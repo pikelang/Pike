@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.213 2003/04/01 19:12:09 mast Exp $
+|| $Id: threads.c,v 1.214 2003/04/01 19:41:13 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.213 2003/04/01 19:12:09 mast Exp $");
+RCSID("$Id: threads.c,v 1.214 2003/04/01 19:41:13 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -46,6 +46,11 @@ PMOD_EXPORT int live_threads = 0, disallow_live_threads = 0;
 PMOD_EXPORT COND_T live_threads_change;
 PMOD_EXPORT COND_T threads_disabled_change;
 PMOD_EXPORT size_t thread_stack_size=256 * 1204;
+
+PMOD_EXPORT void thread_low_error (int errcode)
+{
+  Pike_fatal ("Unexpected error from thread function: %d\n", errcode);
+}
 
 #else
 #include "pike_threadlib.h"
@@ -730,14 +735,7 @@ TH_RETURN_TYPE new_thread_func(void *data)
   }
 #endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
   
-  if((tmp=mt_lock_interpreter()))
-    Pike_fatal("Failed to lock interpreter, return value=%d, errno=%d\n",tmp,
-#ifdef __NT__
-	  GetLastError()
-#else
-	  errno
-#endif
-	  );
+  mt_lock_interpreter();
 
 #if defined(PIKE_DEBUG)
   if(d_flag) {

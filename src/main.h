@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.h,v 1.21 2003/01/08 19:35:42 mast Exp $
+|| $Id: main.h,v 1.22 2003/04/01 19:41:13 mast Exp $
 */
 
 #ifndef MAIN_H
@@ -23,6 +23,7 @@ extern int try_use_mmx;
 #define NO_TAILRECURSION 2
 #define NO_PEEP_OPTIMIZING 4
 #define GC_RESET_DMALLOC 8
+#define ERRORCHECK_MUTEXES 16
 
 /* Runtime options */
 #define RUNTIME_CHECK_TYPES  1

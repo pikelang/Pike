@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.38 2003/04/01 19:12:48 mast Exp $
+|| $Id: pike_threadlib.h,v 1.39 2003/04/01 19:41:13 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -17,6 +17,7 @@
 
 #ifndef CONFIGURE_TEST
 #include "machine.h"
+#include "main.h"
 #endif
 
 /* Needed for the sigset_t typedef, which is needed for
@@ -98,6 +99,13 @@ PMOD_EXPORT extern int live_threads, disallow_live_threads;
 struct object;
 PMOD_EXPORT extern size_t thread_stack_size;
 
+PMOD_EXPORT void thread_low_error (int errcode);
+
+#define LOW_THREAD_CHECK_NONZERO_ERROR(CALL) do {			\
+    int thread_errcode_ = (CALL);					\
+    if (thread_errcode_) thread_low_error (thread_errcode_);		\
+  } while (0)
+
 #define DEFINE_MUTEX(X) PIKE_MUTEX_T X
 
 
@@ -117,27 +125,41 @@ void th_atfork_child(void);
 
 #define THREAD_T pthread_t
 #define PIKE_MUTEX_T pthread_mutex_t
-#define mt_init(X) pthread_mutex_init((X),0)
 
-#if !defined(HAVE_PTHREAD_MUTEX_RECURSIVE_NP) && defined(HAVE_PTHREAD_MUTEX_RECURSIVE)
-#define PTHREAD_MUTEX_RECURSIVE_NP PTHREAD_MUTEX_RECURSIVE
-#define HAVE_PTHREAD_MUTEX_RECURSIVE_NP
+#ifdef PIKE_MUTEX_ERRORCHECK
+#define mt_init(X) do {							\
+    if (debug_options & ERRORCHECK_MUTEXES) {				\
+      pthread_mutexattr_t attr;						\
+      pthread_mutexattr_init(&attr);					\
+      pthread_mutexattr_settype(&attr, PIKE_MUTEX_ERRORCHECK);		\
+      pthread_mutex_init((X), &attr);					\
+    }									\
+    else								\
+      pthread_mutex_init((X),0);					\
+  } while (0)
+#define DO_IF_PIKE_MUTEX_ERRORCHECK(X) X
+#else
+#define mt_init(X) pthread_mutex_init((X),0)
+#define DO_IF_PIKE_MUTEX_ERRORCHECK(X)
 #endif
 
-#ifdef HAVE_PTHREAD_MUTEX_RECURSIVE_NP
+#ifdef PIKE_MUTEX_RECURSIVE
 #define mt_init_recursive(X)						\
     do{ \
       pthread_mutexattr_t attr;					\
       pthread_mutexattr_init(&attr);					\
-      pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP);	\
+      pthread_mutexattr_settype(					\
+	&attr,								\
+	PIKE_MUTEX_RECURSIVE						\
+	DO_IF_PIKE_MUTEX_ERRORCHECK (| PIKE_MUTEX_ERRORCHECK));		\
       pthread_mutex_init((X), &attr);					\
     }while(0)
 #endif
 
-#define mt_lock(X) pthread_mutex_lock(X)
+#define mt_lock(X) LOW_THREAD_CHECK_NONZERO_ERROR (pthread_mutex_lock(X))
 #define mt_trylock(X) pthread_mutex_trylock(X)
-#define mt_unlock(X) pthread_mutex_unlock(X)
-#define mt_destroy(X) pthread_mutex_destroy(X)
+#define mt_unlock(X) LOW_THREAD_CHECK_NONZERO_ERROR (pthread_mutex_unlock(X))
+#define mt_destroy(X) LOW_THREAD_CHECK_NONZERO_ERROR (pthread_mutex_destroy(X))
 
 /* SIGH! No setconcurrency in posix threads. This is more or less
  * needed to make usable multi-threaded programs on solaris machines
@@ -163,12 +185,12 @@ extern pthread_attr_t small_pattr;
 
 
 #ifdef HAVE_PTHREAD_KILL
-#define th_kill(ID,sig) pthread_kill((ID),(sig))
+#define th_kill(ID,sig) LOW_THREAD_CHECK_NONZERO_ERROR (pthread_kill((ID),(sig)))
 #else /* !HAVE_PTHREAD_KILL */
 /* MacOS X (aka Darwin) doesn't have pthread_kill. */
 #define th_kill(ID,sig)
 #endif /* HAVE_PTHREAD_KILL */
-#define th_join(ID,res) pthread_join((ID),(res))
+#define th_join(ID,res) LOW_THREAD_CHECK_NONZERO_ERROR (pthread_join((ID),(res)))
 #ifdef HAVE_PTHREAD_COND_INIT
 #define COND_T pthread_cond_t
 
@@ -187,7 +209,7 @@ extern pthread_attr_t small_pattr;
 #define co_wait(COND, MUTEX) pthread_cond_wait((COND), (MUTEX))
 #define co_signal(X) pthread_cond_signal(X)
 #define co_broadcast(X) pthread_cond_broadcast(X)
-#define co_destroy(X) pthread_cond_destroy(X)
+#define co_destroy(X) LOW_THREAD_CHECK_NONZERO_ERROR (pthread_cond_destroy(X))
 #else
 #error No way to make cond-vars
 #endif /* HAVE_PTHREAD_COND_INIT */
@@ -201,11 +223,11 @@ extern pthread_attr_t small_pattr;
 #define THREAD_T thread_t
 #define PTHREAD_MUTEX_INITIALIZER DEFAULTMUTEX
 #define PIKE_MUTEX_T mutex_t
-#define mt_init(X) mutex_init((X),USYNC_THREAD,0)
-#define mt_lock(X) mutex_lock(X)
+#define mt_init(X) LOW_THREAD_CHECK_NONZERO_ERROR (mutex_init((X),USYNC_THREAD,0))
+#define mt_lock(X) LOW_THREAD_CHECK_NONZERO_ERROR (mutex_lock(X))
 #define mt_trylock(X) mutex_trylock(X)
-#define mt_unlock(X) mutex_unlock(X)
-#define mt_destroy(X) mutex_destroy(X)
+#define mt_unlock(X) LOW_THREAD_CHECK_NONZERO_ERROR (mutex_unlock(X))
+#define mt_destroy(X) LOW_THREAD_CHECK_NONZERO_ERROR (mutex_destroy(X))
 
 #define th_setconcurrency(X) thr_setconcurrency(X)
 
@@ -263,6 +285,10 @@ extern pthread_attr_t small_pattr;
 #include <process.h>
 #include <windows.h>
 
+#define LOW_THREAD_CHECK_ZERO_ERROR(CALL) do {			\
+    if (!(CALL)) thread_low_error (GetLastError());		\
+  } while (0)
+
 #define THREAD_T unsigned
 #define th_setconcurrency(X)
 #define th_create(ID,fun,arg) low_nt_create_thread(2*1024*1024,fun, arg,ID)
@@ -278,17 +304,23 @@ extern pthread_attr_t small_pattr;
 #define th_hash(X) (X)
 
 #define PIKE_MUTEX_T HANDLE
-#define mt_init(X) CheckValidHandle((*(X)=CreateMutex(NULL, 0, NULL)))
-#define mt_lock(X) WaitForSingleObject(CheckValidHandle(*(X)), INFINITE)
-#define mt_trylock(X) WaitForSingleObject(CheckValidHandle(*(X)), 0)
-#define mt_unlock(X) ReleaseMutex(CheckValidHandle(*(X)))
-#define mt_destroy(X) CloseHandle(CheckValidHandle(*(X)))
+#define mt_init(X) LOW_THREAD_CHECK_ZERO_ERROR ((*(X)=CreateMutex(NULL, 0, NULL)))
+#define mt_lock(X)							\
+  LOW_THREAD_CHECK_ZERO_ERROR (						\
+    WaitForSingleObject(CheckValidHandle(*(X)), INFINITE) == WAIT_OBJECT_0)
+#define mt_trylock(X)							\
+  LOW_THREAD_CHECK_ZERO_ERROR (						\
+    WaitForSingleObject(CheckValidHandle(*(X)), 0) != WAIT_FAILED)
+#define mt_unlock(X) LOW_THREAD_CHECK_ZERO_ERROR (ReleaseMutex(CheckValidHandle(*(X))))
+#define mt_destroy(X) LOW_THREAD_CHECK_ZERO_ERROR (CloseHandle(CheckValidHandle(*(X))))
 
 #define EVENT_T HANDLE
-#define event_init(X) CheckValidHandle(*(X)=CreateEvent(NULL, 1, 0, NULL))
-#define event_signal(X) SetEvent(CheckValidHandle(*(X)))
-#define event_destroy(X) CloseHandle(CheckValidHandle(*(X)))
-#define event_wait(X) WaitForSingleObject(CheckValidHandle(*(X)), INFINITE)
+#define event_init(X) LOW_THREAD_CHECK_ZERO_ERROR (*(X)=CreateEvent(NULL, 1, 0, NULL))
+#define event_signal(X) LOW_THREAD_CHECK_ZERO_ERROR (SetEvent(CheckValidHandle(*(X))))
+#define event_destroy(X) LOW_THREAD_CHECK_ZERO_ERROR (CloseHandle(CheckValidHandle(*(X))))
+#define event_wait(X)							\
+  LOW_THREAD_CHECK_ZERO_ERROR (						\
+    WaitForSingleObject(CheckValidHandle(*(X)), INFINITE) == WAIT_OBJECT_0)
 
 /* No fork -- no atfork */
 #define th_atfork(X,Y,Z)
@@ -451,8 +483,10 @@ PMOD_EXPORT extern clock_t thread_start_clock;
 extern THREAD_T debug_locking_thread;
 #define SET_LOCKING_THREAD (debug_locking_thread = th_self(), 0)
 
-#define low_mt_lock_interpreter() (mt_lock(&interpreter_lock) || SET_LOCKING_THREAD)
-#define low_mt_trylock_interpreter() (mt_trylock(&interpreter_lock) || SET_LOCKING_THREAD)
+#define low_mt_lock_interpreter()					\
+  do {mt_lock(&interpreter_lock); SET_LOCKING_THREAD;} while (0)
+#define low_mt_trylock_interpreter()					\
+  (mt_trylock(&interpreter_lock) || SET_LOCKING_THREAD)
 #define low_co_wait_interpreter(COND) \
   do {co_wait((COND), &interpreter_lock); SET_LOCKING_THREAD;} while (0)
 
@@ -469,7 +503,7 @@ extern THREAD_T debug_locking_thread;
 
 #else
 
-#define low_mt_lock_interpreter() (mt_lock(&interpreter_lock))
+#define low_mt_lock_interpreter() do {mt_lock(&interpreter_lock);} while (0)
 #define low_mt_trylock_interpreter() (mt_trylock(&interpreter_lock))
 #define low_co_wait_interpreter(COND) do {co_wait((COND), &interpreter_lock);} while (0)
 
@@ -487,11 +521,15 @@ static INLINE int threads_disabled_wait(void)
   return 0;
 }
 
-#define mt_lock_interpreter() \
-  (low_mt_lock_interpreter() || (threads_disabled && threads_disabled_wait()))
+#define mt_lock_interpreter() do {					\
+    low_mt_lock_interpreter();						\
+    (threads_disabled && threads_disabled_wait());			\
+  } while (0)
 #define mt_trylock_interpreter() \
   (low_mt_trylock_interpreter() || (threads_disabled && threads_disabled_wait()))
-#define mt_unlock_interpreter() (mt_unlock(&interpreter_lock))
+#define mt_unlock_interpreter() do {					\
+    mt_unlock(&interpreter_lock);					\
+  } while (0)
 #define co_wait_interpreter(COND) do {					\
     low_co_wait_interpreter(COND);					\
     if (threads_disabled) threads_disabled_wait();			\
