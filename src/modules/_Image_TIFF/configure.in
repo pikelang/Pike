@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.1 1999/04/07 14:37:12 per Exp $
+# $Id: configure.in,v 1.2 1999/04/07 21:47:30 mirar Exp $
 #
 AC_INIT(image_tiff.c)
 AC_CONFIG_HEADER(config.h)
@@ -8,8 +8,8 @@ AC_ARG_WITH(tifflib,     [  --with(out)-tifflib       Support TIFF (Image.TIFF)]
 AC_MODULE_INIT()
 
 if test x$with_tifflib = xyes ; then
-  AC_CHECK_HEADERS(tiff.h)
-  if test $ac_cv_header_tiff_h = yes ; then
+  AC_CHECK_HEADERS(tiff.h tiffio.h tiffiop.h)
+  if test $ac_cv_header_tiffio_h = yes ; then
     AC_CHECK_LIB(tiff, TIFFClientOpen, [
       AC_DEFINE(HAVE_LIBTIFF) 
       LIBS="${LIBS-} -ltiff"

@@ -2,13 +2,7 @@
 #include "config.h"
 
 #ifdef HAVE_LIBTIFF
-#ifdef INLINE
-#undef INLINE
-#endif
-#include <tiff.h>
-#include <tiffiop.h>
-#include <tiffio.h>
-RCSID("$Id: image_tiff.c,v 1.1 1999/04/07 14:37:12 per Exp $");
+RCSID("$Id: image_tiff.c,v 1.2 1999/04/07 21:47:32 mirar Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -24,6 +18,15 @@ RCSID("$Id: image_tiff.c,v 1.1 1999/04/07 14:37:12 per Exp $");
 #include "error.h"
 #include "stralloc.h"
 #include "../Image/image.h"
+
+#ifdef INLINE
+#undef INLINE
+#endif
+#include <tiff.h>
+#ifdef HAVE_TIFFIOP_H
+#include <tiffiop.h>
+#endif
+#include <tiffio.h>
 
 #ifdef DYNAMIC_MODULE
 static struct program *image_program=NULL;
@@ -427,10 +430,10 @@ static void image_tiff_encode( INT32 args )
   MEMSET(&c, sizeof(c), 0);
   c.xdpy = 150.0;
   c.ydpy = 150.0;
-#ifdef LZW_SUPPORT
+#ifdef COMPRESSION_LZW
   c.compression = COMPRESSION_LZW;
 #else
-#ifdef PACKBITS_SUPPORT
+#ifdef COMPRESSION_PACKBITS
   c.compression = COMPRESSION_LZW;
 #else
   c.compression = COMPRESSION_NONE;
@@ -506,7 +509,7 @@ void pike_module_init(void)
    add_integer_constant( "COMPRESSION_CCITTFAX4", COMPRESSION_CCITTFAX4,0);
    add_integer_constant( "COMPRESSION_CCITTRLEW", COMPRESSION_CCITTRLEW,0);
 #endif
-#ifdef LZW_SUPPORT
+#ifdef COMPRESSION_LZW
    add_integer_constant( "COMPRESSION_LZW", COMPRESSION_LZW,0);
 #endif
 #ifdef JPEG_SUPPORT
@@ -515,7 +518,7 @@ void pike_module_init(void)
 #ifdef NEXT_SUPPORT
    add_integer_constant( "COMPRESSION_NEXT", COMPRESSION_NEXT,0);
 #endif
-#ifdef PACKBITS_SUPPORT
+#ifdef COMPRESSION_PACKBITS
    add_integer_constant( "COMPRESSION_PACKBITS", COMPRESSION_PACKBITS,0);
 #endif
 #ifdef THUNDERSCAN_SUPPORT
