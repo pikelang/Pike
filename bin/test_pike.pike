@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.77 2002/12/02 02:09:26 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.78 2002/12/29 22:32:00 nilsson Exp $ */
 
 import Stdio;
 
@@ -258,8 +258,6 @@ int main(int argc, array(string) argv)
   array(string) testsuites=({});
   args=args[..sizeof(args)-1-argc];
   add_constant("RUNPIKE", map(args, Process.sh_quote)*" ");
-  mapping test_mapping = ([]);
-  add_constant("_TEST", lambda(){ return test_mapping; });
 
   foreach(Getopt.find_all_options(argv,aggregate(
     ({"no-watchdog",Getopt.NO_ARG,({"--no-watchdog"})}),
@@ -887,6 +885,11 @@ int main(int argc, array(string) argv)
 	werror("Leaked constant %O\n", const);
   }
 #endif
+
+  add_constant("regression");
+  add_constant("_verbose");
+  add_constant("_signal_watchdog");
+  add_constant("RUNPIKE");
 
 #ifdef WATCHDOG_SIGNAL
   if(use_watchdog)
