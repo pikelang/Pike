@@ -2,6 +2,20 @@ Calendar -> Calendar II
 changes and backwards issues
 ================================================================
 
+Using Calendar I or detecting Calendar II presence:
+
+Pike 7.1 and Calendar II adds the Calendar.II constant.
+It could be used as this, to always use the old Calendar I, 
+which is kept under the Calendar_I module identifier:
+
+   #if constant(Calendar.II)
+   #define Calendar Calendar_I
+   #endif
+
+   ... Calendar ...
+
+================================================================
+
 a-b => b->range(a)/a
 
 	a-b does no longer give the number of a's between a and b.
