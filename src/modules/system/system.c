@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.5 1997/01/22 10:21:32 grubba Exp $
+ * $Id: system.c,v 1.6 1997/01/25 17:00:51 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -13,7 +13,7 @@
 #include "system_machine.h"
 
 #include <global.h>
-RCSID("$Id: system.c,v 1.5 1997/01/22 10:21:32 grubba Exp $");
+RCSID("$Id: system.c,v 1.6 1997/01/25 17:00:51 grubba Exp $");
 #include <module_support.h>
 #include <las.h>
 #include <interpret.h>
@@ -532,7 +532,7 @@ static MUTEX_T gethostbyname_mutex;
 
 #define GETHOST_DECLARE() struct hostent *ret
 
-#defne CALL_GETHOSTBYNAME(X) \
+#define CALL_GETHOSTBYNAME(X) \
     THREADS_ALLOW(); \
     mt_lock(&gethostbyname_mutex); \
     ret=gethostbyname(X); \
@@ -540,7 +540,7 @@ static MUTEX_T gethostbyname_mutex;
     THREADS_DISALLOW()
 
 
-#defne CALL_GETHOSTBYADDR(X,Y,Z) \
+#define CALL_GETHOSTBYADDR(X,Y,Z) \
     THREADS_ALLOW(); \
     mt_lock(&gethostbyname_mutex); \
     ret=gethostbyaddr((X),(Y),(Z)); \
