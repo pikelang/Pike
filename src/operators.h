@@ -5,12 +5,14 @@
 \*/
 
 /*
- * $Id: operators.h,v 1.6 1998/06/06 13:04:40 grubba Exp $
+ * $Id: operators.h,v 1.7 1999/03/04 06:19:41 hubbe Exp $
  */
 #ifndef OPERATORS_H
 #define OPERATORS_H
 
 #define COMPARISON(ID,NAME,X) void ID(INT32 num_arg);
+
+#include "svalue.h"
 
 extern struct program *string_assignment_program;
 struct string_assignment_storage
