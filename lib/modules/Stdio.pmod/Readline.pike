@@ -1,10 +1,99 @@
-// $Id: Readline.pike,v 1.24 1999/06/22 19:22:42 marcus Exp $
+// $Id: Readline.pike,v 1.25 1999/06/22 21:53:39 marcus Exp $
 
 class OutputController
 {
   static private object outfd, term;
   static private int xpos = 0, columns = 0;
   static private mapping oldattrs = 0;
+
+#define BLINK     1
+#define BOLD      2
+#define DIM       4
+#define REVERSE   8
+#define ITALIC    16
+#define STANDOUT  32
+#define UNDERLINE 64
+
+  static private int selected_attributes = 0, needed_attributes = 0;
+  static private int active_attributes = 0;
+
+  static int low_attribute_mask(array(string) atts)
+  {
+    return `|(@rows(([
+      "blink":BLINK,
+      "bold":BOLD,
+      "dim":DIM,
+      "reverse":REVERSE,
+      "italic":ITALIC,
+      "standout":STANDOUT,
+      "underline":UNDERLINE
+    ]), atts));
+  }
+
+  static void low_set_attributes(int mask, int val, int|void temp)
+  {
+    int i, remv = mask & selected_attributes & ~val;
+    string s = "";
+
+    if(remv & 15) {
+      s += term->put("me")||"";
+      needed_attributes |= selected_attributes;
+      active_attributes = 0;
+    }
+    if(temp) {
+      needed_attributes |= remv;
+    } else {
+      selected_attributes &= ~remv;
+      needed_attributes &= ~remv;
+    }
+    active_attributes &= ~remv;
+    for(i=0; remv; i++)
+      if(remv & (1<<i)) {
+	string cap = ({0,0,0,0,"ZR","se","ue"})[i];
+	if(cap && (cap = term->put(cap)))
+	  s += cap;
+	remv &= ~(1<<i);
+      }
+    if(sizeof(s))
+      outfd->write(s);
+    int add = mask & val & ~selected_attributes;
+    selected_attributes |= add;
+    needed_attributes |= add;
+  }
+
+  static void low_disable_attributes()
+  {
+    low_set_attributes(active_attributes, 0, 1);
+  }
+
+  static void low_enable_attributes()
+  {
+    int i, add = needed_attributes;
+    string s = "";
+
+    needed_attributes &= ~add;
+    for(i=0; add; i++)
+      if(add & (1<<i)) {
+	string cap = ({"mb","md","mh","mr","ZH","so","us"})[i];
+	if(cap && (cap = term->put(cap))) {
+	  s += cap;
+	  active_attributes |= i;
+	}
+	add &= ~(1<<i);
+      }
+    if(sizeof(s))
+      outfd->write(s);
+  }
+
+  void turn_on(string ... atts)
+  {
+    low_set_attributes(low_attribute_mask(atts), ~0);
+  }
+
+  void turn_off(string ... atts)
+  {
+    low_set_attributes(low_attribute_mask(atts), 0);
+  }
 
   void disable()
   {
@@ -105,6 +194,9 @@ class OutputController
     if(!n)
       return;
 
+    if(needed_attributes)
+      low_enable_attributes();
+
 //    werror("low_write(%O)\n",s);
 
     if(word_break)
@@ -157,6 +249,8 @@ class OutputController
   {
     if(n<=0)
       return;
+    if(active_attributes && !term->tgetflag("ms"))
+      low_disable_attributes();
     outfd->write(term->put("DO", n) || (term->put("do")||"")*n);
   }
 
@@ -164,6 +258,8 @@ class OutputController
   {
     if(n<=0)
       return;
+    if(active_attributes && !term->tgetflag("ms"))
+      low_disable_attributes();
     outfd->write(term->put("UP", n) || (term->put("up")||"")*n);
   }
 
@@ -171,6 +267,8 @@ class OutputController
   {
     if(n<=0)
       return;
+    if(active_attributes && !term->tgetflag("ms"))
+      low_disable_attributes();
     if(xpos+n<columns) {
       outfd->write(term->put("RI", n) || (term->put("ri")||"")*n);
       xpos += n;
@@ -189,6 +287,8 @@ class OutputController
   {
     if(n<=0)
       return;
+    if(active_attributes && !term->tgetflag("ms"))
+      low_disable_attributes();
     if(xpos-n>=0) {
       outfd->write(term->put("LE", n) || (term->put("le")||"")*n);
       xpos -= n;
@@ -206,6 +306,8 @@ class OutputController
   void low_erase(int n)
   {
     string e = term->put("ec", n);
+    if(active_attributes && !term->tgetflag("ms"))
+      low_disable_attributes();
     if (e)
       outfd->write(e);
     else
@@ -233,6 +335,8 @@ class OutputController
   void newline()
   {
     string cr = term->put("cr"), down = term->put("do");
+    if(active_attributes && !term->tgetflag("ms"))
+      low_disable_attributes();
     if(cr && down)
       outfd->write(cr+down);
     else
@@ -243,6 +347,8 @@ class OutputController
 
   void bol()
   {
+    if(active_attributes && !term->tgetflag("ms"))
+      low_disable_attributes();
     outfd->write(term->put("cr")||"");
     xpos = 0;
   }
@@ -250,6 +356,8 @@ class OutputController
   void clear(int|void partial)
   {
     string s;
+    if(active_attributes)
+      low_disable_attributes();
     if(!partial && (s = term->put("cl"))) {
       outfd->write(s);
       xpos = 0;
