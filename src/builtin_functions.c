@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.364 2001/05/02 09:47:23 noring Exp $");
+RCSID("$Id: builtin_functions.c,v 1.365 2001/05/03 17:05:59 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1538,7 +1538,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
  *! Converts an UTF16 byte-stream into a string.
  *!
  *! @note
- *! This function does not decode surrogates.
+ *! This function did not decode surrogates in Pike 7.2 and earlier.
  *!
  *! @seealso
  *! @[Locale.Charset.decode()], @[string_to_unicode()], @[string_to_utf8()],
@@ -1562,12 +1562,12 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
   /* Check byteorder of UTF data */
   str0 = (p_wchar1 *)in->str;
   len = in->len;
-  if (len && str0[0] == 0xfeff) {
+  if (len && (str0[0] == 0xfeff)) {
     /* Correct byte order mark.  No swap necessary. */
     swab = 0;
     str0 ++;
     len -= 2;
-  } else if (len && str0[0] == 0xfffe) {
+  } else if (len && (str0[0] == 0xfffe)) {
     /* Reversed byte order mark.  Need to swap. */
     swab = 1;
     str0 ++;
@@ -1640,34 +1640,51 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
 
       p_wchar2 *str2 = STR2(out);
 
-      for (i = len; i--; --str0)
+      for (i = len; i--; --str0) {
 
 	if ((str0[-1]&surrmask) == surr2 && num_surrogates &&
 	    (str0[-2]&surrmask) == surr1) {
 	    
+#if (PIKE_BYTEORDER == 4321)
+	  str2[i] = ((((unsigned char *)str0)[-1]&3)<<18) +
+	    (((unsigned char *)str0)[-2]<<10) +
+	    ((((unsigned char *)str0)[-3]&3)<<8) +
+	    ((unsigned char *)str0)[-4] +
+	    0x10000;
+#else /* PIKE_BYTEORDER != 4321 */
 	  str2[i] = ((((unsigned char *)str0)[-4]&3)<<18) +
 	    (((unsigned char *)str0)[-3]<<10) +
 	    ((((unsigned char *)str0)[-2]&3)<<8) +
 	    ((unsigned char *)str0)[-1] +
 	    0x10000;
-
+#endif /* PIKE_BYTEORDER == 4321 */
 	  --str0;
 	  --num_surrogates;
 
-	} else
-
+	} else {
+#if (PIKE_BYTEORDER == 4321)
+	  str2[i] = (((unsigned char *)str0)[-1]<<8) +
+	    ((unsigned char *)str0)[-2];
+#else /* PIKE_BYTEORDER != 4321 */
 	  str2[i] = (((unsigned char *)str0)[-2]<<8) +
 	    ((unsigned char *)str0)[-1];
-      
+#endif /* PIKE_BYTEORDER == 4321 */
+	}
+      }
     } else {
       /* No surrogates */
 
       p_wchar1 *str1 = STR1(out);
 
-      for (i = len; i--; --str0)
-	
+      for (i = len; i--; --str0) {
+#if (PIKE_BYTEORDER == 4321)
+	str1[i] = (((unsigned char *)str0)[-1]<<8) +
+	  ((unsigned char *)str0)[-2];
+#else /* PIKE_BYTEORDER != 4321 */
 	str1[i] = (((unsigned char *)str0)[-2]<<8) +
 	  ((unsigned char *)str0)[-1];
+#endif /* PIKE_BYTEORDER == 4321 */
+      }
     }
   }
   out = end_shared_string(out);
