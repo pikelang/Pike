@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.14 1997/11/02 03:44:46 mirar Exp $ */
+/* $Id: colortable.c,v 1.15 1997/11/02 03:46:50 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.14 1997/11/02 03:44:46 mirar Exp $
+**!	$Id: colortable.c,v 1.15 1997/11/02 03:46:50 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.14 1997/11/02 03:44:46 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.15 1997/11/02 03:46:50 mirar Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -3281,7 +3281,7 @@ static int* ordered_calculate_errors(int dxs,int dys)
    static int errors3x2[6]={4,0,2,1,5,3};
    static int errors3x3[9]={6,8,4,1,0,3,5,2,7};
 
-   int szx,szy,*errs,*errp,sz,*d,*s;
+   int szx,szy,*errs,sz,*d,*s;
    int xf,yf;
    int x,y;
    

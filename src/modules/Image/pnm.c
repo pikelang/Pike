@@ -1,9 +1,9 @@
-/* $Id: pnm.c,v 1.7 1997/11/02 03:42:36 mirar Exp $ */
+/* $Id: pnm.c,v 1.8 1997/11/02 03:46:52 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm.c,v 1.7 1997/11/02 03:42:36 mirar Exp $
+**!	$Id: pnm.c,v 1.8 1997/11/02 03:46:52 mirar Exp $
 **! class image
 */
 
@@ -47,6 +47,9 @@ extern struct program *image_program;
 **! arg string pnm
 **!	pnm data, as a string
 */
+
+void img_pnm_encode_binary(INT32 args);
+void img_pnm_decode(INT32 args);
 
 void image_toppm(INT32 args)
 {
