@@ -1,0 +1,123 @@
+#!/usr/local/bin/pike
+
+string basename(string s)
+{
+  return (s/"/")[-1];
+}
+
+mapping install_from=([]);
+mapping fake_dirs=([]);
+
+void install(string from, string to)
+{
+  if(search(from,"/CVS/")!=-1) return;
+  install_from[combine_path(".",to)]=combine_path(".",from);
+}
+
+int main(int argc, string *argv)
+{
+  string srcdir=argv[1];
+  string prefix=argv[2];
+  string *lines=Stdio.stdin->read(0x7fffffff)/"\n";
+
+  foreach(lines, string line)
+    {
+      string *args=line/" ";
+      args[0]=basename(args[0]);
+      
+      Getopt.find_all_options(args,
+			      ({
+				({"ignore",Getopt.NO_ARG,"-cvf"}),
+				  }),
+			      0,
+			      0);
+      args=Getopt.get_args(args,0,0);
+      
+      switch(args[0])
+      {
+	case "mkdir":
+	  for(int e=1;e<sizeof(args);e++)
+	    fake_dirs[args]=1;
+	  break;
+	  
+	case "install":
+	case "cp":
+	  mixed s=file_stat(args[-1]);
+	  
+	  if((s && s[1]==-2) || sizeof(args)>3 || fake_dirs[s])
+	  {
+	    for(int e=1;e<sizeof(args)-1;e++)
+	      install(args[e], combine_path(args[-1],basename(args[e])));
+	  }else{
+	    install(args[1], args[2]);
+	  }
+      }
+    }
+
+  string dirname=replace(version()," ","-");
+#if constant(uname)
+  mixed u=uname();
+  dirname+="-"+u->sysname+"-"+u->release+"-"+u->machine;
+#endif
+
+  Process.system("rm -rf "+dirname);
+  mkdir(dirname);
+  chmod(dirname,0755);
+
+  mkdir(dirname+"/files");
+  chmod(dirname+"/files",0755);
+  
+  Process.system("cp "+srcdir+"/install-sh "+srcdir+"/../ANNOUNCE "+dirname);
+  chmod(dirname+"/install-sh",0755);
+
+  mapping new_install_from=([]);
+  int fileno;
+
+  foreach(sort(indices(install_from)), mixed i)
+    {
+      Process.system("cp "+install_from[i]+" "+dirname+"/files/"+fileno);
+      new_install_from[i]="files/"+fileno;
+      fileno++;
+    }
+
+  string script="#!/bin/sh\n";
+  script+="cat <<\EOF\n";
+
+  script+=
+    "This script will install "+version()+" on this machine.\n"
+    "The following directories will be created if they do not\n"
+    "already exist:\n"
+    "\n"
+    "           "+prefix+"/bin/\n"
+    "           "+prefix+"/lib/pike/\n"
+    "           "+prefix+"/include/pike/\n"
+    "\n"
+    "Do you wish to continue? \n"
+    "EOF\n"
+    "if read answer ; then\n"
+    "  case x$answer in\n"
+    "    xy* | xY*) ;;\n"
+    "    *) echo See you later. ; exit 0\n"
+    "  esac\n"
+    "else\n"
+    "  :\n"
+    "fi\n"
+    ;
+
+  
+  foreach(sort(indices(new_install_from)), mixed i)
+    {
+      script+=
+	sprintf("echo installing %s\n",i)+
+	sprintf("if test -f %s ; then mv -f %s %s.old ; else : ; fi\n",i,i,i)+
+	sprintf("./install-sh %s %s\n",new_install_from[i],i);
+    }
+
+  rm(dirname+"/install");
+  Stdio.write_file(dirname+"/install",script);
+  chmod(dirname+"/install",0755);
+
+  Process.system("tar cvf - "+dirname+" | gzip -9 >"+dirname+".tar.gz");
+}
+
+
