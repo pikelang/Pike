@@ -93,8 +93,9 @@ class Codec
 int quiet=0;
 
 Stdio.File logfile;
-function log(string file, int line, string err)
+void log(string file, int line, string err)
 {
+  if(!logfile) return;
   logfile->write("================================================\n");
   logfile->write(sprintf("%s:%d:%s\n",file,line,err));
 }
@@ -111,7 +112,15 @@ int main(int argc, string *argv)
     // It should not be done when running a binary dist
     // installation...
     logfile=Stdio.File("dumpmodule.log","cwt");
-    werror("Dumping modules ");
+//    werror("Dumping modules ");
+  }
+
+  if(argv[1]=="--distquiet")
+  {
+    quiet=2;
+    argv=argv[1..];
+    master()->set_inhibit_compile_errors(log);
+    logfile=0;
   }
 
   foreach(argv[1..],string file)
@@ -140,21 +149,24 @@ int main(int argc, string *argv)
 	  if(programp(p))
 	  {
 	    Stdio.File(file + ".o","wct")->write(s);
-	    if(quiet)
-	      werror(".");
-	    else
-	      werror("dumped.\n");
+	    switch(quiet)
+	    {
+	      case 1: werror("."); break;
+	      case 0: werror("dumped.\n");
+	    }
 	  }else{
-	    if(quiet)
-	      werror("i");
-	    else
-	      werror("Decode of %O failed.\n", file);
+	    switch(quiet)
+	    {
+	      case 1: werror("i"); break;
+	      case 0: werror("Decode of %O failed.\n", file);
+	    }
 	  }
 	}else{
-	  if(quiet)
-	    werror("!");
-	  else
-  	    werror("Compilation of %O failed.\n", file);
+	  switch(quiet)
+	  {
+	    case 1: werror("!"); break;
+	    case 0: werror("Compilation of %O failed.\n", file);
+	  }
 	}
       };
       if(err)
@@ -165,16 +177,20 @@ int main(int argc, string *argv)
 #else
 	if(quiet)
 	{
-	  werror("X");
-	  err[0]="While dumping "+file+": "+err[0];
-	  logfile->write("================================================\n");
-	  logfile->write(master()->describe_backtrace(err));
+	  if(quiet<2)
+	    werror("X");
+	  if(logfile)
+	  {
+	    err[0]="While dumping "+file+": "+err[0];
+	    logfile->write("================================================\n");
+	    logfile->write(master()->describe_backtrace(err));
+	  }
 	}else{
 	  werror(err[0]);
 	}
 #endif
       }
     }
-  if(quiet)
+  if(quiet==1)
     werror("\n");
 }
