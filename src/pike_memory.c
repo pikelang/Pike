@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.149 2004/03/24 20:05:34 grubba Exp $
+|| $Id: pike_memory.c,v 1.150 2004/04/03 15:23:05 mast Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.149 2004/03/24 20:05:34 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.150 2004/04/03 15:23:05 mast Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -690,10 +690,6 @@ void *fake_calloc(size_t x, size_t y)
 #define calloc __real_calloc
 #define strdup __real_strdup
 #endif
-
-#define LOCATION char *
-#define LOCATION_NAME(X) ((X)+1)
-#define LOCATION_IS_DYNAMIC(X) ((X)[0]=='D')
 
 
 static struct memhdr *my_find_memhdr(void *, int);

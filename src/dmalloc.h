@@ -2,8 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dmalloc.h,v 1.46 2004/03/16 18:35:13 mast Exp $
+|| $Id: dmalloc.h,v 1.47 2004/04/03 15:22:12 mast Exp $
 */
+
+#ifndef DMALLOC_H
+#define DMALLOC_H
 
 PMOD_EXPORT extern void *debug_xalloc(size_t);
 PMOD_EXPORT extern void debug_xfree(void *);
@@ -15,6 +18,10 @@ PMOD_EXPORT extern void *debug_xrealloc(void *,size_t);
     (("NS" __FILE__ ":" DEFINETOSTR(__LINE__) NAME )+1)
 
 #define DMALLOC_LOCATION() DMALLOC_NAMED_LOCATION("")
+
+typedef char *LOCATION;
+#define LOCATION_NAME(X) ((X)+1)
+#define LOCATION_IS_DYNAMIC(X) ((X)[0]=='D')
 
 #ifdef DMALLOC_TRACE
 #define DMALLOC_TRACELOGSIZE 131072
@@ -42,22 +49,23 @@ void add_marks_to_memhdr(struct memhdr *to,void *ptr);
 
 extern int verbose_debug_malloc;
 extern void dmalloc_trace(void *);
-extern void dmalloc_register(void *, int, char *);
+extern void dmalloc_register(void *, int, LOCATION);
 extern int dmalloc_unregister(void *, int);
-extern void *debug_malloc(size_t,  char *);
-extern void *debug_calloc(size_t, size_t,  char *);
-extern void *debug_realloc(void *, size_t,  char *);
-extern void debug_free(void *,  char *,int);
-extern char *debug_strdup(const char *, char *);
+extern void *debug_malloc(size_t, LOCATION);
+extern void *debug_calloc(size_t, size_t, LOCATION);
+extern void *debug_realloc(void *, size_t, LOCATION);
+extern void debug_free(void *, LOCATION, int);
+extern char *debug_strdup(const char *, LOCATION);
 extern void reset_debug_malloc(void);
+void dmalloc_check_block_free(void *, LOCATION);
 extern void dmalloc_free(void *p);
-extern int debug_malloc_touch_fd(int,  char *);
-extern int debug_malloc_register_fd(int,  char *);
-extern int debug_malloc_close_fd(int,  char *);
+extern int debug_malloc_touch_fd(int, LOCATION);
+extern int debug_malloc_register_fd(int, LOCATION);
+extern int debug_malloc_close_fd(int, LOCATION);
 extern int dmalloc_mark_as_free(void*,int);
 
-void *debug_malloc_update_location(void *, char *);
-void *debug_malloc_update_location_ptr(void *, ptrdiff_t, char *);
+void *debug_malloc_update_location(void *, LOCATION);
+void *debug_malloc_update_location_ptr(void *, ptrdiff_t, LOCATION);
 void search_all_memheaders_for_references(void);
 void cleanup_memhdrs(void);
 void cleanup_debug_malloc(void);
@@ -170,3 +178,5 @@ int dmalloc_is_invalid_memory_block(void *block);
 #endif /* !MALLOC_TRACE */
 
 #endif /* !DEBUG_MALLOC */
+
+#endif	/* !DMALLOC_H */
