@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.55 2000/04/13 00:50:16 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.56 2000/04/13 02:11:25 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -128,6 +128,11 @@ static char *found_where="";
 static void *found_in=0;
 static int found_in_type=0;
 void *gc_svalue_location=0;
+
+#ifdef PIKE_DEBUG
+static char *fatal_after_gc=0;
+#endif
+
 
 void describe_location(void *memblock, int type, void *location)
 {
@@ -539,11 +544,13 @@ INT32 real_gc_check(void *a)
 
     if(check_for == (void *)1 && gc_do_free(a))
     {
-      fprintf(stderr,"Reference to object to free in referenced object!\n");
+      struct marker *m=get_marker(a);
+      fprintf(stderr,"**Reference to object to free in referenced object!\n");
+      fprintf(stderr,"    has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)m->refs,(long)m->xrefs);
       describe(a);
       locate_references(a);
-      fatal("Reference to object to free in referenced object!\n");
-      return 0;
+      fprintf(stderr,"##### Continuing search for more bugs....\n");
+      fatal_after_gc="Reference to object to free in referenced object!\n";
     }
     return 0;
   }
@@ -699,6 +706,19 @@ int gc_external_mark3(void *a, void *in, char *where)
 
       return 1;
     }
+
+    if(check_for == (void *)1 && gc_do_free(a))
+    {
+      struct marker *m=get_marker(a);
+      fprintf(stderr,"EXTERNAL Reference to object to free%s!\n",in?in:"");
+      fprintf(stderr,"    has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)m->refs,(long)m->xrefs);
+      if(where) describe_location(0,T_UNKNOWN,where);
+      describe(a);
+      locate_references(a);
+      fprintf(stderr,"##### Continuing search for more bugs....\n");
+      fatal_after_gc="EXTERNAL Reference to object to free.\n";
+    }
+
     return 0;
   }
   m=get_marker(a);
@@ -772,8 +792,6 @@ void do_gc(void)
     fprintf(stderr,"Garbage collecting ... ");
   if(num_objects < 0)
     fatal("Panic, less than zero objects!\n");
-
-
 #endif
 
   last_gc=TIME(0);
@@ -829,7 +847,9 @@ void do_gc(void)
   gc_free_all_unreferenced_objects();
 
 #ifdef PIKE_DEBUG
+
   check_for=0;
+  if(fatal_after_gc) fatal(fatal_after_gc);
 #endif
 
   exit_gc();

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.223 2000/04/08 02:01:09 hubbe Exp $");
+RCSID("$Id: program.c,v 1.224 2000/04/13 02:11:25 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3461,55 +3461,58 @@ void gc_mark_program_as_referenced(struct program *p)
   }
 }
 
+static void gc_check_program(struct program *p)
+{
+  int e;
+  extern void * check_for;
+  
+  debug_malloc_touch(p);
+  
+  for(e=0;e<p->num_constants;e++) {
+    debug_gc_check_svalues(& p->constants[e].sval, 1, T_PROGRAM, p);
+  }
+  
+  for(e=0;e<p->num_inherits;e++)
+  {
+    if(p->inherits[e].parent)
+    {
+#ifdef PIKE_DEBUG
+      if(debug_gc_check(p->inherits[e].parent,T_PROGRAM,p)==-2)
+	fprintf(stderr,"(program at 0x%lx -> inherit[%d].parent)\n",
+		(long)p,
+		e);
+#else
+      debug_gc_check(p->inherits[e].parent, T_PROGRAM, p);
+#endif
+    }
+    
+    if(d_flag && p->inherits[e].name && check_for != (void *)1)
+      debug_gc_check(p->inherits[e].name, T_PROGRAM, p);
+    
+    if(e && p->inherits[e].prog)
+      debug_gc_check(p->inherits[e].prog, T_PROGRAM, p);
+  }
+  
+#ifdef PIKE_DEBUG
+  if(d_flag && check_for != (void *)1)
+  {
+    int e;
+    for(e=0;e<(int)p->num_strings;e++)
+      debug_gc_check(p->strings[e], T_PROGRAM, p);
+    
+    for(e=0;e<(int)p->num_identifiers;e++)
+    {
+      debug_gc_check(p->identifiers[e].name, T_PROGRAM, p);
+      debug_gc_check(p->identifiers[e].type, T_PROGRAM, p);
+    }
+  }
+#endif
+}
+
 void gc_check_all_programs(void)
 {
   struct program *p;
-  for(p=first_program;p;p=p->next)
-  {
-    int e;
-
-    debug_malloc_touch(p);
-
-    for(e=0;e<p->num_constants;e++) {
-      debug_gc_check_svalues(& p->constants[e].sval, 1, T_PROGRAM, p);
-    }
-
-    for(e=0;e<p->num_inherits;e++)
-    {
-      if(p->inherits[e].parent)
-      {
-#ifdef PIKE_DEBUG
-	if(debug_gc_check(p->inherits[e].parent,T_PROGRAM,p)==-2)
-	  fprintf(stderr,"(program at 0x%lx -> inherit[%d].parent)\n",
-		  (long)p,
-		  e);
-#else
-	debug_gc_check(p->inherits[e].parent, T_PROGRAM, p);
-#endif
-      }
-
-      if(d_flag && p->inherits[e].name)
-	debug_gc_check(p->inherits[e].name, T_PROGRAM, p);
-
-      if(e && p->inherits[e].prog)
-	debug_gc_check(p->inherits[e].prog, T_PROGRAM, p);
-    }
-
-#ifdef PIKE_DEBUG
-    if(d_flag)
-    {
-      int e;
-      for(e=0;e<(int)p->num_strings;e++)
-	debug_gc_check(p->strings[e], T_PROGRAM, p);
-
-      for(e=0;e<(int)p->num_identifiers;e++)
-      {
-	debug_gc_check(p->identifiers[e].name, T_PROGRAM, p);
-	debug_gc_check(p->identifiers[e].type, T_PROGRAM, p);
-      }
-    }
-#endif
-  }
+  for(p=first_program;p;p=p->next)  gc_check_program(p);
 }
 
 void gc_mark_all_programs(void)
@@ -3558,6 +3561,8 @@ void gc_free_all_unreferenced_programs(void)
       }
       if(tmp >= p->refs)
 	fatal("garbage collector failed to free program!!!\n");
+
+      if(d_flag) gc_check_program(p);
 #endif      
       next=p->next;
     }
