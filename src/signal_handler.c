@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.103 1999/03/13 21:09:46 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.104 1999/03/25 01:23:20 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1413,6 +1413,11 @@ void f_create_process(INT32 args)
       /* FIX: env, cleanup */
     }
 
+#if 0
+    fprintf(stderr,"Gurka: [[%s]]\n",filename);
+    fprintf(stderr,"Gurka2: [[%s]]\n",command_line);
+#endif
+
     THREADS_ALLOW_UID();
     ret=CreateProcess(filename,
 		      command_line,
@@ -2454,14 +2459,12 @@ static void f_signal(int args)
     error("Signal out of range.\n");
   }
 
-#ifdef USE_SIGCHILD
   if(!signal_evaluator_callback)
   {
     signal_evaluator_callback=add_to_callback(&evaluator_callbacks,
 					      check_signals,
 					      0,0);
   }
-#endif
 
   if(args == 1)
   {
