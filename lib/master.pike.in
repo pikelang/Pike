@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.273 2003/04/29 00:46:52 nilsson Exp $
+// $Id: master.pike.in,v 1.274 2003/04/30 00:58:20 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -2248,7 +2248,8 @@ void compile_warning(string file,int line,string err)
 	      line?(string)line:"-",err );
   }
   else if (objectp(val) && val->compile_warning) {
-    val->compile_warning(file, line, err);
+    ([function(string,int,string:void)]([object]val)
+     ->compile_warning)(file, line, err);
   }
 }
 
@@ -2259,13 +2260,15 @@ void compile_warning(string file,int line,string err)
 int compile_exception (array|object trace)
 {
   if (objectp (trace) &&
-      (trace->is_cpp_error || trace->is_compilation_error))
+      ( ([object]trace)->is_cpp_error ||
+	([object]trace)->is_compilation_error))
     // Errors thrown directly by cpp() and compile() are normally not
     // interesting; they've already been reported to compile_error.
     return 1;
   if (mixed val = get_inhibit_compile_errors()) {
-    if (objectp (val) && val->compile_exception)
-      return val->compile_exception (trace);
+    if (objectp(val) && ([object]val)->compile_exception)
+      return ([function(object:int)]([object]val)
+	      ->compile_exception)([object]trace);
   }
   else {
     handle_error (trace);
@@ -2301,7 +2304,7 @@ void runtime_warning (string where, string what, mixed... args)
 }
 
 
-static mixed _charset_mod;
+static object _charset_mod;
 
 //! This function is called by cpp() when it wants to do
 //! character code conversion.
@@ -2310,9 +2313,9 @@ string decode_charset(string data, string charset)
   // werror(sprintf("decode_charset(%O, %O)\n", data, charset));
 
   if (!_charset_mod) {
-    mixed mod = resolv("Locale");
+    object mod = [object]resolv("Locale");
 
-    _charset_mod = mod && mod["Charset"];
+    _charset_mod = [object](mod && mod["Charset"]);
     if (!_charset_mod) {
       compile_warning("-", 0, "No Locale.Charset module!");
       return 0;
@@ -2322,14 +2325,15 @@ string decode_charset(string data, string charset)
   object decoder;
 
   catch {
-    decoder = _charset_mod->decoder(charset);
+    decoder = ([function(string:object)]_charset_mod->decoder)(charset);
   };
 
   if (!decoder) {
     compile_warning("-", 0, sprintf("Unknown charset %O!", charset));
     return 0;
   }
-  return decoder->feed(data)->drain();
+  return ([function(void:string)]([function(string:object)]decoder->
+				  feed)(data)->drain)();
 }
 
 
@@ -2358,11 +2362,11 @@ class Describer
       }
       else if (multisetp (stuff)) {
 	if (!ident[stuff]++)
-	  identify_stack += indices (stuff);
+	  identify_stack += indices([multiset]stuff);
       }
       else if (mappingp (stuff)) {
 	if (!ident[stuff]++)
-	  identify_stack += indices (stuff) + values (stuff);
+	  identify_stack += indices([mapping]stuff) + values([mapping]stuff);
       }
       
     }
@@ -2418,7 +2422,7 @@ class Describer
 
   string describe (mixed m, int maxlen)
   {
-    if (stringp (ident[m])) return ident[m];
+    if (stringp (ident[m])) return [string]ident[m];
     else if (intp (ident[m]) && ident[m] > 1)
       ident[m] = "@" + identcount++;
 
@@ -2431,21 +2435,21 @@ class Describer
     case "float":
       return (string)m;
     case "string":
-      return describe_string (m, maxlen);
+      return describe_string ([string]m, maxlen);
     case "array":
-      res = describe_array (m, maxlen);
+      res = describe_array ([array]m, maxlen);
       break;
     case "mapping":
-      res = describe_mapping (m, maxlen);
+      res = describe_mapping ([mapping]m, maxlen);
       break;
     case "multiset":
-      res = describe_multiset (m, maxlen);
+      res = describe_multiset ([multiset]m, maxlen);
       break;
     case "function":
-      if (string tmp=describe_function(m)) res = tmp;
+      if (string tmp=describe_function([function]m)) res = tmp;
       break;
     case "program":
-      if(string tmp=describe_program(m)) res = tmp;
+      if(string tmp=describe_program([program]m)) res = tmp;
       break;
     default:
       /* object or type. */
@@ -2473,11 +2477,8 @@ class Describer
     int len=maxlen;
     int done=0;
 
-    //  int loopcount=0;
-
     while(1)
     {
-      //    if(loopcount>10000) werror("len=%d\n",len);
       array(string) z=allocate(clip);
       array(int) isclipped=allocate(clip);
       array(int) clippable=allocate(clip);
@@ -2492,13 +2493,10 @@ class Describer
 
       while(1)
       {
-	//      if(loopcount>10000)  werror("clip=%d maxlen=%d\n",clip,maxlen);
 	string ret = z[..clip-1]*",";
-	//      if(loopcount>10000)  werror("sizeof(ret)=%d z=%O isclipped=%O done=%d\n",sizeof(ret),z[..clip-1],isclipped[..clip-1],done);
 	if(done || sizeof(ret)<=maxlen+1)
 	{
 	  int tmp=sizeof(x)-clip-1;
-	  //	if(loopcount>10000) werror("CLIPPED::::: %O\n",isclipped);
 	  clipped=`+(0,@isclipped);
 	  if(tmp>=0)
 	  {
@@ -2514,16 +2512,12 @@ class Describer
 	int clipsuggest;
 	while(1)
 	{
-	  //	if(loopcount++ > 20000) return "";
-	  //	if(!(loopcount & 0xfff)) werror("GNORK\n");
 	  int smallsize=0;
 	  int num_large=0;
 	  clipsuggest=0;
 
 	  for(int e=0;e<clip;e++)
 	  {
-	    //	    if(loopcount>10000) werror("sizeof(z[%d])=%d  len=%d\n",e,sizeof(z[e]),len);
-
 	    if((sizeof(z[e])>=last_newlen || isclipped[e]) && clippable[e])
 	      num_large++;
 	    else
@@ -2532,21 +2526,16 @@ class Describer
 	    if(num_large * 15 + smallsize < maxlen) clipsuggest=e+1;
 	  }
 	
-	  //	if(loopcount>10000) werror("num_large=%d  maxlen=%d  smallsize=%d clippsuggest=%d\n",num_large,maxlen,smallsize,clipsuggest);
 	  newlen=num_large ? (maxlen-smallsize)/num_large : 0;
 	
-	  //	if(loopcount>10000) werror("newlen=%d\n",newlen);
-
 	  if(newlen<8 || newlen >= last_newlen) break;
 	  last_newlen=newlen;
-	  //	if(loopcount>10000) werror("len decreased, retrying.\n");
 	}
 
 	if(newlen < 8 && clip)
 	{
 	  clip-= (clip/4) || 1;
 	  if(clip > clipsuggest) clip=clipsuggest;
-	  //	if(loopcount>10000) werror("clip decreased, retrying.\n");
 	}else{
 	  len=newlen;
 	  done++;
@@ -2625,14 +2614,15 @@ string describe_module(object|program mod, array(object)|void ret_obj)
   program parent_fun;
   if (objectp(mod)) {
     parent_fun = object_program(mod);
-    if (ret_obj) ret_obj[0] = mod;
+    if (ret_obj) ret_obj[0] = [object]mod;
   } else if (intp(mod)) {
     // Function in gmp
-    if (ret_obj) ret_obj[0] = mod;    
+    if (ret_obj) ret_obj[0] = [object]mod;
     return sprintf("%O->", mod);
   }else {
-    parent_fun = mod;
-    if (objectp (mod = objects[parent_fun]) && ret_obj) ret_obj[0] = mod;
+    parent_fun = [program]mod;
+    if (objectp (mod = objects[parent_fun]) && ret_obj)
+      ret_obj[0] = [object]mod;
   }
   if (mod) {
     catch {
@@ -2662,7 +2652,7 @@ string describe_module(object|program mod, array(object)|void ret_obj)
       // Check if we're an object in parent.
       int i = search(values(parent), mod);
       if (i >= 0) {
-	return res + indices(parent)[i] + ".";
+	return res + [string]indices(parent)[i] + ".";
       }
     };
   }
@@ -2679,7 +2669,7 @@ string describe_module(object|program mod, array(object)|void ret_obj)
       // Check if there's a clone of parent_fun in parent_obj.
       int i;
       array(mixed) val = values(parent);
-      array(string) ind = indices(parent);
+      array(string) ind = [array(string)]indices(parent);
       for (i=0; i < sizeof(val); i++) {
 	if (objectp(val[i]) && object_program(val[i]) == parent_fun) {
 	  return res + ind[i] + ".";
@@ -2698,7 +2688,8 @@ string describe_object(object o)
   string s;
   if(zero_type (o)) return 0;	// Destructed.
 
-  function parent_fun = object_program(o);
+  function(mixed...:void|object) parent_fun =
+    [function(mixed...:void|object)]object_program(o);
 
   /* Constant object? */
   catch {
@@ -2722,7 +2713,7 @@ string describe_object(object o)
 		       }), o);
       }
       if (i >= 0) {
-	s = indices(parent_obj)[i];
+	s = [string]indices(parent_obj)[i];
 	return describe_module(parent_obj) + s;
       }
     }
@@ -2738,15 +2729,16 @@ string describe_object(object o)
 }
 
 //!
-string describe_program(program p)
+string describe_program(program|function p)
 {
   string s;
   if(!p) return 0;
 
-  if(s=get_clean_program_path(p, "object_program(", ")", ""))
+  if(programp(p) &&
+     (s=get_clean_program_path([program]p, "object_program(", ")", "")))
     return s;
 
-  if(mixed tmp=(function_object(p) || function_program(p))) {
+  if(object|program tmp=(function_object(p) || function_program(p))) {
     if(s = function_name(p))
     {
       return describe_module(tmp) + s;
@@ -2776,7 +2768,7 @@ string describe_function (function f)
   else
     if (catch (name = function_name (f))) name = "function";
 
-  object o = function_object(f);
+  object o = function_object([function(mixed...:void|mixed)]f);
   if(objectp (o)) { // Check if it's an object in a way that (hopefully) doesn't
 		    // call any functions in it (neither `== nor `!).
     string s;
@@ -2812,17 +2804,19 @@ string describe_backtrace(mixed trace, void|int linewidth)
     linewidth=99999;
     catch 
     {
-      linewidth=_static_modules.files()->_stdin->tcgetattr()->columns;
+      linewidth=[int]_static_modules.files()->_stdin->tcgetattr()->columns;
     };
     if(linewidth<10) linewidth=99999;
   }
 
-  if((arrayp(trace) && sizeof(trace)==2 && stringp(trace[0])) ||
-     (objectp(trace) && trace->is_generic_error))
+  if((arrayp(trace) && sizeof([array]trace)==2 && stringp(([array]trace)[0]))||
+     (objectp(trace) && ([object]trace)->is_generic_error))
   {
     if (catch {
-      ret = trace[0] || "No error message!\n";
-      trace = trace[1];
+      ret = ([array(string)]trace)[0];
+      if(!stringp(ret))
+	ret = "No error message!\n";
+      trace = ([array]trace)[1];
     }) {
       return "Error indexing backtrace!\n";
     }
@@ -2835,12 +2829,13 @@ string describe_backtrace(mixed trace, void|int linewidth)
   {
     Describer desc = Describer();
     desc->identify_parts (trace);
+    array trace = [array]trace;
 
     int end = 0;
     if( (sizeof(trace)>1) &&
 	arrayp(trace[0]) &&
-	(sizeof(trace[0]) > 2) &&
-	(trace[0][2] == _main))
+	(sizeof([array]trace[0]) > 2) &&
+	(([array]trace[0])[2] == _main))
       end = 1;
 
     mapping(string:int) prev_pos = ([]);
@@ -2852,7 +2847,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
       mixed tmp;
       string row;
       if (array err=[array]catch {
-	tmp = ([array]trace)[e];
+	tmp = trace[e];
 	if(stringp(tmp))
 	{
 	  row=[string]tmp;
@@ -2874,7 +2869,8 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	    {
 	      catch 
               {
-		if(mixed tmp=function_object([function]tmp[2]))
+		if(mixed tmp=function_object([function(mixed...:
+						       void|mixed)]tmp[2]))
 		  if(tmp=object_program(tmp))
 		    if(tmp=describe_program([program]tmp))
 		      desc=[string]tmp;
