@@ -91,9 +91,11 @@ NTTOOLS=$NT_TOOL_PATH/lib
 
 if [ "x$NTMOUNT" = x ]; then
   MNTREPLACE=""
+  PIKE_PATH_TRANSLATE=""
 else
   MNTREPLACE="s@$NTMOUNT@@g
 "
+  PIKE_PATH_TRANSLATE="s!^$NTMOUNT!$NTDRIVE!"
 fi
 IFS=' 	
 '
