@@ -3,8 +3,11 @@
 // The classes can produce XML representations of themselves.
 
 #pragma strict_types
+#include "./debug.h"
 
 static inherit "module.pmod";
+static inherit Parser.XML.Tree;
+
 
 //========================================================================
 // REPRESENTATION OF TYPES
@@ -306,7 +309,7 @@ class _Class_or_Module {
   string directory = 0;
   string file = 0;
 
-  // OBS! Vi låter den ligga här istället:
+  // NB: The documentation appears as a child of the <class> or <module>
   Documentation documentation;
 
   array(Inherit) inherits = ({ });
@@ -425,6 +428,134 @@ class Constant {
   }
   string print() {
     return ::print() + " " + name;
+  }
+}
+
+class Typedef {
+  inherit PikeObject;
+  static void create() { ::create("typedef"); }
+  Type type = 0;
+  string xml() {
+    return standardStart() + standardTags()
+      + xmltag("type", type->xml())
+      + standardEnd();
+  }
+  string print() {
+    return ::print() + (type ? " " + type->print() + " " : "") + name;
+  }
+}
+
+// The values inside enum Foo { ... }
+class EnumConstant {
+  inherit PikeObject;
+  static void create() { ::create("constant"); }
+  string xml() {
+    mapping m = ([]) + standardAttributes();
+    return opentag(objtype, m) + standardTags()
+      + standardEnd();
+  }
+  string print() {
+    return "constant";  // for now...
+  }
+}
+
+// The enum container
+class Enum {
+  inherit PikeObject;
+
+  // mimic the class { ... } behaviour
+  Documentation documentation;
+
+  array(DocGroup) children = ({ });
+  static void create() { ::create("enum"); }
+  void addChild(DocGroup c) { children += ({ c }); }
+  string xml() {
+
+    // need some special handling to make this look as if it
+    // were produced by some other stuff
+    string s =  standardStart() + standardTags();
+    array(Node) inDocGroups = ({});
+
+    if (documentation && documentation->xml != "") {
+
+      // Have to handle all xpath:enum/doc/group[constant]
+      // differently, replacing them according to:
+      //
+      // <group>
+      //   <constant name="foo"/>
+      //   <text>....</text>
+      // </group>
+      //
+      // Becomes:
+      //
+      // <docgroup homogen-type="constant" homogen-name="foo">
+      //   <constant name="foo"/>
+      //   <doc>
+      //     <text>
+      //     </text>
+      //   </doc>
+      // </docgroup>
+
+      Node doc = parse_input(documentation->xml);
+
+      foreach (doc->get_children(), Node group) {
+        if (group->get_node_type() == XML_ELEMENT
+            && group->get_any_name() == "group")
+        {
+          int constants = 0;
+          string homogenName = 0;
+          Node docGroupNode = Node(XML_ELEMENT, "docgroup",
+                                   ([ "homogen-type" : "constant" ]), 0);
+          Node text = 0;
+          foreach (group->get_children(), Node child)
+            if (child->get_node_type() == XML_ELEMENT)
+              if (child->get_any_name() == "constant") {
+                ++constants;
+                if (constants == 1)
+                  homogenName = child->get_attributes()["name"];
+                else
+                  homogenName = 0;
+                docGroupNode->add_child(child);
+              }
+              else if (child->get_any_name() == "text") {
+                if (text)
+                  throw("<group> had more than one <text> child!!!!");
+                text = child;
+              }
+          if (constants) {
+            // <group> had at least one <constant> child.
+            // Then it should be transformed into a <docgroup> child
+            // of the <enum> node.
+            doc->remove_child(group);
+            if (homogenName)
+              docGroupNode->get_attributes() ["homogen-name"] = homogenName;
+
+            if (text) {
+              // wrap the <text> node in a <doc>,
+              // and then put it inside the <docgroup>
+              // together with the <constant>s
+              Node d = Node(XML_ELEMENT, "doc", ([]), 0);
+              d->add_child(text);
+              docGroupNode->add_child(d);
+            }
+            inDocGroups += ({ docGroupNode });
+          }
+        }
+      }
+      s += xmltag("doc", doc->html_of_node());
+    }
+
+    foreach (children, DocGroup docGroup)
+      s += docGroup->xml();
+    foreach (inDocGroups, Node n)
+      s += n->html_of_node();
+
+    s += standardEnd();
+    return s;
+  }
+
+  string print() {
+    return "enum";
   }
 }
 

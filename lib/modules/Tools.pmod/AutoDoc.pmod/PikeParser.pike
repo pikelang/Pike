@@ -2,6 +2,7 @@
 // elements of the Pike language...
 
 #include "./debug.h"
+#define TOKEN_DEBUG 0
 
 static inherit .PikeObjects;
 static inherit "module.pmod";
@@ -84,6 +85,11 @@ void skipUntil(multiset(string)|string tokens) {
   }
 }
 
+void skipNewlines() {
+  while (peekToken(WITH_NL) == "\n")
+    readToken(WITH_NL);
+}
+
 //========================================================================
 // PARSING OF PIKE SOURCE FILES
 //========================================================================
@@ -108,6 +114,8 @@ static private array(Token) tokens;
 constant WITH_NL = 1;
 
 string peekToken(int | void with_newlines) {
+  int at = tokenPtr;
+
   if (tokenPtr >= sizeof(tokens))
     return EOF;
   Token t;
@@ -118,9 +126,12 @@ string peekToken(int | void with_newlines) {
     while (tokens[i]->text == "\n")
       ++i;
     t = tokens[i];
+    at = i;
   }
 
-  // werror("    peek: %O  %s\n", t->text, with_newlines ? "(WNL)" : "");
+#if TOKEN_DEBUG
+  werror("    peek:[%d]%O  %s\n", at, t->text, with_newlines ? "(WNL)" : "");
+#endif
 
   currentPosition = t->position;
   return t->text;
@@ -142,7 +153,10 @@ string readToken(int | void with_newlines) {
   if (isDocComment(t->text))
     ++nReadDocComments;
 
-  // werror("    read: %O  %s\n", t->text, with_newlines ? "(WNL)" : "");
+#if TOKEN_DEBUG
+  werror("    read:[%d]%O  %s\n", tokenPtr - 1, t->text,
+         with_newlines ? "(WNL)" : "");
+#endif
 
   currentPosition = t->position;
   return t->text;
@@ -504,7 +518,7 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
       readToken(WITH_NL);
       s = peekToken(WITH_NL);
     }
-    if (s == "import") {
+    if (s == "import") {  // skip all import:s
       skipUntil(";");
       eat(";");
       s = peekToken(WITH_NL);
@@ -553,6 +567,24 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
       i->name = eatIdentifier();
     }
     return i;
+  }
+  else if (s == "typedef") {
+    Typedef t = Typedef();
+    t->position = position;
+    t->modifiers = modifiers;
+    readToken();
+    t->type = parseOrType();
+    t->name = eatIdentifier();
+    return t;
+  }
+  else if (s == "enum") {
+    Enum e = Enum();
+    e->position = position;
+    e->modifiers = modifiers;
+    readToken();
+    if (peekToken() != "{")
+      e->name = eatIdentifier();
+    return e;
   }
   else {
     Type t = parseOrType();
@@ -629,7 +661,13 @@ array(Token) tokenize(string s, string filename, int line) {
   return t;
 }
 
-void setTokens(array(Token) t) { tokens = t; tokenPtr = 0; }
+void setTokens(array(Token) t) {
+  tokens = t;
+  tokenPtr = 0;
+#if TOKEN_DEBUG
+  werror("PikeParser::setTokens(), tokens = \n%O\n", tokens);
+#endif
+}
 
 // create(string, filename, firstline)
 // create(array(Token))
@@ -651,6 +689,8 @@ static void create(string|void s,
   }
   else
     tokens = ({});
-  //  werror("PikeParser::create(), tokens = \n%O\n", tokens);
+#if TOKEN_DEBUG
+  werror("PikeParser::create(), tokens = \n%O\n", tokens);
+#endif
   tokenPtr = 0;
 }

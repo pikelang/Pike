@@ -53,6 +53,8 @@ mapping(string : int) keywordtype =
 
   "section" : CONTAINERKEYWORD,
 
+  "constant" : DELIMITERKEYWORD, // used inside @decl enum Foo
+
   "mapping" : CONTAINERKEYWORD, "member" : DELIMITERKEYWORD,
   "multiset" : CONTAINERKEYWORD, "index" : DELIMITERKEYWORD,
   "array" : CONTAINERKEYWORD, "elem" : DELIMITERKEYWORD,
@@ -73,6 +75,7 @@ mapping(string : array(string)) attributenames =
   "int" : ({ "name" }),
   "string" : ({ "name" }),
   "mixed" : ({ "name" }),
+  "constant" : ({ "name" }),
 ]);
 
 static constant standard = (< "note", "example", "seealso", "deprecated" >);
@@ -85,6 +88,7 @@ mapping(string : multiset(string)) allowedChildren =
   "_class" : standard,
   "_module" : standard,
   "_constant" : standard,
+  "_enum" : (< "constant" >) + standard,
   "mapping" : (< "member" >),
   "multiset": (< "index" >),
   "array"   : (< "elem" >),
@@ -100,7 +104,14 @@ mapping(string : multiset(string)) allowGrouping =
   "member" : (< "member" >),
   "type" : (< "type" >),
   "value" : (< "value" >),
+  "constant" : (< "constant" >),
 ]);
+
+multiset(string) allowOnlyOne =
+(< "seealso",
+   "returns",
+   "deprecated",
+>);
 
 static int getKeywordType(string keyword) {
   if (keywordtype[keyword])

@@ -94,26 +94,112 @@ static private class Extractor {
     return (< "\n", "}", "EOF" >) [token];
   }
 
+  // consumes the "\n" after the last constant too...
+  static array(EnumConstant) parseAdjacentEnumConstants() {
+    array(EnumConstant) result = ({ });
+    parser->skipNewlines();
+    while (isIdent(parser->peekToken(WITH_NL))) {
+      EnumConstant c = EnumConstant();
+      c->position = parser->currentPosition->copy();
+      c->name = parser->readToken(); // read the identifier
+      result += ({ c });
+      parser->skipUntil((<",", "}">)); // don't care about any init expr
+      if (parser->peekToken() == ",")
+        parser->eat(",");
+      else
+        break;
+      // allow at most ONE intervening newline character
+      if (parser->peekToken(WITH_NL) == "\n")
+        parser->readToken(WITH_NL);
+    }
+    return result;
+  }
+
+  // Returns nothing, instead adds the enumconstants as children to
+  // the Enum parent
+  static void parseEnumBody(Enum parent) {
+    for (;;) {
+      parser->skipNewlines();
+      Documentation doc = 0;
+      array(EnumConstant) consts = ({});
+      if (isIdent(parser->peekToken())) {
+        // The case with one or more constants, optionally followed by
+        // a doc comment.
+        consts = parseAdjacentEnumConstants();
+        if (!sizeof(consts)) // well, could never happen, but ...
+          extractorError("expected enum constant");
+
+        // read the optional doc comment
+        if (isDocComment(parser->peekToken(WITH_NL)))
+          doc = readAdjacentDocLines();
+        if (isIdent(parser->peekToken()))
+          extractorError("constant + doc + constant not allowed");
+      }
+      else if (isDocComment(parser->peekToken())) {
+        // The case with a doc comment, that must be followed by
+        // one or more constants.
+        doc = readAdjacentDocLines(); // consumes the \n after //... too!
+        if (!isIdent(parser->peekToken(WITH_NL)))
+          extractorError("expected enum constant");
+        consts = parseAdjacentEnumConstants();
+        // consumes the "\n" after them too...
+        if (isDocComment(parser->peekToken(WITH_NL)))
+          extractorError("cant have doc both before and after enum constant");
+      }
+      else if (parser->peekToken() == "}")
+        // reached the end of the enum { ... }.
+        return;
+      else
+        extractorError("expected doc comment or enum constant, got %O",
+                       parser->peekToken());
+
+      if (doc) {
+        .DocParser.Parse parse = .DocParser.Parse(doc->text, doc->position);
+        .DocParser.MetaData metadata = parse->metadata();
+        if (metadata->appears || metadata->belongs)
+          extractorError("@appears or @belongs not allowed in "
+                         "doc for enum constant");
+        if (metadata->type)
+          extractorError("@%s not allowed in doc for enum constant",
+                         metadata->type);
+        doc->xml = parse->doc("_enumconstant");
+
+        parent->addChild(DocGroup(consts, doc));
+      }
+      // ignore constants without any adjacent doc comment...
+    }
+  }
+
   // parseAdjacentDecls consumes the "\n" that may follow the last decl
   static array(PikeObject) parseAdjacentDecls() {
     array(PikeObject) res = ({ });
     for (;;) {
       // To get the correct line# :
-      while (parser->peekToken(WITH_NL) == "\n")
-        parser->readToken(WITH_NL);
+      parser->skipNewlines();
       SourcePosition pos = parser->currentPosition->copy();
       object(PikeObject)|array(PikeObject) p = parser->parseDecl();
 
+      multiset(string) allowSqueeze = (<
+        "method",
+        "class",
+        "enum"
+      >);
+
       if (isDocComment(parser->peekToken())) {
-        if (!objectp(p) && (p->objtype == "method" || p->objtype == "class"))
-          extractorError("sqeezed in doc only allowed for classes and methods");
+        if (!objectp(p) || !allowSqueeze[p->objtype])
+          extractorError("sqeezed in doc only allowed for %s",
+                         String.implode_nicely(indices(allowSqueeze)));
         Documentation doc = readAdjacentDocLines();
         p->squeezedInDoc = doc;
       }
-      // TODO: parse doc squeezed in between the head and the body
-      if (!arrayp(p) && p->objtype == "class" && parser->peekToken() == "{") {
+      if (objectp(p) && p->objtype == "class" && parser->peekToken() == "{") {
         parser->eat("{");
         parseClassBody([object(Class)] p);
+        parser->eat("}");
+      }
+      else if (objectp(p) && p->objtype == "enum") {
+        parser->eat("{"); // after ("enum" opt_id) must come "{"
+        parseEnumBody([object(Enum)] p);
         parser->eat("}");
       }
       else if (parser->peekToken() == "{") {
@@ -121,7 +207,8 @@ static private class Extractor {
         parser->skipBlock();
         int mark2 = parser->getReadDocComments();
         if (mark2 != mark1)
-          extractorError("%d illegal doc comment lines inside block", mark2-mark1);
+          extractorError("%d illegal doc comment lines inside block",
+                         mark2 - mark1);
       }
       else
         parser->eat(";");
@@ -144,7 +231,8 @@ static private class Extractor {
   // 4.   decls                           (undocumented decls, discarded)
   //
   // If 'filename' is supplied, it will look for standalone doc comments
-  // at the beginning of the file.
+  // at the beginning of the file, and then the return value is that
+  // Documentation for the file.
   Documentation parseClassBody(Class|Module c, void|string filename) {
     Documentation filedoc = 0;
     for (;;) {
@@ -222,12 +310,14 @@ static private class Extractor {
         decls = docDecls;
       }
 
-      int wasClassOrModule = 0;
+      int wasNonGroupable = 0;
+      multiset(string) nonGroupable = (<"class","module","enum">);
       foreach (decls, PikeObject obj)
-        if (obj->objtype == "class" || obj->objtype == "module") {
-          wasClassOrModule = 1;
+        if (nonGroupable[obj->objtype]) {
+          wasNonGroupable = 1;
           if (sizeof(decls) > 1 && doc)
-            extractorError("cannot group classes or modules");
+            extractorError("%s are not groupable",
+                           String.implode_nicely(indices(nonGroupable)));
         }
 
       if (doc && !sizeof(decls))
@@ -258,9 +348,8 @@ static private class Extractor {
         }
 
       if (doc) {
-        if (wasClassOrModule) {
-          object(Class)|object(Module) d =
-	    [object(Class)|object(Module)]decls[0];
+        if (wasNonGroupable) {
+          object(PikeObject) d = [object(PikeObject)] decls[0];
           d->documentation = doc;
           d->appears = appears;
           d->belongs = belongs;
