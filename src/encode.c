@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.190 2003/06/30 17:06:08 mast Exp $
+|| $Id: encode.c,v 1.191 2003/07/01 15:08:29 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.190 2003/06/30 17:06:08 mast Exp $");
+RCSID("$Id: encode.c,v 1.191 2003/07/01 15:08:29 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -374,7 +374,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 
       if(t->cdr)
       {
-	ptrdiff_t id = CAR_TO_INT(t);
+	ptrdiff_t id = CDR_TO_INT(t);
 	if( id >= PROG_DYNAMIC_ID_START )
 	{
 	  struct program *p=id_to_program(id);
