@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.466 2004/04/30 17:19:40 mast Exp $
+|| $Id: builtin_functions.c,v 1.467 2004/05/28 13:09:46 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.466 2004/04/30 17:19:40 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.467 2004/05/28 13:09:46 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4153,6 +4153,56 @@ PMOD_EXPORT void f_localtime(INT32 args)
 }
 #endif
 
+#ifdef HAVE_GMTIME
+/* Returns the approximate difference in seconds between the
+ * two struct tm's.
+ */
+static time_t my_tm_diff(const struct tm *t1, const struct tm *t2)
+{
+  time_t base = (t1->tm_year - t2->tm_year) * 32140800 +
+    (t1->tm_mon - t2->tm_mon) * 2678400 +
+    (t1->tm_mday - t2->tm_mday) * 86400 +
+    (t1->tm_hour - t2->tm_hour) * 3600 +
+    (t1->tm_min - t2->tm_min) * 60 +
+    (t1->tm_sec - t2->tm_sec);
+  if ((t1->tm_year > t2->tm_year) && (base < 0))
+    return 0x7fffffff;
+  if ((t1->tm_year < t2->tm_year) && (base > 0))
+    return -0x7fffffff;
+  return base;
+}
+
+/* Inverse operation of gmtime().
+ */
+static time_t my_timegm(struct tm *target_tm)
+{
+  time_t current_ts = 0;
+  time_t diff_ts;
+  struct tm *current_tm;
+  int loop_cnt = 0;
+
+  /* This loop seems stable, and usually converges in two passes.
+   * The loop counter is for paranoia reasons.
+   */
+  while((diff_ts = my_tm_diff(target_tm, current_tm = gmtime(&current_ts)))) {
+    current_ts += diff_ts;
+    loop_cnt++;
+    /* fprintf(stderr, "Loop [%d]: %d, %d\n", loop_cnt, current_ts, diff_ts); */
+    if (loop_cnt > 20) {
+      /* Infinite loop? */
+      return -1;
+    }
+  }
+  /* Check that the result tm looks like what we expect... */
+  if ((current_tm->tm_sec == target_tm->tm_sec) &&
+      (current_tm->tm_min == target_tm->tm_min)) {
+    /* Odds are that the rest of the fields are correct (1:3600). */
+    return current_ts;
+  }
+  return -1;
+}
+#endif /* HAVE_GMTIME */
+
 #ifdef HAVE_MKTIME
 /*! @decl int mktime(mapping(string:int) tm)
  *! @decl int mktime(int sec, int min, int hour, int mday, int mon, int year, @
@@ -4255,60 +4305,74 @@ PMOD_EXPORT void f_mktime (INT32 args)
     date.tm_isdst = -1;
   }
 
+#ifdef HAVE_GMTIME
+  if ((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
+  {
+    /* UTC-relative time. Use my_timegm(). */
+    retval = my_timegm(&date);
+    if (retval == -1)
+      PIKE_ERROR("mktime", "Cannot convert.\n", Pike_sp, args);
+    retval += Pike_sp[7-args].u.integer;
+  } else {
+#endif /* HAVE_GMTIME */
+
 #ifdef STRUCT_TM_HAS_GMTOFF
-  /* BSD-style */
-  date.tm_gmtoff = 0;
+    /* BSD-style */
+    date.tm_gmtoff = 0;
 #else
 #ifdef STRUCT_TM_HAS___TM_GMTOFF
-  /* Linux-style */
-  date.__tm_gmtoff = 0;
+    /* Linux-style */
+    date.__tm_gmtoff = 0;
 #else
-  if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
-  {
-    /* Pre-adjust for the timezone.
-     *
-     * Note that pre-adjustment must be done on AIX for dates
-     * near Jan 1, 1970, sine AIX mktime(3) doesn't support
-     * negative time.
-     */
-    date.tm_sec += Pike_sp[7-args].u.integer
+    if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
+    {
+      /* Pre-adjust for the timezone.
+       *
+       * Note that pre-adjustment must be done on AIX for dates
+       * near Jan 1, 1970, sine AIX mktime(3) doesn't support
+       * negative time.
+       */
+      date.tm_sec += Pike_sp[7-args].u.integer
 #ifdef HAVE_EXTERNAL_TIMEZONE
-      - timezone
+	- timezone
 #endif /* HAVE_EXTERNAL_TIMEZONE */
-      ;
-  }
+	;
+    }
 #endif /* STRUCT_TM_HAS___TM_GMTOFF */
 #endif /* STRUCT_TM_HAS_GMTOFF */
 
-  retval = mktime(&date);
+    retval = mktime(&date);
   
-  if (retval == -1)
-    PIKE_ERROR("mktime", "Cannot convert.\n", Pike_sp, args);
+    if (retval == -1)
+      PIKE_ERROR("mktime", "Cannot convert.\n", Pike_sp, args);
 
 #if defined(STRUCT_TM_HAS_GMTOFF) || defined(STRUCT_TM_HAS___TM_GMTOFF)
-  if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
-  {
-    /* Post-adjust for the timezone.
-     *
-     * Note that tm_gmtoff has the opposite sign of timezone.
-     *
-     * Note also that it must be post-adjusted, since the gmtoff
-     * field is set by mktime(3).
-     */
+    if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
+    {
+      /* Post-adjust for the timezone.
+       *
+       * Note that tm_gmtoff has the opposite sign of timezone.
+       *
+       * Note also that it must be post-adjusted, since the gmtoff
+       * field is set by mktime(3).
+       */
 #ifdef STRUCT_TM_HAS_GMTOFF
-    retval += Pike_sp[7-args].u.integer + date.tm_gmtoff;
+      retval += Pike_sp[7-args].u.integer + date.tm_gmtoff;
 #else
-    retval += Pike_sp[7-args].u.integer + date.__tm_gmtoff;
+      retval += Pike_sp[7-args].u.integer + date.__tm_gmtoff;
 #endif /* STRUCT_TM_HAS_GMTOFF */
-  }
+    }
 
-  if ((args > 6) && (Pike_sp[6-args].subtype == NUMBER_NUMBER) &&
-      (Pike_sp[6-args].u.integer != -1) &&
-      (Pike_sp[6-args].u.integer != date.tm_isdst)) {
-    /* Some stupid libc's (Hi Linux!) don't accept that we've set isdst... */
-    retval += 3600 * (Pike_sp[6-args].u.integer - date.tm_isdst);
-  }
+    if ((args > 6) && (Pike_sp[6-args].subtype == NUMBER_NUMBER) &&
+	(Pike_sp[6-args].u.integer != -1) &&
+	(Pike_sp[6-args].u.integer != date.tm_isdst)) {
+      /* Some stupid libc's (Hi Linux!) don't accept that we've set isdst... */
+      retval += 3600 * (Pike_sp[6-args].u.integer - date.tm_isdst);
+    }
 #endif /* STRUCT_TM_HAS_GMTOFF || STRUCT_TM_HAS___TM_GMTOFF */
+#ifdef HAVE_GMTIME */
+  }
+#endif /* HAVE_GMTIME */
 
   pop_n_elems(args);
   push_int(retval);
