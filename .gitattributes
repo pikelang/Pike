@@ -93,7 +93,6 @@ testfont binary
 /lib/modules/Crypto.pmod/RSA.pike foreign_ident
 /lib/modules/Crypto.pmod/Random.pmod foreign_ident
 /lib/modules/Crypto.pmod/koremutake.pmod foreign_ident
-/lib/modules/Crypto.pmod/rsa.pike foreign_ident
 /lib/modules/Crypto.pmod/testsuite.in foreign_ident
 /lib/modules/Debug.pmod/Subject.pike foreign_ident
 /lib/modules/Debug.pmod/module.pmod foreign_ident
