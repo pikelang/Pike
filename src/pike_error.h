@@ -2,11 +2,27 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.28 2003/04/01 14:24:19 mast Exp $
+|| $Id: pike_error.h,v 1.29 2003/04/01 19:12:48 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
 #define PIKE_ERROR_H
+
+#ifdef CONFIGURE_TEST
+
+#include <stdio.h>
+
+static inline void Pike_fatal (const char *fmt, ...)
+{
+  va_list args;
+  va_start (args, fmt);
+  vfprintf (stderr, fmt, args);
+  abort();
+}
+
+#define Pike_error Pike_fatal
+
+#else  /* !CONFIGURE_TEST */
 
 #include "machine.h"
 
@@ -346,5 +362,7 @@ PMOD_EXPORT extern const char msg_div_by_zero[];
 /* Generic error stuff */
 #define ERR_EXT_DECLARE
 #include "errors.h"
+
+#endif	/* !CONFIGURE_TEST */
 
 #endif /* PIKE_ERROR_H */

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.37 2003/03/31 17:46:38 grubba Exp $
+|| $Id: pike_threadlib.h,v 1.38 2003/04/01 19:12:48 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -800,7 +800,7 @@ PMOD_EXPORT extern int Pike_in_gc;
 #endif
 
 #ifdef __NT__
-#ifndef PIKE_DEBUG
+#if !defined (PIKE_DEBUG) || defined (CONFIGURE_TEST)
 #define CheckValidHandle(X) (X)
 #else
 PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h);
