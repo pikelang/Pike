@@ -293,6 +293,7 @@ if test "x$with_GTK" = "xyes" ; then
   fi
 
 dnl Must be before..
+AC_SUBST(have_x11)
 AC_SUBST(have_gtk_20)
 AC_SUBST(have_gtk_120)
 
@@ -458,7 +459,7 @@ if test "x$WITH_GTK" = x1 ; then
  
  AC_MSG_CHECKING([if HAVE_SAVE_SESSION_SIGNAL is defined in applet-widget.h])
  AC_CACHE_VAL(pgtk_defined_HAVE_SAVE_SESSION_SIGNAL,[
- AC_TRY_LINK([
+ AC_TRY_COMPILE([
 #include <applet-widget.h> 
  ], 
  [
@@ -476,7 +477,7 @@ if test "x$WITH_GTK" = x1 ; then
  
  AC_MSG_CHECKING([if HAVE_APPLET_BIND_EVENTS is defined in applet-widget.h])
  AC_CACHE_VAL(pgtk_defined_HAVE_APPLET_BIND_EVENTS,[
- AC_TRY_LINK([
+ AC_TRY_COMPILE([
 #include <applet-widget.h> 
  ], 
  [
@@ -495,7 +496,7 @@ if test "x$WITH_GTK" = x1 ; then
  
  AC_MSG_CHECKING([if HAVE_PANEL_PIXEL_SIZE is defined in applet-widget.h])
  AC_CACHE_VAL(pgtk_defined_HAVE_PANEL_PIXEL_SIZE,[
- AC_TRY_LINK([
+ AC_TRY_COMPILE([
 #include <applet-widget.h> 
  ], 
  [
@@ -513,7 +514,7 @@ if test "x$WITH_GTK" = x1 ; then
  
  AC_MSG_CHECKING([if HAVE_PANEL_DRAW_SIGNAL is defined in applet-widget.h])
  AC_CACHE_VAL(pgtk_defined_HAVE_PANEL_DRAW_SIGNAL,[
- AC_TRY_LINK([
+ AC_TRY_COMPILE([
 #include <applet-widget.h> 
  ], 
  [
@@ -531,7 +532,7 @@ if test "x$WITH_GTK" = x1 ; then
  
  AC_MSG_CHECKING([if HAVE_APPLET_QUEUE_RESIZE is defined in applet-widget.h])
  AC_CACHE_VAL(pgtk_defined_HAVE_APPLET_QUEUE_RESIZE,[
- AC_TRY_LINK([
+ AC_TRY_COMPILE([
 #include <applet-widget.h> 
  ], 
  [
@@ -550,7 +551,7 @@ if test "x$WITH_GTK" = x1 ; then
  CFLAGS="$oCFLAGS"
  
  AC_CHECK_HEADERS( X11/xpm.h )
- AC_CHECK_LIB(Xpm, XpmReadFileToXpmImage)
+ AC_CHECK_LIB(Xpm, XpmReadFileToXpmImage,,,`$ac_cv_path_GTK_CONFIG --libs`)
  
  # End of gnome dependent stuff.
  fi
@@ -659,6 +660,35 @@ if test "x$WITH_GTK" = x1 ; then
     echo "*********************************************"
   fi
  fi
+  AC_CHECK_LIB(X11,XSetScreenSaver,[have_x11=x11],[have_x11=nox11])
+  if test "x$have_x11" = "xx11" ; then
+   AC_MSG_CHECKING([X11 DPMS extension])
+ oCFLAGS="$CFLAGS"
+ CFLAGS="$CFLAGS $GTK_CFLAGS"
+
+   AC_TRY_COMPILE([
+#include <gdk/gdk.h> 
+#include <gdk/gdkx.h> 
+#include <X11/extensions/dpms.h> 
+ ], 
+ [
+     CARD16 state;
+     BOOL dpms_off;
+     DPMSInfo(GDK_DISPLAY(), &state, &dpms_off);
+ ], 
+ [_res=1],
+ [_res=0])
+
+ if test "x$_res" = "x1" ; then
+   AC_MSG_RESULT([available])
+   AC_DEFINE(HAVE_DPMS)
+ else
+   AC_MSG_RESULT([missing])
+ fi
+
+  CFLAGS="$oCFLAGS"
+
+  fi
 else
   WITH_GTK=0
 fi

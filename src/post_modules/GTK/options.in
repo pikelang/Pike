@@ -1,5 +1,6 @@
 @have_gtk_120@
 @have_gtk_20@
+@have_x11@
 @pgtk_has_sheet@
 @pgtk_has_glarea@
 @pgtk_has_libglade@
