@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.30 2003/02/15 17:33:33 grubba Exp $
+|| $Id: pike_threadlib.h,v 1.31 2003/02/16 03:50:23 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -425,6 +425,7 @@ PMOD_EXPORT extern clock_t thread_start_clock;
 #ifndef VERBOSE_THREADS_DEBUG
 #define THREADS_FPRINTF(L,X)
 #else
+#include <errno.h>
 #define THREADS_FPRINTF(L,X)	do { \
     if ((VERBOSE_THREADS_DEBUG + 0) >= (L)) {				\
       /* E.g. THREADS_DISALLOW is used in numerous places where the */	\
@@ -501,18 +502,46 @@ PMOD_EXPORT extern unsigned long thread_yields;
 PMOD_EXPORT extern THREAD_T threads_disabled_thread;
 #endif
 
-#define SWAP_OUT_THREAD(_tmp) do {				\
-       (_tmp)->state=Pike_interpreter;				\
-       (_tmp)->swapped=1;					\
-       DO_IF_PROFILING( (_tmp)->time_base += gethrtime() ; )	\
-      } while(0)
+#define INIT_THREAD_STATE(_tmp) do {					\
+    struct thread_state *_th_state = (_tmp);				\
+    Pike_interpreter.thread_state = _th_state;				\
+    _th_state->state = Pike_interpreter;				\
+    _th_state->id = th_self();						\
+    _th_state->status = THREAD_RUNNING;					\
+    _th_state->swapped = 0;						\
+    DO_IF_USE_CLOCK_FOR_SLICES (thread_start_clock = 0);		\
+  } while (0)
+
+#define EXIT_THREAD_STATE(_tmp) do {					\
+    struct thread_state *_th_state = (_tmp);				\
+    DO_IF_DEBUG (Pike_sp = (struct svalue *) (ptrdiff_t) -1);		\
+  } while (0)
+
+#define SWAP_OUT_THREAD(_tmp) do {					\
+    struct thread_state *_th_state = (_tmp);				\
+    _th_state->state=Pike_interpreter;					\
+    _th_state->swapped=1;						\
+    DO_IF_PROFILING( _th_state->time_base += gethrtime() );		\
+    DO_IF_DEBUG (							\
+      /* Yo! Yo run now, yo DIE! Hear! */				\
+      Pike_sp = (struct svalue *) (ptrdiff_t) -1;			\
+    );									\
+  } while(0)
 
 #define SWAP_IN_THREAD(_tmp) do {					\
-       (_tmp)->swapped=0;						\
-       Pike_interpreter=(_tmp)->state;					\
-       DO_IF_USE_CLOCK_FOR_SLICES (thread_start_clock = 0);		\
-       DO_IF_PROFILING(  Pike_interpreter.time_base -=  gethrtime();)	\
-     } while(0)
+    struct thread_state *_th_state = (_tmp);				\
+    DO_IF_DEBUG (							\
+      if (Pike_sp != (struct svalue *) (ptrdiff_t) -1)			\
+	Pike_fatal ("Thread %08x swapped in over existing thread %08x.\n", \
+		    (unsigned int) _th_state->id,			\
+		    Pike_interpreter.thread_state ?			\
+		    (unsigned int) Pike_interpreter.thread_state->id : 0); \
+    );									\
+    _th_state->swapped=0;						\
+    Pike_interpreter=_th_state->state;					\
+    DO_IF_USE_CLOCK_FOR_SLICES (thread_start_clock = 0);		\
+    DO_IF_PROFILING(  Pike_interpreter.time_base -=  gethrtime());	\
+  } while(0)
 
 #define SWAP_OUT_CURRENT_THREAD() \
   do {\
@@ -527,6 +556,7 @@ extern void dumpmem(char *desc, void *x, int size);
 #define SWAP_IN_CURRENT_THREAD()					      \
    THREADS_FPRINTF(1, (stderr, "SWAP_IN_CURRENT_THREAD() %s:%d ... t:%08x\n", \
 		       __FILE__, __LINE__, (unsigned int)_tmp->id));	      \
+   SWAP_IN_THREAD(_tmp);						      \
    DO_IF_DEBUG(								      \
    {									      \
      THREAD_T self=th_self();						      \
@@ -537,7 +567,6 @@ extern void dumpmem(char *desc, void *x, int size);
        Pike_fatal("SWAP_IN_CURRENT_THREAD FAILED!!!\n");		      \
      }									      \
    })									      \
-   SWAP_IN_THREAD(_tmp);						      \
  } while(0)
 
 #if defined(PIKE_DEBUG) && ! defined(DONT_HIDE_GLOBALS)
@@ -568,6 +597,25 @@ extern void dumpmem(char *desc, void *x, int size);
 #define REVEAL_PC
 #endif
 
+#ifdef PIKE_DEBUG
+#define ASSERT_THREAD_SWAPPED_IN() do {				\
+    struct thread_state *_tmp=thread_state_for_id(th_self());	\
+    if(_tmp->swapped) Pike_fatal("Thread is not swapped in!\n");	\
+  }while(0)
+#define DEBUG_CHECK_THREAD() do {					\
+    if(thread_state_for_id(th_self()) != Pike_interpreter.thread_state) { \
+      debug_list_all_threads();						\
+      Pike_fatal("thread_state_for_id() (or Pike_interpreter.thread_state) " \
+		 "failed! %p != %p\n",					\
+		 thread_state_for_id(th_self()),			\
+		 Pike_interpreter.thread_state) ;			\
+    }									\
+  } while (0)
+#else
+#define ASSERT_THREAD_SWAPPED_IN() do { } while (0)
+#define DEBUG_CHECK_THREAD() do { } while (0)
+#endif
+
 #define HIDE_GLOBAL_VARIABLES() do { \
    int Pike_interpreter =0; \
    int pop_n_elems = 0; \
@@ -588,11 +636,8 @@ extern void dumpmem(char *desc, void *x, int size);
 PMOD_EXPORT extern int Pike_in_gc;
 #define THREADS_ALLOW() do { \
      struct thread_state *_tmp = Pike_interpreter.thread_state; \
+     DEBUG_CHECK_THREAD();					\
      DO_IF_DEBUG({ \
-       if(thread_for_id(th_self()) != Pike_interpreter.thread_obj) \
-	 Pike_fatal("thread_for_id() (or Pike_interpreter.thread_obj) failed!" \
-               " %p != %p\n", \
-               thread_for_id(th_self()), Pike_interpreter.thread_obj); \
        if (Pike_in_gc > 50 && Pike_in_gc < 300) \
 	 Pike_fatal("Threads allowed during garbage collection.\n"); \
      }) \
@@ -622,17 +667,13 @@ PMOD_EXPORT extern int Pike_in_gc;
        if (threads_disabled) threads_disabled_wait(); \
        SWAP_IN_THREAD(_tmp);\
      } \
-     DO_IF_DEBUG( if(thread_for_id(th_self()) != Pike_interpreter.thread_obj) \
-        Pike_fatal("thread_for_id() (or Pike_interpreter.thread_obj) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_obj) ; ) \
+     DEBUG_CHECK_THREAD(); \
    } while(0)
 
 #define THREADS_ALLOW_UID() do { \
      struct thread_state *_tmp_uid = Pike_interpreter.thread_state; \
+     DEBUG_CHECK_THREAD();					    \
      DO_IF_DEBUG({ \
-       if(thread_for_id(th_self()) != Pike_interpreter.thread_obj) { \
-	 Pike_fatal("thread_for_id() (or Pike_interpreter.thread_obj) failed! %p != %p\n", \
-               thread_for_id(th_self()),Pike_interpreter.thread_obj); \
-       } \
        if ((Pike_in_gc > 50) && (Pike_in_gc < 300)) { \
          fprintf(stderr, __FILE__ ":" DEFINETOSTR(__LINE__) ": Fatal error:\n"); \
 	 debug_fatal("Threads allowed during garbage collection (%d).\n", \
@@ -682,16 +723,6 @@ PMOD_EXPORT extern int Pike_in_gc;
   struct thread_state *_tmp=thread_state_for_id(th_self());	\
   HIDE_GLOBAL_VARIABLES();					\
   THREADS_DISALLOW()
-
-#ifdef PIKE_DEBUG
-#define ASSERT_THREAD_SWAPPED_IN() do {				\
-    struct thread_state *_tmp=thread_state_for_id(th_self());	\
-    if(_tmp->swapped) Pike_fatal("Thread is not swapped in!\n");	\
-  }while(0)
-
-#else
-#define ASSERT_THREAD_SWAPPED_IN()
-#endif
 
 #endif	/* !CONFIGURE_TEST */
 
