@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.47 2003/07/01 15:21:52 anders Exp $
+// $Id: client.pike,v 1.48 2004/06/14 09:14:59 grubba Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -360,7 +360,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.47 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.48 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -406,20 +406,16 @@ int _prof_gtim;
       THROW(({"Failed to connect to LDAP server.\n",backtrace()}));
     }
 
-#if constant(SSL.sslfile)
     if(lauth->scheme == "ldaps") {
+#if constant(SSL.sslfile)
       context->random = Crypto.randomness.reasonably_random()->read;
-      ::create(SSL.sslfile(::_fd, context, 1,1));
+      ::create(SSL.sslfile(this, context, 1,1));
       info->tls_version = ldapfd->version;
+#else
+      error("LDAP: LDAPS is not available without SSL support.\n");
+#endif
     } else
       ::create(::_fd);
-#else
-    if(lauth->scheme == "ldaps") {
-	THROW(({"LDAP: LDAPS is not available without SSL support.\n",backtrace()}));
-    }
-    else
-      ::create(::_fd);
-#endif
 
     DWRITE("client.create: connected!\n");
 
