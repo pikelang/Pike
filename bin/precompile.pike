@@ -60,7 +60,9 @@
  *    be confusing as RETURN x; will not work if x is zero.
  *  o Comments does not work inside prototypes (?)
  *  o Allow INHERIT
- *    
+ *
+ * C ENVIRONMENT
+ *  FIXME
  */
 
 #define PC Parser.Pike
@@ -1515,6 +1517,7 @@ class ParseBlock
 
 	string funcname=mkname("f",base,name);
 	string define=make_unique_name("f",base,name,"defined");
+	string func_num=mkname("f",base,name,"fun_num");
 
 //    werror("FIX RETURN: %O\n",body);
     
@@ -1523,8 +1526,14 @@ class ParseBlock
 //    werror("  args=%O\n",args);
 
 	ret+=({
-	  sprintf("#define %s\n",define)
+	  sprintf("#define %s\n", define),
 	});
+
+	if (!attributes->efun) {
+	  ret += ({
+	    sprintf("ptrdiff_t %s = 0;\n", func_num),
+	  });
+	}
 
 	// werror("%O %O\n",proto,args);
 	int last_argument_repeats;
@@ -1844,29 +1853,29 @@ class ParseBlock
 	
 
 	if (attributes->efun) {
-	  addfuncs+=
-	    IFDEF(define,({
-	      PC.Token(sprintf("  ADD_EFUN(%O, %s, %s, %s);\n",
-			       attributes->name || name,
-			       funcname,
-			       type->output_c_type(),
-			       (attributes->optflags)|| "0" ,
-			       ),proto[0]->line),
-		}));
+	  addfuncs+=IFDEF(define,({
+	    PC.Token(sprintf("  ADD_EFUN(%O, %s, %s, %s);\n",
+			     attributes->name || name,
+			     funcname,
+			     type->output_c_type(),
+			     (attributes->optflags)|| "0" ,
+			     ),proto[0]->line),
+	  }));
 	} else {
 	  addfuncs+=IFDEF(define, ({
-	    PC.Token(sprintf("  ADD_FUNCTION2(%O, %s, %s, %s, %s);\n",
+	    PC.Token(sprintf("  %s =\n"
+			     "    ADD_FUNCTION2(%O, %s, %s, %s, %s);\n",
+			     func_num,
 			     attributes->name || name,
 			     funcname,
 			     type->output_c_type(),
 			     attributes->flags || "0" ,
 			     attributes->optflags ||
 			     "OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT"
-	      ),proto[0]->line),
-	      }));
+			     ),proto[0]->line),
+	  }));
 	}
       }
-
 
       code=ret;
     }
