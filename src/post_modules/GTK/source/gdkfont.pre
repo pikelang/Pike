@@ -60,6 +60,7 @@ NAME_ARGS(font_name);
 {
   char *n;
   pgtk_verify_setup();
+  pgtk_verify_not_inited();
   if(args)
   {
     get_all_args("Gdk.Font", args, "%s", &n);
@@ -105,6 +106,3 @@ NAME_ARGS(character);
 {
   push_int(gdk_char_width((GdkFont*)THIS->obj, sp[-args].u.integer));
 }
-
-
-

@@ -30,6 +30,8 @@ NAME_ARGS(message, messagebox_type, buttons);
   char **buttons;
   int i;
   get_all_args( "create", args, "%s%s", &message, &type );
+  pgtk_verify_gnome_setup();
+  pgtk_verify_not_inited();
   buttons = malloc( (args-1)*sizeof( char *) );
   buttons[args-2] = NULL;
   for( i = 2; i<args; i++ )
@@ -44,6 +46,7 @@ NAME_ARGS(message, messagebox_type, buttons);
   THIS->obj = GTK_OBJECT( gnome_message_box_newv( (const gchar *)message,
                                                   (const gchar *)type,
                                                   (const gchar **)buttons ) );
+  pgtk__init_object( fp->current_object );
   free( buttons );
   pop_n_elems( args );
   push_int( 0 );

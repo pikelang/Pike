@@ -8,6 +8,8 @@ FUNCTION(create, "function(void:void)")
 ARGS();
 // Create a new object
 {
+  pgtk_verify_setup();
+  pgtk_verify_not_inited();
   THIS->obj = (void *)gtk_accel_group_new();
 /* add_ref(fp->current_object);   one extra ref... No, not really */
 }
@@ -48,5 +50,3 @@ FUNCTION(destroy, "function(void:void)")
   gtk_accel_group_unref( (void *)THIS->obj );
   THIS->obj = 0;
 }
-
-

@@ -13,6 +13,7 @@ NAME_ARGS(context);
 {
   struct object *o;
   pgtk_verify_setup();
+  pgtk_verify_not_inited();
   get_all_args("'()", args, "%o", &o);
   if(get_gdkobject(o, Drawable))
     THIS->obj = (void *)gdk_gc_new( (GdkWindow*)get_gdkobject(o,Drawable) );
@@ -110,5 +111,3 @@ RETURNS(GDK.GC);
   RETURN_THIS();
 }
 /* TODO: a lot of functions left.. */
-
-

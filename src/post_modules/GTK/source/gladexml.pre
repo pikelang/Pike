@@ -15,7 +15,7 @@ class GladeXML;
 #include <glade/glade.h>
 
 int glade_is_setup = 0;
-RCSID("$Id: gladexml.pre,v 1.5 2000/03/08 00:28:09 per Exp $");
+RCSID("$Id: gladexml.pre,v 1.6 2000/03/08 17:57:33 per Exp $");
 
 %{
 /* This function is used by signal_autoconnect to handle signal
@@ -192,6 +192,7 @@ FUNCTION(create, "function(void|int:void)");
 // Create a new GladeXML object. The first time it is run the libglade
 // initializing function is automatically run.
 {
+  pgtk_verify_setup();
   if(!glade_is_setup)
   {
     glade_init();
@@ -325,5 +326,4 @@ RETURNS(void);
   pop_n_elems(args);
 }
 
-// <p align=right><font size=2><i>$Id: gladexml.pre,v 1.5 2000/03/08 00:28:09 per Exp $</i></font>
-
+// <p align=right><font size=2><i>$Id: gladexml.pre,v 1.6 2000/03/08 17:57:33 per Exp $</i></font>

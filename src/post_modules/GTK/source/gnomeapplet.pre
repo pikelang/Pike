@@ -2,6 +2,85 @@ require gnome;
 ADD_INCLUDE(#include <applet-widget.h>);
 class gnome_applet_widget;
 inherit plug;
+// Applets are basically GNOME applications whose window sits inside
+// the panel. Also the panel "takes care" of the applets by providing
+// them with session saving and restarting, window management (inside
+// of the panel), and a context menu.
+// <p>
+// The simplest applet one can write would be along the lines of:
+// <p>
+// <pre>
+// int main( int argc, array argv )
+// {
+//   Gnome.init( "hello", "1.0", argv, 0 );
+//   Gnome.AppletWidget("hello")-&gt;add(GTK.Label("Hello World!"))-&gt;show_all();
+//   GTK.applet_widget_gtk_main();
+// }
+// </pre>
+// This creates an applet which just sits on the panel, not really
+// doing anything, in real life the label would be substituted by
+// something which actually does something useful. As you can see the
+// applet doesn't really take care of restarting itself.
+// <p>
+// For the applet to be added to the menus, you need to install two
+// files. Your x.gnorba file goes into $sysconfdir/CORBA/servers/ and
+// the x.desktop file goes into $prefix/share/applets/&lt;category&gt;/.
+// <p>
+// Example hello.desktop:
+// <pre>
+// [Desktop Entry]
+//  Name=Hello Applet
+//  Comment=An example Hello World type Applet
+//  Type=PanelApplet
+//  Exec=hello.pike
+//  Icon=gnome-hello.png
+//  Terminal=0
+// </pre>
+// Example hello.gnorba:
+// <pre>
+// [hello]
+//  type=exe
+//  repo_id=IDL:GNOME/Applet:1.0
+//  description=Hello Applet
+//  location_info=hello.pike
+// </pre>
+// One thing to keep in mind is that the Exec line for the .desktop
+// doesn't actually get executed when the Type is PanelApplet. The
+// Exec line should be the GOAD ID specified in the .gnorba file (the
+// "hello" enclosed by brackets). For a simple applet all you need to
+// do is replace the hello.pike with the name of your applet
+// executable.
+// <p>
+//  When the user right clicks on the applet, a menu appears, this is
+//  all handeled by the panel, so in order to add items to it you use
+//  a special interface to "add callbacks" to the menu. A very simple
+//  example would be (making our hello applet even more feature full):
+// <p>
+
+// <pre>
+// void hello_there()
+// {
+//   write( "Hello there, indeed!\n" );
+// }
+//
+// int main( int argc, array argv )
+// {
+//   Gnome.AppletWidget w;
+//   Gnome.init( "hello", "1.0", argv, 0 );
+//   w = Gnome.AppletWidget("hello");
+//   w-&gt;add(GTK.Label("Hello World!"))-&gt;show_all();
+//   w-&gt;register_callback( "hello", "Hello there", hello_there, 0 );
+//   GTK.applet_widget_gtk_main();
+// }
+// </pre>
+// Now the user will see a "Hello There" menu item on the applet menu,
+// and when selected, the applet will print "Hello There". Useful huh?
+// <p>
+// Note that the first argument to the register_callback is just a
+// string identifier of this callback, and can really be whatever you
+// want. But it should NOT be translated as the label (the 2nd
+// argument) should be.
+
 #include <applet-widget.h>
 signal change_orient;
 signal change_pixel_size;
@@ -41,7 +120,7 @@ void bind_events( widget to );
 // is done during add, but if you need to bind events over a widget
 // which you added later, use this function.
 
-void set_tooltips( string to );
+void set_tooltip( string to );
 // Set a tooltip on the entire applet that will follow the tooltip
 // setting from the panel configuration.
 

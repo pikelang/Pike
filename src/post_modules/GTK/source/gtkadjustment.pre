@@ -30,6 +30,8 @@ NAME_ARGS(value,lower,upper,step_increment,page_increment,page_size);
 // All are floating point values. For most widgets the unit is pixels.
 {
   float l=0.0, u=1.0, v=0.0, si=0.01, pi=0.01, ps=1.0;
+  pgtk_verify_setup();
+  pgtk_verify_not_inited();
   if(args == 6 )
     get_all_args("Adjustment", args,"%f%f%f%f%f%f", &l,&u,&v,&si,&pi,&ps);
   else if(args == 3 )   get_all_args("Adjustment", args,"%f%f%f", &l,&u,&v);

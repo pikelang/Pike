@@ -7,6 +7,7 @@ NAME_ARGS(x,y,width,height);
 {
   GdkRectangle *r;
   pgtk_verify_setup();
+  pgtk_verify_not_inited();
   THIS->obj = (void *)(r=malloc(sizeof(GdkRectangle)));
   get_all_args( "GDK.Rectangle", args, "%d%d%d%d", &r->x, &r->y,
 		&r->width, &r->height );
@@ -59,6 +60,3 @@ FUNCTION(destroy, "function(void:void)")
 {
   free(THIS->obj);
 }
-
-
-

@@ -10,6 +10,7 @@ NAME_ARGS(XWindowID|parent,void|atrributes);
 // Not for non-experts. I promise.
 {
   pgtk_verify_setup();
+  pgtk_verify_not_inited();
   if(sp[-args].type == T_INT)
   {
     int id;
@@ -513,6 +514,3 @@ NAME_ARGS(background);
 
   RETURN_THIS();
 }
-
-
-

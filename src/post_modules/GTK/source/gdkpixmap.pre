@@ -43,6 +43,7 @@ NAME_ARGS(image|xid);
   int f = 0;
   struct object *o;
   pgtk_verify_setup();
+  pgtk_verify_not_inited();
   if(THIS->obj)
     error("Pixmap already initialized\n");
 
@@ -99,5 +100,3 @@ FUNCTION(destroy, "function(void:void)");
     gdk_gc_destroy( (void *)THIS->extra_data );
   THIS->extra_data = 0;
 }
-
-

@@ -9,6 +9,8 @@ NAME_ARGS(parent,x,y);
   float x, y;
   struct object *o;
   get_all_args( "create", args, "%O%f%f", &o, &x, &y );
+  pgtk_verify_gnome_setup();
+  pgtk_verify_not_inited();
   _x = (gdouble)x;
   _y = (gdouble)y;
 
@@ -16,6 +18,7 @@ NAME_ARGS(parent,x,y);
       gnome_canvas_item_new((void *)get_pgtkobject(o,pgtk_gnome_canvas_item_program),
                             gnome_canvas_group_get_type(),
                             "x", _x, "y", _y );
+  pgtk__init_object( fp->current_object );
   pop_n_elems(args);
   push_int( 0 );
 }

@@ -14,6 +14,7 @@ NAME_ARGS(r|color,g,b);
   GdkColormap *col = gdk_colormap_get_system();
   GdkColor *c;
   pgtk_verify_setup();
+  pgtk_verify_not_inited();
   if( args == 1)
   {
     struct object *o;
@@ -102,5 +103,3 @@ FUNCTION(destroy, "function(void:void)")
     THIS->obj = 0;
   }
 }
-
-
