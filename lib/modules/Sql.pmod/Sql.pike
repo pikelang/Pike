@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.45 2001/01/08 19:04:55 mast Exp $
+ * $Id: Sql.pike,v 1.46 2001/01/09 21:18:29 marcus Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -10,7 +10,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.45 2001/01/08 19:04:55 mast Exp $
+//. RCSID:	$Id: Sql.pike,v 1.46 2001/01/09 21:18:29 marcus Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -328,23 +328,26 @@ string|object compile_query(string q)
 
 //! - handle_extraargs
 //!   Handle sprintf-based quoted arguments
-private string handle_extraargs(string query, array(mixed) extraargs) {
+private array(string|mapping(string|int:mixed)) handle_extraargs(string query, array(mixed) extraargs) {
   array(mixed) args=allocate(sizeof(extraargs));
   mixed s;
-  int j;
+  int j, a=0;
+  mapping(string|int:mixed) b = 0;
   for (j=0;j<sizeof(extraargs);j++) {
     s=extraargs[j];
     if (intp(s) || floatp(s)) {
       args[j]=s;
       continue;
     }
-    if (stringp(s)) {
-      args[j]=quote(s);
+    if (stringp(s) || multisetp(s)) {
+      args[j]=":arg"+(a++);
+      if(!b) b = ([]);
+      b[args[j]] = s;
       continue;
     }
     throw_error("Wrong type to query argument #"+(j+1)+"\n");
   }
-  return sprintf(query,@args);
+  return ({sprintf(query,@args), b});
 }
 
 //. - query
@@ -361,12 +364,12 @@ private string handle_extraargs(string query, array(mixed) extraargs) {
 //.   Each index in the mapping corresponds to one such variable, and the
 //.   value for that index is substituted (quoted) into the query wherever
 //.   the variable is used.
-//.   (i.e. query("select foo from bar where gazonk=':baz'",
-//.         (["baz":"value"])) )
+//.   (i.e. query("select foo from bar where gazonk=:baz",
+//.         ([":baz":"value"])) )
 //.   Binary values (BLOBs) may need to be placed in multisets. 
 //.   2) arguments as you would use in sprintf. They are automatically 
 //.   quoted.
-//.   (i.e. query("select foo from bar where gazonk='%s'","value") )
+//.   (i.e. query("select foo from bar where gazonk=%s","value") )
 array(mapping(string:mixed)) query(object|string q,
                                    mixed ... extraargs)
 {
@@ -375,7 +378,7 @@ array(mapping(string:mixed)) query(object|string q,
     if (mappingp(extraargs[0])) {
       bindings=extraargs[0];
     } else {
-      q=handle_extraargs(q,extraargs);
+      [q,bindings]=handle_extraargs(q,extraargs);
     }
   }
   if (functionp(master_sql->query)) {
@@ -407,7 +410,7 @@ int|object big_query(object|string q, mixed ... extraargs)
     if (mappingp(extraargs[0])) {
       bindings=extraargs[0];
     } else {
-      q=handle_extraargs(q,extraargs);
+      [q,bindings]=handle_extraargs(q,extraargs);
     }
   }  
 
