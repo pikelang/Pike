@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.57 2000/02/01 23:51:47 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.58 2000/02/03 02:37:22 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -300,7 +300,11 @@ static struct mapping *rehash(struct mapping *m, int new_size)
     for(e=0;e<md->hashsize;e++)
       mapping_rehash_backwards_good(new_md, md->hash[e]);
 
-    if(md->hardlinks) md->hardlinks--;
+    if(md->hardlinks)
+    {
+      md->hardlinks--;
+      md->valrefs--;
+    }
     free_mapping_data(md);
   }else{
     /* evil */
