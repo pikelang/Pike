@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.392 2001/02/28 14:48:33 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.393 2001/03/02 02:33:11 marcus Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2193,6 +2193,9 @@ MTEST(55)
 
 define([[MTEST]])
 
+test_equal([[lambda(multiset x){return ({x[17]++,x[17]++,x[17]++});}((<>))]],
+		[[({0,1,1})]])
+
 // mapping tests
 
 test_any([[mapping m=([]);int e;
@@ -2342,6 +2345,9 @@ test_any([[
   m_delete (m, 1);
   return get_weak_flag (([]));
 ]], 0);
+
+test_equal([[lambda(mapping x){return ({x[17]++,x[17]++,x[17]++});}(([]))]],
+		[[({0,1,2})]])
 
 // destructed indices
 test_any([[{
