@@ -1,9 +1,0 @@
-#!/usr/local/bin/pike
-
-inherit "lib.pike";
-
-
-int main(int argc, string *cmd)
-{
-  exit(silent_do_cmd(cmd[1..]));
-}

@@ -8,9 +8,7 @@
 *.png binary
 *.pnm binary
 *.rs binary
-init_nt -text -crlf
 install-welcome binary
-lib -text -crlf
 testfont binary
 
 # Handling of foreign (ie CVS) identifiers.
@@ -20,9 +18,6 @@ testfont binary
 # Remove the corresponding line before committing
 # changes to these files.
 /Makefile foreign_ident
-/NT/tools/install-sh foreign_ident
-/NT/tools/pntld foreign_ident
-/NT/tools/rntecl foreign_ident
 /bin/autodoc.pike foreign_ident
 /bin/export.pike foreign_ident
 /bin/extract.pike foreign_ident
