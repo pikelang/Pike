@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: security.h,v 1.16 2002/10/11 01:39:37 nilsson Exp $
+|| $Id: security.h,v 1.17 2003/09/05 16:22:19 nilsson Exp $
 */
 
 #include "global.h"
@@ -82,10 +82,10 @@ struct pike_creds
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))				\
   {									\
     int e;								\
-    struct svalue *base_sp=Pike_sp-args;					\
+    struct svalue *base_sp=Pike_sp-args;		       		\
 									\
     if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))			\
-      Pike_error(name ": Permission denied.\n");				\
+      Pike_error(name ": Permission denied.\n");	       		\
 									\
     push_constant_text(name);						\
     push_constant_text(access_type);					\
@@ -94,12 +94,12 @@ struct pike_creds
 									\
     safe_apply(OBJ2CREDS(CURRENT_CREDS)->user,"valid_io",args+2);	\
 									\
-    switch(Pike_sp[-1].type)							\
+    switch(Pike_sp[-1].type)				       		\
     {									\
-      case PIKE_T_ARRAY:							\
-      case PIKE_T_OBJECT:							\
-      case PIKE_T_MAPPING:							\
-	assign_svalue(Pike_sp-args-1,Pike_sp-1);					\
+      case PIKE_T_ARRAY:				       		\
+      case PIKE_T_OBJECT:				       		\
+      case PIKE_T_MAPPING:				       		\
+	assign_svalue(Pike_sp-args-1,Pike_sp-1);			\
 	pop_n_elems(args);						\
 	return;								\
 									\
@@ -125,16 +125,18 @@ struct pike_creds
 	    Pike_error(name ": permission denied.\n");			\
 	    								\
 	  default:							\
-	    Pike_error("Error in user->valid_io, wrong return value.\n");	\
+	    Pike_error("Error in user->valid_io, wrong return value.\n"); \
 	}								\
 	break;								\
 									\
-      default:								\
-	Pike_error("Error in user->valid_io, wrong return type.\n");		\
-									\
-      case PIKE_T_STRING:							\
-	assign_svalue(Pike_sp-args-1,Pike_sp-1);					\
+      case PIKE_T_STRING:						\
+	assign_svalue(Pike_sp-args-1,Pike_sp-1);			\
         pop_stack();							\
+	break;								\
+									\
+      default:								\
+	Pike_error("Error in user->valid_io, wrong return type.\n");	\
+	break;								\
     }									\
   }
 
