@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.175 2001/03/31 16:04:34 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.176 2001/03/31 16:07:39 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1776,8 +1776,8 @@ static void low_or_pike_types(struct pike_type *t1,
   {
     INT32 min, max;
 
-    if (MINIMUM((ptrdiff_t)t1->cdr, (ptrdiff_t)t2->cdr) <
-	MAXIMUM((ptrdiff_t)t1->car, (ptrdiff_t)t2->car)) {
+    if ((((ptrdiff_t)t1->cdr) + 1 < (ptrdiff_t)t2->car) ||
+	(((ptrdiff_t)t2->cdr) + 1 < (ptrdiff_t)t1->car)) {
       /* No overlap. */
       push_finished_type(t1);
       push_finished_type(t2);
