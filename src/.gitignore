@@ -1,4 +1,5 @@
 /Makefile
+/case_info.h
 /config.cache
 /config.h.in
 /config.log
