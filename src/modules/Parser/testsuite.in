@@ -502,6 +502,27 @@ test_any_equal([[
   p->add_tag ("t", lambda (object p, mapping a) {return ({a});});
   return p->finish("<t a=b>")->read();
 ]], ({(["a": "b"])}));
+test_any_equal(
+  [[
+    object p = Parser.HTML();
+    p->mixed_mode (1);
+    p->add_container ("c", lambda (object p, mapping a, string s) {return ({s});});
+    return p->finish("<c>x</c>" * 31)->read();
+  ]], ({"x"}) * 31);
+test_any_equal(
+  [[
+    object p = Parser.HTML();
+    p->mixed_mode (1);
+    p->add_container ("c", lambda (object p, mapping a, string s) {return ({s});});
+    return p->finish("<c>x</c>" * 32)->read();
+  ]], ({"x"}) * 32);
+test_any_equal(
+  [[
+    object p = Parser.HTML();
+    p->mixed_mode (1);
+    p->add_container ("c", lambda (object p, mapping a, string s) {return ({s});});
+    return p->finish("<c>x</c>" * 33)->read();
+  ]], ({"x"}) * 33);
 
 // Matching tags and quotes
 test_any([[
