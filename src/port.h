@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: port.h,v 1.37 2001/03/14 20:05:35 mast Exp $
+ * $Id: port.h,v 1.38 2001/07/31 19:31:21 marcus Exp $
  */
 #ifndef PORT_H
 #define PORT_H
@@ -240,5 +240,69 @@ long long gethrtime(void);
 
 #define hrtime_t long long
 #endif
+
+#ifdef DOUBLE_IS_IEEE_BIG
+#define DECLARE_INF static struct { unsigned char c[8]; double d[1]; } \
+	inf_ = { { 0x7f, 0xf0, 0, 0, 0, 0, 0, 0 }, {} };
+#define DECLARE_NAN static struct { unsigned char c[8]; double d[1]; } \
+	nan_ = { { 0x7f, 0xf8, 0, 0, 0, 0, 0, 0 }, {} };
+#define MAKE_INF(s) ((s)*inf_.d[-1])
+#define MAKE_NAN() (nan_.d[-1])
+#else
+#ifdef DOUBLE_IS_IEEE_LITTLE
+#define DECLARE_INF static struct { unsigned char c[8]; double d[1]; } \
+	inf_ = { { 0, 0, 0, 0, 0, 0, 0xf0, 0x7f }, {} };
+#define DECLARE_NAN static struct { unsigned char c[8]; double d[1]; } \
+	nan_ = { { 0, 0, 0, 0, 0, 0, 0xf8, 0x7f }, {} };
+#define MAKE_INF(s) ((s)*inf_.d[-1])
+#define MAKE_NAN() (nan_.d[-1])
+#else
+#ifdef FLOAT_IS_IEEE_BIG
+#define DECLARE_INF static struct { unsigned char c[4]; float f[1]; } \
+	inf_ = { { 0x7f, 0x80, 0, 0 }, {} };
+#define DECLARE_NAN static struct { unsigned char c[4]; float f[1]; } \
+	nan_ = { { 0x7f, 0xc0, 0, 0 }, {} };
+#define MAKE_INF(s) ((s)*inf_.f[-1])
+#define MAKE_NAN() (nan_.f[-1])
+#else
+#ifdef FLOAT_IS_IEEE_LITTLE
+#define DECLARE_INF static struct { unsigned char c[4]; float f[1]; } \
+	inf_ = { { 0, 0, 0x80, 0x7f }, {} };
+#define DECLARE_NAN static struct { unsigned char c[4]; float f[1]; } \
+	nan_ = { { 0, 0, 0xc0, 0x7f }, {} };
+#define MAKE_INF(s) ((s)*inf_.f[-1])
+#define MAKE_NAN() (nan_.f[-1])
+#else
+
+#define DECLARE_INF
+#define DECLARE_NAN
+
+#ifdef HAVE_INFNAN
+#define MAKE_INF(s) (infnan((s)*ERANGE))
+#else
+#ifdef HUGE_VAL
+#define MAKE_INF(s) ((s)*HUGE_VAL)
+#else
+#warning Don´t know how to create Inf on the system!
+#define MAKE_INF(s) ((s)*LDEXP(1.0, 1024))
+#endif /* HUGE_VAL */
+#endif /* HAVE_INFNAN */
+
+#ifdef HAVE_INFNAN
+#define MAKE_NAN() (infnan(EDOM))
+#else
+#ifdef HAVE_NAN
+/* C99 provides a portable way of generating NaN */
+#define MAKE_NAN() (nan(""))
+#else
+#warning Don´t know how to create NaN on this system!
+#define MAKE_NAN() (0.0)
+#endif /* HAVE_NAN */
+#endif /* HAVE_INFNAN */
+
+#endif /* FLOAT_IS_IEEE_LITTLE */
+#endif /* FLOAT_IS_IEEE_BIG */
+#endif /* DOUBLE_IS_IEEE_LITTLE */
+#endif /* DOUBLE_IS_IEEE_BIG */
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * $Id: math_module.c,v 1.7 2001/07/16 13:20:32 grubba Exp $
+ * $Id: math_module.c,v 1.8 2001/07/31 19:31:22 marcus Exp $
  */
 
 #include "global.h"
@@ -54,6 +54,8 @@ void pike_module_exit(void)
 void pike_module_init(void)
 {
    int i;
+   DECLARE_INF
+   DECLARE_NAN
    
    for (i=0; i<(int)(sizeof(sub)/sizeof(sub[0])); i++)
    {
@@ -69,5 +71,7 @@ void pike_module_init(void)
 
    add_float_constant("pi",3.14159265358979323846  ,0);
    add_float_constant("e", 2.7182818284590452354   ,0);
+   add_float_constant("inf", MAKE_INF(1), 0);
+   add_float_constant("nan", MAKE_NAN(), 0);
 }
 

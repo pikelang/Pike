@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.114 2001/07/20 04:02:30 mast Exp $");
+RCSID("$Id: opcodes.c,v 1.115 2001/07/31 19:31:21 marcus Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -954,6 +954,8 @@ static INLINE FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
   int s, e;
   unsigned char x[4];
   double r;
+  DECLARE_INF
+  DECLARE_NAN
 
   x[0] = EXTRACT_UCHAR(b);
   x[1] = EXTRACT_UCHAR(b+1);
@@ -990,30 +992,10 @@ static INLINE FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
   if(e>=9999)
     if(f||extra_f) {
       /* NAN */
-#ifdef HAVE_INFNAN
-      return (FLOAT_TYPE)infnan(EDOM);
-#else
-#ifdef HAVE_NAN
-      /* C99 provides a portable way of generating NaN */
-      return (FLOAT_TYPE)nan("");
-#else
-      return (FLOAT_TYPE)0.0;
-#endif /* HAVE_NAN */
-#endif /* HAVE_INFNAN */
+      return (FLOAT_TYPE)MAKE_NAN();
     } else {
       /* +/- Infinity */
-#ifdef HAVE_INFNAN
-      return (FLOAT_TYPE)infnan(s? -ERANGE:ERANGE);
-#else
-#ifdef HUGE_VAL
-      return (FLOAT_TYPE)(s? -HUGE_VAL:HUGE_VAL);
-#else
-      /* This number is infinite enough...  :) */
-      e = 1024;
-      f = 1;
-      extra_f = 0;
-#endif /* HUGE_VAL */
-#endif /* HAVE_INFNAN */
+      return (FLOAT_TYPE)MAKE_INF(s? -1:1);
     }
 
   r = (double)f;

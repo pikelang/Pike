@@ -93,4 +93,18 @@ MATRIX_CONVOLVE_TEST(
                    ({     72,    171,    100}) }) )
                      );
 
+// Inf
+test_true([[Math.inf>0.0]])
+test_true([[(Math.inf/2)==Math.inf]])
+// -Inf
+test_true([[-Math.inf<0.0]])
+test_true([[(-Math.inf/2)==-Math.inf]])
+// NaN
+test_false([[Math.nan>0.0]])
+test_false([[Math.nan<0.0]])
+test_false([[Math.nan==0.0]])
+// -NaN
+test_false([[-Math.nan>0.0]])
+test_false([[-Math.nan<0.0]])
+test_false([[-Math.nan==0.0]])
 
