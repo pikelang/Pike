@@ -4,6 +4,36 @@ import ".";
 #endif /* __VERSION__ >= 0.6 */
 import Sgml;
 
+/*
+ * My dilemma:
+ *
+ * WMML is not a very good 'in between'-format because it
+ * does not allow to send structured mappings to the output
+ * generators. Because of this the output generator has to
+ * do extensive parsing to find the proper structure elements
+ * *OR* it becomes dependant on the order that the data is
+ * delivered to it, which is *not* good.
+ *
+ * Example:
+ * <function><man_title>bla bla</man_title><man_desc>WMML DATA</man_desc></man_desc>
+ * Would be easier for the output generator to parse as:
+ * <function (["man_title":({"bla bla"}), "man_desc":WMML DATA ])>
+ *
+ * Possible solution one:
+ * Create a link in the properties mapping to the WMML segment in question,
+ * the result of the above would be:
+ *   X=Tag("man_title",([]),0,({"bla bla"}));
+ *   Y=Tag("man_desc",([]),0,WMML DATA);
+ *   Tag("function",(["<man_title>":X,"man_desc":Y]),0,({X,Y}));
+ * advantages of this method:
+ *   backwards compatible (with most things)
+ * disadvantages of this method:
+ *
+ * Solution two:
+ *   Same as above, but using another field in the Tag class.
+ *
+ */
+
 SGML low_make_concrete_wmml(SGML data);
 
 class Trace
@@ -208,7 +238,7 @@ INDEX_DATA collect_index(SGML data, void|INDEX_DATA index,void|mapping taken)
     if(objectp(data))
     {
       if(data->tag == "anchor"
-#if 1 // Let's try to add these to the 
+#if 0 // Let's try to add these to the 
 	  && !data->params->type
 #endif
 	)
@@ -608,8 +638,9 @@ SGML fix_section(TAG t, object(Enumerator) e)
   TAG ret=Tag(t->tag,
 	      t->params+(["number":num]),
 	      t->pos,
-	      t->data=low_make_concrete_wmml(t->data),
+	      low_make_concrete_wmml(t->data),
 	      t->file);
+
   toker->pop(ret);
 
   currentE->pop();
@@ -618,31 +649,214 @@ SGML fix_section(TAG t, object(Enumerator) e)
   return fix_anchors(ret);
 }
 
-SGML fix_class(TAG t, string name)
+array(array(string)) fix_names(Tag tag)
 {
-  classbase->push(name);
-  TAG ret=Tag(t->tag,
-	      t->params+(["name":classbase->query()]),
-	      t->pos,
-	      t->data=low_make_concrete_wmml(t->data),
-	      t->file);
+  array anchors=({}),fullnames=({});
+  string last;
+  
+  foreach ( replace(tag->params->name,
+			    ({"&gt;","&lt;"}),({">","<"}))/",",
+		   string name)
+    {
+      string fullname;
+      if (name!="" && name[0]=='.')
+	fullname=last+name[1..];
+      else if (name[0..strlen(classbase->query())-1]==
+	       classbase->query() ||
+	       tag->params->fullpath)
+	fullname=name;
+      else switch(tag->tag)
+      {
+	case "class":
+	case "module":
+	case "method":
+	case "variable":
+	  fullname=classbase->query()+"."+name; // -> ?
+	  break;
+	case "function":
+	case "constant":
+	  fullname=classbase->query()+"."+name;
+	  break;
+      }
+      anchors+=({name_to_link(fullname)});
+      fullnames+=({fullname});
+      last=reverse(array_sscanf(reverse(fullname),"%*[^.>]%s")[0]);
+    }
+  return ({anchors, fullnames});
+}
 
-  SGML ret=
+SGML mkheader(TAG tag, array(string) fullnames, array(string) anchors)
+{
+#if 1
+  array res=
+    ({Tag("man_title",(["title":upper_case(tag->tag)]),
+	  tag->pos,
+	  Array.map(
+	    fullnames,
+	    lambda(string name,int pos)
+	    { return ({Tag("tt",([]),pos,({name}))}); },
+	    tag->pos)
+	  *({ ",", Tag("br") })
+	  +({ (tag->params->title
+	       ?" - "+tag->params->title
+	       :"")}))
+    }) + tag->data;
+#else
+
+  /* This would probably look nicer, but it needs to be fixed... */
+  SGML res= ({
+    Tag("table",(["border":"0","wmml-type":tag->tag]),tag->pos,({
+      Tag("tr",0,tag->pos,({
+	Tag("td",0,tag->pos,
+	  Array.map(
+	    fullnames,
+	    lambda(string name,int pos)
+	    {
+	      return ({Tag("h2",([]),tag->pos,({name}))});
+	    })
+	    *({ Tag("br") })
+	  ),
+	Tag("td",0,tag->pos,
+	    ({ (tag->params->title ?" - "+tag->params->title :"")})
+	  ),
+      }))
+    }) ) }) + tag->data;
+#endif
+  
+  res=
+    ({Tag(tag->tag,(["name":fullnames*", ",
+		    "title":tag->params->title]),tag->pos,
+	  low_make_concrete_wmml(res))});
+  
+  // FIXME:
+  // The replace "->" to "."
+  // in here is kludgy and might not be correct,
+  // check for accuracy....
+  // -Hubbe
+  foreach (anchors,string anchor)
+    res=({Tag("anchor",(["name":replace(anchor,"->",".")]),
+	      tag->pos,res)});
+  
+  return res;
+}
+
+SGML fix_class(TAG tag, string name)
+{
+  array(string) anchors, fullnames;
+  [anchors, fullnames]=fix_names(tag);
+
+  classbase->push(name);
+
+#if 0
+  /* I wish I remember what this magic is for -Hubbe */
+  TAG foo=Tag(tag->tag,
+	      tag->params+(["name":classbase->query()]),
+	      tag->pos,
+	      tag->data=low_make_concrete_wmml(tag->data),
+	      tag->file);
+
+  SGML res=
   ({
     Tag("anchor",
-	(["name":classbase->query(),"type":t->tag]),
-	t->pos,
-	({t}),
-	t->file)
+	(["name":classbase->query(),"type":tag->tag]),
+	tag->pos,
+	({tag}),
+	tag->file)
       });
+#else
+  SGML res=mkheader(tag, fullnames, anchors);
+#endif
   classbase->pop();
-  return ret;
+  return res;
+}
+
+SGML fix_module(TAG tag, string name)
+{
+  array(string) anchors, fullnames;
+  [anchors, fullnames]=fix_names(tag);
+
+  classbase->push(name);
+
+#if 1
+  /* I wish I remember what this magic is for -Hubbe */
+  TAG foo=Tag(tag->tag,
+	      tag->params+(["name":classbase->query()]),
+	      tag->pos,
+	      tag->data=low_make_concrete_wmml(tag->data),
+	      tag->file);
+
+  SGML res=
+  ({
+    Tag("anchor",
+	(["name":classbase->query(),"type":tag->tag]),
+	tag->pos,
+	({tag}),
+	tag->file)
+      });
+#else
+  SGML res=mkheader(tag, fullnames, anchors);
+#endif
+  classbase->pop();
+  return res;
+}
+
+#define TNAME(X) (objectp(X) ? X->tag : "")
+#define PROCESS(X,T) foreach(X,TAG T) switch(objectp(T) ? T->tag : "")
+
+
+SGML explode(SGML data, multiset tags)
+{
 }
 
 SGML low_make_concrete_wmml(SGML data)
 {
   if(!data) return 0;
   SGML ret=({});
+  SGML tmp=({});
+
+#if 1
+  /* This part is intended to convert <p/> to <p> ... </p>
+   * Hmm, maybe we should encapsulate *all* paragraphs in <p></p> ?
+   * (But how to we recognize am unmarked paragraph as opposed to
+   *  an argument? Example the text within <man_see></man_see> should
+   *  *NOT* be in a <p>)
+   */
+  PROCESS(reverse(data), ptag)
+    {
+      default:
+	tmp+=({ptag});
+	break;
+
+      case "p":
+	ret+=({
+	  Tag(ptag->tag,
+	      ptag->params,
+	      ptag->pos,
+	      reverse(tmp),
+	      ptag->file)
+	});
+	tmp=({});
+	break;
+
+      case "h1":
+      case "h2":
+      case "h3":
+      case "h4":
+      case "h5":
+      case "h6":
+      case "center":
+      case "dl":
+      case "ul":
+      case "ol":
+	tmp+=({ptag});
+	ret+=tmp;
+	tmp=({});
+    }
+  ret+=tmp;
+  data=reverse(ret);
+
+  ret=({});
+#endif
 
   foreach(data, TAG tag)
   {
@@ -652,6 +866,44 @@ SGML low_make_concrete_wmml(SGML data)
     }else if (objectp(tag)) {
       switch(tag->tag)
       {
+	case "dl":
+	case "ul":
+	case "ol":
+	{
+	  array tmp2=({});
+	  tmp=({});
+	    
+	  PROCESS(reverse(tag->data), t)
+	    {
+	      default:
+		tmp+=({t});
+		break;
+		
+	      case "li":
+	      case "dt":
+	      case "dd":
+		tmp2+=({
+		  Tag(t->tag,
+		      t->params,
+		      t->pos,
+		      low_make_concrete_wmml(reverse(tmp)),
+		      t->file)
+		});
+		tmp=({});
+	    }
+
+	  if(strlen(replace(Sgml.get_text(tmp),({" ","\t","\n","\r"}),({"","","",""}))))
+	  {
+	    werror("WARNING, data ignored in %s near %s\n",tag->tag,tag->location());
+	  }
+	  ret+=({Tag(tag->tag,
+		     tag->params,
+		     tag->pos,
+		     low_make_concrete_wmml(reverse(tmp2)),
+		     tag->file)});
+	  continue;
+	}
+	  
 	case "index":
 	case "table-of-contents":
 	  ret+=({
@@ -751,7 +1003,6 @@ SGML low_make_concrete_wmml(SGML data)
 	  continue;
 	  
 	case "class":
-	case "module":
 	{
 	   string name=tag->params->name;
 	   if (!name)
@@ -762,6 +1013,20 @@ SGML low_make_concrete_wmml(SGML data)
 	   }
 	   sscanf(name,classbase->query()+"%*[.->]%s",name);
 	   ret+=fix_class(tag, name);
+	   continue;
+	}
+
+	case "module":
+	{
+	   string name=tag->params->name;
+	   if (!name)
+	   {
+	      werror("module or class w/o name\n"+
+		     tag->location()+"\n");
+	      name="(unknown)";
+	   }
+	   sscanf(name,classbase->query()+"%*[.->]%s",name);
+	   ret+=fix_module(tag, name);
 	   continue;
 	}
 	
@@ -844,37 +1109,10 @@ SGML low_make_concrete_wmml(SGML data)
 	case "function":
         case "constant":
 	{
-	   array anchors=({}),fullnames=({});
-	   string last;
+	  array(string) anchors, fullnames;
+	  [anchors, fullnames]=fix_names(tag);
 
-	   foreach (replace(tag->params->name,
-			    ({"&gt;","&lt;"}),({">","<"}))/",",
-                    string name)
-	   {
-	      string fullname;
-	      if (name!="" && name[0]=='.')
-		 fullname=last+name[1..];
-	      else if (name[0..strlen(classbase->query())-1]==
-		  classbase->query() ||
-		  tag->params->fullpath)
-		 fullname=name;
-	      else switch(tag->tag)
-	      {
-		 case "method":
-	         case "variable":
-		    fullname=classbase->query()+"."+name; // -> ?
-		    break;
-		 case "function":
-	         case "constant":
-		    fullname=classbase->query()+"."+name;
-		    break;
-	      }
-	      anchors+=({name_to_link(fullname)});
-	      string tlast=
-		 reverse(array_sscanf(reverse(fullname),"%*[^.>]%s")[0]);
-	      fullnames+=({fullname});
-	      last=reverse(array_sscanf(reverse(fullname),"%*[^.>]%s")[0]);
-	   }
+#if 0
 	   array res=
 	     ({Tag("man_title",(["title":upper_case(tag->tag)]),
 		   tag->pos,
@@ -888,7 +1126,7 @@ SGML low_make_concrete_wmml(SGML data)
 			?" - "+tag->params->title
 			:"")}))
 	     }) + tag->data;
-		   
+
 	   res=
 	      ({Tag(tag->tag,(["name":fullnames*", ",
 			       "title":tag->params->title]),tag->pos,
@@ -897,8 +1135,10 @@ SGML low_make_concrete_wmml(SGML data)
 	   foreach (anchors,string anchor)
 	      res=({Tag("anchor",(["name":anchor]),
 			tag->pos,res)});
-
 	   ret+=res;
+#else
+	   ret+=mkheader(tag, anchors, fullnames);
+#endif
 
 	   continue;
 	}
