@@ -1,10 +1,11 @@
-dnl $Id: testsuite.in,v 1.6 2004/02/03 13:51:43 nilsson Exp $
+dnl $Id: testsuite.in,v 1.7 2004/02/28 14:58:34 nilsson Exp $
 
 test_any([[
 #pike 7.4
 return SSL.constants && 1;
 ]], 1)
 
+cond_resolv(Crypto.Hash, [[
 test_any([[
 #pike 7.4
 return SSL.cipher && 1;
@@ -71,6 +72,7 @@ int a() {
   object s = Server();
   return 1;
 }
+]])
 ]])
 
 dnl   test_do([[

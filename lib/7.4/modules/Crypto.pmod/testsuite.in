@@ -86,6 +86,7 @@ Crypto.invert()->crypt_block("\0\xffpqrstx")]],
          [["\xff\0\x8f\x8e\x8d\x8c\x8b\x87"]])
 
 // RSA
+cond_resolv(Crypto.MD5.name, [[
 test_do(
 #pike 7.4
 add_constant("RSA", Crypto.rsa()) )
@@ -148,8 +149,10 @@ test_false(
 #pike 7.4
 RSA->public_key_equal(Crypto.rsa()->generate_key(512)) )
 test_do( add_constant("RSA") )
+]])
 
 // DSA
+cond_resolv(Crypto.SHA1.name, [[
 test_do(
 #pike 7.4
 add_constant("DSA", Crypto.dsa()) )
@@ -167,9 +170,11 @@ test_true( DSA->random_exponent )
 test_true( DSA->nist_hash )
 test_true( DSA->find_generator )
 test_do( add_constant("DSA") )
+]])
 
 
 // DES
+cond_resolv(Crypto.DES.name, [[
 test_true([[
 #pike 7.4
 objectp(Crypto.des())]])
@@ -204,8 +209,10 @@ test_eq([[
 Crypto.des()->set_decrypt_key(Crypto.hex_to_string("0123456789abcdef"))
 		->crypt_block(Crypto.hex_to_string("3fa40e8a984d4815"))]],
 	[["Now is t"]])
+]])
 
 // DES3 (EDE with AAA key == DES)
+cond_resolv(Crypto.DES3.name, [[
 test_true([[
 #pike 7.4
 objectp(Crypto.des())]])
@@ -240,13 +247,17 @@ test_eq([[
 Crypto.des3()->set_decrypt_key(Crypto.hex_to_string("0123456789abcdef")*3)
 		->crypt_block(Crypto.hex_to_string("3fa40e8a984d4815"))]],
 	[["Now is t"]])
+]])
 
 // RIJNDAEL
+cond_resolv(Crypto.AES.name, [[
 test_true([[
 #pike 7.4
 objectp(Crypto.rijndael()) && objectp(Crypto.aes())]])
+]])
 
 // IDEA
+cond_resolv(Crypto.IDEA.name, [[
 test_true([[
 #pike 7.4
 objectp(Crypto.idea())]])
@@ -257,8 +268,10 @@ Crypto.idea()
 					         "0123456789abcdef"))
 	  ->crypt_block(Crypto.hex_to_string("0123456789abcde7"))]],
 	[[String.hex2string("2011aacef6f4bc7f")]])
+]])
 
 // CAST
+cond_resolv(Crypto.CAST.name, [[
 test_true([[
 #pike 7.4
 objectp(Crypto.cast())]])
@@ -304,8 +317,10 @@ Crypto.cast()
           ->set_decrypt_key(Crypto.hex_to_string("0123456712"))
 	  ->crypt_block(Crypto.hex_to_string("7AC816D16E9B302E"))]],
 	[[String.hex2string("0123456789ABCDEF")]])
+]])
 
 // ARCFOUR
+cond_resolv(Crypto.Arcfour.name, [[
 test_true([[
 #pike 7.4
 objectp(Crypto.arcfour())]])
@@ -368,8 +383,10 @@ Crypto.arcfour()
 	  "7486d49b9c4bad9ba24b96abf924372c8a8fffb10d55354900a77a3db5f205e1"
 	  "b99fcd8660863a159ad4abe40fa48934163ddde542a6585540fd683cbfd8c00f"
 	  "12129a284deacc4cdefe58be7137541c047126c8d49e2755ab181ab7e940b0c0")]])
+]])
   
 // MD5
+cond_resolv(Crypto.MD5.name, [[
 test_true([[
 #pike 7.4
 objectp(Crypto.md5())]])
@@ -403,8 +420,10 @@ test_eq([[
 Crypto.md5()->update("1234567890123456789012345678901234567890"
 			       "1234567890123456789012345678901234567890")->digest()]],
 	[[String.hex2string("57edf4a22be3c955ac49da2e2107b67a")]])
+]])
 
 // MD4
+cond_resolv(Crypto.MD4.name, [[
 test_true([[
 #pike 7.4
 objectp(Crypto.md4())]])
@@ -436,8 +455,10 @@ test_eq([[
 #pike 7.4
 Crypto.md4()->update("12345678901234567890123456789012345678901234567890123456789012345678901234567890")->digest()]],
 	[[String.hex2string("e33b4ddc9c38f2199c3e7b164fcc0536")]])
+]])
 
 // MD2
+cond_resolv(Crypto.MD2.name, [[
 test_true([[
 #pike 7.4
 objectp(Crypto.md2())]])
@@ -470,8 +491,10 @@ test_eq([[
 Crypto.md2()->update("1234567890123456789012345678901234567890"
 				"1234567890123456789012345678901234567890")->digest()]],
 	[[String.hex2string("d5976f79d83d3a0dc9806c3c66f3efd8")]])
+]])
 
 // SHA
+cond_resolv(Crypto.SHA1.name, [[
 test_true([[
 #pike 7.4
 objectp(Crypto.sha())]])
@@ -499,8 +522,10 @@ test_eq(
 #pike 7.4
 Crypto.string_to_hex(Crypto.sha()->update("x"*257)->digest()),
         "0796067748b6b0c2af864656a399f7722ef9283a")
+]])
 
 // HMAC
+cond_resolv(Crypto.MD5.name, [[
 test_eq([[
 #pike 7.4
 Crypto.hmac(Crypto.md5)("")("")]],
@@ -518,8 +543,10 @@ test_eq([[
 #pike 7.4
 Crypto.hmac(Crypto.md5)("\252" * 16)("\335" * 50)]],
 	[[String.hex2string("56be34521d144c88dbb8c733f0e8b3f6")]])
+]])
 
 // Similar test vectors for sha; not verified with other implementations
+cond_resolv(Crypto.SHA1.name, [[
 test_eq([[
 #pike 7.4
 Crypto.hmac(Crypto.sha)("")("")]],
@@ -536,8 +563,10 @@ test_eq([[
 #pike 7.4
 Crypto.hmac(Crypto.sha)("\252" * 16)("\335" * 50)]],
 	[[String.hex2string("d730594d167e35d5956fd8003d0db3d3f46dc7bb")]])
+]])
 
 // CRYPT_MD5
+cond_resolv(Crypto.crypt_md5, [[
 test_eq([[
 #pike 7.4
 Crypto.crypt_md5("","")]],
@@ -558,11 +587,13 @@ test_eq([[
 #pike 7.4
 Crypto.crypt_md5("Hellx","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]],
 	[["$1$sl5hO7j4$3cyvb8g68rK8.kH9Eayvk."]])
+]])
 
 // ->name
 test_eq(
 #pike 7.4
 Crypto.invert()->name(),"INVERT")
+cond_resolv(Crypto.DES.name, [[
 test_eq(
 #pike 7.4
 Crypto.des()->name(),"DES")
@@ -572,9 +603,13 @@ Crypto.rijndael()->name(),"RIJNDAEL")
 test_eq(
 #pike 7.4
 Crypto.aes()->name(),"AES")
+]])
+cond_resolv(Crypto.IDEA.name, [[
 test_eq(
 #pike 7.4
 Crypto.idea()->name(),"IDEA")
+]])
+cond_resolv(Crypto.CAST.name, [[
 test_eq(
 #pike 7.4
 Crypto.cast()->name(),"CAST")
@@ -593,48 +628,62 @@ Crypto.md2()->name(),"MD2")
 test_eq(
 #pike 7.4
 Crypto.sha()->name(),"SHA")
+]])
 
 // ->query_key_length
 test_eq(
 #pike 7.4
 Crypto.invert()->query_key_length(),0)
+cond_resolv(Crypto.DES.name, [[
 test_eq(
 #pike 7.4
 Crypto.des()->query_key_length(),8)
 test_eq(
 #pike 7.4
 Crypto.aes()->query_key_length(),32)
+]])
+cond_resolv(Crypto.IDEA.name, [[
 test_eq(
 #pike 7.4
 Crypto.idea()->query_key_length(),16)
+]])
+cond_resolv(Crypto.CAST.name, [[
 test_eq(
 #pike 7.4
 Crypto.cast()->query_key_length(),16)
 test_eq(
 #pike 7.4
 Crypto.arcfour()->query_key_length(),1)
+]])
 
 // ->query_block_size
 test_eq(
 #pike 7.4
 Crypto.invert()->query_block_size(),8)
+cond_resolv(Crypto.DES.name, [[
 test_eq(
 #pike 7.4
 Crypto.des()->query_block_size(),8)
 test_eq(
 #pike 7.4
 Crypto.aes()->query_block_size(),16)
+]])
+cond_resolv(Crypto.IDEA.name, [[
 test_eq(
 #pike 7.4
 Crypto.idea()->query_block_size(),8)
+]])
+cond_resolv(Crypto.CAST.name, [[
 test_eq(
 #pike 7.4
 Crypto.cast()->query_block_size(),8)
 test_eq(
 #pike 7.4
 Crypto.arcfour()->query_block_size,0)
+]])
 
 // pipe
+cond_resolv(Crypto.IDEA.name, [[
 test_eq(
 #pike 7.4
  Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
@@ -668,7 +717,10 @@ test_eq(
        "D"*16 )->
        crypt_block(String.hex2string("fc222f3584addf1a5f974e104a3e2231")),
    "F"*16 )
+]])
+
 // Rijndael CBC decrypt
+cond_resolv(Crypto.AES.name, [[
 test_any([[
 #pike 7.4
   object aes_cbc = Crypto.cbc(Crypto.aes());
@@ -680,6 +732,7 @@ test_any([[
   }
   return String.string2hex(ct);
 ]], [[ "faca37e0b0c85373df706e73f7c9af86" ]])
+]])
 
 test_do(
 #pike 7.4

@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.33 2004/02/14 02:43:16 nilsson Exp $
+// $Id: testsuite.in,v 1.34 2004/02/28 14:57:24 nilsson Exp $
 
 // Nettle.Yarrow
 
@@ -231,6 +231,7 @@ test_cipher(Twofish,twofish)
 
 
 // Crypto.RSA
+cond_resolv(Crypto.MD5.name, [[
 test_do( add_constant("RSA", Crypto.RSA()) )
 test_do( RSA->generate_key(1024) )
 test_equal( RSA->raw_sign("hej"), RSA->raw_sign("hej") )
@@ -281,9 +282,11 @@ test_eq( RSA->rsa_size(), 512 )
 test_true( RSA->public_key_equal(RSA) )
 test_false( RSA->public_key_equal(Crypto.RSA()->generate_key(512)) )
 test_do( add_constant("RSA") )
+]])
 
 
 // Crypto.DSA
+cond_resolv(Crypto.SHA1.name, [[
 test_do( add_constant("DSA", Crypto.DSA()) )
 test_eq( DSA->name(), "DSA" )
 test_do( DSA->set_public_key(
@@ -327,6 +330,7 @@ test_true( DSB->get_x()->gcdext2 )
 test_true( DSB->get_y()->gcdext2 )
 test_do( add_constant("DSB") )
 test_do( add_constant("DSA") )
+]])
 
 dnl Crypto.substitution
 
@@ -363,6 +367,7 @@ dnl  _Crypto tests
 dnl
 
 // DES
+cond_resolv(Crypto.DES.name, [[
 test_eq(
   S(Crypto.DES()->set_encrypt_key(H("0101010101010180"))
 		->crypt(H("0000000000000000"))),
@@ -387,8 +392,10 @@ test_eq(
   Crypto.DES()->set_decrypt_key(H("0123456789abcdef"))
 		->crypt(H("3fa40e8a984d4815")),
   "Now is t")
+]])
 
 // DES3 (EDE with AAA key == DES)
+cond_resolv(Crypto.DES3.name, [[
 test_eq(
   S(Crypto.DES3()->set_encrypt_key(H("0101010101010180")*3)
 		->crypt(H("0000000000000000"))),
@@ -413,15 +420,19 @@ test_eq(
   Crypto.DES3()->set_decrypt_key(H("0123456789abcdef")*3)
 		->crypt(H("3fa40e8a984d4815")),
   "Now is t")
+]])
 
 // IDEA
+cond_resolv(Crypto.IDEA.name, [[
 test_eq(
   S(Crypto.IDEA()
           ->set_encrypt_key(H("0123456789abcdef0123456789abcdef"))
 	  ->crypt(H("0123456789abcde7"))),
   "2011aacef6f4bc7f")
+]])
 
 // CAST
+cond_resolv(Crypto.CAST.name, [[
 test_eq(
   S(Crypto.CAST()
           ->set_encrypt_key(H("0123456712345678234567893456789A"))
@@ -452,8 +463,10 @@ test_eq(
           ->set_decrypt_key(H("0123456712"))
 	  ->crypt(H("7AC816D16E9B302E"))),
   "0123456789abcdef")
+]])
 
 // ARCFOUR
+cond_resolv(Crypto.Arcfour.name, [[
 test_eq(
   S(Crypto.Arcfour()->set_encrypt_key(H("0123456789abcdef"))
 		->crypt(H("0123456789abcdef"))),
@@ -508,8 +521,10 @@ test_eq(
 	  "7486d49b9c4bad9ba24b96abf924372c8a8fffb10d55354900a77a3db5f205e1"
 	  "b99fcd8660863a159ad4abe40fa48934163ddde542a6585540fd683cbfd8c00f"
 	  "12129a284deacc4cdefe58be7137541c047126c8d49e2755ab181ab7e940b0c0")
+]])
 
 // HMAC
+cond_resolv(Crypto.MD5.name, [[
 test_eq([[
 S(Crypto.HMAC(Crypto.MD5)("")(""))]],
         "74e6f7298a9c2d168935f58c001bad88")
@@ -523,8 +538,10 @@ S(Crypto.HMAC(Crypto.MD5)("Jefe")("what do ya want for nothing?"))]],
 test_eq([[
 S(Crypto.HMAC(Crypto.MD5)("\252" * 16)("\335" * 50))]],
 	"56be34521d144c88dbb8c733f0e8b3f6")
+]])
 
 // Similar test vectors for sha; not verified with other implementations
+cond_resolv(Crypto.SHA1.name, [[
 test_eq([[
 S(Crypto.HMAC(Crypto.SHA1)("")(""))]],
         "fbdb1d1b18aa6c08324b7d64b71fb76370690e1d")
@@ -537,8 +554,10 @@ S(Crypto.HMAC(Crypto.SHA1)("Jefe")("what do ya want for nothing?"))]],
 test_eq([[
 S(Crypto.HMAC(Crypto.SHA1)("\252" * 16)("\335" * 50))]],
 	"d730594d167e35d5956fd8003d0db3d3f46dc7bb")
+]])
 
 // CRYPT_MD5
+cond_resolv(Crypto.crypt_md5, [[
 test_true([[stringp(Crypto.crypt_md5(""))]])
 test_eq([[Crypto.crypt_md5("","")]],
         [["$1$$qRPK7m23GJusamGpoGLby/"]])
@@ -552,8 +571,10 @@ cond([[ Nettle["crypt_md5"] ]],[[
   test_eq([[Crypto.crypt_md5("Hellx","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]],
 	  [[0]])
 ]])
+]])
 
 // pipe
+cond_resolv(Crypto.IDEA.name, [[
 test_eq(
  Crypto.Pipe( Crypto.DES, Crypto.AES, Crypto.IDEA,
   Crypto.CAST, Crypto.Arcfour )->name(),
@@ -581,8 +602,10 @@ test_eq(
        "D"*16 )->
        crypt(H("fc222f3584addf1a5f974e104a3e2231")),
    "F"*16 )
+]])
 
 // Rijndael CBC decrypt
+cond_resolv(Crypto.AES.name, [[
 test_any([[
   object aes_cbc = Crypto.CBC(Crypto.AES);
   aes_cbc->set_decrypt_key(String.hex2string("0"*32));
@@ -593,6 +616,7 @@ test_any([[
   }
   return ct;
 ]], [[ String.hex2string("FACA37E0B0C85373DF706E73F7C9AF86") ]])
+]])
 
 test_do( add_constant( "H" ) )
 test_do( add_constant( "S" ) )
