@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.398 2000/08/20 12:50:51 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.399 2000/08/20 13:47:37 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2891,10 +2891,44 @@ int main()
 ]])
 
 AC_MSG_CHECKING(for type of float)
-AC_CACHE_VAL(pike_cv_float_type,
-[AC_TRY_RUN(float_check(float,BIG),pike_cv_float_type=ieee_big,
-  [AC_TRY_RUN(float_check(float,LITTLE),pike_cv_float_type=ieee_little,
-    pike_cv_float_type=not_ieee)],pike_cv_float_type=not_ieee)])
+AC_CACHE_VAL(pike_cv_float_type, [
+  AC_TRY_RUN(float_check(float,BIG), pike_cv_float_type=ieee_big, [
+    AC_TRY_RUN(float_check(float,LITTLE), pike_cv_float_type=ieee_little,
+      pike_cv_float_type=not_ieee, pike_cv_float_type=not_ieee)
+  ], [
+    # Use some magical constants...
+    cat > conftest.$ac_ext <<EOF
+dnl This sometimes fails to find confdefs.h, for some reason.
+dnl [#]line __oline__ "[$]0"
+[#]line __oline__ "configure"
+#include "confdefs.h"
+#include <stdio.h>
+float float_info[[]] = {
+  0.0,
+  14914788644012054221422592.0, 16305677175569252352.0,
+  0.0
+};
+EOF
+    if AC_TRY_EVAL(ac_compile); then
+      if test -f "conftest.$ac_objext"; then
+        if strings "conftest.$ac_objext" | grep "iEeE_bIg" >/dev/null; then
+	  pike_cv_float_type=ieee_big
+        else
+	  if strings "conftest.$ac_objext" | grep "EeEigIb_" >/dev/null; then
+	    pike_cv_float_type=ieee_little
+	  else
+	    pike_cv_float_type=not_ieee
+	  fi
+	fi
+      else
+        AC_MSG_WARN([Object file not found.])
+	pike_cv_float_type=not_ieee
+      fi
+    else
+      pike_cv_float_type=not_ieee
+    fi
+  ])
+])
 if test "$pike_cv_float_type" = ieee_big; then
   AC_MSG_RESULT(IEEE big endian)
   AC_DEFINE(FLOAT_IS_IEEE_BIG)
@@ -2908,10 +2942,44 @@ else
 fi
 
 AC_MSG_CHECKING(for type of double)
-AC_CACHE_VAL(pike_cv_double_type,
-[AC_TRY_RUN(float_check(double,BIG),pike_cv_double_type=ieee_big,
-  [AC_TRY_RUN(float_check(double,LITTLE),pike_cv_double_type=ieee_little,
-    pike_cv_double_type=not_ieee)],pike_cv_double_type=not_ieee)])
+AC_CACHE_VAL(pike_cv_double_type, [
+  AC_TRY_RUN(float_check(double,BIG), pike_cv_double_type=ieee_big, [
+    AC_TRY_RUN(float_check(double,LITTLE), pike_cv_double_type=ieee_little,
+      pike_cv_double_type=not_ieee, pike_cv_double_type=not_ieee)
+  ], [
+    # Use some magical constants...
+    cat > conftest.$ac_ext <<EOF
+dnl This sometimes fails to find confdefs.h, for some reason.
+dnl [#]line __oline__ "[$]0"
+[#]line __oline__ "configure"
+#include "confdefs.h"
+#include <stdio.h>
+double double_info[[]] = {
+  0.0,
+  12794738495187527498222028847205909954314554441725728393516969126669975252147490126864122090122288822751876426313291683594796075946303753742007913302630260537160845833197547903208108732031187791380480.0,
+  0.0
+};
+EOF
+    if AC_TRY_EVAL(ac_compile); then
+      if test -f "conftest.$ac_objext"; then
+        if strings "conftest.$ac_objext" | grep "iEeE_bIg" >/dev/null; then
+	  pike_cv_double_type=ieee_big
+        else
+	  if strings "conftest.$ac_objext" | grep "gIb_EeEi" >/dev/null; then
+	    pike_cv_double_type=ieee_little
+	  else
+	    pike_cv_double_type=not_ieee
+	  fi
+	fi
+      else
+        AC_MSG_WARN([Object file not found.])
+	pike_cv_float_type=not_ieee
+      fi
+    else
+      pike_cv_float_type=not_ieee
+    fi
+  ])
+])
 if test "$pike_cv_double_type" = ieee_big; then
   AC_MSG_RESULT(IEEE big endian)
   AC_DEFINE(DOUBLE_IS_IEEE_BIG)
