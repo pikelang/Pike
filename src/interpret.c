@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.25 1997/02/27 11:06:22 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.26 1997/03/01 03:28:55 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1525,9 +1525,6 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
       error("Calling object without `() operator\n");
 
     apply_lfun(s->u.object, LFUN_CALL, args);
-    free_svalue(sp-2);
-    sp[-2]=sp[-1];
-    sp--;
     break;
   }
 
