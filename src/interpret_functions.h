@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.40 2001/01/14 20:02:42 grubba Exp $
+ * $Id: interpret_functions.h,v 1.41 2001/01/14 20:05:26 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -935,9 +935,9 @@ BREAK;
  */
 OPCODE0_JUMP(F_LOOP, "loop") /* loopcnt */
 {
-  /* Use ge and 1 to be able to reuse the 1 for the subtraction. */
+  /* Use >= and 1 to be able to reuse the 1 for the subtraction. */
   push_int(1);
-  if (is_ge(sp-2, sp-1)) {
+  if (!is_lt(sp-2, sp-1)) {
     o_subtract();
     DOJUMP();
   } else {
