@@ -318,7 +318,7 @@ test_parser([[{
   p->add_entity ("e", "E");
   p->add_quote_tag ("q", "Q", "q");
   return p->finish ("a<t>b<c>c</c>d&e;e<qfq>" WIDENER)->read();
-}]], "[a][Tb][Cd][Ee][Q" WIDENER "]");
+}]], "[aTbCdEeQ" WIDENER "]");
 test_parser([[{
   object p = Parser.HTML();
   p->_set_data_callback (lambda (object p, string s) {return ({"[", s, "]"});});
@@ -378,6 +378,44 @@ test_parser([[
   p->add_tags ((["t2": "2", "t3": "3"]));
   return p->finish("a<t>b<t3>c</t>d" WIDENER)->read();
 ]], "ab3c2d" WIDENER);
+test_parser([[
+  object p = Parser.HTML();
+  p->_set_data_callback (lambda (object p, string s) {return ({"[", s, "]"});});
+  p->reparse_strings (1);
+  p->add_tag ("t", lambda (object p, mapping a)
+		     {p->feed_insert("<t2>"); return ({"<t3>"});});
+  p->add_tags ((["t2": "2", "t3": "3"]));
+  return p->finish("a<t>b<t>c" WIDENER)->read();
+]], "[a]<t3>[2b]<t3>[2c" WIDENER "]");
+test_parser([[
+  object p = Parser.HTML();
+  p->_set_data_callback (lambda (object p, string s) {return ({"[", s, "]"});});
+  p->reparse_strings (1);
+  p->add_tag ("t", lambda (object p, mapping a)
+		     {p->feed_insert("<t2>"); return "<t3>";});
+  p->add_tags ((["t2": "2", "t3": "3"]));
+  return p->finish("a<t>b<t>c" WIDENER)->read();
+]], "[a][32b][32c" WIDENER "]");
+test_parser([[
+  object p = Parser.HTML();
+  p->_set_data_callback (lambda (object p, string s) {return ({"[", s, "]"});});
+  p->reparse_strings (1);
+  p->add_tag ("t", lambda (object p, mapping a)
+		     {p->feed_insert("<t2>"); return "<t3>";});
+  p->add_tag ("t2", lambda (object p, mapping a)
+		      {p->feed_insert("A<t3>B"); return "2";});
+  p->add_tag ("t3", "3");
+  return p->finish("a<t>b<t>c" WIDENER)->read();
+]], "[a][3][2A3Bb][3][2A3Bc" WIDENER "]");
+test_parser([[
+  object p = Parser.HTML();
+  p->_set_data_callback (lambda (object p, string s) {return ({"[", s, "]"});});
+  p->reparse_strings (1);
+  p->add_container ("t", lambda (object p, mapping a, string s)
+			   {p->feed_insert("<t2>"); return s;});
+  p->add_tags ((["t2": "2", "t3": "3"]));
+  return p->finish("a<t>b<t3>c</t>d" WIDENER)->read();
+]], "[a][b3c2d" WIDENER "]");
 
 // Streaming
 test_parser([[
@@ -392,9 +430,14 @@ test_parser([[
 ]], "12 3" WIDENER);
 test_parser([[
   object p = Parser.HTML();
-  p->add_tag ("t", lambda (object p, mapping a) {return ({a->a});});
+  p->add_tag ("t", lambda (object p, mapping a) {return ({"{", a->a, "}"});});
   return p->feed("<t a='f")->feed("oo'>" WIDENER)->read();
-]], "foo" WIDENER);
+]], "{foo}" WIDENER);
+test_parser([[
+  object p = Parser.HTML();
+  p->add_tag ("t", lambda (object p, mapping a) {return ({"{", a->a, "}"});});
+  return p->feed("<t a='")->feed("foo'>" WIDENER)->read();
+]], "{foo}" WIDENER);
 test_parser([[
   object p = Parser.HTML();
   p->add_tag ("t", lambda (object p, mapping a) {return ({a->a});});
@@ -743,7 +786,7 @@ test_parser([[
   p->_set_entity_callback (lambda (object p, string s) {return ({"[",s,"]"});});
   p->_set_data_callback (lambda (object p, string s) {return ({"{",s,"}"});});
   return p->finish ("&abc|&abc<>&abc;" WIDENER)->read();
-]], "{&abc|}{&abc}<>[&abc;]{" WIDENER "}");
+]], "{&abc|&abc}<>[&abc;]{" WIDENER "}");
 test_parser([[{
   object p = Parser.HTML();
   p->add_entity ("e", "x");
@@ -997,6 +1040,22 @@ test_parser([[{
   return p->finish ("a<t>b<x>c</t>d</t>e" WIDENER)->read();
 }]], "a[b<x>c]d</t>e" WIDENER);
 
+// Positions
+test_parser([[{
+  object p = Parser.HTML();
+  p->_set_data_callback (lambda (object p) {
+			   p->write_out ("[" + p->at_char() + "]");
+			   return 0;
+			 });
+  p->add_tag ("t", "x");
+  p->reparse_strings (1);
+  p->add_tag ("q", lambda (object p) {
+		     p->write_out ("{" + p->at_char() + "}");
+		     return 0;
+		   });
+  return p->finish("aa<t>bb<q>cc" WIDENER)->read();
+}]], "[0]aaxbb{7}<q>[10]cc" WIDENER);
+
 // parse_tag_args
 test_equal(Parser.HTML()->parse_tag_args("<"), ([]));
 test_equal(Parser.HTML()->parse_tag_args(">"), ([]));
@@ -1017,7 +1076,7 @@ test_parser([[
   p->_set_data_callback (lambda (object p, string s)
 			   {return ({"[",s,"]"});});
   return p->finish("<f <t2>=<t2>><t><t2><a<t2>></t><o>" WIDENER)->read();
-]], "[<f ]2[=]2[>]|2[<a]2[>][<o>" WIDENER "]");
+]], "[<f ]2[=]2[>]|2[<a]2[><o>" WIDENER "]");
 test_parser([[
   object p = Parser.HTML();
   p->add_container ("t", lambda (object p, mapping a, string s)
@@ -1038,7 +1097,7 @@ test_parser([[
   p->_set_data_callback (lambda (object p, string s)
 			   {return ({"[",s,"]"});});
   return p->finish("x<f x<t2>=<t2>x>x<t>x<t2>x<a<t2>x>x</t>x<o>x" WIDENER)->read();
-]], "[x][<f x]2[=]2[x>x]|[x]2[x][<a]2[x>xx][<o>x" WIDENER "]");
+]], "[x<f x]2[=]2[x>x]|[x]2[x<a]2[x>xx<o>x" WIDENER "]");
 test_parser([[
   object p = Parser.HTML();
   p->add_container ("t", lambda (object p, mapping a, string s)
