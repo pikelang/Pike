@@ -33,7 +33,7 @@ object do_method(string method,
   if(!request_headers)
     request_headers = ([]);
   mapping default_headers = ([
-    "user-agent" : "Mozilla/4.0 compatible (Pike HTTP client)",
+    "user-agent" : "Mozilla/5.0 (compatible; Pike HTTP client)",
     "host" : url->host ]);
 
   if(url->user || url->passwd)
