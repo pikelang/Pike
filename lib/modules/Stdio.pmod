@@ -1,8 +1,12 @@
 #include <string.h>
-inherit files;
 
-constant File=file;
-constant Port=port;
+constant PROP_IPC=files.PROP_IPC;
+constant PROP_NONBLOCk=files.PROP_NONBLOCK;
+constant PROP_SHUTDOWN=files.PROP_SHUTDOWN;
+constant PROP_BUFFERED=files.PROP_BUFFERED;
+constant PROP_BIDIRECTIONAL=files.PROP_BIDIRECTIONAL;
+constant File=files.file;
+constant Port=files.port;
 
 object stderr=File("stderr");
 object stdout=File("stdout");
