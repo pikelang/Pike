@@ -408,10 +408,10 @@ SGML convert(SGML data)
 
 	 case "aargdesc":
 	    ret+=convert(({Sgml.Tag("tr",([]),data->pos,
-				    ({Sgml.Tag("td")})+data->data)}));
+				    ({Sgml.Tag("td",(["valign":"top","align":"left"]))})+data->data)}));
 	    continue;
 	 case "adesc":
-	    ret+=convert(({Sgml.Tag("td",([]),data->pos,data->data)}));
+	    ret+=convert(({Sgml.Tag("td",(["valign":"top","align":"left"]),data->pos,data->data)}));
 	    continue;
 	 case "aarg":
 	    ret+=convert(({Sgml.Tag("tt",([]),data->pos,data->data),
