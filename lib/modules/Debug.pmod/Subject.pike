@@ -1,4 +1,6 @@
-// $Id: Subject.pike,v 1.6 2002/11/06 04:59:06 nilsson Exp $
+// $Id: Subject.pike,v 1.7 2002/11/24 19:47:42 nilsson Exp $
+
+#pike __REAL_VERSION__
 
 //! This is a probe subject which you can send in somewhere to
 //! get probed (not to be confused with a probe object, which
