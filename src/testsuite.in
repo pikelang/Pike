@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.604 2003/02/19 00:52:33 marcus Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.605 2003/02/19 12:13:51 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -4138,26 +4138,31 @@ test_any([[
   test_any_equal([[{
     class Live {object o; void destroy() {}};
     array a = set_weak_flag(({Live()}), 1);
-    gc(); return a;
+    gc();
+    return set_weak_flag(a, 0);
   }]], ({0}))
   test_any_equal([[{
     class Live {object o; void destroy() {}};
     multiset l = set_weak_flag((<Live()>), 1);
-    gc(); return l;
+    gc();
+    return set_weak_flag(l, 0);
   }]], (<>))
   test_any_equal([[{
     class Live {object o; void destroy() {}};
     mapping m = set_weak_flag(([0: Live()]), 1);
-    gc(); return m;
+    gc();
+    return set_weak_flag(m, 0);
   }]], ([]))
   test_any_equal([[{
     class Live {object o; void destroy() {}};
     mapping m = set_weak_flag(([Live(): 0]), 1);
-    gc(); return m;
+    gc();
+    return set_weak_flag(m, 0);
   }]], ([]))
   test_any_equal([[{
     array a = set_weak_flag(({4711, 0x54325827a124*0x12348795482485425}), 1);
-    gc(); return a;
+    gc();
+    return set_weak_flag(a, 0);
   }]], ({4711, 0x54325827a124*0x12348795482485425}))
 
   test_any_equal([[{
@@ -4520,17 +4525,17 @@ test_do(add_constant("blatinka");)
   test_any_equal([[{
     array a = set_weak_flag (({1, "foo", 3.14}), 1);
     gc();
-    return a;
+    return set_weak_flag(a, 0);
   }]], ({1, "foo", 3.14}));
   test_any_equal([[{
     multiset a = set_weak_flag ((<1, "foo", 3.14>), 1);
     gc();
-    return a;
+    return set_weak_flag(a, 0);
   }]], (<1, "foo", 3.14>));
   test_any_equal([[{
     mapping a = set_weak_flag (([1: 1, "foo": "foo", 3.14: 3.14]), 1);
     gc();
-    return a;
+    return set_weak_flag(a, 0);
   }]], ([1: 1, "foo": "foo", 3.14: 3.14]));
 
   test_do([[{
@@ -5037,7 +5042,7 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
     array a = ({4711, 0x54325827a124*0x12348795482485425});
     set_weak_flag (a, 1);
     gc();
-    return a;
+    return set_weak_flag(a, 0);
   ]], [[ ({4711, 0x54325827a124*0x12348795482485425}) ]])
 
   test_any_equal([[
@@ -5047,7 +5052,7 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
     ]);
     set_weak_flag (m, 1);
     gc();
-    return m;
+    return set_weak_flag(m, 0);
   ]], [[ ([
     4711: 0x54325827a124*0x12348795482485425,
     0x54325827124*0x1234879548a2485425: 1174,
@@ -5389,7 +5394,7 @@ test_equal([[ array_sscanf("hej","%s") ]], [[ ({ "hej" }) ]])
 test_equal([[ array_sscanf("hej","%s%n") ]], [[ ({ "hej", 3 }) ]])
 test_eval_error([[ function f=array_sscanf; f("hej","%s% ") ]])
 
-test_equal([[ array_sscanf("\x304b\x3066\x3044\x308a\x3087\x3046\x308a", "%[^\x3042\x3044\x3046\x3048\x304a]") ]],
+test_equal([[ array_sscanf("\x304b\x3066\x3044\x308a\x3087\x3046\x308a", "%[^\x3042\x3044\x3046\x3048\x304a]")[0] ]],
     [[ "\x304b\x3066" ]])
 
 	
