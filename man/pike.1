@@ -1,11 +1,11 @@
-.\" $Id: pike.1,v 1.15 2002/12/30 01:55:37 nilsson Exp $
+.\" $Id: pike.1,v 1.16 2003/01/24 12:18:43 kiwi Exp $
 .\" name section last-modified title section-name product/status architecture
 .ds ]L Pike
-.TH pike 1 "$Date: 2002/12/30 01:55:37 $" Pike "Pike Manual" Pike
-.\" On Solaris ]L will contain "Last modified $Date: 2002/12/30 01:55:37 $"
+.TH pike 1 "$Date: 2003/01/24 12:18:43 $" Pike "Pike Manual" Pike
+.\" On Solaris ]L will contain "Last modified $Date: 2003/01/24 12:18:43 $"
 .\" while HPUX uses ]L to contain "Pike".
 .\" On OSF/1 ]L will already contain the wanted string.
-.if !\*(]LPike .ds ]L $Date: 2002/12/30 01:55:37 $ \" Solaris nroff
+.if !\*(]LPike .ds ]L $Date: 2003/01/24 12:18:43 $ \" Solaris nroff
 .\" Major (mj) and minor (mn) version of Pike
 .nr mj 7
 .nr mn 4
@@ -280,13 +280,12 @@ default module directory
 .B \*(bd/lib/0.6/*
 .TP
 .B \*(bd/lib/7.0/*
+.TP
+.B \*(bd/lib/7.2/*
 backward compatibility modules
 .TP
 .B \*(bd/lib/include/*
 pike include files
-.TP
-.B \*(bd/tools/pike.el
-emacs fontlock definitions for pike-mode
 .TP
 .B \*(bd/include/pike/*
 C-include files
@@ -296,7 +295,6 @@ manual pages for pike
 .\" Restore the paragraph distance
 .PD
 .SH SEE ALSO
-.BR hilfe (1),
 .BR Getopt (3P),
 .BR environ (5)
 .\" Force a linebreak
