@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.90 2003/10/13 15:23:50 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.91 2004/01/15 17:48:40 nilsson Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -76,9 +76,15 @@ array(string) read_tests( string fn ) {
 
 class WarningFlag {
   int(0..1) warning;
+  array(string) warnings = ({});
 
-  void compile_warning(mixed ... args) {
+  void compile_warning(string file, int line, string text) {
+    warnings += ({ line+": "+text });
     warning = 1;
+  }
+
+  void compile_error(string file, int line, string text) {
+    werror("%s:%d: %s\n", file,line,text);
   }
 }
 
@@ -582,21 +588,35 @@ int main(int argc, array(string) argv)
 	// _optimizer_debug(5);
 	
 	if(verbose>9) print_code(to_compile);
+	WarningFlag wf;
 	switch(type)
         {
 	  mixed at,bt;
 	  mixed err;
 	case "COMPILE":
+	  wf = WarningFlag();
+	  master()->set_inhibit_compile_errors(wf);
 	  _dmalloc_set_name(fname,0);
 	  if(catch(compile_string(to_compile, testsuite)))
 	  {
 	    _dmalloc_set_name();
+	    master()->set_inhibit_compile_errors(0);
 	    werror(pad_on_error + fname + " failed.\n");
 	    print_code(test);
 	    errors++;
 	  }
 	  else {
 	    _dmalloc_set_name();
+	    master()->set_inhibit_compile_errors(0);
+
+	    if(wf->warning) {
+	      werror(pad_on_error + fname + " produced warning.\n");
+	      werror("%{%s\n%}", wf->warnings);
+	      print_code(test);
+	      errors++;
+	      break;
+	    }
+
 	    successes++;
 	  }
 	  break;
@@ -619,7 +639,7 @@ int main(int argc, array(string) argv)
 	  break;
 
 	case "COMPILE_WARNING":
-	  WarningFlag wf = WarningFlag();
+	  wf = WarningFlag();
 	  master()->set_inhibit_compile_errors(wf);
 	  _dmalloc_set_name(fname,0);
 	  if(catch(compile_string(to_compile, testsuite)))
@@ -670,10 +690,12 @@ int main(int argc, array(string) argv)
 	
 	default:
 	  if (err = catch{
+	    wf = WarningFlag();
+	    master()->set_inhibit_compile_errors(wf);
 	    _dmalloc_set_name(fname,0);
 	    o=compile_string(to_compile,testsuite)();
 	    _dmalloc_set_name();
-	
+
 	    if(check > 1) _verify_internals();
 	
 	    a=b=0;
@@ -696,8 +718,18 @@ int main(int argc, array(string) argv)
 	    if(t) trace(0);
 	    if(check > 1) _verify_internals();
 
+	    if(wf->warning) {
+	      werror(pad_on_error + fname + " produced warning.\n");
+	      werror("%{%s\n%}", wf->warnings);
+	      print_code(test);
+	      errors++;
+	      break;
+	    }
+	    master()->set_inhibit_compile_errors(0);
+
 	  }) {
-	    // trace(0);
+	    if(t) trace(0);
+	    master()->set_inhibit_compile_errors(0);
 	    werror(pad_on_error + fname + " failed.\n");
 	    print_code(test);
 	    if (arrayp(err) && sizeof(err) && stringp(err[0])) {
