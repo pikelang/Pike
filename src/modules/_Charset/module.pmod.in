@@ -342,20 +342,30 @@ private class UTF16LEenc {
 }
 
 //! Returns a charset encoder object.
+//!
 //! @param name
-//!   The name of the character set to decode from. Supported charsets
+//!   The name of the character set to encode to. Supported charsets
 //!   include (not all supported charsets are enumerable):
 //!   "iso_8859-1:1987", "iso_8859-1:1998", "iso-8859-1", "iso-ir-100",
 //!   "latin1", "l1", "ansi_x3.4-1968", "iso_646.irv:1991", "iso646-us",
 //!   "iso-ir-6", "us", "us-ascii", "ascii", "cp367", "ibm367", "cp819",
 //!   "ibm819", "iso-2022" (of various kinds), "utf-7", "utf-8" and
 //!   various encodings as described by RFC1345.
+//!
 //! @param replacement
-//!   Optional string to insert where characters not available in the
-//!   encoding appear.
+//!   The string to use for characters that cannot be represented in
+//!   the charset. It's used when @[repcb] is given or when it returns
+//!   zero. If no replacement string is given then an error is thrown
+//!   instead.
+//!
 //! @param repcb
-//!   Optional function to call when characters not available in the
-//!   encoding appear.
+//!   A function to call for every character that cannot be
+//!   represented in the charset. If specified it's called with one
+//!   argument - a string containing the character in question. If it
+//!   returns a string then that one will replace the character in the
+//!   output. If it returns something else then the @[replacement]
+//!   argument will be used to decide what to do.
+//!
 //! @throws
 //!   If the asked-for @[name] was not supported, an error is thrown.
 object(Encoder) encoder(string name, string|void replacement,
