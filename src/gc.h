@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.68 2000/09/30 16:01:40 mast Exp $
+ * $Id: gc.h,v 1.69 2000/09/30 16:49:13 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -194,7 +194,7 @@ void cleanup_gc(void);
   fprintf(stderr, "%s:%d: GC fatal:\n", __FILE__, __LINE__), debug_gc_fatal
 
 #ifdef PIKE_DEBUG
-#define gc_checked_as_weak(X) (find_marker(X)->flags |= GC_CHECKED_AS_WEAK)
+#define gc_checked_as_weak(X) (get_marker(X)->flags |= GC_CHECKED_AS_WEAK)
 #define gc_assert_checked_as_weak(X) do {				\
   if (!(find_marker(X)->flags & GC_CHECKED_AS_WEAK))			\
     fatal("A thing was checked as weak but "				\
