@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.333 2001/01/19 13:53:43 mirar Exp $");
+RCSID("$Id: builtin_functions.c,v 1.334 2001/01/31 13:27:49 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -108,6 +108,19 @@ PMOD_EXPORT void debug_f_aggregate(INT32 args)
   push_array(a); /* beware, macro */
 }
 
+/*! @decl int compat_hash(string s)
+ *! @decl int compat_hash(string s, int max)
+ *!
+ *! This function will return an @tt{int@} derived from the string @[s].
+ *! The same string will always hash to the same value.
+ *! If @[max] is given, the result will be >= 0 and <= @[max].
+ *!
+ *! @note
+ *!   This function is provided for backward compatibility reasons.
+ *!
+ *! @seealso
+ *!   @[hash()]
+ */
 void f_compat_hash( INT32 args )
 {
   struct pike_string *s = Pike_sp[-args].u.string;
@@ -138,6 +151,20 @@ void f_compat_hash( INT32 args )
   push_int( i );
 }
 
+/*! @decl int hash(string s)
+ *! @decl int hash(string s, int max)
+ *!
+ *! This function will return an @tt{int@} derived from the string @[s].
+ *! The same string will always hash to the same value.
+ *! If @[max] is given, the result will be >= 0 and <= @[max].
+ *!
+ *! @note
+ *!   The hash algorithm was changed in Pike 7.1. If you want a hash
+ *!   that is compatible with Pike 7.0 and earlier, use @[compat_hash()].
+ *!
+ *! @seealso
+ *!   @[compat_hash()]
+ */
 void f_hash(INT32 args)
 {
   size_t i = 0;

@@ -17,7 +17,7 @@
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.31 2000/12/14 07:29:20 mast Exp $");
+RCSID("$Id: multiset.c,v 1.32 2001/01/31 13:19:01 grubba Exp $");
 
 struct multiset *first_multiset;
 
@@ -295,6 +295,17 @@ node * make_node_from_multiset(struct multiset *l)
   }
 }
 
+/*! @decl multiset aggregate_multiset(mixed ... elems)
+ *!
+ *! Construct a multiset.
+ *!
+ *! Construct a multiset with the arguments as indices.
+ *! An alternative and more preferrable syntax is:
+ *! @code{(< elem1, elem2, ... >)@}
+ *!
+ *! @seealso
+ *!   @[sizeof()], @[multisetp()], @[mkmultiset()]
+ */
 PMOD_EXPORT void f_aggregate_multiset(INT32 args)
 {
   struct multiset *l;
