@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.139 2004/04/03 17:57:02 grubba Exp $
+# $Id: Makefile,v 1.140 2004/04/04 12:37:47 grubba Exp $
 #
 # Meta Makefile
 #
@@ -50,7 +50,7 @@ configure_help: src/configure
 
 builddir:
 	@builddir="$(BUILDDIR)"; \
-	if [ -d $$builddir ]; then : ; else NEWBUILD=YEP ; fi; \
+	if [ -d "$$builddir" ]; then : ; else NEWBUILD=YEP ; fi; \
 	OLDIFS="$IFS"; \
 	IFS='/'; \
 	dir=`echo "$$builddir" | sed -e 's|[^/].*||'`; \
@@ -63,12 +63,14 @@ builddir:
 	  dir="$$dir/"; \
 	done; \
 	IFS="$OLDIFS"; \
-	if [ x$$NEWBUILD = xYEP ]; then \
-	  test -f "refdoc/autodoc.xml" && \
+	if [ "x$$NEWBUILD" = "xYEP" ]; then \
+	  if [ -f "refdoc/autodoc.xml" ]; then \
 	    cp "refdoc/autodoc.xml" "$$builddir"; \
+	  fi; \
 	  mkdir "$$builddir/doc_build"; \
-	  test -d "refdoc/images" && \
+	  if [ -d "refdoc/images" ]; then \
 	    cp -R "refdoc/images" "$$builddir/doc_build/images"; \
+	  fi; \
 	fi; \
 	cd "$$builddir"
 
