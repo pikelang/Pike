@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.117 2004/04/04 16:57:55 grubba Exp $
+|| $Id: backend.cmod,v 1.118 2004/04/04 19:00:57 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.117 2004/04/04 16:57:55 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.118 2004/04/04 19:00:57 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -35,12 +35,12 @@ RCSID("$Id: backend.cmod,v 1.117 2004/04/04 16:57:55 grubba Exp $");
 /*
  * Things to do
  *
- * o GC handling for call_out
- *
- *   Well, a call out can never be considered dead since it can always
- *   get called. /mast
- *
  * o what happens to callbacks on destruct?
+ *
+ *   They will just cease to generate any events. If the callback
+ *   container object uses the old callback interface and has added an
+ *   extra ref to itself to account for the callback connection it
+ *   will become garbage. The new interface fixes this. /mast
  *
  * o automatic callback assignment based on current thread
  *
@@ -71,6 +71,8 @@ RCSID("$Id: backend.cmod,v 1.117 2004/04/04 16:57:55 grubba Exp $");
 #include "block_alloc_h.h"
 BLOCK_ALLOC (compat_cb_box, N/A)
 static int compat_box_dispatcher (struct fd_callback_box *box, int event);
+static void update_fd_set (struct Backend_struct *me, int fd,
+			   int old_events, int new_events);
 
 /* CALL OUT STUFF */
 
@@ -138,7 +140,7 @@ struct timeval next_timeout;
  */
 static struct Backend_struct **fd_map=0;
 static int fd_map_size=0;
-struct Backend_struct *default_backend = NULL;
+PMOD_EXPORT struct Backend_struct *default_backend = NULL;
 #ifdef DO_PIKE_CLEANUP
 static int num_backends = 0;
 #endif
@@ -773,14 +775,22 @@ PIKECLASS Backend
   /*
    * PIPE for waking up
    */
-  CVAR int wakeup_pipe[2];
+  CVAR int wakeup_pipe_send_fd;
   CVAR struct fd_callback_box wakeup_cb_box;
 
   /*
    * FD callback data
    */
+
+  /* An array indexed on fd with arbitrary upper and lower bounds. A
+   * lower bould is used to cut down the size for backends that
+   * handle a single or only a few fd's. */
   CVAR struct fd_callback_box **fd_boxes;
-  CVAR int num_fd_boxes;
+  CVAR int fd_boxes_start, fd_boxes_size;
+
+  /* Callback boxes which don't correspond to any open file. */
+  CVAR struct fd_callback_box **inactive_boxes, **free_inactive_box;
+  CVAR int inactive_boxes_size;
 
   /* 
    * POLL/SELECT fd sets
@@ -838,12 +848,24 @@ PIKECLASS Backend
       char foo=0;
 
       if(me && me->exec_thread)
-	fd_write(me->wakeup_pipe[1], &foo ,1);
+	fd_write(me->wakeup_pipe_send_fd, &foo ,1);
     }
 
   /*
-   * Call out defines
+   * Backend callbacks.
    */
+
+  PMOD_EXPORT struct callback *backend_debug_add_backend_callback(
+    struct Backend_struct *me, callback_func call, void *arg,
+    callback_func free_func)
+  {
+    return add_to_callback(& me->backend_callbacks, call, arg, free_func);
+  }
+
+  /*
+   * Call outs.
+   */
+
 #undef CAR
 #undef CDR
 
@@ -867,8 +889,6 @@ PIKECLASS Backend
 #define PROTECT_CALL_OUTS()
 #define UNPROTECT_CALL_OUTS()
 #endif /* PIKE_DEBUG */
-
-  /* CALL OUT */
 
 #ifdef PIKE_DEBUG
  
@@ -1502,12 +1522,82 @@ PIKECLASS Backend
        RETURN backend_get_all_call_outs(THIS);
      }
 
-
-  /* 
-   * FDS handling
+  /*
+   * FD box handling
    */
-#define GET_BOX(ME,FD) ((ME)->num_fd_boxes > (FD) ? (ME)->fd_boxes[FD] : NULL)
-#define WANT_EVENT(BOX, WHAT) ((BOX) && (BOX)->events & PIKE_CONCAT (PIKE_FD_, WHAT))
+
+#define GET_ACTIVE_BOX(ME, FD)						\
+   ((ME)->fd_boxes[(FD) - (ME)->fd_boxes_start])
+
+#define GET_BOX(ME, FD)							\
+   ((FD) < 0 ?								\
+    (ME)->inactive_boxes[~(FD)] :					\
+    (ME)->fd_boxes[(FD) - (ME)->fd_boxes_start])
+
+#define SAFE_GET_ACTIVE_BOX(ME, FD)					\
+   ((FD) >= (ME)->fd_boxes_start &&					\
+    (FD) < (ME)->fd_boxes_start + (ME)->fd_boxes_size ?			\
+    GET_ACTIVE_BOX (ME, FD) : NULL)
+
+   static struct fd_callback_box *safe_get_box (struct Backend_struct *me, int fd)
+   {
+     if (fd < 0) {
+       fd = ~fd;
+       if (fd < me->inactive_boxes_size) {
+	 struct fd_callback_box *box = me->inactive_boxes[fd];
+	 /* Avoid free list pointers. */
+	 if ((struct fd_callback_box **) box < me->inactive_boxes ||
+	     (struct fd_callback_box **) box >= me->inactive_boxes + me->inactive_boxes_size)
+	   return box;
+       }
+     }
+     else {
+       fd -= me->fd_boxes_start;
+       if (fd >= 0 && fd < me->fd_boxes_size)
+	 return me->fd_boxes[fd];
+     }
+     return NULL;
+   }
+
+#define WANT_EVENT(BOX, WHAT)						\
+   ((BOX) && (BOX)->events & PIKE_CONCAT (PIKE_BIT_FD_, WHAT))
+
+#define FOR_EACH_ACTIVE_FD_BOX(ME, BOX_VAR, CODE) do {			\
+     struct Backend_struct *me_ = (ME);					\
+     struct fd_callback_box *BOX_VAR, **boxes_ = me_->fd_boxes;		\
+     int b_, max_ = me_->fd_boxes_size;					\
+     for (b_ = 0; b_ < max_; b_++)					\
+       if ((BOX_VAR = boxes_[b_])) {CODE;}				\
+   } while (0)
+
+#define FOR_EACH_INACTIVE_FD_BOX(ME, BOX_VAR, CODE) do {		\
+     struct Backend_struct *me_ = (ME);					\
+     struct fd_callback_box *BOX_VAR, **boxes_ = me_->inactive_boxes;	\
+     int b_ = 0, max_ = me_->inactive_boxes_size;			\
+     for (b_ = 0; b_ < max_; b_++)					\
+       if ((BOX_VAR = boxes_[b_]) &&					\
+	   /* Avoid free list pointers. */				\
+	   ((struct fd_callback_box **) BOX_VAR < boxes_ ||		\
+	    (struct fd_callback_box **) BOX_VAR >= boxes_+max_))	\
+	 {CODE;}							\
+   } while (0)
+
+#ifdef PIKE_DEBUG
+  static void check_box (struct fd_callback_box *box, int fd)
+  {
+    struct Backend_struct *me = box->backend;
+    if (!me)
+      Pike_fatal ("fd_callback_box not hooked to any backend.\n");
+    if (fd == INT_MAX)
+      fd = box->fd;
+    else if (fd != box->fd)
+      Pike_fatal ("fd in callback box doesn't correspond to where it's found.\n");
+    if (safe_get_box (me, fd) != box)
+      Pike_fatal ("fd_callback_box not hooked in correctly for fd %d.\n", box->fd);
+  }
+#else
+#  define check_box(box, fd) do {} while (0)
+#endif
 
    static void add_fd_box (struct fd_callback_box *box)
    {
@@ -1515,40 +1605,231 @@ PIKECLASS Backend
      int fd = box->fd;
 
 #ifdef PIKE_DEBUG
-     if (GET_BOX (me, fd))
-       Pike_fatal ("There's already a callback box for this fd.\n");
+     if (fd >= 0) {
+       struct fd_callback_box *old_box = SAFE_GET_ACTIVE_BOX (me, fd);
+       if (old_box == box)
+	 Pike_fatal ("The box is already hooked in.\n");
+       if (old_box)
+	 Pike_fatal ("There's another callback box %p for fd %d.\n",
+		     old_box, fd);
+       if (get_backend_for_fd (fd) && get_backend_for_fd (fd) != me)
+	 Pike_fatal ("The fd is allocated to another backend.\n");
+     }
+     else {
+       int i;
+       for (i = 0; i < me->inactive_boxes_size; i++)
+	 if (me->inactive_boxes[i] == box)
+	   Pike_fatal ("The box is already hooked in.\n");
+     }
 #endif
 
-     if (fd >= me->num_fd_boxes) {
-       int old_size=me->num_fd_boxes;
-       debug_malloc_touch(me->fd_boxes);
-       if(!me->num_fd_boxes) me->num_fd_boxes = 16;
-       while(fd >= me->num_fd_boxes) me->num_fd_boxes*=2;
-       if (me->fd_boxes) {
-	 me->fd_boxes =
-	   realloc(me->fd_boxes, sizeof(me->fd_boxes[0]) * me->num_fd_boxes);
-       } else {
-	 me->fd_boxes =
-	   malloc(sizeof(me->fd_boxes[0]) * me->num_fd_boxes);
+     if (fd >= 0) {
+       low_set_backend_for_fd (fd, me);
+
+       if (!me->fd_boxes_size) {
+	 /* Start small since backends with only a single fd aren't uncommon. */
+	 me->fd_boxes_size = 4;
+	 me->fd_boxes = calloc (sizeof (me->fd_boxes[0]), me->fd_boxes_size);
+	 if (!me->fd_boxes)
+	   Pike_fatal ("Out of memory in backend::add_fd_box(): "
+		       "Tried to allocate %d fd_callback_box pointers\n",
+		       me->fd_boxes_size);
+	 me->fd_boxes_start = fd;
+	 fd = 0;
        }
-       if( !me->fd_boxes )
-	 Pike_fatal("Out of memory in backend::grow_fd_boxes()\n"
-		    "Tried to allocate %d fd_callback_box pointers\n",
-		    me->num_fd_boxes);
-       MEMSET(me->fd_boxes+old_size,
-	      0,
-	      (me->num_fd_boxes-old_size)*sizeof(me->fd_boxes[0]));
-       debug_malloc_touch(me->fd_boxes);
+
+       else if (fd < me->fd_boxes_start) {
+	 int old_size = me->fd_boxes_size, shift = me->fd_boxes_size;
+	 struct fd_callback_box **old_boxes = me->fd_boxes;
+	 while (fd < me->fd_boxes_start - shift) shift *= 2;
+	 if (me->fd_boxes_start - shift < 0) shift = me->fd_boxes_start;
+	 me->fd_boxes_start -= shift;
+	 me->fd_boxes_size += shift;
+	 debug_malloc_touch(me->fd_boxes);
+	 me->fd_boxes =
+	   realloc (me->fd_boxes, sizeof (me->fd_boxes[0]) * me->fd_boxes_size);
+	 if (!me->fd_boxes)
+	   Pike_fatal ("Out of memory in backend::add_fd_box(): "
+		       "Tried to allocate %d fd_callback_box pointers\n",
+		       me->fd_boxes_size);
+	 MEMMOVE (me->fd_boxes + shift, me->fd_boxes,
+		  sizeof (me->fd_boxes[0]) * old_size);
+	 MEMSET (me->fd_boxes, 0, sizeof (me->fd_boxes[0]) * shift);
+	 debug_malloc_touch(me->fd_boxes);
+	 fd -= me->fd_boxes_start;
+       }
+
+       else {
+	 fd -= me->fd_boxes_start;
+	 if (fd >= me->fd_boxes_size) {
+	   int old_size=me->fd_boxes_size;
+	   while(fd >= me->fd_boxes_size) me->fd_boxes_size*=2;
+	   debug_malloc_touch(me->fd_boxes);
+	   me->fd_boxes =
+	     realloc(me->fd_boxes, sizeof(me->fd_boxes[0]) * me->fd_boxes_size);
+	   if( !me->fd_boxes )
+	     Pike_fatal("Out of memory in backend::add_fd_box(): "
+			"Tried to allocate %d fd_callback_box pointers\n",
+			me->fd_boxes_size);
+	   MEMSET(me->fd_boxes+old_size,
+		  0,
+		  (me->fd_boxes_size-old_size)*sizeof(me->fd_boxes[0]));
+	   debug_malloc_touch(me->fd_boxes);
+	 }
+       }
+
+       me->fd_boxes[fd] = box;
      }
 
-     me->fd_boxes[fd] = box;
+     else {			/* Add an inactive box. */
+       int pos;
+
+       if (!me->free_inactive_box) {
+	 pos = me->inactive_boxes_size;
+	 if (!me->inactive_boxes_size)
+	   me->inactive_boxes_size = 4;
+	 else
+	   me->inactive_boxes_size *= 2;
+	 if (!me->inactive_boxes)
+	   me->inactive_boxes =
+	     malloc (sizeof (me->inactive_boxes[0]) * me->inactive_boxes_size);
+	 else
+	   me->inactive_boxes =
+	     realloc (me->inactive_boxes,
+		      sizeof (me->inactive_boxes[0]) * me->inactive_boxes_size);
+	 if (!me->inactive_boxes)
+	   Pike_fatal ("Out of memory in backend::add_fd_box(): "
+		       "Tried to allocate %d inactive fd_callback_box pointers\n",
+		       me->inactive_boxes_size);
+	 me->free_inactive_box = me->inactive_boxes + pos;
+	 while (++pos < me->inactive_boxes_size)
+	   me->inactive_boxes[pos - 1] =
+	     (struct fd_callback_box *) (me->inactive_boxes + pos);
+	 me->inactive_boxes[pos] = NULL;
+       }
+
+       pos = me->free_inactive_box - me->inactive_boxes;
+       me->free_inactive_box = (struct fd_callback_box **) *me->free_inactive_box;
+
+       me->inactive_boxes[pos] = box;
+       box->fd = ~pos;
+     }
    }
+
+   static void remove_fd_box (struct fd_callback_box *box)
+   {
+     struct Backend_struct *me = box->backend;
+     int fd = box->fd;
+     check_box (box, INT_MAX);
+
+     /* FIXME: Shrink arrays? */
+
+     if (fd >= 0)
+       me->fd_boxes[fd - me->fd_boxes_start] = NULL;
+     else {
+       fd = ~fd;
+       me->inactive_boxes[fd] = (struct fd_callback_box *) me->free_inactive_box;
+       me->free_inactive_box = me->inactive_boxes + fd;
+     }
+   }
+
+  PMOD_EXPORT void hook_fd_callback_box (struct fd_callback_box *box)
+  {
+    struct Backend_struct *me = box->backend;
+    int fd = box->fd;
+    IF_PD(fprintf(stderr, "BACKEND[%d]: hook_fd_callback_box: "
+		  "fd %d, events 0x%x, object %p\n",
+		  me->id, fd, box->events, box->ref_obj));
+#ifdef PIKE_DEBUG
+    if (!me) Pike_fatal ("Backend not set.\n");
+#endif
+    add_fd_box (box);
+    if (fd >= 0) update_fd_set (me, fd, 0, box->events);
+    if (box->ref_obj && box->events) add_ref (box->ref_obj);
+  }
+
+  PMOD_EXPORT void unhook_fd_callback_box (struct fd_callback_box *box)
+  {
+    check_box (box, INT_MAX);
+    IF_PD(fprintf(stderr, "BACKEND[%d]: unhook_fd_callback_box: fd %d, object %p\n",
+		  box->backend->id, box->fd, box->ref_obj));
+    if (box->fd >= 0) update_fd_set (box->backend, box->fd, box->events, 0);
+    remove_fd_box (box);
+    if (box->ref_obj)
+      /* No use zeroing box->ref_obj if it's freed here; we assume
+       * it's inside its own storage, so it's valid for as long as it
+       * can be read. */
+      free_object (box->ref_obj);
+  }
+
+  PMOD_EXPORT void set_fd_callback_events (struct fd_callback_box *box, int events)
+  {
+    int old_events = box->events;
+    check_box (box, INT_MAX);
+    IF_PD(fprintf(stderr, "BACKEND[%d]: set_fd_callback_events: "
+		  "fd %d, events from 0x%x to 0x%x, object %p\n",
+		  box->backend->id, box->fd, old_events, events, box->ref_obj));
+    if (box->fd >= 0) update_fd_set (box->backend, box->fd, old_events, events);
+    box->events = events;
+    if (box->ref_obj) {
+      if (!old_events) {
+	if (events) add_ref (box->ref_obj);
+      }
+      else
+	if (!events) free_object (box->ref_obj);
+    }
+  }
+
+  PMOD_EXPORT void change_backend_for_box (struct fd_callback_box *box,
+					   struct Backend_struct *new)
+  {
+    struct Backend_struct *old = box->backend;
+    check_box (box, INT_MAX);
+
+#ifdef PIKE_DEBUG
+    if (!new) Pike_fatal ("New backend is invalid.\n");
+#endif
+
+    IF_PD(fprintf(stderr, "BACKEND[%d]: change_backend_for_box: "
+		  "fd %d, new backend %d\n", old->id, box->fd, new->id));
+
+    if (old != new) {
+      if (box->fd >= 0) update_fd_set (old, box->fd, box->events, 0);
+      remove_fd_box (box);
+      box->backend = new;
+      add_fd_box (box);
+      if (box->fd >= 0) update_fd_set (new, box->fd, 0, box->events);
+    }
+  }
+
+  /* Conceivably only used to make a box active or inactive. */
+  PMOD_EXPORT void change_fd_for_box (struct fd_callback_box *box, int new_fd)
+  {
+    int old_fd = box->fd;
+    check_box (box, INT_MAX);
+
+    if (old_fd >= 0 ? old_fd != new_fd : new_fd >= 0) {
+      if (old_fd >= 0) update_fd_set (box->backend, old_fd, box->events, 0);
+      remove_fd_box (box);
+      box->fd = new_fd;
+      add_fd_box (box);
+      new_fd = box->fd;
+      if (new_fd >= 0) update_fd_set (box->backend, new_fd, 0, box->events);
+    }
+
+    IF_PD(fprintf(stderr, "BACKEND[%d]: change_fd_for_box: "
+		  "fd from %d to %d\n", box->backend->id, old_fd, new_fd));
+  }
+
+  /*
+   * FD set handling
+   */
 
 #ifdef USE_POLL_DEVICE
   void UPDATE_BLACK_BOX(struct Backend_struct *me, int fd)
   {
     INT32 events = 0;
-    struct fd_callback_box *box = GET_BOX (me, fd);
+    struct fd_callback_box *box = GET_ACTIVE_BOX (me, fd);
 
     if (WANT_EVENT (box, READ)) {
       events |= MY_POLLIN;
@@ -1617,8 +1898,7 @@ PIKECLASS Backend
     set_close_on_exec(me->set, 1);
 
     /* Restore the poll-state for all the fds. */
-    for (fd = 0; fd < me->num_fd_boxes; fd++)
-      if (GET_BOX(me, fd)) UPDATE_BLACK_BOX(me, fd);
+    FOR_EACH_ACTIVE_FD_BOX (me, box, UPDATE_BLACK_BOX (me, box->fd));
   }
 
   static struct Backend_struct **backends = NULL;
@@ -1669,75 +1949,11 @@ PIKECLASS Backend
 #define unregister_backend(X)
 #endif /* CHILD_NEEDS_TO_REOPEN */
 
-  PMOD_EXPORT struct callback *backend_debug_add_backend_callback(
-    struct Backend_struct *me, callback_func call, void *arg,
-    callback_func free_func)
-    {
-      return add_to_callback(& me->backend_callbacks, call, arg, free_func);
-    }
-
-#ifdef PIKE_DEBUG
-  static void check_box (struct fd_callback_box *box, int fd)
+  static void update_fd_set (struct Backend_struct *me, int fd,
+			     int old_events, int new_events)
   {
-    struct Backend_struct *me = box->backend;
-    if (!me)
-      Pike_fatal ("fd_callback_box not hooked to any backend.\n");
-    if (fd < 0)
-      fd = box->fd;
-    else if (fd != box->fd)
-      Pike_fatal ("fd in callback box doesn't correspond to where it's found.\n");
-    if (GET_BOX (me, fd) != box)
-      Pike_fatal ("fd_callback_box not hooked in correctly for fd %d.\n", box->fd);
-  }
-#else
-#  define check_box(box, fd) do {} while (0)
-#endif
-
-  PMOD_EXPORT void hook_fd_callback_box (struct fd_callback_box *box)
-  {
-    struct Backend_struct *me = box->backend;
-    int fd = box->fd;
-
-    IF_PD(fprintf(stderr, "BACKEND[%d]: hook_fd_callback_box: fd %d, object %p\n",
-		  me->id, fd, box->ref_obj));
-
-#ifdef PIKE_DEBUG
-    if (!me) Pike_fatal ("Backend not set.\n");
-    if (fd < 0) Pike_fatal ("Invalid fd.\n");
-    if (box->events) Pike_fatal ("Events not initially zero.\n");
-#endif
-
-    if (box->ref_obj) add_ref (box->ref_obj);
-    add_fd_box (box);
-  }
-
-  PMOD_EXPORT void unhook_fd_callback_box (struct fd_callback_box *box)
-  {
-    check_box (box, -1);
-    IF_PD(fprintf(stderr, "BACKEND[%d]: unhook_fd_callback_box: fd %d, object %p\n",
-		  box->backend->id, box->fd, box->ref_obj));
-    set_fd_callback_events (box, 0);
-    box->backend->fd_boxes[box->fd] = NULL;
-    box->backend = NULL;
-    if (box->ref_obj)
-      /* Note: box might point to freed memory after this. */
-      free_object (box->ref_obj);
-  }
-
-  PMOD_EXPORT void set_fd_callback_events (struct fd_callback_box *box, int events)
-  {
-    int old_events = box->events;
-    int changed_events = events ^ old_events;
-    check_box (box, -1);
-
-    IF_PD(fprintf(stderr, "BACKEND[%d]: set_fd_callback_events: "
-		  "fd %d, events 0x%x (old 0x%x), object %p\n",
-		  box->backend->id, box->fd, events, old_events, box->ref_obj));
-
+    int changed_events = old_events ^ new_events;
     if (changed_events) {
-      struct Backend_struct *me = box->backend;
-      int fd = box->fd;
-      box->events = events;
 
 #ifdef USE_POLL_DEVICE
 
@@ -1745,8 +1961,8 @@ PIKECLASS Backend
 
 #else  /* !USE_POLL_DEVICE */
 
-      if (changed_events & PIKE_FD_READ) {
-	if (events & PIKE_FD_READ) {
+      if (changed_events & PIKE_BIT_FD_READ) {
+	if (new_events & PIKE_BIT_FD_READ) {
 	  MY_FD_SET(&me->set, fd, MY_POLLIN);
 #ifndef HAVE_POLL
 	  /* Got to enable the exception set to get errors (at least
@@ -1757,27 +1973,28 @@ PIKECLASS Backend
 	else {
 	  MY_FD_CLR(&me->set, fd, MY_POLLIN);
 #ifdef HAVE_POLL
-	  if (events & PIKE_FD_READ_OOB)
+	  if (new_events & PIKE_BIT_FD_READ_OOB)
 	  {
 	    MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
 	  }
 #else
-	  if (!(events & PIKE_FD_READ_OOB) && !(events & PIKE_FD_WRITE))
+	  if (!(new_events & PIKE_BIT_FD_READ_OOB) &&
+	      !(new_events & PIKE_BIT_FD_WRITE))
 	    /* Exceptions might cause calls to read, read_oob and write. */
 	    MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
 #endif
 	}
       }
 
-      if (changed_events & PIKE_FD_READ_OOB) {
-	if (events & PIKE_FD_READ_OOB)
+      if (changed_events & PIKE_BIT_FD_READ_OOB) {
+	if (new_events & PIKE_BIT_FD_READ_OOB)
 	  MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
 	else {
-	  if (!(events & PIKE_FD_READ)) {
+	  if (!(new_events & PIKE_BIT_FD_READ)) {
 #ifdef HAVE_POLL
 	    MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
 #else
-	    if (!(events & PIKE_FD_WRITE))
+	    if (!(new_events & PIKE_BIT_FD_WRITE))
 	      /* Exceptions might cause calls to read, read_oob and write. */
 	      MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
 #endif
@@ -1787,8 +2004,8 @@ PIKECLASS Backend
 	}
       }
 
-      if (changed_events & PIKE_FD_WRITE) {
-	if (events & PIKE_FD_WRITE) {
+      if (changed_events & PIKE_BIT_FD_WRITE) {
+	if (new_events & PIKE_BIT_FD_WRITE) {
 	  MY_FD_SET(&me->set, fd, MY_POLLOUT);
 #ifndef HAVE_POLL
 	  /* Got to enable the exception set to get errors (at least
@@ -1797,10 +2014,11 @@ PIKECLASS Backend
 #endif
 	}
 	else {
-	  if (!(events & PIKE_FD_WRITE_OOB)) {
+	  if (!(new_events & PIKE_BIT_FD_WRITE_OOB)) {
 	    MY_FD_CLR(&me->set, fd, MY_POLLOUT);
 #ifndef HAVE_POLL
-	    if (!(events & PIKE_FD_READ) && !(events & PIKE_FD_READ_OOB))
+	    if (!(new_events & PIKE_BIT_FD_READ) &&
+		!(new_events & PIKE_BIT_FD_READ_OOB))
 	      /* Exceptions might cause calls to read, read_oob and write. */
 	      MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
 #endif
@@ -1808,11 +2026,11 @@ PIKECLASS Backend
 	}
       }
 
-      if (changed_events & PIKE_FD_WRITE_OOB) {
-	if (events & PIKE_FD_WRITE_OOB)
+      if (changed_events & PIKE_BIT_FD_WRITE_OOB) {
+	if (new_events & PIKE_BIT_FD_WRITE_OOB)
 	  MY_FD_SET(&me->set, fd, MY_POLLWREXCEPT);
 	else {
-	  if (!(events & PIKE_FD_WRITE)) {
+	  if (!(new_events & PIKE_BIT_FD_WRITE)) {
 	    MY_FD_CLR(&me->set, fd, MY_POLLWREXCEPT);
 	  } else {
 	    MY_FD_CLR_WRBAND(&me->set, fd);
@@ -1822,7 +2040,7 @@ PIKECLASS Backend
 
 #endif	/* !USE_POLL_DEVICE */
 
-      if (events & ~old_events)
+      if (new_events & ~old_events)
 	/* New events were added. */
 	backend_wake_up_backend (me);
     }
@@ -1901,8 +2119,12 @@ PIKECLASS Backend
       }
 #endif /* !HAVE_SYS_DEVPOLL_H */
 #endif	/* !HAVE_POLL */
+
+      FOR_EACH_ACTIVE_FD_BOX (me, box, check_box (box, INT_MAX));
+      FOR_EACH_INACTIVE_FD_BOX (me, box, check_box (box, INT_MAX));
     }
-#endif
+
+#endif	/* PIKE_DEBUG */
 
   static void low_backend_cleanup (struct Backend_struct *me)
   {
@@ -2096,7 +2318,7 @@ PIKECLASS Backend
 	    }
 
 	    else {
-	      box = GET_BOX (me, i);
+	      box = SAFE_GET_ACTIVE_BOX (me, i);
 	      if (WANT_EVENT (box, READ_OOB)) {
 		errno = 0;
 		IF_PD(fprintf(stderr, "BACKEND[%d]: read_oob_callback(%d, %p)\n",
@@ -2111,7 +2333,7 @@ PIKECLASS Backend
 	  
 	  if(fd_FD_ISSET(i, &me->active_set.rset)) {
 	    IF_PD(fprintf(stderr, "BACKEND[%d]: read on %d\n", me->id, i));
-	    box = GET_BOX (me, i);
+	    box = SAFE_GET_ACTIVE_BOX (me, i);
 	    if (WANT_EVENT (box, READ)) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p)\n",
 			    me->id, i, box->ref_obj));
@@ -2125,7 +2347,7 @@ PIKECLASS Backend
 	  
 	  if(fd_FD_ISSET(i, &me->active_set.wset)) {
 	    IF_PD(fprintf(stderr, "BACKEND[%d]: write on %d\n", me->id, i));
-	    box = GET_BOX (me, i);
+	    box = SAFE_GET_ACTIVE_BOX (me, i);
 	    if (WANT_EVENT (box, WRITE_OOB)) {
 	      /* OOB can by BSD definition always be written, so if we can
 	       * write normal data it's reasonable to assume OOB can be
@@ -2153,7 +2375,7 @@ PIKECLASS Backend
 	    MY_FD_CLR(&me->set, i, MY_POLLIN);
 	    MY_FD_CLR(&me->set, i, MY_POLLOUT);
 	    MY_FD_CLR(&me->set, i, MY_POLLEXCEPT);
-	    box = GET_BOX (me, i);
+	    box = SAFE_GET_ACTIVE_BOX (me, i);
 	    if (WANT_EVENT (box, READ)) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p) for error %d\n",
 			    me->id, i, box->ref_obj, err));
@@ -2218,7 +2440,7 @@ PIKECLASS Backend
 
 	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLRDBAND)) {
 	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLRDBAND on %d\n", me->id, fd));
-	    box = GET_BOX (me, fd);
+	    box = SAFE_GET_ACTIVE_BOX (me, fd);
 	    if (WANT_EVENT (box, READ_OOB))
 	    {
 	      errno = 0;
@@ -2244,7 +2466,7 @@ PIKECLASS Backend
 	  if(CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN))
 	  {
 	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLRDNORM|POLLIN on %d\n", me->id, fd));
-	    box = GET_BOX (me, fd);
+	    box = SAFE_GET_ACTIVE_BOX (me, fd);
 	    if (WANT_EVENT (box, READ)) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p)\n",
 			    me->id, fd, box->ref_obj));
@@ -2263,7 +2485,7 @@ PIKECLASS Backend
 
 	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLWRBAND)) {
 	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLWRBAND on %d\n", me->id, fd));
-	    box = GET_BOX (me, fd);
+	    box = SAFE_GET_ACTIVE_BOX (me, fd);
 	    if (WANT_EVENT (box, WRITE_OOB)) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_oob_callback(%d, %p)\n",
 			    me->id, fd, box->ref_obj));
@@ -2287,7 +2509,7 @@ PIKECLASS Backend
 
 	  if(CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT)) {
 	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLOUT on %d\n", me->id, fd));
-	    box = GET_BOX (me, fd);
+	    box = SAFE_GET_ACTIVE_BOX (me, fd);
 	    if (WANT_EVENT (box, WRITE)) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p)\n",
 			    me->id, fd, box->ref_obj));
@@ -2333,7 +2555,7 @@ PIKECLASS Backend
 #ifndef USE_POLL_DEVICE
 	    MY_FD_CLR(&me->set, fd, ~0);
 #endif /* !USE_POLL_DEVICE */
-	    box = GET_BOX (me, fd);
+	    box = SAFE_GET_ACTIVE_BOX (me, fd);
 	    if (WANT_EVENT (box, READ)) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p) for error %d\n",
 			    me->id, fd, box->ref_obj, errno));
@@ -2425,21 +2647,17 @@ PIKECLASS Backend
 #endif
 		case EBADF:
 		{
-		  int i;
-		  for(i=0;i<me->num_fd_boxes;i++)
-		  {
-		    if(!GET_BOX(me, i)) continue;
-		    
+		  FOR_EACH_ACTIVE_FD_BOX (me, box, {
 		    fd_FD_ZERO(& me->active_set.rset);
 		    fd_FD_ZERO(& me->active_set.wset);
 		    fd_FD_ZERO(& me->active_set.eset);
 		    
-		    if(my_FD_ISSET(i, &me->set.read))
-		      fd_FD_SET(i, & me->active_set.rset);
-		    if(my_FD_ISSET(i, &me->set.write))
-		      fd_FD_SET(i, & me->active_set.wset);
-		    if(my_FD_ISSET(i, &me->set.except))
-		      fd_FD_SET(i, & me->active_set.eset);
+		    if(my_FD_ISSET(box->fd, &me->set.read))
+		      fd_FD_SET(box->fd, & me->active_set.rset);
+		    if(my_FD_ISSET(box->fd, &me->set.write))
+		      fd_FD_SET(box->fd, & me->active_set.wset);
+		    if(my_FD_ISSET(box->fd, &me->set.except))
+		      fd_FD_SET(box->fd, & me->active_set.eset);
 		    
 		    timeout->tv_usec=0;
 		    timeout->tv_sec=0;
@@ -2460,15 +2678,15 @@ PIKECLASS Backend
 #endif
 
 #ifdef DEBUG_MALLOC
-			  debug_malloc_dump_fd(i);
+			  debug_malloc_dump_fd(box->fd);
 #endif
-			  Pike_fatal("Filedescriptor %d (%s) caused fatal error %d in backend.\n",i,fd_info(i),errno);
+			  Pike_fatal("Filedescriptor %d (%s) caused fatal error %d in backend.\n",box->fd,fd_info(box->fd),errno);
 			  
 			case EINTR:
 			  break;
 		      }
 		    }
-		  }
+		  });
 		}
 	      }
 #ifdef _REENTRANT
@@ -2627,10 +2845,16 @@ PIKECLASS Backend
 			" as args for call out in backend object");
     }
 
-    for (e = 0; e < me->num_fd_boxes; e++)
-      if (me->fd_boxes[e] && me->fd_boxes[e]->ref_obj)
-	debug_gc_check (me->fd_boxes[e]->ref_obj,
-			" as callback container object in backend object");
+    FOR_EACH_ACTIVE_FD_BOX (me, box, {
+	if (box->ref_obj)
+	  debug_gc_check (box->ref_obj, " as container object "
+			  "for active callback in backend object");
+      });
+    FOR_EACH_INACTIVE_FD_BOX (me, box, {
+	if (box->ref_obj)
+	  debug_gc_check (box->ref_obj, " as container object "
+			  "for inactive callback in backend object");
+      });
   }
 
   GC_RECURSE
@@ -2646,9 +2870,12 @@ PIKECLASS Backend
 	gc_recurse_array (CALL(e)->args);
     }
 
-    for (e = 0; e < me->num_fd_boxes; e++)
-      if (me->fd_boxes[e] && me->fd_boxes[e]->ref_obj)
-	gc_recurse_object (me->fd_boxes[e]->ref_obj);
+    FOR_EACH_ACTIVE_FD_BOX (me, box, {
+	gc_recurse_short_svalue ((union anything *) &box->ref_obj, T_OBJECT);
+      });
+    FOR_EACH_INACTIVE_FD_BOX (me, box, {
+	gc_recurse_short_svalue ((union anything *) &box->ref_obj, T_OBJECT);
+      });
   }
 
   INIT
@@ -2680,7 +2907,9 @@ PIKECLASS Backend
 #endif
 
       me->fd_boxes=0;
-      me->num_fd_boxes=0;
+      me->fd_boxes_start = me->fd_boxes_size = 0;
+      me->inactive_boxes = me->free_inactive_box = NULL;
+      me->inactive_boxes_size = 0;
 
 #ifdef OPEN_POLL_DEVICE
       if ((me->set = OPEN_POLL_DEVICE()) < 0) {
@@ -2706,20 +2935,21 @@ PIKECLASS Backend
       /* me->set.num_fds=0; */
 #endif /* OPEN_POLL_DEVICE || HAVE_POLL */
 
-      if(pike_make_pipe(me->wakeup_pipe) < 0)
-	Pike_error("Couldn't create backend wakeup pipe! errno=%d.\n",errno);
+      {
+	int pipe[2];
+	if(pike_make_pipe(pipe) < 0)
+	  Pike_error("Couldn't create backend wakeup pipe! errno=%d.\n",errno);
 
-      set_nonblocking(me->wakeup_pipe[0],1);
-      set_nonblocking(me->wakeup_pipe[1],1);
-      set_backend_for_fd (me->wakeup_pipe[0], me);
-      INIT_FD_CALLBACK_BOX (&me->wakeup_cb_box, me, NULL,
-			    me->wakeup_pipe[0], wakeup_callback);
-      hook_fd_callback_box (&me->wakeup_cb_box);
-      set_fd_callback_events (&me->wakeup_cb_box, PIKE_FD_READ);
+	set_nonblocking(pipe[0],1);
+	set_nonblocking(pipe[1],1);
+	INIT_FD_CALLBACK_BOX (&me->wakeup_cb_box, me, NULL,
+			      pipe[0], PIKE_BIT_FD_READ, wakeup_callback);
+	me->wakeup_pipe_send_fd = pipe[1];
 
-      /* Don't keep these on exec! */
-      set_close_on_exec(me->wakeup_pipe[0], 1);
-      set_close_on_exec(me->wakeup_pipe[1], 1);
+	/* Don't keep these on exec! */
+	set_close_on_exec(pipe[0], 1);
+	set_close_on_exec(pipe[1], 1);
+      }
 
 #ifdef DO_PIKE_CLEANUP
       num_backends++;
@@ -2735,36 +2965,52 @@ PIKECLASS Backend
 
       free_callback_list(& THIS->backend_callbacks);
 
-      fd_close(THIS->wakeup_pipe[0]);
-      fd_close(THIS->wakeup_pipe[1]);
+      fd_close(THIS->wakeup_cb_box.fd);
+      fd_close(THIS->wakeup_pipe_send_fd);
 
       if (me->fd_boxes) {
-	for (e = 0; e < me->num_fd_boxes; e++) {
-	  struct fd_callback_box *box = me->fd_boxes[e];
-	  if (box) {
-	    check_box (box, e);
+	FOR_EACH_ACTIVE_FD_BOX (me, box, {
+	    check_box (box, INT_MAX);
 	    box->backend = NULL;
-	    if (box->ref_obj)
-	      /* box might point to freed memory after this. */
-	      free_object (box->ref_obj);
+
 #ifdef PIKE_DEBUG
-	    if (fd_map[e] != me)
+	    if (get_backend_for_fd (box->fd) != me)
 	      Pike_fatal ("Inconsistency in global fd map for fd %d: "
-			  "backend is %p, expected %p.\n", e, fd_map[e], me);
+			  "backend is %p, expected %p.\n",
+			  box->fd, get_backend_for_fd (box->fd), me);
 #endif
+
 	    if (box->callback == compat_box_dispatcher) {
 #ifdef PIKE_DEBUG
 	      fprintf (stderr, "BACKEND[%d]: "
 		       "Compat callbacks left at exit for fd %d: 0x%x\n",
-		       me->id, e, box->events);
+		       me->id, box->fd, box->events);
 #endif
 	      really_free_compat_cb_box ((struct compat_cb_box *) box);
 	    }
-	  }
-	}
+
+	    if (box->ref_obj) free_object (box->ref_obj);
+	  });
+
 	free(me->fd_boxes);
 	me->fd_boxes = NULL;
-	me->num_fd_boxes = 0;
+	me->fd_boxes_start = me->fd_boxes_size = 0;
+      }
+
+      if (me->inactive_boxes) {
+	FOR_EACH_INACTIVE_FD_BOX (me, box, {
+	    check_box (box, INT_MAX);
+	    box->backend = NULL;
+#ifdef PIKE_DEBUG
+	    if (box->callback == compat_box_dispatcher)
+	      Pike_fatal ("Got inactive callback in compat interface.\n");
+#endif
+	    if (box->ref_obj) free_object (box->ref_obj);
+	  });
+
+	free(me->inactive_boxes);
+	me->inactive_boxes = me->free_inactive_box = NULL;
+	me->inactive_boxes_size = 0;
       }
 
       /* Make sure we aren't referenced any more. */
@@ -2911,52 +3157,19 @@ PMOD_EXPORT void set_backend_for_fd (int fd, struct Backend_struct *new)
   if (!old)
     low_set_backend_for_fd (fd, new);
   else if (old != new) {
-    struct fd_callback_box *box = GET_BOX (old, fd);
-    int events;
-    struct object *ref_obj;
+    struct fd_callback_box *box = SAFE_GET_ACTIVE_BOX (old, fd);
     if (box) {
-      check_box (box, fd);
-      events = box->events;
-      ref_obj = box->ref_obj;
-      box->ref_obj = NULL;
-      unhook_fd_callback_box (box);
-    }
-    else events = 0, ref_obj = NULL;
-
-    if (new) {
-      if (box) {
-	box->backend = new;
-	hook_fd_callback_box (box);
-	box->ref_obj = ref_obj;
-	set_fd_callback_events (box, events);
+      if (new)
+	change_backend_for_box (box, new);
+      else {
+	int is_compat_box = box->callback == compat_box_dispatcher;
+	unhook_fd_callback_box (box);
+	if (is_compat_box)
+	  really_free_compat_cb_box ((struct compat_cb_box *) box);
       }
-    } else {
-      if (ref_obj) free_object (ref_obj);
-      if (box && box->callback == compat_box_dispatcher)
-	really_free_compat_cb_box ((struct compat_cb_box *) box);
     }
-
     low_set_backend_for_fd (fd, new);
   }
-}
-
-PMOD_EXPORT void change_backend_for_fd (struct fd_callback_box *box,
-					struct Backend_struct *new)
-{
-  struct Backend_struct *old = box->backend;
-  int events;
-  struct object *ref_obj;
-  check_box (box, -1);
-
-  events = box->events;
-  ref_obj = box->ref_obj;
-  box->ref_obj = NULL;
-  unhook_fd_callback_box (box);
-
-  box->backend = new;
-  hook_fd_callback_box (box);
-  box->ref_obj = ref_obj;
-  set_fd_callback_events (box, events);
 }
 
 /* Compat stuff for old backend interface. */
@@ -3013,11 +3226,11 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
   }
 }
 
-#define WRAP(CB, EVENT_TYPE)						\
+#define WRAP(CB, EVENT_BIT)						\
   void PIKE_CONCAT3(set_, CB, _callback) (int fd, file_callback cb, void *data)	\
   {									\
     struct Backend_struct *b = really_get_backend_for_fd (fd);		\
-    struct fd_callback_box *box = GET_BOX (b, fd);			\
+    struct fd_callback_box *box = SAFE_GET_ACTIVE_BOX (b, fd);		\
     struct compat_cb_box *cbox;						\
 									\
     IF_PD (fprintf (stderr, "BACKEND[%d]: set_" #CB "_callback (%d, %p, %p)\n",	\
@@ -3035,17 +3248,17 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
     else {								\
       if (!cb) return;							\
       cbox = alloc_compat_cb_box();					\
-      INIT_FD_CALLBACK_BOX (&cbox->box, b, NULL, fd, compat_box_dispatcher); \
-      hook_fd_callback_box (&cbox->box);				\
+      INIT_FD_CALLBACK_BOX (&cbox->box, b, NULL,			\
+			    fd, 0, compat_box_dispatcher);		\
     }									\
 									\
     cbox->CB = cb;							\
     cbox->PIKE_CONCAT (CB, _data) = data;				\
 									\
     if (cb)								\
-      set_fd_callback_events (&cbox->box, cbox->box.events | EVENT_TYPE); \
+      set_fd_callback_events (&cbox->box, cbox->box.events | EVENT_BIT); \
     else {								\
-      set_fd_callback_events (&cbox->box, cbox->box.events & ~EVENT_TYPE); \
+      set_fd_callback_events (&cbox->box, cbox->box.events & ~EVENT_BIT); \
       if (!cbox->box.events) {						\
 	unhook_fd_callback_box (&cbox->box);				\
 	really_free_compat_cb_box (cbox);				\
@@ -3060,7 +3273,7 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
     struct compat_cb_box *cbox;						\
 									\
     if (!b) return NULL;						\
-    if (!(box = GET_BOX (b, fd))) return NULL;				\
+    if (!(box = SAFE_GET_ACTIVE_BOX (b, fd))) return NULL;		\
     check_box (box, fd);						\
     DO_IF_DEBUG (							\
       if (box->callback != compat_box_dispatcher)			\
@@ -3069,7 +3282,7 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
     );									\
 									\
     cbox = (struct compat_cb_box *) box;				\
-    if (!(cbox->box.events & EVENT_TYPE)) return NULL;			\
+    if (!(cbox->box.events & EVENT_BIT)) return NULL;			\
     return cbox->CB;							\
   }									\
   									\
@@ -3080,7 +3293,7 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
     struct compat_cb_box *cbox;						\
 									\
     if (!b) return NULL;						\
-    if (!(box = GET_BOX (b, fd))) return NULL;				\
+    if (!(box = SAFE_GET_ACTIVE_BOX (b, fd))) return NULL;		\
     check_box (box, fd);						\
     DO_IF_DEBUG (							\
       if (box->callback != compat_box_dispatcher)			\
@@ -3089,14 +3302,14 @@ static int compat_box_dispatcher (struct fd_callback_box *box, int event)
     );									\
 									\
     cbox = (struct compat_cb_box *) box;				\
-    if (!(cbox->box.events & EVENT_TYPE)) return NULL;			\
+    if (!(cbox->box.events & EVENT_BIT)) return NULL;			\
     return cbox->PIKE_CONCAT (CB, _data);				\
   }
 
-WRAP(read, PIKE_FD_READ);
-WRAP(write, PIKE_FD_WRITE);
-WRAP(read_oob, PIKE_FD_READ_OOB);
-WRAP(write_oob, PIKE_FD_WRITE_OOB);
+WRAP(read, PIKE_BIT_FD_READ);
+WRAP(write, PIKE_BIT_FD_WRITE);
+WRAP(read_oob, PIKE_BIT_FD_READ_OOB);
+WRAP(write_oob, PIKE_BIT_FD_WRITE_OOB);
 
 PMOD_EXPORT struct callback *debug_add_backend_callback(callback_func call,
 							void *arg,
@@ -3155,6 +3368,14 @@ void do_debug(void)
 
   current_do_debug_cycle=0;
 }
+
+PMOD_EXPORT void debug_check_fd_not_in_use (int fd)
+{
+  if (fd < 0) Pike_fatal ("Invalid fd: %d\n", fd);
+  if (fd < fd_map_size && fd_map[fd])
+    Pike_fatal ("fd already in use by backend %d.\n", fd_map[fd]->id);
+}
+
 #endif /* PIKE_DEBUG */
 
 

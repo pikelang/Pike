@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.h,v 1.21 2004/04/03 23:50:58 mast Exp $
+|| $Id: backend.h,v 1.22 2004/04/04 19:00:57 mast Exp $
 */
 
 #ifndef BACKEND_H
@@ -17,11 +17,12 @@ struct selectors;
 
 PMOD_EXPORT extern struct timeval current_time;
 PMOD_EXPORT extern struct timeval next_timeout;
-extern struct Backend_struct *default_backend;
+PMOD_EXPORT extern struct Backend_struct *default_backend;
 extern struct callback_list do_debug_callbacks;
 PMOD_EXPORT extern int fds_size;
 PMOD_EXPORT extern struct program *Backend_program;
 
+PMOD_EXPORT void debug_check_fd_not_in_use (int fd);
 struct Backend_struct *get_backend_for_fd(int fd);
 PMOD_EXPORT struct object *get_backend_obj_for_fd (int fd);
 PMOD_EXPORT void set_backend_for_fd (int fd, struct Backend_struct *new);
@@ -50,38 +51,51 @@ struct fd_callback_box
 {
   struct Backend_struct *backend; /* Not refcounted. Cleared when the backend
 				   * is destructed. */
-  struct object *ref_obj;	/* If set, it's the object containing the box
-				 * and it then acts as the ref from the
-				 * backend to the object. */
-  int fd;			/* May not change after hook-in. */
-  int events;			/* Wanted events. Always use
+  struct object *ref_obj;	/* If set, it's the object containing the box.
+				 * It then acts as the ref from the backend to
+				 * the object and is refcounted by the backend
+				 * whenever any event is wanted. */
+  int fd;			/* Use change_fd_for_box to change this. May
+				 * be negative, in which case only the ref
+				 * magic on backend and ref_obj is done. The
+				 * backend might change a negative value. */
+  int events;			/* Bitfield with wanted events. Always use
 				 * set_fd_callback_events to change this. It's
 				 * ok to have hooked boxes where no events are
 				 * wanted. */
-  fd_box_callback callback;	/* Function to call. Assumed to be set if any
-				 * event is registered. */
+  fd_box_callback callback;	/* Function to call. Assumed to be valid if
+				 * any event is wanted. */
 };
 
-#define INIT_FD_CALLBACK_BOX(BOX, BACKEND, REF_OBJ, FD, CALLBACK) do {	\
+#define INIT_FD_CALLBACK_BOX(BOX, BACKEND, REF_OBJ, FD, EVENTS, CALLBACK) do { \
     struct fd_callback_box *box__ = (BOX);				\
     box__->backend = (BACKEND);						\
     box__->ref_obj = (REF_OBJ);						\
     box__->fd = (FD);							\
-    box__->events = 0;							\
+    box__->events = (EVENTS);						\
     box__->callback = (CALLBACK);					\
+    hook_fd_callback_box (box__);					\
   } while (0)
 
-/* Flags for the events field. */
-#define PIKE_FD_READ		0x0001
-#define PIKE_FD_WRITE		0x0002
-#define PIKE_FD_READ_OOB	0x0004
-#define PIKE_FD_WRITE_OOB	0x0008
+/* The event types. */
+#define PIKE_FD_READ		0
+#define PIKE_FD_WRITE		1
+#define PIKE_FD_READ_OOB	2
+#define PIKE_FD_WRITE_OOB	3
+#define PIKE_FD_NUM_EVENTS	4
+
+/* Flags for event bitfields. */
+#define PIKE_BIT_FD_READ	(1 << PIKE_FD_READ)
+#define PIKE_BIT_FD_WRITE	(1 << PIKE_FD_WRITE)
+#define PIKE_BIT_FD_READ_OOB	(1 << PIKE_FD_READ_OOB)
+#define PIKE_BIT_FD_WRITE_OOB	(1 << PIKE_FD_WRITE_OOB)
 
 PMOD_EXPORT void hook_fd_callback_box (struct fd_callback_box *box);
 PMOD_EXPORT void unhook_fd_callback_box (struct fd_callback_box *box);
 PMOD_EXPORT void set_fd_callback_events (struct fd_callback_box *box, int events);
-PMOD_EXPORT void change_backend_for_fd (struct fd_callback_box *box,
-					struct Backend_struct *new);
+PMOD_EXPORT void change_backend_for_box (struct fd_callback_box *box,
+					 struct Backend_struct *new);
+PMOD_EXPORT void change_fd_for_box (struct fd_callback_box *box, int new_fd);
 
 /* Old style callback interface. This only accesses the default backend. It
  * can't be mixed with the new style interface above for the same fd. */
