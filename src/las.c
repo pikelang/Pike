@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.108 1999/11/17 02:50:34 grubba Exp $");
+RCSID("$Id: las.c,v 1.109 1999/11/17 03:20:26 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -46,7 +46,7 @@ extern char *get_type_name(int);
 
 #define MAX_GLOBAL 2048
 
-int car_is_node(const node *n)
+int car_is_node(node *n)
 {
   switch(n->token)
   {
@@ -62,7 +62,7 @@ int car_is_node(const node *n)
   }
 }
 
-int cdr_is_node(const node *n)
+int cdr_is_node(node *n)
 {
   switch(n->token)
   {
@@ -2177,7 +2177,22 @@ static void find_usage(const node *n, unsigned char *usage,
   case F_ASSIGN:
     if ((CDR(n)->token == F_LOCAL) && (!CDR(n)->u.integer.b)) {
       usage[CDR(n)->u.integer.a] = 0;
+    } else if (CDR(n)->token == F_ARRAY_LVALUE) {
+      find_usage(CDR(n), usage, switch_u, cont_u, break_u);
     }
+    find_usage(CAR(n), usage, switch_u, cont_u, break_u);
+    return;
+
+  case F_LVALUE_LIST:
+    find_usage(CDR(n), usage, switch_u, cont_u, break_u);
+    if (CAR(n)) {
+      if ((CAR(n)->token == F_LOCAL) && (!CAR(n)->u.integer.b)) {
+	usage[CAR(n)->u.integer.a] = 0;
+      }
+    }
+    return;
+
+  case F_ARRAY_LVALUE:
     find_usage(CAR(n), usage, switch_u, cont_u, break_u);
     return;
 
@@ -2285,6 +2300,7 @@ static void find_usage(const node *n, unsigned char *usage,
       unsigned char break_usage[MAX_LOCAL];
       unsigned char continue_usage[MAX_LOCAL];
       node *car1, cadr, cddr;
+      int i;
 
       MEMCPY(break_usage, usage, MAX_LOCAL);
 
@@ -2298,6 +2314,10 @@ static void find_usage(const node *n, unsigned char *usage,
       MEMCPY(continue_usage, usage, MAX_LOCAL);
 
       find_usage(CADR(n), usage, switch_u, continue_usage, break_usage);
+
+      for (i = 0; i < MAX_LOCAL; i++) {
+	usage[i] |= break_usage[i];
+      }
 
       find_usage(CAR(n), usage, switch_u, cont_u, break_u);
       return;
@@ -2360,10 +2380,37 @@ static node *low_localopt(node *n,
 	return low_localopt(CAR(n), usage, switch_u, cont_u, break_u);
       }
       usage[CDR(n)->u.integer.a] = 0;
+      cdr = CDR(n);
+      ADD_NODE_REF(cdr);
+    } else if (CDR(n)->token == F_ARRAY_LVALUE) {
+      cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u);
+    } else {
+      cdr = CDR(n);
+      ADD_NODE_REF(cdr);
     }
-    ADD_NODE_REF(CDR(n));
     return mknode(F_ASSIGN, low_localopt(CAR(n), usage, switch_u, cont_u,
-					 break_u), CDR(n));
+					 break_u), cdr);
+
+  case F_LVALUE_LIST:
+    cdr = low_localopt(CDR(n), usage, switch_u, cont_u, break_u);
+    if (CAR(n)) {
+      if ((CAR(n)->token == F_LOCAL) && (!CAR(n)->u.integer.b)) {
+	/* Array assignment of local variable. */
+	if (!(usage[CDR(n)->u.integer.a] & 1)) {
+	  /* Variable isn't used. */
+	  /* FIXME: Warn? */
+	}
+	usage[CAR(n)->u.integer.a] = 0;
+      }
+      ADD_NODE_REF(CAR(n));
+    }
+    return mknode(F_LVALUE_LIST, CAR(n), cdr);
+
+  case F_ARRAY_LVALUE:
+    return mknode(F_ARRAY_LVALUE, low_localopt(CAR(n), usage, switch_u, cont_u,
+					       break_u), 0);
+
+    
 
   case F_CAST:
     return mkcastnode(n->type, low_localopt(CAR(n), usage, switch_u, cont_u,
@@ -2481,6 +2528,7 @@ static node *low_localopt(node *n,
       unsigned char break_usage[MAX_LOCAL];
       unsigned char continue_usage[MAX_LOCAL];
       node *car1, *cadr, *cddr;
+      int i;
 
       MEMCPY(break_usage, usage, MAX_LOCAL);
 
@@ -2499,6 +2547,10 @@ static node *low_localopt(node *n,
       cadr = low_localopt(CADR(n), usage, switch_u, continue_usage,
 			  break_usage);
       cdr = mknode(':', cadr, cddr);
+
+      for (i = 0; i < MAX_LOCAL; i++) {
+	usage[i] |= break_usage[i];
+      }
 
       /* We need to update the usage set */
       find_usage(car, usage, switch_u, cont_u, break_u);
