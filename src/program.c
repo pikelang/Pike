@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.525 2003/09/10 15:21:58 mast Exp $
+|| $Id: program.c,v 1.526 2003/09/29 19:35:48 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.525 2003/09/10 15:21:58 mast Exp $");
+RCSID("$Id: program.c,v 1.526 2003/09/29 19:35:48 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -6576,8 +6576,7 @@ static void gc_check_frame(struct pike_frame *f)
       debug_gc_check (f->context.prog, " as context.prog in trampoline frame");
     if(f->context.parent)
       debug_gc_check (f->context.parent, " as context.parent in trampoline frame");
-    if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
-      debug_gc_check_svalues (f->locals, f->num_locals, " in locals of trampoline frame");
+    debug_gc_check_svalues (f->locals, f->num_locals, " in locals of trampoline frame");
     if(f->scope && !debug_gc_check (f->scope, " as scope frame of trampoline frame"))
       gc_check_frame(f->scope);
   }
