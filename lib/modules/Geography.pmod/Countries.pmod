@@ -416,7 +416,6 @@ class Country
 //!         Nato field
 //!	@enddl
 //!
-<<<<<<< Countries.pmod
 //!	And that US has five domains, Great Britain and france two:
 //!	<dl compact>
 //!	<dt>EDU   <dd>US Educational
@@ -433,30 +432,6 @@ class Country
 //!	<dt>ORG   <dd>Organization
 //!	<dt>COM   <dd>Commercial
 //!	</dl>
-
-=======
-//!	And that USA has six domains, Great Britain and france two:
-//!	@dl
-//!	  @item COM
-//!         US Commercial
-//!	  @item EDU
-//!         US Educational
-//!	  @item MIL
-//!         US Military
-//!	  @item GOV
-//!         US Government
-//!	  @item UM
-//!         US Minor Outlying Islands
-//!	  @item GB
-//!         Great Britain (UK)
-//!	  @item UK
-//!         United Kingdom
-//!	  @item FR
-//!         France
-//!	  @item FX
-//!	    France, Metropolitan
-//!	@enddl
->>>>>>> 1.12
 
 static private mapping _from_domain=0;
 
