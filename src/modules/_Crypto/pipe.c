@@ -1,5 +1,5 @@
 /*
- * $Id: pipe.c,v 1.7 1997/03/17 03:11:16 hubbe Exp $
+ * $Id: pipe.c,v 1.8 1997/05/16 18:22:04 grubba Exp $
  *
  * PIPE crypto module for Pike.
  *
@@ -82,9 +82,9 @@ static void f_create(INT32 args)
   for (i=-args; i; i++) {
     if (sp[i].type == T_OBJECT) {
       THIS->objects[args + i] = sp[i].u.object;
-      THIS->objects[i]->refs++;
+      THIS->objects[args + i]->refs++;
     } else if (sp[i].type == T_PROGRAM) {
-      THIS->objects[i] = clone_object(sp[i].u.program, 0);
+      THIS->objects[args + i] = clone_object(sp[i].u.program, 0);
     } else if (sp[i].type == T_ARRAY) {
       struct program *prog;
       INT32 n_args;
@@ -100,11 +100,11 @@ static void f_create(INT32 args)
       n_args = sp[i].u.array->size - 1;
 
       push_array_items(sp[i].u.array);	/* Pushes one arg too many */
-      THIS->objects[i] = clone_object(prog, n_args);
+      THIS->objects[args + i] = clone_object(prog, n_args);
 
       pop_stack();	/* Pop the program */
 
-      assert_is_crypto_module(THIS->objects[i]);
+      assert_is_crypto_module(THIS->objects[args + i]);
     } else {
       error("Bad argument %d to pipe->create()\n", i + args);
     }
@@ -116,11 +116,15 @@ static void f_create(INT32 args)
     int sub_size;
     int factor = 1;
 
-    safe_apply(THIS->objects[i], "block_size", 0);
+    safe_apply(THIS->objects[i], "query_block_size", 0);
     if (sp[-1].type != T_INT) {
-      error("pipe->create(): block_size() returned other than int\n");
+      error("_Crypto.pipe->create(): query_block_size() returned other than int\n"
+	    "for object #%d\n", i+1);
     }
-    sub_size = sp[-1].u.integer;
+    if (!(sub_size = sp[-1].u.integer)) {
+      error("_Crypto.pipe->create(): query_block_size() returned zero\n"
+	    "for object #%d\n", i+1);
+    }
     pop_stack();
 
     for (j=2; j <= sub_size;) {
