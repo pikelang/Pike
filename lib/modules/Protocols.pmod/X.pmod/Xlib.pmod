@@ -441,14 +441,36 @@ class Display
 		    ...;
 		  case "UnmapNotify":
 		    ...;
+#endif
 		  case "MapNotify":
-		    ...;
+		    {
+		      int window;
+		      sscanf(msg, "%*4c%4c%4c%c",
+			     event->wid, window, event->override);
+		      event->event = lookup_id(event->wid);
+		      event->window = lookup_id(window) || window;
+		      break;
+		    }
+#if 0
 		  case "MapRequest":
 		    ...;
 		  case "ReparentNotify":
 		    ...;
+#endif
 		  case "ConfigureNotify":
-		    ...;
+		    {
+		      int window, aboveSibling;
+		      sscanf(msg, "%*4c%4c%4c%4c" "%2c%2c" "%2c%2c%2c" "%c",
+			     event->wid, window, aboveSibling,
+			     event->x, event->y,
+			     event->width, event->height, event->borderWidth,
+			     event->override);
+		      event->window = lookup_id(window) || window;
+		      event->aboveSibling = lookup_id(aboveSibling)
+			|| aboveSibling;
+		      break;
+		    }
+#if 0
 		  case "ConfigureRequest":
 		    ...;
 		  case "GravityNotify":

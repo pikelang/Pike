@@ -19,7 +19,7 @@ class request
       {
 	if (!zero_type(m[f]))
 	  {
-	    v += ({ m[f] });
+	    v += ({ objectp(m[f]) ? m[f]->id : m[f] });
 	    mask |= bit;
 	    werror(sprintf("Request->build_value_list: field %s, mask = %x\n",
 			   f, mask));
@@ -112,18 +112,53 @@ class CreateGC
   inherit request;
   constant type = 55;
 
-  int gid;
+  int gc;
   int drawable;
   mapping attributes = ([ ]);
 
   string to_string()
   {
-    return build_request(sprintf("%4c%4c%s", gid, drawable,
+    return build_request(sprintf("%4c%4c%s", gc, drawable,
 				 build_value_list(attributes,
 						  _Xlib.gc_attributes)));
   }
 }
 
+class ChangeGC
+{
+  inherit request;
+  constant type = 56;
+
+  int gc;
+  mapping attributes;
+
+  string to_string()
+  {
+    return build_request(sprintf("%4c%s", gc, 
+				 build_value_list(attributes,
+						  _Xlib.gc_attributes)));
+  }
+}
+
+class FillPoly
+{
+  inherit request;
+  constant type = 69;
+
+  int drawable;
+  int gc;
+  int shape;
+  int coordMode;
+
+  array points;
+
+  string to_string()
+  {
+    return build_request(sprintf("%4c%4c%c%c%2c%@s",
+				 drawable, gc, shape, coordMode, 0,
+				 points->to_string()));
+  }
+}
 
 class PolyFillRectangle
 {
@@ -131,13 +166,13 @@ class PolyFillRectangle
   constant type = 70;
 
   int drawable;
-  int gid;
+  int gc;
 
   array rectangles;
 
   string to_string()
   {
-    return build_request(sprintf("%4c%4c%@s", drawable, gid,
+    return build_request(sprintf("%4c%4c%@s", drawable, gc,
 				 rectangles->to_string()));
   }
 }

@@ -33,6 +33,20 @@ class Visual
 class GC
 {
   inherit XResource;
+
+  object ChangeGC_req(mapping attributes)
+  {
+    object req = Requests.ChangeGC();
+    req->gc = id;
+    req->attributes = attributes;
+    return req;
+  }
+
+  void ChangeGC(mapping attributes)
+  {
+    object req = ChangeGC_req(attributes);
+    display->send_request(req);
+  }
 }
 
 class Rectangle
@@ -64,6 +78,32 @@ class Rectangle
   }
 }
 
+class Point
+{
+  int x, y;
+
+  void create(int ... args)
+  {
+    switch(sizeof(args))
+      {
+      case 0:
+	x = y = 0;
+	break;
+      case 2:
+	x = args[0];
+	y = args[1];
+	break;
+      default:
+	error("Types.Point(): To many arguments.\n");
+      }
+  }
+
+  string to_string()
+  {
+    return sprintf("%2c%2c", x, y);
+  }
+}
+
 class Drawable
 {
   inherit XResource;
@@ -73,7 +113,7 @@ class Drawable
     object req = Requests.CreateGC();
 
     req->drawable = id;
-    req->gid = display->alloc_id();
+    req->gc = display->alloc_id();
 
     return req;
   }
@@ -85,14 +125,31 @@ class Drawable
       req->attributes = attributes;
     display->send_request(req);
 
-    return GC(display, req->gid);
+    return GC(display, req->gc);
   }
 
+  object FillPoly_req(int gc, int shape, int coordMode, array(object) p)
+  {
+    object req = Requests.FillPoly();
+    req->drawable = id;
+    req->gc = gc;
+    req->shape = shape;
+    req->coordMode = coordMode;
+    req->points = p;
+    return req;
+  }
+
+  void FillPoly(object gc, int shape, int coordMode, array(object) points)
+  {
+    object req = FillPoly_req(gc->id, shape, coordMode, points);
+    display->send_request(req);
+  }
+  
   object FillRectangles_req(int gc, array(object) r)
   {
     object req = Requests.PolyFillRectangle();
     req->drawable = id;
-    req->gid = gc;
+    req->gc = gc;
     req->rectangles = r;
     return req;
   }
@@ -112,8 +169,8 @@ class Window
 
   mapping(string:function) event_callbacks = ([ ]);
   
-  object CreateSimpleWindow_req(int x, int y, int width, int height,
-			 int border_width, int border, int background)
+  object CreateWindow_req(int x, int y, int width, int height,
+			  int border_width)
   {
     object req = Requests.CreateWindow();
     req->depth = 0;  /* CopyFromParent */
@@ -126,8 +183,6 @@ class Window
     req->borderWidth = border_width;
     req->c_class = 0 ;  /* CopyFromParent */
     req->visual = 0;    /* CopyFromParent */
-    req->attributes->BackPixel = background;
-    req->attributes->BorderPixel = border;
     return req;
   }
 
@@ -135,10 +190,34 @@ class Window
   {
     return object_program(this_object())(@args);
   }
-  
-  object CreateSimpleWindow(int ... args)
+
+  /* FIXME: Supports only visual CopyFromParent */
+  object CreateWindow(int x, int y, int width, int height,
+		      int border_width, mapping attributes)
   {
-    object req = CreateSimpleWindow_req(@args);
+    object req = CreateWindow_req(x, y, width, height,
+				  border_width);
+    if (attributes)
+      req->attributes = attributes;
+    display->send_request(req);
+    
+    // object w = Window(display, req->wid);
+    object w = new(display, req->wid);
+    
+    w->visual = visual;
+    w->currentInputMask = req->attributes->EventMask;
+    return w;
+  }
+    
+  object CreateSimpleWindow(int x, int y, int width, int height,
+			    int border_width,
+			    int border, int background)
+  {
+    object req = CreateWindow_req(x, y, width, height,
+				  border_width);
+    req->attributes->BackPixel = background;
+    req->attributes->BorderPixel = border;
+
     display->send_request(req);
     
     // object w = Window(display, req->wid);
