@@ -762,6 +762,14 @@ static void copy_selectors(struct active_selectors *to,
 #  define MY_FD_CLR_WRBAND(SET, FD)
 #endif
 
+#ifndef MY_POLLERR
+#define MY_POLLERR	POLLERR
+#endif
+
+#ifndef MY_POLLHUP
+#define MY_POLLHUP	POLLHUP
+#endif
+
 /*! @module Pike
  */
 
@@ -2526,12 +2534,12 @@ PIKECLASS Backend
 	  }
 #endif /* MY_POLLNVAL */
 
-	  if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], POLLHUP|POLLERR))
+	  if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP|MY_POLLERR))
 	  {
 	    /* Closed or error */
 	    int old_events;
 	    errno = 0;
-	    if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], POLLERR)) {
+	    if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLERR)) {
 	      int err;
 	      ACCEPT_SIZE_T len = sizeof (err);
 	      if (!getsockopt (fd, SOL_SOCKET, SO_ERROR, &err, &len)) {
