@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.13 2004/01/12 21:45:39 marcus Exp $
+// $Id: __default.pmod,v 1.14 2004/06/13 11:27:26 grubba Exp $
 
 #pike 7.5
 
@@ -140,6 +140,11 @@ mapping(string:mixed) all_constants()
 #endif
 #if constant(System.getgrent)
   ret->setgrent = System.getgrent;
+#endif
+#if constant(__builtin.security)
+  ret->call_with_creds = Pike.Security.call_with_creds;
+  ret->get_current_creds = Pike.Security.get_current_creds;
+  ret->get_object_creds = Pike.Security.get_object_creds;
 #endif
 #ifdef __NT__
   ret->explode_path=lambda(string x) { return replace(x,"\\","/")/"/"; };
