@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.4 1998/09/20 08:33:00 hubbe Exp $
+# $Id: configure.in,v 1.5 1999/05/28 13:41:08 mirar Exp $
 #
 AC_INIT(image_jpeg.c)
 AC_CONFIG_HEADER(config.h)
@@ -10,11 +10,10 @@ AC_MODULE_INIT()
 if test x$with_jpeglib = xyes ; then
   AC_CHECK_HEADERS(jpeglib.h)
   if test $ac_cv_header_jpeglib_h = yes ; then
-    AC_CHECK_LIB(jpeg, jpeg_destroy, [
+    AC_CHECK_LIB(jpeg, jpeg_create_compress, [
       AC_DEFINE(HAVE_LIBJPEG) 
       LIBS="${LIBS-} -ljpeg"
-      ], 
-      AC_CHECK_LIB(jpeg, jpeg_destroy))
+      ])
   fi
 fi
 
