@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.273 1999/12/02 01:06:03 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.274 2000/07/09 12:00:48 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -955,6 +955,11 @@ int main(int argc, char **argv)
 
     xAIX*)
       LIBS="${OLDLIBS} -lpthreads -lc_r"
+    ;;
+
+    xSolaris*)
+      # Some versions of Solaris 2.5.1 require linking with -lthread too.
+      LIBS="${OLDLIBS} -lpthread -lthread"
     ;;
 
     *)
