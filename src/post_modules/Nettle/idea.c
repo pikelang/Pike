@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: idea.c,v 1.3 2003/11/27 13:43:52 grubba Exp $
+|| $Id: idea.c,v 1.4 2003/12/06 16:17:34 nilsson Exp $
 */
 
 /* The basic IDEA transformation
@@ -171,7 +171,7 @@ idea_invert(unsigned INT16 *d,
   *--p = t2;
   *--p = t1;
   /* Copy and destroy temp copy */
-  memcpy(d, temp, sizeof(temp));
+  MEMCPY(d, temp, sizeof(temp));
   memset(temp, 0, sizeof(temp));
 } /* idea_invert */
 
