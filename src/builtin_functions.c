@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.138 1998/11/13 01:28:41 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.139 1998/11/17 06:39:50 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2169,6 +2169,176 @@ void f_glob(INT32 args)
   }
 }
 
+/* comb_merge */
+
+/* mixed interleave_array(array(mapping(int:mixed)) tab) */
+static void f_interleave_array(INT32 args)
+{
+  struct array *arr = NULL;
+  struct array *min = NULL;
+  struct array *order = NULL;
+  int max = 0;
+  int ok;
+  int nelems = 0;
+  int i;
+
+  get_all_args("interleave_array", args, "%a", &arr);
+
+  /* We're not interrested in any other arguments. */
+  pop_n_elems(args-1);
+
+  if ((ok = arr->type_field & BIT_MAPPING) &&
+      (arr->type_field & ~BIT_MAPPING)) {
+    /* Might be ok, but do some more checking... */
+    for(i = 0; i < arr->size; i++) {
+      if (ITEM(arr)[i].type != T_MAPPING) {
+	ok = 0;
+	break;
+      }
+    }
+  }
+  if (!ok) {
+    error("interleave_array(): Expected array(mapping(int:mixed))\n");
+  }
+
+  /* The order array */
+  ref_push_array(arr);
+  f_indices(1);
+  order = sp[-1].u.array;
+
+  /* The min array */
+  push_array(min = allocate_array(arr->size));
+
+  /* Initialize the min array */
+  for (i = 0; i < arr->size; i++) {
+    struct mapping *m;
+    /* e and k are used by MAPPING_LOOP() */
+    INT32 e;
+    struct keypair *k;
+    INT_TYPE low = 0x7fffffff;
+#ifdef DEBUG
+    if (ITEM(arr)[i].type != T_MAPPING) {
+      error("interleave_array(): Element %d is not a mapping!\n", i);
+    }
+#endif /* DEBUG */
+    m = ITEM(arr)[i].u.mapping;
+    MAPPING_LOOP(m) {
+      if (k->ind.type != T_INT) {
+	error("interleave_array(): Index not an integer in mapping %d!\n", i);
+      }
+      if (low > k->ind.u.integer) {
+	low = k->ind.u.integer;
+	if (low < 0) {
+	  error("interleave_array(): Index %d in mapping %d is negative!\n",
+		low, i);
+	}
+      }
+      if (max < k->ind.u.integer) {
+	max = k->ind.u.integer;
+      }
+      nelems++;
+    }
+    /* FIXME: Is this needed? Isn't T_INT default? */
+    ITEM(min)[i].u.integer = low;
+  }
+
+  ref_push_array(order);
+  f_sort(2);	/* Sort the order array on the minimum index */
+
+  /* State on stack now:
+   *
+   * array(mapping(int:mixed))	arr
+   * array(int)			order
+   * array(int)			min (now sorted)
+   */
+
+  /* Now we can start with the real work... */
+  {
+    char *tab;
+    int size;
+    int minfree = 0;
+
+    /* Initialize the lookup table */
+    max += 1;
+    max *= 2;
+    /* max will be the padding at the end. */
+    size = (nelems + max) * 8;	/* Initial size */
+    if (!(tab = malloc(size + max))) {
+      error("interleave_array(): Out of memory!\n");
+    }
+    MEMSET(tab, 0, size + max);
+
+    for (i = 0; i < order->size; i++) {
+      int low = ITEM(min)[i].u.integer;
+      int j = ITEM(order)[i].u.integer;
+      int offset = 0;
+      struct mapping *m;
+      INT32 e;
+      struct keypair *k;
+
+      if (!(m = ITEM(arr)[j].u.mapping)->size) {
+	/* Not available */
+	ITEM(min)[i].u.integer = -1;
+	continue;
+      }
+
+      if (low < minfree) {
+	offset = minfree - low;
+      } else {
+	minfree = offset;
+      }
+
+      ok = 0;
+      while (!ok) {
+	ok = 1;
+	MAPPING_LOOP(m) {
+	  int ind = k->ind.u.integer;
+	  if (tab[offset + ind]) {
+	    ok = 0;
+	    while (tab[++offset + ind])
+	      ;
+	  }
+	}
+      }
+      MAPPING_LOOP(m) {
+	tab[offset + k->ind.u.integer] = 1;
+      }
+      while(tab[minfree]) {
+	minfree++;
+      }
+      ITEM(min)[i].u.integer = offset;
+
+      /* Check need for realloc */
+      if (offset >= size) {
+	char *newtab = realloc(tab, size*2 + max);
+	if (!newtab) {
+	  free(tab);
+	  error("interleave_array(): Couldn't extend table!\n");
+	}
+	tab = newtab;
+	MEMSET(tab + size + max, 0, size);
+	size = size * 2;
+      }
+    }
+    free(tab);
+  }
+
+  /* We want these two to survive the stackpopping. */
+  add_ref(min);
+  add_ref(order);
+
+  pop_n_elems(3);
+
+  /* Return value */
+  ref_push_array(min);
+
+  /* Restore the order */
+  push_array(order);
+  push_array(min);
+  f_sort(2);
+  pop_stack();
+}
+
 /* longest_ordered_sequence */
 
 static int find_gt(struct array *a, int i, int *stack, int top)
@@ -3573,6 +3743,7 @@ void init_builtin_efuns(void)
   add_efun("decode_value", f_decode_value, "function(string,void|object:mixed)", OPT_TRY_OPTIMIZE);
   add_efun("object_variablep", f_object_variablep, "function(object,string:int)", OPT_EXTERNAL_DEPEND);
 
+  add_function("interleave_array",f_interleave_array,"function(array(mapping(int:mixed)):array(int))",OPT_TRY_OPTIMIZE);
   add_function("diff",f_diff,"function(array,array:array(array))",OPT_TRY_OPTIMIZE);
   add_function("diff_longest_sequence",f_diff_longest_sequence,"function(array,array:array(int))",OPT_TRY_OPTIMIZE);
   add_function("diff_dyn_longest_sequence",f_diff_dyn_longest_sequence,"function(array,array:array(int))",OPT_TRY_OPTIMIZE);

@@ -4,6 +4,7 @@ constant diff = __builtin.diff;
 constant diff_longest_sequence = __builtin.diff_longest_sequence;
 constant diff_compare_table = __builtin.diff_compare_table;
 constant longest_ordered_sequence = __builtin.longest_ordered_sequence;
+constant interleave_array = __builtin.interleave_array;
 
 constant sort = __builtin.sort;
 constant everynth = __builtin.everynth;
