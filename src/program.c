@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.311 2001/04/09 10:01:49 hubbe Exp $");
+RCSID("$Id: program.c,v 1.312 2001/04/10 23:06:10 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -660,7 +660,10 @@ void PIKE_CONCAT(add_to_,NAME) (TYPE ARG) {				\
 void ins_int(INT32 i, void (*func)(char tmp))
 {
   int e;
-  for(e=0;e<(long)sizeof(i);e++) func(EXTRACT_UCHAR(((char *)&i)+e));
+  unsigned char *p = (unsigned char *)&i;
+  for(e=0;e<(long)sizeof(i);e++) {
+    func(p[e]);
+  }
 }
 
 void ins_short(INT16 i, void (*func)(char tmp))
