@@ -413,6 +413,8 @@ void response_and_finish(mapping m, function|void _log_cb)
    {
       sent = my_fd->write(send_buf);
       send_buf="";
+      raw="";
+      finish(1);
       return;
    }
 
