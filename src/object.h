@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.38 2000/03/26 14:16:42 grubba Exp $
+ * $Id: object.h,v 1.39 2000/03/28 17:59:14 grubba Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -61,7 +61,6 @@ struct object *get_master(void);
 struct object *debug_master(void);
 struct destroy_called_mark;
 PTR_HASH_ALLOC(destroy_called_mark,128)
-static void call_destroy(struct object *o, int foo);
 void low_destruct(struct object *o,int do_free);
 void destruct(struct object *o);
 void destruct_objects_to_destruct(void);
