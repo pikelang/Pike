@@ -198,6 +198,12 @@ void f_get_dir(INT32 args)
 #endif /* HAVE_SOLARIS_READDIR_R */
 		 + 1);
 
+    if(!tmp)
+    {
+      closedir(dir);
+      error("Out of memory.\n");
+    }
+
     while(1)
     {
       int e;
@@ -278,7 +284,6 @@ void f_get_dir(INT32 args)
     closedir(dir);
     THREADS_DISALLOW();
     a=aggregate_array(sp-save_sp);
-    free((char *)dir);
   }
 #else
   dir=opendir(path);
