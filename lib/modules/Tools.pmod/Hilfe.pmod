@@ -29,6 +29,16 @@ import Getopt;
   array(string) function_names=({});
   array(string) imports_and_inherits=({});
 
+  constant keywords = (< "array", "break", "case", "catch", "class",
+			 "constant", "continue", "default", "do", "else",
+			 "extern", "final", "float", "for", "foreach",
+			 "function", "gauge", "if", "import", "int",
+			 "inherit", "inline", "lambda", "local", "mapping",
+			 "mixed", "multiset", "nomask", "object", "optional",
+			 "program", "predef", "private", "protected", "public",
+			 "return", "sscanf", "string", "static", "switch",
+			 "typeof", "variant", "void", "while", >);
+
   mapping query_variables() { return variables; }
 /* do nothing */
   
@@ -537,6 +547,12 @@ import Getopt;
 	  return 1;
 	}else{
 	  string f;
+
+	  if (keywords[name]) {
+	    werror(sprintf("%s is a reserved word\n", name));
+	    return 1;
+	  }
+
 	  variables[name]=0;
 	  
 	  if(sscanf(c,"=%s",c))
