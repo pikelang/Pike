@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.55 1997/02/01 02:56:07 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.56 1997/02/07 00:54:36 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -20,11 +20,30 @@ else
   ldflags_is_set=yes
 fi
 
+for ac_site_file in $CONFIG_SITE; do
+  if test -r "$ac_site_file"; then
+    AC_MSG_WARN([You are using a site file to initialize configure, please
+note that this can lead to problems if anything in
+$ac_site_file is not correct. If Pike does not compile, or
+does not run, please try this to compile Pike again:
+rm ./config.cache ; CONFIG_SITE=x ./configure ; make])
+  fi
+done
+
+
+if test ! -z "$ac_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$ac_cv_prog_CC"
+then
+  AC_MSG_WARN(CC is different than last time Pike was compiled, will not use cache
+It is probably best to delete ./config.cache before proceeding)
+fi
+
+
 AC_PROG_CC
 AC_ISC_POSIX
 AC_MINIX
 
 
+AC_ARG_WITH(dynamic_modules,   [  --without-dynamic-modules        link modules statically],[],[with_dynamic_modules=yes])
 AC_ARG_WITH(gdbm,    [  --without-gdbm         no GNU database manager support ])
 AC_ARG_WITH(gmp,     [  --without-gmp          no Support bignums])
 AC_ARG_WITH(readline,[  --without-readline     no support for command line editing])
@@ -404,11 +423,12 @@ AC_CHECK_LIB(dld, dld_link)
 
 
 if test "${pike_cv_sys_os}" = "Linux"; then
-  if test "${ac_cv_lib_m}" = "no"; then
+  if test "${ac_cv_lib_m_floor}" = "no"; then
     AC_MSG_WARN(I will compensate for this by adding -lc -lm)
     LIBS="${LIBS} -lc -lm"
   fi
 
+#if 0
   if test $ldflags_is_set ; then
     AC_MSG_CHECKING(for -rdynamic)
     AC_CACHE_VAL(pike_cv_ld_accepts_rdynamic,
@@ -426,6 +446,7 @@ if test "${pike_cv_sys_os}" = "Linux"; then
        LDFLAGS="$LDFLAGS -rdynamic"
     fi
   fi
+#endif
 fi
 
 ########################################################################
@@ -1290,6 +1311,80 @@ fi
 
 rm -f core
 
+#############################################################################
+
+# Set info about shared libraries.
+AC_SUBST(SO)
+AC_SUBST(LDSHARED)
+AC_SUBST(CCSHARED)
+AC_SUBST(LINKFORSHARED)
+
+# SO is the extension of shared libraries
+# -- usually .so, .sl on HP-UX
+AC_MSG_CHECKING(SO)
+if test -z "$SO"
+then
+	case $pike_cv_sys_os in
+	hp*|HP*)   SO=sl;;
+	*)	   SO=so;;
+	esac
+fi
+AC_MSG_RESULT($SO)
+# LDSHARED is the ld *command* used to create shared library
+# -- "ld" on SunOS 4.x.x, "ld -G" on SunOS 5.x, "ld -shared" on IRIX 5
+AC_MSG_CHECKING(LDSHARED)
+if test -z "$LDSHARED"
+then
+	case $pike_cv_sys_os in
+	AIX*) LDSHARED="ld_so_aix \$(CC)";;
+	IRIX*) LDSHARED="ld -shared";;
+	SunOS*) LDSHARED="ld";;
+	Solaris) LDSHARED="ld -G";;
+	hp*|HP*) LDSHARED="ld -b";;
+	OSF*) LDSHARED="ld -shared -expect_unresolved \"*\"";;
+	DYNIX/ptx*) LDSHARED="ld -G";;
+	next) LDSHARED='$(CC) $(CFLAGS) -nostdlib -r';;
+	Linux*) LDSHARED="gcc -shared";;
+	FreeBSD*) LDSHARED="ld -Bshareable";;
+	SCO_SV*) LDSHARED="cc -G -KPIC -Ki486 -belf -Wl,-Bexport";;
+	*)	LDSHARED="ld";;
+	esac
+fi
+AC_MSG_RESULT($LDSHARED)
+
+# CCSHARED are the C *flags* used to create objects to go into a shared
+# library -- this is only needed for a few systems
+AC_MSG_CHECKING(CCSHARED)
+if test -z "$CCSHARED" ; then
+  if test "$GCC" = yes ; then
+    CCSHARED="-fpic"
+  else
+    case $pike_cv_sys_os in
+	hp*|HP*) CCSHARED="+z"; ;;
+	FreeBSD*) CCSHARED="-fpic";;
+	SCO_SV*) CCSHARED="-KPIC -dy -Bdynamic";;
+    esac
+  fi
+fi
+AC_MSG_RESULT($CCSHARED)
+
+# LINKFORSHARED are the flags passed to the $(CC) command that links
+# the python executable -- this is only needed for a few systems
+AC_MSG_CHECKING(LINKFORSHARED)
+if test -z "$LINKFORSHARED"
+then
+    case $pike_cv_sys_os in
+	AIX*)	LINKFORSHARED="-Wl,-bE:python.exp";;
+	hp*|HP*) LINKFORSHARED="-Wl,-E";;
+	Linux*) LINKFORSHARED="-rdynamic";;
+	next) LINKFORSHARED="-u libsys_s";;
+	SCO_SV*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
+    esac
+fi
+AC_MSG_RESULT($LINKFORSHARED)
+
+#############################################################################
+
 LIBDIR=`(cd $srcdir/../lib ; pwd)`
 BINDIR=`(cd $srcdir/../bin ; pwd)`
 DOCDIR=`(cd $srcdir/../doc ; pwd)`
@@ -1319,6 +1414,16 @@ AC_SUBST(DOCDIR)
 AC_SUBST(DEBUGDEF)
 AC_SUBST(SET_RUN_PATH)
 
-AC_OUTPUT(Makefile,[echo foo >stamp-h])
+if test x$ac_cv_func_dlopen$ac_cv_func_dld_link = xnono ; then
+  with_dynamic_modules=no
+fi
+
+if test x$with_dynamic_modules = xyes ; then
+  dmmsrc="modules/dynamic_module_makefile.in"
+else
+  dmmsrc="modules/static_module_makefile.in"
+fi
+
+AC_OUTPUT(Makefile modules/static_module_makefile modules/dynamic_module_makefile:$dmmsrc,[echo foo >stamp-h])
 
 
