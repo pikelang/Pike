@@ -24,6 +24,8 @@
 
 #include <profiling.h>
 
+#define MASTER_programs 29 /* The id of the programs variable in master() */
+
 #ifndef DEBUG
 #define DEBUG 0
 #endif
@@ -1613,14 +1615,13 @@ class Debug
     mapping __name_to_id;
     array __id_to_name;
 
-    void _walk()
+    void _walk(void|int no_name)
       {
-	if(!__name_to_id)
+	if(!__id_to_name)
 	{
 #if DEBUG >1
 	  werror("Walking program %O\n",__ptr);
 #endif
-	  __name_to_id=([]);
 	  __id_to_name=({});
 
 	  int num_ids=__ptr->num_identifier_references->_value();
@@ -1635,15 +1636,19 @@ class Debug
 	    Handle in=inherits + idref->inherit_offset;
 	    Handle id =in->prog->identifiers + idref->identifier_offset;
 	    object i=Identifier(e, in, id);
-	    __name_to_id[i->name()]=i;
 	    __id_to_name+=({i});
 	  }
+	}
+	if(!__name_to_id && !no_name) {
+	  __name_to_id=([]);
+	  foreach(__id_to_name, Identifier i)
+	    __name_to_id[i->name()] = i;
 	}
       }
 
     array(string) _globals()
       {
-	_walk();
+	_walk(1);
 	array(string) ret=({});
 	foreach(__id_to_name, Identifier i)
 	  if(i->flags() == "")
@@ -1665,7 +1670,7 @@ class Debug
 
     Identifier _low_search(mixed value)
       {
-	_walk();
+	_walk(1);
 	foreach(__id_to_name, Identifier i)
 	  if(i->flags() == "CONST")
 	    if(_constant( i->offset()) == value)
@@ -1684,7 +1689,8 @@ class Debug
 
     Identifier _id_to_name(int i)
       {
-	_walk();
+	_walk(1);
+	if(i<0 || i>=sizeof(__id_to_name)) return 0;
 	return __id_to_name[i];
       }
 
@@ -1716,7 +1722,8 @@ class Debug
 	
 #if 1
 	if(mixed name=ObjectHandle(Handle("master_object"))->
-	   programs->_search(this_object()))
+	   _get_id_or_name(MASTER_programs, "programs")->
+	   _search(this_object()))
 	{
 	  return odesc=name->_value();
 	}
@@ -1792,13 +1799,8 @@ class Debug
 	return "OBJECT";
       }
 
-
-    mixed `[](string key)
-      {
+    mixed _make_ret_value(object i, object p) {
 	mixed ret;
-	ProgramHandle p=_prog();
-	if(!p) return ([])[0]; /* Cast error ?? */
-	object i=p->_name_to_id(key);
 	if(!i) return ([])[0];
 	switch(i->flags())
 	{
@@ -1829,6 +1831,24 @@ class Debug
 	    unbug_error("Failed to index object (flags=%O)\n",i->flags());
 	}
       }
+
+    mixed `[](string key)
+      {
+	ProgramHandle p=_prog();
+	if(!p) return ([])[0]; /* Cast error ?? */
+	object i=p->_name_to_id(key);
+	return _make_ret_value(i,p);
+      }
+
+    mixed _get_id_or_name(int id, string key) {
+      ProgramHandle p=_prog();
+      if(!p) return ([])[0]; /* Cast error ?? */
+      object i=p->_id_to_name(id);
+      if(i && i->name()==key)
+	return _make_ret_value(i,p);
+      else
+	return `[](key);
+    }
 
     array(string) _globals()
       {
@@ -3050,6 +3070,7 @@ class Debug
       cmd("cd "+getcwd());
 
       /* FIXME: Args will probably need quoting */
+
       cmd("set args "+argv[1..]*" ");
     }
 
@@ -3071,7 +3092,7 @@ string find_in_path(string cmd)
 
 int main(int argc, array(string) argv)
 {
-  write(#"UNBUG $Id: unbug,v 1.17 2004/01/22 01:23:09 nilsson Exp $
+  write(#"UNBUG $Id: unbug,v 1.18 2004/01/22 03:29:00 nilsson Exp $
 Copyright 2001-2002, Roxen Internet Software AB.
 Copyright 2002-2004, Department of Computer and Information Science,
                      Linköping University
