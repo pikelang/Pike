@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.40 2001/10/23 20:10:12 nilsson Exp $
+// $Id: Readline.pike,v 1.41 2002/07/14 21:05:59 nilsson Exp $
 #pike __REAL_VERSION__
 
 class OutputController
@@ -1338,8 +1338,6 @@ void redisplay(int clear, int|void nobackup)
   setcursorpos(p);
 }
 
-//! @fixme
-//!   Document this function
 static private void initline()
 {
   text = "";
