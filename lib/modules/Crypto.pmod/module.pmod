@@ -148,6 +148,17 @@ class ARCFOUR_Algorithm
 
 ARCFOUR_Algorithm ARCFOUR = ARCFOUR_Algorithm();
 
+class BLOWFISH_Algorithm
+{
+  // NOTE: Depends on the order of INIT invocations.
+  inherit BLOWFISH_Info;
+  inherit CipherAlgorithm;
+
+  BLOWFISH_State `()() { return BLOWFISH_State(); }
+}
+
+BLOWFISH_Algorithm Blowfish = BLOWFISH_Algorithm();
+
 class CAST128_Algorithm
 {
   // NOTE: Depends on the order of INIT invocations.
