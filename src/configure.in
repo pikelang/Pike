@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.159 1998/09/27 19:39:14 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.160 1998/09/27 19:40:47 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1288,10 +1288,10 @@ char *c="bar";
 char *d="gazonk";
 int main()
 {
-  if(memmem(b,strlen(b),a,strlen(a))!=a ||
-     memmem(c,strlen(c),a,strlen(a))!=(a+4) ||
-     memmem(d,strlen(d),a,strlen(a))!=(a+8) ||
-     memmem(d,0,a,strlen(a))!=a ||
+  if(((char *)memmem(b,strlen(b),a,strlen(a)))!=a ||
+     ((char *)memmem(c,strlen(c),a,strlen(a)))!=(a+4) ||
+     ((char *)memmem(d,strlen(d),a,strlen(a)))!=(a+8) ||
+     ((char *)memmem(d,0,a,strlen(a)))!=a ||
      memmem(d,strlen(d)+1,a,strlen(a))!=0)
     exit(1);
   exit(0);
