@@ -235,11 +235,12 @@ int main(int argc, string *argv)
 
   if(run->depend)
   {
-    if(run->depend == ALWAYS || !max_time_of_files("dependencies"))
+    if(run->depend == ALWAYS || !max_time_of_files("$src/dependencies"))
     {
       // Create an empty file first..
-      Stdio.write_file("dependencies","");
+      Stdio.write_file(srcdir+"/dependencies","");
       do_make( ({"depend"}) );
+      do_make( ({"Makefile"}) );
     }
   }
 
