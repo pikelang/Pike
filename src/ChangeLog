@@ -1,3 +1,11 @@
+Thu Mar 26 00:25:29 1998  Henrik Grubbström  <grubba@idonex.se>
+
+	* backend.c (backend): Improved support for poll(2).
+	Also added support for nonblocking out-of-band data if poll(2)
+	is used.
+	* modules/files/file.c (file_read_oob, file_write_oob, etc): Added
+	support for out-of-band data.
+
 Sat Mar 21 19:20:54 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* DEBUG_MALLOC now does bound checking
