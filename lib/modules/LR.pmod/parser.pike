@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.9 1998/11/14 01:20:02 grubba Exp $
+ * $Id: parser.pike,v 1.10 1998/11/14 04:22:06 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -9,7 +9,7 @@
 
 //.
 //. File:	parser.pike
-//. RCSID:	$Id: parser.pike,v 1.9 1998/11/14 01:20:02 grubba Exp $
+//. RCSID:	$Id: parser.pike,v 1.10 1998/11/14 04:22:06 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	LALR(1) parser and compiler.
@@ -21,7 +21,6 @@
 //. Normal use of this object would be:
 //.
 //. {add_rule, set_priority, set_associativity}*
-//. set_scanner
 //. set_symbol_to_string
 //. compile
 //. {parse}*
@@ -72,6 +71,10 @@ class kernel {
   //.   Contains the items in this state.
   array(object(item)) items = ({});
 
+  //. + item_id_to_items
+  //.   Used to lookup items given rule and offset
+  mapping(int:object(item)) item_id_to_item = ([]);
+
   //. + symbol_items
   //.   Contains the items whose next symbol is this non-terminal.
   mapping(int : multiset(object(item))) symbol_items = ([]);
@@ -96,6 +99,8 @@ class kernel {
     int|string symbol;
   
     items += ({ i });
+    item_id_to_item[i->item_id] = i;
+
     if (i->offset < sizeof(i->r->symbols)) {
       symbol = i->r->symbols[i->offset];
 
@@ -768,16 +773,20 @@ static private int go_through(object(kernel) state, object(rule) r, int offset,
   int index;
   object(item) i, master;
 
+  i = state->item_id_to_item[r->number + offset];
+#if 0
   for (index = 0; index < sizeof(state->items); index++) {
     if ((state->items[index]->r == r) &&
 	(state->items[index]->offset == offset)) {
       /* Found the index for the current rule and offset */
+      i = state->items[index];
       break;
     }
   }
+#endif /* 0 */
 
   /* What to do if not found? */
-  if (index == sizeof(state->items)) {
+  if (!i) {
     werror(sprintf("go_through: item with offset %d in rule\n%s\n"
 		   "not found in state\n%s\n",
 		   offset, rule_to_string(r), state_to_string(state)));
@@ -785,7 +794,6 @@ static private int go_through(object(kernel) state, object(rule) r, int offset,
     return(0);
   }
 
-  i = state->items[index];
   if (i->master_item) {
     master = i->master_item;
   } else {
@@ -1224,38 +1232,59 @@ int compile()
   /* Compute lookback-sets */
   for (int index = 0; index < s_q->tail; index++) {
     array(object(item)) items =  s_q->arr[index]->items;
+    // Set up a lookup table to speedup lookups later.
+    mapping(int:array(object(item))) lookup = ([]);
+    foreach (items, object(item) i) {
+      if (!i->offset) {
+	if (!lookup[i->r->nonterminal]) {
+	  lookup[i->r->nonterminal] = ({ i });
+	} else {
+	  lookup[i->r->nonterminal] += ({ i });
+	}
+      }
+    }
     foreach (items, object(item) transition) {
       int|string symbol;
 
-      if ((transition->offset != sizeof(transition->r->symbols)) &&
-	  (intp(symbol = transition->r->symbols[transition->offset])) &&
-	  (!transition->master_item)) {
-	/* NonTerminal and master item*/
+      if ((!transition->master_item) &&
+	  (transition->offset != sizeof(transition->r->symbols)) &&
+	  (intp(symbol = transition->r->symbols[transition->offset]))) {
+	/* Master item and
+	 * Not a reduction item and
+	 * next symbol is a NonTerminal
+	 */
+	if (!lookup[symbol]) {
+	  // Foo? Shouldn't these always exist since we've made
+	  // a closure earlier?
+	  werror(sprintf("WARNING: No item for symbol <%s>\n"
+			 "in state:\n"
+			 "%s\n",
+			 symbol_to_string(symbol),
+			 state_to_string(s_q->arr[index])));
+	  continue;
+	}
 
 	/* Find items which can reduce to the nonterminal from above */
-	foreach (items, object(item) i2) {
-	  if ((!i2->offset) &&
-	      (i2->r->nonterminal == symbol)) {
-	    if (sizeof(i2->r->symbols)) {
-	      if (go_through(i2->next_state, i2->r, i2->offset+1,
-			     transition)) {
-		/* Nullable */
-		object(item) master = i2;
-		if (i2->master_item) {
-		  master = i2->master_item;
-		}
-		/* Is this a nonterminal transition? */
-		if ((master->offset != sizeof(master->r->symbols)) &&
-		    (intp(master->r->symbols[master->offset]))) {
-		  /* Don't include ourselves */
-		  if (master != transition) {
-		    master->relation[transition] = 1;
-		  }
+	foreach (lookup[symbol], object(item) i) {
+	  if (sizeof(i->r->symbols)) {
+	    if (go_through(i->next_state, i->r, i->offset+1,
+			   transition)) {
+	      /* Nullable */
+	      object(item) master = i;
+	      if (i->master_item) {
+		master = i->master_item;
+	      }
+	      /* Is this a nonterminal transition? */
+	      if ((master->offset != sizeof(master->r->symbols)) &&
+		  (intp(master->r->symbols[master->offset]))) {
+		/* Don't include ourselves */
+		if (master != transition) {
+		  master->relation[transition] = 1;
 		}
 	      }
-	    } else {
-	      i2->relation[transition] = 1;
 	    }
+	  } else {
+	    i->relation[transition] = 1;
 	  }
 	}
       }
@@ -1369,8 +1398,8 @@ int compile()
 //.   Parse the input according to the compiled grammar.
 //.   The last value reduced is returned.
 //. NOTA BENE:
-//.   The parser must have been compiled (with compile()), and a scanner
-//.   been set (with set_scanner()) prior to calling this function.
+//.   The parser must have been compiled (with compile())
+//.   prior to calling this function.
 //. BUGS
 //.   Errors should be throw()n.
 //. > scanner
@@ -1381,7 +1410,7 @@ int compile()
 //. > action_object
 //.   Object used to resolve those actions that have been specified as
 //.   strings.
-mixed parse(function(void:string|array(string|mixed)) scanner,
+mixed parse(object|function(void:string|array(string|mixed)) scanner,
 	    void|object action_object)
 {
   object(Stack.stack) value_stack = Stack.stack();
@@ -1393,7 +1422,8 @@ mixed parse(function(void:string|array(string|mixed)) scanner,
 
   error = 0;	/* No parse error yet */
 
-  if (!scanner || !functionp(scanner)) {
+  if (!functionp(scanner) &&
+      !(objectp(scanner) && functionp(scanner->`()))) {
     werror("parser->parse(): scanner not set!\n");
     error = ERROR_NO_SCANNER;
     return(0);
