@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.53 1997/01/30 21:23:05 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.54 1997/01/31 23:46:11 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -578,6 +578,7 @@ AC_CHECK_FUNCS(
  strcasecmp \
  strchr \
  strcspn \
+ strerror \
  strrchr \
  strtod \
  strtok \
