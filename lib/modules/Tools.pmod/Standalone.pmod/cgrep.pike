@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 // -*- Pike -*-
-// $Id: cgrep.pike,v 1.5 2003/01/18 15:43:39 grubba Exp $
+// $Id: cgrep.pike,v 1.6 2003/01/18 16:36:48 nilsson Exp $
 
 constant description = "Context aware grep.";
 
@@ -93,6 +93,7 @@ class PikeFile {
     // For some reason the Pike parser leaves parts of its
     // end sentinel in the output data.
     array(string) ret = Parser.Pike.split(data, state);
+    if(state->in_token) return ret;
     if(ret[-1]=="\n") return ret[..sizeof(ret)-2];
     ret[-1] = ret[-1][..sizeof(ret[-1])-2];
     return ret;
@@ -146,6 +147,7 @@ class CFile {
     // For some reason the C parser leaves parts of its
     // end sentinel in the output data.
     array(string) ret = Parser.C.split(data, state);
+    if(state->in_token) return ret;
     if(ret[-1]=="\n") return ret[..sizeof(ret)-2];
     ret[-1] = ret[-1][..sizeof(ret[-1])-2];
     return ret;
@@ -252,11 +254,8 @@ int main(int num, array(string) args) {
   if(case_insensitive) target = lower_case(target);
 
   array(string) files = args[1..];
-  if(recurse && !sizeof(files)) {
-    files = ({ "." });
-    show_fn = 1;
-  }
-  if(sizeof(files)>1) show_fn = 1;
+  if(recurse && !sizeof(files)) files = ({ "." });
+  if(sizeof(files)>1 || recurse) show_fn = 1;
   if(!sizeof(files)) usage();
 
   int matches;
@@ -299,7 +298,7 @@ Output control:
       --summarize           print a summary of the number of matches
 ";
 
-constant version = #"cgrep $Revision: 1.5 $
+constant version = #"cgrep $Revision: 1.6 $
 A token based grep with UI stolen from GNU grep.
 By Martin Nilsson 2003.
 ";
