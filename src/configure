@@ -2480,16 +2480,6 @@ rm -fr conftest*
 fi
 
 
-if test "$lpc_cv_hardware_unalignedRW" = "yes"; then
-  echo "$ac_t""yes" 1>&6
-  cat >> confdefs.h <<\EOF
-#define HANDLES_UNALIGNED_MEMORY_ACCESS 1
-EOF
- 
-else
-  echo "$ac_t""no" 1>&6
-fi
-
 echo $ac_n "checking for working memmem""... $ac_c" 1>&6
 if eval "test \"`echo '$''{'lpc_cv_func_memmem'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -2499,7 +2489,7 @@ if test "$cross_compiling" = yes; then
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 2503 "configure"
+#line 2493 "configure"
 #include "confdefs.h"
 
 #include <string.h>
@@ -2549,7 +2539,7 @@ if test "$cross_compiling" = yes; then
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 2553 "configure"
+#line 2543 "configure"
 #include "confdefs.h"
 
 #include <string.h>
@@ -2594,7 +2584,7 @@ if test "$cross_compiling" = yes; then
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 2598 "configure"
+#line 2588 "configure"
 #include "confdefs.h"
 
 #include <string.h>
@@ -2643,7 +2633,7 @@ if test "$cross_compiling" = yes; then
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 2647 "configure"
+#line 2637 "configure"
 #include "confdefs.h"
 
 int main()
@@ -2686,7 +2676,7 @@ if test "$cross_compiling" = yes; then
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 2690 "configure"
+#line 2680 "configure"
 #include "confdefs.h"
 
 int main()
@@ -2729,7 +2719,7 @@ if test "$cross_compiling" = yes; then
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 2733 "configure"
+#line 2723 "configure"
 #include "confdefs.h"
 
 #include <stdio.h>
@@ -2804,7 +2794,7 @@ if eval "test \"`echo '$''{'lpc_cv_func_getrusage_full'+set}'`\" = set"; then
 else
   
 cat > conftest.$ac_ext <<EOF
-#line 2808 "configure"
+#line 2798 "configure"
 #include "confdefs.h"
 
 #include <sys/time.h>
@@ -2871,7 +2861,7 @@ if eval "test \"`echo '$''{'lpc_cv_getrusage_procfs'+set}'`\" = set"; then
 else
   
 cat > conftest.$ac_ext <<EOF
-#line 2875 "configure"
+#line 2865 "configure"
 #include "confdefs.h"
 
 #include <sys/procfs.h>
@@ -2918,7 +2908,7 @@ if eval "test \"`echo '$''{'lpc_cv_volatile'+set}'`\" = set"; then
 else
   
  cat > conftest.$ac_ext <<EOF
-#line 2922 "configure"
+#line 2912 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -2962,7 +2952,7 @@ if test "$cross_compiling" = yes; then
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 2966 "configure"
+#line 2956 "configure"
 #include "confdefs.h"
 
 #include <stdarg.h>
@@ -3011,7 +3001,7 @@ if test "$cross_compiling" = yes; then
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 3015 "configure"
+#line 3005 "configure"
 #include "confdefs.h"
 
 #define TESTING
@@ -3027,7 +3017,7 @@ else
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 3031 "configure"
+#line 3021 "configure"
 #include "confdefs.h"
 
 #define TESTING
@@ -3043,7 +3033,7 @@ else
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 3047 "configure"
+#line 3037 "configure"
 #include "confdefs.h"
 
 #define TESTING
@@ -3059,7 +3049,7 @@ else
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 3063 "configure"
+#line 3053 "configure"
 #include "confdefs.h"
 
 #define TESTING
