@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.308 2000/09/01 19:09:04 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.309 2000/09/01 19:12:04 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5536,9 +5536,6 @@ void f_enumerate(INT32 args)
    }
 }
 
-/* FIXME: This is not accurate anymore! (crash risk!) 
- * The function of in->parent_offset has changed!
- */
 PMOD_EXPORT void f_inherit_list(INT32 args)
 {
   struct program *p;
