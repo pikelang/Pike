@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.16 2000/09/04 13:50:22 grubba Exp $
+# $Id: configure.in,v 1.17 2000/09/04 16:04:33 grubba Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -49,7 +49,40 @@ define([AC_CHECK_GMP],
   done=no
   AC_CHECK_HEADERS($2,[
 
-    AC_MSG_CHECKING(working $1)
+    # This test is needed since the __MPN macro
+    # is broken on many versions of gmp, since
+    # many ANSI compilers only define __STDC__
+    # in strict ansi mode. Some of the affected
+    # compilers also don't allow redefining
+    # __STDC__.
+    AC_MSG_CHECKING(prefix for __MPN in $2)
+    define(PIKE_PREFIX_NAME,[pike_cv_$1___MPN_prefix])
+    AC_CACHE_VAL(PIKE_PREFIX_NAME, [
+      AC_EGREP_CPP([__gmpn_.*PiKe], [
+#include <$2>
+__MPN(PiKe)
+      ], [
+        PIKE_PREFIX_NAME="__gmpn_"
+      ], [
+        AC_EGREP_CPP([__mpn_.*PiKe], [
+#include <$2>
+__MPN(PiKe)
+        ], [
+  	  PIKE_PREFIX_NAME="__mpn_"
+  	], [
+	  PIKE_PREFIX_NAME="no"
+	])
+      ])
+    ])
+    if test "x[$]PIKE_PREFIX_NAME" = "xno"; then
+      AC_MSG_RESULT(warning -- prefix not found)
+    else
+      AC_MSG_RESULT([$]PIKE_PREFIX_NAME)
+      AC_DEFINE(PIKE_MPN_PREFIX, [$]PIKE_PREFIX_NAME)
+    fi
+    undefine(PIKE_PREFIX_NAME)
+
+    AC_MSG_CHECKING(working <$2>)
     AC_CACHE_VAL(pike_cv_working_$1,[
       OLDLIBS="${LIBS-}"
       LIBS="${LIBS-} -l$1"
@@ -57,11 +90,10 @@ define([AC_CHECK_GMP],
 #include <stdio.h>
 
 /* Kludge for some compilers only defining __STDC__ in strict mode. */
-#ifndef __STDC__
-#ifdef HAVE_ANSI_CONCAT
-#define __STDC__ 0
-#endif
-#endif /* __STDC__ */
+#if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
+#define PIKE_MPN_CONCAT(x,y)	x##y
+#define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
+#endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
 
 #include <$2>
 int main(int argc, char **argv)
@@ -84,11 +116,10 @@ int main(int argc, char **argv)
 #include <stdio.h>
 
 /* Kludge for some compilers only defining __STDC__ in strict mode. */
-#ifndef __STDC__
-#ifdef HAVE_ANSI_CONCAT
-#define __STDC__ 0
-#endif
-#endif /* __STDC__ */
+#if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
+#define PIKE_MPN_CONCAT(x,y)	x##y
+#define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
+#endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
 
 #include <$2>
 

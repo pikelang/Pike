@@ -1,4 +1,4 @@
-/* $Id: my_gmp.h,v 1.7 2000/09/04 13:50:23 grubba Exp $
+/* $Id: my_gmp.h,v 1.8 2000/09/04 16:04:34 grubba Exp $
  *
  * These functions or something similar will hopefully be included
  * with Gmp-2.1 .
@@ -7,12 +7,13 @@
 #ifndef MY_GMP_H_INCLUDED
 #define MY_GMP_H_INCLUDED
 
-/* Kludge for some compilers only defining __STDC__ in strict mode. */
-#ifndef __STDC__
-#ifdef HAVE_ANSI_CONCAT
-#define __STDC__ 0
-#endif
-#endif /* __STDC__ */
+/* Kludge for some compilers only defining __STDC__ in strict mode,
+ * which leads to <gmp.h> using the wrong token concat method.
+ */
+#if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
+#define PIKE_MPN_CONCAT(x,y)	x##y
+#define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
+#endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
 
 #undef _PROTO
 #define _PROTO(x) x
