@@ -3,7 +3,7 @@
 //! module Protocols
 //! submodule DNS
 //!
-//! $Id: DNS.pmod,v 1.41 2000/09/06 21:33:03 leif Exp $
+//! $Id: DNS.pmod,v 1.42 2000/09/07 15:33:05 leif Exp $
 
 constant NOERROR=0;
 constant FORMERR=1;
@@ -400,21 +400,29 @@ class client
     udp->bind(0);
     mapping m;
     int i;
-    for (i=0; i < RETRIES; i++) {
+    for (i=0; i < RETRIES; i++)
+    {
       udp->send(nameservers[i % sizeof(nameservers)], 53, s);
 
-      while (udp->wait(RETRY_DELAY)) {
-	// udp->read can throw an error on connection refused.
-	catch {
-	  m = udp->read();
-	  if ((m->port == 53) &&
-	      (m->data[0..1] == s[0..1]) &&
-	      (search(nameservers, m->ip) != -1)) {
-	    // Success.
-	    return decode_res(m->data);
-	  }
-	};
-      }
+      // udp->wait() can throw an error sometimes
+      catch
+      {
+  	while (udp->wait(RETRY_DELAY))
+  	{
+  	  // udp->read can throw an error on connection refused.
+  	  catch
+  	  {
+  	    m = udp->read();
+  	    if ((m->port == 53) &&
+  		(m->data[0..1] == s[0..1]) &&
+  		(search(nameservers, m->ip) != -1))
+  	    {
+  	      // Success.
+  	      return decode_res(m->data);
+  	    }
+  	  };
+  	}
+      };
     }
     // Failure.
     return 0;
