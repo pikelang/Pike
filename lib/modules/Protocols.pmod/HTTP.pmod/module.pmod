@@ -25,8 +25,6 @@ object get_url(string url)
       (port=80,sscanf(url,"%[^:/]/%s",host,query)) == 2 ||
       (host=url,query="");
 
-   write("prot=%O host=%O port=%O query=%O\n",prot,host,port,query);
-
    if (prot!="http")
       error("Protocols.HTTP can't handle %O or any other protocol then HTTP\n",
 	    prot);
