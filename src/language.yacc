@@ -171,7 +171,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.80 1998/04/17 02:53:10 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.81 1998/04/17 03:18:09 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1311,9 +1311,11 @@ expr00: expr0
 expr0: expr01
   | expr4 '=' expr0  { $$=mknode(F_ASSIGN,$3,$1); }
   | expr4 '=' error { $$=$1; reset_type_stack(); yyerrok; }
+  | bad_expr_ident '=' expr0 { $$=$3; }
   | '[' low_lvalue_list ']' '=' expr0  { $$=mknode(F_ASSIGN,$5,mknode(F_ARRAY_LVALUE,$2,0)); }
   | expr4 assign expr0  { $$=mknode($2,$1,$3); }
   | expr4 assign error { $$=$1; reset_type_stack(); yyerrok; }
+  | bad_expr_ident assign expr0 { $$=$3; }
   | '[' low_lvalue_list ']' assign expr0  { $$=mknode($4,mknode(F_ARRAY_LVALUE,$2,0),$5); }
   | '[' low_lvalue_list ']' error { $$=$2; reset_type_stack(); yyerrok; }
 /*  | error { $$=0; reset_type_stack(); } */
@@ -1726,27 +1728,9 @@ bad_identifier: bad_lvalue
   { yyerror("class is a reserved word."); }
   ;
 
-bad_lvalue:
-    F_INLINE
-  { yyerror("inline is a reserved word."); }
-  | F_LOCAL_ID
-  { yyerror("local is a reserved word."); }
-  | F_NO_MASK
-  { yyerror("nomask is a reserved word."); }
-  | F_PREDEF
-  { yyerror("predef is a reserved word."); }
-  | F_PRIVATE
-  { yyerror("private is a reserved word."); }
-  | F_PROTECTED
-  { yyerror("protected is a reserved word."); }
-  | F_PUBLIC
-  { yyerror("public is a reserved word."); }
-  | F_STATIC
-  { yyerror("static is a reserved word."); }
+bad_lvalue: bad_expr_ident
   | F_ARRAY_ID
   { yyerror("array is a reserved word."); }
-  | F_FINAL_ID
-  { yyerror("final is a reserved word.");}
   | F_FLOAT_ID
   { yyerror("float is a reserved word.");}
   | F_FUNCTION_ID
@@ -1767,6 +1751,27 @@ bad_lvalue:
   { yyerror("string is a reserved word."); }
   | F_VOID_ID
   { yyerror("void is a reserved word."); }
+  ;
+
+bad_expr_ident:
+    F_INLINE
+  { yyerror("inline is a reserved word."); }
+  | F_LOCAL_ID
+  { yyerror("local is a reserved word."); }
+  | F_NO_MASK
+  { yyerror("nomask is a reserved word."); }
+  | F_PREDEF
+  { yyerror("predef is a reserved word."); }
+  | F_PRIVATE
+  { yyerror("private is a reserved word."); }
+  | F_PROTECTED
+  { yyerror("protected is a reserved word."); }
+  | F_PUBLIC
+  { yyerror("public is a reserved word."); }
+  | F_STATIC
+  { yyerror("static is a reserved word."); }
+  | F_FINAL_ID
+  { yyerror("final is a reserved word.");}
   | F_DO
   { yyerror("do is a reserved word."); }
   | F_ELSE
