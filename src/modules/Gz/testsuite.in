@@ -1,6 +1,6 @@
-// $Id: testsuite.in,v 1.17 2002/11/28 19:31:13 mast Exp $
+// $Id: testsuite.in,v 1.18 2004/02/04 14:34:53 nilsson Exp $
 
-cond([[ master()->resolv("Gz")->deflate ]],
+cond_resolv(Gz.deflate,
 [[
   test_true(Gz.deflate())
   test_true(Gz.deflate()->deflate)
@@ -37,12 +37,7 @@ define(dotest,[[
     return orig==readback;
 ]], 1)
 
-]])
-
-cond([[  master()->resolv("Gz")->deflate && master()->resolv("Crypto") && master()->resolv("Crypto")["randomness"] ]],
-[[
-  dotest(Crypto.randomness.pike_random()->read(32768))
-
-    dotest(Crypto.randomness.pike_random()->read(524288))
-    dotest(Crypto.randomness.pike_random()->read(8388500))
+  dotest(random_string(32768))
+  dotest(random_string(524288))
+  dotest(random_string(8388500))
 ]])
