@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.155 2002/11/24 22:47:06 mast Exp $
+|| $Id: mapping.c,v 1.156 2002/11/28 02:20:48 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.155 2002/11/24 22:47:06 mast Exp $");
+RCSID("$Id: mapping.c,v 1.156 2002/11/28 02:20:48 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1672,15 +1672,23 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
       my_strcat(buf);
     }
 
-    /* no mapping locking required (I hope) */
     NEW_MAPPING_LOOP(m->data) {
       if (notfirst) my_strcat(",\n");
       else notfirst = 1;
       for(d = 0; d < indent; d++)
 	my_putchar(' ');
+#if 0
+      /* describe_svalue might do anything. */
       describe_svalue(&k->ind, indent+2, &doing);
       my_putchar(':');
       describe_svalue(&k->val, indent+2, &doing);
+#else
+      sprintf (buf, "<%d>", k->ind.type);
+      my_strcat (buf);
+      my_putchar(':');
+      sprintf (buf, "<%d>", k->val.type);
+      my_strcat (buf);
+#endif
     }
 
     my_putchar('\n');
@@ -1715,7 +1723,6 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
     UNSETJMP(catch);
     t_flag = save_t_flag;
 
-    /* no mapping locking required (I hope) */
     for(e = 0; e < a->size; e++)
     {
       struct svalue *tmp;
