@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.104 2004/09/26 15:14:44 marcus Exp $
+|| $Id: global.h,v 1.105 2004/09/27 21:47:35 mast Exp $
 */
 
 #ifndef GLOBAL_H
@@ -436,8 +436,7 @@ typedef struct p_wchar_p
 #endif
 
 #ifndef DO_PIKE_CLEANUP
-#if defined(PURIFY) || defined(__CHECKER__) ||				\
-  defined(DEBUG_MALLOC) || defined(USE_VALGRIND)
+#if defined(PURIFY) || defined(__CHECKER__) || defined(DEBUG_MALLOC)
 #define DO_PIKE_CLEANUP
 #endif
 #endif

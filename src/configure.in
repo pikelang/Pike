@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.842 2004/09/26 15:49:02 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.843 2004/09/27 21:47:34 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1429,7 +1429,7 @@ AC_ARG_WITH(mysql, MY_DESCR([--without-mysql],
 			    [disable support for the Mysql database]),
 	    [],[with_mysql=yes])
 AC_ARG_WITH(valgrind, MY_DESCR([--with-valgrind=path],
-	    [Support for running with valgrind]), [
+	    [Support for running with valgrind. Implies --with-cleanup-on-exit.]), [
   if test "x$with_valgrind" = "xyes"; then
     AC_PATH_PROG(with_valgrind, valgrind, no)
     if test "x$with_valgrind" = "xno"; then
@@ -1573,6 +1573,10 @@ else
   # Make valgrind a bit silent by default.
   VALGRINDARGS="-q --tool=memcheck"
   AC_DEFINE(USE_VALGRIND)
+
+  if test "x$with_cleanup_on_exit" = "x"; then
+    AC_DEFINE(DO_PIKE_CLEANUP)
+  fi
 
   if test "x$with_copt" != "xno"; then
     PIKE_MSG_WARN([--without-copt is advisable when using valgrind!])
