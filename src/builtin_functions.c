@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.198 1999/10/31 15:29:51 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.199 1999/11/01 13:39:18 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3834,12 +3834,12 @@ void f_gethrtime(INT32 args)
   if(args)
     push_int64((((INT64)tv.tv_sec * 1000000) + tv.tv_usec)*1000);
   else
-    push_int64(((INT64)tv.tv_sec * 1000000) + tv.tv_usec));
+    push_int64(((INT64)tv.tv_sec * 1000000) + tv.tv_usec);
 #else /* !INT64 */
   if(args)
     push_int64(((tv.tv_sec * 1000000) + tv.tv_usec)*1000);
   else
-    push_int64((tv.tv_sec * 1000000) + tv.tv_usec));
+    push_int64((tv.tv_sec * 1000000) + tv.tv_usec);
 #endif /* INT64 */
 }
 #endif /* HAVE_GETHRVTIME */
