@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.87 1998/02/28 06:17:25 mirar Exp $ */
+/* $Id: image.c,v 1.88 1998/03/08 13:55:18 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.87 1998/02/28 06:17:25 mirar Exp $
+**!	$Id: image.c,v 1.88 1998/03/08 13:55:18 per Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.87 1998/02/28 06:17:25 mirar Exp $");
+RCSID("$Id: image.c,v 1.88 1998/03/08 13:55:18 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -467,7 +467,7 @@ THREADS_DISALLOW();
 **! 	default alpha channel value
 **! see also: copy, clone, Image.image
 **! bugs
-**!	SIGSEGS can be caused if the size is too big, due
+**!	SIGSEGVS can be caused if the size is too big, due
 **!	to unchecked overflow - 
 **!	(xsize*ysize)&MAXINT is small enough to allocate.
 */
