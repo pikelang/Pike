@@ -14,9 +14,6 @@
 struct object
 {
   INT32 refs;                    /* Reference count, must be first. */
-#ifdef GC2
-  INT16 flags;
-#endif
   struct program *prog;
   struct object *next;
   struct object *prev;
@@ -63,8 +60,10 @@ void cleanup_objects();
 struct array *object_indices(struct object *o);
 struct array *object_values(struct object *o);
 void gc_check_object(struct object *o);
+void gc_mark_object_as_referenced(struct object *o);
 void gc_check_all_objects();
-void gc_clear_object_marks();
+void gc_mark_all_objects();
+void gc_free_all_unreferenced_objects();
 /* Prototypes end here */
 
 #endif /* OBJECT_H */

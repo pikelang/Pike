@@ -93,7 +93,6 @@ struct inherit
 struct program
 {
   INT32 refs;
-  INT32 flags;
   INT32 id;             /* used to identify program in caches */
   INT32 storage_needed; /* storage needed in the object struct */
 
@@ -182,9 +181,10 @@ struct program *end_c_program(char *name);
 void add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags);
 void check_all_programs();
 void cleanup_program();
-void gc_check_program(struct program *p);
+void gc_mark_program_as_referenced(struct program *p);
 void gc_check_all_programs();
-void gc_clear_program_marks();
+void gc_mark_all_programs();
+void gc_free_all_unreferenced_programs();
 /* Prototypes end here */
 
 

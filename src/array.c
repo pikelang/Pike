@@ -27,7 +27,6 @@ struct array empty_array=
   0,                     /* malloced Size = 0 */
   0,                     /* no types */
   T_MIXED,                 /* mixed array */
-  0,                     /* no flags */
 };
 
 
@@ -61,7 +60,6 @@ struct array *low_allocate_array(INT32 size,INT32 extra_space)
 
   v->malloced_size=size+extra_space;
   v->size=size;
-  v->flags=0;
   v->refs=1;
   v->prev=&empty_array;
   v->next=empty_array.next;
@@ -1286,69 +1284,64 @@ void check_all_arrays()
 
 #ifdef GC2
 
-void gc_check_array(struct array *a)
+void gc_mark_array_as_referenced(struct array *a)
 {
-  if(a == gc_ptr) gc_refs++;
-  if(a->flags & GC_MARK) return;
-  a->flags |= GC_MARK;
-  if(!(a->type_field & BIT_COMPLEX)) return;
-  gc_check_svalues(ITEM(a), a->size);
+  if(gc_mark(a))
+    if(a->type_field & BIT_COMPLEX)
+      gc_mark_svalues(ITEM(a), a->size);
 }
-
 
 void gc_check_all_arrays()
 {
-  struct array *a,*n;
-
+  struct array *a;
   a=&empty_array;
   do
   {
-    if(!(a->flags & GC_MARK) && a->type_field & BIT_COMPLEX)
-    {
-      gc_ptr=a;
-      gc_refs=0;
-      
-      gc_check_array(a);
-      
-      a->refs++;
-      
-      if(gc_refs == a->refs)
-      {
-	/* This structure contains as many references to itself as
-	 * it has referenes, which means that it is circular and
-	 * should be destroyed, so please go away.
-	 */
-	
-	free_svalues(ITEM(a), a->size, a->type_field);
-	
-	a->size=0;
-	
-      }
-      
-      if(!(n=a->next))
-	fatal("Null pointer in array list.\n");
-      
-      free_array(a);
-      a=n;
-    }else{
-      a=a->next;
-    }
+    if(a->type_field & BIT_COMPLEX)
+      gc_check_svalues(ITEM(a), a->size);
+
+    a=a->next;
   } while (a != & empty_array);
 }
 
-void gc_clear_array_marks()
+
+void gc_mark_all_arrays()
 {
   struct array *a;
 
   a=&empty_array;
   do
   {
-    a->flags &=~ GC_MARK;
+    if(gc_is_referenced(a))
+      gc_mark_array_as_referenced(a);
+            
     a=a->next;
-
   } while (a != & empty_array);
 }
 
+void gc_free_all_unreferenced_arrays()
+{
+  struct array *a,*next;
+
+  a=&empty_array;
+  do
+  {
+    if(gc_do_free(a))
+    {
+      a->refs++;
+      free_svalues(ITEM(a), a->size, a->type_field);
+      a->size=0;
+
+      if(!(next=a->next))
+	fatal("Null pointer in array list.\n");
+
+      free_array(a);
+      a=next;
+    }else{
+      a=a->next;
+    }
+  } while (a != & empty_array);
+}
 
 
 #endif /* GC2 */

@@ -644,45 +644,83 @@ struct array *object_values(struct object *o)
 
 void gc_check_object(struct object *o)
 {
-  INT32 e;
-  if(o == gc_ptr) gc_refs++;
-  if(o->flags & GC_MARK) return;
-  o->flags |= GC_MARK;
+}
 
-  if(!o->prog) return;
-
-  for(e=0;e<(int)o->prog->num_identifier_indexes;e++)
+void gc_mark_object_as_referenced(struct object *o)
+{
+  if(gc_mark(o))
   {
-    struct identifier *i;
-    
-    i=ID_FROM_INT(o->prog, e);
-
-    if(i->flags & IDENTIFIER_FUNCTION) continue;
-
-    if(i->run_time_type == T_MIXED)
+    if(o->prog)
     {
-      gc_check_svalues((struct svalue *)LOW_GET_GLOBAL(o,e,i),1);
-    }else{
-      gc_check_short_svalue((union anything *)LOW_GET_GLOBAL(o,e,i),
-			    i->run_time_type);
+      INT32 e;
+      
+      for(e=0;e<(int)o->prog->num_identifier_indexes;e++)
+      {
+	struct identifier *i;
+	
+	i=ID_FROM_INT(o->prog, e);
+	
+	if(i->flags & IDENTIFIER_FUNCTION) continue;
+	
+	if(i->run_time_type == T_MIXED)
+	{
+	  gc_mark_svalues((struct svalue *)LOW_GET_GLOBAL(o,e,i),1);
+	}else{
+	  gc_mark_short_svalue((union anything *)LOW_GET_GLOBAL(o,e,i),
+			       i->run_time_type);
+	}
+      }
     }
   }
 }
 
 void gc_check_all_objects()
 {
-  struct object *o, *next;
+  struct object *o;
+  for(o=first_object;o;o=o->next)
+  {
+    if(o->prog)
+    {
+      INT32 e;
+
+      for(e=0;e<(int)o->prog->num_identifier_indexes;e++)
+      {
+	struct identifier *i;
+	
+	i=ID_FROM_INT(o->prog, e);
+	
+	if(i->flags & IDENTIFIER_FUNCTION) continue;
+	
+	if(i->run_time_type == T_MIXED)
+	{
+	  gc_check_svalues((struct svalue *)LOW_GET_GLOBAL(o,e,i),1);
+	}else{
+	  gc_check_short_svalue((union anything *)LOW_GET_GLOBAL(o,e,i),
+				i->run_time_type);
+	}
+      }
+    }
+  }
+}
+
+void gc_mark_all_objects()
+{
+  struct object *o;
+  for(o=first_object;o;o=o->next)
+    if(gc_is_referenced(o))
+      gc_mark_object_as_referenced(o);
+}
+
+void gc_free_all_unreferenced_objects()
+{
+  struct object *o,*next;
+
   for(o=first_object;o;o=next)
   {
-    if(!(o->flags & GC_MARK))
+    if(gc_do_free(o))
     {
-      gc_ptr=o;
-      gc_refs=0;
-      
       o->refs++;
-      
-      if(gc_refs == o->refs) destruct(o);
-      
+      destruct(o);
       next=o->next;
       free_object(o);
     }else{
@@ -691,11 +729,5 @@ void gc_check_all_objects()
   }
 }
 
-void gc_clear_object_marks()
-{
-  struct object *o;
-
-  for(o=first_object;o;o=o->next) o->flags &=~ GC_MARK;
-}
-
 #endif /* GC2 */
+
