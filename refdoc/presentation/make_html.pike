@@ -340,16 +340,31 @@ string parse_text(Node n) {
       // Found...
       break;
 
+    case "ul":
+      ret += "<ul>\n";
+      foreach(c->get_elements("group"), Node c)
+	ret += "<li>" + parse_text(c->get_first_element("text")) + "</li>";
+      ret += "</ul>";
+      break;
+
+    case "ol":
+      ret += "<ol>\n";
+      foreach(c->get_elements("group"), Node c)
+	ret += "<li>" + parse_text(c->get_first_element("text")) + "</li>";
+      ret += "</ol>";
+      break;
+
+    case "source-position":
+      position->update(c);
+      break;
+
     // Not really allowed
     case "br":
       ret += sprintf("<%s%{ %s='%s'%} />", c->get_any_name(), (array)c->get_attributes());
       break;
     case "table":
-    case "ul":
     case "sub":
     case "sup":
-    case "ol":
-    case "li":
     case "td":
     case "tr":
     case "th":
@@ -357,13 +372,9 @@ string parse_text(Node n) {
 		     parse_text(c), c->get_any_name());
       break;
 
-
-    case "source-position":
-      position->update(c);
-      break;
-
     default:
 #ifdef DEBUG
+      werror("\n%s\n", (string)c);
       throw( ({ "Illegal element \"" + name + "\" in mode text.\n", backtrace() }) );
 #endif
       break;
@@ -374,61 +385,52 @@ string parse_text(Node n) {
 }
 
 string parse_doc(Node n, void|int no_text) {
-  string ret = "";
+  string ret ="";
 
-#ifdef DEBUG
-  int text;
-#endif
+  Node c = n->get_first_element("text");
+  if(c)
+    ret += "<dt><font face='Helvetica'>Description</font><dt>\n"
+      "<dd><font face='Helvetica'>" + parse_text(c) + "</font></dd>";
 
-  if(!no_text) {
-    Node c = get_tag(n, "text");
-    if(c)
-      ret += "<dt><font face='Helvetica'>Description</font></dt>\n"
-	"<dd><font face='Helvetica'>" + parse_text(c) + "</font></dd>";
-  }
-
-  foreach(n->get_children(), Node c) {
-    int node_type = c->get_node_type();
-    if(c->get_node_type()==XML_TEXT) {
-      if(sizeof(String.trim_all_whites(c->get_text())))
-	ret += c->get_text();
-      continue;
-    }
-
-#ifdef DEBUG
-    if(c->get_node_type()!=XML_ELEMENT) {
-      throw( ({ "Forbidden node type " + c->get_node_type() + " in doc node.\n", backtrace() }) );
-    }
-#endif
-
-    switch(c->get_any_name()) {
-    case "text":
-      if(text++)
-	throw( ({ "More than one 'text' node in doc node.\n", backtrace() }) );
-      break;
-    case "group":
-      Node cc = get_tag(c, "text");
-      ret += parse_doc(c, 1);
-      if(cc)
-	ret += "<dd><font face='Helvetica'>" + parse_text(cc) + "</font></dd>\n";
-      break;
+  foreach(n->get_elements("group"), Node c) {
+    string name = c->get_first_element()->get_any_name();
+    switch(name) {
     case "param":
-      ret += "<dt><font face='Helvetica'>Parameter <tt><font color='#8000F0'>" +
-	quote(c->get_attributes()->name) + "</font></tt></font></dt><dd></dd>";
+      foreach(c->get_elements("param"), Node d)
+	ret += "<dt><font face='Helvetica'>Parameter <tt><font color='#8000F0'>" +
+	  quote(d->get_attributes()->name) + "</font></tt></font></dt><dd></dd>";
+      ret += "<dd><font face='Helvetica'>" + parse_text(c->get_first_element("text")) +
+	"</font></dd>";
       break;
+
     case "seealso":
-      ret += "<dt><font face='Helvetica'>See also</font></dt>\n";
+      ret += "<dt><font face='Helvetica'>See also</font></dt>\n"
+	"<dd><font face='Helvetica'>" + parse_text(c->get_first_element("text")) +
+	"</font></dd>";
       break;
+
+    case "fixme":
+      ret += "<dt><font face='Helvetica' color='red'>FIXME</font></dt>\n"
+	"<dd><font face='Helvetica' color='red'>" + parse_text(c->get_first_element("text")) +
+	"</font></dd>";
+      break;
+
+    case "bugs":
+    case "note":
+    case "returns":
+    case "throws":
+      ret += "<dt><font face='Helvetica'>" + String.capitalize(name) +"</font></dt>\n"
+	"<dd><font face='Helvetica'>" + parse_text(c->get_first_element("text")) +
+	"</font></dd>";
+      break;
+
+    case "example":
+      ret += "<dt><font face='Helvetica'>Example</font></dt>\n"
+	"<dd><pre>" + parse_text(c->get_first_element("text")) + "</pre></dd>";
+      break;
+
     default:
-      if(c->get_parent()->get_any_name()=="group") {
-	ret += "<dt><font face='Helvetica'>" +
-	  String.capitalize( c->get_any_name() ) + "</font></dt>";
-	parse_doc(c);
-      }
-#ifdef DEBUG
-      else
-	throw( ({ "Illegal element " + c->get_any_name() + ".\n", backtrace() }) );
-#endif
+      throw( ({ "Unknown group type \"" + name + "\".\n", backtrace() }) );
     }
   }
 
@@ -528,6 +530,9 @@ string parse_type(Node n, void|string debug) {
 
   case "static": // Not in XSLT
     ret += "static";
+    break;
+  case "optional": // Not in XSLT
+    ret += "optional";
     break;
 
   default:
@@ -641,6 +646,7 @@ string parse_docgroup(Node n) {
   mapping m = n->get_attributes();
   string ret = "\n\n<hr clear='all' />\n<dl><dt>";
 
+  //  werror("%O\n", m["homogen-name"]);
   if(m["homogen-type"]) {
     string type = "<font face='Helvetica'>" + quote(String.capitalize(m["homogen-type"])) + "</font>\n";
     if(m["homogen-name"])
