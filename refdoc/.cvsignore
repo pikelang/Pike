@@ -1,4 +1,4 @@
-*.xml
-modules
-post_modules
-*.xml.new
+build
+img
+manual
+manual.xml

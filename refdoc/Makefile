@@ -1,54 +1,41 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.5 2001/02/06 14:47:29 grubba Exp $
+# $Id: Makefile,v 1.6 2001/02/26 14:12:19 grubba Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
 
 PIKE=pike
 
-VPATH=../src:.
+all: split
 
-SRCDIR=../src
-ROOT=.
+split: join
 
-all: xml recurse
+join: images
 
-.SUFFIXES: .c .xml
+images: extract
 
-.c.xml: @(ROOT)/../bin/autodoc.pike
-	@rm -f "$@.new" 2>/dev/null || /bin/true
-	@$(PIKE) $(ROOT)/../bin/autodoc.pike "$<" >"$@.new" && \
-	  mv -f "$@.new" "$@"
+extract: build/src/Makefile build/lib/Makefile
+	@(cd build/src && $(MAKE) PIKE="$(PIKE)" extract)
+	@(cd build/lib && $(MAKE) PIKE="$(PIKE)" extract)
 
-xml:
-	$(MAKE) PIKE="$(PIKE)" `(cd $(SRCDIR) && ls *.c) | sed -e 's/\.c$$/\.xml/'`
+build/src/Makefile: Makefile.in build/src
+	@sed -e "s#@SRCDIR@#../../../src#" -e "s#@ROOT@#../..#" \
+	  <Makefile.in >build/src/Makefile
 
-recurse: subdirectories
-	@for d in */.; do \
-	  if test "$$d" = "CVS/." -o ! -d "$$d"; then :; else \
-	    (cd $$d && make PIKE="$(PIKE)" all) || exit 1; \
-	  fi; \
-	done
+build/lib/Makefile: Makefile.in build/lib
+	@sed -e "s#@SRCDIR@#../../../lib#" -e "s#@ROOT@#../..#" \
+	  <Makefile.in >build/lib/Makefile
 
-subdirectories:
-	@for d in `cd $(SRCDIR) && echo *`; do \
-	  if test "$$d" = "CVS" -o ! -d "$(SRCDIR)/$$d/."; then :; else \
-	    if test -d "$$d"; then :; else \
-	      mkdir "$$d" || exit 1; \
-	    fi; \
-	    if test -f "$$d/Makefile"; then :; else \
-	      sed -e "s#@SRCDIR@#../$(SRCDIR)/$$d#" -e "s#@ROOT@#../$(ROOT)#" \
-	        <$(ROOT)/Makefile.in >"$$d/Makefile" || exit 1; \
-	    fi; \
-	  fi; \
-	done
+build/src: build
+	@test -d build/src || mkdir build/src
+
+build/lib: build
+	@test -d build/lib || mkdir build/lib
+
+build:
+	@test -d build || mkdir build
 
 clean:
-	-@rm *.xml
-	@for d in *; do \
-	  if test "$$d" = "CVS" -o ! -d "$$d/."; then :; else \
-	    rm -rf "$$d"; \
-	  fi; \
-	done
+	@rm -rf build || /bin/true

@@ -1,7 +1,7 @@
 #
 # Sub Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile.in,v 1.2 2001/02/06 14:47:30 grubba Exp $
+# $Id: Makefile.in,v 1.3 2001/02/26 14:12:19 grubba Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -13,7 +13,9 @@ VPATH=@SRCDIR@:.
 SRCDIR=@SRCDIR@
 ROOT=@ROOT@
 
-all: xml recurse
+all: extract
+
+extract: xml recurse
 
 .SUFFIXES: .c .xml
 
@@ -30,7 +32,7 @@ xml_dummy:
 recurse: subdirectories
 	@for d in */.; do \
 	  if test -d "$$d"; then \
-	    (cd $$d && make PIKE="$(PIKE)" all) || exit 1; \
+	    (cd $$d && make PIKE="$(PIKE)" extract) || exit 1; \
 	  fi; \
 	done
 
