@@ -3,6 +3,8 @@
  * Primitive PEM decoder. (Extracted from roxen/server/protocols/ssl3.pike).
  */
 
+#error SSL.pem is obsolete! Use Tools.PEM instead.
+
 object begin_pem = Regexp("-----BEGIN (.*)----- *$");
 object end_pem = Regexp("-----END (.*)----- *$");
 
