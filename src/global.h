@@ -5,10 +5,21 @@
 \*/
 
 /*
- * $Id: global.h,v 1.29 1999/04/07 23:10:05 hubbe Exp $
+ * $Id: global.h,v 1.30 1999/04/25 20:17:40 grubba Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
+
+/* The worlds most stringent C compiler? */
+#ifdef __TenDRA__
+/* We want to be able to use 64bit arithmetic */
+#pragma TenDRA longlong type allow
+#pragma TenDRA set longlong type : long long
+/* Decrease the ANSI C stringency. */
+#if __STDC__ - 0 != 0
+#undef __STDC__
+#define __STDC__ 0
+#endif /* __TenDRA__ */
 
 #ifndef _LARGEFILE_SOURCE
 #  define _FILE_OFFSET_BITS 64
