@@ -1,3 +1,11 @@
+Tue Jan 21 21:19:46 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* las.c: improved typechecking for indexing objects
+	* modules/files/efuns.c: get_dir threaded
+	* modules/files/file.c: now uses system.c for gethostbyname
+	* modules/system/system.c: gethostbyname and gethostbyaddr threaded
+	* module_support.c: support for checking arguments added (new file)
+
 Wed Jan 22 01:59:09 1997  Henrik Grubbström  <grubba@infovav.se>
 
 	* configure.in (pike_cv_sys_nonblock): Added workaround for this
