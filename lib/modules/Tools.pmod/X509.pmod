@@ -2,7 +2,7 @@
 //#pragma strict_types
 
 /* 
- * $Id: X509.pmod,v 1.32 2004/03/17 15:11:25 nilsson Exp $
+ * $Id: X509.pmod,v 1.33 2004/03/19 22:39:30 nilsson Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
@@ -263,10 +263,12 @@ class rsa_verifier
       return rsa_verify_digest(rsa, Identifiers.sha1_id,
 			       Crypto.SHA1.hash(msg),
 			       signature);
+#if constant(Crypto.MD2.hash)
     if (algorithm->get_der() == rsa_md2_algorithm->get_der())
       return rsa_verify_digest(rsa, Identifiers.md2_id,
 			       Crypto.MD2.hash(msg),
 			       signature);
+#endif
     return 0;
   }
 }
