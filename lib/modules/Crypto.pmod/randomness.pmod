@@ -1,16 +1,13 @@
-// $Id: randomness.pmod,v 1.3 2003/08/26 16:38:36 nilsson Exp $
+// $Id: randomness.pmod,v 1.4 2004/02/04 14:50:37 nilsson Exp $
 
 //! Assorted stronger or weaker randomnumber generators.
 //! These devices try to collect entropy from the environment.
 //! They differ in behaviour when they run low on entropy, /dev/random
 //! will block if it can't provide enough random bits, while /dev/urandom
 //! will degenerate into a reasonably strong pseudo random generator
+//! @deprecated Crypto.Random
 
-#if constant(Crypto.arcfour)
 #pike __REAL_VERSION__
-#else
-#pike 7.4
-#endif
 
 // #pragma strict_types
 
@@ -37,9 +34,9 @@ static int(0..1) goodseed;
 
 #ifdef __NT__
 static string nt_random_string(int len) {
-  object ctx = Crypto.nt.CryptAcquireContext(0, 0, Crypto.nt.PROV_RSA_FULL,
-					     Crypto.nt.CRYPT_VERIFYCONTEXT
-					     /*|Crypto.nt.CRYPT_SILENT*/);
+  object ctx = Crypto.NT.CryptContext(0, 0, Crypto.NT.PROV_RSA_FULL,
+				      Crypto.NT.CRYPT_VERIFYCONTEXT
+				      /*|Crypto.NT.CRYPT_SILENT*/);
   if(!ctx)
     error( "Couldn't create crypto context.\n" );
 
@@ -106,19 +103,15 @@ static class NTSource {
 }
 #endif
 
-#if constant(Crypto.arcfour)
 //! A pseudo random generator based on the arcfour crypto.
 class arcfour_random {
 
-  inherit Crypto.arcfour : arcfour;
+  inherit Nettle.ARCFOUR_State;
 
   //! Initialize and seed the arcfour random generator.
   void create(string secret)
   {
-    Crypto.sha hash = Crypto.sha();
-    hash->update(secret);
-
-    arcfour::set_encrypt_key(hash->digest());
+    set_encrypt_key(Crypto.SHA->hash(secret));
   }
 
   //! Return a string of the next len random characters from the
@@ -126,11 +119,9 @@ class arcfour_random {
   string read(int len)
   {
     if (len > 16384) return read(len/2)+read(len-len/2);
-    return arcfour::crypt("\47" * len);
+    return crypt("\47" * len);
   }
 }
-
-#endif /* constant(Crypto.arcfour) */
 
 //! Returns a reasonably random random-source.
 RandomSource reasonably_random()
@@ -150,20 +141,10 @@ RandomSource reasonably_random()
     return global_arcfour;
 
   string seed = some_entropy();
-#if constant(Crypto.arcfour)
   if (sizeof(seed) < 2001)
     seed = random_string(2001); // Well, we're only at reasonably random...
   return (global_arcfour = arcfour_random(sprintf("%4c%O%s", time(),
 						  _memory_usage(), seed)));
-#else /* !constant(Crypto.arcfour) */
-
-  // Not very random, but at least a fallback...
-  if(!goodseed) {
-    random_seed( time() + Array.sum( (array)seed ) );
-    goodseed = 1;
-  }
-  return global_arcfour = pike_random();
-#endif /* constant(Crypto.arcfour) */
 }
 
 //! Returns a really random random-source.
