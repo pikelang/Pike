@@ -4,9 +4,10 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: hrz.c,v 1.3 1999/05/24 12:53:57 mirar Exp $");
+RCSID("$Id: hrz.c,v 1.4 1999/09/25 20:02:39 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
+#include "mapping.h"
 #include "constants.h"
 #include "interpret.h"
 #include "svalue.h"

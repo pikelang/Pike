@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.26 1999/08/27 23:44:13 hubbe Exp $
+ * $Id: sendfile.c,v 1.27 1999/09/25 20:09:58 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -292,7 +292,7 @@ int send_iov(int fd, struct iovec *iov, int iovcnt)
       sent += bytes;
 
       while (bytes) {
-	if ((unsigned int)bytes >= iov->iov_len) {
+	if ((unsigned int)bytes >= (unsigned int)iov->iov_len) {
 	  bytes -= iov->iov_len;
 	  iov++;
 	  iovcnt--;

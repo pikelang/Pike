@@ -1,12 +1,12 @@
 /*
- * $Id: udp.c,v 1.7 1999/08/17 14:55:02 grubba Exp $
+ * $Id: udp.c,v 1.8 1999/09/25 20:10:31 grubba Exp $
  */
 
 #include "global.h"
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.7 1999/08/17 14:55:02 grubba Exp $");
+RCSID("$Id: udp.c,v 1.8 1999/09/25 20:10:31 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -21,6 +21,8 @@ RCSID("$Id: udp.c,v 1.7 1999/08/17 14:55:02 grubba Exp $");
 #include "signal_handler.h"
 #include "pike_types.h"
 #include "threads.h"
+
+#include "module_support.h"
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>

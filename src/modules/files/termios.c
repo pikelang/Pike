@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: termios.c,v 1.4 1999/05/09 10:28:02 mirar Exp $");
+RCSID("$Id: termios.c,v 1.5 1999/09/25 20:08:29 grubba Exp $");
 #include "file_machine.h"
 
 #if defined(HAVE_TERMIOS_H)
@@ -15,6 +15,8 @@ RCSID("$Id: termios.c,v 1.4 1999/05/09 10:28:02 mirar Exp $");
 #include "svalue.h"
 #include "stralloc.h"
 #include "operators.h"
+
+#include "module_support.h"
 
 #include "file.h"
 
