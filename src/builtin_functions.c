@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.283 2000/06/24 00:48:12 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.284 2000/06/26 17:35:41 noring Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -738,19 +738,26 @@ static int find_absolute(char *s)
 #define IS_ROOT(X) (IS_SEP((X)[0])?1:0)
 #endif
 
+static void free_nonull(void *ptr)
+{
+  if(ptr)
+    free(ptr);
+}
+
 static char *combine_path(char *cwd,char *file)
 {
   /* cwd is supposed to be combined already */
   char *ret;
   register char *from,*to;
   char *my_cwd;
-  char cwdbuf[10];
+  char *cwdbuf = 0;
   int tmp;
 
-  my_cwd=0; 
-
+  SET_ONERROR(err, free_nonull, cwdbuf);
+  
   if((tmp=IS_ABS(file)))
   {
+    cwdbuf = (char *)xalloc(tmp+1);
     MEMCPY(cwdbuf,file,tmp);
     cwdbuf[tmp]=0;
     cwd=cwdbuf;
@@ -762,12 +769,15 @@ static char *combine_path(char *cwd,char *file)
   {
     if(tmp=IS_ABS(cwd))
     {
+      cwdbuf = (char *)xalloc(tmp+1);
       MEMCPY(cwdbuf,cwd,tmp);
       cwdbuf[tmp]=0;
       cwd=cwdbuf;
       file+=IS_ROOT(file);
     }else{
-      MEMCPY(cwdbuf,file,IS_ROOT(file));
+      tmp = IS_ROOT(file);
+      cwdbuf = (char *)xalloc(tmp+1);
+      MEMCPY(cwdbuf,file,tmp);
       cwdbuf[IS_ROOT(file)]=0;
       cwd=cwdbuf;
       file+=IS_ROOT(file);
@@ -860,7 +870,8 @@ static char *combine_path(char *cwd,char *file)
     }
   }
 
-  if(my_cwd) free(my_cwd);
+  CALL_AND_UNSET_ONERROR(err);
+  
   return ret;
 }
 
