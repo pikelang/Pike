@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.158 1999/10/24 14:28:12 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.159 1999/11/16 20:51:36 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2584,7 +2584,10 @@ void f_create_process(INT32 args)
       {
 	/* Restore the signals to the defaults. */
 #ifdef HAVE_SIGNAL
-        for(i=0; i<60; i++)
+#ifndef NSIG
+#define NSIG 60
+#endif /* !NSIG */
+        for(i=0; i<NSIG; i++)
           signal(i, SIG_DFL);
 #else
 #endif
