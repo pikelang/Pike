@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "../../global.h"
-RCSID("$Id: charsetmod.c,v 1.28 2001/10/07 19:44:33 marcus Exp $");
+RCSID("$Id: charsetmod.c,v 1.29 2003/09/23 17:53:42 mast Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -130,7 +130,8 @@ static int call_repcb(struct svalue *repcb, p_wchar2 ch)
 	  } else if(rep != NULL) \
             func(ctx, sb, rep, NULL, NULL); \
 	  else \
-	    Pike_error("Character unsupported by encoding.\n");
+	    Pike_error("Character %lu unsupported by encoding.\n", \
+		       (unsigned long) ch);
 
 #define MKREPCB(c) ((c).type == T_FUNCTION? &(c):NULL)
 
