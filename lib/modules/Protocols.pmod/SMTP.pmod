@@ -118,7 +118,22 @@ class client
       cmd("RCPT TO: <" + t + ">");
     }
     cmd("DATA");
-    cmd(body+"\r\n.");
+
+    // Perform quoting according to RFC 2821 4.5.2.
+    if (sizeof(body) && body[0] == '.') {
+      body = "." + body;
+    }
+    body = replace(body, "\r\n.", "\r\n..");
+
+    // RFC 2841 4.1.1.4:
+    //   An extra <CRLF> MUST NOT be added, as that would cause an empty
+    //   line to be added to the message.
+    if (has_suffix(body, "\r\n")) {
+      body += ".";
+    } else {
+      body += "\r\n.";
+    }
+    cmd(body);
     cmd("QUIT");
   }
 
