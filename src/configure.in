@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.139 1997/12/02 23:21:33 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.140 1997/12/11 23:55:50 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1648,7 +1648,14 @@ then
            LDSHARED="ld"
          fi
 	;;
-	IRIX*) LDSHARED="ld -shared";;
+	IRIX*)
+	  if test "$GCC" = yes ; then
+	    # egcs defaults to building -n32 objects
+	    LDSHARED="ld -shared -n32"
+	  else
+            LDSHARED="ld -shared"
+	  fi
+	;;
 	SunOS*) LDSHARED="ld";;
 	Solaris) LDSHARED="/usr/ccs/bin/ld -G";;
 	hp*|HP*) LDSHARED="ld -b";;
