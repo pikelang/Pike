@@ -1,4 +1,4 @@
-inherit Calendar.Gregorian : christ;
+inherit Calendar.ISO;
 
 void create()
 {
@@ -13,7 +13,7 @@ void create()
 
 class Week
 {
-   inherit Calendar.Gregorian.Week;
+   inherit Calendar.ISO.Week;
 
    string name()
    {
@@ -23,18 +23,12 @@ class Week
 
 class Year
 {
-   inherit Calendar.Gregorian.Year;
+   inherit Calendar.ISO.Year;
 
    string name()
    {
       if (this->number()<=0) 
 	 return (string)(1-this->number())+" fk";
       return (string)this->number();
-   }
-
-   int leap_day()
-   {
-      if (y>1999) return 31+29-1; // 29 Feb
-      return 31+24-1; // 24 Feb
    }
 }

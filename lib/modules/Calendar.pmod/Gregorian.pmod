@@ -326,11 +326,14 @@ class Year
 	 {
 	    object o=n->year();
 	    n=n->year_day();
-	    if (n==o->leap_day())
+	    if (o->leap() && n==o->leap_day())
 	       if (!this->leap()) return 0;
 	       else n=this->leap_day();
-	    if (o->leap() && n>o->leap_day()) n--;
-	    if (this->leap() && n>=this->leap_day()) n++;
+	    else
+	    {
+	       if (o->leap() && n>o->leap_day()) n--;
+	       if (this->leap() && n>=this->leap_day()) n++;
+	    }
 	    if (n>=number_of_days()) return 0; /* no such day */
 	 }
 	 else return 0; /* illegal object */
@@ -669,7 +672,7 @@ class Week
 	 if (!week_day_mapping)
 	    week_day_mapping=
 	       mkmapping(Array.map(week_day_names,lower_case),
-			 indices(allocate(8))[1..]);
+			 ({1,2,3,4,5,6,0}));
 	 n=week_day_mapping[n];
       }
       else if (objectp(n))
@@ -677,9 +680,8 @@ class Week
 	    n=n->week_day();
 	 else return 0;
 
-      if (n<0) n=8+n;
-      else if (!n) n=1;
-      n+=yday()-1;
+      if (n<0) n=7+n;
+      n+=this->yday()-1;
       if (n<0) return vYear(y-1)->day(n);
       if (n>=this->year()->number_of_days()) 
  	 return vYear(y+1)->day(n-this->year()->number_of_days());
@@ -688,7 +690,7 @@ class Week
 
    array(mixed) days()
    {
-       return ({1,2,3,4,5,6,7});
+       return ({0,1,2,3,4,5,6});
    }
 
 //-- more -----------------------------------------------------------
@@ -830,7 +832,7 @@ class Day
 
    int week_day()
    {
-      return (julian_day()%7+1);
+      return (julian_day()+1)%7;
    }
 
    string week_day_name()
@@ -862,7 +864,7 @@ class Day
    {
       int n;
       object ye=this->year();
-      n=(-({0,-1,-2,-3,3,2,1})[this->year()->julian_day(0)%7]+d)/7+1;
+      n=(-({-1,-2,-3,3,2,1,0})[this->year()->julian_day(0)%7]+d)/7+1;
       if (n>ye->number_of_weeks())
 	 return ye->next()->week(1);
       else if (n<=0)
