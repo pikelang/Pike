@@ -1,12 +1,16 @@
 /*
- * $Id: ia32.c,v 1.8 2001/07/22 22:06:01 grubba Exp $
+ * $Id: ia32.c,v 1.9 2001/07/24 01:16:11 hubbe Exp $
  *
  * Machine code generator for IA32.
  *
  */
 
+#include "operators.h"
+
 #define PUSH_INT(X) ins_int((INT32)(X), (void (*)(char))add_to_program)
 #define PUSH_ADDR(X) PUSH_INT((X))
+
+#define NOP() add_to_program(0x90); /* for alignment */
 
 /* This is ugly, but since the code may be moved we cannot use
  * relative addressing :(
@@ -18,16 +22,17 @@
   add_to_program(0xd0);				\
 }while(0)
 
-#define UPDATE_PC() do {						\
-    INT32 tmp=PC;							\
-    add_to_program(0xa1 /* mov $xxxxx, %eax */);			\
-    ins_int((INT32)(&Pike_interpreter.frame_pointer), add_to_program);	\
-									\
-    add_to_program(0xc7); /* movl $xxxxx, yy%(eax) */			\
-    add_to_program(0x40);						\
-    add_to_program(OFFSETOF(pike_frame, pc));				\
-    ins_int((INT32)tmp, add_to_program);				\
+#define ADDB_EAX(X) do {			\
+  add_to_program(0x83);				\
+  add_to_program(0xc0);				\
+ add_to_program(X);				\
 }while(0)
+
+#define MOVEAX2(ADDR) do {				\
+    add_to_program(0xa3 /* mov %eax, $xxxxx */);	\
+    PUSH_INT( (INT32)&(ADDR) );				\
+}while(0)
+
 
 #define CALL_RELATIVE(X) do{						\
   struct program *p_=Pike_compiler->new_program;			\
@@ -58,8 +63,43 @@ static void update_arg2(INT32 value)
   PUSH_INT(value);
 }
 
+void ia32_push_constant(struct svalue *tmp)
+{
+  int e;
+  MOV2EAX(Pike_interpreter.stack_pointer);
+  for(e=0;e<(int)sizeof(*tmp)/4;e++)
+    SET_MEM_REL_EAX(e*4, ((INT32 *)tmp)[e]);
+  ADDB_EAX(sizeof(*tmp));
+  MOVEAX2(Pike_interpreter.stack_pointer);
+}
+
+INT32 ins_f_jump(unsigned int b)
+{
+  INT32 ret;
+  if(b != F_BRANCH) return -1;
+  add_to_program(0xe9);
+  ret=DO_NOT_WARN( (INT32) PC );
+  PUSH_INT(0);
+  return ret;
+}
+
+void update_f_jump(INT32 offset, INT32 to_offset)
+{
+  upd_pointer(offset, to_offset - offset - 4);
+}
+
+void ia32_push_int(INT32 x)
+{
+  struct svalue tmp;
+  tmp.type=PIKE_T_INT;
+  tmp.subtype=0;
+  tmp.u.integer=x;
+  ia32_push_constant(&tmp);
+}
+
 void ins_f_byte(unsigned int b)
 {
+  void *addr;
 #ifdef PIKE_DEBUG
   if(store_linenumbers && b<F_MAX_OPCODE)
     ADD_COMPILED(b);
@@ -82,14 +122,56 @@ void ins_f_byte(unsigned int b)
       UPDATE_PC();
     }
   }while(0);
-  
-  CALL_RELATIVE(instrs[b].address);
+
+  addr=instrs[b].address;
+
+#ifndef PIKE_DEBUG
+  /* This is not very pretty */
+  switch(b)
+  {
+    case F_CONST0 - F_OFFSET:
+      ia32_push_int(0);
+      return;
+
+    case F_CONST1 - F_OFFSET:
+      ia32_push_int(1);
+      return;
+
+    case F_CONST_1 - F_OFFSET:
+      ia32_push_int(-1);
+      return;
+
+    case F_ADD - F_OFFSET:
+      update_arg1(2);
+      addr=(void *)f_add;
+      break;
+
+    case F_AND - F_OFFSET: addr=(void *)o_and; break;
+    case F_OR - F_OFFSET: addr=(void *)o_or; break;
+    case F_XOR - F_OFFSET: addr=(void *)o_xor; break;
+    case F_MULTIPLY - F_OFFSET: addr=(void *)o_multiply; break;
+    case F_DIVIDE - F_OFFSET: addr=(void *)o_divide; break;
+    case F_MOD - F_OFFSET: addr=(void *)o_mod; break;
+    case F_COMPL - F_OFFSET: addr=(void *)o_compl; break;
+    case F_SSCANF - F_OFFSET: addr=(void *)o_sscanf; break;
+  }
+#endif
+  CALL_RELATIVE(addr);
 /*  CALL_ABSOLUTE(instrs[b].address); */
+
   return;
 }
 
 void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 {
+#ifndef PIKE_DEBUG
+  switch(a)
+  {
+    case F_NUMBER:
+      ia32_push_int(b);
+      return;
+  }
+#endif
   update_arg1(b);
   ins_f_byte(a);
 }

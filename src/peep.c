@@ -19,7 +19,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.63 2001/07/21 09:30:25 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.64 2001/07/24 01:16:11 hubbe Exp $");
 
 static void asm_opt(void);
 
@@ -318,6 +318,16 @@ void assemble(void)
       switch(instrs[c->opcode - F_OFFSET].flags)
       {
       case I_ISJUMP:
+#ifdef INS_F_JUMP
+	tmp=INS_F_JUMP(c->opcode);
+	if(tmp != -1)
+	{
+	  upd_pointer(tmp, jumps[c->arg]);
+	  jumps[c->arg]=~tmp;
+	  break;
+	}
+#endif
+
 	ins_f_byte(c->opcode);
 
       case I_ISPOINTER:
@@ -347,6 +357,32 @@ void assemble(void)
 #endif
       }
     }
+
+#ifdef ALIGN_PIKE_JUMPS
+    if(e+1 < length)
+    {
+      switch(c->opcode)
+      {
+	case F_RETURN:
+	case F_VOLATILE_RETURN:
+	case F_BRANCH:
+	case F_RETURN_0:
+	case F_RETURN_1:
+	case F_RETURN_LOCAL:
+	  
+#define CALLS(X) \
+      case PIKE_CONCAT3(F_,X,_AND_RETURN): \
+      case PIKE_CONCAT3(F_MARK_,X,_AND_RETURN):
+	  
+	  CALLS(APPLY)
+	    CALLS(CALL_FUNCTION)
+	    CALLS(CALL_LFUN)
+	    CALLS(CALL_BUILTIN)
+	    while( ((INT32) PC & (ALIGN_PIKE_JUMPS-1) ) )
+	      ins_byte(0);
+      }
+    }
+#endif
     
     c++;
   }
@@ -362,6 +398,16 @@ void assemble(void)
 	fatal("Hyperspace error: unknown jump point %ld at %d (pc=%x).\n",
 	      PTRDIFF_T_TO_LONG(e), labels[e], jumps[e]);
 #endif
+#ifdef INS_F_JUMP
+      if(jumps[e] < 0)
+      {
+	tmp = read_pointer(~jumps[e]);
+	UPDATE_F_JUMP(~jumps[e], tmp2);
+	jumps[e]=tmp;
+	continue;
+      }
+#endif
+
       tmp = read_pointer(jumps[e]);
       upd_pointer(jumps[e], tmp2 - jumps[e]);
       jumps[e]=tmp;

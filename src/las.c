@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.259 2001/07/20 12:54:37 grubba Exp $");
+RCSID("$Id: las.c,v 1.260 2001/07/24 01:16:11 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -5318,7 +5318,7 @@ int dooptcode(struct pike_string *name,
       extern int remove_clear_locals;
       remove_clear_locals=args;
       if(vargs) remove_clear_locals++;
-      do_code_block(check_node_hash(n));
+      tmp.offset=do_code_block(check_node_hash(n));
       remove_clear_locals=0x7fffffff;
     }
   }

@@ -66,4 +66,24 @@ void FLUSH_CODE_GENERATOR_STATE()
 	the code generator that registers and other states
 	must be updated at this point.
 
-        
+int ALIGN_PIKE_JUMPS
+        This can be defined to a number which will cause Pike to
+	insert zeroes in the code after instructions which do not
+        return to permit better alignment of code. Please note that
+        this is not guaranteed and should only be used for optimization.
+
+int ALIGN_PIKE_FUNCTION_BEGINNINGS
+        Similar to ALIIGN_PIKE_JUMPS, but only for the beginning
+        of a function.
+
+int INS_F_JUMP(unsigned int op)
+        Similar to ins_f_byte, but is is only called for jump instructions.
+        The return value should be the offset in the program to the
+        empty address field of the jump instruction. You can also return
+        -1 to make the code use the same behaviour as if INS_F_JUMP was
+        not defined.    
+
+void UPDATE_F_JUMP(INT32 offset, INT32 to_offset)
+        If you define INS_F_JUMP you must also define UPDATE_F_JUMP.
+        UPDATE_F_JUMP is called when the compiler knows where to jump.
+        (See ia32.c for an example of this and INS_F_JUMP)

@@ -1,8 +1,9 @@
 /*
- * $Id: ia32.h,v 1.6 2001/07/21 09:31:23 hubbe Exp $
+ * $Id: ia32.h,v 1.7 2001/07/24 01:16:11 hubbe Exp $
  */
 
 #define PIKE_OPCODE_T	unsigned INT8
+/* #define ALIGN_PIKE_JUMPS 8 */
 
 #define ins_pointer(PTR)	ins_int((PTR), (void (*)(char))add_to_program)
 #define read_pointer(OFF)	read_int(OFF)
@@ -15,16 +16,32 @@
 #define ins_byte(VAL)		add_to_program(VAL)
 #define ins_data(VAL)		ins_int((VAL), (void (*)(char))add_to_program)
 
-#define UPDATE_PC() do {						\
-    INT32 tmp=PC;							\
-    add_to_program(0xa1 /* mov $xxxxx, %eax */);			\
-    ins_int((INT32)(&Pike_interpreter.frame_pointer), add_to_program);	\
-									\
-    add_to_program(0xc7); /* movl $xxxxx, yy%(eax) */			\
-    add_to_program(0x40);						\
-    add_to_program(OFFSETOF(pike_frame, pc));				\
-    ins_int((INT32)tmp, add_to_program);				\
-  }while(0)
+
+#define MOV2EAX(ADDR) do {				\
+    add_to_program(0xa1 /* mov $xxxxx, %eax */);	\
+    ins_pointer( (INT32)&(ADDR));			\
+}while(0)
+
+
+#define SET_MEM_REL_EAX(OFFSET, VALUE) do {		\
+  INT32 off_ = (OFFSET);				\
+  add_to_program(0xc7); /* movl $xxxxx, yy%(eax) */	\
+  if(off_) 						\
+  {							\
+    add_to_program(0x40);				\
+    add_to_program(OFFSET);				\
+  }else{						\
+    add_to_program(0x0);				\
+  }							\
+  ins_pointer(VALUE);					\
+}while(0)
+
+#define UPDATE_PC() do {				\
+    INT32 tmp=PC;					\
+    MOV2EAX(Pike_interpreter.frame_pointer);		\
+    SET_MEM_REL_EAX(OFFSETOF(pike_frame, pc), tmp);	\
+}while(0)
+
 
 #define READ_INCR_BYTE(PC)	EXTRACT_UCHAR((PC)++)
 
@@ -52,3 +69,11 @@ void ia32_decode_program(struct program *p);
 
 #define ENCODE_PROGRAM(P, BUF)	ia32_encode_program(P, BUF)
 #define DECODE_PROGRAM(P)	ia32_decode_program(p)
+
+INT32 ins_f_jump(unsigned int b);
+void update_f_jump(INT32 offset, INT32 to_offset);
+
+#define INS_F_JUMP ins_f_jump
+#define UPDATE_F_JUMP update_f_jump
+
+
