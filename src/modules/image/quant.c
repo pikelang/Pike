@@ -1,4 +1,4 @@
-/* $Id: quant.c,v 1.14 1996/12/01 04:08:20 law Exp $ */
+/* $Id: quant.c,v 1.15 1996/12/02 16:49:39 per Exp $ */
 
 /*
 
@@ -35,15 +35,21 @@ David Kågedal, kg@infovav.se
 #include <sys/resource.h>
 #define CHRONO(X) chrono(X)
 
-void chrono(char *x)
+static void chrono(char *x)
 {
    struct rusage r;
+   static struct rusage rold;
    getrusage(RUSAGE_SELF,&r);
-   fprintf(stderr,"%s: %ld.%06ld %ld.%06ld %ld.%06ld\n",x,
+   fprintf(stderr,"%s: %ld.%06ld - %ld.%06ld\n",x,
 	   r.ru_utime.tv_sec,r.ru_utime.tv_usec,
-	   r.ru_stime.tv_sec,r.ru_stime.tv_usec,
-	   r.ru_stime.tv_sec+r.ru_utime.tv_sec,
-	   r.ru_stime.tv_usec+r.ru_utime.tv_usec);
+
+	   ((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?-1:0)
+	   +r.ru_utime.tv_sec-rold.ru_utime.tv_sec,
+           ((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?1000000:0)
+           + r.ru_utime.tv_usec-rold.ru_utime.tv_usec
+	   );
+
+   rold=r;
 }
 #else
 #define CHRONO(X)
