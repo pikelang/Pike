@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.190 1999/12/27 20:26:41 mast Exp $");
+RCSID("$Id: program.c,v 1.191 1999/12/28 00:18:06 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2873,6 +2873,8 @@ struct program *compile(struct pike_string *prog, struct object *handler)
   dynamic_buffer used_modules_save = used_modules;
   INT32 num_used_modules_save = num_used_modules;
   extern void yyparse(void);
+  struct mapping *resolve_cache_save = resolve_cache;
+  resolve_cache = 0;
 
   CDFPRINTF((stderr, "th(%ld) compile() starting compilation_depth=%d\n",
 	     (long)th_self(),compilation_depth));
@@ -3005,6 +3007,7 @@ struct program *compile(struct pike_string *prog, struct object *handler)
   used_modules = used_modules_save;
   num_used_modules = num_used_modules_save ;
   error_handler = saved_handler;
+  resolve_cache = resolve_cache_save;
 
 #ifdef PIKE_DEBUG
   UNSET_ONERROR(tmp);
