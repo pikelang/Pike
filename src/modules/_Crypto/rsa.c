@@ -1,5 +1,5 @@
 /*
- * $Id: rsa.c,v 1.16 2000/05/04 15:47:06 grubba Exp $
+ * $Id: rsa.c,v 1.17 2000/05/04 16:02:27 grubba Exp $
  *
  * Glue to RSA BSAFE's RSA implementation.
  *
@@ -31,7 +31,7 @@
 
 #include <bsafe.h>
 
-RCSID("$Id: rsa.c,v 1.16 2000/05/04 15:47:06 grubba Exp $");
+RCSID("$Id: rsa.c,v 1.17 2000/05/04 16:02:27 grubba Exp $");
 
 struct pike_rsa_data
 {
@@ -283,7 +283,7 @@ static void f_set_private_key(INT32 args)
 /* string cooked_get_n() */
 static void f_cooked_get_n(INT32 args)
 {
-  A_RSA_KEY rsa_public_key;
+  A_RSA_KEY *rsa_public_key = NULL;
   int code;
 
   if (!THIS->n) {
@@ -298,14 +298,14 @@ static void f_cooked_get_n(INT32 args)
 
   pop_n_elems(args);
 
-  push_string(make_shared_binary_string(rsa_public_key.modulus.data,
-					rsa_public_key.modulus.len));
+  push_string(make_shared_binary_string(rsa_public_key->modulus.data,
+					rsa_public_key->modulus.len));
 }
 
 /* string cooked_get_e() */
 static void f_cooked_get_e(INT32 args)
 {
-  A_RSA_KEY rsa_public_key;
+  A_RSA_KEY *rsa_public_key = NULL;
   int code;
 
   if (!THIS->n) {
@@ -320,8 +320,8 @@ static void f_cooked_get_e(INT32 args)
 
   pop_n_elems(args);
 
-  push_string(make_shared_binary_string(rsa_public_key.exponent.data,
-					rsa_public_key.exponent.len));
+  push_string(make_shared_binary_string(rsa_public_key->exponent.data,
+					rsa_public_key->exponent.len));
 }
 
 /* int query_blocksize() */
