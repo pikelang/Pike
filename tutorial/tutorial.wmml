@@ -2328,7 +2328,7 @@ you remember from math in school. The arithmetic operators are:
 <p>
 <table border=1>
 <tr>			<th>Function</th>	<th>Syntax</th>		<th>Identifier</th>	<th>Returns</th></tr>
-<tr><anchor name=`+>	<td>Addition</td>	<td><tt>a + b</tt></td>	<td><tt>`+</tt></td>	<td>the sum of a and b</td></anchor></tr>
+<tr><td><anchor name=`+>Addition</anchor></td>	<td><tt>a + b</tt></td>	<td><tt>`+</tt></td>	<td>the sum of a and b</td></tr>
 <tr><anchor name=`->	<td>Subtraction</td>	<td><tt>a - b</tt></td>	<td><tt>`-</tt></td>	<td>b subtracted from a</td></anchor></tr>
 <tr>			<td>Negation</td>	<td><tt>- a</tt></td>	<td><tt>`-</tt></td>	<td>minus a</td></tr>
 <tr><anchor name=`*>	<td>Multiplication</td>	<td><tt>a * b</tt></td>	<td><tt>`*</tt></td>	<td>a multiplied by b</td></anchor></tr>
