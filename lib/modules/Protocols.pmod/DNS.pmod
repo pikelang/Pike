@@ -208,6 +208,9 @@ class protocol
 };
 
 
+#define RETRIES 12
+#define RETRY_DELAY 5
+
 class client {
   inherit protocol;
 
@@ -361,23 +364,29 @@ class client {
   }
 
 
-  // Warning: NO TIMEOUT
   mapping do_sync_query(string s)
   {
     object udp=spider.dumUDP();
     udp->bind(0);
-    udp->send(nameservers[0],53,s);
     mapping m;
-    do {
-      m=udp->read();
-    } while (m->port != 53 ||
-	     m->ip != nameservers[0] ||
-	     m->data[0..1]!=s[0..1]);
-    return decode_res(m->data);
+    int i;
+    for (i=0; i < RETRIES; i++) {
+      udp->send(nameservers[i % sizeof(nameservers)], 53, s);
+      while (udp->wait(RETRY_DELAY * 1.0)) {
+	m=udp->read();
+	if ((m->port == 53) &&
+	    (m->data[0..1] == s[0..1]) &&
+	    (search(nameservers, m->ip) != -1)) {
+	  // Success.
+	  return decode_res(m->data);
+	}
+      }
+    }
+    // Failure.
+    return 0;
   }
   
 
-  // Warning: NO TIMEOUT
   mixed *gethostbyname(string s)
   {
     mapping m;
@@ -393,6 +402,10 @@ class client {
     } else {
       m=do_sync_query(mkquery(s, C_IN, T_A));
     }
+
+    if (!m) {
+      return ({ 0, ({}), ({}) });
+    }
       
     string *names=({});
     string *ips=({});
@@ -405,9 +418,9 @@ class client {
     }
     return ({
       sizeof(names)?names[0]:0,
-	ips,
-	names,
-	});
+      ips,
+      names,
+    });
   }
 
   string arpa_from_ip(string ip)
@@ -420,27 +433,31 @@ class client {
     return reverse(arpa/".")[2..]*".";
   }
   
-  // Warning: NO TIMEOUT
+
   mixed *gethostbyaddr(string s)
   {
     mapping m=do_sync_query(mkquery(arpa_from_ip(s), C_IN, T_PTR));
-    string *names=({});
-    string *ips=({});
-    foreach(m->an, mapping x)
-    {
-      if(x->ptr)
-	names+=({x->ptr});
-      if(x->name)
-	  
+    if (m) {
+      string *names=({});
+      string *ips=({});
+      foreach(m->an, mapping x)
       {
-	ips+=({ip_from_arpa(x->name)});
+	if(x->ptr)
+	  names+=({x->ptr});
+	if(x->name)
+	{
+	  ips+=({ip_from_arpa(x->name)});
+	}
       }
-    }
-    return ({
-      sizeof(names)?names[0]:0,
+      return ({
+	sizeof(names)?names[0]:0,
 	ips,
 	names,
-	});
+      });
+    } else {
+      // Lookup failed.
+      return ({ 0, ({}), ({}) });
+    }
   }
 
   string get_primary_mx(string host)
@@ -458,6 +475,9 @@ class client {
     } else {
       m=do_sync_query(mkquery(host, C_IN, T_MX));
     }
+    if (!m) {
+      return 0;
+    }
     int minpref=29372974;
     string ret;
     foreach(m->an, mapping m2)
@@ -472,8 +492,6 @@ class client {
   }
 }
 
-#define RETRIES 12
-#define RETRY_DELAY 5
 #define REMOVE_DELAY 120
 #define GIVE_UP_DELAY (RETRIES * RETRY_DELAY + REMOVE_DELAY)*2
 
