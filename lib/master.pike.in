@@ -6,7 +6,7 @@
 // Pike is distributed as GPL (General Public License)
 // See the files COPYING and DISCLAIMER for more information.
 //
-// $Id: master.pike.in,v 1.203 2002/05/23 23:27:16 mast Exp $
+// $Id: master.pike.in,v 1.204 2002/05/24 21:46:03 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -68,7 +68,7 @@ int compat_minor=-1;
 //! Throws an error. A more readable version of the code
 //! @tt{throw( ({ sprintf(f, @@args), backtrace() }) )@}.
 void error(string f, mixed ... args) {
-  array(array) b = backtrace();
+  array b = backtrace();
   if (sizeof(args)) f = sprintf(f, @args);
   throw( ({ f, b[..sizeof(b)-2] }) );
 }
@@ -191,7 +191,7 @@ int autoreload_on;
 int newest;
 
 #define AUTORELOAD_CHECK_FILE(X) \
-   if(autoreload_on) if(mixed fnord=master_file_stat(X)) if(fnord[3]>newest) newest=fnord[3];
+   if(autoreload_on) if(Stat s=master_file_stat(X)) if(s->mtime>newest) newest=[int]s->mtime;
 
 #define AUTORELOAD_BEGIN() \
     int ___newest=newest;  \
@@ -240,8 +240,8 @@ program compile_string(string source, void|string filename,
 string master_read_file(string file)
 {
   object o=_static_modules.files()->Fd();
-  if(o->open(fakeroot(file),"r"))
-    return o->read();
+  if( ([function(string, string : int)]o->open)(fakeroot(file),"r") )
+    return ([function(void : string)]o->read)();
   return 0;
 }
 
@@ -273,32 +273,33 @@ mapping(string:multiset(string)) dir_cache = ([]);
 
 Stat master_file_stat(string x)
 {
-  string file, dir=combine_path_with_cwd(x);
+  string dir = combine_path_with_cwd(x);
+  string file = BASENAME(dir);
+  dir = dirname(dir);
 
-  file=BASENAME(dir);
-  dir=dirname(dir);
-
-  multiset(string) d;
   if(time() > invalidate_time)
   {
-    dir_cache=([]);
-    invalidate_time=time()+FILE_STAT_CACHE_TIME;
+    dir_cache = ([]);
+    invalidate_time = time()+FILE_STAT_CACHE_TIME;
   }
-  if(zero_type(d=dir_cache[dir]))
+
+  multiset(string) d = dir_cache[dir];
+  if( zero_type(d) )
   {
-    if(array(string) tmp=get_dir(dir))
+    array(string) tmp = get_dir(dir);
+    if(tmp)
     {
 #ifdef __NT__
-      tmp=map(tmp, lower_case);
+      tmp = map(tmp, lower_case);
 #endif
-      d=dir_cache[dir]=aggregate_multiset(@tmp);
-    }else{
-      dir_cache[dir]=0;
+      d = dir_cache[dir] = aggregate_multiset(@tmp);
     }
+    else
+      dir_cache[dir]=0;
   }
   
 #ifdef __NT__
-  file=lower_case(file);
+  file = lower_case(file);
 #endif
   if(d && !d[file]) return 0;
 
@@ -326,7 +327,7 @@ mapping (string:array(string)) environment=([]);
 //!
 string|mapping(string:string) getenv(string|void s)
 {
-  if(!s) return aggregate_mapping( @(values(environment)*({}) ) );
+  if(!s) return [mapping(string:string)]aggregate_mapping( @(values(environment)*({}) ) );
 #ifdef __NT__
   s = lower_case(s);
 #endif
@@ -442,7 +443,7 @@ array(string) query_precompiled_names(string fname)
 
 #if constant(_static_modules.Builtin.mutex)
 #define THREADED
-object compilation_mutex = _static_modules.Builtin()->mutex();
+_static_modules.Builtin.mutex compilation_mutex = _static_modules.Builtin()->mutex();
 #endif
 
 static program low_findprog(string pname,
@@ -516,7 +517,7 @@ static program low_findprog(string pname,
 	      AUTORELOAD_CHECK_FILE(oname);
 	      return programs[fname] =
 		decode_value(master_read_file(oname),
-			     Codec(fname,mkobj));
+			     Codec(fname, mkobj));
 	    };
 	    m_delete(programs, fname);
 	    if (handler && handler->compile_warning) {
@@ -582,7 +583,8 @@ void unregister(program p)
     // with '/' as path separators, even on NT. Haven't checked if
     // that always is the case.
     fname = dirname (fname);
-    if (object n = fname != "" && fc[fname])
+    object n;
+    if ( fname!="" && (n = fc[fname]) )
       if (n->is_resolv_dirnode || n->is_resolv_joinnode)
 	n->delete_value (p);
   }
@@ -690,8 +692,8 @@ void handle_error(array(mixed)|object trace)
     if(catch {
       catch {
 	if (catch {
-	  string msg = x[0];
-	  array bt = x[1];
+	  string msg = [string]x[0];
+	  array bt = [array]x[1];
 	  werror("%s%O\n", msg, bt);
 	}) {
 	  werror("%O\n", x);
@@ -726,7 +728,7 @@ object new(string|program prog, mixed ... args)
 {
   if(stringp(prog))
   {
-    if(program p=cast_to_program(prog,backtrace()[-2][0]))
+    if(program p=cast_to_program(prog, backtrace()[-2][0]))
       return p(@args);
     else
       error("Failed to find program %s.\n", prog);
@@ -2602,16 +2604,9 @@ string describe_error (mixed trace)
 }
 
 
-class Codec
+class Codec (void|string fname, void|int mkobj)
 {
-  string fname;
-  int mkobj;
   program prog_to_mkobj;
-  void create(void|string f,void|int m)
-    {
-      fname=f;
-      mkobj=m;
-    }
 
   object __register_new_program(program p)
     {
