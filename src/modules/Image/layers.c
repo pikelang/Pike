@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: layers.c,v 1.88 2003/09/01 16:39:45 nilsson Exp $
+|| $Id: layers.c,v 1.89 2003/10/13 17:39:08 grubba Exp $
 */
 
 /*
@@ -201,7 +201,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.88 2003/09/01 16:39:45 nilsson Exp $");
+RCSID("$Id: layers.c,v 1.89 2003/10/13 17:39:08 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -3192,7 +3192,7 @@ static void image_layer_find_autocrop(INT32 args)
    INT_TYPE l=1,r=1,t=1,b=1;
 
    if (args>3)
-      get_all_args("find_autocrop",args,"%d%d%d%d",&l,&r,&t,&b);
+      get_all_args("find_autocrop",args,"%i%i%i%i",&l,&r,&t,&b);
 
    if (!THIS->tiled) {
       if (THIS->alpha)

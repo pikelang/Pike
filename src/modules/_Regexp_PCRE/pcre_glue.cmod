@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.14 2003/10/08 10:47:45 grubba Exp $
+|| $Id: pcre_glue.cmod,v 1.15 2003/10/13 17:48:58 grubba Exp $
 || (original author: mirar)
 */
 
 #include "global.h"
-RCSID("$Id: pcre_glue.cmod,v 1.14 2003/10/08 10:47:45 grubba Exp $");
+RCSID("$Id: pcre_glue.cmod,v 1.15 2003/10/13 17:48:58 grubba Exp $");
 #include "pcre_machine.h"
 
 #include "pike_macros.h"
@@ -67,7 +67,7 @@ PIKECLASS _pcre
 		       void|int options,
 		       void|object table)
       {
-	 int options=0;
+	 INT32 options=0;
 	 struct object *table=NULL;
 	 const char *errptr;
 	 int erroffset;
@@ -312,7 +312,7 @@ PIKECLASS _pcre
 
 	 int rc;
 	 int ovector[OVECTOR_SIZE];
-	 int off=0;
+	 INT32 off=0;
 	 char *dummy_s;
 	 int opts=0;
 

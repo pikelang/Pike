@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: requestobject.c,v 1.27 2003/04/23 15:31:19 marcus Exp $
+|| $Id: requestobject.c,v 1.28 2003/10/13 17:39:44 grubba Exp $
 */
 
 #include "global.h"
@@ -1042,7 +1042,7 @@ void f_aap_reply_with_cache(INT32 args)
   if(!THIS->request)
     Pike_error("Reply already called.\n");
 
-  get_all_args("reply_with_cache", args, "%S%d", &reply, &time_to_keep);
+  get_all_args("reply_with_cache", args, "%S%i", &reply, &time_to_keep);
 
   if((size_t)reply->len < (size_t)THIS->request->cache->max_size/2)
   {

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.204 2003/07/26 20:19:08 mirar Exp $
+|| $Id: image.c,v 1.205 2003/10/13 17:39:08 grubba Exp $
 */
 
 /*
@@ -101,7 +101,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.204 2003/07/26 20:19:08 mirar Exp $");
+RCSID("$Id: image.c,v 1.205 2003/10/13 17:39:08 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1511,8 +1511,8 @@ void image_box(INT32 args)
 	   sp[1-args].u.integer,
 	   sp[2-args].u.integer,
 	   sp[3-args].u.integer);
-   pop_n_elems(args);
    ref_push_object(THISOBJ);
+   stack_pop_n_elems_keep_top(args);
 }
 
 /*

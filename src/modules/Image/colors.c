@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colors.c,v 1.66 2003/09/10 15:21:58 mast Exp $
+|| $Id: colors.c,v 1.67 2003/10/13 17:39:08 grubba Exp $
 */
 
 /*
@@ -192,7 +192,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.66 2003/09/10 15:21:58 mast Exp $");
+RCSID("$Id: colors.c,v 1.67 2003/10/13 17:39:08 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -585,7 +585,7 @@ static void image_color_grey(INT32 args)
 static void image_color_bits( INT32 args )
 {
   INT_TYPE rb, gb, bb, rs, gs, bs;
-  get_all_args( "bits", args, "%d%d%d%d%d%d", &rb,&gb,&bb, &rs, &gs, &bs );
+  get_all_args( "bits", args, "%i%i%i%i%i%i", &rb,&gb,&bb, &rs, &gs, &bs );
   pop_n_elems( args );
 
 

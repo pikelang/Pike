@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freetype.c,v 1.17 2003/02/08 18:20:19 grubba Exp $
+|| $Id: freetype.c,v 1.18 2003/10/13 17:40:53 grubba Exp $
 */
 
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.17 2003/02/08 18:20:19 grubba Exp $");
+RCSID("$Id: freetype.c,v 1.18 2003/10/13 17:40:53 grubba Exp $");
 #include "module.h"
 #include "pike_error.h"
 
@@ -129,7 +129,7 @@ static void image_ft_face_get_kerning( INT32 args )
 {
   INT_TYPE l, r;
   FT_Vector kern;
-  get_all_args( "get_kerning", args, "%d%d", &l, &r );
+  get_all_args( "get_kerning", args, "%i%i", &l, &r );
   l = FT_Get_Char_Index( TFACE, l );
   r = FT_Get_Char_Index( TFACE, r );
   if( FT_Get_Kerning( TFACE, l, r, ft_kerning_default, &kern ) )

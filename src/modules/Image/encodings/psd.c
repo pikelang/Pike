@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: psd.c,v 1.38 2003/09/24 08:47:53 jonasw Exp $
+|| $Id: psd.c,v 1.39 2003/10/13 17:39:08 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: psd.c,v 1.38 2003/09/24 08:47:53 jonasw Exp $");
+RCSID("$Id: psd.c,v 1.39 2003/10/13 17:39:08 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -391,7 +391,7 @@ static void f_decode_image_channel( INT32 args )
   struct object *io;
   unsigned char *source;
   rgb_group *dst;
-  get_all_args( "_decode_image_channel",args, "%d%d%S", &w,&h,&s);
+  get_all_args( "_decode_image_channel",args, "%i%i%S", &w,&h,&s);
 
   ref_push_string( s );
   push_int( h );
@@ -425,7 +425,7 @@ static void f_decode_image_data( INT32 args )
   struct object *io;
   unsigned char *source, *source2, *source3, *source4;
   rgb_group *dst;
-  get_all_args( "_decode_image_data",args, "%d%d%d%d%d%S%S", 
+  get_all_args( "_decode_image_data",args, "%i%i%i%i%i%S%S", 
                 &w,&h,&d,&m,&c,&s,&ct);
 
   if(!ct->len) ct = NULL;

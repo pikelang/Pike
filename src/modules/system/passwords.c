@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: passwords.c,v 1.42 2003/06/02 20:46:29 nilsson Exp $
+|| $Id: passwords.c,v 1.43 2003/10/13 17:43:53 grubba Exp $
 */
 
 /*
@@ -27,7 +27,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.42 2003/06/02 20:46:29 nilsson Exp $");
+RCSID("$Id: passwords.c,v 1.43 2003/10/13 17:43:53 grubba Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -254,7 +254,7 @@ void f_getgrgid(INT32 args)
 {
   INT_TYPE gid;
   struct group *foo;
-  get_all_args("getgrgid", args, "%d", &gid);
+  get_all_args("getgrgid", args, "%i", &gid);
 
   LOCK_IMUTEX(&password_protection_mutex);
 

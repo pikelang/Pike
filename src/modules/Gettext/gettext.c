@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gettext.c,v 1.17 2003/08/20 22:26:11 nilsson Exp $
+|| $Id: gettext.c,v 1.18 2003/10/13 17:41:51 grubba Exp $
 */
 
 #include "global.h"
@@ -29,7 +29,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: gettext.c,v 1.17 2003/08/20 22:26:11 nilsson Exp $");
+RCSID("$Id: gettext.c,v 1.18 2003/10/13 17:41:51 grubba Exp $");
 
 /*! @module Locale
  */
@@ -137,7 +137,7 @@ void f_dcgettext(INT32 args)
   struct pike_string *domain, *msg;
   INT_TYPE category;
 
-  get_all_args("Locale.Gettext.dcgettext", args, "%S%S%d",
+  get_all_args("Locale.Gettext.dcgettext", args, "%S%S%i",
 	       &domain, &msg, &category);
 
   push_text(dcgettext(domain->str, msg->str, category));
@@ -264,7 +264,7 @@ void f_setlocale(INT32 args)
   char *returnstring;
   struct pike_string *locale;
   INT_TYPE category;
-  get_all_args("Gettext.setlocale", args, "%d%S", &category, &locale);
+  get_all_args("Gettext.setlocale", args, "%i%S", &category, &locale);
 
   returnstring = setlocale(category, locale->str);
   pop_n_elems(args);

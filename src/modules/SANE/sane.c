@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sane.c,v 1.17 2003/03/14 15:57:49 grubba Exp $
+|| $Id: sane.c,v 1.18 2003/10/13 17:42:08 grubba Exp $
 */
 
 #include "config.h"
@@ -39,7 +39,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: sane.c,v 1.17 2003/03/14 15:57:49 grubba Exp $");
+RCSID("$Id: sane.c,v 1.18 2003/10/13 17:42:08 grubba Exp $");
 
 /*! @module SANE
  *!
@@ -334,7 +334,7 @@ static void f_scanner_set_option( INT32 args )
      case SANE_TYPE_BOOL:
      case SANE_TYPE_INT:
      case SANE_TYPE_BUTTON:
-       sp++;get_all_args( "set_option", args, "%D", &int_value );sp--;
+       sp++;get_all_args( "set_option", args, "%I", &int_value );sp--;
        sane_control_option( THIS->h, no, SANE_ACTION_SET_VALUE,
                             &int_value, &tmp );
        break;

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xcf.c,v 1.43 2002/10/21 17:06:15 marcus Exp $
+|| $Id: xcf.c,v 1.44 2003/10/13 17:39:08 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.43 2002/10/21 17:06:15 marcus Exp $");
+RCSID("$Id: xcf.c,v 1.44 2003/10/13 17:39:08 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -1190,14 +1190,14 @@ void image_xcf_f__decode_tiles( INT32 args )
   struct array *tiles;
   struct image *i=NULL, *a=NULL;
   struct neo_colortable *cmap = NULL;
-  int rxs, rys;
+  INT32 rxs, rys;
   rgb_group *colortable=NULL;
   rgb_group pix = {0,0,0};
   rgb_group apix= {255,255,255}; /* avoid may use uninitialized warnings */
 
   INT_TYPE rle, bpp, span, shrink;
   unsigned int l, x=0, y=0, cx, cy;
-  get_all_args( "_decode_tiles", args, "%o%O%a%i%i%O%d%d%d",
+  get_all_args( "_decode_tiles", args, "%o%O%a%i%i%O%i%d%d",
                 &io, &ao, &tiles, &rle, &bpp, &cmapo, &shrink, &rxs, &rys);
 
 

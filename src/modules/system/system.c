@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.160 2003/09/30 23:41:56 nilsson Exp $
+|| $Id: system.c,v 1.161 2003/10/13 17:43:37 grubba Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.160 2003/09/30 23:41:56 nilsson Exp $");
+RCSID("$Id: system.c,v 1.161 2003/10/13 17:43:37 grubba Exp $");
 
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
@@ -428,7 +428,7 @@ void f_umask(INT32 args)
 
   if (args) {
     INT_TYPE setmask;
-    get_all_args("umask", args, "%d", &setmask);
+    get_all_args("umask", args, "%i", &setmask);
     oldmask = umask(setmask);
   }
   else {

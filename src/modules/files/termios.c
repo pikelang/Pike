@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: termios.c,v 1.20 2003/01/05 14:09:36 nilsson Exp $
+|| $Id: termios.c,v 1.21 2003/10/13 17:42:54 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: termios.c,v 1.20 2003/01/05 14:09:36 nilsson Exp $");
+RCSID("$Id: termios.c,v 1.21 2003/10/13 17:42:54 grubba Exp $");
 #include "file_machine.h"
 
 #if defined(HAVE_TERMIOS_H)
@@ -394,7 +394,7 @@ void file_tcsendbreak(INT32 args)
 {
   INT_TYPE len=0;
 
-  get_all_args("tcsendbreak", args, "%d", &len);
+  get_all_args("tcsendbreak", args, "%i", &len);
   pop_stack();
   push_int(!tcsendbreak(FD, len));
 }

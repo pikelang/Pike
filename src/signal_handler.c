@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.277 2003/09/30 19:49:40 mast Exp $
+|| $Id: signal_handler.c,v 1.278 2003/10/13 17:45:57 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.277 2003/09/30 19:49:40 mast Exp $");
+RCSID("$Id: signal_handler.c,v 1.278 2003/10/13 17:45:57 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1846,7 +1846,7 @@ static void f_trace_process_exit(INT32 args)
 static void f_proc_reg_index(INT32 args)
 {
   struct pid_status *proc = THIS_PROC_REG_PROC_ID;
-  INT32 regno = 0;
+  INT_TYPE regno = 0;
   long val;
 
   ASSERT_SECURITY_ROOT("Registers->`[]()");
@@ -2302,7 +2302,7 @@ void f_set_priority( INT32 args )
     pid = 0;
     get_all_args( "set_priority", args, "%s", &plevel );
   } else if(args >= 2) {
-    get_all_args( "set_priority", args, "%s%d", &plevel, &pid );
+    get_all_args( "set_priority", args, "%s%i", &plevel, &pid );
   }
   pid = set_priority( pid, plevel );
   pop_n_elems(args);
@@ -2775,6 +2775,7 @@ void f_create_process(INT32 args)
 	    f_aggregate(ptr+1);
 	    push_string(make_shared_binary_string("\0",1));
 	    o_multiply();
+	    /* FIXME: Wide strings? */
 	    env=(void *)Pike_sp[-1].u.string->str;
 	  }
 	}
@@ -4040,6 +4041,7 @@ void Pike_f_fork(INT32 args)
     /* forked copy. there is now only one thread running, this one. */
     num_threads=1;
 #endif
+    /* FIXME: Ought to clear pid_mapping here. */
     call_callback(&fork_child_callback, 0);
     push_int(0);
   }

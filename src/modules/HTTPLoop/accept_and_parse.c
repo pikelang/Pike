@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: accept_and_parse.c,v 1.33 2003/06/30 17:02:49 mast Exp $
+|| $Id: accept_and_parse.c,v 1.34 2003/10/13 17:39:44 grubba Exp $
 */
 
 /* Hohum. Here we go. This is try number four for a more optimized
@@ -586,7 +586,7 @@ static void f_accept_with_http_parse(INT32 nargs)
   struct svalue *fun, *cb, *program;
   struct cache *c;
   struct args *args = LTHIS; 
-  get_all_args("accept_http_loop", nargs, "%o%*%*%*%d%d%d", &port, &program,
+  get_all_args("accept_http_loop", nargs, "%o%*%*%*%i%i%i", &port, &program,
 	       &fun, &cb, &ms, &dolog, &to);
   MEMSET(args, 0, sizeof(struct args));
   if(dolog)
@@ -666,7 +666,7 @@ void f_aap_add_filesystem( INT32 args )
 
   if(args == 4)
     get_all_args( "add_filesystem", args, 
-                  "%s%s%a%d", &basedir, &mountpoint, &noparse, &nosyms );
+                  "%s%s%a%i", &basedir, &mountpoint, &noparse, &nosyms );
   else
     get_all_args( "add_filesystem", args, 
                   "%s%s%a", &basedir, &mountpoint, &noparse );

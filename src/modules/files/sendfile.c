@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.61 2003/06/02 17:57:40 mast Exp $
+|| $Id: sendfile.c,v 1.62 2003/10/13 17:42:54 grubba Exp $
 */
 
 /*
@@ -682,6 +682,7 @@ static void sf_create(INT32 args)
   struct pike_sendfile sf;
   int iovcnt = 0;
   struct svalue *cb = NULL;
+  INT_TYPE offset, len;
 
   if (THIS->to_file) {
     Pike_error("sendfile->create(): Called a second time!\n");
@@ -702,8 +703,11 @@ static void sf_create(INT32 args)
   sf.callback.type = T_INT;
 
   get_all_args("sendfile", args, "%A%O%i%i%A%o%*",
-	       &(sf.headers), &(sf.from_file), &(sf.offset),
-	       &(sf.len), &(sf.trailers), &(sf.to_file), &cb);
+	       &(sf.headers), &(sf.from_file), &offset,
+	       &len, &(sf.trailers), &(sf.to_file), &cb);
+
+  sf.offset = offset;
+  sf.len = len;
 
   /* We need to give 'cb' another reference /Hubbe */
   /* No, we don't. We steal the reference from the stack.
