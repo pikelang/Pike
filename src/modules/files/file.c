@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.98 1998/05/22 08:25:54 neotron Exp $");
+RCSID("$Id: file.c,v 1.99 1998/05/22 11:34:42 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1195,17 +1195,21 @@ static void file_set_buffer(INT32 args)
   if(bufsize>SOCKET_BUFFER_MAX) bufsize=SOCKET_BUFFER_MAX;
 #endif
   flags &= THIS->open_mode;
+#ifdef SO_RCVBUF
   if(flags & FILE_READ)
   {
     int tmp=bufsize;
     fd_setsockopt(FD,SOL_SOCKET, SO_RCVBUF, (char *)&tmp, sizeof(tmp));
   }
+#endif /* SO_RCVBUF */
 
+#ifdef SO_SNDBUF
   if(flags & FILE_WRITE)
   {
     int tmp=bufsize;
     fd_setsockopt(FD,SOL_SOCKET, SO_SNDBUF, (char *)&tmp, sizeof(tmp));
   }
+#endif /* SO_SNDBUF */
 #endif
 }
 
