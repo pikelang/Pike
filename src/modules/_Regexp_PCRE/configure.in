@@ -1,9 +1,9 @@
 #
-# $Id: configure.in,v 1.2 2003/09/20 16:22:04 mirar Exp $
+# $Id: configure.in,v 1.3 2003/09/20 19:20:46 nilsson Exp $
 #
 AC_INIT(pcre_glue.cmod)
 AC_CONFIG_HEADER(pcre_machine.h)
-AC_ARG_WITH(libpcre,     [  --with(out)-libpcre       Support JPEG (Image.JPEG)],[],[with_libpcre=yes])
+AC_ARG_WITH(libpcre,     [  --with(out)-libpcre       Support Regexp.PCRE],[],[with_libpcre=yes])
 
 AC_MODULE_INIT()
 
