@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.200 2002/11/21 15:12:01 marcus Exp $
+|| $Id: pike_types.c,v 1.201 2002/11/22 13:46:56 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.200 2002/11/21 15:12:01 marcus Exp $");
+RCSID("$Id: pike_types.c,v 1.201 2002/11/22 13:46:56 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -4497,16 +4497,27 @@ static struct pike_type *debug_low_make_pike_type(unsigned char *type_string,
 		   (void *)(ptrdiff_t)extract_type_int(type_string+2), 0);
   case PIKE_T_NAME:
     {
-      int size_shift = type_string[1]&127;
+      int size_shift = type_string[1] & 0x3;
       struct pike_string *str;
       INT32 bytes;
-      switch(size_shift) {
-      case 0:
+      /* bit 0 & 1: size_shift
+       * bit 2 ==> little endian.
+       *
+       * The loops check the lsb first, since it's most likely to
+       * be non-zero.
+       */
+      switch(type_string[1]) {
+      case 0: case 4:
 	bytes = strlen(type_string+2);
 	break;
       case 1:
 	for(bytes=0; ; bytes+=2)
 	  if(!type_string[bytes+3] && !type_string[bytes+2])
+	    break;
+	break;
+      case 5:
+	for(bytes=0; ; bytes+=2)
+	  if(!type_string[bytes+2] && !type_string[bytes+3])
 	    break;
 	break;
       case 2:
@@ -4515,9 +4526,43 @@ static struct pike_type *debug_low_make_pike_type(unsigned char *type_string,
 	     !type_string[bytes+3] && !type_string[bytes+2])
 	    break;
 	break;
+      case 6:
+	for(bytes=0; ; bytes+=4)
+	  if(!type_string[bytes+2] && !type_string[bytes+3] &&
+	     !type_string[bytes+4] && !type_string[bytes+5])
+	    break;
+	break;
       }
       str = begin_wide_shared_string(bytes>>size_shift, size_shift);
       MEMCPY(str->str, type_string+2, bytes);
+      if (size_shift &&
+#if (PIKE_BYTEORDER == 1234)
+	  /* Little endian */
+	  !(type_string[1] & 0x04)
+#else /* PIKE_BYTEORDER != 1234 */
+	  /* Big endian */
+	  (type_string[1] & 0x04)
+#endif /* PIKE_BYTEORDER == 1234 */
+	  ) {
+	int len;
+	char tmp;
+	if (size_shift == 1) {
+	  for (len = 0; len < bytes; len += 2) {
+	    tmp = str->str[len];
+	    str->str[len] = str->str[len+1];
+	    str->str[len+1] = tmp;
+	  }
+	} else {
+	  for (len = 0; len < bytes; len += 4) {
+	    tmp = str->str[len];
+	    str->str[len] = str->str[len+3];
+	    str->str[len+3] = tmp;
+	    tmp = str->str[len+1];
+	    str->str[len+1] = str->str[len+2];
+	    str->str[len+2] = tmp;
+	  }
+	}
+      }
       return mk_type(PIKE_T_NAME, (void *)end_shared_string(str),
 		     low_make_pike_type(type_string + 2 + bytes +
 					(1<<size_shift), cont),

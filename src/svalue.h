@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.109 2002/11/21 15:12:02 marcus Exp $
+|| $Id: svalue.h,v 1.110 2002/11/22 13:46:56 grubba Exp $
 */
 
 #ifndef SVALUE_H
@@ -190,8 +190,15 @@ struct svalue
 #define tIfnot(X,Y) tAnd(tNot(X),Y)
 #define tAny tOr(tVoid,tMix)
 #define tName(X,Y) "\361\0"X"\0"Y
+#if PIKE_BYTEORDER == 1234
+/* Little endian */
+#define tName1(X,Y) "\361\5"X"\0\0"Y
+#define tName2(X,Y) "\361\6"X"\0\0\0\0"Y
+#else /* PIKE_BYTEORDER != 1234 */
+/* Big endian */
 #define tName1(X,Y) "\361\1"X"\0\0"Y
 #define tName2(X,Y) "\361\2"X"\0\0\0\0"Y
+#endif /* PIKE_BYTEORDER == 1234 */
 
 #define tSimpleCallable tOr3(tArray,tFunction,tObj)
 #define tCallable tOr3(tArr(tSimpleCallable),tFunction,tObj)
