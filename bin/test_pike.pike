@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.91 2004/01/15 17:48:40 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.92 2004/02/28 23:23:46 nilsson Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -42,6 +42,7 @@ array find_testsuites(string dir)
   array(string) ret=({});
   if(array(string) s=get_dir(dir||"."))
   {
+    if(has_value(s,"no_testsuites")) return ret;
     foreach(s, string file)
       {
 	switch(file)
