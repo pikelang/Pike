@@ -1,38 +1,53 @@
-# $Id: Makefile,v 1.14 1999/03/19 11:11:28 hubbe Exp $
+# $Id: Makefile,v 1.15 1999/04/09 10:20:22 mirar Exp $
 
-DOCFILES = doc-header \
-   image.c \
-   ../_Image_JPEG/acconfig.h \
-   ../_Image_JPEG/image_jpeg.c \
-   ../_Image_XFace/acconfig.h \
+DOCFILES = doc-header            \
+   image.c  			 \
+   acconfig.h			 \
+   blit.c			 \
+   blit_layer_include.h		 \
+   colors.c			 \
+   colors.h			 \
+   colortable.c			 \
+   colortable.h			 \
+   colortable_lookup.h		 \
+   dct.c			 \
+   font.c			 \
+   image.h			 \
+   match.h			 \
+   matrix.c			 \
+   operator.c			 \
+   orient.c			 \
+   pattern.c			 \
+   phase.h			 \
+   pnm_compat.c			 \
+   polyfill.c			 \
+   search.c			 \
+   togif.c			 \
+   x.c				 \
+   encodings/_xpm.c		 \
+   encodings/any.c		 \
+   encodings/bmp.c		 \
+   encodings/gif.c		 \
+   encodings/gif_lzw.c		 \
+   encodings/gif_lzw.h		 \
+   encodings/iff.c		 \
+   encodings/ilbm.c		 \
+   encodings/pcx.c		 \
+   encodings/png.c		 \
+   encodings/pnm.c		 \
+   encodings/tga.c		 \
+   encodings/x.c		 \
+   encodings/xbm.c		 \
+   encodings/xwd.c		 \
+   ../_Image_JPEG/acconfig.h	 \
+   ../_Image_JPEG/image_jpeg.c	 \
+   ../_Image_TIFF/acconfig.h	 \
+   ../_Image_TIFF/image_tiff.c	 \
+   ../_Image_TTF/acconfig.h	 \
+   ../_Image_TTF/image_ttf.c	 \
+   ../_Image_XFace/acconfig.h	 \
    ../_Image_XFace/image_xface.c \
-   acconfig.h \
-   blit.c \
-   blit_layer_include.h \
-   colortable.c \
-   colortable.h \
-   colortable_lookup.h \
-   dct.c \
-   encodings/gif.c \
-   encodings/gif_lzw.c \
-   encodings/gif_lzw.h \
-   encodings/png.c \
-   encodings/pnm.c \
-   encodings/x.c \
-   encodings/xwd.c \
-   font.c \
-   image.h \
-   matrix.c \
-   operator.c \
-   orient.c \
-   pattern.c \
-   pnm_compat.c \
-   polyfill.c \
-   search.c \
-   togif.c \
-   x.c \
-   colors.c \
-   doc-footer
+   doc-footer                     
 
 WMMLDOCPLACE = ../../../tutorial/Image.wmml
 
