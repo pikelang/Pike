@@ -310,6 +310,13 @@ static RETSIGTYPE receive_signal(int signum)
 {
   int tmp;
 
+  if ((signum < 0) || (signum >= MAX_SIGNALS)) {
+    // Some OSs (Solaris 2.6) send a bad signum sometimes.
+    // SIGCHLD is the safest signal to substitute.
+    //	/grubba 1998-05-19
+    signum = SIGCHLD;
+  }
+
   tmp=firstsig+1;
   if(tmp == SIGNAL_BUFFER) tmp=0;
   if(tmp != lastsig)
