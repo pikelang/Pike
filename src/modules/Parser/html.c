@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.156 2002/10/21 17:06:21 marcus Exp $
+|| $Id: html.c,v 1.157 2002/10/25 15:16:27 nilsson Exp $
 */
 
 #include "global.h"
@@ -4725,6 +4725,7 @@ static void html_clone(INT32 args)
       p->extra_args=NULL;
 
    p->flags=THIS->flags;
+   if(THIS->out_max_shift==-1) p->out_max_shift=THIS->out_max_shift;
    p->max_stack_depth=THIS->max_stack_depth;
    p->top.parse_tags = THIS->flags & FLAG_PARSE_TAGS;
 
