@@ -181,7 +181,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.116 1999/04/07 23:10:07 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.117 1999/05/26 07:10:01 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1808,11 +1808,13 @@ low_idents: F_IDENTIFIER
   ;
 
 comma_expr_or_zero: /* empty */ { $$=mkintnode(0); }
-  | safe_comma_expr
+  | comma_expr
+  | F_LEX_EOF { yyerror("Unexpected end of file."); $$=mkintnode(0); }
   ;
 
 comma_expr_or_maxint: /* empty */ { $$=mkintnode(0x7fffffff); }
-  | safe_comma_expr
+  | comma_expr
+  | F_LEX_EOF { yyerror("Unexpected end of file."); $$=mkintnode(0x7fffffff); }
   ;
 
 gauge: F_GAUGE catch_arg
