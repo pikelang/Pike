@@ -28,6 +28,8 @@
 import ".";
 inherit YMD:YMD;
 
+#include "constants.h"
+
 string calendar_name() { return "Islamic"; }
 
 private static mixed __initstuff=lambda()

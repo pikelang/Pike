@@ -30,6 +30,8 @@
 import ".";
 inherit Gregorian:Gregorian;
 
+#include "constants.h"
+
 string calendar_name() { return "Discordian"; }
 
 private static mixed __initstuff=lambda()
