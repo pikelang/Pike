@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.7 2001/01/23 13:42:41 norlin Exp $
+ * $Id: Tree.pmod,v 1.8 2002/08/20 07:37:51 jonasw Exp $
  *
  */
 
@@ -384,6 +384,7 @@ class Node {
 		      case XML_TEXT:
                         data += text_quote(n->get_text());
 			break;
+
 		      case XML_ELEMENT:
 			if (!strlen(n->get_tag_name()))
 			  break;
@@ -397,6 +398,28 @@ class Node {
 			  data += ">";
 			else
 			  data += "/>";
+			break;
+
+		      case XML_HEADER:
+			data += "<?xml";
+			if (mapping attr = n->get_attributes()) {
+                          foreach(indices(attr), string a)
+                            data += " " + a + "='"
+                              + attribute_quote(attr[a]) + "'";
+			}
+			data += "?>\n";
+			break;
+
+		      case XML_PI:
+			data += "<?" + n->get_tag_name();
+			string text = n->get_text();
+			if (strlen(text))
+			  data += " " + text;
+			data += "?>";
+			break;
+			
+		      case XML_COMMENT:
+			data += "<!--" + n->get_text() + "-->";
 			break;
 		      }
 		    },
@@ -459,6 +482,10 @@ class Node {
       mAttrNodes += ({ node });
     }
     return (mAttrNodes);
+  }
+
+  string _sprintf() {
+    return sprintf("Node(#%d: %d, %s)", mDocOrder, get_node_type(), get_any_name());
   }
 };
 
