@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.41 2003/01/05 14:08:58 nilsson Exp $
+|| $Id: udp.c,v 1.42 2003/03/12 09:58:18 agehall Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.41 2003/01/05 14:08:58 nilsson Exp $");
+RCSID("$Id: udp.c,v 1.42 2003/03/12 09:58:18 agehall Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -385,8 +385,8 @@ void udp_wait(INT32 args)
  *! @returns
  *!  mapping(string:int|string) in the form 
  *!	([
- *!	   "data" : string recieved data
- *!	   "ip" : string   recieved from this ip
+ *!	   "data" : string received data
+ *!	   "ip" : string   received from this ip
  *!	   "port" : int    ...and this port
  *!	])
  *!

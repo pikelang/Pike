@@ -1,6 +1,6 @@
 /* imap_server.pike
  *
- * $Id: imap_server.pike,v 1.21 2002/03/09 18:58:29 nilsson Exp $
+ * $Id: imap_server.pike,v 1.22 2003/03/12 09:58:18 agehall Exp $
  */
 #pike __REAL_VERSION__
 
@@ -124,7 +124,7 @@ class connection
 	io->get_request();
 	break;
       case "expect_line":
-	/* Callback for next line recieved */
+	/* Callback for next line received */
 	io->get_line(get_line(action->handler));
 	break;
       case "expect_literal":

@@ -1,5 +1,5 @@
 //
-// $Id: connection.pike,v 1.27 2003/03/07 17:44:02 nilsson Exp $
+// $Id: connection.pike,v 1.28 2003/03/12 09:58:18 agehall Exp $
 
 #pike __REAL_VERSION__
 
@@ -51,7 +51,7 @@ void set_alert_callback(function(object,int|object,string:void) callback)
   alert_callback = callback;
 }
 
-//! Low-level recieve handler. Returns a packet, an alert, or zero if
+//! Low-level receive handler. Returns a packet, an alert, or zero if
 //! more data is needed to get a complete packet.
 static object recv_packet(string data)
 {
@@ -310,7 +310,7 @@ string|int got_data(string|int s)
        {
 	 if (expect_change_cipher)
 	 {
-	   /* No change_cipher message was recieved */
+	   /* No change_cipher message was received */
 	   send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
 			     version[1]));
 	   return -1;

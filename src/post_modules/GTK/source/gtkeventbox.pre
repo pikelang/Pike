@@ -1,7 +1,7 @@
 class GTK.EventBox;
 inherit GTK.Bin;
 //! Some gtk widgets don't have associated X windows, so they just draw
-//! on their parents. Because of this, they cannot recieve events and
+//! on their parents. Because of this, they cannot receive events and
 //! if they are incorrectly sized, they don't clip so you can get messy
 //! overwritting etc. If you require more from these widgets, the
 //! EventBox is for you.

@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: handshake.pike,v 1.32 2003/01/27 15:03:00 nilsson Exp $
+/* $Id: handshake.pike,v 1.33 2003/03/12 09:58:18 agehall Exp $
  *
  */
 
@@ -434,7 +434,7 @@ string server_derive_master_secret(string data)
 	* Bleichenbacher, it is essential not to send any error *
 	* messages back to the client until after the client's *
 	* Finished-message (or some other invalid message) has been *
-	* recieved. */
+	* received. */
 
        werror("SSL.handshake: Invalid premaster_secret! "
 	      "A chosen ciphertext attack?\n");
@@ -599,7 +599,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  cipher_len = input->get_uint(2);
 	  cipher_suites = input->get_fix_uint_array(2, cipher_len/2);
 	  compression_methods = input->get_var_uint_array(1, 1);
-	  SSL3_DEBUG_MSG("STATE_server_wait_for_hello: recieved hello\n"
+	  SSL3_DEBUG_MSG("STATE_server_wait_for_hello: received hello\n"
 			 "version = %d.%d\n"
 			 "id=%O\n"
 			 "cipher suites: %O\n"
@@ -939,7 +939,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
       session->set_cipher_suite(cipher_suite,version[1]);
       session->set_compression_method(compression_method);
-      SSL3_DEBUG_MSG("STATE_client_wait_for_hello: recieved hello\n"
+      SSL3_DEBUG_MSG("STATE_client_wait_for_hello: received hello\n"
 		     "version = %d.%d\n"
 		     "id=%O\n"
 		     "cipher suite: %O\n"
@@ -964,7 +964,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
     case HANDSHAKE_certificate:
       {
       // FIXME: If anonymous connection, we don't need a cert.
-      SSL3_DEBUG_MSG("Handshake: Certificate message recieved\n");
+      SSL3_DEBUG_MSG("Handshake: Certificate message received\n");
       int certs_len = input->get_uint(3);
       array certs = ({ });
       while(!input->is_empty())

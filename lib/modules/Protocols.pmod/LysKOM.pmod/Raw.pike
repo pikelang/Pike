@@ -25,7 +25,7 @@ import .Helper;
 /* connection object */
 object con;
 
-/* recieve buffer */
+/* receive buffer */
 string buf="";
 
 /* outstanding calls */
@@ -255,7 +255,7 @@ void|array|object recv(mixed x,string what,void|int syn)
 	    }
 	    else
 	    {
-	       werror("LysKOM.Raw: generic error recieved: %O\n",res);
+	       werror("LysKOM.Raw: generic error received: %O\n",res);
 	    }
 	    break;
 

@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.5 2003/03/04 17:01:57 mirar Exp $
+// $Id: Session.pike,v 1.6 2003/03/12 09:58:18 agehall Exp $
 
 import Protocols.HTTP;
 
@@ -390,7 +390,7 @@ class Request
 	    (!con?" - no connection"
 	     :((con->con?" - connected":"")+
 	       (!con->ok?" - failed"
-		:" - "+(sizeof(con->buf)+" bytes recieved"))))+
+		:" - "+(sizeof(con->buf)+" bytes received"))))+
 	    ")";
    }
 }
@@ -472,7 +472,7 @@ class Cookie
 }
 
 
-//!	Parse and set a cookie recieved in the HTTP protocol.
+//!	Parse and set a cookie received in the HTTP protocol.
 //!	The cookie will be checked against current security levels et al. 
 
 void set_http_cookie(string cookie,Standards.URI at)
@@ -961,7 +961,7 @@ Request async_do_method(string method,
 //!	received completely, data and all.
 //!
 //!	@[callback_fail] is called when the HTTP request has failed,
-//!	on a TCP/IP or DNS level, or has recieved a forced timeout.
+//!	on a TCP/IP or DNS level, or has received a forced timeout.
 //!
 //!	The created Request object is returned.
 

@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.258 2003/03/12 09:23:36 agehall Exp $
+|| $Id: file.c,v 1.259 2003/03/12 09:58:18 agehall Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.258 2003/03/12 09:23:36 agehall Exp $");
+RCSID("$Id: file.c,v 1.259 2003/03/12 09:58:18 agehall Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -3359,7 +3359,7 @@ static void f_get_all_active_fd(INT32 args)
  *!
  *! @note
  *! When a program registers for some notification, only the first notification
- *! will be recieved unless DN_MULTISHOT is specified as part of the notification argument.
+ *! will be received unless DN_MULTISHOT is specified as part of the notification argument.
  *!
  *! @note
  *! At present, this function is Linux-specific and requires a kernel which supports the F_NOTIFY fcntl() call.
@@ -3369,7 +3369,7 @@ static void f_get_all_active_fd(INT32 args)
  *! about possible notifications.
  *!
  *! @arg callback
- *! Function which should be called when notification is recieved. The function gets
+ *! Function which should be called when notification is received. The function gets
  *! the signal used to indicate the notification as its argument and shouldn't return
  *! anyting.
  */
@@ -3704,8 +3704,8 @@ PIKE_MODULE_INIT
   /*! @decl constant DN_MULTISHOT
    *! Used in @[File.notify()]. If DN_MULTISHOT is used, signals will
    *! be sent for all notifications the program has registred for. Otherwise
-   *! only the first event the program is listening for will be recieved and
-   *! then the program must reregister for the events to recieve futher events.
+   *! only the first event the program is listening for will be received and
+   *! then the program must reregister for the events to receive futher events.
    */
   add_integer_constant("DN_MULTISHOT", DN_MULTISHOT, 0);
 #endif
