@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.218 1999/12/07 09:40:53 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.219 1999/12/07 18:58:47 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -40,6 +40,7 @@ RCSID("$Id: builtin_functions.c,v 1.218 1999/12/07 09:40:53 hubbe Exp $");
 #include "security.h"
 #include "builtin_functions.h"
 #include "bignum.h"
+#include "language.h"
 
 #ifdef HAVE_POLL
 #ifdef HAVE_POLL_H
@@ -1527,6 +1528,122 @@ static node *fix_indices_type(node *n)
 static node *fix_values_type(node *n)
 {
   return FIX_OVERLOADED_TYPE(n, LFUN__VALUES, tArray);
+}
+
+static node *fix_aggregate_mapping_type(node *n)
+{
+  struct pike_string *types[2] = { NULL, NULL };
+  node *args = CDR(n);
+  struct pike_string *new_type = NULL;
+
+#ifdef PIKE_DEBUG
+  if (l_flag > 2) {
+    fprintf(stderr, "Fixing type for aggregate_mapping():\n");
+    print_tree(n);
+
+    fprintf(stderr, "Original type:");
+    simple_describe_type(n->type);
+  }
+#endif /* PIKE_DEBUG */
+
+  if (args) {
+    node *arg = args;
+    int argno = 0;
+
+    /* Make it easier to find... */
+    args->parent = 0;
+
+    while(arg) {
+      if (arg->token == F_ARG_LIST) {
+	if (CAR(arg)) {
+	  CAR(arg)->parent = arg;
+	  arg = CAR(arg);
+	  continue;
+	}
+	if (CDR(arg)) {
+	  CDR(arg)->parent = arg;
+	  arg = CDR(arg);
+	  continue;
+	}
+	/* Retrace */
+      retrace:
+	while (arg->parent &&
+	       (!CDR(arg->parent) || (CDR(arg->parent) == arg))) {
+	  arg = arg->parent;
+	}
+	if (!arg->parent) {
+	  /* No more args. */
+	  break;
+	}
+	arg = arg->parent;
+	CDR(arg)->parent = arg;
+	arg = CDR(arg);
+	continue;
+      }
+      if (arg->token == F_PUSH_ARRAY) {
+	/* FIXME: Should get the type from the pushed array. */
+	/* FIXME: Should probably be fixed in las.c:fix_type_field() */
+	MAKE_CONSTANT_SHARED_STRING(new_type, tMap(tMixed, tMixed));
+	goto set_type;
+      }
+      if (types[argno]) {
+	struct pike_string *t = or_pike_types(types[argno], arg->type, 0);
+	free_string(types[argno]);
+	types[argno] = t;
+      } else {
+	copy_shared_string(types[argno], arg->type);
+      }
+      argno = !argno;
+      goto retrace;
+    }
+
+    if (argno) {
+      yyerror("Odd number of arguments to aggregate_mapping().");
+      goto done;
+    }
+
+    if (!types[0]) {
+      MAKE_CONSTANT_SHARED_STRING(new_type, tMap(tZero, tZero));
+      goto set_type;
+    }
+
+    type_stack_mark();
+    push_unfinished_type(types[1]->str);
+    push_unfinished_type(types[0]->str);
+    push_type(T_MAPPING);
+    new_type = pop_unfinished_type();
+  } else {
+    MAKE_CONSTANT_SHARED_STRING(new_type, tMap(tZero, tZero));
+    goto set_type;
+  }
+  if (new_type) {
+  set_type:
+    free_string(n->type);
+    n->type = new_type;
+
+#ifdef PIKE_DEBUG
+    if (l_flag > 2) {
+      fprintf(stderr, "Result type: ");
+      simple_describe_type(new_type);
+    }
+#endif /* PIKE_DEBUG */
+
+    if (n->parent) {
+      n->parent->node_info |= OPT_TYPE_NOT_FIXED;
+    }    
+  }
+ done:
+  if (args) {
+    /* Not really needed, but... */
+    args->parent = n;
+  }
+  if (types[1]) {
+    free_string(types[1]);
+  }
+  if (types[0]) {
+    free_string(types[0]);
+  }
+  return NULL;
 }
 
 void f_values(INT32 args)
@@ -5213,9 +5330,9 @@ void init_builtin_efuns(void)
 	   tFuncV(tNone,tSetvar(0,tMix),tSet(tVar(0))),OPT_TRY_OPTIMIZE);
   
 /* function(0=mixed ...:mapping(0:0)) */
-  ADD_EFUN("aggregate_mapping",f_aggregate_mapping,
-	   tFuncV(tNone,tSetvar(0,tMix),tMap(tVar(0),tVar(0))),
-	   OPT_TRY_OPTIMIZE);
+  ADD_EFUN2("aggregate_mapping",f_aggregate_mapping,
+	    tFuncV(tNone,tSetvar(0,tMix),tMap(tVar(0),tVar(0))),
+	    OPT_TRY_OPTIMIZE, fix_aggregate_mapping_type, 0);
   
 /* function(:mapping(string:mixed)) */
   ADD_EFUN("all_constants",f_all_constants,
