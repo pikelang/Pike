@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.458 2002/11/19 12:31:49 grubba Exp $
+|| $Id: program.c,v 1.459 2002/11/22 15:46:14 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.458 2002/11/19 12:31:49 grubba Exp $");
+RCSID("$Id: program.c,v 1.459 2002/11/22 15:46:14 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4187,6 +4187,17 @@ make_a_new_def:
     fun.func.offset = -1;
 
   fun.opt_flags = opt_flags;
+
+#ifdef PIKE_DEBUG
+  if (a_flag > 5) {
+    fprintf(stderr, 
+	    "Adding new function #%d: '%s'\n"
+	    "  identifier_flags:0x%02x opt_flags:0x%04x\n",
+	    Pike_compiler->new_program->num_identifiers,
+	    fun.name->str,
+	    fun.identifier_flags, fun.opt_flags);
+  }
+#endif /* PIKE_DEBUG */
 
   i=Pike_compiler->new_program->num_identifiers;
 
