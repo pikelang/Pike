@@ -162,11 +162,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	tmp=FREXP((double)val->u.float_number, &y);
 	x=(INT32)((1<<30)*tmp);
 	y-=30;
+#if 0
 	while(x && y && !(x&1))
 	{
 	  x>>=1;
 	  y++;
 	}
+#endif
 	code_entry(T_FLOAT,x,data);
 	code_entry(T_FLOAT,y,data);
       }
