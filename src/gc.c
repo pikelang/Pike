@@ -89,14 +89,14 @@ static struct marker *new_marker(void)
 }
 
 static struct marker **hash=0;
-static int hashsize=0;
+static unsigned long hashsize=0;
 
 static struct marker *getmark(void *a)
 {
   int hashval;
   struct marker *m;
 
-  hashval=((long)a)%hashsize;
+  hashval=((unsigned long)a)%hashsize;
 
   for(m=hash[hashval];m;m=m->next)
     if(m->marked == a)
