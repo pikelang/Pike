@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.29 2002/07/13 23:49:40 nilsson Exp $
+// $Id: module.pmod,v 1.30 2002/09/29 20:50:30 manual Exp $
 
 static constant fmts = ([
   "image/x-pnm" : "PNM",
@@ -17,6 +17,7 @@ static constant fmts = ([
   "image/x-pcx" : "PCX",
 ]);
 
+//! @belongs Image
 //! Attempts to decode @[data] as image data. The heuristics
 //! has some limited ability to decode macbinary files as well.
 mapping _decode( string data )
@@ -108,6 +109,7 @@ mapping _decode( string data )
   ]);
 }
 
+//! @belongs Image
 //! Attempts to decode @[data] as image layer data. Additional
 //! arguments to the various formats decode_layers method can
 //! be passed through @[opt].
@@ -145,6 +147,7 @@ array(Image.Layer) decode_layers( string data, mapping|void opt )
   return i;
 }
 
+//! @belongs Image
 //! Reads the file @[file] and, if the file is compressed
 //! with gzip or bzip, attempts to decompress it by calling
 //! @tt{gzip@} and @tt{bzip2@} in a @tt{Process.create_process@}
@@ -178,6 +181,7 @@ string read_file(string file)
   return Stdio.read_file( file );
 }
 
+//! @belongs Image
 //! Loads in a file, which need not be an image file. If no
 //! argument is given the data will be taken from stdin. If
 //! a file object is given, it will be read to the end of the
@@ -198,6 +202,7 @@ local string load_file( void|object|string file )
   return data;
 }
 
+//! @belongs Image
 //! Loads a file with @[load_file] and decodes it with @[_decode].
 mapping _load(void|object|string file)
 {
@@ -207,6 +212,7 @@ mapping _load(void|object|string file)
    return _decode( data );
 }
 
+//! @belongs Image
 //! Helper function to load an image layer from a file.
 //! If no filename is given, Stdio.stdin is used.
 //! The loaded file is decoded with _decode.
@@ -219,6 +225,7 @@ Image.Layer load_layer(void|object|string file)
       return Image.Layer( (["image":m->image]) );
 }
 
+//! @belongs Image
 //! Helper function to load all image layers from a file.
 //! If no filename is given, Stdio.stdin is used.
 //! The loaded file is decoded with decode_layers. Extra
@@ -229,6 +236,7 @@ array(Image.Layer) load_layers(void|object|string file, mixed|void opts)
   return decode_layers( load_file( file ), opts );
 }
 
+//! @belongs Image
 //! Helper function to load an image from a file.
 //! If no filename is given, Stdio.stdin is used.
 //! The loaded file is decoded with _decode.
