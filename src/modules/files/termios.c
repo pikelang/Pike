@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: termios.c,v 1.12 2001/05/06 15:50:21 grubba Exp $");
+RCSID("$Id: termios.c,v 1.13 2002/03/20 14:49:13 nilsson Exp $");
 #include "file_machine.h"
 
 #if defined(HAVE_TERMIOS_H)
@@ -280,8 +280,8 @@ void file_tcsetattr(INT32 args)
    	 Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value","ospeed"); 
       switch (sp[-1].u.integer)
       {
-   #define TERMIOS_SPEED(B,V) case V: push_int(B); break;
-   #include "termios_flags.h"
+#define TERMIOS_SPEED(B,V) case V: push_int(B); break;
+#include "termios_flags.h"
    	 default:
    	    Pike_error("illegal argument 1 to tcsetattr, value of key %s is not a valid baud rate\n","ospeed");
       }
@@ -299,8 +299,8 @@ void file_tcsetattr(INT32 args)
    	 Pike_error("illegal argument 1 to tcsetattr: key %s has illegal value","ispeed"); 
       switch (sp[-1].u.integer)
       {
-   #include "termios_flags.h"
-   #undef TERMIOS_SPEED
+#include "termios_flags.h"
+#undef TERMIOS_SPEED
    	 default:
    	    Pike_error("illegal argument 1 to tcsetattr, value of key %s is not a valid baud rate\n","ispeed");
       }

@@ -1,4 +1,4 @@
-/* $Id: connection.pike,v 1.20 2002/03/09 20:30:09 nilsson Exp $
+/* $Id: connection.pike,v 1.21 2002/03/20 14:43:26 nilsson Exp $
  *
  * SSL packet layer
  */
@@ -96,9 +96,9 @@ static object recv_packet(string data)
 void send_packet(object packet, int|void priority)
 {
 
-  #ifdef SSL3_FRAGDEBUG
+#ifdef SSL3_FRAGDEBUG
   werror(" SSL.connection->send_packet: strlen(packet)="+strlen(packet)+"\n");
-  #endif
+#endif
   if (!priority)
     priority = ([ PACKET_alert : PRI_alert,
 		  PACKET_change_cipher_spec : PRI_urgent,
