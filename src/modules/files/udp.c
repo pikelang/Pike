@@ -1,5 +1,5 @@
 /*
- * $Id: udp.c,v 1.26 2001/11/25 03:02:59 nilsson Exp $
+ * $Id: udp.c,v 1.27 2001/11/26 22:02:08 nilsson Exp $
  */
 
 #define NO_PIKE_SHORTHAND
@@ -7,7 +7,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.26 2001/11/25 03:02:59 nilsson Exp $");
+RCSID("$Id: udp.c,v 1.27 2001/11/26 22:02:08 nilsson Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -167,10 +167,10 @@ static void udp_bind(INT32 args)
 #endif /* !SOL_IP && HAVE_GETPROTOBYNAME */
 
   
-  if(args < 1) Pike_error("Too few arguments to dumudp->bind()\n");
+  if(args < 1) Pike_error("Too few arguments to udp->bind()\n");
 
   if(Pike_sp[-args].type != PIKE_T_INT)
-    Pike_error("Bad argument 1 to dumudp->bind()\n");
+    Pike_error("Bad argument 1 to udp->bind()\n");
 
   if(FD != -1)
   {
@@ -451,8 +451,7 @@ void udp_read(INT32 args)
 
 /*! @decl int send(string a, int b, string c, void|int d)
  *! @fixme
- *! Document this function. Pike prototype says function(string,int,string,void|int:int)
- *! but error messages says send(string to, string message, int port, void|int flags).
+ *! Document this function.
  */
 void udp_sendto(INT32 args)
 {
@@ -478,13 +477,13 @@ void udp_sendto(INT32 args)
 #endif /* MSG_DONTROUTE */
     }
     if(Pike_sp[3-args].u.integer & ~3) {
-      Pike_error("Illegal 'flags' value passed to udp->send(string m,string t,int p,[int flags])\n");
+      Pike_error("Illegal 'flags' value passed to "
+		 "udp->send(string to, int port, string message, int flags)\n");
     }
   }
-  if(!args)
+  else if(args != 3)
     Pike_error("Illegal number of arguments to udp->sendto(string to"
-	  ", string message, int port[, int flags])\n");
-
+	       ", int port, string message, void|int flags)\n");
 
   if( Pike_sp[-args].type==PIKE_T_STRING ) 
     get_inet_addr(&to, Pike_sp[-args].u.string->str);
