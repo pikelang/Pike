@@ -48,9 +48,11 @@ struct pike_md5 {
   struct pike_string *string;
 };
 
+#if 0
 struct pike_idea {
   IDEA_KEY_SCHEDULE key;
 };
+#endif
 
 struct pike_des {
   des_key_schedule key_schedules[2];
