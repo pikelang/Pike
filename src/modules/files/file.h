@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: file.h,v 1.12 1999/04/20 20:35:04 grubba Exp $
+ * $Id: file.h,v 1.13 1999/09/29 14:55:44 mirar Exp $
  */
 
 #ifndef FILE_H
@@ -96,5 +96,6 @@ int fd_from_object(struct object *o);
 #define FILE_HAS_INTERNAL_REF   0x0001
 #define FILE_NO_CLOSE_ON_DESTRUCT 0x0002
 #define FILE_LOCK_FD		0x0004
+#define FILE_NOT_OPENED         0x0010
 
 #endif

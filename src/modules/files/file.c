@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.159 1999/08/09 22:52:52 grubba Exp $");
+RCSID("$Id: file.c,v 1.160 1999/09/29 14:55:42 mirar Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -269,6 +269,11 @@ static void close_fd(void)
 {
   free_fd_stuff();
   reset_variables();
+  if ( (THIS->flags & FILE_NOT_OPENED) )
+  {
+     FD=-1;
+     return;
+  }
   just_close_fd();
 }
 
@@ -1182,6 +1187,7 @@ static int do_close(int flags)
       check_internal_reference(THIS);
       return 0;
     }else{
+      THIS->flags&=~FILE_NOT_OPENED;
       close_fd();
       return 1;
     }
@@ -1198,11 +1204,13 @@ static int do_close(int flags)
       check_internal_reference(THIS);
       return 0;
     }else{
+      THIS->flags&=~FILE_NOT_OPENED;
       close_fd();
       return 1;
     }
 
   case FILE_READ | FILE_WRITE:
+    THIS->flags&=~FILE_NOT_OPENED;
     close_fd();
     return 1;
 
@@ -1251,7 +1259,8 @@ static void file_open(INT32 args)
   if(args < 2)
     error("Too few arguments to file->open()\n");
 
-  if(sp[-args].type != T_STRING)
+  if(sp[-args].type != T_STRING &&
+     sp[-args].type != T_INT)
     error("Bad argument 1 to file->open()\n");
 
   if(sp[1-args].type != T_STRING)
@@ -1265,94 +1274,116 @@ static void file_open(INT32 args)
   } else
     access = 00666;
 
-  str=sp[-args].u.string;
-  
   flags = parse((flag_str = sp[1-args].u.string)->str);
 
-#ifdef PIKE_SECURITY
-  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+  if (sp[-args].type==T_STRING)
   {
-    if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))
-      error("Permission denied.\n");
+     str=sp[-args].u.string;
 
-    if(flags & (FILE_APPEND | FILE_TRUNC | FILE_CREATE | FILE_WRITE))
-    {
-      push_text("write");
-    }else{
-      push_text("read");
-    }
+#ifdef PIKE_SECURITY
+     if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+     {
+	if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))
+	   error("Permission denied.\n");
 
-    ref_push_object(fp->current_object);
-    ref_push_string(str);
-    ref_push_string(flag_str);
-    push_int(access);
-
-    safe_apply(OBJ2CREDS(current_creds)->user,"valid_open",5);
-    switch(sp[-1].type)
-    {
-      case T_INT:
-	switch(sp[-1].u.integer)
+	if(flags & (FILE_APPEND | FILE_TRUNC | FILE_CREATE | FILE_WRITE))
 	{
-	  case 0: /* return 0 */
-	    ERRNO=EPERM;
-	    pop_n_elems(args+1);
-	    push_int(0);
-	    return;
-	    
-	  case 1: /* return 1 */
-	    pop_n_elems(args+1);
-	    push_int(1);
-	    return;
-	    
-	  case 2: /* ok */
-	    pop_stack();
-	    break;
-	    
-	  case 3: /* permission denied */
-	    error("Stdio.file->open: permission denied.\n");
-	    
-	  default:
-	    error("Error in user->valid_open, wrong return value.\n");
+	   push_text("write");
+	}else{
+	   push_text("read");
 	}
-	break;
 
-      default:
-	error("Error in user->valid_open, wrong return type.\n");
+	ref_push_object(fp->current_object);
+	ref_push_string(str);
+	ref_push_string(flag_str);
+	push_int(access);
 
-      case T_STRING:
-	str=sp[-1].u.string;
-	args++;
-    }
-  }
+	safe_apply(OBJ2CREDS(current_creds)->user,"valid_open",5);
+	switch(sp[-1].type)
+	{
+	   case T_INT:
+	      switch(sp[-1].u.integer)
+	      {
+		 case 0: /* return 0 */
+		    ERRNO=EPERM;
+		    pop_n_elems(args+1);
+		    push_int(0);
+		    return;
+	    
+		 case 1: /* return 1 */
+		    pop_n_elems(args+1);
+		    push_int(1);
+		    return;
+	    
+		 case 2: /* ok */
+		    pop_stack();
+		    break;
+	    
+		 case 3: /* permission denied */
+		    error("Stdio.file->open: permission denied.\n");
+	    
+		 default:
+		    error("Error in user->valid_open, wrong return value.\n");
+	      }
+	      break;
+
+	   default:
+	      error("Error in user->valid_open, wrong return type.\n");
+
+	   case T_STRING:
+	      str=sp[-1].u.string;
+	      args++;
+	}
+     }
 #endif
       
-  if(!( flags &  (FILE_READ | FILE_WRITE)))
-    error("Must open file for at least one of read and write.\n");
+     if(!( flags &  (FILE_READ | FILE_WRITE)))
+	error("Must open file for at least one of read and write.\n");
 
-  THREADS_ALLOW_UID();
-  do {
-    fd=fd_open(str->str,map(flags), access);
-  } while(fd < 0 && errno == EINTR);
-  THREADS_DISALLOW_UID();
+     THREADS_ALLOW_UID();
+     do {
+	fd=fd_open(str->str,map(flags), access);
+     } while(fd < 0 && errno == EINTR);
+     THREADS_DISALLOW_UID();
 
-  if(!fp->current_object->prog)
-    error("Object destructed in file->open()\n");
+     if(!fp->current_object->prog)
+	error("Object destructed in file->open()\n");
 
-  if(fd >= MAX_OPEN_FILEDESCRIPTORS)
-  {
-    ERRNO=EBADF;
-    close(fd);
-    fd=-1;
-  }
-  else if(fd < 0)
-  {
-    ERRNO=errno;
+     if(fd >= MAX_OPEN_FILEDESCRIPTORS)
+     {
+	ERRNO=EBADF;
+	close(fd);
+	fd=-1;
+     }
+     else if(fd < 0)
+     {
+	ERRNO=errno;
+     }
+     else
+     {
+	init_fd(fd,flags | fd_query_properties(fd, FILE_CAPABILITIES));
+	set_close_on_exec(fd,1);
+     }
   }
   else
   {
-    init_fd(fd,flags | fd_query_properties(fd, FILE_CAPABILITIES));
-    set_close_on_exec(fd,1);
+#ifdef PIKE_SECURITY
+     if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+     {
+	if(!CHECK_SECURITY(SECURITY_BIT_CONDITIONAL_IO))
+	   error("Permission denied.\n");
+	error("Permission denied.\n");
+	/* FIXME!! Insert better security here */
+     }
+#endif
+     fd=sp[-args].u.integer;
+     if (fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
+	error("Not a valid FD.\n");
+
+     init_fd(fd,flags | fd_query_properties(fd, FILE_CAPABILITIES));
+     THIS->flags|=FILE_NOT_OPENED;
   }
+
 
   pop_n_elems(args);
   push_int(fd>=0);
@@ -1891,8 +1922,10 @@ static void init_file_struct(struct object *o)
 
 static void exit_file_struct(struct object *o)
 {
-  if(!(THIS->flags & (FILE_NO_CLOSE_ON_DESTRUCT | FILE_LOCK_FD)))
-    just_close_fd();
+  if(!(THIS->flags & (FILE_NO_CLOSE_ON_DESTRUCT | 
+		      FILE_LOCK_FD |
+		      FILE_NOT_OPENED)))
+     just_close_fd();
   free_fd_stuff();
 
   REMOVE_INTERNAL_REFERENCE(THIS);
@@ -2255,8 +2288,9 @@ static void file_lsh(INT32 args)
 
 static void file_create(INT32 args)
 {
-  if(!args || sp[-args].type == T_INT) return;
-  if(sp[-args].type != T_STRING)
+  if(!args) return;
+  if(sp[-args].type != T_STRING &&
+     sp[-args].type != T_INT)
     error("Bad argument 1 to file->create()\n");
 
   close_fd();
