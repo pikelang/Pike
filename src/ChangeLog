@@ -1,3 +1,10 @@
+Tue Jan 28 15:47:28 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* machine.h.in: now generated with autoheader
+	* configure.in: check for STACK_DIRECTION added, some silly tests
+	  removed.
+	* config.h: removed, merged into global.h and other files
+
 Tue Jan 28 19:35:31 1997  Henrik Grubbström  <grubba@infovav.se>
 
 	* modules/system/passwords.c (f_getpwnam): Moved password-related
