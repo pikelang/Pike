@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.37 2001/06/22 23:45:52 js Exp $
+// $Id: MySQL.pike,v 1.38 2001/06/22 23:55:40 js Exp $
 
 inherit .Base;
 
@@ -127,11 +127,15 @@ int get_document_id(string uri, void|string language_code)
   return db->master_sql->insert_id();
 }
 
+static mapping(string:int) list_fields_cache;
+
 mapping(string:int) list_fields()
 {
+  if(list_fields_cache)
+    return list_fields_cache;
   array a=db->query("select name,id from fields");
 
-  return mkmapping(a->name, (array(int))a->id);
+  return list_fields_cache=mkmapping(a->name, (array(int))a->id);
 }
 
 int allocate_field_id(string field)
@@ -144,6 +148,7 @@ int allocate_field_id(string field)
     {
       a=db->query("insert into field (id,name) values (%d,%s)",
 		  i, field);
+      list_fields_cache=0;
       db->query("unlock tables");
       return i;
     }
@@ -176,6 +181,7 @@ int get_field_id(string field, void|int do_not_create)
 void remove_field_id(string field)
 {
   m_delete(field_cache, field);
+  list_fields_cache=0;
   db->query("delete from field where name=%s", field);
 }
 
