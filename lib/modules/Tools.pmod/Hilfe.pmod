@@ -43,7 +43,16 @@ import Getopt;
 /* do nothing */
   
   function write;
-  
+
+  object compile_handler = class
+    {
+      void compile_error(string file,int line,string err)
+      {
+	write(sprintf("%s:%s:%s\n",master()->trim_file_name(file),
+		      line?(string)line:"-",err));
+      }
+    }();
+
   object eval(string f)
   {
     string prog,file;
@@ -73,7 +82,7 @@ import Getopt;
     mixed oldwrite=all_constants()->write;
     add_constant("write",write);
     add_constant("___hilfe",constants);
-    err=catch(p=compile_string(prog));
+    err=catch(p=compile_string(prog, "-", compile_handler));
     add_constant("___hilfe");
     add_constant("write",oldwrite);
 
