@@ -121,11 +121,19 @@ class FILE {
 	return file::write(sprintf(fmt,@data));
     }
     
-    string read(int bytes)
+    string read(int|void bytes)
     {
+      if (!query_num_arg()) {
+	bytes = 0x7fffffff;
+      }
       while(strlen(b) - bpos < bytes)
-	if(!get_data())
-	  break;
+	if(!get_data()) {
+	  // EOF.
+	  string res = b[bpos..];
+	  b = "";
+	  bpos = 0;
+	  return res;
+	}
 
       return extract(bytes);
     }
