@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.385 2001/11/24 23:18:48 mast Exp $");
+RCSID("$Id: program.c,v 1.386 2001/12/06 13:56:05 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3948,8 +3948,13 @@ struct array *program_indices(struct program *p)
     }
     id = ID_FROM_INT(p, e);
     if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
-      ref_push_string(ID_FROM_INT(p, e)->name);
-      n++;
+      struct program *p2 = PROG_FROM_INT(p, e);
+      struct svalue *val = &p2->constants[id->func.offset].sval;
+      if ((val->type != T_PROGRAM) ||
+	  !(val->u.program->flags & PROGRAM_USES_PARENT)) {
+	ref_push_string(ID_FROM_INT(p, e)->name);
+	n++;
+      }
     }
   }
   f_aggregate(n);
@@ -3972,8 +3977,12 @@ struct array *program_values(struct program *p)
     id = ID_FROM_INT(p, e);
     if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
       struct program *p2 = PROG_FROM_INT(p, e);
-      push_svalue( & p2->constants[id->func.offset].sval);
-      n++;
+      struct svalue *val = &p2->constants[id->func.offset].sval;
+      if ((val->type != T_PROGRAM) ||
+	  !(val->u.program->flags & PROGRAM_USES_PARENT)) {
+	push_svalue(val);
+	n++;
+      }
     }
   }
   f_aggregate(n);
@@ -4001,28 +4010,18 @@ void program_index_no_free(struct svalue *to, struct program *p,
     id=ID_FROM_INT(p, e);
     if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
       struct program *p2 = PROG_FROM_INT(p, e);
-      assign_svalue_no_free(to, ( & p2->constants[id->func.offset].sval));
-      return;
-    } else {
-      if (s->len < 1024) {
-	Pike_error("Index \"%s\" is not constant.\n", s->str);
-      } else {
-	Pike_error("Index is not constant.\n");
+      struct svalue *val = &p2->constants[id->func.offset].sval;
+      if ((val->type != T_PROGRAM) ||
+	  !(val->u.program->flags & PROGRAM_USES_PARENT)) {
+	assign_svalue_no_free(to, val);
+	return;
       }
     }
   }
 
-#if 1
   to->type=T_INT;
   to->subtype=NUMBER_UNDEFINED;
   to->u.integer=0;
-#else
-  if (s->len < 1024) {
-    Pike_error("No such index \"%s\".\n", s->str);
-  } else {
-    Pike_error("No such index.\n");
-  }
-#endif
 }
 
 /*
