@@ -61,7 +61,7 @@ string low_parse_chapter(Node n, int chapter, void|int section, void|int subsect
       break;
 
     case "example":
-      ret += "<p><pre>" + c->get_text() + "</pre></p>\n";
+      ret += "<p><pre>" + c->value_of_node() + "</pre></p>\n";
       break;
 
     case "ul":
@@ -162,6 +162,8 @@ string parse_appendix(Node n, void|int noheader) {
 
 string parse_module(Node n, void|int noheader) {
   string ret ="";
+  if(n->get_attributes()->name == "")
+    noheader = 1;
   if(!noheader)
     ret += "<dl><dt>"
       "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
@@ -256,7 +258,7 @@ string nicebox(array rows) {
     }
   }
 
-  return ret + "</table></td></tr></table>";
+  return ret + "</table></td></tr></table><br />";
 }
 
 string build_box(Node n, string first, string second, function layout, void|string header) {
@@ -627,7 +629,11 @@ string render_class_path(Node n) {
 	      "section", "subsection" }), string node)
     root = max(root, search(b, node));
   a = a[root+1..];
+  if(sizeof(a) && a[0]=="")
+    a = a[1..];
   string ret = a->get_attributes()->name * ".";
+  if(!sizeof(ret))
+    return ret;
   if(n->get_any_name()=="class" || n->get_any_name()=="module")
     return ret + ".";
   if(n->get_parent()->get_parent()->get_any_name()=="class")
@@ -739,7 +745,7 @@ string parse_docgroup(Node n) {
       ret += type + "<font size='+1'><b>" + quote((m->belongs?m->belongs+" ":"") + m["homogen-name"]) +
 	"</b></font>\n";
     else
-      foreach(Array.uniq(n->get_first_element("method")->get_attributes()->name), string name)
+      foreach(Array.uniq(n->get_elements("method")->get_attributes()->name), string name)
 	ret += type + "<font size='+1'><b>" + name + "</b></font><br />\n";
   }
   else

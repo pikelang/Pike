@@ -119,8 +119,8 @@ void ref_expansion(Node n, string dir, void|string file) {
       break;
 
     case "dir":
-      ref_expansion(c, dir + "/" + c->get_attributes()->name, file);
-      c->get_attributes()->name = dir + "/" + file;
+      c->get_attributes()->name = dir + "/" + c->get_attributes()->name;
+      ref_expansion(c, c->get_attributes()->name, file);
       break;
 
     case "chapter-ref":
@@ -217,6 +217,9 @@ void main(int num, array(string) args) {
   werror("Moving appendices.\n");
   move_appendices(m);
   werror("Executing node insetions.\n");
+  if(queue[""])
+    m_delete(queue, "")(m);
   move_items(m, queue);
+  werror("Writing final manual source file.\n");
   write( (string)n );
 }
