@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.111 2004/04/23 12:39:07 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.112 2004/04/23 14:53:25 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -345,24 +345,28 @@ private class CommandDot {
   string help(string what) { return 0; }
 
   private constant usr_vector_a = ({
-    89, 111, 117, 32, 97, 114, 101, 32, 105, 110, 115, 105, 100, 101, 32, 97, 32,
-    72, 105, 108, 102, 101, 46, 32, 73, 116, 32, 115, 109, 101, 108, 108, 115, 32,
-    103, 111, 111, 100, 32, 104, 101, 114, 101, 46, 32, 89, 111, 117, 32, 115, 101, 101, 32 });
+    89, 111, 117, 32, 97, 114, 101, 32, 105, 110, 115, 105, 100, 101, 32, 97,
+    32, 72, 105, 108, 102, 101, 46, 32, 73, 116, 32, 115, 109, 101, 108, 108,
+    115, 32, 103, 111, 111, 100, 32, 104, 101, 114, 101, 46, 32, 89, 111,
+    117, 32, 115, 101, 101, 32 });
   private constant usr_vector_b = ({
-    32, 89, 111, 117, 32, 99, 97, 110, 32, 103, 111, 32, 105, 110, 32, 97, 110, 121,
-    32, 100, 105, 114, 101, 99, 116, 105, 111, 110, 32, 102, 114, 111, 109, 32, 104,
-    101, 114, 101, 46 });
+    32, 89, 111, 117, 32, 99, 97, 110, 32, 103, 111, 32, 105, 110, 32, 97,
+    110, 121, 32, 100, 105, 114, 101, 99, 116, 105, 111, 110, 32, 102, 114,
+    111, 109, 32, 104, 101, 114, 101, 46 });
   private constant usr_vector_c = ({
-    32, 89, 111, 117, 32, 97, 114, 101, 32, 99, 97, 114, 114, 121, 105, 110, 103, 32 });
+    32, 89, 111, 117, 32, 97, 114, 101, 32, 99, 97, 114, 114, 121, 105, 110,
+    103, 32 });
   private constant usr_vector_d = usr_vector_c[..8] + ({
     101, 109, 112, 116, 121, 32, 104, 97, 110, 100, 101, 100, 46 });
 
-  private array(string) thing(array|mapping|object thing, string what, void|string a, void|string b) {
+  private array(string) thing(array|mapping|object thing, string what,
+			      void|string a, void|string b) {
     if(!sizeof(thing)) return ({});
     return ({ sizeof(thing)+" "+what+(sizeof(thing)==1?(a||""):(b||"s")) });
   }
 
-  void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
+  void exec(Evaluator e, string line, array(string) words,
+	    array(string) tokens) {
     string ret = (string)usr_vector_a;
 
     array(string) tmp = ({});
@@ -414,7 +418,8 @@ class CommandDump {
   private string print_mapping(array(string) ind, array val) {
     int m = max( @filter(map(ind, sizeof), `<, 20), 8 );
     foreach(ind; int i; string name)
-      write("%-*s : %s\n", m, name, replace(sprintf("%O", val[i]), "\n", "\n"+(" "*m)+"   "));
+      write("%-*s : %s\n", m, name, replace(sprintf("%O", val[i]), "\n",
+					    "\n"+(" "*m)+"   "));
   }
 
   private void dump(Evaluator e) {
@@ -451,7 +456,8 @@ class CommandDump {
     }
   }
 
-  void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
+  void exec(Evaluator e, string line, array(string) words,
+	    array(string) tokens) {
     write = e->safe_write;
 
     line = words[1..]*"";
@@ -480,7 +486,8 @@ class CommandDump {
 private class CommandHej {
   inherit Command;
   string help(string what) { return 0; }
-  void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
+  void exec(Evaluator e, string line, array(string) words,
+	    array(string) tokens) {
     if(line[0]=='.') e->safe_write( (string)({ 84,106,97,98,97,33,10 }) );
   }
 }
@@ -490,7 +497,8 @@ private class CommandNew {
   string help(string what) { return "Clears the Hilfe state."; }
   string doc(string what, string with) { return documentation_new; }
 
-  void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
+  void exec(Evaluator e, string line, array(string) words,
+	    array(string) tokens) {
 
     line = sizeof(words)>1 && words[1];
     switch(line) {
@@ -544,7 +552,8 @@ private class CommandStartStop {
       return subsystems->doc(0);
   }
 
-  void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
+  void exec(Evaluator e, string line, array(string) words,
+	    array(string) tokens) {
     if(sizeof(words)>=2) {
       subsystems[words[0]](e, words[1], words[1..]);
       return;
@@ -563,9 +572,9 @@ private class CommandStartStop {
 private class SubSysBackend {
   int(0..1) is_running;
 
-  constant startdoc = "backend [once]\n\tStarts the backend thread. If \"once\" is "
-  "specified execution\n\twill end at first exception. Can be restarted "
-  "with \"start backend\".\n";
+  constant startdoc = "backend [once]\n"
+  "\tStarts the backend thread. If \"once\" is specified execution\n"
+  "\twill end at first exception. Can be restarted with \"start backend\".\n";
 
   constant stopdoc = "backend\n\tstop the backend thread.\n";
 
@@ -575,7 +584,8 @@ private class SubSysBackend {
 
   void start(Evaluator e, array(string) words){
     int(0..1) once = (sizeof(words)>=2 && words[1]=="once");
-    add_constant("backend_thread", thread_create(backend_loop, e->safe_write, once));
+    add_constant("backend_thread",
+		 thread_create(backend_loop, e->safe_write, once));
   }
 
   void stop(Evaluator e, array(string) words){
@@ -782,11 +792,13 @@ private class SubSystems {
 }
 
 private constant whitespace = (< ' ', '\n' ,'\r', '\t' >);
-private constant termblock = (< "catch", "do", "gauge", "lambda", "class stop" >);
+private constant termblock = (< "catch", "do", "gauge", "lambda",
+				"class stop" >);
 private constant modifier = (< "extern", "final", "inline", "local", "nomask",
 			       "optional", "private", "protected", "public",
 			       "static", "variant" >);
-private constant notype = (< "(", ")", "->", "[", "]", ":", ";", "+", "++", "-", "--",
+private constant notype = (< "(", ")", "->", "[", "]", ":", ";",
+			     "+", "++", "-", "--",
 			     "%", "*", "/", "&", "&&", "||", ",",
 			     "<", ">", "==", "=", "!=", "?",
 			     "+=", "-=", "%=", "/=", "&=", "|=",
@@ -976,7 +988,8 @@ private class ParserState {
   //! Feed more tokens into the state.
   void feed(array(string) tokens) {
     foreach(tokens, string token) {
-      if(sizeof(token)>1 && (token[0..1]=="//" || token[0..1]=="/*")) continue; // comments
+      // comments
+      if(sizeof(token)>1 && (token[0..1]=="//" || token[0..1]=="/*")) continue;
 
       pipeline += ({ token });
 
@@ -995,10 +1008,14 @@ private class ParserState {
 	continue;
       }
       if(token=="class" && !pstack->ptr) {
-	if(sizeof(pipeline)>1)
-	  block = "class stop"; // Kludge to get "object foo=class{}();" past the kludge below.
-	else
-	  block = token; // Kludge to get "class A {}" to work without semicolon.
+	if(sizeof(pipeline)>1) {
+	  // Kludge to get "object foo=class{}();" past the kludge below.
+	  block = "class stop";
+	}
+	else {
+	  // Kludge to get "class A {}" to work without semicolon.
+	  block = token;
+	}
 	last = token;
 	continue;
       }
@@ -1014,9 +1031,11 @@ private class ParserState {
       if(token==")" || token=="}" || token=="]" ||
 	 token==">)" || token=="})" || token=="])" ) {
 	if(!pstack->ptr)
-	   throw(sprintf("%O end parenthesis without start parenthesis.", token));
+	   throw(sprintf("%O end parenthesis without start parenthesis.",
+			 token));
 	if(pstack->top()!=starts[token])
-	   throw(sprintf("%O end parenthesis does not match closest start parenthesis %O.",
+	   throw(sprintf("%O end parenthesis does not match closest start "
+			 "parenthesis %O.",
 			 token, pstack->top()));
 	pstack->pop();
       }
@@ -1090,9 +1109,11 @@ private class ParserState {
 	caught_error = "Preprocessor defines not possible inside Hilfe.\n";
 	return 0;
       }
-      // FIXME: It should be possible to add charset support, but would it be worth it?
+      // FIXME: It should be possible to add charset support, but
+      // would it be worth it?
       if( has_prefix(tmp, "#charset") ) {
-	caught_error = "Preprocessor charset declaration not possible inside Hilfe.\n";
+	caught_error = "Preprocessor charset declaration not possible "
+	  "inside Hilfe.\n";
 	return 0;
       }
       // FIXME: We would like #pike to work.
@@ -1422,9 +1443,11 @@ class Evaluator {
 					  return 0;
 					});
 	int pos = search(files, "HilfeInput");
-	safe_write(describe_backtrace( ({ err[0], err[1][sizeof(err[1])-pos..] }) ));
+	safe_write(describe_backtrace( ({ err[0],
+					  err[1][sizeof(err[1])-pos..] }) ));
      } else
-	safe_write("Hilfe Error: Unknown format of thrown error (not backtrace).\n(%O)\n", err);
+	safe_write("Hilfe Error: Unknown format of thrown error "
+		   "(not backtrace).\n(%O)\n", err);
     };
     if(err2)
       safe_write("Hilfe Error: Error while printing backtrace.\n");
@@ -1482,7 +1505,8 @@ class Evaluator {
   // Rewrites "dangerous" tokens (int/string/float-variables) to
   // operate directly in the variable mapping. It rewrites all other
   // variables as well, but we didn't have to.
-  private int rel_parser( Expression expr, multiset(string) symbols, void|int p ) {
+  private int rel_parser( Expression expr, multiset(string) symbols,
+			  void|int p ) {
     int top = !p;
     while( p<sizeof(expr)) {
       if( expr->is_block(p) ) {
@@ -1563,8 +1587,8 @@ class Evaluator {
   // Some debug code to intercept calls to relocate. Aspect
   // Oriented Programming would be handy here...
   private int relocate( Expression expr, multiset(string) symbols,
-			 multiset(string) next_symbols, int p, void|string safe_word,
-			 void|int(0..1) top) {
+			multiset(string) next_symbols, int p,
+			void|string safe_word, void|int(0..1) top) {
     int op = p;
     //    werror("%O %O %d\n", (symbols?indices(symbols||(<>))*", ":0),
     //    	   (next_symbols?indices(next_symbols||(<>))*", ":0), top );
@@ -1575,8 +1599,8 @@ class Evaluator {
 #endif
 
   private int relocate( Expression expr, multiset(string) symbols,
-			multiset(string) next_symbols, int p, void|string safe_word,
-			void|int(0..1) top) {
+			multiset(string) next_symbols, int p,
+			void|string safe_word, void|int(0..1) top) {
 
     // Type declaration?
     int pos = expr->endoftype(p);
@@ -1728,7 +1752,8 @@ class Evaluator {
 	    else if(expr[pos]==")") plevel--;
 	    pos++;
 	    if(pos==sizeof(expr))
-	      return "Hilfe Error: Bug in constant handling. Please report this!\n";
+	      return "Hilfe Error: Bug in constant handling. "
+		"Please report this!\n";
 	  }
 	  add_hilfe_constant(expr[from..pos-1], expr[from]);
 	  pos++;
@@ -1739,8 +1764,10 @@ class Evaluator {
 
       case "class":
 
-	if(expr[1]=="{")
-	  evaluate("return " + expr->code(), 1); // Unnamed class ("class {}();").
+	if(expr[1]=="{") {
+	  // Unnamed class ("class {}();").
+	  evaluate("return " + expr->code(), 1);
+	}
 	else
 	  add_hilfe_entity("class", expr[1..], expr[1], programs);
 	return 0;
@@ -1760,10 +1787,12 @@ class Evaluator {
 	    else if(expr[pos]==")" || expr[pos]=="}") plevel--;
 	    pos++;
 	    if(pos==sizeof(expr))
-	      return "Hilfe Error: Bug in variable handling or error in variable assignment.\n";
+	      return "Hilfe Error: Bug in variable handling or error "
+		"in variable assignment.\n";
 	  }
 	  if(constants[expr[from]])
-	    return "Hilfe Error: \"" + expr[from] + "\" already defined as constant.\n";
+	    return "Hilfe Error: \"" + expr[from] +
+	      "\" already defined as constant.\n";
 	  add_hilfe_variable(type, expr[from..pos-1], expr[from]);
 	  pos++;
 	}
@@ -1773,7 +1802,8 @@ class Evaluator {
       if( expr[pos+1]=="(" ) {
 	// We are defining the function expr[pos]
 	if(constants[expr[pos]])
-	  return "Hilfe Error: \"" + expr[pos] + "\" already defined as constant.\n";
+	  return "Hilfe Error: \"" + expr[pos] +
+	    "\" already defined as constant.\n";
 	add_hilfe_entity(type, expr[pos..], expr[pos], functions);
 	return 0;
       }
@@ -1912,10 +1942,12 @@ class Evaluator {
   object hilfe_compile(string f, void|string new_var)
   {
     if(new_var && commands[new_var])
-      safe_write("Hilfe Warning: Command %O no longer reachable. Use %O instead.\n",
-		new_var, "."+new_var);
+      safe_write("Hilfe Warning: Command %O no longer reachable. "
+		 "Use %O instead.\n",
+		 new_var, "."+new_var);
 
-    if(new_var=="___hilfe" || new_var=="___Hilfe" || new_var=="___HilfeWrapper" ) {
+    if(new_var=="___hilfe" || new_var=="___Hilfe" ||
+       new_var=="___HilfeWrapper" ) {
       safe_write("Hilfe Error: Symbol %O must not be defined.\n"
 		"             It is used internally by Hilfe.\n", new_var);
       return 0;
@@ -1929,13 +1961,15 @@ class Evaluator {
     mapping symbols = constants + functions + programs;
 
     if(new_var=="__")
-      safe_write("Hilfe Warning: History variable __ is no longer reachable.\n");
+      safe_write("Hilfe Warning: History variable __ is no "
+		 "longer reachable.\n");
     else if(zero_type(symbols["__"]) && zero_type(variables["__"])) {
       symbols["__"] = history;
     }
 
     if(new_var=="_")
-      safe_write("Hilfe Warning: History variable _ is no longer reachable.\n");
+      safe_write("Hilfe Warning: History variable _ is no "
+		 "longer reachable.\n");
     else if(zero_type(symbols["_"]) && zero_type(variables["__"])
 	    && sizeof(history)) {
       symbols["_"] = history[-1];
@@ -1952,7 +1986,8 @@ class Evaluator {
 
       map(imports, lambda(string f) { return "import "+f+";\n"; }) * "" +
 
-      "mapping(string:mixed) ___hilfe = ___Hilfe->variables;\n# 1\n" + f + "\n";
+      "mapping(string:mixed) ___hilfe = ___Hilfe->variables;\n# 1\n" + f +
+      "\n";
 
     HilfeCompileHandler handler = HilfeCompileHandler (sizeof (backtrace()));
 
