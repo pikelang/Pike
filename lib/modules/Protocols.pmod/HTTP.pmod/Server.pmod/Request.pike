@@ -10,6 +10,10 @@ HeaderParser headerparser;
 
 string buf="";    // content buffer
 
+//! full request, unparsed
+string raw; // raw contents of request (headers and body)
+//! body of the request (request minus request line and headers)
+string body_raw; // raw contents of request body (body only)
 string request_raw;
 string request_type;
 string full_query;
@@ -41,12 +45,13 @@ void attach_fd(Stdio.File _fd,Port server,
 
 static void read_cb(mixed dummy,string s)
 {
+   if(!raw) raw="";
+   raw+=s;
    array v=headerparser->feed(s);
    if (v)
    {
       destruct(headerparser);
       headerparser=0;
-
       buf=v[0];
       request_headers=v[2];
       request_raw=v[1];
@@ -129,10 +134,13 @@ static void parse_post()
 
 static void read_cb_post(mixed dummy,string s)
 {
-   buf+=strlen(s);
-   if (strlen(buf)<=(int)request_headers["content-length"] ||
+   raw+=s;
+   buf+=s;
+   if (strlen(buf)>=(int)request_headers["content-length"] ||
        strlen(buf)>MAXIMUM_REQUEST_SIZE)
    {
+      int i=search(raw, "\r\n\r\n");
+      if(i>0) body_raw=raw[i+4..];
       my_fd->set_blocking();
       parse_post();
       request_callback(this_object());
