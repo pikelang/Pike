@@ -2,12 +2,14 @@
 
 class stack {
   int ptr;
-  mixed *arr=allocate(32);
+  mixed *arr;
 
   void push(mixed val)
   {
-    if(ptr==sizeof(arr)) arr+=allocate(ptr);
-    arr[ptr++]=val;
+    if(ptr == sizeof(arr)) {
+      arr += allocate(ptr);
+    }
+    arr[ptr++] = val;
   }
 
   mixed top()
@@ -16,6 +18,21 @@ class stack {
       return(arr[ptr-1]);
     }
     error("Stack underflow\n");
+  }
+
+  void quick_pop(void|int val)
+  {
+    if (val) {
+      if (ptr < val) {
+	ptr = 0;
+      } else {
+	ptr -= val;
+      }
+    } else {
+      if (ptr > 0) {
+	ptr--;
+      }
+    }
   }
 
   mixed pop(void|int val)
@@ -46,10 +63,15 @@ class stack {
     return foo;
   }
 
-  void reset()
+  void reset(int|void initial_size)
   {
-    arr=allocate(32);
-    ptr=0;
+    arr = allocate(initial_size || 32);
+    ptr = 0;
+  }
+
+  void create(int|void initial_size)
+  {
+    arr = allocate(initial_size || 32);
   }
 };
 
