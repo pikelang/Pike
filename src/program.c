@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.23 1997/03/01 01:41:05 hubbe Exp $");
+RCSID("$Id: program.c,v 1.24 1997/03/01 17:56:29 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -258,6 +258,9 @@ void start_new_program()
   {
     struct svalue tmp;
     tmp.type=T_MAPPING;
+#ifdef __CHECKER__
+    tmp.subtype=0;
+#endif /* __CHECKER__ */
     tmp.u.mapping=get_builtin_constants();
     use_module(& tmp);
   }

@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.26 1997/03/01 02:37:01 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.27 1997/03/01 17:56:04 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1182,6 +1182,9 @@ low_idents: F_IDENTIFIER
     struct svalue tmp;
     node *tmp2;
     tmp.type=T_MAPPING;
+#ifdef __CHECKER__
+    tmp.subtype=0;
+#endif /* __CHECKER__ */
     tmp.u.mapping=get_builtin_constants();
     tmp2=mkconstantsvaluenode(&tmp);
     $$=index_node(tmp2, $3);
