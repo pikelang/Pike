@@ -191,7 +191,6 @@ class Year
 	    month_mapping=
 	       mkmapping(Array.map(month_names,lower_case),
 			 indices(allocate(13))[1..]);
-	    werror(sprintf("%O\n",month_mapping));
 	 }
 	 n=month_mapping[lower_case(n)];
 	 if (!n) return 0;

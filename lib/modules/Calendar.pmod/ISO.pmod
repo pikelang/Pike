@@ -1,10 +1,10 @@
 // IS-8601, international standard
 
-inherit Calendar.Gregorian;
+inherit Calendar.Gregorian:Gregorian;
 
 class Year
 {
-   inherit Calendar.Gregorian.Year;
+   inherit Gregorian::Year;
 
    int leap_day()
    {
@@ -15,7 +15,7 @@ class Year
 
 class Week
 {
-   inherit Calendar.Gregorian.Week;
+   inherit Gregorian::Week;
 
    int yday()
    {
@@ -56,7 +56,7 @@ class Week
 
 class Day
 {
-   inherit Calendar.Gregorian.Day;
+   inherit Gregorian::Day;
 
    int week_day()
    {
