@@ -20,7 +20,7 @@
 #include "pike_macros.h"
 #include <ctype.h>
 
-RCSID("$Id: svalue.c,v 1.26 1998/04/08 03:31:49 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.27 1998/04/08 03:35:51 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1101,15 +1101,27 @@ void gc_mark_svalues(struct svalue *s, int num)
 
 void gc_mark_short_svalue(union anything *u, TYPE_T type)
 {
-  if(!u->refs) return;
   switch(type)
   {
-  case T_ARRAY:   gc_mark_array_as_referenced(u->array);     break;
-  case T_MULTISET:    gc_mark_multiset_as_referenced(u->multiset);       break;
-  case T_MAPPING: gc_mark_mapping_as_referenced(u->mapping); break;
-  case T_PROGRAM: gc_mark_program_as_referenced(u->program); break;
+  case T_ARRAY: 
+    if(!u->refs) return;
+    gc_mark_array_as_referenced(u->array);
+    break;
+  case T_MULTISET:
+    if(!u->refs) return;
+    gc_mark_multiset_as_referenced(u->multiset);
+    break;
+  case T_MAPPING:
+    if(!u->refs) return;
+    gc_mark_mapping_as_referenced(u->mapping);
+    break;
+  case T_PROGRAM:
+    if(!u->refs) return;
+    gc_mark_program_as_referenced(u->program);
+    break;
 
   case T_OBJECT:
+    if(!u->refs) return;
     if(u->object->prog)
     {
       gc_mark_object_as_referenced(u->object);
