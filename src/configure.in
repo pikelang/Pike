@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.301 1999/06/24 22:07:29 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.302 1999/07/08 23:04:40 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1097,6 +1097,7 @@ AC_TYPE_PID_T
 AC_TYPE_UID_T
 AC_TYPE_SIGNAL
 AC_CHECK_TYPE(time_t,INT32)
+AC_CHECK_TYPE(pri_t, short)
 
 dnl AC_CHECK_LIB(PW, alloca)
 
