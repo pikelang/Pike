@@ -1,19 +1,19 @@
 // -*- c-mode -*-
 //
-// $Id: treeopt.in,v 1.1 1999/11/08 00:00:26 grubba Exp $
+// $Id: treeopt.in,v 1.2 1999/11/08 16:09:33 grubba Exp $
 //
 // The tree optimizer
 //
 // Henrik Grubbström 1999-11-06
 
 0 = F_APPLY(1 = F_CONSTANT
-	    [u.sval.type == T_FUNCTION]
-	    [u.sval.subtype == FUNCTION_BUILTIN]
-	    [u.sval.u.efun->optimize], *):
+	    [$$->u.sval.type == T_FUNCTION]
+	    [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	    [$$->u.sval.u.efun->optimize], *):
 
 {
-  if ((tmp = $1->u.sval.u.efun->optimize($0))) {
-    $$ = tmp;
+  if (tmp1 = $1->u.sval.u.efun->optimize($0)) {
+    goto use_tmp1;
   }
 }
 ;
@@ -21,19 +21,19 @@
 F_CAST(-,*):
   -;
 
-F_CAST[type == void_type_string](F_CONSTANT, *):
+F_CAST[$$->type == void_type_string](F_CONSTANT, *):
   -;
 
-F_CAST[type == void_type_string](F_COMMA_EXPR(0, F_CONSTANT), *):
+F_CAST[$$->type == void_type_string](F_COMMA_EXPR(0, F_CONSTANT), *):
 {
   $$ = mkcastnode(void_type_string, $0);
 }
 ;
 
-F_CAST[type == void_type_string]
-      (F_APPLY(F_CONSTANT[(node_info & OPT_SIDE_EFFECT|
-				       OPT_ASSIGNMENT|
-				       OPT_TRY_OPTIMIZE) == OPT_TRY_OPTIMIZE],
+F_CAST[$$->type == void_type_string]
+      (F_APPLY(F_CONSTANT[($$->node_info & OPT_SIDE_EFFECT|
+			   OPT_ASSIGNMENT|
+			   OPT_TRY_OPTIMIZE) == OPT_TRY_OPTIMIZE],
 	       F_ARG_LIST(1, 2)), *):
 {
   $$ = mkcastnode(void_type_string,
@@ -41,8 +41,8 @@ F_CAST[type == void_type_string]
 }
 ;
 
-F_CAST[type == void_type_string]
-      (F_APPLY(F_CONSTANT[(node_info & OPT_SIDE_EFFECT|
+F_CAST[$$->type == void_type_string]
+      (F_APPLY(F_CONSTANT[($$->node_info & OPT_SIDE_EFFECT|
 			   OPT_ASSIGNMENT|
 			   OPT_TRY_OPTIMIZE) == OPT_TRY_OPTIMIZE],
 	       0), *):
@@ -50,15 +50,15 @@ F_CAST[type == void_type_string]
 
 // FCAST[0 = type](1 = *[0], *): 1;
 
-F_RANGE(*, F_ARG_LIST(*, F_CONSTANT[u.sval.type == T_INT]
-                                   [u.sval.u.integer <= 0])):
+F_RANGE(*, F_ARG_LIST(*, F_CONSTANT[$$->u.sval.type == T_INT]
+                                   [$$->u.sval.u.integer <= 0])):
 {
   yywarning("Range end is not positive.");
 }
 ;
 
-F_RANGE(*, F_ARG_LIST(*, F_CONSTANT[u.sval.type == T_FLOAT]
-				   [u.sval.u.float_number <= 0.0])):
+F_RANGE(*, F_ARG_LIST(*, F_CONSTANT[$$->u.sval.type == T_FLOAT]
+				   [$$->u.sval.u.float_number <= 0.0])):
 {
   yywarning("Range end is not positive.");
 }
@@ -85,22 +85,22 @@ F_COMMA_EXPR(0, F_COMMA_EXPR(1, 2)):
   F_COMMA_EXPR(F_COMMA_EXPR($0, $1), $2);
 
 // Is really the OPT_CASE needded for the following three?
-F_COMMA_EXPR(0 = F_RETURN, *[!(tree_info & OPT_CASE)]):
+F_COMMA_EXPR(0 = F_RETURN, *[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_COMMA_EXPR(0 = F_CONTINUE, *[!(tree_info & OPT_CASE)]):
+F_COMMA_EXPR(0 = F_CONTINUE, *[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_COMMA_EXPR(0 = F_BREAK, *[!(tree_info & OPT_CASE)]):
+F_COMMA_EXPR(0 = F_BREAK, *[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_RETURN), *[!(tree_info & OPT_CASE)]):
+F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_RETURN), *[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_CONSTANT), *[!(tree_info & OPT_CASE)]):
+F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_CONSTANT), *[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_BREAK), *[!(tree_info & OPT_CASE)]):
+F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_BREAK), *[!($$->tree_info & OPT_CASE)]):
   $0;
 
 
@@ -111,22 +111,22 @@ F_ARG_LIST(0, -):
   $0;
 
 // Is really the OPT_CASE needded for the following three?
-F_ARG_LIST(0 = F_RETURN, *[!(tree_info & OPT_CASE)]):
+F_ARG_LIST(0 = F_RETURN, *[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_ARG_LIST(0 = F_CONTINUE, *[!(tree_info & OPT_CASE)]):
+F_ARG_LIST(0 = F_CONTINUE, *[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_ARG_LIST(0 = F_BREAK, *[!(tree_info & OPT_CASE)]):
+F_ARG_LIST(0 = F_BREAK, *[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_ARG_LIST(0 = F_COMMA_EXPR(*, F_RETURN), *[!(tree_info & OPT_CASE)]):
+F_ARG_LIST(0 = F_COMMA_EXPR(*, F_RETURN), *[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_ARG_LIST(0 = F_COMMA_EXPR(*, F_CONSTANT), *[!(tree_info & OPT_CASE)]):
+F_ARG_LIST(0 = F_COMMA_EXPR(*, F_CONSTANT), *[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_ARG_LIST(0 = F_COMMA_EXPR(*, F_BREAK), *[!(tree_info & OPT_CASE)]):
+F_ARG_LIST(0 = F_COMMA_EXPR(*, F_BREAK), *[!($$->tree_info & OPT_CASE)]):
   $0;
 
 
@@ -137,22 +137,22 @@ F_LVALUE_LIST(0, -):
   $0;
 
 // Is really the OPT_CASE needded for the following three?
-F_LVALUE_LIST(0 = F_RETURN, *[!(tree_info & OPT_CASE)]):
+F_LVALUE_LIST(0 = F_RETURN, *[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_LVALUE_LIST(0 = F_CONTINUE, *[!(tree_info & OPT_CASE)]):
+F_LVALUE_LIST(0 = F_CONTINUE, *[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_LVALUE_LIST(0 = F_BREAK, *[!(tree_info & OPT_CASE)]):
+F_LVALUE_LIST(0 = F_BREAK, *[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_LVALUE_LIST(0 = F_COMMA_EXPR(*, F_RETURN), *[!(tree_info & OPT_CASE)]):
+F_LVALUE_LIST(0 = F_COMMA_EXPR(*, F_RETURN), *[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_LVALUE_LIST(0 = F_COMMA_EXPR(*, F_CONSTANT), *[!(tree_info & OPT_CASE)]):
+F_LVALUE_LIST(0 = F_COMMA_EXPR(*, F_CONSTANT), *[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_LVALUE_LIST(0 = F_COMMA_EXPR(*, F_BREAK), *[!(tree_info & OPT_CASE)]):
+F_LVALUE_LIST(0 = F_COMMA_EXPR(*, F_BREAK), *[!($$->tree_info & OPT_CASE)]):
   $0;
 
 
@@ -165,35 +165,20 @@ F_LOR(0, -):
 F_LOR(F_NOT(0, *), F_NOT(1, *)):
   F_NOT(F_LAND($0, $1), -);
 
-F_LOR(0 = F_ASSIGN(*, 1), 2):
-{
-  if (node_is_false($1)) {
-    $$ = mknode(F_COMMA_EXPR, $0, $2);
-  }
-  if (node_is_true($1)) {
-    $$ = $0;
-  }
-}
-;
+F_LOR(0 = F_ASSIGN(*, *[node_is_false($$)]), 2):
+  F_COMMA_EXPR($0, $2);
 
-F_LOR(0, 1 = F_CONSTANT):
-{
-  if (node_is_false($1)) {
-    $$ = $0;
-  }
-}
-;
+F_LOR(0 = F_ASSIGN(*, *[node_is_true($$)]), *):
+  $0;
 
-F_LOR(0, 1):
-{
-  if (node_is_false($0)) {
-    $$ = $1;
-  }
-  if (node_is_true($0)) {
-    $$ = $0;
-  }
-}
-;
+F_LOR(0, F_CONSTANT[node_is_false($$)]):
+  $0;
+
+F_LOR(*[node_is_false($$)], 0):
+  $0;
+
+F_LOR(0 = *[node_is_true($$)], *):
+  $0;
 
 
 F_LAND(-, 0):
@@ -205,45 +190,39 @@ F_LAND(0, -):
 F_LAND(F_NOT(0, *), F_NOT(1, *)):
   F_NOT(F_LOR($0, $1), -);
 
-F_LAND(0 = F_ASSIGN(*, 1), 2):
-{
-  if (node_is_true($1)) {
-    $$ = mknode(F_COMMA_EXPR, $0, $2);
-  }
-  if (node_is_false($1)) {
-    $$ = $0;
-  }
-}
-;
+F_LAND(0 = F_ASSIGN(*, *[node_is_true($$)]), 2):
+  F_COMMA_EXPR($0, $2);
 
-F_LAND(0, 1):
-{
-  if (node_is_true($0)) {
-    $$ = $1;
-  }
-  if (node_is_false($0)) {
-    $$ = $0;
-  }
-  if (node_is_false($1)) {
-    $$ = mknode(F_COMMA_EXPR, $0, $1);
-  }
-}
-;
+F_LAND(0 = F_ASSIGN(*, *[node_is_false($$)]), *):
+  $0;
 
+F_LAND(*[node_is_true($$)], 0):
+  $0;
+
+F_LAND(0 = *[node_is_false($$)], *):
+  $0;
+
+F_LAND(0, 1 = *[node_is_false($$)]):
+  F_COMMA_EXPR($0, $1);
+
+
+'?'(-, -):
+  -;
+
+'?'(*, -):
+  -;
+
+'?'(-, ':'(*, 0)):
+  $0;
 
 '?'(F_NOT(0, *), ':'(1, 2)):
   '?'($0, ':'($2, $1));
 
-'?'(0, ':'(1, 2)):
-{
-  if (node_is_true($0)) {
-    $$ = $1;
-  }
-  if (node_is_false($0)) {
-    $$ = $2;
-  }
-}
-;
+'?'(*[node_is_true($$)], ':'(0, *)):
+  $0;
+
+'?'(*[node_is_false($$)], ':'(*, 0)):
+  $0;
 
 
 F_NOT(-, *):
@@ -268,7 +247,7 @@ F_NOT(F_NE(0, 1), *):
   F_EQ($0, $1);
 
 
-F_ADD_EQ(0, 1 = F_CONSTANT[u.sval.type == T_INT]):
+F_ADD_EQ(0, 1 = F_CONSTANT[$$->u.sval.type == T_INT]):
 {
   /* a += 0  ->  a */
   if (!$1->u.sval.u.integer) {
@@ -287,7 +266,7 @@ F_ADD_EQ(0, 1 = F_CONSTANT[u.sval.type == T_INT]):
 }
 ;
 
-F_SUB_EQ(0, 1 = F_CONSTANT[u.sval.type == T_INT]):
+F_SUB_EQ(0, 1 = F_CONSTANT[$$->u.sval.type == T_INT]):
 {
   /* a -= 0  ->  a */
   if (!$1->u.sval.u.integer) {
@@ -306,9 +285,9 @@ F_SUB_EQ(0, 1 = F_CONSTANT[u.sval.type == T_INT]):
 }
 ;
 
-F_ARROW(0 = F_CONSTANT[u.sval.type == T_OBJECT]
-	    [u.sval.u.object->prog],
-	1 = F_CONSTANT[u.sval.type == T_STRING]):
+F_ARROW(0 = F_CONSTANT[$$->u.sval.type == T_OBJECT]
+	    [$$->u.sval.u.object->prog],
+	1 = F_CONSTANT[$$->u.sval.type == T_STRING]):
 {
   if (find_identifier("`->", $0->u.sval.u.object->prog) == -1) {
     int i = find_shared_string_identifier($1->u.sval.u.string,
@@ -333,92 +312,197 @@ F_FOR(-, *):
 F_FOR(0, ':'(-, -)):
   F_FOR($0, -);
 
-F_FOR(0, -):
+F_FOR(0 = *[node_is_true($$)], -):
 {
-  if (node_is_true($0)) {
-    $$ = mknode(F_FOR($0, mknode(':',
-				 mkefuncallnode("sleep", mkintnode(255)),
-				 0)));
-  }
-  if (node_is_false($0)) {
-    $$ = 0;
-  }
+  /* Infinite loop */
+  $$ = mknode(F_FOR($0, mknode(':',
+			       mkefuncallnode("sleep", mkintnode(255)),
+			       0)));
 }
 ;
 
-F_FOR(0, *):
-{
-  if (node_is_false($0)) {
-    $$ = 0;
-  }
-}
-;
+F_FOR(*[node_is_false($$)], *):
+  -;
+
 
 F_FOR(F_INC(0, *), -):
   F_INC_NEQ_LOOP(F_VAL_LVAL(0, $0), -);
-F_FOR(F_INC(0, *), ':'(-, 1[!(tree_info & OPT_CONTINUE)])):
+F_FOR(F_INC(0, *), ':'(-, 1[!($$->tree_info & OPT_CONTINUE)])):
   F_INC_NEQ_LOOP(F_VAL_LVAL(0, $0), $1);
-F_FOR(F_INC(0, *), ':'(1[!(tree_info & OPT_CONTINUE)], -)):
+F_FOR(F_INC(0, *), ':'(1[!($$->tree_info & OPT_CONTINUE)], -)):
   F_INC_NEQ_LOOP(F_VAL_LVAL(0, $0), $1);
-F_FOR(F_INC(0, *), ':'(1[!(tree_info & OPT_CONTINUE)],
-		       2[!(tree_info & OPT_CONTINUE)])):
+F_FOR(F_INC(0, *), ':'(1[!($$->tree_info & OPT_CONTINUE)],
+		       2[!($$->tree_info & OPT_CONTINUE)])):
   F_INC_NEQ_LOOP(F_VAL_LVAL(0, $0), F_COMMA_EXPR($1, $2));
 
 F_FOR(F_POST_INC(0, *), -):
   F_INC_NEQ_LOOP(F_VAL_LVAL(1, $0), -);
-F_FOR(F_POST_INC(0, *), ':'(-, 1[!(tree_info & OPT_CONTINUE)])):
+F_FOR(F_POST_INC(0, *), ':'(-, 1[!($$->tree_info & OPT_CONTINUE)])):
   F_INC_NEQ_LOOP(F_VAL_LVAL(1, $0), $1);
-F_FOR(F_POST_INC(0, *), ':'(1[!(tree_info & OPT_CONTINUE)], -)):
+F_FOR(F_POST_INC(0, *), ':'(1[!($$->tree_info & OPT_CONTINUE)], -)):
   F_INC_NEQ_LOOP(F_VAL_LVAL(1, $0), $1);
-F_FOR(F_POST_INC(0, *), ':'(1[!(tree_info & OPT_CONTINUE)],
-		            2[!(tree_info & OPT_CONTINUE)])):
+F_FOR(F_POST_INC(0, *), ':'(1[!($$->tree_info & OPT_CONTINUE)],
+		            2[!($$->tree_info & OPT_CONTINUE)])):
   F_INC_NEQ_LOOP(F_VAL_LVAL(1, $0), F_COMMA_EXPR($1, $2));
 
 F_FOR(F_DEC(0, *), -):
   F_DEC_NEQ_LOOP(F_VAL_LVAL(0, $0), -);
-F_FOR(F_DEC(0, *), ':'(-, 1[!(tree_info & OPT_CONTINUE)])):
+F_FOR(F_DEC(0, *), ':'(-, 1[!($$->tree_info & OPT_CONTINUE)])):
   F_DEC_NEQ_LOOP(F_VAL_LVAL(0, $0), $1);
-F_FOR(F_DEC(0, *), ':'(1[!(tree_info & OPT_CONTINUE)], -)):
+F_FOR(F_DEC(0, *), ':'(1[!($$->tree_info & OPT_CONTINUE)], -)):
   F_DEC_NEQ_LOOP(F_VAL_LVAL(0, $0), $1);
-F_FOR(F_DEC(0, *), ':'(1[!(tree_info & OPT_CONTINUE)],
-		       2[!(tree_info & OPT_CONTINUE)])):
+F_FOR(F_DEC(0, *), ':'(1[!($$->tree_info & OPT_CONTINUE)],
+		       2[!($$->tree_info & OPT_CONTINUE)])):
   F_DEC_NEQ_LOOP(F_VAL_LVAL(0, $0), F_COMMA_EXPR($1, $2));
 
 F_FOR(F_POST_DEC(0, *), -):
   F_DEC_NEQ_LOOP(F_VAL_LVAL(F_NEG(1, -), $0), -);
-F_FOR(F_POST_DEC(0, *), ':'(-, 1[!(tree_info & OPT_CONTINUE)])):
+F_FOR(F_POST_DEC(0, *), ':'(-, 1[!($$->tree_info & OPT_CONTINUE)])):
   F_DEC_NEQ_LOOP(F_VAL_LVAL(F_NEG(1, -), $0), $1);
-F_FOR(F_POST_DEC(0, *), ':'(1[!(tree_info & OPT_CONTINUE)], -)):
+F_FOR(F_POST_DEC(0, *), ':'(1[!($$->tree_info & OPT_CONTINUE)], -)):
   F_DEC_NEQ_LOOP(F_VAL_LVAL(F_NEG(1, -), $0), $1);
-F_FOR(F_POSTDEC(0, *), ':'(1[!(tree_info & OPT_CONTINUE)],
-                           2[!(tree_info & OPT_CONTINUE)])):
+F_FOR(F_POSTDEC(0, *), ':'(1[!($$->tree_info & OPT_CONTINUE)],
+                           2[!($$->tree_info & OPT_CONTINUE)])):
   F_DEC_NEQ_LOOP(F_VAL_LVAL(F_NEG(1, -), $0), F_COMMA_EXPR($1, $2));
 
-F_FOR(0, ':'(1, F_CAST[type == void_type_string](2, *))):
+F_FOR(0, ':'(1, F_CAST[$$->type == void_type_string](2, *))):
   F_FOR($0, ':'($1, $2));
 
-F_FOR(F_APPLY(0 = F_CONSTANT[u.sval.type == T_FUNCTION]
-                            [u.sval.subtype == FUNCTION_BUILTIN],
-              1),
-      ':'(2, 3)):
+F_FOR(0 = F_APPLY(1 = F_CONSTANT
+		  [$$->u.sval.type == T_FUNCTION]
+		  [$$->u.sval.subtype == FUNCTION_BUILTIN],
+                  2),
+      ':'(3, 4)):
 {
-  int oper;
-  if ($0->u.sval.u.efun->function == f_gt)
-    oper = F_GT;
-  else if ($0->u.sval.u.efun->function == f_ge)
-    oper = F_GE;
-  else if ($0->u.sval.u.efun->function == f_lt)
-    oper = F_LT;
-  else if ($0->u.sval.u.efun->function == f_le)
-    oper = F_LE;
-  else if ($0->u.sval.u.efun->function == f_ne)
-    oper = F_NE;
-  else
-    goto end_for_apply;
+  node **last;
 
-  if (count_args($1) != 2) goto end_for_apply;
+  /* Last is a pointer to the place where the incrementor is in the
+   * tree. This is needed so we can nullify this pointer later and
+   * free the rest of the tree
+   */
+  last = &$4;
+  tmp1 = *last;
 
+  /* We're not interested in casts to void */
+  while(tmp1 && 
+	tmp1->token == F_CAST &&
+	tmp1->type == void_type_string)
+  {
+    last = &CAR(tmp1);
+    tmp1 = *last;
+  }
 
-end_for_apply:
+  /* If there is an incrementor, and it is one of x++, ++x, x-- or ++x */
+  if(tmp1 && (tmp1->token == F_INC ||
+	      tmp1->token == F_POST_INC ||
+	      tmp1->token == F_DEC ||
+	      tmp1->token == F_POST_DEC))
+  {
+    node **arg1, **arg2;
+    int oper;
+    int inc;
+    int token;
+
+    /* does it increment or decrement ? */
+    inc = (tmp1->token==F_INC || tmp1->token==F_POST_INC);
+
+    /* for(; arg1 oper arg2; z ++) p; */
+
+    if($1->u.sval.u.efun->function == f_gt)
+      oper = F_GT;
+    else if($1->u.sval.u.efun->function == f_ge)
+      oper = F_GE;
+    else if($1->u.sval.u.efun->function == f_lt)
+      oper = F_LT;
+    else if($1->u.sval.u.efun->function == f_le)
+      oper = F_LE;
+    else if($1->u.sval.u.efun->function == f_ne)
+      oper = F_NE;
+    else
+      goto next_for_opt;
+
+    if(count_args($2) != 2)
+      goto next_for_opt;
+
+    arg1 = my_get_arg(&$2, 0);
+    arg2 = my_get_arg(&$2, 1);
+
+    /* it was not on the form for(; x op y; z++) p; */
+    if(!node_is_eq(*arg1, CAR(tmp1)) || /* x == z */
+       depend_p(*arg2, *arg2) ||	/* does y depend on y? */
+       depend_p(*arg2, *arg1) ||	/* does y depend on x? */
+       depend_p(*arg2, $3) ||		/* does y depend on p? */
+       depend_p(*arg2, tmp1))		/* does y depend on z? */
+    {
+      /* it was not on the form for(; x op y; z++) p; */
+      if(!node_is_eq(*arg2, CAR(tmp1)) || /* y == z */
+	 depend_p(*arg1, *arg2) ||	/* does x depend on y? */
+	 depend_p(*arg1, *arg1) ||	/* does x depend on x? */
+	 depend_p(*arg1, $3) ||		/* does x depend on p? */
+	 depend_p(*arg1, tmp1))		/* does x depend on z? */
+      {
+	/* it was not on the form for(; x op y; y++) p; */
+	goto next_for_opt;
+      }else{
+	node **tmparg;
+	/* for(; x op y; y++) p; -> for(; y op^-1 x; y++) p; */
+	
+	switch(oper)
+	{
+	case F_LT: oper = F_GT; break;
+	case F_LE: oper = F_GE; break;
+	case F_GT: oper = F_LT; break;
+	case F_GE: oper = F_LE; break;
+	}
+	    
+	tmparg = arg1;
+	arg1 = arg2;
+	arg2 = tmparg;
+      }
+    }
+    if(inc)
+    {
+      if(oper == F_LE)
+	tmp3 = mkopernode("`+", *arg2, mkintnode(1));
+      else if(oper == F_LT)
+	tmp3 = *arg2;
+      else
+	goto next_for_opt;
+    }else{
+      if(oper == F_GE)
+	tmp3 = mkopernode("`-", *arg2, mkintnode(1));
+      else if(oper == F_GT)
+	tmp3 = *arg2;
+      else
+	goto next_for_opt;
+    }
+
+    *last=0;
+    if(oper == F_NE)
+    {
+      if(inc)
+	token = F_INC_NEQ_LOOP;
+      else
+	token = F_DEC_NEQ_LOOP;
+    }else{
+      if(inc)
+	token = F_INC_LOOP;
+      else
+	token = F_DEC_LOOP;
+    }
+    tmp2 = mknode(token, mknode(F_VAL_LVAL, tmp3, *arg1), $3);
+    *arg1 = *arg2 = $3 = 0;
+
+    if(inc)
+    {
+      tmp1->token = F_DEC;
+    }else{
+      tmp1->token = F_INC;
+    }
+
+    tmp1 = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, tmp1), tmp2);
+    goto use_tmp1;
+  }
+ next_for_opt:
 }
 ;
