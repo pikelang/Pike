@@ -8,10 +8,6 @@
 #define WERROR(x)
 #endif
 
-#if __VERSION__ >= 0.6
-import ".";
-#endif /* __VERSION__ >= 0.6 */
-
 #if constant(Standards.ASN1.Decode.simple_der_decode)
 
 import Standards.ASN1.Types;
@@ -84,7 +80,7 @@ object build_rsa_public_key(object rsa)
 {
   return asn1_sequence( ({
     asn1_sequence(
-      ({ Identifiers.rsa_id, asn1_null() }) ),
+      ({ .Identifiers.rsa_id, asn1_null() }) ),
     asn1_bit_string(asn1_sequence(
       ({ asn1_integer(rsa->n), asn1_integer(rsa->e) }) )->get_der()) }) );
 }

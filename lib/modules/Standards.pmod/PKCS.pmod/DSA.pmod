@@ -9,7 +9,8 @@
 
 #if constant(Gmp.mpz)
 
-import Standards.ASN1.Types;
+constant asn1_sequence = Standards.ASN1.Types.asn1_sequence;
+constant asn1_integer = Standards.ASN1.Types.asn1_integer;
 
 object algorithm_identifier(object|void dsa)
 {
