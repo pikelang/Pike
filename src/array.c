@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.138 2004/09/06 11:43:23 grubba Exp $
+|| $Id: array.c,v 1.139 2004/09/16 12:59:25 grubba Exp $
 */
 
 #include "global.h"
@@ -24,8 +24,10 @@
 #include "stuff.h"
 #include "bignum.h"
 #include "cyclic.h"
+#include "multiset.h"
+#include "mapping.h"
 
-RCSID("$Id: array.c,v 1.138 2004/09/06 11:43:23 grubba Exp $");
+RCSID("$Id: array.c,v 1.139 2004/09/16 12:59:25 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -80,16 +82,22 @@ PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size, ptrdiff_t extra_spa
     return &empty_array;
   }
 
+  if( (size+extra_space-1) >
+      (ULONG_MAX-sizeof(struct array))/sizeof(struct svalue) )
+    Pike_error("Too large array (memory size exceeds size of size_t)\n");
   v=(struct array *)malloc(sizeof(struct array)+
 			   (size+extra_space-1)*sizeof(struct svalue));
   if(!v)
-    Pike_error("Couldn't allocate array, out of memory.\n");
+    Pike_error(msg_out_of_mem);
 
   GC_ALLOC(v);
-  
 
-  /* for now, we don't know what will go in here */
-  v->type_field=BIT_MIXED | BIT_UNFINISHED;
+
+  if (size)
+    /* for now, we don't know what will go in here */
+    v->type_field = BIT_MIXED | BIT_UNFINISHED;
+  else
+    v->type_field = 0;
   v->flags=0;
 
   v->malloced_size = DO_NOT_WARN((INT32)(size + extra_space));
@@ -143,7 +151,7 @@ PMOD_EXPORT void really_free_array(struct array *v)
   add_ref(v);
   EXIT_PIKE_MEMOBJ(v);
   free_svalues(ITEM(v), v->size, v->type_field);
-  v->refs--;
+  sub_ref(v);
   array_free_no_free(v);
 }
 
@@ -192,24 +200,28 @@ PMOD_EXPORT void array_index(struct svalue *s,struct array *v,INT32 index)
 PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
 				struct array *a,struct svalue *ind)
 {
-  INT32 i;
   switch(ind->type)
   {
-    case T_INT:
-      i=ind->u.integer;
-      if(i<0) i+=a->size;
+    case T_INT: {
+      INT_TYPE p = ind->u.integer;
+      INT_TYPE i = p < 0 ? p + a->size : p;
       if(i<0 || i>=a->size) {
 	struct svalue tmp;
 	tmp.type=T_ARRAY;
 	tmp.u.array=a;
 	if (a->size) {
-	  index_error(0,0,0,&tmp,ind,"Index %d is out of array range 0 - %d.\n", i, a->size-1);
+	  index_error(0,0,0,&tmp,ind,
+		      "Index %d is out of array range "
+		      "%d..%d.\n",
+		      p, -a->size, a->size-1);
 	} else {
-	  index_error(0,0,0,&tmp,ind,"Attempt to index the empty array with %d.\n", i);
+	  index_error(0,0,0,&tmp,ind,
+		      "Attempt to index the empty array with %d.\n", p);
 	}
       }
       array_index_no_free(s,a,i);
       break;
+    }
 
     case T_STRING:
     {
@@ -249,20 +261,22 @@ PMOD_EXPORT void array_free_index(struct array *v,INT32 index)
 
 PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s)
 {
-  INT32 i;
   switch (ind->type) {
-    case T_INT:
-      i=ind->u.integer;
-      if(i<0) i+=a->size;
+    case T_INT: {
+      INT_TYPE p = ind->u.integer;
+      INT_TYPE i = p < 0 ? p + a->size : p;
       if(i<0 || i>=a->size) {
 	if (a->size) {
-	  Pike_error("Index %d is out of array range 0 - %d.\n", i, a->size-1);
+	  Pike_error("Index %d is out of array range "
+		     "%d..%d.\n",
+		     p, -a->size, a->size-1);
 	} else {
-	  Pike_error("Attempt to index the empty array with %d.\n", i);
+	  Pike_error("Attempt to index the empty array with %d.\n", p);
 	}
       }
       array_set_index(a,i,s);
       break;
+    }
 
     case T_STRING:
     {
@@ -334,6 +348,40 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
 }
 
 /*
+ * Shrink an array destructively
+ */
+PMOD_EXPORT struct array *array_shrink(struct array *v, ptrdiff_t size)
+{
+  struct array *a;
+
+#ifdef PIKE_DEBUG
+  if(v->refs>2) /* Odd, but has to be two */
+    Pike_fatal("Array shrink on array with many references.\n");
+
+  if(size > v->size)
+    Pike_fatal("Illegal argument to array_shrink.\n");
+#endif
+
+  if(!size || (size*4 < v->malloced_size + 4)) /* Should we realloc it? */
+  {
+    a = array_set_flags(allocate_array_no_init(size, 0), v->flags);
+    if (a->size) {
+      a->type_field = v->type_field;
+    }
+
+    free_svalues(ITEM(v) + size, v->size - size, v->type_field);
+    MEMCPY(ITEM(a), ITEM(v), size*sizeof(struct svalue));
+    v->size=0;
+    free_array(v);
+    return a;
+  }else{
+    free_svalues(ITEM(v) + size, v->size - size, v->type_field);
+    v->size=size;
+    return v;
+  }
+}
+
+/*
  * resize array, resize an array destructively
  */
 PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size)
@@ -357,52 +405,18 @@ PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size)
       }
       a->type_field |= BIT_INT;
       return a;
-    }else{
+    } else {
       struct array *ret;
-      ret=low_allocate_array(size, (size>>1) + 4);
-      MEMCPY(ITEM(ret),ITEM(a),sizeof(struct svalue)*a->size);
+      ret = array_set_flags(low_allocate_array(size, (size>>1) + 4),
+			    a->flags);
+      MEMCPY(ITEM(ret), ITEM(a), sizeof(struct svalue)*a->size);
       ret->type_field = DO_NOT_WARN((TYPE_FIELD)(a->type_field | BIT_INT));
       a->size=0;
       free_array(a);
       return ret;
     }
-  }else{
-    /* We should shrink the array */
-    free_svalues(ITEM(a)+size, a->size - size, a->type_field);
-    a->size = size;
-    return a;
-  }
-}
-
-/*
- * Shrink an array destructively
- */
-PMOD_EXPORT struct array *array_shrink(struct array *v, ptrdiff_t size)
-{
-  struct array *a;
-
-#ifdef PIKE_DEBUG
-  if(v->refs>2) /* Odd, but has to be two */
-    Pike_fatal("Array shrink on array with many references.\n");
-
-  if(size > v->size)
-    Pike_fatal("Illegal argument to array_shrink.\n");
-#endif
-
-  if(size*2 < v->malloced_size + 4) /* Should we realloc it? */
-  {
-    a=allocate_array_no_init(size,0);
-    a->type_field = v->type_field;
-
-    free_svalues(ITEM(v) + size, v->size - size, v->type_field);
-    MEMCPY(ITEM(a), ITEM(v), size*sizeof(struct svalue));
-    v->size=0;
-    free_array(v);
-    return a;
-  }else{
-    free_svalues(ITEM(v) + size, v->size - size, v->type_field);
-    v->size=size;
-    return v;
+  } else {
+    return array_shrink(a, size);
   }
 }
 
@@ -419,10 +433,15 @@ PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
 #endif
 
   array_free_index(v, index);
-  if(v->size!=1 &&
-     v->size*2 + 4 < v->malloced_size ) /* Should we realloc it? */
+  if (v->size == 1) {
+    v->size = 0;
+    /* NOTE: The following uses the fact that array_set_flags()
+     *       will reallocate the array if it has zero size!
+     */
+    return array_set_flags(v, v->flags);
+  } else if(v->size*4 + 4 < v->malloced_size ) /* Should we realloc it? */
   {
-    a=allocate_array_no_init(v->size-1, 0);
+    a = array_set_flags(allocate_array_no_init(v->size-1, 0), v->flags);
     a->type_field = v->type_field;
 
     if(index>0)
@@ -434,7 +453,7 @@ PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
     v->size=0;
     free_array(v);
     return a;
-  }else{
+  } else {
     if(v->size-index>1)
     {
       MEMMOVE((char *)(ITEM(v)+index),
@@ -491,7 +510,7 @@ PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
 }
 
 /*
- * Slice a pice of an array (nondestructively)
+ * Slice a piece of an array (nondestructively)
  * return an array consisting of v[start..end-1]
  */
 PMOD_EXPORT struct array *slice_array(struct array *v, ptrdiff_t start,
@@ -529,15 +548,17 @@ PMOD_EXPORT struct array *slice_array(struct array *v, ptrdiff_t start,
 #endif
 
   a=allocate_array_no_init(end-start,0);
-  a->type_field = v->type_field;
+  if (end-start) {
+    a->type_field = v->type_field;
 
-  assign_svalues_no_free(ITEM(a), ITEM(v)+start, end-start, v->type_field);
+    assign_svalues_no_free(ITEM(a), ITEM(v)+start, end-start, v->type_field);
+  }
 
   return a;
 }
 
 /*
- * Slice a pice of an array (nondestructively)
+ * Slice a piece of an array (nondestructively)
  * return an array consisting of v[start..end-1]
  */
 PMOD_EXPORT struct array *friendly_slice_array(struct array *v,
@@ -714,7 +735,7 @@ INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 	if(a->u.integer < b->u.integer) return -1;
 	if(a->u.integer > b->u.integer) return 1;
 	return 0;
-	
+
       default:
 	if(a->u.refs < b->u.refs) return -1;
 	if(a->u.refs > b->u.refs) return 1;
@@ -842,7 +863,7 @@ static int switch_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 
 static int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 {
-  if(a->type == b->type)
+  if (a->type == b->type)
   {
     switch(a->type)
     {
@@ -886,7 +907,7 @@ static int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 #undef TYPE
 #undef ID
 
-
+/* This sort is unstable. */
 PMOD_EXPORT void sort_array_destructively(struct array *v)
 {
   if(!v->size) return;
@@ -993,7 +1014,7 @@ INT32 switch_lookup(struct array *a, struct svalue *s)
 
 
 /*
- * reorganize an array in the order specifyed by 'order'
+ * reorganize an array in the order specified by 'order'
  */
 PMOD_EXPORT struct array *order_array(struct array *v, INT32 *order)
 {
@@ -1071,7 +1092,7 @@ void array_check_type_field(struct array *v)
     Pike_fatal("Type field out of order!\n");
   }
 }
-#endif
+#endif /* PIKE_DEBUG */
 
 PMOD_EXPORT struct array *compact_array(struct array *v) { return v; }
 
@@ -1080,8 +1101,8 @@ PMOD_EXPORT struct array *compact_array(struct array *v) { return v; }
  * type. The 'union anything' may be changed, but not the type.
  */
 PMOD_EXPORT union anything *low_array_get_item_ptr(struct array *a,
-				       INT32 ind,
-				       TYPE_T t)
+						   INT32 ind,
+						   TYPE_T t)
 {
   if(ITEM(a)[ind].type == t) return & (ITEM(a)[ind].u);
   return 0;
@@ -1094,19 +1115,22 @@ PMOD_EXPORT union anything *low_array_get_item_ptr(struct array *a,
  * the index as an svalue.
  */
 PMOD_EXPORT union anything *array_get_item_ptr(struct array *a,
-				   struct svalue *ind,
-				   TYPE_T t)
+					       struct svalue *ind,
+					       TYPE_T t)
 {
-  INT32 i;
+  INT_TYPE i, p;
   if(ind->type != T_INT)
-    Pike_error("Index is not an integer.\n");
-  i=ind->u.integer;
-  if(i<0) i+=a->size;
+    Pike_error("Expected integer as array index, got %s.\n",
+	       get_name_of_type (ind->type));
+  p = ind->u.integer;
+  i = p < 0 ? p + a->size : p;
   if(i<0 || i>=a->size) {
     if (a->size) {
-      Pike_error("Index %d is out of array range 0 - %d.\n", i, a->size-1);
+      Pike_error("Index %d is out of array range "
+		 "%d..%d.\n",
+		 p, -a->size, a->size-1);
     } else {
-      Pike_error("Attempt to index the empty array with %d.\n", i);
+      Pike_error("Attempt to index the empty array with %d.\n", p);
     }
   }
   return low_array_get_item_ptr(a,i,t);
@@ -1770,10 +1794,12 @@ PMOD_EXPORT struct array *aggregate_array(INT32 args)
   struct array *a;
 
   a=allocate_array_no_init(args,0);
-  MEMCPY((char *)ITEM(a),(char *)(Pike_sp-args),args*sizeof(struct svalue));
-  a->type_field=BIT_MIXED;
-  Pike_sp-=args;
-  DO_IF_DMALLOC(while(args--) dmalloc_touch_svalue(Pike_sp + args));
+  if (args) {
+    MEMCPY((char *)ITEM(a),(char *)(Pike_sp-args),args*sizeof(struct svalue));
+    array_fix_type_field (a);
+    Pike_sp-=args;
+    DO_IF_DMALLOC(while(args--) dmalloc_touch_svalue(Pike_sp + args));
+  }
   return a;
 }
 
@@ -2006,6 +2032,7 @@ PMOD_EXPORT struct array *reverse_array(struct array *a)
   ret=allocate_array_no_init(a->size,0);
   for(e=0;e<a->size;e++)
     assign_svalue_no_free(ITEM(ret)+e,ITEM(a)+a->size+~e);
+  ret->type_field = a->type_field;
   return ret;
 }
 
@@ -2114,7 +2141,7 @@ void gc_mark_array_as_referenced(struct array *a)
 #ifdef PIKE_DEBUG
 	  if (a->refs != 1)
 	    Pike_fatal("Got %d refs to weak shrink array "
-		  "which we'd like to change the size on.\n", a->refs);
+		       "which we'd like to change the size on.\n", a->refs);
 #endif
 	  t = 0;
 	  for(e=0;e<a->size;e++)
@@ -2394,6 +2421,7 @@ PMOD_EXPORT struct array *explode_array(struct array *a, struct array *b)
     } END_AGGREGATE_ARRAY;
   }
   tmp=(--Pike_sp)->u.array;
+  debug_malloc_touch(tmp);
   if(tmp->size) tmp->type_field=BIT_ARRAY;
   return tmp;
 }
