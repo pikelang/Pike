@@ -16,13 +16,15 @@
 
 #include "parser.h"
 
+#define DEBUG
+
 #ifdef DEBUG
 #undef DEBUG
-#endif
-#if 1
 #define DEBUG(X) fprintf X
+#define DEBUG_MARK_SPOT debug_mark_spot
 #else
 #define DEBUG(X) do; while(0)
+#define DEBUG_MARK_SPOT(TEXT,FEED,C) do; while(0)
 #endif
 
 #if 0
@@ -135,6 +137,37 @@ struct parser_html_storage
 
 static struct pike_string *empty_string;
 
+/****** debug helper ********************************/
+
+#ifdef DEBUG
+void debug_mark_spot(char *desc,struct piece *feed,int c)
+{
+   int l,m,i,i0;
+   char buf[40];
+
+   l=strlen(desc)+1;
+   if (l<40) l=40;
+   m=75-l; if (m<10) m=10;
+   fprintf(stderr,"%-*s »",l,desc);
+   i=c-m/2;
+   if (i+m>=feed->s->len) i=feed->s->len-m;
+   if (i<0) i=0; 
+   for (i0=i;i<feed->s->len && i-i0<m;i++)
+   {
+      p_wchar2 ch=index_shared_string(feed->s,i);
+      /* if (i==c) { fprintf(stderr,"^"); continue; }*/
+      if (ch<32 || (ch>126 && ch<160) || ch>255)
+	 fprintf(stderr,".");
+      else
+	 fprintf(stderr,"%c",ch);
+   }
+
+   sprintf(buf,"(%d) %p:%d/%d    ^",i0,feed,c,feed->s->len);
+   fprintf(stderr,"»\n%*s\n",l+c-i0+3,buf);
+   
+}
+#endif
+
 /****** init & exit *********************************/
 
 void reset_feed(struct parser_html_storage *this)
@@ -244,13 +277,18 @@ found_start:
       free(THIS->ws_or_endarg_or_quote);
       THIS->ws_or_endarg_or_quote=NULL;
    }
+
    THIS->ws_or_endarg_or_quote=
-      (p_wchar2*)xalloc(sizeof(p_wchar2)*(THIS->n_ws+THIS->nargq));
-   MEMCPY(THIS->ws_or_endarg_or_quote,THIS->ws_or_endarg,
+      (p_wchar2*)xalloc(sizeof(p_wchar2)*(THIS->n_ws_or_endarg+THIS->nargq));
+
+   MEMCPY(THIS->ws_or_endarg_or_quote, THIS->ws_or_endarg,
 	  THIS->n_ws_or_endarg*sizeof(p_wchar2));
-   MEMCPY(THIS->ws_or_endarg_or_quote
-	  +THIS->n_ws_or_endarg*sizeof(p_wchar2),
-	  THIS->argq_start,THIS->nargq);
+
+   MEMCPY(THIS->ws_or_endarg_or_quote+THIS->n_ws_or_endarg,
+	  THIS->argq_start, THIS->nargq*sizeof(p_wchar2));
+
+   THIS->n_ws_or_endarg_or_quote=
+      THIS->n_ws_or_endarg+THIS->nargq;
 }
 
 static void init_html_struct(struct object *o)
@@ -419,12 +457,18 @@ static void put_out_feed_range(struct parser_html_storage *this,
 /* ------------------------ */
 /* push feed range on stack */
 
-static void push_feed_range(struct piece *head,
-			    int c_head,
-			    struct piece *tail,
-			    int c_tail)
+static INLINE void push_feed_range(struct piece *head,
+				   int c_head,
+				   struct piece *tail,
+				   int c_tail)
 {
    int n=0;
+   if (head==tail && c_head==c_tail)
+   {
+      DEBUG((stderr,"push len=0\n"));
+      ref_push_string(empty_string);
+      return;
+   }
    while (head)
    {
       if (head==tail)
@@ -449,6 +493,7 @@ static void push_feed_range(struct piece *head,
       ref_push_string(empty_string);
    else
       f_add(n);
+   DEBUG((stderr,"push len=%d\n",sp[-1].u.string->len));
 }
 
 
@@ -521,8 +566,8 @@ static void skip_feed_range(struct feed_stack *st,
    struct piece *head=*headp;
    int c_head=*c_headp;
 
-   DEBUG((stderr,"skip_feed_range %p:%d -> %p:%d\n",
-	  *headp,*c_headp,tail,c_tail));
+   DEBUG_MARK_SPOT("skip_feed_range from",*headp,*c_headp);
+   DEBUG_MARK_SPOT("                  to",tail,c_tail);
 
    while (head)
    {
@@ -555,15 +600,22 @@ static int scan_forward(struct piece *feed,
 
    if (num_look_for<0) num_look_for=-num_look_for,rev=1;
 
-   DEBUG((stderr,"scan_forward %p:%d "
-	  "num_look_for=%d %slook_for=%d %d %d %d %d\n",
-	  feed,c,
-	  num_look_for,rev?"(rev) ":"",
-	  (num_look_for>0?look_for[0]:-1),
-	  (num_look_for>1?look_for[1]:-1),
-	  (num_look_for>2?look_for[2]:-1),
-	  (num_look_for>3?look_for[3]:-1),
-	  (num_look_for>4?look_for[4]:-1)));
+   DEBUG_MARK_SPOT("scan_forward",feed,c);
+#ifdef DEBUG
+   do
+   {
+      int i=0;
+      fprintf(stderr,"    n=%d%s; ",num_look_for,rev?"; rev":"");
+      for (i=0; i<num_look_for; i++)
+	 if (look_for[i]<33 || (look_for[i]>126 && look_for[i]<160)
+	     || look_for[i]>255)
+	    fprintf(stderr,"%d ",look_for[i]);
+	 else
+	    fprintf(stderr,"%d:'%c' ",look_for[i],look_for[i]);
+      fprintf(stderr,"\n");
+   }
+   while(0);
+#endif
 
    switch (num_look_for)
    {
@@ -572,7 +624,8 @@ static int scan_forward(struct piece *feed,
 	    feed=feed->next;
 	 *destp=feed;
 	 *d_p=feed->s->len;
-	 DEBUG((stderr,"scan_forward end...\n"));
+	 DEBUG_MARK_SPOT("scan_forward end (nothing to look for)",
+			  *destp,*d_p);
 	 return 0; /* not found :-) */
 	 
       case 1: 
@@ -581,8 +634,7 @@ static int scan_forward(struct piece *feed,
 	    {
 	       int ce=feed->s->len-c;
 	       p_wchar2 f=*look_for;
-	       DEBUG((stderr,"loop %p:%d .. %p:%d (%d)\n", 
-		      feed,c,feed,feed->s->len,ce)); 
+	       DEBUG_MARK_SPOT("scan_forward piece loop (1)",feed,c);
 	       switch (feed->s->size_shift)
 	       {
 		  case 0:
@@ -627,13 +679,13 @@ static int scan_forward(struct piece *feed,
 	       feed=feed->next;
 	       break;
 	    }
+	 break;
 
       default:  /* num_look_for > 1 */
 	 while (feed)
 	 {
 	    int ce=feed->s->len-c;
-	    DEBUG((stderr,"loop %p:%d .. %p:%d (%d)\n", 
-		   feed,c,feed,feed->s->len,ce)); 
+	    DEBUG_MARK_SPOT("scan_forward piece loop (>1)",feed,c);
 	    switch (feed->s->size_shift)
 	    {
 	       case 0:
@@ -697,7 +749,7 @@ static int scan_forward(struct piece *feed,
 	 break;
    }
 
-   DEBUG((stderr,"scan_forward not found %p:%d\n",feed,feed->s->len));
+   DEBUG_MARK_SPOT("scan_forward not found",feed,feed->s->len);
    *destp=feed;
    *d_p=feed->s->len;
    return 0; /* not found */
@@ -705,8 +757,7 @@ static int scan_forward(struct piece *feed,
 found:
    *destp=feed;
    *d_p=c-!rev; 
-   DEBUG((stderr,"scan_forward found %p:%d (found %d)\n",
-	  *destp,*d_p,destp[0]->s->str[*d_p]));
+   DEBUG_MARK_SPOT("scan_forward found",feed,c-!rev);
    return 1;
 }
 
@@ -714,13 +765,15 @@ static int scan_forward_arg(struct parser_html_storage *this,
 			    struct piece *feed,
 			    int c,
 			    struct piece **destp,
-			    int *d_p)
+			    int *d_p,
+			    int do_push)
 {
    p_wchar2 ch;
    int res,i;
+   int n=0;
 
-   DEBUG((stderr,"scan for end of arg: %p:%d\n",feed,c));
-   
+   DEBUG_MARK_SPOT("scan_forward_arg: start",feed,c);
+
    for (;;)
    {
       /* we are here: */
@@ -728,23 +781,25 @@ static int scan_forward_arg(struct parser_html_storage *this,
       /*   ^     ->        */
       /*      this is the end */
 
-      /* scan for start of argument quote or end of tag */
+      DEBUG_MARK_SPOT("scan_forward_arg: loop",feed,c);
 
       res=scan_forward(feed,c,destp,d_p,
 		       this->ws_or_endarg_or_quote,
 		       this->n_ws_or_endarg_or_quote);
+
+      if (do_push) push_feed_range(feed,c,*destp,*d_p),n++;
+
       if (!res) 
       {
-	 DEBUG((stderr,"scan for end of arg: forced end at %p:%d\n",
-		destp[0],*d_p));
-	 return 1; /* end of tag... */
+	 DEBUG_MARK_SPOT("scan for end of arg: forced end",destp[0],*d_p);
+	 break;
       }
 
       ch=index_shared_string(destp[0]->s,*d_p);
       if (ch==this->tag_end || ch==this->arg_eq)
       {
-	 DEBUG((stderr,"scan for end of arg: end at %p:%d\n",destp[0],*d_p));
-	 return 1; /* end of arg here */
+	 DEBUG_MARK_SPOT("scan for end of arg: end by tag end",destp[0],*d_p);
+	 break;
       }
 
       /* scan for (possible) end(s) of this argument quote */
@@ -753,22 +808,34 @@ static int scan_forward_arg(struct parser_html_storage *this,
 	 if (ch==this->argq_start[i]) break;
       if (i==this->nargq) /* it was whitespace */
       {
-	 DEBUG((stderr,"scan for end of arg: end at %p:%d (whitespace)\n",
-		destp[0],*d_p));
-	 return 1; /* end of arg due to whitespace */
+	 DEBUG_MARK_SPOT("scan for end of arg: end by whitespace",
+			 destp[0],*d_p);
+	 break;
       }
-      res=scan_forward(*destp,d_p[0]+1,destp,d_p,
+
+      DEBUG_MARK_SPOT("scan for end of arg: quoted",destp[0],*d_p);
+      res=scan_forward(feed=*destp,c=d_p[0]+1,destp,d_p,
 		       this->look_for_end[i],this->num_look_for_end[i]);
+      if (do_push) push_feed_range(feed,c,*destp,*d_p),n++;
+
       if (!res)
-	 {
-	    DEBUG((stderr,"scan for end of arg: forced end at %p:%d\n",
-		   feed,c));
-	    return 1; /* end of tag... */
-	 }
+      {
+	 DEBUG_MARK_SPOT("scan for end of arg: forced end (quote)",
+			 destp[0],*d_p);
+	 break;
+      }
 
       feed=*destp;
       c=d_p[0]+1;
    }
+
+   if (do_push) 
+   {
+      fprintf(stderr,"add %d\n",n);
+      if (n>1) f_add(n);
+      else if (!n) ref_push_string(empty_string);
+   }
+   return 1;
 }
 
 static int scan_for_end_of_tag(struct parser_html_storage *this,
@@ -1430,29 +1497,32 @@ static void html_tag_args(INT32 args)
 
    for (;;)
    {
-      /*  foo=bar   =bar   > */
-      /*^ ^         ^      ^  this is what we want */
-      /*| here we are */
-
       /* skip whitespace */
       scan_forward(s2,c2,&s1,&c1,THIS->ws,-THIS->n_ws);
 
       /* end of tag? */
+      if (c1==s1->s->len) /* end<tm> */
+	 break;
       ch=index_shared_string(s1->s,c1);
       if (ch==THIS->tag_end) /* end */
 	 break;
 
 new_arg:
 
-      /* scan this argument name */
-      scan_forward_arg(THIS,s1,c1,&s2,&c2);
-      /* push it */
+      DEBUG_MARK_SPOT("html_tag_args arg start",s1,c1);
+
+      /* scan this argument name and push*/
+      scan_forward_arg(THIS,s1,c1,&s2,&c2,1);
       n++;
-      push_feed_range(s1,c1,s2,c2);
 
       /* scan for '=', '>' or next argument */
       /* skip whitespace */
       scan_forward(s2,c2,&s1,&c1,THIS->ws,-THIS->n_ws);
+      if (c1==s1->s->len) /* end<tm> */
+      {
+	 stack_dup(); /* arg => arg=arg */
+	 break;
+      }
       ch=index_shared_string(s1->s,c1);
       if (ch==THIS->tag_end) /* end */
       {
@@ -1471,12 +1541,13 @@ new_arg:
       /* skip whitespace */
       scan_forward(s1,c1,&s2,&c2,THIS->ws,-THIS->n_ws);
 
+      DEBUG_MARK_SPOT("html_tag_args value start",s1,c1);
+
       /* scan the argument value */
-      scan_forward_arg(THIS,s2,c2,&s1,&c2);
-      push_feed_range(s2,c2,s1,c1);
+      scan_forward_arg(THIS,s2,c2,&s1,&c2,1);
       
       s1=s2;
-      c1=s2;
+      c1=c2;
       /* next argument in the loop */
    }
 
