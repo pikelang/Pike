@@ -10,6 +10,14 @@ class stack {
     arr[ptr++]=val;
   }
 
+  mixed top()
+  {
+    if (ptr) {
+      return(arr[ptr-1]);
+    }
+    error("Stack underflow\n");
+  }
+
   mixed pop(void|int val)
   {
     mixed foo;
