@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.132 1998/10/15 13:55:50 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.133 1998/10/15 18:47:51 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -636,8 +636,8 @@ void f_string_to_unicode(INT32 args)
       p_wchar1 *str1 = STR1(in);
       for(i = in->len; i--;) {
 	unsigned INT32 c = str1[i];
-	out->str[i * 2] = c & 0xff;
-	out->str[i * 2 + 1] = c >> 8;
+	out->str[i * 2] = c >> 8;
+	out->str[i * 2 + 1] = c & 0xff;
       }
     }
 #endif
