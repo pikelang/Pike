@@ -207,6 +207,10 @@ void clear()
   db->query("delete from "+table);
 }
 
+void remove_uri(string|Standards.URI uri)
+{
+  db->query("delete from "+table+" where uri_md5=%s", to_md5((string)uri));
+}
 
 void clear_stage( int ... stages )
 {
