@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.166 2003/12/07 21:10:28 marcus Exp $
+|| $Id: system.c,v 1.167 2003/12/17 22:44:55 marcus Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.166 2003/12/07 21:10:28 marcus Exp $");
+RCSID("$Id: system.c,v 1.167 2003/12/17 22:44:55 marcus Exp $");
 
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
@@ -1920,7 +1920,7 @@ static void describe_hostent(struct hostent *hp)
  */
 void f_gethostbyaddr(INT32 args)
 {
-  u_long addr;
+  IN_ADDR_T addr;
   char *name;
   GETHOST_DECLARE;
 
