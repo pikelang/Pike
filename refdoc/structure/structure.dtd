@@ -38,9 +38,12 @@
   name   %String;   #IMPLIED
   >
 
+<!-- One of entity and namespace has to be set -->
 <!-- level %Int; -->
 <!ELEMENT insert-move EMPTY>
 <!ATTLIST insert-move
-  entity %String;   #REQUIRED
+  entity    %String; #IMPLIED
+  namespace %String; #IMPLIED
+  peel      (yes|no) #IMPLIED
   >
 
