@@ -1,2 +1,7 @@
+/Makefile
+/config.log
+/config.status
 /configure
 /dependencies
+/linker_options
+/stamp-h
