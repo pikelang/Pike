@@ -6,6 +6,8 @@ inherit Stdio.File : out;
 
 object html=.html();
 
+WMML global_data;
+
 string low_latex_quote(string text)
 {
   return replace( text,
@@ -33,6 +35,15 @@ string low_latex_quote(string text)
 string latex_quote(string text)
 {
   return low_latex_quote( pre ? text : ((text/"\n") - ({""})) *"\n" );
+}
+
+string quote_label(string s)
+{
+  string ret="";
+  while(sscanf(s,"%[_a-zA-Z0-9.:]%c%s",string safe, int char, s)==3)
+    ret+=sprintf("%s-%02x",safe,char);
+  ret+=s;
+  return ret;
 }
 
 
@@ -63,6 +74,24 @@ float aproximate_length(SGML data)
       }
     }
   return len;
+}
+
+string mkref(string label)
+{
+  if(!global_data->links[label])
+  {
+    return "\\pageref{"+quote_label(label)+"}";
+  }
+  switch(global_data->links[label]->tag)
+  {
+    case "chapter":
+    case "section":
+    case "appendix":
+      return global_data->links[label]->tag+" \\ref{"+quote_label(label)+"}";
+
+    default:
+      return "\\pageref{"+quote_label(label)+"}";
+  }
 }
 
 string convert_table(TAG table)
@@ -134,6 +163,7 @@ string convert_table(TAG table)
 
   if(border) ret+="\\hline \\\\\n";
 
+  in_table++;
   foreach(data, TAG tag)
     {
       int c=0;
@@ -154,6 +184,7 @@ string convert_table(TAG table)
       ret+=row*" & "+"\\\\\n";
       if(border) ret+="\\hline\n";
     }
+  in_table--;
 
   ret+="\\end{longtable}\n";
 
@@ -180,9 +211,95 @@ string convert_image_to_latex(TAG tag)
   }
 }
 
+string *srt(string *x)
+{
+  string *y=allocate(sizeof(x));
+  for(int e=0;e<sizeof(y);e++)
+  {
+    y[e]=lower_case(x[e]);
+    sscanf(y[e],"%*[ ,./_]%s",y[e]);
+  }
+  sort(y,x);
+  return x;
+}
+
+string low_index_to_latex(INDEX data, string prefix, string indent)
+{
+//  werror("%O\n",data);
+  string ret="";
+  foreach(srt(indices(data)-({0})),string key)
+    {
+      ret+="\\item \\verb+"+indent+"+";
+      
+      if(data[key][0])
+      {
+	ret+=latex_quote(Html.unquote_param(key));
+	if(data[key][0][prefix+key])
+	{
+	  // FIXME: show all links
+	  ret+=", \\pageref{"+quote_label(data[key][0][prefix+key][0])+"}\n";
+	}
+	ret+="\n";
+
+	foreach(srt(indices(data[key][0])), string key2)
+	  {
+	    if(key2==prefix+key) continue;
+	    ret+="\\item \\verb+"+indent+"  +";
+	    ret+=latex_quote(Html.unquote_param(key2));
+	    ret+=", \\pageref{"+quote_label(data[key][0][key2][0])+"}\n";
+	}
+
+      }else{
+	ret+=latex_quote(Html.unquote_param(key))+"\n";
+      }
+	
+      if(sizeof(data[key]) > !!data[key][0])
+      {
+	ret+=low_index_to_latex(data[key],prefix+key+".",indent+"  ");
+      }
+    }
+
+  return ret;
+}
+
+
+// FIXME:
+// End chapter / appendix!!
+// Too long symbols, fix linebreaking or do not use
+// two-column mode...
+string index_to_latex(INDEX foo)
+{
+  string ret="";
+  ret+="\n\\twocolumn[\\begin{Huge}Index\\end{Huge}]\n\\begin{small}\n";
+  
+//  ret+="\\begin{Huge}Index\\end{Huge}\n\n";
+
+  INDEX data=Wmml.group_index(foo);
+  data=Wmml.group_index_by_character(data);
+
+  ret+="\\begin{list}{}{}\n";
+
+  foreach(srt(indices(data)-({0})),string key)
+    {
+      if(sizeof(data[key]) > !!data[key][0])
+      {
+	ret+="\n\\item \\begin{large}"+
+	  latex_quote(key)+
+	  "\\end{large}\n";
+
+	ret+=low_index_to_latex(data[key],"","  ");
+      }
+    }
+  ret+="\\end{list}\n";
+  ret+="\n\\end{small}\n\\onecolumn\n";
+  return ret;
+}
+
+
 int depth;
 int appendixes;
 int pre;
+int in_table;
 
 constant FLAG_TABLE=1;
 constant FLAG_LIST=2;
@@ -248,7 +365,7 @@ string convert_to_latex(SGML data, void|int flags)
 
 	  case "chapter":
 	    depth++;
-	    ret+="\\cleardoublepage \\section{"+
+	    ret+="\\chapter{"+
 	      latex_quote(tag->params->title)+"}\n"+
 	      convert_to_latex(tag->data);
 	    depth--;
@@ -261,7 +378,7 @@ string convert_to_latex(SGML data, void|int flags)
 	      appendixes=1;
 	    }
 	    depth++;
-	    ret+="\\cleardoublepage \\section{"+
+	    ret+="\\chapter{"+
 	      latex_quote(tag->params->title)+"}\n"+
 	      convert_to_latex(tag->data);
 	    depth--;
@@ -299,6 +416,17 @@ string convert_to_latex(SGML data, void|int flags)
 	    ret+=convert_to_latex(tag->data);
 	    break;
 
+	  case "table-of-contents":
+	    ret+="\\tableofcontents \\newpage\n";
+	    break;
+
+	  case "index":
+	  {
+	    ret+=index_to_latex(global_data->index_data);
+
+	    break;
+	  }
+
 	  case "pre":
 	    if(pre)
 	    {
@@ -315,7 +443,8 @@ string convert_to_latex(SGML data, void|int flags)
 
 	  case "encaps":
             // FIXME: Manual should not really use <encaps>
-	    ret+=convert_to_latex(tag->data);
+	    ret+="\\begin{scshape}"+convert_to_latex(tag->data)+
+	      "\\end{scshape}";
 	    break;
 
 	  case "bloackquote":
@@ -405,11 +534,16 @@ string convert_to_latex(SGML data, void|int flags)
 
 	  case "link":
 	    // FIXME
-//	    if(tag->params->to)
+	    // (la)tex doesn't like having too many links on one
+	    // page. We need to not do this for see-also links.
+	    // To do this we need to put hints in the concrete wmml
+//	    if(tag->params->to && !in_table)
 //	    {
 //	      ret+=
 //		convert_to_latex(tag->data)+
-//		"\\marginpar{See "+latex_quote(tag->params->to)+"}";
+//		"\\marginpar{See \\ref{"+
+//		quote_label(tag->params->to)+"} \\pageref{"+
+//		quote_label(tag->params->to)+"}.}";
 //	    }else{
 	      ret+=convert_to_latex(tag->data);
 //	    }
@@ -426,9 +560,8 @@ string convert_to_latex(SGML data, void|int flags)
 	    if(flags & FLAG_LIST)
 	      ret+="\\item ";
 	    else
-	      ; // FIXME, insert filled circle
+	      ret="$\\bullet$ ";
 	    break;
-
 
 	  case "ol":
 	    ret+="\\begin{enumerate} "+
@@ -438,14 +571,15 @@ string convert_to_latex(SGML data, void|int flags)
 
 	  case "anchor":
 //          FIXME labels causes tex stack overflow!!
-//	    ret+="\\label{"+latex_quote(tag->params->name)+"}";
+	    ret+="\\label{"+quote_label(tag->params->name)+"}";
 	    ret+=convert_to_latex(tag->data);
 	    break;
 
 	  case "ref":
 	    // FIXME: must find out what type of object we are
 	    // referencing!!
-	    ret+="\\ref{"+tag->params->to+"}";
+	    
+	    ret+=mkref(tag->params->to);
 	    break;
 
 
@@ -502,6 +636,7 @@ string convert_to_latex(SGML data, void|int flags)
 
 void output(string base, WMML data)
 {
+  global_data=data;
   string x=convert_to_latex(data->data);
 
   x=replace(x,
@@ -529,6 +664,9 @@ void output(string base, WMML data)
     "\\end{document}\n";
   rm(base+".tex");
   Stdio.write_file(base+".tex",x);
+  array(string) lines=x/"\n";
+  array(int) linenum=indices("x"*sizeof(lines));
+  array(int) lenghts=sort(Array.map(lines,strlen),linenum,lines);
 
-  werror("Longest line is %d characters.\n",sort(Array.map(x/"\n",strlen))[-1]);
+  werror("Longest line is line %d (%d characters).\n",linenum[-1],lenghts[-1]);
 }

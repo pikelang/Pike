@@ -279,7 +279,7 @@ int count_index_lines(SGML z)
   return ret;
 }
 
-SGML index_to_wmml(INDEX data)
+SGML index_to_wmml_low(INDEX data)
 {
   SGML ret=({});
   foreach(srt(indices(data)-({0})),string key)
@@ -296,7 +296,19 @@ SGML index_to_wmml(INDEX data)
 	      });
       }
     }
+  return ret;
+}
 
+SGML index_to_wmml_onecol(INDEX data)
+{
+  SGML ret=index_to_wmml_low(data);
+  return ({ Sgml.Tag("dl",([]),0,ret) });
+}
+
+SGML index_to_wmml(INDEX data)
+{
+  SGML ret=index_to_wmml_low(data);
+  
 #if 1
   int total_lines=count_index_lines(ret);
 //  werror("\nTOTAL LINES: %d\n",total_lines);

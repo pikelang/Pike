@@ -209,6 +209,13 @@ INDEX_DATA collect_index(SGML data, void|INDEX_DATA index,void|mapping taken)
 	if(string real_name=data->params->name)
 	{
 	  string new_name=real_name;
+
+	  if(!strlen(new_name))
+	  {
+	    werror("Empty link name in <anchor> at %s\n",data->location());
+	    continue;
+	  }
+	      
 	  
 	  if(taken[new_name])
 	  {
@@ -226,6 +233,8 @@ INDEX_DATA collect_index(SGML data, void|INDEX_DATA index,void|mapping taken)
 	  }else{
 	    index[real_name]=({new_name});
 	  }
+	}else{
+	  werror("<anchor> without name near %s\n",data->location());
 	}
       }
       if(data->data)
@@ -278,8 +287,14 @@ INDEX group_index_by_character(INDEX i)
   foreach(indices(i),string key)
     {
       int c;
-      sscanf(lower_case(Html.unquote_param(key)),"%*[_ ]%c",c);
-      string char=upper_case(sprintf("%c",c));
+      string char;
+      if(sscanf(lower_case(Html.unquote_param(key)),"%*[_ ]%c",c)==2)
+      {
+	char=upper_case(sprintf("%c",c));
+      }else{
+	char="";
+      }
+
 //      werror(char +" : "+key+"\n");
       if(!m[char]) m[char]=([]);
       m[char][key]=i[key];
@@ -440,10 +455,20 @@ object(Tag) parse_pike_code(string x,
 // output generator.
 class Wmml
 {
+  // Header data
   SGML metadata;
+
+  // Table of contents
   TOC toc;
+
+  // Index
   INDEX_DATA index_data;
+
+  // Concrete WMML data
   SGML data;
+
+  // Link name to tag mapping
+  mapping(string:TAG) links;
 };
 
 // Enumerators are used to give numbers to chapters,
@@ -921,8 +946,113 @@ object(Wmml) make_concrete_wmml(SGML data)
   ret->index_data=collect_index(ret->data);
   ret->toc=toker->query();
   ret->metadata=metadata;
+  collect_links(ret->data,ret->links=([]));
+  ret->data=unlink_unknown_links(ret->data,ret->links);
+  
   return ret;
 }
+
+// These routines are meant to create a mapping from a link name
+// to the corresponding TAG.
+
+int useful_tag(TAG t)
+{
+  return !stringp(t) || sscanf(t,"%*[ \n\r\t ]%*c")==2;
+}
+
+TAG get_tag(TAG t)
+{
+  while(1)
+  {
+    switch(t->tag)
+    {
+      default: return t;
+
+      case "a":
+      case "anchor":
+    }
+    if(!t->data) return t;
+
+    SGML x=Array.filter(t->data,useful_tag);
+    if(sizeof(x)==1 && objectp(t->data[0]))
+      t=t->data[0];
+    else
+      break;
+  }
+
+  return t;
+}
+
+// must be called after Wmml has been made concrete
+void collect_links(SGML data, mapping known_links)
+{
+  foreach(data,TAG t)
+    {
+      if(objectp(t))
+      {
+	if(t->tag == "anchor")
+	{
+	  if(t->params->name)
+	  {
+	    known_links[t->params->name]=get_tag(t);
+	  }
+	}
+
+	if(t->data)
+	  collect_links(t->data,known_links);
+      }
+    }
+}
+
+// This finds nonworking links and makes them non-links,
+// this way the output controller doesn't have to worry
+// about broken links.
+SGML unlink_unknown_links(SGML data, mapping known_links)
+{
+  SGML ret=({});
+
+  foreach(data,TAG t)
+    {
+      if(objectp(t))
+      {
+	switch(t->tag)
+	{
+	  case "ref":
+	    if(!t->params->to)
+	    {
+	      werror("<ref> without to= at %s\n",t->location());
+	      continue;
+	    }
+	    if(!known_links[t->params->to])
+	    {
+	      werror("<ref to=> broken link at %s\n",t->location());
+	      continue;
+	    }
+	    break;
+
+	  case "link":
+	    if(!t->params->to)
+	    {
+	      werror("<ref> without to= at %s\n",t->location());
+	      ret+=unlink_unknown_links(t->data || ({}),known_links);
+	      continue;
+	    }
+	    if(!known_links[t->params->to])
+	    {
+	      werror("<ref to=> broken link at %s\n",t->location());
+	      ret+=unlink_unknown_links(t->data || ({}),known_links);
+	      continue;
+	    }
+	}
+	
+	if(t->data)
+	  t->data=unlink_unknown_links(t->data,known_links);
+      }
+      ret+=({t});
+    }
+  return ret;
+}
+
 
 void save_image_cache();
 

@@ -57,6 +57,7 @@ tutorial.tex: .DUMMY $(SRCFILES)
 tutorial.dvi: tutorial.tex
 	-@rm tutorial.aux
 	latex tutorial.tex
+	latex tutorial.tex
 
 tutorial.ps: tutorial.dvi
 	dvips -Z tutorial.dvi
