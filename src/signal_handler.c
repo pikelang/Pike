@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.174 2000/08/10 09:51:52 per Exp $");
+RCSID("$Id: signal_handler.c,v 1.175 2000/08/12 23:08:29 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2468,7 +2468,7 @@ void f_create_process(INT32 args)
 
       THIS->pid = pid;
       THIS->state = PROCESS_RUNNING;
-      ref_push_object(fp->current_object);
+      ref_push_object(Pike_fp->current_object);
       push_int(pid);
       mapping_insert(pid_mapping, sp-1, sp-2);
       pop_n_elems(2);
