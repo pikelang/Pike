@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.44 1999/12/14 19:48:15 mast Exp $
+ * $Id: svalue.h,v 1.45 1999/12/19 16:04:18 grubba Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -99,14 +99,14 @@ struct svalue
 #define PIKE_T_TUPLE 244	/* Not supported yet */
 #define T_ASSIGN 245
 #define T_DELETED 246
-#define T_NOT 247
-#define T_AND 248
-#define T_UNKNOWN 249
-#define T_OR 251
-#define T_SHORT_LVALUE 252
-#define T_LVALUE 253
-#define T_ARRAY_LVALUE 254
-#define T_MIXED 255
+#define T_UNKNOWN 247
+#define T_SHORT_LVALUE 248
+#define T_LVALUE 249
+#define T_ARRAY_LVALUE 250
+#define T_MIXED 251
+#define T_NOT 253
+#define T_AND 254
+#define T_OR 255
 
 
 #define tArr(VAL) "\000" VAL
@@ -136,8 +136,6 @@ struct svalue
 #define tStr "\006"
 #define tString "\006"
 #define tType "\007"
-#define tFlt "\011"
-#define tFloat "\011"
 #define tInt "\010\200\000\000\000\177\377\377\377"
 #define tInt0 "\010\000\000\000\000\000\000\000\000"
 #define tInt1 "\010\000\000\000\001\000\000\000\001"
@@ -148,23 +146,25 @@ struct svalue
 #define tInt05 "\010\000\000\000\000\000\000\000\005"
 #define tIntPos "\010\000\000\000\000\177\377\377\377"
 #define tByte "\010\000\000\000\000\000\000\000\377"
+#define tFlt "\011"
+#define tFloat "\011"
 
 #define tZero "\016"
 #define tVoid "\020"
 #define tVar(X) #X
 #define tSetvar(X,Y) "\365" #X Y
 #define tScope(X,T) "\363" #X Y
-#define tNot(X) "\367" X
-#define tAnd(X,Y) "\370" X Y
-#define tOr(X,Y) "\373" X Y
+#define tNot(X) "\375" X
+#define tAnd(X,Y) "\376" X Y
+#define tOr(X,Y) "\377" X Y
 #define tOr3(X,Y,Z) tOr(X,tOr(Y,Z))
 #define tOr4(X,Y,Z,A) tOr(X,tOr(Y,tOr(Z,A)))
 #define tOr5(X,Y,Z,A,B) tOr(X,tOr(Y,tOr(Z,tOr(A,B))))
 #define tOr6(X,Y,Z,A,B,C) tOr(X,tOr(Y,tOr(Z,tOr(A,tOr(B,C)))))
 #define tOr7(X,Y,Z,A,B,C,D) tOr(X,tOr(Y,tOr(Z,tOr(A,tOr(B,tOr(C,D))))))
 #define tOr8(A,B,C,D,E,F,G,H) tOr(A,tOr7(B,C,D,E,F,G,H))
-#define tMix "\377"
-#define tMixed "\377"
+#define tMix "\373"
+#define tMixed "\373"
 #define tComplex tOr6(tArray,tMapping,tMultiset,tObj,tFunction,tProgram)
 #define tStringIndicable tOr5(tMapping,tObj,tFunction,tProgram,tMultiset)
 #define tRef tOr(tString,tComplex)
