@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.66 1999/05/19 14:23:25 mirar Exp $
+# $Id: configure.in,v 1.67 1999/06/23 19:06:57 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -46,8 +46,8 @@ else
 fi
 
 if test "$ac_cv_func_sendfile" = "yes"; then
-  AC_MSG_CHECKING(if sendfile takes 4(Linux) or 7(FreeBSD) arguments)
-  AC_CACHE_VAL(pike_cv_freebsd_sendfile, [
+  AC_MSG_CHECKING(if sendfile takes 4(Linux) or 6(HP/UX) or 7(FreeBSD) arguments)
+  AC_CACHE_VAL(pike_cv_sendfile_args, [
     AC_TRY_COMPILE([
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -68,19 +68,39 @@ if test "$ac_cv_func_sendfile" = "yes"; then
 #include <sys/socket.h>
 #include <sys/uio.h>
       ], [
-        /* This should fail on FreeBSD
+        /* This should fail on FreeBSD and HPUX.
          * If it succeeds, we don't have a prototype,
          * which would indicate Linux.
          */
         return sendfile(0,0,(void *)0,0);
-      ], [ pike_cv_freebsd_sendfile=no ], [ pike_cv_freebsd_sendfile=yes ])
-    ], [ pike_cv_freebsd_sendfile=no ])
+      ], [ pike_cv_sendfile_args=4 ], [ pike_cv_sendfile_args=7 ])
+    ], [
+      AC_TRY_COMPILE([
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif /* HAVE_SYS_TYPES_H */
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif /* HAVE_SYS_UIO_H */
+      ], [
+        /* Try HPUX */
+        return (int)sendfile(0,0,0,0,(void *)0,0);
+      ], [ pike_cv_sendfile_args=6 ], [ pike_cv_sendfile_args=4 ])
+    ])
   ])
-  if test "$pike_cv_freebsd_sendfile" = "yes"; then
+  if test "$pike_cv_sendfile_args" = "7"; then
     AC_MSG_RESULT([7 - FreeBSD style])
     AC_DEFINE(HAVE_FREEBSD_SENDFILE)
   else
-    AC_MSG_RESULT([4 - Linux style])
+    if test "$pike_cv_sendfile_args" = "6"; then
+      AC_MSG_RESULT([6 - HP/UX style])
+      AC_DEFINE(HAVE_HPUX_SENDFILE)
+    else
+      AC_MSG_RESULT([4 - Linux style])
+    fi
   fi
 else
   :
