@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_tiff.c,v 1.33 2003/07/25 10:06:57 grubba Exp $
+|| $Id: image_tiff.c,v 1.34 2003/07/25 12:15:14 grubba Exp $
 */
 
 #include "global.h"
@@ -15,7 +15,7 @@
 */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.33 2003/07/25 10:06:57 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.34 2003/07/25 12:15:14 grubba Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -825,7 +825,7 @@ void my_tiff_error_handler(const char *module, const char *fmt, va_list x)
   /* Sentinel that will be overwritten on buffer overflow. */
   last_tiff_error[TIFF_ERROR_BUF_SIZE-1] = '\0';
 
-  VSPRINTF(buf, fmt, x);
+  VSPRINTF(last_tiff_error, fmt, x);
 
   if(last_tiff_error[TIFF_ERROR_BUF_SIZE-1])
     Pike_fatal("Buffer overflow in my_tiff_error_handler()\n");
