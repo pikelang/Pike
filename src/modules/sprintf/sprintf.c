@@ -102,7 +102,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.58 1999/11/01 13:58:46 mirar Exp $");
+RCSID("$Id: sprintf.c,v 1.59 1999/11/01 14:34:24 mirar Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -757,6 +757,12 @@ INLINE static int do_one(struct format_stack *fs,
 	      {								      \
 		 push_constant_text("width");	           		      \
 		 push_int(fs->fsp->width);				      \
+                 n+=2;							      \
+	      }								      \
+	      if((fs->fsp->flags&FIELD_LEFT))
+	      {								      \
+		 push_constant_text("flag_left");	       		      \
+		 push_int(1);						      \
                  n+=2;							      \
 	      }								      \
 	      f_aggregate_mapping(n);					      \
