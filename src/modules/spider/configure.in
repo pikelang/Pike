@@ -15,6 +15,7 @@ AC_HAVE_FUNCS(syslog perror strerror getppid getpgrp getppid getuid getgid \
         setresgid uname gethostbyname gethostbyaddr alarm\
         getpwent setpwent endpwent getpwuid getpwnam \
         getspent setspent endspent getspuid getspnam \
+	initgroups
 )
 
 AC_SUBST(RANLIB)

@@ -114,7 +114,6 @@ static void internal_parse_type(char **s)
   }
   buf[len]=0;
   *s += len;
-  
   if(!strcmp(buf,"int")) push_type(T_INT);
   else if(!strcmp(buf,"float")) push_type(T_FLOAT);
   else if(!strcmp(buf,"object")) push_type(T_OBJECT);

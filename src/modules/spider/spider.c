@@ -784,6 +784,20 @@ void f_localtime(INT32 args)
 #endif
   f_aggregate_mapping(20);
 }
+#ifdef HAVE_INITGROUPS
+void f_initgroups(INT32 args)
+{
+  if(args != 2)
+    error("Wrong number of arguments: initgroups(string name, int gid)\n");
+
+  if(sp[-1].type != T_INT || sp[-2].type != T_STRING)
+    error("Wrong arguments: initgroups(string name, int gid)\n");
+
+  initgroups(sp[-2].u.string->str, sp[-1].u.integer);
+    
+  pop_n_elems(args);
+}
+#endif
 
 void f_do_setuid(INT32 args)
 {
@@ -1630,6 +1644,9 @@ void init_spider_efuns(void)
 
   add_efun("parse_tree", f_parse_tree, "function(string:array(string))", 0);
 
+#ifdef HAVE_INITGROUPS
+  add_efun("initgroups", f_initgroups, "function(string,int:void)", 0);
+#endif
   add_efun("setuid", f_do_setuid, "function(int:void)", 0);
   add_efun("setgid", f_do_setgid, "function(int:void)", 0);
 #if defined(HAVE_SETEUID) || defined(HAVE_SETRESUID)
@@ -1665,8 +1682,13 @@ void init_spider_programs()
 {
    start_new_program();
    add_storage( sizeof (struct streamed_parser) );
+<<<<<<< spider.c
+/*   add_function( "init", streamed_parser_set_data,
+		"function(mapping(string:function(string,mapping(string:string),mixed:mixed)),function(string,mapping(string:string),string,mixed:mixed)),mapping(string:function(string,mixed:mixed)):void)", 0 );*/
+=======
    add_function( "init", streamed_parser_set_data,
 		"function(mapping(string:function(string,mapping(string:string),mixed:mixed)),mapping(string:function(string,mapping(string:string),string,mixed:mixed)),mapping(string:function(string,mixed:mixed)):void)", 0 );
+>>>>>>> 1.21
    add_function( "parse", streamed_parser_parse, "function(string,mixed:string)", 0 );
    add_function( "finish", streamed_parser_finish, "function(void:string)", 0 );
    set_init_callback( streamed_parser_init );
