@@ -54,6 +54,7 @@ testfont binary
 /lib/modules/Sql.pmod/sql.pike foreign_ident
 /lib/modules/Sql.pmod/sql_result.pike foreign_ident
 /lib/modules/Standards.pmod/ASN1.pmod/decode.pike foreign_ident
+/lib/modules/Yabu.pmod/module.pmod foreign_ident
 /src/backend.c foreign_ident
 /src/builtin_functions.c foreign_ident
 /src/configure.in foreign_ident
