@@ -29,7 +29,7 @@ void doit(Stdio.File in, Stdio.File out)
     }
     if(s-"\0" == "") {
       out->write(s);
-      break;
+      continue;
     }
     array a =
       array_sscanf(s, "%100s%8s%8s%8s%12s%12s%8s%c%100s%8s%32s%32s%8s%8s");
