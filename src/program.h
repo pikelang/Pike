@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.100 2000/08/10 14:51:16 grubba Exp $
+ * $Id: program.h,v 1.101 2000/08/14 20:09:58 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -125,7 +125,7 @@ struct program_state;
 union idptr
 {
   void (*c_fun)(INT32);
-  INT32 offset;
+  ptrdiff_t offset;
 };
 
 #define IDENTIFIER_PIKE_FUNCTION 1

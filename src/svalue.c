@@ -24,7 +24,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.85 2000/07/28 17:16:55 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.86 2000/08/14 20:08:29 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -258,7 +258,9 @@ PMOD_EXPORT void assign_svalues_no_free(struct svalue *to,
     size_t e;
     for(e=0;e<num;e++)
       if(!(type_hint & (1<<from[e].type)))
-	 fatal("Type hint lies (%ld %ld %d)!\n",(long)e,(long)type_hint,from[e].type);
+	 fatal("Type hint lies (%ld %ld %d)!\n",
+	       DO_NOT_WARN((long)e),
+	       (long)type_hint, from[e].type);
   }
 #endif
   if((type_hint & ((2<<MAX_REF_TYPE)-1)) == 0)
@@ -440,9 +442,13 @@ PMOD_EXPORT unsigned INT32 hash_svalue(struct svalue *s)
       break;
     }
 
-  default:      q=(unsigned INT32)((long)s->u.refs >> 2); break;
+  default:
+    q=DO_NOT_WARN((unsigned INT32)((ptrdiff_t)s->u.refs >> 2));
+    break;
   case T_INT:   q=s->u.integer; break;
-  case T_FLOAT: q=(unsigned INT32)(s->u.float_number * 16843009.731757771173); break;
+  case T_FLOAT:
+    q=DO_NOT_WARN((unsigned INT32)(s->u.float_number * 16843009.731757771173));
+    break;
   }
   q+=q % 997;
   q+=((q + s->type) * 9248339);
@@ -1211,7 +1217,7 @@ static void low_check_short_svalue(union anything *u, TYPE_T type)
 
 void check_short_svalue(union anything *u, TYPE_T type)
 {
-  if(type<=MAX_REF_TYPE && (3 & (long)(u->refs)))
+  if(type<=MAX_REF_TYPE && (3 & (ptrdiff_t)(u->refs)))
     fatal("Odd pointer! type=%d u->refs=%p\n",type,u->refs);
 
   check_refs2(u,type);
@@ -1221,7 +1227,7 @@ void check_short_svalue(union anything *u, TYPE_T type)
 void debug_check_svalue(struct svalue *s)
 {
   check_type(s->type);
-  if(s->type<=MAX_REF_TYPE && (3 & (long)(s->u.refs)))
+  if(s->type<=MAX_REF_TYPE && (3 & (ptrdiff_t)(s->u.refs)))
     fatal("Odd pointer! type=%d u->refs=%p\n",s->type,s->u.refs);
 
   check_refs(s);
@@ -1578,7 +1584,8 @@ PMOD_EXPORT INT32 pike_sizeof(struct svalue *s)
 {
   switch(s->type)
   {
-  case T_STRING: return s->u.string->len;
+  case T_STRING:
+    return DO_NOT_WARN((INT32)s->u.string->len);
   case T_ARRAY: return s->u.array->size;
   case T_MAPPING: return m_sizeof(s->u.mapping);
   case T_MULTISET: return l_sizeof(s->u.multiset);

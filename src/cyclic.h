@@ -1,5 +1,5 @@
 /*
- * $Id: cyclic.h,v 1.3 1998/03/28 15:34:38 grubba Exp $
+ * $Id: cyclic.h,v 1.4 2000/08/14 20:18:29 grubba Exp $
  */
 #ifndef CYCLIC_H
 #define CYCLIC_H
@@ -22,7 +22,8 @@ typedef struct CYCLIC
   CYCLIC cyclic_struct__
 
 #define BEGIN_CYCLIC(A,B) \
-   begin_cyclic(&cyclic_struct__, &cyclic_identifier__, (void *)th_self(), (void *)(A), (void *)(B))
+   begin_cyclic(&cyclic_struct__, &cyclic_identifier__, \
+                (void *)(ptrdiff_t)th_self(), (void *)(A), (void *)(B))
 
 #define SET_CYCLIC_RET(RET) \
    cyclic_struct__.ret=(void *)(RET)
