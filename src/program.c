@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.306 2001/10/02 07:20:33 hubbe Exp $");
+RCSID("$Id: program.c,v 1.307 2001/10/02 09:10:44 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -638,13 +638,15 @@ void fixate_program(void)
       {
 	struct pike_string *name=ID_FROM_INT(p, i)->name;
 
-	e=find_shared_string_identifier(name,p);
+	if(e == -1)
+	  e=really_low_find_shared_string_identifier(name,p,SEE_STATIC);
+
 	if(e != i)
 	{
 	  if(name->len < 1024 && !name->size_shift)
-	    my_yyerror("Illegal to redefine final identifier %s\n",name->str);
+	    my_yyerror("Illegal to redefine final identifier %s",name->str);
 	  else
-	    my_yyerror("Illegal to redefine final identifier (unable to output name of identifier).\n");
+	    my_yyerror("Illegal to redefine final identifier (unable to output name of identifier).");
 	}
       }
     }
