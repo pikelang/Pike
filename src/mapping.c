@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.35 1998/08/05 20:51:14 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.36 1998/08/05 22:48:36 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -980,8 +980,8 @@ void check_mapping(struct mapping *m)
       if(! ( (1 << k->val.type) & (m->val_types) ))
 	fatal("Mapping values type field lies.\n");
 
-      check_svalues(& k->ind);
-      check_svalues(& k->val);
+      check_svalue(& k->ind);
+      check_svalue(& k->val);
     }
   
   if(m->size != num)
