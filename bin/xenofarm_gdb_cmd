@@ -1,2 +1,3 @@
 echo \nBacktrace\n
 bt
+echo \nEnd of core inspection\n\n\n\n
