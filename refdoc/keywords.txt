@@ -441,7 +441,7 @@ Examples:     @int
                   Do something.
                 @value 17..
                   Do something else.
-              @endit
+              @endint
 
 _______________________________________________________________________________
 
