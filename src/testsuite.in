@@ -1,53 +1,70 @@
-test_true([["$Id: testsuite.in,v 1.234 1999/11/24 14:08:27 mirar Exp $"]])
+test_true([["$Id: testsuite.in,v 1.235 1999/11/24 16:28:13 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
-]])
-test_eq(1e1,10.0)
-test_eq(1E1,10.0)
-test_eq(1e+1,10.0)
-test_eq(1.1e1,11.0)
-test_eq(1e-1,0.1)
-test_eq('\x20',32)
-test_eq("\x20","\040")
-test_eq("\d32","\x20")
-test_eq('Å',"Å"[0])
-test_eq('\7777',"\7777"[0])
-test_eq('\77777777',"\77777777"[0])
-test_eq("\x10000","\x10000")
-test_eq(0x80000000-0x80000000, 0)
-test_eq(0xf0000000-0xf0000000, 0)
-test_eq(0x80000001-0x80000000, 1)
-test_eq(0x80000000-0x80000001,-1)
-test_eq(-2147483648*-1, -2147483648/-1)
-test_true([[1.0e-40]])
+]]);
+test_eq(1e1,10.0);
+test_eq(1E1,10.0);
+test_eq(1e+1,10.0);
+test_eq(1.1e1,11.0);
+test_eq(1e-1,0.1);
+test_eq('\x20',32);
+test_eq("\x20","\040");
+test_eq("\d32","\x20");
+test_eq('Å',"Å"[0]);
+test_eq('\7777',"\7777"[0]);
+test_eq('\77777777',"\77777777"[0]);
+test_eq("\x10000","\x10000");
+test_eq(0x80000000-0x80000000, 0);
+test_eq(0xf0000000-0xf0000000, 0);
+test_eq(0x80000001-0x80000000, 1);
+test_eq(0x80000000-0x80000001,-1);
+test_eq(-2147483648*-1, -2147483648/-1);
+test_true([[1.0e-40]]);
 test_eq([[#"foo
-bar"]],[["foo\nbar"]])
-test_true([[stringp(#string "Makefile")]])
-test_any([[class Bar { array(int) foo = ({}); }; class Foo { inherit Bar; array(int) foo = ({1}); }; return sizeof(Foo()->foo);]],1)
+bar"]],[["foo\nbar"]]);
+test_true([[stringp(#string "Makefile")]]);
+test_any([[class Bar { array(int) foo = ({}); }; class Foo { inherit Bar; array(int) foo = ({1}); }; return sizeof(Foo()->foo);]],1);
 
-test_eq(8, 0b1000)
-test_eq(-8, -0b1000)
-test_eq(16, 0b10000)
-test_eq(-16, -0b10000)
+test_eq(8, 0b1000);
+test_eq(-8, -0b1000);
+test_eq(16, 0b10000);
+test_eq(-16, -0b10000);
 
-test_eval_error([[mixed x; return mkmapping(x,x)]])
+test_eval_error([[mixed x; return mkmapping(x,x)]]);
 
-test_any([[int a=0xffffffff; return a+17]], 0x100000010)
-test_any([[int a=0xffffffff; return a-17]], 0xffffffee)
-test_any([[int a=0xffffffff; return a*17]], 0x10ffffffef)
-test_any([[int a=0xffffffff; return a^17]], 0xffffffee)
-test_any([[int a=0xffffffff; return a&17]], 17)
-test_any([[int a=0xffffffff; return a|17]], 0xffffffff)
-test_any([[int a=0xffffffff; return a<<17]], 0x1fffffffe0000)
+test_any([[int a=0xffffffff; return a+17]], 0x100000010);
+test_any([[int a=0xffffffff; return a-17]], 0xffffffee);
+test_any([[int a=0xffffffff; return a*17]], 0x10ffffffef);
+test_any([[int a=0xffffffff; return a^17]], 0xffffffee);
+test_any([[int a=0xffffffff; return a&17]], 17);
+test_any([[int a=0xffffffff; return a|17]], 0xffffffff);
+test_any([[int a=0xffffffff; return a<<17]], 0x1fffffffe0000);
 
 test_any([[ int a=0xffffffff; return a/17 ]],
-	 [[ (0xffffffff == -1)?-1:0x0f0f0f0f ]])
+	 [[ (0xffffffff == -1)?-1:0x0f0f0f0f ]]);
 test_any([[ int a=0xffffffff; return a%17 ]],
-	 [[ (0xffffffff == -1)?16:0 ]])
+	 [[ (0xffffffff == -1)?16:0 ]]);
 test_any([[ int a=0xffffffff; return a>>17 ]],
-	 [[ (0xffffffff == -1)?-1:0x7fff ]])
+	 [[ (0xffffffff == -1)?-1:0x7fff ]]);
+
+test_any([[return typeof(aggregate("foo"));]], "array(string)");
+test_any([[int a; return typeof(aggregate(a));]], "array(int)");
+test_any([[int|string a;
+	   string s = typeof(aggregate(a));
+	   return (< "array(string | int)", "array(int | string)" >)[s];]], 1);
+test_any([[return typeof(aggregate());]], "array(zero)");
+
+test_any([[array(string) a; return typeof(a[0]); ]], "string")
+
+test_any([[class foo { string a; };
+	   object(foo) bar;
+	   return typeof(bar->a);]], "string");
+
+test_any([[class foo { string a; };
+	   array(object(foo)) bar;
+	   return typeof(bar[0]->a);]], "string");
 
 test_any([[return class Z {
 string bonk() { return "oiff"; }
