@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.34 2003/02/07 13:20:22 agehall Exp $
+# $Id: configure.in,v 1.35 2003/02/07 13:23:41 agehall Exp $
 #
 # Configure script for the mysql-module
 #
@@ -308,9 +308,7 @@ fi
     PIKE_CHECK_MYSQL_FUNC(mysql_options)
 
     AC_CHECK_LIB(mysqlclient, mysql_ssl_set, [
-      AC_CHECK_HEADERS(ssl.h openssl/ssl.h, [
-        AC_DEFINE(HAVE_MYSQL_SSL)
-      ])
+      AC_DEFINE(HAVE_MYSQL_SSL)
     ])
 
     # Note: The following two are variables:
