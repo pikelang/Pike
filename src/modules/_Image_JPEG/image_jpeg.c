@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.27 2000/02/02 22:02:17 marcus Exp $
+ * $Id: image_jpeg.c,v 1.28 2000/03/09 14:05:03 jhs Exp $
  */
 
 #include "global.h"
@@ -37,7 +37,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.27 2000/02/02 22:02:17 marcus Exp $");
+RCSID("$Id: image_jpeg.c,v 1.28 2000/03/09 14:05:03 jhs Exp $");
 
 #include "pike_macros.h"
 #include "object.h"
@@ -843,6 +843,7 @@ static void img_jpeg_decode(INT32 args,int mode)
 	    }
 	 }
 	 f_aggregate_mapping(m*2);
+	 n++;
       }
 
       jpeg_finish_decompress(&cinfo);
