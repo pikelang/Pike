@@ -3,13 +3,14 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #include "pike_macros.h"
 #include "callback.h"
 #include "error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: callback.c,v 1.18 1999/05/08 00:29:00 hubbe Exp $");
+RCSID("$Id: callback.c,v 1.19 1999/10/24 13:34:03 grubba Exp $");
 
 struct callback_list fork_child_callback;
 
