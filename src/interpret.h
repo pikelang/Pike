@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.122 2003/01/09 15:21:26 grubba Exp $
+|| $Id: interpret.h,v 1.123 2003/01/15 21:37:16 mast Exp $
 */
 
 #ifndef INTERPRET_H
@@ -213,6 +213,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 #define push_float(F) do{ FLOAT_TYPE _=(F); Pike_sp->u.float_number=_; Pike_sp++->type=PIKE_T_FLOAT; }while(0)
 #define push_text(T) push_string(make_shared_string((T)))
 #define push_constant_text(T) do{ Pike_sp->subtype=0; MAKE_CONSTANT_SHARED_STRING(Pike_sp->u.string,T); Pike_sp++->type=PIKE_T_STRING; }while(0)
+#define push_function(OBJ, FUN) do {struct object *_=(OBJ); debug_malloc_touch(_); Pike_sp->u.object=_; Pike_sp->subtype=(FUN); Pike_sp++->type=PIKE_T_FUNCTION;} while (0)
 
 #define ref_push_program(P) do{ struct program *_=(P); debug_malloc_touch(_); _->refs++; Pike_sp->u.program=_; Pike_sp++->type=PIKE_T_PROGRAM; }while(0)
 #define ref_push_mapping(M) do{ struct mapping *_=(M); debug_malloc_touch(_); _->refs++; Pike_sp->u.mapping=_; Pike_sp++->type=PIKE_T_MAPPING; }while(0)
@@ -221,6 +222,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 #define ref_push_string(S) do{ struct pike_string *_=(S); debug_malloc_touch(_); _->refs++; Pike_sp->subtype=0; Pike_sp->u.string=_; Pike_sp++->type=PIKE_T_STRING; }while(0)
 #define ref_push_type_value(S) do{ struct pike_type *_=(S); debug_malloc_touch(_); _->refs++; Pike_sp->u.type=_; Pike_sp++->type=PIKE_T_TYPE; }while(0)
 #define ref_push_object(O) do{ struct object  *_=(O); debug_malloc_touch(_); _->refs++; Pike_sp->u.object=_; Pike_sp++->type=PIKE_T_OBJECT; }while(0)
+#define ref_push_function(OBJ, FUN) do {struct object *_=(OBJ); debug_malloc_touch(_); _->refs++; Pike_sp->u.object=_; Pike_sp->subtype=(FUN); Pike_sp++->type=PIKE_T_FUNCTION;} while (0)
 
 #define push_svalue(S) do { const struct svalue *_=(S); assign_svalue_no_free(Pike_sp,_); Pike_sp++; }while(0)
 
