@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.53 1999/02/19 16:42:52 grubba Exp $
+ * $Id: requests.pmod,v 1.54 1999/02/20 14:17:40 grubba Exp $
  */
 
 import .types;
@@ -128,7 +128,7 @@ class noop
 	foreach(status, array a)
 	  send("*", @a);
       
-      send(tag, "OK");
+      send(tag, "OK NOOP done");
       
       return ([ "action" : "finished" ]);
     }
@@ -142,7 +142,7 @@ class capability
   mapping easy_process()
     {
       send("*", "CAPABILITY", @server->capabilities(session));
-      send(tag, "OK");
+      send(tag, "OK CAPABILITY done");
       return ([ "action" : "finished" ]);
     }
 }
@@ -164,10 +164,10 @@ class login
       
       if (!uid)
       {
-	send(tag, "NO");
+	send(tag, "NO LOGIN failed");
 	return ([ "action" : "finished" ]);
       }
-      send(tag, "OK");
+      send(tag, "OK LOGIN done");
       return ([ "action" : "logged_in_state" ]);
     }
 }
@@ -304,10 +304,10 @@ class select
 	  send("*", @a);
 	}
       }
-      send(tag, "OK", imap_prefix( ({ "READ-WRITE" }) ) );
+      send(tag, "OK", imap_prefix( ({ "READ-WRITE" }) ), "SELECT done" );
 	return ([ "action" : "selected_state" ]);
     } else {
-      send(tag, "NO");
+      send(tag, "NO SELECT failed");
 	return ([ "action" : "logged_in_state" ]);
     }
   }
@@ -552,9 +552,9 @@ class fetch
     {
       foreach(info, array a)
 	send("*", @a);
-      send(tag, "OK");
+      send(tag, "OK FETCH done");
     } else 
-      send(tag, "NO");
+      send(tag, "NO FETCH failed");
 
     return ([ "action" : "finished" ]);
   }
