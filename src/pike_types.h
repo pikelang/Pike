@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.14 1998/06/06 03:19:54 hubbe Exp $
+ * $Id: pike_types.h,v 1.15 1998/11/06 03:08:02 hubbe Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -66,8 +66,16 @@ extern struct pike_string *mixed_type_string;
 extern struct pike_string *void_type_string;
 extern struct pike_string *any_type_string;
 
+#ifdef DEBUG
+#define init_type_stack() type_stack_mark()
+#define exit_type_stack() do {\
+  int q_q_q_q=pop_stack_mark(); \
+  if(q_q_q_q) fatal("Type stack out of wack! %d\n",q_q_q_q); \
+  } while(0)
+#else
 #define init_type_stack type_stack_mark
 #define exit_type_stack pop_stack_mark
+#endif
 
 #define push_type(X) do {				\
   *type_stackp=(X);					\

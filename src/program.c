@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.100 1998/10/22 19:44:06 hubbe Exp $");
+RCSID("$Id: program.c,v 1.101 1998/11/06 03:08:03 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -531,12 +531,12 @@ void low_start_new_program(struct program *p,
     id=add_constant(name, &s, flags);
   }
 
+  init_type_stack();
+
 #define PUSH
 #include "compilation.h"
 
   num_used_modules=0;
-  init_type_stack();
-
 
   if(p && (p->flags & PROGRAM_FINISHED))
   {
@@ -917,8 +917,6 @@ struct program *end_first_pass(int finish)
 
   pop_compiler_frame(); /* Pop __INIT local variables */
 
-  exit_type_stack();
-
   if(num_parse_error > 0)
   {
     prog=0;
@@ -947,6 +945,7 @@ struct program *end_first_pass(int finish)
 #define POP
 #include "compilation.h"
 
+  exit_type_stack();
 
   compilation_depth--;
 

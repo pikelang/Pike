@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.47 1998/10/28 03:17:23 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.48 1998/11/06 03:08:01 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -125,7 +125,7 @@ one_more_type:
   switch(EXTRACT_UCHAR(t++))
   {
     default:
-      fatal("error in type string.\n");
+      fatal("error in type string %d.\n",EXTRACT_UCHAR(t-1));
       /*NOTREACHED*/
       
       break;
@@ -310,7 +310,7 @@ struct pike_string *debug_compiler_pop_type(void)
      * is correct and then return it, I just didn't feel
      * like writing the checking code today. / Hubbe
      */
-    pop_stack_mark();
+    type_stack_pop_to_mark();
     type_stack_mark();
     reference_shared_string(mixed_type_string);
     return mixed_type_string;
@@ -610,13 +610,25 @@ static void internal_parse_type(char **s)
  */
 struct pike_string *parse_type(char *s)
 {
+  struct pike_string *ret;
+#ifdef DEBUG
+  unsigned char *ts=type_stackp;
+  unsigned char **ptms=pike_type_mark_stackp;
+#endif
   type_stack_mark();
   internal_parse_type(&s);
 
   if( *s )
     fatal("Extra junk at end of type definition.\n");
 
-  return pop_unfinished_type();
+  ret=pop_unfinished_type();
+
+#ifdef DEBUG
+  if(ts!=type_stackp || ptms!=pike_type_mark_stackp)
+    fatal("Type stack whacked in parse_type.\n");
+#endif
+
+  return ret;
 }
 
 #ifdef DEBUG
@@ -1322,10 +1334,14 @@ static struct pike_string *debug_low_index_type(char *t, node *n)
     reference_shared_string(mixed_type_string);
     return mixed_type_string;
 
+    case T_VOID:
+    case T_FLOAT:
+    case T_INT:
+      return 0;
+
   case T_OR:
   {
     struct pike_string *a,*b;
-    type_stack_mark();
     a=low_index_type(t,n);
     t+=type_length(t);
     b=low_index_type(t,n);
