@@ -13,13 +13,9 @@
 #include "pike_macros.h"
 #include "threads.h"
 
-RCSID("$Id: readlinemod.c,v 1.10 1998/09/06 17:30:07 grubba Exp $");
+RCSID("$Id: readlinemod.c,v 1.11 1999/02/08 04:57:28 mast Exp $");
 
 #include <errno.h>
-
-#ifndef HAVE_LIBTERMCAP
-#undef HAVE_LIBREADLINE
-#endif
 
 #if !defined(HAVE_READLINE_H) && !defined(HAVE_READLINE_READLINE_H)
 #undef HAVE_LIBREADLINE
