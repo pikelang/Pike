@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.744 2003/11/07 21:05:56 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.745 2003/11/07 22:08:18 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1081,24 +1081,24 @@ Please move it out of the way.])
 
               AC_MSG_RESULT(yes)
 
-	      AC_MSG_WARN(Activating the patched cc1.
+	      AC_MSG_WARN([Activating the patched cc1.
 NOTE: Entering critical section.
-If configure fails at this point a broken gcc my result.)
+If configure fails at this point a broken gcc my result.])
 	      if /usr/bin/mv -f "$cc1" "$cc1.orig"; then
 
-	        AC_MSG_WARN(Moved $cc1 to $cc1.orig.)
+	        AC_MSG_WARN([Moved $cc1 to $cc1.orig.])
 
 	        if /usr/bin/mv -f "$cc1.patched" "$cc1"; then
-	          AC_MSG_WARN(Patching seems to have succeeded.
-Please rerun configure.)
+	          AC_MSG_WARN([Patching seems to have succeeded.
+Please rerun configure.])
 		  exit 1
 	        fi
 
-	        AC_MSG_WARN(Moving the patched cc1 into place failed.
-Will try to restore the old cc1.)
+	        AC_MSG_WARN([Moving the patched cc1 into place failed.
+Will try to restore the old cc1.])
 
 	        if /usr/bin/mv -f "$cc1.orig" "$cc1"; then
-	          AC_MSG_WARN(The old cc1 has been restored.)
+	          AC_MSG_WARN([The old cc1 has been restored.])
 	          exit 1
 	        fi
 
@@ -1395,10 +1395,12 @@ else
 Pike applications might not work correctly.])
 fi
 
-if test "x$with_shared_nodes" = xyes; then
-  echo 'Enabling the SHARED_NODES mode of the optimizer.'
+dnl Pike currently breaks miserably if SHARED_NODES isn't defined.
+dnl Shared nodes are still disabled bluntly. (See note above.)
+dnl if test "x$with_shared_nodes" != xno; then
+dnl  echo 'Enabling the SHARED_NODES mode of the optimizer.'
   AC_DEFINE(SHARED_NODES)
-else :; fi
+dnl else :; fi
 
 if test "x$with_poll" = "xyes"; then
   AC_DEFINE(HAVE_AND_USE_POLL)
