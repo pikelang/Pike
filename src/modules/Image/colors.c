@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colors.c,v 1.73 2004/09/18 21:24:53 nilsson Exp $
+|| $Id: colors.c,v 1.74 2005/03/15 20:56:20 per Exp $
 */
 
 /*
@@ -973,17 +973,17 @@ static void image_color_equal(INT32 args)
 	 return;
       }
    }
-   else if (sp[-1].type==T_INT)
-   {
-      if (sp[-1].u.integer == THIS->rgb.r &&
-	  THIS->rgb.r==THIS->rgb.g &&
-	  THIS->rgb.r==THIS->rgb.b)
-      {
-	 pop_stack();
-	 push_int(1);
-	 return;
-      }
-   }
+/*    else if (sp[-1].type==T_INT) */
+/*    { */
+/*       if (sp[-1].u.integer == THIS->rgb.r && */
+/* 	  THIS->rgb.r==THIS->rgb.g && */
+/* 	  THIS->rgb.r==THIS->rgb.b) */
+/*       { */
+/* 	 pop_stack(); */
+/* 	 push_int(1); */
+/* 	 return; */
+/*       } */
+/*    } */
    else if (sp[-1].type==T_STRING)
    {
       if (!THIS->name)
@@ -1508,6 +1508,28 @@ static void _image_make_rgbl_color(INT32 r,INT32 g,INT32 b)
    RGBL_TO_RGB(cs->rgb,cs->rgbl);
 }
 
+static void image_color__encode( INT32 args )
+{
+    push_int( THIS->rgbl.r );
+    push_int( THIS->rgbl.g );
+    push_int( THIS->rgbl.b );
+    f_aggregate( 3 );
+}
+
+static void image_color__decode( INT32 args )
+{
+    struct svalue *a;
+    int r, g, b;
+    if( Pike_sp[-1].type != PIKE_T_ARRAY || Pike_sp[-1].u.array->size != 3 )
+	Pike_error("Illegal argument to _decode\n");
+    a=Pike_sp[-1].u.array->item;
+    THIS->rgbl.r = a[0].u.integer;
+    THIS->rgbl.g = a[1].u.integer;
+    THIS->rgbl.b = a[2].u.integer;
+    RGBL_TO_RGB(THIS->rgb,THIS->rgbl);
+    pop_stack();
+}
+
 static void _image_make_rgbf_color(double r, double g, double b)
 {
 #define FOO(X) FLOAT_TO_COLORL((X)<0.0?0.0:(X)>1.0?1.0:(X))
@@ -1719,6 +1741,9 @@ void init_image_colors(void)
    ADD_FUNCTION("`==",image_color_equal,tFunc(tOr(tObjImpl_IMAGE_COLOR_COLOR_ID,tInt),
 					      tInt),0);
    ADD_FUNCTION("__hash",image_color___hash,tFunc(tNone,tInt),0);
+
+   ADD_FUNCTION("_encode", image_color__encode,tFunc(tNone,tArr(tInt)),0);
+   ADD_FUNCTION("_decode", image_color__decode,tFunc(tInt,tVoid),0);
 
    ADD_FUNCTION("name",image_color_name,tFunc(tNone,tStr),0);
    ADD_FUNCTION("hex",image_color_hex,tFunc(tNone,tStr),0);
