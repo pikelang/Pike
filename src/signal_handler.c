@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.102 1999/02/01 02:41:47 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.103 1999/02/01 02:58:13 per Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -113,6 +113,7 @@ static struct svalue signal_callbacks[MAX_SIGNALS];
 static unsigned char sigbuf[SIGNAL_BUFFER];
 static int firstsig, lastsig;
 static struct callback *signal_evaluator_callback =0;
+static int set_priority( int pid, char *to );
 
 #ifndef __NT__
 struct wait_data {
@@ -667,6 +668,15 @@ static void f_pid_status_pid(INT32 args)
   push_int(THIS->pid);
 }
 
+static void f_pid_status_set_priority(INT32 args)
+{
+  char *to;
+  int r;
+  get_all_args("set_priority", args, "%s", &to);
+  r = set_priority( THIS->pid, to );
+  pop_n_elems(args);
+  push_int(r);
+}
 #ifdef __amigaos__
 
 extern struct DosLibrary *DOSBase;
@@ -791,17 +801,27 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 
 #ifndef __NT__
 
+#ifdef HAVE_SETRLIMIT
+#include <sys/time.h>
+#include <sys/resource.h>
+struct plimit
+{
+  int resource;
+  struct rlimit rlp;
+  struct plimit *next;
+};
+#endif
+
 struct perishables
 {
   char **env;
   char **argv;
-  struct pike_string *nice_s;
-  struct pike_string *cwd_s;
-  struct pike_string *stdin_s;
-  struct pike_string *stdout_s;
-  struct pike_string *stderr_s;
-  struct pike_string *keep_signals_s;
+
   int disabled;
+#ifdef HAVE_SETRLIMIT
+  struct plimit *limits;
+#endif
+
 #ifdef HAVE_SETGROUPS
   gid_t *wanted_gids;
   struct array *wanted_gids_array;
@@ -815,21 +835,18 @@ static void free_perishables(struct perishables *storage)
     exit_threads_disable(NULL);
   }
 
-  if(storage->env) free((char *)storage->env);
-
-  if(storage->argv) free((char *)storage->argv);
-  if(storage->nice_s) free_string(storage->nice_s);
-  if(storage->cwd_s) free_string(storage->cwd_s);
-  if(storage->stdin_s) free_string(storage->stdin_s);
-  if(storage->stdout_s) free_string(storage->stdout_s);
-  if(storage->stderr_s) free_string(storage->stderr_s);
-  if(storage->keep_signals_s) free_string(storage->keep_signals_s);
+  if(storage->env) free( storage->env );
+  if(storage->argv) free( storage->argv );
+  while(storage->limits) 
+  {
+    struct plimit *n = storage->limits->next;
+    free( storage->limits );
+    storage->limits = n;
+  }
 
 #ifdef HAVE_SETGROUPS
-  if(storage->wanted_gids) free((char *)storage->wanted_gids);
-
+  if(storage->wanted_gids) free(storage->wanted_gids);
   if(storage->wanted_gids_array) free_array(storage->wanted_gids_array);
-  
 #endif
 }
 
@@ -868,6 +885,152 @@ extern int pike_make_pipe(int *);
 #endif /* !__NT__ && !__amigaos__ */
 
 
+static int set_priority( int pid, char *to )
+{
+  int prilevel = 0;
+
+  /* Yes, a char*. We call this function from create_process and other similar
+     places, so a struct pike_string * is not really all that good an idea here
+  */
+  if(!strcmp( to, "realtime" ) ||
+     !strcmp( to, "highest" ))
+    prilevel = 3;
+  if(!strcmp( to, "higher" ))
+    prilevel = 2;
+  else if(!strcmp( to, "high" ))
+    prilevel = 1;
+  else if(!strcmp( to, "low" ))
+    prilevel = -1;
+  else if(!strcmp( to, "lowest" ))
+    prilevel = -2;
+#ifdef HAVE___PRIOCNTL
+  if(!pid) pid = getpid();
+  if( prilevel > 1 )
+  {
+    /* Time to get tricky :-) */
+    struct {
+      id_t pc_cid;
+      pri_t rt_pri;
+      ulong rt_tqsecs;
+      long rt_tqnsecs;
+      long padding[10];
+    }  params;
+
+    struct {
+      id_t pc_cid;
+      char pc_clname[PC_CLNMSZ];
+      short rt_maxpri;
+      short _pad;
+      long pad2[10];
+    } foo;
+
+    MEMSET(&params, sizeof(params), 0);
+    MEMSET(&foo, sizeof(foo), 0);
+
+    strcpy(foo.pc_clname, "RT");
+    if( priocntl(NULL, NULL, PC_GETCID, (void *)(&foo)) == -1)
+      return 0;
+    params.pc_cid = foo.pc_cid;
+    params.rt_pri = prilevel == 3 ? foo.rt_maxpri : 0;
+    params.rt_tqsecs = 1;
+    params.rt_tqnsecs = 0;
+    return priocntl(P_PID, pid, PC_SETPARMS, (void *)(&params)) != -1;
+  } else {
+    struct {
+      id_t pc_cid;
+      pri_t ts_uprilim;
+      pri_t ts_upri;
+      long padding[12];
+    }  params;
+    struct {
+      id_t pc_cid;
+      char pc_clname[PC_CLNMSZ];
+      short ts_maxupri;
+      short _pad;
+      long pad2[10];
+    } foo;
+
+    MEMSET(&params, sizeof(params), 0);
+    MEMSET(&foo, sizeof(foo), 0);
+    strcpy(foo.pc_clname, "TS");
+    if( priocntl(NULL, NULL, PC_GETCID, (void *)(&foo)) == -1)
+      return 0;
+    params.pc_cid = foo.pc_cid;
+    params.ts_upri = TS_NOCHANGE;
+    params.ts_uprilim = prilevel*foo.ts_maxupri/2;
+    return priocntl(P_PID, pid, PC_SETPARMS, (void *)(&params)) != -1;
+  }
+#else
+#ifdef HAVE_SCHED_SETSCHEDULER
+  if( prilevel == 3 )
+  {
+    struct sched_param param;
+    MEMSET(&param, 0, sizeof(param));
+    param.sched_priority = sched_get_priority_max( SCHED_FIFO );
+    return !sched_setscheduler( pid, SCHED_FIFO, &param );
+  } else {
+#ifdef SCHED_RR
+    struct sched_param param;
+    int class = SCHED_OTHER;
+    MEMSET(&param, 0, sizeof(param));
+    if(prilevel == 2)
+    {
+      class = SCHED_RR;
+      prilevel = -2; // lowest RR priority...
+      param.sched_priority = sched_get_priority_min( class )+
+        (sched_get_priority_max( class )-
+         sched_get_priority_min( class ))/3 * (prilevel+2);
+      return !sched_setscheduler( pid, class, &param );
+    } 
+#endif
+#ifdef HAVE_SETPRIORITY
+    errno = 0;
+    return setpriority( PRIO_PROCESS, pid, -prilevel*10 )!=-1 || errno==0;
+#else
+    param.sched_priority = sched_get_priority_min( class )+
+      (sched_get_priority_max( class )-
+       sched_get_priority_min( class ))/3 * (prilevel+2);
+    return !sched_setscheduler( pid, class, &param );
+#endif
+  }
+#else
+#ifdef HAVE_SETPRIORITY
+  {
+    if(prilevel == 3) 
+      prilevel = 2;
+    errno = 0;
+    return setpriority( PRIO_PROCESS, pid, -prilevel*10 )!=-1 || errno==0;
+  }
+#else
+#ifdef HAVE_NICE
+  if(!pid || pid == getpid())
+  {
+    errno=0;
+    return !(nice( -prilevel*10 - nice(0) ) != -1) || errno!=EPERM;
+  }
+#endif
+#endif
+#endif
+#endif
+  return 0;
+}
+
+void f_set_priority( INT32 args )
+{
+  int pid;
+  char *plevel;
+  if(args == 1)
+  {
+    pid = 0;
+    get_all_args( "set_priority", args, "%s", &plevel );
+  } else if(args == 2) {
+    get_all_args( "set_priority", args, "%s%d", &plevel, &pid );
+  }
+  pid = set_priority( pid, plevel );
+  pop_n_elems(args);
+  push_int( pid );
+}
+
 
 /*
  * create_process(string *arguments, mapping optional_data);
@@ -879,6 +1042,13 @@ extern int pike_make_pipe(int *);
  *   stderr	object(files.file)
  *   cwd	string
  *   env	mapping(string:string)
+ *   priority   string
+ *               "highest"                      realtime, or similar
+ *               "high"
+ *               "normal"                       the normal execution level
+ *               "low"
+ *               "lowest*                       the lowest possible priority
+ *
  *
  * only on UNIX:
  *
@@ -888,18 +1058,107 @@ extern int pike_make_pipe(int *);
  *   noinitgroups	int
  *   setgroups		array(int|string)
  *   keep_signals	int
+ *   rlimit             mapping(string:int|array(int|string)|mapping(string:int|string)|string)
+ *                         There are two values for each limit, the
+ *                         soft limit and the hard limit. Processes
+ *                         that does not have UID 0 may not raise the
+ *                         hard limit, and the soft limit may never be
+ *                         increased over the hard limit.
+ *                         value is:
+ *                            integer     -> sets cur, max left as it is.
+ *                            mapping     -> ([ "hard":int, "soft":int ])
+ *                                           Both values are optional.
+ *                            array       -> ({ hard, soft }), 
+ *                                            both can be set to the string
+ *                                            "unlimited". 
+ *                                            a value of -1 means 
+ *                                            'keep the old value'
+ *                            "unlimited" ->  set both to unlimited
+ * 
+ *                         the limits are
+ *                            core          core file size
+ *                            cpu           cpu time, in seconds
+ *                            fsize         file size, in bytes
+ *                            nofiles       the number of file descriptors
+ * 
+ *                            stack         stack size in bytes
+ *                            data          heap (brk, malloc) size
+ *                            map_mem       mmap() and heap size
+ *                            mem           mmap, heap and stack size
+ *
  *
  * FIXME:
  *   Support for setresgid().
  */
+#ifdef HAVE_SETRLIMIT
+static void internal_add_limit( struct perishables *storage, 
+                                char *limit_name,
+                                int limit_resource,
+                                struct svalue *limit_value )
+{
+  struct rlimit ol;
+  struct plimit *l = NULL;
+#ifndef RLIM_SAVED_MAX
+  getrlimit( limit_resource, &ol );
+#else
+  ol.rlim_max = RLIM_SAVED_MAX;
+  ol.rlim_cur = RLIM_SAVED_CUR;
+#endif
+
+  if(limit_value->type == T_INT)
+  {
+    l = malloc(sizeof( struct plimit ));
+    l->rlp.rlim_max = ol.rlim_max;
+    l->rlp.rlim_cur = limit_value->u.integer;
+  } else if(limit_value->type == T_MAPPING) {
+    struct svalue *tmp3;
+    l = malloc(sizeof( struct plimit ));
+    if((tmp3=simple_mapping_string_lookup(limit_value->u.mapping, "soft")))
+      if(tmp3->type == T_INT)
+        l->rlp.rlim_cur=
+          tmp3->u.integer>=0?tmp3->u.integer:ol.rlim_cur;
+      else
+        l->rlp.rlim_cur = RLIM_INFINITY;
+    else
+      l->rlp.rlim_cur = ol.rlim_cur;
+    if((tmp3=simple_mapping_string_lookup(limit_value->u.mapping, "hard")))
+      if(tmp3->type == T_INT)
+        l->rlp.rlim_max =
+          tmp3->u.integer>=0?tmp3->u.integer:ol.rlim_max;
+      else
+        l->rlp.rlim_max = RLIM_INFINITY;
+    else
+      l->rlp.rlim_max = ol.rlim_max;
+  } else if(limit_value->type == T_ARRAY && limit_value->u.array->size == 2) {
+    l = malloc(sizeof( struct plimit ));
+    if(limit_value->u.array->item[0].type == T_INT)
+      l->rlp.rlim_max = limit_value->u.array->item[0].u.integer;
+    else
+      l->rlp.rlim_max = ol.rlim_max;
+    if(limit_value->u.array->item[1].type == T_INT)
+      l->rlp.rlim_cur = limit_value->u.array->item[1].u.integer;
+    else
+      l->rlp.rlim_max = ol.rlim_cur;
+  } else if(limit_value->type == T_STRING) {
+    l = malloc(sizeof(struct plimit));
+    l->rlp.rlim_max = RLIM_INFINITY;
+    l->rlp.rlim_cur = RLIM_INFINITY;
+  }
+  if(l)
+  {
+    l->resource = limit_resource;
+    l->next = storage->limits;
+    storage->limits = l;
+  }
+}
+#endif
+
 void f_create_process(INT32 args)
 {
   struct array *cmd=0;
   struct mapping *optional=0;
   struct svalue *tmp;
   int e;
-
-  if(!args) return;	/* FIXME: Why? */
 
   check_all_args("create_process",args, BIT_ARRAY, BIT_MAPPING | BIT_VOID, 0);
 
@@ -1068,6 +1327,7 @@ void f_create_process(INT32 args)
     {
       CloseHandle(proc.hThread);
       THIS->handle=proc.hProcess;
+
       THIS->pid=proc.dwProcessId;
     }else{
       error("Failed to start process (%d).\n",GetLastError());
@@ -1163,15 +1423,22 @@ void f_create_process(INT32 args)
     int control_pipe[2];	/* Used for communication with the child. */
     char buf[4];
 
+    int nice_val;
+    int stds[3]; /* stdin, out and err */
+    char *tmp_cwd; /* to CD to */
+    char *priority = NULL;
+
+    stds[0] = stds[1] = stds[2] = 0;
+    nice_val = 0;
+    tmp_cwd = NULL;
+
     storage.env=0;
     storage.argv=0;
     storage.disabled=0;
-    MAKE_CONSTANT_SHARED_STRING(storage.nice_s, "nice");
-    MAKE_CONSTANT_SHARED_STRING(storage.cwd_s, "cwd");
-    MAKE_CONSTANT_SHARED_STRING(storage.stdin_s, "stdin");
-    MAKE_CONSTANT_SHARED_STRING(storage.stdout_s, "stdout");
-    MAKE_CONSTANT_SHARED_STRING(storage.stderr_s, "stderr");
-    MAKE_CONSTANT_SHARED_STRING(storage.keep_signals_s, "keep_signals");
+
+#ifdef HAVE_SETRLIMIT
+    storage.limits = 0;
+#endif
 
 #ifdef HAVE_SETGROUPS
     storage.wanted_gids=0;
@@ -1189,25 +1456,21 @@ void f_create_process(INT32 args)
 #else
     wanted_gid=getgid();
 #endif
-#ifdef PROC_DEBUG
-    fprintf(stderr, "%s:%d: wanted_gid=%d\n",
-	    __FILE__, __LINE__, (int)wanted_gid);
-#endif /* PROC_DEBUG */
 
     SET_ONERROR(err, free_perishables, &storage);
 
     if(optional)
     {
+      if((tmp = simple_mapping_string_lookup(optional, "priority")) &&
+         tmp->type == T_STRING)
+        priority = tmp->u.string->str;
+
       if((tmp = simple_mapping_string_lookup(optional, "gid")))
       {
 	switch(tmp->type)
 	{
 	  case T_INT:
 	    wanted_gid=tmp->u.integer;
-#ifdef PROC_DEBUG
-	    fprintf(stderr, "%s:%d: wanted_gid=%d\n",
-		    __FILE__, __LINE__, (int)wanted_gid);
-#endif /* PROC_DEBUG */
 	    gid_request=1;
 	    break;
 	    
@@ -1222,10 +1485,6 @@ void f_create_process(INT32 args)
 	    if(sp[-1].u.array->item[2].type != T_INT)
 	      error("Getgrnam failed!\n");
 	    wanted_gid = sp[-1].u.array->item[2].u.integer;
-#ifdef PROC_DEBUG
-	    fprintf(stderr, "%s:%d: wanted_gid=%d\n",
-		    __FILE__, __LINE__, (int)wanted_gid);
-#endif /* PROC_DEBUG */
 	    pop_stack();
 	    gid_request=1;
 	  }
@@ -1236,6 +1495,86 @@ void f_create_process(INT32 args)
 	    error("Invalid argument for gid.\n");
 	}
       }
+      
+      if((tmp = simple_mapping_string_lookup( optional, "cwd" )) &&
+         tmp->type == T_STRING && tmp->u.string->size_shift == 1)
+        tmp_cwd = tmp->u.string->str;
+
+      if((tmp = simple_mapping_string_lookup( optional, "stdin" )) &&
+         tmp->type == T_OBJECT)
+      {
+        stds[0] = fd_from_object( tmp->u.object );
+        if(stds[0] == -1)
+          error("Invalid stdin file\n");
+      }
+
+      if((tmp = simple_mapping_string_lookup( optional, "stdout" )))
+      {
+        stds[1] = fd_from_object( tmp->u.object );
+        if(stds[1] == -1)
+          error("Invalid stdout file\n");
+      }
+
+      if((tmp = simple_mapping_string_lookup( optional, "stderr" )))
+      {
+        stds[2] = fd_from_object( tmp->u.object );
+        if(stds[2] == -1)
+          error("Invalid stderr file\n");
+      }
+
+      if((tmp = simple_mapping_string_lookup( optional, "nice"))
+         && tmp->type == T_INT )
+        nice_val = tmp->u.integer;
+
+
+#ifdef HAVE_SETRLIMIT
+      if((tmp=simple_mapping_string_lookup(optional, "rlimit")))
+      {
+        struct svalue *tmp2;
+        if(tmp->type != T_MAPPING)
+          error("Wrong type of argument for the 'rusage' option. "
+                "Should be mapping.\n");
+
+#define ADD_LIMIT(X,Y,Z) internal_add_limit(&storage,X,Y,Z);
+          
+#ifdef RLIMIT_CORE
+      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "core")))
+        ADD_LIMIT( "core", RLIMIT_CORE, tmp2 );
+#endif        
+#ifdef RLIMIT_CPU
+      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "cpu")))
+        ADD_LIMIT( "cpu", RLIMIT_CPU, tmp2 );
+#endif        
+#ifdef RLIMIT_DATA
+      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "data")))
+        ADD_LIMIT( "data", RLIMIT_DATA, tmp2 );
+#endif        
+#ifdef RLIMIT_FSIZE
+      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "fsize")))
+        ADD_LIMIT( "fsize", RLIMIT_FSIZE, tmp2 );
+#endif        
+#ifdef RLIMIT_NOFILE
+      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "nofile")))
+        ADD_LIMIT( "nofile", RLIMIT_NOFILE, tmp2 );
+#endif        
+#ifdef RLIMIT_STACK
+      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "stack")))
+        ADD_LIMIT( "stack", RLIMIT_STACK, tmp2 );
+#endif        
+#ifdef RLIMIT_VMEM
+      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "map_mem"))
+         ||(tmp2=simple_mapping_string_lookup(tmp->u.mapping, "vmem")))
+        ADD_LIMIT( "map_mem", RLIMIT_VMEM, tmp2 );
+#endif        
+#ifdef RLIMIT_AS
+      if((tmp2=simple_mapping_string_lookup(tmp->u.mapping, "as"))
+         ||(tmp2=simple_mapping_string_lookup(tmp->u.mapping, "mem")))
+        ADD_LIMIT( "mem", RLIMIT_AS, tmp2 );
+#endif        
+      }
+#undef ADD_LIMIT
+#endif        
+
       
       if((tmp=simple_mapping_string_lookup(optional, "uid")))
       {
@@ -1255,10 +1594,6 @@ void f_create_process(INT32 args)
 		if(sp[-1].u.array->item[3].type!=T_INT)
 		  error("Getpwuid failed!\n");
 		wanted_gid = sp[-1].u.array->item[3].u.integer;
-#ifdef PROC_DEBUG
-		fprintf(stderr, "%s:%d: wanted_gid=%d\n",
-			__FILE__, __LINE__, (int)wanted_gid);
-#endif /* PROC_DEBUG */
 	      }
 	      pop_stack();
 	    }
@@ -1279,10 +1614,6 @@ void f_create_process(INT32 args)
 	    wanted_uid=sp[-1].u.array->item[2].u.integer;
 	    if(!gid_request)
 	      wanted_gid=sp[-1].u.array->item[3].u.integer;
-#ifdef PROC_DEBUG
-	    fprintf(stderr, "%s:%d: wanted_gid=%d\n",
-		    __FILE__, __LINE__, (int)wanted_gid);
-#endif /* PROC_DEBUG */
 	    pop_stack();
 	    break;
 	  }
@@ -1295,9 +1626,6 @@ void f_create_process(INT32 args)
 
       if((tmp=simple_mapping_string_lookup(optional, "setgroups")))
       {
-#ifdef PROC_DEBUG
-	fprintf(stderr, "Use setgroups\n");
-#endif /* PROC_DEBUG */
 #ifdef HAVE_SETGROUPS
 	if(tmp->type == T_ARRAY)
 	{
@@ -1360,9 +1688,6 @@ void f_create_process(INT32 args)
     if(wanted_uid != getuid() && do_initgroups)
     {
       extern void f_get_groups_for_user(INT32);
-#ifdef PROC_DEBUG
-      fprintf(stderr, "Creating wanted_gids_array\n");
-#endif /* PROC_DEBUG */
       push_int(wanted_uid);
       f_get_groups_for_user(1);
       if(sp[-1].type == T_ARRAY)
@@ -1378,9 +1703,6 @@ void f_create_process(INT32 args)
     if(storage.wanted_gids_array)
     {
       int e;
-#ifdef PROC_DEBUG
-    fprintf(stderr, "Creating wanted_gids (size=%d)\n", storage.wanted_gids_array->size);
-#endif /* PROC_DEBUG */
       storage.wanted_gids=(gid_t *)xalloc(sizeof(gid_t) * (storage.wanted_gids_array->size + 1));
       storage.wanted_gids[0]=65534; /* Paranoia */
       for(e=0;e<storage.wanted_gids_array->size;e++)
@@ -1409,9 +1731,6 @@ void f_create_process(INT32 args)
 	  default:
 	    error("Gids must be integers or strings only.\n");
 	}
-#ifdef PROC_DEBUG
-	fprintf(stderr, "GROUP #%d is %ld\n", e, storage.wanted_gids[e]);
-#endif /* PROC_DEBUG */
       }
       storage.num_wanted_gids=storage.wanted_gids_array->size;
       free_array(storage.wanted_gids_array);
@@ -1422,10 +1741,6 @@ void f_create_process(INT32 args)
     
     storage.argv=(char **)xalloc((1+cmd->size) * sizeof(char *));
 
-#ifdef PROC_DEBUG
-    fprintf(stderr, "%s:%d: init_threads_disable()...\n", __FILE__, __LINE__);
-#endif /* PROC_DEBUG */
-
     if (pike_make_pipe(control_pipe) < 0) {
       error("Failed to create child communication pipe.\n");
     }
@@ -1434,10 +1749,6 @@ void f_create_process(INT32 args)
     init_threads_disable(NULL);
     storage.disabled = 1;
 #endif
-
-#ifdef PROC_DEBUG
-    fprintf(stderr, "%s:%d: fork()...\n", __FILE__, __LINE__);
-#endif /* PROC_DEBUG */
 
 #if defined(HAVE_FORK1) && defined(_REENTRANT)
     pid=fork1();
@@ -1457,13 +1768,7 @@ void f_create_process(INT32 args)
 
       free_perishables(&storage);
 
-#ifdef PROC_DEBUG
-      fprintf(stderr, "%s:%d: fork() failed, errno=%d\n",
-	      __FILE__, __LINE__, errno);
-#endif /* PROC_DEBUG */
-
-      error("Failed to start process.\n"
-	    "errno:%d\n", errno);
+      error("Failed to start process.\n" "errno:%d\n", errno);
     } else if(pid) {
       /*
        * The parent process
@@ -1475,11 +1780,6 @@ void f_create_process(INT32 args)
       free_perishables(&storage);
 
       pop_n_elems(sp - stack_save);
-
-#ifdef PROC_DEBUG
-      fprintf(stderr, "%s:%d: fork() ok, pid=%d\n",
-	      __FILE__, __LINE__, (int)pid);
-#endif /* PROC_DEBUG */
 
       /* FIXME: Can anything of the following throw an error? */
       if(!signal_evaluator_callback)
@@ -1499,7 +1799,6 @@ void f_create_process(INT32 args)
       buf[0] = 0;
       while (((e = write(control_pipe[0], buf, 1)) < 0) && (errno == EINTR))
 	;
-
       if(e!=1)
 	error("Child process died prematurely. (e=%d errno=%d)\n",e,errno);
 
@@ -1574,18 +1873,22 @@ void f_create_process(INT32 args)
 
       SET_ONERROR(oe, exit_on_error, "Error in create_process() child.");
 
-#ifdef _REENTRANT
-      /* forked copy. there is now only one thread running, this one. */
-      num_threads=1;
-#endif
-
       /* Wait for parent to get ready... */
       while ((( e = read(control_pipe[1], buf, 1)) < 0) && (errno == EINTR))
 	;
 
       /* FIXME: What to do if e < 0 ? */
 
-      call_callback(&fork_child_callback, 0);
+/* We don't call _any_ pike functions at all after this point, so
+ * there is no need at all to call this callback, really.
+ */
+
+/* 
+#ifdef _REENTRANT
+      num_threads=1;
+#endif
+      call_callback(&fork_child_callback, 0); 
+*/
 
       for(e=0;e<cmd->size;e++) storage.argv[e]=ITEM(cmd)[e].u.string->str;
       storage.argv[e]=0;
@@ -1600,105 +1903,73 @@ void f_create_process(INT32 args)
 #endif /* HAVE_SETRESUID */
 #endif /* HAVE_SETEUID */
 
-      if (!keep_signals) {
+      if (!keep_signals) 
+      {
 	/* Restore the signals to the defaults. */
+#ifdef HAVE_SIGNAL
+        for(i=0; i<60; i++)
+          signal(i, SIG_DFL);
+#else
+#endif
       }
 
-      if(optional)
+      if(tmp_cwd)
       {
-	int toclose[3];
-	int fd;
-
-	if((tmp=low_mapping_string_lookup(optional, storage.cwd_s)))
-	  if((tmp->type == T_STRING) && (tmp->u.string->len))
-	    if(chdir(tmp->u.string->str)) {
+        if( chdir( tmp_cwd ) )
+        {
 #ifdef PROC_DEBUG
-	      fprintf(stderr, "%s:%d: child: chdir(\"%s\") failed, errno=%d\n",
-		      __FILE__, __LINE__, tmp->u.string->str, errno);
+          fprintf(stderr, "%s:%d: child: chdir(\"%s\") failed, errno=%d\n",
+                  __FILE__, __LINE__, tmp_cwd, errno);
 #endif /* PROC_DEBUG */
-
-	      PROCERROR(PROCE_CHDIR, 0);
-	    }
+          PROCERROR(PROCE_CHDIR, 0);
+        }
+      }
 
 #ifdef HAVE_NICE
-	if ((tmp=low_mapping_string_lookup(optional, storage.nice_s))) {
-	  if (tmp->type == T_INT) {
-	    nice(tmp->u.integer);
-	  }
-	}
-#endif /* HAVE_NICE */
+      if(nice_val)
+        nice(nice_val);
+#endif
 
-	for(fd=0;fd<3;fd++)
-	{
-	  struct pike_string *fdname;
-	  toclose[fd]=-1;
-	  switch(fd)
-	  {
-	    case 0: fdname=storage.stdin_s; break;
-	    case 1: fdname=storage.stdout_s; break;
-	    default: fdname=storage.stderr_s; break;
-	  }
-	  
-	  if((tmp=low_mapping_string_lookup(optional, fdname)))
-	  {
-	    if(tmp->type == T_OBJECT)
-	    {
-	      INT32 f=fd_from_object(tmp->u.object);
-	      if(f != -1 && fd!=f)
-	      {
-		if(dup2(toclose[fd]=f, fd) < 0)
-		{
-#ifdef PROC_DEBUG
-		  fprintf(stderr, "%s:%d: child: dup2(%d, %d) failed\n"
-			  "errno=%d\n",
-			  __FILE__, __LINE__, f, fd, errno);
-#endif /* PROC_DEBUG */
-
-		  PROCERROR(PROCE_DUP2, f);
-		}
-	      }
-	    }
-	  }
-	}
-
-	for(fd=0;fd<3;fd++)
-	{
-	  int f2;
-	  if(toclose[fd]<3) continue;
-
-	  for(f2=0;f2<fd;f2++)
-	    if(toclose[fd]==toclose[f2])
-	      break;
-
-	  if(f2 == fd)
-	  {
-	    close(toclose[fd]);
-	  }
-	}
-
-	/* Left to do: cleanup? */
+#ifdef HAVE_SETRLIMIT
+      if(storage.limits)
+      {
+        struct plimit *l = storage.limits;
+        while(l)
+        {
+          setrlimit( l->resource, &l->rlp );
+          l = l->next;
+        }
       }
+#endif
+
+      {
+        int fd;
+        for(fd=0; fd<3; fd++)
+        {
+          if(stds[fd])
+            if(dup2(stds[fd], fd) < 0)
+              PROCERROR(PROCE_DUP2, fd);
+        }
+/* Why? */
+/*         for(fd=0; fd<3; fd++) */
+/*           if(stds[fd] && stds[fd]>2) */
+/*             close( stds[fd] ); */
+      }
+
+      if(priority)
+        set_priority( 0, priority );
 
 #ifdef HAVE_SETGID
 #ifdef HAVE_GETGID
       if(wanted_gid != getgid())
 #endif
       {
-#ifdef PROC_DEBUG
-	fprintf(stderr, "%s:%d: wanted_gid=%d\n",
-		__FILE__, __LINE__, (int)wanted_gid);
-#endif /* PROC_DEBUG */
 	if(setgid(wanted_gid))
 #ifdef _HPUX_SOURCE
           /* Kluge for HP-(S)UX */
 	  if(wanted_gid > 60000 && setgid(-2) && setgid(65534) && setgid(60001))
 #endif
 	  {
-#ifdef PROC_DEBUG
-	    fprintf(stderr, "%s:%d: child: setgid(%d) failed, errno=%d\n",
-		    __FILE__, __LINE__, (int)wanted_gid, errno);
-#endif /* PROC_DEBUG */
-
 	    PROCERROR(PROCE_SETGID, (int)wanted_gid);
 	  }
       }
@@ -1707,15 +1978,8 @@ void f_create_process(INT32 args)
 #ifdef HAVE_SETGROUPS
       if(storage.wanted_gids)
       {
-#ifdef PROC_DEBUG
-	fprintf(stderr, "Calling setgroups()\n");
-#endif /* PROC_DEBUG */
 	if(setgroups(storage.num_wanted_gids, storage.wanted_gids))
 	{
-#ifdef PROC_DEBUG
-	  fprintf(stderr, "setgroups() failed.\n");
-#endif /* PROC_DEBUG */
-
 	  PROCERROR(PROCE_SETGROUPS,0);
 	}
       }
@@ -1733,17 +1997,9 @@ void f_create_process(INT32 args)
 	  int initgroupgid;
 	  if(!pw) pw=getpwuid(wanted_uid);
 	  if(!pw) {
-#ifdef PROC_DEBUG
-	    fprintf(stderr, "getpwuid() failed.\n");
-#endif /* PROC_DEBUG */
-
 	    PROCERROR(PROCE_GETPWUID, wanted_uid);
 	  }
 	  initgroupgid=pw->pw_gid;
-/*	  printf("uid=%d euid=%d initgroups(%s,%d)\n",getuid(),geteuid(),pw->pw_name, initgroupgid); */
-#ifdef PROC_DEBUG
-	  fprintf(stderr, "Calling initgroups()\n");
-#endif /* PROC_DEBUG */
 	  if(initgroups(pw->pw_name, initgroupgid))
 #ifdef _HPUX_SOURCE
 	    /* Kluge for HP-(S)UX */
@@ -1758,16 +2014,12 @@ void f_create_process(INT32 args)
 	      if(setgroups(0, x))
 #endif /* SETGROUPS */
 	      {
-#ifdef PROC_DEBUG
-		fprintf(stderr, "initgroups() failed.\n");
-#endif /* PROC_DEBUG */
 
 		PROCERROR(PROCE_INITGROUPS, 0);
 	      }
 	    }
 	}
 #endif /* INITGROUPS */
-/*	printf("uid=%d gid=%d euid=%d egid=%d setuid(%d)\n",getuid(),getgid(),geteuid(),getegid(),wanted_uid); */
 	if(setuid(wanted_uid))
 	{
 	  perror("setuid");
@@ -1795,13 +2047,13 @@ void f_create_process(INT32 args)
 #endif /* HAVE_BROKEN_F_SETFD */
 
       execvp(storage.argv[0],storage.argv);
+#ifndef HAVE_BROKEN_F_SETFD
 #ifdef PROC_DEBUG
       fprintf(stderr,
 	      "execvp(\"%s\", ...) failed\n"
 	      "errno = %d\n",
 	      storage.argv[0], errno);
 #endif /* PROC_DEBUG */
-#ifndef HAVE_BROKEN_F_SETFD
       /* No way to tell about this on broken OS's :-( */
       PROCERROR(PROCE_EXEC, 0);
 #endif /* HAVE_BROKEN_F_SETFD */
@@ -2265,6 +2517,7 @@ void init_signals(void)
   ADD_STORAGE(struct pid_status);
   set_init_callback(init_pid_status);
   set_exit_callback(exit_pid_status);
+  add_function("set_priority",f_pid_status_set_priority,"function(string:int)",0);
   add_function("wait",f_pid_status_wait,"function(:int)",0);
   add_function("status",f_pid_status_status,"function(:int)",0);
   add_function("pid",f_pid_status_pid,"function(:int)",0);
@@ -2272,6 +2525,8 @@ void init_signals(void)
   pid_status_program=end_program();
   add_program_constant("create_process",pid_status_program,0);
 
+  add_efun("set_priority",f_set_priority,"function(string,int|void:int)",
+           OPT_SIDE_EFFECT);
   add_efun("signal",f_signal,"function(int,mixed|void:void)",OPT_SIDE_EFFECT);
 #ifdef HAVE_KILL
   add_efun("kill",f_kill,"function(int|object,int:int)",OPT_SIDE_EFFECT);
