@@ -193,11 +193,11 @@ THREADS_ALLOW();
 #define AVOID_IS_TOO_BIG ((haystack_avoidi[i].r)>(foo)) 
 
       if (type==1)
-	DOUBLE_LOOP(0,1,1, , , )
+	DOUBLE_LOOP(0,1,1, *1, *1, *1)
       else if (type==2)
 	DOUBLE_LOOP(0, haystack_certi[j], needle_certi[ny*nxs+nx],.r,.g,.b)
       else if (type==3)
-	DOUBLE_LOOP(AVOID_IS_TOO_BIG,1,1, , , )
+	DOUBLE_LOOP(AVOID_IS_TOO_BIG,1,1, *1, *1, *1)
       else if (type==4)
 	DOUBLE_LOOP(AVOID_IS_TOO_BIG, haystack_certi[j], needle_certi[ny*nxs+nx],.r,.g,.b)
 
