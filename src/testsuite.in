@@ -40,20 +40,20 @@ test_true(arrayp( _next(({})) || _prev(({}))))
 test_any(object o=this_object(); while(o=_next(o)));
 test_any(object o=this_object(); while(o=_prev(o)));
 
-test_true([["$Id: testsuite.in,v 1.17 1997/01/28 03:20:43 hubbe Exp $"]])
-test_any([[object(File) o=File(); return objectp(o);]],1)
+test_true([["$Id: testsuite.in,v 1.18 1997/02/11 09:26:59 hubbe Exp $"]])
+test_any([[object(Stdio.File) o=Stdio.File(); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return object_program(o);]],Regexp)
 test_any([[class Test {}; object(Test) o=Test(); return object_program(o);]],Test)
-test_define_program(/test,[[constant foo = 1; int a() { return foo; }]])
-test_true(new("/test")->a())
-test_program(inherit "/test";)
-test_program(inherit "/test"; int a() { return foo; } )
-test_define_program(/test,[[class TEST { int a() { return 1; } }]])
-test_program(inherit "/test"; inherit TEST; )
-test_compile_error(class { object(File) foo; object(Regexp) bar=foo; })
+test_define_program(test,[[constant foo = 1; int a() { return foo; }]])
+test_true(new(test)->a())
+test_program(inherit test;)
+test_program(inherit test; int a() { return foo; } )
+test_define_program(test,[[class TEST { int a() { return 1; } }]])
+test_program(inherit test; inherit TEST; )
+test_compile_error(class { object(Stdio.File) foo; object(Regexp) bar=foo; })
 test_do(class { object foo; object(Regexp) bar=foo; })
-test_do(class { object(File) foo; object bar=foo; })
+test_do(class { object(Stdio.File) foo; object bar=foo; })
 test_any(if(int i=1) return i; return 0;,1)
 test_compile(for(int i=0;i<100;i++) return 0;)
 test_compile(foreach(({}),mixed i){})
@@ -98,7 +98,7 @@ test_equal([[glob("?f?",({"ff","ffff","off","fff",""}))]],[[({"off","fff"})]])
 test_equal([[glob("foo*bar",({"foobar","foobargazonk","","foofoobar","fobar","fooar"}))]],[[({"foobar","foofoobar"})]])
 
 // localtime
-cond([[all_efuns()->localtime]],
+cond([[all_constants()->localtime]],
 [[
 test_true(mappingp(localtime(0)))
 ]])
@@ -109,7 +109,7 @@ test_equal(sort(({4,3,2,1})),({1,2,3,4}))
 test_equal([[lambda() {string *a=({1,2,3,4}); sort(({4,3,2,1}),a); return a; }()]],[[({4,3,2,1})]] )
 test_equal([[lambda() {string *a=({1,2,3,4}),*b=a+({}); sort(({4,3,2,1}),a,b); return b; }()]],[[({4,3,2,1})]] )
 
-cond([[all_efuns()->thread_create]],
+cond([[all_constants()->thread_create]],
 [[
 // thread_create
   test_do(thread_create(lambda() { }))
@@ -137,36 +137,28 @@ return 0;
   test_true(objectp(clone(Queue)))
 ]])
 
-test_any([[
-#include <getopt.h>
-return 0;
-]],0)
 
-  test_true(find_option(({"","--foo"}),"p","foo"))
-  test_eq(find_option(({"","--foo=bar"}),"p","foo",0,0),"bar")
-  test_eq(find_option(({"","--foo","bar"}),"p","foo",0,0),"bar")
-  test_eq(find_option(({"","--","--foo=bar"}),"p","foo",0,0),0)
+  test_true(Getopt.find_option(({"","--foo"}),"p","foo"))
+  test_eq(Getopt.find_option(({"","--foo=bar"}),"p","foo",0,0),"bar")
+  test_eq(Getopt.find_option(({"","--foo","bar"}),"p","foo",0,0),"bar")
+  test_eq(Getopt.find_option(({"","--","--foo=bar"}),"p","foo",0,0),0)
 
-  test_true(find_option(({"","-p"}),"p","foo"))
-  test_eq(find_option(({"","-pbar"}),"p","foo",0,0),"bar")
-  test_eq(find_option(({"","-p","bar"}),"p","foo",0,0),"bar")
-  test_eq(find_option(({"","--","--p","bar"}),"p","foo",0,0),0)
+  test_true(Getopt.find_option(({"","-p"}),"p","foo"))
+  test_eq(Getopt.find_option(({"","-pbar"}),"p","foo",0,0),"bar")
+  test_eq(Getopt.find_option(({"","-p","bar"}),"p","foo",0,0),"bar")
+  test_eq(Getopt.find_option(({"","--","--p","bar"}),"p","foo",0,0),0)
 
-  test_equal(get_args(({"",0,0,"sune","--","-foo"})),({"","sune","-foo"}))
+  test_equal(Getopt.get_args(({"",0,0,"sune","--","-foo"})),({"","sune","-foo"}))
 
-test_any([[
-#include <string.h>
-return 0;
-]],0)
-  test_true(objectp(clone(String_buffer)))
-  test_do(clone(String_buffer)->append("foo"))
-  test_do(add_constant("Flurp",clone(String_buffer)))
+  test_true(objectp(clone(String.String_buffer)))
+  test_do(clone(String.String_buffer)->append("foo"))
+  test_do(add_constant("Flurp",clone(String.String_buffer)))
   test_do(Flurp->append("test"))
   test_do(Flurp->append("test"))
   test_eq((string)Flurp,"testtest")
   test_do(add_constant("Flurp"))
 
-  test_eq(strmult("foo",4),"foofoofoofoo")
+  test_eq(String.strmult("foo",4),"foofoofoofoo")
 
 // m_delete
 test_equal(([1:1]),m_delete(a(),0))
@@ -249,16 +241,16 @@ test_any([[mapping m=([]);int e;
     a[e]=reverse(e);
     b[e]=e;
   }
-  add_efun("mtest_m",m);
-  add_efun("mtest_i",a);
-  add_efun("mtest_v",b);
+  add_constant("mtest_m",m);
+  add_constant("mtest_i",a);
+  add_constant("mtest_v",b);
   return 1;
 ]],1)
 
 
 test_eq([[sizeof(mtest_m)]],sizeof(mtest_i))
-test_equal(sort_array(indices(mtest_m)),sort_array(mtest_i))
-test_equal(sort_array(values(mtest_m)),sort_array(mtest_v))
+test_equal(Array.sort_array(indices(mtest_m)),Array.sort_array(mtest_i))
+test_equal(Array.sort_array(values(mtest_m)),Array.sort_array(mtest_v))
 test_equal(mtest_m,copy_value(mtest_m))
 test_any([[int e; for(e=0;e<1000;e++) if(!equal(mtest_m[mtest_i[e] ],mtest_v[e])) return 0; return 1;]],1)
 
@@ -273,9 +265,9 @@ test_any([[mapping m=([]);int e;
     a[e]=reverse(e-50);
     b[e]=reverse(e-50);
   }
-  add_efun("mtest_m2",m);
-  add_efun("mtest_i2",a);
-  add_efun("mtest_v2",b);
+  add_constant("mtest_m2",m);
+  add_constant("mtest_i2",a);
+  add_constant("mtest_v2",b);
   return 1;
 ]],1)
 
@@ -306,8 +298,8 @@ MTEST(55)
 
 define([[MTEST]])
 
-test_do(add_efun("mtest_m"); add_efun("mtest_i"); add_efun("mtest_v");)
-test_do(add_efun("mtest_m2"); add_efun("mtest_i2"); add_efun("mtest_v2");)
+test_do(add_constant("mtest_m"); add_constant("mtest_i"); add_constant("mtest_v");)
+test_do(add_constant("mtest_m2"); add_constant("mtest_i2"); add_constant("mtest_v2");)
 
 // rows
 test_equal([[rows(({1,2,3,4,5,6,7,8,9}),({6,7,2}))]],[[({7,8,3})]])
@@ -333,16 +325,16 @@ ifefun(gc,
 
 
 test_eq("\377"[0],255)
-test_do(add_efun("foo",clone(class {int i;})))
+test_do(add_constant("foo",clone(class {int i;})))
 test_eq(foo->i,0)
 test_do(foo->i=17)
 test_eq(foo->i,17)
-test_do(add_efun("foo"));
-test_do(add_efun("foo",clone(class {int *i=({0});})))
+test_do(add_constant("foo"));
+test_do(add_constant("foo",clone(class {int *i=({0});})))
 test_eq(foo->i[0],0)
 test_do(foo->i[0]=17)
 test_eq(foo->i[0],17)
-test_do(add_efun("foo"));
+test_do(add_constant("foo"));
 
 // signum, signame
 test_eq(signum("SIGKILL"),9)
@@ -352,10 +344,10 @@ test_eq(signame(2),"SIGINT")
 
 // kill, signal, getpid
 test_true(intp(getpid()))
-test_do(signal(signum("SIGUSR1"),lambda() { add_efun("AFJLLAF",17); }))
+test_do(signal(signum("SIGUSR1"),lambda() { add_constant("AFJLLAF",17); }))
 test_do(kill(getpid(),signum("SIGUSR1")))
 test_eq(AFJLLAF,17)
-test_do(add_efun("AFJLLAF"))
+test_do(add_constant("AFJLLAF"))
 test_do(signal(signum("SIGUSR1",0)))
 test_do(signal(signum("SIGUSR1")))
 
@@ -364,7 +356,7 @@ test_eq(typeof(1),"int")
 test_eq(typeof(""),"string")
 test_eq(typeof(""[0]),"int")
 test_eq(typeof(0.0),"float")
-test_eq(typeof(all_efuns()["all_efuns"]),"mixed")
+test_eq(typeof(all_constants()["all_constants"]),"mixed")
 
 // class
 test_true(programp(class {}))
@@ -390,8 +382,8 @@ test_equal( ({ lambda() { return 3; } , lambda() { return 7; }, lambda() { retur
 test_any(int *a=({10}); a[0]++; return a[0], 11)
 test_any(mapping a=([10:11]); a[10]++; return a[10], 12)
 test_equal(mkmapping( ({3,6,2}), ({"3","6","2"})), ([3:"3", 6:"6", 2:"2"]))
-test_equal(sum(([3:"3", 6:"6", 2:"2"])), ([3:"3", 6:"6", 2:"2"]))
-test_true(sum(([3:"3", 6:"6", 2:"2"])) != ([3:"3", 6:"6", 2:"2"]))
+test_equal(`+(([3:"3", 6:"6", 2:"2"])), ([3:"3", 6:"6", 2:"2"]))
+test_true(`+(([3:"3", 6:"6", 2:"2"])) != ([3:"3", 6:"6", 2:"2"]))
 
 test_true(predef::stringp(""))
 test_equal([["a,b,4,7,8s,asfd,a,d,f" / ","]],[["a,b,4,7,8s,asfd,a,d,f" / ","]])
@@ -412,8 +404,8 @@ test_equal(mkmapping("abcd"/"","jklm"/"") | mkmapping("jclm"/"","alcd"/""),
 test_program(int foo() { return 17;} mixed a() { return foo() == 17; })
 test_any([[mixed a; a=2; a=a*3; return a]],6)
 test_any([[mixed a = ({1}); a=a+({2}); return equal(a,({1,2}))]],1)
-test_define_program(/test,[[int foo() { return 17; }]])
-test_any(function bar=clone((program)"/test")->foo; return bar(),17)
+test_define_program(test,[[int foo() { return 17; }]])
+test_any(function bar=clone(test)->foo; return bar(),17)
 
 // sscanf
 test_any([[mixed a; return sscanf("11","%d",a)]],1)
@@ -463,7 +455,7 @@ test_true(object_program(this_object()))
 // testing !
 test_equal(!"",0)
 test_equal(!this_object(),0)
-test_equal(!this_function(),0)
+test_equal(!Simulate.this_function(),0)
 
 // testing ==
 test_true(1==1)
@@ -471,7 +463,7 @@ test_true(!(1==2))
 test_true(""=="")
 test_true(!(""=="foo"))
 test_true(this_object()==this_object())
-test_true(this_function()==a)
+test_true(Simulate.this_function()==a)
 test_true(2.0==2.0)
 test_true(({})==({}))
 
@@ -632,7 +624,7 @@ test_eq(0 | 0,0)
 test_eq(1 | 1,1)
 test_eq(4 | 1,5)
 test_eq(1 | 9,9)
-test_equal( sort_array(({1,2,3,4,4}) | ({3,5,6})), ({1,2,3,4,4,5,6}))
+test_equal( Array.sort_array(({1,2,3,4,4}) | ({3,5,6})), ({1,2,3,4,4,5,6}))
 test_equal( (<4,5,6>) | (<5,5,5>), (<4,5,5,5,6>) )
 test_equal( ([-4:8,8:7]) | ([3:3,8:3]), ([-4:8,8:3,3:3]) )
 
@@ -712,22 +704,22 @@ test_any(mixed a=(<1>); a[0]=0; return equal(a,(<1>)),1)
 test_any(mixed a=([1:1]); a[0]=0; return equal(a,([1:1,0:0])),1)
 test_any(mixed a=([1:1]); a[1]=0; return equal(a,([1:0])),1)
 
-test_define_program(/test,[[public int q,w,e,r; mixed t; mixed getw() { return w; } void setw(int _) { w=_; }]])
-test_eq(clone((program)"/test")->q,0)
-test_eq(clone((program)"/test")->w,0)
-test_eq(clone((program)"/test")->e,0)
-test_eq(clone((program)"/test")->r,0)
-test_eq(clone((program)"/test")->getw(),0)
-test_any(object o=clone((program)"/test"); o->setw(17); return o->w,17)
-test_any(object o=clone((program)"/test"); o->w=17; return o->getw(),17)
+test_define_program(test,[[public int q,w,e,r; mixed t; mixed getw() { return w; } void setw(int _) { w=_; }]])
+test_eq(clone(test)->q,0)
+test_eq(clone(test)->w,0)
+test_eq(clone(test)->e,0)
+test_eq(clone(test)->r,0)
+test_eq(clone(test)->getw(),0)
+test_any(object o=clone(test); o->setw(17); return o->w,17)
+test_any(object o=clone(test); o->w=17; return o->getw(),17)
 
-test_eq(clone((program)"/test")["q"],0)
-test_eq(clone((program)"/test")["w"],0)
-test_eq(clone((program)"/test")["e"],0)
-test_eq(clone((program)"/test")["r"],0)
-test_eq(clone((program)"/test")["getw"](),0)
-test_any(object o=clone((program)"/test"); o["setw"](17); return o["w"],17)
-test_any(object o=clone((program)"/test"); o["w"]=17; return o["getw"](),17)
+test_eq(clone(test)["q"],0)
+test_eq(clone(test)["w"],0)
+test_eq(clone(test)["e"],0)
+test_eq(clone(test)["r"],0)
+test_eq(clone(test)["getw"](),0)
+test_any(object o=clone(test); o["setw"](17); return o["w"],17)
+test_any(object o=clone(test); o["w"]=17; return o["getw"](),17)
 
 // testing range
 test_eq("foObar"[0..0],"f")
@@ -752,7 +744,7 @@ test_equal(({1,2,3})[0..-100],({}))
 
 // testing @
 test_equal(({1,2,3}),lambda(mixed ... x) { return x; }(@a()))
-test_equal(explode("foo",""),lambda(mixed ... x) { return x; }(@a()))
+test_equal("foo"/"",lambda(mixed ... x) { return x; }(@a()))
 test_any([[mixed *a=({1,2,3}); return lambda(mixed ... x) { return x; }(@a) !=a]],1)
 
 // testing +=
@@ -899,7 +891,7 @@ test_any(int e;string t=""; for(e=0;e<10;e++) switch(e) { default: t+=e; case 4.
 test_any([[float e,q; q=0.0; for(e=0.1;e<10.0;e+=1.0) switch(e) { default: q+=e; case 4.0..8.0: } return q]],0.1+1.1+2.1+3.1+8.1+9.1)
 
 // testing preprocessor
-test_any(int e; object o=clone((program)"/precompiled/file"); if(!o->open("conftest.h","wct")) return -1; e=o->write("return 17;\n"); if(!o->close()) return -1; return e,11)
+test_any(int e; object o=clone(Stdio.File); if(!o->open("conftest.h","wct")) return -1; e=o->write("return 17;\n"); if(!o->close()) return -1; return e,11)
 test_any([[
 #include "conftest.h"
 ]],17)
@@ -1127,7 +1119,7 @@ return 1;
 ]],1)
 
 // #if efun
-// see test for add_efun()
+// see test for add_constant()
 
 // #if /* */
 test_any([[
@@ -1367,8 +1359,8 @@ do_test_foop(mappingp,6)
 do_test_foop(multisetp,7)
 do_test_foop(programp,8)
 
-// add_efun
-test_do(add_efun("foobar",lambda() { return 1; }))
+// add_constant
+test_do(add_constant("foobar",lambda() { return 1; }))
 test_any([[
 #if efun(foobar)
 return 1;
@@ -1377,7 +1369,7 @@ return 0;
 #endif
 ]],1)
 test_eq(foobar(),1)
-test_do(add_efun("foobar"))
+test_do(add_constant("foobar"))
 test_any([[
 #if efun(foobar)
 return 1;
@@ -1398,9 +1390,9 @@ test_true(multisetp(aggregate_multiset()))
 test_true(multisetp(aggregate_multiset()))
 
 // - all_efuns
-test_true(mappingp(all_efuns()))
-test_true(all_efuns()["all_efuns"])
-test_eq(all_efuns()["all_efuns"],all_efuns)
+test_true(mappingp(all_constants()))
+test_true(all_constants()["all_constants"])
+test_eq(all_constants()["all_constants"],all_constants)
 
 // - allocate
 test_true(arrayp(allocate(0)))
@@ -1417,9 +1409,9 @@ test_eq(1,call_function(lambda(int a){ return a; },1))
 test_eq(1,call_function(intp,1))
 
 // - capitalize
-test_eq(capitalize("fubar"),"Fubar")
-test_eq(capitalize("FooBar"),"FooBar")
-test_eq(capitalize("-"),"-")
+test_eq(String.capitalize("fubar"),"Fubar")
+test_eq(String.capitalize("FooBar"),"FooBar")
+test_eq(String.capitalize("-"),"-")
 
 // - clone
 // clone is already tested a lot by this script
@@ -1468,7 +1460,7 @@ test_true(stringp(ctime(0)))
 
 // - destruct
 // FIXME put tests for destruct here.
-test_do(add_efun("PROG",compile_string("int foo() { return 1; }")));
+test_do(add_constant("PROG",compile_string("int foo() { return 1; }")));
 test_any([[object o=clone(PROG); destruct(o); return o]],0);
 test_any([[object o=clone(PROG); destruct(o); return objectp(o)]],0);
 test_any([[object *o=({clone(PROG)}); destruct(o[0]); return o-({0}) ]],({}));
@@ -1483,9 +1475,9 @@ test_do([[object t,*o=({}); o+=({t=clone(PROG)}); destruct(t); o=({});]]);
 // FIXME put test for exit here
 
 // - explode
-test_equal(({"a","b","c",}), explode("anna bnna c","nna "))
-test_equal(({"","",}),explode("hej","hej"))
-test_equal(({"",}),explode("","hej"))
+test_equal(({"a","b","c",}), "anna bnna c"/"nna ")
+test_equal(({"","",}),"hej"/"hej")
+test_equal(({"",}),""/"hej")
 
 // - fork()
 // FIXME: add tests for fork
@@ -1499,7 +1491,7 @@ test_eq(function_object(a),this_object())
 test_eq(function_name(function_object),0)
 
 // - get_function (actually in simulate.pike)
-test_eq(a,get_function(this_object(),"a"))
+test_eq(a,Simulate.get_function(this_object(),"a"))
 test_eq(a,this_object()->a)
 
 // - hash
@@ -1511,18 +1503,18 @@ test_true(hash("gazonk",10)<10)
 test_eq(hash("foobargazonk"),hash("foobargazonk"))
 
 // - implode
-test_eq([[implode(({}),"")]],"")
-test_eq([[implode(explode("foo","o"),"o")]],"foo")
-test_eq([[implode(({"foo","bar"}),"-")]],"foo-bar")
-test_eq([[implode(({"foo",0,"bar"}),"-")]],"foo-bar")
-test_eq([[implode(({1.0,"foo",0,"bar",this_object(),([])}),"-")]],"foo-bar")
-test_eq([[implode(({"f","o","o"}),"")]],"foo")
+test_eq([[({})*""]],"")
+test_eq([[("foo"/"o")*"o"]],"foo")
+test_eq([[({"foo","bar"})*"-"]],"foo-bar")
+test_eq([[({"foo",0,"bar"})*"-"]],"foo-bar")
+test_eq([[({1.0,"foo",0,"bar",this_object(),([])})*"-"]],"foo-bar")
+test_eq([[({"f","o","o"})*""]],"foo")
 
 // - indices
 test_equal(indices("foo"),({0,1,2}))
 test_equal(indices(({'f','o','o'})),({0,1,2}))
-test_equal(sort_array(indices(([7:3,8:9,99:12]))),({7,8,99}))
-test_equal(sort_array(indices((<7,8,99>))),({7,8,99}))
+test_equal(Array.sort_array(indices(([7:3,8:9,99:12]))),({7,8,99}))
+test_equal(Array.sort_array(indices((<7,8,99>))),({7,8,99}))
 test_equal(mkmultiset(indices(this_object())),(<"a","b">))
 
 // - lower_case
@@ -1536,9 +1528,6 @@ test_any(int e;object o=next_object(); for(e=0;e<1000 && o;e++) o=next_object(o)
 
 // - object_program
 test_true(programp(object_program(this_object())))
-
-// - query_host_name
-test_true(stringp(query_host_name()))
 
 // - query_num_arg
 test_eq(lambda(int ... q) { return query_num_arg(); }(),0)
@@ -1640,22 +1629,22 @@ test_do(sleep(1))
 test_do(sleep(0.5))
 
 // - sum
-test_eq(sum(1,1),2)
-test_eq(sum(1,-2),-1)
-test_eq(sum(-2,-2),-4)
-test_eq(sum("hi","there"),"hithere")
-test_eq(sum("human","number",666),"humannumber666")
-test_eq(sum("human","number",666),"humannumber666")
-test_eq(sum("human","number",666),"humannumber666")
-test_eq(sum("human","number",666,111),"humannumber666111")
-test_eq(sum("humannumber",sum(666+111)),"humannumber777")
-test_eq(sum("a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","x","y"),"abcdefghijklmnopqrstuvxy")
-test_eq(sum(1.0+1.0),2.0)
-test_eq(sum(1.0,-1.0),0.0)
-test_eq(sum(-1.0,-1.0),-2.0)
-test_equal(sum(({1,2,3}),({4,5,6})),({1,2,3,4,5,6}))
-test_equal(sum((<1,2,3,4>),(<4,5,6>)),(<1,2,3,4,4,5,6>))
-test_equal(sum(([0:1,3:6]),([5:2,3:6])),([0:1,3:6,3:6,5:2]))
+test_eq(`+(1,1),2)
+test_eq(`+(1,-2),-1)
+test_eq(`+(-2,-2),-4)
+test_eq(`+("hi","there"),"hithere")
+test_eq(`+("human","number",666),"humannumber666")
+test_eq(`+("human","number",666),"humannumber666")
+test_eq(`+("human","number",666),"humannumber666")
+test_eq(`+("human","number",666,111),"humannumber666111")
+test_eq(`+("humannumber",`+(666+111)),"humannumber777")
+test_eq(`+("a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","x","y"),"abcdefghijklmnopqrstuvxy")
+test_eq(`+(1.0+1.0),2.0)
+test_eq(`+(1.0,-1.0),0.0)
+test_eq(`+(-1.0,-1.0),-2.0)
+test_equal(`+(({1,2,3}),({4,5,6})),({1,2,3,4,5,6}))
+test_equal(`+((<1,2,3,4>),(<4,5,6>)),(<1,2,3,4,4,5,6>))
+test_equal(`+(([0:1,3:6]),([5:2,3:6])),([0:1,3:6,3:6,5:2]))
 
 // - this_object
 test_true(objectp(this_object()))
@@ -1678,7 +1667,7 @@ test_equal(upper_case("Foo1234-*~\n"),"FOO1234-*~\n")
 // - values
 test_equal(values("foo"),({'f','o','o'}))
 test_equal(values(({'f','o','o'})),({'f','o','o'}))
-test_equal(sort_array(values(([7:3,8:9,99:12]))),({3,9,12}))
+test_equal(Array.sort_array(values(([7:3,8:9,99:12]))),({3,9,12}))
 test_equal(values((<7,8,99>)),({1,1,1}))
 test_equal(mkmultiset(values(this_object())),(<a,b>))
 
@@ -1688,23 +1677,23 @@ test_eq(zero_type(([])[7]),1)
 
 test_program(int b=10; mixed a() { return 1; })
 test_program(mixed b=10; mixed a() { return 1;})
-test_define_program(/test,[[int q,w,e,r,t; mixed foo() { return 10; }]])
+test_define_program(test,[[int q,w,e,r,t; mixed foo() { return 10; }]])
 
-test_program(inherit "/test"; mixed a() { return foo()==10; })
-test_program(inherit "/test"; mixed a() { return test::foo()==10; })
-test_program(inherit "/test" : bar; mixed a() { return bar::foo()==10; })
+test_program(inherit test; mixed a() { return foo()==10; })
+test_program(inherit test; mixed a() { return test::foo()==10; })
+test_program(inherit test : bar; mixed a() { return bar::foo()==10; })
 
-test_define_program(/test2,[[int z,x,c,v,b; mixed bar() { return 11; }]])
-test_program(inherit "/test"; inherit "/test2"; mixed a() { return foo()==10 && bar()==11; })
-test_program(inherit "/test2"; inherit "/test"; mixed a() { return foo()==10 && bar()==11; })
+test_define_program(test2,[[int z,x,c,v,b; mixed bar() { return 11; }]])
+test_program(inherit test; inherit test2; mixed a() { return foo()==10 && bar()==11; })
+test_program(inherit test2; inherit test; mixed a() { return foo()==10 && bar()==11; })
 
-test_define_program(/test,[[int q,w,e,r; mixed t; mixed getw() { return w; } void setw(int _) { w=_; }]])
-test_define_program(/test2,[[int z,x,c,v,b; mixed getb() { return b; } void setb(int _) { b=_; }]])
+test_define_program(test,[[int q,w,e,r; mixed t; mixed getw() { return w; } void setw(int _) { w=_; }]])
+test_define_program(test2,[[int z,x,c,v,b; mixed getb() { return b; } void setb(int _) { b=_; }]])
 
-test_program(inherit "/test"; inherit "/test2"; mixed a() { w=20; b=22; return getw()==20 && getb()==22; })
-test_program(inherit "/test"; inherit "/test2"; mixed a() { setw(20); setb(22); return w==20 && b==22; })
-test_program(inherit "/test2"; inherit "/test"; mixed a() { w=20; b=22; return getw()==20 && getb()==22; })
-test_program(inherit "/test2"; inherit "/test"; mixed a() { setw(20); setb(22); return w==20 && b==22; })
+test_program(inherit test; inherit test2; mixed a() { w=20; b=22; return getw()==20 && getb()==22; })
+test_program(inherit test; inherit test2; mixed a() { setw(20); setb(22); return w==20 && b==22; })
+test_program(inherit test2; inherit test; mixed a() { w=20; b=22; return getw()==20 && getb()==22; })
+test_program(inherit test2; inherit test; mixed a() { setw(20); setb(22); return w==20 && b==22; })
 
 test_eval_error(clone(class{int i;void foo(){ destruct(this_object());i=0;}})->foo())
 
