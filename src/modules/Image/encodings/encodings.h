@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encodings.h,v 1.6 2003/09/14 18:50:13 sigge Exp $
+|| $Id: encodings.h,v 1.7 2003/12/01 19:37:52 nilsson Exp $
 */
 
 #ifndef IMAGE_ENCODINGS_ENCODINGS_H
@@ -20,6 +20,7 @@ void img_bmp_decode_header(INT32 args);
 void img_ilbm_decode(INT32 args);
 void img_pnm_decode(INT32 args);
 void img_ras_decode(INT32 args);
+void img_ras__decode(INT32 args);
 void img_neo_f_decode(INT32 args);
 
 #endif /* !IMAGE_ENCODINGS_ENCODINGS_H */
