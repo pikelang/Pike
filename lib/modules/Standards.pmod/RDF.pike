@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.11 2003/04/14 17:11:25 nilsson Exp $
+// $Id: RDF.pike,v 1.12 2003/07/03 13:16:46 nilsson Exp $
 
 //! Represents an RDF domain which can contain any number of complete
 //! statements.
@@ -114,6 +114,11 @@ class URIResource {
     ::create();
   }
 
+  //! Returns the URI the resource references to.
+  string get_uri() {
+    return id;
+  }
+
   string get_n_triple_name() {
     return "<" + id + ">";
   }
@@ -204,6 +209,15 @@ URIResource make_resource(string uri) {
 array(array(Resource)) find_statements(Resource|int(0..0) subj,
 				       Resource|int(0..0) pred,
 				       Resource|int(0..0) obj) {
+  array ret = ({});
+
+  // Optimize the case when all search predicates are 0.
+  if(!subj && !pred && !obj) {
+    foreach(statements; Resource pred; ADT.Relation.Binary rel)
+      foreach(rel; Resource subj; Resource obj)
+	ret += ({ ({ subj, pred, obj }) });
+    return ret;
+  }
 
   array(array(Resource)) find_subj_obj(Resource subj, Resource pred,
 				       Resource obj, ADT.Relation.Binary rel) {
@@ -223,7 +237,7 @@ array(array(Resource)) find_statements(Resource|int(0..0) subj,
 
   if(pred)
     return find_subj_obj(subj, pred, obj, statements[pred]);
-  array ret = ({});
+
   foreach(statements; Resource pred; ADT.Relation.Binary rel)
     ret += find_subj_obj(subj, pred, obj, rel);
   return ret;
@@ -575,4 +589,29 @@ int _sizeof() {
 //!
 string _sprintf(int t) {
   return t=='O' && sprintf("%O(%d)", this_program, _sizeof());
+}
+
+//! @decl Standards.RDF `|(Standards.RDF x)
+//! Modifies the current object to create a union of the current object
+//! and the object @[x].
+this_program `|(mixed data) {
+  if(sprintf("%t", data)!="object" ||
+     !functionp(data->find_statements))
+    error("Can only or an RDF object with another RDF object.\n");
+
+  Resource normalize(Resource r) {
+    if(r->is_literal_resource) return r;
+    if(r==data->rdf_Statement) return rdf_Statement;
+    if(r==data->rdf_predicate) return rdf_predicate;
+    if(r==data->rdf_subject) return rdf_subject;
+    if(r==data->rdf_object) return rdf_object;
+    if(r==data->rdf_type) return rdf_type;
+    if(!functionp(r->get_uri)) error("Unknown resource found\n");
+    return make_resource(r->get_uri());
+  };
+
+  foreach(data->find_statements(),
+	  [Resource subj, Resource pred, Resource obj])
+    add_statement(normalize(subj), normalize(pred), normalize(obj));
+  return this;
 }

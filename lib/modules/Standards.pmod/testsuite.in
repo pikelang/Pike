@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.7 2003/04/10 23:13:17 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.8 2003/07/03 13:17:04 nilsson Exp $"]]);
 
 // - Standards.ISO639_2
 test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
@@ -10,7 +10,7 @@ test_true(sizeof(Standards.ISO639_2.list_639_1())==163)
 test_false(Standards.ISO639_2.verify_overlap())
 
 // - Standards.RDF
-test_equal_any([[
+test_any_equal([[
   object r = Standards.RDF();
   object x = r->Resource();
   r->add_statement( r->URIResource("http://www.example.org/index.html"),
@@ -212,6 +212,57 @@ test_xmlparse([[
   "<http://www.w3.org/staffId/85740> <http://v.com/Name> \"Ora Lassila\" .",
   "<http://www.w3.org/Home/Lassila> <http://description.org/schema/Creator> <http://www.w3.org/staffId/85740> ."
 >) ]])
+
+test_any_equal([[
+  object a = Standards.RDF();
+  a->add_statement( a->URIResource("http://a"),
+		    a->URIResource("http://b"),
+		    a->LiteralResource("x") );
+  object b = Standards.RDF();
+  b->add_statement( b->URIResource("http://a"),
+		    b->URIResource("http://b"),
+		    b->LiteralResource("x") );
+  object c = a|b;
+  return (multiset)(c->get_n_triples()/"\n");
+]], (< /* 5 elements */
+    "",
+    "<http://a> <http://b> \"x\" .",
+    "<http://a> <http://b> \"x\" .",
+>))
+
+test_any_equal([[
+  object a = Standards.RDF();
+  a->add_statement( a->URIResource("http://a"),
+		    a->URIResource("http://b"),
+		    a->LiteralResource("x") );
+  object b = Standards.RDF();
+  b->add_statement( b->URIResource("http://a"),
+		    b->URIResource("http://c"),
+		    b->LiteralResource("x") );
+  object c = a|b;
+  return (multiset)(c->get_n_triples()/"\n");
+]], (< /* 5 elements */
+    "",
+    "<http://a> <http://b> \"x\" .",
+    "<http://a> <http://c> \"x\" .",
+>))
+
+test_any_equal([[
+  object a = Standards.RDF();
+  a->add_statement( a->URIResource("http://a"),
+		    a->URIResource("http://b"),
+		    a->URIResource("http://c") );
+  object b = Standards.RDF();
+  b->add_statement( b->URIResource("http://a"),
+		    b->URIResource("http://b"),
+		    b->URIResource("http://c") );
+  object c = a|b;
+  return (multiset)(c->get_n_triples()/"\n");
+]], (< /* 5 elements */
+    "",
+    "<http://a> <http://b> <http://c> .",
+>))
+
 
 // - Standards.URI
 test_equal((string)Standards.URI("g:h",           "http://a/b/c/d;p?q"), "g:h")
