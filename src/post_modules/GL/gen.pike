@@ -95,9 +95,9 @@ array(string|array(string)) special_234(int mi, int mx, string ty, int|void a)
 
 array(string) gen_func(string name, string ty)
 {
-  string res="", got="", prot, vdec, vret, fu=name;
+  string res="", got="", prot, vdec, vret, vcast, fu=name;
   array novec, args=({}), argt=({});
-  int r234, argt_cut=-1, img_obj=0;
+  int r234, argt_cut=-1, img_obj=0, polya=-1;
   string rtypes;
 
   switch(ty[0]) {
@@ -110,6 +110,12 @@ array(string) gen_func(string name, string ty)
     prot=":int";
     vdec="INT32";
     vret="push_int";
+    break;
+  case 'S':
+    prot=":string";
+    vdec="const GLubyte *";
+    vret="push_text";
+    vcast="(char *)";
     break;
   default:
     error("%s: Unknown return type '%c'.", name, ty[0]);
@@ -144,6 +150,11 @@ array(string) gen_func(string name, string ty)
       res += "  float arg"+a+";\n";
       got += "  arg"+a+"=sp["+(a-1)+"-args].u.float_number;\n";
       a++;
+      break;
+    case 'Z':
+      argt += ({"float|int"});
+      args += ({ "sp["+(a-1)+"-args]" });
+      polya = (a++)-1;
       break;
     case '+':
       int mi, mx;
@@ -270,7 +281,24 @@ array(string) gen_func(string name, string ty)
   switch(r234)
   {
   case 0:
-    res += (vret?"  res=":"  ")+fu+"("+(args*",")+");\n";
+    if(polya<0)
+      res += (vret?"  res=":"  ")+fu+"("+(args*",")+");\n";
+    else
+      res += "  switch("+args[polya]+".type) {\n"+
+	Array.map(argt[polya]/"|", lambda(string t) 
+				   {
+				     array(string) a = copy_value(args);
+				     a[polya] += ".u";
+				     switch(t) {
+				     case "int":
+				       a[polya]+=".integer"; break;
+				     case "float":
+				       a[polya]+=".float_number"; break;
+				     }
+				     return "    case T_"+upper_case(t)+": "+
+				       (vret?"res=":"")+fu+t[0..0]+"("+
+				       (a*",")+"); break;\n";
+				   })*""+"  }\n";
     break;
   case 1:
     if(sizeof(rtypes)==1)
@@ -368,7 +396,7 @@ array(string) gen_func(string name, string ty)
     res += "  release_img(&img);\n";
   }
   res += "  pop_n_elems(args);\n";
-  res += (vret? "  "+vret+"(res);\n":/*"  push_int(0);\n"*/"");
+  res += (vret? "  "+vret+"("+(vcast||"")+"res);\n":/*"  push_int(0);\n"*/"");
   res += "}\n\n";
   return ({res,prot});
 }
