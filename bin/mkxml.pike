@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.10 2001/05/06 15:39:50 grubba Exp $ */
+/* $Id: mkxml.pike,v 1.11 2001/05/06 15:45:20 grubba Exp $ */
 
 import Stdio;
 import Array;
@@ -285,9 +285,9 @@ string fixdesc(string s,string prefix,string where)
 	 s+=htmlify(t)+make_nice_reference(u,prefix,u);
       t=v;
    }
-   if (search(s,"<ref")!=-1)
+   if (search(t,"<ref")!=-1)
    {
-      werror("%O\n",s);
+      werror("%O\n",t);
       error("buu\n");
    }
 
