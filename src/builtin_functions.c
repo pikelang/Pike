@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.438 2002/09/09 08:04:27 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.439 2002/09/21 16:29:43 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -8085,6 +8085,8 @@ void init_builtin_efuns(void)
 	   tFunc(tComplex,tVoid), OPT_SIDE_EFFECT);
   ADD_EFUN("_dump_backlog", f__dump_backlog,
 	   tFunc(tNone,tVoid), OPT_SIDE_EFFECT);
+  ADD_EFUN("_gdb_breakpoint", pike_gdb_breakpoint,
+	   tFunc(tVoid,tVoid), OPT_SIDE_EFFECT);
 #endif
 
   ADD_EFUN("_gc_status",f__gc_status,

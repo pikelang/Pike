@@ -31,6 +31,7 @@ EOF`
   if test x"$gdbarg" != x; then
     echo "$gdbarg" >> .gdbinit
   fi
+  echo break pike_gdb_breakpoint >> .gdbinit
   gdb "$BUILDDIR/pike"
   rm .gdbinit
   test -f .gdbinit.orig && mv .gdbinit.orig .gdbinit
