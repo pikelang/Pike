@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.288 2003/01/15 19:01:11 mast Exp $
+|| $Id: interpret.c,v 1.289 2003/01/17 16:43:01 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.288 2003/01/15 19:01:11 mast Exp $");
+RCSID("$Id: interpret.c,v 1.289 2003/01/17 16:43:01 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1872,6 +1872,23 @@ PMOD_EXPORT void apply_svalue(struct svalue *s, INT32 args)
       Pike_fatal("Stack underflow!\n");
 #endif
   }
+}
+
+/* Apply function @[fun] in parent @[depth] levels up with @[args] arguments.
+ */
+PMOD_EXPORT void apply_external(int depth, int fun, INT32 args)
+{
+  struct external_variable_context loc;
+
+  loc.o = Pike_fp->current_object;
+  if (!loc.o->prog)
+    Pike_error("Cannot access parent of destructed object.\n");
+  loc.parent_identifier = Pike_fp->fun;
+  loc.inherit = INHERIT_FROM_INT(loc.o->prog, Pike_fp->fun);
+
+  find_external_context(&loc, depth);
+
+  apply_low(loc.o, fun + loc.inherit->identifier_level, args);
 }
 
 #ifdef PIKE_DEBUG

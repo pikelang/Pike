@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.123 2003/01/15 21:37:16 mast Exp $
+|| $Id: interpret.h,v 1.124 2003/01/17 16:43:01 grubba Exp $
 */
 
 #ifndef INTERPRET_H
@@ -416,6 +416,7 @@ PMOD_EXPORT void apply_shared(struct object *o,
 		  int args);
 PMOD_EXPORT void apply(struct object *o, const char *fun, int args);
 PMOD_EXPORT void apply_svalue(struct svalue *s, INT32 args);
+PMOD_EXPORT void apply_external(int depth, int fun, INT32 args);
 PMOD_EXPORT void slow_check_stack(void);
 PMOD_EXPORT void custom_check_stack(ptrdiff_t amount, const char *fmt, ...)
   ATTRIBUTE((format (printf, 2, 3)));
