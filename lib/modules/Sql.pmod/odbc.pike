@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.pike,v 1.9 2001/10/03 11:46:59 grubba Exp $
+ * $Id: odbc.pike,v 1.10 2002/06/11 08:45:56 grubba Exp $
  *
  * Glue for the ODBC-module
  */
@@ -13,7 +13,7 @@ int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
 {  
   if (!bindings)
     return ::big_query(q);
-  return ::big_query(.sql_util.emulate_bindings(q,bindings));
+  return ::big_query(.sql_util.emulate_bindings(q, bindings, this_object()));
 }
 
 constant list_dbs = Odbc.list_dbs;

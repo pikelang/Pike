@@ -1,7 +1,7 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.16 2002/01/15 22:34:12 nilsson Exp $
+ * $Id: postgres.pike,v 1.17 2002/06/11 08:45:56 grubba Exp $
  *
  */
 
@@ -349,7 +349,7 @@ int|object big_query(object|string q, mapping(string|int:mixed)|void bindings)
 {  
   if (!bindings)
     return ::big_query(q);
-  return ::big_query(.sql_util.emulate_bindings(q,bindings));
+  return ::big_query(.sql_util.emulate_bindings(q, bindings, this_object()));
 }
 
 #else /* !constant(Postgres.postgres) */
