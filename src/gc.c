@@ -158,10 +158,6 @@ TYPE_T attempt_to_identify(void *something)
       return T_PROGRAM;
 
   for(m=first_mapping;m;m=m->next)
-    if(m==(struct program *)something)
-      return T_MAPPING;
-
-  for(m=first_mapping;m;m=m->next)
     if(m==(struct mapping *)something)
       return T_MAPPING;
 
@@ -188,6 +184,22 @@ void describe_location(void *memblock, TYPE_T type, void *location)
 
   switch(type)
   {
+    case T_PROGRAM:
+    {
+      struct program *p=(struct program *)memblock;
+      char *ptr=(char *)location;
+      if(ptr >= (char *)p->inherits  && ptr<(char*)(p->inherits+p->num_inherits))
+	fprintf(stderr,"**In inherit block.\n");
+
+      if(ptr >= (char *)p->strings  && ptr<(char*)(p->strings+p->num_strings))
+	fprintf(stderr,"**In string block.\n");
+
+      if(ptr >= (char *)p->identifiers  && ptr<(char*)(p->identifiers+p->num_identifiers))
+	fprintf(stderr,"**In identifier block.\n");
+      
+      return;
+    }
+    
     case T_OBJECT:
     {
       struct object *o=(struct object *)memblock;
@@ -258,6 +270,18 @@ void debug_gc_check_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void 
   gc_check_short_svalue(u,type);
   found_in_type=T_UNKNOWN;
   found_in=0;
+}
+
+
+int debug_gc_check(void *x, TYPE_T t, void *data)
+{
+  int ret;
+  found_in=data;
+  found_in_type=t;
+  ret=gc_check(x);
+  found_in_type=T_UNKNOWN;
+  found_in=0;
+  return ret;
 }
 
 void describe_something(void *a, int t)
