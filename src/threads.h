@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.117 2003/01/08 18:11:03 mast Exp $
+ * $Id: threads.h,v 1.118 2003/03/31 18:20:14 grubba Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -465,6 +465,7 @@ PMOD_EXPORT extern int t_flag;
        (_tmp)->swapped=1;					\
        DO_IF_PROFILING( (_tmp)->time_base += gethrtime() ; )	\
        SWAP_OUT_TRACE(_tmp);					\
+       Pike_interpreter.thread_id = (struct object *) (ptrdiff_t) -1;	\
       } while(0)
 
 #define SWAP_IN_THREAD(_tmp) do {					\
