@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.75 2000/04/20 14:03:52 grubba Exp $");
+RCSID("$Id: lex.c,v 1.76 2000/04/20 22:30:21 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -166,10 +166,6 @@ struct keyword instr_names[]=
 { "label",		F_LABEL,I_HASARG },
 { "align",		F_ALIGN, I_HASARG },
 { "call",		F_APPLY, I_HASARG },
-{ "++local and pop",	F_INC_LOCAL_AND_POP, I_HASARG },
-{ "local++",		F_POST_INC_LOCAL, I_HASARG },
-{ "--local and pop",	F_DEC_LOCAL_AND_POP, I_HASARG },
-{ "local--",		F_POST_DEC_LOCAL, I_HASARG },
 { "int index",          F_POS_INT_INDEX, I_HASARG },
 { "-int index",         F_NEG_INT_INDEX, I_HASARG },
 { "apply and pop",      F_APPLY_AND_POP, I_HASARG },

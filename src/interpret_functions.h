@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.13 2000/04/20 14:03:39 grubba Exp $
+ * $Id: interpret_functions.h,v 1.14 2000/04/20 22:30:08 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -394,30 +394,40 @@ OPCODE1(F_INC_LOCAL, "++local")
   }
 BREAK;
 
-      CASE(F_POST_INC_LOCAL);
-      instr=GET_ARG();
-      assign_svalue_no_free(Pike_sp++,Pike_fp->locals+instr);
-      goto inc_local_and_pop;
-
-      CASE(F_INC_LOCAL_AND_POP);
-      instr=GET_ARG();
-    inc_local_and_pop:
+OPCODE1(F_POST_INC_LOCAL, "local++")
+  assign_svalue_no_free(Pike_sp++, Pike_fp->locals + arg1);
+  if( (Pike_fp->locals[arg1].type == PIKE_T_INT)
 #ifdef AUTO_BIGNUM
-      if(Pike_fp->locals[instr].type == PIKE_T_INT &&
-         !INT_TYPE_ADD_OVERFLOW(Pike_fp->locals[instr].u.integer, 1))
-#else
-      if(Pike_fp->locals[instr].type == PIKE_T_INT)
+      && (!INT_TYPE_ADD_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
 #endif /* AUTO_BIGNUM */
-      {
-	Pike_fp->locals[instr].u.integer++;
-      }else{
-	assign_svalue_no_free(Pike_sp++,Pike_fp->locals+instr);
-	push_int(1);
-	f_add(2);
-	assign_svalue(Pike_fp->locals+instr,Pike_sp-1);
-	pop_stack();
-      }
-      break;
+      )
+  {
+    Pike_fp->locals[arg1].u.integer++;
+  } else {
+    assign_svalue_no_free(Pike_sp++, Pike_fp->locals + arg1);
+    push_int(1);
+    f_add(2);
+    assign_svalue(Pike_fp->locals + arg1, Pike_sp-1);
+    pop_stack();
+  }
+BREAK;
+
+OPCODE1(F_INC_LOCAL_AND_POP, "++local and pop")
+  if( (Pike_fp->locals[arg1].type == PIKE_T_INT)
+#ifdef AUTO_BIGNUM
+      && (!INT_TYPE_ADD_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
+#endif /* AUTO_BIGNUM */
+      )
+  {
+    Pike_fp->locals[arg1].u.integer++;
+  } else {
+    assign_svalue_no_free(Pike_sp++, Pike_fp->locals + arg1);
+    push_int(1);
+    f_add(2);
+    assign_svalue(Pike_fp->locals + arg1, Pike_sp-1);
+    pop_stack();
+  }
+BREAK;
 
 OPCODE1(F_DEC_LOCAL, "--local")
   instr = arg1;
@@ -437,32 +447,41 @@ OPCODE1(F_DEC_LOCAL, "--local")
   }
 BREAK;
 
-      CASE(F_POST_DEC_LOCAL);
-      instr=GET_ARG();
-      assign_svalue_no_free(Pike_sp++,Pike_fp->locals+instr);
-      goto dec_local_and_pop;
-      /* Pike_fp->locals[instr].u.integer--; */
-      break;
-
-      CASE(F_DEC_LOCAL_AND_POP);
-      instr=GET_ARG();
-    dec_local_and_pop:
+OPCODE1(F_POST_DEC_LOCAL, "local--")
+  assign_svalue_no_free(Pike_sp++, Pike_fp->locals + arg1);
+  if( (Pike_fp->locals[arg1].type == PIKE_T_INT)
 #ifdef AUTO_BIGNUM
-      if(Pike_fp->locals[instr].type == PIKE_T_INT &&
-         !INT_TYPE_SUB_OVERFLOW(Pike_fp->locals[instr].u.integer, 1))
-#else
-      if(Pike_fp->locals[instr].type == PIKE_T_INT)
+      && (!INT_TYPE_SUB_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
 #endif /* AUTO_BIGNUM */
-      {
-	Pike_fp->locals[instr].u.integer--;
-      }else{
-	assign_svalue_no_free(Pike_sp++,Pike_fp->locals+instr);
-	push_int(1);
-	o_subtract();
-	assign_svalue(Pike_fp->locals+instr,Pike_sp-1);
-	pop_stack();
-      }
-      break;
+      )
+  {
+    Pike_fp->locals[arg1].u.integer--;
+  } else {
+    assign_svalue_no_free(Pike_sp++, Pike_fp->locals + arg1);
+    push_int(1);
+    o_subtract();
+    assign_svalue(Pike_fp->locals + arg1, Pike_sp-1);
+    pop_stack();
+  }
+  /* Pike_fp->locals[instr].u.integer--; */
+BREAK;
+
+OPCODE1(F_DEC_LOCAL_AND_POP, "--local and pop")
+  if( (Pike_fp->locals[arg1].type == PIKE_T_INT)
+#ifdef AUTO_BIGNUM
+      && (!INT_TYPE_SUB_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
+#endif /* AUTO_BIGNUM */
+      )
+  {
+    Pike_fp->locals[arg1].u.integer--;
+  } else {
+    assign_svalue_no_free(Pike_sp++, Pike_fp->locals + arg1);
+    push_int(1);
+    o_subtract();
+    assign_svalue(Pike_fp->locals + arg1, Pike_sp-1);
+    pop_stack();
+  }
+BREAK;
 
 OPCODE0(F_LTOSVAL, "lvalue to svalue")
   lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2);
