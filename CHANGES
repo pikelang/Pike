@@ -84,7 +84,7 @@ o Iterators
     two functions, index() and value(), to get the index and value
     at the current position, a function `+=(int steps) to advance the
     current position the specified number of steps, and a `!() that
-    returns zero if the position hasn't reached the end of the data set.
+    returns zero if the end of the data set hasn't been reached yet.
 
     Also, if the object o lacks a _get_iterator function, it's assumed
     to be an iterator itself. This makes it possible to pass an
