@@ -618,6 +618,11 @@ SGML convert(SGML data)
 				Sgml.Tag("font",(["color":"#ffffff"]),0,
 					 cell->data),
 			      });
+			    }else{
+			      cell->data=({
+				Sgml.Tag("font",(["color":"#000000"]),0,
+					 cell->data),
+			      });
 			    }
 
 			    // This adds some extra space, needed because
