@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.469 2004/10/11 16:41:48 mast Exp $
+|| $Id: builtin_functions.c,v 1.470 2004/12/08 15:16:34 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.469 2004/10/11 16:41:48 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.470 2004/12/08 15:16:34 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4258,8 +4258,6 @@ PMOD_EXPORT void f_mktime (INT32 args)
 
   if(args == 1)
   {
-    MEMSET(&date, 0, sizeof(date));
-
     push_text("sec");
     push_text("min");
     push_text("hour");
@@ -4290,11 +4288,11 @@ PMOD_EXPORT void f_mktime (INT32 args)
 
   if (args > 6) {
     if (Pike_sp[6-args].type != T_INT) {
-      PIKE_ERROR("mktime", "Bad argument 6 (expected int).\n", Pike_sp, args);
+      PIKE_ERROR("mktime", "Bad argument 7 (expected int).\n", Pike_sp, args);
     }
     if (args > 7) {
       if (Pike_sp[7-args].type != T_INT) {
-	PIKE_ERROR("mktime", "Bad argument 7 (expected int).\n",
+	PIKE_ERROR("mktime", "Bad argument 8 (expected int).\n",
 		   Pike_sp, args);
       }
     }
@@ -4313,7 +4311,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
     /* UTC-relative time. Use my_timegm(). */
     retval = my_timegm(&date);
     if (retval == -1)
-      PIKE_ERROR("mktime", "Cannot convert.\n", Pike_sp, args);
+      PIKE_ERROR("mktime", "Time conversion failed.\n", Pike_sp, args);
     retval += Pike_sp[7-args].u.integer;
   } else {
 #endif /* HAVE_GMTIME */
@@ -8059,7 +8057,8 @@ void init_builtin_efuns(void)
   
 /* function(int,int,int,int,int,int,int,void|int:int)|function(object|mapping:int) */
   ADD_EFUN("mktime",f_mktime,
-	   tOr(tFunc(tInt tInt tInt tInt tInt tInt tInt tOr(tVoid,tInt),tInt),
+	   tOr(tFunc(tInt tInt tInt tInt tInt tInt
+		     tOr(tVoid,tInt) tOr(tVoid,tInt),tInt),
 	       tFunc(tOr(tObj,tMapping),tInt)),OPT_TRY_OPTIMIZE);
 #endif
 
