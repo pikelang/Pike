@@ -1,4 +1,4 @@
-// $Id: module.pmod.in,v 1.4 2002/11/25 01:54:00 nilsson Exp $
+// $Id: module.pmod.in,v 1.5 2002/11/25 11:18:14 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit @module@;
@@ -25,7 +25,7 @@ class File {
   //! mode for the file. Defaults to "rb".
   //! @seealso
   //!   @[open] @[Stdio.File]
-  void create(mixed ... args) {
+  static void create(mixed ... args) {
     ::create();
 
     if(sizeof(args)) {
@@ -33,7 +33,7 @@ class File {
     }
   }
 
-  string _sprintf(int t)
+  static string _sprintf(int t)
   {
     switch(t) {
     case 'O':
@@ -41,7 +41,7 @@ class File {
     case 't':
       return "Gz.File";
     default:
-      return "";
+      return UNDEFINED;
     }
   }
 
@@ -51,7 +51,7 @@ class File {
     return ::close();
   }
 
-  void destroy() {
+  static void destroy() {
     close();
   }
 
