@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.360 2002/05/02 14:48:00 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.361 2002/07/22 17:56:03 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1407,17 +1407,18 @@ PMOD_EXPORT void f_zero_type(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("zero_type",1);
 
-  if(Pike_sp[-args].type != T_INT)
-  {
-    pop_n_elems(args);
-    push_int(0);
-  }
-  else if((Pike_sp[-args].type==T_OBJECT || Pike_sp[-args].type==T_FUNCTION)
+  if((Pike_sp[-args].type==T_OBJECT || Pike_sp[-args].type==T_FUNCTION)
 	   && !Pike_sp[-args].u.object->prog)
   {
     pop_n_elems(args);
     push_int(NUMBER_DESTRUCTED);
   }
+  else if(Pike_sp[-args].type != T_INT)
+  {
+    pop_n_elems(args);
+    push_int(0);
+  }
+  else
   {
     pop_n_elems(args-1);
     Pike_sp[-1].u.integer=Pike_sp[-1].subtype;
