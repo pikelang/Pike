@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.13 2001/01/10 23:44:13 mirar Exp $
+// $Id: TimeRanges.pmod,v 1.14 2001/04/20 17:26:45 mirar Exp $
 
 #pike __REAL_VERSION__
 
@@ -514,6 +514,15 @@ class TimeRange
 //!  |----B----|              A succeeds B
 //!
 //!  </pre>
+//!
+//! note:
+//!	These methods only check the range of the first to the 
+//!	last time in the period;
+//!	use of combined time periods (<ref>SuperTimeRange</ref>s)
+//!	might not give you the result you want. 
+//!
+//! see also: `&
+
 
 //- internal method 
 //- returns [-1,0,1] for comparison between
