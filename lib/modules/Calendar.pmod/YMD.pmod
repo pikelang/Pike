@@ -2496,9 +2496,10 @@ TimeRange parse(string fmt,string arg)
       return 0; // parse error
 
    mapping m=mkmapping(q,res);
-   if (i!=-1 && m->z!="") return 0; 
+   if (i!=-1 && m->n!="") return 0; 
 
 //     werror("bopa %O\n %O\n %O\n %O\n",fmt,arg,nfmt,m);
+
 
    TimeRange low;
 
