@@ -1,19 +1,21 @@
 //
-// $Id: PGP.pmod,v 1.5 2003/12/14 02:31:38 nilsson Exp $
+// $Id: PGP.pmod,v 1.6 2004/01/18 04:38:18 nilsson Exp $
+
+//! PGP stuff. See RFC 2440.
 
 #pike __REAL_VERSION__
 
 #if constant(Crypto.HashState)
 
-//! Decodes a PGP public key.
-//! @returns
-//!   @mapping
-//!     @member int version
-//!     @member int tstamp
-//!     @member int validity
-//!     @member object key
-//!   @endmapping
-mapping decode_public_key(string s) {
+// Decodes a PGP public key.
+// @returns
+//   @mapping
+//     @member int version
+//     @member int tstamp
+//     @member int validity
+//     @member object key
+//   @endmapping
+static mapping decode_public_key(string s) {
 
   mapping r = ([]);
   string key;
@@ -83,23 +85,23 @@ mapping decode_public_key(string s) {
   return r;
 }
 
-//! Decodes a PGP signature
-//! @returns
-//!   @mapping
-//!     @member int version
-//!     @member int classification
-//!     @member int tstamp
-//!     @member string key_id
-//!     @member int type
-//!     @member int digest_algorithm
-//!     @member int md_csum
-//!
-//!     @member Gmp.mpz digest
-//!
-//!     @member Gmp.mpz digest_r
-//!     @member Gmp.mpz digest_s
-//!   @endmapping
-mapping decode_signature(string s) {
+// Decodes a PGP signature
+// @returns
+//   @mapping
+//     @member int version
+//     @member int classification
+//     @member int tstamp
+//     @member string key_id
+//     @member int type
+//     @member int digest_algorithm
+//     @member int md_csum
+//
+//     @member Gmp.mpz digest
+//
+//     @member Gmp.mpz digest_r
+//     @member Gmp.mpz digest_s
+//   @endmapping
+static mapping decode_signature(string s) {
 
   mapping r = ([]);
   int l5, l;
@@ -118,6 +120,24 @@ mapping decode_signature(string s) {
     r->digest_s = Gmp.mpz(dig[..l-1],256);
   }
   return r;
+}
+
+static mapping decode_compressed(string s) {
+  error("Can't decompress.\n");
+  int type = s[0];
+  s = s[1..];
+  switch(type) {
+  case 1:
+    // ZIP
+    error("Don't know how to decompress ZIP.\n");
+  case 2:
+    // ZLIB
+    error("Don't know how to decompress ZLIB.\n");
+    // Perhaps like this?
+    return decode( Gz.inflate()->inflate(s) );
+  default:
+    return ([ "type":type, "data":s ]);
+  }
 }
 
 static constant pgp_id = ([
@@ -144,8 +164,10 @@ static mapping(string:function) pgp_decoder = ([
   "public_key":decode_public_key,
   "public_subkey":decode_public_key,
   "signature":decode_signature,
+  "compressed_data":decode_compressed,
 ]);
 
+//! Decodes PGP data.
 mapping(string:string|mapping) decode(string s) {
 
   mapping(string:string|mapping) r = ([]);
@@ -182,7 +204,7 @@ mapping(string:string|mapping) decode(string s) {
   return r;
 }
 
-int(0..1) verify(Crypto.HashState hash, mapping sig, mapping key) {
+static int(0..1) verify(Crypto.HashState hash, mapping sig, mapping key) {
 
   if(!objectp(hash) || !mappingp(sig) || !mappingp(key) || !key->key)
     return 0;
@@ -208,36 +230,53 @@ int(0..1) verify(Crypto.HashState hash, mapping sig, mapping key) {
 }
 
 
-static int verify_signature(string text, string sig, string pubkey)
+int verify_signature(string text, string sig, string pubkey)
 {
-  catch {
-    mapping signt = decode(sig)->signature;
-    object hash;
-    if(signt->digest_algorithm == 2)
-      hash = Crypto.SHA();
-    else
-      hash = Crypto.MD5();
-    hash->update(text);
-    return verify(hash, signt,
-		  decode(pubkey)->public_key);
-  };
-  return 0;
+  mapping signt = decode(sig)->signature;
+  object hash;
+  if(signt->digest_algorithm == 2)
+    hash = Crypto.SHA();
+  else
+    hash = Crypto.MD5();
+  hash->update(text);
+  return verify(hash, signt,
+		decode(pubkey)->public_key);
 }
 
-#if 0
+
 static int crc24(string data) {
   int crc = 0xb704ce;
   foreach(data; int pos; int char) {
     crc ^= char<<16;
     for(int i; i<8; i++) {
-      crc ^= 1;
+      crc <<= 1;
       if(crc & 0x1000000)
-	crc ^= 0x1864cf;
+	crc ^= 0x864cfb;
     }
   }
   return crc & 0xffffff;
 }
-#endif
+
+// PGP MESSAGE
+// PGP SIGNED MESSAGE
+// PGP PUBLIC KEY BLOCK
+// PGP PRIVATE KEY BLOCK
+// PGP SIGNATURE
+string encode_radix64(string data, string type,
+		      void|mapping(string:string) extra) {
+  string ret = "-----BEGIN " + type + "-----\n";
+  if(!extra) extra = ([]);
+  if(!extra->Version)
+    extra->Version = "Pike " + __REAL_MAJOR__ + "." +
+      __REAL_MINOR__ + "." + __REAL_BUILD__;
+  foreach(extra; string key; string value)
+    ret += key + ": " + value + "\n";
+  ret += "\n";
+  ret += (MIME.encode_base64(data,1)/64.0)*"\n" + "\n";
+  ret += "=" + MIME.encode_base64(sprintf("%3c",crc24(data))) + "\n";
+  ret += "-----END " + type + "-----\n";
+  return ret;
+}
 
 mapping(string:mixed) decode_radix64(string data) {
   mapping ret = ([]);
@@ -273,6 +312,7 @@ mapping(string:mixed) decode_radix64(string data) {
   }
 
   ret->data = MIME.decode_base64(lines*"\n");
+  ret->actual_checksum = crc24(ret->data);
   return ret;
 }
 
