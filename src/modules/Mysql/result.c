@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.1 1997/02/11 08:36:35 hubbe Exp $
+ * $Id: result.c,v 1.2 1997/03/09 13:46:52 grubba Exp $
  *
  * mysql query result
  *
@@ -74,7 +74,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.1 1997/02/11 08:36:35 hubbe Exp $");
+RCSID("$Id: result.c,v 1.2 1997/03/09 13:46:52 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -417,19 +417,19 @@ void init_mysql_res_programs(void)
   start_new_program();
   add_storage(sizeof(struct precompiled_mysql_result));
 
-  add_function("create", f_create, "function(object:void)", OPT_SIDE_EFFECT);
-  add_function("num_rows", f_num_rows, "function(void:int)", OPT_EXTERNAL_DEPEND);
-  add_function("num_fields", f_num_fields, "function(void:int)", OPT_EXTERNAL_DEPEND);
+  add_function("create", f_create, "function(object:void)", ID_PUBLIC);
+  add_function("num_rows", f_num_rows, "function(void:int)", ID_PUBLIC);
+  add_function("num_fields", f_num_fields, "function(void:int)", ID_PUBLIC);
 #ifdef SUPPORT_FIELD_SEEK
-  add_function("field_seek", f_field_seek, "function(int:void)", OPT_SIDE_EFFECT);
+  add_function("field_seek", f_field_seek, "function(int:void)", ID_PUBLIC);
 #endif /* SUPPORT_FIELD_SEEK */
-  add_function("eof", f_eof, "function(void:int)", OPT_EXTERNAL_DEPEND);
+  add_function("eof", f_eof, "function(void:int)", ID_PUBLIC);
 #ifdef SUPPORT_FIELD_SEEK
-  add_function("fetch_field", f_fetch_field, "function(void:int|mapping(string:mixed))", OPT_EXTERNAL_DEPEND);
+  add_function("fetch_field", f_fetch_field, "function(void:int|mapping(string:mixed))", ID_PUBLIC);
 #endif /* SUPPORT_FIELD_SEEK */
-  add_function("fetch_fields", f_fetch_fields, "function(void:array(int|mapping(string:mixed)))", OPT_EXTERNAL_DEPEND);
-  add_function("seek", f_seek, "function(int:void)", OPT_SIDE_EFFECT);
-  add_function("fetch_row", f_fetch_row, "function(void:int|array(string|int|float))", OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+  add_function("fetch_fields", f_fetch_fields, "function(void:array(int|mapping(string:mixed)))", ID_PUBLIC);
+  add_function("seek", f_seek, "function(int:void)", ID_PUBLIC);
+  add_function("fetch_row", f_fetch_row, "function(void:int|array(string|int|float))", ID_PUBLIC);
 
   set_init_callback(init_res_struct);
   set_exit_callback(exit_res_struct);

@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.1 1997/02/11 08:36:34 hubbe Exp $
+ * $Id: mysql.c,v 1.2 1997/03/09 13:46:51 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -51,8 +51,8 @@ typedef struct dynamic_buffer_s dynamic_buffer;
 #include <interpret.h>
 #include <port.h>
 #include <error.h>
-#include <las.h>
 #include <threads.h>
+#include <program.h>
 
 /* System includes */
 #ifdef HAVE_STRING_H
@@ -71,7 +71,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.1 1997/02/11 08:36:34 hubbe Exp $");
+RCSID("$Id: mysql.c,v 1.2 1997/03/09 13:46:51 grubba Exp $");
 
 struct program *mysql_program = NULL;
 
@@ -661,26 +661,26 @@ void pike_module_init(void)
   start_new_program();
   add_storage(sizeof(struct precompiled_mysql));
 
-  add_function("error", f_error, "function(void:int|string)", OPT_EXTERNAL_DEPEND);
-  add_function("create", f_create, "function(string|void, string|void, string|void, string|void:void)", OPT_SIDE_EFFECT);
-  add_function("affected_rows", f_affected_rows, "function(void:int)", OPT_EXTERNAL_DEPEND);
-  add_function("insert_id", f_insert_id, "function(void:int)", OPT_EXTERNAL_DEPEND);
-  add_function("select_db", f_select_db, "function(string:void)", OPT_SIDE_EFFECT);
-  add_function("big_query", f_big_query, "function(string:int|object)", OPT_EXTERNAL_DEPEND);
-  add_function("create_db", f_create_db, "function(string:void)", OPT_SIDE_EFFECT);
-  add_function("drop_db", f_drop_db, "function(string:void)", OPT_SIDE_EFFECT);
-  add_function("shutdown", f_shutdown, "function(void:void)", OPT_SIDE_EFFECT);
-  add_function("reload", f_reload, "function(void:void)", OPT_SIDE_EFFECT);
-  add_function("statistics", f_statistics, "function(void:string)", OPT_EXTERNAL_DEPEND);
-  add_function("server_info", f_server_info, "function(void:string)", OPT_EXTERNAL_DEPEND);
-  add_function("host_info", f_host_info, "function(void:string)", OPT_EXTERNAL_DEPEND);
-  add_function("protocol_info", f_protocol_info, "function(void:int)", OPT_EXTERNAL_DEPEND);
-  add_function("list_dbs", f_list_dbs, "function(void|string:object)", OPT_EXTERNAL_DEPEND);
-  add_function("list_tables", f_list_tables, "function(void|string:object)", OPT_EXTERNAL_DEPEND);
-  add_function("list_fields", f_list_fields, "function(string, void|string:array(int|mapping(string:mixed)))", OPT_EXTERNAL_DEPEND);
-  add_function("list_processes", f_list_processes, "function(void|string:object)", OPT_EXTERNAL_DEPEND);
+  add_function("error", f_error, "function(void:int|string)", ID_PUBLIC);
+  add_function("create", f_create, "function(string|void, string|void, string|void, string|void:void)", ID_PUBLIC);
+  add_function("affected_rows", f_affected_rows, "function(void:int)", ID_PUBLIC);
+  add_function("insert_id", f_insert_id, "function(void:int)", ID_PUBLIC);
+  add_function("select_db", f_select_db, "function(string:void)", ID_PUBLIC);
+  add_function("big_query", f_big_query, "function(string:int|object)", ID_PUBLIC);
+  add_function("create_db", f_create_db, "function(string:void)", ID_PUBLIC);
+  add_function("drop_db", f_drop_db, "function(string:void)", ID_PUBLIC);
+  add_function("shutdown", f_shutdown, "function(void:void)", ID_PUBLIC);
+  add_function("reload", f_reload, "function(void:void)", ID_PUBLIC);
+  add_function("statistics", f_statistics, "function(void:string)", ID_PUBLIC);
+  add_function("server_info", f_server_info, "function(void:string)", ID_PUBLIC);
+  add_function("host_info", f_host_info, "function(void:string)", ID_PUBLIC);
+  add_function("protocol_info", f_protocol_info, "function(void:int)", ID_PUBLIC);
+  add_function("list_dbs", f_list_dbs, "function(void|string:object)", ID_PUBLIC);
+  add_function("list_tables", f_list_tables, "function(void|string:object)", ID_PUBLIC);
+  add_function("list_fields", f_list_fields, "function(string, void|string:array(int|mapping(string:mixed)))", ID_PUBLIC);
+  add_function("list_processes", f_list_processes, "function(void|string:object)", ID_PUBLIC);
 
-  add_function("binary_data", f_binary_data, "function(void:int)", OPT_TRY_OPTIMIZE);
+  add_function("binary_data", f_binary_data, "function(void:int)", ID_PUBLIC);
 
   set_init_callback(init_mysql_struct);
   set_exit_callback(exit_mysql_struct);
