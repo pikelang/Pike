@@ -27,19 +27,7 @@
 #include <math.h>
 #include <fcntl.h>
 #include <errno.h>
-
-#if TIME_WITH_SYS_TIME
-# include <sys/time.h>
-# include <time.h>
-#else
-# if HAVE_SYS_TIME_H
-#  include <sys/time.h>
-# else
-#  if HAVE_TIME_H
-#   include <time.h>
-#  endif
-# endif
-#endif
+#include "time_stuff.h"
 
 #define LEXDEBUG 0
 #define EXPANDMAX 50000
@@ -968,7 +956,7 @@ static int expand_define(struct lpc_string *s, int save_newline)
 
 /*** Handle include ****/
 
-static void handle_include(char *name)
+static void handle_include(char *name, int local_include)
 {
   int fd;
   char buf[400];
@@ -976,6 +964,7 @@ static void handle_include(char *name)
   push_string(make_shared_string(name));
   push_string(current_file);
   reference_shared_string(current_file);
+  push_int(local_include);
 
   SAFE_APPLY_MASTER("handle_include",2);
 
@@ -1243,7 +1232,7 @@ static int do_lex2(int literal, YYSTYPE *yylval)
 		continue;
 	      }
 	    }
-	    handle_include(buf);
+	    handle_include(buf, c==F_STRING);
 	    break;
 	  }
 
