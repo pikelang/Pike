@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.4 1999/06/11 20:26:15 marcus Exp $
+ * $Id: jvm.c,v 1.5 1999/06/11 21:03:19 marcus Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -16,7 +16,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.4 1999/06/11 20:26:15 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.5 1999/06/11 21:03:19 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -2707,16 +2707,44 @@ void pike_module_init(void)
   prog.subtype = 0;
 
 #ifdef __NT__
-  if((jvmdll=LoadLibrary("jvm"))==NULL)
-    return;
-  else {
-    FARPROC proc;
-    if(proc=GetProcAddress(jvmdll, "JNI_CreateJavaVM"))
-      JNI_CreateJavaVM = (createjavavmtype)proc;
-    else {
-      if(FreeLibrary(jvmdll))
-	jvmdll = NULL;
+  {
+    char *libname="jvm";
+    LPCSTR keyname=(LPCSTR)"SOFTWARE\\JavaSoft\\Java Runtime Environment\\1.2";
+    HKEY key;
+    char buffer[2*MAX_PATH+32];
+    DWORD type, len = sizeof(buffer)-1;
+
+    if(RegOpenKeyEx(HKEY_CURRENT_USER, keyname, 0,
+		    KEY_READ, &key) == ERROR_SUCCESS ||
+       RegOpenKeyEx(HKEY_LOCAL_MACHINE, keyname, 0,
+		    KEY_READ, &key) == ERROR_SUCCESS) {
+      if(ERROR_SUCCESS == RegQueryValueEx(key, "RuntimeLib", 0, &type,
+					  buffer, &len))
+	switch(type) {
+	case REG_SZ:
+	  libname = buffer;
+	  break;
+	case REG_EXPAND_SZ:
+	  type = ExpandEnvironmentStrings((LPCTSTR)buffer,
+					  buffer+len,
+					  sizeof(buffer)-len-1);
+	  if(type && type<=sizeof(buffer)-len-1)
+	    libname = buffer+len;
+	  break;
+	}
+      RegCloseKey(key);
+    }
+    if((jvmdll=LoadLibrary(libname))==NULL)
       return;
+    else {
+      FARPROC proc;
+      if(proc=GetProcAddress(jvmdll, "JNI_CreateJavaVM"))
+	JNI_CreateJavaVM = (createjavavmtype)proc;
+      else {
+	if(FreeLibrary(jvmdll))
+	  jvmdll = NULL;
+	return;
+      }
     }
   }
 #endif /* __NT__ */
