@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.53 1999/10/26 03:35:30 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.54 1999/10/29 00:09:04 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -45,7 +45,7 @@ char *type_name[] = {
 void really_free_short_svalue(union anything *s, TYPE_T type)
 {
   union anything tmp=*s;
-  s->refs=0;
+  s->refs=0; /* Prevent cyclic calls */
   switch(type)
   {
     case T_ARRAY:
@@ -158,7 +158,14 @@ void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint LINE_ARGS)
   case BIT_FLOAT | BIT_INT:
     return;
 
-#define DOTYPE(X,Y,Z) case X:while(--num>=0) { DO_IF_DMALLOC(debug_malloc_update_location(s->u.Z, file, line)); Y(s->u.Z); s++; }return
+#define DOTYPE(X,Y,Z) case X:						\
+   while(--num>=0) {							\
+    DO_IF_DMALLOC(debug_malloc_update_location(s->u.Z, file, line));	\
+    Y(s->u.Z);								\
+    DO_IF_DMALLOC(s->u.Z=0);						\
+    s++;								\
+   }return
+
     DOTYPE(BIT_STRING, free_string, string);
     DOTYPE(BIT_ARRAY, free_array, array);
     DOTYPE(BIT_MAPPING, free_mapping, mapping);
@@ -194,6 +201,7 @@ void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint LINE_ARGS)
       if(--s->u.refs[0]<=0)
       {
 	really_free_svalue(s);
+	DO_IF_DMALLOC(s->u.refs=0);
       }
       s++;
     }
@@ -211,6 +219,7 @@ void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint LINE_ARGS)
 	  really_free_callable(s->u.efun);
 	else
 	  really_free_object(s->u.object);
+	DO_IF_DMALLOC(s->u.refs=0);
       }
       s++;
     }
