@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.551 2004/05/12 23:16:16 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.552 2004/05/13 00:06:31 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.551 2004/05/12 23:16:16 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.552 2004/05/13 00:06:31 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1970,23 +1970,16 @@ PMOD_EXPORT void f_allocate(INT32 args)
 {
   INT32 size;
   struct array *a;
+  struct svalue *init;
 
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("allocate",1);
+  get_all_args("allocate", args, "%+.%*", &size, &init);
 
-  if(Pike_sp[-args].type!=T_INT)
-    SIMPLE_BAD_ARG_ERROR("allocate",1,"int");
-
-  size=Pike_sp[-args].u.integer;
-  if(size < 0)
-    PIKE_ERROR("allocate", "Can't allocate array of negative size.\n", Pike_sp, args);
   a=allocate_array(size);
   if(args>1)
   {
     INT32 e;
-    struct svalue *init = Pike_sp - args + 1;
     push_array (a);
-    for(e=0;e<a->size;e++)
+    for(e=0;e<size;e++)
       copy_svalues_recursively_no_free(a->item+e, init, 1, 0);
     a->type_field = 1 << init->type;
     stack_pop_n_elems_keep_top (args);
