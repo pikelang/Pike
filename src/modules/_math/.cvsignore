@@ -1,5 +1,6 @@
 .pure
 Makefile
+config.h.in
 config.log
 config.status
 configure
@@ -10,3 +11,4 @@ modlist_segment
 module.pmod
 module_testsuite
 stamp-h
+stamp-h.in

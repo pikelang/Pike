@@ -1,5 +1,6 @@
 /.pure
 /Makefile
+/config.h.in
 /config.log
 /config.status
 /configure
@@ -9,3 +10,4 @@
 /modlist_segment
 /module_testsuite
 /stamp-h
+/stamp-h.in
