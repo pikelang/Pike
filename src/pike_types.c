@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.122 2000/02/15 22:06:19 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.123 2000/02/29 22:57:46 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -3163,6 +3163,10 @@ struct pike_string *zzap_function_return(char *a, INT32 id)
 
     case T_ARRAY:
       return zzap_function_return(a+1,id);
+
+    case T_MIXED:
+      /* I wonder when this occurrs, but apparently it does... */
+      return zzap_function_return(tFuncV(tVoid,tOr(tMix,tVoid),tObj), id);
   }
 /* This error is bogus /Hubbe
   fatal("zzap_function_return() called with unexpected value: %d\n",
@@ -3304,6 +3308,7 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
       if((tmp=zzap_function_return(a, s->u.program->id)))
 	return tmp;
       tmp=describe_type(ID_FROM_INT(s->u.program, id)->type);
+      /* yywarning("Failed to zzap function return for type: %s.", tmp->str);*/
       free_string(tmp);
     }
 
