@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.68 2004/09/29 19:58:56 grubba Exp $
+|| $Id: xml.c,v 1.69 2004/11/15 18:08:22 mast Exp $
 */
 
 #include "global.h"
@@ -64,8 +64,12 @@ struct xmlobj
   struct mapping *entities;
   struct mapping *attributes;
   struct mapping *is_cdata;
-  INT_TYPE rxml_mode;
+  int flags;
 };
+
+/* Flag bits. */
+#define ALLOW_RXML_ENTITIES 0x01
+#define COMPAT_ALLOW_7_2_ERRORS 0x02
 
 
 static struct svalue location_string_svalue;
@@ -745,7 +749,8 @@ static int low_parse_xml(struct xmldata *data,
 static void xmlerror(char *desc, struct xmldata *data,
 		     struct pike_string *tag_name);
 
-#define XMLERROR(desc) xmlerror(desc,data,NULL)
+#define XMLERROR(desc) do {xmlerror(desc,data,NULL); READ (1);} while (0)
+#define XMLERROR_STAY(desc) xmlerror(desc,data,NULL)
 
 #define VOIDIFY(X) do { struct svalue *save_sp=sp; 	\
        X;						\
@@ -986,7 +991,7 @@ static int gobble(struct xmldata *data, char *s)
     READ_CHAR_REF(X);							    \
   }else{                                                                    \
     int found_period = 0;                                                   \
-    if (THIS->rxml_mode) {                                                  \
+    if (THIS->flags & ALLOW_RXML_ENTITIES) {				    \
       found_period = SIMPLE_READNAME_PERIOD();                              \
     } else {                                                                \
       SIMPLE_READNAME();                                                    \
@@ -1156,7 +1161,6 @@ static void xmlerror(char *desc, struct xmldata *data,
   push_text(desc);
   low_sys(data);
   pop_stack();
-  READ(1);
 }
 
 static int read_smeg_pereference(struct xmldata *data)
@@ -2336,7 +2340,15 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 					      struct string_builder *text,
 					      int keepspaces)
 {
-  int done=0;
+  int done=0, got_element = 0;
+
+#define CHECK_TOPLEVEL_EPILOG do {					\
+    if (toplevel && got_element &&					\
+	!(THIS->flags & COMPAT_ALLOW_7_2_ERRORS)) {			\
+      XMLERROR_STAY ("All data must be in one top-level tag.\n");	\
+    }									\
+  } while (0)
+
   while(!done && !XMLEOF())
   {
     switch(PEEK(0))
@@ -2386,6 +2398,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	switch(PEEK(1))
 	{
 	  case '?': /* Ends with ?> */
+	    CHECK_TOPLEVEL_EPILOG;
 	    if(PEEK(2)=='x' &&
 	       PEEK(3)=='m' &&
 	       PEEK(4)=='l' &&
@@ -2462,6 +2475,12 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		   PEEK(8)=='[')
 		{
 		  READ(9);
+
+		  /* Shouldn't be allowed before the element either,
+		   * but we don't complain about that for
+		   * compatibility. */
+		  CHECK_TOPLEVEL_EPILOG;
+
 		  push_constant_text("<![CDATA[");
 		  push_int(0);
 		  push_int(0);
@@ -2505,6 +2524,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		  XMLERROR("Expected 'DOCTYPE', got something else.");
 		}else{
 		  READ(9);
+		  CHECK_TOPLEVEL_EPILOG;
 		  SKIPSPACE();
 		  push_constant_text("<!DOCTYPE");
 		  SIMPLE_READNAME(); /* NAME */
@@ -2597,6 +2617,8 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 
 	  default:
 	    /* 'Normal' tag (we hope) */
+	    CHECK_TOPLEVEL_EPILOG;
+
 	    push_constant_text(">"); 
 
 	    READ(1);
@@ -2663,6 +2685,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		  xmlerror("Unmatched tag.", data, sp[-3].u.string);
 		}
 		SYS();
+		got_element = 1;
 		break;
 
 	      case '/':
@@ -2670,22 +2693,16 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		if(PEEK(0)!='>')
 		  xmlerror("Missing '>' in empty tag.", data,
 			   sp[-2].u.string);
-		READ(1);
+		else
+		  READ(1);
 		/* Self-contained tag */
 		free_string(sp[-3].u.string);
 		sp[-3].u.string=make_shared_string("<>");
 		push_int(0); /* No data */
 		SYS();
+		got_element = 1;
 		break;
 		
-	    }
-
-	    if(toplevel)
-	    {
-	      done=1;
-	      SKIPSPACE();
-	      if(!XMLEOF())
-		XMLERROR("All data must be in one top-level tag.\n");
 	    }
 	}
     }
@@ -2716,7 +2733,11 @@ static int low_parse_xml(struct xmldata *data,
 /*! @module spider
  */
 
-/*! @decl array parse_xml(string xml, function cb)
+/*! @class XML
+ *! @appears Parser.XML.Simple
+ */
+
+/*! @decl array parse(string xml, function cb)
  */
 static void parse_xml(INT32 args)
 {
@@ -2787,10 +2808,6 @@ static void free_xmldata(struct xmldata *data)
     
 }
 
-/*! @class XML
- *! @appears Parser.XML.Simple
- */
-
 /*! @decl void define_entity_raw(string entity, string raw)
  */
 static void define_entity_raw(INT32 args)
@@ -2850,7 +2867,45 @@ static void define_entity(INT32 args)
 static void allow_rxml_entities(INT32 args)
 {
   check_all_args("XML->allow_rxml_entities", args, BIT_INT, 0);
-  THIS->rxml_mode = !!sp[-args].u.integer;
+  if (UNSAFE_IS_ZERO (sp - args))
+    THIS->flags &= ~ALLOW_RXML_ENTITIES;
+  else
+    THIS->flags |= ALLOW_RXML_ENTITIES;
+  pop_n_elems(args);
+  push_int(0);
+}
+
+/*! @decl void compat_allow_errors(string version)
+ *!
+ *! Set whether the parser should allow certain errors for
+ *! compatibility with earlier versions. @[version] can be:
+ *!
+ *! @string
+ *!   @value "7.2"
+ *!     Allow more data after the toplevel element.
+ *! @endstring
+ *!
+ *! @[version] can also be zero to enable all error checks.
+ */
+static void compat_allow_errors(INT32 args)
+{
+  if (args < 1)
+    SIMPLE_TOO_FEW_ARGS_ERROR ("XML->compat_allow_errors", 1);
+
+  if (UNSAFE_IS_ZERO (sp - args))
+    THIS->flags &= ~COMPAT_ALLOW_7_2_ERRORS;
+
+  else {
+    struct pike_string *str_7_2;
+    MAKE_CONST_STRING (str_7_2, "7.2");
+    if (sp[-args].type != T_STRING)
+      SIMPLE_BAD_ARG_ERROR ("XML->compat_allow_errors", 1, "string");
+    if (sp[-args].u.string == str_7_2)
+      THIS->flags |= COMPAT_ALLOW_7_2_ERRORS;
+    else
+      Pike_error ("Got unknown version string.\n");
+  }
+
   pop_n_elems(args);
   push_int(0);
 }
@@ -3122,6 +3177,8 @@ static void init_xml_struct(struct object *o)
   THIS->is_cdata=sp[-1].u.mapping;
   sp--;
   dmalloc_touch_svalue(sp);
+
+  THIS->flags = 0;
 }
 
 /*! @endclass
@@ -3145,8 +3202,6 @@ void init_xml(void)
 	       off + OFFSETOF(xmlobj, attributes),T_MAPPING);
   map_variable("__is_cdata", "mapping", ID_STATIC|ID_PRIVATE,
 	       off + OFFSETOF(xmlobj, is_cdata),T_MAPPING);
-  map_variable("__allow_rxml_entities", "int", ID_STATIC|ID_PRIVATE,
-	       off + OFFSETOF(xmlobj, rxml_mode), T_INT);
 
   set_init_callback(init_xml_struct);
 
@@ -3174,6 +3229,7 @@ void init_xml(void)
   ADD_FUNCTION("define_entity",define_entity,tFuncV(tStr tStr tMix,tMix,tVoid),0);
   ADD_FUNCTION("allow_rxml_entities", allow_rxml_entities,
 	       tFunc(tInt, tVoid), 0);
+  ADD_FUNCTION("compat_allow_errors", compat_allow_errors, tFunc(tInt, tVoid), 0);
   end_class("XML",0);
 
   ADD_FUNCTION("isbasechar",f_isBaseChar,tFunc(tInt,tInt),0);
