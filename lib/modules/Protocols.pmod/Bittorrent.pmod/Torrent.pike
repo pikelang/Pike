@@ -61,7 +61,7 @@
 
 import .Bencoding;
 
-constant cvsid="$Id: Torrent.pike,v 1.19 2003/12/17 22:31:38 mirar Exp $";
+constant cvsid="$Id: Torrent.pike,v 1.20 2003/12/22 00:20:09 mbaehr Exp $";
 
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 
@@ -137,8 +137,17 @@ void load_metainfo(string filename)
    if (!s)
       error("Failed to read metainfo file %O: %s\n",
 	    filename,strerror(errno()));
+   mixed err=catch {
+     decode_metainfo(s);
+   };
+   if (!err) return;
 
+   err[0]=sprintf("Failed to read metainfo file %O:\n",filename)+err[0];
+   throw(err);
+}
 
+void decode_metainfo(string s)
+{
    mixed err=catch {
       metainfo=decode(s);
       if (!mappingp(metainfo))
@@ -170,7 +179,7 @@ void load_metainfo(string filename)
    };
    if (!err) return;
 
-   err[0]=sprintf("Failed to read metainfo file %O:\n",filename)+err[0];
+   err[0]=sprintf("Failed to decode metainfo\n")+err[0];
    throw(err);
 }
 
