@@ -25,16 +25,16 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.130 2001/10/05 01:30:12 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.131 2001/11/08 23:34:28 nilsson Exp $");
 
 /* #define ENCODE_DEBUG */
 
 #ifdef ENCODE_DEBUG
 /* Pass a nonzero integer as the third arg to encode_value,
  * encode_value_canonic and decode_value to activate this debug. */
-#define EDB(N,X) do if (data->debug>=N) {X;} while (0)
+#define EDB(N,X) do { debug_malloc_touch(data); if (data->debug>=N) {X;} } while (0)
 #else
-#define EDB(N,X) do {} while (0)
+#define EDB(N,X) do { debug_malloc_touch(data); } while (0)
 #endif
 
 /* The sp macro conflicts with Solaris 2.5.1's <sys/conf.h>. */
@@ -473,6 +473,7 @@ static void zap_unfinished_program(struct program *p)
 {
   int e;
   debug_malloc_touch(p);
+  if(p->flags & PROGRAM_FIXED) return; /* allow natural zapping */
   if(p->parent)
   {
     free_program(p->parent);
@@ -1278,6 +1279,7 @@ struct decode_data
   struct svalue counter;
   struct object *codec;
   int pickyness;
+  int pass;
   struct pike_string *raw;
   struct decode_data *next;
 #ifdef PIKE_THREADS
@@ -1286,6 +1288,7 @@ struct decode_data
 #ifdef ENCODE_DEBUG
   int debug, depth;
 #endif
+  struct Supporter supporter;
 };
 
 static void decode_value2(struct decode_data *data);
@@ -1403,7 +1406,10 @@ static int my_extract_char(struct decode_data *data)
 #define getdata(X) do {				\
    long length;					\
    decode_entry(TAG_STRING, length,data);	\
-   get_string_data(X, length, data);		\
+   if(data->pass == 1)				\
+     get_string_data(X, length, data);		\
+   else						\
+     data->ptr+=length;				\
   }while(0)
 
 #define getdata3(X) do {						     \
@@ -1650,6 +1656,45 @@ one_more_type:
   UNSET_ONERROR(err1);
 }
 
+
+static void zap_placeholder(struct object *placeholder)
+{
+  /* fprintf(stderr, "Destructing placeholder.\n"); */
+  if (placeholder->storage) {
+    debug_malloc_touch(placeholder);
+    destruct(placeholder);
+  } else {
+    free_program(placeholder->prog);
+    placeholder->prog = NULL;
+    debug_malloc_touch(placeholder);
+  }
+  free_object(placeholder);
+}
+
+static int init_placeholder(struct object *placeholder);
+
+
+#define SETUP_DECODE_MEMOBJ(TYPE, U, VAR, ALLOCATE,SCOUR) do {		\
+  struct svalue *tmpptr;						\
+  if(data->pass > 1 &&							\
+     (tmpptr=low_mapping_lookup(data->decoded, & data->counter)))	\
+  {									\
+    tmp=*tmpptr;							\
+    VAR=tmp.u.U;							\
+    SCOUR;                                                              \
+  }else{								\
+    tmp.type=TYPE;							\
+    tmp.u.U=VAR=ALLOCATE;						\
+    mapping_insert(data->decoded, & data->counter, &tmp);		\
+  /* Since a reference to the object is stored in the mapping, we can	\
+   * safely decrease this reference here. Thus it will be automatically	\
+   * freed if something goes wrong.					\
+   */									\
+    VAR->refs--;							\
+  }									\
+  data->counter.u.integer++;						\
+}while(0)
+
 #ifdef USE_PIKE_TYPE
 /* This really needs to disable threads.... */
 #define decode_type(X,data)  do {		\
@@ -1815,18 +1860,11 @@ static void decode_value2(struct decode_data *data)
       if(data->ptr + num > data->len)
 	Pike_error("Failed to decode array. (not enough data)\n");
 
-      tmp.type=T_ARRAY;
-      tmp.u.array=a=allocate_array(num);
       EDB(2,fprintf(stderr, "%*sDecoding array of size %d to <%d>\n",
 		  data->depth, "", num, data->counter.u.integer));
-      mapping_insert(data->decoded, & data->counter, &tmp);
-      data->counter.u.integer++;
 
-      /* Since a reference to the array is stored in the mapping, we can
-       * safely decrease this reference here. Thus it will be automatically
-       * freed if something goes wrong.
-       */
-      a->refs--;
+      SETUP_DECODE_MEMOBJ(T_ARRAY, array, a, allocate_array(num),
+			  free_svalues(ITEM(a), a->size, a->type_field));
 
       for(e=0;e<num;e++)
       {
@@ -1852,14 +1890,10 @@ static void decode_value2(struct decode_data *data)
       if(data->ptr + num > data->len)
 	Pike_error("Failed to decode mapping. (not enough data)\n");
 
-      m=allocate_mapping(num);
-      tmp.type=T_MAPPING;
-      tmp.u.mapping=m;
       EDB(2,fprintf(stderr, "%*sDecoding mapping of size %d to <%d>\n",
 		  data->depth, "", num, data->counter.u.integer));
-      mapping_insert(data->decoded, & data->counter, &tmp);
-      data->counter.u.integer++;
-      m->refs--;
+
+      SETUP_DECODE_MEMOBJ(T_MAPPING, mapping, m, allocate_mapping(num), ; );
 
       for(e=0;e<num;e++)
       {
@@ -1887,26 +1921,23 @@ static void decode_value2(struct decode_data *data)
 	Pike_error("Failed to decode multiset. (not enough data)\n");
 
       /* NOTE: This code knows stuff about the implementation of multisets...*/
-      a = low_allocate_array(num, 0);
-      m = allocate_multiset(a);
-      tmp.type = T_MULTISET;
-      tmp.u.multiset = m;
+
       EDB(2,fprintf(stderr, "%*sDecoding multiset of size %d to <%d>\n",
 		  data->depth, "", num, data->counter.u.integer));
-      mapping_insert(data->decoded, & data->counter, &tmp);
-      data->counter.u.integer++;
-      debug_malloc_touch(m);
+      SETUP_DECODE_MEMOBJ(T_MULTISET, multiset, m,
+			  allocate_multiset(low_allocate_array(num, 0)), ;);
+      a=m->ind;
 
       for(e=0;e<num;e++)
       {
 	decode_value2(data);
-	a->item[e] = sp[-1];
-	sp--;
+	assign_svalue(a->item+e , sp-1);
+	pop_stack();
 	dmalloc_touch_svalue(sp);
       }
       array_fix_type_field(a);
       order_multiset(m);
-      push_multiset(m);
+      ref_push_multiset(m);
 #ifdef ENCODE_DEBUG
       data->depth -= 2;
 #endif
@@ -2099,11 +2130,12 @@ static void decode_value2(struct decode_data *data)
 	}
 	case 1:
 	{
-	  int d;
+	  int d, in;
 	  size_t size=0;
-	  char *dat;
+	  char *dat=0;
 	  struct program *p;
-	  ONERROR err1, err2, err3;
+	  struct object *placeholder=0;
+	  ONERROR err1, err2, err3, err4;
 
 #ifdef _REENTRANT
 	  ONERROR err;
@@ -2111,25 +2143,41 @@ static void decode_value2(struct decode_data *data)
 	  SET_ONERROR(err, do_enable_threads, 0);
 #endif
 
-	  p=low_allocate_program();
-	  SET_ONERROR(err3, zap_unfinished_program, p);
-	  
-	  debug_malloc_touch(p);
-	  if(data->codec)
-	  {
-	    ref_push_program(p);
-	    apply(data->codec, "__register_new_program", 1);
-	    pop_stack();
-	  }
-	  tmp.type=T_PROGRAM;
-	  tmp.u.program=p;
 	  EDB(2,fprintf(stderr, "%*sDecoding a program to <%d>: ",
 		      data->depth, "", data->counter.u.integer);
 	      print_svalue(stderr, &tmp);
 	      fputc('\n', stderr););
-	  mapping_insert(data->decoded, & data->counter, &tmp);
-	  data->counter.u.integer++;
-	  p->refs--;
+
+	  SETUP_DECODE_MEMOBJ(T_PROGRAM, program, p, low_allocate_program(),;);
+
+	  SET_ONERROR(err3, zap_unfinished_program, p);
+	  
+	  if(data->pass == 1)
+	  {
+	    if(! data->supporter.prog)
+	      data->supporter.prog = p;
+
+	    debug_malloc_touch(p);
+	    if(data->codec)
+	    {
+	      ref_push_program(p);
+	      apply(data->codec, "__register_new_program", 1);
+	      
+	      /* return a placeholder */
+	      if(Pike_sp[-1].type == T_OBJECT)
+	      {
+		placeholder=Pike_sp[-1].u.object;
+		if(placeholder->prog != null_program)
+		  Pike_error("Placeholder object is not a null_program clone!\n");
+		Pike_sp--;
+	      }else{
+		pop_stack();
+	      }
+	    }
+	  }
+
+	  if(placeholder)
+	    SET_ONERROR(err4, zap_placeholder, placeholder);
 
 	  decode_value2(data);
 	  f_version(0);
@@ -2139,15 +2187,25 @@ static void decode_value2(struct decode_data *data)
 
 	  debug_malloc_touch(p);
 	  decode_number(p->flags,data);
-	  p->flags &= ~(PROGRAM_FINISHED | PROGRAM_OPTIMIZED |
-	    PROGRAM_FIXED | PROGRAM_PASS_1_DONE);
-	  p->flags |= PROGRAM_AVOID_CHECK;
+
+	  if(data->pass == 1)
+	  {
+	    p->flags &= ~(PROGRAM_FINISHED | PROGRAM_OPTIMIZED |
+			  PROGRAM_FIXED | PROGRAM_PASS_1_DONE);
+	    p->flags |= PROGRAM_AVOID_CHECK;
+	  }
 	  decode_number(p->storage_needed,data);
 	  decode_number(p->xstorage,data);
 	  decode_number(p->parent_info_storage,data);
 	  decode_number(p->alignment_needed,data);
 	  decode_number(p->timestamp.tv_sec,data);
 	  decode_number(p->timestamp.tv_usec,data);
+
+	  if(data->pass && p->parent)
+	  {
+	    free_program(p->parent);
+	    p->parent=0;
+	  }
 
 	  debug_malloc_touch(p);
 	  decode_value2(data);
@@ -2177,30 +2235,34 @@ static void decode_value2(struct decode_data *data)
 	  decode_number( p->num_##Z, data);
 #include "program_areas.h"
 
+
+	  if(data->pass == 1)
+	  {
 #define FOO(NUMTYPE,TYPE,NAME) \
           size=DO_ALIGN(size, ALIGNOF(TYPE)); \
           size+=p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0]);
 #include "program_areas.h"
 
-	  dat=xalloc(size);
-	  debug_malloc_touch(dat);
-	  MEMSET(dat,0,size);
-	  size=0;
+	    dat=xalloc(size);
+	    debug_malloc_touch(dat);
+	    MEMSET(dat,0,size);
+	    size=0;
 #define FOO(NUMTYPE,TYPE,NAME) \
 	  size=DO_ALIGN(size, ALIGNOF(TYPE)); \
           p->NAME=(TYPE *)(dat+size); \
           size+=p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0]);
 #include "program_areas.h"
 
-	  for(e=0;e<p->num_constants;e++)
-	    p->constants[e].sval.type=T_INT;
+	    for(e=0;e<p->num_constants;e++)
+	      p->constants[e].sval.type=T_INT;
 
-	  debug_malloc_touch(dat);
-	  debug_malloc_touch(p);
-
-	  p->total_size=size + sizeof(struct program);
-
-	  p->flags |= PROGRAM_OPTIMIZED;
+	    debug_malloc_touch(dat);
+	    debug_malloc_touch(p);
+	    
+	    p->total_size=size + sizeof(struct program);
+	    
+	    p->flags |= PROGRAM_OPTIMIZED;
+	  }
 
 	  {
 	    INT32 bytecode_method = 0;
@@ -2293,8 +2355,23 @@ static void decode_value2(struct decode_data *data)
 	  p->inherits[0].parent_offset=1;
 */
 
+	  if(placeholder && data->pass==1)
+	  {
+	    if(placeholder->prog != null_program)
+	    {
+	      debug_malloc_touch(placeholder);
+	      Pike_error("Placeholder argument is not a null_program clone!");
+	    }else{
+	      free_program(placeholder->prog);
+	      add_ref(placeholder->prog = p);
+	      debug_malloc_touch(placeholder);
+	    }
+	  }
+
 	  debug_malloc_touch(p);
-	  for(d=0;d<p->num_inherits;d++)
+
+	  in=p->num_inherits;
+	  for(d=0;d<in;d++)
 	  {
 	    decode_number(p->inherits[d].inherit_level,data);
 	    decode_number(p->inherits[d].identifier_level,data);
@@ -2309,6 +2386,21 @@ static void decode_value2(struct decode_data *data)
 		 Pike_sp[-1].u.program != p)
 		Pike_error("Program decode failed!\n");
 	      p->refs--;
+	    }
+
+	    if(data->pass > 1)
+	    {
+	      if(p->inherits[d].prog)
+	      {
+		free_program(p->inherits[d].prog);
+		p->inherits[d].prog=0;
+	      }
+
+	      if(p->inherits[d].parent)
+	      {
+		free_object(p->inherits[d].parent);
+		p->inherits[d].parent=0;
+	      }
 	    }
 
 	    switch(Pike_sp[-1].type)
@@ -2338,6 +2430,8 @@ static void decode_value2(struct decode_data *data)
 	      default:
 		Pike_error("Failed to decode inheritance.\n");
 	    }
+
+	    p->num_inherits=d+1;
 
 	    getdata3(p->inherits[d].name);
 
@@ -2395,112 +2489,147 @@ static void decode_value2(struct decode_data *data)
 
 	  debug_malloc_touch(dat);
 	  debug_malloc_touch(p);
+
 	  p->flags |= PROGRAM_PASS_1_DONE | PROGRAM_FIXED;
-	  if(data->codec)
-	  {
-	    ref_push_program(p);
-	    apply(data->codec, "__register_new_object", 1);
-	    pop_stack();
-	  }
-	  
 	  for(d=0;d<p->num_constants;d++)
 	  {
 	    decode_value2(data);
-	    p->constants[d].sval=*--Pike_sp;
+	    if(data->pass > 1)
+	    {
+	      assign_svalue(& p->constants[d].sval , Pike_sp -1 );
+	      pop_stack();
+	    }else{
+	      p->constants[d].sval=*--Pike_sp;
+	    }
 	    dmalloc_touch_svalue(Pike_sp);
 	    getdata3(p->constants[d].name);
 	  }
+
+#ifdef PIKE_DEBUG	  
+	  {
+	    int q;
+	    for(q=0;q<p->num_inherits;q++)
+	      if(!p->inherits[q].prog)
+		fatal("FOOBAR!@!!!\n");
+	  }
+#endif
+
+	  if(placeholder && data->pass == 1)
+	  {
+	    if(!p || (placeholder->storage))
+	    {
+	      Pike_error("Placeholder already has storage!\n");
+	    } else {
+	      placeholder->storage=p->storage_needed ?
+		(char *)xalloc(p->storage_needed) :
+		(char *)0;
+	      call_c_initializers(placeholder);
+	    }
+	  }
+	  
 	  data->pickyness--;
 
-
+	  if(placeholder)
+	  {
+	    free_object(placeholder);
+	    UNSET_ONERROR(err4);
+	  }
 	  UNSET_ONERROR(err3);
 
 	  ref_push_program(p);
 
-	  /* Logic for the PROGRAM_FINISHED flag:
-	   * The purpose of this code is to make sure that the PROGRAM_FINISHED
-	   * flat is not set on the program until all inherited programs also
-	   * have that flag. -Hubbe
-	   */
-	  for(d=1;d<p->num_inherits;d++)
-	    if(! (p->inherits[d].prog->flags & PROGRAM_FINISHED))
-	      break;
-
-	  if(d == p->num_inherits)
+	  if(!(p->flags & PROGRAM_FINISHED) &&
+	     !data->supporter.depends_on)
 	  {
-	    p->flags &=~ PROGRAM_AVOID_CHECK;
-	    p->flags |= PROGRAM_FINISHED;
-
-	    /* Go through the linked list of unfinished programs
-	     * to see what programs are now finished.
+	    /* Logic for the PROGRAM_FINISHED flag:
+	     * The purpose of this code is to make sure that the PROGRAM_FINISHED
+	     * flat is not set on the program until all inherited programs also
+	     * have that flag. -Hubbe
 	     */
+	    for(d=1;d<p->num_inherits;d++)
+	      if(! (p->inherits[d].prog->flags & PROGRAM_FINISHED))
+		break;
+	    
+	    if(d == p->num_inherits)
 	    {
-	      struct unfinished_prog_link *l, **ptr;
-	      
-#ifdef PIKE_DEBUG
-	      check_program(p);
-#endif /* PIKE_DEBUG */
+	      p->flags &=~ PROGRAM_AVOID_CHECK;
+	      p->flags |= PROGRAM_FINISHED;
 
-	      /* It is possible that we need to restart loop
-	       * in some cases... /Hubbe
-	       */
-	      for(ptr= &data->unfinished_programs ; (l=*ptr);)
+	      if (placeholder)
 	      {
-		struct program *pp=l->prog;
-		for(d=1;d<pp->num_inherits;d++)
-		  if(! (pp->inherits[d].prog->flags & PROGRAM_FINISHED))
-		    break;
-		
-		if(d == pp->num_inherits)
-		{
-		  pp->flags &=~ PROGRAM_AVOID_CHECK;
-		  pp->flags |= PROGRAM_FINISHED;
-		  
-#ifdef PIKE_DEBUG
-		  check_program(pp);
-#endif /* PIKE_DEBUG */
-		  
-		  *ptr = l->next;
-		  free((char *)l);
-		}else{
-		  ptr=&l->next;
-		}
+		if(!init_placeholder(placeholder))
+		  placeholder=0;
 	      }
-	    }
-
-	    /* Go through the linked list of unfinished objects
-	     * to see what objects are now finished.
-	     */
-	    {
-	      struct unfinished_obj_link *l, **ptr;
-	      for(ptr= &data->unfinished_objects ; (l=*ptr);)
+	      
+	      /* Go through the linked list of unfinished programs
+	       * to see what programs are now finished.
+	       */
 	      {
-		struct object *o=l->o;
-		if(o->prog)
+		struct unfinished_prog_link *l, **ptr;
+		
+#ifdef PIKE_DEBUG
+		check_program(p);
+#endif /* PIKE_DEBUG */
+		
+		/* It is possible that we need to restart loop
+		 * in some cases... /Hubbe
+		 */
+		for(ptr= &data->unfinished_programs ; (l=*ptr);)
 		{
-		  if(o->prog->flags & PROGRAM_FINISHED)
+		  struct program *pp=l->prog;
+		  for(d=1;d<pp->num_inherits;d++)
+		    if(! (pp->inherits[d].prog->flags & PROGRAM_FINISHED))
+		      break;
+		  
+		  if(d == pp->num_inherits)
 		  {
-		    apply_lfun(o, LFUN___INIT, 0);
-		    pop_stack();
-		    /* FIXME: Should call LFUN_CREATE here in <= 7.2
-		     * compatibility mode. */
+		    pp->flags &=~ PROGRAM_AVOID_CHECK;
+		    pp->flags |= PROGRAM_FINISHED;
+		    
+#ifdef PIKE_DEBUG
+		    check_program(pp);
+#endif /* PIKE_DEBUG */
+		    
+		    *ptr = l->next;
+		    free((char *)l);
 		  }else{
 		    ptr=&l->next;
-		    continue;
 		  }
 		}
-		*ptr = l->next;
-		free((char *)l);
 	      }
+	      
+	      /* Go through the linked list of unfinished objects
+	       * to see what objects are now finished.
+	       */
+	      {
+		struct unfinished_obj_link *l, **ptr;
+		for(ptr= &data->unfinished_objects ; (l=*ptr);)
+		{
+		  struct object *o=l->o;
+		  if(o->prog)
+		  {
+		    if(o->prog->flags & PROGRAM_FINISHED)
+		    {
+		      apply_lfun(o, LFUN___INIT, 0);
+		      pop_stack();
+		      /* FIXME: Should call LFUN_CREATE here in <= 7.2
+		       * compatibility mode. */
+		    }else{
+		      ptr=&l->next;
+		      continue;
+		    }
+		  }
+		  *ptr = l->next;
+		  free((char *)l);
+		}
+	      }
+	    }else{
+	      struct unfinished_prog_link *l;
+	      l=ALLOC_STRUCT(unfinished_prog_link);
+	      l->prog=p;
+	      l->next=data->unfinished_programs;
+	      data->unfinished_programs=l;
 	    }
-
-
-	  }else{
-	    struct unfinished_prog_link *l;
-	    l=ALLOC_STRUCT(unfinished_prog_link);
-	    l->prog=p;
-	    l->next=data->unfinished_programs;
-	    data->unfinished_programs=l;
 	  }
 
 #ifdef _REENTRANT
@@ -2565,25 +2694,35 @@ static void decode_value2(struct decode_data *data)
 #endif
 }
 
+/* Placed after to prevent inlining */
+static int init_placeholder(struct object *placeholder)
+{
+  JMP_BUF rec;
+  /* Initialize the placeholder. */
+  if(SETJMP(rec))
+  {
+    dmalloc_touch_svalue(&throw_value);
+    call_handle_error();
+    zap_placeholder(placeholder);
+    UNSETJMP(rec);
+    return 1;
+  }else{
+    call_pike_initializers(placeholder,0);
+    UNSETJMP(rec);
+    return 0;
+  }
+}
+
+
 
 static struct decode_data *current_decode = NULL;
 
 static void free_decode_data(struct decode_data *data)
 {
-  free_mapping(data->decoded);
-  while(data->unfinished_programs)
-  {
-    struct unfinished_prog_link *tmp=data->unfinished_programs;
-    data->unfinished_programs=tmp->next;
-    free((char *)tmp);
-  }
+  int delay;
 
-  while(data->unfinished_objects)
-  {
-    struct unfinished_obj_link *tmp=data->unfinished_objects;
-    data->unfinished_objects=tmp->next;
-    free((char *)tmp);
-  }
+  debug_malloc_touch(data);
+
   if (current_decode == data) {
     current_decode = data->next;
   } else {
@@ -2600,9 +2739,60 @@ static void free_decode_data(struct decode_data *data)
     }
 #endif /* PIKE_DEBUG */
   }
+
+  
+  delay=unlink_current_supporter(&data->supporter);
+  call_dependants(& data->supporter);
+
+  if(delay)
+  {
+    debug_malloc_touch(data);
+    /* We have been delayed */
+    return;
+  }
+
+  free_mapping(data->decoded);
+
+#ifdef PIKE_DEBUG
+  if(data->unfinished_programs)
+    fatal("We have unfinished programs left in decode()!\n");
+  if(data->unfinished_objects)
+    fatal("We have unfinished objects left in decode()!\n");
+#endif
+
+  while(data->unfinished_programs)
+  {
+    struct unfinished_prog_link *tmp=data->unfinished_programs;
+    data->unfinished_programs=tmp->next;
+    free((char *)tmp);
+  }
+
+  while(data->unfinished_objects)
+  {
+    struct unfinished_obj_link *tmp=data->unfinished_objects;
+    data->unfinished_objects=tmp->next;
+    free((char *)tmp);
+  }
 #ifdef PIKE_THREADS
   free_object(data->thread_id);
 #endif
+
+  free( (char *) data);
+}
+
+/* Run pass2 */
+void re_decode(struct decode_data *data)
+{
+  ONERROR err;
+  SET_ONERROR(err, free_decode_data, data);
+  data->next = current_decode;
+  current_decode = data;
+
+  decode_value2(data);
+
+  CALL_AND_UNSET_ONERROR(err);
+
+  free_decode_data(data);
 }
 
 static INT32 my_decode(struct pike_string *tmp,
@@ -2613,7 +2803,7 @@ static INT32 my_decode(struct pike_string *tmp,
 		      )
 {
   ONERROR err;
-  struct decode_data d, *data;
+  struct decode_data *data;
 
   /* Attempt to avoid infinite recursion on circular structures. */
   for (data = current_decode; data; data=data->next) {
@@ -2639,7 +2829,7 @@ static INT32 my_decode(struct pike_string *tmp,
     }
   }
 
-  data=&d;
+  data=ALLOC_STRUCT(decode_data);
   data->counter.type=T_INT;
   data->counter.u.integer=COUNTER_START;
   data->data=(unsigned char *)tmp->str;
@@ -2647,6 +2837,7 @@ static INT32 my_decode(struct pike_string *tmp,
   data->ptr=0;
   data->codec=codec;
   data->pickyness=0;
+  data->pass=1;
   data->unfinished_programs=0;
   data->unfinished_objects=0;
   data->raw = tmp;
@@ -2659,13 +2850,16 @@ static INT32 my_decode(struct pike_string *tmp,
   data->depth = -2;
 #endif
 
-  if (tmp->size_shift) return 0;
-  if(data->len < 5) return 0;
-  if(GETC() != 182 ||
-     GETC() != 'k' ||
-     GETC() != 'e' ||
-     GETC() != '0')
+  if (tmp->size_shift ||
+      data->len < 5 ||
+      GETC() != 182 ||
+      GETC() != 'k' ||
+      GETC() != 'e' ||
+      GETC() != '0')
+  {
+    free( (char *) data);
     return 0;
+  }
 
 #ifdef PIKE_THREADS
   add_ref(Pike_interpreter.thread_id);
@@ -2676,14 +2870,13 @@ static INT32 my_decode(struct pike_string *tmp,
   current_decode = data;
 
   SET_ONERROR(err, free_decode_data, data);
+
+  init_supporter(& data->supporter,
+		 ( void (*)(void*) )re_decode,
+		 (void *)data);
+
   decode_value2(data);
 
-#ifdef PIKE_DEBUG
-  if(data->unfinished_programs)
-    fatal("We have unfinished programs left in decode()!\n");
-  if(data->unfinished_objects)
-    fatal("We have unfinished objects left in decode()!\n");
-#endif
   CALL_AND_UNSET_ONERROR(err);
   return 1;
 }
