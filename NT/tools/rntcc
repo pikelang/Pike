@@ -133,11 +133,11 @@ int main(int argc, string *argv)
 	case "oper_pre": operation="preprocess"; break;
 	case "oper_comp": operation="compile"; break;
 	case "debug":
-//	  cflags+=({"-d2"});
-//	  ldopts+=({"DEBUG","WATCOM","ALL"});
+	  cflags+=({"-d2"});
+	  ldopts+=({"DEBUG","WATCOM","ALL"});
 
-	  cflags+=({"-d2","-hd"});
-	  ldopts+=({"DEBUG","DWARF"});
+//	  cflags+=({"-d2","-hd"});
+//	  ldopts+=({"DEBUG","DWARF"});
 
 //	  cflags+=({"-d2","-hc"});
 //	  ldopts+=({"DEBUG","CODEVIEW","OPTION","CVPACK"});
