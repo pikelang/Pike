@@ -8,7 +8,7 @@
 #  include "pike_macros.h"
 #  include "main.h"
 
-RCSID("$Id: dynamic_load.c,v 1.45 2000/09/28 15:37:23 grubba Exp $");
+RCSID("$Id: dynamic_load.c,v 1.46 2000/09/29 15:31:31 mast Exp $");
 
 #endif /* !TESTING */
 
@@ -224,6 +224,10 @@ static void dlclose(void *module)
 #ifndef TESTING
 
 #if defined(HAVE_DLOPEN) || defined(USE_DLD) || defined(USE_HPUX_DL) || defined(USE_LOADLIBRARY)
+#define USE_DYNAMIC_MODULES
+#endif
+
+#ifdef USE_DYNAMIC_MODULES
 
 struct module_list
 {
@@ -326,12 +330,12 @@ void f_load_module(INT32 args)
   push_program(end_program());
 }
 
-#endif /* HAVE_DLOPEN || USE_DLD || USE_HPUX_DL */
+#endif /* USE_DYNAMIC_MODULES */
 
 
 void init_dynamic_load(void)
 {
-#if defined(HAVE_DLOPEN) || defined(USE_DLD) || defined(USE_HPUX_DL) || defined(USE_LOADLIBRARY)
+#ifdef USE_DYNAMIC_MODULES
   dlinit();
 
   
@@ -344,20 +348,17 @@ void init_dynamic_load(void)
 /* Call the pike_module_exit() callbacks for the dynamic modules. */
 void exit_dynamic_load(void)
 {
-#if defined(HAVE_DLOPEN) || defined(USE_DLD) || defined(USE_HPUX_DL)
-  while(dynamic_module_list)
-  {
-    struct module_list *tmp=dynamic_module_list;
-    dynamic_module_list=tmp->next;
+#ifdef USE_DYNAMIC_MODULES
+  struct module_list *tmp;
+  for (tmp = dynamic_module_list; tmp; tmp = tmp->next)
     (*tmp->exit)();
-  }
 #endif
 }
 
 /* Unload all the dynamically loaded modules. */
 void free_dynamic_load(void)
 {
-#if defined(HAVE_DLOPEN) || defined(USE_DLD) || defined(USE_HPUX_DL)
+#ifdef USE_DYNAMIC_MODULES
   while(dynamic_module_list)
   {
     struct module_list *tmp=dynamic_module_list;
