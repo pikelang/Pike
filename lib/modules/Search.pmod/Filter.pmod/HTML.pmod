@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.19 2001/08/19 17:20:27 nilsson Exp $
+// $Id: HTML.pmod,v 1.20 2001/08/19 17:42:43 nilsson Exp $
 
 // Filter for text/html
 
@@ -124,7 +124,7 @@ Output filter(Standards.URI uri, string|Stdio.File data,
     return ({ " " });
   };
 
-  array(string) parse_embedd(Parser.HTML p, mapping m) {
+  array(string) parse_embed(Parser.HTML p, mapping m) {
     if( m->pluginspage ) ladd( m->pluginspage ); // Where the required plugin can be downloaded.
     if( m->pluginurl ) ladd( m->pluginurl ); // Similar to pluginspage, but for java archives.
     if( m->src ) ladd( m->src );
@@ -192,6 +192,8 @@ Output filter(Standards.URI uri, string|Stdio.File data,
 		       "td":parse_background,
 		       "object": parse_object,
 		       "q":parse_q,
+		       "embed":parse_embed,
+		       "xml":parse_xml,
   ]) );
 
   constant ignore_tags = ({ "noindex", "script", "style", "no-index" });
