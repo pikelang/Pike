@@ -212,32 +212,41 @@ class client {
   inherit protocol;
 
   string nameserver;
-
+  array search = ({});
   void create(void|string server)
   {
     if(!server)
     {
+      string domain;
       foreach(Stdio.read_file("/etc/resolv.conf")/"\n", string line)
+      {
+	string rest;
+	sscanf(line,"%s#",line);
+	sscanf(line,"%*[\r \t]%s",line);
+	line=reverse(line);
+	sscanf(line,"%*[\r \t]%s",line);
+	line=reverse(line);
+	sscanf(line,"%s%*[ \t]%s",line,rest);
+	switch(line)
 	{
-	  string rest;
-	  sscanf(line,"%s#",line);
-	  sscanf(line,"%*[\r \t]%s",line);
-	  line=reverse(line);
-	  sscanf(line,"%*[\r \t]%s",line);
-	  line=reverse(line);
-	  sscanf(line,"%s%*[ \t]%s",line,rest);
-	  switch(line)
-	  {
-	    case "domain":
-	    case "search":
-	      break; // Not yet implemented
+	 case "domain":
+	  // Save domain for later.
+	  domain = rest;
+	  break;
+	 case "search":
+	  rest = replace(rest, "\t", " ");
+	  foreach(rest / " " - ({""}), string dom)
+	    search += ({dom});
+	  break;
 	      
-	    case "nameserver":
-	      nameserver=rest;
-	      break;
-	  }
+	 case "nameserver":
+	  nameserver=rest;
+	  break;
 	}
-    }else{
+      }
+      if(domain)
+	search = ({ domain }) + search;
+    } else {
       nameserver=server;
     }
   }
@@ -262,16 +271,29 @@ class client {
   // Warning: NO TIMEOUT
   mixed *gethostbyname(string s)
   {
-    mapping m=do_sync_query(mkquery(s, C_IN, T_A));
+    mapping m;
+    if(sizeof(search) && s[-1] != '.' && sizeof(s/".") < 3) {
+      m=do_sync_query(mkquery(s, C_IN, T_A));
+      if(!m || !m->an || !sizeof(m->an))
+	foreach(search, string domain)
+	{
+	  m=do_sync_query(mkquery(s+"."+domain, C_IN, T_A));
+	  if(m && m->an && sizeof(m->an))
+	    break;
+	}
+    } else {
+      m=do_sync_query(mkquery(s, C_IN, T_A));
+    }
+      
     string *names=({});
     string *ips=({});
     foreach(m->an, mapping x)
-      {
-	if(x->name)
-	  names+=({x->name});
-	if(x->a)
-	  ips+=({x->a});
-      }
+    {
+      if(x->name)
+	names+=({x->name});
+      if(x->a)
+	ips+=({x->a});
+    }
     return ({
       sizeof(names)?names[0]:0,
 	ips,
@@ -296,15 +318,15 @@ class client {
     string *names=({});
     string *ips=({});
     foreach(m->an, mapping x)
-      {
-	if(x->ptr)
-	  names+=({x->ptr});
-	if(x->name)
+    {
+      if(x->ptr)
+	names+=({x->ptr});
+      if(x->name)
 	  
-	{
-	  ips+=({ip_from_arpa(x->name)});
-	}
+      {
+	ips+=({ip_from_arpa(x->name)});
       }
+    }
     return ({
       sizeof(names)?names[0]:0,
 	ips,
@@ -314,17 +336,29 @@ class client {
 
   string get_primary_mx(string host)
   {
-    mapping m=do_sync_query(mkquery(host,C_IN,T_MX));
+    mapping m;
+    if(sizeof(search) && host[-1] != '.' && sizeof(host/".") < 3) {
+      m=do_sync_query(mkquery(host, C_IN, T_MX));
+      if(!m || !m->an || !sizeof(m->an))
+	foreach(search, string domain)
+	{
+	  m=do_sync_query(mkquery(host+"."+domain, C_IN, T_MX));
+	  if(m && m->an && sizeof(m->an))
+	    break;
+	}
+    } else {
+      m=do_sync_query(mkquery(host, C_IN, T_MX));
+    }
     int minpref=29372974;
     string ret;
     foreach(m->an, mapping m2)
+    {
+      if(m2->preference<minpref)
       {
-	if(m2->preference<minpref)
-	{
-	  ret=m2->mx;
-	  minpref=m2->preference;
-	}
+	ret=m2->mx;
+	minpref=m2->preference;
       }
+    }
     return ret;
   }
 }
@@ -379,7 +413,6 @@ class async_client
 
     if(requests[id])
       throw(({"Cannot find an empty request slot.\n",backtrace()}));
-
     object r=Request();
     r->req=req;
     r->domain=domain;
@@ -404,6 +437,7 @@ class async_client
 
   static private void generic_get(string d,
 				  mapping answer,
+				  int multi, 
 				  string field,
 				  string domain,
 				  function callback,
@@ -411,8 +445,16 @@ class async_client
   {
     if(!answer || !answer->an || !sizeof(answer->an))
     {
-      callback(domain,0,@args);
-    }else{
+      if(multi == -1 || sizeof(search) < multi) {
+	// Either a request without multi (ip, or FQDN) or we have tried all
+	// domains.
+	callback(domain,0,@args);
+      } else {
+	// Multiple domain request. Try the next one...
+	do_query(domain+"."+search[multi], C_IN, T_A,
+		 generic_get, ++multi, "a", domain, callback, @args);
+      }
+    } else {
       foreach(answer->an, array an)
 	if(an[field])
 	{
@@ -426,16 +468,20 @@ class async_client
 
   void host_to_ip(string host, function callback, mixed ... args)
   {
-    do_query(host, C_IN, T_A,
-	     generic_get,"a",
-	     host, callback,
-	     @args );
+    if(sizeof(search) && host[-1] != '.' && sizeof(host/".") < 3) {
+      do_query(host, C_IN, T_A,
+	       generic_get, 0, "a", host, callback, @args );
+    } else {
+      do_query(host, C_IN, T_A,
+	       generic_get, -1, "a",
+	       host, callback, @args);
+    }
   }
 
   void ip_to_host(string ip, function callback, mixed ... args)
   {
     do_query(arpa_from_ip(ip), C_IN, T_PTR,
-	     generic_get, "ptr",
+	     generic_get, -1, "ptr",
 	     ip, callback,
 	     @args);
   }
