@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rbtree_low.h,v 1.5 2002/10/11 01:39:37 nilsson Exp $
+|| $Id: rbtree_low.h,v 1.6 2004/05/28 09:42:44 mast Exp $
 */
 
 /* The lower level api for using rbtree. This is in a separate file
@@ -141,6 +141,7 @@ void rbstack_shift (struct rbstack_ptr rbstack,
 #define RBSTACK_FREE_SET_ROOT(rbstack, node) do {			\
     if ((rbstack).ssp) {						\
       if ((rbstack).slice->up) rbstack_free (&(rbstack));		\
+      (rbstack).ssp = 0;						\
       (node) = (rbstack).slice->stack[0];				\
     }									\
     DO_IF_RB_STATS (							\
