@@ -74,3 +74,25 @@ DESCRIPTION
 	This function returns the greatest common divisor for arg and mpz.
 
 ============================================================================
+NAME
+	cast - cast to other type
+
+SYNTAX
+	object mpz->gcd( "string" | "int" | "float" );
+	or
+	(string) mpz
+	or
+	(int) mpz
+	or
+	(float) mpz
+
+
+DESCRIPTION
+	This function converts an mpz to a string, int or float. This is
+	nessesary when you want to view, store or use the result of an mpz
+	calculation.
+
+SEE ALSO
+	cast
+
+============================================================================
