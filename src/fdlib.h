@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.40 2002/05/11 00:06:24 nilsson Exp $
+ * $Id: fdlib.h,v 1.41 2002/08/15 14:49:21 marcus Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -188,7 +188,7 @@ struct my_fd_set_s
 typedef struct my_fd_set_s my_fd_set;
 
 #ifdef PIKE_DEBUG
-#define fd_check_fd(X) do { if(fd_type[X]>=0) fatal("FD_SET on closed fd %d (%d) %s:%d.\n",X,da_handle[X],__FILE__,__LINE__); }while(0)
+#define fd_check_fd(X) do { if(fd_type[X]>=0) Pike_fatal("FD_SET on closed fd %d (%d) %s:%d.\n",X,da_handle[X],__FILE__,__LINE__); }while(0)
 #else
 #define fd_check_fd(X)
 #endif

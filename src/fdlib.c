@@ -3,7 +3,7 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.51 2002/03/15 09:31:54 tomas Exp $");
+RCSID("$Id: fdlib.c,v 1.52 2002/08/15 14:49:21 marcus Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -52,7 +52,7 @@ static int IsValidHandle(HANDLE h)
 PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h)
 {
   if(!IsValidHandle(h))
-    fatal("Invalid handle!\n");
+    Pike_fatal("Invalid handle!\n");
   return h;
 }
 #endif
@@ -100,7 +100,7 @@ void fd_init()
   mt_lock(&fd_mutex);
   if(WSAStartup(MAKEWORD(1,1), &wsadata) != 0)
   {
-    fatal("No winsock available.\n");
+    Pike_fatal("No winsock available.\n");
   }
   FDDEBUG(fprintf(stderr,"Using %s\n",wsadata.szDescription));
   
@@ -879,7 +879,7 @@ PMOD_EXPORT FD debug_fd_dup(FD from)
   HANDLE x,p=GetCurrentProcess();
 #ifdef DEBUG
   if(fd_type[from]>=FD_NO_MORE_FREE)
-    fatal("fd_dup() on file which is not open!\n");
+    Pike_fatal("fd_dup() on file which is not open!\n");
 #endif
   if(!DuplicateHandle(p,da_handle[from],p,&x,0,0,DUPLICATE_SAME_ACCESS))
   {
@@ -1023,7 +1023,7 @@ void fd_mapper_set(struct fd_mapper *x, FD fd, void *data)
     x->size*=2;
     x->data=(void **)realloc((char *)x->data, x->size*sizeof(void *));
     if(!x->data)
-      fatal("Out of memory.\n");
+      Pike_fatal("Out of memory.\n");
     x->data=nd;
   }
   x->data[fd]=data;

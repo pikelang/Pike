@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.25 2002/07/10 23:07:47 nilsson Exp $");
+RCSID("$Id: iterators.cmod,v 1.26 2002/08/15 14:49:22 marcus Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -401,7 +401,7 @@ PIKECLASS multiset_iterator
 	THIS->l->msd->noval_refs--;
 	sub_ref (THIS->l->msd);
 #ifdef PIKE_DEBUG
-	if (!THIS->l->msd->refs) fatal ("msd ran out of refs unexpectedly.\n");
+	if (!THIS->l->msd->refs) Pike_fatal ("msd ran out of refs unexpectedly.\n");
 #endif
 	THIS->lock_index = 0;
       }
@@ -434,7 +434,7 @@ PIKECLASS multiset_iterator
 	  THIS->l->msd->noval_refs--;
 	  sub_ref (THIS->l->msd);
 #ifdef PIKE_DEBUG
-	  if (!THIS->l->msd->refs) fatal ("msd ran out of refs unexpectedly.\n");
+	  if (!THIS->l->msd->refs) Pike_fatal ("msd ran out of refs unexpectedly.\n");
 #endif
 	}
 	free_multiset (THIS->l);
@@ -1045,7 +1045,7 @@ PIKECLASS string_split_iterator
 	NEW_SKIP_CASE(1, ssi->flags);
 	NEW_SKIP_CASE(2, ssi->flags);
       default:
-	fatal("Unsupported size shift!\n");
+	Pike_fatal("Unsupported size shift!\n");
       }
     scan_more:
       switch(ssi->buffer->size_shift)
@@ -1054,7 +1054,7 @@ PIKECLASS string_split_iterator
 	NEW_SCAN_MORE_CASE(1);
 	NEW_SCAN_MORE_CASE(2);
       default:
-	fatal("Unsupported size shift!\n");
+	Pike_fatal("Unsupported size shift!\n");
       }
     }
 
@@ -1164,7 +1164,7 @@ PIKECLASS string_split_iterator
 	      SIMPLE_SKIP_CASE(THIS, 1, off);
 	      SIMPLE_SKIP_CASE(THIS, 2, off);
 	    default:
-	      fatal("Unsupported size shift!\n");
+	      Pike_fatal("Unsupported size shift!\n");
 	    }
 	  } else {
 	    switch(THIS->buffer->size_shift) {
@@ -1172,7 +1172,7 @@ PIKECLASS string_split_iterator
 	      COMPLEX_SKIP_CASE(THIS, 1, off);
 	      COMPLEX_SKIP_CASE(THIS, 2, off);
 	    default:
-	      fatal("Unsupported size shift!\n");
+	      Pike_fatal("Unsupported size shift!\n");
 	    }	  
 	  }
 	  if (off >= THIS->buffer->len) {
@@ -1186,7 +1186,7 @@ PIKECLASS string_split_iterator
 	    SIMPLE_SCAN_CASE(THIS, 1, off);
 	    SIMPLE_SCAN_CASE(THIS, 2, off);
 	  default:
-	    fatal("Unsupported size shift!\n");
+	    Pike_fatal("Unsupported size shift!\n");
 	  }
 	} else {
 	  switch(THIS->buffer->size_shift) {
@@ -1194,7 +1194,7 @@ PIKECLASS string_split_iterator
 	    COMPLEX_SCAN_CASE(THIS, 1, off);
 	    COMPLEX_SCAN_CASE(THIS, 2, off);
 	  default:
-	    fatal("Unsupported size shift!\n");
+	    Pike_fatal("Unsupported size shift!\n");
 	  }
 	}
       }

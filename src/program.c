@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.440 2002/07/23 12:58:45 mast Exp $");
+RCSID("$Id: program.c,v 1.441 2002/08/15 14:49:25 marcus Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -772,9 +772,9 @@ int get_small_number(char **q);
 #ifdef PIKE_DEBUG
 #define CHECK_FOO(NUMTYPE,TYPE,NAME)				\
   if(Pike_compiler->malloc_size_program-> PIKE_CONCAT(num_,NAME) < Pike_compiler->new_program-> PIKE_CONCAT(num_,NAME))	\
-    fatal("Pike_compiler->new_program->num_" #NAME " is out of order\n");	\
+    Pike_fatal("Pike_compiler->new_program->num_" #NAME " is out of order\n");	\
   if(Pike_compiler->new_program->flags & PROGRAM_OPTIMIZED)			\
-    fatal("Tried to reallocate fixed program.\n")
+    Pike_fatal("Tried to reallocate fixed program.\n")
 
 #else
 #define CHECK_FOO(NUMTYPE,TYPE,NAME)
@@ -805,7 +805,7 @@ void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
 		  sizeof(TYPE) *					\
 		  state->malloc_size_program->				\
                   PIKE_CONCAT(num_,NAME));				\
-    if(!tmp) fatal("Out of memory.\n");					\
+    if(!tmp) Pike_fatal("Out of memory.\n");					\
     PIKE_CONCAT(RELOCATE_,NAME)(state->new_program, tmp);		\
     state->new_program->NAME=tmp;					\
   }									\
@@ -847,7 +847,7 @@ static void debug_add_to_identifiers (struct identifier id)
     for (i = 0; i < Pike_compiler->new_program->num_identifiers; i++)
       if (Pike_compiler->new_program->identifiers[i].name == id.name) {
 	dump_program_tables (Pike_compiler->new_program, 0);
-	fatal ("Adding identifier twice, old at %d.\n", i);
+	Pike_fatal ("Adding identifier twice, old at %d.\n", i);
       }
   }
   add_to_identifiers (id);
@@ -885,7 +885,7 @@ void unuse_modules(INT32 howmany)
   if(!howmany) return;
 #ifdef PIKE_DEBUG
   if(howmany *sizeof(struct svalue) > used_modules.s.len)
-    fatal("Unusing too many modules.\n");
+    Pike_fatal("Unusing too many modules.\n");
 #endif
   Pike_compiler->num_used_modules-=howmany;
   low_make_buf_space(-sizeof(struct svalue)*howmany, &used_modules);
@@ -1010,7 +1010,7 @@ struct node_s *find_module_identifier(struct pike_string *ident,
       modules-=p->num_used_modules;
 #ifdef PIKE_DEBUG
       if( ((char *)modules ) < used_modules.s.str)
-	fatal("Modules out of whack!\n");
+	Pike_fatal("Modules out of whack!\n");
 #endif
     }
   }
@@ -1364,7 +1364,7 @@ void fixate_program(void)
   if(p->flags & PROGRAM_FIXED) return;
 #ifdef PIKE_DEBUG
   if(p->flags & PROGRAM_OPTIMIZED)
-    fatal("Cannot fixate optimized program\n");
+    Pike_fatal("Cannot fixate optimized program\n");
 #endif
 
   /* Ok, sort for binsearch */
@@ -1567,7 +1567,7 @@ void low_start_new_program(struct program *p,
   if (!node_hash.table) {
     node_hash.table = malloc(sizeof(node *)*32831);
     if (!node_hash.table) {
-      fatal("Out of memory!\n");
+      Pike_fatal("Out of memory!\n");
     }
     MEMSET(node_hash.table, 0, sizeof(node *)*32831);
     node_hash.size = 32831;
@@ -1609,7 +1609,7 @@ void low_start_new_program(struct program *p,
       struct identifier *i;
       id=isidentifier(name);
       if (id < 0)
-	fatal("Program constant disappeared in second pass.\n");
+	Pike_fatal("Program constant disappeared in second pass.\n");
       i=ID_FROM_INT(Pike_compiler->new_program, id);
       free_type(i->type);
       i->type=get_type_of_svalue(&tmp);
@@ -2135,31 +2135,31 @@ void check_program(struct program *p)
     variable_positions[e]=-1;
 
   if(p->id > current_program_id)
-    fatal("Program id is out of sync! (p->id=%d, current_program_id=%d)\n",p->id,current_program_id);
+    Pike_fatal("Program id is out of sync! (p->id=%d, current_program_id=%d)\n",p->id,current_program_id);
 
   if(p->refs <=0)
-    fatal("Program has zero refs.\n");
+    Pike_fatal("Program has zero refs.\n");
 
   if(p->next && p->next->prev != p)
-    fatal("Program ->next->prev != program.\n");
+    Pike_fatal("Program ->next->prev != program.\n");
 
   if(p->prev)
   {
     if(p->prev->next != p)
-      fatal("Program ->prev->next != program.\n");
+      Pike_fatal("Program ->prev->next != program.\n");
   }else{
     if(first_program != p)
-      fatal("Program ->prev == 0 but first_program != program.\n");
+      Pike_fatal("Program ->prev == 0 but first_program != program.\n");
   }
 
   if(p->id > current_program_id || p->id <= 0)
-    fatal("Program id is wrong.\n");
+    Pike_fatal("Program id is wrong.\n");
 
   if(p->storage_needed < 0)
-    fatal("Program->storage_needed < 0.\n");
+    Pike_fatal("Program->storage_needed < 0.\n");
 
   if(p->num_identifier_index > p->num_identifier_references)
-    fatal("Too many identifier index entries in program!\n");
+    Pike_fatal("Too many identifier index entries in program!\n");
 
   for(e=0;e<p->num_constants;e++)
   {
@@ -2179,25 +2179,25 @@ void check_program(struct program *p)
     }
 
     if(p->inherits[e].storage_offset < 0)
-      fatal("Inherit->storage_offset is wrong.\n");
+      Pike_fatal("Inherit->storage_offset is wrong.\n");
 
     if(p->inherits[e].prog &&
        p->inherits[e].storage_offset + STORAGE_NEEDED(p->inherits[e].prog) >
        p->storage_needed)
-      fatal("Not enough room allocated by inherit!\n");
+      Pike_fatal("Not enough room allocated by inherit!\n");
 
     if(e)
     {
       if(p->inherits[e-1].storage_offset >
 	 p->inherits[e].storage_offset)
-	fatal("Overlapping inherits! (1)\n");
+	Pike_fatal("Overlapping inherits! (1)\n");
 
       if(p->inherits[e-1].prog &&
 	 p->inherits[e-1].inherit_level >= p->inherits[e].inherit_level &&
 	 ( p->inherits[e-1].storage_offset +
 	   STORAGE_NEEDED(p->inherits[e-1].prog)) >
 	 p->inherits[e].storage_offset)
-	fatal("Overlapping inherits! (3)\n");
+	Pike_fatal("Overlapping inherits! (3)\n");
     }
   }
 
@@ -2209,7 +2209,7 @@ void check_program(struct program *p)
     check_type_string(p->identifiers[e].type);
 
     if(p->identifiers[e].identifier_flags & ~IDENTIFIER_MASK)
-      fatal("Unknown flags in identifier flag field.\n");
+      Pike_fatal("Unknown flags in identifier flag field.\n");
 
     if(p->identifiers[e].run_time_type!=T_MIXED)
       check_type(p->identifiers[e].run_time_type);
@@ -2219,7 +2219,7 @@ void check_program(struct program *p)
       if( (p->identifiers[e].func.offset /* + OFFSETOF(object,storage)*/ ) &
 	 (alignof_variable(p->identifiers[e].run_time_type)-1))
       {
-	fatal("Variable %s offset is not properly aligned (%ld).\n",
+	Pike_fatal("Variable %s offset is not properly aligned (%ld).\n",
 	      p->identifiers[e].name->str,
 	      PTRDIFF_T_TO_LONG(p->identifiers[e].func.offset));
       }
@@ -2230,19 +2230,19 @@ void check_program(struct program *p)
   {
     struct identifier *i;
     if(p->identifier_references[e].inherit_offset > p->num_inherits)
-      fatal("Inherit offset is wrong!\n");
+      Pike_fatal("Inherit offset is wrong!\n");
 
     if(!p->inherits[p->identifier_references[e].inherit_offset].prog)
     {
       if(!(p->flags & PROGRAM_FINISHED))
 	continue;
 
-      fatal("p->inherit[%d].prog = NULL!\n",p->identifier_references[e].inherit_offset);
+      Pike_fatal("p->inherit[%d].prog = NULL!\n",p->identifier_references[e].inherit_offset);
     }
 
     if(p->identifier_references[e].identifier_offset >
        p->inherits[p->identifier_references[e].inherit_offset].prog->num_identifiers)
-      fatal("Identifier offset %d is wrong! %d > %d\n",
+      Pike_fatal("Identifier offset %d is wrong! %d > %d\n",
 	    e,
 	    p->identifier_references[e].identifier_offset,
 	    p->inherits[p->identifier_references[e].inherit_offset].prog->num_identifiers);
@@ -2257,7 +2257,7 @@ void check_program(struct program *p)
       size=sizeof_variable(i->run_time_type);
 
       if((offset+size > (size_t)p->storage_needed) || offset<0)
-	fatal("Variable outside storage! (%s)\n",i->name->str);
+	Pike_fatal("Variable outside storage! (%s)\n",i->name->str);
 
       for(q=0;q<size;q++)
       {
@@ -2280,7 +2280,7 @@ void check_program(struct program *p)
 						 )->run_time_type),
 		    get_name_of_type(i->run_time_type));
 	    if (i->name) {
-	      fatal("Variable '%s' and '%s' overlap\n"
+	      Pike_fatal("Variable '%s' and '%s' overlap\n"
 		    "Offset 0x%08x - 0x%08x overlaps with 0x%08x - 0x%08x\n",
 		    ID_FROM_INT(p, variable_positions[offset+q])->name->str,
 		    i->name->str,
@@ -2294,7 +2294,7 @@ void check_program(struct program *p)
 						)->run_time_type)-1,
 		    offset, offset+size-1);
 	    } else {
-	      fatal("Variable '%s' and anonymous variable (%d) overlap\n"
+	      Pike_fatal("Variable '%s' and anonymous variable (%d) overlap\n"
 		    "Offset 0x%08x - 0x%08x overlaps with 0x%08x - 0x%08x\n",
 		    ID_FROM_INT(p, variable_positions[offset+q])->name->str,
 		    e,
@@ -2318,7 +2318,7 @@ void check_program(struct program *p)
   for(e=0;e<p->num_identifier_index;e++)
   {
     if(p->identifier_index[e] > p->num_identifier_references)
-      fatal("Program->identifier_indexes[%ld] is wrong\n",(long)e);
+      Pike_fatal("Program->identifier_indexes[%ld] is wrong\n",(long)e);
   }
 
 }
@@ -2494,7 +2494,7 @@ PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment,
 
 #ifdef PIKE_DEBUG
   if(alignment <=0 || (alignment & (alignment-1)) || alignment > 256)
-    fatal("Alignment must be 1,2,4,8,16,32,64,128 or 256 not %ld\n",
+    Pike_fatal("Alignment must be 1,2,4,8,16,32,64,128 or 256 not %ld\n",
 	  PTRDIFF_T_TO_LONG(alignment));
 #endif
   modulo=( modulo_orig /* +OFFSETOF(object,storage) */ ) % alignment;
@@ -2529,10 +2529,10 @@ PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment,
 
 #ifdef PIKE_DEBUG
   if(offset < Pike_compiler->new_program->storage_needed)
-    fatal("add_storage failed horribly!\n");
+    Pike_fatal("add_storage failed horribly!\n");
 
   if( (offset /* + OFFSETOF(object,storage) */ - modulo_orig ) % alignment )
-    fatal("add_storage failed horribly(2) %ld %ld %ld %ld!\n",
+    Pike_fatal("add_storage failed horribly(2) %ld %ld %ld %ld!\n",
 	  DO_NOT_WARN((long)offset),
 	  (long)0 /* + OFFSETOF(object,storage) */,
 	  DO_NOT_WARN((long)modulo_orig),
@@ -2677,7 +2677,7 @@ void pike_set_prog_event_callback(void (*cb)(int))
 {
 #ifdef PIKE_DEBUG
   if(Pike_compiler->new_program->event_handler)
-    fatal("Program already has an event handler!\n");
+    Pike_fatal("Program already has an event handler!\n");
 #endif
   Pike_compiler->new_program->event_handler=cb;
 }
@@ -2686,7 +2686,7 @@ void pike_set_prog_optimize_callback(node *(*opt)(node *))
 {
 #ifdef PIKE_DEBUG
   if(Pike_compiler->new_program->optimize)
-    fatal("Program already has an optimize handler!\n");
+    Pike_fatal("Program already has an optimize handler!\n");
 #endif
   Pike_compiler->new_program->optimize = opt;
 }
@@ -2766,7 +2766,7 @@ node *reference_inherited_identifier(struct pike_string *super_name,
 
 #ifdef PIKE_DEBUG
   if(function_name!=debug_findstring(function_name))
-    fatal("reference_inherited_function on nonshared string.\n");
+    Pike_fatal("reference_inherited_function on nonshared string.\n");
 #endif
 
   p=Pike_compiler->new_program;
@@ -2973,7 +2973,7 @@ void low_inherit(struct program *p,
 
 #ifdef PIKE_DEBUG
   if (p == placeholder_program)
-    fatal("Trying to inherit placeholder_program.\n");
+    Pike_fatal("Trying to inherit placeholder_program.\n");
 #endif
 
   if(p->flags & PROGRAM_NEEDS_PARENT)
@@ -3039,7 +3039,7 @@ void low_inherit(struct program *p,
 	  for(o=Pike_compiler->fake_object;o!=parent;o=o->parent)
 	  {
 #ifdef PIKE_DEBUG
-	    if(!o) fatal("low_inherit with odd Pike_compiler->fake_object as parent!\n");
+	    if(!o) Pike_fatal("low_inherit with odd Pike_compiler->fake_object as parent!\n");
 #endif
 	    inherit.parent_offset++;
 	  }
@@ -3050,7 +3050,7 @@ void low_inherit(struct program *p,
 	  {
 #ifdef PIKE_DEBUG
 	    if(!state->fake_object)
-	      fatal("low_inherit with odd Pike_compiler->fake_object as parent!\n");
+	      Pike_fatal("low_inherit with odd Pike_compiler->fake_object as parent!\n");
 #endif
 	    inherit.parent_offset++;
 	  }
@@ -3346,10 +3346,10 @@ int low_define_variable(struct pike_string *name,
 
 #ifdef PIKE_DEBUG
   if(Pike_compiler->new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
-    fatal("Attempting to add variable to fixed program\n");
+    Pike_fatal("Attempting to add variable to fixed program\n");
 
   if(Pike_compiler->compiler_pass==2)
-    fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n"
+    Pike_fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n"
 	  "Added identifier: \"%s\"\n", name->str);
 #endif
 
@@ -3447,7 +3447,7 @@ int define_variable(struct pike_string *name,
 
 #ifdef PIKE_DEBUG
   if(name!=debug_findstring(name))
-    fatal("define_variable on nonshared string.\n");
+    Pike_fatal("define_variable on nonshared string.\n");
 #endif
 
 #ifdef PROGRAM_BUILD_DEBUG
@@ -3481,7 +3481,7 @@ int define_variable(struct pike_string *name,
 
 #ifdef PIKE_DEBUG
   if(Pike_compiler->new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
-    fatal("Attempting to add variable to fixed program\n");
+    Pike_fatal("Attempting to add variable to fixed program\n");
 #endif
 
   if(n != -1)
@@ -3647,7 +3647,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 
 #ifdef PIKE_DEBUG
   if(name!=debug_findstring(name))
-    fatal("define_constant on nonshared string.\n");
+    Pike_fatal("define_constant on nonshared string.\n");
 #endif
 
   do {
@@ -3727,7 +3727,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
       else {
 #if 0
 #ifdef PIKE_DEBUG
-	if (!c) fatal("Can't declare constant during second compiler pass\n");
+	if (!c) Pike_fatal("Can't declare constant during second compiler pass\n");
 #endif
 #endif
 	free_type(id->type);
@@ -3747,10 +3747,10 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 
 #ifdef PIKE_DEBUG
   if(Pike_compiler->new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
-    fatal("Attempting to add constant to fixed program\n");
+    Pike_fatal("Attempting to add constant to fixed program\n");
 
   if(Pike_compiler->compiler_pass==2)
-    fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n");
+    Pike_fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n");
 #endif
 
   copy_shared_string(dummy.name, name);
@@ -3813,7 +3813,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     if ((overridden = override_identifier (&ref, name)) >= 0) {
 #ifdef PIKE_DEBUG
       if(MEMCMP(Pike_compiler->new_program->identifier_references+n, &ref,sizeof(ref)))
-	fatal("New constant overriding algorithm failed!\n");
+	Pike_fatal("New constant overriding algorithm failed!\n");
 #endif
       return overridden;
     }
@@ -3940,7 +3940,7 @@ PMOD_EXPORT int debug_end_class(char *name, ptrdiff_t namelen, INT32 flags)
   tmp.subtype=0;
   tmp.u.program=end_program();
   if(!tmp.u.program)
-    fatal("Failed to initialize class '%s'\n",name);
+    Pike_fatal("Failed to initialize class '%s'\n",name);
 
   id=make_shared_binary_string(name,namelen);
   ret=add_constant(id, &tmp, flags);
@@ -3987,7 +3987,7 @@ INT32 define_function(struct pike_string *name,
   if ((lfun_type = low_mapping_string_lookup(lfun_types, name))) {
 #ifdef PIKE_DEBUG
     if (lfun_type->type != T_TYPE) {
-      fatal("Bad entry in lfun_types for key \"%s\"\n", name->str);
+      Pike_fatal("Bad entry in lfun_types for key \"%s\"\n", name->str);
     }
 #endif /* PIKE_DEBUG */
     if (!pike_types_le(type, lfun_type->u.type)) {
@@ -4116,7 +4116,7 @@ INT32 define_function(struct pike_string *name,
     if ((overridden = override_identifier (&ref, name)) >= 0) {
 #ifdef PIKE_DEBUG
       if(MEMCMP(Pike_compiler->new_program->identifier_references+i, &ref,sizeof(ref)))
-	fatal("New function overloading algorithm failed!\n");
+	Pike_fatal("New function overloading algorithm failed!\n");
 #endif
       return overridden;
     }
@@ -4125,7 +4125,7 @@ make_a_new_def:
 
 #ifdef PIKE_DEBUG
   if(Pike_compiler->compiler_pass==2)
-    fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n");
+    Pike_fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n");
 #endif
 
   /* define a new function */
@@ -4232,7 +4232,7 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
 
 #ifdef PIKE_DEBUG
   if (!prog) {
-    fatal("really_low_find_shared_string_identifier(\"%s\", NULL, %d)\n"
+    Pike_fatal("really_low_find_shared_string_identifier(\"%s\", NULL, %d)\n"
 	  "prog is NULL!\n", name->str, flags);
   }
 #endif /* PIKE_DEBUG */
@@ -4321,7 +4321,7 @@ int low_find_shared_string_identifier(struct pike_string *name,
 
 #ifdef PIKE_DEBUG
     if(!funindex)
-      fatal("No funindex in fixed program\n");
+      Pike_fatal("No funindex in fixed program\n");
 #endif
 
     max = prog->num_identifier_index;
@@ -4364,7 +4364,7 @@ int find_shared_string_identifier(struct pike_string *name,
 {
 #ifdef PIKE_DEBUG
   if (!prog) {
-    fatal("find_shared_string_identifier(): No program!\n"
+    Pike_fatal("find_shared_string_identifier(): No program!\n"
 	  "Identifier: %s%s%s\n",
 	  name?"\"":"", name?name->str:"NULL", name?"\"":"");
   }
@@ -4624,7 +4624,7 @@ int get_small_number(char **q)
 
 #ifdef PIKE_DEBUG
   case 127:
-    fatal("get_small_number used on filename entry\n");
+    Pike_fatal("get_small_number used on filename entry\n");
 #endif
   }
   *q = (char *)addr;
@@ -4668,7 +4668,7 @@ static void insert_small_number(INT32 a)
       tmp = Pike_compiler->new_program->linenumbers + start;
       fprintf(stderr, "0x%p: %02x %02x %02x %02x %02x\n",
 	      tmp, tmp[0], tmp[1], tmp[2], tmp[3], tmp[4]);	      
-      fatal("insert_small_number failed: %d (0x%08x) != %d (0x%08x)\n",
+      Pike_fatal("insert_small_number failed: %d (0x%08x) != %d (0x%08x)\n",
 	    a, a, res, res);
     }
   }
@@ -4677,7 +4677,7 @@ static void insert_small_number(INT32 a)
 
 void store_linenumber(INT32 current_line, struct pike_string *current_file)
 {
-/*  if(!store_linenumbers)  fatal("Fnord.\n"); */
+/*  if(!store_linenumbers)  Pike_fatal("Fnord.\n"); */
 #ifdef PIKE_DEBUG
   if(a_flag)
   {
@@ -4731,7 +4731,7 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
        (Pike_compiler->last_file && file &&
 	memcmp(Pike_compiler->last_file->str, file, len<<shift)))
     {
-      fatal("Line numbering out of whack\n"
+      Pike_fatal("Line numbering out of whack\n"
 	    "    (line : %d ?= %d)!\n"
 	    "    (  pc : %d ?= %d)!\n"
 	    "    (shift: %d ?= %d)!\n"
@@ -4967,7 +4967,7 @@ void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
 #endif /* HAVE_VSNPRINTF */
 
   if((size_t)strlen(buf) >= (size_t)sizeof(buf))
-    fatal("Buffer overflow in my_yyerror.\n");
+    Pike_fatal("Buffer overflow in my_yyerror.\n");
 
   yyerror(buf);
   va_end(args);
@@ -5009,7 +5009,7 @@ extern void yyparse(void);
   struct svalue *save_sp=Pike_sp;			\
   yyparse();  /* Parse da program */			\
   if(save_sp != Pike_sp)				\
-    fatal("yyparse() left %"PRINTPTRDIFFT"d droppings on the stack!\n",	\
+    Pike_fatal("yyparse() left %"PRINTPTRDIFFT"d droppings on the stack!\n",	\
 	  Pike_sp - save_sp);						\
 }while(0)
 #else
@@ -5058,7 +5058,7 @@ static void mark_supporters(struct Supporter *s)
 #ifdef DEBUG_MALLOC
     describe(s);
 #endif
-    fatal("This is not a supporter (addr=%p, magic=%x)!\n",s,s->magic);
+    Pike_fatal("This is not a supporter (addr=%p, magic=%x)!\n",s,s->magic);
   }
 
   mark_supporters(s->dependants);
@@ -5093,16 +5093,16 @@ static void low_verify_supporters(struct Supporter *s)
 #endif
 
   if(s->previous && SNUM(s->previous) <= m->level)
-    fatal("Que, numbers out of whack1\n");
+    Pike_fatal("Que, numbers out of whack1\n");
 
   if(s->depends_on && SNUM(s->depends_on) <= m->level)
-    fatal("Que, numbers out of whack2\n");
+    Pike_fatal("Que, numbers out of whack2\n");
 
   for(ss=s->dependants;ss;ss=ss->next_dependant) {
     if (ss->depends_on != s)
-      fatal("Dependant hasn't got depends_on set properly.\n");
+      Pike_fatal("Dependant hasn't got depends_on set properly.\n");
     if(SNUM(ss) >= m->level)
-      fatal("Que, numbers out of whack3\n");
+      Pike_fatal("Que, numbers out of whack3\n");
   }
 
   low_verify_supporters(s->previous);
@@ -5167,7 +5167,7 @@ int unlink_current_supporter(struct Supporter *c)
   int ret=0;
 #ifdef PIKE_DEBUG
   if(c != current_supporter)
-    fatal("Previous unlink failed.\n");
+    Pike_fatal("Previous unlink failed.\n");
 #endif
   debug_malloc_touch(c);
   verify_supporters();
@@ -5176,7 +5176,7 @@ int unlink_current_supporter(struct Supporter *c)
 #ifdef PIKE_DEBUG
     struct Supporter *s;
     for (s = c->depends_on->dependants; s; s = s->next_dependant)
-      if (s == c) fatal("Dependant already linked in.\n");
+      if (s == c) Pike_fatal("Dependant already linked in.\n");
 #endif
     ret++;
     c->next_dependant = c->depends_on->dependants;
@@ -5322,7 +5322,7 @@ static void run_init(struct compilation *c)
     case 1: lex.current_lexer = yylex1; break;
     case 2: lex.current_lexer = yylex2; break;
     default:
-      fatal("Program has bad shift %d!\n", c->prog->size_shift);
+      Pike_fatal("Program has bad shift %d!\n", c->prog->size_shift);
       break;
   }
 
@@ -5352,7 +5352,7 @@ static void run_exit(struct compilation *c)
 
 #ifdef PIKE_DEBUG
   if(Pike_compiler->num_used_modules)
-    fatal("Failed to pop modules properly.\n");
+    Pike_fatal("Failed to pop modules properly.\n");
 #endif
   Pike_compiler->num_used_modules = c->num_used_modules_save ;
 
@@ -5486,7 +5486,7 @@ static int run_pass1(struct compilation *c)
     } else {
 #ifdef PIKE_DEBUG
       if (c->placeholder->prog != c->p)
-	fatal("Placeholder object got wrong program after first pass.\n");
+	Pike_fatal("Placeholder object got wrong program after first pass.\n");
 #endif
       debug_malloc_touch(c->placeholder);
       c->placeholder->storage=c->p->storage_needed ?
@@ -5540,7 +5540,7 @@ static void run_cleanup(struct compilation *c, int delayed)
   debug_malloc_touch(c->placeholder);
 #if 0 /* FIXME */
   if (threads_disabled != c->saved_threads_disabled) {
-    fatal("compile(): threads_disabled:%d saved_threads_disabled:%d\n",
+    Pike_fatal("compile(): threads_disabled:%d saved_threads_disabled:%d\n",
 	  threads_disabled, c->saved_threads_disabled);
   }
 #endif /* PIKE_DEBUG */
@@ -5606,7 +5606,7 @@ static void run_cleanup(struct compilation *c, int delayed)
 	/* Initialize the placeholder. */
 #ifdef PIKE_DEBUG
 	if (c->placeholder->prog != c->p)
-	  fatal("Placeholder object got wrong program after second pass.\n");
+	  Pike_fatal("Placeholder object got wrong program after second pass.\n");
 #endif
 	if(SETJMP(rec))
 	{
@@ -5649,7 +5649,7 @@ static int call_delayed_pass2(struct compilation *cc, int finish)
 
 #ifdef PIKE_DEBUG
   if(cc->supporter.dependants)
-    fatal("Que???\n");
+    Pike_fatal("Que???\n");
 #endif
   if(cc->p) {
     ok = finish;
@@ -5857,10 +5857,10 @@ void check_all_programs(void)
       {
 	check_string(cache[e].name);
 	if(cache[e].id<0 || cache[e].id > current_program_id)
-	  fatal("Error in find_function_cache[%ld].id\n",(long)e);
+	  Pike_fatal("Error in find_function_cache[%ld].id\n",(long)e);
 
 	if(cache[e].fun < -1 || cache[e].fun > 65536)
-	  fatal("Error in find_function_cache[%ld].fun\n",(long)e);
+	  Pike_fatal("Error in find_function_cache[%ld].fun\n",(long)e);
       }
     }
   }
@@ -6233,12 +6233,12 @@ unsigned gc_touch_all_programs(void)
   struct program *p;
   struct program_state *ps;
   if (first_program && first_program->prev)
-    fatal("Error in program link list.\n");
+    Pike_fatal("Error in program link list.\n");
   for (p = first_program; p; p = p->next) {
     debug_gc_touch(p);
     n++;
     if (p->next && p->next->prev != p)
-      fatal("Error in program link list.\n");
+      Pike_fatal("Error in program link list.\n");
   }
   return n;
 }
@@ -6341,7 +6341,7 @@ void gc_free_all_unreferenced_programs(void)
     for (p = first_program; p != gc_internal_program; p = p->next) {
       int e,tmp=0;
       if (!p)
-	fatal("gc_internal_program was bogus.\n");
+	Pike_fatal("gc_internal_program was bogus.\n");
       for(e=0;e<p->num_constants;e++)
       {
 	if(p->constants[e].sval.type == T_PROGRAM && p->constants[e].sval.u.program == p)
@@ -6417,7 +6417,7 @@ void pop_compiler_frame(void)
   f=Pike_compiler->compiler_frame;
 #ifdef PIKE_DEBUG
   if(!f)
-    fatal("Popping out of compiler frames\n");
+    Pike_fatal("Popping out of compiler frames\n");
 #endif
 
   low_pop_local_variables(0);
@@ -6452,7 +6452,7 @@ ptrdiff_t low_get_storage(struct program *o, struct program *p)
   hval%=GET_STORAGE_CACHE_SIZE;
 #ifdef PIKE_DEBUG
   if(hval>GET_STORAGE_CACHE_SIZE)
-    fatal("hval>GET_STORAGE_CACHE_SIZE");
+    Pike_fatal("hval>GET_STORAGE_CACHE_SIZE");
 #endif
   if(get_storage_cache[hval].oid == oid &&
      get_storage_cache[hval].pid == pid)
@@ -6559,7 +6559,7 @@ int find_child(struct program *parent, struct program *child)
   h= h % FIND_CHILD_HASHSIZE;
 #ifdef PIKE_DEBUG
   if(h>=FIND_CHILD_HASHSIZE)
-    fatal("find_child failed to hash within boundaries.\n");
+    Pike_fatal("find_child failed to hash within boundaries.\n");
 #endif
   if(find_child_cache[h].pid == parent->id &&
      find_child_cache[h].cid == child->id)
@@ -6598,7 +6598,7 @@ void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)))
   va_end(args);
 
   if(strlen(buf)>sizeof(buf))
-    fatal("Buffer overflow in yywarning!\n");
+    Pike_fatal("Buffer overflow in yywarning!\n");
 
   if ((error_handler && error_handler->prog) || get_master()) {
     ref_push_string(lex.current_file);
@@ -6668,7 +6668,7 @@ PMOD_EXPORT int implements(struct program *a, struct program *b)
   hval %= IMPLEMENTS_CACHE_SIZE;
 #ifdef PIKE_DEBUG
   if(hval >= IMPLEMENTS_CACHE_SIZE)
-    fatal("Implements_cache failed!\n");
+    Pike_fatal("Implements_cache failed!\n");
 #endif
   if(implements_cache[hval].aid==a->id && implements_cache[hval].bid==b->id)
   {
@@ -6750,7 +6750,7 @@ PMOD_EXPORT int is_compatible(struct program *a, struct program *b)
   hval %= IMPLEMENTS_CACHE_SIZE;
 #ifdef PIKE_DEBUG
   if(hval >= IMPLEMENTS_CACHE_SIZE)
-    fatal("Implements_cache failed!\n");
+    Pike_fatal("Implements_cache failed!\n");
 #endif
   if(is_compatible_cache[hval].aid==aid &&
      is_compatible_cache[hval].bid==bid)
@@ -6768,7 +6768,7 @@ PMOD_EXPORT int is_compatible(struct program *a, struct program *b)
   rhval %= IMPLEMENTS_CACHE_SIZE;
 #ifdef PIKE_DEBUG
   if(rhval >= IMPLEMENTS_CACHE_SIZE)
-    fatal("Implements_cache failed!\n");
+    Pike_fatal("Implements_cache failed!\n");
 #endif
   if(implements_cache[rhval].aid==bid &&
      implements_cache[rhval].bid==aid &&

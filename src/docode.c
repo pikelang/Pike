@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.143 2002/07/02 18:12:16 grubba Exp $");
+RCSID("$Id: docode.c,v 1.144 2002/08/15 14:49:20 marcus Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -78,12 +78,12 @@ static int current_stack_depth = 0;
   cleanup_frame__.stack_depth = current_stack_depth;			\
   DO_IF_DEBUG(								\
     if (current_label->cleanups == (void *)(ptrdiff_t) -1)		\
-      fatal("current_label points to an unused statement_label.\n");	\
+      Pike_fatal("current_label points to an unused statement_label.\n");	\
   )									\
   if (current_label->break_label == -2) {				\
     DO_IF_DEBUG(							\
       if (current_label->prev->break_label == -2)			\
-        fatal("Found two open statement_label entries in a row.\n");	\
+        Pike_fatal("Found two open statement_label entries in a row.\n");	\
     )									\
     cleanup_frame__.prev = current_label->prev->cleanups;		\
     current_label->prev->cleanups = &cleanup_frame__;			\
@@ -99,7 +99,7 @@ static int current_stack_depth = 0;
   else {								\
     DO_IF_DEBUG(							\
       if (current_label->prev->cleanups != &cleanup_frame__)		\
-        fatal("Cleanup frame lost from statement_label cleanup list.\n");\
+        Pike_fatal("Cleanup frame lost from statement_label cleanup list.\n");\
     )									\
     current_label->prev->cleanups = cleanup_frame__.prev;		\
   }									\
@@ -123,7 +123,7 @@ static int current_stack_depth = 0;
 #define BLOCK_END							\
   if (current_stack_depth != cleanup_frame__.stack_depth) {		\
     print_tree(n);							\
-    fatal("Stack not in synch after block: is %d, should be %d.\n",	\
+    Pike_fatal("Stack not in synch after block: is %d, should be %d.\n",	\
 	  current_stack_depth, cleanup_frame__.stack_depth);		\
   }									\
   if (d_flag > 2) emit0(F_POP_SYNCH_MARK);				\
@@ -158,7 +158,7 @@ static int current_stack_depth = 0;
   DO_IF_DEBUG(								\
     if (new_label__.cleanups &&						\
 	new_label__.cleanups != (void *)(ptrdiff_t) -1)			\
-      fatal("Cleanup frames still left in statement_label.\n"));	\
+      Pike_fatal("Cleanup frames still left in statement_label.\n"));	\
 } while (0)
 
 struct switch_data
@@ -249,7 +249,7 @@ int ins_label(int lbl)
 void do_pop(int x)
 {
 #ifdef PIKE_DEBUG
-  if (x < 0) fatal("Cannot do pop of %d args.\n", x);
+  if (x < 0) Pike_fatal("Cannot do pop of %d args.\n", x);
 #endif
   switch(x)
   {
@@ -291,7 +291,7 @@ int do_docode(node *n, INT16 flags)
   if(!n) return 0;
   lex.current_line=n->line_number;
 #ifdef PIKE_DEBUG
-  if (current_stack_depth == -4711) fatal("do_docode() used outside docode().\n");
+  if (current_stack_depth == -4711) Pike_fatal("do_docode() used outside docode().\n");
 #endif
   i=do_docode2(check_node_hash(n), flags);
   current_stack_depth = stack_depth_save + i;
@@ -314,7 +314,7 @@ static void code_expression(node *n, INT16 flags, char *err)
   case 0: my_yyerror("Void expression for %s",err);
   case 1: return;
   case 2:
-    fatal("Internal compiler error (%s), line %ld, file %s\n",
+    Pike_fatal("Internal compiler error (%s), line %ld, file %s\n",
 	  err,
 	  (long)lex.current_line,
 	  lex.current_file?lex.current_file->str:"Unknown");
@@ -674,7 +674,7 @@ static int do_docode2(node *n, INT16 flags)
       if (!current_label->cleanups ||
 	  (current_label->cleanups->cleanup != do_pop_mark &&
 	   current_label->cleanups->cleanup != do_pop_to_mark))
-	fatal("F_PUSH_ARRAY unexpected in this context.\n");
+	Pike_fatal("F_PUSH_ARRAY unexpected in this context.\n");
 #endif
       current_label->cleanups->cleanup = do_pop_to_mark;
     }
@@ -787,7 +787,7 @@ static int do_docode2(node *n, INT16 flags)
 	case F_MOD_EQ: opname="`%"; break;
 	case F_DIV_EQ: opname="`/"; break;
 	default:
-	  fatal("Really???\n");
+	  Pike_fatal("Really???\n");
 	  opname="`make gcc happy";
       }
 
@@ -805,7 +805,7 @@ static int do_docode2(node *n, INT16 flags)
       tmp1=do_docode(CAR(n),DO_LVALUE);
 #ifdef PIKE_DEBUG
       if(tmp1 != 2)
-	fatal("HELP! FATAL INTERNAL COMPILER ERROR (7)\n");
+	Pike_fatal("HELP! FATAL INTERNAL COMPILER ERROR (7)\n");
 #endif
 
       if(n->token == F_ADD_EQ && (flags & DO_POP))
@@ -895,7 +895,7 @@ static int do_docode2(node *n, INT16 flags)
 	    case 2: emit0(F_LTOSVAL3); break;
 #ifdef PIKE_DEBUG
 	    default:
-	      fatal("Arglebargle glop-glyf?\n");
+	      Pike_fatal("Arglebargle glop-glyf?\n");
 #endif
 	  }
 	}else{
@@ -996,12 +996,12 @@ static int do_docode2(node *n, INT16 flags)
   case F_NOT:
   case F_COMPL:
   case F_NEGATE:
-    fatal("Optimizer error.\n");
+    Pike_fatal("Optimizer error.\n");
 
   case F_RANGE:
     tmp1=do_docode(CAR(n),DO_NOT_COPY_TOPLEVEL);
     if(do_docode(CDR(n),DO_NOT_COPY)!=2)
-      fatal("Compiler internal error (at %ld).\n",(long)lex.current_line);
+      Pike_fatal("Compiler internal error (at %ld).\n",(long)lex.current_line);
     emit0(n->token);
     return DO_NOT_WARN((INT32)tmp1);
 
@@ -1029,7 +1029,7 @@ static int do_docode2(node *n, INT16 flags)
 
 #ifdef PIKE_DEBUG
       if(tmp1 != 2)
-	fatal("HELP! FATAL INTERNAL COMPILER ERROR (1)\n");
+	Pike_fatal("HELP! FATAL INTERNAL COMPILER ERROR (1)\n");
 #endif
 
       emit0(F_MARK);
@@ -1054,7 +1054,7 @@ static int do_docode2(node *n, INT16 flags)
       tmp1=do_docode(CAR(n),DO_LVALUE);
 #ifdef PIKE_DEBUG
       if(tmp1 != 2)
-	fatal("HELP! FATAL INTERNAL COMPILER ERROR (1)\n");
+	Pike_fatal("HELP! FATAL INTERNAL COMPILER ERROR (1)\n");
 #endif
 
       if(flags & DO_POP)
@@ -1091,7 +1091,7 @@ static int do_docode2(node *n, INT16 flags)
 
 #ifdef PIKE_DEBUG
       if(tmp1 != 2)
-	fatal("HELP! FATAL INTERNAL COMPILER ERROR (1)\n");
+	Pike_fatal("HELP! FATAL INTERNAL COMPILER ERROR (1)\n");
 #endif
 
       emit0(F_MARK);
@@ -1116,7 +1116,7 @@ static int do_docode2(node *n, INT16 flags)
       tmp1=do_docode(CAR(n),DO_LVALUE);
 #ifdef PIKE_DEBUG
       if(tmp1 != 2)
-	fatal("HELP! FATAL INTERNAL COMPILER ERROR (2)\n");
+	Pike_fatal("HELP! FATAL INTERNAL COMPILER ERROR (2)\n");
 #endif
       if(flags & DO_POP)
       {
@@ -1577,7 +1577,7 @@ static int do_docode2(node *n, INT16 flags)
     PUSH_STATEMENT_LABEL;
 
     if(do_docode(CAR(n),0)!=1)
-      fatal("Internal compiler error, time to panic\n");
+      Pike_fatal("Internal compiler error, time to panic\n");
 
     if (!(CAR(n) && (current_switch.type = CAR(n)->type))) {
       current_switch.type = mixed_type_string;
@@ -1610,7 +1610,7 @@ static int do_docode2(node *n, INT16 flags)
 
 #ifdef PIKE_DEBUG
     if(Pike_sp-save_sp != cases)
-      fatal("Count cases is wrong!\n");
+      Pike_fatal("Count cases is wrong!\n");
 #endif
 
     f_aggregate(cases);
@@ -1679,7 +1679,7 @@ static int do_docode2(node *n, INT16 flags)
     BLOCK_END;
 #ifdef PIKE_DEBUG
     if(Pike_interpreter.recoveries && Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
-      fatal("Stack error after F_SWITCH (underflow)\n");
+      Pike_fatal("Stack error after F_SWITCH (underflow)\n");
 #endif
     return 0;
   }
@@ -1915,14 +1915,14 @@ static int do_docode2(node *n, INT16 flags)
       tmp1=do_docode(CAR(n),DO_LVALUE);
 #ifdef PIKE_DEBUG
       if(tmp1 & 1)
-	fatal("Very internal compiler error.\n");
+	Pike_fatal("Very internal compiler error.\n");
 #endif
       emit1(F_ARRAY_LVALUE, DO_NOT_WARN((INT32)(tmp1>>1)));
       return 2;
 
   case F_ARROW:
     if(CDR(n)->token != F_CONSTANT || CDR(n)->u.sval.type!=T_STRING)
-      fatal("Bugg in F_ARROW, index not string.");
+      Pike_fatal("Bugg in F_ARROW, index not string.");
     if(flags & WANT_LVALUE)
     {
       /* FIXME!!!! ??? I wonder what needs fixing... /Hubbe */
@@ -1955,13 +1955,13 @@ static int do_docode2(node *n, INT16 flags)
       {
 #ifdef PIKE_DEBUG
 	if(!mklval)
-	  fatal("Unwanted lvalue!\n");
+	  Pike_fatal("Unwanted lvalue!\n");
 #endif
 	emit0(F_INDIRECT);
       }
       
       if(do_docode(CDR(n),0) != 1)
-	fatal("Internal compiler error, please report this (1).");
+	Pike_fatal("Internal compiler error, please report this (1).");
       if(CDR(n)->token != F_CONSTANT &&
 	match_types(CDR(n)->type, string_type_string))
 	emit0(F_CLEAR_STRING_SUBTYPE);
@@ -2034,7 +2034,7 @@ static int do_docode2(node *n, INT16 flags)
 #ifdef PIKE_DEBUG
     case T_OBJECT:
       if(n->u.sval.u.object->next == n->u.sval.u.object)
-	fatal("Internal error: Pointer to parent cannot be a compile time constant!\n");
+	Pike_fatal("Internal error: Pointer to parent cannot be a compile time constant!\n");
 #endif
       /* FALL_THROUGH */
     default:
@@ -2166,7 +2166,7 @@ static int do_docode2(node *n, INT16 flags)
     return 1;
 
   default:
-    fatal("Infernal compiler error (unknown parse-tree-token %d).\n", n->token);
+    Pike_fatal("Infernal compiler error (unknown parse-tree-token %d).\n", n->token);
     return 0;			/* make gcc happy */
   }
 }
@@ -2175,7 +2175,7 @@ INT32 do_code_block(node *n)
 {
   INT32 ret;
 #ifdef PIKE_DEBUG
-  if (current_stack_depth != -4711) fatal("Reentrance in do_code_block().\n");
+  if (current_stack_depth != -4711) Pike_fatal("Reentrance in do_code_block().\n");
   current_stack_depth = 0;
 #endif
 

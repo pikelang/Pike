@@ -10,7 +10,7 @@
 #include "stuff.h"
 #include "pike_error.h"
 
-RCSID("$Id: hashtable.c,v 1.10 2002/05/31 22:41:24 nilsson Exp $");
+RCSID("$Id: hashtable.c,v 1.11 2002/08/15 14:49:21 marcus Exp $");
 
 static size_t gobble(struct pike_string *s)
 {
@@ -85,7 +85,7 @@ struct hash_table *hash_rehash(struct hash_table *h,int size)
 
 #ifdef PIKE_DEBUG
   if( 1 << my_log2(size) != size)
-    fatal("Size is not a power of two!\n");
+    Pike_fatal("Size is not a power of two!\n");
 #endif
 
   new=(struct hash_table *)calloc(1,sizeof(struct hash_table)+
@@ -142,7 +142,7 @@ struct hash_table *hash_unlink(struct hash_table *h, struct hash_entry *s)
     }
   }
 #ifdef PIKE_DEBUG
-  fatal("hash_entry not in hashtable\n");
+  Pike_fatal("hash_entry not in hashtable\n");
 #endif
   return h;
 }

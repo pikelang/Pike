@@ -24,7 +24,7 @@
 #include "bignum.h"
 #include "cyclic.h"
 
-RCSID("$Id: array.c,v 1.128 2002/05/31 22:41:19 nilsson Exp $");
+RCSID("$Id: array.c,v 1.129 2002/08/15 14:49:18 marcus Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -126,9 +126,9 @@ PMOD_EXPORT void really_free_array(struct array *v)
 {
 #ifdef PIKE_DEBUG
   if(v == & empty_array || v == &weak_empty_array || v == &weak_shrink_empty_array)
-    fatal("Tried to free some *_empty_array.\n");
+    Pike_fatal("Tried to free some *_empty_array.\n");
   if (v->refs)
-    fatal("Freeing array with %d refs.\n", v->refs);
+    Pike_fatal("Freeing array with %d refs.\n", v->refs);
 #endif
 
 #ifdef PIKE_DEBUG
@@ -162,7 +162,7 @@ PMOD_EXPORT struct array *array_set_flags(struct array *a, int flags)
       case ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK:
 	add_ref(a = &weak_shrink_empty_array); break;
       default:
-	fatal("Invalid flags %x\n", flags);
+	Pike_fatal("Invalid flags %x\n", flags);
     }
   }
   return a;
@@ -176,7 +176,7 @@ PMOD_EXPORT void array_index(struct svalue *s,struct array *v,INT32 index)
 {
 #ifdef PIKE_DEBUG
   if(index<0 || index>=v->size)
-    fatal("Illegal index in low level index routine.\n");
+    Pike_fatal("Illegal index in low level index routine.\n");
 #endif
 
   add_ref(v);
@@ -235,7 +235,7 @@ PMOD_EXPORT void array_free_index(struct array *v,INT32 index)
 {
 #ifdef PIKE_DEBUG
   if(index<0 || index>=v->size)
-    fatal("Illegal index in low level free index routine.\n");
+    Pike_fatal("Illegal index in low level free index routine.\n");
 #endif
 
   free_svalue(ITEM(v) + index);
@@ -290,7 +290,7 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
 {
 #ifdef PIKE_DEBUG
   if(index<0 || index>v->size)
-    fatal("Illegal index in low level insert routine.\n");
+    Pike_fatal("Illegal index in low level insert routine.\n");
 #endif
 
   /* Can we fit it into the existing block? */
@@ -378,10 +378,10 @@ PMOD_EXPORT struct array *array_shrink(struct array *v, ptrdiff_t size)
 
 #ifdef PIKE_DEBUG
   if(v->refs>2) /* Odd, but has to be two */
-    fatal("Array shrink on array with many references.\n");
+    Pike_fatal("Array shrink on array with many references.\n");
 
   if(size > v->size)
-    fatal("Illegal argument to array_shrink.\n");
+    Pike_fatal("Illegal argument to array_shrink.\n");
 #endif
 
   if(size*2 < v->malloced_size + 4) /* Should we realloc it? */
@@ -410,7 +410,7 @@ PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
 
 #ifdef PIKE_DEBUG
   if(index<0 || index >= v->size)
-    fatal("Illegal argument to array_remove.\n");
+    Pike_fatal("Illegal argument to array_remove.\n");
 #endif
 
   array_free_index(v, index);
@@ -452,7 +452,7 @@ PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
 
 #ifdef PIKE_DEBUG
   if(start<0)
-    fatal("Start of find_index is less than zero.\n");
+    Pike_fatal("Start of find_index is less than zero.\n");
 #endif
 
   check_destructed(s);
@@ -496,7 +496,7 @@ PMOD_EXPORT struct array *slice_array(struct array *v, ptrdiff_t start,
 
 #ifdef PIKE_DEBUG
   if(start > end || end>v->size || start<0)
-    fatal("Illegal arguments to slice_array()\n");
+    Pike_fatal("Illegal arguments to slice_array()\n");
 
   if(d_flag > 1)  array_check_type_field(v);
 #endif
@@ -543,7 +543,7 @@ PMOD_EXPORT struct array *friendly_slice_array(struct array *v,
 
 #ifdef PIKE_DEBUG
   if(start > end || end>v->size || start<0)
-    fatal("Illegal arguments to slice_array()\n");
+    Pike_fatal("Illegal arguments to slice_array()\n");
 
   if(d_flag > 1)  array_check_type_field(v);
 #endif
@@ -1029,7 +1029,7 @@ PMOD_EXPORT void array_fix_type_field(struct array *v)
   if(t & ~(v->type_field))
   {
     describe(v);
-    fatal("Type field out of order!\n");
+    Pike_fatal("Type field out of order!\n");
   }
 #endif
   v->type_field = t;
@@ -1050,7 +1050,7 @@ void array_check_type_field(struct array *v)
   for(e=0; e<v->size; e++)
   {
     if(ITEM(v)[e].type > MAX_TYPE)
-      fatal("Type is out of range.\n");
+      Pike_fatal("Type is out of range.\n");
       
     t |= 1 << ITEM(v)[e].type;
   }
@@ -1058,7 +1058,7 @@ void array_check_type_field(struct array *v)
   if(t & ~(v->type_field))
   {
     describe(v);
-    fatal("Type field out of order!\n");
+    Pike_fatal("Type field out of order!\n");
   }
 }
 #endif
@@ -1815,7 +1815,7 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
       case 1: f=(explode_searchfunc)mojt.vtab->func1; break;
       case 2: f=(explode_searchfunc)mojt.vtab->func2; break;
 #ifdef PIKE_DEBUG
-      default: fatal("Illegal shift.\n");
+      default: Pike_fatal("Illegal shift.\n");
 #endif
     }
 
@@ -2011,33 +2011,33 @@ PMOD_EXPORT void check_array(struct array *a)
   INT32 e;
 
   if(a->next->prev != a)
-    fatal("Array check: a->next->prev != a\n");
+    Pike_fatal("Array check: a->next->prev != a\n");
 
   if(a->size > a->malloced_size)
-    fatal("Array is larger than malloced block!\n");
+    Pike_fatal("Array is larger than malloced block!\n");
 
   if(a->size < 0)
-    fatal("Array size is negative!\n");
+    Pike_fatal("Array size is negative!\n");
 
   if(a->malloced_size < 0)
-    fatal("Array malloced size is negative!\n");
+    Pike_fatal("Array malloced size is negative!\n");
 
   if(a->item < a->real_item)
   {
 #ifdef DEBUG_MALLOC
     describe(a);
 #endif
-    fatal("Array item pointer is too small!\n");
+    Pike_fatal("Array item pointer is too small!\n");
   }
 
   if(a->refs <=0 )
-    fatal("Array has zero refs.\n");
+    Pike_fatal("Array has zero refs.\n");
 
 
   for(e=0;e<a->size;e++)
   {
     if(! ( (1 << ITEM(a)[e].type) & (a->type_field) ) && ITEM(a)[e].type<16)
-      fatal("Type field lies.\n");
+      Pike_fatal("Type field lies.\n");
     
     check_svalue(ITEM(a)+e);
   }
@@ -2054,7 +2054,7 @@ void check_all_arrays(void)
 
     a=a->next;
     if(!a)
-      fatal("Null pointer in array list.\n");
+      Pike_fatal("Null pointer in array list.\n");
   } while (a != & empty_array);
 }
 #endif /* PIKE_DEBUG */
@@ -2078,7 +2078,7 @@ void gc_mark_array_as_referenced(struct array *a)
   if(gc_mark(a)) {
 #ifdef PIKE_DEBUG
     if (a == &empty_array || a == &weak_empty_array || a == &weak_shrink_empty_array)
-      fatal("Trying to gc mark some *_empty_array.\n");
+      Pike_fatal("Trying to gc mark some *_empty_array.\n");
 #endif
 
     if (a == gc_mark_array_pos)
@@ -2100,7 +2100,7 @@ void gc_mark_array_as_referenced(struct array *a)
 	  int d=0;
 #ifdef PIKE_DEBUG
 	  if (a->refs != 1)
-	    fatal("Got %d refs to weak shrink array "
+	    Pike_fatal("Got %d refs to weak shrink array "
 		  "which we'd like to change the size on.\n", a->refs);
 #endif
 	  t = 0;
@@ -2145,7 +2145,7 @@ void real_gc_cycle_check_array(struct array *a, int weak)
   GC_CYCLE_ENTER(a, weak) {
 #ifdef PIKE_DEBUG
     if (a == &empty_array || a == &weak_empty_array || a == &weak_shrink_empty_array)
-      fatal("Trying to gc cycle check some *_empty_array.\n");
+      Pike_fatal("Trying to gc cycle check some *_empty_array.\n");
 #endif
 
     if (a->type_field & BIT_COMPLEX)
@@ -2180,7 +2180,7 @@ unsigned gc_touch_all_arrays(void)
     debug_gc_touch(a);
     n++;
     if (!a->next || a->next->prev != a)
-      fatal("Error in array link list.\n");
+      Pike_fatal("Error in array link list.\n");
     a=a->next;
   } while (a != &empty_array);
   return n;
@@ -2211,7 +2211,7 @@ void gc_mark_all_arrays(void)
   while (gc_mark_array_pos != &empty_array) {
     struct array *a = gc_mark_array_pos;
 #ifdef PIKE_DEBUG
-    if (!a) fatal("Null pointer in array list.\n");
+    if (!a) Pike_fatal("Null pointer in array list.\n");
 #endif
     gc_mark_array_pos = a->next;
     if(gc_is_referenced(a))
@@ -2247,7 +2247,7 @@ void gc_free_all_unreferenced_arrays(void)
   {
 #ifdef PIKE_DEBUG
     if (!a)
-      fatal("Null pointer in array list.\n");
+      Pike_fatal("Null pointer in array list.\n");
 #endif
     if(gc_do_free(a))
     {
@@ -2428,7 +2428,7 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b)
   }
 #ifdef PIKE_DEBUG
   if(size != ret->size)
-    fatal("Implode_array failed miserably (%d != %d)\n", size, ret->size);
+    Pike_fatal("Implode_array failed miserably (%d != %d)\n", size, ret->size);
 #endif
   return ret;
 }

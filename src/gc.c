@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.184 2002/06/11 17:30:38 mast Exp $");
+RCSID("$Id: gc.c,v 1.185 2002/08/15 14:49:21 marcus Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -664,7 +664,7 @@ void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
 static void gdb_gc_stop_here(void *a, int weak)
 {
 #if 0
-  if (!found_where) fatal("found_where is zero.\n");
+  if (!found_where) Pike_fatal("found_where is zero.\n");
 #endif
   fprintf(stderr,"***One %sref found%s. ",
 	  weak ? "weak " : "",
@@ -1123,7 +1123,7 @@ void debug_gc_touch(void *a)
 	    "gc_touch() in pass %d.\n", a, Pike_in_gc);
   }
 
-  if (!a) fatal("Got null pointer.\n");
+  if (!a) Pike_fatal("Got null pointer.\n");
 
   switch (Pike_in_gc) {
     case GC_PASS_PRETOUCH:
@@ -1195,7 +1195,7 @@ void debug_gc_touch(void *a)
       break;
 
     default:
-      fatal("debug_gc_touch() used in invalid gc pass.\n");
+      Pike_fatal("debug_gc_touch() used in invalid gc pass.\n");
   }
 }
 
@@ -1203,7 +1203,7 @@ static INLINE struct marker *gc_check_debug(void *a, int weak)
 {
   struct marker *m;
 
-  if (!a) fatal("Got null pointer.\n");
+  if (!a) Pike_fatal("Got null pointer.\n");
   if(Pike_in_gc == GC_PASS_LOCATE)
   {
     if(check_for == a)
@@ -1214,7 +1214,7 @@ static INLINE struct marker *gc_check_debug(void *a, int weak)
   }
 
   if (Pike_in_gc != GC_PASS_CHECK)
-    fatal("gc check attempted in invalid pass.\n");
+    Pike_fatal("gc check attempted in invalid pass.\n");
 
   m = get_marker(a);
 
@@ -1460,9 +1460,9 @@ int debug_gc_is_referenced(void *a)
 	    "gc_is_referenced() in pass %d.\n", a, Pike_in_gc);
   }
 
-  if (!a) fatal("Got null pointer.\n");
+  if (!a) Pike_fatal("Got null pointer.\n");
   if (Pike_in_gc != GC_PASS_MARK)
-    fatal("gc_is_referenced() called in invalid gc pass.\n");
+    Pike_fatal("gc_is_referenced() called in invalid gc pass.\n");
 
   if (gc_debug) {
     m = find_marker(a);
@@ -1490,7 +1490,7 @@ int gc_external_mark3(void *a, void *in, char *where)
 	    "gc_external_mark3() in pass %d.\n", a, Pike_in_gc);
   }
 
-  if (!a) fatal("Got null pointer.\n");
+  if (!a) Pike_fatal("Got null pointer.\n");
 
   if(Pike_in_gc == GC_PASS_LOCATE)
   {
@@ -1511,7 +1511,7 @@ int gc_external_mark3(void *a, void *in, char *where)
   }
 
   if (Pike_in_gc != GC_PASS_CHECK)
-    fatal("gc_external_mark() called in invalid gc pass.\n");
+    Pike_fatal("gc_external_mark() called in invalid gc pass.\n");
 
   m=get_marker(a);
   m->xrefs++;
@@ -1551,9 +1551,9 @@ int gc_do_weak_free(void *a)
     fprintf(stderr, "## Watched thing %p found in "
 	    "gc_do_weak_free() in pass %d.\n", a, Pike_in_gc);
   }
-  if (!a) fatal("Got null pointer.\n");
+  if (!a) Pike_fatal("Got null pointer.\n");
   if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_ZAP_WEAK)
-    fatal("gc_do_weak_free() called in invalid gc pass.\n");
+    Pike_fatal("gc_do_weak_free() called in invalid gc pass.\n");
   if (gc_debug) {
     if (!(m = find_marker(a)))
       gc_fatal(a, 0, "gc_do_weak_free() got unknown object.\n");
@@ -1616,14 +1616,14 @@ void gc_delayed_free(void *a, int type)
   }
   if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE &&
       Pike_in_gc != GC_PASS_ZAP_WEAK)
-    fatal("gc_delayed_free() called in invalid gc pass.\n");
+    Pike_fatal("gc_delayed_free() called in invalid gc pass.\n");
   if (gc_debug) {
     if (!(m = find_marker(a)))
       gc_fatal(a, 0, "gc_delayed_free() got unknown object (missed by pretouch pass).\n");
   }
   else m = get_marker(a);
   if (*(INT32 *) a != 1)
-    fatal("gc_delayed_free() called for thing that haven't got a single ref.\n");
+    Pike_fatal("gc_delayed_free() called for thing that haven't got a single ref.\n");
   debug_malloc_touch(a);
   delayed_freed++;
 #else
@@ -1675,9 +1675,9 @@ int gc_mark(void *a)
     fprintf(stderr, "## Watched thing %p found in "
 	    "gc_mark() in pass %d.\n", a, Pike_in_gc);
   }
-  if (!a) fatal("Got null pointer.\n");
+  if (!a) Pike_fatal("Got null pointer.\n");
   if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_ZAP_WEAK)
-    fatal("gc mark attempted in invalid pass.\n");
+    Pike_fatal("gc mark attempted in invalid pass.\n");
   if (!*(INT32 *) a)
     gc_fatal(a, 0, "Marked a thing without refs.\n");
   if (m->weak_refs < 0)
@@ -1780,7 +1780,7 @@ void gc_cycle_run_queue()
 {
 #ifdef PIKE_DEBUG
   if (Pike_in_gc != GC_PASS_CYCLE)
-    fatal("Use of the gc frame stack outside the cycle check pass.\n");
+    Pike_fatal("Use of the gc frame stack outside the cycle check pass.\n");
 #endif
   while (gc_rec_top) {
 #ifdef GC_STACK_DEBUG
@@ -1824,7 +1824,7 @@ static void rotate_rec_list (struct gc_frame *beg, struct gc_frame *pos)
 
 #ifdef PIKE_DEBUG
   if (Pike_in_gc != GC_PASS_CYCLE)
-    fatal("Use of the gc frame stack outside the cycle check pass.\n");
+    Pike_fatal("Use of the gc frame stack outside the cycle check pass.\n");
   CHECK_POP_FRAME(beg);
   CHECK_POP_FRAME(pos);
   if (beg == pos)
@@ -1923,10 +1923,10 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
 
   debug_malloc_touch(x);
 
-  if (!x) fatal("Got null pointer.\n");
-  if (m->data != x) fatal("Got wrong marker.\n");
+  if (!x) Pike_fatal("Got null pointer.\n");
+  if (m->data != x) Pike_fatal("Got wrong marker.\n");
   if (Pike_in_gc != GC_PASS_CYCLE)
-    fatal("GC cycle push attempted in invalid pass.\n");
+    Pike_fatal("GC cycle push attempted in invalid pass.\n");
   if (gc_debug && !(m->flags & GC_PRETOUCHED))
     gc_fatal(x, 0, "gc_cycle_push() called for untouched thing.\n");
   if ((!(m->flags & GC_NOT_REFERENCED) || m->flags & GC_MARKED) &&
@@ -1985,7 +1985,7 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
 	struct gc_frame *l = gc_rec_top;
 #ifdef PIKE_DEBUG
 	if (!gc_rec_top)
-	  fatal("Expected a gc_cycle_pop entry in gc_rec_top.\n");
+	  Pike_fatal("Expected a gc_cycle_pop entry in gc_rec_top.\n");
 #endif
 	gc_rec_top = l->back;
 	if (l->frameflags & GC_POP_FRAME) {
@@ -2156,7 +2156,7 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
 live_recurse:
 #ifdef PIKE_DEBUG
   if (m->flags & GC_LIVE)
-    fatal("Shouldn't live recurse when there's nothing to do.\n");
+    Pike_fatal("Shouldn't live recurse when there's nothing to do.\n");
 #endif
   m->flags |= GC_LIVE|GC_LIVE_RECURSE;
   debug_malloc_touch(x);
@@ -2199,9 +2199,9 @@ static void gc_cycle_pop(void *a)
     fprintf(stderr, "## Watched thing %p found in "
 	    "gc_cycle_pop() in pass %d.\n", a, Pike_in_gc);
   }
-  if (!a) fatal("Got null pointer.\n");
+  if (!a) Pike_fatal("Got null pointer.\n");
   if (Pike_in_gc != GC_PASS_CYCLE)
-    fatal("GC cycle pop attempted in invalid pass.\n");
+    Pike_fatal("GC cycle pop attempted in invalid pass.\n");
   if (!(m->flags & GC_CYCLE_CHECKED))
     gc_fatal(a, 0, "Marker being popped doesn't have GC_CYCLE_CHECKED.\n");
   if ((!(m->flags & GC_NOT_REFERENCED) || m->flags & GC_MARKED) &&
@@ -2314,9 +2314,9 @@ int gc_do_free(void *a)
     fprintf(stderr, "## Watched thing %p found in "
 	    "gc_do_free() in pass %d.\n", a, Pike_in_gc);
   }
-  if (!a) fatal("Got null pointer.\n");
+  if (!a) Pike_fatal("Got null pointer.\n");
   if (Pike_in_gc != GC_PASS_FREE)
-    fatal("gc free attempted in invalid pass.\n");
+    Pike_fatal("gc free attempted in invalid pass.\n");
 #endif
 
   m=find_marker(debug_malloc_pass(a));
@@ -2440,7 +2440,7 @@ int do_gc(void)
 #endif
   }
   if(num_objects < 0)
-    fatal("Panic, less than zero objects!\n");
+    Pike_fatal("Panic, less than zero objects!\n");
 #endif
 
   last_gc=TIME(0);
@@ -2467,7 +2467,7 @@ int do_gc(void)
     n += gc_touch_all_objects();
     gc_touch_all_strings();
     if (n != (unsigned) num_objects)
-      fatal("Object count wrong before gc; expected %d, got %d.\n", num_objects, n);
+      Pike_fatal("Object count wrong before gc; expected %d, got %d.\n", num_objects, n);
     GC_VERBOSE_DO(fprintf(stderr, "| pretouch: %u things\n", n));
   }
 #endif
@@ -2557,11 +2557,11 @@ int do_gc(void)
 
 #ifdef PIKE_DEBUG
     if (gc_rec_top)
-      fatal("gc_rec_top not empty at end of cycle check pass.\n");
+      Pike_fatal("gc_rec_top not empty at end of cycle check pass.\n");
     if (NEXT(&rec_list) || gc_rec_last != &rec_list || gc_rec_top)
-      fatal("Recurse list not empty or inconsistent after cycle check pass.\n");
+      Pike_fatal("Recurse list not empty or inconsistent after cycle check pass.\n");
     if (gc_ext_weak_refs != orig_ext_weak_refs)
-      fatal("gc_ext_weak_refs changed from %"PRINTSIZET"u "
+      Pike_fatal("gc_ext_weak_refs changed from %"PRINTSIZET"u "
 	    "to %"PRINTSIZET"u in cycle check pass.\n",
 	    orig_ext_weak_refs, gc_ext_weak_refs);
 #endif
@@ -2617,7 +2617,7 @@ int do_gc(void)
     n += gc_touch_all_objects();
     gc_touch_all_strings();
     if (n != (unsigned) num_objects)
-      fatal("Object count wrong in gc; expected %d, got %d.\n", num_objects, n);
+      Pike_fatal("Object count wrong in gc; expected %d, got %d.\n", num_objects, n);
     get_marker(rec_list.data)->flags |= GC_MIDDLETOUCHED;
 #if 0 /* Temporarily disabled - Hubbe */
 #ifdef DEBUG_MALLOC
@@ -2632,7 +2632,7 @@ int do_gc(void)
 	Pike_in_gc = 0;
 	describe(m->data);
 	Pike_in_gc = GC_PASS_MIDDLETOUCH;
-	fatal("Fatal in garbage collector.\n");
+	Pike_fatal("Fatal in garbage collector.\n");
       }
 #endif
 #endif
@@ -2704,7 +2704,7 @@ int do_gc(void)
   gc_internal_program = (struct program *) (ptrdiff_t) -1;
   gc_internal_object = (struct object *) (ptrdiff_t) -1;
 
-  if(fatal_after_gc) fatal("%s", fatal_after_gc);
+  if(fatal_after_gc) Pike_fatal("%s", fatal_after_gc);
 #endif
 
   Pike_in_gc=GC_PASS_KILL;
@@ -2773,12 +2773,12 @@ int do_gc(void)
     n += gc_touch_all_objects();
     /* gc_touch_all_strings(); */
     if (n != (unsigned) num_objects)
-      fatal("Object count wrong after gc; expected %d, got %d.\n", num_objects, n);
+      Pike_fatal("Object count wrong after gc; expected %d, got %d.\n", num_objects, n);
     GC_VERBOSE_DO(fprintf(stderr, "| posttouch: %u things\n", n));
   }
   if (gc_extra_refs)
-    fatal("Lost track of %d extra refs to things in gc.\n", gc_extra_refs);
-  if(fatal_after_gc) fatal("%s", fatal_after_gc);
+    Pike_fatal("Lost track of %d extra refs to things in gc.\n", gc_extra_refs);
+  if(fatal_after_gc) Pike_fatal("%s", fatal_after_gc);
 #endif
 
   Pike_in_gc=0;

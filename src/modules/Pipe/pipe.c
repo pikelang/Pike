@@ -30,7 +30,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.48 2002/05/11 00:27:03 nilsson Exp $");
+RCSID("$Id: pipe.c,v 1.49 2002/08/15 14:50:27 marcus Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -378,7 +378,7 @@ static int read_some_data(void)
   struct input * i = this->firstinput;
 
   if (!i || i->type != I_BLOCKING_OBJ) {
-    fatal("PIPE: read_some_data(): Bad input type!\n");
+    Pike_fatal("PIPE: read_some_data(): Bad input type!\n");
     return -1;
   }
   push_int(8192);

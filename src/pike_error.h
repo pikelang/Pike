@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_error.h,v 1.18 2002/05/31 22:41:25 nilsson Exp $
+ * $Id: pike_error.h,v 1.19 2002/08/15 14:49:24 marcus Exp $
  */
 #ifndef PIKE_ERROR_H
 #define PIKE_ERROR_H
@@ -21,11 +21,11 @@
 
 #if 1
 PMOD_EXPORT extern const char msg_fatal_error[];
-#define fatal \
+#define Pike_fatal \
  (fprintf(stderr,msg_fatal_error,__FILE__,__LINE__),debug_fatal)
 #else
 /* This is useful when debugging assembler code sometimes... -Hubbe */
-#define fatal \
+#define Pike_fatal \
  (fprintf(stderr,"%s: Fatal error:\n",__FILE__ ":" DEFINETOSTR(__LINE__) ),debug_fatal)
 #endif
 
@@ -94,9 +94,9 @@ PMOD_EXPORT extern const char msg_unsetjmp_nosync_2[];
                 &(X),  __FILE__, __LINE__)); \
   if(Pike_interpreter.recoveries != &X) { \
     if(Pike_interpreter.recoveries) \
-      fatal(msg_unsetjmp_nosync_1,Pike_interpreter.recoveries->file); \
+      Pike_fatal(msg_unsetjmp_nosync_1,Pike_interpreter.recoveries->file); \
     else \
-      fatal(msg_unsetjmp_nosync_2); \
+      Pike_fatal(msg_unsetjmp_nosync_2); \
     } \
     Pike_interpreter.recoveries=X.previous; \
    check_recovery_context(); \
@@ -144,11 +144,11 @@ PMOD_EXPORT extern const char msg_unset_onerr_nosync_2[];
     if(Pike_interpreter.recoveries->onerror != &(X)) { \
       fprintf(stderr,msg_last_setjmp,Pike_interpreter.recoveries->file); \
       if (Pike_interpreter.recoveries->onerror) { \
-	fatal(msg_unset_onerr_nosync_1,\
-	      Pike_interpreter.recoveries->onerror, &(X), \
-              Pike_interpreter.recoveries->onerror->file); \
+	Pike_fatal(msg_unset_onerr_nosync_1,\
+	           Pike_interpreter.recoveries->onerror, &(X), \
+                   Pike_interpreter.recoveries->onerror->file); \
       } else { \
-        fatal(msg_unset_onerr_nosync_2); \
+        Pike_fatal(msg_unset_onerr_nosync_2); \
       } \
     } \
     Pike_interpreter.recoveries->onerror=(X).previous; \
@@ -159,8 +159,8 @@ PMOD_EXPORT extern const char msg_assert_onerr[];
   do{ \
     if (!Pike_interpreter.recoveries) break; \
     if (Pike_interpreter.recoveries->onerror != &X) { \
-      fatal(msg_assert_onerr, \
-            __FILE__, __LINE__, &(X)); \
+      Pike_fatal(msg_assert_onerr, \
+                 __FILE__, __LINE__, &(X)); \
     } \
   }while(0)
 #else /* !PIKE_DEBUG */

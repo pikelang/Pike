@@ -27,7 +27,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.142 2002/05/31 22:41:26 nilsson Exp $");
+RCSID("$Id: stralloc.c,v 1.143 2002/08/15 14:49:25 marcus Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -151,7 +151,7 @@ static INLINE unsigned INT32 generic_extract (const void *str, int size, ptrdiff
     case 1: return ((unsigned INT16 *)str)[pos];
     case 2: return ((unsigned INT32 *)str)[pos];
   }
-  fatal("Illegal shift size!\n");
+  Pike_fatal("Illegal shift size!\n");
   return 0;
 }
 
@@ -161,11 +161,11 @@ PMOD_EXPORT INLINE unsigned INT32 index_shared_string(struct pike_string *s,
 #ifdef PIKE_DEBUG
   if(pos > s->len || pos<0) {
     if (s->len) {
-      fatal("String index %ld is out of range [0 - %ld]!\n",
+      Pike_fatal("String index %ld is out of range [0 - %ld]!\n",
 	    DO_NOT_WARN((long)pos),
 	    DO_NOT_WARN((long)s->len-1));
     } else {
-      fatal("Attempt to index the empty string with %ld!\n",
+      Pike_fatal("Attempt to index the empty string with %ld!\n",
 	    DO_NOT_WARN((long)pos));
     }
   }
@@ -178,10 +178,10 @@ PMOD_EXPORT INLINE void low_set_index(struct pike_string *s, ptrdiff_t pos,
 {
 #ifdef PIKE_DEBUG
   if(pos > s->len || pos<0)
-    fatal("string index out of range!\n");
+    Pike_fatal("string index out of range!\n");
   
   if(pos == s->len && value)
-    fatal("string zero termination foul!\n");
+    Pike_fatal("string zero termination foul!\n");
 #endif
   switch(s->size_shift)
   {
@@ -189,7 +189,7 @@ PMOD_EXPORT INLINE void low_set_index(struct pike_string *s, ptrdiff_t pos,
     case 1: STR1(s)[pos]=value; break;
     case 2: STR2(s)[pos]=value; break;
     default:
-      fatal("Illegal shift size!\n");
+      Pike_fatal("Illegal shift size!\n");
   }
 }
 
@@ -197,7 +197,7 @@ PMOD_EXPORT INLINE void low_set_index(struct pike_string *s, ptrdiff_t pos,
 PMOD_EXPORT INLINE struct pike_string *debug_check_size_shift(struct pike_string *a,int shift)
 {
   if(a->size_shift != shift)
-    fatal("Wrong STRX macro used!\n");
+    Pike_fatal("Wrong STRX macro used!\n");
   return a;
 }
 #endif
@@ -241,7 +241,7 @@ PMOD_EXPORT void generic_memcpy(PCHARP to,
 {
 #ifdef PIKE_DEBUG
   if(len<0)
-    fatal("Cannot copy %ld bytes!\n",
+    Pike_fatal("Cannot copy %ld bytes!\n",
 	  DO_NOT_WARN((long)len));
 #endif
 
@@ -367,7 +367,7 @@ static INLINE struct pike_string *internal_findstring(const char *s,
     {
       debug_dump_pike_string(curr, 70);
       locate_problem(has_zero_refs);
-      fatal("String with no references.\n");
+      Pike_fatal("String with no references.\n");
     }
 #endif
     debug_malloc_touch(curr);
@@ -436,7 +436,7 @@ static struct pike_string *propagate_shared_string(const struct pike_string *s,
     {
       debug_dump_pike_string(curr, 70);
       locate_problem(has_zero_refs);
-      fatal("String with no references.\n");
+      Pike_fatal("String with no references.\n");
     }
 #endif
   }
@@ -530,7 +530,7 @@ BLOCK_ALLOC(short_pike_string2, SHORT_STRING_BLOCK)
        really_free_short_pike_string1((struct short_pike_string1 *)s); \
      DO_IF_DEBUG( \
      } else if (s->size_shift != 2) { \
-       fatal("Unsupported string shift: %d\n", s->size_shift); \
+       Pike_fatal("Unsupported string shift: %d\n", s->size_shift); \
      ) \
      } else { \
        really_free_short_pike_string2((struct short_pike_string2 *)s); \
@@ -644,7 +644,7 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
       t = (struct pike_string *)alloc_short_pike_string1();
 #ifdef PIKE_DEBUG
     } else if (shift != 2) {
-      fatal("Unsupported string shift: %d\n", shift);
+      Pike_fatal("Unsupported string shift: %d\n", shift);
 #endif /* PIKE_DEBUG */
     } else {
       t = (struct pike_string *)alloc_short_pike_string2();
@@ -673,7 +673,7 @@ PMOD_EXPORT struct pike_string *low_end_shared_string(struct pike_string *s)
   s2 = internal_findstring(s->str, len, s->size_shift, h);
 #ifdef PIKE_DEBUG
   if(s2==s) 
-    fatal("end_shared_string called twice! (or something like that)\n");
+    Pike_fatal("end_shared_string called twice! (or something like that)\n");
 #endif
 
   if(s2)
@@ -700,7 +700,7 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
   switch(s->size_shift)
   {
     default:
-      fatal("ARGHEL! size_shift:%d\n", s->size_shift);
+      Pike_fatal("ARGHEL! size_shift:%d\n", s->size_shift);
 
     case 2:
       switch(find_magnitude2(STR2(s),s->len))
@@ -742,7 +742,7 @@ PMOD_EXPORT struct pike_string *end_and_resize_shared_string(struct pike_string 
   struct pike_string *tmp;
 #ifdef PIKE_DEBUG
   if(len > str->len)
-    fatal("Cannot extend string here!\n");
+    Pike_fatal("Cannot extend string here!\n");
 #endif
   if( str->len <= SHORT_STRING_THRESHOLD ?
       (len <= SHORT_STRING_THRESHOLD) :
@@ -787,7 +787,7 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_pcharp(const PCHARP st
     case 2:
       return make_shared_binary_string2((p_wchar2 *)(str.ptr),  len);
     default:
-      fatal("Unknown string width!\n");
+      Pike_fatal("Unknown string width!\n");
   }
   /* NOT REACHED */
   return NULL;	/* Keep the compiler happy */
@@ -900,7 +900,7 @@ PMOD_EXPORT void unlink_pike_string(struct pike_string *s)
   propagate_shared_string(s,h);
 #ifdef PIKE_DEBUG
   if (base_table[h] != s) {
-    fatal("propagate_shared_string() failed. Probably got bogus pike_string.\n");
+    Pike_fatal("propagate_shared_string() failed. Probably got bogus pike_string.\n");
   }
 #endif /* PIKE_DEBUG */
   base_table[h]=s->next;
@@ -935,19 +935,19 @@ PMOD_EXPORT void really_free_string(struct pike_string *s)
   extern int d_flag;
   if (d_flag) {
     if (s->refs) {
-      fatal("Freeing string with references!\n");
+      Pike_fatal("Freeing string with references!\n");
     }
     if(d_flag > 2)
     {
       if(s->next == (struct pike_string *)(ptrdiff_t)-1)
-	fatal("Freeing shared string again!\n");
+	Pike_fatal("Freeing shared string again!\n");
 
       if(((ptrdiff_t)s->next) & 1)
-	fatal("Freeing shared string again, memory corrupt or other bug!\n");
+	Pike_fatal("Freeing shared string again, memory corrupt or other bug!\n");
     }
   }
   if ((s->size_shift < 0) || (s->size_shift > 2)) {
-    fatal("Freeing string with bad shift (0x%08x); could it be a type?\n",
+    Pike_fatal("Freeing string with bad shift (0x%08x); could it be a type?\n",
 	  s->size_shift);
   }
 #endif
@@ -1029,21 +1029,21 @@ PMOD_EXPORT void check_string(struct pike_string *s)
   if(current_do_debug_cycle == last_stralloc_verify)
   {
     if(debug_findstring(s) !=s)
-      fatal("Shared string not shared.\n");
+      Pike_fatal("Shared string not shared.\n");
   }else{
     if(do_hash(s) != s->hval)
     {
       locate_problem(wrong_hash);
-      fatal("Hash value changed?\n");
+      Pike_fatal("Hash value changed?\n");
     }
     
     if(debug_findstring(s) !=s)
-      fatal("Shared string not shared.\n");
+      Pike_fatal("Shared string not shared.\n");
 
     if(index_shared_string(s,s->len))
     {
       locate_problem(improper_zero_termination);
-      fatal("Shared string is not zero terminated properly.\n");
+      Pike_fatal("Shared string is not zero terminated properly.\n");
     }
   }
 }
@@ -1065,31 +1065,31 @@ PMOD_EXPORT void verify_shared_strings_tables(void)
       h++;
 
       if (bad_pointer(s)) {
-	fatal("Odd string pointer in string table!\n");
+	Pike_fatal("Odd string pointer in string table!\n");
       }
 
       if(s->len < 0)
-	fatal("Shared string shorter than zero bytes.\n");
+	Pike_fatal("Shared string shorter than zero bytes.\n");
 
       if(s->refs <= 0)
       {
 	locate_problem(has_zero_refs);
-	fatal("Shared string had too few references.\n");
+	Pike_fatal("Shared string had too few references.\n");
       }
 
       if(index_shared_string(s,s->len))
       {
 	locate_problem(improper_zero_termination);
-	fatal("Shared string didn't end with a zero.\n");
+	Pike_fatal("Shared string didn't end with a zero.\n");
       }
 
       if(do_hash(s) != s->hval)
-	fatal("Shared string hashed to other number.\n");
+	Pike_fatal("Shared string hashed to other number.\n");
 
       if(HMODULO(s->hval) != e)
       {
 	locate_problem(wrong_hash);
-	fatal("Shared string hashed to wrong place.\n");
+	Pike_fatal("Shared string hashed to wrong place.\n");
       }
 
       if(h>10000)
@@ -1097,14 +1097,14 @@ PMOD_EXPORT void verify_shared_strings_tables(void)
 	struct pike_string *s2;
 	for(s2=s;s2;s2=s2->next)
 	  if(s2 == s)
-	    fatal("Shared string table is cyclic.\n");
+	    Pike_fatal("Shared string table is cyclic.\n");
 	h=0;
       }
     }
     UNLOCK_BUCKET(e);
   }
   if(num != num_strings)
-    fatal("Num strings is wrong %d!=%d\n",num,num_strings);
+    Pike_fatal("Num strings is wrong %d!=%d\n",num,num_strings);
 }
 
 PMOD_EXPORT int safe_debug_findstring(struct pike_string *foo)
@@ -1445,7 +1445,7 @@ PMOD_EXPORT struct pike_string *modify_shared_string(struct pike_string *a,
   INT32 old_value;
 #ifdef PIKE_DEBUG
   if(index<0 || index>=a->len)
-    fatal("Index out of range in modify_shared_string()\n");
+    Pike_fatal("Index out of range in modify_shared_string()\n");
 #endif
 
 
@@ -1486,7 +1486,7 @@ PMOD_EXPORT struct pike_string *modify_shared_string(struct pike_string *a,
 	return end_shared_string(b);
 
       default:
-	fatal("Odd wide string conversion!\n");
+	Pike_fatal("Odd wide string conversion!\n");
     }
   }
 
@@ -1506,7 +1506,7 @@ PMOD_EXPORT struct pike_string *modify_shared_string(struct pike_string *a,
     switch(a->size_shift)
     {
       case 0:
-	fatal("Unshrinkable!\n");
+	Pike_fatal("Unshrinkable!\n");
 
       case 1:
 	/* Test if we *actually* can shrink it.. */
@@ -1636,7 +1636,7 @@ PMOD_EXPORT ptrdiff_t string_search(struct pike_string *haystack,
 #ifdef PIKE_DEBUG
   if((r < haystack->str) ||
      (r - haystack->str)>>haystack->size_shift > haystack->len)
-    fatal("string_search did a bobo!\n");
+    Pike_fatal("string_search did a bobo!\n");
 #endif
   return (r-haystack->str)>>haystack->size_shift;
 }
@@ -1648,7 +1648,7 @@ PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
 #ifdef PIKE_DEBUG
   if(start < 0 || len<0 || start+len>s->len )
   {
-    fatal("string_slice, start = %ld, len = %ld, s->len = %ld\n",
+    Pike_fatal("string_slice, start = %ld, len = %ld, s->len = %ld\n",
 	  DO_NOT_WARN((long)start),
 	  DO_NOT_WARN((long)len),
 	  DO_NOT_WARN((long)s->len));
@@ -1672,7 +1672,7 @@ PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
     case 2:
       return make_shared_binary_string2(STR2(s)+start,len);
   }
-  fatal("Illegal shift size!\n");
+  Pike_fatal("Illegal shift size!\n");
   return 0;
 }
 
@@ -1727,7 +1727,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
       case 1: f=(replace_searchfunc)mojt.vtab->func1; break;
       case 2: f=(replace_searchfunc)mojt.vtab->func2; break;
 #ifdef PIKE_DEBUG
-      default: fatal("Illegal shift.\n");
+      default: Pike_fatal("Illegal shift.\n");
 #endif
     }
 
@@ -1744,7 +1744,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
       case 1: f=(replace_searchfunc)mojt.vtab->func1; break;
       case 2: f=(replace_searchfunc)mojt.vtab->func2; break;
 #ifdef PIKE_DEBUG
-      default: fatal("Illegal shift.\n");
+      default: Pike_fatal("Illegal shift.\n");
 #endif
     }
 
@@ -1770,7 +1770,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
   {
 #ifdef PIKE_DEBUG
     if(tmp + (del->len << str->size_shift) > end)
-      fatal("generic_memory_search found a match beyond end of string!!!\n");
+      Pike_fatal("generic_memory_search found a match beyond end of string!!!\n");
 #endif
     generic_memcpy(r,MKPCHARP(s,str->size_shift),(tmp-s)>>str->size_shift);
     INC_PCHARP(r,(tmp-s)>>str->size_shift);
@@ -1888,7 +1888,7 @@ void count_memory_in_strings(INT32 *num, INT32 *size)
   }
 #ifdef PIKE_DEBUG
   if(num_strings != num_)
-    fatal("Num strings is wrong! %d!=%d.\n",num_strings, num_);
+    Pike_fatal("Num strings is wrong! %d!=%d.\n",num_strings, num_);
 #endif
   num[0]=num_;
   size[0]=size_;
@@ -2020,7 +2020,7 @@ PMOD_EXPORT void string_builder_binary_strcat(struct string_builder *s, char *st
     case 1: convert_0_to_1(STR1(s->s)+s->s->len,(p_wchar0 *)str,len); break;
     case 2: convert_0_to_2(STR2(s->s)+s->s->len,(p_wchar0 *)str,len); break;
     default:
-      fatal("Illegal magnitude!\n");
+      Pike_fatal("Illegal magnitude!\n");
   }
   s->s->len+=len;
   /* Ensure NUL-termination */
@@ -2058,7 +2058,7 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
 
 #ifdef PIKE_DEBUG
   if(len<=0)
-    fatal("Cannot fill with zero length strings!\n");
+    Pike_fatal("Cannot fill with zero length strings!\n");
 #endif
   if(howmany<=0) return;
 
@@ -2169,7 +2169,7 @@ PMOD_EXPORT PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, ptrdiff_t len)
     case 1: return MKPCHARP(MEMCHR1((p_wchar1 *)ptr.ptr,chr,len),1);
     case 2: return MKPCHARP(MEMCHR2((p_wchar2 *)ptr.ptr,chr,len),2);
   }
-  fatal("Illegal shift in MEMCHR_PCHARP.\n");
+  Pike_fatal("Illegal shift in MEMCHR_PCHARP.\n");
   return MKPCHARP(0,0); /* make wcc happy */
 }
 
@@ -2576,7 +2576,7 @@ PMOD_EXPORT p_wchar0 *require_wstring0(struct pike_string *s,
       return 0;
 
     default:
-      fatal("Illegal shift size in string.\n");
+      Pike_fatal("Illegal shift size in string.\n");
   }
   return 0;
 }
@@ -2599,7 +2599,7 @@ PMOD_EXPORT p_wchar1 *require_wstring1(struct pike_string *s,
       return 0;
 
     default:
-      fatal("Illegal shift size in string.\n");
+      Pike_fatal("Illegal shift size in string.\n");
   }
   return 0;
 }
@@ -2625,7 +2625,7 @@ PMOD_EXPORT p_wchar2 *require_wstring2(struct pike_string *s,
       return STR2(s);
 
     default:
-      fatal("Illegal shift size in string.\n");
+      Pike_fatal("Illegal shift size in string.\n");
   }
   return 0;
 }

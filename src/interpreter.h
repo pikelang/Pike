@@ -132,7 +132,7 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
     if (instr) 
       ADD_RUNNED(instr);
     else
-      fatal("NULL Instruction!\n");
+      Pike_fatal("NULL Instruction!\n");
 #else /* !HAVE_COMPUTED_GOTO */
     if(instr + F_OFFSET < F_MAX_OPCODE) 
       ADD_RUNNED(instr + F_OFFSET);
@@ -160,10 +160,10 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
       CHECK_INTERPRETER_LOCK();
       if(OBJ2THREAD(Pike_interpreter.thread_id)->state.thread_id !=
 	 Pike_interpreter.thread_id)
-	fatal("Arglebargle glop glyf, thread swap problem!\n");
+	Pike_fatal("Arglebargle glop glyf, thread swap problem!\n");
 
       if(d_flag>1 && thread_for_id(th_self()) != Pike_interpreter.thread_id)
-        fatal("thread_for_id() (or Pike_interpreter.thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id);
+        Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id);
 #endif
 
       Pike_sp[0].type=99; /* an invalid type */
@@ -173,7 +173,7 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
       
       if(Pike_sp<Pike_interpreter.evaluator_stack ||
 	 Pike_mark_sp < Pike_interpreter.mark_stack || Pike_fp->locals>Pike_sp)
-	fatal("Stack error (generic) sp=%p/%p mark_sp=%p/%p locals=%p.\n",
+	Pike_fatal("Stack error (generic) sp=%p/%p mark_sp=%p/%p locals=%p.\n",
 	      Pike_sp,
 	      Pike_interpreter.evaluator_stack,
 	      Pike_mark_sp,
@@ -181,27 +181,27 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 	      Pike_fp->locals);
       
       if(Pike_mark_sp > Pike_interpreter.mark_stack+Pike_stack_size)
-	fatal("Mark Stack error (overflow).\n");
+	Pike_fatal("Mark Stack error (overflow).\n");
 
 
       if(Pike_mark_sp < Pike_interpreter.mark_stack)
-	fatal("Mark Stack error (underflow).\n");
+	Pike_fatal("Mark Stack error (underflow).\n");
 
       if(Pike_sp > Pike_interpreter.evaluator_stack+Pike_stack_size)
-	fatal("stack error (overflow).\n");
+	Pike_fatal("stack error (overflow).\n");
       
       if(/* Pike_fp->fun>=0 && */ Pike_fp->current_object->prog &&
 	 Pike_fp->locals+Pike_fp->num_locals > Pike_sp)
-	fatal("Stack error (stupid!).\n");
+	Pike_fatal("Stack error (stupid!).\n");
 
       if(Pike_interpreter.recoveries &&
 	 (Pike_sp-Pike_interpreter.evaluator_stack <
 	  Pike_interpreter.recoveries->stack_pointer))
-	fatal("Stack error (underflow).\n");
+	Pike_fatal("Stack error (underflow).\n");
 
       if(Pike_mark_sp > Pike_interpreter.mark_stack &&
 	 Pike_mark_sp[-1] > Pike_sp)
-	fatal("Stack error (underflow?)\n");
+	Pike_fatal("Stack error (underflow?)\n");
       
       if(d_flag > 9) do_debug();
 
@@ -313,7 +313,7 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 
 #ifndef HAVE_COMPUTED_GOTO      
     default:
-      fatal("Strange instruction %ld\n",(long)instr);
+      Pike_fatal("Strange instruction %ld\n",(long)instr);
     }
 #endif /* !HAVE_COMPUTED_GOTO */
   }
@@ -410,7 +410,7 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 
 #ifdef PIKE_DEBUG
     if (sizeof(table) != (F_MAX_OPCODE-F_OFFSET)*sizeof(void *))
-      fatal("opcode_to_label out of sync: 0x%08lx != 0x%08lx\n",
+      Pike_fatal("opcode_to_label out of sync: 0x%08lx != 0x%08lx\n",
 	    DO_NOT_WARN((long)sizeof(table)),
 	    DO_NOT_WARN((long)((F_MAX_OPCODE-F_OFFSET)*sizeof(void *))));
 #endif /* PIKE_DEBUG */

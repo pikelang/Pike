@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_macros.h,v 1.30 2002/05/31 22:41:25 nilsson Exp $
+ * $Id: pike_macros.h,v 1.31 2002/08/15 14:49:24 marcus Exp $
  */
 #ifndef MACROS_H
 #define MACROS_H
@@ -116,7 +116,7 @@
     DO_IF_DEBUG(				\
       if(first_object != o) {			\
         describe(o);                            \
-        fatal("Linked in wrong list!\n");	\
+        Pike_fatal("Linked in wrong list!\n");	\
       }                                         \
     )						\
     first_object=o->next;			\

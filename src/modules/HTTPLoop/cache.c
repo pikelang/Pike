@@ -147,11 +147,11 @@ static void really_free_cache_entry(struct cache  *c, struct cache_entry *e,
   {
     if(b!=(cache_hash(e->url, e->url_len) +
 	   cache_hash(e->host, e->host_len)))
-      fatal("Cache entry did not hash to the same spot\n");
+      Pike_fatal("Cache entry did not hash to the same spot\n");
     if(!mt_trylock( & c->mutex ))
-      fatal("Cache free_entry running unlocked\n");
+      Pike_fatal("Cache free_entry running unlocked\n");
     if(prev && prev->next != e)
-      fatal("prev->next != e\n");
+      Pike_fatal("prev->next != e\n");
   }
 #endif
   if(!prev)
@@ -172,7 +172,7 @@ void aap_free_cache_entry(struct cache *c, struct cache_entry *e,
 {
 #ifdef DEBUG
   if(e->refs<=0)
-    fatal("Freeing free cache entry\n");
+    Pike_fatal("Freeing free cache entry\n");
 #endif
   if(!--e->refs) 
     really_free_cache_entry(c,e,prev,b);
@@ -209,7 +209,7 @@ void aap_cache_insert(struct cache_entry *ce, struct cache *c)
 #ifdef DEBUG
   extern int d_flag;
   if((d_flag > 2) && !mt_trylock( & c->mutex ))
-    fatal("Cache insert running unlocked\n");
+    Pike_fatal("Cache insert running unlocked\n");
 #endif
   c->size += ce->data->len;
   if((head = aap_cache_lookup(ce->url, ce->url_len, 
@@ -249,7 +249,7 @@ struct cache_entry *aap_cache_lookup(char *s, ptrdiff_t len,
   {
     extern int d_flag;
     if((d_flag>2) && !mt_trylock( & c->mutex ))
-      fatal("Cache lookup running unlocked\n");
+      Pike_fatal("Cache lookup running unlocked\n");
   }
 #endif
   if( p ) *p = 0;

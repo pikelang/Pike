@@ -1,9 +1,9 @@
 /*
- * $Id: stat.c,v 1.21 2002/05/11 00:18:06 nilsson Exp $
+ * $Id: stat.c,v 1.22 2002/08/15 14:50:27 marcus Exp $
  */
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.21 2002/05/11 00:18:06 nilsson Exp $");
+RCSID("$Id: stat.c,v 1.22 2002/08/15 14:50:27 marcus Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -566,7 +566,7 @@ static void stat_index(INT32 args)
 	       break;
 
 	   default:
-	     fatal ("stat_index is not kept up-to-date with stat_map.\n");
+	     Pike_fatal ("stat_index is not kept up-to-date with stat_map.\n");
 	 }
       }
       else
@@ -816,7 +816,7 @@ static void stat_index_set (INT32 args)
 	  case STAT_CTIME: DO_NOT_WARN(THIS_STAT->s.st_ctime = int_val); break;
 
 	  default:
-	    fatal ("stat_index_set is not kept up-to-date with stat_map.\n");
+	    Pike_fatal ("stat_index_set is not kept up-to-date with stat_map.\n");
 	}
     }
   }

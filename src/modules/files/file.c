@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.238 2002/06/27 14:22:28 nilsson Exp $");
+RCSID("$Id: file.c,v 1.239 2002/08/15 14:50:27 marcus Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -169,7 +169,7 @@ static struct my_file *get_file_storage(struct object *o)
 #define OOBOP(X)
 #endif
 #define CHECK_FILEP(o) \
-do { if(o->prog && !get_storage(o,file_program)) fatal("%p is not a file object.\n",o); } while (0)
+do { if(o->prog && !get_storage(o,file_program)) Pike_fatal("%p is not a file object.\n",o); } while (0)
 #define DEBUG_CHECK_INTERNAL_REFERENCE(X) do {				\
   if( ((X)->fd!=-1 && (							\
      (query_read_callback((X)->fd)==file_read_callback) ||		\
@@ -177,7 +177,7 @@ do { if(o->prog && !get_storage(o,file_program)) fatal("%p is not a file object.
 OOBOP( || (query_read_oob_callback((X)->fd)==file_read_oob_callback) ||	\
      (query_write_oob_callback((X)->fd)==file_write_oob_callback) ))) != \
   !!( (X)->flags & FILE_HAS_INTERNAL_REF ))				\
-         fatal("Internal reference is wrong. %d\n",(X)->flags & FILE_HAS_INTERNAL_REF);		\
+         Pike_fatal("Internal reference is wrong. %d\n",(X)->flags & FILE_HAS_INTERNAL_REF);		\
    } while (0)
 #else
 #define CHECK_FILEP(o)
@@ -1445,7 +1445,7 @@ static int do_close(int flags)
     return 1;
 
   default:
-    fatal("Bug in switch implementation!\n");
+    Pike_fatal("Bug in switch implementation!\n");
     return 0; /* Make CC happy */
   }
 }
@@ -3173,7 +3173,7 @@ static void exit_file_lock_key(struct object *o)
     int err;
 #ifdef PIKE_DEBUG
     if(THIS_KEY->f->key != o)
-      fatal("File lock key is wrong!\n");
+      Pike_fatal("File lock key is wrong!\n");
 #endif
 
     do
@@ -3392,7 +3392,7 @@ void check_static_file_data(struct callback *a, void *b, void *c)
   {
 #define FILE_FUNC(X,Y,Z) \
     if(PIKE_CONCAT(Y,_function_number)<0 || PIKE_CONCAT(Y,_function_number)>file_program->num_identifier_references) \
-      fatal(#Y "_function_number is incorrect: %ld\n", \
+      Pike_fatal(#Y "_function_number is incorrect: %ld\n", \
             TO_LONG(PIKE_CONCAT(Y,_function_number)));
 #include "file_functions.h"
   }

@@ -5,7 +5,7 @@
 
 #include "global.h"
 
-RCSID("$Id: rbtree.c,v 1.9 2001/12/10 00:57:17 mast Exp $");
+RCSID("$Id: rbtree.c,v 1.10 2002/08/15 14:49:25 marcus Exp $");
 
 #include "interpret.h"
 #include "pike_error.h"
@@ -100,7 +100,7 @@ void rbstack_insert (struct rbstack_ptr *top, struct rbstack_ptr *pos,
       if (rbp1.slice->up) rbstack_up (&rbp1);
 #ifdef PIKE_DEBUG
       else if (rbp1.ssp != rbpos.ssp || rbp1.slice != rbpos.slice)
-	fatal ("Didn't find the given position on the stack.\n");
+	Pike_fatal ("Didn't find the given position on the stack.\n");
 #endif
     }
   }
@@ -117,7 +117,7 @@ void rbstack_assign (struct rbstack_ptr *target, struct rbstack_ptr *source)
   struct rbstack_slice *tgt_slice = target->slice;
 
 #ifdef PIKE_DEBUG
-  if (target->ssp) fatal ("target rbstack not empty.\n");
+  if (target->ssp) Pike_fatal ("target rbstack not empty.\n");
 #endif
 
   target->ssp = source->ssp;
@@ -154,7 +154,7 @@ void rbstack_copy (struct rbstack_ptr *target, struct rbstack_ptr *source)
   size_t ssp = source->ssp;
 
 #ifdef PIKE_DEBUG
-  if (target->ssp) fatal ("target rbstack not empty.\n");
+  if (target->ssp) Pike_fatal ("target rbstack not empty.\n");
 #endif
 
   target->ssp = ssp;
@@ -736,7 +736,7 @@ static struct rb_node_hdr *rebalance_after_delete (struct rb_node_hdr *node,
 void low_rb_init_root (struct rb_node_hdr *node)
 {
 #ifdef PIKE_DEBUG
-  if (!node) fatal ("New node is null.\n");
+  if (!node) Pike_fatal ("New node is null.\n");
 #endif
 #ifdef RB_STATS
   rb_num_adds++;
@@ -752,10 +752,10 @@ void low_rb_link_at_prev (struct rb_node_hdr **root, struct rbstack_ptr rbstack,
   struct rb_node_hdr *parent = RBSTACK_PEEK (rbstack);
 
 #ifdef PIKE_DEBUG
-  if (!new) fatal ("New node is null.\n");
-  if (!parent) fatal ("Cannot link in root node.\n");
+  if (!new) Pike_fatal ("New node is null.\n");
+  if (!parent) Pike_fatal ("Cannot link in root node.\n");
   if (!(parent->flags & RB_THREAD_PREV))
-    fatal ("Cannot link in node at interior prev link.\n");
+    Pike_fatal ("Cannot link in node at interior prev link.\n");
 #endif
 #ifdef RB_STATS
   rb_num_adds++;
@@ -777,10 +777,10 @@ void low_rb_link_at_next (struct rb_node_hdr **root, struct rbstack_ptr rbstack,
   struct rb_node_hdr *parent = RBSTACK_PEEK (rbstack);
 
 #ifdef PIKE_DEBUG
-  if (!new) fatal ("New node is null.\n");
-  if (!parent) fatal ("Cannot link in root node.\n");
+  if (!new) Pike_fatal ("New node is null.\n");
+  if (!parent) Pike_fatal ("Cannot link in root node.\n");
   if (!(parent->flags & RB_THREAD_NEXT))
-    fatal ("Cannot link in node at interior next link.\n");
+    Pike_fatal ("Cannot link in node at interior next link.\n");
 #endif
 #ifdef RB_STATS
   rb_num_adds++;
@@ -876,7 +876,7 @@ struct rb_node_hdr *low_rb_unlink_with_move (struct rb_node_hdr **root,
 
   RBSTACK_POP (rbstack, node);
 #ifdef PIKE_DEBUG
-  if (!node) fatal ("No node to delete on stack.\n");
+  if (!node) Pike_fatal ("No node to delete on stack.\n");
 #endif
 #ifdef RB_STATS
   rb_num_deletes++;
@@ -958,7 +958,7 @@ struct rb_node_hdr *low_rb_unlink_with_move (struct rb_node_hdr **root,
   debug_check_rbstack (*root, *rbstack_ptr);
   if (node != unlink) next = node;
   if (RBSTACK_PEEK (*rbstack_ptr) != next)
-    fatal ("Stack got %p on top, but next node is %p.\n",
+    Pike_fatal ("Stack got %p on top, but next node is %p.\n",
 	   RBSTACK_PEEK (*rbstack_ptr), next);
   if (!keep_rbstack) RBSTACK_FREE (*rbstack_ptr);
   return unlink;
@@ -978,7 +978,7 @@ void low_rb_unlink_without_move (struct rb_node_hdr **root,
 
   RBSTACK_POP (rbstack, node);
 #ifdef PIKE_DEBUG
-  if (!node) fatal ("No node to delete on stack.\n");
+  if (!node) Pike_fatal ("No node to delete on stack.\n");
 #endif
 #ifdef RB_STATS
   rb_num_deletes++;
@@ -1051,7 +1051,7 @@ void low_rb_unlink_without_move (struct rb_node_hdr **root,
   real_low_rb_unlink_without_move (root, rbstack_ptr, 1);
   debug_check_rbstack (*root, *rbstack_ptr);
   if (RBSTACK_PEEK (*rbstack_ptr) != next)
-    fatal ("Stack got %p on top, but next node is %p.\n",
+    Pike_fatal ("Stack got %p on top, but next node is %p.\n",
 	   RBSTACK_PEEK (*rbstack_ptr), next);
   if (!keep_rbstack) RBSTACK_FREE (*rbstack_ptr);
 }
@@ -1124,7 +1124,7 @@ void rb_add_after (struct rb_node_hdr **root,
       while (node != existing) {
 	LOW_RB_TRACK_PREV (rbstack, node);
 #ifdef PIKE_DEBUG
-	if (!node) fatal ("Tree doesn't contain the existing node.\n");
+	if (!node) Pike_fatal ("Tree doesn't contain the existing node.\n");
 #endif
       }
       if (node->flags & RB_THREAD_NEXT) {
@@ -1145,7 +1145,7 @@ void rb_add_after (struct rb_node_hdr **root,
 
   else {
 #ifdef PIKE_DEBUG
-    if (existing) fatal ("Tree doesn't contain the existing node.\n");
+    if (existing) Pike_fatal ("Tree doesn't contain the existing node.\n");
 #endif
     low_rb_init_root (new);
     *root = new;
@@ -1181,17 +1181,17 @@ void rb_remove_node (struct rb_node_hdr **root,
   struct rb_node_hdr *node = *root;
   RBSTACK_INIT (rbstack);
 #ifdef PIKE_DEBUG
-  if (!node) fatal ("Tree is empty.\n");
+  if (!node) Pike_fatal ("Tree is empty.\n");
 #if 0
   if (find_fn (key, to_delete))
-    fatal ("Given key doesn't match the node to delete.\n");
+    Pike_fatal ("Given key doesn't match the node to delete.\n");
 #endif
 #endif
   LOW_RB_TRACK_NEQ (rbstack, node, cmp_res = find_fn (key, node) >= 0 ? 1 : -1, ;, ;);
   while (node != to_delete) {
     LOW_RB_TRACK_PREV (rbstack, node);
 #ifdef PIKE_DEBUG
-    if (!node) fatal ("Tree doesn't contain the node to delete.\n");
+    if (!node) Pike_fatal ("Tree doesn't contain the node to delete.\n");
 #endif
   }
   low_rb_unlink_without_move (root, rbstack);
@@ -1235,17 +1235,17 @@ struct rb_node_hdr *rb_remove_node_with_move (struct rb_node_hdr **root,
   struct rb_node_hdr *node = *root;
   RBSTACK_INIT (rbstack);
 #ifdef PIKE_DEBUG
-  if (!node) fatal ("Tree is empty.\n");
+  if (!node) Pike_fatal ("Tree is empty.\n");
 #if 0
   if (find_fn (key, to_delete))
-    fatal ("Given key doesn't match the node to delete.\n");
+    Pike_fatal ("Given key doesn't match the node to delete.\n");
 #endif
 #endif
   LOW_RB_TRACK_NEQ (rbstack, node, cmp_res = find_fn (key, node) >= 0 ? 1 : -1, ;, ;);
   while (node != to_delete) {
     LOW_RB_TRACK_PREV (rbstack, node);
 #ifdef PIKE_DEBUG
-    if (!node) fatal ("Tree doesn't contain the node to delete.\n");
+    if (!node) Pike_fatal ("Tree doesn't contain the node to delete.\n");
 #endif
   }
   return low_rb_unlink_with_move (root, rbstack, node_size);
@@ -1314,7 +1314,7 @@ struct rb_node_hdr *rb_get_nth (struct rb_node_hdr *root, size_t n)
   }
 tree_too_small:
 #ifdef PIKE_DEBUG
-  fatal ("Tree too small for index %"PRINTSIZET"u.\n", index);
+  Pike_fatal ("Tree too small for index %"PRINTSIZET"u.\n", index);
 #endif
   return (struct rb_node_hdr *) (ptrdiff_t) -1;
 }
@@ -1458,7 +1458,7 @@ struct rb_node_hdr *rb_make_tree (struct rb_node_hdr *list, size_t length)
     while (count < length) {
       struct rb_node_hdr *next;
 #ifdef PIKE_DEBUG
-      if (!list) fatal ("Premature end of list at %"PRINTSIZET"u, "
+      if (!list) Pike_fatal ("Premature end of list at %"PRINTSIZET"u, "
 			"expected %"PRINTSIZET"u.\n", count, length);
 #endif
       next = list->next;
@@ -1514,7 +1514,7 @@ struct rb_node_hdr *rb_make_tree (struct rb_node_hdr *list, size_t length)
   }
 
 #ifdef PIKE_DEBUG
-  if (list) fatal ("List longer than expected %d.\n", length);
+  if (list) Pike_fatal ("List longer than expected %d.\n", length);
 #endif
   return root;
 }

@@ -17,7 +17,7 @@
 #  include "language.h"
 #  include "lex.h"
 
-RCSID("$Id: dynamic_load.c,v 1.63 2002/05/10 23:39:52 nilsson Exp $");
+RCSID("$Id: dynamic_load.c,v 1.64 2002/08/15 14:49:20 marcus Exp $");
 
 #else /* TESTING */
 
@@ -459,7 +459,7 @@ void f_load_module(INT32 args)
   UNSET_ONERROR(err);
 #ifdef PIKE_DEBUG
   if(Pike_sp != save_sp)
-    fatal("load_module(%s) left %ld droppings on stack!\n",
+    Pike_fatal("load_module(%s) left %ld droppings on stack!\n",
 	  module_name,
 	  PTRDIFF_T_TO_LONG(Pike_sp - save_sp));
   }

@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.288 2002/06/25 14:26:40 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.289 2002/08/15 14:49:22 marcus Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -881,14 +881,14 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
       if(Pike_interpreter.recoveries &&
 	 ((Pike_sp - Pike_interpreter.evaluator_stack) <
 	  Pike_interpreter.recoveries->stack_pointer))
-	fatal("Stack error (underflow)\n");
+	Pike_fatal("Stack error (underflow)\n");
 
       if((Pike_compiler->compiler_pass == 1) &&
 	 (f != Pike_compiler->compiler_frame->current_function_number)) {
 	fprintf(stderr, "define_function()/do_opt_code() failed for symbol %s\n",
 		$4->u.sval.u.string->str);
 	dump_program_desc(Pike_compiler->new_program);
-	fatal("define_function screwed up! %d != %d\n",
+	Pike_fatal("define_function screwed up! %d != %d\n",
 	      f, Pike_compiler->compiler_frame->current_function_number);
       }
 #endif
@@ -1165,7 +1165,7 @@ simple_type: type4
     $$ = mktypenode(s);
 #ifdef PIKE_DEBUG
     if ($$->u.sval.u.type != s) {
-      fatal("mktypenode(%p) created node with %p\n", s, $$->u.sval.u.type);
+      Pike_fatal("mktypenode(%p) created node with %p\n", s, $$->u.sval.u.type);
     }
 #endif /* PIKE_DEBUG */
     free_type(s);
@@ -1178,7 +1178,7 @@ simple_type2: type2
     $$ = mktypenode(s);
 #ifdef PIKE_DEBUG
     if ($$->u.sval.u.type != s) {
-      fatal("mktypenode(%p) created node with %p\n", s, $$->u.sval.u.type);
+      Pike_fatal("mktypenode(%p) created node with %p\n", s, $$->u.sval.u.type);
     }
 #endif /* PIKE_DEBUG */
     free_type(s);
@@ -1191,7 +1191,7 @@ simple_identifier_type: identifier_type
     $$ = mktypenode(s);
 #ifdef PIKE_DEBUG
     if ($$->u.sval.u.type != s) {
-      fatal("mktypenode(%p) created node with %p\n", s, $$->u.sval.u.type);
+      Pike_fatal("mktypenode(%p) created node with %p\n", s, $$->u.sval.u.type);
     }
 #endif /* PIKE_DEBUG */
     free_type(s);
@@ -1301,7 +1301,7 @@ number_or_maxint: /* Empty */
   {
 #ifdef PIKE_DEBUG
     if (($2->token != F_CONSTANT) || ($2->u.sval.type != T_INT)) {
-      fatal("Unexpected number in negative int-range.\n");
+      Pike_fatal("Unexpected number in negative int-range.\n");
     }
 #endif /* PIKE_DEBUG */
     $$ = mkintnode(-($2->u.sval.u.integer));
@@ -1318,7 +1318,7 @@ number_or_minint: /* Empty */
   {
 #ifdef PIKE_DEBUG
     if (($2->token != F_CONSTANT) || ($2->u.sval.type != T_INT)) {
-      fatal("Unexpected number in negative int-range.\n");
+      Pike_fatal("Unexpected number in negative int-range.\n");
     }
 #endif /* PIKE_DEBUG */
     $$ = mkintnode(-($2->u.sval.u.integer));
@@ -2305,11 +2305,11 @@ optional_create_arguments: /* empty */ { $$ = 0; }
 #ifdef PIKE_DEBUG
     if(Pike_interpreter.recoveries &&
        Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
-      fatal("Stack error (underflow)\n");
+      Pike_fatal("Stack error (underflow)\n");
 
     if(Pike_compiler->compiler_pass == 1 &&
        f!=Pike_compiler->compiler_frame->current_function_number)
-      fatal("define_function screwed up! %d != %d\n",
+      Pike_fatal("define_function screwed up! %d != %d\n",
 	    f, Pike_compiler->compiler_frame->current_function_number);
 #endif
 
@@ -3706,7 +3706,7 @@ void yyerror(char *str)
 
 #ifdef PIKE_DEBUG
   if(Pike_interpreter.recoveries && Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
-    fatal("Stack error (underflow)\n");
+    Pike_fatal("Stack error (underflow)\n");
 #endif
 
   if (Pike_compiler->num_parse_error > 10) return;
@@ -3908,7 +3908,7 @@ static void safe_inc_enum(void)
   UNSETJMP(recovery);
 #ifdef PIKE_DEBUG
   if (Pike_sp != save_sp) {
-    fatal("stack thrashed in enum.\n");
+    Pike_fatal("stack thrashed in enum.\n");
   }
 #endif /* PIKE_DEBUG */
 }

@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.60 2002/06/05 07:33:03 jhs Exp $
+**!	$Id: colors.c,v 1.61 2002/08/15 14:50:25 marcus Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -187,7 +187,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.60 2002/06/05 07:33:03 jhs Exp $");
+RCSID("$Id: colors.c,v 1.61 2002/08/15 14:50:25 marcus Exp $");
 
 #include "image_machine.h"
 
@@ -307,7 +307,7 @@ static void make_colors(void)
    f_aggregate(n);
    colortable=clone_object(image_colortable_program,1);
    if (!colortable)
-      fatal("couldn't create colortable\n");
+      Pike_fatal("couldn't create colortable\n");
 
    push_int(12);
    push_int(12);
@@ -367,7 +367,7 @@ static void try_find_name(struct color_struct *this)
       make_colors();
 
    if (this->name) 
-      fatal("try_find_name called twice\n");
+      Pike_fatal("try_find_name called twice\n");
 
    if (this->rgbl.r!=COLOR_TO_COLORL(this->rgb.r) ||
        this->rgbl.g!=COLOR_TO_COLORL(this->rgb.g) ||

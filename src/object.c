@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.202 2002/08/07 15:08:35 grubba Exp $");
+RCSID("$Id: object.c,v 1.203 2002/08/15 14:49:23 marcus Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -182,7 +182,7 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
 #ifdef DEBUG
 #define CHECK_FRAME() do { \
     if(pike_frame != Pike_fp) \
-      fatal("Frame stack out of whack.\n"); \
+      Pike_fatal("Frame stack out of whack.\n"); \
   } while(0)
 #else
 #define CHECK_FRAME()
@@ -418,7 +418,7 @@ static struct pike_string *low_read_file(char *file)
 	  check_threads_etc();
 	  continue;
 	}
-	fatal("low_read_file(%s) failed, errno=%d\n",file,errno);
+	Pike_fatal("low_read_file(%s) failed, errno=%d\n",file,errno);
       }
       pos+=tmp;
     }
@@ -573,7 +573,7 @@ PMOD_EXPORT struct object *debug_master(void)
 {
   struct object *o;
   o=get_master();
-  if(!o) fatal("Couldn't load master object.\n");
+  if(!o) Pike_fatal("Couldn't load master object.\n");
   return o;
 }
 
@@ -616,7 +616,7 @@ static void call_destroy(struct object *o, int foo)
   {
 #ifdef PIKE_DEBUG
     if(Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
-      fatal("Calling destroy() inside gc.\n");
+      Pike_fatal("Calling destroy() inside gc.\n");
 #endif
     if(check_destroy_called_mark_semafore(o))
     {
@@ -780,7 +780,7 @@ void low_destruct_objects_to_destruct(void)
 
 #ifdef PIKE_DEBUG
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
-    fatal("Can't meddle with the object link list in gc pass %d.\n", Pike_in_gc);
+    Pike_fatal("Can't meddle with the object link list in gc pass %d.\n", Pike_in_gc);
 #endif
 
   /* We unlink the list from objects_to_destruct before processing it,
@@ -832,9 +832,9 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
 {
 #ifdef PIKE_DEBUG
   if (o->refs)
-    fatal("Object still got references in schedule_really_free_object().\n");
+    Pike_fatal("Object still got references in schedule_really_free_object().\n");
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE && o->next != o)
-    fatal("Freeing objects is not allowed inside the gc.\n");
+    Pike_fatal("Freeing objects is not allowed inside the gc.\n");
 #endif
 
   debug_malloc_touch(o);
@@ -1498,7 +1498,7 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 #if 0
       struct object *o2;
       for (o2 = gc_internal_object; o2 && o2 != o; o2 = o2->next) {}
-      if (!o2) fatal("Object not on gc_internal_object list.\n");
+      if (!o2) Pike_fatal("Object not on gc_internal_object list.\n");
 #endif
 
       LOW_PUSH_FRAME(o);
@@ -1616,12 +1616,12 @@ unsigned gc_touch_all_objects(void)
   unsigned n = 0;
   struct object *o;
   if (first_object && first_object->prev)
-    fatal("Error in object link list.\n");
+    Pike_fatal("Error in object link list.\n");
   for (o = first_object; o; o = o->next) {
     debug_gc_touch(o);
     n++;
     if (o->next && o->next->prev != o)
-      fatal("Error in object link list.\n");
+      Pike_fatal("Error in object link list.\n");
   }
   for (o = objects_to_destruct; o; o = o->next) n++;
   return n;
@@ -1734,7 +1734,7 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
   MAGIC_O2S(magic)->inherit = loc.inherit + inherit_no;
 #ifdef DEBUG
   if(loc.inherit + inherit_no >= loc.o->prog->inherits + loc.o->prog->num_inherit)
-     fatal("Magic index blahonga!\n");
+     Pike_fatal("Magic index blahonga!\n");
 #endif
   push_object(magic);
 }
@@ -2121,7 +2121,7 @@ void check_object_context(struct object *o,
   {
     int d=context_prog->variable_index[q];
     if(d<0 || d>=context_prog->num_identifiers)
-      fatal("Illegal index in variable_index!\n");
+      Pike_fatal("Illegal index in variable_index!\n");
 
     if(context_prog->identifiers[d].run_time_type == T_MIXED)
     {
@@ -2153,12 +2153,12 @@ void check_object(struct object *o)
     if (o->next == o)
     {
       describe(o);
-      fatal("Object check: o->next == o\n");
+      Pike_fatal("Object check: o->next == o\n");
     }
     if (o->next->prev !=o)
     {
       describe(o);
-      fatal("Object check: o->next->prev != o\n");
+      Pike_fatal("Object check: o->next->prev != o\n");
     }
   }
 
@@ -2167,28 +2167,28 @@ void check_object(struct object *o)
     if (o->prev == o)
     {
       describe(o);
-      fatal("Object check: o->prev == o\n");
+      Pike_fatal("Object check: o->prev == o\n");
     }
     if(o->prev->next != o)
     {
       describe(o);
-      fatal("Object check: o->prev->next != o\n");
+      Pike_fatal("Object check: o->prev->next != o\n");
     }
     
     if(o == first_object)
-      fatal("Object check: o->prev !=0 && first_object == o\n");
+      Pike_fatal("Object check: o->prev !=0 && first_object == o\n");
   } else {
     if(first_object != o)
-      fatal("Object check: o->prev ==0 && first_object != o\n");
+      Pike_fatal("Object check: o->prev ==0 && first_object != o\n");
   }
   
   if(o->refs <= 0)
-    fatal("Object refs <= zero.\n");
+    Pike_fatal("Object refs <= zero.\n");
 
   if(!(p=o->prog)) return;
 
   if(id_to_program(o->prog->id) != o->prog)
-    fatal("Object's program not in program list.\n");
+    Pike_fatal("Object's program not in program list.\n");
 
   if(!(o->prog->flags & PROGRAM_PASS_1_DONE)) return;
 
@@ -2212,7 +2212,7 @@ void check_all_objects(void)
 
   for(o=objects_to_destruct;o;o=o->next)
     if(o->refs)
-      fatal("Object to be destructed has references.\n");
+      Pike_fatal("Object to be destructed has references.\n");
 }
 
 #endif

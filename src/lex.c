@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.104 2002/05/31 22:41:24 nilsson Exp $");
+RCSID("$Id: lex.c,v 1.105 2002/08/15 14:49:22 marcus Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -328,7 +328,7 @@ void init_lex()
     }
   }
   if(fatal_later)
-    fatal("Found %d errors in instrs.\n",fatal_later);
+    Pike_fatal("Found %d errors in instrs.\n",fatal_later);
 
 #endif
 

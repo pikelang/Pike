@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.108 2002/05/11 00:27:03 nilsson Exp $ */
+/* $Id: colortable.c,v 1.109 2002/08/15 14:50:25 marcus Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.108 2002/05/11 00:27:03 nilsson Exp $
+**!	$Id: colortable.c,v 1.109 2002/08/15 14:50:25 marcus Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 /* #define COLORTABLE_REDUCE_DEBUG */
 /* #define CUBICLE_DEBUG */
 
-RCSID("$Id: colortable.c,v 1.108 2002/05/11 00:27:03 nilsson Exp $");
+RCSID("$Id: colortable.c,v 1.109 2002/08/15 14:50:25 marcus Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -3267,7 +3267,7 @@ void build_rigid(struct neo_colortable *nct)
    int rc,gc,bc;
    int di,hdi,hhdi;
 
-   if (nct->lu.rigid.index) fatal("rigid is initialized twice");
+   if (nct->lu.rigid.index) Pike_fatal("rigid is initialized twice");
 
    index=malloc(sizeof(int)*r*g*b);
    dist=malloc(sizeof(int)*r*g*b);
@@ -3716,7 +3716,7 @@ void image_colortable_index_32bit(INT32 args)
       SIMPLE_BAD_ARG_ERROR("Colortable.index",1,"non-empty image object");
 
    if (sizeof(unsigned INT32)!=4)
-      fatal("INT32 isn't 32 bits (sizeof is %ld)\n",
+      Pike_fatal("INT32 isn't 32 bits (sizeof is %ld)\n",
 	    (long)TO_UINT32(sizeof(unsigned INT32)));
 
    ps=begin_wide_shared_string(src->xsize*src->ysize,2);
@@ -4076,7 +4076,7 @@ static int* ordered_calculate_errors(int dxs,int dys)
 	 case 6: errs=errors3x2; break;
 	 case 9: errs=errors3x3; break;
 	 default:
-	   fatal("impossible case in colortable ordered dither generator.\n");
+	   Pike_fatal("impossible case in colortable ordered dither generator.\n");
 	   return NULL; /* uh<tm> (not in {x|x={1,2,3}*{1,2,3}}) */
       }
       

@@ -24,7 +24,7 @@ void run_queue(struct pike_queue *q)
 
 #ifdef PIKE_DEBUG
   if (q->first && q->last == (struct queue_block *)(ptrdiff_t)1)
-    fatal("This looks like a lifo queue.\n");
+    Pike_fatal("This looks like a lifo queue.\n");
 #endif
 
   while((b=q->first))
@@ -61,7 +61,7 @@ void enqueue(struct pike_queue *q, queue_call call, void *data)
 #ifdef PIKE_DEBUG
   if (!q->first) q->last = 0;
   else if (q->last == (struct queue_block *)(ptrdiff_t)1)
-    fatal("This looks like a lifo queue.\n");
+    Pike_fatal("This looks like a lifo queue.\n");
 #endif
 
   b=q->last;
@@ -90,7 +90,7 @@ void run_lifo_queue(struct pike_queue *q)
 
 #ifdef PIKE_DEBUG
   if (q->first && q->last != (struct queue_block *)(ptrdiff_t)1)
-    fatal("This does not look like a lifo queue.\n");
+    Pike_fatal("This does not look like a lifo queue.\n");
 #endif
 
   while((b=q->first))
@@ -114,7 +114,7 @@ void enqueue_lifo(struct pike_queue *q, queue_call call, void *data)
 #ifdef PIKE_DEBUG
   if (!q->first) q->last = (struct queue_block *)(ptrdiff_t)1;
   else if (q->last != (struct queue_block *)(ptrdiff_t)1)
-    fatal("This does not look like a lifo queue.\n");
+    Pike_fatal("This does not look like a lifo queue.\n");
 #endif
 
   if(!b || b->used >= QUEUE_ENTRIES)
@@ -136,7 +136,7 @@ void *dequeue_lifo(struct pike_queue *q, queue_call call)
 
 #ifdef PIKE_DEBUG
   if (q->first && q->last != (struct queue_block *)(ptrdiff_t)1)
-    fatal("This does not look like a lifo queue.\n");
+    Pike_fatal("This does not look like a lifo queue.\n");
 #endif
 
   while((b=q->first))

@@ -1,5 +1,5 @@
 /*
- * $Id: sparc.h,v 1.12 2002/04/22 21:59:27 marcus Exp $
+ * $Id: sparc.h,v 1.13 2002/08/15 14:50:25 marcus Exp $
  */
 
 #define PIKE_OPCODE_ALIGN	4
@@ -90,7 +90,7 @@
       DO_IF_DEBUG(						\
         if ((op_[p_->relocations[rel_]] & 0xc0000000) !=	\
 	    0x40000000) {					\
-          fatal("Bad relocation: %d, off:%d, opcode: 0x%08x\n",	\
+          Pike_fatal("Bad relocation: %d, off:%d, opcode: 0x%08x\n",	\
 		rel_, p_->relocations[rel_],			\
 		op_[p_->relocations[rel_]]);			\
 	}							\

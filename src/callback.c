@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: callback.c,v 1.25 2002/05/31 22:41:23 nilsson Exp $");
+RCSID("$Id: callback.c,v 1.26 2002/08/15 14:49:20 marcus Exp $");
 
 struct callback_list fork_child_callback;
 
@@ -68,7 +68,7 @@ static void check_callback_chain(struct callback_list *lst)
 	for(tmp=foo->next;tmp && len2<=len;tmp=tmp->next)
 	{
 	  if(tmp==foo)
-	    fatal("Callback list is cyclic!!!\n");
+	    Pike_fatal("Callback list is cyclic!!!\n");
 	}
       }
       len++;
@@ -84,15 +84,15 @@ static void check_callback_chain(struct callback_list *lst)
 	if(tmp->x[e].free_func == (callback_func)remove_callback)
 	{
 	  if(!is_in_free_list(tmp->x+e))
-	    fatal("Lost track of a struct callback!\n");
+	    Pike_fatal("Lost track of a struct callback!\n");
 
 	  if(tmp->x[e].next &&
 	     !is_in_free_list(tmp->x[e].next))
-	    fatal("Free callback has next in Z'ha'dum!\n");
+	    Pike_fatal("Free callback has next in Z'ha'dum!\n");
 
 	}else{
 	  if(is_in_free_list(tmp->x[e].next))
-	    fatal("Non-free callback has next in free list!\n");
+	    Pike_fatal("Non-free callback has next in free list!\n");
 	}
 	
 	if(tmp->x[e].next)
@@ -110,7 +110,7 @@ static void check_callback_chain(struct callback_list *lst)
 	  }
 	  
 	  if(d == CALLBACK_CHUNK)
-	    fatal("Callback next pointer pointing to Z'ha'dum\n");
+	    Pike_fatal("Callback next pointer pointing to Z'ha'dum\n");
 	}
       }
     }
@@ -155,7 +155,7 @@ PMOD_EXPORT void low_call_callback(struct callback_list *lst, void *arg)
 	if(!*ptr)
 	{
 	  /* We totally failed to find where we are in the linked list.. */
-	  fatal("Callback linked list breakdown.\n");
+	  Pike_fatal("Callback linked list breakdown.\n");
 	}
       }
 

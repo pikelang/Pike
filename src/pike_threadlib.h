@@ -1,5 +1,5 @@
 /*
- * $Id: pike_threadlib.h,v 1.15 2002/08/13 16:59:26 grubba Exp $
+ * $Id: pike_threadlib.h,v 1.16 2002/08/15 14:49:24 marcus Exp $
  */
 #ifndef PIKE_THREADLIB_H
 #define PIKE_THREADLIB_H
@@ -388,10 +388,10 @@ extern THREAD_T debug_locking_thread;
   if (th_running) {							\
     THREAD_T self;							\
     if (!mt_trylock(&interpreter_lock))					\
-      fatal("Interpreter is not locked.\n");				\
+      Pike_fatal("Interpreter is not locked.\n");				\
     self = th_self();							\
     if (!th_equal(debug_locking_thread, self))				\
-      fatal("Interpreter is not locked by this thread.\n");		\
+      Pike_fatal("Interpreter is not locked by this thread.\n");		\
   }									\
 } while (0)
 
@@ -498,7 +498,7 @@ extern void dumpmem(char *desc, void *x, int size);
      {									      \
        dumpmem("Saved thread id: ",&self,sizeof(self));                       \
        debug_list_all_threads();					      \
-       fatal("SWAP_IN_CURRENT_THREAD FAILED!!!\n");			      \
+       Pike_fatal("SWAP_IN_CURRENT_THREAD FAILED!!!\n");			      \
      }									      \
    })									      \
    SWAP_IN_THREAD(_tmp);						      \
@@ -557,11 +557,11 @@ PMOD_EXPORT extern int Pike_in_gc;
      struct thread_state *_tmp=OBJ2THREAD(Pike_interpreter.thread_id); \
      DO_IF_DEBUG({ \
        if(thread_for_id(th_self()) != Pike_interpreter.thread_id) \
-	 fatal("thread_for_id() (or Pike_interpreter.thread_id) failed!" \
+	 Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed!" \
                " %p != %p\n", \
                thread_for_id(th_self()), Pike_interpreter.thread_id); \
        if (Pike_in_gc > 50 && Pike_in_gc < 300) \
-	 fatal("Threads allowed during garbage collection.\n"); \
+	 Pike_fatal("Threads allowed during garbage collection.\n"); \
      }) \
      if(num_threads > 1 && !threads_disabled) { \
        SWAP_OUT_THREAD(_tmp); \
@@ -573,7 +573,7 @@ PMOD_EXPORT extern int Pike_in_gc;
        DO_IF_DEBUG(							\
 	 THREAD_T self = th_self();					\
 	 if (threads_disabled && !th_equal(threads_disabled_thread, self)) \
-	   fatal("Threads allow blocked from a different thread "	\
+	   Pike_fatal("Threads allow blocked from a different thread "	\
 		 "when threads are disabled.\n");			\
        );								\
      }									\
@@ -590,14 +590,14 @@ PMOD_EXPORT extern int Pike_in_gc;
        SWAP_IN_THREAD(_tmp);\
      } \
      DO_IF_DEBUG( if(thread_for_id(th_self()) != Pike_interpreter.thread_id) \
-        fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ; ) \
+        Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ; ) \
    } while(0)
 
 #define THREADS_ALLOW_UID() do { \
      struct thread_state *_tmp_uid=OBJ2THREAD(Pike_interpreter.thread_id); \
      DO_IF_DEBUG({ \
        if(thread_for_id(th_self()) != Pike_interpreter.thread_id) { \
-	 fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n", \
+	 Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n", \
                thread_for_id(th_self()),Pike_interpreter.thread_id); \
        } \
        if ((Pike_in_gc > 50) && (Pike_in_gc < 300)) { \
@@ -624,7 +624,7 @@ PMOD_EXPORT extern int Pike_in_gc;
        DO_IF_DEBUG(							\
 	 THREAD_T self = th_self();					\
 	 if (threads_disabled && !th_equal(threads_disabled_thread, self)) \
-	   fatal("Threads allow blocked from a different thread "	\
+	   Pike_fatal("Threads allow blocked from a different thread "	\
 		 "when threads are disabled.\n");			\
        );								\
      }									\
@@ -653,7 +653,7 @@ PMOD_EXPORT extern int Pike_in_gc;
 #ifdef PIKE_DEBUG
 #define ASSERT_THREAD_SWAPPED_IN() do {				\
     struct thread_state *_tmp=thread_state_for_id(th_self());	\
-    if(_tmp->swapped) fatal("Thread is not swapped in!\n");	\
+    if(_tmp->swapped) Pike_fatal("Thread is not swapped in!\n");	\
   }while(0)
 
 #else

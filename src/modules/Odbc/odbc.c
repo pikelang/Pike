@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.c,v 1.29 2002/05/11 00:24:25 nilsson Exp $
+ * $Id: odbc.c,v 1.30 2002/08/15 14:50:26 marcus Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.29 2002/05/11 00:24:25 nilsson Exp $");
+RCSID("$Id: odbc.c,v 1.30 2002/08/15 14:50:26 marcus Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -315,7 +315,7 @@ static void f_big_query(INT32 args)
   }
 #ifdef PIKE_DEBUG
   if (sp != save_sp) {
-    fatal("Stack error in odbc->big_query().\n");
+    Pike_fatal("Stack error in odbc->big_query().\n");
   }
 #endif /* PIKE_DEBUG */
 }
@@ -375,7 +375,7 @@ static void f_list_tables(INT32 args)
   }
 #ifdef PIKE_DEBUG
   if (sp != save_sp) {
-    fatal("Stack error in odbc->list_tables().\n");
+    Pike_fatal("Stack error in odbc->list_tables().\n");
   }
 #endif /* PIKE_DEBUG */
 }

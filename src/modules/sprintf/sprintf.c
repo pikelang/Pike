@@ -281,7 +281,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.92 2002/05/31 22:31:40 nilsson Exp $");
+RCSID("$Id: sprintf.c,v 1.93 2002/08/15 14:50:27 marcus Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -972,7 +972,7 @@ INLINE static int do_one(struct format_stack *fs,
 	      	if(sp[-1].type == T_STRING)				      \
 	      	{	                                                      \
               	  DO_IF_DEBUG( if(fs->fsp->to_free_string)                    \
-              		       fatal("OOps in sprintf\n"); )                  \
+              		       Pike_fatal("OOps in sprintf\n"); )                  \
               	  fs->fsp->to_free_string = (--sp)->u.string;	              \
 	      								      \
 	      	  fs->fsp->b = MKPCHARP_STR(fs->fsp->to_free_string);	      \
@@ -1028,7 +1028,7 @@ static void low_pike_sprintf(struct format_stack *fs,
     fs->fsp++;
 #ifdef PIKE_DEBUG
     if(fs->fsp < fs->format_info_stack)
-      fatal("sprintf: fs->fsp out of bounds.\n");
+      Pike_fatal("sprintf: fs->fsp out of bounds.\n");
 #endif
     if(fs->fsp-fs->format_info_stack==FORMAT_INFO_STACK_SIZE)
       sprintf_error(fs, "Sprintf stack overflow.\n");
@@ -1069,7 +1069,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	}else{
 	  sprintf_error(fs, "Error in format string, \\%o is not a format.\n",EXTRACT_PCHARP(a));
 	}
-	fatal("Foo, you shouldn't be here!\n");
+	Pike_fatal("Foo, you shouldn't be here!\n");
 
         /* First the modifiers */
 
@@ -1233,9 +1233,9 @@ static void low_pike_sprintf(struct format_stack *fs,
 	  }
 #ifdef PIKE_DEBUG
 	  if(fs->fsp < fs->format_info_stack)
-	    fatal("sprintf: fs->fsp out of bounds.\n");
+	    Pike_fatal("sprintf: fs->fsp out of bounds.\n");
 	  if(fs->fsp!=fsp_save)
-	    fatal("sprintf: fs->fsp incorrect after recursive sprintf.\n");
+	    Pike_fatal("sprintf: fs->fsp incorrect after recursive sprintf.\n");
 #endif
 	  fs->fsp->b=MKPCHARP_STR(b.s);
 	  fs->fsp->len=b.s->len;
@@ -1602,7 +1602,7 @@ static void low_pike_sprintf(struct format_stack *fs,
   {
 #ifdef PIKE_DEBUG
     if(fs->fsp < fs->format_info_stack)
-      fatal("sprintf: fsp out of bounds.\n");
+      Pike_fatal("sprintf: fsp out of bounds.\n");
 #endif
     
     if(fs->fsp->fi_free_string)

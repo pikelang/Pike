@@ -1,5 +1,5 @@
 /*
- * $Id: requestobject.c,v 1.20 2002/08/13 17:04:05 grubba Exp $
+ * $Id: requestobject.c,v 1.21 2002/08/15 14:50:25 marcus Exp $
  */
 
 #include "global.h"
@@ -53,7 +53,7 @@
 #include "cache.h"
 #include "requestobject.h"
 
-/* Used when fatal() can't be. */
+/* Used when Pike_fatal() can't be. */
 #define DWERROR(X)	write(2, X, sizeof(X) - sizeof(""))
 
 /* All current implementations of sendfile(2) are broken. */
@@ -782,7 +782,7 @@ void actually_send(struct send_args *a)
 	}
 	break;
       case EFAULT:	/* Invalid address specified as arg */
-	/* NOTE: Can't use fatal(), since we're not in a valid Pike context. */
+	/* NOTE: Can't use Pike_fatal(), since we're not in a valid Pike context. */
 	DWERROR("FreeBSD-style sendfile() returned EFAULT.\n");
 	abort();
 	break;

@@ -7,7 +7,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.49 2002/05/31 22:41:25 nilsson Exp $");
+RCSID("$Id: multiset.c,v 1.50 2002/08/15 14:49:23 marcus Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -54,7 +54,7 @@ static inline struct msnode_indval *msnode_indval_check (struct msnode_indval *x
   {return x;}
 
 #define sub_extra_ref(X) do {						\
-    if (!sub_ref (X)) fatal ("Got zero refs to " #X " unexpectedly.\n"); \
+    if (!sub_ref (X)) Pike_fatal ("Got zero refs to " #X " unexpectedly.\n"); \
   } while (0)
 
 PMOD_EXPORT const char msg_no_multiset_flag_marker[] =
@@ -239,11 +239,11 @@ void free_multiset_data (struct multiset_data *msd);
     FREE_PROT (L);							\
     DO_IF_DEBUG (							\
       if (L->node_refs)							\
-	fatal ("Freeing multiset with %d node refs.\n", L->node_refs);	\
+	Pike_fatal ("Freeing multiset with %d node refs.\n", L->node_refs);	\
       if (L->msd->refs <= 0)						\
-	fatal ("Too few refs %ld to multiset data.\n", L->msd->refs);	\
+	Pike_fatal ("Too few refs %ld to multiset data.\n", L->msd->refs);	\
       if (L->msd->noval_refs)						\
-	fatal ("Freeing multiset data with %d noval_refs.\n", L->msd->noval_refs); \
+	Pike_fatal ("Freeing multiset data with %d noval_refs.\n", L->msd->noval_refs); \
     );									\
     if (!sub_ref (L->msd)) free_multiset_data (L->msd);			\
     DOUBLEUNLINK (first_multiset, L);					\
@@ -270,7 +270,7 @@ static struct multiset_data *low_alloc_multiset_data (int allocsize, INT16 flags
   struct multiset_data *msd;
 
 #ifdef PIKE_DEBUG
-  if (allocsize < 0) fatal ("Invalid alloc size %d\n", allocsize);
+  if (allocsize < 0) Pike_fatal ("Invalid alloc size %d\n", allocsize);
 #endif
 
   msd = (struct multiset_data *) xalloc (
@@ -332,9 +332,9 @@ void free_multiset_data (struct multiset_data *msd)
 
 #ifdef PIKE_DEBUG
   if (msd->refs)
-    fatal ("Attempt to free multiset_data with refs.\n");
+    Pike_fatal ("Attempt to free multiset_data with refs.\n");
   if (msd->noval_refs)
-    fatal ("There are forgotten noval_refs.\n");
+    Pike_fatal ("There are forgotten noval_refs.\n");
 #endif
 
   /* We trust as few values as possible here, e.g. size and
@@ -489,18 +489,18 @@ static struct multiset_data *resize_multiset_data (struct multiset_data *old,
 
 #ifdef PIKE_DEBUG
   if (old->refs > 1)
-    fatal ("Attempt to resize multiset_data with several refs.\n");
+    Pike_fatal ("Attempt to resize multiset_data with several refs.\n");
   if (verbatim) {
     if (newsize < old->allocsize)
-      fatal ("Cannot shrink multiset_data (from %d to %d) in verbatim mode.\n",
+      Pike_fatal ("Cannot shrink multiset_data (from %d to %d) in verbatim mode.\n",
 	     old->allocsize, newsize);
   }
   else
     if (newsize < old->size)
-      fatal ("Cannot resize multiset_data with %d elements to %d.\n",
+      Pike_fatal ("Cannot resize multiset_data with %d elements to %d.\n",
 	     old->size, newsize);
   if (newsize == old->allocsize)
-    fatal ("Unnecessary resize of multiset_data to same size.\n");
+    Pike_fatal ("Unnecessary resize of multiset_data to same size.\n");
 #endif
 
   /* Note approximate code duplication in copy_multiset_data and
@@ -620,7 +620,7 @@ int prepare_for_change (struct multiset *l, int verbatim)
 
 #ifdef PIKE_DEBUG
   if (!verbatim && l->node_refs)
-    fatal ("The verbatim flag not set for multiset with node refs.\n");
+    Pike_fatal ("The verbatim flag not set for multiset with node refs.\n");
 #endif
 
   if (msd->refs > 1) {
@@ -653,7 +653,7 @@ int prepare_for_add (struct multiset *l, int verbatim)
 
 #ifdef PIKE_DEBUG
   if (!verbatim && l->node_refs)
-    fatal ("The verbatim flag not set for multiset with node refs.\n");
+    Pike_fatal ("The verbatim flag not set for multiset with node refs.\n");
 #endif
 
   if (msd->refs > 1) {
@@ -691,7 +691,7 @@ int prepare_for_value_change (struct multiset *l, int verbatim)
 
 #ifdef PIKE_DEBUG
   if (!verbatim && l->node_refs)
-    fatal ("The verbatim flag not set for multiset with node refs.\n");
+    Pike_fatal ("The verbatim flag not set for multiset with node refs.\n");
 #endif
 
   /* Assume that the caller holds a value lock. */
@@ -717,7 +717,7 @@ static union msnode *alloc_msnode_verbatim (struct multiset_data *msd)
 {
   union msnode *node = msd->free_list;
 #ifdef PIKE_DEBUG
-  if (!node) fatal ("Verbatim multiset data block unexpectedly full.\n");
+  if (!node) Pike_fatal ("Verbatim multiset data block unexpectedly full.\n");
 #endif
 
   if (node->i.ind.type == T_DELETED) {
@@ -726,7 +726,7 @@ static union msnode *alloc_msnode_verbatim (struct multiset_data *msd)
       prev = node;
       node = NEXT_FREE (node);
 #ifdef PIKE_DEBUG
-      if (!node) fatal ("Verbatim multiset data block unexpectedly full.\n");
+      if (!node) Pike_fatal ("Verbatim multiset data block unexpectedly full.\n");
 #endif
     } while (node->i.ind.type == T_DELETED);
     SET_NEXT_FREE (prev, NEXT_FREE (node));
@@ -743,7 +743,7 @@ static union msnode *alloc_msnode_verbatim (struct multiset_data *msd)
       (NODE) = alloc_msnode_verbatim (MSD);				\
     else {								\
       (NODE) = (MSD)->free_list;					\
-      DO_IF_DEBUG (if (!(NODE)) fatal ("Multiset data block unexpectedly full.\n")); \
+      DO_IF_DEBUG (if (!(NODE)) Pike_fatal ("Multiset data block unexpectedly full.\n")); \
       (MSD)->free_list = NEXT_FREE (NODE);				\
       if ((NODE)->i.ind.type == PIKE_T_UNKNOWN) (MSD)->size++;		\
     }									\
@@ -901,7 +901,7 @@ static void midflight_remove_node (struct multiset *l,
   ONERROR uwp;
   sub_ref (*pmsd);
 #ifdef PIKE_DEBUG
-  if (!(*pmsd)->refs) fatal ("Expected extra ref to passed msd.\n");
+  if (!(*pmsd)->refs) Pike_fatal ("Expected extra ref to passed msd.\n");
 #endif
   *pmsd = NULL;
   add_msnode_ref (l);
@@ -1086,7 +1086,7 @@ again:
 	  case FIND_DESTRUCTED:
 	    midflight_remove_node_faster (new.msd, rbstack);
 	    break;
-	  default: DO_IF_DEBUG (fatal ("Invalid find_type.\n"));
+	  default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
 	}
       }
 
@@ -1124,7 +1124,7 @@ PMOD_EXPORT struct multiset *mkmultiset_2 (struct array *indices,
   debug_malloc_touch (indices);
   debug_malloc_touch (values);
   if (values && values->size != indices->size)
-    fatal ("Indices and values not of same size (%d vs %d).\n",
+    Pike_fatal ("Indices and values not of same size (%d vs %d).\n",
 	   indices->size, values->size);
   if (cmp_less) check_svalue (cmp_less);
 #endif
@@ -1178,7 +1178,7 @@ PMOD_EXPORT struct multiset *mkmultiset_2 (struct array *indices,
 	  case FIND_DESTRUCTED:
 	    midflight_remove_node_faster (new.msd, rbstack);
 	    break;
-	  default: DO_IF_DEBUG (fatal ("Invalid find_type.\n"));
+	  default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
 	}
       }
 
@@ -1313,7 +1313,7 @@ static enum find_types low_multiset_find_le_gt (
 
 #ifdef PIKE_DEBUG
   /* Allow zero refs too since that's used during initial building. */
-  if (msd->refs == 1) fatal ("Copy-on-write assumed here.\n");
+  if (msd->refs == 1) Pike_fatal ("Copy-on-write assumed here.\n");
 #endif
 
   if ((node = HDR (msd->root))) {
@@ -1367,7 +1367,7 @@ static enum find_types low_multiset_find_lt_ge (
 
 #ifdef PIKE_DEBUG
   /* Allow zero refs too since that's used during initial building. */
-  if (msd->refs == 1) fatal ("Copy-on-write assumed here.\n");
+  if (msd->refs == 1) Pike_fatal ("Copy-on-write assumed here.\n");
 #endif
 
   if ((node = HDR (msd->root))) {
@@ -1442,7 +1442,7 @@ PMOD_EXPORT ptrdiff_t multiset_find_lt (struct multiset *l, struct svalue *key)
 	case FIND_DESTRUCTED:
 	  midflight_remove_node (l, &msd, node);
 	  break;
-	default: DO_IF_DEBUG (fatal ("Invalid find_type.\n"));
+	default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
       }
   }
 
@@ -1484,7 +1484,7 @@ PMOD_EXPORT ptrdiff_t multiset_find_ge (struct multiset *l, struct svalue *key)
 	case FIND_DESTRUCTED:
 	  midflight_remove_node (l, &msd, node);
 	  break;
-	default: DO_IF_DEBUG (fatal ("Invalid find_type.\n"));
+	default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
       }
   }
 
@@ -1526,7 +1526,7 @@ PMOD_EXPORT ptrdiff_t multiset_find_le (struct multiset *l, struct svalue *key)
 	case FIND_DESTRUCTED:
 	  midflight_remove_node (l, &msd, node);
 	  break;
-	default: DO_IF_DEBUG (fatal ("Invalid find_type.\n"));
+	default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
       }
   }
 
@@ -1568,7 +1568,7 @@ PMOD_EXPORT ptrdiff_t multiset_find_gt (struct multiset *l, struct svalue *key)
 	case FIND_DESTRUCTED:
 	  midflight_remove_node (l, &msd, node);
 	  break;
-	default: DO_IF_DEBUG (fatal ("Invalid find_type.\n"));
+	default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
       }
   }
 
@@ -1730,7 +1730,7 @@ static enum find_types low_multiset_track_eq (
 
 #ifdef PIKE_DEBUG
   /* Allow zero refs too since that's used during initial building. */
-  if (msd->refs == 1) fatal ("Copy-on-write assumed here.\n");
+  if (msd->refs == 1) Pike_fatal ("Copy-on-write assumed here.\n");
 #endif
 
   if (msd->cmp_less.type == T_INT) {
@@ -1798,7 +1798,7 @@ static enum find_types low_multiset_track_eq (
     /* A node was found during stepping. Adjust rbstack. */
     while (step_count--) LOW_RB_TRACK_PREV (rbstack, found_node);
 #ifdef PIKE_DEBUG
-    if (node != RBSTACK_PEEK (rbstack)) fatal ("Stack stepping failed.\n");
+    if (node != RBSTACK_PEEK (rbstack)) Pike_fatal ("Stack stepping failed.\n");
 #endif
 
     *track = rbstack;
@@ -1816,7 +1816,7 @@ static enum find_types low_multiset_track_le_gt (
 
 #ifdef PIKE_DEBUG
   /* Allow zero refs too since that's used during initial building. */
-  if (msd->refs == 1) fatal ("Copy-on-write assumed here.\n");
+  if (msd->refs == 1) Pike_fatal ("Copy-on-write assumed here.\n");
 #endif
 
   if (msd->cmp_less.type == T_INT) {
@@ -1884,9 +1884,9 @@ void multiset_fix_type_field (struct multiset *l)
 
 #ifdef PIKE_DEBUG
   if (ind_types & ~msd->ind_types)
-    fatal ("Multiset indices type field lacks 0x%x.\n", ind_types & ~msd->ind_types);
+    Pike_fatal ("Multiset indices type field lacks 0x%x.\n", ind_types & ~msd->ind_types);
   if (val_types & ~msd->val_types)
-    fatal ("Multiset values type field lacks 0x%x.\n", val_types & ~msd->val_types);
+    Pike_fatal ("Multiset values type field lacks 0x%x.\n", val_types & ~msd->val_types);
 #endif
 
   msd->ind_types = ind_types;
@@ -1916,9 +1916,9 @@ static void check_multiset_type_fields (struct multiset *l)
     if (!(msd->flags & MULTISET_INDVAL)) val_types = BIT_INT;
 
   if (ind_types & ~msd->ind_types)
-    fatal ("Multiset indices type field lacks 0x%x.\n", ind_types & ~msd->ind_types);
+    Pike_fatal ("Multiset indices type field lacks 0x%x.\n", ind_types & ~msd->ind_types);
   if (val_types & ~msd->val_types)
-    fatal ("Multiset values type field lacks 0x%x.\n", val_types & ~msd->val_types);
+    Pike_fatal ("Multiset values type field lacks 0x%x.\n", val_types & ~msd->val_types);
 }
 #endif
 
@@ -1957,7 +1957,7 @@ PMOD_EXPORT void multiset_insert (struct multiset *l,
 	MSD->root = NEW;						\
 	low_rb_init_root (HDR (NEW));					\
 	break;								\
-      default: DO_IF_DEBUG (fatal ("Invalid find_type.\n"));		\
+      default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));		\
     }									\
   } while (0)
 
@@ -2065,7 +2065,7 @@ PMOD_EXPORT ptrdiff_t multiset_insert_2 (struct multiset *l,
 	  msd = l->msd;
 	  break;
 
-	default: DO_IF_DEBUG (fatal ("Invalid find_type.\n"));
+	default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
       }
   }
 
@@ -2154,7 +2154,7 @@ PMOD_EXPORT ptrdiff_t multiset_add (struct multiset *l,
 	  msd = l->msd;
 	  break;
 
-	default: DO_IF_DEBUG (fatal ("Invalid find_type.\n"));
+	default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
       }
   }
 
@@ -2436,7 +2436,7 @@ PMOD_EXPORT int multiset_delete_2 (struct multiset *l,
 	  msd = l->msd;
 	  break;
 
-	default: DO_IF_DEBUG (fatal ("Invalid find_type.\n"));
+	default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
       }
   }
 
@@ -2734,7 +2734,7 @@ PMOD_EXPORT void check_multiset_for_destruct (struct multiset *l)
   debug_malloc_touch (l);
   debug_malloc_touch (msd);
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
-    fatal("check_multiset_for_destruct called in invalid pass inside gc.\n");
+    Pike_fatal("check_multiset_for_destruct called in invalid pass inside gc.\n");
 #endif
 
   if (msd->root &&
@@ -2773,9 +2773,9 @@ PMOD_EXPORT void check_multiset_for_destruct (struct multiset *l)
 
 #ifdef PIKE_DEBUG
     if (ind_types & ~msd->ind_types)
-      fatal ("Multiset indices type field lacks 0x%x.\n", ind_types & ~msd->ind_types);
+      Pike_fatal ("Multiset indices type field lacks 0x%x.\n", ind_types & ~msd->ind_types);
     if (val_types & ~msd->val_types)
-      fatal ("Multiset values type field lacks 0x%x.\n", val_types & ~msd->val_types);
+      Pike_fatal ("Multiset values type field lacks 0x%x.\n", val_types & ~msd->val_types);
 #endif
 
     msd->ind_types = ind_types;
@@ -2980,7 +2980,7 @@ PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
 
 #ifdef PIKE_DEBUG
   if (operation & PIKE_MERGE_DESTR_B)
-    fatal ("Destructiveness on second operand not supported.\n");
+    Pike_fatal ("Destructiveness on second operand not supported.\n");
 #endif
 
 #if 1
@@ -3002,7 +3002,7 @@ PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
   if (operation & PIKE_MERGE_DESTR_A) {
 #ifdef PIKE_DEBUG
     if (a->refs != 1)
-      fatal ("Not safe to do destructive merge with several refs to the operand.\n");
+      Pike_fatal ("Not safe to do destructive merge with several refs to the operand.\n");
 #endif
     m.res = m.a = a;
     if (a == b)
@@ -3160,7 +3160,7 @@ PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
     struct multiset_data *res_msd = m.res->msd;
     struct svalue a_ind, b_ind;
 
-    fatal ("FIXME: Merge of multisets with external sort function "
+    Pike_fatal ("FIXME: Merge of multisets with external sort function "
 	   "not yet implemented.\n");
 
     LOW_RB_MERGE (
@@ -3241,9 +3241,9 @@ PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
 #ifdef PIKE_DEBUG
   if (operation & PIKE_MERGE_DESTR_A) {
     if (a->refs != 1)
-      fatal ("First operand grew external refs during destructive merge.\n");
+      Pike_fatal ("First operand grew external refs during destructive merge.\n");
     if (a->msd->refs > 1)
-      fatal ("Data block of first operand grew external refs "
+      Pike_fatal ("Data block of first operand grew external refs "
 	     "during destructive merge.\n");
   }
 #endif
@@ -3525,9 +3525,9 @@ node *make_node_from_multiset (struct multiset *l)
 
 #ifdef PIKE_DEBUG
     if (l->msd->cmp_less.type != T_INT)
-      fatal ("Didn't expect multiset with custom order function.\n");
+      Pike_fatal ("Didn't expect multiset with custom order function.\n");
     if (l->msd->flags & MULTISET_WEAK)
-      fatal ("Didn't expect multiset with weak flag(s).\n");
+      Pike_fatal ("Didn't expect multiset with weak flag(s).\n");
 #endif
 
     if (l->msd->flags & MULTISET_INDVAL) {
@@ -3673,12 +3673,12 @@ unsigned gc_touch_all_multisets (void)
   unsigned n = 0;
   struct multiset *l;
   if (first_multiset && first_multiset->prev)
-    fatal ("Error in multiset link list.\n");
+    Pike_fatal ("Error in multiset link list.\n");
   for (l = first_multiset; l; l = l->next) {
     debug_gc_touch (l);
     n++;
     if (l->next && l->next->prev != l)
-      fatal ("Error in multiset link list.\n");
+      Pike_fatal ("Error in multiset link list.\n");
   }
   return n;
 }
@@ -3700,7 +3700,7 @@ void gc_check_all_multisets (void)
     if (((int) msd) == 0x55555555) {
       fprintf (stderr, "** Zapped multiset in list of active multisets.\n");
       describe_something (l, T_MULTISET, 0, 2, 0, NULL);
-      fatal ("Zapped multiset in list of active multisets.\n");
+      Pike_fatal ("Zapped multiset in list of active multisets.\n");
     }
 #endif
 #ifdef PIKE_DEBUG
@@ -3818,7 +3818,7 @@ static void gc_unlink_msnode_shared (struct multiset_data *msd,
 	do {								\
 	  low_use_multiset_index (node, ind);				\
 	  if (!IS_DESTRUCTED (&ind) && RECURSE_FN (&ind, 1)) {		\
-	    DO_IF_DEBUG (fatal ("Didn't expect an svalue zapping now.\n")); \
+	    DO_IF_DEBUG (Pike_fatal ("Didn't expect an svalue zapping now.\n")); \
 	  }								\
 	  RECURSE_FN (&node->iv.val, 1);				\
 	  VAL_TYPES |= 1 << node->iv.val.type;				\
@@ -3828,7 +3828,7 @@ static void gc_unlink_msnode_shared (struct multiset_data *msd,
 	do {								\
 	  low_use_multiset_index (node, ind);				\
 	  if (!IS_DESTRUCTED (&ind) && RECURSE_FN (&ind, 1)) {		\
-	    DO_IF_DEBUG (fatal ("Didn't expect an svalue zapping now.\n")); \
+	    DO_IF_DEBUG (Pike_fatal ("Didn't expect an svalue zapping now.\n")); \
 	  }								\
 	} while ((node = low_multiset_next (node)));			\
     }									\
@@ -4112,13 +4112,13 @@ void init_multiset()
   test.i.ind.subtype = (1 << 16) - 1;
   test.i.ind.u.refs = (INT32 *) (ptrdiff_t) -1;
   if (HDR (&test)->flags & (MULTISET_FLAG_MASK))
-    fatal ("The ind svalue overlays the flags field in an unexpected way.\n");
+    Pike_fatal ("The ind svalue overlays the flags field in an unexpected way.\n");
   HDR (&test)->flags |= RB_FLAG_MASK;
   if (test.i.ind.type & MULTISET_FLAG_MARKER)
-    fatal ("The ind svalue overlays the flags field in an unexpected way.\n");
+    Pike_fatal ("The ind svalue overlays the flags field in an unexpected way.\n");
   test.i.ind.type |= MULTISET_FLAG_MARKER;
   if ((test.i.ind.type & ~MULTISET_FLAG_MASK) != (1 << 8) - 1)
-    fatal ("The ind svalue overlays the flags field in an unexpected way.\n");
+    Pike_fatal ("The ind svalue overlays the flags field in an unexpected way.\n");
 #endif
 #ifndef HAVE_UNION_INIT
   svalue_int_one.u.integer = 1;
@@ -4133,7 +4133,7 @@ void exit_multiset()
   if (svalue_int_one.type != T_INT ||
       svalue_int_one.subtype != NUMBER_NUMBER ||
       svalue_int_one.u.integer != 1)
-    fatal ("svalue_int_one has been changed.\n");
+    Pike_fatal ("svalue_int_one has been changed.\n");
 #endif
   free_all_multiset_blocks();
 }
@@ -4147,10 +4147,10 @@ union msnode *debug_check_msnode (struct multiset *l, ptrdiff_t nodepos,
   union msnode *node;
 
   if (l->node_refs <= 0)
-    fatal ("%s:%d: Got a node reference to a multiset without any.\n",
+    Pike_fatal ("%s:%d: Got a node reference to a multiset without any.\n",
 	   file, line);
   if (nodepos < 0 || nodepos >= msd->allocsize)
-    fatal ("%s:%d: Node offset %"PRINTPTRDIFFT"d "
+    Pike_fatal ("%s:%d: Node offset %"PRINTPTRDIFFT"d "
 	   "outside storage for multiset (size %d).\n",
 	   file, line, nodepos, msd->allocsize);
 
@@ -4158,15 +4158,15 @@ union msnode *debug_check_msnode (struct multiset *l, ptrdiff_t nodepos,
   switch (node->i.ind.type) {
     case T_DELETED:
       if (!allow_deleted)
-	fatal ("%s:%d: Node at offset %"PRINTPTRDIFFT"d is deleted.\n",
+	Pike_fatal ("%s:%d: Node at offset %"PRINTPTRDIFFT"d is deleted.\n",
 	       file, line, nodepos);
       break;
     case PIKE_T_UNKNOWN:
-      fatal ("%s:%d: Invalid node offset %"PRINTPTRDIFFT"d.\n",
+      Pike_fatal ("%s:%d: Invalid node offset %"PRINTPTRDIFFT"d.\n",
 	     file, line, nodepos);
     default:
       if (!(node->i.ind.type & MULTISET_FLAG_MARKER))
-	fatal ("%s:%d: %s", file, line, msg_no_multiset_flag_marker);
+	Pike_fatal ("%s:%d: %s", file, line, msg_no_multiset_flag_marker);
   }
 
   return node;
@@ -4183,22 +4183,22 @@ static void check_low_msnode (struct multiset_data *msd,
       node >= (msd->flags & MULTISET_INDVAL ?
 	       IVNODE (NODE_AT (msd, msnode_indval, msd->allocsize)) :
 	       INODE (NODE_AT (msd, msnode_ind, msd->allocsize))))
-    fatal ("Node outside storage for multiset.\n");
+    Pike_fatal ("Node outside storage for multiset.\n");
   if ((char *) node - (char *) msd->nodes !=
       (msd->flags & MULTISET_INDVAL ?
        (&node->iv - &msd->nodes->iv) * (ptrdiff_t) ((struct msnode_indval *) NULL + 1) :
        (&node->i - &msd->nodes->i) * (ptrdiff_t) ((struct msnode_ind *) NULL + 1)))
-    fatal ("Unaligned node in storage for multiset.\n");
+    Pike_fatal ("Unaligned node in storage for multiset.\n");
 
   switch (node->i.ind.type) {
     default:
-      if (!(exp_type & EXP_NODE_ALLOC)) fatal ("Node is in use.\n");
+      if (!(exp_type & EXP_NODE_ALLOC)) Pike_fatal ("Node is in use.\n");
       break;
     case T_DELETED:
-      if (!(exp_type & EXP_NODE_DEL)) fatal ("Node is deleted.\n");
+      if (!(exp_type & EXP_NODE_DEL)) Pike_fatal ("Node is deleted.\n");
       break;
     case PIKE_T_UNKNOWN:
-      if (!(exp_type & EXP_NODE_FREE)) fatal ("Node is free.\n");
+      if (!(exp_type & EXP_NODE_FREE)) Pike_fatal ("Node is free.\n");
       break;
   }
 }
@@ -4211,28 +4211,28 @@ void check_multiset (struct multiset *l)
   /* Check refs and multiset link list. */
 
   if (l->refs <= 0)
-    fatal ("Multiset has incorrect refs %d.\n", l->refs);
+    Pike_fatal ("Multiset has incorrect refs %d.\n", l->refs);
   if (l->node_refs < 0)
-    fatal ("Multiset has incorrect node_refs %d.\n", l->node_refs);
+    Pike_fatal ("Multiset has incorrect node_refs %d.\n", l->node_refs);
   if (!msd)
-    fatal ("Multiset has no data block.\n");
+    Pike_fatal ("Multiset has no data block.\n");
   if (msd->refs <= 0)
-    fatal ("Multiset data block has incorrect refs %d.\n", msd->refs);
+    Pike_fatal ("Multiset data block has incorrect refs %d.\n", msd->refs);
   if (msd->noval_refs < 0)
-    fatal ("Multiset data block has negative noval_refs %d.\n", msd->noval_refs);
+    Pike_fatal ("Multiset data block has negative noval_refs %d.\n", msd->noval_refs);
   if (msd->noval_refs > msd->refs)
-    fatal ("Multiset data block has more noval_refs %d than refs %d.\n",
+    Pike_fatal ("Multiset data block has more noval_refs %d than refs %d.\n",
 	   msd->noval_refs, msd->refs);
 
   if (l->next && l->next->prev != l)
-    fatal("multiset->next->prev != multiset.\n");
+    Pike_fatal("multiset->next->prev != multiset.\n");
   if (l->prev) {
     if (l->prev->next != l)
-      fatal ("multiset->prev->next != multiset.\n");
+      Pike_fatal ("multiset->prev->next != multiset.\n");
   }
   else
     if (first_multiset != l)
-      fatal ("multiset->prev == 0 but first_multiset != multiset.\n");
+      Pike_fatal ("multiset->prev == 0 but first_multiset != multiset.\n");
 
   /* Check all node pointers, the tree structure and the type hints. */
 
@@ -4272,13 +4272,13 @@ void check_multiset (struct multiset *l)
 	      check_low_msnode (msd, INODE (node->i.next),
 				EXP_NODE_ALLOC | EXP_NODE_DEL | EXP_NODE_FREE);
 	    if (node->i.prev)
-	      fatal ("Free node got garbage in prev pointer.\n");
+	      Pike_fatal ("Free node got garbage in prev pointer.\n");
 	    break;
 
 	  default:
 	    alloc++;
 	    if (!(node->i.ind.type & MULTISET_FLAG_MARKER))
-	      fatal (msg_no_multiset_flag_marker);
+	      Pike_fatal (msg_no_multiset_flag_marker);
 	    ind_types |= 1 << (node->i.ind.type & ~MULTISET_FLAG_MASK);
 	    if (indval) val_types |= 1 << node->iv.val.type;
 	    if (node->i.prev)
@@ -4298,9 +4298,9 @@ void check_multiset (struct multiset *l)
     }
 
     if (ind_types & ~msd->ind_types)
-      fatal ("Multiset indices type field lacked 0x%x.\n", ind_types & ~msd->ind_types);
+      Pike_fatal ("Multiset indices type field lacked 0x%x.\n", ind_types & ~msd->ind_types);
     if (val_types & ~msd->val_types)
-      fatal ("Multiset values type field lacked 0x%x.\n", val_types & ~msd->val_types);
+      Pike_fatal ("Multiset values type field lacked 0x%x.\n", val_types & ~msd->val_types);
   }
 
   /* Check the free list. */
@@ -4312,7 +4312,7 @@ void check_multiset (struct multiset *l)
     for (node = msd->free_list; node; node = NEXT_FREE (node)) {
       if (node->i.ind.type == PIKE_T_UNKNOWN) break;
       if (node->i.ind.type != T_DELETED)
-	fatal ("Multiset node in free list got invalid type %d.\n", node->i.ind.type);
+	Pike_fatal ("Multiset node in free list got invalid type %d.\n", node->i.ind.type);
       deleted++;
     }
 
@@ -4321,18 +4321,18 @@ void check_multiset (struct multiset *l)
       for (node = NEXT_FREE (node); node; node = NEXT_FREE (node)) {
 	free++;
 	if (node->i.ind.type == T_DELETED)
-	  fatal ("Multiset data got deleted node after free node on free list.\n");
+	  Pike_fatal ("Multiset data got deleted node after free node on free list.\n");
 	if (node->i.ind.type != PIKE_T_UNKNOWN)
-	  fatal ("Multiset node in free list got invalid type %d.\n", node->i.ind.type);
+	  Pike_fatal ("Multiset node in free list got invalid type %d.\n", node->i.ind.type);
       }
     }
 
     if (msd->size != alloc + deleted)
-      fatal ("Multiset data got size %d but tree has %d nodes and %d are deleted.\n",
+      Pike_fatal ("Multiset data got size %d but tree has %d nodes and %d are deleted.\n",
 	     msd->size, alloc, deleted);
 
     if (free != msd->allocsize - msd->size)
-      fatal ("Multiset data should have %d free nodes but got %d on free list.\n",
+      Pike_fatal ("Multiset data should have %d free nodes but got %d on free list.\n",
 	     msd->allocsize - msd->size, free);
   }
 
@@ -4372,7 +4372,7 @@ void check_multiset (struct multiset *l)
 	    nextpos = MSNODE2OFF (msd, next);
 	    INTERNAL_CMP (low_use_multiset_index (node, tmp1), &tmp2, cmp_res);
 	    if (cmp_res > 0)
-	      fatal ("Order failure in multiset data with internal order.\n");
+	      Pike_fatal ("Order failure in multiset data with internal order.\n");
 
 	    if (l->msd != msd) {
 	      msd = l->msd;
@@ -4400,7 +4400,7 @@ void check_multiset (struct multiset *l)
 	    nextpos = MSNODE2OFF (msd, next);
 	    EXTERNAL_CMP (&msd->cmp_less);
 	    if (!UNSAFE_IS_ZERO (sp - 1))
-	      fatal ("Order failure in multiset data with external order.\n");
+	      Pike_fatal ("Order failure in multiset data with external order.\n");
 	    pop_stack();
 
 	    if (l->msd != msd) {
@@ -4947,7 +4947,7 @@ void test_multiset (void)
 				 pass ? "cmp_less" : "internal", i);
       push_int (rand());
       if (!multiset_delete (l, sp - 1))
-	fatal ("Pseudo-random sequence didn't repeat.\n");
+	Pike_fatal ("Pseudo-random sequence didn't repeat.\n");
       pop_stack();
     }
 #ifdef RB_STATS
@@ -5181,7 +5181,7 @@ void test_multiset (void)
 
   pop_n_elems (2);
   if (orig_sp != sp)
-    fatal ("Stack wrong: %"PRINTPTRDIFFT"d extra elements.\n", sp - orig_sp);
+    Pike_fatal ("Stack wrong: %"PRINTPTRDIFFT"d extra elements.\n", sp - orig_sp);
   fprintf (stderr, "                            \r");
   d_flag = old_d_flag;
 }
@@ -5212,7 +5212,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.49 2002/05/31 22:41:25 nilsson Exp $");
+RCSID("$Id: multiset.c,v 1.50 2002/08/15 14:49:23 marcus Exp $");
 
 struct multiset *first_multiset;
 
@@ -5250,7 +5250,7 @@ PMOD_EXPORT void really_free_multiset(struct multiset *l)
 {
 #ifdef PIKE_DEBUG
   if(l->refs)
-    fatal("really free multiset on multiset with nonzero refs.\n");
+    Pike_fatal("really free multiset on multiset with nonzero refs.\n");
 #endif
 
   free_array(l->ind);
@@ -5562,12 +5562,12 @@ unsigned gc_touch_all_multisets(void)
   unsigned n = 0;
   struct multiset *l;
   if (first_multiset && first_multiset->prev)
-    fatal("Error in multiset link list.\n");
+    Pike_fatal("Error in multiset link list.\n");
   for(l=first_multiset;l;l=l->next) {
     debug_gc_touch(l);
     n++;
     if (l->next && l->next->prev != l)
-      fatal("Error in multiset link list.\n");
+      Pike_fatal("Error in multiset link list.\n");
   }
   return n;
 }

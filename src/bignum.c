@@ -25,7 +25,7 @@ static void resolve_auto_bignum_program(void)
   if(auto_bignum_program.type == T_INT)
   {
     if(gmp_library_resolving)
-      fatal("Recursive GMP resolving!\n");
+      Pike_fatal("Recursive GMP resolving!\n");
 
     gmp_library_resolving=1;
     push_text("Gmp.bignum");

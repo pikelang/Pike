@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.158 2002/08/02 03:10:17 jhs Exp $");
+RCSID("$Id: operators.c,v 1.159 2002/08/15 14:49:24 marcus Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -362,14 +362,14 @@ PMOD_EXPORT void f_add(INT32 args)
       save_sp[--e] = *(--sp);
 #ifdef PIKE_DEBUG
       if (sp != save_sp) {
-	fatal("f_add(): Lost track of stack %p != %p\n", sp, save_sp);
+	Pike_fatal("f_add(): Lost track of stack %p != %p\n", sp, save_sp);
       }
 #endif /* PIKE_DEBUG */
       /* Perform the rest of the addition. */
       f_add(-e);
 #ifdef PIKE_DEBUG
       if (sp != save_sp + 1 + e) {
-	fatal("f_add(): Lost track of stack (2) %p != %p\n",
+	Pike_fatal("f_add(): Lost track of stack (2) %p != %p\n",
 	      sp, save_sp + 1 + e);
       }
 #endif /* PIKE_DEBUG */
@@ -645,7 +645,7 @@ static node *optimize_eq(node *n)
 
 #ifdef PIKE_DEBUG
     if(!first_arg || !second_arg)
-      fatal("Couldn't find argument!\n");
+      Pike_fatal("Couldn't find argument!\n");
 #endif
     if(node_is_false(*first_arg) && !node_may_overload(*second_arg,LFUN_EQ))
     {
@@ -718,7 +718,7 @@ static node *optimize_not(node *n)
     first_arg=my_get_arg(&_CDR(n), 0);
 #ifdef PIKE_DEBUG
     if(!first_arg)
-      fatal("Couldn't find argument!\n");
+      Pike_fatal("Couldn't find argument!\n");
 #endif
     if(node_is_true(*first_arg))  return mkintnode(0);
     if(node_is_false(*first_arg)) return mkintnode(1);
@@ -781,7 +781,7 @@ static node *optimize_binary(node *n)
 
 #ifdef PIKE_DEBUG
     if(!first_arg || !second_arg)
-      fatal("Couldn't find argument!\n");
+      Pike_fatal("Couldn't find argument!\n");
 #endif
 
     if((*second_arg)->type == (*first_arg)->type &&
@@ -829,7 +829,7 @@ static int generate_comparison(node *n)
   if(count_args(CDR(n))==2)
   {
     if(do_docode(CDR(n),DO_NOT_COPY) != 2)
-      fatal("Count args was wrong in generate_comparison.\n");
+      Pike_fatal("Count args was wrong in generate_comparison.\n");
 
     if(CAR(n)->u.sval.u.efun->function == f_eq)
       emit0(F_EQ);
@@ -844,7 +844,7 @@ static int generate_comparison(node *n)
     else if(CAR(n)->u.sval.u.efun->function == f_ge)
       emit0(F_GE);
     else
-      fatal("Couldn't generate comparison!\n");
+      Pike_fatal("Couldn't generate comparison!\n");
     return 1;
   }
   return 0;
@@ -3091,7 +3091,7 @@ PMOD_EXPORT void o_range(void)
     }
 #ifdef PIKE_DEBUG
     if(from < 0 || (to-from+1) < 0)
-      fatal("Error in o_range.\n");
+      Pike_fatal("Error in o_range.\n");
 #endif
 
     s=string_slice(sp[-1].u.string, from, to-from+1);
@@ -3465,7 +3465,7 @@ static int generate_sizeof(node *n)
 {
   if(count_args(CDR(n)) != 1) return 0;
   if(do_docode(CDR(n),DO_NOT_COPY) != 1)
-    fatal("Count args was wrong in sizeof().\n");
+    Pike_fatal("Count args was wrong in sizeof().\n");
   emit0(F_SIZEOF);
   return 1;
 }

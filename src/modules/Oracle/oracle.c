@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.69 2002/08/06 20:13:08 grubba Exp $
+ * $Id: oracle.c,v 1.70 2002/08/15 14:50:26 marcus Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.69 2002/08/06 20:13:08 grubba Exp $");
+RCSID("$Id: oracle.c,v 1.70 2002/08/15 14:50:26 marcus Exp $");
 
 
 /* User-changable defines: */
@@ -251,20 +251,20 @@ void *parent_storage(int depth)
     if (o->refs == 0x55555555) {
       fprintf(stderr, "The object %p has been zapped!\n", o);
       describe(p);
-      fatal("Object zapping detected.\n");
+      Pike_fatal("Object zapping detected.\n");
     }
     if (p->refs == 0x55555555) {
       fprintf(stderr, "The program %p has been zapped!\n", p);
       describe(p);
       fprintf(stderr, "Which taken from the object %p\n", o);
       describe(o);
-      fatal("Looks like the program %p has been zapped!\n", p);
+      Pike_fatal("Looks like the program %p has been zapped!\n", p);
     }
 #endif /* DEBUG_MALLOC */
     
 #ifdef PIKE_DEBUG
     if(i < 0 || i > p->num_identifier_references)
-      fatal("Identifier out of range!\n");
+      Pike_fatal("Identifier out of range!\n");
 #endif
     
     inherit=INHERIT_FROM_INT(p, i);
@@ -277,7 +277,7 @@ void *parent_storage(int depth)
       describe(p);
       fprintf(stderr, "Which was in turn taken from the object %p\n", o);
       describe(o);
-      fatal("Looks like the program %p has been zapped!\n", p);
+      Pike_fatal("Looks like the program %p has been zapped!\n", p);
     }
 #endif /* DEBUG_MALLOC */
     
@@ -303,7 +303,7 @@ void *low_check_storage(void *storage, unsigned long magic, char *prog)
   {
     fprintf(stderr, "Wrong magic number! expected a %s\n",prog);
     fprintf(stderr, "Expected %lx, got %lx\n",magic,*((unsigned long *)storage));
-    fatal("Wrong program, expected %s!\n",prog);
+    Pike_fatal("Wrong program, expected %s!\n",prog);
   }
   return storage;
 }
@@ -1739,7 +1739,7 @@ static void f_big_typed_query_create(INT32 args)
   {
       CHECK_INTERPRETER_LOCK();
       if(d_flag>1 && thread_for_id(th_self()) != Pike_thread_id)
-        fatal("thread_for_id() (or Pike_thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),Pike_thread_id);
+        Pike_fatal("thread_for_id() (or Pike_thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),Pike_thread_id);
   }
 #endif
 
@@ -1788,7 +1788,7 @@ static void f_big_typed_query_create(INT32 args)
   {
       CHECK_INTERPRETER_LOCK();
       if(d_flag>1 && thread_for_id(th_self()) != Pike_thread_id)
-        fatal("thread_for_id() (or Pike_thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),Pike_thread_id);
+        Pike_fatal("thread_for_id() (or Pike_thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),Pike_thread_id);
   }
 #endif
 
@@ -2001,7 +2001,7 @@ static void f_big_typed_query_create(INT32 args)
   {
       CHECK_INTERPRETER_LOCK();
       if(d_flag>1 && thread_for_id(th_self()) != Pike_thread_id)
-        fatal("thread_for_id() (or Pike_thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),Pike_thread_id);
+        Pike_fatal("thread_for_id() (or Pike_thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),Pike_thread_id);
   }
 #endif
 
@@ -2046,7 +2046,7 @@ static void f_big_typed_query_create(INT32 args)
   {
       CHECK_INTERPRETER_LOCK();
       if(d_flag>1 && thread_for_id(th_self()) != Pike_thread_id)
-        fatal("thread_for_id() (or Pike_thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),Pike_thread_id);
+        Pike_fatal("thread_for_id() (or Pike_thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),Pike_thread_id);
   }
 #endif
 
@@ -2188,7 +2188,7 @@ void pike_module_init(void)
   }
 
   if(oracle_program)
-    fatal("Oracle module initiated twice!\n");
+    Pike_fatal("Oracle module initiated twice!\n");
 
   MY_START_CLASS(dbcon); {
 

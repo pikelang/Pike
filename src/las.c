@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.296 2002/08/12 20:19:08 grubba Exp $");
+RCSID("$Id: las.c,v 1.297 2002/08/15 14:49:22 marcus Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -109,7 +109,7 @@ void check_tree(node *n, int depth)
 
   while(n) {
     if(n->token==USHRT_MAX)
-      fatal("Free node in tree.\n");
+      Pike_fatal("Free node in tree.\n");
 
     check_node_hash(n);
 
@@ -141,7 +141,7 @@ void check_tree(node *n, int depth)
 	      simple_describe_type(n->type);
 	      fprintf(stderr, "\n");
 
-	      fatal("Type of external node is not matching its identifier.\n");
+	      Pike_fatal("Type of external node is not matching its identifier.\n");
 	    }
 #endif
 #endif
@@ -157,7 +157,7 @@ void check_tree(node *n, int depth)
       node *q;
       for(q=n->parent;q;q=q->parent)
 	if(q->parent==n)
-	  fatal("Cyclic node structure found.\n");
+	  Pike_fatal("Cyclic node structure found.\n");
     }
 
     if(car_is_node(n))
@@ -167,7 +167,7 @@ void check_tree(node *n, int depth)
       CAR(n)->parent = n;
 #else /* !SHARED_NODES */
       if(CAR(n)->parent != n)
-	fatal("Parent is wrong.\n");
+	Pike_fatal("Parent is wrong.\n");
 #endif /* SHARED_NODES */
 
       depth++;
@@ -182,7 +182,7 @@ void check_tree(node *n, int depth)
       CDR(n)->parent = n;
 #else /* !SHARED_NODES */
       if(CDR(n)->parent != n)
-	fatal("Parent is wrong.\n");
+	Pike_fatal("Parent is wrong.\n");
 #endif /* !SHARED_NODES */
 
       depth++;
@@ -203,7 +203,7 @@ void check_tree(node *n, int depth)
       CDR(n->parent)->parent = n->parent;
 #else /* !SHARED_NODES */
       if(CDR(n->parent)->parent != n->parent)
-	fatal("Parent is wrong.\n");
+	Pike_fatal("Parent is wrong.\n");
 #endif /* !SHARED_NODES */
       n = CDR(n->parent);
       continue;
@@ -218,7 +218,7 @@ void check_tree(node *n, int depth)
     print_tree(n);
     fprintf(stderr, "orig_n:");
     print_tree(orig_n);
-    fatal("check_tree() lost track.\n");
+    Pike_fatal("check_tree() lost track.\n");
   }
   n->parent = parent;
 }
@@ -416,7 +416,7 @@ static void add_node(node *n)
         fprintf(stderr, "    %p\n", (void *)probe);
         probe = probe->next;
       }
-      fatal( "Node already added!\n" );
+      Pike_fatal( "Node already added!\n" );
     }
     probe = probe->next;
   }
@@ -628,7 +628,7 @@ void free_all_nodes(void)
 	}
 #if defined(PIKE_DEBUG)
 	if(!cumulative_parse_error)
-	  fatal("Failed to free %d nodes when compiling!\n",e2);
+	  Pike_fatal("Failed to free %d nodes when compiling!\n",e2);
 #endif
       }
 #ifndef PIKE_DEBUG
@@ -660,7 +660,7 @@ void debug_free_node(node *n)
 		DO_NOT_WARN((unsigned long)hash),
 		DO_NOT_WARN((unsigned long)n->hash));
 	print_tree(n);
-	fatal("token:%d, car:%p cdr:%p file:%s line:%d\n",
+	Pike_fatal("token:%d, car:%p cdr:%p file:%s line:%d\n",
 	      n->token, _CAR(n), _CDR(n), n->current_file->str, n->line_number);
       }
     }
@@ -684,7 +684,7 @@ void debug_free_node(node *n)
 		DO_NOT_WARN((unsigned long)hash),
 		DO_NOT_WARN((unsigned long)n->hash));
 	print_tree(n);
-	fatal("token:%d, car:%p cdr:%p file:%s line:%d\n",
+	Pike_fatal("token:%d, car:%p cdr:%p file:%s line:%d\n",
 	      n->token, _CAR(n), _CDR(n), n->current_file->str, n->line_number);
       }
     }
@@ -696,7 +696,7 @@ void debug_free_node(node *n)
 #ifdef SHARED_NODES
 #ifdef PIKE_DEBUG
     if (n->refs) {
-      fatal("Node with refs left about to be killed: %8p\n", n);
+      Pike_fatal("Node with refs left about to be killed: %8p\n", n);
     }
 #endif /* PIKE_DEBUG */
     sub_node(dmalloc_touch(node *, n));
@@ -705,7 +705,7 @@ void debug_free_node(node *n)
     switch(n->token)
     {
     case USHRT_MAX:
-      fatal("Freeing node again!\n");
+      Pike_fatal("Freeing node again!\n");
       break;
 
     case F_CONSTANT:
@@ -752,7 +752,7 @@ void debug_free_node(node *n)
 
 #if defined(SHARED_NODES) && defined(PIKE_DEBUG)
       if (dead->refs) {
-	fatal("Killed node %p still has refs: %d\n", dead, dead->refs);
+	Pike_fatal("Killed node %p still has refs: %d\n", dead, dead->refs);
       }
 #endif /* SHARED_NODES && PIKE_DEBUG */
 
@@ -772,7 +772,7 @@ void debug_free_node(node *n)
 
 #if defined(SHARED_NODES) && defined(PIKE_DEBUG)
       if (dead->refs) {
-	fatal("Killed node %p still has refs: %d\n", dead, dead->refs);
+	Pike_fatal("Killed node %p still has refs: %d\n", dead, dead->refs);
       }
 #endif /* SHARED_NODES && PIKE_DEBUG */
 
@@ -804,7 +804,7 @@ void debug_free_node(node *n)
 
 #if defined(SHARED_NODES) && defined(PIKE_DEBUG)
     if (n->refs) {
-      fatal("Killed node %p still has refs: %d\n", n, n->refs);
+      Pike_fatal("Killed node %p still has refs: %d\n", n, n->refs);
     }
 #endif /* SHARE_NODES && PIKE_DEBUG */
 
@@ -830,7 +830,7 @@ node *debug_check_node_hash(node *n)
 	    n->token);
     debug_malloc_dump_references(n,0,0,0);
     print_tree(n);
-    fatal("Bad node hash!\n");
+    Pike_fatal("Bad node hash!\n");
   }
 #endif /* PIKE_DEBUG && SHARED_NODES */
   return n;
@@ -911,23 +911,23 @@ node *debug_mknode(short token, node *a, node *b)
 #ifdef PIKE_DEBUG
     case F_CAST:
     case F_SOFT_CAST:
-      fatal("Attempt to create a cast-node with mknode()!\n");
+      Pike_fatal("Attempt to create a cast-node with mknode()!\n");
     case F_CONSTANT:
-      fatal("Attempt to create an F_CONSTANT-node with mknode()!\n");
+      Pike_fatal("Attempt to create an F_CONSTANT-node with mknode()!\n");
     case F_LOCAL:
-      fatal("Attempt to create an F_LOCAL-node with mknode()!\n");
+      Pike_fatal("Attempt to create an F_LOCAL-node with mknode()!\n");
     case F_IDENTIFIER:
-      fatal("Attempt to create an F_IDENTIFIER-node with mknode()!\n");
+      Pike_fatal("Attempt to create an F_IDENTIFIER-node with mknode()!\n");
     case F_TRAMPOLINE:
-      fatal("Attempt to create an F_TRAMPOLINE-node with mknode()!\n");
+      Pike_fatal("Attempt to create an F_TRAMPOLINE-node with mknode()!\n");
     case F_EXTERNAL:
-      fatal("Attempt to create an F_EXTERNAL-node with mknode()!\n");
+      Pike_fatal("Attempt to create an F_EXTERNAL-node with mknode()!\n");
 #endif /* PIKE_DEBUG */
   }
 
 #if defined(PIKE_DEBUG) && !defined(SHARED_NODES)
   if(b && a==b)
-    fatal("mknode: a and be are the same!\n");
+    Pike_fatal("mknode: a and be are the same!\n");
 #endif    
 
   check_tree(a,0);
@@ -1440,7 +1440,7 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
     simple_describe_type(res->type);
     printf("\n");
     
-    fatal("Type of external node is not matching it's identifier.\n");
+    Pike_fatal("Type of external node is not matching it's identifier.\n");
   }
 #endif
 #endif
@@ -1456,7 +1456,7 @@ node *debug_mkcastnode(struct pike_type *type, node *n)
 
 #ifdef PIKE_DEBUG
   if (!type) {
-    fatal("Casting to no type!\n");
+    Pike_fatal("Casting to no type!\n");
   }
 #endif /* PIKE_DEBUG */
 
@@ -1490,7 +1490,7 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n)
 
 #ifdef PIKE_DEBUG
   if (!type) {
-    fatal("Soft cast to no type!\n");
+    Pike_fatal("Soft cast to no type!\n");
   }
 #endif /* PIKE_DEBUG */
 
@@ -1889,7 +1889,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	    if (Pike_sp > save_sp) {
 	      pop_n_elems(Pike_sp - save_sp);
 	    } else if (Pike_sp != save_sp) {
-	      fatal("f_index() munged stack!\n");
+	      Pike_fatal("f_index() munged stack!\n");
 	    }
 	    push_undefined();
 	    thrown = throw_value;
@@ -2132,7 +2132,7 @@ node *copy_node(node *n)
     
     switch((car_is_node(n) << 1) | cdr_is_node(n))
     {
-    default: fatal("fooo?\n");
+    default: Pike_fatal("fooo?\n");
 
     case 3:
       b=mknode(n->token, copy_node(CAR(n)), copy_node(CDR(n)));
@@ -3545,7 +3545,7 @@ void fix_type_field(node *n)
 	}
       }
       /* Fewer than 2 arguments to F_RANGE. */
-      fatal("Bad number of arguments to F_RANGE.\n");
+      Pike_fatal("Bad number of arguments to F_RANGE.\n");
     }
     break;
   case F_AUTO_MAP_MARKER:
@@ -3714,7 +3714,7 @@ void fix_type_field(node *n)
 		simple_describe_type(f);
 		printf("\n");
 
-		fatal("Type of external node is not matching it's identifier.\n");
+		Pike_fatal("Type of external node is not matching it's identifier.\n");
 	      }
 #endif
 #endif
@@ -3830,7 +3830,7 @@ void fix_type_field(node *n)
 	MAKE_CONSTANT_SHARED_STRING(op_string, "`/");
 	break;
       default:
-	fatal("fix_type_field(): Unhandled token: %d\n", n->token);
+	Pike_fatal("fix_type_field(): Unhandled token: %d\n", n->token);
 	break;
       }
       if (!(op_node = find_module_identifier(op_string, 0))) {
@@ -4286,7 +4286,7 @@ static void zapp_try_optimize(node *n)
   }
 #ifdef PIKE_DEBUG
   if (n != orig_n) {
-    fatal("zzap_try_optimize() lost track of parent.\n");
+    Pike_fatal("zzap_try_optimize() lost track of parent.\n");
   }
 #endif /* PIKE_DEBUG */
   n->parent = parent;

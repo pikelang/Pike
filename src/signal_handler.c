@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.224 2002/05/31 22:41:26 nilsson Exp $");
+RCSID("$Id: signal_handler.c,v 1.225 2002/08/15 14:49:25 marcus Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -152,7 +152,7 @@ RCSID("$Id: signal_handler.c,v 1.224 2002/05/31 22:41:26 nilsson Exp $");
 #define SAFE_FIFO_DEBUG_BEGIN() do {\
   static volatile int inside=0;	      \
   if(inside) \
-    fatal("You need to define NEED_SIGNAL_SAFE_FIFO in signal_handler.c!\n"); \
+    Pike_fatal("You need to define NEED_SIGNAL_SAFE_FIFO in signal_handler.c!\n"); \
   inside=1;
 
 #define SAFE_FIFO_DEBUG_END() inside=0; }while(0)
@@ -201,7 +201,7 @@ RCSID("$Id: signal_handler.c,v 1.224 2002/05/31 22:41:26 nilsson Exp $");
 #define END_FIFO_PUSH(pre,TYPE) \
  while( (PIKE_CONCAT(pre,_tmp3_)=write(PIKE_CONCAT(pre,_fd)[1],(char *)&PIKE_CONCAT(pre,_tmp_),sizeof(PIKE_CONCAT(pre,_tmp_)))) < 0 && errno==EINTR); \
  DO_IF_DEBUG(if( PIKE_CONCAT(pre,_tmp3_) != sizeof( PIKE_CONCAT(pre,_tmp_))) \
-		  fatal("Atomic pipe write failed!!\n"); ) \
+		  Pike_fatal("Atomic pipe write failed!!\n"); ) \
   errno=PIKE_CONCAT(pre,_errno_save);\
   PIKE_CONCAT(pre,_data_available)=1; \
  } while(0)
@@ -219,7 +219,7 @@ RCSID("$Id: signal_handler.c,v 1.224 2002/05/31 22:41:26 nilsson Exp $");
 
 #define INIT_FIFO(pre,TYPE) do {			\
   if(pike_make_pipe(PIKE_CONCAT(pre,_fd)) <0)		\
-    fatal("Couldn't create buffer " #pre ".\n");	\
+    Pike_fatal("Couldn't create buffer " #pre ".\n");	\
 							\
   set_nonblocking(PIKE_CONCAT(pre,_fd)[0],1);		\
   set_nonblocking(PIKE_CONCAT(pre,_fd)[1],1);		\
@@ -506,7 +506,7 @@ void dump_process_history(pid_t pid)
 {
   int e;
   if(pid < 1)
-    fatal("Pid out of range: %ld\n",(long)pid);
+    Pike_fatal("Pid out of range: %ld\n",(long)pid);
 
   fprintf(stderr,"Process history:");
   for(e=MAXIMUM(-4095,-last_pid_p);e<0;e++)
@@ -523,7 +523,7 @@ void dump_process_history(pid_t pid)
 void process_started(pid_t pid)
 {
   if(pid < 1)
-    fatal("Pid out of range: %ld\n",(long)pid);
+    Pike_fatal("Pid out of range: %ld\n",(long)pid);
 
   last_pids[last_pid_p++ & 4095]=pid;
 
@@ -543,14 +543,14 @@ void process_started(pid_t pid)
 
     default:
       dump_process_history(pid);
-      fatal("Process debug: Pid %ld started without stopping! (status=%d)\n",(long)pid,process_info[pid]);
+      Pike_fatal("Process debug: Pid %ld started without stopping! (status=%d)\n",(long)pid,process_info[pid]);
   }
 }
 
 void process_done(pid_t pid, char *from)
 {
   if(pid < 1)
-    fatal("Pid out of range in %s: %ld\n",from,(long)pid);
+    Pike_fatal("Pid out of range in %s: %ld\n",from,(long)pid);
 
   if(pid>=MY_MAX_PID)
     return;
@@ -681,7 +681,7 @@ PMOD_EXPORT void check_signals(struct callback *foo, void *bar, void *gazonk)
       BEGIN_FIFO_LOOP(wait,wait_data);
 
       if(!FIFO_DATA(wait,wait_data).pid)
-	  fatal("FIFO_DATA(wait,wait_data).pid=0 NEED_SIGNAL_SAFE_FIFO is "
+	  Pike_fatal("FIFO_DATA(wait,wait_data).pid=0 NEED_SIGNAL_SAFE_FIFO is "
 #ifndef NEED_SIGNAL_SAFE_FIFO
 		"not "
 #endif
@@ -1235,7 +1235,7 @@ static void f_pid_status_wait(INT32 args)
 	if(s && s->type == T_OBJECT && s->u.object == fp->current_object)
 	{
 	  dump_process_history(pid);
-	  fatal("Operating system failure: "
+	  Pike_fatal("Operating system failure: "
 		"Pike lost track of a child, pid=%d, errno=%d.\n",pid,err);
 
 	}
@@ -1315,7 +1315,7 @@ static void f_pid_status_wait(INT32 args)
 	  }
 	}else{
 	  /* This should not happen! */
-	  fatal("Pid = 0 in waitpid(%d)\n",pid);
+	  Pike_fatal("Pid = 0 in waitpid(%d)\n",pid);
 	}
       }
 	
@@ -3812,7 +3812,7 @@ static void f_ualarm(INT32 args)
 static RETSIGTYPE fatal_signal(int signum)
 {
   my_signal(signum,SIG_DFL);
-  fatal("Fatal signal (%s) recived.\n",signame(signum));
+  Pike_fatal("Fatal signal (%s) recived.\n",signame(signum));
 }
 #endif
 
@@ -3899,7 +3899,7 @@ void init_signals(void)
     mt_init(& wait_thread_mutex);
 
     if (th_create_small(&foo,wait_thread,0)) {
-      fatal("wait thread: Failed to create thread!\n"
+      Pike_fatal("wait thread: Failed to create thread!\n"
 	    "errno: %d\n", errno);
     }
     num_threads++;    /* We use the interpreter lock */

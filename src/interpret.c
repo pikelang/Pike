@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.262 2002/06/25 14:26:40 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.263 2002/08/15 14:49:21 marcus Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -118,7 +118,7 @@ ptrdiff_t pop_sp_mark(void)
 {
 #ifdef PIKE_DEBUG
   if(Pike_mark_sp < Pike_interpreter.mark_stack)
-    fatal("Mark stack underflow!\n");
+    Pike_fatal("Mark stack underflow!\n");
 #endif
   return Pike_sp - *--Pike_mark_sp;
 }
@@ -531,7 +531,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 	  struct external_variable_context tmp=*loc;
 #ifdef PIKE_DEBUG
 	  if(!loc->inherit->inherit_level)
-	    fatal("Gahhh! inherit level zero in wrong place!\n");
+	    Pike_fatal("Gahhh! inherit level zero in wrong place!\n");
 #endif
 	  while(tmp.inherit->inherit_level >= loc->inherit->inherit_level)
 	  {
@@ -579,21 +579,21 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
     if (loc->o->refs == 0x55555555) {
       fprintf(stderr, "The object %p has been zapped!\n", loc->o);
       describe(p);
-      fatal("Object zapping detected.\n");
+      Pike_fatal("Object zapping detected.\n");
     }
     if (p->refs == 0x55555555) {
       fprintf(stderr, "The program %p has been zapped!\n", p);
       describe(p);
       fprintf(stderr, "Which taken from the object %p\n", loc->o);
       describe(loc->o);
-      fatal("Looks like the program %p has been zapped!\n", p);
+      Pike_fatal("Looks like the program %p has been zapped!\n", p);
     }
 #endif /* DEBUG_MALLOC */
     
 #ifdef PIKE_DEBUG
     if(loc->parent_identifier < 0 ||
        loc->parent_identifier > p->num_identifier_references)
-      fatal("Identifier out of range, loc->parent_identifer=%d!\n",
+      Pike_fatal("Identifier out of range, loc->parent_identifer=%d!\n",
 	    loc->parent_identifier);
 #endif
 
@@ -617,7 +617,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
       describe(p);
       fprintf(stderr, "Which was in turn taken from the object %p\n", loc->o);
       describe(loc->o);
-      fatal("Looks like the program %p has been zapped!\n", p);
+      Pike_fatal("Looks like the program %p has been zapped!\n", p);
     }
 #endif /* DEBUG_MALLOC */
   }
@@ -767,7 +767,7 @@ static int o_catch(PIKE_OPCODE_T *pc);
 #ifdef PIKE_DEBUG
 #define EVAL_INSTR_RET_CHECK(x)						\
   if (x == -2)								\
-    fatal("Return value -2 from eval_instruction is not handled here.\n"\
+    Pike_fatal("Return value -2 from eval_instruction is not handled here.\n"\
 	  "Probable cause: F_ESCAPE_CATCH outside catch block.\n")
 #else
 #define EVAL_INSTR_RET_CHECK(x)
@@ -856,7 +856,7 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
     fprintf(stderr, "Calling code at 0x%p:\n", pc);
 #ifdef PIKE_OPCODE_ALIGN
     if (((INT32)pc) % PIKE_OPCODE_ALIGN) {
-      fatal("Odd offset!\n");
+      Pike_fatal("Odd offset!\n");
     }
 #endif /* PIKE_OPCODE_ALIGN */
     for (i=0; i < 16; i+=4) {
@@ -1044,7 +1044,7 @@ static void do_trace_call(INT32 args)
   })									\
   DO_IF_DEBUG(								\
   if(X->flags & PIKE_FRAME_MALLOCED_LOCALS)				\
-  fatal("Pike frame is not supposed to have malloced locals here!\n"));	\
+  Pike_fatal("Pike frame is not supposed to have malloced locals here!\n"));	\
  									\
   DO_IF_DMALLOC(							\
     X->context.prog=0;							\
@@ -1090,10 +1090,10 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       CHECK_INTERPRETER_LOCK();
 
       if( Pike_interpreter.thread_id && !th_equal( OBJ2THREAD(Pike_interpreter.thread_id)->id, self) )
-	fatal("Current thread is wrong.\n");
+	Pike_fatal("Current thread is wrong.\n");
 	
       if(thread_for_id(th_self()) != Pike_interpreter.thread_id)
-	fatal("thread_for_id() (or Pike_interpreter.thread_id) failed in mega_apply! "
+	Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed in mega_apply! "
 	      "%p != %p\n", thread_for_id(self), Pike_interpreter.thread_id);
     }
 #endif
@@ -1152,16 +1152,16 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	if(Pike_sp != expected_stack + !s->u.efun->may_return_void)
 	{
 	  if(Pike_sp < expected_stack)
-	    fatal("Function popped too many arguments: %s\n",
+	    Pike_fatal("Function popped too many arguments: %s\n",
 		  s->u.efun->name->str);
 	  if(Pike_sp>expected_stack+1)
-	    fatal("Function left droppings on stack: %s\n",
+	    Pike_fatal("Function left droppings on stack: %s\n",
 		  s->u.efun->name->str);
 	  if(Pike_sp == expected_stack && !s->u.efun->may_return_void)
-	    fatal("Non-void function returned without return value on stack: %s %d\n",
+	    Pike_fatal("Non-void function returned without return value on stack: %s %d\n",
 		  s->u.efun->name->str,s->u.efun->may_return_void);
 	  if(Pike_sp==expected_stack+1 && s->u.efun->may_return_void)
-	    fatal("Void function returned with a value on the stack: %s %d\n",
+	    Pike_fatal("Void function returned with a value on the stack: %s %d\n",
 		  s->u.efun->name->str, s->u.efun->may_return_void);
 	}
 #endif
@@ -1225,7 +1225,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
   call_lfun:
 #ifdef PIKE_DEBUG
     if(fun < 0 || fun >= NUM_LFUNS)
-      fatal("Apply lfun on illegal value!\n");
+      Pike_fatal("Apply lfun on illegal value!\n");
 #endif
     if(!o->prog)
       PIKE_ERROR("destructed object", "Apply on destructed object.\n", Pike_sp, args);
@@ -1298,9 +1298,9 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
   struct svalue *save_sp=Pike_fp->save_sp;		\
   DO_IF_DEBUG(						\
     if(Pike_mark_sp < Pike_fp->save_mark_sp)		\
-      fatal("Popped below save_mark_sp!\n");		\
+      Pike_fatal("Popped below save_mark_sp!\n");		\
     if(Pike_sp<Pike_interpreter.evaluator_stack)	\
-      fatal("Stack error (also simple).\n");		\
+      Pike_fatal("Stack error (also simple).\n");		\
     )							\
 							\
     Pike_mark_sp=Pike_fp->save_mark_sp;			\
@@ -1356,7 +1356,7 @@ void unlink_previous_frame(void)
     {
       while(rec->frame_pointer == current) rec=rec->previous;
       if(rec->frame_pointer == current->next)
-	fatal("You can't touch this!\n");
+	Pike_fatal("You can't touch this!\n");
     }
   }
 #endif
@@ -1447,7 +1447,7 @@ static int o_catch(PIKE_OPCODE_T *pc)
     x=eval_instruction(pc);
 #ifdef PIKE_DEBUG
     if(Pike_mark_sp < save_mark_sp)
-      fatal("mark Pike_sp underflow in catch.\n");
+      Pike_fatal("mark Pike_sp underflow in catch.\n");
 #endif
     Pike_mark_sp=save_mark_sp;
     Pike_fp->expendible=expendible;
@@ -1527,7 +1527,7 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     
 #ifdef PIKE_DEBUG
     if(Pike_sp<Pike_interpreter.evaluator_stack)
-      fatal("Stack error (simple).\n");
+      Pike_fatal("Stack error (simple).\n");
 #endif
     ret=0;
   }
@@ -1579,7 +1579,7 @@ PMOD_EXPORT void safe_apply_low(struct object *o,int fun,int args)
 PMOD_EXPORT void safe_apply(struct object *o, char *fun ,INT32 args)
 {
 #ifdef PIKE_DEBUG
-  if(!o->prog) fatal("Apply safe on destructed object.\n");
+  if(!o->prog) Pike_fatal("Apply safe on destructed object.\n");
 #endif
   safe_apply_low2(o, find_identifier(fun, o->prog), args, 1);
 }
@@ -1690,7 +1690,7 @@ PMOD_EXPORT void apply_lfun(struct object *o, int fun, int args)
 {
 #ifdef PIKE_DEBUG
   if(fun < 0 || fun >= NUM_LFUNS)
-    fatal("Apply lfun on illegal value!\n");
+    Pike_fatal("Apply lfun on illegal value!\n");
 #endif
   if(!o->prog)
     PIKE_ERROR("destructed object", "Apply on destructed object.\n", Pike_sp, args);
@@ -1731,7 +1731,7 @@ PMOD_EXPORT void apply_svalue(struct svalue *s, INT32 args)
     }
 #ifdef PIKE_DEBUG
     if(Pike_sp < (expected_stack + Pike_interpreter.evaluator_stack))
-      fatal("Stack underflow!\n");
+      Pike_fatal("Stack underflow!\n");
 #endif
   }
 }
@@ -1745,16 +1745,16 @@ void slow_check_stack(void)
   debug_check_stack();
 
   if(Pike_sp > &(Pike_interpreter.evaluator_stack[Pike_stack_size]))
-    fatal("Svalue stack overflow. "
+    Pike_fatal("Svalue stack overflow. "
 	  "(%ld entries on stack, stack_size is %ld entries)\n",
 	  PTRDIFF_T_TO_LONG(Pike_sp - Pike_interpreter.evaluator_stack),
 	  PTRDIFF_T_TO_LONG(Pike_stack_size));
 
   if(Pike_mark_sp > &(Pike_interpreter.mark_stack[Pike_stack_size]))
-    fatal("Mark stack overflow.\n");
+    Pike_fatal("Mark stack overflow.\n");
 
   if(Pike_mark_sp < Pike_interpreter.mark_stack)
-    fatal("Mark stack underflow.\n");
+    Pike_fatal("Mark stack underflow.\n");
 
   for(s=Pike_interpreter.evaluator_stack;s<Pike_sp;s++) check_svalue(s);
 
@@ -1762,13 +1762,13 @@ void slow_check_stack(void)
   for(m=Pike_interpreter.mark_stack;m<Pike_mark_sp;m++)
   {
     if(*m < s)
-      fatal("Mark stack failure.\n");
+      Pike_fatal("Mark stack failure.\n");
 
     s=*m;
   }
 
   if(s > &(Pike_interpreter.evaluator_stack[Pike_stack_size]))
-    fatal("Mark stack exceeds svalue stack\n");
+    Pike_fatal("Mark stack exceeds svalue stack\n");
 
   for(f=Pike_fp;f;f=f->next)
   {
@@ -1776,10 +1776,10 @@ void slow_check_stack(void)
     {
       if(f->locals < Pike_interpreter.evaluator_stack ||
 	f->locals > &(Pike_interpreter.evaluator_stack[Pike_stack_size]))
-      fatal("Local variable pointer points to Finspång.\n");
+      Pike_fatal("Local variable pointer points to Finspång.\n");
 
       if(f->args < 0 || f->args > Pike_stack_size)
-	fatal("FEL FEL FEL! HELP!! (corrupted pike_frame)\n");
+	Pike_fatal("FEL FEL FEL! HELP!! (corrupted pike_frame)\n");
     }
   }
 }

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.106 2002/07/09 17:04:00 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.107 2002/08/15 14:50:25 marcus Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -415,7 +415,7 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
       /* Zero is a special case. There are no limbs at all, but
        * the size is still 1 bit, and one digit should be produced. */
       if (len != 1)
-	fatal("mpz->low_get_mpz_digits: strange mpz state!\n");
+	Pike_fatal("mpz->low_get_mpz_digits: strange mpz state!\n");
       s->str[0] = 0;
     } else {
       mp_limb_t *src = mpz->_mp_d;
@@ -1455,7 +1455,7 @@ static void mpzmod_popcount(INT32 args)
     push_int(mpn_popcount(THIS->_mp_d, THIS->_mp_size));
     break;
   default:
-    fatal("Gmp.mpz->popcount: Unexpected sign!\n");
+    Pike_fatal("Gmp.mpz->popcount: Unexpected sign!\n");
   }
 #endif
 }
@@ -1506,8 +1506,8 @@ static void mpzmod_random(INT32 args)
 static void init_mpz_glue(struct object *o)
 {
 #ifdef PIKE_DEBUG
-  if(!fp) fatal("ZERO FP\n");
-  if(!THIS) fatal("ZERO THIS\n");
+  if(!fp) Pike_fatal("ZERO FP\n");
+  if(!THIS) Pike_fatal("ZERO THIS\n");
 #endif
   mpz_init(THIS);
 }
@@ -1515,8 +1515,8 @@ static void init_mpz_glue(struct object *o)
 static void exit_mpz_glue(struct object *o)
 {
 #ifdef PIKE_DEBUG
-  if(!fp) fatal("ZERO FP\n");
-  if(!THIS) fatal("ZERO THIS\n");
+  if(!fp) Pike_fatal("ZERO FP\n");
+  if(!THIS) Pike_fatal("ZERO THIS\n");
 #endif
   mpz_clear(THIS);
 }

@@ -353,7 +353,7 @@ void pgtk_get_mapping_arg( struct mapping *map,
        case PIKE_T_STRING:
 #ifdef DEBUG
          if(len != sizeof(char *))
-           fatal("oddities detected\n");
+           Pike_fatal("oddities detected\n");
 #endif
          MEMCPY(((char **)dest), &s->u.string->str, sizeof(char *));
          break;

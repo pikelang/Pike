@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "../../global.h"
-RCSID("$Id: charsetmod.c,v 1.34 2002/08/13 17:20:27 grubba Exp $");
+RCSID("$Id: charsetmod.c,v 1.35 2002/08/15 14:50:27 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -697,7 +697,7 @@ static void f_rfc1345(INT32 args)
 	case MODE_9696: lowtrans=32; lo=lo2=160; hi=hi2=255; break;
 	case MODE_BIG5: lowtrans=32; lo=0xa1; lo2=0x40; hi=0xf9; hi2=0xfe; break;
 	default:
-	  fatal("Internal error in rfc1345\n");
+	  Pike_fatal("Internal error in rfc1345\n");
 	}
 	
 	if(hi2) {
@@ -741,7 +741,7 @@ static void f_rfc1345(INT32 args)
       case MODE_9696: p = std_9696_program; break;
       case MODE_BIG5: p = std_big5_program; break;
       default:
-	fatal("Internal error in rfc1345\n");
+	Pike_fatal("Internal error in rfc1345\n");
       }
       push_object(clone_object(p, 0));
       ((struct std_rfc_stor *)(sp[-1].u.object->storage+std_rfc_stor_offs))
@@ -1006,7 +1006,7 @@ static void feed_utf8e(struct std_cs_stor *cs, struct string_builder *sb,
     }
     break;
   default:
-    fatal("Illegal shift size!\n");
+    Pike_fatal("Illegal shift size!\n");
   }
 }
 
@@ -1077,7 +1077,7 @@ static void feed_utf7_5e(struct std_cs_stor *cs, struct string_builder *sb,
     }
     break;
   default:
-    fatal("Illegal shift size!\n");
+    Pike_fatal("Illegal shift size!\n");
   }
 }
 
@@ -1231,7 +1231,7 @@ static void feed_utf7e(struct utf7_stor *u7, struct string_builder *sb,
     }
     break;
   default:
-    fatal("Illegal shift size!\n");
+    Pike_fatal("Illegal shift size!\n");
   }
 
   u7->dat = dat;
@@ -1338,7 +1338,7 @@ static void feed_std8e(struct std8e_stor *s8, struct string_builder *sb,
     }
     break;
   default:
-    fatal("Illegal shift size!\n");
+    Pike_fatal("Illegal shift size!\n");
   }
 }
 
@@ -1430,7 +1430,7 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
     }
     break;
   default:
-    fatal("Illegal shift size!\n");
+    Pike_fatal("Illegal shift size!\n");
   }
 }
 

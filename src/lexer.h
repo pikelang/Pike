@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.37 2002/06/11 17:48:11 mast Exp $
+ * $Id: lexer.h,v 1.38 2002/08/15 14:49:22 marcus Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -276,7 +276,7 @@ static struct pike_string *readstring(void)
       
     default:
 #ifdef PIKE_DEBUG
-      fatal("Default case in readstring() reached. c:%d\n", c);
+      Pike_fatal("Default case in readstring() reached. c:%d\n", c);
 #endif /* PIKE_DEBUG */
       break;
     }

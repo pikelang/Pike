@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.105 2002/06/25 14:26:41 grubba Exp $
+ * $Id: svalue.h,v 1.106 2002/08/15 14:49:25 marcus Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -309,7 +309,7 @@ do{ \
 #ifdef PIKE_DEBUG
 PMOD_EXPORT extern void describe(void *); /* defined in gc.c */
 PMOD_EXPORT extern const char msg_type_error[];
-#define check_type(T) if(T > MAX_TYPE && T!=T_LVALUE && T!=T_SHORT_LVALUE && T!=T_VOID && T!=T_DELETED && T!=T_ARRAY_LVALUE) fatal(msg_type_error,T)
+#define check_type(T) if(T > MAX_TYPE && T!=T_LVALUE && T!=T_SHORT_LVALUE && T!=T_VOID && T!=T_DELETED && T!=T_ARRAY_LVALUE) Pike_fatal(msg_type_error,T)
 
 #define check_svalue(S) debug_check_svalue(dmalloc_check_svalue(S,DMALLOC_LOCATION()))
 
@@ -317,14 +317,14 @@ PMOD_EXPORT extern const char msg_sval_obj_wo_refs[];
 #define check_refs(S) do {\
  if((S)->type <= MAX_REF_TYPE && (!(S)->u.refs || (S)->u.refs[0] < 0)) { \
  describe((S)->u.refs); \
- fatal(msg_sval_obj_wo_refs); \
+ Pike_fatal(msg_sval_obj_wo_refs); \
 } }while(0)
 
 PMOD_EXPORT extern const char msg_ssval_obj_wo_refs[];
 #define check_refs2(S,T) do { \
 if((T) <= MAX_REF_TYPE && (S)->refs && (S)->refs[0] <= 0) {\
  describe((S)->refs); \
- fatal(msg_ssval_obj_wo_refs); \
+ Pike_fatal(msg_ssval_obj_wo_refs); \
 } }while(0)
 
 #ifdef DEBUG_MALLOC

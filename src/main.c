@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.149 2002/06/25 14:26:41 grubba Exp $");
+RCSID("$Id: main.c,v 1.150 2002/08/15 14:49:22 marcus Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -251,7 +251,7 @@ int dbm_main(int argc, char **argv)
   
   node_hash.table = malloc(sizeof(node *)*32831);
   if (!node_hash.table) {
-    fatal("Out of memory!\n");
+    Pike_fatal("Out of memory!\n");
   }
   MEMSET(node_hash.table, 0, sizeof(node *)*32831);
   node_hash.size = 32831;

@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.89 2002/05/24 14:12:24 grubba Exp $
+ * $Id: builtin.cmod,v 1.90 2002/08/15 14:49:19 marcus Exp $
  */
 
 #include "global.h"
@@ -2017,7 +2017,7 @@ PIKECLASS single_string_replace
       case 1: f = (replace_searchfunc)THIS->mojt.vtab->func1; break;
       case 2: f = (replace_searchfunc)THIS->mojt.vtab->func2; break;
 #ifdef PIKE_DEBUG
-      default: fatal("Illegal shift.\n");
+      default: Pike_fatal("Illegal shift.\n");
 #endif
       }
 
@@ -2051,7 +2051,7 @@ PIKECLASS single_string_replace
       {
 #ifdef PIKE_DEBUG
 	if(tmp + (del->len << str->size_shift) > end)
-	  fatal("generic_memory_search found a match beyond end of string!\n");
+	  Pike_fatal("generic_memory_search found a match beyond end of string!\n");
 #endif
 	generic_memcpy(r,MKPCHARP(s,str->size_shift),(tmp-s)>>str->size_shift);
 	INC_PCHARP(r,(tmp-s)>>str->size_shift);
@@ -2156,7 +2156,7 @@ static void low_automap(int d,
 
 #ifdef PIKE_DEBUG
    if(size == 0x7fffffff)
-    fatal("No automap markers found in low_automap\n");
+    Pike_fatal("No automap markers found in low_automap\n");
 #endif
 
   push_array(ret=allocate_array(size));
@@ -2171,7 +2171,7 @@ static void low_automap(int d,
       {
 #ifdef PIKE_DEBUG
 	if(x >= tmpargs[e].u.array->size)
-	  fatal("low_automap failed to determine size!\n");
+	  Pike_fatal("low_automap failed to determine size!\n");
 #endif
 	push_svalue(ITEM(tmpargs[e].u.array)+x);
       }else{

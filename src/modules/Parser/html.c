@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.151 2002/08/13 17:18:26 grubba Exp $ */
+/* $Id: html.c,v 1.152 2002/08/15 14:50:26 marcus Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -591,7 +591,7 @@ found_start:
    CC->num_look_for_start=n;
 #ifdef PIKE_DEBUG
    if (n > NELEM (CC->look_for_start))
-     fatal ("Static size of calc_chars.look_for_start is %d but %d required.\n",
+     Pike_fatal ("Static size of calc_chars.look_for_start is %d but %d required.\n",
 	    NELEM (CC->look_for_start), n);
 #endif
 
@@ -618,13 +618,13 @@ found_start:
       CC->num_look_for_end[k]=n;
 #ifdef PIKE_DEBUG
       if (n > NELEM (CC->look_for_end[k]))
-	fatal ("Static size of calc_chars.look_for_end[k] is %d but %d required.\n",
+	Pike_fatal ("Static size of calc_chars.look_for_end[k] is %d but %d required.\n",
 	       NELEM (CC->look_for_end[k]), n);
 #endif
    }
 #ifdef PIKE_DEBUG
    if (k > NELEM (CC->look_for_end))
-     fatal ("Static size of calc_chars.look_for_end is %d but %d required.\n",
+     Pike_fatal ("Static size of calc_chars.look_for_end is %d but %d required.\n",
 	    NELEM (CC->look_for_end), k);
 #endif
 
@@ -653,7 +653,7 @@ found_start:
 #else
 #ifdef PIKE_DEBUG
    if (CC->n_arg_break_chars > NELEM (CC->arg_break_chars))
-     fatal ("Static size of calc_chars.arg_break_chars is %d but %d required.\n",
+     Pike_fatal ("Static size of calc_chars.arg_break_chars is %d but %d required.\n",
 	    NELEM (CC->arg_break_chars), CC->n_arg_break_chars);
 #endif
 #endif
@@ -1080,14 +1080,14 @@ static void html_add_quote_tag(INT32 args)
     int i;
     struct array *arr;
 #ifdef PIKE_DEBUG
-    if (val->type != T_ARRAY) fatal ("Expected array as value in mapqtag.\n");
+    if (val->type != T_ARRAY) Pike_fatal ("Expected array as value in mapqtag.\n");
 #endif
     arr = val->u.array;
 
     for (i = 0; i < arr->size; i += 3) {
       struct pike_string *curname;
 #ifdef PIKE_DEBUG
-      if (arr->item[i].type != T_STRING) fatal ("Expected string as name in mapqtag.\n");
+      if (arr->item[i].type != T_STRING) Pike_fatal ("Expected string as name in mapqtag.\n");
 #endif
       curname = dmalloc_touch (struct pike_string *, arr->item[i].u.string);
 
@@ -1320,7 +1320,7 @@ static void html_quote_tags(INT32 args)
        push_svalue (arr->item+i+1);
 #ifdef PIKE_DEBUG
        if (arr->item[i+2].type != T_STRING)
-	 fatal ("Expected string as end in mapqtag.\n");
+	 Pike_fatal ("Expected string as end in mapqtag.\n");
 #endif
        end = arr->item[i+2].u.string;
        push_string (string_slice (end, 0, end->len-1));
@@ -1354,7 +1354,7 @@ static void put_out_feed(struct parser_html_storage *this, struct svalue *v)
 
 #ifdef PIKE_DEBUG
    if (v->type != T_STRING && this->out_max_shift >= 0)
-     fatal ("Putting a non-string into output queue in non-mixed mode.\n");
+     Pike_fatal ("Putting a non-string into output queue in non-mixed mode.\n");
 #endif
 
    f = alloc_out_piece();
@@ -1417,7 +1417,7 @@ static void put_out_feed_range(struct parser_html_storage *this,
       }
 #ifdef PIKE_DEBUG
       if (!head)
-	fatal("internal error: tail not found in feed (put_out_feed_range)\n");
+	Pike_fatal("internal error: tail not found in feed (put_out_feed_range)\n");
 #endif
       /* Should never have empty strings in the feed. */
       ref_push_string(head->s);
@@ -1461,7 +1461,7 @@ static INLINE void push_feed_range(struct piece *head,
       }
 #ifdef PIKE_DEBUG
       if (!head)
-	fatal("internal error: tail not found in feed (push_feed_range)\n");
+	Pike_fatal("internal error: tail not found in feed (push_feed_range)\n");
 #endif
       ref_push_string(head->s);
       n++;
@@ -1561,7 +1561,7 @@ static INLINE void skip_piece_range(struct location *loc,
      case 2: LOOP (p_wchar2); break;
 #undef LOOP
 #ifdef PIKE_DEBUG
-     default: fatal("unknown width of string\n");
+     default: Pike_fatal("unknown width of string\n");
 #endif
    }
    loc->byteno=b;
@@ -1684,7 +1684,7 @@ static int scan_forward(struct piece *feed,
 #undef LOOP
 #ifdef PIKE_DEBUG
 		  default:
-		     fatal("unknown width of string\n");
+		     Pike_fatal("unknown width of string\n");
 #endif
 	       }
 	       if (!feed->next) break;
@@ -1724,7 +1724,7 @@ static int scan_forward(struct piece *feed,
 #undef LOOP
 #ifdef PIKE_DEBUG
 	       default:
-		  fatal("unknown width of string\n");
+		  Pike_fatal("unknown width of string\n");
 #endif
 	    }
 	    if (!feed->next) break;
@@ -1809,7 +1809,7 @@ static int scan_for_string (struct parser_html_storage *this,
     case 1: LOOP (p_wchar1); break;
     case 2: LOOP (p_wchar2); break;
 #ifdef PIKE_DEBUG
-    default: fatal ("Unknown width of string.\n");
+    default: Pike_fatal ("Unknown width of string.\n");
 #endif
   }
 
@@ -2270,7 +2270,7 @@ static int quote_tag_lookup (struct parser_html_storage *this,
 	      isprint (buf.str[0]) ? buf.str[0] : '.',
 	      isprint (buf.str[1]) ? buf.str[1] : '.', checklen));
 #ifdef PIKE_DEBUG
-      if (val->type != T_ARRAY) fatal ("Expected array as value in mapqtag.\n");
+      if (val->type != T_ARRAY) Pike_fatal ("Expected array as value in mapqtag.\n");
 #endif
       arr = val->u.array;
 
@@ -2278,7 +2278,7 @@ static int quote_tag_lookup (struct parser_html_storage *this,
 	struct pike_string *tag;
 #ifdef PIKE_DEBUG
 	if (arr->item[i].type != T_STRING)
-	  fatal ("Expected string as name in mapqtag.\n");
+	  Pike_fatal ("Expected string as name in mapqtag.\n");
 #endif
 	tag = arr->item[i].u.string;
 	dst = buf.p[checklen-1];
@@ -2306,7 +2306,7 @@ static int quote_tag_lookup (struct parser_html_storage *this,
 	  case 1: LOOP (p_wchar1); break;
 	  case 2: LOOP (p_wchar2); break;
 #ifdef PIKE_DEBUG
-	  default: fatal ("Unknown width of string.\n");
+	  default: Pike_fatal ("Unknown width of string.\n");
 #endif
 	}
 
@@ -2528,7 +2528,7 @@ static newstate data_callback (struct parser_html_storage *this,
 
 #ifdef PIKE_DEBUG
   if (this->callback__data.type == T_INT || !this->data_cb_feed)
-    fatal ("data_callback called in bogus state.\n");
+    Pike_fatal ("data_callback called in bogus state.\n");
 #endif
 
   cend = this->data_cb_feed_end->s->len;
@@ -2564,7 +2564,7 @@ static newstate data_callback (struct parser_html_storage *this,
   else {
 #ifdef PIKE_DEBUG
     if (res != STATE_DONE && res != STATE_REREAD)
-      fatal ("Unexpected state after data callback.\n");
+      Pike_fatal ("Unexpected state after data callback.\n");
 #endif
     do {
       struct piece *next = this->data_cb_feed->next;
@@ -2947,10 +2947,10 @@ static newstate do_try_feed(struct parser_html_storage *this,
 
 #ifdef PIKE_DEBUG
       if (*feed && feed[0]->s->len < st->c)
-	 fatal("len (%ld) < st->c (%ld)\n",
+	 Pike_fatal("len (%ld) < st->c (%ld)\n",
 	       TO_LONG(feed[0]->s->len), TO_LONG(st->c));
       if (*feed && cmp_feed_pos (*feed, st->c, dst, cdst) > 0)
-	fatal ("Going backwards from %p:%ld to %p:%ld.\n",
+	Pike_fatal ("Going backwards from %p:%ld to %p:%ld.\n",
 	       (void *)(*feed), TO_LONG(st->c), (void *)dst, TO_LONG(cdst));
 #endif
 
@@ -3009,7 +3009,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 
 #ifdef PIKE_DEBUG
       if (*feed != dst || st->c != cdst)
-	fatal ("Internal position confusion: feed: %p:%ld, dst: %p:%ld.\n",
+	Pike_fatal ("Internal position confusion: feed: %p:%ld, dst: %p:%ld.\n",
 	       (void *)(*feed), TO_LONG(st->c), (void *)dst, TO_LONG(cdst));
 #endif
 
@@ -3024,7 +3024,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 		*feed,st->c));
 #ifdef PIKE_DEBUG
 	 if (!st->parse_tags)
-	   fatal ("What am I doing parsing tags now?\n");
+	   Pike_fatal ("What am I doing parsing tags now?\n");
 #endif
 
 	 /* skip ws to start of tag name */
@@ -3141,7 +3141,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	    else {
 	       /* this is the hardest part : find the corresponding end tag */
 #ifdef PIKE_DEBUG
-	       if (!tag && !cont) fatal ("You push that stone yourself!\n");
+	       if (!tag && !cont) Pike_fatal ("You push that stone yourself!\n");
 #endif
 
 	       if ((res=find_end_of_container(this,
@@ -3252,7 +3252,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
       {
 #ifdef PIKE_DEBUG
 	if (ch != ENTITY_START (this))
-	  fatal ("Oups! How did I end up here? There's no entity around.\n");
+	  Pike_fatal ("Oups! How did I end up here? There's no entity around.\n");
 #endif
 	goto parse_entity;	/* same code as in tag arguments */
       }
@@ -3432,7 +3432,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
       case CTX_SPLICE_ARG:
 #ifdef PIKE_DEBUG
 	if (this->data_cb_feed)
-	  fatal ("Shouldn't have data cb feed in splice arg context.\n");
+	  Pike_fatal ("Shouldn't have data cb feed in splice arg context.\n");
 #endif
 
 	if (!*feed) {
@@ -3472,7 +3472,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 
 #ifdef PIKE_DEBUG
 	if (this->data_cb_feed)
-	  fatal ("Shouldn't have data cb feed in tag arg context.\n");
+	  Pike_fatal ("Shouldn't have data cb feed in tag arg context.\n");
 #endif
 
 	if (!*feed) {
@@ -3519,9 +3519,9 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	       *feed,st->c));
 
 #ifdef PIKE_DEBUG
-	if (!scan_entity) fatal ("Shouldn't parse entities now.\n");
+	if (!scan_entity) Pike_fatal ("Shouldn't parse entities now.\n");
 	if (*feed != dst || st->c != cdst)
-	  fatal ("Internal position confusion: feed: %p:%ld, dst: %p:%ld\n",
+	  Pike_fatal ("Internal position confusion: feed: %p:%ld, dst: %p:%ld\n",
 		 (void *)(*feed), TO_LONG(st->c), (void *)dst, TO_LONG(cdst));
 #endif
 	/* just search for end of entity */
@@ -3743,7 +3743,7 @@ static void try_feed(int finished)
 
 #ifdef PIKE_DEBUG
 	    if (THIS->stack->local_feed)
-	       fatal("internal wierdness in Parser.HTML: feed left\n");
+	       Pike_fatal("internal wierdness in Parser.HTML: feed left\n");
 #endif
 
 	    really_free_feed_stack (THIS->stack);
@@ -3940,7 +3940,7 @@ static void html_read(INT32 args)
       THIS->out_length -= n;
 #ifdef PIKE_DEBUG
       if (!THIS->out_length != !THIS->out)
-	fatal ("Inconsistency in output queue length.\n");
+	Pike_fatal ("Inconsistency in output queue length.\n");
 #endif
    }
    else
@@ -3954,7 +3954,7 @@ static void html_read(INT32 args)
 	 struct out_piece *z;
 #ifdef PIKE_DEBUG
 	 if (THIS->out->v.type != T_STRING)
-	    fatal ("Got nonstring in parsed data\n");
+	    Pike_fatal ("Got nonstring in parsed data\n");
 #endif
 	 if (THIS->out->v.u.string->len>n)
 	 {
@@ -3996,10 +3996,10 @@ static void html_read(INT32 args)
        struct out_piece *z;
        for (z = THIS->out; z; z = z->next)
 	 if (z->v.type != T_STRING || z->v.u.string->len)
-	   fatal ("Inconsistency in output queue.\n");
+	   Pike_fatal ("Inconsistency in output queue.\n");
      }
      else if (!THIS->out)
-       fatal ("Inconsistency in output queue length.\n");
+       Pike_fatal ("Inconsistency in output queue length.\n");
 #endif
    }
 }
@@ -4192,7 +4192,7 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,ptrdiff
 new_arg:
 #ifdef PIKE_DEBUG
       if (prev_s && cmp_feed_pos (prev_s, prev_c, s1, c1) >= 0)
-	fatal ("Not going forward in tag args loop (from %p:%ld to %p:%ld).\n",
+	Pike_fatal ("Not going forward in tag args loop (from %p:%ld to %p:%ld).\n",
 	       (void *)prev_s, PTRDIFF_T_TO_LONG(prev_c),
 	       (void *)s1, PTRDIFF_T_TO_LONG(c1));
       prev_s = s1, prev_c = c1;

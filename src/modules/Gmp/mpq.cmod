@@ -4,7 +4,7 @@
 ||| for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpq.cmod,v 1.9 2002/08/13 17:01:41 grubba Exp $");
+RCSID("$Id: mpq.cmod,v 1.10 2002/08/15 14:50:25 marcus Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -842,8 +842,8 @@ PIKECLASS mpq
   INIT
     {
 #ifdef PIKE_DEBUG
-      if(!fp) fatal("ZERO FP\n");
-      if(!THISMPQ) fatal("ZERO THISMPQ\n");
+      if(!fp) Pike_fatal("ZERO FP\n");
+      if(!THISMPQ) Pike_fatal("ZERO THISMPQ\n");
 #endif
       mpq_init(THISMPQ);
     }
@@ -851,8 +851,8 @@ PIKECLASS mpq
   EXIT
     {
 #ifdef PIKE_DEBUG
-      if(!fp) fatal("ZERO FP\n");
-      if(!THISMPQ) fatal("ZERO THISMPQ\n");
+      if(!fp) Pike_fatal("ZERO FP\n");
+      if(!THISMPQ) Pike_fatal("ZERO THISMPQ\n");
 #endif
       mpq_clear(THISMPQ);
     }

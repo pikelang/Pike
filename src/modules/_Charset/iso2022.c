@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.22 2002/05/11 00:24:26 nilsson Exp $");
+RCSID("$Id: iso2022.c,v 1.23 2002/08/15 14:50:27 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -638,7 +638,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
     }
     break;
   default:
-    fatal("Illegal shift size!\n");
+    Pike_fatal("Illegal shift size!\n");
   }
 }
 

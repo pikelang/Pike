@@ -102,7 +102,7 @@ HCHAR *NameNH(boyer_moore_hubbe)(struct boyer_moore_hubbe_searcher *s,
       
 #ifdef PIKE_DEBUG
       if(NEEDLE[j] != haystack[i])
-	fatal("T2BM failed!\n");
+	Pike_fatal("T2BM failed!\n");
 #endif
 
 #else

@@ -158,7 +158,7 @@ PMOD_EXPORT SearchMojt compile_memsearcher(PCHARP needle,
     case 2:
       return compile_memsearcher2((p_wchar2*)needle.ptr, needlelen, max_haystacklen,hashkey);
   }
-  fatal("Illegal shift\n");
+  Pike_fatal("Illegal shift\n");
 }
 
 PMOD_EXPORT SearchMojt simple_compile_memsearcher(struct pike_string *str)

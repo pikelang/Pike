@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.40 2002/05/31 22:41:23 nilsson Exp $");
+RCSID("$Id: fd_control.c,v 1.41 2002/08/15 14:49:21 marcus Exp $");
 
 #else /* TESTING */
 
@@ -77,7 +77,7 @@ PMOD_EXPORT int set_nonblocking(int fd,int which)
   int ret;
 #ifdef PIKE_DEBUG
   if(fd<0)
-    fatal("Filedescriptor %d out of range [0,inf).\n", fd);
+    Pike_fatal("Filedescriptor %d out of range [0,inf).\n", fd);
 #endif
 
   do 
@@ -115,7 +115,7 @@ PMOD_EXPORT int query_nonblocking(int fd)
   int ret;
 #ifdef PIKE_DEBUG
   if(fd<0)
-    fatal("Filedescriptor out of range.\n");
+    Pike_fatal("Filedescriptor out of range.\n");
 #endif
 
   do 
@@ -164,7 +164,7 @@ static void grow_fds_to_close(void)
   fds_to_close_size *= 2;
   fds_to_close = realloc( fds_to_close, sizeof( int ) * fds_to_close_size );
   if(!fds_to_close)
-    fatal("Out of memory in fd_control::grow_fds_to_close()\n"
+    Pike_fatal("Out of memory in fd_control::grow_fds_to_close()\n"
           "Tried to allocate %d fd_datum structs\n", fds_to_close_size);
   MEMSET( fds_to_close+(fds_to_close_size/2), 0, fds_to_close_size*sizeof(int)/2 );
 }

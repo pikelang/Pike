@@ -11,7 +11,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: module_support.c,v 1.45 2002/05/13 23:44:23 mast Exp $");
+RCSID("$Id: module_support.c,v 1.46 2002/08/15 14:49:22 marcus Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -151,7 +151,7 @@ int va_get_args(struct svalue *s,
   while(*fmt)
   {
     if(*fmt != '%')
-      fatal("Error in format for get_args.\n");
+      Pike_fatal("Error in format for get_args.\n");
 
     if(ret == num_args) return ret;
 
@@ -297,7 +297,7 @@ int va_get_args(struct svalue *s,
       break;
       
     default:
-      fatal("Unknown format character in get_args.\n");
+      Pike_fatal("Unknown format character in get_args.\n");
     }
     ret++;
     s++;

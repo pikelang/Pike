@@ -62,14 +62,14 @@
 	describe(p);
 	fprintf(stderr,"########Object is:\n");
 	describe(o);
-	fatal("Function index out of range.\n");
+	Pike_fatal("Function index out of range.\n");
       }
 #endif
 
       ref = p->identifier_references + fun;
 #ifdef PIKE_DEBUG
       if(ref->inherit_offset>=p->num_inherits)
-	fatal("Inherit offset out of range in program.\n");
+	Pike_fatal("Inherit offset out of range in program.\n");
 #endif
 
       /* init a new evaluation pike_frame */
@@ -132,7 +132,7 @@
 #ifdef PIKE_DEBUG
       if(new_frame->fun == scope->fun)
       {
-	fatal("Que? A function cannot be parented by itself!\n");
+	Pike_fatal("Que? A function cannot be parented by itself!\n");
       }
 #endif
 #else
@@ -248,7 +248,7 @@
 
 #ifdef PIKE_DEBUG
 	if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
-	  fatal("Pike code called within gc.\n");
+	  Pike_fatal("Pike code called within gc.\n");
 #endif
 
 	debug_malloc_touch(Pike_fp);
@@ -259,7 +259,7 @@
 
 #ifdef PIKE_DEBUG
 	if(num_locals < num_args)
-	  fatal("Wrong number of arguments or locals in function def.\n"
+	  Pike_fatal("Wrong number of arguments or locals in function def.\n"
 		"num_locals: %d < num_args: %d\n",
 		num_locals, num_args);
 #endif
@@ -320,7 +320,7 @@
 #if 0
 #ifdef PIKE_DEBUG
       if(Pike_fp!=new_frame)
-	fatal("Frame stack out of whack!\n");
+	Pike_fatal("Frame stack out of whack!\n");
 #endif
 #endif
       

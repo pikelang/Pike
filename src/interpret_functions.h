@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.104 2002/05/15 09:11:21 grubba Exp $
+ * $Id: interpret_functions.h,v 1.105 2002/08/15 14:49:21 marcus Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -289,7 +289,7 @@ OPCODE2(F_TRAMPOLINE, "trampoline", 0, {
   while(arg2--) {
     DO_IF_DEBUG({
       if (!f->scope) {
-	fatal("F_TRAMPOLINE %d, %d: Missing %d levels of scope!\n", 
+	Pike_fatal("F_TRAMPOLINE %d, %d: Missing %d levels of scope!\n", 
 	      arg1, arg2_, arg2+1);
       }
     });
@@ -966,7 +966,7 @@ OPCODE0_TAIL(F_CLEANUP_SYNCH_MARK, "cleanup synch mark", 0, {
   OPCODE0(F_POP_SYNCH_MARK, "pop synch mark", 0, {
     if (d_flag) {
       if (Pike_mark_sp <= Pike_interpreter.mark_stack) {
-	fatal("Mark stack out of synch - 0x%08x <= 0x%08x.\n",
+	Pike_fatal("Mark stack out of synch - 0x%08x <= 0x%08x.\n",
 	      DO_NOT_WARN((unsigned long)Pike_mark_sp),
 	      DO_NOT_WARN((unsigned long)Pike_interpreter.mark_stack));
       } else if (*--Pike_mark_sp != Pike_sp) {
@@ -975,7 +975,7 @@ OPCODE0_TAIL(F_CLEANUP_SYNCH_MARK, "cleanup synch mark", 0, {
 	if (Pike_sp - *Pike_mark_sp > 0) /* not always same as Pike_sp > *Pike_mark_sp */
 	/* Some attempt to recover, just to be able to report the backtrace. */
 	  pop_n_elems(Pike_sp - *Pike_mark_sp);
-	fatal("Stack out of synch - should be %ld, is %ld.\n",
+	Pike_fatal("Stack out of synch - should be %ld, is %ld.\n",
 	      DO_NOT_WARN((long)should), DO_NOT_WARN((long)is));
       }
     }
@@ -1652,7 +1652,7 @@ OPCODE0(F_SOFT_CAST, "soft cast", 0, {
   /* Stack: type_string, value */
   DO_IF_DEBUG({
     if (Pike_sp[-2].type != T_TYPE) {
-      fatal("Argument 1 to soft_cast isn't a type!\n");
+      Pike_fatal("Argument 1 to soft_cast isn't a type!\n");
     }
   });
   if (runtime_options & RUNTIME_CHECK_TYPES) {
@@ -2022,18 +2022,18 @@ OPCODE1(F_CALL_OTHER_AND_RETURN,"call other & return", 0, {
   if(Pike_sp != expected_stack + !s->u.efun->may_return_void)		 \
   {									 \
     if(Pike_sp < expected_stack)					 \
-      fatal("Function popped too many arguments: %s\n",			 \
+      Pike_fatal("Function popped too many arguments: %s\n",			 \
 	    s->u.efun->name->str);					 \
     if(Pike_sp>expected_stack+1)					 \
-      fatal("Function left %d droppings on stack: %s\n",		 \
+      Pike_fatal("Function left %d droppings on stack: %s\n",		 \
            Pike_sp-(expected_stack+1),					 \
 	    s->u.efun->name->str);					 \
     if(Pike_sp == expected_stack && !s->u.efun->may_return_void)	 \
-      fatal("Non-void function returned without return value "		 \
+      Pike_fatal("Non-void function returned without return value "		 \
 	    "on stack: %s %d\n",					 \
 	    s->u.efun->name->str,s->u.efun->may_return_void);		 \
     if(Pike_sp==expected_stack+1 && s->u.efun->may_return_void)		 \
-      fatal("Void function returned with a value on the stack: %s %d\n", \
+      Pike_fatal("Void function returned with a value on the stack: %s %d\n", \
 	    s->u.efun->name->str, s->u.efun->may_return_void);		 \
   }									 \
   if(t_flag>1 && Pike_sp>expected_stack) trace_return_value();		 \
@@ -2188,7 +2188,7 @@ OPCODE0_JUMP(F_TAIL_RECUR, "tail recursion", 0, {
 
   DO_IF_DEBUG({
     if(args != EXTRACT_UCHAR(addr-1))
-      fatal("Wrong number of arguments in F_TAIL_RECUR %d != %d\n",
+      Pike_fatal("Wrong number of arguments in F_TAIL_RECUR %d != %d\n",
 	    args, EXTRACT_UCHAR(addr-1));
   });
 
@@ -2196,7 +2196,7 @@ OPCODE0_JUMP(F_TAIL_RECUR, "tail recursion", 0, {
   {
     DO_IF_DEBUG({
       if (Pike_sp < Pike_fp->locals + args)
-	fatal("Pike_sp (%p) < Pike_fp->locals (%p) + args (%d)\n",
+	Pike_fatal("Pike_sp (%p) < Pike_fp->locals (%p) + args (%d)\n",
 	      Pike_sp, Pike_fp->locals, args);
     });
     assign_svalues(Pike_fp->locals, Pike_sp-args, args, BIT_MIXED);
@@ -2207,7 +2207,7 @@ OPCODE0_JUMP(F_TAIL_RECUR, "tail recursion", 0, {
 
   DO_IF_DEBUG({
     if(Pike_sp != Pike_fp->locals + Pike_fp->num_locals)
-      fatal("Sp whacked!\n");
+      Pike_fatal("Sp whacked!\n");
   });
 
   DO_JUMP_TO(addr);
@@ -2230,7 +2230,7 @@ OPCODE1(F_THIS_OBJECT, "this_object", 0, {
 	Pike_error ("Cannot get the parent object of a destructed object.\n");
       DO_IF_DEBUG (
 	if (!(p->flags & PROGRAM_USES_PARENT))
-	  fatal ("optimize_this_object failed to set up parent pointers.\n");
+	  Pike_fatal ("optimize_this_object failed to set up parent pointers.\n");
       );
       o = PARENT_INFO(o)->parent;
     }

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.109 2002/05/31 22:41:24 nilsson Exp $
+ * $Id: interpret.h,v 1.110 2002/08/15 14:49:21 marcus Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -109,8 +109,8 @@ extern struct op_2_f {
 
 #ifdef PIKE_DEBUG
 PMOD_EXPORT extern const char msg_stack_error[];
-#define debug_check_stack() do{if(Pike_sp<Pike_interpreter.evaluator_stack)fatal(msg_stack_error);}while(0)
-#define check__positive(X,Y) if((X)<0) fatal Y
+#define debug_check_stack() do{if(Pike_sp<Pike_interpreter.evaluator_stack)Pike_fatal(msg_stack_error);}while(0)
+#define check__positive(X,Y) if((X)<0) Pike_fatal Y
 #include "pike_error.h"
 #else
 #define check__positive(X,Y)
@@ -155,7 +155,7 @@ PMOD_EXPORT extern const char Pike_check_c_stack_errmsg[];
       ((char *)&x_) + STACK_DIRECTION * (X) - Pike_interpreter.stack_top ; \
     x_*=STACK_DIRECTION;						\
     if(x_>0) {								\
-      ((void (*)(const char*, ...))fatal)(Pike_check_c_stack_errmsg);	\
+      ((void (*)(const char*, ...))Pike_fatal)(Pike_check_c_stack_errmsg);	\
     }									\
   }while(0)
 
@@ -251,7 +251,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
   {									\
     really_free_pike_frame(Pike_fp);						\
   }else{								\
-    DO_IF_DEBUG(if( Pike_fp->locals + Pike_fp->num_locals > Pike_sp || Pike_sp < Pike_fp->expendible) fatal("Stack failure in POP_PIKE_FRAME %p+%d=%p %p %p!\n",Pike_fp->locals,Pike_fp->num_locals,Pike_fp->locals+Pike_fp->num_locals,Pike_sp,Pike_fp->expendible));                      \
+    DO_IF_DEBUG(if( Pike_fp->locals + Pike_fp->num_locals > Pike_sp || Pike_sp < Pike_fp->expendible) Pike_fatal("Stack failure in POP_PIKE_FRAME %p+%d=%p %p %p!\n",Pike_fp->locals,Pike_fp->num_locals,Pike_fp->locals+Pike_fp->num_locals,Pike_sp,Pike_fp->expendible));                      \
     debug_malloc_touch(Pike_fp); \
     if(Pike_fp->num_locals)							\
     {									\

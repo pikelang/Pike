@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.h,v 1.13 2002/05/11 10:47:07 mast Exp $
+ * $Id: ppc32.h,v 1.14 2002/08/15 14:50:24 marcus Exp $
  */
 
 #define PPC_INSTR_B_FORM(OPCD,BO,BI,BD,AA,LK)			\
@@ -181,7 +181,7 @@ INT32 ppc32_read_f_jump(INT32 offset);
       DO_IF_DEBUG(						\
         if ((op_[p_->relocations[rel_]] & 0xfc000002) !=	\
 	    0x48000000) {					\
-          fatal("Bad relocation: %d, off:%d, opcode: 0x%08x\n",	\
+          Pike_fatal("Bad relocation: %d, off:%d, opcode: 0x%08x\n",	\
 		rel_, p_->relocations[rel_],			\
 		op_[p_->relocations[rel_]]);			\
 	}							\
@@ -191,7 +191,7 @@ INT32 ppc32_read_f_jump(INT32 offset);
 	disp_ -= 0x04000000;					\
       disp_ += delta_ << 2;					\
       if(disp_ < -33554432 || disp_ > 33554431)			\
-	fatal("Relocation %d out of range!\n", disp_);		\
+	Pike_fatal("Relocation %d out of range!\n", disp_);		\
       op_[p_->relocations[rel_]] = 0x48000000 |			\
 	(disp_ & 0x03ffffff);					\
     }								\

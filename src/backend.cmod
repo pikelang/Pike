@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.26 2002/05/31 22:41:23 nilsson Exp $");
+RCSID("$Id: backend.cmod,v 1.27 2002/08/15 14:49:19 marcus Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -190,7 +190,7 @@ struct Backend_struct *get_backend_for_fd(int fd)
 void set_backend_for_fd(int fd, struct Backend_struct *b)
 {
 #ifdef PIKE_DEBUG
-  if(fd<0) fatal("set_backend_for(%d)\n",fd);
+  if(fd<0) Pike_fatal("set_backend_for(%d)\n",fd);
 #endif
   if(fd >= fd_map_size)
   {
@@ -199,7 +199,7 @@ void set_backend_for_fd(int fd, struct Backend_struct *b)
     while(fd >= fd_map_size) fd_map_size*=2;
     fd_map=(struct Backend_struct **)realloc(fd_map, sizeof(struct Backend_struct *) * fd_map_size);
     if(!fd_map)
-      fatal("Out of memory in backend:set_backend_for_fd.\n"
+      Pike_fatal("Out of memory in backend:set_backend_for_fd.\n"
 	"Tried to allocate %d bytes.\n",sizeof(struct Backend_struct *) * fd_map_size);
     
     MEMSET(fd_map+old,0,sizeof(struct Backend_struct *) * (fd_map_size-old));
@@ -216,7 +216,7 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
   set_backend_for_fd(fd, default_backend);
 #ifdef PIKE_DEBUG
   if(!default_backend)
-    fatal("No backend!\n");
+    Pike_fatal("No backend!\n");
 #endif
   return default_backend;
 }
@@ -273,7 +273,7 @@ static void MY_FD_SET(struct selectors *me,
     me->poll_fd_size += me->num_in_poll;	/* Usually a doubling */
     if (!(me->poll_fds = realloc(me->poll_fds, sizeof(struct pollfd)*me->poll_fd_size)))
     {
-      fatal("Out of memory in backend::MY_FD_SET()\n"
+      Pike_fatal("Out of memory in backend::MY_FD_SET()\n"
 	    "Tried to allocate %d pollfds\n", me->poll_fd_size);
     }
   }
@@ -325,7 +325,7 @@ static void copy_selectors(struct active_selectors *to,
 		  from->poll_fd_size));
     to->poll_fd_size=from->poll_fd_size;
     if (!(to->poll_fds = realloc(to->poll_fds, sizeof(struct pollfd)*to->poll_fd_size))) {
-      fatal("Out of memory in backend::copy_poll_set()\n"
+      Pike_fatal("Out of memory in backend::copy_poll_set()\n"
 	    "Tried to allocate %d pollfds\n", to->poll_fd_size);
     }
   }
@@ -477,7 +477,7 @@ PIKECLASS Backend
 
 #ifdef PIKE_DEBUG
 #define PROTECT_CALL_OUTS() \
-   if(me->inside_call_out) fatal("Recursive call in call_out module.\n"); \
+   if(me->inside_call_out) Pike_fatal("Recursive call in call_out module.\n"); \
    me->inside_call_out=1
  
 #define UNPROTECT_CALL_OUTS() \
@@ -507,7 +507,7 @@ PIKECLASS Backend
       while(wanted_size >= me->fds_size) me->fds_size*=2;
       me->fds = realloc( me->fds, sizeof(struct fd_datum) * me->fds_size );
       if( !me->fds )
-	fatal("Out of memory in backend::grow_fds()\n"
+	Pike_fatal("Out of memory in backend::grow_fds()\n"
 	      "Tried to allocate %d fd_datum structs\n", me->fds_size);
       MEMSET(me->fds+old_size,
 	     0,
@@ -558,7 +558,7 @@ PIKECLASS Backend
       was_set = FDS_ISSET(fd, read.callback);
 #ifdef PIKE_DEBUG
       if(fd<0)
-	fatal("File descriptor out of range.\n %d",fd);
+	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       me->fds[fd].read.callback=cb;
       me->fds[fd].read.data=data;
@@ -597,7 +597,7 @@ PIKECLASS Backend
       was_set = FDS_ISSET(fd, write.callback);
 #ifdef PIKE_DEBUG
       if(fd<0)
-	fatal("File descriptor out of range.\n %d",fd);
+	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       
       me->fds[fd].write.callback=cb;
@@ -639,7 +639,7 @@ PIKECLASS Backend
       was_set = FDS_ISSET(fd, read_oob.callback);
 #ifdef PIKE_DEBUG
       if(fd<0)
-	fatal("File descriptor out of range.\n %d",fd);
+	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       me->fds[fd].read_oob.callback=cb;
       me->fds[fd].read_oob.data=data;
@@ -679,7 +679,7 @@ PIKECLASS Backend
       was_set = FDS_ISSET(fd, write_oob.callback);
 #ifdef PIKE_DEBUG
       if(fd<0)
-	fatal("File descriptor out of range.\n %d",fd);
+	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       
       me->fds[fd].write_oob.callback=cb;
@@ -708,7 +708,7 @@ PIKECLASS Backend
     {
 #ifdef PIKE_DEBUG
       if(fd<0)
-	fatal("File descriptor out of range.\n %d",fd);
+	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_read_callback(%d)\n", fd));
       if(me->fds_size <= fd) return 0;
@@ -721,7 +721,7 @@ PIKECLASS Backend
     {
 #ifdef PIKE_DEBUG
       if(fd<0)
-	fatal("File descriptor out of range.\n %d",fd);
+	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_write_callback(%d)\n", fd));
       if(me->fds_size <= fd) return 0;
@@ -735,7 +735,7 @@ PIKECLASS Backend
     {
 #ifdef PIKE_DEBUG
       if(fd<0)
-	fatal("File descriptor out of range.\n %d",fd);
+	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_read_oob_callback(%d)\n", fd));
       if(me->fds_size <= fd) return 0;
@@ -748,7 +748,7 @@ PIKECLASS Backend
     {
 #ifdef PIKE_DEBUG
       if(fd<0)
-	fatal("File descriptor out of range.\n %d",fd);
+	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_write_oob_callback(%d)\n", fd));
       if(me->fds_size <= fd) return 0;
@@ -762,7 +762,7 @@ PIKECLASS Backend
     {
 #ifdef PIKE_DEBUG
       if(fd<0)
-	fatal("File descriptor out of range.\n %d",fd);
+	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_read_callback_data(%d)\n", fd));
       if(me->fds_size <= fd) return 0;
@@ -776,7 +776,7 @@ PIKECLASS Backend
     {
 #ifdef PIKE_DEBUG
       if(fd<0)
-	fatal("File descriptor out of range.\n %d",fd);
+	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_write_callback_data(%d)\n", fd));
       if(me->fds_size <= fd) return 0;
@@ -791,7 +791,7 @@ PIKECLASS Backend
     {
 #ifdef PIKE_DEBUG
       if(fd<0)
-	fatal("File descriptor out of range.\n %d",fd);
+	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_read_oob_callback_data(%d)\n", fd));
       if(me->fds_size <= fd) return 0;
@@ -805,7 +805,7 @@ PIKECLASS Backend
     {
 #ifdef PIKE_DEBUG
       if(fd<0)
-	fatal("File descriptor out of range.\n %d",fd);
+	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_write_oob_callback_data(%d)\n", fd));
       if(me->fds_size <= fd) return 0;
@@ -860,10 +860,10 @@ PIKECLASS Backend
 	    switch(errno)
 	    {
 	      case EBADF:
-		fatal("Backend filedescriptor %d is bad.\n",e);
+		Pike_fatal("Backend filedescriptor %d is bad.\n",e);
 		break;
 	      case ENOENT:
-		fatal("Backend filedescriptor %d is not.\n",e);
+		Pike_fatal("Backend filedescriptor %d is not.\n",e);
 		break;
 	    }
 	  }
@@ -883,11 +883,11 @@ PIKECLASS Backend
 	  switch(errno)
 	  {
 	    case EBADF:
-	      fatal("Backend filedescriptor %ld is bad.\n", 
+	      Pike_fatal("Backend filedescriptor %ld is bad.\n", 
 		    (long)me->set.poll_fds[e].fd);
 	      break;
 	    case ENOENT:
-	      fatal("Backend filedescriptor %ld is not.\n",
+	      Pike_fatal("Backend filedescriptor %ld is not.\n",
 		    (long)me->set.poll_fds[e].fd);
 	      break;
 	  }
@@ -1029,7 +1029,7 @@ PIKECLASS Backend
 		fds.revents=0;
 		ret=poll(&fds, 1,1 );
 		if(fds.revents & POLLNVAL)
-		  fatal("Bad filedescriptor %d to poll().\n", fd);
+		  Pike_fatal("Bad filedescriptor %d to poll().\n", fd);
 		break;
 	      }
 	    }
@@ -1147,12 +1147,12 @@ PIKECLASS Backend
 	{
 #ifdef __NT__
 	  default:
-	    fatal("Error in backend %d\n",errno);
+	    Pike_fatal("Error in backend %d\n",errno);
 	    break;
 #endif
 	    
 	  case EINVAL:
-	    fatal("Invalid timeout to select().\n");
+	    Pike_fatal("Invalid timeout to select().\n");
 	    break;
 	    
 #ifdef WSAEINTR
@@ -1241,7 +1241,7 @@ PIKECLASS Backend
 #ifdef DEBUG_MALLOC
 			  debug_malloc_dump_fd(i);
 #endif
-			  fatal("Filedescriptor %d (%s) caused fatal error %d in backend.\n",i,fd_info(i),errno);
+			  Pike_fatal("Filedescriptor %d (%s) caused fatal error %d in backend.\n",i,fd_info(i),errno);
 			  
 			case EINTR:
 			  break;
@@ -1255,7 +1255,7 @@ PIKECLASS Backend
 	      write_to_stderr("Bad filedescriptor to select().\n"
 			      "fd closed in another thread?\n", 62);
 #else /* !_REENTRANT */
-	      fatal("Bad filedescriptor to select().\n");
+	      Pike_fatal("Bad filedescriptor to select().\n");
 #endif /* _REENTRANT */
 	    }
 #endif
@@ -1313,7 +1313,7 @@ PIKECLASS Backend
      if(!me->call_buffer) return;
 
      if(me->num_pending_calls<0 || me->num_pending_calls>me->call_buffer_size)
-       fatal("Error in call out tables.\n");
+       Pike_fatal("Error in call out tables.\n");
 
      if(d_flag<2) return;
 
@@ -1322,35 +1322,35 @@ PIKECLASS Backend
        if(e)
        {
 	 if(CMP(e, PARENT(e)))
-	   fatal("Error in call out heap. (@ %d)\n",e);
+	   Pike_fatal("Error in call out heap. (@ %d)\n",e);
        }
 
        if(!(v=CALL(e)->args))
-	 fatal("No arguments to call\n");
+	 Pike_fatal("No arguments to call\n");
 
        if(v->refs < 1)
-	 fatal("Array should have at least one reference.\n");
+	 Pike_fatal("Array should have at least one reference.\n");
        
        if(v->malloced_size<v->size)
-	 fatal("Impossible array.\n");
+	 Pike_fatal("Impossible array.\n");
        
        if(!v->size)
-	 fatal("Call out array of zero size!\n");
+	 Pike_fatal("Call out array of zero size!\n");
        
        if(CALL(e)->prev_arr[0] != CALL(e))
-	 fatal("call_out[%d]->prev_arr[0] is wrong!\n",e);
+	 Pike_fatal("call_out[%d]->prev_arr[0] is wrong!\n",e);
        
        if(CALL(e)->prev_fun[0] != CALL(e))
-	 fatal("call_out[%d]->prev_fun[0] is wrong!\n",e);
+	 Pike_fatal("call_out[%d]->prev_fun[0] is wrong!\n",e);
        
        if(CALL(e)->pos != e)
-	 fatal("Call_out->pos is not correct!\n");
+	 Pike_fatal("Call_out->pos is not correct!\n");
 
        if(d_flag>4)
        {
 	 for(d=e+1;d<me->num_pending_calls;d++)
 	   if(CALL(e)->args == CALL(d)->args)
-	     fatal("Duplicate call out in heap.\n");
+	     Pike_fatal("Duplicate call out in heap.\n");
        }
      }
      
@@ -1363,19 +1363,19 @@ PIKECLASS Backend
        for(prev=& me->call_hash[e].arr;(c=*prev);prev=& c->next_arr)
        {
 	 if(c->prev_arr != prev)
-	   fatal("c->prev_arr is wrong %p.\n",c);
+	   Pike_fatal("c->prev_arr is wrong %p.\n",c);
 
 	 if(c->pos<0)
-	   fatal("Free call_out in call_out hash table %p.\n",c);
+	   Pike_fatal("Free call_out in call_out hash table %p.\n",c);
        }
 
        for(prev=& me->call_hash[e].fun;(c=*prev);prev=& c->next_fun)
        {
 	 if(c->prev_fun != prev)
-	   fatal("c->prev_fun is wrong %p.\n",c);
+	   Pike_fatal("c->prev_fun is wrong %p.\n",c);
 	 
 	 if(c->pos<0)
-	   fatal("Free call_out in call_out hash table %p.\n",c);
+	   Pike_fatal("Free call_out in call_out hash table %p.\n",c);
        }
      }
    }
@@ -1408,7 +1408,7 @@ PIKECLASS Backend
      int from;
 #ifdef PIKE_DEBUG
      if(pos <0 || pos>=me->num_pending_calls)
-       fatal("Bad argument to adjust_up(%d)\n",pos);
+       Pike_fatal("Bad argument to adjust_up(%d)\n",pos);
 #endif
      if(!pos) return 0;
      
@@ -1535,7 +1535,7 @@ PIKECLASS Backend
        }
        
        default:
-	 fatal("Bad timeout to new_call_out!\n");
+	 Pike_fatal("Bad timeout to new_call_out!\n");
      }
      
 #ifdef _REENTRANT
@@ -1698,7 +1698,7 @@ PIKECLASS Backend
 	   {
 #ifdef PIKE_DEBUG
 	     if(CALL(c->pos) != c)
-	       fatal("Call_out->pos not correct!\n");
+	       Pike_fatal("Call_out->pos not correct!\n");
 #endif
 	     return c->pos;
 	   }
@@ -1713,7 +1713,7 @@ PIKECLASS Backend
 	 {
 #ifdef PIKE_DEBUG
 	   if(CALL(c->pos) != c)
-	     fatal("Call_out->pos not correct!\n");
+	     Pike_fatal("Call_out->pos not correct!\n");
 #endif
 	   return c->pos;
 	 }

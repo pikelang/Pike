@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.34 2002/05/11 00:12:38 nilsson Exp $ */
+/* $Id: bmp.c,v 1.35 2002/08/15 14:50:26 marcus Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.34 2002/05/11 00:12:38 nilsson Exp $
+**!	$Id: bmp.c,v 1.35 2002/08/15 14:50:26 marcus Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.34 2002/05/11 00:12:38 nilsson Exp $");
+RCSID("$Id: bmp.c,v 1.35 2002/08/15 14:50:26 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -447,7 +447,7 @@ void img_bmp_encode(INT32 args)
 	    break;
 
 	 default:
-	    fatal("reached unknown RLE level\n");
+	    Pike_fatal("reached unknown RLE level\n");
       }
    }
    else

@@ -1,4 +1,4 @@
-/* $Id: perlmod.c,v 1.24 2001/12/22 00:27:48 nilsson Exp $ */
+/* $Id: perlmod.c,v 1.25 2002/08/15 14:50:27 marcus Exp $ */
 
 #define NO_PIKE_SHORTHAND
 
@@ -192,7 +192,7 @@ static int _perl_parse(struct perlmod_storage *ps,
 
 #ifdef PIKE_DEBUG
     if(env_blockp - ps->env_block > env_block_size)
-      fatal("Arglebargle glop-glyf.\n");
+      Pike_fatal("Arglebargle glop-glyf.\n");
 #endif
 
     ps->env[d]=0;

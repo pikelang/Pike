@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.179 2002/06/17 15:42:39 grubba Exp $");
+RCSID("$Id: threads.c,v 1.180 2002/08/15 14:49:26 marcus Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -118,7 +118,7 @@ PMOD_EXPORT int co_wait(COND_T *c, MUTEX_T *m)
 
 #ifdef PIKE_DEBUG
   if(me.next)
-    fatal("Wait on event return prematurely!!\n");
+    Pike_fatal("Wait on event return prematurely!!\n");
 #endif
 
   return 0;
@@ -340,7 +340,7 @@ void exit_threads_disable(struct object *o)
     }
 #ifdef PIKE_DEBUG
   } else {
-    fatal("exit_threads_disable() called too many times!\n");
+    Pike_fatal("exit_threads_disable() called too many times!\n");
 #endif /* PIKE_DEBUG */
   }
 }
@@ -430,13 +430,13 @@ PMOD_EXPORT void thread_table_insert(struct object *o)
   unsigned INT32 h = thread_table_hash(&s->id);
 #ifdef PIKE_DEBUG
   if(h>=THREAD_TABLE_SIZE)
-    fatal("thread_table_hash failed miserably!\n");
+    Pike_fatal("thread_table_hash failed miserably!\n");
   if(thread_state_for_id(s->id))
   {
     if(thread_state_for_id(s->id) == s)
-      fatal("Registring thread twice!\n");
+      Pike_fatal("Registring thread twice!\n");
     else
-      fatal("Forgot to unregister thread!\n");
+      Pike_fatal("Forgot to unregister thread!\n");
   }
 /*  dumpmem("thread_table_insert",&s->id, sizeof(THREAD_T)); */
 #endif
@@ -471,7 +471,7 @@ PMOD_EXPORT struct thread_state *thread_state_for_id(THREAD_T tid)
 #endif
 #ifdef PIKE_DEBUG
   if(h>=THREAD_TABLE_SIZE)
-    fatal("thread_table_hash failed miserably!\n");
+    Pike_fatal("thread_table_hash failed miserably!\n");
 #endif
   mt_lock( & thread_table_lock );
   if(thread_table_chains[h] == NULL)
@@ -624,11 +624,11 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 #ifdef DEBUG
   if(thread_for_id(th_self()) != Pike_interpreter.thread_id) {
     debug_list_all_threads();
-    fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
+    Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
   }
 
   if(Pike_interpreter.backlink != OBJ2THREAD(Pike_interpreter.thread_id))
-    fatal("Hashlink is wrong!\n");
+    Pike_fatal("Hashlink is wrong!\n");
 #endif
 
   THREADS_ALLOW();
@@ -639,7 +639,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
   DO_IF_DEBUG(
     if(thread_for_id(th_self()) != Pike_interpreter.thread_id) {
       debug_list_all_threads();
-      fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
+      Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
     } )
 }
 
@@ -663,7 +663,7 @@ TH_RETURN_TYPE new_thread_func(void * data)
 #endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
   
   if((tmp=mt_lock_interpreter()))
-    fatal("Failed to lock interpreter, return value=%d, errno=%d\n",tmp,
+    Pike_fatal("Failed to lock interpreter, return value=%d, errno=%d\n",tmp,
 #ifdef __NT__
 	  GetLastError()
 #else
@@ -687,12 +687,12 @@ TH_RETURN_TYPE new_thread_func(void * data)
       THREAD_T self = th_self();
 
       if( Pike_interpreter.thread_id && !th_equal( OBJ2THREAD(Pike_interpreter.thread_id)->id, self) )
-	fatal("Current thread is wrong. %lx %lx\n",
+	Pike_fatal("Current thread is wrong. %lx %lx\n",
 	      (long)OBJ2THREAD(Pike_interpreter.thread_id)->id, (long)self);
 	
       if(thread_for_id(th_self()) != Pike_interpreter.thread_id) {
 	debug_list_all_threads();
-	fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
+	Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
       }
     }
 #endif
@@ -708,7 +708,7 @@ TH_RETURN_TYPE new_thread_func(void * data)
   DO_IF_DEBUG(
     if(thread_for_id(th_self()) != Pike_interpreter.thread_id) {
       debug_list_all_threads();
-      fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
+      Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
     } )
 
 
@@ -738,7 +738,7 @@ TH_RETURN_TYPE new_thread_func(void * data)
   DO_IF_DEBUG(
     if(thread_for_id(th_self()) != Pike_interpreter.thread_id) {
       debug_list_all_threads();
-      fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
+      Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
     } )
 
 
@@ -959,7 +959,7 @@ void f_mutex_lock(INT32 args)
   DO_IF_DEBUG(
     if(thread_for_id(th_self()) != Pike_interpreter.thread_id) {
       debug_list_all_threads();
-      fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
+      Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
     } )
 
   m=THIS_MUTEX;
@@ -1004,7 +1004,7 @@ void f_mutex_lock(INT32 args)
   DO_IF_DEBUG(
     if(thread_for_id(th_self()) != Pike_interpreter.thread_id) {
       debug_list_all_threads();
-      fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
+      Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
     } )
 
   if(m->key)
@@ -1029,7 +1029,7 @@ void f_mutex_lock(INT32 args)
   DO_IF_DEBUG(
     if(thread_for_id(th_self()) != Pike_interpreter.thread_id) {
       debug_list_all_threads();
-      fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
+      Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ;
     } )
 
   THREADS_FPRINTF(1, (stderr, "LOCK k:%08x, m:%08x(%08x), t:%08x\n",
@@ -1187,7 +1187,7 @@ void exit_mutex_key_obj(struct object *o)
 
 #ifdef PIKE_DEBUG
     if(mut->key != o)
-      fatal("Mutex unlock from wrong key %p != %p!\n",THIS_KEY->mut->key,o);
+      Pike_fatal("Mutex unlock from wrong key %p != %p!\n",THIS_KEY->mut->key,o);
 #endif
     mut->key=0;
     if (THIS_KEY->owner) {
@@ -1646,7 +1646,7 @@ static TH_RETURN_TYPE farm(void *_a)
 
   do
   {
-/*     if(farmers == me) fatal("Ouch!\n"); */
+/*     if(farmers == me) Pike_fatal("Ouch!\n"); */
 /*     fprintf(stderr, "farm_begin %p\n",me ); */
     me->harvest( me->field );
 /*     fprintf(stderr, "farm_end %p\n", me); */
@@ -1690,7 +1690,7 @@ static struct farmer *new_farmer(void (*fun)(void *), void *args)
 
   if (!me) {
     /* Out of memory */
-    fatal("new_farmer(): Out of memory!\n");
+    Pike_fatal("new_farmer(): Out of memory!\n");
   }
 
   dmalloc_accept_leak(me);
@@ -1712,7 +1712,7 @@ static struct farmer *new_farmer(void (*fun)(void *), void *args)
 
 PMOD_EXPORT void th_farm(void (*fun)(void *), void *here)
 {
-  if(!fun) fatal("The farmers don't known how to handle empty fields\n");
+  if(!fun) Pike_fatal("The farmers don't known how to handle empty fields\n");
   mt_lock( &rosie );
   if(farmers)
   {
@@ -1798,7 +1798,7 @@ void th_init(void)
   mutex_key->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
 #ifdef PIKE_DEBUG
   if(!mutex_key)
-    fatal("Failed to initialize mutex_key program!\n");
+    Pike_fatal("Failed to initialize mutex_key program!\n");
 #endif
 
   START_NEW_PROGRAM_ID(THREAD_MUTEX);
@@ -1858,7 +1858,7 @@ void th_init(void)
   add_ref(thread_local_prog);
   end_class("thread_local", 0);
   if(!thread_local_prog)
-    fatal("Failed to initialize thread_local program!\n");
+    Pike_fatal("Failed to initialize thread_local program!\n");
   ADD_EFUN("thread_local", f_thread_local,
 	   tFunc(tNone,tObjIs_THREAD_LOCAL),
 	   OPT_EXTERNAL_DEPEND);
@@ -1904,7 +1904,7 @@ void th_init(void)
   add_integer_constant("THREAD_EXITED", THREAD_EXITED, 0);
 
   if(!mutex_key)
-    fatal("Failed to initialize thread program!\n");
+    Pike_fatal("Failed to initialize thread program!\n");
 
   Pike_interpreter.thread_id=clone_object(thread_id_prog,0);
   SWAP_OUT_THREAD(OBJ2THREAD(Pike_interpreter.thread_id)); /* Init struct */

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.78 2002/06/25 14:26:41 grubba Exp $
+ * $Id: pike_types.h,v 1.79 2002/08/15 14:49:24 marcus Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -186,7 +186,7 @@ extern struct pike_type_location *all_pike_type_locations;
 #define init_type_stack() type_stack_mark()
 #define exit_type_stack() do {\
     ptrdiff_t q_q_q_q = pop_stack_mark(); \
-    if(q_q_q_q) fatal("Type stack out of wack! %ld\n", \
+    if(q_q_q_q) Pike_fatal("Type stack out of wack! %ld\n", \
                       PTRDIFF_T_TO_LONG(q_q_q_q)); \
   } while(0)
 #else
@@ -206,7 +206,7 @@ void debug_push_reverse_type(unsigned INT16 type);
 
 #define type_stack_mark() do {				\
   if(Pike_compiler->pike_type_mark_stackp >= pike_type_mark_stack + NELEM(pike_type_mark_stack))	\
-    fatal("Type mark stack overflow.");		\
+    Pike_fatal("Type mark stack overflow.");		\
   else {						\
     *Pike_compiler->pike_type_mark_stackp=Pike_compiler->type_stackp;				\
     Pike_compiler->pike_type_mark_stackp++;					\
@@ -337,7 +337,7 @@ int pike_type_allow_premature_toss(struct pike_type *type);
 } while (0)
 #define DTYPE_END(TYPESTR) do {						\
   if(Pike_compiler->type_stackp >= type_stack + sizeof(type_stack))			\
-    fatal("Type stack overflow.");					\
+    Pike_fatal("Type stack overflow.");					\
   type_stack_reverse();							\
   (TYPESTR)=pop_unfinished_type();					\
 } while (0)

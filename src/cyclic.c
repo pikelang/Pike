@@ -1,7 +1,7 @@
 #include "global.h"
 #include "cyclic.h"
 
-RCSID("$Id: cyclic.c,v 1.5 2000/08/10 08:54:34 grubba Exp $");
+RCSID("$Id: cyclic.c,v 1.6 2002/08/15 14:49:20 marcus Exp $");
 
 #define CYCLIC_HASH_SIZE 4711
 
@@ -29,7 +29,7 @@ static void low_unlink_cyclic(CYCLIC *c)
       return;
     }
   }
-  fatal("Unlink cyclic on lost cyclic struct.\n");
+  Pike_fatal("Unlink cyclic on lost cyclic struct.\n");
 }
 
 void unlink_cyclic(CYCLIC *c)

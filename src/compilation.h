@@ -1,5 +1,5 @@
 /*
- * $Id: compilation.h,v 1.27 2002/06/25 14:26:40 grubba Exp $
+ * $Id: compilation.h,v 1.28 2002/08/15 14:49:20 marcus Exp $
  *
  * Compilator state push / pop operator construction file
  *
@@ -89,12 +89,12 @@
 
 #define DMEMBER(X,Y,Z) DO_DEBUG_CODE( \
     if(MEMCMP((char *)&(Pike_compiler->Y), (char *)&(oLd->Y), sizeof(oLd->Y))) \
-      fatal("Variable " #Y " became whacked during compilation.\n"); ) \
+      Pike_fatal("Variable " #Y " became whacked during compilation.\n"); ) \
   IMEMBER(X,Y)
 
 #define STACKMEMBER(X,Y,Z) DO_DEBUG_CODE( \
     if(Pike_compiler->Y < oLd->Y) \
-      fatal("Stack " #Y " shrunk %ld steps compilation, currently: %p.\n", \
+      Pike_fatal("Stack " #Y " shrunk %ld steps compilation, currently: %p.\n", \
             PTRDIFF_T_TO_LONG(oLd->Y - Pike_compiler->Y), Pike_compiler->Y); )
 
 #define SNAME(X,Y) { \
@@ -113,7 +113,7 @@
 
 #ifdef PIKE_DEBUG
 #define STRMEMBER(X,Y) \
-  PCODE(if(Pike_compiler->X) fatal("Variable " #X " not deallocated properly.\n");) \
+  PCODE(if(Pike_compiler->X) Pike_fatal("Variable " #X " not deallocated properly.\n");) \
   ZMEMBER(struct pike_string *,X,Y)
 #else
 #define STRMEMBER(X,Y) \

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.434 2002/08/06 14:18:57 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.435 2002/08/15 14:49:19 marcus Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -105,7 +105,7 @@ PMOD_EXPORT void debug_f_aggregate(INT32 args)
 {
   struct array *a;
 #ifdef PIKE_DEBUG
-  if(args < 0) fatal("Negative args to f_aggregate() (%d)\n",args);
+  if(args < 0) Pike_fatal("Negative args to f_aggregate() (%d)\n",args);
 #endif
 
   a=aggregate_array(args);
@@ -317,7 +317,7 @@ static struct case_info *find_ci_shift0(INT32 c)
       case CIM_UPPERDELTA: C = c + ci->data; break; \
       case CIM_CASEBIT: C = c | ci->data; break; \
       case CIM_CASEBITOFF: C = ((c - ci->data) | ci->data) + ci->data; break; \
-      default: fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); \
+      default: Pike_fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); \
     } \
    } \
   } while(0)
@@ -331,7 +331,7 @@ static struct case_info *find_ci_shift0(INT32 c)
       case CIM_UPPERDELTA: C = c + ci->data; break; \
       case CIM_CASEBIT: C = c | ci->data; break; \
       case CIM_CASEBITOFF: C = ((c - ci->data) | ci->data) + ci->data; break; \
-      default: fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); \
+      default: Pike_fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); \
     } \
    } \
   } while(0)
@@ -345,7 +345,7 @@ static struct case_info *find_ci_shift0(INT32 c)
       case CIM_LOWERDELTA: C = c - ci->data; break; \
       case CIM_CASEBIT: C = c & ~ci->data; break; \
       case CIM_CASEBITOFF: C = ((c - ci->data)& ~ci->data) + ci->data; break; \
-      default: fatal("upper_case(): Unknown case_info mode: %d\n", ci->mode); \
+      default: Pike_fatal("upper_case(): Unknown case_info mode: %d\n", ci->mode); \
     } \
    } \
   } while(0)
@@ -359,7 +359,7 @@ static struct case_info *find_ci_shift0(INT32 c)
       case CIM_LOWERDELTA: C = c - ci->data; break; \
       case CIM_CASEBIT: C = c & ~ci->data; break; \
       case CIM_CASEBITOFF: C = ((c - ci->data)& ~ci->data) + ci->data; break; \
-      default: fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); \
+      default: Pike_fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); \
     } \
    } \
   } while(0)
@@ -407,7 +407,7 @@ PMOD_EXPORT void f_lower_case(INT32 args)
       DO_LOWER_CASE(str[i]);
     }
   } else {
-    fatal("lower_case(): Bad string shift:%d\n", orig->size_shift);
+    Pike_fatal("lower_case(): Bad string shift:%d\n", orig->size_shift);
   }
 
   pop_n_elems(args);
@@ -461,7 +461,7 @@ PMOD_EXPORT void f_upper_case(INT32 args)
       DO_UPPER_CASE(str[i]);
     }
   } else {
-    fatal("lower_case(): Bad string shift:%d\n", orig->size_shift);
+    Pike_fatal("lower_case(): Bad string shift:%d\n", orig->size_shift);
   }
 
   pop_n_elems(args);
@@ -643,7 +643,7 @@ PMOD_EXPORT void f_search(INT32 args)
 	}
 	break;
       default:
-	fatal("search(): Unsupported string shift: %d!\n",
+	Pike_fatal("search(): Unsupported string shift: %d!\n",
 	      haystack->size_shift);
 	break;
       }
@@ -1086,7 +1086,7 @@ static int generate_zero_type(node *n)
 {
   if(count_args(CDR(n)) != 1) return 0;
   if(do_docode(CDR(n),DO_NOT_COPY) != 1)
-    fatal("Count args was wrong in generate_zero_type().\n");
+    Pike_fatal("Count args was wrong in generate_zero_type().\n");
   emit0(F_ZERO_TYPE);
   return 1;
 }
@@ -1130,7 +1130,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
       if (d_flag) {
 	for(i = len; i--;) {
 	  if (out->str[i]) {
-	    fatal("MEMSET didn't clear byte %ld of %ld\n",
+	    Pike_fatal("MEMSET didn't clear byte %ld of %ld\n",
 		  PTRDIFF_T_TO_LONG(i+1),
 		  PTRDIFF_T_TO_LONG(len));
 	  }
@@ -1218,7 +1218,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
       }
 #ifdef PIKE_DEBUG
       if (j) {
-	fatal("string_to_unicode(): Indexing error: len:%ld, j:%ld.\n",
+	Pike_fatal("string_to_unicode(): Indexing error: len:%ld, j:%ld.\n",
 	      PTRDIFF_T_TO_LONG(len), PTRDIFF_T_TO_LONG(j));
       }
 #endif /* PIKE_DEBUG */
@@ -1516,7 +1516,7 @@ void f_string_to_utf8(INT32 args)
   }
 #ifdef PIKE_DEBUG
   if (len != j) {
-    fatal("string_to_utf8(): Calculated and actual lengths differ: "
+    Pike_fatal("string_to_utf8(): Calculated and actual lengths differ: "
 	  "%ld != %ld\n",
 	  PTRDIFF_T_TO_LONG(len), PTRDIFF_T_TO_LONG(j));
   }
@@ -1673,7 +1673,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
   }
 #ifdef PIKE_DEBUG
   if (j != len) {
-    fatal("utf8_to_string(): Calculated and actual lengths differ: %d != %d\n",
+    Pike_fatal("utf8_to_string(): Calculated and actual lengths differ: %d != %d\n",
 	  len, j);
   }
 #endif /* PIKE_DEBUG */
@@ -1905,7 +1905,7 @@ static node *optimize_this_object(node *n)
       int level;
 #ifdef PIKE_DEBUG
       if (CDR (n)->u.sval.type != T_INT || CDR (n)->u.sval.u.integer < 0)
-	fatal ("The type check for this_object() failed.\n");
+	Pike_fatal ("The type check for this_object() failed.\n");
 #endif
       level = CDR (n)->u.sval.u.integer;
       if (level > compilation_depth) {
@@ -1945,12 +1945,12 @@ static int generate_this_object(node *n)
     else {
 #ifdef PIKE_DEBUG
       if (CDR (n)->u.sval.type != T_INT || CDR (n)->u.sval.u.integer < 0)
-	fatal ("The type check for this_object() failed.\n");
+	Pike_fatal ("The type check for this_object() failed.\n");
 #endif
       level = CDR (n)->u.sval.u.integer;
 #ifdef PIKE_DEBUG
       if (level > compilation_depth)
-	fatal ("this_object level too high. "
+	Pike_fatal ("this_object level too high. "
 	       "Expected this to be caught by optimize_this_object.\n");
 #endif
     }
@@ -4329,7 +4329,7 @@ static void f_parse_format(INT32 args)
   }
 #ifdef PIKE_DEBUG
   if (Pike_sp[-1].type != T_ARRAY) {
-    fatal("parse_format(): Unexpected result from low_parse_format()\n");
+    Pike_fatal("parse_format(): Unexpected result from low_parse_format()\n");
   }
 #endif /* PIKE_DEBUG */
   a = (--Pike_sp)->u.array;
@@ -5011,9 +5011,9 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
 #endif /* DIFF_DEBUG */
 #ifdef PIKE_DEBUG
 	 if (x >= blen) {
-	   fatal("diff_longest_sequence(): x:%d >= blen:%d\n", x, blen);
+	   Pike_fatal("diff_longest_sequence(): x:%d >= blen:%d\n", x, blen);
 	 } else if (x < 0) {
-	   fatal("diff_longest_sequence(): x:%d < 0\n", x);
+	   Pike_fatal("diff_longest_sequence(): x:%d < 0\n", x);
 	 }
 #endif /* PIKE_DEBUG */
 	 if (!marks[x]) {
@@ -5054,9 +5054,9 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
 #endif /* DIFF_DEBUG */
 #ifdef PIKE_DEBUG
 	   if (x >= blen) {
-	     fatal("diff_longest_sequence(): x:%d >= blen:%d\n", x, blen);
+	     Pike_fatal("diff_longest_sequence(): x:%d >= blen:%d\n", x, blen);
 	   } else if (x < 0) {
-	     fatal("diff_longest_sequence(): x:%d < 0\n", x);
+	     Pike_fatal("diff_longest_sequence(): x:%d < 0\n", x);
 	   }
 #endif /* PIKE_DEBUG */
 
@@ -5321,7 +5321,7 @@ static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
   while(dml) {
 #ifdef PIKE_DEBUG
     if (i >= sz) {
-      fatal("Consistency error in diff_dyn_longest_sequence()\n");
+      Pike_fatal("Consistency error in diff_dyn_longest_sequence()\n");
     }
 #endif /* PIKE_DEBUG */
 #ifdef DIFF_DEBUG
@@ -5335,7 +5335,7 @@ static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
   }
 #ifdef PIKE_DEBUG
   if (i != sz) {
-    fatal("Consistency error in diff_dyn_longest_sequence()\n");
+    Pike_fatal("Consistency error in diff_dyn_longest_sequence()\n");
   }
 #endif /* PIKE_DEBUG */
 
@@ -6165,7 +6165,7 @@ PMOD_EXPORT void f_splice(INT32 args)
   INT32 i,j,k;
 
 #ifdef PIKE_DEBUG
-  if(args < 0) fatal("Negative args to f_splice()\n");
+  if(args < 0) Pike_fatal("Negative args to f_splice()\n");
 #endif
 
   for(i=0;i<args;i++)
@@ -6212,7 +6212,7 @@ void f_everynth(INT32 args)
   struct array *ina;
   INT32 size=0;
 #ifdef PIKE_DEBUG
-  if(args < 0) fatal("Negative args to f_everynth()\n");
+  if(args < 0) Pike_fatal("Negative args to f_everynth()\n");
 #endif
 
   check_all_args("everynth", args,
@@ -6257,7 +6257,7 @@ PMOD_EXPORT void f_transpose(INT32 args)
   INT32 j,i;
   TYPE_FIELD type=0;
 #ifdef PIKE_DEBUG
-  if(args < 0) fatal("Negative args to f_transpose()\n");
+  if(args < 0) Pike_fatal("Negative args to f_transpose()\n");
 #endif
   
   if (args<1)

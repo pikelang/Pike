@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include "pike_memory.h"
 
-RCSID("$Id: dynamic_buffer.c,v 1.15 2002/05/31 22:41:23 nilsson Exp $");
+RCSID("$Id: dynamic_buffer.c,v 1.16 2002/08/15 14:49:20 marcus Exp $");
 
 static dynamic_buffer buff;
 
@@ -18,7 +18,7 @@ PMOD_EXPORT char *low_make_buf_space(size_t space, dynamic_buffer *buf)
 {
   char *ret;
 #ifdef PIKE_DEBUG
-  if(!buf->s.str) fatal("ARRRRGH! Deadly Trap!\n");
+  if(!buf->s.str) Pike_fatal("ARRRRGH! Deadly Trap!\n");
 #endif
 
   if(buf->s.len+space >= buf->bufsize)
@@ -42,7 +42,7 @@ PMOD_EXPORT void low_my_putchar(char b,dynamic_buffer *buf)
 {
 #ifdef PIKE_DEBUG
   if(!buf->s.str)
-    fatal("Error in internal buffering.\n");
+    Pike_fatal("Error in internal buffering.\n");
 #endif
   low_make_buf_space(1,buf)[0]=b;
 }
@@ -52,7 +52,7 @@ PMOD_EXPORT void low_my_binary_strcat(const char *b, size_t l,
 {
 #ifdef PIKE_DEBUG
   if(!buf->s.str)
-    fatal("Error in internal buffering.\n");
+    Pike_fatal("Error in internal buffering.\n");
 #endif
 
   MEMCPY(low_make_buf_space(l, buf),b, l);
@@ -87,7 +87,7 @@ PMOD_EXPORT void low_init_buf_with_string(string s, dynamic_buffer *buf)
   buf->s.str=realloc(buf->s.str,buf->bufsize);
 #ifdef PIKE_DEBUG
   if(!buf->s.str)
-    fatal("Realloc failed.\n");
+    Pike_fatal("Realloc failed.\n");
 #endif
 }
 

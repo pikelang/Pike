@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mpf.cmod,v 1.8 2002/08/13 17:03:05 grubba Exp $");
+RCSID("$Id: mpf.cmod,v 1.9 2002/08/15 14:50:25 marcus Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -741,8 +741,8 @@ PIKECLASS mpf
   INIT
     {
 #ifdef PIKE_DEBUG
-      if(!fp) fatal("ZERO FP\n");
-      if(!THISMPF) fatal("ZERO THISMPF\n");
+      if(!fp) Pike_fatal("ZERO FP\n");
+      if(!THISMPF) Pike_fatal("ZERO THISMPF\n");
 #endif
       mpf_init(THISMPF);
     }
@@ -750,8 +750,8 @@ PIKECLASS mpf
   EXIT
     {
 #ifdef PIKE_DEBUG
-      if(!fp) fatal("ZERO FP\n");
-      if(!THISMPF) fatal("ZERO THISMPF\n");
+      if(!fp) Pike_fatal("ZERO FP\n");
+      if(!THISMPF) Pike_fatal("ZERO THISMPF\n");
 #endif
       mpf_clear(THISMPF);
     }

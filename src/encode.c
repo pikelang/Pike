@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.150 2002/08/06 13:50:54 grubba Exp $");
+RCSID("$Id: encode.c,v 1.151 2002/08/15 14:49:20 marcus Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -265,7 +265,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
   }
   switch(t->type) {
     default:
-      fatal("error in type tree: %d.\n", t->type);
+      Pike_fatal("error in type tree: %d.\n", t->type);
       /*NOTREACHED*/
 
       break;
@@ -277,7 +277,7 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
     
     case T_ASSIGN:
       if (((ptrdiff_t)t->car < 0) || ((ptrdiff_t)t->car > 9)) {
-	fatal("Bad assign marker: %ld\n", (long)(ptrdiff_t)t->car);
+	Pike_fatal("Bad assign marker: %ld\n", (long)(ptrdiff_t)t->car);
       }
       addchar('0' + (ptrdiff_t)t->car);
       t = t->cdr;
@@ -412,7 +412,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
 #ifdef PIKE_DEBUG
 #undef encode_value2
-#define encode_value2(X,Y) do { struct svalue *_=Pike_sp; encode_value2_(X,Y); if(Pike_sp!=_) fatal("encode_value2 failed!\n"); } while(0)
+#define encode_value2(X,Y) do { struct svalue *_=Pike_sp; encode_value2_(X,Y); if(Pike_sp!=_) Pike_fatal("encode_value2 failed!\n"); } while(0)
 #endif
 
 {
@@ -965,7 +965,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 #ifdef PIKE_DEBUG
 	  if (p->num_program * sizeof(p->program[0]) !=
 	      data->buf.s.len - bufpos) {
-	    fatal("ENCODE_PROGRAM() failed:\n"
+	    Pike_fatal("ENCODE_PROGRAM() failed:\n"
 		  "Encoded data len: %ld\n"
 		  "Expected data len: %ld\n",
 		  DO_NOT_WARN((long)(p->num_program * sizeof(p->program[0]))),
@@ -1102,7 +1102,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 #ifdef PIKE_DEBUG
 	  if (p->num_program * sizeof(p->program[0]) !=
 	      data->buf.s.len - bufpos) {
-	    fatal("ENCODE_PROGRAM() failed:\n"
+	    Pike_fatal("ENCODE_PROGRAM() failed:\n"
 		  "Encoded data len: %ld\n"
 		  "Expected data len: %ld\n",
 		  DO_NOT_WARN((long)(p->num_program * sizeof(p->program[0]))),
@@ -1766,7 +1766,7 @@ static void restore_type_stack(struct pike_type **old_stackp)
 #endif /* 0 */
 #ifdef PIKE_DEBUG
   if (old_stackp > Pike_compiler->type_stackp) {
-    fatal("type stack out of sync!\n");
+    Pike_fatal("type stack out of sync!\n");
   }
 #endif /* PIKE_DEBUG */
   while(Pike_compiler->type_stackp > old_stackp) {
@@ -1782,7 +1782,7 @@ static void restore_type_mark(struct pike_type ***old_type_mark_stackp)
 #endif /* 0 */
 #ifdef PIKE_DEBUG
   if (old_type_mark_stackp > Pike_compiler->pike_type_mark_stackp) {
-    fatal("type Pike_interpreter.mark_stack out of sync!\n");
+    Pike_fatal("type Pike_interpreter.mark_stack out of sync!\n");
   }
 #endif /* PIKE_DEBUG */
   Pike_compiler->pike_type_mark_stackp = old_type_mark_stackp;
@@ -1977,7 +1977,7 @@ static void decode_value2(struct decode_data *data)
 
 #ifdef PIKE_DEBUG
 #undef decode_value2
-#define decode_value2(X) do { struct svalue *_=Pike_sp; decode_value2_(X); if(Pike_sp!=_+1) fatal("decode_value2 failed!\n"); } while(0)
+#define decode_value2(X) do { struct svalue *_=Pike_sp; decode_value2_(X); if(Pike_sp!=_+1) Pike_fatal("decode_value2 failed!\n"); } while(0)
 #endif
 
 
@@ -2808,7 +2808,7 @@ static void decode_value2(struct decode_data *data)
 	    int q;
 	    for(q=0;q<p->num_inherits;q++)
 	      if(!p->inherits[q].prog)
-		fatal("FOOBAR!@!!!\n");
+		Pike_fatal("FOOBAR!@!!!\n");
 	  }
 #endif
 
@@ -3578,7 +3578,7 @@ static void free_decode_data(struct decode_data *data)
     }
 #ifdef PIKE_DEBUG
     if (!d) {
-      fatal("Decode data fell off the stack!\n");
+      Pike_fatal("Decode data fell off the stack!\n");
     }
 #endif /* PIKE_DEBUG */
   }
@@ -3598,9 +3598,9 @@ static void free_decode_data(struct decode_data *data)
 
 #ifdef PIKE_DEBUG
   if(data->unfinished_programs)
-    fatal("We have unfinished programs left in decode()!\n");
+    Pike_fatal("We have unfinished programs left in decode()!\n");
   if(data->unfinished_objects)
-    fatal("We have unfinished objects left in decode()!\n");
+    Pike_fatal("We have unfinished objects left in decode()!\n");
 #endif
 
   while(data->unfinished_programs)

@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.c,v 1.20 2002/05/10 22:16:59 mast Exp $
+ * $Id: ia32.c,v 1.21 2002/08/15 14:50:24 marcus Exp $
  *
  * Machine code generator for IA32.
  *
@@ -532,7 +532,7 @@ void ia32_encode_program(struct program *p, struct dynamic_buffer_s *buf)
     INT32 opcode;
 #ifdef PIKE_DEBUG
     if (off < prev) {
-      fatal("Relocations in bad order!\n");
+      Pike_fatal("Relocations in bad order!\n");
     }
 #endif /* PIKE_DEBUG */
     adddata2(p->program + prev, off - prev);

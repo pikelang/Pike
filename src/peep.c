@@ -19,7 +19,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.71 2002/05/10 22:30:33 mast Exp $");
+RCSID("$Id: peep.c,v 1.72 2002/08/15 14:49:24 marcus Exp $");
 
 static void asm_opt(void);
 
@@ -80,7 +80,7 @@ ptrdiff_t insert_opcode2(unsigned int f,
 
 #ifdef PIKE_DEBUG
   if(!hasarg2(f) && c)
-    fatal("hasarg2(%d) is wrong!\n",f);
+    Pike_fatal("hasarg2(%d) is wrong!\n",f);
 #endif
 
   p=(p_instr *)low_make_buf_space(sizeof(p_instr), &instrbuf);
@@ -88,7 +88,7 @@ ptrdiff_t insert_opcode2(unsigned int f,
 
 #ifdef PIKE_DEBUG
   if(!instrbuf.s.len)
-    fatal("Low make buf space failed!!!!!!\n");
+    Pike_fatal("Low make buf space failed!!!!!!\n");
 #endif
 
   p->opcode=f;
@@ -107,7 +107,7 @@ ptrdiff_t insert_opcode1(unsigned int f,
 {
 #ifdef PIKE_DEBUG
   if(!hasarg(f) && b)
-    fatal("hasarg(%d) is wrong!\n",f);
+    Pike_fatal("hasarg(%d) is wrong!\n",f);
 #endif
 
   return insert_opcode2(f,b,0,current_line,current_file);
@@ -117,7 +117,7 @@ ptrdiff_t insert_opcode0(int f,int current_line, struct pike_string *current_fil
 {
 #ifdef PIKE_DEBUG
   if(hasarg(f))
-    fatal("hasarg(%d) is wrong!\n",f);
+    Pike_fatal("hasarg(%d) is wrong!\n",f);
 #endif
   return insert_opcode1(f,0,current_line, current_file);
 }
@@ -128,7 +128,7 @@ void update_arg(int instr,INT32 arg)
   p_instr *p;
 #ifdef PIKE_DEBUG
   if(instr > (long)instrbuf.s.len / (long)sizeof(p_instr) || instr < 0)
-    fatal("update_arg outside known space.\n");
+    Pike_fatal("update_arg outside known space.\n");
 #endif  
   p=(p_instr *)instrbuf.s.str;
   p[instr].arg=arg;
@@ -305,10 +305,10 @@ void assemble(void)
       if(c->arg == -1) break;
 #ifdef PIKE_DEBUG
       if(c->arg > max_label || c->arg < 0)
-	fatal("max_label calculation failed!\n");
+	Pike_fatal("max_label calculation failed!\n");
 
       if(labels[c->arg] != -1)
-	fatal("Duplicate label!\n");
+	Pike_fatal("Duplicate label!\n");
 #endif
       FLUSH_CODE_GENERATOR_STATE();
       labels[c->arg] = DO_NOT_WARN((INT32)PIKE_PC);
@@ -337,7 +337,7 @@ void assemble(void)
 
       case I_ISPOINTER:
 #ifdef PIKE_DEBUG
-	if(c->arg > max_label || c->arg < 0) fatal("Jump to unknown label?\n");
+	if(c->arg > max_label || c->arg < 0) Pike_fatal("Jump to unknown label?\n");
 #endif
 	tmp = DO_NOT_WARN((INT32)PIKE_PC);
 	ins_pointer(jumps[c->arg]);
@@ -358,7 +358,7 @@ void assemble(void)
 
 #ifdef PIKE_DEBUG
       default:
-	fatal("Unknown instruction type.\n");
+	Pike_fatal("Unknown instruction type.\n");
 #endif
       }
     }
@@ -405,7 +405,7 @@ void assemble(void)
     {
 #ifdef PIKE_DEBUG
       if(labels[e]==-1)
-	fatal("Hyperspace error: unknown jump point %ld at %d (pc=%x).\n",
+	Pike_fatal("Hyperspace error: unknown jump point %ld at %d (pc=%x).\n",
 	      PTRDIFF_T_TO_LONG(e), labels[e], jumps[e]);
 #endif
 #ifdef INS_F_JUMP
@@ -446,7 +446,7 @@ static INLINE ptrdiff_t insopt2(int f, INT32 a, INT32 b,
 
 #ifdef PIKE_DEBUG
   if(!hasarg2(f) && b)
-    fatal("hasarg2(%d /*%s */) is wrong!\n",f,get_f_name(f));
+    Pike_fatal("hasarg2(%d /*%s */) is wrong!\n",f,get_f_name(f));
 #endif
 
   p=(p_instr *)low_make_buf_space(sizeof(p_instr), &instrbuf);
@@ -459,7 +459,7 @@ static INLINE ptrdiff_t insopt2(int f, INT32 a, INT32 b,
 
 #ifdef PIKE_DEBUG
   if(!instrbuf.s.len)
-    fatal("Low make buf space failed!!!!!!\n");
+    Pike_fatal("Low make buf space failed!!!!!!\n");
 #endif
 
   p->opcode=f;
@@ -475,7 +475,7 @@ static INLINE ptrdiff_t insopt1(int f, INT32 a, int cl, struct pike_string *cf)
 {
 #ifdef PIKE_DEBUG
   if(!hasarg(f) && a)
-    fatal("hasarg(%d /* %s */) is wrong!\n",f,get_f_name(f));
+    Pike_fatal("hasarg(%d /* %s */) is wrong!\n",f,get_f_name(f));
 #endif
 
   return insopt2(f,a,0,cl, cf);
@@ -485,7 +485,7 @@ static INLINE ptrdiff_t insopt0(int f, int cl, struct pike_string *cf)
 {
 #ifdef PIKE_DEBUG
   if(hasarg(f))
-    fatal("hasarg(%d /* %s */) is wrong!\n",f,get_f_name(f));
+    Pike_fatal("hasarg(%d /* %s */) is wrong!\n",f,get_f_name(f));
 #endif
   return insopt2(f,0,0,cl, cf);
 }
@@ -496,14 +496,14 @@ static void debug(void)
     fifo_len=(long)instrbuf.s.len / (long)sizeof(p_instr);
 #ifdef PIKE_DEBUG
   if(eye < 0)
-    fatal("Popped beyond start of code.\n");
+    Pike_fatal("Popped beyond start of code.\n");
 
   if(instrbuf.s.len)
   {
     p_instr *p;
     p=(p_instr *)low_make_buf_space(0, &instrbuf);
     if(!p[-1].file)
-      fatal("No file name on last instruction!\n");
+      Pike_fatal("No file name on last instruction!\n");
   }
 #endif
 }
@@ -579,7 +579,7 @@ static void pop_n_opcodes(int n)
     if(d>fifo_len) d=fifo_len;
 #ifdef PIKE_DEBUG
     if((long)d > (long)instrbuf.s.len / (long)sizeof(p_instr))
-      fatal("Popping out of instructions.\n");
+      Pike_fatal("Popping out of instructions.\n");
 #endif
 
     /* FIXME: It looks like the fifo could be optimized.

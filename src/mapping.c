@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.148 2002/05/31 22:41:24 nilsson Exp $");
+RCSID("$Id: mapping.c,v 1.149 2002/08/15 14:49:22 marcus Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -49,7 +49,7 @@ static struct mapping *gc_mark_mapping_pos = 0;
 #define EXIT_BLOCK(m)	do{						\
 DO_IF_DEBUG(								\
   if(m->refs)								\
-    fatal("really free mapping on mapping with nonzero refs.\n");	\
+    Pike_fatal("really free mapping on mapping with nonzero refs.\n");	\
 )									\
 									\
   FREE_PROT(m);								\
@@ -94,14 +94,14 @@ BLOCK_ALLOC(mapping, 511)
       prev_ = md->hash + h_;				\
       DO_IF_DEBUG(					\
 	if (!*prev_) {					\
-	  fatal("Node to move not found!\n");		\
+	  Pike_fatal("Node to move not found!\n");		\
 	}						\
       );						\
       while (*prev_ != md->free_list) {			\
 	prev_ = &((*prev_)->next);			\
         DO_IF_DEBUG(					\
 	  if (!*prev_) {				\
-	    fatal("Node to move not found!\n");		\
+	    Pike_fatal("Node to move not found!\n");		\
 	  }						\
 	);						\
       }							\
@@ -129,10 +129,10 @@ static void check_mapping_type_fields(struct mapping *m)
     }
 
   if(val_types & ~(m->data->val_types))
-    fatal("Mapping value types out of order!\n");
+    Pike_fatal("Mapping value types out of order!\n");
 
   if(ind_types & ~(m->data->ind_types))
-    fatal("Mapping indices types out of order!\n");
+    Pike_fatal("Mapping indices types out of order!\n");
 }
 #endif
 
@@ -160,8 +160,8 @@ static void init_mapping(struct mapping *m,
   debug_malloc_touch(m);
 #ifdef PIKE_DEBUG
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_ZAP_WEAK)
-    fatal("Can't allocate a new mapping_data inside gc.\n");
-  if(size < 0) fatal("init_mapping with negative value.\n");
+    Pike_fatal("Can't allocate a new mapping_data inside gc.\n");
+  if(size < 0) Pike_fatal("init_mapping with negative value.\n");
 #endif
   if(size)
   {
@@ -240,7 +240,7 @@ PMOD_EXPORT void really_free_mapping_data(struct mapping_data *md)
 
 #ifdef PIKE_DEBUG
   if (md->refs) {
-    fatal("really_free_mapping_data(): md has non-zero refs: %d\n",
+    Pike_fatal("really_free_mapping_data(): md has non-zero refs: %d\n",
 	  md->refs);
   }
 #endif /* PIKE_DEBUG */
@@ -278,7 +278,7 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
   k=md->free_list;
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
 #ifdef PIKE_DEBUG
-  if(!k) fatal("Error in rehash: not enough keypairs.\n");
+  if(!k) Pike_fatal("Error in rehash: not enough keypairs.\n");
 #endif
   md->free_list=k->next;
 #else /* PIKE_MAPPING_KEYPAIR_LOOP */
@@ -313,7 +313,7 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
   k=md->free_list;
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
 #ifdef PIKE_DEBUG
-  if(!k) fatal("Error in rehash: not enough keypairs.\n");
+  if(!k) Pike_fatal("Error in rehash: not enough keypairs.\n");
 #endif
   md->free_list=k->next;
 #else /* PIKE_MAPPING_KEYPAIR_LOOP */
@@ -353,7 +353,7 @@ static struct mapping *rehash(struct mapping *m, int new_size)
   debug_malloc_touch(md);
 #ifdef PIKE_DEBUG
   if(md->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
 
   if(d_flag>1)  check_mapping(m);
 #endif
@@ -381,7 +381,7 @@ static struct mapping *rehash(struct mapping *m, int new_size)
 
 #ifdef PIKE_DEBUG
   if(m->data->size != tmp)
-    fatal("Rehash failed, size not same any more.\n");
+    Pike_fatal("Rehash failed, size not same any more.\n");
 #endif
 #ifdef MAPPING_SIZE_DEBUG
   m->debug_size = m->data->size;
@@ -410,7 +410,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
 
 #ifdef PIKE_DEBUG
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_ZAP_WEAK)
-    fatal("Can't allocate a new mapping_data inside gc.\n");
+    Pike_fatal("Can't allocate a new mapping_data inside gc.\n");
 #endif
 
   debug_malloc_touch(md);
@@ -449,7 +449,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   {
 #ifdef PIKE_DEBUG
     if(md->refs <= 0 || md->valrefs<=0)
-      fatal("Hardlink without refs/valrefs!\n");
+      Pike_fatal("Hardlink without refs/valrefs!\n");
 #endif
     md->hardlinks--;
     md->valrefs--;
@@ -600,10 +600,10 @@ PMOD_EXPORT void mapping_fix_type_field(struct mapping *m)
 
 #ifdef PIKE_DEBUG
   if(val_types & ~(m->data->val_types))
-    fatal("Mapping value types out of order!\n");
+    Pike_fatal("Mapping value types out of order!\n");
 
   if(ind_types & ~(m->data->ind_types))
-    fatal("Mapping indices types out of order!\n");
+    Pike_fatal("Mapping indices types out of order!\n");
 #endif
   m->data->val_types = val_types;
   m->data->ind_types = ind_types;
@@ -646,7 +646,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
 #endif
 
   h2=hash_svalue(key);
@@ -680,7 +680,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
  mi_set_value:
 #ifdef PIKE_DEBUG
   if(m->data != md)
-    fatal("Wrong dataset in mapping_insert!\n");
+    Pike_fatal("Wrong dataset in mapping_insert!\n");
   if(d_flag>1)  check_mapping(m);
 #endif
   free_mapping_data(md);
@@ -697,7 +697,7 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
  mi_insert:
 #ifdef PIKE_DEBUG
   if(m->data != md)
-    fatal("Wrong dataset in mapping_insert!\n");
+    Pike_fatal("Wrong dataset in mapping_insert!\n");
   if(d_flag>1)  check_mapping(m);
 #endif
   free_mapping_data(md);
@@ -759,7 +759,7 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
 
   if(d_flag>1)  check_mapping(m);
 
@@ -796,7 +796,7 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
  mg_set_value:
 #ifdef PIKE_DEBUG
   if(m->data != md)
-    fatal("Wrong dataset in mapping_get_item_ptr!\n");
+    Pike_fatal("Wrong dataset in mapping_get_item_ptr!\n");
   if(d_flag)
     check_mapping(m);
 #endif
@@ -814,7 +814,7 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
  mg_insert:
 #ifdef PIKE_DEBUG
   if(m->data != md)
-    fatal("Wrong dataset in mapping_get_item_ptr!\n");
+    Pike_fatal("Wrong dataset in mapping_get_item_ptr!\n");
   if(d_flag)
     check_mapping(m);
 #endif
@@ -875,7 +875,7 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
   if(d_flag>1)  check_mapping(m);
   debug_malloc_touch(m);
 #endif
@@ -907,9 +907,9 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
  md_remove_value:
 #ifdef PIKE_DEBUG
   if(md->refs <= 1)
-    fatal("Too few refs i mapping->data\n");
+    Pike_fatal("Too few refs i mapping->data\n");
   if(m->data != md)
-    fatal("Wrong dataset in mapping_delete!\n");
+    Pike_fatal("Wrong dataset in mapping_delete!\n");
   if(d_flag>1)  check_mapping(m);
   debug_malloc_touch(m);
 #endif
@@ -955,11 +955,11 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
   if(d_flag>1)  check_mapping(m);
   debug_malloc_touch(m);
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
-    fatal("check_mapping_for_destruct called in invalid pass inside gc.\n");
+    Pike_fatal("check_mapping_for_destruct called in invalid pass inside gc.\n");
 #endif
 
   /* no is_eq -> no locking */
@@ -1029,7 +1029,7 @@ PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
   if(d_flag>1)  check_mapping(m);
 #endif
 
@@ -1096,7 +1096,7 @@ PMOD_EXPORT struct svalue *mapping_mapping_lookup(struct mapping *m,
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
 #endif
 
   if(!s || !s->type==T_MAPPING)
@@ -1171,7 +1171,7 @@ PMOD_EXPORT struct array *mapping_indices(struct mapping *m)
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
 #endif
 
   check_mapping_for_destruct(m);
@@ -1200,7 +1200,7 @@ PMOD_EXPORT struct array *mapping_values(struct mapping *m)
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
 #endif
 
   check_mapping_for_destruct(m);
@@ -1229,7 +1229,7 @@ PMOD_EXPORT struct array *mapping_to_array(struct mapping *m)
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
 #endif
 
   a=allocate_array(m->data->size);
@@ -1258,7 +1258,7 @@ PMOD_EXPORT void mapping_replace(struct mapping *m,struct svalue *from, struct s
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
 #endif
 
   md=m->data;
@@ -1290,7 +1290,7 @@ PMOD_EXPORT struct mapping *mkmapping(struct array *ind, struct array *val)
 
 #ifdef PIKE_DEBUG
   if(ind->size != val->size)
-    fatal("mkmapping on different sized arrays.\n");
+    Pike_fatal("mkmapping on different sized arrays.\n");
 #endif
 
   m=allocate_mapping(MAP_SLOTS(ind->size));
@@ -1329,7 +1329,7 @@ PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
 #endif
 
   n=allocate_mapping(0);
@@ -1360,9 +1360,9 @@ PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b,
 
 #ifdef PIKE_DEBUG
   if(a->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
   if(b->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
 #endif
 
   ai=mapping_indices(a);
@@ -1448,7 +1448,7 @@ PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a,
 	cv=array_zip(av,b,zipper); /* b must not be used */
 	break;
      default:
-	fatal("merge_mapping_array on other than AND or SUB\n");
+	Pike_fatal("merge_mapping_array on other than AND or SUB\n");
   }
 
   UNSET_ONERROR(r2); free_array(av);
@@ -1541,7 +1541,7 @@ PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
   }
 #ifdef PIKE_DEBUG
   if(!ret)
-    fatal("add_mappings is confused!\n");
+    Pike_fatal("add_mappings is confused!\n");
 #endif
   return ret;
 }
@@ -1555,9 +1555,9 @@ PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct pro
 
 #ifdef PIKE_DEBUG
   if(a->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
   if(b->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
 #endif
 
   if(a==b) return 1;
@@ -1637,7 +1637,7 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
 #endif
 
   if(! m->data->size)
@@ -1754,7 +1754,7 @@ node *make_node_from_mapping(struct mapping *m)
 {
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
 #endif
 
   mapping_fix_type_field(m);
@@ -1826,7 +1826,7 @@ PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
 #endif
 
   doing.next=p;
@@ -1883,7 +1883,7 @@ PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
 #endif
   md=m->data;
 
@@ -1964,16 +1964,16 @@ void check_mapping(struct mapping *m)
   md=m->data;
 
   if(m->refs <=0)
-    fatal("Mapping has zero refs.\n");
+    Pike_fatal("Mapping has zero refs.\n");
 
   if(!m->data)
-    fatal("Mapping has no data block.\n");
+    Pike_fatal("Mapping has no data block.\n");
 
   if (!m->data->refs)
-    fatal("Mapping data block has zero refs.\n");
+    Pike_fatal("Mapping data block has zero refs.\n");
 
   if(m->next && m->next->prev != m)
-    fatal("Mapping ->next->prev != mapping.\n");
+    Pike_fatal("Mapping ->next->prev != mapping.\n");
 
 #ifdef MAPPING_SIZE_DEBUG
   if(m->debug_size != md->size)
@@ -1988,51 +1988,51 @@ void check_mapping(struct mapping *m)
     describe(m);
     fprintf(stderr,"--MAPPING ZAPPING (%d!=%d), mapping data:\n",m->debug_size,md->size);
     describe(md);
-    fatal("Mapping zapping detected (%d != %d)!\n",m->debug_size,md->size);
+    Pike_fatal("Mapping zapping detected (%d != %d)!\n",m->debug_size,md->size);
   }
 #endif
 
   if(m->prev)
   {
     if(m->prev->next != m)
-      fatal("Mapping ->prev->next != mapping.\n");
+      Pike_fatal("Mapping ->prev->next != mapping.\n");
   }else{
     if(first_mapping != m)
-      fatal("Mapping ->prev == 0 but first_mapping != mapping.\n");
+      Pike_fatal("Mapping ->prev == 0 but first_mapping != mapping.\n");
   }
 
   if(md->valrefs <0)
-    fatal("md->valrefs  < 0\n");
+    Pike_fatal("md->valrefs  < 0\n");
 
   if(md->hardlinks <0)
-    fatal("md->valrefs  < 0\n");
+    Pike_fatal("md->valrefs  < 0\n");
 
   if(md->refs < md->valrefs+1)
-    fatal("md->refs < md->valrefs+1\n");
+    Pike_fatal("md->refs < md->valrefs+1\n");
 
   if(md->valrefs < md->hardlinks)
-    fatal("md->refs < md->valrefs+1\n");
+    Pike_fatal("md->refs < md->valrefs+1\n");
 
   if(md->hashsize < 0)
-    fatal("Assert: I don't think he's going to make it Jim.\n");
+    Pike_fatal("Assert: I don't think he's going to make it Jim.\n");
 
   if(md->size < 0)
-    fatal("Core breach, evacuate ship!\n");
+    Pike_fatal("Core breach, evacuate ship!\n");
 
   if(md->num_keypairs < 0)
-    fatal("Starboard necell on fire!\n");
+    Pike_fatal("Starboard necell on fire!\n");
 
   if(md->size > md->num_keypairs)
-    fatal("Pretty mean hashtable there buster!\n");
+    Pike_fatal("Pretty mean hashtable there buster!\n");
 
   if(md->hashsize > md->num_keypairs)
-    fatal("Pretty mean hashtable there buster %d > %d (2)!\n",md->hashsize,md->num_keypairs);
+    Pike_fatal("Pretty mean hashtable there buster %d > %d (2)!\n",md->hashsize,md->num_keypairs);
 
   if(md->num_keypairs > (md->hashsize + 3) * AVG_LINK_LENGTH)
-    fatal("Mapping from hell detected, attempting to send it back...\n");
+    Pike_fatal("Mapping from hell detected, attempting to send it back...\n");
   
   if(md->size > 0 && (!md->ind_types || !md->val_types))
-    fatal("Mapping type fields are... wrong.\n");
+    Pike_fatal("Mapping type fields are... wrong.\n");
 
   num=0;
   NEW_MAPPING_LOOP(md)
@@ -2040,10 +2040,10 @@ void check_mapping(struct mapping *m)
       num++;
 
       if(! ( (1 << k->ind.type) & (md->ind_types) ))
-	fatal("Mapping indices type field lies.\n");
+	Pike_fatal("Mapping indices type field lies.\n");
 
       if(! ( (1 << k->val.type) & (md->val_types) ))
-	fatal("Mapping values type field lies.\n");
+	Pike_fatal("Mapping values type field lies.\n");
 
       check_svalue(& k->ind);
       check_svalue(& k->val);
@@ -2055,7 +2055,7 @@ void check_mapping(struct mapping *m)
     }
   
   if(md->size != num)
-    fatal("Shields are failing, hull integrity down to 20%%\n");
+    Pike_fatal("Shields are failing, hull integrity down to 20%%\n");
 
   in_check_mapping=0;
 }
@@ -2080,7 +2080,7 @@ void check_all_mappings(void)
   IND_TYPES = MD->ind_types;						\
   NEW_MAPPING_LOOP(MD) {						\
     if (!IS_DESTRUCTED(&k->ind) && RECURSE_FN(&k->ind, 1)) {		\
-      DO_IF_DEBUG(fatal("Didn't expect an svalue zapping now.\n"));	\
+      DO_IF_DEBUG(Pike_fatal("Didn't expect an svalue zapping now.\n"));	\
     }									\
     RECURSE_FN(&k->val, 1);						\
     VAL_TYPES |= 1 << k->val.type;					\
@@ -2157,7 +2157,7 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
 {
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
-    fatal("Zero refs in mapping->data\n");
+    Pike_fatal("Zero refs in mapping->data\n");
 #endif
   debug_malloc_touch(m);
   debug_malloc_touch(m->data);
@@ -2215,7 +2215,7 @@ void real_gc_cycle_check_mapping(struct mapping *m, int weak)
 
 #ifdef PIKE_DEBUG
     if(md->refs <=0)
-      fatal("Zero refs in mapping->data\n");
+      Pike_fatal("Zero refs in mapping->data\n");
 #endif
 
     if ((md->ind_types | md->val_types) & BIT_COMPLEX) {
@@ -2315,12 +2315,12 @@ unsigned gc_touch_all_mappings(void)
   unsigned n = 0;
   struct mapping *m;
   if (first_mapping && first_mapping->prev)
-    fatal("Error in mapping link list.\n");
+    Pike_fatal("Error in mapping link list.\n");
   for (m = first_mapping; m; m = m->next) {
     debug_gc_touch(m);
     n++;
     if (m->next && m->next->prev != m)
-      fatal("Error in mapping link list.\n");
+      Pike_fatal("Error in mapping link list.\n");
   }
   return n;
 }
@@ -2336,7 +2336,7 @@ void gc_check_all_mappings(void)
     if (((int)m->data) == 0x55555555) {
       fprintf(stderr, "** Zapped mapping in list of active mappings!\n");
       describe_something(m, T_MAPPING, 0,2,0, NULL);
-      fatal("Zapped mapping in list of active mappings!\n");
+      Pike_fatal("Zapped mapping in list of active mappings!\n");
     }
 #endif /* DEBUG_MALLOC */
 

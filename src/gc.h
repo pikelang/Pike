@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.89 2001/12/16 18:51:21 mast Exp $
+ * $Id: gc.h,v 1.90 2002/08/15 14:49:21 marcus Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -33,7 +33,7 @@ extern void *gc_svalue_location;
    if(d_flag) CHECK_INTERPRETER_LOCK();					\
    if((Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE) ||	\
       Pike_in_gc == GC_PASS_LOCATE)					\
-     fatal("Allocating new objects within gc is not allowed!\n");	\
+     Pike_fatal("Allocating new objects within gc is not allowed!\n");	\
  )									\
  if (Pike_in_gc) remove_marker(OBJ);					\
 } while (0)
@@ -59,7 +59,7 @@ extern void *gc_svalue_location;
   extern int d_flag;							\
   if(d_flag) CHECK_INTERPRETER_LOCK();					\
   if (Pike_in_gc == GC_PASS_CHECK || Pike_in_gc == GC_PASS_LOCATE)	\
-    fatal("No free is allowed in this gc pass.\n");			\
+    Pike_fatal("No free is allowed in this gc pass.\n");			\
   else									\
     remove_marker(PTR);							\
 } while (0)
@@ -71,7 +71,7 @@ extern void *gc_svalue_location;
   if(d_flag) CHECK_INTERPRETER_LOCK();					\
   if ((Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE) ||	\
       Pike_in_gc == GC_PASS_LOCATE)					\
-    fatal("Freeing objects within gc is not allowed.\n");		\
+    Pike_fatal("Freeing objects within gc is not allowed.\n");		\
 } while (0)
 
 #else
@@ -83,7 +83,7 @@ extern void *gc_svalue_location;
   GC_FREE_BLOCK(PTR);							\
   DO_IF_DEBUG(								\
     if(num_objects < 1)							\
-      fatal("Panic!! less than zero objects!\n");			\
+      Pike_fatal("Panic!! less than zero objects!\n");			\
   );									\
   num_objects-- ;							\
 }while(0)
@@ -265,12 +265,12 @@ void cleanup_gc(void);
 } while (0)
 #define gc_assert_checked_as_weak(X) do {				\
   if (!(find_marker(X)->flags & GC_CHECKED_AS_WEAK))			\
-    fatal("A thing was checked as nonweak but "				\
+    Pike_fatal("A thing was checked as nonweak but "				\
 	  "marked or cycle checked as weak.\n");			\
 } while (0)
 #define gc_assert_checked_as_nonweak(X) do {				\
   if (find_marker(X)->flags & GC_CHECKED_AS_WEAK)			\
-    fatal("A thing was checked as weak but "				\
+    Pike_fatal("A thing was checked as weak but "				\
 	  "marked or cycle checked as nonweak.\n");			\
 } while (0)
 #else
@@ -392,7 +392,7 @@ extern int gc_in_cycle_check;
   if (!(_m_->flags & GC_MARKED)) {					\
     DO_IF_DEBUG(							\
       if (gc_in_cycle_check)						\
-	fatal("Recursing immediately in gc cycle check.\n");		\
+	Pike_fatal("Recursing immediately in gc cycle check.\n");		\
       gc_in_cycle_check = 1;						\
     );									\
     if (gc_cycle_push(_thing_, _m_, (WEAK))) {
@@ -405,7 +405,7 @@ extern int gc_in_cycle_check;
       _m_->flags |= GC_LIVE|GC_LIVE_OBJ;				\
     DO_IF_DEBUG(							\
       if (gc_in_cycle_check)						\
-	fatal("Recursing immediately in gc cycle check.\n");		\
+	Pike_fatal("Recursing immediately in gc cycle check.\n");		\
       gc_in_cycle_check = 1;						\
     );									\
     if (gc_cycle_push(_thing_, _m_, (WEAK))) {

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.101 2002/05/31 22:41:23 nilsson Exp $
+ * $Id: cpp.c,v 1.102 2002/08/15 14:49:20 marcus Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -151,7 +151,7 @@ void cpp_error_sprintf(struct cpp *this, char *fmt, ...)  ATTRIBUTE((format(prin
   va_end(args);
 
   if((size_t)strlen(buf) >= (size_t)sizeof(buf))
-    fatal("Buffer overflow in cpp_error.\n");
+    Pike_fatal("Buffer overflow in cpp_error.\n");
 
   cpp_error(this, buf);
 }
@@ -220,7 +220,7 @@ static struct mapping *initial_predefs_mapping()
   struct pike_predef_s *def;
   struct mapping *map = allocate_mapping (0);
 #ifdef PIKE_DEBUG
-  if (!use_initial_predefs) fatal ("Initial predefs has been taken over.\n");
+  if (!use_initial_predefs) Pike_fatal ("Initial predefs has been taken over.\n");
 #endif
   for (def = first_predef; def; def = def->next) {
     push_string (make_shared_string (def->name));
@@ -951,7 +951,7 @@ static ptrdiff_t low_cpp(struct cpp *this, void *data, ptrdiff_t len,
     return lower_cpp2(this, (p_wchar2 *)data, len,
 		      flags, auto_convert, charset);
   default:
-    fatal("low_cpp(): Bad shift: %d\n", shift);
+    Pike_fatal("low_cpp(): Bad shift: %d\n", shift);
   }
   /* NOT_REACHED */
   return 0;
@@ -1056,7 +1056,7 @@ static void check_defined(struct cpp *this,
     s=binary_findstring2((p_wchar2 *)args[0].arg.ptr, args[0].len);
     break;
   default:
-    fatal("cpp(): Symbol has unsupported shift: %d\n", args[0].arg.shift);
+    Pike_fatal("cpp(): Symbol has unsupported shift: %d\n", args[0].arg.shift);
     break;
   }
   if(s && find_define(s))
@@ -1086,7 +1086,7 @@ static void dumpdef(struct cpp *this,
     s=binary_findstring2((p_wchar2 *)args[0].arg.ptr, args[0].len);
     break;
   default:
-    fatal("cpp(): Bad shift in macroname: %d\n", args[0].arg.shift);
+    Pike_fatal("cpp(): Bad shift in macroname: %d\n", args[0].arg.shift);
     break;
   }
   if(s && (d=find_define(s)))

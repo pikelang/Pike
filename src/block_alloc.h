@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.40 2001/11/08 23:34:27 nilsson Exp $ */
+/* $Id: block_alloc.h,v 1.41 2002/08/15 14:49:19 marcus Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -71,7 +71,7 @@ BA_STATIC BA_INLINE struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)	\
     PIKE_CONCAT(alloc_more_,DATA)();					\
   DO_IF_DEBUG(								\
     else if (PIKE_CONCAT3(free_,DATA,s) == (struct DATA *)-1)		\
-      fatal("Block alloc not initialized.\n");				\
+      Pike_fatal("Block alloc not initialized.\n");				\
   )									\
 									\
   tmp=PIKE_CONCAT3(free_,DATA,s);					\
@@ -104,7 +104,7 @@ static void PIKE_CONCAT(check_free_,DATA)(struct DATA *d)               \
     if( (char *)d >= (char *)(tmp->x+BSIZE)) continue;                  \
     return;                                                             \
   }                                                                     \
-  fatal("really_free_%s called on non-block_alloc region (%p).\n",      \
+  Pike_fatal("really_free_%s called on non-block_alloc region (%p).\n",      \
          #DATA, d);                                                     \
 }                                                                       \
 )									\
@@ -295,7 +295,7 @@ int PIKE_CONCAT(remove_,DATA)(void *ptr)				     \
   {									     \
     PIKE_CONCAT(num_,DATA)--;						     \
     DO_IF_DEBUG( if(PIKE_CONCAT(DATA,_hash_table)[hval]!=p)                  \
-                    fatal("GAOssdf\n"); );                       	     \
+                    Pike_fatal("GAOssdf\n"); );                       	     \
     PIKE_CONCAT(DATA,_hash_table)[hval]=p->BLOCK_ALLOC_NEXT;		     \
     BA_UL(PIKE_CONCAT(really_free_,DATA))(p);				     \
     DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));                \
@@ -351,7 +351,7 @@ struct DATA *PIKE_CONCAT3(make_,DATA,_unlocked)(void *ptr, size_t hval)   \
   struct DATA *p;							     \
 									     \
   DO_IF_DEBUG( if(!PIKE_CONCAT(DATA,_hash_table))			     \
-    fatal("Hash table error!\n"); )					     \
+    Pike_fatal("Hash table error!\n"); )					     \
   PIKE_CONCAT(num_,DATA)++;						     \
 									     \
   p=BA_UL(PIKE_CONCAT(alloc_,DATA))();					     \
@@ -410,7 +410,7 @@ struct DATA *PIKE_CONCAT3(make_,DATA,_unlocked)(void *ptr, size_t hval)   \
   struct DATA *p;							     \
 									     \
   DO_IF_DEBUG( if(!PIKE_CONCAT(DATA,_hash_table))			     \
-    fatal("Hash table error!\n"); )					     \
+    Pike_fatal("Hash table error!\n"); )					     \
   PIKE_CONCAT(num_,DATA)++;						     \
 									     \
   if(( PIKE_CONCAT(num_,DATA)>>BLOCK_ALLOC_HSIZE_SHIFT ) >=		     \

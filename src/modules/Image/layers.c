@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.78 2002/08/13 17:09:17 grubba Exp $
+**!	$Id: layers.c,v 1.79 2002/08/15 14:50:26 marcus Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -196,7 +196,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.78 2002/08/13 17:09:17 grubba Exp $");
+RCSID("$Id: layers.c,v 1.79 2002/08/15 14:50:26 marcus Exp $");
 
 #include "image_machine.h"
 
@@ -717,7 +717,7 @@ static INLINE void hsv_to_rgb(double h,double s,double v,rgb_group *colorp)
       case 3: 	colorp->r = p;	colorp->g = q;	colorp->b = V;	 break;
       case 4: 	colorp->r = t;	colorp->g = p;	colorp->b = V;	 break;
       case 5: 	colorp->r = V;	colorp->g = p;	colorp->b = q;	 break;
-      default: fatal("unhandled case\n");
+      default: Pike_fatal("unhandled case\n");
    }
 #undef V
 #undef i
@@ -1137,7 +1137,7 @@ static void image_layer_mode(INT32 args)
 	 return;
       }
 
-   fatal("illegal mode: %p\n", (void *)layer_mode[i].func);
+   Pike_fatal("illegal mode: %p\n", (void *)layer_mode[i].func);
 }
 
 static void image_layer_available_modes(INT32 args)

@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.50 2002/07/15 19:00:30 grubba Exp $
+ * $Id: preprocessor.h,v 1.51 2002/08/15 14:49:24 marcus Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -209,7 +209,7 @@ static void PUSH_STRING_SHIFT(void *str, ptrdiff_t len, int shift,
     PUSH_STRING2((p_wchar2 *)str, len, buf);
     break;
   default:
-    fatal("cpp(): Bad string shift detected in PUSH_STRING_SHIFT(): %d\n",
+    Pike_fatal("cpp(): Bad string shift detected in PUSH_STRING_SHIFT(): %d\n",
 	  shift);
     break;
   }
@@ -1065,7 +1065,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 #ifdef PIKE_DEBUG
 	      if (arguments[d->parts[e].argument&DEF_ARG_MASK].arg.shift !=
 		  SHIFT) {
-		fatal("cpp(): Bad argument shift %d != %d\n", SHIFT,
+		Pike_fatal("cpp(): Bad argument shift %d != %d\n", SHIFT,
 		      arguments[d->parts[e].argument&DEF_ARG_MASK].arg.shift);
 	      }
 #endif /* PIKE_DEBUG */
@@ -1126,7 +1126,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  tmp.s->len--;
 #ifdef PIKE_DEBUG
 	  if (tmp.s->size_shift != SHIFT) {
-	    fatal("cpp(): Bad shift in #if: %d != %d\n",
+	    Pike_fatal("cpp(): Bad shift in #if: %d != %d\n",
 		  tmp.s->size_shift, SHIFT);
 	  }
 #endif /* PIKE_DEBUG */
@@ -1257,7 +1257,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 			   this->current_file->len,&this->buf);
 	      break;
 	    default:
-	      fatal("cpp(): Filename has bad shift %d\n",
+	      Pike_fatal("cpp(): Filename has bad shift %d\n",
 		    this->current_file->size_shift);
 	      break;
 	  }
@@ -1523,7 +1523,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  calc_2(this, (p_wchar2 *)tmp.s->str, tmp.s->len, 0);
 	  break;
 	default:
-	  fatal("cpp(): Bad shift: %d\n", tmp.s->size_shift);
+	  Pike_fatal("cpp(): Bad shift: %d\n", tmp.s->size_shift);
 	  break;
 	}
 	free_string_builder(&tmp);
@@ -1652,7 +1652,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	    calc_2(this, (p_wchar2 *)tmp.s->str, tmp.s->len,0);
 	    break;
 	  default:
-	    fatal("cpp(): Bad shift: %d\n", tmp.s->size_shift);
+	    Pike_fatal("cpp(): Bad shift: %d\n", tmp.s->size_shift);
 	    break;
 	  }
 	  free_string_builder(&tmp);
@@ -1828,7 +1828,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		{
 #ifdef PIKE_DEBUG
 		  if(Pike_sp[-1].type != PIKE_T_INT)
-		    fatal("Internal error in CPP\n");
+		    Pike_fatal("Internal error in CPP\n");
 #endif
 		  Pike_sp[-1].u.integer|=DEF_ARG_NOPOSTSPACE;
 		}
@@ -1931,10 +1931,10 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	    {
 #ifdef PIKE_DEBUG
 	      if(partbase[e*2+1].type != PIKE_T_INT)
-		fatal("Cpp internal error, expected integer!\n");
+		Pike_fatal("Cpp internal error, expected integer!\n");
 	      
 	      if(partbase[e*2+2].type != PIKE_T_STRING)
-		fatal("Cpp internal error, expected string!\n");
+		Pike_fatal("Cpp internal error, expected string!\n");
 #endif
 	      def->parts[e].argument=partbase[e*2+1].u.integer;
 	      copy_shared_string(def->parts[e].postfix,
@@ -1944,7 +1944,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 #ifdef PIKE_DEBUG
 	    if(def->num_parts==1 &&
 	       (def->parts[0].argument & DEF_ARG_MASK) > MAX_ARGS)
-	      fatal("Internal error in define\n");
+	      Pike_fatal("Internal error in define\n");
 #endif	  
 	    {
 	      struct define *d;

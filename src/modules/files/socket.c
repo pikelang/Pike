@@ -22,7 +22,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.62 2002/05/31 22:31:40 nilsson Exp $");
+RCSID("$Id: socket.c,v 1.63 2002/08/15 14:50:27 marcus Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -158,7 +158,7 @@ static void port_accept_callback(int fd,void *data)
 #ifndef __NT__
 #ifdef PIKE_DEBUG
   if(!query_nonblocking(f->fd))
-    fatal("Port is in blocking mode in port accept callback!!!\n");
+    Pike_fatal("Port is in blocking mode in port accept callback!!!\n");
 #endif
 #endif
 

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.70 2002/05/31 22:41:25 nilsson Exp $
+ * $Id: object.h,v 1.71 2002/08/15 14:49:23 marcus Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -130,7 +130,7 @@ void check_all_objects(void);
 #endif
 
 #ifdef PIKE_DEBUG
-#define master() ( get_master() ? get_master() : ( fatal("Couldn't load master object at %s:%d.\n",__FILE__,__LINE__), (struct object *)0) )
+#define master() ( get_master() ? get_master() : ( Pike_fatal("Couldn't load master object at %s:%d.\n",__FILE__,__LINE__), (struct object *)0) )
 #else
 #define master() debug_master()
 #endif

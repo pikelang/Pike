@@ -1,5 +1,5 @@
 /*
- * $Id: sparc.c,v 1.10 2002/05/10 14:04:37 mast Exp $
+ * $Id: sparc.c,v 1.11 2002/08/15 14:50:24 marcus Exp $
  *
  * Machine code generator for sparc.
  *
@@ -116,14 +116,14 @@ void sparc_encode_program(struct program *p, struct dynamic_buffer_s *buf)
     INT32 opcode;
 #ifdef PIKE_DEBUG
     if (off < prev) {
-      fatal("Relocations in bad order!\n");
+      Pike_fatal("Relocations in bad order!\n");
     }
 #endif /* PIKE_DEBUG */
     adddata2(p->program + prev, off - prev);
 
 #ifdef PIKE_DEBUG
     if ((p->program[off] & 0xc0000000) != 0x40000000) {
-      fatal("Bad relocation!\n");
+      Pike_fatal("Bad relocation!\n");
     }
 #endif /* PIKE_DEBUG */
     /* Relocate to being relative to NULL */

@@ -23,7 +23,7 @@
 #include "sybase_config.h"
 #include "global.h"
 
-RCSID("$Id: sybase.c,v 1.8 2002/05/11 00:21:24 nilsson Exp $");
+RCSID("$Id: sybase.c,v 1.9 2002/08/15 14:50:28 marcus Exp $");
 
 #ifdef HAVE_SYBASE
 
@@ -315,7 +315,7 @@ static void sybase_destroy (struct object * o) {
     }
     this->busy--;
     sybdebug((stderr,"Busy status: %d\n",this->busy));
-    /* if we fail, it's useless anyways. Maybe we should fatal() */
+    /* if we fail, it's useless anyways. Maybe we should Pike_fatal() */
   }
   
   if (this->cmd) {
@@ -326,7 +326,7 @@ static void sybase_destroy (struct object * o) {
       sybdebug((stderr,"\tHm... failed\n"));
     }
     this->cmd=NULL; 
-    /* if we fail, it's useless anyways. Maybe we should fatal() */
+    /* if we fail, it's useless anyways. Maybe we should Pike_fatal() */
   }
 
   if (this->results) {
@@ -357,7 +357,7 @@ static void sybase_destroy (struct object * o) {
       sybdebug((stderr,"Gasp! Failed!\n"));
     }
     this->connection=NULL;
-    /* if we fail, it's useless anyways. Maybe we should fatal() */
+    /* if we fail, it's useless anyways. Maybe we should Pike_fatal() */
   }
 
   SYB_LOCK(mainlock); /* this is really needed only here */
@@ -375,7 +375,7 @@ static void sybase_destroy (struct object * o) {
       sybdebug((stderr,"\tGosh Robin! You're right!\n"));
     }
     this->context=NULL;
-    /* if we fail, it's useless anyways. Maybe we should fatal() */
+    /* if we fail, it's useless anyways. Maybe we should Pike_fatal() */
   }
 
   SYB_UNLOCK(mainlock);
@@ -907,7 +907,7 @@ static void f_big_query(INT32 args) {
     function_result=NULL;
     break;
   default:
-    fatal("Internal error! Wrong result in big_query\n");
+    Pike_fatal("Internal error! Wrong result in big_query\n");
     break;
   }
   /* extra safety check. Paranoia. */

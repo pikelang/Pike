@@ -650,7 +650,7 @@ ISWRAP(isHexChar)
 
 #define PEEK(X) \
 ( IF_XMLDEBUG(((X) > data->input.len)? \
-    (fatal("PEEK out of bounds (%ld/%ld)\n", \
+    (Pike_fatal("PEEK out of bounds (%ld/%ld)\n", \
            PTRDIFF_T_TO_LONG(X), \
            PTRDIFF_T_TO_LONG(data->input.len)), 0):) \
   INDEX_PCHARP(data->input.datap,X) )
@@ -995,7 +995,7 @@ static int gobble(struct xmldata *data, char *s)
     XMLERROR("Missing ';' after parsed entity reference.");	\
   READ(1);							\
   PARSE_REF(ATTR,PARSE_RECURSIVELY);				\
-  DO_IF_DEBUG(if(sp<spsave) fatal("Stack underflow\n");)        \
+  DO_IF_DEBUG(if(sp<spsave) Pike_fatal("Stack underflow\n");)        \
 }while(0)
 
 
@@ -1574,7 +1574,7 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
 	    {
 #ifdef PIKE_DEBUG
 	      if(!SAFE_IS_ZERO(sp-num))
-		fatal("num not in sync with arguments on stack!\n");
+		Pike_fatal("num not in sync with arguments on stack!\n");
 #endif
 	      if(seq == ',')
 		sp[-num].u.string=make_shared_string(",");
@@ -1641,7 +1641,7 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
 
 #ifdef PIKE_DEBUG
   if(sp != save_sp2+1)
-    fatal("XML: Stack corruption in read_choice_seq_or_name.\n");
+    Pike_fatal("XML: Stack corruption in read_choice_seq_or_name.\n");
 #endif
 }
 
@@ -1656,7 +1656,7 @@ static int really_low_parse_dtd(struct xmldata *data)
   {
 #ifdef PIKE_DEBUG
     if(sp<save_sp)
-      fatal("Stack underflow.\n");
+      Pike_fatal("Stack underflow.\n");
 #endif
     switch(PEEK(0))
     {
@@ -1971,7 +1971,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 		    }
 #ifdef PIKE_DEBUG
 		    if(sp<save)
-		      fatal("Stack underflow.\n");
+		      Pike_fatal("Stack underflow.\n");
 #endif
 		    f_aggregate(DO_NOT_WARN(sp - save));
 		    SKIPSPACE();
@@ -2106,7 +2106,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 		    }
 #ifdef PIKE_DEBUG
 		    if(sp<save)
-		      fatal("Stack underflow.\n");
+		      Pike_fatal("Stack underflow.\n");
 #endif
 		    f_aggregate(DO_NOT_WARN(sp - save));
 		    f_aggregate(2);
@@ -2231,7 +2231,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 	    }
 #ifdef PIKE_DEBUG
 	    if(sp<save_sp)
-	      fatal("Stack underflow.\n");
+	      Pike_fatal("Stack underflow.\n");
 #endif
 	    break;
 
@@ -2286,7 +2286,7 @@ static int low_parse_dtd(struct xmldata *data)
   done=really_low_parse_dtd(data);
 #ifdef PIKE_DEBUG
   if(sp<save_sp)
-    fatal("Stack underflow.\n");
+    Pike_fatal("Stack underflow.\n");
 #endif
 #ifdef VERBOSE_XMLDEBUG
   fprintf(stderr,"Exiting low_parse_dtd %p %p\n",sp,save_sp);
@@ -2663,7 +2663,7 @@ static int low_parse_xml(struct xmldata *data,
   pop_stack();
 #ifdef PIKE_DEBUG
   if(sp<save_sp)
-    fatal("Stack underflow.\n");
+    Pike_fatal("Stack underflow.\n");
 #endif
   f_aggregate(DO_NOT_WARN(sp - save_sp));
   /* There is now one value on the stack */

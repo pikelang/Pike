@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: normalize.c,v 1.8 2002/07/16 11:34:57 mast Exp $");
+RCSID("$Id: normalize.c,v 1.9 2002/08/15 14:50:24 marcus Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -78,7 +78,7 @@ static void init_hashes()
   unsigned int i;
 
 #ifdef PIKE_DEBUG
-  if (hashes_inited) fatal ("init_hashes called twice\n");
+  if (hashes_inited) Pike_fatal ("init_hashes called twice\n");
   hashes_inited = 1;
 #endif
 

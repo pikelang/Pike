@@ -65,7 +65,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.143 2002/07/02 17:56:20 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.144 2002/08/15 14:49:25 marcus Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -125,7 +125,7 @@ PMOD_EXPORT void really_free_short_svalue_ptr(void **s, TYPE_T type)
       
 #ifdef PIKE_DEBUG
     default:
-	fatal("Bad type in free_short_svalue.\n");
+	Pike_fatal("Bad type in free_short_svalue.\n");
 #endif
   }
 }
@@ -194,7 +194,7 @@ PMOD_EXPORT void really_free_svalue(struct svalue *s)
     
 #ifdef PIKE_DEBUG
   default:
-    fatal("Bad type in free_svalue.\n");
+    Pike_fatal("Bad type in free_svalue.\n");
 #endif
   }
 }
@@ -341,7 +341,7 @@ PMOD_EXPORT void assign_svalues_no_free(struct svalue *to,
     size_t e;
     for(e=0;e<num;e++)
       if(!(type_hint & (1<<from[e].type)))
-	 fatal("Type hint lies (%ld %ld %d)!\n",
+	 Pike_fatal("Type hint lies (%ld %ld %d)!\n",
 	       DO_NOT_WARN((long)e),
 	       (long)type_hint, from[e].type);
   }
@@ -683,7 +683,7 @@ PMOD_EXPORT int is_identical(const struct svalue *a, const struct svalue *b)
     return a->u.float_number == b->u.float_number;
 
   default:
-    fatal("Unknown type %x\n",a->type);
+    Pike_fatal("Unknown type %x\n",a->type);
     return 0; /* make gcc happy */
   }
 
@@ -814,7 +814,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
     return a->u.float_number == b->u.float_number;
 
   default:
-    fatal("Unknown type %x\n",a->type);
+    Pike_fatal("Unknown type %x\n",a->type);
     return 0; /* make gcc happy */
   }
 }
@@ -890,7 +890,7 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
       return multiset_equal_p(a->u.multiset, b->u.multiset, p);
       
     default:
-      fatal("Unknown type in is_equal.\n");
+      Pike_fatal("Unknown type in is_equal.\n");
   }
   return 1; /* survived */
 }
@@ -1083,7 +1083,7 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
     /* At this point both a and b have type T_TYPE */
 #ifdef PIKE_DEBUG
     if ((a->type != T_TYPE) || (b->type != T_TYPE)) {
-      fatal("Unexpected types in comparison.\n");
+      Pike_fatal("Unexpected types in comparison.\n");
     }
 #endif /* PIKE_DEBUG */
     /* fall through */
@@ -1463,7 +1463,7 @@ static void low_check_short_svalue(const union anything *u, TYPE_T type)
   {
   case T_STRING:
     if(!debug_findstring(u->string))
-      fatal("Shared string not shared!\n");
+      Pike_fatal("Shared string not shared!\n");
     break;
 
   default:
@@ -1489,7 +1489,7 @@ void check_short_svalue(const union anything *u, TYPE_T type)
 {
   if(type<=MAX_REF_TYPE &&
      ((PIKE_INT32_ALIGNMENT-1) & (ptrdiff_t)(u->refs)))
-    fatal("Odd pointer! type=%d u->refs=%p\n",type,u->refs);
+    Pike_fatal("Odd pointer! type=%d u->refs=%p\n",type,u->refs);
 
   check_refs2(u,type);
   low_check_short_svalue(u,type);
@@ -1500,7 +1500,7 @@ void debug_check_svalue(const struct svalue *s)
   check_type(s->type);
   if(s->type<=MAX_REF_TYPE &&
      ((PIKE_INT32_ALIGNMENT-1) & (ptrdiff_t)(s->u.refs)))
-    fatal("Odd pointer! type=%d u->refs=%p\n",s->type,s->u.refs);
+    Pike_fatal("Odd pointer! type=%d u->refs=%p\n",s->type,s->u.refs);
 
   check_refs(s);
   low_check_short_svalue(& s->u, s->type);
@@ -1564,7 +1564,7 @@ PMOD_EXPORT void real_gc_xmark_svalues(const struct svalue *s, ptrdiff_t num)
       /* Fall through to T_OBJECT. */
 
 #define DO_FUNC_SHORT_SVALUE(U, T, ZAP, GC_DO)				\
-      fatal("Cannot have a function in a short svalue.\n");
+      Pike_fatal("Cannot have a function in a short svalue.\n");
 
 #define DO_CHECK_OBJ(U, T, ZAP, GC_DO)					\
       GC_DO(U.object);							\
@@ -1896,7 +1896,7 @@ void real_gc_free_svalue(struct svalue *s)
 #ifdef PIKE_DEBUG
   if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE &&
       Pike_in_gc != GC_PASS_ZAP_WEAK)
-    fatal("gc_free_svalue() called in invalid gc pass.\n");
+    Pike_fatal("gc_free_svalue() called in invalid gc pass.\n");
 #endif
   if (((1 << s->type) & BIT_COMPLEX) && *(s->u.refs) == 1)
     gc_delayed_free(s->u.refs, s->type);
@@ -1908,7 +1908,7 @@ void real_gc_free_short_svalue(union anything *u, TYPE_T type)
 #ifdef PIKE_DEBUG
   if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE &&
       Pike_in_gc != GC_PASS_ZAP_WEAK)
-    fatal("gc_free_short_svalue() called in invalid gc pass.\n");
+    Pike_fatal("gc_free_short_svalue() called in invalid gc pass.\n");
 #endif
   if (((1 << type) & BIT_COMPLEX) && *u->refs == 1)
     gc_delayed_free(u->refs, type);

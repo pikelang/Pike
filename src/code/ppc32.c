@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.c,v 1.15 2002/05/10 22:16:59 mast Exp $
+ * $Id: ppc32.c,v 1.16 2002/08/15 14:50:24 marcus Exp $
  *
  * Machine code generator for 32 bit PowerPC
  *
@@ -24,7 +24,7 @@
     __asm__("\tmr %0,"PPC_REGNAME(2) : "=r" (toc_));			\
     delta_ = ((char *)func_) - ((char *)toc_);				\
     if(delta_ < -32768 || delta_ > 32767)				\
-      fatal("Function pointer %p out of range for TOC @ %p!\n",		\
+      Pike_fatal("Function pointer %p out of range for TOC @ %p!\n",		\
 	    func_, toc_);						\
     /* lwz r0,delta(r2)	*/						\
     LWZ(0, 2, delta_);							\
@@ -578,14 +578,14 @@ void ppc32_encode_program(struct program *p, struct dynamic_buffer_s *buf)
     INT32 opcode;
 #ifdef PIKE_DEBUG
     if (off < prev) {
-      fatal("Relocations in bad order!\n");
+      Pike_fatal("Relocations in bad order!\n");
     }
 #endif /* PIKE_DEBUG */
     adddata2(p->program + prev, off - prev);
 
 #ifdef PIKE_DEBUG
     if ((p->program[off] & 0xfc000002) != 0x48000000)
-      fatal("Bad relocation: %d, off:%d, opcode: 0x%08x\n",
+      Pike_fatal("Bad relocation: %d, off:%d, opcode: 0x%08x\n",
 	    rel, off, p->program[off]);
 #endif /* PIKE_DEBUG */
     /* Relocate to 0 */
@@ -606,7 +606,7 @@ void ppc32_decode_program(struct program *p)
     PIKE_OPCODE_T *o = prog+p->relocations[rel];
     INT32 disp = *o - (INT32)(void*)o;
     if(disp < -33554432 || disp > 33554431)
-      fatal("Relocation %d out of range!\n", disp);
+      Pike_fatal("Relocation %d out of range!\n", disp);
     *o = 0x48000000 | (disp & 0x03ffffff);
   }
 }

@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image_module.c,v 1.13 2002/05/11 00:24:25 nilsson Exp $");
+RCSID("$Id: image_module.c,v 1.14 2002/08/15 14:50:26 marcus Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -95,7 +95,7 @@ static inline long TO_LONG(ptrdiff_t x)
 #ifdef PIKE_DEBUG
 #define IMAGE_CHECK_STACK(X)	do { \
     if (save_sp != sp) { \
-      fatal("%s:%d: %ld droppings on stack! previous init: %s\n", \
+      Pike_fatal("%s:%d: %ld droppings on stack! previous init: %s\n", \
             __FILE__, __LINE__, TO_LONG(sp - save_sp), X); \
     } \
   } while(0)

@@ -17,7 +17,7 @@
 #include "security.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.37 2002/06/25 14:26:40 grubba Exp $");
+RCSID("$Id: constants.c,v 1.38 2002/08/15 14:49:20 marcus Exp $");
 
 struct mapping *builtin_constants = 0;
 
@@ -91,7 +91,7 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
   {
     struct pike_type *z = check_call(function_type_string, type, 0);
     f->may_return_void = (z == void_type_string);
-    if(!z) fatal("Gnapp!\n");
+    if(!z) Pike_fatal("Gnapp!\n");
     free_type(z);
   }
   f->runs=0;

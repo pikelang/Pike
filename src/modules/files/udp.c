@@ -1,5 +1,5 @@
 /*
- * $Id: udp.c,v 1.36 2002/06/11 10:06:54 grubba Exp $
+ * $Id: udp.c,v 1.37 2002/08/15 14:50:27 marcus Exp $
  */
 
 #define NO_PIKE_SHORTHAND
@@ -7,7 +7,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.36 2002/06/11 10:06:54 grubba Exp $");
+RCSID("$Id: udp.c,v 1.37 2002/08/15 14:50:27 marcus Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -452,7 +452,7 @@ void udp_read(INT32 args)
 	  Pike_error("Out of memory\n");
 #ifdef ENOTSOCK
        case ENOTSOCK:
-	  fatal("reading from non-socket fd!!!\n");
+	  Pike_fatal("reading from non-socket fd!!!\n");
 #endif
        case EWOULDBLOCK:
 	  push_int( 0 );

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.193 2002/08/14 16:27:01 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.194 2002/08/15 14:49:24 marcus Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -294,7 +294,7 @@ void debug_free_type(struct pike_type *t)
       break;
 
     default:
-      fatal("free_type(): Unhandled type-node: %d\n", type);
+      Pike_fatal("free_type(): Unhandled type-node: %d\n", type);
       break;
 #endif /* PIKE_DEBUG */
     }
@@ -378,7 +378,7 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
 	break;
 
       default:
-	fatal("mk_type(): Unhandled type-node: %d\n", type);
+	Pike_fatal("mk_type(): Unhandled type-node: %d\n", type);
 	break;
 #endif /* PIKE_DEBUG */
       }
@@ -464,7 +464,7 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
     break;
 
   default:
-    fatal("mk_type(): Unhandled type-node: %d\n", type);
+    Pike_fatal("mk_type(): Unhandled type-node: %d\n", type);
     break;
   }
 #endif /* DEBUG_MALLOC */
@@ -493,7 +493,7 @@ ptrdiff_t pop_stack_mark(void)
 { 
   Pike_compiler->pike_type_mark_stackp--;
   if(Pike_compiler->pike_type_mark_stackp<pike_type_mark_stack)
-    fatal("Type mark stack underflow\n");
+    Pike_fatal("Type mark stack underflow\n");
 
   TYPE_STACK_DEBUG("pop_stack_mark");
 
@@ -553,7 +553,7 @@ void debug_push_assign_type(int marker)
   marker -= '0';
 #ifdef PIKE_DEBUG 
   if ((marker < 0) || (marker > 9)) {
-    fatal("Bad assign marker: %ld\n", marker);
+    Pike_fatal("Bad assign marker: %ld\n", marker);
   }
 #endif /* PIKE_DEBUG */
 
@@ -620,7 +620,7 @@ void debug_push_type(unsigned INT16 type)
   case PIKE_T_NAME:
   default:
     /* Should not occurr. */
-    fatal("Unsupported argument to push_type().\n");
+    Pike_fatal("Unsupported argument to push_type().\n");
     break;
 
   case T_FLOAT:
@@ -656,7 +656,7 @@ void debug_pop_type_stack(unsigned INT16 expected)
 { 
   struct pike_type *top;
   if(Pike_compiler->type_stackp<type_stack)
-    fatal("Type stack underflow\n");
+    Pike_fatal("Type stack underflow\n");
 
   top = *(Pike_compiler->type_stackp);
   /* Special case... */
@@ -665,7 +665,7 @@ void debug_pop_type_stack(unsigned INT16 expected)
   Pike_compiler->type_stackp--;
 #ifdef PIKE_DEBUG
   if ((top->type != expected) && (top->type != PIKE_T_NAME)) {
-    fatal("Unexpected type on stack: %d (expected %d)\n", top->type, expected);
+    Pike_fatal("Unexpected type on stack: %d (expected %d)\n", top->type, expected);
   }
 #endif /* PIKE_DEBUG */
   /* OPTIMIZE: It looks like this function is always called with
@@ -824,7 +824,7 @@ struct pike_type *debug_pop_unfinished_type(void)
   len = pop_stack_mark();
 
   if (len != 1) {
-    fatal("pop_unfinished_type(): Unexpected len: %d\n", len);
+    Pike_fatal("pop_unfinished_type(): Unexpected len: %d\n", len);
   }
 
   TYPE_STACK_DEBUG("pop_unfinished_type");
@@ -1213,13 +1213,13 @@ struct pike_type *parse_type(char *s)
   internal_parse_type(&s);
 
   if( *s )
-    fatal("Extra junk at end of type definition.\n");
+    Pike_fatal("Extra junk at end of type definition.\n");
 
   ret=pop_unfinished_type();
 
 #ifdef PIKE_DEBUG
   if(ts!=Pike_compiler->type_stackp || ptms!=Pike_compiler->pike_type_mark_stackp)
-    fatal("Type stack whacked in parse_type.\n");
+    Pike_fatal("Type stack whacked in parse_type.\n");
 #endif
 
   return ret;
@@ -2197,7 +2197,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
 #ifdef PIKE_DEBUG
 	if ((m < 0) || (m > 9)) {
-	  fatal("marker out of range: %d\n", m);
+	  Pike_fatal("marker out of range: %d\n", m);
 	}
 #endif /* PIKE_DEBUG */
 
@@ -2228,7 +2228,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 #endif
 #ifdef PIKE_DEBUG
 	if((ptrdiff_t)a_markers[m]->type == m+'0')
-	  fatal("Cyclic type!\n");
+	  Pike_fatal("Cyclic type!\n");
 #endif
       }
       return ret;
@@ -2241,10 +2241,10 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       {
 #ifdef PIKE_DEBUG
 	if(a_markers[m]->type == a->type)
-	  fatal("Cyclic type!\n");
+	  Pike_fatal("Cyclic type!\n");
 	if(a_markers[m]->type == T_OR &&
 	   a_markers[m]->car->type == a->type)
-	  fatal("Cyclic type!\n");
+	  Pike_fatal("Cyclic type!\n");
 #endif
 	return low_match_types(a_markers[m], b, flags);
       }
@@ -2314,7 +2314,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 #endif
 #ifdef PIKE_DEBUG
 	if((ptrdiff_t)b_markers[m]->type == m+'0')
-	  fatal("Cyclic type!\n");
+	  Pike_fatal("Cyclic type!\n");
 #endif
       }
       return ret;
@@ -2327,7 +2327,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       {
 #ifdef PIKE_DEBUG
 	if(b_markers[m]->type == b->type)
-	  fatal("Cyclic type!\n");
+	  Pike_fatal("Cyclic type!\n");
 #endif
 	return low_match_types(a, b_markers[m], flags);
       }
@@ -2602,7 +2602,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     break;
 
   default:
-    fatal("Error in type string.\n");
+    Pike_fatal("Error in type string.\n");
   }
   return ret;
 }
@@ -3140,7 +3140,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     break;
 
   default:
-    fatal("Error in type string.\n");
+    Pike_fatal("Error in type string.\n");
   }
   return 1;
 }
@@ -4103,7 +4103,7 @@ struct pike_type *zzap_function_return(struct pike_type *a, INT32 id)
       return pop_unfinished_type();
   }
 /* This error is bogus /Hubbe
-  fatal("zzap_function_return() called with unexpected value: %d\n",
+  Pike_fatal("zzap_function_return() called with unexpected value: %d\n",
 	EXTRACT_UCHAR(a));
 */
   return NULL;
@@ -4433,7 +4433,7 @@ static struct pike_type *debug_low_make_pike_type(unsigned char *type_string,
   case T_SCOPE:
   case T_ASSIGN:
     if ((type_string[1] < '0') || (type_string[1] > '9')) {
-      fatal("low_make_pike_type(): Bad marker: %d\n", type_string[1]);
+      Pike_fatal("low_make_pike_type(): Bad marker: %d\n", type_string[1]);
     }
     return mk_type(type, (void *)(ptrdiff_t)(type_string[1] - '0'),
 		   low_make_pike_type(type_string+2, cont), PT_COPY_CDR);
@@ -4497,7 +4497,7 @@ static struct pike_type *debug_low_make_pike_type(unsigned char *type_string,
     return mk_type(T_OBJECT, (void *)(ptrdiff_t)(type_string[1]),
 		   (void *)(ptrdiff_t)extract_type_int(type_string+2), 0);
   default:
-    fatal("compile_type_string(): Error in type string %d.\n", type);
+    Pike_fatal("compile_type_string(): Error in type string %d.\n", type);
     /* NOT_REACHED */
     break;
   }
@@ -4564,7 +4564,7 @@ int pike_type_allow_premature_toss(struct pike_type *type)
     case T_VOID:
       return 1;
   default:
-    fatal("pike_type_allow_premature_toss: Unknown type code (%d)\n",
+    Pike_fatal("pike_type_allow_premature_toss: Unknown type code (%d)\n",
 	  ((unsigned char *)type)[-1]);
     /* NOT_REACHED */
     return 0;

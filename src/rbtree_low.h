@@ -3,7 +3,7 @@
  *
  * Created 2001-04-27 by Martin Stjernholm
  *
- * $Id: rbtree_low.h,v 1.1 2001/12/10 00:58:44 mast Exp $
+ * $Id: rbtree_low.h,v 1.2 2002/08/15 14:49:25 marcus Exp $
  */
 
 #ifndef RBTREE_LOW_H
@@ -108,7 +108,7 @@ void rbstack_shift (struct rbstack_ptr rbstack,
   ((rbstack).ssp ? (rbstack).slice->stack[(rbstack).ssp - 1] : NULL)
 
 #define RBSTACK_POKE(rbstack, node) do {				\
-    DO_IF_DEBUG (if (!(rbstack).ssp) fatal ("Using free stack pointer.\n")); \
+    DO_IF_DEBUG (if (!(rbstack).ssp) Pike_fatal ("Using free stack pointer.\n")); \
     (rbstack).slice->stack[(rbstack).ssp - 1] = (node);			\
   } while (0)
 
@@ -255,7 +255,7 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
       rb_num_finds++;							\
     );									\
     while (1) {								\
-      DO_IF_DEBUG (if (!node) fatal ("Recursing into null node.\n"));	\
+      DO_IF_DEBUG (if (!node) Pike_fatal ("Recursing into null node.\n"));	\
       DO_IF_RB_STATS (							\
 	if (++stat_depth_count_ > rb_max_depth)				\
 	  rb_max_depth = stat_depth_count_;				\
@@ -301,7 +301,7 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
       rb_num_finds++;							\
     );									\
     while (1) {								\
-      DO_IF_DEBUG (if (!node) fatal ("Recursing into null node.\n"));	\
+      DO_IF_DEBUG (if (!node) Pike_fatal ("Recursing into null node.\n"));	\
       DO_IF_RB_STATS (							\
 	if (++stat_depth_count_ > rb_max_depth)				\
 	  rb_max_depth = stat_depth_count_;				\
@@ -316,7 +316,7 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
 	(node) = (node)->prev;						\
       }									\
       else {								\
-	DO_IF_DEBUG (if (!cmp_res) fatal ("cmp_res 0 not expected.\n")); \
+	DO_IF_DEBUG (if (!cmp_res) Pike_fatal ("cmp_res 0 not expected.\n")); \
 	if ((node)->flags & RB_THREAD_NEXT) {				\
 	  {got_lt;}							\
 	  break;							\
@@ -331,7 +331,7 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
 #define LOW_RB_TRACK(rbstack, node, cmp, got_lt, got_eq, got_gt)	\
   do {									\
     DO_IF_DEBUG (							\
-      if (RBSTACK_PEEK (rbstack)) fatal ("The stack is not empty.\n");	\
+      if (RBSTACK_PEEK (rbstack)) Pike_fatal ("The stack is not empty.\n");	\
     );									\
     DO_IF_RB_STATS (rb_num_finds--);					\
     LOW_RB_FIND (							\
@@ -352,7 +352,7 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
 #define LOW_RB_TRACK_NEQ(rbstack, node, cmp, got_lt, got_gt)		\
   do {									\
     DO_IF_DEBUG (							\
-      if (RBSTACK_PEEK (rbstack)) fatal ("The stack is not empty.\n");	\
+      if (RBSTACK_PEEK (rbstack)) Pike_fatal ("The stack is not empty.\n");	\
     );									\
     DO_IF_RB_STATS (rb_num_finds--);					\
     LOW_RB_FIND_NEQ (							\
@@ -369,7 +369,7 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
 #define LOW_RB_TRACK_FIRST(rbstack, node)				\
   do {									\
     DO_IF_DEBUG (							\
-      if (RBSTACK_PEEK (rbstack)) fatal ("The stack is not empty.\n");	\
+      if (RBSTACK_PEEK (rbstack)) Pike_fatal ("The stack is not empty.\n");	\
     );									\
     DO_IF_RB_STATS (rb_num_sidetracks++);				\
     if (node) {								\
@@ -389,7 +389,7 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
   do {									\
     DO_IF_DEBUG (							\
       if (node != RBSTACK_PEEK (rbstack))				\
-	fatal ("Given node is not on top of stack.\n");			\
+	Pike_fatal ("Given node is not on top of stack.\n");			\
     );									\
     DO_IF_RB_STATS (rb_num_sidetracks++);				\
     if (node->flags & RB_THREAD_NEXT) {					\
@@ -415,7 +415,7 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
   do {									\
     DO_IF_DEBUG (							\
       if (node != RBSTACK_PEEK (rbstack))				\
-	fatal ("Given node is not on top of stack.\n");			\
+	Pike_fatal ("Given node is not on top of stack.\n");			\
     );									\
     DO_IF_RB_STATS (rb_num_sidetracks++);				\
     if (node->flags & RB_THREAD_PREV) {					\

@@ -32,7 +32,7 @@ PCHARP PxC3(NAME,NSHIFT,N)(void *s,	\
     INTERCASE(NAME,1);				\
     INTERCASE(NAME,2);				\
   }                                             \
-  fatal("Illegal shift\n");                     \
+  Pike_fatal("Illegal shift\n");                     \
   return haystack;	/* NOT_REACHED */	\
 }						\
 						\
@@ -73,7 +73,7 @@ int NameN(init_hubbe_search)(struct hubbe_searcher *s,
 
 #ifdef PIKE_DEBUG
   if(needlelen < 7)
-    fatal("hubbe search does not work with search strings shorter than 7 characters!\n");
+    Pike_fatal("hubbe search does not work with search strings shorter than 7 characters!\n");
 #endif
   
 #ifdef TUNAFISH
@@ -166,7 +166,7 @@ void NameN(init_boyer_moore_hubbe)(struct boyer_moore_hubbe_searcher *s,
 
 #ifdef PIKE_DEBUG
   if(needlelen < 2)
-    fatal("boyer-boore-hubbe search does not work with single-character search strings!\n");
+    Pike_fatal("boyer-boore-hubbe search does not work with single-character search strings!\n");
 #endif
   
 #ifdef TUNAFISH

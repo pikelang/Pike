@@ -22,7 +22,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.85 2002/05/31 22:41:23 nilsson Exp $");
+RCSID("$Id: error.c,v 1.86 2002/08/15 14:49:21 marcus Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -76,7 +76,7 @@ PMOD_EXPORT void check_recovery_context(void)
 	    DO_NOT_WARN((long)TESTILITEST));
     fprintf(stderr, "Last recovery was added at %s\n",
 	    Pike_interpreter.recoveries->file);
-    fatal("Recoveries is out biking (Pike_interpreter.recoveries=%p, Pike_sp=%p, %ld)!\n",
+    Pike_fatal("Recoveries is out biking (Pike_interpreter.recoveries=%p, Pike_sp=%p, %ld)!\n",
 	  Pike_interpreter.recoveries, &foo,
 	  DO_NOT_WARN((long)TESTILITEST));
   }
@@ -121,18 +121,18 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
   }
 
   if(!Pike_interpreter.recoveries)
-    fatal("No error recovery context.\n");
+    Pike_fatal("No error recovery context.\n");
 
 #ifdef PIKE_DEBUG
   if(Pike_sp - Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
-    fatal("Stack error in error.\n");
+    Pike_fatal("Stack error in error.\n");
 #endif
 
   while(Pike_fp != Pike_interpreter.recoveries->frame_pointer)
   {
 #ifdef PIKE_DEBUG
     if(!Pike_fp)
-      fatal("Popped out of stack frames.\n");
+      Pike_fatal("Popped out of stack frames.\n");
 #endif
     POP_PIKE_FRAME();
   }
@@ -196,7 +196,7 @@ void DECLSPEC(noreturn) va_error(const char *fmt, va_list args) ATTRIBUTE((noret
   {
     const char *tmp=in_error;
     in_error=0;
-    fatal("Recursive error() calls, original error: %s",tmp);
+    Pike_fatal("Recursive error() calls, original error: %s",tmp);
   }
 
   in_error=buf;
@@ -218,7 +218,7 @@ void DECLSPEC(noreturn) va_error(const char *fmt, va_list args) ATTRIBUTE((noret
   }
 
   if((size_t)strlen(buf) >= (size_t)sizeof(buf))
-    fatal("Buffer overflow in error()\n");
+    Pike_fatal("Buffer overflow in error()\n");
   
   low_error(buf);
 }
@@ -234,7 +234,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name, const char *text
   {
     const char *tmp=in_error;
     in_error=0;
-    fatal("Recursive error() calls, original error: %s",tmp);
+    Pike_fatal("Recursive error() calls, original error: %s",tmp);
   }
 
   in_error=text;
@@ -566,7 +566,7 @@ DECLSPEC(noreturn) void generic_error_va(struct object *o,
   VSPRINTF(buf, fmt, foo);
 
   if(buf[sizeof(buf)-1])
-    fatal("Buffer overflow in error()\n");
+    Pike_fatal("Buffer overflow in error()\n");
 #endif /* HAVE_VSNPRINTF */
   in_error=buf;
 
@@ -591,7 +591,7 @@ DECLSPEC(noreturn) void generic_error_va(struct object *o,
   }
 
   if(Pike_sp[-1].type!=PIKE_T_ARRAY)
-    fatal("Error failed to generate a backtrace!\n");
+    Pike_fatal("Error failed to generate a backtrace!\n");
 
   ERROR_STRUCT(generic,o)->backtrace=Pike_sp[-1].u.array;
   Pike_sp--;

@@ -1,5 +1,5 @@
 /*
- * $Id: fsort_template.h,v 1.10 2001/09/24 17:07:13 grubba Exp $
+ * $Id: fsort_template.h,v 1.11 2002/08/15 14:49:21 marcus Exp $
  */
 
 #ifndef SWAP
@@ -82,7 +82,7 @@ static void MKNAME(_do_sort)(register TYPE *bas,
 	if(d_flag>1)
 	  for(x=howmany-1;x;x--)
 	    if( CMP( STEP(bas,x-1), STEP(bas,x)  ) > 0)
-	      fatal("Sorting failed!\n");
+	      Pike_fatal("Sorting failed!\n");
 #endif
 	
 	return;

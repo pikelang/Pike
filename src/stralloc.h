@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.65 2002/05/31 22:41:26 nilsson Exp $
+ * $Id: stralloc.h,v 1.66 2002/08/15 14:49:25 marcus Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -78,8 +78,8 @@ PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo);
 #define LOW_SUBTRACT_PCHARP(X,Y) (LOW_COMPARE_PCHARP((X),-,(Y))>>(X).shift)
 
 #ifdef PIKE_DEBUG
-#define SUBTRACT_PCHARP(X,Y)    ((X).shift!=(Y).shift?(fatal("Subtracting different size charp!\n")),0:LOW_SUBTRACT_PCHARP((X),(Y)))
-#define COMPARE_PCHARP(X,CMP,Y) ((X).shift!=(Y).shift?(fatal("Subtracting different size charp!\n")),0:LOW_COMPARE_PCHARP((X),CMP,(Y)))
+#define SUBTRACT_PCHARP(X,Y)    ((X).shift!=(Y).shift?(Pike_fatal("Subtracting different size charp!\n")),0:LOW_SUBTRACT_PCHARP((X),(Y)))
+#define COMPARE_PCHARP(X,CMP,Y) ((X).shift!=(Y).shift?(Pike_fatal("Subtracting different size charp!\n")),0:LOW_COMPARE_PCHARP((X),CMP,(Y)))
 #else
 #define SUBTRACT_PCHARP(X,Y) LOW_SUBTRACT_PCHARP((X),(Y))
 #define COMPARE_PCHARP(X,CMP,Y) LOW_COMPARE_PCHARP((X),CMP,(Y))
