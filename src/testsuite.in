@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.715 2004/04/16 17:03:47 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.716 2004/04/21 18:55:25 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7495,6 +7495,19 @@ test_eq([[cpp("#define FOO(X) X\nFOO(\"\\\n\")\n")]], "# 1 \"-\"\n\n\n \"\" \n")
 test_eq([[cpp("#define FOO(X) X\r\nFOO(\"\\\r\n\")\r\n")]], "# 1 \"-\"\n\n\n \"\"  \n" /* Note: Added extra space for \r. */);
 test_equal([[compile_string("#define FOO(X) X\nstring s=FOO(\"\\\n\\\n\");\nmixed f() {return ({__LINE__, backtrace()[-1][1]});}\n")()->f()]], ({5, 5}));
 test_equal([[compile_string("#define FOO(X) X\nstring s=FOO(#\"\n\n\");\nmixed f() {return ({__LINE__, backtrace()[-1][1]});}\n")()->f()]], ({5, 5}));
+test_do([[
+#define FOO(X) X
+string s = FOO (#"a
+b
+c");
+]]);
+test_any([[
+#define FOO(X) X
+FOO ("\
+\
+");
+return __LINE__;
+]], 6);
 
 test_eq([[compile_string(#"
 #define Y(y) #y
@@ -8478,7 +8491,7 @@ cond([[all_constants()->thread_create]],
   test_any([[
     string file = #"
 /*
- * Attempt to trigg the lex.current_file == NULL bug.
+ * Attempt to trig the lex.current_file == NULL bug.
  *
  * Henrik Grubbström 1999-07-01
  */
