@@ -834,7 +834,7 @@ void do_html_parse_lines(struct pike_string *ss,
 	free_svalue(&sval1);
 	(*strings)++;
 	free_svalue(&sval2);
-	find_endtag(sval2.u.string ,s+j, len-j, &l); // bug /law 960805
+	find_endtag(sval2.u.string ,s+j, len-j, &l); /* bug /law 960805 */
 	j+=l;
 	i=last=j;
 	continue;
