@@ -2476,7 +2476,7 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
    {
 //        nfmt=replace(fmt," %","%*[ \t]%"); // whitespace -> whitespace
 #define ALNU "%[^- -,./:-?[-`{-¿]"
-#define AMPM "%[ampAMP]"
+#define AMPM "%[ampAMP.]"
 #define NUME "%[0-9]"
 #define ZONE "%[-+0-9A-Za-z/]"
       nfmt=replace(fmt,
@@ -2642,7 +2642,7 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 
       if (!zero_type(m->p))
       {
-	 switch (lower_case(m->p))
+	 switch (lower_case(m->p)-".")
 	 {
 	    case "am": 
 	       if (h==12) h=0;
