@@ -1,0 +1,90 @@
+#!/bin/sh
+
+(
+cat <<\EOF
+divert(-1)
+
+dnl generates a script that is supposed to test Pike
+dnl note that not everything is tested yet, you are welcome to
+dnl submit more tests.
+
+changequote([[,]])
+changecom
+
+define(SEPARATOR,[[....]])
+define(CONDITION,[[]])
+
+define(DOTEST,[[dnl
+divert(0)dnl
+define([[TESTNO]],incr(TESTNO))dnl
+CONDITION()test TESTNO, expected result: [[$1]]
+[[$2]]
+SEPARATOR
+divert(-1)dnl]])
+
+define(test_any, [[DOTEST(EQ,dnl
+mixed a() { [[$1]]; }
+mixed b() { return [[$2]]; })]])
+
+define(test_eq,[[DOTEST(EQ,dnl
+mixed a() { return [[$1]]; }
+mixed b() { return [[$2]]; })]])
+
+define(test_equal,[[DOTEST(EQUAL,dnl
+mixed a() { return [[$1]]; }
+mixed b() { return [[$2]]; })]])
+
+define(test_do,[[DOTEST(RUN,dnl
+mixed a() { [[$1]]; })]])
+
+define(test_true, [[DOTEST(TRUE,dnl
+mixed a() { return [[$1]]; })]])
+
+define(test_false, [[DOTEST(FALSE,dnl
+mixed a() { return [[$1]]; })]])
+
+define(test_compile_error,[[DOTEST(COMPILE_ERROR,dnl
+mixed a() { [[$1]]; })]])
+
+define(test_compile_error_low,[[DOTEST(COMPILE_ERROR,dnl
+[[$1]])]])
+
+define(test_eval_error,[[DOTEST(EVAL_ERROR,dnl
+mixed a() { [[$1]]; })]])
+
+define(test_define_program,[[DOTEST(RUN,dnl
+void a() { master()->add_precompiled_program("[[$1]]",class {
+  [[$2]]
+});})]])
+
+define(test_program, [[DOTEST(TRUE,dnl
+[[$1]])]])
+
+define(cond,[[
+define([[CONDITION]],[[COND $1
+]])
+$2
+define([[CONDITION]],[[]])
+]])
+define(ifefun,[[cond([[all_efuns()->$1]],[[$2]])]])
+
+define(TESTNO,0)
+
+// testing < > <= >=
+define([[test_cmp]],[[
+test_true($1<$2)
+test_false($1>$2)
+test_true($2>$1)
+test_false($2<$1)
+test_true($1<=$2)
+test_false($1>=$2)
+test_true($2>=$1)
+test_false($2<=$1)
+test_true($2<=$2)
+test_true($1>=$1) ]])
+
+EOF
+
+cat $1
+) | m4
+

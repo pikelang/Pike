@@ -74,7 +74,7 @@ int main(int argc, string *argv)
     tests=(clone((program)"/precompiled/file","stdin")->read(0x7fffffff)||"")/"\n....\n";
   }
 
-  if(!tests || sizeof(tests) < 10)
+  if(!tests)
   {
     perror("Failed to read test file!\n");
     exit(1);
@@ -216,12 +216,6 @@ int main(int argc, string *argv)
   if(errors + successes != sizeof(tests))
   {
     perror("Errors + Successes != number of tests!\n");
-    errors++;
-  }
-
-  if(successes < 5000)
-  {
-    perror("Tests are missing!\n");
     errors++;
   }
 
