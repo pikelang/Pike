@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gettext.c,v 1.19 2003/10/16 00:39:06 nilsson Exp $
+|| $Id: gettext.c,v 1.20 2003/10/16 01:11:43 nilsson Exp $
 */
 
 #include "global.h"
@@ -29,7 +29,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: gettext.c,v 1.19 2003/10/16 00:39:06 nilsson Exp $");
+RCSID("$Id: gettext.c,v 1.20 2003/10/16 01:11:43 nilsson Exp $");
 
 /*! @module Locale
  */
@@ -177,10 +177,13 @@ void f_textdomain(INT32 args)
   if (args != 0 && args != 1)
     Pike_error( "Wrong number of arguments to Gettext.textdomain()\n" );
 
-  if(sp[-args].type == T_STRING)
-    domain = sp[-args].u.string->str;
-  else if(!(sp[-args].type == T_INT && sp[-args].u.integer == 0))
-    Pike_error( "Bad argument 1 to Gettext.textdomain(), expected string|void\n" );
+  if(args) {
+    if(sp[-args].type == T_STRING)
+      domain = sp[-args].u.string->str;
+    else if(!(sp[-args].type == T_INT && sp[-args].u.integer == 0))
+      Pike_error( "Bad argument 1 to Gettext.textdomain(), "
+		  "expected string|void\n" );
+  }
   returnstring = textdomain(domain);
   pop_n_elems(args);
   push_string(make_shared_string(returnstring));
