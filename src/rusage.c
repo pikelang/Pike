@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.25 2003/01/13 02:07:04 mast Exp $
+|| $Id: rusage.c,v 1.26 2003/01/13 03:42:21 mast Exp $
 */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 #include <errno.h>
 #include "pike_rusage.h"
 
-RCSID("$Id: rusage.c,v 1.25 2003/01/13 02:07:04 mast Exp $");
+RCSID("$Id: rusage.c,v 1.26 2003/01/13 03:42:21 mast Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -40,7 +40,7 @@ RCSID("$Id: rusage.c,v 1.25 2003/01/13 02:07:04 mast Exp $");
  * cpu usage.
  */
 
-#if defined (HAVE_TIMES) && !defined (CLK_TCK)
+#if defined (HAVE_TIMES) && !defined (CLK_TCK) && defined (_SC_CLK_TCK)
 #define CLK_TCK sysconf(_SC_CLK_TCK)
 #endif
 
@@ -210,7 +210,7 @@ int pike_get_rusage(pike_rusage_t rusage_values)
 
 #else /* HAVE_GETRUSAGE */
 
-#if defined(HAVE_TIMES) && (defined(CLK_TCK) || defined(_SC_CLK_TCK))
+#if defined(HAVE_TIMES) && defined(CLK_TCK)
 
 int pike_get_rusage(pike_rusage_t rusage_values)
 {
@@ -284,6 +284,13 @@ cpu_time_t get_cpu_time (void)
     return 0;
 }
 
+#elif defined (HAVE_GETHRVTIME)
+
+cpu_time_t get_cpu_time (void)
+{
+  return gethrvtime() * (CPU_TIME_TICKS / 1000000000);
+}
+
 #elif defined (GETRUSAGE_THROUGH_PROCFS)
 
 cpu_time_t get_cpu_time (void)
@@ -312,12 +319,12 @@ cpu_time_t get_cpu_time (void)
 
   return
     prs.pr_utime.tv_sec * CPU_TIME_TICKS +
-    prs.pr_utime.tv_nsec * (CPU_TIME_TICKS / 1000000) +
+    prs.pr_utime.tv_nsec * (CPU_TIME_TICKS / 1000000000) +
     prs.pr_stime.tv_sec * CPU_TIME_TICKS +
-    prs.pr_stime.tv_nsec * (CPU_TIME_TICKS / 1000000);
+    prs.pr_stime.tv_nsec * (CPU_TIME_TICKS / 1000000000);
 }
 
-#elif defined (HAVE_TIMES) && (defined (CLK_TCK) || defined (_SC_CLK_TCK))
+#elif defined (HAVE_TIMES) && defined (CLK_TCK)
 
 /* Prefer times() over clock() since CLK_TCK isn't defined by POSIX to
  * some constant and it thus lies closer to the real accurancy.
@@ -327,9 +334,11 @@ cpu_time_t get_cpu_time (void)
 cpu_time_t get_cpu_time (void)
 {
   struct tms tms;
+  clock_t ticks;
   if (times (&tms) == (clock_t) -1)
     return 0;
-  return CONVERT_TIME (tms.tms_utime + tms.tms_stime, CLK_TCK, CPU_TIME_TICKS);
+  ticks = CLK_TCK;
+  return CONVERT_TIME (tms.tms_utime + tms.tms_stime, ticks, CPU_TIME_TICKS);
 }
 
 #elif defined (HAVE_CLOCK) && defined (CLOCKS_PER_SEC)
