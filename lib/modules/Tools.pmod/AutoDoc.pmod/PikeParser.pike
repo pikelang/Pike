@@ -88,7 +88,7 @@ void skipUntil(multiset(string)|string tokens) {
 // PARSING OF PIKE SOURCE FILES
 //========================================================================
 
-static class Token {
+class Token {
   SourcePosition position;
   string text;
   string _sprintf() { return sprintf("Token(%O, %O)", position, text); }
@@ -607,7 +607,7 @@ static private array(string) special(array(string) in) {
   return ret;
 }
 
-static private array(Token) tokenize(string s, string filename, int line) {
+array(Token) tokenize(string s, string filename, int line) {
   array(string) a = special(Parser.Pike.split(s)) + ({ EOF });
   array(Token) t = ({ });
   for(int i = 0; i < sizeof(a); ++i) {
@@ -626,22 +626,31 @@ static private array(Token) tokenize(string s, string filename, int line) {
       continue;
     t += ({ tok });
   }
-
   return t;
 }
 
+void setTokens(array(Token) t) { tokens = t; tokenPtr = 0; }
+
 // create(string, filename, firstline)
-static void create(string s, string|SourcePosition filename, int|void line) {
-  if (objectp(filename)) {
-    line = filename->firstline;
-    filename = filename->filename;
+// create(array(Token))
+static void create(string|void s,
+                   string|SourcePosition|void filename,
+                   int|void line)
+{
+  if (s) {
+    if (objectp(filename)) {
+      line = filename->firstline;
+      filename = filename->filename;
+    }
+    if (!line)
+    {
+      werror("PikeParser::create() called without line arg: %s", describe_backtrace(backtrace()));
+      exit(1);
+    }
+    tokens = tokenize(s, filename, line);
   }
-  if (!line)
-  {
-    werror("PikeParser::create() called without line arg: %s", describe_backtrace(backtrace()));
-    exit(1);
-  }
-  tokens = tokenize(s, filename, line);
+  else
+    tokens = ({});
   //  werror("PikeParser::create(), tokens = \n%O\n", tokens);
   tokenPtr = 0;
 }

@@ -20,8 +20,38 @@ static private class Extractor {
   static private .PikeParser parser;
 
   static void create(string s, string filename) {
-    parser = .PikeParser(s, filename, 1);
+    parser = .PikeParser();
+    array(object/*. PikeParser.Token */) a = parser->tokenize(s, filename, 1);
+    array(object) tokens = ({});
+    // the source positions of the @ignore directives.
+    array(SourcePosition) ignores = ({});
+    foreach(a, object token) {
+      string s = token->text;
+      SourcePosition pos = token->position;
+      int ignoreline = 0;
+      if (has_prefix(s, DOC_COMMENT)) {
+        s = String.trim_all_whites(s[strlen(DOC_COMMENT) .. ]);
+        ignoreline = 1;
+        if (s == "@ignore")
+          ignores = ({ pos }) + ignores;
+        else if (s == "@endignore")
+          if (sizeof(ignores))
+            ignores = ignores[1 .. ];
+          else
+            throw (AutoDocError(pos, "PikeExtractor",
+                                "@endignore without matching @ignore"));
+        else
+          ignoreline = 0;
+      }
+      if (sizeof(ignores) == 0 && !ignoreline)
+        tokens += ({ token });
+    }
+    if (sizeof(ignores))
+      throw (AutoDocError(ignores[0], "PikeExtractor",
+                          "@ignore without matchin @endignore"));
+    parser->setTokens(tokens);
   }
+
   static void extractorError(string message, mixed ... args) {
     message = sprintf(message, @args);
     throw (AutoDocError(parser->currentPosition, "PikeExtractor", message));
