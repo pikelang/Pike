@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: pcx.c,v 1.2 1999/04/09 04:50:43 hubbe Exp $");
+RCSID("$Id: pcx.c,v 1.3 1999/04/09 23:19:00 per Exp $");
 
 #include "config.h"
 
@@ -17,6 +17,8 @@ RCSID("$Id: pcx.c,v 1.2 1999/04/09 04:50:43 hubbe Exp $");
 #include "mapping.h"
 #include "error.h"
 #include "stralloc.h"
+#include "builtin_functions.h"
+#include "operators.h"
 #include "dynamic_buffer.h"
 
 #include "image.h"
@@ -95,7 +97,7 @@ void get_rle_decoded_from_data( unsigned char *dest, struct buffer * source,
   {
     unsigned char *c = get_chunk( source, nelems );
     if(c)
-      MEMCPY( dest, source, nelems );
+      MEMCPY( dest, c, nelems );
     else
       MEMSET( dest, 0, nelems );
     return;
@@ -135,7 +137,7 @@ static void load_rgb_pcx( struct pcx_header *hdr, struct buffer *b,
 
   for(y=0; y<height; y++)
   {
-    get_rle_decoded_from_data( line, b,hdr->bytesperline*hdr->planes, hdr, &state );
+    get_rle_decoded_from_data(line, b,hdr->bytesperline*hdr->planes, hdr, &state);
     /* rrrr... ggg... bbb.. */
     for(x=0; x<width; x++)
     {
@@ -335,23 +337,247 @@ void image_pcx__decode( INT32 args )
 
 
 
-static struct pike_string *param_raw;
-
-/* TODO: */
+static struct pike_string *opt_raw,  *opt_dpy,  *opt_xdpy,  *opt_colortable,
+                          *opt_ydpy,  *opt_xoffset, *opt_yoffset;
 /*
-** method string encode(object image)
-** method string encode(object image, mapping options)
-** 	Encodes a Targa image. 
-**
-**     The <tt>options</tt> argument may be a mapping
-**	containing zero or more encoding options:
-**
-**	<pre>
-**	normal options:
-**	    "raw":1
-**		Do not RLE encode the image
-**	</pre>
+**! method string encode(object image)
+**! method string encode(object image, mapping options)
+**! method string _encode(object image)
+**! method string _encode(object image, mapping options)
+**! 	Encodes a PCX image.  The _encode and the encode functions are identical
+**!
+**!     The <tt>options</tt> argument may be a mapping
+**!	containing zero or more encoding options:
+**!
+**!	<pre>
+**!	normal options:
+**!	    "raw":1
+**!		Do not RLE encode the image
+**!	    "dpy":int
+**!	    "xdpy":int
+**!	    "ydpy":int
+**!		Image resolution (in pixels/inch, integer numbers)
+**!	    "xoffset":int
+**!	    "yoffset":int
+**!		Image offset (not used by most programs, but gimp uses it)
+**!	</pre>
 */
+
+struct options
+{
+  int raw;
+  int offset_x, offset_y;
+  int hdpi, vdpi;
+  struct neo_colortable *colortable;
+};
+
+
+static void f_rle_encode( INT32 args )
+{
+  struct pike_string *data;
+  struct string_builder result;
+  unsigned char value, *source;
+  unsigned char nelems;
+  int i;
+  get_all_args( "rle_encode", args, "%S", &data );
+  init_string_builder( &result, 0 );
+
+  source = (unsigned char *)data->str;
+  for(i=0; i<data->len;)
+  {
+    value = *(source++);
+    nelems = 1;
+    i++;
+    while( i<data->len && nelems<63 && *source == value)
+    {
+      nelems++;
+      source++;
+      i++;
+    }
+    if(nelems == 1 && value < 0xC0 )
+      string_builder_putchar( &result, value );
+    else
+    {
+      string_builder_putchar( &result, 0xC0 + nelems );
+      string_builder_putchar( &result, value );
+    }
+  }
+/*   fprintf(stderr, "RLE encode source len = %d;  dest len = %d\n", */
+/*           sp[-1].u.string->len, result.s->len ); */
+  pop_n_elems( args );
+  push_string( finish_string_builder( &result ));
+}
+
+static struct pike_string *encode_pcx_24( struct pcx_header *pcx_header,
+                                          struct image *data,
+                                          struct options *opts )
+{
+  struct pike_string *b;
+  int x, y;
+  char *buffer;
+  rgb_group *s;
+  
+  pcx_header->planes = 3;
+
+  push_string( make_shared_binary_string( (char *)pcx_header, 
+                                          sizeof(struct pcx_header) ) );
+  
+  buffer = malloc(data->xsize*data->ysize*3);
+  s = data->img;
+  for(y=0; y<data->ysize; y++)
+  {
+    unsigned char *line = buffer+y*data->xsize*3;
+    for(x=0; x<data->xsize; x++)
+    {
+      line[x] = s->r;
+      line[x+data->xsize] = s->g;
+      line[x+data->xsize*2] = s->b;
+      s++;
+    }
+  }
+  push_string(make_shared_binary_string(buffer,data->xsize*data->ysize*3));
+  free(buffer);
+
+  if(pcx_header->rle_encoded)
+    f_rle_encode( 1 );
+
+  f_add( 2 );
+  b = sp[-1].u.string;
+  sp--;
+  return b;
+}
+
+
+static struct pike_string *encode_pcx_8( struct pcx_header *pcx_header,
+                                         struct image *data,
+                                         struct options *opts )
+{
+  struct pike_string *b;
+  int x, y;
+  char *buffer;
+
+  pcx_header->planes = 1;
+  push_string( make_shared_binary_string( (char *)pcx_header, 
+                                          sizeof(struct pcx_header) ) );
+
+
+  buffer = malloc(data->xsize*data->ysize);
+  image_colortable_index_8bit_image( opts->colortable,
+                                     data->img, buffer, data->xsize*data->ysize,
+                                     data->xsize );
+  push_string(make_shared_binary_string(buffer,data->xsize*data->ysize));
+  free(buffer);
+
+  if(pcx_header->rle_encoded)
+    f_rle_encode( 1 );
+
+  {
+    char data[256*3+1];
+    MEMSET(data, 0x0c, 256*3+1);
+    image_colortable_write_rgb(opts->colortable, data+1);
+    push_string(make_shared_binary_string(data,256*3+1));
+  }
+
+  f_add( 3 );
+  b = sp[-1].u.string;
+  sp--;
+  return b;
+}
+
+static struct pike_string *low_pcx_encode(struct image *data,struct options *opts)
+{
+  struct pcx_header pcx_header;
+  pcx_header.x1 = opts->offset_x;
+  pcx_header.x2 = opts->offset_x+data->xsize-1;
+  pcx_header.y1 = opts->offset_y;
+  pcx_header.y2 = opts->offset_y+data->ysize-1;
+  pcx_header.hdpi = opts->hdpi;
+  pcx_header.vdpi = opts->vdpi;
+  pcx_header.bytesperline = data->xsize;
+  pcx_header.rle_encoded = opts->raw?0:1;
+  pcx_header.manufacturer = 10;
+  pcx_header.version = 5;
+  pcx_header.reserved = 0;
+  pcx_header.bpp = 8;
+  MEMSET(pcx_header.palette, 0, 48);
+  MEMSET(pcx_header.filler, 0, 58);
+  pcx_header.color = 1;
+#if BYTEORDER == 1234
+  SWAP_S(pcx_header.hdpi);
+  SWAP_S(pcx_header.vdpi);
+  SWAP_S(pcx_header.x1);
+  SWAP_S(pcx_header.y1);
+  SWAP_S(pcx_header.x2);
+  SWAP_S(pcx_header.y2);
+  SWAP_S(pcx_header.bytesperline);
+  SWAP_S(pcx_header.color);
+#endif
+  if(!opts->colortable)
+    return encode_pcx_24( &pcx_header, data, opts );
+  return encode_pcx_8( &pcx_header, data, opts );
+}
+
+static int parameter_int(struct svalue *map,struct pike_string *what,
+                         INT32 *p)
+{
+   struct svalue *v;
+   v=low_mapping_string_lookup(map->u.mapping,what);
+   if (!v || v->type!=T_INT) 
+     return 0;
+   *p=v->u.integer;
+   return 1;
+}
+
+static int parameter_colortable(struct svalue *map,struct pike_string *what,
+                                struct neo_colortable **p)
+{
+   struct svalue *v;
+   v=low_mapping_string_lookup(map->u.mapping,what);
+   if (!v || v->type!=T_OBJECT) return 0;
+   if( !(*p = (struct neo_colortable *)get_storage( v->u.object, image_colortable_program )))
+     return 0;
+   return 1;
+}
+
+void image_pcx_encode( INT32 args )
+{
+  struct options c;
+  struct pike_string *res;
+  struct object *i;
+  struct image *img;
+  ONERROR onerr;
+
+  get_all_args( "Image.PCX.encode", args, "%o", &i );
+
+  if(!get_storage( i, image_program ))
+    error("Invalid object argument to Image.PCX.encode\n");
+
+  img = ((struct image *)get_storage( i, image_program ));
+  
+  MEMSET(&c, sizeof(c), 0);
+  c.hdpi = 150;
+  c.vdpi = 150;
+  c.raw = 0;
+  c.offset_x = c.offset_y = 0;
+  c.colortable = 0;
+  if(args > 1)
+  {
+    int dpy;
+    if(sp[-args+1].type != T_MAPPING)
+      error("Invalid argument 2 to Image.PCX.encode. Expected mapping.\n");
+    parameter_int( sp-args+1, opt_raw, &c.raw );
+    if(parameter_int( sp-args+1, opt_dpy, &dpy ))
+      c.hdpi = c.vdpi = dpy;
+    parameter_int( sp-args+1, opt_xdpy, &c.hdpi );
+    parameter_int( sp-args+1, opt_ydpy, &c.vdpi );
+    parameter_int( sp-args+1, opt_xoffset, &c.offset_x );
+    parameter_int( sp-args+1, opt_yoffset, &c.offset_y );
+    parameter_colortable( sp-args+1, opt_colortable, &c.colortable );
+  }
+  res = low_pcx_encode( img, &c );
+  pop_n_elems( args );
+  push_string( res );
+}
 
 static struct program *image_encoding_pcx_program=NULL;
 void init_image_pcx( )
@@ -361,8 +587,10 @@ void init_image_pcx( )
                 "function(string:mapping(string:object))", 0);
   add_function( "decode", image_pcx_decode, 
                 "function(string:object)", 0);
-/*   add_function( "encode", image_pcx_encode,  */
-/*                 "function(object,mapping|void:string)", 0); */
+  add_function( "encode", image_pcx_encode, 
+                "function(object,mapping|void:string)", 0);
+  add_function( "_encode", image_pcx_encode, 
+                "function(object,mapping|void:string)", 0);
   image_encoding_pcx_program=end_program();
 
   push_object(clone_object(image_encoding_pcx_program,0));
@@ -371,7 +599,13 @@ void init_image_pcx( )
     add_constant(s,sp-1,0);
     free_string(s);
   }
-  param_raw=make_shared_string("raw");
+  opt_raw=make_shared_string("raw");
+  opt_dpy=make_shared_string("dpy");
+  opt_xdpy=make_shared_string("xdpy");
+  opt_ydpy=make_shared_string("ydpy");
+  opt_xoffset=make_shared_string("xoffset");
+  opt_colortable=make_shared_string("colortable");
+  opt_yoffset=make_shared_string("yoffset");
 }
 
 void exit_image_pcx(void)
@@ -380,6 +614,12 @@ void exit_image_pcx(void)
   {
     free_program(image_encoding_pcx_program);
     image_encoding_pcx_program=0;
-    free_string(param_raw);
+    free_string(opt_raw);
+    free_string(opt_dpy);
+    free_string(opt_xdpy);
+    free_string(opt_ydpy);
+    free_string(opt_xoffset);
+    free_string(opt_colortable);
+    free_string(opt_yoffset);
   }
 }
