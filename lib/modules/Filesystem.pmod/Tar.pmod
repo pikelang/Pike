@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.13 2002/03/09 18:15:12 nilsson Exp $
+ * $Id: Tar.pmod,v 1.14 2002/03/13 12:13:05 grubba Exp $
  */
 
 #pike __REAL_VERSION__
@@ -73,6 +73,30 @@ class _Tar  // filesystem
     int pos;
     int pseudo;
 
+    // Header description:
+    //
+    // Fieldno	Offset	len	Description
+    // 
+    // 0	0	100	Filename
+    // 1	100	8	Mode (octal)
+    // 2	108	8	uid (octal)
+    // 3	116	8	gid (octal)
+    // 4	124	12	size (octal)
+    // 5	136	12	mtime (octal)
+    // 6	148	8	chksum (octal)
+    // 7	156	1	linkflag
+    // 8	157	100	linkname
+    // 9	257	8	magic
+    // 10	265	32				(USTAR) uname
+    // 11	297	32				(USTAR)	gname
+    // 12	329	8	devmajor (octal)
+    // 13	337	8	devminor (octal)
+    // 14	345	167				(USTAR) Long path
+    //
+    // magic can be any of:
+    //   "ustar\0""00"	POSIX ustar (Version 0?).
+    //   "ustar  \0"	GNU tar (POSIX draft)
+
     void create(void|string s, void|int _pos)
     {
       if(!s)
@@ -86,7 +110,7 @@ class _Tar  // filesystem
 			     "%"+((string)NAMSIZ)+"s%8s%8s%8s%12s%12s%8s"
 			     "%c%"+((string)NAMSIZ)+"s%8s"
 			     "%"+((string)TUNMLEN)+"s"
-			     "%"+((string)TGNMLEN)+"s%8s%8s");
+			     "%"+((string)TGNMLEN)+"s%8s%8s%167s");
       sscanf(a[0], "%s%*[\0]", arch_name);
       sscanf(a[1], "%o", mode);
       sscanf(a[2], "%o", uid);
@@ -98,10 +122,22 @@ class _Tar  // filesystem
       sscanf(a[8], "%s%*[\0]", arch_linkname);
       sscanf(a[9], "%s%*[\0]", magic);
 
-      if(magic=="ustar  ")
+      if((magic=="ustar  ") || (magic == "ustar"))
       {
+	// GNU ustar or POSIX ustar
 	sscanf(a[10], "%s\0", uname);
 	sscanf(a[11], "%s\0", gname);
+	if (a[9] == "ustar\0""00") {
+	  // POSIX ustar	(Version 0?)
+	  string long_path = "";
+	  sscanf(a[14], "%s\0", long_path);
+	  if (sizeof(long_path)) {
+	    arch_name = long_path + "/" + arch_name;
+	  }
+	} else if (arch_name == "././@LongLink") {
+	  // GNU tar
+	  // FIXME: Data contains full filename of next record.
+	}
       }
       else
 	uname = gname = 0;
