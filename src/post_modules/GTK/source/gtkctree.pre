@@ -241,7 +241,12 @@ string node_get_text(GTK.CTreeNode node, int column)
   get_all_args( "get_*", args, "%o%d", &x, &y );
 
   my_pop_n_elems( args );
-  gtk_ctree_node_get_text( GTK_CTREE( THIS->obj ),
+  if(y==0)
+    gtk_ctree_get_node_info( GTK_CTREE( THIS->obj ),
+                          get_pgdkobject(x,pgtk_ctree_node_program),
+                          &p, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+  else
+    gtk_ctree_node_get_text( GTK_CTREE( THIS->obj ),
                            get_pgdkobject(x,pgtk_ctree_node_program),
                            y, &p );
   if(p)
