@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program_id.h,v 1.16 2003/01/31 02:01:46 mast Exp $
+|| $Id: program_id.h,v 1.17 2003/04/08 17:07:41 nilsson Exp $
 */
 
 #ifndef PROGRAM_ID_H
@@ -79,7 +79,6 @@
 #define PROG_IMAGE_COLORTABLE_ID        101
 #define PROG_IMAGE_LAYER_ID             102
 #define PROG_IMAGE_FONT_ID              103
-#define PROG_IMAGE_POLY_ID              104
 
 /* 120 - 159: Submodules */
 #define PROG_IMAGE_SUBMODULE_START      120
