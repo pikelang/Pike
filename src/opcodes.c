@@ -23,7 +23,7 @@
 #include "module_support.h"
 #include "security.h"
 
-RCSID("$Id: opcodes.c,v 1.39 1999/06/19 20:02:03 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.40 1999/07/01 16:21:06 mirar Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -703,7 +703,7 @@ static INT32 really_low_sscanf(char *input,
 {
   struct svalue sval;
   int e,cnt,matches,eye,arg;
-  int no_assign,field_length;
+  int no_assign,field_length,minus_flag;
   char set[256];
   struct svalue *argp;
   
@@ -746,6 +746,7 @@ static INT32 really_low_sscanf(char *input,
 
     no_assign=0;
     field_length=-1;
+    minus_flag=0;
 
     cnt++;
     if(cnt>=match_len)
@@ -770,6 +771,11 @@ static INT32 really_low_sscanf(char *input,
 	  cnt=t-match;
 	  continue;
 	}
+
+        case '-':
+	  minus_flag=1;
+	  cnt++;
+	  continue;
 
 	case '{':
 	{
@@ -832,12 +838,23 @@ static INT32 really_low_sscanf(char *input,
 	  sval.type=T_INT;
 	  sval.subtype=NUMBER_NUMBER;
 	  sval.u.integer=0;
-	  while(--field_length >= 0)
+	  if (minus_flag)
 	  {
-	    sval.u.integer<<=8;
-	    sval.u.integer|=EXTRACT_UCHAR(input+eye);
-	    eye++;
+	     int pos=0;
+	     while(--field_length >= 0)
+	     {
+		pos+=8;
+		sval.u.integer|=EXTRACT_UCHAR(input+eye)<<pos;
+		eye++;
+	     }
 	  }
+	  else
+	     while(--field_length >= 0)
+	     {
+		sval.u.integer<<=8;
+		sval.u.integer|=EXTRACT_UCHAR(input+eye);
+		eye++;
+	     }
 	  break;
 
 	case 'd':
