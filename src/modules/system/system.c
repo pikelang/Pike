@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.57 1998/07/26 10:29:49 hubbe Exp $
+ * $Id: system.c,v 1.58 1998/08/04 23:20:46 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.57 1998/07/26 10:29:49 hubbe Exp $");
+RCSID("$Id: system.c,v 1.58 1998/08/04 23:20:46 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -251,7 +251,11 @@ void f_readlink(INT32 args)
       err = readlink(path, buf, buflen);
     } while ((err < 0) && (errno == EINTR));
     THREADS_DISALLOW_UID();
-  } while (err >= buflen - 1);
+  } while(
+#ifdef ENAMETOOLONG
+	  ((err < 0) && (errno == ENAMETOOLONG)) ||
+#endif /* ENAMETOOLONG */
+	  (err >= buflen - 1));
 
   if (err < 0) {
     report_error("readlink");
@@ -260,6 +264,52 @@ void f_readlink(INT32 args)
   push_string(make_shared_binary_string(buf, err));
 }
 #endif /* HAVE_READLINK */
+
+#ifndef HAVE_RESOLVEPATH
+#ifdef(HAVE_READLINK)
+/* FIXME: Write code that simulates resolvepath() here
+ */
+/* #define HAVE_RESOLVEPATH */
+#endif /* HAVE_READLINK */
+#endif /* !HAVE_RESOLVEPATH */
+
+#ifdef HAVE_RESOLVEPATH
+/* string resolvepath(string path) */
+void f_resolvepath(INT32 args)
+{
+  char *path;
+  int buflen;
+  char *buf;
+  int err;
+
+  get_all_args("resolvepath", args, "%s", &path);
+
+  buflen = 100;
+
+  do {
+    buflen *= 2;
+    if (!(buf = alloca(buflen))) {
+      error("resolvepath(): Out of memory\n");
+    }
+
+    THREADS_ALLOW_UID();
+    do {
+      err = resolvepath(path, buf, buflen);
+    } while ((err < 0) && (errno == EINTR));
+    THREADS_DISALLOW_UID();
+  } while(
+#ifdef ENAMETOOLONG
+	  ((err < 0) && (errno == ENAMETOOLONG)) ||
+#endif /* ENAMETOOLONG */
+	  (err >= buflen - 1));
+
+  if (err < 0) {
+    report_error("resolvepath");
+  }
+  pop_n_elems(args);
+  push_string(make_shared_binary_string(buf, err));
+}
+#endif /* HAVE_RESOLVEPATH */
 
 /* void chmod(string path, int mode) */
 void f_chmod(INT32 args)
@@ -908,6 +958,9 @@ void pike_module_init(void)
 #ifdef HAVE_READLINK
   add_efun("readlink", f_readlink, "function(string:string)", OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_READLINK */
+#ifdef HAVE_RESOLVEPATH
+  add_efun("resolvepath", f_resolvepath, "function(string:string)", OPT_EXTERNAL_DEPEND);
+#endif /* HAVE_RESOLVEPATH */
   add_efun("chmod", f_chmod, "function(string, int:void)", OPT_SIDE_EFFECT);
 #ifdef HAVE_CHOWN
   add_efun("chown", f_chown, "function(string, int, int:void)", OPT_SIDE_EFFECT);
