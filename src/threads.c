@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.211 2003/03/14 15:50:47 grubba Exp $
+|| $Id: threads.c,v 1.212 2003/03/17 09:17:02 grubba Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.211 2003/03/14 15:50:47 grubba Exp $");
+RCSID("$Id: threads.c,v 1.212 2003/03/17 09:17:02 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -822,7 +822,8 @@ TH_RETURN_TYPE new_thread_func(void *data)
   /* Free ourselves.
    * NB: This really ought to run in some other thread...
    */
-  /* free_object(thread_obj); */
+
+  free_object(thread_obj);
   thread_obj = NULL;
 
   num_threads--;
