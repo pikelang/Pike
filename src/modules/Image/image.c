@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.193 2002/03/08 13:03:58 grubba Exp $ */
+/* $Id: image.c,v 1.194 2002/04/04 15:01:53 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.193 2002/03/08 13:03:58 grubba Exp $
+**!	$Id: image.c,v 1.194 2002/04/04 15:01:53 grubba Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.193 2002/03/08 13:03:58 grubba Exp $");
+RCSID("$Id: image.c,v 1.194 2002/04/04 15:01:53 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -4588,7 +4588,7 @@ void init_image_image(void)
 		tFunc(tVoid,tObj),0);
 
    ADD_FUNCTION("select_from",image_select_from,
-		tFunc(tInt tInt,tObj),0);
+		tFunc(tInt tInt tOr(tInt, tVoid),tObj),0);
 
    ADD_FUNCTION("apply_matrix",image_apply_matrix,
 		tFuncV(tArr(tArr(tOr(tInt,tArr(tInt)))),tOr(tVoid,tInt),tObj),0);
