@@ -19,9 +19,9 @@ typedef enum {
 typedef struct
 {
   HitType type;
+  unsigned short raw;
   union
   {
-    unsigned short raw;
     struct
     {
       unsigned char id:2;

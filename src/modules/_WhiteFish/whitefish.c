@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.13 2001/05/25 12:48:04 per Exp $");
+RCSID("$Id: whitefish.c,v 1.14 2001/05/25 14:29:14 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -42,10 +42,10 @@ static void free_stuff( void *_t )
 }
 
 #define OFFSET(X) \
- (X.type == HIT_BODY?X.u.body.pos:X.type==HIT_FIELD?(X.u.field.pos<<(14-8)):(X.u.anchor.pos<<10))
+ (X.type == HIT_BODY?X.u.body.pos:X.type==HIT_FIELD?(X.u.field.pos):(X.u.anchor.pos))
 
 #define DOFF(X)  MINIMUM((int)sqrt(X),7)
-#define MOFF(X)  (X.type==HIT_BODY?X.u.body.id:X.type==HIT_FIELD?X.u.field.type+3:67)
+#define MOFF(X)  (X.type==HIT_BODY?0:X.type==HIT_FIELD?X.u.field.type+2:1)
 
 static void handle_hit( Blob **blobs,
 			int nblobs,
@@ -74,15 +74,15 @@ static void handle_hit( Blob **blobs,
     for( j = 0; j<nhits[i]; j++ )
     {
       hits[i] = wf_blob_hit( blobs[i], j );
-
+      matrix[MOFF(hits[i])][0]++;
       /* forward the other positions */
       for( k = 0; k<nblobs; k++ )
 	if( k != j &&  pos[ k ] < nhits[ k ] )
 	{
-	  while( (hits[k].u.raw < hits[i].u.raw) && (pos[ k ] < nhits[ k ]))
+	  while( (hits[k].raw < hits[i].raw) && (pos[ k ] < nhits[ k ]))
 	    hits[k] = wf_blob_hit( blobs[k], pos[k]++ );
 	  if( (pos[ k ] < nhits[ k ]) && hits[k].type == hits[i].type )
-	    matrix[MOFF(hits[i])][DOFF(OFFSET(hits[i])-OFFSET(hits[k]))]++;
+	    matrix[MOFF(hits[i])][DOFF(OFFSET(hits[i])-OFFSET(hits[k]))]+=2;
 	}
     }
   }

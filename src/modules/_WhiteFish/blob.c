@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.9 2001/05/25 10:25:38 per Exp $");
+RCSID("$Id: blob.c,v 1.10 2001/05/25 14:29:14 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -94,7 +94,7 @@ Hit wf_blob_hit( Blob *b, int n )
   if( b->eof )
   {
     hit.type = HIT_NOTHING;
-    hit.u.raw = 0;
+    hit.raw = 0;
     return hit;
   }
   else
@@ -102,15 +102,30 @@ Hit wf_blob_hit( Blob *b, int n )
     int off = b->b->rpos + 5 + n*2;
     unsigned char h =  b->b->data[ off ];
     unsigned char l = b->b->data[ off + 1 ];
-    hit.u.raw = (h<<8) | l;
-
-
-    hit.type = HIT_BODY;
-    if( hit.u.body.id == 3 )
+    unsigned short ht= (h<<8) | l;
+    hit.raw = ht;
+    if( (ht>>14) == 3 )
     {
-      hit.type = HIT_FIELD;
-      if( hit.u.field.type == 63 )
+      if( (ht >>8) == 255 )
+      {
 	hit.type = HIT_ANCHOR;
+	hit.u.anchor._pad = 255;
+	hit.u.anchor.hash = (ht>>4) & 63;
+	hit.u.anchor.pos = (ht) & 63;
+      }
+      else
+      {
+	hit.type = HIT_FIELD;
+	hit.u.field._pad = 3;
+	hit.u.field.type = (ht>>8) & 63;
+	hit.u.field.pos = ht&255;
+      }
+    }
+    else
+    {
+      hit.type = HIT_BODY;
+      hit.u.body.pos = ht;
+      hit.u.body.id = 0;
     }
     return hit;
   }
@@ -307,10 +322,27 @@ static void f_blob_remove( INT32 args )
 
 static void f_blob_add( INT32 args )
 {
-  int docid = sp[-2].u.integer;
-  int hit = sp[-1].u.integer;
+  int docid = sp[-4].u.integer;
+  int field = sp[-3].u.integer;
+  int off = sp[-2].u.integer;
+  int hash = sp[-1].u.integer;
+  short s;
+  if( args != 4 )
+    Pike_error( "Illegal number of arguments\n" );
 
-  _append_hit( THIS, docid, hit );
+  switch( docid )
+  {
+    case 0:
+      s = off>((1<<14)-1)?((1<<14)-1):off;
+      break;
+    case 1:
+      s = (255<<8) | (hash<<4) | (off>15?15:off);
+      break;
+    default:
+      s = (3<<14) | ((field-2)<<6) | (off>63?63:off);
+      break;
+  }
+  _append_hit( THIS, docid, s );
 
   pop_n_elems( args );
   push_int( 0 );
@@ -339,6 +371,25 @@ int cmp_hit( char *a, char *b )
   tmp = (X)[0];  (X)[0] = (Y)[0];  (Y)[0] = tmp;\
   tmp = (X)[1];  (X)[1] = (Y)[1];  (Y)[1] = tmp;\
 } while(0)
+
+static void f_blob_memsize( INT32 args )
+{
+  int size = HSIZE*sizeof(void *);
+  int i;
+  struct hash *h;
+  
+  for( i = 0; i<HSIZE; i++ )
+  {
+    h = THIS->hash[i];
+    while( h )
+    {
+      size += sizeof(struct hash) + h->data->allocated_size;
+      h = h->next;
+    }
+  }
+  pop_n_elems(args);
+  push_int( size );
+}
 
 static void f_blob__cast( INT32 args )
 {
@@ -434,6 +485,7 @@ void init_blob_program()
   add_function( "add", f_blob_add, "function(int,int:void)",0 );
   add_function( "remove", f_blob_remove, "function(int:void)",0 );
   add_function( "data", f_blob__cast, "function(void:string)", 0 );
+  add_function( "memsize", f_blob_memsize, "function(void:int)", 0 );
   set_init_callback( init_blob_struct );
   set_exit_callback( exit_blob_struct );
   blob_program = end_program( );
