@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.475 2003/01/15 22:07:19 mast Exp $
+|| $Id: program.c,v 1.476 2003/01/31 01:50:53 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.475 2003/01/15 22:07:19 mast Exp $");
+RCSID("$Id: program.c,v 1.476 2003/01/31 01:50:53 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -5236,6 +5236,19 @@ PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
   return res;
 }
 
+PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
+						       int fun, INT32 *linep)
+{
+  if (o->prog) {
+    struct reference *idref = o->prog->identifier_references + fun;
+    struct program *p = PROG_FROM_PTR (o->prog, idref);
+    struct identifier *id = p->identifiers + idref->identifier_offset;
+    return low_get_line (p->program + id->func.offset, p, linep);
+  }
+  *linep = 0;
+  return NULL;
+}
+
 void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
 {
   va_list args;
@@ -6834,13 +6847,14 @@ PMOD_EXPORT struct program *program_from_svalue(const struct svalue *s)
 
       if (!p) return 0;
 
+#if 0
       if ((call_fun = FIND_LFUN(p, LFUN_CALL)) >= 0) {
 	/* Get the program from the return type. */
 	struct identifier *id = ID_FROM_INT(p, call_fun);
 	/* FIXME: do it. */
-	/* fprintf(stderr, "Object type has `()().\n"); */
 	return 0;
       }
+#endif
       push_svalue(s);
       f_object_program(1);
       p=program_from_svalue(Pike_sp-1);

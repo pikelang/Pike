@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.173 2003/01/15 19:11:38 mast Exp $
+|| $Id: program.h,v 1.174 2003/01/31 01:50:53 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -235,7 +235,7 @@ struct reference
  * the first entry points to itself, the
  * rest are from inherited programs.
  * Note that when a program is inherited,
- * all 'struct inherit' from that program is
+ * all 'struct inherit' from that program are
  * copied, so the whole tree of inherits is
  * represented.
  */
@@ -593,6 +593,8 @@ PMOD_EXPORT struct pike_string *low_get_line(PIKE_OPCODE_T *pc,
 					     struct program *prog, INT32 *linep);
 PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
 					 struct program *prog, INT32 *linep);
+PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
+						       int fun, INT32 *linep);
 void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)));
 void yy_describe_exception(struct svalue *thrown);
 struct supporter_marker;
