@@ -49,6 +49,36 @@ void parse_rc(string rc)
 /*   gtk_widget_propagate_default_style(); */
 }
 
+%{
+  static int timeout_save;
+%}
+
+void saver_off( )
+//! Disable the screensaver
+{
+#ifndef __NT__
+  int interval, prefer_blank, allow_exp;
+  XGetScreenSaver(GDK_DISPLAY(),
+		  &timeout_save, &interval, &prefer_blank, &allow_exp);
+  if (timeout_save)
+    XSetScreenSaver(GDK_DISPLAY(), 0, interval, prefer_blank, allow_exp);
+#endif
+}
+
+void saver_on( )
+//! Enable the screensaver again after @[saver_off] has been called.
+{
+#ifndef __NT__
+  if( timeout_save )
+  {
+    int dummy, interval, prefer_blank, allow_exp;
+    XGetScreenSaver(GDK_DISPLAY(),
+		    &dummy, &interval, &prefer_blank, &allow_exp);
+    XSetScreenSaver(GDK_DISPLAY(),
+		    timeout_save, interval, prefer_blank, allow_exp);
+  }
+#endif
+}
 
 GDK.Window root_window()
 //! Returns the root window of the current display
