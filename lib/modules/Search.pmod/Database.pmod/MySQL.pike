@@ -1,7 +1,7 @@
 // SQL index database without fragments
 // Copyright © 2000, Roxen IS.
 //
-// $Id: MySQL.pike,v 1.10 2001/03/19 04:11:32 js Exp $
+// $Id: MySQL.pike,v 1.11 2001/03/20 04:55:39 js Exp $
 
 // inherit Search.Database.Base;
 
@@ -106,14 +106,14 @@ array(string) split_uri(string in)
 
 int find_or_create_uri_id(string uri)
 {
-  string s=sprintf("select id from uri where uri_md5='%s'", to_md5(uri));
+  string s=sprintf("select id from uri where uri_md5='%s'", db->quote(to_md5(uri)));
   array a=db->query(s);
   if(sizeof(a))
     return (int)a[0]->id;
 
   s=sprintf("insert into uri (uri_first,uri_rest,uri_md5) "
 	    "values ('%s','%s','%s')",
-	    @map(split_uri(uri), db->quote), to_md5(uri));
+	    @map(split_uri(uri), db->quote), db->quote(to_md5(uri)));
   db->query(s);
   return db->master_sql->insert_id();
 }
@@ -188,7 +188,7 @@ class GroupNode
 
   static private string build_sql_part(string what, array params, string delimit)
   {
-    return sprintf("%-7s %s\n",what,Array.uniq(params)*delimit);
+    return sprintf("%-6s %s\n",what,Array.uniq(params)*delimit);
   }
 
   string build_sql(void|int limit, void|mapping(string:array(string)) extra_select_items)
@@ -330,15 +330,15 @@ class Phrase
     array(string) from=({}), where=({}), ranking=({});
     int i=0;
     
-    where+=({ sprintf("t%d.field_id=field.id",ref->ref) });
-    if(arrayp(field))
-      where+=({ sprintf("field.name in (%s)'",
-			map(field, lambda(string f)
-				   {
-				     return sprintf("'%s'",db->quote(f));
-				   }) * ", ") });
-    else
-      where+=({ sprintf("field.name='%s'", db->quote(field)) });
+//      where+=({ sprintf("t%d.field_id=field.id",ref->ref) });
+//      if(arrayp(field))
+//        where+=({ sprintf("field.name in (%s)'",
+//  			map(field, lambda(string f)
+//  				   {
+//  				     return sprintf("'%s'",db->quote(f));
+//  				   }) * ", ") });
+//      else
+//        where+=({ sprintf("field.name='%s'", db->quote(field)) });
     
     foreach(words, string word)
     {
