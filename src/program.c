@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.224 2000/04/13 02:11:25 hubbe Exp $");
+RCSID("$Id: program.c,v 1.225 2000/04/13 12:16:14 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3349,7 +3349,7 @@ static void gc_check_frame(struct pike_frame *f)
     if(f->current_object) gc_check(f->current_object);
     if(f->context.prog)   gc_check(f->context.prog);
     if(f->context.parent) gc_check(f->context.parent);
-    gc_check_svalues(f->locals,f->num_locals);
+    if(f->malloced_locals)gc_check_svalues(f->locals,f->num_locals);
     if(f->scope)          gc_check_frame(f->scope);
   }
 }
@@ -3443,6 +3443,8 @@ void cleanup_program(void)
 
 void gc_mark_program_as_referenced(struct program *p)
 {
+  debug_malloc_touch(p);
+
   if(gc_mark(p))
   {
     int e;
@@ -3518,9 +3520,11 @@ void gc_check_all_programs(void)
 void gc_mark_all_programs(void)
 {
   struct program *p;
-  for(p=first_program;p;p=p->next)
-    if(gc_is_referenced(p))
-      gc_mark_program_as_referenced(p);
+  for(p=first_program;p;p=p->next) {
+    if(gc_is_referenced(p)) {
+      gc_mark_program_as_referenced(debug_malloc_pass(p));
+    }
+  }
 }
 
 void gc_free_all_unreferenced_programs(void)
@@ -3529,6 +3533,8 @@ void gc_free_all_unreferenced_programs(void)
 
   for(p=first_program;p;p=next)
   {
+    debug_malloc_touch(p);
+
     if(gc_do_free(p))
     {
       int e;
