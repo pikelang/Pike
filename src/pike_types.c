@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.235 2004/08/16 16:21:08 mast Exp $
+|| $Id: pike_types.c,v 1.236 2004/08/16 16:53:05 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.235 2004/08/16 16:21:08 mast Exp $");
+RCSID("$Id: pike_types.c,v 1.236 2004/08/16 16:53:05 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -2676,20 +2676,26 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     /* object(* 0) matches any object */
     if(!a->cdr || !b->cdr) break;
 
+    /* object(* x) =? object(* x) */
+    if (a->cdr == b->cdr) break;
+
     /* object(x *) =? object(x *) */
     if(TEST_COMPAT(7,4) && a->car == b->car)
     {
       /* x? */
       if(a->car)
       {
-       /* object(1 x) =? object(1 x) */
-       if(a->cdr != b->cdr) return 0;
+	/* object(1 x) =? object(1 x) */
+	return 0;
       }else{
-       /* object(0 *) =? object(0 *) */
-       break;
+	/* object(0 *) =? object(0 *) */
+	break;
       }
     }
 
+    /* Note: In Pike 7.4 and earlier the following was only done
+     *       when a->car != b->car.
+     */
     {
       struct program *ap,*bp;
       ap = id_to_program(CDR_TO_INT(a));
@@ -2699,20 +2705,8 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
       implements_mode = 0;
 
-      if (TEST_COMPAT(7,4)) {
-	if(a->car)
-	{
-	  if (!is_compatible(implements_a=ap,implements_b=bp))
-	    return 0;
-	}else{
-	  if(!is_compatible(implements_a=bp,implements_b=ap))
-	    return 0;
-	}
-      }
-      else {
-	if (!is_compatible(implements_a=ap,implements_b=bp))
-	  return 0;
-      }
+      if (!is_compatible(implements_a=ap,implements_b=bp))
+	return 0;
     }
     break;
 
