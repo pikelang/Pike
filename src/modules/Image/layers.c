@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.28 1999/07/21 02:59:07 hubbe Exp $
+**!	$Id: layers.c,v 1.29 1999/07/23 21:37:38 mirar Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -160,13 +160,13 @@
 **!    write_image("top layer","b",lay(({ltrans,b}))->image());
 **!    write_image("bottom layer","a",lay(({ltrans,a}))->image());
 **! 
-**!    write(mktag("tr",0,mktag("td",0,mktag("hr"))));
+**!    write(mktag("tr",0,mktag("td",0,"\240")));
 **! 
 **!    foreach (Layer()->available_modes(),string mode)
 **!    {
 **!	  if ((&lt;"add","equal","replace","replace_hsv","darken",
 **!	        "dissolve","screen","logic_equal">)[mode])
-**!          write(mktag("tr",0,mktag("td",0,mktag("hr"))));
+**!          write(mktag("tr",0,mktag("td",0,"\240")));
 **!
 **! 	  ({lc2,lc2b,li2,li2b,lr2,lzo1})->set_mode(mode);
 **! 
@@ -195,7 +195,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.28 1999/07/21 02:59:07 hubbe Exp $");
+RCSID("$Id: layers.c,v 1.29 1999/07/23 21:37:38 mirar Exp $");
 
 #include "image_machine.h"
 

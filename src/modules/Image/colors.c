@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.26 1999/07/15 17:49:27 hubbe Exp $
+**!	$Id: colors.c,v 1.27 1999/07/23 21:37:40 mirar Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -137,9 +137,9 @@
 **! 			      }),colored);
 **! 
 **!    Array.map(({orig}),color_info);
-**!    write(mktag("hr"));
+**!    write("\240");
 **!    Array.map(({grey}),color_info);
-**!    write(mktag("hr"));
+**!    write("\240");
 **!    Array.map(colored/8.0,color_info);
 **! }
 **! 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.26 1999/07/15 17:49:27 hubbe Exp $");
+RCSID("$Id: colors.c,v 1.27 1999/07/23 21:37:40 mirar Exp $");
 
 #include "image_machine.h"
 
