@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.17 1997/11/11 03:56:25 grubba Exp $");
+RCSID("$Id: zlibmod.c,v 1.18 1998/02/27 20:21:27 mirar Exp $");
 
 #include "zlib_machine.h"
 
@@ -167,7 +167,7 @@ static void gz_deflate(INT32 args)
     case Z_NO_FLUSH:
       break;
 
-    defualt:
+    default:
       error("Argument 2 to gz_deflate->deflate() out of range.\n");
     }
   }else{
@@ -343,6 +343,31 @@ static void exit_gz_inflate(struct object *o)
 /*   mt_unlock(& THIS->lock); */
 }
 
+
+static void gz_crc32(INT32 args)
+{
+   unsigned INT32 crc;
+   if (!args ||
+       sp[-args].type!=T_STRING)
+      error("Gz.crc32: illegal or missing argument 1 (expected string)\n");
+
+   if (args>1)
+      if (sp[1-args].type!=T_INT)
+	 error("Gz.crc32: illegal argument 2 (expected integer)\n");
+      else
+	 crc=(unsigned INT32)sp[1-args].u.integer;
+   else
+      crc=0;
+	 
+   crc=crc32(crc,
+	     (unsigned char*)sp[-args].u.string->str,
+	     sp[-args].u.string->len);
+
+   pop_n_elems(args);
+   push_int((INT32)crc);
+}
+
+
 #endif
 
 void pike_module_exit(void) {}
@@ -386,6 +411,10 @@ void pike_module_init(void)
   add_integer_constant("PARTIAL_FLUSH",Z_PARTIAL_FLUSH,0);
   add_integer_constant("SYNC_FLUSH",Z_SYNC_FLUSH,0);
   add_integer_constant("FINISH",Z_FINISH,0);
+
+  add_function("crc32",gz_crc32,
+	       "function(string,void|int:int)",
+	       OPT_TRY_OPTIMIZE);
 
 #endif
 }

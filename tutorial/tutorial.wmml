@@ -6729,6 +6729,7 @@ Note that these functions use the same <i>algorithm</i> as gzip, they do
 not use the exact same format however, so you cannot directly unzip gzipped
 files with these routines. Support for this will be added in the future.
 <p>
+
 <class name=Gz.deflate title="string packer">
 <man_description>
 Gz.inflate is a builtin program written in C. It interfaces the
@@ -6845,6 +6846,23 @@ Gz.deflate-&gt;deflate
 </method>
 
 </section>
+
+<method name=Gz.crc32 title="calculate checksum">
+<man_syntax>
+string crc32(string <I>data</I>,void|int start_value);<br>
+</man_syntax>
+
+<man_description>
+This method is usable for calculating checksums, and presents
+the standard ISO3309 Cyclic Redundancy Check.
+</man_description>
+
+<man_see>
+Gz
+</man_see>
+</method>
+
+
 </module>
 
 <hr noshade size=1>
