@@ -102,7 +102,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.56 1999/10/28 22:27:35 noring Exp $");
+RCSID("$Id: sprintf.c,v 1.57 1999/10/30 23:35:53 noring Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1145,6 +1145,8 @@ static void low_pike_sprintf(struct format_stack *fs,
 	    l -= 2;
 	  }
 	}
+	else if(mode == 'u')
+	  sprintf(x, "%u", val);
 	else
 	  sprintf(x, "%d", val);
 
