@@ -1427,12 +1427,8 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
       if(!GOBBLE(")"))
 	XMLERROR("Expected \")\" at the end of #PCDATA");
       f_aggregate(num);
-      if(GOBBLE("*"))
-      {
-	push_constant_text("*");
-	stack_swap();
-	f_aggregate(2);
-      }
+      if(!GOBBLE("*") && num>1)
+	XMLERROR("Expected \"*\" at the end of #PCDATA");
       
     }else{
       push_int(0); /* allocate a little room */
