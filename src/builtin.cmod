@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.50 2001/06/30 02:02:43 mast Exp $
+ * $Id: builtin.cmod,v 1.51 2001/07/01 13:12:46 grubba Exp $
  */
 
 #include "global.h"
@@ -1479,6 +1479,33 @@ PIKECLASS multi_string_replace
     }
 
     RETURN finish_string_builder(&ret);
+  }
+
+  PIKEFUN array(string) _encode()
+  {
+    size_t i;
+    for (i=0; i < THIS->sz; i++) {
+      ref_push_string(THIS->v[i].ind);
+    }
+    f_aggregate(DO_NOT_WARN((INT32)THIS->sz));
+    for (i=0; i < THIS->sz; i++) {
+      ref_push_string(THIS->v[i].val);
+    }
+    f_aggregate(DO_NOT_WARN((INT32)THIS->sz));
+    f_aggregate(2);
+  }
+
+  PIKEFUN void _decode(array(array(string)) encoded)
+  {
+    INT32 i;
+
+    for (i=0; i < encoded->size; i++) {
+      push_svalue(encoded->item + i);
+      stack_swap();
+    }
+    pop_stack();
+
+    f_multi_string_replace_create(i);
   }
 
   INIT
