@@ -1,5 +1,5 @@
 /*
- * $Id: udp.c,v 1.25 2001/09/24 12:40:04 grubba Exp $
+ * $Id: udp.c,v 1.26 2001/11/25 03:02:59 nilsson Exp $
  */
 
 #define NO_PIKE_SHORTHAND
@@ -7,7 +7,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.25 2001/09/24 12:40:04 grubba Exp $");
+RCSID("$Id: udp.c,v 1.26 2001/11/25 03:02:59 nilsson Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -145,8 +145,18 @@ struct udp_storage {
 #define THISOBJ (Pike_fp->current_object)
 #define FD (THIS->fd)
 
+/*! @module Stdio
+ */
+
+/*! @class UDP
+ */
+
 extern void get_inet_addr(struct sockaddr_in *addr,char *name);
 
+/*! @decl object bind(int a, void|string b)
+ *! @fixme
+ *! Document this function.
+ */
 static void udp_bind(INT32 args)
 {
   struct sockaddr_in addr;
@@ -246,6 +256,10 @@ static void udp_bind(INT32 args)
   ref_push_object(THISOBJ);
 }
 
+/*! @decl void enable_broadcast()
+ *! @fixme
+ *! Document this function.
+ */
 void udp_enable_broadcast(INT32 args)
 {
 #ifdef SO_BROADCAST
@@ -260,7 +274,10 @@ void udp_enable_broadcast(INT32 args)
 #endif /* SO_BROADCAST */
 }
 
-/* int wait(int timeout) */
+/*! @decl int wait(int|float timeout)
+ *! @fixme
+ *! Document this function.
+ */
 void udp_wait(INT32 args)
 {
 #ifdef HAVE_POLL
@@ -342,6 +359,10 @@ void udp_wait(INT32 args)
 
 #define UDP_BUFFSIZE 65536
 
+/*! @decl mapping(string:int|string) read(void|int a)
+ *! @fixme
+ *! Document this function.
+ */
 void udp_read(INT32 args)
 {
   int flags = 0, res=0, fd, e;
@@ -428,6 +449,11 @@ void udp_read(INT32 args)
   f_aggregate_mapping( 6 );
 }
 
+/*! @decl int send(string a, int b, string c, void|int d)
+ *! @fixme
+ *! Document this function. Pike prototype says function(string,int,string,void|int:int)
+ *! but error messages says send(string to, string message, int port, void|int flags).
+ */
 void udp_sendto(INT32 args)
 {
   int flags = 0, fd, e;
@@ -583,6 +609,10 @@ static void udp_set_nonblocking(INT32 args)
   ref_push_object(THISOBJ);
 }
 
+/*! @decl object set_blocking()
+ *! @fixme
+ *! Document this function.
+ */
 static void udp_set_blocking(INT32 args)
 {
   if (FD < 0) Pike_error("File not open.\n");
@@ -591,6 +621,10 @@ static void udp_set_blocking(INT32 args)
   ref_push_object(THISOBJ);
 }
 
+/*! @decl int connect(string a, int b)
+ *! @fixme
+ *! Document this function.
+ */
 static void udp_connect(INT32 args)
 {
   struct sockaddr_in addr;
@@ -633,6 +667,10 @@ static void udp_connect(INT32 args)
   }
 }
 
+/*! @decl string query_address()
+ *! @fixme
+ *! Document this function.
+ */
 static void udp_query_address(INT32 args)
 {
   struct sockaddr_in addr;
@@ -666,12 +704,20 @@ static void udp_query_address(INT32 args)
   push_string(make_shared_string(buffer));
 }
 
+/*! @decl int errno()
+ *! @fixme
+ *! Document this function.
+ */
 static void udp_errno(INT32 args)
 {
    pop_n_elems(args);
    push_int(THIS->my_errno);
 }
 
+/*! @decl object set_type(int a, void|int b)
+ *! @fixme
+ *! Document this function.
+ */
 static void udp_set_type(INT32 args)
 {
    INT_TYPE type=0;
@@ -688,6 +734,10 @@ static void udp_set_type(INT32 args)
    ref_push_object(THISOBJ);
 }
 
+/*! @decl array(int) get_type()
+ *! @fixme
+ *! Document this function.
+ */
 static void udp_get_type(INT32 args)
 {
    pop_n_elems(args);
@@ -695,6 +745,22 @@ static void udp_get_type(INT32 args)
    push_int(THIS->protocol);
    f_aggregate(2);
 }
+
+/*! @decl constant MSG_OOB
+ *! @fixme
+ *! Document this constant. (Why is it always 1?)
+ */
+
+/*! @decl constant MSG_PEEK
+ *! @fixme
+ *! Document this constant.
+ */
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 void init_udp(void)
 {
