@@ -607,3 +607,135 @@ object decode( string what,mapping|void opts )
 {
   return _decode( what,opts )->image;
 }
+
+// --- Encoding
+
+#if 0
+
+#define PROP(X,Y) sprintf("%4c%4c%s", PROP_##X, sizeof(Y), (Y))
+#define UINT(X)   sprintf("%4c", (X))
+#define STRING(X) sprintf("%4c%s\0", sizeof(X)+1, (X))
+
+static string make_hiearchy(Image.Image img) {
+  string data = "";
+  data += UINT(img->xsize());
+  data += UINT(img->ysize());
+  data += UINT(3); // rgb
+
+  // Make just one tile
+  string i = (string)img;
+  string tile = "";
+  tile += UINT(img->xsize());
+  tile += UINT(img->ysize());
+  tile += UINT(sizeof(i));
+  tile += i;
+
+  data += UINT(sizeof(tile));
+  data += tile;
+  return data;
+}
+
+static int make_mode(string mode) {
+  switch(mode) {
+  case "normal": return NORMAL_MODE;
+  }
+  werror("Mode %O not supported in XCF.\n", mode);
+  return NORMAL_MODE;
+}
+
+static string make_layer(Image.Image|Image.Layer img) {
+  string data = "";
+  data += UINT(img->xsize());
+  data += UINT(img->ysize());
+  data += UINT(1); // FIXME: layer type
+  if(img->get_misc_value)
+    data += STRING(img->get_misc_value("name"));
+  else
+    data += STRING(" ");
+
+  // Layer properties
+  {
+    // ACTIVE_LAYER
+    // SELECTION
+
+    if(img->xoffset && img->yoffset)
+      data += PROP(OFFSETS, UINT(img->xoffset()) + UINT(img->yoffset()));
+
+    if(img->alpha_value)
+      data += PROP(OPACITY, UINT(255*img->alpha_value()));
+    else
+      data += PROP(OPACITY, UINT(255));
+
+    data += PROP(VISIBLE, UINT(1));
+
+    // LINKED
+    // PRESERVE_TRANSPARENCY
+    // APPLY_MASK
+    // EDIT_MASK
+    // SHOW_MASK
+
+    if(img->mode)
+      data += PROP(MODE, UINT(make_mode(img->mode)));
+    else
+      data += PROP(MODE, UINT(NORMAL_MODE));
+
+    // TATTOO
+    // PARASITES
+
+    data += PROP(END, "");
+  }
+
+  string h;
+  if(img->image)
+    h = make_hiearchy(img->image());
+  else
+    h = make_hiearchy(img);
+  string lm = ""; // make_layer_mask
+
+  data += UINT(sizeof(h)); // hiearchy size
+  data += UINT(sizeof(lm)); // layer mask size
+
+  data += lm;
+  data += h;
+
+  return data;
+}
+
+string encode(Image.Image img) {
+  String.Buffer buf = String.Buffer();
+  buf->add("gimp xcf file\0");
+
+  // width, height, type
+  buf->add( sprintf("%4c%4c%4c", img->xsize(), img->ysize(), 0) );
+
+  // Properties
+
+  // PROP_COLORMAP
+  // PROP_GUIDES
+  // PROP_RESOLUTION
+  // PROP_TATTOO
+  // PROP_PARASITES
+  // PROP_UNIT
+  // PROP_PATHS
+  // PROP_USER_UNIT
+
+  buf->add( PROP(COMPRESSION, UINT(0)) );
+  buf->add( PROP(END,"") );
+
+  // Layers
+  if(objectp(img)) {
+    string lay = make_layer(img);
+    buf->add( UINT(sizeof(lay)) );
+    buf->add(lay);
+  }
+  //  foreach(indices(layers), Image.Layer layer) {
+  //  }
+  buf->add( UINT(0) );
+
+  // Channels
+  buf->add( UINT(0) );
+
+  return (string)buf;
+}
+
+#endif
