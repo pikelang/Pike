@@ -12,17 +12,18 @@ SRCDIR=@srcdir@
 VPATH=@srcdir@
 
 # These are used while compiling
-TMP_LIBDIR = @LIBDIR@
+LIBDIR_SRC = @LIBDIR@
 TMP_BINDIR = @BINDIR@
 TMP_BUILDDIR = @BUILDDIR@
 TMP_DOCDIR = @DOCDIR@
+TMP_LIBDIR = $(TMP_BUILDDIR)/lib
 
 prefix = @prefix@
 exec_prefix = $(prefix)/bin
 lib_prefix = $(prefix)/lib/pike
 
 #
-# use bison please, yacc doesn't always work good enough.
+# use bison please, yacc isn't good enough.
 #
 YACC=@YACC@
 YFLAGS=-d -v
@@ -56,7 +57,7 @@ CPP=@CPP@
 LD=$(CC)
 LDFLAGS=$(CFLAGS) @LDFLAGS@ @LINKFORSHARED@
 
-RUNPIKE=$(TMP_BUILDDIR)/pike -DNOT_INSTALLED -m $(TMP_LIBDIR)/master.pike -M$(TMP_BUILDDIR)/modules $(PIKEOPTS)
+RUNPIKE=$(TMP_BUILDDIR)/pike -m $(TMP_LIBDIR)/master.pike $(PIKEOPTS)
 
 MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)"
 
@@ -113,22 +114,22 @@ all: module_objects
 
 pike: $(OBJ) modules/linker_options modules/lib_dirs
 	-mv pike pike.old
-	$(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` @SET_RUN_PATH@ $(LIBS) -o pike
+	$(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # purify
 pure: $(OBJ) module_objects
 	-mv pike pike.old
-	purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` @SET_RUN_PATH@ $(LIBS) -o pike
+	purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 gcc $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # purecov
 cover: $(OBJ) module_objects
 	-mv pike pike.old
-	purecov purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` @SET_RUN_PATH@ $(LIBS) -o pike
+	purecov purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 gcc $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # quantify
 quant: $(OBJ) module_objects
 	-mv pike pike.old
-	quantify $(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` @SET_RUN_PATH@ $(LIBS) -o pike
+	quantify gcc $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # install
 install:
@@ -141,10 +142,7 @@ install:
 	if [ ! -d "$(prefix)/include" ]; then mkdir "$(prefix)/include"; chmod 755 "$(prefix)/include"; fi
 	if [ ! -d "$(prefix)/include/pike" ]; then mkdir "$(prefix)/include/pike"; chmod 755 "$(prefix)/include/pike"; fi
 	$(INSTALL) $(SRCDIR)/*.h *.h $(prefix)/include/pike
-	$(INSTALL) $(TMP_LIBDIR)/master.pike $(lib_prefix)
-	cp -r $(TMP_LIBDIR)/include $(lib_prefix)
-	cp -r $(TMP_LIBDIR)/modules $(lib_prefix)
-	-( cd modules; ${MAKE} $(MAKE_FLAGS) install )
+	cp -r $(TMP_LIBDIR) $(lib_prefix)
 
 # tidy up a bit
 tidy:
@@ -200,6 +198,9 @@ gdb_verify: testsuite
 run_hilfe:
 	$(RUNPIKE) $(TMP_BINDIR)/hilfe
 
+lib: $(LIBDIR_SRC) $(LIBDIR_SRC)/master.pike
+	cp -r $(LIBDIR_SRC) .
+
 # make export archive (requires compiled Pike)
 # Do not compile in source tree if you want to use this!
 # Beware that export archive this includes bison/yacc/byacc source
@@ -234,7 +235,7 @@ html_docs: docs
 #
 # Pike internal targets
 #
-module_objects: global.h $(SRCDIR)/language.h
+module_objects: global.h $(SRCDIR)/language.h lib
 	( cd modules ; ${MAKE} $(MAKE_FLAGS) )
 
 language.o: $(SRCDIR)/language.c $(SRCDIR)/object.h $(SRCDIR)/interpret.h $(SRCDIR)/program.h

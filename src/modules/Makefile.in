@@ -10,7 +10,7 @@ all: modules
 
 modules:
 	for a in $(MODULES) ; do echo making $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) MODNAME=$$a) ; done
-	$(MAKE) linker_options lib_dirs modlist.h modlist_headers.h
+	$(MAKE) linker_options lib_dirs modlist.h modlist_headers.h module_list
 
 modlist.h: $(MODULE_SEGMENTS)
 	( for a in $(MODULES) ; do cat $$a/modlist_segment ; done ; ) >modlist.h
@@ -19,14 +19,7 @@ modlist_headers.h: $(MODULE_SEGMENTS)
 	( for a in $(MODULES) ; do cat $$a/modlist_segment; done ) | sed -e 's/^.*{.*,\(.*\),\(.*\).*}.*$$/void \1(void),\2(void);/' >modlist_headers.h
 
 linker_options: $(MODULE_LINKOPTS)
-	( for a in $(MODULES) ; do cat $$a/linker_options ; done ; ) >linker_options
-
-lib_dirs: $(MODULE_LINKOPTS)
-	( ( if test -f master_lib_dirs; then cat master_lib_dirs; else :; fi; \
-            for a in $(MODULES) ; do \
-	      if test -f $$a/lib_dirs ; then cat $$a/lib_dirs ; else : ; fi ; \
-	    done ; ) | sort | uniq | tr '\012' ':'; echo "" )| \
-	sed -e 's/:$$//' -e 's/^/-R/' -e 's/^-R$$//' >lib_dirs
+	( for a in $(MODULES) ; do cat $$a/linker_options; done ; ) >linker_options
 
 depend:
 	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a depend ) ; done

@@ -278,16 +278,15 @@ varargs mixed resolv(string identifier, string current_file)
   {
     foreach(pike_module_path, path)
       {
-	path=combine_path(path,identifier);
-	if(ret=findmodule(path)) break;
+	string file=combine_path(path,identifier);
+	if(ret=findmodule(file)) break;
       }
   }
 
   if(!ret)
   {
     string path=combine_path(pike_library_path+"/modules",identifier);
-    if(!(ret=findmodule(path)))
-      ret=_static_modules[identifier];
+    ret=findmodule(path);
   }
 
   if(ret)
@@ -316,13 +315,11 @@ void _main(string *argv, string *env)
   add_constant("getenv",getenv);
   add_constant("putenv",putenv);
 
-  add_constant("write",_static_modules.files.file("stdout")->write);
+  add_constant("write",_static_modules.files()->file("stdout")->write);
 
   a=backtrace()[-1][0];
   q=a/"/";
   pike_library_path = q[0..sizeof(q)-2] * "/";
-
-  tmp=resolv("Getopt");
 
   add_include_path(pike_library_path+"/include");
   add_module_path(pike_library_path+"/modules");
@@ -332,6 +329,8 @@ void _main(string *argv, string *env)
 
   q=(getenv("PIKE_MODULE_PATH")||"")/":"-({""});
   for(i=sizeof(q)-1;i>=0;i--) add_module_path(q[i]);
+
+  tmp=resolv("Getopt");
 
   q=tmp->find_all_options(argv,({
     ({"version",tmp->NO_ARG,({"-v","--version"})}),
@@ -413,7 +412,14 @@ void _main(string *argv, string *env)
     argv=argv[1..];
   }
 
-  script=cast_to_object(argv[0], getcwd()+"/");
+  program tmp=compile_file(argv[0]);
+  if(!tmp)
+  {
+    werror("Pike: Couldn't find script to execute.\n");
+    exit(1);
+  }
+
+  object script=tmp();
 
   if(!script->main)
   {
@@ -508,6 +514,13 @@ string handle_include(string f,
   return path;
 }
 
+// FIXME
+string stupid_describe(mixed m)
+{
+  if(intp(m)) return (string)m;
+  return sprintf("%t",m);
+}
+
 /* It is possible that this should be a real efun,
  * it is currently used by handle_error to convert a backtrace to a
  * readable message.
@@ -544,8 +557,14 @@ string describe_backtrace(mixed *trace)
 	row="";
 	if(sizeof(tmp)>=3 && functionp(tmp[2]))
 	{
-	  row=function_name(tmp[2])+" in ";
+	  row=function_name(tmp[2])+"(";
 	}
+	for(int e=3;e<sizeof(tmp);e++)
+	{
+	  row+=stupid_describe(tmp[e])+",";
+	}
+
+	row=row[..sizeof(row)-2]+") in ";
 
 	if(sizeof(tmp)>=2 && stringp(tmp[0]) && intp(tmp[1]))
 	{

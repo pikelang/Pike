@@ -1,26 +1,22 @@
 PREFLAGS=$(DEFINES) -I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../.. -I. $(MODULE_CPPFLAGS)
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) @CCSHARED@ $(MODULE_CFLAGS)
 
-all: module.@SO@ linker_options modlist_segment modlist_headers
+MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)"
 
-linker_options:
+all: module.@SO@ dummy
+
+dummy:
 	echo "" >linker_options
-
-modlist_headers:
 	echo "" >modlist_headers
-
-modlist_segment:
 	echo "" >modlist_segment
+	tmp="$(INSTALL_NAME)" ; if test x$$tmp = x ; then tmp="$(MODNAME)"; fi ; $(INSTALL) module.so $(TMP_LIBDIR)/modules/$$tmp.so
 
 module.so: $(OBJS)
-	@LDSHARED@ -o module.@SO@ $(OBJS) $(MODULE_LDFLAGS)
+	$(TMP_BINDIR)/smartlink "@LDSHARED@" -o module.@SO@ $(OBJS) $(MODULE_LDFLAGS)
 	if test @SO@ != so ; then mv module.@SO@ module.so ; fi
-	echo "" >linker_options
-	echo "" >modlist_headers
-	echo "" >modlist_segment
 
 clean:
-	-rm -f *.o module.so
+	-rm -f *.o *.a *.so module.so
 
 depend:
 	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)

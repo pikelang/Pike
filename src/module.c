@@ -43,17 +43,13 @@ void init_modules(void)
   for(e=0;e<NELEM(module_list);e++)
   {
     struct program *p;
-    struct object *o;
     struct pike_string *s;
     start_new_program();
     module_list[e].init();
     p=end_program();
 
-    o=clone(p,0);
-    free_program(p);
-
     push_text(module_list[e].name); 
-    push_object(o);
+    push_program(p);
     mapping_insert(m, sp-2, sp-1);
     pop_n_elems(2);
   }
