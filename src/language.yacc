@@ -109,7 +109,6 @@
 %token F_MIXED_ID
 %token F_MOD_EQ
 %token F_MULT_EQ
-%token F_MULT
 %token F_NO_MASK
 %token F_OBJECT_ID
 %token F_OR_EQ
@@ -147,7 +146,7 @@
 %left '>' F_GE '<' F_LE  /* nonassoc? */
 %left F_LSH F_RSH
 %left '+' '-'
-%left '*' '%' '/' F_MULT
+%left '*' '%' '/'
 %right F_NOT '~'
 %nonassoc F_INC F_DEC
 
@@ -907,7 +906,6 @@ expr1: expr2
      | expr1 '+' expr1    { $$=mkopernode("`+",$1,$3); }
      | expr1 '-' expr1    { $$=mkopernode("`-",$1,$3); }
      | expr1 '*' expr1    { $$=mkopernode("`*",$1,$3); }
-     | expr1 F_MULT expr1    { $$=mkopernode("`*",$1,$3); }
      | expr1 '%' expr1    { $$=mkopernode("`%",$1,$3); }
      | expr1 '/' expr1    { $$=mkopernode("`/",$1,$3); }
      ;
