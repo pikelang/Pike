@@ -27,7 +27,7 @@ Primary: ftp://ftp.oav.net/pike/7.6/
 <<
 Source: mirror:custom:pike-%v.tar.gz
 Source-MD5: 23aa91ffc4c0885117d24a061dc54ca4
-BuildDepends: gmp,fileutils,libjpeg,freetype,freetype2,gdbm,pdflib,fftw,dlcompat-dev,mysql12-dev
+BuildDepends: gmp,fileutils,libjpeg,freetype,freetype2,gdbm,pdflib,fftw,dlcompat-dev,mysql12-dev,nettle
 Depends: gmp-shlibs,libjpeg-shlibs,freetype-shlibs,freetype2-shlibs,gdbm-shlibs,pdflib-shlibs,libtiff-shlibs,ffmpeg,fftw-shlibs,dlcompat-shlibs,mysql12-shlibs
 SourceDirectory: pike-%v
 CompileScript: <<
