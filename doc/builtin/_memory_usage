@@ -1,0 +1,14 @@
+NAME
+	_memory_usage - check memory usage
+
+SYNTAX
+	mapping(string:int) _memory_usage();
+
+DESCRIPTION
+	This function is mostly intended for debugging. It delivers a mapping
+	with information about how many arrays/mappings/strings etc. there
+	are currently allocated and how much memory they use. Try evaluating
+	the function in hilfe to see precisly what it returns.
+
+SEE ALSO
+	_verify_internals
