@@ -155,10 +155,11 @@ static int my_signal(int sig, sigfunctype fun)
 #ifdef HAVE_SIGACTION
   {
     struct sigaction action;
-    action.sa_handler=func;
+    action.sa_handler=fun;
     sigfillset(&action.sa_mask);
 #ifdef SA_INTERRUPT
-    action.sa_flags=SA_INTERRUPT;
+    if(fun != SIG_IGN)
+      action.sa_flags=SA_INTERRUPT;
 #endif
     sigaction(sig,&action,0);
   }
@@ -166,10 +167,11 @@ static int my_signal(int sig, sigfunctype fun)
 #ifdef HAVE_SIGVEC
   {
     struct sigvec action;
-    action.sv_handler= func;
+    action.sv_handler= fun;
     action.sv_mask=-1;
 #ifdef SA_INTERRUPT
-    action.sv_flags=SV_INTERRUPT;
+    if(fun != SIG_IGN)
+      action.sv_flags=SV_INTERRUPT;
 #endif
     sigvec(sig,&action,0);
   }
