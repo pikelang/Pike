@@ -1,0 +1,12 @@
+NAME
+	version - return version info
+
+SYNTAX
+	string version();
+
+DESCRIPTION
+	This function returns a brief information about the uLPC version.
+
+EXAMPLE
+	> version();
+	Result: uLPC v1.0E-13
