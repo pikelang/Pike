@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.46 1999/02/27 21:52:37 grubba Exp $
+ * $Id: cpp.c,v 1.47 1999/03/02 03:39:17 grubba Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -231,11 +231,11 @@ static void simple_add_define(struct cpp *this,
     break;							\
   } } while(0)
 
-#define DUMPPOS(X)					\
-		  fprintf(stderr,"\nPOS(%s):",X);	\
-		  fflush(stderr);			\
-		  write(2,data+pos,20);			\
-		  fprintf(stderr,"\n");			\
+#define DUMPPOS(X)							\
+		  fprintf(stderr,"\nSHIFT:%d, POS(%s):",SHIFT,X);	\
+		  fflush(stderr);					\
+		  write(2,data+pos,20<<SHIFT);				\
+		  fprintf(stderr,"\n");					\
 		  fflush(stderr)
 
 #define FIND_EOL() do {				\
