@@ -16,7 +16,7 @@
 
 // Author:  Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: Crawler.pmod,v 1.2 2001/06/10 11:39:11 per Exp $
+// $Id: Crawler.pmod,v 1.3 2001/06/26 03:14:14 js Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -171,13 +171,19 @@ class Queue
     if(link->fragment)
       link->fragment=0;
 
+    /*  a  d  check_link
+        -  -  ----------
+        0  0           0
+	0  1           0
+	1  1           0
+	1  0           1
+    */
+
     int a = 1, d = 0;
-//     if( link->query )
-//       link->query = normalize_query( link->query );
 
     if( allow ) a = allow->check(link);
     if( deny )  d = deny->check(link);
-    return a || !d;
+    return a && !d;
   }
 }
 
