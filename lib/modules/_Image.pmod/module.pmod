@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.24 2001/09/05 17:23:34 marcus Exp $
+// $Id: module.pmod,v 1.25 2002/01/18 01:07:42 nilsson Exp $
 
 //! @decl Image.Layer load()
 //! @decl Image.Image load(object file)
@@ -111,7 +111,7 @@ mapping _decode( string data, mixed|void tocolor )
   ]);
 }
 
-array(Image.Layer) decode_layers( string data, mixed|void tocolor )
+array(Image.Layer) decode_layers( string data, mapping|void opt )
 {
   array i;
   function f;
@@ -119,19 +119,19 @@ array(Image.Layer) decode_layers( string data, mixed|void tocolor )
     return 0;
 
 #if constant(Image.GIF) && constant(Image.GIF.RENDER)
-  i = Image["GIF"]->decode_layers( data, tocolor );
+  catch( i = Image["GIF"]->decode_layers( data ) );
 #endif
 
   if(!i)
     foreach( ({ "XCF", "PSD","ILBM" }), string fmt )
       if( (f=Image[fmt]["decode_layers"]) &&
-	  !catch(i = f( data,tocolor )) && i )
+	  !catch(i = f( data, opt )) && i )
 	break;
 
   if(!i) // No image could be decoded at all.
     catch
     {
-      mapping q = _decode( data, tocolor );
+      mapping q = _decode( data, opt );
       if( !q->img )
 	return 0;
       i = ({
