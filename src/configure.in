@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.380 2000/06/29 00:09:44 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.381 2000/06/29 10:01:52 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -194,8 +194,9 @@ if ls -1tr "$SMARTLINK${ac_exeext}" "$srcdir/smartlink.$ac_ext" 2>/dev/null | he
 else
   AC_MSG_RESULT(no)
 
-  if echo foo "$CC" | egrep rntc. >/dev/null; then
-    echo Warning: rntcc/rntcl detected. Using the smartlink /bin/sh script.
+  if echo foo "$CC" | egrep 'rntc.|rntec.' >/dev/null; then
+    echo Warning: rntcc/rntcl/rntecl detected.
+    echo Using the smartlink /bin/sh script.
     SMARTLINK="$BINDIR/smartlink"
   else
     rm -f "$SMARTLINK"
@@ -850,7 +851,7 @@ if test $cflags_is_set = no; then
       AC_SYS_COMPILER_FLAG(-Qip,Qip,OPTIMIZE)
 
       # More warnings.
-      AC_SYS_COMPILER_FLAG(-W4,W3,WARN)
+      AC_SYS_COMPILER_FLAG(-W4,W4,WARN)
 
       if test x$with_rtldebug = xyes ; then
         # Initialize auto variables to 0xcc.
@@ -1311,6 +1312,8 @@ AC_CHECK_LIB(m, floor)
 AC_CHECK_LIB(socket, socket)
 
 if test x"$pike_cv_sys_os" = xWindows_NT ; then
+  # FIXME: These look suspiciouly much like 32bit versions.
+  #        We probably want to use 64bit versions on IA64.
   LIBS="-lkernel32 -lws2_32 -ladvapi32 $LIBS"
 fi
 
@@ -1943,7 +1946,7 @@ int main(int argc, char **argv)
   exit(0);
 }
 ], pike_cv_broken_f_setfd=no, pike_cv_broken_f_setfd=yes,
-   pike_cv_broken_f_setfd=no)
+   pike_cv_broken_f_setfd=yes)
 ])
 
 if test "x$pike_cv_broken_f_setfd" = "xyes"; then
