@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.128 2000/07/02 02:27:20 mast Exp $");
+RCSID("$Id: object.c,v 1.129 2000/07/03 16:50:51 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -734,7 +734,8 @@ void schedule_really_free_object(struct object *o)
       /* It's a fake object which isn't counted by the gc, so
        * counteract the num_objects-- done by GC_FREE. */
       num_objects++;
-    GC_FREE();
+    /* This is the only free allowed in the gc check pass. */
+    LOW_GC_FREE();
 
     FREE_PROT(o);
 
@@ -1439,7 +1440,9 @@ void gc_mark_all_objects(void)
   while (gc_mark_object_pos) {
     struct object *o = gc_mark_object_pos;
     gc_mark_object_pos = o->next;
-    if(gc_is_referenced(o))
+    if(o->refs && gc_is_referenced(o))
+      /* Refs check since objects without refs are left around during
+       * gc by schedule_really_free_object(). */
       gc_mark_object_as_referenced(o);
   }
 
@@ -1467,7 +1470,13 @@ void gc_free_all_unreferenced_objects(void)
 
   for(o=gc_internal_object; o; o=next)
   {
-    if(gc_do_free(o))
+    if (!o->refs) {
+      /* Time to handle the refless object left around by
+       * schedule_really_free_object() during the gc. */
+      next = o->next;
+      schedule_really_free_object(o);
+    }
+    else if(gc_do_free(o))
     {
       /* Got an extra ref from gc_cycle_pop_object(). */
 #ifdef PIKE_DEBUG
