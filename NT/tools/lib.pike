@@ -15,61 +15,90 @@ string fixabspath(string s)
   return replace(s,"/","\\");
 }
 
-string handle_input(object o)
-{
-  if(o->proxy)
-    o->proxy(Stdio.File("stdin"));
-  else
-    thread_create(lambda(object o)
-		 {
-		   object stdin=Stdio.File("stdin");
-		   while(string s=stdin->read(1000,1))
-		     o->write(s);
-		 },o);
-}
-
-
-object low_do_cmd(string *cmd)
-{
-  object(Stdio.File) f=Stdio.File();
-  if(!f->connect(getenv("NTHOST"),(int)getenv("NTPORT")))
-  {
-    werror("Failed to connect "+strerror(errno())+".\n");
-    exit(1);
-  }
-
-  string tmp=getcwd();
-  string mnt=getenv("NTMOUNT");
-  if(mnt && strlen(mnt)) tmp=replace(tmp,mnt,"");
-  cmd=({getenv("NTDRIVE")+replace(tmp,"/","\\")})+cmd;
-  f->write(sprintf("%4c",sizeof(cmd)));
-  for(int e=0;e<sizeof(cmd);e++)
-    f->write(sprintf("%4c%s",strlen(cmd[e]),cmd[e]));
-  return f;
-}
-
 int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 {
-  object(Stdio.File) f=low_do_cmd(cmd);
-
-  handle_input(f);
   string ret="";
-  while(1)
+  object(Stdio.File) f=Stdio.File();
+
+  switch(getenv("REMOTE_METHOD"))
   {
-    string s;
-    sscanf(f->read(4),"%4c",int len);
-    if(!len) break;
-    s=f->read(len);
-    s=replace(s,"\r\n","\n");
-    if(!silent) write(s);
-    ret+=s;
+    default:
+      werror("Unknown REMOTE method %s\n",getenv("REMOTE_METHOD"));
+      break;
+
+    case "wine":
+    case "WINE":
+#if 0
+      if(!silent && !filter)
+      {
+	return Process.create_process(({"wine",cmd*" "}))->wait();
+      }
+      else
+#endif
+      {
+	object o=f->pipe(Stdio.PROP_BIDIRECTIONAL | Stdio.PROP_IPC);
+	object proc=Process.create_process(({"wine",
+					       "-debugmsg","fixme-all",
+					       cmd*" "}),
+					   (["stdout":o]));
+	destruct(o);
+	while(1)
+	{
+	  string s=f->read(8192,1);
+	  if(!s || !strlen(s)) break;
+	  s=replace(s,"\r\n","\n");
+	  if(!silent) write(s);
+	  ret+=s;
+	}
+	if(filter) filter(ret);
+	destruct(f);
+	return proc->wait();
+      }
+
+    case 0:
+    case "sprsh":
+    case "SPRSH":
+      string tmp=getcwd();
+      string mnt=getenv("NTMOUNT");
+      if(mnt && strlen(mnt)) tmp=replace(tmp,mnt,"");
+      cmd=({getenv("NTDRIVE")+replace(tmp,"/","\\")})+cmd;
+      if(!f->connect(getenv("NTHOST"),(int)getenv("NTPORT")))
+      {
+	werror("Failed to connect "+strerror(errno())+".\n");
+	exit(1);
+	}
+      
+      f->write(sprintf("%4c",sizeof(cmd)));
+      for(int e=0;e<sizeof(cmd);e++)
+	f->write(sprintf("%4c%s",strlen(cmd[e]),cmd[e]));
+
+      if(f->proxy)
+	f->proxy(Stdio.File("stdin"));
+      else
+	thread_create(lambda(object f)
+		      {
+			object stdin=Stdio.File("stdin");
+			while(string s=stdin->read(1000,1))
+			  f->write(s);
+		      },f);
+
+      while(1)
+      {
+	string s;
+	sscanf(f->read(4),"%4c",int len);
+	if(!len) break;
+	s=f->read(len);
+	s=replace(s,"\r\n","\n");
+	if(!silent) write(s);
+	ret+=s;
+      }
+      if(filter) filter(ret);
+      sscanf(f->read(4),"%4c",int code);
+      f->close("r");
+      f->close("w");
+      destruct(f);
+      return code;
   }
-  if(filter) filter(ret);
-  sscanf(f->read(4),"%4c",int code);
-  f->close("r");
-  f->close("w");
-  destruct(f);
-  return code;
 }
 
 string tmp;
@@ -84,20 +113,21 @@ string popen_cmd(string *cmd)
 string getntenv(string var)
 {
   string s="";
-  object(Stdio.File) f=low_do_cmd( ({"getenv",var}) );
-  
-  while(1)
+  switch(getenv("REMOTE_METHOD"))
   {
-    sscanf(f->read(4),"%4c", int len);
-    if(!len) break;
-    s+=f->read(len);
-  }
+    default:
+      werror("Unknown REMOTE method %s\n",getenv("REMOTE_METHOD"));
+      break;
 
-  sscanf(f->read(4),"%4c",int code);
-  f->close("r");
-  f->close("w");
-  destruct(f);
-  return s;
+    case "wine":
+    case "WINE":
+      return getenv(var) || getenv(lower_case(var));
+
+    case 0:
+    case "sprsh":
+    case "SPRSH":
+      return popen_cmd( ({"getenv",var}) );
+  }
 }
 
 

@@ -1,5 +1,8 @@
 #!/bin/sh
 
+#This can be 'sprsh' or 'wine'
+REMOTE_METHOD=sprsh
+
 # Edit
 NTHOST=10.0.4.10
 NTDRIVE='j:'
@@ -13,6 +16,10 @@ USE_SPRSH=yes
 
 # Port for sprsh
 NTPORT=4711
+
+#These are only used if you use wine
+watcom=D:\\CDROM
+INCLUDE="$watcom\\H;$watcom\\H\\NT"
 
 # Don't edit
 
@@ -35,18 +42,23 @@ fi
 IFS=' 	
 '
 
-export NTHOST NTDRIVE NTCC CC PATH NTTOOLS MNTREPLACE MNTREPLACE NTPORT USE_SPRSH NTMOUNT IFS
+export NTHOST NTDRIVE NTCC CC PATH NTTOOLS MNTREPLACE MNTREPLACE 
+export NTPORT USE_SPRSH NTMOUNT IFS REMOTE_METHOD watcom INCLUDE
 
 case /$SHELL-$TERM in
    */bash-xterm)
-     PROMPT_COMMAND="echo -n ]2\; Remote NT compile ]1\; rntcc"
+     PROMPT_COMMAND="echo -n ]2\; $REMOTE_METHOD NT compile ]1\; rntcc"
      export PROMPT_COMMAND
    ;;
 esac
 
 case /$SHELL in
    */bash)
-     PS1="NT $NTHOST \\$ "
+     if [ $REMOTE_METHOD = sprsh ]; then
+       PS1="NT $NTHOST \\$ "
+     else
+       PS1="WINE \\$ "
+     fi
      export PS1
    ;;
 esac
