@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.79 1999/03/28 23:42:04 grubba Exp $
+ * $Id: requests.pmod,v 1.80 1999/03/28 23:45:05 grubba Exp $
  */
 
 import .types;
@@ -309,6 +309,8 @@ class status
 
     if (res) {
       send("*", "STATUS", mailbox, imap_list(res));
+
+      // Stupid Outlook 5 looks at the second part...
       send(tag, "OK", "STATUS done");
     } else {
       send(tag, "NO", "STATUS failed");
