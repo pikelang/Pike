@@ -1231,7 +1231,7 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
 			    destp[0],*d_p);
 	    feed=*destp;
 	    c=d_p[0]+1;
-	    continue; // scan more
+	    continue; /* Aja baja /hubbe: //scan more  */
 	 }
 	 else
 	 {
