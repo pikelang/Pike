@@ -1,4 +1,5 @@
-// $Id: rsqld.pike,v 1.5 2003/01/19 15:34:47 nilsson Exp $
+#! /usr/bin/env pike
+// $Id: rsqld.pike,v 1.6 2003/01/26 19:51:10 nilsson Exp $
 
 constant description = "Implements an rsql daemon.";
 
@@ -340,6 +341,41 @@ class Server
 
 int main(int argc, array(string) argv)
 {
-  Server();
+  int port;
+  string ip;
+  foreach(Getopt.find_all_options(argv, ({
+    ({ "port",  Getopt.HAS_ARG,  "-p,--port"/"," }),
+    ({ "ip",    Getopt.HAS_ARG,  "-i,--ip"/","   }),
+    ({ "help",  Getopt.NO_ARG,   "-h,--help"/"," }),
+  })), array opt)
+    switch(opt[0])
+    {
+    case "port":
+      port=(int)opt[1];
+      if(!port) werror("Illegal port selected.\n");
+      break;
+    case "ip":
+      ip=opt[1];
+      break;
+    case "help":
+      write(doc);
+      return 0;
+    }
+
+  Server(port, ip);
   return -17;
 }
+
+constant doc=#"Usage: rsqld [OPTION]
+Starts a database proxy server to which other Pike processes can
+connect and make database queries as if they were running locally. To
+connect to the server, simply specify the rsql protocol when creating
+an Sql object.
+The rsql URL is rsql://<host>[:<port>]/<local databaseURL>.
+Example: Sql.Sql(\"rsql://10.0.0.17/mysql://localhost/web\");
+
+Options:
+  -p#, --port=#  The rsqld port. Defaults to 3994.
+  -i#, --ip=#    The ip to open the port on.
+  -h, --help     Displays this message.
+";
