@@ -1,4 +1,4 @@
-// $Id: benchmark.pike,v 1.3 2002/12/17 19:49:34 per Exp $
+// $Id: benchmark.pike,v 1.4 2003/01/19 18:47:44 nilsson Exp $
 
 constant description = "Runs some built in Pike benchmarks.";
 constant help = #"
@@ -19,7 +19,7 @@ Arguments:
   Only run the specified tests.
 ";
 
-int(0..0) main(int num, array(string) args)
+int(0..) main(int num, array(string) args)
 {
    mapping(string:Tools.Shoot.Test) tests=([]);
    array results=({});
@@ -58,7 +58,8 @@ int(0..0) main(int num, array(string) args)
 	test_glob = opt[1];
     }
 
-   Tools.Shoot.ExecTest("Overhead",Tools.Shoot.Overhead())
+   int ecode;
+   ecode += Tools.Shoot.ExecTest("Overhead",Tools.Shoot.Overhead())
      ->run(0,1,1); // fill caches
 
    write("test                        total    user    mem   (runs)\n");
@@ -66,7 +67,8 @@ int(0..0) main(int num, array(string) args)
 /* always run overhead check first */
    foreach (glob(test_glob,({"Overhead"})+(sort(indices(tests))-({"Overhead"})));;string id)
    {
-      Tools.Shoot.ExecTest(id,tests[id])
-	 ->run(seconds_per_test,maximum_runs);
+      ecode += Tools.Shoot.ExecTest(id,tests[id])
+	->run(seconds_per_test,maximum_runs);
    }
+   return ecode;
 }

@@ -35,7 +35,7 @@ lambda()
       res+=({"-m"+master()->_master_file_name});
    foreach (master()->pike_module_path;;string path)
       res+=({"-M"+path});
-   if (-1==search(res[0],"/"))
+   if (sizeof(res) && !has_value(res[0],"/"))
       res[0]=locate_binary(getenv("PATH")/":",res[0]);
    return res;
 }();
@@ -53,7 +53,7 @@ class ExecTest(string id,Test test)
    //! a new pike and call it until at least one of these conditions:
    //! maximum_seconds has passed, or
    //! the number of runs is at least maximum_runs.
-   void run(int maximum_seconds,
+   int(0..1) run(int maximum_seconds,
 	    int maximum_runs,
 	    void|int silent)
    {
@@ -82,7 +82,7 @@ class ExecTest(string id,Test test)
 	 if (status=="")
 	 {
 	    write("failed to spawn pike or run test\n");
-	    return;
+	    return 1;
 	 }
 
 	 array v=status/"\n";
@@ -98,7 +98,7 @@ class ExecTest(string id,Test test)
       useconds=tg/nruns;
       tseconds=truns/nruns;
 
-      if (silent) return;
+      if (silent) return 0;
 
       write("%6.3fs %6.3fs %5dkb %5s%s\n",
 	    tseconds,
@@ -109,6 +109,7 @@ class ExecTest(string id,Test test)
 	    ?" ("+test->present_n(testntot,nruns,tseconds,
 				  useconds,memusage)+")"
 	    :"");
+      return 0;
    }
 }
 
