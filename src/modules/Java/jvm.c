@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.10 1999/12/19 18:23:58 marcus Exp $
+ * $Id: jvm.c,v 1.11 1999/12/21 00:04:38 marcus Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -16,7 +16,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.10 1999/12/19 18:23:58 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.11 1999/12/21 00:04:38 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -3006,6 +3006,133 @@ static void f_javafatal(INT32 args)
   push_int(0);
 }
 
+static void f_new_boolean_array(INT32 args)
+{
+  JNIEnv *env;
+  INT_TYPE n;
+
+  get_all_args("new_boolean_array", args, "%i", &n);
+  pop_n_elems(args);
+
+  if((env = jvm_procure_env(fp->current_object))) {
+    push_java_array((*env)->NewBooleanArray(env, n), fp->current_object,
+		    env, 'Z');
+    jvm_vacate_env(fp->current_object, env);
+  } else
+    push_int(0);
+}
+
+static void f_new_byte_array(INT32 args)
+{
+  JNIEnv *env;
+  INT_TYPE n;
+
+  get_all_args("new_byte_array", args, "%i", &n);
+  pop_n_elems(args);
+
+  if((env = jvm_procure_env(fp->current_object))) {
+    push_java_array((*env)->NewByteArray(env, n), fp->current_object,
+		    env, 'B');
+    jvm_vacate_env(fp->current_object, env);
+  } else
+    push_int(0);
+}
+
+static void f_new_char_array(INT32 args)
+{
+  JNIEnv *env;
+  INT_TYPE n;
+
+  get_all_args("new_char_array", args, "%i", &n);
+  pop_n_elems(args);
+
+  if((env = jvm_procure_env(fp->current_object))) {
+    push_java_array((*env)->NewCharArray(env, n), fp->current_object,
+		    env, 'C');
+    jvm_vacate_env(fp->current_object, env);
+  } else
+    push_int(0);
+}
+
+static void f_new_short_array(INT32 args)
+{
+  JNIEnv *env;
+  INT_TYPE n;
+
+  get_all_args("new_short_array", args, "%i", &n);
+  pop_n_elems(args);
+
+  if((env = jvm_procure_env(fp->current_object))) {
+    push_java_array((*env)->NewShortArray(env, n), fp->current_object,
+		    env, 'S');
+    jvm_vacate_env(fp->current_object, env);
+  } else
+    push_int(0);
+}
+
+static void f_new_int_array(INT32 args)
+{
+  JNIEnv *env;
+  INT_TYPE n;
+
+  get_all_args("new_int_array", args, "%i", &n);
+  pop_n_elems(args);
+
+  if((env = jvm_procure_env(fp->current_object))) {
+    push_java_array((*env)->NewIntArray(env, n), fp->current_object,
+		    env, 'I');
+    jvm_vacate_env(fp->current_object, env);
+  } else
+    push_int(0);
+}
+
+static void f_new_long_array(INT32 args)
+{
+  JNIEnv *env;
+  INT_TYPE n;
+
+  get_all_args("new_long_array", args, "%i", &n);
+  pop_n_elems(args);
+
+  if((env = jvm_procure_env(fp->current_object))) {
+    push_java_array((*env)->NewLongArray(env, n), fp->current_object,
+		    env, 'J');
+    jvm_vacate_env(fp->current_object, env);
+  } else
+    push_int(0);
+}
+
+static void f_new_float_array(INT32 args)
+{
+  JNIEnv *env;
+  INT_TYPE n;
+
+  get_all_args("new_float_array", args, "%i", &n);
+  pop_n_elems(args);
+
+  if((env = jvm_procure_env(fp->current_object))) {
+    push_java_array((*env)->NewFloatArray(env, n), fp->current_object,
+		    env, 'F');
+    jvm_vacate_env(fp->current_object, env);
+  } else
+    push_int(0);
+}
+
+static void f_new_double_array(INT32 args)
+{
+  JNIEnv *env;
+  INT_TYPE n;
+
+  get_all_args("new_double_array", args, "%i", &n);
+  pop_n_elems(args);
+
+  if((env = jvm_procure_env(fp->current_object))) {
+    push_java_array((*env)->NewDoubleArray(env, n), fp->current_object,
+		    env, 'D');
+    jvm_vacate_env(fp->current_object, env);
+  } else
+    push_int(0);
+}
 
 #endif /* HAVE_JAVA */
 
@@ -3211,6 +3338,18 @@ void pike_module_init(void)
 	       "function(:void)", 0);
   add_function("exception_clear", f_exception_clear, "function(:void)", 0);
   add_function("fatal", f_javafatal, "function(string:void)", 0);
+  add_function("new_boolean_array", f_new_boolean_array,
+	       "function(int:object)", 0);
+  add_function("new_byte_array", f_new_byte_array, "function(int:object)", 0);
+  add_function("new_char_array", f_new_char_array, "function(int:object)", 0);
+  add_function("new_short_array", f_new_short_array,
+	       "function(int:object)", 0);
+  add_function("new_int_array", f_new_int_array, "function(int:object)", 0);
+  add_function("new_long_array", f_new_long_array, "function(int:object)", 0);
+  add_function("new_float_array", f_new_float_array,
+	       "function(int:object)", 0);
+  add_function("new_double_array", f_new_double_array,
+	       "function(int:object)", 0);
   set_init_callback(init_jvm_struct);
   set_exit_callback(exit_jvm_struct);
 #ifdef _REENTRANT
