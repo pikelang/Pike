@@ -1,3 +1,16 @@
+Fri Dec  5 23:25:33 1997  Henrik Grubbström  <grubba@infovav.se>
+
+	* modules/Image/colortable.c (reduce_recurse): Now uses MEMMOVE()
+ 	instead of memmove().
+	* pike_memory.c (strdup): Added function for OS's who don't have
+	strdup().
+	* modules/files/configure.in: Fixed configure-test for readdir_r to
+ 	work on Sparc-Linux.
+	* modules/files/efuns.c (f_filesystem_stat): Added support for ULTRIX's
+	struct fs_data.
+	* modules/_Crypto/lib/Makefile.in: algorithms.a is now built in a way
+	that works on Irix 4.0.5.
+
 Mon Nov 17 04:11:14 1997  Niels Möller  <nisse@infovav.se>
 
 	* modules/_Crypto/.build_lobotomized_crypto: Script to build a
