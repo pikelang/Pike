@@ -31,8 +31,7 @@ struct cache_entry
   time_t stale_at;
   char *url;  int url_len;
   char *host; int host_len;
-  short dead;
-  short refs;
+  int refs;
 };
 
 struct file_ret
@@ -50,15 +49,15 @@ struct pstring
 
 
 #define FS_STATS
+
 struct filesystem
 {
   struct pstring base;
-
 #ifdef FS_STATS /* These can be wrong, but should give an indication.. */
-  int lookups;
-  int hits;
-  int notfile;
-  int noperm;
+  unsigned int lookups;
+  unsigned int hits;
+  unsigned int notfile;
+  unsigned int noperm;
 #endif
 };
 
@@ -67,11 +66,10 @@ struct cache
   MUTEX_T mutex;
   struct cache *next;
   struct cache_entry *htable[CACHE_HTABLE_SIZE];
-  int size, entries, max_size;
-  int hits, misses, stale;
-  int num_requests, sent_data, received_data;
-  short unclean;
-  short gone;
+  unsigned int size, entries, max_size;
+  unsigned int hits, misses, stale;
+  unsigned int num_requests, sent_data, received_data;
+  int gone;
 };
 
 struct args 
@@ -93,9 +91,9 @@ struct log_entry
 {
   struct log_entry *next;
   int t;
-  int sent_bytes;
-  int reply;
-  int received_bytes;
+  unsigned int sent_bytes;
+  unsigned int reply;
+  unsigned int received_bytes;
   struct pstring raw;
   struct pstring url;
   struct sockaddr_in from;
@@ -152,7 +150,4 @@ struct c_request_object
 #define THIS ((struct c_request_object *)fp->current_storage)
 #define LTHIS ((struct args *)fp->current_storage)
 
-
-
 void aap_handle_connection(struct args *arg);
-

@@ -99,7 +99,7 @@ static void failed(struct args *arg)
 static int parse(struct args *arg)
 {
   int s1=0, s2=0, i;
-  struct cache_entry *ce, *p; 
+  struct cache_entry *ce ;
   /* get: URL, Protocol, method, headers*/
   for(i=0;i<arg->res.data_len;i++)
     if(arg->res.data[i] == ' ') {
@@ -193,7 +193,6 @@ static int parse(struct args *arg)
   arg->res.url_len = (s2?s2:i)-s1-1;
   
   {
-    int hv;
     struct pstring h;
     h.len=0;
     h.str="";
@@ -211,7 +210,7 @@ static int parse(struct args *arg)
       if(!aap_get_header(arg, "pragma", H_EXISTS, 0))
 	if((ce = aap_cache_lookup(arg->res.url, arg->res.url_len, 
 			      arg->res.host, arg->res.host_len,
-			      arg->cache,0, &p, &hv)) && ce->data)
+			      arg->cache,0, NULL, NULL)) && ce->data)
 	{
 	  int len = WRITE(arg->fd, ce->data->str, ce->data->len);
 	  LOG(len, arg, atoi(ce->data->str+MY_MIN(ce->data->len, 9))); 
@@ -470,6 +469,7 @@ static void low_accept_loop(struct args *arg)
 
 static void finished_p(struct callback *foo, void *b, void *c)
 {
+  aap_clean_cache();
   while(request)
   {
     struct args *arg;
@@ -483,12 +483,6 @@ static void finished_p(struct callback *foo, void *b, void *c)
     if(!arg->res.url) /* not parsed!? */
       fatal("AAP: Very odd request.\n");
 #endif
-
-    if(arg->cache->unclean) 
-      /* This must be done from the backend.
-       * That's why we do it here.
-       */ 
-      aap_clean_cache(arg->cache, 0); 
 
     o = clone_object( request_program, 0 ); /* see requestobject.c */
     obj = (struct c_request_object *)get_storage(o, c_request_program );
@@ -750,6 +744,7 @@ void pike_module_exit()
     }
   }
 
+  aap_clean_cache();
   while(first_cache)
   {
     int i;

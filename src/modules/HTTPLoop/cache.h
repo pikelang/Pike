@@ -12,7 +12,7 @@ void simple_aap_free_cache_entry(struct cache *c, struct cache_entry *e);
 
 void aap_cache_insert(struct cache_entry *ce, struct cache *c);
 
-void aap_clean_cache(struct cache *ce, int nolock);
+void aap_clean_cache();
 
 extern struct cache *first_cache;
 

@@ -27,6 +27,72 @@
 
 struct cache *first_cache;
 
+static struct pike_string *free_queue[1024];
+static int numtofree;
+static MUTEX_T tofree_mutex;
+
+static void really_free_from_queue() 
+/* Must have tofree lock and interpreter lock */
+{
+  int i;
+  for( i=0; i<numtofree; i++ )
+    free_string( free_queue[i] );
+  numtofree=0;
+}
+
+static int ensure_interpreter_lock( )
+{
+  struct thread_state *thi;
+  int free=0;
+  if( thi = thread_state_for_id( th_self() ) )
+  {
+    if( thi->swapped ) /* We are swapped out.. */
+    {
+      mt_lock( &interpreter_lock );
+      return 1;
+    }
+    return 0; /* we are swapped in */
+  }
+
+  /* we are not a pike thread */
+  if( num_threads == 1 )
+    free=num_threads++;
+  wake_up_backend();
+  mt_lock( &interpreter_lock );
+  if( free ) 
+    num_threads--;
+  return 1;
+}
+
+static void free_from_queue()
+{
+  /* We have the interpreter lock here, this is a backend callback */
+  mt_lock( &tofree_mutex );
+  really_free_from_queue();
+  mt_unlock( &tofree_mutex );
+}
+
+static void enqueue_string_to_free( struct pike_string *s )
+{
+  mt_lock( &tofree_mutex );
+  if( numtofree > 1020 )
+  {
+    /* This should not happend all that often.
+     * Almost never, actually.
+     *
+     * This only happends if 1020 different cache entries
+     * have to be freed in one backend callback loop.
+     *
+     */
+    int free_interpreter_lock = ensure_interpteter_lock();
+    really_free_from_queue();
+    if( free_interpreter_lock )
+      mt_unlock( &interpreter_lock );
+  }
+  free_queue[ numtofree++ ] = s;
+  mt_unlock( &tofree_mutex );
+}
+
 static int cache_hash(char *s, int len)
 {
   unsigned int res = len * 9471111;
@@ -57,7 +123,10 @@ static void really_free_cache_entry(struct cache  *c, struct cache_entry *e,
 
   c->size -= e->data->len;
   c->entries--;
-  free_string(e->data);
+    /* Not really a good idea here.. 
+       We might be running without the interpreter lock. */
+/*   free_string(e->data);  */
+  enqueue_string_to_free( e->data );
   free(e->host);
   free(e->url);
   free(e);
@@ -73,7 +142,8 @@ void aap_free_cache_entry(struct cache *c, struct cache_entry *e,
   if(e->refs<=0)
     fatal("Freeing free cache entry\n");
 #endif
-  if(!--e->refs) really_free_cache_entry(c,e,prev,b);
+  if(!--e->refs) 
+    really_free_cache_entry(c,e,prev,b);
 }
 
 void simple_aap_free_cache_entry(struct cache *c, struct cache_entry *e)
@@ -111,18 +181,14 @@ void aap_cache_insert(struct cache_entry *ce, struct cache *c)
 #endif
   c->size += ce->data->len;
   if((head = aap_cache_lookup(ce->url, ce->url_len, 
-			  ce->host, ce->host_len, c, 1, 
-			  &p, &hv)) && !head->dead)
+                              ce->host, ce->host_len, c, 1, 
+                              &p, &hv)))
   {
     c->size -= head->data->len;
+    enqueue_string_to_free(head->data);
     if(head->data != ce->data)
-    {
-      free_string(head->data);
       head->data = ce->data;
-    } else
-      free_string(head->data);
     head->stale_at = ce->stale_at;
-    head->dead = 0;
     aap_free_cache_entry( c, head, p, hv );
     free(ce);
   } else {
@@ -142,7 +208,7 @@ struct cache_entry *aap_cache_lookup(char *s, int len,char *ho, int hlen,
   int h = cache_hash(s, len) + cache_hash(ho,hlen);
   struct cache_entry *e, *prev=NULL;
 
-  *hv = h;
+  if( hv ) *hv = h;
   if(!nolock) 
     mt_lock(&c->mutex);
 #ifdef DEBUG
@@ -153,22 +219,18 @@ struct cache_entry *aap_cache_lookup(char *s, int len,char *ho, int hlen,
       fatal("Cache lookup running unlocked\n");
   }
 #endif
-  *p = 0;
+  if( p ) *p = 0;
   e = c->htable[h];
   while(e)
   {
-    if(!e->dead && e->url_len == len && e->host_len == hlen 
-       && !memcmp(e->url,s,len) && !memcmp(e->host,ho,hlen))
+    if(e->url_len == len && e->host_len == hlen 
+       && !memcmp(e->url,s,len) 
+       && !memcmp(e->host,ho,hlen))
     {
       int t = aap_get_time();
       if(e->stale_at < t)
       {
-	c->unclean = 1;
-	/* We cannot free the pike-string from here. 
-	 * Let the clean-up code handle that instead. 
-	 */
-	e->dead = 1;
-	c->stale++;
+        app_free_cache_entry( c, e, prev, h );
 	if(!nolock) mt_unlock(&c->mutex);
 	return 0;
       }
@@ -184,7 +246,8 @@ struct cache_entry *aap_cache_lookup(char *s, int len,char *ho, int hlen,
       e->refs++;
       return e;
     }
-    *p = prev = e;
+    prev = e;
+    if( p ) *p = prev;
     e = e->next;
   }
   c->misses++;
@@ -192,26 +255,31 @@ struct cache_entry *aap_cache_lookup(char *s, int len,char *ho, int hlen,
   return 0;
 }
 
-
-void aap_clean_cache(struct cache *c, int nolock)
+void aap_clean_cache()
 {
-  int i;
-  struct cache_entry *e, *p, *prev = 0;
-  if(!nolock) mt_lock(&c->mutex);
-  for(i=0; i<CACHE_HTABLE_SIZE; i++)
+  struct cache *c = first_cache;
+  if(numtofree) free_from_queue();
+  while( c )
   {
-    e = c->htable[i];
-    prev=0;
-    while(e)
+    mt_lock( &c->mutex );
+    while( c->size > c->max_size )
     {
-      p = e->next;
-      if(e->dead) 
-	aap_free_cache_entry(c, e, prev, i);
-      else 
-	prev = e;
-      e = p;
+      int i, mlen=0;
+      struct cache_entry *e;
+      int cv = 0;
+      for( i=0; i<CACHE_HTABLE_SIZE; i++ )
+        if( c->htable[i] &&
+            c->htable[i]->data->len  > mlen )
+        {
+          mlen = c->htable[i]->data->len;
+          e = c->htable[i];
+          cv = i;
+        }
+      app_free_cache_entry( c, e, 0, cv );
     }
+    mt_unlock( &c->mutex );
+    c = c->next;
   }
-  if(!nolock) mt_unlock(&c->mutex);
+  if(numtofree) free_from_queue();
 }
 #endif
