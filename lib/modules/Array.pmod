@@ -682,10 +682,10 @@ int|mapping(mixed:int) count(array|mapping|multiset haystack,
 {
   if(zero_type(needle))
   {
-    mapping res = ([]);
+    mapping(mixed:int) res = ([]);
     if(mappingp(haystack))
-      haystack = values(haystack);
-    foreach(haystack, mixed what)
+      haystack = values([mapping]haystack);
+    foreach((array)haystack, mixed what)
       res[what]++;
     return res;
   }
