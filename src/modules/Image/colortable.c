@@ -1,30 +1,34 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.9 1997/10/27 02:50:45 mirar Exp $ */
+/* $Id: colortable.c,v 1.10 1997/10/27 22:38:05 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.9 1997/10/27 02:50:45 mirar Exp $<br>
+**!	$Id: colortable.c,v 1.10 1997/10/27 22:38:05 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
 **!	mostly for image re-coloring (quantization).
 **!
-**! see also: Image, Image.image, Image.font
+**!	The object has color reduction, quantisation,
+**!	mapping and dithering capabilities.
+**!
+**! see also: Image, Image.image, Image.font, Image.GIF
 */
 
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.9 1997/10/27 02:50:45 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.10 1997/10/27 22:38:05 mirar Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include <netinet/in.h>
 #include <errno.h>
+#include <math.h> /* fabs() */
 
 #include "config.h"
 
@@ -82,10 +86,6 @@ static void colortable_free_lookup_stuff(struct neo_colortable *nct)
 {
    switch (nct->lookup_mode)
    {
-      case NCT_TREE: 
-         if (nct->lu.tree.nodes) free(nct->lu.tree.nodes);
-	 nct->lu.tree.nodes=NULL;
-	 break;
       case NCT_CUBICLES: 
          if (nct->lu.cubicles.cubicles)
 	 {
@@ -143,6 +143,8 @@ static void init_colortable_struct(struct object *o)
 
    for (i=0; i<COLORLOOKUPCACHEHASHSIZE; i++)
       THIS->lookupcachehash[i].index=-1;
+
+   THIS->dither_type=NCTD_NONE;
 }
 
 static void exit_colortable_struct(struct object *obj)
@@ -181,16 +183,22 @@ static void _img_copy_colortable(struct neo_colortable *dest,
 {
    struct nct_scale *s,*d,**np;
    int i;
+
+   /* copy/clear lookup info */
+
    for (i=0; i<COLORLOOKUPCACHEHASHSIZE; i++)
       dest->lookupcachehash[i].index=-1;
 
    dest->lookup_mode=src->lookup_mode;
    switch (dest->lookup_mode)
    {
-      case NCT_TREE:     dest->lu.tree.nodes=NULL; break;
       case NCT_CUBICLES: dest->lu.cubicles.cubicles=NULL; break;
       case NCT_FULL:     break;
    }
+   
+   /* copy dither info */
+   dest->dither_type=src->dither_type;
+   dest->du=src->du; 
 
    switch (src->type)
    {
@@ -247,20 +255,27 @@ static void stderr_print_entries(struct nct_flat_entry *src,int n)
 #define DIFF_B_MULT 3
 #define DIFF_GREY_MULT 3
 
+#define POSITION_DONT (-1.0)
+
+enum nct_reduce_method { NCT_REDUCE_MEAN, NCT_REDUCE_WEIGHT };
+
 static int reduce_recurse(struct nct_flat_entry *src,
 			  struct nct_flat_entry *dest,
 			  int src_size,
 			  int target_size,
 			  int level,
-			  rgbl_group sf)
+			  rgbl_group sf,
+			  rgbd_group position,rgbd_group space,
+			  enum nct_reduce_method type)
 {
    int n,i,m;
    rgbl_group sum={0,0,0},diff={0,0,0};
+   rgbl_group min={256,256,256},max={0,0,0};
    unsigned long mmul,tot=0;
    long gdiff=0,g;
    int left,right;
    enum { SORT_R,SORT_G,SORT_B,SORT_GREY } st;
-
+   rgbd_group newpos1,newpos2;
 
 #ifdef COLORTABLE_REDUCE_DEBUG
    fprintf(stderr,"COLORTABLE%*s reduce_recurse %lx,%lx, %d,%d\n",level,"",(unsigned long)src,(unsigned long)dest,src_size,target_size);
@@ -272,7 +287,14 @@ static int reduce_recurse(struct nct_flat_entry *src,
    if (!src_size) return 0; 
       /* can't go figure some good colors just like that... */
    
-   if (target_size<=1 || src_size<=1)
+   if (src_size==1)
+   {
+      *dest=*src;
+      dest->no=-1;
+      return 1;
+   }
+
+   if (target_size<=1)
    {
       for (i=n=0; i<src_size; i++)
 	 if (src[i].weight==WEIGHT_NEEDED)
@@ -284,30 +306,54 @@ static int reduce_recurse(struct nct_flat_entry *src,
 
       if (n>=target_size) return n;
 
-      /* get the mean color */
-
-      if ((mmul=src_size)>10240) mmul=10240;
-      
-      for (i=0; i<src_size; i++)
+      switch (type)
       {
-	 unsigned long mul=src[i].weight;
+	 case NCT_REDUCE_MEAN:
+	    /* get the mean color */
 
-	 sum.r+=src[i].color.r*mul;
-	 sum.g+=src[i].color.g*mul;
-	 sum.b+=src[i].color.b*mul;
-	 tot+=mul;
-      }
-
-      dest->color.r=sum.r/tot;
-      dest->color.g=sum.g/tot;
-      dest->color.b=sum.b/tot;
-      dest->weight=tot;
-      dest->no=-1;
+	    if ((mmul=src_size)>10240) mmul=10240;
+	    
+	    for (i=0; i<src_size; i++)
+	    {
+	       unsigned long mul=src[i].weight;
+	       
+	       sum.r+=src[i].color.r*mul;
+	       sum.g+=src[i].color.g*mul;
+	       sum.b+=src[i].color.b*mul;
+	       tot+=mul;
+	    }
+	    
+	    dest->color.r=sum.r/tot;
+	    dest->color.g=sum.g/tot;
+	    dest->color.b=sum.b/tot;
+	    dest->weight=tot;
+	    dest->no=-1;
 
 #ifdef COLORTABLE_REDUCE_DEBUG
-  fprintf(stderr,"COLORTABLE%*s sum=%d,%d,%d tot=%d\n",level,"",sum.r,sum.g,sum.b,tot);
-  fprintf(stderr,"COLORTABLE%*s dest=%d,%d,%d weidht=%d no=%d\n",level,"",dest->color.r,dest->color.g,dest->color.b,dest->weight,dest->no);
+	    fprintf(stderr,"COLORTABLE%*s sum=%d,%d,%d tot=%d\n",level,"",sum.r,sum.g,sum.b,tot);
+	    fprintf(stderr,"COLORTABLE%*s dest=%d,%d,%d weidht=%d no=%d\n",level,"",dest->color.r,dest->color.g,dest->color.b,dest->weight,dest->no);
 #endif
+	    break;
+         case NCT_REDUCE_WEIGHT:
+	    /* find min and max */
+	    for (i=0; i<src_size; i++)
+	    {
+	       if (min.r>src[i].color.r) min.r=src[i].color.r;
+	       if (min.g>src[i].color.g) min.g=src[i].color.g;
+	       if (min.b>src[i].color.b) min.b=src[i].color.b;
+	       if (max.r<src[i].color.r) max.r=src[i].color.r;
+	       if (max.g<src[i].color.g) max.g=src[i].color.g;
+	       if (max.b<src[i].color.b) max.b=src[i].color.b;
+	       tot+=src[i].weight;
+	    }
+    
+	    dest->color.r=max.r*position.r+min.r*(1-position.r);
+	    dest->color.g=max.g*position.g+min.g*(1-position.g);
+	    dest->color.b=max.b*position.b+min.b*(1-position.b);
+	    dest->weight=tot;
+	    dest->no=-1;
+	    break;
+      }
       return 1;
    }
 
@@ -394,7 +440,11 @@ static int reduce_recurse(struct nct_flat_entry *src,
          if (src[left].color.C>sum.C)  \
 	    tmp=src[left],src[left]=src[right],src[right--]=tmp; \
          else left++; \
-      } 
+      } \
+      space.C/=2.0; \
+      newpos1=newpos2=position; \
+      newpos1.C-=space.C; \
+      newpos2.C+=space.C; 
 
    switch (st)
    {
@@ -410,6 +460,15 @@ static int reduce_recurse(struct nct_flat_entry *src,
 	       tmp=src[left],src[left]=src[right],src[right--]=tmp; 
 	    else left++; 
 	 } 
+	 space.r/=2.0;
+	 space.g/=2.0;
+	 space.b/=2.0;
+	 newpos1.r=position.r-space.r;
+	 newpos1.g=position.g-space.g;
+	 newpos1.b=position.b-space.b;
+	 newpos2.r=position.r+space.r;
+	 newpos2.g=position.g+space.g;
+	 newpos2.b=position.b+space.b;
          break;
    }
 
@@ -427,8 +486,9 @@ static int reduce_recurse(struct nct_flat_entry *src,
    fprintf(stderr,"COLORTABLE%*s try i=%d/%d - %d+%d=%d from %d+%d=%d\n",level+1,"",i,target_size,i,target_size-i,target_size,left,src_size-left,src_size);
 #endif
 
-   n=reduce_recurse(src,dest,left,i,level+2,sf); 
-   m=reduce_recurse(src+left,dest+n,src_size-left,target_size-n,level+2,sf);
+   n=reduce_recurse(src,dest,left,i,level+2,sf,newpos1,space,type); 
+   m=reduce_recurse(src+left,dest+n,src_size-left,
+		    target_size-n,level+2,sf,newpos2,space,type);
 
 #ifdef COLORTABLE_REDUCE_DEBUG
    fprintf(stderr,"COLORTABLE%*s ->%d+%d=%d (tried for %d+%d=%d)\n",level,"",n,m,n+m,i,target_size-i,target_size);
@@ -446,13 +506,14 @@ static int reduce_recurse(struct nct_flat_entry *src,
       fprintf(stderr,"COLORTABLE%*s try i=%d/%d - %d+%d=%d from %d+%d=%d\n",level+1,"",i,target_size,i,target_size-i,target_size,left,src_size-left,src_size);
 #endif
 
-      n=reduce_recurse(src,dest,left,i,level+2,sf);
+      n=reduce_recurse(src,dest,left,i,level+2,sf,newpos1,space,type);
       if (n!=oldn)
 	 if (n<oldn) /* i certainly hope so */
 	    memmove(dest+n,dest+oldn,sizeof(struct nct_flat_entry)*m);
 	 else /* huh? */
 	    /* this is the only case we don't have them already */
-	    m=reduce_recurse(src+left,dest+n,src_size-left,target_size-n,level+2,sf);
+	    m=reduce_recurse(src+left,dest+n,src_size-left,
+			     target_size-n,level+2,sf,newpos2,space,type);
 #ifdef COLORTABLE_REDUCE_DEBUG
       fprintf(stderr,"COLORTABLE%*s ->%d+%d=%d (retried for %d+%d=%d)\n",level,"",n,m,n+m,i,target_size-i,target_size);
 #endif
@@ -467,11 +528,13 @@ static struct nct_flat _img_reduce_number_of_colors(struct nct_flat flat,
 {
    int i,j;
    struct nct_flat_entry *newe;
+   rgbd_group pos={0.5,0.5,0.5},space={0.5,0.5,0.5};
 
    newe=malloc(sizeof(struct nct_flat_entry)*flat.numentries);
    if (!newe) { return flat; }
 
-   i=reduce_recurse(flat.entries,newe,flat.numentries,maxcols,0,sf);
+   i=reduce_recurse(flat.entries,newe,flat.numentries,maxcols,0,sf,
+		    pos,space,NCT_REDUCE_WEIGHT);
 
    free(flat.entries);
 
@@ -1412,6 +1475,235 @@ rerun_rehash_add_2:
    rdest->u.flat=flat;
 }
 
+/**** dither ****/
+
+
+static rgbl_group dither_floyd_steinberg_encode(struct nct_dither *dith,
+					       int rowpos,
+					       rgb_group s)
+{
+   rgbl_group rgb;
+   int i;
+   i=(int)(s.r-dith->u.floyd_steinberg.errors[rowpos].r+0.5); 
+   rgb.r=i<0?0:(i>255?255:i);
+   i=(int)(s.g-dith->u.floyd_steinberg.errors[rowpos].g+0.5); 
+   rgb.g=i<0?0:(i>255?255:i);
+   i=(int)(s.b-dith->u.floyd_steinberg.errors[rowpos].b+0.5); 
+   rgb.b=i<0?0:(i>255?255:i);
+   return rgb;
+}
+
+static void dither_floyd_steinberg_got(struct nct_dither *dith,
+				       int rowpos,
+				       rgb_group s,
+				       rgb_group d)
+{
+   int cd=dith->u.floyd_steinberg.currentdir;
+
+   rgbd_group *ner=dith->u.floyd_steinberg.nexterrors;
+   rgbd_group *er=dith->u.floyd_steinberg.errors;
+   rgbd_group err;
+
+   err.r=(float)(d.r-(int)s.r)+dith->u.floyd_steinberg.errors[rowpos].r+0.5;
+   err.g=(float)(d.g-(int)s.g)+dith->u.floyd_steinberg.errors[rowpos].g+0.5;
+   err.b=(float)(d.b-(int)s.b)+dith->u.floyd_steinberg.errors[rowpos].b+0.5;
+
+   ner[rowpos].r+=err.r*dith->u.floyd_steinberg.down;
+   ner[rowpos].g+=err.g*dith->u.floyd_steinberg.down;
+   ner[rowpos].b+=err.b*dith->u.floyd_steinberg.down;
+
+   if (rowpos+cd>=0 && rowpos+cd<dith->rowlen)
+   {
+      ner[rowpos+cd].r+=err.r*dith->u.floyd_steinberg.downforward;
+      ner[rowpos+cd].g+=err.g*dith->u.floyd_steinberg.downforward;
+      ner[rowpos+cd].b+=err.b*dith->u.floyd_steinberg.downforward;
+      er[rowpos+cd].r+=err.r*dith->u.floyd_steinberg.forward;
+      er[rowpos+cd].g+=err.g*dith->u.floyd_steinberg.forward;
+      er[rowpos+cd].b+=err.b*dith->u.floyd_steinberg.forward;
+   }
+   if (rowpos-cd>=0 && rowpos-cd<dith->rowlen)
+   {
+      ner[rowpos-cd].r+=err.r*dith->u.floyd_steinberg.downback;
+      ner[rowpos-cd].g+=err.g*dith->u.floyd_steinberg.downback;
+      ner[rowpos-cd].b+=err.b*dith->u.floyd_steinberg.downback;
+   }
+}
+
+static void dither_floyd_steinberg_newline(struct nct_dither *dith,
+					   int *rowpos,
+					   rgb_group **s,
+					   rgb_group **d,
+					   int *cd)
+{
+   rgbd_group *er;
+   int i;
+   er=dith->u.floyd_steinberg.errors;
+   dith->u.floyd_steinberg.errors=dith->u.floyd_steinberg.nexterrors;
+   dith->u.floyd_steinberg.nexterrors=er;
+   for (i=0; i<dith->rowlen; i++) er[i].r=er[i].g=er[i].b=0.0;
+
+#if 0
+   fprintf(stderr,"line r: ");
+   er=dith->u.floyd_steinberg.errors;
+   for (i=0; i<dith->rowlen; i++)
+      fprintf(stderr,"%.2f,",er[i].r);
+   fprintf(stderr,"\n");
+#endif
+
+   if (dith->u.floyd_steinberg.dir==0)
+   {
+      dith->u.floyd_steinberg.currentdir=*cd=-*cd;
+      switch (*cd)
+      {
+	 case -1: /* switched from 1 to -1, jump rowlen-1 */
+	    (*s)+=dith->rowlen-1;
+	    (*d)+=dith->rowlen-1;
+	    (*rowpos)=dith->rowlen-1;
+	    break;
+	 case 1: /* switched from 1 to -1, jump rowlen+1 */
+	    (*s)+=dith->rowlen+1;
+	    (*d)+=dith->rowlen+1;
+	    (*rowpos)=0;
+	    break;
+      }
+   }
+   else if (*cd==-1)
+   {
+      (*s)+=dith->rowlen*2;
+      (*d)+=dith->rowlen*2;
+      (*rowpos)=dith->rowlen-1;
+   }
+   else
+   {
+      (*rowpos)=0;
+   }
+}
+
+static void dither_floyd_steinberg_firstline(struct nct_dither *dith,
+					     int *rowpos,
+					     rgb_group **s,
+					     rgb_group **d,
+					     int *cd)
+{
+   rgbd_group *er;
+   int i;
+
+   er=dith->u.floyd_steinberg.errors;
+   for (i=0; i<dith->rowlen; i++)
+   {
+      er[i].r=0.001*(rand()%998-499);
+      er[i].g=0.001*(rand()%998-499);
+      er[i].b=0.001*(rand()%998-499);
+   }
+
+   er=dith->u.floyd_steinberg.nexterrors;
+   for (i=0; i<dith->rowlen; i++) er[i].r=er[i].g=er[i].b=0.0;
+
+   if (dith->u.floyd_steinberg.dir>=0)
+   {
+      dith->u.floyd_steinberg.currentdir=(*cd)=1;
+      *rowpos=0;
+   }
+   else
+   {
+      dith->u.floyd_steinberg.currentdir=(*cd)=-1;
+      (*rowpos)=dith->rowlen-1;
+      (*s)+=dith->rowlen-1;
+      (*d)+=dith->rowlen-1;
+   }
+}
+
+static rgbl_group dither_randomcube_encode(struct nct_dither *dith,
+					   int rowpos,
+					   rgb_group s)
+{
+   rgbl_group rgb;
+   int i;
+   i=(int)(s.r-(rand()%(dith->u.randomcube.r*2-1))+dith->u.randomcube.r+1); 
+   rgb.r=i<0?0:(i>255?255:i); 			       
+   i=(int)(s.g-(rand()%(dith->u.randomcube.g*2-1))+dith->u.randomcube.g+1); 
+   rgb.g=i<0?0:(i>255?255:i); 			       
+   i=(int)(s.b-(rand()%(dith->u.randomcube.b*2-1))+dith->u.randomcube.b+1); 
+   rgb.b=i<0?0:(i>255?255:i);
+   return rgb;
+}
+
+
+static void dither_dummy_got(struct nct_dither *dith,
+			     int rowpos,
+			     rgb_group s,
+			     rgb_group d)
+{
+   /* do-nothing */
+}
+
+
+int image_colortable_initiate_dither(struct neo_colortable *nct,
+				     struct nct_dither *dith,
+				     int rowlen)
+{
+   dith->rowlen=rowlen;
+
+   dith->encode=NULL;
+   dith->got=NULL;
+   dith->newline=NULL;
+   dith->firstline=NULL;
+
+   switch (dith->type=nct->dither_type)
+   {
+      case NCTD_NONE:
+	 return 1;
+
+      case NCTD_FLOYD_STEINBERG:
+	 dith->u.floyd_steinberg.errors=malloc(rowlen*sizeof(rgbd_group));
+	 if (!dith->u.floyd_steinberg.errors) return 0;
+	 dith->u.floyd_steinberg.nexterrors=malloc(rowlen*sizeof(rgbd_group));
+	 if (!dith->u.floyd_steinberg.nexterrors)
+	    { free(dith->u.floyd_steinberg.errors);  return 0; }
+
+	 dith->encode=dither_floyd_steinberg_encode;
+	 dith->got=dither_floyd_steinberg_got;
+	 dith->newline=dither_floyd_steinberg_newline;
+	 dith->firstline=dither_floyd_steinberg_firstline;
+
+	 dith->u.floyd_steinberg.forward=nct->du.floyd_steinberg.forward;
+	 dith->u.floyd_steinberg.downforward=nct->du.floyd_steinberg.downforward;
+	 dith->u.floyd_steinberg.downback=nct->du.floyd_steinberg.downback;
+	 dith->u.floyd_steinberg.down=nct->du.floyd_steinberg.down;
+	 dith->u.floyd_steinberg.currentdir=
+	    dith->u.floyd_steinberg.dir=
+	       nct->du.floyd_steinberg.dir;
+	 return 1;
+
+      case NCTD_RANDOMCUBE:
+	 dith->u.randomcube.r=THIS->du.randomcube.r;
+	 dith->u.randomcube.g=THIS->du.randomcube.g;
+	 dith->u.randomcube.b=THIS->du.randomcube.b;
+
+	 dith->encode=dither_randomcube_encode;
+	 dith->got=dither_dummy_got;
+
+	 return 1;
+   }
+   error("Illegal dither method\n");
+   return 0; /* uh */
+}
+
+void image_colortable_free_dither(struct nct_dither *dith)
+{
+   switch (dith->type)
+   {
+      case NCTD_NONE:
+	 break;
+      case NCTD_FLOYD_STEINBERG:
+	 free(dith->u.floyd_steinberg.errors);
+	 free(dith->u.floyd_steinberg.nexterrors);
+	 break;
+      case NCTD_RANDOMCUBE:
+	 break;
+   }
+}
+
 /***************** global methods ******************************/
 
 /*
@@ -1871,35 +2163,6 @@ void image_colortable_cast(INT32 args)
 }
 
 /*
-**! method object tree()
-**!	Set the colortable to use a tree algorithm to find
-**!     the best color.
-**!
-**!	example: <tt>colors=Image.colortable(img)->tree</tt>
-**!
-**!     algorithm time: O[ln n], where n is numbers of colors
-**!
-**! returns the called object
-**!
-**! note
-**!     This method doesn't figure out the tree, this is 
-**!     done on the first use of the colortable.
-**!
-**!     Not applicable to colorcube types of colortable.
-**/
-
-void image_colortable_tree(INT32 args)
-{
-   if (THIS->lookup_mode!=NCT_TREE) 
-   {
-      colortable_free_lookup_stuff(THIS);
-      THIS->lookup_mode=NCT_TREE;
-   }
-   pop_n_elems(args);
-   push_object(THISOBJ); THISOBJ->refs++;
-}
-
-/*
 **! method object full()
 **!	Set the colortable to use full scan to lookup the closest color.
 **!
@@ -1910,6 +2173,7 @@ void image_colortable_tree(INT32 args)
 **!
 **! returns the called object
 **!
+**! see also: cubicles, map
 **! note
 **!     Not applicable to colorcube types of colortable.
 **/
@@ -1956,6 +2220,16 @@ void image_colortable_full(INT32 args)
 **!	more time then usage.
 **!
 **!	In some cases, the <ref>full</ref> method is faster.
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),16); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),16)->cubicles(4,5,4,200); return c*lena(); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>default cubicles,<br>16 colors</td>
+**!	<td>accuracy=200</td>
+**!	</tr></table>
 **!
 **! returns the called object
 **!
@@ -2026,6 +2300,39 @@ void image_colortable_cubicles(INT32 args)
 **!     the colortable, and creates a new image with the
 **!     closest colors. 
 **!
+**!	<table><tr valign=center>
+**!	<td></td>
+**!	<td><illustration> object c=Image.colortable(lena(),2); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),4); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),8); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),16); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),32); return c*lena(); </illustration></td>
+**!	<td>no dither</td>
+**!	</tr><tr valign=center>
+**!	<td></td>
+**!	<td><illustration> object c=Image.colortable(lena(),2)->floyd_steinberg(); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),4)->floyd_steinberg(); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),8)->floyd_steinberg(); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),16)->floyd_steinberg(); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),32)->floyd_steinberg(); return c*lena(); </illustration></td>
+**!	<td>floyd-steinberg dither</td>
+**!	</tr><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),2)->randomcube(250); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),4)->randomcube(200); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),8)->randomcube(70); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),16)->randomcube(40); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),32)->randomcube(15); return c*lena(); </illustration></td>
+**!	<td>randomcube dither</td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>2</td>
+**!	<td>4</td>
+**!	<td>8</td>
+**!	<td>16</td>
+**!	<td>32 colors</td>
+**!	</tr></table>
+**!
 **! returns a new image object
 **!
 **! note
@@ -2034,14 +2341,15 @@ void image_colortable_cubicles(INT32 args)
 **!	the lookup method, which may take time the first
 **!	use of the colortable - the second use is quicker.
 **!
-**! see also:
-**!     cubicle, tree, full
+**! see also: cubicles, full
 **/
 
 static void _img_nct_map_to_cube(rgb_group *s,
 				 rgb_group *d,
 				 int n,
-				 struct neo_colortable *nct)
+				 struct neo_colortable *nct,
+				 struct nct_dither *dith,
+				 int rowlen)
 {
    int red,green,blue;
    int hred,hgreen,hblue;
@@ -2049,6 +2357,11 @@ static void _img_nct_map_to_cube(rgb_group *s,
    float redf,greenf,bluef;
    struct nct_cube *cube=&(nct->u.cube);
    rgbl_group sf=nct->spacefactor;
+   int rowpos=0,cd=1,rowcount=0;
+   rgbl_group rgb;
+   nct_dither_encode_function *dither_encode=dith->encode;
+   nct_dither_got_function *dither_got=dith->got;
+   nct_dither_line_function *dither_newline=dith->newline;
 
    red=cube->r; 	hred=red/2;      redm=red-1;
    green=cube->g;	hgreen=green/2;  greenm=green-1;
@@ -2062,31 +2375,65 @@ static void _img_nct_map_to_cube(rgb_group *s,
 
    if (!cube->firstscale && red && green && blue)
    {
-      while (n--)
-      {
-	 d->r=((int)(((s->r*red+hred)>>8)*redf));
-	 d->g=((int)(((s->g*green+hgreen)>>8)*greenf));
-	 d->b=((int)(((s->b*blue+hblue)>>8)*bluef));
+      if (!dither_encode)
+	 while (n--)
+	 {
+	    d->r=((int)(((s->r*red+hred)>>8)*redf));
+	    d->g=((int)(((s->g*green+hgreen)>>8)*greenf));
+	    d->b=((int)(((s->b*blue+hblue)>>8)*bluef));
 
-	 d++;
-	 s++;
+	    d++;
+	    s++;
+	 }
+      else
+      {
+	 if (dith->firstline)
+	    (dith->firstline)(dith,&rowpos,&s,&d,&cd);
+	 while (n--)
+	 {
+	    rgb=dither_encode(dith,rowpos,*s);
+	    d->r=((int)(((rgb.r*red+hred)>>8)*redf));
+	    d->g=((int)(((rgb.g*green+hgreen)>>8)*greenf));
+	    d->b=((int)(((rgb.b*blue+hblue)>>8)*bluef));
+	    dither_got(dith,rowpos,*s,*d);
+	    s+=cd; d+=cd; rowpos+=cd;
+	    if (++rowcount==rowlen)
+	    {
+	       rowcount=0;
+	       if (dither_newline) 
+		  dither_newline(dith,&rowpos,&s,&d,&cd);
+	    }
+	 }
       }
    }
    else
    {
+      if (dith->firstline)
+	 (dith->firstline)(dith,&rowpos,&s,&d,&cd);
+
       while (n--) /* similar to _find_cube_dist() */
       {
 	 struct nct_scale *sc;
 	 int mindist;
 	 int i;
-	 char *n;
 	 int nc;
 	 int rgbr,rgbg,rgbb;
-	 int drgbr,drgbg,drgbb;
 	 struct lookupcache *lc;
-	 rgbr=s->r;
-	 rgbg=s->g;
-	 rgbb=s->b;
+
+	 if (dither_encode)
+	 {
+	    rgbl_group val;
+	    val=dither_encode(dith,rowpos,*s);
+	    rgbr=val.r;
+	    rgbg=val.g;
+	    rgbb=val.b;
+	 }
+	 else
+	 {
+	    rgbr=s->r;
+	    rgbg=s->g;
+	    rgbb=s->b;
+	 }
 
 	 lc=nct->lookupcachehash+COLORLOOKUPCACHEHASHVALUE(rgbr,rgbg,rgbb);
 	 if (lc->index!=-1 &&
@@ -2094,9 +2441,8 @@ static void _img_nct_map_to_cube(rgb_group *s,
 	     lc->src.g==rgbg &&
 	     lc->src.b==rgbb)
 	 {
-	    *(d++)=lc->dest;
-	    s++;
-	    continue;
+	    *d=lc->dest;
+	    goto done_pixel;
 	 }
 
 	 lc->src=*s;
@@ -2163,9 +2509,22 @@ static void _img_nct_map_to_cube(rgb_group *s,
 	       sc=sc->next;
 	    }
 	 }
-	 
-	 d++;
-	 s++;
+done_pixel:
+	 if (dither_got)
+	 {
+	    dither_got(dith,rowpos,*s,*d);
+	    s+=cd; d+=cd; rowpos+=cd;
+	    if (++rowcount==rowlen)
+	    {
+	       rowcount=0;
+	       dither_newline(dith,&rowpos,&s,&d,&cd);
+	    }
+	 }
+	 else
+	 {
+	    d++;
+	    s++;
+	 }
       }
    }
    CHRONO("end cube map");
@@ -2174,7 +2533,9 @@ static void _img_nct_map_to_cube(rgb_group *s,
 static void _img_nct_map_to_flat_full(rgb_group *s,
 				      rgb_group *d,
 				      int n,
-				      struct neo_colortable *nct)
+				      struct neo_colortable *nct,
+				      struct nct_dither *dith,
+				      int rowlen)
 {
    /* no need to build any data, we're using full scan */
 
@@ -2182,7 +2543,15 @@ static void _img_nct_map_to_flat_full(rgb_group *s,
    int mprim=nct->u.flat.numentries;
    struct nct_flat_entry *feprim=nct->u.flat.entries;
 
+   nct_dither_encode_function *dither_encode=dith->encode;
+   nct_dither_got_function *dither_got=dith->got;
+   nct_dither_line_function *dither_newline=dith->newline;
+   int rowpos=0,cd=1,rowcount=0;
+
    CHRONO("begin flat/full map");
+
+   if (dith->firstline)
+      (dith->firstline)(dith,&rowpos,&s,&d,&cd);
 
    while (n--)
    {
@@ -2192,9 +2561,20 @@ static void _img_nct_map_to_flat_full(rgb_group *s,
       struct nct_flat_entry *fe;
       struct lookupcache *lc;
 	 
-      rgbr=s->r;
-      rgbg=s->g;
-      rgbb=s->b;
+      if (dither_encode)
+      {
+	 rgbl_group val;
+	 val=dither_encode(dith,rowpos,*s);
+	 rgbr=val.r;
+	 rgbg=val.g;
+	 rgbb=val.b;
+      }
+      else
+      {
+	 rgbr=s->r;
+	 rgbg=s->g;
+	 rgbb=s->b;
+      }
 
       /* cached? */
       lc=nct->lookupcachehash+COLORLOOKUPCACHEHASHVALUE(rgbr,rgbg,rgbb);
@@ -2203,9 +2583,8 @@ static void _img_nct_map_to_flat_full(rgb_group *s,
 	  lc->src.g==rgbg &&
 	  lc->src.b==rgbb)
       {
-	 *(d++)=lc->dest;
-	 s++;
-	 continue;
+	 *d=lc->dest;
+	 goto done_pixel;
       }
 
       lc->src=*s;
@@ -2231,8 +2610,22 @@ static void _img_nct_map_to_flat_full(rgb_group *s,
 	 fe++;
       }
 
-      s++;
-      d++;
+done_pixel:
+      if (dither_got)
+      {
+	 dither_got(dith,rowpos,*s,*d);
+	 s+=cd; d+=cd; rowpos+=cd;
+	 if (++rowcount==rowlen)
+	 {
+	    rowcount=0;
+	    dither_newline(dith,&rowpos,&s,&d,&cd);
+	 }
+      }
+      else
+      {
+	 d++;
+	 s++;
+      }
    }
 
    CHRONO("end flat/full map");
@@ -2502,7 +2895,7 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
 
    int i=0;
    int *p=malloc(n*sizeof(struct nctlu_cubicle));
-   int *pp,*pi; /* write, read */
+   int *pp; /* write */
 
    if (!p) error("out of memory (kablamm, typ) in _build_cubicle in colortable->map()\n");
 
@@ -2564,7 +2957,9 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
 static void _img_nct_map_to_flat_cubicles(rgb_group *s,
 					  rgb_group *d,
 					  int n,
-					  struct neo_colortable *nct)
+					  struct neo_colortable *nct,
+					  struct nct_dither *dith,
+					  int rowlen)
 {
    struct nctlu_cubicles *cubs;
    struct nctlu_cubicle *cub;
@@ -2575,6 +2970,10 @@ static void _img_nct_map_to_flat_cubicles(rgb_group *s,
    int mindist;
    rgbl_group sf=nct->spacefactor;
 
+   nct_dither_encode_function *dither_encode=dith->encode;
+   nct_dither_got_function *dither_got=dith->got;
+   nct_dither_line_function *dither_newline=dith->newline;
+   int rowpos=0,cd=1,rowcount=0;
 
    cubs=&(nct->lu.cubicles);
    if (!(cubs->cubicles))
@@ -2602,6 +3001,9 @@ CHRONO("begin flat/cubicles");
    blue=cubs->b;  hblue=blue/2;
    redgreen=red*green;
 
+   if (dith->firstline)
+      (dith->firstline)(dith,&rowpos,&s,&d,&cd);
+
    while (n--)
    {
       int rgbr,rgbg,rgbb;
@@ -2610,9 +3012,20 @@ CHRONO("begin flat/cubicles");
       int m;
       int *ci;
 
-      rgbr=s->r;
-      rgbg=s->g;
-      rgbb=s->b;
+      if (dither_encode)
+      {
+	 rgbl_group val;
+	 val=(dither_encode)(dith,rowpos,*s);
+	 rgbr=val.r;
+	 rgbg=val.g;
+	 rgbb=val.b;
+      }
+      else
+      {
+	 rgbr=s->r;
+	 rgbg=s->g;
+	 rgbb=s->b;
+      }
       
       lc=nct->lookupcachehash+COLORLOOKUPCACHEHASHVALUE(rgbr,rgbg,rgbb);
       if (lc->index!=-1 &&
@@ -2620,9 +3033,8 @@ CHRONO("begin flat/cubicles");
 	  lc->src.g==rgbg &&
 	  lc->src.b==rgbb)
       {
-	 *(d++)=lc->dest;
-	 s++;
-	 continue;
+	 *d=lc->dest;
+	 goto done_pixel;
       }
 
       lc->src=*s;
@@ -2658,27 +3070,36 @@ CHRONO("begin flat/cubicles");
 	 
 	 ci++;
       }
-      
-      d++;
-      s++;
+
+done_pixel:
+      if (dither_got)
+      {
+	 (dither_got)(dith,rowpos,*s,*d);
+	 s+=cd; d+=cd; rowpos+=cd;
+	 if (++rowcount==rowlen)
+	 {
+	    rowcount=0;
+	    if (dither_newline)
+	       (dither_newline)(dith,&rowpos,&s,&d,&cd);
+	 }
+      }
+      else
+      {
+	 d++;
+	 s++;
+      }
    }
 
 CHRONO("end flat/cubicles");
 }
 
-static void _img_nct_map_to_flat_tree(rgb_group *s,
-				      rgb_group *d,
-				      int n,
-				      struct neo_colortable *nct)
-{
-   error("colortable->map(): map to flat/tree not implemented\n");   
-}
-
 void image_colortable_get_index_line(struct neo_colortable *nct,
 				     rgb_group *s,
 				     unsigned char *buf,
-				     int len)
+				     int len,
+				     struct nct_dither *dith)
 {
+   
 }
 
 void image_colortable_map(INT32 args)
@@ -2686,6 +3107,7 @@ void image_colortable_map(INT32 args)
    struct image *src;
    struct image *dest;
    struct object *o;
+   struct nct_dither dith;
 
    if (args<1)
       error("too few arguments to colortable->map()\n");
@@ -2707,37 +3129,37 @@ void image_colortable_map(INT32 args)
       error("colortable->map(): out of memory\n");
    }
 
+   image_colortable_initiate_dither(THIS,&dith,src->xsize);
+
    switch (THIS->type)
    {
       case NCT_CUBE:
 	 _img_nct_map_to_cube(src->img,dest->img,
-			      src->xsize*src->ysize,THIS);
-	 pop_n_elems(args);
-	 push_object(o);
-	 return;
+			      src->xsize*src->ysize,THIS,&dith,src->xsize);
+	 break;
       case NCT_FLAT:
          switch (THIS->lookup_mode)
 	 {
 	    case NCT_FULL:
   	       _img_nct_map_to_flat_full(src->img,dest->img,
-					 src->xsize*src->ysize,THIS);
+					 src->xsize*src->ysize,
+					 THIS,&dith,src->xsize);
 	       break;
 	    case NCT_CUBICLES:
   	       _img_nct_map_to_flat_cubicles(src->img,dest->img,
-					     src->xsize*src->ysize,THIS);
-	       break;
-	    case NCT_TREE:
-  	       _img_nct_map_to_flat_tree(src->img,dest->img,
-					 src->xsize*src->ysize,THIS);
+					     src->xsize*src->ysize,
+					     THIS,&dith,src->xsize);
 	       break;
 	 }
-	 pop_n_elems(args);
-	 push_object(o);
-	 return;
+	 break;
       default:
 	 free_object(o);
+	 image_colortable_free_dither(&dith);
 	 error("colortable->map(): called colortable is not initiated\n");
    }
+   image_colortable_free_dither(&dith);
+   pop_n_elems(args);
+   push_object(o);
 }
 
 
@@ -2778,9 +3200,180 @@ void image_colortable_spacefactors(INT32 args)
    push_object(THISOBJ); THISOBJ->refs++;
 }
 
+/*
+**! method object floyd_steinberg()
+**! method object floyd_steinberg(int dir,int|float forward,int|float downforward,int|float down,int|float downback,int|float factor)
+**!	Set dithering method to floyd_steinberg.
+**!	
+**!	The arguments to this method is for fine-tuning of the 
+**!	algorithm (for computer graphics wizards). 
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(4,4,4)->floyd_steinberg(); return c*lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(lena(),16)->floyd_steinberg(); return c*lena(); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>floyd_steinberg to a 4󫶘 colorcube</td>
+**!	<td>floyd_steinberg to a 16 chosen colors</td>
+**!	</tr></table>
+**!
+**! arg int bidir
+**!	Set algorithm direction of forward.
+**!	-1 is backward, 1 is forward, 0 for toggle of direction
+**!	each line (default).
+**! arg int|float forward
+**! arg int|float downforward
+**! arg int|float down
+**! arg int|float downback
+**!	Set error correction directions. Default is 
+**!	forward=7, downforward=1, down=5, downback=3.
+**! arg int|float factor
+**!     Error keeping factor. 
+**!	Error will increase if more than 1.0 and decrease if less than 1.0.
+**!	A value of 0.0 will cancel any dither effects.
+**!     Default is 0.95.
+**! returns the called object
+**/
+
+void image_colortable_floyd_steinberg(INT32 args)
+{
+   float forward=7.0,downforward=1.0,down=5.0,downback=3.0,sum;
+   float factor=0.95;
+   THIS->dither_type=NCTD_NONE;
+
+   if (args>=1)
+      if (sp[-args].type!=T_INT) 
+	 error("colortable->spacefactors(): Illegal argument 1\n");
+      else 
+	 THIS->du.floyd_steinberg.dir=sp[-args].u.integer;
+   else
+      THIS->du.floyd_steinberg.dir=0;
+
+   if (args>=6)
+      if (sp[5-args].type==T_FLOAT)
+	 factor=(float)sp[5-args].u.float_number;
+      else if (sp[5-args].type==T_INT)
+	 factor=(float)sp[5-args].u.integer;
+      else
+	 error("colortable->spacefactors(): Illegal argument 6\n");
+
+   if (args>=5)
+   {
+      if (sp[1-args].type==T_FLOAT)
+	 forward=(float)sp[1-args].u.float_number;
+      else if (sp[1-args].type==T_INT)
+	 forward=(float)sp[1-args].u.integer;
+      else
+	 error("colortable->spacefactors(): Illegal argument 2\n");
+      if (sp[2-args].type==T_FLOAT)
+	 downforward=(float)sp[2-args].u.float_number;
+      else if (sp[2-args].type==T_INT)
+	 downforward=(float)sp[2-args].u.integer;
+      else
+	 error("colortable->spacefactors(): Illegal argument 3\n");
+      if (sp[3-args].type==T_FLOAT)
+	 down=(float)sp[3-args].u.float_number;
+      else if (sp[3-args].type==T_INT)
+	 down=(float)sp[3-args].u.integer;
+      else
+	 error("colortable->spacefactors(): Illegal argument 4\n");
+      if (sp[4-args].type==T_FLOAT)
+	 downback=(float)sp[4-args].u.float_number;
+      else if (sp[4-args].type==T_INT)
+	 downback=(float)sp[4-args].u.integer;
+      else
+	 error("colortable->spacefactors(): Illegal argument 5\n");
+   }
+
+   sum=forward+downforward+down+downback;
+   if (fabs(sum)<1e-10) sum=1.0;
+   sum/=factor;
+
+   THIS->du.floyd_steinberg.forward=forward/sum;
+   THIS->du.floyd_steinberg.downforward=downforward/sum;
+   THIS->du.floyd_steinberg.down=down/sum;
+   THIS->du.floyd_steinberg.downback=downback/sum;
+
+   THIS->dither_type=NCTD_FLOYD_STEINBERG;
+
+   pop_n_elems(args);
+   push_object(THISOBJ); THISOBJ->refs++;
+}
+
+/*
+**! method object nodither()
+**!	Set no dithering (default).
+**!
+**! returns the called object
+**/
+
+void image_colortable_nodither(INT32 args)
+{
+   THIS->dither_type=NCTD_NONE;
+   pop_n_elems(args);
+   push_object(THISOBJ); THISOBJ->refs++;
+}
+
+/*
+**! method object randomcube()
+**! method object randomcube(int r,int g,int b)
+**!	Set random cube dithering.
+**!	Color choosen is the closest one to color in picture
+**!	plus (flat) random error; <tt>color眗andom(error)</tt>.
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> object c=Image.colortable(4,4,4)->randomcube(); return c*lena(); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>mapped to <tt>Image.colortable(4,4,4)-><wbr>randomcube();</td>
+**!	</tr></table>
+**!
+**! arg int r
+**! arg int g
+**! arg int b
+**!	The maximum error. Default is 32, or colorcube step.
+**!
+**! returns the called object
+**!
+**! see also: nodither, floyd_steinberg, create
+**/
+
+void image_colortable_randomcube(INT32 args)
+{
+   if (args>=3)
+      if (sp[-args].type!=T_INT||
+	  sp[1-args].type!=T_INT||
+	  sp[2-args].type!=T_INT)
+	 error("Image.colortable->nodither(): illegal argument(s)\n");
+      else
+      {
+	 THIS->du.randomcube.r=sp[-args].u.integer;
+	 THIS->du.randomcube.g=sp[1-args].u.integer;
+	 THIS->du.randomcube.b=sp[2-args].u.integer;
+      }
+   else if (THIS->type==NCT_CUBE && THIS->u.cube.r && 
+	    THIS->u.cube.g && THIS->u.cube.b)
+   {
+      THIS->du.randomcube.r=256/THIS->u.cube.r;
+      THIS->du.randomcube.g=256/THIS->u.cube.g;
+      THIS->du.randomcube.b=256/THIS->u.cube.b;
+   }
+   else
+   {
+      THIS->du.randomcube.r=32;
+      THIS->du.randomcube.g=32;
+      THIS->du.randomcube.b=32;
+   }
+
+   THIS->dither_type=NCTD_RANDOMCUBE;
+
+   pop_n_elems(args);
+   push_object(THISOBJ); THISOBJ->refs++;
+}
 
 /***************** global init etc *****************************/
-
 
 void init_colortable_programs(void)
 {
@@ -2818,9 +3411,7 @@ void init_colortable_programs(void)
    add_function("_sizeof",image_colortable__sizeof,
 		"function(:int)",0);
 
-   /* modes */
-   add_function("tree",image_colortable_tree,
-		"function(:object)",0);
+   /* lookup modes */
    add_function("cubicles",image_colortable_cubicles,
 		"function(:object)",0);
    add_function("full",image_colortable_full,
@@ -2833,6 +3424,15 @@ void init_colortable_programs(void)
 		"function(object:object)",0);
    add_function("``*",image_colortable_map,
 		"function(object:object)",0);
+
+   /* dither */
+   add_function("nodither",image_colortable_nodither,
+		"function(:object)",0);
+   add_function("floyd_steinberg",image_colortable_floyd_steinberg,
+		"function(void|int:object)"
+		"|function(int,int|float,int|float,int|float,int|float:object)",0);
+   add_function("randomcube",image_colortable_randomcube,
+		"function(:object)|function(int,int,int:object)",0);
 
    /* tuning image */
    add_function("spacefactors",image_colortable_spacefactors,
