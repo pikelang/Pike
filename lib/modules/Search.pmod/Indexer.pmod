@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Indexer.pmod,v 1.14 2001/08/08 19:29:56 nilsson Exp $
+// $Id: Indexer.pmod,v 1.15 2001/08/21 14:21:28 js Exp $
 
 //!
 void index_document(Search.Database.Base db,
@@ -55,7 +55,7 @@ array(Standards.URI) filter_and_extract_links(Search.Database.Base db,
 
 //!
 void remove_document(Search.Database.Base db,
-		     string|Standards.URI|string uri,
+		     string|Standards.URI uri,
 		     void|string language)
 {
   db->remove_document(uri, language);
