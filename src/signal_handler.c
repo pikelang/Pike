@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.236 2002/12/18 20:44:40 mast Exp $
+|| $Id: signal_handler.c,v 1.237 2002/12/18 22:40:55 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.236 2002/12/18 20:44:40 mast Exp $");
+RCSID("$Id: signal_handler.c,v 1.237 2002/12/18 22:40:55 mast Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -943,6 +943,10 @@ static RETSIGTYPE receive_sigchild(int signum)
   pid_t pid;
   WAITSTATUSTYPE status;
 
+#ifdef PROC_DEBUG
+  fprintf (stderr, "receive_sigchild\n");
+#endif
+
   SAFE_FIFO_DEBUG_BEGIN();
 
  try_reap_again:
@@ -952,6 +956,9 @@ static RETSIGTYPE receive_sigchild(int signum)
   if(pid>0)
   {
     BEGIN_FIFO_PUSH(wait,wait_data);
+#ifdef PROC_DEBUG
+    fprintf (stderr, "receive_sigchild got pid %d\n", pid);
+#endif
     FIFO_DATA(wait,wait_data).pid=pid;
     FIFO_DATA(wait,wait_data).status=status;
     END_FIFO_PUSH(wait,wait_data);
@@ -1243,6 +1250,7 @@ static void f_pid_status_wait(INT32 args)
 
       if(err)
       {
+#ifdef _REENTRANT
 	if (err == ECHILD) {
 	  /* We can get here if several threads are waiting on the
 	   * same process, or if the second sleep below wasn't enough
@@ -1250,8 +1258,12 @@ static void f_pid_status_wait(INT32 args)
 	   * fifo. In either case we just loop and try again. */
 	  pid = -1;
 	  errno = ECHILD;
+#ifdef PROC_DEBUG
+	  fprintf(stderr, "wait(%d): Child isn't reaped yet, looping.\n", pid);
+#endif
 	}
 	else
+#endif
 	  Pike_error("Lost track of a child (pid %d, errno from wait %d).\n",pid,err);
       }
       else {
@@ -1274,26 +1286,42 @@ static void f_pid_status_wait(INT32 args)
 	  {
 	    case EINTR: break;
 	      
-#if defined(USE_SIGCHLD) && defined(_REENTRANT)
+#ifdef _REENTRANT
 	    case ECHILD:
 	      /* Linux stupidity...
 	       * child might be forked by another thread (aka process).
 	       *
 	       * SIGCHILD will be sent to all threads on Linux.
 	       * The sleep in the loop below will thus be awakened by EINTR.
+	       *
+	       * But not if there's a race or if Linux has gotten more
+	       * POSIX compliant (>= 2.4), so don't sleep too long
+	       * unless we can poll the wait data pipe. /mast
 	       */
 	      pid = THIS->pid;
-	      while ((THIS->state == PROCESS_RUNNING) &&
-		     (!kill(pid, 0))) {
-#ifdef PROC_DEBUG
-		fprintf(stderr, "wait(%s): Sleeping...\n", pid);
-#endif /* PROC_DEBUG */
+	      if (THIS->state == PROCESS_RUNNING) {
 		THREADS_ALLOW();
+		while (!kill(pid, 0)) {
+#ifdef PROC_DEBUG
+		  fprintf(stderr, "wait(%d): Sleeping...\n", pid);
+#endif /* PROC_DEBUG */
 #ifdef HAVE_POLL
-		poll(NULL, 0, 10000);
+#ifdef NEED_SIGNAL_SAFE_FIFO
+		  {
+		    struct pollfd pfd[1];
+		    pfd[0].fd = wait_fd[0];
+		    pfd[0].events = POLLIN;
+		    poll (pfd, 1, 10000);
+		  }
+#else
+		  poll(NULL, 0, 100);
+#endif
 #else /* !HAVE_POLL */
-		sleep(10);
+		  /* FIXME: If this actually gets used then we really
+		   * ought to do better here. :P */
+		  sleep(1);
 #endif /* HAVE_POLL */
+		}
 		THREADS_DISALLOW();
 	      }
 	      /* The process has died. */
@@ -1321,7 +1349,7 @@ static void f_pid_status_wait(INT32 args)
 		err = ECHILD;
 	      }
 	      break;
-#endif /* USE_SIGCHLD && _REENTRANT */
+#endif /* _REENTRANT */
 
 	    default:
 	      err=errno;
