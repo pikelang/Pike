@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.794 2004/03/06 15:39:12 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.795 2004/03/06 15:48:20 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6880,6 +6880,14 @@ AC_OUTPUT(Makefile \
 if test "$pike_bundle_dir" = ""; then :; else
   bundle_info="`find . -type f -name '*.bundle'`"
   if test "$bundle_info" = ""; then :; else
+    cat <<EOF
+
+
+###################################################
+# Extracting bundles...
+#   Requested from:
+`echo "$bundle_info"|sed -e 's/^/#     /'`
+EOF
     # We have some bundles to enable.
     bundles=`echo "$bundle_info" | sed -e 's/.*\///g' -e 's/\.bundle$//' | sort | uniq`
     # FIXME: Intra-bundle dependencies?
