@@ -1,4 +1,4 @@
-// $Id: Stdio.pmod,v 1.29 1998/07/15 15:08:36 grubba Exp $
+// $Id: Stdio.pmod,v 1.30 1998/07/19 03:24:09 hubbe Exp $
 
 #include <string.h>
 
@@ -16,6 +16,10 @@ class File
   mixed ___write_oob_callback;
 #endif
   mixed ___id;
+
+#ifdef __STDIO_DEBUG
+  string __closed_backtrace;
+#endif
 
   int errno()
   {
@@ -124,7 +128,12 @@ class File
   int close(void|string how)
   {
     if(::close(how||"rw"))
+    {
       _fd=0;
+#ifdef __STDIO_DEBUG
+      __closed_backtrace=master()->describe_backtrace(backtrace());
+#endif
+    }
     return 1;
 #if 0
     if(how)
@@ -204,6 +213,18 @@ class File
 #endif
     )
   {
+#ifdef __STDIO_DEBUG
+    if(!_fd)
+    {
+      throw(({
+	"Stdio.File(): set_nonblocking on closed file.\n"+
+	  (__closed_backtrace ? 
+	   sprintf("File was closed from:\n    %-=200s\n",__closed_backtrace) :
+	   "This file has never been open.\n" ),
+	  backtrace()}));
+      
+    }
+#endif
     SET(read_callback,rcb);
     SET(write_callback,wcb);
     ___close_callback=ccb;
