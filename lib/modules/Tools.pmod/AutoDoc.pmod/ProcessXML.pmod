@@ -401,7 +401,16 @@ void handleAppears(Node root) {
 
 // Rather DWIM splitting of a string into a chain of identifiers:
 // "Module.Class->funct(int i)" ==> ({"Module","Class","func"})
+// "\"foo.pike\"" ==> ({ "\"foo.pike\"" })
 static array(string) splitRef(string ref) {
+  if ((sizeof(ref)>1) && (ref[0] == '"')) {
+    // Explictly named program.
+    // Try to DWIM it...
+    ref = ref[1..sizeof(ref)-2];
+    ref = replace(ref, ({ ".pike", ".pmod" }), ({ "", "" }));
+    // FIXME: What about module.pike/module.pmod?
+    return ref/"/";
+  }
   array(string) a = Parser.Pike.split(ref);
   string scope = "";
   array result = ({});
@@ -490,7 +499,7 @@ static class ScopeStack {
     array(string) idents = splitRef(ref);
     int not_param = has_suffix(ref, "()");
     if (!sizeof(idents))
-      return ([ "resolved" : "" ]);
+      return ([ "resolution-failure" : "yes" ]);
 
 #if 0
     if (has_prefix(ref, "glGetIntegerv")) {
