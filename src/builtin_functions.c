@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.201 1999/11/04 17:21:42 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.202 1999/11/07 23:09:26 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -429,6 +429,10 @@ void f_search(INT32 args)
 	SIMPLE_BAD_ARG_ERROR("search", 3, "int");
 
       start=sp[2-args].u.integer;
+      if(start<0) {
+	bad_arg_error("search", sp-args, args, 3, "int(0..)", sp+2-args,
+		   "Start must be greater or equal to zero.\n");
+      }
     }
     start=array_search(sp[-args].u.array,sp+1-args,start);
     pop_n_elems(args);
@@ -436,10 +440,11 @@ void f_search(INT32 args)
     break;
 
   case T_MAPPING:
-    if(args > 2)
+    if(args > 2) {
       mapping_search_no_free(sp,sp[-args].u.mapping,sp+1-args,sp+2-args);
-    else
+    } else {
       mapping_search_no_free(sp,sp[-args].u.mapping,sp+1-args,0);
+    }
     free_svalue(sp-args);
     sp[-args]=*sp;
     dmalloc_touch_svalue(sp);
