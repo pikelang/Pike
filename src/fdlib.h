@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.31 2000/07/02 14:59:39 grubba Exp $
+ * $Id: fdlib.h,v 1.32 2000/07/02 16:04:07 grubba Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -111,12 +111,12 @@ int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS);
 FD debug_fd_accept(FD fd, struct sockaddr *addr, ACCEPT_SIZE_T *addrlen);
 SOCKFUN2(bind, struct sockaddr *, int)
 int debug_fd_connect (FD fd, struct sockaddr *a, int len);
-SOCKFUN4(getsockopt,int,int,void*,int*)
+SOCKFUN4(getsockopt,int,int,void*,ACCEPT_SIZE_T *)
 SOCKFUN4(setsockopt,int,int,void*,int)
 SOCKFUN3(recv,void *,int,int)
-SOCKFUN2(getsockname,struct sockaddr *,int *)
-SOCKFUN2(getpeername,struct sockaddr *,int *)
-SOCKFUN5(recvfrom,void *,int,int,struct sockaddr *,int*)
+SOCKFUN2(getsockname,struct sockaddr *,ACCEPT_SIZE_T *)
+SOCKFUN2(getpeername,struct sockaddr *,ACCEPT_SIZE_T *)
+SOCKFUN5(recvfrom,void *,int,int,struct sockaddr *,ACCEPT_SIZE_T *)
 SOCKFUN3(send,void *,int,int)
 SOCKFUN5(sendto,void *,int,int,struct sockaddr *,unsigned int)
 SOCKFUN1(shutdown, int)

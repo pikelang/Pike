@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.35 2000/07/02 15:00:12 grubba Exp $");
+RCSID("$Id: fdlib.c,v 1.36 2000/07/02 16:04:07 grubba Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -365,12 +365,12 @@ int PIKE_CONCAT(debug_fd_,NAME) X1 { SOCKET ret; \
 
 
 SOCKFUN2(bind, struct sockaddr *, int)
-SOCKFUN4(getsockopt,int,int,void*,int*)
+SOCKFUN4(getsockopt,int,int,void*,ACCEPT_SIZE_T *)
 SOCKFUN4(setsockopt,int,int,void*,int)
 SOCKFUN3(recv,void *,int,int)
-SOCKFUN2(getsockname,struct sockaddr *,int *)
-SOCKFUN2(getpeername,struct sockaddr *,int *)
-SOCKFUN5(recvfrom,void *,int,int,struct sockaddr *,int*)
+SOCKFUN2(getsockname,struct sockaddr *,ACCEPT_SIZE_T *)
+SOCKFUN2(getpeername,struct sockaddr *,ACCEPT_SIZE_T *)
+SOCKFUN5(recvfrom,void *,int,int,struct sockaddr *,ACCEPT_SIZE_T *)
 SOCKFUN3(send,void *,int,int)
 SOCKFUN5(sendto,void *,int,int,struct sockaddr *,unsigned int)
 SOCKFUN1(shutdown, int)
