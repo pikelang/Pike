@@ -196,25 +196,37 @@ if test "x$with_java" = xyes; then
   fi
 
   if test "$pike_cv_java" = yes; then
+    if test "x$pike_cv_sys_os" = xWindows_NT ; then
+      CPPFLAGS="$CPPFLAGS -D__NTJAVA__"
+    else
+      :
+    fi
     AC_MSG_CHECKING(if the JVM really works)
     AC_CACHE_VAL(pike_cv_java_working, [
       AC_TRY_RUN([#ifdef HAVE_JNI_H
 #include <jni.h>
 #endif
+#include <stdio.h>
         int main(int argc, char *argv[])
         {
           JavaVM *jvm;
           JNIEnv *env;
           JavaVMInitArgs vm_args;
           JavaVMOption vm_options[2];
+	  jint res;
           vm_args.version = 0x00010002;
-          vm_args.nOptions = 1;
+          vm_args.nOptions = 0;
           vm_args.options = vm_options;
           vm_args.ignoreUnrecognized = JNI_TRUE;
+#ifndef __NTJAVA__
           vm_options[0].optionString = "-Djava.library.path=$JAVA_LIBPATH";
           vm_options[0].extraInfo = NULL;
-          if(JNI_CreateJavaVM(&jvm, (void**)&env, &vm_args))
+	  vm_args.nOptions++;
+#endif
+          if((res=JNI_CreateJavaVM(&jvm, (void**)&env, &vm_args))) {
+	    fprintf(stderr, "JNI_CreateJavaVM failed code %d\n", (int)res);
             exit(1);
+	  }
 	  return 0;
         };
       ], [pike_cv_java_working=yes], [pike_cv_java_working=no])
