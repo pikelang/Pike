@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.365 2003/11/04 22:24:39 bill Exp $
+# $Id: Makefile.in,v 1.366 2003/11/05 17:14:28 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -499,7 +499,7 @@ dynloadtest: dynloadtest.o @EXTRA_OBJS@ fdlib.o port.o
 	$(LD) $(LDFLAGS) dynloadtest.o @EXTRA_OBJS@ fdlib.o port.o $(LIBS) -o dynloadtest
 
 
-tinstall: master-stamp
+tinstall: master-stamp autodoc-stamp
 	-rm -rf test-install
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
@@ -509,7 +509,7 @@ tinstall: master-stamp
 	PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)" pike_name="test-pike" \
 	prefix="./test-install" $(INSTALLARGS)
 
-just-tinstall: master-stamp
+just-tinstall: master-stamp autodoc-stamp
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" DOCDIR_SRC="$(DOCDIR_SRC)" \
@@ -637,6 +637,9 @@ autodoc.xml: pike doc_build/src doc_build/lib doc_build/images images force
 	  --imgsrc=$(DOCDIR)/src_images --builddir=doc_build/lib \
 	  --imgdir=doc_build/images
 	$(RUNPIKE) -x join_autodoc --quiet --post-process autodoc.xml doc_build
+
+autodoc-stamp: autodoc.xml
+	@test -d autodoc-stamp || echo foo > autodoc-stamp
 
 images: doc_build/src/post_modules/GTK/refdoc/images
 	@cp $(SRCDIR)/post_modules/GTK/refdoc/images/*.png \
