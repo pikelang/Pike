@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: C.pmod,v 1.41 2003/12/08 00:23:03 nilsson Exp $
+// $Id: C.pmod,v 1.42 2004/03/20 06:49:24 nilsson Exp $
 
 //! Splits the @[data] string into an array of tokens. An additional
 //! element with a newline will be added to the resulting array of
@@ -61,7 +61,8 @@ array(string) split(string data, void|mapping state)
 	if(pos==-1)
 	  error("Failed to find end of preprocessor statement.\n");
 
-	while(data[pos-1]=='\\') pos=search(data,"\n",pos+1);
+	while(data[pos-1]=='\\' || (data[pos-1]=='\r' && data[pos-2]=='\\'))
+	  pos=search(data,"\n",pos+1);
 	break;
 
       case 'a'..'z':

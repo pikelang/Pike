@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.32 2003/06/17 23:09:31 mast Exp $
+// $Id: Pike.pmod,v 1.33 2004/03/20 06:47:28 nilsson Exp $
 
 //! This module parses and tokenizes Pike source code.
 
@@ -138,10 +138,12 @@ array(string) split(string data, void|mapping state)
 	pos=search(data,"\n",pos);
 	if(pos==-1)
 	  error("Failed to find end of preprocessor statement.\n");
-	
-	while(data[pos-1]=='\\') pos=search(data,"\n",pos+1);
+
+	while(data[pos-1]=='\\' || (data[pos-1]=='\r' && data[pos-2]=='\\'))
+	  pos=search(data,"\n",pos+1);
+
         sscanf(data[start..pos], 
-	       "#%*[ \t]charset%*[ \t\\]%s%*[ \n]", string charset);
+	       "#%*[ \t]charset%*[ \t\\]%s%*[ \r\n]", string charset);
 	if(charset)
 	  data = (data[0..pos]+
 		  master()->decode_charset(data[pos+1..sizeof(data)-3], 
@@ -233,7 +235,7 @@ array(string) split(string data, void|mapping state)
 
       default:
         UNKNOWN_TOKEN;
-
+      
       case '`':
 	{
 	int bqstart = pos;
