@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.20 1999/11/11 13:41:52 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.21 1999/11/12 14:32:53 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -125,7 +125,7 @@ constant header =
 "/* Tree transformation code.\n"
 " *\n"
 " * This file was generated from %O by\n"
-" * $Id: mktreeopt.pike,v 1.20 1999/11/11 13:41:52 grubba Exp $\n"
+" * $Id: mktreeopt.pike,v 1.21 1999/11/12 14:32:53 grubba Exp $\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"
@@ -526,7 +526,8 @@ string fix_action(string s)
     string clean_up = "\n";
 
     if (sizeof(used_nodes)) {
-      clean_up = "\n" + (indices(used_nodes) * " = ") + " = 0;\n";
+      clean_up = "\nADD_NODE_REF(" +
+	(indices(used_nodes) * ");\nADD_NODE_REF(") + ");\n";
     }
     a[i] = "tmp1" + new_node + clean_up + "goto use_tmp1;" + rest;
   }
@@ -697,10 +698,9 @@ void parse_data()
       default:
 	string fix_refs = "";
 	if (sizeof(t)) {
-	  fix_refs =
-	    "#ifndef SHARED_NODES\n" +
-	    "  " + (t + ({ "0;\n" })) * " = " +
-	    "#endif /* !SHARED_NODES */\n";
+	  fix_refs = "  ADD_NODE_REF(" +
+	    t * ");\n  ADD_NODE_REF(" +
+	    ");\n";
 	}
 	action = sprintf("{\n"
 			 "  tmp1 = %s;\n"
@@ -753,9 +753,9 @@ void zap_cdr(array(object(node)) node_set)
 constant NULL_CAR = 0;
 constant EXACT_CAR = 1;
 constant NULL_CDR = 2;
-constant EXACT_CDR = 3;
-constant MATCH_CAR = 4;
-constant NOT_NULL_CAR = 5;
+constant MATCH_CAR = 3;
+constant NOT_NULL_CAR = 4;
+constant EXACT_CDR = 5;
 constant MATCH_CDR = 6;
 constant NOT_NULL_CDR = 7;
 constant ANY = 8;
