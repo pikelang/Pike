@@ -237,6 +237,7 @@ static void file_read(INT32 args)
 	if(!bytes_read)
 	{
 	  free((char *)str);
+	  UNSET_ONERROR(ebuf);
 	  push_int(0);
 	  return;
 	}
@@ -294,6 +295,7 @@ static void file_read(INT32 args)
 	  if(!bytes_read)
 	  {
 	    free(b.s.str);
+	    UNSET_ONERROR(ebuf);
 	    push_int(0);
 	    return;
 	  }
