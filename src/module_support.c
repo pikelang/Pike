@@ -6,7 +6,7 @@
 #include "pike_types.h"
 #include "error.h"
 
-RCSID("$Id: module_support.c,v 1.31 1999/12/05 16:34:54 mirar Exp $");
+RCSID("$Id: module_support.c,v 1.32 1999/12/06 21:41:03 mirar Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -127,8 +127,8 @@ void check_all_args(const char *fnname, int args, ... )
  *   %W: struct pike_string *		Allow wide strings
  *   %a: struct array *
  *   %A: struct array * or NULL
- *   %f: float
- *   %F: float or int -> float
+ *   %f: float -> FLOAT_TYPE
+ *   %F: float or int -> FLOAT_TYPE
  *   %m: struct mapping *
  *   %M: struct multiset *
  *   %o: struct object *
@@ -223,19 +223,19 @@ int va_get_args(struct svalue *s,
       break;
     case 'f':
       if(s->type != T_FLOAT) return ret;
-      *va_arg(ap, float *)=s->u.float_number;
+      *va_arg(ap, FLOAT_TYPE *)=s->u.float_number;
       break;
     case 'F':
       if(s->type == T_FLOAT)
-	 *va_arg(ap, float *)=s->u.float_number;
+	 *va_arg(ap, FLOAT_TYPE *)=s->u.float_number;
       else if(s->type == T_INT)
-	 *va_arg(ap, float *)=(float)s->u.integer;
+	 *va_arg(ap, FLOAT_TYPE *)=(float)s->u.integer;
       else 
       {
         push_text( "float" );
         push_svalue( s );
         f_cast( );
-        *va_arg(ap, float *)=sp[-1].u.float_number;
+        *va_arg(ap, FLOAT_TYPE *)=sp[-1].u.float_number;
         pop_stack();
       }
       break;
