@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.58 1999/03/03 17:27:58 grubba Exp $
+ * $Id: requests.pmod,v 1.59 1999/03/03 17:32:02 grubba Exp $
  */
 
 import .types;
@@ -581,6 +581,9 @@ class fetch
 	origin = 0;
       }
       atom->options = ({ ([ "type":"atom", "atom":section ]) });
+
+      werror("Options specified. wanted: %O, section:%O, origin:%O, atom: %O\n",
+	     wanted, section, origin, atom);
     }
 
     /* Should requesting any part of the body really count as reading it? */
