@@ -44,10 +44,8 @@ remake
 smartlink
 stamp-h
 stamp-h.in
-stamp-tpike-predep
 test-install
 testsuite
-tpike
 treeopt.h
 y.output
 y.tab.c
