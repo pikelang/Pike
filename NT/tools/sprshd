@@ -94,8 +94,7 @@ void handle_incoming_connection(object(Stdio.File) io)
 				   "cwd":dir,
 				   ]));
       };
-      
-      
+	destruct(p2);
       if(!err)
       {
 #if !constant(Stdio.PROP_IPC)
