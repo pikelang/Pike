@@ -1685,8 +1685,8 @@ void main(int argc, array argv)
   }
   werror("Parsing input files...     ");
   float t1 = gauge {
-  foreach( glob( "*.pre",get_dir( source_dir )), string f)
-    parse_pre_file( source_dir + f );
+    foreach( glob( "*.pre",get_dir( source_dir )), string f)
+      parse_pre_file( source_dir + f );
   };
   Class c = get_class_ref("_global", "*.c", 0, 0);
   foreach( glob( "*.c",get_dir( source_dir )), string f)
