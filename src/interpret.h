@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.147 2003/12/09 15:39:45 grubba Exp $
+|| $Id: interpret.h,v 1.148 2003/12/23 15:17:33 grubba Exp $
 */
 
 #ifndef INTERPRET_H
@@ -292,6 +292,10 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     struct pike_string *_=(S);						\
     struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
+    DO_IF_DEBUG(if(_->size_shift & ~3) {				\
+		  Pike_fatal("Pushing string with bad shift: %d\n",	\
+			     _->size_shift);				\
+		});							\
     _sp_->subtype=0;							\
     _sp_->u.string=_;							\
     _sp_->type=PIKE_T_STRING;						\
@@ -380,6 +384,10 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 #define ref_push_string(S) do{						\
     struct pike_string *_=(S);						\
     struct svalue *_sp_ = Pike_sp++;					\
+    DO_IF_DEBUG(if(_->size_shift & ~3) {				\
+		  Pike_fatal("Pushing string with bad shift: %d\n",	\
+			     _->size_shift);				\
+		});							\
     add_ref(_);								\
     _sp_->subtype=0;							\
     _sp_->u.string=_;							\
