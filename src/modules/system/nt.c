@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.54 2002/10/21 17:06:27 marcus Exp $
+|| $Id: nt.c,v 1.55 2003/04/30 10:28:04 grubba Exp $
 */
 
 /*
@@ -18,7 +18,11 @@
 
 #ifdef __NT__
 
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#else
 #include <winsock.h>
+#endif
 #include <windows.h>
 #include <accctrl.h>
 #include <lm.h>
