@@ -1,3 +1,8 @@
+Wed Sep  3 00:19:38 1997  Henrik Grubbström  <grubba@infovav.se>
+
+	* threads.c (f_mutex_lock): Now throws an error if a mutex is locked
+	recursively.
+
 Sun Aug 31 02:06:06 1997  Henrik Grubbström  <grubba@infovav.se>
 
 	* *.{c,h,yacc}: Fixed valid prototypes for functions taking no
