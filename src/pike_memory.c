@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.130 2002/11/25 01:28:22 mast Exp $
+|| $Id: pike_memory.c,v 1.131 2002/11/30 16:14:56 grubba Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.130 2002/11/25 01:28:22 mast Exp $");
+RCSID("$Id: pike_memory.c,v 1.131 2002/11/30 16:14:56 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -634,6 +634,9 @@ char *debug_qalloc(size_t size)
   return NULL;	/* Keep the compiler happy. */
 }
 
+/* #define DMALLOC_TRACE */
+/* #define DMALLOC_TRACELOGSIZE	256*1024 */
+
 #ifdef DMALLOC_TRACE
 /* this can be used to supplement debugger data
  * to find out *how* the interpreter got to a certain
@@ -657,6 +660,7 @@ size_t dmalloc_tracelogptr=0;
  * dmalloc will output all checkpoints to stderr.
  */
 int dmalloc_print_trace;
+#define DMALLOC_TRACE_LOG(X)
 #endif
 
 
@@ -1023,12 +1027,13 @@ struct memloc
   int times;
 };
 
-#define MEM_PADDED 1
-#define MEM_WARN_ON_FREE 2
-#define MEM_REFERENCED 4
-#define MEM_IGNORE_LEAK 8
-#define MEM_FREE 16
-#define MEM_LOCS_ADDED_TO_NO_LEAKS 32
+#define MEM_PADDED			1
+#define MEM_WARN_ON_FREE		2
+#define MEM_REFERENCED			4
+#define MEM_IGNORE_LEAK			8
+#define MEM_FREE			16
+#define MEM_LOCS_ADDED_TO_NO_LEAKS	32
+#define MEM_TRACE			64
 
 BLOCK_ALLOC_FILL_PAGES(memloc, 64)
 
@@ -1037,6 +1042,7 @@ struct memhdr
   struct memhdr *next;
   long size;
   int flags;
+  int times;		/* Should be equal to `+(@(locations->times))... */
 #ifdef DMALLOC_AD_HOC
   int misses;
 #endif
@@ -1218,14 +1224,26 @@ static inline unsigned long lhash(struct memhdr *m, LOCATION location)
 
 #define INIT_BLOCK(X) X->locations=0; X->flags=0;
 #define EXIT_BLOCK(X) do {				\
-  struct memloc *ml;					\
+  struct memloc *ml = X->locations;			\
+  int times = 0;					\
+  while(ml)						\
+  {							\
+    times += ml->times;					\
+    ml = ml->next;					\
+  }							\
+  if (times != X->times) {				\
+    dump_memhdr_locations(X, 0, 0);			\
+    Pike_fatal("%p: Dmalloc lost locations for block at %p? "		\
+	       "total:%d  !=  accumulated:%d\n",	\
+	       X, X->data, X->times, times);		\
+  }							\
   while((ml=X->locations))				\
   {							\
-    unsigned long l=lhash(X,ml->location);		\
-    if(mlhash[l]==ml) mlhash[l]=0;			\
+    unsigned long l = lhash(X, ml->location);		\
+    if(mlhash[l]==ml) mlhash[l] = NULL;			\
 							\
     X->locations=ml->next;				\
-    really_free_memloc(ml);					\
+    really_free_memloc(ml);				\
   }							\
 }while(0)
 
@@ -1294,6 +1312,10 @@ void merge_location_list(struct memhdr *mh)
   struct memloc *ml,*ml2,**prev;
   for(ml=mh->locations;ml;ml=ml->next)
   {
+    /* Make sure only live memloc's are left in the cache. */
+    unsigned long l = lhash(mh, ml->location);
+    mlhash[l] = ml;
+
     prev=&ml->next;
     while((ml2=*prev))
     {
@@ -1338,7 +1360,7 @@ static int add_location_cleanup(struct memhdr *mh,
       {
 	l2=lhash(mh, ml->location);
 	
-	if(mlhash[l2] &&
+	if(mlhash[l2] && mlhash[l2]!=ml &&
 	   mlhash[l2]->mh == mh && mlhash[l2]->location == ml->location)
 	{
 	  /* We found a duplicate */
@@ -1349,6 +1371,7 @@ static int add_location_cleanup(struct memhdr *mh,
 	  *prev=ml->next;
 	  really_free_memloc(ml);
 	}else{
+	  if (!mlhash[l2]) mlhash[l2] = ml;
 	  prev=&ml->next;
 	}
       }
@@ -1367,6 +1390,7 @@ static int add_location_cleanup(struct memhdr *mh,
       *prev=ml->next;
       really_free_memloc(ml);
     }else{
+      if (!mlhash[l2]) mlhash[l2] = ml;
       prev=&ml->next;
     }
   }
@@ -1376,7 +1400,6 @@ static int add_location_cleanup(struct memhdr *mh,
 }
 #endif
 				 
-
 static inline void add_location(struct memhdr *mh,
 				LOCATION location)
 {
@@ -1385,13 +1408,19 @@ static inline void add_location(struct memhdr *mh,
 
 #ifdef DMALLOC_TRACE
   if(dmalloc_print_trace)
-    fprintf(stderr,"%s\n",location);
+    fprintf(stderr,"%p: %s\n", mh, location);
   DMALLOC_TRACE_LOG(location);
 #endif
 
 #if DEBUG_MALLOC - 0 < 2
   if(find_location(&no_leak_memlocs, location)) return;
 #endif
+
+  mh->times++;
+
+  if (mh->flags & MEM_TRACE) {
+    fprintf(stderr, "add_location(0x%p, %s)\n", mh, location);
+  }
 
 #ifdef DMALLOC_PROFILE
   add_location_calls++;
@@ -1401,6 +1430,18 @@ static inline void add_location(struct memhdr *mh,
 
   if(mlhash[l] && mlhash[l]->mh==mh && mlhash[l]->location==location)
   {
+    if (mh->flags & MEM_TRACE) {
+      fprintf(stderr, "Found in cache.\n");
+      for (ml = mh->locations; ml; ml = ml->next) {
+	if (ml == mlhash[l]) break;
+      }
+      if (!ml) {
+	dump_memhdr_locations(mh, 0, 0);
+	Pike_fatal("Memloc 0x%p in mlhash, but not in mh->locations!\n"
+		   "data:0x%p, location:%s\n",
+		   mlhash[l], mh->data, location);
+      }
+    }
     mlhash[l]->times++;
 #ifdef DMALLOC_PROFILE
     add_location_cache_hits++;
@@ -1410,18 +1451,29 @@ static inline void add_location(struct memhdr *mh,
 
 #ifdef DMALLOC_AD_HOC
   if(mh->misses > AD_HOC_CHECK_INTERVAL)
-    if(add_location_cleanup(mh, location, l))
+    if(add_location_cleanup(mh, location, l)) {
+      if (mh->flags & MEM_TRACE) {
+	fprintf(stderr, "Adjusted by add_location_cleanup().\n");
+      }
       return;
+    }
 #else
   for(ml=mh->locations;ml;ml=ml->next)
   {
 #ifdef DMALLOC_PROFILE
     add_location_seek++;
 #endif
-    if(ml->location==location)
-      goto old_ml;
+    if(ml->location==location) {
+      ml->times++;
+      mlhash[l]=ml;
+      return;
+    }
   }
 #endif
+
+  if (mh->flags & MEM_TRACE) {
+    fprintf(stderr, "Creating a new entry.\n");
+  }
 
 #ifdef DMALLOC_PROFILE
   add_location_new++;
@@ -1438,12 +1490,6 @@ static inline void add_location(struct memhdr *mh,
 #endif
   mlhash[l]=ml;
   return;
-
-#ifndef DMALLOC_AD_HOC
- old_ml:
-  ml->times++;
-  mlhash[l]=ml;
-#endif
 }
 
 static void remove_location(struct memhdr *mh, LOCATION location)
@@ -1463,7 +1509,7 @@ static void remove_location(struct memhdr *mh, LOCATION location)
   l=lhash(mh,location);
 
   if(mlhash[l] && mlhash[l]->mh==mh && mlhash[l]->location==location)
-    mlhash[l]=0;
+    mlhash[l]=NULL;
 
   
   prev=&mh->locations;
@@ -1472,6 +1518,7 @@ static void remove_location(struct memhdr *mh, LOCATION location)
     if(ml->location==location)
     {
       *prev=ml->next;
+      mh->times -= ml->times;
       really_free_memloc(ml);
 #ifndef DMALLOC_AD_HOC
       break;
@@ -1492,13 +1539,14 @@ static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location)
 
   mh->size=s;
   mh->flags=0;
+  mh->times=1;
 #ifdef DMALLOC_AD_HOC
   mh->misses=0;
 #endif
   mh->locations=ml;
   mh->gc_generation=gc_generation * 1000 + Pike_in_gc;
   ml->location=location;
-  ml->next=0;
+  ml->next = NULL;
   ml->times=1;
   ml->mh=mh;
   mlhash[l]=ml;
@@ -1506,6 +1554,14 @@ static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location)
   if(dmalloc_default_location)
     add_location(mh, dmalloc_default_location);
   return mh;
+}
+
+void dmalloc_trace(void *p)
+{
+  struct memhdr *mh = my_find_memhdr(p, 0);
+  if (mh) {
+    mh->flags |= MEM_TRACE;
+  }
 }
 
 void dmalloc_register(void *p, int s, LOCATION location)
