@@ -7,15 +7,13 @@
 # configure.in for Pike environment
 #
 
-# $Id: configure.in,v 1.5 2001/03/26 13:29:08 mirar Exp $
+# $Id: configure.in,v 1.6 2001/03/26 13:31:30 mirar Exp $
 AC_INIT(internal.h)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
 
-AC_PROG_CC
 AC_PROG_RANLIB
-AC_TRY_CPP
 AC_PATH_PROG(AR, ar, ar, $PATH:$EXTRA_PATH)
 export AR
 AC_SUBST(AR)
