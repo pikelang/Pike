@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.44 1997/08/03 09:55:07 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.45 1997/08/03 12:46:15 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1187,27 +1187,30 @@ low_idents: F_IDENTIFIER
       pop_stack();
     }else{
       $$=0;
-      if( get_master() && !num_parse_error)
+      if(!num_parse_error)
       {
-	reference_shared_string($1);
-	push_string($1);
-	reference_shared_string(current_file);
-	push_string(current_file);
-	SAFE_APPLY_MASTER("resolv", 2);
-	
-	if(throw_value.type == T_STRING)
+	if( get_master() )
 	{
-	  my_yyerror("%s",throw_value.u.string->str);
-	}
-	else if(IS_ZERO(sp-1) && sp[-1].subtype==1)
-	{
-	  my_yyerror("'%s' undefined.", $1->str);
+	  reference_shared_string($1);
+	  push_string($1);
+	  reference_shared_string(current_file);
+	  push_string(current_file);
+	  SAFE_APPLY_MASTER("resolv", 2);
+	  
+	  if(throw_value.type == T_STRING)
+	  {
+	    my_yyerror("%s",throw_value.u.string->str);
+	  }
+	  else if(IS_ZERO(sp-1) && sp[-1].subtype==1)
+	  {
+	    my_yyerror("'%s' undefined.", $1->str);
+	  }else{
+	    $$=mkconstantsvaluenode(sp-1);
+	  }
+	  pop_stack();
 	}else{
-	  $$=mkconstantsvaluenode(sp-1);
+	  my_yyerror("'%s' undefined.", $1->str);
 	}
-	pop_stack();
-      }else{
-	my_yyerror("'%s' undefined.", $1->str);
       }
     }
     free_string($1);
