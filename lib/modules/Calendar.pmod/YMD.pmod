@@ -2730,6 +2730,7 @@ Calendar.dwim_day("1");
 Calendar.dwim_day("today");
 Calendar.dwim_day("last monday");
 Calendar.dwim_day("next monday");
+Calendar.dwim_day("Sat Jun  2");
 
 */
 
@@ -2751,6 +2752,7 @@ static constant dwim_day_strings=
   "%M%*[- /]%D",
   "%M-%D-%y",
   "%D-%M-%y",
+  "%e%*[- /]%M%*[- /]%D",
   "%e%*[- /wv]%W%*[ -/]%y",
   "%e%*[- /wv]%W", 
   "%d"
