@@ -1,8 +1,9 @@
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.8 2002/06/26 08:34:59 per Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.9 2002/07/03 14:49:54 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
+#include "threads.h"
 #include "program.h"
 #include "program_id.h"
 #include "object.h"
@@ -20,8 +21,12 @@ RCSID("$Id: Shuffler.cmod,v 1.8 2002/06/26 08:34:59 per Exp $");
 /* must be included last */
 #include "module_magic.h"
 
-
-
+#if 1
+#include <stdio.h>
+#define SHUFFLE_DEBUG(fmt,args...) fprintf(stderr,"Shuffle[%p]:" fmt, args)
+#else
+#define SHUFFLE_DEBUG(fmt,args...) 
+#endif
 #define BLOCK 8192
 static void free_source( struct source *s )
 {
@@ -78,6 +83,8 @@ PIKECLASS Shuffle
 
   PIKEVAR mixed done_callback;
 
+  PIKEVAR mixed request_arg;
+
   CVAR struct source *current_source;
   CVAR struct source *last_source;
   CVAR struct object *this_obj; /* callbacks only have the struct */
@@ -95,26 +102,28 @@ PIKECLASS Shuffle
   static void _send_more( int fd, struct Shuffle_struct *t );
   static void __set_callbacks( struct Shuffle_struct *t )
   {
-    if( t->fd >= 0 )
+    SHUFFLE_DEBUG("__set_calllbacks(%s)\n", t,(t->fd>0?"C":"Pike") );
+    if( t->fd > 0 )
       set_write_callback( t->fd, (void *)_send_more, t );
     else
     {
       ref_push_object( t->this_obj );
       Pike_sp[-1].type = PIKE_T_FUNCTION;
       Pike_sp[-1].subtype = t->write_callback;
-      apply( t->file_obj, "set_write_callback", 1 );
+      safe_apply( t->file_obj, "set_write_callback", 1 );
       pop_stack();
     }
   }
   
   static void __remove_callbacks( struct Shuffle_struct *t )
   {
-    if( t->fd >= 0 )
+    SHUFFLE_DEBUG("__remove_calllbacks(%s)\n", t,(t->fd>0?"C":"Pike") );
+    if( t->fd > 0 )
       set_write_callback( t->fd, 0,0 );
     else
     {
       push_int(0);
-      apply( t->file_obj, "set_write_callback", 1 );
+      safe_apply( t->file_obj, "set_write_callback", 1 );
       pop_stack();
     }
   }
@@ -125,6 +134,7 @@ PIKECLASS Shuffle
    *! 
   */
   {
+    SHUFFLE_DEBUG("set_throttler(%p)\n", THIS, t );
     if( THIS->throttler )
       free_object( THIS->throttler );
     THIS->throttler = t;
@@ -138,6 +148,7 @@ PIKECLASS Shuffle
    *! 
   */
   {
+    SHUFFLE_DEBUG("sent_data() --> %d\n", THIS, THIS->sent );
     RETURN THIS->sent;
   }
 
@@ -155,6 +166,7 @@ PIKECLASS Shuffle
    *!   
   */
   {
+    SHUFFLE_DEBUG("state() --> %d\n", THIS, THIS->state );
     RETURN THIS->state;
   }
 
@@ -163,7 +175,10 @@ PIKECLASS Shuffle
     THIS->leftovers.do_free = 0;
     THIS->shuffler = 0;
     THIS->throttler = 0;
+    THIS->sent = 0;
     THIS->done_callback.type = PIKE_T_INT;
+    THIS->request_arg.type = PIKE_T_INT;
+    THIS->request_arg.u.integer = 0;
     THIS->leftovers.len = 0;
     THIS->current_source = NULL;
     THIS->file_obj = NULL;
@@ -176,12 +191,18 @@ PIKECLASS Shuffle
     THIS->write_callback = 
       find_identifier("write_callback",Pike_fp->current_object->prog);
     
+    SHUFFLE_DEBUG("init()\n", THIS );
   }
 
   EXIT
   {
+    SHUFFLE_DEBUG("exit()\n", THIS );
     THIS->fd = 0;
-    if( THIS->file_obj ) free_object( THIS->file_obj );
+    if( THIS->file_obj )
+    {
+      free_object( THIS->file_obj );
+      THIS->file_obj = 0;
+    }
     while( THIS->current_source )
     {
       struct source *n = THIS->current_source->next;
@@ -196,6 +217,7 @@ PIKECLASS Shuffle
   static void __send_more_callback( struct Shuffle_struct *t, int amount );
   static void _request( struct Shuffle_struct *t, int amount )
   {
+    SHUFFLE_DEBUG("_request(%d) from %p\n", t, amount, t->throttler );
     if( t->throttler )
     {
       __remove_callbacks( t );
@@ -204,7 +226,8 @@ PIKECLASS Shuffle
       ref_push_object( t->this_obj );
       Pike_sp[-1].type = PIKE_T_FUNCTION;
       Pike_sp[-1].subtype = t->callback;
-      apply( t->throttler, "request", 3 );
+      push_svalue( &t->request_arg );
+      safe_apply( t->throttler, "request", 4 );
       pop_stack();
     }
     else /* bypass the pike function calling for the case
@@ -216,6 +239,7 @@ PIKECLASS Shuffle
   static void _send_more( int fd, struct Shuffle_struct *t )
   {
     int l = BLOCK;
+    SHUFFLE_DEBUG("_send_more(%d)\n", t, fd );
     if( t->leftovers.len )
       l = t->leftovers.len;
     _request( t, l );
@@ -223,6 +247,7 @@ PIKECLASS Shuffle
   
   static void _set_callbacks( struct Shuffle_struct *t )
   {
+    SHUFFLE_DEBUG("_set_callbacks()\n", t );
     if( t->current_source && t->current_source->setup_callbacks )
       t->current_source->setup_callbacks( t->current_source );
     __set_callbacks( t );
@@ -230,6 +255,7 @@ PIKECLASS Shuffle
   
   static void _remove_callbacks( struct Shuffle_struct *t )
   {
+    SHUFFLE_DEBUG("_remove_callbacks()\n",t );
     if( t->current_source && t->current_source->remove_callbacks )
       t->current_source->remove_callbacks( t->current_source );
     __remove_callbacks( t );
@@ -237,39 +263,42 @@ PIKECLASS Shuffle
   
   static void _all_done( struct Shuffle_struct *t, int reason )
   {
+    SHUFFLE_DEBUG("_all_done(%d)\n", t,reason );
     _remove_callbacks( t );
     
     ref_push_object( t->this_obj );
-    apply( t->shuffler, "___remove_shuffle", 1 );
+    safe_apply( t->shuffler, "___remove_shuffle", 1 );
     pop_stack();
 
-    if( THIS->file_obj )
+    if( t->file_obj )
     {
-      free_object( THIS->file_obj );
-      THIS->file_obj = 0;
+      free_object( t->file_obj );
+      t->file_obj = 0;
     }
 
     switch( reason )
     {
-      case 0: THIS->state = DONE; break;
-      case 1: THIS->state = WRITE_ERROR; break;
-      case 2: THIS->state = USER_ABORT; break;
-      case 3: THIS->state = READ_ERROR; break;
+      case 0: t->state = DONE; break;
+      case 1: t->state = WRITE_ERROR; break;
+      case 2: t->state = USER_ABORT; break;
+      case 3: t->state = READ_ERROR; break;
     }
 
-    while( THIS->current_source )
+    while( t->current_source )
     {
-      struct source *n = THIS->current_source->next;
-      free_source( THIS->current_source );
-      THIS->current_source = n;
+      struct source *n = t->current_source->next;
+      free_source( t->current_source );
+      t->current_source = n;
     }
-    if( THIS->leftovers.data && THIS->leftovers.do_free )
-      free( THIS->leftovers.data );
+    if( t->leftovers.data && t->leftovers.do_free )
+      free( t->leftovers.data );
 
-    THIS->leftovers.data = 0;
+    t->leftovers.data = 0;
 
     if( t->done_callback.type != PIKE_T_INT )
     {
+      SHUFFLE_DEBUG("_all_done(%d): Calling done callback: %p\n", t,
+		    reason, t->done_callback.u.object);
       push_svalue( &t->done_callback );
       
       ref_push_object( t->this_obj );
@@ -288,28 +317,45 @@ PIKECLASS Shuffle
     *! 
     */
   {
+    SHUFFLE_DEBUG("set_done_callback(%p)\n", THIS, cb->u.object );
     assign_svalue( &THIS->done_callback,cb);
+  }
+
+  PIKEFUN void set_request_arg( mixed arg )
+   /*! @decl void set_request_arg( mixed arg )
+    *!
+    *! Sets the extra argument sent to @[Thottler()->request()] and
+    *! @[Throttler()->give_back].
+    *! 
+    */
+  {
+    SHUFFLE_DEBUG("set_request_arg(%p)\n", THIS, arg->u.object );
+    assign_svalue( &THIS->request_arg, arg );
   }
   
   static void _give_back( struct Shuffle_struct *t, int amount )
   {
+    SHUFFLE_DEBUG("_give_back(%d)\n", t, amount );
     if( t->throttler )
     {
       ref_push_object( t->this_obj );
       push_int( amount );
-      apply( THIS->throttler, "give_back", 2 );
+      push_svalue( &t->request_arg );
+      safe_apply( t->throttler, "give_back", 3 );
       pop_stack();
     }
   }
 
   static void __send_more_callback( struct Shuffle_struct *t, int amount )
   {
-    int sent;
+    int sent = 0;
+    SHUFFLE_DEBUG("__send_more_callback(%d)\n", t, amount );
     while( t->leftovers.len < 1 )
     {
       while( t->current_source && t->current_source->eof )
       {
 	struct source *n = t->current_source->next;
+	SHUFFLE_DEBUG("__send_more_callback(): source done: %p\n", t, t->current_source );
 	if( t->current_source->remove_callbacks )
 	  t->current_source->remove_callbacks( t->current_source );
 	free_source( t->current_source );
@@ -320,16 +366,19 @@ PIKECLASS Shuffle
 
       if( !t->current_source )
       {
+	SHUFFLE_DEBUG("__send_more_callback(): no sources\n", t );
 	_give_back( t, amount );
 	_all_done( t, 0 );
 	return;
       }
 
-      t->leftovers = t->current_source->get_data( t->current_source, amount );
+      t->leftovers = t->current_source->get_data( t->current_source,
+						  MAXIMUM(amount,8192) );
 
       if( t->leftovers.len == -2 )
       {
 	/* come back later (nonblocking source without more data to read) */
+	SHUFFLE_DEBUG("__send_more_callback(): read pending\n", t );
 	__remove_callbacks( t );
 	t->current_source->set_callback( t->current_source,
 					 (void *)_set_callbacks, t );
@@ -338,6 +387,7 @@ PIKECLASS Shuffle
       }
       else if( t->leftovers.len < 0 )
       {
+	SHUFFLE_DEBUG("__send_more_callback(): read error\n", t );
 	/* read error */
 	_give_back( t, amount );
 	_all_done( t, 3 );
@@ -345,18 +395,29 @@ PIKECLASS Shuffle
       }
     }
     /* Now it's time to actually send the data. */
-    if( t->fd >= 0 )
+    SHUFFLE_DEBUG("__send_more_callback(): sending(%d)\n", t,
+		  MINIMUM(amount,t->leftovers.len));
+    if( t->fd > 0 )
+    {
+      THREADS_ALLOW();
       sent = fd_write( t->fd, t->leftovers.data+t->leftovers.off,
 		       MINIMUM(amount,t->leftovers.len) );
+      THREADS_DISALLOW();
+    }
     else
     {
       push_string( make_shared_binary_string(
 		     t->leftovers.data+t->leftovers.off,
 		     t->leftovers.len ) );
       apply( t->file_obj, "write", 1 );
-      sent = Pike_sp[-1].u.integer;
+      if( Pike_sp[-1].type != PIKE_T_INT )
+	fprintf("Oops: %d\n", Pike_sp[-1].type );
+      else
+	sent = Pike_sp[-1].u.integer;
       pop_stack();
     }
+    SHUFFLE_DEBUG("__send_more_callback(): sending(%d): sent %d\n", t,
+		  MINIMUM(t->leftovers.len,amount),sent );
 
     if( sent < 0 )
     {
@@ -364,25 +425,28 @@ PIKECLASS Shuffle
       _give_back( t, amount );
       return;
     }
-    THIS->sent += sent;
-    if( t->leftovers.len == sent )
+    if( sent )
     {
-      t->leftovers.len = 0;
-      if( t->leftovers.do_free )
-	free( t->leftovers.data );
+      t->sent += sent;
+      if( t->leftovers.len == sent )
+      {
+	t->leftovers.len = 0;
+	if( t->leftovers.do_free )
+	  free( t->leftovers.data );
+      }
+      else
+      {
+	t->leftovers.len -= sent;
+	t->leftovers.off += sent;
+      }
     }
-    else
-    {
-      t->leftovers.len -= sent;
-      t->leftovers.off += sent;
-    }
-
     if( sent < amount )
       _give_back( t, amount-sent );
   }
 
   PIKEFUN void send_more_callback( int amount )
   {
+    SHUFFLE_DEBUG("send_more_callback(%d)\n", THIS,amount );
     if( THIS->state == RUNNING )
     {
       __set_callbacks( THIS );
@@ -392,8 +456,9 @@ PIKECLASS Shuffle
       _give_back( THIS, amount );
   }
 
-  PIKEFUN void write_callback( )
+  PIKEFUN void write_callback( mixed|void x )
   {
+    SHUFFLE_DEBUG("write_callback()\n", THIS );
     _send_more( 0,THIS );
   }
   
@@ -406,7 +471,7 @@ PIKECLASS Shuffle
     if( (args != 4) || !shuffler || !get_storage( shuffler, Shuffler_program ) )
       Pike_error("This class cannot be instantiated directly\n");
 
-    apply( fd, "query_fd", 0 );
+    safe_apply( fd, "query_fd", 0 );
     THIS->fd = Pike_sp[-1].u.integer;
 
     THIS->shuffler = shuffler;
@@ -421,7 +486,7 @@ PIKECLASS Shuffle
     THIS->file_obj = fd;
     THIS->file_obj->refs++;
 
-    if( THIS->fd >= 0 )
+    if( THIS->fd > 0 )
     {
       set_nonblocking( THIS->fd, 1 );
       set_read_callback( THIS->fd, 0, 0 );
@@ -436,14 +501,15 @@ PIKECLASS Shuffle
       push_int( 0 ); /* read */
       push_int( 0 ); /* write */
       push_int( 0 ); /* close */
-      apply( THIS->file_obj, "set_nonblocking", 3 );
+      safe_apply( THIS->file_obj, "set_nonblocking", 3 );
       pop_stack();
     }
 
-    if( backend->type == PIKE_T_OBJECT )
+    if( (THIS->fd > 0) &&
+	(backend->type == PIKE_T_OBJECT) )
     {
       ref_push_object( THIS->file_obj );
-      apply( backend->u.object, "add_file", 1 );
+      safe_apply( backend->u.object, "add_file", 1 );
       pop_stack();
     }
     pop_n_elems( args );
@@ -457,6 +523,7 @@ PIKECLASS Shuffle
     */
   {
     THIS->state = RUNNING;
+    SHUFFLE_DEBUG("start()\n", THIS );
     _set_callbacks( THIS );
   }
 
@@ -467,6 +534,7 @@ PIKECLASS Shuffle
     */
   {
     THIS->state = PAUSED;
+    SHUFFLE_DEBUG("pause()\n", THIS );
     _remove_callbacks( THIS );
   }
 
@@ -476,6 +544,7 @@ PIKECLASS Shuffle
     *! 
     */
   {
+    SHUFFLE_DEBUG("stop()\n", THIS );
     _all_done( THIS, 2 );
   }
 
@@ -502,13 +571,20 @@ PIKECLASS Shuffle
     if( args > 2 )
     {
       if( length->type == PIKE_T_OBJECT )
-	int64_from_bignum( &rlength, start->u.object );
+	int64_from_bignum( &rlength, length->u.object );
       else if( length->type == PIKE_T_INT && !length->subtype )
-	rlength = start->u.integer;
+	rlength = length->u.integer;
     }
-
+    if( rlength == 0 )
+    {
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
     res = source_make( source, rstart, rlength );
 
+    SHUFFLE_DEBUG("add_source(XX,%d,%d) --> %p\n", THIS,
+		  (int)rstart, (int)rlength, res );
     if( !res )
       Pike_error("Failed to convert argument to a source\n");
 
@@ -569,7 +645,7 @@ PIKECLASS Shuffler
     push_int(0);
   }
 
-  PIKEFUN void set_throttler( object t )
+  PIKEFUN void set_throttler( object|void t )
     /*! @decl void set_throttler( Throttler t );
      *! Set the throttler that will be used in all @[Shuffle] objects
      *! created from this shuffler, unless overridden in the
@@ -579,7 +655,9 @@ PIKECLASS Shuffler
   {
     if( THIS->throttler )
       free_object( THIS->throttler );
-    THIS->throttler = t;
+    THIS->throttler = NULL;
+    if( t->type == PIKE_T_OBJECT )
+      THIS->throttler = t->u.object;
     Pike_sp--;
     push_int(0);
   }

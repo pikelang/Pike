@@ -2,6 +2,7 @@
 #include "bignum.h"
 #include "object.h"
 #include "interpret.h"
+#include "threads.h"
 
 #include "fdlib.h"
 #include "fd_control.h"
@@ -13,7 +14,7 @@
 
 #define CHUNK 8192
 
-/* $Id: b_source_normal_file.c,v 1.3 2002/05/30 13:30:39 grubba Exp $ */
+/* $Id: b_source_normal_file.c,v 1.4 2002/07/03 14:49:54 per Exp $ */
 
 
 /* Source: Normal file
@@ -26,7 +27,6 @@ static struct program *Fd_ref_program = NULL;
 struct fd_source
 {
   struct source s;
-
   struct object *obj;
   char buffer[CHUNK];
   int fd;
@@ -38,7 +38,6 @@ static struct data get_data( struct source *_s, ptrdiff_t len )
   struct fd_source *s = (struct fd_source *)_s;
   struct data res;
   int rr;
-
   len = CHUNK; /* It's safe to ignore the 'len' argument */
 
   res.do_free = 0;
@@ -50,9 +49,14 @@ static struct data get_data( struct source *_s, ptrdiff_t len )
     len = (ptrdiff_t)s->len;
     s->s.eof = 1;
   }
-
+  THREADS_ALLOW();
   rr = fd_read( s->fd, res.data, len );
+  THREADS_DISALLOW();
+/*    printf("B[normal file]: get_data( %d / %d ) --> %d\n", len, */
+/*  	 s->len, rr); */
+
   res.len = rr;
+
   if( rr < len )
     s->s.eof = 1;
   return res;
@@ -94,17 +98,25 @@ struct source *source_normal_file_make( struct svalue *s,
   apply( s->u.object, "query_fd", 0 );
   res->fd = Pike_sp[-1].u.integer;
   pop_stack();
+  res->s.get_data = get_data;
+  res->s.free_source = free_source;
+  res->obj = s->u.object;
+  res->obj->refs++;
 
   if( fd_fstat( res->fd, &st ) < 0 )
+  {
     goto fail;
-
+  }
   if( !S_ISREG(st.st_mode) )
+  {
     goto fail;
-  
-  if( len != -1 )
+  }  
+  if( len > 0 )
   {
     if( len > st.st_size-start )
+    {
       goto fail;
+    }
     else
       res->len = len;
   }
@@ -112,18 +124,15 @@ struct source *source_normal_file_make( struct svalue *s,
     res->len = st.st_size-start;
 
   if( fd_lseek( res->fd, (off_t)start, SEEK_SET ) < 0 )
+  {
     goto fail;
-
-  res->s.get_data = get_data;
-  res->s.free_source = free_source;
-  res->obj = s->u.object;
-  res->obj->refs++;
+  }
   return (struct source *)res;
 
 fail:
+  free_source((void *)res);
   free(res);
   return 0;
-  
 }
 
 void source_normal_file_exit( )
