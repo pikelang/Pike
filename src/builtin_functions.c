@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.254 2000/04/08 19:27:40 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.255 2000/04/12 15:14:35 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -461,6 +461,63 @@ void f_search(INT32 args)
   default:
     SIMPLE_BAD_ARG_ERROR("search", 1, "string|array|mapping");
   }
+}
+
+/* int has_prefix(string a, string prefix) */
+void f_has_prefix(INT32 args)
+{
+  struct pike_string *a, *b;
+
+  get_all_args("has_prefix", args, "%W%W", &a, &b);
+
+  /* First handle some common special cases. */
+  if ((b->len > a->len) || (b->size_shift > a->size_shift)) {
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  /* Trivial cases. */
+  if ((a == b)||(!b->len)) {
+    pop_n_elems(args);
+    push_int(1);
+    return;
+  }
+
+  if (a->size_shift == b->size_shift) {
+    int res = !MEMCMP(a->str, b->str, b->len << b->size_shift);
+    pop_n_elems(args);
+    push_int(res);
+    return;
+  }
+
+  /* At this point a->size_shift > b->size_shift */
+#define TWO_SHIFTS(S1, S2)	((S1)|((S2)<<2))
+  switch(TWO_SHIFTS(a->size_shift, b->size_shift)) {
+#define CASE_SHIFT(S1, S2) \
+  case TWO_SHIFTS(S1, S2): \
+    { \
+      PIKE_CONCAT(p_wchar,S1) *s1 = PIKE_CONCAT(STR,S1)(a); \
+      PIKE_CONCAT(p_wchar,S2) *s2 = PIKE_CONCAT(STR,S2)(b); \
+      int len = b->len; \
+      while(len-- && (s1[len] == s2[len])) \
+	; \
+      pop_n_elems(args); \
+      push_int(len == -1); \
+      return; \
+    } \
+    break
+
+    CASE_SHIFT(1,0);
+    CASE_SHIFT(2,0);
+    CASE_SHIFT(2,1);
+  default:
+    error("has_index(): Unexpected string shift combination: a:%d, b:%d!\n",
+	  a->size_shift, b->size_shift);
+    break;
+  }
+#undef CASE_SHIFT
+#undef TWO_SHIFTS
 }
 
 void f_has_index(INT32 args)
@@ -5880,6 +5937,9 @@ void init_builtin_efuns(void)
 		    tFunc( tOr(tMapping,tArray) tMix tOr(tVoid,tMix), tZero)))),
 	   0);
   
+  ADD_EFUN2("has_prefix", f_has_prefix, tFunc(tStr tStr,tInt01),
+	    OPT_TRY_OPTIMIZE, 0, 0);
+
   ADD_EFUN("has_index",f_has_index,
 	   tOr5(tFunc(tStr tIntPos, tInt),
 		tFunc(tArray tIntPos, tInt),
