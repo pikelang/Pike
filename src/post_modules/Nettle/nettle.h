@@ -9,7 +9,7 @@ extern struct program *nettle_hash_program;
 
 #define NO_WIDE_STRING(s)					\
 do { if ((s)->size_shift)					\
-       Pike_error("Bad argument, must be 8-bit string.");	\
+       Pike_error("Bad argument. Must be 8-bit string.\n");	\
 } while(0)
 
 void

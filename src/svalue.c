@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.183 2004/01/12 12:26:42 marcus Exp $
+|| $Id: svalue.c,v 1.184 2004/01/22 20:49:43 nilsson Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: svalue.c,v 1.183 2004/01/12 12:26:42 marcus Exp $");
+RCSID("$Id: svalue.c,v 1.184 2004/01/22 20:49:43 nilsson Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1043,7 +1043,7 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
       int res;
       aa.u.program = program_from_svalue(a);
       if (!aa.u.program) {
-	Pike_error("Bad argument to comparison.");
+	Pike_error("Bad argument to comparison.\n");
       }
       type_stack_mark();
       push_object_type(0, aa.u.program->id);
@@ -1059,7 +1059,7 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
       int res;
       bb.u.program = program_from_svalue(b);
       if (!bb.u.program) {
-	Pike_error("Bad argument to comparison.");
+	Pike_error("Bad argument to comparison.\n");
       }
       type_stack_mark();
       push_object_type(0, bb.u.program->id);
