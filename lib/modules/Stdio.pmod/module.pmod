@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.101 2001/01/05 07:39:31 mirar Exp $
+// $Id: module.pmod,v 1.102 2001/01/05 12:47:08 mirar Exp $
 #pike __REAL_VERSION__
 
 
@@ -570,11 +570,18 @@ nothing to read happens if you do, in backend:
  o read it
  o finish backend (ie, callback)
 
+We still need to read 0 bytes though, to get the next callback.
+
 FIXME for NT or internally? /Mirar
 
 */
+
 #if !defined(__NT__)
-    if (!::peek()) return; // nothing to read
+    if (!::peek()) 
+    {
+       ::read(0,1);
+       return; // nothing to read
+    }
 #endif
 
     string s=::read(8192,1);
