@@ -187,7 +187,58 @@ Note
 	    int unix_time()              - unix time
 
 	which should solve the problem better.
-		
+
+----------------------------------------------------------------
+
+Comparison:
+	a <= b, a >= b should no longer be used other then for
+	very known cases. Since Calendar II adds more complex
+	timerange objects, it is much better to ask exactly
+	what you want to measure:
+
+		 case            predicates 
+	
+	<-- past       future ->
+	
+	|----A----|              A strictly preceeds B,
+		     |----B----| A preceeds B
+	
+	|----A----|              A strictly preceeds B, A preceeds B, 
+		  |----B----|    A is previous to B, A touches B
+				 
+	    |----A----|          A preceeds B,
+		  |----B----|    A overlaps B, A touches B
+	
+	    |-------A-------|    A preceeds B, A ends with B
+		  |----B----|    A overlaps B, A contains B, A touches B,
+	
+	    |-------A-------|    A preceeds B,  A succeeds B,
+		|---B---|        A overlaps B, A contains B, A touches B
+	
+	       |----A----|       A overlaps B, A touches B
+	       |----B----|       A equals B, A starts with B, A ends with B
+	
+	    |-------A-------|    A succeeds B, A starts with B
+	    |----B----|          A overlaps B, A contains B, A touches B
+	
+		  |----A----|    A succeeds B, 
+	    |----B----|          A overlaps B, A touches B
+	
+		  |----A----|    A strictly succeeds B, A succeeds B
+	|----B----|              A is next to B, A touches B
+	
+		    |----A----|  A strictly succeeds B, 
+	|----B----|              A succeeds B
+
+	
+	These are used like, for instance,
+	A->succeeds(B) or A->ends_with(B);
+
+	Ie, to test if the beginning of A is before
+	or at the beginning of B, use
+
+		A->preceeds(B) || A->starts_with(B)
+
 ================================================================
 
 Depricated and removed:
