@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.127 2003/02/15 17:33:33 grubba Exp $
+|| $Id: interpret.h,v 1.128 2003/02/16 13:54:05 mast Exp $
 */
 
 #ifndef INTERPRET_H
@@ -473,9 +473,6 @@ PMOD_EXPORT extern struct Pike_interpreter Pike_interpreter;
 #define Pike_sp Pike_interpreter.stack_pointer
 #define Pike_fp Pike_interpreter.frame_pointer
 #define Pike_mark_sp Pike_interpreter.mark_stack_pointer
-#ifdef PIKE_THREADS
-#define Pike_thread_id Pike_interpreter.thread_id
-#endif
 
 
 #define CURRENT_STORAGE (dmalloc_touch(struct pike_frame *,Pike_fp)->current_storage)

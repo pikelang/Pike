@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.291 2003/02/16 03:59:57 mast Exp $
+|| $Id: interpret.c,v 1.292 2003/02/16 13:54:05 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.291 2003/02/16 03:59:57 mast Exp $");
+RCSID("$Id: interpret.c,v 1.292 2003/02/16 13:54:05 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -692,7 +692,7 @@ struct backlog
   struct program *program;
   PIKE_OPCODE_T *pc;
 #ifdef _REENTRANT
-  struct object *thread_id;
+  struct thread_state *thread_state;
 #endif
   ptrdiff_t stack;
   ptrdiff_t mark_stack;
@@ -704,7 +704,7 @@ int backlogp=BACKLOG-1;
 void dump_backlog(void)
 {
 #ifdef _REENTRANT
-  struct object *thread=0;
+  struct thread_state *thread=0;
 #endif
 
   int e;
@@ -723,10 +723,10 @@ void dump_backlog(void)
       INT32 line;
 
 #ifdef _REENTRANT
-      if(thread != backlog[e].thread_id)
+      if(thread != backlog[e].thread_state)
       {
-	fprintf(stderr,"[Thread swap, Pike_interpreter.thread_id=%p]\n",backlog[e].thread_id);
-	thread = backlog[e].thread_id;
+	fprintf(stderr,"[Thread swap, Pike_interpreter.thread_state=%p]\n",backlog[e].thread_state);
+	thread = backlog[e].thread_state;
       }
 #endif
 

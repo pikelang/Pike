@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpreter.h,v 1.81 2003/01/09 15:21:26 grubba Exp $
+|| $Id: interpreter.h,v 1.82 2003/02/16 13:54:06 mast Exp $
 */
 
 #undef LOW_GET_ARG
@@ -159,17 +159,12 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
       backlog[backlogp].stack = Pike_sp - Pike_interpreter.evaluator_stack;
       backlog[backlogp].mark_stack = Pike_mark_sp - Pike_interpreter.mark_stack;
 #ifdef _REENTRANT
-      backlog[backlogp].thread_id=Pike_interpreter.thread_id;
+      backlog[backlogp].thread_state=Pike_interpreter.thread_state;
 #endif
 
 #ifdef _REENTRANT
       CHECK_INTERPRETER_LOCK();
-      if(OBJ2THREAD(Pike_interpreter.thread_id)->state.thread_id !=
-	 Pike_interpreter.thread_id)
-	Pike_fatal("Arglebargle glop glyf, thread swap problem!\n");
-
-      if(d_flag>1 && thread_for_id(th_self()) != Pike_interpreter.thread_id)
-        Pike_fatal("thread_for_id() (or Pike_interpreter.thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id);
+      if(d_flag>1) DEBUG_CHECK_THREAD();
 #endif
 
       Pike_sp[0].type=99; /* an invalid type */
