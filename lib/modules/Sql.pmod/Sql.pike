@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.74 2004/01/06 19:26:00 bill Exp $
+ * $Id: Sql.pike,v 1.75 2004/01/09 14:11:23 nilsson Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -250,8 +250,9 @@ void create(string|object host, void|string|mapping(string:int|string) db,
     // we look in Sql.type and Sql.Provider.type.type for a valid sql class.
     if(Sql[program_name])
       p = Sql[program_name];
-    else if(Sql.Provider && Sql.Provider[program_name] && Sql.Provider[provider][provider])
-      p = Sql.Provider[program_name][program_name];
+    else if(Sql->Provider && Sql->Provider[program_name] &&
+	    Sql->Provider[program_name][program_name])
+      p = Sql->Provider[program_name][program_name];
 
     if (p) {
       if (options) {
