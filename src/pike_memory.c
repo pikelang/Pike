@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.45 1999/10/18 22:54:46 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.46 1999/10/19 02:06:10 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1307,10 +1307,11 @@ void cleanup_memhdrs(void)
 	for(l=m->locations;l;l=l->next)
 	{
 	  struct fileloc *f=find_file_location(l->locnum);
-	  fprintf(stderr,"  *** %s:%d (%d times) %s\n",
+	  fprintf(stderr,"  *** %s:%d (%d times) %s%s\n",
 		  f->file,
 		  f->line,
 		  l->times,
+		  l->locnum<0 ? "-" : "",
 		  find_location(&no_leak_memlocs, l->locnum) ? "" : " *");
 	}
       }
