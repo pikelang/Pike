@@ -207,11 +207,11 @@ lib: $(LIBDIR_SRC) $(LIBDIR_SRC)/master.pike
 # and thus has to follow the rules stated in that code.
 export: new_peep_engine $(SRCDIR)/language.c $(SRCDIR)/language.h depend
 	chmod +x $(SRCDIR)/install-sh
-	$(RUNPIKE) $(TMP_BINDIR)/export.pike Image Pipe spider Ssleay _Crypto
+	$(RUNPIKE) $(TMP_BINDIR)/export.pike Image Pipe spider Ssleay _Crypto Odbc
 
 full_export: new_peep_engine $(SRCDIR)/language.c $(SRCDIR)/language.h depend
 	chmod +x $(SRCDIR)/install-sh
-	$(RUNPIKE) $(TMP_BINDIR)/export.pike
+	$(RUNPIKE) $(TMP_BINDIR)/export.pike Odbc
 
 new_peep_engine:
 	$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
