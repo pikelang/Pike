@@ -135,6 +135,10 @@ quant: $(OBJ) module_objects
 install:
 	if [ ! -d "$(prefix)" ]; then mkdir "$(prefix)" ; chmod 755 "$(prefix)" ; else : ; fi
 	if [ ! -d "$(exec_prefix)" ]; then mkdir "$(exec_prefix)" ; chmod 755 "$(exec_prefix)" ; else : ; fi
+	@if [ -f "$(exec_prefix)/pike" ]; then \
+	  echo Renaming old "$(exec_prefix)/pike" to "$(exec_prefix)/old"; \
+	  mv -f "$(exec_prefix)/pike" "$(exec_prefix)/pike.old"; \
+	fi
 	$(INSTALL) ./pike $(exec_prefix)
 	if [ -f $(SRCDIR)/../bin/hilfe ]; then \
 	  if [ "$(exec_prefix)" != "/usr/local/bin" -a \
@@ -147,10 +151,13 @@ install:
 	    chmod 755 $(exec_prefix)/hilfe; \
 	  else $(INSTALL) $(SRCDIR)/../bin/hilfe $(exec_prefix); fi; \
 	else : ; fi
-	if [ ! -d "$(prefix)/lib" ]; then mkdir "$(prefix)/lib" ; chmod 755 "$(prefix)/lib" ; else : ; fi
-	if [ ! -d "$(lib_prefix)" ]; then mkdir "$(lib_prefix)" ; chmod 755 "$(lib_prefix)" ; else : ; fi
-	if [ ! -d "$(prefix)/include" ]; then mkdir "$(prefix)/include"; chmod 755 "$(prefix)/include"; fi
-	if [ ! -d "$(prefix)/include/pike" ]; then mkdir "$(prefix)/include/pike"; chmod 755 "$(prefix)/include/pike"; fi
+	if [ -d "$(lib_prefix).older/." ]; then echo Warning: deleting "$(lib_prefix).older"...; rm -rf "$(lib_prefix).older"; else : ; fi
+	if [ -d "$(lib_prefix).old/." ]; then mv -f "$(lib_prefix).old" "$(lib_prefix).older"; else : ; fi
+	if [ -d "$(lib_prefix)/." ]; then mv -f "$(lib_prefix)" "$(lib_prefix).old"; else : ; fi
+	if [ ! -d "$(prefix)/lib/." ]; then mkdir "$(prefix)/lib" ; chmod 755 "$(prefix)/lib" ; else : ; fi
+	if [ ! -d "$(lib_prefix)/." ]; then mkdir "$(lib_prefix)" ; chmod 755 "$(lib_prefix)" ; else : ; fi
+	if [ ! -d "$(prefix)/include/." ]; then mkdir "$(prefix)/include"; chmod 755 "$(prefix)/include"; fi
+	if [ ! -d "$(prefix)/include/pike/." ]; then mkdir "$(prefix)/include/pike"; chmod 755 "$(prefix)/include/pike"; fi
 	for a in $(SRCDIR)/*.h *.h ; do $(INSTALL) $$a $(prefix)/include/pike ; done
 	cp -r $(TMP_LIBDIR)/* $(lib_prefix)
 
@@ -253,7 +260,7 @@ html_docs: docs
 #
 # Pike internal targets
 #
-module_objects: global.h $(SRCDIR)/language.h lib
+module_objects: machine.h global.h $(SRCDIR)/language.h lib
 	( cd modules ; ${MAKE} $(MAKE_FLAGS) )
 
 language.o: $(SRCDIR)/language.c $(SRCDIR)/object.h $(SRCDIR)/interpret.h $(SRCDIR)/program.h
