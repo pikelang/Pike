@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.197 2005/03/09 12:03:15 mast Exp $
+|| $Id: stralloc.c,v 1.198 2005/04/02 15:04:03 mast Exp $
 */
 
 #include "global.h"
@@ -1092,6 +1092,31 @@ PMOD_EXPORT void check_string(struct pike_string *s)
     if(debug_findstring(s) !=s)
       Pike_fatal("Shared string not shared.\n");
   }else{
+
+    switch (s->size_shift) {
+      case 0:
+	break;
+      case 1: {
+	ptrdiff_t i;
+	p_wchar1 *str = STR1 (s);
+	for (i = 0; i < s->len; i++)
+	  if (str[i] > 0xff)
+	    goto size_shift_check_done;
+	Pike_fatal ("Shared string is too wide.\n");
+      }
+      case 2: {
+	ptrdiff_t i;
+	p_wchar2 *str = STR2 (s);
+	for (i = 0; i < s->len; i++)
+	  if (str[i] > 0xffff)
+	    goto size_shift_check_done;
+	Pike_fatal ("Shared string is too wide.\n");
+      }
+      default:
+	Pike_fatal ("Invalid size shift %d.\n", s->size_shift);
+    }
+  size_shift_check_done:;
+
     if(do_hash(s) != s->hval)
     {
       locate_problem(wrong_hash);
