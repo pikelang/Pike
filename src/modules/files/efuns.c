@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.155 2005/01/04 17:44:35 grubba Exp $
+|| $Id: efuns.c,v 1.156 2005/01/06 16:13:56 grubba Exp $
 */
 
 #include "global.h"
@@ -102,7 +102,7 @@ LINKFUNC(BOOL, movefileex, (
   DWORD dwFlags                /* move options  */
 ));
 
-#endif
+#endif /* __NT__ */
 
 struct array *encode_stat(PIKE_STAT_T *s)
 {
@@ -805,7 +805,12 @@ void f_mkdir(INT32 args)
  */
 void f_get_dir(INT32 args)
 {
+#ifdef __NT__
+  HANDLE dir;
+  WIN32_FIND_DATA d;
+#else /* !__NT__ */
   DIR *dir;
+#endif /* __NT__ */
   struct pike_string *str=0;
 
   VALID_FILE_IO("get_dir","read");
@@ -829,6 +834,61 @@ void f_get_dir(INT32 args)
     push_int(0);
     return;
   }
+
+#ifdef __NT__
+  /* Append "/" "*". */
+  if (str->len && (str->str[str->len-1] != '/') &&
+      (str->str[str->len-1] != '\\')) {
+    push_constant_text("/*");
+  } else {
+    push_constant_text("*");
+  }
+  f_add(2);
+  str = Pike_sp[-1].u.string;
+
+#ifdef READDIR_DEBUG
+  fprintf(stderr, "FindFirstFile(\"%s\")...\n", str->str);
+#endif /* READDIR_DEBUG */
+
+  dir = FindFirstFile((LPCSTR)str->str, &d);
+
+  if (dir == DO_NOT_WARN(INVALID_HANDLE_VALUE)) {
+#ifdef READDIR_DEBUG
+    fprintf(stderr, "  INVALID_HANDLE_VALUE\n");
+#endif /* READDIR_DEBUG */
+
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  BEGIN_AGGREGATE_ARRAY(10);
+
+  do {
+#ifdef READDIR_DEBUG
+    fprintf(stderr, "  \"%s\"\n", d.cFileName);
+#endif /* READDIR_DEBUG */
+    /* Filter "." and ".." from the list. */
+    if(d.cFileName[0]=='.')
+    {
+      if(!d.cFileName[1]) continue;
+      if(d.cFileName[1]=='.' && !d.cFileName[2]) continue;
+    }
+    push_text(d.cFileName);
+    DO_AGGREGATE_ARRAY(120);
+  } while(FindNextFile(dir, &d));
+
+#ifdef READDIR_DEBUG
+  fprintf(stderr, "  DONE\n");
+#endif /* READDIR_DEBUG */
+
+  FindClose(dir);
+
+  END_AGGREGATE_ARRAY;
+
+  stack_pop_n_elems_keep_top(args);
+
+#else /* !__NT__ */
 
   THREADS_ALLOW_UID();
   dir = opendir(str->str);
@@ -996,6 +1056,7 @@ void f_get_dir(INT32 args)
     pop_n_elems(args);
     push_int(0);
   }
+#endif /* __NT__ */
 }
 
 /*! @decl int cd(string s)
