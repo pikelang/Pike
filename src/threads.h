@@ -208,7 +208,7 @@ struct thread_state {
      struct thread_state *_tmp=(struct thread_state *)thread_id->storage; \
      SWAP_OUT_THREAD(_tmp); \
      THREADS_FPRINTF((stderr, "SWAP_OUT_CURRENT_THREAD() %s:%d t:%08x\n", \
-			__FILE__, __LINE__, (unsigned int)_tmp->thread_id)); \
+			__FILE__, __LINE__, (unsigned int)_tmp->thread_id)) \
 
 #define SWAP_IN_CURRENT_THREAD() \
    THREADS_FPRINTF((stderr, "SWAP_IN_CURRENT_THREAD() %s:%d ... t:%08x\n", \
@@ -216,15 +216,23 @@ struct thread_state {
    SWAP_IN_THREAD(_tmp);\
  } while(0)
 
-#define THREADS_ALLOW() \
-  do {\
-     struct thread_state *_tmp=(struct thread_state *)thread_id->storage; \
-     if(num_threads > 1 && !threads_disabled) { \
-       SWAP_OUT_THREAD(_tmp); \
-       THREADS_FPRINTF((stderr, "THREADS_ALLOW() %s:%d t:%08x\n", \
-			__FILE__, __LINE__, (unsigned int)_tmp->thread_id)); \
-       mt_unlock(& interpreter_lock); \
-     }
+#ifdef DEBUG
+/* Note that scalar types are used in place of pointers and vice versa
+ * below. This is intended to cause compiler warnings/errors if
+ * there is an attempt to use the global variables in an unsafe
+ * environment.
+ */
+#define HIDE_GLOBAL_VARIABLES() do { \
+   int sp = 0, evaluator_stack = 0, mark_sp = 0, mark_stack = 0, fp = 0; \
+   void *evaluator_stack_malloced = NULL, *mark_stack_malloced = NULL; \
+   int recoveries = 0, thread_id = 0
+
+#define REVEAL_GLOBAL_VARIABLES() } while(0)
+#else /* DEBUG */
+#define HIDE_GLOBAL_VARIABLES()
+#define REVEAL_GLOBAL_VARIABLES()
+#endif /* DEBUG */
+			   
 
 #define THREADS_ALLOW() \
   do {\
@@ -234,9 +242,10 @@ struct thread_state {
        THREADS_FPRINTF((stderr, "THREADS_ALLOW() %s:%d t:%08x\n", \
 			__FILE__, __LINE__, (unsigned int)_tmp->thread_id)); \
        mt_unlock(& interpreter_lock); \
-     }
+     } else {} HIDE_GLOBAL_VARIABLES()
 
 #define THREADS_DISALLOW() \
+     REVEAL_GLOBAL_VARIABLES(); \
      if(_tmp->swapped) { \
        mt_lock(& interpreter_lock); \
        THREADS_FPRINTF((stderr, "THREADS_DISALLOW() %s:%d ... t:%08x\n", \
