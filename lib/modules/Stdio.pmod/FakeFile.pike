@@ -1,4 +1,4 @@
-// $Id: FakeFile.pike,v 1.4 2002/11/29 01:30:43 nilsson Exp $
+// $Id: FakeFile.pike,v 1.5 2003/03/07 17:41:05 nilsson Exp $
 #pike __REAL_VERSION__
 
 //! A string wrapper that pretends to be a @[Stdio.File] object.
@@ -134,6 +134,11 @@ int seek(int pos, int mult, int add) {
   ptr = pos;
 }
 
+//! Always returns 1.
+//! @seealso
+//!   @[Stdio.File()->sync()]
+int(1..1) sync() { return 1; }
+
 //! @seealso
 //!   @[Stdio.File()->tell()]
 int tell() { return ptr; }
@@ -145,9 +150,46 @@ int(0..1) truncate(int length) {
   return sizeof(data)==length;
 }
 
+//! @seealso
+//!   @[Stdio.File()->write()]
+int(-1..) write(string|array(string) str, mixed ... extra) {
+  if(!w) return -1;
+  if(arrayp(str)) str=str*"";
+  if(sizeof(extra)) str=sprintf(str, @extra);
+
+  if(ptr==sizeof(data)) {
+    data += str;
+    ptr = sizeof(data);
+  }
+  else if(sizeof(str)==1)
+    data[ptr++] = str[0];
+  else {
+    data = data[..ptr-1] + str + data[ptr+sizeof(str)..];
+    ptr += sizeof(str);
+  }
+  return sizeof(str);
+}
+
 string _sprintf(int t) {
   return t=='O' && sprintf("%O(%d,%O)", this_program, sizeof(data),
 			   make_type_str());
+}
+
+
+// FakeFile specials.
+
+//! A FakeFile can be casted to a string.
+mixed cast(string to) {
+  switch(to) {
+  case "string": return data;
+  case "object": return this_object();
+  }
+  error("Can not cast object to %O.\n", to);
+}
+
+//! Sizeof on a FakeFile returns the size of its contents.
+int(0..) _sizeof() {
+  return sizeof(data);
 }
 
 //! @ignore
@@ -186,10 +228,8 @@ NOPE(query_fd);
 NOPE(read_oob);
 NOPE(set_close_on_exec);
 NOPE(set_keepalive);
-NOPE(stat);
-NOPE(sync);
+NOPE(stat); // We could implement this
 NOPE(trylock); // We could implement this
-NOPE(write); // We could implement this
 NOPE(write_oob);
 
 //! @endignore
