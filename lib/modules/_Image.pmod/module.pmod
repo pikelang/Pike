@@ -1,6 +1,5 @@
 //! module Image
-//! $Id: module.pmod,v 1.2 1999/05/28 13:35:02 mirar Exp $
-
+//! $Id: module.pmod,v 1.3 1999/12/21 16:45:53 per Exp $
 
 //! method object(Image.Image) load()
 //! method object(Image.Image) load(object file)
@@ -19,17 +18,122 @@
 //! 	All data is read, ie nothing happens until the file is closed.
 //!	Throws upon error.
 
-mapping _load(void|object|string file)
+mapping _decode( string data, mixed|void tocolor )
 {
+  Image.image i, a;
+  string format;
+  mapping opts;
+  if(!data)
+    return 0; 
+
+  if( mappingp( tocolor ) )
+  {
+    opts = tocolor;
+    tocolor = 0;
+  }
+  // Use the low-level decode function to get the alpha channel.
+  catch
+  {
+    array chunks = Image["GIF"]->_decode( data );
+
+    // If there is more than one render chunk, the image is probably
+    // an animation. Handling animations is left as an exercise for
+    // the reader. :-)
+    foreach(chunks, mixed chunk)
+      if(arrayp(chunk) && chunk[0] == Image.GIF.RENDER )
+        [i,a] = chunk[3..4];
+    format = "GIF";
+  };
+
+  if(!i)
+    foreach( ({ "GIF", "JPEG", "XWD", "PNM" }), string fmt )
+    {
+      catch {
+        i = Image[fmt]->decode( data );
+        format = fmt;
+      };
+      if( i )
+        break;
+    }
+
+  if(!i)
+    foreach( ({ "XCF", "PSD", "PNG",  "BMP",  "TGA", "PCX", 
+                "XBM", "XPM", "TIFF", "ILBM", "PS",  
+       /* Image formats low on headers below this mark */
+                "HRZ", "AVS", "WBF",
+       /* "XFace" Always succeds*/
+    }), string fmt )
+    {
+      catch {
+        mixed q = Image[fmt]->_decode( data );
+        format = fmt;
+        i = q->image;
+        a = q->alpha;
+      };
+      if( i ) 
+        break;
+    }
+
+  if(!i) // No image could be decoded at all. 
+    return 0;
+
+  if( arrayp(tocolor) && (sizeof(tocolor)==3) && objectp(i) && objectp(a) )
+  {
+    Image.Image o = Image.Image( i->xsize(), i->ysize(), @tocolor );
+    i = o->paste_mask( i, a );
+  }
+
+  return  ([
+    "format":format,
+    "alpha":a,
+    "img":i,
+  ]);
+
+}
+
+string read_file(string file)
+{
+  string ext="";
+  sscanf(reverse(file),"%s.%s",ext,string rest);
+  string dcc;
+
+  switch(lower_case(reverse(ext)))
+  {
+   case "gz":
+   case "z":
+     dcc="gzip";
+     break;
+   case "bz":
+   case "bz2":
+     dcc = "bzip2";
+     break;
+  }
+
+  if( dcc )
+  {
+    object f = Stdio.File();
+    object p=f->pipe(Stdio.PROP_IPC);
+    Process.create_process(({dcc,"-c","-d",file}),(["stdout":p]));
+    destruct( p );
+    return f->read();
+  }
+  return Stdio.read_file( file );
+}
+
+mapping _load(void|object|string file, mixed|void opts)
+{
+   string data;
    if (!file) file=Stdio.stdin;
-   else if (stringp(file))
+   if (objectp(file))
+     data = file->read();
+   else
    {
-      object f=Stdio.File();
-      if (!f->open(file,"r"))
-	 error("Image._load: Can't open %O for input.\n",file);
-      file=f;
+     if( catch( data = read_file( file ) ) || !data || !strlen(data) )
+       catch( data = Protocols.HTTP.get_url_nice( file )[ 1 ] );
    }
-   return Image.ANY._decode(file->read());
+   if( !data )
+     error("Image._load: Can't open %O for input.\n",file);
+   return _decode( data,opts );
 }
 
 object(Image.Layer) load_layer(void|object|string file)
