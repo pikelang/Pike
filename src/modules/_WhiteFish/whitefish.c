@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.10 2001/05/25 10:25:38 per Exp $");
+RCSID("$Id: whitefish.c,v 1.11 2001/05/25 10:38:53 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -50,8 +50,9 @@ static void free_stuff( void *_t )
 static void handle_hit( Blob **blobs,
 			int nblobs,
 			struct object *res,
-			int *field_c[68],
-			int *prox_c[8] )
+			int docid,
+			double *field_c[68],
+			double *prox_c[8] )
 {
   int i, j, k, end = 0;
   Hit *hits = malloc( nblobs * sizeof(Hit) );
@@ -88,14 +89,29 @@ static void handle_hit( Blob **blobs,
   
 
   /* Now we have our nice matrix. Time to do some multiplication */
-  
-  
+
+  {
+    double accum = 0.0, fc, pc;
+    int accum_i;
+    for( i = 0; i<68; i++ )
+      if( (fc = *field_c[i]) != 0.0 )
+	for( j = 0; j<8; j++ )
+	  if( (pc = *prox_c[j]) != 0.0 )
+	    accum += matrix[i][j] * fc * pc;
+
+    /* Limit */
+    if( accum > 32000.0 )
+      accum = 32000.0;
+    accum_i = (int)(accum * 65535); 
+    if( accum_i > 0 )
+      wf_resultset_add( res, docid, accum_i );
+  }
 }
 
 static struct object *low_do_query_merge( Blob **blobs,
 					  int nblobs,
-					  int field_c[68],
-					  int prox_c[8])
+					  double field_c[68],
+					  double prox_c[8] )
 {
   struct object *res = wf_resultset_new();
   struct tofree *__f = malloc( sizeof( struct tofree ) );
@@ -130,7 +146,7 @@ static struct object *low_do_query_merge( Blob **blobs,
       if( blobs[i]->docid == min && !blobs[i]->eof )
 	tmp[j++] = blobs[i];
 
-    handle_hit( tmp, j, res, &field_c, &prox_c );
+    handle_hit( tmp, j, res, min, &field_c, &prox_c );
     
     /* Step the 'min' blobs */
     for( i = 0; i<j; i++ )
@@ -205,8 +221,8 @@ static void f_do_query_merge( INT32 args )
  *!	 for a certain word_id. Call repeatedly until it returns 0.
  */
 {
-  int proximity_coefficients[8];
-  int field_coefficients[68];
+  double proximity_coefficients[8];
+  double field_coefficients[68];
   int numblobs, i;
   Blob **blobs;
 
@@ -238,10 +254,10 @@ static void f_do_query_merge( INT32 args )
     blobs[i] = wf_blob_new( cb, _words->item[i].u.integer );
 
   for( i = 0; i<8; i++ )
-    proximity_coefficients[i] = _prox->item[i].u.integer;
+    proximity_coefficients[i] = (double)_prox->item[i].u.integer/65535.0;
 
   for( i = 0; i<68; i++ )
-    field_coefficients[i] = _field->item[i].u.integer;
+    field_coefficients[i] = (double)_field->item[i].u.integer/65535.0;
 
   res = low_do_query_merge(blobs,numblobs,
 			   field_coefficients,
