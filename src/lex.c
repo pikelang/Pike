@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.71 2000/04/18 20:26:30 grubba Exp $");
+RCSID("$Id: lex.c,v 1.72 2000/04/19 14:14:29 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -86,7 +86,6 @@ void exit_lex(void)
 struct keyword instr_names[]=
 {
 #include "interpret_protos.h"
-{ "!",			F_NOT,0 },	
 { "!=",			F_NE,0 },	
 { "%",			F_MOD,0 },	
 { "%=",			F_MOD_EQ,0 },	
@@ -98,21 +97,17 @@ struct keyword instr_names[]=
 { "*",			F_MULTIPLY,0 },	
 { "*=",			F_MULT_EQ,0 },	
 { "+",			F_ADD,0 },	
-{ "++x",		F_INC,0 },	
 { "+=",			F_ADD_EQ,0 },	
 { "-",			F_SUBTRACT,0 },	
-{ "--x",		F_DEC,0 },	
 { "-=",			F_SUB_EQ,0 },	
 { "/",			F_DIVIDE,0 },	
 { "/=",			F_DIV_EQ,0 },	
 { "<",			F_LT,0 },	
-{ "<<",			F_LSH,0 },	
 { "<<=",		F_LSH_EQ,0 },	
 { "<=",			F_LE,0 },	
 { "==",			F_EQ,0 },	
 { ">",			F_GT,0 },	
 { ">=",			F_GE,0 },	
-{ ">>",			F_RSH,0 },	
 { ">>=",		F_RSH_EQ,0 },	
 { "^",			F_XOR,0 },
 { "^=",			F_XOR_EQ,0 },	
@@ -123,12 +118,8 @@ struct keyword instr_names[]=
 { "arg+=256*XXX",	F_PREFIX_24BITX256,0 },
 { "arg+=512",		F_PREFIX_512,0 },
 { "arg+=768",		F_PREFIX_768,0 },
-{ "assign and pop",	F_ASSIGN_AND_POP,0 },
-{ "assign global",	F_ASSIGN_GLOBAL, I_HASARG },
-{ "assign global and pop",	F_ASSIGN_GLOBAL_AND_POP, I_HASARG },
 { "assign local",       F_ASSIGN_LOCAL, I_HASARG },
 { "assign local and pop",	F_ASSIGN_LOCAL_AND_POP, I_HASARG },
-{ "assign",		F_ASSIGN,0 },
 { "break",		F_BREAK,0 },	
 { "case",		F_CASE,0 },	
 { "continue",		F_CONTINUE,0 },	
@@ -137,7 +128,6 @@ struct keyword instr_names[]=
 { "dumb return",	F_DUMB_RETURN,0 },	
 { "for",		F_FOR,0 },
 { "index",              F_INDEX,0 },
-{ "clear string subtype", F_CLEAR_STRING_SUBTYPE, 0 },
 
 { "branch",             F_BRANCH, I_ISJUMP },
 { "branch non zero",	F_BRANCH_WHEN_NON_ZERO, I_ISJUMP },	
@@ -177,27 +167,16 @@ struct keyword instr_names[]=
 { "lvalue to svalue",	F_LTOSVAL,0 },	
 { "lvalue_list",	F_LVALUE_LIST,0 },	
 { "[ lvalues ]",	F_ARRAY_LVALUE, I_HASARG },	
-{ "mark sp-X",          F_MARK_X, I_HASARG },
 { "mark",               F_MARK,0 },
 { "mark mark",          F_MARK2,0 },
-{ "pop mark",           F_POP_MARK,0 },
-{ "pop",		F_POP_VALUE,0 },	
-{ "pop_n_elems",        F_POP_N_ELEMS, I_HASARG },
 { "return",		F_RETURN,0 },
 { "return 0",		F_RETURN_0,0 },
 { "return 1",		F_RETURN_1,0 },
 { "return local",	F_RETURN_LOCAL, I_HASARG },
 { "return if true",	F_RETURN_IF_TRUE, 0 },
-{ "switch",		F_SWITCH, I_HASARG },
-{ "unary minus",	F_NEGATE,0 },
 { "while",		F_WHILE,0 },	
-{ "x++ and pop",	F_INC_AND_POP,0 },	
-{ "x++",		F_POST_INC,0 },	
-{ "x-- and pop",	F_DEC_AND_POP,0 },	
-{ "x--",		F_POST_DEC,0 },	
 { "|",			F_OR,0 },
 { "|=",			F_OR_EQ,0 },	
-{ "~",			F_COMPL,0 },
 { "label",		F_LABEL,I_HASARG },
 { "align",		F_ALIGN, I_HASARG },
 { "call",		F_APPLY, I_HASARG },
@@ -210,7 +189,6 @@ struct keyword instr_names[]=
 { "--local",		F_DEC_LOCAL, I_HASARG },
 { "--local and pop",	F_DEC_LOCAL_AND_POP, I_HASARG },
 { "local--",		F_POST_DEC_LOCAL, I_HASARG },
-{ "throw(0)",		F_THROW_ZERO,0 },
 { "int index",          F_POS_INT_INDEX, I_HASARG },
 { "-int index",         F_NEG_INT_INDEX, I_HASARG },
 { "apply and pop",      F_APPLY_AND_POP, I_HASARG },

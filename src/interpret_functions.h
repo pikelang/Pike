@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.7 2000/04/18 20:23:59 grubba Exp $
+ * $Id: interpret_functions.h,v 1.8 2000/04/19 14:14:12 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -543,154 +543,154 @@ BREAK;
 	break;
       }
       
-      CASE(F_INC);
-      {
-	union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-	if(u
+OPCODE0(F_INC, "++x")
+{
+  union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
+  if(u
 #ifdef AUTO_BIGNUM
-	   && !INT_TYPE_ADD_OVERFLOW(u->integer, 1)
+     && !INT_TYPE_ADD_OVERFLOW(u->integer, 1)
 #endif
-	  )
-	{
-	  instr=++ u->integer;
-	  pop_n_elems(2);
-	  push_int(u->integer);
-	  break;
-	}
-	lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
-	push_int(1);
-	f_add(2);
-	assign_lvalue(Pike_sp-3, Pike_sp-1);
-	assign_svalue(Pike_sp-3, Pike_sp-1);
-	pop_n_elems(2);
-	break;
-      }
+     )
+  {
+    instr=++ u->integer;
+    pop_n_elems(2);
+    push_int(u->integer);
+  } else {
+    lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
+    push_int(1);
+    f_add(2);
+    assign_lvalue(Pike_sp-3, Pike_sp-1);
+    assign_svalue(Pike_sp-3, Pike_sp-1);
+    pop_n_elems(2);
+  }
+}
+BREAK;
 
-      CASE(F_DEC);
-      {
-	union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-	if(u
+OPCODE0(F_DEC, "--x")
+{
+  union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
+  if(u
 #ifdef AUTO_BIGNUM
-	   && !INT_TYPE_SUB_OVERFLOW(u->integer, 1)
+     && !INT_TYPE_SUB_OVERFLOW(u->integer, 1)
 #endif
-	  )
-	{
-	  instr=-- u->integer;
-	  pop_n_elems(2);
-	  push_int(u->integer);
-	  break;
-	}
-	lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
-	push_int(1);
-	o_subtract();
-	assign_lvalue(Pike_sp-3, Pike_sp-1);
-	assign_svalue(Pike_sp-3, Pike_sp-1);
-	pop_n_elems(2);
-	break;
-      }
+     )
+  {
+    instr=-- u->integer;
+    pop_n_elems(2);
+    push_int(u->integer);
+  } else {
+    lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
+    push_int(1);
+    o_subtract();
+    assign_lvalue(Pike_sp-3, Pike_sp-1);
+    assign_svalue(Pike_sp-3, Pike_sp-1);
+    pop_n_elems(2);
+  }
+}
+BREAK;
 
-      CASE(F_DEC_AND_POP);
-      {
-	union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-	if(u
+OPCODE0(F_DEC_AND_POP, "x-- and pop")
+{
+  union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
+  if(u
 #ifdef AUTO_BIGNUM
-	   && !INT_TYPE_SUB_OVERFLOW(u->integer, 1)
+     && !INT_TYPE_SUB_OVERFLOW(u->integer, 1)
 #endif
 )
-	{
-	  instr=-- u->integer;
-	  pop_n_elems(2);
-	}else{
-	  lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
-	  push_int(1);
-	  o_subtract();
-	  assign_lvalue(Pike_sp-3, Pike_sp-1);
-	  pop_n_elems(3);
-	}
-	break;
-      }
+  {
+    instr=-- u->integer;
+    pop_n_elems(2);
+  }else{
+    lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
+    push_int(1);
+    o_subtract();
+    assign_lvalue(Pike_sp-3, Pike_sp-1);
+    pop_n_elems(3);
+  }
+}
+BREAK;
 
-      CASE(F_INC_AND_POP);
-      {
-	union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-	if(u
+OPCODE0(F_INC_AND_POP, "x++ and pop")
+{
+  union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
+  if(u
 #ifdef AUTO_BIGNUM
-	   && !INT_TYPE_ADD_OVERFLOW(u->integer, 1)
+     && !INT_TYPE_ADD_OVERFLOW(u->integer, 1)
 #endif
-	  )
-	{
-	  instr=++ u->integer;
-	  pop_n_elems(2);
-	  break;
-	}
-	lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
-	push_int(1);
-	f_add(2);
-	assign_lvalue(Pike_sp-3, Pike_sp-1);
-	pop_n_elems(3);
-	break;
-      }
+     )
+  {
+    instr=++ u->integer;
+    pop_n_elems(2);
+  } else {
+    lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
+    push_int(1);
+    f_add(2);
+    assign_lvalue(Pike_sp-3, Pike_sp-1);
+    pop_n_elems(3);
+  }
+}
+BREAK;
 
-      CASE(F_POST_INC);
-      {
-	union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-	if(u
+OPCODE0(F_POST_INC, "x++")
+{
+  union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
+  if(u
 #ifdef AUTO_BIGNUM
-	   && !INT_TYPE_ADD_OVERFLOW(u->integer, 1)
+     && !INT_TYPE_ADD_OVERFLOW(u->integer, 1)
 #endif
-	  )
-	{
-	  instr=u->integer ++;
-	  pop_n_elems(2);
-	  push_int(instr);
-	  break;
-	}
-	lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
-	assign_svalue_no_free(Pike_sp,Pike_sp-1); Pike_sp++;
-	push_int(1);
-	f_add(2);
-	assign_lvalue(Pike_sp-4, Pike_sp-1);
-	assign_svalue(Pike_sp-4, Pike_sp-2);
-	pop_n_elems(3);
-	break;
-      }
+     )
+  {
+    instr=u->integer ++;
+    pop_n_elems(2);
+    push_int(instr);
+  } else {
+    lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
+    assign_svalue_no_free(Pike_sp,Pike_sp-1); Pike_sp++;
+    push_int(1);
+    f_add(2);
+    assign_lvalue(Pike_sp-4, Pike_sp-1);
+    assign_svalue(Pike_sp-4, Pike_sp-2);
+    pop_n_elems(3);
+  }
+}
+BREAK;
 
-      CASE(F_POST_DEC);
-      {
-	union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
-	if(u
+OPCODE0(F_POST_DEC, "x--")
+{
+  union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
+  if(u
 #ifdef AUTO_BIGNUM
-	   && !INT_TYPE_SUB_OVERFLOW(u->integer, 1)
+     && !INT_TYPE_SUB_OVERFLOW(u->integer, 1)
 #endif
-	  )
-	{
-	  instr=u->integer --;
-	  pop_n_elems(2);
-	  push_int(instr);
-	  break;
-	}
-	lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
-	assign_svalue_no_free(Pike_sp,Pike_sp-1); Pike_sp++;
-	push_int(1);
-	o_subtract();
-	assign_lvalue(Pike_sp-4, Pike_sp-1);
-	assign_svalue(Pike_sp-4, Pike_sp-2);
-	pop_n_elems(3);
-	break;
-      }
+     )
+  {
+    instr=u->integer --;
+    pop_n_elems(2);
+    push_int(instr);
+  } else {
+    lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2); Pike_sp++;
+    assign_svalue_no_free(Pike_sp,Pike_sp-1); Pike_sp++;
+    push_int(1);
+    o_subtract();
+    assign_lvalue(Pike_sp-4, Pike_sp-1);
+    assign_svalue(Pike_sp-4, Pike_sp-2);
+    pop_n_elems(3);
+  }
+}
+BREAK;
 
-      CASE(F_ASSIGN);
-      assign_lvalue(Pike_sp-3,Pike_sp-1);
-      free_svalue(Pike_sp-3);
-      free_svalue(Pike_sp-2);
-      Pike_sp[-3]=Pike_sp[-1];
-      Pike_sp-=2;
-      break;
+OPCODE0(F_ASSIGN, "assign")
+  assign_lvalue(Pike_sp-3,Pike_sp-1);
+  free_svalue(Pike_sp-3);
+  free_svalue(Pike_sp-2);
+  Pike_sp[-3]=Pike_sp[-1];
+  Pike_sp-=2;
+BREAK;
 
-      CASE(F_ASSIGN_AND_POP);
-      assign_lvalue(Pike_sp-3,Pike_sp-1);
-      pop_n_elems(3);
-      break;
+OPCODE0(F_ASSIGN_AND_POP, "assign and pop")
+  assign_lvalue(Pike_sp-3, Pike_sp-1);
+  pop_n_elems(3);
+BREAK;
 
     CASE(F_APPLY_ASSIGN_LOCAL);
       strict_apply_svalue(Pike_fp->context.prog->constants + GET_ARG(), Pike_sp - *--Pike_mark_sp );
@@ -711,64 +711,77 @@ BREAK;
       Pike_sp--;
       break;
 
-      CASE(F_ASSIGN_GLOBAL)
-      {
-	struct identifier *i;
-	INT32 tmp=GET_ARG() + Pike_fp->context.identifier_level;
-	if(!Pike_fp->current_object->prog)
-	  error("Cannot access global variables in destructed object.\n");
+OPCODE1(F_ASSIGN_GLOBAL, "assign global")
+{
+  struct identifier *i;
+  INT32 tmp=arg1 + Pike_fp->context.identifier_level;
+  if(!Pike_fp->current_object->prog)
+    error("Cannot access global variables in destructed object.\n");
 
-	i=ID_FROM_INT(Pike_fp->current_object->prog, tmp);
-	if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
-	  error("Cannot assign functions or constants.\n");
-	if(i->run_time_type == T_MIXED)
-	{
-	  assign_svalue((struct svalue *)GLOBAL_FROM_INT(tmp), Pike_sp-1);
-	}else{
-	  assign_to_short_svalue((union anything *)GLOBAL_FROM_INT(tmp),
-				 i->run_time_type,
-				 Pike_sp-1);
-	}
-      }
-      break;
+  i=ID_FROM_INT(Pike_fp->current_object->prog, tmp);
+  if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
+    error("Cannot assign functions or constants.\n");
+  if(i->run_time_type == T_MIXED)
+  {
+    assign_svalue((struct svalue *)GLOBAL_FROM_INT(tmp), Pike_sp-1);
+  }else{
+    assign_to_short_svalue((union anything *)GLOBAL_FROM_INT(tmp),
+			   i->run_time_type,
+			   Pike_sp-1);
+  }
+}
+BREAK;
 
-      CASE(F_ASSIGN_GLOBAL_AND_POP)
-      {
-	struct identifier *i;
-	INT32 tmp=GET_ARG() + Pike_fp->context.identifier_level;
-	if(!Pike_fp->current_object->prog)
-	  error("Cannot access global variables in destructed object.\n");
+OPCODE1(F_ASSIGN_GLOBAL_AND_POP, "assign global and pop")
+{
+  struct identifier *i;
+  INT32 tmp=arg1 + Pike_fp->context.identifier_level;
+  if(!Pike_fp->current_object->prog)
+    error("Cannot access global variables in destructed object.\n");
 
-	i=ID_FROM_INT(Pike_fp->current_object->prog, tmp);
-	if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
-	  error("Cannot assign functions or constants.\n");
+  i=ID_FROM_INT(Pike_fp->current_object->prog, tmp);
+  if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
+    error("Cannot assign functions or constants.\n");
 
-	if(i->run_time_type == T_MIXED)
-	{
-	  struct svalue *s=(struct svalue *)GLOBAL_FROM_INT(tmp);
-	  free_svalue(s);
-	  Pike_sp--;
-	  *s=*Pike_sp;
-	}else{
-	  assign_to_short_svalue((union anything *)GLOBAL_FROM_INT(tmp),
-				 i->run_time_type,
-				 Pike_sp-1);
-	  pop_stack();
-	}
-      }
-      break;
+  if(i->run_time_type == T_MIXED)
+  {
+    struct svalue *s=(struct svalue *)GLOBAL_FROM_INT(tmp);
+    free_svalue(s);
+    Pike_sp--;
+    *s=*Pike_sp;
+  }else{
+    assign_to_short_svalue((union anything *)GLOBAL_FROM_INT(tmp),
+			   i->run_time_type,
+			   Pike_sp-1);
+    pop_stack();
+  }
+}
+BREAK;
 
-      /* Stack machine stuff */
-      CASE(F_POP_VALUE); pop_stack(); break;
-      CASE(F_POP_N_ELEMS); pop_n_elems(GET_ARG()); break;
+/* Stack machine stuff */
+
+OPCODE0(F_POP_VALUE, "pop")
+  pop_stack();
+BREAK;
+
+OPCODE1(F_POP_N_ELEMS, "pop_n_elems")
+  pop_n_elems(arg1);
+BREAK;
+
       CASE(F_MARK2); *(Pike_mark_sp++)=Pike_sp;
       CASE(F_MARK); *(Pike_mark_sp++)=Pike_sp; break;
-      CASE(F_MARK_X); *(Pike_mark_sp++)=Pike_sp-GET_ARG(); break;
-      CASE(F_POP_MARK); --Pike_mark_sp; break;
 
-      CASE(F_CLEAR_STRING_SUBTYPE);
-      if(Pike_sp[-1].type==PIKE_T_STRING) Pike_sp[-1].subtype=0;
-      break;
+OPCODE1(F_MARK_X, "mark sp-X")
+  *(Pike_mark_sp++)=Pike_sp-arg1;
+BREAK;
+
+OPCODE0(F_POP_MARK, "pop mark")
+  --Pike_mark_sp;
+BREAK;
+
+OPCODE0(F_CLEAR_STRING_SUBTYPE, "clear string subtype")
+  if(Pike_sp[-1].type==PIKE_T_STRING) Pike_sp[-1].subtype=0;
+BREAK;
 
       /* Jumps */
       CASE(F_BRANCH);
@@ -908,23 +921,23 @@ BREAK;
 	pc+=EXTRACT_INT(pc);
       break;
 
-      CASE(F_THROW_ZERO);
-      push_int(0);
-      f_throw(1);
-      break;
+OPCODE0(F_THROW_ZERO, "throw(0)")
+  push_int(0);
+  f_throw(1);
+BREAK;
 
-      CASE(F_SWITCH)
-      {
-	INT32 tmp;
-	tmp=switch_lookup(Pike_fp->context.prog->
-			  constants[GET_ARG()].sval.u.array,Pike_sp-1);
-	pc=(unsigned char *)DO_ALIGN(pc,sizeof(INT32));
-	pc+=(tmp>=0 ? 1+tmp*2 : 2*~tmp) * sizeof(INT32);
-	if(*(INT32*)pc < 0) fast_check_threads_etc(7);
-	pc+=*(INT32*)pc;
-	pop_stack();
-	break;
-      }
+OPCODE1(F_SWITCH, "switch")
+{
+  INT32 tmp;
+  tmp=switch_lookup(Pike_fp->context.prog->
+		    constants[arg1].sval.u.array,Pike_sp-1);
+  pc=(unsigned char *)DO_ALIGN(pc,sizeof(INT32));
+  pc+=(tmp>=0 ? 1+tmp*2 : 2*~tmp) * sizeof(INT32);
+  if(*(INT32*)pc < 0) fast_check_threads_etc(7);
+  pc+=*(INT32*)pc;
+  pop_stack();
+}
+BREAK;
 
       /* FIXME: Does this need bignum tests? /Fixed - Hubbe */
       LOOP(F_INC_LOOP, 1, <, is_lt);
@@ -1030,57 +1043,64 @@ BREAK;
       CASE(F_DUMB_RETURN);
       return -1;
 
-      CASE(F_NEGATE); 
-      if(Pike_sp[-1].type == PIKE_T_INT)
-      {
+OPCODE0(F_NEGATE, "unary minus")
+  if(Pike_sp[-1].type == PIKE_T_INT)
+  {
 #ifdef AUTO_BIGNUM
-	if(INT_TYPE_NEG_OVERFLOW(Pike_sp[-1].u.integer))
-	{
-	  convert_stack_top_to_bignum();
-	  o_negate();
-	}
-	else
+    if(INT_TYPE_NEG_OVERFLOW(Pike_sp[-1].u.integer))
+    {
+      convert_stack_top_to_bignum();
+      o_negate();
+    }
+    else
 #endif /* AUTO_BIGNUM */
-	  Pike_sp[-1].u.integer =- Pike_sp[-1].u.integer;
-      }
-      else if(Pike_sp[-1].type == PIKE_T_FLOAT)
-      {
-	Pike_sp[-1].u.float_number =- Pike_sp[-1].u.float_number;
-      }else{
-	o_negate();
-      }
-      break;
+      Pike_sp[-1].u.integer =- Pike_sp[-1].u.integer;
+  }
+  else if(Pike_sp[-1].type == PIKE_T_FLOAT)
+  {
+    Pike_sp[-1].u.float_number =- Pike_sp[-1].u.float_number;
+  }else{
+    o_negate();
+  }
+BREAK;
 
-      CASE(F_COMPL); o_compl(); break;
+OPCODE0(F_COMPL, "~")
+  o_compl();
+BREAK;
 
-      CASE(F_NOT);
-      switch(Pike_sp[-1].type)
-      {
-      case PIKE_T_INT:
-	Pike_sp[-1].u.integer =! Pike_sp[-1].u.integer;
-	break;
+OPCODE0(F_NOT, "!")
+  switch(Pike_sp[-1].type)
+  {
+  case PIKE_T_INT:
+    Pike_sp[-1].u.integer =! Pike_sp[-1].u.integer;
+    break;
 
-      case PIKE_T_FUNCTION:
-      case PIKE_T_OBJECT:
-	if(IS_ZERO(Pike_sp-1))
-	{
-	  pop_stack();
-	  push_int(1);
-	}else{
-	  pop_stack();
-	  push_int(0);
-	}
-	break;
+  case PIKE_T_FUNCTION:
+  case PIKE_T_OBJECT:
+    if(IS_ZERO(Pike_sp-1))
+    {
+      pop_stack();
+      push_int(1);
+    }else{
+      pop_stack();
+      push_int(0);
+    }
+    break;
 
-      default:
-	free_svalue(Pike_sp-1);
-	Pike_sp[-1].type=PIKE_T_INT;
-	Pike_sp[-1].u.integer=0;
-      }
-      break;
+  default:
+    free_svalue(Pike_sp-1);
+    Pike_sp[-1].type=PIKE_T_INT;
+    Pike_sp[-1].u.integer=0;
+  }
+BREAK;
 
-      CASE(F_LSH); o_lsh(); break;
-      CASE(F_RSH); o_rsh(); break;
+OPCODE0(F_LSH, "<<")
+  o_lsh();
+BREAK;
+
+OPCODE0(F_RSH, ">>")
+  o_rsh();
+BREAK;
 
       COMPARISMENT(F_EQ, is_eq(Pike_sp-2,Pike_sp-1));
       COMPARISMENT(F_NE,!is_eq(Pike_sp-2,Pike_sp-1));
@@ -1232,68 +1252,68 @@ OPCODE0(F_CAST, "cast")
   f_cast();
 BREAK;
 
-      CASE(F_SOFT_CAST);
-      /* Stack: type_string, value */
+OPCODE0(F_SOFT_CAST, "soft cast")
+  /* Stack: type_string, value */
 #ifdef PIKE_DEBUG
-      if (Pike_sp[-2].type != T_STRING) {
-	/* FIXME: The type should really be T_TYPE... */
-	fatal("Argument 1 to soft_cast isn't a string!\n");
-      }
+  if (Pike_sp[-2].type != T_STRING) {
+    /* FIXME: The type should really be T_TYPE... */
+    fatal("Argument 1 to soft_cast isn't a string!\n");
+  }
 #endif /* PIKE_DEBUG */
-      if (runtime_options & RUNTIME_CHECK_TYPES) {
-	struct pike_string *sval_type = get_type_of_svalue(Pike_sp-1);
-	if (!pike_types_le(sval_type, Pike_sp[-2].u.string)) {
-	  /* get_type_from_svalue() doesn't return a fully specified type
-	   * for array, mapping and multiset, so we perform a more lenient
-	   * check for them.
-	   */
-	  if (!pike_types_le(sval_type, weak_type_string) ||
-	      !match_types(sval_type, Pike_sp[-2].u.string)) {
-	    struct pike_string *t1;
-	    struct pike_string *t2;
-	    char *fname = "__soft-cast";
-	    ONERROR tmp1;
-	    ONERROR tmp2;
+  if (runtime_options & RUNTIME_CHECK_TYPES) {
+    struct pike_string *sval_type = get_type_of_svalue(Pike_sp-1);
+    if (!pike_types_le(sval_type, Pike_sp[-2].u.string)) {
+      /* get_type_from_svalue() doesn't return a fully specified type
+       * for array, mapping and multiset, so we perform a more lenient
+       * check for them.
+       */
+      if (!pike_types_le(sval_type, weak_type_string) ||
+	  !match_types(sval_type, Pike_sp[-2].u.string)) {
+	struct pike_string *t1;
+	struct pike_string *t2;
+	char *fname = "__soft-cast";
+	ONERROR tmp1;
+	ONERROR tmp2;
 
-	    if (Pike_fp->current_object && Pike_fp->context.prog &&
-		Pike_fp->current_object->prog) {
-	      /* Look up the function-name */
-	      struct pike_string *name =
-		ID_FROM_INT(Pike_fp->current_object->prog, Pike_fp->fun)->name;
-	      if ((!name->size_shift) && (name->len < 100))
-		fname = name->str;
-	    }
-
-	    t1 = describe_type(Pike_sp[-2].u.string);
-	    SET_ONERROR(tmp1, do_free_string, t1);
-	  
-	    t2 = describe_type(sval_type);
-	    SET_ONERROR(tmp2, do_free_string, t2);
-	  
-	    free_string(sval_type);
-
-	    bad_arg_error(NULL, Pike_sp-1, 1, 1, t1->str, Pike_sp-1,
-			  "%s(): Soft cast failed. Expected %s, got %s\n",
-			  fname, t1->str, t2->str);
-	    /* NOT_REACHED */
-	    UNSET_ONERROR(tmp2);
-	    UNSET_ONERROR(tmp1);
-	    free_string(t2);
-	    free_string(t1);
-	  }
+	if (Pike_fp->current_object && Pike_fp->context.prog &&
+	    Pike_fp->current_object->prog) {
+	  /* Look up the function-name */
+	  struct pike_string *name =
+	    ID_FROM_INT(Pike_fp->current_object->prog, Pike_fp->fun)->name;
+	  if ((!name->size_shift) && (name->len < 100))
+	    fname = name->str;
 	}
+
+	t1 = describe_type(Pike_sp[-2].u.string);
+	SET_ONERROR(tmp1, do_free_string, t1);
+	  
+	t2 = describe_type(sval_type);
+	SET_ONERROR(tmp2, do_free_string, t2);
+	  
 	free_string(sval_type);
-#ifdef PIKE_DEBUG
-	if (d_flag > 2) {
-	  struct pike_string *t = describe_type(Pike_sp[-2].u.string);
-	  fprintf(stderr, "Soft cast to %s\n", t->str);
-	  free_string(t);
-	}
-#endif /* PIKE_DEBUG */
+
+	bad_arg_error(NULL, Pike_sp-1, 1, 1, t1->str, Pike_sp-1,
+		      "%s(): Soft cast failed. Expected %s, got %s\n",
+		      fname, t1->str, t2->str);
+	/* NOT_REACHED */
+	UNSET_ONERROR(tmp2);
+	UNSET_ONERROR(tmp1);
+	free_string(t2);
+	free_string(t1);
       }
-      stack_swap();
-      pop_stack();
-      break;
+    }
+    free_string(sval_type);
+#ifdef PIKE_DEBUG
+    if (d_flag > 2) {
+      struct pike_string *t = describe_type(Pike_sp[-2].u.string);
+      fprintf(stderr, "Soft cast to %s\n", t->str);
+      free_string(t);
+    }
+#endif /* PIKE_DEBUG */
+  }
+  stack_swap();
+  pop_stack();
+BREAK;
 
 OPCODE0(F_RANGE, "range")
   o_range();
