@@ -609,8 +609,7 @@ static void copy_selectors(struct active_selectors *to,
 #define MY_POLLOUT	EVFILT_WRITE
 
 #define MY_POLLERR	EV_ERROR
-/* Let EOF be detected by the read and write callbacks. */
-#define MY_POLLHUP	0	/* EV_EOF */
+#define MY_POLLHUP	EV_EOF
 
 /* FIXME: The kqueue API has no documented support for out of band data. */
 #define MY_POLLEXCEPT	EVFILT_READ
@@ -2209,6 +2208,41 @@ PIKECLASS Backend
     me->exec_thread = 0;
   }
 
+  /* Mapping of events to flags and callbacks.
+   *
+   * Event	select	poll		kqueue			callback
+   *
+   * data_in	read	POLLIN		EVFILT_READ		READ
+   *			POLLRDNORM	EVFILT_READ[EOF]      
+   *
+   * data_out	write	POLLOUT		EVFILT_WRITE		WRITE
+   *			POLLWRNORM
+   *
+   * oob_in	except	POLLPRI		(EVFILT_READ)		READ_OOB
+   *			POLLRDBAND
+   *
+   * oob_out	write	POLLWRBAND	(EVFILT_WRITE)		WRITE_OOB
+   *
+   * close_in	read	POLLIN		EVFILT_READ[EOF]	READ
+   *
+   * close_out	write	POLLHUP		EVFILT_WRITE[EOF]	WRITE
+   *								>WRITE_OOB
+   *
+   * conn_ok	write	POLLOUT		EVFILT_WRITE		WRITE
+   *
+   * conn_fail	read	POLLIN		EVFILT_READ[EOF]	READ
+   *		except						(READ_OOB)
+   *
+   * new_conn	read	POLLIN		EVFILT_READ		READ
+   *
+   * sock_err	except	POLLERR		EVFILT_READ[ERR]	ERROR
+   *								>READ
+   *
+   * sock_err	except	POLLERR		EVFILT_WRITE[ERR]	ERROR
+   *								>WRITE
+   */
+
+
   /* A negative tv_sec in timeout turns it off. If it ran until the
    * timeout without calling any callbacks or call outs (except those
    * on backend_callbacks) then tv_sec will be set to -1. Otherwise it
@@ -2501,16 +2535,54 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 
 
+#ifdef POLL_DEBUG
 #ifdef USE_KQUEUE
-	  IF_PD(fprintf(stderr, "fd:%d filter:%d flags:0x%08x\n",
-			GET_FD(ACTIVE_POLLSET[i]),
-			GET_EVENTS(ACTIVE_POLLSET[i]),
-			ACTIVE_POLLSET[i].flags));
+	  fprintf(stderr, "fd:%d filter:%d flags:0x%08x\n",
+		  GET_FD(ACTIVE_POLLSET[i]),
+		  GET_EVENTS(ACTIVE_POLLSET[i]),
+		  ACTIVE_POLLSET[i].flags);
+	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN)) {
+	    fprintf(stderr, "  EVFILT_READ");
+	  } else if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT)) {
+	    fprintf(stderr, "  EVFILT_WRITE");
+	  } else {
+	    fprintf(stderr, "  UNKNOWN");
+	  }
+	  if (ACTIVE_POLLSET[i].flags & EV_ERROR) {
+	    fprintf(stderr, "[ERROR]");
+	  }
+	  if (ACTIVE_POLLSET[i].flags & EV_EOF) {
+	    fprintf(stderr, "[EOF]");
+	  }
+	  fprintf(stderr, "(%d)\n", ACTIVE_POLLSET[i].data);
 #else /* !USE_KQUEUE */
-	  IF_PD(fprintf(stderr, "fd:%d events:0x%04x\n",
-			GET_FD(ACTIVE_POLLSET[i]),
-			GET_EVENTS(ACTIVE_POLLSET[i])));
+	  fprintf(stderr, "fd:%d events:0x%04x\n",
+		  GET_FD(ACTIVE_POLLSET[i]),
+		  GET_EVENTS(ACTIVE_POLLSET[i]));
+	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLNVAL)) {
+	    fprintf(stderr, "  POLLNVAL");
+	  }
+	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLERR)) {
+	    fprintf(stderr, "  POLLERR");
+	  }
+	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP)) {
+	    fprintf(stderr, "  POLLHUP");
+	  }
+	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLRDBAND)) {
+	    fprintf(stderr, "  POLLRDBAND");
+	  }
+	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN)) {
+	    fprintf(stderr, "  POLLIN");
+	  }
+	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLWRBAND)) {
+	    fprintf(stderr, "  POLLWRBAND");
+	  }
+	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT)) {
+	    fprintf(stderr, "  POLLOUT");
+	  }
+	  fprintf(stderr, "\n");
 #endif /* USE_KQUEUE */
+#endif /* POLL_DEBUG */
 
 	  /* FIXME: Use EV_ERROR for kqueue here? */
 #ifdef MY_POLLNVAL
@@ -2540,41 +2612,36 @@ PIKECLASS Backend
 	  }
 #endif /* MY_POLLNVAL */
 
-	  if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP|MY_POLLERR)
-#ifdef USE_KQUEUE
-	      || 
-	      ( CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT) &&
-		CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], EV_EOF) &&
-		!ACTIVE_POLLSET[i].data)
-#endif /* USE_KQUEUE */
-	      )
+	  /* From the roxen-chat re: connecttest.pike/FreeBSD:
+	   *
+	   * kqueue is returning the correct info:
+	   * {7,EVFILT_READ,EV_ADD|EV_EOF,61,0x0,0x0}.
+	   * errno 61 is ECONNREFUSED
+	   */
+	  if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLERR))
 	  {
-	    /* Closed (write end) or error */
+	    /* Error */
 	    int old_events;
+	    int err;
+	    ACCEPT_SIZE_T len = sizeof (err);
 	    errno = 0;
-	    if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLERR)) {
-	      int err;
-	      ACCEPT_SIZE_T len = sizeof (err);
-	      if (!getsockopt (fd, SOL_SOCKET, SO_ERROR, &err, &len)) {
-		IF_PD (fprintf (stderr,
-				"[%d]BACKEND[%d]: POLLERR on %d, error=%d\n",
-				getpid(), me->id, fd, err));
-		errno = err;
-	      }
+	    if (!getsockopt (fd, SOL_SOCKET, SO_ERROR, &err, &len)) {
+	      IF_PD (fprintf (stderr,
+			      "[%d]BACKEND[%d]: POLLERR on %d, error=%d\n",
+			      getpid(), me->id, fd, err));
+	      errno = err;
+	    }
 #ifdef PIKE_DEBUG
-	      else
-		fprintf(stderr, "Got POLLERR on non-socket fd %d (getsockopt errno=%d)\n",
-			fd, errno);
+	    else
+	      fprintf(stderr, "Got POLLERR on non-socket fd %d (getsockopt errno=%d)\n",
+		      fd, errno);
 #endif /* PIKE_DEBUG */
-	    }
-	    else {
-	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLHUP on %d\n",
-			    getpid(), me->id, fd));
-	    }
 	    box = SAFE_GET_ACTIVE_BOX (me, fd);
 	    if (box) {
 	      check_box (box, fd);
-	      /* We don't want to keep this fd anymore. */
+	      /* We don't want to keep this fd anymore.
+	       * Note: This disables any further callbacks.
+	       */
 	      old_events = box->events;
 	      set_fd_callback_events (box, box->events & PIKE_BIT_FD_ERROR);
 	      if (WANT_EVENT (box, ERROR)) {
@@ -2585,13 +2652,31 @@ PIKECLASS Backend
 		  goto backend_round_done;
 	      }
 	      /* The following is temporary compat stuff. */
-	      else if (old_events & PIKE_BIT_FD_READ) {
+	      else if (old_events & PIKE_BIT_FD_READ
+#ifdef USE_KQUEUE
+		       &&
+		       (
+			CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN)
+			||
+			CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP|MY_POLLERR)
+		       )
+#endif /* USE_KQUEUE */
+		       ) {
 		IF_PD(fprintf(stderr,
 			      "[%d]BACKEND[%d]: read_callback(%d, %p) for error %d\n",
 			      getpid(), me->id, fd, box->ref_obj, errno));
 		if (box->callback (box, PIKE_FD_READ) == -1)
 		  goto backend_round_done;
-	      } else if (old_events & PIKE_BIT_FD_WRITE) {
+	      } else if (old_events & PIKE_BIT_FD_WRITE
+#ifdef USE_KQUEUE
+			 &&
+			 (
+			  CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT)
+			  ||
+			  CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP|MY_POLLERR)
+			  )
+#endif /* USE_KQUEUE */
+		       ) {
 		IF_PD(fprintf(stderr,
 			      "[%d]BACKEND[%d]: write_callback(%d, %p) for error %d\n",
 			      getpid(), me->id, fd, box->ref_obj, errno));
@@ -2675,6 +2760,76 @@ PIKECLASS Backend
 	      if (box->callback (box, PIKE_FD_WRITE) == -1)
 		goto backend_round_done;
 	    }
+#ifdef PIKE_DEBUG
+	    handled = 1;
+#endif /* PIKE_DEBUG */
+	  }
+
+	  if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP)) {
+	    int old_events;
+	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLHUP on %d\n",
+			  getpid(), me->id, fd));
+	    box = SAFE_GET_ACTIVE_BOX (me, fd);
+	    check_box (box, fd);
+#ifdef USE_KQUEUE
+	    /* Note: For kqueue the callbacks have already been called above.
+	     *
+	     * Disables the appropriate callbacks, just like in the
+	     * poll case except for the order.
+	     *
+	     * Note: Due to the call order, the box may be NULL.
+	     *
+	     * FIXME: Consider moving this to the POLLIN/POLLOUT
+	     *        code above.
+	     */
+	    if (box) {
+	      if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT)) {
+		/* Disable any further write callbacks on this fd. */
+		set_fd_callback_events(box, box->events &
+				       ~(PIKE_FD_WRITE|PIKE_FD_WRITE_OOB));
+#if 0
+	      } else if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN)) {
+		/* Disable any further read callbacks on this fd. */
+		set_fd_callback_events(box, box->events &
+				       ~(PIKE_FD_READ|PIKE_FD_READ_OOB));
+#endif /* 0 */
+	      }
+	    }
+#else /* !USE_KQUEUE */
+	    /* poll-variants:
+	     *
+	     * A hangup has occurred on the stream. This event
+             * and POLLOUT (and probably POLLWRBAND) are mutually
+	     * exclusive; a stream can never be writable if a
+	     * hangup has occurred.
+	     */
+	    old_events = box->events;
+	    /* Disable any further write callbacks on this fd. */
+	    set_fd_callback_events(box, old_events &
+				   ~(PIKE_FD_WRITE|PIKE_FD_WRITE_OOB));
+	    if (old_events & PIKE_BIT_FD_WRITE) {
+	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_callback(%d, %p)\n",
+			    getpid(), me->id, fd, box->ref_obj));
+	      errno = 0;
+	      if (box->callback (box, PIKE_FD_WRITE) == -1)
+		goto backend_round_done;
+	    } else if (old_events & PIKE_BIT_FD_WRITE_OOB) {
+	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_oob_callback(%d, %p)\n",
+			    getpid(), me->id, fd, box->ref_obj));
+	      errno = 0;
+	      if (box->callback (box, PIKE_FD_WRITE_OOB) == -1)
+		goto backend_round_done;
+	    }
+#ifdef PIKE_DEBUG
+	    handled = 1;
+#endif /* PIKE_DEBUG */
+#endif /* USE_KQUEUE */
+	  }
+
+	  if(CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT)) {
+	    /* FIXME: Consider utilizing ACTIVE_POLLSET[i].data in
+	     *        the kqueue case.
+	     */
 #ifdef PIKE_DEBUG
 	    handled = 1;
 #endif /* PIKE_DEBUG */
