@@ -172,7 +172,7 @@ array(SGML) split_lines(SGML data)
 
 array(float) find_max_width(array(SGML) datas)
 {
-  array(SGML) pieces=Array.map(datas,split_lines);
+  array(array(SGML)) pieces=Array.map(datas,split_lines);
   array(float) widths=find_line_width(pieces * ({}));
   int pos=0;
   array(float) ret=allocate(sizeof(pieces));
@@ -284,7 +284,7 @@ array(SGML) split_words(SGML data)
 
 array(float) find_min_width(array(SGML) datas)
 {
-  array(SGML) pieces=Array.map(datas,split_words);
+  array(array(SGML)) pieces=Array.map(datas,split_words);
   array(float) widths=find_line_width(pieces * ({}));
   int pos=0;
   array(float) ret=allocate(sizeof(pieces));

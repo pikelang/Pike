@@ -1,3 +1,4 @@
+
 all:
 	@if `pwd`/../bin/pike -e 'return 0;' 2>/dev/null; then \
 	  $(MAKE) pike=`pwd`/../bin/pike low_all; \
@@ -12,7 +13,7 @@ MADEFILES=Image.wmml Mysql.wmml ProtocolsLysKOM.wmml \
 
 SRCFILES=tutorial.wmml $(MADEFILES)
 
-pike=/home/hedda/pike07_/install/bin/pike
+pike=pike
 DESTINATION=/usr/local/share/pike/tutorial/
 
 .DUMMY: 

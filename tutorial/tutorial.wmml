@@ -1469,7 +1469,7 @@ Also, these functions operates on floats:
 
 <dt><tt>float ceil(float <i>x</i>)</tt>, 
 <dd>This function computes the smallest integer value greater than or equal to <i>x</i> and returns it as a <tt>float</tt>.
-</dl>
+
 <dt><tt>float round(float <i>x</i>)</tt>, 
 <dd>This function computes the closest integer value to <i>x</i> 
 and returns it as a <tt>float</tt>.
