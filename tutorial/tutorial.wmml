@@ -965,19 +965,19 @@ expression and it can look something like this:
 	switch ( expression )
 	{
 	  case constant1:
-	    expressions1;
+	    statement1;
 	    break;
 
  	  case constant2:
-	    expressions2;
+	    statement2;
 	    break;
 
  	  case constant3 .. constant4:
-	    expressions3;
+	    statement3;
 	    break;
 
 	  default:
-	    expressions5;
+	    statement5;
 	}
 </example>
 As you can see, a switch statement is a bit more complicated than an
@@ -994,7 +994,7 @@ that case statement as well.
 <p>
 One of the case statements in the above example differs in that it is
 a <b>range</b>. In this case, any value between <i>constant3</i> and
-<i>constant4</i> will cause Pike to jump to <i>expressions3</i>. Note
+<i>constant4</i> will cause Pike to jump to <i>statement3</i>. Note
 that the ranges are inclusive, so the values <i>constant3</i> and
 <i>constant4</i> are also valid.
 
@@ -2466,7 +2466,6 @@ arguments to a suitable range. This means that
 <li> No errors are generated in any of the above cases.
 </ul>
 
-</center>
 </section>
 
 <!-- FIX ME: tell more about indexing and ranges -->
