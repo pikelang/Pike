@@ -12,7 +12,9 @@ if test x"$1" = x--gdb; then
   shift
   args="set args '-m$BUILDDIR/master.pike'"
   for arg do
-    arg=`echo $arg | sed -e s/\'/\'\"\'\"\'/g`
+    arg=`sed -e s/\'/\'\"\'\"\'/g <<EOF
+$arg
+EOF`
     args="$args '$arg'"
   done
   if test -f .gdbinit; then
