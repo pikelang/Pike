@@ -1,5 +1,5 @@
 dnl -*- Pike -*-
-test_true([["$Id: testsuite.in,v 1.277 2000/02/13 05:09:05 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.278 2000/02/15 22:06:23 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -4818,3 +4818,37 @@ test_any(class A {int f(){return 1;}}; class B {inherit A; final int f(){return 
 test_any(class A {int f(){return 1;}}; class B {inherit A; nomask int f(){return 2;}}; return B()->f(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; local int f(){return 2;}}; return B()->f(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; inline int f(){return 2;}}; return B()->f(), 2)
+
+test_any([[
+class Fnord
+{
+  array gnzpp() { }
+  constant fNord = 4711;
+
+  class Bzonk
+  {
+    int xxxxx=17;
+    int yyyyy=17;
+    int zzzzz=17;
+
+  }
+
+  class Zboink
+  {
+    int pphfiztzz=1;
+    inherit Bzonk;
+    constant floingngg=fNord;
+    array Zpfoooinginoooo() {}
+    
+    int t()
+      {
+	return fNord + fNord;
+      }
+    int z()
+      {
+	return floingngg + floingngg;
+      }
+  }
+};
+return Fnord()->Zboink()->t() + Fnord()->Zboink()->z();
+]],4711 * 4)

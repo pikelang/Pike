@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.203 2000/02/13 05:09:04 hubbe Exp $");
+RCSID("$Id: program.c,v 1.204 2000/02/15 22:06:21 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -613,9 +613,12 @@ struct program *low_allocate_program(void)
  * Start building a new program
  */
 void low_start_new_program(struct program *p,
-			   struct pike_string *name)
+			   struct pike_string *name,
+			   int flags,
+			   int *idp)
 {
   int e,id=0;
+  struct svalue tmp;
 
 #if 0
 #ifdef SHARED_NODES
@@ -640,21 +643,32 @@ void low_start_new_program(struct program *p,
   CDFPRINTF((stderr, "th(%ld) low_start_new_program() pass=%d: compilation_depth:%d\n",
 	     (long)th_self(),compilation_depth,compiler_pass));
 
+  tmp.type=T_PROGRAM;
   if(!p)
   {
     p=low_allocate_program();
+    if(name)
+    {
+      tmp.u.program=p;
+      id=add_constant(name, &tmp, flags & ~ID_EXTERN);
+    }
     e=1;
   }else{
+    tmp.u.program=p;
     add_ref(p);
+    if(name)
+    {
+      struct identifier *i;
+      id=isidentifier(name);
+      if (id < 0)
+	fatal("Program constant disappeared in second pass.\n");
+      i=ID_FROM_INT(new_program, id);
+      free_string(i->type);
+      i->type=get_type_of_svalue(&tmp);
+    }
     e=2;
   }
-
-  if(name)
-  {
-    id=isidentifier(name);
-    if (e == 2 && id < 0)
-      fatal("Program constant disappeared in second pass.\n");
-  }
+  if(idp) *idp=id;
 
   init_type_stack();
 
@@ -780,7 +794,7 @@ void debug_start_new_program(PROGRAM_LINE_ARGS)
 	     "th(%ld) start_new_program(): threads_disabled:%d, compilation_depth:%d\n",
 	     (long)th_self(),threads_disabled, compilation_depth));
 
-  low_start_new_program(0,0);
+  low_start_new_program(0,0,0,0);
 #ifdef PIKE_DEBUG
   {
     struct pike_string *s=make_shared_string(file);
@@ -3005,7 +3019,7 @@ struct program *compile(struct pike_string *prog, struct object *handler)
     lex.pragmas = 0;
   }
 
-  low_start_new_program(0,0);
+  low_start_new_program(0,0,0,0);
 
   initialize_buf(&used_modules);
   {
@@ -3045,7 +3059,7 @@ struct program *compile(struct pike_string *prog, struct object *handler)
 
   if(p)
   {
-    low_start_new_program(p,0);
+    low_start_new_program(p,0,0,0);
     free_program(p);
     p=0;
     compiler_pass=2;

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.121 2000/02/03 19:09:13 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.122 2000/02/15 22:06:19 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -3288,7 +3288,16 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
   {
     char *a;
     struct pike_string *tmp;
-    int id=FIND_LFUN(s->u.program,LFUN_CREATE);
+    int id;
+
+    if(!s->u.program->identifiers)
+    {
+      a=function_type_string->str;
+      if((tmp=zzap_function_return(a, s->u.program->id)))
+	return tmp;
+    }
+
+    id=FIND_LFUN(s->u.program,LFUN_CREATE);
     if(id>=0)
     {
       a=ID_FROM_INT(s->u.program, id)->type->str;

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.78 2000/01/02 23:41:06 mast Exp $
+ * $Id: program.h,v 1.79 2000/02/15 22:06:22 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -323,7 +323,9 @@ int program_function_index_compare(const void *a,const void *b);
 void fixate_program(void);
 struct program *low_allocate_program(void);
 void low_start_new_program(struct program *p,
-			   struct pike_string *name);
+			   struct pike_string *name,
+			   int flags,
+			   int *idp);
 void debug_start_new_program(PROGRAM_LINE_ARGS);
 void really_free_program(struct program *p);
 void dump_program_desc(struct program *p);
@@ -378,7 +380,7 @@ int simple_add_variable(char *name,
 int add_constant(struct pike_string *name,
 		 struct svalue *c,
 		 INT32 flags);
-int simple_add_constant(char *name, 
+int simple_add_constant(char *name,
 			struct svalue *c,
 			INT32 flags);
 int add_integer_constant(char *name,
