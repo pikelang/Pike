@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.10 1998/04/10 21:21:54 grubba Exp $
+/* $Id: sslfile.pike,v 1.11 1998/06/11 18:11:18 grubba Exp $
  *
  */
 
@@ -207,7 +207,9 @@ private void ssl_close_callback(mixed id)
 #endif
   if (close_callback)
     close_callback(socket::query_id());
-  die(closing ? 1 : -1);
+  if (this_object()) {
+    die(closing ? 1 : -1);
+  }
 }
 
 void set_accept_callback(function(mixed:void) a)
