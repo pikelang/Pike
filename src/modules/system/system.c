@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.137 2003/01/05 13:02:35 nilsson Exp $
+|| $Id: system.c,v 1.138 2003/01/13 03:57:29 mast Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.137 2003/01/05 13:02:35 nilsson Exp $");
+RCSID("$Id: system.c,v 1.138 2003/01/13 03:57:29 mast Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -2449,6 +2449,9 @@ struct timeval
  *! seconds, microseconds, and possible tz_minuteswes, tz_dstttime
  *! as given by the gettimeofday(2) system call 
  *! (read the man page).
+ *!
+ *! @seealso
+ *!   @[time()], @[gethrtime()]
  */
 
 static void f_gettimeofday(INT32 args)
@@ -2474,83 +2477,95 @@ static void f_gettimeofday(INT32 args)
 #endif
 
 /*! @decl mapping(string:int) getrusage()
- *!   Calls getrusage or equivalent function and fills in 
- *!   one or more of the rusage fields.
+ *!
+ *!   Return resource usage about the current process. An error is
+ *!   thrown if it isn't supported or if the system fails to return
+ *!   any information.
  *!
  *! @returns
  *!   Returns a mapping describing the current resource usage:
  *!   @mapping
  *!     @member int "utime"
- *!       user time (ms)
+ *!       Time in milliseconds spent in user code.
  *!     @member int "stime"
- *!       system time (ms)
+ *!       Time in milliseconds spent in system calls.
  *!     @member int "maxrss"
- *!       maximum resident set size [1]
+ *!       Maximum used resident size in kilobytes. [1]
  *!     @member int "ixrss"
- *!       integral shared memory size [1]
+ *!       Quote from GNU libc: An integral value expressed in
+ *!       kilobytes times ticks of execution, which indicates the
+ *!       amount of memory used by text that was shared with other
+ *!       processes. [1]
  *!     @member int "idrss"
- *!       integral unshared data size [1]
+ *!       Quote from GNU libc: An integral value expressed the same
+ *!       way, which is the amount of unshared memory used for data.
+ *!       [1]
  *!     @member int "isrss"
- *!       integral unshared stack size [1]
+ *!       Quote from GNU libc: An integral value expressed the same
+ *!       way, which is the amount of unshared memory used for stack
+ *!       space. [1]
  *!     @member int "minflt"
- *!       page reclaims
+ *!       Minor page faults, i.e. TLB misses which required no disk I/O.
  *!     @member int "majflt"
- *!       page faults
+ *!       Major page faults, i.e. paging with disk I/O required.
  *!     @member int "nswap"
- *!       swaps
+ *!       Number of times the process has been swapped out entirely.
  *!     @member int "inblock"
- *!       block input operations
+ *!       Number of block input operations.
  *!     @member int "oublock"
- *!       block output operations
+ *!       Number of block output operations.
  *!     @member int "msgsnd"
- *!       messages sent
+ *!       Number of IPC messsages sent.
  *!     @member int "msgrcv"
- *!       messages received
+ *!       Number of IPC messsages received.
  *!     @member int "nsignals"
- *!       signals received
+ *!       Number of signals received.
  *!     @member int "nvcsw"
- *!       voluntary context switches
+ *!       Number of voluntary context switches (usually to wait for
+ *!       some service).
  *!     @member int "nivcsw"
- *!       involuntary context switches
+ *!       Number of preemptions, i.e. context switches due to expired
+ *!       time slices, or when processes with higher priority were
+ *!       scheduled.
  *!     @member int "sysc"
- *!       system calls [2]
+ *!       Number of system calls. [2]
  *!     @member int "ioch"
- *!       chars read and written [2]
+ *!       Number of characters read and written. [2]
  *!     @member int "rtime"
- *!       total lwp real (elapsed) time (ms) [2]
+ *!       Elapsed real time (ms). [2]
  *!     @member int "ttime"
- *!       other system trap CPU time (ms) [2]
+ *!       Elapsed system trap (system call) time (ms). [2]
  *!     @member int "tftime"
- *!       text page fault sleep time (ms) [2]
+ *!       Text page fault sleep time (ms). [2]
  *!     @member int "dftime"
- *!       data page fault sleep time (ms) [2]
+ *!       Data page fault sleep time (ms). [2]
  *!     @member int "kftime"
- *!       kernel page fault sleep time (ms) [2]
+ *!       Kernel page fault sleep time (ms). [2]
  *!     @member int "ltime"
- *!       user lock wait sleep time (ms) [2]
+ *!       User lock wait sleep time (ms). [2]
  *!     @member int "slptime"
- *!       all other sleep time (ms) [2]
+ *!       Other sleep time (ms). [2]
  *!     @member int "wtime"
- *!       wait-cpu (latency) time (ms) [2]
+ *!       Wait CPU (latency) time (ms). [2]
  *!     @member int "stoptime"
- *!       stopped time [2]
+ *!       Time spent in stopped (suspended) state. [2]
  *!     @member int "brksize"
- *!       Heap size [3]
+ *!       Heap size. [3]
  *!     @member int "stksize"
- *!       Stack size [3]
+ *!       Stack size. [3]
  *!   @endmapping
  *!
  *! @note
- *!   [1] not if /proc rusage is used
+ *!   [1] Not if /proc rusage is used.
  *!
- *!   [2] only from (solaris?) /proc rusage
+ *!   [2] Only from (Solaris?) /proc rusage.
  *!
- *!   [3] only from /proc PRS usage
+ *!   [3] Only from /proc PRS usage.
  *!
- *!   on some systems, only utime will be filled in.
+ *!   On some systems, only utime will be filled in.
  *!
  *! @seealso
- *!   @[rusage()]
+ *!   @[gethrvtime()]
  */
 
 static void f_getrusage(INT32 args)
@@ -2559,7 +2574,8 @@ static void f_getrusage(INT32 args)
    int n=0;
 
    if (!pike_get_rusage(rusage_values))
-      Pike_error("error in getrusage call\n");
+     PIKE_ERROR("System.getrusage",
+		"System usage information not available.\n", Pike_sp, args);
 
    pop_n_elems(args);
    
