@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.49 2003/10/15 17:05:03 grubba Exp $
+|| $Id: backend.cmod,v 1.50 2003/10/19 14:58:14 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.49 2003/10/15 17:05:03 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.50 2003/10/19 14:58:14 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -861,21 +861,7 @@ PIKECLASS Backend
     {
       int e;
       PIKE_STAT_T tmp;
-      extern void check_all_arrays(void);
-      extern void check_all_mappings(void);
-      extern void check_all_programs(void);
-      extern void check_all_objects(void);
-      extern void verify_shared_strings_tables(void);
-      extern void slow_check_stack(void);
 
-      verify_shared_strings_tables();
-      slow_check_stack();
-      check_all_arrays();
-      check_all_mappings();
-      check_all_programs();
-      check_all_objects();
-      
-      call_callback(& do_debug_callbacks, 0);
       backend_verify_call_outs(me);
       
       /* FIXME: OOB? */
@@ -890,6 +876,10 @@ PIKECLASS Backend
 	  )
 	{
 	  int ret;
+
+	  if (e >= fd_map_size || fd_map[e] != me)
+	    Pike_fatal ("Isn't referenced from fd_map for fd %d in select set.\n", e);
+
 	  do {
 	    ret = fd_fstat(e, &tmp);
 	    /* FIXME: Perhaps do check_threads_etc() here? */
@@ -909,12 +899,18 @@ PIKECLASS Backend
 	  }
 	}
       }
-#else
+#else  /* HAVE_POLL */
       for(e=0;e<me->set.num_in_poll;e++)
       {
 	int ret;
+	int fd = me->set.poll_fds[e].fd;
+
+	if (fd >= fd_map_size || fd_map[fd] != me)
+	  Pike_fatal ("Isn't referenced from fd_map for fd %d at %d in poll set.\n",
+		      fd, e);
+
 	do {
-	  ret=fd_fstat(me->set.poll_fds[e].fd, &tmp);
+	  ret=fd_fstat(fd, &tmp);
 	  /* FIXME: Perhaps do check_threads_etc() here? */
 	}while(ret < 0 && errno == EINTR);
 
@@ -923,19 +919,15 @@ PIKECLASS Backend
 	  switch(errno)
 	  {
 	    case EBADF:
-	      Pike_fatal("Backend filedescriptor %ld is bad.\n", 
-		    (long)me->set.poll_fds[e].fd);
+	      Pike_fatal("Backend filedescriptor %d is bad.\n", fd);
 	      break;
 	    case ENOENT:
-	      Pike_fatal("Backend filedescriptor %ld is not.\n",
-		    (long)me->set.poll_fds[e].fd);
+	      Pike_fatal("Backend filedescriptor %d is not.\n", fd);
 	      break;
 	  }
 	}
       }
-#endif
-
-      if(d_flag>3) do_gc(NULL, 1);
+#endif	/* !HAVE_POLL */
     }
 #endif
 
@@ -2040,6 +2032,8 @@ PIKECLASS Backend
       int e;
 
       /* Make sure we aren't referenced any more. */
+      /* FIXME: Ought to keep better track of our fds so that we don't
+       * need to do this loop. /mast */
       for (e = 0; e < fd_map_size; e++) {
 	if (fd_map[e] == me) fd_map[e] = NULL;
       }
@@ -2219,10 +2213,32 @@ long do_debug_cycle=1;
 long current_do_debug_cycle=0;
 void do_debug(void)
 {
+  extern void check_all_arrays(void);
+  extern void check_all_mappings(void);
+  extern void check_all_programs(void);
+  extern void check_all_objects(void);
+  extern void verify_shared_strings_tables(void);
+  extern void slow_check_stack(void);
+
   if(current_do_debug_cycle) return;
   current_do_debug_cycle=++do_debug_cycle;
+
+  if (d_flag > 2) {
+    verify_shared_strings_tables();
+    slow_check_stack();
+    check_all_arrays();
+    check_all_mappings();
+    check_all_programs();
+    check_all_objects();
+  }
+
+  call_callback(& do_debug_callbacks, 0);
+
   if(default_backend)
     backend_do_debug(default_backend);
+
+  if(d_flag>3) do_gc(NULL, 1);
+
   current_do_debug_cycle=0;
 }
 #endif /* PIKE_DEBUG */
