@@ -17,6 +17,7 @@
 #include "builtin_efuns.h"
 #include "memory.h"
 #include "gc.h"
+#include "main.h"
 
 struct array empty_array=
 {
@@ -26,7 +27,6 @@ struct array empty_array=
   0,                     /* Size = 0 */
   0,                     /* malloced Size = 0 */
   0,                     /* no types */
-  T_MIXED,                 /* mixed array */
 };
 
 
@@ -56,7 +56,7 @@ struct array *low_allocate_array(INT32 size,INT32 extra_space)
   
 
   /* for now, we don't know what will go in here */
-  v->type_field=BIT_MIXED;
+  v->type_field=BIT_MIXED | BIT_UNFINISHED;
 
   v->malloced_size=size+extra_space;
   v->size=size;
@@ -185,7 +185,7 @@ void array_set_index(struct array *v,INT32 index, struct svalue *s)
   v->refs++;
   check_destructed(s);
 
-  v->type_field |= 1 << s->type;
+  v->type_field = (v->type_field & ~BIT_UNFINISHED) | 1 << s->type;
   assign_svalue( ITEM(v) + index, s);
   free_array(v);
 }
@@ -264,11 +264,13 @@ static struct array *resize_array(struct array *a, INT32 size)
 	ITEM(a)[a->size].subtype=NUMBER_NUMBER;
 	ITEM(a)[a->size].u.integer=0;
       }
+      a->type_field |= BIT_INT;
       return a;
     }else{
       struct array *ret;
       ret=allocate_array_no_init(size, (size>>3)+1);
       MEMCPY(ITEM(ret),ITEM(a),sizeof(struct svalue)*a->size);
+      ret->type_field = a->type_field | BIT_INT;
       a->size=0;
       free_array(a);
       return ret;
@@ -371,6 +373,10 @@ INT32 array_search(struct array *v, struct svalue *s,INT32 start)
   check_destructed(s);
 
   /* Why search for something that is not there? */
+#ifdef DEBUG
+    if(d_flag > 1)  array_check_type_field(v);
+#endif
+
   if(v->type_field & (1 << s->type))
   {
     TYPE_FIELD t=0;
@@ -437,6 +443,9 @@ void check_array_for_destruct(struct array *v)
   INT16 types;
 
   types = 0;
+#ifdef DEBUG
+  if(d_flag > 1)  array_check_type_field(v);
+#endif
   if(v->type_field & (BIT_OBJECT | BIT_FUNCTION))
   {
     for(e=0; e<v->size; e++)
@@ -468,6 +477,9 @@ INT32 array_find_destructed_object(struct array *v)
 {
   INT32 e;
   TYPE_FIELD types;
+#ifdef DEBUG
+  if(d_flag > 1)  array_check_type_field(v);
+#endif
   if(v->type_field & (BIT_OBJECT | BIT_FUNCTION))
   {
     types=0;
@@ -604,6 +616,9 @@ static INT32 low_lookup(struct array *v,
 
 INT32 set_lookup(struct array *a, struct svalue *s)
 {
+#ifdef DEBUG
+  if(d_flag > 1)  array_check_type_field(a);
+#endif
   /* face it, it's not there */
   if( (((2 << s->type) -1) & a->type_field) == 0)
     return -1;
@@ -618,6 +633,9 @@ INT32 set_lookup(struct array *a, struct svalue *s)
 INT32 switch_lookup(struct array *a, struct svalue *s)
 {
   /* face it, it's not there */
+#ifdef DEBUG
+  if(d_flag > 1)  array_check_type_field(a);
+#endif
   if( (((2 << s->type) -1) & a->type_field) == 0)
     return -1;
 
@@ -672,6 +690,22 @@ void array_fix_type_field(struct array *v)
   v->type_field = t;
 }
 
+#ifdef DEBUG
+/* Maybe I should have a 'clean' flag for this computation */
+void array_check_type_field(struct array *v)
+{
+  int e;
+  TYPE_FIELD t;
+
+  t=0;
+
+  for(e=0; e<v->size; e++) t |= 1 << ITEM(v)[e].type;
+
+  if(t & ~(v->type_field))
+    fatal("Type field out of order!\n");
+}
+#endif
+
 struct array *compact_array(struct array *v) { return v; }
 
 /*
@@ -717,6 +751,13 @@ INT32 * merge(struct array *a,struct array *b,INT32 opcode)
   INT32 ap,bp,i,*ret,*ptr;
   
   ap=bp=0;
+#ifdef DEBUG
+  if(d_flag > 1)
+  {
+    array_check_type_field(a);
+    array_check_type_field(b);
+  }
+#endif
   if(!(a->type_field & b->type_field))
   {
     /* do smart optimizations */
@@ -828,6 +869,14 @@ int array_equal_p(struct array *a, struct array *b, struct processing *p)
   if(a == b) return 1;
   if(a->size != b->size) return 0;
   if(!a->size) return 1;
+
+#ifdef DEBUG
+  if(d_flag > 1)
+  {
+    array_check_type_field(a);
+    array_check_type_field(b);
+  }
+#endif
 
   /* This could be done much better if I KNEW that
    * the type fields didn't contain types that
@@ -942,6 +991,14 @@ struct array *merge_array_without_order(struct array *a,
 /* subtract an array from another */
 struct array *subtract_arrays(struct array *a, struct array *b)
 {
+#ifdef DEBUG
+  if(d_flag > 1)
+  {
+    array_check_type_field(a);
+    array_check_type_field(b);
+  }
+#endif
+
   if(a->type_field & b->type_field)
   {
     return merge_array_with_order(a, b, OP_SUB);
@@ -958,6 +1015,14 @@ struct array *subtract_arrays(struct array *a, struct array *b)
 /* and two arrays */
 struct array *and_arrays(struct array *a, struct array *b)
 {
+#ifdef DEBUG
+  if(d_flag > 1)
+  {
+    array_check_type_field(a);
+    array_check_type_field(b);
+  }
+#endif
+
   if(a->type_field & b->type_field)
   {
     return merge_array_without_order(a, b, OP_AND);
@@ -969,7 +1034,7 @@ struct array *and_arrays(struct array *a, struct array *b)
 int check_that_array_is_constant(struct array *a)
 {
   array_fix_type_field(a);
-  if(a->type_field & ((1 << T_FUNCTION) | (1 << T_OBJECT)))
+  if(a->type_field & (BIT_FUNCTION | BIT_OBJECT))
     return 0;
   return 1;
 }
@@ -980,7 +1045,7 @@ node *make_node_from_array(struct array *a)
   INT32 e;
 
   array_fix_type_field(a);
-  if(a->type_field == (1 << T_INT))
+  if(a->type_field == BIT_INT)
   {
     for(e=0; e<a->size; e++)
       if(ITEM(a)[e].u.integer != 0)
@@ -1111,7 +1176,7 @@ struct array *explode(struct lpc_string *str,
   if(!del->len)
   {
     ret=allocate_array_no_init(str->len,0);
-    ret->type_field |= 1<<T_STRING;
+    ret->type_field |= BIT_STRING;
     for(e=0;e<str->len;e++)
     {
       ITEM(ret)[e].type=T_STRING;
@@ -1130,7 +1195,7 @@ struct array *explode(struct lpc_string *str,
     }
 
     ret=allocate_array_no_init(e+1,0);
-    ret->type_field |= 1<<T_STRING;
+    ret->type_field |= BIT_STRING;
 
     s=str->str;
     for(d=0;d<e;d++)
@@ -1297,8 +1362,20 @@ void gc_check_all_arrays()
   a=&empty_array;
   do
   {
+#ifdef DEBUG
+    if(d_flag > 1)  array_check_type_field(a);
+#endif
     if(a->type_field & BIT_COMPLEX)
-      a->type_field = gc_check_svalues(ITEM(a), a->size);
+    {
+      TYPE_FIELD t;
+      t=gc_check_svalues(ITEM(a), a->size);
+
+      /* Ugly, but we are not allowed to change type_field
+       * at the same time as the array is being built...
+       */
+      if(!(a->type_field & BIT_UNFINISHED) || a->refs!=1)
+	a->type_field = t;
+    }
 
     a=a->next;
   } while (a != & empty_array);

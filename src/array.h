@@ -82,6 +82,7 @@ INT32 switch_lookup(struct array *a, struct svalue *s);
 struct array *order_array(struct array *v, INT32 *order);
 struct array *reorder_and_copy_array(struct array *v, INT32 *order);
 void array_fix_type_field(struct array *v);
+void array_check_type_field(struct array *v);
 struct array *compact_array(struct array *v);
 union anything *low_array_get_item_ptr(struct array *a,
 				       INT32 ind,
