@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.483 2001/02/14 21:35:06 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.484 2001/02/15 07:53:04 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5195,8 +5195,10 @@ int main()
    char *s;
    struct svalue sval;
 
-   fp=fopen("conftypes.txt","r");
    out=fopen("config.info","a");
+   if (!out) return 1;
+
+   fp=fopen("conftypes.txt","r");
    if (out && fp)
    {
       fgets(float_type,79,fp);
@@ -5209,7 +5211,6 @@ int main()
       fprintf(out,"int type..............%s (%d bytes)\n",
    	      int_type,sizeof(INT_TYPE));
    
-      fclose(out);
       fclose(fp);
    }
 
@@ -5221,6 +5222,7 @@ int main()
 	   sizeof(sval.subtype),
 	   sizeof(sval.u));
 
+   fclose(out);
 
    return 0;
 }
