@@ -17,7 +17,6 @@ AC_HAVE_FUNCS(syslog link symlink readlink \
 	getpwnam getspnam getpwent setpwent endpwent \
 	chroot fchroot uname gethostname gethostbyname)
 
-
 AC_CHECK_LIB(nsl, gethostbyname)
 
 AC_MSG_CHECKING(for solaris style gethostbyname_r)

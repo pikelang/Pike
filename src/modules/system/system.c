@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.31 1997/12/07 22:01:35 grubba Exp $
+ * $Id: system.c,v 1.32 1998/03/02 15:21:58 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include "global.h"
-RCSID("$Id: system.c,v 1.31 1997/12/07 22:01:35 grubba Exp $");
+RCSID("$Id: system.c,v 1.32 1998/03/02 15:21:58 grubba Exp $");
 #include "module_support.h"
 #include "las.h"
 #include "interpret.h"
@@ -634,7 +634,7 @@ static MUTEX_T gethostbyname_mutex;
 #define CALL_GETHOSTBYADDR(X,Y,Z) ret=gethostbyaddr((X),(Y),(Z))
 #endif
 
-#endif /* REENTRANT */
+#endif /* _REENTRANT */
 
 /* this is used from modules/file/file.c ! */
 void get_inet_addr(struct sockaddr_in *addr,char *name)
