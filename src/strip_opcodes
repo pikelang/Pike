@@ -1,5 +1,13 @@
 #!/bin/sh
 
+# Notes about limitations in SysV sed:
+#
+#  o The *-operator only operates on single character regexps.
+#  o The |-operator does not exist.
+#  o Labels are only terminated by newline (ie ; does not terminate
+#    a label).
+#  o Character ranges may not contain literal newlines.
+
 sed -e '
   # First convert #line directives.
   s/^# \([0-9]* "[^"]*"\).*$/#line \1/
