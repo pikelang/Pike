@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.12 2002/01/17 21:13:19 nilsson Exp $
+ * $Id: module.pmod,v 1.13 2002/02/13 14:42:14 mast Exp $
  *
  */
 
@@ -216,7 +216,7 @@ static Parser.HTML xml_parser =
   }();
 
 //! Returns a @[Parser.HTML] initialized for parsing XML. It has all
-//! the flags set properly for XML syntax and have callbacks to ignore
+//! the flags set properly for XML syntax and callbacks to ignore
 //! comments, CDATA blocks and unknown PI tags, but it has no
 //! registered tags and doesn't decode any entities.
 Parser.HTML get_xml_parser()
@@ -226,39 +226,56 @@ Parser.HTML get_xml_parser()
 
 //! @decl HTML html_entity_parser()
 //! @decl string parse_html_entities(string in)
-//!	Parse eventual HTML entities in the string
-//!	to unicode characters. Either return a complete
-//!	parser (to build on or use) or parse a string.
+//!	Parse any HTML entities in the string to unicode characters.
+//!	Either return a complete parser (to build on or use) or parse
+//!	a string. Throw an error if there is an unrecognized entity in
+//!	the string.
 //! @note
 //!	Currently using XHTML 1.0 tables.
 
-static HTML entityparser=0;
+static HTML entityparser =
+  lambda () {
+    HTML p=HTML();
+    p->add_entities (html_entities);
+
+    p->_set_entity_callback(
+      lambda(HTML p,string ent)
+      {
+	string chr = decode_numeric_xml_entity (p->tag_name());
+	if (!chr)
+	  error ("Cannot decode character entity reference %O.\n", p->current());
+	return ({chr});
+      });
+
+    p->lazy_entity_end(1);
+
+    return p;
+  }();
 
 HTML html_entity_parser()
 {
-   if (!entityparser)
-   {
-      HTML p=HTML();
-      foreach (html_entities;string name;string value)
-	 p->add_entity(name,value);
-      
-      p->_set_entity_callback(
-	 lambda(HTML p,string ent)
-	 {
-	    int i;
-	    if (sscanf(ent,"&#x%x",i))
-	       return ({sprintf("%c",i)});
-	    if (sscanf(ent,"&#%d",i))
-	       return ({sprintf("%c",i)});
-	    return ({ent});
-	 });
-
-      p->case_insensitive_tag(0);
-      p->lazy_entity_end(1);
-
-      entityparser=p;
-   }
    return entityparser->clone();
+}
+
+string decode_numeric_xml_entity (string chref)
+//! Decodes the numeric XML entity @[chref], e.g. @tt{"&#x34;"@} and
+//! returns the character as a string. @[chref] is the name part of
+//! the entity, i.e. without the leading '&' and trailing ';'. Returns
+//! zero if @[chref] isn't on a recognized form or if the character
+//! number is too large to be represented in a string.
+{
+  if (sizeof (chref) && chref[0] == '#')
+    if ((<"#x", "#X">)[chref[..1]]) {
+      if (sscanf (chref, "%*2s%x%*c", int c) == 2)
+	// A cast gives a proper error if the integer is too large;
+	// sprintf("%c", c) can (currently) wrap and produce negative
+	// character values.
+	catch {return (string) ({c});};
+    }
+    else
+      if (sscanf (chref, "%*c%d%*c", int c) == 2)
+	catch {return (string) ({c});};
+  return 0;
 }
 
 string parse_html_entities(string in)
