@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.134 2004/04/15 20:34:45 mast Exp $
+|| $Id: cpp.c,v 1.135 2004/04/15 22:07:48 mast Exp $
 */
 
 #include "global.h"
@@ -24,6 +24,7 @@
 #include "stuff.h"
 #include "version.h"
 #include "pike_types.h"
+#include "cpp.h"
 
 #include <ctype.h>
 
@@ -1533,7 +1534,7 @@ static int do_safe_index_call(struct cpp *this, struct pike_string *s)
   if(!s) return 0;
 
   if (SETJMP_SP(recovery, 1)) {
-    if (TEST_COMPAT (7, 4)) {
+    if (CPP_TEST_COMPAT (this, 7, 4)) {
       free_svalue (&throw_value);
       throw_value.type = T_INT;
     }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.h,v 1.8 2003/11/14 00:15:06 mast Exp $
+|| $Id: cpp.h,v 1.9 2004/04/15 22:07:48 mast Exp $
 */
 
 #ifndef CPP_H
@@ -33,5 +33,11 @@ void init_cpp(void);
 void add_predefine(char *s);
 void exit_cpp(void);
 /* Prototypes end here */
+
+/* Return true if compat version is equal or less than MAJOR.MINOR */
+#define CPP_TEST_COMPAT(THIS,MAJOR,MINOR)      \
+  (THIS->compat_major < (MAJOR) ||	       \
+   (THIS->compat_major == (MAJOR) &&	       \
+    THIS->compat_minor <= (MINOR)))
 
 #endif
