@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.170 2004/05/11 11:09:13 grubba Exp $
+|| $Id: encode.c,v 1.171 2004/05/11 11:28:52 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.170 2004/05/11 11:09:13 grubba Exp $");
+RCSID("$Id: encode.c,v 1.171 2004/05/11 11:28:52 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -732,7 +732,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    /* This doesn't let bignums through. That's necessary as
 	     * long as they aren't handled deterministically by the
 	     * sort function. */
-	    /* They should be hanled deterministically now - Hubbe */
+	    /* They should be handled deterministically now - Hubbe */
 	    Pike_error("Canonical encoding requires basic types in indices.\n");
 	}
 	order = get_switch_order(Pike_sp[-2].u.array);
@@ -813,7 +813,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       {
 	code_entry(TAG_OBJECT, 2, data);
 	/* 256 would be better, but then negative numbers
-	 * doesn't work... /Hubbe
+	 * won't work... /Hubbe
 	 */
 	push_int(36);
 	apply(val->u.object,"digits",1);
@@ -923,13 +923,10 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	    /* Put value back in cache */
 	    mapping_insert(data->encoded, val, &tmp);
-#ifdef ENCODE_DEBUG
-	    data->depth -= 2;
-#endif
-	    return;
+	    goto encode_done;
 	  }
 	}
-	Pike_error("Encoding of efuns is not supported yet.\n");
+	Pike_error("Cannot encode builtin functions.\n");
       }
 
       code_entry(TAG_FUNCTION, 0, data);
@@ -981,10 +978,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	    /* Put value back in cache */
 	    mapping_insert(data->encoded, val, &tmp);
-#ifdef ENCODE_DEBUG
-	    data->depth -= 2;
-#endif
-	    return;
+	    goto encode_done;
 	  }
 	  if( p->event_handler )
 	    Pike_error("Cannot encode programs with event handlers.\n");
@@ -992,11 +986,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	}
 
 
-	EDB(1,
-	    fprintf(stderr, "%*sencode: encoding program\n",
-		    data->depth, ""));
-
 #ifdef OLD_PIKE_ENCODE_PROGRAM
+
+	EDB(1,
+	    fprintf(stderr, "%*sencode: encoding program in old style\n",
+		    data->depth, ""));
 
 	/* Type 1 -- Old-style encoding. */
 
@@ -1020,8 +1014,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	encode_value2(Pike_sp-1,data, 0);		/**/
 	pop_stack();
 
-#define FOO(X,Y,Z) \
-	code_number( p->PIKE_CONCAT(num_,Z), data);
+#define FOO(NUMTYPE,TYPE,NAME) \
+	code_number( p->PIKE_CONCAT(num_,NAME), data);
 #include "program_areas.h"
 
 	code_number(PIKE_BYTECODE_METHOD, data);
@@ -1131,6 +1125,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 #else /* !OLD_PIKE_ENCODE_PROGRAM */
 
 	/* Type 4 -- Portable encoding. */
+	EDB(1, fprintf(stderr, "%*sencode: encoding program in new style\n",
+		       data->depth, ""));
 	code_entry(type_to_tag(val->type), 4, data);
 
 	/* Byte-order. */
@@ -1154,8 +1150,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	pop_stack();
 
 	/* num_* */
-#define FOO(X,Y,Z) \
-        code_number( p->PIKE_CONCAT(num_,Z), data);
+#define FOO(NUMTYPE,TYPE,NAME) \
+	code_number( p->PIKE_CONCAT(num_,NAME), data);
 #include "program_areas.h"
 
 	/* Byte-code method
@@ -1236,6 +1232,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    if (inherit_num < p->num_inherits) {
 	      d_max = p->inherits[inherit_num].identifier_ref_offset;
 	    }
+
+	    EDB (4, fprintf (stderr, "%*sencode: inherit_num: %d, d_max: %d\n",
+			     data->depth, "", inherit_num, d_max););
 
 	    /* Fix locally defined identifiers. */
 	    for (; d < d_max; d++) {
@@ -1489,6 +1488,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    } else {
 	      push_int(0);
 	      encode_value2(Pike_sp-1, data, 0);
+	      dmalloc_touch_svalue(Pike_sp-1);
 	      Pike_sp--;
 	    }
 	  }
@@ -1502,6 +1502,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       break;
     }
   }
+
+encode_done:;
 
 #ifdef ENCODE_DEBUG
   data->depth -= 2;
