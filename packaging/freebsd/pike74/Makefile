@@ -331,4 +331,7 @@ post-install:
 verify:
 	@(cd ${WRKSRC}; make verify)
 
+doc:
+	@(cd ${WRKSRC}; make documentation)
+
 .include <bsd.port.post.mk>
