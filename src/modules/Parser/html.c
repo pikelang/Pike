@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.127 2001/04/13 16:55:01 mast Exp $ */
+/* $Id: html.c,v 1.128 2001/04/13 22:23:35 mast Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -65,10 +65,12 @@ extern struct program *parser_html_program;
 
 struct location
 {
-   int byteno;     /* current byte, first=1 */
+   int byteno;     /* current byte, first=0 */
    int lineno;     /* line number, first=1 */
    int linestart;  /* byte current line started at */
 };
+
+static struct location init_pos = {0, 1, 0};
 
 struct piece
 {
@@ -375,7 +377,17 @@ void debug_mark_spot(char *desc,struct piece *feed,int c)
 
 /****** init & exit *********************************/
 
-void reset_feed(struct parser_html_storage *this)
+static INLINE void reset_stack_head (struct parser_html_storage *this)
+{
+   struct feed_stack *st = this->stack;
+   st->ignore_data=0;
+   st->free_feed=1;
+   st->parse_tags=this->flags & FLAG_PARSE_TAGS;
+   st->pos = init_pos;
+   st->c=0;
+}
+
+static void reset_feed(struct parser_html_storage *this)
 {
    struct feed_stack *st;
 
@@ -421,16 +433,8 @@ void reset_feed(struct parser_html_storage *this)
      st=this->stack=alloc_feed_stack();
      st->prev=NULL;
    }
-
-   st->ignore_data=0;
-   st->free_feed=1;
-   st->parse_tags=this->flags & FLAG_PARSE_TAGS;
-   st->pos.byteno=1;
-   st->pos.lineno=1;
-   st->pos.linestart=1;
-   st->c=0;
-
    this->stack_count=0;
+   reset_stack_head (this);
 }
 
 static void recalculate_argq(struct parser_html_storage *this)
@@ -2246,7 +2250,7 @@ static INLINE void add_local_feed (struct parser_html_storage *this,
   new->ignore_data=0;
   new->free_feed=1;
   new->parse_tags=this->stack->parse_tags && this->out_ctx == CTX_DATA;
-  new->pos=this->stack->pos;
+  new->pos=init_pos;
   new->prev=this->stack;
   new->c=0;
   this->stack=new;
@@ -3720,8 +3724,10 @@ static void try_feed(int finished)
 	    if (!THIS->feed) THIS->feed_end=NULL;
 
 	    st=THIS->stack->prev;
-	    if (!st) 
+	    if (!st) {
+	       if (finished) reset_stack_head (THIS);
 	       return; /* all done, but keep last stack elem */
+	    }
 
 	    if (THIS->stack->local_feed && THIS->stack->free_feed)
 	       fatal("internal wierdness in Parser.HTML: feed left\n");
