@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.151 2001/05/19 05:30:18 mast Exp $");
+RCSID("$Id: gc.c,v 1.152 2001/06/06 02:22:39 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -95,7 +95,7 @@ RCSID("$Id: gc.c,v 1.151 2001/05/19 05:30:18 mast Exp $");
 #define GC_VERBOSE_DO(X)
 #endif
 
-INT32 num_objects = 1;		/* Account for empty_array. */
+INT32 num_objects = 3;		/* Account for *_empty_array. */
 INT32 num_allocs =0;
 ptrdiff_t alloc_threshold = MIN_ALLOC_THRESHOLD;
 PMOD_EXPORT int Pike_in_gc = 0;

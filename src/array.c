@@ -23,17 +23,27 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.105 2001/04/30 17:31:28 mast Exp $");
+RCSID("$Id: array.c,v 1.106 2001/06/06 02:22:38 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
   PIKE_CONSTANT_MEMOBJ_INIT(1), /* Never free */
-  &empty_array,          /* Next */
-  &empty_array,          /* previous (circular) */
+  &weak_empty_array,     /* Next */
+  &weak_shrink_empty_array, /* previous (circular) */
   0,                     /* Size = 0 */
   0,                     /* malloced Size = 0 */
   0,                     /* no types */
   0,			 /* no flags */
+};
+PMOD_EXPORT struct array weak_empty_array=
+{
+  PIKE_CONSTANT_MEMOBJ_INIT(1),
+  &weak_shrink_empty_array, &empty_array, 0, 0, 0, ARRAY_WEAK_FLAG
+};
+PMOD_EXPORT struct array weak_shrink_empty_array=
+{
+  PIKE_CONSTANT_MEMOBJ_INIT(1),
+  &empty_array, &weak_empty_array, 0, 0, 0, ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK
 };
 
 struct array *gc_internal_array = &empty_array;
@@ -101,8 +111,8 @@ static void array_free_no_free(struct array *v)
 PMOD_EXPORT void really_free_array(struct array *v)
 {
 #ifdef PIKE_DEBUG
-  if(v == & empty_array)
-    fatal("Tried to free the empty_array.\n");
+  if(v == & empty_array || v == &weak_empty_array || v == &weak_shrink_empty_array)
+    fatal("Tried to free some *_empty_array.\n");
 #endif
 
 #ifdef PIKE_DEBUG
@@ -120,6 +130,26 @@ PMOD_EXPORT void do_free_array(struct array *a)
 {
   if (a)
     free_array(a);
+}
+
+PMOD_EXPORT struct array *array_set_flags(struct array *a, int flags)
+{
+  if (a->size)
+    a->flags = flags;
+  else {
+    free_array(a);
+    switch (flags) {
+      case 0:
+	add_ref(a = &empty_array); break;
+      case ARRAY_WEAK_FLAG:
+	add_ref(a = &weak_empty_array); break;
+      case ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK:
+	add_ref(a = &weak_shrink_empty_array); break;
+      default:
+	fatal("Invalid flags %x\n", flags);
+    }
+  }
+  return a;
 }
 
 /*
@@ -1981,7 +2011,8 @@ void gc_mark_array_as_referenced(struct array *a)
   int e;
   if(gc_mark(a)) {
 #ifdef PIKE_DEBUG
-    if (a == &empty_array) fatal("Trying to gc mark empty_array.\n");
+    if (a == &empty_array || a == &weak_empty_array || a == &weak_shrink_empty_array)
+      fatal("Trying to gc mark some *_empty_array.\n");
 #endif
 
     if (a == gc_mark_array_pos)
@@ -2048,7 +2079,8 @@ void real_gc_cycle_check_array(struct array *a, int weak)
   GC_CYCLE_ENTER(a, weak) {
     int e;
 #ifdef PIKE_DEBUG
-    if (a == &empty_array) fatal("Trying to gc cycle check empty_array.\n");
+    if (a == &empty_array || a == &weak_empty_array || a == &weak_shrink_empty_array)
+      fatal("Trying to gc cycle check some *_empty_array.\n");
 #endif
 
     if (a->type_field & BIT_COMPLEX)
@@ -2110,6 +2142,8 @@ void gc_mark_all_arrays(void)
 {
   gc_mark_array_pos = gc_internal_array;
   gc_mark(&empty_array);
+  gc_mark(&weak_empty_array);
+  gc_mark(&weak_shrink_empty_array);
   while (gc_mark_array_pos != &empty_array) {
     struct array *a = gc_mark_array_pos;
 #ifdef PIKE_DEBUG
@@ -2145,7 +2179,7 @@ void gc_free_all_unreferenced_arrays(void)
 {
   struct array *a,*next;
 
-  for (a = gc_internal_array; a != &empty_array; a = next)
+  for (a = gc_internal_array; a != &weak_empty_array; a = next)
   {
 #ifdef PIKE_DEBUG
     if (!a)
@@ -2193,7 +2227,10 @@ void debug_dump_array(struct array *a)
 	  a->flags,
 	  a->size,
 	  a->malloced_size,
-	  a == &empty_array ? " (the empty_array)" : "");
+	  a == &empty_array ? " (the empty_array)" :
+	  a == &weak_empty_array ? " (the weak_empty_array)" :
+	  a == &weak_shrink_empty_array ? " (the weak_shrink_empty_array)" :
+	  "");
   fprintf(stderr,"Type field = ");
   debug_dump_type_field(a->type_field);
   fprintf(stderr,"\n");
@@ -2211,7 +2248,8 @@ void zap_all_arrays(void)
   {
 
 #if defined(PIKE_DEBUG) && defined(DEBUG_MALLOC)
-    if(verbose_debug_exit && a!=&empty_array)
+    if(verbose_debug_exit && a!=&empty_array &&
+       a!=&weak_empty_array && a!=&weak_shrink_empty_array)
       describe(a);
 #endif
     
@@ -2231,7 +2269,7 @@ void count_memory_in_arrays(INT32 *num_, INT32 *size_)
 {
   INT32 num=0, size=0;
   struct array *m;
-  for(m=empty_array.next;m!=&empty_array;m=m->next)
+  for(m=empty_array.next;m!=&weak_empty_array;m=m->next)
   {
     num++;
     size+=sizeof(struct array)+

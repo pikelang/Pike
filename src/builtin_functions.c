@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.372 2001/06/05 10:11:52 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.373 2001/06/06 02:22:39 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3370,6 +3370,7 @@ void f_set_weak_flag(INT32 args)
 {
   struct svalue *s;
   INT_TYPE ret;
+  int flags;
 
   get_all_args("set_weak_flag",args,"%*%i",&s,&ret);
 
@@ -3378,17 +3379,19 @@ void f_set_weak_flag(INT32 args)
   switch(s->type)
   {
     case T_ARRAY:
-      SETFLAG(s->u.array->flags,ARRAY_WEAK_FLAG,ret & PIKE_WEAK_VALUES);
+      flags = array_get_flags(s->u.array);
+      SETFLAG(flags,ARRAY_WEAK_FLAG,ret & PIKE_WEAK_VALUES);
+      s->u.array = array_set_flags(s->u.array, flags);
       break;
-    case T_MAPPING: {
-      int flags = mapping_get_flags(s->u.mapping);
+    case T_MAPPING:
+      flags = mapping_get_flags(s->u.mapping);
       flags = (flags & ~PIKE_WEAK_BOTH) | (ret & PIKE_WEAK_BOTH);
       mapping_set_flags(s->u.mapping, flags);
       break;
-    }
     case T_MULTISET:
-      SETFLAG(s->u.multiset->ind->flags,(ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK),
-	      ret & PIKE_WEAK_INDICES);
+      flags = array_get_flags(s->u.multiset->ind);
+      SETFLAG(flags,(ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK), ret & PIKE_WEAK_INDICES);
+      s->u.multiset->ind = array_set_flags(s->u.multiset->ind, flags);
       break;
     default:
       SIMPLE_BAD_ARG_ERROR("set_weak_flag",1,"array|mapping|multiset");

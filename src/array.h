@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.34 2001/04/30 17:31:29 mast Exp $
+ * $Id: array.h,v 1.35 2001/06/06 02:22:39 mast Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -34,7 +34,7 @@ struct array
 #define ARRAY_LVALUE 4
 #define ARRAY_WEAK_SHRINK 8
 
-PMOD_EXPORT extern struct array empty_array;
+PMOD_EXPORT extern struct array empty_array, weak_empty_array, weak_shrink_empty_array;
 extern struct array *gc_internal_array;
 
 #if defined(DEBUG_MALLOC) && defined(PIKE_DEBUG)
@@ -90,6 +90,7 @@ typedef short_cmpfun (*cmpfun_getter)(TYPE_T);
 PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size, ptrdiff_t extra_space);
 PMOD_EXPORT void really_free_array(struct array *v);
 PMOD_EXPORT void do_free_array(struct array *a);
+PMOD_EXPORT struct array *array_set_flags(struct array *a, int flags);
 PMOD_EXPORT void array_index_no_free(struct svalue *s,struct array *v,INT32 index);
 PMOD_EXPORT void array_index(struct svalue *s,struct array *v,INT32 index);
 PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
@@ -179,6 +180,8 @@ void count_memory_in_arrays(INT32 *num_, INT32 *size_);
 PMOD_EXPORT struct array *explode_array(struct array *a, struct array *b);
 PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
 /* Prototypes end here */
+
+#define array_get_flags(a) ((a)->flags)
 
 #define gc_cycle_check_array(X, WEAK) \
   gc_cycle_enqueue((gc_cycle_check_cb *) real_gc_cycle_check_array, (X), (WEAK))
