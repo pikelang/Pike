@@ -22,7 +22,7 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.18 1998/04/03 20:55:47 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.19 1998/04/03 21:35:34 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -329,6 +329,34 @@ static void low_start(void)
   free_object(THISOBJ);
 }
 
+/* Read some data from the blocking object.
+ *
+ */
+static int read_some_data(void)
+{
+  struct pipe *this = THIS;
+  struct input * i = this->firstinput;
+
+  if (!i || i->type != I_BLOCKING_OBJ) {
+    fatal("PIPE: read_some_data(): Bad input type!\n");
+    return;
+  }
+  push_int(8192);
+  push_int(1);    /* We don't care if we don't get all 8192 bytes. */
+  apply(i->u.obj, "read", 2);
+  if ((sp[-1].type == T_STRING) && (sp[-1].u.string->len > 0)) {
+    append_buffer(sp[-1].u.string);
+    pop_stack();
+    THIS->sleeping = 1;
+    return(1);        /* Success */
+  }
+
+  /* FIXME: Should we check the return value here? */
+  pop_stack();
+  /* EOF */
+  return(0);  /* EOF */
+}
+
 /* Let's guess what this function does....
  *
  */
@@ -357,20 +385,9 @@ static INLINE void input_finish(void)
       return;
 
     case I_BLOCKING_OBJ:
-      push_int(8192);
-      push_int(1);	/* We don't care if we don't get all 8192 bytes. */
-      apply(i->u.obj, "read", 2);
-      if (sp[-1].type == T_STRING) {
-	append_buffer(sp[-1].u.string);
-	pop_stack();
-	i->sleeping = 1;
+      if (read_some_data())
 	return;
-      } else {
-	/* FIXME: Should we check the return value here? */
-	pop_stack();
-	/* EOF */
-	continue;
-      }
+      continue;
 
     case I_MMAP:
       if (THIS->fd==-1) return;
@@ -447,18 +464,10 @@ static INLINE struct pike_string* gimme_some_data(unsigned long pos)
 	  this->bytes_in_buffer<MAX_BYTES_IN_BUFFER)
       {
 	if (this->firstinput->type == I_BLOCKING_OBJ) {
-	  push_int(8192);
-	  push_int(1);	/* We don't care if we don't get all 8192 bytes. */
-	  apply(i->firstinput->u.obj, "read", 2);
-	  if (sp[-1].type == T_STRING) {
-	    append_buffer(sp[-1].u.string);
-	  } else {
-	    /* FIXME: Should probably check the return value. */
-	    /* EOF */
+	  if (!read_some_data()) {
 	    this->sleeping = 0;
 	    input_finish();
 	  }
-	  pop_stack();
 	} else {
 	  this->sleeping=0;
 	  push_callback(offset_input_read_callback);
@@ -728,6 +737,9 @@ static void pipe_input(INT32 args)
       } else {
 	 /* Try blocking mode */
 	 i->type = I_BLOCKING_OBJ;
+	 if (i==THIS->firstinput) {
+	   read_some_data();
+	 }
 	 return;
       }
    }
