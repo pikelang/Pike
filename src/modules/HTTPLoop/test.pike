@@ -2,7 +2,7 @@ string MP;
 
 class request_program 
 {
-  inherit HTTPAccept.prog;
+  inherit HTTPLoop.prog;
 }
 
 string type_from_fname(string fname)
@@ -58,7 +58,7 @@ void cs()
   call_out(cs, 10);
   catch
   {
-    mapping c = HTTPAccept.cache_status()[0];
+    mapping c = HTTPLoop.cache_status()[0];
     werror("\nCache statistics\n");
     c->total = c->hits + c->misses + c->stale;
     werror(" %d elements in cache, size is %1.1fKb max is %1.1fMb\n"
@@ -79,7 +79,7 @@ int main(int argc, array argv)
 		{
 		  while(1)
 		  {
-		    HTTPAccept.log_as_commonlog_to_file(lf);
+		    HTTPLoop.log_as_commonlog_to_file(lf);
 		    sleep(2);
 		  }
 		}, t);
@@ -93,7 +93,7 @@ int main(int argc, array argv)
     werror("Bind failed.\n");
     return 1;
   }
-  HTTPAccept.accept_http_loop( port, request_program, handle, 0, 1024*1024, 1);
+  HTTPLoop.accept_http_loop( port, request_program, handle, 0, 1024*1024, 1);
   call_out(cs, 0, 0);
 //   call_out(destruct, 20, port);
   return -1;
