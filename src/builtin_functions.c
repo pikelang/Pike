@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.213 1999/12/05 15:37:30 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.214 1999/12/05 22:08:57 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5300,8 +5300,15 @@ void init_builtin_efuns(void)
   ADD_EFUN("reverse",f_reverse,tOr3(tFunc(tInt,tInt),tFunc(tStr,tStr),tFunc(tArray,tArray)),0);
   
 /* function(mixed,array:array) */
-  ADD_EFUN("rows",f_rows,tFunc(tMix tArray,tArray),0);
-  
+  ADD_EFUN("rows",f_rows,
+	   tOr6(tFunc(tMap(tSetvar(0,tMix),tSetvar(1,tMix)) tArr(tVar(0)),
+		      tArr(tVar(1))),
+		tFunc(tSet(tSetvar(0,tMix)) tArr(tVar(0)), tArr(tInt01)),
+		tFunc(tString tArr(tInt), tArr(tInt)),
+		tFunc(tArr(tSetvar(0,tMix)) tArr(tInt), tArr(tVar(1))),
+		tFunc(tArray tArr(tNot(tInt)), tArray),
+		tFunc(tOr4(tObj,tFunction,tProgram,tInt) tArray, tArray)), 0);
+
 /* function(:int *) */
   ADD_EFUN("rusage", f_rusage,tFunc(tNone,tArr(tInt)),OPT_EXTERNAL_DEPEND);
   
@@ -5424,16 +5431,23 @@ void init_builtin_efuns(void)
 
   /* function(array(mapping(int:mixed)):array(int)) */
   ADD_FUNCTION("interleave_array",f_interleave_array,tFunc(tArr(tMap(tInt,tMix)),tArr(tInt)),OPT_TRY_OPTIMIZE);
-  /* function(array,array:array(array)) */
-  ADD_FUNCTION("diff",f_diff,tFunc(tArray tArray,tArr(tArray)),OPT_TRY_OPTIMIZE);
+  /* function(array(0=mixed),array(1=mixed):array(array(array(0)|array(1))) */
+  ADD_FUNCTION("diff",f_diff,
+	       tFunc(tArr(tSetvar(0,tMix)) tArr(tSetvar(1,tMix)),
+		     tArr(tArr(tOr(tArr(tVar(0)),tArr(tVar(1)))))),
+	       OPT_TRY_OPTIMIZE);
   /* function(array,array:array(int)) */
-  ADD_FUNCTION("diff_longest_sequence",f_diff_longest_sequence,tFunc(tArray tArray,tArr(tInt)),OPT_TRY_OPTIMIZE);
+  ADD_FUNCTION("diff_longest_sequence",f_diff_longest_sequence,
+	       tFunc(tArray tArray,tArr(tInt)),OPT_TRY_OPTIMIZE);
   /* function(array,array:array(int)) */
-  ADD_FUNCTION("diff_dyn_longest_sequence",f_diff_dyn_longest_sequence,tFunc(tArray tArray,tArr(tInt)),OPT_TRY_OPTIMIZE);
+  ADD_FUNCTION("diff_dyn_longest_sequence",f_diff_dyn_longest_sequence,
+	       tFunc(tArray tArray,tArr(tInt)),OPT_TRY_OPTIMIZE);
   /* function(array,array:array(array)) */
-  ADD_FUNCTION("diff_compare_table",f_diff_compare_table,tFunc(tArray tArray,tArr(tArray)),OPT_TRY_OPTIMIZE);
+  ADD_FUNCTION("diff_compare_table",f_diff_compare_table,
+	       tFunc(tArray tArray,tArr(tArr(tInt))),OPT_TRY_OPTIMIZE);
   /* function(array:array(int)) */
-  ADD_FUNCTION("longest_ordered_sequence",f_longest_ordered_sequence,tFunc(tArray,tArr(tInt)),0);
+  ADD_FUNCTION("longest_ordered_sequence",f_longest_ordered_sequence,
+	       tFunc(tArray,tArr(tInt)),0);
   /* function(array(mixed),array(mixed)...:array(mixed)) */
   ADD_FUNCTION("sort",f_sort,tFuncV(tArr(tMix),tArr(tMix),tArr(tMix)),OPT_SIDE_EFFECT);
   ADD_FUNCTION("string_count",f_string_count,tFunc(tString tString,tInt),OPT_TRY_OPTIMIZE);
