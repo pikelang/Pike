@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.44 1998/06/06 03:19:53 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.45 1998/08/19 07:37:59 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1301,8 +1301,8 @@ static struct pike_string *debug_low_index_type(char *t, node *n)
 	i=find_shared_string_identifier(CDR(n)->u.sval.u.string, p);
 	if(i==-1)
 	{
-	  reference_shared_string(int_type_string);
-	  return int_type_string;
+	  reference_shared_string(mixed_type_string);
+	  return mixed_type_string;
 	}else{
 	  if(EXTRACT_UCHAR(t) ||
 	     (p->identifier_references[i].id_flags & ID_NOMASK) ||
