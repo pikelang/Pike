@@ -1,48 +1,15 @@
-# $Id: configure.in,v 1.25 2000/08/12 06:17:21 per Exp $
+# $Id: configure.in,v 1.26 2003/03/13 00:44:20 nilsson Exp $
 AC_INIT(spider.c)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
 
-AC_CHECK_LIB(bind, __inet_ntoa)
 AC_CHECK_LIB(socket, socket)
-AC_CHECK_LIB(nsl, gethostbyname)
 
-AC_HAVE_HEADERS(arpa/inet.h sys/socketvar.h sys/protosw.h \
-	netinet/in.h sys/mman.h sys/utsname.h netdb.h sys/socket.h \
-        sync.h sys/sockio.h sys/conf.h stropts.h sys/param.h\
-	sys/uio.h linux/mman.h sys/stream.h unistd.h winsock.h)
-
-AC_FUNC_MMAP
-
-AC_HAVE_FUNCS(perror strdup sendmsg nice)
+AC_HAVE_HEADERS(arpa/inet.h netinet/in.h sys/mman.h netdb.h \
+        sys/socket.h sys/sockio.h sys/conf.h stropts.h \
+	sys/uio.h unistd.h)
 
 AC_CHECK_TYPE(time_t, long)
-
-AC_MSG_CHECKING(how to find timezone)
-
-AC_CACHE_VAL(pike_cv_timezone,
-[
-AC_TRY_LINK([
-#include <time.h>
-],[
- int _tz;
- time_t foo;
- struct tm *g;
- g=localtime(&foo);
-
- _tz = g->tm_gmtoff;	
-],
-  pike_cv_timezone='localtime'
-,
-  pike_cv_timezone='int'
-)])
-
-if test "$pike_cv_timezone" = int; then
-  AC_DEFINE(HAVE_INT_TIMEZONE)
-  AC_MSG_RESULT([int]);
-else
-  AC_MSG_RESULT([localtime])
-fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
