@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.116 1997/09/16 01:23:42 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.117 1997/09/16 01:56:29 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -184,7 +184,8 @@ if test $cflags_is_set = no; then
   AC_SYS_OS_COMPILER_FLAG(HP-UX,+Odataprefetch,plus_Odataprefetch)
   AC_SYS_OS_COMPILER_FLAG(HP-UX,+Ofailsafe,plus_Ofailsafe)
   AC_SYS_OS_COMPILER_FLAG(HP-UX,+O3,plus_O3)
-  AC_SYS_OS_COMPILER_FLAG(HP-UX,+w1,plus_w1)
+  # Ignore warnings 530 and 414 if you turn this on.
+  # AC_SYS_OS_COMPILER_FLAG(HP-UX,+w1,plus_w1)
 
   # OSF/1
   AC_SYS_OS_COMPILER_FLAG(OSF1,-fast,fast)
