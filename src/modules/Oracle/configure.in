@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.35 2004/08/27 15:06:27 grubba Exp $
+# $Id: configure.in,v 1.36 2004/12/08 17:11:09 grubba Exp $
 #
 # Configure script for the oracle module
 #
@@ -254,7 +254,7 @@ if test x$with_oracle = xyes; then
 
     AC_MSG_CHECKING(for working Oracle libs)
     AC_CACHE_VAL(pike_cv_working_oracle,[
-      AC_TRY_COMPILE([
+      AC_TRY_LINK([
 #ifdef HAVE_OCI_H
 #include <oci.h>
 #else /* !HAVE_OCI_H */
