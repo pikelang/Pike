@@ -76,6 +76,7 @@ class imap_atom_options
 
   string format()
     {
+      werror(sprintf("options:%O\n", options));
       return upper_case(name + "[" + Array.map(options, imap_format)*" " + "]")
 	// NOTE: Only the start index is sent
 	+ (range ? sprintf("<%d>", range[0]) : "");
