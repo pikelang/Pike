@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.176 2003/02/12 23:59:18 mast Exp $
+|| $Id: program.h,v 1.177 2003/02/20 14:55:12 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -456,7 +456,9 @@ struct node_s *program_magic_identifier (struct program_state *state,
 struct program *parent_compilation(int level);
 struct program *id_to_program(INT32 id);
 void optimize_program(struct program *p);
-int program_function_index_compare(const void *a,const void *b);
+void fsort_program_identifier_index(unsigned short *start,
+				    unsigned short *end,
+				    struct program *p);
 struct pike_string *find_program_name(struct program *p, INT32 *line);
 int override_identifier (struct reference *ref, struct pike_string *name);
 void fixate_program(void);

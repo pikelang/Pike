@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.164 2003/02/15 17:33:33 grubba Exp $
+|| $Id: encode.c,v 1.165 2003/02/20 14:55:12 grubba Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.164 2003/02/15 17:33:33 grubba Exp $");
+RCSID("$Id: encode.c,v 1.165 2003/02/20 14:55:12 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -2807,14 +2807,11 @@ static void decode_value2(struct decode_data *data)
 	  debug_malloc_touch(dat);
 
 	  debug_malloc_touch(p);
-	  {
-	    struct program *new_program_save=Pike_compiler->new_program;
-	    Pike_compiler->new_program=p;
-	    fsort((void *)p->identifier_index,
-		  p->num_identifier_index,
-		  sizeof(unsigned short),(fsortfun)program_function_index_compare);
-	    Pike_compiler->new_program=new_program_save;
-	  }
+
+	  fsort_program_identifier_index(p->identifier_index,
+					 p->identifier_index +
+					 p->num_identifier_index - 1,
+					 p);
 
 	  debug_malloc_touch(dat);
 	  debug_malloc_touch(p);

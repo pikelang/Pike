@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.481 2003/02/15 16:02:05 grubba Exp $
+|| $Id: program.c,v 1.482 2003/02/20 14:55:12 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.481 2003/02/15 16:02:05 grubba Exp $");
+RCSID("$Id: program.c,v 1.482 2003/02/20 14:55:12 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1462,14 +1462,26 @@ void optimize_program(struct program *p)
 }
 
 /* internal function to make the index-table */
-int program_function_index_compare(const void *a,const void *b)
+static ptrdiff_t program_identifier_index_compare(int a, int b,
+						  const struct program *p)
 {
-  return
-    DO_NOT_WARN((int)my_order_strcmp(ID_FROM_INT(Pike_compiler->new_program,
-						 *(unsigned short *)a)->name,
-				     ID_FROM_INT(Pike_compiler->new_program,
-						 *(unsigned short *)b)->name));
+  ptrdiff_t val_a = ((char *)(ID_FROM_INT(p, a)->name))-(char *)0;
+  ptrdiff_t val_b = ((char *)(ID_FROM_INT(p, b)->name))-(char *)0;
+
+  return val_a - val_b;
 }
+
+#define CMP(X,Y)	program_identifier_index_compare(*(X), *(Y), prog)
+#define EXTRA_ARGS	, struct program *prog
+#define XARGS		, prog
+#define ID		fsort_program_identifier_index
+#define TYPE		unsigned short
+#include "fsort_template.h"
+#undef TYPE
+#undef ID
+#undef XARGS
+#undef EXTRA_ARGS
+#undef CMP
 
 #ifdef PIKE_DEBUG
 struct pike_string *find_program_name(struct program *p, INT32 *line)
@@ -1600,9 +1612,10 @@ void fixate_program(void)
     }
     add_to_identifier_index(i);
   }
-  fsort((void *)p->identifier_index,
-	p->num_identifier_index,
-	sizeof(unsigned short),(fsortfun)program_function_index_compare);
+  fsort_program_identifier_index(p->identifier_index,
+				 p->identifier_index +
+				 p->num_identifier_index - 1,
+				 p);
 
 
   /* Yes, it is supposed to start at 1  /Hubbe */
@@ -2543,6 +2556,13 @@ void check_program(struct program *p)
   {
     if(p->identifier_index[e] > p->num_identifier_references)
       Pike_fatal("Program->identifier_indexes[%ld] is wrong\n",(long)e);
+    if (e && (program_identifier_index_compare(p->identifier_index[e-1],
+					       p->identifier_index[e],
+					       p) > 0)) {
+      Pike_fatal("Program->identifier_index[%ld] > "
+		 "Program->identifier_index[%ld]\n",
+		 (long)(e-1), (long)e);
+    }
   }
 
 }
@@ -4554,6 +4574,7 @@ int low_find_shared_string_identifier(struct pike_string *name,
   if(prog->flags & PROGRAM_FIXED)
   {
     unsigned short *funindex = prog->identifier_index;
+    ptrdiff_t val_n = ((char *)name) - (char *)0;
 
 #ifdef PIKE_DEBUG
     if(!funindex)
@@ -4564,13 +4585,17 @@ int low_find_shared_string_identifier(struct pike_string *name,
     min = 0;
     while(max != min)
     {
+      ptrdiff_t val_t;
+
       tst=(max + min) >> 1;
       fun = ID_FROM_INT(prog, funindex[tst]);
       if(is_same_string(fun->name,name)) return funindex[tst];
-      if(my_order_strcmp(fun->name, name) > 0)
-	max=tst;
-      else
-	min=tst+1;
+      val_t = ((char *)fun->name) - (char *)0;
+      if ((val_n - val_t) < 0) {
+	max = tst;
+      } else {
+	min = tst+1;
+      }
     }
   }else{
     return really_low_find_shared_string_identifier(name,prog,0);
