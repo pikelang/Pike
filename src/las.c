@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.213 2000/09/14 11:33:35 grubba Exp $");
+RCSID("$Id: las.c,v 1.214 2000/09/15 11:44:50 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -597,10 +597,12 @@ void debug_free_node(node *n)
 
     debug_malloc_touch(n);
 
-#if defined(SHARED_NODES) && defined(PIKE_DEBUG)
+#ifdef SHARED_NODES
+#ifdef PIKE_DEBUG
     if (n->refs) {
       fatal("Node with refs left about to be killed: %8p\n", n);
     }
+#endif /* PIKE_DEBUG */
     sub_node(dmalloc_touch(node *, n));
 #endif /* SHARED_NODES */
 
