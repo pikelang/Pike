@@ -1,4 +1,4 @@
-/* $Id: quant.c,v 1.26 1997/01/14 17:20:28 law Exp $ */
+/* $Id: quant.c,v 1.27 1997/01/14 17:24:58 law Exp $ */
 
 /*
 
@@ -894,7 +894,9 @@ fprintf(stderr,"cache: %lu: %d,%d,%d\n",best,ct->clut[best].r,ct->clut[best].g,c
 #endif
       }
    }
+#ifdef QUANT_DEBUG_RGB
    fprintf(stderr,"\n");
+#endif
 
    /* place in cache */
 #if QUANT_SELECT_CACHE>1
