@@ -243,7 +243,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
     switch(run_time_type)
     {
       case T_MIXED:
-	break;
+	return;
 	
       case T_ARRAY:
 	switch(sp[-1].type)
@@ -388,13 +388,12 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	}
 	break;
       }
-      
     }
   }
 
 #ifdef DEBUG
   if(run_time_type != sp[-1].type)
-    fatal("Internal error: Cast failed.\n");
+    fatal("Internal error: Cast failed (run_time_type = %d, sp[-1].type = %d.)\n");
 #endif
 
   switch(run_time_type)
