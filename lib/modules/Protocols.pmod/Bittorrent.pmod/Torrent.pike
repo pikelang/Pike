@@ -452,10 +452,10 @@ void download_more()
 
 int download_one_more()
 {
-   multiset(Peer) available_peers;
-   multiset(Peer) completed_peers;
-   multiset(Peer) activated_peers;
-   multiset(Peer) completed_peers_avail;
+   multiset(.Peer) available_peers;
+   multiset(.Peer) completed_peers;
+   multiset(.Peer) activated_peers;
+   multiset(.Peer) completed_peers_avail;
 
    available_peers=(multiset)filter(values(peers),"is_available");
    activated_peers=(multiset)filter(values(peers),"is_activated");
@@ -505,12 +505,12 @@ int download_one_more()
       if (!i) u&=indices(lost_in_space); // restrain
       foreach (u;;int n)
       {
-	 multiset(Peer) p=file_peers[n];
+	 multiset(.Peer) p=file_peers[n];
 
 	 if (!minp) minp=sizeof(p);
 	 else if (minp<sizeof(p) && sizeof(choices)) break;
 
-	 multiset(Peer) p2=p&from_peers;
+	 multiset(.Peer) p2=p&from_peers;
 	 if (!sizeof(p2)) continue;
 	 choices+=({({n,(sizeof(p2)!=sizeof(p))?p2:p})});
       }
@@ -525,7 +525,7 @@ int download_one_more()
 //       werror("download piece %O, available from %O\n",
 // 	     n,v);
 
-      Peer peer=v[random(sizeof(v))];
+      .Peer peer=v[random(sizeof(v))];
 
       if (lost_in_space[n])
       {
@@ -548,7 +548,7 @@ int download_chunk_max_queue=4; // number of chunks to queue
 
 class PieceDownload
 {
-   Peer peer;
+   .Peer peer;
    int piece;
 
    mapping chunks=([]);
@@ -557,7 +557,7 @@ class PieceDownload
 
    int handed_over=0;
 
-   void create(Peer _peer,int n)
+   void create(.Peer _peer,int n)
    {
       peer=_peer;
       piece=n;
@@ -579,7 +579,7 @@ class PieceDownload
       queue_chunks();
    }
 
-   void reactivate(Peer _peer)
+   void reactivate(.Peer _peer)
    {
       werror("reactivate lost download: %O %O %O\n",
 	     peer,piece,indices(chunks));
@@ -753,10 +753,10 @@ class PieceDownload
 // ----------------------------------------------------------------
 
 // these are already filtered with what we want
-mapping(int:multiset(Peer)) file_peers=([]); 
+mapping(int:multiset(.Peer)) file_peers=([]); 
 multiset(int) file_available=(<>);
 
-void peer_lost(Peer peer)
+void peer_lost(.Peer peer)
 {
    if (!file_peers) return;
    foreach ( file_want & ((multiset)string2arr(peer->bitfield)); 
@@ -774,7 +774,7 @@ void peer_lost(Peer peer)
    }
 }
 
-void peer_gained(Peer peer)
+void peer_gained(.Peer peer)
 {
    multiset m;
 
@@ -788,7 +788,7 @@ void peer_gained(Peer peer)
       download_more();
 }
 
-void peer_have(Peer peer,int n)
+void peer_have(.Peer peer,int n)
 {
    file_available[n]=1;
    if (file_peers[n])
