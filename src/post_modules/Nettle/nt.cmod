@@ -37,23 +37,41 @@ PIKECLASS CryptContext
 {
   CVAR HCRYPTPROV handle;
 
-  /*! @decl void create(void|string str1, void|string str2, int type,@
+  /*! @decl void create(string name, string csp, int type,@
    *!                   int flags)
+   *! @param name
+   *! Key container name. When flags is set to @[CRYPT_VERIFYCONTEXT]
+   *! the name must be @expr{0@}.
+   *!
+   *! @param csp
+   *! The name of the Crypto Service Provider to use. If set to
+   *! @expr{0@} the user default CSP will be used.
    */
-  PIKEFUN void create(void|string str1, void|string str2, int type, int flags)
+  PIKEFUN void create(int|string str1, int|string str2, int type, int flags)
     flags ID_STATIC;
   {
     if(THIS->handle) Pike_error("Already initialized.\n");
-    if(!CryptAcquireContext(THIS->handle,
-			    str1->type==T_STRING ? str1->u.string->str : 0,
-			    str2->type==T_STRING ? str2->u.string->str : 0,
+    if(!CryptAcquireContext(&THIS->handle,
+			    (str1->type==T_STRING ? str1->u.string->str : 0),
+			    (str2->type==T_STRING ? str2->u.string->str : 0),
 			    type, flags)) {
       INT32 errcode = GetLastError();
-      if(errcode == 0x80090016)
+
+      switch(errcode) {
+      case 0x8009000F:
+	Pike_error("CryptContext->create(): Key container already exists.\n");
+	break;
+      case 0x80090016:
 	Pike_error("CryptContext->create(): No default key container.\n");
+	break;
+      case 0x80090019:
+	Pike_error("CryptContext->create(): Crypto Service Provider not set up correctly.\n");
+	break;
       else
 	Pike_error("CryptContext->create(): Failed with code 0x%08x.\n",
 		   errcode);
+	break;
+      }
     }
     pop_n_elems(args);
   }
