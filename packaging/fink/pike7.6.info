@@ -1,5 +1,5 @@
 Package: pike7.6
-Version: 7.6.9
+Version: 7.6.13
 Revision: 1
 Description: Programming language with a C-like syntax
 DescDetail: <<
@@ -26,7 +26,7 @@ CustomMirror: <<
 Primary: ftp://ftp.oav.net/pike/7.6/
 <<
 Source: mirror:custom:pike-%v.tar.gz
-Source-MD5: 921f3f843c456ff9a3790ea87ddb3a0a
+Source-MD5: 9a3eade39e89f58b8979a3b698ada5b7
 BuildDepends: gmp,fileutils,libjpeg,freetype,freetype2,gdbm,pdflib,fftw,dlcompat-dev,mysql12-dev,nettle
 Depends: gmp-shlibs,libjpeg-shlibs,freetype-shlibs,freetype2-shlibs,gdbm-shlibs,pdflib-shlibs,libtiff-shlibs,ffmpeg,fftw-shlibs,dlcompat-shlibs,mysql12-shlibs
 SourceDirectory: pike-%v
