@@ -97,6 +97,16 @@ class Day
 mapping namedays_cache=([]);
 mapping namedays_lookup_cache=([]);
 
+/**
+
+Name database from alma-1.0, 
+http://www.lysator.liu.se/~tab/alma-1.0.tar.gz
+
+Permission to use from Kent Engström, 1998-01-28
+
+ **/
+
+
 array(array(string)) namedays_1993= 
 ({ ({}), ({"Svea","Sverker"}), ({"Alfred","Alfrida"}),
    ({"Rut","Ritva"}), ({"Hanna","Hannele"}), ({"Baltsar","Kasper"}),
