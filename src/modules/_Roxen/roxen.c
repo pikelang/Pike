@@ -33,33 +33,59 @@
 /* must be last include! */
 #include "module_magic.h"
 
-/**** CLASS HeaderParser */
+/*! @module _Roxen
+ */
+
+/*! @class HeaderParser
+ */
 
 #define THP ((struct header_buf *)Pike_fp->current_storage)
 struct  header_buf
 {
-  char headers[8192];
+  char *headers;
   char *pnt;
-  ptrdiff_t left;
+  ptrdiff_t hsize, left;
   int slash_n, spc;
 };
 
+static void f_hp_exit( struct object *o )
+{
+  if( THP->headers )
+    free( THP->headers );
+}
+
 static void f_hp_feed( INT32 args )
+/*! @decl array(string|mapping) feed(string data)
+ */
 {
   struct pike_string *str = Pike_sp[-1].u.string;
   struct header_buf *hp = THP;
-  int tot_slash_n=hp->slash_n, slash_n = 0, spc = hp->spc, cnt, num;
+  int tot_slash_n=hp->slash_n, slash_n = 0, spc = hp->spc;
   char *pp,*ep;
   struct svalue *tmp;
   struct mapping *headers;
   ptrdiff_t os=0, i, j, l;
   unsigned char *in;
-  
+
   if( Pike_sp[-1].type != PIKE_T_STRING )
     Pike_error("Wrong type of argument to feed()\n");
-
-  if( str->len >= hp->left )
-    Pike_error("Too many headers\n");
+  if( str->size_shift )
+    Pike_error("Wide string headers not supported\n");
+  while( str->len >= hp->left )
+  {
+    if( THP->hsize > 512 * 1024 )
+      Pike_error("Too many headers\n");
+    THP->hsize += 8192;
+    THP->headers = realloc( THP->headers, THP->hsize );
+    if( !THP->headers )
+    {
+      THP->hsize = 0;
+      THP->left = 0;
+      Pike_error("Running out of memory in header parser\n");
+    }
+    THP->left  += 8192;
+    THP->pnt = (THP->headers + THP->hsize - THP->left);
+  }
 
   MEMCPY( hp->pnt, str->str, str->len );
   pop_n_elems( args );
@@ -156,16 +182,22 @@ static void f_hp_feed( INT32 args )
 }
 
 static void f_hp_create( INT32 args )
+/*! @decl void create(void)
+ */
 {
+  THP->headers = malloc( 8192 );
   THP->pnt = THP->headers;
+  THP->hsize = 8192;
   THP->left = 8192;
   THP->spc = THP->slash_n = 0;
   pop_n_elems(args);
   push_int(0);
 }
-/**** END CLASS HeaderParser */
 
 static void f_make_http_headers( INT32 args )
+/*! @decl string @
+ *!          make_http_headers(mapping(string:string|array(string)) headers)
+ */
 {
   int total_len = 0, e;
   char *pnt;
@@ -236,6 +268,10 @@ static void f_make_http_headers( INT32 args )
 }
 
 static void f_http_decode_string(INT32 args)
+/*! @decl string http_decode_string(string encoded)
+ *!
+ *! Decodes an http transport-encoded string.
+ */
 {
    int proc;
    char *foo,*bar,*end;
@@ -269,7 +305,6 @@ static void f_http_decode_string(INT32 args)
    pop_n_elems(args);
    push_string(end_shared_string(newstr));
 }
-
 
 static void f_html_encode_string( INT32 args )
 {
@@ -393,6 +428,9 @@ static void f_html_encode_string( INT32 args )
   }
 }
 
+/*! @endmodule
+ */
+
 void pike_module_init()
 {
   pike_add_function("make_http_headers", f_make_http_headers,
@@ -406,6 +444,7 @@ void pike_module_init()
 
   start_new_program();
   ADD_STORAGE( struct header_buf  );
+  set_exit_callback( f_hp_exit );
   pike_add_function( "feed", f_hp_feed, "function(string:array(string|mapping))",0 );
   pike_add_function( "create", f_hp_create, "function(:void)", ID_STATIC );
   end_class( "HeaderParser", 0 );
