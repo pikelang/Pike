@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.143 2004/05/13 23:32:35 nilsson Exp $
+|| $Id: efuns.c,v 1.144 2004/05/19 11:15:48 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.143 2004/05/13 23:32:35 nilsson Exp $");
+RCSID("$Id: efuns.c,v 1.144 2004/05/19 11:15:48 nilsson Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -967,6 +967,7 @@ void f_get_dir(INT32 args)
       }
       THREADS_DISALLOW();
       if ((!d) && err) {
+	free(tmp);
 	Pike_error("get_dir(): readdir_r(\"%s\") failed: %d\n", str->str, err);
       }
       for(e=0;e<num_files;e++)
@@ -1060,7 +1061,7 @@ void f_getcwd(INT32 args)
   size=1000;
   do {
     tmp=(char *)xalloc(size);
-    e = getcwd(tmp,1000); 
+    e = getcwd(tmp,size);
     if (e || errno!=ERANGE) break;
     free(tmp);
     tmp=0;
@@ -1175,26 +1176,24 @@ void f_exece(INT32 args)
   if(en)
   {
     INT32 e;
-    struct array *i,*v;
+    struct keypair *k;
 
-    env=(char **)xalloc((1+m_sizeof(en)) * sizeof(char *));
+    env=(char **)malloc((1+m_sizeof(en)) * sizeof(char *));
+    if(!env) {
+      free(argv);
+      SIMPLE_OUT_OF_MEMORY_ERROR("exece", (1+m_sizeof(en)*sizeof(char *)));
+    }
 
-    i=mapping_indices(en);
-    v=mapping_values(en);
-    
-    for(e=0;e<i->size;e++)
-    {
-      push_string(ITEM(i)[e].u.string);
+    NEW_MAPPING_LOOP(en->data) {
+      push_string(k->ind.u.string);
       push_constant_text("=");
-      push_string(ITEM(v)[e].u.string);
+      push_string(k->val.u.string);
       f_add(3);
       env[e]=sp[-1].u.string->str;
       sp--;
       dmalloc_touch_svalue(sp);
     }
-      
-    free_array(i);
-    free_array(v);
+
     env[e]=0;
   }else{
     env=environ;
