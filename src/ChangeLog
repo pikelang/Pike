@@ -1,3 +1,7 @@
+Tue Mar  4 23:07:31 1997  Henrik Grubbström  <grubba@infovav.se>
+
+	* dynamic_load.c (f_load_module): Now works on FreeBSD.
+
 Fri Feb 28 19:25:36 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* interpret.c (strict_apply_svalue): `() should now work properly
