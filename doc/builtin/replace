@@ -17,7 +17,7 @@ DESCRIPTION
 	string replace(string s, string from, string to);
 
 	   When given strings as second and third argument, a copy of
-	   s with every occurance of 'from' return 'to'.
+	   s with every occurance of 'from' return 'to' is returned.
 
 	string replace(string s, string *from, string *to);
 
