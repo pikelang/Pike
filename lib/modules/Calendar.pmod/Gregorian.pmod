@@ -1,17 +1,11 @@
-//!
-//! module Calendar
-//! submodule Gregorian
-//!
-//! 	This is the standard conservative christian calendar,
-//!	used regularly in some countries - USA, for instance - and 
-//!	which derivate - <ref>the ISO calendar</ref> - is used
-//!	in most of europe.
-//!
-
 #pike __REAL_VERSION__
 
-import ".";
-inherit YMD:YMD;
+//! This is the standard conservative christian calendar,
+//! used regularly in some countries - USA, for instance - and 
+//! which derivate - the @[ISO] calendar - is used in most of
+//! Europe.
+
+inherit .YMD:YMD;
 
 #include "constants.h"
 
@@ -88,7 +82,7 @@ static array(int) year_month_from_month(int y,int m)
       case 12: return ({y,m,31,335+year_leap_year(y)});
    }
 
-   error("month out of range\n");
+   error("Month out of range.\n");
 }
 
 static array(int) month_from_yday(int y,int yd)
@@ -112,7 +106,7 @@ static array(int) month_from_yday(int y,int yd)
       case 305..334: return ({11,yd-304,30,305+year_leap_year(y)});
       case 335..365: return ({12,yd-334,31,335+year_leap_year(y)});
    }
-   error("yday out of range\n");
+   error("yday out of range.\n");
 }
 
 static array(int) week_from_julian_day(int jd)

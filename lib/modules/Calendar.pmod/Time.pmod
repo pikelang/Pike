@@ -16,8 +16,7 @@
 //- these classes majorly works on seconds
 //- an hour is 3600 seconds, a minute is 60 seconds
 
-import ".";
-inherit TimeRanges:TimeRanges;
+inherit .TimeRanges:TimeRanges;
 
 #include "constants.h"
 
@@ -34,7 +33,7 @@ static private int __sanity_check=lambda()
    return 1;
 }();
 
-Rule.Timezone Timezone_UTC=Rule.Timezone(0,"UTC"); // needed for dumping
+.Rule.Timezone Timezone_UTC=.Rule.Timezone(0,"UTC"); // needed for dumping
 
 string calendar_name() { return "Time"; }
 
@@ -83,14 +82,14 @@ class TimeofDay
       switch (args[0])
       {
 	 case "timeofday":
-	    rules=[object(Ruleset)]args[1];
+	    rules=[object(.Ruleset)]args[1];
 	    ux=[int]args[2];
 	    len=[int]args[3];
 	    ls=CALUNKNOWN;
 	    return;
 
 	 case "timeofday_sd":
-	    rules=[object(Ruleset)]args[1];
+	    rules=[object(.Ruleset)]args[1];
 	    ux=[int]args[2];
 	    len=[int]args[3];
 	    ls=[int]args[4];
@@ -910,7 +909,7 @@ class TimeofDay
 
 // --------
 
-   TimeofDay set_ruleset(Ruleset r)
+   TimeofDay set_ruleset(.Ruleset r)
    {
       return 
 	 Second("timeofday",r,ux,len)
@@ -1563,7 +1562,7 @@ class cFraction
       }
       else if (args[0]=="timeofday_f")
       {
-	 rules=[object(Ruleset)]args[1];
+	 rules=[object(.Ruleset)]args[1];
 	 ux=[int]args[2];
 	 ns=[int]args[3];
 	 len_s=[int]args[4];
@@ -1972,22 +1971,22 @@ TimeofDay now()
 //!	Result: Fraction(Fri 2 Jun 2000 16:03:02.323912 UTC)
 //!	</pre>
 
-this_program set_timezone(string|Rule.Timezone tz)
+this_program set_timezone(string|.Rule.Timezone tz)
 {
    return set_ruleset(default_rules->set_timezone(tz));
 }
 
-Rule.Timezone timezone()
+.Rule.Timezone timezone()
 {
    return default_rules->timezone;
 }
 
-this_program set_language(string|Rule.Language lang)
+this_program set_language(string|.Rule.Language lang)
 {
    return set_ruleset(default_rules->set_language(lang));
 }
 
-Rule.Language language()
+.Rule.Language language()
 {
    return default_rules->language;
 }
@@ -1998,15 +1997,14 @@ Rule.Language language()
 //!	<ref>set_ruleset</ref> returns a new calendar object,
 //!	but with the new ruleset.
 
-this_program set_ruleset(Ruleset r)
+this_program set_ruleset(.Ruleset r)
 {
-// "this_program" here ceased to work
-   object c=object_program(this_object())();
+   this_program c=this_program();
    c->default_rules=r;
    return c;
 }
 
-Ruleset ruleset()
+.Ruleset ruleset()
 {
    return default_rules;
 }

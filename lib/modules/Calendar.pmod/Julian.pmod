@@ -1,24 +1,18 @@
-//!
-//! module Calendar
-//! submodule Julian
-//! inherits YMD
-//!
-//! 	This is the Julian calendar, conjured up by
-//!	the old Romans when their calendar were just too
-//!	weird. It was used by the christians as so far
-//!	as the 18th century in some parts of the world.
-//!	(Especially the protestantic and orthodox parts.)
-//!
-//! note:
-//!	Don't confuse the <i>julian day</i> with the Julian
-//!	calendar. The former is just a linear numbering of days,
-//!	used in the Calendar module as a common unit for
-//!	absolute time.
-
 #pike __REAL_VERSION__
 
-import ".";
-inherit Gregorian:Gregorian;
+//! This is the Julian calendar, conjured up by
+//! the old Romans when their calendar were just too
+//! weird. It was used by the christians as so far
+//! as the 18th century in some parts of the world.
+//! (Especially the protestantic and orthodox parts.)
+//!
+//! @note
+//! Don't confuse the @i{julian day@} with the Julian
+//! calendar. The former is just a linear numbering of days,
+//! used in the Calendar module as a common unit for
+//! absolute time.
+
+inherit .Gregorian:Gregorian;
 
 string calendar_name() { return "Julian"; }
 

@@ -1,19 +1,10 @@
-//!
-//! module Calendar
-//! submodule ISO
-//!
-//! 	This is the standard western calendar,
-//!	which is a derivate of the Gregorian calendar,
-//!	but with weeks that starts on monday 
-//!	instead of sunday.
-//!
-//! inherits Gregorian
-//!
-
 #pike __REAL_VERSION__
 
-import ".";
-inherit Gregorian:Gregorian;
+//! This is the standard western calendar, which is a derivate
+//! of the Gregorian calendar, but with weeks that starts on
+//! Monday instead of Sunday.
+
+inherit .Gregorian:Gregorian;
 
 #include "constants.h"
 

@@ -1,32 +1,26 @@
-//!
-//! module Calendar
-//! submodule Islamic
-//!
-//! 	This is the islamic calendar. Due to some sources,
-//!	they decide the first day of the new months on a 
-//!	month-to-month basis (sightings of the new moon),
-//!	so it's probably not <i>that</i> accurate. If
-//!	someone can confirm (or deny) accuracy better than that, 
-//!	please contact me so I can change this statement.
-//!
-//! 	It's vaugely based on rules presented in algorithms by
-//!	Dershowitz, Reingold and Clamen, 'Calendrical Calculations'.
-//!	It is the same that's used in Emacs calendar mode.
-//!
-//! known bugs:
-//!	I have currently no idea how the arabic countries
-//!	count the week. Follow the same rules as ISO
-//!	for now... The time is also suspicious; the *day*
-//!	really starts at sunrise (sunset?) and not midnight,
-//!	the hours of the day is not correct. Also don't know
-//!	what to call years before 1 - go for "BH"; positive
-//!	years are "AH", anno Hegirac.
-//!	
-
 #pike __REAL_VERSION__
 
-import ".";
-inherit YMD:YMD;
+//! This is the islamic calendar. Due to some sources,
+//! they decide the first day of the new months on a 
+//! month-to-month basis (sightings of the new moon),
+//! so it's probably not @i{that@} accurate. If
+//! someone can confirm (or deny) accuracy better than that, 
+//! please contact me so I can change this statement.
+//!
+//! It's vaugely based on rules presented in algorithms by
+//! Dershowitz, Reingold and Clamen, 'Calendrical Calculations'.
+//! It is the same that's used in Emacs calendar mode.
+//!
+//! @bugs
+//! I have currently no idea how the arabic countries
+//! count the week. Follow the same rules as @[ISO]
+//! for now... The time is also suspicious; the @b{day@}
+//! really starts at sunrise (sunset?) and not midnight,
+//! the hours of the day is not correct. Also don't know
+//! what to call years before 1 - go for "BH"; positive
+//! years are "AH", anno Hegirac.
+
+inherit .YMD:YMD;
 
 #include "constants.h"
 
@@ -92,7 +86,7 @@ static array(int) year_month_from_month(int y,int m)
       case 12: return ({y,m,29+year_leap_year(y),326});
    }			       
 
-   error("month out of range\n");
+   error("Month out of range.\n");
 }
 
 static array(int) month_from_yday(int y,int yd)
@@ -116,7 +110,7 @@ static array(int) month_from_yday(int y,int yd)
       case 326..:    return ({12,yd-326,29+year_leap_year(y),326});
    }			       
 
-   error("yday out of range\n");
+   error("yday out of range.\n");
 }
 
 static array(int) week_from_julian_day(int jd)
