@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# $Id: xenofarm.sh,v 1.21 2003/09/12 17:50:57 nilsson Exp $
+# $Id: xenofarm.sh,v 1.22 2003/09/14 14:55:49 nilsson Exp $
 # This file scripts the xenofarm actions and creates a result package
 # to send back.
 
@@ -31,6 +31,12 @@ xenofarm_build() {
 }
 
 xenofarm_post_build() {
+  POST_RESULT=0
+  log_start benchmark
+  $MAKE $MAKE_FLAGS benchmark > xenofarm_result/benchmark.txt 2>&1
+  log_end $?
+  POST_RESULT=$LASTERR
+
   log_start verify
   $MAKE $MAKE_FLAGS METATARGET=verify TESTARGS="-a -T" > \
     xenofarm_result/verifylog.txt 2>&1
@@ -41,11 +47,7 @@ xenofarm_post_build() {
   $MAKE $MAKE_FLAGS bin_export > xenofarm_result/exportlog.txt 2>&1
   log_end $?
   [ $LASTERR = 0 ] || return 1
-
-  log_start benchmark
-  $MAKE $MAKE_FLAGS benchmark > xenofarm_result/benchmark.txt 2>&1
-  log_end $?
-  [ $LASTERR = 0 ] || return 1
+  return POST_RESULT
 }
 
 
