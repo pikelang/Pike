@@ -82,8 +82,8 @@ require gnome;
 CORBA_Environment gnorba_environment;
 %}
 
-void gnome_init(string app_id, string app_version,
-                array(string) argv, int|void corba_init_flags)
+array(string) gnome_init(string app_id, string app_version,
+			 array(string) argv, int|void corba_init_flags)
 //! Initializes the application. This sets up all of the GNOME
 //! internals and prepares them (imlib, gdk/gtk, session-management,
 //! triggers, sound, user preferences). If corba init flags are specified,
@@ -141,13 +141,14 @@ void applet_widget_gtk_main()
 }
 endrequire;
 
-void set_new_signal_convention( int n )
+int set_new_signal_convention( int n )
 {
   extern int pgtk_new_signal_call_convention;
   if( !args || !PGTK_ISINT( Pike_sp-args ) )
     Pike_error("Illegal argument to set_new_signal_convention\n" );
   pgtk_new_signal_call_convention = (int)PGTK_GETINT( Pike_sp-args );
   pop_n_elems( args );
+  push_int( pgtk_new_signal_call_convention );
 }
 
 %{
@@ -188,7 +189,7 @@ static void push_and_free_argv( gchar ** data, int argc, int np )
   g_free(data);
 }
 %}
-void setup_gtk(array(string)|void argv, int|void do_not_parse_rc)
+array(string) setup_gtk(array(string)|void argv, int|void do_not_parse_rc)
 //! Initialize GTK, and all that comes with it.
 //! Also parses $HOME/.pgtkrc and $HOME/.gtkrc if they exists.
 //! The single argument, if supplied, is the argument array passed to
@@ -242,7 +243,7 @@ void low_flush()
   push_int( 0 );
 }
 
-void gtk_init(array(string)|void argc, int|void no_pgtkrc)
+array(string) gtk_init(array(string)|void argc, int|void no_pgtkrc)
 //! Low level GTK init function (used by setup_gtk).
 //! This function is more or less equivalent to the C-GTK+ function gtk_init.
 //! setup_gtk does some extra things (such as parsing ~/.pgtkrc).
