@@ -16,11 +16,11 @@
 #include <ieeefp.h>
 #endif
 
-#ifdef HAVE_FLOATINPOINT_H
+#ifdef HAVE_FLOATINGPOINT_H
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.13 1998/07/22 21:06:42 hubbe Exp $");
+RCSID("$Id: math.c,v 1.14 1998/07/23 01:22:33 hubbe Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
