@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.63 1998/03/06 11:53:39 per Exp $");
+RCSID("$Id: spider.c,v 1.64 1998/03/08 13:54:16 per Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -941,7 +941,9 @@ void do_html_parse_lines(struct pike_string *ss,
 	continue;
       }
 
+      /* free_svalue(&sval1); Not needed. The type is always T_INT */
       /* Is it a container then? */
+
       mapping_index_no_free(&sval1,cont,&sval2);
       if(sval1.type == T_INT)
 	mapping_index_no_free(&sval1,cont,&empty_string);
@@ -1281,16 +1283,23 @@ void do_shuffle(void *_a)
 
   while(a->len)
   {
-    int nread;
+    int nread, written=0;
     nread = fd_read(a->from_fd, a->buffer, BUFFER);
     if(nread <= 0)
-      break;
+      if(errno == EINTR)
+	continue;
+      else
+	break;
 
     while(nread)
     {
-      int nsent = fd_write(a->to_fd, a->buffer, nread);
+      int nsent = fd_write(a->to_fd, a->buffer+written, nread);
       if(nsent < 0)
-	goto end;
+	if(errno != EINTR)
+	  goto end;
+	else 
+	  continue;
+      written += nsent;
       a->sent += nsent;
       nread -= nsent;
       a->len -= nsent;
