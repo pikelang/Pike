@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.693 2003/11/15 17:36:04 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.694 2003/11/25 22:15:35 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -4108,6 +4108,16 @@ cond([[all_constants()->thread_create]],
 
 dnl this will crash pike on out-of-address-space-related errors
 dnl  test_any([[ catch { allocate(10000,thread_create)(lambda() { sleep(1); })->wait(); } ]])
+
+  test_any([[
+    // Test that a loop relinquishes the interpreter lock every now and then.
+    int count, stop;
+    Thread.thread_create (lambda() {while (!stop) count++;});
+    sleep (0.1);
+    stop = 1;
+    sleep (0.1);
+    return count > 0; 
+  ]], 1)
 ]])
 
 cond([[all_constants()->thread_create]],
