@@ -79,10 +79,11 @@ static void f_hp_feed( INT32 args )
     return;
   }
 
-  push_text( pp ); // leftovers
+  push_string( make_shared_binary_string( pp, TPH->pnt - pp ) ); // leftovers
   headers = allocate_mapping( 5 );
   in = THP->headers;
   l = pp - THP->headers;
+
   /* find first line here */
   for( i = 0; i < l; i++ )
     if( in[i] == '\n' )
@@ -97,10 +98,10 @@ static void f_hp_feed( INT32 args )
 
   for(i = 0; i < l; i++)
   {
-    if( in[i] == ':' )
+    if(in[j] > 64 && in[j] < 91) in[j]+=32;
+    else if( in[i] == ':' )
     {
       /* in[os..i-1] == the header */
-      for(j=os;j<i;j++) if(in[j] > 63 && in[j] < 91) in[j]+=32;
       push_string(make_shared_binary_string((char*)in+os,i-os));
       os = i+1;
       while(in[os]==' ') os++;
@@ -131,7 +132,8 @@ static void f_hp_feed( INT32 args )
       mapping_insert(headers, Pike_sp-2, Pike_sp-1);
       pop_n_elems(2);
       if( in[j+1] == '\n' ) j++;
-      os = i = j+1;
+      os = j+1;
+      i = j;
     }
   }
   push_mapping( headers );
