@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.53 1998/05/12 23:51:26 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.54 1998/05/15 18:30:21 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -550,7 +550,11 @@ static int yylex2(YYSTYPE *yylval)
 	}
 	
       badhash:
-	my_yyerror("Unknown directive #%s.",buf);
+	if (sizeof(buf) < 1024) {
+	  my_yyerror("Unknown preprocessor directive #%s.",buf);
+	} else {
+	  my_yyerror("Unknown preprocessor directive.");
+	}
 	SKIPUPTO('\n');
 	continue;
       }
