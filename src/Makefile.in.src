@@ -175,7 +175,7 @@ run_hilfe:
  
 
 depend: language.c
-	gcc -MM $(PREFLAGS) *.c $(SRCDIR)/*.c | sed 's;$(SRCDIR)/;;g' | sed 's;\./;;g' >$(SRCDIR)/dependencies
+	gcc -MM $(PREFLAGS) *.c $(SRCDIR)/*.c | sed 's;"$(SRCDIR)/";;g' | sed 's;\./;;g' >$(SRCDIR)/dependencies
 	cat $(SRCDIR)/Makefile.in.src $(SRCDIR)/dependencies > $(SRCDIR)/Makefile.in
 	config.status
 	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) depend ) ; done
