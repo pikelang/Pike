@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.97 1998/04/15 19:10:27 hedda Exp $");
+RCSID("$Id: builtin_functions.c,v 1.98 1998/04/16 01:14:16 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2748,6 +2748,7 @@ void init_builtin_efuns(void)
   add_efun("upper_case",f_upper_case,"function(string:string)",0);
   add_efun("values",f_values,"function(string|multiset:int*)|function(array(0=mixed)|mapping(mixed:0=mixed)|object:array(0))",0);
   add_efun("zero_type",f_zero_type,"function(mixed:int)",0);
+  add_efun("array_sscanf",f_sscanf,"function(string,string:array)",0);
 
 #ifdef HAVE_LOCALTIME
   add_efun("localtime",f_localtime,"function(int:mapping(string:int))",OPT_EXTERNAL_DEPEND);

@@ -20,8 +20,9 @@
 #include "fd_control.h"
 #include "cyclic.h"
 #include "builtin_functions.h"
+#include "module_support.h"
 
-RCSID("$Id: opcodes.c,v 1.18 1998/04/14 20:10:49 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.19 1998/04/16 01:14:16 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -359,7 +360,7 @@ void f_cast(void)
   %%
 */
 
-static int read_set(char *match,int cnt,char *set,int match_len)
+static int read_set(unsigned char *match,int cnt,char *set,int match_len)
 {
   int init;
   int last=0;
@@ -379,9 +380,9 @@ static int read_set(char *match,int cnt,char *set,int match_len)
     for(e=0;e<256;e++) set[e]=0;
     init=1;
   }
-  if(match[cnt]==']')
+  if(match[cnt]==']' || match[cnt]=='-')
   {
-    set[last=']']=init;
+    set[last=match[cnt]]=init;
     cnt++;
     if(cnt>=match_len)
       error("Error in sscanf format string.\n");
@@ -406,29 +407,21 @@ static int read_set(char *match,int cnt,char *set,int match_len)
   return cnt;
 }
 
-static INT32 low_sscanf(INT32 num_arg)
+
+static INT32 really_low_sscanf(char *input,
+			       long input_len,
+			       char *match,
+			       long match_len,
+			       long *chars_matched,
+			       int *success)
 {
-  char *input;
-  int input_len;
-  char *match;
-  int match_len;
   struct svalue sval;
   int e,cnt,matches,eye,arg;
   int no_assign,field_length;
   char set[256];
   struct svalue *argp;
   
-  if(num_arg < 2) error("Too few arguments to sscanf.\n");
-  argp=sp-num_arg;
-
-  if(argp[0].type != T_STRING) error("Bad argument 1 to sscanf.\n");
-  if(argp[1].type != T_STRING) error("Bad argument 2 to sscanf.\n");
-
-  input=argp[0].u.string->str;
-  input_len=argp[0].u.string->len;;
-
-  match=argp[1].u.string->str;
-  match_len=argp[1].u.string->len;
+  success[0]=0;
 
   arg=eye=matches=0;
 
@@ -446,10 +439,17 @@ static INT32 low_sscanf(INT32 num_arg)
         }
       }
       if(eye>=input_len || input[eye]!=match[cnt])
+      {
+	chars_matched[0]=eye;
 	return matches;
+      }
       eye++;
     }
-    if(cnt>=match_len) return matches;
+    if(cnt>=match_len)
+    {
+      chars_matched[0]=eye;
+      return matches;
+    }
 
 #ifdef DEBUG
     if(match[cnt]!='%' || match[cnt+1]=='%')
@@ -485,9 +485,64 @@ static INT32 low_sscanf(INT32 num_arg)
 	continue;
       }
 
+	case '{':
+	{
+	  ONERROR err;
+	  long tmp;
+	  for(e=cnt+1,tmp=1;tmp;e++)
+	  {
+	    if(!match[e])
+	    {
+	      error("Missing %%} in format string.\n");
+	      break;		/* UNREACHED */
+	    }
+	    if(match[e]=='%')
+	    {
+	      switch(match[e+1])
+	      {
+		case '%': e++; break;
+		case '}': tmp--; break;
+		case '{': tmp++; break;
+	      }
+	    }
+	  }
+	  sval.type=T_ARRAY;
+	  sval.u.array=allocate_array(0);
+	  SET_ONERROR(err, do_free_array, sval.u.array);
+
+	  while(1)
+	  {
+	    int yes;
+	    struct svalue *save_sp=sp;
+	    really_low_sscanf(input+eye,
+			      input_len-eye,
+			      match+cnt+1,
+			      e-cnt-2,
+			      &tmp,
+			      &yes);
+	    if(yes)
+	    {
+	      f_aggregate(sp-save_sp);
+	      sval.u.array=append_array(sval.u.array,sp-1);
+	      pop_stack();
+	      eye+=tmp;
+	    }else{
+	      pop_n_elems(sp-save_sp);
+	      break;
+	    }
+	  }
+	  cnt=e;
+	  UNSET_ONERROR(err);
+	  break;
+	}
+
       case 'c':
 	if(field_length == -1) field_length = 1;
-	if(eye+field_length > input_len) return matches;
+	if(eye+field_length > input_len)
+	{
+	  chars_matched[0]=eye;
+	  return matches;
+	}
 	sval.type=T_INT;
 	sval.subtype=NUMBER_NUMBER;
 	sval.u.integer=0;
@@ -503,16 +558,25 @@ static INT32 low_sscanf(INT32 num_arg)
       {
 	char * t;
 
-	if(eye>=input_len) return matches;
+	if(eye>=input_len)
+	{
+	  chars_matched[0]=eye;
+	  return matches;
+	}
 	if(field_length != -1 && eye+field_length < input_len)
 	{
-	  char save=input[eye+field_length+1];
+	  char save=input[eye+field_length];
+	  input[eye+field_length]=0; /* DANGEROUS */
 	  sval.u.integer=STRTOL(input+eye,&t,10);
-	  input[eye+field_length+1]=save;
+	  input[eye+field_length]=save;
 	}else
 	  sval.u.integer=STRTOL(input+eye,&t,10);
 
-	if(input + eye == t) return matches;
+	if(input + eye == t)
+	{
+	  chars_matched[0]=eye;
+	  return matches;
+	}
 	eye=t-input;
 	sval.type=T_INT;
 	sval.subtype=NUMBER_NUMBER;
@@ -523,15 +587,24 @@ static INT32 low_sscanf(INT32 num_arg)
       {
 	char * t;
 
-	if(eye>=input_len) return matches;
+	if(eye>=input_len)
+	{
+	  chars_matched[0]=eye;
+	  return matches;
+	}
 	if(field_length != -1 && eye+field_length < input_len)
 	{
-	  char save=input[eye+field_length+1];
+	  char save=input[eye+field_length];
+	  input[eye+field_length]=0; /* DANGEROUS */
 	  sval.u.integer=STRTOL(input+eye,&t,16);
-	  input[eye+field_length+1]=save;
+	  input[eye+field_length]=save;
 	}else
 	  sval.u.integer=STRTOL(input+eye,&t,16);
-	if(input + eye == t) return matches;
+	if(input + eye == t)
+	{
+	  chars_matched[0]=eye;
+	  return matches;
+	}
 	eye=t-input;
 	sval.type=T_INT;
 	sval.subtype=NUMBER_NUMBER;
@@ -542,15 +615,24 @@ static INT32 low_sscanf(INT32 num_arg)
       {
 	char * t;
 
-	if(eye>=input_len) return matches;
+	if(eye>=input_len)
+	{
+	  chars_matched[0]=eye;
+	  return matches;
+	}
 	if(field_length != -1 && eye+field_length < input_len)
 	{
-	  char save=input[eye+field_length+1];
+	  char save=input[eye+field_length];
+	  input[eye+field_length]=0; /* DANGEROUS */
 	  sval.u.integer=STRTOL(input+eye,&t,8);
-	  input[eye+field_length+1]=save;
+	  input[eye+field_length]=save;
 	}else
 	  sval.u.integer=STRTOL(input+eye,&t,8);
-	if(input + eye == t) return matches;
+	if(input + eye == t)
+	{
+	  chars_matched[0]=eye;
+	  return matches;
+	}
 	eye=t-input;
 	sval.type=T_INT;
 	sval.subtype=NUMBER_NUMBER;
@@ -562,15 +644,24 @@ static INT32 low_sscanf(INT32 num_arg)
       {
 	char * t;
 
-	if(eye>=input_len) return matches;
+	if(eye>=input_len)
+	{
+	  chars_matched[0]=eye;
+	  return matches;
+	}
 	if(field_length != -1 && eye+field_length < input_len)
 	{
-	  char save=input[eye+field_length+1];
+	  char save=input[eye+field_length];
+	  input[eye+field_length]=0; /* DANGEROUS */
 	  sval.u.integer=STRTOL(input+eye,&t,0);
-	  input[eye+field_length+1]=save;
+	  input[eye+field_length]=save;
 	}else
 	  sval.u.integer=STRTOL(input+eye,&t,0);
-	if(input + eye == t) return matches;
+	if(input + eye == t)
+	{
+	  chars_matched[0]=eye;
+	  return matches;
+	}
 	eye=t-input;
 	sval.type=T_INT;
 	sval.subtype=NUMBER_NUMBER;
@@ -581,9 +672,17 @@ static INT32 low_sscanf(INT32 num_arg)
       {
 	char * t;
 
-	if(eye>=input_len) return matches;
+	if(eye>=input_len)
+	{
+	  chars_matched[0]=eye;
+	  return matches;
+	}
 	sval.u.float_number=STRTOD(input+eye,&t);
-	if(input + eye == t) return matches;
+	if(input + eye == t)
+	{
+	  chars_matched[0]=eye;
+	  return matches;
+	}
 	eye=t-input;
 	sval.type=T_FLOAT;
 #ifdef __CHECKER__
@@ -596,7 +695,10 @@ static INT32 low_sscanf(INT32 num_arg)
 	if(field_length != -1)
 	{
 	  if(input_len - eye < field_length)
+	  {
+	    chars_matched[0]=eye;
 	    return matches;
+	  }
 
 	  sval.type=T_STRING;
 #ifdef __CHECKER__
@@ -674,7 +776,7 @@ static INT32 low_sscanf(INT32 num_arg)
 	      goto match_set;
 
 	    case '[':		/* oh dear */
-	      read_set(match,s-match+1,set,match_len);
+	      read_set((unsigned char *)match,s-match+1,set,match_len);
 	      for(e=0;e<256;e++) set[e]=!set[e];
 	      goto match_set;
 	    }
@@ -704,7 +806,11 @@ static INT32 low_sscanf(INT32 num_arg)
 			end_str_end-end_str_start,
 			input+eye,
 			input_len-eye);
-	    if(!s) return matches;
+	    if(!s)
+	    {
+	      chars_matched[0]=eye;
+	      return matches;
+	    }
 	    eye=s-input;
 	    new_eye=eye+end_str_end-end_str_start;
 	  }else{
@@ -720,7 +826,10 @@ static INT32 low_sscanf(INT32 num_arg)
 		break;
 	    }
 	    if(eye==input_len)
+	    {
+	      chars_matched[0]=eye;
 	      return matches;
+	    }
 	    new_eye=p-input;
 	  }
 
@@ -736,7 +845,7 @@ static INT32 low_sscanf(INT32 num_arg)
 	}
 
       case '[':
-	cnt=read_set(match,cnt+1,set,match_len);
+	cnt=read_set((unsigned char *)match,cnt+1,set,match_len);
 
       match_set:
 	for(e=eye;eye<input_len && set[EXTRACT_UCHAR(input+eye)];eye++);
@@ -760,28 +869,52 @@ static INT32 low_sscanf(INT32 num_arg)
     }
     matches++;
 
-    if(!no_assign)
+    if(no_assign)
     {
-      arg++;
-      if((num_arg-2)/2<arg)
-      {
-	free_svalue(&sval);
-	error("Too few arguments for format to sscanf.\n");
-      }
-      assign_lvalue(argp+(2+(arg-1)*2), &sval);
+      free_svalue(&sval);
+    }else{
+      check_stack(1);
+      *sp++=sval;
+#ifdef DEBUG
+      sval.type=99;
+#endif
     }
-    free_svalue(&sval);
   }
+  chars_matched[0]=eye;
+  success[0]=1;
   return matches;
 }
 
-void f_sscanf(INT32 args)
+void o_sscanf(INT32 args)
 {
 #ifdef DEBUG
   extern int t_flag;
 #endif
-  INT32 i;
-  i=low_sscanf(args);
+  INT32 e,i;
+  int x;
+  long matched_chars;
+  struct svalue *save_sp=sp;
+
+  if(sp[-args].type != T_STRING)
+    error("Bad argument 1 to sscanf().\n");
+
+  if(sp[1-args].type != T_STRING)
+    error("Bad argument 1 to sscanf().\n");
+
+  i=really_low_sscanf(sp[-args].u.string->str,
+		      sp[-args].u.string->len,
+		      sp[1-args].u.string->str,
+		      sp[1-args].u.string->len,
+		      &matched_chars,
+		      &x);
+
+  if(sp-save_sp > args/2-1)
+    error("Too few arguments for sscanf format.\n");
+
+  for(x=0;x<sp-save_sp;x++)
+    assign_lvalue(save_sp-args+2+x*2,save_sp+x);
+  pop_n_elems(sp-save_sp +args);
+
 #ifdef DEBUG
   if(t_flag >2)
   {
@@ -793,7 +926,32 @@ void f_sscanf(INT32 args)
     if(nonblock)
       set_nonblocking(2,1);
   }
-#endif  
-  pop_n_elems(args);
+#endif
   push_int(i);
 }
+
+void f_sscanf(INT32 args)
+{
+#ifdef DEBUG
+  extern int t_flag;
+#endif
+  INT32 e,i;
+  int x;
+  long matched_chars;
+  struct svalue *save_sp=sp;
+  struct array *a;
+
+  check_all_args("array_sscanf",args,BIT_STRING, BIT_STRING,0);
+
+  i=really_low_sscanf(sp[-args].u.string->str,
+		      sp[-args].u.string->len,
+		      sp[1-args].u.string->str,
+		      sp[1-args].u.string->len,
+		      &matched_chars,
+		      &x);
+
+  a=aggregate_array(sp-save_sp);
+  pop_n_elems(args);
+  push_array(a);
+}
+
