@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.498 2001/03/13 04:09:18 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.499 2001/03/13 09:06:34 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -787,7 +787,7 @@ AC_ARG_WITH(gdbm,        [  --without-gdbm         no GNU database manager suppo
 AC_ARG_WITH(gmp,         [  --without-gmp          no support for Gmp bignums])
 AC_ARG_WITH(dmalloc,     [  --with-dmalloc         enable memory-leak tests],[with_debug="yes" AC_DEFINE(DEBUG_MALLOC,10)],[])
 AC_ARG_WITH(dmalloc,     [  --without-dmalloc-malloc Disable overloading malloc(3)],[ ],[ AC_DEFINE(ENCAPSULATE_MALLOC,1) ])
-AC_ARG_WITH(dmalloc,     [  --with-malloc-leaks    Report memory allocated by malloc(3) as leaks.],[ AC_DEFINE(REPORT_ENCAPSULATED_MALLOC,1) ],[ ])
+AC_ARG_WITH(dmalloc,     [  --with-malloc-leaks    Report memory allocated by malloc(3) as leaks.],[ AC_DEFINE(REPORT_ENCAPSULATED_MALLOC,1) ],[])
 AC_ARG_WITH(dmalloc-trace,[  --with-dmalloc-trace   enable tracepoints],[with_dmalloc_trace="yes" AC_DEFINE(DMALLOC_TRACE,10)],[])
 AC_ARG_WITH(debug,       [  --without-debug        disable run debugging],[],[with_debug=])
 AC_ARG_WITH(rtldebug,    [  --with-rtldebug        enable run time self tests],[],[with_rtldebug=])
