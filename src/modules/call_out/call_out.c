@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: call_out.c,v 1.18 1997/11/05 00:22:08 hubbe Exp $");
+RCSID("$Id: call_out.c,v 1.19 1998/02/09 08:56:08 hubbe Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -19,6 +19,7 @@ RCSID("$Id: call_out.c,v 1.18 1997/11/05 00:22:08 hubbe Exp $");
 #include "stralloc.h"
 #include "builtin_functions.h"
 #include "gc.h"
+#include "threads.h"
 
 #include "callback.h"
 
@@ -227,7 +228,15 @@ static struct array * new_call_out(int num_arg,struct svalue *argp)
     fatal("Bad timeout to new_call_out!\n");
   }
 
-  my_add_timeval(& new->tv, &current_time);
+#ifdef _REENTRANT
+  if(num_threads>1)
+  {
+    struct timeval tmp;
+    GETTIMEOFDAY(&tmp);
+    my_add_timeval(& new->tv, &tmp);
+  }else
+#endif
+    my_add_timeval(& new->tv, &current_time);
 
   if(fp && fp->current_object)
   {
