@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.75 2002/07/15 14:55:05 nilsson Exp $
+# $Id: Makefile,v 1.76 2002/07/18 20:00:08 per Exp $
 #
 # Meta Makefile
 #
@@ -253,7 +253,7 @@ xenofarm:
 	-@cp export.stamp build/xenofarm/exportstamp.txt
 	-@uname -s -r -m > build/xenofarm/machineid.txt
 	-@uname -n >> build/xenofarm/machineid.txt
-	@cd build/xenofarm && tar -c *.txt > ../../xenofarm_result.tar
+	@cd build/xenofarm && tar cf - *.txt > ../../xenofarm_result.tar
 	@gzip -f9 xenofarm_result.tar
 
 xenofarm_low:
