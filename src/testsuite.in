@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.632 2003/04/03 13:59:05 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.633 2003/04/03 14:18:24 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9215,6 +9215,12 @@ test_any([[
     return sprintf("Unexpected signal:%d (expected %d)", sig, signum("CONT"));
   }
   proc->cont(signum("KILL"));	// Make it a SIGKILL
+
+  sleep(5);	// Give it some time to die and get reaped.
+
+  if (proc->kill(signum("KILL"))) {
+    return sprintf("Process didn't die of cont(%d).", signum("KILL"));
+  }
 
   code = proc->wait();
   if (code != -1) {
