@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.c,v 1.12 1998/11/22 11:04:48 hubbe Exp $
+ * $Id: odbc.c,v 1.13 1999/01/01 00:54:29 hubbe Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.12 1998/11/22 11:04:48 hubbe Exp $");
+RCSID("$Id: odbc.c,v 1.13 1999/01/01 00:54:29 hubbe Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -321,7 +321,9 @@ void pike_module_init(void)
   RETCODE err = SQLAllocEnv(&odbc_henv);
 
   if (err != SQL_SUCCESS) {
-    error("odbc_module_init(): SQLAllocEnv() failed with code %08x\n", err);
+    odbc_henv = SQL_NULL_HENV;
+    return;
+/*    error("odbc_module_init(): SQLAllocEnv() failed with code %08x\n", err); */
   }
 
   start_new_program();
