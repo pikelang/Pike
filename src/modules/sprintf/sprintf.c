@@ -102,7 +102,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.53 1999/10/26 14:40:12 marcus Exp $");
+RCSID("$Id: sprintf.c,v 1.54 1999/10/26 15:34:33 marcus Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1075,79 +1075,73 @@ static void low_pike_sprintf(struct format_stack *fs,
 	WARNING                                                 WARNING
 	WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
        */
+      case 'b':
       case 'o':
       case 'd':
       case 'u':
       case 'x':
       case 'X':
       {
-	int mask_size = 0;
-	char *x;
+	int base = 0, mask_size = 0;
+	char mode, *x;
+	INT_TYPE val;
 	
 	DO_OP();
 	CHECK_OBJECT_SPRINTF()
-	GET_INT(tmp);
+	GET_INT(val);
 
 	if(fs->fsp->precision != SPRINTF_UNDECIDED && fs->fsp->precision > 0)
 	  mask_size = fs->fsp->precision;
 	
-	buffer[0]='%';
-	buffer[1]=EXTRACT_PCHARP(a);
-	buffer[2]=0;
-	x=(char *)alloca(100 + mask_size);
-	x[0] = '-';
+	mode=EXTRACT_PCHARP(a);
+	x=(char *)alloca(sizeof(val)*CHAR_BIT + 4 + mask_size);
 	fs->fsp->b=MKPCHARP(x,0);
 	
-	/* Within AUTO_BIGNUM until we think this really
-	   works the way we want it do do.   /Noring */
-#ifdef AUTO_BIGNUM
-	if(mask_size)
+	switch(mode)
 	{
-	  INT_TYPE base = 0, i = 0, m, xbits;
-
-	  switch(buffer[1])
-	  {
+	  case 'b': base = 1; break;
 	  case 'o': base = 3; break;
 	  case 'x': base = 4; break;
 	  case 'X': base = 4; break;
-	  }
+	}
 
-	  if(base)
+	if(base)
+	{
+	  char *p = x;
+	  int l;
+
+	  if(mask_size || val>=0)
 	  {
-	    mask_size *= base;
-	    for(m = 0; mask_size>0 && m >= 0; --mask_size)
-	      m = (m<<1)|1;
-
-	    xbits = mask_size % base;
-	    mask_size /= base;
-
-	    if((tmp &= m) < 0)
-	      if(base == 3)
-		for(i = 0; i < mask_size ; i++)
-		  x[i] = '7';
-	      else
-		for(i = 0; i < mask_size ; i++)
-		  x[i] = 'f';
-	    
-	    sprintf(x + i, buffer, tmp & m);
-
-	    /* This is done because octal numbers
-	       don't align very well...   /Noring */
-	    if(xbits && tmp<0)
-	      if(base == 3)
-		x[i]|=7^(7>>xbits);
-	      else
-		if((x[i]|=15^(15>>xbits))>'9')
-		  x[i]+=(buffer[1]=='X'? 'A'-'9'-1 : 'a'-'9'-1);
+	    do {
+	      if((*p++ = '0'|(val&((1<<base)-1)))>'9')
+		p[-1] += (mode=='X'? 'A'-'9'-1 : 'a'-'9'-1);
+	      val >>= base;
+	    } while(--mask_size && val);
+	    l = p-x;
 	  }
 	  else
-	    sprintf(x, buffer, tmp);
+	  {
+	    *p++ = '-';
+	    val = -val;
+	    do {
+	      if((*p++ = '0'|(val&((1<<base)-1)))>'9')
+		p[-1] += (mode=='X'? 'A'-'9'-1 : 'a'-'9'-1);
+	      val = ((unsigned INT_TYPE)val) >> base;
+	    } while(--mask_size && val);
+	    l = p-x-1;
+	  }
+	  *p = '\0';
+	  while(l>1) {
+	    char t = p[-l];
+	    p[-l] = p[-1];
+	    p[-1] = t;
+	    --p;
+	    l -= 2;
+	  }
 	}
 	else
-	  sprintf(x + (tmp<0 ? 1 : 0), buffer, (tmp<0 ? -tmp : tmp));
-#else
-	sprintf(x,buffer,tmp);
-#endif /* AUTO_BIGNUM */
+	  sprintf(x, "%d", val);
+
 	fs->fsp->len=strlen(x);
 	break;
       }
