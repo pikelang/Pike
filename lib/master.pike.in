@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.365 2004/11/05 02:47:29 mast Exp $
+// $Id: master.pike.in,v 1.366 2004/11/05 21:01:51 nilsson Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -2392,7 +2392,7 @@ void _main(array(string) orig_argv, array(string) env)
       ({"ignore",         MAY_HAVE_ARG, ({"-Dqdatplr"}), 0, 1}),
       ({"ignore",         HAS_ARG, ({"-s"}), 0, 0}),
       ({"run_tool",       NO_ARG,  ({"-x"}), 0, 0}),
-      ({"show_cpp_warn",  NO_ARG,  ({"--show-all-cpp-warnings"}), 0, 0}),
+      ({"show_cpp_warn",  NO_ARG,  ({"--show-all-cpp-warnings","--picky-cpp"}), 0, 0}),
     }), 1);
 
     /* Parse -M and -I backwards */
