@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.80 2000/06/22 13:13:12 noring Exp $
+// $Id: module.pmod,v 1.81 2000/08/02 20:18:29 mast Exp $
 
 import String;
 
@@ -647,7 +647,7 @@ string read_file(string filename,void|int start,void|int len)
     ret=buf->get_buffer();
     destruct(buf);
   }
-  destruct(f);
+  f->close();
 
   return ret;
 }
@@ -789,12 +789,15 @@ constant cp=system.cp;
 int cp(string from, string to)
 {
   string data;
-  object(File) tmp=File();
-  if(!tmp->open(from,"r")) return 0;
-  function(int,int|void:string) r=tmp->read;
-  tmp=File();
-  if(!tmp->open(to,"wct")) return 0;
-  function(string:int) w=tmp->write;
+  object(File) f=File(), t;
+  if(!f->open(from,"r")) return 0;
+  function(int,int|void:string) r=f->read;
+  t=File();
+  if(!t->open(to,"wct")) {
+    f->close();
+    return 0;
+  }
+  function(string:int) w=t->write;
   do
   {
     data=r(BLOCK);
@@ -802,6 +805,8 @@ int cp(string from, string to)
     if(w(data)!=strlen(data)) return 0;
   }while(strlen(data) == BLOCK);
 
+  f->close();
+  t->close();
   return 1;
 }
 #endif
