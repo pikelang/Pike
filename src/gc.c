@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.80 2000/04/23 03:17:11 mast Exp $");
+RCSID("$Id: gc.c,v 1.81 2000/04/26 12:13:56 mast Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -982,6 +982,8 @@ void do_gc(void)
   objects_freed*=multiplier;
   objects_freed += (double) num_objects;
 
+  /* Thread switches and object alloc/free are disallowed now. */
+
 #ifdef PIKE_DEBUG
   if (gc_debug) {
     INT32 n;
@@ -1034,6 +1036,8 @@ void do_gc(void)
   if(d_flag)
     gc_mark_all_strings();
 
+  /* Thread switches and object alloc/free are allowed now. */
+
 #ifdef PIKE_DEBUG
   check_for=(void *)1;
 #endif
@@ -1043,7 +1047,7 @@ void do_gc(void)
   gc_free_all_unreferenced_multisets();
   gc_free_all_unreferenced_mappings();
   gc_free_all_unreferenced_programs();
-  Pike_in_gc=GC_PASS_DESTROY;	/* Pike code allowed in this pass. */
+  Pike_in_gc=GC_PASS_DESTROY;
   /* This is intended to happen before the freeing done above. But
    * it's put here for the time being, since the problem of non-object
    * objects getting external references from destroy code isn't
@@ -1062,6 +1066,8 @@ void do_gc(void)
 
   Pike_in_gc=GC_PASS_DESTRUCT;
   destruct_objects_to_destruct();
+
+  /* Thread switches and object alloc/free are disallowed now. */
 
 #ifdef PIKE_DEBUG
   if (gc_debug) {
