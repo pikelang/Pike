@@ -56,6 +56,16 @@ DESCRIPTION
 	'identifier(something1,something2d)' would be replaced with
 	the replacement string. And in the replacement string, arg1 and arg2
 	will be replaced with something1 and something2.
+
+BUGS
+	Note that it is not a good idea to do something like this:
+
+	#define foo bar // a comment
+
+	The comment will be included in the define, and thus inserted in the
+	code. This will have the effect that the rest of the line will be
+	ignored when the word foo is used. Not exactly what you might expect.
+
 ============================================================================
 DIRECTIVE
 	#undef
@@ -127,7 +137,7 @@ DESCRIPTION
 
 EXAMPLES
 	#if !efun(write_file)
-	#error Move object is missing
+	#error Write file efun is missing
 	#endif
 ============================================================================
 DIRECTIVE
