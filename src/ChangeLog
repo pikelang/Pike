@@ -1,3 +1,17 @@
+Tue Aug  6 13:33:51 1996  Fredrik Hubinette  <hubbe@axel.signum.se>
+
+	* call_out.c: call outs now have unique ids, so you can remove
+	  them individually.
+	* opcodes.c: sscanf now accepts field sizes for %c and %s
+	* lpc_signal.c: signal(signum,0) now means SIG_IGN
+
+Tue Aug  6 00:02:14 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+        * memory.c: fixed a bug in memory searcher (8 bit chars)
+        * las.c: fixed so that the --loop and ++loop works again
+	* docode.c: if(foo && bar) opimized (one jump less)
+	* simulate.c (regexp): now frees regexp correctly
+
 Thu Aug  1 15:26:12 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
 	* Makefile.src: a few bugs fixed
