@@ -1,6 +1,5 @@
 Package: nettle
 Version: 1.10
-Revision: 0
 Description: Crypto library
 DescDetail: <<
   Nettle is a cryptographic library that is designed to fit easily in
@@ -23,7 +22,7 @@ make
 InstallScript: <<
 make install
 <<
-DocFiles: AUTHORS COPYING ChangeLog README NEWS TOD
+DocFiles: AUTHORS COPYING ChangeLog README NEWS
 License: GPL/LGPL
 Homepage: http://www.lysator.liu.se/~nisse/nettle/
 Maintainer: Xavier BEAUDOUIN <kiwi@caudium.net>
