@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.44 2002/04/07 14:23:13 leif Exp $");
+RCSID("$Id: zlibmod.c,v 1.45 2002/05/11 01:32:43 mast Exp $");
 
 #include "zlib_machine.h"
 
@@ -31,6 +31,8 @@ RCSID("$Id: zlibmod.c,v 1.44 2002/04/07 14:23:13 leif Exp $");
 
 /* This must be included last! */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 struct zipper
 {

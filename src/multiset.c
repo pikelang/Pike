@@ -7,7 +7,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.47 2002/05/10 23:53:33 nilsson Exp $");
+RCSID("$Id: multiset.c,v 1.48 2002/05/11 01:36:00 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -23,6 +23,8 @@ RCSID("$Id: multiset.c,v 1.47 2002/05/10 23:53:33 nilsson Exp $");
 #include "block_alloc.h"
 
 #include <assert.h>
+
+#define sp Pike_sp
 
 /* The following defines the allocation policy. It's almost the same
  * as for mappings. */
@@ -5210,7 +5212,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.47 2002/05/10 23:53:33 nilsson Exp $");
+RCSID("$Id: multiset.c,v 1.48 2002/05/11 01:36:00 mast Exp $");
 
 struct multiset *first_multiset;
 
