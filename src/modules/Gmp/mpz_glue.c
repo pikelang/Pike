@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.133 2003/03/29 02:00:59 mast Exp $
+|| $Id: mpz_glue.c,v 1.134 2003/03/29 03:14:44 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.133 2003/03/29 02:00:59 mast Exp $");
+RCSID("$Id: mpz_glue.c,v 1.134 2003/03/29 03:14:44 mast Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -294,20 +294,30 @@ int get_new_mpz(MP_INT *tmp, struct svalue *s,
   case T_INT:
 #if SIZEOF_INT_TYPE <= SIZEOF_LONG
     mpz_set_si(tmp, (signed long int) s->u.integer);
-#elif defined (HAVE_MPZ_IMPORT)
-    mpz_import (tmp, 1, 1, SIZEOF_INT_TYPE, 0, 0, &s->u.integer);
 #else
     {
-      size_t n =
-	((SIZEOF_INT_TYPE + SIZEOF_LONG - 1) / SIZEOF_LONG - 1)
-	/* The above is the position of the top unsigned long in the INT64. */
-	* ULONG_BITS;
-      mpz_set_ui (tmp, (s->u.integer >> n) & ULONG_MAX);
-      while (n) {
-	n -= ULONG_BITS;
-	mpz_mul_2exp (tmp, tmp, ULONG_BITS);
-	mpz_add_ui (tmp, tmp, (s->u.integer >> n) & ULONG_MAX);
+      INT_TYPE i = s->u.integer;
+      int neg = i < 0;
+      if (neg) i = -i;
+
+#ifdef HAVE_MPZ_IMPORT
+      mpz_import (tmp, 1, 1, SIZEOF_INT_TYPE, 0, 0, &i);
+#else
+      {
+	size_t n =
+	  ((SIZEOF_INT_TYPE + SIZEOF_LONG - 1) / SIZEOF_LONG - 1)
+	  /* The above is the position of the top unsigned long in the INT_TYPE. */
+	  * ULONG_BITS;
+	mpz_set_ui (tmp, (i >> n) & ULONG_MAX);
+	while (n) {
+	  n -= ULONG_BITS;
+	  mpz_mul_2exp (tmp, tmp, ULONG_BITS);
+	  mpz_add_ui (tmp, tmp, (i >> n) & ULONG_MAX);
+	}
       }
+#endif
+
+      if (neg) mpz_neg (tmp, tmp);
     }
 #endif
     break;
