@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.96 2000/07/07 13:19:48 grubba Exp $
+ * $Id: threads.h,v 1.97 2000/07/07 15:36:53 grubba Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -55,6 +55,14 @@
 #undef SGI_SPROC_THREADS
 #undef HAVE_SPROC
 #endif /* _SGI_SPROC_THREADS */
+
+
+
+/* Restore the fp macro. */
+#ifdef FRAMEPOINTER_WAS_DEFINED
+#define fp Pike_fp
+#undef FRAMEPOINTER_WAS_DEFINED
+#endif /* FRAMEPOINTER_WAS_DEFINED */
 
 
 extern int num_threads;
@@ -629,13 +637,6 @@ void th_farm(void (*fun)(void *), void *here);
 #define low_init_threads_disable()
 #define init_threads_disable(X)
 #define exit_threads_disable(X)
-
-
-/* Restore the fp macro. */
-#ifdef FRAMEPOINTER_WAS_DEFINED
-#define fp Pike_fp
-#undef FRAMEPOINTER_WAS_DEFINED
-#endif /* FRAMEPOINTER_WAS_DEFINED */
 
 
 #endif /* PIKE_THREADS */
