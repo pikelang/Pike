@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.73 1999/01/31 09:01:51 hubbe Exp $");
+RCSID("$Id: las.c,v 1.74 1999/02/01 06:13:15 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -800,7 +800,8 @@ int node_is_eq(node *a,node *b)
   switch(a->token)
   {
   case F_LOCAL:
-    return a->u.integer.a == b->u.integer.b;
+    return a->u.integer.a == b->u.integer.a &&
+      a->u.integer.b == b->u.integer.b;
       
   case F_IDENTIFIER:
   case F_TRAMPOLINE: /* FIXME, the context has to be the same! */

@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.62 1999/02/01 04:11:37 hubbe Exp $
+ * $Id: threads.h,v 1.63 1999/02/01 06:13:16 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -278,6 +278,13 @@ struct interleave_mutex
 #define THREAD_RUNNING 0
 #define THREAD_EXITED 1
 
+#ifdef PIKE_SECURITY
+extern struct object *current_creds;
+#define DO_IF_SECURITY(X) X
+#else
+#define DO_IF_SECURITY(X)
+#endif
+
 struct thread_state {
   char swapped;
   char status;
@@ -295,6 +302,7 @@ struct thread_state {
   JMP_BUF *recoveries;
   struct object * thread_id;
   char *stack_top;
+  DO_IF_SECURITY(struct object *current_creds;)
 
 #ifdef PROFILING
 #ifdef HAVE_GETHRTIME
@@ -370,6 +378,7 @@ struct thread_state {
        (_tmp)->thread_id=thread_id;\
        DO_IF_PROFILING( (_tmp)->accounted_time=accounted_time; ) \
        DO_IF_PROFILING( (_tmp)->time_base = gethrtime() - time_base; ) \
+       DO_IF_SECURITY( (_tmp)->current_creds = current_creds ;) \
        SWAP_OUT_TRACE(_tmp); \
       } while(0)
 
@@ -387,6 +396,7 @@ struct thread_state {
        thread_id=(_tmp)->thread_id;\
        DO_IF_PROFILING( accounted_time=(_tmp)->accounted_time; ) \
        DO_IF_PROFILING(  time_base =  gethrtime() - (_tmp)->time_base; ) \
+       DO_IF_SECURITY( current_creds = (_tmp)->current_creds ;) \
        SWAP_IN_TRACE(_tmp); \
      } while(0)
 
