@@ -30,7 +30,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.41 2000/08/17 18:25:04 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.42 2000/08/19 11:18:12 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -167,7 +167,7 @@ struct pipe
   int fd;			/* buffer fd or -1 */
 
   unsigned long bytes_in_buffer;
-  unsigned long pos; 
+  size_t pos; 
   /* fd: size of buffer file */
   /* current position of first element (buffer or mmap) */
   struct buffer *firstbuffer,*lastbuffer;

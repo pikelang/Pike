@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.188 2000/08/16 20:12:50 grubba Exp $");
+RCSID("$Id: file.c,v 1.189 2000/08/19 11:22:23 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -359,7 +359,7 @@ static struct pike_string *do_read(int fd,
 				   int *err)
 {
   ONERROR ebuf;
-  INT32 bytes_read,i;
+  ptrdiff_t bytes_read, i;
   bytes_read=0;
   *err=0;
 
@@ -375,7 +375,7 @@ static struct pike_string *do_read(int fd,
       int fd=FD;
       int e;
       THREADS_ALLOW();
-      i=fd_read(fd, str->str+bytes_read, r);
+      i = fd_read(fd, str->str+bytes_read, r);
       THREADS_DISALLOW();
 
       e=errno;  /* check signals may affect errno */
@@ -442,7 +442,7 @@ static struct pike_string *do_read(int fd,
       buf = low_make_buf_space(try_read, &b);
 
       THREADS_ALLOW();
-      i=fd_read(fd, buf, try_read);
+      i = fd_read(fd, buf, try_read);
       THREADS_DISALLOW();
 
       e=errno; /* check signals may effect errno */
@@ -1086,7 +1086,7 @@ static void file_write(INT32 args)
 #ifdef WITH_OOB
 static void file_write_oob(INT32 args)
 {
-  INT32 written,i;
+  ptrdiff_t written,i;
   struct pike_string *str;
 
   if(args<1 || Pike_sp[-args].type != PIKE_T_STRING)
@@ -1109,7 +1109,7 @@ static void file_write_oob(INT32 args)
   {
     int fd=FD;
     THREADS_ALLOW();
-    i=fd_send(fd, str->str + written, str->len - written, MSG_OOB);
+    i = fd_send(fd, str->str + written, str->len - written, MSG_OOB);
     THREADS_DISALLOW();
 
 #ifdef _REENTRANT
@@ -1400,7 +1400,7 @@ static void file_seek(INT32 args)
 #ifdef HAVE_LSEEK64
   INT64 to = 0;
 #else
-  INT32 to = 0;
+  ptrdiff_t to = 0;
 #endif
 
 #ifdef HAVE_LSEEK64
@@ -1434,9 +1434,9 @@ static void file_seek(INT32 args)
   ERRNO=0;
 
 #ifdef HAVE_LSEEK64
-  to=lseek64(FD,to,to<0 ? SEEK_END : SEEK_SET);
+  to = lseek64(FD,to,to<0 ? SEEK_END : SEEK_SET);
 #else
-  to=fd_lseek(FD,to,to<0 ? SEEK_END : SEEK_SET);
+  to = fd_lseek(FD,to,to<0 ? SEEK_END : SEEK_SET);
 #endif
   if(to<0) ERRNO=errno;
 
@@ -1449,7 +1449,7 @@ static void file_tell(INT32 args)
 #ifdef HAVE_LSEEK64
   INT64 to;
 #else
-  INT32 to;
+  ptrdiff_t to;
 #endif
 
   if(FD < 0)
@@ -1457,9 +1457,9 @@ static void file_tell(INT32 args)
 
   ERRNO=0;
 #ifdef HAVE_LSEEK64
-  to=lseek64(FD, 0L, SEEK_CUR);
+  to = lseek64(FD, 0L, SEEK_CUR);
 #else
-  to=fd_lseek(FD, 0L, SEEK_CUR);
+  to = fd_lseek(FD, 0L, SEEK_CUR);
 #endif
 
   if(to<0) ERRNO=errno;
@@ -2330,8 +2330,8 @@ static TH_RETURN_TYPE proxy_thread(void * data)
 
   while(1)
   {
-    long len, w;
-    len=fd_read(p->from, buffer, READ_BUFFER);
+    ptrdiff_t len, w;
+    len = fd_read(p->from, buffer, READ_BUFFER);
     if(len==0) break;
     if(len<0)
     {
@@ -2343,7 +2343,7 @@ static TH_RETURN_TYPE proxy_thread(void * data)
     w=0;
     while(w<len)
     {
-      long wl=fd_write(p->to, buffer+w, len-w);
+      ptrdiff_t wl = fd_write(p->to, buffer+w, len-w);
       if(wl<0)
       {
 	if(errno==EINTR) continue;

@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.22 2000/08/18 22:03:50 grubba Exp $
+ * $Id: nt.c,v 1.23 2000/08/19 11:29:15 grubba Exp $
  *
  * NT system calls for Pike
  *
@@ -63,9 +63,10 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
       break;
       
     case REG_EXPAND_SZ:
-      type=ExpandEnvironmentStrings((LPCTSTR)buffer,
-				    buffer+len,
-				    sizeof(buffer)-len-1);
+      type =
+	ExpandEnvironmentStrings((LPCTSTR)buffer,
+				 buffer+len,
+				 DO_NOT_WARN((DWORD)(sizeof(buffer)-len-1)));
       if(type>sizeof(buffer)-len-1 || !type)
 	error("RegGetValue: Failed to expand data.\n");
       push_string(make_shared_string(buffer+len));

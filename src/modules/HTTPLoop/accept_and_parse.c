@@ -197,7 +197,7 @@ static int parse(struct args *arg)
   aap_get_header(arg, "content-length", H_INT, &arg->res.content_len);
   if((arg->res.data_len - arg->res.body_start) < arg->res.content_len)
   {
-    int nr;
+    ptrdiff_t nr;
     /* read the rest of the request.. OBS: This is done without any
      * timeout right now. It is relatively easy to add one, though.
      * The only problem is that this might be an upload of a _large_ file,

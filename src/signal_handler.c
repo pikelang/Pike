@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.177 2000/08/17 18:58:28 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.178 2000/08/19 11:35:51 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -925,7 +925,7 @@ static void init_pid_status(struct object *o)
 {
   THIS->pid=-1;
 #ifdef __NT__
-  THIS->handle=INVALID_HANDLE_VALUE;
+  THIS->handle = DO_NOT_WARN(INVALID_HANDLE_VALUE);
 #else
   THIS->state=PROCESS_UNKNOWN;
   THIS->result=-1;
@@ -1302,7 +1302,7 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 				     char *name,
 				     int for_reading)
 {
-  HANDLE ret=INVALID_HANDLE_VALUE;
+  HANDLE ret = DO_NOT_WARN(INVALID_HANDLE_VALUE);
   struct svalue *save_stack=sp;
   struct svalue *tmp;
   if((tmp=simple_mapping_string_lookup(optional, name)))
@@ -1782,9 +1782,9 @@ void f_create_process(INT32 args)
 
 #ifdef __NT__
   {
-    HANDLE t1=INVALID_HANDLE_VALUE;
-    HANDLE t2=INVALID_HANDLE_VALUE;
-    HANDLE t3=INVALID_HANDLE_VALUE;
+    HANDLE t1 = DO_NOT_WARN(INVALID_HANDLE_VALUE);
+    HANDLE t2 = DO_NOT_WARN(INVALID_HANDLE_VALUE);
+    HANDLE t3 = DO_NOT_WARN(INVALID_HANDLE_VALUE);
     STARTUPINFO info;
     PROCESS_INFORMATION proc;
     int ret,err;
@@ -1867,13 +1867,13 @@ void f_create_process(INT32 args)
       }
 
       t1=get_inheritable_handle(optional, "stdin",1);
-      if(t1!=INVALID_HANDLE_VALUE) info.hStdInput=t1;
+      if(t1 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) info.hStdInput=t1;
 
       t2=get_inheritable_handle(optional, "stdout",0);
-      if(t2!=INVALID_HANDLE_VALUE) info.hStdOutput=t2;
+      if(t2 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) info.hStdOutput=t2;
 
       t3=get_inheritable_handle(optional, "stderr",0);
-      if(t3!=INVALID_HANDLE_VALUE) info.hStdError=t3;
+      if(t3 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) info.hStdError=t3;
 
 	if((tmp=simple_mapping_string_lookup(optional, "env")))
 	{
@@ -1929,9 +1929,9 @@ void f_create_process(INT32 args)
     if(env) pop_stack();
     if(command_line) free(command_line);
 #if 1
-    if(t1!=INVALID_HANDLE_VALUE) CloseHandle(t1);
-    if(t2!=INVALID_HANDLE_VALUE) CloseHandle(t2);
-    if(t3!=INVALID_HANDLE_VALUE) CloseHandle(t3);
+    if(t1 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) CloseHandle(t1);
+    if(t2 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) CloseHandle(t2);
+    if(t3 != DO_NOT_WARN(INVALID_HANDLE_VALUE)) CloseHandle(t3);
 #endif
     
     if(ret)
@@ -3007,8 +3007,8 @@ static void f_pid_status_kill(INT32 args)
 #define HAVE_KILL
 static void f_kill(INT32 args)
 {
-  HANDLE proc=INVALID_HANDLE_VALUE;
-  HANDLE tofree=INVALID_HANDLE_VALUE;
+  HANDLE proc = DO_NOT_WARN(INVALID_HANDLE_VALUE);
+  HANDLE tofree = DO_NOT_WARN(INVALID_HANDLE_VALUE);
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
@@ -3025,7 +3025,7 @@ static void f_kill(INT32 args)
 			    0,
 			    sp[-args].u.integer);
 /*    fprintf(stderr,"PROC: %ld %ld\n",(long)proc,INVALID_HANDLE_VALUE); */
-    if(!proc || proc==INVALID_HANDLE_VALUE)
+    if(!proc || proc == DO_NOT_WARN(INVALID_HANDLE_VALUE))
     {
       errno=EPERM;
       pop_n_elems(args);
@@ -3075,7 +3075,7 @@ static void f_kill(INT32 args)
       push_int(0);
       break;
   }
-  if(tofree != INVALID_HANDLE_VALUE)
+  if(tofree != DO_NOT_WARN(INVALID_HANDLE_VALUE))
     CloseHandle(tofree);
 }
 

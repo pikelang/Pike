@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: file.h,v 1.16 2000/08/04 18:33:02 grubba Exp $
+ * $Id: file.h,v 1.17 2000/08/19 11:25:50 grubba Exp $
  */
 
 #ifndef FILE_H
@@ -61,7 +61,7 @@ struct pike_sendfile
 {
   struct object *self;
 
-  int sent;
+  ptrdiff_t sent;
 
   struct array *headers;
   struct array *trailers;
@@ -78,8 +78,8 @@ struct pike_sendfile
   struct my_file *from;
   struct my_file *to;
 
-  INT_TYPE offset;
-  INT_TYPE len;
+  ptrdiff_t offset;
+  ptrdiff_t len;
 
   struct iovec *hd_iov;
   struct iovec *tr_iov;
@@ -89,7 +89,7 @@ struct pike_sendfile
 
   struct iovec *iovs;
   char *buffer;
-  int buf_size;
+  ptrdiff_t buf_size;
 };
 
 #endif /* _REENTRANT */

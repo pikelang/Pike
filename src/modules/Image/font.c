@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.64 2000/08/14 14:27:05 grubba Exp $ */
+/* $Id: font.c,v 1.65 2000/08/19 11:16:53 grubba Exp $ */
 #include "global.h"
 
 #define SPACE_CHAR 'i'
@@ -9,7 +9,7 @@ extern unsigned char * image_default_font;
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.64 2000/08/14 14:27:05 grubba Exp $
+**!	$Id: font.c,v 1.65 2000/08/19 11:16:53 grubba Exp $
 **! class Font
 **!
 **! note
@@ -268,7 +268,7 @@ static INLINE int char_width(struct font *this, INT32 c)
 }  
 
 #ifndef HAVE_MMAP
-static INLINE int my_read(int from, void *t, size_t towrite)
+static INLINE ptrdiff_t my_read(int from, void *t, size_t towrite)
 {
   ptrdiff_t res;
   while((res = fd_read(from, t, towrite)) < 0)
