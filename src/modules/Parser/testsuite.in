@@ -490,3 +490,12 @@ test_any([[
   p->add_entity ("cC","[c]");
   return p->finish("<aa><AA><bb></Bb><BB></bB>&cc;&CC;")->read();
 ]], "<aa><AA><bb></Bb><BB></bB>&cc;&CC;");
+test_any([[
+  object p = Parser.HTML();
+  p->add_tag ("t", lambda (object p, mapping a) {
+		     return ({"[",p->current(),"|",sort(indices(a))*",","]"});
+		   });
+  p->match_tag (0);
+  return p->finish("<t bar <foo>>")->read();
+  //                       ^ bogus char that we should jump over.
+]], [["[<t bar <foo>|bar,foo]>"]]);
