@@ -1,5 +1,19 @@
-string destination_dir = "";
 #!/usr/bin/env pike
+
+
+string destination_dir = "";
+
+/* Start of relevant parts of program_id.h */
+#define PROG_IMAGE_IMAGE_ID             100
+#define PROG_IMAGE_COLORTABLE_ID        101
+#define PROG_IMAGE_LAYER_ID             102
+#define PROG_IMAGE_FONT_ID              103
+#define PROG_IMAGE_POLY_ID              104
+#define PROG_IMAGE_COLOR_COLOR_ID       200
+#define PROG_STDIO_FD_ID                  1
+
+/* End of it */
+
 #define COMPOSE(X) Parser.Pike.reconstitute_with_line_numbers( X )
 #define SPLIT(X,FN) Parser.Pike.group(Parser.Pike.hide_whitespaces(Parser.Pike.tokenize(Parser.Pike.split(X),FN)))
 #define GOBBLE() ((sizeof(t)>i)?t[i++]:0)
@@ -488,8 +502,12 @@ class Type
 	return "int|float"+optp;
 
       case "Image.Image":
+	return "object(implements "+PROG_IMAGE_IMAGE_ID+")"+optp;
       case "Stdio.File":
+	return "object(implements "+PROG_STDIO_FD_ID+")"+optp;
       case "Image.Color.Color":
+	return "object(implements "+PROG_IMAGE_COLOR_COLOR_ID+")"+optp;
+
       case "GDK.Atom": // implemented in pike
 	return "object"+optp;
 
