@@ -1,0 +1,22 @@
+test_true([["$Id: testsuite.in,v 1.1 2002/08/02 20:23:45 nilsson Exp $"]]);
+
+test_any([[
+  object s = ADT.Stack();
+  s->push(1);
+  return s->pop();
+]], 1)
+
+test_any([[
+  object s = ADT.Stack();
+  s->push(2);
+  s->push(3);
+  s->push(4);
+  s->pop(2);
+  return s->pop();
+]], 2)
+
+test_any([[
+  object s = ADT.Stack();
+  s->push(5);
+  return s->top();
+]], 5)
