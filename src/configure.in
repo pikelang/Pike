@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.151 1998/07/01 17:52:23 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.152 1998/07/01 20:18:07 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -327,7 +327,7 @@ else
       if test "$CC" = "$BINDIR/smartlink cc" -a -x /usr/bin/cc ; then
         CC="$BINDIR/smartlink /usr/bin/cc"
       fi
-      CFLAGS="-Aa -D_HPUX_SOURCE +Olibcalls $CFLAGS"
+      CFLAGS="-Ae +Olibcalls $CFLAGS"
       AC_TRY_COMPILE([int foo(int bar);],[],[],[
         CC="$OLD_CC"
 	CFLAGS="$OLD_CFLAGS"
