@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.37 1998/10/21 14:59:33 grubba Exp $");
+RCSID("$Id: backend.c,v 1.38 1998/11/05 23:12:32 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -340,7 +340,7 @@ void set_write_callback(int fd,file_callback cb,void *data)
 #endif /* WITH_POLL */
     }
 #else
-#if POLLWRBAND == POLLOUT
+#if defined(WITH_OOB) && (POLLWRBAND == POLLOUT)
     if (was_set && !fds[fd].write_oob.callback)
       POLL_FD_CLR(fd, POLLOUT);
 #else /* POLLWRBAND != POLLOUT */
