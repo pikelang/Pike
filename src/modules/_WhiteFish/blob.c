@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.26 2001/07/31 15:27:17 js Exp $");
+RCSID("$Id: blob.c,v 1.27 2001/08/08 10:59:06 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -9,6 +9,7 @@ RCSID("$Id: blob.c,v 1.26 2001/07/31 15:27:17 js Exp $");
 #include "object.h"
 #include "operators.h"
 #include "fsort.h"
+#include "array.h"
 
 #include "config.h"
 
@@ -335,6 +336,39 @@ static void f_blob_remove( INT32 args )
   push_int(0);
 }
 
+static void f_blob_remove_list( INT32 args )
+{
+  struct array *docs = sp[-1].u.array;
+  int i;
+  if( sp[-1].type != T_ARRAY )
+    Pike_error("Expected array\n");
+
+  for( i = 0; i<docs->size; i++ )
+  {
+    int doc_id = docs->item[i].u.integer;
+    int r = doc_id % HSIZE;
+    struct hash *h = THIS->hash[r], *p = 0;
+
+    while( h )
+    {
+      if( h->doc_id == doc_id )
+      {
+	if( p )
+	  p->next = h->next;
+	else
+	  THIS->hash[ r ] = h->next;
+	h->next = 0;
+	free_hash( h );
+	THIS->size--;
+      }
+      p = h;
+      h = h->next;
+    }
+  }
+  pop_n_elems(args);
+  push_int( 0 );
+}
+
 void wf_blob_low_add( struct object *o,
 		      int docid, int field, int off )
 {
@@ -504,6 +538,8 @@ void init_blob_program()
   add_function( "merge", f_blob_merge, "function(string:void)", 0 );
   add_function( "add", f_blob_add, "function(int,int,int:void)",0 );
   add_function( "remove", f_blob_remove, "function(int:void)",0 );
+  add_function( "remove_list", f_blob_remove_list,
+		"function(array(int):void)",0 );
   add_function( "data", f_blob__cast, "function(void:string)", 0 );
   add_function( "memsize", f_blob_memsize, "function(void:int)", 0 );
   set_init_callback( init_blob_struct );
