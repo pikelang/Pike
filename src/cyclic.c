@@ -1,7 +1,7 @@
 #include "global.h"
 #include "cyclic.h"
 
-RCSID("$Id: cyclic.c,v 1.4 2000/05/07 00:39:17 hubbe Exp $");
+RCSID("$Id: cyclic.c,v 1.5 2000/08/10 08:54:34 grubba Exp $");
 
 #define CYCLIC_HASH_SIZE 4711
 
@@ -9,15 +9,15 @@ CYCLIC *cyclic_hash[CYCLIC_HASH_SIZE];
 
 static void low_unlink_cyclic(CYCLIC *c)
 {
-  unsigned int h;
+  size_t h;
   CYCLIC **p;
-  h=(int)c->id;
+  h=(ptrdiff_t)c->id;
   h*=33;
-  h|=(int)c->a;
+  h|=(ptrdiff_t)c->a;
   h*=33;
-  h|=(int)c->b;
+  h|=(ptrdiff_t)c->b;
   h*=33;
-  h|=(int)c->th;
+  h|=(ptrdiff_t)c->th;
   h*=33;
   h%=CYCLIC_HASH_SIZE;
 
@@ -44,17 +44,17 @@ void *begin_cyclic(CYCLIC *c,
 		   void *a,
 		   void *b)
 {
-  unsigned int h;
+  size_t h;
   void *ret=0;
   CYCLIC *p;
 
-  h=(int)id;
+  h=(ptrdiff_t)id;
   h*=33;
-  h|=(int)a;
+  h|=(ptrdiff_t)a;
   h*=33;
-  h|=(int)b;
+  h|=(ptrdiff_t)b;
   h*=33;
-  h|=(int)th;
+  h|=(ptrdiff_t)th;
   h*=33;
   h%=CYCLIC_HASH_SIZE;
 
@@ -67,7 +67,7 @@ void *begin_cyclic(CYCLIC *c,
     }
   }
 
-  c->ret=(void *)1;
+  c->ret=(void *)(ptrdiff_t)1;
   c->a=a;
   c->b=b;
   c->id=id;

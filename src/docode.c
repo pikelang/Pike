@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.76 2000/07/12 12:38:40 grubba Exp $");
+RCSID("$Id: docode.c,v 1.77 2000/08/10 09:01:54 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -273,7 +273,8 @@ static int do_docode2(node *n,int flags)
 
   /* Stack check */
   {
-    long x_= ((char *)&x_) + STACK_DIRECTION * (32768) - Pike_interpreter.stack_top ;
+    ptrdiff_t x_= ((char *)&x_) + STACK_DIRECTION * (32768) -
+      Pike_interpreter.stack_top ;
     x_*=STACK_DIRECTION;						
     if(x_>0)
     {

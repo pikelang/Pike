@@ -1,5 +1,5 @@
 /*
- * $Id: fsort_template.h,v 1.7 2000/07/28 17:16:55 hubbe Exp $
+ * $Id: fsort_template.h,v 1.8 2000/08/10 09:07:57 grubba Exp $
  */
 
 #ifndef SWAP
@@ -14,7 +14,7 @@
 
 #define INC(X) X=STEP(X,1)
 #define DEC(X) X=STEP(X,-1)
-#define SIZE ((long)(char *)STEP((TYPE *)0,1))
+#define SIZE ((ptrdiff_t)(char *)STEP((TYPE *)0,1))
 
 #define PARENT(X) (((X)-1)>>1)
 #define CHILD1(X) (((X)<<1)+1)
@@ -45,7 +45,7 @@ static void MKNAME(_do_sort)(register TYPE *bas,
     }else{
       if(--max_recursion <= 0)
       {
-	long howmany,x,y,z;
+	ptrdiff_t howmany,x,y,z;
 	howmany=((((char *)last)-((char *)bas))/SIZE)+1;
 	if(howmany<2) return;
 	

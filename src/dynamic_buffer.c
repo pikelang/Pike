@@ -10,7 +10,7 @@
 #include "error.h"
 #include "pike_memory.h"
 
-RCSID("$Id: dynamic_buffer.c,v 1.11 2000/08/04 10:59:22 grubba Exp $");
+RCSID("$Id: dynamic_buffer.c,v 1.12 2000/08/10 09:03:10 grubba Exp $");
 
 static dynamic_buffer buff;
 
@@ -128,7 +128,7 @@ PMOD_EXPORT struct pike_string *debug_low_free_buf(dynamic_buffer *buf)
 PMOD_EXPORT struct pike_string *debug_free_buf(void) { return low_free_buf(&buff); }
 PMOD_EXPORT char *make_buf_space(INT32 space) { return low_make_buf_space(space,&buff); }
 PMOD_EXPORT void my_putchar(char b) { low_my_putchar(b,&buff); }
-PMOD_EXPORT void my_binary_strcat(const char *b,INT32 l) { low_my_binary_strcat(b,l,&buff); }
+PMOD_EXPORT void my_binary_strcat(const char *b, ptrdiff_t l) { low_my_binary_strcat(b,l,&buff); }
 PMOD_EXPORT void my_strcat(const char *b) { my_binary_strcat(b,strlen(b)); }
 PMOD_EXPORT void init_buf(void) { low_reinit_buf(&buff); }
 PMOD_EXPORT void init_buf_with_string(string s) { low_init_buf_with_string(s,&buff); }

@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.62 2000/07/07 19:27:12 grubba Exp $");
+RCSID("$Id: encode.c,v 1.63 2000/08/10 09:01:00 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -186,14 +186,14 @@ static int type_to_tag(int type)
 static int (*tag_to_type)(int) = type_to_tag;
 
 /* Let's cram those bits... */
-static void code_entry(int tag, INT32 num, struct encode_data *data)
+static void code_entry(int tag, ptrdiff_t num, struct encode_data *data)
 {
   int t;
   EDB(
-    fprintf(stderr,"encode: code_entry(tag=%d (%s), num=%d)\n",
+    fprintf(stderr,"encode: code_entry(tag=%d (%s), num=%ld)\n",
 	    tag,
 	    get_name_of_type(tag_to_type(tag)),
-	    num) );
+	    (long)num) );
   if(num<0)
   {
     tag |= TAG_NEG;
@@ -229,7 +229,7 @@ static void code_entry(int tag, INT32 num, struct encode_data *data)
   }
 }
 
-static void code_number(INT32 num, struct encode_data *data)
+static void code_number(ptrdiff_t num, struct encode_data *data)
 {
   code_entry(num & 15, num >> 4, data);
 }
@@ -1602,9 +1602,10 @@ static unsigned char extract_char(char **v, INT32 *l)
   return ((unsigned char *)(*v))[-1];
 }
 
-static INT32 extract_int(char **v, INT32 *l)
+static ptrdiff_t extract_int(char **v, INT32 *l)
 {
-  INT32 j,i;
+  INT32 j;
+  ptrdiff_t i;
 
   j=extract_char(v,l);
   if(j & 0x80) return (j & 0x7f);

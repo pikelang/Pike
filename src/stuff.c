@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stuff.c,v 1.11 2000/07/28 17:16:55 hubbe Exp $
+ * $Id: stuff.c,v 1.12 2000/08/10 09:20:00 grubba Exp $
  */
 #include "global.h"
 #include "stuff.h"
@@ -51,7 +51,7 @@ PMOD_EXPORT INT32 hashprimes[32] =
 /* same thing as (int)floor(log((double)x) / log(2.0)) */
 /* Except a bit quicker :) (hopefully) */
 
-PMOD_EXPORT int my_log2(unsigned INT32 x)
+PMOD_EXPORT int my_log2(size_t x)
 {
   static signed char bit[256] =
   {
@@ -72,7 +72,18 @@ PMOD_EXPORT int my_log2(unsigned INT32 x)
      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 
      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 
   };
-  register unsigned int tmp;
+  register size_t tmp;
+#if SIZEOF_CHAR_P > 4
+  if((tmp=(x>>32)))
+  {
+    if((x=(tmp>>16))) {
+      if((tmp=(x>>8))) return bit[tmp]+56;
+      return bit[x]+48;
+    }
+    if((x=(tmp>>8))) return bit[x]+40;
+    return bit[tmp]+32;
+  }
+#endif /* SIZEOF_CHAP_P > 4 */
   if((tmp=(x>>16)))
   {
     if((x=(tmp>>8))) return bit[x]+24;
