@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.39 2000/08/06 20:06:21 grubba Exp $
+**!	$Id: image.h,v 1.40 2000/08/07 09:56:29 grubba Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -33,9 +33,6 @@ extern int image_cpuid;
 #define COLOR_TO_COLORL(X) ((((INT32)(X))*0x0808080)+((X)>>1))
 #define COLOR_TO_FLOAT(X) (((float)(X))/(float)COLORMAX)
 #define COLORL_TO_FLOAT(X) ((((float)(X))/(float)(COLORLMAX>>8))/256.0)
-#define FLOAT_TO_COLOR(X) ((COLORTYPE)((X)*((float)COLORMAX+0.4)))
-#define FLOAT_TO_COLORL(X) /* stupid floats */ \
-	(((INT32)((X)*((float)(COLORLMAX/256))))*256+((INT32)((X)*255)))
 
 #define RGB_TO_RGBL(RGBL,RGB) (((RGBL).r=COLOR_TO_COLORL((RGB).r)),((RGBL).g=COLOR_TO_COLORL((RGB).g)),((RGBL).b=COLOR_TO_COLORL((RGB).b)))
 #define RGBL_TO_RGB(RGB,RGBL) (((RGB).r=COLORL_TO_COLOR((RGBL).r)),((RGB).g=COLORL_TO_COLOR((RGBL).g)),((RGB).b=COLORL_TO_COLOR((RGBL).b)))
@@ -55,10 +52,23 @@ static inline COLORTYPE DOUBLE_TO_COLORTYPE(double d)
 {
   return DO_NOT_WARN((COLORTYPE)d);
 }
+static inline COLORTYPE FLOAT_TO_COLOR(double X)
+{
+  return DO_NOT_WARN((COLORTYPE)((X)*((double)COLORMAX+0.4)));
+}
+static inline INT32 FLOAT_TO_COLORL(double X)
+{
+  /* stupid floats */
+  return (DO_NOT_WARN((INT32)((X)*((double)(COLORLMAX/256))))*256+
+	  DO_NOT_WARN((INT32)((X)*255)));
+}
 #else /* !__ECL */
 #define DOUBLE_TO_INT(D)	((int)(D))
 #define DOUBLE_TO_CHAR(D)	((char)(D))
 #define DOUBLE_TO_COLORTYPE(D)	((COLORTYPE)(D))
+#define FLOAT_TO_COLOR(X) ((COLORTYPE)((X)*((float)COLORMAX+0.4)))
+#define FLOAT_TO_COLORL(X) /* stupid floats */ \
+	(((INT32)((X)*((float)(COLORLMAX/256))))*256+((INT32)((X)*255)))
 #endif /* __ECL */
 
 
