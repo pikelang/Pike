@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.63 1999/11/20 22:12:31 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.64 1999/11/20 22:15:45 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1025,9 +1025,13 @@ static void low_and_pike_types(char *t1, char *t2)
   {
     push_unfinished_type(t1);
   }
-  else if(EXTRACT_UCHAR(t1)==T_MIXED || EXTRACT_UCHAR(t2)==T_MIXED)
+  else if(EXTRACT_UCHAR(t1)==T_MIXED)
   {
-    push_type(T_MIXED);
+    push_unfinished_type(t2);
+  }
+  else if(EXTRACT_UCHAR(t2)==T_MIXED)
+  {
+    push_unfinished_type(t1);
   }
   else if(EXTRACT_UCHAR(t1)==T_INT && EXTRACT_UCHAR(t2)==T_INT)
   {
