@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.5 1999/03/23 15:25:23 marcus Exp $
+// $Id: Readline.pike,v 1.6 1999/03/23 18:01:48 marcus Exp $
 
 class OutputController
 {
@@ -234,9 +234,9 @@ class InputController
   void destroy()
   {
     catch{ infd->set_blocking(); };
+    catch{ infd->tcsetattr((["ECHO":1,"ICANON":1])); };
     catch{ if(oldattrs) infd->tcsetattr((["ECHO":0,"ICANON":0,"VEOF":0,
 					  "VEOL":0,"VLNEXT":0])&oldattrs); };
-    catch{ infd->tcsetattr((["ECHO":1,"ICANON":1])); };
   }
 
   static private string process_input(string s)
@@ -346,6 +346,10 @@ class InputController
 	return;
       data = prefix+infd->read(1024, 1);
       prefix = "";
+      if(!data || !sizeof(data)) {
+	disable();
+	return;
+      }
     }
   }
 
