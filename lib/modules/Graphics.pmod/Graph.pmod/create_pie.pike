@@ -1,34 +1,16 @@
-#!NOMODULE
+// Graph sub-module for drawing pie-charts.
+// $Id: create_pie.pike,v 1.7 2001/11/19 00:04:38 nilsson Exp $
+//
+// These functions were written by Henrik "Hedda" Wallin (hedda@roxen.com)
+// Create_pie can draw pie charts in different forms.
 
 #pike __REAL_VERSION__
 
 #include "graph.h"
 
-// import Image;
-import Array;
-import Stdio;
-
 inherit "polyline.pike";
 inherit "create_graph.pike";
 inherit "create_bars.pike";
-
-constant cvs_version = "$Id: create_pie.pike,v 1.6 2001/04/07 00:55:17 nilsson Exp $";
-
-/*
- * name = "BG: Create pies";
- * doc = "Business Graphics sub-module for drawing pie-charts.";
- */
-
-/*
-These functions were written by Henrik "Hedda" Wallin (hedda@roxen.com)
-Create_pie can draw pie charts in different forms.
-
-The data is taken from the diagram_data-mapping which is described in 
- doc/diagram_internals.txt
-
-
-*/ 
-
 
 mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 {
@@ -498,7 +480,4 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
   diagram_data["ysize"]-=diagram_data["legend_size"];
   diagram_data["image"]=piediagram;
   return diagram_data;
-
-
-
 }

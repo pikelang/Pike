@@ -1,8 +1,6 @@
-#!NOMODULE
 /*
- * name = "BG: Create pies";
- * doc = "Business Graphics sub-module providing draw functions.";
- * $Id: polyline.pike,v 1.3 2000/09/28 03:38:43 hubbe Exp $
+ * Graph sub-module providing draw functions.
+ * $Id: polyline.pike,v 1.4 2001/11/19 00:01:32 nilsson Exp $
  */
 
 #pike __REAL_VERSION__

@@ -1,33 +1,29 @@
-#!NOMODULE
+// Graph sub-module for drawing bars.
+// These functions were written by Henrik "Hedda" Wallin (hedda@roxen.com)
+// Create_bars can draw normal bars, sumbars and normalized sumbars.
 
 #pike __REAL_VERSION__
 
 #include "graph.h"
 
 import Image;
-import Array;
-import Stdio;
 
 inherit "polyline.pike";
 inherit "create_graph.pike";
 
-constant cvs_version = "$Id: create_bars.pike,v 1.5 2001/04/07 00:55:16 nilsson Exp $";
-
-/*
- * name = "BG: Create bars";
- * doc = "Business Graphics sub-module for drawing bars.";
- */
-
-/*
-These functions were written by Henrik "Hedda" Wallin (hedda@roxen.com)
-Create_bars can draw normal bars, sumbars and normalized sumbars.
-*/ 
+#ifdef BG_DEBUG
+# define START_DEBUG(X) diagram_data->bg_timers[(X)]=gethrtime()
+# define STOP_DEBUG(X) diagram->data->bg_timers[(X)]=gethrtime()-diagram_data->bg_timers[(X)]
+#else
+# define START_DEBUG(X)
+# define STOP_DEBUG(X)
+#endif
 
 mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
 {
 
 #ifdef BG_DEBUG
-  mapping bg_timers = ([]);
+  diagram_data->bg_timers = ([]);
 #endif
 
   //Supports only xsize>=100
@@ -37,45 +33,29 @@ mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
   //Fix defaultcolors!
   setinitcolors(diagram_data);
 
-
-  string where_is_ax;
-
   object(image) barsdiagram;
 
-#ifdef BG_DEBUG
-  bg_timers->init_bg = gauge {
-#endif
+  START_DEBUG("init_bg");
   init_bg(diagram_data);
-#ifdef BG_DEBUG
-  };
-#endif
+  STOP_DEBUG("init_bg");
+
   barsdiagram=diagram_data["image"];
 
-#ifdef BG_DEBUG
-  bg_timers->set_legend_size = gauge {
-#endif
+  START_DEBUG("set_legend_size");
   set_legend_size(diagram_data);
-#ifdef BG_DEBUG
-  };
-#endif
+  STOP_DEBUG("set_legend_size");
+
   //write("ysize:"+diagram_data["ysize"]+"\n");
   diagram_data["ysize"]-=diagram_data["legend_size"];
   //write("ysize:"+diagram_data["ysize"]+"\n");
   
-#ifdef BG_DEBUG
-  bg_timers->init = gauge {
-#endif
-
   //Calculate biggest and smallest datavalues
+  START_DEBUG("init");
   init(diagram_data);
-#ifdef BG_DEBUG
-  };
-#endif
+  STOP_DEBUG("init");
 
   //Calculate how many and how big the texts are.
-#ifdef BG_DEBUG
-  bg_timers->space = gauge {
-#endif
+  START_DEBUG("space");
   if (!(diagram_data["xspace"]))
   {
     //Initiate the distance between the texts on the x-axis (Or X-axis?)
@@ -114,17 +94,9 @@ mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
 	space *= 0.5;
     diagram_data["yspace"]=space;      
   }
- 
-#ifdef BG_DEBUG
-  };
-#endif
+  STOP_DEBUG("space");
 
-
-#ifdef BG_DEBUG
-  bg_timers->text = gauge {
-#endif
-    
-    
+  START_DEBUG("text");
   float start;
   start=diagram_data["xminvalue"]+diagram_data["xspace"]/2.0;
   diagram_data["values_for_xnames"]=allocate(sizeof(diagram_data["xnames"]));
@@ -194,10 +166,7 @@ mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
   //calculate xmaxynames, ymaxynames xmaxxnames ymaxxnames
   create_text(diagram_data);
   si=diagram_data["fontsize"];
-
-#ifdef BG_DEBUG
-  };
-#endif
+  STOP_DEBUG("text");
 
   //Create the label-texts for the X-axis
   object labelimg;
@@ -370,26 +339,15 @@ mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
   float ymore=(-ystart+diagram_data["ystop"])/
     (diagram_data["ymaxvalue"]-diagram_data["yminvalue"]);
   
-#ifdef BG_DEBUG
-  bg_timers->draw_grid = gauge {
-#endif
-
-  draw_grid(diagram_data, xpos_for_yaxis, ypos_for_xaxis, 
+  START_DEBUG("draw_grid");
+  draw_grid(diagram_data, xpos_for_yaxis, ypos_for_xaxis,
 	     xmore, ymore, xstart, ystart, (float) si);
-  
-#ifdef BG_DEBUG
-  };
-#endif
-
+  STOP_DEBUG("draw_grid");
 
   //???
   int farg=0;
-
  
-#ifdef BG_DEBUG
-  bg_timers->draw_values = gauge {
-#endif
-
+  START_DEBUG("draw_values");
   if (diagram_data["type"]=="sumbars")
   {
     int s=diagram_data["datasize"];
@@ -521,14 +479,10 @@ mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
     else
       throw( ({"\""+diagram_data["subtype"]
 	       +"\" is an unknown bars-diagram subtype!\n", backtrace()}));
+  STOP_DEBUG("draw_values");
 
-#ifdef BG_DEBUG
-  };
-#endif
-  
   //Draw X and Y-axis
   barsdiagram->setcolor(@(diagram_data["axcolor"]));
-  
 
   //Draw the X-axis
   if ((diagram_data["xminvalue"]<=LITET)&&
@@ -706,12 +660,7 @@ mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
   //Write the text on the X-axis
   int s=sizeof(diagram_data["xnamesimg"]);
 
-
- 
-#ifdef BG_DEBUG
-  bg_timers->text_on_axis = gauge {
-#endif
-
+  START_DEBUG("text_on_axis");
   for(int i=0; i<s; i++)
     if ((diagram_data["values_for_xnames"][i]<diagram_data["xmaxvalue"])&&
 	(diagram_data["values_for_xnames"][i]>diagram_data["xminvalue"]))
@@ -807,17 +756,10 @@ mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
 				     x,
 				     2+labely-labelimg->ysize());
   }
-
- 
-#ifdef BG_DEBUG
-  };
-#endif
+  STOP_DEBUG("text_on_axis");
 
   diagram_data["ysize"]-=diagram_data["legend_size"];
   diagram_data["image"]=barsdiagram;
 
-#ifdef BG_DEBUG
-  diagram_data->bg_timers=bg_timers;
-#endif
   return diagram_data;
 }

@@ -1,30 +1,17 @@
-#!NOMODULE
+// Graph sub-module for drawing graphs.
+// These functions were written by Henrik "Hedda" Wallin (hedda@roxen.com)
+// Create_graph draws a graph but there are also some other functions
+// used by create_pie and create_bars.
+//
+// This was orginally a part of the Roxen module Business Graphics.
 
 #pike __REAL_VERSION__
 
 #include "graph.h"
 
 import Image;
-import Array;
-import Stdio;
 
 inherit "polyline.pike";
-
-constant cvs_version = "$Id: create_graph.pike,v 1.7 2001/09/22 03:29:40 nilsson Exp $";
-
-/*
- * name = "BG: Create graphs";
- * doc = "Business Graphics sub-module for drawing graphs.";
- */
-
-/*
-These functions were written by Henrik "Hedda" Wallin (hedda@roxen.com)
-Create_graph draws a graph but there are also some other functions
-used by create_pie and create_bars.
-
-This was orginally a part of the Roxen module Business Graphics.
-*/ 
-
 
 object tileimage(object img, int xs, int ys)
 {
@@ -43,18 +30,19 @@ object tileimage(object img, int xs, int ys)
   return dest;
 }
 
-//Key word eng:
-//This function writes a float like on an engineer-format
+private constant pfix = ({ "a", "f", "p", "n", "µ", "m", "",
+			   "k", "M", "G", "T", "P", "E" });
+
+// This function writes a float like on an engineer-format.
 string diagram_eng(float a)
 {
-  string foo="";
+  string sign="";
   if (a<0.0)
   {
-    foo="-";
+    sign="-";
     a=-a;
   }
-  array(string) pfix = ({ "a", "f", "p", "n", "µ", "m", "",
-			  "k", "M", "G", "T", "P", "E" });
+
   if (a == 0.0) return "0";
   float p = log(a)/log(1000.0);
   if (p < -6.0) p = 0.0;
@@ -62,13 +50,14 @@ string diagram_eng(float a)
   int i = (int) floor(p+0.000001);
   string s;
   sscanf(sprintf("%g%s", a*exp(-i*log(1000.0)), pfix[6+i]), "%*[ ]%s", s);
-  return foo+s;
+
+  return sign+s;
 }
 
 //Key word neng:
-//This function writes a float like on an engineer-format
-//Exept for 0.1<a<1.0 
-// "neng" is a short for Noring's eng by the way :-) 
+//This function writes a float like on an engineer-format,
+//exept for 0.1<a<1.0. "neng" is a short for Noring's eng
+//by the way :-)
 string diagram_neng(float a)
 {
   string foo="";
@@ -77,9 +66,7 @@ string diagram_neng(float a)
     foo="-";
     a=-a;
   }
-  array(string) pfix;
-  pfix = ({ "a", "f", "p", "n", "µ", "m", "",
-	    "k", "M", "G", "T", "P", "E" });
+
   if (a == 0.0) return "0";
   float p = log(a)/log(1000.0);
   if (p < -6.0) p = 0.0;
@@ -89,6 +76,7 @@ string diagram_neng(float a)
     i=0;
   string s; 
   sscanf(sprintf("%g%s", a*exp(-i*log(1000.0)), pfix[6+i]), "%*[ ]%s", s);
+
   return foo+s;
 }
 
@@ -98,10 +86,11 @@ void draw(object(image) img, float h, array(float|string) coords,
   if ((sizeof(coords)==2)||
       (sizeof(coords)==3))
   {
-    array(float) foo=({(float)coords[0]-(float)zerolength,
-		       (float)coords[1],
-		       (float)coords[0]+(float)zerolength,
-		       (float)coords[1]
+    coords = (array(float))coords;
+    array(float) foo=({coords[0]-(float)zerolength,
+		       coords[1],
+		       coords[0]+(float)zerolength,
+		       coords[1]
     });
     img->polygone(make_polygon_from_line(h, foo,1, 1)[0]);
   }
@@ -448,15 +437,6 @@ mapping(string:mixed) init(mapping(string:mixed) diagram_data)
   
   return diagram_data;
 };
-
-/*
-#ifndef ROXEN
-object get_font(string j, int p, int t, int h, string fdg, int s, int hd)
-{
-  return font()->load("avant_garde");
-};
-#endif
-*/
 
 //Paste the text into the graph
 //calculate xmaxynames, ymaxynames xmaxxnames ymaxxnames
