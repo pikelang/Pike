@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.79 1999/11/12 01:45:47 hubbe Exp $
+ * $Id: system.c,v 1.80 1999/12/27 20:56:33 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.79 1999/11/12 01:45:47 hubbe Exp $");
+RCSID("$Id: system.c,v 1.80 1999/12/27 20:56:33 hubbe Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -761,6 +761,16 @@ void f_chroot(INT32 args)
 #endif /* HAVE_CHROOT */
  
 #ifdef HAVE_SYSINFO
+#  ifdef SI_NODENAME
+#    define USE_SYSINFO
+#  else
+#    ifndef HAVE_UNAME
+#      define USE_SYSINFO
+#    endif
+#  endif
+#endif
+
+#ifdef USE_SYSINFO
 
 static struct {
   char *name;
