@@ -26,7 +26,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.120 2001/09/21 21:53:08 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.121 2001/09/28 23:14:09 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -424,17 +424,17 @@ static void rehash(void)
 
 struct short_pike_string0 {
   PIKE_STRING_CONTENTS;
-  p_wchar0 str[SHORT_STRING_THRESHOLD];
+  p_wchar0 str[SHORT_STRING_THRESHOLD+1];
 };
 
 struct short_pike_string1 {
   PIKE_STRING_CONTENTS;
-  p_wchar1 str[SHORT_STRING_THRESHOLD];
+  p_wchar1 str[SHORT_STRING_THRESHOLD+1];
 };
 
 struct short_pike_string2 {
   PIKE_STRING_CONTENTS;
-  p_wchar2 str[SHORT_STRING_THRESHOLD];
+  p_wchar2 str[SHORT_STRING_THRESHOLD+1];
 };
 
 BLOCK_ALLOC(short_pike_string0, SHORT_STRING_BLOCK)
