@@ -6,6 +6,8 @@
 #include "global.h"
 #include "pike_macros.h"
 #include "time_stuff.h"
+#include "error.h"
+
 #include <ctype.h>
 #include <math.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -15,7 +17,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.15 1998/03/28 15:08:34 grubba Exp $");
+RCSID("$Id: port.c,v 1.16 1998/05/17 22:30:38 grubba Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
