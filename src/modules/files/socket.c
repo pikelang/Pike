@@ -55,6 +55,7 @@ struct port
 };
 
 #define THIS ((struct port *)(fp->current_storage))
+static void port_accept_callback(int fd,void *data);
 
 static void do_close(struct port *p, struct object *o)
 {
@@ -371,8 +372,8 @@ void port_setup_program()
   INT32 offset;
   start_new_program();
   offset=add_storage(sizeof(struct port));
-  map_variable("_accept_callback","mixed",offset+OFFSETOF(port,accept_callback),T_MIXED);
-  map_variable("_id","mixed",offset+OFFSETOF(port,id),T_MIXED);
+  map_variable("_accept_callback","mixed",0,offset+OFFSETOF(port,accept_callback),T_MIXED);
+  map_variable("_id","mixed",0,offset+OFFSETOF(port,id),T_MIXED);
   add_function("bind",port_bind,"function(int,void|mixed:int)",0);
   add_function("listen_fd",port_listen_fd,"function(int,void|mixed:int)",0);
   add_function("set_id",port_set_id,"function(mixed:mixed)",0);

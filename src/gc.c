@@ -51,13 +51,17 @@ struct callback *add_gc_callback(callback_func call,
 }
 
 #define GC_REFERENCED 1
+#define GC_XREFERENCED 2
 
 struct marker
 {
+  INT32 refs;
+#ifdef DEBUG
+  INT32 xrefs;
+#endif
+  INT32 flags;
   struct marker *next;
   void *marked;
-  INT32 refs;
-  INT32 flags;
 };
 
 struct marker_chunk
@@ -101,6 +105,9 @@ static struct marker *getmark(void *a)
   m=new_marker();
   m->marked=a;
   m->refs=0;
+#ifdef DEBUG
+  m->xrefs=0;
+#endif
   m->flags=0;
   m->next=hash[hashval];
   hash[hashval]=m;
@@ -137,9 +144,13 @@ int gc_is_referenced(void *a)
   struct marker *m;
   m=getmark(a);
 #ifdef DEBUG
-  if(m->refs > *(INT32 *)a)
+  if(m->refs + m->xrefs > *(INT32 *)a)
   {
     check_for=a;
+    fatal("Ref counts are wrong (has %d, found %d + %d external)\n",
+	  *(INT32 *)a,
+	  m->refs,
+	  m->xrefs);
 
     gc_check_all_arrays();
     gc_check_all_multisets();
@@ -154,6 +165,29 @@ int gc_is_referenced(void *a)
 #endif
   return m->refs < *(INT32 *)a;
 }
+
+#ifdef DEBUG
+int gc_external_mark(void *a)
+{
+  struct marker *m;
+  if(check_for)
+  {
+    if(a==check_for)
+    {
+      gdb_gc_stop_here(a);
+      fprintf(stderr,"--External\n");
+
+      return 1;
+    }
+    return 0;
+  }
+  m=getmark(a);
+  m->xrefs++;
+  m->flags|=GC_XREFERENCED;
+  gc_is_referenced(a);
+  return 0;
+}
+#endif
 
 int gc_mark(void *a)
 {

@@ -899,6 +899,22 @@ TYPE_FIELD gc_check_svalues(struct svalue *s, int num)
   return f;
 }
 
+#ifdef DEBUG
+void gc_xmark_svalues(struct svalue *s, int num)
+{
+  INT32 e;
+
+  for(e=0;e<num;e++,s++)
+  {
+    check_type(s->type);
+    check_refs(s);
+
+    if(s->type <= MAX_REF_TYPE)
+      gc_external_mark(s->u.refs);
+  }
+}
+#endif
+
 void gc_check_short_svalue(union anything *u, TYPE_T type)
 {
   if(!u->refs) return;

@@ -1,7 +1,9 @@
 // tests for file module
 test_true(programp(Stdio.File))
 test_true(programp(Stdio.File))
+test_true(objectp(Stdio.File()))
 test_true(programp(Stdio.Port))
+test_true(objectp(Stdio.Port()))
 test_any(object o; o=clone(Stdio.File); destruct(o); return 1,1)
 
 // - file->open

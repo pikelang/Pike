@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.42 1997/04/16 03:09:11 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.43 1997/07/19 20:25:24 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -84,10 +84,25 @@ int pop_sp_mark()
 
 struct frame *fp; /* frame pointer */
 
+#ifdef DEBUG
+static void gc_check_stack_callback(struct callback *foo, void *bar, void *gazonk)
+{
+  gc_xmark_svalues(evaluator_stack,sp-evaluator_stack-1);
+}
+#endif
+
 void init_interpreter()
 {
 #ifdef USE_MMAP_FOR_STACK
   static int fd = -1;
+
+#ifdef DEBUG
+  static struct callback *spcb;
+  if(!spcb)
+  {
+    spcb=add_gc_callback(gc_check_stack_callback,0,0);
+  }
+#endif
 
 #ifndef MAP_VARIABLE
 #define MAP_VARIABLE 0

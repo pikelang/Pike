@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.48 1997/07/18 01:44:26 hubbe Exp $");
+RCSID("$Id: file.c,v 1.49 1997/07/19 20:25:29 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -1097,10 +1097,15 @@ static void exit_file_struct(struct object *o)
   ERRNO=-1;
 }
 
-static void (struct object *o)
+static void gc_mark_file_struct(struct object *o)
 {
-  FD=-1;
-  ERRNO=-1;
+  if(FD>-1)
+  {
+    gc_mark_svalues(& THIS->read_callback,1);
+    gc_mark_svalues(& THIS->write_callback,1);
+    gc_mark_svalues(& THIS->close_callback,1);
+    gc_mark_svalues(& THIS->id,1);
+  }
 }
 
 static void file_dup(INT32 args)
@@ -1462,6 +1467,10 @@ void mark_ids(struct callback *foo, void *bar, void *gazonk)
       gc_check_svalues( & files[e].read_callback, 1);
       gc_check_svalues( & files[e].close_callback, 1);
     }else{
+#ifdef DEBUG
+      gc_xmark_svalues( & files[e].read_callback, 1);
+      gc_xmark_svalues( & files[e].close_callback, 1);
+#endif
       tmp=0;
     }
 
@@ -1469,6 +1478,9 @@ void mark_ids(struct callback *foo, void *bar, void *gazonk)
     {
       gc_check_svalues( & files[e].write_callback, 1);
     }else{
+#ifdef DEBUG
+      gc_xmark_svalues( & files[e].write_callback, 1);
+#endif
       tmp=0;
     }
 
@@ -1476,6 +1488,12 @@ void mark_ids(struct callback *foo, void *bar, void *gazonk)
     {
       gc_check_svalues( & files[e].id, 1);
     }
+#ifdef DEBUG
+    else
+    {
+      gc_xmark_svalues( & files[e].id, 1);
+    }
+#endif
   }
 }
 
@@ -1534,7 +1552,7 @@ void pike_module_init()
   add_function("open_socket",file_open_socket,"function(int|void,string|void:int)",0);
   add_function("connect",file_connect,"function(string,int:int)",0);
   add_function("query_address",file_query_address,"function(int|void:string)",0);
-  add_function("create",file_create,"function(void|string:void)",0);
+  add_function("create",file_create,"function(void|string,void|string:void)",0);
   add_function("`<<",file_lsh,"function(mixed:object)",0);
 
   set_init_callback(init_file_struct);

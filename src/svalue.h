@@ -236,6 +236,7 @@ void copy_svalues_recursively_no_free(struct svalue *to,
 void check_short_svalue(union anything *u,TYPE_T type);
 void check_svalue(struct svalue *s);
 TYPE_FIELD gc_check_svalues(struct svalue *s, int num);
+void gc_xmark_svalues(struct svalue *s, int num);
 void gc_check_short_svalue(union anything *u, TYPE_T type);
 void gc_mark_svalues(struct svalue *s, int num);
 void gc_mark_short_svalue(union anything *u, TYPE_T type);

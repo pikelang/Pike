@@ -200,6 +200,16 @@ void rename_last_inherit(struct pike_string *n);
 void do_inherit(struct program *p,INT32 flags, struct pike_string *name);
 void simple_do_inherit(struct pike_string *s, INT32 flags,struct pike_string *name);
 int isidentifier(struct pike_string *s);
+int low_define_variable(struct pike_string *name,
+			struct pike_string *type,
+			INT32 flags,
+			INT32 offset,
+			INT32 run_time_type);
+int map_variable(char *name,
+		 char *type,
+		 INT32 flags,
+		 INT32 offset,
+		 INT32 run_time_type);
 int define_variable(struct pike_string *name,
 		    struct pike_string *type,
 		    INT32 flags);

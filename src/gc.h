@@ -35,6 +35,7 @@ struct marker;
 struct marker_chunk;
 INT32 gc_check(void *a);
 int gc_is_referenced(void *a);
+int gc_external_mark(void *a);
 int gc_mark(void *a);
 int gc_do_free(void *a);
 void do_gc();
