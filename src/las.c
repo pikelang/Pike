@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.67 1998/11/06 03:46:29 hubbe Exp $");
+RCSID("$Id: las.c,v 1.68 1998/11/07 06:32:18 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1051,6 +1051,10 @@ node **is_call_to(node *n, c_fun f)
 static void low_print_tree(node *foo,int needlval)
 {
   if(!foo) return;
+  if(l_flag>4)
+  {
+    printf("/*%x*/",foo->tree_info);
+  }
   switch(foo->token)
   {
   case F_LOCAL:
@@ -1328,6 +1332,20 @@ static void find_written_vars(node *n,
     find_written_vars(CDR(n), p, 1);
     break;
 
+    case F_AND_EQ:
+    case F_OR_EQ:
+    case F_XOR_EQ:
+    case F_LSH_EQ:
+    case F_RSH_EQ:
+    case F_ADD_EQ:
+    case F_SUB_EQ:
+    case F_MULT_EQ:
+    case F_MOD_EQ:
+    case F_DIV_EQ:
+      find_written_vars(CAR(n), p, 1);
+      find_written_vars(CDR(n), p, 0);
+      break;
+
   case F_SSCANF:
     find_written_vars(CAR(n), p, 0);
     find_written_vars(CDR(n), p, 1);
@@ -1382,7 +1400,7 @@ static int depend_p2(node *a,node *b)
   return 0;
 }
 
-static int depend_p(node *a,node *b)
+static int depend_p3(node *a,node *b)
 {
   if(!b) return 0;
 #if 0
@@ -1395,6 +1413,31 @@ static int depend_p(node *a,node *b)
     
   return depend_p2(a,b);
 }
+
+#ifdef DEBUG
+static int depend_p(node *a,node *b)
+{
+  int ret;
+  if(l_flag > 3)
+  {
+    fprintf(stderr,"Checking if: ");
+    print_tree(a);
+    fprintf(stderr,"Depends on: ");
+    print_tree(b);
+    if(depend_p3(a,b))
+    {
+      fprintf(stderr,"The answer is (durumroll) : yes\n");
+      return 1;
+    }else{
+      fprintf(stderr,"The answer is (durumroll) : no\n");
+      return 0;
+    }
+  }
+  return depend_p3(a,b);
+}
+#else
+#define depend_p depend_p3
+#endif
 
 static int cntargs(node *n)
 {
