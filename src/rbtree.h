@@ -2,7 +2,7 @@
  *
  * Created 2001-04-27 by Martin Stjernholm
  *
- * $Id: rbtree.h,v 1.2 2001/05/01 01:11:23 mast Exp $
+ * $Id: rbtree.h,v 1.3 2001/05/01 07:52:20 mast Exp $
  */
 
 #ifndef RBTREE_H
@@ -84,16 +84,16 @@ union rb_node {
 PMOD_EXPORT int rb_ind_default_cmp (struct svalue *key, union rb_node *node);
 typedef int low_rb_cmp_fn (void *key, struct rb_node_hdr *node);
 
-PMOD_EXPORT union rb_node *rb_find_eq_extcmp (union rb_node *tree, struct svalue *key,
-					      struct svalue *cmp_less);
-PMOD_EXPORT union rb_node *rb_find_lt_extcmp (union rb_node *tree, struct svalue *key,
-					      struct svalue *cmp_less);
-PMOD_EXPORT union rb_node *rb_find_gt_extcmp (union rb_node *tree, struct svalue *key,
-					      struct svalue *cmp_less);
-PMOD_EXPORT union rb_node *rb_find_le_extcmp (union rb_node *tree, struct svalue *key,
-					      struct svalue *cmp_less);
-PMOD_EXPORT union rb_node *rb_find_ge_extcmp (union rb_node *tree, struct svalue *key,
-					      struct svalue *cmp_less);
+PMOD_EXPORT union rb_node *rb_find_eq_extcmp (
+  union rb_node *tree, struct svalue *key, struct svalue *cmp_less);
+PMOD_EXPORT union rb_node *rb_find_lt_extcmp (
+  union rb_node *tree, struct svalue *key, struct svalue *cmp_less);
+PMOD_EXPORT union rb_node *rb_find_gt_extcmp (
+  union rb_node *tree, struct svalue *key, struct svalue *cmp_less);
+PMOD_EXPORT union rb_node *rb_find_le_extcmp (
+  union rb_node *tree, struct svalue *key, struct svalue *cmp_less);
+PMOD_EXPORT union rb_node *rb_find_ge_extcmp (
+  union rb_node *tree, struct svalue *key, struct svalue *cmp_less);
 PMOD_EXPORT struct rb_node_hdr *rb_first (struct rb_node_hdr *tree);
 PMOD_EXPORT struct rb_node_hdr *rb_last (struct rb_node_hdr *tree);
 PMOD_EXPORT struct rb_node_hdr *rb_prev (struct rb_node_hdr *node);
@@ -176,11 +176,16 @@ PMOD_EXPORT int rb_ind_delete (struct rb_node_ind **tree,
 			       struct svalue *cmp_less);
 PMOD_EXPORT struct rb_node_ind *rb_ind_copy (struct rb_node_ind *tree);
 PMOD_EXPORT void rb_ind_free (struct rb_node_ind *tree);
-#define rb_ind_find_eq(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_ind, rb_find_eq, tree, key, cmp_less)
-#define rb_ind_find_lt(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_ind, rb_find_lt, tree, key, cmp_less)
-#define rb_ind_find_gt(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_ind, rb_find_gt, tree, key, cmp_less)
-#define rb_ind_find_le(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_ind, rb_find_le, tree, key, cmp_less)
-#define rb_ind_find_ge(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_ind, rb_find_ge, tree, key, cmp_less)
+#define rb_ind_find_eq(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_ind, \
+					    rb_find_eq, tree, key, cmp_less)
+#define rb_ind_find_lt(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_ind, \
+					    rb_find_lt, tree, key, cmp_less)
+#define rb_ind_find_gt(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_ind, \
+					    rb_find_gt, tree, key, cmp_less)
+#define rb_ind_find_le(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_ind, \
+					    rb_find_le, tree, key, cmp_less)
+#define rb_ind_find_ge(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_ind, \
+					    rb_find_ge, tree, key, cmp_less)
 #define rb_ind_first(tree) RB_DECL_STEP_FUNC (rb_node_ind, rb_first, tree)
 #define rb_ind_last(tree) RB_DECL_STEP_FUNC (rb_node_ind, rb_last, tree)
 #define rb_ind_prev(tree) RB_DECL_STEP_FUNC (rb_node_ind, rb_prev, tree)
@@ -208,11 +213,16 @@ PMOD_EXPORT struct rb_node_indval *rb_indval_delete_node (struct rb_node_indval 
 							  struct svalue *cmp_less);
 PMOD_EXPORT struct rb_node_indval *rb_indval_copy (struct rb_node_indval *tree);
 PMOD_EXPORT void rb_indval_free (struct rb_node_indval *tree);
-#define rb_indval_find_eq(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_indval, rb_find_eq, tree, key, cmp_less)
-#define rb_indval_find_lt(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_indval, rb_find_lt, tree, key, cmp_less)
-#define rb_indval_find_gt(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_indval, rb_find_gt, tree, key, cmp_less)
-#define rb_indval_find_le(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_indval, rb_find_le, tree, key, cmp_less)
-#define rb_indval_find_ge(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_indval, rb_find_ge, tree, key, cmp_less)
+#define rb_indval_find_eq(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_indval, \
+					       rb_find_eq, tree, key, cmp_less)
+#define rb_indval_find_lt(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_indval, \
+					       rb_find_lt, tree, key, cmp_less)
+#define rb_indval_find_gt(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_indval, \
+					       rb_find_gt, tree, key, cmp_less)
+#define rb_indval_find_le(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_indval, \
+					       rb_find_le, tree, key, cmp_less)
+#define rb_indval_find_ge(tree, key, cmp_less) RB_DECL_FIND_FUNC (rb_node_indval, \
+					       rb_find_ge, tree, key, cmp_less)
 #define rb_indval_first(tree) RB_DECL_STEP_FUNC (rb_node_indval, rb_first, tree)
 #define rb_indval_last(tree) RB_DECL_STEP_FUNC (rb_node_indval, rb_last, tree)
 #define rb_indval_prev(tree) RB_DECL_STEP_FUNC (rb_node_indval, rb_prev, tree)
@@ -253,85 +263,74 @@ PMOD_EXPORT void rb_indval_free (struct rb_node_indval *tree);
  * case it's enough for trees with up to about 2^(20-1) = 524288
  * elements. */
 
-struct rb_stack_slice
+struct rbstack_slice
 {
-  struct rb_stack_slice *up;
+  struct rbstack_slice *up;
   struct rb_node_hdr *stack[STACK_SLICE_SIZE];
 };
 
-#define RBSTACK_INIT(slice, ssp)					\
-  struct rb_stack_slice PIKE_CONCAT3 (_top_, slice, _);			\
-  struct rb_stack_slice *slice =					\
-    (PIKE_CONCAT3 (_top_, slice, _).up = 0,				\
-     &PIKE_CONCAT3 (_top_, slice, _));					\
-  size_t ssp = 0 /* Only zero when the stack is empty. */
+struct rbstack_ptr
+{
+  struct rbstack_slice *slice;
+  size_t ssp;			/* Only zero when the stack is empty. */
+};
 
-#define RBSTACK_PUSH(slice, ssp, node) do {				\
-  if (ssp < STACK_SLICE_SIZE)						\
-    slice->stack[ssp++] = (node);					\
-  else {								\
-    struct rb_stack_slice *_new_ = ALLOC_STRUCT (rb_stack_slice);	\
-    _new_->up = slice;							\
-    slice = _new_;							\
-    slice->stack[0] = (node);						\
-    ssp = 1;								\
-  }									\
+PMOD_EXPORT void rbstack_push (struct rbstack_ptr *rbstack,
+			       struct rb_node_hdr *node);
+PMOD_EXPORT void rbstack_pop (struct rbstack_ptr *rbstack);
+PMOD_EXPORT void rbstack_up (struct rbstack_ptr *rbstack);
+PMOD_EXPORT void rbstack_free (struct rbstack_ptr *rbstack);
+
+#define RBSTACK_INIT(rbstack)						\
+  struct rbstack_slice PIKE_CONCAT3 (_, rbstack, _top_);		\
+  struct rbstack_ptr rbstack = {					\
+    (PIKE_CONCAT3 (_, rbstack, _top_).up = 0,				\
+     &PIKE_CONCAT3 (_, rbstack, _top_)),				\
+    0									\
+  }
+
+#define RBSTACK_PUSH(rbstack, node) do {				\
+  if ((rbstack).ssp < STACK_SLICE_SIZE)					\
+    (rbstack).slice->stack[(rbstack).ssp++] = (node);			\
+  else rbstack_push (&(rbstack), node);					\
 } while (0)
 
-#define RBSTACK_POP(slice, ssp, node) do {				\
-  if (ssp) {								\
-    (node) = slice->stack[--ssp];					\
-    if (!ssp && slice->up) {						\
-      struct rb_stack_slice *_old_ = slice;				\
-      slice = slice->up;						\
-      ssp = STACK_SLICE_SIZE;						\
-      xfree (_old_);							\
-    }									\
-  }									\
-  else (node) = 0;							\
-} while (0)
-
-#define RBSTACK_POP_IGNORE(slice, ssp) do {				\
-  if (ssp && !--ssp && slice->up) {					\
-    struct rb_stack_slice *_old_ = slice;				\
-    slice = slice->up;							\
-    ssp = STACK_SLICE_SIZE;						\
-    xfree (_old_);							\
-  }									\
-} while (0)
-
-#define RBSTACK_UP(slice, ssp, node) do {				\
-  if (ssp) {								\
-    (node) = slice->stack[--ssp];					\
-    if (!ssp && slice->up) {						\
-      slice = slice->up;						\
-      ssp = STACK_SLICE_SIZE;						\
-    }									\
+#define RBSTACK_POP(rbstack, node) do {					\
+  if ((rbstack).ssp) {							\
+    (node) = (rbstack).slice->stack[--(rbstack).ssp];			\
+    if (!(rbstack).ssp && (rbstack).slice->up)				\
+      rbstack_pop (&(rbstack));						\
   }									\
   else (node) = 0;							\
 } while (0)
 
-#define RBSTACK_PEEK(slice, ssp, node) do {				\
-  if (ssp) (node) = slice->stack[ssp - 1];				\
+#define RBSTACK_POP_IGNORE(rbstack) do {				\
+  if ((rbstack).ssp && !--(rbstack).ssp && (rbstack).slice->up)		\
+    rbstack_pop (&(rbstack));						\
+} while (0)
+
+#define RBSTACK_UP(rbstack, node) do {					\
+  if ((rbstack).ssp) {							\
+    (node) = (rbstack).slice->stack[--(rbstack).ssp];			\
+    if (!(rbstack).ssp && (rbstack).slice->up) rbstack_up (&(rbstack));	\
+  }									\
   else (node) = 0;							\
 } while (0)
 
-#define RBSTACK_FREE(slice) do {					\
-  while (slice->up) {							\
-    struct rb_stack_slice *_old_ = slice;				\
-    slice = slice->up;							\
-    xfree (_old_);							\
+#define RBSTACK_PEEK(rbstack)						\
+  ((rbstack).ssp ? (rbstack).slice->stack[(rbstack).ssp - 1] : 0)
+
+#define RBSTACK_FREE(rbstack) do {					\
+  if ((rbstack).ssp) {							\
+    if ((rbstack).slice->up) rbstack_free (&(rbstack));			\
+    (rbstack).ssp = 0;							\
   }									\
 } while (0)
 
-#define RBSTACK_FREE_SET_ROOT(slice, ssp, node) do {			\
-  if (ssp) {								\
-    while (slice->up) {							\
-      struct rb_stack_slice *_old_ = slice;				\
-      slice = slice->up;						\
-      xfree (_old_);							\
-    }									\
-    (node) = slice->stack[0];						\
+#define RBSTACK_FREE_SET_ROOT(rbstack, node) do {			\
+  if ((rbstack).ssp) {							\
+    if ((rbstack).slice->up) rbstack_free (&(rbstack));			\
+    (node) = (rbstack).slice->stack[0];					\
   }									\
 } while (0)
 
@@ -345,7 +344,7 @@ struct rb_stack_slice
  * n_sub	Run when the nodes next pointer is a subtree.
  * pop		Run when leaving a node.
  */
-#define LOW_RB_TRAVERSE(label, slice, ssp, node, push, p_leaf, p_sub, between, n_leaf, n_sub, pop) \
+#define LOW_RB_TRAVERSE(label, rbstack, node, push, p_leaf, p_sub, between, n_leaf, n_sub, pop) \
 do {									\
   struct rb_node_hdr *low_rb_last_;					\
   if (node) {								\
@@ -355,7 +354,7 @@ do {									\
       {p_leaf;}								\
     else {								\
       {p_sub;}								\
-      RBSTACK_PUSH (slice, ssp, node);					\
+      RBSTACK_PUSH (rbstack, node);					\
       (node) = (node)->prev;						\
       goto PIKE_CONCAT (enter_, label);					\
     }									\
@@ -365,7 +364,7 @@ do {									\
       {n_leaf;}								\
     else {								\
       {n_sub;}								\
-      RBSTACK_PUSH (slice, ssp, node);					\
+      RBSTACK_PUSH (rbstack, node);					\
       (node) = (node)->next;						\
       goto PIKE_CONCAT (enter_, label);					\
     }									\
@@ -373,7 +372,7 @@ do {									\
     while (1) {								\
       {pop;}								\
       low_rb_last_ = (node);						\
-      RBSTACK_POP (slice, ssp, node);					\
+      RBSTACK_POP (rbstack, node);					\
       if (!(node)) break;						\
       if (low_rb_last_ == (node)->prev)					\
 	goto PIKE_CONCAT (between_, label);				\
@@ -381,11 +380,11 @@ do {									\
   }									\
 } while (0)
 
-#define LOW_RB_DEBUG_TRAVERSE(label, slice, ssp, node, push, p_leaf, p_sub, between, n_leaf, n_sub, pop) \
+#define LOW_RB_DEBUG_TRAVERSE(label, rbstack, node, push, p_leaf, p_sub, between, n_leaf, n_sub, pop) \
 do {									\
   size_t PIKE_CONCAT (depth_, label) = 0;				\
   LOW_RB_TRAVERSE(							\
-    label, slice, ssp, node,						\
+    label, rbstack, node,						\
     fprintf (stderr, "%*s%p enter\n",					\
 	     PIKE_CONCAT (depth_, label)++, "", node); {push;},		\
     fprintf (stderr, "%*s%p prev leaf\n",				\
@@ -433,35 +432,30 @@ do {									\
 
 /* Tracks the way down a tree to a specific node and updates the stack
  * as necessary for low_rb_link_* and low_rb_unlink. */
-#define LOW_RB_TRACK(slice, ssp, node, cmp, got_lt, got_eq, got_gt)	\
+#define LOW_RB_TRACK(rbstack, node, cmp, got_lt, got_eq, got_gt)	\
   LOW_RB_FIND (node, {							\
-    RBSTACK_PUSH (slice, ssp, node);					\
+    RBSTACK_PUSH (rbstack, node);					\
     {cmp;}								\
   }, got_lt, got_eq, got_gt)
 
 /* Goes to the next node in order while keeping the stack updated. */
-#define LOW_RB_TRACK_NEXT(slice, ssp, node)				\
+#define LOW_RB_TRACK_NEXT(rbstack, node)				\
 do {									\
-  DO_IF_DEBUG ({							\
-    struct rb_node_hdr *low_rb_stack_top_;				\
-    RBSTACK_PEEK (slice, ssp, low_rb_stack_top_);			\
-    if (node != low_rb_stack_top_)					\
+  DO_IF_DEBUG (								\
+    if (node != RBSTACK_PEEK (rbstack))					\
       fatal ("Given node is not on top of stack.\n");			\
-  });									\
+  );									\
   if (node->flags & RB_THREAD_NEXT) {					\
     struct rb_node_hdr *low_rb_next_ = node->next;			\
-    while (1) {								\
-      RBSTACK_PEEK (slice, ssp, node);					\
-      if (node == low_rb_next_) break;					\
-      RBSTACK_POP_IGNORE (slice, ssp);					\
-    }									\
+    while ((node = RBSTACK_PEEK (rbstack)) != low_rb_next_)		\
+      RBSTACK_POP_IGNORE (rbstack);					\
   }									\
   else {								\
     node = node->next;							\
-    RBSTACK_PUSH (slice, ssp, node);					\
-    while (!(node->flags & RB_THREAD_PREV)) {				\
+    while (1) {								\
+      RBSTACK_PUSH (rbstack, node);					\
+      if (node->flags & RB_THREAD_PREV) break;				\
       node = node->prev;						\
-      RBSTACK_PUSH (slice, ssp, node);					\
     }									\
   }									\
 } while (0)
@@ -473,24 +467,28 @@ do {									\
  * existing node. */
 #define LOW_RB_INSERT(tree, node, cmp, insert, replace)			\
 do {									\
+  int low_rb_ins_type_;							\
+  RBSTACK_INIT (rbstack);						\
   if (((node) = *(tree))) {						\
-    RBSTACK_INIT (slice, ssp);						\
-    LOW_RB_TRACK (slice, ssp, node, cmp, {				\
-      DO_IF_DEBUG ((node) = 0);						\
-      {insert;}								\
-      low_rb_link_at_next ((tree), slice, ssp, (node));			\
+    LOW_RB_TRACK (rbstack, node, cmp, {					\
+      low_rb_ins_type_ = 1;	/* Got less - link at next. */		\
     }, {								\
+      low_rb_ins_type_ = 0;	/* Got equal - replace. */		\
       {replace;}							\
-      RBSTACK_FREE (slice);						\
-    }, {								\
-      DO_IF_DEBUG ((node) = 0);						\
-      {insert;}								\
-      low_rb_link_at_prev ((tree), slice, ssp, (node));			\
+      RBSTACK_FREE (rbstack);						\
+    }, {			/* Got greater - link at prev. */	\
+      low_rb_ins_type_ = 2;						\
     });									\
   }									\
-  else {								\
+  else low_rb_ins_type_ = 3;						\
+  if (low_rb_ins_type_) {						\
+    DO_IF_DEBUG ((node) = 0);						\
     {insert;}								\
-    low_rb_init_root (*(tree) = (node));				\
+    switch (low_rb_ins_type_) {						\
+      case 1: low_rb_link_at_next ((tree), rbstack, (node)); break;	\
+      case 2: low_rb_link_at_prev ((tree), rbstack, (node)); break;	\
+      case 3: low_rb_init_root (*(tree) = (node)); break;		\
+    }									\
   }									\
 } while (0)
 
@@ -499,50 +497,49 @@ do {									\
  * instead. */
 typedef void low_rb_move_data_fn (struct rb_node_hdr *to,
 				  struct rb_node_hdr *from);
-
-typedef struct rb_node_hdr *low_rb_alloc_copy_fn (struct rb_node_hdr *node);
+typedef struct rb_node_hdr *low_rb_copy_fn (struct rb_node_hdr *node);
+typedef void low_rb_free_fn (struct rb_node_hdr *node);
 
 void low_rb_init_root (struct rb_node_hdr *new_root);
-void low_rb_link_at_prev (struct rb_node_hdr **tree,
-			  struct rb_stack_slice *slice, size_t ssp,
+void low_rb_link_at_prev (struct rb_node_hdr **tree, struct rbstack_ptr rbstack,
 			  struct rb_node_hdr *new);
-void low_rb_link_at_next (struct rb_node_hdr **tree,
-			  struct rb_stack_slice *slice, size_t ssp,
+void low_rb_link_at_next (struct rb_node_hdr **tree, struct rbstack_ptr rbstack,
 			  struct rb_node_hdr *new);
 struct rb_node_hdr *low_rb_unlink (struct rb_node_hdr **tree,
-				   struct rb_stack_slice *slice, size_t ssp,
+				   struct rbstack_ptr rbstack,
 				   low_rb_move_data_fn *move_data);
 
 struct rb_node_hdr *low_rb_insert (struct rb_node_hdr **tree,
-				   low_rb_cmp_fn *cmpfun, void *key,
+				   low_rb_cmp_fn *cmp_fn, void *key,
 				   struct rb_node_hdr *new);
 void low_rb_add (struct rb_node_hdr **tree,
-		 low_rb_cmp_fn *cmpfun, void *key,
+		 low_rb_cmp_fn *cmp_fn, void *key,
 		 struct rb_node_hdr *new);
 void low_rb_add_after (struct rb_node_hdr **tree,
-		       low_rb_cmp_fn *cmpfun, void *key,
+		       low_rb_cmp_fn *cmp_fn, void *key,
 		       struct rb_node_hdr *new,
 		       struct rb_node_hdr *existing);
 struct rb_node_hdr *low_rb_delete (struct rb_node_hdr **tree,
-				   low_rb_cmp_fn *cmpfun, void *key,
-				   low_rb_move_data_fn *move_data);
+				   low_rb_cmp_fn *cmp_fn, void *key,
+				   low_rb_move_data_fn *move_data_fn);
 struct rb_node_hdr *low_rb_delete_node (struct rb_node_hdr **tree,
-					low_rb_cmp_fn *cmpfun, void *key,
-					low_rb_move_data_fn *move_data,
+					low_rb_cmp_fn *cmp_fn, void *key,
+					low_rb_move_data_fn *move_data_fn,
 					struct rb_node_hdr *node);
 struct rb_node_hdr *low_rb_copy (struct rb_node_hdr *tree,
-				 low_rb_alloc_copy_fn *alloc_copy);
+				 low_rb_copy_fn *copy_node_fn);
+void low_rb_free (struct rb_node_hdr *tree, low_rb_free_fn *free_node_fn);
 
 struct rb_node_hdr *low_rb_find_eq (struct rb_node_hdr *tree,
-				    low_rb_cmp_fn *cmpfun, void *key);
+				    low_rb_cmp_fn *cmp_fn, void *key);
 struct rb_node_hdr *low_rb_find_lt (struct rb_node_hdr *tree,
-				    low_rb_cmp_fn *cmpfun, void *key);
+				    low_rb_cmp_fn *cmp_fn, void *key);
 struct rb_node_hdr *low_rb_find_gt (struct rb_node_hdr *tree,
-				    low_rb_cmp_fn *cmpfun, void *key);
+				    low_rb_cmp_fn *cmp_fn, void *key);
 struct rb_node_hdr *low_rb_find_le (struct rb_node_hdr *tree,
-				    low_rb_cmp_fn *cmpfun, void *key);
+				    low_rb_cmp_fn *cmp_fn, void *key);
 struct rb_node_hdr *low_rb_find_ge (struct rb_node_hdr *tree,
-				    low_rb_cmp_fn *cmpfun, void *key);
+				    low_rb_cmp_fn *cmp_fn, void *key);
 
 #ifdef PIKE_DEBUG
 void debug_check_rb_tree (struct rb_node_hdr *tree);

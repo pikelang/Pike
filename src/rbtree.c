@@ -2,7 +2,7 @@
  *
  * Created 2001-04-27 by Martin Stjernholm
  *
- * $Id: rbtree.c,v 1.2 2001/05/01 01:11:23 mast Exp $
+ * $Id: rbtree.c,v 1.3 2001/05/01 07:52:19 mast Exp $
  */
 
 #include "global.h"
@@ -49,12 +49,12 @@ struct svalue_cmp_data
   struct svalue *key, *cmp_less;
 };
 
-static int svalue_cmp_eq (struct svalue_cmp_data *data, struct rb_node_ind *node)
+static int svalue_cmp_eq (struct svalue_cmp_data *data, union rb_node *node)
 {
   int cmp_res;
   struct svalue tmp;
   push_svalue (data->key);
-  push_svalue (&use_rb_node_ind (node, tmp));
+  push_svalue (&use_rb_node_ind (&(node->i), tmp));
   apply_svalue (data->cmp_less, 2);
   if (IS_ZERO (sp - 1))
     cmp_res = !is_eq (data->key, &tmp);
@@ -65,12 +65,12 @@ static int svalue_cmp_eq (struct svalue_cmp_data *data, struct rb_node_ind *node
 }
 
 /* Considers equal as greater. */
-static int svalue_cmp_ge (struct svalue_cmp_data *data, struct rb_node_ind *node)
+static int svalue_cmp_ge (struct svalue_cmp_data *data, union rb_node *node)
 {
   int cmp_res;
   struct svalue tmp;
   push_svalue (data->key);
-  push_svalue (&use_rb_node_ind (node, tmp));
+  push_svalue (&use_rb_node_ind (&(node->i), tmp));
   apply_svalue (data->cmp_less, 2);
   cmp_res = IS_ZERO (sp - 1) ? 1 : -1;
   pop_stack();
@@ -78,11 +78,11 @@ static int svalue_cmp_ge (struct svalue_cmp_data *data, struct rb_node_ind *node
 }
 
 /* Considers equal as less. */
-static int svalue_cmp_le (struct svalue_cmp_data *data, struct rb_node_ind *node)
+static int svalue_cmp_le (struct svalue_cmp_data *data, union rb_node *node)
 {
   int cmp_res;
   struct svalue tmp;
-  push_svalue (&use_rb_node_ind (node, tmp));
+  push_svalue (&use_rb_node_ind (&(node->i), tmp));
   push_svalue (data->key);
   apply_svalue (data->cmp_less, 2);
   cmp_res = IS_ZERO (sp - 1) ? -1 : 1;
@@ -113,7 +113,7 @@ PMOD_EXPORT struct rb_node_ind *rb_ind_insert (struct rb_node_ind **tree,
     data.cmp_less = cmp_less;
     data.key = ind;
     LOW_RB_INSERT ((struct rb_node_hdr **) tree, HDR (node), { /* Compare. */
-      cmp_res = svalue_cmp_eq (&data, node);
+      cmp_res = svalue_cmp_eq (&data, (union rb_node *) node);
     }, {			/* Insert. */
       node = alloc_rb_node_ind();
       assign_svalue_no_free (&node->ind, ind);
@@ -193,19 +193,20 @@ static struct rb_node_ind *copy_ind_node (struct rb_node_ind *node)
   struct rb_node_ind *new = alloc_rb_node_ind();
   struct svalue tmp;
   assign_svalue_no_free (&new->ind, &use_rb_node_ind (node, tmp));
+  DO_IF_DEBUG (new->ind.type |= RB_FLAG_MARKER);
   return new;
 }
 
 PMOD_EXPORT struct rb_node_ind *rb_ind_copy (struct rb_node_ind *tree)
 {
   return (struct rb_node_ind *)
-    low_rb_copy (HDR (tree), (low_rb_alloc_copy_fn *) copy_ind_node);
+    low_rb_copy (HDR (tree), (low_rb_copy_fn *) copy_ind_node);
 }
 
 PMOD_EXPORT void rb_ind_free (struct rb_node_ind *tree)
 {
-  RBSTACK_INIT (slice, ssp);
-  LOW_RB_TRAVERSE (1, slice, ssp, HDR (tree), ;, ;, ;, ;, ;, ;, {
+  RBSTACK_INIT (rbstack);
+  LOW_RB_TRAVERSE (1, rbstack, HDR (tree), ;, ;, ;, ;, ;, ;, {
     /* Pop. */
     tree->ind.type &= ~RB_IND_FLAG_MASK;
     free_svalue (&tree->ind);
@@ -238,7 +239,7 @@ PMOD_EXPORT struct rb_node_indval *rb_indval_insert (struct rb_node_indval **tre
     data.cmp_less = cmp_less;
     data.key = ind;
     LOW_RB_INSERT ((struct rb_node_hdr **) tree, HDR (node), { /* Compare. */
-      cmp_res = svalue_cmp_eq (&data, (struct rb_node_ind *) node);
+      cmp_res = svalue_cmp_eq (&data, (union rb_node *) node);
     }, {			/* Insert. */
       node = alloc_rb_node_indval();
       assign_svalue_no_free (&node->ind, ind);
@@ -416,19 +417,20 @@ static struct rb_node_indval *copy_indval_node (struct rb_node_indval *node)
   struct svalue tmp;
   assign_svalue_no_free (&new->ind, &use_rb_node_ind (node, tmp));
   assign_svalue_no_free (&new->val, &node->val);
+  DO_IF_DEBUG (new->ind.type |= RB_FLAG_MARKER);
   return new;
 }
 
 PMOD_EXPORT struct rb_node_indval *rb_indval_copy (struct rb_node_indval *tree)
 {
   return (struct rb_node_indval *)
-    low_rb_copy (HDR (tree), (low_rb_alloc_copy_fn *) copy_indval_node);
+    low_rb_copy (HDR (tree), (low_rb_copy_fn *) copy_indval_node);
 }
 
 PMOD_EXPORT void rb_indval_free (struct rb_node_indval *tree)
 {
-  RBSTACK_INIT (slice, ssp);
-  LOW_RB_TRAVERSE (1, slice, ssp, HDR (tree), ;, ;, ;, ;, ;, ;, {
+  RBSTACK_INIT (rbstack);
+  LOW_RB_TRAVERSE (1, rbstack, HDR (tree), ;, ;, ;, ;, ;, ;, {
     /* Pop. */
     tree->ind.type &= ~RB_IND_FLAG_MASK;
     free_svalue (&tree->ind);
@@ -535,6 +537,41 @@ PMOD_EXPORT struct rb_node_hdr *rb_next (struct rb_node_hdr *node)
 
 /* The low level stuff. */
 
+PMOD_EXPORT void rbstack_push (struct rbstack_ptr *rbstack, struct rb_node_hdr *node)
+{
+  struct rbstack_slice *new = ALLOC_STRUCT (rbstack_slice);
+  new->up = rbstack->slice;
+  new->stack[0] = node;
+  rbstack->slice = new;
+  rbstack->ssp = 1;
+}
+
+PMOD_EXPORT void rbstack_pop (struct rbstack_ptr *rbstack)
+{
+  struct rbstack_slice *old = rbstack->slice;
+  rbstack->slice = old->up;
+  xfree (old);
+  rbstack->ssp = STACK_SLICE_SIZE;
+}
+
+PMOD_EXPORT void rbstack_up (struct rbstack_ptr *rbstack)
+{
+  rbstack->slice = rbstack->slice->up;
+  rbstack->ssp = STACK_SLICE_SIZE;
+}
+
+PMOD_EXPORT void rbstack_free (struct rbstack_ptr *rbstack)
+{
+  struct rbstack_slice *ptr = rbstack->slice;
+  do {
+    struct rbstack_slice *old = ptr;
+    ptr = ptr->up;
+    xfree (old);
+  } while (ptr->up);
+  rbstack->slice = ptr;
+  rbstack->ssp = 0;
+}
+
 /* Sets the pointer in parent that points to child. */
 #define SET_PTR_TO_CHILD(parent, child, prev_val, next_val)		\
 do {									\
@@ -543,7 +580,8 @@ do {									\
   else {								\
     DO_IF_DEBUG(							\
       if (child != parent->next)					\
-	rb_fatal (parent, "Got invalid parent to %p.\n", child);	\
+	rb_fatal (parent, "Got invalid parent to %p "			\
+		  "(stack probably wrong).\n", child);			\
     );									\
     parent->next = next_val;						\
   }									\
@@ -604,78 +642,80 @@ static inline struct rb_node_hdr *rot_left (struct rb_node_hdr *node)
 
 /* Returns the root node, which might have changed. The passed stack
  * is freed. */
-static struct rb_node_hdr *rebalance_after_add (
-  struct rb_node_hdr *node, struct rb_stack_slice *slice, size_t ssp)
+static struct rb_node_hdr *rebalance_after_add (struct rb_node_hdr *node,
+						struct rbstack_ptr rbstack)
 {
   struct rb_node_hdr *parent, *grandparent, *uncle, *top;
-  RBSTACK_POP (slice, ssp, parent);
-  RBSTACK_POP (slice, ssp, grandparent);
+  RBSTACK_POP (rbstack, parent);
+#ifdef PIKE_DEBUG
+  if (!parent) rb_fatal (node, "No parent on stack.\n");
+#endif
+  RBSTACK_POP (rbstack, grandparent);
   top = grandparent ? grandparent : parent;
 
   while (parent->flags & RB_RED) {
     /* Since the root always is black we know there's a grandparent. */
+#ifdef PIKE_DEBUG
+    if (!grandparent) rb_fatal (parent, "No parent for red node.\n");
+#endif
 
     if (parent == grandparent->prev) {
       uncle = grandparent->next;
 
       if (!(grandparent->flags & RB_THREAD_NEXT) && uncle->flags & RB_RED) {
-	/* If grandparent has a thread pointer in next, then uncle is
-	 * really NULL and therefore black. */
-
 	/* Case 1:
-	 *           grandparent(B)                   grandparent(R)
-	 *             /     \                          /     \
-	 *            /       \                        /       \
-	 *      parent(R)   uncle(R)    ==>      parent(B)   uncle(B)
-	 *        /   \                            /   \
-	 *       /     \                          /     \
-	 *  node(R) or node(R)               node(R) or node(R)
+	 *            grandparent(B)                   *grandparent(R)
+	 *               /    \                            /    \
+	 *              /      \                          /      \
+	 *        parent(R)   uncle(R)    ==>       parent(B)   uncle(B)
+	 *         /    \                            /    \
+	 *        /      \                          /      \
+	 *  *node(R) or *node(R)               node(R) or node(R)
 	 */
-	grandparent->flags |= RB_RED;
 	parent->flags &= ~RB_RED;
 	uncle->flags &= ~RB_RED;
-	/* Continue at grandparent. */
-	node = grandparent;
-	RBSTACK_POP (slice, ssp, parent);
+	RBSTACK_POP (rbstack, parent);
 	if (!parent) {
-	  top = node;
-	  top->flags &= ~RB_RED;
+	  /* The grandparent is root - leave it black. */
+	  top = grandparent;
 	  break;
 	}
-	RBSTACK_POP (slice, ssp, grandparent);
+	grandparent->flags |= RB_RED;
+	node = grandparent;
+	RBSTACK_POP (rbstack, grandparent);
 	top = grandparent ? grandparent : parent;
       }
 
       else {
 	if (node == parent->next) {
 	  /* Case 2:
-	   *           grandparent(B)                  grandparent(B)
-	   *             /     \                         /     \
-	   *            /       \                       /       \
-	   *      parent(R)   uncle(B)    ==>       node(R)   uncle(B)
-	   *            \                            /
-	   *             \                          /
-	   *            node(R)               parent(R)
+	   *          grandparent(B)                    grandparent(B)
+	   *             /    \                            /    \
+	   *            /      \                          /      \
+	   *      parent(R)   uncle(B)    ==>        node(R)    uncle(B)
+	   *            \                            /    \
+	   *             \                          /      \
+	   *            *node(R)             *parent(R)    (B)
 	   */
-	  /* Also swap node and parent to get them back in order. */
 	  node = parent;
 	  parent = grandparent->prev = rot_left (node);
 	}
 
 	/* Case 3:
-	 *           grandparent(B)                parent(B)
-	 *             /     \                      /     \
-	 *            /       \                    /       \
-	 *      parent(R)   uncle(B)    ==>    node(R)   grandparent(R)
-	 *        /                                              \
-	 *       /                                                \
-	 *   node(R)                                            uncle(B)
+	 *            grandparent(B)                  parent(B)
+	 *               /    \                        /    \
+	 *              /      \                      /      \
+	 *        parent(R)   uncle(B)    ==>    node(R)  grandparent(R)
+	 *         /    \                                    /    \
+	 *        /      \                                  /      \
+	 *  *node(R)     (B)                              (B)     uncle(B)
+	 *
 	 * => Done.
 	 */
+	rot_right (grandparent);
 	grandparent->flags |= RB_RED;
 	parent->flags &= ~RB_RED;
-	rot_right (grandparent);
-	RBSTACK_POP (slice, ssp, top);
+	RBSTACK_POP (rbstack, top);
 	if (top)
 	  SET_PTR_TO_CHILD (top, grandparent, parent, parent);
 	else
@@ -695,17 +735,16 @@ static struct rb_node_hdr *rebalance_after_add (
 
       if (!(grandparent->flags & RB_THREAD_PREV) && uncle->flags & RB_RED) {
 	/* Case 1 */
-	grandparent->flags |= RB_RED;
 	parent->flags &= ~RB_RED;
 	uncle->flags &= ~RB_RED;
-	node = grandparent;
-	RBSTACK_POP (slice, ssp, parent);
+	RBSTACK_POP (rbstack, parent);
 	if (!parent) {
-	  top = node;
-	  top->flags &= ~RB_RED;
+	  top = grandparent;
 	  break;
 	}
-	RBSTACK_POP (slice, ssp, grandparent);
+	grandparent->flags |= RB_RED;
+	node = grandparent;
+	RBSTACK_POP (rbstack, grandparent);
 	top = grandparent ? grandparent : parent;
       }
 
@@ -717,10 +756,10 @@ static struct rb_node_hdr *rebalance_after_add (
 	}
 
 	/* Case 3 */
+	rot_left (grandparent);
 	grandparent->flags |= RB_RED;
 	parent->flags &= ~RB_RED;
-	rot_left (grandparent);
-	RBSTACK_POP (slice, ssp, top);
+	RBSTACK_POP (rbstack, top);
 	if (top)
 	  SET_PTR_TO_CHILD (top, grandparent, parent, parent);
 	else
@@ -730,7 +769,7 @@ static struct rb_node_hdr *rebalance_after_add (
     }
   }
 
-  RBSTACK_FREE_SET_ROOT (slice, ssp, top);
+  RBSTACK_FREE_SET_ROOT (rbstack, top);
 #ifdef PIKE_DEBUG
   if (top->flags & RB_RED) rb_fatal (top, "Root node not black.\n");
 #endif
@@ -739,11 +778,11 @@ static struct rb_node_hdr *rebalance_after_add (
 
 /* Returns the root node, which might have changed. The passed stack
  * is freed. */
-static struct rb_node_hdr *rebalance_after_delete (
-  struct rb_node_hdr *node, struct rb_stack_slice *slice, size_t ssp)
+static struct rb_node_hdr *rebalance_after_delete (struct rb_node_hdr *node,
+						   struct rbstack_ptr rbstack)
 {
   struct rb_node_hdr *parent, *sibling, *top = node;
-  RBSTACK_POP (slice, ssp, parent);
+  RBSTACK_POP (rbstack, parent);
 
   if (!parent) {
     if (!node) return 0;
@@ -757,100 +796,94 @@ static struct rb_node_hdr *rebalance_after_delete (
 	node->flags &= ~RB_RED;
 	break;
       }
+#ifdef PIKE_DEBUG
+      if (parent->flags & RB_THREAD_NEXT)
+	/* Since the node in the prev subtree is the "concatenation"
+	 * of two black nodes, there must be at least two black nodes
+	 * in the next subtree too, i.e. at least one non-null
+	 * child. */
+	rb_fatal (parent, "Sibling in next is null; tree was unbalanced.\n");
+#endif
       sibling = parent->next;
 
-      if (!(parent->flags & RB_THREAD_NEXT) && sibling->flags & RB_RED) {
-	/* If parent has a thread pointer in next, then sibling is
-	 * really NULL and therefore black. */
-
+      if (sibling->flags & RB_RED) {
 	/* Case 1:
-	 *            parent(B)                       sibling(B)
-	 *             /     \                           /
-	 *            /       \                         /
-	 *        node(B)  sibling(R)    ==>     parent(R)
-	 *                    /                   /     \
-	 *                   /                   /       \
-	 *            new sibling(B)         node(B)  new sibling(B)
+	 *            parent(B)                           sibling(B)
+	 *             /    \                              /    \
+	 *            /      \                            /      \
+	 *     *node(2B)    sibling(R)    ==>       parent(R)    (B)
+	 *                   /    \                  /    \
+	 *                  /      \                /      \
+	 *                (B)      (B)       *node(2B)     (B)
 	 */
 	parent->flags |= RB_RED;
 	sibling->flags &= ~RB_RED;
 	rot_left (parent);
-	RBSTACK_POP (slice, ssp, top);
+	RBSTACK_POP (rbstack, top);
 	if (top)
 	  SET_PTR_TO_CHILD (top, parent, sibling, sibling);
 	else
 	  top = sibling;
-	RBSTACK_PUSH (slice, ssp, sibling);
+	RBSTACK_PUSH (rbstack, sibling);
+#ifdef PIKE_DEBUG
+	if (parent->flags & RB_THREAD_NEXT)
+	  rb_fatal (parent, "Sibling in next is null; tree was unbalanced.\n");
+#endif
 	sibling = parent->next;
 	goto prev_node_red_parent;
       }
 
       if (!(parent->flags & RB_RED)) {
-	/* Case 2a:
-	 *            parent(B)                     parent(B)
-	 *             /     \                       /     \
-	 *            /       \                     /       \
-	 *        node(B)  sibling(B)    ==>    node(B)  sibling(R)
-	 *                    /  \                          /  \
-	 *                   /    \                        /    \
-	 *                 (B)    (B)                    (B)    (B)
-	 */
-	if (parent->flags & RB_THREAD_NEXT) {
-	  node = parent;
-	  RBSTACK_POP (slice, ssp, parent);
-	  continue;
-	}
-	else if ((sibling->flags & RB_THREAD_PREV ||
-		  !(sibling->prev->flags & RB_RED)) &&
-		 (sibling->flags & RB_THREAD_NEXT ||
-		  !(sibling->next->flags & RB_RED))) {
+	if ((sibling->flags & RB_THREAD_PREV || !(sibling->prev->flags & RB_RED)) &&
+	    (sibling->flags & RB_THREAD_NEXT || !(sibling->next->flags & RB_RED))) {
+	  /* Case 2a:
+	   *            parent(B)                      *parent(2B)
+	   *             /    \                          /    \
+	   *            /      \                        /      \
+	   *     *node(2B)    sibling(B)    ==>    node(B)    sibling(R)
+	   *                   /    \                          /    \
+	   *                  /      \                        /      \
+	   *                (B)      (B)                    (B)      (B)
+	   */
 	  sibling->flags |= RB_RED;
 	  node = parent;
-	  RBSTACK_POP (slice, ssp, parent);
+	  RBSTACK_POP (rbstack, parent);
 	  continue;
 	}
       }
 
       else {
       prev_node_red_parent:
-	/* Case 2b:
-	 *            parent(R)                     parent(B)
-	 *             /     \                       /     \
-	 *            /       \                     /       \
-	 *        node(B)  sibling(B)    ==>    node(B)  sibling(R)
-	 *                    /  \                          /  \
-	 *                   /    \                        /    \
-	 *                 (B)    (B)                    (B)    (B)
-	 * => Done.
-	 */
-	if (parent->flags & RB_THREAD_NEXT) {
-	  parent->flags &= ~RB_RED;
-	  break;
-	}
-	else if ((sibling->flags & RB_THREAD_PREV ||
-		  !(sibling->prev->flags & RB_RED)) &&
-		 (sibling->flags & RB_THREAD_NEXT ||
-		  !(sibling->next->flags & RB_RED))) {
+	if ((sibling->flags & RB_THREAD_PREV || !(sibling->prev->flags & RB_RED)) &&
+	    (sibling->flags & RB_THREAD_NEXT || !(sibling->next->flags & RB_RED))) {
+	  /* Case 2b:
+	   *            parent(R)                       parent(B)
+	   *             /    \                          /    \
+	   *            /      \                        /      \
+	   *     *node(2B)    sibling(B)    ==>    node(B)    sibling(R)
+	   *                   /    \                          /    \
+	   *                  /      \                        /      \
+	   *                (B)      (B)                    (B)      (B)
+	   * => Done.
+	   */
 	  parent->flags &= ~RB_RED;
 	  sibling->flags |= RB_RED;
 	  break;
 	}
       }
 
-#ifdef PIKE_DEBUG
-      if (parent->flags & RB_THREAD_NEXT)
-	rb_fatal (parent, "Null sibling in next.\n");
-#endif
-
       if (sibling->flags & RB_THREAD_NEXT || !(sibling->next->flags & RB_RED)) {
 	/* Case 3:
-	 *            parent(?)                     parent(?)
-	 *             /     \                       /     \
-	 *            /       \                     /       \
-	 *        node(B)  sibling(B)    ==>    node(B)  new sibling(B)
-	 *                   /    \                             \
-	 *                  /      \                             \
-	 *         new sibling(R)  (B)                        sibling(R)
+	 *        parent(?)                        parent(?)
+	 *         /    \                           /    \
+	 *        /      \                         /      \
+	 *  *node(2B)   sibling(B)          *node(2B)  new sibling(B)
+	 *               /    \                           /    \
+	 *              /      \      ==>                /      \
+	 *     new sibling(R)  (B)                     (B)     sibling(R)
+	 *         /    \                                       /    \
+	 *        /      \                                     /      \
+	 *      (B)      (B)                                 (B)      (B)
 	 */
 	sibling->flags |= RB_RED;
 	sibling = parent->next = rot_right (sibling);
@@ -858,17 +891,17 @@ static struct rb_node_hdr *rebalance_after_delete (
       }
 
       /* Case 4:
-       *            parent(?)                       sibling(?)
-       *             /     \                          /    \
-       *            /       \                        /      \
-       *        node(B)  sibling(B)    ==>     parent(B)    (B)
-       *                   /    \                /   \
-       *                  /      \              /     \
-       *                (?)      (R)        node(B)   (?)
+       *            parent(?)                           sibling(?)
+       *             /    \                              /    \
+       *            /      \                            /      \
+       *     *node(2B)    sibling(B)    ==>       parent(B)    (B)
+       *                   /    \                  /    \
+       *                  /      \                /      \
+       *                (?)      (R)         node(B)     (?)
        * => Done.
        */
       rot_left (parent);
-      RBSTACK_POP (slice, ssp, top);
+      RBSTACK_POP (rbstack, top);
       if (top) {
 	SET_PTR_TO_CHILD (top, parent, sibling, sibling);
 	if (parent->flags & RB_RED) {
@@ -899,64 +932,55 @@ static struct rb_node_hdr *rebalance_after_delete (
 	node->flags &= ~RB_RED;
 	break;
       }
+#ifdef PIKE_DEBUG
+      if (parent->flags & RB_THREAD_PREV)
+	rb_fatal (parent, "Sibling in prev is null; tree was unbalanced.\n");
+#endif
       sibling = parent->prev;
 
-      if (!(parent->flags & RB_THREAD_PREV) && sibling->flags & RB_RED) {
+      if (sibling->flags & RB_RED) {
 	/* Case 1 */
 	parent->flags |= RB_RED;
 	sibling->flags &= ~RB_RED;
 	rot_right (parent);
-	RBSTACK_POP (slice, ssp, top);
+	RBSTACK_POP (rbstack, top);
 	if (top)
 	  SET_PTR_TO_CHILD (top, parent, sibling, sibling);
 	else
 	  top = sibling;
-	RBSTACK_PUSH (slice, ssp, sibling);
+	RBSTACK_PUSH (rbstack, sibling);
+#ifdef PIKE_DEBUG
+	if (parent->flags & RB_THREAD_PREV)
+	  rb_fatal (parent, "Sibling in prev is null; tree was unbalanced.\n");
+#endif
 	sibling = parent->prev;
 	goto next_node_red_parent;
       }
 
       if (!(parent->flags & RB_RED)) {
-	/* Case 2a */
-	if (parent->flags & RB_THREAD_PREV) {
-	  node = parent;
-	  RBSTACK_POP (slice, ssp, parent);
-	  continue;
-	}
-	else if ((sibling->flags & RB_THREAD_PREV ||
-		  !(sibling->prev->flags & RB_RED)) &&
-		 (sibling->flags & RB_THREAD_NEXT ||
-		  !(sibling->next->flags & RB_RED))) {
+	if ((sibling->flags & RB_THREAD_PREV || !(sibling->prev->flags & RB_RED)) &&
+	    (sibling->flags & RB_THREAD_NEXT || !(sibling->next->flags & RB_RED))) {
+	  /* Case 2a */
 	  sibling->flags |= RB_RED;
 	  node = parent;
-	  RBSTACK_POP (slice, ssp, parent);
+	  RBSTACK_POP (rbstack, parent);
 	  continue;
 	}
       }
 
       else {
       next_node_red_parent:
-	/* Case 2b */
-	if (parent->flags & RB_THREAD_PREV) {
-	  parent->flags &= ~RB_RED;
-	  break;
-	}
-	else if ((sibling->flags & RB_THREAD_PREV ||
-		  !(sibling->prev->flags & RB_RED)) &&
-		 (sibling->flags & RB_THREAD_NEXT ||
-		  !(sibling->next->flags & RB_RED))) {
+	if ((sibling->flags & RB_THREAD_PREV || !(sibling->prev->flags & RB_RED)) &&
+	    (sibling->flags & RB_THREAD_NEXT || !(sibling->next->flags & RB_RED))) {
+	  /* Case 2b */
 	  parent->flags &= ~RB_RED;
 	  sibling->flags |= RB_RED;
 	  break;
 	}
       }
 
-#ifdef PIKE_DEBUG
-      if (parent->flags & RB_THREAD_PREV)
-	rb_fatal (parent, "Null sibling in prev.\n");
-#endif
-
       if (sibling->flags & RB_THREAD_PREV || !(sibling->prev->flags & RB_RED)) {
+	/* Case 3 */
 	sibling->flags |= RB_RED;
 	sibling = parent->prev = rot_left (sibling);
 	sibling->flags &= ~RB_RED;
@@ -964,7 +988,7 @@ static struct rb_node_hdr *rebalance_after_delete (
 
       /* Case 4 */
       rot_right (parent);
-      RBSTACK_POP (slice, ssp, top);
+      RBSTACK_POP (rbstack, top);
       if (top) {
 	SET_PTR_TO_CHILD (top, parent, sibling, sibling);
 	if (parent->flags & RB_RED) {
@@ -983,7 +1007,7 @@ static struct rb_node_hdr *rebalance_after_delete (
     }
   } while (parent);
 
-  RBSTACK_FREE_SET_ROOT (slice, ssp, top);
+  RBSTACK_FREE_SET_ROOT (rbstack, top);
 #ifdef PIKE_DEBUG
   if (top->flags & RB_RED) rb_fatal (top, "Root node not black.\n");
 #endif
@@ -1000,12 +1024,10 @@ void low_rb_init_root (struct rb_node_hdr *node)
 }
 
 /* The passed stack is freed. */
-void low_rb_link_at_prev (struct rb_node_hdr **tree,
-			  struct rb_stack_slice *slice, size_t ssp,
+void low_rb_link_at_prev (struct rb_node_hdr **tree, struct rbstack_ptr rbstack,
 			  struct rb_node_hdr *new)
 {
-  struct rb_node_hdr *parent;
-  RBSTACK_PEEK (slice, ssp, parent);
+  struct rb_node_hdr *parent = RBSTACK_PEEK (rbstack);
 #ifdef PIKE_DEBUG
   if (!new) fatal ("New node is null.\n");
   if (!parent) fatal ("Cannot link in root node.\n");
@@ -1018,16 +1040,14 @@ void low_rb_link_at_prev (struct rb_node_hdr **tree,
   parent->flags &= ~RB_THREAD_PREV;
   parent->prev = new;
 
-  *tree = rebalance_after_add (new, slice, ssp);
+  *tree = rebalance_after_add (new, rbstack);
 }
 
 /* The passed stack is freed. */
-void low_rb_link_at_next (struct rb_node_hdr **tree,
-			  struct rb_stack_slice *slice, size_t ssp,
+void low_rb_link_at_next (struct rb_node_hdr **tree, struct rbstack_ptr rbstack,
 			  struct rb_node_hdr *new)
 {
-  struct rb_node_hdr *parent;
-  RBSTACK_PEEK (slice, ssp, parent);
+  struct rb_node_hdr *parent = RBSTACK_PEEK (rbstack);
 #ifdef PIKE_DEBUG
   if (!new) fatal ("New node is null.\n");
   if (!parent) fatal ("Cannot link in root node.\n");
@@ -1040,42 +1060,45 @@ void low_rb_link_at_next (struct rb_node_hdr **tree,
   parent->flags &= ~RB_THREAD_NEXT;
   parent->next = new;
 
-  *tree = rebalance_after_add (new, slice, ssp);
+  *tree = rebalance_after_add (new, rbstack);
 }
 
 /* The node to unlink is the one on top of the stack. Returns the node
  * that actually got unlinked. The passed stack is freed. */
 struct rb_node_hdr *low_rb_unlink (struct rb_node_hdr **tree,
-				   struct rb_stack_slice *slice, size_t ssp,
-				   low_rb_move_data_fn *move_data)
+				   struct rbstack_ptr rbstack,
+				   low_rb_move_data_fn *move_data_fn)
 {
   struct rb_node_hdr *node, *parent, *unlinked;
   int replace_with;		/* 0: none, 1: prev, 2: next */
 
-  RBSTACK_POP (slice, ssp, node);
+  RBSTACK_POP (rbstack, node);
+#ifdef PIKE_DEBUG
+  if (!node) fatal ("No node to delete on stack.\n");
+#endif
 
   if (node->flags & RB_THREAD_PREV) {
     unlinked = node;
     replace_with = node->flags & RB_THREAD_NEXT ? 0 : 2;
-    RBSTACK_PEEK (slice, ssp, parent);
+    parent = RBSTACK_PEEK (rbstack);
   }
   else if (node->flags & RB_THREAD_NEXT) {
     unlinked = node;
     replace_with = 1;
-    RBSTACK_PEEK (slice, ssp, parent);
+    parent = RBSTACK_PEEK (rbstack);
   }
   else {
     /* Node has two subtrees, so we can't delete it. */
     parent = node;
-    RBSTACK_PUSH (slice, ssp, node);
+    RBSTACK_PUSH (rbstack, node);
     unlinked = node->next;
     while (!(unlinked->flags & RB_THREAD_PREV)) {
       parent = unlinked;
-      RBSTACK_PUSH (slice, ssp, unlinked);
+      RBSTACK_PUSH (rbstack, unlinked);
       unlinked = unlinked->prev;
     }
     replace_with = unlinked->flags & RB_THREAD_NEXT ? 0 : 2;
-    move_data (node, unlinked);
+    move_data_fn (node, unlinked);
   }
 
   switch (replace_with) {
@@ -1102,9 +1125,9 @@ struct rb_node_hdr *low_rb_unlink (struct rb_node_hdr **tree,
    * point to the unlinked node. */
 
   if (unlinked->flags & RB_RED)
-    RBSTACK_FREE (slice);
+    RBSTACK_FREE (rbstack);
   else
-    *tree = rebalance_after_delete (node, slice, ssp);
+    *tree = rebalance_after_delete (node, rbstack);
 
   return unlinked;
 }
@@ -1112,17 +1135,20 @@ struct rb_node_hdr *low_rb_unlink (struct rb_node_hdr **tree,
 /* Returns the node in the tree. It might not be the passed new node
  * if an equal one was found. */
 struct rb_node_hdr *low_rb_insert (struct rb_node_hdr **tree,
-				   low_rb_cmp_fn *cmpfun, void *key,
+				   low_rb_cmp_fn *cmp_fn, void *key,
 				   struct rb_node_hdr *new)
 {
   if (*tree) {
     struct rb_node_hdr *node = *tree;
-    RBSTACK_INIT (slice, ssp);
-    LOW_RB_TRACK (slice, ssp, node,
-		  cmp_res = cmpfun (key, node),
-		  low_rb_link_at_next (tree, slice, ssp, new), /* Got less. */
-		  return node,	/* Got equal. */
-		  low_rb_link_at_prev (tree, slice, ssp, new));	/* Got greater. */
+    RBSTACK_INIT (rbstack);
+    LOW_RB_TRACK (rbstack, node, cmp_res = cmp_fn (key, node), {
+      low_rb_link_at_next (tree, rbstack, new); /* Got less. */
+    }, {			/* Got equal - new not used. */
+      RBSTACK_FREE (rbstack);
+      return node;
+    }, {			/* Got greater. */
+      low_rb_link_at_prev (tree, rbstack, new);
+    });
   }
   else {
     low_rb_init_root (new);
@@ -1132,30 +1158,30 @@ struct rb_node_hdr *low_rb_insert (struct rb_node_hdr **tree,
 }
 
 void low_rb_add (struct rb_node_hdr **tree,
-		 low_rb_cmp_fn *cmpfun, void *key,
+		 low_rb_cmp_fn *cmp_fn, void *key,
 		 struct rb_node_hdr *new)
 {
   if (*tree) {
     struct rb_node_hdr *node = *tree;
-    RBSTACK_INIT (slice, ssp);
-    LOW_RB_TRACK (slice, ssp, node, cmp_res = cmpfun (key, node), {
-      low_rb_link_at_next (tree, slice, ssp, new); /* Got less. */
+    RBSTACK_INIT (rbstack);
+    LOW_RB_TRACK (rbstack, node, cmp_res = cmp_fn (key, node), {
+      low_rb_link_at_next (tree, rbstack, new); /* Got less. */
     }, {			/* Got equal. */
       if (node->flags & RB_THREAD_PREV)
-	low_rb_link_at_prev (tree, slice, ssp, new);
+	low_rb_link_at_prev (tree, rbstack, new);
       else if (node->flags & RB_THREAD_NEXT)
-	low_rb_link_at_next (tree, slice, ssp, new);
+	low_rb_link_at_next (tree, rbstack, new);
       else {
 	node = node->next;
-	RBSTACK_PUSH (slice, ssp, node);
+	RBSTACK_PUSH (rbstack, node);
 	while (!(node->flags & RB_THREAD_PREV)) {
 	  node = node->prev;
-	  RBSTACK_PUSH (slice, ssp, node);
+	  RBSTACK_PUSH (rbstack, node);
 	}
-	low_rb_link_at_prev (tree, slice, ssp, new);
+	low_rb_link_at_prev (tree, rbstack, new);
       }
     }, {
-      low_rb_link_at_prev (tree, slice, ssp, new); /* Got greater. */
+      low_rb_link_at_prev (tree, rbstack, new); /* Got greater. */
     });
   }
   else {
@@ -1165,40 +1191,40 @@ void low_rb_add (struct rb_node_hdr **tree,
 }
 
 void low_rb_add_after (struct rb_node_hdr **tree,
-		       low_rb_cmp_fn *cmpfun, void *key,
+		       low_rb_cmp_fn *cmp_fn, void *key,
 		       struct rb_node_hdr *new,
 		       struct rb_node_hdr *existing)
 {
   if (*tree) {
     struct rb_node_hdr *node = *tree;
-    RBSTACK_INIT (slice, ssp);
+    RBSTACK_INIT (rbstack);
 
     if (existing) {
 #ifdef PIKE_DEBUG
-      if (cmpfun (key, existing)) fatal ("Given key doesn't match the existing node.\n");
+      if (cmp_fn (key, existing)) fatal ("Given key doesn't match the existing node.\n");
 #endif
-      LOW_RB_TRACK (slice, ssp, node, cmp_res = cmpfun (key, node) > 0 ? 1 : -1,
+      LOW_RB_TRACK (rbstack, node, cmp_res = cmp_fn (key, node) > 0 ? 1 : -1,
 		    node = node->next, ;, ;);
       while (node != existing) {
-	LOW_RB_TRACK_NEXT (slice, ssp, node);
+	LOW_RB_TRACK_NEXT (rbstack, node);
 #ifdef PIKE_DEBUG
 	if (!node) fatal ("Tree doesn't contain the existing node.\n");
 #endif
       }
       if (node->flags & RB_THREAD_NEXT) {
-	low_rb_link_at_next (tree, slice, ssp, new);
+	low_rb_link_at_next (tree, rbstack, new);
 	return;
       }
       else node = node->next;
     }
 
     /* Link at lowest position. */
-    RBSTACK_PUSH (slice, ssp, node);
+    RBSTACK_PUSH (rbstack, node);
     while (!(node->flags & RB_THREAD_PREV)) {
       node = node->prev;
-      RBSTACK_PUSH (slice, ssp, node);
+      RBSTACK_PUSH (rbstack, node);
     }
-    low_rb_link_at_prev (tree, slice, ssp, new);
+    low_rb_link_at_prev (tree, rbstack, new);
   }
 
   else {
@@ -1212,63 +1238,63 @@ void low_rb_add_after (struct rb_node_hdr **tree,
 
 /* Returns the node to free, if any. */
 struct rb_node_hdr *low_rb_delete (struct rb_node_hdr **tree,
-				   low_rb_cmp_fn *cmpfun, void *key,
-				   low_rb_move_data_fn *move_data)
+				   low_rb_cmp_fn *cmp_fn, void *key,
+				   low_rb_move_data_fn *move_data_fn)
 {
   struct rb_node_hdr *node = *tree;
   if (node) {
-    RBSTACK_INIT (slice, ssp);
-    LOW_RB_TRACK (slice, ssp, node,
-		  cmp_res = cmpfun (key, node),
+    RBSTACK_INIT (rbstack);
+    LOW_RB_TRACK (rbstack, node,
+		  cmp_res = cmp_fn (key, node),
 		  ;,		/* Got less. */
-		  return low_rb_unlink (tree, slice, ssp, move_data), /* Got equal. */
+		  return low_rb_unlink (tree, rbstack, move_data_fn), /* Got equal. */
 		  ;);		/* Got greater. */
-    RBSTACK_FREE (slice);
+    RBSTACK_FREE (rbstack);
   }
   return 0;
 }
 
 /* Returns the node to actually free. */
 struct rb_node_hdr *low_rb_delete_node (struct rb_node_hdr **tree,
-					low_rb_cmp_fn *cmpfun, void *key,
-					low_rb_move_data_fn *move_data,
+					low_rb_cmp_fn *cmp_fn, void *key,
+					low_rb_move_data_fn *move_data_fn,
 					struct rb_node_hdr *to_delete)
 {
   struct rb_node_hdr *node = *tree;
-  RBSTACK_INIT (slice, ssp);
+  RBSTACK_INIT (rbstack);
 #ifdef PIKE_DEBUG
   if (!node) fatal ("Tree is empty.\n");
-  if (cmpfun (key, to_delete)) fatal ("Given key doesn't match the node to delete.\n");
+  if (cmp_fn (key, to_delete)) fatal ("Given key doesn't match the node to delete.\n");
 #endif
-  LOW_RB_TRACK (slice, ssp, node, cmp_res = cmpfun (key, node) > 0 ? 1 : -1,
+  LOW_RB_TRACK (rbstack, node, cmp_res = cmp_fn (key, node) > 0 ? 1 : -1,
 		node = node->next, ;, ;);
   while (node != to_delete) {
-    LOW_RB_TRACK_NEXT (slice, ssp, node);
+    LOW_RB_TRACK_NEXT (rbstack, node);
 #ifdef PIKE_DEBUG
     if (!node) fatal ("Tree doesn't contain the node to delete.\n");
 #endif
   }
-  return low_rb_unlink (tree, slice, ssp, move_data);
+  return low_rb_unlink (tree, rbstack, move_data_fn);
 }
 
 struct rb_node_hdr *low_rb_copy (struct rb_node_hdr *source,
-				 low_rb_alloc_copy_fn *alloc_copy)
+				 low_rb_copy_fn *copy_node_fn)
 {
   if (source) {
     struct rb_node_hdr *copy, *target, *new, *t_prev_tgt = 0, *t_next_src = 0;
-    RBSTACK_INIT (s_slice, s_ssp);
-    RBSTACK_INIT (t_slice, t_ssp);
+    RBSTACK_INIT (s_stack);
+    RBSTACK_INIT (t_stack);
 
-    copy = target = alloc_copy (source);
+    copy = target = copy_node_fn (source);
     copy->flags = (copy->flags & ~RB_FLAG_MASK) | (source->flags & RB_FLAG_MASK);
 
-    LOW_RB_TRAVERSE (1, s_slice, s_ssp, source, { /* Push. */
+    LOW_RB_TRAVERSE (1, s_stack, source, { /* Push. */
     }, {			/* prev is leaf. */
       target->prev = t_prev_tgt;
     }, {			/* prev is subtree. */
-      new = target->prev = alloc_copy (source->prev);
+      new = target->prev = copy_node_fn (source->prev);
       new->flags = (new->flags & ~RB_FLAG_MASK) | (source->prev->flags & RB_FLAG_MASK);
-      RBSTACK_PUSH (t_slice, t_ssp, target);
+      RBSTACK_PUSH (t_stack, target);
       target = new;
     }, {			/* Between. */
       t_prev_tgt = target;
@@ -1279,12 +1305,12 @@ struct rb_node_hdr *low_rb_copy (struct rb_node_hdr *source,
     }, {			/* next is leaf. */
       t_next_src = target;
     }, {			/* next is subtree. */
-      new = target->next = alloc_copy (source->next);
+      new = target->next = copy_node_fn (source->next);
       new->flags = (new->flags & ~RB_FLAG_MASK) | (source->next->flags & RB_FLAG_MASK);
-      RBSTACK_PUSH (t_slice, t_ssp, target);
+      RBSTACK_PUSH (t_stack, target);
       target = new;
     }, {			/* Pop. */
-      RBSTACK_POP (t_slice, t_ssp, target);
+      RBSTACK_POP (t_stack, target);
     });
 
     if (t_next_src) t_next_src->next = 0;
@@ -1293,46 +1319,52 @@ struct rb_node_hdr *low_rb_copy (struct rb_node_hdr *source,
   else return 0;
 }
 
+void low_rb_free (struct rb_node_hdr *tree, low_rb_free_fn *free_node_fn)
+{
+  RBSTACK_INIT (rbstack);
+  LOW_RB_TRAVERSE (1, rbstack, tree, ;, ;, ;, ;, ;, ;, free_node_fn (tree));
+}
+
 struct rb_node_hdr *low_rb_find_eq (struct rb_node_hdr *tree,
-				    low_rb_cmp_fn *cmpfun, void *key)
+				    low_rb_cmp_fn *cmp_fn, void *key)
 {
   if (tree)
-    LOW_RB_FIND (tree, cmp_res = cmpfun (key, tree), ;, return tree, ;);
+    LOW_RB_FIND (tree, cmp_res = cmp_fn (key, tree), ;, return tree, ;);
   return 0;
 }
 
 struct rb_node_hdr *low_rb_find_lt (struct rb_node_hdr *tree,
-				    low_rb_cmp_fn *cmpfun, void *key)
+				    low_rb_cmp_fn *cmp_fn, void *key)
 {
   if (tree)
-    LOW_RB_FIND (tree, cmp_res = cmpfun (key, tree) > 0 ? 1 : -1,
+    LOW_RB_FIND (tree, cmp_res = cmp_fn (key, tree) > 0 ? 1 : -1,
 		 return tree, ;, return tree->prev);
   return 0;
 }
 
 struct rb_node_hdr *low_rb_find_gt (struct rb_node_hdr *tree,
-				    low_rb_cmp_fn *cmpfun, void *key)
+				    low_rb_cmp_fn *cmp_fn, void *key)
 {
   if (tree)
-    LOW_RB_FIND (tree, cmp_res = cmpfun (key, tree) >= 0 ? 1 : -1,
+    LOW_RB_FIND (tree, cmp_res = cmp_fn (key, tree) >= 0 ? 1 : -1,
 		 return tree->next, ;, return tree);
   return 0;
 }
 
 struct rb_node_hdr *low_rb_find_le (struct rb_node_hdr *tree,
-				    low_rb_cmp_fn *cmpfun, void *key)
+				    low_rb_cmp_fn *cmp_fn, void *key)
 {
   if (tree)
-    LOW_RB_FIND (tree, cmp_res = cmpfun (key, tree) >= 0 ? 1 : -1,
+    LOW_RB_FIND (tree, cmp_res = cmp_fn (key, tree) >= 0 ? 1 : -1,
 		 return tree, ;, return tree->prev);
   return 0;
 }
 
 struct rb_node_hdr *low_rb_find_ge (struct rb_node_hdr *tree,
-				    low_rb_cmp_fn *cmpfun, void *key)
+				    low_rb_cmp_fn *cmp_fn, void *key)
 {
   if (tree)
-    LOW_RB_FIND (tree, cmp_res = cmpfun (key, tree) > 0 ? 1 : -1,
+    LOW_RB_FIND (tree, cmp_res = cmp_fn (key, tree) > 0 ? 1 : -1,
 		 return tree->next, ;, return tree);
   return 0;
 }
@@ -1387,19 +1419,18 @@ static void debug_dump_rb_tree (struct rb_node_hdr *tree, dump_data_fn *dump_dat
 {
   if (tree) {
     struct rb_node_hdr *n;
-    struct rb_stack_slice *s;
-    size_t p;
-    RBSTACK_INIT (slice, ssp);
+    struct rbstack_ptr p;
+    RBSTACK_INIT (rbstack);
 
-    LOW_RB_TRAVERSE (1, slice, ssp, tree, { /* Push. */
-      s = slice; p = ssp;
-      RBSTACK_UP (s, p, n);
+    LOW_RB_TRAVERSE (1, rbstack, tree, { /* Push. */
+      p = rbstack;
+      RBSTACK_UP (p, n);
       while (n) {
 	if (n == tree) {
 	  fprintf (stderr, "[Circular! %p]", tree);
 	  goto leave_1;
 	}
-	RBSTACK_UP (s, p, n);
+	RBSTACK_UP (p, n);
       }
       fputc ('(', stderr);
     }, {			/* prev is leaf. */
@@ -1469,19 +1500,19 @@ void debug_check_rb_tree (struct rb_node_hdr *tree)
 {
   if (tree) {
     struct rb_node_hdr *node = tree, *n, *n2;
-    struct rb_stack_slice *s;
-    size_t p, blacks = 1, max_blacks = 0, depth = 0;
-    RBSTACK_INIT (slice, ssp);
+    struct rbstack_ptr p;
+    size_t blacks = 1, max_blacks = 0, depth = 0;
+    RBSTACK_INIT (rbstack);
 
     if (tree->flags & RB_RED) rb_fatal (tree, "Root node not black.\n");
 
-    LOW_RB_TRAVERSE (1, slice, ssp, node, { /* Push. */
+    LOW_RB_TRAVERSE (1, rbstack, node, { /* Push. */
       depth++;
-      s = slice; p = ssp;
-      RBSTACK_UP (s, p, n);
+      p = rbstack;
+      RBSTACK_UP (p, n);
       while (n) {
 	if (n == node) rb_fatal (tree, "Circular subtrees @ %p.\n", node);
-	RBSTACK_UP (s, p, n);
+	RBSTACK_UP (p, n);
       }
 
       if (!(node->flags & RB_RED)) blacks++;
@@ -1494,12 +1525,12 @@ void debug_check_rb_tree (struct rb_node_hdr *tree)
       }
       else max_blacks = blacks;
 
-      s = slice; p = ssp;
+      p = rbstack;
       n2 = node;
-      RBSTACK_UP (s, p, n);
+      RBSTACK_UP (p, n);
       while (n && (n->flags & RB_THREAD_NEXT || n->next != n2)) {
 	n2 = n;
-	RBSTACK_UP (s, p, n);
+	RBSTACK_UP (p, n);
       }
       if (node->prev != n)
 	rb_fatal (tree, "Thread prev pointer @ %p is %p, expected %p.\n",
@@ -1517,12 +1548,12 @@ void debug_check_rb_tree (struct rb_node_hdr *tree)
 	rb_fatal (tree, "Unbalanced tree - leftmost branch is %d, this @ %p is %d.\n",
 		  max_blacks, node, blacks);
 
-      s = slice; p = ssp;
+      p = rbstack;
       n2 = node;
-      RBSTACK_UP (s, p, n);
+      RBSTACK_UP (p, n);
       while (n && (n->flags & RB_THREAD_PREV || n->prev != n2)) {
 	n2 = n;
-	RBSTACK_UP (s, p, n);
+	RBSTACK_UP (p, n);
       }
       if (node->next != n)
 	rb_fatal (tree, "Thread next pointer @ %p is %p, expected %p.\n",
