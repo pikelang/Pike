@@ -549,7 +549,7 @@ array(int) parse_color(string from)
   // Is it #rrggbb?
   if(from[0]=='#')
   {
-    c = (int)("0x"+from[1..]);
+    sscanf(from, "#%x", c);
     if(strlen(from)>6)
       return ({ c>>16, (c>>8)&255, c&255 });
     return ({ (c>>8)<<4, ((c>>4)&15)<<4, (c&15)<<4 });
@@ -577,7 +577,8 @@ array(int) parse_color(string from)
   }
 
   // No luck. It might be a color on the form rrggbb (that is, no leading '#')
-  if(c=(int)("0x"+from))
+  sscanf(from, "%x", c);
+  if(c)
   {
     if(strlen(from)>5)
       return ({ c>>16, (c>>8)&255, c&255 });
