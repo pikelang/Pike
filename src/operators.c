@@ -21,7 +21,7 @@
 
 #define COMPARISON(ID,NAME,EXPR) \
 void ID(INT32 args) \
-{\
+{ \
   int i; \
   if(args > 2) \
     pop_n_elems(args-2); \
@@ -217,6 +217,58 @@ static int generate_sum(node *n)
     return 0;
   }
 }
+
+static node *optimize_binary(node *n)
+{
+  node **first_arg, **second_arg, *ret;
+  if(count_args(CDR(n))==2)
+  {
+    first_arg=my_get_arg(&CDR(n), 0);
+    second_arg=my_get_arg(&CDR(n), 1);
+
+#ifdef DEBUG
+    if(!first_arg || !second_arg)
+      fatal("Couldn't find argument!\n");
+#endif
+
+    if((*second_arg)->type == (*first_arg)->type)
+    {
+      if((*first_arg)->token == F_APPLY &&
+	 CAR(*first_arg)->token == F_CONSTANT &&
+	 is_eq(& CAR(*first_arg)->u.sval, & CAR(n)->u.sval))
+      {
+	ret=mknode(F_APPLY,
+		   CAR(n),
+		   mknode(F_ARG_LIST,
+			  CDR(*first_arg),
+			  *second_arg));
+	CAR(n)=0;
+	CDR(*first_arg)=0;
+	*second_arg=0;
+	
+	return ret;
+      }
+      
+      if((*second_arg)->token == F_APPLY &&
+	 CAR(*second_arg)->token == F_CONSTANT &&
+	 is_eq(& CAR(*second_arg)->u.sval, & CAR(n)->u.sval))
+      {
+	ret=mknode(F_APPLY,
+		   CAR(n),
+		   mknode(F_ARG_LIST,
+			  *first_arg,
+			  CDR(*second_arg)));
+	CAR(n)=0;
+	*first_arg=0;
+	CDR(*second_arg)=0;
+	
+	return ret;
+      }
+    }
+  }
+  return 0;
+}
+
 
 static int generate_comparison(node *n)
 {
@@ -650,7 +702,7 @@ void f_multiply(INT32 args)
   case 0: error("Too few arguments to `*\n");
   case 1: return;
   case 2: o_multiply(); return;
-  case 3: while(--args > 0) o_multiply(); 
+  default: while(--args > 0) o_multiply(); 
   }
 }
 
@@ -902,8 +954,6 @@ void o_range()
 
 void init_operators()
 {
-  
-
   add_efun2("`==",f_eq,"function(mixed,mixed:int)",0,0,generate_comparison);
   add_efun2("`!=",f_ne,"function(mixed,mixed:int)",0,0,generate_comparison);
   add_efun2("`<", f_lt,"function(int,int:int)|function(float,float:int)|function(string,string:int)",0,0,generate_comparison);
@@ -911,20 +961,20 @@ void init_operators()
   add_efun2("`>", f_gt,"function(int,int:int)|function(float,float:int)|function(string,string:int)",0,0,generate_comparison);
   add_efun2("`>=",f_ge,"function(int,int:int)|function(float,float:int)|function(string,string:int)",0,0,generate_comparison);
 
-  add_efun2("`+",f_add,"function(int ...:int)|function(float ...:float)|function(string,string|int|float ...:string)|function(string,string|int|float ...:string)|function(int|float,string,string|int|float:string)|function(array ...:array)|function(mapping ...:mapping)|function(list...:list)",0,0,generate_sum);
+  add_efun2("`+",f_add,"function(int ...:int)|function(float ...:float)|function(string,string|int|float ...:string)|function(string,string|int|float ...:string)|function(int|float,string,string|int|float:string)|function(array ...:array)|function(mapping ...:mapping)|function(list...:list)",0,optimize_binary,generate_sum);
 
   add_efun2("`-",f_minus,"function(int:int)|function(float:float)|function(array,array:array)|function(mapping,mapping:mapping)|function(list,list:list)|function(float,float:float)|function(int,int:int)|function(string,string:string)",0,0,generate_minus);
 
-  add_efun2("`&",f_and,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",0,0,generate_and);
+  add_efun2("`&",f_and,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",0,optimize_binary,generate_and);
 
-  add_efun2("`|",f_and,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",0,0,generate_or);
+  add_efun2("`|",f_and,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",0,optimize_binary,generate_or);
 
-  add_efun2("`^",f_and,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",0,0,generate_xor);
+  add_efun2("`^",f_and,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",0,optimize_binary,generate_xor);
 
   add_efun2("`<<",f_lsh,"function(int,int:int)",0,0,generate_lsh);
   add_efun2("`>>",f_rsh,"function(int,int:int)",0,0,generate_rsh);
 
-  add_efun2("`*",f_multiply,"function(int...:int)|function(float...:float)|function(string*,string:string)",0,0,generate_multiply);
+  add_efun2("`*",f_multiply,"function(int...:int)|function(float...:float)|function(string*,string:string)",0,optimize_binary,generate_multiply);
 
   add_efun2("`/",f_divide,"function(int,int:int)|function(float,float:float)|function(string,string:string*)",0,0,generate_divide);
 

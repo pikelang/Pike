@@ -6,13 +6,21 @@
 #include "global.h"
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
+
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  if HAVE_TIME_H
+#   include <time.h>
+#  endif
+# endif
 #endif
+
 #include <fcntl.h>
-#ifdef HAVE_TIME_H
-#include <time.h>
-#endif
 #include <errno.h>
 #include "types.h"
 #include "rusage.h"

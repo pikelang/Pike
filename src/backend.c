@@ -4,11 +4,9 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
+#include "backend.h"
 #include <errno.h>
 #include <sys/types.h>
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
 #include <sys/param.h>
 #include <string.h>
 #include "interpret.h"
@@ -16,10 +14,8 @@
 #include "types.h"
 #include "error.h"
 #include "call_out.h"
-#include "backend.h"
 #include "fd_control.h"
 #include "main.h"
-#include "debug.h"
 #include "callback.h"
 
 #ifdef HAVE_SYS_SELECT_H

@@ -1414,7 +1414,7 @@ test_eq([[implode(explode("foo","o"),"o")]],"foo")
 test_eq([[implode(({"foo","bar"}),"-")]],"foo-bar")
 test_eq([[implode(({"foo",0,"bar"}),"-")]],"foo-bar")
 test_eq([[implode(({1.0,"foo",0,"bar",this_object(),([])}),"-")]],"foo-bar")
-test_eq([[implode(({"f","o","o"}))]],"foo")
+test_eq([[implode(({"f","o","o"}),"")]],"foo")
 
 // - indices
 test_equal(indices("foo"),({0,1,2}))

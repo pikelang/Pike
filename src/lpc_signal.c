@@ -186,15 +186,20 @@ static int my_signal(int sig, sigfunctype fun)
 
 static RETSIGTYPE sig_child(int arg)
 {
+  /* We carefully reap what we saw */
 #ifdef HAVE_WAITPID
-  waitpid(-1,0,WNOHANG);
+  while(waitpid(-1,0,WNOHANG) > 0); 
 #else
 #ifdef HAVE_WAIT3
-  wait3(-1,0,WNOHANG);
+  while( wait3(0,WNOHANG,0) > 0);
+#else
+#ifdef HAVE_WAIT4
+  while( wait4(-1,0,WNOHANG,0) > 0);
 #else
 
   /* Leave'em hanging */
 
+#endif /* HAVE_WAIT4 */
 #endif /* HAVE_WAIT3 */
 #endif /* HAVE_WAITPID */
 

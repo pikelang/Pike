@@ -676,18 +676,6 @@ static int do_docode2(node *n,int flags)
 
   case F_EQ:
   case F_NE:
-    if(flags & DO_POP)
-    {
-      do_pop(do_docode(CAR(n),DO_NOT_COPY|DO_POP)+
-	     do_docode(CDR(n),DO_NOT_COPY|DO_POP));
-      return 0;
-    }
-    tmp1=do_docode(CAR(n),0);
-    if(do_docode(CDR(n),0)!=1)
-      fatal("Compiler internal error (gnng!).\n");
-    ins_f_byte(n->token);
-    return tmp1;
-
   case F_ADD:
   case F_LT:
   case F_LE:
@@ -702,17 +690,10 @@ static int do_docode2(node *n,int flags)
   case F_XOR:
   case F_OR:
   case F_AND:
-    if(flags & DO_POP)
-    {
-      do_pop(do_docode(CAR(n),DO_NOT_COPY|DO_POP)+
-	     do_docode(CDR(n),DO_NOT_COPY|DO_POP));
-      return 0;
-    }
-    tmp1=do_docode(CAR(n),DO_NOT_COPY);
-    if(do_docode(CDR(n),DO_NOT_COPY)!=1)
-      fatal("Compiler internal error.\n");
-    ins_f_byte(n->token);
-    return tmp1;
+  case F_NOT:
+  case F_COMPL:
+  case F_NEGATE:
+    fatal("Optimizer errror.\n");
 
   case F_RANGE:
     tmp1=do_docode(CAR(n),DO_NOT_COPY);
@@ -753,18 +734,6 @@ static int do_docode2(node *n,int flags)
       ins_f_byte(n->token);
       return 1;
     }
-
-  case F_NOT:
-  case F_COMPL:
-  case F_NEGATE:
-    tmp1=do_docode(CAR(n),DO_NOT_COPY | (flags & ~DO_LVALUE));
-    if(flags & DO_POP)
-    {
-      do_pop(tmp1);
-      return 0;
-    }
-    ins_f_byte(n->token);
-    return tmp1;
 
   case F_FOR:
   {

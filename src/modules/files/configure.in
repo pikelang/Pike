@@ -72,11 +72,15 @@ int sig_child(int arg)
   waitpid(-1,0,WNOHANG);
 #else
 #ifdef HAVE_WAIT3
-  wait3(-1,0,WNOHANG);
+  wait3(0,WNOHANG,0);
+#else
+#ifdef HAVE_WAIT4
+  wait3(-1,0,WNOHANG,0);
 #else
 
   /* Leave'em hanging */
 
+#endif /* HAVE_WAIT4 */
 #endif /* HAVE_WAIT3 */
 #endif /* HAVE_WAITPID */
 

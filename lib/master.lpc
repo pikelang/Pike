@@ -78,9 +78,9 @@ program handle_inherit(string pname, string current_file)
   string *tmp;
   p=cast_to_program(pname);
   if(p) return p;
-  tmp=explode(current_file,"/");
+  tmp=current_file/"/";
   tmp[-1]=pname;
-  return cast_to_program(implode(tmp,"/"));
+  return cast_to_program(tmp*"/");
 }
 
 mapping (string:object) objects=(["/master.lpc":this_object()]);
@@ -197,14 +197,14 @@ string handle_include(string f, string current_file)
   string *tmp, path;
 /*  perror("Handle include: "+f+"\n"); */
 
-  tmp=explode(current_file, "/");
+  tmp=current_file/"/";
   tmp[-1]=f;
-  path=combine_path(getcwd(),implode(tmp,"/"));
+  path=combine_path(getcwd(),tmp*"/");
   if(file_stat(path)) return path;
   
   if(path=getenv("LPC_INCLUDE_PATH"))
   {
-    foreach(explode(path,":"), path)
+    foreach(path/":", path)
     {
       path=combine_path(path,f);
       if(file_stat(path)) return path;

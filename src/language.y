@@ -905,7 +905,7 @@ expr2: expr3
      }
      | F_INC expr4       { $$=mknode(F_INC,$2,0); }
      | F_DEC expr4       { $$=mknode(F_DEC,$2,0); }
-     | F_NOT expr2        { $$=mknode(F_NOT,$2,0); }
+     | F_NOT expr2        { $$=mkopernode("`!",$2,0); }
      | '~' expr2          { $$=mkopernode("`~",$2,0); }
      | '-' expr2          { $$=mkopernode("`-",$2,0); }
      ;

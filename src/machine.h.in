@@ -40,6 +40,9 @@
 /* Define if you have the <time.h> header file.  */
 #undef HAVE_TIME_H
 
+/* Define if we may include both time.h and sys/time.h */
+#undef TIME_WITH_SYS_TIME
+
 /* Define if you have the <sys/select.h> header file. */
 #undef HAVE_SYS_SELECT_H
 

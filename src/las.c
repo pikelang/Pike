@@ -519,7 +519,7 @@ int node_is_false(node *n)
   }
 }
 
-static node **last_cmd(node **a)
+node **last_cmd(node **a)
 {
   node **n;
   if(!a || !*a) return (node **)NULL;
@@ -563,7 +563,7 @@ static node **low_get_arg(node **a,int *nr)
   return 0;
 }
 
-/* static node **my_get_arg(node **a,int n) { return low_get_arg(a,&n); } */
+node **my_get_arg(node **a,int n) { return low_get_arg(a,&n); }
 /* static node **first_arg(node **a) { return my_get_arg(a,0); } */
 
 static void low_print_tree(node *foo,int needlval)
@@ -1163,6 +1163,17 @@ static void optimize(node *n)
 
     switch(n->token)
     {
+    case F_APPLY:
+      if(CAR(n)->token == F_CONSTANT &&
+	 CAR(n)->u.sval.type == T_FUNCTION &&
+	 CAR(n)->u.sval.subtype == -1 && /* driver fun? */
+	 CAR(n)->u.sval.u.efun->optimize)
+      {
+	if(tmp1=CAR(n)->u.sval.u.efun->optimize(n))
+	  goto use_tmp1;
+      }
+      break;
+
     case F_ARG_LIST:
     case F_LVALUE_LIST:
       if(!CAR(n)) goto use_cdr;
@@ -1372,7 +1383,7 @@ static void optimize(node *n)
 	if(inc)
 	{
 	  if(CAR(n)->token==F_LE)
-	    tmp3=mknode(F_ADD,CDAR(n),mkintnode(1));
+	    tmp3=mkopernode("`+",CDAR(n),mkintnode(1));
 	  else if(CAR(n)->token==F_LT)
 	    tmp3=CDAR(n);
 	  else

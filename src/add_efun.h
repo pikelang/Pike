@@ -18,7 +18,7 @@ struct efun
 
 typedef void (*c_fun)(INT32);
 typedef int (*docode_fun)(node *n);
-typedef void (*optimize_fun)(node *n);
+typedef node *(*optimize_fun)(node *n);
 
 struct callable
 {

@@ -132,10 +132,11 @@ AC_DEFINE_UNQUOTED(F_OFFSET,$lpc_cv_yacc_first)
 
 rm -rf conftest.y y.tab.c y.tab.h conftest.out
 
-AC_HAVE_HEADERS(sys/rusage.h time.h sys/time.h unistd.h stdlib.h memory.h values.h \
- string.h fcntl.h sys/filio.h sys/sockio.h crypt.h locale.h sys/resource.h \
- sys/select.h netdb.h)
-AC_STDC_HEADERS
+AC_HEADER_TIME
+AC_HEADER_STDC
+AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h unistd.h stdlib.h memory.h \
+values.h string.h fcntl.h sys/filio.h sys/sockio.h crypt.h locale.h \
+sys/resource.h sys/select.h netdb.h)
 
 AC_SIZEOF_TYPE(char *)
 AC_SIZEOF_TYPE(long)
@@ -144,10 +145,10 @@ AC_SIZEOF_TYPE(short)
 AC_SIZEOF_TYPE(float)
 AC_SIZEOF_TYPE(double)
 
-AC_SIZE_T
-AC_PID_T
-AC_UID_T
-AC_RETSIGTYPE
+AC_TYPE_SIZE_T
+AC_TYPE_PID_T
+AC_TYPE_UID_T
+AC_TYPE_SIGNAL
 AC_CHECK_TYPE(time_t,INT32)
 
 AC_CHECK_LIB(PW, alloca)
@@ -173,7 +174,9 @@ fi
 
 LIBOBJS="${OLD_LIBOBJS}"
 
-AC_HAVE_FUNCS(
+AC_FUNC_STRCOLL
+
+AC_CHECK_FUNCS(
  _crypt \
  bcopy \
  bzero \
@@ -202,6 +205,7 @@ AC_HAVE_FUNCS(
  times \
  vfprintf \
  vsprintf \
+ wait3 \
  wait4 \
  waitpid \
 )
@@ -214,7 +218,7 @@ define(MY_CHECK_HEADERS,
    lpc_cv_decl_$1=nonexistant
    for a in $2
    do
-     AC_HEADER_EGREP($1,$a,lpc_cv_decl_$1=existant; break)
+     AC_EGREP_HEADER($1,$a,lpc_cv_decl_$1=existant; break)
    done
  ])
  AC_MSG_RESULT($lpc_cv_decl_$1)
@@ -301,8 +305,8 @@ AC_DEFINE_UNQUOTED(POINTER,$lpc_cv_sys_malloc_return)
 
 AC_ALLOCA
 
-AC_CONST
-AC_INLINE
+AC_C_CONST
+AC_C_INLINE
 
 AC_REPLACE_FUNCS(ualarm)
 
@@ -375,28 +379,6 @@ int main()
 if test "$lpc_cv_func_memmem" = yes; then
   AC_MSG_RESULT(yes)
   AC_DEFINE(HAVE_MEMMEM)
-else
-  AC_MSG_RESULT(no)
-fi
-
-AC_MSG_CHECKING(for working strcoll)
-AC_CACHE_VAL(lpc_cv_func_strcoll,
-[
-AC_TRY_RUN([
-#include <string.h>
-int main()
-{
-  if(strcoll("a","b")< 0 &&
-     strcoll("a","a")==0 &&
-     strcoll("b","a")> 0)
-    exit(0);
-  exit(1);
-}
-],lpc_cv_func_strcoll=yes,lpc_cv_func_strcoll=no)])
-
-if test "$lpc_cv_func_strcoll" = yes; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_STRCOLL)
 else
   AC_MSG_RESULT(no)
 fi

@@ -8,14 +8,11 @@ SYNTAX
 
 DESCRIPTION
 	This function is the inverse of explode. It contatenates all the
-	strings in a with a delimeter in between each. If no delimeter is
-	given, an empty string will be used.
+	strings in a with a delimeter in between each.
 
 EXAMPLES
 	> implode( ({ "foo","bar","gazonk"}), "-" );
 	Result: foo-bar-gazonk
-	> implode( ({ "f","o","o" }) );
-	Result: foo
 	> ({ "a","b","c" })*" and ";
 	Result: a and b and c
 	> 

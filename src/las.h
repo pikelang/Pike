@@ -98,6 +98,8 @@ int is_const(node *n);
 int node_is_tossable(node *n);
 int node_is_true(node *n);
 int node_is_false(node *n);
+node **last_cmd(node **a);
+node **my_get_arg(node **a,int n);
 void print_tree(node *n);
 struct used_vars;
 void fix_type_field(node *n);
