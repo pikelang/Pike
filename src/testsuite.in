@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.587 2003/01/15 22:16:48 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.588 2003/01/16 15:35:23 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -1533,7 +1533,7 @@ test_do([[
   mkdir ("testsuite_test_dir.pmod");
 
   Stdio.write_file ("testsuite_test_dir.pmod/module.pmod", #"\
-    .B b();
+    .B.B b();
     class X {}");
   Stdio.write_file ("testsuite_test_dir.pmod/A.pike", #"\
     int f() {return 0;}");
