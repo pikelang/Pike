@@ -18,8 +18,9 @@
 #include "operators.h"
 #include "module_support.h"
 #include "threads.h"
+#include "gc.h"
 
-RCSID("$Id: error.c,v 1.44 2000/04/04 15:39:13 grubba Exp $");
+RCSID("$Id: error.c,v 1.45 2000/04/12 18:40:12 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -532,10 +533,21 @@ void permission_error(
   ERROR_DONE(generic);
 }
 
+#ifdef PIKE_DEBUG
+static void gc_check_throw_value(struct callback *foo, void *bar, void *gazonk)
+{
+  debug_gc_xmark_svalues(&throw_value,1," in the throw value");
+}
+#endif
+
 void init_error(void)
 {
 #define ERR_SETUP
 #include "errors.h"
+
+#ifdef PIKE_DEBUG
+  dmalloc_accept_leak(add_gc_callback(gc_check_throw_value,0,0));
+#endif
 }
 
 void cleanup_error(void)

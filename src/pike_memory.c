@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.63 2000/04/08 02:01:09 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.64 2000/04/12 18:40:12 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1454,6 +1454,7 @@ void dump_memhdr_locations(struct memhdr *from,
 
 static void low_dmalloc_describe_location(struct memhdr *mh, int offset);
 
+
 static void find_references_to(void *block)
 {
   unsigned long h;
@@ -1489,6 +1490,44 @@ static void find_references_to(void *block)
   }
 
   memheader_references_located=1;
+}
+
+void dmalloc_find_references_to(void *block)
+{
+  mt_lock(&debug_malloc_mutex);
+  find_references_to(block);
+  mt_unlock(&debug_malloc_mutex);
+}
+
+void *dmalloc_find_memblock_base(void *ptr)
+{
+  unsigned long h;
+  struct memhdr *m;
+  char *lookfor=(char *)ptr;
+
+  mt_lock(&debug_malloc_mutex);
+
+  for(h=0;h<(unsigned long)memhdr_hash_table_size;h++)
+  {
+    for(m=memhdr_hash_table[h];m;m=m->next)
+    {
+      unsigned int e;
+      struct memhdr *tmp;
+      char *p=(char *)m->data;
+      
+      if( ! ((sizeof(void *)-1) & (long) p ))
+      {
+	if( m->data <= lookfor && lookfor < m->data + m->size)
+	{
+	  mt_unlock(&debug_malloc_mutex);
+	  return m->data;
+	}
+      }
+    }
+  }
+
+  mt_unlock(&debug_malloc_mutex);
+  return 0;
 }
 
 void debug_malloc_dump_references(void *x)

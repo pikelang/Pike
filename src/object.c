@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.100 2000/04/11 23:27:27 hubbe Exp $");
+RCSID("$Id: object.c,v 1.101 2000/04/12 18:40:12 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1191,56 +1191,61 @@ void gc_mark_object_as_referenced(struct object *o)
   }
 }
 
+static inline void gc_check_object(struct object *o)
+{
+  int e;
+  struct program *p;
+
+#ifdef PIKE_DEBUG
+  if(o->parent)
+    if(debug_gc_check(o->parent,T_OBJECT,o)==-2)
+      fprintf(stderr,"(in object at %lx -> parent)\n",(long)o);
+#else
+  if(o->parent)
+    gc_check(o->parent);
+#endif
+  if((p=o->prog))
+  {
+    PUSH_FRAME(o);
+    
+    for(e=p->num_inherits-1; e>=0; e--)
+    {
+      int q;
+      SET_FRAME_CONTEXT(p->inherits[e]);
+      
+      if(pike_frame->context.prog->gc_check_func)
+	pike_frame->context.prog->gc_check_func(o);
+      
+      for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
+      {
+	int d=pike_frame->context.prog->variable_index[q];
+	
+	if(pike_frame->context.prog->identifiers[d].run_time_type == T_MIXED)
+	{
+	  struct svalue *s;
+	  s=(struct svalue *)(pike_frame->current_storage +
+			      pike_frame->context.prog->identifiers[d].func.offset);
+	  debug_gc_check_svalues(s,1,T_OBJECT,o);
+	}else{
+	  union anything *u;
+	  u=(union anything *)(pike_frame->current_storage +
+			       pike_frame->context.prog->identifiers[d].func.offset);
+	  debug_gc_check_short_svalue(u,pike_frame->context.prog->identifiers[d].run_time_type,T_OBJECT,o);
+	}
+      }
+    }
+    POP_FRAME();
+  }
+}
+
 void gc_check_all_objects(void)
 {
   struct object *o,*next;
 
   for(o=first_object;o;o=next)
   {
-    int e;
-    struct program *p;
     add_ref(o);
-
-#ifdef PIKE_DEBUG
-    if(o->parent)
-      if(debug_gc_check(o->parent,T_OBJECT,o)==-2)
-	fprintf(stderr,"(in object at %lx -> parent)\n",(long)o);
-#else
-    if(o->parent)
-      gc_check(o->parent);
-#endif
-    if((p=o->prog))
-    {
-      PUSH_FRAME(o);
-      
-      for(e=p->num_inherits-1; e>=0; e--)
-      {
-	int q;
-	SET_FRAME_CONTEXT(p->inherits[e]);
-	
-	if(pike_frame->context.prog->gc_check_func)
-	  pike_frame->context.prog->gc_check_func(o);
-
-	for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
-	{
-	  int d=pike_frame->context.prog->variable_index[q];
-	  
-	  if(pike_frame->context.prog->identifiers[d].run_time_type == T_MIXED)
-	  {
-	    struct svalue *s;
-	    s=(struct svalue *)(pike_frame->current_storage +
-				pike_frame->context.prog->identifiers[d].func.offset);
-	    debug_gc_check_svalues(s,1,T_OBJECT,o);
-	  }else{
-	    union anything *u;
-	    u=(union anything *)(pike_frame->current_storage +
-				 pike_frame->context.prog->identifiers[d].func.offset);
-	    debug_gc_check_short_svalue(u,pike_frame->context.prog->identifiers[d].run_time_type,T_OBJECT,o);
-	  }
-	}
-      }
-      POP_FRAME();
-    }
+    gc_check_object(o);
     SET_NEXT_AND_FREE(o,free_object);
   }
 }
@@ -1257,6 +1262,7 @@ void gc_mark_all_objects(void)
       SET_NEXT_AND_FREE(o,free_object);
     }else{
       next=o->next;
+
     }
   }
 }
@@ -1273,7 +1279,15 @@ void gc_free_all_unreferenced_objects(void)
       call_destroy(o,0);
       SET_NEXT_AND_FREE(o,free_object);
     }else{
-      next=o->next;
+#ifdef PIKE_DEBUG
+      if(d_flag)
+      {
+	add_ref(o);
+	gc_check_object(o);
+	SET_NEXT_AND_FREE(o,free_object);
+      }else
+#endif
+	next=o->next;
     }
   }
 

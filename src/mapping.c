@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.71 2000/04/06 20:17:05 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.72 2000/04/12 18:40:12 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1825,10 +1825,32 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
   }
 }
 
-void gc_check_all_mappings(void)
+static void gc_check_mapping(struct mapping *m)
 {
   INT32 e;
   struct keypair *k;
+
+  if((m->data->ind_types | m->data->val_types) & BIT_COMPLEX)
+  {
+    if(gc_check(m->data)) return;
+    
+    MAPPING_LOOP(m)
+      {
+	/* We do not want to count this key:index pair if
+	 * the index is a destructed object or function
+	 */
+	if(((1 << k->ind.type) & (BIT_OBJECT | BIT_FUNCTION)) &&
+	   !(k->ind.u.object->prog))
+	  continue;
+	
+	debug_gc_check_svalues(&k->ind, 1, T_MAPPING, m);
+	m->data->val_types |= debug_gc_check_svalues(&k->val, 1, T_MAPPING, m);
+      }
+  }
+}
+
+void gc_check_all_mappings(void)
+{
   struct mapping *m;
 
   for(m=first_mapping;m;m=m->next)
@@ -1840,28 +1862,11 @@ void gc_check_all_mappings(void)
       fatal("Zapped mapping in list of active mappings!\n");
     }
 #endif /* DEBUG_MALLOC */
-    if((m->data->ind_types | m->data->val_types) & BIT_COMPLEX)
-    {
-      if(gc_check(m->data)) continue;
 
-      MAPPING_LOOP(m)
-      {
-	/* We do not want to count this key:index pair if
-	 * the index is a destructed object or function
-	 */
-	if(((1 << k->ind.type) & (BIT_OBJECT | BIT_FUNCTION)) &&
-	   !(k->ind.u.object->prog))
-	  continue;
-	  
-	debug_gc_check_svalues(&k->ind, 1, T_MAPPING, m);
-	m->data->val_types |= debug_gc_check_svalues(&k->val, 1, T_MAPPING, m);
-      }
-
+    gc_check_mapping(m);
 #ifdef PIKE_DEBUG
       if(d_flag > 1) check_mapping_type_fields(m);
 #endif
-
-    }
   }
 }
 
@@ -1941,6 +1946,9 @@ void gc_free_all_unreferenced_mappings(void)
     }
     else
     {
+#ifdef PIKE_DEBUG
+      if(d_flag) gc_check_mapping(m);
+#endif
       next=m->next;
     }
   }

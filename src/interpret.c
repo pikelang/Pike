@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.139 2000/04/08 02:01:08 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.140 2000/04/12 18:40:12 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -101,14 +101,14 @@ struct pike_frame *fp; /* pike_frame pointer */
 static void gc_check_stack_callback(struct callback *foo, void *bar, void *gazonk)
 {
   struct pike_frame *f;
-  debug_gc_xmark_svalues(evaluator_stack,sp-evaluator_stack-1,"interpreter stack");
+  debug_gc_xmark_svalues(evaluator_stack,sp-evaluator_stack-1," on current interpreter stack");
 
   for(f=fp;f;f=f->next)
   {
     if(f->context.parent)
-      gc_external_mark(f->context.parent);
-    gc_external_mark(f->current_object);
-    gc_external_mark(f->context.prog);
+      gc_external_mark2(f->context.parent,0," in fp->context.parent on current stack");
+    gc_external_mark2(f->current_object,0," in fp->current_object on current stack");
+    gc_external_mark2(f->context.prog,0," in fp->context.prog on current stack");
   }
 
 }

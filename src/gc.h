@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.24 2000/04/08 02:01:08 hubbe Exp $
+ * $Id: gc.h,v 1.25 2000/04/12 18:40:12 hubbe Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -47,7 +47,7 @@ struct callback *debug_add_gc_callback(callback_func call,
 				 callback_func free_func);
 void dump_gc_info(void);
 TYPE_T attempt_to_identify(void *something);
-void describe_location(void *memblock, TYPE_T type, void *location);
+void describe_location(void *memblock, int type, void *location);
 void debug_gc_xmark_svalues(struct svalue *s, int num, char *fromwhere);
 TYPE_FIELD debug_gc_check_svalues(struct svalue *s, int num, TYPE_T t, void *data);
 void debug_gc_check_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void *data);
@@ -58,7 +58,7 @@ void debug_describe_svalue(struct svalue *s);
 INT32 real_gc_check(void *a);
 void locate_references(void *a);
 int debug_gc_is_referenced(void *a);
-int gc_external_mark(void *a);
+int gc_external_mark3(void *a, void *in, char *where);
 int gc_mark(void *a);
 int debug_gc_do_free(void *a);
 void do_gc(void);
@@ -80,6 +80,9 @@ void f__gc_status(INT32 args);
 #define GC_FREE() do { num_objects-- ; }while(0)
 #endif
 
+
+#define gc_external_mark2(X,Y,Z) gc_external_mark3( debug_malloc_pass(X),(Y),(Z))
+#define gc_external_mark(X) gc_external_mark2( (X),"externally", 0)
 
 #define add_gc_callback(X,Y,Z) \
   dmalloc_touch(struct callback *,debug_add_gc_callback((X),(Y),(Z)))

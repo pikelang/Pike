@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.63 2000/03/26 01:53:58 mast Exp $");
+RCSID("$Id: array.c,v 1.64 2000/04/12 18:40:12 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -1799,6 +1799,24 @@ void gc_mark_array_as_referenced(struct array *a)
   }
 }
 
+static void gc_check_array(struct array *a)
+{
+  if(a->type_field & BIT_COMPLEX)
+  {
+    TYPE_FIELD t;
+    t=debug_gc_check_svalues(ITEM(a), a->size, T_ARRAY, a);
+    
+    /* Ugly, but we are not allowed to change type_field
+     * at the same time as the array is being built...
+     * Actually we just need better primitives for building arrays.
+     */
+    if(!(a->type_field & BIT_UNFINISHED) || a->refs!=1)
+      a->type_field = t;
+    else
+      a->type_field |= t;
+  }
+}
+
 void gc_check_all_arrays(void)
 {
   struct array *a;
@@ -1808,21 +1826,7 @@ void gc_check_all_arrays(void)
 #ifdef PIKE_DEBUG
     if(d_flag > 1)  array_check_type_field(a);
 #endif
-    if(a->type_field & BIT_COMPLEX)
-    {
-      TYPE_FIELD t;
-      t=debug_gc_check_svalues(ITEM(a), a->size, T_ARRAY, a);
-
-      /* Ugly, but we are not allowed to change type_field
-       * at the same time as the array is being built...
-       * Actually we just need better primitives for building arrays.
-       */
-      if(!(a->type_field & BIT_UNFINISHED) || a->refs!=1)
-	a->type_field = t;
-      else
-	a->type_field |= t;
-    }
-
+    gc_check_array(a);
     a=a->next;
   } while (a != & empty_array);
 }
@@ -1905,6 +1909,9 @@ void gc_free_all_unreferenced_arrays(void)
     }
     else
     {
+#ifdef PIKE_DEBUG
+      if(d_flag) gc_check_array(a);
+#endif
       a=a->next;
     }
   } while (a != & empty_array);

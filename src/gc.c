@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.53 2000/04/08 02:01:08 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.54 2000/04/12 18:40:12 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -123,24 +123,40 @@ TYPE_T attempt_to_identify(void *something)
   return T_UNKNOWN;
 }
 
-static void *check_for =0;
+void *check_for =0;
 static char *found_where="";
 static void *found_in=0;
 static int found_in_type=0;
 void *gc_svalue_location=0;
 
-void describe_location(void *memblock, TYPE_T type, void *location)
+void describe_location(void *memblock, int type, void *location)
 {
   struct program *p;
   if(!location) return;
 /*  fprintf(stderr,"**Location of (short) svalue: %p\n",location); */
 
+#ifdef DEBUG_MALLOC
+  if(memblock == 0 || type == -1)
+  {
+    extern void *dmalloc_find_memblock_base(void *);
+    memblock=dmalloc_find_memblock_base(location);
+  }
+#endif
+
   if(type==T_UNKNOWN) type=attempt_to_identify(memblock);
-  fprintf(stderr,"  <from %s %p offset %ld>\n",
-	  get_name_of_type(type),
-	  memblock,
-	  ((long)location - (long)memblock));
-	  
+
+  if(memblock)
+    fprintf(stderr,"  <from %s %p offset %ld>\n",
+	    get_name_of_type(type),
+	    memblock,
+	    ((long)location - (long)memblock));
+  else
+    fprintf(stderr,"  <at location %p in unknown memblock (mmaped?)>\n",
+	    location);
+
+
+  if(memblock) describe_something(memblock,type,1);
+
   switch(type)
   {
     case T_UNKNOWN:
@@ -270,9 +286,10 @@ void describe_location(void *memblock, TYPE_T type, void *location)
 
 static void gdb_gc_stop_here(void *a)
 {
-  fprintf(stderr,"***One ref found%s.\n",found_where);
+  fprintf(stderr,"***One ref found%s.\n",found_where?found_where:"");
   describe_something(found_in, found_in_type, 0);
-  describe_location(found_in, found_in_type, gc_svalue_location);
+  describe_location(found_in , found_in_type, gc_svalue_location);
+  fprintf(stderr,"----------end------------\n");
 }
 
 void debug_gc_xmark_svalues(struct svalue *s, int num, char *fromwhere)
@@ -519,6 +536,14 @@ INT32 real_gc_check(void *a)
     {
       gdb_gc_stop_here(a);
     }
+
+    if(check_for == (void *)1 && gc_do_free(a))
+    {
+      fprintf(stderr,"Reference to object to free in referenced object!\n");
+      describe(a);
+      fatal("Reference to object to free in referenced object!\n");
+      return 0;
+    }
     return 0;
   }
 #endif
@@ -595,12 +620,27 @@ void locate_references(void *a)
   
   found_where=" in an object";
   gc_check_all_objects();
+
+#ifdef PIKE_DEBUG
+  if(master_object) gc_external_mark2(master_object,0," &master_object");
+#endif
   
   found_where=" in a module";
   call_callback(& gc_callbacks, (void *)0);
   
   found_where="";
   check_for=0;
+
+#ifdef DEBUG_MALLOC
+  {
+    extern void dmalloc_find_references_to(void *);
+#if 0
+    fprintf(stderr,"**DMALLOC Looking for references:\n");
+    dmalloc_find_references_to(a);
+#endif
+  }
+#endif
+
   
   if(!in_gc)
     exit_gc();
@@ -620,6 +660,7 @@ int debug_gc_is_referenced(void *a)
     INT32 refs=m->refs;
     INT32 xrefs=m->xrefs;
     TYPE_T t=attempt_to_identify(a);
+    d_flag=0;
 
     fprintf(stderr,"**Something has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)refs,(long)xrefs);
     describe_something(a, t, 1);
@@ -637,7 +678,7 @@ int debug_gc_is_referenced(void *a)
 #endif
 
 #ifdef PIKE_DEBUG
-int gc_external_mark(void *a)
+int gc_external_mark3(void *a, void *in, char *where)
 {
   struct marker *m;
   if(check_for)
@@ -645,9 +686,15 @@ int gc_external_mark(void *a)
     if(a==check_for)
     {
       char *tmp=found_where;
-      found_where=" externally";
+      void *tmp2=found_in;
+
+      if(where) found_where=where;
+      if(in) found_in=in;
+
       gdb_gc_stop_here(a);
+
       found_where=tmp;
+      found_in=tmp2;
 
       return 1;
     }
@@ -746,7 +793,13 @@ void do_gc(void)
   gc_check_all_mappings();
   gc_check_all_programs();
   gc_check_all_objects();
+
+#ifdef PIKE_DEBUG
+  if(master_object) gc_external_mark2(master_object,0," &master_object");
+#endif
+
   call_callback(& gc_callbacks, (void *)0);
+
 
   /* Next we mark anything with external references */
   gc_mark_all_arrays();
@@ -763,12 +816,20 @@ void do_gc(void)
   if(d_flag)
     gc_mark_all_strings();
 
+
+#ifdef PIKE_DEBUG
+  check_for=(void *)1;
+#endif
   /* Now we free the unused stuff */
   gc_free_all_unreferenced_arrays();
   gc_free_all_unreferenced_multisets();
   gc_free_all_unreferenced_mappings();
   gc_free_all_unreferenced_programs();
   gc_free_all_unreferenced_objects();
+
+#ifdef PIKE_DEBUG
+  check_for=0;
+#endif
 
   exit_gc();
 

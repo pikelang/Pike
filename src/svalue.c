@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.66 2000/04/12 10:39:24 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.67 2000/04/12 18:40:12 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1206,6 +1206,7 @@ void check_svalue(struct svalue *s)
 
 TYPE_FIELD real_gc_check_svalues(struct svalue *s, int num)
 {
+  extern void * check_for;
   INT32 e;
   TYPE_FIELD f;
   f=0;
@@ -1224,7 +1225,7 @@ TYPE_FIELD real_gc_check_svalues(struct svalue *s, int num)
     case T_FUNCTION:
       if(s->subtype == FUNCTION_BUILTIN)
       {
-	if(d_flag)
+	if(d_flag && check_for != (void *)1)
 	{
 	  if(!gc_check(s->u.efun))
 	  {
@@ -1252,6 +1253,7 @@ TYPE_FIELD real_gc_check_svalues(struct svalue *s, int num)
       break;
 
     case T_STRING:
+      if(check_for == (void *)1) break;
       if(!d_flag) break;
     case T_PROGRAM:
     case T_ARRAY:
@@ -1290,7 +1292,7 @@ void real_gc_xmark_svalues(struct svalue *s, int num)
 #endif
 
     if(s->type <= MAX_REF_TYPE)
-      gc_external_mark(s->u.refs);
+      gc_external_mark2(s->u.refs,0,0);
   }
 #ifdef PIKE_DEBUG
   gc_svalue_location=0;
@@ -1300,6 +1302,7 @@ void real_gc_xmark_svalues(struct svalue *s, int num)
 
 void real_gc_check_short_svalue(union anything *u, TYPE_T type)
 {
+  extern void * check_for;
 #ifdef PIKE_DEBUG
   gc_svalue_location=(void *)u;
 #endif
@@ -1320,6 +1323,7 @@ void real_gc_check_short_svalue(union anything *u, TYPE_T type)
     break;
 
   case T_STRING:
+    if(check_for == (void *)1) break;
     if(!d_flag) break;
   case T_ARRAY:
   case T_MULTISET:
