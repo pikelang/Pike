@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.51 2004/04/06 00:18:27 nilsson Exp $
+|| $Id: iterators.cmod,v 1.52 2004/04/06 08:41:33 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.51 2004/04/06 00:18:27 nilsson Exp $");
+RCSID("$Id: iterators.cmod,v 1.52 2004/04/06 08:41:33 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -257,7 +257,7 @@ PIKECLASS Iterator
 /*! @module Mapping
  */
 /*! @class Iterator
- *! @inherit Iterator
+ *! @inherit predef::Iterator
  *!
  *!   An object of this class is returned by @[get_iterator()] when
  *!   called with a mapping.
@@ -416,7 +416,7 @@ PIKECLASS mapping_iterator
 /*! @module Array
  */
 /*! @class Iterator
- *! @inherit Iterator
+ *! @inherit predef::Iterator
  *!
  *!   An object of this class is returned by @[get_iterator()] when
  *!   called with an array.
@@ -541,7 +541,7 @@ PIKECLASS array_iterator
 /*! @module Multiset
  */
 /*! @class Iterator
- *! @inherit Iterator
+ *! @inherit predef::Iterator
  *!
  *!   An object of this class is returned by @[get_iterator()] when
  *!   called with a multiset.
@@ -846,7 +846,7 @@ PIKECLASS multiset_iterator
 /*! @module String
  */
 /*! @class Iterator
- *! @inherit Iterator
+ *! @inherit predef::Iterator
  *!
  *!   An object of this class is returned by @[get_iterator()] when
  *!   called with a string.
@@ -1171,17 +1171,19 @@ PIKECLASS file_line_iterator
  */
 
 /*! @class SplitIterator
- *! @inherit Iterator
+ *! @inherit predef::Iterator
+ *!
  *! An iterator that iterates over substrings of a string, separated
  *! by a character or several different characters.
+ *!
  *! @note
- *! Typically you don't need to explicitly use the SplitIterator.
- *! Expressions like the following is automatically optimized into
- *! using a SplitIterator.
- *! @code
- *! foreach(str/"\n", string line)
- *!   write("%s\n", line);
- *! @endcode
+ *!   Typically you don't need to explicitly use the SplitIterator.
+ *!   Expressions like the following are automatically optimized into
+ *!   using a SplitIterator.
+ *!   @code
+ *!     foreach(str/"\n", string line)
+ *!       write("%s\n", line);
+ *!   @endcode
  */
 PIKECLASS string_split_iterator
 {
