@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.149 1999/04/20 15:50:54 grubba Exp $");
+RCSID("$Id: file.c,v 1.150 1999/04/20 15:58:56 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2495,6 +2495,8 @@ static void exit_file_locking(void)
 
 void pike_module_exit(void)
 {
+  extern void exit_sendfile(void);
+
   exit_sendfile();
 
   if(file_program)
@@ -2558,6 +2560,7 @@ void pike_module_init(void)
 {
   struct object *o;
   extern void port_setup_program(void);
+  extern void init_sendfile(void);
   int e;
 
   init_files_efuns();
