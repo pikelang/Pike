@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.469 2003/02/08 17:12:27 mast Exp $
+|| $Id: builtin_functions.c,v 1.470 2003/02/08 18:07:07 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.469 2003/02/08 17:12:27 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.470 2003/02/08 18:07:07 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5956,7 +5956,7 @@ PMOD_EXPORT void f_master(INT32 args)
  *! Return the CPU time that has been consumed by this process or
  *! thread. Zero is returned if the system couldn't determine it. The
  *! time is normally returned in microseconds, but if the optional
- *! @[nsec] is nonzero then it's returned in nanoseconds.
+ *! argument @[nsec] is nonzero it's returned in nanoseconds.
  *!
  *! The CPU time includes both user and system time, i.e. it's
  *! approximately the same thing you would get by adding together the
@@ -5966,24 +5966,25 @@ PMOD_EXPORT void f_master(INT32 args)
  *! current one only; @[System.CPU_TIME_IS_THREAD_LOCAL] tells which.
  *!
  *! @note
- *!   The actual accurancy on many systems is significantly less than
+ *!   The actual accuracy on many systems is significantly less than
  *!   milliseconds or nanoseconds.
  *!
  *! @note
  *!   The garbage collector might run automatically at any time. The
  *!   time it takes is not included in the figure returned by this
- *!   function, so that normal measurements isn't randomly clobbered
+ *!   function, so that normal measurements aren't randomly clobbered
  *!   by it. Explicit calls to @[gc] are still included, though.
  *!
  *! @note
  *!   The special function @[gauge] is implemented with this function.
  *!
  *! @seealso
- *!   @[System.CPU_TIME_IS_THREAD_LOCAL], @[gauge],
+ *!   @[System.CPU_TIME_IS_THREAD_LOCAL], @[gauge()],
  *!   @[System.getrusage()], @[gethrtime()]
  */
 PMOD_EXPORT void f_gethrvtime(INT32 args)
 {
+  int nsec = 0;
   cpu_time_t time = get_cpu_time();
 
   /* Don't subtract the gc time at all if we don't know whether it's
@@ -5995,8 +5996,10 @@ PMOD_EXPORT void f_gethrvtime(INT32 args)
   time -= auto_gc_time;
 #endif
 
+  nsec = args && !UNSAFE_IS_ZERO(sp-args);
+
   pop_n_elems(args);
-  if (args)
+  if (nsec)
     push_int64(time);
   else
     push_int64(time/1000);
@@ -6006,10 +6009,10 @@ PMOD_EXPORT void f_gethrvtime(INT32 args)
  *!
  *! Return the real time since some arbitrary event in the past. The
  *! time is normally returned in microseconds, but if the optional
- *! @[nsec] is nonzero then it's returned in nanoseconds.
+ *! argument @[nsec] is nonzero it's returned in nanoseconds.
  *!
  *! @note
- *!   The actual accurancy on many systems is significantly less than
+ *!   The actual accuracy on many systems is significantly less than
  *!   milliseconds or nanoseconds.
  *!
  *! @seealso
@@ -6018,8 +6021,11 @@ PMOD_EXPORT void f_gethrvtime(INT32 args)
 #ifdef HAVE_GETHRTIME
 PMOD_EXPORT void f_gethrtime(INT32 args)
 {
+  int nsec = 0;
+  nsec = args && !UNSAFE_IS_ZERO(sp-args);
+
   pop_n_elems(args);
-  if(args)
+  if(nsec)
     push_int64(gethrtime()); 
   else
     push_int64(gethrtime()/1000);
@@ -6027,15 +6033,18 @@ PMOD_EXPORT void f_gethrtime(INT32 args)
 #else
 PMOD_EXPORT void f_gethrtime(INT32 args)
 {
+  int nsec = 0;
+  nsec = args && !UNSAFE_IS_ZERO(sp-args);
+
   pop_n_elems(args);
   GETTIMEOFDAY(&current_time);
 #ifdef INT64
-  if(args)
+  if(nsec)
     push_int64((((INT64)current_time.tv_sec * 1000000) + current_time.tv_usec)*1000);
   else
     push_int64(((INT64)current_time.tv_sec * 1000000) + current_time.tv_usec);
 #else /* !INT64 */
-  if(args)
+  if(nsec)
     push_int64(((current_time.tv_sec * 1000000) + current_time.tv_usec)*1000);
   else
     push_int64((current_time.tv_sec * 1000000) + current_time.tv_usec);
