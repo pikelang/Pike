@@ -39,6 +39,7 @@ class Minicontext
 void got_connection(object f)
 {
   object c = f->accept();
+  c->set_blocking();
   object con = Connection(0, max_call_threads);
   object ctx = Context(gethostname()+"-"+portno);
   if (!c)
@@ -62,6 +63,8 @@ void create(string host, int p, void|int _max_call_threads)
   else if(!port->bind(p, got_connection, host))
     throw(({"Failed to bind to port\n", backtrace()}));
 
+  DEBUGMSG("listening to " + host + ":" + p + "\n");
+
   if(!portno)
     sscanf(port->query_address(), "%*s %d", portno);
 
@@ -76,11 +79,13 @@ void provide(string name, mixed thing)
 
 void close()
 {
+  DEBUGMSG("closing listening port\n");
   destruct (port);
 }
 
 void close_all()
 {
+  DEBUGMSG("closing listening port and all connections\n");
   destruct (port);
   foreach (connections, object conn) conn->close();
 }
@@ -92,5 +97,6 @@ int closed()
 
 void destroy()
 {
+  DEBUGMSG("destruct" + (port ? " - closing listening port\n" : "\n"));
   catch (destruct (port));
 }
