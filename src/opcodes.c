@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.143 2003/03/14 15:50:45 grubba Exp $
+|| $Id: opcodes.c,v 1.144 2003/04/27 17:52:42 mast Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.143 2003/03/14 15:50:45 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.144 2003/04/27 17:52:42 mast Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -585,7 +585,7 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	      ref_push_object(((struct pike_trampoline *)
 			       (Pike_sp[-1].u.object->storage))->
 			      frame->current_object);
-	      stack_pop_n_elems_keep_top(1);
+	      stack_pop_keep_top();
 	    } else {
 	      Pike_sp[-1].type = T_OBJECT;
 	    }

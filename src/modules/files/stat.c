@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stat.c,v 1.27 2003/04/07 17:21:13 nilsson Exp $
+|| $Id: stat.c,v 1.28 2003/04/27 17:52:42 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.27 2003/04/07 17:21:13 nilsson Exp $");
+RCSID("$Id: stat.c,v 1.28 2003/04/27 17:52:42 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -907,7 +907,7 @@ static void stat_values(INT32 args)
       f_index(2);
    }
    f_aggregate(z);
-   stack_pop_n_elems_keep_top(1);
+   stack_pop_keep_top();
 }
 
 #undef THIS_STAT

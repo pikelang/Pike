@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.39 2003/04/22 14:03:12 jhs Exp $
+|| $Id: iterators.cmod,v 1.40 2003/04/27 17:52:42 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.39 2003/04/22 14:03:12 jhs Exp $");
+RCSID("$Id: iterators.cmod,v 1.40 2003/04/27 17:52:42 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -62,7 +62,7 @@ DECLARATIONS
  *! back the iterator can move. Therefore iterators may support only a
  *! limited amount of backward movement, e.g. when they access a
  *! stream through a limited buffer. If such an iterator is moved back
- *! past that limit then it'll behave as if it's pointing entirely
+ *! past the limit then it'll behave as if it's pointing entirely
  *! outside the data set (see above).
  *!
  *! An iterator that doesn't support backward movement at all should
@@ -104,7 +104,7 @@ PIKECLASS Iterator
     prototype;
   {}
 
-  /*! @decl Iterator `+(int steps)
+  /*! @decl Iterator `+ (int steps)
    *!
    *! Returns a clone of this iterator which is advanced the specified
    *! number of steps. The amount may be negative to move backwards.
@@ -116,15 +116,14 @@ PIKECLASS Iterator
     prototype;
   {}
 
-  /*! @decl Iterator `+=(int steps)
+  /*! @decl Iterator `+= (int steps)
    *!
    *! Advance this iterator the specified number of steps and return
    *! it. The amount may be negative to move backwards. If the
    *! iterator doesn't support backward movement it should throw an
    *! exception in that case.
    *!
-   *! @[foreach] currently only calls this function with a
-   *! step value of @expr{1@}.
+   *! @[foreach] calls this function with a step value of @expr{1@}.
    *!
    *! @note
    *!   @[foreach] will call this function even when the the
@@ -1775,7 +1774,7 @@ PIKEFUN object(Iterator) get_iterator(object|array|mapping|multiset|string data)
       if(FIND_LFUN(data->u.object->prog, LFUN__GET_ITERATOR) != -1)
       {
 	apply_lfun(data->u.object, LFUN__GET_ITERATOR, 0);
-	stack_unlink(1);
+	stack_pop_keep_top();
 	return;
       }
 

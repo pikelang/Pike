@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.149 2003/04/18 15:49:46 mast Exp $
+|| $Id: interpret_functions.h,v 1.150 2003/04/27 17:52:42 mast Exp $
 */
 
 /*
@@ -725,13 +725,13 @@ OPCODE0(F_ADD_TO, "+=", 0, {
        *     no need to reassign it.
        */
       pop_stack();
-      stack_pop_n_elems_keep_top(2);
+      stack_pop_2_elems_keep_top();
       goto add_to_done;
     }
   }
   f_add(2);
   assign_lvalue(Pike_sp-3,Pike_sp-1);
-  stack_pop_n_elems_keep_top(2);
+  stack_pop_2_elems_keep_top();
  add_to_done:
    ; /* make gcc happy */
 });
@@ -813,7 +813,7 @@ OPCODE0(F_INC, "++x", 0, {
     push_int(1);
     f_add(2);
     assign_lvalue(Pike_sp-3, Pike_sp-1);
-    stack_unlink(2);
+    stack_pop_2_elems_keep_top();
   }
 });
 
@@ -833,7 +833,7 @@ OPCODE0(F_DEC, "--x", 0, {
     push_int(1);
     o_subtract();
     assign_lvalue(Pike_sp-3, Pike_sp-1);
-    stack_unlink(2);
+    stack_pop_2_elems_keep_top();
   }
 });
 
@@ -893,7 +893,7 @@ OPCODE0(F_POST_INC, "x++", 0, {
     f_add(2);
     assign_lvalue(Pike_sp-4, Pike_sp-1);
     pop_stack();
-    stack_unlink(2);
+    stack_pop_2_elems_keep_top();
     print_return_value();
   }
 });
@@ -916,7 +916,7 @@ OPCODE0(F_POST_DEC, "x--", 0, {
     o_subtract();
     assign_lvalue(Pike_sp-4, Pike_sp-1);
     pop_stack();
-    stack_unlink(2);
+    stack_pop_2_elems_keep_top();
     print_return_value();
   }
 });
@@ -1897,7 +1897,7 @@ OPCODE1(F_CALL_OTHER,"call other", I_PC_AT_NEXT, {
 	    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
 	    DO_JUMP_TO(Pike_fp->pc);
 	  }
-	  stack_unlink(1);
+	  stack_pop_keep_top();
 	  DONE;
 	}
       }
@@ -2004,7 +2004,7 @@ OPCODE1(F_CALL_OTHER_AND_RETURN,"call other & return", 0, {
 	    unlink_previous_frame();
 	    DO_JUMP_TO(addr);
 	  }
-	  stack_unlink(1);
+	  stack_pop_keep_top();
 	  DO_DUMB_RETURN;
 	}
       }

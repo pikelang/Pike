@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.175 2003/04/17 22:51:13 mast Exp $
+|| $Id: operators.c,v 1.176 2003/04/27 17:52:42 mast Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.175 2003/04/17 22:51:13 mast Exp $");
+RCSID("$Id: operators.c,v 1.176 2003/04/27 17:52:42 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -251,7 +251,7 @@ PMOD_EXPORT void f_add(INT32 args)
 	     FIND_LFUN(sp[-args].u.object->prog,LFUN_ADD_EQ) != -1)
 	  {
 	    apply_lfun(sp[-args].u.object, LFUN_ADD_EQ, args-1);
-	    stack_unlink(1);
+	    stack_pop_keep_top();
 	    return;
 	  }
 	  if(FIND_LFUN(sp[-args].u.object->prog,LFUN_ADD) != -1)
