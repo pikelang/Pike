@@ -10,7 +10,7 @@ class Tag
   int pos;
   mapping(string:mixed) params=([]);
 //  array(Tag) data;
-  array(object) data;
+  array(string|object(Tag)) data;
   string file;
 
   string location()
