@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.81 1998/02/13 11:52:14 mirar Exp $ */
+/* $Id: image.c,v 1.82 1998/02/13 18:57:58 marcus Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.81 1998/02/13 11:52:14 mirar Exp $
+**!	$Id: image.c,v 1.82 1998/02/13 18:57:58 marcus Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.81 1998/02/13 11:52:14 mirar Exp $");
+RCSID("$Id: image.c,v 1.82 1998/02/13 18:57:58 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2989,7 +2989,7 @@ extern void exit_image_x(void);
 extern void init_image_png(void);
 extern void exit_image_png(void);
 
-static struct pike_string *magic_JPEG;
+static struct pike_string *magic_JPEG, *magic_XFace;
 
 static void image_index_magic(INT32 args)
 {
@@ -3006,6 +3006,14 @@ static void image_index_magic(INT32 args)
       SAFE_APPLY_MASTER("resolv",2);
       return;
    }
+   else if (sp[-1].u.string==magic_XFace)
+   {
+      pop_stack();
+      push_string(make_shared_string("_Image_XFace"));
+      push_int(0);
+      SAFE_APPLY_MASTER("resolv",2);
+      return;
+   }
    push_object(THISOBJ); THISOBJ->refs++;
    tmp=sp[-1], sp[-1]=sp[-2], sp[-2]=tmp;
    f_arrow(2);
@@ -3016,6 +3024,7 @@ void pike_module_init(void)
    int i;
 
    magic_JPEG=make_shared_string("JPEG");
+   magic_XFace=make_shared_string("XFace");
 
    image_noise_init();
 
@@ -3254,6 +3263,7 @@ void pike_module_exit(void)
   exit_image_x();
 
   free_string(magic_JPEG);
+  free_string(magic_XFace);
 }
 
 
