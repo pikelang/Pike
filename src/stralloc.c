@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.180 2004/11/06 15:36:13 grubba Exp $
+|| $Id: stralloc.c,v 1.181 2004/11/06 15:39:33 grubba Exp $
 */
 
 #include "global.h"
@@ -2409,29 +2409,29 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  string_builder_putchar(s, va_arg(args, INT32));
 	  break;
 	case 'b':
-	  string_builder_append_integer(s, va_arg(args, unsigned int), 2, 0,
-					min_width, precision);
+	  string_builder_append_integer(s, va_arg(args, unsigned int), 2,
+					flags, min_width, precision);
 	  break;
 	case 'o':
-	  string_builder_append_integer(s, va_arg(args, unsigned int), 8, 0,
-					min_width, precision);
+	  string_builder_append_integer(s, va_arg(args, unsigned int), 8,
+					flags, min_width, precision);
 	  break;
 	case 'x':
-	  string_builder_append_integer(s, va_arg(args, unsigned int), 16, 0,
-					min_width, precision);
+	  string_builder_append_integer(s, va_arg(args, unsigned int), 16,
+					flags, min_width, precision);
 	  break;
 	case 'X':
 	  string_builder_append_integer(s, va_arg(args, unsigned int), 16,
-					APPEND_UPPER_CASE,
+					flags | APPEND_UPPER_CASE,
 					min_width, precision);
 	  break;
 	case 'u':
-	  string_builder_append_integer(s, va_arg(args, unsigned int), 10, 0,
-					min_width, precision);
+	  string_builder_append_integer(s, va_arg(args, unsigned int), 10,
+					flags, min_width, precision);
 	  break;
 	case 'd':
 	  string_builder_append_integer(s, va_arg(args, int), 10,
-					APPEND_SIGNED,
+					flags | APPEND_SIGNED,
 					min_width, precision);
 	  break;
 	default:
