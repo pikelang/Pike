@@ -118,6 +118,14 @@ test_eq(AFJLLAF,17)
 test_do(add_efun("AFJLLAF"))
 test_do(signal(signum("SIGUSR1")))
 
+// class
+test_true(programp(class {}))
+test_true(functionp(clone(class { int foo() { return 1; }})->foo))
+test_true(clone(class { int foo() { return 1; }})->foo())
+test_true(clone(class { int i=1; })->i)
+test_false(clone(class { int foo() { return 1; }})->bar)
+test_eq(clone(clone(class { program foo=class { int i=20; }; })->foo)->i,20)
+
 // Not yet cataloged
 test_program(void foo(int a ,int b); function(int,int:void) a() { return foo; })
 test_program(void foo(int a, int ... b); function(int,int ...:void) a() { return foo; })
