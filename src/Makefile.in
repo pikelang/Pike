@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.277 2001/11/08 23:34:26 nilsson Exp $
+# $Id: Makefile.in,v 1.278 2001/11/12 13:25:17 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -302,7 +302,7 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 	$(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
 	  -DPMOD_PROTO=PMOD_PROTO "$<" >"$@"
 
-.c.protos:
+.c.protos: precompile.sh-stamp
 	./precompile.sh fake_dynamic_load.pike >"$@" --cpp --protos \
 	  $(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
 	    -DPMOD_PROTO=PMOD_PROTO -DPIKE_PRECOMPILER=1 "$<" || \
@@ -337,7 +337,7 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 # The .c file will not be created in the SOURCE directory otherwise.
 # -Hubbe
 #
-.cmod.c:
+.cmod.c: precompile.sh-stamp
 	./precompile.sh precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
 
 # This rule is used for some header files that are generated from the
@@ -739,7 +739,7 @@ $(SRCDIR)/language.c: $(SRCDIR)/language.h_src
 	touch $(SRCDIR)/language.c
 
 
-interpret_functions_fixed.h: $(SRCDIR)/interpret_functions.h
+interpret_functions_fixed.h: $(SRCDIR)/interpret_functions.h precompile.sh-stamp
 	./precompile.sh make_interpret_functions.pike >"$@" "$(SRCDIR)/interpret_functions.h" || { rm "$@"; exit 1; }
 
 # UnixWare make needs help to find the source file...
