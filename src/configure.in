@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.832 2004/05/10 21:45:13 agehall Exp $")
+AC_REVISION("$Id: configure.in,v 1.833 2004/05/11 08:49:54 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -703,7 +703,7 @@ if test "$uname_prog" != "no"; then
     ;;
     *MINGW*|*mingw*)
       # Stupid mingw does not define __NT__ so we must...
-      CFLAGS="$CFLAGS -D__NT__=1"
+      CPPFLAGS="$CPPFLAGS -D__NT__=1"
       pike_is_mingw="yes"
       pike_cv_sys_os="Windows_NT"
     ;;
@@ -953,8 +953,8 @@ if test "$GCC" = "yes"; then
     AC_SYS_COMPILER_FLAG(-pipe, pipe, OPTIMIZE)
 
     #### For exec-shield in newer linux kernels.
-    #### We should really fix the machine code generator to use mprotect instead.
-    #### That should work.
+    #### Linux's mprotect(2) is broken, so we unfortunately
+    #### need to enable executabe stack.
     #### This test crashes under mingw32 so let's disable for win32 for now.
     if test "$pike_cv_sys_os" != "Windows_NT"; then
       AC_SYS_COMPILER_FLAG([[-Wa,--execstack]],executableheap,CFLAGS)
