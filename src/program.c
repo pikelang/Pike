@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.318 2001/05/05 13:58:02 grubba Exp $");
+RCSID("$Id: program.c,v 1.319 2001/05/05 21:00:17 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -204,10 +204,10 @@ static char *raw_lfun_types[] = {
 
 /*! @decl void lfun::__INIT()
  *!
- *! Global variable initialization.
- *!
- *! This function is called just before @[lfun::create()] when
- *! an object is instanciated.
+ *!   Global variable initialization.
+ *!   
+ *!   This function is called just before @[lfun::create()] when
+ *!   an object is instanciated.
  *!
  *! @note
  *!   This function is generated automatically by the compiler,
@@ -219,31 +219,31 @@ static char *raw_lfun_types[] = {
 
 /*! @decl void lfun::create(zero ... args)
  *!
- *! Object creation callback.
- *!
- *! This function is called right after @[lfun::__INIT()].
- *!
- *! @[args] will be the arguments passed when the program was called.
- *!
- *! In Pike 7.2 and later this function can be created implicitly
- *! by the compiler using the new syntax:
- *! @code{
- *!   class Foo(int foo) {
- *!     int bar;
- *!   }
- *! @}
- *! In the above case an implicit @[lfun::create()] will be created,
- *! and it will be equvivalent to:
- *! @code{
- *!   class Foo {
- *!     int foo;
- *!     int bar;
- *!     static void create(int foo)
- *!     {
- *!       local::foo = foo;
- *!     }
- *!   }
- *! @}
+ *!   Object creation callback.
+ *!   
+ *!   This function is called right after @[lfun::__INIT()].
+ *!   
+ *!   @[args] will be the arguments passed when the program was called.
+ *!   
+ *!   In Pike 7.2 and later this function can be created implicitly
+ *!   by the compiler using the new syntax:
+ *!     @code{
+ *!       class Foo(int foo) {
+ *!         int bar;
+ *!       }
+ *!     @}
+ *!   In the above case an implicit @[lfun::create()] will be created,
+ *!   and it will be equvivalent to:
+ *!     @code{
+ *!       class Foo {
+ *!         int foo;
+ *!         int bar;
+ *!         static void create(int foo)
+ *!         {
+ *!           local::foo = foo;
+ *!         }
+ *!       }
+ *!     @}
  *!
  *! @seealso
  *!   @[lfun::__INIT()], @[lfun::destroy()]
@@ -251,10 +251,10 @@ static char *raw_lfun_types[] = {
 
 /*! @decl void lfun::destroy()
  *!
- *! Object destruction callback.
- *!
- *! This function is called by @[destruct()] right before
- *! it will zero all the object variables, and destroy the object.
+ *!   Object destruction callback.
+ *!   
+ *!   This function is called by @[destruct()] right before
+ *!   it will zero all the object variables, and destroy the object.
  *!
  *! @seealso
  *!   @[lfun::create()], @[destruct()]
@@ -262,7 +262,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`+(zero ... args)
  *!
- *! Left associative addition operator callback.
+ *!   Left associative addition operator callback.
  *!
  *! @seealso
  *!   @[lfun::``+()], @[`+()]
@@ -270,7 +270,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`-(zero ... args)
  *!
- *! Left associative subtraction operator callback.
+ *!   Left associative subtraction operator callback.
  *!
  *! @seealso
  *!   @[lfun::``-()], @[`-()]
@@ -278,7 +278,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`&(zero ... args)
  *!
- *! Left associative and operator callback.
+ *!   Left associative and operator callback.
  *!
  *! @seealso
  *!   @[lfun::``&()], @[`&()]
@@ -286,7 +286,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`|(zero ... args)
  *!
- *! Left associative or operator callback.
+ *!   Left associative or operator callback.
  *!
  *! @seealso
  *!   @[lfun::``|()], @[`|()]
@@ -294,7 +294,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`^(zero ... args)
  *!
- *! Left associative exclusive or operator callback.
+ *!   Left associative exclusive or operator callback.
  *!
  *! @seealso
  *!   @[lfun::``^()], @[`^()]
@@ -302,7 +302,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`<<(zero arg)
  *!
- *! Left associative left shift operator callback.
+ *!   Left associative left shift operator callback.
  *!
  *! @seealso
  *!   @[lfun::``<<()], @[`<<()]
@@ -310,7 +310,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`>>(zero arg)
  *!
- *! Left associative right shift operator callback.
+ *!   Left associative right shift operator callback.
  *!
  *! @seealso
  *!   @[lfun::``>>()], @[`>>()]
@@ -318,7 +318,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`*(zero ... args)
  *!
- *! Left associative multiplication operator callback.
+ *!   Left associative multiplication operator callback.
  *!
  *! @seealso
  *!   @[lfun::``*()], @[`*()]
@@ -326,7 +326,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`/(zero ... args)
  *!
- *! Left associative division operator callback.
+ *!   Left associative division operator callback.
  *!
  *! @seealso
  *!   @[lfun::``/()], @[`/()]
@@ -334,7 +334,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`%(zero ... args)
  *!
- *! Left associative modulo operator callback.
+ *!   Left associative modulo operator callback.
  *!
  *! @seealso
  *!   @[lfun::``%()], @[`%()]
@@ -342,7 +342,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`~()
  *!
- *! Inversion operator callback.
+ *!   Inversion operator callback.
  *!
  *! @seealso
  *!   @[`~()]
@@ -350,7 +350,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl int(0..1) lfun::`==(mixed arg)
  *!
- *! Equality operator callback.
+ *!   Equality operator callback.
  *!
  *! @seealso
  *!   @[`==()]
@@ -358,7 +358,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl int(0..1) lfun::`<(mixed arg)
  *!
- *! Less than operator callback.
+ *!   Less than operator callback.
  *!
  *! @seealso
  *!   @[`<()]
@@ -366,7 +366,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl int(0..1) lfun::`>(mixed arg)
  *!
- *! Greater than operator callback.
+ *!   Greater than operator callback.
  *!
  *! @seealso
  *!   @[`>()]
@@ -374,14 +374,14 @@ static char *raw_lfun_types[] = {
 
 /*! @decl int lfun::__hash()
  *!
- *! Hashing callback.
+ *!   Hashing callback.
  *!
- *! FIXME: When is this used?
+ *!   FIXME: When is this used?
  */
 
 /*! @decl mixed lfun::cast(string requested_type)
  *!
- *! Cast operator callback.
+ *!   Cast operator callback.
  *!
  *! @note
  *!   The argument is currently (Pike 7.2) a string with the name
@@ -390,7 +390,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl int lfun::`!()
  *!
- *! Not operator callback.
+ *!   Not operator callback.
  *!
  *! @seealso
  *!   @[`!()]
@@ -398,7 +398,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`[](zero arg1, zero|void arg2)
  *!
- *! Index/range operator callback.
+ *!   Index/range operator callback.
  *!
  *! @seealso
  *!   @[`[]()]
@@ -406,7 +406,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`[]=(zero arg1, zero arg2)
  *!
- *! Index assignment operator callback.
+ *!   Index assignment operator callback.
  *!
  *! @seealso
  *!   @[`[]=()]
@@ -414,7 +414,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`->(string arg)
  *!
- *! Arrow index operator callback.
+ *!   Arrow index operator callback.
  *!
  *! @seealso
  *!   @[`->()]
@@ -422,7 +422,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`->=(string arg1, zero arg2)
  *!
- *! Arrow index assign operator callback.
+ *!   Arrow index assign operator callback.
  *!
  *! @seealso
  *!   @[`->=()]
@@ -430,7 +430,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl int lfun::_sizeof()
  *!
- *! Sizeof operator callback.
+ *!   Sizeof operator callback.
  *!
  *! @seealso
  *!   @[sizeof()]
@@ -438,7 +438,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl array lfun::_indices()
  *!
- *! Indices operator callback.
+ *!   Indices operator callback.
  *!
  *! @seealso
  *!   @[indices()]
@@ -446,7 +446,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl array lfun::_values()
  *!
- *! Values operator callback.
+ *!   Values operator callback.
  *!
  *! @seealso
  *!   @[values()]
@@ -454,7 +454,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`()(zero ... args)
  *!
- *! Function call operator callback.
+ *!   Function call operator callback.
  *!
  *! @seealso
  *!   @[`()]
@@ -462,7 +462,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::``+(zero ... args)
  *!
- *! Right associative addition operator callback.
+ *!   Right associative addition operator callback.
  *!
  *! @seealso
  *!   @[lfun::`+()], @[`+()]
@@ -470,7 +470,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::``-(zero ... args)
  *!
- *! Right associative subtraction operator callback.
+ *!   Right associative subtraction operator callback.
  *!
  *! @seealso
  *!   @[lfun::`-()], @[`-()]
@@ -478,7 +478,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::``&(zero ... args)
  *!
- *! Right associative and operator callback.
+ *!   Right associative and operator callback.
  *!
  *! @seealso
  *!   @[lfun::`&()], @[`&()]
@@ -486,7 +486,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::``|(zero ... args)
  *!
- *! Right associative or operator callback.
+ *!   Right associative or operator callback.
  *!
  *! @seealso
  *!   @[lfun::`|()], @[`|()]
@@ -494,7 +494,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::``^(zero ... args)
  *!
- *! Right associative exclusive or operator callback.
+ *!   Right associative exclusive or operator callback.
  *!
  *! @seealso
  *!   @[lfun::`^()], @[`^()]
@@ -502,7 +502,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::``<<(zero arg)
  *!
- *! Right associative left shift operator callback.
+ *!   Right associative left shift operator callback.
  *!
  *! @seealso
  *!   @[lfun::`<<()], @[`<<()]
@@ -510,7 +510,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::``>>(zero arg)
  *!
- *! Right associative right shift operator callback.
+ *!   Right associative right shift operator callback.
  *!
  *! @seealso
  *!   @[lfun::`>>()], @[`>>()]
@@ -518,7 +518,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::``*(zero ... args)
  *!
- *! Right associative multiplication operator callback.
+ *!   Right associative multiplication operator callback.
  *!
  *! @seealso
  *!   @[lfun::`*()], @[`*()]
@@ -526,7 +526,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::``/(zero ... args)
  *!
- *! Right associative division operator callback.
+ *!   Right associative division operator callback.
  *!
  *! @seealso
  *!   @[lfun::`/()], @[`/()]
@@ -534,7 +534,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::``%(zero ... args)
  *!
- *! Right associative modulo operator callback.
+ *!   Right associative modulo operator callback.
  *!
  *! @seealso
  *!   @[lfun::`%()], @[`%()]
@@ -542,7 +542,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::`+=(zero arg)
  *!
- *! Self increment operator callback.
+ *!   Self increment operator callback.
  *!
  *! @seealso
  *!   @[`+()], @[lfun::`+()]
@@ -550,7 +550,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl int(0..1) lfun::_is_type(string arg)
  *!
- *! Type comparison callback.
+ *!   Type comparison callback.
  *!
  *! @note
  *!   The argument is currently (Pike 7.2) a string with the name
@@ -560,7 +560,7 @@ static char *raw_lfun_types[] = {
 /*! @decl string lfun::_sprintf(int conversion_type, @
  *!                             mapping(string:int)|void params)
  *!
- *! Sprintf callback.
+ *!   Sprintf callback.
  *!
  *! @seealso
  *!    @[sprintf()]
@@ -568,7 +568,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl int lfun::_equal(mixed arg)
  *!
- *! Equal callback.
+ *!   Equal callback.
  *!
  *! @seealso
  *!   @[equal()], @[lfun::`==()]
@@ -576,7 +576,7 @@ static char *raw_lfun_types[] = {
 
 /*! @decl mixed lfun::_m_delete(mixed arg)
  *!
- *! Mapping delete callback.
+ *!   Mapping delete callback.
  *!
  *! @seealso
  *!   @[m_delete()]
@@ -584,20 +584,21 @@ static char *raw_lfun_types[] = {
 
 /*! @decl object lfun::_get_iterator()
  *!
- *! Iterator creation callback.
+ *!   Iterator creation callback.
  *!
- *! Should return an object that implements the iterator API:
- *! @dl
- *!   @item
- *!     @[lfun::`!()] should return @tt{1@} when not at end of stream,
- *!     and @tt{0@} (zero) at end of stream.
- *!   @item
- *!     @[lfun::`+=()] should advance the specified number of steps.
- *!   @item
- *!     @[index()] should return the current index.
- *!   @item
- *!     @[value()] should return the current value.
- *! @enddl
+ *! @returns
+ *!   Should return an object that implements the iterator API:
+ *!   @dl
+ *!   	@item
+ *!   	  @[lfun::`!()] should return @tt{1@} when not at end of stream,
+ *!   	  and @tt{0@} (zero) at end of stream.
+ *!   	@item
+ *!   	  @[lfun::`+=()] should advance the specified number of steps.
+ *!   	@item
+ *!   	  @[index()] should return the current index.
+ *!   	@item
+ *!   	  @[value()] should return the current value.
+ *!   @enddl
  *!
  *! @seealso
  *!   @[Iterator], @[foreach()]
