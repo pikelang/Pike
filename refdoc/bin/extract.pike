@@ -1,5 +1,5 @@
 /*
- * $Id: extract.pike,v 1.15 2002/06/04 13:10:07 mast Exp $
+ * $Id: extract.pike,v 1.16 2002/06/04 13:33:13 mast Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -89,17 +89,18 @@ string extract(string filename, string imgdest, int(0..1) rootless, string build
     return mirar_parser->make_doc_files( builddir, imgdest );
   }
 
-  string suffix;
+  string name_sans_suffix, suffix;
   if (has_suffix(filename, ".in")) {
-    suffix = filename[..sizeof(filename)-4];
+    name_sans_suffix = filename[..sizeof(filename)-4];
   }
   else
-    suffix = filename;
-  if(!has_value(suffix, "."))
-    error("No suffix in file %O.\n", suffix);
-  suffix = ((suffix/"/")[-1]/".")[-1];
+    name_sans_suffix = filename;
+  if(!has_value(name_sans_suffix, "."))
+    error("No suffix in file %O.\n", name_sans_suffix);
+  suffix = ((name_sans_suffix/"/")[-1]/".")[-1];
   if( !(< "c", "pike", "pmod", >)[suffix] )
     error("Unknown filetype %O.\n", suffix);
+  name_sans_suffix = name_sans_suffix[..sizeof(name_sans_suffix)-(sizeof(suffix)+2)];
 
   string result;
   mixed err = catch {
@@ -112,12 +113,9 @@ string extract(string filename, string imgdest, int(0..1) rootless, string build
 
       string type = ([ "pike":"class", "pmod":"module", ])[suffix];
 
-      string name = (filename/"/")[-1];
+      string name = (name_sans_suffix/"/")[-1];
       if(name == "master.pike")
 	name = "/master";
-      else {
-	name = name[..sizeof(name)-(sizeof(suffix)+2)];
-      }
       if(name == "module" && !rootless) {
 	if(!sizeof(parents))
 	  error("Unknown module parent name.\n");
