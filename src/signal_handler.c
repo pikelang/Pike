@@ -21,6 +21,22 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
+#ifdef HAVE_PASSWD_H
+# include <passwd.h>
+#endif
+
+#ifdef HAVE_GROUP_H
+# include <group.h>
+#endif
+
+#ifdef HAVE_PWD_H
+# include <pwd.h>
+#endif
+
+#ifdef HAVE_GRP_H
+# include <grp.h>
+#endif
+
 #ifdef HAVE_WINBASE_H
 #include <winbase.h>
 #endif
@@ -428,7 +444,7 @@ static void report_child(int pid,
 					       pid_status_program)))
 	{
 	  p->state = PROCESS_EXITED;
-	  if(WIFEXITED(p->result))
+	  if(WIFEXITED(status))
 	    p->result = WEXITSTATUS(status);
 	  else
 	    p->result=-1;
@@ -489,7 +505,7 @@ static void f_pid_status_wait(INT32 args)
 #endif
 #endif
     THREADS_DISALLOW();
-    if(pid >= -1)
+    if(pid > -1)
       report_child(pid, status);
     check_signals(0,0,0);
   }
@@ -600,6 +616,53 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
  * FIXME:
  *   Support for setresuid() and setresgid().
  */
+
+#ifdef HAVE_GETPWENT
+#ifndef HAVE_GETPWNAM
+struct passwd *getpwnam(char *name)
+{
+  struct passwd *pw;
+  setpwent();
+  while(pw=getpwent())
+    if(strcmp(pw->pw_name,name))
+      break;
+  endpwent();
+  return pw;
+}
+#define HAVE_GETPWNAM
+#endif
+
+#ifndef HAVE_GETPWUID
+struct passwd *getpwiod(int uid)
+{
+  struct passwd *pw;
+  setpwent();
+  while(pw=getpwent())
+    if(pw->pw_uid == uid)
+      break;
+  endpwent();
+  return 0;
+}
+#define HAVE_GETPWUID
+#endif
+#endif
+
+#ifdef HAVE_GETGRENT
+#ifndef HAVE_GETGRNAM
+struct group *getgrnam(char *name)
+{
+  struct group *gr;
+  setgrent();
+  while(pw=getgrent())
+    if(strcmp(gr->gr_name,name))
+      break;
+  endgrent();
+  return gr;
+}
+#define HAVE_GETGRNAM
+#endif
+#endif
+
 void f_create_process(INT32 args)
 {
   struct array *cmd=0;
@@ -769,7 +832,12 @@ void f_create_process(INT32 args)
       mapping_insert(pid_mapping,sp-1, sp-2);
       pop_n_elems(2);
     }else{
-      int euid;
+      int wanted_uid;
+      int wanted_gid;
+      int gid_request=0;
+      int do_initgroups=1;
+      struct passwd *pw=0;
+
       char **argv;
 #ifdef DECLARE_ENVIRON
       extern char **environ;
@@ -792,52 +860,108 @@ void f_create_process(INT32 args)
       
       argv[e]=0;
 
-      euid=geteuid();
+#ifdef HAVE_GETEUID
+      wanted_uid=geteuid();
+#else
+      wanted_uid=getgid();
+#endif
+
+#ifdef HAVE_GETGID
+      wanted_gid=getegid();
+#else
+      wanted_gid=getgid();
+#endif
+
+#ifdef HAVE_SETEUID
+      seteuid(0);
+#endif
 
       if(optional)
       {
 	int toclose[3];
 	int fd;
 
-#ifdef HAVE_SETGID
 	if((tmp=simple_mapping_string_lookup(optional, "gid")))
 	{
-	  if(tmp->type == T_INT)
+	  switch(tmp->type)
 	  {
-#ifdef HAVE_SETEUID
-	    seteuid(0);
-#endif
-	    if(!setgid(tmp->u.integer)
-#ifdef HAVE_SETEGID
-	       || !setegid(tmp->u.integer)
-#endif
-		 )
+	    case T_INT:
+	      wanted_gid=tmp->u.integer;
+	      gid_request=1;
+	      break;
+
+#ifdef HAVE_GETGRNAM
+	    case T_STRING:
 	    {
-	      exit(69);
+	      struct group *gr=getgrnam(tmp->u.string->str);
+	      if(!gr) exit(77);
+	      wanted_gid=tmp->u.integer;
+	      gid_request=1;
 	    }
-	  }
-	}
 #endif
 
-#ifdef HAVE_SETUID
-	if((tmp=simple_mapping_string_lookup(optional, "uid")))
-	{
-	  if(tmp->type == T_INT)
-	  {
-#ifdef HAVE_SETEUID
-	    seteuid(0);
-#endif
-	    if(!setuid(euid=tmp->u.integer) 
-#ifdef HAVE_SETEUID
-	       || ! seteuid(tmp->u.integer)
-#endif
-	      )
-	    {
-	      exit(69);
-	    }
+	    default:
+	      exit(64);
 	  }
 	}
+
+	if((tmp=simple_mapping_string_lookup(optional, "uid")))
+	{
+	  switch(tmp->type)
+	  {
+	    case T_INT:
+	      wanted_uid=tmp->u.integer;
+#ifdef HAVE_GETPWUID
+	      if(!gid_request)
+	      {
+		pw=getpwuid(wanted_uid);
+		if(pw) wanted_gid=pw->pw_gid;
+	      }
 #endif
+	      break;
+
+#ifdef HAVE_GETPWNAM
+	    case T_STRING:
+	      printf("poof\n");
+	      pw=getpwnam(tmp->u.string->str);
+	      if(!pw) exit(77);
+	      wanted_uid=pw->pw_uid;
+	      if(!gid_request) 
+		wanted_gid=pw->pw_gid;  
+	      break;
+#endif
+
+	    default:
+	      exit(64);
+	  }
+	}
+
+	if((tmp=simple_mapping_string_lookup(optional, "noinitgroups")))
+	  if(!IS_ZERO(tmp))
+	    do_initgroups=0;
+
+	if((tmp=simple_mapping_string_lookup(optional, "setgroups")))
+	{
+#ifdef HAVE_SETGROUPS
+	  if(tmp->type != T_ARRAY)
+	  {
+	    int e;
+	    gid_t *g=(gid_t *)xalloc(sizeof(gid_t) * tmp->u.array->size);
+	    for(e=0;e<tmp->u.array->size;e++)
+	    {
+	      if(tmp->u.array->item[e].type != T_INT) exit(64);
+	      g[e]=tmp->u.array->item[e].u.integer;
+	    }
+	    if(!setgroups(tmp->u.array->size, g))  exit(77);
+	    do_initgroups=0;
+	  }else{
+	    exit(64);
+	  }
+#else
+	  exit(69);
+#endif
+	}
+
 
 	if((tmp=simple_mapping_string_lookup(optional, "cwd")))
 	  if(tmp->type == T_STRING)
@@ -908,7 +1032,13 @@ void f_create_process(INT32 args)
 	    {
 	      apply(tmp->u.object,"query_fd",0);
 	      if(sp[-1].type == T_INT)
-		dup2(toclose[fd]=sp[-1].u.integer, fd);
+	      {
+		if(sp[-1].u.integer != fd)
+		{
+		  dup2(toclose[fd]=sp[-1].u.integer, fd);
+		}
+	      }
+	      pop_stack();
 	    }
 	  }
 	}
@@ -916,7 +1046,7 @@ void f_create_process(INT32 args)
 	for(fd=0;fd<3;fd++)
 	{
 	  int f2;
-	  if(toclose[fd]<0) continue;
+	  if(toclose[fd]<3) continue;
 
 	  for(f2=0;f2<fd;f2++)
 	    if(toclose[fd]==toclose[f2])
@@ -929,18 +1059,75 @@ void f_create_process(INT32 args)
 	/* Left to do: cleanup? */
       }
 
-#if defined(HAVE_SETEUID) && defined(HAVE_GETEUID) && defined(HAVE_SETUID) && defined(HAVE_SETEUID)
-      /* Protect us from harm */
-      seteuid(0);
-      setgid(geteuid());
-      setuid(euid);
-      seteuid(euid);
+      printf("foo\n");
+#ifdef HAVE_SETGID
+#ifdef HAVE_GETGID
+      if(wanted_gid != getgid())
+#endif
+      {
+	if(setgid(wanted_gid))
+#ifdef _HPUX_SOURCE
+          /* Kluge for HP-(S)UX */
+	  if(wanted_gid > 60000 && setgid(-2) && setgid(65534) && setgid(60001))
+#endif
+	    exit(77);
+      }
 #endif
 
+      printf("bar\n");
+
+#ifdef HAVE_SETUID
+#ifdef HAVE_GETUID
+      if(wanted_uid != getuid())
+#endif
+      {
+#ifdef HAVE_INITGROUPS
+	if(do_initgroups)
+	{
+	  int initgroupgid;
+	  if(!pw) pw=getpwuid(wanted_uid);
+	  if(!pw) exit(77);
+	  initgroupgid=pw->pw_gid;
+	  printf("uid=%d euid=%d initgroups(%s,%d)\n",getuid(),geteuid(),pw->pw_name, initgroupgid);
+	  if(initgroups(pw->pw_name, initgroupgid))
+#ifdef _HPUX_SOURCE
+	    /* Kluge for HP-(S)UX */
+	    if(initgroupgid>60000 &&
+	       initgroups(wanted_uid,-2) &&
+	       initgroups(wanted_uid,65534)
+	       initgroups(wanted_uid,60001))
+#endif /* _HPUX_SOURCE */
+	    {
+#ifdef HAVE_SETGROUPS
+	      gid_t x[]={ 65534 };
+	      if(setgroups(0,x))
+#endif /* SETGROUPS */
+		exit(77);
+	    }
+	}
+#endif /* INITGROUPS */
+	printf("uid=%d gid=%d euid=%d egid=%d setuid(%d)\n",getuid(),getgid(),geteuid(),getegid(),wanted_uid);
+	if(setuid(wanted_uid))
+	{
+	  perror("setuid");
+	  exit(77);
+	}
+      }
+#endif /* SETUID */
+
+      printf("gazonk\n");
+
+#ifdef HAVE_SETEUID
+      seteuid(wanted_uid);
+#endif
+	
       my_set_close_on_exec(0,0);
       my_set_close_on_exec(1,0);
       my_set_close_on_exec(2,0);
       do_set_close_on_exec();
+      set_close_on_exec(0,0);
+      set_close_on_exec(1,0);
+      set_close_on_exec(2,0);
       
       execvp(argv[0],argv);
       exit(69);
@@ -1276,10 +1463,10 @@ void init_signals(void)
 
 #ifdef DEBUG
 #ifdef SIGSEGV
-  my_signal(SIGSEGV, fatal_signal);
+/*  my_signal(SIGSEGV, fatal_signal); */
 #endif
 #ifdef SIGBUS
-  my_signal(SIGBUS, fatal_signal);
+/*  my_signal(SIGBUS, fatal_signal); */
 #endif
 #endif
 
