@@ -6,10 +6,10 @@
 
 #pike __REAL_VERSION__
 
-constant cvs_id = "$Id: module.pmod,v 1.25 2000/12/11 12:13:20 per Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.26 2002/11/29 19:51:06 nilsson Exp $";
 
-#define ERR(msg) throw(({ "(Yabu) "+msg+"\n", backtrace() }))
-#define IO_ERR(msg) throw(({ sprintf("(Yabu) %s, %s (%d)\n",msg,strerror(errno()),errno()),backtrace() }))
+#define ERR(msg) error( "(Yabu) "+msg+"\n" )
+#define IO_ERR(msg) error( "(Yabu) %s, %s (%d)\n",msg,strerror(errno()),errno() )
 #define WARN(msg) werror(msg)
 #define DEB(msg) /* werror(msg) */
 #if constant(hash_7_0)
