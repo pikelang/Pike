@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: crypt.c,v 1.6 2003/11/10 10:30:37 grubba Exp $
+|| $Id: crypt.c,v 1.7 2003/11/10 14:15:56 nilsson Exp $
 */
 
 /*
@@ -183,14 +183,14 @@ static void f(int i, struct block *key, struct block *a, struct block *x)
         transpose(x, &ptr, 32);
 }
 
-void definekey(char *k)
+static inline void definekey(char *k)
 {
 
         key = *((struct block *) k);
         transpose(&key, &KeyTr1, 56);
 }
 
-void encrypt(char *blck, int edflag)
+static void encrypt(char *blck, int edflag)
 {
         register struct block *p = (struct block *) blck;
         register int i;
