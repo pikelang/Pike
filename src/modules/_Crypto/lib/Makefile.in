@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.19 1998/08/02 15:16:31 grubba Exp $
+# $Id: Makefile.in,v 1.20 1999/11/08 23:20:53 mast Exp $
 #
 # Makefile for low-level crypto library
 
@@ -112,6 +112,10 @@ desdata:	desdata.o
 .i.o:
 		$(CODEGEN.c) $<
 		$(COMPILE.c) $*.s
+
+.c.o:
+	@echo "Compiling $<" ;\
+	$(CC) $(CFLAGS) -c $< -o $@
 
 # slowest to quickest
 desSmallFips.c:
