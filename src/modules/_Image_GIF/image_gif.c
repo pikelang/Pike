@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_gif.c,v 1.16 2003/09/10 15:21:58 mast Exp $
+|| $Id: image_gif.c,v 1.17 2003/11/07 17:45:02 nilsson Exp $
 */
 
 /*
@@ -39,7 +39,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: image_gif.c,v 1.16 2003/09/10 15:21:58 mast Exp $");
+RCSID("$Id: image_gif.c,v 1.17 2003/11/07 17:45:02 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2219,7 +2219,7 @@ void image_gif_decode_layer(INT32 args)
 }
 
 /*
-**! method mapping decode_map(INT32 args)
+**! method mapping decode_map(string|array layers)
 **!	Returns a mapping similar to other decoders
 **!	<tt>_decode</tt> function.
 **!
