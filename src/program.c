@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.209 2000/03/07 08:13:18 hubbe Exp $");
+RCSID("$Id: program.c,v 1.210 2000/03/09 15:02:27 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -435,6 +435,14 @@ struct node_s *find_module_identifier(struct pike_string *ident)
       END_CYCLIC();
     }
     if(ret) return ret;
+  }
+
+  /* Handle this_program */
+  if (ident == this_program_string) {
+    struct svalue s;
+    s.type=T_PROGRAM;
+    s.u.program=new_program;
+    return mkconstantsvaluenode(&s);
   }
 
   return 0;

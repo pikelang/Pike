@@ -188,7 +188,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.168 2000/03/07 21:22:34 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.169 2000/03/09 15:02:26 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -2352,13 +2352,7 @@ low_idents: F_IDENTIFIER
     if(last_identifier) free_string(last_identifier);
     copy_shared_string(last_identifier, $1->u.sval.u.string);
 
-    if(last_identifier == this_program_string) {
-      struct svalue s;
-      s.type=T_PROGRAM;
-      s.u.program=new_program;
-      $$=mkconstantsvaluenode(&s);
-    }
-    else if(($$=lexical_islocal(last_identifier)))
+    if(($$=lexical_islocal(last_identifier)))
     {
       /* done, nothing to do here */
     }else if((i=isidentifier(last_identifier))>=0){
