@@ -1,17 +1,13 @@
 #pike __REAL_VERSION__
 
-import Stdio;
-
-#if !constant(strerror)
-#define strerror(X) ("errno="+X)
-#endif
-
 constant create_process = __builtin.create_process;
 
+//!
 class Process
 {
   inherit __builtin.create_process;
 
+  //!
   void create( string|array(string) args, mapping m )
   {
     if( stringp( args ) )
@@ -23,6 +19,7 @@ class Process
   }
 }
 
+//!
 int exec(string file,string ... foo)
 {
   if (sizeof(file)) {
@@ -41,6 +38,8 @@ int exec(string file,string ... foo)
 }
 
 static array(string) search_path_entries=0;
+
+//!
 string search_path(string command)
 {
    if (command=="" || command[0]=='/') return command;
@@ -79,6 +78,7 @@ string search_path(string command)
    return 0;
 }
 
+//!
 string sh_quote(string s)
 {
   return replace(s,
@@ -86,6 +86,7 @@ string sh_quote(string s)
 	({"\\\\", "\\'", "\\\"","\\ "}));
 }
 
+//!
 array(string) split_quoted_string(string s)
 {
   sscanf(s,"%*[ \n\t]%s",s);
@@ -150,10 +151,10 @@ array(string) split_quoted_string(string s)
   return ret;
 }
 
+//!
 Process spawn(string s,object|void stdin,object|void stdout,object|void stderr,
 	      function|void cleanup, mixed ... args)
 {
-#if 1
   mapping data=(["env":getenv()]);
   if(stdin) data->stdin=stdin;
   if(stdout) data->stdout=stdout;
@@ -169,41 +170,15 @@ Process spawn(string s,object|void stdin,object|void stdout,object|void stderr,
 #else /* !__NT__||__amigaos__ */
   return create_process(({ "/bin/sh", "-c", s }),data);
 #endif /* __NT__||__amigaos__ */
-#else
 
-  Process pid;
-
-#if constant(fork)
-  pid=fork();
-#endif
-  
-  if(pid)
-  {
-    return pid;
-  }else{
-    if(stdin ) stdin ->dup2(File("stdin"));
-    if(stdout) stdout->dup2(File("stdout"));
-    if(stderr) stderr->dup2(File("stderr"));
-
-    if(stdin ) destruct(stdin);
-    if(stdout) destruct(stdout);
-    if(stderr) destruct(stderr);
-
-    if (cleanup) {
-      cleanup(@args);
-    }
-
-    exec("/bin/sh","-c",s);
-    exit(69);
-  }
-#endif
 }
 
+//!
 string popen(string s)
 {
   object p;
   string t;
-  object f = File();
+  object f = Stdio.File();
 
   if (!f) error("Popen failed. (couldn't create pipe)\n");
 
@@ -228,6 +203,7 @@ string popen(string s)
   return t;
 }
 
+//!
 int system(string s)
 {
   return spawn(s)->wait();
@@ -243,6 +219,8 @@ constant exece = predef::exece;
 #endif
 
 #if constant(fork)
+
+//!
 class Spawn
 {
    object stdin;
