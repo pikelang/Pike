@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.237 2002/12/18 22:40:55 mast Exp $
+|| $Id: signal_handler.c,v 1.238 2003/01/04 15:23:56 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.237 2002/12/18 22:40:55 mast Exp $");
+RCSID("$Id: signal_handler.c,v 1.238 2003/01/04 15:23:56 nilsson Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -3979,6 +3979,9 @@ static void do_signal_exit(INT32 sig)
  */
 void f_atexit(INT32 args)
 {
+  if(args < 1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("atexit", 1);
+
   if(!atexit_functions)
   {
 #ifdef SIGHUP
