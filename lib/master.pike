@@ -517,8 +517,26 @@ string handle_include(string f,
 // FIXME
 string stupid_describe(mixed m)
 {
-  if(intp(m)) return (string)m;
-  return sprintf("%t",m);
+  switch(string typ=sprintf("%t",m))
+  {
+  case "int":
+  case "float":
+    return (string)m;
+
+  case "string":
+    if(sizeof(m) < 60 && sscanf(m,"%*[-a-zAZ0-9.~`!@#$%^&*()_]%n",int i) && i==sizeof(m))
+    {
+      return "\""+m+"\"";
+    }
+
+  case "array":
+  case "mapping":
+  case "multiset":
+    return typ+"["+sizeof(m)+"]";
+
+  default:
+    return sprintf("%t",m);
+  }
 }
 
 /* It is possible that this should be a real efun,
