@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.240 2004/12/30 13:52:54 grubba Exp $
+|| $Id: pike_types.c,v 1.241 2005/02/02 10:15:58 grubba Exp $
 */
 
 #include "global.h"
@@ -239,6 +239,13 @@ void debug_free_type(struct pike_type *t)
     struct pike_type **t2 = pike_type_hash + hash;
     struct pike_type *car, *cdr;
     unsigned INT32 type;
+
+    /* PIKE_DEBUG code */
+    if (hash >= pike_type_hash_size) {
+      Pike_fatal("Modulo operation failed for hash:%u, index:%u, size:%u.\n",
+		 t->hash, hash, pike_type_hash_size);
+    }
+    /* End PIKE_DEBUG code */
 
     while (*t2) {
       if (*t2 == t) {
