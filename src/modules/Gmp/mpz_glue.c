@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.128 2003/03/28 15:51:40 mast Exp $
+|| $Id: mpz_glue.c,v 1.129 2003/03/28 16:30:46 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.128 2003/03/28 15:51:40 mast Exp $");
+RCSID("$Id: mpz_glue.c,v 1.129 2003/03/28 16:30:46 mast Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -76,14 +76,14 @@ void mpzmod_reduce(struct object *o)
   INT_TYPE res = 0;
 
   /* Get the index of the highest limb that have bits within the range
-   * of the INT64. */
+   * of the INT_TYPE. */
   size_t pos = (INT_TYPE_BITS + GMP_NUMB_BITS - 1) / GMP_NUMB_BITS - 1;
 
   if (mpz_size (mpz) <= pos + 1) {
 #if INT_TYPE_BITS == GMP_NUMB_BITS
-    res = mpz_getlimbn (mpz, 0);
+    res = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
 #elif INT_TYPE_BITS < GMP_NUMB_BITS
-    mp_limb_t val = mpz_getlimbn (mpz, 0);
+    mp_limb_t val = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
     if (val >= (mp_limb_t) 1 << INT_TYPE_BITS) goto overflow;
     res = val;
 #else
@@ -174,9 +174,9 @@ static int gmp_int64_from_bignum (INT64 *i, struct object *bignum)
 
   if (mpz_size (mpz) <= pos + 1) {
 #if INT64_BITS == GMP_NUMB_BITS
-    res = mpz_getlimbn (mpz, 0);
+    res = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
 #elif INT64_BITS < GMP_NUMB_BITS
-    mp_limb_t val = mpz_getlimbn (mpz, 0);
+    mp_limb_t val = mpz_getlimbn (mpz, 0) & GMP_NUMB_MASK;
     if (val >= (mp_limb_t) 1 << INT64_BITS) goto overflow;
     res = val;
 #else
