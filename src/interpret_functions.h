@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.122 2003/02/26 18:19:08 mast Exp $
+|| $Id: interpret_functions.h,v 1.123 2003/03/25 15:40:40 marcus Exp $
 */
 
 /*
@@ -1159,24 +1159,24 @@ OPCODE0_BRANCH(F_LOR, "||", 0, {
 OPCODE0_BRANCH(F_EQ_OR, "==||", 0, {
   if(!is_eq(Pike_sp-2,Pike_sp-1))
   {
-    pop_2_elems();
     DONT_BRANCH();
+    pop_2_elems();
   }else{
+    DO_BRANCH();
     pop_2_elems();
     push_int(1);
-    DO_BRANCH();
   }
 });
 
 OPCODE0_BRANCH(F_EQ_AND, "==&&", 0, {
   if(is_eq(Pike_sp-2,Pike_sp-1))
   {
-    pop_2_elems();
     DONT_BRANCH();
+    pop_2_elems();
   }else{
+    DO_BRANCH();
     pop_2_elems();
     push_int(0);
-    DO_BRANCH();
   }
 });
 
@@ -1313,8 +1313,8 @@ OPCODE0_BRANCH(F_LOOP, "loop", 0, { /* loopcnt */
     o_subtract();
     DO_BRANCH();
   } else {
-    pop_2_elems();
     DONT_BRANCH();
+    pop_2_elems();
   }
 });
 
