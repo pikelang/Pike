@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image_module.c,v 1.5 1999/07/21 19:04:08 grubba Exp $");
+RCSID("$Id: image_module.c,v 1.6 2000/06/02 05:03:13 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -9,6 +9,8 @@ RCSID("$Id: image_module.c,v 1.5 1999/07/21 19:04:08 grubba Exp $");
 #include "operators.h"
 
 #include "image.h"
+#include "assembly.h"
+#include "image_machine.h"
 
 #define IMAGE_INITER
 
@@ -146,10 +148,69 @@ static void image_magic_index(INT32 args)
    pop_stack();
 }
 
+int image_cpuid;
+#ifdef ASSEMBLY_OK
+static void init_cpuidflags( )
+{
+  unsigned int a, b, c, d;
+  char *data = alloca(20);
+  MEMSET( data, 0, 20 );
+
+  image_get_cpuid( 0, &a, &b, &c, &d );
+
+  ((int *)data)[0] = a;
+  ((int *)data)[1] = b;
+  ((int *)data)[2] = c;
+
+  if( strncmp( data, "GenuineIntel", 12 ) )
+  {
+    if( strncmp( data, "AuthenticAMD", 12 ) )
+    {
+      if( !strncmp( data, "CyrixInstead", 12 ) )
+      {
+        if( d != 2 )
+          goto normal_test;
+        image_get_cpuid( 0x80000000, &a, &b, &c, &d );
+        if( d < 0x80000000 )
+          goto normal_test;
+        image_get_cpuid( 0x80000001, &a, &b, &c, &d );
+        
+        if( b & 0x00800000 ) image_cpuid |= IMAGE_MMX;
+        if( b & 0x02000000 ) image_cpuid |= IMAGE_SSE;
+        if( b & 0x01000000 ) image_cpuid |= IMAGE_EMMX;
+        if( b & 0x80000000 ) image_cpuid |= (IMAGE_3DNOW | IMAGE_MMX);
+      }   
+    } else { 
+      /* It's an AMD cpu. */
+      image_get_cpuid( 0x80000000, &a, &b, &c, &d );
+      if( d < 0x80000000 )
+        goto normal_test;
+      image_get_cpuid( 0x80000001, &a, &b, &c, &d );
+      
+      if( b & 0x00800000 ) image_cpuid |= IMAGE_MMX;
+      if( b & 0x02000000 ) image_cpuid |= IMAGE_SSE;
+      if( b & 0x80000000 ) image_cpuid |= (IMAGE_3DNOW | IMAGE_MMX);
+    }
+  } else {
+  normal_test:
+    /* It's an intel CPU. */
+    image_get_cpuid( 1, &a, &b, &c, &d );
+    if( b & 0x00800000 )
+      image_cpuid |= IMAGE_MMX;
+    if( b & 0x02000000 )
+      image_cpuid |= IMAGE_SSE;
+  }
+#if 0
+  fprintf(stderr, "Image CPUID == %d\n", image_cpuid );
+#endif
+}
+#endif
+
 void pike_module_init(void)
 {
    char type_of_index[]=
       tFunc(tStr,tOr3(tObj,tPrg,""))
+
 #undef IMAGE_FUNCTION
 #undef IMAGE_SUBMODMAG
 #define IMAGE_SUBMODMAG(name,init,exit) 
@@ -162,6 +223,12 @@ void pike_module_init(void)
 #endif
 
    int i;
+
+
+#ifdef ASSEMBLY_OK
+     init_cpuidflags( );
+#endif
+
    for (i=0; i<(int)NELEM(initclass); i++)
    {
       start_new_program();
