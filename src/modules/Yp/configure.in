@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.9 2000/08/17 18:28:57 grubba Exp $
+# $Id: configure.in,v 1.10 2003/01/04 17:07:11 grubba Exp $
 AC_INIT(yp.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -18,52 +18,14 @@ AC_HAVE_HEADERS(sys/types.h rpc/types.h rpc/rpc.h rpc/clnt.h rpcsvc/ypclnt.h rpc
 # int and unsigned int have the same size, so we only test if the last
 # arg's an unsigned long * or not.
 #
+# The above strategy in unfortunately not enough to satify TCC,
+# so we do it the hard way anyway...
+#
 AC_MSG_CHECKING(the type of the last argument to yp_order)
 AC_CACHE_VAL(pike_cv_yp_order_type, [
-  AC_TRY_COMPILE([
-#include "global.h"
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
-#ifdef HAVE_RPC_TYPES_H
-#include <rpc/types.h>
-#endif /* HAVE_RPC_TYPES_H */
-#ifdef HAVE_RPC_RPC_H
-#include <rpc/rpc.h>
-#endif /* HAVE_RPC_RPC_H */
-#ifdef HAVE_RPC_CLNT_H
-#include <rpc/clnt.h>
-#endif /* HAVE_RPC_CLNT_H */
-#include <rpcsvc/yp_prot.h>
-#include <rpcsvc/ypclnt.h>
-
-int yp_order(char *, char *, unsigned long *);
-  ],[
-    /* EMPTY */
-  ],[ pike_cv_yp_order_type="unsigned long" ], [
-    AC_TRY_COMPILE([
-#include "global.h"
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
-#ifdef HAVE_RPC_TYPES_H
-#include <rpc/types.h>
-#endif /* HAVE_RPC_TYPES_H */
-#ifdef HAVE_RPC_RPC_H
-#include <rpc/rpc.h>
-#endif /* HAVE_RPC_RPC_H */
-#ifdef HAVE_RPC_CLNT_H
-#include <rpc/clnt.h>
-#endif /* HAVE_RPC_CLNT_H */
-#include <rpcsvc/yp_prot.h>
-#include <rpcsvc/ypclnt.h>
-
-int yp_order(const char *, const char *, unsigned long *);
-    ],[
-    /* EMPTY */
-    ],[ pike_cv_yp_order_type="unsigned long" ], [
+  for order_type in "unsigned long" "long" "unsigned int" "int"; do
+    for str_type in "char" "const char"; do
       AC_TRY_COMPILE([
-#include "global.h"
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif /* HAVE_SYS_TYPES_H */
@@ -79,35 +41,23 @@ int yp_order(const char *, const char *, unsigned long *);
 #include <rpcsvc/yp_prot.h>
 #include <rpcsvc/ypclnt.h>
 
-int yp_order(char *, char *, long *);
+int yp_order($str_type *, $str_type *, $order_type *);
       ],[
-    /* EMPTY */
-      ],[ pike_cv_yp_order_type="unsigned long" ], [
-        AC_TRY_COMPILE([
-#include "global.h"
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
-#ifdef HAVE_RPC_TYPES_H
-#include <rpc/types.h>
-#endif /* HAVE_RPC_TYPES_H */
-#ifdef HAVE_RPC_RPC_H
-#include <rpc/rpc.h>
-#endif /* HAVE_RPC_RPC_H */
-#ifdef HAVE_RPC_CLNT_H
-#include <rpc/clnt.h>
-#endif /* HAVE_RPC_CLNT_H */
-#include <rpcsvc/yp_prot.h>
-#include <rpcsvc/ypclnt.h>
-
-int yp_order(const char *, const char *, long *);
+    	/* EMPTY */
       ],[
-    /* EMPTY */
-      ],[ pike_cv_yp_order_type="unsigned long" ],
-        [ pike_cv_yp_order_type="unsigned int" ])
+        pike_cv_yp_order_type="$order_type"
+	break
       ])
-    ])
-  ])
+    done
+    if test "x$pike_cv_yp_order_type" = "x$order_type"; then
+      break;
+    fi
+  done
+
+  if test "x$pike_cv_yp_order_type" = "x"; then
+    # Use default
+    pike_cv_yp_order_type="unsigned int"
+  fi
 ])
 AC_DEFINE_UNQUOTED(YP_ORDER_TYPE, $pike_cv_yp_order_type)
 AC_MSG_RESULT($pike_cv_yp_order_type)
