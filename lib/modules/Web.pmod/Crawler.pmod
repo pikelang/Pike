@@ -16,7 +16,7 @@
 
 // Author:  Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: Crawler.pmod,v 1.6 2001/05/28 17:01:07 per Exp $
+// $Id: Crawler.pmod,v 1.7 2001/05/28 22:01:00 per Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -242,8 +242,9 @@ class MySQLQueue
     {
       db->query("create table "+table+" ("
 		"done int(2) unsigned not null, "
-		"uri varchar(255) not null unique primary key,"
-		"INDEX (done) foo)" );
+		"uri varchar(255) binary not null unique,"
+		"KEY uri_index (uri(64)),"
+		"INDEX done_i  (done))" );
     };
   }
 
@@ -254,10 +255,15 @@ class MySQLQueue
 			    (string)uri));
   }
 
+  mapping hascache = ([]);
   static int has_uri( string|Standards.URI uri )
   {
-    return sizeof(db->query("select done from "+table+" where uri=%s",
-			    (string)uri));
+    uri = (string)uri;
+    if( sizeof(hascache) > 100000 )
+      hascache = ([]);
+    return hascache[uri]||
+      (hascache[uri]=sizeof(db->query("select done from "+
+				     table+" where uri=%s",uri)));
   }
 
   static void add_uri( Standards.URI uri )
@@ -270,16 +276,22 @@ class MySQLQueue
 
   static int empty_count;
 
+  static array possible=({});
+  int p_c;
   int|Standards.URI get()
   {
     if(stats->concurrent_fetchers() > policy->max_concurrent_fetchers)
       return -1;
 
-    array possible =
-      db->query( "select uri from "+table+" where done=0 limit 1" );
-    if( sizeof( possible ) )
+    if( sizeof( possible ) <= p_c )
     {
-      string u = possible[0]->uri;
+      p_c = 0;
+      possible = db->query( "select uri from "+table+" where done=0" )->uri;
+    }
+
+    if( sizeof( possible ) > p_c )
+    {
+      string u = possible[p_c++];
       empty_count=0;
       db->query( "UPDATE "+table+" SET done=1 WHERE uri=%s", (string)u );
       return Standards.URI(u);
