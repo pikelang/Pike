@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.61 2000/07/07 01:27:16 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.62 2000/07/07 19:27:12 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -34,6 +34,12 @@ RCSID("$Id: encode.c,v 1.61 2000/07/07 01:27:16 hubbe Exp $");
 #else
 #define EDB(X)
 #endif
+
+/* The sp macro conflicts with Solaris 2.5.1's <sys/conf.h>. */
+#ifdef sp
+#undef sp
+#define STACKPOINTER_WAS_DEFINED
+#endif /* sp */
 
 #ifdef _AIX
 #include <net/nh.h>
@@ -44,6 +50,12 @@ RCSID("$Id: encode.c,v 1.61 2000/07/07 01:27:16 hubbe Exp $");
 #endif
 
 #include <math.h>
+
+/* Restore the sp macro */
+#ifdef STACKPOINTER_WAS_DEFINED
+#define sp Pike_sp
+#undef STACK_POINTER_WAS_DEFINED
+#endif /* STACKPOINTER_WAS_DEFINED */
 
 #ifdef HAVE_FREXP
 #define FREXP frexp
