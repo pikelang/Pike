@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.126 2001/02/02 23:34:24 mast Exp $ */
+/* $Id: html.c,v 1.127 2001/02/03 00:03:16 mast Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -3915,6 +3915,11 @@ static void html_read(INT32 args)
       }
       res->type_field = type_field;
       push_array (res);
+      THIS->out_length -= n;
+#ifdef PIKE_DEBUG
+      if (!THIS->out_length != !THIS->out)
+	fatal ("Inconsistency in output queue length.\n");
+#endif
    }
    else
    {
@@ -3962,14 +3967,19 @@ static void html_read(INT32 args)
 	 free_string(THIS->out->v.u.string);
 	 THIS->out->v.u.string=ps;
        }
-     if (n == THIS->out_length) THIS->out_max_shift = 0;
-   }
-
-   THIS->out_length -= n;
+     THIS->out_length -= n;
+     if (!THIS->out_length) THIS->out_max_shift = 0;
 #ifdef PIKE_DEBUG
-   if (!THIS->out_length != !THIS->out)
-     fatal ("Inconsistency in output queue length.\n");
+     if (!THIS->out_length) {
+       struct out_piece *z;
+       for (z = THIS->out; z; z = z->next)
+	 if (z->v.type != T_STRING || z->v.u.string->len)
+	   fatal ("Inconsistency in output queue.\n");
+     }
+     else if (!THIS->out)
+       fatal ("Inconsistency in output queue length.\n");
 #endif
+   }
 }
 
 /*
