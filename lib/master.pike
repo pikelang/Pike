@@ -1,4 +1,4 @@
-/* $Id: master.pike,v 1.55 1997/11/10 16:37:53 noring Exp $
+/* $Id: master.pike,v 1.56 1997/11/11 22:20:59 hubbe Exp $
  *
  * Master-file for Pike.
  */
@@ -124,7 +124,7 @@ void add_program_path(string tmp)
 {
   tmp=combine_path_with_cwd(tmp);
   pike_program_path-=({tmp});
-  pike_program_path=({tmp})+pike_module_path;
+  pike_program_path=({tmp})+pike_program_path;
 }
 
 
