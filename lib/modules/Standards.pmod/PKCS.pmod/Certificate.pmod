@@ -16,7 +16,7 @@ Version ::= INTEGER
 
 Attributes ::= SET OF Attribute
 
--- From the last section of PKCS-9. Is this used???
+-- From the last section of PKCS-9. 
 Attribute ::= SEQUENCE {
   attribyteType ::= OBJECT IDENTIFIER,
   attributeValue ::= SET OF ANY }
@@ -124,12 +124,12 @@ Version ::= INTEGER
 
 */
 
-import asn1.encode;
-import identifiers;
+import Standards.ASN1.Encode;
+import Identifiers;
 
 class AttributeValueAssertion
 {
-  import asn1.encode;
+  import Standards.ASN1.Encode;
   inherit asn1_sequence;
   void create(mapping(string:object) types,
 	      string type,
@@ -146,7 +146,7 @@ class AttributeValueAssertion
 /* RelativeDistinguishedName */
 class attribute_set
 {
-  import asn1.encode;
+  import Standards.ASN1.Encode;
   inherit asn1_set;
 
   void create(mapping(string:object) types, mapping(string:object) pairs)
@@ -165,6 +165,38 @@ object build_distinguished_name(mapping(string:object) ... args)
   return asn1_sequence(@Array.map(args, lambda(mapping rdn)
 					{
 					  return attribute_set(
-					    identifiers.name_ids, rdn);
+					    Identifiers.name_ids, rdn);
 					} ));
 }
+
+class Attribute
+{
+  import Standards.ASN1.Encode;
+  inherit asn1_sequence;
+
+  void create(mapping(string:object) types, string type,
+	      array(object) v)
+    {
+      if (!types[type])
+	throw( ({ sprintf("Attribute: "
+			  "Unknown attribute type '%s'\n",
+			  type), backtrace() }) );
+      ::create(types[type], asn1_set(@ v));
+    }
+}
+
+class Attributes
+{
+  import Standards.ASN1.Encode;
+  inherit asn1_set;
+
+  void create(mapping(string:object) types, mapping(string:array(object)) m)
+    {
+      ::create(@ Array.map(indices(m),
+			   lambda(string field, mapping m, mapping t)
+			   {
+			     return Attribute(t, field, m[field]);
+			   }, m, types));
+    }
+}
+      
