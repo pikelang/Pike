@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.106 2000/03/25 21:25:31 hubbe Exp $
+ * $Id: master.pike.in,v 1.107 2000/03/25 21:28:37 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -569,8 +569,9 @@ object cast_to_object(string oname, string current_file)
 {
   if(object o=low_cast_to_object(oname, current_file))
     return o;
-  error(sprintf("Cast '%s' to object failed%s.\n",file,
-	current_file?sprintf("for '%s'",current_file),""));
+  error("Cast '"+oname+"' to object failed"+
+	(current_file?sprintf("for '%s'",current_file):"")+".\n");
+  return 0;
 }
 
 class dirnode
