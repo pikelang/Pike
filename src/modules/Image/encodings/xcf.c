@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.16 2000/08/03 21:25:32 grubba Exp $");
+RCSID("$Id: xcf.c,v 1.17 2000/08/08 10:57:17 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -164,11 +164,11 @@ static int xcf_read_int( struct buffer *from )
   return (int)read_uint( from );
 }
 
-static char *read_data( struct buffer * from, unsigned int len )
+static char *read_data( struct buffer * from, size_t len )
 {
   char *res;
   if( from->len < len )
-    error("Not enough space for %ud bytes\n", len);
+    error("Not enough space for %uld bytes\n", len);
   res = (char *)from->str;
   from->str += len;
   from->len -= len;
@@ -634,7 +634,7 @@ static void push_properties( struct property *p )
     f_aggregate_mapping( 4 );
     p = p->next;
   }
-  f_aggregate( sp-osp );
+  f_aggregate(DO_NOT_WARN(sp - osp));
 }
 
 static void push_tile( struct tile *t )
@@ -661,8 +661,8 @@ static void push_hierarchy( struct hierarchy * h )
     push_tile( t );
     t=t->next;
   }
-  f_aggregate( sp-tsp );
-  f_aggregate_mapping( sp-osp );
+  f_aggregate(DO_NOT_WARN(sp - tsp));
+  f_aggregate_mapping(DO_NOT_WARN(sp - osp));
 }
 
 static void push_layer_mask(struct layer_mask *i)
@@ -675,7 +675,7 @@ static void push_layer_mask(struct layer_mask *i)
   ref_push_string( s_name );  push_buffer( &i->name );
   ref_push_string( s_image_data );
   push_hierarchy( &i->image_data );
-  f_aggregate_mapping( sp-osp );
+  f_aggregate_mapping(DO_NOT_WARN(sp-osp));
 }
 
 static void push_channel(struct channel *i)
@@ -688,7 +688,7 @@ static void push_channel(struct channel *i)
   ref_push_string( s_name );  push_buffer( &i->name );
   ref_push_string( s_image_data );
   push_hierarchy( &i->image_data );
-  f_aggregate_mapping( sp-osp );
+  f_aggregate_mapping(DO_NOT_WARN(sp-osp));
 }
 
 static void push_layer(struct layer *i)
@@ -707,7 +707,7 @@ static void push_layer(struct layer *i)
     ref_push_string( s_mask );
     push_layer_mask( i->mask );
   }
-  f_aggregate_mapping( sp-osp );
+  f_aggregate_mapping(DO_NOT_WARN(sp - osp));
 }
 
 
@@ -742,7 +742,7 @@ static void push_image( struct gimp_image *i )
     c = c->next;
   }
   f_aggregate( nitems );
-  f_aggregate_mapping( sp-osp );
+  f_aggregate_mapping(DO_NOT_WARN(sp-osp));
 }
 
 
