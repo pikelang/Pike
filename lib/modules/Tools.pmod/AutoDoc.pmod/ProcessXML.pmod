@@ -245,6 +245,8 @@ string moveImages(string docXMLFile,
                   string imageDestDir,
 		  int|void quiet)
 {
+  if(!has_value(docXMLFile, "<image")) return docXMLFile;
+
   array(string) parents = ({});
   int counter = 0;
   array(int) docgroupcounters = ({}); // docgroup on top level is impossible
