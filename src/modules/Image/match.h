@@ -179,10 +179,9 @@ THREADS_ALLOW();
 	    int j=i+ny*xs+nx; \
             int h=0;\
             int n=0;\
-	    sum+= \
-              (MAXIMUM(CERTI1 R1, CERTI1 R1) * PIXEL_VALUE_DISTANCE(r))+ \
-	      (MAXIMUM(CERTI1 G1, CERTI1 G1) * PIXEL_VALUE_DISTANCE(g))+ \
-	      (MAXIMUM(CERTI1 B1, CERTI1 B1) * PIXEL_VALUE_DISTANCE(b)); \
+	    sum+=(MAXIMUM(CERTI1 R1, CERTI1 R1) * PIXEL_VALUE_DISTANCE(r)); \
+	    sum+=(MAXIMUM(CERTI1 G1, CERTI1 G1) * PIXEL_VALUE_DISTANCE(g)); \
+	    sum+=(MAXIMUM(CERTI1 B1, CERTI1 B1) * PIXEL_VALUE_DISTANCE(b)); \
 	  } \
 	imgi[i+(nys/2)*xs+(nxs/2)].r=\
           DOUBLE_TO_INT(255.99/(1.0+((((double)scale) * SCALE_MODIFY((double)sum))))); \
