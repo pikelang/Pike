@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.132 2000/09/04 23:08:33 grubba Exp $");
+RCSID("$Id: gc.c,v 1.133 2000/09/14 15:25:36 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1115,7 +1115,6 @@ int debug_gc_is_referenced(void *a)
   if (Pike_in_gc != GC_PASS_MARK)
     fatal("gc_is_referenced() called in invalid gc pass.\n");
 
-#ifdef PIKE_DEBUG
   if (gc_debug) {
     m = find_marker(a);
     if ((!m || !(m->flags & GC_PRETOUCHED)) &&
@@ -1123,9 +1122,7 @@ int debug_gc_is_referenced(void *a)
       gc_fatal(a, 0, "Doing gc_is_referenced() on invalid object.\n");
     if (!m) m = get_marker(a);
   }
-  else
-#endif /* PIKE_DEBUG */
-    m = get_marker(a);
+  else m = get_marker(a);
 
   if (m->flags & GC_IS_REFERENCED)
     gc_fatal(a, 0, "gc_is_referenced() called twice for thing.\n");
