@@ -1,9 +1,9 @@
 // SQL blob based database
 // Copyright © 2000,2001 Roxen IS.
 //
-// $Id: MySQL.pike,v 1.25 2001/06/09 23:21:51 js Exp $
+// $Id: MySQL.pike,v 1.26 2001/06/10 11:29:39 per Exp $
 
-inherit Search.Database.Base;
+inherit .Base;
 
 // Creates the SQL tables we need.
 
@@ -19,22 +19,23 @@ void recreate_tables()
   catch(db->query("drop table metadata"));
   
   db->query(
-#"create table uri      (id          int unsigned primary key auto_increment not null,
-                         uri         text binary not null,
-                         uri_md5     char(32) binary not null,
+#"create table uri      (id          int unsigned primary key
+                                     auto_increment not null,
+                         uri         blob not null,
+                         uri_md5     varchar(32) binary not null,
                          UNIQUE(uri_md5))"
 			 );
 
   db->query(
-#"create table document (id            int unsigned primary key auto_increment not null,
+#"create table document (id            int unsigned primary key
+			               auto_increment not null,
                          uri_id        int unsigned not null,
-                         indexed       tinyint not null,
                          language_code char(3) default null,
                          INDEX index_language_code (language_code),
                          INDEX index_uri_id (uri_id))"
 			 );
   
-  db->query("create table deleted_document (id int unsigned not null)");
+  db->query("create table deleted_document (doc_id int unsigned not null)");
 
   db->query(
 #"create table word_hit (word_id        int not null,
@@ -49,7 +50,8 @@ void recreate_tables()
                          unique(doc_id,name))");
 
   db->query(
-#"create table field (id    tinyint unsigned primary key auto_increment not null,
+#"create table field (id    tinyint unsigned primary key
+                            auto_increment not null,
                       name  varchar(127) not null,
                       INDEX index_name (name))");
 }
@@ -223,9 +225,12 @@ mapping get_uri_and_language(int doc_id)
   return (["uri":1,"language":1]) & a[0];
 }
 
-static int docs;
+static int docs; // DEBUG
 void remove_document(string|Standards.URI uri, void|string language)
 {
+  docs++; // DEBUG
+
+
   int uri_id=get_uri_id((string)uri);
 
   if(!uri_id)
@@ -243,9 +248,13 @@ void remove_document(string|Standards.URI uri, void|string language)
   db->query("delete from document where id in ("+a->id*","+")");
   db->query("insert into deleted_document (doc_id) values "+
 	    "("+a->id*"),("+")");
-  docs++;
 }
 
+static function sync_callback;
+void set_sync_callback( function f )
+{
+  sync_callback = f;
+}
 
 static void sync_thread( _WhiteFish.Blobs blobs, int docs )
 {
@@ -265,6 +274,9 @@ static void sync_thread( _WhiteFish.Blobs blobs, int docs )
     db->query("insert into word_hit (word_id,first_doc_id,hits) "
 	      "values (%d,%d,%s)", i, w, d );
   } while( 1 );
+
+  if( sync_callback )
+    sync_callback();
   werror("----------- sync() done %3ds %5dw -------\n", time()-s,q);
 }
 
@@ -288,12 +300,6 @@ string get_blob(int word_id, int num)
 		    "limit %d,1",
 		    word_id, num);
 
-//    if(sizeof(a))
-//      werror("get_blob(%d,%d) -> %d bytes, first_doc_id: %s\n",
-//  	   word_id,num,sizeof(a[0]->hits),a[0]->first_doc_id);
-//    else
-//      werror("get_blob(%d,%d) -> EOF\n", word_id, num);
-
   if(!sizeof(a))
     return 0;
 
@@ -308,82 +314,152 @@ void zap()
   db->query("delete from field");
 }
 
+
+
+/* The queue does _not_ use the same objects as the database above.
+ * The reason is twofold:
+ *
+ *   1: It's possible to store it in any database
+ *
+ *   2: Even when it's in the same database, it's accessed in
+ *       parallell with the database in a different thread in at least
+ *       multiprocess_crawler.pike
+ */
+
+
 class Queue
 {
+  Sql.Sql db;
+  string url, table;
+  
   Web.Crawler.Stats stats;
   Web.Crawler.Policy policy;
-  Web.Crawler.RuleSet allow,deny;
+  Web.Crawler.RuleSet allow, deny;
   
   inherit Web.Crawler.Queue;
 
   void create( Web.Crawler.Stats _stats,
-	       Web.Crawler.Policy _policy, 
+	       Web.Crawler.Policy _policy,
+
+	       string _url, string _table,
+
 	       void|Web.Crawler.RuleSet _allow,
 	       void|Web.Crawler.RuleSet _deny)
   {
-    stats = _stats;
-    policy = _policy;
-    allow=_allow;
-    deny=_deny;
+    stats = _stats;   policy = _policy;
+    allow=_allow;     deny=_deny;
+    table = _table;
+
+    db = Sql.Sql( _url );
+    perhaps_create_table(  );
   }
 
-  static int done_uri( string|Standards.URI uri )
+  static void perhaps_create_table(  )
   {
-    return sizeof(db->query("select indexed from document where indexed=2 and uri_id=%d",
-			    get_uri_id(uri)));
+    catch {
+      db->query(
+#"
+    create table "+table+#" (
+        uri        blob not null,
+	template   varchar(255) not null default '',
+	md5        char(16) not null default '',
+	recurse    tinyint not null,
+	stage      tinyint not null,
+	INDEX uri_ind (uri(64)),
+	INDEX stage   (stage)
+	)
+    "
+      );
+    };
   }
-
+  
   mapping hascache = ([]);
   static int has_uri( string|Standards.URI uri )
   {
     uri = (string)uri;
-    if( sizeof(hascache) > 100000 )
-      hascache = ([]);
+    if( sizeof(hascache) > 100000 )  hascache = ([]);
     return hascache[uri]||
-      (hascache[uri]=sizeof(db->query("select indexed from document where uri_id=%d",
-				      get_uri_id(uri))));
+      (hascache[uri]=
+       sizeof(db->query("select stage from "+table+" where uri=%s",uri)));
   }
 
-  static void add_uri( Standards.URI uri )
+  void add_uri( Standards.URI uri, int recurse, string template )
   {
-    if(check_link(uri, allow, deny) && !has_uri(uri))
-    {
-      db->query( "insert into document (uri) values (%s)", (string)uri );
-    }
+    // The language is encoded in the fragment.
+    Standards.URI r = Standards.URI( (string)uri );
+    if( r->query )         r->query = normalize_query( r->query );
+    if(r->query && !strlen(r->query))  r->query = 0;
+
+    if( check_link(uri, allow, deny) && !has_uri( r ) )
+      db->query( "insert into "+table+
+		 " (uri,recurse,template) values (%s,%d,%s)",
+		 (string)r, recurse, (template||"") );
+  }
+
+  void set_md5( Standards.URI uri, string md5 )
+  {
+    db->query( "update "+table+
+	       " set md5=%s WHERE uri=%s", md5, (string)uri );
+  }
+
+  mapping get_extra( Standards.URI uri )
+  {
+    array r = db->query( "SELECT md5,recurse,stage,template "
+			 "FROM "+table+" WHERE uri=%s", (string)uri );
+    if( sizeof( r ) )
+      return r[0];
   }
 
   static int empty_count;
 
+  // cache, for performance reasons.
   static array possible=({});
-  int p_c;
+  static int p_c;
+
   int|Standards.URI get()
   {
     if(stats->concurrent_fetchers() > policy->max_concurrent_fetchers)
+    {
       return -1;
+    }
 
     if( sizeof( possible ) <= p_c )
     {
       p_c = 0;
-      possible = db->query( "select uri from document where indexed=0" )->uri;
+      possible = db->query( "select uri from "+table+" where stage=0" )->uri;
     }
 
-    if( sizeof( possible ) > p_c )
+    while( sizeof( possible ) > p_c )
     {
-      string u = possible[p_c++];
       empty_count=0;
-      db->query( "update document set indexed=1 where uri=%s", (string)u );
-      return Standards.URI(u);
+
+      Standards.URI ur = Standards.URI( possible[p_c++] );
+
+      if( stats->concurrent_fetchers( ur->host ) >
+	  policy->max_concurrent_fetchers_per_host )
+      {
+	continue; // not this host..
+      }
+
+      set_stage( ur, 1 );
+      return ur;
     }
 
-    if(stats->concurrent_fetchers())
+    if( stats->concurrent_fetchers() )
     {
       return -1;
     }
     // delay for (quite) a while.
-    if( empty_count++ > 1000 )
+    if( empty_count++ > 10 )
     {
+      if( num_with_stage( 2 ) || num_with_stage( 3 ) )
+      {
+	empty_count=0;
+	return -1;
+      }
       return 0;
     }
+
     return -1;
   }
 
@@ -398,11 +474,34 @@ class Queue
     if(!objectp(uri))
       uri=Standards.URI(uri);
     
-    add_uri(uri);
+    add_uri( uri, 1, 0 );
   }
 
-  void done(Standards.URI uri)
+  void done( Standards.URI uri,
+	     int called )
   {
-    db->query( "update document set indexed=2 where uri=%s", (string)uri );
+    if( called )
+      set_stage( uri, 2 );
+    else
+      set_stage( uri, 5 );
+  }
+
+  void clear_stage( int ... stages )
+  {
+    foreach( stages, int s )
+      db->query( "update "+table+" set stage=0 where stage=%d", s );
+  }
+
+  int num_with_stage( int stage )
+  {
+    return (int)
+      db->query( "select COUNT(*) as c from "+table+" where stage=%d",
+		 stage )[ 0 ]->c;
+  }
+
+  void set_stage( Standards.URI uri,
+		  int stage )
+  {
+    db->query( "update "+table+" set stage=%d where uri=%s",stage,(string)uri);
   }
 }
