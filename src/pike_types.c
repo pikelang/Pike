@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.208 2003/02/24 20:42:53 mast Exp $
+|| $Id: pike_types.c,v 1.209 2003/03/07 13:16:55 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.208 2003/02/24 20:42:53 mast Exp $");
+RCSID("$Id: pike_types.c,v 1.209 2003/03/07 13:16:55 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -826,6 +826,76 @@ void debug_push_finished_type_with_markers(struct pike_type *type,
   /* push_type has sufficient magic to recreate the type. */
   push_type(type->type);
   TYPE_STACK_DEBUG("push_finished_type_with_markers");
+}
+
+static void push_type_field(TYPE_FIELD field)
+{
+  field &= (BIT_BASIC|BIT_COMPLEX);
+  if (!field) {
+    /* No values. */
+    push_type(T_ZERO);
+  } else if (field == (BIT_BASIC|BIT_COMPLEX)) {
+    /* All values. */
+    push_type(T_MIXED);
+  } else {
+    /* Check the bits... */
+    push_type(T_ZERO);
+
+    if (field & BIT_COMPLEX) {
+      if (field & BIT_ARRAY) {
+	push_type(T_MIXED);
+	push_type(T_ARRAY);
+	push_type(T_OR);
+      }
+      if (field & BIT_MAPPING) {
+	push_type(T_MIXED);
+	push_type(T_MIXED);
+	push_type(T_MAPPING);
+	push_type(T_OR);
+      }
+      if (field & BIT_MULTISET) {
+	push_type(T_MIXED);
+	push_type(T_MULTISET);
+	push_type(T_OR);
+      }
+      if (field & BIT_OBJECT) {
+	push_object_type(0, 0);
+	push_type(T_OR);
+      }
+      if (field & BIT_FUNCTION) {
+	push_type(T_ZERO);
+	push_type(T_ZERO);
+	push_type(T_MIXED);
+	push_type(T_OR);
+	push_type(T_MANY);
+	push_type(T_OR);
+      }
+      if (field & BIT_PROGRAM) {
+	push_object_type(0, 0);
+	push_type(T_PROGRAM);
+	push_type(T_OR);
+      }
+    }
+    if (field & BIT_BASIC) {
+      if (field & BIT_STRING) {
+	push_type(T_STRING);
+	push_type(T_OR);
+      }
+      if (field & BIT_TYPE) {
+	push_type(T_MIXED);
+	push_type(T_TYPE);
+	push_type(T_OR);
+      }
+      if (field & BIT_INT) {
+	push_int_type(MIN_INT32, MAX_INT32);
+	push_type(T_OR);
+      }
+      if (field & BIT_FLOAT) {
+	push_type(T_FLOAT);
+	push_type(T_OR);
+      }
+    }
+  }
 }
 
 INT32 extract_type_int(char *p)
@@ -4184,8 +4254,8 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
   case T_MAPPING:
     type_stack_mark();
     if (m_sizeof(s->u.mapping)) {
-      push_type(T_MIXED);
-      push_type(T_MIXED);
+      push_type_field(s->u.mapping->data->ind_types);
+      push_type_field(s->u.mapping->data->val_types);
     }
     else {
       push_type(T_ZERO);
