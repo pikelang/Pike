@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.117 2000/10/04 22:11:17 grubba Exp $");
+RCSID("$Id: threads.c,v 1.118 2000/10/04 22:14:57 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -1398,8 +1398,6 @@ void th_init(void)
 
 void th_cleanup(void)
 {
-  th_running = 0;
-
   if(thread_id)
   {
     thread_table_delete(thread_id);
