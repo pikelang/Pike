@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.245 2005/03/21 21:35:29 grubba Exp $
+|| $Id: pike_types.c,v 1.246 2005/04/06 17:38:15 grubba Exp $
 */
 
 #include "global.h"
@@ -3744,6 +3744,7 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
 	  free_type(call_type);
 	  return tmp;
 	}
+	free_type(call_type);
 
 	add_ref(mixed_type_string);
 	return mixed_type_string;
@@ -3780,6 +3781,7 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
 	  free_type(call_type);
 	  return tmp;
 	}
+	free_type(call_type);
 
 	add_ref(mixed_type_string);
 	return mixed_type_string;
