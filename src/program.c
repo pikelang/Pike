@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.75 1998/04/10 18:38:15 grubba Exp $");
+RCSID("$Id: program.c,v 1.76 1998/04/10 22:24:21 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2287,12 +2287,12 @@ static struct get_storage_cache
   INT32 oid, pid, offset;
 } get_storage_cache[GET_STORAGE_CACHE_SIZE];
 
-char *get_storage(struct object *o, struct program *p)
+int low_get_storage(struct program *o, struct program *p)
 {
   INT32 oid,pid, offset;
   unsigned INT32 hval;
-  if(!o->prog) return 0;
-  oid=o->prog->id;
+  if(!o) return 0;
+  oid=o->id;
   pid=p->id;
   hval=oid*9248339 + pid;
   hval%=GET_STORAGE_CACHE_SIZE;
@@ -2307,11 +2307,11 @@ char *get_storage(struct object *o, struct program *p)
   }else{
     INT32 e;
     offset=-1;
-    for(e=0;e<o->prog->num_inherits;e++)
+    for(e=0;e<o->num_inherits;e++)
     {
-      if(o->prog->inherits[e].prog==p)
+      if(o->inherits[e].prog==p)
       {
-	offset=o->prog->inherits[e].storage_offset;
+	offset=o->inherits[e].storage_offset;
 	break;
       }
     }
@@ -2321,6 +2321,12 @@ char *get_storage(struct object *o, struct program *p)
     get_storage_cache[hval].offset=offset;
   }
 
+  return offset;
+}
+
+char *get_storage(struct object *o, struct program *p)
+{
+  int offset= low_get_storage(o->prog, p);
   if(offset == -1) return 0;
   return o->storage + offset;
 }

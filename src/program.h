@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.38 1998/04/09 02:49:48 hubbe Exp $
+ * $Id: program.h,v 1.39 1998/04/10 22:24:22 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -108,6 +108,7 @@ union idptr
 #define IDENTIFIER_FUNCTION 3
 #define IDENTIFIER_CONSTANT 4
 #define IDENTIFIER_VARARGS 8
+#define IDENTIFIER_PROTOTYPED 16
 
 #define IDENTIFIER_IS_FUNCTION(X) ((X) & IDENTIFIER_FUNCTION)
 #define IDENTIFIER_IS_CONSTANT(X) ((X) & IDENTIFIER_CONSTANT)
@@ -350,6 +351,7 @@ void count_memory_in_programs(INT32 *num_, INT32 *size_);
 void push_compiler_frame(void);
 void pop_local_variables(int level);
 void pop_compiler_frame(void);
+int low_get_storage(struct program *o, struct program *p);
 char *get_storage(struct object *o, struct program *p);
 struct program *low_program_from_function(struct program *p,
 					  INT32 i);

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.75 1998/04/10 18:06:05 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.76 1998/04/10 22:24:19 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -915,7 +915,7 @@ static int eval_instruction(unsigned char *pc)
       pop_n_elems(3);
       break;
 
-      CASE(F_GLOBAL_LVALUE)
+      CASE(F_GLOBAL_LVALUE);
       {
 	struct identifier *i;
 	INT32 tmp=GET_ARG() + fp->context.identifier_level;

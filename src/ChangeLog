@@ -1,3 +1,9 @@
+Fri Apr 10 15:05:11 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* language.yacc: it is now possible to use class names as types
+	  in most places.
+	* pike_types.c: object(foo) now means 'object that inherits foo'
+
 Thu Apr  9 15:11:07 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* Recursive module references now generates errors

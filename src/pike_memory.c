@@ -9,7 +9,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.19 1998/04/06 04:29:27 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.20 1998/04/10 22:24:20 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -466,6 +466,10 @@ int verbose_debug_exit = 1;
 #define LHSIZE 1109891
 #define FLSIZE 8803
 #define DEBUG_MALLOC_PAD 8
+#define FREE_DELAY 256
+
+static void *blocks_to_free[FREE_DELAY];
+static unsigned int blocks_to_free_ptr=0;
 
 struct fileloc
 {
@@ -490,7 +494,7 @@ BLOCK_ALLOC(memloc, 16382)
 struct memhdr
 {
   struct memhdr *next;
-  size_t size;
+  long size;
   void *data;
   struct memloc *locations;
 };
@@ -526,7 +530,14 @@ void check_pad(struct memhdr *mh)
 {
   long q,e;
   char *mem=mh->data;
-  size_t size=mh->size;
+  size_t size;
+  if(mh->size < 0)
+  {
+    fprintf(stderr,"Freeing block %p twice (size %ld)!\n",mem, ~mh->size);
+    dump_memhdr_locations(mh, 0);
+    abort();
+  }
+  size=mh->size;
   q= (((long)mem) ^ 0x555555) + (size * 9248339);
 
 /*  fprintf(stderr,"Checking %p(%d) %ld\n",mem, size, q);  */
@@ -745,6 +756,7 @@ static int remove_memhdr(void *p, int already_gone)
   {
     if(mh->data==p)
     {
+      if(mh->size < 0) mh->size=~mh->size;
       if(!already_gone) check_pad(mh);
 
       *prev=mh->next;
@@ -814,11 +826,25 @@ void *debug_realloc(void *p, size_t s, const char *fn, int line)
 
 void debug_free(void *p, const char *fn, int line)
 {
+  struct memhdr *mh;
+  if(!p) return;
   mt_lock(&debug_malloc_mutex);
-  if(remove_memhdr(p,0))  p=((char *)p) - DEBUG_MALLOC_PAD;
-  free(p);
   if(verbose_debug_malloc)
     fprintf(stderr, "free(%p) (%s:%d)\n", p, fn,line);
+  if((mh=find_memhdr(p)))
+  {
+    void *p2;
+    add_location(mh, location_number(fn,line));
+    MEMSET(p, 0x55, mh->size);
+    mh->size = ~mh->size;
+    blocks_to_free_ptr++;
+    blocks_to_free_ptr%=FREE_DELAY;
+    p2=blocks_to_free[blocks_to_free_ptr];
+    blocks_to_free[blocks_to_free_ptr]=p;
+    p=p2;
+  }
+  if(remove_memhdr(p,0))  p=((char *)p) - DEBUG_MALLOC_PAD;
+  free(p);
   mt_unlock(&debug_malloc_mutex);
 }
 
@@ -862,6 +888,15 @@ void cleanup_memhdrs()
 {
   unsigned long h;
   mt_lock(&debug_malloc_mutex);
+  for(h=0;h<FREE_DELAY;h++)
+  {
+    void *p;
+    if((p=blocks_to_free[h]))
+    {
+      if(remove_memhdr(p,0))  p=((char *)p) - DEBUG_MALLOC_PAD;
+      free(p);
+    }
+  }
   if(verbose_debug_exit)
   {
     int first=1;
@@ -878,7 +913,7 @@ void cleanup_memhdrs()
 	}
 
 	
-	fprintf(stderr, "LEAK: (%p) %d bytes\n",m->data, m->size);
+	fprintf(stderr, "LEAK: (%p) %ld bytes\n",m->data, m->size);
 #ifdef DEBUG
 	describe_something(m->data, attempt_to_identify(m->data),0);
 #endif

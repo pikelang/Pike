@@ -107,6 +107,8 @@
 %token F_IMPORT
 %token F_INHERIT
 %token F_INLINE
+%token F_LOCAL_ID
+%token F_FINAL_ID
 %token F_INT_ID
 %token F_LAMBDA
 %token F_MULTISET_ID
@@ -169,7 +171,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.71 1998/04/10 04:35:19 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.72 1998/04/10 22:24:20 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -290,6 +292,8 @@ int yylex(YYSTYPE *yylval);
 
 %type <n> cast
 %type <n> simple_type
+%type <n> simple_type2
+%type <n> simple_identifier_type
 %type <n> string_constant
 %type <n> string
 %type <n> F_STRING
@@ -328,6 +332,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> idents
 %type <n> lambda
 %type <n> local_name_list
+%type <n> local_name_list2
 %type <n> low_idents
 %type <n> lvalue
 %type <n> lvalue_list
@@ -335,6 +340,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> m_expr_list
 %type <n> m_expr_list2
 %type <n> new_local_name
+%type <n> new_local_name2
 %type <n> optional_else_part
 %type <n> return
 %type <n> sscanf
@@ -485,14 +491,7 @@ type_or_error: simple_type
     copy_shared_string(compiler_frame->current_type,$1->u.sval.u.string);
     free_node($1);
   }
-  | /* empty */
-  {
-    yyerror("Missing type.");
-    if(compiler_frame->current_type)
-      free_string(compiler_frame->current_type); 
-    copy_shared_string(compiler_frame->current_type,
-		       mixed_type_string);
-  }
+  ;
   
 
 def: modifiers type_or_error optional_stars F_IDENTIFIER 
@@ -599,7 +598,7 @@ optional_identifier: F_IDENTIFIER
   | /* empty */ { $$=0; }
   ;
 
-new_arg_name: type optional_dot_dot_dot optional_identifier
+new_arg_name: type7 optional_dot_dot_dot optional_identifier
   {
     if(varargs) yyerror("Can't define more arguments after ...");
 
@@ -641,8 +640,10 @@ arguments2: new_arg_name { $$ = 1; }
   ;
 
 modifier: F_NO_MASK    { $$ = ID_NOMASK; }
+  | F_FINAL_ID   { $$ = ID_NOMASK; }
   | F_STATIC     { $$ = ID_STATIC; }
-  | F_PRIVATE    { $$ = ID_PRIVATE; }
+  | F_PRIVATE    { $$ = ID_PRIVATE | ID_STATIC; }
+  | F_LOCAL_ID   { $$ = ID_INLINE; }
   | F_PUBLIC     { $$ = ID_PUBLIC; }
   | F_PROTECTED  { $$ = ID_PROTECTED; }
   | F_INLINE     { $$ = ID_INLINE; }
@@ -665,12 +666,18 @@ cast: '(' type ')'
       free_string(s);
     }
     ;
+
+type6: type | identifier_type ;
   
 type: type '*' { push_type(T_ARRAY); }
   | type2
   ;
 
-simple_type: type2
+type7: type7 '*' { push_type(T_ARRAY); }
+  | type4
+  ;
+
+simple_type: type4
   {
     struct pike_string *s=pop_type();
     $$=mkstrnode(s);
@@ -678,8 +685,43 @@ simple_type: type2
   }
   ;
 
+simple_type2: type2
+  {
+    struct pike_string *s=pop_type();
+    $$=mkstrnode(s);
+    free_string(s);
+  }
+  ;
+
+simple_identifier_type: identifier_type
+  {
+    struct pike_string *s=pop_type();
+    $$=mkstrnode(s);
+    free_string(s);
+  }
+  ;
+
+identifier_type: idents
+     { 
+       struct program *p;
+       resolv_program($1);
+       if((p=program_from_svalue(sp-1)))
+       {
+         push_type_int(sp[-1].u.program->id);
+       }else{
+         push_type_int(0);
+       }
+       push_type(0);
+       push_type(T_OBJECT);
+       pop_stack();
+       free_node($1);
+     }
+     ;
+
+type4: type2 | identifier_type
+
 type2: type2 '|' type3 { push_type(T_OR); }
-  | type3
+  | type3 
   ;
 
 type3: F_INT_ID      { push_type(T_INT); }
@@ -695,7 +737,7 @@ type3: F_INT_ID      { push_type(T_INT); }
   | F_FUNCTION_ID opt_function_type { push_type(T_FUNCTION); }
   ;
 
-opt_object_type:  /* Empty */ { push_type_int(0); }
+opt_object_type:  /* Empty */ { push_type_int(0); push_type(0); }
   | '(' program_ref ')'
   {
     struct program *p=program_from_svalue(sp-1);
@@ -707,6 +749,7 @@ opt_object_type:  /* Empty */ { push_type_int(0); }
       push_type_int(0);
     }
     pop_n_elems(2);
+    push_type(0);
   }
   ;
 
@@ -728,7 +771,7 @@ opt_function_type: '('
     }
     type_stack_mark();
   }
-  type ')'
+  type7 ')'
   {
     type_stack_reverse();
     type_stack_reverse();
@@ -745,16 +788,16 @@ function_type_list: /* Empty */ optional_comma
   | function_type_list2 optional_comma
   ;
 
-function_type_list2: type 
+function_type_list2: type7 
   | function_type_list2 ','
   {
     type_stack_reverse();
     type_stack_mark();
   }
-  type
+  type7
   ;
 
-opt_array_type: '(' type ')'
+opt_array_type: '(' type7 ')'
   |  { push_type(T_MIXED); }
   ;
 
@@ -763,12 +806,12 @@ opt_mapping_type: '('
     type_stack_mark();
     type_stack_mark();
   }
-  type ':'
+  type7 ':'
   { 
     type_stack_reverse();
     type_stack_mark();
   }
-  type
+  type7
   { 
     type_stack_reverse();
     type_stack_reverse();
@@ -822,7 +865,7 @@ new_local_name: optional_stars F_IDENTIFIER
     push_finished_type($<n>0->u.sval.u.string);
     while($1--) push_type(T_ARRAY);
     add_local_name($2->u.sval.u.string, pop_type());
-    $$=mknode(F_ASSIGN,mkintnode(0), mklocalnode(islocal($2->u.sval.u.string)));
+    $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($2->u.sval.u.string)));
     free_node($2);
   }
   | optional_stars F_IDENTIFIER '=' expr0
@@ -832,6 +875,20 @@ new_local_name: optional_stars F_IDENTIFIER
     add_local_name($2->u.sval.u.string, pop_type());
     $$=mknode(F_ASSIGN,$4,mklocalnode(islocal($2->u.sval.u.string)));
     free_node($2);
+  }
+  ;
+
+new_local_name2: F_IDENTIFIER
+  {
+    add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.string);
+    $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($1->u.sval.u.string)));
+    free_node($1);
+  }
+  | F_IDENTIFIER '=' expr0
+  {
+    add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.string);
+    $$=mknode(F_ASSIGN,$3, mklocalnode(islocal($1->u.sval.u.string)));
+    free_node($1);
   }
   ;
 
@@ -854,6 +911,10 @@ failsafe_block: block
 
 local_name_list: new_local_name
   | local_name_list ',' { $<n>$=$<n>0; } new_local_name { $$=mknode(F_ARG_LIST,$1,$4); }
+  ;
+
+local_name_list2: new_local_name2
+  | local_name_list2 ',' { $<n>$=$<n>0; } new_local_name { $$=mknode(F_ARG_LIST,$1,$4); }
   ;
 
 statements: { $$=0; }
@@ -1136,7 +1197,8 @@ optional_comma_expr: { $$=0; }
   ;
 
 comma_expr: comma_expr2
-  | simple_type local_name_list { $$=$2; free_node($1); }
+  | simple_type2 local_name_list { $$=$2; free_node($1); }
+  | simple_identifier_type local_name_list2 { $$=$2; free_node($1); }
   ;
           
 
@@ -1452,7 +1514,7 @@ sscanf: F_SSCANF '(' expr0 ',' expr0 lvalue_list ')'
 
 lvalue: expr4
   | '[' low_lvalue_list ']' { $$=mknode(F_ARRAY_LVALUE, $2,0); }
-  | type F_IDENTIFIER
+  | type6 F_IDENTIFIER
   {
     add_local_name($2->u.sval.u.string,pop_type());
     $$=mklocalnode(islocal($2->u.sval.u.string));

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.37 1998/04/09 02:47:47 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.38 1998/04/10 22:24:21 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -46,6 +46,11 @@ static int type_length(char *t);
  * note that the type after T_MANY can be T_VOID
  * T_MIXED matches anything except T_VOID
  * T_UNKNOWN only matches T_MIXED and T_UNKNOWN
+ * objects are coded thus:
+ * T_OBJECT <0/1> <program_id>
+ *           ^
+ *           0 means 'inherits'
+ *           1 means 'is'
  */
 
 struct pike_string *string_type_string;
@@ -90,7 +95,7 @@ static void CHECK_TYPE(struct pike_string *s)
   if(type_length(s->str) != s->len)
   {
     stupid_describe_type(s->str,s->len);
-    fatal("Length of type is wrong.\n");
+    fatal("Length of type is wrong. (should be %d, is %d)\n",type_length(s->str),s->len);
   }
 }
 #else
@@ -164,6 +169,7 @@ static int type_length(char *t)
       break;
       
     case T_OBJECT:
+      t++;
       t+=sizeof(INT32);
       break;
   }
@@ -271,6 +277,7 @@ static void push_unfinished_type_with_markers(char *s, struct pike_string **am)
 	push_type(EXTRACT_UCHAR(s+ ++e));
 	push_type(EXTRACT_UCHAR(s+ ++e));
 	push_type(EXTRACT_UCHAR(s+ ++e));
+	push_type(EXTRACT_UCHAR(s+ ++e));
 	break;
 	
       default:
@@ -339,6 +346,7 @@ static void internal_parse_typeA(char **_s)
   else if(!strcmp(buf,"object"))
   {
     push_type_int(0);
+    push_type(0);
     push_type(T_OBJECT);
   }
   else if(!strcmp(buf,"program")) push_type(T_PROGRAM);
@@ -583,8 +591,10 @@ void stupid_describe_type(char *a,INT32 len)
       case T_STRING: printf("string"); break;
       case T_PROGRAM: printf("program"); break;
       case T_OBJECT:
-	printf("object(%ld)",(long)EXTRACT_INT(a+e+1));
-	e+=sizeof(INT32);
+	printf("object(%s %ld)",
+	       EXTRACT_UCHAR(a+e+1)?"inherits":"clone of",
+	       (long)EXTRACT_INT(a+e+2));
+	e+=sizeof(INT32)+1;
 	break;
       case T_FUNCTION: printf("function"); break;
       case T_ARRAY: printf("array"); break;
@@ -636,7 +646,7 @@ char *low_describe_type(char *t)
     case T_PROGRAM: my_strcat("program"); break;
     case T_OBJECT:
       my_strcat("object");
-      t+=4;
+      t+=sizeof(INT32)+1;
       /* Prog id */
       break;
     case T_STRING: my_strcat("string"); break;
@@ -837,6 +847,38 @@ static struct pike_string *or_pike_types(struct pike_string *a,
   return pop_unfinished_type();
 }
 
+static struct pike_string *low_object_fun_type(char *t,
+					       struct pike_string *tmp)
+{
+  struct program *p;
+  int i;
+  p=id_to_program(EXTRACT_INT(t+2));
+  if(!p) return 0;
+  i=FIND_LFUN(p, LFUN_CALL);
+
+  if(EXTRACT_UCHAR(t+1) ||
+     (p->identifier_references[i].id_flags & ID_NOMASK) ||
+    (ID_FROM_INT(p, i)->identifier_flags & IDENTIFIER_PROTOTYPED))
+    return ID_FROM_INT(p, i)->type;
+
+  return 0;
+}
+
+static struct pike_string *low_object_lfun_type(char *t, short lfun)
+{
+  struct program *p;
+  int i;
+  p=id_to_program(EXTRACT_INT(t+2));
+  if(!p) return 0;
+  i=FIND_LFUN(p, LFUN_CALL);
+
+  if(EXTRACT_UCHAR(t+1) ||
+     (p->identifier_references[i].id_flags & ID_NOMASK) ||
+    (ID_FROM_INT(p, i)->identifier_flags & IDENTIFIER_PROTOTYPED))
+    return ID_FROM_INT(p, i)->type;
+
+  return 0;
+}
 
 #define A_EXACT 1
 #define B_EXACT 2
@@ -952,25 +994,17 @@ static char *low_match_types(char *a,char *b, int flags)
     return a;
   case TWOT(T_OBJECT, T_FUNCTION):
   {
-    struct program *p;
-    if((p=id_to_program(EXTRACT_INT(a+1))))
-    {
-      int i=FIND_LFUN(p,LFUN_CALL);
-      if(i == -1) return 0;
-      return low_match_types(ID_FROM_INT(p, i)->type->str, b, flags);
-    }
+    struct pike_string *s;
+    if((s=low_object_lfun_type(a, LFUN_CALL)))
+       return low_match_types(s->str,b,flags);
     return a;
   }
 
   case TWOT(T_FUNCTION, T_OBJECT):
   {
-    struct program *p;
-    if((p=id_to_program(EXTRACT_INT(b+1))))
-    {
-      int i=FIND_LFUN(p,LFUN_CALL);
-      if(i == -1) return 0;
-      return low_match_types(a, ID_FROM_INT(p, i)->type->str, flags);
-    }
+    struct pike_string *s;
+    if((s=low_object_lfun_type(b, LFUN_CALL)))
+       return low_match_types(a,s->str,flags);
     return a;
   }
   }
@@ -1030,10 +1064,40 @@ static char *low_match_types(char *a,char *b, int flags)
     break;
 
   case T_OBJECT:
-    a++;
-    b++;
-    if(!EXTRACT_INT(a) || !EXTRACT_INT(b)) break;
-    if(EXTRACT_INT(a) != EXTRACT_INT(b)) return 0;
+    /* object(* 0) matches any object */
+    if(!EXTRACT_INT(a+2) || !EXTRACT_INT(b+2)) break;
+
+    /* object(x *) =? object(x *) */
+    if(EXTRACT_UCHAR(a+1) == EXTRACT_UCHAR(b+1))
+    {
+      /* x? */
+      if(EXTRACT_UCHAR(a+1))
+      {
+	/* object(1 x) =? object(1 x) */
+	if(EXTRACT_INT(a+2) != EXTRACT_INT(b+2)) return 0;
+      }else{
+	/* object(0 *) =? object(0 *) */
+	break;
+      }
+    }
+
+    {
+      struct program *ap,*bp;
+      ap=id_to_program(EXTRACT_UCHAR(a+2));
+      bp=id_to_program(EXTRACT_UCHAR(b+2));
+
+      if(!ap || !bp) break;
+      
+      if(EXTRACT_UCHAR(a+1))
+      {
+	if(low_get_storage(bp,ap)==-1)
+	  return 0;
+      }else{
+	if(low_get_storage(ap,bp)==-1)
+	  return 0;
+      }
+    }
+    
     break;
 
   case T_MULTISET:
@@ -1121,6 +1185,7 @@ static int low_get_return_type(char *a,char *b)
 
     case T_PROGRAM:
       push_type_int(0);
+      push_type(0);
       push_type(T_OBJECT);
       return 1;
 
@@ -1155,7 +1220,7 @@ static struct pike_string *debug_low_index_type(char *t, node *n)
   {
   case T_OBJECT:
   {
-    struct program *p=id_to_program(EXTRACT_INT(t));
+    struct program *p=id_to_program(EXTRACT_INT(t+1));
     if(p && n)
     {
       if(n->token == F_ARROW)
@@ -1181,8 +1246,16 @@ static struct pike_string *debug_low_index_type(char *t, node *n)
 	  reference_shared_string(int_type_string);
 	  return int_type_string;
 	}else{
-	  reference_shared_string(ID_FROM_INT(p, i)->type);
-	  return ID_FROM_INT(p, i)->type;
+	  if(EXTRACT_UCHAR(t) ||
+	     (p->identifier_references[i].id_flags & ID_NOMASK) ||
+	    (ID_FROM_INT(p, i)->identifier_flags & IDENTIFIER_PROTOTYPED))
+	  {
+	    reference_shared_string(ID_FROM_INT(p, i)->type);
+	    return ID_FROM_INT(p, i)->type;
+	  }else{
+	    reference_shared_string(mixed_type_string);
+	    return mixed_type_string;
+	  }
 	}	   
       }
     }
@@ -1276,16 +1349,16 @@ static int low_check_indexing(char *type, char *index_type, node *n)
 
   case T_OBJECT:
   {
-    struct program *p=id_to_program(EXTRACT_INT(type));
+    struct program *p=id_to_program(EXTRACT_INT(type+1));
     if(p)
     {
       if(n->token == F_ARROW)
       {
-	if(FIND_LFUN(p,LFUN_ARROW) != -1 || FIND_LFUN(p,LFUN_ASSIGN_ARROW) != -1)
-	return 1;
+	if(FIND_LFUN(p,LFUN_ARROW)!=-1 || FIND_LFUN(p,LFUN_ASSIGN_ARROW)!=-1)
+	  return 1;
       }else{
-	if(FIND_LFUN(p,LFUN_INDEX) != -1 || FIND_LFUN(p,LFUN_ASSIGN_INDEX) != -1)
-	return 1;
+	if(FIND_LFUN(p,LFUN_INDEX)!=-1 || FIND_LFUN(p,LFUN_ASSIGN_INDEX)!=-1)
+	  return 1;
       }
       return !!low_match_types(string_type_string->str, index_type,0);
     }else{
@@ -1440,8 +1513,10 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
     if(s->u.object->prog)
     {
       push_type_int(s->u.object->prog->id);
+      push_type(1);
     }else{
       push_type_int(0);
+      push_type(0);
     }
     push_type(T_OBJECT);
     return pop_unfinished_type();
@@ -1470,6 +1545,7 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
     {
       type_stack_mark();
       push_type_int(s->u.program->id);
+      push_type(1);
       push_type(T_OBJECT);
       
       type_stack_mark();

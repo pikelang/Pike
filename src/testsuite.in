@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.87 1998/04/10 04:49:55 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.88 1998/04/10 22:24:22 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -13,6 +13,13 @@ bar"]],[["foo\nbar"]])
 test_true([[stringp(#string "Makefile")]])
 test_any([[class Bar { array(int) foo = ({}); }; class Foo { inherit Bar; array(int) foo = ({1}); }; return sizeof(Foo()->foo);]],1)
 
+test_compile([[Stdio.File foo=Stdio.File();]])
+test_compile([[class { Stdio.File foo=Stdio.File(); }]])
+test_compile_any([[void foo(Stdio.FILE f) {}]])
+test_compile_any([[void foo(array(Stdio.FILE) f) {}]])
+test_compile_any([[void foo(array(Stdio.FILE) f) {}]])
+test_compile_any([[Stdio.File foo(array(Stdio.FILE) f) { return f[0]; }]])
+test_compile([[Stdio.File foo=Stdio.FILE();]])
 
 test_any([[object(Stdio.File) f; f=Stdio.File(); return 1]],1)
 test_compile([[int t=gauge { string foo; };]])
@@ -171,7 +178,10 @@ test_program(inherit test;)
 test_program(inherit test; int a() { return foo; } )
 test_define_program(test,[[class TEST { int a() { return 1; } }]])
 test_program(inherit test; inherit TEST; )
-test_compile_error(class c { object(Stdio.File) foo; object(Regexp) bar=foo; })
+
+dnl This test cannot be performed without a way to tell the
+dnl compiler that foo *is* an Stdio.File, not inherits an Stdio.File
+dnl test_compile_error(class c { object(Stdio.File) foo; object(Regexp) bar=foo; })
 test_do(class c { object foo; object(Regexp) bar=foo; })
 test_do(class c { object(Stdio.File) foo; object bar=foo; })
 test_any(if(int i=1) return i; return 0;,1)
