@@ -91,6 +91,7 @@ object dsa_id = asn1_identifier(1, 2, 840, 10040, 4, 1);
 */
 object dsa_sha_id = asn1_identifier(1, 2, 840, 10040, 4, 3);
 
+object md2_id = asn1_identifier(1, 2, 840, 113549, 2, 2);
 object md5_id = asn1_identifier(1, 2, 840, 113549, 2, 5);
 object sha1_id = asn1_identifier(1, 3, 14, 3, 2, 26);
 
