@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.20 2003/09/08 18:09:48 nilsson Exp $
+ * $Id: Tar.pmod,v 1.21 2003/09/09 16:28:19 nilsson Exp $
  */
 
 #pike __REAL_VERSION__
@@ -227,6 +227,7 @@ class _Tar  // filesystem
 	if(next_name) {
 	  r->fullpath = next_name;
 	  r->name = (next_name/"/")[-1];
+	  next_name = 0;
 	}
 	entries += ({ r });
       }
