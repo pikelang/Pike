@@ -20,7 +20,7 @@ static class FTFont
   constant driver = "FreeType 2";
 
   Thread.Mutex lock = Thread.Mutex();
-  static Image.FreeType.Face face;
+  Image.FreeType.Face face;
   static int size;
   static int xspacing;
   static int line_height;
@@ -111,6 +111,12 @@ static class FTFont
     return res;
   }
 
+  int advance( int character )
+  {
+    mapping m = do_write_char( character );
+    if( m )
+      return m->advance;
+  }
   
   Image.Image write( string ... text )
   {
@@ -236,7 +242,7 @@ class Font( static string file,
 //! the height of the finished image (the image is generally speaking
 //! bigger then the size of the characters).
 {
-  static object font;
+  object font;
   static object codec;
   
   static int fake_bold;
