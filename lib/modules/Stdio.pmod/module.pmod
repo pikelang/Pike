@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.209 2005/01/26 15:21:01 mast Exp $
+// $Id: module.pmod,v 1.210 2005/01/26 21:48:48 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -116,11 +116,11 @@ class File
 
   int is_file;
 
-  mixed ___read_callback;
-  mixed ___write_callback;
-  mixed ___close_callback;
-  mixed ___read_oob_callback;
-  mixed ___write_oob_callback;
+  function(mixed|void,string|void:int) ___read_callback;
+  function(mixed|void:int) ___write_callback;
+  function(mixed|void:int) ___close_callback;
+  function(mixed|void,string|void:int) ___read_oob_callback;
+  function(mixed|void:int) ___write_oob_callback;
   mixed ___id;
 
 #ifdef __STDIO_DEBUG
@@ -747,38 +747,17 @@ class File
     return 0;
   }
 
-  static private int peek_file_before_read_callback=0;
-
-  this_program set_peek_file_before_read_callback(int(0..1) to)
-  {      
-     peek_file_before_read_callback=to;
+  this_program set_peek_file_before_read_callback(int(0..1) ignored)
+  {
+    // This hack is not necessary anymore - the backend now properly
+    // ignores events if other callbacks/threads has managed to read
+    // the data before the read callback.
      return this;
   }
 
   // FIXME: No way to specify the maximum to read.
-  static void __stdio_read_callback()
+  static int __stdio_read_callback()
   {
-
-/*
-** 
-** Nothing to read happens if you do:
-**  o open a socket
-**  o set_read_callback
-**  o make sure something is to read on the socket
-**    and on another socket
-** in that sockets read callback, do
-**  o read all from the first socket
-**  o finish callback
-** 
-** We still need to read 0 bytes though, to get the next callback.
-** 
-** But peek lowers performance significantly.
-** Check if we need it first, and set this flag manually.
-** 
-** FIXME for NT or internally? /Mirar
-** 
-*/
-
     BE_WERR("__stdio_read_callback()");
 
     if (!errno()) {
@@ -792,119 +771,129 @@ class File
 	       ___id);
 #endif /* 0 */
 
-#if !defined(__NT__)
-      if (peek_file_before_read_callback)
-	if (!::peek()) 
-	{
-	  ::read(0,1);
-	  return; // nothing to read
-	}
-#endif
-
-#if defined(__STDIO_DEBUG) && !defined(__NT__)
-      if(!::peek())
-	error( "Read callback with no data to read!\n" );
-#endif
-
-      if(string s=::read(8192,1))
-      {
-	BE_WERR(sprintf("  got %O", s));
-
+      string s=::read(8192,1);
+      if (s) {
 	if(sizeof(s))
 	{
-	  ___read_callback(___id, s);
-	  return;
+	  BE_WERR(sprintf("  calling read callback with %O", s));
+	  return ___read_callback(___id, s);
 	}
-      }else{
-#if constant(System.EWOULDBLOCK)
-	if (errno() == System.EWOULDBLOCK) {
-	  // Necessary to reregister since the callback is disabled
-	  // until a successful read() has been done.
-	  ::set_read_callback(__stdio_read_callback);
-	  return;
+
+	// If the backend doesn't support separate read oob events
+	// then we'll get here if there's oob data to read.
+	if (___read_oob_callback && (s = ::read_oob (8192, 1)) && sizeof (s)) {
+	  BE_WERR (sprintf ("  calling read oob callback with %O", s));
+	  return ___read_oob_callback (___id, s);
 	}
-#endif
       }
+
+#if constant(System.EWOULDBLOCK)
+      if (!s && errno() == System.EWOULDBLOCK) {
+	// Necessary to reregister since the callback is disabled
+	// until a successful read() has been done.
+	::set_read_callback(__stdio_read_callback);
+	return 0;
+      }
+#endif
     }
 
+    BE_WERR (sprintf ("  got errno %O", errno()));
     ::set_read_callback(0);
     if (___close_callback) {
-      BE_WERR("  calling close callback.");
-
-      ___close_callback(___id);
+      BE_WERR ("  calling close callback");
+      return ___close_callback(___id);
     }
+
+    return 0;
   }
 
-  static void __stdio_close_callback()
+  static int __stdio_close_callback()
   {
+    BE_WERR ("__stdio_close_callback()");
 #if 0
     if (!(::mode() & PROP_IS_NONBLOCKING)) ::set_nonblocking();
 #endif /* 0 */
 
-    if (!errno() && read (0, 1)) {
+    if (!errno() && (read (0, 1) || read_oob (0, 1))) {
       // There's data to read...
+      //
+      // read_oob is called in case the backend doesn't support
+      // separate read oob events.
+      //
       // FIXME: This doesn't work well since the close callback might
       // very well be called sometime later, due to an error if
       // nothing else. What we really need is a special error callback
       // from the backend. /mast
+      BE_WERR ("  WARNING: data to read - __stdio_close_callback deregistered");
       ::set_read_callback(0);
       //___close_callback = 0;
     }
+
     else {
+      BE_WERR (sprintf ("  got errno %O", errno()));
       ::set_read_callback(0);
       if (___close_callback) {
-	___close_callback(___id);
+	BE_WERR ("  calling close callback");
+	return ___close_callback(___id);
       }
     }
+
+    return 0;
   }
 
-  static void __stdio_write_callback()
+  static int __stdio_write_callback()
   {
     BE_WERR("__stdio_write_callback()");
-    if (!errno())
-      ___write_callback(___id);
+    if (!errno()) {
+      BE_WERR ("  calling write callback");
+      return ___write_callback(___id);
+    }
+
+    BE_WERR (sprintf ("  got errno %O", errno()));
+    // Don't need to report the error to ___close_callback here - we
+    // know it isn't installed. If it were, either
+    // __stdio_read_callback or __stdio_close_callback would be
+    // installed and would get the error first.
+    return 0;
   }
 
-  static void __stdio_read_oob_callback()
+  static int __stdio_read_oob_callback()
   {
+    BE_WERR ("__stdio_read_oob_callback()");
     string s=::read_oob(8192,1);
     if(s)
     {
-      if (sizeof(s))
-	___read_oob_callback(___id, s);
+      if (sizeof(s)) {
+	BE_WERR (sprintf ("  calling read oob callback with %O", s));
+	return ___read_oob_callback(___id, s);
+      }
     }else{
 #if constant(System.EWOULDBLOCK)
       if (errno() == System.EWOULDBLOCK) {
 	// Necessary to reregister since the callback is disabled
 	// until a successful read() has been done.
 	::set_read_oob_callback(__stdio_read_oob_callback);
-	return;
+	return 0;
       }
 #endif
+
+      // In case the read fails (it shouldn't, but anyway..).
+      BE_WERR (sprintf ("  got errno %O", errno()));
       ::set_read_oob_callback(0);
       if (___close_callback) {
-	// Why this? The oob callbacks doesn't get called at eof or
-	// errors, do they? /mast
-	___close_callback(___id);
+	BE_WERR ("  calling close callback");
+	return ___close_callback(___id);
       }
     }
+
+    return 0;
   }
 
-  static void __stdio_write_oob_callback() { ___write_oob_callback(___id); }
-
-#define SET(X,Y) ::set_##X ((___##X = (Y)) && __stdio_##X)
-#define _SET(X,Y) _fd->_##X=(___##X = (Y)) && __stdio_##X
-
-#define CBFUNC(TYPE, X)					\
-  void set_##X (TYPE l##X)				\
-  {							\
-    BE_WERR(sprintf("setting " #X " to %O\n", l##X));	\
-    SET( X , l##X );					\
-  }							\
-							\
-  TYPE query_##X ()					\
-  {							\
-    return ___##X;					\
+  static int __stdio_write_oob_callback()
+  {
+    BE_WERR ("__stdio_write_oob_callback()");
+    BE_WERR ("  calling write oob callback");
+    return ___write_oob_callback(___id);
   }
 
   //! @decl void set_read_callback(function(mixed, string:int) read_cb)
@@ -937,9 +926,11 @@ class File
   //!   will be called so that you can write more data to it.
   //!
   //!   This callback is also called after the remote end of a socket
-  //!   connection has closed the write direction only. An attempt to
-  //!   write data to it in that case will generate a @[System.EPIPE]
-  //!   errno.
+  //!   connection has closed the write direction. An attempt to write
+  //!   data to it in that case will generate a @[System.EPIPE] errno.
+  //!   If the remote end has closed both directions simultaneously
+  //!   (the usual case), Pike will first attempt to call @[close_cb],
+  //!   then this callback (unless @[close_cb] has closed the stream).
   //!
   //! @item
   //!   When out-of-band data arrives on the stream, @[read_oob_cb]
@@ -955,8 +946,7 @@ class File
   //!   out-of-band data, Pike will try to call @[write_oob_cb] first.
   //!   If it doesn't write anything, then @[write_cb] will be tried.
   //!   This also means that @[write_oob_cb] might get called when the
-  //!   remote end of a connection has closed the write direction
-  //!   only.
+  //!   remote end of a connection has closed the write direction.
   //!
   //! @item
   //!   When an error or an end-of-stream in the read direction
@@ -972,16 +962,22 @@ class File
   //!   close, neither by a call to @[close] or by destructing this
   //!   object.
   //!
-  //!   Also, @[close_cb] will not be called if a remote close occurs
-  //!   in the write direction; that is handled by @[write_cb] (or
-  //!   possibly @[write_oob_cb]).
+  //!   Also, @[close_cb] will not be called if a remote close only
+  //!   occurs in the write direction; that is handled by @[write_cb]
+  //!   (or possibly @[write_oob_cb]).
   //!
-  //!   If an error occurs, all events will be automatically
-  //!   deregistered, so there won't be any more read or write events
-  //!   unless callbacks are reinstalled. This doesn't affect the
+  //!   Events to @[read_cb] and @[close_cb] will be automatically
+  //!   deregistered if an end-of-stream occurs, and all events in the
+  //!   case of an error. I.e. there won't be any more calls to the
+  //!   callbacks unless they are reinstalled. This doesn't affect the
   //!   callback settings - @[query_read_callback] et al will still
   //!   return the installed callbacks.
   //! @endul
+  //!
+  //! If the stream is a socket performing a nonblocking connect (see
+  //! @[open_socket] and @[connect]), a connection failure will call
+  //! @[close_cb], and a successful connect will call either
+  //! @[read_cb] or @[write_cb] as above.
   //!
   //! All callbacks will receive the @tt{id@} set by @[set_id] as
   //! first argument.
@@ -1057,7 +1053,7 @@ class File
 
   //! @ignore
 
-  void set_read_callback(function(void|mixed,void|string:void|mixed) read_cb)
+  void set_read_callback(function(mixed|void,string|void:int) read_cb)
   {
     BE_WERR(sprintf("setting read_callback to %O\n", read_cb));
     ::set_read_callback(((___read_callback = read_cb) &&
@@ -1065,16 +1061,31 @@ class File
 			(___close_callback && __stdio_close_callback));
   }
 
-  function(void|mixed,void|string:void|mixed) query_read_callback()
+  function(mixed|void,string|void:int) query_read_callback()
   {
     return ___read_callback;
   }
 
-  CBFUNC(function(void|mixed:void|mixed), write_callback)
-  CBFUNC(function(void|mixed,void|string:void|mixed), read_oob_callback)
-  CBFUNC(function(void|mixed:void|mixed), write_oob_callback)
+#define SET(X,Y) ::set_##X ((___##X = (Y)) && __stdio_##X)
+#define _SET(X,Y) _fd->_##X=(___##X = (Y)) && __stdio_##X
 
-  void set_close_callback(mixed c)  {
+#define CBFUNC(TYPE, X)					\
+  void set_##X (TYPE l##X)				\
+  {							\
+    BE_WERR(sprintf("setting " #X " to %O\n", l##X));	\
+    SET( X , l##X );					\
+  }							\
+							\
+  TYPE query_##X ()					\
+  {							\
+    return ___##X;					\
+  }
+
+  CBFUNC(function(mixed|void:int), write_callback)
+  CBFUNC(function(mixed|void,string|void:int), read_oob_callback)
+  CBFUNC(function(mixed|void:int), write_oob_callback)
+
+  void set_close_callback(function(mixed|void:int) c)  {
     ___close_callback=c;
     if (!___read_callback) {
       if (c) {
@@ -1085,7 +1096,7 @@ class File
     }
   }
 
-  mixed query_close_callback()  { return ___close_callback; }
+  function(mixed|void:int) query_close_callback() { return ___close_callback; }
 
   static void fix_internal_callbacks()
   {
