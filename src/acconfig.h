@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.56 2000/03/28 08:10:53 hubbe Exp $
+ * $Id: acconfig.h,v 1.57 2000/03/28 19:35:26 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -127,6 +127,9 @@
 
 /* Define if you have fpsetmask */
 #undef HAVE_FPSETMASK
+
+/* Define if you have fpsetround */
+#undef HAVE_FPSETROUND
 
 /* Define if you have crypt.  */
 #undef HAVE_CRYPT
