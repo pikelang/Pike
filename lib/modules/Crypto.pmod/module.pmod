@@ -43,20 +43,20 @@ class MD5_Algorithm
 MD5_Algorithm MD5 = MD5_Algorithm();
 
 string crypt_md5(string password, void|string salt) {
-  if(salt)
+  if(salt) {
+    if(has_prefix(salt, "$1$")) {
+      // Verify:
+      string hash, full=salt;
+      if( sscanf(full, "$1$%s$%s", salt, hash)!=2 )
+	error("Error in hash.\n");
+      if( Nettle.crypt_md5(password, salt)==hash )
+	return full;
+    }
     sscanf(salt, "%s$", salt);
+  }
   else
     salt = MIME.encode_base64(random_string(8));
   return "$1$"+salt+"$"+Nettle.crypt_md5(password, salt);
-}
-
-int(0..1) crypt_md5_verify(string password, string hash) {
-  string magic, salt;
-  if( sscanf(hash, "$%s$%s$%s", magic, salt, hash)!=3 )
-    error("Error in hash.\n");
-  if( magic!="1" )
-    error("Unknown hash magic.\n");
-  return Nettle.crypt_md5(password, salt)==hash;
 }
 
 #if constant(Nettle.MD4_Info)
