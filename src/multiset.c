@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.53 2002/10/11 02:06:25 nilsson Exp $
+|| $Id: multiset.c,v 1.54 2002/10/27 17:16:30 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.53 2002/10/11 02:06:25 nilsson Exp $");
+RCSID("$Id: multiset.c,v 1.54 2002/10/27 17:16:30 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -840,6 +840,9 @@ PMOD_EXPORT struct multiset *allocate_multiset (int allocsize,
 						struct svalue *cmp_less)
 {
   struct multiset *l = alloc_multiset();
+
+  /* FIXME: It's currently little use making "inflated" multisets with
+   * allocsize, since prepare_for_add shrinks them. */
 
 #ifdef PIKE_DEBUG
   if (cmp_less) check_svalue (cmp_less);
@@ -5240,7 +5243,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.53 2002/10/11 02:06:25 nilsson Exp $");
+RCSID("$Id: multiset.c,v 1.54 2002/10/27 17:16:30 mast Exp $");
 
 struct multiset *first_multiset;
 
