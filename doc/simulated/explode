@@ -1,0 +1,29 @@
+NAME
+	explode - explode a string on a delimeter
+
+SYNTAX
+	string *explode(string victim, string delimeter);
+	or
+	victim / delimiter
+
+DESCRIPTION
+	Explode divides the string called victim at every occurance of
+	the string delimeter and returns the resulting parts in an array.
+	If delimeter is an empty string, victim will be divided into strings
+	of length 1.
+
+EXAMPLES
+	> explode("foobar","o");
+	Result: ({ "f", "", "bar" })
+	> explode("10101001010100010101","10");
+	Result: ({ "", "", "", "0", "", "", "00", "", "1" })
+	> explode("/foo/bar/gazonk","/");
+	Result: ({ "", "foo", "bar", "gazonk" })
+	> explode("foobar","");
+	Result: ({ "f", "o", "o", "b", "a", "r" })
+
+KEYWORDS
+	string
+
+SEE ALSO
+	implode
