@@ -1,5 +1,5 @@
 # New ports collection makefile for:	pike74
-# Date created:		24 Jun 2003
+# Date created:		24 Jan 2003
 # Whom:			kiwi@oav.net
 #
 # $FreeBSD$
