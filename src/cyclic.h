@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cyclic.h,v 1.7 2002/10/11 01:39:30 nilsson Exp $
+|| $Id: cyclic.h,v 1.8 2002/12/01 17:36:03 mast Exp $
 */
 
 #ifndef CYCLIC_H
@@ -11,23 +11,38 @@
 #include "pike_error.h"
 #include "threads.h"
 
+/* #define CYCLIC_DEBUG */
+
 typedef struct CYCLIC
 {
   ONERROR onerr;
   void *th;
-  void *id,*a,*b;
+  char *id;
+  void *a,*b;
   void *ret;
   struct CYCLIC *next;
 } CYCLIC;
 
 
-#define DECLARE_CYCLIC() \
+#ifdef CYCLIC_DEBUG
+
+#define DECLARE_CYCLIC()						\
+  static char cyclic_identifier__[] = __FILE__ ":" DEFINETOSTR(__LINE__); \
+  CYCLIC cyclic_struct__
+#define BEGIN_CYCLIC(A,B) \
+   begin_cyclic(&cyclic_struct__, cyclic_identifier__, \
+                (void *)(ptrdiff_t)th_self(), (void *)(A), (void *)(B))
+
+#else  /* CYCLIC_DEBUG */
+
+#define DECLARE_CYCLIC()	   \
   static char cyclic_identifier__; \
   CYCLIC cyclic_struct__
-
 #define BEGIN_CYCLIC(A,B) \
    begin_cyclic(&cyclic_struct__, &cyclic_identifier__, \
                 (void *)(ptrdiff_t)th_self(), (void *)(A), (void *)(B))
+
+#endif	/* !CYCLIC_DEBUG */
 
 #define SET_CYCLIC_RET(RET) \
    cyclic_struct__.ret=(void *)(RET)
@@ -37,7 +52,7 @@ typedef struct CYCLIC
 /* Prototypes begin here */
 void unlink_cyclic(CYCLIC *c);
 void *begin_cyclic(CYCLIC *c,
-		   void *id,
+		   char *id,
 		   void *thread,
 		   void *a,
 		   void *b);
