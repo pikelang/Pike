@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.30 2000/04/10 01:18:45 per Exp $");
+RCSID("$Id: png.c,v 1.31 2000/05/07 00:04:58 per Exp $");
 
 #include "image_machine.h"
 
@@ -858,7 +858,7 @@ static int _png_write_rgb(rgb_group *w1,
 	       error("Image.PNG->_decode: Unsupported color type/bit depth %d (palette)/%d bit.\n",
 		     type,bpp);
 	 }
-	 return !trns; /* alpha channel if trns chunk */
+	 return !!trns; /* alpha channel if trns chunk */
 
       case 4: /* 8 or 16 bit grey,a */
 	 switch (bpp)
