@@ -574,17 +574,14 @@ array|mapping|string cast(string to)
    switch (to)
    {
       case "mapping":
-	 `()();
 	 return headers|
 	    (["data":data(),
 	      "protocol":protocol,
 	      "status":status,
 	      "status_desc":status_desc]);
       case "array":
-	 `()();
 	 return ({headers,data(),protocol,status,status_desc});
       case "string":
-	 `()();
          data();
          return buf;
    }
@@ -632,7 +629,9 @@ class PseudoFile
 
 object file(void|mapping newheader,void|mapping removeheader)
 {
+#if constant(thread_create)
    `()();
+#endif
    mapping h=headers;
    int len;
    if (newheader||removeheader)
@@ -658,7 +657,9 @@ object file(void|mapping newheader,void|mapping removeheader)
 
 object datafile()
 {
+#if constant(thread_create)
    `()();
+#endif
    return PseudoFile(con,buf[datapos..],(int)headers["content-length"]);
 }
 
