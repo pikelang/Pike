@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.139 2004/06/29 16:58:07 grubba Exp $
+|| $Id: cpp.c,v 1.140 2004/06/29 21:18:19 nilsson Exp $
 */
 
 #include "global.h"
@@ -452,10 +452,7 @@ static int do_safe_index_call(struct cpp *this, struct pike_string *s)
       throw_value.type = T_INT;
     }
     else {
-      if (!s->size_shift)
-	cpp_handle_exception (this, "Error indexing module with \"%s\".", s->str);
-      else
-	cpp_handle_exception (this, "Error indexing module in '.' operator.");
+      cpp_handle_exception (this, "Error indexing module with %S.", s);
     }
     res = 0;
     push_undefined();
@@ -541,15 +538,10 @@ void cpp_func_constant(struct cpp *this, INT32 args)
 	     Pike_sp[-1].u.object == placeholder_object) ||
 	    (Pike_sp[-1].type == T_PROGRAM &&
 	     Pike_sp[-1].u.program == placeholder_program)) {
-	  if (!str->size_shift) {
-	    cpp_error_sprintf (this, "Got placeholder %s (resolver problem) "
-			       "when resolving '%s'.",
-			       get_name_of_type(Pike_sp[-1].type),
-			       str->str);
-	  }
-	  else
-	    cpp_error_sprintf (this, "Got placeholder %s (resolver problem).",
-			       get_name_of_type (Pike_sp[-1].type));
+	  cpp_error_sprintf (this, "Got placeholder %s (resolver problem) "
+			     "when resolving %S.",
+			     get_name_of_type(Pike_sp[-1].type),
+			     str);
 	}
 	else
 	  res = !(SAFE_IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
@@ -560,10 +552,8 @@ void cpp_func_constant(struct cpp *this, INT32 args)
 	free_svalue(&throw_value);
 	throw_value.type = T_INT;
 	res = 0;
-      } else if (!str->size_shift) {
-	cpp_handle_exception (this, "Error resolving '%s'.", str->str);
       } else {
-	cpp_handle_exception (this, "Error resolving identifier.");
+	cpp_handle_exception (this, "Error resolving %S.", str);
       }
     }
   } else {
