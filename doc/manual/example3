@@ -1,0 +1,269 @@
+  This example is a very simple www-server.
+
+
+	#!/usr/local/bin/ulpc
+	
+	/* A very small httpd capable of fetching files only.
+	 * Written by Fredrik Hübinette as a demonstration of uLPC.
+	 */
+
+  A comment, /* begins the comment, and */ ends it.
+	
+	inherit "/precompiled/port";
+
+  Inherit copies all the functionality of /precompiled/port into this program.
+  /precompiled/port makes it possible to bind a TCP socket to accept incoming
+  connections.
+
+  Next are some constants that will affect how uHTTPD will operate. This uses
+  the preprocessor directive #define. As an example, after the first define
+  below, BLOCK will be replaced with 16060.
+	
+	/* number of bytes to read for each write */
+	#define BLOCK 16060
+	
+	/* Where do we have the html files ? */
+	#define BASE "/home/hubbe/ulpc/src/"
+	
+	/* File to return when we can't find the file requested */
+	#define NOFILE "/home/hubbe/www/html/nofile.html"
+	
+	/* Port to open */
+	#define PORT 1905
+
+  Next we declare a global variable of the type program called output_class,
+  and then we use the class construct to assign a program to it. class {}
+  defines a clonable program. (or class for you C++ freaks)
+
+	program output_class=class
+	{
+	  inherit "/precompiled/file" : socket;
+	  inherit "/precompiled/file" : file;
+
+  Our new class inherits /precompile/file twice. To be able to separate them
+  they are then named 'socket' and 'file'.
+
+	  int offset=0;
+
+  Then ther is a global variable called offset which is initalized to zero.
+  (each instance of this class will have it's own instance of this variable,
+   so it is not truly global, but..) 
+  Note that the initalization is done when the clas is cloned. (or instanciated
+  if you prefer C++ terminology)
+
+
+  Next we define the function write_callback(). 'void' means that it does not
+  return a value. Write callback will be used further down as a callback and
+  will be called whenever there is room in the socket output buffer.
+	
+	  void write_callback()
+	  {
+	    int written;
+	    string data;
+	
+	    file::seek(offset);
+
+  Move the file pointer to the where we want to the position we want to read
+  from.
+
+	    data=file::read(BLOCK);
+
+  Read BLOCK (16060) bytes from the file. If there are less that that left to
+  read only that many bytes will be returned.
+
+	    if(strlen(data))
+	    {
+
+   If we managed to read someting...
+
+	      written=socket::write(data);
+
+   ... we try to write it to the socket.
+
+	      if(written >= 0)
+	      {
+		offset+=written;
+		return;
+	      }
+
+   Update offset if we managed to write to the socket without errors.
+
+	      perror("Error: "+socket::errno()+".\n");
+	    }
+
+   If something went wront during writing, or there was nothing left to read
+   we destruct this instance of this class.
+
+	    destruct(this_object());
+	  }
+
+   That was the end of write_callback()
+
+
+   Next we need a variable to buffer the input received in. We initialize it
+   to an empty string.
+	
+	  string input="";
+
+   And then we define the function that will be called when there is something
+   in the socket input buffer. Ignore the argument 'id' for now. The second
+   argument is the contents of the input buffer.
+
+	  void read_callback(mixed id,string data)
+	  {
+	    string cmd;
+	
+	    input+=data;
+
+  Append data to the string input. Then we check if we have received a
+  a complete line yet. If so we parse this and start ouputting the file.
+
+	    if(sscanf(input,"%s %s%*[\012\015 \t]",cmd,input))
+	    {
+
+  This sscanf is pretty complicated, but in essense it means: put the
+  first word in 'input' in 'cmd' and the second in 'input' and return 2
+  if successfull, 0 otherwise.
+
+	      if(cmd!="GET")
+	      {
+		perror("Only method GET is supported.\n");
+		destruct(this_object());
+		return;
+	      }
+
+  If the first word isn't GET print an error message and terminate
+  this instance of the program. (and thus the connection)
+	
+	      sscanf(input,"%*[/]%s",input);
+
+  Remove the leading slash.
+
+	      input=combine_path(BASE,input);
+
+  Combine the requested file with the base of the HTML tree, this gives
+  us a full filename beginning with a slash.
+	      
+	      if(!file::open(input,"r"))
+	      {
+
+  Try opening the file in read-only mode. If this fails, try opening NOFILE
+  instead. 
+
+		if(!file::open(NOFILE,"r"))
+		{
+
+  If this fails too. Write an error message and destruct this object.
+
+		  perror("Couldn't find default file.\n");
+		  destruct(this_object());
+		  return;
+		}
+	      }
+
+  Ok, now we set up the socket so we can write the data back.
+	
+	      socket::set_buffer(65536,"w");
+
+  Set the buffer size to 64 kilobytes.
+
+	      socket::set_nonblocking(0,write_callback,0);
+
+  Make it so that write_callback is called when it is time to write more
+  data to the socket.
+
+	      write_callback();
+
+  Jump-start the writing.
+	    }
+	  }
+
+  That was the end of read_callback().
+
+
+  This function is called if the connection is closed while we are reading
+  from the socket.
+	  void selfdestruct() { destruct(this_object()); }
+
+
+  This function is called when the program is instanciated. It is used
+  to set up data the way we want it. Extra arguments to clone() will be
+  sent to this function. In this case it is the object representing the
+  new connection.
+
+	  void create(object f)
+	  {
+	    socket::assign(f);
+
+  We insert the data from the file f into 'socket'.
+
+	    socket::set_nonblocking(read_callback,0,selfdestruct);
+
+  Then we set up the callback functions. (And sets the file nonblocking.)
+  Nonblocking mode means that read() and write() will rather return that
+  wait for I/O to finish. Then we sit back and wait for read_callback to
+  be called.
+
+	  }
+
+  End of create()
+
+	};
+
+  End of the new class.
+	
+
+  Next we define the function called when someone connects.
+
+	void accept_callback()
+	{
+	  object tmp_output;
+	  tmp_output=accept();
+
+  The function accept clones a /precompiled/file and makes this equal to the
+  newly connected socket.
+
+	  if(!tmp_output) return;
+
+  If it failed we just return.
+
+	  clone(output_class, tmp_output);
+
+  Otherwise we clone an instanec of 'output_class' and let it take care of the
+  connection.
+
+	  destruct(tmp_output);
+
+  Destruct the object returned by accept(), output_class has already copied
+  the contents of this object.
+
+	}
+
+
+  Then there is main, the function that gets it all started.
+  	
+	int main(int argc, string *argv)
+	{
+	  perror("Starting minimal httpd\n");
+
+  Write an encouraging message to stderr.
+	
+	  if(!bind(PORT, accept_callback))
+	  {
+	    perror("Failed to open socket (already bound?)\n");
+	    return 17;
+	  }
+
+
+  Bind PORT and set it up to call accept_callback as soon as someone connects
+  to it. If the bind() fails we write an error message and return the 17 to
+  indicate failiure.
+	
+	  return - 17; /* Keep going */
+
+  If everything went ok, we return -17, any negative value returned by main()
+  means that the program WONT exit, it will hang around waiting for events
+  instead. (like someone connecting)
+	}
+
+  End of uhttpd.lpc
