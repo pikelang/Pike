@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.144 2004/05/19 11:15:48 nilsson Exp $
+|| $Id: efuns.c,v 1.145 2004/07/04 16:28:23 srb Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.144 2004/05/19 11:15:48 nilsson Exp $");
+RCSID("$Id: efuns.c,v 1.145 2004/07/04 16:28:23 srb Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -576,10 +576,10 @@ void f_filesystem_stat(INT32 args)
 #endif /* HAVE_STATVFS || HAVE_STATFS || HAVE_USTAT */
 #endif /* __NT__ */
 
-/*! @decl void werror(string msg, mixed ... args)
- *!
- *! Write to standard error.
+/* This function is available as the builtin _werror(), to be called by
+ * werror() to allow werror() to be overridden by load-reordering
  */
+
 void f_werror(INT32 args)
 {
   VALID_FILE_IO("werror","werror");
@@ -1545,7 +1545,7 @@ void init_files_efuns(void)
   ADD_EFUN("errno",f_errno,tFunc(tNone,tInt),OPT_EXTERNAL_DEPEND);
   
 /* function(string,void|mixed...:void) */
-  ADD_EFUN("werror",f_werror,tFuncV(tStr,tOr(tVoid,tMix),tVoid),OPT_SIDE_EFFECT);
+  ADD_EFUN("_werror",f_werror,tFuncV(tStr,tOr(tVoid,tMix),tVoid),OPT_SIDE_EFFECT);
   
 /* function(string:int) */
   ADD_EFUN("rm",f_rm,tFunc(tStr,tInt),OPT_SIDE_EFFECT);

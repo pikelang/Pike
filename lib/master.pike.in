@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.354 2004/07/04 14:51:19 mast Exp $
+// $Id: master.pike.in,v 1.355 2004/07/04 16:28:23 srb Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -94,6 +94,14 @@ private constant Files = _static_modules.files;
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
 #define write(X ...) (Files()->_stdout->write(X))
 #define trim_all_whites(X) (Builtin()->string_trim_all_whites (X))
+
+//! @appears void werror(string msg, mixed ... args)
+//!
+//! Write to standard error.
+//!
+void werror(mixed ... args) {
+  _werror(@args);
+}
 
 #ifdef RESOLV_DEBUG
 
@@ -1058,6 +1066,7 @@ constant master_efuns = ({
   "normalize_path",
   "getenv",
   "putenv",
+  "werror",
 
 #ifdef GETCWD_CACHE
   "cd",

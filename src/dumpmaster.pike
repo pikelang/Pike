@@ -2,12 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dumpmaster.pike,v 1.12 2004/04/17 15:18:52 marcus Exp $
+|| $Id: dumpmaster.pike,v 1.13 2004/07/04 16:28:23 srb Exp $
 */
 
 string fr;
 
 array encoded=({});
+
+#define werror _werror
 
 void handle_error(mixed err)
 {
