@@ -1,3 +1,10 @@
+Thu Feb 13 02:56:13 1997  Niels Möller  <nisse@infovav.se>
+
+	* operators.c (o_and, o_or, o_xor, o_compl): Added support for
+ 	bitwise logical operations on strings.
+
+	* Fifo.pmod: Changed builtin.foo to Builtin.foo
+
 Tue Feb 11 19:31:28 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* pike_regexp.c: regexp function renamed so they will not

@@ -11,7 +11,7 @@
 #include	"desCode.h"
 
 #include "RCSID.h"
-RCSID(desdata_cRcs, "$Id: desdata.c,v 1.1 1997/02/12 06:25:00 nisse Exp $");
+RCSID(desdata_cRcs, "$Id: desdata.c,v 1.2 1997/02/13 02:46:14 nisse Exp $");
 
 /* list of weak and semi-weak keys
 
@@ -175,7 +175,7 @@ case 'k':
 			/* rotate right (alg keeps everything rotated by 1) */
 			ROR(m, 1, 31);
 			/* print it out */
-			(void)printf(" 0x%08lx,", m);
+			(void)printf(" 0x%08lx,", (long) m);
 			if ( ( d & 3 ) == 3 )
 				(void)printf("\n");
 		}
