@@ -1,5 +1,3 @@
-#if constant(GTK.DrawingArea)
-
 inherit GTK.DrawingArea;
 static object backing_store, bgc;
 static int _xsize, _ysize, is_realized;
@@ -62,7 +60,7 @@ object size(int x, int y)
 static void rrefresh()
 {
   if(!is_realized) return;
-  if(xsize() != _xsize || ysize() != _ysize) 
+  if(xsize() != _xsize || ysize() != _ysize)
     size(xsize(),ysize());
   if(backing_store)
   {
@@ -102,12 +100,12 @@ void set_background( GDK.Pixmap to )
 }
 
 object clear(int|void x, int|void y, int|void w, int|void h)
-{ 
+{
 //   werror("%d,%d->%d,%d <%d,%d>\n", x, y, x+w, y+h, w, h);
   if(xsize() != _xsize ||
      ysize() != _ysize)
     size(xsize(),ysize());
-  
+
   if(!w && !h)
   {
     w = xsize();
@@ -121,7 +119,7 @@ object clear(int|void x, int|void y, int|void w, int|void h)
     for(; y<sy; x=stx,y+=background_pix->ysize()-y%background_pix->ysize())
       for(; x<sx; x+=background_pix->xsize()-x%background_pix->xsize())
         backing_store->draw_pixmap(bgc,
-                                   background_pix, 
+                                   background_pix,
                                    (x%background_pix->xsize()),
                                    (y%background_pix->ysize()),
                                    x,y,
@@ -152,5 +150,3 @@ WRAP(draw_pixmap);
 WRAP(draw_point);
 WRAP(draw_rectangle);
 WRAP(draw_text);
-
-#endif

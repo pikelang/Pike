@@ -1,5 +1,3 @@
-#if constant(GTK.Ctree)
-
 inherit GTK.Ctree:ctree;
 
 class Node
@@ -50,13 +48,13 @@ class Node
       return this;
    }
 
-   Node insert_sibling(array(string)|void columns, 
+   Node insert_sibling(array(string)|void columns,
 		       void|int is_leaf,void|int expanded)
    {
       return Prog (ctree::insert_node(0,node,columns,is_leaf,expanded));
    }
 
-   Node insert_child(array(string)|void columns, 
+   Node insert_child(array(string)|void columns,
 		     void|int is_leaf,void|int expanded)
    {
       return Prog(ctree::insert_node(node,0,columns,is_leaf,expanded));
@@ -76,7 +74,7 @@ class Node
    {
       return !!ctree::node_is_visible(node);
    }
-   
+
    Node last()
    {
       return Prog(ctree::last(node));
@@ -188,7 +186,7 @@ class Node
       return this;
    }
 
-   Node set_pixtext( int column, string text, int spacing, 
+   Node set_pixtext( int column, string text, int spacing,
 		     GDK.Pixmap pixmap, object(GDK.Bitmap)|void mask)
    {
       ctree::node_set_pixtext(node,column,text,spacing,pixmap,mask);
@@ -205,12 +203,12 @@ class Node
    {
       return ctree::node_get_row_data(node);
    }
-   
-   Node set_info(string text, int spacing, 
-		 object(GDK.Pixmap)|void pixmap_closed, 
-		 object(GDK.Bitmap)|void mask_closed, 
-		 object(GDK.Pixmap)|void pixmap_opened, 
-		 object(GDK.Bitmap)|void mask_opened, 
+
+   Node set_info(string text, int spacing,
+		 object(GDK.Pixmap)|void pixmap_closed,
+		 object(GDK.Bitmap)|void mask_closed,
+		 object(GDK.Pixmap)|void pixmap_opened,
+		 object(GDK.Bitmap)|void mask_opened,
 		 int is_leaf, int expanded )
    {
       ctree::set_node_info(node,text,spacing,pixmap_closed,
@@ -230,7 +228,7 @@ class Node
       ctree::remove_node(node);
       node=0;
    }
-   
+
    Node select()
    {
       ctree::select(node);
@@ -364,5 +362,3 @@ static void unselect_expansion() {} /* (node); */
 static void unselect_expansion_recursive() {} /* (node); */
 static void find() {} /* (what->get_node(),node); */
 static void find_by_row_data() {} /* (what->get_node(),node)); */
-
-#endif
