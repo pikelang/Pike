@@ -4,7 +4,7 @@
 //! module Protocols
 //! submodule DNS
 
-//! $Id: DNS.pmod,v 1.53 2000/12/07 17:58:47 grubba Exp $
+//! $Id: DNS.pmod,v 1.54 2000/12/08 12:15:17 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -491,10 +491,16 @@ class client
 #if __NT__
       domains = get_tcpip_param("Domain", "") +
 	get_tcpip_param("DhcpDomain", "") +
-	map(get_tcpip_param("SearchList", ""), `/, " ") * ({});
+	map(get_tcpip_param("SearchList", ""),
+	    lambda(string s) {
+	      return replace(s, " ", ",")/",";
+	    }) * ({});
 
       nameservers = map(get_tcpip_param("NameServer", "") +
-			get_tcpip_param("DhcpNameServer", ""), `/, " ") * ({});
+			get_tcpip_param("DhcpNameServer", ""),
+			lambda(string s) {
+			  return replace(s, " ", ",")/",";
+			}) * ({});
 #else
       string domain;
       string resolv_conf;
