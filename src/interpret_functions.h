@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.139 2003/02/26 18:19:08 mast Exp $
+|| $Id: interpret_functions.h,v 1.140 2003/03/06 17:19:43 grubba Exp $
 */
 
 /*
@@ -2043,6 +2043,10 @@ OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", 0, {
   register struct pike_frame *new_frame;				   \
   ptrdiff_t args;							   \
 									   \
+  DO_IF_SECURITY(CHECK_DATA_SECURITY_OR_ERROR(Pike_fp->current_object,	   \
+					      SECURITY_BIT_CALL,	   \
+				("Function call permission denied.\n")));  \
+									   \
   fast_check_threads_etc(6);						   \
   check_stack(256);							   \
 									   \
@@ -2083,6 +2087,10 @@ OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", 0, {
     add_ref(new_frame->context.parent);					   \
   Pike_fp=new_frame;							   \
   new_frame->flags=PIKE_FRAME_RETURN_INTERNAL | XFLAGS;			   \
+									   \
+  DO_IF_SECURITY(if(!CHECK_DATA_SECURITY(Pike_fp->current_object,	   \
+					 SECURITY_BIT_NOT_SETUID))	   \
+		   SET_CURRENT_CREDS(Pike_fp->current_object->prot));	   \
 									   \
   FETCH;								   \
   DONE;									   \
