@@ -54,7 +54,6 @@ string make_c_string( string from )
      case '.':
      case 'a'..'z':
      case 'A'..'Z':
-     case '0'..'9':
      case 0300..0376: // 377 breaks some versions of gcc.
      case '_': case ' ':
        line += from[i..i];
@@ -89,12 +88,17 @@ int data_offset( string what )
     return ocache[what];
 
   if((off=search(gbl_data,what))!=-1)
+  {
+    if( gbl_data[ off..off+strlen(what)-1 ] != what )
+      werror( "Search returned illegal string match! %O != %O\n",
+	      gbl_data[ off..off+strlen(what)-1 ], what );
     return ocache[what]=off;
+  }
 //   write("New string: %O\n", what);
 
   gbl_data += what;
 
-  return ocache[what]=(strlen(gbl_data)-strlen(what));
+  return data_offset( what );
 }
 
 string S( string what, int|void nul, int|void nq, int|void ind )
@@ -142,8 +146,10 @@ class Function(Class parent,
 
   string pike_type( )
   {
-    return "function("+(arg_types->pike_type()*",")+":"+
-           return_type->pike_type()+")";
+    string rt = return_type->pike_type( 1 );
+    if( parent->name != "_global" && has_prefix(rt, "void" ) )
+      rt = parent->pike_type( 1 );
+    return "function("+(arg_types->pike_type(0)*",")+":"+rt+")";
   }
 
   string pike_name()
@@ -159,6 +165,16 @@ class Function(Class parent,
   string pike_add( )
   {
     string type = function_type( pike_type( ) );
+#ifdef EXTERMINATE_MIXED
+    if( search( pike_type(), "mixed" ) != -1 )
+    {
+      write( "Hmm: "+parent->pike_name()+"->"+pike_name()+": "+pike_type()+
+	     "\n" );
+      write( "     "+(arg_types->pike_type()*",")+"\n");
+      write( "     "+return_type->pike_type( 1 )+"\n");
+      write( "     "+parent->pike_type( 1 )+"\n");
+    }
+#endif
     string res="";
     void low_do_emit( string name )
     {
@@ -344,12 +360,10 @@ class Signal( string name )
     return sprintf("Signal( %O )",name );
   }
 }
-  
+
 string function_type( string what )
 {
-  what = reverse( what ); sscanf( what, "%*[ \t\n\r\"]%s", what );
-  what = reverse( what ); sscanf( what, "%*[ \t\n\r\"]%s", what );
-  return __parse_pike_type( what );
+  return __parse_pike_type( String.trim_all_whites( what ) );
 }
 
 class Member( string name, Type type, int set,
@@ -362,9 +376,9 @@ class Member( string name, Type type, int set,
   string pike_type( )
   {
     if( set )
-      return "function("+type->pike_type()+":void)";
+      return "function("+type->pike_type(0)+":"+parent->pike_type(1)+")";
     else
-      return "function(void:"+type->pike_type()+")";
+      return "function(void:"+type->pike_type(1)+")";
   }
 
   string pike_add( )
@@ -439,10 +453,10 @@ class Type
   
   array _s_modifiers;
 
-  string pike_type( int|void nc )
+  string pike_type( int is, int|void nc )
   {
     if( subtypes )
-      return subtypes->pike_type(1)*"|";
+      return subtypes->pike_type(is,1)*"|";
     string optp = "";
     if( opt )
       optp = "|void";
@@ -455,12 +469,10 @@ class Type
      case "string":
        return "string"+optp;
      case "array":
-       {
-         if( !nc && !c_inited ) catch(c_init());
+       if( !nc && !c_inited ) catch(c_init());
          if( array_type )
-           return "array("+array_type->pike_type()+")"+optp;
-         return "array";
-       }
+           return "array("+array_type->pike_type(is,1)+")"+optp;
+         return "array"+optp;
      case "mapping":
        return "mapping";
      case "callback":
@@ -469,12 +481,17 @@ class Type
        if( has_value( get_modifiers(), "callback" ) )
          return "function"+optp+",mixed"+optp;
        return "function"+optp;
+      case "void":
+	return "void";
      default:
        if( classes[ name ] )
-         if( opt )
-           return "object"+optp;
+	 if( nc || opt )
+           return classes[ name ]->pike_type(is) + optp;
          else
-           return "zero|object";
+           return (is ? classes[ name ]->pike_type(1) :
+		   (classes[ name ]->pike_type(0)+ "|zero"));
+       if( name == "Image.Image" )  return "object"+optp;
+       if( name == "Stdio.File" )   return "object"+optp;
        return "mixed"+optp;
     }
   }
@@ -876,6 +893,8 @@ class Type
   }
 }
 
+int last_class_id = 1000;
+
 class Class( string name, string file, int line )
 {
   Class inherits;
@@ -894,6 +913,22 @@ class Class( string name, string file, int line )
   string _cdcl;
 
 
+  int _class_id;
+  
+  int class_id()
+  {
+    if( _class_id ) return _class_id;
+    return (_class_id = last_class_id++);
+  }
+
+  string pike_type(int is)
+  {
+    if( name == "_global" )
+      return "mixed";
+//     return "object("+(is?"is ":"implements ")+class_id()+")";
+    return "object(implements "+class_id()+")";
+  }
+  
   string pike_name()
   {
     if( sscanf(name, "GTK.%s", string pn ) )
