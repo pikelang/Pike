@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.172 2003/01/11 00:01:21 mast Exp $
+|| $Id: program.h,v 1.173 2003/01/15 19:11:38 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -386,6 +386,7 @@ struct program
 #define ID_FROM_INT(P,X) ID_FROM_PTR(P,(P)->identifier_references+(X))
 
 #define FIND_LFUN(P,N) ( dmalloc_touch(struct program *,(P))->flags & PROGRAM_FIXED?((P)->lfuns[(N)]):low_find_lfun((P), (N)) )
+#define QUICK_FIND_LFUN(P,N) (dmalloc_touch(struct program *,(P))->lfuns[N])
 
 #define free_program(p) do{ struct program *_=(p); debug_malloc_touch(_); if(!sub_ref(_)) really_free_program(_); }while(0)
 
