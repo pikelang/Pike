@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.38 1999/02/13 16:47:33 grubba Exp $
+ * $Id: requests.pmod,v 1.39 1999/02/13 17:55:44 grubba Exp $
  */
 
 import .types;
@@ -273,6 +273,38 @@ class select
       send(tag, "NO");
 	return ([ "action" : "logged_in_state" ]);
     }
+  }
+}
+
+class copy
+{
+  inherit request;
+
+  constant arg_info = ({ ({ "set" }), ({ "string" }) });
+
+  mapping easy_process(object message_set, string mailbox_name)
+  {
+    switch (server->copy(session, message_set, mailbox_name)) {
+    case -1:
+      // RFC 2060, Section 6.4.7:
+      //   If the destination mailbox does not exist, a server SHOULD return
+      //   an error. It SHOULD NOT automatically create the mailbox. Unless
+      //   it is certain that the destination mailbox can not be created, the
+      //   server MUST send the response code "[TRYCREATE]" as the prefix of
+      //   the tagged NO response.
+      send(tag, "NO", imap_prefix(({ "TRYCREATE" })));
+      break;
+    case 0:
+      send(tag, "NO");
+      break;
+    case 1:
+      send(tag, "OK");
+      break;
+    default:
+      throw(({ "Bad returncode from copy().", backtrace() }));
+      break;
+    }
+    return ([ "action" : "finished" ]);
   }
 }
 
