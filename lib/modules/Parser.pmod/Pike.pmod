@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.21 2002/06/28 17:30:19 nilsson Exp $
+// $Id: Pike.pmod,v 1.22 2002/07/14 17:05:52 nilsson Exp $
 
 //! This module parses and tokanizes Pike source code.
 
@@ -141,6 +141,7 @@ array(string) split(string data, void|mapping state)
 		  master()->decode_charset(data[pos+1..sizeof(data)-3], 
 					   charset)
 		  +"\n\0");  // New end sentinel.
+	pos++;
 	break;
 
       case 'a'..'z':
