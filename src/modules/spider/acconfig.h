@@ -2,8 +2,6 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.6 2003/03/13 00:44:20 nilsson Exp $
+|| $Id: acconfig.h,v 1.7 2003/12/18 19:07:37 marcus Exp $
 */
 
-/* If you do not have an 'time_t', define this to 'int' */
-#undef time_t
