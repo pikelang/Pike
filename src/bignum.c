@@ -130,10 +130,6 @@ PMOD_EXPORT void convert_svalue_to_bignum(struct svalue *s)
 }
 
 #ifdef INT64
-/* These routines can be made much more optimized. */
-
-#define BIGNUM_INT64_MASK  0xffff
-#define BIGNUM_INT64_SHIFT 16
 
 PMOD_EXPORT void push_int64(INT64 i)
 {
@@ -143,44 +139,37 @@ PMOD_EXPORT void push_int64(INT64 i)
   }
   else
   {
-    int neg, pos, lshfun, orfun;
-
-    neg = (i < 0);
-
-    if(neg)
-      i = ~i;
-
-    push_int(DO_NOT_WARN(i & BIGNUM_INT64_MASK));
-    i >>= BIGNUM_INT64_SHIFT;
-    convert_stack_top_to_bignum();
-    
-    lshfun = FIND_LFUN(sp[-1].u.object->prog, LFUN_LSH);
-    orfun = FIND_LFUN(sp[-1].u.object->prog, LFUN_OR);
-    
-    for(pos = BIGNUM_INT64_SHIFT; i; pos += BIGNUM_INT64_SHIFT)
+    unsigned int neg = 0;
+    if( i < 0 )
     {
-      push_int(DO_NOT_WARN(i & BIGNUM_INT64_MASK));
-      i >>= BIGNUM_INT64_SHIFT;
-      convert_stack_top_to_bignum();
-      
-      push_int(pos);
-      apply_low(sp[-2].u.object, lshfun, 1);
-      stack_swap();
-      pop_stack();
-      
-      apply_low(sp[-2].u.object, orfun, 1);
-      stack_swap();
-      pop_stack();
-
-      if(sp[-1].type == T_INT)
-	convert_stack_top_to_bignum();
+      i = -i;
+      neg = 1;
     }
-    
+#if PIKE_BYTEORDER == 1234
+    {
+      char digits[8];
+      char *ledigits = (char *)&i;
+      digits[7] = ledigits[ 0 ];      digits[6] = ledigits[ 1 ];
+      digits[5] = ledigits[ 2 ];      digits[4] = ledigits[ 3 ];
+      digits[3] = ledigits[ 4 ];      digits[2] = ledigits[ 5 ];
+      digits[1] = ledigits[ 6 ];      digits[0] = ledigits[ 7 ];
+      push_string( make_shared_binary_string( digits, 8 ) );
+    }
+#else
+    push_string( make_shared_binary_string( (char *)&i, 8 ) );
+#endif
+    push_int( 256 );
+    apply_svalue(&auto_bignum_program, 2);
+
+
     if(neg)
       apply_low(sp[-1].u.object,FIND_LFUN(sp[-1].u.object->prog,LFUN_COMPL),0);
   }
 }
 
+/* This routines can be optimized quite drastically. */
+#define BIGNUM_INT64_MASK  0xffffff
+#define BIGNUM_INT64_SHIFT 24
 PMOD_EXPORT int int64_from_bignum(INT64 *i, struct object *bignum)
 {
   int neg, pos, rshfun, andfun;
