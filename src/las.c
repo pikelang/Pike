@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.339 2003/08/03 02:42:03 mast Exp $
+|| $Id: las.c,v 1.340 2003/11/08 01:37:46 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.339 2003/08/03 02:42:03 mast Exp $");
+RCSID("$Id: las.c,v 1.340 2003/11/08 01:37:46 nilsson Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -34,14 +34,10 @@ RCSID("$Id: las.c,v 1.339 2003/08/03 02:42:03 mast Exp $");
 #include "opcodes.h"
 #include "pikecode.h"
 
-#define LASDEBUG
-
 /* Define this if you want the optimizer to be paranoid about aliasing
  * effects to to indexing.
  */
 /* #define PARANOID_INDEXING */
-
-int lasdebug=0;
 
 static node *eval(node *);
 static void optimize(node *n);
