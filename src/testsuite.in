@@ -1,4 +1,6 @@
-test_true([["$Id: testsuite.in,v 1.23 1997/02/19 05:07:50 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.24 1997/02/24 22:10:29 hubbe Exp $"]])
+teste_eval_error(mixed foo=({}); sort(@foo); )
+test_compile_error([[int foo() { return 1} ; constant foo=(["foo":foo]); return foo->foo();]])
 test_eval_error(mixed *foo=({}); return mkmapping(foo,({1})); )
 test_true(time())
 test_compile_error([[mapping (string:array(string:string)) foo=([]); ]])
@@ -588,6 +590,7 @@ test_equal("foobargazonk"/"",({"f","o","o","b","a","r","g","a","z","o","n","k"})
 test_equal(({1,0,1,2,1,2,2,2,1,1,1})/({2}),({ ({1,0,1}), ({1}), ({}), ({}), ({1,1,1}) }))
 test_equal(({1,2,3,4})/({}),({ ({1}), ({2}), ({3}), ({4}) }))
 test_equal(({1,0,1,2,1,2,2,2,1,1,1})/({2,1}),({ ({1,0,1}), ({2,2}), ({1,1}) }))
+test_equal( ({1,2,3})/({2,3}), ({ ({1}), ({}) }) )
 
 // testing %
 test_eq(12%3,0)
