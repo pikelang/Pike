@@ -1,65 +1,14 @@
-/* $Id: des3.pike,v 1.1 2003/03/19 17:46:30 nilsson Exp $
+/* $Id: des3.pike,v 1.2 2004/02/03 13:49:35 nilsson Exp $
  *
  */
 
 #pike __REAL_VERSION__
 
-//! Triple-DES
-//!
-//! @seealso
-//!   @[pipe], @[des]
+inherit Nettle.DES3_State;
 
-inherit Crypto.pipe : pipe;
+string name() { return "DES"; } // Yep, it doesn't say DES3
 
-private array(object) d;
-
-void create()
-{
-  d = ({ Crypto.des(), Crypto.des(), Crypto.des() });
-  pipe::create( @ d); 
-}
-
-//! @fixme
-//!   Document this function.
-int query_key_size() { return 16; }
-
-//! @fixme
-//!   Document this function.
+array(int) query_key_length() { return ({ 8, 8, 8 }); }
 int query_block_size() { return 8; }
-
-private array(string) split_key(string key)
-{
-  string k1 = key[..7];
-  string k2 = key[8..15];
-  string k3 = (sizeof(key) > 16) ? key[16..] : k1;
-  return ({ k1, k2, k3 });
-}
-
-//! @fixme
-//!   Document this function.
-//!
-//! @throws
-//!   An exception will be raised if key is weak
-object set_encrypt_key(string key)
-{
-  array(string) keys = split_key(key);
-  pipe :: set_encrypt_key( @ keys);
-  /* Switch mode of middle crypto */
-  d[1]->set_decrypt_key(keys[1]);
-  return this_object();
-}
-
-//! @fixme
-//!   Document this function.
-//!
-//! @throws
-//!   An exception will be raised if key is weak
-object set_decrypt_key(string key)
-{
-  array(string) keys = split_key(key);
-  pipe :: set_decrypt_key( @ keys);
-  /* Switch mode of middle crypto */
-  d[1]->set_encrypt_key(keys[1]);
-  return this_object();
-}
-
+int query_key_size() { return 16; }
+string crypt_block(string p) { return crypt(p); }

@@ -1,5 +1,5 @@
 //
-// $Id: CSR.pmod,v 1.9 2003/01/27 02:54:02 nilsson Exp $
+// $Id: CSR.pmod,v 1.10 2004/02/03 13:50:10 nilsson Exp $
 
 //! Handling of Certifikate Signing Requests (PKCS-10)
 
@@ -18,8 +18,8 @@ class CSR_Attributes
 }
 
 //!
-Sequence build_csr(Crypto.rsa rsa, object name,
-		 mapping(string:array(object)) attributes)
+Sequence build_csr(Crypto.RSA rsa, object name,
+		   mapping(string:array(object)) attributes)
 {
   Sequence info = Sequence( ({ Integer(0), name,
 			       .RSA.build_rsa_public_key(rsa),
@@ -29,7 +29,7 @@ Sequence build_csr(Crypto.rsa rsa, object name,
 		      Sequence(
 			       ({ .Identifiers.rsa_md5_id, Null() }) ),
 		      BitString(rsa->sign(info->get_der(),
-					  Crypto.md5)
+					  Crypto.MD5)
 				->digits(256)) }) );
 }
 

@@ -1,5 +1,5 @@
 //
-// $Id: context.pike,v 1.28 2004/01/30 21:44:05 bill Exp $
+// $Id: context.pike,v 1.29 2004/02/03 13:52:12 nilsson Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -12,7 +12,7 @@
 import .Constants;
 
 //! The server's private key
-Crypto.rsa rsa;
+Crypto.RSA rsa;
 
 /* For client authentication */
 
@@ -95,8 +95,8 @@ int verify_certificates = 0;
 //! message with the (public part of) the long_rsa key.
 //!
 //! Otherwise, dont send any server_key_exchange message.
-Crypto.rsa long_rsa;
-Crypto.rsa short_rsa;
+Crypto.RSA long_rsa;
+Crypto.RSA short_rsa;
 
 //! Servers dsa key.
 Crypto.dsa dsa;

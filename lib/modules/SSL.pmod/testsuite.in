@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.5 2003/11/13 16:04:49 grubba Exp $
+dnl $Id: testsuite.in,v 1.6 2004/02/03 13:51:43 nilsson Exp $
 
 test_any([[
 #pike 7.4
@@ -17,7 +17,7 @@ string _key;
 string _cert;
 
 void make_cert() {
-  object rsa = Crypto.rsa();
+  object rsa = Crypto.RSA();
   rsa->generate_key( 1024, random_string );
   _key = Tools.PEM.simple_build_pem("RSA PRIVATE KEY",
     Standards.PKCS.RSA.private_key(rsa));
@@ -29,7 +29,7 @@ void make_cert() {
   ASSERT(rsa->public_key_equal(rsa_again));
 
   array attrs = ({
-    (["organizationName":Standards.ASN1.Types.asn1_printable_string("Pike")]),
+    (["organizationName":Standards.ASN1.Types.asn1_printable_string("Test")]),
     (["commonName":Standards.ASN1.Types.asn1_printable_string("*")]),
   });
 
@@ -57,7 +57,7 @@ class Server {
     object rsa = Standards.PKCS.RSA.parse_private_key(key);
     ctx->rsa = rsa;
     ASSERT(rsa->rsa_size()>512);
-    ctx->short_rsa = Crypto.rsa()->generate_key(512, ctx->random);
+    ctx->short_rsa = Crypto.RSA()->generate_key(512, ctx->random);
     ctx->rsa_mode();
 
     object tbs = Tools.X509.decode_certificate(cert);
@@ -68,7 +68,7 @@ class Server {
 
 int a() {
   make_cert();
-  Server();
+  object s = Server();
   return 1;
 }
 ]])

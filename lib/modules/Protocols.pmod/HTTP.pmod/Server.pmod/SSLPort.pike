@@ -132,7 +132,7 @@ void set_key(string skey)
     object p = key[4][1];
     object q = key[5][1];
 
-    rsa = Crypto.rsa();
+    rsa = Crypto.RSA();
     rsa->set_public_key(n, e);
     rsa->set_private_key(d);
 #else /* !0 */

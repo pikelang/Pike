@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: https.pike,v 1.14 2003/01/27 01:41:17 nilsson Exp $
+/* $Id: https.pike,v 1.15 2004/02/03 13:52:40 nilsson Exp $
  *
  * dummy https server
  */
@@ -74,15 +74,13 @@ class conn {
 }
 
 class no_random {
-  object arcfour = Crypto.arcfour();
+  object arcfour = Crypto.Arcfour();
   
   void create(string|void secret)
   {
     if (!secret)
       secret = sprintf("Foo!%4c", time());
-    object sha = Crypto.sha();
-    sha->update(secret);
-    arcfour->set_encrypt_key(sha->digest());
+    arcfour->set_encrypt_key(Crypto.SHA->hash(secret));
   }
 
   string read(int size)
@@ -135,7 +133,7 @@ int main()
   werror("n =  %s\np =  %s\nq =  %s\npq = %s\n",
 	 n->digits(), p->digits(), q->digits(), (p*q)->digits());
 
-  rsa = Crypto.rsa();
+  rsa = Crypto.RSA();
   rsa->set_public_key(n, e);
   rsa->set_private_key(d);
 #else /* !0 */
