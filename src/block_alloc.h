@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.28 2001/03/28 10:02:40 hubbe Exp $ */
+/* $Id: block_alloc.h,v 1.29 2001/03/30 09:08:36 hubbe Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -17,7 +17,6 @@
 #include "threads.h"
 #endif
 
-
 #define BLOCK_ALLOC(DATA,BSIZE)						\
 									\
 struct PIKE_CONCAT(DATA,_block)						\
@@ -30,10 +29,9 @@ static struct PIKE_CONCAT(DATA,_block) *PIKE_CONCAT(DATA,_blocks)=0;	\
 static struct DATA *PIKE_CONCAT3(free_,DATA,s)=(struct DATA *)-1;	\
 DO_IF_RUN_UNLOCKED(static PIKE_MUTEX_T PIKE_CONCAT(DATA,_mutex);)       \
 									\
-struct DATA *PIKE_CONCAT(alloc_,DATA)(void)				\
+static struct DATA *PIKE_CONCAT3(alloc_,DATA,_unlocked)(void)		\
 {									\
   struct DATA *tmp;							\
-  DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));               \
   if(!PIKE_CONCAT3(free_,DATA,s))					\
   {									\
     struct PIKE_CONCAT(DATA,_block) *n;					\
@@ -60,8 +58,25 @@ struct DATA *PIKE_CONCAT(alloc_,DATA)(void)				\
   PIKE_CONCAT3(free_,DATA,s)=(struct DATA *)tmp->BLOCK_ALLOC_NEXT;	\
   DO_IF_DMALLOC( dmalloc_register(tmp,sizeof(struct DATA), DMALLOC_LOCATION());  )\
   INIT_BLOCK(tmp);							\
-  DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));             \
   return tmp;								\
+}									\
+									\
+struct DATA *PIKE_CONCAT(alloc_,DATA)(void)			        \
+{									\
+  struct DATA *ret;  							\
+  DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));		\
+  ret=PIKE_CONCAT3(alloc_,DATA,_unlocked)();  				\
+  DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));             \
+  return ret;								\
+}									\
+									\
+void PIKE_CONCAT3(really_free_,DATA,_unlocked)(struct DATA *d)		\
+{									\
+  EXIT_BLOCK(d);							\
+  DO_IF_DMALLOC( dmalloc_unregister(d, 1);  )				\
+  d->BLOCK_ALLOC_NEXT = (void *)PIKE_CONCAT3(free_,DATA,s);		\
+  PRE_INIT_BLOCK(d);							\
+  PIKE_CONCAT3(free_,DATA,s)=d;						\
 }									\
 									\
 void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
@@ -75,10 +90,9 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
   DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));             \
 }									\
 									\
-void PIKE_CONCAT3(free_all_,DATA,_blocks)(void)				\
+static void PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)(void)		\
 {									\
   struct PIKE_CONCAT(DATA,_block) *tmp;					\
-  DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));               \
   DO_IF_DMALLOC(                                                        \
    for(tmp=PIKE_CONCAT(DATA,_blocks);tmp;tmp=tmp->next)                 \
    {                                                                    \
@@ -95,9 +109,14 @@ void PIKE_CONCAT3(free_all_,DATA,_blocks)(void)				\
   }									\
   PIKE_CONCAT(DATA,_blocks)=0;						\
   PIKE_CONCAT3(free_,DATA,s)=0;						\
-  DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));             \
 }									\
 									\
+void PIKE_CONCAT3(free_all_,DATA,_blocks)(void)				\
+{									\
+  DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));               \
+  PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)();  			\
+  DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));             \
+}                                                                       \
 									\
 void PIKE_CONCAT3(count_memory_in_,DATA,s)(INT32 *num_, INT32 *size_)	\
 {									\
@@ -122,7 +141,8 @@ void PIKE_CONCAT3(count_memory_in_,DATA,s)(INT32 *num_, INT32 *size_)	\
 									\
 void PIKE_CONCAT3(init_,DATA,_blocks)(void)				\
 {                                                                       \
-  DO_IF_RUN_UNLOCKED(mt_init_recursive(&PIKE_CONCAT(DATA,_mutex)));     \
+/*  DO_IF_RUN_UNLOCKED(mt_init_recursive(&PIKE_CONCAT(DATA,_mutex)));*/ \
+  DO_IF_RUN_UNLOCKED(mt_init(&PIKE_CONCAT(DATA,_mutex)));               \
   PIKE_CONCAT3(free_,DATA,s)=0;                                         \
 }                                                                       \
 
@@ -137,10 +157,9 @@ ptrdiff_t PIKE_CONCAT(DATA,_hash_table_size)=0;				     \
 static ptrdiff_t PIKE_CONCAT(num_,DATA)=0;				     \
 									     \
 inline struct DATA *							     \
- PIKE_CONCAT(really_low_find_,DATA)(void *ptr, ptrdiff_t hval)		     \
+ PIKE_CONCAT3(really_low_find_,DATA,_unlocked)(void *ptr, ptrdiff_t hval)    \
 {									     \
   struct DATA *p,**pp;							     \
-  DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));                    \
   p=PIKE_CONCAT(DATA,_hash_table)[hval];                                     \
   if(!p || p->data == ptr)                                                   \
   {                                                                          \
@@ -154,23 +173,26 @@ inline struct DATA *							     \
       *pp=p->BLOCK_ALLOC_NEXT;						     \
       p->BLOCK_ALLOC_NEXT=PIKE_CONCAT(DATA,_hash_table)[hval];		     \
       PIKE_CONCAT(DATA,_hash_table)[hval]=p;				     \
-      DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));              \
       return p;								     \
     }									     \
   }									     \
-  DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));                  \
   return 0;								     \
 }									     \
 									     \
-									     \
 struct DATA *PIKE_CONCAT(find_,DATA)(void *ptr)				     \
 {									     \
+  struct DATA *p;                                                            \
   size_t hval = (size_t)ptr;						     \
-  if(!PIKE_CONCAT(DATA,_hash_table_size)) return 0;                          \
+  DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));                    \
+  if(!PIKE_CONCAT(DATA,_hash_table_size)) {                                  \
+    DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));                \
+    return 0;                                                                \
+  }                                                                          \
   hval%=PIKE_CONCAT(DATA,_hash_table_size);				     \
-  return PIKE_CONCAT(really_low_find_,DATA)(ptr, hval);			     \
+  p=PIKE_CONCAT3(really_low_find_,DATA,_unlocked)(ptr, hval);		     \
+  DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));                  \
+  return p;								     \
 }									     \
-									     \
 									     \
 static void PIKE_CONCAT(DATA,_rehash)()					     \
 {									     \
@@ -210,11 +232,10 @@ static void PIKE_CONCAT(DATA,_rehash)()					     \
 }									     \
 									     \
 									     \
-struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr, ptrdiff_t hval)		     \
+struct DATA *PIKE_CONCAT3(make_,DATA,_unlocked)(void *ptr, ptrdiff_t hval)   \
 {									     \
   struct DATA *p;							     \
 									     \
-  DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));                    \
 									     \
   DO_IF_DEBUG( if(!PIKE_CONCAT(DATA,_hash_table))			     \
     fatal("Hash table error!\n"); )					     \
@@ -228,10 +249,18 @@ struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr, ptrdiff_t hval)		     \
     hval%=PIKE_CONCAT(DATA,_hash_table_size);				     \
   }									     \
 									     \
-  p=PIKE_CONCAT(alloc_,DATA)();						     \
+  p=PIKE_CONCAT3(alloc_,DATA,_unlocked)();				     \
   p->data=ptr;								     \
   p->BLOCK_ALLOC_NEXT=PIKE_CONCAT(DATA,_hash_table)[hval];		     \
   PIKE_CONCAT(DATA,_hash_table)[hval]=p;				     \
+  return p;								     \
+}									     \
+									     \
+struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr, ptrdiff_t hval)		     \
+{									     \
+  struct DATA *p;							     \
+  DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));                    \
+  p=PIKE_CONCAT3(make_,DATA,_unlocked)(ptr,hval);                            \
   DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));                  \
   return p;								     \
 }									     \
@@ -242,8 +271,8 @@ struct DATA *PIKE_CONCAT(get_,DATA)(void *ptr)			 	     \
   ptrdiff_t hval=(ptrdiff_t)ptr;					     \
   DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));                    \
   hval%=PIKE_CONCAT(DATA,_hash_table_size);				     \
-  if(!(p=PIKE_CONCAT(really_low_find_,DATA)(ptr, hval)))                     \
-    p=PIKE_CONCAT(make_,DATA)(ptr, hval);			             \
+  if(!(p=PIKE_CONCAT3(really_low_find_,DATA,_unlocked)(ptr, hval)))          \
+    p=PIKE_CONCAT3(make_,DATA,_unlocked)(ptr, hval);		             \
   DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));                  \
   return p;                                                                  \
 }									     \
@@ -254,13 +283,13 @@ int PIKE_CONCAT3(check_,DATA,_semafore)(void *ptr)			     \
   ptrdiff_t hval=(ptrdiff_t)ptr;					     \
   DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));                    \
   hval%=PIKE_CONCAT(DATA,_hash_table_size);				     \
-  if((p=PIKE_CONCAT(really_low_find_,DATA)(ptr, hval)))			     \
+  if((p=PIKE_CONCAT3(really_low_find_,DATA,_unlocked)(ptr, hval)))	     \
   {                                                                          \
     DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));                \
     return 0;								     \
   }                                                                          \
 									     \
-  PIKE_CONCAT(make_,DATA)(ptr, hval);					     \
+  PIKE_CONCAT3(make_,DATA,_unlocked)(ptr, hval);			     \
   DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));                  \
   return 1;								     \
 }									     \
@@ -276,12 +305,12 @@ int PIKE_CONCAT(remove_,DATA)(void *ptr)				     \
     return 0;				                                     \
   }                                                                          \
   hval%=PIKE_CONCAT(DATA,_hash_table_size);				     \
-  if((p=PIKE_CONCAT(really_low_find_,DATA)(ptr, hval)))			     \
+  if((p=PIKE_CONCAT3(really_low_find_,DATA,_unlocked)(ptr, hval)))	     \
   {									     \
     PIKE_CONCAT(num_,DATA)--;						     \
     if(PIKE_CONCAT(DATA,_hash_table)[hval]!=p) fatal("GAOssdf\n");	     \
     PIKE_CONCAT(DATA,_hash_table)[hval]=p->BLOCK_ALLOC_NEXT;		     \
-    PIKE_CONCAT(really_free_,DATA)(p);					     \
+    PIKE_CONCAT3(really_free_,DATA,_unlocked)(p);			     \
     DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));                \
     return 1;								     \
   }									     \
@@ -312,7 +341,7 @@ void PIKE_CONCAT3(init_,DATA,_hash)(void)				     \
 void PIKE_CONCAT3(exit_,DATA,_hash)(void)				     \
 {									     \
   DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));                    \
-  PIKE_CONCAT3(free_all_,DATA,_blocks)();				     \
+  PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)();			     \
   free(PIKE_CONCAT(DATA,_hash_table));					     \
   PIKE_CONCAT(DATA,_hash_table)=0;					     \
   PIKE_CONCAT(num_,DATA)=0;						     \
