@@ -146,10 +146,10 @@ string trim(string s)
 /*
  * make a C identifier representation of 'n'
  */
-string cquote(string n)
+string cquote(string|object(PC.Token) n)
 {
   string ret="";
-  while(sscanf(n,"%[a-zA-Z0-9]%c%s",string safe, int c, n)==3)
+  while(sscanf((string)n,"%[a-zA-Z0-9]%c%s",string safe, int c, n)==3)
   {
     switch(c)
     {
@@ -348,7 +348,7 @@ class PikeType
       }
     }
 
-  string c_storage_type()
+  string c_storage_type(int|void is_struct_entry)
     {
       switch(string btype=basetype())
       {
@@ -365,8 +365,12 @@ class PikeType
 	case "program": return "struct "+btype+" *";
 	  
 	case "function":
-	case "mixed":  return "struct svalue *";
-	  
+	case "mixed":
+	  if (is_struct_entry) {
+	    return "struct svalue";
+	  } else {
+	    return "struct svalue *";
+	  }
 	default:
 	  werror("Unknown type %s\n",btype);
 	  exit(1);
@@ -1232,13 +1236,14 @@ class ParseBlock
 
 	thestruct+=
 	  IFDEF(define,
-		({ sprintf("  %s %s;\n",type->c_storage_type(),name) }));
+		({ sprintf("  %s %s;\n",type->c_storage_type(1),name) }));
 	addfuncs+=
 	  IFDEF(define,
 		({
-		  sprintf("  map_variable(%O,%O,%s_storage_offset + OFFSETOF(%s_struct, %s), T_%s)",
-			  name,
+		  sprintf("  map_variable(%O,%O,%O,%s_storage_offset + OFFSETOF(%s_struct, %s), %s);",
+			  (string)name,
 			  type->output_pike_type(0),
+			  0,
 			  base,
 			  base,
 			  name,
