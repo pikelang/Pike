@@ -1,14 +1,14 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.3 1999/04/19 16:50:47 mirar Exp $
+**!	$Id: layers.c,v 1.4 1999/04/19 18:34:37 mirar Exp $
 **! class Layer
 */
 
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: layers.c,v 1.3 1999/04/19 16:50:47 mirar Exp $");
+RCSID("$Id: layers.c,v 1.4 1999/04/19 18:34:37 mirar Exp $");
 
 #include "config.h"
 
@@ -85,58 +85,58 @@ struct layer
 #define THISOBJ (fp->current_object)
 
 static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
-rgb_group *sa,rgb_group *la,rgb_group *da,
+		      rgb_group *sa,rgb_group *la,rgb_group *da,
 		      int len,float alpha);
 static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
-rgb_group *sa,rgb_group *la,rgb_group *da,
+			rgb_group *sa,rgb_group *la,rgb_group *da,
 			int len,float alpha);
 static void lm_behind(rgb_group *s,rgb_group *l,rgb_group *d,
-rgb_group *sa,rgb_group *la,rgb_group *da,
+		      rgb_group *sa,rgb_group *la,rgb_group *da,
 		      int len,float alpha);
 static void lm_multiply(rgb_group *s,rgb_group *l,rgb_group *d,
-rgb_group *sa,rgb_group *la,rgb_group *da,
+			rgb_group *sa,rgb_group *la,rgb_group *da,
 			int len,float alpha);
 static void lm_screen(rgb_group *s,rgb_group *l,rgb_group *d,
-rgb_group *sa,rgb_group *la,rgb_group *da,
+		      rgb_group *sa,rgb_group *la,rgb_group *da,
 		      int len,float alpha);
 static void lm_overlay(rgb_group *s,rgb_group *l,rgb_group *d,
-rgb_group *sa,rgb_group *la,rgb_group *da,
+		       rgb_group *sa,rgb_group *la,rgb_group *da,
 		       int len,float alpha);
 static void lm_difference(rgb_group *s,rgb_group *l,rgb_group *d,
-rgb_group *sa,rgb_group *la,rgb_group *da,
+			  rgb_group *sa,rgb_group *la,rgb_group *da,
 			  int len,float alpha);
-static void lm_addition(rgb_group *s,rgb_group *l,rgb_group *d,
-rgb_group *sa,rgb_group *la,rgb_group *da,
-			int len,float alpha);
+static void lm_add(rgb_group *s,rgb_group *l,rgb_group *d,
+		   rgb_group *sa,rgb_group *la,rgb_group *da,
+		   int len,float alpha);
 static void lm_subtract(rgb_group *s,rgb_group *l,rgb_group *d,
-rgb_group *sa,rgb_group *la,rgb_group *da,
+			rgb_group *sa,rgb_group *la,rgb_group *da,
 			int len,float alpha);
 static void lm_darken(rgb_group *s,rgb_group *l,rgb_group *d,
-rgb_group *sa,rgb_group *la,rgb_group *da,
+		      rgb_group *sa,rgb_group *la,rgb_group *da,
 		      int len,float alpha);
 static void lm_lighten(rgb_group *s,rgb_group *l,rgb_group *d,
-rgb_group *sa,rgb_group *la,rgb_group *da,
+		       rgb_group *sa,rgb_group *la,rgb_group *da,
 		       int len,float alpha);
 static void lm_hue(rgb_group *s,rgb_group *l,rgb_group *d,
-rgb_group *sa,rgb_group *la,rgb_group *da,
+		   rgb_group *sa,rgb_group *la,rgb_group *da,
 		   int len,float alpha);
 static void lm_saturation(rgb_group *s,rgb_group *l,rgb_group *d,
-rgb_group *sa,rgb_group *la,rgb_group *da,
+			  rgb_group *sa,rgb_group *la,rgb_group *da,
 			  int len,float alpha);
 static void lm_color(rgb_group *s,rgb_group *l,rgb_group *d,
-rgb_group *sa,rgb_group *la,rgb_group *da,
+		     rgb_group *sa,rgb_group *la,rgb_group *da,
 		     int len,float alpha);
 static void lm_value(rgb_group *s,rgb_group *l,rgb_group *d,
-rgb_group *sa,rgb_group *la,rgb_group *da,
+		     rgb_group *sa,rgb_group *la,rgb_group *da,
 		     int len,float alpha);
 static void lm_divide(rgb_group *s,rgb_group *l,rgb_group *d,
-rgb_group *sa,rgb_group *la,rgb_group *da,
+		      rgb_group *sa,rgb_group *la,rgb_group *da,
 		      int len,float alpha);
 static void lm_erase(rgb_group *s,rgb_group *l,rgb_group *d,
-rgb_group *sa,rgb_group *la,rgb_group *da,
+		     rgb_group *sa,rgb_group *la,rgb_group *da,
 		     int len,float alpha);
 static void lm_replace(rgb_group *s,rgb_group *l,rgb_group *d,
-rgb_group *sa,rgb_group *la,rgb_group *da,
+		       rgb_group *sa,rgb_group *la,rgb_group *da,
 		       int len,float alpha);
 
 struct layer_mode_desc
@@ -148,23 +148,23 @@ struct layer_mode_desc
 } layer_mode[]=
 {
    {"normal",        lm_normal,        1, NULL            },
-/*    {"dissolve",      lm_dissolve,      1,  NULL            }, */
-/*    {"behind",        lm_behind,        1,  NULL            }, */
-/*    {"multiply",      lm_multiply,      1,  NULL            }, */
-/*    {"screen",        lm_screen,        1,  NULL            }, */
-/*    {"overlay",       lm_overlay,       1,  NULL            }, */
-/*    {"difference",    lm_difference,    1,  NULL            }, */
-/*    {"add",           lm_addition,      1,  NULL            }, */
-/*    {"subtract",      lm_subtract,      1,  NULL            }, */
-/*    {"darken",        lm_darken,        1,  NULL            }, */
-/*    {"lighten",       lm_lighten,       1,  NULL            }, */
-/*    {"hue",           lm_hue,           1,  NULL            }, */
-/*    {"saturation",    lm_saturation,    1,  NULL            }, */
-/*    {"color",         lm_color,         1,  NULL            }, */
-/*    {"value",         lm_value,         1,  NULL            }, */
-/*    {"divide",        lm_divide,        1,  NULL            },  */
-/*    {"erase",         lm_erase,         1,  NULL            }, */
-/*    {"replace",       lm_replace,       1,  NULL            }, */
+   {"add",           lm_add,           1, NULL            }, 
+   {"subtract",      lm_subtract,      1, NULL            }, 
+   {"dissolve",      lm_dissolve,      1, NULL            }, 
+/* {"behind",        lm_behind,        1, NULL            }, */
+/* {"multiply",      lm_multiply,      1, NULL            }, */
+/* {"screen",        lm_screen,        1, NULL            }, */
+/* {"overlay",       lm_overlay,       1, NULL            }, */
+/* {"difference",    lm_difference,    1, NULL            }, */
+/* {"darken",        lm_darken,        1, NULL            }, */
+/* {"lighten",       lm_lighten,       1, NULL            }, */
+/* {"hue",           lm_hue,           1, NULL            }, */
+/* {"saturation",    lm_saturation,    1, NULL            }, */
+/* {"color",         lm_color,         1, NULL            }, */
+/* {"value",         lm_value,         1, NULL            }, */
+/* {"divide",        lm_divide,        1, NULL            }, */
+/* {"erase",         lm_erase,         1, NULL            }, */
+/* {"replace",       lm_replace,       1, NULL            }, */
 } ;
 
 #define LAYER_MODES ((int)NELEM(layer_mode))
@@ -855,11 +855,18 @@ static void image_layer_cast(INT32 args)
 
 /*** layer helpers ************************************/
 
-#define ALPHA_METHOD_FLOAT
+#define COMBINE_METHOD_INT
+#define CCUT_METHOD_INT
 
-#ifdef ALPHA_METHOD_INT
-
+#ifdef CCUT_METHOD_FLOAT
+#define qMAX (1.0/COLORMAX)
+#define CCUT(Z) ((COLORTYPE)(qMAX*Z))
+#else /* CCUT_METHOD_INT */
 #define CCUT(Z) ((COLORTYPE)((Z)/COLORMAX))
+#endif
+
+#ifdef COMBINE_METHOD_INT
+
 
 #define COMBINE_ALPHA_SUM(aS,aL) \
     CCUT((COLORMAX*(int)(aL))+(COLORMAX-(int)(aL))*(aS))
@@ -875,11 +882,9 @@ static void image_layer_cast(INT32 args)
     COMBINE_ALPHA(S,(int)((L)*(V)),aS,aL)
 
 #else 
-#ifdef ALPHA_METHOD_FLOAT
+#ifdef COMBINE_METHOD_FLOAT
 
-#define qMAX (1.0/COLORMAX)
 #define C2F(Z) (qMAX*(Z))
-#define CCUT(Z) ((COLORTYPE)(qMAX*Z))
 
 #define COMBINE_ALPHA(S,L,aS,aL) \
     ( (COLORTYPE)( ( (S)*(1.0-C2F(aL))*C2F(aS) + (L)*C2F(aL) ) / \
@@ -893,13 +898,15 @@ static void image_layer_cast(INT32 args)
 #define COMBINE_ALPHA_SUM_V(aS,aL,V) \
     COMBINE_ALPHA_SUM(aS,(aL)*(V))
 
-#else /* unknown ALPHA_METHOD */
-#error unknown ALPHA_METHOD
-#endif /* ALPHA_METHOD_FLOAT  */
+#else /* unknown COMBINE_METHOD */
+#error unknown COMBINE_METHOD
+#endif /* COMBINE_METHOD_FLOAT  */
 
 #endif 
 
-
+#define COMBINE(P,A) CCUT(((int)(P))*(A))
+#define COMBINE_A(P,A) ((COLORTYPE)((P)*(A)))
+#define COMBINE_V(P,V,A) CCUT((V)*(P)*(A))
 
 /*** layer mode definitions ***************************/
 
@@ -1014,8 +1021,195 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 static void lm_add(rgb_group *s,rgb_group *l,rgb_group *d,
 		   rgb_group *sa,rgb_group *la,rgb_group *da,
 		   int len,float alpha)
-    {
-    }
+{
+   if (alpha==0.0)
+   {
+      MEMCPY(s,d,sizeof(rgb_group)*len);
+      MEMCPY(sa,da,sizeof(rgb_group)*len);
+      return; 
+   }
+   else if (alpha==1.0)
+   {
+      if (!la)  /* no layer alpha => full opaque */
+	 while (len--)
+	 {
+	    d->r=MINIMUM(COLORMAX,COMBINE(s->r,sa->r)+(int)l->r);
+	    d->g=MINIMUM(COLORMAX,COMBINE(s->r,sa->g)+(int)l->g);
+	    d->b=MINIMUM(COLORMAX,COMBINE(s->r,sa->b)+(int)l->b);
+	    *da=white;
+	    l++; s++; sa++; da++; d++;
+	 }
+      else
+	 while (len--)
+	 {
+	    d->r=MINIMUM(COLORMAX,COMBINE(s->r,sa->r)+
+			 (int)COMBINE(l->r,la->r));
+	    d->g=MINIMUM(COLORMAX,COMBINE(s->g,sa->g)+
+			 (int)COMBINE(l->g,la->g));
+	    d->b=MINIMUM(COLORMAX,COMBINE(s->b,sa->b)+
+			 (int)COMBINE(l->b,la->b));
+	    da->r=COMBINE_ALPHA_SUM(la->r,sa->r);
+	    da->g=COMBINE_ALPHA_SUM(la->g,sa->g);
+	    da->b=COMBINE_ALPHA_SUM(la->b,sa->b);
+	    l++; s++; la++; sa++; da++; d++;
+	 }
+   }
+   else
+   {
+      if (!la)  /* no layer alpha => full opaque */
+	 while (len--)
+	 {
+	    d->r=MINIMUM(COLORMAX,COMBINE(s->r,sa->r)+
+			 (int)COMBINE_A(l->r,alpha));
+	    d->g=MINIMUM(COLORMAX,COMBINE(s->g,sa->g)+
+			 (int)COMBINE_A(l->g,alpha));
+	    d->b=MINIMUM(COLORMAX,COMBINE(s->b,sa->b)+
+			 (int)COMBINE_A(l->b,alpha));
+	    da->r=COMBINE_ALPHA_SUM_V(COLORMAX,sa->r,alpha);
+	    da->g=COMBINE_ALPHA_SUM_V(COLORMAX,sa->g,alpha);
+	    da->b=COMBINE_ALPHA_SUM_V(COLORMAX,sa->b,alpha);
+	    l++; s++; sa++; da++; d++;
+	 }
+      else
+	 while (len--)
+	 {
+	    d->r=MINIMUM(COLORMAX,
+			 COMBINE(s->r,sa->r)+(int)COMBINE_V(l->r,la->r,alpha));
+	    d->g=MINIMUM(COLORMAX,
+			 COMBINE(s->g,sa->g)+(int)COMBINE_V(l->g,la->g,alpha));
+	    d->b=MINIMUM(COLORMAX,
+			 COMBINE(s->b,sa->b)+(int)COMBINE_V(l->b,la->b,alpha));
+	    da->r=COMBINE_ALPHA_SUM_V(la->r,sa->r,alpha);
+	    da->g=COMBINE_ALPHA_SUM_V(la->g,sa->g,alpha);
+	    da->b=COMBINE_ALPHA_SUM_V(la->b,sa->b,alpha);
+	    l++; s++; la++; sa++; da++; d++;
+	 }
+   }
+}
+
+static void lm_subtract(rgb_group *s,rgb_group *l,rgb_group *d,
+			rgb_group *sa,rgb_group *la,rgb_group *da,
+			int len,float alpha)
+{
+   if (alpha==0.0)
+   {
+      MEMCPY(s,d,sizeof(rgb_group)*len);
+      MEMCPY(sa,da,sizeof(rgb_group)*len);
+      return; 
+   }
+   else if (alpha==1.0)
+   {
+      if (!la)  /* no layer alpha => full opaque */
+	 while (len--)
+	 {
+	    d->r=MAXIMUM(0,COMBINE(s->r,sa->r)-(int)l->r);
+	    d->g=MAXIMUM(0,COMBINE(s->r,sa->g)-(int)l->g);
+	    d->b=MAXIMUM(0,COMBINE(s->r,sa->b)-(int)l->b);
+	    *da=white;
+	    l++; s++; sa++; da++; d++;
+	 }
+      else
+	 while (len--)
+	 {
+	    d->r=MAXIMUM(0,COMBINE(s->r,sa->r)-
+			 (int)COMBINE(l->r,la->r));
+	    d->g=MAXIMUM(0,COMBINE(s->g,sa->g)-
+			 (int)COMBINE(l->g,la->g));
+	    d->b=MAXIMUM(0,COMBINE(s->b,sa->b)-
+			 (int)COMBINE(l->b,la->b));
+	    da->r=COMBINE_ALPHA_SUM(la->r,sa->r);
+	    da->g=COMBINE_ALPHA_SUM(la->g,sa->g);
+	    da->b=COMBINE_ALPHA_SUM(la->b,sa->b);
+	    l++; s++; la++; sa++; da++; d++;
+	 }
+   }
+   else
+   {
+      if (!la)  /* no layer alpha => full opaque */
+	 while (len--)
+	 {
+	    d->r=MAXIMUM(0,COMBINE(s->r,sa->r)-
+			 (int)COMBINE_A(l->r,alpha));
+	    d->g=MAXIMUM(0,COMBINE(s->g,sa->g)-
+			 (int)COMBINE_A(l->g,alpha));
+	    d->b=MAXIMUM(0,COMBINE(s->b,sa->b)-
+			 (int)COMBINE_A(l->b,alpha));
+	    da->r=COMBINE_ALPHA_SUM_V(COLORMAX,sa->r,alpha);
+	    da->g=COMBINE_ALPHA_SUM_V(COLORMAX,sa->g,alpha);
+	    da->b=COMBINE_ALPHA_SUM_V(COLORMAX,sa->b,alpha);
+	    l++; s++; sa++; da++; d++;
+	 }
+      else
+	 while (len--)
+	 {
+	    d->r=MAXIMUM(0,COMBINE(s->r,sa->r)-
+			 (int)COMBINE_V(l->r,la->r,alpha));
+	    d->g=MAXIMUM(0,COMBINE(s->g,sa->g)-
+			 (int)COMBINE_V(l->g,la->g,alpha));
+	    d->b=MAXIMUM(0,COMBINE(s->b,sa->b)-
+			 (int)COMBINE_V(l->b,la->b,alpha));
+	    da->r=COMBINE_ALPHA_SUM_V(la->r,sa->r,alpha);
+	    da->g=COMBINE_ALPHA_SUM_V(la->g,sa->g,alpha);
+	    da->b=COMBINE_ALPHA_SUM_V(la->b,sa->b,alpha);
+	    l++; s++; la++; sa++; da++; d++;
+	 }
+   }
+}
+
+static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
+			rgb_group *sa,rgb_group *la,rgb_group *da,
+			int len,float alpha)
+{
+   if (alpha==0.0)
+   {
+      MEMCPY(s,d,sizeof(rgb_group)*len);
+      MEMCPY(sa,da,sizeof(rgb_group)*len);
+      return; 
+   }
+   else if (alpha==1.0)
+   {
+      if (!la)  /* no layer alpha => full opaque */
+	 while (len--) /* 50 % */
+	 {
+	    if (my_rand()&1) *d=*l,*da=white;
+	    else *d=*s,*da=*sa;
+	    l++; s++; sa++; da++; d++;
+	 }
+      else
+	 while (len--)
+	 {
+	    if ((my_rand()&65535) < (la->r*87 + la->g*127 + la->b*41)) 
+	       *d=*l,*da=white;
+	    else 
+	       *d=*s,*da=*sa;
+	    l++; s++; la++; sa++; da++; d++;
+	 }
+   }
+   else
+   {
+      int v=(int)(COLORMAX*alpha);
+      if (!la)  /* no layer alpha => full opaque */
+	 while (len--)
+	 {
+	    if ((my_rand()&255) < v) 
+	       *d=*l,*da=white;
+	    else 
+	       *d=*s,*da=*sa;
+	    l++; s++; sa++; da++; d++;
+	 }
+      else
+      {
+	 while (len--)
+	 {
+	    if ((my_rand()&65535) < ((la->r*87 + la->g*127 + la->b*41)>>8)*v)
+	       *d=*l,*da=white;
+	    else 
+	       *d=*s,*da=*sa;
+	    l++; s++; la++; sa++; da++; d++;
+	 }
+      }
+   }
+}
 
 /*** the add-layer function ***************************/
 
