@@ -279,9 +279,15 @@ static string line_expand_tab(string line, int tab_width,
 string hex2string(string hex)
 {
   if (sizeof(hex) % 2)
-    error("Can't have an odd number of digits.");
+    error("Can't have an odd number of digits.\n");
 
-  return (string)(array_sscanf(hex, "%{%2x%}")[0] * ({})); 
+  array(array(int)) chars;
+  string rest;
+  if (sscanf(hex, "%{%2x%}%s", chars, rest) != 2
+      || sizeof(rest))
+    error("Invalid hex input.\n");
+  
+  return (string)(chars * ({}));
 }
 
 /*! @decl string string2hex(string s)
@@ -293,5 +299,8 @@ string hex2string(string hex)
  */
 string string2hex(string s)
 {
+  if(String.width(s)>8)
+    error("Can't convert wide string to hex");
+  
   return sprintf("%@02x", (array(int)) s);
 }
