@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.204 2000/09/09 19:39:44 hubbe Exp $");
+RCSID("$Id: las.c,v 1.205 2000/09/11 22:10:38 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -94,6 +94,7 @@ int node_is_leaf(node *n)
 }
 
 #ifdef PIKE_DEBUG
+/* FIXME: Ought to use parent pointer to avoid recursion. */
 void check_tree(node *n, int depth)
 {
   if(!d_flag) return;
@@ -139,12 +140,17 @@ void check_tree(node *n, int depth)
 
   if(d_flag<2) return;
 
-  if(!(depth & 1023))
-  {
-    node *q;
-    for(q=n->parent;q;q=q->parent)
-      if(q->parent==n)
-	fatal("Cyclic node structure found.\n");
+  if (!(depth & 63)) {
+    /* 512 bytes/stack frame should be enough... */
+    check_c_stack(32768);
+
+    if(!(depth & 1023))
+    {
+      node *q;
+      for(q=n->parent;q;q=q->parent)
+	if(q->parent==n)
+	  fatal("Cyclic node structure found.\n");
+    }
   }
   depth++;
 
@@ -170,6 +176,7 @@ void check_tree(node *n, int depth)
 }
 #endif
 
+/* FIXME: Ought to use parent pointer to avoid recursion. */
 INT32 count_args(node *n)
 {
   int a,b;
@@ -235,6 +242,7 @@ INT32 count_args(node *n)
   }
 }
 
+/* FIXME: Ought to use parent pointer to avoid recursion. */
 struct pike_string *find_return_type(node *n)
 {
   struct pike_string *a,*b;
@@ -370,6 +378,18 @@ static node *freeze_node(node *orig)
     if ((n->hash == hash) &&
 	!MEMCMP(&(n->token), &(orig->token),
 		sizeof(node) - OFFSETOF(node_s, token))) {
+      if (orig->type && (orig->type != n->type)) {
+	if (n->type) {
+	  /* Use the new type if it's stricter. */
+	  if (pike_types_le(orig->type, n->type)) {
+	    free_string(n->type);
+	    copy_shared_string(n->type, orig->type);
+	  }
+	} else {
+	  /* This probably doesn't happen, but... */
+	  copy_shared_string(n->type, orig->type);
+	}
+      }
       free_node(dmalloc_touch(node *, orig));
       n->refs++;
       return check_node_hash(dmalloc_touch(node *, n));
@@ -478,6 +498,7 @@ void free_all_nodes(void)
   }
 }
 
+/* FIXME: Ought to use parent pointer to avoid recursion. */
 void debug_free_node(node *n)
 {
   if(!n) return;
@@ -1416,6 +1437,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 }
 
 
+/* FIXME: Ought to use parent pointer to avoid recursion. */
 int node_is_eq(node *a,node *b)
 {
   check_tree(a,0);
@@ -1546,6 +1568,9 @@ node *debug_mksvaluenode(struct svalue *s)
 
 #if 1 /*  DEAD_CODE - I need this /Hubbe */
 
+/* FIXME: Ought to use parent pointer to avoid recursion.
+ * In the SHARED_NODES case there's no need of course.
+ */
 node *copy_node(node *n)
 {
   node *b;
@@ -1714,6 +1739,7 @@ node **last_cmd(node **a)
   return 0;
 }
 
+/* FIXME: Ought to use parent pointer to avoid recursion. */
 static node **low_get_arg(node **a,int *nr)
 {
   node **n;
@@ -1754,6 +1780,7 @@ node **is_call_to(node *n, c_fun f)
 }
 
 
+/* FIXME: Ought to use parent pointer to avoid recursion. */
 static void low_print_tree(node *foo,int needlval)
 {
   if(!foo) return;
@@ -2138,6 +2165,7 @@ char *find_q(struct scope_info **a, int num, int scope_id)
   return new->vars + num;
 }
 
+/* FIXME: Ought to use parent pointer to avoid recursion. */
 /* Find the variables that are used in the tree n. */
 static int find_used_variables(node *n,
 			       struct used_vars *p,
@@ -2264,6 +2292,7 @@ static int find_used_variables(node *n,
   return 0;
 }
 
+/* FIXME: Ought to use parent pointer to avoid recursion. */
 /* no subtility needed */
 static void find_written_vars(node *n,
 			      struct used_vars *p,
@@ -2535,6 +2564,7 @@ static int depend_p(node *a,node *b)
 #define depend_p depend_p3
 #endif
 
+/* FIXME: Ought to use parent pointer to avoid recursion. */
 static int cntargs(node *n)
 {
   if(!n) return 0;
@@ -2565,6 +2595,7 @@ static int cntargs(node *n)
 
 static int function_type_max=0;
 
+/* FIXME: Ought to use parent pointer to avoid recursion. */
 static void low_build_function_type(node *n)
 {
   if(!n) return;
@@ -3172,6 +3203,7 @@ void fix_type_field(node *n)
 #endif /* PIKE_DEBUG */
 }
 
+/* FIXME: Ought to use parent pointer to avoid recursion. */
 static void zapp_try_optimize(node *n)
 {
   if(!n) return;
@@ -3182,6 +3214,7 @@ static void zapp_try_optimize(node *n)
 }
 
 #if defined(SHARED_NODES) && !defined(IN_TPIKE)
+/* FIXME: Ought to use parent pointer to avoid recursion. */
 static void find_usage(node *n, unsigned char *usage,
 		       unsigned char *switch_u,
 		       const unsigned char *cont_u,
@@ -4279,6 +4312,7 @@ static node *eval(node *n)
 
 INT32 last_function_opt_info;
 
+/* FIXME: Ought to use parent pointer to avoid recursion. */
 static int stupid_args(node *n, int expected,int vargs)
 {
   if(!n) return expected;
@@ -4302,6 +4336,7 @@ static int stupid_args(node *n, int expected,int vargs)
   }
 }
 
+/* FIXME: Ought to use parent pointer to avoid recursion. */
 static int is_null_branch(node *n)
 {
   if(!n) return 1;
