@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.418 2000/09/16 11:51:43 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.419 2000/09/16 12:15:24 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -92,16 +92,17 @@ if test "x$GCC" = "xno" -a "x$TCC" = "xno"; then
     # The AIX 5L/cc beta can't generate working binaries without a
     # data-segment...
     AC_MSG_CHECKING([if we're really using a cross-compiler])
-    AC_CV_CACHE_VAL(pike_cv_datasegment_required, [
-      AC_LANG_C
-      AC_TRY_COMPILER([int foo;main(){return(0);}], pike_cv_compiler_works,
-        pike_cv_cross_compiler)
-      AC_LANG_RESTORE
-      if test "x$pike_cv_cross_compiler" = "xno"; then
+    AC_CACHE_VAL(pike_cv_datasegment_required, [
+      ac_cv_prog_cc_cross=no;
+      AC_TRY_RUN([int foo;main(){return(0);}], [
         pike_cv_datasegment_required=yes
-      else
+      ], [
         pike_cv_datasegment_required=no
-      fi
+	ac_cv_prog_cc_cross=yes
+      ], [
+        pike_cv_datasegment_required=no
+	ac_cv_prog_cc_cross=yes
+      ])
     ])
     if test "x$pike_cv_datasegment_required" = "xyes"; then
       AC_MSG_RESULT([no -- Applying data-segment kludge])
