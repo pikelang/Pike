@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.16 2003/03/30 11:29:02 grubba Exp $
+|| $Id: SDL.cmod,v 1.17 2003/03/30 12:41:20 grubba Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: SDL.cmod,v 1.16 2003/03/30 11:29:02 grubba Exp $");
+RCSID("$Id: SDL.cmod,v 1.17 2003/03/30 12:41:20 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -2761,7 +2761,7 @@ PIKE_MODULE_INIT
   SAFE_APPLY_MASTER("resolv", 1);
   
   _image_color_program = Pike_sp[-1];
-  dmalloc_touch_svalue(&_image_program);
+  dmalloc_touch_svalue(&_image_color_program);
   image_color_program = program_from_svalue(&_image_color_program);
 
   Pike_sp--;
