@@ -42,7 +42,9 @@ int main(int argc, array argv)
   object transaction = table->transaction();
 
   if(!equal(indices(table), ({ "Blixt" })))
-    ERR("Table diff #1!");
+    ERR("Table diff #1A!");
+  if(!equal(values(table), ({ "Gordon" })))
+    ERR("Table diff #1B!");
   if(!equal(indices(transaction), ({ "Blixt" })))
     ERR("Table diff #2!");
   
