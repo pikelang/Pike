@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.181 2003/10/08 08:29:37 grubba Exp $
+|| $Id: main.c,v 1.182 2003/10/24 23:39:34 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.181 2003/10/08 08:29:37 grubba Exp $");
+RCSID("$Id: main.c,v 1.182 2003/10/24 23:39:34 nilsson Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -61,7 +61,11 @@ RCSID("$Id: main.c,v 1.181 2003/10/08 08:29:37 grubba Exp $");
 #endif
 
 #ifdef TRY_USE_MMX
+#ifdef HAVE_MMX_H
 #include <mmx.h>
+#else
+#include <asm/mmx.h>
+#endif
 int try_use_mmx;
 #endif
 
@@ -311,7 +315,7 @@ int dbm_main(int argc, char **argv)
   }
 
   TRACE((stderr, "Default master at \"%s\"...\n", master_file));
-  
+
   for(e=1; e<argc; e++)
   {
     TRACE((stderr, "Parse argument %d:\"%s\"...\n", e, argv[e]));

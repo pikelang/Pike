@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.75 2003/10/03 12:17:55 grubba Exp $
+|| $Id: port.c,v 1.76 2003/10/24 23:38:56 nilsson Exp $
 */
 
 /*
@@ -27,7 +27,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.75 2003/10/03 12:17:55 grubba Exp $");
+RCSID("$Id: port.c,v 1.76 2003/10/24 23:38:56 nilsson Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -274,7 +274,11 @@ void *MEMSET(void *s,int c,size_t n)
 
 #if (0 && defined(TRY_USE_MMX)) || !defined(HAVE_MEMCPY) && !defined(HAVE_BCOPY)
 #ifdef TRY_USE_MMX
+#ifdef HAVE_MMX_H
 #include <mmx.h>
+#else
+#include <asm/mmx.h>
+#endif
 #endif
 PMOD_EXPORT void MEMCPY(void *bb,const void *aa,size_t s)
 {

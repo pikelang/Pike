@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: layers.c,v 1.89 2003/10/13 17:39:08 grubba Exp $
+|| $Id: layers.c,v 1.90 2003/10/24 23:33:08 nilsson Exp $
 */
 
 /*
@@ -201,7 +201,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.89 2003/10/13 17:39:08 grubba Exp $");
+RCSID("$Id: layers.c,v 1.90 2003/10/24 23:33:08 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -223,7 +223,11 @@ RCSID("$Id: layers.c,v 1.89 2003/10/13 17:39:08 grubba Exp $");
 #include "image.h"
 
 #ifdef TRY_USE_MMX
+#ifdef HAVE_MMX_H
 #include <mmx.h>
+#else
+#include <asm/mmx.h>
+#endif
 #endif
 
 

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.739 2003/10/24 12:36:28 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.740 2003/10/24 23:41:45 nilsson Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2411,8 +2411,9 @@ AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 		 passwd.h group.h winsock2.h signal.h sys/file.h poll.h \
 		 sys/poll.h socket.h ieeefp.h fp_class.h floatingpoint.h \
 		 sys/priocntl.h sys/sched.h windows.h float.h errno.h \
-		 stddef.h mmx.h sys/termio.h sys/termios.h ws2tcpip.h \
-		 valgrind/memcheck.h memcheck.h valgrind.h sys/prctl.h)
+		 stddef.h mmx.h asm/mmx.h sys/termio.h sys/termios.h \
+		 ws2tcpip.h valgrind/memcheck.h memcheck.h valgrind.h \
+		 sys/prctl.h)
 
 # some Linux systems have a broken resource.h that compiles anyway /Mirar
 AC_MSG_CHECKING([for sys/resource.h])
@@ -4701,6 +4702,9 @@ if test "x$ac_cv_header_mmx_h" = xyes; then
     AC_TRY_LINK([
 #ifdef HAVE_MMX_H
 #include <mmx.h>
+#endif
+#ifdef HAVE_ASM_MMX_H
+#include <asm/mmx.h>
 #endif
     ],[
     {
