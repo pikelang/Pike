@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.176 2005/01/07 20:06:45 grubba Exp $
+|| $Id: builtin.cmod,v 1.177 2005/01/08 20:11:57 grubba Exp $
 */
 
 #include "global.h"
@@ -34,10 +34,38 @@
 #include "block_alloc.h"
 #include <assert.h>
 
-/*! @decl array(array(int|string)) describe_program(program p)
+/*! @decl array(array(int|string|type)) describe_program(program p)
  *! @belongs Debug
  *!
  *! Debug function for showing the symbol table of a program.
+ *!
+ *! @returns
+ *!   Returns an array of arrays with the following information
+ *!   for each symbol in @[p]:
+ *!   @array
+ *!     @elem int modifiers
+ *!       Bitfield with the modifiers for the symbol.
+ *!     @elem string symbol_name
+ *!       Name of the symbol.
+ *!     @elem type value_type
+ *!       Value type for the symbol.
+ *!     @elem int symbol_type
+ *!       Type of symbol.
+ *!     @elem int symbol_offset
+ *!       Offset into the code or data area for the symbol.
+ *!     @elem int inherit_offset
+ *!       Offset in the inherit table to the inherit containing
+ *!       the symbol.
+ *!     @elem int inherit_level
+ *!       Depth in the inherit tree for the inherit containing
+ *!       the symbol.
+ *!   @endarray
+ *!
+ *! @note
+ *!   The API for this function is not fixed, and has changed
+ *!   since Pike 7.6. In particular it would make sense to return
+ *!   an array of objects instead, and more information about the
+ *!   symbols might be added.
  */
 PIKEFUN array(array(int|string)) _describe_program(mixed x)
      efun;
@@ -55,6 +83,7 @@ PIKEFUN array(array(int|string)) _describe_program(mixed x)
     struct inherit *inh = INHERIT_FROM_PTR(p, ref);
     push_int(ref->id_flags);
     ref_push_string(id->name);
+    ref_push_type_value(id->type);
     push_int(id->identifier_flags);
     if (IDENTIFIER_IS_C_FUNCTION(id->identifier_flags)) {
       push_int(-2);
@@ -63,7 +92,7 @@ PIKEFUN array(array(int|string)) _describe_program(mixed x)
     }
     push_int(ref->inherit_offset);
     push_int(inh->inherit_level);
-    f_aggregate(6);
+    f_aggregate(7);
   }
   f_aggregate(p->num_identifier_references);
   dmalloc_touch_svalue(Pike_sp-1);
