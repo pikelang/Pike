@@ -6,6 +6,13 @@
 #ifndef DOCODE_H
 #define DOCODE_H
 
+/*
+ * The compiler stack is used when compiling to keep track of data.
+ * This value need too be large enough for the programs you compile.
+ */
+#define COMPILER_STACK_SIZE	8000
+
+
 #define DO_LVALUE 1
 #define DO_NOT_COPY 2
 #define DO_POP 4
