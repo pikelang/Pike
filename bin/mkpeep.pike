@@ -1,8 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: mkpeep.pike,v 1.9 1998/05/13 07:35:45 hubbe Exp $ */
-
-import Simulate;
+/* $Id: mkpeep.pike,v 1.10 1999/03/13 02:06:56 marcus Exp $ */
 
 #define JUMPBACK 3
 
@@ -193,7 +191,7 @@ string treat(string expr)
     case 'o': tmp[e]="opcode("+num+")"+rest; break;
     }
   }
-  return implode(tmp,"");
+  return tmp*"";
 }
 
 /* Dump C co(d|r)e */
@@ -233,11 +231,11 @@ void dump2(mixed *data,int ind)
 
     /* Check what variable has most values */
     max=maxe=e=0; 
-    foreach(m_values(foo),d)
+    foreach(values(foo),d)
     {
-      if(m_sizeof(d)>max)
+      if(sizeof(d)>max)
       {
-	max=m_sizeof(d);
+	max=sizeof(d);
 	maxe=e;
       }
       e++;
@@ -246,14 +244,14 @@ void dump2(mixed *data,int ind)
     /* If zero, done */
     if(max <= 1) break;
 
-    test=m_indices(foo)[maxe];
+    test=indices(foo)[maxe];
     
     write(sprintf("%*nswitch(%s)\n",ind,treat(test)));
     write(sprintf("%*n{\n",ind));
 
-    d=m_values(foo)[maxe];
-    a=m_indices(d);
-    b=m_values(d);
+    d=values(foo)[maxe];
+    a=indices(d);
+    b=values(d);
 
 
     /* foo: variable
@@ -295,7 +293,7 @@ void dump2(mixed *data,int ind)
       if(sizeof(d[0]))
       {
 	string test;
-	test=treat(implode(d[0]," && "));
+	test=treat(d[0]*" && ");
 	write(sprintf("%*nif(%s)\n",ind,test));
       }
       write(sprintf("%*n{\n",ind));
@@ -333,8 +331,8 @@ int main(int argc, string *argv)
 
   mapping tests=([]);
 
-  f=cpp(read_bytes(argv[1]),argv[1]);
-  foreach(explode(f,"\n"),f)
+  f=cpp(Stdio.read_bytes(argv[1]),argv[1]);
+  foreach(f/"\n",f)
   {
     string *a,*b;
     mapping tmp;
