@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# $Id: uname,v 1.9 2002/10/29 22:22:59 grubba Exp $
+# $Id: uname,v 1.10 2002/10/29 22:26:22 grubba Exp $
 
 . $NTTOOLS
 
@@ -87,7 +87,9 @@ fi
 if [ X$S = Xyes ]; then
   # System name.
   # Note that the first '.' either matches ' ' or '['.
-  OUTPUT="$OUTPUT `echo $RAW_VERSION|sed -e 's/.Version.*//'`"
+  SYSNAME="`echo $RAW_VERSION|sed -e 's/.Version.*//;s/^Microsoft//'`"
+  # Perform whitespace adjustmant.
+  OUTPUT="$OUTPUT `echo $SYSNAME|tr ' ' '_'`"
 fi
 
 if [ X$N = Xyes ]; then
