@@ -2,23 +2,19 @@
 
 #pragma strict_types
 
-// $Id: mkpeep.pike,v 1.31 2003/04/01 00:08:16 nilsson Exp $
+// $Id: mkpeep.pike,v 1.32 2003/04/01 00:52:02 nilsson Exp $
 
 #define SKIPWHITE(X) sscanf(X, "%*[ \t\n]%s", X)
 
-void err(string e) {
-  werror(e);
+void err(string e, mixed ... a) {
+  werror(e, @a);
   exit(1);
 }
 
-/* Find the matching parenthesis */
+// Find the matching parenthesis
 int find_end(string s)
 {
   int parlvl=1;
-
-#if DEBUG > 8
-  werror("find_end("+s+")\n");
-#endif
 
   for(int e=1; e<sizeof(s); e++)
   {
@@ -35,15 +31,12 @@ int find_end(string s)
       break;
     }
   }
-  werror("Syntax error (1).\n");
-  exit(1);
+
+  err("Syntax error (1).\n");
 }
 
 array(string) explode_comma_expr(string s)
 {
-#if DEBUG>4
-  werror("Exploding %O\n",s);
-#endif
   int parlvl;
   array(string) ret=({});
   int begin=0;
@@ -69,12 +62,10 @@ array(string) explode_comma_expr(string s)
     }
   }
 
-  /* Ignore empty last arguments */
+  // Ignore empty last arguments
   if(sizeof(String.trim_all_whites(s[begin..])))
-    ret+=({ String.trim_all_whites(s[begin..]) });
-#if DEBUG>4
-  werror("RESULT: %O\n",ret);
-#endif
+    ret += ({ String.trim_all_whites(s[begin..]) });
+
   return ret;
 }
 
@@ -207,19 +198,16 @@ class Rule {
   }
 }
 
-/* Replace $[0-9]+(o|a|b) with something a C compiler can understand */
+// Replace $[0-9]+(o|a|b) with something a C compiler can understand.
 string treat(string expr)
 {
   array(string) tmp = expr/"$";
-  for(int e=1; e<sizeof(tmp); e++)
-  {
-    string num, rest;
-    int type;
-    if(sscanf(tmp[e],"%d%c%s",num,type,rest)!=3)
-    {
-      werror("Syntax error (3).\n");
-      exit(2);
-    }
+  for(int e=1; e<sizeof(tmp); e++) {
+    string rest;
+    int num, type;
+    if(sscanf(tmp[e], "%d%c%s", num, type, rest)!=3)
+      err("Syntax error (3).\n");
+
     num--;
     switch(type)
     {
@@ -231,8 +219,7 @@ string treat(string expr)
   return tmp*"";
 }
 
-/* Dump C co(d|r)e */
-void dump2(array(Rule) data, int ind)
+void dump(array(Rule) data, int ind)
 {
   int i,maxv;
   string test;
@@ -297,7 +284,7 @@ void dump2(array(Rule) data, int ind)
       foreach(b[i], Rule d)
 	d->from -= ({ a[i] });
 
-      dump2(b[i], ind+2);
+      dump(b[i], ind+2);
       write("%*n  break;\n", ind);
       write("\n");
     }
@@ -361,8 +348,7 @@ int main(int argc, array(string) argv)
 
     // Parse expressions
     foreach(f/";",f) {
-      SKIPWHITE(f);
-      //      f = String.trim_all_whites(f);
+      f = String.trim_all_whites(f);
       if(!sizeof(f)) continue;
       data += ({ Rule(f) });
     }
@@ -389,7 +375,7 @@ int main(int argc, array(string) argv)
 	"    }\n"
 	"#endif\n\n");
 
-  dump2(data, 4);
+  dump(data, 4);
 
   write("    advance();\n");
   write("  }\n");
