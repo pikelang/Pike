@@ -692,3 +692,25 @@ int|mapping(mixed:int) count(array|mapping|multiset haystack,
   }
   return sizeof(filter(haystack, `==, needle));
 }
+
+//! Find the longest common prefix from an array of arrays.
+//! @seealso
+//!   @[String.common_prefix]
+array common_prefix(array(array) arrs)
+{
+  if(!sizeof(arrs))
+    return 0;
+
+  array arrs0 = arrs[0];
+  int n, i;
+  
+  catch
+  {
+    for(n = 0; n < sizeof(arrs0); n++)
+      for(i = 1; i < sizeof(arrs); i++)
+	if(!equal(arrs[i][n],arrs0[n]))
+	  return arrs0[0..n-1];
+  };
+
+  return arrs0[0..n-1];
+}
