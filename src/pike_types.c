@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.58 1999/10/26 00:08:15 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.59 1999/10/29 00:07:58 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -22,6 +22,7 @@ RCSID("$Id: pike_types.c,v 1.58 1999/10/26 00:08:15 hubbe Exp $");
 #include "las.h"
 #include "language.h"
 #include "pike_memory.h"
+#include "bignum.h"
 
 int max_correct_args;
 
