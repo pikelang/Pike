@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.99 1998/05/22 11:34:42 grubba Exp $");
+RCSID("$Id: file.c,v 1.100 1998/05/22 11:37:59 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1212,6 +1212,10 @@ static void file_set_buffer(INT32 args)
 #endif /* SO_SNDBUF */
 #endif
 }
+
+#ifndef AF_UNIX
+#define AF_UNIX	4711
+#endif /* AF_UNIX */
 
 
 /* No socketpair() ?
