@@ -1136,6 +1136,57 @@ static void do_callback(struct parser_html_storage *this,
    apply_svalue(callback_function,2);
 }
 
+static newstate entity_callback(struct parser_html_storage *this,
+				struct object *thisobj,
+				struct svalue *v,
+				struct piece *start, int cstart,
+				struct piece *end, int cend,
+				struct feed_stack *st,
+				struct piece **cutstart, int *ccutstart,
+				struct piece *cutend, int ccutend)
+{
+   switch (v->type)
+   {
+      case T_STRING:
+	 push_svalue(v);
+	 return P_DONE;
+      case T_ARRAY:
+	 error("unimplemented");
+	 
+      case T_FUNCTION:
+      case T_OBJECT:
+	 break;
+      default:
+	 error("Parser.HTML: illegal type found when trying to call callback\n");
+   }
+
+   push_svalue(v);
+
+   this->start=start;
+   this->cstart=cstart;
+   this->end=end;
+   this->cend=cend;
+
+   ref_push_object(thisobj);
+
+   if (this->extra_args)
+   {
+      this->extra_args->refs++;
+      push_array_items(this->extra_args);
+
+      DEBUG((stderr,"entity_callback args=%d\n",2+this->extra_args->size));
+
+      f_call_function(2+this->extra_args->size);
+   }
+   else
+   {
+      DEBUG((stderr,"entity_callback args=%d\n",2));
+      f_call_function(2);
+   }
+
+   return handle_result(this,st,cutstart,ccutstart,cutend,ccutend);
+}
+
 static newstate tag_callback(struct parser_html_storage *this,
 			     struct object *thisobj,
 			     struct svalue *v,
@@ -1236,7 +1287,7 @@ static newstate container_callback(struct parser_html_storage *this,
    }
    else
    {
-      DEBUG((stderr,"tag_callback args=%d\n",4));
+      DEBUG((stderr,"container_callback args=%d\n",4));
       f_call_function(4);
    }
 
@@ -1570,6 +1621,39 @@ static int do_try_feed(struct parser_html_storage *this,
 	    st->ignore_data=1; /* no data first at next call */
 	    return 1; /* no end, call again */
 	 }
+
+	 if (this->mapentity->size)
+	 {
+	    struct svalue *v;
+	    
+	    push_feed_range(*feed,st->c+1,dst,cdst);
+
+	    v=low_mapping_lookup(this->mapentity,sp-1);
+	    if (v) /* entity we want, do a callback */
+	    {
+	       pop_stack();
+
+	       /* low-level tag call */
+	       if ((res=entity_callback(this,thisobj,v,
+					*feed,st->c+1,dst,cdst,
+					st,feed,&(st->c),dst,cdst+1)))
+	       {
+		  DEBUG((stderr,"%*d entity callback return %d %p:%d\n",
+			 this->stack_count,this->stack_count,
+			 res,*feed,st->c));
+		  st->ignore_data=(res==P_WAIT);
+		  return res;
+	       }
+
+	       DEBUG((stderr,"%*d entity callback done %p:%d\n",
+		      this->stack_count,this->stack_count,
+		      *feed,st->c));
+
+	       goto done;
+	    }
+	    pop_stack();
+	 }
+
 
 	 if (this->callback__entity.type!=T_INT)
 	 {
