@@ -70,6 +70,8 @@ static void f_buf_add( INT32 args )
   if( args != 1 || Pike_sp[-args].type != PIKE_T_STRING )
     Pike_error("Illegal argument\n");
   a = Pike_sp[-args].u.string;
+  if(!a->len)
+    return;
 
   if( str->len && str->shift != a->size_shift )
   {
@@ -79,14 +81,16 @@ static void f_buf_add( INT32 args )
 
   if( !str->size )
   {
-    str->size = MAXIMUM( str->initial, (unsigned)a->len );
+    str->size = (MAXIMUM( str->initial, (unsigned)a->len )
+		 + sizeof(struct pike_string) );
     str->data = xalloc( str->size );
+    str->len = sizeof( sizeof(struct pike_string) );
   }
 
   while( str->size-str->len < (unsigned)a->len )
   {
-    str->data = realloc( str->data, str->size*2 );
     str->size *= 2;
+    str->data = realloc( str->data, str->size );
   }
   
   MEMCPY( str->data + str->len,
@@ -101,26 +105,40 @@ static void f_buf_add( INT32 args )
 static void f_buf_get( INT32 args )
 {
   struct buffer_str *str = THB;
-  if( !str->len )
+  int len = str->len-sizeof(struct pike_string);
+  if( len <= 0 )
   {    
     push_text("");
     return;
   }
-  switch( str->shift )
+
+  if( str->len < 64 )
   {
-    case 0:
-      push_string( make_shared_binary_string( str->data, str->len ) );
-      break;
-    case 1:
-      push_string( make_shared_binary_string1( (unsigned short*)str->data,
-					       str->len>>1 ) );
-      break;
-    case 2:
-      push_string( make_shared_binary_string2( (unsigned int*)str->data,
-					       str->len>>2 ) );
-      break;
+    char *d = str->data+sizeof(struct pike_string);
+    switch( str->shift )
+    {
+      case 0:
+	push_string(make_shared_binary_string(d,len));
+	break;
+      case 1:
+	push_string(make_shared_binary_string1((short*)d,len>>1));
+	break;
+      case 2:
+	push_string(make_shared_binary_string2((int*)d,len>>2));
+	break;
+    }
+    xfree( str->data );
   }
-  xfree( str->data );
+  else
+  {
+    str->data = realloc( str->data, str->len+1 );
+    {
+      struct pike_string *s = (struct pike_string *)str->data;
+      s->len = len>>str->shift;
+      s->size_shift = str->shift;
+      push_string( end_shared_string( s ) );
+    }
+  }
   str->data = 0;
   str->size = 0;
   str->len = 0;
