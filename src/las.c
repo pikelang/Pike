@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.187 2000/07/12 21:57:42 mast Exp $");
+RCSID("$Id: las.c,v 1.188 2000/07/18 16:22:37 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -383,7 +383,7 @@ static node *freeze_node(node *orig)
 #ifdef PIKE_DEBUG
 static node *freeze_node(node *orig)
 {
-  check_tree(orig);
+  check_tree(orig, 0);
   return orig;
 }
 #else /* !PIKE_DEBUG */
