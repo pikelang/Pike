@@ -1,6 +1,6 @@
 # Makefile for builtin Pike libmird
 
-# $Id: Makefile.in,v 1.4 2002/01/27 17:17:46 mast Exp $
+# $Id: Makefile.in,v 1.5 2002/01/27 17:51:01 mast Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../../..:../../..
 
@@ -58,7 +58,7 @@ pure: all
 	cd ../../..; $(MAKE) pure
 
 Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies
-	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" CONFIG_FILES=Makefile CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status
+	CONFIG_FILES=Makefile CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status
 	@echo "Run make again"
 	@exit 1
 
@@ -69,12 +69,12 @@ $(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
 	else :; fi
 
 config.status: $(SRCDIR)/configure
-	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" ./config.status --recheck
+	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" ./config.status --recheck
 
 mird.h: $(SRCDIR)/mird.h.in config.status
-	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" CONFIG_FILES=mird.h CONFIG_HEADERS="" ./config.status
+	CONFIG_FILES=mird.h CONFIG_HEADERS="" ./config.status
 
 config.h: $(SRCDIR)/config.h.in config.status
-	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" CONFIG_FILES="" CONFIG_HEADERS=config.h ./config.status
+	CONFIG_FILES="" CONFIG_HEADERS=config.h ./config.status
 
 @dependencies@
