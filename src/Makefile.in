@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.122 1998/10/22 15:56:20 grubba Exp $
+# $Id: Makefile.in,v 1.123 1998/10/28 11:34:14 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -282,8 +282,9 @@ install: pike hilfe pike-module aclocal
 	@echo ; echo "Installing header-files..."; \
 	for a in $(SRCDIR)/*.h *.h ; do \
 	  $(INSTALL) $$a "$(prefix)/include/pike" || exit 1; \
-	  chmod a+r "$(prefix)/include/pike" ; \
-	  chmod u+w "$(prefix)/include/pike" ; \
+	  : Should use the basename here. ; \
+	  : chmod a+r "$(prefix)/include/pike" ; \
+	  : chmod u+w "$(prefix)/include/pike" ; \
 	done
 	@$(INSTALL) modules/dynamic_module_makefile $(prefix)/include/pike/dynamic_module_makefile
 	@$(INSTALL) ./aclocal $(prefix)/include/pike/aclocal.m4
@@ -296,15 +297,15 @@ install: pike hilfe pike-module aclocal
 	      mv -f "$(share_prefix)/$$f" "$(share_prefix)/$$f.old"; \
 	    else : ; fi; \
 	    rm -f "$(share_prefix)/$$f.o" >/dev/null 2>/dev/null ; \
-	    if [ -f "$(lib_prefix)/$$f" ]; then \
-              if test "x$(lib_prefix)" != "x$(share_prefix)"; then \
-	        mv -f "$(lib_prefix)/$$f" "$(lib_prefix)/$$f.now_in_share.old"; \
-	      else : ; fi; \
-            else : ; fi; \
 	    cp "$(LIBDIR_SRC)/$$f" "$(share_prefix)/$$f" || exit 1; \
 	    chmod a+r "$(share_prefix)/$$f"; \
 	    chmod u+w "$(share_prefix)/$$f"; \
 	  fi ; \
+	  if [ -f "$(lib_prefix)/$$f" ]; then \
+            if test "x$(lib_prefix)" != "x$(share_prefix)"; then \
+	      mv -f "$(lib_prefix)/$$f" "$(lib_prefix)/$$f.now_in_share.old"; \
+	    else : ; fi; \
+          else : ; fi; \
 	done
 	@echo ; echo "Installing modules written in C..."; \
 	for f in `cd "$(TMP_LIBDIR)"; find . -type f -print`; do \
