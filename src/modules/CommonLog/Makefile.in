@@ -1,12 +1,11 @@
 #
-# $Id: Makefile.in,v 1.4 2003/05/04 13:32:20 mast Exp $
+# $Id: Makefile.in,v 1.5 2003/06/12 20:54:56 mast Exp $
 #
 # Makefile for CommonLog
 #
 
 @make_variables@
 VPATH=@srcdir@
-MODULE_CPPFLAGS=@DEFS@
 OBJS=clf.o
 MODULE_LDFLAGS=@LDFLAGS@
 

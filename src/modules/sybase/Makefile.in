@@ -1,10 +1,9 @@
-# $Id: Makefile.in,v 1.4 2003/05/04 13:32:21 mast Exp $
+# $Id: Makefile.in,v 1.5 2003/06/12 20:54:56 mast Exp $
 # by Francesco Chemolli <kinkie@roxen.com>
 
 @make_variables@
 
 VPATH=@srcdir@
-MODULE_CPPFLAGS=@DEFS@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 OBJS=sybase.o
 
