@@ -3,7 +3,7 @@ Section: interpreters
 Priority: optional
 Maintainer: Marek Habersack <grendel@debian.org>
 Standards-Version: 3.6.1
-Build-Depends: debhelper (>> 4.0.0), libgdbm-dev, libgmp3-dev, libz-dev | zlib1g-dev, libjpeg-dev, libttf-dev, libmysqlclient10-dev, libreadline-dev, perl, bison, debhelper, freeglut3-dev (>= 2.2.0-6.1) [alpha hppa] | libglut3-dev, freeglut3-dev [!alpha !hppa] | libglut3-dev, xlibmesa-glu-dev | libglu-dev, xlibmesa-gl-dev | libgl-dev, libxpm4-dev, libglib1.2-dev, libglade0-dev, libxml2-dev, libgtkxmhtml-dev, libfreetype6-dev, autoconf, libiodbc2-dev, libsane-dev, postgresql-dev, librsvg2-dev (>= 2.7), libsdl-mixer1.2-dev, libsdl1.2-dev, libperl-dev, sharutils, libpng3-dev, gtkglarea5-dev, libtiff3g-dev, gdk-imlib1-dev, bc, libpcre3-dev, libbz2-dev, libnettle-dev
+Build-Depends: debhelper (>> 4.0.0), libgdbm-dev, libgmp3-dev, libz-dev | zlib1g-dev, libjpeg-dev, libttf-dev, libmysqlclient10-dev, libreadline-dev, perl, bison, debhelper, freeglut3-dev (>= 2.2.0-6.1) [alpha hppa] | libglut3-dev, freeglut3-dev [!alpha !hppa] | libglut3-dev, xlibmesa-glu-dev | libglu-dev, xlibmesa-gl-dev | libgl-dev, libxpm-dev, libglib1.2-dev, libglade0-dev, libxml2-dev, libgtkxmhtml-dev, libfreetype6-dev, autoconf, libiodbc2-dev, libsane-dev, postgresql-dev, librsvg2-dev (>= 2.7), libsdl-mixer1.2-dev, libsdl1.2-dev, libperl-dev, sharutils, libpng3-dev, gtkglarea5-dev, libtiff3g-dev, gdk-imlib1-dev, bc, libpcre3-dev, libbz2-dev, libnettle-dev
 Build-Conflicts: libutahglx-dev
 
 Package: pike7.6-core
