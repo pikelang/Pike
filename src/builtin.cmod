@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.170 2004/09/17 15:07:43 grubba Exp $
+|| $Id: builtin.cmod,v 1.171 2004/09/28 16:58:23 grubba Exp $
 */
 
 #include "global.h"
@@ -3011,7 +3011,7 @@ PMOD_EXPORT void detach_list_node(struct list_node *n)
 }
 
 PMOD_EXPORT void prepend_list_node(struct list_node *node,
-				   struct list_node *new)
+				   struct list_node *new_node)
 {
 #ifdef PIKE_DEBUG
   if (!node) {
@@ -3020,22 +3020,22 @@ PMOD_EXPORT void prepend_list_node(struct list_node *node,
   if (!node->prev) {
     Pike_fatal("Prepending unhooked node.\n");
   }
-  if (!new) {
+  if (!new_node) {
     Pike_fatal("Prepending NULL node.\n");
   }
-  if (new->next || new->prev) {
+  if (new_node->next || new_node->prev) {
     Pike_fatal("Prepending hooked node.\n");
   }
 #endif /* PIKE_DEBUG */
-  new->next = node;
-  new->prev = node->prev;
-  new->prev->next = node->prev = new;
-  add_ref(new);
-  add_ref(new);
+  new_node->next = node;
+  new_node->prev = node->prev;
+  new_node->prev->next = node->prev = new_node;
+  add_ref(new_node);
+  add_ref(new_node);
 }
 
 PMOD_EXPORT void append_list_node(struct list_node *node,
-				  struct list_node *new)
+				  struct list_node *new_node)
 {
 #ifdef PIKE_DEBUG
   if (!node) {
@@ -3044,18 +3044,18 @@ PMOD_EXPORT void append_list_node(struct list_node *node,
   if (!node->next) {
     Pike_fatal("Appending unhooked node.\n");
   }
-  if (!new) {
+  if (!new_node) {
     Pike_fatal("Appending NULL node.\n");
   }
-  if (new->next || new->prev) {
+  if (new_node->next || new_node->prev) {
     Pike_fatal("Appending hooked node.\n");
   }
 #endif /* PIKE_DEBUG */
-  new->next = node->next;
-  new->prev = node;
-  new->next->prev = node->next = new;
-  add_ref(new);
-  add_ref(new);
+  new_node->next = node->next;
+  new_node->prev = node;
+  new_node->next->prev = node->next = new_node;
+  add_ref(new_node);
+  add_ref(new_node);
 }
 
 /*! @module ADT
@@ -3268,10 +3268,10 @@ PIKECLASS List
   {
     struct list_node *node = TAIL_SENTINEL(THIS);
     while (args--) {
-      struct list_node *new = alloc_list_node();
-      new->val = *(--Pike_sp);
-      prepend_list_node(node, new);
-      free_list_node(node = new);
+      struct list_node *new_node = alloc_list_node();
+      new_node->val = *(--Pike_sp);
+      prepend_list_node(node, new_node);
+      free_list_node(node = new_node);
       THIS->num_elems++;
     }
     push_int(0);
@@ -3288,10 +3288,10 @@ PIKECLASS List
   {
     struct list_node *node = THIS->head;
     while (args--) {
-      struct list_node *new = alloc_list_node();
-      new->val = *(--Pike_sp);
-      prepend_list_node(node, new);
-      free_list_node(node = new);
+      struct list_node *new_node = alloc_list_node();
+      new_node->val = *(--Pike_sp);
+      prepend_list_node(node, new_node);
+      free_list_node(node = new_node);
       THIS->num_elems++;
     }
     push_int(0);
@@ -3622,15 +3622,15 @@ PIKECLASS List
      */
     PIKEFUN void insert(mixed val)
     {
-      struct list_node *new;
+      struct list_node *new_node;
       if (!THIS->cur->prev) {
 	Pike_error("Attempt to insert before the start sentinel.\n");
       }
-      new = alloc_list_node();
-      assign_svalue_no_free(&new->val, val);
-      prepend_list_node(THIS->cur, new);
+      new_node = alloc_list_node();
+      assign_svalue_no_free(&new_node->val, val);
+      prepend_list_node(THIS->cur, new_node);
       free_list_node(THIS->cur);
-      THIS->cur = new;
+      THIS->cur = new_node;
       List__get_iterator_find_parent()->num_elems++;
       pop_n_elems(args);
       push_int(0);
@@ -3645,14 +3645,14 @@ PIKECLASS List
      */
     PIKEFUN void append(mixed val)
     {
-      struct list_node *new;
+      struct list_node *new_node;
       if (!THIS->cur->next) {
 	Pike_error("Attempt to append after the end sentinel.\n");
       }
-      new = alloc_list_node();
-      assign_svalue_no_free(&new->val, val);
-      append_list_node(THIS->cur, new);
-      free_list_node(new);
+      new_node = alloc_list_node();
+      assign_svalue_no_free(&new_node->val, val);
+      append_list_node(THIS->cur, new_node);
+      free_list_node(new_node);
       List__get_iterator_find_parent()->num_elems++;
       pop_n_elems(args);
       push_int(0);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.h,v 1.31 2004/09/10 15:24:42 grubba Exp $
+|| $Id: builtin_functions.h,v 1.32 2004/09/28 16:55:07 grubba Exp $
 */
 
 #ifndef BUILTIN_EFUNS_H
@@ -172,9 +172,9 @@ BLOCK_ALLOC_FILL_PAGES(list_node, 4);
 PMOD_EXPORT void free_list_node(struct list_node *node);
 PMOD_EXPORT void unlink_list_node(struct list_node *n);
 PMOD_EXPORT void prepend_list_node(struct list_node *node,
-				   struct list_node *new);
+				   struct list_node *new_node);
 PMOD_EXPORT void append_list_node(struct list_node *node,
-				  struct list_node *new);
+				  struct list_node *new_node);
 void init_builtin(void);
 void exit_builtin(void);
 
