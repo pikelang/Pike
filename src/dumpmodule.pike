@@ -289,6 +289,9 @@ void dumpit(string file)
 
 int main(int argc, string *argv)
 {
+  /* Redirect all debug and error messages to a logfile. */
+  Stdio.File("dumpmodule.log", "caw")->dup2(Stdio.stderr);
+  
   foreach( (array)all_constants(), [string name, mixed func])
     function_names[func]="efun:"+name;
 
@@ -305,8 +308,13 @@ int main(int argc, string *argv)
     // FIXME: Make this a command line option..
     // It should not be done when running a binary dist
     // installation...
-    logfile=Stdio.File("dumpmodule.log","caw");
-//    werror("Dumping modules ");
+
+    //
+    // FIXME: Print everything that should go to the log on stderr instead.
+    //
+    // logfile=Stdio.File("dumpmodule.log","caw");
+    
+    //    werror("Dumping modules ");
   }
 
   if(argv[1]=="--distquiet")
