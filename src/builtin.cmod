@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.104 2003/01/08 19:35:42 mast Exp $
+|| $Id: builtin.cmod,v 1.105 2003/01/09 15:21:26 grubba Exp $
 */
 
 #include "global.h"
@@ -344,16 +344,16 @@ PIKEFUN int trace(int t, void|int all_threads)
   optflags OPT_SIDE_EFFECT;
 {
   pop_n_elems(args);
-  push_int(t_flag);
+  push_int(Pike_interpreter.trace_level);
 #ifdef PIKE_THREADS
   if (!all_threads || UNSAFE_IS_ZERO (all_threads))
-    t_flag=t;
+    Pike_interpreter.trace_level=t;
   else {
     struct thread_state *s;
     FOR_EACH_THREAD(s, s->state.trace_level = t);
   }
 #else
-  t_flag=t;
+  Pike_interpreter.trace_level=t;
 #endif
 }
 

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.157 2002/12/01 00:16:54 mast Exp $
+|| $Id: mapping.c,v 1.158 2003/01/09 15:21:26 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.157 2002/12/01 00:16:54 mast Exp $");
+RCSID("$Id: mapping.c,v 1.158 2003/01/09 15:21:26 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1706,7 +1706,7 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
     my_strcat("([ ])");
   }
   else {
-    int save_t_flag = t_flag;
+    int save_t_flag = Pike_interpreter.trace_level;
 
     if (m->data->size == 1) {
       my_strcat("([ /* 1 element */\n");
@@ -1715,7 +1715,7 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
       my_strcat(buf);
     }
 
-    t_flag = 0;
+    Pike_interpreter.trace_level = 0;
     if(SETJMP(catch)) {
       free_svalue(&throw_value);
       throw_value.type = T_INT;
@@ -1723,7 +1723,7 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
     else
       sort_array_destructively(a);
     UNSETJMP(catch);
-    t_flag = save_t_flag;
+    Pike_interpreter.trace_level = save_t_flag;
 
     for(e = 0; e < a->size; e++)
     {
@@ -1738,12 +1738,12 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
       my_putchar(':');
       
       {
-	int save_t_flag=t_flag;
-	t_flag=0;
+	int save_t_flag=Pike_interpreter.trace_level;
+	Pike_interpreter.trace_level=0;
 	
 	tmp=low_mapping_lookup(m, ITEM(a)+e);
 	
-	t_flag=save_t_flag;
+	Pike_interpreter.trace_level=save_t_flag;
       }
       if(tmp)
 	describe_svalue(tmp, indent+2, &doing);

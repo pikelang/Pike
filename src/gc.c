@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.191 2002/12/07 16:10:34 grubba Exp $
+|| $Id: gc.c,v 1.192 2003/01/09 15:21:26 grubba Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.191 2002/12/07 16:10:34 grubba Exp $");
+RCSID("$Id: gc.c,v 1.192 2003/01/09 15:21:26 grubba Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -2466,7 +2466,7 @@ int do_gc(void)
   last_cycle = 0;
 
 #ifdef PIKE_DEBUG
-  if(GC_VERBOSE_DO(1 ||) t_flag) {
+  if(GC_VERBOSE_DO(1 ||) Pike_interpreter.trace_level) {
     fprintf(stderr,"Garbage collecting ... ");
     GC_VERBOSE_DO(fprintf(stderr, "\n"));
 #ifdef HAVE_GETHRTIME
@@ -2843,7 +2843,7 @@ int do_gc(void)
 
 #ifdef PIKE_DEBUG
   UNSET_ONERROR (uwp);
-  if(GC_VERBOSE_DO(1 ||) t_flag)
+  if(GC_VERBOSE_DO(1 ||) Pike_interpreter.trace_level)
   {
 #ifdef HAVE_GETHRTIME
     fprintf(stderr,

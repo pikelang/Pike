@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.195 2003/01/08 19:32:08 mast Exp $
+|| $Id: threads.c,v 1.196 2003/01/09 15:21:27 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: threads.c,v 1.195 2003/01/08 19:32:08 mast Exp $");
+RCSID("$Id: threads.c,v 1.196 2003/01/09 15:21:27 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -721,7 +721,7 @@ TH_RETURN_TYPE new_thread_func(void * data)
     }
 #endif
 
-  t_flag = default_t_flag;
+  Pike_interpreter.trace_level = default_t_flag;
 
   THREADS_FPRINTF(0, (stderr,"THREAD %08x INITED\n",(unsigned int)Pike_interpreter.thread_id));
 

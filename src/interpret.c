@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.286 2003/01/05 19:54:04 grubba Exp $
+|| $Id: interpret.c,v 1.287 2003/01/09 15:21:26 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.286 2003/01/05 19:54:04 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.287 2003/01/09 15:21:26 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -59,7 +59,7 @@ RCSID("$Id: interpret.c,v 1.286 2003/01/05 19:54:04 grubba Exp $");
  */
 #define EVALUATOR_STACK_SIZE	100000
 
-#define TRACE_LEN (100 + t_flag * 10)
+#define TRACE_LEN (100 + Pike_interpreter.trace_level * 10)
 
 /* Keep some margin on the stack space checks. They're lifted when
  * handle_error runs to give it some room. */
@@ -464,7 +464,7 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
 inline void pike_trace(int level,char *fmt, ...) ATTRIBUTE((format (printf, 2, 3)));
 inline void pike_trace(int level,char *fmt, ...)
 {
-  if(t_flag > level)
+  if(Pike_interpreter.trace_level > level)
   {
     va_list args;
     va_start(args,fmt);
@@ -531,7 +531,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
   while(--arg2>=0)
   {
 #ifdef PIKE_DEBUG  
-    if(t_flag>8 && loc->o->prog)
+    if(Pike_interpreter.trace_level>8 && loc->o->prog)
       my_describe_inherit_structure(loc->o->prog);
 #endif
 
@@ -621,7 +621,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
     loc->inherit=INHERIT_FROM_INT(p, loc->parent_identifier);
 
 #ifdef PIKE_DEBUG  
-    if(t_flag>28)
+    if(Pike_interpreter.trace_level>28)
       my_describe_inherit_structure(p);
 #endif
 
@@ -652,7 +652,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 #ifdef PIKE_DEBUG
 void print_return_value(void)
 {
-  if(t_flag>3)
+  if(Pike_interpreter.trace_level>3)
   {
     char *s;
 	
@@ -822,20 +822,20 @@ void *dummy_label = NULL;
 #define OPCODE0(O,N,F,C) \
 void PIKE_CONCAT(opcode_,O)(void) { \
   DEF_PROG_COUNTER; \
-DO_IF_DEBUG(if(t_flag > 3) fprintf(stderr,"- (%p,%ld): %s()\n",PROG_COUNTER,DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),N));\
+DO_IF_DEBUG(if(Pike_interpreter.trace_level > 3) fprintf(stderr,"- (%p,%ld): %s()\n",PROG_COUNTER,DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),N));\
 C }
 
 #define OPCODE1(O,N,F,C) \
 void PIKE_CONCAT(opcode_,O)(INT32 arg1) {\
   DEF_PROG_COUNTER; \
-DO_IF_DEBUG(if(t_flag > 3) fprintf(stderr,"- (%p,%ld): %s(%d)\n",PROG_COUNTER,DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),N,arg1)); \
+DO_IF_DEBUG(if(Pike_interpreter.trace_level > 3) fprintf(stderr,"- (%p,%ld): %s(%d)\n",PROG_COUNTER,DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),N,arg1)); \
 C }
 
 
 #define OPCODE2(O,N,F,C) \
 void PIKE_CONCAT(opcode_,O)(INT32 arg1,INT32 arg2) { \
   DEF_PROG_COUNTER; \
-DO_IF_DEBUG(if(t_flag > 3) fprintf(stderr,"- (%p,%ld): %s(%d,%d)\n",PROG_COUNTER,DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),N,arg1,arg2)); \
+DO_IF_DEBUG(if(Pike_interpreter.trace_level > 3) fprintf(stderr,"- (%p,%ld): %s(%d,%d)\n",PROG_COUNTER,DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),N,arg1,arg2)); \
 C }
 
 #ifdef OPCODE_INLINE_BRANCH
@@ -843,7 +843,7 @@ C }
 int PIKE_CONCAT(test_opcode_,O)(void) { \
     int branch_taken = 0;	\
     DEF_PROG_COUNTER; \
-    DO_IF_DEBUG(if(t_flag > 3) \
+    DO_IF_DEBUG(if(Pike_interpreter.trace_level > 3) \
       fprintf(stderr, "- (%p,%ld): %s()\n", PROG_COUNTER, \
               DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)), \
               N));\
@@ -855,7 +855,7 @@ int PIKE_CONCAT(test_opcode_,O)(void) { \
 int PIKE_CONCAT(test_opcode_,O)(INT32 arg1) {\
     int branch_taken = 0;	\
     DEF_PROG_COUNTER; \
-    DO_IF_DEBUG(if(t_flag > 3) \
+    DO_IF_DEBUG(if(Pike_interpreter.trace_level > 3) \
       fprintf(stderr, "- (%p,%ld): %s(%d)\n", PROG_COUNTER, \
               DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)), \
               N, arg1)); \
@@ -868,7 +868,7 @@ int PIKE_CONCAT(test_opcode_,O)(INT32 arg1) {\
 int PIKE_CONCAT(test_opcode_,O)(INT32 arg1, INT32 arg2) { \
     int branch_taken = 0;	\
     DEF_PROG_COUNTER; \
-    DO_IF_DEBUG(if(t_flag > 3) \
+    DO_IF_DEBUG(if(Pike_interpreter.trace_level > 3) \
       fprintf(stderr, "- (%p,%ld): %s(%d,%d)\n", PROG_COUNTER, \
               DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)), \
               N, arg1, arg2)); \
@@ -933,7 +933,7 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc);
 static int eval_instruction(PIKE_OPCODE_T *pc)
 #ifdef PIKE_DEBUG
 {
-  if (t_flag && pc) {
+  if (Pike_interpreter.trace_level && pc) {
     int i;
     fprintf(stderr, "Calling code at %p:\n", pc);
 #ifdef PIKE_OPCODE_ALIGN
@@ -1048,7 +1048,7 @@ int lookup_sort_fun(const void *a, const void *b)
 
 static inline int eval_instruction(unsigned char *pc)
 {
-  if(d_flag || t_flag>2)
+  if(d_flag || Pike_interpreter.trace_level>2)
     return eval_instruction_with_debug(pc);
   else
     return eval_instruction_without_debug(pc);
@@ -1260,7 +1260,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       {
 #ifdef PIKE_DEBUG
 	struct svalue *expected_stack = Pike_sp-args;
-	if(t_flag>1)
+	if(Pike_interpreter.trace_level>1)
 	{
 	  init_buf();
 	  describe_svalue(s,0,0);
@@ -1307,7 +1307,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
     case T_ARRAY:
 #ifdef PIKE_DEBUG
-      if(t_flag>1)
+      if(Pike_interpreter.trace_level>1)
       {
 	init_buf();
 	describe_svalue(s,0,0);
@@ -1319,7 +1319,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
     case T_PROGRAM:
 #ifdef PIKE_DEBUG
-      if(t_flag>1)
+      if(Pike_interpreter.trace_level>1)
       {
 	init_buf();
 	describe_svalue(s,0,0);
@@ -1390,7 +1390,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       low_destruct_objects_to_destruct(); /* consider using a flag for immediate destruct instead... */
       
     }
-    if(t_flag>1) trace_return_value();
+    if(Pike_interpreter.trace_level>1) trace_return_value();
   }
   return 0;
 }
@@ -1446,7 +1446,7 @@ void low_return(void)
       /* consider using a flag for immediate destruct instead... */
       destruct_objects_to_destruct();
     }
-    if(t_flag>1) trace_return_value();
+    if(Pike_interpreter.trace_level>1) trace_return_value();
   }
 }
 
@@ -1618,8 +1618,8 @@ PMOD_EXPORT void call_handle_error(void)
   dmalloc_touch_svalue(&throw_value);
   if (Pike_interpreter.svalue_stack_margin) {
     ONERROR tmp;
-    int old_t_flag = t_flag;
-    t_flag = 0;
+    int old_t_flag = Pike_interpreter.trace_level;
+    Pike_interpreter.trace_level = 0;
     Pike_interpreter.svalue_stack_margin = 0;
     Pike_interpreter.c_stack_margin = 0;
     SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
@@ -1630,7 +1630,7 @@ PMOD_EXPORT void call_handle_error(void)
     UNSET_ONERROR(tmp);
     Pike_interpreter.svalue_stack_margin = SVALUE_STACK_MARGIN;
     Pike_interpreter.c_stack_margin = C_STACK_MARGIN;
-    t_flag = old_t_flag;
+    Pike_interpreter.trace_level = old_t_flag;
   }
   else {
     free_svalue(&throw_value);

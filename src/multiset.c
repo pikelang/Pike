@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.64 2003/01/08 22:28:06 grubba Exp $
+|| $Id: multiset.c,v 1.65 2003/01/09 15:21:27 grubba Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.64 2003/01/08 22:28:06 grubba Exp $");
+RCSID("$Id: multiset.c,v 1.65 2003/01/09 15:21:27 grubba Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -93,7 +93,7 @@ PMOD_EXPORT const char msg_multiset_no_node_refs[] =
     struct svalue *_cmp_a_ = (A);					\
     struct svalue *_cmp_b_ = (B);					\
     int _cmp_res_;							\
-    if (t_flag) {							\
+    if (Pike_interpreter.trace_level) {					\
       fputs ("internal cmp ", stderr);					\
       print_svalue (stderr, _cmp_a_);					\
       fputs (" <=> ", stderr);						\
@@ -101,12 +101,12 @@ PMOD_EXPORT const char msg_multiset_no_node_refs[] =
       fputs (": ", stderr);						\
     }									\
     _cmp_res_ = (CMP_RES) = set_svalue_cmpfun (_cmp_a_, _cmp_b_);	\
-    if (t_flag)								\
+    if (Pike_interpreter.trace_level)					\
       fprintf (stderr, "%d\n", _cmp_res_);				\
   } while (0)
 
 #define EXTERNAL_CMP(CMP_LESS) do {					\
-    if (t_flag) {							\
+    if (Pike_interpreter.trace_level) {					\
       fputs ("external cmp ", stderr);					\
       print_svalue (stderr, sp - 2);					\
       fputs (" <=> ", stderr);						\
@@ -114,7 +114,7 @@ PMOD_EXPORT const char msg_multiset_no_node_refs[] =
       fputs (": ", stderr);						\
     }									\
     apply_svalue (CMP_LESS, 2);						\
-    if (t_flag) {							\
+    if (Pike_interpreter.trace_level) {					\
       print_svalue (stderr, sp - 1);					\
       fputc ('\n', stderr);						\
     }									\
@@ -5277,7 +5277,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.64 2003/01/08 22:28:06 grubba Exp $");
+RCSID("$Id: multiset.c,v 1.65 2003/01/09 15:21:27 grubba Exp $");
 
 struct multiset *first_multiset;
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.130 2003/01/08 19:35:42 mast Exp $
+|| $Id: opcodes.c,v 1.131 2003/01/09 15:21:27 grubba Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.130 2003/01/08 19:35:42 mast Exp $");
+RCSID("$Id: opcodes.c,v 1.131 2003/01/09 15:21:27 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1907,7 +1907,7 @@ void o_sscanf(INT32 args)
   pop_n_elems(sp-save_sp +args);
 
 #ifdef PIKE_DEBUG
-  if(t_flag >2)
+  if(Pike_interpreter.trace_level >2)
   {
     int nonblock;
     if((nonblock=query_nonblocking(2)))

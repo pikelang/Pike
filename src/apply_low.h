@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.13 2003/01/05 19:54:04 grubba Exp $
+|| $Id: apply_low.h,v 1.14 2003/01/09 15:21:26 grubba Exp $
 */
 
     {
@@ -108,7 +108,7 @@
 
       
 #ifdef PIKE_DEBUG
-	if(t_flag > 9)
+	if(Pike_interpreter.trace_level > 9)
 	{
 	  fprintf(stderr,"-- ref: inoff=%d idoff=%d flags=%d\n",
 		  ref->inherit_offset,
@@ -123,7 +123,7 @@
 		  new_frame->context.parent_offset,
 		  DO_NOT_WARN((long)new_frame->context.storage_offset),
 		  new_frame->context.name ? new_frame->context.name->str  : "NULL");
-	  if(t_flag>19)
+	  if(Pike_interpreter.trace_level>19)
 	  {
 	    describe(new_frame->context.prog);
 	  }
@@ -154,7 +154,7 @@
       if(new_frame->scope) add_ref(new_frame->scope);
 #endif
 
-      if(t_flag)
+      if(Pike_interpreter.trace_level)
       {
 	char buf[50];
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.153 2002/12/01 18:44:43 mast Exp $
+|| $Id: svalue.c,v 1.154 2003/01/09 15:21:27 grubba Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.153 2002/12/01 18:44:43 mast Exp $");
+RCSID("$Id: svalue.c,v 1.154 2003/01/09 15:21:27 grubba Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1285,10 +1285,10 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      /* We require some tricky coding to make this work
 	       * with tracing...
 	       */
-	      int save_t_flag=t_flag;
+	      int save_t_flag=Pike_interpreter.trace_level;
 	      dynbuf_string save_buffer=complex_free_buf();
 	    
-	      t_flag=0;
+	      Pike_interpreter.trace_level=0;
 	      SET_CYCLIC_RET(1);
 	    
 	      ref_push_object(obj);
@@ -1305,7 +1305,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		    }
 	      
 		  init_buf_with_string(save_buffer);
-		  t_flag=save_t_flag;
+		  Pike_interpreter.trace_level=save_t_flag;
 		
 		  dsv_add_string_to_buf( sp[-1].u.string );
 		  my_binary_strcat(name->str,name->len);
@@ -1318,7 +1318,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      debug_malloc_touch(save_buffer.str);
 	      
 	      init_buf_with_string(save_buffer);
-	      t_flag=save_t_flag;
+	      Pike_interpreter.trace_level=save_t_flag;
 	      pop_stack();
 	      prog = obj->prog;
 	    }
@@ -1371,10 +1371,10 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      /* We require some tricky coding to make this work
 	       * with tracing...
 	       */
-	      int save_t_flag=t_flag;
+	      int save_t_flag=Pike_interpreter.trace_level;
 	      dynbuf_string save_buffer=complex_free_buf();
 	      
-	      t_flag=0;
+	      Pike_interpreter.trace_level=0;
 	      SET_CYCLIC_RET(1);
 	      
 	      debug_malloc_touch(obj);
@@ -1396,7 +1396,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		    }
 
 		  init_buf_with_string(save_buffer);
-		  t_flag=save_t_flag;
+		  Pike_interpreter.trace_level=save_t_flag;
 
 		  dsv_add_string_to_buf( sp[-1].u.string );
 
@@ -1408,7 +1408,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      debug_malloc_touch(save_buffer.str);
 
 	      init_buf_with_string(save_buffer);
-	      t_flag=save_t_flag;
+	      Pike_interpreter.trace_level=save_t_flag;
 	      pop_stack();
 	      prog = obj->prog;
 	    }
@@ -1419,10 +1419,10 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	    /* We require some tricky coding to make this work
 	     * with tracing...
 	     */
-	    int save_t_flag=t_flag;
+	    int save_t_flag=Pike_interpreter.trace_level;
 	    dynbuf_string save_buffer=complex_free_buf();
 	    
-	    t_flag=0;
+	    Pike_interpreter.trace_level=0;
 	    SET_CYCLIC_RET(1);
 	    
 	    debug_malloc_touch(obj);
@@ -1441,7 +1441,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		  }
 		
 		init_buf_with_string(save_buffer);
-		t_flag=save_t_flag;
+		Pike_interpreter.trace_level=save_t_flag;
 		
 		dsv_add_string_to_buf( sp[-1].u.string );
 
@@ -1453,7 +1453,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	    debug_malloc_touch(save_buffer.str);
 	    
 	    init_buf_with_string(save_buffer);
-	    t_flag=save_t_flag;
+	    Pike_interpreter.trace_level=save_t_flag;
 	    pop_stack();
 	    prog = obj->prog;
 	  }
@@ -1496,10 +1496,10 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	  /* We require some tricky coding to make this work
 	   * with tracing...
 	   */
-	  int save_t_flag=t_flag;
+	  int save_t_flag=Pike_interpreter.trace_level;
 	  dynbuf_string save_buffer=complex_free_buf();
 	    
-	  t_flag=0;
+	  Pike_interpreter.trace_level=0;
 	  SET_CYCLIC_RET(1);
 	    
 	  debug_malloc_touch(prog);
@@ -1518,7 +1518,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		}
 	      
 	      init_buf_with_string(save_buffer);
-	      t_flag=save_t_flag;
+	      Pike_interpreter.trace_level=save_t_flag;
 		
 	      dsv_add_string_to_buf( sp[-1].u.string );
 
@@ -1530,7 +1530,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	  debug_malloc_touch(save_buffer.str);
 	    
 	  init_buf_with_string(save_buffer);
-	  t_flag=save_t_flag;
+	  Pike_interpreter.trace_level=save_t_flag;
 	  pop_stack();
 	}
 	END_CYCLIC();
