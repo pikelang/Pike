@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.526 2002/07/29 17:20:06 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.527 2002/08/02 03:07:18 jhs Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -6313,18 +6313,12 @@ test_eq(1<<0,1)
 test_eq(1<<1,2)
 test_eq(1<<10,1024)
 test_eq(5<<3,40)
-test_eq("Yum!","Crunch! Yum!"<<8)
-test_eq("","Crunch! Yummy!"<<100)
-test_eq("*burp*","*burp*"<<0)
 
 // testing >>
 test_eq(9>>2,2)
 test_eq(1>>1,0)
 test_eq(1024>>10,1)
 test_eq(47>>3,5)
-test_eq("Crunch!","Crunch! Yum!">>5)
-test_eq("","Crunch! Ka-Chomp!">>100)
-test_eq("*burp*","*burp*">>0)
 
 // testing ? :
 test_true(0?0:1)
