@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.101 2001/06/07 16:04:26 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.102 2001/06/07 16:26:18 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -1025,8 +1025,6 @@ void f_getcwd(INT32 args)
       free(tmp);
     Pike_error("Failed to fetch current path.\n");
   }
-
-  fflush(stderr);
 
   pop_n_elems(args);
   push_string(make_shared_string(e));
