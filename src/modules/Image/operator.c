@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.11 1998/01/13 22:59:23 hubbe Exp $ */
+/* $Id: operator.c,v 1.12 1998/01/24 17:30:58 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.11 1998/01/13 22:59:23 hubbe Exp $
+**!	$Id: operator.c,v 1.12 1998/01/24 17:30:58 per Exp $
 **! class image
 */
 
@@ -89,7 +89,7 @@ extern struct program *image_program;
 		   		   		   		\
    i=img->xsize*img->ysize;			   		\
    THREADS_ALLOW();                                             \
-   if (oper)
+   if (s2)
 
 
 /*
