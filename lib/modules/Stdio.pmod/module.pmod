@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.144 2002/04/05 10:04:15 jhs Exp $
+// $Id: module.pmod,v 1.145 2002/04/05 16:42:21 jhs Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1714,7 +1714,7 @@ string simplify_path(string path)
 //! exist, for instance because one of its links pointed to a
 //! nonexistent file or if there was a symlink loop. The returned path
 //! is also canonicized/simplified, removing "//", "/./" and the like.
-string|int(0..0) chase_links(string path)
+string|int(0..0) expand_symlinks(string path)
 {
   string unwound, root = has_prefix(path, "/") ? "/" : "";
   mapping(string:Stat) seen = ([]);
