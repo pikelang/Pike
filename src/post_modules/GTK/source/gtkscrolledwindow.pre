@@ -38,13 +38,15 @@ void add(GTK.Widget victim)
 
   get_all_args( "add", args, "%o", &o );
   victim = GTK_WIDGET( get_gtkobject( o ) );
-  if(!(GTK_WIDGET_CLASS(GTK_OBJECT(victim)->klass)->
-       set_scroll_adjustments_signal))
+#ifdef HAVE_GTK_20
+  if (!(GTK_WIDGET_GET_CLASS(victim)->set_scroll_adjustments_signal))
+#else
+  if(!(GTK_WIDGET_CLASS(GTK_OBJECT(victim)->klass)->set_scroll_adjustments_signal))
+#endif
     gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(THIS->obj),
                                           victim);
   else
     gtk_container_add( GTK_CONTAINER( THIS->obj ), victim );
-
   RETURN_THIS();
 }
 
