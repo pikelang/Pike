@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.52 1999/03/26 23:40:57 grubba Exp $");
+RCSID("$Id: operators.c,v 1.53 1999/05/25 13:32:12 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2041,20 +2041,29 @@ void init_operators(void)
 	    "function(0=array...:0)|"
 	    "function(mapping(1=mixed:2=mixed)...:mapping(1:2))|"
 	    "function(3=multiset...:3) */
-  ADD_EFUN2("`+",f_add,tOr7(tIfnot(tFuncV(,tNot(tObj),tMix),tFunction),tFuncV(,tInt,tInt),tIfnot(tFuncV(,tInt,tMix),tFuncV(,tOr(tInt,tFlt),tFlt)),tIfnot(tFuncV(,tOr(tInt,tFlt),tMix),tFuncV(,tOr3(tStr,tInt,tFlt),tStr)),tFuncV(,tSetvar(0,tArray),tVar(0)),tFuncV(,tMap(tSetvar(1,tMix),tSetvar(2,tMix)),tMap(tVar(1),tVar(2))),tFuncV(,tSetvar(3,tMultiset),tVar(3))),
+  ADD_EFUN2("`+",f_add,
+	    tOr7(tIfnot(tFuncV(,tNot(tObj),tMix),tFunction),
+		 tFuncV(,tInt,tInt),
+		 tIfnot(tFuncV(,tInt,tMix),
+			tFuncV(,tOr(tInt,tFlt),tFlt)),
+		 tIfnot(tFuncV(,tOr(tInt,tFlt),tMix),
+			tFuncV(,tOr3(tStr,tInt,tFlt),tStr)),
+		 tFuncV(,tSetvar(0,tArray),tVar(0)),
+		 tFuncV(,tMap(tSetvar(1,tMix),
+			      tSetvar(2,tMix)),tMap(tVar(1),tVar(2))),
+		 tFuncV(,tSetvar(3,tMultiset),tVar(3))),
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_sum);
-
-  /* !function(!object...:mixed)&function(mixed...:mixed)|"
-	    "function(int:int)|"
-	    "function(float:float)|"
-	    "function(array(0=mixed),array:array(0))|"
-	    "function(mapping(1=mixed:2=mixed),mapping:mapping(1:2))|"
-	    "function(multiset(3=mixed),multiset:multiset(3))|"
-	    "function(float|int,float:float)|"
-	    "function(float,int:float)|"
-	    "function(int,int:int)|"
-	    "function(string,string:string) */
-  ADD_EFUN2("`-",f_minus,tOr7(tIfnot(tFuncV(,tNot(tObj),tMix),tFunction),tFunc(tInt,tInt),tFunc(tFlt,tFlt),tFunc(tArr(tSetvar(0,tMix)) tArray,tArr(tVar(0))),tFunc(tMap(tSetvar(1,tMix),tSetvar(2,tMix)) tMapping,tMap(tVar(1),tVar(2))),tFunc(tSet(tSetvar(3,tMix)) tMultiset,tSet(tVar(3))),tOr4(tFunc(tOr(tFlt,tInt) tFlt,tFlt),tFunc(tFlt tInt,tFlt),tFunc(tInt tInt,tInt),tFunc(tStr tStr,tStr))),
+  
+  ADD_EFUN2("`-",f_minus,
+	    tOr7(tIfnot(tFuncV(,tNot(tObj),tMix),tFunction),
+		 tFuncV(tInt,tInt,tInt),
+		 tIfnot(tFuncV(tInt,tInt,tMix),
+			tFuncV(tOr(tInt,tFlt),tOr(tInt,tFlt),tFlt)),
+		 tFuncV(tArr(tSetvar(0,tMix)),tArray,tArr(tVar(0))),
+		 tFuncV(tMap(tSetvar(1,tMix),tSetvar(2,tMix)),
+			tMapping,tMap(tVar(1),tVar(2))),
+		 tFunc(tSet(tSetvar(3,tMix)) tMultiset,tSet(tVar(3))),
+		 tFuncV(tStr,tStr,tStr)),
 	    OPT_TRY_OPTIMIZE,0,generate_minus);
 
 #define LOG_TYPE "function(mixed,object...:mixed)|function(object,mixed...:mixed)|function(int...:int)|function(mapping(0=mixed:1=mixed)...:mapping(0:1))|function(multiset(2=mixed)...:multiset(2))|function(array(3=mixed)...:array(3))|function(string...:string)"
