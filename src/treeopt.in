@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.30 1999/11/19 21:24:01 grubba Exp $
+// $Id: treeopt.in,v 1.31 1999/11/22 14:19:06 grubba Exp $
 //
 // The tree optimizer
 //
@@ -104,11 +104,6 @@ F_POP_VALUE('?'(0, ':'(1, 2)), *):
 F_CAST(-,*):
   -;
 
-// Convert casts to void to F_POP_VALUE
-// Not needed -- done automatically by mkcastnode().
-// F_CAST[$$->type == void_type_string](0, *):
-//   F_POP_VALUE($0, -);
-
 // void can't be casted to anything else.
 F_CAST(0 = +[$$->type == void_type_string], *):
 {
@@ -121,23 +116,24 @@ F_CAST(0 = +[$$->type == void_type_string], *):
 0 = F_CAST(1 = +[$$->type == $0->type](*, *), *):
   $1;
 
-// Propagate casts towards the leaves
-0 = F_CAST(F_COMMA_EXPR(1, 2), *):
-{
-  struct pike_string *type = $0->type;
-  $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1),
-	      mkcastnode(type, $2));
-}
-;
-
-// Propagate casts toward the leaves
-0 = F_CAST('?'(1, ':'(2, 3)), *):
-{
-  struct pike_string *type = $0->type;
-  $$ = mknode('?', $1, mknode(':', mkcastnode(type, $2),
-			      mkcastnode(type, $3)));
-}
-;
+// Propagate casts towards the root instead.
+// // Propagate casts towards the leaves
+// 0 = F_CAST(F_COMMA_EXPR(1, 2), *):
+// {
+//   struct pike_string *type = $0->type;
+//   $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1),
+// 		 mkcastnode(type, $2));
+// }
+// ;
+// 
+// // Propagate casts toward the leaves
+// 0 = F_CAST('?'(1, ':'(2, 3)), *):
+// {
+//   struct pike_string *type = $0->type;
+//   $$ = mknode('?', $1, mknode(':', mkcastnode(type, $2),
+// 				 mkcastnode(type, $3)));
+// }
+// ;
 
 // Remove function calls that don't affect the result or the state.
 // FIXME: Disabled since it doesn't check for callbacks.
@@ -197,6 +193,18 @@ F_COMMA_EXPR(F_POP_VALUE(0, *), F_POP_VALUE(1, *)):
 
 F_COMMA_EXPR(F_COMMA_EXPR(0, F_POP_VALUE(1, *)), F_POP_VALUE(2, *)):
   F_COMMA_EXPR($0, F_POP_VALUE(F_COMMA_EXPR($1, $2), -));
+
+// Remove initial casts in comma-expressions.
+F_COMMA_EXPR(F_CAST(0, *), 1 = +):
+  F_COMMA_EXPR($0, $1);
+
+// Propagate casts towards the root.
+F_COMMA_EXPR(0, 1 = F_CAST(2, *)):
+{
+  struct pike_string *type = $1->type;
+  $$ = mkcastnode(type, mknode(F_COMMA_EXPR, $0, $2));
+}
+;
 
 // The following two are disabled, since they are too general.
 // F_COMMA_EXPR(+[!($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|OPT_CASE|
