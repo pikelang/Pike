@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.30 2001/08/26 23:04:17 js Exp $
+// $Id: Utils.pmod,v 1.31 2001/08/31 16:20:04 js Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -395,6 +395,8 @@ class ProfileCache (string db_name) {
     value_cache = ([]);
     db_profile_names = ([]);
     query_profile_names = ([]);
+    last_db_prof_stat = 0;
+    last_query_prof_stat = 0;
   }
 }
 
