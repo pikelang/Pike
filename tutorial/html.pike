@@ -510,7 +510,7 @@ SGML convert(SGML data)
 		       Sgml.Tag("td",(["align":"left"]),data->pos,
 				({Sgml.Tag("font",(["size":"-2"]),
 					   data->pos,({"description"}))}))}))})+
-		  data->data)
+		  (data->data||({})))
 	    }));
 	    continue;
 

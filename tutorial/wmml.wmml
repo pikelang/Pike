@@ -38,7 +38,8 @@ This is a terse documentation about WMML.
           <adesc>what language the example is written in;
                  pike and c are supported</adesc></aargdesc>
 <aargdesc><aarg>meta</aarg>
-          <adesc>comma-separated list of ?</adesc></aargdesc>
+          <adesc>comma-separated list of keywords that will be in italics</adesc></aargdesc>
+</man_arguments>
 <man_description>
 This tag marks an area as an example. If <tt>language</tt> equals
 "<tt>pike</tt>" or "<tt>c</tt>", the are will count as preformatted.
@@ -46,11 +47,59 @@ This tag marks an area as an example. If <tt>language</tt> equals
 <man_see>man_example, data_description</man_see>
 </method>
 
+<method name=data_description title="?">
+<man_syntax>
+&lt;data_description&gt; ... &lt;/data_description&gt;
+</man_syntax>
+<man_arguments>
+</man_arguments>
+<man_description>
 data_description type=
+</man_description>
+<man_see></man_see>
+</method>
 
+
+<method name=firstpage title="?">
+<man_syntax>
+&lt;firstpage&gt; ... &lt;/firstpage&gt;
+</man_syntax>
+<man_arguments>
+</man_arguments>
+<man_description>
 firstpage
-ref to=
+</man_description>
+<man_see></man_see>
+</method>
+
+<method name=ref title="?">
+<man_syntax>
+&lt;ref&gt; ... &lt;/ref&gt;<br>
+&lt;ref to=somewhere&gt; ... &lt;/ref&gt;<br>
+</man_syntax>
+<man_arguments>
+<aargdesc><aarg>to</aarg>
+          <adesc>optional destination</adesc></aargdesc>
+</man_arguments>
+<man_description>
+Adds a hyperlink around that area; default destination is resolved by
+the contents.
+</man_description>
+<man_see>link, anchor</man_see>
+</method>
+
+<method name=anchor title="?">
+<man_syntax>
+&lt;anchor&gt; ... &lt;/anchor&gt;
+</man_syntax>
+<man_arguments>
+</man_arguments>
+<man_description>
 anchor name=
+</man_description>
+<man_see></man_see>
+</method>
+
 
 </section title="markup tags (implying format)">
 

@@ -41,6 +41,9 @@ tutorial_onepage.html: .DUMMY  $(SRCFILES)
 tut.html: .DUMMY $(SRCFILES)
 	$(pike) ./wmmltohtml2 tutorial.wmml sitebuilder tut
 
+wmml.html: .DUMMY wmml.wmml
+	$(pike) ./wmmltohtml2 wmml.wmml html_onepage wmml
+
 manpages: .DUMMY $(SRCFILES)
 	$(pike) ./wmmltohtml2 tutorial.wmml manpages man/man
 
