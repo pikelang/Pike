@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.320 1999/09/23 12:15:18 noring Exp $")
+AC_REVISION("$Id: configure.in,v 1.321 1999/10/04 05:33:28 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -193,17 +193,21 @@ AC_MINIX
 AC_DEFUN(AC_SYS_COMPILER_FLAG,
 [
   AC_MSG_CHECKING($1)
-  OLD_CFLAGS="[$]CFLAGS"
   AC_CACHE_VAL(pike_cv_option_$2,
   [
+    OLD_CFLAGS="[$]CFLAGS"
     CFLAGS="[$]OLD_CFLAGS $1"
     AC_TRY_RUN([int main(){exit(0);}],pike_cv_option_$2=yes,pike_cv_option_$2=no,pike_cv_option_$2=no)
+    CFLAGS="[$]OLD_CFLAGS"
   ])
-  
-  CFLAGS="[$]OLD_CFLAGS"
   
   if test x"[$]pike_cv_option_$2" = "xyes" ; then
     $3="[$]$3 $1"
+    case "$3" in
+      OPTIMIZE)
+        CFLAGS="[$]OLD_CFLAGS $1"
+      ;;
+    esac
     AC_MSG_RESULT(yes)
     $5
   else
@@ -3182,7 +3186,7 @@ if test x$pike_cv_sys_dynamic_loading = xno ; then
   with_dynamic_modules=no
 fi
 
-#
+#######################################################################
 # Since configure doesn't always know if we will be linking with ld or cc,
 # We use this little code snippet to add flags to ld that would otherwise
 # be given automatically by $(CC) $(CFLAGS)
@@ -3197,6 +3201,28 @@ case "x$LD" in
     LD="${LD} ${LD_FALLBACK_FLAGS-}"
   ;;
 esac
+
+#######################################################################
+# Since all $OPTIMIZE flags have to be automatically included in $CFLAGS
+# (because otherwise the tests will not be accurate) we have to remove all
+# OPTIMIZE flags from the regular CFLAGS...
+
+NEW_CFLAGS=
+for opt in ${CFLAGS-}
+do
+   case " $OPTIMIZE " in
+     *\ $opt\ *) ;;
+     *)
+       case "$opt" in
+         -O2|-pipe) OPTIMIZE="${OPTIMIZE-} $opt" ;;
+          *)  NEW_CFLAGS="$NEW_CFLAGS $opt" ;;
+       esac
+     ;;
+   esac
+done
+CFLAGS="$NEW_CFLAGS"
+
+##########################################################################
 
 case "x$pike_cv_sys_os" in
   xSolaris | xAIX)
