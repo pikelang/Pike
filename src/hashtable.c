@@ -6,7 +6,6 @@
 #include "global.h"
 #include "hashtable.h"
 #include "stralloc.h"
-#include "config.h"
 #include "stuff.h"
 #include "error.h"
 

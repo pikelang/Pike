@@ -6,8 +6,8 @@
 #ifndef INTERPRET_H
 #define INTERPRET_H
 
+#include "global.h"
 #include "program.h"
-#include "config.h"
 
 #ifndef STRUCT_FRAME_DECLARED
 #define STRUCT_FRAME_DECLARED
