@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.135 2001/09/29 08:47:03 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.136 2001/10/05 22:55:32 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -2188,9 +2188,11 @@ INT32 do_code_block(node *n)
   emit0(F_ENTRY);
   emit0(F_START_FUNCTION);
   low_insert_label(0);
-  if(Pike_compiler->new_program->identifier_references[Pike_compiler->compiler_frame->
-				       current_function_number].id_flags &
-     ID_INLINE)
+
+  if(Pike_compiler->compiler_frame->current_function_number >= 0 &&
+     (Pike_compiler->new_program->identifier_references[
+       Pike_compiler->compiler_frame->current_function_number].id_flags &
+      ID_INLINE))
   {
     Pike_compiler->compiler_frame->recur_label=0;
     Pike_compiler->compiler_frame->is_inline=1;

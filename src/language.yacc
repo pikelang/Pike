@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.262 2001/09/29 06:19:27 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.263 2001/10/05 22:55:33 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1816,7 +1816,7 @@ lambda: TOK_LAMBDA push_compiler_frame1
   failsafe_block
   {
     struct pike_type *type;
-    char buf[40];
+    char buf[80];
     int f,e;
     struct pike_string *name;
     int save_line = lex.current_line;
@@ -1865,7 +1865,8 @@ lambda: TOK_LAMBDA push_compiler_frame1
     fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
 	    Pike_compiler->compiler_pass, buf, (long)Pike_compiler->new_program->id, Pike_compiler->local_class_counter-1);
 #endif /* LAMBDA_DEBUG */
-    
+    if(Pike_compiler->compiler_pass == 2)
+      Pike_compiler->compiler_frame->current_function_number=isidentifier(name);
     f=dooptcode(name,
 		$6,
 		type,
@@ -1949,11 +1950,12 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     }else{
       id=define_function(name,
 			 type,
-			 0,
+			 ID_INLINE,
 			 IDENTIFIER_PIKE_FUNCTION,
 			 0,
 			 OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
     }
+    Pike_compiler->compiler_frame->current_function_number=id;
     n=0;
     if(Pike_compiler->compiler_pass > 1 &&
        (i=ID_FROM_INT(Pike_compiler->new_program, id)))
@@ -2092,11 +2094,12 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     }else{
       id=define_function(name,
 			 type,
-			 0,
+			 ID_INLINE,
 			 IDENTIFIER_PIKE_FUNCTION,
 			 0,
 			 OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
     }
+    Pike_compiler->compiler_frame->current_function_number=id;
     n=0;
     if(Pike_compiler->compiler_pass > 1 &&
        (i=ID_FROM_INT(Pike_compiler->new_program, id)))
@@ -2263,7 +2266,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
 
     Pike_compiler->compiler_frame->current_function_number=
       define_function(create_string, type,
-		      ID_STATIC, IDENTIFIER_PIKE_FUNCTION, 0,
+		      ID_INLINE | ID_STATIC, IDENTIFIER_PIKE_FUNCTION, 0,
 		      OPT_SIDE_EFFECT);
 
     /* Third: Generate the initialization code.
