@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.110 1998/05/16 10:58:01 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.111 1998/05/20 02:14:29 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -27,6 +27,20 @@ test_any([[ int a,b; [ [a],b]=({ ({ 1 }) ,2}); return a]],1)
 test_any([[ int a,b; [ [a],b]=({ ({ 1 }) ,2}); return b]],2)
 test_compile_error([[ default ; ]])
 test_compile_error([[ int a,b; [a,b]++; ]])
+test_compile_error([[
+array(int) x;
+
+string foo()
+{
+ return "foo "+(array(string) x) * ",";
+}
+
+int main()
+{
+  return 0;
+}
+]])
+
 test_compile_eror(0())
 test_compile_eror(1())
 test_compile_eror(""())

@@ -179,7 +179,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.96 1998/05/12 23:51:25 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.97 1998/05/20 02:14:28 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -575,7 +575,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
     
     if(compiler_frame->current_return_type)
       free_string(compiler_frame->current_return_type);
-    compiler_frame->current_return_type=pop_type();
+    compiler_frame->current_return_type=compiler_pop_type();
     
     push_finished_type(compiler_frame->current_return_type);
     
@@ -597,7 +597,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
     push_type(T_FUNCTION);
 
     {
-      struct pike_string *s=pop_type();
+      struct pike_string *s=compiler_pop_type();
       $<n>$=mkstrnode(s);
       free_string(s);
     }
@@ -639,7 +639,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
   | modifiers type_or_error optional_stars bad_identifier
     '(' arguments ')' block_or_semi
   {
-    free_string(pop_type());
+    free_string(compiler_pop_type());
   }
   | modifiers type_or_error name_list ';' {}
   | inheritance {}
@@ -698,7 +698,7 @@ new_arg_name: type7 optional_dot_dot_dot optional_identifier
       my_yyerror("Variable '%s' appears twice in argument list.",
 		 $3->u.sval.u.string->str);
     
-    add_local_name($3->u.sval.u.string, pop_type());
+    add_local_name($3->u.sval.u.string, compiler_pop_type());
     free_node($3);
   }
   ;
@@ -745,7 +745,7 @@ optional_stars: optional_stars '*' { $$=$1 + 1; }
 
 cast: '(' type ')'
     {
-      struct pike_string *s=pop_type();
+      struct pike_string *s=compiler_pop_type();
       $$=mkstrnode(s);
       free_string(s);
     }
@@ -763,7 +763,7 @@ type7: type7 '*' { push_type(T_ARRAY); }
 
 simple_type: type4
   {
-    struct pike_string *s=pop_type();
+    struct pike_string *s=compiler_pop_type();
     $$=mkstrnode(s);
     free_string(s);
   }
@@ -771,7 +771,7 @@ simple_type: type4
 
 simple_type2: type2
   {
-    struct pike_string *s=pop_type();
+    struct pike_string *s=compiler_pop_type();
     $$=mkstrnode(s);
     free_string(s);
   }
@@ -779,7 +779,7 @@ simple_type2: type2
 
 simple_identifier_type: identifier_type
   {
-    struct pike_string *s=pop_type();
+    struct pike_string *s=compiler_pop_type();
     $$=mkstrnode(s);
     free_string(s);
   }
@@ -926,7 +926,7 @@ new_name: optional_stars F_IDENTIFIER
     struct pike_string *type;
     push_finished_type(compiler_frame->current_type);
     while($1--) push_type(T_ARRAY);
-    type=pop_type();
+    type=compiler_pop_type();
     define_variable($2->u.sval.u.string, type, current_modifiers);
     free_string(type);
     free_node($2);
@@ -937,7 +937,7 @@ new_name: optional_stars F_IDENTIFIER
     struct pike_string *type;
     push_finished_type(compiler_frame->current_type);
     while($1--) push_type(T_ARRAY);
-    type=pop_type();
+    type=compiler_pop_type();
     $<number>$=define_variable($2->u.sval.u.string, type, current_modifiers);
     free_string(type);
   }
@@ -964,7 +964,7 @@ new_local_name: optional_stars F_IDENTIFIER
   {
     push_finished_type($<n>0->u.sval.u.string);
     while($1--) push_type(T_ARRAY);
-    add_local_name($2->u.sval.u.string, pop_type());
+    add_local_name($2->u.sval.u.string, compiler_pop_type());
     $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($2->u.sval.u.string)));
     free_node($2);
   }
@@ -973,7 +973,7 @@ new_local_name: optional_stars F_IDENTIFIER
   {
     push_finished_type($<n>0->u.sval.u.string);
     while($1--) push_type(T_ARRAY);
-    add_local_name($2->u.sval.u.string, pop_type());
+    add_local_name($2->u.sval.u.string, compiler_pop_type());
     $$=mknode(F_ASSIGN,$4,mklocalnode(islocal($2->u.sval.u.string)));
     free_node($2);
   }
@@ -1132,7 +1132,7 @@ lambda: F_LAMBDA
     
     push_type(T_FUNCTION);
     
-    type=pop_type();
+    type=compiler_pop_type();
 
     sprintf(buf,"__lambda_%ld_%ld",
 	    (long)new_program->id,
@@ -1838,7 +1838,7 @@ lvalue: expr4
   | '[' low_lvalue_list ']' { $$=mknode(F_ARRAY_LVALUE, $2,0); }
   | type6 F_IDENTIFIER
   {
-    add_local_name($2->u.sval.u.string,pop_type());
+    add_local_name($2->u.sval.u.string,compiler_pop_type());
     $$=mklocalnode(islocal($2->u.sval.u.string));
     free_node($2);
   }

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.12 1998/04/24 00:08:43 hubbe Exp $
+ * $Id: pike_types.h,v 1.13 1998/05/20 02:14:29 hubbe Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -101,6 +101,7 @@ void push_finished_type(struct pike_string *type);
 void push_finished_type_backwards(struct pike_string *type);
 struct pike_string *debug_pop_unfinished_type(void);
 struct pike_string *debug_pop_type(void);
+struct pike_string *debug_compiler_pop_type(void);
 struct pike_string *parse_type(char *s);
 void stupid_describe_type(char *a,INT32 len);
 void simple_describe_type(struct pike_string *s);
@@ -123,10 +124,12 @@ void cleanup_pike_types(void);
 
 #ifdef DEBUG_MALLOC
 #define pop_type() ((struct pike_string *)debug_malloc_update_location(debug_pop_type(),__FILE__,__LINE__))
+#define compiler_pop_type() ((struct pike_string *)debug_malloc_update_location(debug_compiler_pop_type(),__FILE__,__LINE__))
 #define pop_unfinished_type() \
  ((struct pike_string *)debug_malloc_update_location(debug_pop_unfinished_type(),__FILE__,__LINE__))
 #else
 #define pop_type debug_pop_type
+#define compiler_pop_type debug_compiler_pop_type
 #define pop_unfinished_type debug_pop_unfinished_type
 #endif
 

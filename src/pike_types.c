@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.42 1998/04/28 07:47:17 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.43 1998/05/20 02:14:29 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -299,6 +299,27 @@ struct pike_string *debug_pop_type(void)
   s=pop_unfinished_type();
   type_stack_mark();
   return s;
+}
+
+struct pike_string *debug_compiler_pop_type(void)
+{
+  extern int num_parse_error;
+  if(num_parse_error)
+  {
+    /* This could be fixed to check if the type
+     * is correct and then return it, I just didn't feel
+     * like writing the checking code today. / Hubbe
+     */
+    pop_stack_mark();
+    type_stack_mark();
+    reference_shared_string(mixed_type_string);
+    return mixed_type_string;
+  }else{
+    struct pike_string *s;
+    s=pop_unfinished_type();
+    type_stack_mark();
+    return s;
+  }
 }
 
 static void internal_parse_typeA(char **_s)
