@@ -1,10 +1,17 @@
-AC_REVISION("$Id: configure.in,v 1.731 2003/08/31 21:49:57 nilsson Exp $")
+AC_REVISION("$Id: configure.in,v 1.732 2003/09/09 03:04:23 nilsson Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
 rm -f config.warnings 2>/dev/null
 
-if test "x`expr AC_ACVERSION '>=' 2.50`" = "x1"; then
+ifelse(ifdef([AC_ACVERSION], [eval(
+  index(AC_ACVERSION,.) > 0 &&
+  substr(AC_ACVERSION, 0, index(AC_ACVERSION,.)) >= 2 &&
+  (
+   substr(AC_ACVERSION, 0, index(AC_ACVERSION,.)) > 2 ||
+   substr(AC_ACVERSION, index(+AC_ACVERSION,.)) >= 50
+  )
+)],0),1,[
   if test "x$cache_file" = "x/dev/null"; then
     cache_file=./config.cache
     if test -r "$cache_file"; then
@@ -15,9 +22,9 @@ if test "x`expr AC_ACVERSION '>=' 2.50`" = "x1"; then
       > $cache_file
     fi
   fi
-else
+], [
   PIKE_MSG_WARN([configure script has been generated with autoconf 2.13 or earlier.])
-fi
+])
 
 # We want an absolute path to the source-dir.
 case "$srcdir" in
