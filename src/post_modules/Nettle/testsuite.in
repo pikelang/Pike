@@ -2,7 +2,7 @@
 test_true([[objectp(Nettle)]])
 
 // MD5
-cond([[ Nettle->MD5_State ]], [[
+cond_resolv( Nettle.MD5_State, [[
 
   test_true([[objectp(Nettle.MD5_State())]])
   test_eq([[Nettle.MD5_State()->update("")->digest()]],
@@ -24,7 +24,7 @@ cond([[ Nettle->MD5_State ]], [[
 ]])
 
 // SHA1
-cond([[ Nettle->SHA1_State ]], [[
+cond_resolv( Nettle.SHA1_State, [[
 
   test_true([[objectp(Nettle.SHA1_State())]])
   test_eq([[Nettle.SHA1_State()->update("abc")->digest()]],
@@ -32,7 +32,7 @@ cond([[ Nettle->SHA1_State ]], [[
 ]])
 
 // AES
-cond([[ Nettle->AES_State ]], [[
+cond_resolv( Nettle.AES_State, [[
   test_true([[objectp(Nettle.AES_State())]])
   test_eq([[Nettle.AES_State()
   	    ->set_encrypt_key(String.hex2string(
@@ -47,7 +47,7 @@ cond([[ Nettle->AES_State ]], [[
   	  [[String.hex2string("5C6D71CA30DE8B8B00549984D2EC7D4B")]])
 ]])
 
-cond([[ Nettle->CBC ]], [[
+cond_resolv( Nettle.CBC, [[
   test_eval_error( Nettle.CBC( class{} ) )
   test_eval_error( object o=class{}(); Nettle.CBC(o); )
   test_eval_error([[
