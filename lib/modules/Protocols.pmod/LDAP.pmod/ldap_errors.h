@@ -1,6 +1,6 @@
 // LDAP client protocol implementation for Pike.
 //
-// $Id: ldap_errors.h,v 1.1 1999/04/24 16:43:29 js Exp $
+// $Id: ldap_errors.h,v 1.2 1999/06/05 16:15:05 grubba Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -31,7 +31,7 @@
 #define LDAP_PROTOCOL_ERROR             0x02    /* 2 */
 #define LDAP_PROTOCOL_ERROR_STR		"Protocol error"
 #define LDAP_TIMELIMIT_EXCEEDED         0x03    /* 3 */
-#define LDAP_TIMELIMIT_EXCEEDED_STR	"Timilimit exceeded"
+#define LDAP_TIMELIMIT_EXCEEDED_STR	"Timelimit exceeded"
 #define LDAP_SIZELIMIT_EXCEEDED         0x04    /* 4 */
 #define LDAP_SIZELIMIT_EXCEEDED_STR	"Sizelimit exceeded"
 #define LDAP_COMPARE_FALSE              0x05    /* 5 */
