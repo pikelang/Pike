@@ -3,7 +3,7 @@ AC_INIT(image.c)
 AC_PROG_CC
 AC_PROG_RANLIB
 
-AC_CHECK_HEADER(sys/fcntl.h fcntl.h)
+AC_CHECK_HEADERS(sys/fcntl.h fcntl.h)
 
 AC_SUBST(RANLIB)
 
