@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.25 2002/03/20 14:48:04 js Exp $
+// $Id: HTML.pmod,v 1.26 2002/03/25 13:32:30 js Exp $
 
 // Filter for text/html
 
@@ -100,8 +100,8 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   // FIXME: This information should be pushed to the body field
   // of the image file, if it is indexed.
   array(string) parse_img(Parser.HTML p, mapping m)  {
-    if( m->alt )
-      dadd(m->alt);
+//      if( m->alt )
+//        dadd(m->alt);
     return ({ " " });
   };
 
