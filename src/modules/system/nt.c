@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.13 1999/08/14 09:00:42 hubbe Exp $
+ * $Id: nt.c,v 1.14 1999/08/17 13:34:15 marcus Exp $
  *
  * NT system calls for Pike
  *
@@ -1712,9 +1712,15 @@ void init_nt_system_calls(void)
 
   SIMPCONST(FILE_ATTRIBUTE_COMPRESSED);
   SIMPCONST(FILE_ATTRIBUTE_DIRECTORY);
+#ifdef FILE_ATTRIBUTE_ENCRYPTED
   SIMPCONST(FILE_ATTRIBUTE_ENCRYPTED);
+#endif
+#ifdef FILE_ATTRIBUTE_REPARSE_POINT
   SIMPCONST(FILE_ATTRIBUTE_REPARSE_POINT);
+#endif
+#ifdef FILE_ATTRIBUTE_SPARSE_FILE
   SIMPCONST(FILE_ATTRIBUTE_SPARSE_FILE);
+#endif
   
   ADD_FUNCTION("cp",f_cp,tFunc(tStr tStr,tInt), 0);
 
