@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.166 2004/09/17 14:52:20 nilsson Exp $
+|| $Id: array.c,v 1.167 2004/09/17 15:02:58 nilsson Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "multiset.h"
 #include "mapping.h"
 
-RCSID("$Id: array.c,v 1.166 2004/09/17 14:52:20 nilsson Exp $");
+RCSID("$Id: array.c,v 1.167 2004/09/17 15:02:58 nilsson Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -93,7 +93,7 @@ PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size, ptrdiff_t extra_spa
 
   /* Limits size to (1<<29)-4 */
   if( (size+extra_space-1) >
-      (ULONG_MAX-sizeof(struct array))/sizeof(struct svalue) )
+      (INT32)((ULONG_MAX-sizeof(struct array))/sizeof(struct svalue)) )
     Pike_error("Too large array (memory size exceeds size of size_t)\n");
   v=(struct array *)malloc(sizeof(struct array)+
 			   (size+extra_space-1)*sizeof(struct svalue));
