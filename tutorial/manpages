@@ -15,6 +15,8 @@ object whatis;
 
 string quote_text(string s)
 {
+  s=replace(s,({"&gt;","&amp;","&lt;"}),
+	    ({">","&","<"}));
   return(replace(s, ({ "*", "\\", "()", " - ", "..." }),
 		 ({ "\\(**", "\\e", "(\\|)", " \\- ", "\&.\|.\|." })));
 }
