@@ -44,17 +44,6 @@ Source: "Y:\win32-pike\extras\pike.ico"; DestDir: "{app}"; CopyMode: alwaysoverw
 ;Source: "Y:\win32-pike\dlls\libmySQL.dll"; DestDir: "{sys}"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: mysql
 ;;;End MySQL files
 
-;;;Begin DreamSNES installer files
-;Source: "Y:\win32-pike\dsinstaller\README.txt"; DestDir: "{app}\apps\dsinstall\"; CopyMode: alwaysoverwrite; Components: dsinstaller
-;Source: "Y:\win32-pike\dsinstaller\dreamsnesinstall.pike"; DestDir: "{app}\apps\dsinstall\"; CopyMode: alwaysoverwrite; Components: dsinstaller
-;Source: "Y:\win32-pike\dsinstaller\tutorial.url"; DestDir: "{app}\apps\dsinstall\"; CopyMode: alwaysoverwrite; Components: dsinstaller; Flags: isreadme
-
-; the needed cdrtools stuff...
-;Source: "Y:\win32-pike\dsinstaller\cdrtools\cdda2wav.exe"; DestDir: "{app}\apps\dsinstall\"; CopyMode: alwaysoverwrite; Components: dsinstaller
-;*snip*
-;Source: "Y:\win32-pike\dsinstaller\cdrtools\scgcheck.exe"; DestDir: "{app}\apps\dsinstall\"; CopyMode: alwaysoverwrite; Components: dsinstaller
-;End DreamSNES installer files
-
 
 [Run]
 Filename: "{tmp}\Pike-v7.4.11-Win32-tsubasa-beta.exe"; Parameters: "--no-gui --traditional ""prefix={app}"""
@@ -66,13 +55,10 @@ Name: "full"; Description: "Full installation"
 [Components]
 ;Name: "gtk"; Description: "GTK+"; Types: full custom; Flags: fixed
 Name: "pike"; Description: "Pike"; Types: full; Flags: fixed; ExtraDiskSpaceRequired: 40000000
-;Name: "dsinstaller"; Description: "DreamSNES installer"; Types: full;
 
 [Tasks]
 ;;Name: gtk; Description: "Install GTK+ support"
 ;Name: mysql; Description: "Install MySQL client support"
-;;Name: dsinstaller; Description: "Install DreamSNES installer"
-;Perform ASPI layer check
 Name: associate; Description: "Associate .pike and .pmod extensions with Pike"
 
 [Dirs]
@@ -93,10 +79,6 @@ Root: HKCR; Subkey: "pike_module\Shell\Edit\Command"; ValueType: string; ValueDa
 
 [Icons]
 Name: "{group}\Pike"; Filename: "{app}\bin\pike.exe"
-;Name: "{group}\DreamSNES installer"; Filename: "{app}\apps\dsinstall\dreamsnesinstall.pike"; WorkingDir: "{app}\apps\dsinstall"; Flags: runminimized createonlyiffileexists
-;Name: "{userdesktop}\DreamSNES installer"; Filename: "{app}\apps\dsinstall\dreamsnesinstall.pike"; WorkingDir: "{app}\apps\dsinstall"; Flags: runminimized createonlyiffileexists
-;Name: "{group}\DreamSNES tutorial"; Filename: "{app}\apps\dsinstall\tutorial.url"; Flags: createonlyiffileexists
-;Name: "{userdesktop}\DreamSNES burning tutorial"; Filename: "{app}\apps\dsinstall\tutorial.url"; Flags: createonlyiffileexists
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\bin"
