@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.h,v 1.7 2001/08/16 00:28:30 marcus Exp $
+ * $Id: ppc32.h,v 1.8 2001/08/16 18:51:10 marcus Exp $
  */
 
 #define PIKE_OPCODE_T	unsigned INT32
@@ -119,6 +119,13 @@ void ppc32_flush_code_generator_state(void);
 #define ins_align(ALIGN)
 #define ins_byte(VAL)	  add_to_program((INT32)(VAL))
 #define ins_data(VAL)	  add_to_program((INT32)(VAL))
+
+INT32 ppc32_ins_f_jump(unsigned int b);
+void ppc32_update_f_jump(INT32 offset, INT32 to_offset);
+INT32 ppc32_read_f_jump(INT32 offset);
+#define INS_F_JUMP ppc32_ins_f_jump
+#define UPDATE_F_JUMP ppc32_update_f_jump
+#define READ_F_JUMP ppc32_read_f_jump
 
 #define READ_INCR_BYTE(PC)	(((PC)++)[0])
 

@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.c,v 1.9 2001/08/16 01:06:49 marcus Exp $
+ * $Id: ppc32.c,v 1.10 2001/08/16 18:51:10 marcus Exp $
  *
  * Machine code generator for 32 bit PowerPC
  *
@@ -8,6 +8,12 @@
 
 #include "operators.h"
 #include "constants.h"
+
+#if PIKE_BYTEORDER == 1234
+#define MAKE_TYPE_WORD(t,st) ((t)|((st)<<16))
+#else
+#define MAKE_TYPE_WORD(t,st) ((st)|((t)<<16))
+#endif
 
 #ifdef _AIX
 #define ADD_CALL(X) do {						\
@@ -73,11 +79,17 @@ INT32 ppc32_get_local_addr(int reg, INT32 arg)
   return offs;
 }
 
-void ppc32_push_svalue(int reg, INT32 offs)
+void ppc32_push_svalue(int reg, INT32 offs, int force_reftype)
 {
   int e;
 
   LOAD_SP_REG();
+
+  if(offs > (INT32)(32768-sizeof(struct svalue))) {
+    /* addi r,r,offs */
+    ADDI(reg, reg, offs);
+    offs = 0;
+  }
 
   if(sizeof(struct svalue) > 8)
   {
@@ -98,20 +110,26 @@ void ppc32_push_svalue(int reg, INT32 offs)
   LWZ(11, reg, offs+OFFSETOF(svalue,u.refs));
   /* stw r0,0(pike_sp) */
   STW(0, PPC_REG_PIKE_SP, 0);
+  if(!force_reftype) {
 #if PIKE_BYTEORDER == 1234
-  /* rlwinm r0,r0,0,16,31 */
-  RLWINM(0, 0, 0, 16, 31);
+    /* rlwinm r0,r0,0,16,31 */
+    RLWINM(0, 0, 0, 16, 31);
 #else
-  /* rlwinm r0,r0,16,16,31 */
-  RLWINM(0, 0, 16, 16, 31);
+    /* rlwinm r0,r0,16,16,31 */
+    RLWINM(0, 0, 16, 16, 31);
 #endif
+  }
   /* stw r11,refs(pike_sp) */
   STW(11, PPC_REG_PIKE_SP, OFFSETOF(svalue,u.refs));
-  /* cmplwi r0,MAX_REF_TYPE */
-  CMPLI(0, 0, MAX_REF_TYPE);
+  if(!force_reftype) {
+    /* cmplwi r0,MAX_REF_TYPE */
+    CMPLI(0, 0, MAX_REF_TYPE);
+  }
   INCR_SP_REG(sizeof(struct svalue));
-  /* bgt bork */
-  BC(12, 1, 4);
+  if(!force_reftype) {
+    /* bgt bork */
+    BC(12, 1, 4);
+  }
   /* lwz r0,0(r11) */
   LWZ(0, 11, 0);
   /* addic r0,r0,1 */
@@ -124,6 +142,27 @@ void ppc32_push_svalue(int reg, INT32 offs)
 void ppc32_push_constant(INT32 arg)
 {
   INT32 offs;
+  struct svalue *sval = &Pike_compiler->new_program->constants[arg].sval;
+
+  if(sval->type > MAX_REF_TYPE) {
+    int e;
+    INT32 last=0;
+
+    LOAD_SP_REG();
+
+    for(e=0;e<(int)sizeof(struct svalue);e+=4)
+    {
+      if(e==0 || *(INT32 *)(((char *)sval)+e) != last)
+	SET_REG(0, last = *(INT32 *)(((char *)sval)+e));
+      /* stw r0,e(pike_sp) */
+      STW(0, PPC_REG_PIKE_SP, e);
+    }
+
+    INCR_SP_REG(sizeof(struct svalue));  
+
+    return;
+  }
+
   LOAD_FP_REG();
   /* lwz r3,context.prog(pike_fp) */
   LWZ(PPC_REG_ARG1, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, context.prog));
@@ -139,14 +178,14 @@ void ppc32_push_constant(INT32 arg)
       offs -= 65536;
   }
 
-  ppc32_push_svalue(PPC_REG_ARG1, offs);
+  ppc32_push_svalue(PPC_REG_ARG1, offs, 1);
 }
 
 void ppc32_push_local(INT32 arg)
 {
   INT32 offs;
   offs = ppc32_get_local_addr(PPC_REG_ARG1, arg);
-  ppc32_push_svalue(PPC_REG_ARG1, offs);
+  ppc32_push_svalue(PPC_REG_ARG1, offs, 0);
 }
 
 void ppc32_local_lvalue(INT32 arg)
@@ -167,17 +206,14 @@ void ppc32_local_lvalue(INT32 arg)
     /* addi r3,r3,offs */
     ADDI(PPC_REG_ARG1, PPC_REG_ARG1, offs);
   }
-#if PIKE_BYTEORDER == 1234
-  SET_REG(0, T_LVALUE);
+  /* li r0,T_LVALUE */
+  SET_REG(0, MAKE_TYPE_WORD(T_LVALUE, 0));
+  /* stw r0,0(pike_sp) */
   STW(0, PPC_REG_PIKE_SP, 0);
-  SET_REG(0, T_VOID);
+  /* li r0,T_VOID */
+  SET_REG(0, MAKE_TYPE_WORD(T_VOID, 0));
+  /* stw r0,sizeof(struct svalue)(pike_sp) */
   STW(0, PPC_REG_PIKE_SP, sizeof(struct svalue));
-#else
-  SET_REG(0, T_LVALUE<<16);
-  STW(0, PPC_REG_PIKE_SP, 0);
-  SET_REG(0, T_VOID<<16);
-  STW(0, PPC_REG_PIKE_SP, sizeof(struct svalue));
-#endif
   /* stw r3,u.lval(pike_sp) */
   STW(PPC_REG_ARG1, PPC_REG_PIKE_SP, OFFSETOF(svalue,u.lval));
   INCR_SP_REG(sizeof(struct svalue)*2);  
@@ -201,13 +237,8 @@ void ppc32_push_int(INT32 x)
   if(sizeof(struct svalue) <= 8 || x != 0)
     SET_REG(0, x);
   STW(0, PPC_REG_PIKE_SP, OFFSETOF(svalue,u.integer));
-#if PIKE_BYTEORDER == 1234
-  if(x != PIKE_T_INT)
-    SET_REG(0, PIKE_T_INT);
-#else
-  if(x != (PIKE_T_INT << 16))
-    SET_REG(0, (PIKE_T_INT << 16));
-#endif
+  if(x != MAKE_TYPE_WORD(PIKE_T_INT, 0))
+    SET_REG(0, MAKE_TYPE_WORD(PIKE_T_INT, 0));
   STW(0, PPC_REG_PIKE_SP, 0);
   INCR_SP_REG(sizeof(struct svalue));  
 }
@@ -358,6 +389,31 @@ void ins_f_byte_with_2_args(unsigned int a,
   SET_REG(PPC_REG_ARG2, c);
   ins_f_byte(a);
   return;
+}
+
+INT32 ppc32_ins_f_jump(unsigned int b)
+{
+  INT32 ret;
+  if(b != F_BRANCH) return -1;
+  FLUSH_CODE_GENERATOR_STATE();
+  ret=DO_NOT_WARN( (INT32) PIKE_PC );
+  add_to_program(0x48000000);
+  return ret;
+}
+
+void ppc32_update_f_jump(INT32 offset, INT32 to_offset)
+{
+  PIKE_OPCODE_T *op = &Pike_compiler->new_program->program[offset];
+
+  *op = (*op & 0xfc000003) | (((to_offset - offset)<<2)&0x03fffffc);
+}
+
+INT32 ppc32_read_f_jump(INT32 offset)
+{
+  INT32 delta = ((read_pointer(offset)&0x03fffffc)>>2);
+  if(delta >= 0x800000)
+    delta -= 0x1000000;
+  return offset + delta;
 }
 
 void ppc32_flush_instruction_cache(void *addr, size_t len)
