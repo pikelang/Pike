@@ -25,7 +25,6 @@ struct object
 
 extern struct object fake_object;
 extern struct object *first_object;
-extern struct object *objects_to_destruct;
 extern struct object *master_object;
 extern struct program *master_program;
 
