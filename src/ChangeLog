@@ -1,8 +1,14 @@
+Mon Dec  8 03:41:27 1997  Henrik Grubbström  <grubba@infovav.se>
+
+	* modules/*/*.[ch]: Pike's header-files are now #included with
+	""-quoting (and not <>-quoting) from all modules. This makes
+	the dependency files contain all the expected rules.
+
 Fri Dec  5 23:25:33 1997  Henrik Grubbström  <grubba@infovav.se>
 
 	* modules/Image/colortable.c (reduce_recurse): Now uses MEMMOVE()
  	instead of memmove().
-	* pike_memory.c (strdup): Added function for OS's who don't have
+	* pike_memory.c (strdup): Added function for OS's which don't have
 	strdup().
 	* modules/files/configure.in: Fixed configure-test for readdir_r to
  	work on Sparc-Linux.
@@ -10,6 +16,8 @@ Fri Dec  5 23:25:33 1997  Henrik Grubbström  <grubba@infovav.se>
 	struct fs_data.
 	* modules/_Crypto/lib/Makefile.in: algorithms.a is now built in a way
 	that works on Irix 4.0.5.
+	* smartlink: ulimit disabled since it caused problems on some OS's
+	with some compilers.
 
 Mon Nov 17 04:11:14 1997  Niels Möller  <nisse@infovav.se>
 
