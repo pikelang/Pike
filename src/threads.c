@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.227 2003/11/22 15:00:54 grubba Exp $
+|| $Id: threads.c,v 1.228 2003/11/25 17:58:24 jonasw Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.227 2003/11/22 15:00:54 grubba Exp $");
+RCSID("$Id: threads.c,v 1.228 2003/11/25 17:58:24 jonasw Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -41,6 +41,20 @@ PMOD_EXPORT int threads_disabled = 0;
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
 #endif /* HAVE_SYS_PRCTL_H */
+
+#ifdef HAVE_MACH_TASK_INFO_H
+#include <mach/task_info.h>
+#endif
+#ifdef HAVE_MACH_TASK_H
+#include <mach/task.h>
+#endif
+#ifdef HAVE_MACH_MACH_INIT_H
+#include <mach/mach_init.h>
+#endif
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
 
 #ifndef PIKE_THREAD_C_STACK_SIZE
 #define PIKE_THREAD_C_STACK_SIZE (256 * 1024)
@@ -718,6 +732,26 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
     if( now-last_ < 50000000 ) /* 0.05s slice */
       return;
     last_ = now;
+  }
+#elif HAVE_MACH_TASK_INFO_H
+  {
+    static struct timeval         last_check = { 0, 0 };
+    task_thread_times_info_data_t info;
+    mach_msg_type_number_t        info_size = TASK_THREAD_TIMES_INFO_COUNT;
+    
+    /* Get user time and test if 50usec has passed since last check. */
+    if (task_info(mach_task_self(), TASK_THREAD_TIMES_INFO,
+		  (task_info_t) &info, &info_size) == 0) {
+      /* Compute difference by converting kernel time_info_t to timeval. */
+      struct timeval now;
+      struct timeval diff;
+      now.tv_sec = info.user_time.seconds;
+      now.tv_usec = info.user_time.microseconds;
+      timersub(&now, &last_check, &diff);
+      if (diff.tv_usec < 50000 && diff.tv_sec == 0)
+	return;
+      last_check = now;
+    }
   }
 #elif defined (USE_CLOCK_FOR_SLICES)
   if (clock() - thread_start_clock < (clock_t) (CLOCKS_PER_SEC / 20))
