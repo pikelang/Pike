@@ -452,10 +452,14 @@ void read_thread()
 
 void server_read_thread()
 {
-  DEBUGMSG("server_read_thread\n");
-  handshake (0, con->read (24, 1));
-  read_thread();
-  DEBUGMSG("server_read_thread exit\n");
+  mixed err = catch {
+    DEBUGMSG("server_read_thread\n");
+    handshake (0, con->read (24, 1));
+    read_thread();
+    DEBUGMSG("server_read_thread exit\n");
+  };
+  con = 0;
+  if (err) throw (err);
 }
 
 void call_thread()
