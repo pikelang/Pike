@@ -1,4 +1,4 @@
-// $Id: assemble_autodoc.pike,v 1.21 2002/12/12 20:43:16 grubba Exp $
+// $Id: assemble_autodoc.pike,v 1.22 2002/12/12 21:15:02 grubba Exp $
 
 // AutoDoc mk II assembler
 
@@ -153,6 +153,14 @@ void enqueue_move(string source, Node target) {
 
   if(source != "") {
     array path = map(source/".", replace, "-", ".");
+    if (!has_value(path[0], "::")) {
+      // Default namespace.
+      path = ({ "predef::" }) + path;
+    } else {
+      if (!has_suffix(path[0], "::")) {
+	path = path[0]/"::" + path[1..];
+      }
+    }
     foreach(path, string node) {
       if(!bucket[node])
 	bucket[node] = ([]);
@@ -368,7 +376,7 @@ static void move_items_low(Node n, mapping jobs, void|Node wrapper) {
       if(wrapper)
 	wr = wrap( wr, wrapper->clone() );
 
-      move_items(c, e, wr);
+      move_items_low(c, e, wr);
 
       if(!sizeof(e))
 	m_delete(jobs, name);
@@ -377,10 +385,6 @@ static void move_items_low(Node n, mapping jobs, void|Node wrapper) {
 
 void move_items(Node n, mapping jobs, void|Node wrapper)
 {
-#if 0
-  werror("move_items(%O, %O, %O)\n",
-	 n, jobs, wrapper);
-#endif /* 0 */
   if(jobs[0]) {
     if(wrapper)
       jobs[0]( wrap(n, wrapper->clone()) );
@@ -390,14 +394,13 @@ void move_items(Node n, mapping jobs, void|Node wrapper)
   }
   if(!sizeof(jobs)) return;
 
-  // First do all namespace specific moves.
   foreach(n->get_elements("namespace"), Node c) {
     mapping m = c->get_attributes();
     string name = m->name + "::";
     mapping e = jobs[name];
     if(!e) continue;
 
-    Node wr = Node(XML_ELEMENT, n->get_tag_name(),
+    Node wr = Node(XML_ELEMENT, "namespace",
 		   n->get_attributes()+(["hidden":"1"]), 0);
     if(wrapper)
       wr = wrap( wr, wrapper->clone() );
@@ -406,20 +409,6 @@ void move_items(Node n, mapping jobs, void|Node wrapper)
 
     if(!sizeof(e))
       m_delete(jobs, name);
-  }
-
-  if(!sizeof(jobs)) return;
-
-  // Then perform the moves that are predef:: implicit.
-  foreach(n->get_elements("namespace"), Node c)
-  {
-    if (c->get_attributes()->name != "predef") continue;
-
-    Node wr = Node(XML_ELEMENT, n->get_tag_name(),
-		   n->get_attributes()+(["hidden":"1"]), 0);
-    if(wrapper)
-      wr = wrap( wr, wrapper->clone() );
-    move_items_low(c, jobs, wr);
   }
 }
 
