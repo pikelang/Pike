@@ -21,6 +21,8 @@ class elem {
   int `==(object o) { return pri==o->pri; }
 };
 
+//! @fixme
+//!   Document this function
 mixed push(int pri, mixed val)
 {
   mixed handle;
@@ -30,10 +32,14 @@ mixed push(int pri, mixed val)
   return handle;
 }
 
+//! @fixme
+//!   Document this function
 void adjust_pri(mixed handle, int new_pri)
 {
   handle->pri=new_pri;
   ::adjust(handle);
 }
 
+//! @fixme
+//!   Document this function
 mixed pop() { return top()->value; }

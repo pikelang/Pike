@@ -13,7 +13,8 @@ void verify_heap()
   {
     if(values[(e-1)/2] > values[e])
     {
-      write(sprintf("FEL in HEAP (%d, %d) num_values=%d\n", (e-1)/2, e, num_values));
+      write(sprintf("Error in HEAP (%d, %d) num_values=%d\n",
+		    (e-1)/2, e, num_values));
       exit(1);
     }
   }
@@ -71,6 +72,8 @@ static int adjust_up(int elem)
   return 0;
 }
 
+//! @fixme
+//!   Document this function
 void push(mixed value)
 {
   if(num_values >= sizeof(values))
@@ -81,6 +84,8 @@ void push(mixed value)
   verify_heap();
 }
 
+//! @fixme
+//!   Document this function
 void adjust(mixed value)
 {
   int pos=search(values, value);
@@ -90,6 +95,8 @@ void adjust(mixed value)
   verify_heap();
 }
 
+//! @fixme
+//!   Document this function
 mixed top()
 {
   mixed ret;
@@ -111,5 +118,7 @@ mixed top()
   verify_heap();
 }
 
+//! @fixme
+//!   Document this function
 int size() { return num_values; }
 
