@@ -43,4 +43,4 @@ gdb_verify: module_testsuite
 
 
 install:
-	$(INSTALL) module.so @prefix@/pike/lib/modules/$(MODNAME).so
+	$(INSTALL) module.so @prefix@/lib/pike/modules/$(MODNAME).so
