@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.c,v 1.19 2002/09/14 21:08:40 marcus Exp $
+ * $Id: ppc32.c,v 1.20 2002/09/22 22:03:43 marcus Exp $
  *
  * Machine code generator for 32 bit PowerPC
  *
@@ -353,10 +353,36 @@ void ppc32_mark(void)
 static void ppc32_escape_catch(void)
 {
   extern void *do_escape_catch_label;
-  void *pc;
-  __asm__("\tmflr %0" : "=r" (pc));
-  Pike_fp->pc = pc;
-  goto *do_escape_catch_label;
+  void *toc_;
+  INT32 delta_;
+
+  LOAD_FP_REG();
+  __asm__("\tmr %0,"PPC_REGNAME(2) : "=r" (toc_));
+  delta_ = ((char *)&do_escape_catch_label) - ((char *)toc_);
+  if(delta_ < -32768 || delta_ > 32767) {
+    /* addis r11,r2,%hi(delta) */
+    ADDIS(11, 2, (delta_+32768)>>16);
+    if ((delta_ &= 0xffff) > 32767)
+      delta_ -= 65536;
+    /* lwz r0,%lo(delta)(r11) */
+    LWZ(0, 11, delta_);
+  } else {
+    /* lwz r0,delta(r2)	*/
+    LWZ(0, 2, delta_);
+  }
+  FLUSH_CODE_GENERATOR_STATE();
+  /* bl .+4 */
+  add_to_program(0x48000005);
+  /* mflr pike_pc */
+  MFSPR(PPC_REG_PIKE_PC, 8);
+  /* mtlr r0 */
+  add_to_program(0x7c0803a6);
+  /* addi pike_pc,pike_pc,20 */
+  ADDI(PPC_REG_PIKE_PC, PPC_REG_PIKE_PC, 5*sizeof(PIKE_OPCODE_T));
+  /* stw pike_pc,pc(pike_fp) */
+  STW(PPC_REG_PIKE_PC, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, pc));
+  /* blrl */
+  add_to_program(0x4e800021);
 }
 
 static void maybe_update_pc(void)
@@ -426,8 +452,8 @@ void ins_f_byte(unsigned int b)
     break;
 
   case F_ESCAPE_CATCH - F_OFFSET:
-    addr = (void *)ppc32_escape_catch;
-    break;
+    ppc32_escape_catch();
+    return;
   }
 
   FLUSH_CODE_GENERATOR_STATE();
