@@ -3475,8 +3475,44 @@ except for stdin, stdout and stderr.
 
 </a>
 <hr noshade size=1>
-<!-- FIXME insert examples of how to use Stdio.File here -->
-<!-- FIXME Don't forget to put a TCP example here -->
+
+<!-- FIXME might be good to have a plain and simple example of Stdio.File here -->
+
+<p>
+Here is an example of how to use the TCP functions in Stdio.File in blocking
+mode. This short program takes an URL as first argument, connects to the
+WWW server, sends a HEAD request and writes the reply to stdout. For clarity,
+all calls to Stdio.File use <tt>File::</tt> even if that is not strictly
+nessesary.
+<pre>
+	import Stdio;
+	inherit File;
+
+	int main(int argc, array(string) argv)
+	{
+	  string host;
+	  string path="";
+	  int port=80;
+	  sscanf(argv[1],"http://%s",argv[1]);
+	  sscanf(argv[1],"%s/%s",host,path);
+	  sscanf(host,"%s:%d",host,port);
+
+	  if(!File::open_socket())
+	  {
+	    perror("Open socket failed");
+	    exit(1);
+	  }
+
+	  if(!File::connect(host,port))
+	  {
+	    perror("Failed to connect to remote host");
+	    exit(1);
+	  }
+
+	  File::write(sprintf("HEAD /%s HTTP/1.0\n",path));
+	  stdout::write(File::read());
+	}
+</pre>
 
 </a>
 
@@ -3560,7 +3596,6 @@ that the return value is the ascii value of the character, not
 a string containing one character.
 <p>
 </dl>
-
 </a>
 
 <!-- FIXME, example of how to use Stdio.FILE here -->
@@ -4502,52 +4537,962 @@ This function returns how many values are currently in the queue.
 
 <HR NEWPAGE>
 
-<H1>Minor modules</H1>
-(the rest of them)
-<ul>
-  <li>Gdbm
-  <li>Mpz
-  <li>regexp
-  <li>heap
-  <li>priority_queue
-  <li>Other available modules: image, curses
-</ul>
-<HR NEWPAGE>
+<H1>Modules for specific data types</h1>
+There are a few modules that provide extra functions that operate specifically
+on one data type. These modules have the same name as the data type, but are
+capitalized so you can tell the differance. At the time of writing, the only
+such modules are <tt>String</tt> and <tt>Array</tt>, but more are expected to
+show up in the future.
 
-<H1>10. The preprocessor</h1>
-<a name=preprocessor>
+<h2>String</h2>
+The module <tt>String</tt> contains some extra string functionality which
+is not always used. These functions are mostly implemented in Pike as a
+compliment to those written in C.
+
+<hr noshade size=1>
+<a name=String.implode_nicely>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>preprocessor</tt> - textually process code before compiling
+<tt>String.implode_nicely</tt> - make an english comma separated list
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string implode_nicely(string *words, string|void separator)<br>
+</tt>
 <p>
 <dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-Pike has a builtin C-style preprocessor. It works similar to old
-C preprocessors but has a few extra features. This file describes
-the different preprocessor directives.
+This function implodes a list of words to a readable string.
+If the separator is omitted, the default is <tt>"and"</tt>.
 <p>
-<dt><b> <font size=+1>P</font><font size=-1>REPROCESSOR</font> <font size=+1>D</font><font size=-1>IRECTIVES</font></b><dd>
-<tt><dl><dt><dd>#!<br>
-#define<br>
-#elif<br>
-#else<br>
-#elseif<br>
-#endif<br>
-#error<br>
-#if<br>
-#ifdef<br>
-#ifndef<br>
-#include<br>
-#line<br>
-#pragma<br>
-#undef<br>
-</dl></tt>
+<dt><b> <font size=+1>E</font><font size=-1>XAMPLES</font></b><dd>
+<tt>&gt; implode_nicely(({"green"}));<br>
+Result: green<br>
+&gt; implode_nicely(({"green","blue"}));<br>
+Result: green and blue<br>
+&gt; implode_nicely(({"green","blue","white"}));<br>
+Result: green, blue and white<br>
+&gt; implode_nicely(({"green","blue","white"}),"or");<br>
+Result: green, blue or white<br>
+</tt>
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index.html#pike>pike</a>
+<a href=types_string.html>string</a>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#multiplication>`*</a>
+</dl>
+</a>
+
+<hr noshade size=1>
+
+<a name=String.capitalize>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>String.capitalize</tt> - capitalize a string
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string capitalize(string str)<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Convert the first character in str to upper case, and return the
+new string.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+<a href=types_string.html>string</a>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#lower_case>lower_case</a> and <a href=#upper_case>upper_case</a>
+<p>
+</dl>
+</a>
+
+<hr noshade size=1>
+
+<a name=String.strmult>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>String.strmult</tt> - multiply strings
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string strmult(string <I>s</I>, int <I>num</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function multplies 's' by 'num'. The return value is the same
+as appending 's' to an empty string 'num' times.
+<p>
+</dl>
+</a>
+<hr noshade size=1>
+
+<h2>Array</h2>
+As with <tt>String</tt> these functions are Pike functions written to
+suppliment those written in C.
+
+<hr noshade size=1>
+<a name=Array.map>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Array.map</tt> - map an array or mapping over a function
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>mixed *map(mixed <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
+or<br>
+mixed *map(object *<I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
+or<br>
+mixed *map(function *<I>arr</I>,-<I>1</I>,mixed ... <I>arg</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+First syntax:
+Map array returns an array holding the items of arr mapped thrugh
+the function fun. ie. arr[x]=fun(arr[x], @args) for all x.
+<p>Second syntax:
+Map array calls function fun in all objects in the array arr.
+ie. arr[x]=arr[x]-&gt;fun(@ args);
+<p>Third syntax:
+Map array calls the functions in the array arr:
+arr[x]=arr[x]-&gt;fun(@ args);
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+<a href=types_array.html>array</a>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Array.sum_arrays>Array.sum_arrays</a> and <a href=#Array.filter>Array.filter</a>
 <p>
 </dl>
 
 </a>
+<hr noshade size=1>
+<a name=Array.filter>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Array.filter</tt> - filter an array or mapping through a function
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>mixed *filter(mixed <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
+or<br>
+mixed *filter(object *<I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
+or<br>
+mixed *filter(function *<I>arr</I>,-<I>1</I>,mixed ... <I>args</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+First syntax:
+Filter array returns an array holding the items of arr for which
+fun returns true.
+<p>Second syntax:
+Filter array calls fun in all the objects in the array arr, and
+return all objects that returned true.
+<p>Third syntax:
+Filter array calls all functionpointers in the array arr, and
+return all that returned true.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+<a href=types_array.html>array</a>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Array.sum_arrays>Array.sum_arrays</a> and <a href=#Array.map>Array.map</a>
+</dl>
+</a>
+
+
+<hr noshade size=1>
+<a name=Array.search_array>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Array.search_array</tt> - search for something in an array
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int search_array(mixed *<I>arr</I>,function <I>fun</I>,mixed <I>arg</I>, ...);<br>
+or<br>
+int search_array(object *<I>arr</I>,string <I>fun</I>,mixed <I>arg</I>, ...);<br>
+or<br>
+int search_array(function *<I>arr</I>,-<I>1</I>,mixed <I>arg</I>, ...);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+search_array works like map_array, only it returns the index of the
+first call that returned true instead or returning an array of the
+returned values. If no call returns true, -1 is returned.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+<a href=types_array.html>array</a>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Array.sum_arrays.html>Array.sum_arrays</a> and <a href=#Array.filter_array>Array.filter_array</a>
+<p>
+</dl>
+</a>
+
+<hr noshade size=1>
+<a name=Array.sum_arrays>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Array.sum_arrays</tt> - map any number of arrays over a function.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>mixed *sum_arrays(function <I>fun</I>,mixed *<I>arr1</I>,...);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Works like this:
+<p>mixed *sum_arrays(function fun,mixed *arr1,...)<br>
+{<br>
+<dl><dt><dd>int e;<br>
+mixed *res=allocate(sizeof(arr1));<br>
+for(e=0;e&lt;sizeof(arr1);e++)<br>
+{<br>
+<dl><dt><dd>res[e]=fun(arr1[e],arr2[e],...);<br>
+</dl>}<br>
+return res;<br>
+</dl>}<br>
+
+<p>Simple ehh?
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+<a href=types_array.html>array</a>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Array.map_array>Array.map</a>, <a href=#Array.filter>Array.filter</a> and <a href=#Array.search_array>Array.search_array</a>
+</dl>
+</a>
+
+<hr noshade size=1>
+<a name=Array.sort_array>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Array.sort_array</tt> - sort an array
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>mixed *sort_array(mixed *<I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function sorts an array after a compare-function 'fun'
+which takes two arguments and should return 1 if the first argument
+is larger then the second. The rest of the arguments 'args' will be
+sent as 3rd, 4th etc. argument to fun. If fun is omitted, `&lt; is unsed
+instead.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+<a href=types_array.html>array</a>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Array.map>Array.map</a> and <a href=#sort>sort</a>
+</dl>
+</a>
+
+<hr noshade size=1>
+<a name=Array.uniq>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Array.uniq</tt> - return one of each element
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>array uniq(array <I>a</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function returns an copy of the array a with all duplicate
+values removed. The order of the values in the result is undefined.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+<a href=types_array.html>array</a>
+<p>
+</dl>
+</a>
+
+<hr noshade size=1>
+
+<H1>Other modules</H1>
+Pike also include a number of smaller modules. These modules implement support
+for various algorithms, data structures and system routines.
+
+<h2>System</h2>
+The system module contains some system-specific functions that may or may
+not be available on your system. Most of these functions do exactly the same
+thing as their UNIX counterpart. See the UNIX man pages for detailed
+information about what these functions do on your system.
+<p>
+Please note that these functions are available globally, you do not
+have to <tt>import System</tt> to use these functions.
+
+<hr noshade size=1>
+<a name=chroot>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>chroot</tt> - change the root directory
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int chroot(string <I>newroot</I>);<br>
+or<br>
+int chroot(object(File) <I>obj</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Changes the root directory for this process to the indicated
+directory.
+<p>
+<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
+Since this function modifies the directory structure as seen from
+Pike, you have to modify the environment variables PIKE_MODULE_PATH
+and PIKE_INCLUDE_PATH to compensate for the new root-directory.
+<p>This function only exists on systems that have the chroot(2)
+system call.
+The second variant only works on systems that also have
+the fchroot(2) system call.
+
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=getegid>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>getegid</tt> - get the effective group ID
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int getegid();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Get the effective group ID.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+Usersecurity
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#setuid>setuid</a>, <a href=#getuid>getuid</a>, <a href=#setgid>setgid</a>, <a href=#getgid>getgid</a>, <a href=#seteuid>seteuid</a>, <a href=#geteuid>geteuid</a> and <a href=#setegid>setegid</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=geteuid>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>geteuid</tt> - get the effective user ID
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int geteuid();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Get the effective user ID.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+Usersecurity
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#setuid>setuid</a>, <a href=#getuid>getuid</a>, <a href=#setgid>setgid</a>, <a href=#getgid>getgid</a>, <a href=#seteuid>seteuid</a>, <a href=#setegid>setegid</a> and <a href=#getegid>getegid</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=getgid>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>getgid</tt> - get the group ID
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int getgid();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Get the real group ID.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+Usersecurity
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#setuid>setuid</a>, <a href=#getuid>getuid</a>, <a href=#setgid>setgid</a>, <a href=#seteuid>seteuid</a>, <a href=#geteuid>geteuid</a>, <a href=#setegid>setegid</a> and <a href=#getegid>getegid</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=gethostbyaddr>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>gethostbyaddr</tt> - gets information about a host given it's address
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>array gethostbyaddr(string <I>addr</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Returns an array with information about the specified IP address.
+<p>The returned array contains the same information as that returned
+by gethostbyname().
+<p>
+<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
+This function only exists on systems that have the gethostbyaddr(2)
+or similar system call.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#gethostbyname>gethostbyname</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=gethostbyname>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>gethostbyname</tt> - gets information about a host given it's name
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>array gethostbyname(string <I>hostname</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Returns an array with information about the specified host.
+<p>The array contains three elements:
+<p>The first element is the hostname.
+<p>The second element is an array(string) of IP numbers for the host.
+<p>The third element is an array(string) of aliases for the host.
+<p>
+<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
+This function only exists on systems that have the gethostbyname(2)
+or similar system call.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#gethostbyaddr>gethostbyaddr</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=gethostname>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>gethostname</tt> - get the name of this host
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string gethostname();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Returns a string with the name of the host.
+<p>
+<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
+This function only exists on systems that have the gethostname(2)
+or uname(2) system calls.
+
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=getpgrp>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>getpgrp</tt> - get the process group ID
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int getpgrp();<br>
+or<br>
+int getpgrp(int <I>pid</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+With no argguments or with 'pid' equal to zero, returns the process
+group ID of this process.
+<p>If 'pid' is specified, returns the process group ID of that process.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+Processes
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#getpid>getpid</a> and <a href=#getppid>getppid</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=getpid>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>getpid</tt> - get the process ID
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int getpid();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Returns the process ID of this process.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+Processes
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#getppid>getppid</a> and <a href=#getpgrp>getpgrp</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=getppid>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>getppid</tt> - get the parent process ID
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int getppid();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Returns the process ID of the parent process.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+Processes
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#getpid>getpid</a> and <a href=#getpgrp>getpgrp</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=getuid>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>getuid</tt> - get the user ID
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int getuid();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Get the real user ID.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+Usersecurity
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#setuid>setuid</a>, <a href=#setgid>setgid</a>, <a href=#getgid>getgid</a>, <a href=#seteuid>seteuid</a>, <a href=#geteuid>geteuid</a>, <a href=#setegid>setegid</a> and <a href=#getegid>getegid</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=hardlink>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>hardlink</tt> - create a hardlink
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void hardlink(string <I>from</I>, string <I>to</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Creates a hardlink named 'to' from the file 'from'.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+<a href=index#file>file</a>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#symlink>symlink</a>, <a href=files_mv>mv</a> and <a href=files_rm>rm</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=initgroups>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>initgroups</tt> - initialize the group access list
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void initgroups(string <I>username</I>, int <I>base_gid</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Initializes the group access list according to the system
+group database. 'base_gid' is also added to the group access
+list.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+Usersecurity
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#setuid>setuid</a>, <a href=#getuid>getuid</a>, <a href=#setgid>setgid</a>, <a href=#getgid>getgid</a>, <a href=#seteuid>seteuid</a>, <a href=#geteuid>geteuid</a>, <a href=#setegid>setegid</a>, <a href=#getegid>getegid</a>, system/getgroups and system/setgroups
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=openlog>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>openlog</tt> - initializes the connection to syslogd
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void openlog(string <I>ident</I>, int <I>options</I>, <I>facility</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Initializes the connection to syslogd.
+<p>The 'ident' argument specifies an identifier to tag all logentries
+with.
+<p>'options' is a bitfield specifying the behaviour of the message
+logging. Valid options are:
+<p><dl><dt><dd><table border=0 cellpadding=0 cellspacing=0>
+<tr valign=top><td> LOG_PID </td><td> Log the process ID with each message. </td></tr>
+<tr valign=top><td> LOG_CONS </td><td> Write messages to the console if they can't be sent to syslogd. </td></tr>
+<tr valign=top><td> LOG_NDELAY </td><td> Open the connection to syslogd now and not later. </td></tr>
+<tr valign=top><td> LOG_NOWAIT </td><td> Do not wait for subprocesses talking to syslogd. </td></tr>
+</table>
+</dl>
+<p>'facility' specifies what subsystem you want to log as. Valid
+facilities are:
+<p><dl><dt><dd><table border=0 cellpadding=0 cellspacing=0>
+<tr valign=top><td> LOG_AUTH </td><td> Authorization subsystem </td></tr>
+<tr valign=top><td> LOG_AUTHPRIV </td></tr>
+<tr valign=top><td> LOG_CRON </td><td> Crontab subsystem </td></tr>
+<tr valign=top><td> LOG_DAEMON </td><td> System daemons </td></tr>
+<tr valign=top><td> LOG_KERN </td><td> Kernel subsystem (NOT USABLE) </td></tr>
+<tr valign=top><td> LOG_LOCAL </td><td> For local use </td></tr>
+<tr valign=top><td> LOG_LOCAL[1-7] </td><td> For local use </td></tr>
+<tr valign=top><td> LOG_LPR </td><td> Line printer spooling system </td></tr>
+<tr valign=top><td> LOG_MAIL </td><td> Mail subsystem </td></tr>
+<tr valign=top><td> LOG_NEWS </td><td> Network news subsystem </td></tr>
+<tr valign=top><td> LOG_SYSLOG </td></tr>
+<tr valign=top><td> LOG_USER </td></tr>
+<tr valign=top><td> LOG_UUCP </td><td> UUCP subsystem </td></tr>
+</table>
+</dl>
+<p>
+<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
+Only available on systems with syslog(3).
+
+BUGS
+LOG_NOWAIT should probably always be specified.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+syslog, closelog and setlogmask
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=readlink>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>readlink</tt> - read a symbolic link
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string readlink(string <I>linkname</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Returns what the symbolic link 'linkname' points to.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+<a href=index#file>file</a>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#symlink>symlink</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=setegid>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>setegid</tt> - set the effective group ID
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void setegid(int <I>uid</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Sets the effective group ID to 'gid'.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+Usersecurity
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#setuid>setuid</a>, <a href=#getuid>getuid</a>, <a href=#setgid>setgid</a>, <a href=#getgid>getgid</a>, <a href=#seteuid>seteuid</a>, <a href=#geteuid>geteuid</a> and <a href=#getegid>getegid</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=seteuid>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>seteuid</tt> - set the effective user ID
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void seteuid(int <I>uid</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Sets the effective user ID to 'uid'.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+Usersecurity
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#setuid>setuid</a>, <a href=#getuid>getuid</a>, <a href=#setgid>setgid</a>, <a href=#getgid>getgid</a>, <a href=#geteuid>geteuid</a>, <a href=#setegid>setegid</a> and <a href=#getegid>getegid</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=setgid>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>setgid</tt> - set the group ID
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void setgid(int <I>gid</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Sets the real group ID, effective group ID and saved group ID to 'gid'.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+Usersecurity
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#setuid>setuid</a>, <a href=#getuid>getuid</a>, <a href=#getgid>getgid</a>, <a href=#seteuid>seteuid</a>, <a href=#geteuid>geteuid</a>, <a href=#setegid>setegid</a> and <a href=#getegid>getegid</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=setuid>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>setuid</tt> - set the user ID
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void setuid(int <I>uid</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Sets the real user ID, effective user ID and saved user ID to 'uid'.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+Usersecurity
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#getuid>getuid</a>, <a href=#setgid>setgid</a>, <a href=#getgid>getgid</a>, <a href=#seteuid>seteuid</a>, <a href=#geteuid>geteuid</a>, <a href=#setegid>setegid</a> and <a href=#getegid>getegid</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=symlink>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>symlink</tt> - create a symbolic link
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void symlink(string <I>from</I>, string <I>to</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Creates a symbolic link named 'to' pointing to 'from'.
+<p>
+<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
+<a href=index#file>file</a>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#hardlink>hardlink</a>, <a href=#readlink>readlink</a>, <a href=files_mv>mv</a> and <a href=files_rm>rm</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=uname>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>uname</tt> - get operating system information
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>mapping(string:string) <I>uname</I>();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Returns a mapping describing the operating system.
+<p>The mapping contains the following fields:
+<p><table border=0 cellpadding=0 cellspacing=0>
+<tr valign=top><td>  </td><td> "sysname": </td><td> Operating system name </td></tr>
+<tr valign=top><td>  </td><td> "nodename": "release": "version": "machine": </td><td> Host name Release of this OS Version number of this OS Machine architecture </td></tr>
+</table>
+
+<p>
+<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
+This function only exists on systems that have the uname(2)
+system call.
+<p>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+
+<h2>Process</h2>
+The Process module contains functions to start and control other programs from Pike.
+<hr noshade size=1>
+a name=Process.popen>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Process.popen</tt> - pipe open
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string popen(string <I>cmd</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function runs the command cmd as in a shell and returns the
+output. See your unix/C manual for details on popen.
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=Process.system>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Process.system</tt> - run an external program
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void system(string <I>cmd</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function runs the external program cmd and waits until it
+is finished. Standard /bin/sh completions/redirections/etc. can
+be used.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Process.popen>Process.popen</a>, <a href=#Process.exec>Process.exec</a> and <a href=#Process.spawn>Process.spawn</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=Process.spawn>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Process.spawn</tt> - spawn a process
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int spawn(string <I>cmd</I>);<br>
+or<br>
+int spawn(string <I>cmd</I>, object <I>stdin</I>);<br>
+or<br>
+int spawn(string <I>cmd</I>, object <I>stdin</I>, object <I>stdout</I>);<br>
+or<br>
+int spawn(string <I>cmd</I>, object <I>stdin</I>, object <I>stdout</I>, object <I>stderr</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function spawns a process but does not wait for it to finish.
+Optionally, clones of /precompiled/file can be sent to it to
+specify where stdin, stdout and stderr of the spawned processes
+should go.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Process.popen>Process.popen</a>, <a href=#fork>fork</a>, <a href=#Process.exec>Process.exec</a>, <a href=#Stdio.File.pipe>Stdio.File-&gt;pipe</a> and <a href=#Stdio.File.dup2>Stdio.File-&gt;dup2</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=exece>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>exece</tt> - execute a program
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int exece(string <I>file</I>, string *<I>args</I>);<br>
+or<br>
+int exece(string <I>file</I>, string *<I>args</I>, mapping(string:string) <I>env</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function transforms the Pike process into a process running
+the program specified in the argument 'file' with the argument 'args'.
+If the mapping 'env' is present, it will completely replace all
+environment variables before the new program is executed.
+This function only returns if something went wrong during exece(),
+and in that case it returns zero.
+<p>
+<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
+The Pike driver _dies_ when this function is called. You must use
+fork() if you wish to execute a program and still run the Pike
+driver.
+<p>
+<dt><b> <font size=+1>E</font><font size=-1>XAMPLES</font></b><dd>
+<tt>exece("/bin/ls", ({"-l"}));<br>
+exece("/bin/sh", ({"-c", "echo $HOME"}), (["HOME":"/not/home"]));<br>
+</tt>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#fork>fork</a> and <a href=#Stdio.File.pipe>Stdio.File-&gt;pipe</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+a name=Process.exec>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Process.exec</tt> - simple way to use exece()
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int exec(string <I>file</I>, string ... <I>args</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function destroys the Pike parser and runs the program
+'file' instead with the arguments. If no there are no '/' in
+the filename, the variable PATH will be consulted when looking
+for the program. This function does not return except when
+the exec fails for some reason.
+<p>
+<dt><b> <font size=+1>E</font><font size=-1>XAMPLE</font></b><dd>
+<tt>exec("/bin/echo","hello","world");<br>
+<br>
+</tt>
+</dl>
+
+</a>
+<hr noshade size=1>
+
+<h2>regexp</h2>
+<h2>Mpz</h2>
+<h2>Gdbm</h2>
+<h2>Structs</h2>
+<!-- FIXME priority_queue and heap should be placed here -->
+<h2>Getopt</h2>
+<h2>Simulate</h2>
+
+<h1>The Image module</h2>
+
+<HR NEWPAGE>
+
+<H1>The preprocessor</h1>
+<a name=preprocessor>
+Pike has a builtin C-style preprocessor. The preprocessor reads the source
+before it is compiled and removes comments and expands macros. The preprocessor
+can also remove code depending on an expression that is evaluated when you
+compile the program. The preprocessor helps to keep your programming abstract
+by using defines instead of writing the same constant everywhere. 
+<p>
+It currently works similar to old C preprocessors but has a few extra features.
+This chapter describes the different preprocessor directives. This is
+what it can do:
+
 <hr noshade size=1>
 <a name=error>
 <dl>
@@ -4593,7 +5538,18 @@ Note that it is not a good idea to do something like this:
 <p>The comment will be included in the define, and thus inserted in the
 code. This will have the effect that the rest of the line will be
 ignored when the word foo is used. Not exactly what you might expect.
-<p>
+<dt><b><font size=+1>E</font><font size=-1>XAMPLE</font></b><dd>
+<pre>
+#define A "test"
+#define B 17
+#define C(X) (X)+(B)+"\n"
+#define W write
+#define Z Stdio.stdout
+int main()
+{
+  Z->W(C(A));
+}
+</pre>
 <p>
 </dl>
 
@@ -4785,7 +5741,7 @@ are currently allocated and how much memory they use. Try evaluating
 the function in hilfe to see precisly what it returns.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin__verify_internals.html>_verify_internals</a>
+<a href=#_verify_internals>_verify_internals</a>
 <p>
 </dl>
 </a>
@@ -4807,7 +5763,7 @@ in the linked list. It is mainly meant for debugging Pike but
 can also be used to control memory usage.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_next_object.html>next_object</a> and <a href=builtin__prev.html>_prev</a>
+<a href=#next_object>next_object</a> and <a href=#_prev>_prev</a>
 <p>
 </dl>
 </a>
@@ -4829,7 +5785,7 @@ can also be used to control memory usage. Note that this function
 does not work on strings.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin__next.html>_next</a>
+<a href=#_next>_next</a>
 <p>
 </dl>
 </a>
@@ -4892,10 +5848,10 @@ debugging
 Return the arcus cosinus value for f.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_float.html>float</a>
+<a href=types_float>float</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=math_cos.html>cos</a> and <a href=math_asin.html>asin</a>
+<a href=math_cos>cos</a> and <a href=math_asin>asin</a>
 <p>
 </dl>
 </a>
@@ -4935,7 +5891,7 @@ add_constant("add_constant");<br>
 </tt>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_all_constants.html>all_constants</a>
+<a href=#all_constants>all_constants</a>
 <p>
 </dl>
 </a>
@@ -4958,7 +5914,7 @@ void add_efun(string func_name)<br>
 This function is the same as add_constant.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_add_constant.html>add_constant</a>
+<a href=#add_constant>add_constant</a>
 <p>
 </dl>
 </a>
@@ -4979,7 +5935,7 @@ This function is the same as add_constant.
 This function is exactly the same as aggregate_multiset.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_aggregage_multiset.html>aggregate_multiset</a>
+<a href=#aggregage_multiset>aggregate_multiset</a>
 <p>
 </dl>
 </a>
@@ -5007,10 +5963,10 @@ like int a[10]=allocate(10); (and it isn't possible either) like
 in C, just int *a=allocate(10); will do.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array.html>array</a>
+<a href=types_array>array</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_sizeof.html>sizeof</a>, <a href=builtin_arrayp.html>arrayp</a> and <a href=builtin_allocate.html>allocate</a>
+<a href=#sizeof>sizeof</a>, <a href=#arrayp>arrayp</a> and <a href=#allocate>allocate</a>
 <p>
 </dl>
 </a>
@@ -5033,10 +5989,10 @@ creates a mapping of those pairs. The second syntax is always
 preferable.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_mapping.html>mapping</a>
+<a href=types_mapping>mapping</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_sizeof.html>sizeof</a>, <a href=builtin_mappingp.html>mappingp</a> and <a href=builtin_mkmapping.html>mkmapping</a>
+<a href=#sizeof>sizeof</a>, <a href=#mappingp>mappingp</a> and <a href=#mkmapping>mkmapping</a>
 <p>
 </dl>
 </a>
@@ -5061,10 +6017,10 @@ could be written in Pike as:
 aggregage_multiset...
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_multiset.html>multiset</a>
+<a href=types_multiset>multiset</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_sizeof.html>sizeof</a>, <a href=builtin_multisetp.html>multisetp</a> and <a href=simulated_mkmultiset.html>mkmultiset</a>
+<a href=#sizeof>sizeof</a>, <a href=#multisetp>multisetp</a> and <a href=simulated_mkmultiset>mkmultiset</a>
 <p>
 </dl>
 </a>
@@ -5091,7 +6047,7 @@ previously  scheduled  alarm  was  due to be delivered, or
 zero if there was no previously scheduled alarm.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_signal.html>signal</a>
+<a href=#signal>signal</a>
 <p>
 </dl>
 </a>
@@ -5111,7 +6067,7 @@ Return a mapping containing all constants, indexed on the names of the
 constant, and with the value of the efun as argument.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_add_constant.html>add_constant</a>
+<a href=#add_constant>add_constant</a>
 <p>
 </dl>
 </a>
@@ -5132,7 +6088,7 @@ constant, and with the value of the efun as argument.
 This function is the same as all_constants.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_all_constants.html>all_constants</a>
+<a href=#all_constants>all_constants</a>
 <p>
 </dl>
 </a>
@@ -5160,10 +6116,10 @@ like int a[10]=allocate(10); (and it isn't possible either) like
 in C, just int *a=allocate(10); will do.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array.html>array</a>
+<a href=types_array>array</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_sizeof.html>sizeof</a>, <a href=builtin_aggregate.html>aggregate</a> and <a href=builtin_arrayp.html>arrayp</a>
+<a href=#sizeof>sizeof</a>, <a href=#aggregate>aggregate</a> and <a href=#arrayp>arrayp</a>
 <p>
 </dl>
 </a>
@@ -5182,10 +6138,10 @@ in C, just int *a=allocate(10); will do.
 Returns 1 if arg is an array, zero otherwise.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array.html>array</a>
+<a href=types_array>array</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_allocate.html>allocate</a>, <a href=builtin_intp.html>intp</a>, <a href=builtin_programp.html>programp</a>, <a href=builtin_floatp.html>floatp</a>, <a href=builtin_stringp.html>stringp</a>, <a href=builtin_objectp.html>objectp</a>, <a href=builtin_mappingp.html>mappingp</a>, <a href=builtin_multisetp.html>multisetp</a> and <a href=builtin_functionp.html>functionp</a>
+<a href=#allocate>allocate</a>, <a href=#intp>intp</a>, <a href=#programp>programp</a>, <a href=#floatp>floatp</a>, <a href=#stringp>stringp</a>, <a href=#objectp>objectp</a>, <a href=#mappingp>mappingp</a>, <a href=#multisetp>multisetp</a> and <a href=#functionp>functionp</a>
 <p>
 </dl>
 </a>
@@ -5204,10 +6160,10 @@ Returns 1 if arg is an array, zero otherwise.
 Return the arcus sinus value for f.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_float.html>float</a>
+<a href=types_float>float</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=math_sin.html>sin</a> and <a href=math_acos.html>acos</a>
+<a href=math_sin>sin</a> and <a href=math_acos>acos</a>
 <p>
 </dl>
 </a>
@@ -5226,10 +6182,10 @@ Return the arcus sinus value for f.
 Return the arcus tangent value for f.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_float.html>float</a>
+<a href=types_float>float</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=math_tan.html>tan</a>, <a href=math_asin.html>asin</a> and <a href=math_acos.html>acos</a>
+<a href=math_tan>tan</a>, <a href=math_asin>asin</a> and <a href=math_acos>acos</a>
 <p>
 </dl>
 </a>
@@ -5261,7 +6217,7 @@ in the stack. Each entry has this format:
 that the last but one and so on.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=pike_control_structures_catch.html>catch</a> and <a href=builtin_throw.html>throw</a>
+<a href=pike_control_structures_catch>catch</a> and <a href=#throw>throw</a>
 <p>
 </dl>
 </a>
@@ -5285,10 +6241,10 @@ you will never have to write call_function(), because you will use the
 second syntax instead.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_function.html>function</a>
+<a href=types_function>function</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_backtrace.html>backtrace</a> and <a href=simulated_get_function.html>get_function</a>
+<a href=#backtrace>backtrace</a> and <a href=simulated_get_function>get_function</a>
 <p>
 </dl>
 </a>
@@ -5310,7 +6266,7 @@ identifies this call out. The return value can be sent to
 find_call_out or remove_call_out to remove the call out again.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=call_out_remove_call_out.html>remove_call_out</a>, <a href=call_out_find_call_out.html>find_call_out</a> and <a href=call_out_call_out_info.html>call_out_info</a>
+<a href=call_out_remove_call_out>remove_call_out</a>, <a href=call_out_find_call_out>find_call_out</a> and <a href=call_out_call_out_info>call_out_info</a>
 <p>
 </dl>
 </a>
@@ -5342,32 +6298,7 @@ contains an array that looks like this:
 
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=call_out_call_out.html>call_out</a>, <a href=call_out_find_call_out.html>find_call_out</a> and <a href=call_out_remove_call_out.html>remove_call_out</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
-<a name=capitalize>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>capitalize</tt> - capitalize a string
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;simulate.h&gt;<br>
-
-<p>string capitalize(string str)<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-Convert the first character in str to upper case, and return the
-new string.
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string.html>string</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_lower_case.html>lower_case</a> and <a href=builtin_upper_case.html>upper_case</a>
+<a href=call_out_call_out>call_out</a>, <a href=call_out_find_call_out>find_call_out</a> and <a href=call_out_remove_call_out>remove_call_out</a>
 <p>
 </dl>
 </a>
@@ -5390,16 +6321,16 @@ returns the argument given to throw. For a run time error, this value
 is ({ "error message", backtrace }) 
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index.html#control>control</a>
+<a href=index#control>control</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_throw.html>throw</a>
+<a href=#throw>throw</a>
 <p>
 </dl>
 </a>
 
 <HR NEWPAGE>
-<html><title>Pike: cd</title><body bgcolor="#A0E0C0" text="#000000" link=blue vlink=purple><a name=cd>
+<a name=cd>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>cd</tt> - change directory
@@ -5413,10 +6344,10 @@ Change the current directory for the whole Pike process, return
 1 for success, 0 otherwise.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index.html#file>file</a>
+<a href=index#file>file</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=files_getcwd.html>getcwd</a>
+<a href=files_getcwd>getcwd</a>
 <p>
 </dl>
 </a>
@@ -5436,10 +6367,10 @@ Return the closest integral value higher or equal to x.
 Note that ceil() does _not_ return an int, merely an integral value.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_float.html>float</a>
+<a href=types_float>float</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=math_floor.html>floor</a>
+<a href=math_floor>floor</a>
 <p>
 </dl>
 </a>
@@ -5461,10 +6392,10 @@ all global variables initalized, and then create() will be called
 with args as arguments.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_object.html>object</a> and <a href=types_program.html>program</a>
+<a href=types_object>object</a> and <a href=types_program>program</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_destruct.html>destruct</a>, <a href=builtin_compile_string.html>compile_string</a> and <a href=builtin_compile_file.html>compile_file</a>
+<a href=#destruct>destruct</a>, <a href=#compile_string>compile_string</a> and <a href=#compile_file>compile_file</a>
 <p>
 </dl>
 </a>
@@ -5487,10 +6418,10 @@ That is, it indexes every index in the array data on the value of
 the argument index and returns an array with the results.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array.html>array</a>
+<a href=types_array>array</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_rows.html>rows</a>
+<a href=#rows>rows</a>
 <p>
 </dl>
 </a>
@@ -5520,10 +6451,10 @@ Result: /foo/bar/sune.c<br>
 </tt>
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index.html#file>file</a>
+<a href=index#file>file</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=files_getcwd.html>getcwd</a>
+<a href=files_getcwd>getcwd</a>
 <p>
 </dl>
 </a>
@@ -5543,10 +6474,10 @@ This function will compile the filename to an Pike program that can
 later be used for cloning.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_program.html>program</a>
+<a href=types_program>program</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_clone.html>clone</a> and <a href=builtin_compile_string.html>compile_string</a>
+<a href=#clone>clone</a> and <a href=#compile_string>compile_string</a>
 <p>
 </dl>
 </a>
@@ -5568,10 +6499,10 @@ will be used as the file name of the program and will be used for
 error messages and such.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_program.html>program</a>
+<a href=types_program>program</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_compile_string.html>compile_string</a> and <a href=builtin_clone.html>clone</a>
+<a href=#compile_string>compile_string</a> and <a href=#clone>clone</a>
 <p>
 </dl>
 </a>
@@ -5594,7 +6525,7 @@ will always be equal to the copied (tested with the efun equal), but
 they may not the the same value. (tested with ==)
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_equal.html>equal</a>
+<a href=#equal>equal</a>
 <p>
 </dl>
 </a>
@@ -5613,16 +6544,16 @@ they may not the the same value. (tested with ==)
 Return the cosinus value for f.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_float.html>float</a>
+<a href=types_float>float</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=math_acos.html>acos</a> and <a href=math_sin.html>sin</a>
+<a href=math_acos>acos</a> and <a href=math_sin>sin</a>
 <p>
 </dl>
 </a>
 
 <HR NEWPAGE>
-<title>Pike: crypt</title><body bgcolor="#A0E0C0" text="#000000" link=blue vlink=purple><a name=crypt>
+<a name=crypt>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>crypt</tt> - crypt a password
@@ -5649,7 +6580,7 @@ matched, 0 otherwise.
 </dl>
 </tt>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string.html>string</a>
+<a href=types_string>string</a>
 <p>
 </dl>
 
@@ -5674,7 +6605,7 @@ Result: Wed Jan 14 03:36:08 1970<br>
 </tt>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_time.html>time</a>
+<a href=#time>time</a>
 <p>
 </dl>
 </a>
@@ -5697,7 +6628,7 @@ that describes where the backtrace was made. The argument 'backtrace'
 should normally be the return value from a call to backtrace()
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_backtrace.html>backtrace</a>
+<a href=#backtrace>backtrace</a>
 <p>
 </dl>
 </a>
@@ -5719,10 +6650,10 @@ be freed from memory as soon as possible. This will also call
 o-&gt;destroy.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_object.html>object</a>
+<a href=types_object>object</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_clone.html>clone</a>
+<a href=#clone>clone</a>
 <p>
 </dl>
 </a>
@@ -5753,7 +6684,7 @@ Result: 1<br>
 </tt>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_copy_value.html>copy_value</a>
+<a href=#copy_value>copy_value</a>
 <p>
 </dl>
 </a>
@@ -5774,7 +6705,7 @@ Note that you should normally use the function errno in the file
 object instead.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=files_errno.html>errno</a>
+<a href=files_errno>errno</a>
 <p>
 </dl>
 </a>
@@ -5837,7 +6768,7 @@ exece("/bin/sh", ({"-c", "echo $HOME"}), (["HOME":"/not/home"]));<br>
 </tt>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=files_fork.html>fork</a> and <a href=files_file.html#pipe>file-&gt;pipe</a>
+<a href=files_fork>fork</a> and <a href=files_file#pipe>file-&gt;pipe</a>
 <p>
 </dl>
 </a>
@@ -5877,10 +6808,10 @@ Return the natural exponent of f.
 log( exp( x ) ) == x as long as exp(x) doesn't overflow an int.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_float.html>float</a>
+<a href=types_float>float</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=math_pow.html>pow</a> and <a href=math_log.html>log</a>
+<a href=math_pow>pow</a> and <a href=math_log>log</a>
 <p>
 </dl>
 </a>
@@ -5916,10 +6847,10 @@ Result: ({ "f", "o", "o", "b", "a", "r" })<br>
 </tt>
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string.html>string</a>
+<a href=types_string>string</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_implode.html>implode</a> and <a href=operators_divide.html>`/</a>
+<a href=simulated_implode>implode</a> and <a href=operators_divide>`/</a>
 <p>
 </dl>
 </a>
@@ -5942,10 +6873,10 @@ does not exist, or that it is not readable by you. Size -2
 indicates that it is a directory.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index.html#file>file</a>
+<a href=index#file>file</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_write_file.html>write_file</a> and <a href=simulated_read_bytes.html>read_bytes</a>
+<a href=simulated_write_file>write_file</a> and <a href=simulated_read_bytes>read_bytes</a>
 <p>
 </dl>
 </a>
@@ -5985,46 +6916,10 @@ You can never get -3 as size if you don't give a second argument.<br>
 <p>If there is no such file or directory, zero is returned.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index.html#file>file</a>
+<a href=index#file>file</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=files_get_dir.html>get_dir</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
-<a name=filter>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>filter</tt> - filter an array or mapping through a function
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;array.h&gt;<br>
-
-<p>mixed *filter(mixed <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
-or<br>
-mixed *filter(object *<I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
-or<br>
-mixed *filter(function *<I>arr</I>,-<I>1</I>,mixed ... <I>args</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-First syntax:
-Filter array returns an array holding the items of arr for which
-fun returns true.
-<p>Second syntax:
-Filter array calls fun in all the objects in the array arr, and
-return all objects that returned true.
-<p>Third syntax:
-Filter array calls all functionpointers in the array arr, and
-return all that returned true.
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array.html>array</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_sum_arrays.html>sum_arrays</a> and <a href=simulated_map.html>map</a>
+<a href=files_get_dir>get_dir</a>
 <p>
 </dl>
 </a>
@@ -6049,10 +6944,10 @@ mixed *filter_array(function *<I>arr</I>,-<I>1</I>,mixed ... <I>args</I>);<br>
 Filter array is the same function as filter.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array.html>array</a>
+<a href=types_array>array</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_sum_arrays.html>sum_arrays</a>, <a href=simulated_map_array.html>map_array</a> and <a href=simulated_filter.html>filter</a>
+<a href=simulated_sum_arrays>sum_arrays</a>, <a href=simulated_map_array>map_array</a> and <a href=simulated_filter>filter</a>
 <p>
 </dl>
 </a>
@@ -6079,7 +6974,7 @@ before that call will be executed. If no call is found,
 zero_type(find_call_out(f)) will return 1.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=call_out_call_out.html>call_out</a>, <a href=call_out_remove_call_out.html>remove_call_out</a> and <a href=call_out_call_out_info.html>call_out_info</a>
+<a href=call_out_call_out>call_out</a>, <a href=call_out_remove_call_out>remove_call_out</a> and <a href=call_out_call_out_info>call_out_info</a>
 <p>
 </dl>
 </a>
@@ -6135,7 +7030,7 @@ find_option(argv,"b","bar","BAR_OPTION","default")+<br>
 </tt>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_get_args.html>get_args</a>
+<a href=simulated_get_args>get_args</a>
 <p>
 </dl>
 </a>
@@ -6253,10 +7148,10 @@ find_option modifies argv.
 Returns 1 if arg is a float, zero otherwise.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_float.html>float</a>
+<a href=types_float>float</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_intp.html>intp</a>, <a href=builtin_programp.html>programp</a>, <a href=builtin_arrayp.html>arrayp</a>, <a href=builtin_stringp.html>stringp</a>, <a href=builtin_objectp.html>objectp</a>, <a href=builtin_mappingp.html>mappingp</a>, <a href=builtin_multisetp.html>multisetp</a> and <a href=builtin_functionp.html>functionp</a>
+<a href=#intp>intp</a>, <a href=#programp>programp</a>, <a href=#arrayp>arrayp</a>, <a href=#stringp>stringp</a>, <a href=#objectp>objectp</a>, <a href=#mappingp>mappingp</a>, <a href=#multisetp>multisetp</a> and <a href=#functionp>functionp</a>
 <p>
 </dl>
 </a>
@@ -6276,10 +7171,10 @@ Return the closest integral value lower or equal to x.
 Note that floor() does _not_ return an int, merely an integral value.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_float.html>float</a>
+<a href=types_float>float</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=math_ceil.html>ceil</a>
+<a href=math_ceil>ceil</a>
 <p>
 </dl>
 </a>
@@ -6302,7 +7197,7 @@ pid of the child. Refer to your unix manual for further details.
 This function cause endless bugs if used without proper care.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_exec.html>exec</a> and <a href=files_file.html#pipe>file-&gt;pipe</a>
+<a href=simulated_exec>exec</a> and <a href=files_file#pipe>file-&gt;pipe</a>
 <p>
 </dl>
 </a>
@@ -6322,10 +7217,10 @@ This function returns the name of the function f. If the function is
 a pre-defined function in the driver, zero will be returned.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_function.html>function</a>
+<a href=types_function>function</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_function_object.html>function_object</a> and <a href=simulated_get_function.html>get_function</a>
+<a href=#function_object>function_object</a> and <a href=simulated_get_function>get_function</a>
 <p>
 </dl>
 </a>
@@ -6346,10 +7241,10 @@ function is a predefined function from the driver, zero will be
 returned.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_function.html>function</a>
+<a href=types_function>function</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_function_name.html>function_name</a> and <a href=simulated_get_function.html>get_function</a>
+<a href=#function_name>function_name</a> and <a href=simulated_get_function>get_function</a>
 <p>
 </dl>
 </a>
@@ -6368,10 +7263,10 @@ returned.
 Returns 1 if arg is a function, zero otherwise.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_function.html>function</a>
+<a href=types_function>function</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_intp.html>intp</a>, <a href=builtin_programp.html>programp</a>, <a href=builtin_arrayp.html>arrayp</a>, <a href=builtin_stringp.html>stringp</a>, <a href=builtin_objectp.html>objectp</a>, <a href=builtin_mappingp.html>mappingp</a>, <a href=builtin_multisetp.html>multisetp</a> and <a href=builtin_floatp.html>floatp</a>
+<a href=#intp>intp</a>, <a href=#programp>programp</a>, <a href=#arrayp>arrayp</a>, <a href=#stringp>stringp</a>, <a href=#objectp>objectp</a>, <a href=#mappingp>mappingp</a>, <a href=#multisetp>multisetp</a> and <a href=#floatp>floatp</a>
 <p>
 </dl>
 </a>
@@ -6394,15 +7289,15 @@ given as arguments. The number of milliseconds used is returned
 as an integer.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index.html#control>control</a>
+<a href=index#control>control</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=pike_control_structures_catch.html>catch</a> and <a href=builtin_rusage.html>rusage</a>
+<a href=pike_control_structures_catch>catch</a> and <a href=#rusage>rusage</a>
 <p>
 </dl>
 
 <HR NEWPAGE>
-html><title>Pike: gc</title><body bgcolor="#A0E0C0" text="#000000" link=blue vlink=purple><a name=gc>
+<a name=gc>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>gc</tt> - do garbage collection
@@ -6458,7 +7353,7 @@ werror("The arguments are: "+(argv*" ")+".\n");<br>
 </tt>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_find_option.html>find_option</a>
+<a href=simulated_find_option>find_option</a>
 <p>
 </dl>
 </a>
@@ -6478,10 +7373,10 @@ Return an array of all filenames in the directory dir, or zero if
 no such directory exists.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index.html#file>file</a>
+<a href=index#file>file</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=files_mkdir.html>mkdir</a> and <a href=files_cd.html>cd</a>
+<a href=files_mkdir>mkdir</a> and <a href=files_cd>cd</a>
 <p>
 </dl>
 </a>
@@ -6502,7 +7397,7 @@ no such directory exists.
 Defined as: return o[name];
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_function.html>function</a>
+<a href=types_function>function</a>
 <p>
 </dl>
 </a>
@@ -6521,10 +7416,10 @@ Defined as: return o[name];
 getcwd returns the current working directory.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index.html#file>file</a>
+<a href=index#file>file</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=files_cd.html>cd</a>
+<a href=files_cd>cd</a>
 <p>
 </dl>
 </a>
@@ -6564,7 +7459,7 @@ This returns the pid of this process. Useful for sending
 signals to yourself.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_kill.html>kill</a>, <a href=files_fork.html>fork</a> and <a href=builtin_signal.html>signal</a>
+<a href=#kill>kill</a>, <a href=files_fork>fork</a> and <a href=#signal>signal</a>
 <p>
 </dl>
 </a>
@@ -6589,7 +7484,7 @@ which reflects if the 'str' matches 'glob'. When given an array as
 second argument, an array containing all matching strings is returned.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=pike_sscanf.html>sscanf</a> and <a href=simulated_regexp.html>regexp</a>
+<a href=pike_sscanf>sscanf</a> and <a href=simulated_regexp>regexp</a>
 <p>
 </dl>
 </a>
@@ -6612,7 +7507,7 @@ string will always hash to the same value. If a second argument
 is given, the result will be &gt;= 0 and lesser than that argument.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string.html>string</a>
+<a href=types_string>string</a>
 <p>
 </dl>
 </a>
@@ -6645,46 +7540,10 @@ Result: a and b and c<br>
 </tt>
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string.html>string</a>
+<a href=types_string>string</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_explode.html>explode</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
-<a name=implode_nicely>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>implode_nicely</tt> - make an english comma separated list
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;string.h&gt;<br>
-
-<p>string implode_nicely(string *words, string|void separator)<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function implodes a list of words to a readable string.
-If the separator is omitted, the default is 'and'.
-<p>
-<dt><b> <font size=+1>E</font><font size=-1>XAMPLES</font></b><dd>
-<tt>&gt; implode_nicely(({"green"}));<br>
-Result: green<br>
-&gt; implode_nicely(({"green","blue"}));<br>
-Result: green and blue<br>
-&gt; implode_nicely(({"green","blue","white"}));<br>
-Result: green, blue and white<br>
-&gt; implode_nicely(({"green","blue","white"}),"or");<br>
-Result: green, blue or white<br>
-</tt>
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string.html>string</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=operators_mult.html>`*</a>
+<a href=simulated_explode>explode</a>
 <p>
 </dl>
 </a>
@@ -6706,10 +7565,10 @@ ascending numbers. For mappings and multisets, the array may contain any
 kind of value. For objects, the result is an array of strings.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_mapping.html>mapping</a> and <a href=types_multiset.html>multiset</a>
+<a href=types_mapping>mapping</a> and <a href=types_multiset>multiset</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_values.html>values</a>
+<a href=#values>values</a>
 <p>
 </dl>
 </a>
@@ -6728,10 +7587,10 @@ kind of value. For objects, the result is an array of strings.
 Returns 1 if arg is an int, zero otherwise.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_int.html>int</a>
+<a href=types_int>int</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_arrayp.html>arrayp</a>, <a href=builtin_programp.html>programp</a>, <a href=builtin_floatp.html>floatp</a>, <a href=builtin_stringp.html>stringp</a>, <a href=builtin_objectp.html>objectp</a>, <a href=builtin_mappingp.html>mappingp</a>, <a href=builtin_multisetp.html>multisetp</a> and <a href=builtin_functionp.html>functionp</a>
+<a href=#arrayp>arrayp</a>, <a href=#programp>programp</a>, <a href=#floatp>floatp</a>, <a href=#stringp>stringp</a>, <a href=#objectp>objectp</a>, <a href=#mappingp>mappingp</a>, <a href=#multisetp>multisetp</a> and <a href=#functionp>functionp</a>
 <p>
 </dl>
 </a>
@@ -6782,7 +7641,7 @@ Kill sends a signal to another process. If something goes wrong
 to it's number.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_signal.html>signal</a>, <a href=builtin_signum.html>signum</a>, <a href=builtin_signame.html>signame</a> and <a href=files_fork.html>fork</a>
+<a href=#signal>signal</a>, <a href=#signum>signum</a>, <a href=#signame>signame</a> and <a href=files_fork>fork</a>
 <p>
 </dl>
 </a>
@@ -6803,10 +7662,10 @@ to it's number.
 This function is equal to sizeof.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_multiset.html>multiset</a>
+<a href=types_multiset>multiset</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_sizeof.html>sizeof</a>
+<a href=#sizeof>sizeof</a>
 <p>
 </dl>
 </a>
@@ -6827,7 +7686,7 @@ This function is equal to sizeof.
 This function is the same as multisetp.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_multisetp.html>multisetp</a>
+<a href=#multisetp>multisetp</a>
 <p>
 </dl>
 </a>
@@ -6895,7 +7754,7 @@ components:
 The 'timezone' might not be available on all platforms.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_time.html>time</a>
+<a href=#time>time</a>
 <p>
 </dl>
 </a>
@@ -6915,10 +7774,10 @@ Return the natural logarithm of f.
 exp( log(x) ) == x for x &gt; 0.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_float.html>float</a>
+<a href=types_float>float</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=math_pow.html>pow</a> and <a href=math_exp.html>exp</a>
+<a href=math_pow>pow</a> and <a href=math_exp>exp</a>
 <p>
 </dl>
 </a>
@@ -6937,10 +7796,10 @@ exp( log(x) ) == x for x &gt; 0.
 Return a string with all capital letters converted to lower case.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string.html>string</a>
+<a href=types_string>string</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_upper_case.html>upper_case</a>
+<a href=#upper_case>upper_case</a>
 <p>
 </dl>
 </a>
@@ -6963,10 +7822,10 @@ Note that m_delete changes map destructively and only returns
 the mapping for compatibility reasons.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_mapping.html>mapping</a>
+<a href=types_mapping>mapping</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_mappingp.html>mappingp</a>
+<a href=#mappingp>mappingp</a>
 <p>
 </dl>
 </a>
@@ -6987,10 +7846,10 @@ the mapping for compatibility reasons.
 This function is equal to indices
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_mapping.html>mapping</a>
+<a href=types_mapping>mapping</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_indices.html>indices</a>
+<a href=#indices>indices</a>
 <p>
 </dl>
 </a>
@@ -7011,10 +7870,10 @@ This function is equal to indices
 This function is equal to sizeof.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_mapping.html>mapping</a>
+<a href=types_mapping>mapping</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_sizeof.html>sizeof</a>
+<a href=#sizeof>sizeof</a>
 <p>
 </dl>
 </a>
@@ -7035,10 +7894,10 @@ This function is equal to sizeof.
 This function is equal to values
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_mapping.html>mapping</a>
+<a href=types_mapping>mapping</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_values.html>values</a>
+<a href=#values>values</a>
 <p>
 </dl>
 </a>
@@ -7069,10 +7928,10 @@ Map array calls the functions in the array arr:
 arr[x]=arr[x]-&gt;fun(@ args);
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array.html>array</a>
+<a href=types_array>array</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_sum_arrays.html>sum_arrays</a> and <a href=simulated_filter.html>filter</a>
+<a href=simulated_sum_arrays>sum_arrays</a> and <a href=simulated_filter>filter</a>
 <p>
 </dl>
 </a>
@@ -7096,10 +7955,10 @@ mixed *map_array(function *<I>arr</I>,-<I>1</I>,mixed ... <I>arg</I>);<br>
 This function is the same as map.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array.html>array</a>
+<a href=types_array>array</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_filter_array.html>filter_array</a>, <a href=simulated_sum_arrays.html>sum_arrays</a> and <a href=simulated_map.html>map</a>
+<a href=simulated_filter_array>filter_array</a>, <a href=simulated_sum_arrays>sum_arrays</a> and <a href=simulated_map>map</a>
 <p>
 </dl>
 </a>
@@ -7118,10 +7977,10 @@ This function is the same as map.
 Returns 1 if arg is a mapping, zero otherwise.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_mapping.html>mapping</a>
+<a href=types_mapping>mapping</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_intp.html>intp</a>, <a href=builtin_programp.html>programp</a>, <a href=builtin_arrayp.html>arrayp</a>, <a href=builtin_stringp.html>stringp</a>, <a href=builtin_objectp.html>objectp</a>, <a href=builtin_multisetp.html>multisetp</a>, <a href=builtin_floatp.html>floatp</a> and <a href=builtin_functionp.html>functionp</a>
+<a href=#intp>intp</a>, <a href=#programp>programp</a>, <a href=#arrayp>arrayp</a>, <a href=#stringp>stringp</a>, <a href=#objectp>objectp</a>, <a href=#multisetp>multisetp</a>, <a href=#floatp>floatp</a> and <a href=#functionp>functionp</a>
 <p>
 </dl>
 </a>
@@ -7140,7 +7999,7 @@ Returns 1 if arg is a mapping, zero otherwise.
 Master is added by the master object to make it easier to access it.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_object.html>object</a>
+<a href=types_object>object</a>
 <p>
 </dl>
 </a>
@@ -7162,7 +8021,7 @@ Returns the index of the first occurence of item in array arr.
 If not found, then -1 is returned.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array.html>array</a>
+<a href=types_array>array</a>
 <p>
 </dl>
 </a>
@@ -7181,10 +8040,10 @@ If not found, then -1 is returned.
 Create a directory, return zero if it fails and nonzero if it fails.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index.html#file>file</a>
+<a href=index#file>file</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=files_rm.html>rm</a> and <a href=files_cd.html>cd</a>
+<a href=files_rm>rm</a> and <a href=files_cd>cd</a>
 <p>
 </dl>
 </a>
@@ -7215,10 +8074,10 @@ Result: (&lt; /* 3 elements */<br>
 </tt>
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_multiset.html>multiset</a>
+<a href=types_multiset>multiset</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_aggregage_multiset.html>aggregate_multiset</a>
+<a href=#aggregage_multiset>aggregate_multiset</a>
 <p>
 </dl>
 </a>
@@ -7239,10 +8098,10 @@ Ind and val must have the same size.
 This is the inverse operation of indices and values.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_mapping.html>mapping</a>
+<a href=types_mapping>mapping</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_indices.html>indices</a> and <a href=builtin_values.html>values</a>
+<a href=#indices>indices</a> and <a href=#values>values</a>
 <p>
 </dl>
 </a>
@@ -7270,10 +8129,10 @@ Result: (&lt; /* 3 elements */<br>
 </tt>
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_multiset.html>multiset</a>
+<a href=types_multiset>multiset</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_aggregage_multiset.html>aggregate_multiset</a>
+<a href=#aggregage_multiset>aggregate_multiset</a>
 <p>
 </dl>
 </a>
@@ -7292,10 +8151,10 @@ Result: (&lt; /* 3 elements */<br>
 Returns 1 if arg is a multiset, zero otherwise.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_multiset.html>multiset</a>
+<a href=types_multiset>multiset</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_intp.html>intp</a>, <a href=builtin_programp.html>programp</a>, <a href=builtin_arrayp.html>arrayp</a>, <a href=builtin_stringp.html>stringp</a>, <a href=builtin_objectp.html>objectp</a>, <a href=builtin_mappingp.html>mappingp</a>, <a href=builtin_floatp.html>floatp</a> and <a href=builtin_functionp.html>functionp</a>
+<a href=#intp>intp</a>, <a href=#programp>programp</a>, <a href=#arrayp>arrayp</a>, <a href=#stringp>stringp</a>, <a href=#objectp>objectp</a>, <a href=#mappingp>mappingp</a>, <a href=#floatp>floatp</a> and <a href=#functionp>functionp</a>
 <p>
 </dl>
 </a>
@@ -7316,10 +8175,10 @@ file already exists, it will be overwritten. Returns 1 on sucess,
 0 otherwise.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index.html#file>file</a>
+<a href=index#file>file</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=files_rm.html>rm</a>
+<a href=files_rm>rm</a>
 <p>
 </dl>
 </a>
@@ -7349,10 +8208,10 @@ for(o=next_object();o;o=next_object(o))<br>
 </dl></tt>
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_object.html>object</a>
+<a href=types_object>object</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_clone.html>clone</a> and <a href=builtin_destruct.html>destruct</a>
+<a href=#clone>clone</a> and <a href=#destruct>destruct</a>
 <p>
 </dl>
 </a>
@@ -7372,10 +8231,10 @@ This function returns the program from which o was cloned.
 If o is not an object, or o was destructed zero is returned.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_object.html>object</a>
+<a href=types_object>object</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_clone.html>clone</a>
+<a href=#clone>clone</a>
 <p>
 </dl>
 </a>
@@ -7394,39 +8253,14 @@ If o is not an object, or o was destructed zero is returned.
 Returns 1 if arg is an object, zero otherwise.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_object.html>object</a>
+<a href=types_object>object</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_intp.html>intp</a>, <a href=builtin_programp.html>programp</a>, <a href=builtin_floatp.html>floatp</a>, <a href=builtin_stringp.html>stringp</a>, <a href=builtin_arrayp.html>arrayp</a>, <a href=builtin_mappingp.html>mappingp</a>, <a href=builtin_multisetp.html>multisetp</a> and <a href=builtin_functionp.html>functionp</a>
+<a href=#intp>intp</a>, <a href=#programp>programp</a>, <a href=#floatp>floatp</a>, <a href=#stringp>stringp</a>, <a href=#arrayp>arrayp</a>, <a href=#mappingp>mappingp</a>, <a href=#multisetp>multisetp</a> and <a href=#functionp>functionp</a>
 <p>
 </dl>
 </a>
 
-<HR NEWPAGE>
-<a name=perror>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>perror</tt> - print error
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;stdio.h&gt;<br>
-
-<p>void perror(string <I>s</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function prints a message to stderr along with a description
-of what went wrong if available. It uses the system errno to find
-out what went wrong, so it is only applicable to IO errors.
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index.html#file>file</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=files_werror.html>werror</a>
-<p>
-</dl>
-</a>
 
 <HR NEWPAGE>
 <a name=popen>
@@ -7462,10 +8296,10 @@ output. See your unix/C manual for details on popen.
 Return n raised to the power of x.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_float.html>float</a>
+<a href=types_float>float</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=math_exp.html>exp</a> and <a href=math_log.html>log</a>
+<a href=math_exp>exp</a> and <a href=math_log>log</a>
 <p>
 </dl>
 </a>
@@ -7487,7 +8321,7 @@ Returns an object pointer to the object that called current function,
 if any.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_call_function.html>call_function</a> and <a href=builtin_backtrace.html>backtrace</a>
+<a href=#call_function>call_function</a> and <a href=#backtrace>backtrace</a>
 <p>
 </dl>
 </a>
@@ -7506,10 +8340,10 @@ if any.
 Returns 1 if arg is a program, zero otherwise.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_program.html>program</a>
+<a href=types_program>program</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_intp.html>intp</a>, <a href=builtin_multisetp.html>multisetp</a>, <a href=builtin_arrayp.html>arrayp</a>, <a href=builtin_stringp.html>stringp</a>, <a href=builtin_objectp.html>objectp</a>, <a href=builtin_mappingp.html>mappingp</a>, <a href=builtin_floatp.html>floatp</a> and <a href=builtin_functionp.html>functionp</a>
+<a href=#intp>intp</a>, <a href=#multisetp>multisetp</a>, <a href=#arrayp>arrayp</a>, <a href=#stringp>stringp</a>, <a href=#objectp>objectp</a>, <a href=#mappingp>mappingp</a>, <a href=#floatp>floatp</a> and <a href=#functionp>functionp</a>
 <p>
 </dl>
 </a>
@@ -7528,7 +8362,7 @@ Returns 1 if arg is a program, zero otherwise.
 This function sets the environment variable 'varname' to 'value'.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_getenv.html>getenv</a> and <a href=files_exece.html>exece</a>
+<a href=simulated_getenv>getenv</a> and <a href=files_exece>exece</a>
 <p>
 </dl>
 </a>
@@ -7567,7 +8401,7 @@ Query_num_arg returns the number of arguments given when this
 function was called. This is only useful for varargs functions.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_call_function.html>call_function</a>
+<a href=#call_function>call_function</a>
 <p>
 </dl>
 </a>
@@ -7586,10 +8420,10 @@ function was called. This is only useful for varargs functions.
 This function returns a random number in the range 0 - max-1.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_int.html>int</a>
+<a href=types_int>int</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_random_seed.html>random_seed</a>
+<a href=#random_seed>random_seed</a>
 <p>
 </dl>
 </a>
@@ -7629,10 +8463,10 @@ Result: 94<br>
 </tt>
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_int.html>int</a>
+<a href=types_int>int</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_random.html>random</a>
+<a href=#random>random</a>
 <p>
 </dl>
 </a>
@@ -7654,10 +8488,10 @@ Result: 94<br>
 Return those strings in arr that matches the regexp in reg.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string.html>string</a>
+<a href=types_string>string</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_regexp.html>regexp</a>
+<a href=simulated_regexp>regexp</a>
 <p>
 </dl>
 </a>
@@ -7682,7 +8516,7 @@ will return 1. You can also give a call out id as argument. (as
 returned by call_out)
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=call_out_call_out_info.html>call_out_info</a>, <a href=call_out_call_out.html>call_out</a> and <a href=call_out_find_call_out.html>find_call_out</a>
+<a href=call_out_call_out_info>call_out_info</a>, <a href=call_out_call_out>call_out</a> and <a href=call_out_find_call_out>find_call_out</a>
 <p>
 </dl>
 </a>
@@ -7726,7 +8560,7 @@ to destructively.<br>
 </dl>
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string.html>string</a>, <a href=types_array.html>array</a> and <a href=types_mapping.html>mapping</a>
+<a href=types_string>string</a>, <a href=types_array>array</a> and <a href=types_mapping>mapping</a>
 <p>
 </dl>
 </a>
@@ -7772,10 +8606,10 @@ strings can be particularly useful for parsing difficult syntaxes
 which require scanning backwards.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string.html>string</a>, <a href=types_array.html>array</a> and <a href=types_int.html>int</a>
+<a href=types_string>string</a>, <a href=types_array>array</a> and <a href=types_int>int</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=pike_sscanf.html>sscanf</a>
+<a href=pike_sscanf>sscanf</a>
 <p>
 </dl>
 </a>
@@ -7795,10 +8629,10 @@ which require scanning backwards.
 Remove a file or directory, return 0 if it fails. Nonzero otherwise.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index.html#file>file</a>
+<a href=index#file>file</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=files_mkdir.html>mkdir</a>
+<a href=files_mkdir>mkdir</a>
 <p>
 </dl>
 </a>
@@ -7821,10 +8655,10 @@ That is, it indexes data on every index in the array index and
 returns an array with the results.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array.html>array</a>
+<a href=types_array>array</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_column.html>column</a>
+<a href=#column>column</a>
 <p>
 </dl>
 </a>
@@ -7877,7 +8711,7 @@ be zero. The elements are as follows:
 more information. (Note that all values may not be present though)
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_time.html>time</a>
+<a href=#time>time</a>
 <p>
 </dl>
 </a>
@@ -7912,10 +8746,10 @@ and zero_type() will return 1 for this zero.
 This function replaces strstr and member_array from Pike4.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string.html>string</a>, <a href=types_array.html>array</a> and <a href=types_mapping.html>mapping</a>
+<a href=types_string>string</a>, <a href=types_array>array</a> and <a href=types_mapping>mapping</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_indices.html>indices</a>, <a href=builtin_values.html>values</a> and <a href=builtin_zero_type.html>zero_type</a>
+<a href=#indices>indices</a>, <a href=#values>values</a> and <a href=#zero_type>zero_type</a>
 <p>
 </dl>
 </a>
@@ -7942,10 +8776,10 @@ first call that returned true instead or returning an array of the
 returned values. If no call returns true, -1 is returned.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array.html>array</a>
+<a href=types_array>array</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_sum_arrays.html>sum_arrays</a>, <a href=simulated_filter_array.html>filter_array</a> and <a href=simulated_member_array.html>member_array</a>
+<a href=simulated_sum_arrays>sum_arrays</a>, <a href=simulated_filter_array>filter_array</a> and <a href=simulated_member_array>member_array</a>
 <p>
 </dl>
 </a>
@@ -7975,7 +8809,7 @@ is restored to the default handler.
 <p>If the second argument is zero, the signal will be completely ignored.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_kill.html>kill</a>, <a href=builtin_signame.html>signame</a> and <a href=builtin_signum.html>signum</a>
+<a href=#kill>kill</a>, <a href=#signame>signame</a> and <a href=#signum>signum</a>
 <p>
 </dl>
 </a>
@@ -7999,7 +8833,7 @@ Result: SIGKILL<br>
 </tt>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_kill.html>kill</a>, <a href=builtin_signum.html>signum</a> and <a href=builtin_signal.html>signal</a>
+<a href=#kill>kill</a>, <a href=#signum>signum</a> and <a href=#signal>signal</a>
 <p>
 </dl>
 </a>
@@ -8023,7 +8857,7 @@ Result: 9<br>
 </tt>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_signame.html>signame</a>, <a href=builtin_kill.html>kill</a> and <a href=builtin_signal.html>signal</a>
+<a href=#signame>signame</a>, <a href=#kill>kill</a> and <a href=#signal>signal</a>
 <p>
 </dl>
 </a>
@@ -8042,10 +8876,10 @@ Result: 9<br>
 Return the sinus value for f.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_float.html>float</a>
+<a href=types_float>float</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=math_asin.html>asin</a> and <a href=math_cos.html>cos</a>
+<a href=math_asin>asin</a> and <a href=math_cos>cos</a>
 <p>
 </dl>
 </a>
@@ -8066,7 +8900,7 @@ given to it. It replaces older functions like strlen, m_sizeof and
 size.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string.html>string</a>, <a href=types_multiset.html>multiset</a>, <a href=types_mapping.html>mapping</a> and <a href=types_array.html>array</a>
+<a href=types_string>string</a>, <a href=types_multiset>multiset</a>, <a href=types_mapping>mapping</a> and <a href=types_array>array</a>
 <p>
 </dl>
 </a>
@@ -8087,7 +8921,7 @@ handlers can interrupt the sleep. Other callbacks are not called
 during sleep.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_signal.html>signal</a>
+<a href=#signal>signal</a>
 <p>
 </dl>
 </a>
@@ -8114,10 +8948,10 @@ Arrays will be sorted first on the first element of each array.
 <p>Sort returns it's first argument.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array.html>array</a>
+<a href=types_array>array</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_reverse.html>reverse</a>
+<a href=#reverse>reverse</a>
 <p>
 </dl>
 </a>
@@ -8142,10 +8976,10 @@ sent as 3rd, 4th etc. argument to fun. If fun is omitted, `&lt; is unsed
 instead.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array.html>array</a>
+<a href=types_array>array</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_map_array.html>map_array</a> and <a href=simulated_filter_array.html>filter_array</a>
+<a href=simulated_map_array>map_array</a> and <a href=simulated_filter_array>filter_array</a>
 <p>
 </dl>
 </a>
@@ -8176,7 +9010,7 @@ specify where stdin, stdout and stderr of the spawned processes
 should go.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_popen.html>popen</a>, <a href=files_fork.html>fork</a>, <a href=simulated_exec.html>exec</a>, <a href=files_file.html#pipe>file-&gt;pipe</a> and <a href=files_file.html#dup2>file-&gt;dup2</a>
+<a href=simulated_popen>popen</a>, <a href=files_fork>fork</a>, <a href=simulated_exec>exec</a>, <a href=files_file#pipe>file-&gt;pipe</a> and <a href=files_file#dup2>file-&gt;dup2</a>
 <p>
 </dl>
 </a>
@@ -8364,10 +9198,10 @@ Exiting.<br>
 </tt>
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string.html>string</a>
+<a href=types_string>string</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=pike_sscanf.html>sscanf</a>
+<a href=pike_sscanf>sscanf</a>
 <p>
 </dl>
 </a>
@@ -8389,10 +9223,10 @@ Return the square root of f, or in the second case, the square root
 truncated to the closest lower integer.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_float.html>float</a> and <a href=types_int.html>int</a>
+<a href=types_float>float</a> and <a href=types_int>int</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=math_pow.html>pow</a>, <a href=math_log.html>log</a>, <a href=math_exp.html>exp</a> and <a href=math_floor.html>floor</a>
+<a href=math_pow>pow</a>, <a href=math_log>log</a>, <a href=math_exp>exp</a> and <a href=math_floor>floor</a>
 <p>
 </dl>
 </a>
@@ -8414,49 +9248,7 @@ Stderr is a clone of /precompiled/file connected to the standard
 error stream.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=files_file.html>/precompiled/file</a> and <a href=files_werror.html>werror</a>
-<p>
-</dl>
-</a>
-
-
-<HR NEWPAGE>
-<a name=stdin>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>stdin</tt> - Standard input
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font> <font size=+1>E</font><font size=-1>XAMPLE</font></b><dd>
-<tt>#include &lt;stdio.h&gt;<br>
-
-<p>stdin-&gt;gets()<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-Stdin is a clone of /precompiled/FILE connected to the standard input.
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=precompiled_FILE.html>/precompiled/FILE</a>
-<p>
-</dl>
-
-<HR NEWPAGE>
-<a name=stdout>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>stdout</tt> - Standard output
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font> <font size=+1>E</font><font size=-1>XAMPLE</font></b><dd>
-<tt>#include &lt;stdio.h&gt;<br>
-
-<p>stdout-&gt;gets()<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-Stdout is a clone of /precompiled/file connected to the standard output.
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=files_file.html>/precompiled/file</a> and <a href=simulated_write.html>write</a>
+<a href=files_file>/precompiled/file</a> and <a href=files_werror>werror</a>
 <p>
 </dl>
 </a>
@@ -8476,7 +9268,7 @@ This function returns a description of an error code. The error
 code is usually obtained from the file-&gt;errno() call.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index.html#file>file</a>
+<a href=index#file>file</a>
 <p>
 <dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
 This function may not be available on all platforms.
@@ -8498,10 +9290,10 @@ This function may not be available on all platforms.
 Returns 1 if arg is a string, zero otherwise.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string.html>string</a>
+<a href=types_string>string</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_intp.html>intp</a>, <a href=builtin_multisetp.html>multisetp</a>, <a href=builtin_arrayp.html>arrayp</a>, <a href=builtin_programp.html>programp</a>, <a href=builtin_objectp.html>objectp</a>, <a href=builtin_mappingp.html>mappingp</a>, <a href=builtin_floatp.html>floatp</a> and <a href=builtin_functionp.html>functionp</a>
+<a href=#intp>intp</a>, <a href=#multisetp>multisetp</a>, <a href=#arrayp>arrayp</a>, <a href=#programp>programp</a>, <a href=#objectp>objectp</a>, <a href=#mappingp>mappingp</a>, <a href=#floatp>floatp</a> and <a href=#functionp>functionp</a>
 <p>
 </dl>
 </a>
@@ -8522,32 +9314,14 @@ Returns 1 if arg is a string, zero otherwise.
 This function is equal to sizeof.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string.html>string</a>
+<a href=types_string>string</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_sizeof.html>sizeof</a>
+<a href=#sizeof>sizeof</a>
 <p>
 </dl>
 </a>
 
-<HR NEWPAGE>
-<a name=strmult>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>strmult</tt> - multiply strings
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;string.h&gt;<br>
-
-<p>string strmult(string <I>s</I>, int <I>num</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function multplies 's' by 'num'. The return value is the same
-as appending 's' to an empty string 'num' times.
-<p>
-</dl>
-</a>
 
 <HR NEWPAGE>
 <a name=strstr>
@@ -8566,10 +9340,10 @@ Return the position of str2 in str1, if str2 can't be found in str1
 -1 is returned.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string.html>string</a>
+<a href=types_string>string</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=pike_sscanf.html>sscanf</a> and <a href=simulated_explode.html>explode</a>
+<a href=pike_sscanf>sscanf</a> and <a href=simulated_explode>explode</a>
 <p>
 </dl>
 </a>
@@ -8602,46 +9376,10 @@ together with +. It's just here so you can get a function-pointer to
 the summation operator.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_int.html>int</a>, <a href=types_float.html>float</a>, <a href=types_string.html>string</a>, <a href=types_array.html>array</a>, <a href=types_mapping.html>mapping</a> and <a href=types_multiset.html>multiset</a>
+<a href=types_int>int</a>, <a href=types_float>float</a>, <a href=types_string>string</a>, <a href=types_array>array</a>, <a href=types_mapping>mapping</a> and <a href=types_multiset>multiset</a>
 <p>
 </dl>
 d
-</a>
-
-<HR NEWPAGE>
-<a name=sum_arrays>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>sum_arrays</tt> - map any number of arrays over a function.
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;array.h&gt;<br>
-
-<p>mixed *sum_arrays(function <I>fun</I>,mixed *<I>arr1</I>,...);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-Works like this:
-<p>mixed *sum_arrays(function fun,mixed *arr1,...)<br>
-{<br>
-<dl><dt><dd>int e;<br>
-mixed *res=allocate(sizeof(arr1));<br>
-for(e=0;e&lt;sizeof(arr1);e++)<br>
-{<br>
-<dl><dt><dd>res[e]=fun(arr1[e],arr2[e],...);<br>
-</dl>}<br>
-return res;<br>
-</dl>}<br>
-
-<p>Simple ehh?
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array.html>array</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_map_array.html>map_array</a>, <a href=simulated_filter_array.html>filter_array</a> and <a href=simulated_search_array.html>search_array</a>
-<p>
-</dl>
 </a>
 
 <HR NEWPAGE>
@@ -8662,7 +9400,7 @@ is finished. Standard /bin/sh completions/redirectoins/etc. can
 be used.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_popen.html>popen</a>, <a href=simulated_exec.html>exec</a> and <a href=simulated_spawn.html>spawn</a>
+<a href=simulated_popen>popen</a>, <a href=simulated_exec>exec</a> and <a href=simulated_spawn>spawn</a>
 <p>
 </dl>
 </a>
@@ -8681,10 +9419,10 @@ be used.
 Return the tangent value for f.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_float.html>float</a>
+<a href=types_float>float</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=math_atan.html>atan</a>, <a href=math_sin.html>sin</a> and <a href=math_cos.html>cos</a>
+<a href=math_atan>atan</a>, <a href=math_sin>sin</a> and <a href=math_cos>cos</a>
 <p>
 </dl>
 </a>
@@ -8706,10 +9444,10 @@ Returns a functionpointer to the current function, useful for
 making recursive lambda-functions.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_function.html>function</a>
+<a href=types_function>function</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_get_function.html>get_function</a>, <a href=builtin_function_name.html>function_name</a>, <a href=builtin_function_object.html>function_object</a> and <a href=builtin_backtrace.html>backtrace</a>
+<a href=simulated_get_function>get_function</a>, <a href=#function_name>function_name</a>, <a href=#function_object>function_object</a> and <a href=#backtrace>backtrace</a>
 <p>
 </dl>
 </a>
@@ -8728,7 +9466,7 @@ making recursive lambda-functions.
 This function returns the object we are curently evaluating in.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_object.html>object</a>
+<a href=types_object>object</a>
 <p>
 </dl>
 </a>
@@ -8752,7 +9490,7 @@ index contains an error message and the second index is a backtrace,
 like a real error by overlying functions.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=pike_control_structures_catch.html>catch</a>
+<a href=pike_control_structures_catch>catch</a>
 <p>
 </dl>
 </a>
@@ -8776,7 +9514,7 @@ The function ctime() converts this integer to a readable string.
 but is only updated in the backed. (when pike code isn't running)
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_time.html>time</a>
+<a href=#time>time</a>
 <p>
 </dl>
 </a>
@@ -8828,7 +9566,7 @@ Result: int<br>
 </tt>
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index.html#pike>pike</a>
+<a href=index#pike>pike</a>
 <p>
 </dl>
 </a>
@@ -8856,29 +9594,7 @@ ualarm returns the number of microseconds seconds  remaining<br>
 
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_signal.html>signal</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
-<a name=uniq>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>uniq</tt> - return one of each element
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;array.h&gt;<br>
-
-<p>array uniq(array <I>a</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function returns an copy of the array a with all duplicate
-values removed. The order of the values in the result is undefined.
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_array.html>array</a>
+<a href=#signal>signal</a>
 <p>
 </dl>
 </a>
@@ -8898,10 +9614,10 @@ Return a copy of the string s with all lower case character converted
 to upper case character.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_string.html>string</a>
+<a href=types_string>string</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_lower_case.html>lower_case</a>
+<a href=#lower_case>lower_case</a>
 <p>
 </dl>
 </a>
@@ -8924,10 +9640,10 @@ ones is return. For mappings, objects and arrays, the returned array
 may contain any kind of value.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_mapping.html>mapping</a>
+<a href=types_mapping>mapping</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_indices.html>indices</a>
+<a href=#indices>indices</a>
 <p>
 </dl>
 </a>
@@ -8969,7 +9685,7 @@ Writes a message to stderr. Stderr is normally the console, even if
 the process output has been redirected to a file or pipe.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index.html#file>file</a>
+<a href=index#file>file</a>
 <p>
 </dl>
 </a>
@@ -8989,7 +9705,7 @@ Added by the master, it directly calls write in a clone of
 /precompiled/file
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=files_werror.html>werror</a>
+<a href=files_werror>werror</a>
 <p>
 </dl>
 </a>
@@ -9017,10 +9733,10 @@ returned. Otherwize zero_type will return zero.
 <p>If the argument is not an int, zero will be returned.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=types_int.html>int</a> and <a href=types_mapping.html>mapping</a>
+<a href=types_int>int</a> and <a href=types_mapping>mapping</a>
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=call_out_find_call_out.html>find_call_out</a>
+<a href=call_out_find_call_out>find_call_out</a>
 <p>
 </dl>
 </a>
