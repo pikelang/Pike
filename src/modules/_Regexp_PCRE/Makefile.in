@@ -1,10 +1,13 @@
-# $Id: Makefile.in,v 1.1 2003/09/20 16:16:05 mirar Exp $
+# $Id: Makefile.in,v 1.2 2003/10/16 13:27:34 grubba Exp $
 @make_variables@
 VPATH=@srcdir@
 OBJS=pcre_glue.o 
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
+
+# Some make's need help to find the source files...
+pcre_glue.o: $(SRCDIR)/pcre_glue.c
 
 @dynamic_module_makefile@
 @dependencies@
