@@ -96,7 +96,7 @@ string cname(mixed type)
 
   switch(objectp(btype) ? btype->text : btype)
   {
-    case "int": return "INT32";
+    case "int": return "INT_TYPE";
     case "float": return "FLOAT_NUMBER";
     case "string": return "struct pike_string *";
 
