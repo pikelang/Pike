@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.92 2001/04/09 14:51:41 jonasw Exp $");
+RCSID("$Id: efuns.c,v 1.93 2001/04/18 02:30:04 mast Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -1032,7 +1032,134 @@ void f_mv(INT32 args)
     return;
   }
 
+#ifndef __NT__
   i=rename(str1->str, str2->str);
+#else
+
+  /* Emulate the behavior of unix rename(2) when the destination exists. */
+  if (MoveFileEx (str1->str, str2->str, 0))
+    i = 0;
+  else if ((i = GetLastError()) == ERROR_ALREADY_EXISTS) {
+    int err;
+    struct stat st;
+    char *s = 0, *p;
+    i = ERROR_ACCESS_DENIED;
+
+#ifdef HAVE_LSTAT
+    err = fd_lstat(str2->str, &st);
+#else
+    err = fd_stat(str2->str, &st);
+#endif
+    if (err) goto nt_rename_kludge_end;
+
+    if ((st.st_mode & S_IFMT) != S_IFDIR) {
+      /* MoveFileEx can overwrite a file but not a dir. */
+      if (!(st.st_mode & _S_IWRITE))
+	/* Like in f_rm, we got to handle the case that NT looks on
+	 * the permissions on the file itself before removing it. */
+	if (chmod (str2->str, st.st_mode | _S_IWRITE))
+	  goto nt_rename_kludge_end;
+      if (MoveFileEx (str1->str, str2->str, MOVEFILE_REPLACE_EXISTING))
+	i = 0;			/* Success. */
+      else
+	chmod (str2->str, st.st_mode);
+    }
+
+    else {
+      WIN32_FIND_DATA *dir;
+      HANDLE h;
+      if (!(s = malloc (str2->len + 2)) ||
+	  !(dir = malloc (sizeof (WIN32_FIND_DATA)))) {
+	i = ERROR_NOT_ENOUGH_MEMORY;
+	goto nt_rename_kludge_end;
+      }
+      memcpy (s, str2->str, str2->len);
+      p = s + str2->len;
+      p[0] = '/', p[1] = '*', p[2] = 0;
+      h = FindFirstFile (s, dir);
+      if (h != INVALID_HANDLE_VALUE) {
+	do {
+	  if (dir->cFileName[0] != '.' ||
+	      dir->cFileName[1] &&
+	      (dir->cFileName[1] != '.' || dir->cFileName[2])) {
+	    /* Target dir not empty. */
+	    FindClose (h);
+	    free (dir);
+	    goto nt_rename_kludge_end;
+	  }
+	} while (FindNextFile (h, dir));
+	FindClose (h);
+      }
+      free (dir);
+
+      /* MoveFileEx won't replace an empty target dir, so we move it
+       * away and try again. */
+      for (p[0] = 'A'; p[0] != 'Z'; p[0]++)
+	for (p[1] = 'A'; p[1] != 'Z'; p[1]++)
+	  if (MoveFileEx (str2->str, s, 0)) {
+
+	    if (MoveFileEx (str1->str, str2->str, MOVEFILE_REPLACE_EXISTING)) {
+	      if (!(st.st_mode & _S_IWRITE))
+		if (chmod (s, st.st_mode | _S_IWRITE))
+		  goto nt_rename_kludge_fail;
+	      if (!rmdir(s)) {	/* Success. */
+		i = 0;
+		goto nt_rename_kludge_end;
+	      }
+
+	    nt_rename_kludge_fail:
+	      /* Couldn't remove the old dest, perhaps the directory
+	       * grew files. */
+	      if (!(st.st_mode & _S_IWRITE))
+		chmod (s, st.st_mode);
+	      if (!MoveFileEx (str2->str, str1->str, MOVEFILE_REPLACE_EXISTING)) {
+		/* Old dest left behind but the rename is still
+		 * successful, so we claim success anyway in lack of
+		 * better error reporting capabilities. */
+		i = 0;
+		goto nt_rename_kludge_end;
+	      }
+	    }
+
+	    MoveFileEx (s, str2->str, MOVEFILE_REPLACE_EXISTING);
+	    goto nt_rename_kludge_end;
+	  }
+	  else if (GetLastError() != ERROR_ALREADY_EXISTS)
+	    goto nt_rename_kludge_end;
+    }
+
+  nt_rename_kludge_end:
+    if (s) free (s);
+  }
+
+  switch (i) {
+    /* Try to translate NT errors to errno codes that NT's rename()
+     * would return. */
+    case ERROR_SUCCESS:
+      break;
+    case ERROR_INVALID_NAME:
+      errno = EINVAL;
+      break;
+    case ERROR_NOT_ENOUGH_MEMORY:
+      errno = ENOMEM;
+      break;
+    case ERROR_FILE_NOT_FOUND:
+      errno = ENOENT;
+      break;
+    case ERROR_PATH_NOT_FOUND: {
+      /* MoveFileEx returns this both when the source and when the
+       * dest paths doesn't exist, but we want ENOENT only for the
+       * source. */
+      struct stat st;
+      if (fd_stat (str1->str, &st)) {
+	errno = ENOENT;
+	break;
+      }
+    }
+    default:
+      errno = EACCES;
+  }
+#endif /* __NT__ */
 
   pop_n_elems(args);
   push_int(!i);
