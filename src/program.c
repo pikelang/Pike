@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.453 2002/11/07 15:00:01 grubba Exp $
+|| $Id: program.c,v 1.454 2002/11/07 15:00:56 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.453 2002/11/07 15:00:01 grubba Exp $");
+RCSID("$Id: program.c,v 1.454 2002/11/07 15:00:56 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2121,9 +2121,9 @@ void dump_program_tables (struct program *p, int indent)
 	  indent, "");
   {
     INT32 off = 0, line = 0;
-    char *cnt = p->line_numbers;
+    char *cnt = p->linenumbers;
 
-    while (cnt < p->line_numbers + p->num_linenumbers) {
+    while (cnt < p->linenumbers + p->num_linenumbers) {
       if (*cnt == 127) {
 	int len, shift;
 	char *file;
