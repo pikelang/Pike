@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.76 2003/02/15 20:34:08 grubba Exp $
+|| $Id: oracle.c,v 1.77 2003/02/23 17:42:01 grubba Exp $
 */
 
 /*
@@ -54,7 +54,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.76 2003/02/15 20:34:08 grubba Exp $");
+RCSID("$Id: oracle.c,v 1.77 2003/02/23 17:42:01 grubba Exp $");
 
 
 /* User-changable defines: */
@@ -1739,8 +1739,7 @@ static void f_big_typed_query_create(INT32 args)
   if(d_flag)
   {
       CHECK_INTERPRETER_LOCK();
-      if(d_flag>1 && thread_for_id(th_self()) != Pike_interpreter.thread_obj)
-        Pike_fatal("thread_for_id() (or Pike_interpreter.thread_obj) failed in oracle.c! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_obj);
+      DEBUG_CHECK_THREAD();
   }
 #endif
 
@@ -1788,8 +1787,7 @@ static void f_big_typed_query_create(INT32 args)
   if(d_flag)
   {
       CHECK_INTERPRETER_LOCK();
-      if(d_flag>1 && thread_for_id(th_self()) != Pike_interpreter.thread_obj)
-        Pike_fatal("thread_for_id() (or Pike_interpreter.thread_obj) failed in oracle.c! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_obj);
+      DEBUG_CHECK_THREAD();
   }
 #endif
 
@@ -2001,8 +1999,7 @@ static void f_big_typed_query_create(INT32 args)
   if(d_flag)
   {
       CHECK_INTERPRETER_LOCK();
-      if(d_flag>1 && thread_for_id(th_self()) != Pike_interpreter.thread_obj)
-        Pike_fatal("thread_for_id() (or Pike_interpreter.thread_obj) failed in oracle.c! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_obj);
+      DEBUG_CHECK_THREAD();
   }
 #endif
 
@@ -2046,8 +2043,7 @@ static void f_big_typed_query_create(INT32 args)
   if(d_flag)
   {
       CHECK_INTERPRETER_LOCK();
-      if(d_flag>1 && thread_for_id(th_self()) != Pike_interpreter.thread_obj)
-        Pike_fatal("thread_for_id() (or Pike_interpreter.thread_obj) failed in oracle.c! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_obj);
+      DEBUG_CHECK_THREAD();
   }
 #endif
 
