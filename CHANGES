@@ -23,6 +23,11 @@ o pike -x
     running rsif (replace string in file) and pv (the image viewer
     you may be familiar with from Tools.PV).
 
+o pike -e scope
+    When running command line one liners with pike -e you can now
+    access the numer of arguments, the actual arguments and the
+    environment variables through the variables argc, argv and env.
+
 o unbug
     Embryo of a Pike debugger. Not stable nor finished.
 
@@ -51,6 +56,22 @@ o Expanded Charset module
     Shift_JS, UTF-7.5, EUC, Big5, CP950, UTF-16, UTF-16BE, UTF-16LE.
     It is now also easier to get the right charset codec since the
     names are normalized internally.
+
+o sprintf("%O", foo) is more descriptive
+    If foo is a program or an object then Pike will try to find the
+    resolved name instead of returning just "program" or "object".
+    However, if an object contains an _sprintf function it will still
+    be called in this case.
+
+o basetype(foo)
+    Returns a string with the basic type of foo as opposed to
+    typeof(foo) that returns the actual type. Also available as
+    sprintf("%t", foo).
+
+o getenv()/putenv()
+    The environment variable functions getenv and putenv is now is now
+    both case insensitive on Microsoft Windows systems. This should
+    make your programs more portable.
 
 
 Language additions:
@@ -232,21 +253,10 @@ o _m_delete
     make the objects work like mappings with m_delete(). (This feature
     has been added to later 7.2 releases too.)
 
-o sprintf("%O", foo) is more descriptive
-    If foo is a program or an object then Pike will try to find the
-    resolved name instead of returning just "program" or "object".
-    However, if an object contains an _sprintf function it will still
-    be called in this case.
-
-o basetype(foo)
-  Returns a string with the basic type of foo as opposed to
-  typeof(foo) that returns the actual type. Also available as
-  sprintf("%t", foo).
-
 o Constant objects
     An object can now be constant, allowing for better
-    performace. For example used for Gmp.Bignum, Math.Matrix and
-    Image.Color.
+    performace and better dumping. For example used for Gmp.Bignum,
+    Math.Matrix and Image.Color.
 
 
 New modules / classes / methods / functionality added:
@@ -307,6 +317,44 @@ o DVB
     at once.
     Note: Only old 0.9.4 DVB API is supported.
 
+o Gz.File
+    Pike can now compress and decompress the Gzip format. This is
+    still a bit experimental but the basic functions should work 
+    just fine.
+
+o HTTP.Server
+    A simple HTTP Server.
+
+o Image.Dims
+    Can extract the dimensions of an image with a minimal amount of
+    data loading. Currently handles JPEG, GIF and PNG images. Hilfe
+    example:
+      > Image.Dims.get(Stdio.File("test.gif"));
+      (1) Result: ({ /* 2 elements */
+                      1412,
+                      1120
+                  })
+
+o Image.DWG
+    Decodes the thumbnail images embedded in AutoCAD drawings.
+
+o Image.Fonts
+    High level API for font handling. Should be used instead of
+    accessing the FreeType, TTF and Image.Font modules directly.
+
+o Image.Image 
+    Added two new methods: blur() and grey_blur().
+
+o Image.JPEG
+    Support for lossless transforms and handling of metadata.
+
+o Image.PVR
+    VQ compression/decompression added.
+
+o Image.SVG
+    Support for Structured Vector Graphics through the Gnome SVG
+    library. Requires Gnome 2.
+
 o Locale.Language
     FIXME: nilsson?
 
@@ -328,11 +376,13 @@ o Parser.Python
 o Parser.RCS
     Extracts data from RCS or CVS repositories.
 
-o HTTP.Server
-    A simple HTTP Server.
+o Parser.XML.NSTree
+    FIXME: Nilsson?
 
 o Protocols.X.KeySyms
+
 o Standards.CIFF
+
 o Standards.FIPS10_4
     FIXME: remove?
 
@@ -358,6 +408,14 @@ system.get_netinfo_property (Max OS X)
 system.usleep/nanosleep
    FIXME: per?
 
+o Stdio
+    Moved get_all_active_fd() from spider to Stdio.
+    Added methods to Stdio.File: sync(), line_iterator()
+
+o Stdio.expand_symlinks(string path)
+    Expands all symlinks along a path (returns 0 for broken links).
+    (Only available on systems with readlink.)
+
 o Stdio.FakeFile
     Wraps a string and exports a Stdio.File interface.
 
@@ -371,19 +429,6 @@ o Stdio.File->grantpt()
         "stdin":fd2,  "stdout":fd2, "stderr":fd2, "setsid":fd2, 
       ]) );
 
-o Stdio
-    Moved get_all_active_fd() from spider to Stdio.
-    Added methods to Stdio.File: sync(), line_iterator()
-
-o Gz.File
-    Pike can now compress and decompress the Gzip format. This is
-    still a bit experimental but the basic functions should work 
-    just fine.
-
-o Stdio.expand_symlinks(string path)
-    Expands all symlinks along a path (returns 0 for broken links).
-    (Only available on systems with readlink.)
-
 o Tools.PV
     Convenience tool that sets up a canvas with GTK, presents a
     picture on it and delivers a number of image inspection and
@@ -394,36 +439,6 @@ o Tools.PV
       > Tools.PV(i);
 
     The Pike Viewer tool is also accessible via "pike -x pv".
-
-o Image.Dims
-    Can extract the dimensions of an image with a minimal amount of
-    data loading. Currently handles JPEG, GIF and PNG images. Hilfe
-    example:
-      > Image.Dims.get(Stdio.File("test.gif"));
-      (1) Result: ({ /* 2 elements */
-                      1412,
-                      1120
-                  })
-
-o Image.Fonts
-    High level API for font handling. Should be used instead of
-    accessing the FreeType, TTF and Image.Font modules directly.
-
-o Image.DWG
-    Decodes AutoCAD thumbnail images.
-
-o Image.JPEG
-    Support for lossless transforms and handling of metadata.
-
-o Image.SVG
-    Support for Structured Vector Graphics through the Gnome SVG
-    library. Requires Gnome 2.
-
-o Image.Image 
-    Added two new methods: blur() and grey_blur().
-
-o Image.PVR
-    VQ compression/decompression added.
 
 o Shuffler
 
@@ -440,9 +455,6 @@ o SDL
     Wrapper for a subset of Simple DirectMedia Layer
     functionality. Useful for writing games, movie players and other
     graphically intensive applications.
-
-o XML.NSTree
-    FIXME: Nilsson?
 
 o Oracle
      CLOB and BLOB support.
@@ -684,11 +696,7 @@ o Calendar.verify  *FIXME: remove?*
 Nilsson does lib:
 
 master.pike
-- Better %O print outs for objects and programs. /* DONE */
-- pike -x  /* DONE */
 - add_predefine/remove_predefine
-- argc, argv and env are available when using pike -e
-- getenv/putenv is now case insensitive on NT.
 - Improved handling of module cross dependencies.
 
 Array.common_prefix
