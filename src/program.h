@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.170 2002/12/01 18:39:07 mast Exp $
+|| $Id: program.h,v 1.171 2002/12/16 14:32:21 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -219,7 +219,7 @@ struct program_constant
 /*
  * All identifiers in this program
  * and all identifiers in inherited programs
- * needs to have a 'struct reference' in this
+ * need to have a 'struct reference' in this
  * program. When we overload a function, we simply
  * change the reference to point to the new 'struct identifier'.
  */
