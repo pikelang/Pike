@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.164 2002/09/14 03:03:04 mast Exp $");
+RCSID("$Id: threads.c,v 1.165 2002/11/18 17:09:07 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1153,7 +1153,8 @@ static void f_thread_id_result(INT32 args)
 
 void init_thread_obj(struct object *o)
 {
-  MEMSET(THIS_THREAD, 0, sizeof(struct Pike_interpreter));
+  MEMSET(&THIS_THREAD->state, 0, sizeof(struct Pike_interpreter));
+  THIS_THREAD->swapped = 0;
   THIS_THREAD->status=THREAD_NOT_STARTED;
   co_init(& THIS_THREAD->status_change);
   THIS_THREAD->thread_local=NULL;
