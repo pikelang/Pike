@@ -34,7 +34,7 @@ void create(string host, int port, void|int nice,
 
 void provide(string name, mixed thing)
 {
-  con->ctx->add(name, thing);
+  con->ctx->add(thing, name);
 }
 
 void set_close_callback(function f)
