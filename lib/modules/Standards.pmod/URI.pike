@@ -3,7 +3,7 @@
 
 // Implemented by Johan Sundström and Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: URI.pike,v 1.4 2001/01/13 00:09:52 grubba Exp $
+// $Id: URI.pike,v 1.5 2001/01/14 16:16:02 jhs Exp $
 
 #pragma strict_types
 
@@ -220,9 +220,8 @@ void reparse_uri(object(this_program)|string|void base_uri)
 
   // Parse query information
   sscanf(uri, "%s?%s", uri, query);
-  if(query && !sizeof(query)) query = 0;
   debug("Found query %O", query);
- 
+
   // Parse path:
   path = uri;						
   debug("Found path %O", path);
