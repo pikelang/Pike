@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.4 2002/10/16 00:00:07 nilsson Exp $
+dnl $Id: testsuite.in,v 1.5 2002/11/15 02:57:51 nilsson Exp $
 
 dnl - Array
 
@@ -135,6 +135,251 @@ test_equal(Array.common_prefix(({ "muzzle"/1, "muzzy"/1 })), "muzz"/1)
 test_equal(Array.common_prefix(({ "labyrinth"/1, "diatom"/1 })), ({}))
 test_equal(Array.common_prefix(({ "abc"/1, "abc"/1, "abc"/1 })), "abc"/1)
 test_equal(Array.common_prefix(({})), ({}))
+
+
+dnl - Getopt
+dnl setup
+test_do( add_constant("getopt_env", master()->environment); )
+test_do( master()->environment=([ "foo": ({ "foo", "bar" }) ]); )
+
+test_eq( Getopt.find_option( "-a,-b"/",", "a" ), 0 )
+test_eq( Getopt.find_option( "-a,--b"/",", "a" ), 0 )
+test_eq( Getopt.find_option( "-a,-b"/",", "b" ), 1 )
+test_eq( Getopt.find_option( "-a,-ab"/",", "b" ), 1 )
+test_eq( Getopt.find_option( ",-a,-b"/",", "bc"/1 ), 1)
+test_eq( Getopt.find_option( ",-,-a"/",", "a" ), 1)
+test_eq( Getopt.find_option( ",--,-a"/",", "a" ), 0)
+
+test_eq( Getopt.find_option( ",--a,-b"/",", "a"), 0)
+test_eq( Getopt.find_option( ",--a,-b"/",", "b"), 1)
+test_eq( Getopt.find_option( ",--a=b"/",", "x", "a"), "b")
+test_eq( Getopt.find_option( ",--a=b"/",", "x", "a", 0, "y"), "b")
+test_eq( Getopt.find_option( ",--a,-b"/",", "b", "a", 0, "y"), "-b")
+test_eval_error( Getopt.find_option( ",--a"/",", "x", "a", 0, "y") )
+
+test_eq( Getopt.find_option( ",-ab"/",", "a"), 1)
+test_eq( Getopt.find_option( ",-ab"/",", "b"), 1)
+test_eq( Getopt.find_option( ",-ab"/",", "a", 0, 0, "y"), "b")
+test_eq( Getopt.find_option( ",-a,-b"/",", "ab"/1, 0, 0, "y"), "-b")
+test_eval_error( Getopt.find_option( ",-a"/",", "a", 0, 0, "y") )
+
+test_any_equal([[
+  array x = ({ "", "--a" });
+  Getopt.find_option( x, "x", "a" );
+  return x;
+]],[[ ({ "", 0 }) ]])
+test_any_equal([[
+  array x = ({ "", "--a" });
+  Getopt.find_option( x, "x", "b" );
+  return x;
+]],[[ ({ "", "--a" }) ]])
+test_any_equal([[
+  array x = ({ "", "--a", "hej" });
+  Getopt.find_option( x, "x", "a", 0, "b" );
+  return x;
+]],[[ ({ "", 0, 0 }) ]])
+test_any_equal([[
+  array x = ({ "", "-ab" });
+  Getopt.find_option( x, "a" );
+  return x;
+]],[[ ({ "", "-b" }) ]])
+test_any_equal([[
+  array x = ({ "", "-ab" });
+  Getopt.find_option( x, "b" );
+  return x;
+]],[[ ({ "", "-a" }) ]])
+test_any_equal([[
+  array x = ({ "", "-ab" });
+  Getopt.find_option( x, "a", 0, 0, "y" );
+  return x;
+]],[[ ({ "", 0 }) ]])
+test_any_equal([[
+  array x = ({ "", "-", "-abc" });
+  Getopt.find_option( x, "b" );
+  return x;
+]],[[ ({ "", "-", "-ac" }) ]])
+test_any_equal([[
+  array x = ({ "", "-ab", "c" });
+  Getopt.find_option( x, "b", 0, 0, "y" );
+  return x;
+]],[[ ({ "", "-a", 0 }) ]])
+
+test_eq( Getopt.find_option(({}),({"a","b"}),({"c","d"}), 0, "e" ), "e")
+test_eq( Getopt.find_option(({}),({"a","b"}),({"c","d"}), "foo", "e" ), "bar")
+test_eq( Getopt.find_option(({}),({"a","b"}),({"c","d"}), "foo" ), "bar")
+test_eq( Getopt.find_option(({}),({"a","b"}),({"c","d"}), ({"x","foo"}) ), "bar")
+test_eq( Getopt.find_option(({}),({"a","b"}),({"c","d"}), "x", "e" ), "e")
+
+test_equal( Getopt.get_args(({ "x",0,0,1,"y",0,"z" })), "xyz"/1 )
+test_eval_error( Getopt.get_args(({ "x", "-a" }), 0, 1) )
+test_equal( Getopt.get_args(({ "-a", 0, "a"})), ({ "-a", "a" }) )
+test_eval_error( Getopt.get_args(({ "x", "--a" }), 0, 1) )
+test_equal( Getopt.get_args(({ "x", "--", "--a" })), ({ "x", "--a" }) )
+test_equal( Getopt.get_args(({ "x", "-" })), ({ "x", "-" }) )
+test_eval_error( Getop.get_args(({ "x", "a", "-b" }), 0, 1) )
+
+test_equal( Getopt.get_args(({ "x", "a", "-b" }), 1, 1), ({ "x", "a", "-b" }))
+test_equal( Getopt.get_args(({ "x", "ab", "-b" }), 1, 1), ({ "x", "ab", "-b" }))
+test_equal( Getopt.get_args(({ "x", 0, "-b" }), 1, 1), ({ "x", "-b" }))
+test_eval_error( Getopt.get_args(({ "x", "-a" }), 1, 1))
+
+test_do( add_constant("opt", lambda(array x, array y, mixed ... z) {
+ return Getopt.find_all_options(x, ({ y }), @z); }); )
+test_equal( opt( "-a,-b"/",", ({ "a", Getopt.NO_ARG, "-a" }) ), ({}) )
+test_equal( opt( "-a,--b"/",", ({ "a", Getopt.NO_ARG, "-b" }) ), ({}) )
+test_equal( opt( "-a,-b"/",", ({ "b", Getopt.NO_ARG, "-b" }) ),
+ ({ ({ "b", 1 }) }) )
+test_equal( opt( "-a,-ab"/",", ({ "b", Getopt.NO_ARG, "-b" }) ),
+ ({ ({ "b", 1 }) }) )
+test_equal( opt( ",-,-a"/",", ({ "a", Getopt.NO_ARG, "-a" }) ),
+ ({ ({ "a", 1 }) }) ) )
+test_equal( opt( ",--,-a"/",", ({ "a", Getopt.NO_ARG, "-a" }) ), ({}) )
+test_equal( opt( ",-b,-A"/",", ({ "a", Getopt.NO_ARG, "-a-A"/2 }) ),
+ ({ ({ "a", 1 }) }) )
+test_equal( Getopt.find_all_options( ",-a,-b"/",",
+ ({ ({ "a", Getopt.NO_ARG, "-a" }), ({ "b", Getopt.NO_ARG, "-b" }) })),
+ ({ ({ "a", 1 }), ({ "b", 1 }) }) )
+
+test_equal( opt( "--a,--b"/",", ({ "a", Getopt.NO_ARG, "--a" }) ), ({}) )
+test_equal( opt( "--a,--b"/",", ({ "b", Getopt.NO_ARG, "--b" }) ),
+ ({ ({ "b", 1 }) }) )
+test_equal( opt( "--a,--b=c"/",", ({ "b", Getopt.NO_ARG, "--b" }) ),
+ ({ ({ "b", "c" }) }) )
+test_equal( opt( ",-,--a"/",", ({ "a", Getopt.NO_ARG, "--a" }) ),
+ ({ ({ "a", 1 }) }) ) )
+test_equal( opt( ",--,--a"/",", ({ "a", Getopt.NO_ARG, "--a" }) ), ({}) )
+test_equal( opt( ",--b,--A"/",", ({ "a", Getopt.NO_ARG, "--a--A"/3 }) ),
+ ({ ({ "a", 1 }) }) )
+test_equal( Getopt.find_all_options( ",--a,--b"/",",
+ ({ ({ "a", Getopt.NO_ARG, "--a" }), ({ "b", Getopt.NO_ARG, "--b" }) })),
+ ({ ({ "a", 1 }), ({ "b", 1 }) }) )
+
+test_equal( opt( "-a,-b"/",", ({ "a", Getopt.MAY_HAVE_ARG, "-a" }) ), ({}) )
+test_equal( opt( "-a,-b"/",", ({ "b", Getopt.MAY_HAVE_ARG, "-b" }) ),
+ ({ ({ "b", 1 }) }) )
+test_equal( opt( "-a,-b,c"/",", ({ "b", Getopt.MAY_HAVE_ARG, "-b" }) ),
+ ({ ({ "b", 1 }) }) )
+test_equal( opt( "-a,-bc"/",", ({ "b", Getopt.MAY_HAVE_ARG, "-b" }) ),
+ ({ ({ "b", "c" }) }) )
+
+test_equal( opt( "--a,--b"/",", ({ "a", Getopt.MAY_HAVE_ARG, "--a" }) ), ({}) )
+test_equal( opt( "--a,--b,d"/",", ({ "b", Getopt.MAY_HAVE_ARG, "--b" }) ),
+ ({ ({ "b", 1 }) }) )
+test_equal( opt( "--a,--b=c,d"/",", ({ "b", Getopt.MAY_HAVE_ARG, "--b" }) ),
+ ({ ({ "b", "c" }) }) )
+
+test_equal( opt( "-a,-b"/",", ({ "a", Getopt.HAS_ARG, "-a" }) ), ({}) )
+test_eval_error( opt( "-a,-b"/",", ({ "b", Getopt.HAS_ARG, "-b" }), 0, 1 ) )
+test_equal( opt( "-a,-b,c"/",", ({ "b", Getopt.HAS_ARG, "-b" }) ),
+ ({ ({ "b", "c" }) }) )
+test_equal( opt( "-a,-bc,d"/",", ({ "b", Getopt.HAS_ARG, "-b" }) ),
+ ({ ({ "b", "c" }) }) )
+
+test_equal( opt( "--a,--b"/",", ({ "a", Getopt.HAS_ARG, "--a" }) ), ({}) )
+test_eval_error( opt( "--a,--b"/",", ({ "b", Getopt.HAS_ARG, "--b" }), 0, 1 ) )
+test_equal( opt( "--a,--b,d"/",", ({ "b", Getopt.HAS_ARG, "--b" }) ),
+ ({ ({ "b", "d" }) }) )
+test_equal( opt( "--a,--b=c,d"/",", ({ "b", Getopt.HAS_ARG, "--b" }) ),
+ ({ ({ "b", "c" }) }) )
+
+test_any_equal([[
+  array x = ({ "", "--a" });
+  opt( x, ({ "x", Getopt.NO_ARG, "--a" }) );
+  return x;
+]],[[ ({ "", 0 }) ]])
+test_any_equal([[
+  array x = ({ "", "--a" });
+  opt( x, ({ "x", Getopt.NO_ARG, "--b" }) );
+  return x;
+]],[[ ({ "", "--a" }) ]])
+test_any_equal([[
+  array x = ({ "", "--a", "hej" });
+  opt( x, ({ "x", Getopt.HAS_ARG, "--a" }) );
+  return x;
+]],[[ ({ "", 0, 0 }) ]])
+test_any_equal([[
+  array x = ({ "", "--a", "hej" });
+  opt( x, ({ "x", Getopt.MAY_HAVE_ARG, "--a" }) );
+  return x;
+]],[[ ({ "", 0, "hej" }) ]])
+test_any_equal([[
+  array x = ({ "", "-ab" });
+  opt( x, ({ "x", Getopt.NO_ARG, "-a" }) );
+  return x;
+]],[[ ({ "", "-b" }) ]])
+test_any_equal([[
+  array x = ({ "", "-ab" });
+  opt( x, ({ "x", Getopt.MAY_HAVE_ARG, "-a" }) );
+  return x;
+]],[[ ({ "", 0 }) ]])
+test_any_equal([[
+  array x = ({ "", "-ab" });
+  opt( x, ({ "x", Getopt.NO_ARG, "-b" }) );
+  return x;
+]],[[ ({ "", "-a" }) ]])
+test_any_equal([[
+  array x = ({ "", "-ab" });
+  opt( x, ({ "x", Getopt.HAS_ARG, "-a" }) );
+  return x;
+]],[[ ({ "", 0 }) ]])
+test_any_equal([[
+  array x = ({ "", "-", "-abc" });
+  opt( x, ({ "x", Getopt.NO_ARG, "-b" }) );
+  return x;
+]],[[ ({ "", "-", "-ac" }) ]])
+test_any_equal([[
+  array x = ({ "", "-ab", "c" });
+  opt( x, ({ "x", Getopt.HAS_ARG, "-b" }) );
+  return x;
+]],[[ ({ "", "-a", 0 }) ]])
+test_any_equal([[
+  array x = ({ "", "-ab", "c", "--x", "x" });
+  Getopt.find_all_options( x, ({
+    ({ "x", Getopt.HAS_ARG, "-b" }),
+    ({ "y", Getopt.NO_ARG, "-a" }),
+    ({ "z", Getopt.HAS_ARG, "--x" }) }) );
+  return x;
+]],[[ ({ "", 0, 0, 0, 0 }) ]])
+
+test_equal( opt( ({}), ({ "a", Getopt.MAY_HAVE_ARG, "-a", 0, "e" }) ),
+ ({ }) )
+test_equal( opt( ({"","-a"}), ({ "a", Getopt.MAY_HAVE_ARG, "-a", 0, "e" }) ),
+ ({ ({ "a", "e" }) }) )
+test_equal( opt( ({"","--a"}), ({ "a", Getopt.MAY_HAVE_ARG, "--a", 0, "e" }) ),
+ ({ ({ "a", "e" }) }) )
+
+test_equal( opt( ({}), ({ "a", Getopt.HAS_ARG, "-a", "foo" }) ),
+ ({ ({ "a", "bar" }) }) )
+test_equal( opt( ({}), ({ "a", Getopt.HAS_ARG, "-a", ({ "x", "foo" }) }) ),
+ ({ ({ "a", "bar" }) }) )
+
+test_equal( Getopt.get_args(({ "x", "a", "-b" }), 1, 1), ({ "x", "a", "-b" }))
+test_any_equal([[
+  array x = ({ "x", "a", "-b" });
+  opt(x, ({ "y", Getopt.HAS_ARG, "-b" }), 1 );
+  return x;
+]],[[ ({ "x", "a", "-b" }) ]])
+
+test_do( putenv("POSIX_ME_HARDER", "1"); )
+test_eval_error( Getop.get_args(({ "x", "a", "-b" }), -1, 1) )
+test_equal( Getopt.get_args(({ "x", "a", "-b" }), 0, 1), ({ "x", "a", "-b" }))
+test_equal( Getopt.get_args(({ "x", 0, "-b" }), 0, 1), ({ "x", "-b" }))
+test_eval_error( opt( ({"x","a","-b"}), ({"y",Getopy.HAS_ARG,"-b"}), -1 ))
+test_any_equal([[
+  array x = ({ "x", "a", "-b" });
+  opt(x, ({ "y", Getopt.HAS_ARG, "-b" }) );
+  return x;
+]],[[ ({ "x", "a", "-b" }) ]])
+test_any_equal([[
+  array x = ({ "x", "a", "-b" });
+  opt(x, ({ "y", Getopt.HAS_ARG, "-b" }), 1);
+  return x;
+]],[[ ({ "x", "a", "-b" }) ]])
+
+dnl cleanup
+test_do( master()->environment=getopt_env; )
+test_do( add_constant("getopt_env"); )
+test_do( add_constant("opt"); )
 
 
 dnl - Colors
