@@ -22,7 +22,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.53 2001/09/12 11:29:10 grubba Exp $");
+RCSID("$Id: socket.c,v 1.54 2003/09/30 20:40:40 mast Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -207,7 +207,8 @@ static void port_bind(INT32 args)
   if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
   {
     THIS->my_errno=errno;
-    close(fd);
+    while (close(fd) && errno == EINTR) {}
+    errno = THIS->my_errno;
     push_int(0);
     return;
   }
@@ -235,7 +236,8 @@ static void port_bind(INT32 args)
   if(tmp)
   {
     THIS->my_errno=errno;
-    fd_close(fd);
+    while (fd_close(fd) && errno == EINTR) {}
+    errno = THIS->my_errno;
     pop_n_elems(args);
     push_int(0);
     return;
@@ -303,7 +305,7 @@ static void port_accept(INT32 args)
 {
   struct sockaddr_in addr;
   struct port *this=THIS;
-  int fd,tmp;
+  int fd,tmp, err;
   struct object *o;
   ACCEPT_SIZE_T len=0;
 
@@ -312,12 +314,15 @@ static void port_accept(INT32 args)
 
   THREADS_ALLOW();
   len=sizeof(addr);
-  fd=fd_accept(this->fd, (struct sockaddr *)&addr, &len);
+  do {
+    fd=fd_accept(this->fd, (struct sockaddr *)&addr, &len);
+    err = errno;
+  } while (fd < 0 && err == EINTR);
   THREADS_DISALLOW();
 
   if(fd < 0)
   {
-    THIS->my_errno=errno;
+    THIS->my_errno=errno = err;
     pop_n_elems(args);
     push_int(0);
     return;
