@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.216 2004/12/19 16:39:48 grubba Exp $
+|| $Id: svalue.c,v 1.217 2004/12/19 18:34:15 grubba Exp $
 */
 
 #include "global.h"
@@ -1052,8 +1052,8 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 		      "in comparison on the form a < b.\n");
       }
       push_svalue(a);
-      apply_lfun(b->u.object,
-		 fun + p->inherits[b->subtype].identifier_level, 1);
+      apply_low(b->u.object,
+		fun + p->inherits[b->subtype].identifier_level, 1);
       if(UNSAFE_IS_ZERO(sp-1))
       {
 	if(!sp[-1].subtype)
