@@ -142,19 +142,12 @@ tags:
 TAGS:
 	etags -t *.h *.c
 
-configure: configure.in
-	cd $(SRCDIR) && autoconf
-
-config.status: configure
-	./config.status --recheck
-	
-
-Makefile: Makefile.in config.status
+Makefile: Makefile.in 
 	./config.status
 
 machine.h: stamp-h
 
-stamp-h: machine.h.in config.status
+stamp-h: machine.h.in 
 	./config.status
 
 modlist.h:
