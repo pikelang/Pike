@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.401 2001/07/30 14:59:25 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.402 2001/08/10 21:38:57 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7122,7 +7122,8 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
  *!   Returns a string with filename and linenumber where @[fun]
  *!   was defined.
  *!
- *!   Returns @tt{0@} (zero) for builtin functions.
+ *!   Returns @tt{0@} (zero) for builtin functions and functions in
+ *!   destructed objects.
  */
 PMOD_EXPORT void f_function_defined(INT32 args)
 {
@@ -7131,16 +7132,25 @@ PMOD_EXPORT void f_function_defined(INT32 args)
   if(Pike_sp[-args].subtype != FUNCTION_BUILTIN &&
      Pike_sp[-args].u.object->prog)
   {
-    struct identifier *id=ID_FROM_INT(Pike_sp[-args].u.object->prog,
-				      Pike_sp[-args].subtype);
+    struct program *p = Pike_sp[-args].u.object->prog;
+    int func = Pike_sp[-args].subtype;
+    struct identifier *id;
+
+    if (p == pike_trampoline_program) {
+      struct pike_trampoline *t =
+	(struct pike_trampoline *) Pike_sp[-args].u.object->storage;
+      if (t->frame->current_object->prog) {
+	p = t->frame->current_object->prog;
+	func = t->func;
+      }
+    }
+
+    id=ID_FROM_INT(p, func);
     if(IDENTIFIER_IS_PIKE_FUNCTION( id->identifier_flags ) &&
       id->func.offset != -1)
     {
       INT32 line = 0;
-      struct pike_string *tmp =
-	get_line(Pike_sp[-args].u.object->prog->program + id->func.offset,
-		 Pike_sp[-args].u.object->prog,
-		 &line);
+      struct pike_string *tmp = get_line(p->program + id->func.offset, p, &line);
       if (tmp)
       {
 	pop_n_elems(args);

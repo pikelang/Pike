@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.113 2001/07/05 10:38:26 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.114 2001/08/10 21:38:57 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1056,6 +1056,18 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       {
 	my_binary_strcat(s->u.efun->name->str,s->u.efun->name->len);
       }else{
+	if (s->u.object->prog == pike_trampoline_program) {
+	  struct pike_trampoline *t =
+	    (struct pike_trampoline *) s->u.object->storage;
+	  if (t->frame->current_object->prog) {
+	    struct svalue f;
+	    f.type = T_FUNCTION;
+	    f.subtype = t->func;
+	    f.u.object = t->frame->current_object;
+	    describe_svalue (&f, indent, p);
+	    break;
+	  }
+	}
 	if(s->u.object->prog)
 	{
 	  struct pike_string *name;
@@ -1151,17 +1163,54 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	  t_flag=save_t_flag;
 	  pop_stack();
 	}
+	else {
+	  struct pike_string *file;
+	  INT32 line;
+#if 0
+	  /* This provides useful info sometimes, but there are code
+	   * that looks for the plain "object" string to resort to
+	   * other fallbacks. */
+	  if ((file = get_program_line(s->u.object->prog, &line))) {
+	    my_strcat("object(");
+	    my_strcat(file->str);
+	    free_string(file);
+	    if (line) {
+	      sprintf(buf, ":%d", line);
+	      my_strcat(buf);
+	    }
+	    my_putchar(')');
+	  }
+	  else
+#endif
+	    my_strcat("object");
+	}
       } else {
 	my_strcat("0");
-	break;
       }
-      
-      my_strcat("object");
       break;
 
-    case T_PROGRAM:
-      my_strcat("program");
+    case T_PROGRAM: {
+      struct pike_string *file;
+      INT32 line;
+#if 0
+      /* This provides useful info sometimes, but there are code that
+       * looks for the plain "program" string to resort to other
+       * fallbacks. */
+      if ((file = get_program_line(s->u.program, &line))) {
+	my_strcat("program(");
+	my_strcat(file->str);
+	free_string(file);
+	if (line) {
+	  sprintf(buf, ":%d", line);
+	  my_strcat(buf);
+	}
+	my_putchar(')');
+      }
+      else
+#endif
+	my_strcat("program");
       break;
+    }
 
     case T_FLOAT:
       sprintf(buf,"%f",(double)s->u.float_number);
