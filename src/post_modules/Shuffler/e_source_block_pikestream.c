@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: e_source_block_pikestream.c,v 1.2 2003/03/14 15:57:49 grubba Exp $
+|| $Id: e_source_block_pikestream.c,v 1.3 2003/09/10 15:21:59 mast Exp $
 */
 
 #include "global.h"
@@ -28,7 +28,7 @@ struct pf_source
   struct source s;
 
   struct object *obj;
-  size_t len, skip;
+  ptrdiff_t len, skip;
 };
 
 

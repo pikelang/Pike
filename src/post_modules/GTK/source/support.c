@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.36 2002/11/28 23:45:49 marcus Exp $
+|| $Id: support.c,v 1.37 2003/09/10 15:21:58 mast Exp $
 */
 
 #include <version.h>
@@ -70,7 +70,7 @@ void pgtk_index_stack( char *what )
 #endif
 }
 
-int get_color_from_pikecolor( struct object *o, int *r, int *g, int *b )
+int get_color_from_pikecolor( struct object *o, INT_TYPE *r, INT_TYPE *g, INT_TYPE *b )
 {
   struct color_struct *col;
   static struct program *pike_color_program;

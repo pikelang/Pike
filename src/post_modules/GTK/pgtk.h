@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgtk.h,v 1.30 2002/10/21 17:07:10 marcus Exp $
+|| $Id: pgtk.h,v 1.31 2003/09/10 15:21:58 mast Exp $
 */
 
 /* Sort of unnessesary, and decreases code-size with 140Kb */
@@ -105,7 +105,7 @@ void pgtk_verify_not_inited();
 
 void push_Xpseudo32bitstring( void *f, int nelems );
 
-int get_color_from_pikecolor( struct object *o, int *r, int *g, int *b );
+int get_color_from_pikecolor( struct object *o, INT_TYPE *r, INT_TYPE *g, INT_TYPE *b );
 
 int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
                              int nparams, GtkArg *params);

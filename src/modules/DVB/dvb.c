@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dvb.c,v 1.20 2003/05/12 20:21:33 mast Exp $
+|| $Id: dvb.c,v 1.21 2003/09/10 15:21:58 mast Exp $
 */
 
 /*
@@ -180,7 +180,7 @@ int sl_del(dvb_data *parent, dvb_stream_data *oldstream) {
 
 }
 
-dvb_stream_data *sl_getstream(dvb_data *parent, int pid) {
+dvb_stream_data *sl_getstream(dvb_data *parent, unsigned int pid) {
   dvb_stream_data *st = parent->stream;
 
   if(st == NULL)
@@ -239,11 +239,12 @@ static void f_create(INT32 args) {
     Pike_error("Create already called!\n");
 
   DVB->cardn = 0;
-  if(args)
+  if(args) {
     if(Pike_sp[-1].type != T_INT)
       Pike_error("Invalid argument 1, expected int.\n");
     else
       DVB->cardn = (u_short)Pike_sp[-1].u.integer;
+  }
 
   if((devname = mk_devname(DVB->cardn, FRONTENDDEVICE)) == NULL)
       Pike_error("Internal error: can't malloc buffer.\n");
@@ -920,7 +921,7 @@ static void f_parse_pmt(INT32 args)
   unsigned int length,info_len,data_len, index;
   int retries;
   int pid;
-  int n,i;
+  int n;
 
   int pnr = -1;
 
@@ -1026,7 +1027,7 @@ static void f_parse_pmt(INT32 args)
     data_len = ((buffer[index+3] & 0x0F) << 8) + buffer[index+4];
     if (buffer[index]==0x02 || buffer[index]==0x03 || buffer[index]==0x04)
     {
-      i = index+5;
+      unsigned int i = index+5;
       while (i < index+5+data_len)
       {
         switch (buffer[i])
@@ -1081,7 +1082,8 @@ static void f_parse_pmt(INT32 args)
  */
 static void f_stream_attach(INT32 args) {
 
-  int err, pid, ptype = PID_NONE;
+  int err, ptype = PID_NONE;
+  unsigned int pid;
   struct svalue feeder;
   unsigned char *pktdata;
 
@@ -1123,7 +1125,7 @@ static void f_stream_attach(INT32 args) {
 
 static void f__sprintf(INT32 args) {
 
-  unsigned int n = 0, x, cnt;
+  int n = 0, x, cnt;
   dvb_stream_data *st = DVB->stream;
 
   check_all_args("DVB.dvb->_sprintf", args, BIT_INT, BIT_MAPPING | BIT_VOID, 0);
@@ -1431,11 +1433,12 @@ static void f_audio_create(INT32 args) {
   if(DVBAudio->fd != -1)
     Pike_error("Create already called!\n");
 
-  if(args)
+  if(args) {
     if(Pike_sp[-1].type != T_INT)
       Pike_error("Invalid argument 1, expected int.\n");
     else
       devno = (u_short)Pike_sp[-1].u.integer;
+  }
   pop_n_elems(args);
   if((devname = mk_devname(devno, AUDIODEVICE)) == NULL)
      Pike_error("Internal error: can't malloc buffer.\n");

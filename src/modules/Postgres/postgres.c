@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.31 2003/04/28 09:51:01 grubba Exp $
+|| $Id: postgres.c,v 1.32 2003/09/10 15:21:58 mast Exp $
 */
 
 /*
@@ -79,7 +79,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.31 2003/04/28 09:51:01 grubba Exp $");
+RCSID("$Id: postgres.c,v 1.32 2003/09/10 15:21:58 mast Exp $");
 
 static void set_error (char * newerror)
 {
@@ -266,7 +266,7 @@ static void f_create (INT32 args)
 			    		Pike_sp[2-args].u.integer >= 0) {
 				if (Pike_sp[2-args].u.integer>0) {
 					port=xalloc(10*sizeof(char)); /*we only need 6, we just checked.*/
-					sprintf(port,"%d",Pike_sp[2-args].u.integer);
+					sprintf(port,"%"PRINTPIKEINT"d",Pike_sp[2-args].u.integer);
 				}
 			}
 		case 4:

@@ -400,7 +400,8 @@ mapping get_selection_info(int x, int y)
 //! the returned values are only valid if the x and y coordinates
 //! are relative to the clist window coordinates
 {
-  INT_TYPE r=-1, c=-1, x, y;
+  INT_TYPE x, y;
+  gint r=-1, c=-1;
   get_all_args( "get_selection_info", args, "%d%d", &x, &y );
   gtk_clist_get_selection_info( GTK_CLIST( THIS->obj ), x, y, &r, &c );
 

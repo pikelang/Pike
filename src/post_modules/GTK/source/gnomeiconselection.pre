@@ -16,7 +16,7 @@ void clear(?int not_shown);
 //! Clear the currently shown icons, the ones that weren't shown yet
 //! are not cleared unless the not_shown parameter is given, in which
 //! case even those are cleared.
-string get_icon( int full_path );
+string(const) get_icon( int full_path );
 //! Gets the currently selected icon name, if full_path is true, it
 //! returns the full path to the icon, if none is selected it returns
 //! 0.

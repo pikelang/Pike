@@ -94,7 +94,8 @@ array(string) gnome_init(string app_id, string app_version,
 {
   gchar **data;
   char *id, *vers;
-  INT_TYPE argc, flags=0;
+  gint argc;
+  INT_TYPE flags=0;
 
   if( pigtk_is_setup )
     Pike_error( "You should only call GTK.setup_gtk() or Gnome.init() once\n");

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colors.c,v 1.65 2003/01/31 02:01:46 mast Exp $
+|| $Id: colors.c,v 1.66 2003/09/10 15:21:58 mast Exp $
 */
 
 /*
@@ -192,7 +192,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.65 2003/01/31 02:01:46 mast Exp $");
+RCSID("$Id: colors.c,v 1.66 2003/09/10 15:21:58 mast Exp $");
 
 #include "image_machine.h"
 
@@ -1597,8 +1597,9 @@ static void image_make_hsv_color(INT32 args)
 	 case 3: r = p;	 g = q;	 b = v;	 break;
 	 case 4: r = t;	 g = p;	 b = v;	 break;
 	 case 5: r = v;	 g = p;	 b = q;	 break;
-	 default: Pike_error("internal error (hue=%d <= hsv[%f,%f,%f])\n",
-			DOUBLE_TO_INT(i), h, s, v);
+	 default: Pike_error("internal error (hue=%d <= hsv[%"PRINTPIKEFLOAT"f,"
+			     "%"PRINTPIKEFLOAT"f,%"PRINTPIKEFLOAT"f])\n",
+			     DOUBLE_TO_INT(i), h, s, v);
       }
    }
 #undef i

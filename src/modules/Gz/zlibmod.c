@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.64 2003/04/15 15:00:58 marcus Exp $
+|| $Id: zlibmod.c,v 1.65 2003/09/10 15:21:58 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.64 2003/04/15 15:00:58 marcus Exp $");
+RCSID("$Id: zlibmod.c,v 1.65 2003/09/10 15:21:58 mast Exp $");
 
 #include "zlib_machine.h"
 #include "module.h"
@@ -28,6 +28,7 @@ RCSID("$Id: zlibmod.c,v 1.64 2003/04/15 15:00:58 marcus Exp $");
 #include "pike_types.h"
 #include "threads.h"
 #include "dynamic_buffer.h"
+#include "operators.h"
 
 #include <zlib.h>
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_jpeg.c,v 1.62 2003/04/30 18:03:14 grubba Exp $
+|| $Id: image_jpeg.c,v 1.63 2003/09/10 15:21:58 mast Exp $
 */
 
 #include "global.h"
@@ -59,7 +59,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.62 2003/04/30 18:03:14 grubba Exp $");
+RCSID("$Id: image_jpeg.c,v 1.63 2003/09/10 15:21:58 mast Exp $");
 
 /* jpeglib defines EXTERN for some reason.
  * This is not good, since it confuses compilation.h.
@@ -357,9 +357,9 @@ static int parameter_qt(struct svalue *map,struct pike_string *what,
 	 if ((z=store_int_in_table(k->val.u.array,DCTSIZE2,table))!=
 	     DCTSIZE2)
 	    Pike_error("Image.JPEG.encode: illegal value of option quant_table;"
-		  " quant_table %d array is of illegal size (%d), "
-		  "expected %d integers\n",
-		  k->ind.u.integer,z,DCTSIZE2);
+		       " quant_table %"PRINTPIKEINT"d array is of illegal size (%d), "
+		       "expected %d integers\n",
+		       k->ind.u.integer,z,DCTSIZE2);
 
 	 jpeg_add_quant_table(cinfo,k->ind.u.integer,table,100,0);
       }
@@ -395,9 +395,9 @@ static int parameter_qt_d(struct svalue *map,struct pike_string *what,
 	 if ((z=store_int_in_table(k->val.u.array,DCTSIZE2,table))!=
 	     DCTSIZE2)
 	    Pike_error("Image.JPEG.encode: illegal value of option quant_table;"
-		  " quant_table %d array is of illegal size (%d), "
-		  "expected %d integers\n",
-		  k->ind.u.integer,z,DCTSIZE2);
+		       " quant_table %"PRINTPIKEINT"d array is of illegal size (%d), "
+		       "expected %d integers\n",
+		       k->ind.u.integer,z,DCTSIZE2);
 
 	 /* jpeg_add_quant_table(cinfo,k->ind.u.integer,table,100,0); */
 

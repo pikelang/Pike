@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.524 2003/09/08 20:05:21 mast Exp $
+|| $Id: program.c,v 1.525 2003/09/10 15:21:58 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.524 2003/09/08 20:05:21 mast Exp $");
+RCSID("$Id: program.c,v 1.525 2003/09/10 15:21:58 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4914,7 +4914,6 @@ int store_constant(struct svalue *foo,
 		   struct pike_string *constant_name)
 {
   struct program_constant tmp;
-  unsigned int e;
   JMP_BUF tmp2;
 
   if(SETJMP(tmp2))
@@ -4939,6 +4938,7 @@ int store_constant(struct svalue *foo,
     UNSETJMP(tmp2);
     return store_constant(&zero, equal, constant_name);
   }else{
+    unsigned int e;
     for(e=0;e<Pike_compiler->new_program->num_constants;e++)
     {
       JMP_BUF tmp1;

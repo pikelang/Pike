@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.166 2003/09/01 16:51:35 mast Exp $
+|| $Id: html.c,v 1.167 2003/09/10 15:21:58 mast Exp $
 */
 
 #include "global.h"
@@ -2438,7 +2438,7 @@ static newstate handle_result(struct parser_html_storage *this,
 	       pop_stack();
 	       return STATE_REPARSE;
 	 }
-	 Pike_error("Parser.HTML: illegal result from callback: %d, "
+	 Pike_error("Parser.HTML: illegal result from callback: %"PRINTPIKEINT"d, "
 		    "not 0 (skip) or 1 (reparse)\n",
 		    sp[-1].u.integer);
 

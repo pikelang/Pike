@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dummy.c,v 1.12 2003/04/26 12:49:38 grubba Exp $
+|| $Id: dummy.c,v 1.13 2003/09/10 15:21:58 mast Exp $
 */
 
 /*
@@ -18,6 +18,10 @@
 #include "global.h"
 
 #ifdef HAVE_MYSQL
+
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
 
 #include <stdio.h>
 

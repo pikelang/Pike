@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.19 2003/09/10 12:40:50 mirar Exp $
+|| $Id: SDL.cmod,v 1.20 2003/09/10 15:21:58 mast Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: SDL.cmod,v 1.19 2003/09/10 12:40:50 mirar Exp $");
+RCSID("$Id: SDL.cmod,v 1.20 2003/09/10 15:21:58 mast Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -1854,7 +1854,7 @@ PIKECLASS Joystick {
   PIKEFUN void create(int device_index) {
     THIS->joystick = SDL_JoystickOpen(device_index);
     if(!THIS->joystick) {
-      Pike_error("Failed to open joystick %d: %s\n", device_index,
+      Pike_error("Failed to open joystick %"PRINTPIKEINT"d: %s\n", device_index,
 		 SDL_GetError());
     }
   }
@@ -2102,7 +2102,7 @@ PIKECLASS CD {
   PIKEFUN void create(int drive) {
     THIS->cd = SDL_CDOpen(drive);
     if(!THIS->cd) {
-      Pike_error("Failed to open CD %d: %s\n", drive, SDL_GetError());
+      Pike_error("Failed to open CD %"PRINTPIKEINT"d: %s\n", drive, SDL_GetError());
     }
   }
 

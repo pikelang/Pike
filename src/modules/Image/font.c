@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: font.c,v 1.80 2003/04/30 15:56:53 grubba Exp $
+|| $Id: font.c,v 1.81 2003/09/10 15:21:58 mast Exp $
 */
 
 #include "global.h"
@@ -319,7 +319,7 @@ void font_load(INT32 args)
    if (!args) 
    {
       THIS=(struct font *)xalloc(sizeof(struct font));
-      THIS->mem=image_default_font;
+      THIS->mem=(void *)image_default_font;
       size=IMAGE_DEFAULT_FONT_SIZE;
       goto loading_default;
    }
