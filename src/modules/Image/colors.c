@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.15 1999/04/25 20:34:51 grubba Exp $
+**!	$Id: colors.c,v 1.16 1999/05/20 17:07:00 mirar Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -97,7 +97,7 @@
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: colors.c,v 1.15 1999/04/25 20:34:51 grubba Exp $");
+RCSID("$Id: colors.c,v 1.16 1999/05/20 17:07:00 mirar Exp $");
 
 #include "config.h"
 
@@ -364,6 +364,7 @@ static void image_color_greylevel(INT32 args)
 }
 
 #define MAX3(X,Y,Z) MAXIMUM(MAXIMUM(X,Y),Z)
+#define MIN3(X,Y,Z) MINIMUM(MINIMUM(X,Y),Z)
 
 static void image_color_hsvf(INT32 args)
 {
@@ -375,8 +376,8 @@ static void image_color_hsvf(INT32 args)
 
    if((THIS->rgb.r==THIS->rgb.g) && (THIS->rgb.g==THIS->rgb.b)) 
    {
-      push_float(0);
-      push_float(0);
+      push_float(0.0);
+      push_float(0.0);
       push_float(COLORL_TO_FLOAT(THIS->rgbl.r));
       f_aggregate(3);
       return;
@@ -385,8 +386,9 @@ static void image_color_hsvf(INT32 args)
    r = COLORL_TO_FLOAT(THIS->rgbl.r);
    g = COLORL_TO_FLOAT(THIS->rgbl.g);
    b = COLORL_TO_FLOAT(THIS->rgbl.b);
+
    max = MAX3(r,g,b);
-   min = -(MAX3(-r,-g,-b));
+   min = MIN3(r,g,b);
 
    v = max;
 
@@ -797,6 +799,10 @@ static void image_color___hash(INT32 args)
 **!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->neon())</illustration></td></tr>
 **!
 **!     </table>
+**!
+**!	<ref>light</ref> and <ref>dark</ref> lower/highers saturation
+**!	when value is min-/maximised respective.
+**!
 **! returns the new color object
 **! note:
 **!	The opposites may not always take each other out.
@@ -816,6 +822,9 @@ static void image_color_light(INT32 args)
    sp--;
    push_array_items(sp->u.array); /* frees */
    sp[-1].u.float_number+=+0.2;
+   if (sp[-1].u.float_number>=1.0)
+      sp[-2].u.float_number-=sp[-1].u.float_number-1.0;
+
    image_make_hsv_color(3);
 }
 
@@ -826,6 +835,8 @@ static void image_color_dark(INT32 args)
    sp--;
    push_array_items(sp->u.array); /* frees */
    sp[-1].u.float_number-=0.2;
+   if (sp[-1].u.float_number<0.0)
+      sp[-2].u.float_number-=sp[-1].u.float_number;
    image_make_hsv_color(3);
 }
 
@@ -868,6 +879,7 @@ static void image_color_dull(INT32 args)
    }
 
    sp[-2].u.float_number-=0.2;
+   sp[-1].u.float_number-=0.2;
    image_make_hsv_color(3);
 }
 
@@ -886,6 +898,7 @@ static void image_color_bright(INT32 args)
    }
 
    sp[-2].u.float_number+=0.2;
+   sp[-1].u.float_number+=0.2;
    image_make_hsv_color(3);
 }
 
@@ -1309,7 +1322,7 @@ static void image_make_hsv_color(INT32 args)
 	 case 3: r = p;	 g = q;	 b = v;	 break;
 	 case 4: r = t;	 g = p;	 b = v;	 break;
 	 case 5: r = v;	 g = p;	 b = q;	 break;
-	 default: error("internal error\n");
+	 default: error("internal error (hue=%d <= hsv[%f,%f,%f])\n",(int)i,h,s,v);
       }
    }
 #undef i
