@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program_id.h,v 1.22 2004/11/26 16:30:17 grubba Exp $
+|| $Id: program_id.h,v 1.23 2004/11/26 16:42:38 grubba Exp $
 */
 
 #ifndef PROGRAM_ID_H
@@ -96,6 +96,8 @@
 #define     PROG_SIGNLE_STRING_REPLACE_ID			    050
 #define     PROG_BOOTSTRING_ID					    051
 #define     PROG_TIME_ID					    052
+/* Kludge for #define TIME time in port.h */
+#define     PROG_time_ID					    052
 #define     PROG_TIMER_ID					    053
 #define     PROG_AUTOMAP_MARKER_ID				    054
 #define     PROG_LIST_ID					    055
