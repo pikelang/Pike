@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.17 2001/05/25 16:17:59 per Exp $");
+RCSID("$Id: whitefish.c,v 1.18 2001/05/25 18:39:32 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -89,7 +89,7 @@ static void handle_hit( Blob **blobs,
     {
       hits[i] = wf_blob_hit( blobs[i], j );
       matrix[MOFF(hits[i])][0]++;
-/*       printf("Absolute hit %d -> %d\n", hits[i].raw, MOFF(hits[i]) ); */
+
       /* forward the other positions */
       for( k = 0; k<nblobs; k++ )
 	if( k != i &&  pos[ k ] < nhits[ k ] )
@@ -97,29 +97,16 @@ static void handle_hit( Blob **blobs,
 	  while( (hits[k].raw < hits[i].raw) && (pos[ k ] < nhits[ k ]))
 	    hits[k] = wf_blob_hit( blobs[k], pos[k]++ );
 	  if( (pos[ k ] < nhits[ k ]) && hits[k].type == hits[i].type )
-	  {
-/* 	    printf("Pair hit %d-%d: %x -> [%d][%d]\n", */
-/* 		   OFFSET(hits[i]),  OFFSET(hits[k]), */
-/* 		   hits[i].raw, */
-/* 		   MOFF(hits[i]), */
-
 	    matrix[MOFF(hits[i])][DOFF(OFFSET(hits[k])-OFFSET(hits[i]))]+=2;
-	  }
 	}
     }
   }
   
-
+  free( pos );
+  free( nhits );
+  free( hits );
   /* Now we have our nice matrix. Time to do some multiplication */
 
-/*   printf("matrix:\n"); */
-/*   for( i = 0; i<3; i++ ) */
-/*   { */
-/*     for( j = 0; j<8; j++ ) */
-/*       printf( "%4d ", matrix[i][j] ); */
-/*     printf("\n"); */
-/*   } */
-  
   {
     double accum = 0.0, fc, pc;
     int accum_i;
@@ -147,9 +134,8 @@ static struct object *low_do_query_merge( Blob **blobs,
   struct tofree *__f = malloc( sizeof( struct tofree ) );
   double max_c=0.0, max_p=0.0;
   ONERROR e;
-  int i, j, end=0;
+  int i, j;
   Blob **tmp;
-  
   tmp = malloc( nblobs * sizeof( Blob *) );
 
   __f->res = res;
@@ -174,7 +160,7 @@ static struct object *low_do_query_merge( Blob **blobs,
       wf_blob_next( blobs[i] );  
 
     /* Main loop: Find the smallest element in the blob array. */
-    while( !end )
+    while( 1 )
     {
       unsigned int min = 0x7ffffff;
     
@@ -185,18 +171,12 @@ static struct object *low_do_query_merge( Blob **blobs,
       if( min == 0x7ffffff )
 	break;
 
-/*       printf( "hit in %d: ", min ); */
-
       for( j = 0, i = 0; i < nblobs; i++ )
 	if( blobs[i]->docid == min && !blobs[i]->eof )
-	{
 	  tmp[j++] = blobs[i];
-/* 	  printf( "%8x ", blobs[i]->word ); */
-	}
-/*       printf( "\n"); */
+
       handle_hit( tmp, j, res, min, &field_c, &prox_c, max_c, max_p );
     
-      /* Step the 'min' blobs */
       for( i = 0; i<j; i++ )
 	wf_blob_next( tmp[i] );
     }
@@ -209,6 +189,188 @@ static struct object *low_do_query_merge( Blob **blobs,
   return res;
 }
 				
+static void handle_phrase_hit( Blob **blobs,
+			       int nblobs,
+			       struct object *res,
+			       int docid,
+			       double *field_c[66],
+			       double mc )
+{
+  int i, j, k;
+  unsigned char *nhits = malloc( nblobs );
+  int matrix[66];
+  double accum = 0.0;
+  
+  MEMSET(matrix, 0, sizeof(matrix) );
+
+  for( i = 0; i<nblobs; i++ )
+    nhits[i] = wf_blob_nhits( blobs[i] );
+
+  for( i = 0; i<nhits[0]; )
+  {
+    double add;
+    int fail = 1;
+    Hit h = wf_blob_hit( blobs[0], i );
+    if( (add = (*field_c)[ MOFF(h) ]) != 0.0 )
+    {
+      for( j = 1; j<nblobs; j++)
+      {
+	for( k = 0; k<nhits[j]; k++ )
+	{
+	  Hit h2 = wf_blob_hit( blobs[j], k );
+	  if( h2.raw >= h.raw )
+	  {
+	    if( (h2.raw - h.raw) != j )
+	    {
+	      fail=1;
+	      goto next;
+	    }
+	    else
+	    {
+	      fail=0;
+	      break;
+	    }
+	  }
+	}
+      }
+      if( !fail )
+	accum += add/mc;
+    }
+  next:
+    i++;
+  }
+
+  free( nhits );  
+
+  if( accum >= 0.01 )
+    wf_resultset_add( res, docid, (int)(accum*100) );
+}
+
+static struct object *low_do_query_phrase( Blob **blobs, int nblobs,
+					   double field_c[66])
+{
+  struct object *res = wf_resultset_new();
+  struct tofree *__f = malloc( sizeof( struct tofree ) );
+  double max_c=0.0;
+  ONERROR e;
+  int i, j;
+  __f->blobs = blobs;
+  __f->nblobs = nblobs;
+  __f->res = res;
+  __f->tmp    = 0;
+  SET_ONERROR( e, free_stuff, __f );
+
+
+  for( i = 0; i<66; i++ )
+    if( field_c[i] > max_c )
+      max_c = field_c[i];
+
+  if(  max_c != 0.0 )
+  {
+    /* Time to do the real work. :-) */
+    for( i = 0; i<nblobs; i++ ) /* Forward to first element */
+      wf_blob_next( blobs[i] );
+
+    /* Main loop: Find the smallest element in the blob array. */
+    while( 1 )
+    {
+      unsigned int min = 0x7ffffff;
+    
+      for( i = 0; i<nblobs; i++ )
+	if( blobs[i]->eof )
+	  goto end;
+	else if( ((unsigned int)blobs[i]->docid) < min )
+	  min = blobs[i]->docid;
+
+      if( min == 0x7ffffff )
+	goto end;
+
+      for( j = 0, i = 0; i < nblobs; i++ )
+	if( blobs[i]->docid != min )
+	  goto next;
+
+      handle_phrase_hit( blobs, nblobs, res, min, &field_c, max_c );
+    
+    next:
+      for( i = 0; i<nblobs; i++ )
+	if( blobs[i]->docid == min )
+	  wf_blob_next( blobs[i] );
+    }
+  }
+end:
+  /* Free workarea and return the result. */
+
+  UNSET_ONERROR( e );
+  __f->res = 0;
+  free_stuff( __f );
+  return res;
+}
+				
+
+static void f_do_query_phrase( INT32 args )
+/*! @decl ResultSet do_query_phrase( array(int) words,          @
+ *!                          array(int) field_coefficients,       @
+ *!                          function(int:string) blobfeeder)   
+ *!       @[words]
+ *!       
+ *!          Arrays of word ids. Note that the order is significant
+ *!          for the ranking.
+ *!
+ *!       @[field_coefficients]
+ *!
+ *!       An array of ranking coefficients for the different fields. 
+ *!       In the range of [0x0000-0xffff]. The array (always) has 66
+ *!       elements:
+ *!
+ *!	  Index        Coefficient for field
+ *!	  -----        ---------------------
+ *!	  0            body
+ *!	  1            anchor
+ *!	  2..65        Special field 0..63
+ *!
+ *!     @[blobfeeder]
+ *!     
+ *!      This function returns a Pike string containing the word hits
+ *!	 for a certain word_id. Call repeatedly until it returns 0.
+ */
+{
+  double proximity_coefficients[8];
+  double field_coefficients[66];
+  int numblobs, i;
+  Blob **blobs;
+
+  struct svalue *cb;
+  struct object *res;
+  struct array *_words, *_field;
+
+  /* 1: Get all arguments. */
+  get_all_args( "do_query_merge", args, "%a%a%*",
+		&_words, &_field, &cb);
+
+  if( _field->size != 66 )
+    Pike_error("Illegal size of field_coefficients array (expected 66)\n" );
+
+  numblobs = _words->size;
+  if( !numblobs )
+  {
+    struct object *o = wf_resultset_new( );
+    pop_n_elems( args );
+    push_object( o );
+    return;
+  }
+
+  blobs = malloc( sizeof(Blob *) * numblobs );
+
+  for( i = 0; i<numblobs; i++ )
+    blobs[i] = wf_blob_new( cb, _words->item[i].u.integer );
+
+  for( i = 0; i<66; i++ )
+    field_coefficients[i] = (double)_field->item[i].u.integer;
+
+  res = low_do_query_phrase(blobs,numblobs, field_coefficients );
+  pop_n_elems( args );
+  push_object( res );
+}
 
 static void f_do_query_merge( INT32 args )
 /*! @decl ResultSet do_query_merge( array(int) words,          @
@@ -309,6 +471,11 @@ void pike_module_init(void)
 
   add_function( "do_query_merge", f_do_query_merge,
 		"function(array(int),array(int),array(int)"
+		",function(int:string):object)",
+		0 );
+
+  add_function( "do_query_phrase", f_do_query_phrase,
+		"function(array(int),array(int)"
 		",function(int:string):object)",
 		0 );
 }
