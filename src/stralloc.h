@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.83 2004/11/05 15:23:32 grubba Exp $
+|| $Id: stralloc.h,v 1.84 2004/11/06 13:41:27 grubba Exp $
 */
 
 #ifndef STRALLOC_H
@@ -39,6 +39,11 @@ struct string_builder
   ptrdiff_t malloced;
   size_t known_shift;
 };
+
+/* Flags used by string_builder_append_integer() */
+#define APPEND_SIGNED		1	/* Value is signed */
+#define APPEND_POSITIVE		2	/* Sign positive values too. */
+#define APPEND_UPPER_CASE	4	/* Use upper case hex. */
 
 #ifdef PIKE_DEBUG
 PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo);
@@ -279,6 +284,10 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
 				     ptrdiff_t offset);
 PMOD_EXPORT void string_builder_strcat(struct string_builder *s, char *str);
 PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s, struct pike_string *str);
+PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
+					       LONGEST val,
+					       unsigned int base,
+					       int flags);
 PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 					 const char *fmt,
 					 va_list args);

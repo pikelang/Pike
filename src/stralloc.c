@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.173 2004/11/05 16:09:35 grubba Exp $
+|| $Id: stralloc.c,v 1.174 2004/11/06 13:41:38 grubba Exp $
 */
 
 #include "global.h"
@@ -1098,7 +1098,10 @@ PMOD_EXPORT void verify_shared_strings_tables(void)
       }
 
       if(do_hash(s) != s->hval)
+      {
+	locate_problem(wrong_hash);
 	Pike_fatal("Shared string hashed to other number.\n");
+      }
 
       if(HMODULO(s->hval) != e)
       {
@@ -2174,6 +2177,91 @@ PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s, struct p
   s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
+PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
+					       LONGEST val,
+					       unsigned int base,
+					       int flags)
+{
+  unsigned LONGEST tmp;
+  const char *numbers = "0123456789abcdef";
+  if ((base < 2) || (base > 16)) {
+    Pike_fatal("string_builder_append_int(): Unsupported base %u.\n", base);
+  }
+  if (flags & APPEND_UPPER_CASE) {
+    numbers = "0123456789ABCDEF";
+  }
+  if ((flags & APPEND_SIGNED) && (val < 0)) {
+    string_builder_putchar(s, '-');
+    val = -val;
+  } else if (flags & APPEND_POSITIVE) {
+    string_builder_putchar(s, '+');
+  }
+  tmp = val;
+  if (base & (base - 1)) {
+    int len = 0;
+
+    /* Calculate the output length.
+     * Use do-while to ensure that zero isn't output as an empty string.
+     */
+    do {
+      len++;
+      tmp /= base;
+    } while (tmp);
+
+    tmp = val;
+    switch(s->s->size_shift) {
+    case 0:
+      {
+	p_wchar0 *p = string_builder_allocate(s, len, 0);
+	do {
+	  p[--len] = numbers[tmp%base];
+	  tmp /= base;
+	} while (tmp);
+      }
+      break;
+    case 1:
+      {
+	p_wchar1 *p = string_builder_allocate(s, len, 0);
+	do {
+	  p[--len] = numbers[tmp%base];
+	  tmp /= base;
+	} while (tmp);
+      }
+      break;
+    case 2:
+      {
+	p_wchar2 *p = string_builder_allocate(s, len, 0);
+	do {
+	  p[--len] = numbers[tmp%base];
+	  tmp /= base;
+	} while (tmp);
+      }
+      break;
+    }
+  } else {
+    /* base is a power of two, so we can do without
+     * the division and modulo operations.
+     */
+    int delta;
+    int shift;
+    unsigned int mask;
+
+    for(delta = 1; (base>>delta) > 1; delta++)
+      ;
+
+    mask = (1<<delta)-1;	/* Usually base-1. */
+
+    /* Start at delta, so that zero isn't output as an empty string. */
+    for (shift = delta; tmp >> shift; shift += delta)
+      ;
+    shift -= delta;
+    while(shift >= 0) {
+      string_builder_putchar(s, numbers[(tmp>>shift) & mask]);
+      shift -= delta;
+    }
+  }
+}
+
 PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 					 const char *fmt,
 					 va_list args)
@@ -2209,94 +2297,24 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	string_builder_putchar(s, va_arg(args, INT32));
 	break;
       case 'b':
+	string_builder_append_integer(s, va_arg(args, unsigned int), 2, 0);
+	break;
       case 'o':
+	string_builder_append_integer(s, va_arg(args, unsigned int), 8, 0);
+	break;
       case 'x':
+	string_builder_append_integer(s, va_arg(args, unsigned int), 16, 0);
+	break;
       case 'X':
-	{
-	  int delta;
-	  unsigned int val = va_arg(args, unsigned int);
-	  char *numbers = "0123456789abcdef";
-	  int shift;
-	  unsigned int mask;
-
-	  switch (*fmt) {
-	  case 'b':
-	    delta = 1;
-	    break;
-	  case 'o':
-	    delta = 3;
-	    break;
-	  case 'X':
-	    numbers = "0123456789ABCDEF";
-	    /* FALL_THROUGH */
-	  case 'x':
-	    delta = 4;
-	    break;
-	  default:
-	    fatal("Unsupported binary integer formatting directive '%c'\n",
-		  *fmt);
-	    break;
-	  }
-	  mask = (1<<delta)-1;
-
-	  for (shift = delta; val >> shift; shift += delta)
-	    ;
-	  shift -= delta;
-	  while(shift >= 0) {
-	    string_builder_putchar(s, numbers[(val>>shift) & mask]);
-	    shift -= delta;
-	  }
-	}
+	string_builder_append_integer(s, va_arg(args, unsigned int), 16,
+				      APPEND_UPPER_CASE);
+	break;
+      case 'u':
+	string_builder_append_integer(s, va_arg(args, unsigned int), 10, 0);
 	break;
       case 'd':
-      case 'u':
-	{
-	  unsigned int val = va_arg(args, unsigned int);
-	  unsigned int tmp;
-	  int len;
-	  if ((*fmt == 'd') && ((int)val < 0)) {
-	    string_builder_putchar(s, '-');
-	    val = -val;
-	  }
-	  tmp = val;
-	  len = 0;
-	  do {
-	    len++;
-	    tmp /= 10;
-	  } while (tmp);
-
-	  switch(s->s->size_shift) {
-	  case 0:
-	    {
-	      p_wchar0 *p = string_builder_allocate(s, len, 0);
-	      do {
-		p[--len] = '0' + val%10;
-		val /= 10;
-	      } while (val);
-	    }
-	    break;
-	  case 1:
-	    {
-	      p_wchar1 *p = string_builder_allocate(s, len, 0);
-	      do {
-		p[--len] = '0' + val%10;
-		val /= 10;
-	      } while (val);
-	    }
-	    break;
-	  case 2:
-	    {
-	      p_wchar2 *p = string_builder_allocate(s, len, 0);
-	      do {
-		p[--len] = '0' + val%10;
-		val /= 10;
-	      } while (val);
-	    }
-	    break;
-	  }
-	}
-	break;
-	
+	string_builder_append_integer(s, va_arg(args, int), 10, APPEND_SIGNED);
+	break;	
       default:
 	Pike_fatal("string_builder_vsprintf(): Invalid formatting method: "
 		   "'%c' 0x%x.\n", *fmt, *fmt);
