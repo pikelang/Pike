@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.59 2004/04/18 02:16:05 mast Exp $
+|| $Id: array.h,v 1.60 2004/09/22 12:13:22 mast Exp $
 */
 
 #ifndef ARRAY_H
@@ -124,7 +124,7 @@ INT32 set_lookup(struct array *a, struct svalue *s);
 INT32 switch_lookup(struct array *a, struct svalue *s);
 PMOD_EXPORT struct array *order_array(struct array *v, INT32 *order);
 PMOD_EXPORT struct array *reorder_and_copy_array(struct array *v, INT32 *order);
-PMOD_EXPORT void array_fix_type_field(struct array *v);
+PMOD_EXPORT TYPE_FIELD array_fix_type_field(struct array *v);
 #ifdef PIKE_DEBUG
 void array_check_type_field(struct array *v);
 #endif
