@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.188 2002/06/25 14:26:41 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.189 2002/07/03 09:05:56 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1474,9 +1474,14 @@ static void low_describe_type(struct pike_type *t)
     }
     case T_FLOAT: my_strcat("float"); break;
     case T_PROGRAM:
-      my_strcat("program(");
-      my_describe_type(t->car);
-      my_strcat(")");
+      if ((t->car->type == T_OBJECT) &&
+	  (!t->car->cdr)) {
+	my_strcat("program");
+      } else {
+	my_strcat("program(");
+	my_describe_type(t->car);
+	my_strcat(")");
+      }
       break;
     case T_OBJECT:
       if (t->cdr)
