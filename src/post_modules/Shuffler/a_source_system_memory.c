@@ -5,9 +5,9 @@
 
 #include <shuffler.h>
 
+/* $Id: a_source_system_memory.c,v 1.2 2002/05/29 05:47:12 per Exp $ */
+
 static struct program *shm_program;
-
-
 
 struct sm_source
 {
