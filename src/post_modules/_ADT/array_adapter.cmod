@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array_adapter.cmod,v 1.4 2003/02/21 16:19:14 mast Exp $
+|| $Id: array_adapter.cmod,v 1.5 2003/03/08 20:00:47 nilsson Exp $
 */
 
 #include "global.h"
@@ -764,7 +764,7 @@ PIKECLASS ArrayAdapter
      *!    possible to move one step forward.
      */    
 
-    PIKEFUN int has_next(void|int steps)
+    PIKEFUN int(0..1) has_next(void|int steps)
     {
       if (args==0)
       {
@@ -787,7 +787,7 @@ PIKECLASS ArrayAdapter
      *!    possible to move one step backward.
      */  
 
-    PIKEFUN int has_previous(void|int steps)
+    PIKEFUN int(0..1) has_previous(void|int steps)
     {
       if (args==0)
       {
@@ -808,7 +808,7 @@ PIKECLASS ArrayAdapter
      *!    Returns @tt{false@} if the iterator has reached the end.
      */  
 
-    PIKEFUN int `!()
+    PIKEFUN int(0..1) `!()
     {
       RETURN (THIS->adapter && THIS->adapter->a &&
 	      THIS->pos  == THIS->adapter->a->size);
@@ -825,7 +825,7 @@ PIKECLASS ArrayAdapter
      *!    objects and are positioned at the same spot.
      */  
 
-    PIKEFUN int _equal(mixed iter)
+    PIKEFUN int(0..1) _equal(mixed iter)
     {
       if (iter->type == T_OBJECT && 
 	  iter->u.object->prog == ArrayAdapterIterator_program)
@@ -842,7 +842,7 @@ PIKECLASS ArrayAdapter
     }
 	
     
-    /*! @decl int '<(object iter)
+    /*! @decl int(0..1) '<(mixed iter)
      *!    Less then operator
      *!
      *! @returns
@@ -850,13 +850,14 @@ PIKECLASS ArrayAdapter
      *!    then @[iter].
      */  
 
-    PIKEFUN int `<(object iter)
+    PIKEFUN int(0..1) `<(mixed iter)
     {
-      if (iter->prog == ArrayAdapterIterator_program)
+      if (iter->type == T_OBJECT &&
+	  iter->u.object->prog == ArrayAdapterIterator_program)
       {
 	//to do: Check so that it is an ArrayAdapterIterator
 	struct ArrayAdapterIterator_struct *i = 
-	  OBJ2_ARRAYADAPTERITERATOR(iter);
+	  OBJ2_ARRAYADAPTERITERATOR(iter->u.object);
 	RETURN (THIS->pos < i->pos);
       }
       else
@@ -866,7 +867,7 @@ PIKECLASS ArrayAdapter
     }
 	
 
-    /*! @decl int '<(object iter)
+    /*! @decl int(0..1) '<(mixed iter)
      *!    Greater then operator
      *!
      *! @returns
@@ -875,13 +876,14 @@ PIKECLASS ArrayAdapter
      */  
 
 
-    PIKEFUN int `>(object iter)
+    PIKEFUN int(0..1) `>(mixed iter)
     {
-      if (iter->prog == ArrayAdapterIterator_program)
+      if (iter->type == T_OBJECT &&
+	  iter->u.object->prog == ArrayAdapterIterator_program)
       {
 	//to do: Check so that it is an ArrayAdapterIterator
 	struct ArrayAdapterIterator_struct *i = 
-	  OBJ2_ARRAYADAPTERITERATOR(iter);
+	  OBJ2_ARRAYADAPTERITERATOR(iter->u.object);
 	RETURN (THIS->pos > i->pos);
       }
       else
