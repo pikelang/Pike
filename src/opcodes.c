@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: opcodes.c,v 1.24 1998/05/16 10:58:31 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.25 1998/05/20 23:08:12 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -55,7 +55,7 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
       if(i<0)
 	i+=what->u.string->len;
       if(i<0 || i>=what->u.string->len)
-	error("Index out of range.\n");
+	error("Index %d is out of range 0 - %d.\n", i, what->u.string->len-1);
       else
 	i=EXTRACT_UCHAR(what->u.string->str + i);
       to->type=T_INT;
