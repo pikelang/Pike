@@ -186,13 +186,24 @@ void f_get_dir(INT32 args)
     while(1)
     {
       int e;
-      struct dirent tmp;
+      struct dirent *tmp;
       int num_files=0;
       char *bufptr=buffer;
       THREADS_ALLOW();
+
+      if (!(tmp = alloca(pathconf(path, _PC_NAME_MAX) + 1))) {
+	error("get_dir(): Out of memory!\n");
+      }
+
       while(1)
       {
-	d=readdir_r(dir, &tmp);
+	/* Should have code for the POSIX variant here also */
+	do {
+	  d=readdir_r(dir, tmp);
+	} while ((!d) && ((errno == EAGAIN)||(errno == EINTR)));
+	if (!d) {
+	  error("get_dir(): readdir_r() failed: %d\n", errno);
+	}
 	if(d->d_name[0]=='.')
 	{
 	  if(!d->d_name[1]) continue;
