@@ -4,10 +4,18 @@ AC_CONFIG_HEADER(spider.h)
 AC_PROG_CC
 AC_PROG_RANLIB
 
+AC_CHECK_LIB(nsl, gethostbyname)
+
 AC_HAVE_HEADERS(syslog.h sys/syslog.h arpa/inet.h sys/socketvar.h \
-	netinet/in.h sys/mman.h)
+	netinet/in.h sys/mman.h sys/utsname.h netdb.h sys/socket.h pwd.h\
+        shadow.h)
+
 AC_HAVE_FUNCS(syslog perror strerror getppid getpgrp getppid getuid getgid \
-	geteuid getegid fchroot strdup seteuid setegid setresuid setresgid)
+	gethostname geteuid getegid fchroot strdup seteuid setegid setresuid \
+        setresgid uname gethostbyname gethostbyaddr \
+        getpwent setpwent endpwent getpwuid getpwnam \
+        getspent setspent endspent getspuid getspnam \
+)
 
 AC_SUBST(RANLIB)
 

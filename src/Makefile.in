@@ -43,10 +43,10 @@ WARN=@WARN@
 
 #add extra defines here
 # Be sure to use -g and -DDEBUG when looking for bugs
-DEFINES= -DDEFAULT_MASTER=\"$(lib_prefix)/master.lpc\"
+DEFINES= -DDEFAULT_MASTER=\"$(lib_prefix)/master.lpc\" -DDEBUG -msupersparc
 
 # -O should work with all compilers
-OPTIMIZE=@OPTIMIZE@
+OPTIMIZE=@OPTIMIZE@ -O9
 
 # Preprocessor flags.
 PREFLAGS=-I. -I$(SRCDIR) $(DEFINES)

@@ -21,4 +21,31 @@
 #undef HAVE_SYSLOG_H
 #undef HAVE_SYS_MMAN_H
 #undef HAVE_SYS_SOCKETVAR_H
+#undef HAVE_SYS_SOCKET_H
+#undef HAVE_NETDB_H
+#undef HAVE_GETHOSTNAME
+#undef HAVE_GETHOSTBYNAME
+#undef HAVE_GETHOSTBYADDR
+#undef HAVE_UNAME
+#undef HAVE_SYS_UTSNAME_H
 
+/* Passwd functions */
+#undef HAVE_SETPWENT
+#undef HAVE_ENDPWENT
+
+#undef HAVE_GETPWENT
+#undef HAVE_GETPWNAM
+#undef HAVE_GETPWUID
+
+#undef HAVE_PWD_H
+#undef HAVE_PASSWD_H
+
+/* Shadow passwd functions */
+#undef HAVE_SETSPENT
+#undef HAVE_ENDSPENT
+
+#undef HAVE_GETSPENT
+#undef HAVE_GETSPNAM
+#undef HAVE_GETSPUID
+
+#undef HAVE_SHADOW_H

@@ -31,13 +31,23 @@
 
 #include "spider.h"
 #include "conf.h"
+
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
 #endif
 
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
+
+#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif
+
 
 #define MAX_PARSE_RECURSE 1024
 
@@ -237,8 +247,7 @@ void f_parse_html(INT32 args)
 
   free_mapping(cont);
   free_mapping(single);
-  f_aggregate(strings);
-  f_implode(1);
+  f_sum(strings);
 }
 
 char start_quote_character = '\000';
@@ -259,7 +268,12 @@ void f_set_start_quote(INT32 args)
 }
 
 
-#define PUSH() do{if(i>j){push_string(make_shared_binary_string(s+j,i-j));strs++;j=i;}}while(0)
+#define PUSH() do{\
+     if(i>j){\
+       push_string(make_shared_binary_string(s+j,i-j));\
+       strs++;\
+       j=i;\
+     } }while(0)
 #define SKIP_SPACE()  while (i<len && s[i]!='>' && isspace(s[i])) i++
 
 int extract_word(char *s, int i, int len)
@@ -349,8 +363,12 @@ int extract_word(char *s, int i, int len)
 done:
   if(!strs || i-j > 2)
     PUSH();
-  f_aggregate(strs);
-  f_implode(1);
+  if(strs > 1)
+  {
+    f_sum(strs);
+  } else if(strs == 0) {
+    push_text("");
+  }
   SKIP_SPACE();
   return i;
 }
@@ -367,6 +385,8 @@ int push_parsed_tag(char *s,int len)
 
   while (i<len && s[i]!='>')
   {
+    int oldi;
+    oldi = i;
     i = extract_word(s, i, len);
     f_lower_case(1);            /* Since SGML want's us to... */
     if (i+1 >= len || (s[i] != '=') || (s[i]=='>') || (s[i+1]=='>'))
@@ -377,6 +397,7 @@ int push_parsed_tag(char *s,int len)
     } else {
       i = extract_word(s, i+1, len);
     }
+    if(oldi == i) break;
   }
   f_aggregate_mapping(sp-oldsp);
   if(i<len) i++;
@@ -517,6 +538,8 @@ void do_html_parse(struct lpc_string *ss,
 	  free_svalue(&sval1);
 
 	  f_implode(1);
+	  copy_shared_string(ss2,sp[-1].u.string);
+	  pop_stack();
 
 	  if (last != i-1)
 	  { 
@@ -524,9 +547,10 @@ void do_html_parse(struct lpc_string *ss,
 	    (*strings)++; 
 	  }
 	  i=last=j+k;
-	  push_string(sp[-1].u.string);
+	  
+	  push_string(ss2);
 	  (*strings)++;
-	  pop_stack();
+
 	  free_svalue(&sval1);
 	  continue;
 	}
@@ -547,14 +571,14 @@ void do_html_parse(struct lpc_string *ss,
 	i=last=j;
 	continue;
       }
-      else if (sval1.type != T_STRING)
+      else if (sval1.type != T_INT)
       {
 	assign_svalue_no_free(sp++,&sval2);
 	m=push_parsed_tag(s+j,len-j) + j;
-	k=find_endtag(sval2.u.string,s+m,len-m,&l); 
+	k=find_endtag(sval2.u.string,s+m,len-m,&l);
 	push_string(make_shared_binary_string(s+m,k));
-	m+=l; 
-        /* M == just after end tag, from s       */
+	m+=l;
+        /* M == just after end tag, from s */
 
 	if (extra_args)
 	{
@@ -586,29 +610,18 @@ void do_html_parse(struct lpc_string *ss,
 	  free_svalue(&sval1);
 	  free_svalue(&sval2);
 
-	  if(sp[-1].u.array->size < 1)
-	  {
-	    pop_stack();
-	    continue;
-	  }
-	  array_index(&sval1, sp[-1].u.array, 0);
-	  if(sval1.type != T_STRING)
-	  {
-	    free_svalue(&sval1);
-	    pop_stack();
-	    continue;
-	  }
-	  copy_shared_string(ss2,sval1.u.string);
-	  free_svalue(&sval1);
+	  f_implode(1);
+	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
+
 	  if (last!=i-1)
 	  { 
 	    push_string(make_shared_binary_string(s+last,i-last-1)); 
 	    (*strings)++; 
 	  }
 	  i=last=j+k;
- /* No recursive parsing in this case.. */
-/*	  do_html_parse(ss2,cont,single,strings,recurse_left-1,extra_args);*/
+	  push_string(ss2);
+	  (*strings)++;
 	  continue;
 	}
 	pop_stack();
@@ -1034,6 +1047,23 @@ void f_closelog(INT32 args)
 }
 #endif
 
+
+#ifdef HAVE_STRERROR
+void f_strerror(INT32 args)
+{
+  char *s;
+  if(!args) 
+    s=NULL;
+  else
+    s=strerror(sp[-args].u.integer);
+  pop_n_elems(args);
+  if(s)
+    push_text(s);
+  else
+    push_int(0);
+}
+#endif
+
 #ifdef HAVE_PERROR
 void f_real_perror(INT32 args)
 {
@@ -1200,12 +1230,301 @@ void f_chroot(INT32 args)
 #endif
 }
 
+#ifdef HAVE_UNAME
+#ifdef HAVE_SYS_UTSNAME_H
+#include <sys/utsname.h>
+#endif
+void f_uname(INT32 args)
+{
+  struct svalue *old_sp;
+  struct utsname foo;
+
+  pop_n_elems(args);
+  old_sp = sp;
+
+  if(uname(&foo) < 0)
+    error("uname() system call failed.\n");
+
+  push_text("sysname");
+  push_text(foo.sysname);
+
+  push_text("nodename");
+  push_text(foo.nodename);
+
+  push_text("release");
+  push_text(foo.release);
+
+  push_text("version");
+  push_text(foo.version);
+
+  push_text("machine");
+  push_text(foo.machine);
+
+  f_aggregate_mapping(sp-old_sp);
+}
+#endif
+
+
+#if defined(HAVE_GETHOSTNAME) && !defined(SOLARIS)
+void f_gethostname(INT32 args)
+{
+  char name[1024];
+  pop_n_elems(args);
+  if((gethostname(name, 1024) != -1))
+  {
+    push_text(name);
+    return;
+  }
+  error("gethostname() system call failed?\n");
+}
+#else
+#ifdef HAVE_UNAME
+void f_gethostname(INT32 args)
+{
+  struct utsname foo;
+  pop_n_elems(args);
+  if(uname(&foo) < 0)
+    error("uname() system call failed.\n");
+  push_text(foo.nodename);
+}
+#endif
+#endif
+
+#ifdef HAVE_GETHOSTBYADDR
+void f_gethostbyaddr(INT32 args)
+{
+  u_long addr;
+  struct hostent *hp;
+  char **p;
+  struct svalue *old_sp;
+ 
+  if ((args != 1) || sp[-1].type != T_STRING) 
+    error("gethostbyaddr(IP-ADDRESS)\n");
+
+  if ((int)(addr = inet_addr(sp[-1].u.string->str)) == -1) 
+    error("IP-address must be of the form a.b.c.d\n");
+
+  pop_n_elems(args);
+  old_sp = sp;
+  
+  hp = gethostbyaddr((char *)&addr, sizeof (addr), AF_INET);
+  if(!hp)
+  {
+    push_int(0);
+    return;
+  }
+  
+  for (p = hp->h_addr_list; *p != 0; p++) {
+    int nelem = 0;
+    struct in_addr in;
+    char **q;
+ 
+    memcpy(&in.s_addr, *p, sizeof (in.s_addr));
+    push_text(inet_ntoa(in)); nelem++;
+
+    for (q = hp->h_aliases; *q != 0; q++)
+    {
+      push_text(*q); nelem++;
+    }
+    f_aggregate(nelem);
+  }
+  f_aggregate(sp-old_sp);
+}  
+
+#endif
+
+#ifdef HAVE_GETHOSTBYNAME
+void f_gethostbyname(INT32 args)
+{
+  struct hostent *hp;
+  char **p;
+  struct svalue *old_sp;
+ 
+  if ((args != 1) || sp[-1].type != T_STRING) 
+    error("gethostbyname(NAME)\n");
+
+  hp = gethostbyname((char *)sp[-1].u.string->str);
+
+  pop_n_elems(args);
+  old_sp = sp;
+  
+  if(!hp)
+  {
+    push_int(0);
+    return;
+  }
+  
+  for (p = hp->h_addr_list; *p != 0; p++) {
+    int nelem = 0;
+    struct in_addr in;
+    char **q;
+ 
+    memcpy(&in.s_addr, *p, sizeof (in.s_addr));
+    push_text(inet_ntoa(in)); nelem++;
+
+    for (q = hp->h_aliases; *q != 0; q++)
+    {
+      push_text(*q); nelem++;
+    }
+    f_aggregate(nelem);
+  }
+  f_aggregate(sp-old_sp);
+}  
+#endif
+
+#ifdef HAVE_PASSWD_H
+# include <passwd.h>
+#endif
+
+#ifdef HAVE_PWD_H
+# include <pwd.h>
+#endif
+
+#ifdef HAVE_SHADOW_H
+# include <shadow.h>
+#endif
+
+#if defined(HAVE_GETPWNAM) || defined(HAVE_GETPWUID) || defined(HAVE_SETPWENT) || defined(HAVE_ENDPWENT) || defined(HAVE_GETPWENT)
+static void push_pwent(struct passwd *ent)
+{
+  push_text(ent->pw_name);
+
+#ifdef HAVE_GETSPNAM
+  if(!strcmp(ent->pw_passwd, "x"))
+  {
+    struct spwd *foo;
+    if((foo = getspnam(ent->pw_name)))
+    {
+      push_text(foo->sp_pwdp);
+    } else {
+      push_text("x");
+    }
+  } else 
+#endif
+  {
+    push_text(ent->pw_passwd);
+  }
+  push_int(ent->pw_uid);
+  push_int(ent->pw_gid);
+  push_text(ent->pw_gecos);
+  push_text(ent->pw_dir);
+  push_text(ent->pw_shell);
+  f_aggregate(7);
+}
+#endif
+
+#ifdef HAVE_GETPWNAM
+void f_getpwnam(INT32 args)
+{
+  struct passwd *foo;
+  if(args!=1) error("Must pass one string to getpwnam(NAME)\n");
+  if(sp[-1].type != T_STRING)  error("Must pass string to getpwnam(NAME)\n");
+  foo = getpwnam((const char *)sp[-1].u.string->str);
+  pop_stack();
+  push_pwent(foo);
+}
+#endif
+
+#ifdef HAVE_GETPWUID
+void f_getpwuid(INT32 args)
+{
+  struct passwd *foo;
+  if(args!=1) error("Must pass one integer to getpwuid(NAME)\n");
+  foo = getpwuid(sp[-1].u.integer);
+  pop_stack();
+  push_pwent(foo);
+}
+#endif
+
+#ifdef HAVE_SETPWENT
+void f_setpwent(INT32 args)
+{
+  setpwent();
+  pop_n_elems(args);
+  push_int(0);
+}
+#endif
+
+#ifdef HAVE_ENDPWENT
+void f_endpwent(INT32 args)
+{
+  setpwent();
+  pop_n_elems(args);
+  push_int(0);
+}
+#endif
+
+#ifdef HAVE_GETPWENT
+void f_getpwent(INT32 args)
+{
+  struct passwd *foo;
+  pop_n_elems(args);
+  foo = getpwent();
+  if(!foo)
+  {
+    push_int(0);
+    return;
+  }
+  push_pwent(foo);
+}
+#endif
+
+
+
 void init_spider_efuns(void) 
 {
-  add_efun("set_start_quote", f_set_start_quote, "function(int:int)", 
+
+  /* This _will_ leak some memory. It is supposed to. These
+   * make_shared_string's are here to define a few very commonly used
+   * strings, to speed spinner up a little.  
+   */
+  make_shared_string("HTTP/1.0");
+  make_shared_string("GET");
+  make_shared_string("POST");
+
+#ifdef HAVE_GETPWNAM
+  add_efun("getpwnam", f_getpwnam, "function(string:array)", 
 	   OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_GETPWUID
+  add_efun("getpwuid", f_getpwuid, "function(int:array)", OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_GETPWENT
+  add_efun("getpwent", f_getpwent, "function(void:array)",
+	   OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_ENDPWENT
+  add_efun("endpwent", f_endpwent, "function(void:int)", OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_SETPWENT
+  add_efun("setpwent", f_setpwent, "function(void:int)", OPT_EXTERNAL_DEPEND);
+#endif
+
+
+  add_efun("set_start_quote", f_set_start_quote, "function(int:int)",
+	   OPT_EXTERNAL_DEPEND);
+
   add_efun("set_end_quote", f_set_end_quote, "function(int:int)", 
 	   OPT_EXTERNAL_DEPEND);
+
+#ifdef HAVE_GETHOSTBYNAME
+  add_efun("gethostbyname", f_gethostbyname, "function(string:array)",
+	   OPT_TRY_OPTIMIZE);
+#endif
+
+#ifdef HAVE_GETHOSTBYADDR
+  add_efun("gethostbyaddr", f_gethostbyaddr, "function(string:array)",
+	   OPT_TRY_OPTIMIZE);
+#endif
+
+
+#if defined(HAVE_GETHOSTNAME) || defined(HAVE_UNAME)
+  add_efun("gethostname", f_gethostname, "function(:string)",OPT_TRY_OPTIMIZE);
+#endif
+
+#ifdef HAVE_UNAME
+  add_efun("uname", f_uname, "function(:mapping)", OPT_TRY_OPTIMIZE);
+#endif
 
 #ifdef SOLARIS
   add_efun("send_fd", f_send_fd, "function(int,int:int)", OPT_EXTERNAL_DEPEND);
@@ -1214,19 +1533,25 @@ void init_spider_efuns(void)
 #ifdef HAVE_GETUID
   add_efun("getuid", f_getuid, "function(:int)", OPT_EXTERNAL_DEPEND);
 #endif
+
 #ifdef HAVE_GETEUID
   add_efun("geteuid", f_geteuid, "function(:int)", OPT_EXTERNAL_DEPEND);
 #endif
+
 #ifdef HAVE_GETGID
   add_efun("getgid", f_getgid, "function(:int)", OPT_EXTERNAL_DEPEND);
 #endif
+
 #ifdef HAVE_GETEGID
   add_efun("getegid", f_getegid, "function(:int)", OPT_EXTERNAL_DEPEND);
 #endif
+
   add_efun("getpid", f_getpid, "function(:int)", OPT_EXTERNAL_DEPEND);
+
 #ifdef HAVE_GETPPID
   add_efun("getppid", f_getppid, "function(:int)", OPT_EXTERNAL_DEPEND);
 #endif
+
 #ifdef HAVE_GETPGRP
   add_efun("getpgrp", f_getpgrp, "function(:int)", OPT_EXTERNAL_DEPEND);
 #endif
@@ -1237,6 +1562,8 @@ void init_spider_efuns(void)
   add_efun("parse_accessed_database", f_parse_accessed_database,
 	   "function(string:array)", OPT_TRY_OPTIMIZE);
 
+#define DEBUG
+#ifdef DEBUG
   add_efun("_string_debug", f__string_debug, "function(void|mixed:string)", 
 	   OPT_EXTERNAL_DEPEND);
 
@@ -1257,6 +1584,7 @@ void init_spider_efuns(void)
 
   add_efun("_dump_obj_table", f__dump_obj_table, "function(:array(array))", 
 	   OPT_EXTERNAL_DEPEND);
+#endif
 
   add_efun("parse_html",f_parse_html,
 	   "function(string,mapping(string:function(string,mapping(string:string),mixed ...:string)),mapping(string:function(string,mapping(string:string),string,mixed ...:string)),mixed ...:string)",
@@ -1267,6 +1595,10 @@ void init_spider_efuns(void)
 
   add_efun("localtime",f_localtime,
 	   "function(int:mapping(string:mixed))",OPT_EXTERNAL_DEPEND);
+
+#ifdef HAVE_STRERROR
+  add_efun("strerror",f_strerror, "function(int:string)",OPT_TRY_OPTIMIZE);
+#endif
 
   add_efun("real_perror",f_real_perror, "function(:void)",OPT_EXTERNAL_DEPEND);
 
