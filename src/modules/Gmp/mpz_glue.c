@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.161 2004/03/23 18:56:25 nilsson Exp $
+|| $Id: mpz_glue.c,v 1.162 2004/09/15 18:39:37 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.161 2004/03/23 18:56:25 nilsson Exp $");
+RCSID("$Id: mpz_glue.c,v 1.162 2004/09/15 18:39:37 mast Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -250,6 +250,13 @@ overflow:
  *! can be used to explicitly type integers that are too big to be
  *! INT_TYPE. Best is however to not use this program unless you
  *! really know what you are doing.
+ *!
+ *! Due to the auto-bignum conversion, all integers can be treated as
+ *! @[Gmp.mpz] objects insofar as that they can be indexed with the
+ *! functions in the @[Gmp.mpz] class. For instance, to calculate the
+ *! greatest common divisor between @expr{51@} and @expr{85@}, you can
+ *! do @expr{51->gcd(85)@}. In other words, all the functions in
+ *! @[Gmp.mpz] are also available here.
  *! @endclass
  */
 
@@ -257,6 +264,11 @@ overflow:
  *! Gmp.mpz implements very large integers. In fact,
  *! the only limitation on these integers is the available memory.
  *! The mpz object implements all the normal integer operations.
+ *!
+ *! Note that the auto-bignum feature also makes these operations
+ *! available "in" normal integers. For instance, to calculate the
+ *! greatest common divisor between @expr{51@} and @expr{85@}, you can
+ *! do @expr{51->gcd(85)@}.
  */
 
 void get_mpz_from_digits(MP_INT *tmp,
@@ -604,9 +616,11 @@ static void mpzmod_get_string(INT32 args)
 }
 
 /*! @decl string digits(void|int(2..36)|int(256..256) base)
- *! This function converts an mpz to a string. If a @[base] is given the
+ *!
+ *! Convert this mpz object to a string. If a @[base] is given the
  *! number will be represented in that base. Valid bases are 2-36 and
  *! 256. The default base is 10.
+ *!
  *! @seealso
  *!   @[cast_to_string]
  */
@@ -842,8 +856,9 @@ static void mpzmod__is_type(INT32 args)
 }
 
 /*! @decl int size(void|int base)
- *! This function returns how long the mpz would be represented in the
- *! specified @[base]. The default base is 2.
+ *!
+ *! Return how long this mpz would be represented in the specified
+ *! @[base]. The default base is 2.
  */
 static void mpzmod_size(INT32 args)
 {
@@ -870,7 +885,10 @@ static void mpzmod_size(INT32 args)
 }
 
 /*! @decl mixed cast(string type)
- *! It is possible to cast an mpz to a string, int or float.
+ *!
+ *! Cast this mpz object to another type. Allowed types are string,
+ *! int and float.
+ *!
  *! @seealso
  *!   @[cast_to_int], @[cast_to_float], @[cast_to_string]
  */
@@ -1142,8 +1160,10 @@ BINFUN2(mpzmod_add, "+", mpz_add, +);
  */
 BINFUN2(mpzmod_mul, "*", mpz_mul, *);
 
-/*! @decl Gmp.mpz gcd(object|int|float|string arg)
- *! This function returns the greatest common divisor for @[arg] and mpz.
+/*! @decl Gmp.mpz gcd(object|int|float|string... arg)
+ *! 
+ *! Return the greatest common divisor between this mpz object and
+ *! all the arguments.
  */
 static void mpzmod_gcd(INT32 args)
 {
@@ -1316,6 +1336,18 @@ static void mpzmod_rmod(INT32 args)
 }
 
 /*! @decl array(Gmp.mpz) gcdext(int|float|Gmp.mpz x)
+ *!
+ *! Compute the greatest common divisor between this mpz object and
+ *! @[x]. An array @expr{({g,s,t})@} is returned where @expr{g@} is
+ *! the greatest common divisor, and @expr{s@} and @expr{t@} are the
+ *! coefficients that satisfies
+ *!
+ *! @code
+ *!                this * s + @[x] * t = g
+ *! @endcode
+ *!
+ *! @seealso
+ *!   @[gcdext2], @[gcd]
  */
 static void mpzmod_gcdext(INT32 args)
 {
@@ -1338,6 +1370,20 @@ static void mpzmod_gcdext(INT32 args)
 }
 
 /*! @decl array(Gmp.mpz) gcdext2(int|float|Gmp.mpz x)
+ *!
+ *! Compute the greatest common divisor between this mpz object and
+ *! @[x]. An array @expr{({g,s})@} is returned where @expr{g@} is the
+ *! greatest common divisor, and @expr{s@} is a coefficient that
+ *! satisfies
+ *!
+ *! @code
+ *!                this * s + @[x] * t = g
+ *! @endcode
+ *!
+ *! where @expr{t@} is some integer value.
+ *!
+ *! @seealso
+ *!   @[gcdext], @[gcd]
  */
 static void mpzmod_gcdext2(INT32 args)
 {
@@ -1359,6 +1405,12 @@ static void mpzmod_gcdext2(INT32 args)
 }
 
 /*! @decl Gmp.mpz invert(int|float|Gmp.mpz x)
+ *!
+ *! Return the inverse of this mpz value modulo @[x]. The returned
+ *! value satisfies @expr{0 <= result < x@}.
+ *!
+ *! @throws
+ *!   An error is thrown if no inverse exists.
  */
 static void mpzmod_invert(INT32 args)
 {
@@ -1367,7 +1419,7 @@ static void mpzmod_invert(INT32 args)
 
   if (args != 1)
     SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpz->invert", 1);
-  modulo = get_mpz(sp-args, 1, "Gmp.mpz->invert", 1, 1);
+  modulo = get_mpz(sp-1, 1, "Gmp.mpz->invert", 1, 1);
 
   if (!mpz_sgn(modulo))
     SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpz->invert");
@@ -1377,6 +1429,65 @@ static void mpzmod_invert(INT32 args)
     free_object(res);
     Pike_error("Not invertible.\n");
   }
+  pop_n_elems(args);
+  PUSH_REDUCED(res);
+}
+
+/*! @decl Gmp.mpz fac()
+ *!
+ *! Return the factorial of this mpz object.
+ *!
+ *! @throws
+ *!   Since factorials grow very quickly, only small integers are
+ *!   supported. An error is thrown if the value in this mpz object is
+ *!   too large.
+ */
+static void mpzmod_fac(INT32 args)
+{
+  struct object *res;
+  unsigned long n;
+  if (mpz_sgn (THIS) < 0)
+    Pike_error ("Cannot calculate factorial for negative integer.\n");
+  if (!mpz_fits_ulong_p (THIS))
+    Pike_error ("Integer too large for factorial calculation.\n");
+  res = fast_clone_object (THIS_PROGRAM);
+  mpz_fac_ui (OBTOMPZ(res), mpz_get_ui (THIS));
+  pop_n_elems (args);
+  PUSH_REDUCED (res);
+}
+
+/*! @decl Gmp.mpz bin(int k)
+ *! 
+ *! Return the binomial coefficient @expr{n@} over @[k], where
+ *! @expr{n@} is the value of this mpz object. Negative values of
+ *! @expr{n@} are supported using the identity
+ *!
+ *! @code
+ *!     (-n)->bin(k) == (-1)->pow(k) * (n+k-1)->bin(k)
+ *! @endcode
+ *!
+ *! (See Knuth volume 1, section 1.2.6 part G.)
+ *!
+ *! @throws
+ *!   The @[k] value can't be arbitrarily large. An error is thrown if
+ *!   it's too large.
+ */
+static void mpzmod_bin(INT32 args)
+{
+  MP_INT *k;
+  struct object *res;
+
+  if (args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpz->bin", 1);
+  k = get_mpz (sp-1, 1, "Gmp.mpz->bin", 1, 1);
+  if (mpz_sgn (k) < 0)
+    Pike_error ("Cannot calculate binomial with negative k value.\n");
+  if (!mpz_fits_ulong_p (k))
+    SIMPLE_ARG_ERROR ("Gmp.mpz->bin", 1, "Argument too large.\n");
+
+  res = fast_clone_object(THIS_PROGRAM);
+  mpz_bin_ui (OBTOMPZ (res), THIS, mpz_get_ui (k));
+
   pop_n_elems(args);
   PUSH_REDUCED(res);
 }
@@ -1461,8 +1572,9 @@ CMPEQU(mpzmod_eq, "Gmp.mpz->`==", ==, RET_UNDEFINED);
 CMPEQU(mpzmod_nq, "Gmp.mpz->`!=", !=, i=1);
 
 /*! @decl int(0..1) probably_prime_p()
- *! This function returns 1 if mpz is a prime, and 0 most of the time
- *! if it is not.
+ *!
+ *! Return 1 if this mpz object is a prime, and 0 most of the time if
+ *! it is not.
  */
 static void mpzmod_probably_prime_p(INT32 args)
 {
@@ -1538,8 +1650,9 @@ static void mpzmod_sgn(INT32 args)
 }
 
 /*! @decl Gmp.mpz sqrt()
- *! This function return the the truncated integer part of the square
- *! root of the value of mpz.
+ *!
+ *! Return the the truncated integer part of the square root of this
+ *! mpz object.
  */
 static void mpzmod_sqrt(INT32 args)
 {
@@ -1716,9 +1829,13 @@ static void mpzmod_rrsh(INT32 args)
   PUSH_REDUCED(res);
 }
 
-/*! @decl Gmp.mpz powm(int|string|float|Gmp.mpz a,@
- *!                    int|string|float|Gmp.mpz b)
- *! This function returns @tt{( mpz ** a ) % b@}.
+/*! @decl Gmp.mpz powm(int|string|float|Gmp.mpz exp,@
+ *!                    int|string|float|Gmp.mpz mod)
+ *!
+ *! Return @expr{( this->pow(@[exp]) ) % @[mod]@}.
+ *!
+ *! @seealso
+ *!   @[pow]
  */
 static void mpzmod_powm(INT32 args)
 {
@@ -1740,6 +1857,12 @@ static void mpzmod_powm(INT32 args)
 }
 
 /*! @decl Gmp.mpz pow(int|float|Gmp.mpz x)
+ *!
+ *! Return this mpz object raised to @[x]. The case when zero is
+ *! raised to zero yields one.
+ *!
+ *! @seealso
+ *!   @[powm]
  */
 static void mpzmod_pow(INT32 args)
 {
@@ -2017,6 +2140,9 @@ PIKE_MODULE_EXIT
   ADD_FUNCTION("gcdext",mpzmod_gcdext,tFunc(tMpz_arg,tArr(tMpz_ret)),0);\
   ADD_FUNCTION("gcdext2",mpzmod_gcdext2,tFunc(tMpz_arg,tArr(tMpz_ret)),0);\
   ADD_FUNCTION("invert", mpzmod_invert,tFunc(tMpz_arg,tMpz_ret),0);	\
+									\
+  ADD_FUNCTION("fac", mpzmod_fac, tFunc(tNone,tMpz_ret), 0);		\
+  ADD_FUNCTION("bin", mpzmod_bin, tFunc(tMpz_arg,tMpz_ret), 0);		\
 									\
   ADD_FUNCTION("sgn", mpzmod_sgn, tFunc(tNone,tInt), 0);		\
   ADD_FUNCTION("sqrt", mpzmod_sqrt,tFunc(tNone,tMpz_ret),0);		\
