@@ -1,0 +1,62 @@
+AC_INIT(mysql.c)
+
+AC_PROG_CC
+AC_PROG_RANLIB
+AC_SUBST(RANLIB)
+
+AC_ARG_WITH(mysql,  [  --without-mysql       no support for the Mysql database],[],[with_mysql=yes])
+
+if test x$with_mysql = xyes; then
+  AC_MSG_CHECKING(Checking for existance of Mysql)
+  
+  AC_CACHE_VAL(pike_cv_mysql_exists,
+  [
+    if test -d /usr/local/mysql/. ; then
+      pike_cv_mysql_exists="yes"
+    else
+      pike_cv_mysql_exists="no"
+    fi
+  ])
+  
+  AC_MSG_RESULT($pike_cv_mysql_exists)
+  
+  if test x$pike_cv_mysql_exists = xyes; then
+  
+    if test -d /usr/local/mysql/mach-lib-thread/. ; then
+      echo Added /usr/local/mysql/mach-lib-thread to the library search path.
+      LDFLAGS="-L/usr/local/mysql/mach-lib-thread ${LDFLAGS}"
+    fi
+
+    if test -d /usr/local/mysql/include ; then
+      echo Added /usr/local/mysql/include to the include search path.
+      CPPFLAGS="-I/usr/local/mysql/include ${CPPFLAGS}"
+    fi
+
+    pike_cv_mysql="yes"
+
+    # System libs which might be needed
+
+    AC_CHECK_LIB(pthread, pthread_self, [], [])
+    AC_CHECK_LIB(pthreads, pthread_self, [], [])
+    AC_CHECK_LIB(socket, socket, [], [])
+    AC_CHECK_LIB(nsl, gethostbyname, [], [])
+    AC_CHECK_LIB(m, floor, [], [])
+
+    # Mysql libs
+
+    AC_CHECK_LIB(strings, bchange, [], [ pike_cv_mysql="no" ])
+    AC_CHECK_LIB(dbug, _db_doprnt_, [], [ pike_cv_mysql="no" ])
+    AC_CHECK_LIB(mysys, my_init, [], [ pike_cv_mysql="no" ])
+    AC_CHECK_LIB(mysql, mysql_connect, [], [ pike_cv_mysql="no" ])
+
+    AC_MSG_CHECKING(Supported version of Mysql)
+
+    AC_MSG_RESULT($pike_cv_mysql)
+
+    if test x$pike_cv_mysql = xyes; then
+      AC_DEFINE(HAVE_MYSQL)
+    fi
+  fi
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
