@@ -169,7 +169,6 @@ static private class Extractor {
       object(.DocParser.Parse) parse = 0;
       string appears = 0;
       string belongs = 0;
-      int global = 0;
       if (doc) {
         parse = .DocParser.Parse(doc->text, doc->position);
         MetaData meta = parse->metadata();
@@ -178,7 +177,6 @@ static private class Extractor {
         docDecls = meta->decls;
         appears = meta->appears;
         belongs = meta->belongs;
-        global = meta->global;
       } else
         foreach (decls, PikeObject obj)
           if (obj->objtype == "class" &&
@@ -238,7 +236,6 @@ static private class Extractor {
             contexts[obj->objtype] = 1;
         }
 
-
       if (doc) {
         if (wasClassOrModule) {
           object(Class)|object(Module) d =
@@ -246,14 +243,12 @@ static private class Extractor {
           d->documentation = doc;
           d->appears = appears;
           d->belongs = belongs;
-          d->global = global;
           c->AddChild(d);
         }
         else {
           DocGroup d = DocGroup(decls, doc);
           d->appears = appears;
           d->belongs = belongs;
-          d->global = global;
           c->AddGroup(d);
         }
 

@@ -126,7 +126,6 @@ static private class Extractor {
         c->documentation = doc;
         c->appears = meta->appears;
         c->belongs = meta->belongs;
-        c->global = meta->global;
         tokens = tokens[1..];
         return ({ meta->type, c });
         }
@@ -150,7 +149,6 @@ static private class Extractor {
         DocGroup d = DocGroup(decls, doc);
         d->appears = meta->appears;
         d->belongs = meta->belongs;
-        d->global = meta->global;
         d->documentation = doc;
         tokens = tokens[1..];
         return ({ "docgroup", d });

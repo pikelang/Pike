@@ -208,13 +208,11 @@ class DocGroup {
   }
   string appears = 0;
   string belongs = 0;
-  int global = 0;
 
   string xml() {
     mapping(string:string) m = ([]);
     if (appears) m->appears = appears;
     if (belongs) m->belongs = belongs;
-    if (global)  m->global = "predef";
 
     // Check if homogeneous
     mapping (string:int) types = ([]);
@@ -252,7 +250,6 @@ class PikeObject {
   SourcePosition position;
   string appears = 0;
   string belongs = 0;
-  int global = 0;
 
   Documentation squeezedInDoc = 0;
 
@@ -271,7 +268,6 @@ class PikeObject {
     if (name)    m->name = name;
     if (appears) m->appears = appears;
     if (belongs) m->belongs = belongs;
-    if (global)  m->global = "predef";
     return m;
   }
 

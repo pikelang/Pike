@@ -1,6 +1,8 @@
 // A very special purpose Pike parser that can parse some selected
 // elements of the Pike language...
 
+#define DEB werror("###PikeParser.Pike: %d\n", __LINE__);
+
 static inherit .PikeObjects;
 static inherit "module.pmod";
 
@@ -133,7 +135,7 @@ string readToken(int | void with_newlines) {
   }
   if (isDocComment(s))
     ++nReadDocComments;
-  // werror("    read: %O  %s\n", s, with_newlines ? "(WNL)" : "");
+  //  werror("    read: %O  %s\n", s, with_newlines ? "(WNL)" : "");
   return s;
 }
 
@@ -155,17 +157,22 @@ string eat(multiset(string) | string token) {
   return readToken();
 }
 
-// Also ::ident, predef::ident
-string eatIdentifier() {
-  string predeF = peekToken() == "predef" ? readToken() : "";
-  string scope = peekToken() == "::" ? readToken() : "";
-  if (predeF != "" && scope == "")
-    parseError("predef must be followed by ::");
+// Also ::ident, predef::ident, lfun::ident
+string eatIdentifier(void|int allowScopePrefix) {
+  string scope = peekToken() == "predef" || peekToken() == "lfun"
+    ? readToken() : "";
+  string colons = peekToken() == "::" ? readToken() : "";
+  //  werror("scope == %O ,colons == %O\n", scope, colons);
+
+  if (scope != "" && colons == "")
+    parseError("%s must be followed by ::", scope);
+  if (strlen(scope + colons) && !allowScopePrefix)
+    parseError("scope prefix not allowed");
   string s = peekToken();
   if (!isIdent(s))
     parseError("expected identifier, got %O", s);
   readToken();
-  return predeF + scope + s;
+  return scope + colons + s;
 }
 
 Type|void parseOrType() {
@@ -500,7 +507,8 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
   }
   else {
     Type t = parseOrType();
-    string name = eatIdentifier();
+    // only allow lfun::, predef::, :: in front of methods/variables
+    string name = eatIdentifier(args["allowScopePrefix"]);
     if (peekToken() == "(") { // It's a method def
       Method m = Method();
       m->modifiers = modifiers;

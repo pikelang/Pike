@@ -21,7 +21,6 @@ class MetaData {
   array(PikeObject) decls = ({});
   string belongs = 0;
   string appears = 0;
-  int global = 0;
 }
 
 constant EOF = .PikeParser.EOF;
@@ -584,6 +583,8 @@ static class DocParserClass {
       ++i;
     tokens[0 .. i - 1];
     MetaData meta = MetaData();
+    string scopeModule = 0;
+    int global = 0;
     foreach (tokens[0 .. i - 1], [string keyword, string arg])
       switch (keyword) {
         case "class":
@@ -610,6 +611,7 @@ static class DocParserClass {
 
         case "decl":
           {
+          int first = !meta->type;
           if (!meta->type)
             meta->type = "decl";
           else if (meta->type != "decl")
@@ -622,11 +624,21 @@ static class DocParserClass {
 
           .PikeParser declparser = .PikeParser(arg);
           PikeObject p = declparser->parseDecl(
-            ([ "allowArgListLiterals" : 1 ])
-          ); // with constants/literals
+            ([ "allowArgListLiterals" : 1,
+               "allowScopePrefix" : 1 ]) ); // constants/literals + scope::
           string s = declparser->peekToken();
           if (s != ";" && s != EOF)
             parseError("expected end of line, got %O", s);
+          int i = search(p->name, "::");
+          if (i >= 0) {
+            string scope = p->name[0 .. i + 1];
+            p->name = p->name[i + 2 ..];
+            if (!first && scopeModule != scope)
+              parseError("@decl's must have identical scope:: prefix");
+            scopeModule = scope;
+          }
+          else if (!first && scopeModule)
+            parseError("@decl's must have identical scope:: prefix");
           meta->decls += ({ p });
           }
           break;
@@ -635,12 +647,13 @@ static class DocParserClass {
           if (meta->type == "class" || meta->type == "decl"
               || meta->type == "module" || !meta->type)
           {
-            if (meta->global)
+            if (global)
               parseError("duplicate @global");
+            if (scopeModule)
+              parseError("@global combined with scope prefix");
             .PikeParser ucko = .PikeParser(arg);
             if (ucko->peekToken() != EOF)
               parseError("expected end of line, got %O", arg);
-            meta->global = 1;
           }
           else
             parseError("@global not allowed here");
@@ -654,6 +667,8 @@ static class DocParserClass {
               parseError("duplicate @appears");
             if (meta->belongs)
               parseError("both @appears and @belongs");
+            if (scopeModule)
+              parseError("both scope:: and @appears");
             .PikeParser idparser = .PikeParser(arg);
             string s = idparser->parseIdents();
             if (!s)
@@ -672,6 +687,8 @@ static class DocParserClass {
               parseError("duplicate @belongs");
             if (meta->appears)
               parseError("both @appears and @belongs");
+            if (scopeModule)
+              parseError("both scope:: and @belongs");
             .PikeParser idparser = .PikeParser(arg);
             string s = idparser->parseIdents();
             if (!s && idparser->peekToken() != EOF)
@@ -698,9 +715,12 @@ static class DocParserClass {
           parseError("illegal keyword: @%s", keyword);
       }
     tokens = tokens[i ..];
+    if (scopeModule)
+      meta->belongs = scopeModule;
+    if (global)
+      meta->belongs = "predef::";
     return meta;
   }
-
 
   array(array(string)) getMetaDataOLD() {  // OLD VERSION
     // collect all meta info at the start of the block
