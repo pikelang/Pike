@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.425 2002/05/09 14:52:10 mast Exp $");
+RCSID("$Id: program.c,v 1.426 2002/05/09 14:59:18 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1285,7 +1285,7 @@ int override_identifier (struct reference *ref, struct pike_string *name, int cu
       continue;
 
     /* Do not zapp inherited inline ('local') identifiers */
-    if((Pike_compiler->new_program->identifier_references[z].id_flags &
+    if((Pike_compiler->new_program->identifier_references[cur_id].id_flags &
 	(ID_INLINE|ID_INHERITED)) == (ID_INLINE|ID_INHERITED))
       continue;
 
@@ -1999,10 +1999,11 @@ void dump_program_tables (struct program *p, int indent)
     if (IDENTIFIER_IS_PIKE_FUNCTION(ID_FROM_PTR(p,ref)->identifier_flags)) {
       INT32 line;
       struct program *inh_p = INHERIT_FROM_PTR(p,ref)->prog;
-      char *file = get_line (ID_FROM_PTR(p,ref)->func.offset + inh_p->program,
-			     inh_p, &line);
-      fprintf (stderr, "%*s                                  %s:%d\n",
-	       indent, "", file, line);
+      struct pike_string *file =
+	get_line (ID_FROM_PTR(p,ref)->func.offset + inh_p->program, inh_p, &line);
+      if (!file->size_shift)
+	fprintf (stderr, "%*s                                  %s:%d\n",
+		 indent, "", file->str, line);
     }
   }
   fprintf(stderr, "\n"
@@ -2012,10 +2013,10 @@ void dump_program_tables (struct program *p, int indent)
   for (d=0; d < p->num_inherits; d++) {
     struct inherit *inh = p->inherits + d;
 
-    fprintf(stderr, "%*s  %4d: %5d %8d %6d %10d\n",
+    fprintf(stderr, "%*s  %4d: %5d %8d %6d"/* %10d*/"\n",
 	    indent, "",
 	    d, inh->inherit_level, inh->identifier_level,
-	    inh->storage_offset, inh->identifier_ref_offset);
+	    inh->storage_offset /*, inh->identifier_ref_offset*/);
   }
   fprintf(stderr, "\n"
 	  "%*sIdentifier table:\n"
@@ -3995,12 +3996,11 @@ INT32 define_function(struct pike_string *name,
 
     ref.inherit_offset = 0;
     ref.id_flags = flags;
-    override_identifier (%ref, name, 0);
+    override_identifier (&ref, name, 0);
 #ifdef PIKE_DEBUG
     if(MEMCMP(Pike_compiler->new_program->identifier_references+i, &ref,sizeof(ref)))
       fatal("New function overloading algorithm failed!\n");
 #endif
-    }
     return i;
   }
 make_a_new_def:
