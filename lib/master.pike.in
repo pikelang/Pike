@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.179 2001/11/19 00:15:18 nilsson Exp $
+ * $Id: master.pike.in,v 1.180 2001/12/13 11:05:56 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -560,6 +560,11 @@ void unregister(program p)
 {
   if(string fname=search(programs,p))
     m_delete(programs, fname);
+  if (zero_type(objects[p]) != 1)
+    m_delete(objects, p);
+  foreach (fc; string name; mixed mod)
+    if (objectp(mod) && object_program(mod) == p)
+      m_delete(fc, name);
 }
 
 static program findprog(string pname,

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.388 2001/12/12 21:11:16 mast Exp $");
+RCSID("$Id: program.c,v 1.389 2001/12/13 11:05:57 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4562,7 +4562,7 @@ void verify_supporters()
 #endif
 
 void init_supporter(struct Supporter *s,
-		    void (*fun)(void *),
+		    supporter_callback *fun,
 		    void *data)
 {
   verify_supporters();
@@ -4602,20 +4602,22 @@ int unlink_current_supporter(struct Supporter *c)
   return ret;
 }
 
-void call_dependants(struct Supporter *s)
+int call_dependants(struct Supporter *s, int finish)
 {
+  int ok = 1;
   struct Supporter *tmp;
   verify_supporters();
   while((tmp=s->dependants))
   {
     s->dependants=tmp->next_dependant;
-#ifdef PIKD_DEBUG
+#ifdef PIKE_DEBUG
     tmp->next_dependant=0;
 #endif
     verify_supporters();
-    tmp->fun(tmp->data);
+    if (!tmp->fun(tmp->data, finish)) ok = 0;
     verify_supporters();
   }
+  return ok;
 }
 
 int report_compiler_dependency(struct program *p)
@@ -4784,9 +4786,11 @@ static void zap_placeholder(struct compilation *c)
   /* fprintf(stderr, "Destructing placeholder.\n"); */
   if (c->placeholder->storage) {
     yyerror("Placeholder already has storage!");
-    /* fprintf(stderr, "Placeholder already has storage!\n"
-       "placeholder: %p, storage: %p, prog: %p, p: %p\n",
-       placeholder, placeholder->storage, placeholder->prog, p); */
+#if 0
+    fprintf(stderr, "Placeholder already has storage!\n"
+	    "placeholder: %p, storage: %p, prog: %p\n",
+	    c->placeholder, c->placeholder->storage, c->placeholder->prog);
+#endif
     debug_malloc_touch(c->placeholder);
     destruct(c->placeholder);
   } else {
@@ -4936,7 +4940,7 @@ static void run_cleanup(struct compilation *c, int delayed)
 
   CDFPRINTF((stderr,
 	     "th(%ld) %p run_cleanup(): threads_disabled:%d, compilation_depth:%d\n",
-	     (long)th_self(), c->p, threads_disabled, compilation_depth));
+	     (long)th_self(), c->target, threads_disabled, compilation_depth));
   if (!c->p)
   {
     /* fprintf(stderr, "Destructing placeholder.\n"); */
@@ -4945,54 +4949,94 @@ static void run_cleanup(struct compilation *c, int delayed)
 
     if(delayed && c->target)
     {
+      struct program *p = c->target;
+      /* Free the constants in the failed program, to untangle the
+       * cyclic references we might have to this program, typically
+       * in parent pointers in nested classes. */
+      if (p->constants) {
+	int i;
+	for (i = 0; i < p->num_constants; i++) {
+	  free_svalue(&p->constants[i].sval);
+	  p->constants[i].sval.type = T_INT;
+	}
+      }
+
       /* We have to notify the master object that
        * a previous compile() actually failed, even
        * if we did not know it at the time
        */
-      ref_push_program(c->target);
+      CDFPRINTF((stderr, "th(%ld) %p unregistering failed delayed compile.\n",
+		 (long) th_self(), p));
+      ref_push_program(p);
       SAFE_APPLY_MASTER("unregister",1);
       pop_stack();
+
+#ifdef PIKE_DEBUG
+      if (p->refs > 1) {
+	fprintf(stderr, "Warning: Program still got %d "
+		"external refs after unregister:\n", p->refs - 1);
+	locate_references(p);
+      }
+#endif
     }
   }
   else
   {
     if (c->placeholder)
     {
-      JMP_BUF rec;
-      /* Initialize the placeholder. */
-      if(SETJMP(rec))
-      {
-	dmalloc_touch_svalue(&throw_value);
-	call_handle_error();
-	zap_placeholder(c);
-      }else{
-	call_pike_initializers(c->placeholder,0);
+      if (c->target->flags & PROGRAM_FINISHED) {
+	JMP_BUF rec;
+	/* Initialize the placeholder. */
+	if(SETJMP(rec))
+	{
+	  struct svalue thrown = throw_value;
+	  throw_value.type = T_INT;
+	  push_svalue(&thrown);
+	  low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+	  if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+	  pop_stack();
+	  free_svalue(&thrown);
+	  zap_placeholder(c);
+	}else{
+	  call_pike_initializers(c->placeholder,0);
+	}
+	UNSETJMP(rec);
       }
-      UNSETJMP(rec);
+      else zap_placeholder(c);
     }
   }
   verify_supporters();
 }
 
-static void call_delayed_pass2(struct compilation *cc)
+static int call_delayed_pass2(struct compilation *cc, int finish)
 {
+  int ok = 0;
   debug_malloc_touch(cc);
 
-  CDFPRINTF((stderr, "th(%ld) %p continuing delayed compile.\n",
-	     (long) th_self(), cc->p));
+  CDFPRINTF((stderr, "th(%ld) %p %s delayed compile.\n",
+	     (long) th_self(), cc->p, finish ? "continuing" : "cleaning up"));
 
-  if(cc->p) run_pass2(cc);
+  if(finish && cc->p) run_pass2(cc);
   run_cleanup(cc,1);
   
   debug_malloc_touch(cc);
-  
+
 #ifdef PIKE_DEBUG
   if(cc->supporter.dependants)
     fatal("Que???\n");
 #endif
-  if(cc->p) free_program(cc->p); /* later */
+  if(cc->p) {
+    ok = finish;
+    free_program(cc->p); /* later */
+  }
+
+  CDFPRINTF((stderr, "th(%ld) %p delayed compile %s.\n",
+	     (long) th_self(), cc->target, ok ? "done" : "failed"));
+
   free_compilation(cc);
   verify_supporters();
+
+  return ok;
 }
 
 struct program *compile(struct pike_string *aprog,
@@ -5001,7 +5045,7 @@ struct program *compile(struct pike_string *aprog,
 			struct program *atarget,
 			struct object *aplaceholder)
 {
-  int delay;
+  int delay, dependants_ok = 1;
   struct program *ret;
 #ifdef PIKE_DEBUG
   ONERROR tmp;
@@ -5042,12 +5086,11 @@ struct program *compile(struct pike_string *aprog,
   c->saved_threads_disabled = threads_disabled;
 
   init_supporter(& c->supporter,
-		 ( void (*)(void*) )call_delayed_pass2,
+		 (supporter_callback *) call_delayed_pass2,
 		 (void *)c);
 
   delay=run_pass1(c) && c->p;
-  call_dependants(& c->supporter );
-
+  dependants_ok = call_dependants(& c->supporter, !!c->p );
 #ifdef PIKE_DEBUG
   /* FIXME */
   UNSET_ONERROR(tmp);
@@ -5056,7 +5099,7 @@ struct program *compile(struct pike_string *aprog,
   if(delay)
   {
     CDFPRINTF((stderr, "th(%ld) %p compile() finish later.\n",
-	       (long) th_self(), c->p));
+	       (long) th_self(), c->target));
     /* finish later */
     add_ref(c->p);
     verify_supporters();
@@ -5071,9 +5114,21 @@ struct program *compile(struct pike_string *aprog,
 
     debug_malloc_touch(c);
     free_compilation(c);
-    if(!ret)
+
+    if (!dependants_ok) {
+      CDFPRINTF((stderr, "th(%ld) %p compile() reporting failure "
+		 "since a dependant failed.\n",
+		 (long) th_self(), c->target));
+      if (ret) free_program(ret);
       throw_error_object(low_clone(compilation_error_program), 0, 0, 0,
 			 "Compilation failed.\n");
+    }
+    if(!ret) {
+      CDFPRINTF((stderr, "th(%ld) %p compile() failed.\n",
+		 (long) th_self(), c->target));
+      throw_error_object(low_clone(compilation_error_program), 0, 0, 0,
+			 "Compilation failed.\n");
+    }
     debug_malloc_touch(ret);
     verify_supporters();
     return ret;

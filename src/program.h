@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.147 2001/11/08 23:34:30 nilsson Exp $
+ * $Id: program.h,v 1.148 2001/12/13 11:05:57 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -403,7 +403,7 @@ extern int compilation_depth;
 #define FOO(NUMTYPE,TYPE,NAME) void PIKE_CONCAT(add_to_,NAME(TYPE ARG));
 #include "program_areas.h"
 
-
+typedef int supporter_callback (void *, int);
 struct Supporter
 {
 #ifdef PIKE_DEBUG
@@ -413,7 +413,7 @@ struct Supporter
   struct Supporter *depends_on;
   struct Supporter *dependants;
   struct Supporter *next_dependant;
-  void (*fun)(void *);
+  supporter_callback *fun;
   void *data;
   struct program *prog;
 };
@@ -566,10 +566,10 @@ void yy_describe_exception(struct svalue *thrown);
 struct supporter_marker;
 void verify_supporters();
 void init_supporter(struct Supporter *s,
-		    void (*fun)(void *),
+		    supporter_callback *fun,
 		    void *data);
 int unlink_current_supporter(struct Supporter *c);
-void call_dependants(struct Supporter *s);
+int call_dependants(struct Supporter *s, int finish);
 int report_compiler_dependency(struct program *p);
 struct compilation;
 void run_pass2(struct compilation *c);

@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.133 2001/12/10 02:08:14 mast Exp $");
+RCSID("$Id: encode.c,v 1.134 2001/12/13 11:05:57 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -2785,7 +2785,7 @@ static void free_decode_data(struct decode_data *data)
 
   
   delay=unlink_current_supporter(&data->supporter);
-  call_dependants(& data->supporter);
+  call_dependants(& data->supporter, 1);
 
   if(delay)
   {
@@ -2824,7 +2824,7 @@ static void free_decode_data(struct decode_data *data)
 }
 
 /* Run pass2 */
-void re_decode(struct decode_data *data)
+int re_decode(struct decode_data *data, int ignored)
 {
   ONERROR err;
   SET_ONERROR(err, free_decode_data, data);
@@ -2833,9 +2833,10 @@ void re_decode(struct decode_data *data)
 
   decode_value2(data);
 
-  CALL_AND_UNSET_ONERROR(err);
+  UNSET_ONERROR(err);
 
   free_decode_data(data);
+  return 1;
 }
 
 static INT32 my_decode(struct pike_string *tmp,
@@ -2915,7 +2916,7 @@ static INT32 my_decode(struct pike_string *tmp,
   SET_ONERROR(err, free_decode_data, data);
 
   init_supporter(& data->supporter,
-		 ( void (*)(void*) )re_decode,
+		 (supporter_callback *) re_decode,
 		 (void *)data);
 
   decode_value2(data);
