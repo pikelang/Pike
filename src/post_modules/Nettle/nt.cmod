@@ -16,6 +16,8 @@
 #include "pike_macros.h"
 #include "stralloc.h"
 
+#include "nettle.h"
+
 #include <wincrypt.h>
 
 DECLARATIONS
