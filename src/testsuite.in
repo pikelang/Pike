@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.713 2004/04/16 16:46:08 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.714 2004/04/16 16:57:20 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -10132,6 +10132,8 @@ cond([[all_constants()->_verify_internals]],
 ]])
 
 test_tests([[
+array a()
+{
   Stdio.File p = Stdio.File();
   object pid = Process.create_process(RUNPIKE_ARRAY +
 				      ({ "]]SRCDIR[[/test_resolve.pike" }),
@@ -10148,6 +10150,7 @@ test_tests([[
     return ({ err, s });
   }
   return ({ ok, failed });
+}
 ]])
 
 // - modifiers, compile time type checks
