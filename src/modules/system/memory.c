@@ -1,5 +1,5 @@
 /*
- * $Id: memory.c,v 1.5 2001/02/04 21:40:48 mirar Exp $
+ * $Id: memory.c,v 1.6 2001/02/07 07:52:55 mirar Exp $
  */
 
 //! module system
@@ -14,7 +14,7 @@
 //!	Don't blame Pike if you shoot your foot off.
 
 #include "global.h"
-RCSID("$Id: memory.c,v 1.5 2001/02/04 21:40:48 mirar Exp $");
+RCSID("$Id: memory.c,v 1.6 2001/02/07 07:52:55 mirar Exp $");
 
 #include "system_machine.h"
 
@@ -268,7 +268,7 @@ static void memory__mmap(INT32 args,int complain,int private)
 #ifdef PAGE_SIZE
    if (offset%PAGE_SIZE)
       Pike_error("Memory.mmap(): mapped offset not aligned to PAGE_SIZE "
-		 "(%d aka system.PAGE_SIZE)\n",offset);
+		 "(%d aka system.PAGE_SIZE)\n",(int)offset);
 #endif
 
    if (private) flags|=MAP_PRIVATE;
