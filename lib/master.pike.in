@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.218 2002/09/05 15:42:19 marcus Exp $
+// $Id: master.pike.in,v 1.219 2002/09/05 15:42:55 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -1744,7 +1744,7 @@ void _main(array(string) orig_argv, array(string) env)
 	want_warnings++;
 	break;
 
-      case "no-warnings":
+      case "nowarnings":
 	want_warnings--;
 	break;
 
