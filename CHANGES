@@ -2,11 +2,19 @@
 visit http://community.roxen.com/crunch/ - or append the ticket id to
 "http://bugs.roxen.com/" for a address directly to the ticket itself)
 
+Changes since 2001-11-27 / Pike 7.2.239
+----------------------------------------------------------------------
+
 Changes since 2001-09-12 / Pike 7.2.197
 ----------------------------------------------------------------------
 
   o Protocols.LDAP.client now handles LDAP over TLS (ldaps://...)
 
+  o Improved support for Microsoft Windows 9x.
+
+  o Fixed tickets:  397,  486,  721, 1173, 1247, 1518, 1731, 1858, 2103, 2264,
+		   2269, 2314, 2329, 2359, 2362, 2369, 2383, 2400, 2403, 2433,
+		   1247, 2505, 2548, 2564
 
 Changes since 2001-04-06 / Pike 7.2.30
 ----------------------------------------------------------------------
