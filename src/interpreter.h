@@ -1,3 +1,4 @@
+
 #undef GET_ARG
 #undef GET_ARG2
 
@@ -151,9 +152,28 @@ static int eval_instruction(unsigned char *pc)
   INT32 arg1=GET_ARG(); \
   INT32 arg2=GET_ARG2();
 
+
 #define OPCODE0_TAIL(OP,DESC) CASE(OP);
 #define OPCODE1_TAIL(OP,DESC) CASE(OP);
 #define OPCODE2_TAIL(OP,DESC) CASE(OP);
+
+#define OPCODE0_JUMP(OP,DESC) CASE(OP); {
+
+/* These are something of a special case as they
+ * requires a POINTER stored explicitly after
+ * the instruction itself.
+ */
+#define OPCODE1_JUMP(OP,DESC) CASE(OP); { \
+  INT32 arg1=GET_ARG(); \
+
+#define OPCODE2_JUMP(OP,DESC) CASE(OP); { \
+  INT32 arg1=GET_ARG(); \
+  INT32 arg2=GET_ARG2();
+
+#define OPCODE0_TAILJUMP(OP,DESC) CASE(OP);
+#define OPCODE1_TAILJUMP(OP,DESC) CASE(OP); 
+#define OPCODE2_TAILJUMP(OP,DESC) CASE(OP); 
+
 
 
 #define BREAK break; }

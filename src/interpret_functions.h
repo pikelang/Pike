@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.14 2000/04/20 22:30:08 grubba Exp $
+ * $Id: interpret_functions.h,v 1.15 2000/04/21 00:29:48 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -190,7 +190,6 @@ OPCODE2(F_EXTERNAL,"external")
 			   arg1 + inherit->identifier_level);
   Pike_sp++;
   print_return_value();
-  break;
 }
 BREAK;
 
@@ -235,9 +234,7 @@ OPCODE2(F_EXTERNAL_LVALUE,"& external")
   Pike_sp->type=T_LVALUE;
   Pike_sp->u.integer=id + inherit->identifier_level;
   Pike_sp++;
-  break;
 }
-
 BREAK;
 
 OPCODE1(F_MARK_AND_LOCAL, "mark & local")
@@ -312,7 +309,6 @@ OPCODE2(F_LEXICAL_LOCAL,"lexical local")
   }
   push_svalue(f->locals + arg1);
   print_return_value();
-  break;
 }
 BREAK;
 
@@ -328,7 +324,6 @@ OPCODE2(F_LEXICAL_LOCAL_LVALUE,"&lexical local")
   Pike_sp[0].u.lval=f->locals+arg1;
   Pike_sp[1].type=T_VOID;
   Pike_sp+=2;
-  break;
 }
 BREAK;
 
@@ -344,53 +339,49 @@ OPCODE1(F_ARRAY_LVALUE, "[ lvalues ]")
 BREAK;
 
 OPCODE1(F_CLEAR_2_LOCAL, "clear 2 local")
-  instr = arg1;
-  free_svalues(Pike_fp->locals + instr, 2, -1);
-  Pike_fp->locals[instr].type = PIKE_T_INT;
-  Pike_fp->locals[instr].subtype = 0;
-  Pike_fp->locals[instr].u.integer = 0;
-  Pike_fp->locals[instr+1].type = PIKE_T_INT;
-  Pike_fp->locals[instr+1].subtype = 0;
-  Pike_fp->locals[instr+1].u.integer = 0;
+  free_svalues(Pike_fp->locals + arg1, 2, -1);
+  Pike_fp->locals[arg1].type = PIKE_T_INT;
+  Pike_fp->locals[arg1].subtype = 0;
+  Pike_fp->locals[arg1].u.integer = 0;
+  Pike_fp->locals[arg1+1].type = PIKE_T_INT;
+  Pike_fp->locals[arg1+1].subtype = 0;
+  Pike_fp->locals[arg1+1].u.integer = 0;
 BREAK;
 
 OPCODE1(F_CLEAR_4_LOCAL, "clear 4 local")
 {
   int e;
-  instr = arg1;
-  free_svalues(Pike_fp->locals + instr, 4, -1);
+  free_svalues(Pike_fp->locals + arg1, 4, -1);
   for(e = 0; e < 4; e++)
   {
-    Pike_fp->locals[instr+e].type = PIKE_T_INT;
-    Pike_fp->locals[instr+e].subtype = 0;
-    Pike_fp->locals[instr+e].u.integer = 0;
+    Pike_fp->locals[arg1+e].type = PIKE_T_INT;
+    Pike_fp->locals[arg1+e].subtype = 0;
+    Pike_fp->locals[arg1+e].u.integer = 0;
   }
 }
 BREAK;
 
 OPCODE1(F_CLEAR_LOCAL, "clear local")
-  instr = arg1;
-  free_svalue(Pike_fp->locals + instr);
-  Pike_fp->locals[instr].type = PIKE_T_INT;
-  Pike_fp->locals[instr].subtype = 0;
-  Pike_fp->locals[instr].u.integer = 0;
+  free_svalue(Pike_fp->locals + arg1);
+  Pike_fp->locals[arg1].type = PIKE_T_INT;
+  Pike_fp->locals[arg1].subtype = 0;
+  Pike_fp->locals[arg1].u.integer = 0;
 BREAK;
 
 OPCODE1(F_INC_LOCAL, "++local")
-  instr = arg1;
-  if( (Pike_fp->locals[instr].type == PIKE_T_INT)
+  if( (Pike_fp->locals[arg1].type == PIKE_T_INT)
 #ifdef AUTO_BIGNUM
-      && (!INT_TYPE_ADD_OVERFLOW(Pike_fp->locals[instr].u.integer, 1))
+      && (!INT_TYPE_ADD_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
 #endif /* AUTO_BIGNUM */
       )
   {
-    Pike_fp->locals[instr].u.integer++;
-    assign_svalue_no_free(Pike_sp++,Pike_fp->locals+instr);
+    Pike_fp->locals[arg1].u.integer++;
+    assign_svalue_no_free(Pike_sp++,Pike_fp->locals+arg1);
   } else {
-    assign_svalue_no_free(Pike_sp++,Pike_fp->locals+instr);
+    assign_svalue_no_free(Pike_sp++,Pike_fp->locals+arg1);
     push_int(1);
     f_add(2);
-    assign_svalue(Pike_fp->locals+instr,Pike_sp-1);
+    assign_svalue(Pike_fp->locals+arg1,Pike_sp-1);
   }
 BREAK;
 
@@ -430,20 +421,19 @@ OPCODE1(F_INC_LOCAL_AND_POP, "++local and pop")
 BREAK;
 
 OPCODE1(F_DEC_LOCAL, "--local")
-  instr = arg1;
-  if( (Pike_fp->locals[instr].type == PIKE_T_INT)
+  if( (Pike_fp->locals[arg1].type == PIKE_T_INT)
 #ifdef AUTO_BIGNUM
-      && (!INT_TYPE_SUB_OVERFLOW(Pike_fp->locals[instr].u.integer, 1))
+      && (!INT_TYPE_SUB_OVERFLOW(Pike_fp->locals[arg1].u.integer, 1))
 #endif /* AUTO_BIGNUM */
       )
   {
-    Pike_fp->locals[instr].u.integer--;
-    assign_svalue_no_free(Pike_sp++,Pike_fp->locals+instr);
+    Pike_fp->locals[arg1].u.integer--;
+    assign_svalue_no_free(Pike_sp++,Pike_fp->locals+arg1);
   } else {
-    assign_svalue_no_free(Pike_sp++,Pike_fp->locals+instr);
+    assign_svalue_no_free(Pike_sp++,Pike_fp->locals+arg1);
     push_int(1);
     o_subtract();
-    assign_svalue(Pike_fp->locals+instr,Pike_sp-1);
+    assign_svalue(Pike_fp->locals+arg1,Pike_sp-1);
   }
 BREAK;
 
@@ -791,8 +781,11 @@ OPCODE1(F_POP_N_ELEMS, "pop_n_elems")
   pop_n_elems(arg1);
 BREAK;
 
-      CASE(F_MARK2); *(Pike_mark_sp++)=Pike_sp;
-      CASE(F_MARK); *(Pike_mark_sp++)=Pike_sp; break;
+OPCODE0_TAIL(F_MARK2,"mark mark")
+  *(Pike_mark_sp++)=Pike_sp;
+OPCODE0(F_MARK,"mark")
+  *(Pike_mark_sp++)=Pike_sp;
+BREAK;
 
 OPCODE1(F_MARK_X, "mark sp-X")
   *(Pike_mark_sp++)=Pike_sp-arg1;
@@ -807,60 +800,59 @@ OPCODE0(F_CLEAR_STRING_SUBTYPE, "clear string subtype")
 BREAK;
 
       /* Jumps */
-      CASE(F_BRANCH);
-      DOJUMP();
-      break;
+OPCODE0_JUMP(F_BRANCH,"branch")
+  DOJUMP();
+BREAK;
 
-      CASE(F_BRANCH_IF_NOT_LOCAL_ARROW);
-      {
-	struct svalue tmp;
-	tmp.type=PIKE_T_STRING;
-	tmp.u.string=Pike_fp->context.prog->strings[GET_ARG()];
-	tmp.subtype=1;
-	Pike_sp->type=PIKE_T_INT;	
-	Pike_sp++;
-	index_no_free(Pike_sp-1,Pike_fp->locals+GET_ARG2() , &tmp);
-	print_return_value();
-      }
+OPCODE2(F_BRANCH_IF_NOT_LOCAL_ARROW,"branch if !local->x")
+{
+  struct svalue tmp;
+  tmp.type=PIKE_T_STRING;
+  tmp.u.string=Pike_fp->context.prog->strings[arg1];
+  tmp.subtype=1;
+  Pike_sp->type=PIKE_T_INT;	
+  Pike_sp++;
+  index_no_free(Pike_sp-1,Pike_fp->locals+arg2, &tmp);
+  print_return_value();
+}
 
       /* Fall through */
 
-      CASE(F_BRANCH_WHEN_ZERO);
-      if(!IS_ZERO(Pike_sp-1))
-      {
-	pc+=sizeof(INT32);
-      }else{
-	DOJUMP();
-      }
-      pop_stack();
-      break;
+OPCODE0_TAILJUMP(F_BRANCH_WHEN_ZERO,"branch if zero")
+  if(!IS_ZERO(Pike_sp-1))
+  {
+    SKIPJUMP();
+  }else{
+    DOJUMP();
+  }
+  pop_stack();
+BREAK;
 
       
-      CASE(F_BRANCH_WHEN_NON_ZERO);
-      if(IS_ZERO(Pike_sp-1))
-      {
-	pc+=sizeof(INT32);
-      }else{
-	DOJUMP();
-      }
-      pop_stack();
-      break;
+OPCODE0_JUMP(F_BRANCH_WHEN_NON_ZERO,"branch if not zero")
+  if(IS_ZERO(Pike_sp-1))
+  {
+    SKIPJUMP();
+  }else{
+    DOJUMP();
+  }
+  pop_stack();
+BREAK
 
-      CASE(F_BRANCH_IF_LOCAL);
-      instr=GET_ARG();
-      if(IS_ZERO(Pike_fp->locals + instr))
-      {
-	pc+=sizeof(INT32);
-      }else{
-	DOJUMP();
-      }
-      break;
+OPCODE1_JUMP(F_BRANCH_IF_LOCAL,"branch if local")
+  if(IS_ZERO(Pike_fp->locals + arg1))
+  {
+    SKIPJUMP();
+  }else{
+    DOJUMP();
+  }
+BREAK;
 
       CASE(F_BRANCH_IF_NOT_LOCAL);
       instr=GET_ARG();
       if(!IS_ZERO(Pike_fp->locals + instr))
       {
-	pc+=sizeof(INT32);
+	SKIPJUMP();
       }else{
 	DOJUMP();
       }
@@ -876,7 +868,7 @@ BREAK;
       CASE(F_BRANCH_AND_POP_WHEN_ZERO);
       if(!IS_ZERO(Pike_sp-1))
       {
-	pc+=sizeof(INT32);
+	SKIPJUMP();
       }else{
 	DOJUMP();
 	pop_stack();
@@ -886,7 +878,7 @@ BREAK;
       CASE(F_BRANCH_AND_POP_WHEN_NON_ZERO);
       if(IS_ZERO(Pike_sp-1))
       {
-	pc+=sizeof(INT32);
+	SKIPJUMP();
       }else{
 	DOJUMP();
 	pop_stack();
@@ -896,7 +888,7 @@ BREAK;
       CASE(F_LAND);
       if(!IS_ZERO(Pike_sp-1))
       {
-	pc+=sizeof(INT32);
+	SKIPJUMP();
 	pop_stack();
       }else{
 	DOJUMP();
@@ -906,7 +898,7 @@ BREAK;
       CASE(F_LOR);
       if(IS_ZERO(Pike_sp-1))
       {
-	pc+=sizeof(INT32);
+	SKIPJUMP();
 	pop_stack();
       }else{
 	DOJUMP();
@@ -917,7 +909,7 @@ BREAK;
       if(!is_eq(Pike_sp-2,Pike_sp-1))
       {
 	pop_n_elems(2);
-	pc+=sizeof(INT32);
+	SKIPJUMP();
       }else{
 	pop_n_elems(2);
 	push_int(1);
@@ -929,7 +921,7 @@ BREAK;
       if(is_eq(Pike_sp-2,Pike_sp-1))
       {
 	pop_n_elems(2);
-	pc+=sizeof(INT32);
+	SKIPJUMP();
       }else{
 	pop_n_elems(2);
 	push_int(0);
@@ -983,7 +975,7 @@ BREAK;
 	  pc+=EXTRACT_INT(pc);
 	  Pike_sp[-1].u.integer++;
 	}else{
-	  pc+=sizeof(INT32);
+	  SKIPJUMP();
 	}
 	break;
       }

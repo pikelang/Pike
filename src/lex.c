@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.76 2000/04/20 22:30:21 grubba Exp $");
+RCSID("$Id: lex.c,v 1.77 2000/04/21 00:29:48 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -79,6 +79,14 @@ void exit_lex(void)
 #define OPCODE1_TAIL(OP,DESC) { DESC, OP, I_HASARG },
 #define OPCODE2_TAIL(OP,DESC) { DESC, OP, I_TWO_ARGS },
 
+#define OPCODE0_JUMP(OP,DESC) { DESC, OP, I_ISJUMP },
+#define OPCODE1_JUMP(OP,DESC) { DESC, OP, I_HASARG },
+#define OPCODE2_JUMP(OP,DESC) { DESC, OP, I_TWO_ARGS },
+
+#define OPCODE0_TAILJUMP(OP,DESC) { DESC, OP, I_ISJUMP },
+#define OPCODE1_TAILJUMP(OP,DESC) { DESC, OP, I_HASARG },
+#define OPCODE2_TAILJUMP(OP,DESC) { DESC, OP, I_TWO_ARGS },
+
 #define LEXER
 
 struct keyword instr_names[]=
@@ -125,12 +133,7 @@ struct keyword instr_names[]=
 { "for",		F_FOR,0 },
 { "index",              F_INDEX,0 },
 
-{ "branch",             F_BRANCH, I_ISJUMP },
-{ "branch non zero",	F_BRANCH_WHEN_NON_ZERO, I_ISJUMP },	
-{ "branch if local",	F_BRANCH_IF_LOCAL, I_HASARG },	
 { "branch if !local",	F_BRANCH_IF_NOT_LOCAL, I_HASARG },	
-{ "branch if ! local->x",	F_BRANCH_IF_NOT_LOCAL_ARROW, I_TWO_ARGS },
-{ "branch when zero",	F_BRANCH_WHEN_ZERO, I_ISJUMP },	
 { "branch if <",	F_BRANCH_WHEN_LT, I_ISJUMP },
 { "branch if >",	F_BRANCH_WHEN_GT, I_ISJUMP },
 { "branch if <=",	F_BRANCH_WHEN_LE, I_ISJUMP },
@@ -155,8 +158,6 @@ struct keyword instr_names[]=
 { "local function call",F_CALL_LFUN, I_HASARG },
 { "local function call and pop",F_CALL_LFUN_AND_POP, I_HASARG },
 { "lvalue_list",	F_LVALUE_LIST,0 },	
-{ "mark",               F_MARK,0 },
-{ "mark mark",          F_MARK2,0 },
 { "return",		F_RETURN,0 },
 { "return 0",		F_RETURN_0,0 },
 { "return 1",		F_RETURN_1,0 },

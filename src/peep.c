@@ -14,7 +14,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: peep.c,v 1.30 2000/04/20 02:41:45 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.31 2000/04/21 00:29:48 hubbe Exp $");
 
 struct p_instr_s
 {
@@ -345,6 +345,7 @@ void assemble(void)
       {
       case I_ISJUMP:
 	ins_f_byte(c->opcode);
+
       case I_ISPOINTER:
 #ifdef PIKE_DEBUG
 	if(c->arg > max_label || c->arg < 0) fatal("Jump to unknown label?\n");
