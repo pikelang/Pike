@@ -135,7 +135,7 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 	      file,(long)linep,
 	      DO_NOT_WARN((long)(pc-Pike_fp->context.prog->program-1)),
 #ifdef HAVE_COMPUTED_GOTO
-	      get_f_name(instr),
+	      get_opcode_name(instr),
 #else /* !HAVE_COMPUTED_GOTO */
 	      get_f_name(instr + F_OFFSET),
 #endif /* HAVE_COMPUTED_GOTO */
@@ -144,7 +144,8 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
     }
 
 #ifdef HAVE_COMPUTED_GOTO
-    ADD_RUNNED(instr);
+    if (instr) 
+      ADD_RUNNED(instr);
 #else /* !HAVE_COMPUTED_GOTO */
     if(instr + F_OFFSET < F_MAX_OPCODE) 
       ADD_RUNNED(instr + F_OFFSET);
@@ -386,6 +387,44 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 #include "interpret_protos.h"
     };
 
+    static struct op_2_f lookup[] = {
+#undef LABEL
+#define LABEL(OP)	{ &&PIKE_CONCAT(LABEL_, OP), OP }
+#undef NULL_LABEL
+#define NULL_LABEL(OP)	{ NULL, OP }
+
+      NULL_LABEL(F_OFFSET),
+
+      NULL_LABEL(F_PREFIX_256),
+      NULL_LABEL(F_PREFIX_512),
+      NULL_LABEL(F_PREFIX_768),
+      NULL_LABEL(F_PREFIX_1024),
+      NULL_LABEL(F_PREFIX_CHARX256),
+      NULL_LABEL(F_PREFIX_WORDX256),
+      NULL_LABEL(F_PREFIX_24BITX256),
+
+      NULL_LABEL(F_PREFIX2_256),
+      NULL_LABEL(F_PREFIX2_512),
+      NULL_LABEL(F_PREFIX2_768),
+      NULL_LABEL(F_PREFIX2_1024),
+      NULL_LABEL(F_PREFIX2_CHARX256),
+      NULL_LABEL(F_PREFIX2_WORDX256),
+      NULL_LABEL(F_PREFIX2_24BITX256),
+
+      LABEL(F_INDEX),
+      LABEL(F_POS_INT_INDEX),
+      LABEL(F_NEG_INT_INDEX),
+
+      LABEL(F_RETURN),
+      LABEL(F_DUMB_RETURN),
+      LABEL(F_RETURN_0),
+      LABEL(F_RETURN_1),
+      LABEL(F_RETURN_LOCAL),
+      LABEL(F_RETURN_IF_TRUE),
+
+#include "interpret_protos.h"
+    };
+
 #ifdef PIKE_DEBUG
     if (sizeof(table) != (F_MAX_OPCODE-F_OFFSET)*sizeof(void *))
       fatal("opcode_to_label out of sync: 0x%08lx != 0x%08lx\n",
@@ -393,6 +432,11 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 	    DO_NOT_WARN((long)((F_MAX_OPCODE-F_OFFSET)*sizeof(void *))));
 #endif /* PIKE_DEBUG */
     fcode_to_opcode = table;
+    opcode_to_fcode = lookup;
+
+    qsort(lookup, F_MAX_OPCODE-F_OFFSET, sizeof(struct op_2_f),
+	  lookup_sort_fun);
+
     return 0;
   }
 #endif /* HAVE_COMPUTED_GOTO */

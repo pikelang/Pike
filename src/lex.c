@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.95 2001/07/09 11:37:21 grubba Exp $");
+RCSID("$Id: lex.c,v 1.96 2001/07/09 14:19:16 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -85,7 +85,9 @@ void add_runned(PIKE_OPCODE_T instr)
     tmp=tmp[0]->next + last_instruction[e];
     last_instruction[e]=last_instruction[e+1];
   }
+#ifndef HAVE_COMPUTED_GOTO
   ((char **)(tmp))[0]++;
+#endif /* !HAVE_COMPUTED_GOTO */
   last_instruction[e]=instr;
 }
 
@@ -322,6 +324,34 @@ char *get_f_name(int n)
     return buf;
   }
 }
+
+#ifdef HAVE_COMPUTED_GOTO
+char *get_opcode_name(PIKE_OPCODE_T n)
+{
+  int fcode;
+  int low = 0;
+  int high = F_MAX_OPCODE - F_OFFSET;
+  static char buf[64];
+
+  if (!n) {
+    return "<NULL opcode!>";
+  }
+
+  while (low < high) {
+    int mid = (low+high)/2;
+    if (opcode_to_fcode[mid].opcode < n) {
+      low = mid + 1;
+    } else if (opcode_to_fcode[mid].opcode > n) {
+      high = mid;
+    } else {
+      return get_f_name(opcode_to_fcode[mid].fcode);
+    }
+  }
+
+  sprintf(buf, "<Unknown opcode 0x%p>", n);
+  return buf;
+}
+#endif /* HAVE_COMPUTED_GOTO */
 
 char *get_token_name(int n)
 {

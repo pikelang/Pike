@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.135 2001/07/09 11:37:19 grubba Exp $
+ * $Id: program.h,v 1.136 2001/07/09 14:19:16 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -30,6 +30,10 @@ PMOD_PROTO extern struct program_state * Pike_compiler;
 #ifdef HAVE_COMPUTED_GOTO
 #define PIKE_OPCODE_T	void *
 extern PIKE_OPCODE_T *fcode_to_opcode;
+extern struct op_2_f {
+  PIKE_OPCODE_T opcode;
+  INT32 fcode;
+} *opcode_to_fcode;
 #else /* !HAVE_COMPUTED_GOTO */
 #ifdef SHORT_PIKE_OPCODE
 #define PIKE_OPCODE_T	unsigned INT16

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.217 2001/07/09 11:37:20 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.218 2001/07/09 14:19:15 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -66,6 +66,7 @@ RCSID("$Id: interpret.c,v 1.217 2001/07/09 11:37:20 grubba Exp $");
 
 #ifdef HAVE_COMPUTED_GOTO
 PIKE_OPCODE_T *fcode_to_opcode = NULL;
+struct op_2_f *opcode_to_fcode = NULL;
 #endif /* HAVE_COMPUTED_GOTO */
 
 PMOD_EXPORT const char *Pike_check_stack_errmsg =
@@ -691,7 +692,7 @@ void dump_backlog(void)
       fprintf(stderr,"%s:%ld: %s",
 	      file,
 	      (long)line,
-	      low_get_f_name(backlog[e].instruction, backlog[e].program));
+	      get_opcode_name(backlog[e].instruction));
 #else /* !HAVE_COMPUTED_GOTO */
       if(backlog[e].instruction < 0 || backlog[e].instruction+F_OFFSET > F_MAX_OPCODE)
       {
@@ -740,6 +741,14 @@ static int o_catch(PIKE_OPCODE_T *pc);
 #else
 #define EVAL_INSTR_RET_CHECK(x)
 #endif
+
+#ifdef HAVE_COMPUTED_GOTO
+int lookup_sort_fun(const void *a, const void *b)
+{
+  return (int)(((ptrdiff_t)((struct op_2_f *)a)->opcode) -
+	       ((ptrdiff_t)((struct op_2_f *)b)->opcode));
+}
+#endif /* HAVE_COMPUTED_GOTO */
 
 /* NOTE: Due to the implementation of computed goto,
  *       interpreter.h may only be included once.
@@ -1241,7 +1250,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       {
 	int num_args;
 	int num_locals;
-	unsigned char *pc;
+	PIKE_OPCODE_T *pc;
 
 #ifdef PIKE_DEBUG
 	if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
@@ -1250,9 +1259,14 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
 	debug_malloc_touch(Pike_fp);
 	pc=new_frame->context.prog->program + function->func.offset;
-	
-	num_locals=EXTRACT_UCHAR(pc++);
-	num_args=EXTRACT_UCHAR(pc++);
+
+#ifdef HAVE_COMPUTED_GOTO
+	num_locals = (int)(ptrdiff_t)((pc++)[0]);
+	num_args = (int)(ptrdiff_t)((pc++)[0]);
+#else /* !HAVE_COMPUTED_GOTO */
+	num_locals = EXTRACT_UCHAR(pc++);
+	num_args = EXTRACT_UCHAR(pc++);
+#endif /* HAVE_COMPUTED_GOTO */
 
 #ifdef PIKE_DEBUG
 	if(num_locals < num_args)
@@ -1294,7 +1308,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	new_frame->save_mark_sp=Pike_mark_sp;
 	new_frame->mark_sp_base=Pike_mark_sp;
 	check_threads_etc();
-	new_frame->pc=pc;
+	new_frame->pc = pc;
 	return 1;
       }
       }

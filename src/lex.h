@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: lex.h,v 1.17 2001/07/09 11:37:20 grubba Exp $
+ * $Id: lex.h,v 1.18 2001/07/09 14:19:16 grubba Exp $
  */
 #ifndef LEX_H
 #define LEX_H
@@ -90,6 +90,11 @@ struct reserved;
 void init_lex(void);
 char *low_get_f_name(int n,struct program *p);
 char *get_f_name(int n);
+#ifdef HAVE_COMPUTED_GOTO
+char *get_opcode_name(PIKE_OPCODE_T n);
+#else /* !HAVE_COMPUTED_GOTO */
+#define get_opcode_name(n)	get_f_name(n)
+#endif /* HAVE_COMPUTED_GOTO */
 char *get_token_name(int n);
 
 int yylex0(YYSTYPE *);
