@@ -79,7 +79,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.9 2001/01/18 12:58:45 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.10 2001/01/18 13:01:18 grubba Exp $");
 
 #endif
 
@@ -1060,7 +1060,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	      ptr=low_dlsym(&global_dlhandle, name, len, 0);
 	    if(!ptr)
 	    {
-	      char err[256];
+	      static char err[256];
 	      MEMCPY(err,"Symbol '",8);
 	      MEMCPY(err+8,name,MINIMUM(len, 128));
 	      MEMCPY(err+8+MINIMUM(len, 128),"' not found.\0",13);
