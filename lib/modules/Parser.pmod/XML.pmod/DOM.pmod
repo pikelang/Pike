@@ -45,7 +45,7 @@ class DOMException(int code) {
     INUSE_ATTRIBUTE_ERR: "attempted to add an attribute that is already in use",
   ]);
 
-  string|array `[] (int i)
+  static string|array `[] (int i)
   {
     switch (i) {
       case 0:
@@ -56,7 +56,7 @@ class DOMException(int code) {
     }
   }
 
-  string _sprintf(int mode, mapping options)
+  static string _sprintf(int mode, mapping options)
   {
     return mode == 'O' && "DOMException(" + (symbolic[code]||code) + ")";
   }
@@ -88,12 +88,12 @@ class NodeList
 {
   static array(Node) nodes;
 
-  NodeList `+(NodeList nl) {
+  static NodeList `+(NodeList nl) {
     return NodeList(values(this_object())+values(nl));
   }
-  Node `[](int index) { return item(index); }
-  int _sizeof() { return get_length(); }
-  array(Node) cast(string to) {
+  static Node `[](int index) { return item(index); }
+  static int _sizeof() { return get_length(); }
+  static array(Node) cast(string to) {
     return to[..4] == "array" && values(this_object());
   }
 
@@ -107,9 +107,10 @@ class NodeList
     return sizeof(nodes);
   }
 
-  array(int) _indices() { return indices(nodes); }
-  array(Node) _values() { return copy_value(nodes); }
-  
+  static array(int) _indices() { return indices(nodes); }
+  static array(Node) _values() { return copy_value(nodes); }
+  static Array.Iterator _get_iterator() { return Array.Iterator(nodes); }
+
   static void create(array(Node)|void elts) { nodes = elts || ({}); }
 }
 
@@ -152,13 +153,13 @@ class NamedNodeMap
     return old;
   }
 
-  Node `[](int|string index)
+  static Node `[](int|string index)
   {
     return stringp(index)? get_named_item(index) : item(index);
   }
 
-  int _sizeof() { return get_length(); }
-  mapping(string:Node) cast(string to) {
+  static int _sizeof() { return get_length(); }
+  static mapping(string:Node) cast(string to) {
     return to[..6] == "mapping" && copy_value(map);
   }
 
@@ -172,8 +173,9 @@ class NamedNodeMap
     return sizeof(map);
   }
 
-  array(string) _indices() { return indices(map); }
-  array(Node) _values() { return values(map); }
+  static array(string) _indices() { return indices(map); }
+  static array(Node) _values() { return values(map); }
+  static Mapping.Iterator _get_iterator() { return Mapping.Iterator(map); }
 
   static void create(Document owner)
   {
@@ -343,6 +345,11 @@ class Node
     throw(DOMException(DOMException.NOT_SUPPORTED_ERR));
   }
 
+  static string _sprintf(int mode, mapping options)
+  {
+    return mode == 'O' &&
+      function_name(object_program(this_object())) + "("+get_node_name()+")";
+  }
 }
 
 class DocumentFragment
@@ -983,7 +990,7 @@ class ParseException
   string get_system_id() { return sysid; }
   string get_message() { return message; }
 
-  string|array `[] (int i)
+  static string|array `[] (int i)
   {
     switch (i) {
       case 0:
@@ -993,7 +1000,7 @@ class ParseException
     }
   }
 
-  string _sprintf(int mode, mapping options)
+  static string _sprintf(int mode, mapping options)
   {
     return mode == 'O' &&
       sprintf("DOM.ParseException(%O /* %O char %d */)",
