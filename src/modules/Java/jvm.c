@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.36 2001/09/24 11:41:37 grubba Exp $
+ * $Id: jvm.c,v 1.37 2002/02/12 09:49:42 anders Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -17,7 +17,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.36 2001/09/24 11:41:37 grubba Exp $");
+RCSID("$Id: jvm.c,v 1.37 2002/02/12 09:49:42 anders Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1883,7 +1883,7 @@ static void build_native_entry(JNIEnv *env, jclass cls,
       statc = 1;
     else {
       (*env)->ExceptionClear(env);
-      Pike_error("trying to register nonexistant function\n");
+      Pike_error("trying to register nonexistent function\n");
     }
   }
 
