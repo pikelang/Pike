@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.226 2000/12/19 20:51:17 marcus Exp $
+# $Id: Makefile.in,v 1.227 2001/01/01 15:13:34 mirar Exp $
 #
 
 # This line is needed on some machines.
@@ -412,6 +412,8 @@ tinstall: aclocal master.pike aclocal
 
 
 verify: module_testsuites testsuite tinstall
+	unset PIKE_MODULE_PATH; \
+	unset PIKE_INCLUDE_PATH; \
 	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
 	if test -f ./test-pike ; then ./test-pike -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; else sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKE_OPTS) $(TMP_BINDIR)/test_pike.pike $$args ; fi
 
