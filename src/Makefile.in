@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.278 2001/11/12 13:25:17 mast Exp $
+# $Id: Makefile.in,v 1.279 2001/11/26 16:11:57 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -185,6 +185,14 @@ POBJ = las.o builtin_functions.o peep.o module.o
 all: module_objects hilfe
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) post_modules
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike
+	@if [ "`find . -name '*.fail' -print`" = "" ]; then :; else \
+	  echo; \
+	  echo "Pike compiled and linked ok, but the following file(s) "; \
+	  echo "failed to compile with full optimization.";\
+	  echo "This may affect performance negatively."; \
+	  find . -name '*.fail' -print | sed -e 's/\.fail$$//' -e 's/^/	/'; \
+	  echo; \
+	fi
 
 documentation: just-tinstall
 	@if [ -f "$(SRCDIR)/../refdoc/Makefile" ]; then \
