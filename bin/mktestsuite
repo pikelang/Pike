@@ -177,8 +177,9 @@ define([[CONDITION]],[[COND \$1
 define([[CONDITION]],[[]])
 ]])
 
+define(cond_resolv,[[cond([[master()->resolv(dnl
+  String.trim_all_whites("\$1"))]],[[\$2]])]])
 define(ifefun,[[cond([[all_constants()->\$1]],[[\$2]])]])
-
 define(nonregression,[[ifefun(regression,[[\$1]])]])
 
 define(TESTNO,0)
