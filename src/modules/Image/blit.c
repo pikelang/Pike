@@ -1,4 +1,4 @@
-/* $Id: blit.c,v 1.4 1997/03/23 14:31:52 mirar Exp $ */
+/* $Id: blit.c,v 1.5 1997/03/25 06:59:06 mirar Exp $ */
 #include "global.h"
 
 #include <math.h>
@@ -213,6 +213,22 @@ void img_clone(struct image *newimg,struct image *img)
    newimg->rgb=img->rgb;
 }
 
+/*
+**! method object paste(object image)
+**! method object paste(object image,int x,int y)
+**!    Pastes a given image over the current image.
+**!
+**! returns the object called
+**!
+**! object image
+**!	image to paste
+**! int x
+**! int y
+**!	where to paste the image; default is 0,0
+**!
+**! see also: paste_mask, paste_alpha, paste_alpha_color
+*/
+
 void image_paste(INT32 args)
 {
    struct image *img;
@@ -256,6 +272,29 @@ void image_paste(INT32 args)
    push_object(THISOBJ);
 }
 
+/*
+**! method object paste_alpha(object image,int alpha)
+**! method object paste_alpha(object image,int alpha,int x,int y)
+**!    	Pastes a given image over the current image, with
+**!    	the specified alpha channel value.
+**!	
+**!    	An alpha channel value of 0 leaves nothing of the original 
+**!     image in the paste area, 255 is meaningless and makes the
+**!	given image invisible.
+**!
+**! returns the object called
+**!
+**! object image
+**!	image to paste
+**! int alpha
+**!	alpha channel value
+**! int x
+**! int y
+**!	where to paste the image; default is 0,0
+**!
+**! see also: paste_mask, paste, paste_alpha_color
+*/
+
 void image_paste_alpha(INT32 args)
 {
    struct image *img;
@@ -296,6 +335,30 @@ void image_paste_alpha(INT32 args)
    THISOBJ->refs++;
    push_object(THISOBJ);
 }
+
+/*
+**! method object paste_mask(object image,object mask)
+**! method object paste_mask(object image,object mask,int x,int y)
+**!    Pastes a given image over the current image,
+**!    using the given mask as opaque channel.  
+**!    
+**!    A pixel value of 255 makes the result become a pixel
+**!    from the given image, 0 doesn't change anything.
+**!
+**!    The masks red, green and blue values are used separately.
+**!
+**! returns the object called
+**!
+**! object image
+**!	image to paste
+**! object mask
+**!	mask image
+**! int x
+**! int y
+**!	where to paste the image; default is 0,0
+**!
+**! see also: paste, paste_alpha, paste_alpha_color
+*/
 
 void image_paste_mask(INT32 args)
 {
@@ -354,13 +417,13 @@ CHRONO("image_paste_mask begin");
       for (x=max(0,-x1); x<x2; x++)
       {
 	 if (m->r==255) d->r=s->r;
-	 else if (m->r==0) d->r=d->r;
+	 else if (m->r==0) {}
 	 else d->r=(unsigned char)(((d->r*(255-m->r))+(s->r*m->r))*q);
 	 if (m->g==255) d->g=s->g;
-	 else if (m->g==0) d->g=d->g;
+	 else if (m->g==0) {}
 	 else d->g=(unsigned char)(((d->g*(255-m->g))+(s->g*m->g))*q);
 	 if (m->b==255) d->b=s->b;
-	 else if (m->b==0) d->b=d->b;
+	 else if (m->b==0) {}
 	 else d->b=(unsigned char)(((d->b*(255-m->b))+(s->b*m->b))*q);
 	 s++; m++; d++;
       }
@@ -373,6 +436,35 @@ CHRONO("image_paste_mask end");
    THISOBJ->refs++;
    push_object(THISOBJ);
 }
+
+/*
+**! method object paste_alpha_color(object mask)
+**! method object paste_alpha_color(object mask,int x,int y)
+**! method object paste_alpha_color(object mask,int r,int g,int b)
+**! method object paste_alpha_color(object mask,int r,int g,int b,int x,int y)
+**!    Pastes a given color over the current image,
+**!    using the given mask as opaque channel.  
+**!    
+**!    A pixel value of 255 makes the result become the color given,
+**!    0 doesn't change anything.
+**!    
+**!    The masks red, green and blue values are used separately.
+**!    If no color are given, the current is used.
+**!
+**! returns the object called
+**!
+**! object mask
+**!     mask image
+**! int r
+**! int g
+**! int b
+**!     what color to paint with; default is current
+**! int x
+**! int y
+**!     where to paste the image; default is 0,0
+**!
+**! see also: paste_mask, paste_alpha, paste_alpha_color
+*/
 
 void image_paste_alpha_color(INT32 args)
 {
@@ -463,13 +555,59 @@ void img_box(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
 }
 
 
+/*
+**! method object add_layers(array(array(int|object)) layers)
+**! method object add_layers(array(array(int|object)) layers,int x1,int y1,int x2,int y2)
+**!	Using the called object as base, adds layers using masks,
+**!	opaque channel values and special methods.
+**!
+**!	The destination image can also be cropped, thus
+**!	speeding up the process.
+**!
+**!	Each array in the layers array is one of:
+**!	<pre>
+**!	({object image,object|int mask})
+**!	({object image,object|int mask,int opaque_value})
+**!	({object image,object|int mask,int opaque_value,int method})
+**!	</pre>
+**!	Given 0 as mask means the image is totally opaque.
+**!
+**!	Default opaque value is 255, only using the mask.
+**!
+**!	Methods for now are:
+**!	<pre>
+**!	0  no operation (just paste with mask, default)
+**!	1  maximum  (`|)
+**!	2  minimum  (`&)
+**!	3  multiply (`*)
+**!	4  add      (`+)
+**!	5  diff     (`-)
+**!	</pre>
+**!	The layer image and the current source are calculated
+**!	through the given method and then pasted using the mask
+**!	and the opaque channel value. 
+**!
+**!	All given images must be the same size.
+**!
+**! returns a new image object
+**!
+**! object image
+**!	image to paste
+**! object mask
+**!	mask image
+**! int x
+**! int y
+**!	where to paste the image; default is 0,0
+**!
+**! see also: paste_mask, paste_alpha, paste_alpha_color, `|, `&, `*, `+, `-
+*/
 
 void image_add_layers(INT32 args)
 /*
 
 [x1,y1,x2,y2],
-({object image,object mask|0|1,[int alpha_value,[int method]]}),
-({object image,object mask|0|1,[int alpha_value,[int method]]}),
+({object image,object mask|0,[int alpha_value,[int method]]}),
+({object image,object mask|0,[int alpha_value,[int method]]}),
 ...
 :object
 
@@ -479,7 +617,7 @@ void image_add_layers(INT32 args)
    {
       rgb_group *s;
       rgb_group *m;
-      int alpha;
+      int opaque;
       enum layer_method method;
    } *layer;
    float q2=1/(255.0*255.0);
@@ -488,7 +626,7 @@ void image_add_layers(INT32 args)
    rgb_group *d;
    struct object *o;
 
-   int allalpha255=1,allmask=1,allnop=1;
+   int allopaque255=1,allmask=1,allnop=1;
 
    int i,j,l,mod,layers;
    int x1,y1,x2,y2;
@@ -590,12 +728,12 @@ void image_add_layers(INT32 args)
 	 if (a->item[2].type!=T_INT)
 	 {
 	    free(layer);
-	    error("Illegal array contents (illegal alpha) to image->add_layers()\n");
+	    error("Illegal array contents (illegal opaque) to image->add_layers()\n");
 	 }
-	 layer[j].alpha=a->item[2].u.integer;
+	 layer[j].opaque=a->item[2].u.integer;
       }
       else
-	 layer[j].alpha=255;
+	 layer[j].opaque=255;
 
       if (a->size>=4)
       {
@@ -625,35 +763,35 @@ void image_add_layers(INT32 args)
       layer[i].s+=x1+THIS->xsize*y1;
       if (layer[i].m) layer[i].m+=x1+THIS->xsize*y1;
       else allmask=0;
-      if (layer[i].alpha!=255) allalpha255=0;
+      if (layer[i].opaque!=255) allopaque255=0;
       if (layer[i].method!=LAYER_NOP) allnop=0;
    }
 
-   if (allmask && allalpha255 && allnop)
+   if (allmask && allopaque255 && allnop)
    {
 #define ALL_IS_NOP
 #define ALL_HAVE_MASK
-#define ALL_HAVE_ALPHA
+#define ALL_HAVE_OPAQUE
 #include "blit_layer_include.h"
 #undef ALL_IS_NOP
 #undef ALL_HAVE_MASK
-#undef ALL_HAVE_ALPHA
+#undef ALL_HAVE_OPAQUE
    }
-   else if (allalpha255 && allnop)
+   else if (allopaque255 && allnop)
    {
 #define ALL_IS_NOP
-#define ALL_HAVE_ALPHA
+#define ALL_HAVE_OPAQUE
 #include "blit_layer_include.h"
 #undef ALL_IS_NOP
-#undef ALL_HAVE_ALPHA
+#undef ALL_HAVE_OPAQUE
    }
    else if (allmask && allnop)
    {
 #define ALL_HAVE_MASK
-#define ALL_HAVE_ALPHA
+#define ALL_HAVE_OPAQUE
 #include "blit_layer_include.h"
 #undef ALL_HAVE_MASK
-#undef ALL_HAVE_ALPHA
+#undef ALL_HAVE_OPAQUE
    }
    else if (allnop)
    {
@@ -661,19 +799,19 @@ void image_add_layers(INT32 args)
 #include "blit_layer_include.h"
 #undef ALL_IS_NOP
    }
-   else if (allmask && allalpha255)
+   else if (allmask && allopaque255)
    {
 #define ALL_HAVE_MASK
-#define ALL_HAVE_ALPHA
+#define ALL_HAVE_OPAQUE
 #include "blit_layer_include.h"
 #undef ALL_HAVE_MASK
-#undef ALL_HAVE_ALPHA
+#undef ALL_HAVE_OPAQUE
    }
-   else if (allalpha255)
+   else if (allopaque255)
    {
-#define ALL_HAVE_ALPHA
+#define ALL_HAVE_OPAQUE
 #include "blit_layer_include.h"
-#undef ALL_HAVE_ALPHA
+#undef ALL_HAVE_OPAQUE
    }
    else if (allmask)
    {

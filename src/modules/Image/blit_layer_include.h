@@ -1,4 +1,4 @@
-/* $Id: blit_layer_include.h,v 1.1 1997/03/20 07:56:05 mirar Exp $ */
+/* $Id: blit_layer_include.h,v 1.2 1997/03/25 06:59:10 mirar Exp $ */
 /* included w/ defines in blit.c, image_add_layer() */
 
 
@@ -13,7 +13,7 @@
 	 struct img_layer *lr=layer;
 	 rgb=*s;
 	 for (l=0; l<layers; l++,lr++)
-	    if (lr->alpha!=0)
+	    if (lr->opaque!=0)
 	    {
 #ifndef ALL_IS_NOP
 	       if (lr->method==LAYER_NOP)
@@ -23,8 +23,8 @@
 		  if (lr->m) /* mask */
 		  {
 #endif
-#ifndef ALL_HAVE_ALPHA_255
-		     if (lr->alpha==255) /* only mask */
+#ifndef ALL_HAVE_OPAQUE_255
+		     if (lr->opaque==255) /* only mask */
 		     {
 #endif
 			if (lr->m->r==255)
@@ -45,19 +45,19 @@
 			   rgb.b=(unsigned char)
 			      ((rgb.b*(255-lr->m->b)
 				+lr->s->b*lr->m->b)*q);
-#ifndef ALL_HAVE_ALPHA_255
+#ifndef ALL_HAVE_OPAQUE_255
 		     }
-		     else /* alpha and mask */
+		     else /* opaque and mask */
 		     {
 			rgb.r=(unsigned char)
-			   ((rgb.r*(255*255-lr->m->r*lr->alpha)
-			     +lr->s->r*lr->m->r*lr->alpha)*q2);
+			   ((rgb.r*(255*255-lr->m->r*lr->opaque)
+			     +lr->s->r*lr->m->r*lr->opaque)*q2);
 			rgb.g=(unsigned char)
-			   ((rgb.g*(255*255-lr->m->g*lr->alpha)
-			     +lr->s->g*lr->m->g*lr->alpha)*q2);
+			   ((rgb.g*(255*255-lr->m->g*lr->opaque)
+			     +lr->s->g*lr->m->g*lr->opaque)*q2);
 			rgb.b=(unsigned char)
-			   ((rgb.b*(255*255-lr->m->b*lr->alpha)
-			     +lr->s->b*lr->m->b*lr->alpha)*q2);
+			   ((rgb.b*(255*255-lr->m->b*lr->opaque)
+			     +lr->s->b*lr->m->b*lr->opaque)*q2);
 		     }
 #endif
 		     lr->m++;
@@ -65,22 +65,22 @@
 		  }
 		  else /* no mask */
 		  {
-#ifndef ALL_HAVE_ALPHA_255
-		     if (lr->alpha==255) /* no alpha (bam!) */
+#ifndef ALL_HAVE_OPAQUE_255
+		     if (lr->opaque==255) /* no opaque (bam!) */
 #endif
 			rgb=lr->s[0];
-#ifndef ALL_HAVE_ALPHA_255
-		     else /* only alpha */
+#ifndef ALL_HAVE_OPAQUE_255
+		     else /* only opaque */
 		     {
 			rgb.r=(unsigned char)
-			   ((rgb.r*(255-lr->alpha)
-			     +lr->s->r*lr->alpha)*q);
+			   ((rgb.r*(255-lr->opaque)
+			     +lr->s->r*lr->opaque)*q);
 			rgb.g=(unsigned char)
-			   ((rgb.g*(255-lr->alpha)
-			     +lr->s->g*lr->alpha)*q);
+			   ((rgb.g*(255-lr->opaque)
+			     +lr->s->g*lr->opaque)*q);
 			rgb.b=(unsigned char)
-			   ((rgb.b*(255-lr->alpha)
-			     +lr->s->b*lr->alpha)*q);
+			   ((rgb.b*(255-lr->opaque)
+			     +lr->s->b*lr->opaque)*q);
 		     }
 #endif
 		  }
@@ -128,8 +128,8 @@
 		  if (lr->m) /* mask */
 		  {
 #endif
-#ifndef ALL_HAVE_ALPHA_255
-		     if (lr->alpha==255) /* only mask */
+#ifndef ALL_HAVE_OPAQUE_255
+		     if (lr->opaque==255) /* only mask */
 		     {
 #endif
 			if (lr->m->r==255)
@@ -150,19 +150,19 @@
 			   rgb.b=(unsigned char)
 			      ((rgb.b*(255-lr->m->b)
 				+res.b*lr->m->b)*q);
-#ifndef ALL_HAVE_ALPHA_255
+#ifndef ALL_HAVE_OPAQUE_255
 		     }
-		     else /* alpha and mask */
+		     else /* opaque and mask */
 		     {
 			rgb.r=(unsigned char)
-			   ((rgb.r*(255*255-lr->m->r*lr->alpha)
-			     +res.r*lr->m->r*lr->alpha)*q2);
+			   ((rgb.r*(255*255-lr->m->r*lr->opaque)
+			     +res.r*lr->m->r*lr->opaque)*q2);
 			rgb.g=(unsigned char)
-			   ((rgb.g*(255*255-lr->m->g*lr->alpha)
-			     +res.g*lr->m->g*lr->alpha)*q2);
+			   ((rgb.g*(255*255-lr->m->g*lr->opaque)
+			     +res.g*lr->m->g*lr->opaque)*q2);
 			rgb.b=(unsigned char)
-			   ((rgb.b*(255*255-lr->m->b*lr->alpha)
-			     +res.b*lr->m->b*lr->alpha)*q2);
+			   ((rgb.b*(255*255-lr->m->b*lr->opaque)
+			     +res.b*lr->m->b*lr->opaque)*q2);
 		     }
 #endif
 		     lr->m++;
@@ -170,22 +170,22 @@
 		  }
 		  else /* no mask */
 		  {
-#ifndef ALL_HAVE_ALPHA_255
-		     if (lr->alpha==255) /* no alpha (bam!) */
+#ifndef ALL_HAVE_OPAQUE_255
+		     if (lr->opaque==255) /* no opaque (bam!) */
 #endif
 			rgb=res;
-#ifndef ALL_HAVE_ALPHA_255
-		     else /* only alpha */
+#ifndef ALL_HAVE_OPAQUE_255
+		     else /* only opaque */
 		     {
 			rgb.r=(unsigned char)
-			   ((rgb.r*(255-lr->alpha)
-			     +res.r*lr->alpha)*q);
+			   ((rgb.r*(255-lr->opaque)
+			     +res.r*lr->opaque)*q);
 			rgb.g=(unsigned char)
-			   ((rgb.g*(255-lr->alpha)
-			     +res.g*lr->alpha)*q);
+			   ((rgb.g*(255-lr->opaque)
+			     +res.g*lr->opaque)*q);
 			rgb.b=(unsigned char)
-			   ((rgb.b*(255-lr->alpha)
-			     +res.b*lr->alpha)*q);
+			   ((rgb.b*(255-lr->opaque)
+			     +res.b*lr->opaque)*q);
 		     }
 #endif
 		  }
