@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xbm.c,v 1.18 2002/10/21 17:06:15 marcus Exp $
+|| $Id: xbm.c,v 1.19 2002/12/07 14:12:05 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 
 #include "global.h"
-RCSID("$Id: xbm.c,v 1.18 2002/10/21 17:06:15 marcus Exp $");
+RCSID("$Id: xbm.c,v 1.19 2002/12/07 14:12:05 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -24,7 +24,6 @@ RCSID("$Id: xbm.c,v 1.18 2002/10/21 17:06:15 marcus Exp $");
 #include "stralloc.h"
 #include "multiset.h"
 #include "pike_types.h"
-#include "rusage.h"
 #include "operators.h"
 #include "fsort.h"
 #include "callback.h"

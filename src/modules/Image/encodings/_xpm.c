@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: _xpm.c,v 1.22 2002/10/21 17:06:14 marcus Exp $
+|| $Id: _xpm.c,v 1.23 2002/12/07 14:11:40 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.22 2002/10/21 17:06:14 marcus Exp $");
+RCSID("$Id: _xpm.c,v 1.23 2002/12/07 14:11:40 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -22,7 +22,6 @@ RCSID("$Id: _xpm.c,v 1.22 2002/10/21 17:06:14 marcus Exp $");
 #include "stralloc.h"
 #include "multiset.h"
 #include "pike_types.h"
-#include "rusage.h"
 #include "operators.h"
 #include "fsort.h"
 #include "callback.h"
