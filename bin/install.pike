@@ -1122,8 +1122,6 @@ void dump_modules()
 #endif
       "--quiet"});
 
-//      werror("%O\n",cmd);
-
     int offset = 1;
     foreach(to_dump/25.0, array delta_dump)
     {
