@@ -19,7 +19,7 @@ int no_gui;
 
 Tools.Install.ProgressBar progress_bar;
 
-/* for progress bar */
+// for progress bar
 int files_to_install;
 int installed_files;
 
@@ -31,12 +31,13 @@ int installed_files;
 int istty_cache;
 int istty()
 {
-#ifdef __NT__
-  return 1;
-#else
   if(!istty_cache)
   {
+#ifdef __NT__
+    istty_cache=1;
+#else
     istty_cache=!!Stdio.stdin->tcgetattr();
+#endif
     if(!istty_cache)
     {
       istty_cache=-1;
@@ -50,7 +51,6 @@ int istty()
     }
   }
   return istty_cache>0;
-#endif
 }
 
 void status1(string fmt, mixed ... args)
@@ -68,14 +68,14 @@ void status1(string fmt, mixed ... args)
   // Ugly thing, but status_clear does not indent in non-tty mode...
   if(!istty())
     write("   ");
-  
-  write("%s\n",sprintf(fmt,@args));
+
+  write(fmt+"\n", @args);
 }
 
 string some_strerror(int err)
 {
   string ret;
-#if constant(strerror)  
+#if constant(strerror)
   ret=strerror(err);
 #endif
   if(!ret || search("unknown error",lower_case(ret))!=-1)
@@ -100,7 +100,6 @@ void fail(string fmt, mixed ... args)
     while(1) { sleep(0.1); GTK.flush(); }
   }
 #endif
-
 
   if(last_len) write("\n");
   werror("%s: %s\n",sprintf(fmt,@args),some_strerror(err));
@@ -219,11 +218,10 @@ int low_install_file(string from,
   installed_files++;
   if(export)
   {
-//    werror("FROM: %O\n",from);
     to_export+=({ from });
     return 1;
   }
-  
+
   to=fakeroot(to);
 
   status("Installing",to);
@@ -243,16 +241,16 @@ int low_install_file(string from,
   if(!Stdio.cp(from,tmpfile))
     fail("copy(%s,%s)",from,tmpfile);
 
-  /* Chown and chgrp not implemented yet */
+  // Chown and chgrp not implemented yet
   chmod(tmpfile,mode);
 
-  /* Need to rename the old file to .old */
+  // Need to rename the old file to .old
   if(file_stat(to))
   {
     rm(to+".old"); // Ignore errors
 #if constant(hardlink)
     if( catch { hardlink(to,to+".old"); })
-#endif 
+#endif
       mv(to,to+".old");
   }
   if(!mv(tmpfile,to))
@@ -313,7 +311,6 @@ void install_dir(string from, string to,int dump)
 
   installed_files++;
   mkdirhier(to);
-//  werror("\nFOO (from=%s, cwd=%s)\n",from,getcwd());
   foreach(get_dir(from),string file)
   {
     if(file=="CVS") continue;
@@ -355,7 +352,6 @@ void install_header_files(string from, string to)
 mapping vars=([]);
 
 object reg;
-string regexp;
 
 string regquote(string s)
 {
@@ -377,17 +373,18 @@ string fakeroot(string s)
   if(!vars->fakeroot) return s;
   if(!reg)
   {
-    reg=Regexp(regexp=sprintf("^([^/])%{|(%s)%}",
-			      Array.map(
-				({
-				  getcwd(),
-				    vars->LIBDIR_SRC,
-				    vars->SRCDIR,
-				    vars->TMP_BINDIR,
-				    vars->MANDIR_SRC,
-				    vars->TMP_LIBDIR,
-				    vars->fakeroot,
-				    }),regquote)));
+    reg=Regexp(sprintf("^([^/])%{|(%s)%}",
+		       Array.map(
+				 ({
+				   getcwd(),
+				   vars->LIBDIR_SRC,
+				   vars->SRCDIR,
+				   vars->TMP_BINDIR,
+				   vars->BASEDIR,
+				   vars->MANDIR_SRC,
+				   vars->TMP_LIBDIR,
+				   vars->fakeroot,
+				 }),regquote)));
   }
   if(reg->match(s)) return s;
   return vars->fakeroot+s;
@@ -445,6 +442,7 @@ void do_export()
   string tmpdir="~piketmp";
 
   mapping translator = ([
+    TRANSLATE(vars->BASEDIR,tmpdir),
     TRANSLATE(vars->LIBDIR_SRC,tmpdir+"/lib"),
     TRANSLATE(vars->SRCDIR,tmpdir+"/src"),
     TRANSLATE(vars->TMP_BINDIR,tmpdir+"/bin"),
@@ -452,8 +450,8 @@ void do_export()
     TRANSLATE(vars->TMP_LIBDIR,tmpdir+"/build/lib"),
     "":tmpdir+"/build",
     ]);
-    
-  
+
+
   array(string) translated_names = Array.map(to_export, translate, translator);
   array(string) dirs=Array.uniq(Array.map(translated_names, dirname));
   while(1)
@@ -466,7 +464,8 @@ void do_export()
   sort(dirs);
 
   foreach(dirs, string dir) p->write("d%4c%s",strlen(dir),dir);
-  foreach(Array.transpose(  ({ to_export, translated_names }) ), [ string file, string file_name ])
+  foreach(Array.transpose(  ({ to_export, translated_names }) ),
+	  [ string file, string file_name ])
     {
       status("Adding",file);
       if (string f=Stdio.read_file(file)) {
@@ -480,7 +479,7 @@ void do_export()
       }
     }
 
-  /* FIXME, support $INSTALL_SCRIPT (or similar) */
+  // FIXME, support $INSTALL_SCRIPT (or similar)
 
 #define TRVAR(X) translate(combine_path(vars->X,"."), translator)
 
@@ -490,7 +489,7 @@ void do_export()
     "PIKE_INCLUDE_PATH="+TRVAR(LIBDIR_SRC)+"/include",
     });
 
-    
+
   foreach(env, string e)
     p->write("e%4c%s",strlen(e),e);
 
@@ -505,17 +504,19 @@ void do_export()
     RELAY(SRCDIR)
     RELAY(TMP_BINDIR)
     RELAY(MANDIR_SRC)
+    RELAY(BASEDIR)
     " TMP_BUILDDIR="+translate("", translator)+
     (((vars->PIKE_MODULE_RELOC||"") != "")? " PIKE_MODULE_RELOC=1":"")+
     " $" // $ = @argv
     ;
-  
+
   p->write("s%4c%s",strlen(cmd),cmd);
 
   array(string) to_delete=translated_names + ({translate("pike.tmp",translator)});
   to_delete=Array.uniq(to_delete);
   to_delete+=reverse(dirs);
-  /* Generate cleanup */
+
+  // Generate cleanup
   foreach(to_delete, string del)
     p->write("D%4c%s",strlen(del),del);
 
@@ -533,7 +534,7 @@ void do_export()
 
   cd("..");
 
-  string tmpname=sprintf("PtmP%07x",random(0xfffffff));
+  string tmpname = sprintf("PtmP%07x",random(0xfffffff));
 
   status("Creating","script glue");
 
@@ -601,30 +602,28 @@ done
   chmod(tmpname+".x",0755);
   string script=sprintf("#!/bin/sh\n"
 			"tar xf \"$0\" %s.x\n"
-			"exec ./%s.x \"$0\" \"$@\"\n",tmpname,tmpname,tmpname);
+			"exec ./%s.x \"$0\" \"$@\"\n", tmpname, tmpname, tmpname);
   if(strlen(script) >= 100)
   {
     werror("Script too long!!\n");
     exit(1);
   }
 
-  array(string) parts=(script/"/");
+  array(string) parts = script/"/";
   mkdirhier( parts[..sizeof(parts)-2]*"/");
   Stdio.write_file(script,"");
 
-  to_export=Array.map(to_export,
-	      lambda(string s)
-	      {
-		return combine_path(export_base_name+".dir",s);
-	      });
-
+  to_export = map(to_export,
+		  lambda(string s) {
+		    return combine_path(export_base_name+".dir", s);
+		  } );
 
   string tmpmsg=".";
 
   string tararg="cf";
-  foreach(to_export/50.0, array files_to_tar)
+  foreach(to_export/25.0, array files_to_tar)
     {
-      status("Creating",tmpname+".tar",tmpmsg);
+      status("Creating", tmpname+".tar", tmpmsg);
       tmpmsg+=".";
       Process.create_process(({"tar",tararg,tmpname+".tar"})+ files_to_tar)
 	->wait();
@@ -634,15 +633,15 @@ done
   status("Filtering to root/root ownership", tmpname+".tar");
   tarfilter(tmpname+".tar");
 
-  status("Creating",tmpname+".tar.gz");
+  status("Creating", tmpname+".tar.gz");
 
   Process.create_process(({"gzip","-9",tmpname+".tar"}))->wait();
 
-  to_export=({script,tmpname+".x",tmpname+".tar.gz"});
+  to_export = ({ script, tmpname+".x", tmpname+".tar.gz" });
 
-  status("Creating",export_base_name);
+  status("Creating", export_base_name);
 
-  Process.create_process( ({ "tar","cf", export_base_name})+ to_export)
+  Process.create_process( ({ "tar","cf", export_base_name }) + to_export )
     ->wait();
 
   status("Filtering to root/root ownership", export_base_name);
@@ -653,10 +652,12 @@ done
   status("Cleaning up","");
 
   Process.create_process( ({ "rm","-rf",
-			       export_base_name+".dir",
-			       export_base_name+".x"
-			       }) ) ->wait();
-
+			     export_base_name+".dir",
+			     export_base_name+".x",
+			     tmpname+".x",
+			     tmpname+".tar.gz",
+			     parts[0],
+  }) ) ->wait();
 
 #endif
   status1("Export done");
@@ -717,7 +718,8 @@ void selectfile(object entry, object button)
   object selector;
   selector=GTK.FileSelection("Pike installation prefix");
   selector->set_filename(entry->get_text());
-  selector->ok_button()->signal_connect("clicked",set_filename, ({selector, entry}) );
+  selector->ok_button()->signal_connect("clicked", set_filename,
+					({ selector, entry }) );
   selector->cancel_button()->signal_connect("clicked",destruct,selector);
   selector->show();
 }
@@ -748,7 +750,7 @@ int next()
   install_type="--new_style";
 
   destruct(table1);
-  
+
   vbox2->PS(vbox3=GTK.Vbox(0,0)->show(),1,1,0);
 
   vbox3->PS(label7=GTK.Label("---head---")->show(),0,0,0);
@@ -779,7 +781,8 @@ void begin_wizard(array(string) argv)
 	       ->set_shadow_type(GTK.SHADOW_IN)
 	       ->set_border_width(11)
 	       ->add(hbox1=GTK.Hbox(0,0)
-		     ->PS(GTK.Pixmap(GTK.Util.load_image(combine_path(vars->SRCDIR,"install-welcome"))->img),0,0,0)
+		     ->PS(GTK.Pixmap(GTK.Util.load_image(combine_path(vars->SRCDIR,
+								      "install-welcome"))->img),0,0,0)
 		     ->PS(vbox2=GTK.Vbox(0,0),1,1,0)
 		       ),1,1,0)
 	  ->PS(hbuttonbox1=GTK.HbuttonBox()
@@ -788,7 +791,6 @@ void begin_wizard(array(string) argv)
 	       ->add(button2=GTK.Button("Install Pike >>"))
 	       ,0,1,0));
 
-	  
   vbox2->PS(label3=GTK.Label("Welcome to the interactive "+version()+" installer.")
 	    ->set_justify(GTK.JUSTIFY_CENTER),1,1,0)
     ->PS(table1=GTK.Table(3,2,0)
@@ -812,7 +814,8 @@ void begin_wizard(array(string) argv)
 
   entry1->set_text(prefix);
   entry2->set_text(vars->pike_name ||
-		   combine_path(vars->exec_prefix||combine_path(prefix, "bin"),"pike"));
+		   combine_path(vars->exec_prefix||combine_path(prefix, "bin"),
+				"pike"));
 
   entry1->signal_connect("focus_out_event",update_entry2,0);
   button1->signal_connect("pressed",cancel,0);
@@ -839,10 +842,8 @@ string install_type="--interactive";
 
 int pre_install(array(string) argv)
 {
-  // werror("pre_install(({%{%O, %}}))\r\n", argv);
-  
-  prefix=vars->prefix || "/usr/local";
-  
+  prefix = vars->prefix || "/usr/local";
+
   if(!vars->TMP_BINDIR)
     vars->TMP_BINDIR=combine_path(vars->SRCDIR,"../bin");
 
@@ -866,19 +867,19 @@ int pre_install(array(string) argv)
       catch  {
 	if(!no_gui)
 	{
-#ifndef __NT__ /* We are using GTK on Win32!! no DISPLAY required */
+#ifndef __NT__ // We are using GTK on Win32!! no DISPLAY required
 	  if(getenv("DISPLAY"))
 #endif
 	  {
 	    begin_wizard(argv);
-	    return -1; 
+	    return -1;
 	  }
 	}
       };
 #endif
 
       status1("");
-  
+
       interactive=Tools.Install.Readline();
       interactive->set_cwd("../");
 
@@ -895,11 +896,11 @@ int pre_install(array(string) argv)
 	     "   the <tab> key to perform filename completion. You will be able to\n"
 	     "   confirm your settings before the installation begins.\n")
 	    );
-      
+
       string confirm, bin_path = vars->pike_name;
       do {
 	write("\n");
-	
+
 //	werror("PREFIX: %O\n",prefix);
 //	if(!vars->prefix)
 	prefix=interactive->edit_directory(prefix,"Install prefix: ");
@@ -907,7 +908,7 @@ int pre_install(array(string) argv)
 
 	if(!vars->pike_name)
 	{
-#if constant(symlink)	
+#if constant(symlink)
 	  bin_path=interactive->edit_filename
 		   (combine_path(vars->exec_prefix ||
 				 combine_path(prefix, "bin"),
@@ -920,7 +921,7 @@ int pre_install(array(string) argv)
 	}
 
 	bin_path = interactive->absolute_path(bin_path);
-	
+
 	write("\n");
 	confirm =
 	  lower_case(interactive->
@@ -935,39 +936,38 @@ int pre_install(array(string) argv)
       } while(!(confirm == "" || confirm == "y"));
 
       write("\n");
-      
+
       vars->pike_name = bin_path;
-      
+
       destruct(interactive);
       install_type="--new-style";
-//      trace(2);
       continue;
 
     case "--export":
-      string ver=replace(replace(version()," ","-"),"-release-",".");
+      string ver = replace( version(), ([ " ":"-", " release ":"." ]) );
 #if constant(uname)
-      mixed u=uname();
-      if(u->sysname=="AIX")
+      mapping(string:string) u = uname();
+      if( u->sysname=="AIX" )
       {
-	export_base_name=sprintf("%s-%s-%s.%s",
-				 ver,
-				 uname()->sysname,
-				 uname()->version,
-				 uname()->release);
-      }else{
-	export_base_name=sprintf("%s-%s-%s-%s",
-				 ver,
-				 uname()->sysname,
-				 uname()->release,
-				 uname()->machine);
+	export_base_name = sprintf("%s-%s-%s.%s",
+				   ver,
+				   u->sysname,
+				   u->version,
+				   u->release);
       }
-      export_base_name=replace(export_base_name,
-			       ({ "/", " " }), ({ "-", "-" }) );
+      else {
+	export_base_name = sprintf("%s-%s-%s-%s",
+				   ver,
+				   u->sysname,
+				   u->release,
+				   u->machine);
+      }
+      export_base_name = replace(export_base_name, ([ "/":"-", " ":"-" ]));
 #else
-      export_base_name=ver;
+      export_base_name = ver;
 #endif
 
-      status1("Building export %s\n",export_base_name);
+      status1("Building export %s\n", export_base_name);
 
 #ifndef __NT__
       mkdirhier(export_base_name+".dir");
@@ -991,12 +991,13 @@ int pre_install(array(string) argv)
 
       export=1;
       to_export+=({ combine_path(vars->TMP_BINDIR,"install.pike") });
-      
+
     case "":
     default:
     case "--new-style":
       if(!(lnk=vars->pike_name) || !strlen(lnk)) {
-	lnk=combine_path(vars->exec_prefix || combine_path(vars->prefix, "bin"),"pike");
+	lnk = combine_path(vars->exec_prefix || combine_path(vars->prefix, "bin"),
+			   "pike");
 	old_exec_prefix=vars->exec_prefix; // to make the directory for pike link
       }
       prefix = combine_path("/", getcwd(), prefix, "pike",
@@ -1021,26 +1022,27 @@ void make_master(string dest, string master, string lib_prefix)
   string master_data=Stdio.read_file(master);
   master_data=replace(master_data,"¤lib_prefix¤",replace(lib_prefix,"\\","\\\\"));
   if((vars->PIKE_MODULE_RELOC||"") != "")
-    master_data=replace(master_data,"#undef PIKE_MODULE_RELOC","#define PIKE_MODULE_RELOC 1");
+    master_data = replace(master_data, "#undef PIKE_MODULE_RELOC",
+			  "#define PIKE_MODULE_RELOC 1");
   Stdio.write_file(combine_path(vars->TMP_LIBDIR,"master.pike"),master_data);
   status("Finalizing",master,"done");
 }
 
-/* dump modules (and master) */
+// dump modules (and master)
 void dump_modules()
 {
   string master=combine_path(lib_prefix,"master.pike");
   mixed s1=file_stat(master);
   mixed s2=file_stat(master+".o");
-  mapping(string:mapping(string:string)) options = ([ 
+  mapping(string:mapping(string:string)) options = ([
     "env":getenv()-([
       "PIKE_PROGRAM_PATH":"",
       "PIKE_MODULE_PATH":"",
       "PIKE_INCLUDE_PATH":"",
       "PIKE_MASTER":"",
-      ]) ]); 
-  
-  
+      ]) ]);
+
+
   if(!s1 || !s2 || s1[3]>=s2[3] || redump_all)
   {
      object p=
@@ -1058,11 +1060,11 @@ void dump_modules()
   if(sizeof(to_dump))
   {
     rm("dumpmodule.log");
-    
+
     foreach(to_dump, string mod)
       rm(mod+".o");
-      
-    /* Dump 25 modules at a time */
+
+    // Dump 25 modules at a time
 
     array cmd=({fakeroot(pike) });
 
@@ -1072,13 +1074,14 @@ void dump_modules()
 	  sprintf("-DPIKE_FAKEROOT_OMIT=%O",
 		  Array.map( ({
 		    getcwd(),
-		      vars->LIBDIR_SRC,
-		      vars->SRCDIR,
-		      vars->TMP_BINDIR,
-		      vars->MANDIR_SRC,
-		      vars->TMP_LIBDIR,
-		      vars->fakeroot,
-		      }), globify)*":"),
+		    vars->LIBDIR_SRC,
+		    vars->SRCDIR,
+		    vars->TMP_BINDIR,
+		    vars->MANDIR_SRC,
+		    vars->TMP_LIBDIR,
+		    vars->BASEDIR,
+		    vars->fakeroot,
+		  }), globify)*":"),
 	  "-m",combine_path(vars->TMP_LIBDIR,"master.pike")
 	  });
 
@@ -1097,7 +1100,7 @@ void dump_modules()
       mixed err = catch {
 	object p=
 	  Process.create_process(cmd +
-				 ( istty() ? 
+				 ( istty() ?
 				   ({
 				     sprintf("--progress-bar=%d,%d",
 					     offset, sizeof(to_dump))
@@ -1117,35 +1120,35 @@ void dump_modules()
 
       offset += sizeof(delta_dump);
     }
-      
+
     if(progress_bar)
-      /* The last files copied does not really count (should
-	 really be a third phase)... */
+      // The last files copied does not really count (should
+      // really be a third phase)...
       progress_bar->set_phase(1.0, 0.0);
-    
+
     status_clear(1);
   }
 }
 
 void do_install()
 {
-  // werror("do_install()\r\n");
   pike=combine_path(exec_prefix,"pike");
   if(!export)
   {
     status1("Installing Pike in %s, please wait...\n", fakeroot(prefix));
   }
   catch {
-    files_to_install = (int)Stdio.read_file(combine_path(vars->TMP_BUILDDIR,"num_files_to_install"));
-    
+    files_to_install = (int)Stdio.read_file(combine_path(vars->TMP_BUILDDIR,
+							 "num_files_to_install"));
+
     if(!export && files_to_install)
       progress_bar =
 	Tools.Install.ProgressBar("Installing", 0, files_to_install, 0.0, 0.2);
   };
 
-  mixed err=catch {
+  mixed err = catch {
 
-    /* Ugly way to detect NT installation */
+    // Ugly way to detect NT installation
     string pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike");
     if(Stdio.file_size(pike_bin_file) < 10000 &&
        file_stat(pike_bin_file+".exe"))
@@ -1155,25 +1158,26 @@ void do_install()
     }
 
     if(export)
-    {
-      to_export+=({pike_bin_file});
-    }else{
+      to_export += ({ pike_bin_file });
+    else {
       status("Finalizing",pike_bin_file);
       string pike_bin=Stdio.read_file(pike_bin_file);
-      int pos=search(pike_bin,MASTER_COOKIE);
-      
+      int pos=search(pike_bin, MASTER_COOKIE);
+
       if(pos>=0)
       {
 	status("Finalizing",pike_bin_file,"...");
-	Stdio.write_file(pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike.tmp"),pike_bin);
+	pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike.tmp");
+	Stdio.write_file(pike_bin_file, pike_bin);
 	Stdio.File f=Stdio.File(pike_bin_file,"rw");
 	f->seek(pos+strlen(MASTER_COOKIE));
 	f->write(combine_path(lib_prefix,"master.pike"));
 	f->close();
 	status("Finalizing",pike_bin_file,"done");
-      }else{
-	werror("Warning! Failed to finalize master location!\n");
       }
+      else
+	werror("Warning! Failed to finalize master location!\n");
+
       if(install_file(pike_bin_file,pike)) redump_all=1;
     }
 
@@ -1187,43 +1191,55 @@ void do_install()
       install_file(combine_path(vars->TMP_BUILDDIR, "pike.pdb"),
 		   combine_path(exec_prefix, "pike.pdb"));
 #endif
-    install_file(combine_path(vars->TMP_BUILDDIR,"rsif"),combine_path(exec_prefix,"rsif"));
-    install_file(combine_path(vars->TMP_BUILDDIR,"hilfe"),combine_path(exec_prefix,"hilfe"));
+
+    install_file(combine_path(vars->TMP_BUILDDIR,"rsif"),
+		 combine_path(exec_prefix,"rsif"));
+    install_file(combine_path(vars->TMP_BUILDDIR,"hilfe"),
+		 combine_path(exec_prefix,"hilfe"));
     install_file(combine_path(vars->TMP_BUILDDIR,"pike.syms"),
 		 pike+".syms");
+
     string master=combine_path(vars->LIBDIR_SRC,"master.pike.in");
-    
+
     if(export)
     {
       to_export+=({master,
 		   combine_path(vars->TMP_BUILDDIR,"master.pike"),
-		   combine_path(vars->SRCDIR,"COPYING"),
 		   combine_path(vars->SRCDIR,"install-welcome"),
 		   combine_path(vars->SRCDIR,"dumpmaster.pike"),
 		   combine_path(vars->SRCDIR,"dumpmodule.pike")
       });
-    }else{
-      make_master(combine_path(vars->TMP_LIBDIR,"master.pike"), master, 
-		  lib_prefix);
+
+      void basefile(string x) {
+	string from = combine_path(vars->BASEDIR,x);
+	if(!Stdio.cp(from, x))
+	  werror("Could not copy %s to %s.\n", from ,x);
+	to_export += ({ x });
+      };
+
+      basefile("ANNOUNCE");
+      basefile("COPYING");
+      basefile("COPYRIGHT");
     }
-    
+    else
+      make_master(combine_path(vars->TMP_LIBDIR,"master.pike"), master,
+		  lib_prefix);
+
     install_dir(vars->TMP_LIBDIR,lib_prefix,1);
     install_dir(vars->LIBDIR_SRC,lib_prefix,1);
-    
+
     install_header_files(vars->SRCDIR,include_prefix);
     install_header_files(combine_path(vars->SRCDIR,"code"),
 			 combine_path(include_prefix,"code"));
     install_header_files(vars->TMP_BUILDDIR,include_prefix);
-    
+
     install_file(combine_path(vars->TMP_BUILDDIR,"modules/dynamic_module_makefile"),
 		 combine_path(include_prefix,"dynamic_module_makefile"));
     install_file(combine_path(vars->TMP_BUILDDIR,"aclocal"),
 		 combine_path(include_prefix,"aclocal.m4"));
-    
+
     if(file_stat(vars->MANDIR_SRC))
     {
-//      trace(9);
-//      _debug(5);
       install_dir(vars->MANDIR_SRC,combine_path(man_prefix,"man1"),0);
     }
   };
@@ -1246,12 +1262,12 @@ void do_install()
     do_export();
   }else{
     dump_modules();
-    
+
     // Delete any .pmod files that would shadow the .so
     // files that we just installed. For a new installation
     // this never does anything. -Hubbe
     Array.map(files_to_delete - files_to_not_delete,rm);
-    
+
 #if constant(symlink)
     if(lnk)
     {
@@ -1281,8 +1297,7 @@ void do_install()
 
 int main(int argc, array(string) argv)
 {
-  // werror("main(%O, ({%{%O, %}}))...\r\n", argc, argv);
-  foreach(Getopt.find_all_options(argv,aggregate(
+  foreach(Getopt.find_all_options(argv, ({
     ({"help",Getopt.NO_ARG,({"-h","--help"})}),
     ({"notty",Getopt.NO_ARG,({"-t","--notty"})}),
     ({"--interactive",Getopt.NO_ARG,({"-i","--interactive"})}),
@@ -1290,7 +1305,7 @@ int main(int argc, array(string) argv)
     ({"no-gui",Getopt.NO_ARG,({"--no-gui","--no-x"})}),
     ({"--export",Getopt.NO_ARG,({"--export"})}),
     ({"--traditional",Getopt.NO_ARG,({"--traditional"})}),
-    )),array opt)
+    }) ),array opt)
     {
       switch(opt[0])
       {
@@ -1317,18 +1332,28 @@ int main(int argc, array(string) argv)
     if(sscanf(foo,"%s=%s",string var, string value)==2)
       vars[var]=value;
 
-  /* Some magic for the fakeroot stuff */
-  string tmp=vars->fakeroot;
-  m_delete(vars,"fakeroot");
+  if(vars->BASEDIR) {
+    if(vars->BASEDIR[-1]!='/') vars->BASEDIR += "/";
+    if(!vars->LIBDIR_SRC) vars->LIBDIR_SRC=vars->BASEDIR+"lib";
+    if(!vars->MANDIR_SRC) vars->MANDIR_SRC=vars->BASEDIR+"man";
+    if(!vars->SRCDIR) vars->SRCDIR=vars->BASEDIR+"src";
+  }
+  else {
+    // Do some guessing...
+    array split = vars->SRCDIR/"/";
+    vars->BASEDIR = split[..sizeof(split)-2]*"/"+"/";
+  }
+
+  // Some magic for the fakeroot stuff
+  string tmp = m_delete(vars, "fakeroot");
   if(tmp && tmp!="")
   {
     if(tmp[-1]=='/' || tmp[-1]=='\\')
       tmp=tmp[..sizeof(tmp)-2];
 
-    /* Create the fakeroot if it doesn't exist
-    /* This must be done with fakeroot unset since
-     * it would create fakeroot/fakeroot otherwise
-     */
+    // Create the fakeroot if it doesn't exist
+    // This must be done with fakeroot unset since
+    // it would create fakeroot/fakeroot otherwise
     mkdirhier(tmp);
     vars->fakeroot=tmp;
   }
