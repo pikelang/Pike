@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.257 2004/09/22 13:40:27 mast Exp $
+|| $Id: gc.c,v 1.258 2004/09/22 18:08:13 mast Exp $
 */
 
 #include "global.h"
@@ -2913,9 +2913,8 @@ size_t do_gc(void *ignored, int explicit_call)
 #endif
     Pike_in_gc = GC_PASS_ZAP_WEAK;
     /* Zap weak references from external to internal things. That
-     * doesn't occur very often; only when something have both
-     * external weak refs and nonweak cyclic refs from internal
-     * things. */
+     * occurs when something has both external weak refs and nonweak
+     * cyclic refs from internal things. */
     gc_zap_ext_weak_refs_in_mappings();
     gc_zap_ext_weak_refs_in_arrays();
     gc_zap_ext_weak_refs_in_multisets();
