@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.746 2004/11/14 13:04:04 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.747 2004/11/14 18:35:24 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7733,6 +7733,40 @@ FOO ("\
 ");
 return __LINE__;
 ]], 6);
+
+test_any([[
+#define ab\u0063
+#ifdef \u0061\
+bc
+return 1;
+#else
+return 0;
+#endif
+]], 1)
+
+test_any([[
+#define \U00010330(\U00010331) #\U00010331
+#define \U00010332(\U00010333) \U00010330 (\U00010333)
+#define \U00010334 qth
+return \U00010332 (\U00010334)
+]], "qth")
+test_any([[
+#define \U00010330(\U00010331) #\U00010331
+#define \U00010332(\U00010333) \U00010330 (\U00010333)
+#define \U00010334 \u0220qt\u0222h
+return \U00010332 (\U00010334)
+]], "\x220qt\x222h")
+test_any([[
+#define \U00010330(\U00010331) #\U00010331
+#define \U00010332(\U00010333) \U00010330 (\U00010333)
+#define \U00010334 \U00010330qt\u0222h
+return \U00010332 (\U00010334)
+]], "\x10330qt\x222h")
+test_program([[
+  typedef \u0069n\u0074 \u02222;
+  \u0222\u0032 my_\u0223 (\u02222 \u0220) {re\u0074urn \u0220+1\u0031;}
+  int a() {return m\u0079_\u0223 (17) == 28;}
+]])
 
 test_eq([[compile_string(#"
 #define Y(y) #y
