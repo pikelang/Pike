@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.264 2001/07/02 22:12:41 mast Exp $
+# $Id: Makefile.in,v 1.265 2001/07/03 07:51:45 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -439,15 +439,15 @@ module_testsuites:
 	( cd modules && $(MAKE) $(MAKE_FLAGS) testsuites )
 	( cd post_modules && $(MAKE) $(MAKE_FLAGS) testsuites )
 
-just_verify: module_testsuites testsuite master_stamp
+just_verify: module_testsuites testsuite master-stamp
 	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike $$args
 
-tinstall: aclocal master_stamp aclocal
+tinstall: aclocal master-stamp aclocal
 	-rm -rf test-install
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike $(INSTALLARGS) pike_name="test-pike" lib_prefix="$(lib_prefix)" TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" man_prefix="$(man_prefix)" fakeroot="$(buildroot)"
 
-just-tinstall: aclocal master_stamp aclocal
+just-tinstall: aclocal master-stamp aclocal
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike $(INSTALLARGS) pike_name="test-pike" lib_prefix="$(lib_prefix)" TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" man_prefix="$(man_prefix)" fakeroot="$(buildroot)"
 
 
@@ -456,7 +456,7 @@ verify: module_testsuites testsuite tinstall
 	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
 	if test -f ./test-pike ; then ./test-pike -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; else sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKE_OPTS) $(TMP_BINDIR)/test_pike.pike $$args ; fi
 
-verify_installed: module_testsuites testsuite master_stamp
+verify_installed: module_testsuites testsuite master-stamp
 	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
 	$(exec_prefix)/pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args
 
@@ -465,12 +465,12 @@ check: verify
 sure: verify
 
 # verify / debug verbose
-verbose_verify: module_testsuites testsuite master_stamp
+verbose_verify: module_testsuites testsuite master-stamp
 	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike --verbose $$args
 
 # verify & debug VERBOSE
-gdb_verify: module_testsuites testsuite master_stamp
+gdb_verify: module_testsuites testsuite master-stamp
 	@echo >.gdbinit handle SIGFPE nostop noprint pass
 	@echo >>.gdbinit handle SIGUSR1 nostop noprint pass
 	@echo >>.gdbinit handle SIGUSR2 nostop noprint pass
