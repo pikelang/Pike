@@ -24,3 +24,13 @@ _WhiteFish.ResultSet test_query(Search.Database.MySQL db, array(string) words)
 				   prox_ranking,
 				   blobfeeder(db, map(words,hash) ));
 }
+
+_WhiteFish.ResultSet test_query2(Search.Database.MySQL db, array(string) words)
+{
+  array(int) field_ranking=allocate(66);
+  field_ranking[0]=17;
+  field_ranking[2]=47;
+  return _WhiteFish.do_query_phrase(map(words, hash),
+				    field_ranking,
+				    blobfeeder(db, map(words,hash) ));
+}
