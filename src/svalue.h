@@ -75,8 +75,12 @@ struct svalue
 #define BIT_INT (1<<T_INT)
 #define BIT_FLOAT (1<<T_FLOAT)
 
+/* Used to signifiy that this array might not be finished yet */
+/* garbage collect uses this */
+#define BIT_UNFINISHED (1<<15)
+
 #define BIT_NOTHING 0
-#define BIT_MIXED 0xffff
+#define BIT_MIXED 0x7fff
 #define BIT_BASIC (BIT_INT|BIT_FLOAT|BIT_STRING)
 #define BIT_COMPLEX (BIT_ARRAY|BIT_LIST|BIT_OBJECT|BIT_PROGRAM|BIT_MAPPING)
 
