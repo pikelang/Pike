@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.193 2001/12/19 22:01:01 mast Exp $");
+RCSID("$Id: object.c,v 1.194 2002/01/11 17:55:01 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -344,6 +344,17 @@ PMOD_EXPORT struct object *parent_clone_object(struct program *p,
   call_pike_initializers(o,args);
   UNSET_ONERROR(tmp);
   return o;
+}
+
+PMOD_EXPORT struct object *clone_object_from_object(struct object *o, int args)
+{
+  if (o->prog->flags & PROGRAM_USES_PARENT)
+    return parent_clone_object(o->prog,
+			       PARENT_INFO(o)->parent,
+			       PARENT_INFO(o)->parent_identifier,
+			       args);
+  else
+    return clone_object(o->prog, args);
 }
 
 /* BEWARE: This function does not call create() or __INIT() */
