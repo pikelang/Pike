@@ -3,7 +3,7 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: Yabu.pike,v 1.1 2000/07/02 20:16:55 kinkie Exp $
+ * $Id: Yabu.pike,v 1.2 2000/07/05 21:38:56 kinkie Exp $
  *
  * Settings will be added later.
  */
@@ -22,11 +22,11 @@ class Data {
   int _size=0;
   string _key=0;
   mixed _data=0;
-  private Gdbm.gdbm db, metadb;
+  private Yabu.table db, metadb;
   
   int size() {
     if (_size) return _size;
-    _size=recursive_low_size(data());
+    _size=sizeof(encode_value(data()));
     return _size;
   }
   
@@ -46,6 +46,7 @@ class Data {
     metadb->set(_key,metadata_dump());
   }
 
+  //FIXME
   //restores a dumped object
   //basically a kind of second-stage constructor for objects retrieved
   //from the db.
@@ -66,20 +67,7 @@ class Data {
     sync();
   }
   
-  //initializes a new object with a fresh value. It's used only
-  //for the first instantiation, after that undump is to be used.
-  //The data is not immediately dumped to the DB, as the destructor
-  //will take care of that.
-  Data init(mixed value, void|int expires, void|float 
-            preciousness) {
-     atime=ctime=time(1);
-     if (expires) etime=expires;
-     if (preciousness) cost=preciousness;
-     sync();
-     db->set(_key,value);
-     return this_object();
-  }
-  
+  //FIXME
   void create(string key, Gdbm.gdbm data_db, Gdbm.gdbm metadata_db) {
     _key=key;
      db=data_db;
@@ -123,9 +111,20 @@ void set(string key, mixed value,
      werror("can't store value\n"); //TODO: use crumbs
      return 0;
    }
-   Data(key,db,metadb)->init(value,expire_time,preciousness);
+   int tm=time(1);
+   mapping meta;
+   db->set(key,value);
+   //maybe we could lazy-ify this
+   meta=(["size":sizeof(encode_value(value)), "atime":tm,"ctime":tm]);
+   if (expire_time) meta->etime=expire_time;
+   if (preciousness||!zero_type(preciousness))
+     meta->cost=preciousness;
+   else
+     meta->cost=1.0;
+   metadb->set(key,meta);
 }
 
+//FIXME
 int(0..0)|Cache.Data get(string key,void|int notouch) {
   mixed tmp=metadb->get(key);
   if (tmp) {
@@ -145,8 +144,7 @@ void aget(string key,
   callback(key,get(key));
 }
 
-Cache.Data|int(0..0) delete(string key, void|int(0..1) hard) {
-  Data rv=(hard?0:get(key,1));
+void delete(string key, void|int(0..1) hard) {
   db->delete(key);
   metadb->delete(key);
   deletion_ops++;
@@ -154,7 +152,6 @@ Cache.Data|int(0..0) delete(string key, void|int(0..1) hard) {
     yabudb->reorganize();
     deletion_ops=0;
   }
-  return rv;
 }
 
 void create(string path) {
