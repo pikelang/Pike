@@ -9,7 +9,7 @@
 #include "error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: callback.c,v 1.17 1999/05/02 08:11:33 hubbe Exp $");
+RCSID("$Id: callback.c,v 1.18 1999/05/08 00:29:00 hubbe Exp $");
 
 struct callback_list fork_child_callback;
 
@@ -183,7 +183,8 @@ struct callback *debug_add_to_callback(struct callback_list *lst,
   l->arg=arg;
   l->free_func=free_func;
 
-  DO_IF_DMALLOC( if(l->free_func == free) l->free_func=dmalloc_free; )
+  DO_IF_DMALLOC( if(l->free_func == (callback_func)free)
+		 l->free_func=(callback_func)dmalloc_free; )
 
   l->next=lst->callbacks;
   lst->callbacks=l;
