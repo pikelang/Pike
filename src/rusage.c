@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.34 2003/02/11 20:03:41 mast Exp $
+|| $Id: rusage.c,v 1.35 2003/02/23 17:50:52 grubba Exp $
 */
 
 #include "global.h"
@@ -17,19 +17,22 @@
 #include <errno.h>
 #include "pike_rusage.h"
 
-RCSID("$Id: rusage.c,v 1.34 2003/02/11 20:03:41 mast Exp $");
+RCSID("$Id: rusage.c,v 1.35 2003/02/23 17:50:52 grubba Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
+#endif
+#ifdef HAVE_TIME_H
+#include <time.h>
+#endif
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
 #endif
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
-#ifdef HAVE_TIME_H
-#include <time.h>
 #endif
 
 #ifndef CONFIGURE_TEST
