@@ -1,4 +1,4 @@
-mapping blob_done=([]);
+static mapping blob_done=([]);
 
 static function(int:string) blobfeeder(Search.Database.Base db, array word_ids)
 {
@@ -247,33 +247,4 @@ Search.ResultSet execute(Search.Database.Base db,
     }
 
   } (db, defaultRanking)->execute(q);
-}
-
-
-/* Test stuff */
-Search.ResultSet test_query(Search.Database.Base db, array(string) words)
-{
-  array(int) field_ranking=allocate(66);
-  field_ranking[0]=17;
-  field_ranking[2]=147;
-
-  array(int) prox_ranking=allocate(8);
-  for(int i=0; i<8; i++)
-    prox_ranking[i]=8-i;
-
-  return _WhiteFish.do_query_and(map(words, hash),
-				   field_ranking,
-				   prox_ranking,
-				   8,
-				   blobfeeder(db, map(words,hash) ));
-}
-
-_WhiteFish.ResultSet test_query2(Search.Database.Base db, array(string) words)
-{
-  array(int) field_ranking=allocate(66);
-  field_ranking[0]=17;
-  field_ranking[2]=47;
-  return _WhiteFish.do_query_phrase(map(words, hash),
-				    field_ranking,
-				    blobfeeder(db, map(words,hash) ));
 }
