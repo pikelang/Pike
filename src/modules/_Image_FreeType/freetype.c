@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freetype.c,v 1.10 2002/10/21 17:06:24 marcus Exp $
+|| $Id: freetype.c,v 1.11 2002/11/29 20:40:21 jhs Exp $
 */
 
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.10 2002/10/21 17:06:24 marcus Exp $");
+RCSID("$Id: freetype.c,v 1.11 2002/11/29 20:40:21 jhs Exp $");
 #include "module.h"
 #include "pike_error.h"
 
@@ -49,12 +49,22 @@ struct face
 
 #define TFACE   ((struct face*)Pike_fp->current_storage)->face
 
+/*! @module Image */
 
+/*! @module FreeType */
+
+/*! @class Face
+ *! A FreeType font face. We recommend using the more generic font handling
+ *! interfaces in @[Image.Fonts] instead.
+ */
 static void image_ft_face_free( struct object *o )
 {
   FT_Done_Face( TFACE );
 }
 
+/*! @decl Image.Image write_char(int char)
+ *! @fixme
+ */
 static void image_ft_face_write_char( INT32 args )
 {
   FT_GlyphSlot  slot = TFACE->glyph; /* optimize. */
@@ -105,7 +115,9 @@ static void image_ft_face_write_char( INT32 args )
   f_aggregate_mapping( 14 );
 }
 
-
+/*! @decl int get_kerning(int l, int r)
+ *! @fixme
+ */
 static void image_ft_face_get_kerning( INT32 args )
 {
   INT_TYPE l, r;
@@ -119,6 +131,9 @@ static void image_ft_face_get_kerning( INT32 args )
   push_int( kern.x );
 }
 
+/*! @decl void attach_file(string file)
+ *! @fixme
+ */
 static void image_ft_face_attach_file( INT32 args )
 {
   char *path;
@@ -129,6 +144,8 @@ static void image_ft_face_attach_file( INT32 args )
   push_int( 0 );
 }
 
+/*! @decl Face set_size(int width, int height)
+ */
 static void image_ft_face_set_size( INT32 args )
 {
   int w, h;
@@ -137,13 +154,25 @@ static void image_ft_face_set_size( INT32 args )
     Pike_error("Illegal arguments to set_size\n");
   w = sp[-2].u.integer;
   h = sp[-1].u.integer;
-  
+
   if( FT_Set_Pixel_Sizes( TFACE, w, h ) )
     Pike_error("Failed to set size\n");
   pop_n_elems( 2 );
   ref_push_object( fp->current_object );
 }
 
+/*! @decl mapping info()
+ *! @returns
+ *!   @mapping
+ *!     @member string "family"
+ *!       The font family, or the string "unknown"
+ *!     @member string "style_name"
+ *!       The name of the font style, or "unknown"
+ *!     @member int "face_flags"
+ *!     @member int "style_flags"
+ *!       The sum of all face/style flags respectively.
+ *!   @endmapping
+ */
 static void image_ft_face_info( INT32 args )
 {
   push_text( "family" );
@@ -161,6 +190,10 @@ static void image_ft_face_info( INT32 args )
   f_aggregate_mapping( 8 );
 }
 
+/*! @decl void create(string font)
+ *! @param font
+ *!   The path of the font file to use
+ */
 static void image_ft_face_create( INT32 args )
 {
   int er;
@@ -175,12 +208,34 @@ static void image_ft_face_create( INT32 args )
   push_int( 0 );
 }
 
-  
+/*! @endclass */
+
 PIKE_MODULE_EXIT
 {
   if( face_program )
     free_program( face_program );
 }
+
+/*! @decl constant FACE_FLAG_SCALABLE
+ *! @decl constant FACE_FLAG_FIXED_WIDTH
+ *! @decl constant FACE_FLAG_SFNT
+ *! @decl constant FACE_FLAG_HORIZONTAL
+ *! @decl constant FACE_FLAG_VERTICAL
+ *! @decl constant FACE_FLAG_KERNING
+ *! @decl constant FACE_FLAG_FAST_GLYPHS
+ *! @decl constant FACE_FLAG_MULTIPLE_MASTERS
+ *! @decl constant FACE_FLAG_GLYPH_NAMES
+ *! @fixme
+ */
+
+/*! @decl constant STYLE_FLAG_ITALIC
+ *! @decl constant STYLE_FLAG_BOLD
+ *! @fixme
+ */
+
+/*! @endmodule */
+
+/*! @endmodule */
 
 PIKE_MODULE_INIT
 {
@@ -211,7 +266,7 @@ PIKE_MODULE_INIT
                  tFunc(tInt tInt,tInt),0);
     
     set_exit_callback( image_ft_face_free );
-    
+
     face_program = end_program();
     add_program_constant("Face", face_program, 0 );
     add_integer_constant( "FACE_FLAG_SCALABLE", FT_FACE_FLAG_SCALABLE, 0 );
