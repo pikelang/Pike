@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.125 2003/08/18 15:11:38 mast Exp $
+|| $Id: interpret_functions.h,v 1.126 2003/09/11 19:23:54 mast Exp $
 */
 
 /*
@@ -1340,12 +1340,28 @@ OPCODE0(F_MAKE_ITERATOR, "Iterator", 0, {
   f_Iterator(1);
 });
 
-OPCODE0_BRANCH(F_NEW_FOREACH, "foreach++", 0, { /* iterator, lvalue, lvalue */
-  extern int foreach_iterate(struct object *o);
+/* Stack is: iterator, index lvalue, value lvalue. */
+OPCODE0_BRANCH (F_FOREACH_START, "foreach start", 0, {
+  extern int foreach_iterate(struct object *o, int do_step);
+  DO_IF_DEBUG (
+    if(Pike_sp[-5].type != PIKE_T_OBJECT)
+      Pike_fatal ("Iterator gone from stack.\n");
+  );
+  if (foreach_iterate (Pike_sp[-5].u.object, 0))
+    DONT_BRANCH();
+  else {
+    DO_BRANCH();
+  }
+});
 
-  if(Pike_sp[-5].type != PIKE_T_OBJECT)
-    PIKE_ERROR("foreach", "Bad argument 1.\n", Pike_sp-3, 1);
-  if(foreach_iterate(Pike_sp[-5].u.object))
+/* Stack is: iterator, index lvalue, value lvalue. */
+OPCODE0_BRANCH(F_FOREACH_LOOP, "foreach loop", 0, {
+  extern int foreach_iterate(struct object *o, int do_step);
+  DO_IF_DEBUG (
+    if(Pike_sp[-5].type != PIKE_T_OBJECT)
+      Pike_fatal ("Iterator gone from stack.\n");
+  );
+  if(foreach_iterate(Pike_sp[-5].u.object, 1))
   {
     DO_BRANCH();
   }else{

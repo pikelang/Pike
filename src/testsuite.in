@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.591 2003/09/09 16:58:30 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.592 2003/09/11 19:23:54 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -6405,6 +6405,13 @@ test_any([[
   foreach(m  ; int a ; int b) { m_delete(m,a); ret+=a*b; }
   return ret;
 ]],315)
+
+test_any([[
+  String.Iterator iter = String.Iterator ("foo");
+  foreach (iter; int idx;)
+    if (idx != iter->index()) return 1;
+  return 0;
+]], 0)
 
 // do-while
 test_any(int e;string t=""; e=0; do{ t+=e; }while(++e<6); return t,"012345";)
