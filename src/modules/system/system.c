@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.73 1999/10/27 14:37:35 grubba Exp $
+ * $Id: system.c,v 1.74 1999/10/27 14:53:24 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.73 1999/10/27 14:37:35 grubba Exp $");
+RCSID("$Id: system.c,v 1.74 1999/10/27 14:53:24 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -75,6 +75,9 @@ RCSID("$Id: system.c,v 1.73 1999/10/27 14:37:35 grubba Exp $");
 #ifdef HAVE_SYS_SYSTEMINFO_H
 #include <sys/systeminfo.h>
 #endif /* HAVE_SYS_SYSTEMINFO_H */
+#ifdef HAVE_SYS_UTSNAME_H
+#include <sys/utsname.h>
+#endif
 
 #include "dmalloc.h"
 
@@ -796,7 +799,7 @@ static struct {
 #ifdef SI_SRPC_DOMAIN
   { "srpc domain", SI_SRPC_DOMAIN },
 #endif /* SI_SRPC_DOMAIN */
-}
+};
 
 /* Recomended is >257 */
 #define PIKE_SI_BUFLEN	512
@@ -804,7 +807,7 @@ static struct {
 void f_uname(INT32 args)
 {
   char buffer[PIKE_SI_BUFLEN];
-  int i;
+  unsigned int i;
   struct svalue *old_sp;
 
   pop_n_elems(args);
@@ -827,9 +830,6 @@ void f_uname(INT32 args)
 #else /* !HAVE_SYSINFO */
 
 #ifdef HAVE_UNAME
-#ifdef HAVE_SYS_UTSNAME_H
-#include <sys/utsname.h>
-#endif
 void f_uname(INT32 args)
 {
   struct svalue *old_sp;
