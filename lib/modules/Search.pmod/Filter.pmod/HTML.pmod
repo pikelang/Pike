@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.35 2003/10/03 14:05:16 wellhard Exp $
+// $Id: HTML.pmod,v 1.36 2004/06/08 12:28:50 anders Exp $
 
 // Filter for text/html
 
@@ -285,7 +285,7 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   parser->finish();
 
   res->links = lf->read();
-  res->fields->body=Parser.parse_html_entities(databuf->get());
+  res->fields->body=Parser.parse_html_entities(databuf->get(), 1);
   res->fix_relative_links(uri);
 
   return res;
