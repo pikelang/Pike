@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: gif_lzw.h,v 1.5 1998/04/29 01:27:23 mirar Exp $
+**!	$Id: gif_lzw.h,v 1.6 1998/05/02 01:24:25 mirar Exp $
 */
 
 typedef unsigned short lzwcode_t; /* no more than 12 bits used */
@@ -12,7 +12,7 @@ struct lzwc
    unsigned short prev;
    unsigned short len;
    unsigned short c;
-} *c;
+};
 
 struct gif_lzw
 {
