@@ -340,12 +340,12 @@ string http_encode_query(mapping(string:int|string) variables)
 static constant url_non_corresponding = enumerate(0x21) +
   enumerate(0x81,1,0x7f);
 static constant url_unsafe = ({ '<', '>', '"', '#', '%', '{', '}',
-				'|', '\\', '^', '~', '[', ']', '`', '\'' });
+				'|', '\\', '^', '~', '[', ']', '`' });
 static constant url_reserved = ({ ';', '/', '?', ':', '@', '=', '&' });
 
 // Encode these chars
 static constant url_chars = url_non_corresponding + url_unsafe +
-  url_reserved + ({ '+' });
+  url_reserved + ({ '+', '\'' });
 static constant url_from = sprintf("%c", url_chars[*]);
 static constant url_to   = sprintf("%%%02x", url_chars[*]);
 
