@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.174 1999/07/27 17:36:09 mirar Exp $");
+RCSID("$Id: builtin_functions.c,v 1.175 1999/07/27 19:19:52 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4248,6 +4248,189 @@ void f_map(INT32 args)
    }      
 }
 
+void f_filter(INT32 args)
+{
+   /* filter(mixed arr,mixed fun,mixed ... extra) ->
+
+        _arr__________goes________
+
+        array		keep=map(arr,fun,@extra);
+        	     	for (i=0; i<sizeof(arr); i++) 
+				if (keep[i]) res+=({arr[i]});
+        
+        multiset	(multiset)filter((array)arr,fun,@extra);
+        
+        mapping |	ind=indices(arr),val=values(arr)
+        program |       keep=map(val,fun,@extra);
+        function     	for (i=0; i<sizeof(keep); i++) 
+				if (keep[i]) res[ind[i]]=val[i];
+        
+        string		(string)filter( (array)arr,fun,@extra );
+   
+        object	        if arr->cast :              
+                           try filter((array)arr,fun,@extra);
+                           try filter((mapping)arr,fun,@extra);
+			   try filter((multiset)arr,fun,@extra);
+   */
+
+   int n,i,m,k;
+   struct array *a,*y,*f;
+   struct svalue *mysp;
+
+   if (args<1)
+      SIMPLE_TOO_FEW_ARGS_ERROR("filter", 1);
+   
+   switch (sp[-args].type)
+   {
+      case T_ARRAY:
+	 MEMMOVE(sp-args+1,sp-args,args*sizeof(*sp));
+	 sp++;
+	 add_ref_svalue(sp-args);
+
+	 f_map(args);
+	 f=sp[-1].u.array;
+	 a=sp[-2].u.array;
+	 n=a->size;
+	 for (k=m=i=0; i<n; i++)
+	    if (!IS_ZERO(f->item+i))
+	    {
+	       push_svalue(a->item+i);
+	       if (m++>32) 
+	       {
+		  f_aggregate(m),m=0;
+		  if (++k>32) f_add(k),k=1;
+	       }
+	    }
+	 if (m||!k) f_aggregate(m);
+	 if (m||k) f_add(k+1);
+	 stack_pop_n_elems_keep_top(2);
+	 return;
+
+      case T_MAPPING:
+      case T_PROGRAM:
+      case T_FUNCTION:
+	 /* mapping ret =                             
+	       mkmapping(indices(arr),                
+	                 map(values(arr),fun,@extra)); */
+	 MEMMOVE(sp-args+2,sp-args,args*sizeof(*sp));
+	 sp+=2;
+	 sp[-args-2].type=T_INT;
+	 sp[-args-1].type=T_INT;
+
+	 push_svalue(sp-args);
+	 f_indices(1);
+	 sp[-args-3]=*--sp;
+	 push_svalue(sp-args);
+	 f_values(1);
+	 sp[-args-2]=*--sp;
+
+	 assign_svalue(sp-args,sp-args-1); /* loop values only */
+	 f_map(args);
+
+	 y=sp[-3].u.array;
+	 a=sp[-2].u.array;
+	 f=sp[-1].u.array;
+	 n=a->size;
+
+	 for (m=i=0; i<n; i++)
+	    if (!IS_ZERO(f->item+i)) m++;
+
+	 push_mapping(allocate_mapping(MAXIMUM(m,4)));
+
+	 for (i=0; i<n; i++)
+	    if (!IS_ZERO(f->item+i))
+	       mapping_insert(sp[-1].u.mapping,y->item+i,a->item+i);
+
+	 stack_pop_n_elems_keep_top(3);
+	 return;
+
+      case T_MULTISET:
+	 /* multiset ret =                             
+	       (multiset)(map(indices(arr),fun,@extra)); */
+	 push_svalue(sp-args);      /* take indices from arr */
+	 free_svalue(sp-args-1);    /* move it to top of stack */
+	 sp[-args-1].type=T_INT;    
+	 f_indices(1);              /* call f_indices */
+	 sp--;                       
+	 sp[-args]=sp[0];           /* move it back */
+	 f_filter(args);               
+	 sp--;                      /* allocate_multiset is destructive */
+	 push_multiset(allocate_multiset(sp->u.array));
+	 return;
+
+      case T_STRING:
+	 /* multiset ret =                             
+	       (string)(map((array)arr,fun,@extra)); */
+	 push_svalue(sp-args);      /* take indices from arr */
+	 free_svalue(sp-args-1);    /* move it to top of stack */
+	 sp[-args-1].type=T_INT;    
+	 o_cast(NULL,T_ARRAY);      /* cast the string to an array */
+	 sp--;                       
+	 sp[-args]=sp[0];           /* move it back */
+	 f_filter(args);               
+	 o_cast(NULL,T_STRING);     /* cast the array to a string */
+	 return;
+
+      case T_OBJECT:
+	 /* if arr->cast :              
+               try map((array)arr,fun,@extra);
+               try map((mapping)arr,fun,@extra);
+               try map((multiset)arr,fun,@extra); */
+
+	 mysp=sp+3-args;
+
+	 push_svalue(mysp-3);
+	 push_constant_text("cast");
+	 f_arrow(2);
+	 if (!IS_ZERO(sp-1))
+	 {
+	    pop_stack();
+
+	    push_constant_text("array");
+	    safe_apply(mysp[-3].u.object,"cast",1);
+	    if (sp[-1].type==T_ARRAY)
+	    {
+	       free_svalue(mysp-3);
+	       mysp[-3]=*(--sp);
+	       f_filter(args);
+	       return;
+	    }
+	    pop_stack();
+
+	    push_constant_text("mapping");
+	    safe_apply(mysp[-3].u.object,"cast",1);
+	    if (sp[-1].type==T_MAPPING)
+	    {
+	       free_svalue(mysp-3);
+	       mysp[-3]=*(--sp);
+	       f_filter(args);
+	       return;
+	    }
+	    pop_stack();
+
+	    push_constant_text("multiset");
+	    safe_apply(mysp[-3].u.object,"cast",1);
+	    if (sp[-1].type==T_MULTISET)
+	    {
+	       free_svalue(mysp-3);
+	       mysp[-3]=*(--sp);
+	       f_filter(args);
+	       return;
+	    }
+	    pop_stack();
+	 }
+	 pop_stack();
+
+	 SIMPLE_BAD_ARG_ERROR("filter",1,
+			      "...|object that can be cast to array, multiset or mapping");
+
+      default:
+	 SIMPLE_BAD_ARG_ERROR("filter",1,
+			      "array|mapping|program|function|"
+			      "multiset|string|object");
+   }
+}
+
 void f_string_count(INT32 args)
 {
    struct pike_string * haystack=NULL;
@@ -4618,8 +4801,15 @@ void init_builtin_efuns(void)
 		 tFuncV(tArr(tStringIndicable) tString,tMix,tMix),
 
 		 tFuncV(tObj,tMix,tMix) ),
-
 	   OPT_TRY_OPTIMIZE);
+  
+  ADD_EFUN("filter",f_filter,
+	   tOr3( tFuncV(tSetvar(1,tOr4(tArray,tMapping,tMultiset,tString)),
+			tMixed,tVar(1)),
+		 tFuncV(tOr(tProgram,tFunction),tMixed,tMap(tString,tMix)),
+		 tFuncV(tObj,tMix,tMix) ) ,
+	   OPT_TRY_OPTIMIZE);
+		
 
 #ifdef DEBUG_MALLOC
   
