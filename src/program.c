@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.369 2001/09/02 14:25:19 grubba Exp $");
+RCSID("$Id: program.c,v 1.370 2001/09/10 20:47:35 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4139,6 +4139,68 @@ PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
     return dash;
   }
 }
+
+#ifdef PIKE_DEBUG
+/* Same as get_program_line but only used for debugging,
+ * returns a char* 
+ * This is important because this function may be called
+ * after the shared string table has expired.
+ */
+char *debug_get_program_line(struct program *prog,
+		       INT32 *linep)
+{
+  char *cnt;
+  size_t len = 0;
+  INT32 shift = 0;
+  char *file = NULL;
+  static char buffer[1025];
+
+  if(prog == Pike_compiler->new_program)
+  {
+    linep[0]=0;
+    return "optimizer";
+  }
+
+  cnt = prog->linenumbers;
+  if (cnt < prog->linenumbers + prog->num_linenumbers) {
+    if (*cnt == 127) {
+      cnt++;
+      len = get_small_number(&cnt);
+      shift = *cnt;
+      file = ++cnt;
+      cnt += len<<shift;
+    }
+    get_small_number(&cnt);	/* Ignore the offset */
+    *linep = get_small_number(&cnt);
+  }
+  else *linep = 0;
+  if (file) {
+    if(shift)
+    {
+      PCHARP from=MKPCHARP(file, shift);
+      size_t ptr=0;
+      while(ptr < NELEM(buffer)-20 &&
+	    EXTRACT_PCHARP(from))
+      {
+	if(EXTRACT_PCHARP(from) > 255)
+	{
+	  sprintf(buffer+ptr,"\\0x%x",EXTRACT_PCHARP(from));
+	  ptr+=strlen(buffer+ptr);
+	}else{
+	  buffer[ptr++]=EXTRACT_PCHARP(from);
+	}
+	INC_PCHARP(from, 1);
+      }
+      buffer[ptr]=0;
+      return buffer;
+    }else{
+      return file;
+    }
+  } else {
+    return "-";
+  }
+}
+#endif
 
 /*
  * return the file in which we were executing.
