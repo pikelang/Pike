@@ -19,6 +19,8 @@
 #undef PMOD_EXPORT
 #define PMOD_EXPORT __declspec(dllexport)
 
+/* #define FAKE_DYNAMIC_LOAD */
+
 #include "import_functions.h"
 
 #endif /* __NT__ */
