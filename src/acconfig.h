@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.113 2003/02/08 02:28:40 mast Exp $
+|| $Id: acconfig.h,v 1.114 2003/02/10 16:45:22 mast Exp $
 */
 
 #ifndef MACHINE_H
@@ -603,5 +603,10 @@
 
 #define TOSTR(X)	#X
 #define DEFINETOSTR(X)	TOSTR(X)
+
+/* Some identifiers used as flags in the defines above. */
+#define YES	1
+#define NO	2
+#define UNKNOWN	3
 
 #endif /* MACHINE_H */
