@@ -76,3 +76,22 @@ pgtk.o: pgtk.c
 	  echo "echo $(CC) $(NOOPT_CFLAGS) -c $< -o $@" >&2;\
 	  NO_ULIMIT=yes $(CC) $(NOOPT_CFLAGS) -c $< -o $@ ;\
 	fi
+
+
+# Some hand-made dependencies:
+$(OBJS) : \
+ $(SRCDIR)/../../global.h \
+ $(SRCDIR)/../../svalue.h \
+ $(SRCDIR)/../../program.h \
+ $(SRCDIR)/../../pike_types.h \
+ $(SRCDIR)/../../interpret.h \
+ $(SRCDIR)/../../module_support.h \
+ $(SRCDIR)/../../error.h \
+ $(SRCDIR)/../../array.h \
+ $(SRCDIR)/../../backend.h \
+ $(SRCDIR)/../../stralloc.h \
+ $(SRCDIR)/../../mapping.h \
+ $(SRCDIR)/../../object.h \
+ $(SRCDIR)/../../threads.h \
+ $(SRCDIR)/../../operators.h
+
