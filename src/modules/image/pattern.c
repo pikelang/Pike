@@ -1,4 +1,4 @@
-/* $Id: pattern.c,v 1.5 1996/12/12 20:03:45 law Exp $ */
+/* $Id: pattern.c,v 1.6 1997/01/23 20:02:05 grubba Exp $ */
 
 #include "global.h"
 
@@ -18,7 +18,7 @@
 
 #include "image.h"
 
-struct program *image_program;
+extern struct program *image_program;
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 

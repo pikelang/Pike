@@ -1,4 +1,4 @@
-/* $Id: dct.c,v 1.2 1996/12/10 01:42:42 law Exp $ */
+/* $Id: dct.c,v 1.3 1997/01/23 20:02:01 grubba Exp $ */
 
 #include "global.h"
 
@@ -18,7 +18,7 @@
 
 #include "image.h"
 
-struct program *image_program;
+extern struct program *image_program;
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 

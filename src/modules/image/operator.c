@@ -1,4 +1,4 @@
-/* $Id: operator.c,v 1.4 1997/01/07 00:41:44 law Exp $ */
+/* $Id: operator.c,v 1.5 1997/01/23 20:02:04 grubba Exp $ */
 #include "global.h"
 
 #include <math.h>
@@ -18,7 +18,7 @@
 
 #include "image.h"
 
-struct program *image_program;
+extern struct program *image_program;
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 

@@ -1,4 +1,4 @@
-/* $Id: blit.c,v 1.9 1997/01/07 00:41:40 law Exp $ */
+/* $Id: blit.c,v 1.10 1997/01/23 20:01:59 grubba Exp $ */
 #include "global.h"
 
 #include <math.h>
@@ -18,7 +18,7 @@
 
 #include "image.h"
 
-struct program *image_program;
+extern struct program *image_program;
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 

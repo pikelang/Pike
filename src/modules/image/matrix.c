@@ -1,4 +1,4 @@
-/* $Id: matrix.c,v 1.10 1997/01/08 00:58:06 law Exp $ */
+/* $Id: matrix.c,v 1.11 1997/01/23 20:02:03 grubba Exp $ */
 
 #include "global.h"
 
@@ -19,7 +19,7 @@
 
 #include "image.h"
 
-struct program *image_program;
+extern struct program *image_program;
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 
