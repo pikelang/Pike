@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.135 1997/11/03 22:38:25 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.136 1997/11/04 22:45:14 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -307,7 +307,7 @@ fi
 
 echo Searching for include-file directories...
 if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
-  for d in /usr/local /usr/gnu /opt/gnu /sw/gnu /sw /usr/freeware
+  for d in /usr/local /sw/local /usr/gnu /opt/gnu /sw/gnu /sw /usr/freeware
   do
     AC_MSG_CHECKING($d/include)
     if test -d "$d/include/." ; then
@@ -323,18 +323,32 @@ fi
 
 echo Searching for library directories...
 if test $ldflags_is_set = no ; then
-  for d in /usr/local /usr/gnu /opt/gnu /sw/gnu /sw /usr/freeware
+  for d in /usr/local /sw/local /usr/gnu /opt/gnu /sw/gnu /sw /usr/freeware
   do
+    AC_MSG_CHECKING($d/lib)
     if test -d "$d/lib/." ; then
-      echo Adding $d/lib to the library-path
+      AC_MSG_RESULT(added)
       LDFLAGS="${LDFLAGS} -R$d/lib -L$d/lib"
     else
-      :
+      AC_MSG_RESULT(no)
     fi
   done
 else
   :
 fi
+
+echo Searching for binary directories...
+for d in "" /bin /usr/ccs /usr/local /sw/local /usr/gnu /opt/gnu /sw/gnu /sw /usr/freeware
+do
+  AC_MSG_CHECKING($d/bin)
+  if test -d "$d/bin/." ; then
+    AC_MSG_RESULT(added)
+    EXTRA_PATH="${EXTRA_PATH}:$d/bin"
+  else
+    AC_MSG_RESULT(no)
+  fi
+done
+export EXTRA_PATH
 
 #############################################################################
 
@@ -379,6 +393,10 @@ AC_PROG_INSTALL
 AC_PROG_CPP
 AC_PROG_RANLIB
 AC_SET_MAKE
+
+AC_PATH_PROG(AR, ar, ar, $PATH:$EXTRA_PATH)
+export AR
+AC_SUBST(AR)
 
 #############################################################################
 
@@ -1782,6 +1800,8 @@ if test x$with_dynamic_modules = xyes ; then
 else
   dmmsrc="modules/static_module_makefile.in"
 fi
+
+AC_SUBST(dmmsrc)
 
 AC_OUTPUT(Makefile modules/static_module_makefile modules/dynamic_module_makefile:$dmmsrc,[echo foo >stamp-h])
 
