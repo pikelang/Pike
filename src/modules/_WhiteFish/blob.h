@@ -69,3 +69,8 @@ int wf_blob_docid( Blob *b );
 int wf_blob_eof( Blob *b );
 /* Returns -1 if there are no more entries available */
 
+
+
+
+void init_blob_program();
+void exit_blob_program();
