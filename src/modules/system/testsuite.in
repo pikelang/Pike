@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.6 1998/07/18 17:47:36 grubba Exp $
+// $Id: testsuite.in,v 1.7 1998/07/18 22:50:42 grubba Exp $
 
 
 // system.c:
@@ -39,6 +39,7 @@ ifefun(getuid, [[ test_true(intp(getuid())) ]])
 // setuid		HAVE_SETUID
 // symlink		HAVE_SYMLINK
 // uname		HAVE_UNAME
+ifefun(uname, [[ test_true(mappingp(uname())) ]])
 
 
 // passwords.c:
