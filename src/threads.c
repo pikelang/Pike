@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.192 2002/11/28 23:45:39 marcus Exp $
+|| $Id: threads.c,v 1.193 2003/03/05 16:18:30 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: threads.c,v 1.192 2002/11/28 23:45:39 marcus Exp $");
+RCSID("$Id: threads.c,v 1.193 2003/03/05 16:18:30 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -32,6 +32,10 @@ PMOD_EXPORT int threads_disabled = 0;
 #include "rusage.h"
 
 #include <errno.h>
+
+#ifdef HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif /* HAVE_SYS_PRCTL_H */
 
 PMOD_EXPORT int live_threads = 0, disallow_live_threads = 0;
 PMOD_EXPORT COND_T live_threads_change;
@@ -687,8 +691,17 @@ TH_RETURN_TYPE new_thread_func(void * data)
    * effective uid & gid.
    */
   if (!geteuid()) {
+#if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
+    /* The sete?id calls will clear the dumpable state that we might
+     * have set with system.dumpable. */
+    int current = prctl(PR_GET_DUMPABLE);
+#endif
     setegid(arg.egid);
     seteuid(arg.euid);
+#if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
+    if (prctl(PR_SET_DUMPABLE, current) == -1)
+      Pike_fatal ("Didn't expect prctl to go wrong. errno=%d\n", errno);
+#endif
   }
 #endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
   
@@ -1676,8 +1689,17 @@ static TH_RETURN_TYPE farm(void *_a)
    * effective uid & gid.
    */
   if (!geteuid()) {
+#if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
+    /* The sete?id calls will clear the dumpable state that we might
+     * have set with system.dumpable. */
+    int current = prctl(PR_GET_DUMPABLE);
+#endif
     setegid(me->egid);
     seteuid(me->euid);
+#if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
+    if (prctl(PR_SET_DUMPABLE, current) == -1)
+      Pike_fatal ("Didn't expect prctl to go wrong. errno=%d\n", errno);
+#endif
   }
 #endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
 
