@@ -20,7 +20,7 @@
 #include "mapping.h"
 #include "module_support.h"
 
-RCSID("$Id: gettext.c,v 1.1 2000/02/29 20:33:48 neotron Exp $");
+RCSID("$Id: gettext.c,v 1.2 2000/02/29 20:37:39 neotron Exp $");
 
 /*
 **! module Locale.Gettext
@@ -28,7 +28,7 @@ RCSID("$Id: gettext.c,v 1.1 2000/02/29 20:33:48 neotron Exp $");
 **!	This module enables access to localization functions from within Pike.
 **!
 **! note
-**!	$Id: gettext.c,v 1.1 2000/02/29 20:33:48 neotron Exp $
+**!	$Id: gettext.c,v 1.2 2000/02/29 20:37:39 neotron Exp $
 */
 
 /******************** PUBLIC FUNCTIONS BELOW THIS LINE */
@@ -379,6 +379,7 @@ void f_setlocale(INT32 args)
 **!	               negative_sign  for a negative formatted monetary
 **!	               quantity. The value of n_sign_posn is interpreted
 **!	               according to the rules described under p_sign_posn.
+**! see also: bindtextdomain, textdomain, gettext, dgettext, dcgettext, setlocale
 void f_localeconv(INT32 args)
 {
   struct lconv *locale; /* Information about the current locale */
