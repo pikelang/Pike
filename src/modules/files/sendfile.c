@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.44 2000/08/19 11:45:05 grubba Exp $
+ * $Id: sendfile.c,v 1.45 2000/08/19 11:45:27 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -26,6 +26,7 @@
 #include "callback.h"
 #include "backend.h"
 #include "module_support.h"
+#include "bignum.h"
 
 #include "file.h"
 
