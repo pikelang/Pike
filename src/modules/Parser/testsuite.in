@@ -365,13 +365,13 @@ test_any_equal([[
   p->mixed_mode (1);
   p->add_tag ("t", lambda (object p, mapping a) {return p->tag();});
   return p->finish("<t a b='b>")->read();
-]], ({"t", (["a": "a", "b": "b>"])}));
+]], ({"t", (["a": "a", "b": "b>"]), 0}));
 test_any_equal([[
   object p = Parser.HTML();
   p->mixed_mode (1);
   p->add_tag ("t", lambda (object p, mapping a) {return p->tag((<>));});
   return p->finish("<t a b='b>")->read();
-]], ({"t", (["a": (<>), "b": "b>"])}));
+]], ({"t", (["a": (<>), "b": "b>"]), 0}));
 
 // Redefinition during parsing
 test_any([[
