@@ -158,10 +158,10 @@ char *MEMMEM(char *needle, SIZE_T needlelen, char *haystack,
   default:
   {
     SIZE_T i, j;
-    for(i=0; i<haystacklen-needlelen; i++)
+    for(i=0; i <= haystacklen-needlelen; i++)
     {
       for(j=0; j<needlelen; j++)
-	if(haystack[i] != needle[j])
+	if(haystack[i + j] != needle[j])
 	  break;
       if(j==needlelen)
 	return haystack+i;
