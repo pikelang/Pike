@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.234 2001/05/21 22:24:28 grubba Exp $");
+RCSID("$Id: las.c,v 1.235 2001/06/07 21:48:10 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1695,6 +1695,7 @@ int node_is_eq(node *a,node *b)
 
   switch(a->token)
   {
+  case F_EXTERNAL:
   case F_LOCAL:
     return a->u.integer.a == b->u.integer.a &&
       a->u.integer.b == b->u.integer.b;
