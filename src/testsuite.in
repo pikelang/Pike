@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.387 2001/06/08 14:26:42 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.388 2001/06/11 11:20:18 wellhard Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -5707,6 +5707,7 @@ test_eq([[combine_path("./.","..")]],"..")
 test_eq([[combine_path("/","../../foo")]],"/foo")
 test_eq([[combine_path("./foobar/.","..")]],".")
 test_eq([[combine_path("/","foo","bar","gazonk")]],"/foo/bar/gazonk")
+test_eq([[combine_path("/","foo","")]],"/foo/")
 
 // - Stdio.append_path
 test_eq([[ Stdio.append_path("../foo/", "../bar") ]], "../foo/bar")
