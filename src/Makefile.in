@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.113 1998/08/07 15:48:02 grubba Exp $
+# $Id: Makefile.in,v 1.114 1998/08/07 16:01:34 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -139,11 +139,17 @@ compiler-warnings : clean
 	@if $(MAKE) $(MAKE_FLAGS) all 2>compiler-warnings ; then \
 	  echo; \
 	  echo 'Compilation warning summary:'; \
+	  echo '----------------------------'; \
 	else \
 	  echo; \
 	  echo 'Compilation warning and error summary:'; \
+	  echo '--------------------------------------'; \
 	fi
+	@echo
 	@cat compiler-warnings
+	@echo
+	@echo 'End of summary'
+	@echo '--------------'
 
 pike: $(OBJ) modules/linker_options
 	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
