@@ -94,6 +94,14 @@ struct sigdesc
  * All known signals
  */
 
+#ifdef __NT__
+
+#ifndef SIGKILL
+#define SIGKILL 9
+#endif
+
+#endif /* __NT__ */
+
 static struct sigdesc signal_desc []={
 #ifdef SIGHUP
   { SIGHUP, "SIGHUP" },
@@ -1214,6 +1222,67 @@ static void f_kill(INT32 args)
   check_signals(0,0,0);
   pop_n_elems(args-1);
 }
+
+#else
+
+#ifdef __NT__
+void f_kill(INT32 args)
+{
+  HANDLE proc=INVALID_HANDLE_VALUE;
+
+  if(args < 2)
+    error("Too few arguments to kill().\n");
+
+  switch(sp[-args].type)
+  {
+  case T_INT:
+    proc=OpenProcess(PROCESS_TERMINATE,
+		     0,
+		     sp[-args].u.integer);
+    if(proc==INVALID_HANDLE_VALUE)
+    {
+      errno=EPERM;
+      pop_n_elems(args);
+      push_int(-1);
+      return;
+    }
+    break;
+
+  case T_OBJECT:
+  {
+    INT32 pid;
+    struct pid_status *p;
+    if((p=(struct pid_status *)get_storage(sp[-args].u.object,
+					  pid_status_program)))
+    {
+      proc=p->handle;
+      break;
+    }
+  }
+
+  default:
+    error("Bad argument 1 to kill().\n");
+  }
+    
+  if(sp[1-args].type != T_INT)
+    error("Bad argument 1 to kill().\n");
+
+  switch(sp[1-args].u.integer)
+  {
+    case SIGKILL:
+    {
+      int i=TerminateProcess(proc,0xff)?0:-1;
+      pop_n_elems(args);
+      push_int(i);
+      check_signals(0,0,0);
+      break;
+    }
+      
+    default:
+      error("Unknown signal %d\n",sp[1-args].u.integer);
+  }
+}
+#endif
 
 #endif
 
