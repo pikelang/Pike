@@ -1293,6 +1293,7 @@ void f__verify_internals(INT32 args)
   d_flag=0x7fffffff;
   do_debug();
   d_flag=tmp;
+  do_gc();
   pop_n_elems(args);
 }
 
