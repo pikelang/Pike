@@ -57,7 +57,11 @@ string filename_to_type(string filename)
 
 //! method string http_date(int time)
 //!	Makes a time notification suitable for the HTTP protocol.
-
+//! @param time
+//!  The time in seconds since the 00:00:00 UTC, January 1, 1970
+//! @returns
+//!  The date in the HTTP standard date format.
+//!  Example : Thu, 03 Aug 2000 05:40:39 GMT
 string http_date(int time)
 {
    return Calendar.ISO_UTC.Second(time)->format_http();
