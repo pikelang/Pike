@@ -91,7 +91,7 @@ array|object paranoia_stat(string f)
   return file_stat(f);
 }
 
-int main(int argc, string *argv)
+int main(int argc, array(string) argv)
 {
 //	werror("%O\n",argv);
   string *ldopts=({"-INCREMENTAL:no"});
@@ -497,7 +497,7 @@ int main(int argc, string *argv)
     Stdio.write_file(output,
 		     "#!/usr/local/bin/pike\n"
 		     "inherit \""+find_lib_location()+"\";\n"
-		     "int main(int argc, string *argv) {\n"
+		     "int main(int argc, array(string) argv) {\n"
 		     "  if (lower_case(getenv(\"CROSSCOMPILING\")||\"no\") != \"no\")\n"
 		     "    exit(1);\n"
 		     "  argv[0]=getenv(\"NTDRIVE\")+fixpath(follow_symlinks(combine_path(getcwd(),argv[0]))+\".exe\");\n"

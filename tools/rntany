@@ -6,7 +6,7 @@ inherit "lib.pike";
 
 int verbose=0;
 
-int main(int argc, string *argv)
+int main(int argc, array(string) argv)
 {
   int ret;
   if(verbose)

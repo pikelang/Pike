@@ -342,7 +342,7 @@ void handle_connections(string *hosts)
   }
 }
 
-int main(int argc, string *argv)
+int main(int argc, array(string) argv)
 {
 #ifdef WINE
   werror("Running in WINE mode.\n");

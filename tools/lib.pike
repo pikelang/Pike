@@ -45,7 +45,7 @@ string opt_path(string p1, string p2)
 }
 
 
-int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
+int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent)
 {
 //  werror("%O\n",cmd);
 
@@ -395,7 +395,7 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 
 string tmp;
 
-string popen_cmd(string *cmd)
+string popen_cmd(array(string) cmd)
 {
   tmp="";
   silent_do_cmd(cmd,lambda(string x) { tmp=x; }, 1);
@@ -423,7 +423,7 @@ string getntenv(string var)
 }
 
 
-int do_cmd(string *cmd, mixed|void filter)
+int do_cmd(array(string) cmd, mixed|void filter)
 {
   return silent_do_cmd(cmd,filter);
 }

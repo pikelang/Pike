@@ -92,7 +92,7 @@ void check_errorfile(string errorfile)
     }
 }
 
-int main(int argc, string *argv)
+int main(int argc, array(string) argv)
 {
   string target;
   string operation="link";
@@ -347,7 +347,7 @@ int main(int argc, string *argv)
     Stdio.write_file(output,
 		     "#!/usr/local/bin/pike\n"
 		     "inherit \""+find_lib_location()+"\";\n"
-		     "int main(int argc, string *argv) {\n"
+		     "int main(int argc, array(string) argv) {\n"
 		     "  argv[0]=getenv(\"NTDRIVE\")+fixpath(follow_symlinks(combine_path(getcwd(),argv[0]))+\".exe\");\n"
 		     "  exit(silent_do_cmd(argv));\n"
 		     "}\n");

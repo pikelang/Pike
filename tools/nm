@@ -3,7 +3,7 @@
 
 inherit "lib.pike";
 
-int main(int argc, string *argv)
+int main(int argc, array(string) argv)
 {
   string ext=reverse(argv[-1]);
   sscanf(ext,"%s.",ext);

@@ -2,7 +2,7 @@
 
 inherit "lib.pike";
 
-int main(int argc, string *argv)
+int main(int argc, array(string) argv)
 {
   argv[0]=find_next_in_path(argv[0],"wc");
   if(file_stat(argv[-1]+".exe"))

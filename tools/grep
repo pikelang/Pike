@@ -2,7 +2,7 @@
 
 inherit "lib.pike";
 
-int main(int argc, string *argv)
+int main(int argc, array(string) argv)
 {
   if(argc>2 && sscanf(argv[-1],"/usr/%*s"))
     exit(1);
