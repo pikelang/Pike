@@ -4,10 +4,11 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: C.pmod,v 1.34 2002/12/30 14:26:30 nilsson Exp $
+// $Id: C.pmod,v 1.35 2002/12/30 14:37:27 nilsson Exp $
 
 mapping(string:string) global_groupings=(["{":"}","(":")","[":"]"]);
 
+//! Splits the @[data] string into an array of tokens.
 array(string) split(string data)
 {
   int start;
@@ -215,14 +216,23 @@ array(string) split(string data)
   }
 }
 
-
+//!
 class Token
 {
+  //! The line where the token was found.
   int line;
+
+  //! The actual token.
   string text;
+
+  //! The file in which the token was found.
   string file;
+
+  //! Trailing whitespaces.
   string trailing_whitespaces="";
 
+  //! @decl void create(string text, void|int line, void|string file,@
+  //!   void|string trailing_whitespace)
   void create(string t, void|int l, void|string f, void|string space)
     {
       text=t;
@@ -231,6 +241,7 @@ class Token
       if(space) trailing_whitespaces=space;
     }
 
+  //! If the object is printed as %s it will only output its text contents.
   string _sprintf(int how)
     {
       switch(how)
@@ -242,34 +253,43 @@ class Token
       }
     }
 
+  //! Tokens are considered equal if the text contents are equal. It
+  //! is also possible to compare the Token object with a text string
+  //! directly.
   int `==(mixed foo)
     {
       return (objectp(foo) ? foo->text : foo) == text;
     }
 
+  //! A string can be added to the Token, which will be added to the
+  //! text contents.
   string `+(string ... s)
     {
       return predef::`+(text,@s);
     }
 
+  //! A string can be added to the Token, which will be added to the
+  //! text contents.
   string ``+(string ... s)
     {
       return predef::`+(@s,text);
     }
 
+  //! It is possible to case a Token object to a string. The text content
+  //! will be returned.
   mixed cast(string to)
     {
       if(to=="string") return text;
     }
 
+  //! Characters and ranges may be indexed from the text contents of the token.
   int|string `[](int a, void|int b) {
     if(zero_type(b)) return text[a];
     return text[a..b];
   }
 }
 
-/* FIXME:
- */
+//! Returns an array of @[Token] objects given an array of string tokens.
 array(Token) tokenize(array(string) s, void|string file)
 {
   array(Token) ret=allocate(sizeof(s));
@@ -288,6 +308,7 @@ array(Token) tokenize(array(string) s, void|string file)
   return ret;
 }
 
+//!
 array(Token) group(array(string|Token) tokens, void|mapping groupings)
 {
   ADT.Stack stack=ADT.Stack();
@@ -329,6 +350,8 @@ array(Token) group(array(string|Token) tokens, void|mapping groupings)
 /* FIXME:
  * This actually strips all preprocessing tokens
  */
+
+//!
 array strip_line_statements(array tokens)
 {
   array(Token) ret=({});
@@ -346,6 +369,7 @@ array strip_line_statements(array tokens)
   
 }
 
+//!
 array hide_whitespaces(array tokens)
 {
   array(Token) ret=({tokens[0]});
@@ -374,6 +398,7 @@ array hide_whitespaces(array tokens)
   return ret;
 }
 
+//!
 string simple_reconstitute(array(string|object(Token)|array) tokens)
 {
   string ret="";
@@ -387,6 +412,7 @@ string simple_reconstitute(array(string|object(Token)|array) tokens)
   return ret;
 }
 
+//!
 string reconstitute_with_line_numbers(array(string|object(Token)|array) tokens)
 {
   int line=1;
