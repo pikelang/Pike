@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.80 2002/06/11 21:55:09 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.81 2002/06/13 22:09:21 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -384,7 +384,7 @@ class CommandDump {
 		   lambda(string in) {
 		     return sprintf("%03d: %s", ++i, in);
 		   })*"\n";
-    write(replace(w, "%", "%%")+"\n");
+    write(w+"\n");
   }
 
   private string print_mapping(array(string) ind, array val) {
@@ -1117,9 +1117,10 @@ class Evaluator {
   int safe_write(string in, mixed ... args) {
     if(!write) return 0;
     mixed err = catch {
-      string s = sprintf(in, @args);
-      write(s);
-      return sizeof(s);
+      if(sizeof(args))
+	in = sprintf(in, @args);
+      write(in);
+      return sizeof(in);
     };
     catch {
       write("HilfeError: Error while outputting data.\n");
