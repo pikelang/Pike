@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.31 2002/05/11 00:11:10 nilsson Exp $");
+RCSID("$Id: psd.c,v 1.32 2002/07/14 20:34:53 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -37,12 +37,6 @@ RCSID("$Id: psd.c,v 1.31 2002/05/11 00:11:10 nilsson Exp $");
 
 extern struct program *image_colortable_program;
 extern struct program *image_program;
-
-/*
-**! module Image
-**! submodule PSD
-**!
-*/
 
 #define STRING(X) static struct pike_string *PIKE_CONCAT(s_, X)
 #include "psd_constant_strings.h"
