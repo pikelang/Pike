@@ -1,24 +1,5 @@
 #pike __REAL_VERSION__
 
-
-// Compatibility
-// FIXME: We really need a better way to do this..
-mapping tmp;
-mixed `->(string s)
-{
-  if(s=="_module_value")
-  {
-    if(!tmp)
-    {
-      tmp=([]);
-      tmp->sql=(program)"Sql";
-    }
-    return tmp;
-  }
-  return UNDEFINED;
-}
-
-
 //! The SQL module is a unified interface between pike and all
 //! its supported databases. The parts of this module that is
 //! usuable for all normal uses is the @[Sql] class and the
