@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.48 2003/03/31 18:31:03 grubba Exp $
+|| $Id: jvm.c,v 1.49 2004/01/02 12:08:43 jonasw Exp $
 */
 
 /*
@@ -16,13 +16,14 @@
  */
 
 #define NO_PIKE_SHORTHAND
+#define JW 0
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.48 2003/03/31 18:31:03 grubba Exp $");
+RCSID("$Id: jvm.c,v 1.49 2004/01/02 12:08:43 jonasw Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -855,6 +856,9 @@ static void f_call_static(INT32 args)
     jjf = (*env)->CallStaticDoubleMethodA(env, class, m->method, jargs);
     THREADS_DISALLOW();
     pop_n_elems(args);
+#if JW
+    fprintf(stderr, "pushing float (double) value [1]: %f\n", jjf);
+#endif
     push_float(jjf);
     break;
   case 'L':
@@ -966,6 +970,9 @@ static void f_call_virtual(INT32 args)
     jjf = (*env)->CallDoubleMethodA(env, jo->jobj, m->method, jargs);
     THREADS_DISALLOW();
     pop_n_elems(args);
+#if JW
+    fprintf(stderr, "pushing float (double) value [2]: %f\n", jjf);
+#endif
     push_float(jjf);
     break;
   case 'L':
@@ -1077,6 +1084,9 @@ static void f_call_nonvirtual(INT32 args)
     jjf = (*env)->CallNonvirtualDoubleMethodA(env, jo->jobj, class, m->method, jargs);
     THREADS_DISALLOW();
     pop_n_elems(args);
+#if JW
+    fprintf(stderr, "pushing float (double) value [3]: %f\n", jjf);
+#endif
     push_float(jjf);
     break;
   case 'L':
@@ -1666,6 +1676,8 @@ struct cpu_context {
   unsigned INT32 code[23];
 };
 
+#define FLT_ARG_OFFS (args+wargs)
+
 static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 			   void (*dispatch)(), int args,
 			   int flt_args, int dbl_args)
@@ -1677,12 +1689,26 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
   *p++ = 0x9421ffc8;  /* stwu r1,-56(r1) */
   if(!statc)
     *p++ = 0x90810054;  /* stw r4,84(r1)   */
+#ifdef __APPLE__
+  {
+    int i, fp=1;
+    for(i=0; i<6; i++)
+      if(flt_args&(1<<i))
+	*p++ = 0xd0010000|((fp++)<<21)|(4*i+88);  /* stfs fN,X(r1)   */	
+      else if(i<5 && dbl_args&(1<<i)) {
+	*p++ = 0xd8010000|((fp++)<<21)|(4*i+88);  /* stfd fN,X(r1)   */	
+	i++;
+      } else
+	*p++ = 0x90010000|((i+5)<<21)|(4*i+88);  /* stw rN,X(r1)   */
+  }
+#else
   *p++ = 0x90a10058;  /* stw r5,88(r1)   */
   *p++ = 0x90c1005c;  /* stw r6,92(r1)   */
   *p++ = 0x90e10060;  /* stw r7,96(r1)   */
   *p++ = 0x91010064;  /* stw r8,100(r1)  */
   *p++ = 0x91210068;  /* stw r9,104(r1)  */
   *p++ = 0x9141006c;  /* stw r10,108(r1) */
+#endif
 
   if(statc) {
     *p++ = 0x7c852378;  /* mr r5,r4        */
@@ -1931,7 +1957,15 @@ static void do_native_dispatch(struct native_method_context *ctx,
 	break;
       
       case 'D':
+#if JW
+	{
+	  FLOAT_TYPE junk = GET_NATIVE_ARG(jdouble);
+	  push_float(junk);
+	  fprintf(stderr, "pushing float (double) value [4]: %f\n", junk);
+	}
+#else
 	push_float(GET_NATIVE_ARG(jdouble));
+#endif
 	break;
       
       case 'L':
@@ -2123,6 +2157,10 @@ static void *make_stub(struct cpu_context *ctx, void *data, int statc, int rt,
   return low_make_stub(ctx, data, statc, disp, args, flt_args, dbl_args);
 }
 
+#ifndef FLT_ARG_OFFS
+#define FLT_ARG_OFFS args
+#endif
+
 static void build_native_entry(JNIEnv *env, jclass cls,
 			       struct native_method_context *con,
 			       JNINativeMethod *jnm,
@@ -2156,13 +2194,13 @@ static void build_native_entry(JNIEnv *env, jclass cls,
     case '(':
       break;
     case 'D':
-      dbl_args |= 1<<args;
+      dbl_args |= 1<<FLT_ARG_OFFS;
     case 'J':
       args ++;
       wargs ++;
       break;
     case 'F':
-      flt_args |= 1<<args;
+      flt_args |= 1<<FLT_ARG_OFFS;
       args ++;
       break;
     case '[':
