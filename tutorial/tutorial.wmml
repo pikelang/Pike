@@ -1271,7 +1271,7 @@ that is still missing is the ability to exit a loop in the middle of it.
 There are three ways to do this:
 
 <section title="break">
-<tt>Break</tt><!-- FIXME: liten bokstav? --> exits a loop or switch statement immediately and continues
+<tt>break</tt><!-- FIXME: liten bokstav? JA! /Hedda--> exits a loop or switch statement immediately and continues
 executing after the loop. <tt>Break</tt> can not be used outside of a loop or
 switch. It is quite useful in conjunction with <tt>while(1)</tt> to
 construct command parsing loops for instance:
