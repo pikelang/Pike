@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.491 2003/04/29 00:46:25 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.492 2003/05/07 12:31:52 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.491 2003/04/29 00:46:25 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.492 2003/05/07 12:31:52 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4535,30 +4535,27 @@ PMOD_EXPORT void f_glob(INT32 args)
   case T_ARRAY:
     a=Pike_sp[1-args].u.array;
     matches=0;
-    check_stack(a->size);
-    for(i=0;i<a->size;i++)
-    {
-      if(ITEM(a)[i].type != T_STRING)
-	SIMPLE_BAD_ARG_ERROR("glob", 2, "string|array(string)");
-
-      if(does_match(ITEM(a)[i].u.string,0,glob,0))
+    check_stack(120);
+    BEGIN_AGGREGATE_ARRAY (MINIMUM (a->size, 120)) {
+      for(i=0;i<a->size;i++)
       {
-	add_ref(ITEM(a)[i].u.string);
-	push_string(ITEM(a)[i].u.string);
-	matches++;
+	if(ITEM(a)[i].type != T_STRING)
+	  SIMPLE_BAD_ARG_ERROR("glob", 2, "string|array(string)");
+
+	if(does_match(ITEM(a)[i].u.string,0,glob,0))
+	{
+	  ref_push_string(ITEM(a)[i].u.string);
+	  matches++;
+	  DO_AGGREGATE_ARRAY (120);
+	}
       }
-    }
-    f_aggregate(matches);
-    tmp=Pike_sp[-1];
-    Pike_sp--;
-    dmalloc_touch_svalue(Pike_sp);
-    pop_n_elems(2);
-    Pike_sp[0]=tmp;
-    Pike_sp++;
+    } END_AGGREGATE_ARRAY;
+    Pike_sp[-1].u.array->type_field = BIT_STRING;
+    stack_pop_n_elems_keep_top (2);
     break;
 
   default:
-    SIMPLE_BAD_ARG_ERROR("glob", 1, "string|array(string)");
+    SIMPLE_BAD_ARG_ERROR("glob", 2, "string|array(string)");
   }
 }
 
