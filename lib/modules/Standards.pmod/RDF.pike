@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.9 2003/04/10 22:58:48 nilsson Exp $
+// $Id: RDF.pike,v 1.10 2003/04/14 13:42:50 nilsson Exp $
 
 //! Represents an RDF domain which can contain any number of complete
 //! statements.
@@ -34,6 +34,11 @@ class Resource {
     return "_:Resource"+number;
   }
 
+  //! Returns the nodes' 3-tuple serialized ID.
+  string get_3_tuple_name() {
+    return "RDF:_"+number;
+  }
+
   static string __sprintf(string c, int t) {
     if(t=='t') return "RDF."+c;
     if(t=='O') return "RDF."+c+"(" + get_n_triple_name() + ")";
@@ -41,6 +46,32 @@ class Resource {
 
   string _sprintf(int t) { return __sprintf("Resource", t); }
 }
+
+//! Resource used for RDF-technical reasons like reification.
+class RDFResource {
+  inherit Resource;
+  static string id;
+
+  //! The resource will be identified by the identifier @[rdf_id]
+  void create(string rdf_id) {
+    id = rdf_id;
+  }
+
+  string get_n_triple_name() {
+    return "_:"+id;
+  }
+
+  string get_3_tuple_name() {
+    return "RDF:"+id;
+  }
+}
+
+RDFResource rdf_Statement = RDFResource("Statement");
+RDFResource rdf_predicate = RDFResource("predicate");
+RDFResource rdf_subject   = RDFResource("subject");
+RDFResource rdf_object    = RDFResource("object");
+RDFResource rdf_type      = RDFResource("type");
+
 
 //! Resource identified by literal.
 class LiteralResource {
@@ -56,6 +87,10 @@ class LiteralResource {
 
   string get_n_triple_name() {
     return "\"" + encode_n_triple_string(id) + "\"";
+  }
+
+  string get_3_tuple_name() {
+    return get_n_triple_name();
   }
 
   string _sprintf(int t) { return __sprintf("LiteralResource", t); }
@@ -83,6 +118,10 @@ class URIResource {
     return "<" + id + ">";
   }
 
+  string get_3_tuple_name() {
+    return "[" + id + "]";
+  }
+
   string _sprintf(int t) { return __sprintf("URIResource", t); }
 }
 
@@ -102,6 +141,25 @@ void add_statement(Resource subj, Resource pred, Resource obj) {
   }
 
   rel->add(subj, obj);
+}
+
+//! Reifies the statement @tt{{ pred, subj, obj }@} and returns
+//! the resource that denotes the reified statement. There will
+//! not be any check to see if the unreified statement is already
+//! in the domain, making it possible to define the relation twice.
+Resource reify(Resource subj, Resource pred, Resource obj) {
+  Resource r = Resource();
+  add_statement(r, rdf_predicate, pred);
+  add_statement(r, rdf_subject, subj);
+  add_statement(r, rdf_object, obj);
+  add_statement(r, rdf_type, rdf_Statement);
+  return r;
+}
+
+//! Returns all properties in the domain, e.g. all resources that
+//! has been used as predicates.
+array(Resource) get_properties() {
+  return indices(statements);
 }
 
 //! Returns an RDF resource with the given URI as identifier,
@@ -163,23 +221,44 @@ array(array(Resource)) find_statements(Resource|int(0..0) subj,
 
 
 //
+// 3-tuple code
+//
+
+//! Returns a 3-tuple serialization of all the statements in
+//! the RDF set.
+string get_3_tuples() {
+  String.Buffer ret = String.Buffer();
+
+  foreach(statements; Resource n; ADT.Relation.Binary rel) {
+    string rel_name = n->get_3_tuple_name();
+    foreach(rel; Resource left; Resource right) {
+      ret->add( "{", left->get_3_tuple_name(), ", ", rel_name,
+		", ", right->get_3_tuple_name(), "}\n" );
+    }
+  }
+
+  return (string)ret;
+}
+
+
+//
 // N-triple code
 //
 
 //! Returns an N-triples serialization of all the statements in
 //! the RDF set.
 string get_n_triples() {
-  string ret = "";
+  String.Buffer ret = String.Buffer();
 
   foreach(statements; Resource n; ADT.Relation.Binary rel) {
     string rel_name = n->get_n_triple_name();
     foreach(rel; Resource left; Resource right) {
-      ret += left->get_n_triple_name() + " " +
-	rel_name + " " + right->get_n_triple_name() + " .\n";
+      ret->add( left->get_n_triple_name(), " ", rel_name,
+		" ", right->get_n_triple_name(), " .\n" );
     }
   }
 
-  return ret;
+  return (string)ret;
 }
 
 //! Parses an N-triples string and adds the found statements
