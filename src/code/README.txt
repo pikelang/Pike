@@ -5,6 +5,9 @@ These paired files should all implement the following functions/macros:
 PIKE_OPCODE_T
 	Type with opcode granularity.
 
+PIKE_OPCODE_T *PROG_COUNTER;
+	Return the current program counter.
+
 void ins_pointer(INT32 ptr);
 	Store a 32bit pointer at the current offset.
 
@@ -13,6 +16,12 @@ INT32 read_pointer(INT32 off);
 
 void upd_pointer(INT32 off, INT32 ptr);
 	Store a 32bit pointer at the specified offset.
+
+INT32 LOW_GET_JUMP(void);
+	Extract a 32bit pointer from PROG_COUNTER.
+
+void LOW_SKIPJUMP(void);
+	Advance PROG_COUNTER past a 32bit pointer.
 
 void ins_align(INT32 align);
 	Align the current offset to the specified alignment.
@@ -44,6 +53,15 @@ INT32 READ_INCR_BYTE(PIKE_OPCODE_T *pc);
 	'pc' to the next legal position.
 
 Optional macros:
+
+void SET_PROG_COUNTER(PIKE_OPCODE_T *newpc)
+	Set PROG_COUNTER to a new value.
+
+DEF_PROG_COUNTER;
+	Declare stuff needed for PROG_COUNTER.
+
+int PIKE_OPCODE_ALIGN;
+	Alignment restriction for PIKE_OPCODE_T (debug).
 
 void INS_ENTRY(void)
 	Mark the entry point from eval_instruction().

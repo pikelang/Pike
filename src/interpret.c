@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.232 2001/07/24 17:26:40 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.233 2001/07/26 18:19:30 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -767,25 +767,15 @@ static int o_catch(PIKE_OPCODE_T *pc);
 
 #ifdef PIKE_USE_MACHINE_CODE
 
-#ifdef sparc
-#define LOW_GET_JUMP()	(PROG_COUNTER[0])
-#define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + 1))
-#else /* !sparc */
-#define LOW_GET_JUMP()	EXTRACT_INT(PROG_COUNTER)
-#define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + sizeof(INT32)))
-#endif /* sparc */
-
 /* Labels to jump to to cause eval_instruction to return */
 /* FIXME: Replace these with assembler lables */
 void *do_inter_return_label;
 void *do_escape_catch_label;
 void *dummy_label;
 
-#ifdef sparc
-#define DEF_PROG_COUNTER	register unsigned INT32 *reg_pc __asm__ ("%i7")
-#else /* !sparc */
+#ifndef DEF_PROG_COUNTER
 #define DEF_PROG_COUNTER
-#endif /* sparc */
+#endif /* !DEF_PROG_COUNTER */
 
 #define OPCODE0(O,N,C) \
 void PIKE_CONCAT(opcode_,O)(void) { \
@@ -822,13 +812,9 @@ C }
 #undef HAVE_COMPUTED_GOTO
 
 #ifdef __GNUC__
-#ifdef __i386__
-#define PROG_COUNTER (((unsigned char **)__builtin_frame_address(0))[1])
-#elif defined(sparc)
-register unsigned INT32 *reg_pc __asm__ ("%i7");
-#define PROG_COUNTER		(reg_pc + 2)
-#define SET_PROG_COUNTER(X)	(reg_pc = ((unsigned INT32 *)(X))-2)
-#endif /* __i386__ || sparc */
+
+/* Define the program counter if necessary. */
+DEF_PROG_COUNTER;
 
 static int eval_instruction(PIKE_OPCODE_T *pc)
 {
@@ -839,11 +825,11 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
   if (t_flag) {
     int i;
     fprintf(stderr, "Calling code at 0x%p:\n", pc);
-#ifdef sparc
-    if (((INT32)pc) & 0x03) {
+#ifdef PIKE_OPCODE_ALIGN
+    if (((INT32)pc) % PIKE_OPCODE_ALIGN) {
       fatal("Odd offset!\n");
     }
-#endif /* sparc */
+#endif /* PIKE_OPCODE_ALIGN */
     for (i=0; i < 16; i+=4) {
       fprintf(stderr,
 	      "  0x%08x 0x%08x 0x%08x 0x%08x\n",
@@ -864,14 +850,14 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 			: "=m" (pc)
 			:
 			: "cc", "memory", "eax" );
-#elif defined(sparc)
+#else /* !__i386__ */
   /* The test is needed to get the labels to work... */
   if (pc) {
     /* No extra setup needed!
      */
     return ((int (*)(void))pc)();
   }
-#endif /* __i386__ || sparc */
+#endif /* __i386__ */
   /* This code is never reached, but will
    * prevent gcc from optimizing the labels below too much
    */

@@ -1,9 +1,14 @@
 /*
- * $Id: ia32.h,v 1.8 2001/07/24 09:22:14 hubbe Exp $
+ * $Id: ia32.h,v 1.9 2001/07/26 18:19:31 grubba Exp $
  */
 
 #define PIKE_OPCODE_T	unsigned INT8
 /* #define ALIGN_PIKE_JUMPS 8 */
+
+#define LOW_GET_JUMP()	EXTRACT_INT(PROG_COUNTER)
+#define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + sizeof(INT32)))
+#define PROG_COUNTER (((unsigned char **)__builtin_frame_address(0))[1])
+
 
 #define ins_pointer(PTR)	ins_int((PTR), (void (*)(char))add_to_program)
 #define read_pointer(OFF)	read_int(OFF)
