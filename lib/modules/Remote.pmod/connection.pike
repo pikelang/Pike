@@ -15,6 +15,14 @@ array(function) close_callbacks = ({ });
 
 int nice; // don't throw from call_sync
 
+static void enable_async()
+{
+  // This function is installed as a call out. This way async mode
+  // is enabled only if and when a backend is started (provided
+  // max_call_threads is zero).
+  do_calls_async = 1;
+}
+
 // - create
 
 void create(void|int _nice, void|int _max_call_threads)
@@ -22,7 +30,7 @@ void create(void|int _nice, void|int _max_call_threads)
    nice=_nice;
    max_call_threads = _max_call_threads;
    if (!max_call_threads)
-     call_out( lambda(){ do_calls_async=1; }, 0.1 ); // :-)
+     call_out( enable_async, 0.1 ); // :-)
 }
 
 // - connect
@@ -38,6 +46,8 @@ int connect(string host, int port, void|int timeout)
 
   string s, sv;
   int end_time=time()+(timeout||60);
+
+  remove_call_out (enable_async);
 
   if (closed)
     error("Can't reopen a closed connection");
@@ -74,6 +84,8 @@ int connect(string host, int port, void|int timeout)
 #else
     con->set_nonblocking(read_some, write_some, closed_connection);
 #endif
+    if (!max_call_threads)
+      call_out( enable_async, 0 ); // :-)
     return 1;
   }
   return 0;
@@ -172,6 +184,7 @@ void try_close()
     };
 #endif
     catch {con->set_blocking(); con->close();};
+    remove_call_out (enable_async);
 #if constant(thread_create)
     wb_lock = 0;
     fc_lock = 0;
