@@ -97,15 +97,14 @@ if test "x$with_java" = xyes; then
       fi
     done
     IFS="$ac_save_ifs"
-    if test no = "$pike_cv_ls"; then
-      AC_MSG_ERROR([no working ls found!  Use --without-java])
-      exit 1
-    else
-      :
-    fi
   ])
   AC_MSG_RESULT($pike_cv_ls)
-  LS="$pike_cv_ls"
+  if test no = "$pike_cv_ls"; then
+    AC_MSG_WARN([no working ls found!  Java configure will almost certainly fail.])
+    LS="false"
+  else
+    LS="$pike_cv_ls"
+  fi
 
   AC_MSG_CHECKING(for JAVA_HOME)
 
