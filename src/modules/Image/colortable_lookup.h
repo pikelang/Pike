@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colortable_lookup.h,v 1.21 2003/03/21 18:58:25 marcus Exp $
+|| $Id: colortable_lookup.h,v 1.22 2003/04/01 22:22:50 mast Exp $
 */
 
 /* included w/ defines in colortable.c */
@@ -533,7 +533,7 @@ void (*NCTLU_SELECT_FUNCTION(struct neo_colortable *nct))
 		 DEFINETOSTR(NCTLU_DESTINATION) " => "
 		 DEFINETOSTR(NCTLU_CUBE_NAME) "\n");
 #endif /* COLORTABLE_DEBUG */
-	 return NCTLU_CUBE_NAME;
+	 return &NCTLU_CUBE_NAME;
       case NCT_FLAT:
          switch (nct->lookup_mode)
 	 {
@@ -544,7 +544,7 @@ void (*NCTLU_SELECT_FUNCTION(struct neo_colortable *nct))
 		      DEFINETOSTR(NCTLU_DESTINATION) " => "
 		      DEFINETOSTR(NCTLU_FLAT_FULL_NAME) "\n");
 #endif /* COLORTABLE_DEBUG */
-	       return NCTLU_FLAT_FULL_NAME;
+	       return &NCTLU_FLAT_FULL_NAME;
 	    case NCT_RIGID:
 #ifdef COLORTABLE_DEBUG
 	      fprintf(stderr,
@@ -552,7 +552,7 @@ void (*NCTLU_SELECT_FUNCTION(struct neo_colortable *nct))
 		      DEFINETOSTR(NCTLU_DESTINATION) " => "
 		      DEFINETOSTR(NCTLU_FLAT_RIGID_NAME) "\n");
 #endif /* COLORTABLE_DEBUG */
-	       return NCTLU_FLAT_RIGID_NAME;
+	       return &NCTLU_FLAT_RIGID_NAME;
 	    case NCT_CUBICLES:
 #ifdef COLORTABLE_DEBUG
 	      fprintf(stderr,
@@ -560,7 +560,7 @@ void (*NCTLU_SELECT_FUNCTION(struct neo_colortable *nct))
 		      DEFINETOSTR(NCTLU_DESTINATION) " => "
 		      DEFINETOSTR(NCTLU_FLAT_CUBICLES_NAME) "\n");
 #endif /* COLORTABLE_DEBUG */
-	       return NCTLU_FLAT_CUBICLES_NAME;
+	       return &NCTLU_FLAT_CUBICLES_NAME;
 	 }
       default:
 	 Pike_fatal("lookup select (%s:%d) couldn't find the lookup mode\n",
