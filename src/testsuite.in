@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.720 2004/04/29 21:46:43 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.721 2004/05/01 15:34:47 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -8503,6 +8503,18 @@ test_eq([[combine_path("/", "foo", "")]], "/foo/")
 test_eq([[combine_path("/","/foo/bar/ga\11111zonk/../../")]],"/foo/")
 test_eq([[combine_path("/","/fo\1111/bar/ga\11111zonk/../../")]],"/fo\1111/")
 test_eq([[combine_path("/","/fo\1111/bar/gazonk/../../")]],"/fo\1111/")
+
+test_eq([[combine_path("foo", "../bar")]],"bar")
+test_eq([[combine_path("foo/", "../bar")]],"bar")
+test_eq([[combine_path("foo/", "../bar/")]],"bar/")
+test_eq([[combine_path("foo/.", "../bar")]],"bar")
+test_eq([[combine_path("foo", "..")]],".")
+test_eq([[combine_path("foo/", "..")]],".")
+test_eq([[combine_path("foo/.", "..")]],".")
+test_eq([[combine_path(".", "bar")]],"bar")
+test_eq([[combine_path("./", "bar")]],"bar")
+test_eq([[combine_path(".", "../bar")]],"../bar")
+test_eq([[combine_path("./", "../bar")]],"../bar")
 
 // - combine_path_nt
 test_eq([[combine_path_nt("/","/fo\1111/bar/gazonk/../../")]],"/fo\1111/")
