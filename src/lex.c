@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.43 1998/02/01 04:01:36 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.44 1998/03/04 22:15:40 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -656,13 +656,13 @@ static int yylex2(YYSTYPE *yylval)
       if(GOBBLE('<')) return F_MULTISET_START;
       return '(';
 
+    case ']':
     case '?':
     case ',':
     case '~':
     case '@':
     case ')':
     case '[':
-    case ']':
     case '{':
     case ';':
     case '}': return c;
