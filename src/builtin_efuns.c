@@ -458,47 +458,6 @@ void f_combine_path(INT32 args)
   free(path);
 }
 
-void f_implode(INT32 args)
-{
-  struct lpc_string *ret;
-
-  if(args < 1)
-    error("Too few arguments to implode.\n");
-
-  if(sp[-args].type != T_ARRAY)
-    error("Bad argument 1 to implode.\n");
-
-  if(args<2)
-  {
-    push_string(make_shared_string(""));
-  }else{
-    pop_n_elems(args-2);
-    if(sp[-1].type != T_STRING)
-      error("Bad argument 2 to implode.\n");
-  }
-
-  ret=implode(sp[-2].u.array, sp[-1].u.string);
-  pop_n_elems(2);
-  push_string(ret);
-}
-
-void f_explode(INT32 args)
-{
-  struct array *ret;
-  if(args < 2)
-    error("Too few arguments to explode.\n");
-
-  if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to explode.\n");
-
-  if(sp[1-args].type != T_STRING)
-    error("Bad argument 2 to explode.\n");
-
-  ret=explode(sp[-args].u.string, sp[1-args].u.string);
-  pop_n_elems(args);
-  push_array(ret);
-}
-
 void f_function_object(INT32 args)
 {
   if(args < 1)
@@ -1267,14 +1226,12 @@ void init_builtin_efuns()
   add_efun("destruct",f_destruct,"function(object|void:void)",OPT_SIDE_EFFECT);
   add_efun("equal",f_equal,"function(mixed,mixed:int)",OPT_TRY_OPTIMIZE);
   add_efun("exit",f_exit,"function(int:void)",OPT_SIDE_EFFECT);
-  add_efun("explode",f_explode,"function(string,string:array(string))",OPT_TRY_OPTIMIZE);
   add_efun("find_call_out",f_find_call_out,"function(function:int)",OPT_EXTERNAL_DEPEND);
   add_efun("floatp",  f_floatp,  "function(mixed:int)",OPT_TRY_OPTIMIZE);
   add_efun("function_name",f_function_name,"function(function:string)",OPT_TRY_OPTIMIZE);
   add_efun("function_object",f_function_object,"function(function:object)",OPT_TRY_OPTIMIZE);
   add_efun("functionp",  f_functionp,  "function(mixed:int)",OPT_TRY_OPTIMIZE);
   add_efun("hash",f_hash,"function(string,int|void:int)",OPT_TRY_OPTIMIZE);
-  add_efun("implode",f_implode,"function(array,string|void:string)",OPT_TRY_OPTIMIZE);
   add_efun("indices",f_indices,"function(string|array:int*)|function(mapping|list:mixed*)|function(object:string*)",0);
   add_efun("intp",   f_intp,    "function(mixed:int)",OPT_TRY_OPTIMIZE);
   add_efun("listp",   f_listp,   "function(mixed:int)",OPT_TRY_OPTIMIZE);
