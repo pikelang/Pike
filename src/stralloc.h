@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.73 2003/03/14 15:50:47 grubba Exp $
+|| $Id: stralloc.h,v 1.74 2003/04/07 15:28:47 mast Exp $
 */
 
 #ifndef STRALLOC_H
@@ -261,6 +261,8 @@ void gc_mark_all_strings(void);
 struct pike_string *next_pike_string (struct pike_string *s);
 PMOD_EXPORT void init_string_builder(struct string_builder *s, int mag);
 PMOD_EXPORT void init_string_builder_alloc(struct string_builder *s, ptrdiff_t length, int mag);
+PMOD_EXPORT void init_string_builder_copy(struct string_builder *to,
+					  struct string_builder *from);
 PMOD_EXPORT void *string_builder_allocate(struct string_builder *s, ptrdiff_t chars, int mag);
 PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch);
 PMOD_EXPORT void string_builder_binary_strcat(struct string_builder *s, char *str, ptrdiff_t len);

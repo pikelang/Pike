@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.154 2003/03/17 16:44:23 grubba Exp $
+|| $Id: stralloc.c,v 1.155 2003/04/07 15:28:47 mast Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.154 2003/03/17 16:44:23 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.155 2003/04/07 15:28:47 mast Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -1961,6 +1961,15 @@ PMOD_EXPORT void init_string_builder_alloc(struct string_builder *s, ptrdiff_t l
   s->s->len=0;
   s->s->str[0] = 0;
   s->known_shift=0;
+}
+
+PMOD_EXPORT void init_string_builder_copy(struct string_builder *to,
+					  struct string_builder *from)
+{
+  to->malloced = from->malloced;
+  to->s = begin_wide_shared_string (from->s->len, from->s->size_shift);
+  MEMCPY (to->s->str, from->s->str, from->s->len << from->s->size_shift);
+  to->known_shift = from->known_shift;
 }
 
 static void string_build_mkspace(struct string_builder *s,
