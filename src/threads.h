@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.116 2002/09/14 03:03:05 mast Exp $
+ * $Id: threads.h,v 1.117 2003/01/08 18:11:03 mast Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -447,8 +447,8 @@ PMOD_EXPORT extern clock_t thread_start_clock;
 
 #ifdef THREAD_TRACE
 PMOD_EXPORT extern int t_flag;
-#define SWAP_OUT_TRACE(_tmp)	do { (_tmp)->status.t_flag = t_flag; } while(0)
-#define SWAP_IN_TRACE(_tmp)	do { t_flag = (_tmp)->status.t_flag; } while(0)
+#define SWAP_OUT_TRACE(_tmp)	do { (_tmp)->state.t_flag = t_flag; } while(0)
+#define SWAP_IN_TRACE(_tmp)	do { t_flag = (_tmp)->state.t_flag; } while(0)
 #else /* !THREAD_TRACE */
 #define SWAP_OUT_TRACE(_tmp)
 #define SWAP_IN_TRACE(_tmp)
@@ -464,6 +464,7 @@ PMOD_EXPORT extern int t_flag;
        (_tmp)->state=Pike_interpreter;				\
        (_tmp)->swapped=1;					\
        DO_IF_PROFILING( (_tmp)->time_base += gethrtime() ; )	\
+       SWAP_OUT_TRACE(_tmp);					\
       } while(0)
 
 #define SWAP_IN_THREAD(_tmp) do {					\
@@ -471,6 +472,7 @@ PMOD_EXPORT extern int t_flag;
        Pike_interpreter=(_tmp)->state;					\
        DO_IF_USE_CLOCK_FOR_SLICES (thread_start_clock = 0);		\
        DO_IF_PROFILING(  Pike_interpreter.time_base -=  gethrtime();)	\
+       SWAP_IN_TRACE(_tmp);						\
      } while(0)
 
 #define SWAP_OUT_CURRENT_THREAD() \
