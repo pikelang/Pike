@@ -1,20 +1,21 @@
 // -*- Pike -*-
 
 #pike __REAL_VERSION__
-#define ERR(msg) throw(({ "(Regexp) "+sprintf msg+"\n", backtrace() }))
 
-class Regexp
+inherit @module@;
+
+class SimpleRegexp
 {
-  inherit @module@;
+  inherit _SimpleRegexp;
 
   static private object repreg;
   static private string regexp_string;
 
-  /* Semi-optimal speed, yes, I agree, but it should work. */
+  // Semi-optimal speed, yes, I agree, but it should work.
   string replace(string in, string|function(string:string) transform)
   {
     if(!repreg)
-      repreg = object_program(this_object())("("+regexp_string+")");
+      repreg = this_program("("+regexp_string+")");
 
     for(string result = ""; ; )
     {
@@ -29,29 +30,29 @@ class Regexp
       int i = search(in, a[0]);
 
       if(i == -1)
-	ERR(("Split resulted in unknown substring %O of %O.", a[0], in));
+	error("Split resulted in unknown substring %O of %O.", a[0], in);
        
       result += in[..i-1]+(functionp(transform)?transform(a[0]):transform);
       in = in[i+sizeof(a[0])..];
     }
   }
   
-  void create(string|void _regexp_string)
+  static void create(string|void _regexp_string)
   {
     regexp_string = _regexp_string;
   
-    if(query_num_arg())
+    if(regexp_string)
       ::create(regexp_string);
     else
       ::create();
   }
 
-  string _sprintf(int t)
+  static string _sprintf(int t)
   {
     switch(t)
     {
       case 'O':
-	return sprintf("Regexp(%O)", regexp_string);
+	return sprintf("%O(%s)", this_program, regexp_string||"");
 
       case 's':
 	return regexp_string;
@@ -63,4 +64,17 @@ class Regexp
   mixed _decode(string s) { create(s); }
 }
 
-program _module_value=Regexp;
+SimpleRegexp `()(void|string regexp) { return SimpleRegexp(regexp); }
+
+int(0..1) match(string regexp, string data) {
+  return SimpleRegexp(regexp)->match(data);
+}
+
+array split(string regexp, string data) {
+  return SimpleRegexp(regexp)->split(data);
+}
+
+string replace(string regexp, string data,
+	       string|function(string:string) transform) {
+  return SimpleRegexp(regexp)->replace(data, transform);
+}

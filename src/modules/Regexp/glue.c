@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: glue.c,v 1.32 2002/10/21 17:06:22 marcus Exp $
+|| $Id: glue.c,v 1.33 2003/08/08 00:53:59 nilsson Exp $
 */
 
 #include "global.h"
@@ -16,12 +16,13 @@
 #include "stralloc.h"
 #include "array.h"
 #include "object.h"
+#include "program.h"
 #include "pike_macros.h"
 #include "threads.h"
 #include "module_support.h"
 #include "builtin_functions.h"
 
-RCSID("$Id: glue.c,v 1.32 2002/10/21 17:06:22 marcus Exp $");
+RCSID("$Id: glue.c,v 1.33 2003/08/08 00:53:59 nilsson Exp $");
 
 #ifdef USE_SYSTEM_REGEXP
 #include <regexp.h>
@@ -324,10 +325,12 @@ PIKE_MODULE_EXIT {}
 
 PIKE_MODULE_INIT
 {
+  start_new_program();
   ADD_STORAGE(struct regexp_glue);
-  
+
   /* function(void|string:void) */
   ADD_FUNCTION("create",regexp_create,tFunc(tOr(tVoid,tStr),tVoid),0);
+
   /* function(string:int) */
   ADD_FUNCTION("match",regexp_match,
 	       tOr(tFunc(tStr, tInt),
@@ -337,4 +340,5 @@ PIKE_MODULE_INIT
 
   set_init_callback(init_regexp_glue);
   set_exit_callback(exit_regexp_glue);
+  end_class("_SimpleRegexp", 0);
 }

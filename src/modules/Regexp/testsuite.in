@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.8 2002/11/26 16:31:11 nilsson Exp $
+dnl $Id: testsuite.in,v 1.9 2003/08/08 00:54:09 nilsson Exp $
 
 dnl - Here we try the Regexp module
 test_true([[objectp(Regexp("foo"))]])
@@ -50,3 +50,9 @@ test_equal([[ Regexp("k|br")->replace("abrakadabra",
 
 dnl test non-crash
 test_do([[Regexp("^((.*)[ ]|)(.*)[ ]")->split("abcdef")]])
+
+dnl Shortcuts
+test_eq([[Regexp.match("^[abc]$","-")]],0)
+test_eq([[Regexp.match("^[abc]$","a")]],1)
+test_equal([[Regexp.split("^(a*)[^a]*$","aaabbb")]],({"aaa"}))
+test_equal([[ Regexp.replace("(a)", "abrakadabra", "·") ]], "·br·k·d·br·")
