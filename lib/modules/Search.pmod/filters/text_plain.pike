@@ -3,19 +3,28 @@
 
 constant contenttypes = ({ "text/plain" });
 
+constant whtspaces = ({ "\n", "\r", "\t" });
+constant interpunc = ({ ".", ",", ";", ":", "-", "_", "!", "\"", "?", "/",
+			"\\", "(", ")", "{", "}", "[", "]" });
+
+inline string normalize(string text) {
+  return replace(text, whtspaces+interpunc,
+		 ({" "})*sizeof(whtspaces+interpunc));
+}
+
 class Filter {
   array(string) content=({});
   array(int) context=({});
   array(int) offset=({});
 
   void set_content(string c) {
-    content=({ c });
+    content=({ normalize(c) });
     context=({ 0 });
     offset=({ 1 });
   }
 
   void add_content(string c, int t) {
-    content+=({ c });
+    content+=({ normalize(c) });
     context+=({ t });
     offset+=({ 0 });
   }
