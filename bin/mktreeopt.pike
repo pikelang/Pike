@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.32 2001/03/28 16:56:58 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.33 2002/10/17 17:01:49 manual Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -236,7 +236,7 @@ constant header =
 "/* Tree transformation code.\n"
 " *\n"
 " * This file was generated from %O by\n"
-" * $Id: mktreeopt.pike,v 1.32 2001/03/28 16:56:58 grubba Exp $\n"
+" * $Id: mktreeopt.pike,v 1.33 2002/10/17 17:01:49 manual Exp $\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"
@@ -917,8 +917,7 @@ string generate_match(array(object(node)) rule_set, string indent)
 
   // Group the nodes by their class:
 
-  array(array(object(node))) node_classes =
-    allocate(11, allocate)(0);
+  array(array(object(node))) node_classes = allocate(11, ({}));
 
   foreach(rule_set, object(node) n) {
     int car_kind = ANY;
