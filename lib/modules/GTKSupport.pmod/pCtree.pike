@@ -94,17 +94,17 @@ class Node
       return this;
    }
 
-   GTK.style get_cell_style(int cell)
+   GTK.Style get_cell_style(int cell)
    {
       return ctree::node_get_cell_style(node,cell);
    }
 
-   GTK.style get_style()
+   GTK.Style get_style()
    {
       return ctree::node_get_row_style(node);
    }
 
-   Node set_style(GTK.style style)
+   Node set_style(GTK.Style style)
    {
       ctree::node_set_row_style(node,style);
       return node;
