@@ -300,7 +300,7 @@ SGML index_to_wmml(INDEX data)
   for(x=0;x<sizeof(ret);x+=2)
   {
     lines+=count_index_lines(ret[x..x+1]);
-    werror("LINES: %d\n",lines);
+//    werror("LINES: %d\n",lines);
     if(lines*2>total_lines) break;
   }
   return ({
@@ -634,7 +634,7 @@ SGML wmml_to_html(SGML data)
     ret=({
       Sgml.Tag("body",
 	       ([
-		 "bgcolor":"#A0E0C0",
+		 "bgcolor":"#CCD9D2",
 		 "text":"#000000",
 		 "link":"blue",
 		 "vlink":"purple",
