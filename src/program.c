@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.206 2000/02/16 00:04:38 grubba Exp $");
+RCSID("$Id: program.c,v 1.207 2000/02/16 00:10:25 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2517,7 +2517,7 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
 
 int low_find_lfun(struct program *p, int lfun)
 {
-  struct pike_string *lfun_name = find_string(lfun_names[lfun]);
+  struct pike_string *lfun_name = findstring(lfun_names[lfun]);
   unsigned int flags = 0;
   if (!lfun_name) return -1;
   if ((1 <= lfun) && (lfun < 3)) {
