@@ -22,6 +22,16 @@ class __Codec
 {
   string last_id;
 
+  static string fixup_path(string x)
+  {
+    foreach(master()->pike_module_path, string path) {
+      path = combine_path(path, "");
+      if(x[..sizeof(path)-1] == path)
+	return "mpath:"+x[sizeof(path)..];
+    }
+    return x;
+  }
+
   string nameof(mixed x)
   {
     string tmp;
@@ -46,7 +56,7 @@ class __Codec
 	if(p!=x)
 	{
 	  if(tmp = search(master()->programs,x))
-	    return tmp;
+	    return fixup_path(tmp);
 #if 0
 	  if(tmp = search(values(_static_modules), x)!=-1)
 	  {
@@ -61,7 +71,7 @@ class __Codec
 	{
 	  if(tmp = search(master()->programs,p))
 	  {
-	    return tmp;
+	    return fixup_path(tmp);
 	  }else{
 #if 0
 	    werror("Completely failed to find this program:\n");
@@ -110,6 +120,11 @@ class __Codec
     if(sscanf(x,"resolv:%s",x))
       return master()->resolv(x);
 
+    if(sscanf(x,"mpath:%s",x))
+      foreach(master()->pike_module_path, string path)
+	if(object ret=master()->low_cast_to_object(combine_path(path,x),0))
+	  return ret;
+
     if(object tmp=(object)x) return tmp;
     werror("Failed to decode %s\n",x);
     return 0;
@@ -128,6 +143,11 @@ class __Codec
     {
       return (program)_static_modules[x];
     }
+
+    if(sscanf(x,"mpath:%s",x))
+      foreach(master()->pike_module_path, string path)
+	if(program ret=master()->cast_to_program(combine_path(path,x),0))
+	  return ret;
 
     if(program tmp=(program)x) return tmp;
     werror("Failed to decode %s\n",x);
