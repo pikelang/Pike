@@ -1,5 +1,5 @@
 //! module Image
-//! $Id: module.pmod,v 1.6 2000/02/24 01:11:22 marcus Exp $
+//! $Id: module.pmod,v 1.7 2000/03/10 04:52:36 per Exp $
 
 //! method object(Image.Image) load()
 //! method object(Image.Image) load(object file)
@@ -46,7 +46,7 @@ mapping _decode( string data, mixed|void tocolor )
   };
 
   if(!i)
-    foreach( ({ "GIF", "JPEG", "XWD", "PNM" }), string fmt )
+    foreach( ({ "GIF", "JPEG", "XWD", "PNM", "RAS" }), string fmt )
     {
       catch {
         i = Image[fmt]->decode( data );
@@ -57,7 +57,7 @@ mapping _decode( string data, mixed|void tocolor )
     }
 
   if(!i)
-    foreach( ({ "XCF", "PSD", "PNG",  "BMP",  "TGA", "PCX",
+    foreach( ({ "ANY", "XCF", "PSD", "PNG",  "BMP",  "TGA", "PCX",
                 "XBM", "XPM", "TIFF", "ILBM", "PS", "PVR",
        /* Image formats low on headers below this mark */
                 "HRZ", "AVS", "WBF",
@@ -73,15 +73,6 @@ mapping _decode( string data, mixed|void tocolor )
       if( i )
         break;
     }
-
-  if(!i) // No image could be decoded at all.
-    return 0;
-
-  if( arrayp(tocolor) && (sizeof(tocolor)==3) && objectp(i) && objectp(a) )
-  {
-    Image.Image o = Image.Image( i->xsize(), i->ysize(), @tocolor );
-    i = o->paste_mask( i, a );
-  }
 
   return  ([
     "format":format,
