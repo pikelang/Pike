@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.303 2003/09/19 13:24:02 grubba Exp $
+// $Id: master.pike.in,v 1.304 2003/09/19 13:28:26 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -617,6 +617,9 @@ static program low_findprog(string pname,
   program ret;
   Stat s;
   string fname=pname+ext;
+
+  resolv_debug("low_findprog(%O, %O, %O, %O)\n",
+	       pname, ext, handler, mkobj);
 
 #ifdef THREADED
   object key;
