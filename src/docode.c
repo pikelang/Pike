@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.38 1998/05/25 10:38:44 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.39 1998/07/31 06:51:41 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -425,7 +425,7 @@ static int do_docode2(node *n,int flags)
   case F_LOR:
     tmp1=alloc_label();
     do_cond_jump(CAR(n), tmp1, n->token == F_LOR, 0);
-    if(do_docode(CDR(n),0)!=1) fatal("Compiler logical error.\n");
+    code_expression(CDR(n), flags, n->token == F_LOR ? "||" : "&&");
     emit(F_LABEL,tmp1);
     return 1;
 
