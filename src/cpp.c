@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.43 1999/02/24 23:44:17 grubba Exp $
+ * $Id: cpp.c,v 1.44 1999/02/26 01:09:31 grubba Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -2082,8 +2082,6 @@ static int do_safe_index_call(struct pike_string *s)
 
 static struct pike_string *recode_string(struct pike_string *data)
 {
-  fprintf(stderr, "recode_string()\n");
-
   /* Observations:
    *
    * * At least a prefix of two bytes need to be 7bit in a valid
@@ -2155,7 +2153,7 @@ static struct pike_string *recode_string(struct pike_string *data)
       if ((!((unsigned char *)data->str)[1]) ||
 	  (((unsigned char *)data->str)[1] == 0xfe)) {
 	/* Reverse Byte-order */
-	struct pike_string new_str = begin_shared_string(data->len);
+	struct pike_string *new_str = begin_shared_string(data->len);
 	int i;
 	for(i=0; i<data->len; i++) {
 	  new_str->str[i^1] = data->str[i];
@@ -2170,7 +2168,7 @@ static struct pike_string *recode_string(struct pike_string *data)
       pop_stack();
       return data;
     }
-  } else if (((unsigned char *)data->str)[0] == 0x7b) {
+  } else if (data->str[0] == '{') {
     /* EBCDIC */
     /* Notes on EBCDIC:
      *
@@ -2186,6 +2184,113 @@ static struct pike_string *recode_string(struct pike_string *data)
      * * This still allows the rest of the file to be written in
      *   another encoding than EBCDIC.
      */
+
+    /* First split out the first line.
+     *
+     * Note that codes 0x00 - 0x1f are the same in ASCII and EBCDIC.
+     */
+    struct pike_string *new_str;
+    char *p = strchr(data->str, '\n');
+    char *p2;
+    unsigned int len;
+
+    if (!p) {
+      return data;
+    }
+
+    len = p - data->str;
+
+    if (len < CONSTANT_STRLEN("#charset ")) {
+      return data;
+    }
+
+    new_str = begin_shared_string(len);
+
+    MEMCPY(new_str->str, data->str, len);
+
+    push_string(end_shared_string(new_str));
+
+    push_constant_text("ebcdic-us");
+
+    SAFE_APPLY_MASTER("decode_charset", 2);
+
+    /* Various consistency checks. */
+    if ((sp[-1].type != T_STRING) || (sp[-1].u.string->size_shift) ||
+	(((unsigned int)sp[-1].u.string->len) < CONSTANT_STRLEN("#charset")) ||
+	(sp[-1].u.string->str[0] != '#')) {
+      pop_stack();
+      return data;
+    }
+
+    /* At this point the decoded first line is on the stack. */
+
+    /* Extract the charset name */
+
+    p = sp[-1].u.string->str + 1;
+    while (*p && isspace(*((unsigned char *)p))) {
+      p++;
+    }
+
+    if (strncmp(p, "charset", CONSTANT_STRLEN("charset")) ||
+	!isspace(((unsigned char *)p)[CONSTANT_STRLEN("charset")])) {
+      pop_stack();
+      return data;
+    }
+
+    p += CONSTANT_STRLEN("charset") + 1;
+
+    while (*p && isspace(*((unsigned char *)p))) {
+      p++;
+    }
+
+    if (!*p) {
+      pop_stack();
+      return data;
+    }
+
+    /* Build a string of the trailing data
+     * NOTE:
+     *   Keep the newline, so the linenumber info stays correct.
+     */
+
+    new_str = begin_shared_string(data->len - len);
+
+    MEMCPY(new_str->str, data->str + len, data->len - len);
+
+    push_string(end_shared_string(new_str));
+
+    stack_swap();
+
+    /* Build a string of the charset name */
+
+    p2 = p;
+    while(*p2 && !isspace(*((unsigned char *)p2))) {
+      p2++;
+    }
+
+    len = p2 - p;
+
+    new_str = begin_shared_string(len);
+
+    MEMCPY(new_str->str, p, len);
+
+    pop_stack();
+    push_string(end_shared_string(new_str));
+		
+    /* Decode the string */
+
+    SAFE_APPLY_MASTER("decode_charset", 2);
+
+    if (sp[-1].type != T_STRING) {
+      pop_stack();
+      return data;
+    }
+
+    /* Accept the new string */
+
+    free_string(data);
+    add_ref(data = sp[-1].u.string);
+    pop_stack();
   }
   return data;
 }
@@ -2201,8 +2306,6 @@ static struct pike_string *filter_bom(struct pike_string *data)
   int j = 0;
   int len = data->len;
   struct string_builder buf;
-
-  fprintf(stderr, "filter_bom()\n");
 
   /* Add an extra reference to data here, since we may return it as is. */
   add_ref(data);
