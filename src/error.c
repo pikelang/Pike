@@ -15,7 +15,7 @@
 #include "builtin_functions.h"
 #include "backend.h"
 
-RCSID("$Id: error.c,v 1.15 1998/04/06 04:15:52 hubbe Exp $");
+RCSID("$Id: error.c,v 1.16 1998/04/10 15:20:48 grubba Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -79,13 +79,23 @@ void pike_throw(void) ATTRIBUTE((noreturn))
   longjmp(recoveries->recovery,1);
 }
 
+void push_error(char *description)
+{
+  push_text(description);
+  f_backtrace(0);
+  f_aggregate(2);
+}
+
 struct svalue throw_value = { T_INT };
 int throw_severity;
 
+static char *in_error;
+/* FIXME: NOTE: This function uses a static buffer.
+ * Check sizes of arguments passed!
+ */
 void va_error(char *fmt, va_list args) ATTRIBUTE((noreturn))
 {
   char buf[2000];
-  static char *in_error;
   if(in_error)
   {
     char *tmp=in_error;
@@ -110,9 +120,63 @@ void va_error(char *fmt, va_list args) ATTRIBUTE((noreturn))
   if((long)strlen(buf) >= (long)sizeof(buf))
     fatal("Buffer overflow in error()\n");
   
-  push_string(make_shared_string(buf));
+  push_error(buf);
+  free_svalue(& throw_value);
+  throw_value = *--sp;
+  throw_severity=THROW_ERROR;
+
+  in_error=0;
+  pike_throw();  /* Hope someone is catching, or we will be out of balls. */
+}
+
+void new_error(char *name, char *text, struct svalue *oldsp, INT32 args,
+	       char *file, int line) ATTRIBUTE((noreturn))
+{
+  int i;
+
+  if(in_error)
+  {
+    char *tmp=in_error;
+    in_error=0;
+    fatal("Recursive error() calls, original error: %s",tmp);
+  }
+
+  in_error=text;
+
+  if(!recoveries)
+  {
+#ifdef DEBUG
+    dump_backlog();
+#endif
+
+    fprintf(stderr,"No error recovery context!\n%s():%s",name,text);
+    exit(99);
+  }
+
+  push_text(text);
+
   f_backtrace(0);
+
+  if (file) {
+    push_text(file);
+    push_int(line);
+  } else {
+    push_int(0);
+    push_int(0);
+  }
+  push_text(name);
+
+  for (i=-args; i; i++) {
+    push_svalue(oldsp + i);
+  }
+
+  f_aggregate(args + 3);
+  f_aggregate(1);
+
+  f_add(2);
+
   f_aggregate(2);
+
   free_svalue(& throw_value);
   throw_value = *--sp;
   throw_severity=THROW_ERROR;
@@ -168,9 +232,7 @@ void debug_fatal(char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
   (void)VFPRINTF(stderr, fmt, args);
 
   d_flag=t_flag=0;
-  push_text("Attempting to dump backlog (may fail).\n");
-  f_backtrace(0);
-  f_aggregate(2);
+  push_error("Attempting to dump backlog (may fail).\n");
   APPLY_MASTER("describe_backtrace",1);
   if(sp[-1].type==T_STRING)
     write_to_stderr(sp[-1].u.string->str, sp[-1].u.string->len);
