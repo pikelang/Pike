@@ -16,7 +16,7 @@ string _sprintf()
 
 inline string normalize(string text)
 {
-  return replace(text, whtspaces+interpunc,
+  return replace(lower_case(text), whtspaces+interpunc,
 		 ({" "})*sizeof(whtspaces+interpunc));
 }
 
