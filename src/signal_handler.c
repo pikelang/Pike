@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.48 1998/04/20 18:53:22 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.49 1998/04/21 14:15:09 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -67,6 +67,8 @@ RCSID("$Id: signal_handler.c,v 1.48 1998/04/20 18:53:22 grubba Exp $");
 
 #define SIGNAL_BUFFER 16384
 #define WAIT_BUFFER 4096
+
+/* #define PROC_DEBUG */
 
 extern int fd_from_object(struct object *o);
 
@@ -673,7 +675,7 @@ static void free_perishables(struct perishables *storage)
  *   gid		int
  *   nice		int
  *   noinitgroups	int
- *   setgroups		array(int)
+ *   setgroups		array(int|string)
  *   keep_signals	int
  *
  * FIXME:
@@ -854,25 +856,31 @@ void f_create_process(INT32 args)
     SET_ONERROR(err, free_perishables, &storage);
 
 #ifdef HAVE_GETEUID
-      wanted_uid=geteuid();
+    wanted_uid=geteuid();
 #else
-      wanted_uid=getgid();
+    wanted_uid=getgid();
 #endif
 
-#ifdef HAVE_GETGID
-      wanted_gid=getegid();
+#ifdef HAVE_GETEGID
+    wanted_gid=getegid();
 #else
-      wanted_gid=getgid();
+    wanted_gid=getgid();
 #endif
+#ifdef PROC_DEBUG
+    fprintf(stderr, "%s:%d: wanted_gid=%d\n", __FILE__, __LINE__, wanted_gid);
+#endif /* PROC_DEBUG */
 
     if(optional)
     {
-      if((tmp=simple_mapping_string_lookup(optional, "gid")))
+      if((tmp = simple_mapping_string_lookup(optional, "gid")))
       {
 	switch(tmp->type)
 	{
 	  case T_INT:
 	    wanted_gid=tmp->u.integer;
+#ifdef PROC_DEBUG
+    fprintf(stderr, "%s:%d: wanted_gid=%d\n", __FILE__, __LINE__, wanted_gid);
+#endif /* PROC_DEBUG */
 	    gid_request=1;
 	    break;
 	    
@@ -882,14 +890,20 @@ void f_create_process(INT32 args)
 	    extern void f_getgrnam(INT32);
 	    push_svalue(tmp);
 	    f_getgrnam(1);
-	    if(!sp[-1].type!=T_ARRAY)
+	    if(!sp[-1].type != T_ARRAY)
 	      error("No such group.\n");
-	    if(sp[-1].u.array->item[2].type!=T_INT)
-	      error("Getpwuid failed!\n");
-	    wanted_gid=sp[-1].u.array->item[2].u.integer;
+	    if(sp[-1].u.array->item[2].type != T_INT)
+	      error("Getgrnam failed!\n");
+	    wanted_gid = sp[-1].u.array->item[2].u.integer;
+#ifdef PROC_DEBUG
+    fprintf(stderr, "%s:%d: wanted_gid=%d\n", __FILE__, __LINE__, wanted_gid);
+#endif /* PROC_DEBUG */
 	    pop_stack();
 	    gid_request=1;
 	  }
+	  break;
+#else
+#error These ought to exist on Solaris.
 #endif
 	  
 	  default:
@@ -906,18 +920,23 @@ void f_create_process(INT32 args)
 #if defined(HAVE_GETPWUID) || defined(HAVE_GETPWENT)
 	    if(!gid_request)
 	    {
-	      extern void f_getpwent(INT32);
-	      push_int(gid_request);
-	      f_getpwent(1);
+	      extern void f_getpwuid(INT32);
+	      push_int(wanted_uid);
+	      f_getpwuid(1);
 
 	      if(sp[-1].type==T_ARRAY)
 	      {
 		if(sp[-1].u.array->item[3].type!=T_INT)
 		  error("Getpwuid failed!\n");
-		wanted_gid=sp[-1].u.array->item[3].u.integer;
+		wanted_gid = sp[-1].u.array->item[3].u.integer;
+#ifdef PROC_DEBUG
+    fprintf(stderr, "%s:%d: wanted_gid=%d\n", __FILE__, __LINE__, wanted_gid);
+#endif /* PROC_DEBUG */
 	      }
 	      pop_stack();
 	    }
+#else
+#error These ought to exist on Solaris.
 #endif
 	    break;
 	    
@@ -935,6 +954,9 @@ void f_create_process(INT32 args)
 	    wanted_uid=sp[-1].u.array->item[2].u.integer;
 	    if(!gid_request)
 	      wanted_gid=sp[-1].u.array->item[3].u.integer;
+#ifdef PROC_DEBUG
+    fprintf(stderr, "%s:%d: wanted_gid=%d\n", __FILE__, __LINE__, wanted_gid);
+#endif /* PROC_DEBUG */
 	    pop_stack();
 	    break;
 	  }
@@ -947,6 +969,9 @@ void f_create_process(INT32 args)
 
       if((tmp=simple_mapping_string_lookup(optional, "setgroups")))
       {
+#ifdef PROC_DEBUG
+	fprintf(stderr, "Use setgroups\n");
+#endif /* PROC_DEBUG */
 #ifdef HAVE_SETGROUPS
 	if(tmp->type != T_ARRAY)
 	{
@@ -1009,12 +1034,17 @@ void f_create_process(INT32 args)
     if(wanted_uid != getuid() && do_initgroups)
     {
       extern void f_get_groups_for_user(INT32);
+#ifdef PROC_DEBUG
+      fprintf(stderr, "Creating wanted_gids_array\n");
+#endif /* PROC_DEBUG */
       push_int(wanted_uid);
       f_get_groups_for_user(1);
       if(sp[-1].type == T_ARRAY)
       {
 	storage.wanted_gids_array=sp[-1].u.array;
 	sp--;
+      } else {
+	pop_stack();
       }
     }
 #endif
@@ -1022,6 +1052,9 @@ void f_create_process(INT32 args)
     if(storage.wanted_gids_array)
     {
       int e;
+#ifdef PROC_DEBUG
+    fprintf(stderr, "Creating wanted_gids (size=%d)\n", storage.wanted_gids_array->size);
+#endif /* PROC_DEBUG */
       storage.wanted_gids=(gid_t *)xalloc(sizeof(gid_t) * (storage.wanted_gids_array->size + 1));
       storage.wanted_gids[0]=65534; /* Paranoia */
       for(e=0;e<storage.wanted_gids_array->size;e++)
@@ -1050,6 +1083,9 @@ void f_create_process(INT32 args)
 	  default:
 	    error("Gids must be integers or strings only.\n");
 	}
+#ifdef PROC_DEBUG
+	fprintf(stderr, "GROUP #%d is %ld\n", e, storage.wanted_gids[e]);
+#endif /* PROC_DEBUG */
       }
       storage.num_wanted_gids=storage.wanted_gids_array->size;
       free_array(storage.wanted_gids_array);
@@ -1194,6 +1230,9 @@ void f_create_process(INT32 args)
       if(wanted_gid != getgid())
 #endif
       {
+#ifdef PROC_DEBUG
+    fprintf(stderr, "%s:%d: wanted_gid=%d\n", __FILE__, __LINE__, wanted_gid);
+#endif /* PROC_DEBUG */
 	if(setgid(wanted_gid))
 #ifdef _HPUX_SOURCE
           /* Kluge for HP-(S)UX */
@@ -1206,6 +1245,9 @@ void f_create_process(INT32 args)
 #ifdef HAVE_SETGROUPS
       if(storage.wanted_gids)
       {
+#ifdef PROC_DEBUG
+    fprintf(stderr, "Calling setgroups()\n");
+#endif /* PROC_DEBUG */
 	if(setgroups(storage.num_wanted_gids, storage.wanted_gids))
 	{
 	  exit(77);
@@ -1227,6 +1269,9 @@ void f_create_process(INT32 args)
 	  if(!pw) exit(77);
 	  initgroupgid=pw->pw_gid;
 /*	  printf("uid=%d euid=%d initgroups(%s,%d)\n",getuid(),geteuid(),pw->pw_name, initgroupgid); */
+#ifdef PROC_DEBUG
+    fprintf(stderr, "Calling initgroups()\n");
+#endif /* PROC_DEBUG */
 	  if(initgroups(pw->pw_name, initgroupgid))
 #ifdef _HPUX_SOURCE
 	    /* Kluge for HP-(S)UX */
