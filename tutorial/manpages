@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: manpages,v 1.16 1998/05/13 00:46:29 grubba Exp $
+// $Id: manpages,v 1.17 1998/05/13 00:49:59 grubba Exp $
 
 #include "types.h"
 inherit Stdio.File : out;
@@ -179,7 +179,7 @@ void make_page(string base, TAG tag, string ind, string fbase)
        mkdirhier(globalbase+base);
      }
 
-     verbose = ((names*",") == "Thread.Mutex");
+     // verbose = ((names*",") == "Thread.Mutex");
 
      string page=strip_empty_lines(make_manpage(base,tag->data,ind+" ",fbase));
 
