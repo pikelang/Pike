@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.40 2003/12/18 15:40:07 grubba Exp $
+# $Id: run_autoconfig,v 1.41 2004/04/04 13:33:22 mast Exp $
 #
 # Bootstrap script
 
@@ -90,7 +90,9 @@ if [ "x$autoconf_version" != "x$autoheader_version" ]; then
 else :; fi
 
 IFS=''
-( find . -follow -type d -print $prune_flag || find . -type d -print $prune_flag ) |egrep -v '/(CVS)|(RCS)|(test-install)$'| while read dir; do
+( find . -follow -type d -print $prune_flag || \
+  find . -type d -print $prune_flag
+) | egrep -v '/(CVS)|(RCS)|(test-install)$' | sort | uniq | while read dir; do
 
   IFS=' 	
   '
