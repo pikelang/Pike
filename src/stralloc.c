@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.196 2005/02/25 23:33:45 nilsson Exp $
+|| $Id: stralloc.c,v 1.197 2005/03/09 12:03:15 mast Exp $
 */
 
 #include "global.h"
@@ -2650,9 +2650,9 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 					flags, min_width, precision);
 	  break;
 	case 'd':
+	  flags |= APPEND_SIGNED;
 	  string_builder_append_integer(s, pike_va_int(VA_LIST_ADDR(args), flags), 10,
-					flags | APPEND_SIGNED,
-					min_width, precision);
+					flags, min_width, precision);
 	  break;
 
 	  /* FIMXE: TODO: Doubles (ie 'a', 'e', 'E', 'g', 'G'). */
