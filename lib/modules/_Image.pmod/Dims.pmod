@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//   $Id: Dims.pmod,v 1.4 2004/05/23 14:48:51 nilsson Exp $
+//   $Id: Dims.pmod,v 1.5 2004/05/23 14:55:56 nilsson Exp $
 //
 //   Imagedimensionreadermodule for Pike.
 //   Created by Johan Schön, <js@roxen.com>.
@@ -62,8 +62,8 @@ static int first_marker(Stdio.File f)
   int c1, c2;
     
   sscanf(f->read(2), "%c%c", c1, c2);
-  if (c1!=0xFF||c2!=M_SOI) return 0;
-  return 1;
+  if (c1==0xFF||c2==M_SOI) return 1;
+  return 0;
 }
 
 /*
@@ -169,30 +169,22 @@ array(int) get_JPEG(Stdio.File f)
 //! width and height, or if the file isn't a valid image, 0.
 array(int) get_GIF(Stdio.File f)
 {
-  int marker;
   int offs=f->tell();
   if(f->read(3)!="GIF") return 0;
   f->seek(offs+6);
-  int image_width = read_2_bytes_intel(f);
-  int image_height = read_2_bytes_intel(f);
-  return ({ image_width, image_height });
+  return array_sscanf(file->read(4), "%-2c%-2c");
 }
 
 //! Reads the dimensions from a PNG file and returns an array with
 //! width and height, or if the file isn't a valid image, 0.
 array(int) get_PNG(Stdio.File f)
 {
-  int marker;
   int offs=f->tell();
   f->seek(offs+1);
   if(f->read(3)!="PNG") return 0;
   f->seek(offs+12);
   if(f->read(4)!="IHDR") return 0;
-  read_2_bytes(f);
-  int image_width = read_2_bytes(f);
-  read_2_bytes_intel(f);
-  int image_height = read_2_bytes(f);
-  return ({ image_width, image_height });
+  return array_sscanf(file->read(8), "%4c%4c");
 }
 
 //! Read dimensions from a JPEG, GIF or PNG file and return an array
@@ -200,6 +192,16 @@ array(int) get_PNG(Stdio.File f)
 //! @expr{0@}. The argument @[file] should be file object or the data
 //! from a file. The offset pointer will be assumed to be at the start
 //! of the file data and will be modified by the function.
+//! @returns
+//!   @array
+//!     @elem int 0
+//!       Image width.
+//!     @elem int 1
+//!       Image height.
+//!     @elem string 2
+//!       Image type. Any of @expr{"gif"@}, @expr{"png"@} and
+//!       @expr{"jpeg@}.
+//!   @endarray
 array(int) get(string|Stdio.File file) {
   if(stringp(file)) file = Stdio.FakeFile(file);
 
