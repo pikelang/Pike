@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.53 2002/03/23 03:37:30 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.54 2002/03/23 16:24:41 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -187,6 +187,7 @@ private class CommandSet {
 	if(!f)
 	  write("No formatting string given.\n");
 	else {
+	  // FIXME: We should do a real string compilation.
 	  f = replace(f, ([ "\\n":"\n", "\\\"":"\"" ]) );
 	  e->reswrite = Reswriter(f[1..sizeof(f)-2]);
 	}
@@ -1179,7 +1180,7 @@ class Evaluator {
 
   void std_reswrite(function w, string sres, int num, mixed res) {
     w( "Result %d: %s\n", num,
-       replace(sres, "\n", "\n        ") );
+       replace(sres, "\n", "\n         "+(" "*sizeof(""+num))) );
   }
 
   function reswrite = std_reswrite;
