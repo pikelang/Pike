@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.382 2004/05/01 13:46:31 mast Exp $
+# $Id: Makefile.in,v 1.383 2004/07/04 12:54:46 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -551,7 +551,7 @@ just_verify: testsuites testsuite master-stamp
 	else args="$(TESTARGS)" ; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike $$args
 
-valgrind_verify: testsuites testsuite master-stamp
+valgrind_just_verify: testsuites testsuite master-stamp
 	if test "x$(TESTARGS)" = x ; then args="-F -a -v" ; \
 	else args="$(TESTARGS)" ; fi; \
 	$(VALGRIND) $(VALGRINDARGS) $(RUNPIKE) $(TMP_BINDIR)/test_pike.pike $$args
@@ -592,6 +592,16 @@ just-tinstall: master-stamp
 
 
 verify: testsuites testsuite tinstall
+	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
+	if test "$(TESTARGS)" = "" ; then args="-F -a -v" ; else \
+	  args="$(TESTARGS)" ; fi; \
+	if test -f ./test-pike ; then \
+	  ./test-pike -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; \
+	else \
+	  sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; \
+	fi
+
+valgrind_verify: testsuites testsuite tinstall
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
 	if test "$(TESTARGS)" = "" ; then args="-F -a -v" ; else \
 	  args="$(TESTARGS)" ; fi; \
