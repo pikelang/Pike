@@ -16,6 +16,8 @@ char *low_make_buf_space(INT32 space,dynamic_buffer *buf)
   char *ret;
   if(buf->s.len+space>=buf->bufsize)
   {
+    if(!buf->bufsize) buf->bufsize=1;
+
     do{
       buf->bufsize*=2;
     }while(buf->s.len+space>=buf->bufsize);
