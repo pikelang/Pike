@@ -3,12 +3,13 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.1 1998/10/15 19:33:34 marcus Exp $");
+RCSID("$Id: charsetmod.c,v 1.2 1998/11/02 22:55:19 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
 #include "object.h"
 #include "module_support.h"
+#include "error.h"
 
 #include "iso2022.h"
 
