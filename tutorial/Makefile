@@ -51,6 +51,9 @@ Protocols.wmml :
 		fi		\
 	done > Protocols.wmml
 
+Modules.wmml: 
+	$(MKWMML) `find ../lib/modules -type f -print ` >Modules.wmml
+
 
 # ----------------------------------------------------------------------
 
