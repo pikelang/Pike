@@ -161,6 +161,10 @@ class LocaleObject
       functions = ([]);
   }
 
+  array(string|int) list_ids() {
+    return indices(bindings);
+  }
+
   string translate(string|int key)
   {
 #ifdef LOCALE_DEBUG_ALL
