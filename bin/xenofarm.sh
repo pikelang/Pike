@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# $Id: xenofarm.sh,v 1.15 2002/12/09 23:15:26 nilsson Exp $
+# $Id: xenofarm.sh,v 1.16 2003/02/08 14:44:29 mast Exp $
 # This file scripts the xenofarm actions and creates a result package
 # to send back.
 
@@ -83,6 +83,17 @@ log_start response_assembly
     gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$BUILDDIR/pike" {} >> \
       build/xenofarm/_core.txt ";"
   cp "$BUILDDIR/dumpmodule.log" build/xenofarm/dumplog.txt || /bin/true
+  (
+    cd "$BUILDDIR"
+    test -f config.log && cat config.log
+    for f in `find modules post_modules -name config.log -type f`; do
+      echo
+      echo '###################################################'
+      echo '##' `dirname "$f"`
+      echo
+      cat "$f"
+    done
+  ) > build/xenofarm/configlogs.txt
 log_end $?
 
 log "END"
