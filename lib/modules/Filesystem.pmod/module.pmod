@@ -132,9 +132,6 @@ class Base
   int rm(string filename);
 
   array find(void|function(Stat:int) mask, mixed ...extra);
-
-  // for simplicity in descendants
-  static program this_class = object_program(this_object());
 }
 
 int parse_mode(int old, int|string mode)
