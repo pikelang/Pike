@@ -1,4 +1,4 @@
-/* $Id: connection.pike,v 1.8 1998/05/20 23:13:52 grubba Exp $
+/* $Id: connection.pike,v 1.9 1998/08/26 11:44:24 grubba Exp $
  *
  * SSL packet layer
  */
@@ -90,7 +90,11 @@ void send_packet(object packet, int|void priority)
 	          PACKET_handshake : PRI_urgent,
 		  PACKET_application_data : PRI_application ])[packet->content_type];
 #ifdef SSL3_DEBUG
-  werror(sprintf("SSL.connection->send_packet: type %d, %d, '%s'\n",
+  if (packet->content_type == 22)
+    werror(sprintf("SSL.connection->send_packet() called from:\n"
+		   "%s\n", describe_backtrace(backtrace())));
+
+  werror(sprintf("SSL.connection->send_packet: type %d, %d, '%O'\n",
 		 packet->content_type, priority,  packet->fragment[..5]));
 #endif
   switch (priority)

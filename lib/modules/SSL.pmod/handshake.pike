@@ -1,4 +1,4 @@
-/* $Id: handshake.pike,v 1.10 1998/08/26 07:10:36 nisse Exp $
+/* $Id: handshake.pike,v 1.11 1998/08/26 11:42:44 grubba Exp $
  *
  */
 
@@ -75,7 +75,7 @@ object server_hello_packet()
 
   string data = struct->pop_data();
 #ifdef SSL3_DEBUG
-  werror(sprintf("SSL.handshake: Server hello: '%s'\n", data));
+  werror(sprintf("SSL.handshake: Server hello: '%O'\n", data));
 #endif
   return handshake_packet(HANDSHAKE_server_hello, data);
 }
@@ -157,8 +157,8 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
 
     object s = context->rsa->raw_sign(digest);
 #ifdef SSL3_DEBUG
-    werror(sprintf("  Digest: '%s'\n"
-		   "  Signature: '%s'\n",
+    werror(sprintf("  Digest: '%O'\n"
+		   "  Signature: '%O'\n",
 		   digest, s->digits(256)));
 #endif
     
@@ -222,7 +222,7 @@ string server_derive_master_secret(string data)
    {
      /* Decrypt the pre_master_secret */
 #ifdef SSL3_DEBUG
-     werror(sprintf("encrypted premaster_secret: '%s'\n", data));
+     werror(sprintf("encrypted premaster_secret: '%O'\n", data));
 #endif
      // trace(1);
      string s = (temp_key || context->rsa)->decrypt(data);
@@ -260,7 +260,7 @@ string server_derive_master_secret(string data)
    }
   }
 #ifdef SSL3_DEBUG
-//  werror(sprintf("master: '%s'\n", res));
+//  werror(sprintf("master: '%O'\n", res));
 #endif
   return res;
 }
@@ -329,13 +329,13 @@ int handle_handshake(int type, string data, string raw)
 
 #ifdef SSL3_DEBUG
 	if (strlen(id))
-	  werror(sprintf("SSL.handshake: Looking up session %s\n", id));
+	  werror(sprintf("SSL.handshake: Looking up session %O\n", id));
 #endif
 	session = strlen(id) && context->lookup_session(id);
 	if (session)
 	{
 #ifdef SSL3_DEBUG
-	  werror(sprintf("SSL.handshake: Reusing session %s\n", id));
+	  werror(sprintf("SSL.handshake: Reusing session %O\n", id));
 #endif
 	  /* Reuse session */
 	  reuse = 1;
@@ -560,7 +560,7 @@ int handle_handshake(int type, string data, string raw)
    }
   }
 #ifdef SSL3_DEBUG
-//  werror(sprintf("SSL.handshake: messages = '%s'\n", handshake_messages));
+//  werror(sprintf("SSL.handshake: messages = '%O'\n", handshake_messages));
 #endif
   return 0;
 }
