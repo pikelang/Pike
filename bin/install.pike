@@ -949,7 +949,8 @@ int pre_install(array(string) argv)
 				 uname()->release,
 				 uname()->machine);
       }
-      export_base_name=replace(export_base_name,"/","-");
+      export_base_name=replace(export_base_name,
+			       ({ "/", " " }), ({ "-", "-" }) );
 #else
       export_base_name=ver;
 #endif
