@@ -1,12 +1,12 @@
 #pike __REAL_VERSION__
-// $Id: Random.pmod,v 1.9 2004/03/10 00:38:50 nilsson Exp $
+// $Id: Random.pmod,v 1.10 2004/03/10 00:43:37 nilsson Exp $
 
 //! This module contains stuff to that tries to give you the
 //! best possible random generation.
 
 #if constant(Nettle.Yarrow)
 
-#if !constant(Crypto.NT)
+#if !constant(Nettle.NT)
 static string dev_urandom;
 static string dev_random;
 
@@ -22,8 +22,8 @@ static class RND {
   inherit Nettle.Yarrow;
   static int bytes_left = 32;
 
-#if constant(Crypto.NT)
-  static Crypto.NT.CryptContext ctx;
+#if constant(Nettle.NT)
+  static Nettle.NT.CryptContext ctx;
 #else
   static Stdio.File f;
 #endif
@@ -38,9 +38,9 @@ static class RND {
     ::create(3);
     int entropy_needed = min_seed_size()*2;
 
-#if constant(Crypto.NT)
-    ctx = Crypto.NT.CryptContext(0, 0, Crypto.NT.PROV_RSA_FULL,
-				 Crypto.NT.CRYPT_VERIFYCONTEXT );
+#if constant(Nettle.NT)
+    ctx = Nettle.NT.CryptContext(0, 0, Nettle.NT.PROV_RSA_FULL,
+				 Nettle.NT.CRYPT_VERIFYCONTEXT );
     seed( ctx->read(entropy_needed) );
 #else
     if (dev_random) {
@@ -116,7 +116,7 @@ static class RND {
       bytes_left -= pass;
       len -= pass;
       if(!bytes_left) {
-#if constant(Crypto.NT)
+#if constant(Nettle.NT)
 	// CryptGenRandom claims to be cryptographically strong.
 	update( ctx->read(32), 0, 256 );
 #else
