@@ -1,3 +1,7 @@
+Sun Dec 15 07:50:35 1996  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* file.c (file_close): fixed a file descriptor leak
+
 Tue Dec 10 16:43:55 1996  David Hedbor  <neotron@mouser.hedbor.org.>
 
 	* language.yacc (string): Added extern int cumulative_parse_error
