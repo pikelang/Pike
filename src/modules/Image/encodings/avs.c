@@ -5,7 +5,7 @@
 #include <netinet/in.h>
 
 #include "stralloc.h"
-RCSID("$Id: avs.c,v 1.1 1999/04/12 10:30:03 per Exp $");
+RCSID("$Id: avs.c,v 1.2 1999/04/15 02:40:08 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -48,7 +48,7 @@ void image_avs_f__decode(INT32 args)
   extern void f_aggregate_mapping(INT32 args);
   struct object *io, *ao;
   struct pike_string *s;
-  int c;
+  unsigned int c;
   unsigned int w, h;
   unsigned char *q;
   get_all_args( "decode", args, "%S", &s);
@@ -60,7 +60,7 @@ void image_avs_f__decode(INT32 args)
   if( w <= 0 || h <= 0)
     error("This is not an AVS file (w=%d; h=%d)\n", w, h);
 
-  if(w*h*4+8 > s->len)
+  if((unsigned)w*h*4+8 > (unsigned)s->len)
     error("This is not an AVS file (w=%d; h=%d; s=%d)\n",w,h,s->len);
 
   push_int( w );
