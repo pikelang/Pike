@@ -1,6 +1,6 @@
 require gnome;
 class gnome_icon_list;
-inherit gnome_canvas;
+inherit widget;
 // The GNOME icon list widget can hold a number of icons with
 // captions. The icons on the list can be selected (various selection
 // methods are supported). The programmer can enable caption-editing

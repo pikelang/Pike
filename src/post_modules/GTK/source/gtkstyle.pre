@@ -30,8 +30,8 @@ COPY array GDK.Color &mid[5];
 COPY array GDK.Color &text[5];
 COPY array GDK.Color &base[5];
 
-REF member GDK.Color &black;
-REF member GDK.Color &white;
+COPY member GDK.Color &black;
+COPY member GDK.Color &white;
 
 REF member GDK.Font font;
 REF array GDK.Pixmap bg_pixmap[5];
