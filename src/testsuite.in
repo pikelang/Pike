@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.647 2003/05/27 16:17:34 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.648 2003/05/27 21:05:46 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9613,6 +9613,7 @@ test_any([[
   Process.TraceProcess proc =
     Process.TraceProcess(RUNPIKE_ARRAY + ({ "-e", "sleep(99999)" }));
 
+  int initial_sleep = 5;
   int state;
   int code;
   while ((code = proc->wait()) == -2) {
@@ -9626,7 +9627,9 @@ test_any([[
       state = ((state <= 1) ? 1 : state);
       proc->cont();
 
-      sleep(5);	// Give it some time to settle down after initialization.
+      // Give it some time to settle down after initialization.
+      sleep(initial_sleep);
+      initial_sleep=1;
 
       // Check that we can block deadly signals.
       proc->kill(signum("TERM"));
@@ -9643,7 +9646,7 @@ test_any([[
       break;
     case signum("CONT"):
       if (state != 2) {
-	werror("Unexpected SIGTERM in state %d.\n", state);
+	werror("Unexpected SIGCONT in state %d.\n", state);
       }
       state = ((state <= 3) ? 3 : state);
       proc->cont(signum("KILL"));	// Make it a SIGKILL
