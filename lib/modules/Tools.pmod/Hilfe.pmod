@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.36 2002/03/02 16:42:57 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.37 2002/03/03 03:13:04 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -16,9 +16,6 @@ constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
   local variables/constants/functions/programs.
 - Some preprocessor stuff works. Some doesn't. They should be
   reviewed and fixed where possible.
-- Parser.Pike needs to stream better. Currently Hilfe input that
-  ends with /* or #\"will produce a tokianization error since the
-  end of that token can not be found.
 - Filter exit/quit from history. Could be done by adding a 'pop'
   method to Readline.History and call it from StdinHilfes' destroy.
 - Add some better multiline edit support.
@@ -500,7 +497,7 @@ private class ParserState {
   private string last;
   private string block;
 
-  //  mapping low_state = ([]);
+  private mapping low_state = ([]);
 
   //! Feed more tokens into the state.
   void feed(array(string) tokens) {
@@ -563,6 +560,23 @@ private class ParserState {
     return ret;
   }
 
+  //! Sends the input @[line] to @[Parser.Pike] for tokanization,
+  //! but keeps a state between each call to handle multiline
+  //! /**/ comments and multiline #"" strings.
+  //!
+  //! @param w
+  //!   A function that will be called with an error string in
+  //!   the event of any error in the tokanization.
+  array(string) push_string(string line, function w) {
+    array(string) tokens;
+    mixed err;
+    if(err = catch( tokens = Parser.Pike.split(line, low_state) )) {
+      w("Hilfe Error: %s", err[0]);
+      return ({});
+    }
+    return tokens;
+  }
+
   //! Returns true if there is any waiting expression that can be fetched
   //! with @[read].
   int datap() {
@@ -575,7 +589,7 @@ private class ParserState {
   //! Hilfe prompt when entering multiline expressions.
   int(0..1) finishedp() {
     if(pstack->ptr) return 0;
-    //    if(low_state->in_token) return 0;
+    if(low_state->in_token) return 0;
     if(!sizeof(pipeline)) return 1;
     if(sizeof(pipeline)==1 && whitespace[pipeline[0][0]]) {
       pipeline = ({});
@@ -591,7 +605,7 @@ private class ParserState {
     ready = ({});
     last = 0;
     block = 0;
-    //    low_state = ([]);
+    low_state = ([]);
   }
 
   //! Returns the current parser state. Used by "dump state".
@@ -767,12 +781,7 @@ class Evaluator {
   void add_buffer(string s)
   {
     // Tokanize the input
-    array tokens;
-
-    if(catch( tokens = Parser.Pike.split(s) )) {
-      write("Hilfe Error: Could not tokanize input string.\n");
-      return;
-    }
+    array tokens = state->push_string(s, write);
 
     if(!sizeof(tokens))
       return;
