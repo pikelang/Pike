@@ -1,4 +1,4 @@
-// $Id: assemble_autodoc.pike,v 1.25 2003/01/20 17:44:02 nilsson Exp $
+// $Id: assemble_autodoc.pike,v 1.26 2003/02/08 01:46:29 nilsson Exp $
 
 constant description = "Assembles AutoDoc output file.";
 
@@ -13,6 +13,7 @@ int appendix;
 
 mapping queue = ([]);
 mapping appendix_queue = ([]);
+mapping ns_queue = ([]);
 array(Node) chapters = ({});
 
 Node void_node = Node(XML_ELEMENT, "void", ([]), 0);
@@ -140,6 +141,21 @@ class mvEntry {
   }
 }
 
+class mvPeelEntry {
+  inherit Entry;
+  constant type = "mvPeel";
+
+  void `()(Node data) {
+    Node i_node = target->get_parent();
+
+    // WARNING! Disrespecting information hiding!
+    int pos = search(i_node->mChildren, data);
+    array pre = i_node->mChildren[..pos-1];
+    array post = i_node->mChildren[pos+1..];
+    i_node->mChildren = pre + data->mChildren + post;
+  }
+}
+
 class cpEntry {
   inherit Entry;
   constant type = "cp";
@@ -150,11 +166,28 @@ class cpEntry {
   }
 }
 
-void enqueue_move(string source, Node target) {
+void enqueue_move(Node target) {
+
+  mapping(string:string) m = target->get_attributes();
+  if(m->namespace) {
+    string ns = m->namespace;
+    sscanf(ns, "%s::", ns);
+    ns += "::";
+    if(ns_queue[ns])
+      error("Move source already allocated (%O).\n", ns);
+    if(m->peel="yes")
+      ns_queue[ns] = mvPeelEntry(target);
+    else
+      ns_queue[ns] = mvEntry(target);
+    return;
+  }
+  else if(!m->entity)
+    error("Error in insert-move element.\n");
+
   mapping bucket = queue;
 
-  if(source != "") {
-    array path = map(source/".", replace, "-", ".");
+  if(m->entity != "") {
+    array path = map(m->entity/".", replace, "-", ".");
     if (!has_value(path[0], "::")) {
       // Default namespace.
       path = ({ "predef::" }) + path;
@@ -171,7 +204,7 @@ void enqueue_move(string source, Node target) {
   }
 
   if(bucket[0])
-    error("Move source already allocated (%s).\n", source);
+    error("Move source already allocated (%s).\n", m->entity);
 
   bucket[0] = mvEntry(target);
 }
@@ -203,7 +236,7 @@ void section_ref_expansion(Node n) {
       break;
 
     case "insert-move":
-      enqueue_move(c->get_attributes()->entity, c);
+      enqueue_move(c);
       break;
 
     default:
@@ -230,7 +263,7 @@ void chapter_ref_expansion(Node n, string dir) {
       break;
 
     case "insert-move":
-      enqueue_move(c->get_attributes()->entity, c);
+      enqueue_move(c);
       break;
 
     default:
@@ -385,33 +418,37 @@ static void move_items_low(Node n, mapping jobs, void|Node wrapper) {
     }
 }
 
-void move_items(Node n, mapping jobs, void|Node wrapper)
+void move_items(Node n, mapping jobs)
 {
   if(jobs[0]) {
-    if(wrapper)
-      jobs[0]( wrap(n, wrapper->clone()) );
-    else
-      jobs[0](n);
+    jobs[0](n);
     m_delete(jobs, 0);
   }
-  if(!sizeof(jobs)) return;
+  if(!sizeof(jobs) && !sizeof(ns_queue)) return;
 
   foreach(n->get_elements("namespace"), Node c) {
     mapping m = c->get_attributes();
     string name = m->name + "::";
+
+    if(ns_queue[name]) {
+      ns_queue[name]( c );
+      m_delete(ns_queue, name);
+    }
+
     mapping e = jobs[name];
     if(!e) continue;
 
     Node wr = Node(XML_ELEMENT, "autodoc",
 		   n->get_attributes()+(["hidden":"1"]), 0);
-    if(wrapper)
-      wr = wrap( wr, wrapper->clone() );
 
     move_items_low(c, e, wr);
 
     if(!sizeof(e))
       m_delete(jobs, name);
   }
+
+  foreach(indices(ns_queue), string name)
+    werror("Failed to move namespace %O.\n", name);
 }
 
 string make_toc_entry(Node n) {
@@ -453,6 +490,8 @@ void report_failed_entries(mapping scope, string path) {
 int(0..1) main(int num, array(string) args) {
 
   int T = time();
+  if(has_value(args, "--version"))
+     werror("$Id: assemble_autodoc.pike,v 1.26 2003/02/08 01:46:29 nilsson Exp $\n");
   if(num<3)
     error("To few arguments\n");
 
