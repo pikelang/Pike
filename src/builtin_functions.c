@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.335 2001/02/04 09:38:16 per Exp $");
+RCSID("$Id: builtin_functions.c,v 1.336 2001/02/05 19:25:26 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -6228,7 +6228,7 @@ PMOD_EXPORT void f_map_array(INT32 args)
  *! @returns
  *! Generally the same datatype as given, but with the subtype set to
  *! the return value of the function; the exception are program and
- *! function that gives a mapping back
+ *! function that give a mapping back.
  *!
  *! @note
  *! You may get unexpected errors if you feed the function with
