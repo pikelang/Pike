@@ -320,7 +320,7 @@ DESCRIPTION
 	 "type":	string	The type of the field.
 	 "length":	int	The length of the field.
 	 "max_length":	int	The length of the longest element in this field.
-	 "flags":	int	Some flags.
+	 "flags":	multiset(string)	Some flags.
 	 "decimals":	int	The number of decimalplaces.
 
 	The type of the field can be any of:
@@ -328,9 +328,14 @@ DESCRIPTION
 	"time", "longlong", "int24", "tiny blob", "medium blob",
 	"long blob", "var string", "string" or "unknown".
 
+	The flags multiset can contain any of
+	 "primary_key":	This field is part of the primary key for this table.
+	 "not_null":	This field may not be NULL.
+	 "blob":	This field is a blob field.
+
 NOTA BENE
 	Michael Widenius recomends usage of the following query instead:
-	show fields in 'table' like "wild"
+	 show fields in 'table' like "wild"
 
 SEE ALSO
 	mysql->list_dbs, mysql->list_tables, mysql->list_processes,
