@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.23 2000/02/02 00:38:27 hubbe Exp $
+ * $Id: gc.h,v 1.24 2000/04/08 02:01:08 hubbe Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -55,7 +55,7 @@ int debug_gc_check(void *x, TYPE_T t, void *data);
 void describe_something(void *a, int t, int dm);
 void describe(void *x);
 void debug_describe_svalue(struct svalue *s);
-INT32 gc_check(void *a);
+INT32 real_gc_check(void *a);
 void locate_references(void *a);
 int debug_gc_is_referenced(void *a);
 int gc_external_mark(void *a);
@@ -65,13 +65,18 @@ void do_gc(void);
 void f__gc_status(INT32 args);
 /* Prototypes end here */
 
+#define gc_check_svalues(S,N) real_gc_check_svalues(debug_malloc_pass(S),N)
+#define gc_check_short_svalue(S,N) real_gc_check_short_svalue(debug_malloc_pass(S),N)
+#define gc_xmark_svalues(S,N) real_gc_xmark_svalues(debug_malloc_pass(S),N)
+#define gc_check(VP) real_gc_check(debug_malloc_pass(VP))
+
 #ifdef PIKE_DEBUG
 #define GC_FREE() do { num_objects-- ; if(num_objects < 0) fatal("Panic!! less than zero objects!\n"); }while(0)
 #else
-#define debug_gc_check_svalues(S,N,T,V) gc_check_svalues(S,N)
-#define debug_gc_check_short_svalue(S,N,T,V) gc_check_short_svalue(S,N)
-#define debug_gc_xmark_svalue(S,N,X) gc_xmark_svalue(S,N)
-#define debug_gc_check(VP,T,V) gc_check(VP)
+#define debug_gc_check_svalues(S,N,T,V) gc_check_svalues((S),N)
+#define debug_gc_check_short_svalue(S,N,T,V) gc_check_short_svalue((S),N)
+#define debug_gc_xmark_svalues(S,N,X) gc_xmark_svalues((S),N)
+#define debug_gc_check(VP,T,V) gc_check((VP))
 #define GC_FREE() do { num_objects-- ; }while(0)
 #endif
 
@@ -84,8 +89,8 @@ void f__gc_status(INT32 args);
 
 
 #ifdef PIKE_DEBUG
-#define gc_is_referenced debug_gc_is_referenced
-#define gc_do_free debug_gc_do_free
+#define gc_is_referenced(X) debug_gc_is_referenced(debug_malloc_pass(X))
+#define gc_do_free(X) debug_gc_do_free(debug_malloc_pass(X))
 #else
 #define gc_is_referenced(X) (get_marker(X)->refs < *(INT32 *)(X))
 #define gc_do_free(X) ( ! (get_marker(X)->flags & GC_REFERENCED ) )

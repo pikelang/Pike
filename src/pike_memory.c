@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.62 2000/04/06 21:00:20 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.63 2000/04/08 02:01:09 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1416,8 +1416,9 @@ void *__wrap_strdup(const char *s)
 #endif
 
 
-void dump_memhdr_locations(struct memhdr *from,
-			   struct memhdr *notfrom)
+void low_dump_memhdr_locations(struct memhdr *from,
+			   struct memhdr *notfrom,
+			   int indent)
 {
   struct memloc *l;
   if(!from) return;
@@ -1430,15 +1431,28 @@ void dump_memhdr_locations(struct memhdr *from,
     if(notfrom && find_location(notfrom, l->location))
       continue;
 
-    fprintf(stderr,"   %s %s (%d times) %s\n",
+    
+    fprintf(stderr,"%*s %s %s (%d times) %s\n",
+	    indent,"",
 	    LOCATION_IS_DYNAMIC(l->location) ? "-->" : "***",
 	    LOCATION_NAME(l->location),
 	    l->times,
 	    find_location(&no_leak_memlocs, l->location) ? "" :
 	    ( from->flags & MEM_REFERENCED ? "*" : "!*!")
 	    );
+
+    /* Allow linked memhdrs */
+/*    dump_memhdr_locations(my_find_memhdr(l,0),notfrom,indent+2); */
   }
 }
+
+void dump_memhdr_locations(struct memhdr *from,
+			   struct memhdr *notfrom)
+{
+  low_dump_memhdr_locations(from,notfrom, 2);
+}
+
+static void low_dmalloc_describe_location(struct memhdr *mh, int offset);
 
 static void find_references_to(void *block)
 {
@@ -1461,7 +1475,11 @@ static void find_references_to(void *block)
 	  {
 	    if(p[e] == block)
 	    {
-	      fprintf(stderr,"  <from %p word %d>\n",p,e);
+/*	      fprintf(stderr,"  <from %p word %d>\n",p,e); */
+	      describe_location(p,T_UNKNOWN,p+e);
+
+	      low_dmalloc_describe_location(m, e * sizeof(void *));
+
 	      m->flags |= MEM_WARN_ON_FREE;
 	    }
 	  }
@@ -1722,7 +1740,7 @@ struct dmalloc_string
 
 static struct dmalloc_string *dstrhash[DSTRHSIZE];
 
-LOCATION dynamic_location(char *file, int line)
+static LOCATION low_dynamic_location(char type, char *file, int line)
 {
   struct dmalloc_string **prev, *str;
   int len=strlen(file);
@@ -1736,7 +1754,7 @@ LOCATION dynamic_location(char *file, int line)
     if(hval == str->hval &&
        str->str[len+1]==':' &&
        !MEMCMP(str->str+1, file, len) &&
-       str->str[0]=='D' &&
+       str->str[0]==type &&
        atoi(str->str+len+2) == line)
     {
       *prev=str->next;
@@ -1749,7 +1767,7 @@ LOCATION dynamic_location(char *file, int line)
   if(!str)
   {
     str=malloc( sizeof(struct dmalloc_string) + len + 20);
-    sprintf(str->str, "D%s:%d", file, line);
+    sprintf(str->str, "%c%s:%d", type, file, line);
     str->hval=hval;
     str->next=dstrhash[h];
     dstrhash[h]=str;
@@ -1758,6 +1776,11 @@ LOCATION dynamic_location(char *file, int line)
   mt_unlock(&debug_malloc_mutex);
 
   return str->str;
+}
+
+LOCATION dynamic_location(char *file, int line)
+{
+  return low_dynamic_location('D',file,line);
 }
 
 
@@ -1783,8 +1806,9 @@ void * debug_malloc_name(void *p,char *file, int line)
  * one pointer to another. Used by clone() to copy
  * the name(s) of the program.
  */
-void debug_malloc_copy_names(void *p, void *p2)
+int debug_malloc_copy_names(void *p, void *p2)
 {
+  int names=0;
   if(p)
   {
     struct memhdr *mh,*from;
@@ -1796,12 +1820,42 @@ void debug_malloc_copy_names(void *p, void *p2)
       for(l=from->locations;l;l=l->next)
       {
 	if(LOCATION_IS_DYNAMIC(l->location))
+	{
 	  add_location(mh, l->location);
+	  names++;
+	}
       }
     }
 
     mt_unlock(&debug_malloc_mutex);
   }
+  return names;
+}
+
+char *dmalloc_find_name(void *p)
+{
+  char *name=0;
+  if(p)
+  {
+    struct memhdr *mh;
+    mt_lock(&debug_malloc_mutex);
+
+    if((mh=my_find_memhdr(p,0)))
+    {
+      struct memloc *l;
+      for(l=mh->locations;l;l=l->next)
+      {
+	if(LOCATION_IS_DYNAMIC(l->location))
+	{
+	  name=LOCATION_NAME(l->location);
+	  break;
+	}
+      }
+    }
+
+    mt_unlock(&debug_malloc_mutex);
+  }
+  return name;
 }
 
 int debug_malloc_touch_fd(int fd, LOCATION location)
@@ -1840,6 +1894,155 @@ void reset_debug_malloc(void)
       }
     }
   }
+}
+
+struct memory_map
+{
+  char name[128];
+  struct memory_map *next;
+  struct memory_map_entry *entries;
+};
+
+struct memory_map_entry
+{
+  struct memory_map_entry *next;
+  char name[128];
+  int offset;
+  int size;
+  int count;
+  int recur_offset;
+  struct memory_map *recur;
+};
+
+BLOCK_ALLOC(memory_map, 255)
+BLOCK_ALLOC(memory_map_entry, 511)
+
+void dmalloc_set_mmap(void *ptr, struct memory_map *m)
+{
+  debug_malloc_update_location(ptr, m->name+1);
+}
+
+void dmalloc_set_mmap_template(void *ptr, struct memory_map *m)
+{
+  debug_malloc_update_location(ptr,m->name);
+}
+
+void dmalloc_set_mmap_from_template(void *p, void *p2)
+{
+  int names=0;
+  if(p)
+  {
+    struct memhdr *mh,*from;
+    mt_lock(&debug_malloc_mutex);
+
+    if((from=my_find_memhdr(p2,0)) && (mh=my_find_memhdr(p,0)))
+    {
+      struct memloc *l;
+      for(l=from->locations;l;l=l->next)
+      {
+	if(l->location[0]=='T')
+	{
+	  add_location(mh, l->location+1);
+	  names++;
+	}
+      }
+    }
+
+    mt_unlock(&debug_malloc_mutex);
+  }
+}
+
+static void very_low_dmalloc_describe_location(struct memory_map *m,
+					       int offset,
+					       int indent)
+{
+  struct memory_map_entry *e;
+  fprintf(stderr,"%*s ** In memory map %s:\n",indent,"",m->name+2);
+  for(e=m->entries;e;e=e->next)
+  {
+    if(e->offset <= offset && e->offset + e->size * e->count > offset)
+    {
+      int num=(offset - e->offset)/e->size;
+      int off=offset-e->size*num-e->offset;
+      fprintf(stderr,"%*s    Found in member: %s[%d] + %d (offset=%d size=%d)\n",
+	      off,
+	      indent,"",
+	      num,
+	      e->name,e->offset,e->size);
+
+      if(e->recur)
+      {
+	very_low_dmalloc_describe_location(e->recur,
+					   off-e->recur_offset,
+					   indent+2);
+      }
+    }
+  }
+}
+
+static void low_dmalloc_describe_location(struct memhdr *mh, int offset)
+{
+  struct memloc *l;
+  for(l=mh->locations;l;l=l->next)
+  {
+    if(l->location[0]=='M')
+    {
+      struct memory_map *m = (struct memory_map *)(l->location - 1);
+      very_low_dmalloc_describe_location(m, offset,4);
+    }
+  }
+}
+
+void dmalloc_describe_location(void *p, int offset)
+{
+  if(p)
+  {
+    struct memhdr *mh;
+    mt_lock(&debug_malloc_mutex);
+    if((mh=my_find_memhdr(p,0))) low_dmalloc_describe_location(mh, offset);
+    mt_unlock(&debug_malloc_mutex);
+  }
+}
+
+struct memory_map *dmalloc_alloc_mmap(char *name, int line)
+{
+  struct memory_map *m;
+  mt_lock(&debug_malloc_mutex);
+  m=alloc_memory_map();
+  strncpy(m->name+2,name,sizeof(m->name)-2);
+  m->name[sizeof(m->name)-1]=0;
+  m->name[0]='T';
+  m->name[1]='M';
+
+  if(strlen(m->name)+12<sizeof(m->name))
+    sprintf(m->name+strlen(m->name),":%d",line);
+
+  m->entries=0;
+  mt_unlock(&debug_malloc_mutex);
+  return m;
+}
+
+void dmalloc_add_mmap_entry(struct memory_map *m,
+			    char *name,
+			    int offset,
+			    int size,
+			    int count,
+			    struct memory_map *recur,
+			    int recur_offset)
+{
+  struct memory_map_entry *e;
+  mt_lock(&debug_malloc_mutex);
+  e=alloc_memory_map_entry();
+  strncpy(e->name,name,sizeof(e->name));
+  e->name[sizeof(e->name)-1]=0;
+  e->offset=offset;
+  e->size=size;
+  e->count=count?count:1;
+  e->next=m->entries;
+  e->recur=recur;
+  e->recur=recur_offset;
+  m->entries=e;
+  mt_unlock(&debug_malloc_mutex);
 }
 
 #endif

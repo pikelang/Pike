@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.98 2000/04/06 21:07:58 hubbe Exp $");
+RCSID("$Id: object.c,v 1.99 2000/04/08 02:01:09 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -88,7 +88,28 @@ struct object *low_clone(struct program *p)
 
   o=(struct object *)xalloc( ((long)(((struct object *)0)->storage))+p->storage_needed);
 
-  debug_malloc_copy_names(o, p);
+#ifdef DEBUG_MALLOC
+  if(!debug_malloc_copy_names(o, p)) 
+  {
+    /* Didn't find a given name, revert to ad-hoc method */
+    char *tmp;
+    INT32 line,pos;
+
+    for(pos=0;pos<100;pos++)
+    {
+      tmp=get_line(p->program+pos, p, &line);
+      if(tmp && line)
+      {
+	debug_malloc_name(o, tmp, line);
+	break;
+      }
+      if(pos+1>=(long)p->num_program)
+	break;
+    }
+    
+  }
+  dmalloc_set_mmap_from_template(o,p);
+#endif
 
   o->prog=p;
   add_ref(p);
@@ -100,6 +121,11 @@ struct object *low_clone(struct program *p)
     first_object->prev=o;
   first_object=o;
   o->refs=1;
+
+#ifdef PIKE_DEBUG
+  o->program_id=p->id;
+#endif
+
   INITIALIZE_PROT(o);
   return o;
 }
@@ -481,6 +507,7 @@ void low_destruct(struct object *o,int do_free)
 	u=(union anything *)(pike_frame->current_storage +
 			     pike_frame->context.prog->identifiers[d].func.offset);
 	free_short_svalue(u, pike_frame->context.prog->identifiers[d].run_time_type);
+	DO_IF_DMALLOC(u->refs=(void *)-1);
       }
     }
   }
@@ -1190,8 +1217,8 @@ void gc_check_all_objects(void)
 	int q;
 	SET_FRAME_CONTEXT(p->inherits[e]);
 	
-	if(pike_frame->context.prog->gc_check)
-	  pike_frame->context.prog->gc_check(o);
+	if(pike_frame->context.prog->gc_check_func)
+	  pike_frame->context.prog->gc_check_func(o);
 
 	for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
 	{

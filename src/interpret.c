@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.138 2000/04/04 00:26:09 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.139 2000/04/08 02:01:08 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -620,8 +620,11 @@ static void do_trace_call(INT32 args)
   DO_IF_DMALLOC(					\
     X->context.prog=0;					\
     X->context.parent=0;				\
+    X->context.name=0;					\
     X->scope=0;						\
+    X->current_object=0;				\
     X->malloced_locals=0;				\
+    X->expendible=0;					\
     X->locals=0;					\
  )							\
 }while(0)

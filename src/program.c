@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.222 2000/04/06 21:00:20 hubbe Exp $");
+RCSID("$Id: program.c,v 1.223 2000/04/08 02:01:09 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -595,6 +595,62 @@ void fixate_program(void)
   }
 
   new_program->flags |= PROGRAM_FIXED;
+
+#ifdef DEBUG_MALLOC
+  {
+#define DBSTR(X) ((X)?(X)->str:"")
+    int e,v;
+    struct memory_map *m=dmalloc_alloc_mmap( DBSTR(lex.current_file),
+					     lex.current_line);
+    for(e=0;e<new_program->num_inherits;e++)
+    {
+      struct inherit *i=new_program->inherits+e;
+      char *tmp;
+      char buffer[50];
+
+      for(v=0;v<i->prog->num_variable_index;v++)
+      {
+	int d=i->prog->variable_index[v];
+	struct identifier *id=i->prog->identifiers+d;
+
+	dmalloc_add_mmap_entry(m,
+			       id->name->str,
+			       OFFSETOF(object,storage) + i->storage_offset + id->func.offset,
+			       sizeof_variable(id->run_time_type),
+			       1, /* count */
+			       0,0);
+      }
+
+      if(i->name)
+      {
+	tmp=i->name->str;
+      }else if(!(tmp=dmalloc_find_name(i->prog))){
+	/* Didn't find a given name, revert to ad-hoc method */
+	INT32 line,pos;
+	
+	for(pos=0;pos<100;pos++)
+	{
+	  tmp=get_line(i->prog->program+pos, i->prog, &line);
+	  if(tmp && line) break;
+	  if(pos+1>=(long)i->prog->num_program) break;
+	}
+	if(!(tmp && line))
+	{
+	  sprintf(buffer,"inherit[%d]",e);
+	  tmp=buffer;
+	}
+      }
+      dmalloc_add_mmap_entry(m,
+			     tmp,
+			     OFFSETOF(object, storage) + i->storage_offset,
+			     i->prog->storage_needed - i->prog->inherits[0].storage_offset,
+			     1, /* count */
+			     0,0);
+
+    }
+    dmalloc_set_mmap_template(new_program, m);
+  }
+#endif
 }
 
 struct program *low_allocate_program(void)
@@ -708,6 +764,11 @@ void low_start_new_program(struct program *p,
   fake_object->parent_identifier=0;
   fake_object->prog=p;
   add_ref(p);
+
+#ifdef PIKE_DEBUG
+  fake_object->program_id=p->id;
+#endif
+
 #ifdef PIKE_SECURITY
   fake_object->prot=0;
 #endif
@@ -1383,7 +1444,7 @@ void set_gc_mark_callback(void (*m)(struct object *))
  */
 void set_gc_check_callback(void (*m)(struct object *))
 {
-  new_program->gc_check=m;
+  new_program->gc_check_func=m;
 }
 
 int low_reference_inherited_identifier(struct program_state *q,
@@ -3074,7 +3135,11 @@ struct program *compile(struct pike_string *prog,
   if(lex.current_file)
   {
     store_linenumber(lex.current_line, lex.current_file);
-    debug_malloc_name(new_program, lex.current_file->str, lex.current_line);
+
+#ifdef DEBUG_MALLOC
+    if(strcmp(lex.current_file->str,"-") || lex.current_line!=1)
+      debug_malloc_name(new_program, lex.current_file->str, lex.current_line);
+#endif
   }
   compilation_depth=0;
 
@@ -3469,6 +3534,7 @@ void gc_free_all_unreferenced_programs(void)
       {
 	free_svalue(& p->constants[e].sval);
 	p->constants[e].sval.type=T_INT;
+	DO_IF_DMALLOC(p->constants[e].sval.u.refs=(void *)-1);
       }
 
       for(e=0;e<p->num_inherits;e++)
@@ -3483,6 +3549,16 @@ void gc_free_all_unreferenced_programs(void)
       /* FIXME: Is there anything else that needs to be freed here? */
       SET_NEXT_AND_FREE(p, free_program);
     }else{
+#ifdef PIKE_DEBUG
+      int e,tmp=0;
+      for(e=0;e<p->num_constants;e++)
+      {
+	if(p->constants[e].sval.type == T_PROGRAM && p->constants[e].sval.u.program == p)
+	  tmp++;
+      }
+      if(tmp >= p->refs)
+	fatal("garbage collector failed to free program!!!\n");
+#endif      
       next=p->next;
     }
   }

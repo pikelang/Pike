@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.39 2000/03/28 17:59:14 grubba Exp $
+ * $Id: object.h,v 1.40 2000/04/08 02:01:09 hubbe Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -29,6 +29,9 @@ struct object
   INT16 parent_identifier;
   struct object *next;
   struct object *prev;
+#if PIKE_DEBUG
+  long program_id;
+#endif
   char storage[1];
 };
 

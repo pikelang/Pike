@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.85 2000/03/30 08:43:07 hubbe Exp $
+ * $Id: program.h,v 1.86 2000/04/08 02:01:09 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -262,7 +262,7 @@ struct program
   void (*init)(struct object *);
   void (*exit)(struct object *);
   void (*gc_marked)(struct object *);
-  void (*gc_check)(struct object *);
+  void (*gc_check_func)(struct object *);
 #ifdef PIKE_DEBUG
   unsigned INT32 checksum;
 #endif

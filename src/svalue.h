@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.48 2000/03/20 21:00:04 hubbe Exp $
+ * $Id: svalue.h,v 1.49 2000/04/08 02:01:09 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -270,8 +270,8 @@ do{ \
 
 #endif
 
-#define free_svalue(X) do { struct svalue *_s=(X); check_type(_s->type); check_refs(_s); if(_s->type<=MAX_REF_TYPE) { debug_malloc_touch(_s->u.refs); if(--*(_s->u.refs) <=0) { really_free_svalue(_s); DO_IF_DMALLOC(_s->u.refs=0;) }}}while(0)
-#define free_short_svalue(X,T) do { union anything *_s=(X); TYPE_T _t=(T); check_type(_t); check_refs2(_s,_t); if(_t<=MAX_REF_TYPE && _s->refs) if(--*(_s->refs) <= 0) { really_free_short_svalue(_s,_t); DO_IF_DMALLOC(_s->refs=0;)} }while(0)
+#define free_svalue(X) do { struct svalue *_s=(X); check_type(_s->type); check_refs(_s); if(_s->type<=MAX_REF_TYPE) { debug_malloc_touch(_s->u.refs); if(--*(_s->u.refs) <=0) { really_free_svalue(_s); } DO_IF_DMALLOC(_s->u.refs=(void *)-1;)  }}while(0)
+#define free_short_svalue(X,T) do { union anything *_s=(X); TYPE_T _t=(T); check_type(_t); check_refs2(_s,_t); if(_t<=MAX_REF_TYPE && _s->refs) if(--*(_s->refs) <= 0) { really_free_short_svalue(_s,_t); } DO_IF_DMALLOC(_s->refs=(void *)-1;) }while(0)
 #define add_ref_svalue(X) do { struct svalue *_tmp=(X); check_type(_tmp->type); check_refs(_tmp); if(_tmp->type <= MAX_REF_TYPE) { debug_malloc_touch(_tmp->u.refs); _tmp->u.refs[0]++; } }while(0)
 #define assign_svalue_no_free(X,Y) do { struct svalue _tmp, *_to=(X), *_from=(Y); check_type(_from->type); check_refs(_from);  *_to=_tmp=*_from; if(_tmp.type <= MAX_REF_TYPE) { debug_malloc_touch(_tmp.u.refs); _tmp.u.refs[0]++; } }while(0)
 #define assign_svalue(X,Y) do { struct svalue *_to2=(X), *_from2=(Y); free_svalue(_to2); assign_svalue_no_free(_to2, _from2);  }while(0)
@@ -335,9 +335,9 @@ void copy_svalues_recursively_no_free(struct svalue *to,
 				      struct processing *p);
 void check_short_svalue(union anything *u, TYPE_T type);
 void check_svalue(struct svalue *s);
-TYPE_FIELD gc_check_svalues(struct svalue *s, int num);
-void gc_xmark_svalues(struct svalue *s, int num);
-void gc_check_short_svalue(union anything *u, TYPE_T type);
+TYPE_FIELD real_gc_check_svalues(struct svalue *s, int num);
+void real_gc_xmark_svalues(struct svalue *s, int num);
+void real_gc_check_short_svalue(union anything *u, TYPE_T type);
 void gc_mark_svalues(struct svalue *s, int num);
 void gc_mark_short_svalue(union anything *u, TYPE_T type);
 INT32 pike_sizeof(struct svalue *s);

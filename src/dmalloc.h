@@ -1,5 +1,5 @@
 /*
- * $Id: dmalloc.h,v 1.23 2000/03/27 06:34:05 hubbe Exp $
+ * $Id: dmalloc.h,v 1.24 2000/04/08 02:01:08 hubbe Exp $
  */
 
 extern char *debug_xalloc(long);
@@ -35,7 +35,8 @@ void search_all_memheaders_for_references(void);
 
 /* Beware! names of named memory regions are never ever freed!! /Hubbe */
 void *debug_malloc_name(void *p, char *fn, int line);
-void debug_malloc_copy_names(void *p, void *p2);
+int debug_malloc_copy_names(void *p, void *p2);
+char *dmalloc_find_name(void *p);
 
 /* glibc 2.1 defines this as a macro. */
 #ifdef strdup
@@ -63,6 +64,23 @@ void dmalloc_accept_leak(void *);
 #define dmalloc_touch_fd(X) debug_malloc_touch_fd((X),DMALLOC_LOCATION())
 #define dmalloc_register_fd(X) debug_malloc_register_fd((X),DMALLOC_LOCATION())
 #define dmalloc_close_fd(X) debug_malloc_close_fd((X),DMALLOC_LOCATION())
+
+/* Beware, these do not exist without DMALLOC */
+struct memory_map;
+void dmalloc_set_mmap(void *ptr, struct memory_map *m);
+void dmalloc_set_mmap_template(void *ptr, struct memory_map *m);
+void dmalloc_set_mmap_from_template(void *p, void *p2);
+void dmalloc_describe_location(void *p, int offset);
+struct memory_map *dmalloc_alloc_mmap(char *name, int line);
+void dmalloc_add_mmap_entry(struct memory_map *m,
+			    char *name,
+			    int offset,
+			    int size,
+			    int count,
+			    struct memory_map *recur,
+			    int recur_offset);
+
+
 #else
 #define dmalloc_touch_fd(X) (X)
 #define dmalloc_register_fd(X) (X)
@@ -85,6 +103,7 @@ void dmalloc_accept_leak(void *);
 #define dmalloc_unregister(X,Y)
 #define debug_free(X,Y,Z) free((X))
 #define debug_malloc_name(P,FN,LINE)
-#define debug_malloc_copy_names(p,p2)
+#define debug_malloc_copy_names(p,p2) 0
 #define search_all_memheaders_for_references()
+#define dmalloc_find_name(X) "unknown (no dmalloc)"
 #endif

@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.64 2000/03/27 07:54:27 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.65 2000/04/08 02:01:09 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -153,7 +153,7 @@ void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint DMALLOC_LINE
    while(--num>=0) {							\
     DO_IF_DMALLOC(debug_malloc_update_location(s->u.Z, dmalloc_location));	\
     Y(s->u.Z);								\
-    DO_IF_DMALLOC(s->u.Z=0);						\
+    DO_IF_DMALLOC(s->u.Z=(void *)-1);					\
     s++;								\
    }return
 
@@ -1204,7 +1204,7 @@ void check_svalue(struct svalue *s)
 
 #endif
 
-TYPE_FIELD gc_check_svalues(struct svalue *s, int num)
+TYPE_FIELD real_gc_check_svalues(struct svalue *s, int num)
 {
   INT32 e;
   TYPE_FIELD f;
@@ -1272,7 +1272,7 @@ TYPE_FIELD gc_check_svalues(struct svalue *s, int num)
 }
 
 #ifdef PIKE_DEBUG
-void gc_xmark_svalues(struct svalue *s, int num)
+void real_gc_xmark_svalues(struct svalue *s, int num)
 {
   INT32 e;
 
@@ -1298,7 +1298,7 @@ void gc_xmark_svalues(struct svalue *s, int num)
 }
 #endif
 
-void gc_check_short_svalue(union anything *u, TYPE_T type)
+void real_gc_check_short_svalue(union anything *u, TYPE_T type)
 {
 #ifdef PIKE_DEBUG
   gc_svalue_location=(void *)u;

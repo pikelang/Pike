@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.52 2000/03/07 23:51:29 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.53 2000/04/08 02:01:08 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -131,23 +131,77 @@ void *gc_svalue_location=0;
 
 void describe_location(void *memblock, TYPE_T type, void *location)
 {
+  struct program *p;
   if(!location) return;
-  fprintf(stderr,"**Location of (short) svalue: %p\n",location);
+/*  fprintf(stderr,"**Location of (short) svalue: %p\n",location); */
 
+  if(type==T_UNKNOWN) type=attempt_to_identify(memblock);
+  fprintf(stderr,"  <from %s %p offset %ld>\n",
+	  get_name_of_type(type),
+	  memblock,
+	  ((long)location - (long)memblock));
+	  
   switch(type)
   {
+    case T_UNKNOWN:
+      for(p=first_program;p;p=p->next)
+      {
+	if(memblock == (void *)p->program)
+	{
+	  fprintf(stderr,"    **In memory block for program at %p\n",p);
+	  memblock=p;
+	  type=T_PROGRAM;
+	  goto describe_program_location;
+	}
+      }
+      break;
+      
     case T_PROGRAM:
+  describe_program_location:
     {
+      long e;
       struct program *p=(struct program *)memblock;
       char *ptr=(char *)location;
-      if(ptr >= (char *)p->inherits  && ptr<(char*)(p->inherits+p->num_inherits))
-	fprintf(stderr,"**In inherit block.\n");
 
-      if(ptr >= (char *)p->strings  && ptr<(char*)(p->strings+p->num_strings))
-	fprintf(stderr,"**In string block.\n");
+      if(location == (void *)&p->prev)
+	fprintf(stderr,"    **In p->prev\n");
+
+      if(location == (void *)&p->next)
+	fprintf(stderr,"    **In p->next\n");
+
+      if(ptr >= (char *)p->inherits  && ptr<(char*)(p->inherits+p->num_inherits)) 
+      {
+	e=((long)ptr - (long)(p->inherits)) / sizeof(struct inherit);
+	fprintf(stderr,"    **In p->inherits[%ld] (%s)\n",
+		e,
+		p->inherits[e].name ? p->inherits[e].name->str : "no name");
+	return;
+      }
+
+      if(ptr >= (char *)p->constants  && ptr<(char*)(p->constants+p->num_constants))
+      {
+	e=((long)ptr - (long)(p->constants)) / sizeof(struct program_constant);
+	fprintf(stderr,"    **In p->constants[%ld] (%s)\n",
+		e,
+		p->constants[e].name ? p->constants[e].name->str : "no name");
+	return;
+      }
+
 
       if(ptr >= (char *)p->identifiers  && ptr<(char*)(p->identifiers+p->num_identifiers))
-	fprintf(stderr,"**In identifier block.\n");
+      {
+	e=((long)ptr - (long)(p->identifiers)) / sizeof(struct identifier);
+	fprintf(stderr,"    **In p->identifiers[%ld] (%s)\n",
+		e,
+		p->identifiers[e].name ? p->constants[e].name->str : "no name");
+	return;
+      }
+
+#define FOO(NTYP,TYP,NAME) \
+    if(location == (void *)&p->NAME) fprintf(stderr,"    **In p->" #NAME "\n"); \
+    if(ptr >= (char *)p->NAME  && ptr<(char*)(p->NAME+p->PIKE_CONCAT(num_,NAME))) \
+      fprintf(stderr,"    **In p->" #NAME "[%ld]\n",((long)ptr - (long)(p->NAME)) / sizeof(TYP));
+#include "program_areas.h"
       
       return;
     }
@@ -155,12 +209,28 @@ void describe_location(void *memblock, TYPE_T type, void *location)
     case T_OBJECT:
     {
       struct object *o=(struct object *)memblock;
-      if(o->prog)
+      struct program *p;
+
+      if(location == (void *)&o->parent) fprintf(stderr,"    **In o->parent\n");
+      if(location == (void *)&o->prog)  fprintf(stderr,"    **In o->prog\n");
+      if(location == (void *)&o->next)  fprintf(stderr,"    **In o->next\n");
+      if(location == (void *)&o->prev)  fprintf(stderr,"    **In o->prev\n");
+
+      p=o->prog;
+
+      if(!o->prog)
+      {
+	p=id_to_program(o->program_id);
+	if(p)
+	  fprintf(stderr,"    **(We are lucky, found program for destructed object)\n");
+      }
+
+      if(p)
       {
 	INT32 e,d;
-	for(e=0;e<(INT32)o->prog->num_inherits;e++)
+	for(e=0;e<(INT32)p->num_inherits;e++)
 	{
-	  struct inherit tmp=o->prog->inherits[e];
+	  struct inherit tmp=p->inherits[e];
 	  char *base=o->storage + tmp.storage_offset;
 	  
 	  for(d=0;d<(INT32)tmp.prog->num_identifiers;d++)
@@ -170,9 +240,19 @@ void describe_location(void *memblock, TYPE_T type, void *location)
 	    
 	    if(location == (void *)(base + id->func.offset))
 	    {
-	      fprintf(stderr,"**In variable %s\n",id->name->str);
+	      fprintf(stderr,"    **In variable %s\n",id->name->str);
 	    }
 	  }
+
+	  if((char *)location >= base && (char *)location <= base +
+	     ( tmp.prog->storage_needed - tmp.prog->inherits[0].storage_offset ))
+	  {
+	    fprintf(stderr,"    **In storage for inherit %d",e);
+	    if(tmp.name)
+	      fprintf(stderr," (%s)",tmp.name->str);
+	    fprintf(stderr,"\n");
+	  }
+	     
 	}
       }
       return;
@@ -182,7 +262,7 @@ void describe_location(void *memblock, TYPE_T type, void *location)
     {
       struct array *a=(struct array *)memblock;
       struct svalue *s=(struct svalue *)location;
-      fprintf(stderr,"**In index %ld\n",(long)(s-ITEM(a)));
+      fprintf(stderr,"    **In index %ld\n",(long)(s-ITEM(a)));
       return;
     }
   }
@@ -252,6 +332,8 @@ void low_describe_something(void *a, int t, int dm)
     case T_OBJECT:
       p=((struct object *)a)->prog;
       fprintf(stderr,"**Parent identifier: %d\n",((struct object *)a)->parent_identifier);
+      fprintf(stderr,"**Program id: %ld\n",((struct object *)a)->program_id);
+
       if( ((struct object *)a)->parent)
       {
 	fprintf(stderr,"**Describing object's parent:\n");
@@ -262,7 +344,9 @@ void low_describe_something(void *a, int t, int dm)
       if(!p)
       {
 	fprintf(stderr,"**The object is destructed.\n");
-	break;
+	p=id_to_program(((struct object *)a)->program_id);
+
+	if(!p) break;
       }
       fprintf(stderr,"**Attempting to describe program object was instantiated from:\n");
       
@@ -313,6 +397,9 @@ void low_describe_something(void *a, int t, int dm)
 
 	fprintf(stderr,"**num inherits: %d\n",p->num_inherits);
       }
+#define FOO(NUMTYPE,TYPE,NAME) \
+      fprintf(stderr,"* " #NAME " %p[%d]\n",p->NAME,p->PIKE_CONCAT(num_,NAME));
+#include "program_areas.h"
 
       break;
     }
@@ -406,7 +493,13 @@ void debug_describe_svalue(struct svalue *s)
       }else{
 	if(!s->u.object->prog)
 	{
-	  fprintf(stderr,"    Function in destructed object.\n");
+	  struct program *p=id_to_program(s->u.object->program_id);
+	  if(p)
+	  {
+	    fprintf(stderr,"    Function (destructed) name: %s\n",ID_FROM_INT(p,s->subtype)->name->str);
+	  }else{
+	    fprintf(stderr,"    Function in destructed object.\n");
+	  }
 	}else{
 	  fprintf(stderr,"    Function name: %s\n",ID_FROM_INT(s->u.object->prog,s->subtype)->name->str);
 	}
@@ -417,7 +510,7 @@ void debug_describe_svalue(struct svalue *s)
 
 #endif
 
-INT32 gc_check(void *a)
+INT32 real_gc_check(void *a)
 {
 #ifdef PIKE_DEBUG
   if(check_for)
