@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.27 1998/04/16 01:12:53 hubbe Exp $
+# $Id: static_module_makefile.in,v 1.28 1998/04/29 22:20:48 hubbe Exp $
 #
 
 
@@ -60,8 +60,8 @@ depend:
 	for a in '' $(MODULE_SUBDIRS) ; do if test ! -z "$$a"; then echo making depend in $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) depend ) ; else :; fi ; done
 
 #verify / debug
-module_testsuite: $(SRCDIR)/testsuite.in
-	$(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >module_testsuite -DSRCDIR=$(SRCDIR) 
+module_testsuite: $(SRCDIR)/testsuite.in $(REAL_TESTSUITE)
+	if test "x$(REAL_TESTSUITE)" != x ; then cp $(SRCDIR)/$(REAL_TESTSUITE module_testsuite; else $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >module_testsuite -DSRCDIR=$(SRCDIR); fi
 
 extra_tests: $(MODULE_TESTS)
 
