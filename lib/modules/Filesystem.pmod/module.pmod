@@ -112,7 +112,7 @@ class Base
   string cwd();
   Base chroot(void|string directory);
 
-  Stat stat(string file);
+  Stat stat(string file, int|void lstat);
 
   array(string) get_dir(void|string directory, void|string|array glob);
   array(Stat) get_stats(void|string directory, void|string|array glob);
