@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.54 2001/02/26 20:06:41 grubba Exp $
+ * $Id: pike_types.h,v 1.55 2001/03/02 15:44:11 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -115,7 +115,7 @@ PMOD_EXPORT extern struct pike_type *object_type_string;
 PMOD_EXPORT extern struct pike_type *function_type_string;
 PMOD_EXPORT extern struct pike_type *program_type_string;
 PMOD_EXPORT extern struct pike_type *array_type_string;
-PMOD_EXPORT extern struct pike_type *list_type_string;
+PMOD_EXPORT extern struct pike_type *multiset_type_string;
 PMOD_EXPORT extern struct pike_type *mapping_type_string;
 PMOD_EXPORT extern struct pike_type *type_type_string;
 PMOD_EXPORT extern struct pike_type *mixed_type_string;
