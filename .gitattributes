@@ -266,6 +266,7 @@ testfont binary
 /refdoc/presentation/wiki.pike foreign_ident
 /refdoc/structure/caudium_modref.html foreign_ident
 /refdoc/structure/modref.xml foreign_ident
+/refdoc/structure/module_modref.xml foreign_ident
 /refdoc/structure/onepage.xml foreign_ident
 /refdoc/structure/traditional.xml foreign_ident
 /src/Makefile.in foreign_ident

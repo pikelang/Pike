@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.58 2003/11/04 22:24:39 bill Exp $
+# $Id: Makefile,v 1.59 2003/11/12 03:59:33 bill Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -22,6 +22,22 @@ modref: $(BUILDDIR)/modref.xml structure/modref.css structure/modref.html \
 	  presentation/make_html.pike presentation/tree-split-autodoc.pike
 	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" DESTDIR="$(DESTDIR)" low_modref
 
+module_modref: $(BUILDDIR)/module_modref.xml structure/modref.css structure/module_modref.html \
+	  presentation/make_html.pike presentation/tree-split-autodoc.pike
+	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" DESTDIR="$(DESTDIR)" low_module_modref
+
+low_module_modref:
+	rm -rf modref || /bin/true
+	@mkdir modref
+	@cp structure/modref.css modref/style.css
+	@$(PIKE) presentation/tree-split-autodoc.pike \
+	  $(BUILDDIR)/module_modref.xml structure/module_modref.html $(DESTDIR)modref predef
+	@mkdir $(DESTDIR)modref/images
+	-cp $(BUILDDIR)/doc_build/images/* $(DESTDIR)modref/images
+	@for file in pike_logo.gif next.gif prev.gif unit.gif \
+          pike_line_left.gif pike_line_middle.gif pike_line_right.gif ; do \
+	  cp src_images/$$file $(DESTDIR)modref/images/ ; done
+
 low_modref:
 	rm -rf modref || /bin/true
 	@mkdir modref
@@ -29,7 +45,7 @@ low_modref:
 	@$(PIKE) presentation/tree-split-autodoc.pike \
 	  $(BUILDDIR)/modref.xml structure/modref.html $(DESTDIR)modref predef
 	@mkdir $(DESTDIR)modref/images
-	cp $(BUILDDIR)/doc_build/images/* $(DESTDIR)modref/images
+	-cp $(BUILDDIR)/doc_build/images/* $(DESTDIR)modref/images
 	@for file in pike_logo.gif next.gif prev.gif unit.gif \
           pike_line_left.gif pike_line_middle.gif pike_line_right.gif ; do \
 	  cp src_images/$$file $(DESTDIR)modref/images/ ; done
