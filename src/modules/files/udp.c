@@ -1,5 +1,5 @@
 /*
- * $Id: udp.c,v 1.12 2000/07/29 21:31:08 hubbe Exp $
+ * $Id: udp.c,v 1.13 2000/08/07 10:05:52 grubba Exp $
  */
 
 #define NO_PIKE_SHORTHAND
@@ -7,7 +7,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.12 2000/07/29 21:31:08 hubbe Exp $");
+RCSID("$Id: udp.c,v 1.13 2000/08/07 10:05:52 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -394,7 +394,8 @@ void udp_sendto(INT32 args)
   int flags = 0, res=0, i, fd, e;
   struct sockaddr_in to;
   char *str;
-  INT32 len;
+  ptrdiff_t len;
+
   if(FD < 0)
     error("UDP: not open\n");
   
