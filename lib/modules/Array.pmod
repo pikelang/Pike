@@ -591,7 +591,6 @@ array uniq2(array a)
 //!     @item otherwise
 //!       arrayify(x) => ({ x })
 //!   @enddl
-//! @endexample
 array arrayify(void|array|mixed x)
 {
    if(zero_type(x)) return ({});
