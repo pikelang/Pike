@@ -1,48 +1,44 @@
-// $Id: Subject.pike,v 1.2 2002/10/21 02:10:54 grendel Exp $
+// $Id: Subject.pike,v 1.3 2002/10/31 10:58:20 jhs Exp $
 
 //! This is a probe subject which you can send in somewhere to
 //! get probed (not to be confused with a probe object, which
-//! does some active probing). All calls to lfuns will be printed
-//! to stderr. It is possible to name a subject by passing one
-//! string as first and only argument when creating the subject
+//! does some active probing). All calls to LFUNs will be printed
+//! to stderr. It is possible to name the subject by passing a
+//! string as the first and only argument when creating the subject
 //! object.
 //!
 //! @example
 //! > object s = Debug.Subject();
-//! create got ({ })
+//! create()
 //! > random(s);
-//! _random got ({ })
+//! _random()
 //! (1) Result: 0
 //! > abs(s);
-//! `< got ({ /* 1 element */
-//! 	0
-//! })
-//!   _sprintf got ({ /* 2 elements */
-//! 	79,
-//! 	([ /* 1 element */
-//! 	  "indent":2
-//! 	])
-//! })
+//! `<(0)
+//! _sprintf(79, ([ "indent":2 ]))
 //! (2) Result: Debug.Subject
 //! > abs(class { inherit Debug.Subject; int `<(mixed ... args) { return 1; } }());
-//! create got ({ })
-//! `- got ({ })
-//! destroy got ({ })
+//! create()
+//! `-()
+//! destroy()
 //! (3) Result: 0
 //! > pow(s,2);
-//! `[] got ({ /* 1 element */
-//! 	"pow"
-//! })
+//! `[]("pow")
 //! Attempt to call the NULL-value
 //! Unknown program: 0(2)
-//! HilfeInput:1: ___HilfeWrapper()
 
-#define PROXY(X,Y) X(mixed ... args) { werror(id+#X+" got %O\n", args); return Y; }
+#define ENTER(X)                       \
+  string t = sprintf("%{%O, %}", args); \
+  werror("%s%s(%s)\n", id, #X,           \
+	 has_suffix(t, ", ") ? t[..sizeof(t)-3] : t)
+
+#define PROXY(X,Y) X(mixed ... args) { ENTER(X); return Y; }
 
 static string id = "";
 
-void create(mixed ... args) {
-  werror("create got %O\n", args);
+void create(mixed ... args)
+{
+  ENTER(create);
   if(sizeof(args)==1 && stringp(args[0]))
     id = "(" + args[0] + ") ";
 }
@@ -93,25 +89,36 @@ int(0..1) PROXY(_is_type, 0);
 int PROXY(_equal, 0);
 mixed PROXY(_m_delete, 0);
 
-array _indices(mixed ... args) { 
-   werror(id+"_values got %O\n", args); 
-   return ::_indices(); 
-}
+array PROXY(_indices, ::_indices());
+array PROXY(_values, ::_values());
 
-array _values(mixed ... args) { 
-   werror(id+"_values got %O\n", args); 
-   return ::_values(); 
-}
-
-object _get_iterator(mixed ... args) {
-  werror(id+"_get_iterator got %O\n", args);
+object _get_iterator(mixed ... args)
+{
+  ENTER(_get_iterator);
   string iid = id==""?"":id[1..sizeof(id)-3];
   return this_program("("+iid+" iterator) ");
 }
 
-string _sprintf(mixed ... args) {
-  werror(id+"_sprintf got %O\n", args);
-  return sprintf("Debug.Subject"+id);
+string _sprintf(int|void t, mapping|void opt, mixed ... x)
+{
+  string args = "";
+  if(t)
+    args += sprintf("'%c'", t);
+  if(opt == ([]))
+    args += ", ([])";
+  else if(opt)
+  {
+    string tmp = sprintf("%O", opt);
+    sscanf(tmp, "([ /*%*s*/\n  %s\n])", tmp);
+    args += sprintf(", ([ %s ])", replace(tmp, "\n ", ""));
+  }
+  string tmp = sprintf("%{%O, %}", x);
+  if(has_suffix(tmp, ", "))
+    tmp = tmp[..sizeof(tmp)-3];
+  if(sizeof(tmp))
+    args += ", " + tmp;
+  werror("%s_sprintf(%s)\n", id, args);
+  return "Debug.Subject" + id[..sizeof(id)-2];
 }
 
 mixed PROXY(_random, 0);
