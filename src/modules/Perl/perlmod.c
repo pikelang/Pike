@@ -1,4 +1,4 @@
-/* $Id: perlmod.c,v 1.23 2000/12/05 21:08:31 per Exp $ */
+/* $Id: perlmod.c,v 1.24 2001/12/22 00:27:48 nilsson Exp $ */
 
 #define NO_PIKE_SHORTHAND
 
@@ -438,7 +438,7 @@ static void _perlmod_eval(INT32 args, int perlflags)
 { struct pike_string *firstarg;
   struct perlmod_storage *ps = _THIS;
   int i, n;
-// #define sp _perlsp
+  /* #define sp _perlsp */
   dSP;
 
   if (!ps->perl) Pike_error("Perl interpreter not available.\n");
@@ -451,7 +451,7 @@ static void _perlmod_eval(INT32 args, int perlflags)
   PUSHMARK(sp);
 
   PUTBACK;
-// #undef sp
+  /* #undef sp */
 
   if (!ps->parsed)
   {
@@ -477,7 +477,7 @@ static void _perlmod_eval(INT32 args, int perlflags)
 
   pop_n_elems(args);
 
-// #define sp _perlsp
+  /* #define sp _perlsp */
   SPAGAIN;
 
   if (SvTRUE(GvSV(PL_errgv)))
@@ -505,7 +505,7 @@ static void _perlmod_eval(INT32 args, int perlflags)
   else _push_zerotype();
 
   PUTBACK; FREETMPS; LEAVE;
-// #undef sp
+  /* #undef sp */
 }
 
 static void perlmod_eval(INT32 args)
@@ -517,7 +517,7 @@ static void perlmod_eval_list(INT32 args)
 static void _perlmod_call(INT32 args, int perlflags)
 { struct perlmod_storage *ps = _THIS;
   int i, n; char *pv;
-// #define sp _perlsp
+  /* #define sp _perlsp */
   dSP;
 
 #ifdef PIKE_PERLDEBUG
@@ -573,13 +573,13 @@ static void _perlmod_call(INT32 args, int perlflags)
   PUTBACK;
 
   pv = Pike_sp[-args].u.string->str;  
-// #undef sp
+  /* #undef sp */
   MT_PERMIT;
 
   n = perl_call_pv(pv, perlflags);
 
   MT_FORBID;
-// #define sp _perlsp
+  /* #define sp _perlsp */
 
   pop_n_elems(args);
 
@@ -622,7 +622,7 @@ static void _perlmod_call(INT32 args, int perlflags)
      _push_zerotype();
 
   PUTBACK; FREETMPS; LEAVE;
-// #undef sp
+  /* #undef sp */
 }
 
 static void perlmod_call_list(INT32 args)
