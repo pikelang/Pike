@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.107 2003/09/08 15:27:58 mast Exp $");
+RCSID("$Id: svalue.c,v 1.108 2004/09/25 19:33:23 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -651,6 +651,7 @@ PMOD_EXPORT int is_eq(struct svalue *a, struct svalue *b)
   switch(a->type)
   {
   case T_OBJECT:
+    if (a->u.object == b->u.object) return 1;
     if(FIND_LFUN(a->u.object->prog,LFUN_EQ) != -1)
       goto a_is_obj;
 
