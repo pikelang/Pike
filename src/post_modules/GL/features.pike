@@ -1,22 +1,46 @@
 array funcEV = ({
-  "glEnable",
-  "glDisable",
-  "glShadeModel",
-  "glFrontFace",
-  "glCullFace",
-  "glMatrixMode",
   "glBegin",
+  "glCullFace",
+
+  "glDisable",
+  "glEnable",
+  "glFrontFace",
+  "glMatrixMode",
+  "glShadeModel",
 });
 array funcV = ({
-  "glLoadIdentity",
   "glEnd",
+
   "glEndList",
   "glFlush",
-  "glPushMatrix",
+  "glLoadIdentity",
   "glPopMatrix",
+  "glPushMatrix",
 });
 array func_misc = ({
+  ({"glAccum", "VEF"}),
+  ({"glAlphaFunc", "VEF"}),
+  ({"glArrayElement", "VI"}),
+  ({"glBindTexture","VEI"}),
+  ({"glBlendFunc", "VEE"}),
+  ({"glCallList","VI"}),
+  ({"glClear","VB"}),
+  ({"glClearAccum", "V+FFFF"}),
   ({"glClearColor", "V+FFFF"}),
+  ({"glClearDepth", "VD"}),
+  ({"glClearIndex", "VF"}),
+  ({"glClearStencil", "VI"}),
+  ({"glClipPlane", "VE=DDDD"}),
+  ({"glColor", "V+ZZZZ"}),
+  ({"glColorMask", "VOOOO"}),
+  ({"glColorMaterial", "VEE"}),
+  ({"glCopyPixels", "VIIIIE"}),
+  ({"glCopyTexImage1D", "VEIEIIII"}),
+  ({"glCopyTexImage2D", "VEIEIIIII"}),
+  ({"glCopyTexSubImage1D", "VEIIIII"}),
+  ({"glCopyTexSubImage2D", "VEIIIIIII"}),
+  ({"glDeleteLists", "VII"}),
+
   ({"glFrustum", "VDDDDDD"}),
   ({"glOrtho", "VDDDDDD"}),
   ({"glViewport", "VIIII"}),
@@ -28,14 +52,9 @@ array func_misc = ({
   ({"glLightModel","VE@Q"}),
   ({"glGenLists","II"}),
   ({"glNewList","VIE"}),
-  ({"glCallList","VI"}),
   ({"glNormal","V#ZZZ"}),
   ({"glVertex","V+ZZZ"}),
-  ({"glColor","V+ZZZZ"}),
-  ({"glClear","VB"}),
   ({"glIsEnabled","OE"}),
-  ({"glBlendFunc","VEE"}),
-  ({"glBindTexture","VEI"}),
   ({"glTexEnv","VEE@Q"}),
   ({"glTexParameter","VEE@Q"}),
   ({"glTexCoord", "V+Z"}),
@@ -46,3 +65,12 @@ mapping func_cat = ([
   "VE":funcEV,
   "V":funcV,
 ]);
+/*
+  Not implemented:
+
+  glAreTexturesResident
+  glBitmap
+  glCallLists
+  glColorPointer
+
+*/
