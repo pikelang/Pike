@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.123 2000/02/29 22:57:46 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.124 2000/03/10 00:36:44 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -2744,27 +2744,29 @@ static struct pike_string *debug_low_index_type(char *t,
     return make_shared_binary_string(t, type_length(t));
 
   case T_ARRAY:
-    if(n &&
-       (CDR(n)->token == F_CONSTANT ?
-	(CDR(n)->u.sval.type == T_STRING) :
-	!!low_match_types(string_type_string->str,CDR(n)->type->str,0)))
     {
-      struct pike_string *a=low_index_type(t,index_type,n);
-      if(!a)
-	return make_shared_binary_string(t, type_length(t));
-	
-      type_stack_mark();
-      push_finished_type(a);
-      free_string(a);
-      push_type(T_ARRAY);
-      if(low_match_types(int_type_string->str,CDR(n)->type->str,0))
-      {
-	push_unfinished_type(t);
-	push_type(T_OR);
+      struct pike_string *a;
+
+      if(low_pike_types_le(tString, index_type, 0, 0) &&
+	 (a = low_index_type(t, tString, n))) {
+	/* Possible to index the array with a string. */
+	if (low_match_types(tInt, index_type, 0)) {
+	  /* Also possible to index the array with an int. */
+	  type_stack_mark();
+	  push_finished_type(a);
+	  free_string(a);
+	  push_unfinished_type(t);
+	  push_type(T_OR);
+	  return pop_unfinished_type();
+	}
+	return a;
       }
-      return pop_unfinished_type();
-    }else{
-      return make_shared_binary_string(t, type_length(t));
+      if (low_match_types(tInt, index_type, 0)) {
+	/* Possible to index the array with an int. */
+	return make_shared_binary_string(t, type_length(t));
+      }
+      /* Bad index type. */
+      return 0;
     }
   }
 }
