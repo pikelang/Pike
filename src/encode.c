@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.163 2003/08/05 14:32:45 grubba Exp $
+|| $Id: encode.c,v 1.164 2003/11/18 14:22:52 grubba Exp $
 */
 
 #include "global.h"
@@ -29,7 +29,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.163 2003/08/05 14:32:45 grubba Exp $");
+RCSID("$Id: encode.c,v 1.164 2003/11/18 14:22:52 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1100,6 +1100,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	/* Byte-code method
 	 */
 	code_number(PIKE_BYTECODE_METHOD, data);
+
+#ifdef PIKE_USE_MACHINE_CODE
+        /* Add the checksum of the instrs array. */
+        code_number(instrs_checksum, data);
+#endif /* PIKE_USE_MACHINE_CODE */
 
 	/* program */
 #ifdef ENCODE_PROGRAM
@@ -3124,6 +3129,18 @@ static void decode_value2(struct decode_data *data)
 	  if (bytecode_method != PIKE_BYTECODE_METHOD) {
 	    Pike_error("Unsupported byte-code method: %d\n", bytecode_method);
 	  }
+
+#ifdef PIKE_USE_MACHINE_CODE
+          {
+            size_t csum;
+            /* Check the checksum of the instrs array. */
+            decode_number(csum, data);
+            if (csum != instrs_checksum) {
+              Pike_error("Bad instruction checksum: %d (expected %d)\n",
+                         csum, instrs_checksum);
+            }       
+          }
+#endif /* PIKE_USE_MACHINE_CODE */
 
 	  /* Decode program */
 	  if (data->ptr + (int)local_num_program >= data->len) {

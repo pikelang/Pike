@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lex.h,v 1.26 2002/11/02 15:21:01 grubba Exp $
+|| $Id: lex.h,v 1.27 2003/11/18 14:22:52 grubba Exp $
 */
 
 #ifndef LEX_H
@@ -119,6 +119,7 @@ struct lex
 
 extern struct lex lex;
 extern struct instr instrs[];
+extern unsigned INT32 instrs_checksum;
 
 /* Prototypes begin here */
 void exit_lex(void);

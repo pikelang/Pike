@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lex.c,v 1.112 2002/11/10 20:19:18 grubba Exp $
+|| $Id: lex.c,v 1.113 2003/11/18 14:22:52 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: lex.c,v 1.112 2002/11/10 20:19:18 grubba Exp $");
+RCSID("$Id: lex.c,v 1.113 2003/11/18 14:22:52 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -326,6 +326,7 @@ struct keyword instr_names[]=
 };
 
 struct instr instrs[F_MAX_INSTR - F_OFFSET];
+unsigned INT32 instrs_checksum;
 
 struct reserved
 {
@@ -365,6 +366,10 @@ void init_lex()
     instrs[instr_names[i].token - F_OFFSET].address=instr_names[i].address;
 #endif
   }
+
+#ifdef PIKE_USE_MACHINE_CODE
+  instrs_checksum = hashmem(instrs, sizeof(instrs), sizeof(instrs));
+#endif /* PIKE_USE_MACHINE_CODE */
 
 #ifdef PIKE_DEBUG
   for(i=1; i<F_MAX_OPCODE-F_OFFSET;i++)
