@@ -176,7 +176,7 @@ write this book, but since it seems impossible without paying a fortune for
 it I will have to do it myself. 
 A big thanks goes to
 <a href="http://www.emit.com.pl/ian.html">Ian Carr-de Avelon</a> and
-<a href="mailto:hedda@idonix.se">Henrik Wallin</a>
+<a href="mailto:hedda@idonex.se">Henrik Wallin</a>
  for helping
 me iron out some of the rough spots. 
 
@@ -641,7 +641,7 @@ String is a basic type in Pike, it is not an array of char like it is in C.
 This means that you cannot assign new values to individual characters in a string.
 Also, all strings are "shared", i.e. if the same string is used in several places, it will be stored in memory only once.
 When writing a string in a program, you enclose it in double quotes. To write special characters you need to use the following syntax:
-<table>
+<table small>
 <tr><td>\n</td><td>newline</td></tr>
 <tr><td>\r</td><td>carriage return</td></tr>
 <tr><td>\t</td><td>tab</td></tr>
@@ -3442,6 +3442,7 @@ sscanf(" \t test","%*[ \t]%s",a)
 sscanf(str,"the %s",str);
 </example>
 <p>
+<!-- FIXME this is not very abstract: -->
 <encaps>SEE ALSO</encaps>: <link to=sprintf>sprintf</link>
 </section>
 </anchor>
@@ -6748,7 +6749,7 @@ Initializes the connection to syslogd.
 with.
 <p><i>options</i> is a bit field specifying the behavior of the message
 logging. Valid options are:
-<p><dl><dt><dd><table border=0 cellpadding=0 cellspacing=0>
+<p><dl><dt><dd><table border=0 cellpadding=0 cellspacing=0 small>
 <tr valign=top><td> LOG_PID </td><td> Log the process ID with each message. </td></tr>
 <tr valign=top><td> LOG_CONS </td><td> Write messages to the console if they can't be sent to syslogd. </td></tr>
 <tr valign=top><td> LOG_NDELAY </td><td> Open the connection to syslogd now and not later. </td></tr>
@@ -6757,7 +6758,7 @@ logging. Valid options are:
 </dl>
 <p><i>facility</i> specifies what subsystem you want to log as. Valid
 facilities are:
-<p><dl><dt><dd><table border=0 cellpadding=0 cellspacing=0>
+<p><dl><dt><dd><table border=0 cellpadding=0 cellspacing=0 small>
 <tr valign=top><td> LOG_AUTH </td><td> Authorization subsystem </td></tr>
 <tr valign=top><td> LOG_AUTHPRIV </td></tr>
 <tr valign=top><td> LOG_CRON </td><td> Crontab subsystem </td></tr>
@@ -6892,7 +6893,7 @@ mapping(string:string) <I>uname</I>();<br>
 <man_description>
 Returns a mapping describing the operating system.
 <p>The mapping contains the following fields:
-<p><table border=0 cellpadding=0 cellspacing=0>
+<p><table border=0 cellpadding=0 cellspacing=0 small>
 <tr valign=top><td>  </td><td> "sysname": </td><td> Operating system name </td></tr>
 <tr valign=top><td>  </td><td> "nodename": "release": "version": "machine": </td><td> Host name Release of this OS Version number of this OS Machine architecture </td></tr>
 </table>
@@ -7097,7 +7098,7 @@ The string contains characters that make up a pattern for other strings
 to match. Normal characters, such as A through Z only match themselves,
 but some characters have special meaning. 
 
-<table>
+<table nicer>
 <tr><th> pattern </th><th>Matches</th></tr>
 <tr><td> . </td><td> any one character </td></tr>
 <tr><td> [abc] </td><td> a, b or c </td></tr>
@@ -7114,7 +7115,7 @@ but some characters have special meaning.
 <tr valign=top><td> \&gt; </td><td> the end of a word (but no characters) </td></tr>
 </table>
 Let's look at a few examples:
-<table>
+<table nicer>
 <tr><th>Regexp</th><th>Matches</th></tr>
 <tr><td>[0-9]+</td><td>one or more digits</td></tr>
 <tr><td>[^ \t\n]</td><td>exactly one non-whitespace character</td></tr>
@@ -7381,7 +7382,7 @@ opens the given file as a gdbm database, if this fails for some
 reason, an error will be generated. If a second argument is present,
 it specifies how to open the database using one or more of the follow
 flags in a string:
-<p><table border=0 cellpadding=0 cellspacing=0>
+<p><table border=0 cellpadding=0 cellspacing=0 small>
 <tr valign=top><td> r </td><td> open database for reading </td></tr>
 <tr valign=top><td> w </td><td> open database for writing </td></tr>
 <tr valign=top><td> c </td><td> create database if it does not exist </td></tr>
@@ -7781,7 +7782,7 @@ returns the packed data. Streaming can be done by calling this
 function several times and concatenating the returned data.
 The optional 'flush' argument should be one f the following:
 <p>
-<table border=0 cellpadding=0 cellspacing=0>
+<table border=0 cellpadding=0 cellspacing=0 small>
 <tr valign=top><td> Gz.NO_FLUSH       </td><td> Only data that doesn't fit in the internal buffers is returned. </td></tr>
 <tr valign=top><td> Gz.PARTIAL_FLUSH </td><td> All input is packed and returned. </td></tr>
 <tr valign=top><td> Gz.SYNC_FLUSH    </td><td> All input is packed and returned. </td></tr>
@@ -11011,7 +11012,7 @@ The description is returned in an array with one entry for each call
 in the stack. Each entry has this format:
 <p>
 ({
-<table border=0 cellpadding=0 cellspacing=0>
+<table border=0 cellpadding=0 cellspacing=0 small>
 <tr valign=top><td><ex_indent> file, </td><td> /* a string with the filename if known, else zero */ </td></tr>
 <tr valign=top><td><ex_indent> line, </td><td> /* an integer containing the line if known, else zero */ </td></tr>
 <tr valign=top><td><ex_indent> function, </td><td> /* The function pointer to the called function */ </td></tr>
@@ -11088,7 +11089,7 @@ This function returns an array with one entry for each entry in the
 call out queue. The first in the queue will be in index 0. Each index
 contains an array that looks like this:
 <p>({<br>
-<dl><dt><dd><table border=0 cellpadding=0 cellspacing=0>
+<dl><dt><dd><table border=0 cellpadding=0 cellspacing=0 small>
 <tr valign=top><td> time_left, </td><td> /* an int */ </td></tr>
 <tr valign=top><td> caller, </td><td> /* the object that made the call out */ </td></tr>
 <tr valign=top><td> function, </td><td> /* the function to be called */ </td></tr>

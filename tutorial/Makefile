@@ -61,11 +61,10 @@ tutorial.dvi: tutorial.tex
 	latex tutorial.tex
 
 tutorial.pdf: tutorial.pdftex
-	if [ -d fonts ]; then ( cd fonts ; make ) ; fi
 	TEXPSHEADERS=fonts: TEXINPUTS=fonts: TTFONTS=fonts: TFMFONTS=fonts: pdflatex tutorial.pdftex
 
 tutorial.ps: tutorial.dvi
-	dvips -Z tutorial.dvi -o tutorial.ps
+	dvips -a -Z tutorial.dvi -o tutorial.ps
 
 tutorial.ps.gz: tutorial.ps
 	gzip -9 <tutorial.ps >tutorial.ps.gz
@@ -74,6 +73,7 @@ tutorial.ps.bz2: tutorial.ps
 	bzip2 -9 <tutorial.ps >tutorial.ps.bz2
 
 tutorial.pdftex: .DUMMY $(SRCFILES)
+	if [ -d fonts ]; then ( cd fonts ; make pike="$(pike)" ) ; fi
 	$(pike) ./wmmltohtml2 tutorial.wmml pdflatex tutorial
 
 
@@ -99,7 +99,7 @@ clean:
 	-rm -f *.html *.md $(MADEFILES) 
 	-rm -f tutorial.dvi tutorial.tex tutorial.aux
 	-rm -f tutorial.log tutorial.toc
-	-rm -f latex_wcache illustration_cache image_cache gfx/* execute_cache
+	-rm -f latex.wcache pdflatex.wcache illustration_cache image_cache gfx/* execute_cache
 	if [ -d fonts ]; then ( cd fonts ; make clean ); fi
 
 rebuild:

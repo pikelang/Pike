@@ -17,25 +17,22 @@ object html=.html();
 
 WMML global_data;
 
-string packages = 
-#"\\usepackage{epic}
-\\usepackage{eepic}
-\\usepackage{isolatin1}
-\\usepackage{latexsym}  % For $\Box$
-\\usepackage{amsmath}
-\\usepackage{longtable}
-\\usepackage{graphicx}
-\\usepackage{color}  % colors becomes wrong in xdvi, but right in postscript
-\\usepackage{colortbl}
-\\usepackage{parskip}
-";
-
 string latex = "latex";
 
-// #define BORDERCOLOR "{0,0.2,0}"
-#define BORDERCOLOR "{0.153,0.13,0.357}"
+// Blue
+// #define BORDERCOLOR "0.153,0.13,0.357"
+// #define ROWCOLOR "0.867,0.933,1"
 
-object wcache=.Cache("latex_wcache");
+// Green
+#define BORDERCOLOR "0,0.2,0"
+#define ROWCOLOR "0.627,0.878,0.753"
+
+object wcache=.Cache(latex+".wcache");
+
+string SillyCaps(string s)
+{
+  return Array.map(lower_case(s)/" ",String.capitalize)*" ";
+}
 
 array(float) find_line_width(array(SGML) data)
 {
@@ -66,12 +63,20 @@ array(float) find_line_width(array(SGML) data)
     sscanf(tmp,"%{%*slength=%f%}",array lengths);
 //	  werror("%O\n",lengths);
 //	  werror("%O\n",keys);
+
+    if(sizeof(lengths) != sizeof(keys))
+    {
+      werror("Latex exection failed.\n");
+      werror("%s",tmp);
+      exit(1);
+    }
     
     for(int e=0;e<sizeof(lengths);e++)
     {
       lengths[e]=lengths[e][0] / 65536; // convert to points
 //	      werror("Width of %s is %f\n",key, lengths[e][0]/65536);
     }
+
     
     wcache->set_many(keys, lengths);
     
@@ -295,29 +300,33 @@ array(float) find_min_width(array(SGML) datas)
   return ret;
 }
 
+array(string) quote_from=
+({"<",">",
+  "{","}",
+  "µ","&",
+  " ","\\",
+  "[","]",
+  "#","%",
+  "$","~",
+  "^","_",
+});
+
+array(string) quote_to=
+({"$<$","$>$",
+  "\\{","\\}",
+  "$\\mu$","\\&",
+  "$\\;$","$\\backslash$",
+  "\\symbol{91}","\\symbol{93}",
+  "\\#","\\%",
+  "\\$","\\symbol{126}",
+  "\\symbol{94}","\\_",
+});
+
 string low_latex_quote(string text)
 {
-  return replace( text,
-		 ({"<",">",
-		     "{","}",
-		     "µ","&",
-		     " ","\\",
-		     "[","]",
-		     "#","%",
-		     "$","~",
-		     "^","_",
-		     }),
-		 ({"$<$","$>$",
-		     "\\{","\\}",
-		     "$\\mu$","\\&",
-		     "$\\;$","$\\backslash$",
-		     "\\symbol{91}","\\symbol{93}",
-
-		     "\\#","\\%",
-		     "\\$","\\symbol{126}",
-		     "\\symbol{94}","\\_",
-		     }) );
+  return replace( text, quote_from, quote_to );
 }
+
 
 string latex_quote(string text)
 {
@@ -327,7 +336,17 @@ string latex_quote(string text)
     if(text[-1]=='\n') text[-1]=' ';
     text= ((text/"\n") - ({""})) *"\n";
   }
-  return low_latex_quote(text);
+  text=low_latex_quote(text);
+#if 0
+  if(space_out_quoting)
+  {
+    text=replace(text,
+		 ({ " - ","-"}),
+		 ({ "\\emdash ","\\hyphen "})
+      );
+  }
+#endif
+  return text;
 }
 
 string quote_label(string s)
@@ -409,6 +428,9 @@ string convert_table(TAG table)
 
   // extra space between columns
   int spaced;
+
+  // A short table, no page breaks...
+  int short=(int)table->params->small;
 
   if(table->params->nicer)
   {
@@ -759,12 +781,12 @@ string convert_table(TAG table)
       {
 	if(head)
 	{
-	  color="\\rowcolor[rgb]" BORDERCOLOR "%%\n";
+	  color="\\rowcolor[rgb]{" BORDERCOLOR "}%%\n";
 	  for(int e=0;e<sizeof(ltxrow);e++)
 	    ltxrow[e]="\\color[rgb]{1,1,1}%\n"+ltxrow[e];
 	  ltxrow[-1]+="\\normalcolor ";
 	}else{
-	  color=sprintf("\\rowcolor[rgb]{%s}%%\n",(rownum++&1)?"1,1,1":"0.867,0.933,1");
+	  color=sprintf("\\rowcolor[rgb]{%s}%%\n",(rownum++&1)?"1,1,1":ROWCOLOR);
 	}
       }
 
@@ -778,12 +800,38 @@ string convert_table(TAG table)
     }
   in_table--;
 
-  string ret="\n\n\\begin{longtable}{"+ fmt +"}\n";
+
+  string ret="\n\n";
+  int restart_multi;
+
+  if(short)
+  {
+    ret+="\\begin{tabular}{"+ fmt +"}\n";
+  }else{
+    if(multicolumn)
+    {
+      restart_multi=1;
+      ret+="\\end{multicols}";
+    }
+    ret+="\\begin{longtable}{"+ fmt +"}\n";
+  }
   if(framed && !border) ret+="\\hline\\endfoot\n";
   if(framed) ret+="\\hline\n";
   ret+=ret_rows * ( border ? "\\hline\n" : "" );
   if(framed) ret+="\\hline\n";
-  ret+="\\end{longtable}\n";
+
+  if(short)
+  {
+    ret+="\\end{tabular}\n";
+  }else{
+    ret+="\\end{longtable}\n";
+  }
+
+  if(restart_multi)
+  {
+    ret+="\\begin{multicols}{2}\n";
+    multicolumn=1;
+  }
 
   return ret;
 }
@@ -905,6 +953,8 @@ int depth;
 int appendixes;
 int pre;
 int in_table;
+int space_out_quoting;
+int multicolumn;
 
 constant FLAG_TABLE=1;
 constant FLAG_LIST=2;
@@ -931,7 +981,11 @@ string convert_to_latex(SGML data, void|int flags)
 	  case "tt":
 	    if(flags & FLAG_MAN_HEAD)
 	    {
-	      ret+="\\begin{Large}\\PikeHeaderFont "+convert_to_latex(tag->data)+"\\end{Large}\\normalfont\\normalcolor ";
+	      space_out_quoting++;
+	      ret+="\\begin{Large}\\PikeHead{"+
+		convert_to_latex(tag->data)+
+		"}\\end{Large} ";
+	      space_out_quoting--;
 	    }else{
 	      ret+="{\\tt "+convert_to_latex(tag->data)+"}";
 	    }
@@ -981,10 +1035,9 @@ string convert_to_latex(SGML data, void|int flags)
 	      case "module":
 	      case "class":
 	      case "name":
-		ret+="\n\n\\pagebreak[0]\n\\begin{tabular}{p{\\linewidth}}\n"
-		  ""+convert_to_latex(tag->data,FLAG_MAN_HEAD)+"\\\\\n"
-		  "\\hline\n"
-		  "\\end{tabular}\\nopagebreak\n\n\\nopagebreak ";
+		ret+="\n\n\\pagebreak[0] "+
+		  convert_to_latex(tag->data,FLAG_MAN_HEAD)+"\n"
+		  "\\hrule\\nopagebreak ";
 		break;
 
 	      case "syntax":
@@ -995,17 +1048,22 @@ string convert_to_latex(SGML data, void|int flags)
 
 	      default:
 		ret+="\n\n"+
-		  "\\PikeHeaderFont "+latex_quote(tag->params->title)+":\\normalfont\\normalcolor\\\\\n "+
-		convert_to_latex(tag->data)+
+		  "\\PikeHeaderFont "+latex_quote(SillyCaps(tag->params->title))+"\\normalfont\\normalcolor\\\\\n "+
+		  convert_to_latex(tag->data)+
 		  "\n";
 	    }
 	    break;
 
 	  case "chapter":
 	    depth++;
-	    ret+="\\chapter{"+
-	      latex_quote(tag->params->title)+"}\n"+
-	      convert_to_latex(tag->data);
+	    space_out_quoting++;
+	    ret+="\\chapter{"+latex_quote(tag->params->title)+"}\n";
+	    space_out_quoting--;
+//	    ret+="\\begin{multicols}{2}\n";
+//	    multicolumn=1;
+	    ret+=convert_to_latex(tag->data);
+//	    multicolumn=0;
+//	    ret+="\\end{multicols}\n";
 	    depth--;
 	    break;
 
@@ -1016,13 +1074,16 @@ string convert_to_latex(SGML data, void|int flags)
 	      appendixes=1;
 	    }
 	    depth++;
-	    ret+="\\chapter{"+
-	      latex_quote(tag->params->title)+"}\n"+
-	      convert_to_latex(tag->data);
+	    space_out_quoting++;
+	    ret+="\\chapter{"+latex_quote(tag->params->title)+"}\n";
+	    space_out_quoting--;
+	    ret+=convert_to_latex(tag->data);
 	    depth--;
 	    break;
 
 	  case "section":
+	  {
+	    int restart;
 	    int olddepth=depth;
 	    string tmp="";
 	    switch(depth)
@@ -1036,21 +1097,48 @@ string convert_to_latex(SGML data, void|int flags)
 	      case 1:
 	    }
 	    depth++;
-	    ret+="\\"+tmp+"section{"+latex_quote(tag->params->title)+"}"+
-	      convert_to_latex(tag->data);
+	    space_out_quoting++;
+	    if(multicolumn)
+	    {
+	      restart=1;
+	      multicolumn=0;
+	      ret+="\\end{multicols}\n";
+	    }
+	    ret+="\\"+tmp+"section{"+latex_quote(tag->params->title)+"}";
+	    if(restart)
+	    {
+	      ret+="\\begin{multicols}{2}\n";
+	      multicolumn=1;
+	    }
+	    space_out_quoting--;
+	    ret+=convert_to_latex(tag->data);
 	    depth=olddepth;
 	    break;
+	  }
 
 	  case "center":
-	    ret+="\\begin{center}\n"+
-	      convert_to_latex(tag->data)+
-	      "\n\\end{center}\n";
-	    break;
+	  {
+	    int restart;
 
-	  case "variable":
-	  case "constant":
-	  case "method":
-	  case "function":
+	    if(multicolumn)
+	    {
+	      restart=1;
+	      multicolumn=0;
+	      ret+="\\end{multicols}\n";
+	    }
+	    ret+="\\begin{center}\n";
+	    ret+=convert_to_latex(tag->data);
+	    ret+="\n\\end{center}\n";
+	    if(restart)
+	    {
+	      ret+="\\begin{multicols}{2}\n";
+	      multicolumn=1;
+	    }
+	    break;
+	  }
+
+	  case "class":
+	  case "module":
 #if 1
 	  if(depth)
 	  {
@@ -1078,14 +1166,13 @@ string convert_to_latex(SGML data, void|int flags)
 	    }
 	  }
 #endif
+	  case "variable":
+	  case "constant":
+	  case "method":
+	  case "function":
 	  ret+=convert_to_latex(tag->data);
 	  break;
 
-	  case "class":
-	  case "module":
-            // FIXME: but how?
-	    ret+=convert_to_latex(tag->data);
-	    break;
 
 	  case "firstpage":
 	    ret+="\\begin{titlepage}\n"+
@@ -1152,7 +1239,7 @@ string convert_to_latex(SGML data, void|int flags)
 	    break;
 	    
 	  case "dt": ret+="\n\\item "; break;
-	  case "dd": ret+="\n\\item $\\;$$\\;$$\\;$$\\;$"; break;
+	  case "dd": ret+="\\nopagebreak\n\\item $\\;$$\\;$$\\;$$\\;$\\nopagebreak "; break;
 
 	  case "ex_indent":
 	    ret+="$\\;$$\\;$$\\;$$\\;$";
@@ -1322,8 +1409,18 @@ string package(string x)
 {
   return #"
 \\documentclass[twoside,a4paper]{book}
-"+packages+
-#"\\begin{document}
+\\input{idonex-fonts.tex}
+\\usepackage{epic}
+\\usepackage{eepic}
+\\usepackage{isolatin1}
+\\usepackage{latexsym}  % For $\Box$
+\\usepackage{amsmath}
+\\usepackage{longtable}
+\\usepackage[dvips]{graphicx}
+\\usepackage[dvips]{color}  % colors becomes wrong in xdvi, but right in postscript
+\\usepackage{colortbl}
+\\usepackage{parskip}
+\\begin{document}
 \\author{wmml to latex}
 \\setlength{\\unitlength}{1mm}
 
@@ -1333,7 +1430,7 @@ string package(string x)
 \\parskip=1pt\\tt}}
 "+
     x+
-    "\\end{document}\n";
+    "\\LoadCustomFonts\\end{document}\n";
 }
 
 string extention=".tex";

@@ -11,21 +11,19 @@ import ".";
 inherit "latex";
 
 string extention=".pdftex";
-
-string packages=
-#"\\usepackage{isolatin1}
-\\usepackage{latexsym}  % For $\Box$
-\\usepackage{amsmath}
-\\usepackage{longtable}
-\\usepackage[pdftex]{graphicx}
-\\usepackage[pdftex]{color}
-\\usepackage{colortbl}
-\\usepackage{parskip}
-\\usepackage[pdftex,breaklinks,colorlinks,linkcolor=black]{hyperref}
-";
-
 string latex="pdflatex";
 
+array(string) quote_to=
+({"\\symbol{60}","\\symbol{62}",
+  "\\symbol{123}","\\symbol{125}",
+  "$\\mu$","\\symbol{38}",
+  "\\symbol{32}","\\symbol{92}",
+  "\\symbol{91}","\\symbol{93}",
+  "\\#","\\%",
+  "\\$","\\symbol{126}",
+  "\\symbol{94}","\\_",
+});
+ 
 string convert_gfx(TAG tag)
 {
   string file;
@@ -61,12 +59,19 @@ string convert_gfx(TAG tag)
 
 Sgml.Tag illustration(object o,void|mapping options)
 {
-  return Sgml.Tag("image",(["src":Gfx.mkpng(o,options)]),0);
+  return Sgml.Tag("image",
+		  (["src":Gfx.mkpng(o,options),
+		   "dpi": (string) (options->dpi || "75"),
+		    ])
+		  ,0);
 }
 
 Sgml.Tag illustration_jpeg(object o,void|mapping options)
 {
-  return Sgml.Tag("image",(["src":Gfx.mkjpg(o,options)]),0);
+  return Sgml.Tag("image",
+		  (["src":Gfx.mkjpg(o,options),
+		   "dpi": (string) (options->dpi || "75"),
+		    ]),0);
 }
 
 string package(string x)
@@ -76,8 +81,17 @@ string package(string x)
 \\relax
 \\documentclass[twoside,a4paper]{book}
 \\input{idonex-fonts.tex}
-"+packages+
-#"\\begin{document}
+\\usepackage{isolatin1}
+\\usepackage{latexsym}  % For $\Box$
+\\usepackage{amsmath}
+\\usepackage{longtable}
+\\usepackage[pdftex]{graphicx}
+\\usepackage[pdftex]{color}
+\\usepackage{colortbl}
+\\usepackage{parskip}
+\\usepackage{multicol}
+\\usepackage[pdftex,breaklinks,colorlinks,linkcolor=black]{hyperref}
+\\begin{document}
 \\author{wmml2pdflatex}
 \\setlength{\\unitlength}{1mm}
 
@@ -88,5 +102,18 @@ string package(string x)
 
 "+
     x+
-    "\\end{document}\n";
+    "\\LoadCustomFonts\\end{document}\n";
+}
+
+
+void create()
+{
+  if(file_stat("fonts"))
+  {
+    putenv("TEXPSHEADERS","fonts:");
+    putenv("TEXINPUTS","fonts:");
+    putenv("TTFONTS","fonts:");
+    putenv("TFMFONTS","fonts:");
+  }
+  ::create();
 }
