@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.153 2003/01/29 18:04:40 mast Exp $");
+RCSID("$Id: gc.c,v 1.154 2003/04/15 17:00:56 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -39,7 +39,7 @@ RCSID("$Id: gc.c,v 1.153 2003/01/29 18:04:40 mast Exp $");
 
 #define GC_CONST 20
 #define MIN_ALLOC_THRESHOLD 1000
-#define MAX_ALLOC_THRESHOLD 10000000
+#define MAX_ALLOC_THRESHOLD 2000000000
 #define MULTIPLIER 0.9
 #define MARKER_CHUNK_SIZE 1023
 #define GC_LINK_CHUNK_SIZE 31
