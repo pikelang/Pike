@@ -525,6 +525,9 @@ array active_asyncs()
 
 void got_async_message(array what)
 {
+  werror("got_async_message: %O\n", what);
+  catch {
    if (async_callbacks[(int)what[1]])
       async_callbacks[(int)what[1]](@.ASync["decode_"+what[1]](what[2..]));
+  };
 }
