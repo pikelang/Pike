@@ -906,7 +906,7 @@ class Runtime_timezone_compiler
 	     lambda(string fn)
 	     {
 		return Stdio.read_bytes(base_path+fn) ||
-		   error("Failed to open file %O\n",base_path+fn);
+		   (error("Failed to open file %O\n",base_path+fn), "");
 	     })*"\n";
    }
 
