@@ -13,7 +13,7 @@ modules:
 
 linker_options: $(MODULE_OBJS)
 	( for a in $(MODULES) ; do echo modules/$$a/$$a.a ; \
-	if test -f $$a/linker_options ; then cat $$a/linker_options ; fi ; \
+	if test -f $$a/linker_options ; then cat $$a/linker_options ; else : ; fi ; \
 	done ; ) >linker_options
 
 depend:

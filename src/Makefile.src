@@ -130,11 +130,11 @@ quant: $(OBJ) module_objects
 
 # install
 install:
-	if [ ! -d "$(prefix)" ]; then mkdir "$(prefix)" ; chmod 755 "$(prefix)" ; fi
-	if [ ! -d "$(exec_prefix)" ]; then mkdir "$(exec_prefix)" ; chmod 755 "$(exec_prefix)" ; fi
+	if [ ! -d "$(prefix)" ]; then mkdir "$(prefix)" ; chmod 755 "$(prefix)" ; else : ; fi
+	if [ ! -d "$(exec_prefix)" ]; then mkdir "$(exec_prefix)" ; chmod 755 "$(exec_prefix)" ; else : ; fi
 	$(INSTALL) ./pike $(exec_prefix)
-	if [ ! -d "$(prefix)/lib" ]; then mkdir "$(prefix)/lib" ; chmod 755 "$(prefix)/lib" ; fi
-	if [ ! -d "$(lib_prefix)" ]; then mkdir "$(lib_prefix)" ; chmod 755 "$(lib_prefix)" ; fi
+	if [ ! -d "$(prefix)/lib" ]; then mkdir "$(prefix)/lib" ; chmod 755 "$(prefix)/lib" ; else : ; fi
+	if [ ! -d "$(lib_prefix)" ]; then mkdir "$(lib_prefix)" ; chmod 755 "$(lib_prefix)" ; else : ; fi
 	$(INSTALL) $(TMP_LIBDIR)/master.pike $(lib_prefix)
 	cp -r $(TMP_LIBDIR)/include $(lib_prefix)
 
