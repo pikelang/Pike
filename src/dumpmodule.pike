@@ -29,10 +29,13 @@ class Codec
 	break;
 
       case "object":
-	if(p!=x)
-	  if(mixed tmp=search(master()->objects,x))
-	    if(tmp=search(master()->programs,tmp))
-	      return tmp;
+	if(mixed tmp=search(master()->objects,x))
+	{
+	  if(tmp=search(master()->programs,tmp))
+	  {
+	    return tmp;
+	  }
+	}
 	break;
     }
     return ([])[0];
@@ -76,9 +79,10 @@ class Codec
 
   mixed encode_object(object x)
   {
+//    _describe(x);
     error("Cannot encode objects yet.\n");
+//    error(sprintf("Cannot encode objects yet. %O\n",indices(x)));
   }
-
 
   mixed decode_object(object x)
   {
@@ -104,8 +108,10 @@ int main(int argc, string *argv)
 	  werror("does not exist.\n");
 	  break;
 	}
+//	trace(99);
 	if(programp(p=compile_file(file)))
 	{
+//	  trace(0);
 	  string s=encode_value(p, Codec());
 	  p=decode_value(s,Codec());
 	  if(programp(p))
