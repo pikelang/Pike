@@ -1,30 +1,8 @@
 #!/usr/local/bin/pike
 
-// $Id: feature_list,v 1.8 2000/01/19 19:23:24 grubba Exp $
+// $Id: feature_list,v 1.9 2000/09/08 13:31:36 noring Exp $
 
 int main(int argc, string *argv)
 {
-  write("Features: ");
-
-  if(!_static_modules["Regexp"])
-    write("dynamic_modules ");
-
-#if efun(thread_create)
-  write("threads ");
-#endif
-
-  foreach(({ "_Crypto", "CommonLog","Dbm","GL","GTK","Gdbm","Gmp","Gz","_Image_JPEG",
-	     "_Image_TIFF","_Image_TTF","MIME","Msql","Mysql","Odbc","Oracle",
-	     "Perl", "Postgres","Ssleay","WideValues","X","Yp" }),
-	  string modname) {
-    catch {
-      if (sizeof(indices(master()->resolv(modname) || ({})))) {
-	if(modname[0] == '_')
-	  modname = replace(modname[1..], "_", ".");
-	write(modname+" ");
-      }
-    };
-  }
-
-  write("\n");
+  write("Features: "+Tools.Install.features()*" "+"\n");
 }
