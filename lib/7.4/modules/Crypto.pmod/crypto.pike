@@ -39,6 +39,11 @@ string name() { return ::name(); }
 int query_key_length() { return key_size(); }
 int query_block_size() { return block_size(); }
 string crypt_block(string p) { return crypt(p); }
+string unpad(string m) {
+  m = crypt(m);
+  return ::unpad(m);
+}
+
 #else
 inherit Crypto.crypto;
 #endif
