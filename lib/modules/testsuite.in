@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.17 2003/10/04 18:18:23 grubba Exp $
+dnl $Id: testsuite.in,v 1.18 2003/10/04 19:29:51 grubba Exp $
 
 dnl - Array
 
@@ -701,8 +701,6 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && (cpp("__NT__")/"\n")[
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
-
-  test_do(_gdb_breakpoint();)
   
   test_any([[
     object o=Process.create_process(({"/bin/cat","/dev/null"}));
