@@ -56,6 +56,7 @@ mixed rreduce(function fun, array arr, mixed|void zero)
 }
 
 //! @[shuffle()] gives back the same elements, but in random order.
+//! The array is modified destructively.
 //!
 //! @seealso
 //!   @[permute()]
