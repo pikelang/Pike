@@ -1,14 +1,14 @@
 UNICODE CHARACTER DATABASE
-Version 3.1.0
+Version 3.2.0
 
- Revision           3.1.0
+ Revision           3.2.0
  Authors            Mark Davis and Ken Whistler
- Date               2001-02-28
- This Version       ftp://ftp.unicode.org/Public/3.1-Update/
- Previousn Version  ftp://ftp.unicode.org/Public/3.0-Update1/
+ Date               2002-03-22
+ This Version       ftp://ftp.unicode.org/Public/3.2-Update/
+ Previousn Version  ftp://ftp.unicode.org/Public/3.1-Update/
  Latest Version     ftp://ftp.unicode.org/Public/UNIDATA/
 
-          Copyright © 1991-2001 Unicode, Inc. All Rights reserved.
+          Copyright © 1991-2002 Unicode, Inc. All Rights reserved.
 
 Disclaimer
 
