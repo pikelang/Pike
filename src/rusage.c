@@ -14,6 +14,10 @@
 #include "types.h"
 #include "rusage.h"
 
+#ifdef HAVE_SYS_TIMES_H
+#include <sys/times.h>
+#endif
+
 static INT32 rusage_values[30];
 /*
  * Here comes a long blob with stuff to see how to find out about
