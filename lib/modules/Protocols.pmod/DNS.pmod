@@ -223,7 +223,16 @@ class client {
   static private string match_etc_hosts(string host)
   {
     if (!etc_hosts) {
-      string raw = Stdio.read_file("/etc/hosts");
+      string raw;
+#ifdef __NT__
+      raw = RegGetValue(HKEY_LOCAL_MACHINE,
+			"SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters",
+			"DataBasePath");
+      raw+="\\hosts";
+#else
+      raw="/etc/hosts";
+#endif
+      raw = Stdio.read_file(raw);
 
       etc_hosts = ([ "localhost":"127.0.0.1" ]);
 
@@ -257,6 +266,17 @@ class client {
     if(!server)
     {
       string domain;
+#if __NT__
+      domain=RegGetValue(HKEY_LOCAL_MACHINE,
+			 "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters",
+			 "Domain");
+      nameservers = ({ RegGetValue(HKEY_LOCAL_MACHINE,
+				   "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters",
+				   "NameServer") });
+      domains=RegGetValue(HKEY_LOCAL_MACHINE,
+			  "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters",
+			  "SearchList") / " "- ({""});
+#else
       string resolv_conf = Stdio.read_file("/etc/resolv.conf");
 
       if (!resolv_conf) {
@@ -301,6 +321,7 @@ class client {
 	  break;
 	}
       }
+#endif
       if (!sizeof(nameservers)) {
 	nameservers = ({ "127.0.0.1" });
       }
