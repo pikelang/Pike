@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: opcodes.c,v 1.27 1998/05/25 20:47:47 marcus Exp $");
+RCSID("$Id: opcodes.c,v 1.28 1998/06/07 19:47:53 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -48,10 +48,6 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
     to->u.integer=i;
     break;
 
-  case T_PROGRAM:
-    program_index_no_free(to, what->u.program, ind);
-    break;
-
   case T_STRING:
     if(ind->type==T_INT)
     {
@@ -69,6 +65,20 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
     }else{
       error("Index is not an integer.\n");
     }
+
+  case T_PROGRAM:
+    program_index_no_free(to, what->u.program, ind);
+    break;
+
+  case T_FUNCTION:
+    {
+      struct program *p = program_from_svalue(what);
+      if (p) {
+	program_index_no_free(to, p, ind);
+	break;
+      }
+    }
+    /* FALL THROUGH */
 
   default:
     error("Indexing a basic type.\n");
