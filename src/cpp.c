@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.132 2004/03/22 22:25:42 mast Exp $
+|| $Id: cpp.c,v 1.133 2004/04/15 20:32:41 mast Exp $
 */
 
 #include "global.h"
@@ -1533,10 +1533,16 @@ static int do_safe_index_call(struct cpp *this, struct pike_string *s)
   if(!s) return 0;
 
   if (SETJMP_SP(recovery, 1)) {
-    if (!s->size_shift)
-      cpp_handle_exception (this, "Error indexing module with \"%s\".", s->str);
-    else
-      cpp_handle_exception (this, "Error indexing module in '.' operator.");
+    if (TEST_COMPAT (7, 4)) {
+      free_string (&throw_value);
+      throw_value.type = T_INT;
+    }
+    else {
+      if (!s->size_shift)
+	cpp_handle_exception (this, "Error indexing module with \"%s\".", s->str);
+      else
+	cpp_handle_exception (this, "Error indexing module in '.' operator.");
+    }
     res = 0;
     push_undefined();
   } else {
