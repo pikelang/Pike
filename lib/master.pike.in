@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.65 1999/11/03 23:52:07 grubba Exp $
+/* $Id: master.pike.in,v 1.66 1999/11/04 02:35:31 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -234,7 +234,7 @@ mapping (string:program) programs=(["/master":object_program(this_object())]);
 
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
 
-static program low_findprog(string pname, string ext)
+static program low_findprog(string pname, string ext, object|void handler)
 {
   program ret;
   array s;
@@ -262,11 +262,17 @@ static program low_findprog(string pname, string ext)
             AUTORELOAD_CHECK_FILE(fname+".o");
 	    return programs[fname]=decode_value(_static_modules.files()->Fd(fname+".o","r")->read(),Codec());
 	  };
-	  if(want_warnings)
-	    werror("Warning: Failed to decode %s.o:\n"
-		   "       : \t%s\n",
-		   fname,
-		   err[0]);
+	  if(want_warnings) {
+	    if (handler) {
+	      handler->compile_warning(fname, 0,
+				       sprintf("Decode failed:\n"
+					       "\t%s", err[0]));
+	    } else {
+	      compile_warning(fname, 0,
+			      sprintf("Decode failed:\n"
+				      "\t%s", err[0]));
+	    }
+	  }
 	}
       }
       
@@ -299,20 +305,20 @@ static program low_findprog(string pname, string ext)
   }
 }
 
-static program findprog(string pname, string ext)
+static program findprog(string pname, string ext, object|void handler)
 {
   switch(ext)
   {
   case ".pike":
   case ".so":
-    return low_findprog(pname,ext);
+    return low_findprog(pname,ext,handler);
 
   default:
     pname+=ext;
     return
-      low_findprog(pname,"") ||
-      low_findprog(pname,".pike") ||
-      low_findprog(pname,".so");
+      low_findprog(pname,"", handler) ||
+      low_findprog(pname,".pike", handler) ||
+      low_findprog(pname,".so", handler);
   }
 }
 
@@ -321,7 +327,7 @@ static program findprog(string pname, string ext)
  * or a implict cast. In the future it might receive more arguments,
  * to aid the master finding the right program.
  */
-program cast_to_program(string pname, string current_file)
+program cast_to_program(string pname, string current_file, object|void handler)
 {
   string ext;
   string nname;
@@ -338,7 +344,7 @@ program cast_to_program(string pname, string current_file)
   if(IS_ABSOLUTE_PATH(pname))
   {
     pname=combine_path("/",pname);
-    return findprog(pname,ext);
+    return findprog(pname,ext,handler);
   }else{
     string cwd;
     if(current_file)
@@ -348,11 +354,11 @@ program cast_to_program(string pname, string current_file)
       cwd=getcwd();
     }
 
-    if(program ret=findprog(combine_path(cwd,pname),ext))
+    if(program ret=findprog(combine_path(cwd,pname),ext,handler))
       return ret;
 
     foreach(pike_program_path, string path)
-      if(program ret=findprog(combine_path(path,pname),ext))
+      if(program ret=findprog(combine_path(path,pname),ext,handler))
 	return ret;
 
     return 0;
@@ -475,9 +481,9 @@ void create()
  * previous_object(), can be virtually anything in this function, as it
  * is called from the compiler.
  */
-program handle_inherit(string pname, string current_file)
+program handle_inherit(string pname, string current_file, object|void handler)
 {
-  return cast_to_program(pname, current_file);
+  return cast_to_program(pname, current_file, handler);
 }
 
 mapping (program:object) objects=([object_program(this_object()):this_object()]);
@@ -705,7 +711,7 @@ object findmodule(string fullname)
   return fc[fullname]=UNDEFINED;
 }
 
-mixed handle_import(string what, string|void current_file)
+mixed handle_import(string what, string|void current_file, object|void handler)
 {
   string *tmp,path;
   if(current_file)
@@ -1043,7 +1049,7 @@ void compile_warning(string file,int line,string err)
   if(!inhibit_compile_errors)
   {
     if(want_warnings)
-      werror(sprintf("%s:%d:%s\n",trim_file_name(file),line,err));
+      werror(sprintf("%s:%d:Warning: %s\n",trim_file_name(file),line,err));
   }
 }
 

@@ -182,7 +182,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.128 1999/10/23 06:51:25 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.129 1999/11/04 02:35:30 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -416,7 +416,13 @@ low_program_ref: string_constant
     ref_push_string($1->u.sval.u.string);
     ref_push_string($1->u.sval.u.string);
     ref_push_string(lex.current_file);
-    SAFE_APPLY_MASTER("handle_inherit", 2);
+    
+    if (error_handler && error_handler->prog) {
+      ref_push_object(error_handler);
+      SAFE_APPLY_MASTER("handle_inherit", 3);
+    } else {
+      SAFE_APPLY_MASTER("handle_inherit", 2);
+    }
 
     if(sp[-1].type != T_PROGRAM)
       my_yyerror("Couldn't cast string \"%s\" to program",
@@ -494,7 +500,12 @@ import: F_IMPORT idents ';'
     ref_push_string($2->u.sval.u.string);
     free_node($2);
     ref_push_string(lex.current_file);
-    SAFE_APPLY_MASTER("handle_import",2);
+    if (error_handler && error_handler->prog) {
+      ref_push_object(error_handler);
+      SAFE_APPLY_MASTER("handle_import", 3);
+    } else {
+      SAFE_APPLY_MASTER("handle_import", 2);
+    }
     use_module(sp-1);
     pop_stack();
   }
@@ -1705,7 +1716,12 @@ idents: low_idents
     node *tmp;
     push_text(".");
     ref_push_string(lex.current_file);
-    SAFE_APPLY_MASTER("handle_import",2);
+    if (error_handler && error_handler->prog) {
+      ref_push_object(error_handler);
+      SAFE_APPLY_MASTER("handle_import", 3);
+    } else {
+      SAFE_APPLY_MASTER("handle_import", 2);
+    }
     tmp=mkconstantsvaluenode(sp-1);
     pop_stack();
     $$=index_node(tmp, ".", $2->u.sval.u.string);
@@ -2124,7 +2140,7 @@ void yyerror(char *str)
   num_parse_error++;
   cumulative_parse_error++;
 
-  if ( get_master() )
+  if ((error_handler && error_handler->prog) || get_master())
   {
     if (lex.current_file) {
       ref_push_string(lex.current_file);
@@ -2136,7 +2152,11 @@ void yyerror(char *str)
     }
     push_int(lex.current_line);
     push_text(str);
-    SAFE_APPLY_MASTER("compile_error",3);
+    if (error_handler && error_handler->prog) {
+      safe_apply(error_handler, "compile_error", 3);
+    } else {
+      SAFE_APPLY_MASTER("compile_error", 3);
+    }
     pop_stack();
   }else{
     if (lex.current_file) {

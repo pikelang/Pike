@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.169 1999/10/29 00:09:47 hubbe Exp $");
+RCSID("$Id: program.c,v 1.170 1999/11/04 02:35:28 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -111,6 +111,7 @@ static int current_program_id=0;
 struct program *new_program=0;
 struct object *fake_object=0;
 struct program *malloc_size_program=0;
+struct object *error_handler=0;
 
 int compiler_pass;
 int compilation_depth;
@@ -2628,7 +2629,7 @@ void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
   va_end(args);
 }
 
-struct program *compile(struct pike_string *prog)
+struct program *compile(struct pike_string *prog, struct object *handler)
 {
 #ifdef PIKE_DEBUG
   JMP_BUF tmp;
@@ -2637,12 +2638,15 @@ struct program *compile(struct pike_string *prog)
   struct lex save_lex;
   int save_depth=compilation_depth;
   int saved_threads_disabled;
+  struct object *saved_handler = error_handler;
   dynamic_buffer used_modules_save = used_modules;
   INT32 num_used_modules_save = num_used_modules;
   extern void yyparse(void);
 
   CDFPRINTF((stderr, "th(%ld) compile() starting compilation_depth=%d\n",
 	     (long)th_self(),compilation_depth));
+
+  error_handler = handler;
 
   low_init_threads_disable();
   saved_threads_disabled = threads_disabled;
@@ -2754,6 +2758,7 @@ struct program *compile(struct pike_string *prog)
   compilation_depth=save_depth;
   used_modules = used_modules_save;
   num_used_modules = num_used_modules_save ;
+  error_handler = saved_handler;
 
 #ifdef PIKE_DEBUG
   UNSETJMP(tmp);
@@ -3270,12 +3275,16 @@ void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)))
   if(strlen(buf)>sizeof(buf))
     fatal("Buffer overfloat in yywarning!\n");
 
-  if(get_master())
-  {
+  if ((error_handler && error_handler->prog) || get_master()) {
     ref_push_string(lex.current_file);
     push_int(lex.current_line);
     push_text(buf);
-    SAFE_APPLY_MASTER("compile_warning",3);
+
+    if (error_handler && error_handler->prog) {
+      safe_apply(error_handler, "compile_warning", 3);
+    } else {
+      SAFE_APPLY_MASTER("compile_warning",3);
+    }
     pop_stack();
   }
 }
