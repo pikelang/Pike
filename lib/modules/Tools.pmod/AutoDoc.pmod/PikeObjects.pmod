@@ -407,6 +407,20 @@ class Module {
   constant objtype = "module";
 }
 
+// A name space, eg: predef:: or lfun::
+class NameSpace {
+  inherit _Class_or_Module;
+  constant objtype = "namespace";
+}
+
+// The top-level container.
+// This container should only contain namespaces,
+// and they in turn contain modules etc.
+class AutoDoc {
+  inherit _Class_or_Module;
+  constant objtype = "autodoc";
+}
+
 // A modifier range, e.g.:
 // static private {
 //   ...
