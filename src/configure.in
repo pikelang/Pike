@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.262 1999/03/23 19:00:43 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.263 1999/04/23 01:10:03 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2822,7 +2822,7 @@ AC_SUBST(DEBUGDEF)
 AC_SUBST(ac_configure_args)
 pike_cv_prog_CC="$CC"
 
-if test x$ac_cv_func_dlopen$ac_cv_func_dld_link$ac_cv_func_shl_load = xnonono;
+if test x$pike_cv_func_dlopen$ac_cv_func_dld_link$ac_cv_func_shl_load = xnonono;
 then
   if test x$pike_cv_sys_os != xWindows_NT ; then
     with_dynamic_modules=no
