@@ -1,3 +1,7 @@
+# $Id: export_list,v 1.2 2002/04/21 01:41:23 nilsson Exp $
+# This file lists the files and directories that should be
+# added to source dists. Used by bin/export.pike.
+
 /README.txt
 /README-CVS.txt
 /ANNOUNCE
@@ -21,4 +25,3 @@
 /refdoc/template.xsl
 /refdoc/xml.txt
 /refdoc/.cvsignore
-
