@@ -5,7 +5,7 @@
 \*/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.38 1998/07/31 07:06:40 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.39 1998/07/31 20:15:11 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1256,13 +1256,13 @@ void o_divide(void)
 	
 	if(len<0)
 	{
-	  len=-len;
-	  size=sp[-2].u.array->size / len;
-	  pos=sp[-2].u.array->size % len;
+	  len = -len;
+	  pos = sp[-2].u.array->size % len;
 	}else{
-	  size=sp[-2].u.array->size / len;
-	  pos=0;
+	  pos = 0;
 	}
+	size = sp[-2].u.array->size / len;
+
 	a=allocate_array(size);
 	for(e=0;e<size;e++)
 	{
