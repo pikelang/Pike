@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.1 1998/10/31 19:07:54 mirar Exp $
+ * $Id: acconfig.h,v 1.2 1999/02/09 16:14:01 grubba Exp $
  */
 
 @TOP@
@@ -7,5 +7,8 @@
 
 /* Define this if you have -ljpeg */
 #undef HAVE_LIBTTF
+
+/* Define this if TT_Horizontal_Header has the member Reserved0 */
+#undef HAVE_TT_H_H_Reserved0
 
 
