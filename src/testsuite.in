@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.165 1999/04/02 23:25:01 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.166 1999/04/08 22:19:47 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -348,6 +348,38 @@ test_compile_any([[
   class X { static void hej() {} }
   class Y { inherit X:banan; void hopp() { banan::hej(); } }
 ]])
+
+// testing virtual overloading
+test_any([[
+class fnord
+{
+  int ber() { return 1; }
+  int goo() { return ber(); }
+};
+
+class blorg
+{
+  inherit fnord;
+  int ber() { return 2; }
+};
+return blorg()->goo();
+]],2)
+
+// testing 'local'
+test_any([[
+class fnord
+{
+  local int ber() { return 1; }
+  int goo() { return ber(); }
+};
+
+class blorg
+{
+  inherit fnord;
+  int ber() { return 2; }
+};
+return blorg()->goo();
+]],1)
 
 
 // Testing the 'inline' keyword
