@@ -128,8 +128,13 @@ string parse_text(Node n) {
     case "int":
     case "string": // Not in XSLT
     case "mixed":
-    case "image": // Not in XSLT
       // Not implemented yet.
+      break;
+
+    case "image": // Not in XSLT
+      mapping m = c->get_attributes();
+      m->src = m_delete(m, "file");
+      ret += sprintf("<img%{ %s='%s'%} />", (array)m);
       break;
 
     case "section":
@@ -225,29 +230,57 @@ string parse_type(Node n, void|string debug) {
     return "";
 
   string ret = "";
+  Node c, d;
   switch(n->get_any_name()) {
+
   case "object":
     if(n->count_children())
       ret += "<font color='#005080'>" + n[0]->get_text() + "</font>";
     else
       ret += "<font color='#202020'>object</font>";
     break;
+
   case "multiset":
     ret += "<font color='#202020'>multiset</font>";
-    // if(indextype)...
+    c = get_tag(n, "indextype");
+    if(c) ret += "(" + parse_type( get_first_element(c) ) + ")";
     break;
+
   case "array":
     ret += "<font color='#202020'>array</font>";
-    // if(valuetype)...
+    c = get_tag(n, "valuetype");
+    if(c) ret += "(" + parse_type( get_first_element(c) ) + ")";
     break;
+
   case "mapping":
     ret += "<font color='#202020'>mapping</font>";
-    //if(indextype && valuetypes)
+    c = get_tag(n, "indextype");
+    d = get_tag(n, "valuetype");
+    if(c && d)
+      ret += "(" + parse_type( get_first_element(c) ) + ":" +
+	parse_type( get_first_element(d) ) + ")";
+#ifdef DEBUG
+    if( !c != !d )
+      throw( ({ "Indextype/valuetype defined while the other is not in mapping.\n",
+		backtrace() }) );
+#endif
     break;
+
   case "function":
     ret += "<font color='#202020'>function</font>";
-    // if(argtype && returntype)
+    c = get_tag(n, "argtype");
+    d = get_tag(n, "returntype");
+    // Doing different than the XSL here. Must both
+    // argtype and returntype be defined?
+    if(c || d) {
+      ret += "(";
+      if(c) ret += map(c->get_children(), parse_type)*", ";
+      ret += " : ";
+      if(d) ret += parse_type( get_first_element(d) );
+      ret += ")";
+    }
     break;
+
   case "varargs":
 #ifdef DEBUG
     if(!n->count_children())
@@ -255,12 +288,15 @@ string parse_type(Node n, void|string debug) {
 #endif
     ret += parse_type(get_first_element(n)) + " ... ";
     break;
+
   case "or":
     ret += map(n->get_children(), parse_type)*"|";
     break;
+
   case "string": case "void": case "program": case "mixed": case "float":
     ret += "<font color='#202020'>" + n->get_any_name() + "</font>";
     break;
+
   case "int":
     ret += "<font color='#202020'>int</font>";
     // min/max ...
@@ -275,6 +311,22 @@ string parse_type(Node n, void|string debug) {
     break;
   }
   return ret;
+}
+
+string render_class_path(Node n) {
+  array a = reverse(n->get_ancestors(0));
+  if(sizeof(a)<4) return "";
+  string ret = a[2..sizeof(a)-2]->get_attributes()->name * ".";
+  if(n->get_parent()->get_parent()->get_any_name()=="class")
+    return ret + "->";
+  if(n->get_parent()->get_parent()->get_any_name()=="module")
+    return ret + ".";
+#ifdef DEBUG
+  throw( ({ "Parent module is " + n->get_parent()->get_any_name() + ".\n",
+	   backtrace() }) );
+#else
+    return "";
+#endif
 }
 
 string parse_not_doc(Node n) {
@@ -300,7 +352,7 @@ string parse_not_doc(Node n) {
 #endif
       ret += "<tt>" + parse_type(get_first_element(get_tag(c, "returntype"))); // Check for more children
       ret += " ";
-      // ret += class-path
+      ret += render_class_path(c);
       ret += "<b><font color='#0000EE'>" + c->get_attributes()->name + "</font>(</b>";
       ret += parse_not_doc( get_tag(c, "arguments") );
       ret += "<b>)</b></tt>";
@@ -322,14 +374,14 @@ string parse_not_doc(Node n) {
     case "variable":
       if(variable++) ret += "<br />\n";
       ret += "<tt>" + parse_type(get_first_element(get_first_element(c)), "variable") + " ";
-      // show-class-path
+      ret += render_class_path(c);
       ret += "<b><font color='#F000F0'>" + c->get_attributes()->name + "</font></b></tt>";
       break;
 
     case "constant":
       if(const++) ret += "<br />\n";
-      ret += "<tt>constant";
-      // show-class-path
+      ret += "<tt>constant ";
+      ret += render_class_path(c);
       ret += "<font color='#F000F0'>" + c->get_attributes()->name + "</font>";
       cc = get_tag(c, "typevalue");
       if(cc) ret += " = " + parse_type(get_first_element(cc));
