@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.146 2003/12/09 06:44:52 nilsson Exp $
+|| $Id: interpret.h,v 1.147 2003/12/09 15:39:45 grubba Exp $
 */
 
 #ifndef INTERPRET_H
@@ -585,7 +585,8 @@ void dump_backlog(void);
 BLOCK_ALLOC(pike_frame,128)
 
 #ifdef PIKE_USE_MACHINE_CODE
-#ifdef OPCODE_INLINE_BRANCH
+#if defined(OPCODE_INLINE_BRANCH) || defined(INS_F_JUMP) || \
+    defined(INS_F_JUMP_WITH_ARG) || defined(INS_F_JUMP_WITH_TWO_ARGS)
 void branch_check_threads_etc();
 #endif
 #ifdef PIKE_DEBUG
