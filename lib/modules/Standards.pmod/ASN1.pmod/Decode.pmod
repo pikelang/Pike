@@ -1,8 +1,10 @@
 //
-// $Id: Decode.pmod,v 1.15 2003/01/26 16:33:55 nilsson Exp $
+// $Id: Decode.pmod,v 1.16 2003/01/27 02:13:26 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
+#pragma strict_types
+#define COMPATIBILITY
 
 //! Decodes a DER object.
 
@@ -13,6 +15,7 @@ import .Types;
 //! Primitive unconstructed ASN1 data type.
 class primitive
 {
+  inherit Object;
   constant constructed = 0;
   int combined_tag;
 
@@ -33,14 +36,21 @@ class primitive
     raw = r;
   }
 
+  static string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%d)", this_program, combined_tag);
+  }
+
+#ifdef COMPATIBILITY
   string debug_string() {
     return sprintf("primitive(%d)", combined_tag);
   }
+#endif
 }
 
 //! constructed type
 class constructed
 {
+  inherit Object;
   constant constructed = 1;
   int combined_tag;
 
@@ -64,6 +74,10 @@ class constructed
     raw = r;
     elements = e;
   }
+
+  static string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%d)", this_program, combined_tag);
+  }
 }
 
 //! @param data
@@ -82,7 +96,7 @@ class constructed
 //! @fixme
 //!   Handling of implicit and explicit ASN.1 tagging, as well as
 //!   other context dependence, is next to non_existant.
-object|mapping der_decode(ADT.struct data, mapping types)
+object der_decode(ADT.struct data, mapping(int:program(Object)) types)
 {
   int raw_tag = data->get_uint(1);
   int len;
@@ -110,7 +124,7 @@ object|mapping der_decode(ADT.struct data, mapping types)
 
   int tag = make_combined_tag(raw_tag >> 6, raw_tag & 0x1f);
 
-  program p = types[tag];
+  program(Object) p = types[tag];
 
   if (raw_tag & 0x20)
   {
@@ -134,7 +148,7 @@ object|mapping der_decode(ADT.struct data, mapping types)
       return constructed(tag, contents, elements);
     }
 
-    object res = p();
+    Object res = p();
     res->begin_decode_constructed(contents);
 
     int i;
@@ -163,7 +177,7 @@ object|mapping der_decode(ADT.struct data, mapping types)
 
 #define U(x) make_combined_tag(0, (x))
 
-mapping universal_types =
+mapping(int:program(Object)) universal_types =
 ([ U(1) : Boolean,
    U(2) : Integer,
    U(3) : BitString,
