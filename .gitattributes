@@ -896,6 +896,8 @@ testfont binary
 /src/signal_handler.h foreign_ident
 /src/smartlink.c foreign_ident
 /src/specs.in foreign_ident
+/src/sscanf.c foreign_ident
+/src/sscanf.h foreign_ident
 /src/stralloc.c foreign_ident
 /src/stralloc.h foreign_ident
 /src/stuff.c foreign_ident

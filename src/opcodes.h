@@ -2,11 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.h,v 1.33 2003/08/06 18:05:27 mast Exp $
+|| $Id: opcodes.h,v 1.34 2003/11/14 09:06:06 mast Exp $
 */
 
 #ifndef OPCODES_H
 #define OPCODES_H
+
+/* To provide o_sscanf and f_sscanf for compatibility. */
+#include "sscanf.h"
 
 /* Opcodes */
 
@@ -166,8 +169,6 @@ void o_cast_to_int(void);
 void o_cast_to_string(void);
 void o_cast(struct pike_type *type, INT32 run_time_type);
 PMOD_EXPORT void f_cast(void);
-void o_sscanf(INT32 args);
-PMOD_EXPORT void f_sscanf(INT32 args);
 /* Prototypes end here */
 
 #endif
