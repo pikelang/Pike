@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.94 2002/10/11 01:39:29 nilsson Exp $
+|| $Id: builtin.cmod,v 1.95 2002/10/15 09:12:49 grubba Exp $
 */
 
 #include "global.h"
@@ -1414,6 +1414,8 @@ PIKECLASS Buffer
 
     if( type == string_t )
     {
+      free_string(string_t);
+      free_string(int_t);
       pop_n_elems( args );
       if( Pike_fp->current_object->refs != 1 )
 	f_Buffer_get_copy( 0 );
@@ -1422,9 +1424,12 @@ PIKECLASS Buffer
       return;
     }
 
+    free_string(string_t);
+
     if( type == int_t )
     {
       struct Buffer_struct *str = THIS;
+      free_string(int_t);
       pop_stack();
       if( Pike_fp->current_object->refs != 1 )
 	f_Buffer_get_copy( 0 );
@@ -1433,6 +1438,7 @@ PIKECLASS Buffer
       o_cast_to_int( );
       return;
     }
+    free_string(int_t);
     Pike_error("Cannot cast to %s\n", type->str );
   }
   
@@ -1511,13 +1517,13 @@ PIKECLASS Buffer
 	switch( str->size_shift )
 	{
 	  case 0:
-	    RETURN make_shared_binary_string(d,len);
+	    RETURN make_shared_binary_string0((p_wchar0 *)d,len);
 	    break;
 	  case 1:
-	    RETURN make_shared_binary_string1((short*)d,len>>1);
+	    RETURN make_shared_binary_string1((p_wchar1 *)d,len>>1);
 	    break;
 	  case 2:
-	    RETURN make_shared_binary_string2((int*)d,len>>2);
+	    RETURN make_shared_binary_string2((p_wchar2 *)d,len>>2);
 	    break;
 	}
       }
