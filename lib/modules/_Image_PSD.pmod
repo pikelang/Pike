@@ -15,36 +15,20 @@ class Layer
   int mask_xoffset, mask_yoffset;
   int mask_width, mask_height;
 
-
-  Layer copy()
-  {
-    Layer l = Layer();
-    l->mode = mode;
-    l->opacity = opacity;
-    l->image = image;
-    l->alpha = alpha;
-    l->flags = flags;
-    l->xoffset = xoffset;
-    l->yoffset = yoffset;
-    l->width = width;
-    l->height = height;
-    return l;
-  }
-
-
-  Layer get_opaqued( int opaque_value )
-  {
-    Layer res = copy();
-    if(opaque_value != 255)
-    {
-      if(res->alpha)
-        res->alpha *= opaque_value/255.0;
-      else
-        res->alpha = Image.image(width,height,
-                                 opaque_value,opaque_value,opaque_value);
-    }
-    return res;
-  }
+//   Layer copy()
+//   {
+//     Layer l = Layer();
+//     l->mode = mode;
+//     l->opacity = opacity;
+//     l->image = image;
+//     l->alpha = alpha;
+//     l->flags = flags;
+//     l->xoffset = xoffset;
+//     l->yoffset = yoffset;
+//     l->width = width;
+//     l->height = height;
+//     return l;
+//   }
 }
 
 int foo;
@@ -273,13 +257,14 @@ array decode_layers( string|mapping what, mapping|void opts )
   if(!mappingp( what ) )
     what = __decode( what );
   
-  mapping lopts = ([ "tiled":1, ]);
+  mapping lopts = ([  ]);
 
   if( opts->background )
   {
+    lopts->tiled = 1;
     lopts->image = Image.Image( 32, 32, opts->background );
-    lopts->alpha = Image.Image( 32, 32, Image.Color.white );
-    lopts->alpha_value = 1.0;
+//     lopts->alpha = Image.Image( 32, 32, Image.Color.white );
+//     lopts->alpha_value = 1.0;
   }
 
   object img, alpha;
@@ -293,7 +278,7 @@ array decode_layers( string|mapping what, mapping|void opts )
         lopts->alpha = alpha;
       else
         lopts->alpha = 0;
-      lopts->alpha_value = 1.0;
+//       lopts->alpha_value = 1.0;
     }
   }
   array layers;
@@ -304,12 +289,29 @@ array decode_layers( string|mapping what, mapping|void opts )
 
   foreach(reverse(what->layers), object l)
   {
-    if( string m = translate_mode( l->mode ) )
+    string m;
+    if( (m = translate_mode( l->mode ))
+	&& l->opacity
+	&& l->image->xsize()
+	&& l->image->ysize() )
     {
       Image.Layer lay = Image.Layer( l->image, l->alpha, m );
       l->image = 0; l->alpha = 0;
+#if 0
+      // Dumps core in Pike 7.0 at least...
       if( l->opacity != 255 )
-	lay->set_alpha_value( 1.0 - l->opacity / 255.0 );
+ 	lay->set_alpha_value( 1.0 - l->opacity / 255.0 );
+#else
+      if( lay->alpha() )
+	lay->set_image( lay->image(), lay->alpha()->color(l->opacity,
+							  l->opacity,
+							  l->opacity ) );
+      else
+	lay->set_image( lay->image(),
+			lay->image()->clear(l->opacity,
+					    l->opacity,
+					    l->opacity) );
+#endif
       lay->set_offset( l->xoffset, l->yoffset );
       layers += ({ lay });
     }
@@ -330,13 +332,10 @@ mapping _decode( string|mapping what, mapping|void opts )
 
   Image.Layer res = Image.lay(decode_layers( data, opts ),
                               0,0,data->width,data->height );
-  Image.Image img = res->image();
-  Image.Image alpha = res->alpha();
-
   return 
   ([
-    "image":img,
-    "alpha":alpha,
+    "image":res->image(),
+    "alpha":res->alpha(),
   ]);
 // };
 //  werror(describe_backtrace(e));
