@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.161 2002/11/29 01:30:30 nilsson Exp $
+// $Id: module.pmod,v 1.162 2002/12/12 13:14:14 jhs Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1744,37 +1744,6 @@ string simplify_path(string path)
     return combine_path("/", path);
   return combine_path("/", path)[1..];
 }
-
-#if constant(System.readlink)
-//! Unwinds all symlinks along the directory trail @[path], returning
-//! a path with no symlink components or 0, in case @[path] does not
-//! exist, for instance because one of its links pointed to a
-//! nonexistent file or if there was a symlink loop. The returned path
-//! is also canonicized/simplified, removing "//", "/./" and the like.
-string|int(0..0) expand_symlinks(string path)
-{
-  string unwound, root = has_prefix(path, "/") ? "/" : "";
-  mapping(string:Stat) seen = ([]);
-  while(!seen[path = simplify_path(path)])
-  {
-    if(!(seen[path] = file_stat(path, 1)))
-      return 0;
-    if(seen[path]->islnk)
-      path = combine_path(path, System.readlink(path));
-    else
-    {
-      if(unwound)
-	unwound = basename(path) + "/" + unwound;
-      else
-	unwound = basename(path);
-      path = dirname(path);
-      if(path=="/")
-	return unwound;
-    }
-  }
-  return 0;
-}
-#endif /* constant(System.readlink) */
 
 //! This function prints a message to stderr along with a description
 //! of what went wrong if available. It uses the system errno to find
