@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.4 1998/10/10 00:54:32 grubba Exp $
+ * $Id: Line.pmod,v 1.5 1998/10/12 15:44:27 nisse Exp $
  *
  * Line-buffered protocol handling.
  *
@@ -29,6 +29,7 @@ class simple
 	con->close();
       };
       catch {
+	// FIXME: Don't do this. It will break SSL connections. /nisse
 	destruct(con);
       };
     }
@@ -77,25 +78,29 @@ class simple
   }
 
   static string read_buffer = "";
+
+  static string get_line()
+  {
+    int i = search(read_buffer, "\r\n");
+    if (i == -1) {
+      return 0;
+    }
+    string data = read_buffer[..i-1];			// Not the "\r\n".
+    read_buffer = read_buffer[i+2..];
+
+    return data;
+  }
+  
   static void read_callback(mixed ignored, string data)
   {
     touch_time();
 
     read_buffer += data;
 
-    while(1) {
-      int i = search(read_buffer, "\r\n");
-      if (i == -1) {
-	return;
-      }
-      data = read_buffer[..i-1];			// Not the "\r\n".
-      read_buffer = read_buffer[i+2..];
-      _handle_command(data);
-
-      if (read_buffer == "") {
-	return;
-      }
-    }
+    string line;
+    
+    while( (line = get_line()) )
+      _handle_command(line);
   }
 
   object(ADT.queue) send_q = ADT.queue();
@@ -115,6 +120,7 @@ class simple
 	  // EOF
 	  con->set_write_callback(0);
 	  con->close();
+	  // FIXME: Don't do this! It will break SSL connections. /nisse
 	  catch { destruct(con); };
 	  con = 0;
 	  return;
@@ -205,3 +211,65 @@ class smtp_style
     con->set_write_callback(write_callback);
   }
 };
+
+class imap_style
+{
+  inherit simple;
+
+  function handle_literal = 0;
+  int literal_length;
+
+  function timeout_handler = 0;
+  
+  static void read_callback(mixed ignored, string data)
+  {
+    touch_time();
+
+    read_buffer += data;
+
+    while(1) {
+      if (handle_literal)
+      {
+	if (strlen(read_buffer) < literal_length)
+	  return;
+	string literal = read_buffer[..literal_length - 1];
+	read_buffer = read_buffer[literal_length..];
+
+	function handler = handle_literal;
+	handle_literal = 0;
+
+	handler(literal);
+      } else {
+	string line = get_line();
+	if (line)
+	  handle_command(line);
+	else
+	  break;
+      }
+    }
+  }
+
+  void expect_literal(int length, function callback)
+  {
+    literal_length = length;
+    handle_literal = callback;
+  }
+
+  static void do_timeout()
+  {
+    if (timeout_handler)
+    {
+      con->set_read_callback(0);
+      con->set_close_callback(0);
+      
+      timeout_handler();
+    } else 
+      ::do_timeout();
+  }
+
+  void create(object con_, int|void timeout_, function|void callback)
+  {
+    timeout_handler = callback;
+    ::create(con_, timeout_);
+  }
+}
