@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.81 2002/07/30 22:44:28 per Exp $
+# $Id: Makefile,v 1.82 2002/07/30 22:46:48 per Exp $
 #
 # Meta Makefile
 #
@@ -249,10 +249,10 @@ xenofarm:
 	-@cp "$(BUILDDIR)/config.info" build/xenofarm/configinfo.txt
 	-@if test ! -f "build/xenofarm/verifylog.txt"; then \
 	  cp "$(BUILDDIR)/config.cache" build/xenofarm/configcache.txt \
-	else:; fi
+	else :; fi
 	-@if test ! -f "build/xenofarm/exportlog.txt"; then \
 	  cp "$(BUILDDIR)/testsuite" build/xenofarm/testsuite.txt; \
-	else:; fi
+	else :; fi
 	-@cp "$(BUILDDIR)/dumpmodule.log" build/xenofarm/dumplog.txt
 	-@cp export.stamp build/xenofarm/exportstamp.txt
 	-@uname -s -r -m > build/xenofarm/machineid.txt
