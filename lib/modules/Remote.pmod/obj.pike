@@ -11,7 +11,7 @@ mixed get_function(string f)
 {
   object call = calls[f];
   if (!call)
-    call = calls[f] = Call(id, f, con, ctx);
+    call = calls[f] = Call(id, f, con, ctx, 0);
   return call;
 }
 
