@@ -166,14 +166,18 @@ TAGS:
 	etags -t *.h *.c
 
 # verify / debug
-verify: testsuite
-	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike testsuite
+verify_modules:
 	( cd modules ; $(MAKE) $(MAKE_FLAGS) verify )
 
-# verify / debug verbose
-verbose_verify: testsuite
-	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike testsuite --verbose
+verbose_verify_modules:
 	( cd modules ; $(MAKE) $(MAKE_FLAGS) verbose_verify )
+
+verify: testsuite verify_modules
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike testsuite
+
+# verify / debug verbose
+verbose_verify: testsuite verbose_verify_modules
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike testsuite --verbose
 
 # verify & debug VERBOSE
 gdb_verify: testsuite
@@ -197,11 +201,11 @@ export: new_peep_engine $(SRCDIR)/language.c $(SRCDIR)/language.h depend
 new_peep_engine:
 	$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
 
-peep_engine.c: peep.in
+$(SRCDIR)/peep_engine.c: peep.in
 	echo "" >$(SRCDIR)/peep_engine.c
 	-$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
 
-peep.o: peep_engine.c
+peep.o: $(SRCDIR)/peep_engine.c
 
 # make dependencies (requires compiled Pike)
 depend: language.c
