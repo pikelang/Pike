@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.124 2001/07/02 04:09:48 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.125 2001/07/02 07:02:45 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -810,10 +810,18 @@ static int do_docode2(node *n, INT16 flags)
   case F_LAND:
   case F_LOR:
     tmp1=alloc_label();
-    do_cond_jump(CAR(n), DO_NOT_WARN((INT32)tmp1), n->token == F_LOR, 0);
-    code_expression(CDR(n), flags, n->token == F_LOR ? "||" : "&&");
-    low_insert_label( DO_NOT_WARN((INT32)tmp1));
-    return 1;
+    if(flags & DO_POP)
+    {
+      do_cond_jump(CAR(n), DO_NOT_WARN((INT32)tmp1), n->token == F_LOR, DO_POP);
+      DO_CODE_BLOCK(CDR(n));
+      low_insert_label( DO_NOT_WARN((INT32)tmp1));
+      return 0;
+    }else{
+      do_cond_jump(CAR(n), DO_NOT_WARN((INT32)tmp1), n->token == F_LOR, 0);
+      code_expression(CDR(n), flags, n->token == F_LOR ? "||" : "&&");
+      low_insert_label( DO_NOT_WARN((INT32)tmp1));
+      return 1;
+    }
 
   case F_EQ:
   case F_NE:

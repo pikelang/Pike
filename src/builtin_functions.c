@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.388 2001/07/02 04:09:47 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.389 2001/07/02 07:02:44 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -40,6 +40,9 @@ RCSID("$Id: builtin_functions.c,v 1.388 2001/07/02 04:09:47 hubbe Exp $");
 #include "security.h"
 #include "builtin_functions.h"
 #include "bignum.h"
+#include "language.h"
+#include "docode.h"
+#include "lex.h"
 
 #ifdef HAVE_POLL
 #ifdef HAVE_POLL_H
@@ -107,6 +110,7 @@ PMOD_EXPORT void debug_f_aggregate(INT32 args)
   a=aggregate_array(args);
   push_array(a); /* beware, macro */
 }
+
 
 /*! @decl int compat_hash(string s)
  *! @decl int compat_hash(string s, int max)
@@ -1188,6 +1192,16 @@ PMOD_EXPORT void f_zero_type(INT32 args)
   }
 }
 
+static int generate_zero_type(node *n)
+{
+  node **arg;
+  if(count_args(CDR(n)) != 1) return 0;
+  if(do_docode(CDR(n),DO_NOT_COPY) != 1)
+    fatal("Count args was wrong in generate_zero_type().\n");
+  emit0(F_ZERO_TYPE);
+  return 1;
+}
+
 /*
  * Some wide-strings related functions
  */
@@ -1973,6 +1987,12 @@ node *fix_this_object_type(node *n)
     n->parent->node_info |= OPT_TYPE_NOT_FIXED;
   }
   return NULL;
+}
+
+static int generate_this_object(node *n)
+{
+  emit0(F_THIS_OBJECT);
+  return 1;
 }
 
 /*! @decl void throw(mixed value)
@@ -7518,7 +7538,7 @@ void init_builtin_efuns(void)
   
 /* function(:object) */
   ADD_EFUN2("this_object", f_this_object,tFunc(tNone,tObj),
-	    OPT_EXTERNAL_DEPEND, fix_this_object_type, 0);
+	    OPT_EXTERNAL_DEPEND, fix_this_object_type, generate_this_object);
   
 /* function(mixed:void) */
   ADD_EFUN("throw",f_throw,tFunc(tMix,tVoid),OPT_SIDE_EFFECT);
@@ -7546,7 +7566,7 @@ void init_builtin_efuns(void)
 		     tArr(tVar(0)))),0,fix_values_type,0);
   
 /* function(mixed:int) */
-  ADD_EFUN("zero_type",f_zero_type,tFunc(tMix,tInt01),0);
+  ADD_EFUN2("zero_type",f_zero_type,tFunc(tMix,tInt01),0,0,generate_zero_type);
   
 /* function(string,string:array) */
   ADD_EFUN("array_sscanf",f_sscanf,tFunc(tStr tStr,tArray),0);

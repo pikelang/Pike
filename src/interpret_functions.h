@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.66 2001/07/02 04:09:48 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.67 2001/07/02 07:02:45 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -124,6 +124,9 @@ OPCODE1(F_TRAMPOLINE, "trampoline")
 BREAK;
 
 /* The not so basic 'push value' instructions */
+
+OPCODE1_TAIL(F_MARK_AND_GLOBAL,"mark & global")
+  *(Pike_mark_sp++)=Pike_sp;
 
 OPCODE1(F_GLOBAL,"global")
   low_object_index_no_free(Pike_sp,
@@ -1892,5 +1895,29 @@ OPCODE0(F_BREAKPOINT,"breakpoint")
   extern void o_breakpoint(void);
   o_breakpoint();
   pc--;
+}
+BREAK;
+
+OPCODE0(F_THIS_OBJECT,"this_object")
+{
+  if(Pike_fp)
+  {
+    ref_push_object(Pike_fp->current_object);
+  }else{
+    push_int(0);
+  }
+}
+BREAK;
+
+OPCODE0(F_ZERO_TYPE,"zero_type")
+{
+  if(Pike_sp[-1].type != T_INT)
+  {
+    pop_stack();
+    push_int(0);
+  }else{
+    Pike_sp[-1].u.integer=Pike_sp[-1].subtype;
+    Pike_sp[-1].subtype=NUMBER_NUMBER;
+  }
 }
 BREAK;

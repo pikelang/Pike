@@ -1,5 +1,5 @@
 //
-// $Id: peep.in,v 1.56 2001/07/02 04:09:49 hubbe Exp $
+// $Id: peep.in,v 1.57 2001/07/02 07:02:45 hubbe Exp $
 //
 
 NOP :
@@ -157,6 +157,7 @@ GE NOT: LT
 
 LOCAL LOCAL [$3o != F_SIZEOF && $3o != F_INDEX ]: 2_LOCALS ($1a,$2a)
 MARK LOCAL [ $3o != F_SIZEOF && $3o != F_INDEX ]: MARK_AND_LOCAL ($2a)
+MARK GLOBAL: MARK_AND_GLOBAL ($2a)
 MARK STRING : MARK_AND_STRING($2a)
 MARK EXTERNAL : MARK_AND_EXTERNAL($2a,$2b)
 LOCAL SIZEOF: SIZEOF_LOCAL ($1a)
