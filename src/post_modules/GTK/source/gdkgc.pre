@@ -26,6 +26,51 @@ FUNCTION(destoy, "function(void:void)");
   gdk_gc_destroy( (GdkGC*)THIS->obj );
   destruct(Pike_fp->current_object);
 }
+
+FUNCTION(get_values, "function(void:mapping)");
+RETURNS(mapping(string:mixed));
+// Get all (or rather most) values from the GC.
+{
+  GdkGCValues v;
+  struct svalue *osp;
+  if( args ) my_pop_n_elems( args );
+
+  gdk_gc_get_values( (GdkGC*)THIS->obj, &v );
+
+  osp = Pike_sp;
+  push_text( "join_style" );      push_int( v.join_style );
+  push_text( "cap_style" );       push_int( v.cap_style );
+  push_text( "line_style" );      push_int( v.line_style );
+  push_text( "line_width" );      push_int( v.line_width );
+  push_text( "clip_x_origin" );   push_int( v.clip_x_origin );
+  push_text( "clip_y_origin" );   push_int( v.clip_y_origin );
+  push_text( "ts_x_origin" );     push_int( v.ts_x_origin );
+  push_text( "ts_y_origin" );     push_int( v.ts_y_origin );
+  push_text( "subwindow_mode" );  push_int( v.subwindow_mode );
+  push_text( "clip_mask" );       push_gdkobject( v.clip_mask, Bitmap );
+  push_text( "stipple" );         push_gdkobject( v.stipple, Bitmap );
+  push_text( "tile" );            push_gdkobject( v.tile, Pixmap );
+  push_text( "font" );            push_gdkobject( v.font, Font );
+
+  if( v.font )      gdk_font_ref( v.font );
+  if( v.tile )      gdk_pixmap_ref( v.tile );
+  if( v.stipple )   gdk_pixmap_ref( v.stipple );
+  if( v.clip_mask ) gdk_pixmap_ref( v.clip_mask );
+
+  push_text( "fill" ); push_int( v.fill );
+  push_text( "tile" ); push_int( v.tile );
+  push_text( "function" ); push_int( v.function );
+  {
+    GdkColor *f = malloc( sizeof( GdkColor ) );
+    GdkColor *b = malloc( sizeof( GdkColor ) );
+    *f = v.foreground;
+    *b = v.background;
+    push_text( "foreground" ); push_gdkobject( f, Color );
+    push_text( "background" ); push_gdkobject( b, Color );
+  }
+  f_aggregate_mapping( Pike_sp-osp );
+}
+
 FUNCTION(set_foreground, "function(object:object)");
 ARGS(GDK.Color);
 NAME_ARGS(color);

@@ -552,6 +552,8 @@ Style get_style();
 
 void restore_default_style();
 // Reset all styles to their default value
+void set_rc_style();
+// Set the style from the .rc files
 void reset_rc_styles();
 // Reset all styles to their default value, recursively
 void set_composite_name( string name );

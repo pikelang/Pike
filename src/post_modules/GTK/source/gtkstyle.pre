@@ -1,5 +1,10 @@
 class style;
 
+FUNCTION(destroy, "function(void:void)");
+{
+  /* do nothing */
+}
+
 style copy();
 //  Copy this style, and return the new style object
 style attach( GdkWindow to );
@@ -17,29 +22,29 @@ void apply_default_background( GdkWindow window, int set_bgp, int state_type, ?G
 // <p>
 // If set_bgp is true, the background of the widget will be set,
 // otherwise it will only be drawn into the window.
-array GDK.Color &fg[5];
-array GDK.Color &bg[5];
-array GDK.Color &light[5];
-array GDK.Color &dark[5];
-array GDK.Color &mid[5];
-array GDK.Color &text[5];
-array GDK.Color &base[5];
+COPY array GDK.Color &fg[5];
+COPY array GDK.Color &bg[5];
+COPY array GDK.Color &light[5];
+COPY array GDK.Color &dark[5];
+COPY array GDK.Color &mid[5];
+COPY array GDK.Color &text[5];
+COPY array GDK.Color &base[5];
 
-member GDK.Color &black;
-member GDK.Color &white;
+REF member GDK.Color &black;
+REF member GDK.Color &white;
 
-member GDK.Font font;
-array GDK.Pixmap bg_pixmap[5];
+REF member GDK.Font font;
+REF array GDK.Pixmap bg_pixmap[5];
 
-array GDK.GC fg_gc[5];
-array GDK.GC bg_gc[5];
-array GDK.GC light_gc[5];
-array GDK.GC dark_gc[5];
-array GDK.GC mid_gc[5];
-array GDK.GC text_gc[5];
-array GDK.GC base_gc[5];
-member GDK.GC black_gc;
-member GDK.GC white_gc;
+REF array GDK.GC fg_gc[5];
+REF array GDK.GC bg_gc[5];
+REF array GDK.GC light_gc[5];
+REF array GDK.GC dark_gc[5];
+REF array GDK.GC mid_gc[5];
+REF array GDK.GC text_gc[5];
+REF array GDK.GC base_gc[5];
+REF member GDK.GC black_gc;
+REF member GDK.GC white_gc;
 
 %{
 /* void draw_hline( GDK.Window window, int state_type, int x1, int x2, int y)

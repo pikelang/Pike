@@ -511,7 +511,9 @@ void do_default_sprintf( int args, int offset, int len )
 	  docs[progname+last_function] += "\n"+line;
       }
     }
-    else if(sscanf(line, "array %s %s[%s];", string type, line, string size ) )
+    else if(sscanf(line, "%[A-Z ]array %s %s[%s];", 
+                   string alloctype,
+                   string type, line, string size ) > 2 )
     {
       string ptype;
       int and, star;
@@ -552,10 +554,31 @@ void do_default_sprintf( int args, int offset, int len )
              "( THIS->obj )->"+line+"[n]));\n");
       } else {
         if( sscanf( type, "GDK.%s", type ) )
-          emit("    push_gdkobject( "+
-               (and?"&":"")+(star?"*":"")+
-               "("+castname("GTK_"+upper_case( progname ))+
-               "( THIS->obj )->"+line+"[n]), "+type+");\n" );
+        {
+          if( alloctype == "COPY" )
+          {
+            emit( "  {\n");
+            emit(
+"  Gdk"+type+" *tmp = malloc( sizeof( Gdk"+type+" ) );\n"
+"  *tmp = "+(star?"**":(and?"":"*"))+
+"("+castname("GTK_"+upper_case( progname ))+
+"( THIS->obj )->"+line+"[n]);\n"
+"  push_gdkobject( tmp, "+type+" );\n" );
+            emit( "  }\n");
+          }
+          else 
+          {
+            emit("    push_gdkobject( "+
+                 (and?"&":"")+(star?"*":"")+
+                 "("+castname("GTK_"+upper_case( progname ))+
+                 "( THIS->obj )->"+line+"[n]), "+type+");\n" );
+            if( alloctype == "REF" )
+              emit( "    gdk_"+lower_case(type)+"_ref( "+
+                    (and?"&":"")+(star?"*":"")+
+                    "("+castname("GTK_"+upper_case( progname ))+
+                    "( THIS->obj )->"+line+"[n]) );\n" );
+          }
+        }
         else
         {
           sscanf( type, "GTK.%s", type );
@@ -570,11 +593,13 @@ void do_default_sprintf( int args, int offset, int len )
       emit("}\n");
       if( current_define ) emit( "#endif\n");
     }
-    else if(sscanf(line, "member %s %s;", string type, line ) )
+    else if(sscanf(line, "%[A-Z ]member %s %s;", string alloctype,
+                   string type, line ) > 1)
     {
       string ptype;
       int and, star;
       signal_doc=0;
+      alloctype = String.trim_whites( alloctype );
       line = String.trim_whites( line );
       type = String.trim_whites( type );
       and = sscanf( type, "&%s", type ) || sscanf(line,"&%s",line);
@@ -605,10 +630,31 @@ void do_default_sprintf( int args, int offset, int len )
              "( THIS->obj )->"+line+"));\n");
       } else {
         if( sscanf( type, "GDK.%s", type ) )
-          emit("  push_gdkobject( "+
-               (and?"&":"")+(star?"*":"")+
-               "("+castname("GTK_"+upper_case( progname ))+
-               "( THIS->obj )->"+line+"), "+type+");\n" );
+        {
+          if( alloctype == "COPY" )
+          {
+            emit( "  {\n");
+            emit(
+                 "  Gdk"+type+" *tmp = malloc( sizeof( Gdk"+type+" ) );\n"
+                 "  *tmp = "+(star?"**":(and?"":"*"))+
+                 "("+castname("GTK_"+upper_case( progname ))+
+                 "( THIS->obj )->"+line+");\n"
+                 "  push_gdkobject( tmp, "+type+" );\n" );
+            emit( "  }\n");
+          }
+          else
+          {
+            emit("  push_gdkobject( "+
+                 (and?"&":"")+(star?"*":"")+
+                 "("+castname("GTK_"+upper_case( progname ))+
+                 "( THIS->obj )->"+line+"), "+type+");\n" );
+            if( alloctype == "REF" )
+              emit( "    gdk_"+lower_case(type)+"_ref( "+
+                    (and?"&":"")+(star?"*":"")+
+                    "("+castname("GTK_"+upper_case( progname ))+
+                    "( THIS->obj )->"+line+") );\n" );
+          }
+        }
         else
         {
           sscanf( type, "GTK.%s", type );
