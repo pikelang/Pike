@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.288 2002/05/14 16:08:46 grubba Exp $");
+RCSID("$Id: las.c,v 1.289 2002/05/15 14:49:33 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3435,7 +3435,32 @@ void fix_type_field(node *n)
       n->type=index_type(type_a, type_b,n);
     }
     break;
+  case F_RANGE:
+    {
+      node **nptr = my_get_arg(&_CDR(n), 0);
 
+      if (!CAR(n)) {
+	/* Unlikely to occurr, and if it does, it has probably
+	 * already been complained about.
+	 */
+	copy_pike_type(n->type, mixed_type_string);
+	break;
+      }
+
+      if (nptr) {
+	node *arg1 = *nptr;
+
+	if ((nptr = my_get_arg(&_CDR(n), 1))) {
+	  node *arg2 = *nptr;
+
+	  n->type = range_type(CAR(n)->type, arg1->type, arg2->type);
+	  break;
+	}
+      }
+      /* Fewer than 2 arguments to F_RANGE. */
+      fatal("Bad number of arguments to F_RANGE.\n");
+    }
+    break;
   case F_AUTO_MAP_MARKER:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       my_yyerror("Indexing a void expression.");
@@ -3757,7 +3782,7 @@ void fix_type_field(node *n)
     }
     copy_pike_type(n->type, mixed_type_string);
     break;
-  case F_RANGE:
+
   case F_INC:
   case F_DEC:
   case F_POST_INC:
