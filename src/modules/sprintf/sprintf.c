@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.118 2004/03/21 17:14:47 nilsson Exp $
+|| $Id: sprintf.c,v 1.119 2004/11/02 14:38:45 aldem Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -278,7 +278,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.118 2004/03/21 17:14:47 nilsson Exp $");
+RCSID("$Id: sprintf.c,v 1.119 2004/11/02 14:38:45 aldem Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1423,7 +1423,10 @@ static void low_pike_sprintf(struct format_stack *fs,
 
 	if (fs->fsp->precision==SPRINTF_UNDECIDED) fs->fsp->precision=3;
 
-	x=(char *)xalloc(100+MAXIMUM(fs->fsp->precision,3));
+	/* FIXME: The constant (320) is good for IEEE double precision
+	 * float, but will definitely fail for bigger precision! --aldem
+	 */
+	x=(char *)xalloc(320+MAXIMUM(fs->fsp->precision,3));
 	fs->fsp->fi_free_string=x;
 	fs->fsp->b=MKPCHARP(x,0);
 	sprintf(buffer,"%%*.*%c",EXTRACT_PCHARP(a));

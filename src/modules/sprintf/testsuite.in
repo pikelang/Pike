@@ -112,11 +112,11 @@ test_eq(sprintf("%20.-3f", 31415.92670),"               31000")
 
 dnl test for high exponent problems
 dnl (this might only effect --with-double-precision et al)
-test_true(stringp(sprintf("%f",exp(200))))
-test_true(stringp(sprintf("%g",exp(200))))
-test_true(stringp(sprintf("%G",exp(200))))
-test_true(stringp(sprintf("%e",exp(200))))
-test_true(stringp(sprintf("%E",exp(200))))
+test_true(stringp(sprintf("%f",exp(700))))
+test_true(stringp(sprintf("%g",exp(700))))
+test_true(stringp(sprintf("%G",exp(700))))
+test_true(stringp(sprintf("%e",exp(700))))
+test_true(stringp(sprintf("%E",exp(700))))
 
 dnl test for "inf" problems
 test_eq(lower_case(sprintf("%f",Math.inf)),"inf") 
