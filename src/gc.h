@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.104 2003/09/08 20:05:20 mast Exp $
+|| $Id: gc.h,v 1.105 2003/09/23 20:06:28 mast Exp $
 */
 
 #ifndef GC_H
@@ -75,8 +75,7 @@ extern int gc_external_refs_zapped;
  num_allocs++;								\
  DO_IF_DEBUG(								\
    if(d_flag) CHECK_INTERPRETER_LOCK();					\
-   if((Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE) ||	\
-      Pike_in_gc == GC_PASS_LOCATE)					\
+   if(Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)	\
      Pike_fatal("Allocating new objects within gc is not allowed!\n");	\
  )									\
  if (Pike_in_gc) remove_marker(OBJ);					\
@@ -102,7 +101,7 @@ extern int gc_external_refs_zapped;
 #define GC_FREE_SIMPLE_BLOCK(PTR) do {					\
   extern int d_flag;							\
   if(d_flag) CHECK_INTERPRETER_LOCK();					\
-  if (Pike_in_gc == GC_PASS_CHECK || Pike_in_gc == GC_PASS_LOCATE)	\
+  if (Pike_in_gc == GC_PASS_CHECK)					\
     Pike_fatal("No free is allowed in this gc pass.\n");		\
   else									\
     remove_marker(PTR);							\
@@ -113,8 +112,7 @@ extern int gc_external_refs_zapped;
 #define GC_FREE_BLOCK(PTR) do {						\
   extern int d_flag;							\
   if(d_flag) CHECK_INTERPRETER_LOCK();					\
-  if ((Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE) ||	\
-      Pike_in_gc == GC_PASS_LOCATE)					\
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)	\
     Pike_fatal("Freeing objects within gc is not allowed.\n");		\
 } while (0)
 
