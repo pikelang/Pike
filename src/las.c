@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.287 2002/05/12 00:27:46 mast Exp $");
+RCSID("$Id: las.c,v 1.288 2002/05/14 16:08:46 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3773,22 +3773,25 @@ void fix_type_field(node *n)
 
   case F_RETURN:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
-      yywarning("Returning a void expression.");
-      if (!CAR(n)) {
+      yywarning("Returning a void expression. Converted to zero.");
 #ifdef SHARED_NODES
-	sub_node(n);
+      sub_node(n);
 #endif /* SHARED_NODES */
+      if (!CAR(n)) {
 	_CAR(n) = mkintnode(0);
 	copy_pike_type(n->type, CAR(n)->type);
-#ifdef SHARED_NODES
-	if (!(n->tree_info & OPT_NOT_SHARED)) {
-	  n->hash = hash_node(n);
-	}
-	n->node_info |= OPT_DEFROSTED;
-	add_node(n);
-#endif /* SHARED_NODES */
-	break;
+      } else {
+	_CAR(n) = mknode(F_COMMA_EXPR, CAR(n), mkintnode(0));
+	copy_pike_type(n->type, CDAR(n)->type);
       }
+#ifdef SHARED_NODES
+      if (!(n->tree_info & OPT_NOT_SHARED)) {
+	n->hash = hash_node(n);
+      }
+      n->node_info |= OPT_DEFROSTED;
+      add_node(n);
+#endif /* SHARED_NODES */
+      break;
     } else if(Pike_compiler->compiler_frame &&
 	      Pike_compiler->compiler_frame->current_return_type) {
       if (!pike_types_le(CAR(n)->type,
