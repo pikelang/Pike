@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.479 2003/03/14 15:50:43 grubba Exp $
+|| $Id: builtin_functions.c,v 1.480 2003/03/28 14:23:28 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.479 2003/03/14 15:50:43 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.480 2003/03/28 14:23:28 marcus Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7280,7 +7280,8 @@ static node *fix_map_node_info(node *n)
 {
   int argno;
   node **cb_;
-  int node_info = OPT_SIDE_EFFECT;	/* Assume worst case. */
+  /* Assume worst case. */
+  int node_info = OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
 
   /* Note: argument 2 has argno 1. */
   for (argno = 1; (cb_ = my_get_arg(&_CDR(n), argno)); argno++) {
@@ -7293,7 +7294,7 @@ static node *fix_map_node_info(node *n)
 	/* map(), map_array() or filter(). */
 	continue;
       }
-      node_info = cb->u.sval.u.efun->flags & OPT_SIDE_EFFECT;
+      node_info &= cb->u.sval.u.efun->flags;
     }
     /* FIXME: Type-checking? */
     break;
