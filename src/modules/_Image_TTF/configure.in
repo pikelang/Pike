@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.9 2001/02/13 15:44:18 mirar Exp $
+# $Id: configure.in,v 1.10 2002/08/05 18:32:29 kiwi Exp $
 #
 AC_INIT(image_ttf.c)
 AC_CONFIG_HEADER(config.h)
@@ -12,13 +12,14 @@ PIKE_FEATURE_WITHOUT(Image.TTF)
 if test x$with_ttflib = xyes ; then
   PIKE_FEATURE_NODEP(Image.TTF)
 
-  AC_CHECK_HEADERS(freetype.h ftxkern.h freetype/freetype.h freetype/ftxkern.h)
+  AC_CHECK_HEADERS(freetype.h ftxkern.h freetype/freetype.h freetype/ftxkern.h freetype1/freetype/freetype.h freetype1/freetype/ftxkern.h)
 
   parent="$ac_cv_header_ftxkern_h$ac_cv_header_freetype_h"
   subdir="$ac_cv_header_freetype_ftxkern_h$ac_cv_header_freetype_freetype_h"
+  subsubdir="$ac_cv_header_freetype1_freetype_ftxkern_h$ac_cv_header_freetype1_freetype_freetype_h"
   freetype_h="$ac_cv_header_freetype_h$ac_cv_header_freetype_freetype_h"
 
-  if test "$parent" = "yesyes" -o "$subdir" = "yesyes"; then
+  if test "$parent" = "yesyes" -o "$subdir" = "yesyes" -o "$subsubdir" = "yesyes"; then
     AC_CHECK_LIB(ttf, TT_Open_Collection, [
       AC_DEFINE(HAVE_LIBTTF) 
       LIBS="${LIBS-} -lttf"
@@ -27,10 +28,14 @@ if test x$with_ttflib = xyes ; then
     AC_MSG_CHECKING([if TT_Horizontal_Header has the member Reserved0])
     AC_CACHE_VAL(pike_cv_tt_hh_reserved0, [
       AC_TRY_COMPILE([
+#ifdef HAVE_FREETYPE1_FREETYPE_FREETYPE_H
+#include <freetype1/freetype/freetype.h>
+#else
 #ifdef HAVE_FREETYPE_FREETYPE_H
 #include <freetype/freetype.h>
 #else
 #include <freetype.h>
+#endif
 #endif
       ],[
   extern TT_Horizontal_Header *horiz;
