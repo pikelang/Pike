@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: termios.c,v 1.2 1998/12/17 02:06:50 mirar Exp $");
+RCSID("$Id: termios.c,v 1.3 1998/12/18 17:26:55 mirar Exp $");
 #include "file_machine.h"
 
 #if defined(HAVE_TERMIOS_H)
@@ -7,6 +7,7 @@ RCSID("$Id: termios.c,v 1.2 1998/12/17 02:06:50 mirar Exp $");
 #include <termios.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/ioctl.h>
 
 #include "fdlib.h"
 #include "interpret.h"
@@ -26,18 +27,22 @@ RCSID("$Id: termios.c,v 1.2 1998/12/17 02:06:50 mirar Exp $");
 **!
 **!	the returned value/the parameter is a mapping on the form
 **!	<pre>
-**!		"ispeed":baud rate
-**!		"ospeed":baud rate
-**!		flag:0|1
+**!		"ispeed":    baud rate
+**!		"ospeed":    baud rate
+**!		"csize":     character size (5,6,7 or 8)
+**!		"rows":      terminal rows 
+**!		"columns":   terminal columns  
+**!		flag:        0 or 1
+**!		control char:value
 **!		...
 **!	</pre>
 **!     where 'flag' is the string describing the termios 
 **!     (input, output, control and local mode) flags 
 **!     (see the manpage for termios or the tutorial).
 **!
-**!	Note that tcsetattr always will set the attributes
-**!	in the mapping; correct use would be something like:
-**!	<tt>fd->tcsetattr(fd->tcgetattr()|(["myflag":1]));</tt>
+**!	Note that tcsetattr always _changes_ the attributes;
+**!	correct use to set a flag would be something like:
+**!	<tt>fd->tcsetattr((["myflag":1]));</tt>
 **!
 **!	the argument 'when' to tcsetattr describes when the 
 **!	changes are to take effect:
@@ -45,6 +50,13 @@ RCSID("$Id: termios.c,v 1.2 1998/12/17 02:06:50 mirar Exp $");
 **!	"TCSADRAIN": the change occurs after all output has been written;
 **!	"TCSAFLUSH": the change occurs after all output has been written,
 **!	and empties input buffers.
+**!
+**!	Example for setting the terminal in raw mode:
+**!	   Stdio.stdin->tcsetattr((["ECHO":0,"ICANON":0,"VMIN":0,"VTIME":0]));
+**!
+**!	Note: Unknown flags are ignored by tcsetattr().
+**!	Terminal rows and columns settring by tcsetattr() is not
+**!	currently supported.
 **!
 **!	returns 0 if failed.
 */
@@ -77,16 +89,21 @@ void file_tcgetattr(INT32 args)
    push_text(sflag); \
    push_int(!!(ti.where&flag)); \
    n++; 
+#define TERMIOS_CHAR(c,sc) \
+   push_text(sc); \
+   push_int(ti.c_cc[c]); \
+   n++; 
 
 #include "termios_flags.h"
 
 #undef TERMIOS_FLAG
+#undef TERMIOS_CHAR
 
    push_text("ospeed");
    switch (cfgetospeed(&ti))
    {
 #define TERMIOS_SPEED(B,V) case B: push_int(V); break;
-#include "termios_speeds.h"
+#include "termios_flags.h"
       default: push_int(-1);
    }
    n++;
@@ -94,11 +111,49 @@ void file_tcgetattr(INT32 args)
    push_text("ispeed");
    switch (cfgetispeed(&ti))
    {
-#include "termios_speeds.h"
+#include "termios_flags.h"
 #undef TERMIOS_SPEED
       default: push_int(-1);
    }
    n++;
+
+#ifdef CSIZE
+   push_text("csize");
+   switch (ti.c_cflag&CSIZE)
+   {
+#ifdef CS8
+      case CS8: push_int(8); break;
+#endif
+#ifdef CS7
+      case CS7: push_int(7); break;
+#endif
+#ifdef CS6
+      case CS6: push_int(6); break;
+#endif
+#ifdef CS5
+      case CS5: push_int(5); break;
+#endif
+      default:
+	 push_int(-1);
+   }
+   n++;
+#endif
+
+#ifdef TIOCGWINSZ
+   {
+      struct winsize winsize;
+      if (!ioctl(FD,TIOCGWINSZ,&winsize))
+      {
+	 push_text("rows");
+	 push_int(winsize.ws_row);
+	 n++;
+	 push_text("columns");
+	 push_int(winsize.ws_col);
+	 n++;
+      }
+   }
+#endif
+
 
    f_aggregate_mapping(n*2);
 }
@@ -135,55 +190,112 @@ void file_tcsetattr(INT32 args)
    if (sp[-1].type!=T_MAPPING)
       error("illegal argument 1 to tcsetattr\n");
 
-   /* just zero these */
-   ti.c_iflag=0;
-   ti.c_oflag=0;
-   ti.c_cflag=0;
-   ti.c_lflag=0;
+   /* read attr to edit */
+   if (tcgetattr(FD,&ti)) /* error */
+   {
+      ERRNO=errno;
+      push_int(0);
+      return;
+   }
 
 #define TERMIOS_FLAG(where,flag,sflag) \
    stack_dup(); \
    push_text(sflag); \
    f_index(2); \
-   if (sp[-1].type!=T_INT)  \
-      error("illegal argument 1 to tcsetattr: key %s has illegal value",sflag); \
-   if (sp[-1].u.integer) ti.where|=flag; \
+   if (!IS_UNDEFINED(sp-1)) \
+   { \
+      if (sp[-1].type!=T_INT)  \
+         error("illegal argument 1 to tcsetattr: key %s has illegal value",sflag); \
+      if (sp[-1].u.integer) ti.where|=flag; else ti.where&=~flag; \
+   } \
+   pop_stack();
+
+#define TERMIOS_CHAR(cc,scc) \
+   stack_dup(); \
+   push_text(scc); \
+   f_index(2); \
+   if (!IS_UNDEFINED(sp-1)) \
+   { \
+      if (sp[-1].type!=T_INT)  \
+         error("illegal argument 1 to tcsetattr: key %s has illegal value",scc); \
+      ti.c_cc[cc]=(char)sp[-1].u.integer; \
+   } \
    pop_stack();
 
 #include "termios_flags.h"
 
 #undef TERMIOS_FLAG
+#undef TERMIOS_CHAR
 
+#ifdef CSIZE
+   stack_dup();
+   push_text("csize");
+   f_index(2);
+
+   if (!IS_UNDEFINED(sp-1)) 
+   {
+      if (sp[-1].type!=T_INT)  
+   	 error("illegal argument 1 to tcsetattr: key %s has illegal value","csize"); 
+
+      switch (sp[-1].u.integer)
+      {
+#ifdef CS8
+	 case 8: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS8; break;
+#endif
+#ifdef CS7
+	 case 7: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS8; break;
+#endif
+#ifdef CS6
+	 case 6: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS8; break;
+#endif
+#ifdef CS5
+	 case 5: ti.c_cflag=(ti.c_cflag&~CSIZE)|CS8; break;
+#endif
+	 default:
+	    error("illegal argument 1 to tcsetattr: value of key %s is not a valid char size","csize"); 
+      }
+   }
+   pop_stack();
+
+#endif
+   
+   
    stack_dup(); 
    push_text("ospeed");
    f_index(2); 
-   if (sp[-1].type!=T_INT)  
-      error("illegal argument 1 to tcsetattr: key %s has illegal value","ospeed"); 
-   switch (sp[-1].u.integer)
+   if (!IS_UNDEFINED(sp-1)) 
    {
-#define TERMIOS_SPEED(B,V) case V: push_int(B); break;
-#include "termios_speeds.h"
-      default:
-	 error("illegal argument 1 to tcsetattr, value of key %s in not a valid baud rate\n","ospeed");
+      if (sp[-1].type!=T_INT)  
+   	 error("illegal argument 1 to tcsetattr: key %s has illegal value","ospeed"); 
+      switch (sp[-1].u.integer)
+      {
+   #define TERMIOS_SPEED(B,V) case V: push_int(B); break;
+   #include "termios_flags.h"
+   	 default:
+   	    error("illegal argument 1 to tcsetattr, value of key %s is not a valid baud rate\n","ospeed");
+      }
+      cfsetospeed(&ti,sp[-1].u.integer);
+      pop_stack();
    }
-   cfsetospeed(&ti,sp[-1].u.integer);
-   pop_stack();
    pop_stack();
 
    stack_dup(); 
    push_text("ispeed");
    f_index(2); 
-   if (sp[-1].type!=T_INT)  
-      error("illegal argument 1 to tcsetattr: key %s has illegal value","ospeed"); 
-   switch (sp[-1].u.integer)
+   if (!IS_UNDEFINED(sp-1)) 
    {
-#include "termios_speeds.h"
-#undef TERMIOS_SPEED
-      default:
-	 error("illegal argument 1 to tcsetattr, value of key %s in not a valid baud rate\n","ispeed");
+      if (sp[-1].type!=T_INT)  
+   	 error("illegal argument 1 to tcsetattr: key %s has illegal value","ospeed"); 
+      switch (sp[-1].u.integer)
+      {
+   #include "termios_flags.h"
+   #undef TERMIOS_SPEED
+   	 default:
+   	    error("illegal argument 1 to tcsetattr, value of key %s is not a valid baud rate\n","ispeed");
+      }
+      cfsetispeed(&ti,sp[-1].u.integer);
+      pop_stack();
    }
-   cfsetispeed(&ti,sp[-1].u.integer);
-   pop_stack();
    pop_stack();
 
    pop_stack(); /* lose the mapping */
