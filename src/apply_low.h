@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.22 2003/08/03 01:09:54 mast Exp $
+|| $Id: apply_low.h,v 1.23 2003/09/08 19:46:52 mast Exp $
 */
 
     {
@@ -43,6 +43,7 @@
 	      do_debug();
 	    break;
 	  case 4:
+	  default:
 	    do_debug();
 	}
       }
