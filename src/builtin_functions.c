@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.460 2003/01/13 02:07:04 mast Exp $
+|| $Id: builtin_functions.c,v 1.461 2003/01/13 03:55:15 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.460 2003/01/13 02:07:04 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.461 2003/01/13 03:55:15 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2078,7 +2078,7 @@ void f__exit(INT32 args)
  *!
  *! @seealso
  *!   @[ctime()], @[localtime()], @[mktime()], @[gmtime()],
- *!   @[System.gettimeofday]
+ *!   @[System.gettimeofday], @[gethrtime]
  */
 PMOD_EXPORT void f_time(INT32 args)
 {
@@ -6044,17 +6044,46 @@ PMOD_EXPORT void f_master(INT32 args)
 #include <sys/time.h>
 #endif
 
-#ifdef HAVE_GETHRVTIME
-/*! @decl int gethrvtime()
+/*! @decl int gethrvtime (void|int nsec)
+ *!
+ *! Return the CPU time that has been consumed by this process. Zero
+ *! is returned if the system couldn't determine it. The time is
+ *! normally returned in microseconds, but if the optional @[nsec] is
+ *! nonzero then it's returned in nanoseconds.
+ *!
+ *! The CPU time includes both user and system time, i.e. it's
+ *! approximately the same thing you would get by adding together the
+ *! "utime" and "stime" fields returned by @[System.getrusage] (but
+ *! perhaps with better accurancy).
+ *!
+ *! @note
+ *!   The actual accurancy on many systems is significantly less than
+ *!   milliseconds or nanoseconds.
+ *!
+ *! @seealso
+ *!   @[System.getrusage()], @[gethrtime()]
  */
 PMOD_EXPORT void f_gethrvtime(INT32 args)
 {
   pop_n_elems(args);
-  push_int64(gethrvtime()/1000);
+  if (args)
+    push_int64(get_cpu_time());
+  else
+    push_int64(get_cpu_time()/1000);
 }
-#endif
 
-/*! @decl int gethrtime()
+/*! @decl int gethrtime (void|int nsec)
+ *!
+ *! Return the real time since some arbitrary event in the past. The
+ *! time is normally returned in microseconds, but if the optional
+ *! @[nsec] is nonzero then it's returned in nanoseconds.
+ *!
+ *! @note
+ *!   The actual accurancy on many systems is significantly less than
+ *!   milliseconds or nanoseconds.
+ *!
+ *! @seealso
+ *!   @[time()], @[System.gettimeofday()], @[gethrvtime()]
  */
 #ifdef HAVE_GETHRTIME
 PMOD_EXPORT void f_gethrtime(INT32 args)
@@ -6068,19 +6097,18 @@ PMOD_EXPORT void f_gethrtime(INT32 args)
 #else
 PMOD_EXPORT void f_gethrtime(INT32 args)
 {
-  struct timeval tv;
   pop_n_elems(args);
-  GETTIMEOFDAY(&tv);
+  GETTIMEOFDAY(&current_time);
 #ifdef INT64
   if(args)
-    push_int64((((INT64)tv.tv_sec * 1000000) + tv.tv_usec)*1000);
+    push_int64((((INT64)current_time.tv_sec * 1000000) + current_time.tv_usec)*1000);
   else
-    push_int64(((INT64)tv.tv_sec * 1000000) + tv.tv_usec);
+    push_int64(((INT64)current_time.tv_sec * 1000000) + current_time.tv_usec);
 #else /* !INT64 */
   if(args)
-    push_int64(((tv.tv_sec * 1000000) + tv.tv_usec)*1000);
+    push_int64(((current_time.tv_sec * 1000000) + current_time.tv_usec)*1000);
   else
-    push_int64((tv.tv_sec * 1000000) + tv.tv_usec);
+    push_int64((current_time.tv_sec * 1000000) + current_time.tv_usec);
 #endif /* INT64 */
 }
 #endif /* HAVE_GETHRTIME */
@@ -7562,14 +7590,11 @@ void init_builtin_efuns(void)
 {
   struct program *pike___master_program;
 
+  ADD_EFUN("gethrvtime",f_gethrvtime,
+	   tFunc(tOr(tInt,tVoid),tInt), OPT_EXTERNAL_DEPEND);
   ADD_EFUN("gethrtime", f_gethrtime,
 	   tFunc(tOr(tInt,tVoid),tInt), OPT_EXTERNAL_DEPEND);
 
-#ifdef HAVE_GETHRVTIME
-  ADD_EFUN("gethrvtime",f_gethrvtime,
-	   tFunc(tNone,tInt),OPT_EXTERNAL_DEPEND);
-#endif
-  
 #ifdef PROFILING
   ADD_EFUN("get_profiling_info", f_get_prof_info,
 	   tFunc(tPrg(tObj),tArray), OPT_EXTERNAL_DEPEND);
