@@ -1,15 +1,11 @@
 #! /usr/bin/env pike
-// -*- pike -*- $Id: rsif,v 1.7 2002/04/21 04:06:42 jhs Exp $
+// -*- pike -*- $Id: rsif,v 1.8 2002/04/21 16:23:21 nilsson Exp $
 
-string version = ("$Revision: 1.7 $"/" ")[1];
-int verbosity = 1; // interactive
+string version = ("$Revision: 1.8 $"/" ")[1];
+int verbosity = 1; // more output
 int overwrite = 1; // no backups
 
-void usage(function|void output_fun)
-{
-  if(!output_fun)
-    output_fun = write;
-  output_fun(#"rsif [options] <from> <to> <files>
+constant usage = #"rsif [options] <from> <to> <files>
 
 rsif (\"replace string in file\") replaces all occurrences of the string
 <from> with the string <to> in listed files. The name of the files that
@@ -19,8 +15,7 @@ were changed are written to stdout. Available options:
   -v, --verbose   Writes more junk to stderr.
   -q, --quiet     Writes no output at all.
   -V, --version   Writes the version number of rsif.
-  -h, --help      Shows this help message.\n");
-}
+  -h, --help      Shows this help message.\n";
 
 int main(int argc, array(string) argv)
 {
@@ -32,16 +27,28 @@ int main(int argc, array(string) argv)
     ({ "help",       Getopt.NO_ARG,       "-h,--help"/"," }) })), array opt)
     switch(opt[0])
     {
-      case "backup": overwrite = 0; break;
-      case "verbose": verbosity++; break;
-      case "version": write(version + "\n"); return 0;
-      case "quiet": verbosity = 0; break;
-      case "help": usage(); return 0;
+      case "backup":
+	overwrite = 0;
+	break;
+      case "verbose":
+	verbosity++;
+	break;
+      case "version":
+	write(version + "\n");
+	return 0;
+      case "quiet":
+	verbosity = 0;
+	break;
+      case "help":
+	write(usage);
+	return 0;
     }
   argv = Getopt.get_args(argv);
 
-  if(4 > (argc = sizeof(argv)))
-    return usage(werror), 1;
+  if(4 > (argc = sizeof(argv))) {
+    werror(usage);
+    return 1;
+  }
 
   string from = argv[1], to = argv[2], file;
   if(argc == 4 && argv[-1] == "-")
