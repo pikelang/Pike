@@ -1,0 +1,136 @@
+/* nt.cmod -*- c -*- */
+
+#ifdef __NT__
+
+/* We need to do this before including global.h /Hubbe */
+/* (because global.h includes windows.h which includes wincrypt.h ) */
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0400
+#endif
+
+#include "global.h"
+#include "interpret.h"
+#include "svalue.h"
+#include "object.h"
+#include "module_support.h"
+#include "pike_macros.h"
+#include "stralloc.h"
+
+#include <wincrypt.h>
+
+DECLARATIONS
+
+/*! @module Crypto
+ */
+
+/*! @module NT
+ */
+
+/*! @class CryptContext
+ *!
+ *! Class representing an HCRYPTPROV handle.
+ */
+
+PIKECLASS CryptContext
+{
+  CVAR HCRYPTPROV handle;
+
+  PIKEFUN void create(string|int str1, string|int str2, int type, int flags)
+  {
+    if(THIS->handle) Pike_error("Already initialized.\n");
+    if(str1->type==T_INT) str1=0;
+    if(str2->type==T_INT) str2=0;
+    if(!CryptAcquireContext(THIS->handle, str1->u.string->str,
+			    str2->u.string->str, type, flags)) {
+      INT32 errcode = GetLastError();
+      if(errcode == 0x80090016)
+	Pike_error("CryptContext->create(): No default key container.\n");
+      else
+	Pike_error("CryptContext->create(): Failed with code 0x%08x.\n",
+		   errcode);
+    }
+    pop_n_elems(args);
+  }
+
+  /*! @decl string CryptGenRandom(int size, string|void init)
+   *!
+   *! Retreive some random data.
+   */
+  PIKEFUN string CryptGenRandom(int size, string|void init)
+  {
+    struct pike_string *res;
+    struct pike_string *str = 0;
+    if(size<0)
+      Pike_error("Negative string length.\n");
+    if(init && init->type==T_STRING) {
+      str = init->u.string;
+      NO_WIDE_STRING(str);
+      if(size==0)
+	size = str->len;
+    }
+    res = begin_shared_string(size);
+    if(str && size>0)
+      MEMCPY(res->str, str->str, MINIMUM(str->len,size));
+    if(CryptGenRandom(THIS->handle, size, (BYTE*)res->str)) {
+      pop_n_elems(args);
+      push_string(end_shared_string(res));
+    }
+    else {
+      pop_n_elems(args);
+      free_string(end_shared_string(res));
+      push_int(0);
+    }
+  }
+
+  INIT
+  {
+    THIS->handle = 0;
+  }
+  EXIT
+  {
+    if(THIS->handle)
+      CryptReleaseContext(THIS->handle, 0);
+  }
+}
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
+
+void nt_init()
+{
+  INIT;
+
+#define SIMPCONST(X) \
+      add_integer_constant(#X,X,0);
+
+  SIMPCONST(PROV_RSA_FULL);
+  SIMPCONST(PROV_RSA_SIG);
+  SIMPCONST(PROV_DSS);
+  SIMPCONST(PROV_FORTEZZA);
+  SIMPCONST(PROV_MS_EXCHANGE);
+  SIMPCONST(PROV_SSL);
+
+  SIMPCONST(CRYPT_VERIFYCONTEXT);
+  SIMPCONST(CRYPT_NEWKEYSET);
+  SIMPCONST(CRYPT_DELETEKEYSET);
+#ifdef CRYPT_MACHINE_KEYSET
+  SIMPCONST(CRYPT_MACHINE_KEYSET);
+#endif
+#ifdef CRYPT_SILENT
+  SIMPCONST(CRYPT_SILENT);
+#endif
+
+}
+
+void nt_exit()
+{
+  EXIT;
+}
+
+#endif /* __NT__ */
