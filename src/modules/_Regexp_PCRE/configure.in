@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.6 2003/09/24 12:46:47 mirar Exp $
+# $Id: configure.in,v 1.7 2003/10/06 16:56:47 grubba Exp $
 #
 AC_INIT(pcre_glue.cmod)
 AC_CONFIG_HEADER(pcre_machine.h)
@@ -18,7 +18,7 @@ if test x$with_libpcre = xyes ; then
       LIBS="${LIBS-} -lpcre"
       PIKE_FEATURE(Regexp.PCRE,[yes, (using libpcre)])
 
-      AC_CHECK_FUNCS(pcre_fullinfo)
+      AC_CHECK_FUNCS(pcre_fullinfo pcre_get_stringnumber)
     ])
   fi
 fi
