@@ -6,7 +6,6 @@
 #ifndef CALL_OUT_H
 #define CALL_OUT_H
 
-#include <sys/types.h>
 #include "types.h"
 
 struct call_out_s

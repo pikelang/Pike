@@ -272,7 +272,7 @@ struct backlog
 struct backlog backlog[BACKLOG];
 int backlogp=BACKLOG-1;
 
-void dump_backlog()
+void dump_backlog(void)
 {
   int e;
   if(!d_flag || backlogp<0 || backlogp>=BACKLOG)
@@ -865,7 +865,7 @@ void apply_low(struct object *o, int fun, int args)
   if(!p)
     error("Cannot call functions in destructed objects.\n");
 #ifdef DEBUG
-  if(fun>=p->num_identifier_references)
+  if(fun>=(int)p->num_identifier_references)
     fatal("Function index out of range.\n");
 #endif
 
@@ -921,7 +921,7 @@ void apply_low(struct object *o, int fun, int args)
     }
     my_strcat(")"); 
     s=simple_free_buf();
-    if(strlen(s) > TRACE_LEN)
+    if((long)strlen(s) > (long)TRACE_LEN)
     {
       s[TRACE_LEN]=0;
       s[TRACE_LEN-1]='.';
@@ -1022,7 +1022,7 @@ void apply_low(struct object *o, int fun, int args)
     my_strcat("Return: ");
     describe_svalue(sp-1,0,0);
     s=simple_free_buf();
-    if(strlen(s) > TRACE_LEN)
+    if((long)strlen(s) > (long)TRACE_LEN)
     {
       s[TRACE_LEN]=0;
       s[TRACE_LEN-1]='.';
@@ -1135,7 +1135,7 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
     }
     my_strcat(")"); 
     st=simple_free_buf();
-    if(strlen(st) > TRACE_LEN)
+    if((long)strlen(st) > (long)TRACE_LEN)
     {
       st[TRACE_LEN]=0;
       st[TRACE_LEN-1]='.';
@@ -1181,7 +1181,7 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
     my_strcat("Return: ");
     describe_svalue(sp-1,0,0);
     s=simple_free_buf();
-    if(strlen(s) > TRACE_LEN)
+    if((long)strlen(s) > (long)TRACE_LEN)
     {
       s[TRACE_LEN]=0;
       s[TRACE_LEN-1]='.';

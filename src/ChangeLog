@@ -1,0 +1,86 @@
+Tue Oct 24 00:13:18 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* everything; fixed implicit casts to explicits in < > <= >=
+
+	* builtin_efuns.c (f_values & f_indices): fixed a loop with
+	  undefined behaviour, now it works.
+
+	* svalue.c (copy_svalues_recursively_no_free): Changed
+	  (*to=*from).u.refs[0]++; to *to=*from; from->u.refs[0]++;
+          because hp-cc didn't handle the first case. 
+
+Sun Oct 22 22:50:49 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* svalue.c (assign_from_short_svalue_no_free): Moved
+	  assignmet to make it work with stupid compilers. (HP-cc)
+
+	* main.c (main): put #ifdef's around usage of RLIM_INFINITY
+
+	* configure.in: Added special patch for HP-UX cc,
+	  also changed so that -pipe -g -W -Wunused -Wformat is only
+          used with gcc.
+          Fixed #ifdef <-> #if problem in test for byteorder
+	* all files: removed extra includes of stdlib.h, stdio.h and unistd.h
+
+Sat Oct 21 01:38:37 1995  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* array.c (compact_array): this routine would allocate
+          array(int) when given an array(string|zero) if first
+	  index was zero.
+	* array.c (low_lookup): Failed to lookup zeroes in a short
+          string *: FIXED
+
+	* create_testsuite: added a few thousand tests on switch()
+
+	* configure.in: Removed the definition of SOLARIS that
+	  causes mutex lock around accept()
+	  also added search for -lcrypt
+	* mapping.c: fixed so that order_mapping doesn't do
+          free(0) sometimes..
+	* modules/files/file.c: fixed a missing ; in the simulated
+	  socketpair().
+
+Thu Oct 19 12:48:58 1995  Fredrik Hubinette  <hubbe@freeone.signum.se>
+
+	* v1.1E-14 Released
+
+	* array.c: when sorting an array for switch(), it would dump core
+	  if there was strings and zeroes, but nothing else. FIXED
+
+Tue Oct 17 21:45:31 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* v1.0E-14 Released
+
+	* las.c (optimize): Fixed a rather nasty bug that caused
+	  segfaults in loops like for(something;x++;somethingelse) {}
+
+	* language.y: fixed so you can declare variables as:
+	  function(int,int:int) foo;
+	* lpc_types.c: fixed a nasty bug in typechecker, also made
+	  'mixed' match 'void' (simpler that way)
+	* program.c: Fixed a nasty bug that made ::identifier dump
+          core if identifier was inherited indirectly.
+
+Sat Oct 14 01:58:13 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* v1.1E-15 Released
+
+	* call_out.c (verify_call_outs): Fixed so that this function
+	  is actually run (when compiled with DEBUG and usint -d)
+	  Also fixed a bug when doing call_out 0 or less...
+
+	* interpret.c (strict_apply_svalue): Moved fix to a bug
+	  to apply_svalue, so I don't cause a new bug.
+	  (void functions left droppings on the stack)
+
+Thu Oct 12 22:33:26 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* v1.0E-15 Released
+
+	* Makefile.in: targets 'export' added, and 'depend' fixed
+	  make depend now uses a uLPC script to get rid of include
+	  and pathnames
+	* simulate.lpc: added system()
+	* file.c: added file->set_close_on_exec()
+
+	* Changelog started

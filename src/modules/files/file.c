@@ -753,7 +753,9 @@ int socketpair(int family, int type, int protocol, int sv[2])
   if(bind(sv[1], (struct sockaddr *)&addr2, sizeof(addr2)) < 0) return -1;
 
   /* Check what ports we got.. */
+  len=sizeof(addr);
   if(getsockname(fd,(struct sockaddr *)&addr,&len) < 0) return -1;
+  len=sizeof(addr);
   if(getsockname(sv[1],(struct sockaddr *)&addr2,&len) < 0) return -1;
 
   /* Listen to connections on our new socket */
@@ -771,12 +773,12 @@ int socketpair(int family, int type, int protocol, int sv[2])
    */
   do
   {
-    len=sizeof(addr2);
-    sv[0]=accept(fd,(struct sockaddr_in *)&addr2,&len);
+    len=sizeof(addr);
+    sv[0]=accept(fd,(struct sockaddr *)&addr,&len);
     if(sv[0] < 0) return -1;
-  } while(len < sizeof(addr2) ||
-	  addr2.sin_addr.s_addr != addr.sin_addr.s_addr ||
-	  addr2.sin_port != addr.sin_port);
+  }while(len < sizeof(addr) ||
+       addr2.sin_addr.s_addr != addr.sin_addr.s_addr ||
+       addr2.sin_port != addr.sin_port);
 
   if(close(fd) <0) return -1;
 

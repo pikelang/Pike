@@ -128,26 +128,4 @@ INT32 get_opt_info();
 
 extern dynamic_buffer areas[NUM_AREAS];
 
-struct compilation
-{
-  struct compilation *previous;
-  node *init_node;
-  dynamic_buffer areas[NUM_AREAS];
-  dynamic_buffer inherit_names; 
-  INT32 current_line;
-  INT32 old_line;
-  INT32 nexpands;
-  INT32 last_line;
-  INT32 last_pc;
-  struct lpc_string *current_file;
-  int pragma_all_inline;     /* inline all possible inlines */
-  struct program fake_program;
-  struct inputstate *istate;
-  struct hash_table *defines;
-  int comp_stackp;
-  int num_parse_error;
-  struct locals *local_variables;
-  struct hash_table *identifier_hash;
-};
-
 #endif

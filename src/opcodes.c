@@ -248,7 +248,7 @@ static int read_set(char *match,int cnt,char *set,int match_len)
 	set['-']=init;
 	break;
       }
-      for(e=last;e<EXTRACT_UCHAR(match+cnt);e++) set[e]=init;
+      for(e=last;e<(int) EXTRACT_UCHAR(match+cnt);e++) set[e]=init;
     }
     set[last=EXTRACT_UCHAR(match+cnt)]=init;
   }

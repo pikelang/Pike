@@ -82,6 +82,7 @@ struct keyword reserved_words[] =
 { "break",	F_BREAK, },
 { "case",	F_CASE, },
 { "catch",	F_CATCH, },
+{ "class",	F_CLASS, },
 { "continue",	F_CONTINUE, },
 { "default",	F_DEFAULT, },
 { "do",		F_DO, },
@@ -271,7 +272,7 @@ char *low_get_f_name(int n,struct program *p)
     return instrs[n-F_OFFSET].name;
   }else if(n >= F_MAX_OPCODE) {
     if(p &&
-       p->num_constants > n-F_MAX_OPCODE &&
+       (int)p->num_constants > (int)(n-F_MAX_OPCODE) &&
        p->constants[n-F_MAX_OPCODE].type==T_FUNCTION &&
        p->constants[n-F_MAX_OPCODE].subtype == -1 &&
        p->constants[n-F_MAX_OPCODE].u.efun)
@@ -295,7 +296,7 @@ char *get_f_name(int n)
     return instrs[n-F_OFFSET].name;
   }else if(n >= F_MAX_OPCODE) {
     if(fp && fp->context.prog &&
-       fp->context.prog->num_constants > n-F_MAX_OPCODE &&
+       (int)fp->context.prog->num_constants > (int)(n-F_MAX_OPCODE) &&
        fp->context.prog->constants[n-F_MAX_OPCODE].type==T_FUNCTION &&
        fp->context.prog->constants[n-F_MAX_OPCODE].subtype == -1 &&
        fp->context.prog->constants[n-F_MAX_OPCODE].u.efun)

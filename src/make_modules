@@ -1,0 +1,25 @@
+#!/bin/sh
+#
+# Call make in the modules subdirs
+#
+
+fullnames=`cat $1`
+
+shift
+
+#
+# This is more likely to be portable than using "$@" I think
+# Less generic, but I don't need to quote anything but spaces
+# at the moment
+#
+args=
+for arg
+do
+  args="$args \"$arg\""
+done
+
+for dir in $fullnames
+do
+  ( cd $dir ; eval $args )
+done
+

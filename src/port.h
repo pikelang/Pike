@@ -132,13 +132,13 @@ int VSPRINTF(char *buf,char *fmt,va_list args);
 #ifdef EXTRACT_UCHAR_BY_CAST
 #  define EXTRACT_UCHAR(p) (*(unsigned char *)(p))
 #else
-static inline int EXTRACT_UCHAR(p) { return *p < 0 ? *p + 0x100 : *p; }
+static INLINE int EXTRACT_UCHAR(char *p) { return *p < 0 ? *p + 0x100 : *p; }
 #endif
 
 #ifdef EXTRACT_CHAR_BY_CAST
 #  define EXTRACT_CHAR(p) (*(signed char *)(p))
 #else
-static inline int EXTRACT_CHAR(p) { return *p > 0x7f ? *p - 0x100 : *p; }
+static INLINE int EXTRACT_CHAR(char *p) { return *p > 0x7f ? *p - 0x100 : *p; }
 #endif
 
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS

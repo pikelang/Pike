@@ -3,7 +3,6 @@
 ||| uLPC is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
-#include <stdlib.h>
 #include "global.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -63,7 +62,7 @@ struct object *clone(struct program *p, int args)
     frame.context.prog->refs++;
     frame.current_storage=o->storage+frame.context.storage_offset;
 
-    for(d=0;d<frame.context.prog->num_identifiers;d++)
+    for(d=0;d<(int)frame.context.prog->num_identifiers;d++)
     {
       if(frame.context.prog->identifiers[d].flags & IDENTIFIER_FUNCTION) 
 	continue;
@@ -176,7 +175,7 @@ void destruct(struct object *o)
     if(frame.context.prog->exit)
       frame.context.prog->exit(frame.current_storage,o);
 
-    for(d=0;d<frame.context.prog->num_identifiers;d++)
+    for(d=0;d<(int)frame.context.prog->num_identifiers;d++)
     {
       if(frame.context.prog->identifiers[d].flags & IDENTIFIER_FUNCTION) 
 	continue;
@@ -510,7 +509,7 @@ void verify_all_objects(int pass)
 	if(!p)
 	  fatal("Object's program not in program list.\n");
 
-      for(e=0;e<o->prog->num_identifiers;e++)
+      for(e=0;e<(int)o->prog->num_identifiers;e++)
       {
 	struct identifier *i;
 	i=ID_FROM_INT(o->prog, e);
@@ -541,7 +540,7 @@ void verify_all_objects(int pass)
 
       frame.current_object->refs++;
 
-      for(e=0;e<o->prog->num_inherits;e++)
+      for(e=0;e<(int)o->prog->num_inherits;e++)
       {
 	frame.context=o->prog->inherits[e];
 	frame.context.prog->refs++;
@@ -577,7 +576,7 @@ int object_equal_p(struct object *a, struct object *b, struct processing *p)
   if(a->prog)
   {
     int e;
-    for(e=0;e<a->prog->num_identifiers;e++)
+    for(e=0;e<(int)a->prog->num_identifiers;e++)
     {
       struct identifier *i;
       i=ID_FROM_INT(a->prog, e);

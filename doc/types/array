@@ -37,7 +37,7 @@ DESCRIPTION
                  is not enough.
         a != b : returns 0 if a is the same array as b, same size and values
                  is not enough.
-        ! a    : boolean not, returns 1
+        ! a    : boolean not, returns 0
 	a[c]   : indexing, returns element c in the array (c is an int)
 	a[c]=d : setting, sets element c in the array to d (c is an int)
 	a[c..d]: range (c & d are ints) returns an array containing a pice of

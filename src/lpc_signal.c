@@ -10,7 +10,6 @@
 #include "add_efun.h"
 #include "macros.h"
 #include "backend.h"
-#include "unistd.h"
 #include <signal.h>
 
 #ifdef NSIG

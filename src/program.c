@@ -21,13 +21,25 @@
 #include <stdio.h>
 #include <fcntl.h>
 
+#define FILE_STATE
+#define PROGRAM_STATE
+
+#define STRUCT
+#include "compilation.h"
+#undef STRUCT
+
+#define DECLARE
+#include "compilation.h"
+#undef DECLARE
+
+#undef FILE_STATE
+#undef PROGRAM_STATE
 
 struct program *first_program = 0;
 
 struct program fake_program;
 
 static int current_program_id=0;
-struct compilation *previous_compilation = 0;
 static INT32 last_line = 0;
 static INT32 last_pc = 0;
 static struct lpc_string *last_file = 0;
@@ -82,32 +94,13 @@ void start_new_program()
 {
   int e;
   struct inherit inherit;
-  struct compilation *old;
   struct lpc_string *name;
-  old=ALLOC_STRUCT(compilation);
 
-  old->previous=previous_compilation;
-  previous_compilation=old;
-#define MOVE(var) old->var=var; MEMSET((char *)&(var),0,sizeof(var))
-
-  for(e=0;e<NUM_AREAS;e++)  { MOVE(areas[e]); }
-  MOVE(fake_program);
-  MOVE(init_node);
-  MOVE(current_line);
-  MOVE(old_line);
-  MOVE(nexpands);
-  MOVE(last_line);
-  MOVE(last_pc);
-  MOVE(current_file);
-  MOVE(pragma_all_inline);
-  MOVE(istate);
-  MOVE(defines);
-  MOVE(num_parse_error);
-  MOVE(local_variables);
-  MOVE(inherit_names);
-  old->comp_stackp=comp_stackp;
-
-#undef MOVE
+#define PROGRAM_STATE
+#define PUSH
+#include "compilation.h"
+#undef PUSH
+#undef PROGRAM_STATE
 
   for(e=0; e<NUM_AREAS; e++) low_init_buf(areas + e);
   low_init_buf(& inherit_names);
@@ -125,7 +118,7 @@ void start_new_program()
 
 static void low_free_program(struct program *p)
 {
-  INT32 e;
+  unsigned INT16 e;
   for(e=0; e<p->num_strings; e++)
     free_string(p->strings[e]);
 
@@ -258,15 +251,15 @@ void check_program(struct program *p, int pass)
       fatal("Someone changed a program!!!\n");
   }
 
-  for(e=0;e<p->num_constants;e++)
+  for(e=0;e<(int)p->num_constants;e++)
   {
     check_svalue(p->constants + e);
   }
 
-  for(e=0;e<p->num_strings;e++)
+  for(e=0;e<(int)p->num_strings;e++)
     check_string(p->strings[e]);
 
-  for(e=0;e<p->num_identifiers;e++)
+  for(e=0;e<(int)p->num_identifiers;e++)
   {
     check_string(p->identifiers[e].name);
     check_string(p->identifiers[e].type);
@@ -278,7 +271,7 @@ void check_program(struct program *p, int pass)
       check_type(p->identifiers[e].run_time_type);
   }
 
-  for(e=0;e<p->num_identifier_references;e++)
+  for(e=0;e<(int)p->num_identifier_references;e++)
   {
     if(p->identifier_references[e].inherit_offset > p->num_inherits)
       fatal("Inherit offset is wrong!\n");
@@ -288,13 +281,13 @@ void check_program(struct program *p, int pass)
       fatal("Identifier offset is wrong!\n");
   }
 
-  for(e=0;e<p->num_identifier_indexes;e++)
+  for(e=0;e<(int)p->num_identifier_indexes;e++)
   {
     if(p->identifier_index[e] > p->num_identifier_references)
       fatal("Program->identifier_indexes[%ld] is wrong\n",(long)e);
   }
 
-  for(e=0;e<p->num_inherits;e++)
+  for(e=0;e<(int)p->num_inherits;e++)
   {
     if(p->inherits[e].storage_offset < 0)
       fatal("Inherit->storage_offset is wrong.\n");
@@ -380,7 +373,7 @@ struct program *end_program()
 
     /* Ok, sort for binsearch */
     prog->identifier_index=(unsigned short *)p;
-    for(e=i=0;i<prog->num_identifier_references;i++)
+    for(e=i=0;i<(int)prog->num_identifier_references;i++)
     {
       struct reference *funp;
       struct identifier *fun;
@@ -393,7 +386,7 @@ struct program *end_program()
 	if(fun->func.offset == -1) continue; /* prototype */
 
 	/* check for multiple definitions */
-	for(t=0;t>=0 && t<prog->num_identifier_references;t++)
+	for(t=0;t>=0 && t<(int)prog->num_identifier_references;t++)
 	{
 	  struct reference *funpb;
 	  struct identifier *funb;
@@ -435,36 +428,17 @@ struct program *end_program()
 #endif
   }
 
-  if(previous_compilation)
+  if(current_file)
   {
-    struct compilation *old;
-    INT32 e;
-    if(current_file) free_string(current_file);
-
-#define MOVE(var) var=old->var;
-    old=previous_compilation;
-    for(e=0;e<NUM_AREAS;e++)  { MOVE(areas[e]); }
-
-    MOVE(fake_program);
-    MOVE(init_node);
-    MOVE(current_line);
-    MOVE(old_line);
-    MOVE(nexpands);
-    MOVE(last_line);
-    MOVE(last_pc);
-    MOVE(current_file);
-    MOVE(pragma_all_inline);
-    MOVE(istate);
-    MOVE(defines);
-    MOVE(num_parse_error);
-    MOVE(local_variables);
-    MOVE(inherit_names);
-
-    comp_stackp=previous_compilation->comp_stackp;
-    previous_compilation=old->previous;
-    free((char *)old);
-#undef MOVE
+    free_string(current_file);
+    current_file=0;
   }
+
+#define PROGRAM_STATE
+#define POP
+#include "compilation.h"
+#undef POP
+#undef PROGRAM_STATE
   
   return prog;
 }
@@ -522,7 +496,7 @@ int low_reference_inherited_identifier(int e,struct lpc_string *name)
   funp.inherit_offset+=e;
   funp.flags|=ID_HIDDEN;
 
-  for(d=0;d<fake_program.num_identifier_references;d++)
+  for(d=0;d<(int)fake_program.num_identifier_references;d++)
   {
     struct reference *fp;
     fp=fake_program.identifier_references+d;
@@ -599,7 +573,7 @@ void do_inherit(struct program *p,INT32 flags, struct lpc_string *name)
   storage_offset=fake_program.storage_needed;
   add_storage(p->storage_needed);
 
-  for(e=0; e<p->num_inherits; e++)
+  for(e=0; e<(int)p->num_inherits; e++)
   {
     inherit=p->inherits[e];
     inherit.prog->refs++;
@@ -612,7 +586,7 @@ void do_inherit(struct program *p,INT32 flags, struct lpc_string *name)
     name=0;
   }
 
-  for (e=0; e < p->num_identifier_references; e++)
+  for (e=0; e < (int)p->num_identifier_references; e++)
   {
     struct reference fun;
     struct lpc_string *name;
@@ -686,7 +660,7 @@ int isidentifier(struct lpc_string *s)
 {
   INT32 e;
   setup_fake_program();
-  for(e=0;e<fake_program.num_identifier_references;e++)
+  for(e=0;e<(int)fake_program.num_identifier_references;e++)
   {
     if(fake_program.identifier_references[e].flags & ID_HIDDEN) continue;
     
@@ -905,7 +879,7 @@ static int low_find_shared_string_identifier(struct lpc_string *name,
     }
   }else{
     int i,t;
-    for(i=0;i<prog->num_identifier_references;i++)
+    for(i=0;i<(int)prog->num_identifier_references;i++)
     {
       funp = prog->identifier_references + i;
       if(funp->flags & ID_HIDDEN) continue;
@@ -915,7 +889,7 @@ static int low_find_shared_string_identifier(struct lpc_string *name,
       if(funp->flags & ID_INHERITED)
       {
         if(funp->flags & ID_PRIVATE) continue;
-	for(t=0; t>=0 && t<prog->num_identifier_references; t++)
+	for(t=0; t>=0 && t<(int)prog->num_identifier_references; t++)
 	{
 	  if(t == i) continue;
 
@@ -1160,11 +1134,24 @@ struct program *compile_file(struct lpc_string *file_name)
   if(fd < 0)
     error("Couldn't open file '%s'.\n",file_name->str);
 
+
   start_new_program();
+
+#define FILE_STATE
+#define PUSH
+#include "compilation.h"
+#undef PUSH
+
   start_new_file(fd,file_name);
   compile();
   end_new_file();
   p=end_program();
+
+#define POP
+#include "compilation.h"
+#undef POP
+#undef FILE_STATE
+
   if(!p) error("Failed to compile %s.\n",file_name->str);
   return p;
 }
@@ -1174,10 +1161,22 @@ struct program *compile_string(struct lpc_string *prog,
 {
   struct program *p;
   start_new_program();
+
+#define FILE_STATE
+#define PUSH
+#include "compilation.h"
+#undef PUSH
+
   start_new_string(prog->str,prog->len,name);
   compile();
   end_new_file();
   p=end_program();
+
+#define POP
+#include "compilation.h"
+#undef POP
+#undef FILE_STATE
+
   if(!p) error("Compilation failed.\n");
   return p;
 }

@@ -68,6 +68,7 @@
 %token F_ARROW
 %token F_BREAK
 %token F_CASE
+%token F_CLASS
 %token F_COLON_COLON
 %token F_COMMA
 %token F_CONTINUE 
@@ -971,7 +972,7 @@ expr4: string
 
        $$=0;
        setup_fake_program();
-       for(e=1;e<fake_program.num_inherits;e++)
+       for(e=1;e<(int)fake_program.num_inherits;e++)
        {
 	 if(fake_program.inherits[e].inherit_level!=1) continue;
 	 i=low_reference_inherited_identifier(e,$2);
@@ -1127,14 +1128,14 @@ void dump_program_desc(struct program *p)
 */
 
   fprintf(stderr,"All identifiers:\n");
-  for(e=0;e<p->num_identifier_references;e++)
+  for(e=0;e<(int)p->num_identifier_references;e++)
   {
     fprintf(stderr,"%3d:",e);
     for(d=0;d<INHERIT_FROM_INT(p,e)->inherit_level;d++) fprintf(stderr,"  ");
     fprintf(stderr,"%s;\n",ID_FROM_INT(p,e)->name->str);
   }
   fprintf(stderr,"All sorted identifiers:\n");
-  for(q=0;q<p->num_identifier_indexes;q++)
+  for(q=0;q<(int)p->num_identifier_indexes;q++)
   {
     e=p->identifier_index[q];
     fprintf(stderr,"%3d (%3d):",e,q);

@@ -32,7 +32,7 @@ DESCRIPTION
                  and values is not enough, 0 otherwise.
         a != b : returns 0 if a is the same mapping as b, same size, indices
                  and values is not enough, 1 otherwise.
-        ! a    : boolean not, returns 1
+        ! a    : boolean not, returns 0
 	a[c]   : indexing, returns the value associated with the value c
                  in the mapping a. If there is no index c in the mapping
                  zero will be returned. (With zero type = 1)

@@ -1,6 +1,36 @@
 AC_INIT(interpret.c)
 AC_PROG_CC
 
+# We need some special hacks when running slowaris
+AC_PATH_PROG(uname_prog,uname,no)
+AC_MSG_CHECKING(operating system)
+AC_CACHE_VAL(lpc_cv_sys_os,
+[
+if test "$uname_prog" != "no"; then
+  lpc_cv_sys_os="`uname`"
+
+  if test "$lpc_cv_sys_os" = "SunOS"; then
+    case "`uname -r`" in
+      5.*) lpc_cv_sys_os="Solaris";
+    esac
+  fi
+else
+  lpc_cv_sys_os="Not Solaris"
+fi
+])
+AC_MSG_RESULT($lpc_cv_sys_os)
+
+dnl
+dnl This enables a mutex lock around accept() unfortunately
+dnl accept bangs out every 20000th time or so when linked
+dnl with libthreads.  Solaris...
+dnl
+dnl if test "$lpc_cv_sys_os" = "Solaris"; then
+dnl   AC_DEFINE(SOLARIS)
+dnl  LIBS="$LIBS -lthread"
+dnl fi
+dnl
+
 OLD_CFLAGS="$CFLAGS"
 OPTIMIZE="";
 
@@ -19,64 +49,43 @@ else
   AC_MSG_RESULT(-O not found)
 fi
 
-AC_MSG_CHECKING(warning flags)
-AC_CACHE_VAL(lpc_cv_option_warn,
+CFLAGS="$OLD_CFLAGS"
+
+if test "$GCC" = "yes"; then
+  WARN="-g -pipe -W -Wunused -Wformat"
+else
+  WARN=""
+#
+# Special hack for HP-UX stupid cc
+#
+  if test "$lpc_cv_sys_os" = "HP-UX"; then
+    OLD_CC="${CC-cc}"
+    CC="$CC -Aa -D_HPUX_SOURCE +Olibcalls"
+    AC_TRY_LINK([int foo(int bar);],[ exit(0); ],[],[CC="$OLD_CC"])
+  fi
+fi
+
+AC_MSG_CHECKING(ansi prototype capability)
+AC_CACHE_VAL(lpc_cv_sys_ansi_prototypes,
 [
-lpc_cv_option_warn=
-for a in -pipe -g -W -Wunused -Wformat
-do
-  case "$CFLAGS" in
-    *\ $a\ *) lpc_cv_option_warn="$lpc_cv_option_warn $a" ;;
-    $a\ *) lpc_cv_option_warn="$lpc_cv_option_warn $a" ;;
-    *\ $a) lpc_cv_option_warn="$lpc_cv_option_warn $a" ;;
-    *)
-  CFLAGS="$OLD_CFLAGS $OPTIMIZE $a"
-  AC_TRY_LINK([],[ exit(0); ], [ lpc_cv_option_warn="$lpc_cv_option_warn $a" ])
-  ;;
-  esac 
-done
+  AC_TRY_LINK([int foo(int bar);],[ exit(0); ],
+  [lpc_cv_sys_ansi_prototypes=yes],
+  [lpc_cv_sys_ansi_prototypes=no])
 ])
 
-AC_MSG_RESULT($lpc_cv_option_warn)
-WARN="$lpc_cv_option_warn"
-CFLAGS="$OLD_CFLAGS"
+if test "$lpc_cv_sys_ansi_prototypes" = "yes"; then
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no, giving up...)
+  exit 1
+fi
 
 AC_CONFIG_HEADER(machine.h)
 AC_PROG_INSTALL
 AC_PROG_YACC
-if test "$ac_cv_prog_YACC" != "bison -y"; then
-  echo PANIC! Bison not found! Exiting...
-  exit 1
-fi
-
 AC_PROG_CPP
 AC_PROG_RANLIB
 AC_SET_MAKE
-AC_PATH_PROG(uname_prog,uname,no)
-
-# We need some special hacks when running slowaris
-AC_MSG_CHECKING(operating system)
-AC_CACHE_VAL(lpc_cv_sys_os,
-[
-if test "$uname_prog" != "no"; then
-  lpc_cv_sys_os="`uname`"
-
-  if test "$lpc_cv_sys_os" = "SunOS"; then
-    case "`uname -r`" in
-      5.*) lpc_cv_sys_os="Solaris";
-    esac
-  fi
-else
-  lpc_cv_sys_os="Not Solaris"
-fi
-])
-AC_MSG_RESULT($lpc_cv_sys_os)
-
-if test "$lpc_cv_sys_os" = "Solaris"; then
-  AC_DEFINE(SOLARIS)
-  LIBS="$LIBS -lthread"
-fi
-
 
 AC_MSG_CHECKING(first yacc define)
 AC_CACHE_VAL(lpc_cv_yacc_first,
@@ -123,6 +132,15 @@ AC_UID_T
 AC_RETSIGTYPE
 AC_CHECK_TYPE(time_t,INT32)
 
+AC_CHECK_LIB(PW, alloca)
+AC_CHECK_LIB(m, floor)
+AC_CHECK_LIB(socket, socket)
+AC_CHECK_LIB(crypt, crypt)
+if test "$ac_cv_lib_socket" = yes -o "$ac_cv_lib_ucb"; then
+ AC_CHECK_LIB(nsl, main)
+fi
+
+
 OLD_LIBOBJS="${LIBOBJS}"
 
 AC_FUNC_MEMCMP
@@ -132,8 +150,6 @@ if test "${OLD_LIBOBJS}" = "${LIBOBJS}" ; then
 fi
 
 LIBOBJS="${OLD_LIBOBJS}"
-
-AC_CHECK_LIB(crypt, crypt)
 
 AC_HAVE_FUNCS(
  _crypt \
@@ -258,18 +274,11 @@ int free(POINTER);
 AC_MSG_RESULT($lpc_cv_sys_malloc_return)
 AC_DEFINE_UNQUOTED(POINTER,$lpc_cv_sys_malloc_return)
 
+
 AC_ALLOCA
 
 AC_CONST
 AC_INLINE
-
-AC_CHECK_LIB(PW, alloca)
-AC_CHECK_LIB(m, floor)
-AC_CHECK_LIB(socket, socket)
-
-if test "$ac_cv_lib_socket" = yes -o "$ac_cv_lib_ucb"; then
- AC_CHECK_LIB(nsl, main)
-fi
 
 AC_REPLACE_FUNCS(ualarm)
 
@@ -288,7 +297,7 @@ AC_TRY_RUN([
 
 int main()
 {
-#ifdef SIZEOF_INT == 4
+#if SIZEOF_INT == 4
 #define T int
 #else
 #define T long
@@ -367,7 +376,6 @@ if test "$lpc_cv_func_strcoll" = yes; then
 else
   AC_MSG_RESULT(no)
 fi
-
 
 AC_MSG_CHECKING(for working memmove)
 AC_CACHE_VAL(lpc_cv_func_memmove,
@@ -460,9 +468,11 @@ int main()
 {
   FILE *f;
   long limit;
+
 #if !defined(RLIMIT_NOFILE) && defined(RLIMIT_OFILE)
 #define RLIMIT_NOFILE RLIMIT_OFILE
 #endif
+
 #if defined(HAVE_SETRLIMIT) && defined(RLIMIT_NOFILE)
   struct rlimit lim;
 
@@ -481,7 +491,6 @@ int main()
 #else
   limit = MAX_FD;
 #endif
-	
 
   f=fopen("conftest.out.2","w");
   fprintf(f,"%ld\n",(long)limit);
@@ -651,7 +660,7 @@ module_names=
 for a in `(cd $srcdir/modules ; echo *)`
 do
   if test "$a" != "CVS" -a "$a" != "RCS" ; then
-      if test -d "$srcdir/modules/$a" ; then
+    if test -d "$srcdir/modules/$a" ; then
       dirs="$dirs modules/$a"
       MODULE_OBJS="$MODULE_OBJS modules/$a/$a.a"
       module_names="$module_names $a"
@@ -659,16 +668,21 @@ do
   fi
 done
 
+LIBDIR=`(cd $srcdir/../lib ; pwd)`
+BINDIR=`(cd $srcdir/../bin ; pwd)`
+BUILDDIR=`pwd`
 
 AC_CONFIG_SUBDIRS($dirs)
 
 AC_SUBST(MODULE_OBJS)
 AC_SUBST(INSTALL)
 AC_SUBST(WARN)
-AC_SUBST(COMPARE)
 AC_SUBST(OPTIMIZE)
 AC_SUBST(EXTRA_OBJS)
 AC_SUBST(RANLIB)
+AC_SUBST(LIBDIR)
+AC_SUBST(BINDIR)
+AC_SUBST(BUILDDIR)
 
 AC_OUTPUT(Makefile,
 [

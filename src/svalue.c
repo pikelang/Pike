@@ -279,7 +279,8 @@ void assign_from_short_svalue_no_free(struct svalue *s,
 
   if(type <= MAX_REF_TYPE)
   {
-    if((s->u=*u).refs)
+    s->u=*u;
+    if(u->refs)
     {
       u->refs[0]++;
       s->type=type;
@@ -659,10 +660,8 @@ void copy_svalues_recursively_no_free(struct svalue *to,
     switch(from->type)
     {
     default:
-      if(from->type <= MAX_REF_TYPE)
-	(*to=*from).u.refs[0]++;
-      else
-	*to=*from;
+      *to=*from;
+      if(from->type <= MAX_REF_TYPE) from->u.refs[0]++;
       break;
 
     case T_ARRAY:

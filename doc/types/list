@@ -25,7 +25,7 @@ DESCRIPTION
                  is not enough.
         a != b : returns 1 if a is the same list as b, same size and values
                  is not enough.
-        ! a    : boolean not, returns 1
+        ! a    : boolean not, returns 0
 	a[c]   : indexing, returns 1 c is present in the list a.
 	a[c]=d : setting, if d is true, c is added to the list if it is not
 		 present already. If d is false, it is removed if it is

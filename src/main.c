@@ -3,15 +3,8 @@
 ||| uLPC is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
-#include <stdio.h>
-#include <stdlib.h>
 #include "global.h"
 #include "types.h"
-
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
 #include "backend.h"
 #include "module.h"
 #include "object.h"
@@ -28,6 +21,9 @@
 
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
+#endif
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
 #endif
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
@@ -137,9 +133,6 @@ void main(int argc, char **argv, char **env)
 #if !defined(RLIMIT_NOFILE) && defined(RLIMIT_OFILE)
 #define RLIMIT_NOFILE RLIMIT_OFILE
 #endif
-#ifndef RLIM_INFINITY 
-#define RLIM_INFINITY 0x7fffffff
-#endif
 
 #if defined(HAVE_SETRLIMIT) && defined(RLIMIT_NOFILE)
   {
@@ -147,7 +140,10 @@ void main(int argc, char **argv, char **env)
     long tmp;
     if(!getrlimit(RLIMIT_NOFILE, &lim))
     {
-      if(lim.rlim_max == RLIM_INFINITY) tmp=0x7fffffff;
+#ifdef RLIM_INFINITY
+      if(lim.rlim_max == RLIM_INFINITY)
+	lim.rlim_max=MAX_OPEN_FILEDESCRIPTORS;
+#endif
       tmp=MINIMUM(lim.rlim_max, MAX_OPEN_FILEDESCRIPTORS);
       lim.rlim_cur=tmp;
       setrlimit(RLIMIT_NOFILE, &lim);

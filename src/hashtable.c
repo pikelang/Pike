@@ -3,7 +3,7 @@
 ||| uLPC is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
-#include <stdlib.h>
+#include "global.h"
 #include "hashtable.h"
 #include "stralloc.h"
 #include "config.h"
