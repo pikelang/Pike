@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rbtree.c,v 1.13 2002/10/28 13:09:28 nilsson Exp $
+|| $Id: rbtree.c,v 1.14 2002/12/05 20:13:04 mast Exp $
 */
 
 /* An implementation of a threaded red/black balanced binary tree.
@@ -12,7 +12,7 @@
 
 #include "global.h"
 
-RCSID("$Id: rbtree.c,v 1.13 2002/10/28 13:09:28 nilsson Exp $");
+RCSID("$Id: rbtree.c,v 1.14 2002/12/05 20:13:04 mast Exp $");
 
 #include "interpret.h"
 #include "pike_error.h"
@@ -116,10 +116,11 @@ void rbstack_insert (struct rbstack_ptr *top, struct rbstack_ptr *pos,
   *pos = rbp2;
 }
 
+#if 0
+/* Disabled since these aren't tested and not currently used. */
+
 void rbstack_assign (struct rbstack_ptr *target, struct rbstack_ptr *source)
 {
-  /* Not tested. */
-
   struct rbstack_slice *src_slice = source->slice;
   struct rbstack_slice *tgt_slice = target->slice;
 
@@ -154,8 +155,6 @@ void rbstack_assign (struct rbstack_ptr *target, struct rbstack_ptr *source)
 
 void rbstack_copy (struct rbstack_ptr *target, struct rbstack_ptr *source)
 {
-  /* Not tested. */
-
   struct rbstack_slice *src_slice = source->slice;
   struct rbstack_slice *tgt_stack_slice = target->slice;
   size_t ssp = source->ssp;
@@ -194,6 +193,8 @@ void rbstack_copy (struct rbstack_ptr *target, struct rbstack_ptr *source)
   target->slice->maxdepth = target->slice->depth = source->slice->depth;
 #endif
 }
+
+#endif	/* Not tested or used. */
 
 /* Offsets all the rb_node_hdr pointers in rbstack from their offsets
  * relative oldbase to the same relative newbase. Useful if the memory
