@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.77 2004/08/18 12:29:19 grubba Exp $
+// $Id: MySQL.pike,v 1.78 2004/12/20 12:04:49 anders Exp $
 
 inherit .Base;
 
@@ -193,7 +193,7 @@ void remove_field(string field)
 
 void safe_remove_field(string field)
 {
-  if( search(({"uri"})+Search.get_filter_fields(), field) == -1 )
+  if( search(({"uri","path1","path2"})+Search.get_filter_fields(), field) == -1 )
     remove_field( field );
 }
 
