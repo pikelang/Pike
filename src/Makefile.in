@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.177 2000/02/05 02:35:09 marcus Exp $
+# $Id: Makefile.in,v 1.178 2000/02/22 16:46:25 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -319,7 +319,7 @@ distclean: spotless
 	  -name 'config.cache' ')' -exec rm -f \{\} \;
 
 cvsclean: distclean
-	( for d in `cd $(SRCDIR); find . -type d -print`; do \
+	( for d in `cd $(SRCDIR) && find . -type d -print`; do \
 	    if test -f "$(SRCDIR)/$$d/.cvsignore" ; then \
 	      (cd "$$d" && rm -f `cat "$(SRCDIR)/$$d/.cvsignore"`); \
 	      (cd "$(SRCDIR)/$$d" && rm -f `cat "$(SRCDIR)/$$d/.cvsignore"`); \
@@ -335,7 +335,7 @@ TAGS:
 
 # verify / debug
 module_testsuites:
-	( cd modules ; $(MAKE) $(MAKE_FLAGS) testsuites )
+	( cd modules && $(MAKE) $(MAKE_FLAGS) testsuites )
 
 just_verify: module_testsuites testsuite master.pike
 	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
@@ -431,7 +431,7 @@ full_export: new_peep_engine $(SRCDIR)/language.c $(SRCDIR)/language.h depend
 	$(RUNPIKE) $(TMP_BINDIR)/export.pike --srcdir="$(SRCDIR)" 
 
 all_exports: full_export
-	( cd .. ; $(TMP_BINDIR)/makedists )
+	( cd .. && $(TMP_BINDIR)/makedists )
 
 bin_export: aclocal
 	@rm -f *.burk
@@ -481,7 +481,7 @@ stamp-tpike-predep: $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike peep.c $(SRCDIR)
 # make dependencies
 depend: $(SRCDIR)/language.c
 	gcc -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
-	( cd modules ; $(MAKE) $(MAKE_FLAGS) depend )
+	( cd modules && $(MAKE) $(MAKE_FLAGS) depend )
 	$(SRCDIR)/configure @ac_configure_args@
 
 # Documentation...
@@ -491,7 +491,7 @@ docs:
 
 wmml: force
 	@test -d wmml/. || mkdir wmml
-	@modules="`cd $(SRCDIR)/modules; ls -d */. | sed -e '/^_.*/d' -e 's/\/\.$$//'`"; \
+	@modules="`cd $(SRCDIR)/modules && ls -d */. | sed -e '/^_.*/d' -e 's/\/\.$$//'`"; \
 	echo The following modules are interresting:; \
 	echo "$$modules"; \
 	for d in $$modules; do \
@@ -510,14 +510,14 @@ manpages: wmml
 	  cat "$(SRCDIR)/../tutorial/tutorial.wmml"; \
 	else \
 	  cat wmml/*.wmml; \
-	fi) | (cd wmml; $(RUNPIKE) $(TMP_BINDIR)/wmmltohtml2 \
+	fi) | (cd wmml && $(RUNPIKE) $(TMP_BINDIR)/wmmltohtml2 \
 	  $(TMP_BINDIR)/manpages man/man)
 
 # Lobotomization...
 
 lobotomize_crypto:
-	( cd $(SRCDIR)/modules/_Crypto ; ./.build_lobotomized_crypto  )
-	( cd $(SRCDIR)/modules/_Lobotomized_Crypto ; autoconf )
+	( cd $(SRCDIR)/modules/_Crypto && ./.build_lobotomized_crypto  )
+	( cd $(SRCDIR)/modules/_Lobotomized_Crypto && autoconf )
 
 #
 # Pike internal targets
@@ -531,9 +531,9 @@ language.o: $(SRCDIR)/language.c $(SRCDIR)/object.h $(SRCDIR)/interpret.h $(SRCD
 
 $(SRCDIR)/language.h: $(SRCDIR)/language.yacc
 	@echo "Expect 1 shift/reduce conflict."
-	( cd $(SRCDIR) ;\
-	 $(YACC) $(YFLAGS) language.yacc ;\
-	 mv y.tab.c language.c ;\
+	( cd $(SRCDIR) &&\
+	 $(YACC) $(YFLAGS) language.yacc &&\
+	 mv y.tab.c language.c &&\
 	 mv y.tab.h language.h )
 
 $(SRCDIR)/language.c: $(SRCDIR)/language.h
@@ -543,7 +543,7 @@ $(SRCDIR)/language.c: $(SRCDIR)/language.h
 run_yacc: $(SRCDIR)/language.c
 
 modules/modlist.h:
-	( cd modules ; $(MAKE) $(MAKE_FLAGS) )
+	( cd modules && $(MAKE) $(MAKE_FLAGS) )
 
 modules/modlist_headers.h: modules/modlist.h
 	touch modules/modlist_headers.h
