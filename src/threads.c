@@ -47,6 +47,7 @@ void *new_thread_func(void * data)
     UNSET_ONERROR(tmp);
   } else {
     push_array_items(arg.args);
+    f_call_function(args);
     arg.args=0;
   }
 
