@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.16 2001/05/25 15:55:20 per Exp $");
+RCSID("$Id: whitefish.c,v 1.17 2001/05/25 16:17:59 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -44,7 +44,19 @@ static void free_stuff( void *_t )
 #define OFFSET(X) \
  (X.type == HIT_BODY?X.u.body.pos:X.type==HIT_FIELD?(X.u.field.pos):(X.u.anchor.pos))
 
-#define DOFF(X)  MINIMUM((int)X,7)
+static int _distance_f( int distance )
+{
+  if( distance < 2 )   return 0;
+  if( distance < 6 )   return 1;
+  if( distance < 11 )  return 2;
+  if( distance < 22 )  return 3;
+  if( distance < 42 )  return 4;
+  if( distance < 82 )  return 5;
+  if( distance < 161 ) return 6;
+  return 7;
+}
+
+#define DOFF(X)  _distance_f(X)
 #define MOFF(X)  (X.type==HIT_BODY?0:X.type==HIT_FIELD?X.u.field.type+2:1)
 
 static void handle_hit( Blob **blobs,

@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.14 2001/05/25 15:55:20 per Exp $");
+RCSID("$Id: resultset.c,v 1.15 2001/05/25 16:17:59 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -204,7 +204,7 @@ static void f_resultset_slice( INT32 args )
   if( !THIS->d )
   {
     pop_n_elems( args );
-    push_int( 0 );
+    push_array( allocate_array(0) );
     return;
   }
 
@@ -216,7 +216,7 @@ static void f_resultset_slice( INT32 args )
   if( nelems < 1 )
   {
     pop_n_elems( args );
-    push_int( 0 );
+    push_array( allocate_array(0) );
     return;
   }
   res = allocate_array( nelems );

@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.13 2001/05/25 15:55:20 per Exp $");
+RCSID("$Id: blob.c,v 1.14 2001/05/25 16:17:59 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -31,9 +31,8 @@ int wf_blob_next( Blob *b )
 {
   /* Find the next document ID */
   if( b->eof )
-  {
-    return -1;
-  }
+    return 0;
+
   b->docid = 0;
   if( b->b->rpos >= b->b->size )
   {
@@ -153,7 +152,7 @@ int wf_blob_docid( Blob *b )
 Blob *wf_blob_new( struct svalue *feed, int word )
 {
   Blob *b = malloc( sizeof( Blob ) );
-  MEMSET(b, 0, sizeof(b) );
+  MEMSET(b, 0, sizeof(Blob) );
   b->word = word;
   b->feed = feed;
   b->b = wf_buffer_new();
