@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.1 2003/01/28 22:59:30 nilsson Exp $
+dnl $Id: testsuite.in,v 1.2 2003/01/29 14:47:02 marcus Exp $
 
 dnl Tests from ITU-T Rec.X690 (07/2002)
 
@@ -9,7 +9,7 @@ dnl §8.9
 test_any([[
   import Standards.ASN1.Types;
   return Sequence( ({ IA5String("Smith"), Boolean(17) }) )->get_der();
-]], "0\n\26\5Smith\1\1ÿ")
+]], "0\n\26\5Smith\1\1\xff")
 
 dnl §8.19
 dnl BUG?
