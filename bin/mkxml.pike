@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.8 2001/05/06 15:21:59 grubba Exp $ */
+/* $Id: mkxml.pike,v 1.9 2001/05/06 15:24:23 grubba Exp $ */
 
 import Stdio;
 import Array;
@@ -833,9 +833,8 @@ void process_line(string s, string currentfile, int line)
       {
 	stderr->write("mkwmml: "+
 		      currentfile+"file='"+currentfile+"' line="+line);
-	return 1;
+	exit(1);
       }
-      inpre=0;
     }
     else if (s[i+3..]!="")
     {
@@ -848,7 +847,7 @@ void process_line(string s, string currentfile, int line)
 	stderr->write("mkwmml: "+
 		      currentfile+" line "+line+
 		      ": illegal description position\n");
-	return 1;
+	exit(1);
       }
       if (!descM->desc) descM->desc="";
       else descM->desc+="\n";
@@ -886,8 +885,6 @@ int main(int ac,string *files)
    for (;;)
    {
       int i;
-      int inpre=0;
-
       if (!f) 
       {
 	 if (!sizeof(files)) break;
