@@ -128,6 +128,16 @@ class NSNode {
       }
     }
 
+    // Assign the right namespace to this element
+    if(has_value(name, ":")) {
+      sscanf(name, "%s:%s", element_ns, name);
+      if(!nss[element_ns])
+	error("Unknown namespace %s.\n", element_ns);
+      element_ns = nss[element_ns];
+    }
+    else
+      element_ns = default_ns;
+
     // Then take care of the rest of the attributes.
     foreach(attr; string name; string value) {
 
@@ -140,22 +150,17 @@ class NSNode {
 	if(!nss[ns])
 	  error("Unknown namespace %s.\n", ns);
 	ns = nss[ns];
-	if(!ns_attrs[ns])
-	  ns_attrs[ns] = ([]);
-	ns_attrs[ns][m] = value;
 	m_delete(attr, name);
+      } else {
+	// FIXME: This makes the RDF-tests work,
+	//        but is it according to the spec?
+	ns = element_ns;
+	m = name;
       }
+      if(!ns_attrs[ns])
+	ns_attrs[ns] = ([]);
+      ns_attrs[ns][m] = value;
     }
-
-    // Assign the right namespace to this element
-    if(has_value(name, ":")) {
-      sscanf(name, "%s:%s", element_ns, name);
-      if(!nss[element_ns])
-	error("Unknown namespace %s.\n", element_ns);
-      element_ns = nss[element_ns];
-    }
-    else
-      element_ns = default_ns;
 
     ::create(type, name, attr, text);
   }
