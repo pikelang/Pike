@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.584 2003/01/13 04:36:59 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.585 2003/01/15 14:49:52 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -6201,6 +6201,8 @@ test_equal(({1,2,3})+({4,5,6}),({1,2,3,4,5,6}))
 test_equal((<1,2,3,4>)+(<4,5,6>),(<1,2,3,4,4,5,6>))
 test_equal(([0:1,3:6])+([5:2,3:6]),([0:1,3:6,3:6,5:2]))
 test_eval_error(return this_object() + this_object())
+test_any(return((1+2+3)-(1+2-3)), 6)
+
 
 // testing -
 test_eq(10-3,7)
@@ -6237,6 +6239,11 @@ test_eq(2*2.0*2.0*2.0*2.0,32.0)
 test_eq(3.0*4,12.0)
 test_eq(4.0*3,12.0)
 test_eq(2.0*2*2.0*2*2.0,32.0)
+
+test_eq([[({})*""]],"")
+test_eq([[({"foo",0,"bar"})*"-"]],"foo-bar")
+test_eq([[({1.0,"foo",0,"bar",this_object(),([])})*"-"]],"foo-bar")
+test_eq([[({"f","o","o"})*""]],"foo")
 
 test_eq(({"foo","bar","gazonk"})*"-","foo-bar-gazonk")
 test_eq(({"f\777\777","bar","gaz\777nk"})*"-","f\777\777-bar-gaz\777nk")
@@ -6319,6 +6326,8 @@ test_equal("f\777\777bargaz\777nk"/5.0,({"f\777\777ba","rgaz\777","nk"}))
 test_equal("f\777\777bargaz\777nk"/-5.0,({"f\777","\777barg","az\777nk"}))
 test_equal("f\777\777bargaz\777nk"/2.5,({"f\777\777","ba","rga","z\777","nk"}))
 
+test_equal(""/"hej", ({""}))
+test_equal("hej"/"hej", ({"",""}))
 test_equal("f\7777777\7777777bargaz\7777777nk"/1,"f\7777777\7777777bargaz\7777777nk"/"")
 test_equal("f\7777777\7777777bargaz\7777777nk"/2,({"f\7777777","\7777777b","ar","ga","z\7777777","nk"}))
 test_equal("f\7777777\7777777bargaz\7777777nk"/3,({"f\7777777\7777777","bar","gaz","\7777777nk"}))
@@ -7763,6 +7772,7 @@ test_eq($1 (({})), !($2-5))
 test_eq($1 (([])), !($2-6))
 test_eq($1 ((<>)), !($2-7))
 test_eq($1 (object_program(this_object())), !($2-8))
+test_eq($1 (typeof(1)), 0)
 ]])
 
 do_test_foop(intp,0)
@@ -7794,36 +7804,160 @@ return 0;
 #endif
 ]],0)
 
+
+// ####  Test everything in all_constants.
+
+// - __automap__
+// - __empty_program
+// - __null_program
+// - __parse_pike_type
+// - __placeholder_object
+// - _describe_program
+// - _disable_threads
+// - _do_call_outs
+// - _exit
+// - _gc_status
+// - _leak
+// - _memory_usage
+// - _next
+// - _prev
+// - _refs
+// - _static_modules
+// - _typeof
+
+// - _verify_internals
+cond([[all_constants()->_verify_internals]],
+[[
+  test_do(_verify_internals())
+]])
+
+// - `!
+// - `!=
+// - `%
+// - `&
+// - `()
+// - `*
+
+// - `+
+test_eq(`+(1,1),2)
+test_eq(`+(1,-2),-1)
+test_eq(`+(-2,-2),-4)
+test_eq(`+("hi","there"),"hithere")
+
+test_eq(`+("hi\777","there"),"hi\777there")
+test_eq(`+("hi","there\777"),"hithere\777")
+
+test_eq(`+("hi\7777777","there"),"hi\7777777there")
+test_eq(`+("hi","there\7777777"),"hithere\7777777")
+
+test_eq(`+("human","number",666),"humannumber666")
+test_eq(`+("human","number",666),"humannumber666")
+test_eq(`+("human","number",666),"humannumber666")
+test_eq(`+("human","number",666,111),"humannumber666111")
+test_eq(`+("humannumber",`+(666+111)),"humannumber777")
+test_eq(`+("a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","x","y"),"abcdefghijklmnopqrstuvxy")
+test_eq(`+(1.0+1.0),2.0)
+test_eq(`+(1.0,-1.0),0.0)
+test_eq(`+(-1.0,-1.0),-2.0)
+test_equal(`+(({1,2,3}),({4,5,6})),({1,2,3,4,5,6}))
+test_equal(`+((<1,2,3,4>),(<4,5,6>)),(<1,2,3,4,4,5,6>))
+test_equal(`+(([0:1,3:6]),([5:2,3:6])),([0:1,3:6,3:6,5:2]))
+
+// - `-
+// - `->
+// - `->=
+// - `/
+// - `<
+// - `<<
+// - `<=
+// - `==
+// - `>
+// - `>=
+// - `>>
+// - `[]
+// - `[]=
+// - `^
+// - `|
+// - `~
+
+// - abs
+// - acos
+// Tested in _math
+
+// - add_constant
+
+// - add_include_path
+// - add_module_path
+// - add_program_path
+// Tested in lib
+
 // - aggregate
-test_true(arrayp(aggregate()))
-test_eq(sizeof(aggregate()),0)
+test_equal(aggregate(),({}))
 test_equal(aggregate(1,2,3,4),({1,2,3,4}))
 
 // - aggregate_multiset
-test_true(multisetp(aggregate_multiset()))
+test_equal(aggregate_multiset(), (<>))
+test_equal(aggregate_multiset(1,1), (<1,1>))
+test_equal(aggregate_multiset(1,2,"3"), (<1,2,"3">))
 
 // - aggregate_mapping
-test_true(multisetp(aggregate_multiset()))
+test_equal(aggregate_mapping(), ([]))
+test_equal(aggregate_mapping(1,2,3,4), ([1:2,3:4]))
+test_eval_error(aggregate_mapping(1,2,3))
+
+// - alarm
 
 // - all_constants
 test_true(mappingp(all_constants()))
-test_true(all_constants()["all_constants"])
 test_eq(all_constants()["all_constants"],all_constants)
 
+// - all_threads
+
 // - allocate
-test_true(arrayp(allocate(0)))
+test_equal(allocate(0),({}))
 test_equal(allocate(2),({0,0}))
 test_false(allocate(2)==({0,0}))
+test_equal(allocate(2,2),({2,2}))
 test_true(allocate(65536,random))
+
+// - array_sscanf
+
+// - arrayp
+// Tested in foop
+
+// - asin
+// - atan
+// - atan2
+// Tested in _math
+
+// - atexit
 
 // - backtrace
 test_true(arrayp(backtrace()))
 test_eq(backtrace()[-1][2],a)
 
+// - basename
+// Tested in lib
+
+// - basetype
+
 // - call_function
 test_eq(1,call_function(a))
 test_eq(1,call_function(lambda(int a){ return a; },1))
 test_eq(1,call_function(intp,1))
+
+// - call_out
+// - call_out_info
+// - callablep
+// - cd
+
+// - ceil
+// Tested in _math
+
+// - chmod
+// - chown
+// - chroot
+// - cleargroups
 
 // - new/clone
 test_true([[
@@ -7838,6 +7972,9 @@ objectp(clone(compile_string("int foo() { return 17; }"))) ]])
 test_eq([[
 #pike 7.2
 clone(compile_string("int foo() { return 17; }"))->foo() ]],17)
+
+// - closelog
+// - column
 
 // - combine_path
 test_eq([[combine_path("/foo/bar/gazonk/","..")]],"/foo/bar")
@@ -7865,19 +8002,18 @@ test_eq([[combine_path("/", "foo", "")]], "/foo/")
 test_eq([[combine_path("/","/foo/bar/ga\11111zonk/../../")]],"/foo/")
 test_eq([[combine_path("/","/fo\1111/bar/ga\11111zonk/../../")]],"/fo\1111/")
 test_eq([[combine_path("/","/fo\1111/bar/gazonk/../../")]],"/fo\1111/")
+
+// - combine_path_nt
 test_eq([[combine_path_nt("/","/fo\1111/bar/gazonk/../../")]],"/fo\1111/")
-test_eq([[combine_path_unix("/","/fo\1111/bar/gazonk/../../")]],"/fo\1111/")
 test_eq([[combine_path_nt("a:/","/fo\1111/bar/gazonk/../../")]],"a:/fo\1111/")
 test_eq([[combine_path_nt("a:/", "/foo","bar")+combine_path_nt("/foo","bar")]],
 	  "a:/foo/bar/foo/bar")
 
-// - Stdio.append_path
-test_eq([[ Stdio.append_path("../foo/", "../bar") ]], "../foo/bar")
-test_eq([[ Stdio.append_path("../foo/", "../bar", "../baz") ]], "../foo/bar/baz")
-test_eq([[ Stdio.append_path("../foo/", "../bar", "../baz", "../fie/../faz") ]], "../foo/bar/baz/faz")
+// - combine_path_unix
+test_eq([[combine_path_unix("/","/fo\1111/bar/gazonk/../../")]],"/fo\1111/")
 
+// - compile
 // - compile_file
-// FIXME: add tests for compile_file
 
 // - compile_string
 // see test for clone()
@@ -7965,6 +8101,11 @@ test_any([[
    return equal( ({0,0,0}), a) && equal( ({17,42,128}), b);
 ]], 1)
 
+// - cos
+// Tested in _math
+
+// - cpp
+
 // - crypt
 test_true(stringp(crypt("hej")))
 test_true(crypt("hej",crypt("hej")))
@@ -7979,6 +8120,11 @@ test_false(crypt("hej","buf8/Z7taE6q"))
 // - ctime
 test_eq(ctime(0)[-1],'\n')
 
+// - decode_value
+// - delay
+// - describe_backtrace
+// - describe_error
+
 // - destruct
 test_do(add_constant("PROG",compile_string("int foo() { return 1; }")));
 test_any([[object o=PROG(); destruct(o); return o]],0);
@@ -7989,199 +8135,46 @@ dnl test_any([[object t; mapping o=([t=PROG():"foo"]); destruct(t); return sizeo
 test_do([[object t; array(object) o=({}); o+=({t=PROG()}); destruct(t); o=({});]]);
 test_do(add_constant("PROG"))
 
-// - Array.diff
-test_equal(Array.diff(({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }),
-                      ({ 6, 7, 8, 9, 3, 4, 5, 1, 2, 0 })),
-           ({ ({ ({ 0, 1, 2, 3, 4, 5 }),
-                 ({ 6, 7, 8, 9 }), ({}) }),
-              ({ ({}), ({ 6, 7, 8, 9 }),
-                 ({ 3, 4, 5, 1, 2, 0 }) }) }))
-test_equal(Array.diff(({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }),
-                      ({ 9, 7, 8, 4, 5, 6, 0, 1, 2, 3 })),
-           ({ ({ ({}), ({ 0, 1, 2, 3 }),
-                 ({ 4, 5, 6, 7, 8, 9 }) }),
-              ({ ({ 9, 7, 8, 4, 5, 6 }),
-                 ({ 0, 1, 2, 3 }), ({}) }) }))
-test_equal(Array.diff("qadfgoksdfäojerjgöohjgdgkm"/"",
-                      "xadfgokälojeorjgöoyjgdgkmzzz"/""),
-           ({ ({ ({ "q" }), "adfgok"/"", "sdf"/"", ({ "ä" }), ({}),
-                 "oje"/"", ({}), "rjgöo"/"", ({ "h" }), "jgdgkm"/"", ({}) }),
-              ({ ({ "x" }), "adfgok"/"", ({}), ({ "ä" }), ({ "l" }),
-                 "oje"/"", ({ "o" }), "rjgöo"/"", ({ "y" }), "jgdgkm"/"",
-                 "zzz"/"" }) }))
-test_equal(Array.diff("123.org"/"","http://123.org/"/""),
-	   ({ ({ ({}), "123.org"/"", ({}) }),
-	      ({ "http://"/"", "123.org"/"", ({ "/" }) }) }))
+// - dirname
+// Tested in lib
 
-// - Array.diff3 (note that the results would be different for a really optimal diff3)
-test_equal(Array.diff3(({}),({"a","c"}),({"b","y"})),
-	   ({({({       })}),
-	     ({({"a","c"})}),
-	     ({({"b","y"})})}))
-test_equal(Array.diff3(({"a"}),({"a","b"}),({"b"})),
-	   ({({({"a"}),({   })}),
-	     ({({"a"}),({"b"})}),
-	     ({({   }),({"b"})})}))
-test_equal(Array.diff3(({"a"}),({"a","c"}),({"b"})),
-	   ({({({"a"}),({   })}),
-	     ({({"a"}),({"c"})}),
-	     ({({   }),({"b"})})}))
-test_equal(Array.diff3(({"a","d"}),({"a","d"}),({"a","b"})),
-	   ({({({"a"}),({"d"})}),
-	     ({({"a"}),({"d"})}),
-	     ({({"a"}),({"b"})})}))
-test_equal(Array.diff3(({"a","b"}),({"b"}),({"c","b"})),
-	   ({({({"a"}),({"b"})}),
-	     ({({   }),({"b"})}),
-	     ({({"c"}),({"b"})})}))
-// The following is not optimal.
-test_equal(Array.diff3(({"a","b"}),({"b"}),({"b","b"})),
-	   ({({({"a"}),({"b"}),({   })}),
-	     ({({   }),({"b"}),({   })}),
-	     ({({   }),({"b"}),({"b"})})}))
-test_equal(Array.diff3(({"a","c","d"}),({"a","d","d"}),({"a","b"})),
-	   ({({({"a"}),({"c"}),({"d"}),({   })}),
-	     ({({"a"}),({   }),({"d"}),({"d"})}),
-	     ({({"a"}),({"b"}),({   }),({   })})}))
-test_equal(Array.diff3(({"a","b","c"}),({"b","e","c"}),({"b","e","c"})),
-	   ({({({"a"}),({"b"}),({   }),({"c"})}),
-	     ({({   }),({"b"}),({"e"}),({"c"})}),
-	     ({({   }),({"b"}),({"e"}),({"c"})})}))
-test_equal(Array.diff3(({"a","b","x"}),({"y","b","c","x"}),({"y","c","a"})),
-	   ({({({"a"}),({"b"}),({   }),({"x"})}),
-	     ({({"y"}),({"b"}),({"c"}),({"x"})}),
-	     ({({"y"}),({   }),({"c"}),({"a"})})}))
-test_equal(Array.diff3(({"y","b","c","x"}),({"y","c","a"}),({"a","b","x"})),
-	   ({({({"y"}),({"b"}),({"c"}),({"x"})}),
-	     ({({"y"}),({   }),({"c"}),({"a"})}),
-	     ({({"a"}),({"b"}),({   }),({"x"})})}))
-test_equal(Array.diff3(({"y","b","c","x"}),({"a","b","x"}),({"y","c","a"})),
-	   ({({({"y"}),({"b"}),({"c"}),({"x"})}),
-	     ({({"a"}),({"b"}),({   }),({"x"})}),
-	     ({({"y"}),({   }),({"c"}),({"a"})})}))
-test_equal(Array.diff3(({"a","a","b","b"}),({"b","b","c","c"}),({"c","c","a","a"})),
-	   ({({({"a","a"}),({"b","b"}),({       }),({       })}),
-	     ({({       }),({"b","b"}),({"c","c"}),({       })}),
-	     ({({       }),({       }),({"c","c"}),({"a","a"})})}))
-// The following is not optimal.
-test_equal(Array.diff3(({"a","x","b","c"}),({"b","x","c"}),({"b","x","c"})),
-	   ({({({"a","x"}),({"b"}),({   }),({"c"})}),
-	     ({({       }),({"b"}),({"x"}),({"c"})}),
-	     ({({       }),({"b"}),({"x"}),({"c"})})}))
-test_equal(Array.diff3(({"x","x","a","x"}),({"a","x","b","x"}),({"a","x","b","x"})),
-	   ({({({"x","x"}),({"a","x"}),({       })}),
-	     ({({       }),({"a","x"}),({"b","x"})}),
-	     ({({       }),({"a","x"}),({"b","x"})})}))
-test_equal(Array.diff3(({"a","a","b"}),({"b","c"}),({"c","a","a"})),
-	   ({({({   }),({   }),({"a","a"}),({"b"})}),
-	     ({({"b"}),({"c"}),({       }),({   })}),
-	     ({({   }),({"c"}),({"a","a"}),({   })})}))
-test_equal(Array.diff3(({"x","x","x","a"}),({"y","b"}),({"x","x","x","c"})),
-	   ({({({"x","x","x"}),({"a"    })}),
-	     ({({           }),({"y","b"})}),
-	     ({({"x","x","x"}),({"c"    })})}))
-test_equal(Array.diff3(({"a","x","x","x","a"}),({"b","y","y","b"}),({"c","x","x","x","c"})),
-	   ({({({"a"            }),({"x","x","x"}),({"a"})}),
-	     ({({"b","y","y","b"}),({           }),({   })}),
-	     ({({"c"            }),({"x","x","x"}),({"c"})})}))
-test_equal(Array.diff3(({"a","b","c","d"}),({"x","x","x","d"}),({"a","y","y","y"})),
-	   ({({({"a"}),({"b","c"    }),({"d"})}),
-	     ({({   }),({"x","x","x"}),({"d"})}),
-	     ({({"a"}),({"y","y","y"}),({   })})}))
-test_equal(Array.diff3(({"a","b","c","d"}),({"a","x","x","d"}),({"a","y","y","y"})),
-	   ({({({"a"}),({"b","c"    }),({"d"})}),
-	     ({({"a"}),({"x","x"    }),({"d"})}),
-	     ({({"a"}),({"y","y","y"}),({   })})}))
-test_equal(Array.diff3(({"a","b","c","d"}),({"x","x","x","b"}),({"a","y","y","y"})),
-	   ({({({"a"        }),({"b"}),({"c","d"    })}),
-	     ({({"x","x","x"}),({"b"}),({           })}),
-	     ({({"a"        }),({   }),({"y","y","y"})})}))
-test_equal(Array.diff3(({"a","b","c","d"}),({"x","x","x","c"}),({"a","y","y","y"})),
-	   ({({({"a"}),({"b"        }),({"c"}),({"d"})}),
-	     ({({   }),({"x","x","x"}),({"c"}),({   })}),
-	     ({({"a"}),({"y","y","y"}),({   }),({   })})}))
-test_equal(Array.diff3(({"a","b","b","c","d"}),({"z","a","b","b","x"}),({"z","b","c","x"})),
-	   ({({({   }),({"a"}),({"b"}),({"b"}),({"c"}),({"d"})}),
-	     ({({"z"}),({"a"}),({"b"}),({"b"}),({   }),({"x"})}),
-	     ({({"z"}),({   }),({"b"}),({   }),({"c"}),({"x"})})}))
-test_equal(Array.diff3(({"a","b","c","d"}),({"b","a","c","c"}),({"b","b","d","d","a"})),
-	   ({({({"a"}),({"b"}),({"c"}),({"d"}),({   }),({   }),({       })}),
-	     ({({   }),({"b"}),({   }),({   }),({   }),({"a"}),({"c","c"})}),
-	     ({({   }),({"b"}),({"b"}),({"d"}),({"d"}),({"a"}),({       })})}))
-// The following is not optimal.
-test_equal(Array.diff3(({"a"}),({"b","a"}),({"a","b","a"})),
-	   ({({({   }),({"a"}),({       })}),
-	     ({({"b"}),({"a"}),({       })}),
-	     ({({   }),({"a"}),({"b","a"})})}))
-// The following is not optimal.
-test_equal(Array.diff3(({"a","c"}),({"b","a","c"}),({"a","c","b","a","c"})),
-	   ({({({   }),({"a","c"}),({           })}),
-	     ({({"b"}),({"a","c"}),({           })}),
-	     ({({   }),({"a","c"}),({"b","a","c"})})}))
-// The following is not optimal.
-test_equal(Array.diff3(({"a","d"}),({"b","a","c"}),({"a","c","b","a","c"})),
-	   ({({({   }),({"a"}),({"d"        }),({   })}),
-	     ({({"b"}),({"a"}),({           }),({"c"})}),
-	     ({({   }),({"a"}),({"c","b","a"}),({"c"})})}))
-// The following is not optimal.
-test_equal(Array.diff3(({"a","a"}),({"b","a","d","a"}),({"a","a","b","a","a"})),
-	   ({({({   }),({"a"}),({   }),({"a"}),({           })}),
-	     ({({"b"}),({"a"}),({"d"}),({"a"}),({           })}),
-	     ({({   }),({"a"}),({   }),({"a"}),({"b","a","a"})})}))
-test_equal(Array.diff3(({"a"}),({"a","b"}),({"b","a"})),
-	   ({({({   }),({"a"}),({   })}),
-	     ({({   }),({"a"}),({"b"})}),
-	     ({({"b"}),({"a"}),({   })})}))
-test_equal(Array.diff3(({"a","b"}),({"b","a"}),({"a"})),
-	   ({({({   }),({"a"}),({"b"})}),
-	     ({({"b"}),({"a"}),({   })}),
-	     ({({   }),({"a"}),({   })})}))
-test_equal(Array.diff3(({"b","a"}),({"a"}),({"a","b"})),
-	   ({({({"b"}),({"a"}),({   })}),
-	     ({({   }),({"a"}),({   })}),
-	     ({({   }),({"a"}),({"b"})})}))
-test_equal(Array.diff3(({"a","b"}),({"a"}),({"b","a"})),
-	   ({({({   }),({"a"}),({"b"})}),
-	     ({({   }),({"a"}),({   })}),
-	     ({({"b"}),({"a"}),({   })})}))
-test_equal(Array.diff3(({"a","c"}),({"a","c","b","a"}),({"b","a","c"})),
-	   ({({({   }),({"a","c"}),({       })}),
-	     ({({   }),({"a","c"}),({"b","a"})}),
-	     ({({"b"}),({"a","c"}),({       })})}))
-test_equal(Array.diff3(({"a","c","b","a"}),({"a","c"}),({"b","a","c"})),
-	   ({({({   }),({"a","c"}),({"b","a"})}),
-	     ({({   }),({"a","c"}),({       })}),
-	     ({({"b"}),({"a","c"}),({       })})}))
-
-// - Array.dwim_sort_func
-test_eq(Array.dwim_sort_func("1","a"), -1)
-test_eq(Array.dwim_sort_func("1","1a"), -1)
-test_eq(Array.dwim_sort_func("1","0a"), 1)
-test_eq(Array.dwim_sort_func("1","1"), 0)
-test_eq(Array.dwim_sort_func("1","01"), 0)
-test_eq(Array.dwim_sort_func("1","2"), -1)
-test_eq(Array.dwim_sort_func("10","2a"), 1)
+// - encode_value
+// - encode_value_canonic
+// - endgrent
+// - endpwent
+// - enumerate
 
 // - equal
 // equal is already tested by this script
 
+// - errno
+
+// - error
+// Tested in lib
+
+// - exece
 // - exit
-// FIXME put test for exit here
 
-// - explode
-test_equal(({"a","b","c",}), "anna bnna c"/"nna ")
-test_equal(({"\3333","\3333","\3333",}), "\3333nna \3333nna \3333"/"nna ")
-test_equal(({"\3333333","\3333333","\3333333",}), "\3333333nna \3333333nna \3333333"/"nna ")
-test_equal(({"","",}),"hej"/"hej")
-test_equal(({""}),""/"hej")
+// - exp
+// Tested in _math
 
-// - fork()
-// FIXME: add tests for fork
+// - explode_path
+// - file_stat
+// - file_truncate
+// - filesystem_stat
 
-cond([[all_constants()->_verify_internals]],
-[[
-  test_do(_verify_internals())
-]])
+// - filter
+// Tested in lib/modules
+
+// - find_call_out
+
+// - floatp
+// Tested in foop
+
+// - floor
+// Tested in _math
+
+// - fork
 
 // - function_name
 test_eq(function_name(a),"a")
@@ -8191,11 +8184,82 @@ test_eq(function_name(function_name),0)
 test_eq(function_object(a),this_object())
 test_eq(function_name(function_object),0)
 
-// - get_function (actually in simulate.pike)
-test_eq(a,
-#pike 7.0
-Simulate.get_function(this_object(),"a"))
-test_eq(a,this_object()->a)
+// - function_program
+
+// - functionp
+// Tested in foop
+
+// - gc
+
+// - get_all_groups
+// - get_all_users
+// - get_dir
+// - get_groups_for_user
+// - get_weak_flag
+// - getcwd
+// - getegid
+// - getenv
+// - geteuid
+// - getgid
+// - getgrent
+// - getgrgid
+// - getgrnam
+// - getgroups
+// - gethostbyaddr
+// - gethostbyname
+// - gethostname
+
+// - gethrtime
+// See time
+
+// - gethrvtime
+// - getpgrp
+// - getpid
+// - getppid
+// - getpwent
+// - getpwnam
+// - getpwuid
+// - getsid
+// - getuid
+// - glob
+// - gmtime
+// - hardlink
+
+// - has_index
+define(test_has_index,[[test_true([[mixed foo=$1; return has_index(foo,$2)==$3;]])]])
+test_has_index([[ ({}) ]],0,0)
+test_has_index([[ ({}) ]],"foo",0)
+test_has_index([[ ({ "a" }) ]],-1,0)
+test_has_index([[ ({ "a" }) ]],"a",0)
+test_has_index([[ ({ "a" }) ]],0,1)
+test_has_index([[ ({ "a" }) ]],1,0)
+test_has_index([[ ({ "a", "b" }) ]],1,1)
+test_has_index([[ ([ "a":"A" ]) ]],4711,0)
+test_has_index([[ ([ "a":"A" ]) ]],"a",1)
+test_has_index([[ ([ "a":"A" ]) ]],"A",0)
+test_has_index([[ ([ "a":"A", "b":"B", "c":"C" ]) ]],"b",1)
+test_has_index([[ ([ "a":"A", "b":"B", "c":"C" ]) ]],"B",0)
+test_has_index([[ class {}() ]],"foo",0)
+test_has_index([[ (class{array _indices(){return({"a","b"});}})() ]],"b",1)
+
+// - has_prefix
+// - has_suffix
+
+// - has_value
+define(test_has_value,[[test_true([[mixed foo=$1; return has_value(foo,$2)==$3;]])]])
+test_has_value([[ ({}) ]],0,0)
+test_has_value([[ ({}) ]],"foo",0)
+test_has_value([[ ({ "a" }) ]],-1,0)
+test_has_value([[ ({ "a" }) ]],"a",1)
+test_has_value([[ ({ "a" }) ]],0,0)
+test_has_value([[ ({ "a", "b" }) ]],"b",1)
+test_has_value([[ ([ "a":"A" ]) ]],4711,0)
+test_has_value([[ ([ "a":"A" ]) ]],"a",0)
+test_has_value([[ ([ "a":"A" ]) ]],"A",1)
+test_has_value([[ ([ "a":"A", "b":"B", "c":"C" ]) ]],"B",1)
+test_has_value([[ ([ "a":"A", "b":"B", "c":"C" ]) ]],"b",0)
+test_has_value([[ class {}() ]],"foo",0)
+test_has_value([[ (class{array _values(){return({"a","b"});}})() ]],"b",1)
 
 // - hash
 test_true(intp(hash("foo")))
@@ -8206,13 +8270,7 @@ test_true(hash("gazonk",10)<10)
 test_eq(hash("foobargazonk"),hash("foobargazonk"))
 test_false(hash(""))
 
-// - implode
-test_eq([[({})*""]],"")
-test_eq([[("foo"/"o")*"o"]],"foo")
-test_eq([[({"foo","bar"})*"-"]],"foo-bar")
-test_eq([[({"foo",0,"bar"})*"-"]],"foo-bar")
-test_eq([[({1.0,"foo",0,"bar",this_object(),([])})*"-"]],"foo-bar")
-test_eq([[({"f","o","o"})*""]],"foo")
+// - hash_7_0
 
 // - indices
 test_equal(indices("foo"),({0,1,2}))
@@ -8222,9 +8280,25 @@ test_equal(Array.sort_array(indices((<7,8,99>))),({7,8,99}))
 test_equal(mkmultiset(indices(class{constant a="a"; constant b="b";}())),
 	   (<"a","b">))
 
-// - Array.longest_ordered_sequence
-test_equal(Array.longest_ordered_sequence("dfgaokäpojghadjjioijrgxcvb"/""),
-	   ({ 0, 1, 2, 10, 11, 16, 18, 19, 20, 22 }));
+// - initgroups
+// - innetgrp
+
+// - int2char
+// - int2hex
+// Tested in String
+
+// - intp
+// Tested in foop
+
+// - is_absolute_path
+// Tested in lib
+
+// - kill
+// - load_module
+// - localtime
+
+// - log
+// Tested in _math
 
 // - lower_case
 test_equal(lower_case("foo"),"foo")
@@ -8317,13 +8391,49 @@ test_equal(lower_case((string) ({
 0x010428, 0x010426, 0x010428, 0x01044e, 
 }))
 
+// - m_delete
+// - map
+
+// - mappingp
+// Tested in foop
+
+// - master
+
+// - max
+// - min
+// Tested in _math
+
+// - mkdir
+// - mkmapping
+// - mkmultiset
+// - mktime
+
+// - multisetp
+// Tested in foop
+
+// - mv
 
 // - next_object
 test_true(objectp(next_object()))
 test_any(int e;object o=next_object(); for(e=0;e<10000 && (o || objectp(o));e++) o=next_object(o); return o,0)
 
+// - normalize_path
+// Tested in lib
+
 // - object_program
 test_true(programp(object_program(this_object())))
+
+// - object_variablep
+// - openlog
+
+// - pow
+// Tested in _math
+
+// - programp
+// Tested in foop
+
+// - putenv
+// Tested in lib
 
 // - query_num_arg
 test_eq(lambda(int ... q) { return query_num_arg(); }(),0)
@@ -8353,11 +8463,20 @@ test_eval_error([[ return random( (<>) ) ]])
 test_eval_error([[ return random( ([]) ) ]])
 test_eq([[ random( class() { int _random() { return 17; }}()) ]], 17)
 
-// random_seed
+// - random_seed
 test_do(int p; foreach(({1,2,3,4,5}),p) random_seed(p))
 test_eq([[random_seed(17),random(20000)]],[[random_seed(17),random(20000)]])
 test_eq([[random_seed(18),random(20000)]],[[random_seed(18),random(20000)]])
 test_eq([[random_seed(19),random(20000)]],[[random_seed(19),random(20000)]])
+
+// - random_string
+// - readlink
+// - remove_call_out
+
+// - remove_include_path
+// - remove_module_path
+// - remove_program_path
+// Tested in lib
 
 // - replace
 test_eq(replace("foo","f","\x9999"),"\x9999oo")
@@ -8471,6 +8590,8 @@ test_eq(replace("f\7777777\7777777barf\7777777\7777777",({"f\7777777\7777777bar"
 test_equal(replace(({1,2,3,4,5,1,2,3,4}),3,-1),({1,2,-1,4,5,1,2,-1,4}))
 test_equal(replace(([1:2,3:4,5:1,2:3]),3,-1),([1:2,3:4,5:1,2:-1]))
 
+// - replace_master
+
 // - reverse
 test_eq(reverse("reverse"),"esrever")
 test_eq(reverse("r\777v\777rs\777"),"\777sr\777v\777r")
@@ -8483,46 +8604,12 @@ test_equal(reverse(({42})),({42}))
 test_equal(reverse(({42,4711})),({4711,42}))
 test_equal(reverse(0x12345678),0x1e6a2c48)
 
-// - rusage
-test_true(
-#pike 7.4
-arrayp(rusage()))
-test_true(
-#pike 7.4
-sizeof(rusage())>28)
+// - rm
 
-// - has_index
-define(test_has_index,[[test_true([[mixed foo=$1; return has_index(foo,$2)==$3;]])]])
-test_has_index([[ ({}) ]],0,0)
-test_has_index([[ ({}) ]],"foo",0)
-test_has_index([[ ({ "a" }) ]],-1,0)
-test_has_index([[ ({ "a" }) ]],"a",0)
-test_has_index([[ ({ "a" }) ]],0,1)
-test_has_index([[ ({ "a" }) ]],1,0)
-test_has_index([[ ({ "a", "b" }) ]],1,1)
-test_has_index([[ ([ "a":"A" ]) ]],4711,0)
-test_has_index([[ ([ "a":"A" ]) ]],"a",1)
-test_has_index([[ ([ "a":"A" ]) ]],"A",0)
-test_has_index([[ ([ "a":"A", "b":"B", "c":"C" ]) ]],"b",1)
-test_has_index([[ ([ "a":"A", "b":"B", "c":"C" ]) ]],"B",0)
-test_has_index([[ class {}() ]],"foo",0)
-test_has_index([[ (class{array _indices(){return({"a","b"});}})() ]],"b",1)
+// - round
+// Tested in _math
 
-// - has_value
-define(test_has_value,[[test_true([[mixed foo=$1; return has_value(foo,$2)==$3;]])]])
-test_has_value([[ ({}) ]],0,0)
-test_has_value([[ ({}) ]],"foo",0)
-test_has_value([[ ({ "a" }) ]],-1,0)
-test_has_value([[ ({ "a" }) ]],"a",1)
-test_has_value([[ ({ "a" }) ]],0,0)
-test_has_value([[ ({ "a", "b" }) ]],"b",1)
-test_has_value([[ ([ "a":"A" ]) ]],4711,0)
-test_has_value([[ ([ "a":"A" ]) ]],"a",0)
-test_has_value([[ ([ "a":"A" ]) ]],"A",1)
-test_has_value([[ ([ "a":"A", "b":"B", "c":"C" ]) ]],"B",1)
-test_has_value([[ ([ "a":"A", "b":"B", "c":"C" ]) ]],"b",0)
-test_has_value([[ class {}() ]],"foo",0)
-test_has_value([[ (class{array _values(){return({"a","b"});}})() ]],"b",1)
+// - rows
 
 // - search
 test_eval_error(return search("foolbar","o",-10))
@@ -8635,19 +8722,37 @@ test_search4("\345677777-------------------")
 test_search4("kapit\3333l>")
 test_search4("kapit\3333333l>")
 
+// - rusage
+test_true(
+#pike 7.4
+arrayp(rusage()))
+test_true(
+#pike 7.4
+sizeof(rusage())>28)
 
-// - sprintf
-test_eq(sprintf("%.1f",31415.9267),"31415.9")
-test_eq(sprintf("%.0f",31415.9267),"31416")
-test_eq(sprintf("%.-1f",31415.9267),"31420")
-test_eq(sprintf("%.-2f",31415.9267),"31400")
-test_eq(sprintf("%.-2f",-31415.9267),"-31400")
-test_eq(sprintf("%.-10f",31415.9267),"0")
-test_eq(sprintf("%20.-3f", 31415.92670),"               31000")
-test_eq(sprintf("%t", ({"a"})), "array")
-test_any([[array(string) a = ({"a"}); return sprintf("%t", a);]], "array")
-test_eq(sprintf("%t", 0), "int")
-test_any([[array(string) a = 0; return sprintf("%t", a);]], "int")
+// - set_priority
+// - set_weak_flag
+// - setegid
+// - seteuid
+// - setgid
+// - setgrent
+// - setgroups
+// - setpgrp
+// - setpwent
+// - setresgid
+// - setresuid
+// - setsid
+// - setuid
+
+// - sgn
+// Tested in _math
+
+// - signal
+// - signame
+// - signum
+
+// - sin
+// Tested in _math
 
 // - sizeof
 test_eq(sizeof("felbar"),6)
@@ -8661,6 +8766,16 @@ test_do(sleep(1))
 test_do(sleep(0.5))
 test_any([[int x=time(); sleep(2); return x!=time()]],1)
 test_any([[int x=time(); sleep(2); return x!=time()]],1)
+
+// - sort
+
+// - sprintf
+// Tested in sprintf
+
+// - sqrt
+// Tested in _math
+
+// - strerror
 
 // - string_to_unicode, unicode_to_string
 test_eq(string_to_unicode("foo"), "\0f\0o\0o")
@@ -8719,32 +8834,17 @@ test_eval_error(return utf8_to_string("\367\207\270a"));
 test_eval_error(return utf8_to_string("\347\270a"));
 test_eval_error(return utf8_to_string("\303a"));
 
-// - sum
-test_eq(`+(1,1),2)
-test_eq(`+(1,-2),-1)
-test_eq(`+(-2,-2),-4)
-test_eq(`+("hi","there"),"hithere")
+// - stringp
+// Tested in foop
 
-test_eq(`+("hi\777","there"),"hi\777there")
-test_eq(`+("hi","there\777"),"hithere\777")
+// - strlen
+test_eq(strlen, sizeof)
 
-test_eq(`+("hi\7777777","there"),"hi\7777777there")
-test_eq(`+("hi","there\7777777"),"hithere\7777777")
+// - symlink
+// - syslog
 
-test_eq(`+("human","number",666),"humannumber666")
-test_eq(`+("human","number",666),"humannumber666")
-test_eq(`+("human","number",666),"humannumber666")
-test_eq(`+("human","number",666,111),"humannumber666111")
-test_eq(`+("humannumber",`+(666+111)),"humannumber777")
-test_eq(`+("a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","x","y"),"abcdefghijklmnopqrstuvxy")
-test_eq(`+(1.0+1.0),2.0)
-test_eq(`+(1.0,-1.0),0.0)
-test_eq(`+(-1.0,-1.0),-2.0)
-test_equal(`+(({1,2,3}),({4,5,6})),({1,2,3,4,5,6}))
-test_equal(`+((<1,2,3,4>),(<4,5,6>)),(<1,2,3,4,4,5,6>))
-test_equal(`+(([0:1,3:6]),([5:2,3:6])),([0:1,3:6,3:6,5:2]))
-
-test_any(return((1+2+3)-(1+2-3)), 6)
+// - tan
+// Tested in _math
 
 // - this_object and this
 test_true(objectp(this_object()))
@@ -8833,14 +8933,12 @@ test_program([[
   int a() {return A()->B()->f();}
 ]])
 
+// - this_thread
+// - thread_create
+// - thread_local
+
 // - throw
 test_eq(20,catch(throw(a())))
-
-// - catch compile-errors
-test_any([[ master()->set_inhibit_compile_errors(lambda(){});mixed res = catch{compile_string("dfasfqw123");};master()->set_inhibit_compile_errors(0); return arrayp(res)||objectp(res); ]], 1)
-
-// catch
-test_false([[class X { string test(string foo) { catch { return lower_case(foo); }; return foo; }}()->test(0); ]])
 
 // - time
 test_true(time())
@@ -8848,7 +8946,6 @@ test_true(time(1))
 test_true(intp(time()))
 test_true(intp(time(1)))
 test_true(floatp(time(2)))
-
 
 // gethrtime() may gethrtime(), RDTSC or gettimeofday
 // sleep uses a combination of select/poll and the above
@@ -8877,118 +8974,16 @@ test_any([[
    return "no error";
 ]],"no error")
 
-
-// Stdio.FILE gets/ngets tests
-
-test_equal([[
-lambda()
-{
-   Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
-   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
-   array v=({});
-   while (string s=r->gets())
-      v+=({s});
-   return v;
-}()
-]],({"hej","hopp","gazonk"}))
-
-test_equal([[
-lambda()
-{
-   Stdio.write_file("testsuite.tmp",        // 59 is a prime number:
-	"abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ!\n"*400);
-   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
-   array v=({});
-   while (string s=r->gets())
-      v+=({s});
-   return v;
-}()
-]],({"abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ!"})*400)
-
-test_equal([[
-lambda()
-{
-   Stdio.write_file("testsuite.tmp",
-	"abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ!\n"*400);
-   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
-   return r->ngets();
-}()
-]],({"abcdefghijklmnopqrstuvwxyzåäöABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ!"})*400)
-
-test_equal([[
-lambda()
-{
-   Stdio.write_file("testsuite.tmp", "\n"*400);
-   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
-   array v=({});
-   while (string s=r->gets())
-      v+=({s});
-   return v;
-}()
-]],({""})*400)
-
-test_equal([[
-lambda()
-{
-   Stdio.write_file("testsuite.tmp","\n"*400);
-   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
-   return r->ngets();
-}()
-]],({""})*400)
-
-test_equal([[
-lambda()
-{
-   Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk\n");
-   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
-   array v=({});
-   while (string s=r->gets())
-      v+=({s});
-   return v;
-}()
-]],({"hej","hopp","gazonk"}))
-
-test_equal([[
-lambda()
-{
-   Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk\n");
-   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
-   return r->ngets();
-}()
-]],({"hej","hopp","gazonk"}))
-
-test_equal([[
-lambda()
-{
-   Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
-   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
-   return r->ngets();
-}()
-]],({"hej","hopp","gazonk"}))
-
-test_equal([[
-lambda()
-{
-   Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk\n");
-   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
-   return r->ngets(100);
-}()
-]],({"hej","hopp","gazonk"}))
-
-test_equal([[
-lambda()
-{
-   Stdio.write_file("testsuite.tmp","hej\nhopp\ngazonk");
-   Stdio.FILE r=Stdio.FILE("testsuite.tmp","r");
-   return r->ngets(100);
-}()
-]],({"hej","hopp","gazonk"}))
-
-test_true(rm("testsuite.tmp"))
-
 // - trace
 test_do(trace(0))
 test_eq(trace(0),0)
+
+// - ualarm
+// - umask
+// - uname
+
+// - unicode_to_string
+// See string_to_unicode
 
 // - upper_case
 test_equal(upper_case("fooq"),"FOOQ")
@@ -9081,6 +9076,10 @@ test_equal(upper_case((string) ({
 0x010400, 0x010426, 0x010400, 0x01044e, 
 }))
 
+// - utf8_to_string
+// See string_to_utf8
+
+// - utime
 
 // - values
 test_equal(values("foo"),({'f','o','o'}))
@@ -9089,6 +9088,12 @@ test_equal(Array.sort_array(values(([7:3,8:9,99:12]))),({3,9,12}))
 test_equal(values((<7,8,99>)),({1,1,1}))
 test_equal(mkmultiset(values(class{ constant a="a"; constant b="b";}())),
            (<"a","b">))
+
+// - version
+test_equal(version(), "Pike v"+__REAL_MAJOR__+"."+__REAL_MINOR__+" release "+__REAL_BUILD__)
+
+// - werror
+// - write
 
 // - zero_type
 test_eq(zero_type(0),0)
@@ -9099,6 +9104,9 @@ test_true([[lambda (int|void a) { return zero_type(a); }()]])
 test_true([[lambda () {mixed a; return zero_type(a = ([])[0]);}()]])
 test_true([[lambda () {mapping a=([]); return zero_type(a[0] = ([])[0]);}()]])
 test_true([[zero_type (lambda () {return ([])[0];}())]])
+
+
+
 
 test_program(int b=10; mixed a() { return 1; })
 test_program(mixed b=10; mixed a() { return 1;})
@@ -9125,27 +9133,18 @@ test_do(add_constant("test2"))
 
 test_eval_error(return class c{int i;void foo(){ destruct(this_object());i=0;return i;}}()->foo())
 
-// master defined functions
+// - get_function (actually in simulate.pike)
+test_eq(a,
+#pike 7.0
+Simulate.get_function(this_object(),"a"))
+test_eq(a,this_object()->a)
 
-test_eq(dirname("/a/b/"),"/a/b")
-test_eq(dirname("/a/b"),"/a")
-test_eq(dirname("/a/"),"/a")
-test_eq(dirname("/a"),"/")
-test_eq(dirname("/"),"/")
-test_eq(dirname(""),"")
-test_eq(dirname("a/b/"),"a/b")
-test_eq(dirname("a/b"),"a")
-test_eq(dirname("a/"),"a")
-test_eq(dirname("a"),"")
+// - catch compile-errors
+test_any([[ master()->set_inhibit_compile_errors(lambda(){});mixed res = catch{compile_string("dfasfqw123");};master()->set_inhibit_compile_errors(0); return arrayp(res)||objectp(res); ]], 1)
 
-test_eq(basename("/a/b"),"b")
-test_eq(basename("/a/"),"")
-test_eq(basename("/a"),"a")
-test_eq(basename("/"),"")
-test_eq(basename("a/b"),"b")
-test_eq(basename("a/"),"")
-test_eq(basename("a"),"a")
-test_eq(basename(""),"")
+// - catch
+test_false([[class X { string test(string foo) { catch { return lower_case(foo); }; return foo; }}()->test(0); ]])
+
 
 // Pike modules
 
