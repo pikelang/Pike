@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.336 2003/10/20 14:59:42 marcus Exp $
+|| $Id: interpret.c,v 1.337 2003/11/09 01:10:13 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.336 2003/10/20 14:59:42 marcus Exp $");
+RCSID("$Id: interpret.c,v 1.337 2003/11/09 01:10:13 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -102,7 +102,7 @@ PMOD_EXPORT struct Pike_interpreter Pike_interpreter;
 PMOD_EXPORT int Pike_stack_size = EVALUATOR_STACK_SIZE;
 
 static void trace_return_value(void);
-static void do_trace_call(INT32);
+static void do_trace_call(INT32 args, dynamic_buffer *old_buf);
 
 void gdb_stop_here(void)
 {
@@ -683,10 +683,11 @@ void print_return_value(void)
   if(Pike_interpreter.trace_level>3)
   {
     char *s;
-	
-    init_buf();
+    dynamic_buffer save_buf;
+
+    init_buf(&save_buf);
     describe_svalue(Pike_sp-1,0,0);
-    s=simple_free_buf();
+    s=simple_free_buf(&save_buf);
     if((size_t)strlen(s) > (size_t)TRACE_LEN)
     {
       s[TRACE_LEN]=0;
@@ -1346,11 +1347,12 @@ static inline int eval_instruction(unsigned char *pc)
 static void trace_return_value(void)
 {
   char *s;
+  dynamic_buffer save_buf;
 
-  init_buf();
+  init_buf(&save_buf);
   my_strcat("Return: ");
   describe_svalue(Pike_sp-1,0,0);
-  s=simple_free_buf();
+  s=simple_free_buf(&save_buf);
   if((size_t)strlen(s) > (size_t)TRACE_LEN)
   {
     s[TRACE_LEN]=0;
@@ -1362,7 +1364,7 @@ static void trace_return_value(void)
   free(s);
 }
 
-static void do_trace_call(INT32 args)
+static void do_trace_call(INT32 args, dynamic_buffer *old_buf)
 {
   struct pike_string *filep = NULL;
   char *file, *s;
@@ -1374,7 +1376,7 @@ static void do_trace_call(INT32 args)
     describe_svalue(Pike_sp-args+e,0,0);
   }
   my_strcat(")"); 
-  s=simple_free_buf();
+  s=simple_free_buf(old_buf);
   if((size_t)strlen(s) > (size_t)TRACE_LEN)
   {
     s[TRACE_LEN]=0;
@@ -1543,9 +1545,10 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	struct svalue *expected_stack = Pike_sp-args;
 	if(Pike_interpreter.trace_level>1)
 	{
-	  init_buf();
+	  dynamic_buffer save_buf;
+	  init_buf(&save_buf);
 	  describe_svalue(s,0,0);
-	  do_trace_call(args);
+	  do_trace_call(args, &save_buf);
 	}
 #endif
 	check_threads_etc();
@@ -1591,9 +1594,10 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 #ifdef PIKE_DEBUG
       if(Pike_interpreter.trace_level>1)
       {
-	init_buf();
+	dynamic_buffer save_buf;
+	init_buf(&save_buf);
 	describe_svalue(s,0,0);
-	do_trace_call(args);
+	do_trace_call(args, &save_buf);
       }
 #endif
       apply_array(s->u.array,args);
@@ -1603,9 +1607,10 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 #ifdef PIKE_DEBUG
       if(Pike_interpreter.trace_level>1)
       {
-	init_buf();
+	dynamic_buffer save_buf;
+	init_buf(&save_buf);
 	describe_svalue(s,0,0);
-	do_trace_call(args);
+	do_trace_call(args, &save_buf);
       }
 #endif
       push_object(clone_object(s->u.program,args));
@@ -1948,11 +1953,12 @@ PMOD_EXPORT void call_handle_error(void)
       UNSET_ONERROR(tmp);
     }
     else {
+      dynamic_buffer save_buf;
       char *s;
       fprintf (stderr, "There's no master to handle the error. Dumping it raw:\n");
-      init_buf();
+      init_buf(&save_buf);
       describe_svalue (Pike_sp - 1, 0, 0);
-      s=simple_free_buf();
+      s=simple_free_buf(&save_buf);
       fprintf(stderr,"%s\n",s);
       free(s);
     }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.160 2003/10/10 14:50:53 grubba Exp $
+|| $Id: interpret_functions.h,v 1.161 2003/11/09 01:10:13 mast Exp $
 */
 
 /*
@@ -2120,9 +2120,10 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
     struct svalue *s=&Pike_fp->context.prog->constants[arg1].sval;	 \
   if(Pike_interpreter.trace_level>1)					 \
   {									 \
-    init_buf();								 \
+    dynamic_buffer save_buf;						 \
+    init_buf(&save_buf);						 \
     describe_svalue(s, 0,0);						 \
-    do_trace_call(args);						 \
+    do_trace_call(args, &save_buf);					 \
   }									 \
   (*(s->u.efun->function))(args);					 \
   s->u.efun->runs++;                                                     \

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.172 2003/09/23 22:26:56 mast Exp $
+|| $Id: mapping.c,v 1.173 2003/11/09 01:10:14 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.172 2003/09/23 22:26:56 mast Exp $");
+RCSID("$Id: mapping.c,v 1.173 2003/11/09 01:10:14 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -2443,10 +2443,11 @@ size_t gc_free_all_unreferenced_mappings(void)
 
 void simple_describe_mapping(struct mapping *m)
 {
+  dynamic_buffer save_buf;
   char *s;
-  init_buf();
+  init_buf(&save_buf);
   describe_mapping(m,0,2);
-  s=simple_free_buf();
+  s=simple_free_buf(&save_buf);
   fprintf(stderr,"%s\n",s);
   free(s);
 }

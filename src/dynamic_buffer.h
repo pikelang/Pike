@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_buffer.h,v 1.18 2003/04/02 19:22:43 mast Exp $
+|| $Id: dynamic_buffer.h,v 1.19 2003/11/09 01:10:13 mast Exp $
 */
 
 #ifndef DYNAMIC_BUFFER_H
@@ -33,19 +33,21 @@ PMOD_EXPORT void low_my_binary_strcat(const char *b, size_t l, dynamic_buffer *b
 PMOD_EXPORT void debug_initialize_buf(dynamic_buffer *buf);
 PMOD_EXPORT void low_reinit_buf(dynamic_buffer *buf);
 PMOD_EXPORT void low_init_buf_with_string(dynbuf_string s, dynamic_buffer *buf);
-PMOD_EXPORT dynbuf_string complex_free_buf(void);
 PMOD_EXPORT void toss_buffer(dynamic_buffer *buf);
-PMOD_EXPORT char *simple_free_buf(void);
 PMOD_EXPORT struct pike_string *debug_low_free_buf(dynamic_buffer *buf);
-PMOD_EXPORT struct pike_string *debug_free_buf(void);
+
+PMOD_EXPORT dynbuf_string complex_free_buf(dynamic_buffer *old_buf);
+PMOD_EXPORT char *simple_free_buf(dynamic_buffer *old_buf);
+PMOD_EXPORT struct pike_string *debug_free_buf(dynamic_buffer *old_buf);
 PMOD_EXPORT char *make_buf_space(INT32 space);
 PMOD_EXPORT void my_putchar(int b);
 PMOD_EXPORT void my_binary_strcat(const char *b, ptrdiff_t l);
 PMOD_EXPORT void my_strcat(const char *b);
-PMOD_EXPORT void initialize_global_buf(void);
-PMOD_EXPORT void init_buf(void);
-PMOD_EXPORT void init_buf_with_string(dynbuf_string s);
-PMOD_EXPORT char *debug_return_buf(void);
+PMOD_EXPORT void init_buf(dynamic_buffer *old_buf);
+PMOD_EXPORT void init_buf_with_string(dynamic_buffer *old_buf, dynbuf_string s);
+PMOD_EXPORT void save_buffer (dynamic_buffer *save_buf);
+PMOD_EXPORT void restore_buffer (dynamic_buffer *save_buf);
+/* PMOD_EXPORT char *debug_return_buf(void); */
 /* Prototypes end here */
 
 #ifdef DEBUG_MALLOC
@@ -55,8 +57,8 @@ PMOD_EXPORT char *debug_return_buf(void);
 #define low_free_buf(X) \
   ((struct pike_string *)debug_malloc_pass(debug_low_free_buf(X)))
 
-#define free_buf() \
-  ((struct pike_string *)debug_malloc_pass(debug_free_buf()))
+#define free_buf(OLD_BUF) \
+  ((struct pike_string *)debug_malloc_pass(debug_free_buf(OLD_BUF)))
 
 #define return_buf() \
   ((char *)debug_malloc_pass(debug_return_buf()))

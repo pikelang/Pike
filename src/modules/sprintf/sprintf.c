@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.114 2003/11/07 17:41:53 mast Exp $
+|| $Id: sprintf.c,v 1.115 2003/11/09 01:10:15 mast Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -278,7 +278,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.114 2003/11/07 17:41:53 mast Exp $");
+RCSID("$Id: sprintf.c,v 1.115 2003/11/09 01:10:15 mast Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1515,15 +1515,16 @@ static void low_pike_sprintf(struct format_stack *fs,
 
       case 'O':
       {
+	dynamic_buffer save_buf;
 	dynbuf_string s;
 	struct svalue *t;
 	DO_OP();
 	/* No need to do CHECK_OBJECT_SPRINTF() here,
 	   it is checked in describe_svalue. */
 	GET_SVALUE(t);
-	init_buf();
+	init_buf(&save_buf);
 	describe_svalue(t,0,0);
-	s=complex_free_buf();
+	s=complex_free_buf(&save_buf);
 	fs->fsp->b=MKPCHARP(s.str,0);
 	fs->fsp->len=s.len;
 	fs->fsp->fi_free_string=s.str;
@@ -1534,15 +1535,16 @@ static void low_pike_sprintf(struct format_stack *fs,
       /* This can be useful when doing low level debugging. */
       case 'p':
       {
+	dynamic_buffer save_buf;
 	dynbuf_string s;
 	char buf[50];
 	struct svalue *t;
 	DO_OP();
 	GET_SVALUE(t);
-	init_buf();
+	init_buf(&save_buf);
 	sprintf (buf, "%p", t->u.refs);
 	my_strcat (buf);
-	s=complex_free_buf();
+	s=complex_free_buf(&save_buf);
 	fs->fsp->b=MKPCHARP(s.str,0);
 	fs->fsp->len=s.len;
 	fs->fsp->fi_free_string=s.str;

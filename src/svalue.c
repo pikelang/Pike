@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.178 2003/11/07 17:41:53 mast Exp $
+|| $Id: svalue.c,v 1.179 2003/11/09 01:10:14 mast Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: svalue.c,v 1.178 2003/11/07 17:41:53 mast Exp $");
+RCSID("$Id: svalue.c,v 1.179 2003/11/09 01:10:14 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1255,8 +1255,9 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	       * with tracing...
 	       */
 	      int save_t_flag=Pike_interpreter.trace_level;
-	      dynbuf_string save_buffer=complex_free_buf();
-	    
+	      dynamic_buffer save_buf;
+	      save_buffer (&save_buf);
+
 	      Pike_interpreter.trace_level=0;
 	      SET_CYCLIC_RET(1);
 	    
@@ -1273,7 +1274,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		      push_text("(master returned illegal value from describe_module)");
 		    }
 	      
-		  init_buf_with_string(save_buffer);
+		  restore_buffer (&save_buf);
 		  Pike_interpreter.trace_level=save_t_flag;
 		
 		  dsv_add_string_to_buf( sp[-1].u.string );
@@ -1286,7 +1287,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      
 	      debug_malloc_touch(save_buffer.str);
 	      
-	      init_buf_with_string(save_buffer);
+	      restore_buffer (&save_buf);
 	      Pike_interpreter.trace_level=save_t_flag;
 	      pop_stack();
 	      prog = obj->prog;
@@ -1342,7 +1343,8 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	       * with tracing...
 	       */
 	      int save_t_flag=Pike_interpreter.trace_level;
-	      dynbuf_string save_buffer=complex_free_buf();
+	      dynamic_buffer save_buf;
+	      save_buffer (&save_buf);
 	      
 	      Pike_interpreter.trace_level=0;
 	      SET_CYCLIC_RET(1);
@@ -1365,7 +1367,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		      push_text("(object returned illegal value from _sprintf)");
 		    }
 
-		  init_buf_with_string(save_buffer);
+		  restore_buffer (&save_buf);
 		  Pike_interpreter.trace_level=save_t_flag;
 
 		  dsv_add_string_to_buf( sp[-1].u.string );
@@ -1377,7 +1379,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 
 	      debug_malloc_touch(save_buffer.str);
 
-	      init_buf_with_string(save_buffer);
+	      restore_buffer (&save_buf);
 	      Pike_interpreter.trace_level=save_t_flag;
 	      pop_stack();
 	      prog = obj->prog;
@@ -1390,8 +1392,9 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	     * with tracing...
 	     */
 	    int save_t_flag=Pike_interpreter.trace_level;
-	    dynbuf_string save_buffer=complex_free_buf();
-	    
+	    dynamic_buffer save_buf;
+	    save_buffer (&save_buf);
+
 	    Pike_interpreter.trace_level=0;
 	    SET_CYCLIC_RET(1);
 	    
@@ -1410,7 +1413,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		    push_text("(master returned illegal value from describe_object)");
 		  }
 		
-		init_buf_with_string(save_buffer);
+		restore_buffer (&save_buf);
 		Pike_interpreter.trace_level=save_t_flag;
 		
 		dsv_add_string_to_buf( sp[-1].u.string );
@@ -1419,10 +1422,8 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		END_CYCLIC();
 		break;
 	      }
-	    
-	    debug_malloc_touch(save_buffer.str);
-	    
-	    init_buf_with_string(save_buffer);
+
+	    restore_buffer (&save_buf);
 	    Pike_interpreter.trace_level=save_t_flag;
 	    pop_stack();
 	    prog = obj->prog;
@@ -1467,8 +1468,9 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	   * with tracing...
 	   */
 	  int save_t_flag=Pike_interpreter.trace_level;
-	  dynbuf_string save_buffer=complex_free_buf();
-	    
+	  dynamic_buffer save_buf;
+	  save_buffer (&save_buf);
+
 	  Pike_interpreter.trace_level=0;
 	  SET_CYCLIC_RET(1);
 	    
@@ -1487,7 +1489,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		  push_text("(master returned illegal value from describe_program)");
 		}
 	      
-	      init_buf_with_string(save_buffer);
+	      restore_buffer (&save_buf);
 	      Pike_interpreter.trace_level=save_t_flag;
 		
 	      dsv_add_string_to_buf( sp[-1].u.string );
@@ -1496,10 +1498,8 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      END_CYCLIC();
 	      break;
 	    }
-	    
-	  debug_malloc_touch(save_buffer.str);
-	    
-	  init_buf_with_string(save_buffer);
+
+	  restore_buffer (&save_buf);
 	  Pike_interpreter.trace_level=save_t_flag;
 	  pop_stack();
 	}
@@ -1568,13 +1568,11 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 
 PMOD_EXPORT void print_svalue (FILE *out, const struct svalue *s)
 {
-  dynbuf_string orig_str;
+  dynamic_buffer save_buf;
   dynbuf_string str;
-  orig_str = complex_free_buf();
-  init_buf();
+  init_buf(&save_buf);
   describe_svalue (s, 0, 0);
-  str = complex_free_buf();
-  if (orig_str.str) init_buf_with_string (orig_str);
+  str = complex_free_buf(&save_buf);
   fwrite (str.str, str.len, 1, out);
   free (str.str);
 }

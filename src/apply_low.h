@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.24 2003/10/01 15:07:00 grubba Exp $
+|| $Id: apply_low.h,v 1.25 2003/11/09 01:10:13 mast Exp $
 */
 
     {
@@ -165,13 +165,14 @@
 
       if(Pike_interpreter.trace_level)
       {
+	dynamic_buffer save_buf;
 	char buf[50];
 
-	init_buf();
+	init_buf(&save_buf);
 	sprintf(buf, "%lx->", DO_NOT_WARN((long) PTR_TO_INT (o)));
 	my_strcat(buf);
 	my_strcat(function->name->str);
-	do_trace_call(args);
+	do_trace_call(args, &save_buf);
       }
 
 #ifdef PIKE_DEBUG      

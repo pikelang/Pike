@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.150 2003/10/15 16:23:13 grubba Exp $
+|| $Id: array.c,v 1.151 2003/11/09 01:10:13 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "cyclic.h"
 #include "multiset.h"
 
-RCSID("$Id: array.c,v 1.150 2003/10/15 16:23:13 grubba Exp $");
+RCSID("$Id: array.c,v 1.151 2003/11/09 01:10:13 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1894,10 +1894,11 @@ void describe_array_low(struct array *a, struct processing *p, int indent)
 
 PMOD_EXPORT void simple_describe_array(struct array *a)
 {
+  dynamic_buffer save_buf;
   char *s;
-  init_buf();
+  init_buf(&save_buf);
   describe_array_low(a,0,0);
-  s=simple_free_buf();
+  s=simple_free_buf(&save_buf);
   fprintf(stderr,"({\n%s\n})\n",s);
   free(s);
 }

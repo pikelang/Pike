@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.159 2003/10/13 16:23:06 mast Exp $
+|| $Id: stralloc.c,v 1.160 2003/11/09 01:10:14 mast Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.159 2003/10/13 16:23:06 mast Exp $");
+RCSID("$Id: stralloc.c,v 1.160 2003/11/09 01:10:14 mast Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -983,9 +983,10 @@ PMOD_EXPORT void debug_free_string(struct pike_string *s)
  */
 struct pike_string *add_string_status(int verbose)
 {
+  dynamic_buffer save_buf;
   char b[200];
 
-  init_buf();
+  init_buf(&save_buf);
 
   if (verbose)
   {
@@ -1030,7 +1031,7 @@ struct pike_string *add_string_status(int verbose)
       (long)num_str_searches, (double)search_len / num_str_searches);
   my_strcat(b);
 */
-  return free_buf();
+  return free_buf(&save_buf);
 }
 
 /*** PIKE_DEBUG ***/
@@ -1817,8 +1818,6 @@ void init_shared_string_table(void)
   }
 #endif
   empty_pike_string = make_shared_string("");
-
-  initialize_global_buf();
 }
 
 #ifdef DEBUG_MALLOC

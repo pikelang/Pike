@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.223 2003/09/09 14:31:00 mast Exp $
+|| $Id: pike_types.c,v 1.224 2003/11/09 01:10:14 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.223 2003/09/09 14:31:00 mast Exp $");
+RCSID("$Id: pike_types.c,v 1.224 2003/11/09 01:10:14 mast Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1794,11 +1794,12 @@ void my_describe_type(struct pike_type *type)
 
 struct pike_string *describe_type(struct pike_type *type)
 {
+  dynamic_buffer save_buf;
   check_type_string(type);
   if(!type) return make_shared_string("mixed");
-  init_buf();
+  init_buf(&save_buf);
   low_describe_type(type);
-  return free_buf();
+  return free_buf(&save_buf);
 }
 
 
@@ -2203,7 +2204,8 @@ static struct pike_type *low_match_types(struct pike_type *a,
 					    int flags);
 
   if (l_flag>2) {
-    init_buf();
+    dynamic_buffer save_buf;
+    init_buf(&save_buf);
     for(e=0;e<indent;e++) my_strcat("  ");
     my_strcat("low_match_types(");
     my_describe_type(a);
@@ -2246,7 +2248,7 @@ static struct pike_type *low_match_types(struct pike_type *a,
       my_strcat("0");
     }
     my_strcat(");\n");
-    fprintf(stderr,"%s",(s=simple_free_buf()));
+    fprintf(stderr,"%s",(s=simple_free_buf(&save_buf)));
     free(s);
     indent++;
   }
@@ -2254,8 +2256,9 @@ static struct pike_type *low_match_types(struct pike_type *a,
   a = low_match_types2(a, b, flags);
 
   if (l_flag>2) {
+    dynamic_buffer save_buf;
     indent--;
-    init_buf();
+    init_buf(&save_buf);
     for(e=0;e<indent;e++) my_strcat("  ");
     my_strcat("= ");
     if(a)
@@ -2263,7 +2266,7 @@ static struct pike_type *low_match_types(struct pike_type *a,
     else
       my_strcat("NULL");
     my_strcat("\n");
-    fprintf(stderr,"%s",(s=simple_free_buf()));
+    fprintf(stderr,"%s",(s=simple_free_buf(&save_buf)));
     free(s);
   }
   return a;
@@ -2333,16 +2336,17 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 
 #ifdef PIKE_TYPE_DEBUG
 	if (l_flag>2) {
+	  dynamic_buffer save_buf;
 	  char *s;
 	  int e;
-	  init_buf();
+	  init_buf(&save_buf);
 	  for(e=0;e<indent;e++) my_strcat("  ");
 	  my_strcat("a_markers[");
 	  my_putchar((char)(m+'0'));
 	  my_strcat("]=");
 	  my_describe_type(a_markers[m]);
 	  my_strcat("\n");
-	  fprintf(stderr,"%s",(s=simple_free_buf()));
+	  fprintf(stderr,"%s",(s=simple_free_buf(&save_buf)));
 	  free(s);
 	}
 #endif
@@ -2419,16 +2423,17 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 	b_markers[m] = pop_unfinished_type();
 #ifdef PIKE_TYPE_DEBUG
 	if (l_flag>2) {
+	  dynamic_buffer save_buf;
 	  char *s;
 	  int e;
-	  init_buf();
+	  init_buf(&save_buf);
 	  for(e=0;e<indent;e++) my_strcat("  ");
 	  my_strcat("b_markers[");
 	  my_putchar((char)(m+'0'));
 	  my_strcat("]=");
 	  my_describe_type(b_markers[m]);
 	  my_strcat("\n");
-	  fprintf(stderr,"%s",(s=simple_free_buf()));
+	  fprintf(stderr,"%s",(s=simple_free_buf(&save_buf)));
 	  free(s);
 	}
 #endif
@@ -2753,7 +2758,8 @@ static int low_pike_types_le(struct pike_type *a, struct pike_type *b,
   char buf[50];
 
   if (l_flag>2) {
-    init_buf();
+    dynamic_buffer save_buf;
+    init_buf(&save_buf);
     for(e=0;e<indent;e++) my_strcat("  ");
     my_strcat("low_pike_types_le(");
     my_describe_type(a);
@@ -2770,7 +2776,7 @@ static int low_pike_types_le(struct pike_type *a, struct pike_type *b,
     sprintf(buf, "0x%08x", flags);
     my_strcat(buf);
     my_strcat(");\n");
-    fprintf(stderr,"%s",(s=simple_free_buf()));
+    fprintf(stderr,"%s",(s=simple_free_buf(&save_buf)));
     free(s);
     indent++;
   }
@@ -2877,16 +2883,17 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       a_markers[m] = pop_unfinished_type();
 #ifdef PIKE_TYPE_DEBUG
       if (l_flag>2) {
+	dynamic_buffer save_buf;
 	char *s;
 	int e;
-	init_buf();
+	init_buf(&save_buf);
 	for(e=0;e<indent;e++) my_strcat("  ");
 	my_strcat("a_markers[");
 	my_putchar((char)(m+'0'));
 	my_strcat("]=");
 	my_describe_type(a_markers[m]);
 	my_strcat("\n");
-	fprintf(stderr,"%s",(s=simple_free_buf()));
+	fprintf(stderr,"%s",(s=simple_free_buf(&save_buf)));
 	free(s);
       }
 #endif
@@ -2961,16 +2968,17 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       b_markers[m]=pop_unfinished_type();
 #ifdef PIKE_TYPE_DEBUG
       if (l_flag>2) {
+	dynamic_buffer save_buf;
 	char *s;
 	int e;
-	init_buf();
+	init_buf(&save_buf);
 	for(e=0;e<indent;e++) my_strcat("  ");
 	my_strcat("b_markers[");
 	my_putchar((char)(m+'0'));
 	my_strcat("]=");
 	my_describe_type(b_markers[m]);
 	my_strcat("\n");
-	fprintf(stderr,"%s",(s=simple_free_buf()));
+	fprintf(stderr,"%s",(s=simple_free_buf(&save_buf)));
 	free(s);
       }
 #endif
@@ -4844,9 +4852,10 @@ static void low_type_to_string(struct pike_type *t)
 
 struct pike_string *type_to_string(struct pike_type *t)
 {
-  init_buf();
+  dynamic_buffer save_buf;
+  init_buf(&save_buf);
   low_type_to_string(t);
-  return free_buf();
+  return free_buf(&save_buf);
 }
 
 void init_types(void)

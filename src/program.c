@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.529 2003/11/07 21:09:50 mast Exp $
+|| $Id: program.c,v 1.530 2003/11/09 01:10:14 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.529 2003/11/07 21:09:50 mast Exp $");
+RCSID("$Id: program.c,v 1.530 2003/11/09 01:10:14 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -6557,6 +6557,7 @@ static void not_trampoline(INT32 args)
 
 static void sprintf_trampoline (INT32 args)
 {
+  dynamic_buffer save_buf;
   dynbuf_string str;
 
   if (!args || sp[-args].type != T_INT || sp[-args].u.integer != 'O' ||
@@ -6568,9 +6569,9 @@ static void sprintf_trampoline (INT32 args)
   pop_n_elems (args);
 
   ref_push_function (THIS->frame->current_object, THIS->func);
-  init_buf();
+  init_buf(&save_buf);
   describe_svalue (sp - 1, 0, 0);
-  str = complex_free_buf();
+  str = complex_free_buf(&save_buf);
   pop_stack();
   push_string (make_shared_binary_string (str.str, str.len));
   free (str.str);
