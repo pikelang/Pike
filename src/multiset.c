@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.80 2003/11/09 02:31:28 mast Exp $
+|| $Id: multiset.c,v 1.81 2003/11/10 01:04:34 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "svalue.h"
 #include "block_alloc.h"
 
-RCSID("$Id: multiset.c,v 1.80 2003/11/09 02:31:28 mast Exp $");
+RCSID("$Id: multiset.c,v 1.81 2003/11/10 01:04:34 mast Exp $");
 
 /* FIXME: Optimize finds and searches on type fields? (But not when
  * objects are involved!) Well.. Although cheap I suspect it pays off
@@ -1158,7 +1158,7 @@ PMOD_EXPORT struct multiset *mkmultiset_2 (struct array *indices,
   if (!indices->size)
     fix_free_list (new.msd, 0);
   else {
-    int pos;
+    int pos, size = indices->size;
     ONERROR uwp;
 
     new.list = NULL;
@@ -1166,7 +1166,7 @@ PMOD_EXPORT struct multiset *mkmultiset_2 (struct array *indices,
     new.msd->ind_types = indices->type_field;
     if (values) new.msd->val_types = values->type_field;
 
-    for (pos = indices->size; --pos >= 0;) {
+    for (pos = 0; pos < size; pos++) {
       new.node = values ?
 	IVNODE (NODE_AT (new.msd, msnode_indval, pos)) :
 	INODE (NODE_AT (new.msd, msnode_ind, pos));
@@ -5306,7 +5306,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.80 2003/11/09 02:31:28 mast Exp $");
+RCSID("$Id: multiset.c,v 1.81 2003/11/10 01:04:34 mast Exp $");
 
 struct multiset *first_multiset;
 
