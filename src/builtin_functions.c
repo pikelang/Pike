@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.49 1997/10/22 02:36:31 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.50 1997/10/27 09:59:19 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -658,7 +658,7 @@ void f_exit(INT32 args)
   i=sp[-args].u.integer;
 
 #ifdef _REENTRANT
-  if(num_threads) exit(i);
+  if(num_threads>1) exit(i);
 #endif
 
   SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
@@ -1472,7 +1472,7 @@ static void f_mktime (INT32 args)
 #endif
 
 
-/* Check if the glob s[0..len[ matches the string m[0..mlen[ */
+/* Check if the string s[0..len[ matches the glob m[0..mlen[ */
 static int does_match(char *s, int len, char *m, int mlen)
 {
   int i,j;

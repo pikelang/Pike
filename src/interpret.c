@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.52 1997/10/25 17:33:58 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.53 1997/10/27 09:59:20 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -748,6 +748,31 @@ static void eval_instruction(unsigned char *pc)
 	assign_lvalue(sp-3,&s);
       }
       sp++;
+      break;
+
+
+      CASE(F_ADD_TO_AND_POP);
+      sp[0]=sp[-1];
+      lvalue_to_svalue_no_free(sp-1,sp-3);
+
+      /* this is so that foo+=bar (and similar things) will be faster, this
+       * is done by freeing the old reference to foo after it has been pushed
+       * on the stack. That way foo can have only 1 reference if we are lucky,
+       * and then the low array/multiset/mapping manipulation routines can be
+       * destructive if they like
+       */
+      if( (1 << sp[-1].type) & ( BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING ))
+      {
+	struct svalue s;
+	s.type=T_INT;
+	s.subtype=0;
+	s.u.integer=0;
+	assign_lvalue(sp-3,&s);
+      }
+      sp++;
+      f_add(2);
+      assign_lvalue(sp-3,sp-1);
+      pop_n_elems(3);
       break;
 
       CASE(F_GLOBAL_LVALUE)

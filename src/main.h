@@ -15,8 +15,10 @@ struct callback *add_post_master_callback(callback_func call,
 					  void *arg,
 					  callback_func free_func);
 void main(int argc, char **argv, char **env);
-void init_main(void);
+void low_init_main(void);
 void exit_main(void);
+void init_main(void);
+void low_exit_main(void);
 /* Prototypes end here */
 
 #endif

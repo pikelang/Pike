@@ -28,5 +28,9 @@ rename sizeof -> size?
 
 then make a compat.h
 
-make a better module interface. (a struct maybe...)
 make a C++ interface.
+
+internal security
+separate cpp
+generalize exceptions
+make exit() an exception

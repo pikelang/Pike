@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.28 1997/10/11 06:48:23 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.29 1997/10/27 09:59:22 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -257,7 +257,7 @@ struct keyword instr_names[]=
 { "|",			F_OR },
 { "|=",			F_OR_EQ },	
 { "~",			F_COMPL },
-{ "label",		F_LABEL,1 },
+{ "label",		F_LABEL,I_HASARG },
 { "align",		F_ALIGN, I_HASARG },
 { "call",		F_APPLY, I_HASARG },
 { "clear local",	F_CLEAR_LOCAL, I_HASARG },
@@ -283,6 +283,7 @@ struct keyword instr_names[]=
 { "add -integer",       F_ADD_NEG_INT, I_HASARG },
 { "mark & call",        F_MARK_APPLY, I_HASARG },
 { "mark, call & pop",   F_MARK_APPLY_POP, I_HASARG },
+{ "+= and pop",         F_ADD_TO_AND_POP },
 };
 
 struct instr instrs[F_MAX_INSTR - F_OFFSET];

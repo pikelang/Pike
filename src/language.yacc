@@ -63,6 +63,7 @@
 %token F_FOREACH
 
 %token F_SIZEOF F_SIZEOF_LOCAL
+%token F_ADD_TO_AND_POP
 
 /*
  * These are token values that needn't have an associated code for the
@@ -156,7 +157,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.49 1997/09/19 06:45:32 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.50 1997/10/27 09:59:21 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
