@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: lex.h,v 1.20 2002/01/16 02:54:14 nilsson Exp $
+ * $Id: lex.h,v 1.21 2002/05/10 22:28:28 mast Exp $
  */
 #ifndef LEX_H
 #define LEX_H
@@ -22,14 +22,17 @@ struct keyword
 #endif
 };
 
-#define I_HASARG 1
-#define I_POINTER 2
-#define I_JUMP 4
-#define I_ISPOINTER 3
-#define I_ISJUMP 7
-#define I_DATA 9
-#define I_HASARG2 16
-#define I_TWO_ARGS 17
+#define I_HASARG	1
+#define I_POINTER	2
+#define I_JUMP		4
+#define I_HASARG2	16
+#define I_PC_AT_NEXT	32
+
+#define I_ISPOINTER	(I_HASARG | I_POINTER)
+#define I_ISJUMP	(I_HASARG | I_POINTER | I_JUMP)
+#define I_DATA		(I_HASARG | 8)
+#define I_TWO_ARGS	(I_HASARG | I_HASARG2)
+#define I_IS_MASK	(I_HASARG | I_POINTER | I_JUMP | I_HASARG2)
 
 #ifdef PIKE_DEBUG
 #define INSTR_PROFILING

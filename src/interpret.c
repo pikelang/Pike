@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.257 2002/04/09 10:33:56 mast Exp $");
+RCSID("$Id: interpret.c,v 1.258 2002/05/10 22:28:28 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -798,45 +798,45 @@ void *dummy_label;
   } while(0)
 #endif /* !CALL_MACHINE_CODE */
 
-#define OPCODE0(O,N,C) \
+#define OPCODE0(O,N,F,C) \
 void PIKE_CONCAT(opcode_,O)(void) { \
   DEF_PROG_COUNTER; \
 DO_IF_DEBUG(if(t_flag > 3) fprintf(stderr,"- (%p,%ld): %s()\n",PROG_COUNTER,DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),N));\
 C }
 
-#define OPCODE1(O,N,C) \
+#define OPCODE1(O,N,F,C) \
 void PIKE_CONCAT(opcode_,O)(INT32 arg1) {\
   DEF_PROG_COUNTER; \
 DO_IF_DEBUG(if(t_flag > 3) fprintf(stderr,"- (%p,%ld): %s(%d)\n",PROG_COUNTER,DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),N,arg1)); \
 C }
 
 
-#define OPCODE2(O,N,C) \
+#define OPCODE2(O,N,F,C) \
 void PIKE_CONCAT(opcode_,O)(INT32 arg1,INT32 arg2) { \
   DEF_PROG_COUNTER; \
 DO_IF_DEBUG(if(t_flag > 3) fprintf(stderr,"- (%p,%ld): %s(%d,%d)\n",PROG_COUNTER,DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),N,arg1,arg2)); \
 C }
 
 
-#define OPCODE0_JUMP(O,N,C) OPCODE0(O,N,C)
-#define OPCODE1_JUMP(O,N,C) OPCODE1(O,N,C)
-#define OPCODE2_JUMP(O,N,C) OPCODE2(O,N,C)
+#define OPCODE0_JUMP(O,N,F,C) OPCODE0(O,N,F,C)
+#define OPCODE1_JUMP(O,N,F,C) OPCODE1(O,N,F,C)
+#define OPCODE2_JUMP(O,N,F,C) OPCODE2(O,N,F,C)
 
-#define OPCODE0_TAIL(O,N,C) OPCODE0(O,N,C)
-#define OPCODE1_TAIL(O,N,C) OPCODE1(O,N,C)
-#define OPCODE2_TAIL(O,N,C) OPCODE2(O,N,C)
+#define OPCODE0_TAIL(O,N,F,C) OPCODE0(O,N,F,C)
+#define OPCODE1_TAIL(O,N,F,C) OPCODE1(O,N,F,C)
+#define OPCODE2_TAIL(O,N,F,C) OPCODE2(O,N,F,C)
 
-#define OPCODE0_TAILJUMP(O,N,C) OPCODE0(O,N,C)
-#define OPCODE1_TAILJUMP(O,N,C) OPCODE1(O,N,C)
-#define OPCODE2_TAILJUMP(O,N,C) OPCODE2(O,N,C)
+#define OPCODE0_TAILJUMP(O,N,F,C) OPCODE0(O,N,F,C)
+#define OPCODE1_TAILJUMP(O,N,F,C) OPCODE1(O,N,F,C)
+#define OPCODE2_TAILJUMP(O,N,F,C) OPCODE2(O,N,F,C)
 
-#define OPCODE0_RETURN(O,N,C) OPCODE0(O,N,C)
-#define OPCODE1_RETURN(O,N,C) OPCODE1(O,N,C)
-#define OPCODE2_RETURN(O,N,C) OPCODE2(O,N,C)
+#define OPCODE0_RETURN(O,N,F,C) OPCODE0(O,N,F,C)
+#define OPCODE1_RETURN(O,N,F,C) OPCODE1(O,N,F,C)
+#define OPCODE2_RETURN(O,N,F,C) OPCODE2(O,N,F,C)
 
-#define OPCODE0_RETURNJUMP(O,N,C) OPCODE0(O,N,C)
-#define OPCODE1_RETURNJUMP(O,N,C) OPCODE1(O,N,C)
-#define OPCODE2_RETURNJUMP(O,N,C) OPCODE2(O,N,C)
+#define OPCODE0_RETURNJUMP(O,N,F,C) OPCODE0(O,N,F,C)
+#define OPCODE1_RETURNJUMP(O,N,F,C) OPCODE1(O,N,F,C)
+#define OPCODE2_RETURNJUMP(O,N,F,C) OPCODE2(O,N,F,C)
 
 #undef HAVE_COMPUTED_GOTO
 

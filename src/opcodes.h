@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: opcodes.h,v 1.26 2002/03/02 18:47:39 mast Exp $
+ * $Id: opcodes.h,v 1.27 2002/05/10 22:28:28 mast Exp $
  */
 #ifndef OPCODES_H
 #define OPCODES_H
@@ -16,24 +16,24 @@
  * These values are used by the stack machine, and can not be directly
  * called from Pike.
  */
-#define OPCODE0(X,Y) X,
-#define OPCODE1(X,Y) X,
-#define OPCODE2(X,Y) X,
-#define OPCODE0_TAIL(X,Y) X,
-#define OPCODE1_TAIL(X,Y) X,
-#define OPCODE2_TAIL(X,Y) X,
-#define OPCODE0_JUMP(X,Y) X,
-#define OPCODE1_JUMP(X,Y) X,
-#define OPCODE2_JUMP(X,Y) X,
-#define OPCODE0_TAILJUMP(X,Y) X,
-#define OPCODE1_TAILJUMP(X,Y) X,
-#define OPCODE2_TAILJUMP(X,Y) X,
-#define OPCODE0_RETURN(X,Y) X,
-#define OPCODE1_RETURN(X,Y) X,
-#define OPCODE2_RETURN(X,Y) X,
-#define OPCODE0_TAILRETURN(X,Y) X,
-#define OPCODE1_TAILRETURN(X,Y) X,
-#define OPCODE2_TAILRETURN(X,Y) X,
+#define OPCODE0(X,Y,F) X,
+#define OPCODE1(X,Y,F) X,
+#define OPCODE2(X,Y,F) X,
+#define OPCODE0_TAIL(X,Y,F) X,
+#define OPCODE1_TAIL(X,Y,F) X,
+#define OPCODE2_TAIL(X,Y,F) X,
+#define OPCODE0_JUMP(X,Y,F) X,
+#define OPCODE1_JUMP(X,Y,F) X,
+#define OPCODE2_JUMP(X,Y,F) X,
+#define OPCODE0_TAILJUMP(X,Y,F) X,
+#define OPCODE1_TAILJUMP(X,Y,F) X,
+#define OPCODE2_TAILJUMP(X,Y,F) X,
+#define OPCODE0_RETURN(X,Y,F) X,
+#define OPCODE1_RETURN(X,Y,F) X,
+#define OPCODE2_RETURN(X,Y,F) X,
+#define OPCODE0_TAILRETURN(X,Y,F) X,
+#define OPCODE1_TAILRETURN(X,Y,F) X,
+#define OPCODE2_TAILRETURN(X,Y,F) X,
 
 enum Pike_opcodes
 {
