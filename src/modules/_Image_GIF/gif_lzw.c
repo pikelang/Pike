@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: gif_lzw.c,v 1.1 2000/09/11 16:05:03 grubba Exp $
+**!	$Id: gif_lzw.c,v 1.2 2001/04/27 13:45:29 grubba Exp $
 */
 
 #include "global.h"
@@ -117,10 +117,10 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
 	    }
 	    lno=lzw->code[lno].next;
 	 }
-#ifdef GIF_LZW_RLE
+#ifdef GIF_LZW_LZ
       }
 #endif
-#ifdef GIF_LZW_LZ
+#ifdef GIF_LZW_RLE
    }
 #endif
 
