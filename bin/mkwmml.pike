@@ -1,4 +1,4 @@
-/* $Id: mkwmml.pike,v 1.21 2000/07/12 19:37:21 mirar Exp $ */
+/* $Id: mkwmml.pike,v 1.22 2000/08/11 08:52:10 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -524,6 +524,7 @@ void document(string enttype,
       {
 	 werror("%O\n",m);
 	 sscanf(m->decl,"%s %s",string type,string name);
+	 if (!name) name=m->decl,type="mixed";
 	 sscanf(name,"%s=%s",name,string value);
 	 document("variable",m,prefix+name,prefix+name+".",f);
       }
