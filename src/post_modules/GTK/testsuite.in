@@ -1,0 +1,6 @@
+dnl $Id: testsuite.in,v 1.2 2003/01/20 17:56:49 nilsson Exp $
+
+cond([[ master()->resolv("GTK")->setup_gtk ]],
+[[
+  test_do( GTK.setup_gtk("",1) )
+]])
