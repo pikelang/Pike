@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.714 2003/04/02 00:47:25 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.715 2003/04/04 20:31:58 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6052,25 +6052,25 @@ if test -z "$LDSHARED" ; then
     hp*|HP*) LDSHARED="ld -b";;
     OSF*) LDSHARED="ld -expect_unresolved '*' -shared -msym -O3";;
     DYNIX/ptx*) LDSHARED="ld -G";;
-    next*) LDSHARED="$CC $CFLAGS -nostdlib -r";;
-    Linux*) LDSHARED="$CC -shared";;
+    next*) LDSHARED="$REALCC $CFLAGS -nostdlib -r";;
+    Linux*) LDSHARED="$REALCC -shared";;
     GNU*) LDSHARED="ld -Bshareable";;
-    FreeBSD*) LDSHARED="$CC -Wl,-Bshareable";;
+    FreeBSD*) LDSHARED="$REALCC -Wl,-Bshareable";;
     NetBSD*) LDSHARED="ld -Bshareable";;
     OpenBSD*) LDSHARED="ld -Bshareable";;
     BSD/OS*)
       case "`uname -r`" in
-       [4-9].*) LDSHARED="$CC -shared";;
+       [4-9].*) LDSHARED="$REALCC -shared";;
         *) LDSHARED="shlicc -r";;
       esac
     ;;
-    SCO_SV*) LDSHARED="$CC -G -KPIC -Wl,-Bexport";;
+    SCO_SV*) LDSHARED="$REALCC -G -KPIC -Wl,-Bexport";;
     UNIX_SV*) LDSHARED="ld -G";;
     UnixWare*|OpenUNIX*)
       if test "$GCC" = yes ; then
-        LDSHARED="$CC -G -fPIC"
+        LDSHARED="$REALCC -G -fPIC"
       else
-        LDSHARED="$CC -G -KPIC -Wl,-Bexport"
+        LDSHARED="$REALCC -G -KPIC -Wl,-Bexport"
       fi
     ;;
     Windows_NT*|NT*)
