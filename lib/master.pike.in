@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.225 2002/11/23 17:07:51 marcus Exp $
+// $Id: master.pike.in,v 1.226 2002/11/23 18:40:05 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -2341,7 +2341,8 @@ class Describer
 }
 
 
-static string get_clean_program_path ( program p, string suff1, string suff2 )
+static string get_clean_program_path ( program p, string pref1,
+				       string suff1, string suff2 )
 {
   array(string) sort_paths_by_length(array(string) paths)
   {
@@ -2350,7 +2351,7 @@ static string get_clean_program_path ( program p, string suff1, string suff2 )
   };
   string path = search(programs, p);
   if (path) {
-    if (path == "/master") return "master()"+suff2;
+    if (path == "/master") return "master"+suff2;
     foreach(sort_paths_by_length(map(pike_module_path - ({""}),
 				     lambda(string s) {
 				       if (s[-1] == '/') return s;
@@ -2365,14 +2366,14 @@ static string get_clean_program_path ( program p, string suff1, string suff2 )
     path = trim_file_name(path);
     string modname = replace(path, ".pmod/", ".");
     if(search(modname, "/")<0) path=modname;
-    if (has_suffix(path, ".pmod/module.pmod")) {
-      return path[..sizeof(path)-18]+suff1;
+    if (has_suffix(path, ".module.pmod")) {
+      return pref1+path[..sizeof(path)-13]+suff1;
     }
     if (has_suffix(path, ".pmod")) {
-      return path[..sizeof(path)-6]+suff1;
+      return pref1+path[..sizeof(path)-6]+suff1;
     }
     if (has_suffix(path, ".so")) {
-      return path[..sizeof(path)-4]+suff1;
+      return pref1+path[..sizeof(path)-4]+suff1;
     }
     if (has_suffix(path, ".pike")) {
       return path[..sizeof(path)-6]+suff2;
@@ -2414,12 +2415,13 @@ string describe_module(object|program mod, array(object)|void ret_obj)
     catch {
       string res = sprintf("%O", mod);
       if (res != "object" && res != "")
-	return (objects[parent_fun]? res+".":res+"->");
+	return (objects[parent_fun] && programs["/master"] != parent_fun?
+		res+".":res+"->");
     };
   }
   if (!object_program(parent_fun)) {
     // We might be a top-level entity.
-    string path = get_clean_program_path(parent_fun, ".", "()->");
+    string path = get_clean_program_path(parent_fun, "", ".", "()->");
     if(path) return path;
   }
   // Begin by describing our parent.
@@ -2499,9 +2501,12 @@ string describe_object(object|program o)
       }
     }
   };
+  if(objects[parent_fun])
+    if(s=get_clean_program_path(parent_fun, "", "", "()"))
+      return s;
   /* Try identifying the program. */
   if(( s=describe_program(parent_fun) ))
-    return (objects[parent_fun]? s : s+"()");
+    return s+"()";
 
   return 0;
 }
@@ -2512,7 +2517,7 @@ string describe_program(program p)
   string s;
   if(!p) return 0;
 
-  if(s=get_clean_program_path(p, "", ""))
+  if(s=get_clean_program_path(p, "program(", ")", ""))
     return s;
 
   if(mixed tmp=function_object(p))
