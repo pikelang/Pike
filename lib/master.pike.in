@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.282 2003/05/31 10:58:30 mast Exp $
+// $Id: master.pike.in,v 1.283 2003/05/31 11:03:16 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -2645,28 +2645,6 @@ class Describer
 
     return ret;
   }
-}
-
-
-string module_path_to_name (string path)
-//! Converts a module path on the form @expr{"Foo.pmod/Bar.pmod"@} to
-//! a module identifier on the form @expr{"Foo.Bar"@}.
-{
-  string modname = replace(path, ".pmod/", ".");
-  if(search(modname, "/")<0) path=modname;
-  if (has_suffix(path, ".module.pmod")) {
-    return path[..sizeof(path)-13];
-  }
-  if (has_suffix(path, ".pmod")) {
-    return path[..sizeof(path)-6];
-  }
-  if (has_suffix(path, ".so")) {
-    return path[..sizeof(path)-4];
-  }
-  if (has_suffix(path, ".pike")) {
-    return path[..sizeof(path)-6];
-  }
-  return path;
 }
 
 
