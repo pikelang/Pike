@@ -4,7 +4,7 @@
  * associated with a unique key.
  */
 
-constant cvs_id = "$Id: module.pmod,v 1.7 1999/02/15 00:03:35 noring Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.8 1999/02/23 18:05:36 noring Exp $";
 
 #define ERR(msg) throw(({ "(Yabu) "+msg+"\n", backtrace() }))
 #define WARN(msg) werror(msg)
@@ -53,7 +53,7 @@ static private class ProcessLock {
   {
     lock_file = _lock_file;
 
-    while(1) {
+    for(int tryout = 0; tryout < 3; tryout++) {
       object f = Stdio.File();
       
       if(f->open(lock_file, "cxw")) {
@@ -82,6 +82,7 @@ static private class ProcessLock {
       rm(lock_file);
       sleep(10);
     }
+    ERR("Lock tryout error (insufficient permissions?)");
   }
 }
 
