@@ -1,4 +1,4 @@
-/* $Id: handshake.pike,v 1.12 1999/03/03 14:15:24 nisse Exp $
+/* $Id: handshake.pike,v 1.13 1999/03/09 15:07:41 nisse Exp $
  *
  */
 
@@ -36,7 +36,10 @@ int expect_change_cipher; /* Reset to 0 if a change_cipher message is
 object temp_key; /* Key used for session key exchange (if not the same
 		  * as the server's certified key) */
 
+object dh_state; /* For diffie-hellman key exchange */
+
 int rsa_message_was_bad;
+
 
 int reuse;
 
@@ -78,6 +81,52 @@ object server_hello_packet()
   werror(sprintf("SSL.handshake: Server hello: '%O'\n", data));
 #endif
   return handshake_packet(HANDSHAKE_server_hello, data);
+}
+
+object server_key_exchange_packet()
+{
+  object struct;
+  
+  switch (session->ke_method)
+  {
+  case KE_rsa:
+    temp_key = (session->cipher_spec->is_exportable
+		? context->short_rsa
+		: context->long_rsa);
+    if (temp_key)
+    {
+      /* Send a ServerKeyExchange message. */
+      
+#ifdef SSL3_DEBUG
+      werror(sprintf("Sending a server key exchange-message, "
+		     "with a %d-bits key.\n", temp_key->rsa_size()));
+#endif
+      struct = Struct();
+      struct->put_bignum(temp_key->n);
+      struct->put_bignum(temp_key->e);
+    }
+    else
+      return 0;
+    break;
+  case KE_dhe_dss:
+  case KE_dhe_rsa:
+  case KE_dh_anon:
+    struct = Struct();
+
+    dh_state = dh_key_exchange(context->dh_params);
+    dh_state->new_secret();
+    
+    struct->put_bignum(context->dh_params->p);
+    struct->put_bignum(context->dh_params->g);
+    struct->put_bignum(dh_state->our);
+    break;
+  default:
+    return 0;
+  }
+
+  session->cipher_spec->sign(context, other_random + my_random, struct);
+  return handshake_packet(HANDSHAKE_server_key_exchange,
+			  struct->pop_data());
 }
 
 int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
@@ -134,39 +183,11 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
       struct->put_var_string(cert, 3);
     send_packet(handshake_packet(HANDSHAKE_certificate, struct->pop_data()));
   }
-  temp_key = (session->cipher_spec->is_exportable
-	      ? context->short_rsa
-	      : context->long_rsa);
-  if (temp_key)
-  {
-    /* Send a ServerKeyExchange message. */
 
-#ifdef SSL3_DEBUG
-    werror(sprintf("Sending a server key exchange-message, "
-		   "with a %d-bits key.\n", temp_key->rsa_size()));
-#endif
-    object struct = Struct();
-    struct->put_bignum(temp_key->n);
-    struct->put_bignum(temp_key->e);
+  object key_exchange = server_key_exchange_packet();
 
-    /* Exactly how is the signature process defined? */
-
-    string params = other_random + my_random + struct->contents();
-    string digest = Crypto.md5()->update(params)->digest()
-      + Crypto.sha()->update(params)->digest();    
-
-    object s = context->rsa->raw_sign(digest);
-#ifdef SSL3_DEBUG
-    werror(sprintf("  Digest: '%O'\n"
-		   "  Signature: '%O'\n",
-		   digest, s->digits(256)));
-#endif
-    
-    struct->put_bignum(s);
-    
-    send_packet(handshake_packet(HANDSHAKE_server_key_exchange,
-				 struct->pop_data()));
-  }
+  if (key_exchange)
+    send_packet(key_exchange);
   
   if (context->auth_level >= AUTHLEVEL_ask)
   {
@@ -207,7 +228,8 @@ object finished_packet(string sender)
 
 string server_derive_master_secret(string data)
 {
-  string res = "";
+  string premaster_secret;
+  
 #ifdef SSL3_DEBUG
   werror(sprintf("server_derive_master_secret: ke_method %d\n",
 		 session->ke_method));
@@ -216,23 +238,56 @@ string server_derive_master_secret(string data)
   {
   default:
     throw( ({ "SSL.handshake: internal error\n", backtrace() }) );
+#if 0
+    /* What is this for? */
   case 0:
     return 0;
+#endif
   case KE_dhe_dss:
-    throw( ({ "Not implemented.\n", backtrace() }) );
-    
+  case KE_dhe_rsa:
+    if (!strlen(data))
+    {
+      /* Implicit encoding; Should never happen unless we have
+       * requested and received a client certificate of type
+       * rsa_fixed_dh or dss_fixed_dh. Not supported. */
+      werror("SSL.handshake: Client uses implicit encoding if its DH-value.\n"
+	     "               Hanging up.\n");
+      send_packet(Alert(ALERT_fatal, ALERT_certificate_unknown));
+      return 0;
+    }
+    /* Fall through */
+  case KE_dh_anon:
+  {
+    /* Explicit encoding */
+    object struct = Struct(data);
+
+    if (catch
+	{
+	  dh_state->set_other(struct->get_bignum);
+	} || !struct->is_empty())
+      {
+	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message));
+	return 0;
+      }
+
+    premaster_secret = dh_state->get_shared();
+    dh_state = 0;
+    break;
+  }
   case KE_rsa:
    {
-     /* Decrypt the pre_master_secret */
+     /* Decrypt the premaster_secret */
 #ifdef SSL3_DEBUG
      werror(sprintf("encrypted premaster_secret: '%O'\n", data));
 #endif
      // trace(1);
-     string s = (temp_key || context->rsa)->decrypt(data);
+     premaster_secret = (temp_key || context->rsa)->decrypt(data);
 #ifdef SSL3_DEBUG
-     werror(sprintf("premaster_secret: '%O'\n", s));
+     werror(sprintf("premaster_secret: '%O'\n", premaster_secret));
 #endif
-     if (!s || (strlen(s) != 48) || (s[0] != 3))
+     if (!premaster_secret
+	 || (strlen(premaster_secret) != 48)
+	 || (premaster_secret[0] != 3))
      {
 
        /* To avoid the chosen ciphertext attack discovered by Daniel
@@ -244,26 +299,30 @@ string server_derive_master_secret(string data)
        werror("SSL.handshake: Invalid premaster_secret! "
 	      "A chosen ciphertext attack?\n");
 
-       s = context->random(48);
+       premaster_secret = context->random(48);
        rsa_message_was_bad = 1;
 
      } else {
        /* FIXME: When versions beyond 3.0 are supported,
 	* the version number here must be checked more carefully
 	* for a version rollback attack. */
-       if (s[1] > 0)
+       if (premaster_secret[1] > 0)
 	 werror("SSL.handshake: Newer version detected in key exchange message.\n");
      }
-     object sha = mac_sha();
-     object md5 = mac_md5();
-     foreach( ({ "A", "BB", "CCC" }), string cookie)
-       res += md5->hash_raw(s + sha->hash_raw(cookie + s +
-					      other_random + my_random));
      break;
    }
   }
+  string res = "";
+  
+  object sha = mac_sha();
+  object md5 = mac_md5();
+  foreach( ({ "A", "BB", "CCC" }), string cookie)
+    res += md5->hash_raw(premaster_secret
+			 + sha->hash_raw(cookie + premaster_secret 
+					 + other_random + my_random));
+    
 #ifdef SSL3_DEBUG
-//  werror(sprintf("master: '%O'\n", res));
+  werror(sprintf("master: '%O'\n", res));
 #endif
   return res;
 }
@@ -484,7 +543,7 @@ int handle_handshake(int type, string data, string raw)
 
       if (!(session->master_secret = server_derive_master_secret(data)))
       {
-	throw( ({ "SSL.handshake: internal error\n", backtrace() }) );
+	return -1;
       } else {
 	
 	// trace(1);
