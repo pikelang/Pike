@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.238 2004/10/30 11:38:27 mast Exp $
+|| $Id: pike_types.c,v 1.239 2004/11/05 16:21:23 grubba Exp $
 */
 
 #include "global.h"
@@ -4565,8 +4565,8 @@ void yyexplain_nonmatching_types(struct pike_type *type_a,
       yywarning("Expected: %s",s1->str);
       yywarning("Got     : %s",s2->str);
     }else{
-      my_yyerror("Expected: %s",s1->str);
-      my_yyerror("Got     : %s",s2->str);
+      my_yyerror("Expected: %S", s1);
+      my_yyerror("Got     : %S", s2);
     }
     free_string(s1);
     free_string(s2);

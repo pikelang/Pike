@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.351 2004/10/30 11:38:26 mast Exp $
+|| $Id: las.c,v 1.352 2004/11/05 16:21:23 grubba Exp $
 */
 
 #include "global.h"
@@ -3506,7 +3506,7 @@ void yytype_error(char *msg, struct pike_type *expected_t,
     if (flags & YYTE_IS_WARNING)
       yywarning("%s", msg);
     else
-      my_yyerror("%s", msg);
+      yyerror(msg);
   }
 
   yyexplain_nonmatching_types(expected_t, got_t, flags);
@@ -3569,7 +3569,7 @@ void fix_type_field(node *n)
 
   case F_ASSIGN:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
-      my_yyerror("Assigning a void expression.");
+      yyerror("Assigning a void expression.");
       copy_pike_type(n->type, void_type_string);
       break;
     } else if(CAR(n) && CDR(n)) {
@@ -3647,7 +3647,7 @@ void fix_type_field(node *n)
   case F_INDEX:
   case F_ARROW:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
-      my_yyerror("Indexing a void expression.");
+      yyerror("Indexing a void expression.");
       /* The optimizer converts this to an expression returning 0. */
       copy_pike_type(n->type, zero_type_string);
     } else {
@@ -3655,7 +3655,7 @@ void fix_type_field(node *n)
       type_b=CDR(n)->type;
       if(!check_indexing(type_a, type_b, n))
 	if(!Pike_compiler->catch_level)
-	  my_yyerror("Indexing on illegal type.");
+	  yyerror("Indexing on illegal type.");
       n->type=index_type(type_a, type_b,n);
     }
     break;
@@ -3677,14 +3677,14 @@ void fix_type_field(node *n)
 
   case F_AUTO_MAP_MARKER:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
-      my_yyerror("Indexing a void expression.");
+      yyerror("Indexing a void expression.");
       /* The optimizer converts this to an expression returning 0. */
       copy_pike_type(n->type, zero_type_string);
     } else {
       type_a=CAR(n)->type;
       if(!match_types(type_a, array_type_string))
 	if(!Pike_compiler->catch_level)
-	  my_yyerror("[*] on non-array.");
+	  yyerror("[*] on non-array.");
       n->type=index_type(type_a, int_type_string, n);
     }
     break;
@@ -3692,11 +3692,12 @@ void fix_type_field(node *n)
   case F_AUTO_MAP:
   case F_APPLY:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
-      my_yyerror("Calling a void expression.");
+      yyerror("Calling a void expression.");
     } else {
       struct pike_type *f;	/* Expected type. */
       struct pike_type *s;	/* Actual type */
-      char *name;
+      struct pike_string *name = NULL;
+      char *alternate_name;
       INT32 max_args,args;
 
 #ifdef NEW_ARG_CHECK
@@ -3771,7 +3772,7 @@ void fix_type_field(node *n)
       case F_TRAMPOLINE:
 #endif
       case F_IDENTIFIER:
-	name=ID_FROM_INT(Pike_compiler->new_program, CAR(n)->u.id.number)->name->str;
+	name=ID_FROM_INT(Pike_compiler->new_program, CAR(n)->u.id.number)->name;
 	break;
 
 	case F_ARROW:
@@ -3779,9 +3780,9 @@ void fix_type_field(node *n)
 	  if(CDAR(n)->token == F_CONSTANT &&
 	     CDAR(n)->u.sval.type == T_STRING)
 	  {
-	    name=CDAR(n)->u.sval.u.string->str;
+	    name=CDAR(n)->u.sval.u.string;
 	  }else{
-	    name="dynamically resolved function";
+	    alternate_name="dynamically resolved function";
 	  }
 	  break;
 
@@ -3791,23 +3792,23 @@ void fix_type_field(node *n)
 	case T_FUNCTION:
 	  if(CAR(n)->u.sval.subtype == FUNCTION_BUILTIN)
 	  {
-	    name=CAR(n)->u.sval.u.efun->name->str;
+	    name=CAR(n)->u.sval.u.efun->name;
 	  }else{
 	    name=ID_FROM_INT(CAR(n)->u.sval.u.object->prog,
-			     CAR(n)->u.sval.subtype)->name->str;
+			     CAR(n)->u.sval.subtype)->name;
 	  }
 	  break;
 
 	case T_ARRAY:
-	  name="array call";
+	  alternate_name="array call";
 	  break;
 
 	case T_PROGRAM:
-	  name="clone call";
+	  alternate_name="clone call";
 	  break;
 
 	default:
-	  name="`() (function call)";
+	  alternate_name="`() (function call)";
 	  break;
 	}
 	break;
@@ -3817,13 +3818,13 @@ void fix_type_field(node *n)
 	  int id_no = CAR(n)->u.integer.b;
 
 	  if (id_no == IDREF_MAGIC_THIS)
-	    name = "this";	/* Should perhaps qualify it. */
+	    alternate_name = "this";	/* Should perhaps qualify it. */
 
 	  else {
 	    int program_id = CAR(n)->u.integer.a;
 	    struct program_state *state = Pike_compiler;
 
-	    name="external symbol";
+	    alternate_name="external symbol";
 
 	    while (state && (state->new_program->id != program_id)) {
 	      state = state->previous;
@@ -3857,7 +3858,7 @@ void fix_type_field(node *n)
 	break;
 	  
       default:
-	name="unknown function";
+	alternate_name="unknown function";
       }
 
       if(max_args < args)
@@ -3868,14 +3869,25 @@ void fix_type_field(node *n)
 	  copy_pike_type(n->type, mixed_type_string);
 	  break;
 	}
-	my_yyerror("Too many arguments to %s.",name);
+	if (name) {
+	  my_yyerror("Too many arguments to %S.", name);
+	} else {
+	  my_yyerror("Too many arguments to %s.", alternate_name);
+	}
       }
       else if(max_correct_args == args)
       {
-	my_yyerror("Too few arguments to %s.",name);
-      }else{
-	my_yyerror("Bad argument %d to %s.",
+	if (name) {
+	  my_yyerror("Too few arguments to %S.", name);
+	} else {
+	  my_yyerror("Too few arguments to %s.", alternate_name);
+	}
+      } else if (name) {
+	my_yyerror("Bad argument %d to %S.",
 		   max_correct_args+1, name);
+      } else {
+	my_yyerror("Bad argument %d to %s.",
+		   max_correct_args+1, alternate_name);
       }
       
       yytype_error(NULL, f, s, 0);

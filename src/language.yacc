@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.349 2004/11/05 15:27:19 grubba Exp $
+|| $Id: language.yacc,v 1.350 2004/11/05 16:21:23 grubba Exp $
 */
 
 %pure_parser
@@ -784,7 +784,8 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 	      simple_describe_type(s);
 #endif
 	    } else {
-	      my_yyerror("Lost identifier %O (%d).", $4->u.sval, i);
+	      my_yyerror("Lost identifier %S (%d).",
+			 $4->u.sval.u.string, i);
 	    }
 	  } else {
 	    fprintf(stderr, "Not defined.\n");
@@ -814,7 +815,8 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 #endif
 	  }
 	} else {
-	  my_yyerror("Identifier %S lost after first pass.", $4->u.sval);
+	  my_yyerror("Identifier %S lost after first pass.",
+		     $4->u.sval.u.string);
 	}
       }
 
@@ -1060,7 +1062,8 @@ new_arg_name: type7 optional_dot_dot_dot optional_identifier
 
     if($3->u.sval.u.string->len &&
        islocal($3->u.sval.u.string) >= 0)
-      my_yyerror("Variable %O appears twice in argument list.", $3->u.sval);
+      my_yyerror("Variable %S appears twice in argument list.",
+		 $3->u.sval.u.string);
     
     add_local_name($3->u.sval.u.string, compiler_pop_type(),0);
     free_node($3);
@@ -1349,8 +1352,7 @@ identifier_type: idents
       
       default:
 	if (Pike_compiler->compiler_pass!=1)
-	  my_yyerror("Illegal program identifier (type: %s).",
-		     get_name_of_type(Pike_sp[-1].type));
+	  my_yyerror("Illegal program identifier: %O.", Pike_sp-1);
 	pop_stack();
 	push_int(0);
 	push_object_type(0, 0);
@@ -1480,12 +1482,7 @@ opt_object_type:  /* Empty */ { push_object_type(0, 0); }
 
     if(!p) {
       if (Pike_compiler->compiler_pass!=1) {
-	if ((Pike_sp[-2].type == T_STRING) && (Pike_sp[-2].u.string->len > 0) &&
-	    (Pike_sp[-2].u.string->len < 256)) {
-	  my_yyerror("Not a valid program specifier: %S", Pike_sp[-2]);
-	} else {
-	  yyerror("Not a valid program specifier.");
-	}
+	my_yyerror("Not a valid program specifier: %S", Pike_sp[-2].u.string);
       }
     }
     push_object_type(0, p?(p->id):0);
@@ -2315,8 +2312,8 @@ create_arg: modifiers type_or_error optional_stars optional_dot_dot_dot TOK_IDEN
     type=compiler_pop_type();
 
     if(islocal($5->u.sval.u.string) >= 0)
-      my_yyerror("Variable %O appears twice in create argument list.",
-		 $5->u.sval);
+      my_yyerror("Variable %S appears twice in create argument list.",
+		 $5->u.sval.u.string);
 
     /* Add the identifier both globally and locally. */
     define_variable($5->u.sval.u.string, type,
@@ -3472,7 +3469,7 @@ inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
     }
     if (e == -1) {
       if (TEST_COMPAT (7, 2))
-	my_yyerror("No such inherit %O.", $1->u.sval);
+	my_yyerror("No such inherit %S.", $1->u.sval.u.string);
       else {
 	if ($1->u.sval.u.string == this_program_string) {
 	  inherit_state = Pike_compiler;
@@ -3480,7 +3477,8 @@ inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
 	  e = 0;
 	}
 	else
-	  my_yyerror("No inherit or surrounding class %O.", $1->u.sval);
+	  my_yyerror("No inherit or surrounding class %S.",
+		     $1->u.sval.u.string);
       }
     }
     free_node($1);
@@ -3508,11 +3506,11 @@ inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
 #endif /* 0 */
       if (!e) {
 	if (inherit_state->new_program->inherits[$1].name) {
-	  my_yyerror("No such inherit %S::%O.",
+	  my_yyerror("No such inherit %S::%S.",
 		     inherit_state->new_program->inherits[$1].name,
-		     $2->u.sval);
+		     $2->u.sval.u.string);
 	} else {
-	  my_yyerror("No such inherit %O.", $2->u.sval);
+	  my_yyerror("No such inherit %S.", $2->u.sval.u.string);
 	}
 	$$ = -1;
       } else {
@@ -3649,9 +3647,9 @@ low_idents: TOK_IDENTIFIER
       {
 	if (Pike_compiler->compiler_pass == 2) {
 	  if (TEST_COMPAT(7,2)) {
-	    yywarning("Undefined identifier ::%O.", $2->u.sval);
+	    yywarning("Undefined identifier ::%S.", $2->u.sval.u.string);
 	  } else {
-	    my_yyerror("Undefined identifier ::%O.", $2->u.sval);
+	    my_yyerror("Undefined identifier ::%S.", $2->u.sval.u.string);
 	  }
 	}
 	$$=mkintnode(0);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.574 2004/10/30 15:57:19 nilsson Exp $
+|| $Id: program.c,v 1.575 2004/11/05 16:21:23 grubba Exp $
 */
 
 #include "global.h"
@@ -1518,7 +1518,7 @@ struct node_s *resolve_identifier(struct pike_string *ident)
       else
 	if(Pike_compiler->compiler_pass==2) {
 	  if (throw_value.type == T_STRING) {
-	    my_yyerror("%O", throw_value);
+	    my_yyerror("%S", throw_value.u.string);
 	    free_svalue(&throw_value);
 	    throw_value.type = T_INT;
 	  }
@@ -1926,12 +1926,8 @@ void fixate_program(void)
     }
     if ((fun->func.offset == -1) && (funp->id_flags & ID_INLINE) &&
 	IDENTIFIER_IS_PIKE_FUNCTION(fun->identifier_flags)) {
-      if (fun->name->len < 900) {
-	my_yyerror("Missing definition for local function %S.",
-		   fun->name);
-      } else {
-	yyerror("Missing definition for local function.");
-      }
+      my_yyerror("Missing definition for local function %S.",
+		 fun->name);
     }
     add_to_identifier_index(i);
   }
@@ -1964,10 +1960,7 @@ void fixate_program(void)
 
 	if((e != i) && (e != -1))
 	{
-	  if(name->len < 1024)
-	    my_yyerror("Illegal to redefine final identifier %S", name);
-	  else
-	    my_yyerror("Illegal to redefine final identifier (name too large to print).");
+	  my_yyerror("Illegal to redefine final identifier %S", name);
 	}
       }
     }
@@ -4245,8 +4238,8 @@ int define_variable(struct pike_string *name,
 	if(!IDENTIFIER_IS_VARIABLE(ID_FROM_INT(Pike_compiler->new_program, n)->
 				   identifier_flags))
 	{
-	  my_yyerror("Illegal to redefine inherited variable "
-		     "with different type.");
+	  my_yyerror("Illegal to redefine inherited variable %S "
+		     "with different type.", name);
 	  return n;
 	}
 
@@ -4254,8 +4247,8 @@ int define_variable(struct pike_string *name,
 	     PIKE_T_MIXED) &&
 	    (ID_FROM_INT(Pike_compiler->new_program, n)->run_time_type !=
 	     compile_type_to_runtime_type(type))) {
-	  my_yyerror("Illegal to redefine inherited variable "
-		     "with different type.");
+	  my_yyerror("Illegal to redefine inherited variable %S "
+		     "with different type.", name);
 	  return n;
 	}
 
@@ -5929,9 +5922,13 @@ PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
 
 void va_yyerror(const char *fmt, va_list args)
 {
-  char buf[8192];
-  Pike_vsnprintf (buf, sizeof (buf), fmt, args);
-  yyerror(buf);
+  struct string_builder s;
+  struct pike_string *tmp;
+  init_string_builder(&s, 0);
+  string_builder_vsprintf(&s, fmt, args);
+  tmp = finish_string_builder(&s);
+  low_yyerror(tmp);
+  free_string(tmp);
 }
 
 void my_yyerror(const char *fmt,...)
@@ -5981,7 +5978,7 @@ void handle_compile_exception (const char *yyerror_fmt, ...)
   if (SAFE_IS_ZERO(sp-1)) {
     struct pike_string *s = format_exception_for_error_msg (&thrown);
     if (s) {
-      my_yyerror("%S", s);
+      low_yyerror(s);
       free_string (s);
     }
   }
