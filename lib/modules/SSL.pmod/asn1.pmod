@@ -2,7 +2,7 @@
  *
  * Rudimentary support for decoding ASN.1 encoded data.
  *
- * $Id: asn1.pmod.pike,v 1.3 1997/03/15 12:15:07 nisse Exp $
+ * $Id: asn1.pmod,v 1.1 1997/04/17 14:26:24 nisse Exp $
  */
 
 /* BER decoder
