@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.35 1998/01/10 21:21:53 hubbe Exp $
+ * $Id: system.c,v 1.36 1998/01/11 00:00:19 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include "global.h"
-RCSID("$Id: system.c,v 1.35 1998/01/10 21:21:53 hubbe Exp $");
+RCSID("$Id: system.c,v 1.36 1998/01/11 00:00:19 grubba Exp $");
 #include "module_support.h"
 #include "las.h"
 #include "interpret.h"
@@ -24,6 +24,7 @@ RCSID("$Id: system.c,v 1.35 1998/01/10 21:21:53 hubbe Exp $");
 #include "mapping.h"
 #include "builtin_functions.h"
 #include "constants.h"
+#include "pike_memory.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -318,13 +319,13 @@ void f_setgroups(INT32 args)
 
   get_all_args("setgroups", args, "%a", &arr);
   if ((size = arr->size)) {
-    gids = xalloc(arr->size * sizeof(gid_t));
+    gids = (gid_t *)xalloc(arr->size * sizeof(gid_t));
   } else {
     gids = safeguard;
   }
 
   for (i=0; i < size; i++) {
-    if (arr->item[i].type != T_INTEGER) {
+    if (arr->item[i].type != T_INT) {
       /* Only reached if arr->size > 0
        * so we always have an allocated gids here.
        */
@@ -361,7 +362,7 @@ void f_getgroups(INT32 args)
     /* OS which doesn't understand this convention */
     numgrps = NGROUPS_MAX;
   }
-  gids = xalloc(sizeof(gid_t) * numgrps);
+  gids = (gid_t *)xalloc(sizeof(gid_t) * numgrps);
 
   numgrps = getgroups(numgrps, gids);
 
@@ -374,7 +375,7 @@ void f_getgroups(INT32 args)
     report_error("getgroups");
   }
 
-  f_aggregate_array(numgrps);
+  f_aggregate(numgrps);
 }
 #endif /* HAVE_GETGROUPS */
 
