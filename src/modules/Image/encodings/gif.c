@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.33 1998/02/15 14:59:38 mirar Exp $ */
+/* $Id: gif.c,v 1.34 1998/02/19 01:46:01 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.33 1998/02/15 14:59:38 mirar Exp $
+**!	$Id: gif.c,v 1.34 1998/02/19 01:46:01 per Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.33 1998/02/15 14:59:38 mirar Exp $");
+RCSID("$Id: gif.c,v 1.34 1998/02/19 01:46:01 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -499,6 +499,7 @@ CHRONO("gif _render_block push of packed data begin");
       {
 	 push_string(make_shared_binary_string("\0",1));
 	 numstrings++;
+         break;
       }
       else if (lzw.outpos-i>=255)
       {
