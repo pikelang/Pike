@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.16 2002/10/07 11:55:39 kiwi Exp $
+# $Id: configure.in,v 1.17 2002/10/08 17:11:15 norrby Exp $
 #
 AC_INIT(image_jpeg.c)
 AC_CONFIG_HEADER(config.h)
@@ -35,7 +35,7 @@ int main(int argc, char **argv)
       else
         AC_MSG_RESULT(no)
       fi
-      AC_CHECK_FUNCS(jcopy_sample_rows jcopy_block_row jzero_far)
+      AC_CHECK_FUNCS(jcopy_sample_rows jcopy_block_row jzero_far jdiv_round_up jround_up)
     ])
     AC_MSG_CHECKING([if jpeg_componment_info has the member height_in_blocks])
     AC_CACHE_VAL(pike_cv_jpeg_height_in_blocks, [
@@ -56,8 +56,38 @@ int main(int argc, char **argv)
       ])
     ])
     AC_MSG_RESULT($pike_cv_jpeg_height_in_blocks)
-    if test "x$pike_cv_jpeg_height_in_blocks" = "xyes"; then
-      AC_DEFINE(HAVE_JPEG_HEIGHT_IN_BLOCKS)
+    if test "x$pike_cv_jpeg_height_in_blocks" = "xno"; then
+      AC_DEFINE(TRANSFORMS_NOT_SUPPORTED)
+    else :; fi
+    AC_MSG_CHECKING([if jpeg_decompress_struct has the member marker_list])
+    AC_CACHE_VAL(pike_cv_marker_list, [
+      AC_TRY_COMPILE([
+#define FILE void
+#define size_t unsigned int
+#include <jpeglib.h>
+#include <jconfig.h>
+      ],[
+#define FILE void
+#define size_t unsigned int
+#include <jpeglib.h>
+#include <jconfig.h>
+
+j_decompress_ptr srcinfo;
+void *test_ptr;
+
+int main() {
+    test_ptr=(void*)srcinfo->marker_list;
+    return 0;
+}
+      ],[
+        pike_cv_marker_list=yes
+      ],[
+        pike_cv_marker_list=no
+      ])
+    ])
+    AC_MSG_RESULT($pike_cv_marker_list)
+    if test "x$pike_cv_marker_list" = "xno"; then
+      AC_DEFINE(TRANSFORMS_NOT_SUPPORTED)
     else :; fi
   fi
 fi

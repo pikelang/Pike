@@ -1,5 +1,5 @@
 /*
- * $Id: transupp.c,v 1.6 2002/10/06 12:21:36 grubba Exp $
+ * $Id: transupp.c,v 1.7 2002/10/08 17:11:16 norrby Exp $
  */
 
 #include "global.h"
@@ -53,11 +53,15 @@
 #include "transupp.h"		/* My own external interface */
 #include <ctype.h>		/* to declare isdigit() */
 
+#ifdef TRANSFORMS_NOT_SUPPORTED
+#undef TRANSFORMS_SUPPORTED
+#endif
+#if TRANSFORMS_SUPPORTED
+
 #ifndef HAVE_JERR_BAD_CROP_SPEC
 #define JERR_BAD_CROP_SPEC	JERR_BAD_LENGTH
 #endif /* !HAVE_JERR_BAD_CROP_SPEC */
 
-#if TRANSFORMS_SUPPORTED
 
 /* implementation ripped from jutils.c */
 
@@ -156,6 +160,31 @@ jzero_far (void FAR * target, size_t bytestozero)
 
 #endif /* HAVE_JZERO_FAR */
 
+GLOBAL(long)
+jdiv_round_up (long a, long b)
+#ifdef HAVE_JDIV_ROUND_UP
+     ;
+#else
+/* Compute a/b rounded up to next integer, ie, ceil(a/b) */
+/* Assumes a >= 0, b > 0 */
+{
+  return (a + b - 1L) / b;
+}
+#endif
+
+
+GLOBAL(long)
+jround_up (long a, long b)
+#ifdef HAVE_JROUND_UP
+     ;
+#else
+/* Compute a rounded up to next multiple of b, ie, ceil(a/b)*b */
+/* Assumes a >= 0, b > 0 */
+{
+  a += b - 1L;
+  return a - (a % b);
+}
+#endif
 /*
  * Lossless image transformation routines.  These routines work on DCT
  * coefficient arrays and thus do not require any lossy decompression

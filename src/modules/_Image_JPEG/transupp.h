@@ -18,7 +18,7 @@
  */
 
 /* If you happen not to want the image transform support, disable it here */
-#ifdef HAVE_JPEG_HEIGHT_IN_BLOCKS
+#ifndef TRANSFORMS_NOT_SUPPORTED
 #ifndef TRANSFORMS_SUPPORTED
 #define TRANSFORMS_SUPPORTED 1		/* 0 disables transform code */
 #endif
