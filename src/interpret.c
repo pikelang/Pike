@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.187 2001/03/03 00:26:23 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.188 2001/03/04 19:27:18 mirar Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -963,7 +963,8 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
       if (!s->u.integer) {
 	PIKE_ERROR("0", "Attempt to call the NULL-value\n", Pike_sp, args);
       } else {
-	Pike_error("Attempt to call the value %d\n", s->u.integer);
+	Pike_error("Attempt to call the value %"PRINTPIKEINT"d\n", 
+		   s->u.integer);
       }
 
     case T_STRING:

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.89 2001/03/04 15:27:54 mirar Exp $");
+RCSID("$Id: mpz_glue.c,v 1.90 2001/03/04 19:27:19 mirar Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -65,14 +65,49 @@ static struct program *bignum_program;
 static void reduce(struct object *o)
 {
   INT_TYPE i;
-  
+
   i = mpz_get_si(OBTOMPZ(o));
   if(mpz_cmp_si(OBTOMPZ(o), i) == 0)
   {
-    free_object(o);
-    push_int(i);
-  }else{
-    push_object(o);
+     free_object(o);
+     push_int(i);
+  }
+  else
+  {
+#ifdef BIG_PIKE_INT
+#define SHIFT  16 /* suggested: CHAR_BIT*sizeof(unsigned long int) */
+#define FILTER ((1<<SHIFT)-1)
+     int pos=0;
+     unsigned long int a;
+     INT_TYPE res=0;
+     mpz_t t,u;
+
+     mpz_init_set(t,OBTOMPZ(o));
+     mpz_init(u);
+     while (pos<sizeof(INT_TYPE)*CHAR_BIT)
+     {
+        a=mpz_get_ui(t)&FILTER;
+        if (!a && mpz_cmp_si(t,0)==0) 
+        {
+           if (mpz_get_si(OBTOMPZ(o))<0) res=-res;
+	   mpz_clear(t);
+	   mpz_clear(u);
+           free_object(o);
+           push_int(res);
+           return;
+        }
+        res|=((INT_TYPE)a)<<pos;
+        if ((res>>pos) != a) break; 
+        mpz_fdiv_q_2exp(u,t,SHIFT);
+	mpz_set(t,u);
+	pos+=SHIFT;
+     }
+     mpz_clear(t);
+     mpz_clear(u);
+#undef SHIFT
+#undef FILTER
+#endif
+     push_object(o);
   }
 }
 #define PUSH_REDUCED(o) do { struct object *reducetmp__=(o);	\
@@ -181,7 +216,10 @@ static void get_new_mpz(MP_INT *tmp, struct svalue *s)
         mpz_clear(t1);
      }
   }
+#undef SHIFT
+#undef FILTER
 #else
+#error HUU
     mpz_set_si(tmp, (signed long int) s->u.integer);
 #endif
     break;
@@ -758,6 +796,11 @@ double double_from_sval(struct svalue *s)
 #define DO_IF_AUTO_BIGNUM(X)
 #endif
 
+#ifdef BIG_PIKE_INT
+#define TOOBIGTEST || sp[e-args].u.integer>MAX_INT32
+#else
+#define TOOBIGTEST 
+#endif
 
 #define BINFUN2(name, fun, OP)						\
 static void name(INT32 args)						\
@@ -793,7 +836,7 @@ static void name(INT32 args)						\
     }									\
   } )									\
   for(e=0; e<args; e++)							\
-   if(sp[e-args].type != T_INT || sp[e-args].u.integer<=0)		\
+   if(sp[e-args].type != T_INT || sp[e-args].u.integer<=0 TOOBIGTEST)	\
     get_mpz(sp+e-args, 1);						\
   res = fast_clone_object(THIS_PROGRAM, 0);				\
   mpz_set(OBTOMPZ(res), THIS);						\
@@ -804,8 +847,8 @@ static void name(INT32 args)						\
       PIKE_CONCAT(fun,_ui)(OBTOMPZ(res), OBTOMPZ(res),			\
                            sp[e-args].u.integer);			\
 									\
-  pop_n_elems(args);							\
-  PUSH_REDUCED(res);							\
+  pop_n_elems(args);                                                    \
+  PUSH_REDUCED(res);                                                    \
 }									\
                                                                         \
 STRINGCONV(                                                             \

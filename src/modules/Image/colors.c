@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.45 2001/03/04 15:27:54 mirar Exp $
+**!	$Id: colors.c,v 1.46 2001/03/04 19:27:19 mirar Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.45 2001/03/04 15:27:54 mirar Exp $");
+RCSID("$Id: colors.c,v 1.46 2001/03/04 19:27:19 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -653,8 +653,10 @@ static void image_color_hex(INT32 args)
 
       sh=4*(sizeof(COLORTYPE)*2-i);
       if (sh>0)
-	 sprintf(buf,"#%0*x%0*x%0*x",i,(unsigned)(THIS->rgb.r>>sh),
-		 i,(unsigned)(THIS->rgb.g>>sh),i,(unsigned)(THIS->rgb.b>>sh)); 
+	 sprintf(buf,"#%0*x%0*x%0*x",
+		 (int)i,(unsigned)(THIS->rgb.r>>sh),
+		 (int)i,(unsigned)(THIS->rgb.g>>sh),
+		 (int)i,(unsigned)(THIS->rgb.b>>sh)); 
       else
       {
 	 unsigned INT32 r=THIS->rgbl.r;
@@ -669,7 +671,9 @@ static void image_color_hex(INT32 args)
 	    sh=0;
 	 }
 	 sprintf(buf,"#%0*x%0*x%0*x",
-		 i,(unsigned)(r>>sh),i,(unsigned)(g>>sh),i,(unsigned)(b>>sh));
+		 (int)i,(unsigned)(r>>sh),
+		 (int)i,(unsigned)(g>>sh),
+		 (int)i,(unsigned)(b>>sh));
       }
    }
    else

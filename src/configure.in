@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.494 2001/03/04 15:27:53 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.495 2001/03/04 19:27:17 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -4753,6 +4753,129 @@ case "x$pike_cv_system_oob_working" in
   xTIMEOUT)        AC_DEFINE_UNQUOTED(PIKE_OOB_WORKS,0)  ;;
   *)               AC_DEFINE_UNQUOTED(PIKE_OOB_WORKS,-1) ;; #unknown
 esac
+
+#######################################################################
+
+AC_MSG_CHECKING(how to printf INT_TYPE)
+AC_CACHE_VAL(pike_cv_printf_int_type,
+	    [AC_TRY_RUN([#include <stdio.h>
+                         #include "global.h"
+			 int main() {
+			 char buf[32];
+	                 if (sizeof(INT_TYPE)>4)
+                         {
+			   sprintf(buf,"%lld,%d",((INT_TYPE)4711)<<32,17);
+			   return !!strcmp("20233590931456,17",buf); 
+                         }
+                         else
+                         {
+  			   sprintf(buf,"%lld,%d",(INT_TYPE)4711,17);
+  			   return !!strcmp("4711,17",buf);
+			 }
+                         }], 
+			[pike_cv_printf_int_type="ll"],
+	    [AC_TRY_RUN([#include <stdio.h>
+                         #include "global.h"
+			 int main() {
+			 char buf[32];
+	                 if (sizeof(INT_TYPE)>4)
+                         {
+			   sprintf(buf,"%d,%d",((INT_TYPE)4711)<<32,17);
+			   return !!strcmp("20233590931456,17",buf); 
+                         }
+                         else
+                         {
+  			   sprintf(buf,"%d,%d",(INT_TYPE)4711,17);
+  			   return !!strcmp("4711,17",buf);
+			 }
+                         }], 
+			[pike_cv_printf_int_type=""],
+	    [AC_TRY_RUN([#include <stdio.h>
+                         #include "global.h"
+			 int main() {
+			 char buf[32];
+	                 if (sizeof(INT_TYPE)>4)
+                         {
+			   sprintf(buf,"%Ld,%d",((INT_TYPE)4711)<<32,17);
+			   return !!strcmp("20233590931456,17",buf); 
+                         }
+                         else
+                         {
+  			   sprintf(buf,"%Ld,%d",(INT_TYPE)4711,17);
+  			   return !!strcmp("4711,17",buf);
+			 }
+                         }], 
+			[pike_cv_printf_int_type="L"],
+	    [AC_TRY_RUN([#include <stdio.h>
+                         #include "global.h"
+			 int main() {
+			 char buf[32];
+	                 if (sizeof(INT_TYPE)>4)
+                         {
+			   sprintf(buf,"%ld,%d",((INT_TYPE)4711)<<32,17);
+			   return !!strcmp("20233590931456,17",buf); 
+                         }
+                         else
+                         {
+  			   sprintf(buf,"%ld,%d",(INT_TYPE)4711,17);
+  			   return !!strcmp("4711,17",buf);
+			 }
+                         }], 
+			[pike_cv_printf_int_type="l"],
+			[AC_MSG_CHECKING([(none found?)])
+			 pike_cv_printf_int_type=""],
+			[?])],
+			[?])],
+			[?])],
+			[?])
+])
+AC_MSG_RESULT([%${pike_cv_printf_int_type}d, %${pike_cv_printf_int_type}x])
+AC_DEFINE_UNQUOTED(PRINTPIKEINT,"$pike_cv_printf_int_type")
+
+AC_MSG_CHECKING(how to printf FLOAT_TYPE)
+AC_CACHE_VAL(pike_cv_printf_float_type,
+	    [AC_TRY_RUN([#include <stdio.h>
+                         #include "global.h"
+			 int main() {
+			 char buf[32];
+ 			 sprintf(buf,"%4.1f,%d",(FLOAT_TYPE)17.0,17);
+  			 return !!strcmp("17.0,17",buf);
+                         }], 
+			[pike_cv_printf_float_type=""],
+	    [AC_TRY_RUN([#include <stdio.h>
+                         #include "global.h"
+			 int main() {
+			 char buf[32];
+ 			 sprintf(buf,"%L4.1f,%d",(FLOAT_TYPE)17.0,17);
+  			 return !!strcmp("17.0,17",buf);
+                         }], 
+			[pike_cv_printf_float_type="L"],
+	    [AC_TRY_RUN([#include <stdio.h>
+                         #include "global.h"
+			 int main() {
+			 char buf[32];
+ 			 sprintf(buf,"%ll4.1f,%d",(FLOAT_TYPE)17.0,17);
+  			 return !!strcmp("17.0,17",buf);
+                         }], 
+			[pike_cv_printf_float_type="ll"],
+	    [AC_TRY_RUN([#include <stdio.h>
+                         #include "global.h"
+			 int main() {
+			 char buf[32];
+ 			 sprintf(buf,"%l4.1f,%d",(FLOAT_TYPE)17.0,17);
+  			 return !!strcmp("17.0,17",buf);
+                         }], 
+			[pike_cv_printf_float_type="l"],
+			[AC_MSG_CHECKING([(none found?)])
+			 pike_cv_printf_float_type=""],
+			[?])],
+			[?])],
+			[?])],
+			[?])
+])
+AC_MSG_RESULT([%${pike_cv_printf_float_type}g, %${pike_cv_printf_float_type}f])
+AC_DEFINE_UNQUOTED(PRINTPIKEFLOAT,"$pike_cv_printf_float_type")
+
 #######################################################################
 
 # Set info about shared libraries.

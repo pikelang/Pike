@@ -103,7 +103,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.76 2001/03/04 15:27:55 mirar Exp $");
+RCSID("$Id: sprintf.c,v 1.77 2001/03/04 19:27:20 mirar Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1203,9 +1203,9 @@ static void low_pike_sprintf(struct format_stack *fs,
 	  }
 	}
 	else if(mode == 'u')
-	  sprintf(x, "%"PRINTINT"u", (unsigned INT_TYPE) val);
+	  sprintf(x, "%"PRINTPIKEINT"u", (unsigned INT_TYPE) val);
 	else
-	  sprintf(x, "%"PRINTINT"d", val);
+	  sprintf(x, "%"PRINTPIKEINT"d", val);
 
 	fs->fsp->len=strlen(x);
 	break;

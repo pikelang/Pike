@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.80 2001/03/04 15:27:53 mirar Exp $
+ * $Id: acconfig.h,v 1.81 2001/03/04 19:27:17 mirar Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -397,6 +397,12 @@
 
 /* Define if you want to enable use of the struct pike_type (EXPERIMENTAL) */
 #undef USE_PIKE_TYPE
+
+/* set this to the modifier type string to print INT_TYPE, like "" or "ll" */
+#undef PRINTPIKEINT
+
+/* set this to the modifier type string to print FLOAT_TYPE, like "L" or "" */
+#undef PRINTPIKEFLOAT
 
 @BOTTOM@
 

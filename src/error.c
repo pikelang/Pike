@@ -21,7 +21,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.69 2001/02/06 19:31:39 grubba Exp $");
+RCSID("$Id: error.c,v 1.70 2001/03/04 19:27:17 mirar Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -129,7 +129,7 @@ static void f_bt__index(INT32 args)
   if (index < 0) {
     /* Indexing from end not supported. */
     index_error("backtrace->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
-		"Indexing with negative value (%d).\n", index);
+		"Indexing with negative value (%"PRINTPIKEINT"d).\n", index);
   }
 
   if (index < THIS_BT->iterator_index) {
@@ -188,15 +188,15 @@ static void f_pf__index(INT32 args)
 
   if (!f) {
     index_error("pike_frame->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
-		"Indexing the empty array with %d.\n", index);
+		"Indexing the empty array with %"PRINTPIKEINT"d.\n", index);
   }
   if (index < 0) {
     index_error("pike_frame->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
-		"Indexing with negative index (%d)\n", index);
+		"Indexing with negative index (%"PRINTPIKEINT"d)\n", index);
   }
   if (!(f->current_object && f->context.prog)) {
     index_error("pike_frame->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
-		"Indexing the NULL value with %d.\n", index);
+		"Indexing the NULL value with %"PRINTPIKEINT"d.\n", index);
   }
   switch(index) {
   case 0:	/* Filename */
@@ -601,7 +601,7 @@ void f_error_index(INT32 args)
       break;
     default:
       index_error("error->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
-		  "Index %d is out of range 0 - 1.\n", ind);
+		  "Index %"PRINTPIKEINT"d is out of range 0 - 1.\n", ind);
       break;
   }
 }

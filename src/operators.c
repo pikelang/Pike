@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.128 2001/02/26 21:46:15 grubba Exp $");
+RCSID("$Id: operators.c,v 1.129 2001/03/04 19:27:18 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -3322,8 +3322,8 @@ static void f_string_assignment_index(INT32 args)
   if(i<0)
     i+=THIS->s->len;
   if(i<0 || i>=THIS->s->len)
-    Pike_error("Index %d is out of range 0 - %ld.\n",
-	  i, PTRDIFF_T_TO_LONG(THIS->s->len - 1));
+    Pike_error("Index %"PRINTPIKEINT"d is out of range 0 - %ld.\n",
+	       i, PTRDIFF_T_TO_LONG(THIS->s->len - 1));
   else
     i=index_shared_string(THIS->s,i);
   pop_n_elems(args);
