@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.68 2004/09/18 14:59:03 nilsson Exp $
+|| $Id: udp.c,v 1.69 2004/09/18 15:26:06 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.68 2004/09/18 14:59:03 nilsson Exp $");
+RCSID("$Id: udp.c,v 1.69 2004/09/18 15:26:06 marcus Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -311,14 +311,18 @@ void udp_enable_multicast(INT32 args)
 {
   int result;
   char *ip;
-  struct in_addr reply;
+  PIKE_SOCKADDR reply;
+
   get_all_args("enable_multicast", args, "%s", &ip);
 
-  if( !inet_aton(ip, &reply) )
-    Pike_error("Failed to parse ip address.\n");
+  get_inet_addr(&reply, ip, NULL, -1, 1);
+
+  if(SOCKADDR_FAMILY(reply) != AF_INET)
+    Pike_error("Multicast only supported for IPv4.\n");
 
   result = fd_setsockopt(FD, IPPROTO_IP, IP_MULTICAST_IF,
-			 (char *)&reply, sizeof(reply));
+			 (char *)&reply.ipv4.sin_addr,
+			 sizeof(reply.ipv4.sin_addr));
   pop_n_elems(args);
   push_int(result);
 }
@@ -357,16 +361,26 @@ void udp_add_membership(INT32 args)
   char *group;
   char *address=0;
   struct ip_mreq sock;
+  PIKE_SOCKADDR addr;
 
   get_all_args("add_membership", args, "%s.%s%d", &group, &address, &face);
 
-  if( !inet_aton( group, &sock.imr_multiaddr ) )
-    Pike_error("Failed to parse ip address %d.\n", 1);
+  get_inet_addr(&addr, group, NULL, -1, 1);
+
+  if(SOCKADDR_FAMILY(addr) != AF_INET)
+    Pike_error("Multicast only supported for IPv4.\n");
+
+  sock.imr_multiaddr = addr.ipv4.sin_addr;
+
   if( !address )
     sock.imr_interface.s_addr = htonl( INADDR_ANY );
   else {
-    if( !inet_aton( address, &sock.imr_interface ) )
-      Pike_error("Failed to parse ip address %d.\n", 2);
+    get_inet_addr(&addr, address, NULL, -1, 1);
+
+    if(SOCKADDR_FAMILY(addr) != AF_INET)
+      Pike_error("Multicast only supported for IPv4.\n");
+
+    sock.imr_interface = addr.ipv4.sin_addr;
   }
 #if 0
   sock.imr_ifindex = face;
@@ -388,16 +402,26 @@ void udp_drop_membership(INT32 args)
   char *group;
   char *address=0;
   struct ip_mreq sock;
+  PIKE_SOCKADDR addr;
 
   get_all_args("drop_membership", args, "%s.%s%d", &group, &address, &face);
 
-  if( !inet_aton( group, &sock.imr_multiaddr ) )
-    Pike_error("Failed to parse ip address %d.\n", 1);
+  get_inet_addr(&addr, group, NULL, -1, 1);
+
+  if(SOCKADDR_FAMILY(addr) != AF_INET)
+    Pike_error("Multicast only supported for IPv4.\n");
+
+  sock.imr_multiaddr = addr.ipv4.sin_addr;
+
   if( !address )
     sock.imr_interface.s_addr = htonl( INADDR_ANY );
   else {
-    if( !inet_aton( address, &sock.imr_interface ) )
-      Pike_error("Failed to parse ip address %d.\n", 2);
+    get_inet_addr(&addr, address, NULL, -1, 1);
+
+    if(SOCKADDR_FAMILY(addr) != AF_INET)
+      Pike_error("Multicast only supported for IPv4.\n");
+
+    sock.imr_interface = addr.ipv4.sin_addr;
   }
 #if 0
   sock.imr_ifindex = face;
