@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.115 2001/11/09 02:09:13 nilsson Exp $");
+RCSID("$Id: pike_memory.c,v 1.116 2001/11/14 15:09:07 jonasw Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1477,6 +1477,10 @@ static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location)
   unsigned long l=lhash(mh,location);
 
   mh->size=s;
+  mh->flags=0;
+#ifdef DMALLOC_AD_HOC
+  mh->misses=0;
+#endif
   mh->locations=ml;
   mh->gc_generation=gc_generation * 1000 + Pike_in_gc;
   ml->location=location;
