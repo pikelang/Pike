@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.111 2003/04/03 16:58:36 mast Exp $
+|| $Id: acconfig.h,v 1.112 2003/06/26 08:28:17 tomas Exp $
 */
 
 #ifndef MACHINE_H
@@ -499,6 +499,9 @@
 
 /* Define to the page size (handled efficiently by malloc). */
 #undef PIKE_MALLOC_PAGE_SIZE
+
+/* Define to the size of the c-stack for new threads */
+#undef PIKE_THREAD_C_STACK_SIZE
 
 @BOTTOM@
 

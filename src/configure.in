@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.664 2003/05/30 00:09:24 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.665 2003/06/26 08:28:17 tomas Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1224,6 +1224,11 @@ AC_ARG_WITH(malloc_page_size,
 		     [tune to the memory page size (default is 4 kb)]),
 	    [AC_DEFINE(PIKE_MALLOC_PAGE_SIZE,($withval))],
 	    [AC_DEFINE(PIKE_MALLOC_PAGE_SIZE,(4 * 1024))])
+AC_ARG_WITH(thread_c_stack,
+	    MY_DESCR([--with-thread-c-stack=n],
+	             [tune the thread c-stack (default is 256 * 1024)]),
+	    [AC_DEFINE_UNQUOTED(PIKE_THREAD_C_STACK_SIZE,($withval))],
+	    [AC_DEFINE(PIKE_THREAD_C_STACK_SIZE,(256 * 1024))])
 
 AC_ARG_WITH(gdbm, MY_DESCR([--without-gdbm],[no GNU database manager support]))
 AC_ARG_WITH(gmp, MY_DESCR([--without-gmp],[no support for Gmp bignums]))
