@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.186 2004/02/02 02:02:21 nilsson Exp $
+|| $Id: svalue.c,v 1.187 2004/03/14 21:21:38 nilsson Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: svalue.c,v 1.186 2004/02/02 02:02:21 nilsson Exp $");
+RCSID("$Id: svalue.c,v 1.187 2004/03/14 21:21:38 nilsson Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1755,6 +1755,20 @@ void debug_check_svalue(const struct svalue *s)
   if(s->type<=MAX_REF_TYPE &&
      ((PIKE_POINTER_ALIGNMENT-1) & (ptrdiff_t)(s->u.refs)))
     Pike_fatal("Odd pointer! type=%d u->refs=%p\n",s->type,s->u.refs);
+
+#if 0
+  if(s->type==T_INT) {
+    if(s->subtype!=NUMBER_NUMBER &&
+       s->subtype!=NUMBER_UNDEFINED && s->subtype!=NUMBER_DESTRUCTED) {
+      Pike_fatal("Unknown int subtype %d\n", s->subtype);
+    }
+  }
+  else if(s->type==T_FUNCTION) {
+    if(s->subtype!=0 && s->subtype!=FUNCTION_BUILTIN) {
+      Pike_fatal("Unknown function subtype %d\n", s->subtype);
+    }
+  }
+#endif
 
   check_refs(s);
   low_check_short_svalue(& s->u, s->type);
