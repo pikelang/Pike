@@ -36,6 +36,8 @@ static private int __sanity_check=lambda()
 
 Ruleset.Timezone Timezone_UTC=Ruleset.Timezone(0,"UTC"); // needed for dumping
 
+string calendar_name() { return "Time"; }
+
 //------------------------------------------------------------------------
 //! class TimeOfDay
 //------------------------------------------------------------------------
@@ -778,12 +780,12 @@ class TimeofDay
 
    string format_mtime()
    {
-      return this_object()->format_ymd_short()+" "+format_mod();
+      return this_object()->format_ymd()+" "+format_mod();
    }
 
    string format_xtime()
    {
-      return this_object()->format_ymd_short()+" "+format_xtod();
+      return this_object()->format_ymd()+" "+format_xtod();
    }
 
    string format_ctime()
