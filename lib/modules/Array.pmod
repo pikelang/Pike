@@ -472,3 +472,20 @@ array(array(array(mixed))) diff3_old(array mid,array left,array right)
    
    return transpose(res);
 }
+
+// sort with care of numerical sort:
+//  "abc4def" before "abc30def"
+
+int dwim_sort_func(string a,string b)
+{
+   string a2="",b2="";
+   int a1,b1;
+   sscanf(a0,"%s%d%s",a0,a1,a2);
+   sscanf(b0,"%s%d%s",b0,b1,b2);
+   if (a0>b0) return 1;
+   if (a0<b0) return 0;
+   if (a1>b1) return 1;
+   if (a1<b1) return 0;
+   if (a2==b2) return 0;
+   return sort_func(a2,b2);
+}
