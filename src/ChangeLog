@@ -4,6 +4,7 @@ Thu Apr 23 17:36:57 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 	* encode_value/decode_value can now take a 'codec' as second
 	  argument. They can also encode/decode some programs.
 	  (Mostly depending on how good the codec is.)
+	* ({})/ array and ""/string now return ({}).
 	* A few minor optimizations implemented
 	* sprintf("%O",x) now quotes strings (and quotes them correctly)
 
