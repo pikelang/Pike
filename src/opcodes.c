@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.157 2003/11/14 10:12:29 mast Exp $
+|| $Id: opcodes.c,v 1.158 2003/11/15 16:40:04 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: opcodes.c,v 1.157 2003/11/14 10:12:29 mast Exp $");
+RCSID("$Id: opcodes.c,v 1.158 2003/11/15 16:40:04 grubba Exp $");
 #include "constants.h"
 #include "interpret.h"
 #include "opcodes.h"
@@ -293,60 +293,35 @@ struct keyword instr_names[]=
 
 struct instr instrs[F_MAX_INSTR - F_OFFSET];
 
-char *low_get_f_name(int n,struct program *p)
+char *low_get_f_name(int n, struct program *p)
 {
   static char buf[30];
   
-  if (n<F_MAX_OPCODE && instrs[n-F_OFFSET].name)
+  if (n<F_MAX_OPCODE)
   {
-    return instrs[n-F_OFFSET].name;
-  }else if(n >= F_MAX_OPCODE) {
-    if(p &&
-       (int)p->num_constants > (int)(n-F_MAX_OPCODE) &&
-       p->constants[n-F_MAX_OPCODE].sval.type==T_FUNCTION &&
-       (p->constants[n-F_MAX_OPCODE].sval.subtype == FUNCTION_BUILTIN) &&
-       p->constants[n-F_MAX_OPCODE].sval.u.efun)
-    {
-      return p->constants[n-F_MAX_OPCODE].sval.u.efun->name->str;
-    }else{
-      sprintf(buf, "Call efun %d", n - F_MAX_OPCODE);
-      return buf;
-    }
-  }else{
+    if ((n >= 0) && instrs[n-F_OFFSET].name)
+      return instrs[n-F_OFFSET].name;
     sprintf(buf, "<OTHER %d>", n);
     return buf;
   }
+
+  if(p &&
+     (int)p->num_constants > (int)(n-F_MAX_OPCODE) &&
+     p->constants[n-F_MAX_OPCODE].sval.type==T_FUNCTION &&
+     (p->constants[n-F_MAX_OPCODE].sval.subtype == FUNCTION_BUILTIN) &&
+     p->constants[n-F_MAX_OPCODE].sval.u.efun) {
+    return p->constants[n-F_MAX_OPCODE].sval.u.efun->name->str;
+  }
+
+  sprintf(buf, "Call efun %d", n - F_MAX_OPCODE);
+  return buf;
 }
 
 char *get_f_name(int n)
 {
-  static char buf[30];
-  if (n<F_MAX_OPCODE && instrs[n-F_OFFSET].name)
-  {
-    return instrs[n-F_OFFSET].name;
-  }else if(n >= F_MAX_OPCODE) {
-    if(Pike_fp && Pike_fp->context.prog &&
-       (int)Pike_fp->context.prog->num_constants > (int)(n-F_MAX_OPCODE) &&
-       Pike_fp->context.prog->constants[n-F_MAX_OPCODE].sval.type==T_FUNCTION &&
-       Pike_fp->context.prog->constants[n-F_MAX_OPCODE].sval.subtype == FUNCTION_BUILTIN &&
-       Pike_fp->context.prog->constants[n-F_MAX_OPCODE].sval.u.efun)
-    {
-      return Pike_fp->
-	context.prog->
-	constants[n-F_MAX_OPCODE]
-	.sval
-	.u
-	.efun->
-	name->
-	str;
-    }else{
-      sprintf(buf, "Call efun %d", n - F_MAX_OPCODE);
-      return buf;
-    }
-  }else{
-    sprintf(buf, "<OTHER %d>", n);
-    return buf;
-  }
+  if (Pike_fp && Pike_fp->context.prog)
+    return low_get_f_name(n, Pike_fp->context.prog);
+  return low_get_f_name(n, NULL);
 }
 
 #ifdef HAVE_COMPUTED_GOTO
