@@ -102,7 +102,7 @@ PIKEFUN mapping(1:2) mkmapping(array(1=mixed) a, array(2=mixed) b)
   RETURN mkmapping(a,b);
 }
 
-PIKEFUN ptrdiff_t string_count(string haystack, string needle)
+PIKEFUN int string_count(string haystack, string needle)
   errname String.count;
   optflags OPT_TRY_OPTIMIZE;
 {
@@ -131,7 +131,7 @@ PIKEFUN ptrdiff_t string_count(string haystack, string needle)
        }
        break;
    }
-   RETURN c;
+   RETURN DO_NOT_WARN((INT_TYPE)c);
 }
 
 PIKEFUN int program_implements(program p, program p2)
