@@ -164,6 +164,9 @@ static int new_call_out(int num_arg,struct svalue *argp)
   return 1;
 }
 
+static struct callback *call_out_backend_callback=0;
+void do_call_outs(struct callback *ignored, void *ignored_too, void *arg);
+
 void f_call_out(INT32 args)
 {
   struct svalue tmp;
@@ -179,6 +182,12 @@ void f_call_out(INT32 args)
   sp[1-args]=tmp;
 
   new_call_out(args,sp-args);
+
+  /* We do not add this callback until we actually have
+   * call outs to take care of.
+   */
+  if(!call_out_backend_callback)
+    call_out_backend_callback=add_backend_callback(do_call_outs,0,0);
 }
 
 void do_call_outs(struct callback *ignored, void *ignored_too, void *arg)
@@ -224,6 +233,15 @@ void do_call_outs(struct callback *ignored, void *ignored_too, void *arg)
       if(my_timercmp(& pending_calls[0]->tv, < , &next_timeout))
       {
 	next_timeout = pending_calls[0]->tv;
+      }
+    }else{
+      if(call_out_backend_callback)
+      {
+	/* There are no call outs queued, let's remove
+	 * the taxing backend callback...
+	 */
+	remove_callback(call_out_backend_callback);
+	call_out_backend_callback=0;
       }
     }
   }
@@ -352,8 +370,6 @@ void verify_all_call_outs()
 
 void init_call_out_efuns(void)
 {
-  add_backend_callback(do_call_outs,0,0);
-
   add_efun("call_out",f_call_out,"function(function,float|int,mixed...:void)",OPT_SIDE_EFFECT);
   add_efun("call_out_info",f_call_out_info,"function(:array*)",OPT_EXTERNAL_DEPEND);
   add_efun("find_call_out",f_find_call_out,"function(function:int)",OPT_EXTERNAL_DEPEND);
