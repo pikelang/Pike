@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.146 2004/02/10 22:26:45 mast Exp $
+|| $Id: builtin.cmod,v 1.147 2004/02/13 23:09:25 nilsson Exp $
 */
 
 #include "global.h"
@@ -1104,6 +1104,7 @@ PIKEFUN float random(float f)
  */
 
 PIKEFUN mixed random(array a)
+     rawtype tFunc(tArr(tSetvar(0,tMix)),tVar(0));
 {
   if(!a->size)
     SIMPLE_BAD_ARG_ERROR("random", 1, "array with elements in it");
@@ -1113,6 +1114,7 @@ PIKEFUN mixed random(array a)
 }
 
 PIKEFUN mixed random(multiset m)
+     rawtype tFunc(tSet(tSetvar(1,tMix)),tVar(1));
 {
   if(multiset_is_empty (m))
     SIMPLE_BAD_ARG_ERROR("random", 1, "multiset with elements in it");
