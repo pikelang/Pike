@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.115 2002/10/21 17:06:12 marcus Exp $
+|| $Id: mpz_glue.c,v 1.116 2003/02/21 17:42:21 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.115 2002/10/21 17:06:12 marcus Exp $");
+RCSID("$Id: mpz_glue.c,v 1.116 2003/02/21 17:42:21 grubba Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -308,12 +308,6 @@ void get_new_mpz(MP_INT *tmp, struct svalue *s)
  */
 static void mpzmod_create(INT32 args)
 {
-#ifdef AUTO_BIGNUM
-  /* Alert bignum.c that we have been loaded /Hubbe */
-  if(THIS_PROGRAM == bignum_program)
-    gmp_library_loaded=1;
-#endif
-
   switch(args)
   {
   case 1:
@@ -1719,6 +1713,7 @@ PIKE_MODULE_INIT
 #ifdef AUTO_BIGNUM
   {
     int id;
+    extern struct svalue auto_bignum_program;
 
     /* This program autoconverts to integers, Gmp.mpz does not!!
      * magic? no, just an if statement :)              /Hubbe
@@ -1741,6 +1736,11 @@ PIKE_MODULE_INIT
       PROGRAM_NO_EXPLICIT_DESTRUCT |
       PROGRAM_CONSTANT ;
     
+    /* Magic hook in... */
+    free_svalue(&auto_bignum_program);
+    add_ref(auto_bignum_program.u.program = bignum_program);
+    auto_bignum_program.type = PIKE_T_PROGRAM;
+
 #if 0
     /* magic /Hubbe
      * This seems to break more than it fixes though... /Hubbe

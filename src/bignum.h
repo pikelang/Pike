@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.h,v 1.16 2002/10/11 01:39:28 nilsson Exp $
+|| $Id: bignum.h,v 1.17 2003/02/21 17:42:21 grubba Exp $
 */
 
 #include "global.h"
@@ -49,6 +49,7 @@ extern int gmp_library_loaded;
 /* Prototypes begin here */
 struct program *get_auto_bignum_program(void);
 struct program *get_auto_bignum_program_or_zero(void);
+void init_auto_bignum(void);
 void exit_auto_bignum(void);
 void convert_stack_top_to_bignum(void);
 void convert_stack_top_with_base_to_bignum(void);
@@ -64,6 +65,7 @@ void push_int64(INT64 i);
 int int64_from_bignum(INT64 *i, struct object *bignum);
 #else
 #define push_int64(i) push_int((INT_TYPE)i)
+#define int64_from_bignum(I,BIGNUM)	0
 #endif /* INT64 */
 /* Prototypes end here */
 
@@ -72,6 +74,7 @@ int int64_from_bignum(INT64 *i, struct object *bignum);
 #define INT_TYPE_DIV_OVERFLOW(a, b) ((a) && (a) == -(a) && (b) == -1)
 
 #define push_int64(i) push_int((INT_TYPE)i)
+#define int64_from_bignum(I,BIGNUM)	0
 
 #define INT_TYPE_MUL_OVERFLOW(a, b) 0
 #define INT_TYPE_NEG_OVERFLOW(x)    0

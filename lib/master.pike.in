@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.239 2003/01/09 16:50:19 grubba Exp $
+// $Id: master.pike.in,v 1.240 2003/02/21 17:42:21 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -1626,9 +1626,18 @@ void _main(array(string) orig_argv, array(string) env)
 	     "                " + "\n");
   };
 
+  mixed main_resolv(string ... syms) {
+    mixed v = resolv(syms[0]);
+    foreach(syms[1..], string sym)
+      if(v) v = v[sym];
+    if(!v)
+      _error("Could not resolv %s\n", syms*".");
+    return v;
+  };
+
   if(sizeof(argv)>1 && sizeof(argv[1]) && argv[1][0]=='-')
   {
-    tmp=resolv("Getopt");
+    tmp = main_resolv("Getopt");
     int NO_ARG = tmp->NO_ARG;
     int MAY_HAVE_ARG = tmp->MAY_HAVE_ARG;
     int HAS_ARG = tmp->HAS_ARG;
@@ -1821,20 +1830,15 @@ void _main(array(string) orig_argv, array(string) env)
     argv = tmp->get_args(argv,1);
   }
 
-  mixed main_resolv(array syms) {
-    mixed v = resolv(syms[0]);
-    foreach(syms[1..], string sym)
-      if(v) v = v[sym];
-    if(!v)
-      _error("Could not resolv %s\n", syms*".");
-    return v;
-  };
+#ifdef __AUTO_BIGNUM__
+  main_resolv( "Gmp", "bignum" );
+#endif /* __AUTO_BIGNUM__ */
 
   switch (postparseaction)
   {
      case "features":
 	_static_modules.files()->_stdout->
-	  write( main_resolv( "Tools.Install.features"/"." )()*"\n"+"\n" );
+	  write( main_resolv("Tools", "Install", "features")()*"\n"+"\n" );
 	exit(0);
 
      case "info":
@@ -1848,7 +1852,7 @@ void _main(array(string) orig_argv, array(string) env)
 	w( format_paths() + "\n");
 
 	w("Features......"+
-	  main_resolv( "Tools.Install.features"/"." )()*"\n              "+
+	  main_resolv("Tools", "Install", "features")()*"\n              "+
 	  "\n");
 	exit(0);
   }
@@ -1859,7 +1863,7 @@ void _main(array(string) orig_argv, array(string) env)
   {
     if(run_tool)
       _error( "Pike: -x specified without tool name.\n");
-    main_resolv( ({ "Tools", "Hilfe" }) )->StdinHilfe();
+    main_resolv("Tools", "Hilfe")->StdinHilfe();
     exit(0);
   }
   else
@@ -1869,7 +1873,7 @@ void _main(array(string) orig_argv, array(string) env)
 
   if(run_tool) {
     mixed err = catch {
-      prog=main_resolv( ({ "Tools", "Standalone", argv[0] }) );
+      prog=main_resolv("Tools", "Standalone", argv[0]);
     };
 
     if (err)
