@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.67 2001/06/06 02:22:29 mast Exp $");
+RCSID("$Id: array.c,v 1.68 2002/03/06 11:01:58 grubba Exp $");
 
 struct array empty_array=
 {
@@ -2074,6 +2074,12 @@ struct array *implode_array(struct array *a, struct array *b)
 {
   INT32 e,size;
   struct array *ret;
+
+  if (!a->size) {
+    add_ref(a);
+    return a;
+  }
+
   size=0;
   for(e=0;e<a->size;e++)
   {
