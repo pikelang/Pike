@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.90 2000/04/18 06:54:13 jonasw Exp $");
+RCSID("$Id: spider.c,v 1.91 2000/05/20 02:23:11 per Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -970,11 +970,16 @@ void f_timezone(INT32 args)
 
 void f_get_all_active_fd(INT32 args)
 {
-  int i,fds,q;
+  int i,fds,q, ne;
   struct stat foo;
+  extern int fds_size;
+
+  ne = fds_size;
+  if( MAX_OPEN_FILEDESCRIPTORS > ne )
+    ne = MAX_OPEN_FILEDESCRIPTORS;
 
   pop_n_elems(args);
-  for (i=fds=0; i<MAX_OPEN_FILEDESCRIPTORS; i++)
+  for (i=fds=0; i<ne; i++)
   {
     int q;
     THREADS_ALLOW();
@@ -1011,56 +1016,6 @@ void f_fd_info(INT32 args)
 	  (int)foo.st_dev,
 	  (long)foo.st_ino);
   push_string(make_shared_string(buf));
-}
-
-struct pike_string *fd_marks[MAX_OPEN_FILEDESCRIPTORS];
-
-void f_mark_fd(INT32 args)
-{
-  int fd;
-  struct pike_string *s;
-  if (args<1
-      || sp[-args].type!=T_INT
-      || (args>2 && sp[-args+1].type!=T_STRING))
-    error("Illegal argument(s) to mark_fd(int,void|string)\n");
-  fd=sp[-args].u.integer;
-  if(fd>MAX_OPEN_FILEDESCRIPTORS || fd < 0)
-    error("Fd must be in the range 0 to %d\n", MAX_OPEN_FILEDESCRIPTORS);
-  if (args<2)
-  {
-    int len;
-    char *tmp;
-    char buf[20];
-    struct stat fs;
-
-
-    pop_stack();
-    if(!fstat(fd,&fs))
-    {
-      if(fd_marks[fd])
-      {
-	ref_push_string(fd_marks[fd]);
-      } else {
-	push_text("");
-      }
-      return;
-    } else {
-      if(fd_marks[fd])
-      {
-	free_string(fd_marks[fd]);
-	fd_marks[fd]=0;
-      }
-      push_int(0);
-      return;
-    }
-  }
-
-  add_ref(s=sp[-args+1].u.string);
-  if(fd_marks[fd])
-    free_string(fd_marks[fd]);
-  fd_marks[fd]=s;
-  pop_n_elems(args);
-  push_int(0);
 }
 
 static void program_name(struct program *p)
@@ -1352,10 +1307,6 @@ void pike_module_init(void)
 /* function(int:string) */
   ADD_EFUN("fd_info", f_fd_info,tFunc(tInt,tStr), OPT_EXTERNAL_DEPEND);
 
-/* function(int,void|mixed:mixed) */
-  ADD_EFUN("mark_fd", f_mark_fd,tFunc(tInt tOr(tVoid,tMix),tMix),
-	   OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
-
   /* timezone() needs */
   {
     time_t foo = (time_t)0;
@@ -1400,15 +1351,6 @@ void pike_module_exit(void)
     streamed_parser=0;
   }
 #endif /* ENABLE_STREAMED_PARSER */
-
-  for(i=0; i<MAX_OPEN_FILEDESCRIPTORS; i++)
-  {
-    if(fd_marks[i])
-    {
-      free_string(fd_marks[i]);
-      fd_marks[i]=0;
-    }
-  }
 
   exit_xml();
 }
