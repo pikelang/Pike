@@ -1,4 +1,4 @@
-/* $Id: mkwmml.pike,v 1.20 2000/02/29 20:36:21 neotron Exp $ */
+/* $Id: mkwmml.pike,v 1.21 2000/07/12 19:37:21 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -56,16 +56,21 @@ mapping focM(mapping dest,string name,string line)
 
 string stripws(string s)
 {
-  array lines = s / "\n";
-  return String.trim_all_whites(lines * "\n");
+   return desc_stripws(s);
 }
 
 string desc_stripws(string s)
 {
-  array lines = s / "\n";
-  for(int i = 0; i < sizeof(lines); i++) 
-    lines[i] =  String.trim_all_whites(lines[i]);
-  return String.trim_all_whites(lines * "\n");
+   if (s=="") return s;
+   array lines = s / "\n";
+   int m=10000;
+   foreach (lines,string s)
+      if (s!="")
+      {
+	 sscanf(s,"%[ ]%s",string a,string b);
+	 if (b!="") m=min(strlen(a),m);
+      }
+   return map(lines,lambda(string s) { return s[m..]; })*"\n";
 }
 
 mapping lower_nowM()
@@ -109,6 +114,27 @@ mapping keywords=
 	    { if (!classM->methods) classM->methods=({});
 	      classM->methods+=({methodM=nowM=(["decl":({}),"_line":line])}); }
 	    methodM->decl+=({stripws(arg)}); descM=0; },
+  "inherits":lambda(string arg,string line)
+	  { if (!nowM) return complain("inherits w/o class or module");
+  	    if (nowM != classM) return complain("inherits outside class or module");
+	    if (!classM->inherits) classM->inherits=({});
+	    classM->inherits+=({stripws(arg)}); },
+
+  "variable":lambda(string arg,string line)
+	  {
+	     if (!classM) return complain("variable w/o class");
+	     if (!classM->variables) classM->variables=({});
+	     classM->variables+=({descM=nowM=(["_line":line])}); 
+	     nowM->decl=stripws(arg); 
+	  },
+  "constant":lambda(string arg,string line)
+	  {
+	     if (!classM) return complain("constant w/o class");
+	     if (!classM->constants) classM->constants=({});
+	     classM->constants+=({descM=nowM=(["_line":line])}); 
+	     nowM->decl=stripws(arg); 
+	  },
+
   "arg":lambda(string arg,string line)
 	  {
 	     if (!methodM) return complain("arg w/o method");
@@ -157,14 +183,12 @@ mapping keywords=
 string getridoftabs(string s)
 {
    string res="";
-   for (;;)
+   while (sscanf(s,"%s\t%s",string a,s)==2)
    {
-      int i;
-      if ((i=search(s,"\t"))==-1) return res+s;
-      res+=s[0..i-1]; 
-      s=s[i+1..];
+      res+=a;
       res+="         "[(strlen(res)%8)..7];
    }
+   return res+s;
 }
 
 
@@ -188,6 +212,7 @@ object(File) make_file(string filename)
 string synopsis_to_html(string s,mapping huh)
 {
    string type,name,arg;
+   s=replace(s,({"<",">"}),({"&lt;","&gt;"}));
    if (sscanf(s,"%s%*[ \t]%s(%s",type,name,arg)!=4)
    {
       sscanf(s,"%s(%s",name,arg),type="";
@@ -216,7 +241,7 @@ string htmlify(string s)
 #define linkify(S) \
    ("\""+replace((S),({"->","()","&lt;","&gt;"}),({".","","<",">"}))+"\"")
 
-string make_nice_reference(string what,string prefix)
+string make_nice_reference(string what,string prefix,string stuff)
 {
    string q;
    if (what==prefix[strlen(prefix)-strlen(what)-2..strlen(prefix)-3])
@@ -236,7 +261,7 @@ string make_nice_reference(string what,string prefix)
    else 
       q=what;
 
-   return "<link to="+linkify(q)+">"+htmlify(what)+"</link>";
+   return "<link to="+linkify(q)+">"+htmlify(stuff)+"</link>";
 }
 
 string fixdesc(string s,string prefix,string where)
@@ -246,22 +271,54 @@ string fixdesc(string s,string prefix,string where)
    string t,u,v,q;
 
    t=s; s="";
-   while (sscanf(t,"%s<ref>%s</ref>%s",t,u,v)==3)
+   while (sscanf(t,"%s<ref%s>%s</ref>%s",t,q,u,v)==4)
    {
-      s+=htmlify(t)+make_nice_reference(u,prefix);
+      if (search(u,"<ref")!=-1)
+      {
+	 werror("warning: unclosed <ref>\n%O\n",s);
+	 u=replace(u,"<ref","&lt;ref");
+      }
+      
+      if (sscanf(q," to=%s",q))
+	 s+=htmlify(t)+make_nice_reference(q,prefix,u);
+      else
+	 s+=htmlify(t)+make_nice_reference(u,prefix,u);
       t=v;
    }
+   if (search(s,"<ref")!=-1)
+   {
+      werror("%O\n",s);
+      error("buu\n");
+   }
+
    s+=htmlify(t);
 
    t=s; s="";
-   while (sscanf(t,"%s<illustration%s>%s</illustration>%s",t,q,u,v)==4)
+   for (;;)
    {
-      s+=replace(t,"\n\n","\n\n<p>");
-
-      s+="<illustration __from__='"+where+"' src=image_ill.pnm"+q+">\n"
-	 +replace(u,"lena()","src")+"</illustration>";
-
-      t=v;
+      string a,b,c;
+      if (sscanf(t,"%s<%s>%s",a,b,c)<3) break;
+      
+      if (b[..11]=="illustration" &&
+	  sscanf(t,"%s<illustration%s>%s</illustration>%s",t,q,u,v)==4)
+      {
+	 s+=replace(t,"\n\n","\n\n<p>")+
+	    "<illustration __from__='"+where+"' src=image_ill.pnm"+q+">\n"
+	    +replace(u,"lena()","src")+"</illustration>";
+	 t=v;
+      }
+      else if (b[..2]=="pre" &&
+	  sscanf(t,"%s<pre%s>%s</pre>%s",t,q,u,v)==4)
+      {
+	 s+=replace(t,"\n\n","\n\n<p>")+
+	    "<pre"+q+">\n"+u+"</pre>";
+	 t=v;
+      }
+      else
+      {
+	 s+=replace(a,"\n\n","\n\n<p>")+"<"+b+">";
+	 t=c;
+      }
    }
    s+=replace(t,"\n\n","\n\n<p>");
 
@@ -344,8 +401,12 @@ void document(string enttype,
    {
       f->write("<man_syntax>\n");
 
-      f->write(replace(htmlify(map(huh->decl,synopsis_to_html,huh)*
-			       "<br>\n"),"\n","\n\t")+"\n");
+      if (enttype=="function" ||
+	  enttype=="method")
+	 f->write(replace(htmlify(map(huh->decl,synopsis_to_html,huh)*
+				  "<br>\n"),"\n","\n\t")+"\n");
+      else
+	 f->write(huh->decl);
 
       f->write("</man_syntax>\n\n");
    }
@@ -355,6 +416,16 @@ void document(string enttype,
    if (huh->desc)
    {
       f->write("<man_description>\n");
+
+      if (huh->inherits)
+      {
+	 string s="";
+	 foreach (huh->inherits,string what)
+	    f->write("inherits "+make_nice_reference(what,prefix,what)+
+		     "<br>\n");
+	 f->write("<br>\n");
+      }
+
       f->write(fixdesc(huh->desc,prefix,huh->_line)+"\n");
       f->write("</man_description>\n\n");
    }
@@ -436,6 +507,27 @@ void document(string enttype,
    }
 
 // ---childs----
+
+   if (huh->constants)
+   {
+      foreach(huh->constants,mapping m)
+      {
+	 sscanf(m->decl,"%s %s",string type,string name);
+	 sscanf(name,"%s=%s",name,string value);
+	 document("constant",m,prefix+name,prefix+name+".",f);
+      }
+   }
+
+   if (huh->variables)
+   {
+      foreach(huh->variables,mapping m)
+      {
+	 werror("%O\n",m);
+	 sscanf(m->decl,"%s %s",string type,string name);
+	 sscanf(name,"%s=%s",name,string value);
+	 document("variable",m,prefix+name,prefix+name+".",f);
+      }
+   }
 
    if (huh->methods)
    {
@@ -526,6 +618,7 @@ int main(int ac,string *files)
    for (;;)
    {
       int i;
+      int inpre=0;
 
       if (!f) 
       {
@@ -556,6 +649,8 @@ int main(int ac,string *files)
       }
       s=ss[0]; ss=ss[1..];
 
+      s=getridoftabs(s);
+
       line++;
       if ((i=search(s,"**!"))!=-1 || (i=search(s,"//!"))!=-1)
       {
@@ -571,11 +666,12 @@ int main(int ac,string *files)
 			     currentfile+" line "+line+": "+err+"\n");
 	       return 1;
 	    }
+	    inpre=0;
 	 }
-	 else 
+	 else if (s[i+3..]!="")
 	 {
 	    string d=s[i+3..];
-	    sscanf(d,"%*[ \t]!%s",d);
+//  	    sscanf(d,"%*[ \t]!%s",d);
 //	    if (search(s,"$Id")!=-1) report("Id: "+d);
 	    if (!descM) descM=methodM;
 	    if (!descM)
