@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.299 2004/08/19 15:00:50 grubba Exp $
+|| $Id: interpret.c,v 1.300 2004/09/30 15:38:48 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.299 2004/08/19 15:00:50 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.300 2004/09/30 15:38:48 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -138,18 +138,19 @@ ptrdiff_t pop_sp_mark(void)
 static void gc_check_stack_callback(struct callback *foo, void *bar, void *gazonk)
 {
   struct pike_frame *f;
-  debug_gc_xmark_svalues(Pike_interpreter.evaluator_stack,
-			 Pike_sp-Pike_interpreter.evaluator_stack-1,
-			 " on current interpreter stack");
+  if (Pike_interpreter.evaluator_stack) {
+    debug_gc_xmark_svalues(Pike_interpreter.evaluator_stack,
+			   Pike_sp-Pike_interpreter.evaluator_stack-1,
+			   " on current interpreter stack");
 
-  for(f=Pike_fp;f;f=f->next)
-  {
-    if(f->context.parent)
-      gc_external_mark2(f->context.parent,0," in Pike_fp->context.parent on current stack");
-    gc_external_mark2(f->current_object,0," in Pike_fp->current_object on current stack");
-    gc_external_mark2(f->context.prog,0," in Pike_fp->context.prog on current stack");
+    for(f=Pike_fp;f;f=f->next)
+    {
+      if(f->context.parent)
+	gc_external_mark2(f->context.parent,0," in Pike_fp->context.parent on current stack");
+      gc_external_mark2(f->current_object,0," in Pike_fp->current_object on current stack");
+      gc_external_mark2(f->context.prog,0," in Pike_fp->context.prog on current stack");
+    }
   }
-
 }
 #endif
 
