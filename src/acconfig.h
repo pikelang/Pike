@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.108 2002/11/19 12:26:20 grubba Exp $
+|| $Id: acconfig.h,v 1.109 2002/11/24 22:37:50 mast Exp $
 */
 
 #ifndef MACHINE_H
@@ -498,6 +498,13 @@
 
 /* Define when binary --disable-binary is used. */
 #undef DISABLE_BINARY
+
+/* Define to the size of the overhead for a malloc'ed block. (Slightly
+ * too much is better than slightly too little.) */
+#undef PIKE_MALLOC_OVERHEAD
+
+/* Define to the page size (handled efficiently by malloc). */
+#undef PIKE_MALLOC_PAGE_SIZE
 
 @BOTTOM@
 

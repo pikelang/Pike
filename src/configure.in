@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.648 2002/11/23 16:43:43 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.649 2002/11/24 22:37:50 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1133,8 +1133,6 @@ AC_ARG_WITH(int-int, MY_DESCR([--with-int-int],
 AC_ARG_WITH(short-int, MY_DESCR([--with-short-int],
 				[use short native type int (EXPERIMENTAL)]))
 
-AC_ARG_WITH(gdbm, MY_DESCR([--without-gdbm],[no GNU database manager support]))
-AC_ARG_WITH(gmp, MY_DESCR([--without-gmp],[no support for Gmp bignums]))
 MY_AC_ARG_WITH(dmalloc, MY_DESCR([--with-dmalloc],[enable memory-leak tests]),
 	       [AC_DEFINE(DEBUG_MALLOC,10)])
 MY_AC_ARG_WITH(dmalloc-malloc, MY_DESCR([--with-dmalloc-malloc],
@@ -1193,6 +1191,20 @@ Use --with-threads to force threads support.
      with_threads=yes
    fi
 ])
+
+AC_ARG_WITH(malloc_overhead,
+	    MY_DESCR([--with-malloc-overhead=n],
+	             [tune the malloc block overhead (default is 2 * sizeof(void *))]),
+	    [AC_DEFINE(PIKE_MALLOC_OVERHEAD,($withval))],
+	    [AC_DEFINE(PIKE_MALLOC_OVERHEAD,(2 * sizeof(void *)))])
+AC_ARG_WITH(malloc_page_size,
+	    MY_DESCR([--with-malloc-page-size=n],
+		     [tune to the memory page size (default is 4 kb)]),
+	    [AC_DEFINE(PIKE_MALLOC_PAGE_SIZE,($withval))],
+	    [AC_DEFINE(PIKE_MALLOC_PAGE_SIZE,(4 * 1024))])
+
+AC_ARG_WITH(gdbm, MY_DESCR([--without-gdbm],[no GNU database manager support]))
+AC_ARG_WITH(gmp, MY_DESCR([--without-gmp],[no support for Gmp bignums]))
 AC_ARG_WITH(zlib, MY_DESCR([--without-zlib],[disable gz compression support]),
 	    [],[with_zlib=yes])
 AC_ARG_WITH(ssleay,
