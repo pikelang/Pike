@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.62 1998/03/02 16:09:06 hubbe Exp $");
+RCSID("$Id: spider.c,v 1.63 1998/03/06 11:53:39 per Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -405,18 +405,19 @@ void f_parse_html_lines(INT32 args)
   else extra_args=NULL;
 
   pop_n_elems(3);
+/*   fprintf(stderr, "sp=%p\n", sp); */
 
   strings=0;
   do_html_parse_lines(ss,cont,single,&strings,MAX_PARSE_RECURSE,extra_args,1);
 
   if (extra_args) free_array(extra_args);
-
   free_mapping(cont);
   free_mapping(single);
   if(strings > 1)
     f_add(strings);
   else if(!strings)
     push_text("");
+/*   fprintf(stderr, "sp=%p (strings=%d)\n", sp, strings); */
 }
 
 char start_quote_character = '\000';
@@ -850,6 +851,7 @@ void do_html_parse(struct pike_string *ss,
   pop_stack();					\
 } while(0)
 
+struct svalue empty_string;
 void do_html_parse_lines(struct pike_string *ss,
 			 struct mapping *cont,struct mapping *single,
 			 int *strings,int recurse_left,
@@ -860,6 +862,9 @@ void do_html_parse_lines(struct pike_string *ss,
   char *s;
   struct svalue sval1,sval2;
   struct pike_string *ss2;
+
+/*   fprintf(stderr, "sp=%p (strings=%d)\n", sp, *strings); */
+
   if (!ss->len)
   {
     free_string(ss);
@@ -877,6 +882,8 @@ void do_html_parse_lines(struct pike_string *ss,
   len=ss->len;
 
   last=0;
+
+
   for (i=0; i<len-1;)
   {
     if (s[i]==10)
@@ -899,7 +906,9 @@ void do_html_parse_lines(struct pike_string *ss,
 
       /* Is this a non-container? */
       mapping_index_no_free(&sval1,single,&sval2);
-
+/*       if(sval1.type == T_INT) */
+/* 	mapping_index_no_free(&sval1,single,&empty_string); */
+	
       if (sval1.type==T_STRING)
       {
 	/* A simple string ... */
@@ -908,7 +917,7 @@ void do_html_parse_lines(struct pike_string *ss,
 	sval1.type=99;
 #endif
 	(*strings)++;
-	find_endtag(sval2.u.string ,s+j, len-j, &l); /* bug /law 960805 */
+/* 	find_endtag(sval2.u.string ,s+j, len-j, &l); * bug /law 960805 */
 	free_svalue(&sval2);
 	j+=l;
 	i=last=j;
@@ -931,10 +940,11 @@ void do_html_parse_lines(struct pike_string *ss,
 	HANDLE_RETURN_VALUE(j+k);
 	continue;
       }
-      free_svalue(&sval1);
 
       /* Is it a container then? */
       mapping_index_no_free(&sval1,cont,&sval2);
+      if(sval1.type == T_INT)
+	mapping_index_no_free(&sval1,cont,&empty_string);
       if (sval1.type==T_STRING)
       {
 	*(sp++)=sval1;
@@ -983,7 +993,7 @@ void do_html_parse_lines(struct pike_string *ss,
   }
   else if (last<len)
   {
-    push_string(make_shared_binary_string(s+last,len-last));  
+    push_string(make_shared_binary_string(s+last,len-last));
     free_string(ss);
     (*strings)++;
   }
@@ -1239,6 +1249,8 @@ extern void init_udp(void);
 /* Hohum. Here we go. This is try number three for a more optimized Roxen. */
 
 #ifdef _REENTRANT
+#define BUFFER (8192)
+
 struct thread_args
 {
   struct thread_args *next;
@@ -1249,6 +1261,7 @@ struct thread_args
   struct svalue args;
   int len;
   int sent;
+  char buffer[BUFFER];
   THREAD_T tid;
 };
 
@@ -1256,26 +1269,26 @@ MUTEX_T done_lock;
 struct thread_args *done;
 
 /* WARNING! This function is running _without_ any stack etc. */
-void *do_shuffle(void *_a)
+
+void do_shuffle(void *_a)
 {
   struct thread_args *a = (struct thread_args *)_a;
-  char buffer[8192];
 
 #ifdef DIRECTIO_ON
-  if(a->len >= 65536)
+  if(a->len > (65536*2))
     directio(a->from_fd, DIRECTIO_ON);
 #endif
 
   while(a->len)
   {
     int nread;
-    nread = fd_read(a->from_fd, buffer, 8192);
+    nread = fd_read(a->from_fd, a->buffer, BUFFER);
     if(nread <= 0)
       break;
 
     while(nread)
     {
-      int nsent = fd_write(a->to_fd, buffer, nread);
+      int nsent = fd_write(a->to_fd, a->buffer, nread);
       if(nsent < 0)
 	goto end;
       a->sent += nsent;
@@ -1293,7 +1306,6 @@ void *do_shuffle(void *_a)
   done = a;
   mt_unlock(&done_lock);
   wake_up_backend();
-  return 0;
 }
 
 static int num_shuffles = 0;
@@ -1347,7 +1359,7 @@ void f_shuffle(INT32 args)
   assign_svalue_no_free(&a->cb, q);
   assign_svalue_no_free(&a->args, w);
   
-  th_create_small(&a->tid, do_shuffle, (void *)a);
+  th_farm(do_shuffle, (void *)a);
 
   if(!my_callback)
     my_callback = add_backend_callback( finished_p, 0, 0 );
@@ -1359,6 +1371,12 @@ void f_shuffle(INT32 args)
 
 void pike_module_init(void) 
 {
+  push_string(make_shared_string(""));
+  empty_string = sp[-1];
+  empty_string.u.string->refs++;
+  pop_stack();
+
+
 #ifdef _REENTRANT
   add_function("shuffle", f_shuffle, 
 	       "function(object,object,function,mixed,int:void)", 0);
@@ -1448,6 +1466,8 @@ void pike_module_init(void)
 void pike_module_exit(void)
 {
   int i;
+
+  free_string(empty_string.u.string);
 
 #ifdef ENABLE_STREAMED_PARSER
   if(streamed_parser)
