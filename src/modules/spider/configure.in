@@ -16,7 +16,7 @@ AC_HAVE_HEADERS(syslog.h sys/syslog.h arpa/inet.h sys/socketvar.h \
         shadow.h thread.h sync.h sys/sockio.h sys/conf.h stropts.h\
 	sys/uio.h linux/mman.h)
 
-AC_HAVE_FUNCS(syslog perror strerror getppid getpgrp strdup\
+AC_HAVE_FUNCS(syslog perror getppid getpgrp strdup\
 	gethostname geteuid fchroot seteuid setresuid \
         uname gethostbyname getpwnam getspnam initgroups \
 	mutex_unlock mmap sendmsg)
