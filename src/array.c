@@ -22,7 +22,7 @@
 #include "security.h"
 #include "stuff.h"
 
-RCSID("$Id: array.c,v 1.54 1999/09/16 23:56:08 hubbe Exp $");
+RCSID("$Id: array.c,v 1.55 1999/09/24 13:03:01 noring Exp $");
 
 struct array empty_array=
 {
@@ -1512,7 +1512,9 @@ void describe_array(struct array *a,struct processing *p,int indent)
     }
   }
   
-  sprintf(buf,"({ /* %ld elements */\n",(long)a->size);
+  sprintf(buf, a->size == 1 ? "({ /* %ld element */\n" :
+	                      "({ /* %ld elements */\n",
+	  (long)a->size);
   my_strcat(buf);
   describe_array_low(a,&doing,indent);
   my_putchar('\n');

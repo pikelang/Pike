@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.40 1999/09/06 10:48:07 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.41 1999/09/24 13:03:02 noring Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -764,7 +764,9 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
     }
   }
   
-  sprintf(buf,"([ /* %ld elements */\n",(long) m->size);
+  sprintf(buf, m->size == 1 ? "([ /* %ld element */\n" :
+	                      "([ /* %ld elements */\n",
+	  (long)m->size);
   my_strcat(buf);
 
   q=0;

@@ -16,7 +16,7 @@
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.14 1999/04/13 20:10:05 hubbe Exp $");
+RCSID("$Id: multiset.c,v 1.15 1999/09/24 13:03:03 noring Exp $");
 
 struct multiset *first_multiset;
 
@@ -209,7 +209,9 @@ void describe_multiset(struct multiset *l,struct processing *p,int indent)
     }
   }
   
-  sprintf(buf,"(< /* %ld elements */\n",(long)l->ind->size);
+  sprintf(buf, l->ind->size == 1 ? "(< /* %ld element */\n" :
+	                           "(< /* %ld elements */\n",
+	  (long)l->ind->size);
   my_strcat(buf);
   describe_array_low(l->ind,&doing,indent);
   my_putchar('\n');
