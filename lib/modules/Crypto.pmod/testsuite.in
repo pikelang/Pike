@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.10 2003/10/05 01:20:59 nilsson Exp $
+dnl $Id: testsuite.in,v 1.11 2003/10/05 01:32:44 nilsson Exp $
 
 dnl Nettle.Yarrow
 
@@ -159,6 +159,12 @@ cond([[ Crypto["SHA256"] ]], [[
             "2d706483bfa0f98a5e886266e7ae"))
 ]])
 
+
+dnl Crypto.DES
+test_eq( Crypto.DES.fix_parity("\xff"*8), "\xfe"*8 )
+test_eq( Crypto.DES.fix_parity("12345678"), "12244778" )
+test_eq( Crypto.DES.fix_parity("\xff"*7), "\xfe"*8 )
+test_eq( Crypto.DES.fix_parity("\1"*7), "\1\200\100\40\20\10\4\2")
 
 dnl Crypto.rsa
 
