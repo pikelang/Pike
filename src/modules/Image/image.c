@@ -1,4 +1,9 @@
-/* $Id: image.c,v 1.17 1997/03/24 20:41:06 mirar Exp $ */
+/* $Id: image.c,v 1.18 1997/03/25 06:13:41 mirar Exp $ */
+
+/*
+**! module Image
+**! class image
+*/
 
 #include "global.h"
 
@@ -7,7 +12,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.17 1997/03/24 20:41:06 mirar Exp $");
+RCSID("$Id: image.c,v 1.18 1997/03/25 06:13:41 mirar Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -76,6 +81,8 @@ static void init_image_struct(struct object *obj)
   THIS->rgb.r=0;
   THIS->rgb.g=0;
   THIS->rgb.b=0;
+  THIS->xsize=THIS->ysize=0;
+  THIS->alpha=0;
 /*  fprintf(stderr,"init %lx (%d)\n",obj,++obj_counter);*/
 }
 
@@ -250,7 +257,7 @@ void img_apply_matrix(struct image *dest,
    rgb_group *d,*ip,*dp;
    rgbd_group *mp;
    int i,j,x,y,bx,by,ex,ey,xp,yp;
-   int sumr,sumg,sumb;
+   double sumr,sumg,sumb;
    double qr,qg,qb;
    register double r=0,g=0,b=0;
 
@@ -349,14 +356,33 @@ THREADS_DISALLOW();
 
 /***************** methods *************************************/
 
+/*
+**! method void create()
+**! method void create(int xsize,int ysize)
+**! method void create(int xsize,int ysize,int r,int g,int b)
+**! method void create(int xsize,int ysize,int r,int g,int b,int alpha)
+**! 	Initializes a new image object.
+**! arg int xsize
+**! arg int ysize
+**! 	size of (new) image in pixels
+**! arg int r
+**! arg int g
+**! arg int b
+**!     background color (will also be current color),
+**!     default color is black
+**! arg int alpha
+**! 	default alpha channel value
+**! see also: copy, clone, Image.image
+*/
+
 void image_create(INT32 args)
 {
    if (args<2) return;
    if (sp[-args].type!=T_INT||
        sp[1-args].type!=T_INT)
-      error("Illegal arguments to image->clone()\n");
+      error("Illegal arguments to image::create()\n");
 
-   getrgb(THIS,2,args,"image->create()"); 
+   getrgb(THIS,2,args,"image::create()"); 
 
    if (THIS->img) free(THIS->img);
 	
@@ -374,6 +400,29 @@ void image_create(INT32 args)
    pop_n_elems(args);
 }
 
+/*
+**! method object clone()
+**! method object clone(int xsize,int ysize)
+**! method object clone(int xsize,int ysize,int r,int g,int b)
+**! method object clone(int xsize,int ysize,int r,int g,int b,int alpha)
+**! 	Copies to or initialize a new image object.
+**! returns the new object
+**! arg int xsize
+**! arg int ysize
+**! 	size of (new) image in pixels, called image
+**!     is cropped to that size
+**! arg int r
+**! arg int g
+**! arg int b
+**!     current color of the new image, 
+**!     default is black. 
+**!     Will also be the background color if the cloned image
+**!     is empty (no drawing area made).
+**! arg int alpha
+**! 	new default alpha channel value
+**! see also: copy, create
+*/
+
 void image_clone(INT32 args)
 {
    struct object *o;
@@ -383,7 +432,7 @@ void image_clone(INT32 args)
       if (args<2||
 	  sp[-args].type!=T_INT||
 	  sp[1-args].type!=T_INT)
-	 error("Illegal arguments to image->clone()\n");
+	 error("Illegal arguments to image::clone()\n");
 
    o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
@@ -393,12 +442,12 @@ void image_clone(INT32 args)
    {
       if(sp[-args].u.integer < 0 ||
 	 sp[1-args].u.integer < 0)
-	 error("Illegal size to image->clone()\n");
+	 error("Illegal size to image::clone()\n");
       img->xsize=sp[-args].u.integer;
       img->ysize=sp[1-args].u.integer;
    }
 
-   getrgb(img,2,args,"image->clone()"); 
+   getrgb(img,2,args,"image::clone()"); 
 
    if (img->xsize<0) img->xsize=1;
    if (img->ysize<0) img->ysize=1;
@@ -426,6 +475,21 @@ void image_clone(INT32 args)
    push_object(o);
 }
 
+
+/*
+**! method void clear()
+**! method void clear(int r,int g,int b)
+**! method void clear(int r,int g,int b,int alpha)
+**! 	gives a new, cleared image with the same size of drawing area
+**! arg int r
+**! arg int g
+**! arg int b
+**!     color of the new image
+**! arg int alpha
+**! 	new default alpha channel value
+**! see also: copy, clone
+*/
+
 void image_clear(INT32 args)
 {
    struct object *o;
@@ -435,7 +499,7 @@ void image_clear(INT32 args)
    img=(struct image*)(o->storage);
    *img=*THIS;
 
-   getrgb(img,0,args,"image->clear()"); 
+   getrgb(img,0,args,"image::clear()"); 
 
    img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
    if (!img->img)
@@ -449,6 +513,35 @@ void image_clear(INT32 args)
    pop_n_elems(args);
    push_object(o);
 }
+
+/*
+**! method object copy()
+**! method object copy(int x1,int y1,int x2,int y2)
+**! method object copy(int x1,int y1,int x2,int y2,int r,int g,int b)
+**! method object copy(int x1,int y1,int x2,int y2,int r,int g,int b,int alpha)
+**! 	Copies this part of the image. The requested area can
+**!	be smaller, giving a cropped image, or bigger - 
+**!	the new area will be filled with the given or current color.
+**!
+**! returns a new image object
+**!
+**! note
+**! 	<ref>clone</ref>(void) and <ref>copy</ref>(void) does the same 
+**!	operation
+**!
+**! arg int x1
+**! arg int y1
+**! arg int x2
+**! arg int y2
+**!	The requested new area. Default is the old image size.
+**! arg int r
+**! arg int g
+**! arg int b
+**!     color of the new image
+**! arg int alpha
+**! 	new default alpha channel value
+**! see also: clone, autocrop
+*/
 
 void image_copy(INT32 args)
 {
@@ -468,11 +561,11 @@ void image_copy(INT32 args)
        sp[1-args].type!=T_INT||
        sp[2-args].type!=T_INT||
        sp[3-args].type!=T_INT)
-      error("illegal arguments to image->copy()\n");
+      error("illegal arguments to image::copy()\n");
 
    if (!THIS->img) error("no image\n");
 
-   getrgb(THIS,2,args,"image->crop()"); 
+   getrgb(THIS,4,args,"image::copy()"); 
 
    o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
@@ -485,6 +578,24 @@ void image_copy(INT32 args)
    push_object(o);
 }
 
+/*
+**! method object change_color(int tor,int tog,int tob)
+**! method object change_color(int fromr,int fromg,int fromb, int tor,int tog,int tob)
+**! 	Changes one color (exakt match) to another.
+**!	If non-exakt-match is preferred, check <ref>distancesq</ref>
+**!	and <ref>paste_alpha_color</ref>.
+**! returns a new (the destination) image object
+**!
+**! arg int tor
+**! arg int tog
+**! arg int tob
+**!     destination color and next current color
+**! arg int fromr
+**! arg int fromg
+**! arg int fromb
+**!     source color, default is current color
+*/
+
 static void image_change_color(INT32 args)
 
 {
@@ -495,19 +606,19 @@ static void image_change_color(INT32 args)
    struct image *img;
 
    if (!THIS->img) error("no image\n");
-   if (args<3) error("too few arguments to image->change_color()\n");
+   if (args<3) error("too few arguments to image::change_color()\n");
 
    if (args<6)
    {
       to=THIS->rgb;   
-      getrgb(THIS,0,args,"image->change_color()");
+      getrgb(THIS,0,args,"image::change_color()");
       from=THIS->rgb;
    }
    else
    {
-      getrgb(THIS,0,args,"image->change_color()");
+      getrgb(THIS,0,args,"image::change_color()");
       from=THIS->rgb;
-      getrgb(THIS,3,args,"image->change_color()");
+      getrgb(THIS,3,args,"image::change_color()");
       to=THIS->rgb;
    }
    
@@ -559,6 +670,40 @@ static INLINE int try_autocrop_horisontal(INT32 y,INT32 x,INT32 x2,
    return 1;
 }
 
+/*
+**! method object autocrop()
+**! method object autocrop(int border)
+**! method object autocrop(int border,int r,int g,int b)
+**! method object autocrop(int border,int left,int right,int top,int bottom)
+**! method object autocrop(int border,int left,int right,int top,int bottom,int r,int g,int b)
+**! 	Removes "unneccesary" borders around the image, adds one of
+**!	its own if wanted to, in selected directions.
+**!
+**!	"Unneccesary" is all pixels that are equal -- ie if all the same pixels
+**!	to the left are the same color, that column of pixels are removed.
+**!
+**! returns the new image object
+**!
+**! arg int border
+**!     added border size in pixels
+**! arg int r
+**! arg int g
+**! arg int b
+**!     color of the new border
+**! arg int left
+**! arg int right
+**! arg int top
+**! arg int bottom
+**!	which borders to scan and cut the image; 
+**!	a typical example is removing the top and bottom unneccesary
+**!	pixels:
+**! example
+**!	img=img->autocrop(0, 0,0,1,1);
+**! end example
+**! see also: copy
+*/
+
+
 void image_autocrop(INT32 args)
 {
    INT32 border=0,x1,y1,x2,y2;
@@ -570,7 +715,7 @@ void image_autocrop(INT32 args)
 
    if (args)
       if (sp[-args].type!=T_INT)
-         error("Illegal argument to image->autocrop()\n");
+         error("Illegal argument to image::autocrop()\n");
       else
          border=sp[-args].u.integer; 
 
@@ -580,9 +725,9 @@ void image_autocrop(INT32 args)
       right=!(sp[2-args].type==T_INT && sp[2-args].u.integer==0);
       top=!(sp[3-args].type==T_INT && sp[3-args].u.integer==0);
       bottom=!(sp[4-args].type==T_INT && sp[4-args].u.integer==0);
-      getrgb(THIS,5,args,"image->autocrop()"); 
+      getrgb(THIS,5,args,"image::autocrop()"); 
    }
-   else getrgb(THIS,1,args,"image->autocrop()"); 
+   else getrgb(THIS,1,args,"image::autocrop()"); 
 
    if (!THIS->img)
    {
@@ -620,24 +765,55 @@ void image_autocrop(INT32 args)
 }
 
 
+/*
+**! method object setcolor(int r,int g,int b)
+**! method object setcolor(int r,int g,int b,int alpha)
+**!    set the current color
+**!
+**! returns the object called
+**!
+**! arg int r
+**! arg int g
+**! arg int b
+**!     new color
+**! arg int alpha
+**!     new alpha value
+*/
 void image_setcolor(INT32 args)
 {
    if (args<3)
-      error("illegal arguments to image->setcolor()\n");
-   getrgb(THIS,0,args,"image->setcolor()");
+      error("illegal arguments to image::setcolor()\n");
+   getrgb(THIS,0,args,"image::setcolor()");
    pop_n_elems(args);
    THISOBJ->refs++;
    push_object(THISOBJ);
 }
 
+/*
+**! method object setpixel(int x,int y)
+**! method object setpixel(int x,int y,int r,int g,int b)
+**! method object setpixel(int x,int y,int r,int g,int b,int alpha)
+**!    
+**! returns the object called
+**!
+**! arg int x
+**! arg int y
+**!	position of the pixel
+**! arg int r
+**! arg int g
+**! arg int b
+**!     color
+**! arg int alpha
+**!     alpha value
+*/
 void image_setpixel(INT32 args)
 {
    INT32 x,y;
    if (args<2||
        sp[-args].type!=T_INT||
        sp[1-args].type!=T_INT)
-      error("Illegal arguments to image->setpixel()\n");
-   getrgb(THIS,2,args,"image->setpixel()");   
+      error("Illegal arguments to image::setpixel()\n");
+   getrgb(THIS,2,args,"image::setpixel()");   
    if (!THIS->img) return;
    x=sp[-args].u.integer;
    y=sp[1-args].u.integer;
@@ -648,6 +824,15 @@ void image_setpixel(INT32 args)
    push_object(THISOBJ);
 }
 
+/*
+**! method array(int) getpixel(int x,int y)
+**!    
+**! returns color of the requested pixel -- ({int red,int green,int blue})
+**!
+**! arg int x
+**! arg int y
+**!	position of the pixel
+*/
 void image_getpixel(INT32 args)
 {
    INT32 x,y;
@@ -656,7 +841,7 @@ void image_getpixel(INT32 args)
    if (args<2||
        sp[-args].type!=T_INT||
        sp[1-args].type!=T_INT)
-      error("Illegal arguments to image->getpixel()\n");
+      error("Illegal arguments to image::getpixel()\n");
 
    if (!THIS->img) error("No image.\n");
 
@@ -675,6 +860,26 @@ void image_getpixel(INT32 args)
    f_aggregate(3);
 }
 
+/*
+**! method object line(int x1,int y1,int x2,int y2)
+**! method object line(int x1,int y1,int x2,int y2,int r,int g,int b)
+**! method object line(int x1,int y1,int x2,int y2,int r,int g,int b,int alpha)
+**! 	Draws a line on the image. The line is <i>not</i> antialiased.
+**! 
+**! returns the object called
+**!
+**! arg int x1
+**! arg int y1
+**! arg int x2
+**! arg int y2
+**!	line endpoints
+**! arg int r
+**! arg int g
+**! arg int b
+**!     color
+**! arg int alpha
+**!     alpha value
+*/
 void image_line(INT32 args)
 {
    if (args<4||
@@ -682,8 +887,8 @@ void image_line(INT32 args)
        sp[1-args].type!=T_INT||
        sp[2-args].type!=T_INT||
        sp[3-args].type!=T_INT)
-      error("Illegal arguments to image->line()\n");
-   getrgb(THIS,4,args,"image->line()");
+      error("Illegal arguments to image::line()\n");
+   getrgb(THIS,4,args,"image::line()");
    if (!THIS->img) return;
 
    img_line(sp[-args].u.integer,
@@ -695,6 +900,26 @@ void image_line(INT32 args)
    push_object(THISOBJ);
 }
 
+/*
+**! method object box(int x1,int y1,int x2,int y2)
+**! method object box(int x1,int y1,int x2,int y2,int r,int g,int b)
+**! method object box(int x1,int y1,int x2,int y2,int r,int g,int b,int alpha)
+**! 	Draws a filled rectangle on the image. 
+**! 
+**! returns the object called
+**!
+**! arg int x1
+**! arg int y1
+**! arg int x2
+**! arg int y2
+**!	box corners
+**! arg int r
+**! arg int g
+**! arg int b
+**!     color of the box
+**! arg int alpha
+**!     alpha value 
+*/
 void image_box(INT32 args)
 {
    if (args<4||
@@ -702,8 +927,8 @@ void image_box(INT32 args)
        sp[1-args].type!=T_INT||
        sp[2-args].type!=T_INT||
        sp[3-args].type!=T_INT)
-      error("Illegal arguments to image->box()\n");
-   getrgb(THIS,4,args,"image->box()");
+      error("Illegal arguments to image::box()\n");
+   getrgb(THIS,4,args,"image::box()");
    if (!THIS->img) return;
 
    img_box(sp[-args].u.integer,
@@ -715,6 +940,27 @@ void image_box(INT32 args)
    push_object(THISOBJ);
 }
 
+/*
+**! method object circle(int x,int y,int rx,int ry)
+**! method object circle(int x,int y,int rx,int ry,int r,int g,int b)
+**! method object circle(int x,int y,int rx,int ry,int r,int g,int b,int alpha)
+**! 	Draws a line on the image. The line is <i>not</i> antialiased.
+**! 
+**! returns the object called
+**!
+**! arg int x
+**! arg int y
+**!     circle center
+**! arg int rx
+**! arg int ry
+**!	circle radius in pixels
+**! arg int r
+**! arg int g
+**! arg int b
+**!     color
+**! arg int alpha
+**!     alpha value
+*/
 void image_circle(INT32 args)
 {
    INT32 x,y,rx,ry;
@@ -725,8 +971,8 @@ void image_circle(INT32 args)
        sp[1-args].type!=T_INT||
        sp[2-args].type!=T_INT||
        sp[3-args].type!=T_INT)
-      error("illegal arguments to image->circle()\n");
-   getrgb(THIS,4,args,"image->circle()");
+      error("illegal arguments to image::circle()\n");
+   getrgb(THIS,4,args,"image::circle()");
    if (!THIS->img) return;
 
    x=sp[-args].u.integer;
@@ -793,6 +1039,34 @@ static INLINE void
    sum->b=testrange(sum->b+(INT32)(rgba.b*factor+0.5));
 }
 
+/*
+**! method object tuned_box(int x1,int y1,int x2,int y2,array(array(int)) corner_color)
+**! 	Draws a filled rectangle with colors (and alpha values) tuned
+**!	between the corners.
+**!
+**!	Tuning function is (1.0-x/xw)*(1.0-y/yw) where x and y is
+**!	the distance to the corner and xw and yw are the sides of the
+**!	rectangle.
+**!
+**! returns the object called
+**!
+**! arg int x1
+**! arg int y1
+**! arg int x2
+**! arg int y2
+**!	rectangle corners
+**! arg array(array(int)) corner_color
+**!     colors of the corners:
+**!
+**!	({x1y1,x2y1,x1y2,x2y2})
+**!
+**!	each of these is an array of integeres:
+**!
+**!	({r,g,b}) or ({r,g,b,alpha})
+**!
+**!	Default alpha channel value is 0 (opaque).
+*/
+
 void image_tuned_box(INT32 args)
 {
    INT32 x1,y1,x2,y2,xw,yw,x,y;
@@ -807,7 +1081,7 @@ void image_tuned_box(INT32 args)
        sp[3-args].type!=T_INT||
        sp[4-args].type!=T_ARRAY||
        sp[4-args].u.array->size<4)
-      error("Illegal number of arguments to image->tuned_box()\n");
+      error("Illegal number of arguments to image::tuned_box()\n");
 
    if (!THIS->img)
       error("no image\n");
@@ -838,10 +1112,11 @@ void image_tuned_box(INT32 args)
 
    for (x=max(0,-x1); x<=xw && x+x1<THIS->xsize; x++)
    {
-#define tune_factor(a,aw) (1.0-((float)(a)/(aw)))
+#define tune_factor(a,aw) (1.0-((float)(a)*(aw)))
       INT32 ymax;
-      float tfx1=tune_factor(x,xw);
-      float tfx2=tune_factor(xw-x,xw);
+      float dyw=1/yw;
+      float tfx1=tune_factor(x,1/xw);
+      float tfx2=tune_factor(xw-x,1/xw);
 
       ymax=min(yw,this->ysize-y1);
       img=this->img+x+x1+this->xsize*max(0,y1);
@@ -851,9 +1126,9 @@ void image_tuned_box(INT32 args)
 	    float tfy;
 	    sum=sumzero;
 
-	    add_to_rgba_sum_with_factor(&sum,topleft,(tfy=tune_factor(y,yw))*tfx1);
+	    add_to_rgba_sum_with_factor(&sum,topleft,(tfy=tune_factor(y,dyw))*tfx1);
 	    add_to_rgba_sum_with_factor(&sum,topright,tfy*tfx2);
-	    add_to_rgba_sum_with_factor(&sum,bottomleft,(tfy=tune_factor(yw-y,yw))*tfx1);
+	    add_to_rgba_sum_with_factor(&sum,bottomleft,(tfy=tune_factor(yw-y,dyw))*tfx1);
 	    add_to_rgba_sum_with_factor(&sum,bottomright,tfy*tfx2);
 
 	    set_rgb_group_alpha(*img, sum,sum.alpha);
@@ -865,9 +1140,9 @@ void image_tuned_box(INT32 args)
 	    float tfy;
 	    rgb_group sum={0,0,0};
 
-	    add_to_rgb_sum_with_factor(&sum,topleft,(tfy=tune_factor(y,yw))*tfx1);
+	    add_to_rgb_sum_with_factor(&sum,topleft,(tfy=tune_factor(y,dyw))*tfx1);
 	    add_to_rgb_sum_with_factor(&sum,topright,tfy*tfx2);
-	    add_to_rgb_sum_with_factor(&sum,bottomleft,(tfy=tune_factor(yw-y,yw))*tfx1);
+	    add_to_rgb_sum_with_factor(&sum,bottomleft,(tfy=tune_factor(yw-y,dyw))*tfx1);
 	    add_to_rgb_sum_with_factor(&sum,bottomright,tfy*tfx2);
 
 	    *img=sum;
@@ -882,11 +1157,21 @@ void image_tuned_box(INT32 args)
    push_object(THISOBJ);
 }
 
+/*
+**! method int xsize()
+**! returns the width of the image
+*/
+
 void image_xsize(INT32 args)
 {
    pop_n_elems(args);
    if (THIS->img) push_int(THIS->xsize); else push_int(0);
 }
+
+/*
+**! method int ysize()
+**! returns the height of the image
+*/
 
 void image_ysize(INT32 args)
 {
@@ -894,7 +1179,23 @@ void image_ysize(INT32 args)
    if (THIS->img) push_int(THIS->ysize); else push_int(0);
 }
 
-void image_gray(INT32 args)
+/*
+**! method object grey()
+**! method object grey(int r,int g,int b)
+**!    Makes a grey-scale image (with weighted values).
+**!
+**! returns the new image object
+**!
+**! arg int r
+**! arg int g
+**! arg int b
+**!     weight of color, default is r=87,g=127,b=41,
+**!	which should be pretty accurate of what the eyes see...
+**!
+**! see also: color, `*, modify_by_intensity
+*/
+
+void image_grey(INT32 args)
 {
    INT32 x,y,div;
    rgbl_group rgb;
@@ -909,7 +1210,7 @@ void image_gray(INT32 args)
       rgb.b=41;
    }
    else
-      getrgbl(&rgb,0,args,"image->gray()");
+      getrgbl(&rgb,0,args,"image::grey()");
    div=rgb.r+rgb.g+rgb.b;
 
    o=clone_object(image_program,0);
@@ -939,6 +1240,31 @@ void image_gray(INT32 args)
    push_object(o);
 }
 
+/*
+**! method object color()
+**! method object color(int value)
+**! method object color(int r,int g,int b)
+**!    Colorize an image. 
+**!
+**!    The red, green and blue values of the pixels are multiplied
+**!    with the given value(s). This works best on a grey image...
+**!
+**!    The result is divided by 255, giving correct pixel values.
+**!
+**!    If no arguments are given, the current color is used as factors.
+**!
+**! returns the new image object
+**!
+**! arg int r
+**! arg int g
+**! arg int b
+**!	red, green, blue factors
+**! arg int value
+**!	factor
+**!
+**! see also: grey, `*, modify_by_intensity
+*/
+
 void image_color(INT32 args)
 {
    INT32 x,y;
@@ -958,7 +1284,7 @@ void image_color(INT32 args)
 	 rgb.b=THIS->rgb.b;
    }
    else
-      getrgbl(&rgb,0,args,"image->color()");
+      getrgbl(&rgb,0,args,"image::color()");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -988,6 +1314,14 @@ void image_color(INT32 args)
    pop_n_elems(args);
    push_object(o);
 }
+
+/*
+**! method object invert()
+**!    Invert an image. Each pixel value gets to be 255-x, where x 
+**!    is the old value.
+**!
+**! returns the new image object
+*/
 
 void image_invert(INT32 args)
 {
@@ -1026,6 +1360,31 @@ void image_invert(INT32 args)
    push_object(o);
 }
 
+/*
+**! method object treshold()
+**! method object treshold(int r,int g,int b)
+**! 	Makes a black-white image. 
+**!
+**! 	If all red, green, blue parts of a pixel
+**!    	is larger or equal then the given value, the pixel will become
+**!	white, else black.
+**!
+**!	This method works fine with the grey method.
+**!
+**!	If no arguments are given, the current color is used 
+**!	for treshold values.
+**!
+**! returns the new image object
+**!
+**! arg int r
+**! arg int g
+**! arg int b
+**! 	red, green, blue threshold values
+**!
+**! see also: grey
+*/
+
+
 void image_threshold(INT32 args)
 {
    INT32 x,y;
@@ -1035,7 +1394,7 @@ void image_threshold(INT32 args)
 
    if (!THIS->img) error("no image\n");
 
-   getrgb(THIS,0,args,"image->threshold()");
+   getrgb(THIS,0,args,"image::threshold()");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -1070,6 +1429,34 @@ void image_threshold(INT32 args)
    push_object(o);
 }
 
+/*
+**! method object distancesq()
+**! method object distancesq(int r,int g,int b)
+**!    Makes an grey-scale image, for alpha-channel use.
+**!    
+**!    The given value (or current color) are used for coordinates
+**!    in the color cube. Each resulting pixel is the 
+**!    distance from this point to the source pixel color,
+**!    in the color cube, squared, rightshifted 8 steps:
+**!
+**!    <pre>
+**!    p = pixel color
+**!    o = given color
+**!    d = destination pixel
+**!    d.red=d.blue=d.green=
+**!	   ((o.red-p.red)²+(o.green-p.green)²+(o.blue-p.blue)²)>>8
+**!    </pre>
+**!
+**! returns the new image object
+**!
+**! arg int r
+**! arg int g
+**! arg int b
+**!	red, green, blue coordinates
+**!
+**! see also: select_from
+*/
+
 void image_distancesq(INT32 args)
 {
    INT32 i;
@@ -1079,7 +1466,7 @@ void image_distancesq(INT32 args)
 
    if (!THIS->img) error("no image\n");
 
-   getrgb(THIS,0,args,"image->distancesq()");
+   getrgb(THIS,0,args,"image::distancesq()");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -1201,7 +1588,7 @@ fprintf(stderr," %d,%d,%d)\n",src[x+y*xsize].r,src[x+y*xsize].g,src[x+y*xsize].b
 	 while (++x<=x2)
 	    if ( (j=DISTANCE(rgb,src[x+y*xsize])) <=low_limit) break;
 	 xr=x;
-/*	 x++; hokuspokus /law */
+/*	 x++; hokuspokus /mirar */
 /*       nån dag ska jag försöka begripa varför... */
 	 if (x>x2) return;
 	 continue;
@@ -1214,6 +1601,32 @@ fprintf(stderr," %d,%d,%d)\n",src[x+y*xsize].r,src[x+y*xsize].g,src[x+y*xsize].b
 	       xr,x-1,y,src,dest,xsize,ysize,rgb,reclvl+1);
 }
 
+/*
+**! method object select_from(int x,int y)
+**! method object select_from(int x,int y,int edge_value)
+**!    Makes an grey-scale image, for alpha-channel use.
+**!    
+**!    This is very close to a floodfill.
+**!    
+**!    The image is scanned from the given pixel,
+**!    filled with 255 if the color is the same,
+**!    or 255 minus distance in the colorcube, squared, rightshifted
+**!    8 steps (see <ref>distancesq</ref>).
+**!
+**!    When the edge distance is reached, the scan is stopped.
+**!    Default edge value is 30.
+**!    This value is squared and compared with the square of the 
+**!    distance above.
+**!
+**! returns the new image object
+**!
+**! arg int x
+**! arg int y
+**!    originating pixel in the image
+**!
+**! see also: distancesq
+*/
+
 void image_select_from(INT32 args)
 {
    struct object *o;
@@ -1225,11 +1638,11 @@ void image_select_from(INT32 args)
    if (args<2 
        || sp[-args].type!=T_INT
        || sp[1-args].type!=T_INT)
-      error("Illegal argument(s) to image->select_from()\n");
+      error("Illegal argument(s) to image::select_from()\n");
 
    if (args>=3)
       if (sp[2-args].type!=T_INT)
-	 error("Illegal argument 3 (edge type) to image->select_from()\n");
+	 error("Illegal argument 3 (edge value) to image::select_from()\n");
       else
 	 low_limit=max(0,sp[2-args].u.integer);
    else
@@ -1249,6 +1662,7 @@ void image_select_from(INT32 args)
    if (sp[-args].u.integer>=0 && sp[-args].u.integer<img->xsize 
        && sp[1-args].u.integer>=0 && sp[1-args].u.integer<img->ysize)
    {
+      MARK_DISTANCE(pixel(THIS,sp[-args].u.integer,sp[1-args].u.integer),0);
       isf_seek(ISF_LEFT|ISF_RIGHT,1,low_limit,
 	       sp[-args].u.integer,sp[-args].u.integer,
 	       sp[1-args].u.integer,
@@ -1265,6 +1679,67 @@ void image_select_from(INT32 args)
    push_object(o);
 }
 
+
+/*
+**! method object apply_matrix(array(array(int|array(int))) matrix)
+**! method object apply_matrix(array(array(int|array(int))) matrix,int r,int g,int b)
+**! method object apply_matrix(array(array(int|array(int))) matrix,int r,int g,int b,int|float div)
+**!     Applies a pixel-transform matrix, or filter, to the image.
+**!    
+**!	<pre>
+**!                            2   2
+**!	pixel(x,y)= base+ k ( sum sum pixel(x+k-1,y+l-1)*matrix(k,l) ) 
+**!                           k=0 l=0 
+**!     </pre>
+**!	
+**!	1/k is sum of matrix, or sum of matrix multiplied with div.
+**!	base is given by r,g,b and is normally black.
+**!
+**!     blur (ie a 2d gauss function):
+**!	<pre>
+**!	({({1,2,1}),
+**!	  ({2,5,2}),
+**!	  ({1,2,1})})
+**!	</pre>
+**!	
+**!     sharpen (k>8, preferably 12 or 16):
+**!	<pre>
+**!	({({-1,-1,-1}),
+**!	  ({-1, k,-1}),
+**!	  ({-1,-1,-1})})
+**!	</pre>
+**!
+**!     edge detect:
+**!	<pre>
+**!	({({1, 1,1}),
+**!	  ({1,-8,1}),
+**!	  ({1, 1,1})})
+**!	</pre>
+**!
+**!     horisontal edge detect (get the idea):
+**!	<pre>
+**!	({({0, 0,0})
+**!	  ({1,-8,1}),
+**!	  ({0, 0,0})})
+**!	</pre>
+**!
+**!     emboss (might prefer to begin with a <ref>grey</ref> image):
+**!	<pre>
+**!	({({2, 1, 0})
+**!	  ({1, 0,-1}),
+**!	  ({0,-1, 2})}), 128,128,128, 5
+**!	</pre>
+**!
+**! returns the new image object
+**!
+**! arg array(array(int|array(int)))
+**!     the matrix; innermost is a value or an array with red, green, blue
+**!     values for red, green, blue separation.
+**!	
+**!	
+*/
+
+
 void image_apply_matrix(INT32 args)
 {
    int width,height,i,j;
@@ -1277,13 +1752,13 @@ CHRONO("apply_matrix");
 
    if (args<1 ||
        sp[-args].type!=T_ARRAY)
-      error("Illegal arguments to image->apply_matrix()\n");
+      error("Illegal arguments to image::apply_matrix()\n");
 
    if (args>3)
       if (sp[1-args].type!=T_INT ||
 	  sp[2-args].type!=T_INT ||
 	  sp[3-args].type!=T_INT)
-	 error("Illegal argument(s) (2,3,4) to image->apply_matrix()\n");
+	 error("Illegal argument(s) (2,3,4) to image::apply_matrix()\n");
       else
       {
 	 default_rgb.r=sp[1-args].u.integer;
@@ -1318,12 +1793,12 @@ CHRONO("apply_matrix");
       struct svalue s;
       array_index_no_free(&s,sp[-args].u.array,i);
       if (s.type!=T_ARRAY) 
-	 error("Illegal contents of (root) array (image->apply_matrix)\n");
+	 error("Illegal contents of (root) array (image::apply_matrix)\n");
       if (width==-1)
 	 width=s.u.array->size;
       else
 	 if (width!=s.u.array->size)
-	    error("Arrays has different size (image->apply_matrix)\n");
+	    error("Arrays has different size (image::apply_matrix)\n");
       free_svalue(&s);
    }
    if (width==-1) width=0;
@@ -1381,6 +1856,31 @@ CHRONO("apply_matrix, end");
    push_object(o);
 }
 
+/*
+**! method object modify_by_intensity(int r,int g,int b,int|array(int) v1,...,int|array(int) vn)
+**!    Recolor an image from intensity values.
+**!
+**!    For each color an intensity is calculated, from r, g and b factors
+**!    (see <ref>grey</ref>), this gives a value between 0 and max.
+**!
+**!    The color is then calculated from the values given, v1 representing
+**!    the intensity value of 0, vn representing max, and colors between
+**!    representing intensity values between, linear.
+**!
+**! returns the new image object
+**!
+**! arg int r
+**! arg int g
+**! arg int b
+**!	red, green, blue intensity factors
+**! arg int|array(int) v1
+**! arg int|array(int) vn
+**!	destination color
+**!
+**! see also: grey, `*, color
+*/
+
+
 void image_modify_by_intensity(INT32 args)
 {
    INT32 x,y,i;
@@ -1393,9 +1893,9 @@ void image_modify_by_intensity(INT32 args)
 
    if (!THIS->img) error("no image\n");
    if (args<5) 
-      error("too few arguments to image->modify_by_intensity()\n");
+      error("too few arguments to image::modify_by_intensity()\n");
    
-   getrgbl(&rgb,0,args,"image->modify_by_intensity()");
+   getrgbl(&rgb,0,args,"image::modify_by_intensity()");
    div=rgb.r+rgb.g+rgb.b;
    if (!div) div=1;
 
@@ -1478,6 +1978,24 @@ void image_modify_by_intensity(INT32 args)
    push_object(o);
 }
 
+
+/*
+**! method object map_closest(array(array(int)) colors)
+**!    Maps all pixel colors to the colors given.
+**!
+**!    Method to find the correct color is linear search
+**!    over the colors given, selecting the nearest in the
+**!    color cube. Slow...
+**!
+**! returns the new image object
+**!
+**! arg array(array(int)) color
+**!    list of destination (available) colors
+**!
+**! see also: map_fast, select_colors, map_fs
+*/
+
+
 static void image_map_closest(INT32 args)
 {
    struct colortable *ct;
@@ -1488,13 +2006,13 @@ static void image_map_closest(INT32 args)
    if (!THIS->img) error("no image\n");
    if (args<1
        || sp[-args].type!=T_ARRAY)
-      error("illegal argument to image->map_closest()\n");
+      error("illegal argument to image::map_closest()\n");
 
    push_int(THIS->xsize);
    push_int(THIS->ysize);
    o=clone_object(image_program,2);
       
-   ct=colortable_from_array(sp[-args].u.array,"image->map_closest()\n");
+   ct=colortable_from_array(sp[-args].u.array,"image::map_closest()\n");
    pop_n_elems(args);
 
    i=THIS->xsize*THIS->ysize;
@@ -1512,6 +2030,24 @@ static void image_map_closest(INT32 args)
    push_object(o);
 }
 
+/*
+**! method object map_fast(array(array(int)) colors)
+**!    Maps all pixel colors to the colors given.
+**!
+**!    Method to find the correct color is to branch
+**!    in a binary space partitioning tree in the 
+**!    colorcube. This is fast, but in some cases
+**!    it gives the wrong color (mostly when few colors
+**!    are available).
+**!
+**! returns the new image object
+**!
+**! arg array(array(int)) color
+**!    list of destination (available) colors
+**!
+**! see also: map_fast, select_colors
+*/
+
 static void image_map_fast(INT32 args)
 {
    struct colortable *ct;
@@ -1522,13 +2058,13 @@ static void image_map_fast(INT32 args)
    if (!THIS->img) error("no image\n");
    if (args<1
        || sp[-args].type!=T_ARRAY)
-      error("illegal argument to image->map_closest()\n");
+      error("illegal argument to image::map_closest()\n");
 
    push_int(THIS->xsize);
    push_int(THIS->ysize);
    o=clone_object(image_program,2);
       
-   ct=colortable_from_array(sp[-args].u.array,"image->map_closest()\n");
+   ct=colortable_from_array(sp[-args].u.array,"image::map_closest()\n");
    pop_n_elems(args);
 
    i=THIS->xsize*THIS->ysize;
@@ -1546,6 +2082,25 @@ static void image_map_fast(INT32 args)
    push_object(o);
 }
 
+/*
+**! method object map_closest(array(array(int)) colors)
+**!    Maps all pixel colors to the colors given.
+**!
+**!    Method to find the correct color is linear search
+**!    over the colors given, selecting the nearest in the
+**!    color cube. Slow...
+**!
+**!    Floyd-steinberg error correction is added to create
+**!    a better-looking image, in many cases, anyway.
+**!
+**! returns the new image object
+**!
+**! arg array(array(int)) color
+**!    list of destination (available) colors
+**!
+**! see also: map_fast, select_colors, map_closest
+*/
+
 static void image_map_fs(INT32 args)
 {
    struct colortable *ct;
@@ -1558,7 +2113,7 @@ static void image_map_fs(INT32 args)
    if (!THIS->img) error("no image\n");
    if (args<1
        || sp[-args].type!=T_ARRAY)
-      error("illegal argument to image->map_fs()\n");
+      error("illegal argument to image::map_fs()\n");
 
    push_int(THIS->xsize);
    push_int(THIS->ysize);
@@ -1567,7 +2122,7 @@ static void image_map_fs(INT32 args)
    res=(int*)xalloc(sizeof(int)*THIS->xsize);
    errb=(rgbl_group*)xalloc(sizeof(rgbl_group)*THIS->xsize);
       
-   ct=colortable_from_array(sp[-args].u.array,"image->map_closest()\n");
+   ct=colortable_from_array(sp[-args].u.array,"image::map_closest()\n");
    pop_n_elems(args);
 
    for (i=0; i<THIS->xsize; i++)
@@ -1596,6 +2151,18 @@ static void image_map_fs(INT32 args)
    push_object(o);
 }
 
+/*
+**! method array(array(int)) map_closest(int num_colors)
+**!    	Selects the best colors to represent the image.
+**!
+**! returns an array of colors
+**!
+**! arg int num_colors
+**!	number of colors to return
+**!
+**! see also: map_fast, select_colors
+*/
+
 void image_select_colors(INT32 args)
 {
    struct colortable *ct;
@@ -1603,7 +2170,7 @@ void image_select_colors(INT32 args)
 
    if (args<1
       || sp[-args].type!=T_INT)
-      error("Illegal argument to image->select_colors()\n");
+      error("Illegal argument to image::select_colors()\n");
 
    colors=sp[-args].u.integer;
    pop_n_elems(args);
@@ -1728,7 +2295,9 @@ void pike_module_init()
    add_function("tuned_box",image_tuned_box,
 		"function(int,int,int,int,array:object)",0);
 
-   add_function("gray",image_gray,
+   add_function("gray",image_grey,
+		"function("RGB_TYPE":object)",0);
+   add_function("grey",image_grey,
 		"function("RGB_TYPE":object)",0);
    add_function("color",image_color,
 		"function("RGB_TYPE":object)",0);

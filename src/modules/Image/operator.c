@@ -1,4 +1,4 @@
-/* $Id: operator.c,v 1.3 1997/03/17 03:08:01 hubbe Exp $ */
+/* $Id: operator.c,v 1.4 1997/03/25 06:13:48 mirar Exp $ */
 #include "global.h"
 
 #include <math.h>
@@ -103,17 +103,17 @@ void image_operator_plus(INT32 args)
 STANDARD_OPERATOR_HEADER("'+")
    while (i--)
    {
-      d->r=max(s1->r+s2->r,255);
-      d->g=max(s1->g+s2->g,255);
-      d->b=max(s1->b+s2->b,255);
+      d->r=min(s1->r+s2->r,255);
+      d->g=min(s1->g+s2->g,255);
+      d->b=min(s1->b+s2->b,255);
       s1++; s2++; d++; 
    }
    else
    while (i--)
    {
-      d->r=max(s1->r+rgb.r,255);
-      d->g=max(s1->g+rgb.g,255);
-      d->b=max(s1->b+rgb.b,255);
+      d->r=min(s1->r+rgb.r,255);
+      d->g=min(s1->g+rgb.g,255);
+      d->b=min(s1->b+rgb.b,255);
       s1++; d++;
    }
    THREADS_DISALLOW();
@@ -125,17 +125,17 @@ void image_operator_multiply(INT32 args)
 STANDARD_OPERATOR_HEADER("'+")
    while (i--)
    {
-      d->r=floor(s1->r*s2->r*q+0.5);
-      d->g=floor(s1->g*s2->g*q+0.5);
-      d->b=floor(s1->b*s2->b*q+0.5);
+      d->r=floor(s1->r*q*s2->r+0.5);
+      d->g=floor(s1->g*q*s2->g+0.5);
+      d->b=floor(s1->b*q*s2->b+0.5);
       s1++; s2++; d++; 
    }
    else
    while (i--)
    {
-      d->r=floor(s1->r*rgb.r*q+0.5);
-      d->g=floor(s1->g*rgb.g*q+0.5);
-      d->b=floor(s1->b*rgb.b*q+0.5);
+      d->r=floor(s1->r*q*rgb.r+0.5);
+      d->g=floor(s1->g*q*rgb.g+0.5);
+      d->b=floor(s1->b*q*rgb.b+0.5);
       s1++; d++; 
    }
    THREADS_DISALLOW();
