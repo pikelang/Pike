@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.24 1998/11/22 11:02:54 hubbe Exp $
+ * $Id: interpret.h,v 1.25 2001/01/06 01:58:26 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -51,6 +51,8 @@ struct frame
 
 #define push_program(P) do{ struct program *_=(P); debug_malloc_touch(_); sp->u.program=_; sp++->type=T_PROGRAM; }while(0)
 #define push_int(I) do{ INT32 _=(I); sp->u.integer=_;sp->type=T_INT;sp++->subtype=NUMBER_NUMBER; }while(0)
+/* forward compatibility */
+#define push_int64(I) do{ INT32 _=(I); Pike_sp->u.integer=_;Pike_sp->type=PIKE_T_INT;Pike_sp++->subtype=NUMBER_NUMBER; }while(0)
 #define push_mapping(M) do{ struct mapping *_=(M); debug_malloc_touch(_); sp->u.mapping=_; sp++->type=T_MAPPING; }while(0)
 #define push_array(A) do{ struct array *_=(A); debug_malloc_touch(_); sp->u.array=_ ;sp++->type=T_ARRAY; }while(0)
 #define push_multiset(L) do{ struct multiset *_=(L); debug_malloc_touch(_); sp->u.multiset=_; sp++->type=T_MULTISET; }while(0)

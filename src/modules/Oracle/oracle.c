@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.29 2001/01/04 23:42:52 hubbe Exp $
+ * $Id: oracle.c,v 1.30 2001/01/06 01:58:27 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.29 2001/01/04 23:42:52 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.30 2001/01/06 01:58:27 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -334,7 +334,11 @@ struct inout
   union dbunion
   {
     double f;
-    int i;
+#ifdef INT64
+    INT64 i;
+#else
+    INT32 i;
+#endif
     char shortstr[32];
     OCIDate date;
 #ifdef STATIC_BUFFERS
@@ -940,6 +944,13 @@ static void f_fetch_fields(INT32 args)
 #endif
 	);
 
+#ifdef ORACLE_DEBUG
+      fprintf(stderr,"data_size=%d type=%d SQLT_INT=%d\n",
+	      data_size,
+	      type,
+	      SQLT_INT);
+#endif
+
       if(rc != OCI_SUCCESS)
 	ora_error_handler(dbcon->error_handle, rc, "OCIDefineByPos");
 
@@ -1034,7 +1045,7 @@ static void push_inout_value(struct inout *inout)
       break;
       
     case SQLT_INT:
-      push_int(inout->u.i);
+      push_int64(inout->u.i);
       break;
       
     case SQLT_FLT:

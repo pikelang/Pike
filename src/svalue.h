@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.19 1998/11/22 11:03:21 hubbe Exp $
+ * $Id: svalue.h,v 1.20 2001/01/06 01:58:27 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -88,6 +88,12 @@ struct svalue
 #define T_STRING 6
 #define T_FLOAT 7
 #define T_INT 8
+
+/* forward compatibility */
+#define PIKE_T_INT T_INT
+#define PIKE_T_STRING T_STRING
+#define PIKE_T_OBJECT T_OBJECT
+#define PIKE_T_ARRAY T_ARRAY
 
 #define T_VOID 16
 #define T_MANY 17
