@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.176 2000/08/13 15:15:22 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.177 2000/08/17 18:58:28 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -41,6 +41,10 @@ RCSID("$Id: signal_handler.c,v 1.176 2000/08/13 15:15:22 grubba Exp $");
 
 #ifdef HAVE_GRP_H
 # include <grp.h>
+#endif
+
+#ifdef HAVE_SYS_ID_H
+# include <sys/id.h>
 #endif
 
 #ifdef HAVE_WINBASE_H
