@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.301 2003/10/24 17:44:33 mast Exp $
+|| $Id: file.c,v 1.302 2003/10/24 17:54:58 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.301 2003/10/24 17:44:33 mast Exp $");
+RCSID("$Id: file.c,v 1.302 2003/10/24 17:54:58 mast Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -269,10 +269,6 @@ static void close_fd_quietly(void)
   int fd=FD;
   if(fd<0) return;
 
-  set_read_callback(fd,0,0);
-  set_write_callback(fd,0,0);
-  set_read_oob_callback(fd,0,0);
-  set_write_oob_callback(fd,0,0);
   set_backend_for_fd(fd, NULL);
 
   check_internal_reference(THIS);
@@ -321,10 +317,6 @@ static void just_close_fd(void)
   int fd=FD;
   if(fd<0) return;
 
-  set_read_callback(fd,0,0);
-  set_write_callback(fd,0,0);
-  set_read_oob_callback(fd,0,0);
-  set_write_oob_callback(fd,0,0);
   set_backend_for_fd(fd, NULL);
 
   check_internal_reference(THIS);
@@ -2136,6 +2128,58 @@ static void file_mode(INT32 args)
 {
   pop_n_elems(args);
   push_int(THIS->open_mode);
+}
+
+/*! @decl void set_backend (Pike.Backend backend)
+ *!
+ *! Set the backend used for the callbacks.
+ *!
+ *! @note
+ *! The backend does not keep a reference to this object, not even a
+ *! weak one. So if this object runs out of other references it will
+ *! still be destructed quickly (after closing, if necessary).
+ *!
+ *! @seealso
+ *!   @[query_backend], @[set_nonblocking], @[set_read_callback], @[set_write_callback]
+ */
+static void file_set_backend (INT32 args)
+{
+  int fd = FD;
+  struct Backend_struct *backend;
+
+  if(fd < 0) Pike_error ("File not open.\n");
+
+  if (!args)
+    SIMPLE_TOO_FEW_ARGS_ERROR ("Stdio.File->set_backend", 1);
+  if (Pike_sp[-args].type != PIKE_T_OBJECT)
+    SIMPLE_BAD_ARG_ERROR ("Stdio.File->set_backend", 1, "object(Pike.Backend)");
+  backend = (struct Backend_struct *)
+    get_storage (Pike_sp[-args].u.object, Backend_program);
+  if (!backend)
+    SIMPLE_BAD_ARG_ERROR ("Stdio.File->set_backend", 1, "object(Pike.Backend)");
+
+  set_backend_for_fd (fd, backend);
+
+  pop_n_elems (args - 1);
+}
+
+/*! @decl Pike.Backend query_backend()
+ *!
+ *! Return the backend used for the callbacks.
+ *!
+ *! @seealso
+ *!   @[set_backend]
+ */
+static void file_query_backend (INT32 args)
+{
+  struct object *b;
+  if(FD < 0) Pike_error ("File not open.\n");
+  pop_n_elems (args);
+  b = get_backend_obj_for_fd (FD);
+  if (b)
+    ref_push_object (b);
+  else
+    push_int (0);
 }
 
 /*! @decl void set_nonblocking()

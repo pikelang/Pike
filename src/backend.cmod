@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.57 2003/10/24 15:11:45 mast Exp $
+|| $Id: backend.cmod,v 1.58 2003/10/24 17:54:58 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.57 2003/10/24 15:11:45 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.58 2003/10/24 17:54:58 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -194,7 +194,7 @@ struct Backend_struct *get_backend_for_fd(int fd)
   return fd_map[fd];
 }
 
-void set_backend_for_fd(int fd, struct Backend_struct *b)
+static void low_set_backend_for_fd(int fd, struct Backend_struct *b)
 {
 #ifdef PIKE_DEBUG
   if(fd<0) Pike_fatal("set_backend_for(%d)\n",fd);
@@ -219,7 +219,7 @@ void set_backend_for_fd(int fd, struct Backend_struct *b)
 	malloc(sizeof(struct Backend_struct *) * fd_map_size);
     }
     if(!fd_map)
-      Pike_fatal("Out of memory in backend:set_backend_for_fd.\n"
+      Pike_fatal("Out of memory in backend:low_set_backend_for_fd.\n"
 	"Tried to allocate %d bytes.\n",sizeof(struct Backend_struct *) * fd_map_size);
     
     MEMSET(fd_map+old,0,sizeof(struct Backend_struct *) * (fd_map_size-old));
@@ -237,7 +237,7 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
   if(!default_backend)
     Pike_fatal("No backend!\n");
 #endif
-  set_backend_for_fd(fd, default_backend);
+  low_set_backend_for_fd(fd, default_backend);
   return default_backend;
 }
 
@@ -495,6 +495,9 @@ PIKECLASS Backend
   CVAR int inside_call_out;
 #endif
 
+  /* The object we're in. This ref isn't refcounted. */
+  CVAR struct object *backend_obj;
+
   DECLARE_STORAGE
   /*
    * Call out defines
@@ -605,7 +608,10 @@ PIKECLASS Backend
       
       if(cb)
       {
-	set_backend_for_fd(fd, me);
+#ifdef PIKE_DEBUG
+	if (get_backend_for_fd (fd) != me)
+	  Pike_fatal ("This backend doesn't own this fd.\n");
+#endif
 	if(!was_set)
 	{
 	  MY_FD_SET(&me->set, fd, MY_POLLIN);
@@ -648,7 +654,10 @@ PIKECLASS Backend
       
       if(cb)
       {
-	set_backend_for_fd(fd, me);
+#ifdef PIKE_DEBUG
+	if (get_backend_for_fd (fd) != me)
+	  Pike_fatal ("This backend doesn't own this fd.\n");
+#endif
 	if(!was_set)
 	{
 	  MY_FD_SET(&me->set, fd, MY_POLLOUT);
@@ -686,7 +695,10 @@ PIKECLASS Backend
       
       if(cb)
       {
-	set_backend_for_fd(fd, me);
+#ifdef PIKE_DEBUG
+	if (get_backend_for_fd (fd) != me)
+	  Pike_fatal ("This backend doesn't own this fd.\n");
+#endif
 	MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
 	backend_wake_up_backend(me);
       }else{
@@ -727,7 +739,10 @@ PIKECLASS Backend
       
       if(cb)
       {
-	set_backend_for_fd(fd, me);
+#ifdef PIKE_DEBUG
+	if (get_backend_for_fd (fd) != me)
+	  Pike_fatal ("This backend doesn't own this fd.\n");
+#endif
 	MY_FD_SET(&me->set, fd, MY_POLLWREXCEPT);
 	backend_wake_up_backend(me);
       }else{
@@ -1443,30 +1458,17 @@ PIKECLASS Backend
   }
 
   /*! @decl void add_file(Stdio.File|Stdio.FILE f)
-   *!   Add @[f] to this backend.
+   *! 
+   *! Add @[f] to this backend. This simply does
+   *! @expr{f->set_backend(backend)@} where @expr{backend@} is this
+   *! object.
    */
   PIKEFUN void add_file(object f)
-    {
-      int fd=fd_from_object(f);
-      struct Backend_struct *old;
-      if(fd<0) Pike_error("Backend->add_file() on nonopen file.\n");
-      if((old=get_backend_for_fd(fd)))
-      {
-	backend_set_read_callback(THIS, fd,
-			  backend_query_read_callback(old, fd),
-			  backend_query_read_callback_data(old, fd));
-	backend_set_write_callback(THIS, fd,
-			  backend_query_write_callback(old, fd),
-			  backend_query_write_callback_data(old, fd));
-	backend_set_read_oob_callback(THIS, fd,
-			  backend_query_read_oob_callback(old, fd),
-			  backend_query_read_oob_callback_data(old, fd));
-	backend_set_write_oob_callback(THIS, fd,
-			  backend_query_write_oob_callback(old, fd),
-			  backend_query_write_oob_callback_data(old, fd));
-      }
-      set_backend_for_fd(fd, THIS);
-    }
+  {
+    ref_push_object (Pike_fp->current_object);
+    apply (f, "set_backend", 1);
+    pop_stack();
+  }
 
 
   /* CALL OUT */
@@ -2148,6 +2150,8 @@ PIKECLASS Backend
       me->hash_order=5;
       me->call_hash=0;
 
+      me->backend_obj = Pike_fp->current_object; /* Note: Not refcounted. */
+
 #ifdef PIKE_DEBUG
       me->inside_call_out=0;
 #endif
@@ -2177,6 +2181,7 @@ PIKECLASS Backend
 
       set_nonblocking(me->wakeup_pipe[0],1);
       set_nonblocking(me->wakeup_pipe[1],1);
+      set_backend_for_fd (me->wakeup_pipe[0], me);
       backend_set_read_callback(me,
 				me->wakeup_pipe[0],
 				wakeup_callback,
@@ -2318,6 +2323,46 @@ PMOD_EXPORT int write_to_stderr(char *a, size_t len)
   
 #endif
   return 1;
+}
+
+PMOD_EXPORT struct object *get_backend_obj_for_fd (int fd)
+{
+  struct Backend_struct *b = really_get_backend_for_fd (fd);
+  if (!b) return NULL;
+  return b->backend_obj;
+}
+
+PMOD_EXPORT void set_backend_for_fd (int fd, struct Backend_struct *new)
+{
+  struct Backend_struct *old = get_backend_for_fd (fd);
+
+  if (!old)
+    low_set_backend_for_fd (fd, new);
+
+  else {
+    if (new && old != new) {
+      file_callback read_cb = backend_query_read_callback (old, fd);
+      void *read_cb_data = backend_query_read_callback_data (old, fd);
+      file_callback write_cb = backend_query_write_callback (old, fd);
+      void *write_cb_data = backend_query_write_callback_data (old, fd);
+      file_callback read_oob_cb = backend_query_read_oob_callback (old, fd);
+      void *read_oob_cb_data = backend_query_read_oob_callback_data (old, fd);
+      file_callback write_oob_cb = backend_query_write_oob_callback (old, fd);
+      void *write_oob_cb_data = backend_query_write_oob_callback_data (old, fd);
+
+      low_set_backend_for_fd (fd, new);
+
+      backend_set_read_callback (new, fd, read_cb, read_cb_data);
+      backend_set_write_callback (new, fd, write_cb, write_cb_data);
+      backend_set_read_oob_callback (new, fd, read_oob_cb, read_oob_cb_data);
+      backend_set_write_oob_callback (new, fd, write_oob_cb, write_oob_cb_data);
+    }
+
+    backend_set_read_callback (old, fd, NULL, NULL);
+    backend_set_write_callback (old, fd, NULL, NULL);
+    backend_set_read_oob_callback (old, fd, NULL, NULL);
+    backend_set_write_oob_callback (old, fd, NULL, NULL);
+  }
 }
 
 #define WRAP(CB)							    \

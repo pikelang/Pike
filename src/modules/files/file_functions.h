@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.29 2003/10/23 12:34:02 grubba Exp $
+|| $Id: file_functions.h,v 1.30 2003/10/24 17:54:58 mast Exp $
 */
 
 FILE_FUNC("open",file_open,"function(string,string,void|int:int)")
@@ -29,10 +29,11 @@ FILE_FUNC("open",file_open,"function(string,string,void|int:int)")
   FILE_FUNC("set_close_on_exec",file_set_close_on_exec,"function(int:void)")
   FILE_FUNC("set_nonblocking",file_set_nonblocking,"function(:void)")
 
+  FILE_FUNC("set_backend", file_set_backend, "function(object:void)")
+  FILE_FUNC("query_backend", file_query_backend, "function(void:object)")
+
   FILE_FUNC("set_read_callback",file_set_read_callback,"function(mixed:void)")
-
   FILE_FUNC("set_write_callback",file_set_write_callback,"function(mixed:void)")
-
   FILE_FUNC("set_read_oob_callback",file_set_read_oob_callback,"function(mixed:void)")
   FILE_FUNC("set_write_oob_callback",file_set_write_oob_callback,"function(mixed:void)")
 
