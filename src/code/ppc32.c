@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.c,v 1.5 2001/08/14 01:26:09 marcus Exp $
+ * $Id: ppc32.c,v 1.6 2001/08/15 17:44:04 marcus Exp $
  *
  * Machine code generator for 32 bit PowerPC
  *
@@ -19,7 +19,7 @@
       fatal("Function pointer %p out of range for TOC @ %p!\n",		\
 	    func_, toc_);						\
     /* lwz r0,delta(r2)	*/						\
-    add_to_program(0x80000000|(2<<16)|(delta_&0xffff));			\
+    LWZ(0, 2, delta_);							\
     /* mtlr r0 */							\
     add_to_program(0x7c0803a6);						\
     /* blrl */								\
@@ -37,21 +37,29 @@
   } while(0)
 #endif
 
+int ppc32_codegen_state = 0;
+
+void ppc32_flush_code_generator_state()
+{
+  if(ppc32_codegen_state & PPC_CODEGEN_SP_NEEDSSTORE) {
+    /* stw pike_sp,stack_pointer(pike_interpreter) */
+    STW(PPC_REG_PIKE_SP, PPC_REG_PIKE_INTERP,
+	OFFSETOF(Pike_interpreter, stack_pointer));
+  }
+  ppc32_codegen_state = 0;
+}
+
 INT32 ppc32_get_local_addr(int reg, INT32 arg)
 {
   INT32 offs = arg * sizeof(struct svalue);
 
-  /* lwz 11,frame_pointer(31) */
-  add_to_program(0x80000000|(11<<21)|(31<<16)|
-		 OFFSETOF(Pike_interpreter, frame_pointer));
-  /* lwz reg,locals(11) */
-  add_to_program(0x80000000|(reg<<21)|(11<<16)|
-		 OFFSETOF(pike_frame, locals));
+  LOAD_FP_REG();
+  /* lwz reg,locals(pike_fp) */
+  LWZ(reg, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, locals));
 
   if(offs > 32767) {
     /* addis reg,reg,%hi(offs) */
-    add_to_program(0x3c000000|(reg<<21)|(reg<<16)|
-		   (((offs+32768)>>16)&0xffff));
+    ADDIS(reg, reg, (offs+32768)>>16);
     if((offs &= 0xffff) > 32767)
       offs -= 65536;
   }
@@ -63,9 +71,7 @@ void ppc32_push_svalue(int reg, INT32 offs)
 {
   int e;
 
-  /* lwz 11,stack_pointer(31) */
-  add_to_program(0x80000000|(11<<21)|(31<<16)|
-		 OFFSETOF(Pike_interpreter, stack_pointer));
+  LOAD_SP_REG();
 
   if(sizeof(struct svalue) > 8)
   {
@@ -73,54 +79,47 @@ void ppc32_push_svalue(int reg, INT32 offs)
     {
       if( e ==  OFFSETOF(svalue,u.refs)) continue;
 
-      /* lwz 0,e+offs(r) */
-      add_to_program(0x80000000|(0<<21)|(reg<<16)|(e+offs));
-      /* stw 0,e(11) */
-      add_to_program(0x90000000|(0<<21)|(11<<16)|(e));
+      /* lwz r0,e+offs(r) */
+      LWZ(0, reg, e+offs);
+      /* stw r0,e(pike_sp) */
+      STW(0, PPC_REG_PIKE_SP, e);
     }
   }
  
-  /* lwz 0,offs(r) */
-  add_to_program(0x80000000|(0<<21)|(reg<<16)|(offs));
-  /* lwz r,refs+offs(r) */
-  add_to_program(0x80000000|(reg<<21)|(reg<<16)|
-		 (offs+OFFSETOF(svalue,u.refs)));
-  /* stw 0,0(11) */
-  add_to_program(0x90000000|(0<<21)|(11<<16)|0);
+  /* lwz r0,offs(r) */
+  LWZ(0, reg, offs);
+  /* lwz r11,refs+offs(r) */
+  LWZ(11, reg, offs+OFFSETOF(svalue,u.refs));
+  /* stw r0,0(pike_sp) */
+  STW(0, PPC_REG_PIKE_SP, 0);
 #if PIKE_BYTEORDER == 1234
-  /* rlwinm 0,0,0,16,31 */
-  add_to_program(0x54000000|(0<<21)|(0<<16)|(0<<11)|(16<<6)|(31<<1));
+  /* rlwinm r0,r0,0,16,31 */
+  RLWINM(0, 0, 0, 16, 31);
 #else
-  /* rlwinm 0,0,16,16,31 */
-  add_to_program(0x54000000|(0<<21)|(0<<16)|(16<<11)|(16<<6)|(31<<1));
+  /* rlwinm r0,r0,16,16,31 */
+  RLWINM(0, 0, 16, 16, 31);
 #endif
-  /* stw r,refs(11) */
-  add_to_program(0x90000000|(reg<<21)|(11<<16)|
-		 OFFSETOF(svalue,u.refs));
-  /* cmplwi 0,7 */
-  add_to_program(0x28000000|(0<<16)|(7));
-  /* addi 11,11,sizeof(struct svalue) */
-  add_to_program(0x38000000|(11<<21)|(11<<16)|(sizeof(struct svalue)));
+  /* stw r11,refs(pike_sp) */
+  STW(11, PPC_REG_PIKE_SP, OFFSETOF(svalue,u.refs));
+  /* cmplwi r0,7 */
+  CMPLI(0, 0, 7);
+  INCR_SP_REG(sizeof(struct svalue));
   /* bgt bork */
-  add_to_program(0x40000000|(12<<21)|(1<<16)|(4<<2));
-  /* lwz 0,0(r) */
-  add_to_program(0x80000000|(0<<21)|(reg<<16)|0);
-  /* addic 0,0,1 */
-  add_to_program(0x30000000|(0<<21)|(0<<16)|1);
-  /* stw 0,0(r) */
-  add_to_program(0x90000000|(0<<21)|(reg<<16)|0);
+  BC(12, 1, 4);
+  /* lwz r0,0(r11) */
+  LWZ(0, 11, 0);
+  /* addic r0,r0,1 */
+  ADDIC(0, 0, 1);
+  /* stw r0,0(r11) */
+  STW(0, 11, 0);
   /* bork: */
-  
-  /* stw 11,stack_pointer(31) */
-  add_to_program(0x90000000|(11<<21)|(31<<16)|
-		 OFFSETOF(Pike_interpreter, stack_pointer));
 }
 
 void ppc32_push_local(INT32 arg)
 {
   INT32 offs;
-  offs = ppc32_get_local_addr(3, arg);
-  ppc32_push_svalue(3, offs);
+  offs = ppc32_get_local_addr(PPC_REG_ARG1, arg);
+  ppc32_push_svalue(PPC_REG_ARG1, offs);
 }
 
 void ins_f_byte(unsigned int b)
@@ -159,17 +158,18 @@ void ins_f_byte(unsigned int b)
   case F_MAKE_ITERATOR - F_OFFSET:
     {
       extern void f_Iterator(INT32);
-      SET_REG(3, 1);
+      SET_REG(PPC_REG_ARG1, 1);
       addr = (void *)f_Iterator;
     }
     break;
   case F_ADD - F_OFFSET:
-    SET_REG(3, 2);
+    SET_REG(PPC_REG_ARG1, 2);
     addr = (void *)f_add;
     break;
   }
 #endif
   
+  FLUSH_CODE_GENERATOR_STATE();
   ADD_CALL(addr);
 }
 
@@ -183,7 +183,7 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
      return;
   }
 #endif
-  SET_REG(3, b);
+  SET_REG(PPC_REG_ARG1, b);
   ins_f_byte(a);
   return;
 }
@@ -201,8 +201,8 @@ void ins_f_byte_with_2_args(unsigned int a,
      return;
   }
 #endif
-  SET_REG(3, b);
-  SET_REG(4, c);
+  SET_REG(PPC_REG_ARG1, b);
+  SET_REG(PPC_REG_ARG2, c);
   ins_f_byte(a);
   return;
 }
