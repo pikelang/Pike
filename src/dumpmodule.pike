@@ -18,7 +18,7 @@ Tools.Install.ProgressBar progress_bar;
 
 mapping function_names=([]);
 
-class Codec
+class __Codec
 {
   string last_id;
 
@@ -33,6 +33,7 @@ class Codec
 
     switch(sprintf("%t",x))
     {
+#if 0
       case "function":
 	if (!function_object(x) &&
 	    (tmp = search(all_constants(), x))) {
@@ -40,6 +41,7 @@ class Codec
 	  return tmp;
 	}
 	break;
+#endif
       case "program":
 	if(p!=x)
 	{
@@ -77,9 +79,11 @@ class Codec
 	  if(master()->resolv(dirname) == x)
 	    return "resolv:"+dirname;
 	}
+#if 0
 	if (tmp = mkmapping(values(__builtin), indices(__builtin))[x]) {
 	  return "resolv:__builtin."+tmp;
 	}
+#endif
 	break;
     }
     return ([])[0];
@@ -150,6 +154,47 @@ class Codec
     if(sizeof(data)>1) ret->_decode(data[1]);
     error("Cannot encode objects yet.\n");
   }
+}
+
+class Codec
+{
+  inherit __Codec;
+
+  mapping debug_data=([]);
+
+  string nameof(mixed x)
+    {
+      string ret=::nameof(x);
+      if(ret)
+	debug_data[ret]=x;
+      return ret;
+    }
+
+  function functionof(string x)
+    {
+      function ret=::functionof(x);
+      if(debug_data[x] != ret)
+	werror("functionof(%O) returned the wrong value (%O != %O)\n",x,debug_data[x],ret);
+      return ret;
+    }
+
+  object objectof(string x)
+    {
+      object ret=::objectof(x);
+      if(debug_data[x] != ret)
+	werror("objectof(%O) returned the wrong value (%O != %O)\n",x,debug_data[x],ret);
+      return ret;
+    }
+  
+
+  program programof(string x)
+    {
+      program ret=::programof(x);
+      if(debug_data[x] != ret)
+	werror("programof(%O) returned the wrong value (%O != %O)\n",x,debug_data[x],ret);
+      return ret;
+    }
+  
 }
 
 Stdio.File logfile;
@@ -261,7 +306,8 @@ int main(int argc, array(string) argv)
   function_names[Stdio.stdin]="resolv:Stdio.stdin";
   function_names[Stdio.stdout]="resolv:Stdio.stdout";
   function_names[Stdio.stderr]="resolv:Stdio.stderr";
-  function_names[_static_modules.Builtin]="resolv:_";
+  function_names[_static_modules.Builtin]="resolv:__builtin";
+//  function_names[__builtin.__backend]="resolv:__builtin.__backend";
 
   // Remove the name of the program.
   argv = argv[1..];
