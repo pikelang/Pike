@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.141 1997/12/20 19:01:09 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.142 1997/12/22 17:38:25 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -81,14 +81,41 @@ AC_ARG_WITH(dynamic_modules,   [  --without-dynamic-modules        link modules 
 AC_ARG_WITH(gdbm,      [  --without-gdbm         no GNU database manager support ])
 AC_ARG_WITH(gmp,       [  --without-gmp          no Support bignums])
 AC_ARG_WITH(readline,  [  --without-readline     no support for command line editing])
-AC_ARG_WITH(debug,     [  --without-debug        disable run time self tests],[],[with_debug=yes])
+AC_ARG_WITH(debug,     [  --without-debug        disable run debugging],[],[with_debug=])
+AC_ARG_WITH(rtldebug,  [  --without-rtldebug     disable run time self tests],[],[with_rtldebug=])
+AC_ARG_WITH(cdebug,    [  --without-cdebug       disable -g],[],[with_cdebug=])
 AC_ARG_WITH(threads,   [  --without-threads      no threads support],[],[with_threads=yes])
 AC_ARG_WITH(zlib,      [  --without-zlib         no gz compression support],[],[with_zlib=yes])
 AC_ARG_WITH(ssleay,    [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
 AC_ARG_WITH(mysql,     [  --without-mysql        no support for the Mysql database],[],[with_mysql=yes])
 AC_ARG_WITH(profiling, [  --with-profiling       add code used to profile pike code ],[AC_DEFINE(PROFILING)],[])
 
-if test x$with_debug = xyes ; then
+#
+# Allow --with(out)-debug to toggle both cdebug and rtldebug, but
+# let --with(out)-{c,rtl}debug take precedence.
+#
+if test "x$with_cdebug" = x ; then
+  with_cdebug="$with_debug"
+fi
+
+if test "x$with_rtldebug" = x ; then
+  with_rtldebug="$with_debug"
+fi
+
+
+#
+# Defaults for cdebug and rtldebug here:
+#
+
+if test "x$with_cdebug" = x ; then
+  with_cdebug=yes
+fi
+
+if test "x$with_rtldebug" = x ; then
+  with_rtldebug=yes
+fi
+
+if test "x$with_rtldebug" = xyes ; then
   AC_DEFINE(DEBUG)
 fi
 
@@ -183,7 +210,7 @@ if test $cflags_is_set = no; then
  if test "x${GCC-}" = xyes ; then
   WARN="-W -Wall -Wpointer-arith -Wno-unused"
 
-  if test "x$with_debug" = "xno" ; then
+  if test "x$with_cdebug" = "xno" ; then
     AC_SYS_COMPILER_FLAG(-fomit-frame-pointer,fomit_frame_pointer,OPTIMIZE)
   fi  
 
@@ -228,7 +255,7 @@ if test $cflags_is_set = no; then
   # AC_SYS_OS_COMPILER_FLAG(IRIX,-n32,n32,CFLAGS)
   AC_SYS_OS_COMPILER_FLAG(IRIX,-g3,g3,OPTIMIZE)
   AC_SYS_OS_COMPILER_FLAG(IRIX,-fullwarn,fullwarn,WARN)
-  if test x$with_debug = xyes ; then
+  if test x$with_cdebug = xyes ; then
     AC_SYS_OS_COMPILER_FLAG(IRIX,-trapuw,trapuw,WARN)
   fi
 
@@ -530,15 +557,24 @@ AC_C_CONST
 
 if test "$ac_cv_c_const" = "yes"; then
   AC_MSG_CHECKING(if const really does work)
-  AC_TRY_COMPILE([
+  AC_CACHE_VAL(pike_cv_c_really_const,[
+    AC_TRY_COMPILE([
 const int foo(int bar) { return bar; }
-  ], [
-    return bar(0);
-  ], [], [
-    ac_cv_c_const=no
-    AC_DEFINE(const, [])
+    ], [
+      return bar(0);
+    ], [
+       pike_cv_c_really_const=yes
+    ], [
+       pike_cv_c_really_const=no
+    ])
   ])
-  AC_MSG_RESULT($ac_cv_c_const)
+
+  AC_MSG_RESULT($pike_cv_c_really_const)
+  if test "x$pike_cv_c_really_const" = xno ; then
+    AC_DEFINE(const, [])
+  else
+    :
+  fi
 fi
 
 #############################################################################
@@ -577,7 +613,7 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 memory.h values.h string.h strings.h fcntl.h sys/filio.h sys/sockio.h crypt.h \
 locale.h sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h \
-thread.h dlfcn.h dld.h sys/times.h sched.h sys/procfs.h)
+thread.h dlfcn.h dld.h sys/times.h sched.h sys/procfs.h sys/param.h winsock.h)
 
 AC_SIZEOF_TYPE(char *)
 AC_SIZEOF_TYPE(long)
@@ -1038,10 +1074,10 @@ define(MY_CHECK_HEADERS,
 
 MY_CHECK_HEADERS(strchr,string.h unistd.h stdlib.h)
 MY_CHECK_HEADERS(malloc,memory.h unistd.h stdlib.h)
-MY_CHECK_HEADERS(getpeername,sys/socket.h sys/socketvar.h sys/socketio.h)
+MY_CHECK_HEADERS(getpeername,sys/socket.h sys/socketvar.h sys/socketio.h winsock.h)
 MY_CHECK_HEADERS(popen,stdio.h unistd.h)
 MY_CHECK_HEADERS(getenv,unistd.h stdlib.h)
-MY_CHECK_HEADERS(gethostname,unistd.h netdb.h)
+MY_CHECK_HEADERS(gethostname,unistd.h netdb.h winsock.h)
 
 AC_ALLOCA
 
@@ -1076,35 +1112,35 @@ esac
 OLD_LIBOBJS="${LIBOBJS}"
 
 ########################################################################
-AC_MSG_CHECKING(stack direction)
-AC_CACHE_VAL(pike_cv_hardware_stack_direction,
-[
-AC_TRY_RUN([
-static int find_stack_direction ()
-{
-  static char	*addr = NULL;
-  char dummy;
-  if (addr == NULL)
-  {
-      addr = &dummy;
-      return find_stack_direction();
-  }
-  else
-  {
-    if (&dummy > addr) return 1; else return -1;
-  }
-}
-
-int main() { exit( find_stack_direction() < 0); }
-],pike_cv_hardware_stack_direction=up,pike_cv_hardware_stack_direction=down)
-])
-
-AC_MSG_RESULT($pike_cv_hardware_stack_direction)
-if test x$pike_cv_hardware_stack_direction = up ; then
-  AC_DEFINE(STACK_DIRECTION, 1)
-else
-  AC_DEFINE(STACK_DIRECTION, -1)
-fi
+dnl AC_MSG_CHECKING(stack direction)
+dnl AC_CACHE_VAL(pike_cv_hardware_stack_direction,
+dnl [
+dnl AC_TRY_RUN([
+dnl static int find_stack_direction ()
+dnl {
+dnl   static char	*addr = NULL;
+dnl   char dummy;
+dnl   if (addr == NULL)
+dnl   {
+dnl       addr = &dummy;
+dnl       return find_stack_direction();
+dnl   }
+dnl   else
+dnl   {
+dnl     if (&dummy > addr) return 1; else return -1;
+dnl   }
+dnl }
+dnl 
+dnl int main() { exit( find_stack_direction() < 0); }
+dnl ],pike_cv_hardware_stack_direction=up,pike_cv_hardware_stack_direction=down)
+dnl ])
+dnl 
+dnl AC_MSG_RESULT($pike_cv_hardware_stack_direction)
+dnl if test x$pike_cv_hardware_stack_direction = up ; then
+dnl   AC_DEFINE(STACK_DIRECTION, 1)
+dnl else
+dnl   AC_DEFINE(STACK_DIRECTION, -1)
+dnl fi
 
 ########################################################################
 
@@ -1547,13 +1583,13 @@ fi
 AC_MSG_CHECKING(how to concatenate two symbols)
 AC_CACHE_VAL(pike_cv_cpp_symbol_concat, [
   AC_TRY_COMPILE([
-#define AABB	0
+int AABB=0;
 #define CONCAT(X,Y)	X##Y
   ], [
     return CONCAT(AA,BB);
   ], pike_cv_cpp_symbol_concat=ANSI, [
     AC_TRY_COMPILE([
-#define AABB	0
+int AABB=0;
 #define CONCAT(X,Y)	X/**/Y
     ], [
       return CONCAT(AA,BB);
