@@ -3,7 +3,7 @@
  * Encodes various asn.1 objects according to the Distinguished
  * Encoding Rules (DER) */
 
-/* FIXME: This file is obsolete. All code should use ASN1.Types instead. */
+/* This file is obsolete. All code should use ASN1.Types instead. */
 
 #pike __REAL_VERSION__
 
