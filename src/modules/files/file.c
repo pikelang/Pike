@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.128 1998/11/22 11:08:04 hubbe Exp $");
+RCSID("$Id: file.c,v 1.129 1998/12/06 22:55:41 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -788,6 +788,8 @@ static void PIKE_CONCAT(file_,X) (int fd, void *data)		\
 								\
 static void PIKE_CONCAT(file_set_,X) (INT32 args)		\
 {								\
+  if(FD<0)							\
+    error("File is not open.\n");				\
   if(!args)							\
     error("Too few arguments to file_set_%s\n",#X);		\
   assign_svalue(& THIS->X, sp-args);				\
@@ -816,6 +818,9 @@ CBFUNCS(write_oob_callback)
 
 static void file__enable_callbacks(INT32 args)
 {
+  if(FD<0)
+    error("File is not open.\n");
+
 #define DO_TRIGGER(X) \
   if(IS_ZERO(& THIS->X )) \
   {								\
@@ -838,6 +843,8 @@ DO_TRIGGER(write_oob_callback)
 
 static void file__disable_callbacks(INT32 args)
 {
+  if(FD<0)
+    error("File is not open.\n");
 #define DO_DISABLE(X) \
   PIKE_CONCAT(set_,X)(FD, 0, 0); 
 
