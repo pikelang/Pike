@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.55 2000/03/09 05:06:08 mast Exp $
+# $Id: static_module_makefile.in,v 1.56 2000/03/20 20:56:11 hubbe Exp $
 #
 
 
@@ -19,6 +19,8 @@ CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(MODULE_CFLAGS)
 NOOPT_CFLAGS=$(PREFLAGS) $(NOOPTFLAGS) @CCSHARED@ $(MODULE_CFLAGS)
 
 MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "AR=$(AR)" "NOOPTFLAGS=$(NOOPTFLAGS)" $(MODULE_MAKE_FLAGS)
+
+MODNAME=`pwd|sed -e 's@.*/@@g'`
 
 all: dummy
 

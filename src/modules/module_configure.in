@@ -1,4 +1,4 @@
-# $Id: module_configure.in,v 1.6 1999/04/23 20:15:08 grubba Exp $
+# $Id: module_configure.in,v 1.7 2000/03/20 20:56:11 hubbe Exp $
 AC_PROG_CC
 
 AC_DEFINE(POSIX_SOURCE)
@@ -8,6 +8,7 @@ AC_SUBST(CONFIG_HEADERS)
 
 AC_SUBST_FILE(dependencies)
 dependencies=$srcdir/dependencies
+
 AC_SUBST_FILE(dynamic_module_makefile)
 if test -f ../dynamic_module_makefile; then
   dynamic_module_makefile=../dynamic_module_makefile
