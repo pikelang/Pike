@@ -3385,7 +3385,7 @@ here is a list of the basic Pike modules:
 <dt>Process
 <dd>Functions to start and control other processes.
 <dt>Protocols
-<dd>Support for NNTP, SMNT, DNS, TELNET and other protocols.
+<dd>Support for HTTP, NNTP, SMNT, DNS, TELNET and other protocols.
 <dt>Regexp
 <dd>Regexp matching routines.
 <dt>Simulate
@@ -6132,6 +6132,19 @@ which says what time it is in white text on a black background.
 <hr newpage>
 
 <include file=Image.wmml>
+
+</chapter>
+</anchor>
+
+<anchor name=Protocols>
+<chapter title=Protocols>
+
+The Protocol modules is some helper modules that makes it easier for
+the pike programmer to use some of the protocols used on the internet.
+
+<hr newpage>
+
+<include file=protocols.wmml>
 
 </chapter>
 </anchor>
@@ -9924,6 +9937,14 @@ prints.
 
 <include file=Mysql.wmml>
 <include file=crypto.wmml>
+
+<section title=Calendar>
+<include file=Calendar.wmml>
+</section>
+
+<section title=Parser>
+<include file=Parser.wmml>
+</section title=Parser>
 
 </chapter>
 
