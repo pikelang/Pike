@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.182 2003/10/24 23:39:34 nilsson Exp $
+|| $Id: main.c,v 1.183 2003/11/14 00:08:51 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.182 2003/10/24 23:39:34 nilsson Exp $");
+RCSID("$Id: main.c,v 1.183 2003/11/14 00:08:51 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -781,7 +781,7 @@ int dbm_main(int argc, char **argv)
   }
   UNSETJMP(back);
 
-  TRACE((stderr, "Exit %s...\n", num));
+  TRACE((stderr, "Exit %d...\n", num));
   
   pike_do_exit(num);
   return num; /* avoid warning */
