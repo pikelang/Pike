@@ -1,6 +1,6 @@
 /* Xlib.pmod
  *
- * $Id: Xlib.pmod,v 1.34 1998/04/21 02:56:05 per Exp $
+ * $Id: Xlib.pmod,v 1.35 1998/04/21 02:56:30 per Exp $
  */
 
 /*
@@ -427,7 +427,7 @@ class Display
 	    received->expect(32);
 	    get_keyboard_mapping();
 
-	    foreach(values(Extensions), program p)
+	    foreach(values(.Extensions), program p)
 	      {
 		object e = p();
 		if(e->init( this_object() ))
