@@ -1,10 +1,10 @@
 /*\
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
 \*/
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.17 2002/05/11 00:27:02 nilsson Exp $");
+RCSID("$Id: gdbmmod.c,v 1.18 2002/05/31 22:31:39 nilsson Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 

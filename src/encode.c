@@ -1,7 +1,7 @@
 /*\
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
 \*/
 /**/
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.146 2002/05/14 12:13:12 grubba Exp $");
+RCSID("$Id: encode.c,v 1.147 2002/05/31 22:41:23 nilsson Exp $");
 
 /* #define ENCODE_DEBUG */
 

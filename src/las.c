@@ -1,11 +1,11 @@
 /*\
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.290 2002/05/23 14:40:24 grubba Exp $");
+RCSID("$Id: las.c,v 1.291 2002/05/31 22:41:24 nilsson Exp $");
 
 #include "language.h"
 #include "interpret.h"

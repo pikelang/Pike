@@ -1,7 +1,7 @@
 /*\
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
 \*/
 /**/
 
@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.39 2002/01/27 01:00:53 mast Exp $");
+RCSID("$Id: fd_control.c,v 1.40 2002/05/31 22:41:23 nilsson Exp $");
 
 #else /* TESTING */
 

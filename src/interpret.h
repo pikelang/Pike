@@ -1,11 +1,11 @@
 /*\
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
 \*/
 
 /*
- * $Id: interpret.h,v 1.108 2002/05/11 00:05:28 nilsson Exp $
+ * $Id: interpret.h,v 1.109 2002/05/31 22:41:24 nilsson Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H

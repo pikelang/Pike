@@ -1,11 +1,11 @@
 /*\
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.185 2002/05/15 14:48:29 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.186 2002/05/31 22:41:25 nilsson Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"

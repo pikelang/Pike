@@ -1,11 +1,11 @@
 /*\
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.104 2002/05/11 00:13:10 nilsson Exp $");
+RCSID("$Id: mpz_glue.c,v 1.105 2002/05/31 22:31:39 nilsson Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)

@@ -1,12 +1,12 @@
 /*\
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
 \*/
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.152 2002/05/31 13:44:31 nilsson Exp $");
+RCSID("$Id: operators.c,v 1.153 2002/05/31 22:41:25 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"

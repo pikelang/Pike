@@ -1,11 +1,11 @@
 /*\
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
 \*/
 
 /*
- * $Id: mapping.h,v 1.41 2002/01/16 02:54:15 nilsson Exp $
+ * $Id: mapping.h,v 1.42 2002/05/31 22:41:25 nilsson Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H

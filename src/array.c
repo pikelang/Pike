@@ -1,7 +1,7 @@
 /*\
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
 \*/
 /**/
 #include "global.h"
@@ -24,7 +24,7 @@
 #include "bignum.h"
 #include "cyclic.h"
 
-RCSID("$Id: array.c,v 1.127 2002/05/28 15:37:17 grubba Exp $");
+RCSID("$Id: array.c,v 1.128 2002/05/31 22:41:19 nilsson Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {

@@ -1,7 +1,7 @@
 /*\
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
 \*/
 /**/
 
@@ -11,7 +11,7 @@
 #include "stralloc.h"
 #include "version.h"
 
-RCSID("$Id: version.c,v 1.134 2002/01/16 02:54:21 nilsson Exp $");
+RCSID("$Id: version.c,v 1.135 2002/05/31 22:41:26 nilsson Exp $");
 
 #define STR(X) #X
 /*! @decl string version()

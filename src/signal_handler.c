@@ -1,7 +1,7 @@
 /*\
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
 \*/
 /**/
 #include "global.h"
@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.223 2002/05/11 00:29:41 nilsson Exp $");
+RCSID("$Id: signal_handler.c,v 1.224 2002/05/31 22:41:26 nilsson Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>

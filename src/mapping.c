@@ -1,11 +1,11 @@
 /*\
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.147 2002/05/10 23:52:34 nilsson Exp $");
+RCSID("$Id: mapping.c,v 1.148 2002/05/31 22:41:24 nilsson Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"

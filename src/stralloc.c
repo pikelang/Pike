@@ -1,7 +1,7 @@
 /*\
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
 \*/
 /**/
 #include "global.h"
@@ -27,7 +27,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.141 2002/05/10 23:55:51 nilsson Exp $");
+RCSID("$Id: stralloc.c,v 1.142 2002/05/31 22:41:26 nilsson Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 

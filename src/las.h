@@ -1,11 +1,11 @@
 /*\
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
 \*/
 
 /*
- * $Id: las.h,v 1.55 2002/01/16 02:54:14 nilsson Exp $
+ * $Id: las.h,v 1.56 2002/05/31 22:41:24 nilsson Exp $
  */
 #ifndef LAS_H
 #define LAS_H

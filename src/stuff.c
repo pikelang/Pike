@@ -1,11 +1,11 @@
 /*\
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
 \*/
 
 /*
- * $Id: stuff.c,v 1.17 2002/04/30 01:06:08 mast Exp $
+ * $Id: stuff.c,v 1.18 2002/05/31 22:41:26 nilsson Exp $
  */
 #include "global.h"
 #include "stuff.h"

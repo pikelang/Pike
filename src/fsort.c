@@ -1,7 +1,7 @@
 /*\
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
 \*/
 /* fsort- a smarter quicksort /Hubbe */
 /* Optimized for minimum amount of compares */
@@ -11,7 +11,7 @@
 #include "fsort.h"
 #include "main.h"
 
-RCSID("$Id: fsort.c,v 1.16 2002/01/16 02:54:12 nilsson Exp $");
+RCSID("$Id: fsort.c,v 1.17 2002/05/31 22:41:24 nilsson Exp $");
 
 #define CMP(X,Y) ( (*cmpfun)((void *)(X),(void *)(Y)) )
 #define EXTRA_ARGS ,fsortfun cmpfun

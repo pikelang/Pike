@@ -1,11 +1,11 @@
 /*\
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
-||| Pike is distributed as GPL (General Public License)
-||| See the files COPYING and DISCLAIMER for more information.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
 \*/
 
 /*
- * $Id: global.h,v 1.68 2002/04/11 22:08:49 mast Exp $
+ * $Id: global.h,v 1.69 2002/05/31 22:41:24 nilsson Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
