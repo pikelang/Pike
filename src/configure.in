@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.504 2001/03/19 13:48:07 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.505 2001/03/19 21:28:41 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3601,7 +3601,7 @@ fi
 
 #############################################################################
 mmx_reason=' (no mmx.h found)'
-if test "x$ac_cv_header_mmx_h" = xyes -o "x$ac_cv_header_asm_mmx_h" ; then
+if test "x$ac_cv_header_mmx_h" = xyes; then
   AC_MSG_CHECKING(for working MMX)
   mmx_reason=' (mmx.h found, but mmx operations failed)'
 
