@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.217 2000/03/26 20:55:32 hubbe Exp $");
+RCSID("$Id: program.c,v 1.218 2000/03/29 04:56:22 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2815,8 +2815,11 @@ void program_index_no_free(struct svalue *to, struct program *p,
 
 int get_small_number(char **q)
 {
+  /* This is a workaround for buggy cc & Tru64 */
   int ret;
-  switch(ret=(*(signed char **)q)++[0])
+  ret=*(signed char *)*q;
+  (*q)++;
+  switch(ret)
   {
   case -127:
     ret=EXTRACT_WORD((unsigned char*)*q);
