@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.51 2000/08/10 08:42:26 grubba Exp $
+ * $Id: stralloc.h,v 1.52 2000/08/10 17:57:17 grubba Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -157,11 +157,11 @@ CONVERT(1,0)
 CONVERT(1,2)
 CONVERT(2,0)
 CONVERT(2,1)
-PMOD_EXPORT int generic_compare_strings(const void *a,int alen, int asize,
-			    const void *b,int blen, int bsize);
+PMOD_EXPORT int generic_compare_strings(const void *a, ptrdiff_t alen, int asize,
+					const void *b, ptrdiff_t blen, int bsize);
 PMOD_EXPORT void generic_memcpy(PCHARP to,
 				PCHARP from,
-				int len);
+				ptrdiff_t len);
 PMOD_EXPORT INLINE void pike_string_cpy(PCHARP to,
 					struct pike_string *from);
 PMOD_EXPORT struct pike_string *binary_findstring(const char *foo,

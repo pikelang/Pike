@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.257 2000/08/10 17:46:34 grubba Exp $");
+RCSID("$Id: program.c,v 1.258 2000/08/10 17:51:34 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1087,7 +1087,7 @@ int sizeof_variable(int run_time_type)
   }
 }
 
-static int alignof_variable(int run_time_type)
+static ptrdiff_t alignof_variable(int run_time_type)
 {
   switch(run_time_type)
   {
@@ -1384,8 +1384,8 @@ PMOD_EXPORT struct program *debug_end_program(void)
  */
 PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment, int modulo_orig)
 {
-  long offset;
-  int modulo;
+  ptrdiff_t offset;
+  ptrdiff_t modulo;
 
   if(!size) return Pike_compiler->new_program->storage_needed;
 
@@ -1428,11 +1428,10 @@ PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment, int modulo_ori
 
   if( (offset /* + OFFSETOF(object,storage) */ - modulo_orig ) % alignment )
     fatal("add_storage failed horribly(2) %ld %ld %ld %ld!\n",
-	  (long)offset,
+	  DO_NOT_WARN((long)offset),
 	  (long)0 /* + OFFSETOF(object,storage) */,
 	  (long)modulo_orig,
-	  (long)alignment
-	  );
+	  DO_NOT_WARN((long)alignment));
 
 #endif
 
@@ -1659,7 +1658,8 @@ void low_inherit(struct program *p,
 		 INT32 flags,
 		 struct pike_string *name)
 {
-  int e, inherit_offset, storage_offset;
+  int e;
+  ptrdiff_t inherit_offset, storage_offset;
   struct inherit inherit;
   struct pike_string *s;
 
@@ -2782,12 +2782,12 @@ int find_shared_string_identifier(struct pike_string *name,
 #ifdef FIND_FUNCTION_HASHSIZE
   if(prog -> flags & PROGRAM_FIXED)
   {
-    unsigned int hashval;
-    hashval=my_hash_string(name);
-    hashval+=prog->id;
-    hashval^=(unsigned long)prog;
-    hashval-=name->str[0];
-    hashval%=FIND_FUNCTION_HASHSIZE;
+    size_t hashval;
+    hashval = my_hash_string(name);
+    hashval += prog->id;
+    hashval ^= (size_t)prog;
+    hashval -= name->str[0];
+    hashval %= FIND_FUNCTION_HASHSIZE;
     if(is_same_string(cache[hashval].name,name) &&
        cache[hashval].id==prog->id)
       return cache[hashval].fun;
@@ -3087,7 +3087,7 @@ PMOD_EXPORT char *get_line(unsigned char *pc,struct program *prog,INT32 *linep)
 {
   static char *file, *cnt;
   static INT32 off,line,pid;
-  INT32 offset;
+  ptrdiff_t offset;
 
   if (prog == 0) return "Unkown program";
   offset = pc - prog->program;
@@ -3145,7 +3145,7 @@ void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
   VSPRINTF(buf, fmt, args);
 #endif /* HAVE_VSNPRINTF */
 
-  if((long)strlen(buf) >= (long)sizeof(buf))
+  if((size_t)strlen(buf) >= (size_t)sizeof(buf))
     fatal("Buffer overflow in my_yyerror.\n");
 
   yyerror(buf);
@@ -3643,7 +3643,7 @@ static void gc_check_program(struct program *p)
 #ifdef PIKE_DEBUG
       if(debug_gc_check(p->inherits[e].parent,T_PROGRAM,p)==-2)
 	fprintf(stderr,"(program at 0x%lx -> inherit[%d].parent)\n",
-		(long)p,
+		DO_NOT_WARN((long)p),
 		e);
 #else
       debug_gc_check(p->inherits[e].parent, T_PROGRAM, p);

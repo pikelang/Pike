@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.92 2000/08/10 08:41:30 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.93 2000/08/10 17:57:04 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -47,7 +47,7 @@ unsigned INT32 num_strings=0;
 
 #define StrHash(s,len) low_do_hash(s,len,0)
 
-static unsigned int low_do_hash(const void *s, int len, int size_shift)
+static unsigned int low_do_hash(const void *s, ptrdiff_t len, int size_shift)
 {
   full_hash_value=hashmem(s,len<<size_shift,HASH_PREFIX<<size_shift);
   return full_hash_value % htable_size;
@@ -59,7 +59,7 @@ static INLINE unsigned int do_hash(struct pike_string *s)
 }
 
 
-static INLINE int find_magnitude1(const unsigned INT16 *s, int len)
+static INLINE int find_magnitude1(const unsigned INT16 *s, ptrdiff_t len)
 {
   while(--len>=0)
     if(s[len]>=256)
@@ -67,7 +67,7 @@ static INLINE int find_magnitude1(const unsigned INT16 *s, int len)
   return 0;
 }
 
-static INLINE int find_magnitude2(const unsigned INT32 *s, int len)
+static INLINE int find_magnitude2(const unsigned INT32 *s, ptrdiff_t len)
 {
   while(--len>=0)
   {
@@ -161,8 +161,8 @@ CONVERT(2,0)
 CONVERT(2,1)
 
 
-PMOD_EXPORT int generic_compare_strings(const void *a,int alen, int asize,
-			    const void *b,int blen, int bsize)
+PMOD_EXPORT int generic_compare_strings(const void *a, ptrdiff_t alen, int asize,
+					const void *b, ptrdiff_t blen, int bsize)
 {
 #define TWO_SIZES(X,Y) (((X)<<2)+(Y))
   if(alen != blen) return 0;
@@ -180,8 +180,8 @@ PMOD_EXPORT int generic_compare_strings(const void *a,int alen, int asize,
 
 
 PMOD_EXPORT void generic_memcpy(PCHARP to,
-		    PCHARP from,
-		    int len)
+				PCHARP from,
+				ptrdiff_t len)
 {
 #ifdef PIKE_DEBUG
   if(len<0)
@@ -285,7 +285,7 @@ static int improper_zero_termination(struct pike_string *s)
  * This assumes that the string is minimized!!!! 
  */
 static struct pike_string *internal_findstring(const char *s,
-					       int len,
+					       ptrdiff_t len,
 					       int size_shift,
 					       int h)
 {
@@ -444,7 +444,7 @@ static void link_pike_string(struct pike_string *s, unsigned int h)
     /* This could in theory have a pretty ugly complexity */
     /* /Hubbe
      */
-    unsigned INT32 save_full_hash_value=full_hash_value;
+    size_t save_full_hash_value = full_hash_value;
     
     need_more_hash_prefix=0;
     HASH_PREFIX=HASH_PREFIX*2;
@@ -456,7 +456,7 @@ static void link_pike_string(struct pike_string *s, unsigned int h)
       base_table[h]=0;
       while(tmp)
       {
-	unsigned int h2;
+	size_t h2;
 	struct pike_string *tmp2=tmp; /* First unlink */
 	tmp=tmp2->next;
 
@@ -493,12 +493,12 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
  */
 PMOD_EXPORT struct pike_string *low_end_shared_string(struct pike_string *s)
 {
-  int len,h;
+  ptrdiff_t len, h;
   struct pike_string *s2;
 
-  len=s->len;
-  h=do_hash(s);
-  s2=internal_findstring(s->str,len,s->size_shift,h);
+  len = s->len;
+  h = do_hash(s);
+  s2 = internal_findstring(s->str,len,s->size_shift,h);
 #ifdef PIKE_DEBUG
   if(s2==s) 
     fatal("end_shared_string called twice! (or something like that)\n");
