@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.27 1998/06/08 12:48:21 grubba Exp $
+ * $Id: acconfig.h,v 1.28 1998/07/11 15:49:05 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -213,6 +213,12 @@
 /* Enable tracing of the compiler */
 #undef YYDEBUG
 
+/* Define if your compiler has a symbol __func__ */
+#undef HAVE_WORKING___FUNC__
+
+/* Define if your compiler has a symbol __FUNCTION__ */
+#undef HAVE_WORKING___FUNCTION__
+
 @BOTTOM@
 
 /* NT stuff */
@@ -243,6 +249,14 @@
 #else
 #define ATTRIBUTE(X)
 #endif
+
+#ifndef HAVE_WORKING___FUNC__
+#ifdef HAVE_WORKING___FUNCTION__
+#define __func__	__FUNCTION__
+#else /* !HAVE_WORKING___FUNCTION__ */
+#define __func__	"unknown"
+#endif /* HAVE_WORKING___FUNCTION__ */
+#endif /* !HAVE_WORKING___FUNC__ */
 
 /* NOTE:
  *    PIKE_CONCAT doesn't get defined if there isn't any way to
