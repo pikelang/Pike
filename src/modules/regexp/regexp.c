@@ -1169,25 +1169,26 @@ regexp         *r;
     register char  *nxt;
 
     s = r->program + 1;
-    while (op != END) {		/* While that wasn't END last time... */
+    while (op != END) 
+      {		/* While that wasn't END last time... */
 	op = OP(s);
-	printf("%2ld%s", (long)(s - r->program), regprop(s));	/* Where, what. */
+	printf("%2ld%s", (long)(s - r->program), regprop(s)); /* Where, what. */
 	nxt = regnext(s);
-	if (nxt == (char *)NULL)	/* nxt ptr. */
-	    printf("(0)");
+	if (nxt == (char *)NULL) /* nxt ptr. */
+	  printf("(0)");
 	else
-	  printf("(%ld)", (long)( (s - r->program) + (nxt - s) ));
+	  printf("(%ld)", (long)( (s - r->program) + (nxt - s)));
 	s += 3;
 	if (op == ANYOF || op == ANYBUT || op == EXACTLY) {
-	    /* Literal string, where present. */
-	    while (*s != '\0') {
-		putchar(*s);
-		s++;
-	    }
-	    s++;
-	}
+							    /* Literal string, where present. */
+							    while (*s != '\0') {
+										 putchar(*s);
+										 s++;
+									       }
+							    s++;
+							  }
 	putchar('\n');
-    }
+      }
 
     /* Header fields of interest. */
     if (r->regstart != '\0')
