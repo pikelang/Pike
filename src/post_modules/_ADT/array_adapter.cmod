@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array_adapter.cmod,v 1.2 2003/02/14 12:51:55 grubba Exp $
+|| $Id: array_adapter.cmod,v 1.3 2003/02/14 12:58:14 grubba Exp $
 */
 
 #include "global.h"
@@ -28,7 +28,7 @@
 DECLARATIONS
 
 /*! @class ArrayAdapter
- *! This adapter gives the possibillity to use normal arrays as collections.
+ *! This adapter gives the possibility to use normal arrays as collections.
  *! 
  */
 
@@ -144,7 +144,7 @@ PIKECLASS ArrayAdapter
  *! Perform an and on this adapter and the @[coll] adapter by only returning 
  *! those values that is present in both adapters as a new @[ArrayAdapter].
  *! The remaning values is in the same order as they are in this adapter and
- *! the values is compared using '==.
+ *! the values are compared using `==.
  *!
  *! @param coll 
  *!   The adapter to and to his adapter
@@ -174,7 +174,7 @@ PIKECLASS ArrayAdapter
  *! Or operator
  *! Perform an or on this adapter and the @[coll] adapter by returning 
  *! those values that is present in both adapters as a new @[ArrayAdapter].
- *! The values is compared using '==.
+ *! The values are compared using `==.
  *!
  *! @param coll 
  *!   The adapter to or with his adapter
@@ -206,7 +206,7 @@ PIKECLASS ArrayAdapter
  *! Perform a xor on this adapter and the @[coll] adapter by returning 
  *! those values that is present in one of the adpaters but not in both 
  *! adapters as a new @[ArrayAdapter].
- *! The values is compared using '==.
+ *! The values are compared using `==.
  *!
  *! @param coll 
  *!   The adapter to xor with his adapter
@@ -406,8 +406,17 @@ PIKECLASS ArrayAdapter
   }
 
 
-/*! @decl void cast('array')
- *!   Cast the content of this adapter toan array.
+/*! @decl void cast(string type)
+ *! Cast operator.
+ *!
+ *! @param type
+ *!   Casts to this type.
+ *!
+ *!   Casts to the following types are supported:
+ *!   @string
+ *!     @value "array"
+ *!       Cast the content of this adapter to an array.
+ *!   @endstring
  *!
  *! @returns
  *!   An array with the contents of this adapter.
@@ -416,7 +425,7 @@ PIKECLASS ArrayAdapter
   PIKEFUN mixed cast(string type)
   {
     struct pike_string *array_t;
-       MAKE_CONSTANT_SHARED_STRING( array_t, "array" ); 
+    MAKE_CONSTANT_SHARED_STRING( array_t, "array" ); 
     
     if (type == array_t)
     {
