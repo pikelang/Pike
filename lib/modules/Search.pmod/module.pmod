@@ -24,7 +24,7 @@ private mapping filters=([]);
 void create()
 {
 //   werror("Loading filters\n");
-  foreach(values(Search.Filter), program filter)
+  foreach(values(Search.Filter.Base), program filter)
   {
     Search.Filter.Base tmp=filter();
     foreach(tmp->contenttypes || ({ }), string mime)
