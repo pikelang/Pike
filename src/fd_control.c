@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fd_control.c,v 1.48 2003/05/15 15:33:30 mast Exp $
+|| $Id: fd_control.c,v 1.49 2003/12/08 15:24:11 grubba Exp $
 */
 
 #ifndef TESTING
@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.48 2003/05/15 15:33:30 mast Exp $");
+RCSID("$Id: fd_control.c,v 1.49 2003/12/08 15:24:11 grubba Exp $");
 
 #else /* TESTING */
 
@@ -87,26 +87,28 @@ PMOD_EXPORT int set_nonblocking(int fd,int which)
 #if defined(USE_IOCTL_FIONBIO) || defined(__NT__)
     ret=fd_ioctl(fd, FIONBIO, &which);
 #else
-
 #ifdef USE_FCNTL_O_NDELAY
-    ret=fcntl(fd, F_SETFL, which?O_NDELAY:0);
-#else
+#define FCNTL_NBFLAG	O_NDELAY
+#elif defined(USE_FCNTL_O_NONBLOCK)
+#define FCNTL_NBFLAG	O_NONBLOCK
+#elif defined(USE_FCNTL_FNDELAY)
+#define FCNTL_NBFLAG	FNDELAY
+#endif
+#ifdef FCNTL_NBFLAG
+    int flags = fcntl(fd, F_GETFL, 0);
 
-#ifdef USE_FCNTL_O_NONBLOCK
-    ret=fcntl(fd, F_SETFL, which?O_NONBLOCK:0);
-#else
-
-#ifdef USE_FCNTL_FNDELAY
-    ret=fcntl(fd, F_SETFL, which?FNDELAY:0);
+    if (which) {
+      flags |= FCNTL_NBFLAG;
+    } else {
+      flags &= ~FCNTL_NBFLAG;
+    }
+    ret = fcntl(fd, F_SETFL, flags);
 #else
 
 #ifndef DISABLE_BINARY
 #error Do not know how to set your filedescriptors nonblocking.
 #endif
 
-#endif
-#endif
-#endif
 #endif
   } while(ret <0 && errno==EINTR);
   return ret;
@@ -122,20 +124,10 @@ PMOD_EXPORT int query_nonblocking(int fd)
 
   do 
   {
-#ifdef USE_FCNTL_O_NDELAY
-    ret=fcntl(fd, F_GETFL, 0) & O_NDELAY;
+#ifdef FCNTL_NBFLAG
+    ret = fcntl(fd, F_GETFL, 0) & FCNTL_NBFLAG;
 #else
-
-#ifdef USE_FCNTL_O_NONBLOCK
-    ret=fcntl(fd, F_GETFL, 0) & O_NONBLOCK;
-#else
-
-#ifdef USE_FCNTL_FNDELAY
-    ret=fcntl(fd, F_GETFL, 0) & FNDELAY;
-#else
-  return 0;
-#endif
-#endif
+    return 0;
 #endif
   } while(ret <0 && errno==EINTR);
   return ret;
