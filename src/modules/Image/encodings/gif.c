@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.5 1997/11/01 18:16:41 grubba Exp $ */
+/* $Id: gif.c,v 1.6 1997/11/02 03:44:49 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.5 1997/11/01 18:16:41 grubba Exp $
+**!	$Id: gif.c,v 1.6 1997/11/02 03:44:49 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -21,7 +21,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.5 1997/11/01 18:16:41 grubba Exp $");
+RCSID("$Id: gif.c,v 1.6 1997/11/02 03:44:49 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -30,7 +30,7 @@ RCSID("$Id: gif.c,v 1.5 1997/11/01 18:16:41 grubba Exp $");
 #include "threads.h"
 #include "array.h"
 #include "error.h"
-
+#include "threads.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -75,8 +75,9 @@ object decode_alpha(string data);
 
 advanced:
 
-string header_block(object img,object colortable,int noglobalpalette);
-string header_block(object img,int numcol,int noglobalpalette);
+string header_block(int xsize,int ysize,int numcolors);
+string header_block(int xsize,int ysize,object colortable);
+string header_block(int xsize,int ysize,object colortable,int background_color_index);
 string end_block();
 string transparency_block(int no);
 string delay_block(int centiseconds);
@@ -102,10 +103,190 @@ string _encode(array data);
  */
 
 /*
+**! method string header_block(int xsize,int ysize,int numcolors);
+**! method string header_block(int xsize,int ysize,object colortable);
+**! method string header_block(int xsize,int ysize,object colortable,int background_color_index,int gif87a,int aspectx,int aspecty);
+**! method string header_block(int xsize,int ysize,object colortable,int background_color_index,int gif87a,int aspectx,int aspecty,int r,int g,int b);
+**!     This function gives back a GIF header block.
+**!
+**! 	Giving a colortable to this function includes a 
+**!	global palette in the header block.
+**!
+**! returns the created header block as a string
+**!
+**! arg int xsize
+**! arg int ysize
+**! 	Size of drawing area. Usually same size as in
+**!	the first (or only) render block(s).
+**! arg int background_color_index
+**!	This color in the palette is the background color.
+**!	Background is visible if the following render block(s)
+**!	doesn't fill the drawing area or are transparent.
+**!	Most decoders doesn't use this value, though.
+**! arg int gif87a
+**!	If set, write 'GIF87a' instead of 'GIF89a' (default 0 == 89a).
+**! arg int aspectx
+**! arg int aspecty
+**!	Aspect ratio of pixels,
+**!	ranging from 4:1 to 1:4 in increments
+**!	of 1/16th. Ignored by most decoders. 
+**!	If any of <tt>aspectx</tt> or <tt>aspecty</tt> is zero,
+**!	aspectratio information is skipped.
+**! arg int r
+**! arg int g
+**! arg int b
+**!	Add this color as the transparent color.
+**!	This is the color used as transparency color in
+**!	case of alpha-channel given as image object. 
+**!	This increases (!) the number of colors by one.
+**!
+**! note
+**!	This is in the advanced sector of the GIF support;
+**!	please read some about how GIFs are packed.
+**!
+**!	This GIF encoder doesn't support different size
+**!	of colors in global palette and color resolution.
+*/
+
+void image_gif_header_block(INT32 args)
+{
+   int xs,ys,bkgi=0,aspect=0,gif87a=0;
+   struct neo_colortable *nct=NULL;
+   int globalpalette;
+   int numcolors;
+   int bpp=0;
+   char buf[20];
+   struct pike_string *ps;
+   rgb_group alphacolor={0,0,0};
+   int alphaentry=0;
+
+   if (args<3)
+      error("Image.GIF.header_block(): too few arguments\n");
+   if (sp[-args].type!=T_INT ||
+       sp[1-args].type!=T_INT)
+      error("Image.GIF.header_block(): illegal argument(s) 1..2 (expected int)\n");
+
+   xs=sp[-args].u.integer;
+   ys=sp[1-args].u.integer;
+
+   if (sp[2-args].type==T_INT)
+   {
+      numcolors=sp[2-args].u.integer;
+      if (numcolors<2) numcolors=2;
+      globalpalette=0;
+   } 
+   else if (sp[2-args].type==T_OBJECT &&
+	    (nct=(struct neo_colortable*)
+	        get_storage(sp[2-args].u.object,image_colortable_program)))
+   {
+      numcolors=image_colortable_size(nct);
+      if (numcolors<2) numcolors=2;
+      globalpalette=1;
+   }
+   else
+      error("Image.GIF.header_block(): illegal argument 3 (expected int or colortable object)\n");
+
+   if (args>=4)
+      if (sp[3-args].type!=T_INT)
+	 error("Image.GIF.header_block(): illegal argument 4 (expected int)\n");
+      else
+	 bkgi=sp[3-args].u.integer;
+
+   if (args>=5)
+      if (sp[4-args].type!=T_INT)
+	 error("Image.GIF.header_block(): illegal argument 4 (expected int)\n");
+      else
+	 gif87a=sp[4-args].u.integer;
+
+   if (args>=7)
+      if (sp[5-args].type!=T_INT ||
+	  sp[6-args].type!=T_INT)
+	 error("Image.GIF.header_block(): illegal argument(s) 5..6 (expected int)\n");
+      else
+	 if (sp[5-args].u.integer &&
+	     sp[6-args].u.integer)
+	    aspect=(64*sp[5-args].u.integer)/sp[6-args].u.integer-15;
+
+   if (args>=10)
+   {
+      if (sp[7-args].type!=T_INT ||
+	  sp[8-args].type!=T_INT ||
+	  sp[9-args].type!=T_INT)
+	 error("Image.GIF.render_block(): illegal argument 8..10 (expected int)\n");
+      alphacolor.r=(unsigned char)(sp[7-args].u.integer);
+      alphacolor.g=(unsigned char)(sp[8-args].u.integer);
+      alphacolor.b=(unsigned char)(sp[9-args].u.integer);
+      alphaentry=1;
+   }
+
+   if (numcolors+alphaentry>256)
+      error("Image.GIF.header_block(): too many colors\n");
+
+   while ((1<<bpp)<numcolors+alphaentry) bpp++;
+
+   sprintf(buf,"GIF8%ca%c%c%c%c%c%c%c",
+	   gif87a?'7':'9',
+	   xs&255, (xs>>8)&255, /* width */
+	   ys&255, (ys>>8)&255, /* height */
+	   ((globalpalette<<7) 
+	    | ((bpp-1)<<4) /* color resolution = 2^bpp */
+	    | (0 <<3) /* palette is sorted, most used first */
+	    | ((bpp)-1)), /* palette size = 2^bpp */
+	   bkgi,
+	   aspect);
+   
+   push_string(make_shared_binary_string(buf,13));
+
+   if (globalpalette)
+   {
+      ps=begin_shared_string((1<<bpp)*3);
+      image_colortable_write_rgb(nct,ps->str);
+      MEMSET(ps->str+(numcolors+alphaentry)*3,0,((1<<bpp)-numcolors)*3);
+
+      if (alphaentry) 
+      {
+	 ps->str[3*numcolors+0]=alphacolor.r;
+	 ps->str[3*numcolors+1]=alphacolor.g;
+	 ps->str[3*numcolors+2]=alphacolor.b;
+      }
+      /* note: same as _calculated_ 'alphaidx' 
+	       in image_gif_render_block */
+
+      push_string(end_shared_string(ps));
+      f_add(2);
+   }
+
+   (ps=sp[-1].u.string)->refs++;
+
+   pop_n_elems(args+1);
+   push_string(ps);
+}
+
+/*
+**! method string end_block();
+**!	This function gives back a GIF end (trailer) block.
+**!
+**! returns the end block as a string.
+**!
+**! note
+**!	This is in the advanced sector of the GIF support;
+**!	please read some about how GIFs are packed.
+**!
+**!	The result of this function is always ";" or "\x3b",
+**!	but I recommend using this function anyway for code clearity.
+*/
+
+void image_gif_end_block(INT32 args)
+{
+   pop_n_elems(args);
+   push_string(make_shared_string("\x3b"));
+}
+
+/*
 **! method string _gce_block(int transparency,int transparency_index,int delay,int user_input,int disposal);
 **!
-**!     This function gives back a Graphic Control Extension block,
-**!	normally placed before an render block.
+**!     This function gives back a Graphic Control Extension block.
+**!	A GCE block has the scope of the following render block.
 **!	
 **! arg int transparency
 **! arg int transparency_index
@@ -130,6 +311,8 @@ string _encode(array data);
 **!              what was there prior to rendering the graphic.
 **!     <dt compact>4-7<dd>To be defined.
 **!     </dl>
+**!
+**! see also: _render_block, render_block
 **!
 **! note
 **!	This is in the very advanced sector of the GIF support;
@@ -165,6 +348,190 @@ void image_gif__gce_block(INT32 args)
    pop_n_elems(args);
    push_string(make_shared_binary_string(buf,8));
 }
+
+
+/*
+**! method string _render_block(int x,int y,int xsize,int ysize,int bpp,string indices,0|string colortable,int interlace);
+**!	Advanced (!) method for writing renderblocks for placement
+**!	in a GIF file. This method only applies LZW encoding on the
+**!	indices and makes the correct headers. 
+**!
+**! arg int x
+**! arg int y
+**!	Position of this image.
+**! arg int xsize
+**! arg int ysize
+**!	Size of the image. Length if the <tt>indices</tt> string
+**!	must be xsize*ysize.
+**! int bpp
+**!	Bits per pixels in the indices. Valid range 1..8.
+**! string indices
+**!	The image indices as an 8bit indices.
+**! string colortable
+**!	Colortable with colors to write as palette.
+**!	If this argument is zero, no local colortable is written.
+**!	Colortable string len must be 1<<bpp.
+**! arg int interlace
+**!     Interlace index data and set interlace bit. The given string
+**!	should _not_ be pre-interlaced.
+**!
+**! see also: encode, _encode, header_block, end_block
+**! 
+**! note
+**!	This is in the very advanced sector of the GIF support;
+**!	please read about how GIFs file works.
+*/
+
+void image_gif__render_block(INT32 args)
+{
+   int xpos,ypos,xs,ys,bpp,interlace;
+   int localpalette=0;
+   struct pike_string *ips,*cps,*ps;
+   char buf[20];
+   struct gif_lzw lzw;
+   int i;
+   int numstrings=0;
+   
+   if (args<8)
+      error("Image.GIF._render_block(): Too few arguments\n");
+
+   if (sp[-args].type!=T_INT ||
+       sp[1-args].type!=T_INT ||
+       sp[2-args].type!=T_INT ||
+       sp[3-args].type!=T_INT ||
+       sp[4-args].type!=T_INT ||
+       sp[5-args].type!=T_STRING ||
+       sp[7-args].type!=T_INT)
+      error("Image.GIF._render_block(): Illegal argument(s)\n");
+
+   xpos=sp[-args].u.integer;
+   ypos=sp[1-args].u.integer;
+   xs=sp[2-args].u.integer;
+   ys=sp[3-args].u.integer;
+   bpp=sp[4-args].u.integer;
+   ips=sp[5-args].u.string;
+   interlace=sp[7-args].u.integer;
+
+   if (bpp<1) bpp=1;
+   else if (bpp>8) bpp=8;
+
+   if (sp[6-args].type==T_INT)
+   {
+      localpalette=0;
+   }
+   else if (sp[6-args].type==T_STRING)
+   {
+      cps=sp[6-args].u.string;
+      localpalette=1;
+      if (cps->len!=3*(1<<bpp))
+	 error("Image.GIF._render_block(): colortable string has wrong length\n");
+   }
+   else
+      error("Image.GIF._render_block(): Illegal argument(s)\n");
+
+   if (xs*ys!=ips->len)
+      error("Image.GIF._render_block(): indices string has wrong length\n");
+
+/*** write image rendering header */
+
+   sprintf(buf,"%c%c%c%c%c%c%c%c%c%c",
+	   0x2c, /* render block initiator */
+	   xpos&255, (xpos>>8)&255, /* left position */
+	   ypos&255, (ypos>>8)&255, /* top position */
+	   xs&255, (xs>>8)&255, /* width */
+	   ys&255, (ys>>8)&255, /* height */
+	   /* packed field */
+	   ((localpalette<<7) 
+	    | (interlace<<6)
+	    | (0 <<5) /* palette is sorted, most used first */
+	    | ((bpp)-1)) /* palette size = 2^bpp */
+           );
+   push_string(make_shared_binary_string(buf,10)); 
+   numstrings++;
+
+/*** write local palette if needed */
+   
+   if (localpalette)
+   {
+      cps->refs++;
+      push_string(cps);
+      numstrings++;
+   }
+/*** write the image */
+
+   /* write lzw minimum code size */
+   if (bpp<2)
+      sprintf(buf,"%c",2);
+   else
+      sprintf(buf,"%c",bpp);
+
+   push_string(make_shared_binary_string(buf,1));
+   numstrings++;
+   
+   image_gif_lzw_init(&lzw,bpp);
+   if (lzw.broken) error("out of memory\n");
+
+   THREADS_ALLOW();
+
+   if (!interlace)
+      image_gif_lzw_add(&lzw,ips->str,ips->len);
+   else
+   {
+      int y;
+      for (y=0; y<ys; y+=8)
+         image_gif_lzw_add(&lzw,ips->str+y*xs,xs); 
+      for (y=4; y<ys; y+=8)
+         image_gif_lzw_add(&lzw,ips->str+y*xs,xs);
+      for (y=2; y<ys; y+=4)
+         image_gif_lzw_add(&lzw,ips->str+y*xs,xs);
+      for (y=1; y<ys; y+=2)
+         image_gif_lzw_add(&lzw,ips->str+y*xs,xs);
+   }
+
+   image_gif_lzw_finish(&lzw);
+   
+   THREADS_DISALLOW();
+
+   if (lzw.broken) error("out of memory\n");
+
+   for (i=0;;)
+      if (lzw.outpos-i>=255)
+      {
+	 ps=begin_shared_string(256);
+	 ps->str[0]=255;
+	 MEMCPY(ps->str+1,lzw.out+i,255);
+	 push_string(end_shared_string(ps));
+	 numstrings++;
+	 if (numstrings>32) /* shrink stack */
+	 {
+	    f_add(numstrings);
+	    numstrings=1;
+	 }
+	 i+=255;
+      }
+      else
+      {
+	 ps=begin_shared_string(lzw.outpos-i+2);
+	 ps->str[0]=lzw.outpos-i;
+	 MEMCPY(ps->str+1,lzw.out+i,lzw.outpos-i);
+	 ps->str[lzw.outpos-i+1]=0;
+	 push_string(end_shared_string(ps));
+	 numstrings++;
+	 break;
+      }
+
+   image_gif_lzw_free(&lzw);
+
+/*** done */
+
+   f_add(numstrings);
+
+   (ps=sp[-1].u.string)->refs++;
+
+   pop_n_elems(args+1);
+   push_string(ps);
+}
+
 /*
 **! method string render_block(object img,object colortable,int x,int y,int localpalette);
 **! method string render_block(object img,object colortable,int x,int y,int localpalette,int transp_index);
@@ -197,7 +564,7 @@ void image_gif__gce_block(INT32 args)
 **! int g
 **! int b
 **!	Color of transparent pixels. Not all decoders understands
-**!	transparency.
+**!	transparency. This is ignored if localpalette isn't set.
 **! arg int delay
 **!	View this image for this many centiseconds. Default is zero.
 **! arg int user_input
@@ -229,35 +596,6 @@ void image_gif__gce_block(INT32 args)
 **!	in most decoders.
 */
 
-int image_gif_add_line(struct neo_colortable *nct,
-		       struct gif_lzw *lzw,
-		       rgb_group *s,
-		       rgb_group *m,
-		       int len,
-		       int alphaidx,
-		       struct nct_dither *dith)
-{
-   unsigned char *buf=alloca(len);
-   int n;
-   unsigned char *bd;
-   
-/*   image_colortable_get_index_line(nct,s,buf,len,dith);*/
-
-   if (m)
-   {
-      n=len;
-      bd=buf;
-      while (n--)
-      {
-	 if (!(m->r||m->g||m->b)) *bd=alphaidx;
-	 m++;
-	 bd++;
-      }
-   }
-
-   return image_gif_lzw_add(lzw,buf,len);
-}
-
 void image_gif_render_block(INT32 args)
 {
    struct image *img,*alpha=NULL;
@@ -276,14 +614,6 @@ void image_gif_render_block(INT32 args)
    int interlace=0;
    int bpp;
    struct pike_string *ps;
-
-   unsigned char buf[20];
-
-   int y,xs,ys;
-   rgb_group *img_s,*alpha_s=NULL;
-
-   struct gif_lzw lzw;
-   struct nct_dither dith;
 
    if (args<2) 
       error("Image.GIF.render_block(): Too few arguments\n");
@@ -318,7 +648,7 @@ void image_gif_render_block(INT32 args)
    {
       if (sp[4-args].type!=T_INT)
 	 error("Image:GIF.render_block(): Illegal argument 5 (expected int)\n");
-      localpalette=sp[3-args].u.integer;
+      localpalette=sp[4-args].u.integer;
    }
    else localpalette=0;
    if (args>=6)
@@ -340,10 +670,7 @@ void image_gif_render_block(INT32 args)
 	 else if (alpha->xsize != img->xsize ||
 		  alpha->ysize != img->ysize)
 	    error("Image.GIF.render_block(): given alpha channel differ in size from given image\n");
-	 alphaidx=numcolors;
-	 alphaentry=1;
-	 if (numcolors>255) 
-	    error("Image.GIF.render_block(): too many colors in colortable (255 is max, need one for transparency)\n");
+	 alphaidx=0;
 	 n=9;
 
 	 alphacolor.r=alphacolor.g=alphacolor.b=0;
@@ -356,6 +683,13 @@ void image_gif_render_block(INT32 args)
 	    alphacolor.r=(unsigned char)(sp[6-args].u.integer);
 	    alphacolor.g=(unsigned char)(sp[7-args].u.integer);
 	    alphacolor.b=(unsigned char)(sp[8-args].u.integer);
+
+	    alphaidx=numcolors; 
+	    /* note: same as transparent color index 
+	             in image_gif_header_block */
+	    alphaentry=1;
+	    if (numcolors>255) 
+	       error("Image.GIF.render_block(): too many colors in colortable (255 is max, need one for transparency)\n");
 	 }
       }
       else
@@ -410,101 +744,54 @@ void image_gif_render_block(INT32 args)
       numstrings++;
    }
 
-/*** write image rendering header */
+   ps=begin_shared_string(img->xsize*img->ysize);
+   image_colortable_index_8bit_image(nct,img->img,ps->str,
+				     img->xsize*img->ysize,img->xsize);
 
-   sprintf(buf,"%c%c%c%c%c%c%c%c%c%c",
-	   0x2c, /* render block initiator */
-	   xpos&255, (xpos>>8)&255, /* left position */
-	   ypos&255, (ypos>>8)&255, /* top position */
-	   img->xsize&255, (img->xsize>>8)&255, /* width */
-	   img->ysize&255, (img->ysize>>8)&255, /* height */
-	   /* packed field */
-	   ((localpalette<<7) 
-	    | (interlace<<6)
-	    | (0 <<5) /* palette is sorted, most used first */
-	    | ((bpp)-1)) /* palette size = 2^bpp */
-           );
-   push_string(make_shared_binary_string(buf,10)); 
-   numstrings++;
+   if (alpha)
+   {
+      rgb_group *a=alpha->img;
+      int n=img->xsize*img->ysize;
+      unsigned char *d=ps->str;
+      while (n--)
+      {
+	 if (a->r||a->g||a->b) 
+	    *d=alphaidx;
+	 d++;
+	 a++;
+      }
+   }
 
-/*** write local palette if needed */
-   
+   ps=end_shared_string(ps);
+
+   push_int(xpos);
+   push_int(ypos);
+   push_int(img->xsize);
+   push_int(img->ysize);
+   push_int(bpp);
+   push_string(ps);
    if (localpalette)
    {
+      int numcolors=image_colortable_size(nct);
+
       ps=begin_shared_string((1<<bpp)*3);
       image_colortable_write_rgb(nct,ps->str);
-      MEMSET(ps->str+numcolors*3,0,((1<<bpp)-numcolors)*3);
+      MEMSET(ps->str+(numcolors+alphaentry)*3,0,((1<<bpp)-numcolors)*3);
       if (alphaentry) 
       {
-	 ps->str[3*alphaentry+0]=alphacolor.r;
-	 ps->str[3*alphaentry+1]=alphacolor.g;
-	 ps->str[3*alphaentry+2]=alphacolor.b;
+	 ps->str[3*alphaidx+0]=alphacolor.r;
+	 ps->str[3*alphaidx+1]=alphacolor.g;
+	 ps->str[3*alphaidx+2]=alphacolor.b;
       }
       push_string(end_shared_string(ps));
-      numstrings++;
    }
-
-/*** write the image */
-
-   /* write lzw minimum code size */
-   if (bpp<2)
-      sprintf(buf,"%c",2);
    else
-      sprintf(buf,"%c",bpp);
+      push_int(0);
+   push_int(interlace);
 
-   push_string(make_shared_binary_string(buf,1));
+   image_gif__render_block(8);
+
    numstrings++;
-   
-   image_colortable_initiate_dither(nct,&dith,img->xsize);
-
-   numstrings+=image_gif_lzw_init(&lzw,bpp<2?2:bpp);
-
-   xs=img->xsize;
-   ys=img->ysize;
-   img_s=img->img;
-   if (alpha) alpha_s=alpha->img;
-
-   if (interlace)
-   {
-   /* interlace: 
-      row 0, 8, 16, ...
-      row 4, 12, 20, ...
-      row 2, 6, 10, ...
-      row 1, 3, 5, 7, ... */
-      
-      for (y=0; y<ys; y+=8)
-	 numstrings+=image_gif_add_line(nct,&lzw,img_s+xs*y,
-					alpha?alpha_s+xs*y:NULL,
-					xs,alphaidx,&dith);
-      for (y=4; y<ys; y+=8)
-	 numstrings+=image_gif_add_line(nct,&lzw,img_s+xs*y,
-					alpha?alpha_s+xs*y:NULL,
-					xs,alphaidx,&dith);
-      for (y=2; y<ys; y+=4)
-	 numstrings+=image_gif_add_line(nct,&lzw,img_s+xs*y,
-					alpha?alpha_s+xs*y:NULL,
-					xs,alphaidx,&dith);
-      for (y=1; y<ys; y+=2)
-	 numstrings+=image_gif_add_line(nct,&lzw,img_s+xs*y,
-					alpha?alpha_s+xs*y:NULL,
-					xs,alphaidx,&dith);
-   }
-   else
-   {
-      y=ys;
-      if (!alpha) alpha_s=NULL;
-      while (y--)
-      {
-	 numstrings+=image_gif_add_line(nct,&lzw,img_s,alpha_s,
-					xs,alphaidx,&dith);
-	 if (alpha) alpha_s+=xs;
-	 img_s+=xs;
-      }
-   }
-
-   numstrings+=image_gif_lzw_finish(&lzw);
-
-   image_colortable_free_dither(&dith);
 
 /*** done */
 
@@ -527,6 +814,12 @@ void init_image_gif(void)
 		"|function(object,object,void|int,void|int,void|int,void|int,void|int,void|int,void|int,void|int:string)",0);
    add_function("_gce_block",image_gif__gce_block,
 		"function(int,int,int,int,int:string)",0);
+   add_function("_render_block",image_gif__render_block,
+		"function(int,int,int,int,string,void|string,int:string)",0);
+   add_function("header_block",image_gif_header_block,
+		"function(int,int,int|object,void|int,void|int,void|int,void|int,void|int,void|int,void|int:string)",0);
+   add_function("end_block",image_gif_end_block,
+		"function(:string)",0);
 
    image_gif_module_program=end_program();
    push_object(clone_object(image_gif_module_program,0));

@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colortable.h,v 1.4 1997/11/01 01:36:53 mirar Exp $
+**!	$Id: colortable.h,v 1.5 1997/11/02 03:44:47 mirar Exp $
 */
 
 #define COLORLOOKUPCACHEHASHSIZE 207
@@ -179,3 +179,9 @@ int image_colortable_initiate_dither(struct neo_colortable *nct,
 				     int rowlen);
 
 void image_colortable_free_dither(struct nct_dither *dith);
+
+int image_colortable_index_8bit_image(struct neo_colortable *nct,
+				      rgb_group *s,
+				      unsigned char *d,
+				      int len,
+				      int rowlen);
