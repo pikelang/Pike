@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.259 2000/01/04 18:32:50 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.260 2000/01/07 04:19:53 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -611,6 +611,13 @@ object o=class
 o[""]("i",99);
 return o->i;
 ]],99)
+
+test_any([[
+  class A {int foo() {return bar();} int bar();};
+  class B {int bar() {return 1;}};
+  class C {inherit A; inherit B; int bar() {return B::bar();}};
+  return C()->foo();
+]], 1)
 
 test_compile_any([[
   class X { void hej() {} }
