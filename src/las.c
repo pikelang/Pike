@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.235 2001/02/21 18:25:24 grubba Exp $");
+RCSID("$Id: las.c,v 1.236 2001/02/21 20:21:42 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3222,9 +3222,91 @@ void fix_type_field(node *n)
   case F_MULT_EQ:
   case F_MOD_EQ:
   case F_DIV_EQ:
-    /* FIXME: Go via var = OP(var, expr); to restrict the type further?
-     * type = typeof(OP(var, expr)) AND typeof(var);
-     */
+    if (CAR(n)) {
+      struct pike_string *op_string;
+      struct pike_type *call_type;
+      node *op_node;
+
+      /* Go via var = OP(var, expr);
+       *
+       * FIXME: To restrict the type further:
+       * type = typeof(OP(var, expr)) AND typeof(var);
+       */
+      switch(n->token) {
+      case F_AND_EQ:
+	MAKE_CONSTANT_SHARED_STRING(op_string, "`&");
+	break;
+      case F_OR_EQ:
+	MAKE_CONSTANT_SHARED_STRING(op_string, "`|");
+	break;
+      case F_XOR_EQ:
+	MAKE_CONSTANT_SHARED_STRING(op_string, "`^");
+	break;
+      case F_LSH_EQ:
+	MAKE_CONSTANT_SHARED_STRING(op_string, "`<<");
+	break;
+      case F_RSH_EQ:
+	MAKE_CONSTANT_SHARED_STRING(op_string, "`>>");
+	break;
+      case F_ADD_EQ:
+	MAKE_CONSTANT_SHARED_STRING(op_string, "`+");
+	break;
+      case F_SUB_EQ:
+	MAKE_CONSTANT_SHARED_STRING(op_string, "`-");
+	break;
+      case F_MULT_EQ:
+	MAKE_CONSTANT_SHARED_STRING(op_string, "`*");
+	break;
+      case F_MOD_EQ:
+	MAKE_CONSTANT_SHARED_STRING(op_string, "`%");
+	break;
+      case F_DIV_EQ:
+	MAKE_CONSTANT_SHARED_STRING(op_string, "`/");
+	break;
+      default:
+	fatal("fix_type_field(): Unhandled token: %d\n", n->token);
+	break;
+      }
+      if (!(op_node = find_module_identifier(op_string, 0))) {
+	my_yyerror("Internally used efun undefined for token %d: %s()",
+		   n->token, op_string->str);
+	copy_type(n->type, mixed_type_string);
+	free_string(op_string);
+	break;
+      }
+      if (!op_node->type) {
+	fix_type_field(op_node);
+      }
+
+      push_finished_type(CAR(n)->type);
+      push_type(T_VOID);
+      push_type(T_MANY);
+      push_finished_type(CDR(n)->type);
+      push_finished_type(CAR(n)->type);
+      push_type(T_FUNCTION);
+
+      call_type = pop_type();
+
+      n->type = check_call(call_type,
+			   op_node->type ? op_node->type : mixed_type_string,
+			   (lex.pragmas & ID_STRICT_TYPES) &&
+			   !(op_node->node_info & OPT_WEAK_TYPE));
+      if (n->type) {
+	/* Type check ok. */
+	free_node(op_node);
+	free_type(call_type);
+	free_string(op_string);
+	break;
+      }
+      my_yyerror("Bad arguments to %s().", op_string->str);
+      yytype_error(NULL, op_node->type ? op_node->type : mixed_type_string,
+		   call_type, 0);
+      free_node(op_node);
+      free_type(call_type);
+      free_string(op_string);
+    }
+    copy_type(n->type, mixed_type_string);
+    break;
   case F_RANGE:
   case F_INC:
   case F_DEC:
