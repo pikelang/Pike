@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.43 1997/09/23 15:17:18 grubba Exp $");
+RCSID("$Id: threads.c,v 1.44 1997/10/05 03:40:34 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -410,6 +410,13 @@ void th_init(void)
 #endif /* SGI_SPROC_THREADS */
 
   THREADS_FPRINTF((stderr, "THREADS_DISALLOW() Initializing threads.\n"));
+
+#ifdef POSIX_THREADS
+#ifdef HAVE_PTHREAD_INIT
+  pthread_init();
+#endif /* HAVE_PTHREAD_INIT */
+#endif /* POSIX_THREADS */
+
   mt_init( & interpreter_lock);
   mt_lock( & interpreter_lock);
 #ifdef POSIX_THREADS
