@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.366 2001/01/14 20:35:20 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.367 2001/01/14 20:49:58 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3605,6 +3605,10 @@ test_equal([[ array_sscanf("02 00 DC 00 0B","%{%x%*[\0-/:-@]%}")[0] ]],
 
 test_equal([[ array_sscanf("\51726\30212\66610\30131", "%*[ \t]%s")[0] ]],
     [[ "\51726\30212\66610\30131" ]])
+
+test_equal([[ array_sscanf("hej","%s") ]], [[ ({ "hej" }) ]])
+test_equal([[ array_sscanf("hej","%s%n") ]], [[ ({ "hej", 3 }) ]])
+test_eval_error([[ function f=array_sscanf; f("hej","%s% ") ]])
 	
 test_any([[
 class Bar {
