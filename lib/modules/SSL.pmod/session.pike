@@ -1,5 +1,5 @@
 //
-// $Id: session.pike,v 1.25 2003/03/08 21:36:46 nilsson Exp $
+// $Id: session.pike,v 1.26 2003/03/08 22:12:13 nilsson Exp $
 
 #pike __REAL_VERSION__
 // #pragma strict_types
@@ -17,7 +17,6 @@
 
 import .Constants;
 static constant Struct = ADT.struct;
-static constant State = SSL.state;
 
 //! Identifies the session to the server
 string identity;
@@ -247,11 +246,11 @@ array(string) generate_keys(string client_random, string server_random,
 //!     @elem SSL.state write_state
 //!       Write state
 //!   @endarray
-array(State) new_server_states(string client_random, string server_random,
-			       array(int) version)
+array(.state) new_server_states(string client_random, string server_random,
+				array(int) version)
 {
-  State write_state = State(this_object());
-  State read_state = State(this_object());
+  .state write_state = .state(this_object());
+  .state read_state = .state(this_object());
   array(string) keys = generate_keys(client_random, server_random,version);
 
   if (cipher_spec->mac_algorithm)
@@ -289,11 +288,11 @@ array(State) new_server_states(string client_random, string server_random,
 //!     @elem SSL.state write_state
 //!       Write state
 //!   @endarray
-array(State) new_client_states(string client_random, string server_random,
-			       array(int) version)
+array(.state) new_client_states(string client_random, string server_random,
+				array(int) version)
 {
-  State write_state = State(this_object());
-  State read_state = State(this_object());
+  .state write_state = .state(this_object());
+  .state read_state = .state(this_object());
   array keys = generate_keys(client_random, server_random,version);
   
   if (cipher_spec->mac_algorithm)
