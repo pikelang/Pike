@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.38 2000/05/05 18:54:06 hubbe Exp $
+ * $Id: oracle.c,v 1.39 2000/05/13 02:09:41 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -42,7 +42,7 @@
 #include <oci.h>
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.38 2000/05/05 18:54:06 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.39 2000/05/13 02:09:41 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -232,6 +232,7 @@ void *check_storage(void *storage, unsigned long magic, char *prog)
 #define check_storage(X,Y,Z) (X)
 #endif
 
+#define STORAGE(O) ((O)->storage + (O)->prog->inherits[0].storage_offset)
 #define THIS_DBCON ((struct dbcon *)check_storage(CURRENT_STORAGE,0xdbc04711UL,"dbcon"))
 #define THIS_QUERY_DBCON ((struct dbcon *)check_storage(parent_storage(0),0xdbc04711UL,"dbcon"))
 #define THIS_RESULT_DBCON ((struct dbcon *)check_storage(parent_storage(1),0xdbc04711UL,"dbcon"))
@@ -462,6 +463,13 @@ static void exit_dbresultinfo_struct(struct object *o)
   OCIHandleFree(THIS_RESULTINFO->define_handle, OCI_HTYPE_DEFINE);
   free_inout( & THIS_RESULTINFO->data);
 }
+
+#ifdef ORACLE_DEBUG
+static void gc_dbresultinfo_struct(struct object *o)
+{
+  THIS_RESULTINFO;
+}
+#endif
 
 static void protect_dbresultinfo(INT32 args)
 {
@@ -774,7 +782,7 @@ static void f_fetch_fields(INT32 args)
 
 
       push_object( o=clone_object(dbresultinfo_program,0) );
-      info= (struct dbresultinfo *)o->storage;
+      info= (struct dbresultinfo *)STORAGE(o);
 
       info->name=make_shared_binary_string(name, namelen);
       info->length=size;
@@ -918,7 +926,7 @@ static void push_inout_value(struct inout *inout)
 	ref_push_object(nulldate_object);
 	push_object(low_clone(Date_program));
 	call_c_initializers(sp[-1].u.object);
-	((struct dbdate *)sp[-1].u.object->storage)->date = inout->u.date;
+	((struct dbdate *)STORAGE(sp[-1].u.object))->date = inout->u.date;
 	break;
 	
       case SQLT_NUM:
@@ -958,7 +966,7 @@ static void push_inout_value(struct inout *inout)
     case SQLT_DAT:
       push_object(low_clone(Date_program));
       call_c_initializers(sp[-1].u.object);
-      ((struct dbdate *)sp[-1].u.object->storage)->date = inout->u.date;
+      ((struct dbdate *)STORAGE(sp[-1].u.object))->date = inout->u.date;
       break;
       
     case SQLT_INT:
@@ -1046,7 +1054,7 @@ static void f_fetch_row(INT32 args)
        dbquery->field_info->item[i].u.object->prog == dbresultinfo_program)
     {
       struct dbresultinfo *info;
-      info=(struct dbresultinfo *)(dbquery->field_info->item[i].u.object->storage);
+      info=(struct dbresultinfo *)STORAGE(dbquery->field_info->item[i].u.object);
 
       /* Extract data from 'info' */
       push_inout_value(& info->data);
@@ -1345,7 +1353,7 @@ static void f_big_query_create(INT32 args)
   if(new_parent &&
      PARENTOF(PARENTOF(THISOBJ)) != new_parent)
   {
-    if(new_parent->prog != PARENTOF(PARENTOF(THISOBJ))->parent)
+    if(new_parent->prog != PARENTOF(PARENTOF(THISOBJ))->parent->prog)
       error("Bad argument 3 to big_query.\n");
 
     /* We might need to check that there are no locks held here
@@ -1384,7 +1392,7 @@ static void f_big_query_create(INT32 args)
 	  case T_OBJECT:
 	    if(value->u.object->prog == Date_program)
 	    {
-	      bind.bind[bind.bindnum].data.u.date=((struct dbdate *)(value->u.object->storage))->date;
+	      bind.bind[bind.bindnum].data.u.date=((struct dbdate *)STORAGE(value->u.object))->date;
 	      addr = &bind.bind[bind.bindnum].data.u.date;
 	      rlen = len = sizeof(bind.bind[bind.bindnum].data.u.date);
 	      fty=SQLT_ODT;
@@ -1393,7 +1401,7 @@ static void f_big_query_create(INT32 args)
 	    if(value->u.object->prog == NULL_program)
 	    {
 	      bind.bind[bind.bindnum].indicator=-1;
-	      value=& ((struct dbnull *)(value->u.object->storage))->type;
+	      value=& ((struct dbnull *)STORAGE(value->u.object))->type;
 	      goto retry;
 	    }
 	    error("Bad value type in argument 2 to "
@@ -1683,7 +1691,7 @@ static void dbnull_not(INT32 args)
 
 void pike_module_init(void)
 {
-  long offset;
+  long offset=0;
 #ifdef ORACLE_HOME
   if(getenv("ORACLE_HOME")==NULL)
     putenv("ORACLE_HOME="ORACLE_HOME);
@@ -1761,6 +1769,9 @@ void pike_module_init(void)
 	
 	ADD_FUNCTION("`->=",protect_dbresultinfo,tFunc(tStr tComma tMix,tVoid),0);
 	ADD_FUNCTION("`[]=",protect_dbresultinfo,tFunc(tStr tComma tMix,tVoid),0);
+#ifdef ORACLE_DEBUG
+	set_gc_check_callback(gc_dbresultinfo_struct);
+#endif
 	MY_END_CLASS(dbresultinfo);
       }
 
