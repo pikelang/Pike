@@ -1,4 +1,4 @@
-// $Id: module.pmod.in,v 1.15 2003/04/23 11:41:22 nilsson Exp $
+// $Id: module.pmod.in,v 1.16 2005/04/02 19:10:23 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit @module@;
@@ -330,10 +330,10 @@ class File {
   //! @seealso
   //!   @[open] @[Stdio.File]
   static void create(mixed ... args) {
-    ::create();
+    ::create(@args);
 
     if(sizeof(args)) {
-      open(@args);
+      is_open = 1;
     }
   }
 
