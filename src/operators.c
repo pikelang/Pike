@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.135 2001/05/09 16:37:49 grubba Exp $");
+RCSID("$Id: operators.c,v 1.136 2001/05/10 22:35:20 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -660,6 +660,51 @@ static node *optimize_eq(node *n)
       ret=*first_arg;
       ADD_NODE_REF(*first_arg);
       return mkopernode("`!",ret,0);
+    }
+
+    if (((*second_arg)->token == F_CONSTANT) &&
+	((*second_arg)->u.sval.type == T_STRING) &&
+	((*first_arg)->token == F_RANGE) &&
+	(CADR(*first_arg)->token == F_CONSTANT) &&
+	(CADR(*first_arg)->u.sval.type == T_INT) &&
+	(!(CADR(*first_arg)->u.sval.u.integer)) &&
+	(CDDR(*first_arg)->token == F_CONSTANT) &&
+	(CDDR(*first_arg)->u.sval.type == T_INT)) {
+      /* str[..c] == "foo" */
+      INT_TYPE c = CDDR(*first_arg)->u.sval.u.integer;
+
+      if ((*second_arg)->u.sval.u.string->len == c+1) {
+	/* str[..2] == "foo"
+	 *   ==>
+	 * has_prefix(str, "foo");
+	 */
+	ADD_NODE_REF2(CAR(*first_arg),
+	ADD_NODE_REF2(*second_arg,
+	  ret = mkopernode("has_prefix", CAR(*first_arg), *second_arg);
+	));
+	return ret;
+      } else if ((*second_arg)->u.sval.u.string->len <= c) {
+	/* str[..4] == "foo"
+	 *   ==>
+	 * str == "foo"
+	 */
+	/* FIXME: Warn? */
+	ADD_NODE_REF2(CAR(*first_arg),
+	ADD_NODE_REF2(*second_arg,
+	  ret = mkopernode("`==", CAR(*first_arg), *second_arg);
+	));
+	return ret;
+      } else {
+	/* str[..1] == "foo"
+	 *   ==>
+	 * (str, 0)
+	 */
+	/* FIXME: Warn? */
+	ADD_NODE_REF2(CAR(*first_arg),
+	  ret = mknode(F_COMMA_EXPR, CAR(*first_arg), mkintnode(0));
+	);
+	return ret;
+      }
     }
   }
   return 0;
