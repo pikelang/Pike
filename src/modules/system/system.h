@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.h,v 1.8 2002/10/11 01:39:57 nilsson Exp $
+|| $Id: system.h,v 1.9 2003/10/10 19:12:53 nilsson Exp $
 */
 
 /*
@@ -63,4 +63,5 @@ struct memory_storage
 #define MEM_FREE_MUNMAP 0x20   
 #define MEM_FREE_SHMDEL 0x40
    unsigned long flags;
+   void *extra;
 };
