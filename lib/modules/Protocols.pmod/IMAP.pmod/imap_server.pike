@@ -2,6 +2,148 @@
  *
  */
 
+mapping unauth_commands =
+([ "noop" : .requests.noop,
+   "capability" : .requests.capability,
+   "logout" : .requests.logout,
+   "login" : .requests.login,
+   // "authenticate" : .requests.authenticate
+]);
+
+mapping auth_commands =
+([ "noop" : .requests.noop,
+   "logout" : .requests.logout,
+   "capability" : .requests.capability,
+   "select" : .requests.select,
+//   "examine" : .requests.examine,
+//   "create" : .requests.create,
+//   "delete" : .requests.delete,
+//   "rename" : .requests.rename,
+//   "subscribe" : .requests.subscribe,
+//   "unsubscribe" : .requests.unsubscribe,
+   "list" : .requests.list,
+   "lsub" : .requests.lsub,
+//   "status" : .requests.status,
+//   "append" : .requests.append
+]);
+
+mapping select_commands =
+([ "noop" : .requests.noop,
+   "logout" : .requests.logout,
+   "capability" : .requests.capability,
+   "select" : .requests.select,
+//    "examine" : .requests.examine,
+//    "create" : .requests.create,
+//    "delete" : .requests.delete,
+//    "rename" : .requests.rename,
+//    "subscribe" : .requests.subscribe,
+//    "unsubscribe" : .requests.unsubscribe,
+   "list" : .requests.list,
+   "lsub" : .requests.lsub,
+//    "status" : .requests.status,
+//    "append" : .requests.append,
+//    "check" : .requests.check,
+//    "close" : .requests.close,
+//    "expunge" : .requests.expunge,
+//    "search" : .requests.search,
+//    "fetch" : .requests.fetch,
+//    "store" : .requests.store,
+//    "copy" : .requests.copy,
+//    "uid" : .requests.uid
+]);
+
+class connection
+{
+  inherit .server;
+
+  object db; /* Mail backend */
+
+  mapping session = ([]); /* State information about this ession; primarily
+			   * uid and mailboxid. */
+
+  object current_request;
+
+#if 0
+  void imap_close(int|void hard)
+    {
+      if (hard || !strlen(write_buffer))
+	fd->close();
+      else
+	closing = 1;
+    }
+#endif
+  
+  void show_backtrace(mixed e)
+    {
+      werror(describe_backtrace(e));
+    }
+
+  void next_action(mapping action)
+    {
+      switch(action->action)
+      {
+      case "close":
+	/* Close connection */
+	break;
+      case "finished":
+	/* Finished processing this request. Remain in the same state. */
+	get_request();
+	break;
+      case "expect_line":
+	/* Callback for next line recieved */
+	get_line(action->handler);
+	break;
+      case "expect_literal":
+	/* Callback for recieving a literal */
+	get_literal(action->length, action->handler);
+	break;
+      case "logged_in_state":
+	use_commands(auth_commands);
+	break;
+      case "selected_state":
+	use_commands(select_commands);
+	break;
+      default:
+	throw( ({ sprintf("IMAP.pmod: Internal error, action = %O\n",
+			  action), backtrace() }) );
+      }
+    }
+  
+  void handle_request(object req)
+    {
+      mapping action;
+      
+      mixed e;
+      if (e = catch(action = req->process(session, db, this_object())))
+	{
+	  show_backtrace(e);
+	  send_bad_response(current_request->tag, "Internal error");
+	  return;
+	}
+      next_action(action);
+    }
+
+  void create(object f, int timeout, object server, mapping preauth, int|void debug)
+    {
+      fd = f;
+      db = server;
+
+      ::create(f, timeout);
+
+      if (preauth)
+      {
+	session = preauth->session;
+	use_commands(auth_commands);
+
+	imap_send("*", "PREAUTH", "IMAP4rev1", preauth->message);
+      } else {
+	use_commands(unauth_commands);
+	imap_send("*", "OK", "IMAP4", "IMAP4rev1", "Service ready");
+      }
+    }
+}
+
+#if 0
 class connection
 {
   inherit .server;
@@ -181,6 +323,7 @@ class connection
       imap_send("*", "OK", "IMAP4", "IMAP4rev1", "Service ready");
     }
 }
+#endif
 
 object db;
 
