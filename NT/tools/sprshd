@@ -98,7 +98,7 @@ void handle_incoming_connection(object(Stdio.File) io)
       
       if(!err)
       {
-#if !constant(Process.PROP_IPC)
+#if !constant(Stdio.PROP_IPC)
 	thread_create(monitor,p2,p);
 #endif
 	while(1)
