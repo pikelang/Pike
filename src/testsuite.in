@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.225 1999/11/06 22:22:27 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.226 1999/11/14 23:36:56 grubba Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -736,16 +736,16 @@ test_any([[mixed a=({0}); a[0]=a; return equal(a, decode_value(encode_value(a)))
 test_any([[ int e; for(e=0;e<100000;e+=1+(e>>4)) if(decode_value(encode_value(e))!=e) return e; return -1;]], -1)
 test_any([[ int e; for(e=0;e<100000;e+=1+(e>>4)) if(decode_value(encode_value(-e))!=-e) return e; return -1;]], -1)
 
-test_eval_error([[decode_value("\266ke0\241\346abc\b&\346de~\200\335\1\362PO\35\242")]])
-test_eval_error([[decode_value("\266ke0\241\346abcpf\221\337v\37\224")]])
-test_eval_error([[decode_value("\266ke0\241\346abc\b&\346def`\266\212\340\337\b\252\b")]])
-test_eval_error([[decode_value("\266ke0\241\346abc\b&\346def`\266\264\22\330\207")]])
-test_eval_error([[decode_value("\266ke0\241\262\266\216\213{@\333|")]])
-test_eval_error([[decode_value("\266ke0\241\346a\211[\266SN\313\331")]])
-test_eval_error([[decode_value("\266ke0\241\346ab-\266""6\227}u\320\274\251\211")]])
-test_eval_error([[decode_value("\266ke0\241\346abc\b&\346de\276\266\364\30\251s\233UF\362")]])
-test_eval_error([[decode_value("\266ke0\241\346abcv\22C\246\264\264L"          )]])
-test_eval_error([[decode_value("\266ke0\241\260\303\rl")]])
+test_eval_error([[return decode_value("\266ke0\241\346abc\b&\346de~\200\335\1\362PO\35\242")]])
+test_eval_error([[return decode_value("\266ke0\241\346abcpf\221\337v\37\224")]])
+test_eval_error([[return decode_value("\266ke0\241\346abc\b&\346def`\266\212\340\337\b\252\b")]])
+test_eval_error([[return decode_value("\266ke0\241\346abc\b&\346def`\266\264\22\330\207")]])
+test_eval_error([[return decode_value("\266ke0\241\262\266\216\213{@\333|")]])
+test_eval_error([[return decode_value("\266ke0\241\346a\211[\266SN\313\331")]])
+test_eval_error([[return decode_value("\266ke0\241\346ab-\266""6\227}u\320\274\251\211")]])
+test_eval_error([[return decode_value("\266ke0\241\346abc\b&\346de\276\266\364\30\251s\233UF\362")]])
+test_eval_error([[return decode_value("\266ke0\241\346abcv\22C\246\264\264L"          )]])
+test_eval_error([[return decode_value("\266ke0\241\260\303\rl")]])
 
 
 
@@ -2237,7 +2237,7 @@ test_true([[(array(array))([]) ]])
 test_true([[(array(array))([1:2]) ]])
 test_true([[(array(array))([1:2,3:4]) ]])
 test_true([[(array(array))([1:2,3:4,5:6]) ]])
-test_eval_error([[(mapping)""]])
+test_eval_error([[return (mapping)""]])
 
 // testing @
 test_equal(({1,2,3}),lambda(mixed ... x) { return x; }(@a()))
@@ -3495,8 +3495,8 @@ test_true(arrayp(rusage()))
 test_true(sizeof(rusage())>0)
 
 // - search
-test_eval_error(search("foolbar","o",-10))
-test_eval_error(search("foolbar","o",2983742))
+test_eval_error(return search("foolbar","o",-10))
+test_eval_error(return search("foolbar","o",2983742))
 test_eq(search("foolbar","gazonk"),-1)
 test_eq(search("qowiueproqiuweproiwqueoplkjljlklksjjriwueproiuwerowieu","lkjljlklksjj"),24)
 test_eq(search("lkjljlklksjjriwueproiuwerlskjdvlaskjfowieu","lkjljlklksjj"),0)
@@ -3601,7 +3601,7 @@ test_eq(unicode_to_string("\176\77"), "\77077")
 test_eq(unicode_to_string("\0b\0l\0ä"), "blä")
 test_eq(unicode_to_string("\0f\0o\0o"), "foo")
 
-test_eval_error(string_to_unicode("\7077077"))
+test_eval_error(return string_to_unicode("\7077077"))
 
 // - string_to_utf8, utf8_to_string
 test_eq(string_to_utf8("foo"), "foo")
@@ -3619,22 +3619,22 @@ test_eq(utf8_to_string("\347\270\277"), "\77077")
 test_eq(utf8_to_string("bl\303\244"), "blä")
 test_eq(utf8_to_string("foo"), "foo")
 
-test_eval_error(string_to_utf8("\77077077077"))
-test_eval_error(utf8_to_string("\376\203\270\277\207\270\277"))
-test_eval_error(utf8_to_string("\277"));
-test_eval_error(utf8_to_string("\377"));
-test_eval_error(utf8_to_string("\376\203\270\277\207\270", 1));
-test_eval_error(utf8_to_string("\374\270\277\207\270"));
-test_eval_error(utf8_to_string("\370\277\207\270"));
-test_eval_error(utf8_to_string("\367\207\270"));
-test_eval_error(utf8_to_string("\347\270"));
-test_eval_error(utf8_to_string("\303"));
-test_eval_error(utf8_to_string("\376\203\270\277\207\270a"));
-test_eval_error(utf8_to_string("\374\270\277\207\270a"));
-test_eval_error(utf8_to_string("\370\277\207\270a"));
-test_eval_error(utf8_to_string("\367\207\270a"));
-test_eval_error(utf8_to_string("\347\270a"));
-test_eval_error(utf8_to_string("\303a"));
+test_eval_error(return string_to_utf8("\77077077077"))
+test_eval_error(return utf8_to_string("\376\203\270\277\207\270\277"))
+test_eval_error(return utf8_to_string("\277"));
+test_eval_error(return utf8_to_string("\377"));
+test_eval_error(return utf8_to_string("\376\203\270\277\207\270", 1));
+test_eval_error(return utf8_to_string("\374\270\277\207\270"));
+test_eval_error(return utf8_to_string("\370\277\207\270"));
+test_eval_error(return utf8_to_string("\367\207\270"));
+test_eval_error(return utf8_to_string("\347\270"));
+test_eval_error(return utf8_to_string("\303"));
+test_eval_error(return utf8_to_string("\376\203\270\277\207\270a"));
+test_eval_error(return utf8_to_string("\374\270\277\207\270a"));
+test_eval_error(return utf8_to_string("\370\277\207\270a"));
+test_eval_error(return utf8_to_string("\367\207\270a"));
+test_eval_error(return utf8_to_string("\347\270a"));
+test_eval_error(return utf8_to_string("\303a"));
 
 // - sum
 test_eq(`+(1,1),2)
@@ -3790,7 +3790,7 @@ test_program(inherit test; inherit test2; mixed a() { setw(20); setb(22); return
 test_program(inherit test2; inherit test; mixed a() { w=20; b=22; return getw()==20 && getb()==22; })
 test_program(inherit test2; inherit test; mixed a() { setw(20); setb(22); return w==20 && b==22; })
 
-test_eval_error(clone(class c{int i;void foo(){ destruct(this_object());i=0;}})->foo())
+test_eval_error(return clone(class c{int i;void foo(){ destruct(this_object());i=0;return i;}})->foo())
 
 // Pike modules
 
@@ -4143,19 +4143,19 @@ test_compile_any(class A {int f(){}} class B {inline inherit A;} class C {inheri
 
 // - modifiers, run time access properties
 
-test_eval_error(class {}()->f())
+test_eval_error(return class {}()->f())
 test_do(class {int f(){}}()->f())
 test_do(class {public int f(){}}()->f())
-test_eval_error(class {static int f(){}}()->f())
-test_eval_error(class {private int f(){}}()->f())
+test_eval_error(return class {static int f(){}}()->f())
+test_eval_error(return class {private int f(){}}()->f())
 test_do(class {final int f(){}}()->f())
 test_do(class {nomask int f(){}}()->f())
 test_do(class {local int f(){}}()->f())
 test_do(class {inline int f(){}}()->f())
 test_do(class {class A {}}()->A())
 test_do(class {public class A {}}()->A())
-test_eval_error(class {static class A {}}()->A())
-test_eval_error(class {private class A {}}()->A())
+test_eval_error(return class {static class A {}}()->A())
+test_eval_error(return class {private class A {}}()->A())
 test_do(class {final class A {}}()->A())
 test_do(class {nomask class A {}}()->A())
 test_do(class {local class A {}}()->A())
