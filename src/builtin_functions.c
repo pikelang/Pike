@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.80 1998/03/12 21:43:40 per Exp $");
+RCSID("$Id: builtin_functions.c,v 1.81 1998/03/16 22:11:17 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -40,6 +40,8 @@ RCSID("$Id: builtin_functions.c,v 1.80 1998/03/12 21:43:40 per Exp $");
 #ifdef HAVE_CRYPT_H
 #include <crypt.h>
 #endif
+
+#define DIFF_DEBUG
 
 
 void f_equal(INT32 args)
@@ -1855,6 +1857,27 @@ static INLINE int diff_ponder_array(int x,
    return a;
 }
 
+/*
+ * The Grubba-Mirar Longest Common Sequence algorithm.
+ *
+ * This algorithm is O((Na * Nb / K)*lg(Na * Nb / K)), where:
+ *
+ *  Na == sizeof(a)
+ *  Nb == sizeof(b)
+ *  K  == sizeof(correlation(a,b))
+ *
+ * For binary data:
+ *  K == 256 => O(Na * Nb * lg(Na * Nb)),
+ *  Na ~= Nb ~= N => O(N² * lg(N))
+ *
+ * For ascii data:
+ *  K ~= C * min(Na, Nb), C constant => O(max(Na, Nb)*lg(max(Na,Nb))),
+ *  Na ~= Nb ~= N => O(N * lg(N))
+ *
+ * diff_longest_sequence() takes two arguments:
+ *  cmptbl == diff_compare_table(a, b)
+ *  blen == sizeof(b) >= max(@(cmptbl*({})))
+ */
 static struct array* diff_longest_sequence(struct array *cmptbl, int blen)
 {
    int i,j,top=0,lsize=0;
@@ -1864,10 +1887,11 @@ static struct array* diff_longest_sequence(struct array *cmptbl, int blen)
    struct diff_magic_link **stack;
    char *marks;
 
-   stack=malloc(sizeof(struct diff_magic_link*)*cmptbl->size);
+   stack = malloc(sizeof(struct diff_magic_link*)*cmptbl->size);
 
    if (!stack) error("out of memory\n");
 
+   /* NB: marks is used for optimization purposes only */
    marks = calloc(blen,1);
 
    if (!marks) {
@@ -1875,41 +1899,71 @@ static struct array* diff_longest_sequence(struct array *cmptbl, int blen)
      error("Out of memory\n");
    }
 
-   for (i=0; i<cmptbl->size; i++)
+#ifdef DIFF_DEBUG
+   fprintf(stderr, "\n\nDIFF: sizeof(cmptbl)=%d, blen=%d\n",
+	   cmptbl->size, blen);
+#endif /* DIFF_DEBUG */
+
+   for (i = 0; i<cmptbl->size; i++)
    {
       struct svalue *inner=cmptbl->item[i].u.array->item;
 
-      for (j=cmptbl->item[i].u.array->size; j--;)
-      {
-	 int x=inner[j].u.integer;
+#ifdef DIFF_DEBUG
+      fprintf(stderr, "DIFF: i=%d\n", i);
+#endif /* DIFF_DEBUG */
 
+      for (j = cmptbl->item[i].u.array->size; j--;)
+      {
+	 int x = inner[j].u.integer;
+
+#ifdef DIFF_DEBUG
+	 fprintf(stderr, "DIFF:  j=%d, x=%d\n", j, x);
+#endif /* DIFF_DEBUG */
 	 if (!marks[x]) {
 	   int pos;
 
 	   if (top && x<=stack[top-1]->x) {
-	     pos=diff_ponder_stack(x,stack,top);
+	     /* Find the insertion point. */
+	     pos = diff_ponder_stack(x, stack, top);
 	     if (pos != top) {
+	       /* Not on the stack anymore. */
 	       marks[stack[pos]->x] = 0;
 	     }
 	   } else
 	     pos=top;
 
+#ifdef DIFF_DEBUG
+	   fprintf(stderr, "DIFF:  pos=%d\n", pos);
+#endif /* DIFF_DEBUG */
+
+	   /* This part is only optimization (j accelleration). */
 	   if (pos && j)
 	   {
 	     if (!marks[inner[j-1].u.integer])
 	     {
-	       j=diff_ponder_array(stack[pos-1]->x+1,inner,j);
-	       x=inner[j].u.integer;
+	       /* Find the element to insert. */
+	       j = diff_ponder_array(stack[pos-1]->x+1, inner, j);
+	       x = inner[j].u.integer;
 	     }
 	   }
 	   else
 	   {
-	     j=0;
-	     x=inner->u.integer;
+	     j = 0;
+	     x = inner->u.integer;
 	   }
+
+#ifdef DIFF_DEBUG
+	   fprintf(stderr, "DIFF: New j=%d, x=%d\n", j, x);
+#endif /* DIFF_DEBUG */
+
+	   /* Put x on the stack. */
 	   marks[x] = 1;
-	   if (pos==top)
+	   if (pos == top)
 	   {
+#ifdef DIFF_DEBUG
+	     fprintf(stderr, "DIFF:  New top element\n");
+#endif /* DIFF_DEBUG */
+
 	     if (! (dml=dml_new(&pools)) )
 	     {
 	       dml_free_pools(pools);
@@ -1917,56 +1971,71 @@ static struct array* diff_longest_sequence(struct array *cmptbl, int blen)
 	       error("out of memory\n");
 	     }
 
-	     dml->x=x;
-	     dml->refs=1;
+	     dml->x = x;
+	     dml->refs = 1;
 
 	     if (pos)
-	       (dml->prev=stack[pos-1])->refs++;
+	       (dml->prev = stack[pos-1])->refs++;
 	     else
-	       dml->prev=NULL;
+	       dml->prev = NULL;
 
 	     top++;
 	    
-	     stack[pos]=dml;
-	   }
-	   else if (stack[pos]->x!=x)
-	     if (pos && 
-		 stack[pos]->refs==1 &&
-		 stack[pos-1]==stack[pos]->prev)
+	     stack[pos] = dml;
+	   } else if (pos && 
+		      stack[pos]->refs == 1 &&
+		      stack[pos-1] == stack[pos]->prev)
+	   {
+#ifdef DIFF_DEBUG
+	     fprintf(stderr, "DIFF:  Optimized case\n");
+#endif /* DIFF_DEBUG */
+
+	     /* Optimization. */
+	     stack[pos]->x = x;
+	   } else {
+#ifdef DIFF_DEBUG
+	     fprintf(stderr, "DIFF:  Generic case\n");
+#endif /* DIFF_DEBUG */
+
+	     if (! (dml=dml_new(&pools)) )
 	     {
-	       stack[pos]->x=x;
+	       dml_free_pools(pools);
+	       free(stack);
+	       error("out of memory\n");
 	     }
+
+	     dml->x = x;
+	     dml->refs = 1;
+
+	     if (pos)
+	       (dml->prev = stack[pos-1])->refs++;
 	     else
-	     {
-	       if (! (dml=dml_new(&pools)) )
-	       {
-		 dml_free_pools(pools);
-		 free(stack);
-		 error("out of memory\n");
-	       }
+	       dml->prev = NULL;
 
-	       dml->x=x;
-	       dml->refs=1;
-
-	       if (pos)
-		 (dml->prev=stack[pos-1])->refs++;
-	       else
-		 dml->prev=NULL;
-
-	       if (!--stack[pos]->refs)
-		 dml_delete(pools,stack[pos]);
+	     if (!--stack[pos]->refs)
+	       dml_delete(pools, stack[pos]);
 	    
-	       stack[pos]=dml;
-	     }
+	     stack[pos] = dml;
+	   }
+#ifdef DIFF_DEBUG
+	 } else {
+	   fprintf(stderr, "DIFF:  Already marked (%d)!\n", marks[x]);
+#endif /* DIFF_DEBUG */
 	 }
       }
+#ifdef DIFF_DEBUG
+      for(j=0; j < top; j++) {
+	fprintf(stderr, "DIFF:  stack:%d, mark:%d\n",
+		stack[j]->x, marks[stack[j]->x]);
+      }
+#endif /* DIFF_DEBUG */
    }
 
    /* No need for marks anymore. */
 
    free(marks);
 
-   /* FIXME(?) memory unfreed upon error here */
+   /* FIXME(?) memory unfreed upon error here. */
    a=low_allocate_array(top,0); 
    if (top)
    {
@@ -2067,7 +2136,7 @@ void f_diff(INT32 args)
 
    cmptbl=diff_compare_table(sp[-args].u.array,sp[1-args].u.array);
    push_array(cmptbl);
-   seq=diff_longest_sequence(cmptbl, sp[1-args].u.array->size);
+   seq=diff_longest_sequence(cmptbl, sp[1-1-args].u.array->size);
    push_array(seq); 
    
    diff=diff_build(sp[-2-args].u.array,sp[1-2-args].u.array,seq);
@@ -2109,7 +2178,7 @@ void f_diff_longest_sequence(INT32 args)
    cmptbl=diff_compare_table(sp[-args].u.array,sp[1-args].u.array);
    push_array(cmptbl);
    /* Note that the stack is one element off here. */
-   seq=diff_longest_sequence(cmptbl, sp[-args].u.array->size);
+   seq=diff_longest_sequence(cmptbl, sp[1-1-args].u.array->size);
    pop_n_elems(args+1);
    push_array(seq); 
 }
