@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.35 2003/09/01 15:18:07 nilsson Exp $
+ * $Id: Tree.pmod,v 1.36 2003/10/24 11:19:49 jhs Exp $
  *
  */
 
@@ -540,7 +540,7 @@ class Node {
 
   //  Member variables for this node type
   static int            mNodeType;
-  static string		mShortNamespace;	// Namespace prefix
+  static string		mShortNamespace = "";	// Namespace prefix
   static string		mNamespace;	// Resolved namespace
   static string         mTagName;
 //   private int            mTagCode;
