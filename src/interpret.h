@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.89 2001/06/11 16:35:07 grubba Exp $
+ * $Id: interpret.h,v 1.90 2001/06/29 23:33:30 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -117,7 +117,7 @@ struct external_variable_context
   (Pike_sp - Pike_interpreter.evaluator_stack + \
    Pike_interpreter.svalue_stack_margin + (X) >= Pike_stack_size)
 
-PMOD_EXPORT const char *Pike_check_stack_errmsg;
+extern const char *Pike_check_stack_errmsg;
 
 #define check_stack(X) do { \
   if(low_stack_check(X)) \
@@ -128,14 +128,14 @@ PMOD_EXPORT const char *Pike_check_stack_errmsg;
 	       PTRDIFF_T_TO_LONG(X)); \
   }while(0)
 
-PMOD_EXPORT const char *Pike_check_mark_stack_errmsg;
+extern const char *Pike_check_mark_stack_errmsg;
 
 #define check_mark_stack(X) do {		\
   if(Pike_mark_sp - Pike_interpreter.mark_stack + (X) >= Pike_stack_size) \
     ((void (*)(const char*, ...))Pike_error)(Pike_check_mark_stack_errmsg); \
   }while(0)
 
-PMOD_EXPORT const char *Pike_check_c_stack_errmsg;
+extern const char *Pike_check_c_stack_errmsg;
 
 #define check_c_stack(X) do {						\
   ptrdiff_t x_= ((char *)&x_) +						\
