@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.141 1999/06/22 19:00:11 marcus Exp $");
+RCSID("$Id: signal_handler.c,v 1.142 1999/06/25 21:34:22 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -458,7 +458,7 @@ static struct sigdesc signal_desc []={
 
 /* Process stuff */
 
-#if PIKE_DEBUG
+#ifdef PIKE_DEBUG
 
 char process_info[65536];
 int last_pid_p;
@@ -1985,7 +1985,7 @@ void f_create_process(INT32 args)
     gid_t wanted_gid;
     int gid_request=0;
     int keep_signals = 0;
-    pid_t pid;
+    pid_t pid=-2;
     int control_pipe[2];	/* Used for communication with the child. */
     char buf[4];
 
@@ -2320,11 +2320,15 @@ void f_create_process(INT32 args)
 
     do
     {
+#ifdef PROC_DEBUG
+      fprintf("Forking... (pid=%d errno=%d)\n",pid,errno);
+#endif
 #if defined(HAVE_FORK1) && defined(_REENTRANT)
       pid=fork1();
 #else
       pid=fork();
 #endif
+
     }while(pid == -1 && (errno==EAGAIN || errno==EINTR));
 
     UNSET_ONERROR(err);
