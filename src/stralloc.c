@@ -476,6 +476,7 @@ struct pike_string *realloc_shared_string(struct pike_string *a, INT32 size)
   }else{
     r=begin_shared_string(size);
     MEMCPY(r->str, a->str, a->len);
+    free_string(a);
     return r;
   }
 }
