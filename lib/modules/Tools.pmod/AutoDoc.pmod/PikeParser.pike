@@ -12,7 +12,7 @@ static string quoteString(string s) {
   return "\"" + (quote[s] || s) + "\"";
 }
 
-static void parseError(string message, mixed ... args) {
+static int parseError(string message, mixed ... args) {
   message = sprintf(message, @args);
   werror("parseError! \n");
   // werror(sprintf("%s\n", describe_backtrace(backtrace())));
@@ -236,10 +236,10 @@ IntType parseInt() {
   if (peekToken() == "(") {
     readToken();
     if (peekToken() != "..")
-      i->min = readToken();
+      i->min = eatLiteral();
     eat("..");
     if (peekToken() != ")")
-      i->max = readToken();
+      i->max = eatLiteral();
     eat(")");
   }
   return i;
@@ -428,14 +428,19 @@ array(string) parseModifiers() {
 }
 
 void|string parseLiteral() {
+  string sign = peekToken() == "-" ? readToken() : "";
   string s = peekToken();
   if (s && s != "" &&
       (s[0] == '"' || s[0] == '\'' || isDigit(s[0])))
   {
     readToken();
-    return s;
+    return sign + s;
   }
   return 0;
+}
+
+string eatLiteral() {
+  return parseLiteral() || parseError("expected literal");
 }
 
 // parseDecl() reads ONLY THE HEAD, NOT the ";" or "{" .. "}" !!!
