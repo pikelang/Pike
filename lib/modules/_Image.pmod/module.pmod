@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 //! module Image
-//! $Id: module.pmod,v 1.11 2000/09/28 03:39:15 hubbe Exp $
+//! $Id: module.pmod,v 1.12 2000/10/08 22:40:34 per Exp $
 
 //! method object(Image.Image) load()
 //! method object(Image.Image) load(object file)
@@ -64,7 +64,7 @@ mapping _decode( string data, mixed|void tocolor )
     foreach( ({ "ANY", "XCF", "PSD", "PNG",  "BMP",  "TGA", "PCX",
                 "XBM", "XPM", "TIFF", "ILBM", "PS", "PVR",
        /* Image formats low on headers below this mark */
-                "TIM", "HRZ", "AVS", "WBF",
+                "DSI", "TIM", "HRZ", "AVS", "WBF",
        /* "XFace" Always succeds*/
     }), string fmt )
     {
