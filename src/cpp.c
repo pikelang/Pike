@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.51 1999/04/07 23:10:03 hubbe Exp $
+ * $Id: cpp.c,v 1.52 1999/08/17 19:00:27 grubba Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -774,6 +774,8 @@ static INT32 low_cpp(struct cpp *this, void *data, INT32 len, int shift,
   default:
     fatal("low_cpp(): Bad shift: %d\n", shift);
   }
+  /* NOT_REACHED */
+  return 0;
 }
 
 void free_one_define(struct hash_entry *h)

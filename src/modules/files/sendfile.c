@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.24 1999/08/17 18:54:12 grubba Exp $
+ * $Id: sendfile.c,v 1.25 1999/08/17 18:57:37 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -402,7 +402,7 @@ void worker(void *this_)
     goto done;
 
   fallback:
-#endif /* !HAVE_FREEBSD_SENDFILE */
+#endif /* HAVE_FREEBSD_SENDFILE || HAVE_HPUX_SENDFILE */
 
     SF_DFPRINTF((stderr, "sendfile: Sending headers\n"));
 
@@ -556,7 +556,9 @@ void worker(void *this_)
     this->sent += send_iov(this->to_fd, iov, iovcnt);
   }
 
+#if defined(HAVE_FREEBSD_SENDFILE) || defined(HAVE_HPUX_SENDFILE)
  done:
+#endif /* HAVE_FREEBSD_SENDFILE || HAVE_HPUX_SENDFILE */
 
   SF_DFPRINTF((stderr,
 	      "sendfile: Done. Setting up callback\n"
