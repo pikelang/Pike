@@ -1154,7 +1154,7 @@ void my_yyerror(char *fmt,...)
   va_start(args,fmt);
   VSPRINTF(buf,fmt,args);
 
-  if(strlen(buf) >= sizeof(buf))
+  if((long)strlen(buf) >= (long)sizeof(buf))
     fatal("Buffer overflow in my_yyerror.");
 
   yyerror(buf);
