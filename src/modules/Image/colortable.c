@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.87 2000/08/10 16:56:20 grubba Exp $ */
+/* $Id: colortable.c,v 1.88 2000/08/10 16:59:02 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.87 2000/08/10 16:56:20 grubba Exp $
+**!	$Id: colortable.c,v 1.88 2000/08/10 16:59:02 grubba Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.87 2000/08/10 16:56:20 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.88 2000/08/10 16:59:02 grubba Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -1446,7 +1446,7 @@ static void _img_sub_colortable(struct neo_colortable *rdest,
    struct nct_flat_entry *en;
    struct nct_flat flat;
    struct neo_colortable *dest=rdest;
-   int no;
+   ptrdiff_t no;
 
    colortable_init_stuff(&tmp1);
    colortable_init_stuff(&tmp2);
@@ -2155,8 +2155,8 @@ static void image_colortable_add(INT32 args)
 		     nct->u.cube.weight=WEIGHT_NEEDED;
 		  else if (nct->type==NCT_FLAT)
 		  {
-		     unsigned long i;
-		     i=nct->u.flat.numentries;
+		     size_t i;
+		     i = nct->u.flat.numentries;
 		     while (i--)
 			nct->u.flat.entries[i].weight=WEIGHT_NEEDED;
 		  }

@@ -1,10 +1,10 @@
-/* $Id: colortable_lookup.h,v 1.10 2000/08/07 13:51:07 grubba Exp $ */
+/* $Id: colortable_lookup.h,v 1.11 2000/08/10 17:01:27 grubba Exp $ */
 /* included w/ defines in colortable.c */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable_lookup.h,v 1.10 2000/08/07 13:51:07 grubba Exp $
+**!	$Id: colortable_lookup.h,v 1.11 2000/08/10 17:01:27 grubba Exp $
 **! class colortable
 */
 
@@ -157,7 +157,7 @@ void NCTLU_FLAT_FULL_NAME(rgb_group *s,
    /* no need to build any data, we're using full scan */
 
    rgbl_group sf=nct->spacefactor;
-   int mprim=nct->u.flat.numentries;
+   ptrdiff_t mprim=nct->u.flat.numentries;
    struct nct_flat_entry *feprim=nct->u.flat.entries;
 
    nct_dither_encode_function *dither_encode=dith->encode;
@@ -261,9 +261,9 @@ void NCTLU_FLAT_RIGID_NAME(rgb_group *s,
 			   struct nct_dither *dith,
 			   int rowlen)
 {
-   rgbl_group sf=nct->spacefactor;
-   int mprim=nct->u.flat.numentries;
-   struct nct_flat_entry *feprim=nct->u.flat.entries;
+   rgbl_group sf = nct->spacefactor;
+   ptrdiff_t mprim = nct->u.flat.numentries;
+   struct nct_flat_entry *feprim = nct->u.flat.entries;
 
    nct_dither_encode_function *dither_encode=dith->encode;
    nct_dither_got_function *dither_got=dith->got;
@@ -463,17 +463,16 @@ void NCTLU_CUBE_NAME(rgb_group *s,
 	    {
 	       /* what step is closest? project... */
 
-	       i=(int)
-		  (( sc->steps *
-		     ( ((int)val.r-(int)sc->low.r)*sc->vector.r +
-		       ((int)val.g-(int)sc->low.g)*sc->vector.g +
-		       ((int)val.b-(int)sc->low.b)*sc->vector.b ) ) *
-		   sc->invsqvector);
+	      i = DOUBLE_TO_INT((sc->steps *
+				 (((int)val.r-(int)sc->low.r)*sc->vector.r +
+				  ((int)val.g-(int)sc->low.g)*sc->vector.g +
+				  ((int)val.b-(int)sc->low.b)*sc->vector.b)) *
+				sc->invsqvector);
 
 	       if (i<0) i=0; else if (i>=sc->steps) i=sc->steps-1;
 	       if (sc->no[i]>=nc) 
 	       {
-		  float f=i*sc->mqsteps;
+		  double f= i * sc->mqsteps;
 		  int drgbr=sc->low.r+(int)(sc->vector.r*f);
 		  int drgbg=sc->low.g+(int)(sc->vector.g*f);
 		  int drgbb=sc->low.b+(int)(sc->vector.b*f);
