@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.38 1998/01/25 11:26:54 mirar Exp $ */
+/* $Id: colortable.c,v 1.39 1998/02/10 13:27:04 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.38 1998/01/25 11:26:54 mirar Exp $
+**!	$Id: colortable.c,v 1.39 1998/02/10 13:27:04 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.38 1998/01/25 11:26:54 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.39 1998/02/10 13:27:04 mirar Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -381,8 +381,13 @@ static int reduce_recurse(struct nct_flat_entry *src,
 
    if (!tot) /* all needed */
    {
-      memcpy(dest,src,sizeof(struct nct_flat_entry)*src_size);
-      return src_size;
+      *dest=*src;
+      for (i=n=1; i<src_size; i++)
+	 if (src[i].color.r!=dest[n-1].color.r ||
+	     src[i].color.g!=dest[n-1].color.g ||
+	     src[i].color.b!=dest[n-1].color.b)
+	    dest[n++]=src[i];
+      return n;
    }
 
    tot=0;
@@ -489,12 +494,40 @@ static int reduce_recurse(struct nct_flat_entry *src,
 	 newpos2.b=position.b+space.b;
          break;
    }
+   
 
 #ifdef COLORTABLE_REDUCE_DEBUG
    fprintf(stderr,"COLORTABLE%*s left=%d right=%d\n",level,"",left,right);
 #endif
 
    if (left==0) left++;
+   while (left &&
+	  src[left].color.r==src[left-1].color.r &&
+	  src[left].color.g==src[left-1].color.g &&
+	  src[left].color.b==src[left-1].color.b) 
+      left--;
+   
+   if (right==src_size-1 && !left) 
+   {
+#ifdef COLORTABLE_REDUCE_DEBUG
+      fprintf(stderr,"got all in one color: %02x%02x%02x %02x%02x%02x\n",
+	      src[left].color.r,
+	      src[left].color.g,
+	      src[left].color.b,
+	      src[right].color.r,
+	      src[right].color.g,
+	      src[right].color.b);
+#endif
+
+      *dest=*src;
+      while (dest->weight!=WEIGHT_NEEDED && left<=right) 
+      {
+	 if (src[left].weight==WEIGHT_NEEDED) dest->weight=WEIGHT_NEEDED;
+	 else dest->weight+=src[left].weight;
+	 left++;
+      }
+      return 1;
+   }
 
    i=target_size/2;
    if (src_size-left<target_size-i) i+=(target_size-i)-(src_size-left);
@@ -967,7 +1000,7 @@ static struct nct_cube _img_get_cube_from_args(INT32 args)
        sp[-args].type!=T_INT ||
        sp[1-args].type!=T_INT ||
        sp[2-args].type!=T_INT)
-      error("Illegal argument(s) 1, 2 or 3\n");
+      error("Image.colortable->create (get cube from args): Illegal argument(s) 1, 2 or 3\n");
 
    cube.r=sp[-args].u.integer;
    cube.g=sp[1-args].u.integer;
@@ -2130,15 +2163,25 @@ void image_colortable_create(INT32 args)
 **!
 **! arg int colors
 **!	target number of colors
+**!
+**! note
+**!	this algorithm assumes all colors are different to 
+**!     begin with (!)
 **/
 
 void image_colortable_reduce(INT32 args)
 {
    struct object *o;
    struct neo_colortable *nct;
+   int numcolors;
 
-   if (!args) error("Missing argument to Image.colortable->reduce\n");
-   if (sp[-args].type!=T_INT) error("Illegal argument to Image.colortable->reduce\n");
+   if (args) 
+      if (sp[-args].type!=T_INT)
+	 error("Illegal argument to Image.colortable->reduce\n");
+      else
+	 numcolors=sp[-args].u.integer;
+   else
+      numcolors=1293791; /* a lot */
    
    o=clone_object(THISOBJ->prog,0);
    nct=(struct neo_colortable*)get_storage(o,image_colortable_program);
@@ -2157,7 +2200,7 @@ void image_colortable_reduce(INT32 args)
 
    if (sp[-args].u.integer<1) sp[-args].u.integer=1;
 
-   nct->u.flat=_img_reduce_number_of_colors(nct->u.flat,sp[-args].u.integer,
+   nct->u.flat=_img_reduce_number_of_colors(nct->u.flat,numcolors,
 					    nct->spacefactor);
 
    pop_n_elems(args);
@@ -3810,6 +3853,54 @@ void image_colortable_ordered(INT32 args)
    push_object(THISOBJ); THISOBJ->refs++;
 }
 
+/*
+**! method object image()
+**!	cast the colortable to an image object
+**!
+**!	each pixel in the image object is an entry in the colortable
+**!
+**! returns the resulting image object
+**/
+
+void image_colortable_image(INT32 args)
+{
+   struct object *o;
+   struct image *img;
+   struct nct_flat flat;
+   int i;
+   rgb_group *dest;
+
+   pop_n_elems(args);
+   push_int(image_colortable_size(THIS));
+   push_int(1);
+   o=clone_object(image_program,2);
+   push_object(o);
+
+   if (THIS->type==NCT_NONE)
+      return;
+
+   img=(struct image*)get_storage(o,image_program);
+   dest=img->img;
+   
+   if (THIS->type==NCT_CUBE)
+      flat=_img_nct_cube_to_flat(THIS->u.cube);
+   else
+      flat=THIS->u.flat;
+
+   /* sort in number order? */
+
+   for (i=0; i<flat.numentries; i++)
+   {
+      dest->r=flat.entries[i].color.r;
+      dest->g=flat.entries[i].color.g;
+      dest->g=flat.entries[i].color.b;
+      dest++;
+   }
+
+   if (THIS->type==NCT_CUBE)
+      free(flat.entries);
+}
+
 /***************** global init etc *****************************/
 
 void init_colortable_programs(void)
@@ -3880,6 +3971,9 @@ void init_colortable_programs(void)
    add_function("ordered",image_colortable_ordered,
 		"function(:object)"
 		"|function(int,int,int:object)",0);
+
+   add_function("image",image_colortable_image,
+		"function(:object)",0);
 
    /* tuning image */
    add_function("spacefactors",image_colortable_spacefactors,
