@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.62 2003/10/31 19:28:50 mast Exp $
+/* $Id: sslfile.pike,v 1.63 2003/11/04 18:35:33 mast Exp $
  */
 
 //! Interface similar to @[Stdio.File].
@@ -69,10 +69,10 @@ static array(string) write_buffer; // Encrypted data to be written.
 static String.Buffer read_buffer; // Decrypted data that has been read.
 
 static mixed callback_id;
-static function(void|mixed:void) accept_callback;
-static function(mixed,string:void) read_callback;
-static function(void|mixed:void) write_callback;
-static function(void|mixed:void) close_callback;
+static function(void|mixed:int) accept_callback;
+static function(mixed,string:int) read_callback;
+static function(void|mixed:int) write_callback;
+static function(void|mixed:int) close_callback;
 
 static Pike.Backend real_backend;
 // The real backend for the stream.
@@ -1127,8 +1127,7 @@ static int call_read_callback()
 		      "with %d bytes (%d still in buffer)\n",
 		      read_callback, sizeof (received), sizeof (read_buffer));
       RESTORE;
-      read_callback (callback_id, received);
-      return 0;
+      return read_callback (callback_id, received);
     }
   } LEAVE;
   return 0;
@@ -1197,15 +1196,13 @@ static int ssl_read_callback (int called_from_real_backend, string input)
 	    SSL3_DEBUG_MSG ("ssl_read_callback: Calling accept callback %O\n",
 			    accept_callback);
 	    RESTORE;
-	    accept_callback (callback_id);
-	    return 0;
+	    return accept_callback (callback_id);
 	  }
 	}
 
 	if (called_from_real_backend && read_callback && sizeof (read_buffer)) {
 	  RESTORE;
-	  call_read_callback();
-	  return 0;
+	  return call_read_callback();
 	}
       }
     }
@@ -1219,8 +1216,7 @@ static int ssl_read_callback (int called_from_real_backend, string input)
 	  SSL3_DEBUG_MSG ("ssl_read_callback: Calling close callback %O\n",
 			  close_callback);
 	  RESTORE;
-	  close_callback (callback_id);
-	  return 0;
+	  return close_callback (callback_id);
 	}
       }
 
@@ -1349,8 +1345,8 @@ static int ssl_write_callback (int called_from_real_backend)
       SSL3_DEBUG_MSG ("ssl_write_callback: Calling write callback %O\n",
 		      write_callback);
       RESTORE;
-      write_callback (callback_id);
-      return ret;
+      int res = write_callback (callback_id);
+      return ret == -1 ? -1 : res;
     }
   } LEAVE;
   return ret;
