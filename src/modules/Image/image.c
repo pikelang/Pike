@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.95 1998/04/03 00:18:29 mirar Exp $ */
+/* $Id: image.c,v 1.96 1998/04/06 02:31:01 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.95 1998/04/03 00:18:29 mirar Exp $
+**!	$Id: image.c,v 1.96 1998/04/06 02:31:01 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.95 1998/04/03 00:18:29 mirar Exp $");
+RCSID("$Id: image.c,v 1.96 1998/04/06 02:31:01 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1468,11 +1468,24 @@ static void image_gradients(INT32 args)
 
 	 c=first;
 
-	 if (grad!=0.0)
+	 if (grad==0.0)
 	    while (c)
 	    {
 	       c->xd++;
-	       di=pow((c->xd*c->xd)+(c->yd*c->yd),0.5*grad);
+	       di=pow((c->xd*c->xd)+(c->yd*c->yd),0.5);
+	       if (!di) di=1e20; else di=1.0/di;
+	       r+=c->r*di;
+	       g+=c->g*di;
+	       b+=c->b*di;
+	       z+=di;
+
+	       c=c->next;
+	    }
+	 else if (grad==2.0)
+	    while (c)
+	    {
+	       c->xd++;
+	       di=(c->xd*c->xd)+(c->yd*c->yd);
 	       if (!di) di=1e20; else di=1.0/di;
 	       r+=c->r*di;
 	       g+=c->g*di;
@@ -1485,7 +1498,7 @@ static void image_gradients(INT32 args)
 	    while (c)
 	    {
 	       c->xd++;
-	       di=pow((c->xd*c->xd)+(c->yd*c->yd),0.5);
+	       di=pow((c->xd*c->xd)+(c->yd*c->yd),0.5*grad);
 	       if (!di) di=1e20; else di=1.0/di;
 	       r+=c->r*di;
 	       g+=c->g*di;
@@ -1509,6 +1522,32 @@ static void image_gradients(INT32 args)
    THREADS_DISALLOW();
 
    push_object(o);
+}
+
+/*
+**! method object test()
+**!    Generates a test image, currently random gradients.
+**! returns the new image
+**! note
+**!    May be subject to change or cease without prior warning.
+*/
+
+void image_test(INT32 args)
+{
+   int i;
+   pop_n_elems(args);
+
+   for (i=0; i<5; i++)
+   {
+      push_int(THIS->xsize); f_random(1); 
+      push_int(THIS->ysize); f_random(1);
+      push_int((i!=0)?255:0); f_random(1);
+      push_int((i!=1)?255:0); f_random(1);
+      push_int((i!=2)?255:0); f_random(1);
+      f_aggregate(5);
+   }
+   push_float(2.0);
+   image_gradients(6);
 }
 
 /*
@@ -3402,6 +3441,8 @@ void pike_module_init(void)
    add_function("orient",image_orient,
                 "function(:object)",0);
 
+   add_function("test",image_test,
+		"function(:object)",0);
 
    set_init_callback(init_image_struct);
    set_exit_callback(exit_image_struct);
