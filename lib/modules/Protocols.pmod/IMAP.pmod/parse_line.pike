@@ -63,25 +63,6 @@ string get_atom(int|void with_options)
 	  : "%*[ \t]%[^(){ \0-\037\177%\"]%s"),
 	 atom, buffer);
 
-#if 0	/* FIXME: This code is broken */
-  if (strlen(buffer))
-    switch(buffer[0])
-    {
-    case ' ':
-    case '\t':
-    case ')':
-    case ']':
-      break;
-    case '[':
-      if (with_options)
-	break;
-      /* Fall through */
-    default:
-      werror("=> atom: 0\n");
-      return 0;
-    }
-#endif /* 0 */
-  
   werror(sprintf("=> atom: %O\n", atom));
   return strlen(atom) && atom;
 }
@@ -192,13 +173,12 @@ mapping get_token(int eol, int accept_options)
     return s && ([ "type" : "literal", "length" : s->length ]);
   }
   default: {
-    string atom = get_atom(accept_options);
-
-    if (!accept_options || !strlen(buffer) || (buffer[0] != '['))
+    if (accept_options) {
+      return get_atom_options(2);
+    } else {
+      string atom = get_atom(accept_options);
       return ([ "type" : "atom", "atom" : atom ]);
-
-    buffer = buffer[1..];
-    return ([ "type" : "atom_options", "atom" : atom, "options" : 1 ]);
+    }
   }
   }
 }
@@ -346,8 +326,10 @@ mapping get_atom_options(int max_depth)
   string option_start = buffer;
       
   array options = do_parse_simple_list(max_depth - 1, ']');
-  if (!options)
-    return 0;
+  if (!options) {
+    res->options = ({ ([ "type":"atom", "atom":"" ]) });
+    return res;
+  }
 
   res->options = options;
   res->raw = option_start[..sizeof(option_start) - sizeof(buffer) - 1];
