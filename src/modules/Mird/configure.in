@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.7 2001/03/30 18:02:34 grubba Exp $
+# $Id: configure.in,v 1.8 2001/03/30 18:45:47 grubba Exp $
 AC_INIT(mird_glue.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -29,7 +29,7 @@ write(fd,"hejsan",3);
 close(fd);
 return 0;
 }],
-  	      [mird_cv_nice_mird_system=yes],[ ],[ ])])
+  	      [mird_cv_nice_mird_system=yes],[:],[:])])
   AC_MSG_RESULT($mird_cv_nice_mird_system)
 
   if test "x$mird_cv_nice_mird_system" != "xyes"; then
