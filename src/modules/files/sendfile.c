@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.1 1999/04/03 01:54:04 grubba Exp $
+ * $Id: sendfile.c,v 1.2 1999/04/14 21:43:01 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -39,6 +39,27 @@
 #define SF_DFPRINTF(X)
 #endif /* SF_DEBUG */
 
+#define BUF_SIZE 65536
+
+
+/*
+ * Only support for threaded operation right now.
+ */
+#ifdef _REENTRANT
+
+
+/*
+ * Struct's
+ */
+
+#ifndef HAVE_STRUCT_IOVEC
+struct iovec {
+  void *iov_base;
+  int iov_len;
+};
+#endif /* !HAVE_STRUCT_IOVEC */
+
+
 struct pike_sendfile
 {
   struct object *self;
@@ -67,9 +88,14 @@ struct pike_sendfile
   int tr_cnt;
 
   struct iovec *iovs;
+  char *buffer;
 };
 
 #define THIS	((struct pike_sendfile *)(fp->current_storage))
+
+/*
+ * Globals
+ */
 
 static struct program *pike_sendfile_prog = NULL;
 
@@ -88,6 +114,9 @@ static void exit_pike_sendfile(struct object *o)
 {
   if (THIS->iovs) {
     free(THIS->iovs);
+  }
+  if (THIS->buffer) {
+    free(THIS->buffer);
   }
   if (THIS->headers) {
     free_array(THIS->headers);
@@ -112,11 +141,45 @@ static void exit_pike_sendfile(struct object *o)
   free_svalue(&(THIS->callback));
 }
 
-#ifdef _REENTRANT
+/*
+ * Fallback code
+ */
+
+#ifndef HAVE_WRITEV
+#define writev my_writev
+static int writev(int fd, struct iovec *iov, int n)
+{
+  if (n) {
+    return write(fd, iov->iov_data, iov->iov_len);
+  }
+  return 0;
+}
+#endif /* !HAVE_WRITEV */
 
 /*
- * Code called in the threaded case. 
+ * Helper functions
  */
+
+void sf_call_callback(struct pike_sendfile *this)
+{
+  if (this->callback.type != T_INT) {
+    int sz = this->args->size;
+
+    push_int(this->sent);
+    push_array_items(this->args);
+    this->args = NULL;
+
+    apply_svalue(&this->callback, 1 + sz);
+    pop_stack();
+
+    free_svalue(&this->callback);
+    this->callback.type = T_INT;
+    this->callback.u.integer = 0;
+  } else {
+    free_array(this->args);
+    this->args = NULL;
+  }
+}
 
 void call_callback_and_free(struct callback *cb, void *this_, void *arg)
 {
@@ -127,27 +190,23 @@ void call_callback_and_free(struct callback *cb, void *this_, void *arg)
 
   remove_callback(cb);
 
-  /* Make sure we get freed in case of error */
-  push_object(this->self);
-  this->self = NULL;
-
-  push_int(this->sent);
-  sz = this->args->size;
-  push_array_items(this->args);
-  this->args = NULL;
-
-  if (this->callback.type != T_INT) {
-    apply_svalue(&this->callback, 1 + sz);
-    pop_stack();
-
-    free_svalue(&this->callback);
-    this->callback.type = T_INT;
-    this->callback.u.integer = 0;
+#ifdef _REENTRANT
+  if (this->self) {
+    /* Make sure we get freed in case of error */
+    push_object(this->self);
+    this->self = NULL;
   }
+#endif /* _REENTRANT */
+
+  sf_call_callback(this);
 
   /* Free ourselves */
   pop_stack();
 }
+
+/*
+ * Code called in the threaded case. 
+ */
 
 /* writev() without the IOV_MAX limit. */
 int send_iov(int fd, struct iovec *iov, int iovcnt)
@@ -279,46 +338,39 @@ void *worker(void *this_)
 #endif /* HAVE_SENDFILE && !HAVE_FREEBSD_SENDFILE */
     SF_DFPRINTF((stderr, "sendfile: Sending file by hand\n"));
 
+    lseek(this->from_fd, this->offset, SEEK_SET);
     {
-#define BUF_SIZE 65536
-      char *buffer = malloc(BUF_SIZE);
       int buflen;
-
-      lseek(this->from_fd, this->offset, SEEK_SET);
-
-      if (buffer) {
-	int len = this->len;
-	if (len > BUF_SIZE) {
+      int len = this->len;
+      if ((len > BUF_SIZE) || (len < 0)) {
+	len = BUF_SIZE;
+      }
+      while ((buflen = read(this->from_fd, this->buffer, len)) > 0) {
+	char *buf = this->buffer;
+	this->len -= buflen;
+	this->offset += buflen;
+	while (buflen) {
+	  int wrlen = write(this->to_fd, buf, buflen);
+	  if ((wrlen < 0) && (errno == EINTR)) {
+	    continue;
+	  } else if (wrlen <= 0) {
+	    goto send_trailers;
+	  }
+	  buf += wrlen;
+	  buflen -= wrlen;
+	  this->sent += wrlen;
+	}
+	len = this->len;
+	if ((len > BUF_SIZE) || (len < 0)) {
 	  len = BUF_SIZE;
 	}
-	while ((buflen = read(this->from_fd, buffer, len)) > 0) {
-	  char *buf = buffer;
-	  this->len -= buflen;
-	  this->offset += buflen;
-	  while (buflen) {
-	    int wrlen = write(this->to_fd, buf, buflen);
-	    if ((wrlen < 0) && (errno == EINTR)) {
-	      continue;
-	    } else if (wrlen <= 0) {
-	      free(buffer);
-	      goto send_trailers;
-	    }
-	    buf += wrlen;
-	    buflen -= wrlen;
-	    this->sent += wrlen;
-	  }
-	  len = this->len;
-	  if (len > BUF_SIZE) {
-	    len = BUF_SIZE;
-	  }
-	}
-	free(buffer);
-#undef BUF_SIZE
-      } else {
-	/* FIXME: Out of memory. */
       }
     }
   send_trailers:
+    /* No more need for the buffer */
+    free(this->buffer);
+    this->buffer = NULL;
+
     SF_DFPRINTF((stderr, "sendfile: Sending trailers.\n"));
 
     if (this->tr_cnt) {
@@ -381,10 +433,8 @@ void *worker(void *this_)
   return NULL;
 }
 
-#endif /* _REENTRANT */
-
 /*
- * Callable functions
+ * Functions callable from Pike code
  */
 
 /* void create(array(string) headers, object from, int offset, int len,
@@ -445,34 +495,43 @@ static void sf_create(INT32 args)
   /* Note: No need for safe_apply() */
   sf.from_fd = -1;
   if (sf.from_file) {
-    apply(sf.from_file, "query_fd", 0);
-    if (sp[-1].type != T_INT) {
-      pop_stack();
-      bad_arg_error("sendfile", sp-args, args, 2, "object", sp+1-args,
-		    "Bad argument 2 to sendfile(): "
-		    "query_fd() returned non-integer.\n");
-    }
-    sf.from_fd = sp[-1].u.integer;
-    pop_stack();
-
-    /* Fix offset */
-    if (sf.offset < 0) {
-      if (sf.from_fd >= 0) {
-	sf.offset = tell(sf.from_fd);
-      } else {
-	apply(sf.from_file, "tell", 0);
-	if (sp[-1].type != T_INT) {
-	  pop_stack();
-	  bad_arg_error("sendfile", sp-args, args, 2, "object", sp+1-args,
-			"Bad argument 2 to sendfile(): "
-			"tell() returned non-integer.\n");
-	}
-	sf.offset = sp[-1].u.integer;
+    if (sf.len) {
+      apply(sf.from_file, "query_fd", 0);
+      if (sp[-1].type != T_INT) {
 	pop_stack();
+	bad_arg_error("sendfile", sp-args, args, 2, "object", sp+1-args,
+		      "Bad argument 2 to sendfile(): "
+		      "query_fd() returned non-integer.\n");
       }
-    }
-    if (sf.offset < 0) {
-      sf.offset = 0;
+      sf.from_fd = sp[-1].u.integer;
+      pop_stack();
+
+      /* Fix offset */
+      if (sf.offset < 0) {
+	if (sf.from_fd >= 0) {
+	  sf.offset = tell(sf.from_fd);
+	} else {
+	  apply(sf.from_file, "tell", 0);
+	  if (sp[-1].type != T_INT) {
+	    pop_stack();
+	    bad_arg_error("sendfile", sp-args, args, 2, "object", sp+1-args,
+			  "Bad argument 2 to sendfile(): "
+			  "tell() returned non-integer.\n");
+	  }
+	  sf.offset = sp[-1].u.integer;
+	  pop_stack();
+	}
+      }
+      if (sf.offset < 0) {
+	sf.offset = 0;
+      }
+    } else {
+      /* No need for the from_file object. */
+      /* NOTE: We need to zap from_file from the stack too. */
+      free_object(sf.from_file);
+      sf.from_file = NULL;
+      sp[1-args].type = T_INT;
+      sp[1-args].u.integer = 0;
     }
   }
   apply(sf.to_file, "query_fd", 0);
@@ -535,10 +594,10 @@ static void sf_create(INT32 args)
     sf.trailers = a;
   }
 
-  /* Note: we hold a reference to ourselves.
-   * The gc() won't find it, so be carefull.
-   */
-  add_ref(sf.self = fp->current_object);
+  if (sf.from_file) {
+    /* We may need a buffer to hold the data */
+    sf.buffer = (char *)xalloc(BUF_SIZE);
+  }
 
   /*
    * Setup done. Note that we keep refs to all refcounted svalues in
@@ -548,25 +607,43 @@ static void sf_create(INT32 args)
   *THIS = sf;
   args = 0;
 
-#ifdef _REENTRANT
   if (((sf.from_fd >= 0) || (!sf.from_file)) && (sf.to_fd >= 0)) {
+    /* Threaded blocking mode possible */
     THREAD_T th_id;
+
+    /* Make sure both file objects are in blocking mode.
+     */
+    if (THIS->from_file) {
+      apply(THIS->from_file, "set_blocking", 0);
+      pop_stack();
+    }
+    apply(THIS->to_file, "set_blocking", 0);
+    pop_stack();
+
+    /* Note: we hold a reference to ourselves.
+     * The gc() won't find it, so be carefull.
+     */
+    add_ref(THIS->self = fp->current_object);
+
     /* The worker will have a ref. */
     th_create_small(&th_id, worker, THIS);
   } else {
-#endif /* _REENTRANT */
-    /* Not implemented yet */
-    free_object(THIS->self);
-    THIS->self = NULL;
+    /* Nonblocking operation needed */
+
+    /* Not supported */
+    error("Unsupported operation\n");
   }
   return;
 }
+
+#endif /* _REENTRANT */
 
 /*
  * Module init code
  */
 void pike_module_init(void)
 {
+#ifdef _REENTRANT
   start_new_program();
   ADD_STORAGE(struct pike_sendfile);
   map_variable("_args", "array(mixed)", 0, OFFSETOF(pike_sendfile, args),
@@ -584,12 +661,15 @@ void pike_module_init(void)
 
   pike_sendfile_prog = end_program();
   add_program_constant("sendfile", pike_sendfile_prog, 0);
+#endif /* _REENTRANT */
 }
 
 void pike_module_exit(void)
 {
+#ifdef _REENTRANT
   if (pike_sendfile_prog) {
     free_program(pike_sendfile_prog);
     pike_sendfile_prog = NULL;
   }
+#endif /* _REENTRANT */
 }
