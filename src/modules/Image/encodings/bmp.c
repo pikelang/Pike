@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.7 1999/05/02 15:29:16 mirar Exp $ */
+/* $Id: bmp.c,v 1.8 1999/05/02 15:33:19 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.7 1999/05/02 15:29:16 mirar Exp $
+**!	$Id: bmp.c,v 1.8 1999/05/02 15:33:19 mirar Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.7 1999/05/02 15:29:16 mirar Exp $");
+RCSID("$Id: bmp.c,v 1.8 1999/05/02 15:33:19 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -522,6 +522,8 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 if (comp)
 	    error("Image.BMP.decode: can't handle compressed 24bpp BMP\n");
 
+	 skip=(4-(img->xsize*3)&3)&3;
+
 	 j=(len)/3;
 	 y=img->ysize;
 	 while (j && y--)
@@ -536,6 +538,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	       d->r=*(s++);
 	       d++;
 	    }
+	    if (j>=skip) { j-=skip; s+=skip; }
 	 }
 	 break;
       case 8:
