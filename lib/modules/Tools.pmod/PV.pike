@@ -9,20 +9,15 @@ typedef Standards.URI|string|Image.Image|Image.Layer|array(Image.Layer) PVImage;
 //! to be a filename of a image that can be loaded with Image.load. 
 //! This includes URLs.
 
-enum AlphaMode {
-  Squares,
-  Solid,
-  None,
-  AlphaOnly,
-};
 //! The alpha combination modes.
 //!
-//! Squares: Checkerboard pattern
-//! Solid: Solid color
-//! None: Ignore alpha
-//! AlphaOnly: Only show the alpha channel, if any.
-//!
-//! Use @[set_alpha_mode] to change the mode.
+//! Use @[set_alpha_mode()] to change the mode.
+enum AlphaMode {
+  Squares,	//! Checkerboard pattern (default).
+  Solid,	//! Solid color.
+  None,		//! Ignore alpha.
+  AlphaOnly,	//! Only show the alpha channel (if any).
+};
 
 
 #define STEP 30
@@ -94,7 +89,10 @@ void set_alpha_mode( AlphaMode m )
 
 void set_alpha_colors( Image.Color.Color c1, Image.Color.Color|void c2 )
 //! Set the colors used for the alpha combination. @[c2] is only used
-//! for the @[Squares] mode,
+//! for the @[Squares] alpha mode.
+//!
+//! @seealso
+//!   @[set_alpha_mode()]
 {
   if( c1 ) alpha_color1 = c1;
   if( c2 ) alpha_color2 = c2;

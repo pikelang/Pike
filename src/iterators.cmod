@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.47 2003/09/05 15:19:20 mast Exp $
+|| $Id: iterators.cmod,v 1.48 2003/11/22 15:00:54 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.47 2003/09/05 15:19:20 mast Exp $");
+RCSID("$Id: iterators.cmod,v 1.48 2003/11/22 15:00:54 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -255,6 +255,16 @@ PIKECLASS Iterator
 /*! @endclass
  */
 
+/*! @module Mapping
+ */
+/*! @class Iterator
+ *!
+ *!   An object of this class is returned by @[get_iterator()] when
+ *!   called with a mapping.
+ *!
+ *! @seealso
+ *!   @[get_iterator]
+ */
 PIKECLASS mapping_iterator
 {
   /* All variables *must* be before all functions! */
@@ -397,6 +407,11 @@ PIKECLASS mapping_iterator
       }
     }
 };
+/*! @endclass
+ */
+/*! @endmodule
+ */
+
 
 /*! @module Array
  */
@@ -522,6 +537,16 @@ PIKECLASS array_iterator
 /*! @endmodule
  */
 
+/*! @module Multiset
+ */
+/*! @class Iterator
+ *!
+ *!   An object of this class is returned by @[get_iterator()] when
+ *!   called with a multiset.
+ *!
+ *! @seealso
+ *!   @[get_iterator]
+ */
 #ifdef PIKE_NEW_MULTISETS
 
 PIKECLASS multiset_iterator
@@ -811,7 +836,21 @@ PIKECLASS multiset_iterator
 };
 
 #endif	/* PIKE_NEW_MULTISETS */
+/*! @endclass
+ */
+/*! @endmodule
+ */
 
+/*! @module String
+ */
+/*! @class Iterator
+ *!
+ *!   An object of this class is returned by @[get_iterator()] when
+ *!   called with a string.
+ *!
+ *! @seealso
+ *!   @[get_iterator]
+ */
 PIKECLASS string_iterator
 {
   CVAR int pos;
@@ -936,6 +975,11 @@ PIKECLASS string_iterator
       free_string(THIS->s);
     }
 };
+
+/*! @endclass
+ */
+/*! @endmodule
+ */
 
 /* Interal (for Stdio.File) class: Stdio.File->line_iterator.
  * Splits on lines, does only handle 8-bit characters.

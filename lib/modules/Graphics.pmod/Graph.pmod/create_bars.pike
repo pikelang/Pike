@@ -1,4 +1,4 @@
-// Graph sub-module for drawing bars.
+//! Graph sub-module for drawing bars.
 // These functions were written by Henrik "Hedda" Wallin (hedda@roxen.com)
 // Create_bars can draw normal bars, sumbars and normalized sumbars.
 

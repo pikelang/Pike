@@ -22,8 +22,7 @@
 //!   for time units. 
 //!
 
-//! class time_unit
-//!
+//! Base class for units of time.
 class _TimeUnit
 {
    object this=this_object();

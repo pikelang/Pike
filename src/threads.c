@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.226 2003/11/13 03:28:26 mast Exp $
+|| $Id: threads.c,v 1.227 2003/11/22 15:00:54 grubba Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.226 2003/11/13 03:28:26 mast Exp $");
+RCSID("$Id: threads.c,v 1.227 2003/11/22 15:00:54 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1295,6 +1295,20 @@ void exit_mutex_obj(struct object *o)
 /*! @endclass
  */
 
+/*! @class MutexKey
+ *!
+ *! Objects of this class are returned by @[Mutex()->lock()]
+ *! and @[Mutex()->trylock()]. They are also passed as arguments
+ *! to @[Condition()->wait()].
+ *!
+ *! As long as they are held, the corresponding mutex will be locked.
+ *!
+ *! The corresponding mutex will be unlocked when the object
+ *! is destructed (eg by not having any references left).
+ *!
+ *! @seealso
+ *!   @[Mutex], @[Condition]
+ */
 #define THIS_KEY ((struct key_storage *)(CURRENT_STORAGE))
 void init_mutex_key_obj(struct object *o)
 {
@@ -1335,6 +1349,9 @@ void exit_mutex_key_obj(struct object *o)
     co_signal(& mut->condition);
   }
 }
+
+/*! @endclass
+ */
 
 #define THIS_COND ((COND_T *)(CURRENT_STORAGE))
 

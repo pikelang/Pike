@@ -1,7 +1,6 @@
-/*
- * Graph sub-module providing draw functions.
- * $Id: polyline.pike,v 1.5 2003/08/22 14:26:26 nilsson Exp $
- */
+//! Graph sub-module providing draw functions.
+//!
+//! $Id: polyline.pike,v 1.6 2003/11/22 15:00:54 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -23,7 +22,7 @@ constant PI = 3.1415926535897932384626433832795080;
 /*
  * Some optimizations for the cappings.
  *
- * /grubba (who got tired of BG beeing so slow)
+ * /grubba (who got tired of BG being so slow)
  */
 
 static array(float) init_cap_sin_table()

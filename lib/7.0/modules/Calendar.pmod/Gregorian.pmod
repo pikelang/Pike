@@ -31,7 +31,7 @@ class _TimeUnit
 
 //== Year ====================================================================
 
-//! 	A @[Calendar.time_unit]. 
+//! 	A @[Calendar._TimeUnit]. 
 //!
 //!	Lesser units: <ref>Month</ref>, <ref>Week</ref>, <ref>Day</ref>
 //!	Greater units: none

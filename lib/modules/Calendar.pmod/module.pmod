@@ -25,6 +25,7 @@ static mixed `[](string what)
 {
    if (!booted)
    {
+      if (what == "_module_value") return UNDEFINED;
       booted++;
       stage++;
 // bootstrap in the right order

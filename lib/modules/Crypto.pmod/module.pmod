@@ -1,7 +1,9 @@
 #pike __REAL_VERSION__
 
 /* Old crypto module */
+//! @ignore
 inherit _Crypto;
+//! @endignore
 
 #if constant(Nettle.HashInfo)
 
@@ -20,11 +22,11 @@ class Hash
   //!
   //! @note
   //!  The hash buffer will not be cleared before @[data] is added
-  //!  to the buffer, so data added with calls to @[update] will be
-  //!  prepended to the @[data].
+  //!  to the buffer, so data added with calls to @[HashState()->update()]
+  //!  will be prepended to the @[data].
   //!
   //! @seealso
-  //!   @[update] and @[digest].
+  //!   @[HashState()->update()] and @[HashState()->digest()].
   string hash(string data)
   {
     return `()()->update(data)->digest();

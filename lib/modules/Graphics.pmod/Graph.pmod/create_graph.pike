@@ -1,9 +1,11 @@
-// Graph sub-module for drawing graphs.
 // These functions were written by Henrik "Hedda" Wallin (hedda@roxen.com)
-// Create_graph draws a graph but there are also some other functions
-// used by create_pie and create_bars.
 //
 // This was orginally a part of the Roxen module Business Graphics.
+
+//! Graph sub-module for drawing graphs.
+//!
+//! @[create_graph] draws a graph but there are also some other functions
+//! used by @[create_pie] and @[create_bars].
 
 #pike __REAL_VERSION__
 

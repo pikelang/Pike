@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.538 2003/11/20 13:54:32 grubba Exp $
+|| $Id: program.c,v 1.539 2003/11/22 15:00:54 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.538 2003/11/20 13:54:32 grubba Exp $");
+RCSID("$Id: program.c,v 1.539 2003/11/22 15:00:54 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -6907,6 +6907,13 @@ void init_program(void)
   debug_malloc_touch(Pike_compiler->fake_object->storage);
   pike_trampoline_program=end_program();
 
+  /*! @decl constant __null_program
+   *!
+   *! Program used internally by the compiler.
+   *!
+   *! @seealso
+   *!   @[__placeholder_object]
+   */
   {
     struct svalue s;
     start_new_program();
@@ -6917,6 +6924,13 @@ void init_program(void)
     debug_malloc_touch(null_program);
   }
 
+  /*! @decl constant __placeholder_object
+   *!
+   *! Object used internally by the compiler.
+   *!
+   *! @seealso
+   *!   @[__null_program]
+   */
   {
     struct svalue s;
     start_new_program();
