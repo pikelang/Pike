@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.219 2000/03/30 08:43:07 hubbe Exp $");
+RCSID("$Id: program.c,v 1.220 2000/04/06 09:05:54 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2333,6 +2333,9 @@ INT32 define_function(struct pike_string *name,
     }
   }
 
+  if(function_flags & IDENTIFIER_C_FUNCTION)
+    new_program->flags |= PROGRAM_HAS_C_METHODS;
+
   i=isidentifier(name);
 
   if(i >= 0)
@@ -2462,9 +2465,6 @@ make_a_new_def:
   copy_shared_string(fun.type, type);
 
   fun.identifier_flags=function_flags;
-  if(function_flags & IDENTIFIER_C_FUNCTION)
-    new_program->flags |= PROGRAM_HAS_C_METHODS;
-
   fun.run_time_type=T_FUNCTION;
 
   if(func)
