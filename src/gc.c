@@ -147,11 +147,9 @@ int gc_is_referenced(void *a)
 #ifdef DEBUG
   if(m->refs + m->xrefs > *(INT32 *)a)
   {
+    INT32 refs=m->refs;
+    INT32 xrefs=m->xrefs;
     check_for=a;
-    fatal("Ref counts are wrong (has %d, found %d + %d external)\n",
-	  *(INT32 *)a,
-	  m->refs,
-	  m->xrefs);
 
     gc_check_all_arrays();
     gc_check_all_multisets();
@@ -161,7 +159,11 @@ int gc_is_referenced(void *a)
     call_callback(& gc_callbacks, (void *)0);
 
     check_for=0;
-    fatal("Ref counts are totally wrong!!!\n");
+
+    fatal("Ref counts are wrong (has %d, found %d + %d external)\n",
+	  *(INT32 *)a,
+	  refs,
+	  xrefs);
   }
 #endif
   return m->refs < *(INT32 *)a;
