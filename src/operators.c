@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.80 1999/12/18 17:49:05 mast Exp $");
+RCSID("$Id: operators.c,v 1.81 1999/12/27 16:13:53 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2460,12 +2460,28 @@ void init_operators(void)
 	   0); /* OPT_ASSIGNMENT|OPT_TRY_OPTIMIZE); ? */
 
   /* function(mixed...:int) */
-  ADD_EFUN2("`==",f_eq,tFuncV(tNone,tMix,tInt01),OPT_TRY_OPTIMIZE,optimize_eq,generate_comparison);
+  ADD_EFUN2("`==",f_eq,
+	    tOr5(tFuncV(tOr(tInt,tFloat) tOr(tInt,tFloat),
+			tOr(tInt,tFloat),tInt01),
+		 tFuncV(tSetvar(0,tOr4(tString,tMapping,tSet,tArray)) tVar(0),
+			tVar(0),tInt01),
+		 tFuncV(tOr3(tObject,tProgram,tFunction) tMix,tMix,tInt01),
+		 tFuncV(tMix tOr3(tObject,tProgram,tFunction),tMix,tInt01),
+		 tFuncV(tType tType,tOr3(tProgram,tFunction,tType),tInt01)),
+	    OPT_TRY_OPTIMIZE,optimize_eq,generate_comparison);
   /* function(mixed...:int) */
-  ADD_EFUN2("`!=",f_ne,tFuncV(tNone,tMix,tInt01),OPT_TRY_OPTIMIZE,0,generate_comparison);
+  ADD_EFUN2("`!=",f_ne,
+	    tOr5(tFuncV(tOr(tInt,tFloat) tOr(tInt,tFloat),
+			tOr(tInt,tFloat),tInt01),
+		 tFuncV(tSetvar(0,tOr4(tString,tMapping,tSet,tArray)) tVar(0),
+			tVar(0),tInt01),
+		 tFuncV(tOr3(tObject,tProgram,tFunction) tMix,tMix,tInt01),
+		 tFuncV(tMix tOr3(tObject,tProgram,tFunction),tMix,tInt01),
+		 tFuncV(tType tType,tOr3(tProgram,tFunction,tType),tInt01)),
+	    OPT_TRY_OPTIMIZE,0,generate_comparison);
   /* function(mixed:int) */
-  add_efun2("`!",f_not,"function(mixed:int(0..1))",OPT_TRY_OPTIMIZE,
-	    optimize_not,generate_not);
+  ADD_EFUN2("`!",f_not,tFuncV(tMix,tVoid,tInt01),
+	    OPT_TRY_OPTIMIZE,optimize_not,generate_not);
 
 #define CMP_TYPE "!function(!(object|mixed)...:mixed)&function(mixed...:int(0..1))|function(int|float...:int(0..1))|function(string...:int(0..1))|function(type|program,type|program,type|program...:int(0..1))"
   add_efun2("`<", f_lt,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
