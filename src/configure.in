@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.735 2003/09/22 09:45:46 jonasw Exp $")
+AC_REVISION("$Id: configure.in,v 1.736 2003/10/03 13:45:12 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -205,14 +205,14 @@ fi
  
 #############################################################################
 
-# option, cache_name, variable
+# option, cache_name, variable, do_if_failed, do_if_ok, paranoia_test
 AC_DEFUN(AC_SYS_COMPILER_FLAG,
 [
   AC_MSG_CHECKING($1)
   AC_CACHE_VAL(pike_cv_option_$2,
   [
-    OLD_CFLAGS="[$]CFLAGS"
-    CFLAGS="[$]OLD_CFLAGS $1"
+    OLD_CPPFLAGS="[$]CPPFLAGS"
+    CPPFLAGS="[$]OLD_CPPFLAGS $1"
     old_ac_link="[$]ac_link"
     ac_link="[$]old_ac_link 2>conftezt.out.2"
     AC_TRY_RUN([
@@ -229,8 +229,6 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
       pike_cv_option_$2=no, [
       AC_TRY_LINK([], [], pike_cv_option_$2=yes, pike_cv_option_$2=no)
     ])
-    CFLAGS="[$]OLD_CFLAGS"
-    ac_link="[$]old_ac_link"
     if grep -i 'unrecognized option' <conftezt.out.2 >/dev/null; then
       pike_cv_option_$2=no
     elif grep -i 'unknown option' <conftezt.out.2 >/dev/null; then
@@ -258,6 +256,14 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
       # cc1: warning: -fpic ignored (all code is position independent)
       pike_cv_option_$2=no
     else :; fi
+    ifelse([$6], , ,[
+    if test "$pike_cv_option_$2" = yes; then
+      :
+      $6
+    else :; fi
+    ]) dnl
+    CPPFLAGS="[$]OLD_CPPFLAGS"
+    ac_link="[$]old_ac_link"
     rm conftezt.out.2
   ])
   
@@ -1588,6 +1594,31 @@ if test "$cflags_is_set" = "no"; then
    sun4u)
     AC_SYS_COMPILER_FLAG(-mcpu=ultrasparc,mcpu_ultrasparc,CFLAGS,[
       AC_SYS_COMPILER_FLAG(-msupersparc,supersparc,CFLAGS)
+    ],[],[
+      # Some versions of gcc define __sparcv9 but aren't LP64.
+      # Definition of __sparcv9 causes <sys/isa_defs.h> to define _LP64,
+      # which is not a good thing for ILP32 systems...
+      # Some versions of gcc define __sparc_v9__, which causes the
+      # fix-included <limits.h> to think the same...
+      AC_TRY_CPP([#include <limits.h>
+#include <sys/types.h>
+#if defined(_LP64) || (LONG_MAX != 2147483647L)
+#error "We might have a problem."
+#endif
+      ],[],[
+        # We might have a problem...
+        # Check that we indeed have a LP64 system.
+        AC_MSG_RESULT([yes, but LP64])
+        AC_CHECK_SIZEOF(long, 4)
+	# Note: the result for the following message is provided
+	# by SYS_COMPILER_FLAG
+	AC_MSG_CHECKING([are we really an LP64 system])
+	if test "x$ac_cv_sizeof_long" = "x8"; then
+	  :; #OK, we have an LP64 system!
+	else
+	  pike_cv_option_mcpu_ultrasparc=no
+	fi
+      ])
     ])
    ;;
    i586)
@@ -5983,7 +6014,9 @@ TH_RETURN_TYPE work_thread (void *dummy)
 {
   struct timeval rt_start, rt;
   cpu_time_t start;
+  FPUTS("work_thread waiting.\n", stderr);
   mt_lock (&m);
+  FPUTS("work_thread start.\n", stderr);
   GETTIMEOFDAY (&rt_start);
   start = get_cpu_time();
   do {
@@ -5995,8 +6028,10 @@ TH_RETURN_TYPE work_thread (void *dummy)
     }
     work_time = t - start;
   } while (work_time < (CPU_TIME_TICKS / 10) && rt.tv_sec <= rt_start.tv_sec + 1);
+  FPUTS("work_thread releasing main.\n", stderr);
   co_signal (&c);
   mt_unlock (&m);
+  FPUTS("work_thread done.\n", stderr);
   return 0;
 }
 
@@ -6013,6 +6048,7 @@ int main()
   co_init (&c);
 
   mt_lock (&m);
+  FPUTS("Creating work_thread.\n", stderr);
   if (th_create (&worker, work_thread, NULL)) {
     FPUTS("unknown (failed to create thread)", res);
     fclose (res);
