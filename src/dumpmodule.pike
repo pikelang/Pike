@@ -230,7 +230,7 @@ void dumpit(string file)
   }
 }
 
-int main(int argc, string *argv)
+int main(int argc, array(string) argv)
 {
   /* Redirect all debug and error messages to a logfile. */
   Stdio.File("dumpmodule.log", "caw")->dup2(Stdio.stderr);
