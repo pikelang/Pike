@@ -83,7 +83,7 @@ void f_file_stat(INT32 args)
     error("Bad argument 1 to file_stat()\n");
 
   s = sp[-args].u.string->str;
-  l = (args>1 && !IS_ZERO(sp-1-args))?1:0;
+  l = (args>1 && !IS_ZERO(sp+1-args))?1:0;
   THREADS_ALLOW();
   if(l)
   {
