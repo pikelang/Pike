@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.158 2002/05/09 14:37:46 mast Exp $
+ * $Id: program.h,v 1.159 2002/05/10 15:31:43 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -252,6 +252,7 @@ struct inherit
   INT16 identifier_level;
   INT16 parent_identifier;
   INT16 parent_offset;
+  size_t identifier_ref_offset;
   ptrdiff_t storage_offset;
   struct object *parent;
   struct program *prog;
@@ -448,6 +449,7 @@ struct Supporter
 /* Prototypes begin here */
 void ins_int(INT32 i, void (*func)(char tmp));
 void ins_short(INT16 i, void (*func)(char tmp));
+void add_relocated_int_to_program(INT32 i);
 void use_module(struct svalue *s);
 void unuse_modules(INT32 howmany);
 struct node_s *find_module_identifier(struct pike_string *ident,
@@ -458,6 +460,7 @@ struct program *id_to_program(INT32 id);
 void optimize_program(struct program *p);
 int program_function_index_compare(const void *a,const void *b);
 struct pike_string *find_program_name(struct program *p, INT32 *line);
+int override_identifier (struct reference *ref, struct pike_string *name, int cur_id);
 void fixate_program(void);
 struct program *low_allocate_program(void);
 void low_start_new_program(struct program *p,
