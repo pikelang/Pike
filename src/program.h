@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.106 2000/08/28 21:27:10 grubba Exp $
+ * $Id: program.h,v 1.107 2000/08/28 21:47:57 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -23,8 +23,6 @@
 
 #define EXTERN
 #include "compilation.h"
-
-struct program_state;
 
 /* Needed to support dynamic loading on NT */
 PMOD_PROTO extern struct program_state * Pike_compiler;
