@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.172 2003/03/14 15:50:46 grubba Exp $
+|| $Id: operators.c,v 1.173 2003/04/01 18:11:09 nilsson Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.172 2003/03/14 15:50:46 grubba Exp $");
+RCSID("$Id: operators.c,v 1.173 2003/04/01 18:11:09 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -212,7 +212,7 @@ COMPARISON(f_ge,"`>=",!is_lt)
  *!   @endmixed
  *!
  *!   Otherwise if there are more than 2 arguments the result will be:
- *!     @code{`+(`+(@[arg1], @[arg2]), @@@[extras])@}
+ *!     @expr{`+(`+(@[arg1], @[arg2]), @@@[extras])@}
  *!
  *! @note
  *!   In Pike 7.0 and earlier the addition order was unspecified.
@@ -1077,7 +1077,7 @@ PMOD_EXPORT void o_subtract(void)
  *!   without arguments.
  *!
  *!   If there are more than two arguments the result will be:
- *!   @code{`-(`-(@[arg1], @[arg2]), @@@[extras])@}.
+ *!   @expr{`-(`-(@[arg1], @[arg2]), @@@[extras])@}.
  *!
  *!   If @[arg1] is an object that overloads @tt{`-()@}, that function will
  *!   be called with @[arg2] as the single argument.
@@ -1452,7 +1452,7 @@ static void speedup(INT32 args, void (*func)(void))
  *!   If there's a single argument, that argument will be returned.
  *!
  *!   If there are more than two arguments, the result will be:
- *!   @code{`&(`&(@[arg1], @[arg2]), @@@[extras])@}.
+ *!   @expr{`&(`&(@[arg1], @[arg2]), @@@[extras])@}.
  *!
  *!   If @[arg1] is an object that has an @[lfun::`&()], that function
  *!   will be called with @[arg2] as the single argument.
@@ -1658,7 +1658,7 @@ PMOD_EXPORT void o_or(void)
  *!   If there's a single argument, that argument will be returned.
  *!
  *!   If there are more than two arguments, the result will be:
- *!   @code{`|(`|(@[arg1], @[arg2]), @@@[extras])@}.
+ *!   @expr{`|(`|(@[arg1], @[arg2]), @@@[extras])@}.
  *!
  *!   If @[arg1] is an object that has an @[lfun::`|()], that function
  *!   will be called with @[arg2] as the single argument.
@@ -1867,7 +1867,7 @@ PMOD_EXPORT void o_xor(void)
  *!   If there's a single argument, that argument will be returned.
  *!
  *!   If there are more than two arguments, the result will be:
- *!   @code{`^(`^(@[arg1], @[arg2]), @@@[extras])@}.
+ *!   @expr{`^(`^(@[arg1], @[arg2]), @@@[extras])@}.
  *!
  *!   If @[arg1] is an object that has an @[lfun::`^()], that function
  *!   will be called with @[arg2] as the single argument.

@@ -197,19 +197,20 @@ class Angle {
 
   // --- Advanced general functions
 
-  //! Turns the direction of the angle half a turn. Equal to @code{add(180,"deg")@}.
+  //! Turns the direction of the angle half a turn. Equal to
+  //! @expr{add(180,"deg")@}.
   void about_face() {
     add(180, "deg");
   }
 
   //! Turns the direction of the angle a quarter of a turn to the right.
-  //! Equal to @code{subtract(90,"deg")@}.
+  //! Equal to @expr{subtract(90,"deg")@}.
   void right_face() {
     subtract(90, "deg");
   }
 
   //! Turns the direction of the angle a quarter of a turn to the left.
-  //! Equal to @code{add(90,"deg")@}.
+  //! Equal to @expr{add(90,"deg")@}.
   void left_face() {
     add(90, "deg");
   }

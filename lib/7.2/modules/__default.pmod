@@ -1,19 +1,19 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.15 2002/12/30 15:05:38 grubba Exp $
+// $Id: __default.pmod,v 1.16 2003/04/01 18:15:58 nilsson Exp $
 
 #pike 7.3
 
 //! Pike 7.2 compatibility.
 //!
 //! The symbols in this namespace will appear in
-//! programs that use @tt{#pike 7.2@} or lower.
+//! programs that use @expr{#pike 7.2@} or lower.
 
 //! @decl inherit 7.4::
 
 //! Remove the last segment from @[path].
 //!
 //! This implementation differs from @[predef::dirname()]
-//! in that it will return @tt{""@} for the input @tt{"/"@}
+//! in that it will return @expr{""@} for the input @expr{"/"@}
 //! while @[predef::dirname()] will return @["/"].
 //!
 //! @seealso
@@ -62,7 +62,7 @@ string default_yp_domain() {
 //!   then @[lfun::create()] will be called with @[args] as arguments.
 //!
 //!   This function was removed in Pike 7.3, use
-//!   @code{((program)@[prog])(@@@[args])@}
+//!   @expr{((program)@[prog])(@@@[args])@}
 //!   instead.
 //!
 //! @deprecated
@@ -87,7 +87,7 @@ object new(string|program prog, mixed ... args)
 //!   Alternate name for the function @[new()] (Pike 7.2 compatibility).
 //!
 //!   This function was removed in Pike 7.3, use
-//!   @code{((program)@[prog])(@@@[args])@}
+//!   @expr{((program)@[prog])(@@@[args])@}
 //!   instead.
 //!
 //! @deprecated

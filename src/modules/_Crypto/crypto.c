@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: crypto.c,v 1.54 2003/03/23 23:19:26 nilsson Exp $
+|| $Id: crypto.c,v 1.55 2003/04/01 18:12:42 nilsson Exp $
 */
 
 /*
@@ -261,7 +261,9 @@ static void f_des_parity(INT32 args)
  *! be randomized.
  *!
  *! Verification can be done by supplying the crypted password as @[salt]:
- *! @code{crypt_md5(typed_pw, crypted_pw) == crypted_pw@}
+ *! @code
+ *! crypt_md5(typed_pw, crypted_pw) == crypted_pw;
+ *! @endcode
  *! 
  *! @seealso
  *!   @[crypt()]

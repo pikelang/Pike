@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.495 2003/03/30 17:15:09 mast Exp $
+|| $Id: program.c,v 1.496 2003/04/01 18:11:09 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.495 2003/03/30 17:15:09 mast Exp $");
+RCSID("$Id: program.c,v 1.496 2003/04/01 18:11:09 nilsson Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -298,23 +298,23 @@ static char *raw_lfun_types[] = {
  *! @note
  *!   In Pike 7.2 and later this function can be created implicitly
  *!   by the compiler using the new syntax:
- *!     @code{
- *!       class Foo(int foo) {
- *!         int bar;
- *!       }
- *!     @}
+ *! @code
+ *! class Foo(int foo) {
+ *!   int bar;
+ *! }
+ *! @endcode
  *!   In the above case an implicit @[lfun::create()] will be created,
  *!   and it will be equvivalent to:
- *!     @code{
- *!       class Foo {
- *!         int foo;
- *!         int bar;
- *!         static void create(int foo)
- *!         {
- *!           local::foo = foo;
- *!         }
- *!       }
- *!     @}
+ *! @code
+ *! class Foo {
+ *!   int foo;
+ *!   int bar;
+ *!   static void create(int foo)
+ *!   {
+ *!     local::foo = foo;
+ *!   }
+ *! }
+ *! @endcode
  *!
  *! @seealso
  *!   @[lfun::__INIT()], @[lfun::destroy()]

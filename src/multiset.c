@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.69 2003/03/14 15:50:45 grubba Exp $
+|| $Id: multiset.c,v 1.70 2003/04/01 18:10:21 nilsson Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.69 2003/03/14 15:50:45 grubba Exp $");
+RCSID("$Id: multiset.c,v 1.70 2003/04/01 18:10:21 nilsson Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -3591,9 +3591,9 @@ node *make_node_from_multiset (struct multiset *l)
  * Construct a multiset with the arguments as indices. The multiset
  * will not contain any values. This method is most useful when
  * constructing multisets with @[map] or similar; generally, the
- * multiset literal syntax is handier: @code{(<elem1, elem2, ...>)@}
+ * multiset literal syntax is handier: @expr{(<elem1, elem2, ...>)@}
  * With it, it's also possible to construct a multiset with values:
- * @code{(<index1: value1, index2: value2, ...>)@}
+ * @expr{(<index1: value1, index2: value2, ...>)@}
  *
  * @seealso
  *   @[sizeof()], @[multisetp()], @[mkmultiset()]
@@ -5281,7 +5281,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.69 2003/03/14 15:50:45 grubba Exp $");
+RCSID("$Id: multiset.c,v 1.70 2003/04/01 18:10:21 nilsson Exp $");
 
 struct multiset *first_multiset;
 
@@ -5562,7 +5562,7 @@ node * make_node_from_multiset(struct multiset *l)
  *! Construct a multiset with the arguments as indices.
  *! This method is most useful when constructing multisets
  *! with @[map] or similar; generally, the multiset literal
- *! syntax is handier: @code{(< elem1, elem2, ... >)@}
+ *! syntax is handier: @expr{(< elem1, elem2, ... >)@}
  *!
  *! @seealso
  *!   @[sizeof()], @[multisetp()], @[mkmultiset()]

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.164 2003/03/30 16:15:09 mast Exp $
+|| $Id: mapping.c,v 1.165 2003/04/01 18:10:21 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.164 2003/03/30 16:15:09 mast Exp $");
+RCSID("$Id: mapping.c,v 1.165 2003/04/01 18:10:21 nilsson Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1803,7 +1803,7 @@ node *make_node_from_mapping(struct mapping *m)
  *!
  *! Groups the arguments together two and two in key-index pairs and
  *! creates a mapping of those pairs. Generally, the mapping literal
- *! syntax is handier: @code{([ key1:val1, key2:val2, ... ])@}
+ *! syntax is handier: @expr{([ key1:val1, key2:val2, ... ])@}
  *!
  *! @seealso
  *!   @[sizeof()], @[mappingp()], @[mkmapping()]

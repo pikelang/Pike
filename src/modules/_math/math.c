@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.58 2003/03/28 15:24:58 nilsson Exp $
+|| $Id: math.c,v 1.59 2003/04/01 18:12:05 nilsson Exp $
 */
 
 #include "global.h"
@@ -38,7 +38,7 @@
   if(sp[-1].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float")
 
 
-RCSID("$Id: math.c,v 1.58 2003/03/28 15:24:58 nilsson Exp $");
+RCSID("$Id: math.c,v 1.59 2003/04/01 18:12:05 nilsson Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -268,7 +268,7 @@ void f_sqrt(INT32 args)
 /*! @decl float log(float f)
  *!
  *! Return the natural logarithm of @[f].
- *! @code{exp( log(x) ) == x@} for x > 0.
+ *! @expr{exp( log(x) ) == x@} for x > 0.
  *!
  *! @seealso
  *!   @[pow()], @[exp()]
@@ -286,7 +286,7 @@ void f_log(INT32 args)
 /*! @decl float exp(float f)
  *!
  *! Return the natural exponential of @[f].
- *! @code{log( exp( x ) ) == x@} as long as exp(x) doesn't overflow an int.
+ *! @expr{log( exp( x ) ) == x@} as long as exp(x) doesn't overflow an int.
  *!
  *! @seealso
  *!   @[pow()], @[log()]

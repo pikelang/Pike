@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.480 2003/03/28 14:23:28 marcus Exp $
+|| $Id: builtin_functions.c,v 1.481 2003/04/01 18:09:40 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.480 2003/03/28 14:23:28 marcus Exp $");
+RCSID("$Id: builtin_functions.c,v 1.481 2003/04/01 18:09:40 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -68,7 +68,7 @@ RCSID("$Id: builtin_functions.c,v 1.480 2003/03/28 14:23:28 marcus Exp $");
  *!   This function checks if the values @[a] and @[b] are equal.
  *!
  *!   For all types but arrays, multisets and mappings, this operation is
- *!   the same as doing @code{@[a] == @[b]@}.
+ *!   the same as doing @expr{@[a] == @[b]@}.
  *!   For arrays, mappings and multisets however, their contents are checked
  *!   recursively, and if all their contents are the same and in the same
  *!   place, they are considered equal.
@@ -92,12 +92,14 @@ PMOD_EXPORT void f_equal(INT32 args)
  *!   Construct an array with the arguments as indices.
  *!
  *!   This function could be written in Pike as:
- *!   @code{array aggregate(mixed ... elems) { return elems; }@}
+ *! @code
+ *! array aggregate(mixed ... elems) { return elems; }
+ *! @endcode
  *!
  *! @note
  *!   Arrays are dynamically allocated there is no need to declare them
- *!   like @code{int a[10]=allocate(10);@} (and it isn't possible either) like
- *!   in C, just @code{array(int) a=allocate(10);@} will do.
+ *!   like @expr{int a[10]=allocate(10);@} (and it isn't possible either) like
+ *!   in C, just @expr{array(int) a=allocate(10);@} will do.
  *!
  *! @seealso
  *!   @[sizeof()], @[arrayp()], @[allocate()]
@@ -894,7 +896,9 @@ PMOD_EXPORT void f_has_suffix(INT32 args)
  *!
  *!   This function is equivalent to (but sometimes faster than):
  *!
- *!   @code{search(indices(haystack), index) != -1@}
+ *! @code
+ *! search(indices(haystack), index) != -1
+ *! @endcode
  *!
  *! @note
  *!   A negative index in strings and arrays as recognized by the
@@ -983,11 +987,15 @@ PMOD_EXPORT void f_has_index(INT32 args)
  *!   This function is in all cases except when both arguments are strings
  *!   equivalent to (but sometimes faster than):
  *!
- *!   @code{search(values(@[haystack]), @[value]) != -1@}
+ *! @code
+ *! search(values(@[haystack]), @[value]) != -1
+ *! @endcode
  *!
  *!   If both arguments are strings, @[has_value()] is equivalent to:
  *!
- *!   @code{search(@[haystack], @[value]) != -1@}
+ *! @code
+ *! search(@[haystack], @[value]) != -1
+ *! @endcode
  *!
  *! @seealso
  *!   @[has_index()], @[indices()], @[search()], @[values()], @[zero_type()]
@@ -2969,7 +2977,7 @@ static struct pike_string *replace_many(struct pike_string *str,
  *!   If the first argument is a string, and the others array(string), a string
  *!   with every occurrance of @[from][@i{i@}] in @[s] replaced with
  *!   @[to][@i{i@}] will be returned. Instead of the arrays @[from] and @[to]
- *!   a mapping equvivalent to @code{@[mkmapping](@[from], @[to])@} can be
+ *!   a mapping equvivalent to @expr{@[mkmapping](@[from], @[to])@} can be
  *!   used.
  *!
  *!   If the first argument is an array or mapping, the values of @[a] which
@@ -3791,7 +3799,9 @@ PMOD_EXPORT void f_sort(INT32 args)
  *!
  *!   This function is en optimized equivalent to:
  *!
- *!   @code{map(@[index], lambda(mixed x) { return @[data][x]; })@}
+ *! @code
+ *! map(@[index], lambda(mixed x) { return @[data][x]; })
+ *! @endcode
  *!
  *!   That is, it indices data on every index in the array index and
  *!   returns an array with the results.
@@ -5474,7 +5484,7 @@ static struct array* diff_build(struct array *a,
  *!
  *!   Give a specified permutation of an array.
  *!
- *!   The number of permutations is equal to @code{sizeof(@[in])!@}
+ *!   The number of permutations is equal to @expr{sizeof(@[in])!@}
  *!   (the factorial of the size of the given array).
  *!
  *! @seealso
@@ -6656,7 +6666,8 @@ PMOD_EXPORT void f_map_array(INT32 args)
  *!       identifiers that are indexable from it and their values.
  *!
  *!     @item object
- *!       If there is a @code{cast@} method in the object, it's called
+ *!       If there is a @[lfun::cast] method in the object, it's
+ *!       called
  *!       to try to cast the object to an array, a mapping, or a
  *!       multiset, in that order, which is then handled as described
  *!       above.
@@ -6672,7 +6683,7 @@ PMOD_EXPORT void f_map_array(INT32 args)
  *!
  *!     @item object
  *!       @[fun] is used as a function like above, i.e. the
- *!       @code{`()@} method in it is called.
+ *!       @[lfun::`()] method in it is called.
  *!
  *!     @item multiset
  *!     @item mapping
@@ -7037,7 +7048,7 @@ PMOD_EXPORT void f_map(INT32 args)
  *!       identifiers that are indexable from it and their values.
  *!
  *!     @item object
- *!       If there is a @code{cast@} method in the object, it's called
+ *!       If there is a @[lfun::cast] method in the object, it's called
  *!       to try to cast the object to an array, a mapping, or a
  *!       multiset, in that order, which is then filtered as described
  *!       above.
@@ -7055,7 +7066,7 @@ PMOD_EXPORT void f_map(INT32 args)
  *!
  *!     @item object
  *!       The object is used as a function like above, i.e. the
- *!       @code{`()@} method in it is called.
+ *!       @[lfun::`()] method in it is called.
  *!
  *!     @item multiset
  *!     @item mapping
@@ -7321,18 +7332,18 @@ static node *fix_map_node_info(node *n)
  *!
  *!   @section Advanced use
  *!   	The resulting array is calculated like this:
- *!   	@code{
- *!   	  array enumerate(int n, mixed step, mixed start, function operator)
- *!   	  {
- *!   	    array res = allocate(n);
- *!   	    for (int i=0; i < n; i++)
- *!   	    {
- *!   	      res[i] = start;
- *!   	      start = operator(start, step);
- *!   	    }
- *!   	    return res;
- *!   	  }
- *!   	@}
+ *! @code
+ *! array enumerate(int n, mixed step, mixed start, function operator)
+ *! {
+ *!   array res = allocate(n);
+ *!   for (int i=0; i < n; i++)
+ *!   {
+ *!     res[i] = start;
+ *!     start = operator(start, step);
+ *!   }
+ *!   return res;
+ *! }
+ *! @endcode
  *!   @endsection
  *!
  *! @seealso

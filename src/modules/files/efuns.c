@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.124 2003/03/28 11:03:43 grubba Exp $
+|| $Id: efuns.c,v 1.125 2003/04/01 18:11:45 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.124 2003/03/28 11:03:43 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.125 2003/04/01 18:11:45 nilsson Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -153,12 +153,14 @@ struct array *encode_stat(PIKE_STAT_T *s)
  *! @note
  *!   In Pike 7.0 and earlier this function returned an array with 7 elements.
  *!   The old behaviour can be simulated with the following function:
- *!   @code{array(int) file_stat(string path, void|int(0..1) symlink)
- *!         {
- *!           File.Stat st = predef::file_stat(path, symlink);
- *!           if (!st) return 0;
- *!           return (array(int))st;
- *!         }@}
+ *! @code
+ *! array(int) file_stat(string path, void|int(0..1) symlink)
+ *! {
+ *!   File.Stat st = predef::file_stat(path, symlink);
+ *!   if (!st) return 0;
+ *!   return (array(int))st;
+ *! }
+ *! @endcode
  *!
  *! @seealso
  *!   @[Stdio.Stat], @[Stdio.File->stat()]

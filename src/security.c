@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: security.c,v 1.40 2003/03/03 12:12:48 grubba Exp $
+|| $Id: security.c,v 1.41 2003/04/01 18:11:09 nilsson Exp $
 */
 
 #include "global.h"
@@ -81,7 +81,7 @@ static void restore_creds(struct object *creds)
  *! Call with credentials.
  *!
  *! Sets the current credentials to @[creds], and calls
- *! @code{@[func](@@@[args])@}. If @[creds] is @tt{0@} (zero), the
+ *! @expr{@[func](@@@[args])@}. If @[creds] is @tt{0@} (zero), the
  *! credentials from the current object will be used.
  *!
  *! @note

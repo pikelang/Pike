@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.127 2003/03/14 17:19:52 grubba Exp $
+|| $Id: builtin.cmod,v 1.128 2003/04/01 18:09:15 nilsson Exp $
 */
 
 #include "global.h"
@@ -258,7 +258,9 @@ PIKEFUN string int2hex(int|object x)
  *! Extract a column from a two-dimensional array.
  *!
  *! This function is exactly equivalent to:
- *! @code{map(@[data], lambda(mixed x,mixed y) { return x[y]; }, @[index])@}
+ *! @code
+ *! map(@[data], lambda(mixed x,mixed y) { return x[y]; }, @[index])
+ *! @endcode
  *!
  *! Except of course it is a lot shorter and faster.
  *! That is, it indices every index in the array data on the value of
@@ -1564,15 +1566,15 @@ PIKEFUN array(mixed) backtrace()
  *! @example
  *!    For the fastest possible operation, write your code like this:
  *!
- *!    @code{
- *!    String.Buffer b = String.Buffer( );
+ *! @code
+ *! String.Buffer b = String.Buffer( );
  *!
- *!    function add = b->add;
+ *! function add = b->add;
  *!
- *!    .. call add several times in code ...
+ *! .. call add several times in code ...
  *!
- *!    string result = b->get(); // also clears the buffer
- *!    @}
+ *! string result = b->get(); // also clears the buffer
+ *! @endcode
  */
 PIKECLASS Buffer
 {
