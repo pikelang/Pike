@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.62 1997/03/17 03:04:36 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.63 1997/03/17 22:42:47 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -378,7 +378,7 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 memory.h values.h string.h fcntl.h sys/filio.h sys/sockio.h crypt.h locale.h \
 sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h \
-thread.h dlfcn.h dld.h)
+thread.h dlfcn.h dld.h sys/times.h)
 
 AC_SIZEOF_TYPE(char *)
 AC_SIZEOF_TYPE(long)
