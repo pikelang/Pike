@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.358 2001/04/08 10:11:39 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.359 2001/04/08 22:57:39 per Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3301,19 +3301,49 @@ PMOD_EXPORT void f_objectp(INT32 args)
  */
 PMOD_EXPORT void f_functionp(INT32 args)
 {
+  int res = 0;
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("functionp", 1);
-  if(Pike_sp[-args].type != T_FUNCTION ||
-     (Pike_sp[-args].subtype != FUNCTION_BUILTIN && !Pike_sp[-args].u.object->prog))
-  {
-    pop_n_elems(args);
-    push_int(0);
-  }else{
-    pop_n_elems(args);
-    push_int(1);
-  }
+  if( Pike_sp[-args].type == T_FUNCTION &&
+      !Pike_sp[-args].u.object->prog )
+    res=1;
+  pop_n_elems(args);
+  push_int(res);
 }
 
+/*! @decl int callablep(mixed arg)
+ *!
+ *! Returns @tt{1@} if @[arg] is a callable, @tt{0@} (zero) otherwise.
+ *!
+ *! @seealso
+ *! @[mappingp()], @[programp()], @[arrayp()], @[stringp()], @[objectp()],
+ *! @[multisetp()], @[floatp()], @[intp()]
+ */
+PMOD_EXPORT void f_callablep(INT32 args)
+{
+  int res = 0;
+  if(args<1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("callablep", 1);
+
+  switch( Pike_sp[-args].type )
+  {
+    case T_FUNCTION:
+      if( Pike_sp[-args].subtype != FUNCTION_BUILTIN
+	  && !Pike_sp[-args].u.object->prog)
+	break;
+      res = 1;
+      break;
+    case T_PROGRAM:
+      res = 1;
+      break;
+    case T_OBJECT:
+      if( Pike_sp[-args].u.object->prog &&
+	  FIND_LFUN( Pike_sp[-args].u.object->prog, LFUN_CALL ) != -1 )
+	res = 1;
+  }
+  pop_n_elems(args);
+  push_int(res);
+}
 #ifndef HAVE_AND_USE_POLL
 #undef HAVE_POLL
 #endif
@@ -7547,6 +7577,9 @@ void init_builtin_efuns(void)
   
 /* function(mixed:int) */
   ADD_EFUN("functionp",  f_functionp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
+
+/* function(mixed:int) */
+  ADD_EFUN("callablep",  f_callablep,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
   
 /* function(string,string:int)|function(string,string*:array(string)) */
   ADD_EFUN("glob",f_glob,
@@ -7605,7 +7638,7 @@ void init_builtin_efuns(void)
 		tFunc(tArray,tArray)),OPT_EXTERNAL_DEPEND);
   
 /* function(mixed:program) */
-  ADD_EFUN2("object_program", f_object_program,tFunc(tMix, tPrg(tObj)),
+  ADD_EFUN2("object_program", f_object_program,tFunc(tMix, tOr(tPrg(tObj),tObj)),
 	    OPT_TRY_OPTIMIZE, fix_object_program_type, 0);
   
 /* function(mixed:int) */
