@@ -7,8 +7,7 @@
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: ssleay.c,v 1.4 1997/03/17 03:10:48 hubbe Exp $");
-#include "types.h"
+RCSID("$Id: ssleay.c,v 1.5 1997/05/19 22:52:03 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"

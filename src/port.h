@@ -6,7 +6,7 @@
 #ifndef PORT_H
 #define PORT_H
 
-#include "types.h"
+#include "global.h"
 
 #ifndef STRUCT_TIMEVAL_DECLARED
 #define STRUCT_TIMEVAL_DECLARED

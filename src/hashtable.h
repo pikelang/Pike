@@ -6,7 +6,7 @@
 #ifndef HASHTABLE_H
 #define HASHTABLE_H
 
-#include "types.h"
+#include "global.h"
 
 #define AVERAGE_HASH_LENGTH 16
 #define NEW_HASHTABLE_SIZE 4

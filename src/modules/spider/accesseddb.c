@@ -2,7 +2,6 @@
 
 #include "stralloc.h"
 #include "global.h"
-#include "types.h"
 #include "pike_macros.h"
 #include "backend.h"
 #include "object.h"

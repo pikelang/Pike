@@ -19,7 +19,6 @@
 #include "stralloc.h"
 #include "error.h"
 #include "global.h"
-#include "types.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

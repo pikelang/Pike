@@ -9,7 +9,6 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-#include "types.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"

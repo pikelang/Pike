@@ -5,7 +5,6 @@
 \*/
 #include "global.h"
 #include "array.h"
-#include "types.h"
 #include "multiset.h"
 #include "svalue.h"
 #include "pike_macros.h"

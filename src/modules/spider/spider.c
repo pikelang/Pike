@@ -24,7 +24,6 @@
 
 #include "stralloc.h"
 #include "global.h"
-#include "types.h"
 #include "pike_macros.h"
 #include "machine.h"
 #include "object.h"

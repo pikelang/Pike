@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.11 1997/05/19 09:28:41 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.12 1997/05/19 22:48:05 hubbe Exp $");
 #include "backend.h"
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -14,7 +14,6 @@ RCSID("$Id: backend.c,v 1.11 1997/05/19 09:28:41 hubbe Exp $");
 #include <string.h>
 #include "interpret.h"
 #include "object.h"
-#include "types.h"
 #include "error.h"
 #include "fd_control.h"
 #include "main.h"

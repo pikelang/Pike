@@ -1,5 +1,4 @@
 #include "global.h"
-#include "types.h"
 #include "language.h"
 #include "stralloc.h"
 #include "dynamic_buffer.h"

@@ -7,7 +7,6 @@
 #define LAS_H
 
 #include "global.h"
-#include "types.h"
 #include "svalue.h"
 #include "dynamic_buffer.h"
 #include "program.h"

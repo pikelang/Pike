@@ -3,8 +3,7 @@
 
 #ifdef GC2
 
-#include "types.h"
-#include "callback.h"
+#include "global.h"
 
 extern INT32 num_objects;
 extern INT32 num_allocs;

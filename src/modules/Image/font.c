@@ -39,7 +39,7 @@
 **! see also: Image, Image.image
 */
 
-/* $Id: font.c,v 1.9 1997/04/19 12:33:47 mirar Exp $ */
+/* $Id: font.c,v 1.10 1997/05/19 22:50:25 hubbe Exp $ */
 
 #include "global.h"
 
@@ -60,7 +60,6 @@
 #include "config.h"
 
 #include "stralloc.h"
-#include "types.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

@@ -1,4 +1,4 @@
-/* $Id: operator.c,v 1.6 1997/05/01 13:29:48 mirar Exp $ */
+/* $Id: operator.c,v 1.7 1997/05/19 22:50:26 hubbe Exp $ */
 
 /*
 **! module Image
@@ -12,7 +12,6 @@
 
 #include "stralloc.h"
 #include "global.h"
-#include "types.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

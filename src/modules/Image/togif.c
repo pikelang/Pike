@@ -4,7 +4,7 @@ togif
 
 Pontus Hagland, law@infovav.se
 
-$Id: togif.c,v 1.10 1997/05/07 23:07:14 per Exp $ 
+$Id: togif.c,v 1.11 1997/05/19 22:50:28 hubbe Exp $ 
 
 */
 
@@ -21,7 +21,6 @@ $Id: togif.c,v 1.10 1997/05/07 23:07:14 per Exp $
 #include "stralloc.h"
 #include "global.h"
 #include "threads.h"
-#include "types.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.27 1997/05/14 00:40:57 per Exp $ */
+/* $Id: image.c,v 1.28 1997/05/19 22:50:25 hubbe Exp $ */
 
 /*
 **! module Image
@@ -100,8 +100,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.27 1997/05/14 00:40:57 per Exp $");
-#include "types.h"
+RCSID("$Id: image.c,v 1.28 1997/05/19 22:50:25 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

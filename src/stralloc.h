@@ -5,7 +5,7 @@
 \*/
 #ifndef STRALLOC_H
 #define STRALLOC_H
-#include "types.h"
+#include "global.h"
 
 #define STRINGS_ARE_SHARED
 

@@ -6,8 +6,6 @@
 #ifndef EFUN_H
 #define EFUN_H
 
-#include "types.h"
-
 typdef void (*efun_t) (INT32);
 
 /* I need:

@@ -6,7 +6,7 @@
 #ifndef SVALUE_H
 #define SVALUE_H
 
-#include "types.h"
+#include "global.h"
 
 #ifndef STRUCT_ARRAY_DECLARED
 #define STRUCT_ARRAY_DECLARED

@@ -5,7 +5,6 @@
 \*/
 #include "global.h"
 #include "readline_machine.h"
-#include "types.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"

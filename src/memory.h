@@ -6,7 +6,7 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#include "types.h"
+#include "global.h"
 
 #define MEMSEARCH_LINKS 512
 

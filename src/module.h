@@ -6,8 +6,6 @@
 #ifndef MODULE_H
 #define MODULE_H
 
-#include "types.h"
-
 /* Prototypes begin here */
 struct static_module;
 void init_modules(void);

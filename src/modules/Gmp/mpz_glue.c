@@ -4,9 +4,8 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.17 1997/05/15 17:36:01 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.18 1997/05/19 22:48:54 hubbe Exp $");
 #include "gmp_machine.h"
-#include "types.h"
 
 #if !defined(HAVE_LIBGMP)
 #undef HAVE_GMP_H

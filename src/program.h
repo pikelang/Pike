@@ -8,7 +8,6 @@
 
 #include <stdarg.h>
 #include "global.h"
-#include "types.h"
 
 #define LFUN___INIT 0
 #define LFUN_CREATE 1

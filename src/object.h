@@ -6,7 +6,7 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-#include "types.h"
+#include "global.h"
 #include "svalue.h"
 
 /* a destructed object has no program */

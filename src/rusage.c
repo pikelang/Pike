@@ -11,7 +11,6 @@
 #include "time_stuff.h"
 #include <fcntl.h>
 #include <errno.h>
-#include "types.h"
 #include "rusage.h"
 
 #ifdef HAVE_SYS_TIMES_H

@@ -6,8 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.38 1997/05/19 09:42:29 hubbe Exp $");
-#include "types.h"
+RCSID("$Id: file.c,v 1.39 1997/05/19 22:52:39 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"

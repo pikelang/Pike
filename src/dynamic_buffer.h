@@ -8,8 +8,6 @@
 
 #define BUFFER_BEGIN_SIZE 4080
 
-#include "types.h"
-
 struct string_s
 {
   char *str;

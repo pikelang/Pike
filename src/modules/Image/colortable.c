@@ -1,6 +1,6 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.1 1997/05/01 12:38:41 mirar Exp $ */
+/* $Id: colortable.c,v 1.2 1997/05/19 22:50:24 hubbe Exp $ */
 
 /*
 **! module Image
@@ -24,7 +24,6 @@
 #include "config.h"
 
 #include "stralloc.h"
-#include "types.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

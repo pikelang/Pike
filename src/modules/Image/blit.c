@@ -1,4 +1,4 @@
-/* $Id: blit.c,v 1.8 1997/04/18 06:47:18 mirar Exp $ */
+/* $Id: blit.c,v 1.9 1997/05/19 22:50:24 hubbe Exp $ */
 #include "global.h"
 
 /*
@@ -11,7 +11,6 @@
 
 #include "stralloc.h"
 #include "global.h"
-#include "types.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

@@ -4,9 +4,8 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.18 1997/04/23 23:06:16 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.19 1997/05/19 22:48:08 hubbe Exp $");
 #include "main.h"
-#include "types.h"
 #include "object.h"
 #include "mapping.h"
 #include "svalue.h"

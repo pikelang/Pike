@@ -1,4 +1,4 @@
-/* $Id: matrix.c,v 1.4 1997/04/03 07:00:26 mirar Exp $ */
+/* $Id: matrix.c,v 1.5 1997/05/19 22:50:26 hubbe Exp $ */
 
 /*
 **! module Image
@@ -12,7 +12,6 @@
 
 #include "stralloc.h"
 #include "global.h"
-#include "types.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

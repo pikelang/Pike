@@ -1,4 +1,4 @@
-/* $Id: pattern.c,v 1.3 1997/03/17 03:08:01 hubbe Exp $ */
+/* $Id: pattern.c,v 1.4 1997/05/19 22:50:26 hubbe Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,6 @@
 
 #include "stralloc.h"
 #include "global.h"
-#include "types.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

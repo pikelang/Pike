@@ -4,10 +4,9 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.7 1997/04/07 03:26:31 hubbe Exp $");
+RCSID("$Id: zlibmod.c,v 1.8 1997/05/19 22:49:09 hubbe Exp $");
 
 #include "zlib_machine.h"
-#include "types.h"
 
 #if !defined(HAVE_LIBZ) && !defined(HAVE_LIBGZ)
 #undef HAVE_ZLIB_H

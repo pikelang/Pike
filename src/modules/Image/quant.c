@@ -1,5 +1,5 @@
 #include <config.h>
-/* $Id: quant.c,v 1.7 1997/03/18 16:15:24 mirar Exp $ */
+/* $Id: quant.c,v 1.8 1997/05/19 22:50:27 hubbe Exp $ */
 
 /*
 
@@ -19,7 +19,6 @@ David Kågedal, kg@infovav.se
 #include <stdlib.h>
 #endif
 
-#include "types.h"
 #include "error.h"
 #include "global.h"
 #include "array.h"

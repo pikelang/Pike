@@ -6,7 +6,7 @@
 #ifndef STUFF_H
 #define STUFF_H
 
-#include "types.h"
+#include "global.h"
 
 /* Prototypes begin here */
 int my_log2(unsigned INT32 x);
