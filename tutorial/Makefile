@@ -60,7 +60,7 @@ tutorial.dvi: tutorial.tex
 	latex tutorial.tex
 
 tutorial.ps: tutorial.dvi
-	dvips -Z tutorial.dvi
+	dvips -Z tutorial.dvi -o tutorial.ps
 
 tutorial.ps.gz: tutorial.ps
 	gzip -9 <tutorial.ps >tutorial.ps.gz

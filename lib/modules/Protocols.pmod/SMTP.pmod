@@ -87,7 +87,7 @@ class client
 
   static string parse_addr(string addr)
   {
-    array(string|int) tokens = replace(MIME.tokenize(to), '@', "@");
+    array(string|int) tokens = replace(MIME.tokenize(addr), '@', "@");
 
     int i;
     tokens = tokens[search(tokens, '<') + 1..];
