@@ -1,5 +1,5 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.5 1998/05/09 22:13:58 noring Exp $
+// $Id: Table.pmod,v 1.6 1998/05/09 22:38:58 noring Exp $
 
 #define TABLE_ERR(msg) throw(({ "(Table) "+msg+"\n", backtrace() }))
 
@@ -153,7 +153,7 @@ class table {
     return select(@remap(fields) - remap(cs, 1));
   }
 
-  object where(function f, array(int|string)|int|string cs, mixed ... args)
+  object where(array(int|string)|int|string cs, function f, mixed ... args)
   {
     array t = ({});
     cs = remap(arrayp(cs)?cs:({ cs }));
