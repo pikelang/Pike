@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.101 2004/05/23 01:57:36 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.102 2004/07/15 09:35:08 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -37,6 +37,14 @@ void print_code(string test)
   return;
 }
 
+void report_size()
+{
+#if 0
+  werror("\n");
+  Process.system(sprintf("/usr/proc/bin/pmap %d|tail -1", getpid()));
+#endif
+}
+
 array find_testsuites(string dir)
 {
   array(string) ret=({});
@@ -44,21 +52,19 @@ array find_testsuites(string dir)
   {
     if(has_value(s,"no_testsuites")) return ret;
     foreach(s, string file)
-      {
-	switch(file)
-	{
-	  case "testsuite":
-	  case "module_testsuite":
-	    ret+=({ combine_path(dir||"",file) });
-	}
+    {
+      string name=combine_path(dir||"",file);
+      if(Stdio.is_dir(name)) {
+	ret+=find_testsuites(name);
+	continue;
       }
-
-    foreach(s, string file)
+      switch(file)
       {
-	string name=combine_path(dir||"",file);
-	if(Stdio.is_dir(name))
-	  ret+=find_testsuites(name);
+      case "testsuite":
+      case "module_testsuite":
+	ret+=({ combine_path(dir||"",file) });
       }
+    }
   }
   return ret;
 }
@@ -486,6 +492,9 @@ int main(int argc, array(string) argv)
       for(e=start;e<sizeof(tests);e++)
       {
 	signal_watchdog();
+
+	if (!((e-start) % 10))
+	  report_size();
 
 	int skip=0, prev_errors = errors;
 	object o;
@@ -975,6 +984,7 @@ int main(int argc, array(string) argv)
       }
     }
     }
+    report_size();
     if(mem)
     {
       int total;
@@ -994,7 +1004,7 @@ int main(int argc, array(string) argv)
 	}
       }
       werror( "%-10s: %6s %10d\n",
-	     "Total", "", total );
+	      "Total", "", total );
     }
   }
   if(errors || verbose>1)
