@@ -21,9 +21,14 @@ if test x"$1" = x--gdb; then
     arg=`echo $arg | sed -e s/\'/\'\"\'\"\'/g`
     args="$args '$arg'"
   done
-  echo $args > .gdbinit
+  if test -f .gdbinit; then
+    mv .gdbinit .gdbinit.orig
+    cp .gdbinit.orig .gdbinit
+  fi
+  echo $args >> .gdbinit
   gdb "$BUILDDIR/pike"
   rm .gdbinit
+  test -f .gdbinit.orig && mv .gdbinit.orig .gdbinit
 else
   exec "$BUILDDIR/pike" "-m$BUILDDIR/master.pike" "$@"
 fi
