@@ -1,9 +1,9 @@
-/* $Id: xwd.c,v 1.1 1998/03/23 22:52:53 mirar Exp $ */
+/* $Id: xwd.c,v 1.2 1998/03/25 14:55:08 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: xwd.c,v 1.1 1998/03/23 22:52:53 mirar Exp $
+**!	$Id: xwd.c,v 1.2 1998/03/25 14:55:08 mirar Exp $
 **! submodule XWD
 **!
 **!	This submodule keeps the XWD (X Windows Dump) 
@@ -25,7 +25,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: xwd.c,v 1.1 1998/03/23 22:52:53 mirar Exp $");
+RCSID("$Id: xwd.c,v 1.2 1998/03/25 14:55:08 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -43,6 +43,7 @@ extern struct program *image_colortable_program;
 extern struct program *image_program;
 
 void image_x_decode_truecolor_masks(INT32 args);
+void image_x_decode_pseudocolor(INT32 args);
 void f_aggregate_mapping(INT32 args);
 void f_index(INT32 args);
 
@@ -120,7 +121,7 @@ static void image_xwd__decode(INT32 args)
        sp[-args].type!=T_STRING)
       error("Image.PNM._decode(): Illegal arguments\n");
 
-   if (args==1 && sp[1-args].type!=T_INT || 
+   if ((args==1 && sp[1-args].type!=T_INT) ||
        sp[1-args].u.integer!=0) 
       skipcmap=1;
    
@@ -134,7 +135,7 @@ static void image_xwd__decode(INT32 args)
       error("Image.XWD._decode: header to small\n");
    header.header_size=CARD32n(s,0);
 
-   if (s->len<header.header_size || s->len<100)
+   if ((unsigned long)s->len<header.header_size || s->len<100)
       error("Image.XWD._decode: header to small\n");
 
    header.file_version=CARD32n(s,1);     
@@ -275,7 +276,7 @@ static void image_xwd__decode(INT32 args)
 
    push_string(make_shared_string("image"));
 
-   if (s->len-(header.header_size+header.ncolors*12)<0)
+   if (s->len-(int)(header.header_size+header.ncolors*12)<0)
       push_string(make_shared_string(""));
    else
       push_string(make_shared_binary_string(
