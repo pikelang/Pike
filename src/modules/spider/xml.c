@@ -570,29 +570,6 @@ static int isExtender(INT32 c)
   return 0;
 }
 
-static int isChar(INT32 c)
-{
- 
-  if(c <= 0xd7ff)
-  {
-    if(c>0x20 || c==0x9 || c==0x0a || c==0x0d) return 1;
-  }else{
-    /* FIXME: The test below is always false!
-     * /grubba 1998-12-05
-     * 
-     * So? This function isn't used anyways...
-     * /Hubbe 1998-12-16
-     */
-    if(c <=0xffd)
-    {
-      if(c>=0xe000) return 1;
-    }else{
-      if(c>=0x10000 && c<=0x10ffff) return 1;
-    }
-  }
-  return 0;
-}
-
 static INLINE int isSpace(INT32 c)
 {
   switch(c)
