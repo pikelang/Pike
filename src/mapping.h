@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.16 1999/11/12 07:34:32 hubbe Exp $
+ * $Id: mapping.h,v 1.17 2000/01/27 23:18:25 hubbe Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
@@ -20,33 +20,53 @@ struct keypair
   struct svalue ind, val;
 };
 
+struct mapping_data
+{
+  INT32 refs;
+  INT32 valrefs; /* lock values too */
+  INT32 hardlinks;
+  INT32 size, hashsize;
+  INT32 num_keypairs;
+  TYPE_FIELD ind_types, val_types;
+  struct keypair *free_list;
+  struct keypair *hash[1 /* hashsize */ ];
+  /* struct keypair data_block[ hashsize * AVG_LINK_LENGTH ] */
+};
+
 struct mapping
 {
   INT32 refs;
 #ifdef PIKE_SECURITY
   struct object *prot;
 #endif
-  INT32 size, hashsize;
   INT16 flags;
-  TYPE_FIELD ind_types, val_types;
+  struct mapping_data *data;
   struct mapping *next, *prev;
-  struct keypair **hash;
-  struct keypair *free_list;
 };
+
 
 extern struct mapping *first_mapping;
 
 #define map_delete(m,key) map_delete_no_free(m, key, 0)
-#define m_sizeof(m) ((m)->size)
-#define m_ind_types(m) ((m)->ind_types)
-#define m_val_types(m) ((m)->val_types)
-#define MAPPING_LOOP(m) for(e=0;e<m->hashsize;e++) for(k=m->hash[e];k;k=k->next)
+#define m_sizeof(m) ((m)->data->size)
+#define m_ind_types(m) ((m)->data->ind_types)
+#define m_val_types(m) ((m)->data->val_types)
+
+
+#define NEW_MAPPING_LOOP(md) \
+  for((e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(md)) ) ;e<md->hashsize;e++) for(k=md->hash[e];k;k=k->next)
+
+/* WARNING: this should not be used */
+#define MAPPING_LOOP(m) \
+  for((e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(m),debug_malloc_touch(m->data))) ;e<m->data->hashsize;e++) for(k=m->data->hash[e];k;k=k->next)
 
 #define free_mapping(M) do{ struct mapping *m_=(M); debug_malloc_touch(m_); if(!--m_->refs) really_free_mapping(m_); }while(0)
+#define free_mapping_data(M) do{ struct mapping_data *md_=(M); debug_malloc_touch(md_); if(!--md_->refs) really_free_mapping_data(md_); }while(0)
 
 /* Prototypes begin here */
 struct mapping *allocate_mapping(int size);
 void really_free_mapping(struct mapping *m);
+void really_free_mapping_data(struct mapping_data *md);
 void mapping_fix_type_field(struct mapping *m);
 void mapping_insert(struct mapping *m,
 		    struct svalue *key,
@@ -110,5 +130,6 @@ void simple_describe_mapping(struct mapping *m);
 void debug_dump_mapping(struct mapping *m);
 void zap_all_mappings(void);
 void count_memory_in_mappings(INT32 *num_, INT32 *size_);
+struct mapping_data *copy_mapping_data(struct mapping_data *md);
 /* Prototypes end here */
 #endif

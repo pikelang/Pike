@@ -883,7 +883,7 @@ static void html_add_tags(INT32 args)
    struct keypair *k;
    check_all_args("add_tags",args,BIT_MAPPING,0);
 
-   sz=sp[-1].u.mapping->size;
+   sz=m_sizeof(sp[-1].u.mapping);
 
    MAPPING_LOOP(sp[-1].u.mapping)
       {
@@ -904,7 +904,7 @@ static void html_add_containers(INT32 args)
    struct keypair *k;
    check_all_args("add_containers",args,BIT_MAPPING,0);
 
-   sz=sp[-1].u.mapping->size;
+   sz=m_sizeof(sp[-1].u.mapping);
 
    MAPPING_LOOP(sp[-1].u.mapping)
       {
@@ -925,7 +925,7 @@ static void html_add_entities(INT32 args)
    struct keypair *k;
    check_all_args("add_entities",args,BIT_MAPPING,0);
 
-   sz=sp[-1].u.mapping->size;
+   sz=m_sizeof(sp[-1].u.mapping);
 
    MAPPING_LOOP(sp[-1].u.mapping)
       {
@@ -1005,15 +1005,15 @@ static INLINE void recheck_scan(struct parser_html_storage *this,
 				int *scan_tag)
 {
    if (this->callback__tag.type!=T_INT ||
-       this->maptag->size ||
-       this->mapcont->size ||
-       this->mapqtag->size)
+       m_sizeof(this->maptag) ||
+       m_sizeof(this->mapcont) ||
+       m_sizeof(this->mapqtag))
       *scan_tag=1;
    else 
       *scan_tag=0;
 
    if (this->callback__entity.type!=T_INT ||
-       this->mapentity->size)
+       m_sizeof(this->mapentity))
       *scan_entity=1;
    else 
       *scan_entity=0;
@@ -2324,7 +2324,7 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 	return STATE_WAIT; /* come again */
       }
 
-      if (this->mapqtag->size) {
+      if (m_sizeof(this->mapqtag)) {
 	/* must check nested quote tags, since they affect the syntax itself */
 	struct svalue *v;
 	if (!quote_tag_lookup(this,s2,c2,&s3,&c3,finished,&v)) {
@@ -2360,8 +2360,8 @@ static newstate find_end_of_container(struct parser_html_storage *this,
       /* When we should treat unknown tags as text, we have to parse
        * and lookup just the tag name before continuing. */
       if (!found && (THIS->flags & FLAG_IGNORE_UNKNOWN) &&
-	  (!this->maptag->size || !low_mapping_lookup(this->maptag,sp-1)) &&
-	  (!this->mapcont->size || !low_mapping_lookup(this->mapcont,sp-1))) {
+	  (!m_sizeof(this->maptag) || !low_mapping_lookup(this->maptag,sp-1)) &&
+	  (!m_sizeof(this->mapcont) || !low_mapping_lookup(this->mapcont,sp-1))) {
 	DEBUG((stderr,"find_end_of_cont : treating unknown tag as text\n"));
 	feed = s3;
 	c = c3;
@@ -2581,7 +2581,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	   return STATE_WAIT; /* come again */
 	 }
 
-	 if (this->mapqtag->size) {
+	 if (m_sizeof(this->mapqtag)) {
 	   struct piece *e1,*e2; /* <![CDATA[ ... ]]>  */
 	   int ce1,ce2;          /*       e1 ^    ^ e2 */
 
@@ -2628,8 +2628,8 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	   return STATE_WAIT; /* come again */
 	 }
 	 
-	 if (this->maptag->size ||
-	     this->mapcont->size)
+	 if (m_sizeof(this->maptag) ||
+	     m_sizeof(this->mapcont))
 	 {
 	    if (this->flags & FLAG_CASE_INSENSITIVE_TAG)
 	      f_lower_case(1);
@@ -2789,7 +2789,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	    return STATE_WAIT; /* no end, call again */
 	 }
 
-	 if (this->mapentity->size)
+	 if (m_sizeof(this->mapentity))
 	 {
 	    struct svalue *v;
 	    
@@ -3867,7 +3867,7 @@ static void html_case_insensitive_tag(INT32 args)
        f_lower_case(1);
        push_svalue(&k->val);
      }
-     f_aggregate_mapping(THIS->maptag->size * 2);
+     f_aggregate_mapping(m_sizeof(THIS->maptag) * 2);
      free_mapping(THIS->maptag);
      THIS->maptag=(--sp)->u.mapping;
 
@@ -3876,7 +3876,7 @@ static void html_case_insensitive_tag(INT32 args)
        f_lower_case(1);
        push_svalue(&k->val);
      }
-     f_aggregate_mapping(THIS->mapcont->size * 2);
+     f_aggregate_mapping(m_sizeof(THIS->mapcont) * 2);
      free_mapping(THIS->mapcont);
      THIS->mapcont=(--sp)->u.mapping;
    }

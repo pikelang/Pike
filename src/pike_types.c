@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.119 2000/01/16 05:56:03 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.120 2000/01/27 23:18:25 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -3233,7 +3233,7 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
 
   case T_MAPPING:
     type_stack_mark();
-    if (s->u.mapping->size) {
+    if (m_sizeof(s->u.mapping)) {
       push_type(T_MIXED);
       push_type(T_MIXED);
     }
