@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.47 1999/11/23 22:38:06 grubba Exp $");
+RCSID("$Id: encode.c,v 1.48 1999/12/10 22:40:33 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -857,7 +857,9 @@ one_more_type:
 	  break;
 	  
 	default:
-	  error("Failed to decode type.\n");
+	  error("Failed to decode type "
+		"(object(%s), expected object(zero|program)).\n",
+		get_name_of_type(sp[-1].type));
       }
       pop_stack();
       type_stack_reverse();
