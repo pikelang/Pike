@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.14 2000/12/28 14:34:20 grubba Exp $
+ * $Id: Line.pmod,v 1.15 2000/12/28 16:43:46 grubba Exp $
  *
  * Line-buffered protocol handling.
  *
@@ -326,7 +326,7 @@ class smtp_style
   //! @seealso
   //! @[errorcodes]
   //!
-  void send(int(100,999) code, array(string)|string|void lines)
+  void send(int(100 .. 999) code, array(string)|string|void lines)
   {
     lines = lines || errorcodes[code] || "Error";
 
