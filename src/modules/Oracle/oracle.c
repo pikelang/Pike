@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.56 2001/04/14 09:44:22 hubbe Exp $
+ * $Id: oracle.c,v 1.57 2001/06/11 19:48:41 grubba Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.56 2001/04/14 09:44:22 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.57 2001/06/11 19:48:41 grubba Exp $");
 
 
 /* User-changable defines: */
@@ -328,14 +328,14 @@ void *low_check_storage(void *storage, unsigned long magic, char *prog)
 
 static struct program *oracle_program = NULL;
 static struct program *compile_query_program = NULL;
-static struct program *big_query_program = NULL;
+static struct program *big_typed_query_program = NULL;
 static struct program *dbresultinfo_program = NULL;
 static struct program *Date_program = NULL;
 static struct program *NULL_program = NULL;
 
 static int oracle_identifier;
 static int compile_query_identifier;
-static int big_query_identifier;
+static int big_typed_query_identifier;
 static int dbresultinfo_identifier;
 static int Date_identifier;
 
@@ -1555,7 +1555,7 @@ static void free_bind_block(struct bind_block *bind)
  * FIXME: This function should probably lock the statement
  * handle until it is freed...
  */
-static void f_big_query_create(INT32 args)
+static void f_big_typed_query_create(INT32 args)
 {
   sword rc;
   struct mapping *bnds=0;
@@ -1576,7 +1576,7 @@ static void f_big_query_create(INT32 args)
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
 
-  check_all_args("Oracle.oracle.compile_query->big_query", args,
+  check_all_args("Oracle.oracle.compile_query->big_typed_query", args,
 		 BIT_VOID | BIT_MAPPING | BIT_INT, 
 		 BIT_VOID | BIT_INT,
 		 BIT_VOID | BIT_OBJECT,
@@ -1622,7 +1622,7 @@ static void f_big_query_create(INT32 args)
      PARENTOF(PARENTOF(THISOBJ)) != new_parent)
   {
     if(new_parent->prog != PARENTOF(PARENTOF(PARENTOF(THISOBJ)))->prog)
-      Pike_error("Bad argument 3 to big_query.\n");
+      Pike_error("Bad argument 3 to big_typed_query.\n");
 
     /* We might need to check that there are no locks held here
      * but I don't beleive that could happen, so just go with it...
@@ -1682,7 +1682,7 @@ static void f_big_query_create(INT32 args)
 	      goto retry;
 	    }
 	    Pike_error("Bad value type in argument 2 to "
-		  "Oracle.oracle->big_query()\n");
+		       "Oracle.oracle->big_typed_query()\n");
 	    break;
 
 	  case T_STRING:
@@ -1727,7 +1727,7 @@ static void f_big_query_create(INT32 args)
 	    
 	  default:
 	    Pike_error("Bad value type in argument 2 to "
-		  "Oracle.oracle->big_query()\n");
+		       "Oracle.oracle->big_typed_query()\n");
 	}
 	
 	bind.bind[bind.bindnum].addr=addr;
@@ -1775,7 +1775,7 @@ static void f_big_query_create(INT32 args)
 	else
 	{
 	  Pike_error("Bad index type in argument 2 to "
-		"Oracle.oracle->big_query()\n");
+		     "Oracle.oracle->big_typed_query()\n");
 	}
 	if(rc)
 	{
@@ -2041,8 +2041,9 @@ void pike_module_init(void)
 /*      add_function("query_type",f_query_type,"function(:int)",0); */
 
       MY_START_CLASS(dbresult); {
-	ADD_FUNCTION("create", f_big_query_create,
-		     tFunc(tOr(tVoid,tMap(tStr,tMix)) tComma tOr(tVoid,tInt) tComma tOr(tVoid,tObj),tVoid), ID_PUBLIC);
+	ADD_FUNCTION("create", f_big_typed_query_create,
+		     tFunc(tOr(tVoid,tMap(tStr,tMix)) tComma tOr(tVoid,tInt)
+			   tComma tOr(tVoid,tObj),tVoid), ID_PUBLIC);
 	
 	/* function(:int) */
 	ADD_FUNCTION("num_fields", f_num_fields,tFunc(tNone,tInt), ID_PUBLIC);
@@ -2053,11 +2054,11 @@ void pike_module_init(void)
 	/* function(:int|array(string|int)) */
 	ADD_FUNCTION("fetch_row", f_fetch_row,tFunc(tNone,tOr(tInt,tArr(tOr(tStr,tInt)))), ID_PUBLIC);
 	
-	MY_END_CLASS(big_query);
+	MY_END_CLASS(big_typed_query);
 #ifdef PROGRAM_USES_PARENT
-	big_query_program->flags|=PROGRAM_USES_PARENT;
+	big_typed_query_program->flags|=PROGRAM_USES_PARENT;
 #endif
-	big_query_program->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
+	big_typed_query_program->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
       }
       
       
@@ -2141,7 +2142,7 @@ void pike_module_exit(void)
 #define FREE_OBJ(X) if(X) { free_object(X) ; X=NULL; }
   FREE_PROG(oracle_program);
   FREE_PROG(compile_query_program);
-  FREE_PROG(big_query_program);
+  FREE_PROG(big_typed_query_program);
   FREE_PROG(dbresultinfo_program);
   FREE_PROG(Date_program);
   FREE_PROG(NULL_program);

@@ -10,12 +10,13 @@ class oracle
 {
   inherit M::oracle : O;
 
-  object big_query(object(compile_query)|string query,
-		   void|mapping(int|string:int|float|string|multiset(string)) binds,
-		   void|int autocommit)
+  object big_typed_query(object(compile_query)|string query,
+			 void|mapping(int|string:
+				      int|float|string|multiset(string)) binds,
+			 void|int autocommit)
     {
       if(stringp(query)) query=compile_query(query);
-      object ret=query->big_query(binds, autocommit, this_object());
+      object ret = query->big_typed_query(binds, autocommit, this_object());
       if(query->_type == 1)
       {
 	return ret;
@@ -30,12 +31,59 @@ class oracle
     {
       if(wild)
       {
-	return big_query("select tname from tab where tname like :wild",
-			 ([":wild":wild]));
+	return big_typed_query("select tname from tab where tname like :wild",
+			       ([":wild":wild]));
       }else{
-	return big_query("select tname from tab");
+	return big_typed_query("select tname from tab");
       }
     }
+
+  // Implements the standard API.
+  class big_query
+  {
+    static object answer;
+
+    // Aliases.
+    function(:int) num_rows;
+    function(:int) num_fields;
+    function(:int) eof;
+    function(:array(mapping(string:mixed))) fetch_fields;
+    function(int:void) seek;
+
+    // Convert to the standard result coding. 
+    static string|int(0..0) compat_convert(mixed x)
+    {
+      if(!x && intp(x)) return 0;
+      if(multisetp(x)) return ((array(string))x)*",";
+      return (string)x;
+    }
+
+    int(0..0)|array(string|int(0..0)) fetch_row()
+    {
+      array(mixed) res = answer->fetch_row();
+
+      if (res) {
+	return map(res, compat_convert);
+      }
+      return 0;
+    }
+
+    static void create(object(compile_query)|string query,
+		       void|mapping(int|string:
+				    int|float|string|multiset(string)) binds,
+		       void|int autocommit)
+    {
+      answer = big_typed_query(query, binds, autocommit);
+      if (!answer) {
+	destruct();
+      }
+      num_rows = answer->num_rows;
+      num_fields = answer->num_fields;
+      eof = answer->eof;
+      fetch_fields = answer->fetch_fields;
+      seek = answer->seek;
+    }
+  }
 }
 
 #endif
