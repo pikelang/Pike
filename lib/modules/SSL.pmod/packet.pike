@@ -1,4 +1,4 @@
-/* $Id: packet.pike,v 1.8 2001/08/25 18:26:45 noy Exp $
+/* $Id: packet.pike,v 1.9 2001/08/26 14:25:56 grubba Exp $
  *
  * SSL Record Layer
  */
@@ -30,7 +30,7 @@ void create(void|int extra)
   needed_chars = HEADER_SIZE;
 }
 
-object check_size(int|void extra,int version)
+object check_size(int version, int|void extra)
 {
   marginal_size = extra;
   return (strlen(fragment) > (PACKET_MAX_SIZE + extra))
