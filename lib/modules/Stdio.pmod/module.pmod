@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.62 1999/09/16 20:46:33 noring Exp $
+// $Id: module.pmod,v 1.63 1999/09/29 14:57:10 mirar Exp $
 
 import String;
 
@@ -138,8 +138,9 @@ class File
     }
   }
 
-  void create(string|void file,void|string mode,void|int bits)
+  void create(int|string|void file,void|string mode,void|int bits)
   {
+    if (zero_type(file)) return;
     switch(file)
     {
       case "stdin":
@@ -147,9 +148,6 @@ class File
 #ifdef __STDIO_DEBUG
 	__closed_backtrace=0;
 #endif
-      case 0:
-	break;
-	
       case "stdout":
 	_fd=_stdout;
 #ifdef __STDIO_DEBUG
@@ -163,14 +161,25 @@ class File
 	__closed_backtrace=0;
 #endif
 	break;
-	
+
+      case 0..0x7fffffff:
+	 if (!mode) mode="rw";
+	_fd=Fd(file,mode);
+#ifdef __STDIO_DEBUG
+	__closed_backtrace=0;
+#endif
+	break;
+
       default:
 	_fd=Fd();
 #ifdef __STDIO_DEBUG
 	__closed_backtrace=0;
 #endif
 	if(query_num_arg()<3) bits=0666;
-	::open(file,mode,bits);
+	if(!mode) mode="r";
+	if (!::open(file,mode,bits))
+	   error("Failed to open %O mode %O : %s\n",
+		 file,mode,strerror(errno()));
     }
   }
 
