@@ -1,8 +1,7 @@
-/* $Id: handshake.pike,v 1.21 2000/10/22 11:35:13 sigge Exp $
+/* $Id: handshake.pike,v 1.22 2001/04/18 14:30:41 noy Exp $
  *
  */
 
-// int is_server;
 
 inherit "cipher";
 
@@ -50,7 +49,7 @@ object temp_key; /* Key used for session key exchange (if not the same
 object dh_state; /* For diffie-hellman key exchange */
 
 int rsa_message_was_bad;
-
+array(int) version;
 
 int reuse;
 
@@ -86,7 +85,7 @@ object server_hello_packet()
 {
   object struct = Struct();
   /* Build server_hello message */
-  struct->put_uint(3,1); struct->put_uint(0,1); /* version */
+  struct->put_uint(3,1); struct->put_uint(version[1],1); /* version */
   struct->put_fix_string(server_random);
   struct->put_var_string(session->identity, 1);
   struct->put_uint(session->cipher_suite, 2);
@@ -103,7 +102,7 @@ SSL.packet client_hello()
 {
   object struct = Struct();
   /* Build client_hello message */
-  struct->put_uint(3,1); struct->put_uint(0,1); /* version */
+  struct->put_uint(3,1); struct->put_uint(1,1); /* version */
   client_random = sprintf("%4c%s", time(), context->random(28));
   struct->put_fix_string(client_random);
   struct->put_var_string("", 1);
@@ -118,6 +117,11 @@ SSL.packet client_hello()
   struct->put_var_uint_array(compression_methods, 1, 1);
 
   string data = struct->pop_data();
+
+#ifdef SSL3_DEBUG
+  werror(sprintf("SSL.handshake: Client hello: '%O'\n", data));
+#endif
+
   return handshake_packet(HANDSHAKE_client_hello, data);
 }
 
@@ -169,7 +173,7 @@ object server_key_exchange_packet()
   }
 
   session->cipher_spec->sign(context, client_random + server_random, struct);
-  return handshake_packet(HANDSHAKE_server_key_exchange,
+  return handshake_packet (HANDSHAKE_server_key_exchange,
 			  struct->pop_data());
 }
 
@@ -182,17 +186,21 @@ object client_key_exchange_packet()
   switch (session->ke_method)
   {
   case KE_rsa:
-    struct->put_uint(3,1); struct->put_uint(0,1); /* version FIXME (TLS)*/
+    struct->put_uint(3,1); struct->put_uint(1,1);
     string random = context->random(46);
     struct->put_fix_string(random);
-    string premaster_secret = struct->pop_data();
+    string  premaster_secret = struct->pop_data();
     session->master_secret = client_derive_master_secret(premaster_secret);
 
-    array res = session->new_client_states(client_random, server_random);
+    array res = session->new_client_states(client_random, server_random,version);
     pending_read_state = res[0];
     pending_write_state = res[1];
 
     data = (temp_key || context->rsa)->encrypt(premaster_secret);
+
+    if(version[1]==1) 
+      data=sprintf("%2c",strlen(data))+data;
+      
     break;
   case KE_dhe_dss:
   case KE_dhe_rsa:
@@ -226,7 +234,7 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
     int suite;
     foreach(context->preferred_suites, suite)
       if (common_suites[suite]) break;
-    session->set_cipher_suite(suite);
+    session->set_cipher_suite(suite,version[1]);
   } else {
     send_packet(Alert(ALERT_fatal, ALERT_handshake_failure));
     return -1;
@@ -262,9 +270,9 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
 
   object key_exchange = server_key_exchange_packet();
 
-  if (key_exchange)
+  if (key_exchange) {
     send_packet(key_exchange);
-  
+  }
   if (auth_level >= AUTHLEVEL_ask)
   {
     /* Send a CertificateRequest message */
@@ -282,7 +290,6 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
   send_packet(handshake_packet(HANDSHAKE_server_hello_done, ""));
   return 0;
 }
-
 object change_cipher_packet()
 {
   object packet = Packet();
@@ -293,13 +300,23 @@ object change_cipher_packet()
 
 string hash_messages(string sender)
 {
-  return mac_md5(session->master_secret)->hash_master(handshake_messages + sender) +
-    mac_sha(session->master_secret)->hash_master(handshake_messages + sender);
+
+  if(version[1] == 0) {
+    return mac_md5(session->master_secret)->hash_master(handshake_messages + sender) +    
+      mac_sha(session->master_secret)->hash_master(handshake_messages + sender);
+  }
+  else if(version[1] == 1) {
+    return prf(session->master_secret,sender,mac_md5()->hash_raw(handshake_messages)+mac_sha()->hash_raw(handshake_messages),12);
+  }
+
 }
 
 object finished_packet(string sender)
 {
-  return handshake_packet(HANDSHAKE_finished, hash_messages(sender));
+#ifdef SSL3_DEBUG
+           werror("Sending finished_packet, with sender=\""+sender+"\"\n" );
+#endif
+	   return handshake_packet(HANDSHAKE_finished, hash_messages(sender));
 }
 
 string server_derive_master_secret(string data)
@@ -360,7 +377,14 @@ string server_derive_master_secret(string data)
 #ifdef SSL3_DEBUG
      werror(sprintf("encrypted premaster_secret: '%O'\n", data));
 #endif
-     // trace(1);
+     if(version[1] == 1) {
+       if(strlen(data)-2 != data[0]*256+data[1]) {
+	 premaster_secret = context->random(48);
+	 rsa_message_was_bad = 1;
+       }
+       data=data[2..];
+     }
+
      premaster_secret = (temp_key || context->rsa)->decrypt(data);
 #ifdef SSL3_DEBUG
      werror(sprintf("premaster_secret: '%O'\n", premaster_secret));
@@ -378,7 +402,6 @@ string server_derive_master_secret(string data)
 
        werror("SSL.handshake: Invalid premaster_secret! "
 	      "A chosen ciphertext attack?\n");
-
        premaster_secret = context->random(48);
        rsa_message_was_bad = 1;
 
@@ -398,12 +421,17 @@ string server_derive_master_secret(string data)
 
   object sha = mac_sha();
   object md5 = mac_md5();
-  // FIXME: TLS does this differently
-  foreach( ({ "A", "BB", "CCC" }), string cookie)
-    res += md5->hash_raw(premaster_secret
-			 + sha->hash_raw(cookie + premaster_secret 
-					 + client_random + server_random));
-    
+
+  if(version[1] == 0) {
+    foreach( ({ "A", "BB", "CCC" }), string cookie)
+      res += md5->hash_raw(premaster_secret
+			   + sha->hash_raw(cookie + premaster_secret 
+					   + client_random + server_random));
+  }
+  else if(version[1] == 1) {
+    res=prf(premaster_secret,"master secret",client_random+server_random,48);
+  }
+  
 #ifdef SSL3_DEBUG
   werror(sprintf("master: '%O'\n", res));
 #endif
@@ -416,14 +444,23 @@ string client_derive_master_secret(string premaster_secret)
 
   object sha = mac_sha();
   object md5 = mac_md5();
-  // FIXME: TLS does this differently
-  foreach( ({ "A", "BB", "CCC" }), string cookie)
-    res += md5->hash_raw(premaster_secret
-			 + sha->hash_raw(cookie + premaster_secret 
-					 + client_random + server_random));
 
 #ifdef SSL3_DEBUG
-  werror(sprintf("master: '%O'\n", res));
+  werror("Handshake.pike: in client_derive_master_secret is version[1]="+version[1]+"\n");
+#endif
+
+  if(version[1] == 0) {
+    foreach( ({ "A", "BB", "CCC" }), string cookie)
+      res += md5->hash_raw(premaster_secret
+			   + sha->hash_raw(cookie + premaster_secret 
+					   + client_random + server_random));
+  }
+  else if(version[1] == 1) {
+    res+=prf(premaster_secret,"master secret",client_random+server_random,48);
+  }
+  
+#ifdef SSL3_DEBUG
+  werror(sprintf("bahmaster: '%O'\n", res));
 #endif
   return res;
 }
@@ -454,6 +491,21 @@ string describe_type(int i)
 }
 #endif
 
+
+#ifdef SSL3_DEBUG
+ void  printHex(string buf) {
+  int i;
+  string res="";
+  for(i=0; i< strlen(buf) ; i++) {
+    int data=buf[i];
+    res+=sprintf("%02x ",data&0xff);
+  } 
+  res+=sprintf("\n");
+  werror(res);
+}
+#endif
+
+
 /* return 0 if handshake is in progress, 1 if finished, -1 if there's a
  * fatal error. */
 int handle_handshake(int type, string data, string raw)
@@ -463,6 +515,7 @@ int handle_handshake(int type, string data, string raw)
 #ifdef SSL3_DEBUG_HANDSHAKE_STATE
   werror("SSL.handshake: state %s, type %s\n",
 	 describe_state(handshake_state), describe_type(type));
+  werror("strlen(data)="+strlen(data)+"\n");
 #endif
 
   switch(handshake_state)
@@ -490,20 +543,19 @@ int handle_handshake(int type, string data, string raw)
        return -1;
      case HANDSHAKE_client_hello:
       {
-	array(int) version;
 	string id;
 	int cipher_len;
 	array(int) cipher_suites;
 	array(int) compression_methods;
-             
-	if (catch{
+
+       	if (
+	  catch{
 	  version = input->get_fix_uint_array(1, 2);
 	  client_random = input->get_fix_string(32);
 	  id = input->get_var_string(1);
 	  cipher_len = input->get_uint(2);
 	  cipher_suites = input->get_fix_uint_array(2, cipher_len/2);
 	  compression_methods = input->get_var_uint_array(1, 1);
-
 	  SSL3_DEBUG_MSG("STATE_server_wait_for_hello: recieved hello\n"
 			 "version = %d.%d\n"
 			 "id=%O\n"
@@ -512,11 +564,12 @@ int handle_handshake(int type, string data, string raw)
 			 version[0], version[1],
 			 id, cipher_suites, compression_methods);
 
-	} || (version[0] != 3) || (cipher_len & 1))
+	}
+	  || (version[0] != 3) || (version[1] > 1) || (cipher_len & 1))
 	{
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
-		      "SSL.session->handle_handshake: unexpected message\n",
-		      backtrace()));
+			    "SSL.session->handle_handshake: unexpected message\n",
+			    backtrace()));
 	  return -1;
 	}
 
@@ -525,20 +578,20 @@ int handle_handshake(int type, string data, string raw)
 	  werror("SSL.connection->handle_handshake: "
 		 "extra data in hello message ignored\n");
       
-	if (version[1] > 0)
+	if (version[1] > 1)
 	  werror(sprintf("SSL.handshake->handle_handshake: "
 			 "Version %d.%d hello detected\n", @version));
-
+	
 	if (strlen(id))
 	  werror(sprintf("SSL.handshake: Looking up session %O\n", id));
 #endif
 	session = strlen(id) && context->lookup_session(id);
 	if (session)
-	{
+	  {
 #ifdef SSL3_DEBUG
-	  werror(sprintf("SSL.handshake: Reusing session %O\n", id));
+	    werror(sprintf("SSL.handshake: Reusing session %O\n", id));
 #endif
-	  /* Reuse session */
+	    /* Reuse session */
 	  reuse = 1;
 	  if (! ( (cipher_suites & ({ session->cipher_suite }))
 		  && (compression_methods & ({ session->compression_algorithm }))))
@@ -548,11 +601,13 @@ int handle_handshake(int type, string data, string raw)
 	  }
 	  send_packet(server_hello_packet());
 
-	  array res = session->new_server_states(client_random, server_random);
+	  array res = session->new_server_states(client_random, server_random,version);
 	  pending_read_state = res[0];
 	  pending_write_state = res[1];
 	  send_packet(change_cipher_packet());
-	  send_packet(finished_packet("SRVR"));
+	  if(version[1] == 0) send_packet(finished_packet("SRVR"));
+	  else if(version[1] == 1) send_packet(finished_packet("server finished"));
+
 	  expect_change_cipher = 1;
 	 
 	  handshake_state = STATE_server_wait_for_finish;
@@ -574,7 +629,6 @@ int handle_handshake(int type, string data, string raw)
 	int ci_len;
 	int id_len;
 	int ch_len;
-	array(int) version;
 	mixed err;
 	if (err = catch{
 	  version = input->get_fix_uint_array(1, 2);
@@ -595,9 +649,9 @@ int handle_handshake(int type, string data, string raw)
 	}
 
 #ifdef SSL3_DEBUG
-	if (version[1] > 0)
+	if (version[1] > 1)
 	  werror(sprintf("SSL.connection->handle_handshake: "
-			 "Version %d.%d hello detected\n", @version));
+			 "Version %d.%d hello detected\n", @context->version));
 #endif
 
 	string challenge;
@@ -634,17 +688,35 @@ int handle_handshake(int type, string data, string raw)
       return -1;
     case HANDSHAKE_finished:
      {
-       string my_digest = hash_messages("CLNT");
+       string my_digest;
        string digest;
-       if (catch {
-	 digest = input->get_fix_string(36);
-       } || !input->is_empty())
-       {
-	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
-		      "SSL.session->handle_handshake: unexpected message\n",
-		      backtrace()));
-	 return -1;
+       
+       if(version[1] == 0) {
+	 my_digest=hash_messages("CLNT");
+	 if (catch {
+	   digest = input->get_fix_string(36);
+	 } || !input->is_empty())
+	   {
+	     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+			       "SSL.session->handle_handshake: unexpected message\n",
+			       backtrace()));
+	     return -1;
+	   }
+       } else if(version[1] == 1) {
+	 my_digest=hash_messages("client finished");
+	 if (catch {
+	   digest = input->get_fix_string(12);
+	 } || !input->is_empty())
+	   {
+	     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
+			       "SSL.session->handle_handshake: unexpected message\n",
+			       backtrace()));
+	     return -1;
+	   }
+	 
+
        }
+
        if (rsa_message_was_bad       /* Error delayed until now */
 	   || (my_digest != digest))
        {
@@ -664,7 +736,8 @@ int handle_handshake(int type, string data, string raw)
        if (!reuse)
        {
 	 send_packet(change_cipher_packet());
-	 send_packet(finished_packet("SRVR"));
+	 if(version[1] == 0) send_packet(finished_packet("SRVR"));
+	 else if(version[1] == 1) send_packet(finished_packet("server finished"));
 	 expect_change_cipher = 1;
 	 context->record_session(session); /* Cache this session */
        }
@@ -701,7 +774,7 @@ int handle_handshake(int type, string data, string raw)
       } else {
 
 	// trace(1);
-	array res = session->new_server_states(client_random, server_random);
+	array res = session->new_server_states(client_random, server_random,version);
 	pending_read_state = res[0];
 	pending_write_state = res[1];
 	
@@ -797,7 +870,6 @@ int handle_handshake(int type, string data, string raw)
     else
     {
       handshake_messages += raw;
-      array(int) version;
       string id;
       int cipher_suite, compression_method;
 
@@ -818,9 +890,8 @@ int handle_handshake(int type, string data, string raw)
 	return -1;
       }
 
-      session->set_cipher_suite(cipher_suite);
+      session->set_cipher_suite(cipher_suite,version[1]);
       session->set_compression_method(compression_method);
-
       SSL3_DEBUG_MSG("STATE_client_wait_for_hello: recieved hello\n"
 		     "version = %d.%d\n"
 		     "id=%O\n"
@@ -851,6 +922,7 @@ int handle_handshake(int type, string data, string raw)
       array certs = ({ });
       while(!input->is_empty())
 	certs += ({ input->get_var_string(3) });
+
       session->server_certificate_chain = certs;
 
       if (catch
@@ -952,8 +1024,9 @@ int handle_handshake(int type, string data, string raw)
 
       send_packet(change_cipher_packet());
 
-      send_packet(finished_packet("CLNT"));
-
+      if(version[1] == 0) send_packet(finished_packet("CLNT"));
+      else if(version[1] == 1) send_packet(finished_packet("client finished"));
+      
       }
 	handshake_state = STATE_client_wait_for_finish;
 	expect_change_cipher = 1;
@@ -984,6 +1057,7 @@ int handle_handshake(int type, string data, string raw)
 
 void create(int is_server)
 {
+  version=({0,0});
   auth_level = context->auth_level;
   if (is_server)
     handshake_state = STATE_server_wait_for_hello;

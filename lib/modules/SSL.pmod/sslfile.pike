@@ -1,22 +1,26 @@
-/* $Id: sslfile.pike,v 1.27 2001/03/01 20:39:51 per Exp $
+/* $Id: sslfile.pike,v 1.28 2001/04/18 14:30:41 noy Exp $
  *
  */
 
-// inherit Stdio.File : socket;
+
 inherit "connection" : connection;
+
 
 #ifdef SSL3_DEBUG
 #define SSL3_DEBUG_MSG werror
 #else /*! SSL3_DEBUG */
 #define SSL3_DEBUG_MSG
 #endif /* SSL3_DEBUG */
+static object(Stdio.File) socket;
 
-object(Stdio.File) socket;
+static object context;
 
-object context;
-  
-string read_buffer; /* Data that is received before there is any
-		     * read_callback */
+int _fd;
+
+static string read_buffer; /* Data that is received before there is any
+		     * read_callback 
+                     * Data is also buffered here if a blocking read from HLP
+		     * doesnt want to read a full packet of data.*/
 string write_buffer; /* Data to be written */
 function(mixed,string:void) read_callback;
 function(mixed:void) write_callback;
@@ -72,12 +76,13 @@ private int queue_write()
   werror(sprintf("SSL.sslfile->queue_write: buffer = '%O'\n", write_buffer));
 #endif
 
-  if (catch {
-    socket->set_write_callback(ssl_write_callback);
-  }) {
-    return(0);
+  if(!blocking) {
+    if (catch {
+      socket->set_write_callback(ssl_write_callback);
+    }) {
+      return(0);
+    }
   }
-  
 #ifdef SSL3_DEBUG_TRANSPORT
   werror("SSL.sslfile->queue_write: end\n");
 #endif
@@ -93,7 +98,7 @@ void close()
   if (is_closed) return;
   is_closed = 1;
 
-  if (sizeof (write_buffer))
+  if (sizeof (write_buffer) && !blocking)
     ssl_write_callback(socket->query_id());
 
   send_close();
@@ -101,7 +106,95 @@ void close()
   read_callback = 0;
   write_callback = 0;
   close_callback = 0;
+
+
 }
+
+
+string|int read(string|int ...args) {
+
+  #ifdef SSL3_DEBUG
+  werror(sprintf("sslfile.read called!, with args: %O \n",args));
+  #endif
+  
+  int nbytes;
+  int notall;
+  switch(sizeof(args)) {
+  case 0:
+    {
+      string res="";
+      string data=got_data(read_blocking_packet());
+      
+      while(stringp(data)) {
+	res+=data;
+	data=got_data(read_blocking_packet());
+      } 
+      die(1);
+      return read_buffer+res;
+    }
+  case 1:
+    {
+      nbytes=args[0];
+      notall=0;
+      break;
+    }
+  case 2:
+    {
+      nbytes=args[0];
+      notall=args[1];
+      break;
+    }
+
+  default:
+
+    throw( ({ "SSL.sslfile->read: Wrong number of arguments\n",
+		backtrace() }) );
+  }
+  
+  string res="";
+  int leftToRead=nbytes;
+
+  if(strlen(read_buffer)) {
+    if(leftToRead<=strlen(read_buffer)) {
+      res=read_buffer[..leftToRead-1];
+      read_buffer=read_buffer[leftToRead..];
+      return res;
+    } else {
+      res=read_buffer;
+      leftToRead-=strlen(read_buffer);
+      if(notall) {
+	return res;
+      }
+    }
+  }
+
+  string|int data=got_data(read_blocking_packet());
+  if(!stringp(data)) {
+    return ""; //EOF or ssl-fatal error occured.
+  }
+
+  while(stringp(data)) {
+    res+=data;
+    leftToRead-=strlen(data);
+    if(leftToRead<=0) break;
+    if(notall) return res;
+    data=got_data(read_blocking_packet());
+  }
+
+  if(leftToRead<0) {
+    read_buffer=data[strlen(data)+leftToRead..];
+    return res[0..args[0]-1];
+  } else {
+    read_buffer="";
+  }
+
+  if(!stringp(data)) {
+    die(1);
+  }
+
+  return res;
+}
+
 
 int write(string|array(string) s)
 {
@@ -128,18 +221,61 @@ int write(string|array(string) s)
     s = s[PACKET_MAX_SIZE..];
   }
 
-  if (call_write)
-    ssl_write_callback(socket->query_id());
-
-#if 0
-  if (queue_write() == -1)
-  {
-    die(-1);
-    return -1;
+  if (blocking)
+    write_blocking();
+  else {
+    if (call_write)
+      ssl_write_callback(socket->query_id());
   }
-#endif
   return len;
 }
+
+ 
+void get_blocking_to_handshake_finsihed_state() {
+  
+  while(!handshake_finished) {
+    write_blocking();
+    string|int s=got_data(read_blocking_packet());
+    if(s==1||s==-1) break;
+  }
+}
+
+// Reads a single record layer packet.
+private int|string read_blocking_packet() {
+  
+  string header=socket->read(5);
+  if(!stringp(header)) {
+    return -1;    
+  }
+  
+  if(strlen(header)!=5) {
+    return 1;
+  }
+  
+  int compressedLen=header[3]*256+header[4];
+  return header+socket->read(compressedLen);
+}
+
+
+// Writes out everything that is enqued for writing.
+private void write_blocking() {
+
+  int res = queue_write();
+
+  while(strlen(write_buffer)) {
+    
+    int written = socket->write(write_buffer);
+    if (written > 0) {
+      write_buffer = write_buffer[written ..];
+    } else {
+      if (written < 0)
+	die(-1);
+    }
+    res=queue_write();
+  }
+}
+
+
 
 private void ssl_read_callback(mixed id, string s)
 {
@@ -153,34 +289,34 @@ private void ssl_read_callback(mixed id, string s)
     werror(sprintf("SSL.sslfile->ssl_read_callback: application_data: '%O'\n", data));
 #endif
     if (!connected && handshake_finished)
-    {
+      {
       connected = 1;
       if (accept_callback)
 	accept_callback(this_object());
     }
-
+    
     read_buffer += data;
     if (!blocking && read_callback && strlen(read_buffer))
-    {
-      string received = read_buffer;
-      read_buffer = "";
-      read_callback(id, received);
-    }
+      {
+	string received = read_buffer;
+	read_buffer = "";
+	read_callback(id, received);
+      }
   } else {
     if (data > 0)
-    {
-      if (close_callback)
-	close_callback(socket->query_id());
-    }
+      {
+	if (close_callback)
+	  close_callback(socket->query_id());
+      }
     else
       if (data < 0)
-      {
-	/* Fatal error, remove from session cache */
-	if (this_object()) {
-	  die(-1);
+	{
+	  /* Fatal error, remove from session cache */
+	  if (this_object()) {
+	    die(-1);
+	  }
+	  return;
 	}
-	return;
-      }
   }
   if (this_object()) {
     int res = queue_write();
@@ -196,10 +332,9 @@ private void ssl_write_callback(mixed id)
 		 "blocking = %d, write_callback = %O\n",
 		 handshake_finished, blocking, write_callback));
 #endif
-
   if (strlen(write_buffer))
-  {
-    int written = socket->write(write_buffer);
+    {
+      int written = socket->write(write_buffer);
     if (written > 0)
     {
       write_buffer = write_buffer[written ..];
@@ -223,6 +358,7 @@ private void ssl_write_callback(mixed id)
 #ifdef SSL3_DEBUG
     werror("SSL.sslport->ssl_write_callback: Calling write_callback\n");
 #endif
+    werror("Calling HLP write_callback now!!!, which is: %O \n",write_callback);
     write_callback(id);
     if (!this_object()) {
       // We've been destructed.
@@ -230,7 +366,6 @@ private void ssl_write_callback(mixed id)
     }
     res = queue_write();
   }
-//   if (!strlen(write_buffer) && !query_write_callback())
   if (!strlen(write_buffer))
     socket->set_write_callback(0);
   if (res)
@@ -305,8 +440,8 @@ void set_nonblocking(function ...args)
     break;
   case 3:
     set_read_callback(args[0]);
-    set_close_callback(args[2]);
     set_write_callback(args[1]);
+    set_close_callback(args[2]);
     if (!this_object()) {
       return;
     }
@@ -316,6 +451,7 @@ void set_nonblocking(function ...args)
 		backtrace() }) );
   }
   blocking = 0;
+  socket->set_nonblocking(ssl_read_callback,ssl_write_callback,ssl_close_callback);
   if (strlen(read_buffer))
     ssl_read_callback(socket->query_id(), "");
 }
@@ -325,12 +461,13 @@ void set_blocking()
 #ifdef SSL3_DEBUG
   werror("SSL.sslfile->set_blocking\n");
 #endif
-#if 0
-  if (!connected)
-    throw( ({ "SSL.sslfile->set_blocking: Not supported\n",
-		backtrace() }) );
-#endif
+  
+  if (sizeof (write_buffer) && !blocking)
+    ssl_write_callback(socket->query_id());
+  
+  socket->set_blocking();
   blocking = 1;
+  get_blocking_to_handshake_finsihed_state();
 }
 
 string query_address(int|void arg)
@@ -338,24 +475,27 @@ string query_address(int|void arg)
   return socket->query_address(arg);
 }
 
-#if 0
-object accept()
-{
-  /* Dummy method, for compatibility with Stdio.Port */
-  return this_object();
-}
-#endif
 
-void create(object f, object c, int|void is_client)
+void create(object f, object c, int|void is_client, int|void is_blocking)
 {
 #ifdef SSL3_DEBUG
   werror("SSL.sslfile->create\n");
 #endif
+  _fd=f->_fd;
   context = c;
   read_buffer = write_buffer = "";
   socket = f;
-  socket->set_nonblocking(ssl_read_callback, ssl_write_callback, ssl_close_callback);
-  connection::create(!is_client);
+  blocking=is_blocking;
+  if(blocking) {
+    socket->set_blocking();
+    connection::create(!is_client);
+    get_blocking_to_handshake_finsihed_state();
+  } else {
+    socket->set_nonblocking(ssl_read_callback,
+			  ssl_write_callback,
+			  ssl_close_callback);
+    connection::create(!is_client);
+  }
 }
 
 void renegotiate()

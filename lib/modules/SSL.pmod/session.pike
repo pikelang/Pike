@@ -1,10 +1,9 @@
-/* $Id: session.pike,v 1.12 2000/10/22 11:35:13 sigge Exp $
+/* $Id: session.pike,v 1.13 2001/04/18 14:30:41 noy Exp $
  *
  */
 
 inherit "cipher" : cipher;
 
-// object server;
 
 string identity; /* Identifies the session to the server */
 int compression_algorithm;
@@ -15,13 +14,13 @@ string master_secret; /* 48 byte secret shared between client and server */
 
 constant Struct = ADT.struct;
 constant State = SSL.state;
-
+array(int) version;
 array(string) client_certificate_chain;
 array(string) server_certificate_chain;
 
-void set_cipher_suite(int suite)
+void set_cipher_suite(int suite,int version)
 {
-  array res = cipher::lookup(suite);
+  array res = cipher::lookup(suite,version);
   cipher_suite = suite;
   ke_method = res[0];
   cipher_spec = res[1];
@@ -39,7 +38,7 @@ void set_compression_method(int compr)
   compression_algorithm = compr;
 }
 
-string generate_key_block(string client_random, string server_random)
+string generate_key_block(string client_random, string server_random,array(int) version)
 {
   int required = 2 * (
 #ifndef WEAK_CRYPTO_40BIT
@@ -56,16 +55,22 @@ string generate_key_block(string client_random, string server_random)
   object md5 = mac_md5();
   int i = 0;
   string key = "";
-  while (strlen(key) < required)
-  {
-    i++;
-    string cookie = replace(allocate(i), 0, sprintf("%c", 64+i)) * "";
+
+  if(version[1]==0) {
+    while (strlen(key) < required)
+      {
+	i++;
+	string cookie = replace(allocate(i), 0, sprintf("%c", 64+i)) * "";
 #ifdef SSL3_DEBUG
-    werror(sprintf("cookie %O\n", cookie));
+	werror(sprintf("cookie %O\n", cookie));
 #endif
-    key += md5->hash_raw(master_secret +
-			 sha->hash_raw(cookie + master_secret +
-				       server_random + client_random));
+	key += md5->hash_raw(master_secret +
+			     sha->hash_raw(cookie + master_secret +
+					   server_random + client_random));
+      }
+  } else if(version[1]==1) {
+    key=prf(master_secret,"key expansion",server_random+client_random,required);
+
   }
 #ifdef SSL3_DEBUG
 //  werror(sprintf("key_block: %O\n", key));
@@ -73,9 +78,25 @@ string generate_key_block(string client_random, string server_random)
   return key;
 }
 
-array generate_keys(string client_random, string server_random)
+#ifdef SSL3_DEBUG
+void printKey(string name , string key) {
+
+  string res="";
+  res+=sprintf("%s:  len:%d type:%d \t\t",name,strlen(key),0); 
+  /* return; */
+  for(int i=0;i<strlen(key);i++) {
+    int d=key[i];
+    res+=sprintf("%02x ",d&0xff);
+  }
+  res+=sprintf("\n");
+  werror(res);
+}
+
+#endif
+
+array generate_keys(string client_random, string server_random,array(int) version)
 {
-  object key_data = Struct(generate_key_block(client_random, server_random));
+  object key_data = Struct(generate_key_block(client_random, server_random,version));
   array keys = allocate(6);
 
 #ifdef SSL3_DEBUG
@@ -91,7 +112,9 @@ array generate_keys(string client_random, string server_random)
   if (cipher_spec->is_exportable)
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   {
-    object md5 = mac_md5()->hash_raw;
+
+    //Needs to be fixed for TLS!!!!!!
+        object md5 = mac_md5()->hash_raw;
     
     keys[2] = md5(key_data->get_fix_string(5) +
 		 client_random + server_random)
@@ -105,6 +128,7 @@ array generate_keys(string client_random, string server_random)
       keys[5] = md5(server_random + client_random)[..cipher_spec->iv_size-1];
     }
   }
+
 #ifndef WEAK_CRYPTO_40BIT
   else {
     keys[2] = key_data->get_fix_string(cipher_spec->key_material);
@@ -116,14 +140,30 @@ array generate_keys(string client_random, string server_random)
     }
   }
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
+
+#ifdef SSL3_BEBUG
+  printKey( "client_write_MAC_secret",keys[0]);
+  printKey( "server_write_MAC_secret",keys[1]);
+  printKey( "keys[2]",keys[2]);
+  printKey( "keys[3]",keys[3]);
+
+  if(cipher_spec->iv_size) {
+    printKey( "keys[4]",keys[4]);
+    printKey( "keys[5]",keys[5]);
+      
+  } else {
+    werror("No IVs!!\n");
+  }
+#endif
+
   return keys;
 }
 
-array new_server_states(string client_random, string server_random)
+array new_server_states(string client_random, string server_random,array(int) version)
 {
   object write_state = State(this_object());
   object read_state = State(this_object());
-  array keys = generate_keys(client_random, server_random);
+  array keys = generate_keys(client_random, server_random,version);
 
   if (cipher_spec->mac_algorithm)
   {
@@ -150,11 +190,11 @@ array new_server_states(string client_random, string server_random)
   return ({ read_state, write_state });
 }
 
-array new_client_states(string client_random, string server_random)
+array new_client_states(string client_random, string server_random,array(int) version)
 {
   object write_state = State(this_object());
   object read_state = State(this_object());
-  array keys = generate_keys(client_random, server_random);
+  array keys = generate_keys(client_random, server_random,version);
   
   if (cipher_spec->mac_algorithm)
   {
@@ -195,5 +235,6 @@ void create(int is_s, int|void auth)
     handshake_state = STATE_CLIENT_WAIT_FOR_HELLO;
     auth_type = auth || AUTH_require;
   }
+  version={0,0};
 }
 #endif

@@ -1,4 +1,4 @@
-/* $Id: connection.pike,v 1.14 2000/10/22 11:35:13 sigge Exp $
+/* $Id: connection.pike,v 1.15 2001/04/18 14:30:41 noy Exp $
  *
  * SSL packet layer
  */
@@ -121,13 +121,13 @@ string|int to_write()
 {
   if (dying)
     return -1;
-  if (closing)
+  if (closing) {
     return 1;
-  
+  }
   object packet = alert::get() || urgent::get() || application::get();
   if (!packet)
     return "";
-  
+
 #ifdef SSL3_DEBUG
   werror(sprintf("SSL.connection: writing packet of type %d, %O\n",
 		 packet->content_type, packet->fragment[..6]));
@@ -140,7 +140,7 @@ string|int to_write()
       if (packet->description == ALERT_close_notify)
 	closing = 1;
   }
-  string res = current_write_state->encrypt_packet(packet)->send();
+  string res = current_write_state->encrypt_packet(packet,version[1])->send();
   if (packet->content_type == PACKET_change_cipher_spec)
     current_write_state = pending_write_state;
   return res;
@@ -171,11 +171,18 @@ int handle_alert(string s)
   }
   if (description == ALERT_close_notify)
   {
+#ifdef SSL3_DEBUG
+    werror(sprintf("SSL.connection: Close notify  alert %d\n", description));
+#endif
     return 0;
 //     return 1;			// looses data
   }
   if (description == ALERT_no_certificate)
   {
+#ifdef SSL3_DEBUG
+    werror(sprintf("SSL.connection: No certificate  alert %d\n", description));
+#endif
+
     if ((certificate_state == CERT_requested) && (auth_level == AUTHLEVEL_ask))
     {
       certificate_state = CERT_no_certificate;
@@ -196,6 +203,9 @@ int handle_change_cipher(int c)
 {
   if (!expect_change_cipher || (c != 1))
   {
+#ifdef SSL3_DEBUG
+    werror("SSL.connection: handle_change_cipher: Unexcepted message!");
+#endif
     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message));
     return -1;
   }
@@ -213,8 +223,11 @@ int handshake_finished = 0;
 
 /* Returns a string of application data, 1 if connection was closed, or
  * -1 if a fatal error occured */
-string|int got_data(string s)
+string|int got_data(string|int s)
 {
+  if(!stringp(s)) {
+    return s;
+  }
   /* If alert_callback is called, this data is passed as an argument */
   string alert_context = (left_over || "") + s;
 
@@ -296,8 +309,9 @@ string|int got_data(string s)
 	   handshake_buffer = handshake_buffer[len + 4..];
 	   if (err < 0)
 	     return err;
-	   if (err > 0)
+	   if (err > 0) {
 	     handshake_finished = 1;
+	   }
 	 }
 	 break;
        }
@@ -323,8 +337,3 @@ string|int got_data(string s)
   return res;
 }
 
-/* FIXME: Delete this function */
-void server()
-{
-  handshake_state = STATE_server_wait_for_hello;
-}
