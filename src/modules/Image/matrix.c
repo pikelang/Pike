@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.26 2000/08/06 17:06:54 grubba Exp $ */
+/* $Id: matrix.c,v 1.27 2000/08/09 11:23:40 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.26 2000/08/06 17:06:54 grubba Exp $
+**!	$Id: matrix.c,v 1.27 2000/08/09 11:23:40 grubba Exp $
 **! class Image
 */
 
@@ -130,7 +130,7 @@ static INLINE int getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *name
 /** end internals **/
 
 
-#define decimals(x) ((x)-(int)(x))
+#define decimals(x) ((x)-DOUBLE_TO_INT(x))
 #define testrange(x) MAXIMUM(MINIMUM((x),255),0)
 #define _scale_add_rgb(dest,src,factor) \
    ((dest)->r+=(src)->r*(factor), \
@@ -149,12 +149,12 @@ static INLINE void scale_add_line(rgbd_group *new,INT32 yn,INT32 newx,
    img=img+y*xsize;
    for (x=0,xn=0; x<xsize; img++,x++,xn+=dx)
    {
-      if ((INT32)xn<(INT32)(xn+dx))
+      if (DOUBLE_TO_INT(xn) < DOUBLE_TO_INT(xn+dx))
       {
 	 xndxd=py*(1.0-decimals(xn));
 	 if (xndxd)
 	    scale_add_pixel(new,(INT32)xn,img,x,xndxd);
-	 if (dx>=1.0 && (xd=(INT32)(xn+dx)-(INT32)(xn))>1)
+	 if (dx>=1.0 && (xd = DOUBLE_TO_INT(xn+dx) - DOUBLE_TO_INT(xn))>1)
             while (--xd)
 	    {
 	       new++;
@@ -199,22 +199,22 @@ CHRONO("scale begin");
 
    for (y=0,yn=0; y<source->ysize; y++,yn+=dy)
    {
-      if ((INT32)yn<(INT32)(yn+dy))
+      if (DOUBLE_TO_INT(yn)<DOUBLE_TO_INT(yn+dy))
       {
 	 if (1.0-decimals(yn))
-	    scale_add_line(new,(INT32)(yn),newx,source->img,y,source->xsize,
-			   (1.0-decimals(yn)),dx);
-	 if ((yd=(INT32)(yn+dy)-(INT32)(yn))>1)
+	    scale_add_line(new, DOUBLE_TO_INT(yn), newx, source->img, y,
+			   source->xsize, (1.0-decimals(yn)),dx);
+	 if ((yd = DOUBLE_TO_INT(yn+dy) - DOUBLE_TO_INT(yn))>1)
             while (--yd)
-   	       scale_add_line(new,(INT32)yn+yd,newx,source->img,y,source->xsize,
-			      1.0,dx);
+   	       scale_add_line(new, (INT32)(yn+yd), newx, source->img, y,
+			      source->xsize, 1.0, dx);
 	 if (decimals(yn+dy))
-	    scale_add_line(new,(INT32)(yn+dy),newx,source->img,y,source->xsize,
-			   (decimals(yn+dy)),dx);
+	    scale_add_line(new, DOUBLE_TO_INT(yn+dy), newx, source->img, y,
+			   source->xsize, (decimals(yn+dy)), dx);
       }
       else
-	 scale_add_line(new,(INT32)yn,newx,source->img,y,source->xsize,
-			dy,dx);
+	 scale_add_line(new, DOUBLE_TO_INT(yn), newx, source->img, y,
+			source->xsize, dy, dx);
    }
 
    dest->img=d=malloc(newx*newy*sizeof(rgb_group) +1);
@@ -227,9 +227,9 @@ CHRONO("transfer begin");
      y=newx*newy;
      while (y--) 
      {
-       d->r=MINIMUM((int)(s->r+0.5),255);
-       d->g=MINIMUM((int)(s->g+0.5),255);
-       d->b=MINIMUM((int)(s->b+0.5),255);
+       d->r = MINIMUM(DOUBLE_TO_INT(s->r+0.5),255);
+       d->g = MINIMUM(DOUBLE_TO_INT(s->g+0.5),255);
+       d->b = MINIMUM(DOUBLE_TO_INT(s->b+0.5),255);
        d++; s++;
      }
 
@@ -341,9 +341,9 @@ void image_scale(INT32 args)
             image_bitscale( args );
             return;
          }
-	 img_scale(newimg,THIS,
-		   (INT32)(THIS->xsize*sp[-args].u.float_number),
-		   (INT32)(THIS->ysize*sp[-args].u.float_number));
+	 img_scale(newimg, THIS,
+		   DOUBLE_TO_INT(THIS->xsize*sp[-args].u.float_number),
+		   DOUBLE_TO_INT(THIS->ysize*sp[-args].u.float_number));
       }
    }
    else if (args>=2 &&
@@ -367,9 +367,9 @@ void image_scale(INT32 args)
    else if (args>=2 &&
 	    sp[-args].type==T_FLOAT &&
 	    sp[1-args].type==T_FLOAT)
-      img_scale(newimg,THIS,
-		(INT32)(THIS->xsize*sp[-args].u.float_number),
-		(INT32)(THIS->ysize*sp[1-args].u.float_number));
+      img_scale(newimg, THIS,
+		DOUBLE_TO_INT(THIS->xsize*sp[-args].u.float_number),
+		DOUBLE_TO_INT(THIS->ysize*sp[1-args].u.float_number));
    else if (args>=2 &&
 	    sp[-args].type==T_INT &&
 	    sp[1-args].type==T_INT)
@@ -653,7 +653,7 @@ void image_mirrory(INT32 args)
 
 static void img_skewx(struct image *src,
 		      struct image *dest,
-		      float diff,
+		      double diff,
 		      int xpn) /* expand pixel for use with alpha instead */
 {
    double x0,xmod,xm;
@@ -663,9 +663,9 @@ static void img_skewx(struct image *src,
 
    if (dest->img) free(dest->img);
    if (diff<0)
-      dest->xsize=ceil(-diff)+src->xsize,x0=-diff;
+      dest->xsize = DOUBLE_TO_INT(ceil(-diff) + src->xsize), x0=-diff;
    else
-      dest->xsize=ceil(diff)+src->xsize,x0=0;
+      dest->xsize = DOUBLE_TO_INT(ceil(diff) + src->xsize), x0=0;
    dest->ysize=src->ysize;
    len=src->xsize;
 
@@ -684,15 +684,15 @@ static void img_skewx(struct image *src,
    {
       int j;
       if (xpn) rgb=*s;
-      for (j=x0; j--;) *(d++)=rgb;
+      for (j = DOUBLE_TO_INT(x0); j--;) *(d++)=rgb;
       if (!(xm=(x0-floor(x0))))
       {
 	 for (j=len; j--;) *(d++)=*(s++);
-	 j=dest->xsize-x0-len;
+	 j = DOUBLE_TO_INT(dest->xsize - x0 - len);
       }
       else
       {
-	 float xn=1-xm;
+	 double xn = 1.0 - xm;
 	 if (xpn)
 	    *d=*s;
 	 else
@@ -717,7 +717,7 @@ static void img_skewx(struct image *src,
 	 d++;
 	 s++;
 	 debug_malloc_touch(dest->img);
-	 j=dest->xsize-x0-len;
+	 j = DOUBLE_TO_INT(dest->xsize - x0 - len);
       }
       if (xpn) rgb=s[-1];
       while (j--) *(d++)=rgb;
@@ -732,7 +732,7 @@ static void img_skewx(struct image *src,
 
 static void img_skewy(struct image *src,
 		      struct image *dest,
-		      float diff,
+		      double diff,
 		      int xpn) /* expand pixel for use with alpha instead */
 {
    double y0,ymod,ym;
@@ -742,9 +742,9 @@ static void img_skewy(struct image *src,
 
    if (dest->img) free(dest->img);
    if (diff<0)
-      dest->ysize=ceil(-diff)+src->ysize,y0=-diff;
+      dest->ysize = DOUBLE_TO_INT(ceil(-diff) + src->ysize), y0 =- diff;
    else
-      dest->ysize=ceil(diff)+src->ysize,y0=0;
+      dest->ysize = DOUBLE_TO_INT(ceil(diff) + src->ysize), y0 = 0;
    xsz=dest->xsize=src->xsize;
    len=src->ysize;
 
@@ -763,15 +763,15 @@ CHRONO("skewy begin\n");
    {
       int j;
       if (xpn) rgb=*s;
-      for (j=y0; j--;) *d=rgb,d+=xsz;
+      for (j = DOUBLE_TO_INT(y0); j--;) *d=rgb,d+=xsz;
       if (!(ym=(y0-floor(y0))))
       {
 	 for (j=len; j--;) *d=*s,d+=xsz,s+=xsz;
-	 j=dest->ysize-y0-len;
+	 j = DOUBLE_TO_INT(dest->ysize - y0 - len);
       }
       else
       {
-	 float yn=1-ym;
+	 double yn = 1.0 - ym;
 	 if (xpn)
 	    *d=*s;
 	 else
@@ -795,7 +795,7 @@ CHRONO("skewy begin\n");
 	    d->b=ROUND(rgb.b*yn+s->b*ym);
 	 d+=xsz;
 	 s+=xsz;
-	 j=dest->ysize-y0-len;
+	 j = DOUBLE_TO_INT(dest->ysize - y0 - len);
       }
       if (xpn) rgb=s[-xsz];
       while (j--) *d=rgb,d+=xsz;
@@ -847,15 +847,15 @@ CHRONO("skewy end\n");
 
 void image_skewx(INT32 args)
 {
-   float diff=0;
+   double diff=0;
    struct object *o;
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("image->skewx",1);
    else if (sp[-args].type==T_FLOAT)
-      diff=THIS->ysize*sp[-args].u.float_number;
+      diff = THIS->ysize*sp[-args].u.float_number;
    else if (sp[-args].type==T_INT)
-      diff=sp[-args].u.integer;
+      diff = (double)sp[-args].u.integer;
    else
       bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
 		"Bad arguments to image->skewx()\n");
@@ -911,15 +911,15 @@ void image_skewx(INT32 args)
 
 void image_skewy(INT32 args)
 {
-   float diff=0;
+   double diff=0;
    struct object *o;
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("image->skewy",1);
    else if (sp[-args].type==T_FLOAT)
-      diff=THIS->xsize*sp[-args].u.float_number;
+      diff = THIS->xsize*sp[-args].u.float_number;
    else if (sp[-args].type==T_INT)
-      diff=sp[-args].u.integer;
+      diff = (double)sp[-args].u.integer;
    else
       bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
 		"Bad arguments to image->skewx()\n");
@@ -939,15 +939,15 @@ void image_skewy(INT32 args)
 
 void image_skewx_expand(INT32 args)
 {
-   float diff=0;
+   double diff=0;
    struct object *o;
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("image->skewx",1);
    else if (sp[-args].type==T_FLOAT)
-      diff=THIS->ysize*sp[-args].u.float_number;
+      diff = THIS->ysize*sp[-args].u.float_number;
    else if (sp[-args].type==T_INT)
-      diff=sp[-args].u.integer;
+      diff = (double)sp[-args].u.integer;
    else
       bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
 		"Bad arguments to image->skewx()\n");
@@ -967,15 +967,15 @@ void image_skewx_expand(INT32 args)
 
 void image_skewy_expand(INT32 args)
 {
-   float diff=0;
+   double diff=0;
    struct object *o;
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("image->skewy",1);
    else if (sp[-args].type==T_FLOAT)
-      diff=THIS->xsize*sp[-args].u.float_number;
+      diff = THIS->xsize*sp[-args].u.float_number;
    else if (sp[-args].type==T_INT)
-      diff=sp[-args].u.integer;
+      diff = (double)sp[-args].u.integer;
    else
       bad_arg_error("image->skewx",sp-args,args,0,"",sp-args,
 		"Bad arguments to image->skewx()\n");
@@ -997,16 +997,16 @@ void image_skewy_expand(INT32 args)
 
 void img_rotate(INT32 args,int xpn)
 {
-   float angle=0;
+   double angle=0;
    struct object *o;
    struct image *dest,d0,dest2;
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("image->rotate",1);
    else if (sp[-args].type==T_FLOAT)
-      angle=sp[-args].u.float_number;
+      angle = sp[-args].u.float_number;
    else if (sp[-args].type==T_INT)
-      angle=sp[-args].u.integer;
+      angle = (double)sp[-args].u.integer;
    else
       bad_arg_error("image->rotate",sp-args,args,0,"",sp-args,
 		"Bad arguments to image->rotate()\n");
@@ -1099,7 +1099,7 @@ void image_rotate_expand(INT32 args)
 
 void img_translate(INT32 args,int expand)
 {
-   float xt,yt;
+   double xt,yt;
    int y,x;
    struct object *o;
    struct image *img;
@@ -1140,7 +1140,7 @@ void img_translate(INT32 args,int expand)
    }
    else
    {
-      float xn=1-xt;
+      double xn = 1.0 - xt;
 
       d=img->img;
       s=THIS->img;
@@ -1174,7 +1174,7 @@ void img_translate(INT32 args,int expand)
 
    if (yt)
    {
-      float yn=1-yt;
+      double yn = 1.0 - yt;
       int xsz=img->xsize;
 
       d=s=img->img;
