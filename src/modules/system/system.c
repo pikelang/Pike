@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.173 2004/10/15 15:19:02 grubba Exp $
+|| $Id: system.c,v 1.174 2004/10/15 17:06:44 nilsson Exp $
 */
 
 /*
@@ -635,7 +635,7 @@ void f_setgroups(INT32 args)
 {
   static const gid_t safeguard[1] = { 65534 };
   struct array *arr = NULL;
-  const gid_t *gids = NULL;
+  gid_t *gids = NULL;
   INT32 i;
   INT32 size;
   int err;
@@ -650,7 +650,7 @@ void f_setgroups(INT32 args)
     gids = (gid_t *)alloca(arr->size * sizeof(gid_t));
     if (!gids) Pike_error("setgroups(): Too large array (%d).\n", arr->size);
   } else {
-    gids = safeguard;
+    gids = (gid_t *)safeguard;
   }
 
   for (i=0; i < size; i++) {
