@@ -1,3 +1,5 @@
+#if constant(GTK.Ctree)
+
 inherit GTK.Ctree:ctree;
 
 class Node
@@ -362,3 +364,5 @@ static void unselect_expansion() {} /* (node); */
 static void unselect_expansion_recursive() {} /* (node); */
 static void find() {} /* (what->get_node(),node); */
 static void find_by_row_data() {} /* (what->get_node(),node)); */
+
+#endif

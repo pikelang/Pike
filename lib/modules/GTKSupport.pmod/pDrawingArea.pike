@@ -1,3 +1,5 @@
+#if constant(GTK.DrawingArea)
+
 inherit GTK.DrawingArea;
 static object backing_store, bgc;
 static int _xsize, _ysize, is_realized;
@@ -150,3 +152,5 @@ WRAP(draw_pixmap);
 WRAP(draw_point);
 WRAP(draw_rectangle);
 WRAP(draw_text);
+
+#endif

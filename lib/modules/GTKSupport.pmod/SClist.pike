@@ -1,3 +1,4 @@
+#if constant(GTK.ScrolledWindow)
 inherit GTK.ScrolledWindow;
 
 object cl;
@@ -22,3 +23,4 @@ mixed `[](string what )
 }
 
 mixed `->(string what ) { return `[]( what ); }
+#endif

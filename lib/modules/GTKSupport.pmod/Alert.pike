@@ -1,3 +1,5 @@
+#if constant(GTK.Dialog)
+
 inherit GTK.Dialog;
 
 void begone(object w2)
@@ -26,3 +28,5 @@ void create(string text, string|void title)
   action_area()->add( ok_button->show() );
   show();
 }
+
+#endif

@@ -1,3 +1,5 @@
+#if constant(.GTK.parse_rc)
+
 inherit .GTK;
 #define INDEX(x) predef::`->(this_object(),(x))
 
@@ -46,3 +48,5 @@ mixed `[](string what)
     return INDEX("GDK_"+upper_case(GTK.unsillycaps(what)));
   return  GDKSupport[what];
 }
+
+#endif
