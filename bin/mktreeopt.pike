@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.14 1999/11/09 12:57:14 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.15 1999/11/09 19:41:49 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -125,7 +125,7 @@ constant header =
 "/* Tree transformation code.\n"
 " *\n"
 " * This file was generated from %O by\n"
-" * $Id: mktreeopt.pike,v 1.14 1999/11/09 12:57:14 grubba Exp $\n"
+" * $Id: mktreeopt.pike,v 1.15 1999/11/09 19:41:49 grubba Exp $\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"
@@ -182,7 +182,7 @@ string read_id()
 
   while ((pos < sizeof(data)) && (((c = data[pos]) == '_') ||
 				  (('A' <= c) && (c <= 'Z')) ||
-				  (c == '*'))) {
+				  (c == '*') || (c == '+'))) {
     pos++;
   }
   return data[start..pos-1];
@@ -195,6 +195,8 @@ void expect(int c)
   }
   pos++;
 }
+
+int node_cnt;
 
 class node
 {
@@ -211,12 +213,44 @@ class node
 
   string action;
 
+  int node_id = node_cnt++;
+
+  object _copy()
+  {
+    object(node) n = node();
+
+    // werror(sprintf("Copy called on node %s\n", this_object()));
+
+    n->tag = tag;
+    n->token = token;
+    n->extras = extras;
+    if (car) {
+      n->car = car->_copy();
+    }
+    if (cdr) {
+      n->cdr = cdr->_copy();
+    }
+    n->action = action;
+
+    return n;
+  }
+
+  object copy()
+  {
+    object n = _copy();
+
+    generate_follow(n, follow, tpos);
+    
+    return n;
+  }
+
   string _sprintf()
   {
     string s = token;
     if (tag >= 0) {
       s = sprintf("%d = %s", tag, token);
     }
+    s += "{" + node_id + "}";
     foreach(extras, string e) {
       s += "[" + e + "]";
     }
@@ -341,6 +375,13 @@ object read_node()
     eat_whitespace();
     c = data[pos];
     while (c == '[') {
+      if (token == "*") {
+	fail("%s:%d: *-nodes can't have conditionals.\n", fname, line);
+      }
+      if (res->token == "*") {
+	// Implicit any node converted to plus node.
+	res->token = "+";
+      }
       pos++;
       int cnt = 1;
       int start = pos;
@@ -644,264 +685,242 @@ string do_indent(string code, string indent)
   return a*"\n";
 }
 
-string generate_back_match(array(object(node)) rule_set, string indent)
+void zap_car(array(object(node)) node_set)
 {
-  string res = "";
-
-  array(object(node)) back_nodes = rule_set->follow;
-  int i;
-  string post_res = "";
-  while ((i = search(back_nodes, 0, i)) >= 0) {
-    post_res += do_indent(rule_set[i]->action, indent) + "\n";
-    i++;
+  foreach(node_set, object(node) n) {
+    n->car = 0;
   }
-  back_nodes -= ({ 0 });
-  if (sizeof(back_nodes)) {
-    res += generate_cdr_match(back_nodes, indent);
-  }
-  res += post_res;
-
-  return res;
 }
 
-string generate_cdr_match(array(object(node)) rule_set, string indent)
+void zap_cdr(array(object(node)) node_set)
 {
-  mapping(string: array(object(node))) cdr_follow = ([]);
-
-  foreach(rule_set, object(node) n) {
-    string t;
-    if (n->cdr) {
-      // Follow.
-      t = n->cdr->token;
-      if (t != "-") {
-	n = n->cdr;
-      }
-    } else {
-      // Null.
-      t = 0;
-    }
-    if (!cdr_follow[t]) {
-      cdr_follow[t] = ({ n });
-    } else {
-      cdr_follow[t] += ({ n });
-    }
+  foreach(node_set, object(node) n) {
+    n->cdr = 0;
   }
-
-  string tpos = rule_set[0]->tpos;
-
-  string res = "";
-
-  array(object(node)) any_follow = cdr_follow["*"];
-  m_delete(cdr_follow, "*");
-
-  array(object(node)) back_follow = cdr_follow[0];
-  m_delete(cdr_follow, 0);
-
-  int last_was_if;
-
-  if (cdr_follow["-"]) {
-
-    res = sprintf("%sif (!CD%sR(n)) {\n", indent, tpos);
-
-    res += generate_back_match(cdr_follow["-"], "  " + indent);
-
-    m_delete(cdr_follow, "-");
-
-    last_was_if = 1;
-
-    res += indent + "}";
-  }
-
-  if (sizeof(cdr_follow)) {
-    foreach(indices(cdr_follow), string t) {
-      if (last_was_if) {
-	res += " else ";
-      } else {
-	res += indent;
-      }
-      last_was_if = 1;
-      res += sprintf("if (CD%sR(n)->token == %s) {\n",
-		     tpos, t);
-
-      res += generate_extras_match(cdr_follow[t], "  " + indent);
-
-      res += indent + "}";
-    }
-  }
-
-  if (last_was_if) {
-    res += "\n";
-  }
-
-  if (any_follow) {
-    // This node is ignored, but nodes further down are interresting.
-    res += generate_extras_match(any_follow, indent);
-  }
-
-  if (back_follow) {
-    // The cdr part is ignored.
-    // Back up the tree.
-    res += generate_back_match(back_follow, indent);
-  }
-
-  return res;
 }
+
+constant NULL_CAR = 0;
+constant NULL_CDR = 1;
+constant MATCH_CAR = 2;
+constant NOT_NULL_CAR = 3;
+constant MATCH_CDR = 4;
+constant NOT_NULL_CDR = 5;
+constant ANY = 6;
+constant ANY_CAR = 7;
+constant ANY_CDR = 8;
 
 static int label_cnt;
 
-string generate_car_match(array(object(node)) rule_set, string indent)
+int debug;
+
+string generate_match(array(object(node)) rule_set, string indent)
 {
-  mapping(string: array(object(node))) car_follow = ([]);
+  string res = "";
 
-  array(object(node)) cdr_null = ({});
+  if (debug) {
+    werror(indent + sprintf("generate_match(%s)\n",
+			    rule_set->_sprintf() * ", "));
+  }
 
-  array(object(node)) car_any_cdr_null = ({});
+  // Group the nodes by their class:
+
+  array(array(object(node))) node_classes = allocate(9, allocate)(0);
 
   foreach(rule_set, object(node) n) {
-    string t;
+    int car_kind = ANY;
     if (n->car) {
-      // Follow.
-      t = n->car->token;
-      if (t == "-") {
-	// car is NULL.
-	// Mark as followed.
-	n->car = 0;
-      } else {
-	if (n->cdr && (n->cdr->token == "-")) {
-	  // cdr is NULL.
-	  // Mark as followed.
-	  n->cdr = 0;
-
-	  if (t == "*") {
-	    car_any_cdr_null += ({ n });
-	  } else {
-	    cdr_null += ({ n });
-	  }
-	  continue;
-	}
-	n = n->car;
+      if (n->car->token == "-") {
+	// NULL
+	car_kind = NULL_CAR;
+      } else if (n->car->token == "+") {
+	// PLUS
+	car_kind = NOT_NULL_CAR;
+      } else if (n->car->token != "*") {
+	// X
+	car_kind = MATCH_CAR;
       }
-    } else {
-      // car is ANY.
-      if (n->cdr && (n->cdr->token == "-")) {
-	// cdr is NULL.
-	// Mark as followed.
-	n->cdr = 0;
-	car_any_cdr_null += ({ n });
-	continue;
-      }
-      t = 0;
     }
-    if (!car_follow[t]) {
-      car_follow[t] = ({ n });
+    int cdr_kind = ANY;
+    if (n->cdr) {
+      if (n->cdr->token == "-") {
+	// NULL
+	cdr_kind = NULL_CDR;
+      } else if (n->cdr->token == "+") {
+	// PLUS
+	cdr_kind = NOT_NULL_CDR;
+      } else if (n->cdr->token != "*") {
+	// X
+	cdr_kind = MATCH_CDR;
+      }
+    }
+    if (car_kind < cdr_kind) {
+      node_classes[car_kind] += ({ n });
     } else {
-      car_follow[t] += ({ n });
+      node_classes[cdr_kind] += ({ n });
+    }
+    if (car_kind != cdr_kind) {
+      if (car_kind == ANY && cdr_kind == NOT_NULL_CDR) {
+	node_classes[ANY_CAR] += ({ n->copy() });
+      } else if (cdr_kind == ANY && car_kind == NOT_NULL_CAR) {
+	node_classes[ANY_CDR] += ({ n->copy() });
+      }
+    }
+    if (debug) {
+      werror(indent + sprintf("generate_match(%s)\n", n));
+      werror(indent + sprintf("car_kind: %d, cdr_kind: %d\n",
+			      car_kind, cdr_kind));
     }
   }
 
   string tpos = rule_set[0]->tpos;
 
-  string res = "";
-
-  array(object(node)) any_follow = car_follow["*"];
-  m_delete(car_follow, "*");
-
-  array(object(node)) cdr_follow = car_follow[0];
-  m_delete(car_follow, 0);
-
-  int last_was_if;
-
   string label;
+  int any_cdr_last;
 
-  if (car_follow["-"]) {
+  int last_was_if = 0;
+  if (sizeof(node_classes[NULL_CAR])) {
+    res += indent + sprintf("if (!CA%sR(n)) {\n", tpos);
+    zap_car(node_classes[NULL_CAR]);
 
-    res = indent + sprintf("if (!CA%sR(n)) {\n", tpos);
-
-    res += generate_cdr_match(car_follow["-"], "  " + indent);
-
-    m_delete(car_follow, "-");
-
-    last_was_if = 1;
-
-    if (sizeof(car_any_cdr_null)) {
-      // Add a goto to the X(*, -) code.
-      label = sprintf("label_%d", label_cnt++);
-      res += sprintf("%s  if (!CD%sR(n)) {\n"
-		     "%s    goto %s;\n"
-		     "%s  }\n",
-		     indent, tpos,
-		     indent, label,
-		     indent);
+#if 0
+    if (sizeof(node_classes[ANY_CAR]) < sizeof(node_classes[ANY_CDR])) {
+#endif /* 0 */
+      res += generate_match(node_classes[NULL_CAR] +
+			    node_classes[ANY_CAR], indent + "  ");
+#if 0
+    } else {
+      res += generate_match(node_classes[NULL_CAR], indent + "  ");
+      if (sizeof(node_classes[ANY_CAR])) {
+	label = sprintf("any_car_%d", label_cnt++);
+	res += indent + "  goto " + label + ";\n";
+      }
     }
-
+#endif /* 0 */
     res += indent + "}";
+    last_was_if = 1;
   }
 
-  if (sizeof(cdr_null) || sizeof(car_any_cdr_null)) {
+  if (sizeof(node_classes[NULL_CDR])) {
     if (last_was_if) {
       res += " else ";
     } else {
       res += indent;
     }
-    last_was_if = 1;
     res += sprintf("if (!CD%sR(n)) {\n", tpos);
-
-    if (sizeof(cdr_null)) {
-      res += generate_car_match(cdr_null, indent + "  ");
-    }
-    
+    zap_cdr(node_classes[NULL_CDR]);
+#if 0
     if (label) {
-      res += indent + label + ":\n";
-
-      res += generate_car_match(car_any_cdr_null, indent + "  ");
-
-      // We need to skip past the any-section.
-
-      label = sprintf("label_%d", label_cnt++);
-
-      res += indent + "  goto " + label + ";\n";
+#endif /* 0 */
+      res += generate_match(node_classes[NULL_CDR] +
+			    node_classes[ANY_CDR], indent + "  ");
+#if 0
+    } else {
+      // We can use goto to handle ANY_CDR.
+      res += generate_match(node_classes[NULL_CDR], indent + "  ");
+      if (sizeof(node_classes[ANY_CDR])) {
+	label = sprintf("any_cdr_%d", label_cnt++);
+	res += indent + "  goto " + label + ";\n";
+	any_cdr_last = 1;
+      }      
     }
-
+#endif /* 0 */
     res += indent + "}";
+    last_was_if = 1;
   }
-
-  if (sizeof(car_follow)) {
-    foreach(indices(car_follow), string t) {
-      if (last_was_if) {
-	res += " else ";
-      } else {
-	res += indent;
-      }
-      last_was_if = 1;
-      res += sprintf("if (CA%sR(n)->token == %s) {\n",
-		     tpos, t);
-
-      res += generate_extras_match(car_follow[t], "  " + indent);
-
-      res += indent + "}";
+  if (sizeof(node_classes[MATCH_CAR]) || sizeof(node_classes[NOT_NULL_CAR]) ||
+      sizeof(node_classes[MATCH_CDR]) || sizeof(node_classes[NOT_NULL_CDR])) {
+    if (last_was_if) {
+      res += " else {\n";
+    } else {
+      res += indent + "{\n";
     }
+    if (sizeof(node_classes[MATCH_CAR])) {
+      mapping(string:array(object)) token_groups = ([]);
+      foreach(node_classes[MATCH_CAR], object(node) n) {
+	token_groups[n->car->token] += ({ n->car });
+      }
+      zap_car(node_classes[MATCH_CAR]);
+      int last_was_if2;
+      foreach(indices(token_groups), string token) {
+	if (last_was_if2) {
+	  res += " else ";
+	} else {
+	  res += indent + "  ";
+	}
+	last_was_if2 = 1;
+	res += sprintf("if (CA%sR(n)->token == %s) {\n", tpos, token);
+	res += generate_extras_match(token_groups[token], indent + "    ");
+	res += indent + "  }";
+      }
+      res += "\n";
+    }
+    if (sizeof(node_classes[MATCH_CDR])) {
+      mapping(string:array(object)) token_groups = ([]);
+      foreach(node_classes[MATCH_CDR], object(node) n) {
+	token_groups[n->cdr->token] += ({ n->cdr });
+      }
+      zap_cdr(node_classes[MATCH_CDR]);
+      int last_was_if2;
+      foreach(indices(token_groups), string token) {
+	if (last_was_if2) {
+	  res += " else ";
+	} else {
+	  res += indent + "  ";
+	}
+	last_was_if2 = 1;
+	res += sprintf("if (CD%sR(n)->token == %s) {\n", tpos, token);
+	res += generate_extras_match(token_groups[token], indent + "    ");
+	res += indent + "  }";
+      }
+      res += "\n";
+    }
+    array(object(node)) not_null = ({});
+    if (sizeof(node_classes[NOT_NULL_CAR])) {
+      foreach(node_classes[NOT_NULL_CAR], object(node) n) {
+	not_null += ({ n->car });
+	n->car = 0;
+      }
+    }
+    if (sizeof(node_classes[NOT_NULL_CDR])) {
+      foreach(node_classes[NOT_NULL_CDR], object(node) n) {
+	not_null += ({ n->cdr });
+	n->cdr = 0;
+      }
+    }
+    if (sizeof(not_null)) {
+      res += generate_extras_match(not_null, indent + "  ");
+    }
+    res += indent + "}";
+    last_was_if = 1;
   }
-
   if (last_was_if) {
     res += "\n";
   }
-
-  if (any_follow) {
-    // This node is ignored, but nodes further down are interresting.
-    res += generate_extras_match(any_follow, indent);
+  if (sizeof(node_classes[ANY])) {
+    array(object(node)) follow_set = ({});
+    array(object(node)) car_set = ({});
+    array(object(node)) cdr_set = ({});
+    foreach(node_classes[ANY], object(node) n) {
+      if (n->car) {
+	car_set += ({ n->car });
+	n->car = 0;
+      } else if (n->cdr) {
+	cdr_set += ({ n->cdr });
+	n->cdr = 0;
+      } else if (n->follow) {
+	follow_set += ({ n->follow });
+      } else {
+	res += do_indent(n->action, indent) + "\n";
+      }
+    }
+    if (sizeof(car_set) || sizeof(cdr_set)) {
+      res += generate_extras_match(car_set + cdr_set, indent);
+    }
+    if (sizeof(follow_set)) {
+      res += generate_match(follow_set, indent);
+    }
   }
-
-  if (cdr_follow) {
-    // The car part is ignored.
-    // Generate code for the cdr part instead.
-    res += generate_cdr_match(cdr_follow, indent);
-  }
-
-  if (label) {
-    res += indent[2..] + label + ":\n" +
-      indent + ";\t/* Keep compiler happy */\n";
-  }
-
+  // werror(res + "\n");
   return res;
 }
 
@@ -917,22 +936,24 @@ string generate_extras_match(array(object(node)) rule_set, string indent)
       t = n->extras * (") &&\n" +
 		       indent + "    (");
     }
-    if (!extra_set[t]) {
-      extra_set[t] = ({ n });
-    } else {
-      extra_set[t] += ({ n });
-    }
+    extra_set[t] += ({ n });
   }
 
-  if (extra_set[0]) {
-    res += generate_car_match(extra_set[0], indent);
-    m_delete(extra_set, 0);
+  if (debug) {
+    werror(do_indent(sprintf("extra_set: %O\n", extra_set), indent));
   }
+
+  array(object(node)) no_extras = extra_set[0];
+  m_delete(extra_set, 0);
 
   foreach(indices(extra_set), string code) {
     res += indent + sprintf("if ((%s)) {\n", code);
-    res += generate_car_match(extra_set[code], indent + "  ");
+    res += generate_match(extra_set[code], indent + "  ");
     res += indent + "}\n";
+  }
+
+  if (no_extras) {
+    res += generate_match(no_extras, indent);
   }
 
   return res;
@@ -943,6 +964,7 @@ string generate_code()
   string res = "";
   // Note: token below can't be 0 or *.
   foreach(sort(indices(rules)), string token) {
+    // debug = (token == "'?'");
     res += "case " + token + ":\n" +
       generate_extras_match(rules[token], "  ") +
       "  break;\n\n";
