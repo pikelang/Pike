@@ -183,6 +183,8 @@ testfont binary
 /src/code/computedgoto.h foreign_ident
 /src/code/ia32.c foreign_ident
 /src/code/ia32.h foreign_ident
+/src/code/ppc32.c foreign_ident
+/src/code/ppc32.h foreign_ident
 /src/code/sparc.c foreign_ident
 /src/code/sparc.h foreign_ident
 /src/combine_path.h foreign_ident
