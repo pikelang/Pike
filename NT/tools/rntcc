@@ -71,15 +71,20 @@ int main(int argc, string *argv)
 		      ({"warn",Getopt.MAY_HAVE_ARG, ({"-W"}) }),
 			({"define",Getopt.HAS_ARG, ({"-D"}) }),
 			  ({"undefine",Getopt.HAS_ARG, ({"-U"})}),
-			    ({"output",Getopt.HAS_ARG, ({"-o"}) })
+			    ({"output",Getopt.HAS_ARG, ({"-o"}) }),
+			    ({"export",Getopt.HAS_ARG, ({"--export"}) })
 			      }));
   foreach(opts, mixed *option)
     {
       switch(option[0])
       {
+	case "export":
+	  ldopts+=({"export",option[1]+"_"});
+	  break;
+
 	case "share":
 	  share=1;
-	  ldopts+=({"SYS","nt_dll"});
+	  ldopts=({"SYSTEM","nt_dll","initinstance","terminstance"})+ldopts;
 	  cflags+=({"-bd"});
 	  break;
 
@@ -200,6 +205,11 @@ int main(int argc, string *argv)
 		 "NAME "+target+" " +ldopts*" "+" "+
 		    "FIL "+Array.map(objects,fixpath)*","+" "+
 		    libraries*" "+" ");
+
+#if 0
+      Process.system("cat "+ldfile);
+      write("\n");
+#endif
 
       do_cmd( ({"wlink","@"+ldfile }), lambda(string data)
       {
