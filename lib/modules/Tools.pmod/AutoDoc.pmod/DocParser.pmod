@@ -514,6 +514,9 @@ static class DocParserClass {
           string keyword = s[start .. i - 1];
           if (s[i] != '{' || keyword == "")
             parseError("expected @keyword{, got %O", s[start .. i]);
+          if (getKeywordType(keyword) != BRACEKEYWORD)
+            parseError("@%s cannot be used like this: @%s{ ... @}",
+                      keyword, keyword);
           ++i;
           tagstack = ({ keyword }) + tagstack;
           if (keyword == "xml")
