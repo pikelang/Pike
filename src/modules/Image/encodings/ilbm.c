@@ -1,9 +1,9 @@
-/* $Id: ilbm.c,v 1.19 2000/08/14 14:23:01 grubba Exp $ */
+/* $Id: ilbm.c,v 1.20 2000/09/15 21:27:56 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ilbm.c,v 1.19 2000/08/14 14:23:01 grubba Exp $
+**!	$Id: ilbm.c,v 1.20 2000/09/15 21:27:56 grubba Exp $
 **! submodule ILBM
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.19 2000/08/14 14:23:01 grubba Exp $");
+RCSID("$Id: ilbm.c,v 1.20 2000/09/15 21:27:56 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -312,7 +312,7 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, ptrdiff_t blen,
 	  unsigned char ss = *src++;
 	  for(x=0; x<bmhd->w; x++) {
 	    if(ss&bit) {
-	      adest->r = adest->g = adest->b = ~0;
+	      adest->r = adest->g = adest->b = 0xff;
 	    } else {
 	      adest->r = adest->g = adest->b = 0;
 	    }
@@ -328,7 +328,7 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, ptrdiff_t blen,
 	  if(cline[x] == bmhd->transparentColor)
 	    adest->r = adest->g = adest->b = 0;
 	  else
-	    adest->r = adest->g = adest->b = ~0;
+	    adest->r = adest->g = adest->b = 0xff;
 	  adest++;
 	}
 	break;

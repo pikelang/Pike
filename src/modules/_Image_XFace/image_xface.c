@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: image_xface.c,v 1.11 2000/09/08 16:14:32 grubba Exp $");
+RCSID("$Id: image_xface.c,v 1.12 2000/09/15 21:37:56 grubba Exp $");
 
 #include "config.h"
 
@@ -321,7 +321,7 @@ static void decodeface(char *data, INT32 len, rgb_group *out)
       if(face[i][j])
 	out->r = out->g = out->b = 0;
       else
-	out->r = out->g = out->b = ~0;
+	out->r = out->g = out->b = 0xff;
       out++;
     }
 }
