@@ -11456,6 +11456,42 @@ decode_value, sprintf
 </function>
 
 
+<function name=enumerate title="create an array with an enumeration">
+<man_syntax>
+array(int) enumerate(int n);<br>
+array enumerate(int n,void|mixed step,void|mixed start,void|function operator);
+</man_syntax>
+
+<man_description>
+
+Create an enumeration, useful for initializing arrays or as first
+argument to <link to=map>map</link> or <link to=foreach>foreach</link>.
+
+<p>For instance, <tt>enumerate(4)</tt> gives <tt>({0,1,2,3})</tt>.
+
+<p><i>Advanced use: </i> the resulting array is caluculated like this:
+<pre>
+array enumerate(int n,mixed step,mixed start,function operator)
+{
+   array res=({});
+   for (int i=0; i&lt;n; i++)
+   {
+      res+=({start});
+      start=operator(start,step);
+   }
+   return res;
+}
+</pre>
+
+<p>The default values is step=1, start=0, operator=add.
+
+</man_description>
+
+<man_see>map, foreach</man_see>
+
+</function>
+
+
 
 <function name=equal title="check if two values are equal or not">
 <man_syntax>
@@ -11614,6 +11650,58 @@ Returns 1 if ok, 0 if failed.
 </function>
 
 
+<function name=filter title="map a function over elements and filter">
+<man_syntax>
+array filter(array arr,function fun,mixed ...extra);<br>
+mixed filter(mixed arr,void|mixed fun,void|mixed ...extra);
+</man_syntax>
+
+<man_description> 
+
+Calls the given function for all elements in <i>arr</i>, and keeps the
+elements in <i>arr</i> that resulted in a non-zero value from the function. 
+
+<table nicer>
+<tr><th>arr</th><th>result</th></tr>
+
+<tr><td valign=top>array</td>
+    <td valign=top>keep=map(arr,fun,@extra);
+        for (i=0; i&lt;sizeof(arr); i++) 
+           if (keep[i]) res+=({arr[i]});
+</td></tr>        
+
+<tr><td valign=top>multiset</td>
+    <td valign=top>(multiset)filter((array)arr,fun,@extra);
+</td></tr>        
+
+<tr><td valign=top>mapping | <br>program | <br>function</td>
+    <td valign=top>ind=indices(arr),val=values(arr);<br>
+       keep=map(val,fun,@extra);<br>
+       for (i=0; i&lt;sizeof(keep); i++) <br>
+          if (keep[i]) res[ind[i]]=val[i];
+</td></tr>        
+
+<tr><td valign=top>string</td>
+    <td valign=top>(string)filter( (array)arr,fun,@extra );
+</td></tr>
+   
+<tr><td valign=top>object</td>
+    <td valign=top>if arr->cast :              <br>
+           try filter((array)arr,fun,@extra);<br>
+           try filter((mapping)arr,fun,@extra);<br>
+           try filter((multiset)arr,fun,@extra);<br>
+</td></tr>        
+</table>
+
+
+</man_description>
+
+<man_returns>the same datatype as given, the exception are program and
+function that gives a mapping back</man_returns>
+
+<man_see>map, foreach</man_see>
+
+</function>
 
 
 <function name=find_call_out title="find a call out in the queue">
@@ -12051,6 +12139,79 @@ Returns a string with all capital letters converted to lower case.
 <man_see>
 upper_case
 </man_see>
+</function>
+
+
+
+<function name=map title="map a function over elements">
+<man_syntax>
+array map(array arr,function fun,mixed ...extra);<br>
+mixed map(mixed arr,void|mixed fun,void|mixed ...extra);
+</man_syntax>
+
+<man_description>
+
+<i>simple use:</i> map() loops over all elements in arr and call the
+function fun with the element as first argument, with all "extra"
+arguments following. The result is the same datatype as "arr", but all
+elements is the result from the function call of the corresponding
+element.<p>
+
+<i>advanced use</i> is a wide combination of types given as "arr" or
+"fun".
+
+<table nicer>
+<tr><th>arr</th><th>fun</th><th>result</th></tr>
+<tr><td valign=top>array</td>	
+    <td>function | <br>program | <br>object | <br>array</td>	
+    <td valign=top>array ret; ret[i]=fun(arr[i],@extra);</td></tr>
+
+<tr><td valign=top>array</td>	<td>multiset | <br>mapping</td>	
+    <td valign=top>ret = rows(fun,arr)</td></tr>
+
+<tr><td valign=top>array</td>	<td>string</td>	
+    <td valign=top>array ret; ret[i]=arr[i][fun](@extra);</td></tr>
+
+<tr><td valign=top>array</td>	<td>void|int(0)</td>	
+    <td valign=top>array ret; ret=arr(@extra)</td></tr>
+
+<tr><td valign=top>mapping |</td>	<td>*</td>	
+    <td valign=top>mapping ret = 
+        mkmapping(indices(arr),		     
+	map(values(arr),fun,@extra));</td></tr>
+
+<tr><td valign=top>multiset</td>	<td>*</td>	
+    <td valign=top>multiset ret = 
+	(multiset)(map(indices(arr),fun,@extra));</td></tr>
+
+<tr><td valign=top>string</td>	<td>*</td>	
+    <td valign=top>string ret = (string)map((array)arr,fun,@extra);</td></tr>
+
+<tr><td valign=top>object</td>	<td valign=top>*</td>	
+    <td valign=top>if arr->cast : <br>
+	   try map((array)arr,fun,@extra);<br>
+	   try map((mapping)arr,fun,@extra);<br>
+	   try map((multiset)arr,fun,@extra);<br>
+	if arr->_sizeof && arr->`[] <br>
+	   array ret; ret[i]=arr[i];<br>
+	   ret=map(ret,fun,@extra);<br>
+</td></tr>
+
+</table>
+
+</man_description>
+
+<man_returns> the same datatype as given, but with the subtype set to
+the return value of the function; the exception are program and function that gives a mapping back </man_returns>
+
+<man_see>
+filter, enumerate, foreach
+</man_see>
+
+<man_note> You may get unexpected errors if you feed the function with
+illegal values; for instance if <i>fun</i> is an array of
+non-callables. </man_note>
+
 </function>
 
 
