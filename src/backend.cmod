@@ -2,11 +2,10 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.141 2004/06/27 19:00:40 srb Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.141 2004/06/27 19:00:40 srb Exp $");
+RCSID("$Id: backend.cmod,v 1.142 2004/07/02 02:32:53 srb Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1542,8 +1541,7 @@ PIKECLASS Backend
     (FD) < (ME)->fd_boxes_start + (ME)->fd_boxes_size ?			\
     GET_ACTIVE_BOX (ME, FD) : NULL)
 
-   PMOD_EXPORT struct fd_callback_box *
-    safe_get_box (struct Backend_struct *me, int fd)
+   static struct fd_callback_box *safe_get_box (struct Backend_struct *me, int fd)
    {
      if (fd < 0) {
        fd = ~fd;

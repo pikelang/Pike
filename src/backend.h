@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.h,v 1.27 2004/06/30 21:41:55 nilsson Exp $
+|| $Id: backend.h,v 1.28 2004/07/02 02:32:53 srb Exp $
 */
 
 #ifndef BACKEND_H
@@ -96,8 +96,6 @@ struct fd_callback_box
 /* Note: If ref_obj is used, both unhook_fd_callback_box and
  * set_fd_callback_events might free the object containing the box.
  * They may be used from within the gc recurse passes. */
-PMOD_EXPORT struct fd_callback_box *
- safe_get_box (struct Backend_struct *me, int fd);
 PMOD_EXPORT void hook_fd_callback_box (struct fd_callback_box *box);
 PMOD_EXPORT void unhook_fd_callback_box (struct fd_callback_box *box);
 PMOD_EXPORT void set_fd_callback_events (struct fd_callback_box *box, int events);

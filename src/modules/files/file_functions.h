@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.33 2004/04/05 21:54:50 mast Exp $
+|| $Id: file_functions.h,v 1.34 2004/07/02 02:32:53 srb Exp $
 */
 
 #define CB_FUNC tFunc(tNone,tOr(tVoid,tMixed))
@@ -75,6 +75,10 @@ FILE_FUNC("set_blocking",file_set_blocking, tFunc(tNone,tVoid));
 FILE_FUNC ("is_open", file_is_open, tFunc(tNone,tInt));
 /* function(:int) */
 FILE_FUNC("query_fd",file_query_fd, tFunc(tNone,tInt));
+/* function(void:int) */
+FILE_FUNC("release_fd",file_release_fd, tFunc(tVoid,tInt));
+/* function(int:void) */
+FILE_FUNC("take_fd",file_take_fd, tFunc(tInt,tVoid));
 
 /* function(object:int) */
 /* Note: We have no way of specifying "object that inherits Fd or Fd_ref". */

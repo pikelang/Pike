@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.33 2004/06/28 22:55:30 srb Exp $
+|| $Id: Shuffler.cmod,v 1.34 2004/07/02 02:32:53 srb Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.33 2004/06/28 22:55:30 srb Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.34 2004/07/02 02:32:53 srb Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"
@@ -82,7 +82,6 @@ extern struct program *Shuffler_program;
 PIKECLASS Shuffle
 {
   CVAR struct fd_callback_box box;
-  CVAR struct fd_callback_box*chainbox;
 
   PIKEVAR object shuffler;
   /*! @decl Shuffler shuffler;
@@ -221,7 +220,6 @@ PIKECLASS Shuffle
     THIS->box.backend = NULL;
     THIS->box.ref_obj = Pike_fp->current_object;
     THIS->box.fd = -1;
-    THIS->chainbox = NULL;
     debug_malloc_touch(THIS->box.ref_obj);
     
     SHUFFLE_DEBUG1("init()\n", THIS );
@@ -230,17 +228,15 @@ PIKECLASS Shuffle
   EXIT
   {
     SHUFFLE_DEBUG1("exit()\n", THIS );
-#if 0
-    change_fd_for_box(&THIS->box, -1);  /* unnecessary? */
-#endif
-    { struct Backend_struct*ob = THIS->box.backend;
+
+    if(THIS->box.fd >= 0) {
+      push_int( THIS->box.fd );
       unhook_fd_callback_box(&THIS->box);
-      if(THIS->chainbox) {
-        INIT_FD_CALLBACK_BOX(THIS->chainbox, ob, THIS->chainbox->ref_obj,
-         THIS->chainbox->fd, THIS->chainbox->events, THIS->chainbox->callback);
-        THIS->chainbox = NULL;
-      }
+      if(THIS->file_obj)
+        safe_apply( THIS->file_obj, "take_fd", 1 );
+      pop_stack();
     }
+
     if( THIS->file_obj )
     {
       free_object( THIS->file_obj );
@@ -324,18 +320,18 @@ PIKECLASS Shuffle
 
     /* Remove our callbacks. */
     _remove_callbacks( t );
+
+    if(t->box.fd >= 0) {
+      push_int( t->box.fd );
+      unhook_fd_callback_box(&t->box);
+      if(t->file_obj)
+        safe_apply(t->file_obj, "take_fd", 1 );
+      pop_stack();
+      THIS->box.fd = -1;
+    }
     
     debug_malloc_touch( t->box.ref_obj );
     ref_push_object( t->box.ref_obj );
-
-    { struct Backend_struct*ob = t->box.backend;
-      unhook_fd_callback_box(&t->box);
-      if(t->chainbox) {
-        INIT_FD_CALLBACK_BOX(t->chainbox, ob, t->chainbox->ref_obj,
-         t->chainbox->fd, t->chainbox->events, t->chainbox->callback);
-        t->chainbox = NULL;
-      }
-    }
 
     /* If a callback exists, we call it before destroying
      * source and destination
@@ -581,14 +577,12 @@ PIKECLASS Shuffle
       add_ref(THIS->throttler);
     }
 
-    if (find_identifier("query_fd", fd->prog) < 0)
+    if (find_identifier("release_fd", fd->prog) < 0)
       change_fd_for_box(&THIS->box, -1);
     else {
-      safe_apply( fd, "query_fd", 0 );
+      safe_apply( fd, "release_fd", 0 );
       if(backend->type == PIKE_T_OBJECT && backend->u.object)
         be = (struct Backend_struct*)backend->u.object;
-      if(THIS->chainbox = safe_get_box(be, Pike_sp[-1].u.integer))
-        unhook_fd_callback_box(THIS->chainbox);
       change_fd_for_box(&THIS->box, Pike_sp[-1].u.integer);
       pop_stack();
     }

@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.320 2004/05/13 23:32:52 nilsson Exp $
+|| $Id: file.c,v 1.321 2004/07/02 02:32:53 srb Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.320 2004/05/13 23:32:52 nilsson Exp $");
+RCSID("$Id: file.c,v 1.321 2004/07/02 02:32:53 srb Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -2281,6 +2281,31 @@ static void file_query_fd(INT32 args)
 
   pop_n_elems(args);
   push_int(FD);
+}
+
+/*! @decl int release_fd()
+ *!
+ *! Returns the file descriptor number associated with this object,
+ *! in addition to releasing it (temporarily) from the callbacks.
+ *! @seealso
+ *!   @[query_fd()], @[take_fd()]
+ */
+static void file_release_fd(INT32 args)
+{
+  file_query_fd(args);
+  change_fd_for_box(&THIS->box, -1);
+}
+
+/*! @decl void take_fd(int fd)
+ *!
+ *! Rehooks the given file descriptor number to be associated with this object.
+ *! @seealso
+ *!   @[release_fd()]
+ */
+static void file_take_fd(INT32 args)
+{
+  change_fd_for_box(&THIS->box, Pike_sp[-args].u.integer);
+  pop_n_elems(args);
 }
 
 struct object *file_make_object_from_fd(int fd, int mode, int guess)
