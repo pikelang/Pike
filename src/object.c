@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.8 1997/01/16 05:00:46 hubbe Exp $");
+RCSID("$Id: object.c,v 1.9 1997/01/18 04:44:40 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -675,12 +675,15 @@ int object_equal_p(struct object *a, struct object *b, struct processing *p)
 
 void cleanup_objects()
 {
-  struct object *o,*next;
-  for(o=first_object;o;o=next)
+  struct object *o, *next;
+  o=first_object;
+  while(o->next) o=o->next;
+  
+  for(;o;o=next)
   {
     o->refs++;
     destruct(o);
-    next=o->next;
+    next=o->prev;
     free_object(o);
   }
   destruct_objects_to_destruct();
