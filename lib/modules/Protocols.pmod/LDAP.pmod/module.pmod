@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.7 2005/03/11 17:52:33 mast Exp $
+// $Id: module.pmod,v 1.8 2005/03/24 14:02:54 mast Exp $
 
 #include "ldap_globals.h"
 
@@ -861,7 +861,7 @@ constant _standard_attr_type_descrs = ([]); // Filled in by create().
 //!   ",dc=my,dc=domain,dc=com>"
 //! @endcode
 constant GUID_USERS_CONTAINER              = "a9d1ca15768811d1aded00c04fd8d5cd";
-constant GUID_COMPUTRS_CONTAINER           = "aa312825768811d1aded00c04fd8d5cd";
+constant GUID_COMPUTERS_CONTAINER          = "aa312825768811d1aded00c04fd8d5cd";
 constant GUID_SYSTEMS_CONTAINER            = "ab1d30f3768811d1aded00c04fd8d5cd";
 constant GUID_DOMAIN_CONTROLLERS_CONTAINER = "a361b2ffffd211d1aa4b00c04fd7d83a";
 constant GUID_INFRASTRUCTURE_CONTAINER     = "2fbac1870ade11d297c400c04fd8d5cd";
