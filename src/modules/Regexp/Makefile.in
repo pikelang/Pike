@@ -1,7 +1,7 @@
-# $Id: Makefile.in,v 1.8 2003/05/04 13:32:21 mast Exp $
+# $Id: Makefile.in,v 1.9 2003/08/08 19:30:05 nilsson Exp $
 @make_variables@
 VPATH=@srcdir@
-OBJS=glue.o @REGEXP_OBJS@ 
+OBJS=glue.o @REGEXP_OBJS@
 MODULE_LDFLAGS=@LDFLAGS@
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
