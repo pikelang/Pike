@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.25 2001/04/23 16:31:30 mast Exp $
+;;; $Id: pike.el,v 1.26 2001/04/23 20:55:03 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -252,51 +252,52 @@ The name is assumed to begin with a capital letter.")
 		    (setq cast nil)))
 	      ;; Should only get here if the scan-sexps above fails.
 	      (error nil))
-	    (goto-char beg-pos)
-	    (when (and check-macro-end
-		       ;; End of the type and beg of the expression are on
-		       ;; different lines...
-		       (save-excursion
-			 (goto-char continue-pos)
-			 (beginning-of-line)
-			 ;; bob can't happen here.
-			 (not (eq (char-after (- (point) 2)) ?\\)))
-		       ;; ...and the expression is not part of a macro...
-		       (save-excursion
-			 (beginning-of-line)
-			 (while (and (>= (- (point) 2) (point-min))
-				     (eq (char-after (- (point) 2)) ?\\))
-			   (forward-line -1))
-			 (eq (following-char) ?#)))
-	      ;; ...but the type is. They therefore don't correspond to each
-	      ;; other and we should ignore it. Set continue-pos to continue
-	      ;; searching after the macro. We also set start so we don't go
-	      ;; back into the macro a second time.
-	      (save-restriction
-		(end-of-line)
-		(while (and (not (eobp))
-			    (eq (preceding-char) ?\\))
+	    (when beg-pos
+	      (goto-char beg-pos)
+	      (when (and check-macro-end
+			 ;; End of the type and beg of the expression are on
+			 ;; different lines...
+			 (save-excursion
+			   (goto-char continue-pos)
+			   (beginning-of-line)
+			   ;; bob can't happen here.
+			   (not (eq (char-after (- (point) 2)) ?\\)))
+			 ;; ...and the expression is not part of a macro...
+			 (save-excursion
+			   (beginning-of-line)
+			   (while (and (>= (- (point) 2) (point-min))
+				       (eq (char-after (- (point) 2)) ?\\))
+			     (forward-line -1))
+			   (eq (following-char) ?#)))
+		;; ...but the type is. They therefore don't correspond to each
+		;; other and we should ignore it. Set continue-pos to continue
+		;; searching after the macro. We also set start so we don't go
+		;; back into the macro a second time.
+		(save-restriction
+		  (end-of-line)
+		  (while (and (not (eobp))
+			      (eq (preceding-char) ?\\))
+		    (forward-char)
+		    (end-of-line))
+		  (setq start (point)
+			continue-pos (point)))
+		(throw 'continue t))
+	      (setq pike-font-lock-more-identifiers nil
+		    pike-font-lock-maybe-ids nil)
+	      (if (< (point) start)
+		  ;; Might have gone before the start. Start off inside
+		  ;; the type in that case.
+		  (goto-char start)
+		(when (eq (following-char) cast)
+		  ;; Jumped over exactly one sexp surrounded with ( ) or [ ],
+		  ;; so it's a cast.
 		  (forward-char)
-		  (end-of-line))
-		(setq start (point)
-		      continue-pos (point)))
-	      (throw 'continue t))
-	    (setq pike-font-lock-more-identifiers nil
-		  pike-font-lock-maybe-ids nil)
-	    (if (< (point) start)
-		;; Might have gone before the start. Start off inside
-		;; the type in that case.
-		(goto-char start)
-	      (when (eq (following-char) cast)
-		;; Jumped over exactly one sexp surrounded with ( ) or [ ],
-		;; so it's a cast.
-		(forward-char)
-		;; Make sure that pike-font-lock-find-following-identifier
-		;; doesn't highlight any following identifier.
-		(setq pike-font-lock-last-type-end cast-end-pos)
-		(throw 'done t)))
-	    (setq pike-font-lock-last-type-end continue-pos)
-	    (throw 'done t))
+		  ;; Make sure that pike-font-lock-find-following-identifier
+		  ;; doesn't highlight any following identifier.
+		  (setq pike-font-lock-last-type-end cast-end-pos)
+		  (throw 'done t)))
+	      (setq pike-font-lock-last-type-end continue-pos)
+	      (throw 'done t)))
 	  (goto-char continue-pos)
 	  )))))
 
