@@ -1,5 +1,4 @@
 inherit Array;
-inherit Stdio;
 inherit String;
 inherit Process;
 
