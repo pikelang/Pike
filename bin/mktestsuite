@@ -156,6 +156,14 @@ void a() { add_constant("[[\$1]]",class c {
 define(test_program, [[DOTEST(TRUE,dnl
 [[\$1]])]])
 
+define(test_program_eq, [[DOTEST(EQ,dnl
+[[\$1]]
+mixed b() {return [[\$2]];})]])
+
+define(test_program_equal, [[DOTEST(EQUAL,dnl
+[[\$1]]
+mixed b() {return [[\$2]];})]])
+
 define(test_tests, [[DOTEST(RUNCT,dnl
 [[\$1]])]])
 
