@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.236 2002/12/04 15:21:57 marcus Exp $
+// $Id: master.pike.in,v 1.237 2002/12/08 21:38:08 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -629,8 +629,7 @@ void unregister(program p)
       if (n->is_resolv_dirnode || n->is_resolv_joinnode)
 	n->delete_value (p);
   }
-  if (objectp (objects[p]))
-    m_delete(objects, p);
+  m_delete(objects, p);
   foreach (fc; string name; mixed mod)
     if (objectp(mod) && object_program(mod) == p)
       m_delete(fc, name);
