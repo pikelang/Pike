@@ -478,6 +478,7 @@ struct memloc_block
 
 static struct memloc_block *memloc_blocks=0;
 static struct memloc *free_memlocs=0;
+static struct memhdr no_leak_memlocs;
 
 static struct memloc *alloc_memloc(void)
 {
@@ -534,6 +535,15 @@ static void add_location(struct memhdr *mh, const char *fn, int line)
   mh->locations=ml;
 }
 
+static int find_location(struct memhdr *mh, const char *fn, int line)
+{
+  struct memloc *ml;
+  for(ml=mh->locations;ml;ml=ml->next)
+    if(ml->filename==fn && ml->line==line)
+      return 1;
+  return 0;
+}
+
 static void make_memhdr(void *p, int s, const char *fn, int line)
 {
   struct memhdr *mh=alloc_memhdr();
@@ -563,6 +573,7 @@ static int remove_memhdr(void *p)
       struct memloc *ml;
       while((ml=mh->locations))
       {
+	add_location(&no_leak_memlocs, ml->filename, ml->line);
 	mh->locations=ml->next;
 	ml->next=free_memlocs;
 	free_memlocs=ml;
@@ -655,9 +666,15 @@ static void cleanup_memhdrs()
       for(m=hash[h];m;m=m->next)
       {
 	struct memloc *l;
-	fprintf(stderr, "LEAK: (%p) %d bytes (%ld refs?)\n",m->data, m->size,(long)*(INT32 *)m->data);
+	fprintf(stderr, "LEAK: (%p) %d bytes\n",m->data, m->size);
 	for(l=m->locations;l;l=l->next)
-	  fprintf(stderr,"  *** %s:%d (%d times)\n",l->filename, l->line, l->times);
+	  fprintf(stderr,"  *** %s:%d (%d times) %s\n",
+		  l->filename,
+		  l->line,
+		  l->times,
+		  find_location(&no_leak_memlocs,
+				l->filename,
+				l->line) ? "" : " *");
       }
     }
   }
@@ -672,9 +689,12 @@ int main(int argc, char *argv[])
 
 void * debug_malloc_update_location(void *p,const char *fn, int line)
 {
-  struct memhdr *mh=find_memhdr(p);
-  if(mh)
-    add_location(mh, fn, line);
+  if(p)
+  {
+    struct memhdr *mh;
+    if((mh=find_memhdr(p)))
+      add_location(mh, fn, line);
+  }
   return p;
 }
 

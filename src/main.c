@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.36 1998/01/25 09:15:47 hubbe Exp $");
+RCSID("$Id: main.c,v 1.37 1998/01/26 19:59:56 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -69,7 +69,7 @@ struct callback *add_exit_callback(callback_func call,
   return add_to_callback(&exit_callbacks, call, arg, free_func);
 }
 
-int main(int argc, char **argv)
+int dbm_main(int argc, char **argv)
 {
   JMP_BUF back;
   int e, num, do_backend;
@@ -304,9 +304,13 @@ int main(int argc, char **argv)
   UNSETJMP(back);
 
   do_exit(num);
+  return num; /* avoid warning */
 }
 
-void do_exit(int num)
+#undef ATTRIBUTE
+#define ATTRIBUTE(X)
+
+void do_exit(int num) ATTRIBUTE((noreturn))
 {
   call_callback(&exit_callbacks, (void *)0);
   free_callback(&exit_callbacks);
@@ -361,7 +365,7 @@ void low_exit_main(void)
     INT32 num,size,recount=0;
 
     count_memory_in_arrays(&num, &size);
-    if(num || size)
+    if(num)
     {
       recount++;
       fprintf(stderr,"Arrays left: %d (%d bytes) (zapped)\n",num,size);
@@ -370,7 +374,7 @@ void low_exit_main(void)
     zap_all_arrays();
 
     count_memory_in_mappings(&num, &size);
-    if(num || size)
+    if(num)
     {
       recount++;
       fprintf(stderr,"Mappings left: %d (%d bytes) (zapped)\n",num,size);
@@ -379,7 +383,7 @@ void low_exit_main(void)
     zap_all_mappings();
 
     count_memory_in_multisets(&num, &size);
-    if(num || size)
+    if(num)
       fprintf(stderr,"Multisets left: %d (%d bytes)\n",num,size);
 
 
@@ -398,7 +402,7 @@ void low_exit_main(void)
     
 
     count_memory_in_programs(&num, &size);
-    if(num || size)
+    if(num)
       fprintf(stderr,"Programs left: %d (%d bytes)\n",num,size);
 
     {
@@ -411,12 +415,8 @@ void low_exit_main(void)
 
 
     count_memory_in_objects(&num, &size);
-    if(num || size)
+    if(num)
       fprintf(stderr,"Objects left: %d (%d bytes)\n",num,size);
-
-    count_memory_in_strings(&num, &size);
-    if(num || size)
-      fprintf(stderr,"Strings left: %d (%d bytes) (zapped)\n",num,size);
 
     cleanup_shared_string_table();
   }

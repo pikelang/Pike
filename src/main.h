@@ -17,8 +17,8 @@ struct callback *add_post_master_callback(callback_func call,
 struct callback *add_exit_callback(callback_func call,
 				   void *arg,
 				   callback_func free_func);
-int main(int argc, char **argv);
-void do_exit(int num);
+int dbm_main(int argc, char **argv);
+void do_exit(int num) ATTRIBUTE((noreturn));
 void low_init_main(void);
 void exit_main(void);
 void init_main(void);

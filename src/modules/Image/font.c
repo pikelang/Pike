@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.26 1998/01/16 22:09:10 grubba Exp $ */
+/* $Id: font.c,v 1.27 1998/01/26 20:01:58 hubbe Exp $ */
 #include <config.h>
 
 #define SPACE_CHAR 'i'
@@ -6,7 +6,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.26 1998/01/16 22:09:10 grubba Exp $
+**!	$Id: font.c,v 1.27 1998/01/26 20:01:58 hubbe Exp $
 **! class font
 **!
 **! note
@@ -134,6 +134,7 @@ Kerningtable types:
 #include <sys/mman.h>
 #endif
 
+#include "dmalloc.h"
 
 static struct program *font_program;
 extern struct program *image_program;

@@ -60,6 +60,7 @@ struct compiler_frame
 /* Prototypes begin here */
 int car_is_node(node *n);
 int cdr_is_node(node *n);
+void check_tree(node *n, int depth);
 INT32 count_args(node *n);
 struct pike_string *find_return_type(node *n);
 struct node_chunk;
@@ -116,5 +117,9 @@ int dooptcode(struct pike_string *name,
 #define IDENTIFIERP(i) (new_program->identifier_references+(i))
 #define INHERIT(i) (new_program->inherits+(i))
 #define PC (new_program->num_program)
+
+#ifndef DEBUG
+#define check_tree(X,Y)
+#endif
 
 #endif

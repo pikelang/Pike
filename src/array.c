@@ -1138,11 +1138,7 @@ node *make_node_from_array(struct array *a)
 	break;
     if(e == a->size)
     {
-      return mkefuncallnode("allocate",
-			    mknode(F_ARG_LIST,
-				   mkintnode(a->size),
-				   mkstrnode(make_shared_string("mixed"))
-				   ));
+      return mkefuncallnode("allocate",mkintnode(a->size));
     }
   }
   if(check_that_array_is_constant(a))
@@ -1562,7 +1558,7 @@ void zap_all_arrays(void)
   {
 
 #if defined(DEBUG) && defined(DEBUG_MALLOC)
-    if(verbose_debug_exit)
+    if(verbose_debug_exit && a!=&empty_array)
       debug_dump_array(a);
 #endif
     

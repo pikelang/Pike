@@ -14,6 +14,9 @@ struct node_s
   INT16 line_number;
   INT16 node_info;
   INT16 tree_info;
+#ifdef DEBUG
+  struct pike_string *current_file;
+#endif
   struct pike_string *type;
   struct node_s *parent;
   union 

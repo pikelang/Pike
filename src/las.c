@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.44 1998/01/26 02:34:50 grubba Exp $");
+RCSID("$Id: las.c,v 1.45 1998/01/26 19:59:54 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -73,9 +73,45 @@ int cdr_is_node(node *n)
   }
 }
 
+#ifdef DEBUG
+void check_tree(node *n, int depth)
+{
+  if(!d_flag) return;
+  if(!n) return;
+  if(n->token==USHRT_MAX)
+    fatal("Free node in tree.\n");
+
+  if(!(depth & 1023))
+  {
+    node *q;
+    for(q=n->parent;q;q=q->parent)
+      if(q->parent==n)
+	fatal("Cyclic node structure found.\n");
+  }
+  depth++;
+
+  if(car_is_node(n))
+  {
+    if(CAR(n)->parent != n)
+      fatal("Parent is wrong.\n");
+
+    check_tree(CAR(n),depth);
+  }
+
+  if(cdr_is_node(n))
+  {
+    if(CDR(n)->parent != n)
+      fatal("Parent is wrong.\n");
+
+    check_tree(CDR(n),depth);
+  }
+}
+#endif
+
 INT32 count_args(node *n)
 {
   int a,b;
+  check_tree(n,0);
   if(!n) return 0;
   switch(n->token)
   {
@@ -129,6 +165,8 @@ struct pike_string *find_return_type(node *n)
 {
   struct pike_string *a,*b;
 
+  check_tree(n,0);
+
   if(!n) return 0;
   if(!(n->tree_info & OPT_RETURN)) return 0;
   if(car_is_node(n))
@@ -169,9 +207,10 @@ void free_all_nodes()
     struct node_chunk *tmp2;
     int e=0;
 
-
+#ifndef DEBUG
     if(cumulative_parse_error)
     {
+#endif
       
       for(tmp2=node_chunks;tmp2;tmp2=tmp2->next) e+=NODES;
       for(tmp=free_nodes;tmp;tmp=CAR(tmp)) e--;
@@ -192,7 +231,9 @@ void free_all_nodes()
 #ifdef DEBUG
 	      if(!cumulative_parse_error)
 	      {
-		fprintf(stderr,"Free node at %p.\n",tmp);
+		fprintf(stderr,"Free node at %p, (%s:%d) (token=%d).\n",tmp, tmp->current_file->str, tmp->line_number, tmp->token);
+		if(tmp->token==F_CONSTANT)
+		  print_tree(tmp);
 	      }
 	      else
 #endif
@@ -201,6 +242,7 @@ void free_all_nodes()
 		/* Make sure we don't free any nodes twice */
 		if(car_is_node(tmp)) CAR(tmp)=0;
 		if(cdr_is_node(tmp)) CDR(tmp)=0;
+		debug_malloc_touch(tmp->type);
 		free_node(tmp);
 	      }
 	    }
@@ -211,7 +253,9 @@ void free_all_nodes()
 	  fatal("Failed to free %d nodes when compiling!\n",e2);
 #endif
       }
+#ifndef DEBUG
     }
+#endif
     while(node_chunks)
     {
       tmp2=node_chunks;
@@ -242,6 +286,9 @@ void free_node(node *n)
   }
   n->token=USHRT_MAX;
   if(n->type) free_string(n->type);
+#ifdef DEBUG
+  if(n->current_file) free_string(n->current_file);
+#endif
   CAR(n)=free_nodes;
   free_nodes=n;
 }
@@ -267,6 +314,9 @@ static node *mkemptynode(void)
   free_nodes=CAR(res);
   res->token=0;
   res->line_number=lex.current_line;
+#ifdef DEBUG
+  copy_shared_string(res->current_file, lex.current_file);
+#endif
   res->type=0;
   res->node_info=0;
   res->tree_info=0;
@@ -277,6 +327,8 @@ static node *mkemptynode(void)
 node *mknode(short token,node *a,node *b)
 {
   node *res;
+  check_tree(a,0);
+  check_tree(b,0);
   res = mkemptynode();
   CAR(res) = a;
   CDR(res) = b;
@@ -342,7 +394,11 @@ node *mknode(short token,node *a,node *b)
   if(b) b->parent = res;
 
   if(!num_parse_error && compiler_pass==2)
+  {
+    check_tree(res,0);
     optimize(res);
+    check_tree(res,0);
+  }
 
 #ifdef DEBUG
   if(d_flag > 3)
@@ -454,6 +510,7 @@ node *mkidentifiernode(int i)
   CDR(res)=0;
 #endif
   res->u.number = i;
+  check_tree(res,0);
   return res;
 }
 
@@ -504,6 +561,8 @@ void resolv_constant(node *n)
   struct identifier *i;
   struct program *p;
   INT32 numid;
+
+  check_tree(n,0);
 
   if(!n)
   {
@@ -562,6 +621,8 @@ void resolv_constant(node *n)
 
 void resolv_program(node *n)
 {
+  check_tree(n,0);
+
   resolv_constant(n);
   switch(sp[-1].type)
   {
@@ -595,6 +656,9 @@ node *index_node(node *n, struct pike_string * id)
 {
   node *ret;
   JMP_BUF tmp;
+
+  check_tree(n,0);
+
   if(SETJMP(tmp))
   {
     ONERROR tmp;
@@ -644,6 +708,9 @@ node *index_node(node *n, struct pike_string * id)
 
 int node_is_eq(node *a,node *b)
 {
+  check_tree(a,0);
+  check_tree(b,0);
+
   if(a == b) return 1;
   if(!a || !b) return 0;
   if(a->token != b->token) return 0;
@@ -737,6 +804,7 @@ node *mksvaluenode(struct svalue *s)
 node *copy_node(node *n)
 {
   node *b;
+  check_tree(n,0);
   if(!n) return n;
   switch(n->token)
   {
@@ -989,6 +1057,7 @@ static void low_print_tree(node *foo,int needlval)
 
 void print_tree(node *n)
 {
+  check_tree(n,0);
   low_print_tree(n,0);
   printf("\n");
   fflush(stdout);
@@ -1540,6 +1609,7 @@ static void optimize(node *n)
       }
     }
     fix_type_field(n);
+    debug_malloc_touch(n->type);
 
 #ifdef DEBUG
     if(l_flag > 3 && n)
@@ -2152,6 +2222,8 @@ int dooptcode(struct pike_string *name,
   union idptr tmp;
   int args, vargs, ret;
   struct svalue *foo;
+
+  check_tree(n,0);
 
 #ifdef DEBUG
   if(a_flag > 1)

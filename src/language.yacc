@@ -161,7 +161,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.54 1998/01/25 08:25:08 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.55 1998/01/26 19:59:54 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -221,12 +221,7 @@ static void __yy_memcpy(char *to, char *from, int count);
 {
   int number;
   FLOAT_TYPE fnum;
-  unsigned int address;		/* Address of an instruction */
-  struct pike_string *string;
-  char *str;
-  unsigned short type;
   struct node_s *n;
-  struct efun *efun;
 }
 
 %{
@@ -234,15 +229,6 @@ int yylex(YYSTYPE *yylval);
 %}
 
 %type <fnum> F_FLOAT
-
-%type <string> F_IDENTIFIER
-%type <string> F_STRING
-%type <string> cast
-%type <string> simple_type
-%type <string> low_string
-%type <string> optional_identifier
-%type <string> optional_rename_inherit
-%type <string> string_constant
 
 %type <number> F_ARRAY_ID
 %type <number> F_BREAK
@@ -293,6 +279,14 @@ int yylex(YYSTYPE *yylval);
 
 /* The following symbos return type information */
 
+%type <n> cast
+%type <n> simple_type
+%type <n> string_constant
+%type <n> string
+%type <n> F_STRING
+%type <n> optional_rename_inherit
+%type <n> optional_identifier
+%type <n> F_IDENTIFIER
 %type <n> assoc_pair
 %type <n> block
 %type <n> failsafe_block
@@ -336,7 +330,6 @@ int yylex(YYSTYPE *yylval);
 %type <n> sscanf
 %type <n> statement
 %type <n> statements
-%type <n> string
 %type <n> switch
 %type <n> typeof
 %type <n> unused
@@ -356,10 +349,17 @@ optional_semi_colon: /* empty */
   | ';' 
   ;
 
-string_constant: low_string
-  | string_constant '+' low_string
+string_constant: string
+  | string_constant '+' string
   {
-    $$=add_and_free_shared_strings($1,$3);
+    struct pike_string *a,*b;
+    copy_shared_string(a,$1->u.sval.u.string);
+    copy_shared_string(b,$3->u.sval.u.string);
+    free_node($1);
+    free_node($3);
+    a=add_and_free_shared_strings(a,b);
+    $$=mkstrnode(a);
+    free_string(a);
   }
   ;
 
@@ -369,13 +369,14 @@ optional_rename_inherit: ':' F_IDENTIFIER { $$=$2; }
 
 low_program_ref: string_constant
   {
-    ref_push_string($1);
-    push_string($1);
+    ref_push_string($1->u.sval.u.string);
+    ref_push_string($1->u.sval.u.string);
     ref_push_string(lex.current_file);
     SAFE_APPLY_MASTER("handle_inherit", 2);
 
     if(sp[-1].type != T_PROGRAM)
-      my_yyerror("Couldn't cast string \"%s\" to program",$1->str);
+      my_yyerror("Couldn't cast string \"%s\" to program",$1->u.sval.u.string->str);
+    free_node($1);
     $$=mksvaluenode(sp-1);
     pop_stack();
   }
@@ -384,7 +385,6 @@ low_program_ref: string_constant
     if(last_identifier)
     {
       ref_push_string(last_identifier);
-      last_identifier->refs++;
     }else{
       push_constant_text("");
     }
@@ -394,7 +394,8 @@ low_program_ref: string_constant
 
 program_ref: low_program_ref
   {
-    resolv_program($1);    
+    resolv_program($1);
+    free_node($1);
   }
   ;
       
@@ -403,10 +404,10 @@ inheritance: modifiers F_INHERIT low_program_ref optional_rename_inherit ';'
     if(!(new_program->flags & PROGRAM_PASS_1_DONE))
     {
       struct pike_string *s=sp[-1].u.string;
-      if($4) s=$4;
+      if($4) s=$4->u.sval.u.string;
       compiler_do_inherit($3,$1,s);
     }
-    if($4) free_string($4);
+    if($4) free_node($4);
     pop_n_elems(1);
     free_node($3);
   }
@@ -435,7 +436,7 @@ constant_name: F_IDENTIFIER '=' expr0
     {
       if(compiler_pass==2)
 	yyerror("Constant definition is not constant.");
-      add_constant($1,0, current_modifiers); /* Prototype */
+      add_constant($1->u.sval.u.string,0, current_modifiers); /* Prototype */
     } else {
       tmp=eval_low($3);
       if(tmp < 1)
@@ -443,12 +444,12 @@ constant_name: F_IDENTIFIER '=' expr0
 	yyerror("Error in constant definition.");
       }else{
 	pop_n_elems(tmp-1);
-	add_constant($1,sp-1,current_modifiers);
+	add_constant($1->u.sval.u.string,sp-1,current_modifiers);
 	pop_stack();
       }
     }
     if($3) free_node($3);
-    free_string($1);
+    free_node($1);
   }
   ;
 
@@ -471,11 +472,14 @@ type_or_error: simple_type
   {
     if(compiler_frame->current_type)
       free_string(compiler_frame->current_type); 
-    compiler_frame->current_type=$1;
+    copy_shared_string(compiler_frame->current_type,$1->u.sval.u.string);
+    free_node($1);
   }
   | /* empty */
   {
     yyerror("Missing type.");
+    if(compiler_frame->current_type)
+      free_string(compiler_frame->current_type); 
     copy_shared_string(compiler_frame->current_type,
 		       mixed_type_string);
   }
@@ -524,13 +528,17 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
       push_finished_type(compiler_frame->variable[e].type);
     }
     push_type(T_FUNCTION);
-    
-    $<string>$=pop_type();
+
+    {
+      struct pike_string *s=pop_type();
+      $<n>$=mkstrnode(s);
+      free_string(s);
+    }
 
     if(compiler_pass==1)
     {
-      define_function($4,
-		      $<string>$,
+      define_function($4->u.sval.u.string,
+		      $<n>$->u.sval.u.string,
 		      $1,
 		      IDENTIFIER_PIKE_FUNCTION,
 		      0);
@@ -550,15 +558,15 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
 	  }
       }
 
-      dooptcode($4, $10, $<string>9, $1);
+      dooptcode($4->u.sval.u.string, $10, $<n>9->u.sval.u.string, $1);
 #ifdef DEBUG
       if(recoveries && sp-evaluator_stack < recoveries->sp)
 	fatal("Stack error (underflow)\n");
 #endif
     }
     pop_compiler_frame();
-    free_string($4);
-    free_string($<string>9);
+    free_node($4);
+    free_node($<n>9);
   }
   | modifiers type_or_error name_list ';' {}
   | inheritance {}
@@ -589,14 +597,21 @@ new_arg_name: type optional_dot_dot_dot optional_identifier
       push_type(T_ARRAY);
       varargs=1;
     }
-    if(!$3)
-      MAKE_CONSTANT_SHARED_STRING($3,"");
 
-    if(islocal($3) >= 0)
+    if(!$3)
+    {
+      struct pike_string *s;
+      MAKE_CONSTANT_SHARED_STRING(s,"");
+      $3=mkstrnode(s);
+      free_string(s);
+    }
+
+    if(islocal($3->u.sval.u.string) >= 0)
       my_yyerror("Variable '%s' appears twice in argument list.",
-		 $3->str);
+		 $3->u.sval.u.string->str);
     
-    add_local_name($3, pop_type());
+    add_local_name($3->u.sval.u.string, pop_type());
+    free_node($3);
   }
   ;
 
@@ -631,15 +646,25 @@ optional_stars: optional_stars '*' { $$=$1 + 1; }
   | /* empty */ { $$=0; }
   ;
 
-cast: '(' type ')' { $$=pop_type(); }
+cast: '(' type ')'
+    {
+      struct pike_string *s=pop_type();
+      $$=mkstrnode(s);
+      free_string(s);
+    }
     ;
   
 type: type '*' { push_type(T_ARRAY); }
   | type2
   ;
 
-simple_type: type2 { $$=pop_type(); }
-           ;
+simple_type: type2
+  {
+    struct pike_string *s=pop_type();
+    $$=mkstrnode(s);
+    free_string(s);
+  }
+  ;
 
 type2: type2 '|' type3 { push_type(T_OR); }
   | type3
@@ -756,9 +781,9 @@ new_name: optional_stars F_IDENTIFIER
     push_finished_type(compiler_frame->current_type);
     while($1--) push_type(T_ARRAY);
     type=pop_type();
-    define_variable($2, type, current_modifiers);
+    define_variable($2->u.sval.u.string, type, current_modifiers);
     free_string(type);
-    free_string($2);
+    free_node($2);
   }
   | optional_stars F_IDENTIFIER '='
   {
@@ -766,7 +791,7 @@ new_name: optional_stars F_IDENTIFIER
     push_finished_type(compiler_frame->current_type);
     while($1--) push_type(T_ARRAY);
     type=pop_type();
-    $<number>$=define_variable($2, type, current_modifiers);
+    $<number>$=define_variable($2->u.sval.u.string, type, current_modifiers);
     free_string(type);
   }
   expr0
@@ -775,7 +800,7 @@ new_name: optional_stars F_IDENTIFIER
 		     mkcastnode(void_type_string,
 				mknode(F_ASSIGN,$5,
 				       mkidentifiernode($<number>4))));
-    free_string($2);
+    free_node($2);
   }
   ;
 
@@ -784,15 +809,17 @@ new_local_name: optional_stars F_IDENTIFIER
   {
     push_finished_type(compiler_frame->current_type);
     while($1--) push_type(T_ARRAY);
-    add_local_name($2, pop_type());
-    $$=mknode(F_ASSIGN,mkintnode(0), mklocalnode(islocal($2)));
+    add_local_name($2->u.sval.u.string, pop_type());
+    $$=mknode(F_ASSIGN,mkintnode(0), mklocalnode(islocal($2->u.sval.u.string)));
+    free_node($2);
   }
   | optional_stars F_IDENTIFIER '=' expr0
   {
     push_finished_type(compiler_frame->current_type);
     while($1--) push_type(T_ARRAY);
-    add_local_name($2, pop_type());
-    $$=mknode(F_ASSIGN,$4,mklocalnode(islocal($2)));
+    add_local_name($2->u.sval.u.string, pop_type());
+    $$=mknode(F_ASSIGN,$4,mklocalnode(islocal($2->u.sval.u.string)));
+    free_node($2);
   }
   ;
 
@@ -918,19 +945,22 @@ class: modifiers F_CLASS optional_identifier
   {
     if(!$3)
     {
+      struct pike_string *s;
       char buffer[42];
       sprintf(buffer,"__class_%ld",local_class_counter++);
-      $3=make_shared_string(buffer);
+      s=make_shared_string(buffer);
+      $3=mkstrnode(s);
+      free_string(s);
       $1|=ID_PRIVATE;
     }
     if(compiler_pass==1)
     {
-      low_start_new_program(0, $3, $1);
+      low_start_new_program(0, $3->u.sval.u.string, $1);
     }else{
       int i;
       struct program *p;
       struct identifier *id;
-      i=isidentifier($3);
+      i=isidentifier($3->u.sval.u.string);
       if(i<0)
       {
 	low_start_new_program(new_program,0,0);
@@ -943,7 +973,7 @@ class: modifiers F_CLASS optional_identifier
 	  s=PROG_FROM_INT(new_program,i)->constants+id->func.offset;
 	  if(s->type==T_PROGRAM)
 	  {
-	    low_start_new_program(s->u.program, $3, $1);
+	    low_start_new_program(s->u.program, $3->u.sval.u.string, $1);
 	  }else{
 	    yyerror("Pass 2: constant redefined!");
 	    low_start_new_program(new_program, 0,0);
@@ -963,14 +993,16 @@ class: modifiers F_CLASS optional_identifier
     else
       p=end_program();
 
-    $$=mkidentifiernode(isidentifier($3));
+    $$=mkidentifiernode(isidentifier($3->u.sval.u.string));
 
     if(!p)
       yyerror("Class definition failed.");
     else
       free_program(p);
 
-    free_string($3);
+    free_node($3);
+    check_tree($$,0);
+
   }
   ;
 
@@ -1178,8 +1210,8 @@ expr1: expr2
 expr2: expr3
   | cast expr2
   {
-    $$=mkcastnode($1,$2);
-    free_string($1);
+    $$=mkcastnode($1->u.sval.u.string,$2);
+    free_node($1);
   }
   | F_INC expr4       { $$=mknode(F_INC,$2,0); }
   | F_DEC expr4       { $$=mknode(F_DEC,$2,0); }
@@ -1218,19 +1250,18 @@ expr4: string
     { $$=mkefuncallnode("aggregate_multiset",$2); }
   | expr4 F_ARROW F_IDENTIFIER
   {
-    $$=mknode(F_ARROW,$1,mkstrnode($3));
-    free_string($3);
+    $$=mknode(F_ARROW,$1,$3);
   }
   ;
 
 idents: low_idents
   | idents '.' F_IDENTIFIER
   {
-    $$=index_node($1, $3);
+    $$=index_node($1, $3->u.sval.u.string);
     free_node($1);
     if(last_identifier) free_string(last_identifier);
-    copy_shared_string(last_identifier, $3);
-    free_string($3);
+    copy_shared_string(last_identifier, $3->u.sval.u.string);
+    free_node($3);
   }
   ;
 
@@ -1239,20 +1270,20 @@ low_idents: F_IDENTIFIER
     int i;
     struct efun *f;
     if(last_identifier) free_string(last_identifier);
-    copy_shared_string(last_identifier, $1);
-    if((i=islocal($1))>=0)
+    copy_shared_string(last_identifier, $1->u.sval.u.string);
+    if((i=islocal(last_identifier))>=0)
     {
       $$=mklocalnode(i);
-    }else if((i=isidentifier($1))>=0){
+    }else if((i=isidentifier(last_identifier))>=0){
       $$=mkidentifiernode(i);
-    }else if(!($$=find_module_identifier($1))){
+    }else if(!($$=find_module_identifier(last_identifier))){
       $$=0;
       if(!num_parse_error)
       {
 	if(get_master())
 	   {
-	     reference_shared_string($1);
-	     push_string($1);
+	     reference_shared_string(last_identifier);
+	     push_string(last_identifier);
 	     ref_push_string(lex.current_file);
 	     SAFE_APPLY_MASTER("resolv", 2);
 	
@@ -1266,7 +1297,7 @@ low_idents: F_IDENTIFIER
 	     else if(IS_ZERO(sp-1) && sp[-1].subtype==1)
 	     {
 	       if(compiler_pass==2)
-		 my_yyerror("'%s' undefined.", $1->str);
+		 my_yyerror("'%s' undefined.", last_identifier->str);
 	       else
 		 $$=mknode(F_UNDEFINED,0,0);
 	     }else{
@@ -1276,14 +1307,14 @@ low_idents: F_IDENTIFIER
 	   }else{
 	     if(compiler_pass==2)
 	     {
-	       my_yyerror("'%s' undefined.", $1->str);
+	       my_yyerror("'%s' undefined.", last_identifier->str);
 	     }else{
 	       $$=mknode(F_UNDEFINED,0,0);
 	     }
 	   }
       }
     }
-    free_string($1);
+    free_node($1);
   }
   | F_PREDEF F_COLON_COLON F_IDENTIFIER
   {
@@ -1295,27 +1326,30 @@ low_idents: F_IDENTIFIER
 #endif /* __CHECKER__ */
     tmp.u.mapping=get_builtin_constants();
     tmp2=mkconstantsvaluenode(&tmp);
-    $$=index_node(tmp2, $3);
+    $$=index_node(tmp2, $3->u.sval.u.string);
     free_node(tmp2);
-    free_string($3);
+    free_node($3);
   }
   | F_IDENTIFIER F_COLON_COLON F_IDENTIFIER
   {
     int f;
     struct reference *idp;
 
-    f=reference_inherited_identifier($1,$3);
+    f=reference_inherited_identifier($1->u.sval.u.string,
+				     $3->u.sval.u.string);
     idp=new_program->identifier_references+f;
     if (f<0)
     {
-      my_yyerror("Undefined identifier %s::%s", $1->str,$3->str);
+      my_yyerror("Undefined identifier %s::%s", 
+		 $1->u.sval.u.string->str,
+		 $3->u.sval.u.string->str);
       $$=mkintnode(0);
     } else {
       $$=mkidentifiernode(f);
     }
 
-    free_string($1);
-    free_string($3);
+    free_node($1);
+    free_node($3);
   }
   | F_COLON_COLON F_IDENTIFIER
   {
@@ -1325,7 +1359,7 @@ low_idents: F_IDENTIFIER
     for(e=1;e<(int)new_program->num_inherits;e++)
     {
       if(new_program->inherits[e].inherit_level!=1) continue;
-      i=low_reference_inherited_identifier(e,$2);
+      i=low_reference_inherited_identifier(e,$2->u.sval.u.string);
       if(i==-1) continue;
       if($$)
       {
@@ -1340,7 +1374,7 @@ low_idents: F_IDENTIFIER
     }else{
       if($$->token==F_ARG_LIST) $$=mkefuncallnode("aggregate",$$);
     }
-    free_string($2);
+    free_node($2);
   }
   ;
 
@@ -1374,14 +1408,13 @@ gauge: F_GAUGE catch_arg
 
 typeof: F_TYPEOF '(' expr0 ')'
   {
+    struct pike_string *s;
     node *tmp;
     tmp=mknode(F_ARG_LIST,$3,0);
-    if($3 && $3->type)
-    {
-       $$=mkstrnode(describe_type($3->type));
-    }else{
-       $$=mkstrnode(describe_type(mixed_type_string));
-    }
+
+    s=describe_type( $3 && $3->type ? $3->type : mixed_type_string);
+    $$=mkstrnode(s);
+    free_string(s);
     free_node(tmp);
   } ;
  
@@ -1400,23 +1433,28 @@ sscanf: F_SSCANF '(' expr0 ',' expr0 lvalue_list ')'
 lvalue: expr4
   | type F_IDENTIFIER
   {
-    add_local_name($2,pop_type());
-    $$=mklocalnode(islocal($2));
+    add_local_name($2->u.sval.u.string,pop_type());
+    $$=mklocalnode(islocal($2->u.sval.u.string));
+    free_node($2);
   }
 
 lvalue_list: /* empty */ { $$ = 0; }
   | ',' lvalue lvalue_list { $$ = mknode(F_LVALUE_LIST,$2,$3); }
   ;
 
-low_string: F_STRING 
-  | low_string F_STRING
+string: F_STRING 
+  | string F_STRING
   {
-    $$=add_and_free_shared_strings($1,$2);
+    struct pike_string *a,*b;
+    copy_shared_string(a,$1->u.sval.u.string);
+    copy_shared_string(b,$2->u.sval.u.string);
+    free_node($1);
+    free_node($2);
+    a=add_and_free_shared_strings(a,b);
+    $$=mkstrnode(a);
+    free_string(a);
   }
   ;
-
-string: low_string { $$=mkstrnode($1); free_string($1); } ;
-
 
 %%
 
@@ -1456,10 +1494,11 @@ void yyerror(char *str)
   }
 }
 
-/* argument must be a shared string (no need to free it) */
+/* argument must be a shared string */
 void add_local_name(struct pike_string *str,
 		    struct pike_string *type)
 {
+  reference_shared_string(str);
   if (compiler_frame->current_number_of_locals == MAX_LOCAL)
   {
     yyerror("Too many local variables");

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.40 1998/01/25 08:25:09 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.41 1998/01/26 19:59:55 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -539,8 +539,12 @@ static int yylex2(YYSTYPE *yylval)
       return F_NUMBER;
 	
     case '"':
-      yylval->string=readstring();
+    {
+      struct pike_string *s=readstring();
+      yylval->n=mkstrnode(s);
+      free_string(s);
       return F_STRING;
+    }
   
     case ':':
       if(GOBBLE(':')) return F_COLON_COLON;
@@ -735,8 +739,12 @@ static int yylex2(YYSTYPE *yylval)
 	break;
       }
 
-      yylval->string=make_shared_string(tmp+offset);
-      return F_IDENTIFIER;
+      {
+	struct pike_string *s=make_shared_string(tmp+offset);
+	yylval->n=mkstrnode(s);
+	free_string(s);
+	return F_IDENTIFIER;
+      }
     }
 
   
@@ -855,8 +863,12 @@ static int yylex2(YYSTYPE *yylval)
 	  break;
 	  }
 	}
-	yylval->string=make_shared_binary_string(buf,len);
-	return F_IDENTIFIER;
+	{
+	  struct pike_string *tmp=make_shared_binary_string(buf,len);
+	  yylval->n=mkstrnode(tmp);
+	  free_string(tmp);
+	  return F_IDENTIFIER;
+	}
       }else{
 	char buff[100];
 	sprintf(buff, "Illegal character (hex %02x) '%c'", c, c);

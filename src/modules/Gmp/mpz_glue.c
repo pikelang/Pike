@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.24 1997/10/29 11:20:41 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.25 1998/01/26 20:01:17 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if !defined(HAVE_LIBGMP)
@@ -297,8 +297,15 @@ static void mpzmod_cast(INT32 args)
   error("mpz->cast() to other type than string, int or float.\n");
 }
 
+#ifdef DEBUG_MALLOC
+#define get_mpz(X,Y) \
+ (debug_get_mpz((X),(Y)),( (X)->type==T_OBJECT? debug_malloc_touch((X)->u.object) :0 ),debug_get_mpz((X),(Y)))
+#else
+#define get_mpz debug_get_mpz 
+#endif
+
 /* Converts an svalue, located on the stack, to an mpz object */
-static MP_INT *get_mpz(struct svalue *s, int throw_error)
+static MP_INT *debug_get_mpz(struct svalue *s, int throw_error)
 {
 #define ERROR(x) if (throw_error) error(x)
   struct object *o;

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.61 1998/01/25 08:25:07 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.62 1998/01/26 19:59:53 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1814,6 +1814,11 @@ static int o_catch(unsigned char *pc)
     UNSETJMP(tmp);
     return 1;
   }
+}
+
+void f_call_function(INT32 args)
+{
+  mega_apply(APPLY_STACK,args,0,0);
 }
 
 int apply_low_safe_and_stupid(struct object *o, INT32 offset)

@@ -55,6 +55,7 @@ extern int throw_severity;
 
 #define SET_ONERROR(X,Y,Z) \
   do{ \
+     if(!recoveries) break; \
      X.func=(error_call)(Y); \
      X.arg=(void *)(Z); \
      X.previous=recoveries->onerror; \
@@ -63,6 +64,7 @@ extern int throw_severity;
 
 #ifdef DEBUG
 #define UNSET_ONERROR(X) do {\
+  if(!recoveries) break; \
   if(recoveries->onerror != &(X)) fatal("UNSET_ONERROR out of sync.\n"); \
   recoveries->onerror=(X).previous; \
   } while(0)

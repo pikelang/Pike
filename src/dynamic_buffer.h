@@ -34,23 +34,35 @@ void low_init_buf_with_string(string s, dynamic_buffer *buf);
 string complex_free_buf(void);
 void toss_buffer(dynamic_buffer *buf);
 char *simple_free_buf(void);
-struct pike_string *low_free_buf(dynamic_buffer *buf);
-struct pike_string *free_buf(void);
+struct pike_string *debug_low_free_buf(dynamic_buffer *buf);
+struct pike_string *debug_free_buf(void);
 char *make_buf_space(INT32 space);
 void my_putchar(char b);
 void my_binary_strcat(const char *b,INT32 l);
 void my_strcat(const char *b);
 void init_buf(void);
 void init_buf_with_string(string s);
-char *return_buf(void);
+char *debug_return_buf(void);
 /* Prototypes end here */
 
 #ifdef DEBUG_MALLOC
 #define initialize_buf(X) \
   do { dynamic_buffer *b_=(X); debug_initialize_buf(b_); \
    debug_malloc_update_location(b_->s.str,__FILE__,__LINE__); } while(0)
+#define low_free_buf(X) \
+  ((struct pike_string *)debug_malloc_touch(debug_low_free_buf(X)))
+
+#define free_buf() \
+  ((struct pike_string *)debug_malloc_touch(debug_free_buf()))
+
+#define return_buf() \
+  ((char *)debug_malloc_touch(debug_return_buf()))
+
 #else
 #define initialize_buf debug_initialize_buf
+#define low_free_buf debug_low_free_buf
+#define free_buf debug_free_buf
+#define return_buf debug_return_buf
 #endif
 
 #endif

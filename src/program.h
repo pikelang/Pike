@@ -240,7 +240,7 @@ void really_free_program(struct program *p);
 void dump_program_desc(struct program *p);
 void check_program(struct program *p);
 struct program *end_first_pass(int finish);
-struct program *end_program(void);
+struct program *debug_end_program(void);
 SIZE_T add_storage(SIZE_T size);
 void set_init_callback(void (*init)(struct object *));
 void set_exit_callback(void (*exit)(struct object *));
@@ -301,7 +301,7 @@ int add_program_constant(char *name,
 			 struct program *p,
 			 INT32 flags);
 int add_function_constant(char *name, void (*cfun)(INT32), char * type, INT16 flags);
-int end_class(char *name, INT32 flags);
+int debug_end_class(char *name, INT32 flags);
 INT32 define_function(struct pike_string *name,
 		      struct pike_string *type,
 		      INT16 flags,
@@ -342,4 +342,12 @@ void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)));
 /* Prototypes end here */
 
 
+#endif
+
+#ifdef DEBUG_MALLOC
+#define end_program() ((struct program *)debug_malloc_touch(debug_end_program()))
+#define end_class(NAME, FLAGS) do { debug_malloc_touch(new_program); debug_end_class(NAME, FLAGS); }while(0)
+#else
+#define end_class debug_end_class
+#define end_program debug_end_program
 #endif

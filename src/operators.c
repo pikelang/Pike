@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.22 1998/01/13 22:56:47 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.23 1998/01/26 19:59:57 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1416,11 +1416,6 @@ static int generate_sizeof(node *n)
     fatal("Count args was wrong in sizeof().\n");
   emit2(F_SIZEOF);
   return 1;
-}
-
-void f_call_function(INT32 args)
-{
-  mega_apply(APPLY_STACK,args,0,0);
 }
 
 static int generate_call_function(node *n)

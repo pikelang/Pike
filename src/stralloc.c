@@ -397,7 +397,7 @@ void dump_stralloc_strings(void)
   struct pike_string *p;
   for(e=0;e<htable_size;e++)
     for(p=base_table[e];p;p=p->next)
-      printf("%ld refs \"%s\"\n",(long)p->refs,p->str);
+      printf("0x%p: %ld refs \"%s\"\n",p,(long)p->refs,p->str);
 }
 
 #endif
@@ -669,8 +669,13 @@ void cleanup_shared_string_table(void)
 
   if(verbose_debug_exit)
   {
-    fprintf(stderr,"Leaked strings \n");
-    dump_stralloc_strings();
+    INT32 num,size;
+    count_memory_in_strings(&num,&size);
+    if(num)
+    {
+      fprintf(stderr,"Strings left: %d (%d bytes) (zapped)\n",num,size);
+      dump_stralloc_strings();
+    }
   }
 #endif
   for(e=0;e<htable_size;e++)

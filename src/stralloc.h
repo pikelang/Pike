@@ -31,11 +31,11 @@ struct pike_string *debug_findstring(const struct pike_string *foo);
 #define my_order_strcmp(X,Y) ((char *)(X)-(char *)(Y))
 #define is_same_string(X,Y) ((X)==(Y))
 
-#define reference_shared_string(s) (s)->refs++
-#define copy_shared_string(to,s) ((to)=(s))->refs++
-
 
 #ifdef DEBUG_MALLOC
+#define reference_shared_string(s) do { struct pike_string *S_=(s); debug_malloc_touch(S_); S_->refs++; }while(0)
+#define copy_shared_string(to,s) do { struct pike_string *S_=(to)=(s); debug_malloc_touch(S_); S_->refs++; }while(0)
+
 struct shared_string_location
 {
   struct pike_string *s;
@@ -56,6 +56,10 @@ extern struct shared_string_location *all_shared_string_locations;
 
 
 #else
+
+#define reference_shared_string(s) (s)->refs++
+#define copy_shared_string(to,s) ((to)=(s))->refs++
+
 #define MAKE_CONSTANT_SHARED_STRING(var, text)	\
  do { static struct pike_string *str_;		\
     if(!str_) str_=make_shared_string((text));	\

@@ -2,7 +2,6 @@
 
 extern int verbose_debug_malloc;
 extern int verbose_debug_exit;
-#define main dbm_main
 extern void *debug_malloc(size_t, const char *, int);
 extern char *debug_xalloc(long, const char *, int);
 extern void *debug_calloc(size_t, size_t, const char *, int);
@@ -17,8 +16,13 @@ void *debug_malloc_update_location(void *,const char *, int);
 #define free(x) debug_free((x), __FILE__, __LINE__)
 #define strdup(x) debug_strdup((x), __FILE__, __LINE__)
 #define DO_IF_DMALLOC(X) X
+#define debug_malloc_touch(X) debug_malloc_update_location((X),__FILE__,__LINE__)
+#define debug_malloc_pass(X) debug_malloc_update_location((X),__FILE__,__LINE__)
 #else
+#define dbm_main main
 #define DO_IF_DMALLOC(X)
 extern char *xalloc(long);
 #define debug_malloc_update_location(X,Y,Z) (X)
+#define debug_malloc_touch(X)
+#define debug_malloc_pass(X) (X)
 #endif

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.33 1998/01/25 08:25:12 hubbe Exp $");
+RCSID("$Id: object.c,v 1.34 1998/01/26 19:59:56 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -128,11 +128,20 @@ static void call_pike_initializers(struct object *o, int args)
   pop_stack();
 }
 
-struct object *clone_object(struct program *p, int args)
+void do_free_object(struct object *o)
 {
+  free_object(o);
+}
+
+struct object *debug_clone_object(struct program *p, int args)
+{
+  ONERROR tmp;
   struct object *o=low_clone(p);
+  SET_ONERROR(tmp, do_free_object, o);
+  debug_malloc_touch(o);
   call_c_initializers(o);
   call_pike_initializers(o,args);
+  UNSET_ONERROR(tmp);
   return o;
 }
 
@@ -141,12 +150,16 @@ struct object *parent_clone_object(struct program *p,
 				   int parent_identifier,
 				   int args)
 {
+  ONERROR tmp;
   struct object *o=low_clone(p);
+  SET_ONERROR(tmp, do_free_object, o);
+  debug_malloc_touch(o);
   o->parent=parent;
   parent->refs++;
   o->parent_identifier=parent_identifier;
   call_c_initializers(o);
   call_pike_initializers(o,args);
+  UNSET_ONERROR(tmp);
   return o;
 }
 
@@ -202,6 +215,7 @@ struct object *get_master(void)
     }
   }
   master_object=low_clone(master_program);
+  debug_malloc_touch(master_object);
 
   call_c_initializers(master_object);
   call_pike_initializers(master_object,0);

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.53 1998/01/25 08:25:16 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.54 1998/01/26 20:00:01 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -14,6 +14,7 @@ int threads_disabled = 0;
 #include "constants.h"
 #include "program.h"
 #include "gc.h"
+#include "main.h"
 
 #ifdef __NT__
 
@@ -214,7 +215,6 @@ void *new_thread_func(void * data)
   free((char *)data); /* Moved by per, to avoid some bugs.... */
   UNSETJMP(back);
 
-  destruct(thread_id);
   THREADS_FPRINTF((stderr,"THREADS_ALLOW() Thread %08x done\n",
 		   (unsigned int)thread_id));
 
