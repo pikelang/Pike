@@ -332,12 +332,14 @@ mapping get_atom_options(int max_depth)
   }
 
   if (!options) {
+    res->raw = atom + "[]";
     res->options = ({ ([ "type":"atom", "atom":"" ]) });
     return res;
   }
 
   res->options = options;
-  res->raw = option_start[..sizeof(option_start) - sizeof(buffer) - 1];
+  res->raw = atom + "[" +
+    option_start[..sizeof(option_start) - sizeof(buffer) - 1];
 
       
   if (!strlen(buffer) || (buffer[0] != '<'))
