@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.82 2002/07/30 22:46:48 per Exp $
+# $Id: Makefile,v 1.83 2002/08/07 09:19:23 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -252,6 +252,10 @@ xenofarm:
 	else :; fi
 	-@if test ! -f "build/xenofarm/exportlog.txt"; then \
 	  cp "$(BUILDDIR)/testsuite" build/xenofarm/testsuite.txt; \
+	else :; fi
+	-@if test -f "core"; then \
+	  gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$(BUILDDIR)/pike" core > \
+	    build/xenofarm/core.txt \
 	else :; fi
 	-@cp "$(BUILDDIR)/dumpmodule.log" build/xenofarm/dumplog.txt
 	-@cp export.stamp build/xenofarm/exportstamp.txt
