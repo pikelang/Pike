@@ -1,3 +1,12 @@
+Tue Feb 18 20:59:18 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* array.c: division and multiplication on arrays implemented.
+	  works like division and multiplication on strings.
+	* builtin_functions.c: fixed a core-dumping bug in mkmapping
+	  (when doing mkmapping on different sized arrays)
+	* backend.c: added a pipe for signal handlers and call_outs to
+	  use when they need to wake up the backend.
+	
 Mon Feb 17 21:09:56 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* master.pike: PIKE_MODULE_PATH & PIKE_INCLUDE_PATH now read
