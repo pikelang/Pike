@@ -620,7 +620,6 @@ class PikeType
 		  }
 		  args=map(argstmp[..end]*({}),PikeType)+
 		    ({repeater, PikeType(rettmp) });
-		  werror("args: %O\n", args);
 		}else{
 		  args=({PikeType("mixed"),PikeType("any")});
 		}
