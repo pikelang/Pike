@@ -53,7 +53,7 @@ fi
 CFLAGS="$OLD_CFLAGS"
 
 if test "$GCC" = "yes"; then
-  WARN="-g -W -Wunused -Wformat"
+  WARN="-g -W -Wformat"
 
   AC_MSG_CHECKING(-pipe)
   AC_CACHE_VAL(lpc_cv_option_pipe,
@@ -230,6 +230,7 @@ AC_TYPE_SIGNAL
 AC_CHECK_TYPE(time_t,INT32)
 
 AC_CHECK_LIB(PW, alloca)
+AC_CHECK_LIB(crypt, crypt)
 AC_CHECK_LIB(m, floor)
 if test "${ac_cv_lib_m}" = "no" -a "${lpc_cv_sys_os}" = "Linux"; then
   AC_MSG_WARN(I will compensate for this by adding -lc -lm)
