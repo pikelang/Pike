@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.11 1998/11/14 15:47:58 grubba Exp $
+ * $Id: parser.pike,v 1.12 1998/11/14 18:52:47 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -9,7 +9,7 @@
 
 //.
 //. File:	parser.pike
-//. RCSID:	$Id: parser.pike,v 1.11 1998/11/14 15:47:58 grubba Exp $
+//. RCSID:	$Id: parser.pike,v 1.12 1998/11/14 18:52:47 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	LALR(1) parser and compiler.
@@ -86,6 +86,10 @@ class kernel {
   //.   object(rule)	REDUCE according to this rule on this symbol.
   mapping(int|string : object(kernel)|object(rule)) action = ([]);
 
+  //. + closure_set
+  //.   The symbols that closure has been called on.
+  multiset closure_set = (<>);
+
   /*
    * Functions
    */
@@ -118,6 +122,7 @@ class kernel {
   //.   nonterminal to make the closure on.
   void closure(int nonterminal)
   {
+    closure_set[nonterminal] = 1;
     if (grammar[nonterminal]) {
       foreach (grammar[nonterminal], object(rule) r) {
 	if (!rules[r]) {
@@ -134,7 +139,8 @@ class kernel {
 
 	  add_item(new_item);
 
-	  if (sizeof(r->symbols) && intp(r->symbols[0])) {
+	  if (sizeof(r->symbols) && intp(r->symbols[0]) &&
+	      !closure_set[r->symbols[0]]) {
 	    closure(r->symbols[0]);
 	  }
 	}
@@ -506,7 +512,7 @@ void add_rule(object(rule) r)
 
   /* Then see if it is nullable */
   if (!r->has_tokens) {
-    object(Stack.stack) new_nullables = Stack.stack();
+    object(Stack.stack) new_nullables = Stack.stack(1024);
 
     foreach (r->symbols, symbol) {
       if (nullable[symbol]) {
@@ -711,7 +717,7 @@ static private void shift_conflict(int empty)
 
 static private void handle_shift_conflicts()
 {
-  item_stack = Stack.stack();
+  item_stack = Stack.stack(131072);
 
   /* Initialize the counter */
   for (int index = 0; index < s_q->tail; index++) {
@@ -742,7 +748,7 @@ static private void follow_conflict(int empty)
 
 static private void handle_follow_conflicts()
 {
-  item_stack = Stack.stack();
+  item_stack = Stack.stack(131072);
 
   /* Initialize the counter */
   for (int index = 0; index < s_q->tail; index++) {
@@ -1403,8 +1409,8 @@ int compile()
 mixed parse(object|function(void:string|array(string|mixed)) scanner,
 	    void|object action_object)
 {
-  object(Stack.stack) value_stack = Stack.stack();
-  object(Stack.stack) state_stack = Stack.stack();
+  object(Stack.stack) value_stack = Stack.stack(4096);
+  object(Stack.stack) state_stack = Stack.stack(4096);
   object(kernel) state = start_state;
 
   string input;
@@ -1432,8 +1438,6 @@ mixed parse(object|function(void:string|array(string|mixed)) scanner,
     mixed a = state->action[input];
 
     if (object_program(a) == rule) {
-      /* REDUCE */
-      function (mixed ...:mixed) func = 0;
 
       if (verbose) {
 	werror(sprintf("Reducing according to rule\n%s\n",
@@ -1441,48 +1445,69 @@ mixed parse(object|function(void:string|array(string|mixed)) scanner,
       }
 
       if (a->action) {
-	if (functionp(a->action)) {
-	  func = a->action;
-	} else if (stringp(a->action)) {
+	/* REDUCE */
+	string|function (mixed ...:mixed) func = 0;
+
+	if (stringp(func = a->action)) {
 	  if (action_object) {
 	    func = action_object[a->action];
-	    if (!func) {
-	      werror(sprintf("Missing action \"%s\" in object\n",
-			     a->action));
-	      error |= ERROR_MISSING_ACTION;
-	    } else if (!functionp(func)) {
-	      werror(sprintf("Bad type (%s) for action \"%s\" in object\n",
-			     typeof(func), a->action));
-	      error |= ERROR_BAD_ACTION_TYPE;
-	      func = 0;
+	    if (!functionp(func)) {
+	      if (!func) {
+		werror(sprintf("Missing action \"%s\" in object\n",
+			       a->action));
+		error |= ERROR_MISSING_ACTION;
+	      } else {
+		werror(sprintf("Bad type (%s) for action \"%s\" in object\n",
+			       typeof(func), a->action));
+		error |= ERROR_BAD_ACTION_TYPE;
+		func = 0;
+	      }
 	    }
 	  } else {
 	    werror(sprintf("Missing object for action \"%s\"\n",
 			   a->action));
 	    error |= ERROR_NO_OBJECT;
+	    func = 0;
+	  }
+	}
+	if (func) {
+	  if (sizeof(a->symbols)) {
+	    value_stack->push(func(@value_stack->pop(sizeof(a->symbols))));
+	    state = state_stack->pop(sizeof(a->symbols))[0];
+	  } else {
+	    value_stack->push(a->action());
 	  }
 	} else {
-	  werror(sprintf("Unsupported action type \"%s\" (%s)\n",
-			 a->action, typeof(a->action)));
-	  error |= ERROR_BAD_ACTION_TYPE;
-	}
-      }
-      if (func) {
-	if (sizeof(a->symbols)) {
-	  value_stack->push(a->action(@value_stack->pop(sizeof(a->symbols))));
-	} else {
-	  value_stack->push(a->action());
+	  // Default action.
+	  if (sizeof(a->symbols)) {
+#if 0
+	    value_stack->push(value_stack->pop(sizeof(a->symbols))[0]);
+#else /* !0 */
+	    if (sizeof(a->symbols) > 1) {
+	      value_stack->quick_pop(sizeof(a->symbols) - 1);
+	    }
+#endif /* 0 */
+	    state = state_stack->pop(sizeof(a->symbols))[0];
+	  } else {
+	    value_stack->push(0);
+	  }
 	}
       } else {
+	// Default action.
 	if (sizeof(a->symbols)) {
+#if 0
 	  value_stack->push(value_stack->pop(sizeof(a->symbols))[0]);
+#else /* !0 */
+	  if (sizeof(a->symbols) > 1) {
+	    value_stack->quick_pop(sizeof(a->symbols) - 1);
+	  }
+#endif /* 0 */
+	  state = state_stack->pop(sizeof(a->symbols))[0];
 	} else {
 	  value_stack->push(0);
 	}
       }
-      if (sizeof(a->symbols)) {
-	state = state_stack->pop(sizeof(a->symbols))[0];
-      }
+
       state_stack->push(state);
       state = state->action[a->nonterminal];	/* Goto */
     } else if (a) {
