@@ -156,9 +156,13 @@ void question(string question,
 //! Ask a yes or no question, and call the callback when it's answered.
 {
   struct signal_data * d  = (void *)xalloc( sizeof(struct signal_data) );
-  char *message;
-  get_all_args( "question", args, "%s%*%*", &message, &d->cb, &d->args );
+  gchar *message;
+  if( args != 3 || !PGTK_ISSTR(Pike_sp-args))  Pike_error("Illegal arguments to question");
+  message=PGTK_GETSTR(Pike_sp-args);
+  d->cb = Pike_sp[1-args];
+  d->args = Pike_sp[2-args];
   gnome_app_question( GNOME_APP(THIS->obj), message, (void *)replyfunc, d );
+  PGTK_FREESTR( message );
   pop_n_elems( args );
   RETURN_THIS();
 }
@@ -170,9 +174,13 @@ void question_modal(string question,
 //! and call the callback when it's answered.
 {
   struct signal_data * d  = (void *)xalloc( sizeof(struct signal_data) );
-  char *message;
-  get_all_args( "question_modal", args, "%s%*%*", &message,&d->cb, &d->args );
+  gchar *message;
+  if( args != 3 || !PGTK_ISSTR(Pike_sp-args))  Pike_error("Illegal arguments to question_modal");
+  message=PGTK_GETSTR(Pike_sp-args);
+  d->cb = Pike_sp[1-args];
+  d->args = Pike_sp[2-args];
   gnome_app_question_modal(GNOME_APP(THIS->obj),message,(void *)replyfunc,d );
+  PGTK_FREESTR( message );
   pop_n_elems( args );
   RETURN_THIS();
 }
@@ -184,9 +192,13 @@ void ok_cancel(string question,
 //! and call the callback when it's answered.
 {
   struct signal_data * d  = (void *)xalloc( sizeof(struct signal_data) );
-  char *message;
-  get_all_args( "ok_cancel", args, "%s%*%*", &message,&d->cb, &d->args );
+  gchar *message;
+  if( args != 3 || !PGTK_ISSTR(Pike_sp-args))  Pike_error("Illegal arguments to question_modal");
+  message=PGTK_GETSTR(Pike_sp-args);
+  d->cb = Pike_sp[1-args];
+  d->args = Pike_sp[2-args];
   gnome_app_ok_cancel(GNOME_APP(THIS->obj),message,(void *)replyfunc,d );
+  PGTK_FREESTR( message );
   pop_n_elems( args );
   RETURN_THIS();
 }
