@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.14 1999/05/11 18:29:19 mirar Exp $
+ * $Id: image_ttf.c,v 1.15 1999/05/13 06:48:56 per Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.14 1999/05/11 18:29:19 mirar Exp $");
+RCSID("$Id: image_ttf.c,v 1.15 1999/05/13 06:48:56 per Exp $");
 
 #ifdef HAVE_LIBTTF
 #include <freetype.h>
@@ -338,22 +338,6 @@ static void image_ttf_face_properties(INT32 args)
       push_text("xMax_Extent"); push_int(prop.horizontal->xMax_Extent);
       push_text("caret_Slope_Rise"); push_int(prop.horizontal->caret_Slope_Rise);
       push_text("caret_Slope_Run"); push_int(prop.horizontal->caret_Slope_Run);
-      push_text("Reserved"); 
-#ifdef HAVE_TT_H_H_Reserved0
-      /* FreeType 1.2 stable and later. */
-      push_int(prop.horizontal->Reserved0);
-      push_int(prop.horizontal->Reserved1);
-      push_int(prop.horizontal->Reserved2);
-      push_int(prop.horizontal->Reserved3);
-      push_int(prop.horizontal->Reserved4);
-#else /* !HAVE_TT_H_H_Reserved0 */
-      push_int(prop.horizontal->Reserved[0]);
-      push_int(prop.horizontal->Reserved[1]);
-      push_int(prop.horizontal->Reserved[2]);
-      push_int(prop.horizontal->Reserved[3]);
-      push_int(prop.horizontal->Reserved[4]);
-#endif /* HAVE_TT_H_H_Reserved0 */
-      f_aggregate(5);
       push_text("metric_Data_Format"); push_int(prop.horizontal->metric_Data_Format);
       push_text("number_Of_HMetrics"); push_int(prop.horizontal->number_Of_HMetrics);
       f_aggregate_mapping(13*2);
@@ -648,31 +632,11 @@ static void ttf_instance_setc(struct image_ttf_face_struct *face_s,
       my_tt_error("Image.TTF.FaceInstance()",
 		  "TT_Set_Instance_Resolutions: ",res);
 
-   if ((res=TT_Set_Instance_CharSize(face_i->instance,towhat)))
-      my_tt_error(where,"TT_Set_Instance_CharSize: ",res);
-
    if ((res=TT_Get_Instance_Metrics(face_i->instance,&metr)))
       my_tt_error(where,"TT_Get_Instance_Metrics",res);
 
-#if 0
-   fprintf(stderr,
-	   "prop.horizontal->Ascender: %d\n",
-	   prop.horizontal->Ascender);
-   fprintf(stderr,
-	   "prop.horizontal->Descender: %d\n",
-	   prop.horizontal->Descender);
-   fprintf(stderr,
-	   "prop.horizontal->Line_Gap: %d\n",
-	   prop.horizontal->Line_Gap);
-   fprintf(stderr,
-	   "metrics.scale: %f,%f\n",
-	   metr.x_scale/65536.0,
-	   metr.y_scale/65536.0);
-   fprintf(stderr,
-	   "baseline guess: %f\n",
-	   ((float)metr.y_ppem*prop.horizontal->Ascender)/
-	   (prop.horizontal->Ascender-prop.horizontal->Descender));
-#endif
+   if ((res=TT_Set_Instance_CharSize(face_i->instance,towhat)))
+      my_tt_error(where,"TT_Set_Instance_CharSize: ",res);
    
    face_i->baseline=
       (int)(((float)(towhat/64.0)*prop.horizontal->Ascender)/
