@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.132 2002/01/14 11:34:26 mast Exp $ */
+/* $Id: html.c,v 1.133 2002/02/13 04:47:17 mast Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -3927,6 +3927,8 @@ static void html_read(INT32 args)
 	 f_aggregate(m);
 	 if (got_arr) f_add(2);
       }
+      else
+	ref_push_array(&empty_array);
    }
    else
    {
