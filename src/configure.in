@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.563 2002/01/27 00:53:59 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.564 2002/01/27 00:57:02 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -84,6 +84,7 @@ targets in the Makefile can be used, typically those that only
 operates on the source directory, e.g. depend.
 
 ])
+  AC_DEFINE(DISABLE_BINARY)
 else
 
   if test ! -z "$pike_cv_prog_CC_save" -a ! -z "$CC" -a "$CC" != "$pike_cv_prog_CC_save"

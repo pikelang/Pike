@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.94 2001/12/10 02:08:11 mast Exp $
+ * $Id: acconfig.h,v 1.95 2002/01/27 00:57:01 mast Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -439,6 +439,9 @@
 
 /* Define if the compiler understand union initializations. */
 #undef HAVE_UNION_INIT
+
+/* Define when binary --disable-binary is used. */
+#undef DISABLE_BINARY
 
 @BOTTOM@
 
