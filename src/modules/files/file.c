@@ -6,7 +6,7 @@
 #define READ_BUFFER 16384
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.14 1996/11/26 02:28:58 hubbe Exp $");
+RCSID("$Id: file.c,v 1.15 1996/12/04 04:22:30 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -228,29 +228,15 @@ static int map(int flags)
 static void call_free(char *s) { free(s); }
 static void free_dynamic_buffer(dynamic_buffer *b) { free(b->s.str); }
 
-static void file_read(INT32 args)
+static struct pike_string *do_read(int fd,
+				   INT32 r,
+				   int all,
+				   short *err)
 {
-  INT32 i, r, bytes_read, all;
   ONERROR ebuf;
-
-  if(args<1 || sp[-args].type != T_INT)
-    error("Bad argument 1 to file->read().\n");
-
-  if(FD < 0)
-    error("File not open.\n");
-
-  if(args > 1 && !IS_ZERO(sp+1-args))
-  {
-    all=0;
-  }else{
-    all=1;
-  }
-
-  r=sp[-args].u.integer;
-
-  pop_n_elems(args);
+  INT32 bytes_read,i;
   bytes_read=0;
-  ERRNO=0;
+  *err=0;
 
   if(r < 65536)
   {
@@ -280,13 +266,12 @@ static void file_read(INT32 args)
       }
       else if(errno != EINTR)
       {
-	ERRNO=errno;
+	*err=errno;
 	if(!bytes_read)
 	{
 	  free((char *)str);
 	  UNSET_ONERROR(ebuf);
-	  push_int(0);
-	  return;
+	  return 0;
 	}
 	break;
       }
@@ -296,10 +281,10 @@ static void file_read(INT32 args)
     
     if(bytes_read == str->len)
     {
-      push_string(end_shared_string(str));
+      return end_shared_string(str);
     }else{
-      push_string(make_shared_binary_string(str->str,bytes_read));
       free((char *)str);
+      return make_shared_binary_string(str->str,bytes_read);
     }
     
   }else{
@@ -311,7 +296,6 @@ static void file_read(INT32 args)
     initialize_buf(&b);
     SET_ONERROR(ebuf, free_dynamic_buffer, &b);
     do{
-      int fd=FD;
       try_read=MINIMUM(CHUNK,r);
       
       THREADS_ALLOW();
@@ -343,21 +327,55 @@ static void file_read(INT32 args)
 	low_make_buf_space(-try_read, &b);
 	if(errno != EINTR)
 	{
-	  ERRNO=errno;
+	  *err=errno;
 	  if(!bytes_read)
 	  {
 	    free(b.s.str);
 	    UNSET_ONERROR(ebuf);
-	    push_int(0);
-	    return;
+	    return 0;
 	  }
 	  break;
 	}
       }
     }while(r);
+
     UNSET_ONERROR(ebuf);
-    push_string(low_free_buf(&b));
+    return low_free_buf(&b);
   }
+}
+
+static void file_read(INT32 args)
+{
+  struct pike_string *tmp;
+  INT32 all, len;
+
+  if(FD < 0)
+    error("File not open.\n");
+
+  if(!args)
+  {
+    len=0x7fffffff;
+  }
+  else
+  {
+    if(sp[-args].type != T_INT)
+      error("Bad argument 1 to file->read().\n");
+    len=sp[-args].u.integer;
+  }
+
+  if(args > 1 && !IS_ZERO(sp+1-args))
+  {
+    all=0;
+  }else{
+    all=1;
+  }
+
+  pop_n_elems(args);
+
+  if(tmp=do_read(FD, len, all, & ERRNO))
+    push_string(tmp);
+  else
+    push_int(0);
 }
 
 static void file_write_callback(int fd, void *data)
@@ -609,15 +627,13 @@ static void file_errno(INT32 args)
 
 /* Trick compiler to keep 'buffer' in memory for
  * as short a time as possible.
+ * shouldn't be any need to allow threading here, this
+ * call should never block..
  */
-static struct pike_string *do_read(INT32 *amount,int fd)
+static struct pike_string *simple_do_read(INT32 *amount,int fd)
 {
   char buffer[READ_BUFFER];
-  
-  THREADS_ALLOW();
   *amount = read(fd, buffer, READ_BUFFER);
-  THREADS_DISALLOW();
-
   if(*amount>0) return make_shared_binary_string(buffer,*amount);
   return 0;
 }
@@ -634,7 +650,7 @@ static void file_read_callback(int fd, void *data)
 
   /* files[fd].errno=0; */
 
-  s=do_read(&i, fd);
+  s=simple_do_read(&i, fd);
 
   if(i>0)
   {
@@ -659,42 +675,66 @@ static void file_read_callback(int fd, void *data)
   set_read_callback(fd, 0, 0);
 
   /* We _used_ to close the file here, not possible anymore though... */
+  /* Hmm, I wonder why... :P */
   assign_svalue_no_free(sp++, &files[fd].id);
   apply_svalue(& files[fd].close_callback, 1);
 }
 
-static void file_set_nonblocking(INT32 args)
+static void file_set_read_callback(INT32 args)
 {
-  if(args < 3)
-    error("Too few arguments to file->set_nonblocking()\n");
-
-  if(FD < 0)
-    error("File not open.\n");
+  if(args < 1)
+    error("Too few arguments to file->set_read_callback().\n");
 
   assign_svalue(& THIS->read_callback, sp-args);
-  assign_svalue(& THIS->write_callback, sp+1-args);
-  assign_svalue(& THIS->close_callback, sp+2-args);
 
-  if(FD >= 0)
+  if(IS_ZERO(& THIS->read_callback))
   {
-    if(IS_ZERO(& THIS->read_callback))
-    {
-      set_read_callback(FD, 0,0);
-    }else{
-      set_read_callback(FD, file_read_callback, 0);
-    }
-
-    if(IS_ZERO(& THIS->write_callback))
-    {
-      set_write_callback(FD, 0,0);
-    }else{
-      set_write_callback(FD, file_write_callback, 0);
-    }
-    set_nonblocking(FD,1);
+    set_read_callback(FD, 0, 0);
+  }else{
+    set_read_callback(FD, file_read_callback, 0);
   }
-
   pop_n_elems(args);
 }
+
+static void file_set_write_callback(INT32 args)
+{
+  if(args < 1)
+    error("Too few arguments to file->set_write_callback().\n");
+
+  assign_svalue(& THIS->write_callback, sp-args);
+
+  if(IS_ZERO(& THIS->write_callback))
+  {
+    set_write_callback(FD, 0, 0);
+  }else{
+    set_write_callback(FD, file_write_callback, 0);
+  }
+  pop_n_elems(args);
+}
+
+static void file_set_close_callback(INT32 args)
+{
+  if(args < 1)
+    error("Too few arguments to file->set_close_callback().\n");
+
+  assign_svalue(& THIS->close_callback, sp-args);
+  pop_n_elems(args);
+}
+
+static void file_set_nonblocking(INT32 args)
+{
+  if(FD < 0) error("File not open.\n");
+
+  switch(args)
+  {
+  default: pop_n_elems(args-3);
+  case 3: file_set_close_callback(1);
+  case 2: file_set_write_callback(1);
+  case 1: file_set_read_callback(1);
+  }
+  set_nonblocking(FD,1);
+}
+
 
 static void file_set_blocking(INT32 args)
 {
@@ -1337,7 +1377,11 @@ void init_files_programs()
   add_function("errno",file_errno,"function(:int)",0);
 
   add_function("set_close_on_exec",file_set_close_on_exec,"function(int:void)",0);
-  add_function("set_nonblocking",file_set_nonblocking,"function(mixed,mixed,mixed:void)",0);
+  add_function("set_nonblocking",file_set_nonblocking,"function(mixed|void,mixed|void,mixed|void:void)",0);
+  add_function("set_read_callback",file_set_read_callback,"function(mixed:void)",0);
+  add_function("set_write_callback",file_set_write_callback,"function(mixed:void)",0);
+  add_function("set_close_callback",file_set_close_callback,"function(mixed:void)",0);
+
   add_function("set_blocking",file_set_blocking,"function(:void)",0);
   add_function("set_id",file_set_id,"function(mixed:void)",0);
 

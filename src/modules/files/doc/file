@@ -186,10 +186,12 @@ NAME
 	set_nonblocking - make stream nonblocking
 
 SYNTAX
-	void file->set_nonblocking(
-	       function read_callback,
-	       function write_callback,
-	       function close_callback);
+	void file->set_nonblocking(function read_callback,
+	                           function write_callback,
+	                           function close_callback);
+	or
+	void file->set_nonblocking();
+	
 
 DESCRIPTION
 	This function sets a stream to nonblocking mode. When data arrives on
@@ -199,8 +201,56 @@ DESCRIPTION
 	the other end, close_callback is called. All callbacks will have the
 	id of file as first argument when called.
 
+	If no arguments are given, the callbacks are not changed. The
+	stream is just set to nonblocking mode.
+
 SEE ALSO
-	files/set_blocking
+	files->set_blocking
+
+============================================================================
+NAME
+	set_read_callback - set the read callback
+
+SYNTAX
+	void file->set_read_callback(function read_callback)
+
+DESCRIPTION
+	This function sets the read callback for the file. The read callback
+	is called whenever there is data to read from the file. Note that
+	this function does not set the file nonblocking.
+
+SEE ALSO
+	file->set_nonblocking
+
+============================================================================
+NAME
+	set_write_callback - set the write callback
+
+SYNTAX
+	void file->set_write_callback(function write_callback)
+
+DESCRIPTION
+	This function sets the write callback for the file. The write callback
+	is called whenever there is buffer space available to write to for
+	the file. Note that this function does not set the file nonblocking.
+
+SEE ALSO
+	file->set_nonblocking
+
+============================================================================
+NAME
+	set_close_callback - set the close callback
+
+SYNTAX
+	void file->set_close_callback(function close_callback)
+
+DESCRIPTION
+	This function sets the close callback for the file. The close callback
+	is called when the remote end of a socket or pipe is closed. Note that
+	this function does not set the file nonblocking.
+
+SEE ALSO
+	file->set_nonblocking
 
 ============================================================================
 NAME
