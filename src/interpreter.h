@@ -1069,6 +1069,7 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_RETURN_IF_TRUE);
       if(!IS_ZERO(sp-1))
 	goto do_return;
+      pop_stack();
       break;
 
       CASE(F_RETURN_1);
