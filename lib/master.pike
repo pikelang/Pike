@@ -17,6 +17,8 @@ void putenv(string var, string val)
 
 mapping (string:program) programs=([]);
 
+#define capitalize(X) (upper_case((X)[..0])+(X)[1..])
+
 /* This function is called whenever a module has built a clonable program
  * with functions written in C and wants to notify the Pike part about
  * this. It also supplies a suggested name for the program.
@@ -25,8 +27,14 @@ void add_precompiled_program(string name, program p)
 {
   programs[name]=p;
 
-  if(sscanf(name,"/precompiled/%s",name))
-    add_constant(upper_case(name[..0])+name[1..],p);
+  if(sscanf(name, "/precompiled/%s", name)) {
+    string const="";
+    name /= "/";
+    foreach(reverse(name), string s) {
+      const = capitalize(s) + const;
+      add_constant(const, p);
+    }
+  }
 }
 
 /* This function is called when the driver wants to cast a string
