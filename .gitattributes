@@ -175,6 +175,7 @@ testfont binary
 /lib/modules/Standards.pmod/ID3.pmod foreign_ident
 /lib/modules/Standards.pmod/URI.pike foreign_ident
 /lib/modules/Stdio.pmod foreign_ident
+/lib/modules/Stdio.pmod/FakeFile.pike foreign_ident
 /lib/modules/Stdio.pmod/Readline.pike foreign_ident
 /lib/modules/Stdio.pmod/Terminfo.pmod foreign_ident
 /lib/modules/Stdio.pmod/module.pmod foreign_ident
