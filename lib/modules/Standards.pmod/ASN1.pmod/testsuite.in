@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.5 2004/02/22 20:24:25 nilsson Exp $
+dnl $Id: testsuite.in,v 1.6 2004/02/23 00:01:57 nilsson Exp $
 
 dnl Tests from ITU-T Rec.X690 (07/2002)
 
@@ -52,3 +52,22 @@ test_eq(Standards.ASN1.Types.PrintableString("Test User 1")->get_der(),
 test_eq(Standards.ASN1.Types.UTC("910506234540Z")->get_der(),
   String.hex2string("170d3931303530363233343534305a"))
 
+test_any([[
+  import Standards.ASN1.Types;
+  Sequence countryName = Sequence( ({ Identifier(2,5,4,6),
+	                              PrintableString("US") }) );
+  Sequence organizationName = Sequence( ({ Identifier(2,5,4,10),
+                                 PrintableString("Example Organization") }) );
+  Sequence commonName = Sequence( ({ Identifier(2,5,4,11),
+                                     PrintableString("Test User 1") }) );
+  return Sequence( ({
+    Set( ({ countryName }) ),
+    Set( ({ organizationName }) ),
+    Set( ({ commonName }) ),
+  }) )->get_der();
+]], String.hex2string(
+  "3042"
+  "310b" "3009""0603550406""13025553"
+  "311d" "301b""060355040a""13144578616d706c65204f7267616e697a6174696f6e"
+  "3114" "3012""060355040b""130b5465737420557365722031"
+))
