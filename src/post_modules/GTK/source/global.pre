@@ -253,7 +253,7 @@ NAME_ARGS(argv, do_not_parse_rc);
   }
   data[argc] = NULL;
 
-  atexit( (void (*)(void))_exit );
+/*  atexit( (void (*)(void))_exit ); */
 /*   g_log_set_handler("Gdk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
 /*   g_log_set_handler("Gdk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL ); */
 /*   g_log_set_handler("Gdk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL ); */
@@ -276,7 +276,7 @@ NAME_ARGS(argv, do_not_parse_rc);
 /*   g_log_set_handler("Gtk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL ); */
 /*   g_log_set_handler("Gtk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL ); */
 /*   g_log_set_handler("Gtk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL ); */
-  atexit( (void (*)(void))_exit );
+/*  atexit( (void (*)(void))_exit ); */
 
 #ifdef HAVE_SIGACTION
   for(sig=1;sig<NSIG;sig++)
@@ -365,14 +365,14 @@ FUNCTION(main_level, "function(void:int)");
   push_int( gtk_main_level() );
 }
 
-FUNCTION(main_iteration_do, "function(int:void)");
+FUNCTION(main_iteration_do, "function(int:int)");
 NAME_ARGS(block);
 // Run one iteration in the mainloop. If block is true, wait for an
 // event before returning.
 {
   INT_TYPE n;
   get_all_args( "gtk_main_iteration_do", args, "%d", &n );
-  gtk_main_iteration_do( n );
+  push_int( gtk_main_iteration_do( n ) );
 }
 
 FUNCTION(true, "function(void:int)");
