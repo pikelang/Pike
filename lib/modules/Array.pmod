@@ -182,9 +182,10 @@ array columns(array x, array ind)
 
 array transpose(array x)
 {
-  array ret=allocate(sizeof(x[0]));
-  for(int e=0;e<sizeof(x[0]);e++) ret[e]=column(x,e);
-  return ret;
+   if (!sizeof(x)) return x;
+   array ret=allocate(sizeof(x[0]));
+   for(int e=0;e<sizeof(x[0]);e++) ret[e]=column(x,e);
+   return ret;
 }
 
 // diff3, complement to diff (alpha stage)
