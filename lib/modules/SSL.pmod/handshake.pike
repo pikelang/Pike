@@ -1,4 +1,4 @@
-/* $Id: handshake.pike,v 1.16 2000/04/06 11:01:55 nilsson Exp $
+/* $Id: handshake.pike,v 1.17 2000/05/04 16:06:36 grubba Exp $
  *
  */
 
@@ -107,8 +107,8 @@ object server_key_exchange_packet()
 		     "with a %d-bits key.\n", temp_key->rsa_size()));
 #endif
       struct = Struct();
-      struct->put_bignum(temp_key->n);
-      struct->put_bignum(temp_key->e);
+      struct->put_bignum(temp_key->get_n());
+      struct->put_bignum(temp_key->get_e());
     }
     else
       return 0;
