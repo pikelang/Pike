@@ -1448,8 +1448,8 @@ object parse(string fmt,string arg)
 
    mapping m=mkmapping(q,res);
 
-   if (m->Y) m->year=Year(m->Y);
-   else if (m->y) 
+   if (!zero_type(m->Y)) m->year=Year(m->Y);
+   else if (!zero_type(m->y))
    {
       if (m->y<70) m->y+=2000;
       else if (m->y<100) m->y+=1900;
@@ -1470,16 +1470,16 @@ object parse(string fmt,string arg)
 
    if (m->D)
       m->day=low=(m->month||Month())->day(m->D);
-   else if (m->a)
+   else if (!zero_type(m->a))
       m->day=low=m->year->day(m->a);
-   else if (m->e)
+   else if (!zero_type(m->e))
       m->day=low=(m->week||Week())->day(m->e);
    
-   if (m->h)
+   if (!zero_type(m->h))
       low=m->hour=(m->day||Day())->hour(m->h);
-   if (m->m)
+   if (!zero_type(m->m))
       low=m->minute=(m->hour||Hour())->minute(m->m);
-   if (m->s)
+   if (!zero_type(m->s))
       low=m->second=(m->minute||Minute())->second(m->s);
 
    return low;
