@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.301 2002/10/11 13:39:05 grubba Exp $
+|| $Id: language.yacc,v 1.302 2002/10/12 11:54:30 grubba Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.301 2002/10/11 13:39:05 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.302 2002/10/12 11:54:30 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -178,6 +178,7 @@ static void __yy_memcpy(char *to, YY_FROM_CONST char *from,
   FLOAT_TYPE fnum;
   struct node_s *n;
   char *str;
+  void *ptr;
 }
 
 %{
@@ -194,6 +195,7 @@ int yylex(YYSTYPE *yylval);
 #ifdef YYBISON
 #define short int
 #endif /* YYBISON */
+
 %}
 
 %type <fnum> TOK_FLOAT
@@ -391,6 +393,8 @@ force_resolve: /* empty */
  */
 low_program_ref: string_constant
   {
+    STACK_LEVEL_START(0);
+
     ref_push_string($1->u.sval.u.string);
     if (call_handle_inherit($1->u.sval.u.string)) {
       $$=mksvaluenode(Pike_sp-1);
@@ -401,9 +405,13 @@ low_program_ref: string_constant
     if($$->name) free_string($$->name);
     add_ref( $$->name=Pike_sp[-1].u.string );
     free_node($1);
+
+    STACK_LEVEL_DONE(1);
   }
   | idents
   {
+    STACK_LEVEL_START(0);
+
     if(Pike_compiler->last_identifier)
     {
       ref_push_string(Pike_compiler->last_identifier);
@@ -411,14 +419,20 @@ low_program_ref: string_constant
       push_constant_text("");
     }
     $$=$1;
+
+    STACK_LEVEL_DONE(1);
   }
   ;
 
 /* NOTE: Pushes the resolved program on the stack. */
 program_ref: low_program_ref
   {
+    STACK_LEVEL_START(0);
+
     resolv_program($1);
     free_node($1);
+
+    STACK_LEVEL_DONE(1);
   }
   ;
       
@@ -439,7 +453,7 @@ inheritance: modifiers TOK_INHERIT force_resolve
       compiler_do_inherit($4,$1,s);
     }
     if($5) free_node($5);
-    pop_n_elems(1);
+    pop_stack();
     free_node($4);
   }
   | modifiers TOK_INHERIT force_resolve low_program_ref error ';'
@@ -1382,13 +1396,25 @@ opt_int_range: /* Empty */
   ;
 
 opt_object_type:  /* Empty */ { push_object_type(0, 0); }
-  | '(' program_ref ')'
+  | {
+#ifdef PIKE_DEBUG
+      $<ptr>$ = Pike_sp;
+#endif /* PIKE_DEBUG */
+    }
+    '(' program_ref ')'
   {
     /* NOTE: On entry, there are two items on the stack:
      *   Pike_sp-2:	Name of the program reference (string).
      *   Pike_sp-1:	The resolved program (program|function|zero).
      */
     struct program *p=program_from_svalue(Pike_sp-1);
+
+#ifdef PIKE_DEBUG
+    if ($<ptr>1 != (Pike_sp - 2)) {
+      Pike_fatal("Unexpected stack depth: %p != %p\n",
+		 $<n>1, Pike_sp-2);
+    }
+#endif /* PIKE_DEBUG */
 
     if(!p) {
       if (Pike_compiler->compiler_pass!=1) {
