@@ -9,19 +9,26 @@ void exece(string cmd, array(string) args)
 }
 #endif
 
-string fixpath(string s)
+string follow_symlinks(string s)
 {
-  string mnt=getenv("NTMOUNT");
   mixed st;
-
+  string x=s;
   while ((st = file_stat(s, 1)) && (st[1] == -3)) {
     string new_s = readlink(s);
     if (new_s == s) {
       werror(sprintf("%O is a symlink to itself!\n", s));
       exit(1);
     }
-    s = new_s;
+    s = combine_path(getcwd(),dirname(s),new_s);
   }
+//  werror("Follow symlink %O -> %O\n",x,s);
+  return s;
+}
+
+string fixpath(string s)
+{
+  string mnt=getenv("NTMOUNT");
+  s=follow_symlinks(s);
   if(mnt && strlen(mnt)) s=replace(s,mnt,"");
   return replace(s,"/","\\");
 }
@@ -40,6 +47,8 @@ string opt_path(string p1, string p2)
 
 int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 {
+//  werror("%O\n",cmd);
+
   string ret="";
   object(Stdio.File) f=Stdio.File();
 
