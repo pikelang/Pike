@@ -146,11 +146,15 @@ rm -rf conftest*])
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.22 2000/08/21 13:04:13 grubba Exp $
+# $Id: aclocal.m4,v 1.23 2001/01/26 01:38:40 mast Exp $
+
+if test "x$enable_binary" != "xno"; then
 
 MY_AC_PROG_CC
 
 AC_DEFINE(POSIX_SOURCE)
+
+fi
 
 AC_SUBST(CONFIG_HEADERS)
 
@@ -194,10 +198,24 @@ static_module_makefile=PIKE_INCLUDE_PATH/dynamic_module_makefile
   AC_MSG_RESULT(found)
 ])
 
+if test "x$enable_binary" != "xno"; then
+# Skip the rest of tests since we do not want to compile or anything,
+# just get Makefiles to run make depend. Wonder if we will get away
+# with this if statement which is balanced in AC_OUTPUT.
+define([ENABLE_BINARY_IF_OPEN], yes)
 ])
 
 pushdef([AC_OUTPUT],
 [
+  ifdef([ENABLE_BINARY_IF_OPEN],
+  [
+    if test "x$enable_binary" = "xno"; then
+      AC_MSG_ERROR([Didn't expect enable_binary to be "no" here.
+Probably unbalanced if between ac_module_init and ac_output.])
+    fi
+    fi #if test "x$enable_binary" != "xno"
+  ])
+
   AC_SET_MAKE
 
   AC_SUBST(prefix)

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.465 2001/01/25 22:54:12 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.466 2001/01/26 01:38:40 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -41,6 +41,14 @@ does not run, please try this to compile Pike again:
 rm ./config.cache ; CONFIG_SITE=x ./configure ; make])
   fi
 done
+
+AC_ARG_ENABLE(binary,    [  --disable-binary       don't configure for binary build, only do tests for precompilation stuff], [], [enable_binary=yes])
+
+if test "x$enable_binary" = "xno"; then
+  AC_MSG_WARN(Not running configure tests for binary build - only some targets in the Makefile can be used.)
+else
+#############################################################################
+# The following tests are only relevant if we intend to build binaries.
 
 if test ! -z "$pike_cv_prog_CC_save" -a ! -z "$CC" -a "$CC" != "$pike_cv_prog_CC_save"
 then
@@ -190,24 +198,6 @@ EOF
   fi
 fi
 
-#
-# Some cross-compilation support
-#
-
-CROSS="$ac_cv_prog_cc_cross"
-AC_SUBST(CROSS)
-
-if test "x$ac_cv_prog_cc_cross" = "xyes"; then
-  RUNTPIKE="USE_PIKE"
-else
-  RUNTPIKE="USE_TPIKE"
-fi
-AC_SUBST(RUNTPIKE)
-
-AC_PATH_PROG(pike_prog,pike,no)
-PIKE="$ac_cv_path_pike_prog"
-AC_SUBST(PIKE)
-
 #############################################################################
 
 #
@@ -238,6 +228,40 @@ oplocks = False
   exit 1
 fi
 
+#############################################################################
+fi #if test "x$enable_binary" != "xno"
+#############################################################################
+
+#
+# Some cross-compilation support
+#
+
+CROSS="$ac_cv_prog_cc_cross"
+AC_SUBST(CROSS)
+
+if test "x$ac_cv_prog_cc_cross" = "xyes"; then
+  RUNTPIKE="USE_PIKE"
+else
+  RUNTPIKE="USE_TPIKE"
+fi
+AC_SUBST(RUNTPIKE)
+
+AC_PATH_PROG(pike_prog,pike,no)
+PIKE="$ac_cv_path_pike_prog"
+AC_SUBST(PIKE)
+
+#############################################################################
+
+LIBDIR=`(cd $srcdir/../lib ; pwd)`
+BINDIR=`(cd $srcdir/../bin ; pwd)`
+BUILDDIR=`pwd`
+AC_SUBST(LIBDIR)
+AC_SUBST(BINDIR)
+AC_SUBST(BUILDDIR)
+
+#############################################################################
+if test "x$enable_binary" != "xno"; then
+# The following tests are only relevant if we intend to build binaries.
 #############################################################################
 
 AC_CHECK_HEADERS(fnord/fnord/fnord.h)
@@ -276,15 +300,6 @@ else
   LIBGCC=""
 fi
 AC_SUBST(LIBGCC)
-
-#############################################################################
-
-LIBDIR=`(cd $srcdir/../lib ; pwd)`
-BINDIR=`(cd $srcdir/../bin ; pwd)`
-BUILDDIR=`pwd`
-AC_SUBST(LIBDIR)
-AC_SUBST(BINDIR)
-AC_SUBST(BUILDDIR)
 
 #############################################################################
 
@@ -730,6 +745,8 @@ string:
 else :; fi
 
 #############################################################################
+fi #if test "x$enable_binary" != "xno"
+#############################################################################
 
 
 AC_ARG_WITH(root,              [  --with-root=path                 specify a cross-compilation root-directory],[
@@ -924,6 +941,9 @@ if test "x$with_rtldebug" = xyes ; then
   AC_DEFINE(PIKE_DEBUG)
 fi
 
+#############################################################################
+if test "x$enable_binary" != "xno"; then
+# The following tests are only relevant if we intend to build binaries.
 #############################################################################
 
 
@@ -1454,7 +1474,6 @@ fi
 AC_PROG_INSTALL
 AC_PROG_CPP
 AC_PROG_RANLIB
-AC_SET_MAKE
 
 if test "x${AR-}" = x ; then
   AC_PATH_PROG(AR, ar, ar, $PATH:$EXTRA_PATH)
@@ -1496,6 +1515,8 @@ case "$ac_cv_path_install" in
   ;;
 esac
 
+#############################################################################
+fi #if test "x$enable_binary" != "xno"
 #############################################################################
 
 AC_MSG_CHECKING(for yacc clone that handles %pure_parser)
@@ -1581,6 +1602,11 @@ if test "x$YACC" = "xNone" ; then
 else
   AC_MSG_RESULT($YACC)
 fi
+
+#############################################################################
+if test "x$enable_binary" != "xno"; then
+# The rest of the tests are only relevant if we intend to build binaries.
+#############################################################################
 
 AC_MSG_CHECKING(for the type of the last argument to __yy_memcpy)
 AC_CACHE_VAL(pike_cv___yy_memcpy_count_type, [
@@ -4669,11 +4695,6 @@ AC_CONFIG_SUBDIRS(modules post_modules)
 default_master=$prefix/pike/%d.%d.%d/lib/master.pike
 AC_DEFINE_UNQUOTED(DEFAULT_MASTER,"$default_master")
 
-AC_SUBST_FILE(dependencies)
-dependencies=$srcdir/dependencies
-
-AC_SUBST(YACC)
-AC_SUBST(INSTALL)
 AC_SUBST(WARN)
 AC_SUBST(PROFIL)
 AC_SUBST(OPTIMIZE)
@@ -4681,8 +4702,21 @@ AC_SUBST(EXTRA_OBJS)
 AC_SUBST(RANLIB)
 AC_SUBST(DEBUGDEF)
 AC_SUBST(EXTRA_MODULE_REQUIREMENTS)
-AC_SUBST(ac_configure_args)
+
 pike_cv_prog_CC="${CC}"
+
+#############################################################################
+else #if test "x$enable_binary" != "xno"
+  dmmsrc="modules/static_module_makefile.in"
+fi
+#############################################################################
+
+AC_SUBST_FILE(dependencies)
+dependencies=$srcdir/dependencies
+
+AC_SUBST(YACC)
+AC_SUBST(INSTALL)
+AC_SUBST(ac_configure_args)
 
 AC_SUBST(dmmsrc)
 
