@@ -797,8 +797,8 @@ static class DocParserClass {
         case "endclass":
         case "endmodule":
           {
-          if (meta->type || meta->belongs || meta->appears)
-            parseError("@%s must stand alone", endkeyword);
+          if (meta->type || meta->belongs || meta->appears || endkeyword)
+            parseError("@%s must stand alone", keyword);
           meta->type = endkeyword = keyword;
           .PikeParser nameparser = .PikeParser(arg, currentPosition);
           while (nameparser->peekToken() != EOF)

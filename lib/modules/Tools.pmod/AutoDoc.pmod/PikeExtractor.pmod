@@ -245,7 +245,7 @@ static private class Extractor {
   Documentation parseClassBody(Class|Module c,
                                array(string) defModifiers,
                                void|string filename,
-                               void|int inAtModule) {
+                               void|string inAt) {
     Documentation filedoc = 0;
   mainloop:
     for (;;) {
@@ -317,29 +317,51 @@ static private class Extractor {
         parse = .DocParser.Parse(doc->text, doc->position);
         MetaData meta = parse->metadata();
         if (meta->type && meta->type != "decl") {
-          switch(meta->type) {
+          string what = meta->type;
+          switch(what) {
             case "module":
-              if (c->objtype != "module")
+              if (c->objtype == "class" && what == "module")
                 extractorError("@module not allowed in class files");
+              // fall through
+            case "class":
               if (sizeof(decls))
                 extractorError("@module doc comment must stand alone");
-              Module m = Module();
-              m->appears = meta->appears;
-              m->belongs = meta->belongs;
-              m->name = meta->name;
-              doc->xml = parse->doc("_module");
+              object(Class)|object(Module) alreadyChild =
+                c->findChild(meta->name);
+              object(Class)|object(Module) m;
+              if (alreadyChild) {
+                m = alreadyChild;
+                if (m->objtype != what)
+                  extractorError("found @%s %s, but %s has "
+                                 "previously been defined as %s",
+                                 what, m->name, m->name, m->objtype);
+              }
+              else {
+                m = what == "class" ? Class() : Module();
+                m->appears = meta->appears;
+                m->belongs = meta->belongs;
+                m->name = meta->name;
+              }
+              doc->xml = parse->doc("_" + what);
               m->documentation = doc;
-              parseClassBody(m, 0, 0, 1);
-              c->AddChild(m);
+              if (alreadyChild)
+                if (doc->xml && doc->xml != "")
+                  extractorError("doc not allowed on reentrance into '%s %s'",
+                                 m->objtype, m->name);
+              if (!alreadyChild)
+                c->AddChild(m);
+              parseClassBody(m, 0, 0, what);
               continue mainloop;
+            case "endclass":
             case "endmodule":
               if (sizeof(decls))
-                extractorError("@endmodule doc comment must stand alone");
-              if (!inAtModule)
-                extractorError("@endmodule has no matching @module");
+                extractorError("@%s doc comment must stand alone", meta->type);
+              if (inAt != what - "end")
+                extractorError("@%s has no matching %s",
+                               meta->type, meta->type - "end");
               if (meta->name && meta->name != c->name)
-                extractorError("'@endmodule %s' doesn't match '@module %s'",
-                               meta->name, c->name || "");
+                extractorError("'@%s %s' doesn't match '@%s %s'",
+                               meta->type, meta->name, c->objtype, c->name || "");
               return 0;  // no filedoc possible
             default:
               extractorError("@%s is not allowed in Pike files", meta->type);
