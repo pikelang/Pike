@@ -1,0 +1,27 @@
+// $Id: testsuite.in,v 1.1 1998/10/15 19:33:42 marcus Exp $
+
+// _Charset.decoder
+test_true([[objectp(_Charset)]])
+test_true([[functionp(_Charset.decoder)]])
+test_true([[objectp(_Charset.decoder("latin1"))]])
+test_true([[functionp(_Charset.decoder("latin1")->feed)]])
+test_eq([[_Charset.decoder("latin1")->feed("xyzåäö¤ß¶")->drain()]],"xyzåäö¤ß¶")
+
+// _Charset.rfc1345
+test_eq([[_Charset.decoder("iso646-se")->feed("}{|][\\")->drain()]],"åäöÅÄÖ")
+test_eq([[_Charset.decoder("iso-ir-126")->feed("abcåäö")->drain()]],
+	"abc\x3b5\x3b4\x3c6")
+
+// _Charset.ISO2022
+test_eq([[_Charset.decoder("iso-2022")->
+	feed("\033-Aeäv\016ed\017v\033$(BF|K\\\033(Bfoo")->drain()]],
+	"eävåäv\x65e5\x672c""foo")
+
+// _Charset.UTF7
+test_eq([[_Charset.decoder("utf-7")->
+	feed("foobar+-xy-+--z+AOUA5AD2!+ZeVnLA-X")->drain()]],
+	"foobar+xy-+-zåäö!\x65e5\x672cX")
+
+// _Charset.UTF8
+test_eq([[_Charset.decoder("utf-8")->feed("Ã¥Ã¤Ã¶")->drain()]],"åäö")
+

@@ -251,6 +251,11 @@ testfont binary
 /src/modules/Yp/configure.in foreign_ident
 /src/modules/Yp/module.pmod.in foreign_ident
 /src/modules/Yp/yp.c foreign_ident
+/src/modules/_Charset/Makefile.in foreign_ident
+/src/modules/_Charset/charsetmod.c foreign_ident
+/src/modules/_Charset/configure.in foreign_ident
+/src/modules/_Charset/iso2022.c foreign_ident
+/src/modules/_Charset/testsuite.in foreign_ident
 /src/modules/_Crypto/.build_lobotomized_crypto foreign_ident
 /src/modules/_Crypto/.exportable_files foreign_ident
 /src/modules/_Crypto/Makefile.in foreign_ident
