@@ -100,6 +100,14 @@ cond([[pow(2.0,1024.0)!=0.0]],
   test_eq([[sprintf("%8F", pow(2.0,1024.0))]], "\177\360\000\000\000\000\000\000")
 ]])
 
+// Make sure that _sprintf is called and that the argument list isn't screwed.
+test_eq(sprintf("%d%c%s%t%o%d%u%x%X%e%f%g%E%G%O%d", 4711,
+	@allocate(14, (class { string _sprintf(int t)
+	                        { return sprintf("[%c%c%c]", 'a', t, 'b'); }
+                             })()), 42),
+	"4711[acb][asb][atb][aob][adb][aub][axb][aXb]"
+        "[aeb][afb][agb][aEb][aGb][aOb]42")
+
 dnl . : and ; hasn't been tested
 dnl ^, @ and _ hasn't been tested yet
 test_eval_error(sprintf("%d"))
