@@ -4,37 +4,16 @@
 
 #include "types.h"
 
-class Document
-{
-  string _sprintf()
-  {
-    return sprintf("Search.Document(\"http://%s\")", uri);
-  }
-  //! The placeholder for document metadata.
-  string uri;
-  string title;
-  string description;
-  int last_changed;
-  int size;
-  string content_type;
-}
-
 private mapping filters=([]);
 
 void create()
 {
-//   werror("Loading filters\n");
   foreach(values(Search.Filter.Base), program filter)
   {
     Search.Filter.Base tmp=filter();
     foreach(tmp->contenttypes || ({ }), string mime)
       filters[mime]=tmp;
   }
-  
-//   if(!sizeof(filters))
-//     werror("No filters loaded\n");
-//   else
-//     werror("Loaded %d filters\n", sizeof(filters));
 }
 
 Search.Filter.Base get_filter(string mime_type)
