@@ -9,17 +9,18 @@
  *  -Hubbe
  *
  * TODO:
- *   watchpoints (hardware watchpoints?)
  *   integrate with Emacs GUD mode
  *   lots and lots of testing
- *   allow 'run' to re-start program with new arguments
+ *   fix attach
  *   fix all bugs
  *   Support Pike 7.2, 7.0? 0.6???
- *   Allow it to run without X
  *   Allow it to run on Win32
  *   Trap errors and exceptions
+ *   Use hardware watchpoints when possible
+ *   Breakpoint conditions
  *   (Add your own wishes here)
  */
+
 
 #define DEBUG 0
 int failsafe;
@@ -625,6 +626,7 @@ class Gdb
     string why;
     mixed data;
     string desc;
+    mixed other;
 
     void create(string command)
       {
@@ -634,7 +636,9 @@ class Gdb
 	{
 	  why="breakpoint";
 	  if(breakpoint_callbacks[data])
-	    `()(@breakpoint_callbacks[data]);
+	    other=breakpoint_callbacks[data][0](
+	      this_object(),
+	      @ breakpoint_callbacks[data][1..]);
 	  return;
 	}
 	if(sscanf(ret,"%*sreceived signal %s, %s.", data, desc))
@@ -1859,10 +1863,10 @@ class Debug
 				fp->pc);
       }
 
-    void print_source_line()
+    string  get_source_line()
       {
 	sscanf(location(),"%s:%d",string file, int line);
-	showline(file, line);
+	return getline(file, line);
       }
 
     int pc()
@@ -1964,7 +1968,7 @@ class Debug
 
   array history = ({});
 
-  string get_history(int num)
+  mixed get_history(int num)
     {
       num--;
       if(num < 0 || num>=sizeof(history))
@@ -2002,16 +2006,18 @@ class Debug
     void compile_warning(string current_file, int current_line, string warning)
       {
       }
+
+    void compile_error(string current_file, int current_line, string warning)
+      {
+	master()->compile_error(current_file, current_line, warning);
+      }
     
   }
 
   mixed eval(string expression)
     {
-      
-#if 1
       expression=replace(expression,"$","________DOLLAR_________");
       array(string) data=Parser.C.split(expression);
-//      werror("%O\n",data);
       for(int e=0;e<sizeof(data);e++)
       {
 	switch(data[e][0])
@@ -2038,7 +2044,6 @@ class Debug
 
       expression=data*"";
       expression=replace(expression,"________DOLLAR_________","$");
-#endif
 
       string expr=sprintf(
 	"import __THIS_OBJECT__;\n"
@@ -2050,32 +2055,19 @@ class Debug
 
   /* */
 
-  void create(string *argv)
-    {
-      ::create();
-      string tmpfile=sprintf("pike-debugger-%d-%d",getpid(),counter++);
-      cmd("file "+argv[0]);
-      terminal=Process.create_process(
-	({"xterm","-e","/bin/sh","-c",
-	    "stty sane ;tty >"+tmpfile+".tmp ; mv "+tmpfile+".tmp "+tmpfile+" ; while kill -0 "+getpid()+"; do sleep 2; done" }),(["setsid":1]) );
-      while(!file_stat(tmpfile))
-	sleep(0.2);
-      string tmp=Stdio.FILE(tmpfile,"r")->gets();
-      sscanf(tmp,"%s\n",tmp);
-      cmd("tty "+tmp);
-      rm(tmpfile);
-      cmd("cd "+getcwd());
-
-      /* FIXME: Args will probably need quoting */
-      cmd("set args "+argv[1..]*" ");
-    }
-
-
   FrameHandle current_frame;
   string current_file;
   int current_line;
   string last_cmd;
-  Breakpoint current_breakpoint;
+
+
+#define RUNINFO array(RunInfo)
+  class RunInfo
+  {
+    int pri(); /* lower priority should mean more verbose */
+    string short(); /* one-word description */
+    string long(); /* Frame/locals description */
+  }
 
   /*
    * This flushes all caches when we run code
@@ -2086,87 +2078,265 @@ class Debug
       current_frame=0;
       current_file=0;
       ptrhandlecache=([]);
-      current_breakpoint=0;
     }
 
   void fix_current_frame()
     {
-      if(!current_frame)
+      if(!current_frame && started)
 	current_frame=FrameHandle();
     }
 
   int started=0;
-  string low_go(string command)
-    {
-      if(Breakpoint bp=current_breakpoint)
-      {
-	current_breakpoint=0;
-	bp->go_around();
-      }
-
-      flush();
-      Run r=Run(command);
-      started=1;
-      fix_current_frame();
-      string ret="";
-      switch(r->why)
-      {
-	case "breakpoint":
-	  break; /* Desc done by callbacks */
-
-	case "signal":
-	  /* No extra desc at this time */
-
-	default:
-	  /* No extra desc at this time */
-	  werror("%s\n",r->ret);
-      }
-      return ret;
-    }
 
   string go()
     {
-      string tmp=low_go(started?"cont":"run");
-      write("%s%s\n",tmp, current_frame);
-      current_frame->print_source_line();
-      return "";
+      while(1)
+      {
+	flush();
+	Run r=Run(started?"cont":"run");
+//	werror("WHY=%O (%O)\n",r->why,r->other);
+	started=1;
+	if(r->why == "exit") started=0;
+	
+	if(r->other)
+	{
+	  RUNINFO a=r->other;
+	  if(!sizeof(a)) continue;
+	  sort(a->pri(), a);
+	  return a->short()*""+a[0]->long();
+	}
+
+	/* FIXME: It would be nicer to create a RunInfo
+	 * struct for this data
+	 */
+	   
+	fix_current_frame();
+
+	if(!current_frame) return r->ret;
+
+	return sprintf("%s\n%s\n%s",
+		       r->ret,
+		       current_frame,
+	               current_frame->get_source_line());
+      }
     }
 
   array(int) step_breakpoints;
+  array watchpoint_callbacks=({});
 
-  void start_stepping()
+  RUNINFO call_watchpoint_callbacks()
     {
-      if(!step_breakpoints)
+      RUNINFO ret=({});
+      foreach(watchpoint_callbacks, mixed cb)
       {
-	int tmp;
-	step_breakpoints=({});
-	tmp=do_break("interpreter.h:"+syms->STEP_BREAK_LINE);
-	if(tmp != -1) step_breakpoints+=({ tmp });
-
-	tmp=do_break("interpreter_debug.h:"+syms->STEP_BREAK_LINE);
-	if(tmp != -1) step_breakpoints+=({ tmp });
-      }else{
-	cmd(sprintf("enable %{%d %}",step_breakpoints));
+	if(cb)
+	  ret+=`()(@cb);
       }
-      if(!sizeof(step_breakpoints))
-      {
-	unbug_error("This pike does not support stepping!\n");
-      }
-    }
-
-  void stop_stepping()
-    {
-      cmd(sprintf("disable %{%d %}",step_breakpoints));
-    }
-
-  string step()
-    {
-      start_stepping();
-      string ret;
-      ret=low_go(started?"cont":"run");
-      stop_stepping();
       return ret;
     }
+
+  mixed register_internal_watchpoint(function cb, mixed ... args)
+    {
+      if(!sizeof(watchpoint_callbacks))
+      {
+	if(!step_breakpoints)
+	{
+	  int tmp;
+	  step_breakpoints=({});
+	  tmp=do_break("interpreter.h:"+syms->STEP_BREAK_LINE);
+	  if(tmp != -1) 
+	  {
+	    step_breakpoints+=({ tmp });
+	    register_breakpoint_callback(tmp, call_watchpoint_callbacks);
+	  }
+	  
+	  tmp=do_break("interpreter_debug.h:"+syms->STEP_BREAK_LINE);
+	  if(tmp != -1)
+	  {
+	    step_breakpoints+=({ tmp });
+	    register_breakpoint_callback(tmp, call_watchpoint_callbacks);
+	  }
+	}else{
+	  cmd(sprintf("enable %{%d %}",step_breakpoints));
+	}
+	if(!sizeof(step_breakpoints))
+	{
+	  unbug_error("This pike does not support stepping!\n");
+	}
+      }
+      array handle=({cb})+args;
+      watchpoint_callbacks+=({handle});
+//      werror("WPCB REG : %O\n",watchpoint_callbacks);
+      return handle;
+    }
+
+  void unregister_internal_watchpoint(mixed handle)
+    {
+      watchpoint_callbacks -= ({ handle });
+//      werror("WPCB UNREG: %O\n",watchpoint_callbacks);
+      if(!sizeof(watchpoint_callbacks))
+	cmd(sprintf("disable %{%d %}",step_breakpoints));
+    }
+
+  class stepi_wp
+  {
+    string desc;
+    mixed handle;
+
+    void create()
+      {
+	if(current_frame)
+	  desc=current_frame->funcdesc();
+	handle=register_internal_watchpoint(this_object());
+      }
+
+    RUNINFO `() () {
+      unregister_internal_watchpoint(handle);
+      return ({ this_object() });
+    }
+
+    /* implements RunInfo */
+    int pri() { return  100; }
+    string short()
+      {
+	/* FIXME: Return current address here? */
+	return "";
+      }
+	  
+    string long()
+      {
+	fix_current_frame();
+	string ret="";
+	if(current_frame)
+	{
+	  if(current_frame->funcdesc() != desc)
+	    ret+=sprintf("%O\n",current_frame);
+//	  werror("LONG\n");
+	  ret+=current_frame->get_source_line();
+	}else{
+	  return "Program is not running\n";
+	}
+	return ret;
+      }
+
+    string _sprintf() { return "nexti_wp"; }
+
+  }
+
+  class next_line_wp
+  {
+    inherit stepi_wp;
+    string loc;
+
+    string _sprintf() { return "next_line_wp"; }
+
+    void create()
+      {
+	if(current_frame)
+	  loc=current_frame->location();
+	::create();
+      }
+
+    RUNINFO `() () {
+      fix_current_frame();
+      if(current_frame &&
+	 (!loc || loc != current_frame->location()))
+      {
+	unregister_internal_watchpoint(handle);
+	return ({ this_object() });
+      }
+      return ({});
+    }
+
+    string short() { return ""; }
+  }
+
+  class WatchPoint
+  {
+    int num;
+    string condition;
+    mixed val, oldval;
+    mixed handle;
+
+    RUNINFO `() () {
+      mixed tmp;
+      fix_current_frame();
+      if(catch {
+	tmp=eval(condition) -> _value();
+      }) {
+	write("Failed to evaluate watchpoint %d, disabling.\n",num);
+	disable();
+	return ({});
+      }
+      if(tmp != val)
+      {
+	oldval=val;
+	val=tmp;
+	return ({this_object()});
+      }
+
+      return ({});
+    }
+
+    void enable()
+      {
+	if(!handle)
+	  handle=register_internal_watchpoint(this_object());
+      }
+
+    void disable()
+      {
+	if(handle)
+	{
+	  unregister_internal_watchpoint(handle);
+	  handle=0;
+	}
+      }
+
+    string _sprintf(int op)
+      {
+	switch(op)
+	{
+	  case 'O':
+	    return sprintf("%3d watchpoint    %c           %s",
+			   num,
+			   handle?'y':'n',
+			   condition);
+	  case 's':
+	    return sprintf("Watchpoint %d: %s",num,condition);
+	}
+      }
+
+    void create(string c)
+      {
+	val=eval(condition=c)->_value();
+	number_to_breakpoint+=({this_object()});
+	num=sizeof(number_to_breakpoint);
+
+	enable();
+      }
+
+    /* Implements RunInfo */
+    int pri() { return 5; }
+
+    string short()
+      {
+	return sprintf("Watchpoint %d, ",num);
+      }
+
+    string long()
+      {
+	fix_current_frame();
+	return sprintf("%s\nOld value: %O\n"
+		       "New value: %O\n"
+		       "%s",
+		       current_frame,
+		       oldval, val,
+	               current_frame->get_source_line());
+      }
+  }
+
+
 
   /* breakpoint handling */
 
@@ -2181,7 +2351,6 @@ class Debug
      * check that the program is still there before disabling/enabling
      * the breakpoint. -Hubbe
      */
-
     
     int num;
     int location; /* address */
@@ -2192,6 +2361,25 @@ class Debug
     int count;
     int ignore;
 
+    class step_over_wp
+    {
+      mixed handle;
+      
+      void create()
+	{
+	  handle=register_internal_watchpoint(this_object());
+	}
+
+      RUNINFO `() ()
+	{
+	  unregister_internal_watchpoint(handle);
+	  if(on)
+	    cmd(sprintf("print *(unsigned char *)(%d)=%d",location,F_BREAKPOINT));
+	  return ({});
+	}
+    }
+
+    
     int enable()
       {
 	if(!on)
@@ -2213,22 +2401,16 @@ class Debug
 	}
       }
 
-    void go_around()
+    RUNINFO callback()
       {
 	if(on)
 	{
-	  disable();
-	  step();
-	  enable();
+	  count++;
+	  step_over_wp();
+	  cmd(sprintf("print *(unsigned char *)(%d)=%d",location,oldval));
+	  return ({ this_object() });
 	}
-      }
-
-    void set_current_breakpoint()
-      {
-	fix_current_frame();
-	count++;
-	current_breakpoint=this_object();
-	write("Breakpoint %d, ",num);
+	return ({});
       }
 
     void create(int l, void|string d)
@@ -2245,7 +2427,7 @@ class Debug
 	switch(op)
 	{
 	  case 'O':
-	    return sprintf("%2d  %c  0x%08x  %s",
+	    return sprintf("%3d breakpoint    %c  0x%08x  %s",
 			   num,
 			   on?'y':'n',
 			   location,
@@ -2254,6 +2436,22 @@ class Debug
 	    return sprintf("Breakpoint %d at %s",num,desc);
 	}
       }
+
+    /* implements RunInfo */
+    int pri() { return  10; }
+    string short()
+      {
+	return sprintf("Breakpoint %d, ",num);
+      }
+
+    string long()
+      {
+	fix_current_frame();
+	return sprintf("%s\n%s",
+		       current_frame,
+	               current_frame->get_source_line());
+      }
+
   };
 
 
@@ -2261,7 +2459,6 @@ class Debug
   {
     int __breakpoint;
     inherit Breakpoint;
-    void go_around() {};
 
     void enable()
       {
@@ -2287,7 +2484,7 @@ class Debug
 	::create(l,desc);
 	__breakpoint=do_break("*" + l);
 	on=1;
-	register_breakpoint_callback(__breakpoint, set_current_breakpoint);
+	register_breakpoint_callback(__breakpoint, breakpoint_callback);
       }
   }
 
@@ -2296,13 +2493,13 @@ class Debug
   array(Breakpoint) number_to_breakpoint = ({});
 
 
-  void set_current_breakpoint()
+  mixed breakpoint_callback()
     {
       fix_current_frame();
 
       int pc=current_frame->pc();
 //      werror("PC=%x\n",pc);
-      location_to_breakpoint[pc]->set_current_breakpoint();
+      return location_to_breakpoint[pc]->callback();
     }
 
   Breakpoint set_breakpoint(string at)
@@ -2317,7 +2514,7 @@ class Debug
 	  unbug_error("Breakpoints are not supported in this Pike.\n");
 	}
 	register_breakpoint_callback(breakpoint_breakpoint,
-				     set_current_breakpoint);
+				     breakpoint_callback);
       }
 
       if(!F_BREAKPOINT)
@@ -2341,31 +2538,26 @@ class Debug
       return bp;
     }
 
-
   /* Source code handling */
-
   mapping(string:array(string)) source_cache=([]);
 
-  void showline(string file, int line)
+  string getline(string file, int line)
     {
 //      werror("showline(%O:%O)\n",file,line);
-      if(line < 1) return;
+      if(line < 1) return sprintf("negative line: %s:%d\n",file,line);
       line--;
       array(string) source;
       if(!(source=source_cache[file]))
 	source=source_cache[file]=Stdio.read_file(file)/"\n";
 
-      if(line >= sizeof(source)) return;
-      write("%7d %s\n",line+1,source[line]);
+      if(line >= sizeof(source))
+	return sprintf("line out of range: %s:%d\n",file,line);
+
+      return sprintf("%7d %s\n",line+1,source[line]);
     }
 
 
-  void destroy()
-    {
-      ::destroy();
-      terminal->kill(signum("SIGINT"));
-    }
-
+  /* Interactive stuff */
   string command(string s)
   {
     array foo=s/" ";
@@ -2391,6 +2583,7 @@ class Debug
 	exit(0);
 
       case "run":/* FIXME: This should restart program */
+	started=0;
       case "cont":
       case "go":
 	return go();
@@ -2422,7 +2615,7 @@ class Debug
 	}
 
 	for(int e=-numlines;e<=numlines;e++)
-	  showline(current_file, current_line++);
+	  write(getline(current_file, current_line++));
 	return "";
       }
       break;
@@ -2455,7 +2648,13 @@ class Debug
 	return "";
 
       case "globals":
-	object to=current_frame->this_object();
+	object to;
+	if(sizeof(foo)>1)
+	{
+	  to=eval(foo[1..]*" ");
+	}else{
+	  to=current_frame->this_object();
+	}
 
 	foreach(to->_globals(), string name)
 	  write("%s = %O\n",name, to[name]);
@@ -2494,27 +2693,27 @@ class Debug
 	return "";
 
       case "step":
-	start_stepping();
-	string desc;
-	if(current_frame)
-	{
-	  desc=current_frame->funcdesc();
-	  string loc=current_frame->location();
-	  do
-	  {
-	    low_go(started?"cont":"run");
-//	    write("step.. %s\n",current_frame->location());
-	  }while(loc == current_frame->location());
-	}else{
-	  low_go(started?"cont":"run");
-	}
-	stop_stepping();
-	
-	if(current_frame->funcdesc() != desc)
-	  werror("%O\n",current_frame);
-	current_frame->print_source_line();
-	return "";
+	next_line_wp();
+	return go();
 
+      case "stepi":
+	stepi_wp();
+	return go();
+
+      case "watch":
+      {
+	WatchPoint wp=WatchPoint(foo[1..]*" ");
+	return sprintf("%s\n",wp);
+      }
+
+      case "display":
+      case "disp":
+
+
+      case "attach":
+      case "atta":
+
+      case "handle": /* for exceptions */
 
       case "help":
       case "h":
@@ -2522,14 +2721,16 @@ class Debug
 	write("Commands currently understood by UNBUG:\n");
 	write("go/run/cont       : let the program run\n");
 	write("step              : step one line\n");
+	write("stepi             : step one instruction\n");
 	write("backtrace/bt      : Show backtrace\n");
 	write("up                : go up to higher stack frame\n");
 	write("down              : go down to lower stack frame\n");
 	write("list              : show source\n");
-	write("print/p           : evaluate an expression\n");
+	write("print/p E         : evaluate an expression\n");
 	write("locals            : show local variables\n");
 	write("globals           : show global variables\n");
 	write("breakpoint/break  : set a breakpoint\n");
+	write("watch E           : Watch an expression.\n");
 	write("info breakpoints  : show breakpoints\n");
 	write("enable B          : enable breakpoint B\n");
 	write("disable B         : disable breakpoint B\n");
@@ -2564,11 +2765,55 @@ class Debug
 	last_cmd=s;
       }
     }
+  
+  void destroy()
+    {
+      ::destroy();
+      terminal->kill(signum("SIGINT"));
+    }
+
+  void create(string *argv)
+    {
+      ::create();
+      string tmpfile=sprintf("pike-debugger-%d-%d",getpid(),counter++);
+      cmd("file "+argv[0]);
+      string c="stty sane ;tty >"+tmpfile+".tmp ; mv "+tmpfile+".tmp "+tmpfile+" ; while kill -0 "+getpid()+"; do sleep 2; done";
+      array(string) fnord;
+      if(getenv("STY")) fnord=({"screen","/bin/sh","-c",c });
+      if(getenv("XTERM")) fnord=({"xterm","-e","/bin/sh","-c",c });
+      terminal=Process.create_process(fnord, (["setsid":1]) );
+
+      while(!file_stat(tmpfile))
+	sleep(0.2);
+      string tmp=Stdio.FILE(tmpfile,"r")->gets();
+      sscanf(tmp,"%s\n",tmp);
+      cmd("tty "+tmp);
+      rm(tmpfile);
+      cmd("cd "+getcwd());
+
+      /* FIXME: Args will probably need quoting */
+      cmd("set args "+argv[1..]*" ");
+    }
+
+}
+
+string find_in_path(string cmd)
+{
+  /* GDB looks in $PATH for executable, and so must we */
+  if(search(cmd,"/") == -1)
+  {
+    foreach(getenv("PATH")/":", string p)
+    {
+      p=combine_path(getcwd(),p,cmd);
+      if(Stdio.file_size(p)>0) return p;
+    }
+  }
+  return cmd;
 }
 
 int main(int argc, string *argv)
 {
-  write(#"UNBUG $Id: unbug,v 1.3 2001/04/25 22:14:14 js Exp $
+  write(#"UNBUG $Id: unbug,v 1.4 2001/05/06 01:57:19 hubbe Exp $
 Copyright 2001, Roxen Internet Software AB.
 UNBUG is free software, covered by the GNU General Public License, and you are
 welcome to change it and/or distribute copies of it under certain conditions.
@@ -2580,25 +2825,49 @@ welcome to change it and/or distribute copies of it under certain conditions.
     exit(1);
   }
 
-  string pike=argv[1];
-
-  /* GDB looks in $PATH for executable, and so must we */
-  if(search(pike,"/") == -1)
+  if(!getenv("STY") && !getenv("DISPLAY"))
   {
-    foreach(getenv("PATH")/":", string p)
-    {
-      p=combine_path(getcwd(),p,pike);
-      if(Stdio.file_size(p)>0)
-      {
-	pike=p;
-	break;
-      }
-    }
+    werror("You must run X-windows or Screen to use UNBUG.\n");
+    exit(1);
   }
-   syms=(mapping)(array_sscanf(Stdio.read_file(pike+".syms"),"%{%*sdefine%*[ \t]%s%*[ \t]%i%*s\n%}")[0]);
 
+  string pike;
+  int is_script=0;
+  do {
+    is_script=0;
+    pike=argv[1];
+    pike=find_in_path(pike);
+    Stdio.File f=Stdio.File();
+    if(f->open(pike,"r"))
+    {
+      /* This is a script, find interpreter */
+      if(f->read(2) == "#!")
+      {
+	is_script=1;
+	argv=argv[..0] + ( ((f->read(256)/"\n")[0]/" ") - ({""}) ) + argv[1..];
+      }
+      f->close();
+    }
+  }while(is_script);
+
+
+  string realpike=pike;
+#if constant(readlink)
+  catch {
+    while(1)
+      realpike=combine_path(dirname(realpike), readlink(realpike));
+  };
+#endif
+
+  if(string symbols=Stdio.read_file(realpike+".syms"))
+  {
+    syms=(mapping)(array_sscanf(symbols,"%{%*sdefine%*[ \t]%s%*[ \t]%i%*s\n%}")[0]);
+  }else{
+    write("Warning, no symbol file found, using builtin symbols!\n");
+  }
+
+  /* Make it possible to map numbers to symbol names */
   revsyms->PROG_ID=([]);
-
   foreach(indices(syms), string symname)
     {
       mapping rev;
