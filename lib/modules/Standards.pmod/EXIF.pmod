@@ -1,15 +1,16 @@
 #pike __REAL_VERSION__
 
-//! This module implements EXIF (Exchangeable image file format for Digital Still Cameras) 2.1
-//! parsing.
+//! This module implements EXIF (Exchangeable image file format for
+//! Digital Still Cameras) 2.2 parsing.
 
-// $Id: EXIF.pmod,v 1.12 2002/10/08 14:04:10 nilsson Exp $
+// $Id: EXIF.pmod,v 1.13 2002/11/10 13:05:20 anders Exp $
 //  Johan Schön <js@roxen.com>, July 2001.
 //  Based on Exiftool by Robert F. Tobler <rft@cg.tuwien.ac.at>.
 //
 // Some URLs:
 // http://www.ba.wakwak.com/~tsuruzoh/Computer/Digicams/exif-e.html
 // http://www.pima.net/standards/it10/PIMA15740/exif.htm
+// http://tsc.jeita.or.jp/WTO-01.htm
 
 void add_field(mapping m, string field,
 	       mapping|array alts,
@@ -30,6 +31,21 @@ void add_field(mapping m, string field,
     else
       m["failed "+field]=index;
   }
+}
+
+string components_config(string data)
+{
+  mapping val = ([ 00: "",
+		   01: "Y",
+		   02: "Cb",
+		   03: "Cr",
+		   04: "R",
+		   05: "G",
+		   06: "B" ]);
+  string res = "";
+  foreach(data/"", string b)
+    res += val[b[0]] || b;
+  return res;
 }
 
 #define SIZETEST(X) if(sizeof(data)<(X)+1) return res
@@ -603,7 +619,7 @@ mapping TAG_INFO = ([
   0x9000:       ({"ExifVersion",     	    	0, ([]) }), // from EXIFread
   0x9003:       ({"DateTimeOriginal",	    	0, ([]) }),
   0x9004:       ({"DateTimeDigitized",	    	0, ([]) }), // from EXIFread
-  0x9101:       ({"ComponentsConfiguration", 	0, ([]) }), // from EXIFread
+  0x9101:       ({"ComponentsConfiguration", 	"CUSTOM", components_config }),
   0x9102:	({"CompressedBitsPerPixel",  	0, ([]) }),
   0x9201:	({"ShutterSpeedValue",	    	0, ([]) }),
   0x9202:	({"ApertureValue",   	    	0, ([]) }),
@@ -617,8 +633,31 @@ mapping TAG_INFO = ([
 		      2:		    "CenterWeightedAverage",
 		      3:		    "Spot",
 		      4:		    "MultiSpot",
-		      5:                    "Matrix", ]) }),
-  0x9208:	({"LightSource",     	    	0, ([]) }),
+		      5:                    "Pattern",
+		      6:                    "Partial",
+		      255:                  "Other", ]) }),
+  0x9208:	({"LightSource",     	    	"MAP",
+		  ([  0:                    "Unknown",
+		      1:                    "Daylight",
+		      2:                    "Fluorescent",
+		      3:                    "Tungsten",
+		      4:                    "Flash",
+		      9:                    "Fine weather",
+		      10:                   "Cloudy weather",
+		      11:                   "Shade",
+		      12:                   "Daylight fluorescent",
+		      13:                   "Day white fluorescent",
+		      14:                   "Cool white fluorescent",
+		      15:                   "White fluorescent",
+		      17:                   "Standard light A",
+		      18:                   "Standard light B",
+		      19:                   "Standard light C",
+		      20:                   "D55",
+		      21:                   "D65",
+		      22:                   "D75",
+		      23:                   "D50",
+		      24:                   "ISO studio tungsten",
+		      255:                  "Other light source", ]) }),
   0x9209:	({"Flash",   	    	    	"MAP",
 		  ([  0:		"no",
 		      1:		"fired",
@@ -627,12 +666,21 @@ mapping TAG_INFO = ([
 		      9:		"fill fired",
 		      13:		"fill fired (?)",
 		      15:		"fill fired (!)",
-		      16:		"off",
+		      16:		"fill no",
 		      24:		"auto off",
 		      25:		"auto fired",
 		      29:		"auto fired (?)",
 		      31:		"auto fired (!)",
-		      32:		"not available", ]) }),
+		      32:		"not available",
+		      65:               "red-eye fired",
+		      69:               "red-eye fired (?)",
+		      71:               "red-eye fired (!)",
+		      73:               "red-eye fill fired",
+		      77:               "red-eye fill fired (?)",
+		      79:               "red-eye fill fired (!)",
+		      89:               "red-eye auto fired",
+		      93:               "red-eye auto fired (?)",
+		      95:               "red-eye auto fired (!)", ]) }),
   0x920a:	({"FocalLength",     	    	"FLOAT", ([]) }),
   0x920b:	({"FlashEnergy",     	    	0, ([]) }),
   0x920c:	({"SpatialFrequencyResponse",	0, ([]) }),
@@ -643,7 +691,7 @@ mapping TAG_INFO = ([
   0x9211:	({"ImageNumber",     	    	0, ([]) }),
   0x9212:	({"SecurityClassification",  	0, ([]) }),
   0x9213:	({"ImageHistory",    	    	0, ([]) }),
-  0x9214:	({"SubjectLocation", 	    	0, ([]) }),
+  0x9214:	({"SubjectArea", 	    	0, ([]) }),
   0x9215:	({"ExposureIndex",   	    	0, ([]) }),
   0x9216:	({"TIFF_EPStandardID",	    	0, ([]) }),
   0x9217:	({"SensingMethod",   	    	0, ([]) }),
@@ -674,6 +722,46 @@ mapping TAG_INFO = ([
   0xa300:       ({"FileSource",                 0, ([]) }),
   0xa301:       ({"SceneType",                  0, ([]) }),
   0xa302:       ({"CFAPattern",                 0, ([]) }),
+  0xa401:       ({"CustomRendered",             0, ([]) }),
+  0xa402:       ({"ExposureMode",               "MAP",
+		  ([  0:                "Auto exposure",
+		      1:                "Manual exposure",
+		      2:                "Auto bracket", ]) }),
+  0xa403:       ({"WhiteBalance",               "MAP",
+		  ([  0:                "Auto",
+		      1:                "Manual", ]) }),
+  0xa404:       ({"DigitalZoomRatio",           "FLOAT", ([]) }),
+  0xa405:       ({"FocalLengthIn35mmFilm",      0, ([]) }),
+  0xa406:       ({"SceneCaptureType",           "MAP",
+		  ([  0:                "Standard",
+		      1:                "Landscape",
+		      2:                "Portrait",
+		      3:                "Night scene", ]) }),
+  0xa407:       ({"GainControl",                "MAP",
+		  ([  0:                "None",
+		      1:                "Low gain up",
+		      2:                "High gain up",
+		      3:                "Low gain down",
+		      4:                "High gain down", ]) }),
+  0xa408:       ({"Contrast",                   "MAP",
+		  ([  0:                "Normal",
+		      1:                "Soft",
+		      2:                "Hard", ]) }),
+  0xa409:       ({"Saturation",                 "MAP",
+		  ([  0:                "Normal",
+		      1:                "Low saturation",
+		      2:                "Hight saturation", ]) }),
+  0xa40a:       ({"Sharpness",                  "MAP",
+		  ([  0:                "Normal",
+		      1:                "Soft",
+		      2:                "Hard", ]) }),
+  0xa40b:       ({"DeviceSettingDescription",   0, ([]) }),
+  0xa40c:       ({"SubjectDistanceRange",       "MAP",
+		  ([  0:                "Unknown",
+		      1:                "Macro",
+		      2:                "Close view",
+		      3:                "Distant view", ]) }),
+  0xa420:       ({"ImageUniqueID",              "ASCII", ([]) }),
 ]);
 
 mapping TAG_TYPE_INFO =
@@ -772,6 +860,8 @@ mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
 	  model = tags["Model"];
 	  tags[tag_name]= tag_map[make+"_"+model] || tag_map[make] || format_bytes(str);
 	}
+      else if(tag_format=="CUSTOM")
+	tags[tag_name]=tag_map(str);
       else
 	tags[tag_name]=format_bytes(str);
     }
