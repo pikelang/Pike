@@ -1,0 +1,3 @@
+// -*- Pike -*-
+
+test_eq(_Roxen.html_encode_string (10), "10");

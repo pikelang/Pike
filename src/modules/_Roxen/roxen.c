@@ -317,7 +317,7 @@ static void f_html_encode_string( INT32 args )
 
 	buf[20] = 0;
 
-	while( i > 10 )
+	while( i >= 10 )
 	{
 	  b[ -j++ ] = '0'+(i%10);
 	  i /= 10;
