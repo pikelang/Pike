@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.427 2002/05/10 23:38:10 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.428 2002/05/11 21:07:59 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1847,30 +1847,85 @@ void f_rusage(INT32 args)
   Pike_sp++;
 }
 
-/*! @decl object this_object();
+/*! @decl object this_object(void|int level);
  *!
  *!   Returns the object we are currently evaluating in.
+ *!
+ *!   @[level] might be used to access the object of a surrounding
+ *!   class: The object at level 0 is the current object, the object
+ *!   at level 1 is the one belonging to the class surrounding the
+ *!   current class, and so on.
  */
 void f_this_object(INT32 args)
 {
+  int level;
+  if (args) {
+    if (Pike_sp[-args].type != T_INT || Pike_sp[-args].u.integer < 0)
+      SIMPLE_BAD_ARG_ERROR ("this_object", 1, "a non-negative integer");
+    level = Pike_sp[-args].u.integer;
+  }
+  else
+    level = 0;
+
   pop_n_elems(args);
   if(Pike_fp)
   {
-    ref_push_object(Pike_fp->current_object);
+    struct object *o = Pike_fp->current_object;
+    for (; level > 0; level--) {
+      struct program *p = o->prog;
+      if (!p)
+	Pike_error ("Cannot get the parent object of a destructed object.\n");
+      if (!(p->flags & PROGRAM_USES_PARENT))
+	/* FIXME: Ought to write out the object here. */
+	Pike_error ("Object lacks parent reference.\n");
+      o = PARENT_INFO(o)->parent;
+    }
+    ref_push_object(o);
   }else{
+    /* Shouldn't this generate an error? /mast */
     push_int(0);
   }
 }
 
-node *fix_this_object_type(node *n)
+static node *optimize_this_object(node *n)
 {
+  int id;
+
+  if (CDR (n)) {
+    struct program_state *state = Pike_compiler;
+    if (CDR (n)->token != F_CONSTANT) {
+      /* Not a constant expression. Make sure there are parent
+       * pointers all the way. */
+      int i;
+      for (i = 0; i < compilation_depth; i++, state = state->previous)
+	state->new_program->flags |= PROGRAM_USES_PARENT | PROGRAM_NEEDS_PARENT;
+      return NULL;
+    }
+    else {
+      int level;
+#ifdef PIKE_DEBUG
+      if (CDR (n)->u.sval.type != T_INT || CDR (n)->u.sval.u.integer < 0)
+	fatal ("The type check for this_object() failed.\n");
+#endif
+      level = CDR (n)->u.sval.u.integer;
+      if (level > compilation_depth) {
+	my_yyerror ("There is no surrounding class %d levels out.", level);
+	return NULL;
+      }
+      for (; level > 0; level--, state = state->previous)
+	state->new_program->flags |= PROGRAM_USES_PARENT | PROGRAM_NEEDS_PARENT;
+      id = state->new_program->id;
+    }
+  }
+  else id = Pike_compiler->new_program->id;
+
   free_type(n->type);
   type_stack_mark();
 
   /* We are rather sure that we contain ourselves... */
   /* push_object_type(1, Pike_compiler->new_program->id); */
   /* But it did not work yet, so... */
-  push_object_type(0, Pike_compiler->new_program->id);
+  push_object_type(0, id);
   n->type = pop_unfinished_type();
   if (n->parent) {
     n->parent->node_info |= OPT_TYPE_NOT_FIXED;
@@ -1880,7 +1935,29 @@ node *fix_this_object_type(node *n)
 
 static int generate_this_object(node *n)
 {
-  emit0(F_THIS_OBJECT);
+  int level;
+
+  if (CDR (n)) {
+    struct program_state *state = Pike_compiler;
+    if (CDR (n)->token != F_CONSTANT)
+      /* Not a constant expression. Make a call to f_this_object. */
+      return 0;
+    else {
+#ifdef PIKE_DEBUG
+      if (CDR (n)->u.sval.type != T_INT || CDR (n)->u.sval.u.integer < 0)
+	fatal ("The type check for this_object() failed.\n");
+#endif
+      level = CDR (n)->u.sval.u.integer;
+#ifdef PIKE_DEBUG
+      if (level > compilation_depth)
+	fatal ("this_object level too high. "
+	       "Expected this to be caught by optimize_this_object.\n");
+#endif
+    }
+  }
+  else level = 0;
+
+  emit1(F_THIS_OBJECT, level);
   return 1;
 }
 
@@ -7695,9 +7772,8 @@ void init_builtin_efuns(void)
 /* function(mixed:int) */
   ADD_EFUN("stringp", f_stringp,tFunc(tMix,tInt),0);
   
-/* function(:object) */
-  ADD_EFUN2("this_object", f_this_object,tFunc(tNone,tObj),
-	    OPT_EXTERNAL_DEPEND, fix_this_object_type, generate_this_object);
+  ADD_EFUN2("this_object", f_this_object,tFunc(tOr(tVoid,tIntPos),tObj),
+	    OPT_EXTERNAL_DEPEND, optimize_this_object, generate_this_object);
   
 /* function(mixed:void) */
   ADD_EFUN("throw",f_throw,tFunc(tMix,tVoid),OPT_SIDE_EFFECT);

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.429 2002/05/11 00:29:58 nilsson Exp $");
+RCSID("$Id: program.c,v 1.430 2002/05/11 21:08:00 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -100,7 +100,7 @@ BLOCK_ALLOC(program, 104)
 #define DECLARE
 #include "compilation.h"
 
-struct pike_string *this_program_string=0;
+struct pike_string *this_program_string = NULL, *this_string = NULL;
 static struct pike_string *UNDEFINED_string=0;
 
 char *lfun_names[] = {
@@ -1019,18 +1019,6 @@ struct node_s *find_module_identifier(struct pike_string *ident,
     }
   }
 
-  /* Handle this_program */
-  if (ident == this_program_string) {
-    if (compilation_depth > 0)
-      return mkexternalnode(Pike_compiler->previous->new_program,
-			    Pike_compiler->previous->parent_identifier);
-    else {
-      struct svalue s;
-      s.type=T_PROGRAM;
-      s.u.program=Pike_compiler->new_program;
-      return mkconstantsvaluenode(&s);
-    }
-  }
   /* Handle UNDEFINED */
   if (ident == UNDEFINED_string) {
     struct svalue s;
@@ -1119,6 +1107,67 @@ struct node_s *resolve_identifier(struct pike_string *ident)
   }
 
   return 0;
+}
+
+/* If the identifier is recognized as one of the magic identifiers,
+ * like "this", "this_program" or "`->" when preceded by ::, then a
+ * suitable node is returned, NULL otherwise. inherit_num is -1 when
+ * accessing all inherits (i.e. when :: is used without any identifier
+ * before). */
+struct node_s *program_magic_identifier (struct program_state *state,
+					 int state_depth, int inherit_num,
+					 struct pike_string *ident,
+					 int colon_colon_ref)
+{
+#if 0
+  fprintf (stderr, "magic_identifier (state, %d, %d, %s, %d)\n",
+	   state_depth, inherit_num, ident->str, colon_colon_ref);
+#endif
+
+  if (!inherit_num) {
+    /* These are only recognized when looking in the current program
+     * and not an inherited one. */
+
+    /* Handle this */
+    if (ident == this_string)
+      return mkefuncallnode ("this_object", mknewintnode (state_depth));
+
+    /* Handle this_program */
+    if (ident == this_program_string) {
+      if (compilation_depth > state_depth)
+	return mkexternalnode(state->previous->new_program,
+			      state->previous->parent_identifier);
+      else {
+	struct svalue s;
+	s.type=T_PROGRAM;
+	s.u.program=state->new_program;
+	return mkconstantsvaluenode(&s);
+      }
+    }
+  }
+
+  if (colon_colon_ref) {
+    /* These are only recognized when prefixed with the :: operator. */
+
+    if (inherit_num < 0) inherit_num = 0;
+    if(ident == lfun_strings[LFUN_ARROW] ||
+       ident == lfun_strings[LFUN_INDEX]) {
+      return mknode(F_MAGIC_INDEX, mknewintnode(inherit_num),
+		    mknewintnode(state_depth));
+    } else if(ident == lfun_strings[LFUN_ASSIGN_ARROW] ||
+	      ident == lfun_strings[LFUN_ASSIGN_INDEX]) {
+      return mknode(F_MAGIC_SET_INDEX, mknewintnode(inherit_num),
+		    mknewintnode(state_depth));
+    } else if(ident == lfun_strings[LFUN__INDICES]) {
+      return mknode(F_MAGIC_INDICES, mknewintnode(inherit_num),
+		    mknewintnode(state_depth));
+    } else if(ident == lfun_strings[LFUN__VALUES]) {
+      return mknode(F_MAGIC_VALUES, mknewintnode(inherit_num),
+		    mknewintnode(state_depth));
+    }
+  }
+
+  return NULL;
 }
 
 /* Fixme: allow level=0 to return the current level */
@@ -3261,7 +3310,6 @@ void simple_do_inherit(struct pike_string *s,
  */
 int isidentifier(struct pike_string *s)
 {
-  INT32 e;
   return really_low_find_shared_string_identifier(s,
 						  Pike_compiler->new_program,
 						  SEE_STATIC|SEE_PRIVATE);
@@ -5870,6 +5918,7 @@ void init_program(void)
   init_program_blocks();
 
   MAKE_CONSTANT_SHARED_STRING(this_program_string,"this_program");
+  MAKE_CONSTANT_SHARED_STRING(this_string,"this");
   MAKE_CONSTANT_SHARED_STRING(UNDEFINED_string,"UNDEFINED");
 
   lfun_ids = allocate_mapping(NUM_LFUNS);
@@ -5932,6 +5981,7 @@ void cleanup_program(void)
   int e;
 
   free_string(UNDEFINED_string);
+  free_string(this_string);
   free_string(this_program_string);
 
   free_mapping(lfun_types);

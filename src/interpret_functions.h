@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.102 2002/05/10 23:44:05 nilsson Exp $
+ * $Id: interpret_functions.h,v 1.103 2002/05/11 21:07:59 mast Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -2209,11 +2209,24 @@ OPCODE0(F_BREAKPOINT, "breakpoint", 0, {
   DO_JUMP_TO(PROG_COUNTER-1);
 });
 
-OPCODE0(F_THIS_OBJECT, "this_object", 0, {
+OPCODE1(F_THIS_OBJECT, "this_object", 0, {
   if(Pike_fp)
   {
-    ref_push_object(Pike_fp->current_object);
+    struct object *o = Pike_fp->current_object;
+    int level = arg1;
+    for (; level > 0; level--) {
+      struct program *p = o->prog;
+      if (!p)
+	Pike_error ("Cannot get the parent object of a destructed object.\n");
+      DO_IF_DEBUG (
+	if (!(p->flags & PROGRAM_USES_PARENT))
+	  fatal ("optimize_this_object failed to set up parent pointers.\n");
+      );
+      o = PARENT_INFO(o)->parent;
+    }
+    ref_push_object(o);
   }else{
+    /* Shouldn't this generate an error? /mast */
     push_int(0);
   }
 });

@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.282 2002/05/11 12:11:38 mast Exp $");
+RCSID("$Id: language.yacc,v 1.283 2002/05/11 21:07:59 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3278,15 +3278,14 @@ inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
 
     inherit_state = Pike_compiler;
 
-    for (inherit_depth = -1; inherit_depth < compilation_depth;
-	 inherit_depth++, inherit_state = inherit_state->previous) {
+    for (inherit_depth = 0;; inherit_depth++, inherit_state = inherit_state->previous) {
       int inh = find_inherit(inherit_state->new_program, $1->u.sval.u.string);
       if (inh) {
 	e = inh;
 	break;
       }
+      if (inherit_depth == compilation_depth) break;
       if (!TEST_COMPAT (7, 2) &&
-	  inherit_state->previous->new_program &&
 	  ID_FROM_INT (inherit_state->previous->new_program,
 		       inherit_state->previous->parent_identifier)->name ==
 	  $1->u.sval.u.string) {
@@ -3354,7 +3353,9 @@ low_idents: TOK_IDENTIFIER
       /* done, nothing to do here */
     }else if((i=isidentifier(Pike_compiler->last_identifier))>=0){
       $$=mkidentifiernode(i);
-    }else if(!($$=find_module_identifier(Pike_compiler->last_identifier,1))){
+    }else if(!($$=find_module_identifier(Pike_compiler->last_identifier,1)) &&
+	     !($$ = program_magic_identifier (Pike_compiler, 0, 0,
+					      Pike_compiler->last_identifier, 0))) {
       if(!Pike_compiler->num_parse_error)
       {
 	if(Pike_compiler->compiler_pass==2)
@@ -3408,26 +3409,16 @@ low_idents: TOK_IDENTIFIER
 						      SEE_STATIC|SEE_PRIVATE);
 
       if (id != -1) {
-	if (inherit_depth >= 0) {
+	if (inherit_depth > 0) {
 	  $$ = mkexternalnode(inherit_state->new_program, id);
 	} else {
 	  $$ = mkidentifiernode(id);
 	}
-      } else if(Pike_compiler->last_identifier == lfun_strings[LFUN_ARROW] ||
-		Pike_compiler->last_identifier == lfun_strings[LFUN_INDEX]) {
-	$$ = mknode(F_MAGIC_INDEX, mknewintnode($1),
-		    mknewintnode(inherit_depth+1));
-      } else if(Pike_compiler->last_identifier == lfun_strings[LFUN_ASSIGN_ARROW] ||
-		Pike_compiler->last_identifier == lfun_strings[LFUN_ASSIGN_INDEX]) {
-	$$ = mknode(F_MAGIC_SET_INDEX, mknewintnode($1),
-		    mknewintnode(inherit_depth+1));
-      } else if(Pike_compiler->last_identifier == lfun_strings[LFUN__INDICES]) {
-	$$ = mknode(F_MAGIC_INDICES, mknewintnode($1),
-		    mknewintnode(inherit_depth+1));
-      } else if(Pike_compiler->last_identifier == lfun_strings[LFUN__VALUES]) {
-	$$ = mknode(F_MAGIC_VALUES, mknewintnode($1),
-		    mknewintnode(inherit_depth+1));
-      } else {
+      } else if (($$ = program_magic_identifier (inherit_state, inherit_depth, $1,
+						 Pike_compiler->last_identifier, 1))) {
+	/* All done. */
+      }
+      else {
 	if (Pike_compiler->compiler_pass == 2) {
 	  if (inherit_state->new_program->inherits[$1].name) {
 	    my_yyerror("Undefined identifier %s::%s.",
@@ -3471,28 +3462,10 @@ low_idents: TOK_IDENTIFIER
     }
     if(!$$)
     {
-	if($2->u.sval.u.string == lfun_strings[LFUN_ARROW] ||
-	   $2->u.sval.u.string == lfun_strings[LFUN_INDEX] )
-	{
-	  $$=mknode(F_MAGIC_INDEX,mknewintnode(0),mknewintnode(0));
-	}
-	else if($2->u.sval.u.string == lfun_strings[LFUN_ASSIGN_ARROW] ||
-		$2->u.sval.u.string == lfun_strings[LFUN_ASSIGN_INDEX] )
-	{
-	  $$=mknode(F_MAGIC_SET_INDEX,mknewintnode(0),mknewintnode(0));
-	}
-	else if($2->u.sval.u.string == lfun_strings[LFUN__INDICES])
-	{
-	  $$=mknode(F_MAGIC_INDICES,mknewintnode(0),mknewintnode(0));
-	}
-	else if($2->u.sval.u.string == lfun_strings[LFUN__VALUES])
-	{
-	  $$=mknode(F_MAGIC_VALUES,mknewintnode(0),mknewintnode(0));
-	}
-	else
-	{
-	  $$=mkintnode(0);
-	}
+      if (!($$ = program_magic_identifier (Pike_compiler, 0, -1,
+					   $2->u.sval.u.string, 1)))
+	/* FIXME: Shouldn't this be an error? /mast */
+	$$=mkintnode(0);
     }else{
       if($$->token==F_ARG_LIST) $$=mkefuncallnode("aggregate",$$);
     }
