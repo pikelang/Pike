@@ -1,7 +1,7 @@
 glue.o: glue.c global.h machine.h config.h \
- port.h interpret.h program.h svalue.h \
- stralloc.h array.h las.h \
+ debug.h port.h interpret.h program.h \
+ svalue.h stralloc.h array.h las.h \
  dynamic_buffer.h object.h macros.h
 regexp.o: regexp.c global.h machine.h \
- config.h port.h regexp.h error.h \
- svalue.h
+ config.h debug.h port.h regexp.h \
+ error.h svalue.h

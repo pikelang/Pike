@@ -1,30 +1,31 @@
 discdate.o: discdate.c stralloc.h types.h \
- machine.h global.h config.h port.h \
- macros.h object.h svalue.h add_efun.h \
- hashtable.h las.h dynamic_buffer.h \
- program.h interpret.h mapping.h \
- array.h builtin_efuns.h spider.h
+ machine.h global.h config.h debug.h \
+ port.h macros.h object.h svalue.h \
+ add_efun.h hashtable.h las.h \
+ dynamic_buffer.h program.h interpret.h \
+ mapping.h array.h builtin_efuns.h spider.h
 sdebug.o: sdebug.c stralloc.h types.h \
- machine.h global.h config.h port.h \
- macros.h object.h svalue.h add_efun.h \
- hashtable.h las.h dynamic_buffer.h \
- program.h interpret.h mapping.h \
- array.h builtin_efuns.h spider.h
+ machine.h global.h config.h debug.h \
+ port.h macros.h object.h svalue.h \
+ add_efun.h hashtable.h las.h \
+ dynamic_buffer.h program.h interpret.h \
+ mapping.h array.h builtin_efuns.h spider.h
 spider.o: spider.c machine.h stralloc.h \
- types.h global.h config.h port.h \
- macros.h object.h svalue.h add_efun.h \
- hashtable.h las.h dynamic_buffer.h \
- program.h interpret.h mapping.h \
- array.h builtin_efuns.h spider.h conf.h
+ types.h global.h config.h debug.h \
+ port.h macros.h object.h svalue.h \
+ add_efun.h hashtable.h las.h \
+ dynamic_buffer.h program.h interpret.h \
+ mapping.h array.h builtin_efuns.h spider.h \
+ conf.h
 stardate.o: stardate.c stralloc.h types.h \
- machine.h global.h config.h port.h \
- macros.h object.h svalue.h add_efun.h \
- hashtable.h las.h dynamic_buffer.h \
- program.h interpret.h mapping.h \
- array.h builtin_efuns.h spider.h
+ machine.h global.h config.h debug.h \
+ port.h macros.h object.h svalue.h \
+ add_efun.h hashtable.h las.h \
+ dynamic_buffer.h program.h interpret.h \
+ mapping.h array.h builtin_efuns.h spider.h
 tree.o: tree.c machine.h stralloc.h types.h \
- global.h config.h port.h macros.h \
- object.h svalue.h add_efun.h \
+ global.h config.h debug.h port.h \
+ macros.h object.h svalue.h add_efun.h \
  hashtable.h las.h dynamic_buffer.h \
  program.h interpret.h mapping.h \
  array.h builtin_efuns.h spider.h
