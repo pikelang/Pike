@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.47 2003/03/17 16:53:49 marcus Exp $
+|| $Id: jvm.c,v 1.48 2003/03/31 18:31:03 grubba Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.47 2003/03/17 16:53:49 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.48 2003/03/31 18:31:03 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1998,19 +1998,23 @@ static void native_dispatch(struct native_method_context *ctx,
     init_interpreter();
     Pike_interpreter.stack_top=((char *)&state)+ (thread_stack_size-16384) * STACK_DIRECTION;
     Pike_interpreter.recoveries = NULL;
-    Pike_interpreter.thread_id = low_clone(thread_id_prog);
-    call_c_initializers(Pike_interpreter.thread_id);
-    SWAP_OUT_THREAD(OBJ2THREAD(Pike_interpreter.thread_id));
-    OBJ2THREAD(Pike_interpreter.thread_id)->swapped=0;
-    OBJ2THREAD(Pike_interpreter.thread_id)->id=th_self();
-    num_threads++;
-    thread_table_insert(Pike_interpreter.thread_id);
-    do_native_dispatch(ctx, env, cls, args, rc);
-    OBJ2THREAD(Pike_interpreter.thread_id)->status=THREAD_EXITED;
-    co_signal(& OBJ2THREAD(Pike_interpreter.thread_id)->status_change);
-    thread_table_delete(Pike_interpreter.thread_id);
-    free_object(Pike_interpreter.thread_id);
-    Pike_interpreter.thread_id=NULL;
+    {
+      struct object *o = Pike_interpreter.thread_id =
+	low_clone(thread_id_prog);
+      call_c_initializers(Pike_interpreter.thread_id);
+      SWAP_OUT_THREAD(OBJ2THREAD(Pike_interpreter.thread_id));
+      Pike_interpreter.thread_id = o;
+      OBJ2THREAD(Pike_interpreter.thread_id)->swapped=0;
+      OBJ2THREAD(Pike_interpreter.thread_id)->id=th_self();
+      num_threads++;
+      thread_table_insert(Pike_interpreter.thread_id);
+      do_native_dispatch(ctx, env, cls, args, rc);
+      OBJ2THREAD(Pike_interpreter.thread_id)->status=THREAD_EXITED;
+      co_signal(& OBJ2THREAD(Pike_interpreter.thread_id)->status_change);
+      thread_table_delete(Pike_interpreter.thread_id);
+      free_object(Pike_interpreter.thread_id);
+      Pike_interpreter.thread_id=NULL;
+    }
     cleanup_interpret();
     num_threads--;
     mt_unlock_interpreter();

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.193 2003/03/05 16:18:30 mast Exp $
+|| $Id: threads.c,v 1.194 2003/03/31 18:31:03 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: threads.c,v 1.193 2003/03/05 16:18:30 mast Exp $");
+RCSID("$Id: threads.c,v 1.194 2003/03/31 18:31:03 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1967,11 +1967,15 @@ void th_init(void)
   if(!mutex_key)
     Pike_fatal("Failed to initialize thread program!\n");
 
-  Pike_interpreter.thread_id=clone_object(thread_id_prog,0);
-  SWAP_OUT_THREAD(OBJ2THREAD(Pike_interpreter.thread_id)); /* Init struct */
-  OBJ2THREAD(Pike_interpreter.thread_id)->id=th_self();
-  OBJ2THREAD(Pike_interpreter.thread_id)->swapped=0;
-  thread_table_insert(Pike_interpreter.thread_id);
+  {
+    struct object *o = Pike_interpreter.thread_id =
+      clone_object(thread_id_prog,0);
+    SWAP_OUT_THREAD(OBJ2THREAD(Pike_interpreter.thread_id)); /* Init struct */
+    Pike_interpreter.thread_id = o;
+    OBJ2THREAD(Pike_interpreter.thread_id)->id=th_self();
+    OBJ2THREAD(Pike_interpreter.thread_id)->swapped=0;
+    thread_table_insert(Pike_interpreter.thread_id);
+  }
 }
 
 void th_cleanup(void)
