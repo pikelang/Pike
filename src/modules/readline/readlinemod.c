@@ -13,6 +13,8 @@
 #include "pike_macros.h"
 #include "threads.h"
 
+#include <errno.h>
+
 #ifndef HAVE_LIBTERMCAP
 #undef HAVE_LIBREADLINE
 #endif
