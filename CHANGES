@@ -219,10 +219,12 @@ o Implicit lambda
     statements outside the implicit lambda block.
 
     Another method that overcomes these problems will likely be
-    implemented. The problem is that it can give compatibility
-    problems to change old code that uses implicit lambdas to that
-    one, since e.g. return will work differently without giving any
-    sort of error.
+    implemented. The problem is that there can be compatibility issues
+    to change old code that uses implicit lambdas to that one. For
+    example, the implementor of PushPop above can't safely switch to
+    such a new method since that would make return statements like the
+    one in do_something behave differently without giving any sort of
+    error.
 
 o Access to hidden variables in surrounding scopes
     Include the names of the surrounding classes themselves in the lookup for
@@ -942,6 +944,8 @@ o Now supports Autoconf 2.50 & Autoconf 2.52
 
 o Modules with the constant dont_dump_mode will not be dumped, as a
   workaround for modules that can not yet be dumped.
+
+o And many many more.
 
 
   Enjoy!
