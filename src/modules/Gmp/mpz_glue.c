@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.67 1999/11/23 10:38:17 mast Exp $");
+RCSID("$Id: mpz_glue.c,v 1.68 1999/11/23 23:04:13 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -1224,11 +1224,17 @@ static void exit_mpz_glue(struct object *o)
 void pike_module_exit(void)
 {
 #if defined(USE_GMP) || defined(USE_GMP2)
-  free_program(mpzmod_program);
-  mpzmod_program=0;
+  if(mpzmod_program)
+  {
+    free_program(mpzmod_program);
+    mpzmod_program=0;
+  }
 #ifdef AUTO_BIGNUM
-  free_program(bignum_program);
-  bignum_program=0;
+  if(bignum_program)
+  {
+    free_program(bignum_program);
+    bignum_program=0;
+  }
 #endif
 #endif
 }
