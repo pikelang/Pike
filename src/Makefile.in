@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.263 2001/06/28 19:44:41 per Exp $
+# $Id: Makefile.in,v 1.264 2001/07/02 22:12:41 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -248,7 +248,7 @@ $(TMP_BUILDDIR)/tpike: precompile.sh-stamp
 # the recursive make of tpike-real above, that one will never start to
 # make the $(OBJ)s concurrently with this one. stamp-tpike-predep
 # records the $(POBJ) dependencies without tpike.
-pike: $(OBJ) master.pike pike.syms modules/linker_options stamp-tpike-predep post_modules/linker_options
+pike: $(OBJ) master-stamp pike.syms modules/linker_options stamp-tpike-predep post_modules/linker_options
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) $(POBJ)
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
@@ -256,17 +256,17 @@ pike: $(OBJ) master.pike pike.syms modules/linker_options stamp-tpike-predep pos
 	$(LD) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options post_modules/linker_options` $(LIBS) -o pike
 
 # purify
-pure: $(OBJ) $(POBJ) master.pike module_objects
+pure: $(OBJ) $(POBJ) master-stamp module_objects
 	-@mv pike pike.old 2>/dev/null || true
 	$(SMARTLINK) purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options  post_modules/linker_options` $(LIBS) -o pike
 
 # purecov
-cover: $(OBJ) $(POBJ) master.pike module_objects
+cover: $(OBJ) $(POBJ) master-stamp module_objects
 	-@mv pike pike.old 2>/dev/null || true
 	$(SMARTLINK) purecov purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options  post_modules/linker_options` $(LIBS) -o pike
 
 # quantify
-quant: $(OBJ) $(POBJ) master.pike module_objects
+quant: $(OBJ) $(POBJ) master-stamp module_objects
 	-@mv pike pike.old 2>/dev/null || true
 	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options  post_modules/linker_options` $(LIBS) -o pike
 
@@ -396,7 +396,7 @@ clean: tidy
 	-rm -rf test-install test-pike
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out
 	-rm -f hilfe master.pike compiler-warnings
-	-rm -f tpike stamp-tpike-predep import-stamp modules-stamp
+	-rm -f tpike stamp-tpike-predep import-stamp modules-stamp master-stamp
 	-rm -rf lib/modules/*
 #	-rm -f lib/master.pike
 
@@ -439,15 +439,15 @@ module_testsuites:
 	( cd modules && $(MAKE) $(MAKE_FLAGS) testsuites )
 	( cd post_modules && $(MAKE) $(MAKE_FLAGS) testsuites )
 
-just_verify: module_testsuites testsuite master.pike
+just_verify: module_testsuites testsuite master_stamp
 	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike $$args
 
-tinstall: aclocal master.pike aclocal
+tinstall: aclocal master_stamp aclocal
 	-rm -rf test-install
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike $(INSTALLARGS) pike_name="test-pike" lib_prefix="$(lib_prefix)" TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" man_prefix="$(man_prefix)" fakeroot="$(buildroot)"
 
-just-tinstall: aclocal master.pike aclocal
+just-tinstall: aclocal master_stamp aclocal
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike $(INSTALLARGS) pike_name="test-pike" lib_prefix="$(lib_prefix)" TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" man_prefix="$(man_prefix)" fakeroot="$(buildroot)"
 
 
@@ -456,7 +456,7 @@ verify: module_testsuites testsuite tinstall
 	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
 	if test -f ./test-pike ; then ./test-pike -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; else sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKE_OPTS) $(TMP_BINDIR)/test_pike.pike $$args ; fi
 
-verify_installed: module_testsuites testsuite master.pike
+verify_installed: module_testsuites testsuite master_stamp
 	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
 	$(exec_prefix)/pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args
 
@@ -465,12 +465,12 @@ check: verify
 sure: verify
 
 # verify / debug verbose
-verbose_verify: module_testsuites testsuite master.pike
+verbose_verify: module_testsuites testsuite master_stamp
 	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike --verbose $$args
 
 # verify & debug VERBOSE
-gdb_verify: module_testsuites testsuite master.pike
+gdb_verify: module_testsuites testsuite master_stamp
 	@echo >.gdbinit handle SIGFPE nostop noprint pass
 	@echo >>.gdbinit handle SIGUSR1 nostop noprint pass
 	@echo >>.gdbinit handle SIGUSR2 nostop noprint pass
@@ -506,6 +506,11 @@ master.pike: $(LIBDIR_SRC)/master.pike.in Makefile
 	t="$$PIKE_PATH_TRANSLATE"; if test "x$$t" = "x"; then t=s,x,x,; else :; fi; \
 	sed -e 's!¤lib_prefix¤!'"`echo "$(TMP_LIBDIR)" | sed -e "$$t"`"'!' <$(LIBDIR_SRC)/master.pike.in \
 	  | sed -e 's!¤share_prefix¤!'"`echo "$(LIBDIR_SRC)" | sed -e "$$t"`"'!' >master.pike
+
+# Want master.pike up-to-date, but yet there's no dependency on the
+# that file. Works like the .h_src.h target.
+master-stamp: master.pike
+	@test -f master-stamp || echo foo > master-stamp
 
 pike.syms: $(SRCDIR)/interpret.c $(SRCDIR)/interpreter.h $(SRCDIR)/program.c $(SRCDIR)/builtin_functions.c
 	( cat $(SRCDIR)/*.h *.h | egrep  '^[  ]*#[     ]*define[      ][       ]*[a-zA-Z_0-9]*[       ][      ]*[0-9][xabcdefABCDEF0-9]*[  ]*' ; \
