@@ -3,7 +3,7 @@ Section: interpreters
 Priority: optional
 Maintainer: Marek Habersack <grendel@debian.org>
 Standards-Version: 3.5.10
-Build-Depends: debhelper (>> 4.0.0), libgdbm-dev, libgmp3-dev, libz-dev, libjpeg-dev, libttf-dev, libmysqlclient10-dev, libreadline-dev, perl5, bison, glutg3-dev, libgnome-dev, xlibmesa-gl-dev, xlibmesa-glu-dev, libgnorba-dev, libxpm4-dev, libglib1.2-dev, libglade0-dev, libxml2-dev, libgtkxmhtml-dev, libfreetype6-dev, libdockapp-dev, autoconf2.13, automake, libiodbc2-dev, libsane-dev, postgresql-dev, librsvg2-dev, libsdl-mixer1.2-dev, libsdl1.2-dev, libperl-dev, sharutils, libpng2-dev, orbit, libtiff3g-dev, libungif4-dev, gdk-imlib1-dev, bc
+Build-Depends: debhelper (>> 4.0.0), libgdbm-dev, libgmp3-dev, libz-dev, libjpeg-dev, libttf-dev, libmysqlclient10-dev, libreadline-dev, perl5, bison-1.35, glutg3-dev, xlibmesa-gl-dev, xlibmesa-glu-dev, libxpm4-dev, libglade0-dev, libxml2-dev, libgtkxmhtml-dev, libgtk1.2-dev, libfreetype6-dev, autoconf2.13, automake, libiodbc2-dev, libsane-dev, postgresql-dev, librsvg2-dev, libsdl-mixer1.2-dev, libsdl1.2-dev, libperl-dev, sharutils, libpng3-dev, libtiff3g-dev, libungif4-dev, bc
 Build-Conflicts: libutahglx-dev
 
 Package: pike7.4-core
@@ -288,7 +288,7 @@ Description: Pike 7.4 documentation meta package
 
 Package: pike7.4-meta
 Architecture: all
-Depends: pike7.4 (=${Source-Version}), pike7.4-mysql (=${Source-Version}), pike7.4-pg (=${Source-Version}), pike7.4-odbc (=${Source-Version}), pike7.4-image (=${Source-Version}), pike7.4-sdl (=${Source-Version}), pike7.4-gdbm (=${Source-Version}), pike7.4-gtk (=${Source-Version}), pike7.4-gl (=${Source-Version}), pike7.4-sane (=${Source-Version}), pike7.4-doc (=${Source-Version}), pike7.4-dev (=${Source-Version}), pike7.4-perl (=${Source-Version})
+Depends: pike7.4 (=${Source-Version}), pike7.4-mysql (=${Source-Version}), pike7.4-pg (=${Source-Version}), pike7.4-odbc (=${Source-Version}), pike7.4-image (=${Source-Version}), pike7.4-sdl (=${Source-Version}), pike7.4-gdbm (=${Source-Version}), pike7.4-gtk (=${Source-Version}), pike7.4-gl (=${Source-Version}), pike7.4-sane (=${Source-Version}), pike7.4-doc (=${Source-Version}), pike7.4-dev (=${Source-Version}), pike7.4-perl (=${Source-Version}), pike7.4-svg (=${Source-Version})
 Description: Meta package for Pike 7.4
  This package depends on all the components that make up the Pike
  language distribution. It will pull in a LOT of packages the
