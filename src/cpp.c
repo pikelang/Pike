@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.34 1999/04/15 22:45:45 marcus Exp $
+ * $Id: cpp.c,v 1.35 2001/05/29 18:20:41 grubba Exp $
  */
 #include "global.h"
 #include "dynamic_buffer.h"
@@ -102,7 +102,7 @@ struct define
   magic_define_fun magic;
   int args;
   int num_parts;
-  int inside;
+  int inside;		/* 1 - Don't expand. 2 - In use. */
   struct pike_string *first;
   struct define_part parts[1];
 };
@@ -169,6 +169,11 @@ static void undefine(struct cpp *this,
   d=find_define(name);
 
   if(!d) return;
+
+  if (d->inside) {
+    cpp_error(this, "Illegal to undefine a macro during its expansion.");
+    return;
+  }
 
   this->defines=hash_unlink(this->defines, & d->link);
 
@@ -567,6 +572,18 @@ static INLINE int find_end_parenthesis(struct cpp *this,
   }
 }
 
+void free_one_define(struct hash_entry *h)
+{
+  int e;
+  struct define *d=BASEOF(h, define, link);
+
+  for(e=0;e<d->num_parts;e++)
+    free_string(d->parts[e].postfix);
+  if(d->first)
+    free_string(d->first);
+  free((char *)d);
+}
+
 static INT32 low_cpp(struct cpp *this,
 		    char *data,
 		    INT32 len,
@@ -648,11 +665,12 @@ static INT32 low_cpp(struct cpp *this,
 	  }
 	}
 	  
-	if(d && !d->inside)
+	if(d && !(d->inside & 1))
 	{
 	  int arg=0;
 	  dynamic_buffer tmp;
 	  struct define_argument arguments [MAX_ARGS];
+	  short inside = d->inside;
 	  
 	  if(s) add_ref(s);
 	  
@@ -773,8 +791,10 @@ static INT32 low_cpp(struct cpp *this,
 		  INT32 line=this->current_line;
 		  save=this->buf;
 		  this->buf=tmp;
+		  d->inside = 2;
 		  low_cpp(this, a, l,
 			  flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE));
+		  d->inside = inside;
 		  tmp=this->buf;
 		  this->buf=save;
 		  this->current_line=line;
@@ -806,7 +826,7 @@ static INT32 low_cpp(struct cpp *this,
 	  if(s)
 	  {
 	    if((d=find_define(s)))
-	      d->inside=0;
+	      d->inside = inside;
 	    
 	    free_string(s);
 	  }
@@ -1404,9 +1424,16 @@ static INT32 low_cpp(struct cpp *this,
 	       (def->parts[0].argument & DEF_ARG_MASK) > MAX_ARGS)
 	      fatal("Internal error in define\n");
 #endif	  
-	    
-	    this->defines=hash_insert(this->defines, & def->link);
-	    
+	    {
+	      struct define *d;
+	      if ((d = find_define(def->link.s)) && (d->inside)) {
+		cpp_error(this,
+			  "Illegal to redefine a macro during its expansion.");
+		free_one_define(&(def->link));
+	      } else {
+		this->defines=hash_insert(this->defines, & def->link);
+	      }
+	    }
 	  }
 	  pop_n_elems(sp-argbase);
 	  break;
@@ -1876,18 +1903,6 @@ static int calc(struct cpp *this,char *data,INT32 len,INT32 tmp)
 /*  fprintf(stderr,"Done\n"); */
 
   return pos;
-}
-
-void free_one_define(struct hash_entry *h)
-{
-  int e;
-  struct define *d=BASEOF(h, define, link);
-
-  for(e=0;e<d->num_parts;e++)
-    free_string(d->parts[e].postfix);
-  if(d->first)
-    free_string(d->first);
-  free((char *)d);
 }
 
 /*** Magic defines ***/
