@@ -75,7 +75,9 @@ string parse_appendix(Node n, void|int noheader) {
 
   Node c = get_tag(n, "doc");
   if(c)
-    ret += "<dl>" + parse_text(c) + "</dl>";
+    ret += parse_text(c);
+  else
+    throw( ({ "No doc element in appendix.\n", backtrace() }) );
 
 #ifdef DEBUG
   if(sizeof(get_tags(n, "doc"))>1)
