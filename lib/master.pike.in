@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.129 2000/09/05 02:15:53 hubbe Exp $
+ * $Id: master.pike.in,v 1.130 2000/09/15 13:11:10 mirar Exp $
  * 
  * Master-file for Pike.
  *
@@ -795,7 +795,7 @@ class joinnode
         {
 	  // Only join directorynodes (or joinnodes).
 	  res += ({ ret });
-	} else if ( ret ) {
+	} else if ( !zero_type(ret) ) {
 	  return (ret);
 	} else {
 	  // Ignore
