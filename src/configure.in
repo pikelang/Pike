@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.351 2000/03/25 23:43:25 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.352 2000/03/26 14:33:09 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -530,7 +530,7 @@ AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[
         else :; fi
       fi
       if test "$with_poll" = "yes" ; then
-        AC_MSG_WARN([Defaulting to --with-poll since the OS AIX 4.2 or later.])
+        AC_MSG_WARN([Defaulting to --with-poll since the OS is AIX 4.2 or later.])
       else :; fi
     ;;
   esac
