@@ -95,7 +95,7 @@ The Pike master:
 ----------------
 
 o The new option --dumpversion prints out the Pike version in a more
-  easily pared way than --version.
+  easily parsed way than --version.
 
 o The master now supplies argv to the started application, so it can
   use the create() method for execution. Some people find it a more
