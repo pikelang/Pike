@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.146 2002/09/23 14:34:29 grubba Exp $");
+RCSID("$Id: docode.c,v 1.147 2002/09/23 20:12:59 mast Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1897,8 +1897,7 @@ static int do_docode2(node *n, INT16 flags)
     in_catch--;
 
     ins_label(current_label->break_label);
-    emit0(F_THROW_ZERO);
-    /* do_escape_catch(); */
+    emit0(F_EXIT_CATCH);
     POP_STATEMENT_LABEL;
     current_switch.jumptable = prev_switch_jumptable;
 

@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.107 2002/09/20 12:31:36 marcus Exp $
+ * $Id: interpret_functions.h,v 1.108 2002/09/23 20:12:59 mast Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1168,9 +1168,10 @@ OPCODE0_RETURN(F_ESCAPE_CATCH, "escape catch", 0, {
   INTER_ESCAPE_CATCH;
 });
 
-OPCODE0(F_THROW_ZERO, "throw(0)", 0, {
-  push_int(0);
-  f_throw(1);
+OPCODE0_RETURN(F_EXIT_CATCH, "exit catch", 0, {
+  push_undefined();
+  Pike_fp->pc = PROG_COUNTER;
+  INTER_ESCAPE_CATCH;
 });
 
 OPCODE1(F_SWITCH, "switch", 0, {
