@@ -1,0 +1,28 @@
+NAME
+	get_args - get the non-option arguments
+
+SYNTAX
+	#include <getopt.h>
+
+	string *get_args(string *argv);
+
+DESCRIPTION
+	This function returns the remaining command line arguments after
+	you have run find_options to find all the options in the
+	argument list. If there are any options left not handled by
+	find_options an error message will be written and the program will
+	exit. Otherwise a new 'argv' array without the parsed options is
+	returned.
+
+EXAMPLE
+	int main(int argc, string *argv)
+	{
+	  if(find_option(argv,"f","foo"))
+            werror("The FOO option was given.\n");
+
+	  argv=get_args(argv);
+	  werror("The arguments are: "+(argv*" ")+".\n");
+	}
+
+SEE ALSO
+	find_option
