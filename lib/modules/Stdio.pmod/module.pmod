@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.112 2001/11/22 11:55:36 grubba Exp $
+// $Id: module.pmod,v 1.113 2001/12/03 12:22:01 anders Exp $
 #pike __REAL_VERSION__
 
 
@@ -706,7 +706,7 @@ class File
   static void __stdio_close_callback()
   {
     string s=::read(0, 1);
-    werror(sprintf("__stdio_close_callback(): s:%O\n", s));
+    //werror(sprintf("__stdio_close_callback(): s:%O\n", s));
     if(!s)
     {
       switch(errno())
