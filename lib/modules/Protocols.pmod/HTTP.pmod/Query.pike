@@ -338,7 +338,7 @@ void async_fetch_close()
    con->set_blocking();
    destruct(con);
    con=0;
-   request_ok(@extra_args);
+   if (request_ok) (request_ok)(@extra_args);
 }
 
 /****** utilities **************************************************/
@@ -677,7 +677,7 @@ void destroy()
    catch { con->close(); destruct(con); };
 }
 
-void async_fetch(function callback,array ... extra)
+void async_fetch(function callback,mixed ... extra)
 {
    if (!con)
    {
