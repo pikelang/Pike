@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.732 2004/06/23 11:19:56 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.733 2004/06/30 14:12:25 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7539,6 +7539,23 @@ test_eq([[cpp("#define FOO(X) X\nFOO(\"\\\n\")\n")]], "# 1 \"-\"\n\n\n \"\" \n")
 test_eq([[cpp("#define FOO(X) X\r\nFOO(\"\\\r\n\")\r\n")]], "# 1 \"-\"\n\n\n \"\"  \n" /* Note: Added extra space for \r. */);
 test_equal([[compile_string("#define FOO(X) X\nstring s=FOO(\"\\\n\\\n\");\nmixed f() {return ({__LINE__, backtrace()[-1][1]});}\n")()->f()]], ({5, 5}));
 test_equal([[compile_string("#define FOO(X) X\nstring s=FOO(#\"\n\n\");\nmixed f() {return ({__LINE__, backtrace()[-1][1]});}\n")()->f()]], ({5, 5}));
+test_equal([[
+  compile_string("#define FOO BAR\n"
+		 "#define TOSTR(X) #X\n"
+		 "#define TOSTR2(X) TOSTR(X)\n"
+		 "constant val = TOSTR2(FOO);\n")()->val;
+]], "BAR")
+test_equal([[
+  compile_string("#define FOO\n"
+		 "#define TOSTR(X) #X\n"
+		 "#define TOSTR2(X) TOSTR(X)\n"
+		 "constant val = TOSTR2(FOO);\n")()->val;
+]], "")
+test_equal([[
+  compile_string(Locale.Charset("ebcdic-us")->
+    feed("#charset ebcdic-us\n"
+	 "constant val = \"abc\";\n")->drain())()->val;
+]], "abc")
 // The following two tests are in triplicate to force testing in all shifts.
 test_do([[
 #define FOO(X) X
