@@ -1,13 +1,19 @@
-dnl $Id: testsuite.in,v 1.2 2002/10/14 13:48:12 nilsson Exp $
+dnl $Id: testsuite.in,v 1.3 2002/10/14 16:09:43 jhs Exp $
 
 dnl - Array
 
-dnl Array.diff
 dnl Array.diff_longest_sequence
 dnl Array.diff_compare_table
 dnl Array.longest_ordered_sequence
 dnl Array.interleave_array
 dnl Array.sort
+
+test_equal([[ Array.diff(enumerate(4),enumerate(4,1,2)) ]],
+	   [[ ({ ({ ({0,1}), ({2,3}), ({   }) }),
+		 ({ ({   }), ({2,3}), ({4,5}) }) }) ]])
+test_any_equal([[ array x, y;
+		  [x, y] = Array.diff(enumerate(4),enumerate(4,1,2));
+                  return x[1] == y[1]; ]], 1)
 
 test_equal(Array.everynth("0123456789"/""),
   ({ "0", "2", "4", "6", "8"}))
@@ -58,8 +64,13 @@ test_equal(Array.enumerate(5,2), ({ 0,2,4,6,8 }))
 test_equal(Array.enumerate(5,2,7), ({ 7,9,11,13,15 }))
 test_equal(Array.enumerate(5,2,7,`-), ({ 7,5,3,1,-1 }))
 
-dnl Array.reduce
-dnl Array.rreduce
+test_eq([[ Array.reduce(`>>, ({})) ]], 0)
+test_eq([[ Array.reduce(`==, ({}), 1) ]], 1)
+test_eq([[ Array.reduce(`<<, ({1,2,3,4,5})) ]], 1<<14)
+
+test_eq([[ Array.rreduce(`>>, ({})) ]], 0)
+test_eq([[ Array.rreduce(`==, ({}), 1) ]], 1)
+test_eq([[ Array.rreduce(`<<, ({4,3,2,1})) ]], 1125899906842624)
 
 test_any([[
   random_seed(4711);
@@ -74,7 +85,9 @@ test_true( equal(Array.enumerate(1000),sort(Array.shuffle(Array.enumerate(1000))
 
 dnl Array.search_array
 dnl Array.sum_arrays
-dnl Array.sort_array
+
+test_equal([[ Array.sort_array(enumerate(9), `<) ]], [[ enumerate(9,-1,8) ]])
+
 dnl Array.columns
 dnl Array.transpose_old
 dnl Array.diff3
@@ -82,8 +95,12 @@ dnl Array.diff3_old
 dnl Array.dwim_sort_func
 dnl Array.lyskom_sort_func
 dnl Array.flatten
-dnl Array.sum
-dnl Array.uniq2
+
+test_eq(Array.sum((array(int))"157"), 157)
+test_eq([[ Array.sum(enumerate(12345)) ]],
+	[[ Array.reduce(`+, enumerate(12345)) ]])
+
+test_equal([[ Array.uniq2("AAAAAAAAAAAHHHHAAA!!!!"/1)*"" ]], [[ "AHA!" ]])
 
 test_equal([[ Array.arrayify( ({1,2,3}) ) ]],[[ ({1,2,3}) ]])
 test_equal([[ Array.arrayify( 1 ) ]],[[ ({1}) ]])
@@ -92,7 +109,12 @@ test_equal([[ Array.arrayify( UNDEFINED ) ]],[[ ({}) ]])
 
 dnl Array.oid_sort_func
 dnl Array.greedy_diff
-dnl Array.count
+
+test_eq( Array.count((multiset)("All your Pike are belong to us!"/1), " "), 6 )
+test_eq( Array.count("...and there was much rejoicing."/1, "."), 4 )
+test_eq([[Array.count((["An":"eye", "for":4, "an":"eye"]), "eye")]], 2 )
+test_equal([[ Array.count((["An":"eye", "for":4, "an":"eye"])) ]],
+	   [[ ([ "eye":2, 4:1 ]) ]])
 
 test_equal(Array.common_prefix(({ "soliloquise"/1 })), "soliloquise"/1)
 test_equal(Array.common_prefix(({ "muzzle"/1, "muzzy"/1 })), "muzz"/1)
