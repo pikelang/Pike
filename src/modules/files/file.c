@@ -46,6 +46,14 @@
 #include <netdb.h>
 #endif
 
+#ifndef SEEK_SET
+#define SEEK_SET 0
+#endif
+
+#ifndef SEEK_END
+#define SEEK_END 2
+#endif
+
 #define FD (*(int*)(fp->current_storage))
 #define THIS (files + FD)
 
@@ -451,14 +459,12 @@ static void file_open(INT32 args)
   if(!( flags &  (FILE_READ | FILE_WRITE)))
     error("Must open file for at least one of read and write.\n");
 
-  THIS->errno = 0;
-
  retry:
   fd=open(sp[-args].u.string->str,map(flags), 00666);
 
   if(fd >= MAX_OPEN_FILEDESCRIPTORS)
   {
-    THIS->errno=EBADF;
+    /* THIS->errno=EBADF;  THIS is invalid here...*/
     close(fd);
     fd=-1;
   }
@@ -467,13 +473,14 @@ static void file_open(INT32 args)
     if(errno == EINTR)
       goto retry;
 
-    THIS->errno=errno;
+    /* THIS->errno=EBADF;  THIS is invalid here...*/
   }
   else
   {
-    set_close_on_exec(fd,1);
     init_fd(fd,flags);
     FD=fd;
+    THIS->errno = 0;
+    set_close_on_exec(fd,1);
   }
 
   pop_n_elems(args);
@@ -1028,14 +1035,14 @@ static void file_open_socket(INT32 args)
   fd=socket(AF_INET, SOCK_STREAM, 0);
   if(fd >= MAX_OPEN_FILEDESCRIPTORS)
   {
-    THIS->errno = EBADF;
+    /* THIS->errno = EBADF;   THIS is invalid here ..*/
     pop_n_elems(args);
     push_int(0);
     return;
   }
   if(fd < 0)
   {
-    THIS->errno=errno;
+    /* THIS->errno = errno;   THIS is invalid here ..*/
     pop_n_elems(args);
     push_int(0);
     return;
