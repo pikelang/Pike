@@ -1,6 +1,10 @@
 
 #pike __REAL_VERSION__
 
+//! A wrapper class that connects several cipher algorithms into one
+//! algorithm. E.g. triple DES can be emulated with
+//! @expr{Crypto.Pipe(Crypto.DES, Crypto.DES, Crypto.DES)@}.
+
 static array ciphers = ({});
 static int _block_size = 1;
 static int(0..1) reversed;
