@@ -106,9 +106,7 @@ array(string) split(string data)
 	break;
 
       default:
-	werror("%O\n",ret);
-	werror("Unknown token %O\n",data[pos..pos+20]);
-	exit(1);
+	throw( ({sprintf("Unknown token %O\n",data[pos..pos+20]) }) );
 
       case  '`':
 	while(data[pos]=='`') data[pos]++;
