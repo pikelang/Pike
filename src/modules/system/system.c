@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.138 2003/01/13 03:57:29 mast Exp $
+|| $Id: system.c,v 1.139 2003/02/08 17:00:14 mast Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.138 2003/01/13 03:57:29 mast Exp $");
+RCSID("$Id: system.c,v 1.139 2003/02/08 17:00:14 mast Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -2476,6 +2476,14 @@ static void f_gettimeofday(INT32 args)
 
 #endif
 
+/*! @decl string CPU_TIME_IS_THREAD_LOCAL
+ *!
+ *! This string constant tells whether or not the CPU time returned by
+ *! @[gethrvtime] is thread local or not. The value is "yes" if it is
+ *! and "no" if it isn't. The value is also "no" if there is no thread
+ *! support.
+ */
+
 /*! @decl mapping(string:int) getrusage()
  *!
  *!   Return resource usage about the current process. An error is
@@ -2917,6 +2925,12 @@ PIKE_MODULE_INIT
 #ifdef HAVE_GETTIMEOFDAY
   ADD_FUNCTION("gettimeofday",f_gettimeofday,
 	       tFunc(tNone,tArr(tInt)),0);
+#endif
+
+#if CPU_TIME_IS_THREAD_LOCAL == YES
+  add_string_constant ("CPU_TIME_IS_THREAD_LOCAL", "yes", 0);
+#elif CPU_TIME_IS_THREAD_LOCAL == NO
+  add_string_constant ("CPU_TIME_IS_THREAD_LOCAL", "no", 0);
 #endif
 
 #ifdef HAVE_NETINFO_NI_H
