@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.198 1998/06/06 03:11:48 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.199 1998/06/06 12:43:11 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -291,6 +291,7 @@ if test $cflags_is_set = no; then
 
   # OSF/1
   AC_SYS_OS_COMPILER_FLAG(OSF1,-fast,fast,OPTIMIZE)
+  # The need for -ieee is not detected properly by the FPE tests below.
   AC_SYS_OS_COMPILER_FLAG(OSF1,-ieee,ieee,CFLAGS)
   AC_SYS_OS_COMPILER_FLAG(OSF1,-readonly_strings,readonly_strings,OPTIMIZE)
   AC_SYS_OS_COMPILER_FLAG(OSF1,-assume trusted_short_alignment,
@@ -2285,6 +2286,26 @@ if test x$pike_cv_sys_dynamic_loading = xno ; then
   with_dynamic_modules=no
 fi
 
+
+#############################################################################
+
+echo
+echo "Compiler summary:"
+echo
+echo "C Compiler:    $CC"
+echo "Linker:        $LD"
+echo "Shared linker: $LDSHARED"
+echo
+echo "Shared object extension: $SO"
+echo
+echo "CPPFLAGS:      $CPPFLAGS"
+echo "CFLAGS:        $CFLAGS"
+echo "CCSHARED:      $CCSHARED"
+echo "LINKFORSHARED: $LINKFORSHARED"
+echo "WARN:          $WARN"
+echo "OPTIMIZE:      $OPTIMIZE"
+echo "LDFLAGS:       $LDFLAGS"
+echo
 
 #############################################################################
 
