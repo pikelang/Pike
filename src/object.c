@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.224 2003/02/15 16:02:05 grubba Exp $
+|| $Id: object.c,v 1.225 2003/02/16 04:05:16 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.224 2003/02/15 16:02:05 grubba Exp $");
+RCSID("$Id: object.c,v 1.225 2003/02/16 04:05:16 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -963,6 +963,8 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
 }
 
 
+/* Get a variable through internal indexing, i.e. directly by
+ * identifier index without going through `->= or `[]= lfuns. */
 PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 					  struct object *o,
 					  ptrdiff_t f)
@@ -1060,9 +1062,13 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
   }
 }
 
+/* Get a variable without going through `->= or `[]= lfuns. If index
+ * is a string then the externally visible identifiers are indexed. If
+ * index is T_OBJ_INDEX then any identifier is accessed through
+ * identifier index. */
 PMOD_EXPORT void object_index_no_free2(struct svalue *to,
-			  struct object *o,
-			  struct svalue *index)
+				       struct object *o,
+				       struct svalue *index)
 {
   struct program *p;
   int f = -1;
@@ -1079,11 +1085,15 @@ PMOD_EXPORT void object_index_no_free2(struct svalue *to,
     f=find_shared_string_identifier(index->u.string, p);
     break;
 
-  case T_LVALUE:
-    f=index->u.integer;
+  case T_OBJ_INDEX:
+    f=index->u.identifier;
     break;
 
   default:
+#ifdef PIKE_DEBUG
+    if (index->type > MAX_TYPE)
+      Pike_fatal ("Invalid type %d in index.\n", index->type);
+#endif
     Pike_error("Lookup in object with non-string index.\n");
   }
 
@@ -1099,6 +1109,8 @@ PMOD_EXPORT void object_index_no_free2(struct svalue *to,
 
 #define ARROW_INDEX_P(X) ((X)->type==T_STRING && (X)->subtype)
 
+/* Get a variable through external indexing, i.e. by going through
+ * `-> or `[] lfuns, not seeing private and static etc. */
 PMOD_EXPORT void object_index_no_free(struct svalue *to,
 				      struct object *o,
 				      struct svalue *index)
@@ -1111,43 +1123,47 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
     Pike_error("Lookup in destructed object.\n");
     return; /* make gcc happy */
   }
-  if (index->type != T_LVALUE) {
-    lfun=ARROW_INDEX_P(index) ? LFUN_ARROW : LFUN_INDEX;
 
-    if(p->flags & PROGRAM_FIXED)
-    {
-      l=p->lfuns[lfun];
-    }else{
-      if(!(p->flags & PROGRAM_PASS_1_DONE))
-      {
-	if(report_compiler_dependency(p))
-	{
-#if 0
-	  fprintf(stderr,"Placeholder deployed for %p\n", p);
+#ifdef PIKE_DEBUG
+  if (index->type > MAX_TYPE)
+    Pike_fatal ("Invalid index type %d.\n", index->type);
 #endif
-	  add_ref(to->u.object=placeholder_object);
-	  to->type=T_OBJECT;
-	  return;
-	}
-      }
-      l=low_find_lfun(p, lfun);
-    }
-    if(l != -1)
+
+  lfun=ARROW_INDEX_P(index) ? LFUN_ARROW : LFUN_INDEX;
+
+  if(p->flags & PROGRAM_FIXED)
+  {
+    l=p->lfuns[lfun];
+  }else{
+    if(!(p->flags & PROGRAM_PASS_1_DONE))
     {
-      push_svalue(index);
-      apply_lfun(o, lfun, 1);
-      *to=sp[-1];
-      sp--;
-      dmalloc_touch_svalue(sp);
-    } else {
-      object_index_no_free2(to, o, index);
+      if(report_compiler_dependency(p))
+      {
+#if 0
+	fprintf(stderr,"Placeholder deployed for %p\n", p);
+#endif
+	add_ref(to->u.object=placeholder_object);
+	to->type=T_OBJECT;
+	return;
+      }
     }
+    l=low_find_lfun(p, lfun);
+  }
+  if(l != -1)
+  {
+    push_svalue(index);
+    apply_lfun(o, lfun, 1);
+    *to=sp[-1];
+    sp--;
+    dmalloc_touch_svalue(sp);
   } else {
-    low_object_index_no_free(to, o, index->u.integer);
+    object_index_no_free2(to, o, index);
   }
 }
 
 
+/* Assign a variable through internal indexing, i.e. directly by
+ * identifier index without going through `->= or `[]= lfuns. */
 PMOD_EXPORT void object_low_set_index(struct object *o,
 				      int f,
 				      struct svalue *from)
@@ -1229,6 +1245,10 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
   }
 }
 
+/* Assign a variable without going through `->= or `[]= lfuns. If
+ * index is a string then the externally visible identifiers are
+ * indexed. If index is T_OBJ_INDEX then any identifier is accessed
+ * through identifier index. */
 PMOD_EXPORT void object_set_index2(struct object *o,
 				   struct svalue *index,
 				   struct svalue *from)
@@ -1246,39 +1266,39 @@ PMOD_EXPORT void object_set_index2(struct object *o,
   {
   case T_STRING:
     f=find_shared_string_identifier(index->u.string, p);
-    if(f<0) {
-      if (index->u.string->len < 1024) {
-	Pike_error("No such variable (%s) in object.\n", index->u.string->str);
-      } else {
-	Pike_error("No such variable in object.\n");
-      }
-    }
     break;
 
-  case T_LVALUE:
-    f=index->u.integer;
+  case T_OBJ_INDEX:
+    f=index->u.identifier;
     break;
 
   default:
+#ifdef PIKE_DEBUG
+    if (index->type > MAX_TYPE)
+      Pike_fatal ("Invalid type %d in index.\n", index->type);
+#endif
     Pike_error("Lookup on non-string value.\n");
   }
 
   if(f < 0)
   {
-    if (index->u.string->len < 1024) {
+    if (index->type == T_STRING && !index->u.string->size_shift &&
+	index->u.string->len < 1024)
       Pike_error("No such variable (%s) in object.\n", index->u.string->str);
-    } else {
+    else
       Pike_error("No such variable in object.\n");
-    }
   }else{
     object_low_set_index(o, f, from);
   }
 }
 
+/* Assign a variable through external indexing, i.e. by going through
+ * `->= or `[]= lfuns, not seeing private and static etc. */
 PMOD_EXPORT void object_set_index(struct object *o,
 				  struct svalue *index,
 				  struct svalue *from)
 {
+  int lfun;
   struct program *p = NULL;
 
   if(!o || !(p=o->prog))
@@ -1287,20 +1307,21 @@ PMOD_EXPORT void object_set_index(struct object *o,
     return; /* make gcc happy */
   }
 
-  if (index->type != T_LVALUE) {
-    int lfun=ARROW_INDEX_P(index) ? LFUN_ASSIGN_ARROW : LFUN_ASSIGN_INDEX;
+#ifdef PIKE_DEBUG
+  if (index->type > MAX_TYPE)
+    Pike_fatal ("Invalid index type %d.\n", index->type);
+#endif
 
-    if(FIND_LFUN(p, lfun) != -1)
-    {
-      push_svalue(index);
-      push_svalue(from);
-      apply_lfun(o, lfun, 2);
-      pop_stack();
-    } else {
-      object_set_index2(o, index, from);
-    }
+  lfun=ARROW_INDEX_P(index) ? LFUN_ASSIGN_ARROW : LFUN_ASSIGN_INDEX;
+
+  if(FIND_LFUN(p, lfun) != -1)
+  {
+    push_svalue(index);
+    push_svalue(from);
+    apply_lfun(o, lfun, 2);
+    pop_stack();
   } else {
-    object_low_set_index(o, index->u.integer, from);
+    object_set_index2(o, index, from);
   }
 }
 
@@ -1320,7 +1341,9 @@ static union anything *object_low_get_item_ptr(struct object *o,
   i=ID_FROM_INT(p, f);
 
 #ifdef PIKE_DEBUG
-  if (type == T_OBJECT || type == T_FUNCTION || type == T_LVALUE)
+  if (type > MAX_TYPE)
+    Pike_fatal ("Invalid type %d.\n", type);
+  if (type == T_OBJECT || type == T_FUNCTION)
     Pike_fatal ("Dangerous with the refcount-less this-pointers.\n");
 #endif
 
@@ -1373,18 +1396,26 @@ union anything *object_get_item_ptr(struct object *o,
     f=find_shared_string_identifier(index->u.string, p);
     break;
 
-  case T_LVALUE:
-    f=index->u.integer;
+  case T_OBJ_INDEX:
+    f=index->u.identifier;
     break;
 
   default:
+#ifdef PIKE_DEBUG
+    if (index->type > MAX_TYPE)
+      Pike_fatal ("Invalid type %d in index.\n", index->type);
+#endif
 /*    Pike_error("Lookup on non-string value.\n"); */
     return 0;
   }
 
   if(f < 0)
   {
-    Pike_error("No such variable in object.\n");
+    if (index->type == T_STRING && !index->u.string->size_shift &&
+	index->u.string->len < 1024)
+      Pike_error("No such variable (%s) in object.\n", index->u.string->str);
+    else
+      Pike_error("No such variable in object.\n");
   }else{
     return object_low_get_item_ptr(o, f, type);
   }
@@ -2022,7 +2053,10 @@ static void f_magic_set_index(INT32 args)
 
   if(f<0)
   {
-    Pike_error("No such variable in object.\n");
+    if (!s->size_shift && s->len < 1024)
+      Pike_error("No such variable (%s) in object.\n", s->str);
+    else
+      Pike_error("No such variable in object.\n");
   }else{
     object_low_set_index(o, f+inherit->identifier_level,
 			 val);

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.206 2003/01/26 12:47:42 mirar Exp $
+|| $Id: pike_types.c,v 1.207 2003/02/16 03:59:57 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.206 2003/01/26 12:47:42 mirar Exp $");
+RCSID("$Id: pike_types.c,v 1.207 2003/02/16 03:59:57 mast Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -144,7 +144,8 @@ char *get_name_of_type(int t)
     case T_FLOAT: return "float";
     case T_FUNCTION: return "function";
     case T_INT: return "int";
-    case T_LVALUE: return "lvalue";
+    case T_SVALUE_PTR: return "svalue_ptr";
+    case T_OBJ_INDEX: return "obj_index";
     case T_MAPPING: return "mapping";
     case T_MULTISET: return "multiset";
     case T_OBJECT: return "object";

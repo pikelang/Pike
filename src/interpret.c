@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.290 2003/02/15 17:33:33 grubba Exp $
+|| $Id: interpret.c,v 1.291 2003/02/16 03:59:57 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.290 2003/02/15 17:33:33 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.291 2003/02/16 03:59:57 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -286,9 +286,9 @@ use_malloc:
  * array[index]   : { array, index } 
  * mapping[index] : { mapping, index } 
  * multiset[index] : { multiset, index } 
- * object[index] : { object, index }
- * local variable : { svalue_pointer, nothing } 
- * global variable : { svalue_pointer/short_svalue_pointer, nothing } 
+ * object[index] : { object, index } (external object indexing)
+ * local variable : { svalue pointer (T_SVALUE_PTR), nothing (T_VOID) }
+ * global variable : { object, identifier index (T_OBJ_INDEX) } (internal object indexing)
  */
 
 void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
@@ -315,17 +315,15 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
       break;
     }
       
-    case T_LVALUE:
+    case T_SVALUE_PTR:
       assign_svalue_no_free(to, lval->u.lval);
       break;
-      
-    case T_SHORT_LVALUE:
-      assign_from_short_svalue_no_free(to, lval->u.short_lval,
-				       (TYPE_T)lval->subtype);
-      break;
-      
+
     case T_OBJECT:
-      object_index_no_free(to, lval->u.object, lval+1);
+      if (lval[1].type == T_OBJ_INDEX)
+	low_object_index_no_free (to, lval->u.object, lval[1].u.identifier);
+      else
+	object_index_no_free(to, lval->u.object, lval+1);
       break;
       
     case T_ARRAY:
@@ -383,16 +381,15 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
     }
     break;
 
-  case T_LVALUE:
+  case T_SVALUE_PTR:
     assign_svalue(lval->u.lval,from);
     break;
 
-  case T_SHORT_LVALUE:
-    assign_to_short_svalue(lval->u.short_lval, (TYPE_T)lval->subtype, from);
-    break;
-
   case T_OBJECT:
-    object_set_index(lval->u.object, lval+1, from);
+    if (lval[1].type == T_OBJ_INDEX)
+      object_low_set_index (lval->u.object, lval[1].u.identifier, from);
+    else
+      object_set_index(lval->u.object, lval+1, from);
     break;
 
   case T_ARRAY:
@@ -431,14 +428,10 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
     case T_ARRAY_LVALUE:
       return 0;
       
-    case T_LVALUE:
+    case T_SVALUE_PTR:
       if(lval->u.lval->type == t) return & ( lval->u.lval->u );
       return 0;
-      
-    case T_SHORT_LVALUE:
-      if(lval->subtype == t) return lval->u.short_lval;
-      return 0;
-      
+
     case T_OBJECT:
       return object_get_item_ptr(lval->u.object,lval+1,t);
       
@@ -2045,10 +2038,6 @@ void gdb_backtrace (
 	struct svalue *arg = f->locals + i;
 
 	switch (arg->type) {
-	  case T_LVALUE:
-	    fputs ("lvalue", stderr);
-	    break;
-
 	  case T_INT:
 	    fprintf (stderr, "%ld", (long) arg->u.integer);
 	    break;

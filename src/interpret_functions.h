@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.137 2003/02/15 14:59:35 grubba Exp $
+|| $Id: interpret_functions.h,v 1.138 2003/02/16 03:59:57 mast Exp $
 */
 
 /*
@@ -408,7 +408,7 @@ OPCODE2(F_EXTERNAL_LVALUE, "& external", 0, {
 
 
   ref_push_object(loc.o);
-  Pike_sp->type=T_LVALUE;
+  Pike_sp->type=T_OBJ_INDEX;
   Pike_sp->u.integer=arg1 + loc.inherit->identifier_level;
   Pike_sp++;
 });
@@ -450,7 +450,7 @@ OPCODE2(F_GLOBAL_2_LOCAL, "local = global", 0, {
 });
 
 OPCODE1(F_LOCAL_LVALUE, "& local", 0, {
-  Pike_sp[0].type = T_LVALUE;
+  Pike_sp[0].type = T_SVALUE_PTR;
   Pike_sp[0].u.lval = Pike_fp->locals + arg1;
   Pike_sp[1].type = T_VOID;
   Pike_sp += 2;
@@ -474,7 +474,7 @@ OPCODE2(F_LEXICAL_LOCAL_LVALUE, "&lexical local", 0, {
     f=f->scope;
     if(!f) Pike_error("Lexical scope error.\n");
   }
-  Pike_sp[0].type=T_LVALUE;
+  Pike_sp[0].type=T_SVALUE_PTR;
   Pike_sp[0].u.lval=f->locals+arg1;
   Pike_sp[1].type=T_VOID;
   Pike_sp+=2;
@@ -724,7 +724,7 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", 0, {
 OPCODE1(F_GLOBAL_LVALUE, "& global", 0, {
   ref_push_object(Pike_fp->current_object);
   push_int(arg1 + Pike_fp->context.identifier_level);
-  Pike_sp[-1].type = T_LVALUE;
+  Pike_sp[-1].type = T_OBJ_INDEX;
 });
 
 OPCODE0(F_INC, "++x", 0, {

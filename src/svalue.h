@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.115 2003/02/15 02:51:06 mast Exp $
+|| $Id: svalue.h,v 1.116 2003/02/16 03:59:58 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -67,8 +67,8 @@ union anything
   INT32 *refs;
   struct ref_dummy *dummy;
   FLOAT_TYPE float_number;
-  struct svalue *lval;   /* only used on stack */
-  union anything *short_lval;   /* only used on stack */
+  int identifier;		/* Used with T_OBJ_INDEX. */
+  struct svalue *lval;		/* Used with T_SVALUE_PTR. */
   void *ptr;
 };
 
@@ -99,7 +99,11 @@ struct svalue
 
 #define PIKE_T_ZERO  14	/* Can return 0, but nothing else */
 #define T_UNFINISHED 15	/* Reserved for the garbage-collector */
-#define T_VOID       16	/* Can't return any value */
+
+#define T_VOID       16
+/* Can't return any value. Also used on stack to fill out the second
+ * svalue on an lvalue when it isn't used. */
+
 #define T_MANY       17
 
 #define PIKE_T_RING 240
@@ -109,8 +113,15 @@ struct svalue
 #define T_ASSIGN 245
 #define T_DELETED 246
 #define PIKE_T_UNKNOWN 247
-#define T_SHORT_LVALUE 248
-#define T_LVALUE 249
+
+#define T_OBJ_INDEX 248
+/* svalue.u.identifer is an identifier index in an object. Primarily
+ * used in lvalues on stack. */
+
+#define T_SVALUE_PTR 249
+/* svalue.u.lval points to an svalue. Primarily used in lvalues on
+ * stack. */
+
 #define T_ARRAY_LVALUE 250
 #define PIKE_T_MIXED 251
 #define T_NOT 253
@@ -317,7 +328,7 @@ do{ \
 #ifdef PIKE_DEBUG
 PMOD_EXPORT extern void describe(void *); /* defined in gc.c */
 PMOD_EXPORT extern const char msg_type_error[];
-#define check_type(T) if(T > MAX_TYPE && T!=T_LVALUE && T!=T_SHORT_LVALUE && T!=T_VOID && T!=T_DELETED && T!=T_ARRAY_LVALUE) Pike_fatal(msg_type_error,T)
+#define check_type(T) if(T > MAX_TYPE && T!=T_SVALUE_PTR && T!=T_OBJ_INDEX && T!=T_VOID && T!=T_DELETED && T!=T_ARRAY_LVALUE) Pike_fatal(msg_type_error,T)
 
 #define check_svalue(S) debug_check_svalue(dmalloc_check_svalue(S,DMALLOC_LOCATION()))
 

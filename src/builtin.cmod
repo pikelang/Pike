@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.119 2003/02/11 09:28:19 grubba Exp $
+|| $Id: builtin.cmod,v 1.120 2003/02/16 03:59:57 mast Exp $
 */
 
 #include "global.h"
@@ -113,7 +113,6 @@ PIKEFUN string basetype(mixed x)
     case T_FLOAT: push_constant_text("float"); break;
     case T_FUNCTION: push_constant_text("function"); break;
     case T_INT: push_constant_text("int"); break;
-    case T_LVALUE: push_constant_text("lvalue"); break;
     case T_MAPPING: push_constant_text("mapping"); break;
     case T_MULTISET: push_constant_text("multiset"); break;
     case T_OBJECT: push_constant_text("object"); break;
@@ -122,7 +121,12 @@ PIKEFUN string basetype(mixed x)
     case T_TYPE: push_constant_text("type"); break;
     case T_ZERO: push_constant_text("zero"); break;
     case T_VOID: push_constant_text("void"); break;
+      /* The following are internal and shouldn't be applicable in normal use. */
+    case T_SVALUE_PTR: push_constant_text("svalue_ptr"); break;
+    case T_OBJ_INDEX: push_constant_text("obj_index"); break;
     case T_MAPPING_DATA: push_constant_text("mapping_data"); break;
+    case T_PIKE_FRAME: push_constant_text("pike_frame"); break;
+    case T_MULTISET_DATA: push_constant_text("multiset_data"); break;
     default: push_constant_text("unknown"); break;
   }
 }
