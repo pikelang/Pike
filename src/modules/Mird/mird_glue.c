@@ -77,7 +77,7 @@ static void pmird_exception(MIRD_RES res)
    mird_describe_error(res,&s);
    d=alloca(strlen(s)+1);
    memcpy(d,s,strlen(s)+1);
-   mird_free(s);
+   mird_free((unsigned char *)s);
    mird_free_error(res);
    Pike_error("[mird] %s\n",d);
 }
@@ -447,7 +447,7 @@ UNLOCK(this);
 
    if (data)
    {
-      push_string(make_shared_binary_string(data,len));
+      push_string(make_shared_binary_string((char *)data, len));
       mird_free(data);
    }
    else
@@ -925,7 +925,7 @@ UNLOCK(this->parent);
 
    if (data)
    {
-      push_string(make_shared_binary_string(data,len));
+      push_string(make_shared_binary_string((char *)data, len));
       mird_free(data);
    }
    else
@@ -1306,7 +1306,7 @@ UNLOCK(this->pmird);
 	    push_int((INT_TYPE)(this->msr->tupel[i].key));
 	 if (do_what!=SCAN_INDICES)
 	    push_string(make_shared_binary_string(
-	       this->msr->tupel[i].value,
+	       (char *)this->msr->tupel[i].value,
 	       this->msr->tupel[i].value_len));
 	 if (do_what==SCAN_TUPELS)
 	    f_aggregate(2);
@@ -1319,11 +1319,11 @@ UNLOCK(this->pmird);
       {
 	 if (do_what!=SCAN_VALUES)
 	    push_string(make_shared_binary_string(
-	       this->mssr->tupel[i].key,
+	       (char *)this->mssr->tupel[i].key,
 	       this->mssr->tupel[i].key_len));
 	 if (do_what!=SCAN_INDICES)
 	    push_string(make_shared_binary_string(
-	       this->mssr->tupel[i].value,
+	       (char *)this->mssr->tupel[i].value,
 	       this->mssr->tupel[i].value_len));
 	 if (do_what==SCAN_TUPELS)
 	    f_aggregate(2);
@@ -1343,22 +1343,22 @@ UNLOCK(this->pmird);
 
 static void pmts_read(INT32 args)
 {
-   return _pmts_read(args,SCAN_MAP);
+   _pmts_read(args,SCAN_MAP);
 }
 
 static void pmts_read_tupels(INT32 args)
 {
-   return _pmts_read(args,SCAN_TUPELS);
+   _pmts_read(args,SCAN_TUPELS);
 }
 
 static void pmts_read_indices(INT32 args)
 {
-   return _pmts_read(args,SCAN_INDICES);
+   _pmts_read(args,SCAN_INDICES);
 }
 
 static void pmts_read_values(INT32 args)
 {
-   return _pmts_read(args,SCAN_VALUES);
+   _pmts_read(args,SCAN_VALUES);
 }
 
 
