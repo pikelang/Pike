@@ -1,4 +1,4 @@
-
+// -*- pike -*-
 
 // --------------- Standards.ASN1.Types private add-on --------------------
 // This is very poor defined own ASN.1 objects (not enough time to clean it!)
