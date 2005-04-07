@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.20 2005/04/06 19:45:51 mast Exp $
+// $Id: module.pmod,v 1.21 2005/04/07 18:16:02 mast Exp $
 
 #include "ldap_globals.h"
 
@@ -1317,6 +1317,284 @@ mapping(string:mixed) parse_ldap_url (string ldap_url)
   }
 
   return res;
+}
+
+class FilterError
+//! Error object thrown by @[make_filter] for parse errors.
+{
+  constant is_ldap_filter_error = 1;
+  //! Recognition constant.
+
+  constant is_generic_error = 1;
+  string error_message;
+  array error_backtrace;
+  string|array `[] (int i) {return i ? error_backtrace : error_message;}
+  static void create (string msg, mixed... args)
+  {
+    if (sizeof (args)) msg = sprintf (msg, @args);
+    error_message = msg;
+    error_backtrace = backtrace();
+    error_backtrace = error_backtrace[..sizeof (error_backtrace) - 2];
+    throw (this_object());
+  }
+}
+
+object make_filter (string filter, void|int ldap_version)
+//! Parses an LDAP filter string into an ASN1 object tree that can be
+//! given to @[Protocols.LDAP.search].
+//!
+//! Using this function instead of giving the filter string directly
+//! to the search function has two advantages: This function provides
+//! better error reports for syntax errors, and the same object tree
+//! can be used repeatedly to avoid reparsing the filter string.
+//!
+//! @param filter
+//!   The filter to parse, according to the syntax specified in RFC
+//!   2254. The syntax is extended a bit to allow and ignore
+//!   whitespace everywhere except inside and next to the filter
+//!   values.
+//!
+//! @param ldap_version
+//!   LDAP protocol version to make the filter for. This controls what
+//!   syntaxes are allowed depending on the protocol version. Also, if
+//!   the protocol is @expr{3@} or later then full Unicode string
+//!   literals are supported. The default is the latest supported
+//!   version.
+//!
+//! @returns
+//!   An ASN1 object tree representing the filter.
+//!
+//! @throws
+//!   @[FilterError] is thrown if there's a syntax error in the
+//!   filter.
+{
+#define EXCERPT(STR) (sizeof (STR) > 30 ? (STR)[..27] + "..." : (STR))
+
+  if (!ldap_version) ldap_version = 3;
+  if (ldap_version >= 3)
+    filter = string_to_utf8 (filter);
+
+  // Afaict from the RFCs no insignificant whitespace is allowed in
+  // query filters, but the old parser and other query tools (at
+  // least LDP in Windows XP) seem to accept it anyway. This makes
+  // it somewhat unclear whether whitespace around values should be
+  // significant or not. This parser always treat whitespace as
+  // significant there (and inside operators) but not anywhere else.
+  // /mast
+#define WS "%*[ \t\n\r]"
+
+  string read_filter_value()
+  // Reads a filter value encoded according to section 4 in RFC 2254
+  // and section 3 in the older RFC 1960.
+  {
+    string res = "";
+    //werror ("read_filter_value %O\n", filter);
+    while (1) {
+      sscanf (filter, "%[^()*\\]%s", string val, filter);
+      res += val;
+      if (filter == "" || (<'(', ')', '*'>)[filter[0]]) break;
+      // filter[0] == '\\' now.
+      if (sscanf (filter, "\\%1x%1x%s", int high, int low, filter) == 3)
+	// RFC 2254. (Use two %1x to force reading of exactly two
+	// hex digits; something like %2.2x is currently not
+	// supported.)
+	res += sprintf ("%c", (high << 4) + low);
+      else {
+	// RFC 1960. Note that this RFC doesn't define a consistent
+	// quoting since a "\" shouldn't be quoted. That means it
+	// isn't possible to specify a value ending with "\".
+	if (sscanf (filter, "\\%1[*()]%s", val, filter) == 2)
+	  res += val;
+	else {
+	  res += filter[..1];
+	  filter = filter[2..];
+	}
+      }
+    }
+    //werror ("read_filter_value => %O (rest: %O)\n", res, filter);
+    return res;
+  };
+
+  object make_filter_recur()
+  {
+    string subfilter = filter;
+    object res;
+
+    //werror ("make_filter_recur %O\n", filter);
+
+    if (sscanf (filter, WS"("WS"%s", filter) != 3)
+      FilterError ("Expected opening parenthesis at the start of %O.\n",
+		   EXCERPT (subfilter));
+    if (filter == "")
+      FilterError ("Unexpected end of filter expression.\n");
+
+    switch (filter[0]) {
+      case '&':
+      case '|': {
+	int op = filter[0];
+	filter = filter[1..];
+	array(object) subs = ({});
+	do {
+	  subs += ({make_filter_recur()});
+	} while (has_prefix (filter, "("));
+	res = ASN1_CONTEXT_SET (op == '&' ? 0 : 1, subs); // 'and' or 'or'
+	break;
+      }
+
+      case '!': {
+	filter = filter[1..];
+	res = ASN1_CONTEXT_SEQUENCE (2, ({make_filter_recur()})); // 'not'
+	break;
+      }
+
+      default: {
+	string attr;
+	// Doing a slightly lax check of the attribute here: Periods
+	// are only allowed if's a string of decimal digits separated
+	// by them.
+	sscanf (filter, "%[-A-Za-z0-9.]"WS"%s", attr, filter);
+	if (filter == "")
+	  FilterError ("Unexpected end of the filter expression starting at %O.\n",
+		       EXCERPT (subfilter));
+
+	string op;
+	switch (filter[0]) {
+	  case ':': case '=':
+	    sscanf (filter, "%1s%s", op, filter);
+	    break;
+	  case '~': case '>': case '<':
+	    if (sscanf (filter, "%2s%s", op, filter) != 2 || op[1] != '=')
+	      FilterError ("Invalid filter type in the expression starting at %O.\n",
+			   EXCERPT (subfilter));
+	    break;
+	  default:
+	    FilterError ("Invalid filter type in the expression starting at %O.\n",
+			 EXCERPT (subfilter));
+	}
+
+	if (op == ":") {
+	  // LDAP 3 extensible match. Note that we haven't really
+	  // parsed the operator in this case.
+
+	  if (ldap_version < 3)
+	    FilterError ("Invalid filter type in the expression starting at %O.\n",
+			 EXCERPT (subfilter));
+
+	  int dn_attrs = sscanf (filter, "dn"WS":"WS"%s", filter) == 3;
+	  string matching_rule;
+	  if (has_prefix (filter, "=")) {
+	    if (attr == "")
+	      FilterError ("Must specify either an attribute, "
+			   "a matching rule identifier or both "
+			   "in the expression starting at %O.\n",
+			   EXCERPT (subfilter));
+	    filter = filter[1..];
+	  }
+	  else {
+	    // Same kind of slightly lax check on the matching rule
+	    // identifier here as on the attribute above.
+	    if (sscanf (filter, "%[-A-Za-z0-9.]"WS":=%s", matching_rule, filter) != 3 ||
+		matching_rule == "")
+	      FilterError ("Error parsing matching rule identifier "
+			   "in the expression starting at %O.\n",
+			   EXCERPT (subfilter));
+	  }
+
+	  string val = read_filter_value();
+
+	  res = ASN1_CONTEXT_SEQUENCE (	// 'extensibleMatch'
+	    9, ((matching_rule ?
+		 ({ASN1_CONTEXT_OCTET_STRING (1, matching_rule)}) : ({})) +
+		(attr != "" ?
+		 ({ASN1_CONTEXT_OCTET_STRING (2, attr)}) : ({})) +
+		({ASN1_CONTEXT_OCTET_STRING (3, val),
+		  ASN1_CONTEXT_BOOLEAN (4, dn_attrs)})));
+	}
+
+	else {
+	  if (attr == "")
+	    FilterError ("Expected attribute in the expression starting at %O.\n",
+			 EXCERPT (subfilter));
+
+	  string|object val = read_filter_value();
+
+	  if (op == "=" && has_prefix (filter, "*")) {
+	    array(string) parts = ({val});
+	    do {
+	      filter = filter[1..];
+	      val = read_filter_value();
+	      parts += ({val});
+	    } while (has_prefix (filter, "*"));
+
+	    array(object) subs = sizeof (parts[0]) ?
+	      ({ASN1_CONTEXT_OCTET_STRING (0, parts[0])}) : ({});
+	    foreach (parts[1..sizeof (parts) - 2], string middle)
+	      subs += ({ASN1_CONTEXT_OCTET_STRING (1, middle)});
+	    if (sizeof (parts) > 1 && sizeof (parts[-1]))
+	      subs += ({ASN1_CONTEXT_OCTET_STRING (2, parts[-1])});
+
+	    if (!sizeof (subs))
+	      res = ASN1_CONTEXT_OCTET_STRING (7, attr); // 'present'
+	    else
+	      res = ASN1_CONTEXT_SEQUENCE ( // 'substrings'
+		4, ({Standards.ASN1.Types.asn1_octet_string (attr),
+		     Standards.ASN1.Types.asn1_sequence (subs)}));
+	  }
+
+	  else {
+	    int op_number;
+	    switch (op) {
+	      case "=": op_number = 3; break;	// 'equalityMatch'
+	      case ">=": op_number = 5; break; // 'greaterOrEqual'
+	      case "<=": op_number = 6; break; // 'lessOrEqual'
+	      case "~=": op_number = 8; break; // 'approxMatch'
+	      default:			// Shouldn't be reached.
+		FilterError ("Invalid filter type in the expression "
+			     "starting at %O.\n", EXCERPT (subfilter));
+	    }
+	    res = ASN1_CONTEXT_SEQUENCE (
+	      op_number, ({Standards.ASN1.Types.asn1_octet_string (attr),
+			   Standards.ASN1.Types.asn1_octet_string (val)}));
+	  }
+	}
+
+	break;
+      }
+    }
+
+    //werror ("make_filter_recur => %O (rest: %O)\n", res, filter);
+
+    if (sscanf (filter, WS")"WS"%s", filter) != 3)
+      FilterError ("Missing closing parenthesis in the expression "
+		   "starting at %O.\n", EXCERPT (subfilter));
+    return res;
+  };
+
+  object res = make_filter_recur();
+  if (filter != "")
+    FilterError ("Unexpected data beginning with %O "
+		 "after end of filter expression.\n", EXCERPT (filter));
+  return res;
+
+#undef WS
+#undef EXCERPT
+}
+
+static mapping(string:array(object)) cached_filters = ([]);
+
+object get_cached_filter (string filter, void|int ldap_version)
+//! Like @[make_filter] but saves the generated objects for reuse.
+//! Useful for filters that reasonably will occur often. The cache is
+//! never garbage collected, however.
+{
+  if (!ldap_version) ldap_version = 3;
+  array(object) arr = cached_filters[filter] || ({});
+  if (object res = sizeof (arr) > ldap_version && arr[ldap_version])
+    return res;
+  object res = make_filter (filter, ldap_version);
+  if (sizeof (arr) <= ldap_version)
+    arr = cached_filters[filter] = arr + allocate (ldap_version + 1 - sizeof (arr));
+  return arr[ldap_version] = res;
 }
 
 // Client connection pool

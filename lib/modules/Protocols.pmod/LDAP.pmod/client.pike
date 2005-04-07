@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.93 2005/04/06 19:45:51 mast Exp $
+// $Id: client.pike,v 1.94 2005/04/07 18:16:02 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -110,6 +110,7 @@ import ".";
     int ldap_sizelimit;
     int ldap_timelimit;
     mapping lauth = ([]);
+    object default_filter_obj;	// Filter object parsed from lauth->filter.
     result last_rv;		// last returned value
   }
 
@@ -559,7 +560,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|mapping(string:mixed)|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.93 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.94 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -1033,7 +1034,7 @@ void reset_options()
   } // add
 
 static mapping(string:array(string)) simple_read (string object_name,
-						  string filter,
+						  object filter,
 						  array attrs)
 // Makes a base object search for object_name. The result is returned
 // as a mapping where the attribute types have been lowercased and the
@@ -1122,7 +1123,8 @@ array(string) get_root_dse_attr (string attr)
 	attrs[attr] = 1;
 
 	mapping(string:array(string)) res =
-	  simple_read ("", "(objectClass=*)", indices (attrs));
+	  simple_read ("", get_cached_filter ("(objectClass=*)", ldap_version),
+		       indices (attrs));
 
 	foreach (indices (res), string attr)
 	  // Microsoft AD has several attributes in its root DSE that
@@ -1170,228 +1172,46 @@ multiset(string) get_supported_controls()
   return supported_controls;
 }
 
-  /*private*/ object|int make_filter(string filter)
-  {
+object make_filter (string filter)
+//! Returns the ASN1 object parsed from the given filter. This is a
+//! wrapper for @[Protocols.LDAP.make_filter] which parses the filter
+//! with the LDAP protocol version currently in use by this
+//! connection.
+//!
+//! @throws
+//!   If there's a parse error in the filter then a
+//!   @[Protocols.LDAP.FilterError] is thrown as from
+//!   @[Protocols.LDAP.make_filter].
+{
+  return Protocols.LDAP.make_filter (filter, ldap_version);
+}
 
-#define FILTER_PARSE_ERR(MSG...) do {					\
-      /*werror (MSG);*/							\
-      return -1;							\
-    } while (0)
-
-    // Afaict from the RFCs no insignificant whitespace is allowed in
-    // query filters, but the old parser and other query tools (at
-    // least LDP in Windows XP) seem to accept it anyway. This makes
-    // it somewhat unclear whether whitespace around values should be
-    // significant or not. This parser always treat whitespace as
-    // significant there (and inside operators) but not anywhere else.
-    // /mast
-#define WS "%*[ \t\n\r]"
-
-    string read_filter_value()
-    // Reads a filter value encoded according to section 4 in RFC 2254
-    // and section 3 in the older RFC 1960.
-    {
-      string res = "";
-      //werror ("read_filter_value %O\n", filter);
-      while (1) {
-	sscanf (filter, "%[^()*\\]%s", string val, filter);
-	res += val;
-	if (filter == "" || (<'(', ')', '*'>)[filter[0]]) break;
-	// filter[0] == '\\' now.
-	if (sscanf (filter, "\\%1x%1x%s", int high, int low, filter) == 3)
-	  // RFC 2254. (Use two %1x to force reading of exactly two
-	  // hex digits; something like %2.2x is currently not
-	  // supported.)
-	  res += sprintf ("%c", (high << 4) + low);
-	else {
-	  // RFC 1960. Note that this RFC doesn't define a consistent
-	  // quoting since a "\" shouldn't be quoted. That means it
-	  // isn't possible to specify a value ending with "\".
-	  if (sscanf (filter, "\\%1[*()]%s", val, filter) == 2)
-	    res += val;
-	  else {
-	    res += filter[..1];
-	    filter = filter[2..];
-	  }
-	}
-      }
-      //werror ("read_filter_value => %O (rest: %O)\n", res, filter);
-      return res;
-    };
-
-    object|int make_filter_recur()
-    {
-      object res;
-
-      //werror ("make_filter_recur %O\n", filter);
-
-      // Legacy error reporting: If there's a syntax error then -1 is
-      // returned if it's on the top level or 0 if it's in a
-      // subexpression. Don't know what use that is. /mast
-
-      if (sscanf (filter, WS"("WS"%s", filter) != 3)
-	FILTER_PARSE_ERR ("Expected opening parenthesis.\n");
-      if (filter == "")
-	FILTER_PARSE_ERR ("Unexpected end of filter expression.\n");
-
-      switch (filter[0]) {
-	case '&':
-	case '|': {
-	  int op = filter[0];
-	  filter = filter[1..];
-	  array(object) subs = ({});
-	  do {
-	    object|int sub = make_filter_recur();
-	    if (intp (sub)) return 0;
-	    subs += ({sub});
-	  } while (has_prefix (filter, "("));
-	  res = ASN1_CONTEXT_SET (op == '&' ? 0 : 1, subs); // 'and' or 'or'
-	  break;
-	}
-
-	case '!': {
-	  filter = filter[1..];
-	  object|int sub = make_filter_recur();
-	  if (intp (sub)) return 0;
-	  res = ASN1_CONTEXT_SEQUENCE (2, ({sub})); // 'not'
-	  break;
-	}
-
-	default: {
-	  string attr;
-	  // Doing a slightly lax check of the attribute here: Periods
-	  // are only allowed if's a string of decimal digits separated
-	  // by them.
-	  sscanf (filter, "%[-A-Za-z0-9.]"WS"%s", attr, filter);
-	  if (filter == "")
-	    FILTER_PARSE_ERR ("Unexpected end of filter expression.\n");
-
-	  string op;
-	  switch (filter[0]) {
-	    case ':': case '=':
-	      sscanf (filter, "%1s%s", op, filter);
-	      break;
-	    case '~': case '>': case '<':
-	      if (sscanf (filter, "%2s%s", op, filter) != 2 || op[1] != '=')
-		FILTER_PARSE_ERR ("Invalid filter type.\n");
-	      break;
-	    default:
-	      FILTER_PARSE_ERR ("Invalid filter type.\n");
-	  }
-
-	  if (op == ":") {
-	    // LDAP 3 extensible match. Note that we haven't really
-	    // parsed the operator in this case.
-
-	    if (ldap_version < 3)
-	      FILTER_PARSE_ERR ("Invalid filter type.\n");
-
-	    int dn_attrs = sscanf (filter, "dn"WS":"WS"%s", filter) == 3;
-	    string matching_rule;
-	    if (has_prefix (filter, "=")) {
-	      if (attr == "")
-		FILTER_PARSE_ERR ("Must specify either an attribute, "
-				  "a matching rule identifier, or both.\n");
-	      filter = filter[1..];
-	    }
-	    else {
-	      // Same kind of slightly lax check on the matching rule
-	      // identifier here as on the attribute above.
-	      if (sscanf (filter, "%[-A-Za-z0-9.]"WS":=%s", matching_rule, filter) != 3 ||
-		  matching_rule == "")
-		FILTER_PARSE_ERR ("Error parsing matching rule identifier.\n");
-	    }
-
-	    string val = read_filter_value();
-
-	    res = ASN1_CONTEXT_SEQUENCE (	// 'extensibleMatch'
-	      9, ((matching_rule ?
-		   ({ASN1_CONTEXT_OCTET_STRING (1, matching_rule)}) : ({})) +
-		  (attr != "" ?
-		   ({ASN1_CONTEXT_OCTET_STRING (2, attr)}) : ({})) +
-		  ({ASN1_CONTEXT_OCTET_STRING (3, val),
-		    ASN1_CONTEXT_BOOLEAN (4, dn_attrs)})));
-	  }
-
-	  else {
-	    if (attr == "") FILTER_PARSE_ERR ("Expected attribute.\n");
-
-	    string|object val = read_filter_value();
-
-	    if (op == "=" && has_prefix (filter, "*")) {
-	      array(string) parts = ({val});
-	      do {
-		filter = filter[1..];
-		val = read_filter_value();
-		parts += ({val});
-	      } while (has_prefix (filter, "*"));
-
-	      array(object) subs = sizeof (parts[0]) ?
-		({ASN1_CONTEXT_OCTET_STRING (0, parts[0])}) : ({});
-	      foreach (parts[1..sizeof (parts) - 2], string middle)
-		subs += ({ASN1_CONTEXT_OCTET_STRING (1, middle)});
-	      if (sizeof (parts) > 1 && sizeof (parts[-1]))
-		subs += ({ASN1_CONTEXT_OCTET_STRING (2, parts[-1])});
-
-	      if (!sizeof (subs))
-		res = ASN1_CONTEXT_OCTET_STRING (7, attr); // 'present'
-	      else
-		res = ASN1_CONTEXT_SEQUENCE ( // 'substrings'
-		  4, ({Standards.ASN1.Types.asn1_octet_string (attr),
-		       Standards.ASN1.Types.asn1_sequence (subs)}));
-	    }
-
-	    else {
-	      int op_number;
-	      switch (op) {
-		case "=": op_number = 3; break;	// 'equalityMatch'
-		case ">=": op_number = 5; break; // 'greaterOrEqual'
-		case "<=": op_number = 6; break; // 'lessOrEqual'
-		case "~=": op_number = 8; break; // 'approxMatch'
-		default:
-		  FILTER_PARSE_ERR ("Invalid filter type.\n"); // Shouldn't be reached.
-	      }
-	      res = ASN1_CONTEXT_SEQUENCE (
-		op_number, ({Standards.ASN1.Types.asn1_octet_string (attr),
-			     Standards.ASN1.Types.asn1_octet_string (val)}));
-	    }
-	  }
-
-	  break;
-	}
-      }
-
-      //werror ("make_filter_recur => %O (rest: %O)\n", res, filter);
-
-      if (sscanf (filter, WS")"WS"%s", filter) != 3)
-	FILTER_PARSE_ERR ("Expected closing parenthesis.\n");
-      return res;
-    };
-
-    object|int res = make_filter_recur();
-    if (intp (res)) return res;
-    if (filter != "")
-      FILTER_PARSE_ERR ("Unexpected data after end of filter expression.\n");
-    return res;
-
-#undef WS
-  }
+object get_default_filter()
+//! Returns the ASN1 object parsed from the filter specified in the
+//! LDAP URL, or zero if the URL doesn't specify any filter.
+//!
+//! @throws
+//!   If there's a parse error in the filter then a
+//!   @[Protocols.LDAP.FilterError] is thrown as from
+//!   @[Protocols.LDAP.make_filter].
+{
+  if (!default_filter_obj && lauth->filter)
+    default_filter_obj = make_filter (lauth->filter);
+  return default_filter_obj;
+}
 
   private object|int make_search_op(string basedn, int scope, int deref,
 				    int sizelimit, int timelimit,
-				    int attrsonly, string filter,
+				    int attrsonly, object filter,
 				    void|array(string) attrs)
   {
     // SEARCH
   // limitations: !!! sizelimit and timelimit should be unsigned int !!!
 
-    object msgval, ofilt;
+    object msgval;
     array(object) ohlp;
 
-    if(!objectp(ofilt = make_filter(filter))) {
-      return -seterr(LDAP_FILTER_ERROR);
-    }
-    ohlp = ({ofilt});
+    ohlp = ({filter});
     if (arrayp(attrs)) { //explicitly defined attributes
       array(object) o2 = ({});
       foreach(attrs, string s2)
@@ -1414,16 +1234,19 @@ multiset(string) get_supported_controls()
   //! Search LDAP directory.
   //!
   //! @param filter
-  //!   Search filter used when searching directory objects. See RFC
-  //!   2254.
+  //!   Search filter to override the one from the LDAP URL. It's
+  //!   either a string with the format specified in RFC 2254, or an
+  //!   object returned by @[Protocols.LDAP.make_filter].
   //!
   //! @param attrs
-  //!   The array of attribute names which will be returned by server.
+  //!   The array of attribute names which will be returned by server
   //!   for every entry.
   //!
   //! @param attrsonly
-  //!   The flag causes server return only attribute type (aka name)
-  //!   but not the attribute values.
+  //!   This flag causes server return only the attribute types (aka
+  //!   names) but not their values. The values will instead be empty
+  //!   arrays or - if @[Protocols.LDAP.SEARCH_MULTIVAL_ARRAYS_ONLY]
+  //!   is given - zeroes for single-valued attributes.
   //!
   //! @param controls
   //!   Extra controls to send in the search query, to modify how the
@@ -1466,8 +1289,8 @@ multiset(string) get_supported_controls()
   //!
   //! @seealso
   //!  @[result], @[result.fetch], @[read], @[get_supported_controls],
-  //!  @[Protocols.LDAP.quote_filter_value]
-  result|int search (string|void filter, array(string)|void attrs,
+  //!  @[Protocols.LDAP.quote_filter_value], @[Protocols.LDAP.make_filter]
+  result|int search (string|object|void filter, array(string)|void attrs,
 		     int|void attrsonly,
 		     void|mapping(string:array(int|string)) controls,
 		     void|int flags) {
@@ -1476,16 +1299,26 @@ multiset(string) get_supported_controls()
     mixed raw;
     array(string) rawarr = ({});
 
-    filter=filter||lauth->filter; // default from LDAP URI
-
     DWRITE_HI("client.SEARCH: " + (string)filter + "\n");
     if (chk_ver())
       return 0;
     if (chk_binded())
       return 0;
-    if(ldap_version == 3) {
-      filter = string_to_utf8(filter);
-    }
+
+    if (!objectp (filter))
+      if (mixed err = catch {
+	    if (!filter)
+	      filter = get_default_filter();
+	    else
+	      filter = make_filter (filter);
+	  }) {
+	if (objectp (err) && err->is_ldap_filter_error) {
+	  seterr (LDAP_FILTER_ERROR);
+	  return 0;
+	}
+	else
+	  throw (err);
+      }
 
     object|int search_request =
       make_search_op(ldap_basedn, ldap_scope, ldap_deref,
@@ -1661,7 +1494,8 @@ mapping(string:string|array(string)) read (
   object|int search_request =
     make_search_op (object_name, 0, ldap_deref,
 		    ldap_sizelimit, ldap_timelimit, attrsonly,
-		    filter || "(objectClass=*)", attrs);
+		    filter || get_cached_filter ("(objectClass=*)", ldap_version),
+		    attrs);
 
   if(intp(search_request)) {
     THROW(({error_string()+"\n",backtrace()}));
@@ -2089,7 +1923,8 @@ static mapping(string:array(string)) query_subschema (string dn,
     subschema_response = root_dse;
   else {
     subschema_response =
-      simple_read (dn, "(objectClass=*)", ({"subschemaSubentry"}));
+      simple_read (dn, get_cached_filter ("(objectClass=*)", ldap_version),
+		   ({"subschemaSubentry"}));
     utf8_decode_dns = 1;
   }
 
@@ -2098,7 +1933,7 @@ static mapping(string:array(string)) query_subschema (string dn,
       if (sizeof (subschema_dns) == 1)
 	return simple_read (
 	  utf8_decode_dns ? utf8_to_string (subschema_dns[0]) : subschema_dns[0],
-	  "(objectClass=subschema)", attrs);
+	  get_cached_filter ("(objectClass=subschema)", ldap_version), attrs);
 
       else {
 	// This should afaics only occur for the root DSE, but it's a
@@ -2110,7 +1945,7 @@ static mapping(string:array(string)) query_subschema (string dn,
 	foreach (subschema_dns, string subschema_dn) {
 	  if (mapping(string:array(string)) subres = simple_read (
 		utf8_decode_dns ? utf8_to_string (subschema_dn) : subschema_dn,
-		"(objectClass=subschema)", attrs))
+		get_cached_filter ("(objectClass=subschema)", ldap_version), attrs))
 	    foreach (indices (subres), string attr)
 	      res[attr] += subres[attr];
 	}
