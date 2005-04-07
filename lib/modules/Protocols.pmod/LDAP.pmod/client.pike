@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.94 2005/04/07 18:16:02 mast Exp $
+// $Id: client.pike,v 1.95 2005/04/07 18:36:15 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -560,7 +560,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|mapping(string:mixed)|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.94 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.95 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -1123,8 +1123,7 @@ array(string) get_root_dse_attr (string attr)
 	attrs[attr] = 1;
 
 	mapping(string:array(string)) res =
-	  simple_read ("", get_cached_filter ("(objectClass=*)", ldap_version),
-		       indices (attrs));
+	  simple_read ("", get_cached_filter ("(objectClass=*)"), indices (attrs));
 
 	foreach (indices (res), string attr)
 	  // Microsoft AD has several attributes in its root DSE that
@@ -1184,6 +1183,19 @@ object make_filter (string filter)
 //!   @[Protocols.LDAP.make_filter].
 {
   return Protocols.LDAP.make_filter (filter, ldap_version);
+}
+
+object get_cached_filter (string filter)
+//! This is a wrapper for @[Protocols.LDAP.get_cached_filter] which
+//! passes the LDAP protocol version currently in use by this
+//! connection.
+//!
+//! @throws
+//!   If there's a parse error in the filter then a
+//!   @[Protocols.LDAP.FilterError] is thrown as from
+//!   @[Protocols.LDAP.make_filter].
+{
+  return Protocols.LDAP.get_cached_filter (filter, ldap_version);
 }
 
 object get_default_filter()
@@ -1494,7 +1506,7 @@ mapping(string:string|array(string)) read (
   object|int search_request =
     make_search_op (object_name, 0, ldap_deref,
 		    ldap_sizelimit, ldap_timelimit, attrsonly,
-		    filter || get_cached_filter ("(objectClass=*)", ldap_version),
+		    filter || get_cached_filter ("(objectClass=*)"),
 		    attrs);
 
   if(intp(search_request)) {
@@ -1923,8 +1935,7 @@ static mapping(string:array(string)) query_subschema (string dn,
     subschema_response = root_dse;
   else {
     subschema_response =
-      simple_read (dn, get_cached_filter ("(objectClass=*)", ldap_version),
-		   ({"subschemaSubentry"}));
+      simple_read (dn, get_cached_filter ("(objectClass=*)"), ({"subschemaSubentry"}));
     utf8_decode_dns = 1;
   }
 
@@ -1933,7 +1944,7 @@ static mapping(string:array(string)) query_subschema (string dn,
       if (sizeof (subschema_dns) == 1)
 	return simple_read (
 	  utf8_decode_dns ? utf8_to_string (subschema_dns[0]) : subschema_dns[0],
-	  get_cached_filter ("(objectClass=subschema)", ldap_version), attrs);
+	  get_cached_filter ("(objectClass=subschema)"), attrs);
 
       else {
 	// This should afaics only occur for the root DSE, but it's a
@@ -1945,7 +1956,7 @@ static mapping(string:array(string)) query_subschema (string dn,
 	foreach (subschema_dns, string subschema_dn) {
 	  if (mapping(string:array(string)) subres = simple_read (
 		utf8_decode_dns ? utf8_to_string (subschema_dn) : subschema_dn,
-		get_cached_filter ("(objectClass=subschema)", ldap_version), attrs))
+		get_cached_filter ("(objectClass=subschema)"), attrs))
 	    foreach (indices (subres), string attr)
 	      res[attr] += subres[attr];
 	}
