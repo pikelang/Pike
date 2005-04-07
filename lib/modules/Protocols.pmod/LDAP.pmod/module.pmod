@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.21 2005/04/07 18:16:02 mast Exp $
+// $Id: module.pmod,v 1.22 2005/04/07 18:36:45 mast Exp $
 
 #include "ldap_globals.h"
 
@@ -1586,6 +1586,10 @@ object get_cached_filter (string filter, void|int ldap_version)
 //! Like @[make_filter] but saves the generated objects for reuse.
 //! Useful for filters that reasonably will occur often. The cache is
 //! never garbage collected, however.
+//!
+//! @throws
+//!   If there's a parse error in the filter then a @[FilterError] is
+//!   thrown as from @[make_filter].
 {
   if (!ldap_version) ldap_version = 3;
   array(object) arr = cached_filters[filter] || ({});
