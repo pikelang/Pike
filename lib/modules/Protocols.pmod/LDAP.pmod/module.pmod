@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.22 2005/04/07 18:36:45 mast Exp $
+// $Id: module.pmod,v 1.23 2005/04/08 12:27:34 grubba Exp $
 
 #include "ldap_globals.h"
 
@@ -1610,10 +1610,11 @@ constant connection_rebind_threshold = 4;
 // Let there be a couple of differently bound connections before
 // starting to rebind the same ones.
 
-static mapping(string:array(client)) idle_conns = ([]);
+static mapping(string:array(object/*(client)*/)) idle_conns = ([]);
 static Thread.Mutex idle_conns_mutex = Thread.Mutex();
 
-client get_connection (string ldap_url, void|string binddn, void|string password)
+object/*(client)*/ get_connection(string ldap_url, void|string binddn,
+				  void|string password)
 //! Returns a client connection to the specified LDAP URL. If a bind
 //! DN is specified (either through a @expr{"bindname"@} extension in
 //! @[ldap_url] or, if there isn't one, through @[binddn]) then the
@@ -1631,7 +1632,7 @@ client get_connection (string ldap_url, void|string binddn, void|string password
 {
   string pass = password;
   password = "CENSORED";
-  client conn;
+  object/*(client)*/ conn;
 
   mapping(string:mixed) parsed_url = parse_ldap_url (ldap_url);
   if (string url_bindname = parsed_url->ext && parsed_url->ext->bindname)
@@ -1644,10 +1645,10 @@ client get_connection (string ldap_url, void|string binddn, void|string password
 find_connection:
   if (idle_conns[ldap_url]) {
     Thread.MutexKey lock = idle_conns_mutex->lock();
-    if (array(client) conns = idle_conns[ldap_url]) {
+    if (array(object/*(client)*/) conns = idle_conns[ldap_url]) {
 
       int now = time();
-      client rebind_conn;
+      object/*(client)*/ rebind_conn;
       for (int i = 0; i < sizeof (conns);) {
 	conn = conns[i];
 	int last_use = conn->get_last_io_time();
@@ -1689,7 +1690,7 @@ find_connection:
   else {
     DWRITE("Connecting to %O.\n", ldap_url);
 
-    conn = client (parsed_url);
+    conn = Protocols.LDAP->client (parsed_url);
   }
 
   if (!binddn)
@@ -1715,7 +1716,7 @@ find_connection:
   return conn;
 }
 
-void return_connection (client conn)
+void return_connection (object/*(client)*/ conn)
 //! Use this to return a connection to the connection pool after
 //! you've finished using it. The connection is assumed to be working.
 //!
