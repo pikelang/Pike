@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.164 2004/11/14 13:03:09 nilsson Exp $
+|| $Id: mpz_glue.c,v 1.165 2005/04/08 17:05:17 grubba Exp $
 */
 
 #include "global.h"
@@ -1146,7 +1146,7 @@ static void PIKE_CONCAT(name,_eq)(INT32 args)				\
  */
 /*! @decl Gmp.mpz `+=(int|float|Gmp.mpz ... x)
  */
-BINFUN2(mpzmod_add, "+", mpz_add, +);
+BINFUN2(mpzmod_add, "+", mpz_add, +)
 
 #undef STRINGCONV
 #define STRINGCONV(X)
@@ -1157,7 +1157,7 @@ BINFUN2(mpzmod_add, "+", mpz_add, +);
  */
 /*! @decl Gmp.mpz `*=(int|float|Gmp.mpz ... x)
  */
-BINFUN2(mpzmod_mul, "*", mpz_mul, *);
+BINFUN2(mpzmod_mul, "*", mpz_mul, *)
 
 /*! @decl Gmp.mpz gcd(object|int|float|string... arg)
  *! 
@@ -1509,15 +1509,15 @@ static void name(INT32 args)				\
 
 /*! @decl Gmp.mpz `&(int|float|Gmp.mpz ... x)
  */
-BINFUN(mpzmod_and, "Gmp.mpz->`&", mpz_and);
+BINFUN(mpzmod_and, "Gmp.mpz->`&", mpz_and)
 
 /*! @decl Gmp.mpz `|(int|float|Gmp.mpz ... x)
  */
-BINFUN(mpzmod_or, "Gmp.mpz->`|", mpz_ior);
+BINFUN(mpzmod_or, "Gmp.mpz->`|", mpz_ior)
 
 /*! @decl Gmp.mpz `^(int|float|Gmp.mpz ... x)
  */
-BINFUN(mpzmod_xor, "Gmp.mpz->`^", mpz_xor);
+BINFUN(mpzmod_xor, "Gmp.mpz->`^", mpz_xor)
 
 /*! @decl Gmp.mpz `~()
  */
@@ -1548,27 +1548,27 @@ static void name(INT32 args)				\
 
 /*! @decl int(0..1) `>(mixed with)
  */
-CMPEQU(mpzmod_gt, "Gmp.mpz->`>", >, RET_UNDEFINED);
+CMPEQU(mpzmod_gt, "Gmp.mpz->`>", >, RET_UNDEFINED)
 
 /*! @decl int(0..1) `<(mixed with)
  */
-CMPEQU(mpzmod_lt, "Gmp.mpz->`<", <, RET_UNDEFINED);
+CMPEQU(mpzmod_lt, "Gmp.mpz->`<", <, RET_UNDEFINED)
 
 /*! @decl int(0..1) `>=(mixed with)
  */
-CMPEQU(mpzmod_ge, "Gmp.mpz->`>=", >=, RET_UNDEFINED);
+CMPEQU(mpzmod_ge, "Gmp.mpz->`>=", >=, RET_UNDEFINED)
 
 /*! @decl int(0..1) `<=(mixed with)
  */
-CMPEQU(mpzmod_le, "Gmp.mpz->`<=", <=, RET_UNDEFINED);
+CMPEQU(mpzmod_le, "Gmp.mpz->`<=", <=, RET_UNDEFINED)
 
 /*! @decl int(0..1) `==(mixed with)
  */
-CMPEQU(mpzmod_eq, "Gmp.mpz->`==", ==, RET_UNDEFINED);
+CMPEQU(mpzmod_eq, "Gmp.mpz->`==", ==, RET_UNDEFINED)
 
 /*! @decl int(0..1) `!=(mixed with)
  */
-CMPEQU(mpzmod_nq, "Gmp.mpz->`!=", !=, i=1);
+CMPEQU(mpzmod_nq, "Gmp.mpz->`!=", !=, i=1)
 
 /*! @decl int(0..1) probably_prime_p()
  *!
