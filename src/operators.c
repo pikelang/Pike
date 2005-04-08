@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.203 2005/01/14 10:00:54 nilsson Exp $
+|| $Id: operators.c,v 1.204 2005/04/08 16:59:18 grubba Exp $
 */
 
 #include "global.h"
@@ -5067,15 +5067,22 @@ struct program *string_assignment_program;
 
 #undef THIS
 #define THIS ((struct string_assignment_storage *)(CURRENT_STORAGE))
-/*! @decl int `[](int i, int j)
+/*! @decl int `[](int i)
  *!
  *! String index operator.
  */
 static void f_string_assignment_index(INT32 args)
 {
-  ptrdiff_t len = THIS->s->len;
+  ptrdiff_t len;
   INT_TYPE i, p;
-  get_all_args("string[]",args,"%i",&p);
+
+  get_all_args("string[]", args, "%i", &p);
+
+  if (!THIS->s) {
+    Pike_error("Indexing uninitialized string_assignment.\n");
+  }
+
+  len = THIS->s->len;
   i = p < 0 ? p + len : p;
   if(i<0 || i>=len)
     Pike_error("Index %"PRINTPIKEINT"d is out of string range "
@@ -5107,7 +5114,7 @@ static void f_string_assignment_assign_index(INT32 args)
       Pike_error("Index %"PRINTPIKEINT"d is out of string range "
 		 "%"PRINTPTRDIFFT"d..%"PRINTPTRDIFFT"d.\n",
 		 p, -len, len - 1);
-    free_string(THIS->s);
+    if (THIS->s) free_string(THIS->s);
     u->string=modify_shared_string(u->string,i,j);
     copy_shared_string(THIS->s, u->string);
   }
@@ -5135,9 +5142,9 @@ static void f_string_assignment_assign_index(INT32 args)
 
 static void init_string_assignment_storage(struct object *o)
 {
-  THIS->lval[0].type=T_INT;
-  THIS->lval[1].type=T_INT;
-  THIS->s=0;
+  THIS->lval[0].type = T_INT;
+  THIS->lval[1].type = T_INT;
+  THIS->s = NULL;
 }
 
 static void exit_string_assignment_storage(struct object *o)
