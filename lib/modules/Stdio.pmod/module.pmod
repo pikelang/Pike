@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.216 2005/04/08 00:01:53 nilsson Exp $
+// $Id: module.pmod,v 1.217 2005/04/08 01:55:18 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1422,36 +1422,6 @@ class Port
   }
 }
 
-//! An instance of @tt{FILE("stderr")@}, the standard error stream. Use this
-//! when you want to output error messages.
-//!
-//! @seealso
-//!   @[predef::werror()]
-File stderr=FILE("stderr");
-
-//! An instance of @tt{FILE("stdout")@}, the standatd output stream. Use this
-//! when you want to write anything to the standard output.
-//!
-//! @seealso
-//!   @[predef::write()]
-File stdout=FILE("stdout");
-
-//! An instance of @tt{FILE("stdin")@}, the standard input stream. Use this
-//! when you want to read anything from the standard input.
-//! This example will read lines from standard input for as long as there
-//! are more lines to read. Each line will then be written to stdout together
-//! with the line number. We could use @[Stdio.stdout.write()] instead
-//! of just @[write()], since they are the same function.
-//!
-//! @example
-//!  int main()
-//!  {
-//!    int line;
-//!    while(string s=Stdio.stdin.gets())
-//! 	 write("%5d: %s\n", line++, s);
-//!  }
-FILE stdin=FILE("stdin");
-
 //! @[Stdio.FILE] is a buffered version of @[Stdio.File], it inherits
 //! @[Stdio.File] and has most of the functionality of @[Stdio.File].
 //! However, it has an input buffer that allows line-by-line input.
@@ -1474,7 +1444,7 @@ class FILE
   // Contains a prefix of b splitted on "\n".
   // Note that the last element of the array is a partial line,
   // and should not be used.
-  private array cached_lines = ({});
+  private array(string) cached_lines = ({});
 
   private function(string:string) output_conversion, input_conversion;
   
@@ -1556,11 +1526,11 @@ class FILE
       object out = master()->resolv("Locale.Charset.encoder")( charset );
 
       input_conversion =
-	lambda( string s ) {
+	[function(string:string)]lambda( string s ) {
 	  return in->feed( s )->drain();
 	};
       output_conversion =
-	lambda( string s ) {
+	[function(string:string)]lambda( string s ) {
 	  return out->feed( s )->drain();
 	};
     }
@@ -1716,12 +1686,12 @@ class FILE
       {
 	if( arrayp( what ) )
 	  what *="";
-	what = sprintf( what, @fmt );
+	what = sprintf( [string]what, @fmt );
       }
       if( arrayp( what ) )
 	what = map( what, output_conversion );
       else
-	what = output_conversion( what );
+	what = output_conversion( [string]what );
       return ::write( what );
     }
     return ::write( what,@fmt );
@@ -1855,6 +1825,36 @@ class FILE
     return b[bpos++];
   }
 }
+
+//! An instance of @tt{FILE("stderr")@}, the standard error stream. Use this
+//! when you want to output error messages.
+//!
+//! @seealso
+//!   @[predef::werror()]
+FILE stderr=FILE("stderr");
+
+//! An instance of @tt{FILE("stdout")@}, the standatd output stream. Use this
+//! when you want to write anything to the standard output.
+//!
+//! @seealso
+//!   @[predef::write()]
+FILE stdout=FILE("stdout");
+
+//! An instance of @tt{FILE("stdin")@}, the standard input stream. Use this
+//! when you want to read anything from the standard input.
+//! This example will read lines from standard input for as long as there
+//! are more lines to read. Each line will then be written to stdout together
+//! with the line number. We could use @[Stdio.stdout.write()] instead
+//! of just @[write()], since they are the same function.
+//!
+//! @example
+//!  int main()
+//!  {
+//!    int line;
+//!    while(string s=Stdio.stdin.gets())
+//! 	 write("%5d: %s\n", line++, s);
+//!  }
+FILE stdin=FILE("stdin");
 
 #ifdef TRACK_OPEN_FILES
 static mapping(string|int:array) open_files = ([]);
@@ -2121,7 +2121,8 @@ int append_file(string filename, string str, int|void access)
 
 //! Give the size of a file. Size -1 indicates that the file either
 //! does not exist, or that it is not readable by you. Size -2
-//! indicates that it is a directory.
+//! indicates that it is a directory, -3 that it is a symlink and -4
+//! that it is a device.
 //!
 //! @seealso
 //! @[file_stat()], @[write_file()], @[read_bytes()]
@@ -2131,7 +2132,7 @@ int file_size(string filename)
   Stat stat;
   stat = file_stat(filename);
   if(!stat) return -1;
-  return stat[1]; 
+  return [int]stat->size;
 }
 
 //! Append @[relative] paths to an @[absolute] path and remove any
@@ -2196,7 +2197,7 @@ void perror(string s)
 //!
 int is_file(string path)
 {
-  if (Stat s = file_stat (path)) return s->isreg;
+  if (Stat s = file_stat (path)) return [int]s->isreg;
   return 0;
 }
 
@@ -2210,7 +2211,7 @@ int is_file(string path)
 //!
 int is_dir(string path)
 {
-  if (Stat s = file_stat (path)) return s->isdir;
+  if (Stat s = file_stat (path)) return [int]s->isdir;
   return 0;
 }
 
@@ -2224,7 +2225,7 @@ int is_dir(string path)
 //!
 int is_link(string path)
 {
-  if (Stat s = file_stat (path, 1)) return s->islnk;
+  if (Stat s = file_stat (path, 1)) return [int]s->islnk;
   return 0;
 }
 
@@ -2332,8 +2333,8 @@ int cp(string from, string to)
     // recursive copying of directories
     if(!mkdir(to))
       return 0;
-    chmod(to, convert_modestring2int(stat->mode_string));
-    array sub_files = get_dir(from);
+    chmod(to, convert_modestring2int([string]stat->mode_string));
+    array(string) sub_files = get_dir(from);
     foreach(sub_files, string sub_file)
     {
       if(!cp(combine_path(from, sub_file), combine_path(to, sub_file)))
@@ -2361,7 +2362,7 @@ int cp(string from, string to)
   
     f->close();
     t->close();
-    chmod(to, convert_modestring2int(stat->mode_string));
+    chmod(to, convert_modestring2int([string]stat->mode_string));
     return 1;
   }
 }
@@ -2444,8 +2445,8 @@ static void call_cp_cb(int len,
 void async_cp(string from, string to,
 	      function(int, mixed...:void) callback, mixed ... args)
 {
-  object from_file = File();
-  object to_file = File();
+  File from_file = File();
+  File to_file = File();
 
   if ((!(from_file->open(from, "r"))) ||
       (!(to_file->open(to, "wct")))) {
@@ -2947,9 +2948,9 @@ static class nb_sendfile
 //! @[Stdio.File->set_nonblocking()]
 //!
 object sendfile(array(string) headers,
-		object from, int offset, int len,
+		File from, int offset, int len,
 		array(string) trailers,
-		object to,
+		File to,
 		function(int, mixed ...:void)|void cb,
 		mixed ... args)
 {
@@ -2962,8 +2963,7 @@ object sendfile(array(string) headers,
   };
 
 #ifdef SENDFILE_DEBUG
-  werror(sprintf("files.sendfile() failed:\n%s\n",
-		 describe_backtrace(err)));
+  werror("files.sendfile() failed:\n%s\n", describe_backtrace(err)));
 #endif /* SENDFILE_DEBUG */
 
 #endif /* !DISABLE_FILES_SENDFILE && files.sendfile */
@@ -2978,7 +2978,7 @@ class UDP
   inherit files.UDP;
 
   private static array extra=0;
-  private static function callback=0;
+  private static function(mapping,mixed...:void) callback=0;
 
   //! @decl UDP set_nonblocking()
   //! @decl UDP set_nonblocking(function(mapping(string:int|string), @
@@ -2993,10 +2993,11 @@ class UDP
   //! @returns
   //! The called object.
   //!
-  this_program set_nonblocking(mixed ...stuff)
+  this_program set_nonblocking(void|function(mapping,mixed...:void) f,
+			       mixed ... stuff)
   {
-    if (stuff!=({})) 
-      set_read_callback(@stuff);
+    if(f)
+      set_read_callback(f,@stuff);
     return _set_nonblocking();
   }
 
@@ -3021,7 +3022,8 @@ class UDP
   //! @seealso
   //! @[read()]
   //!
-  this_program set_read_callback(function f,mixed ...ext)
+  this_program set_read_callback(function(mapping,mixed ...:void) f,
+				 mixed ...ext)
   {
     extra=ext;
     _set_read_callback((callback = f) && _read_callback);
