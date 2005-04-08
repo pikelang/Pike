@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.345 2005/03/10 01:15:12 nilsson Exp $
+|| $Id: file.c,v 1.346 2005/04/08 17:32:18 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -2971,6 +2971,8 @@ static void file_open_socket(INT32 args)
     args = 0;
   }
 
+/*   fprintf(stderr, "file_open_socket: family: %d\n", family); */
+
   if (args) {
     PIKE_SOCKADDR addr;
     int addr_len;
@@ -3192,6 +3194,8 @@ static void file_connect(INT32 args)
 			    dest_port->u.string->str : NULL),
 			   (dest_port->type == PIKE_T_INT?
 			    dest_port->u.integer : -1), 0);
+
+/*   fprintf(stderr, "connect: family: %d\n", SOCKADDR_FAMILY(addr)); */
 
   if(was_closed)
   {
@@ -3868,24 +3872,19 @@ PIKE_MODULE_EXIT
 
 #define REF (*((struct object **)(Pike_fp->current_storage)))
 
-#define FILE_FUNC(X,Y,Z) \
-static ptrdiff_t PIKE_CONCAT(Y,_function_number);
-
-#include "file_functions.h"
-
-
 #define FILE_FUNC(X,Y,Z)					\
-void PIKE_CONCAT(Y,_ref) (INT32 args) {				\
-  struct object *o=REF;						\
-  debug_malloc_touch(o);					\
-  if(!o || !o->prog) { 						\
-   /* This is a temporary kluge */                              \
-   Pike_error("Stdio.File(): not open.\n");				\
-  }								\
-  if(o->prog != file_program)					\
-     Pike_error("Wrong type of object in Stdio.File->_fd\n");	\
-  apply_low(o, PIKE_CONCAT(Y,_function_number), args);		\
-}
+  static ptrdiff_t PIKE_CONCAT(Y,_function_number);		\
+  void PIKE_CONCAT(Y,_ref) (INT32 args) {			\
+    struct object *o=REF;					\
+    debug_malloc_touch(o);					\
+    if(!o || !o->prog) {					\
+      /* This is a temporary kluge */				\
+      Pike_error("Stdio.File(): not open.\n");			\
+    }								\
+    if(o->prog != file_program)					\
+      Pike_error("Wrong type of object in Stdio.File->_fd\n");	\
+    apply_low(o, PIKE_CONCAT(Y,_function_number), args);	\
+  }
 
 #include "file_functions.h"
 
@@ -3909,10 +3908,12 @@ void check_static_file_data(struct callback *a, void *b, void *c)
 {
   if(file_program)
   {
-#define FILE_FUNC(X,Y,Z) \
-    if(PIKE_CONCAT(Y,_function_number)<0 || PIKE_CONCAT(Y,_function_number)>file_program->num_identifier_references) \
+#define FILE_FUNC(X,Y,Z)				    \
+    if(PIKE_CONCAT(Y,_function_number)<0 ||		    \
+       PIKE_CONCAT(Y,_function_number)>			    \
+       file_program->num_identifier_references)		    \
       Pike_fatal(#Y "_function_number is incorrect: %ld\n", \
-            TO_LONG(PIKE_CONCAT(Y,_function_number)));
+		 TO_LONG(PIKE_CONCAT(Y,_function_number)));
 #include "file_functions.h"
   }
 }
@@ -4063,9 +4064,11 @@ PIKE_MODULE_INIT
   START_NEW_PROGRAM_ID(STDIO_FD);
   ADD_STORAGE(struct my_file);
 
-#define FILE_FUNC(X,Y,Z) PIKE_CONCAT(Y,_function_number)=ADD_FUNCTION(X,Y,Z,0)
+#define FILE_FUNC(X,Y,Z)					\
+  PIKE_CONCAT(Y,_function_number) = ADD_FUNCTION(X,Y,Z,0);
 #define FILE_OBJ tObjImpl_STDIO_FD
 #include "file_functions.h"
+
   MAP_VARIABLE("_read_callback",tMix,0,
 	       OFFSETOF(my_file, event_cbs[PIKE_FD_READ]),PIKE_T_MIXED);
   MAP_VARIABLE("_write_callback",tMix,0,
@@ -4111,7 +4114,8 @@ PIKE_MODULE_INIT
   MAP_VARIABLE("_fd", tObj, 0, 0, PIKE_T_OBJECT);
   set_init_callback(file___init_ref);
 
-#define FILE_FUNC(X,Y,Z) ADD_FUNCTION(X,PIKE_CONCAT(Y,_ref),Z,0)
+#define FILE_FUNC(X,Y,Z)			\
+  ADD_FUNCTION(X, PIKE_CONCAT(Y,_ref), Z, 0);
 #define FILE_OBJ tObjImpl_STDIO_FD_REF
 #include "file_functions.h"
 
