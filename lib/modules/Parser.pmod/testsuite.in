@@ -1,7 +1,7 @@
 START_MARKER
 
 define(test_pike_token,[[
-test_eq(Parser.Pike.low_split($1)[0],$1)
+test_equal(Parser.Pike.low_split($1),({$1}))
 ]])
 
 test_equal(Parser.Pike.low_split(""),({}))
