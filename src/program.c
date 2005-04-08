@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.586 2005/02/09 16:35:50 mast Exp $
+|| $Id: program.c,v 1.587 2005/04/08 17:01:02 grubba Exp $
 */
 
 #include "global.h"
@@ -4441,7 +4441,8 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 				 id->opt_flags);
 	}
       } else if (IDENTIFIER_IS_VARIABLE(id->identifier_flags)) {
-	yyerror("Attempt to make a constant of a variable.");
+	my_yyerror("Attempt to make a constant %S of a variable.",
+		   name);
 	c = NULL;
       }
     }
@@ -4452,7 +4453,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     c &&
 #endif
     !svalues_are_constant(c,1,BIT_MIXED,0))
-    yyerror("Constant values may not have references to this.");
+    my_yyerror("Constant value %S has a reference to this.", name);
 
   if(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE)
   {
