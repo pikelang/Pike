@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.217 2005/04/08 01:55:18 nilsson Exp $
+// $Id: module.pmod,v 1.218 2005/04/08 08:56:21 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -851,7 +851,7 @@ class File
 
     if (!___close_callback) return 0;
 
-#ifdef __NT__
+#ifndef __NT__
     if (!errno() && peek (0)) {
       // There's data to read...
       //
@@ -863,9 +863,9 @@ class File
       ::set_read_callback(0);
       //___close_callback = 0;
     }
-#endif
-
-    else {
+    else
+#endif /* !__NT__ */
+    {
 #ifdef BACKEND_DEBUG
       if (errno())
 	BE_WERR ("  got error " + strerror (errno()) + " from backend");
