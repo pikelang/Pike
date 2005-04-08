@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.74 2005/01/20 10:48:52 nilsson Exp $
+|| $Id: jvm.c,v 1.75 2005/04/08 17:17:21 grubba Exp $
 */
 
 /*
@@ -1469,6 +1469,20 @@ static void f_static_field_get(INT32 args)
 
 struct native_method_context;
 
+/* low_make_stub() returns the address of a function in ctx that
+ * prepends data to the list of arguments, and then calls dispatch()
+ * with the resulting argument list.
+ *
+ * Arguments:
+ *   ctx	Context, usually just containing space for the machine code.
+ *   data	Value to prepend in the argument list.
+ *   statc	dispatch is a static method.
+ *   dispatch	Function to call.
+ *   args	Number of integer equvivalents to pass along.
+ *   flt_args	bitfield: There are float arguments at these positions.
+ *   dbl_args	bitfield: There are double arguments at these positions.
+ */
+
 #ifdef HAVE_SPARC_CPU
 
 struct cpu_context {
@@ -1520,6 +1534,52 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 
 #else
 #ifdef HAVE_X86_CPU
+
+struct cpu_context {
+  unsigned char code[32];
+};
+
+static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
+			   void (*dispatch)(), int args,
+			   int flt_args, int dbl_args)
+{
+  unsigned char *p = ctx->code;
+
+  *p++ = 0x55;               /* pushl  %ebp       */
+  *p++ = 0x8b; *p++ = 0xec;  /* movl  %esp, %ebp  */
+  *p++ = 0x8d; *p++ = 0x45;  /* lea  n(%ebp),%eax */
+  if(statc)
+    *p++ = 16;
+  else
+    *p++ = 12;
+  *p++ = 0x50;               /* pushl  %eax       */
+  if(statc) {
+    *p++ = 0xff; *p++ = 0x75; *p++ = 0x0c;  /* pushl  12(%ebp) */
+  } else {
+    *p++ = 0x6a; *p++ = 0x00;               /* pushl  $0x0     */
+  }
+  *p++ = 0xff; *p++ = 0x75; *p++ = 0x08;  /* pushl  8(%ebp)  */
+  *p++ = 0x68;               /* pushl  $data          */
+  *((unsigned INT32 *)p) = (unsigned INT32)data; p+=4;
+  *p++ = 0xb8;               /* movl  $dispatch, %eax */
+  *((unsigned INT32 *)p) = (unsigned INT32)dispatch; p+=4;
+  *p++ = 0xff; *p++ = 0xd0;  /* call  *%eax          */
+  *p++ = 0x8b; *p++ = 0xe5;  /* movl  %ebp, %esp     */
+  *p++ = 0x5d;               /* popl  %ebp           */
+#ifdef __NT__
+  *p++ = 0xc2;               /* ret   n              */
+  *((unsigned INT16 *)p) = (unsigned INT16)(args<<2); p+=2;
+#else /* !__NT__ */
+  *p++ = 0xc3;               /* ret                  */
+#endif /* __NT__ */
+
+  return ctx->code;
+}
+
+#else
+#ifdef HAVE_X86_64_CPU
+
+#error Support for x86_64 not implemented yet!
 
 struct cpu_context {
   unsigned char code[32];
@@ -1825,6 +1885,7 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 #error How did you get here?  It should never happen.
 #endif /* HAVE_ALPHA_CPU */
 #endif /* HAVE_PPC_CPU */
+#endif /* HAVE_X86_64_CPU */
 #endif /* HAVE_X86_CPU */
 #endif /* HAVE_SPARC_CPU */
 
@@ -2112,21 +2173,21 @@ static void JNICALL native_dispatch_v(struct native_method_context *ctx,
 static void *make_stub(struct cpu_context *ctx, void *data, int statc, int rt,
 		       int args, int flt_args, int dbl_args)
 {
-  void *disp = native_dispatch_v;
+  void (*disp)() = (void (*)())native_dispatch_v;
 
   switch(rt) {
-  case 'Z': disp = native_dispatch_z; break;
-  case 'B': disp = native_dispatch_b; break;
-  case 'C': disp = native_dispatch_c; break;
-  case 'S': disp = native_dispatch_s; break;
-  case 'I': disp = native_dispatch_i; break;
-  case 'J': disp = native_dispatch_j; break;
-  case 'F': disp = native_dispatch_f; break;
-  case 'D': disp = native_dispatch_d; break;
+  case 'Z': disp = (void (*)())native_dispatch_z; break;
+  case 'B': disp = (void (*)())native_dispatch_b; break;
+  case 'C': disp = (void (*)())native_dispatch_c; break;
+  case 'S': disp = (void (*)())native_dispatch_s; break;
+  case 'I': disp = (void (*)())native_dispatch_i; break;
+  case 'J': disp = (void (*)())native_dispatch_j; break;
+  case 'F': disp = (void (*)())native_dispatch_f; break;
+  case 'D': disp = (void (*)())native_dispatch_d; break;
   case '[':
-  case 'L': disp = native_dispatch_l; break;
+  case 'L': disp = (void (*)())native_dispatch_l; break;
   default:
-    disp = native_dispatch_v;
+    disp = (void (*)())native_dispatch_v;
   }
 
   return low_make_stub(ctx, data, statc, disp, args, flt_args, dbl_args);
