@@ -5,6 +5,9 @@ test_eq([[ Stdio.append_path("../foo/", "../bar") ]], "../foo/bar")
 test_eq([[ Stdio.append_path("../foo/", "../bar", "../baz") ]], "../foo/bar/baz")
 test_eq([[ Stdio.append_path("../foo/", "../bar", "../baz", "../fie/../faz") ]], "../foo/bar/baz/faz")
 
+// Peek is missing on windows. When it exists, turn on peek-dependent
+// code in module.pmod
+test_true( functionp(Stdio.File()->peek) )
 
 // Stdio.FILE gets/ngets tests
 test_equal([[
