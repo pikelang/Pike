@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.42 2005/04/08 17:23:46 grubba Exp $
+|| $Id: roxen.c,v 1.43 2005/04/08 17:24:39 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -393,7 +393,7 @@ static void f_http_decode_string(INT32 args)
 	 *dest=*(bar++);
        }
    } else {
-     foo = newstr->str;
+     foo = STR0(newstr);
      for (proc=0; bar<end; foo++)
        if (*bar=='%') {
 	 if (bar[1] == 'u' || bar[1] == 'U') {
