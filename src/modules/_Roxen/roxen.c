@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.41 2005/01/20 10:46:34 nilsson Exp $
+|| $Id: roxen.c,v 1.42 2005/04/08 17:23:46 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -47,8 +47,8 @@
 #define THP ((struct header_buf *)Pike_fp->current_storage)
 struct  header_buf
 {
-  char *headers;
-  char *pnt;
+  unsigned char *headers;
+  unsigned char *pnt;
   ptrdiff_t hsize, left;
   int slash_n, spc;
 };
@@ -79,7 +79,7 @@ static void f_hp_feed( INT32 args )
   struct header_buf *hp = THP;
   int str_len;
   int tot_slash_n=hp->slash_n, slash_n = 0, spc = hp->spc;
-  char *pp,*ep;
+  unsigned char *pp,*ep;
   struct svalue *tmp;
   struct mapping *headers;
   ptrdiff_t os=0, i, j, l;
@@ -92,7 +92,7 @@ static void f_hp_feed( INT32 args )
   str_len = str->len;
   while( str_len >= hp->left )
   {
-    char *buf;
+    unsigned char *buf;
     if( THP->hsize > 512 * 1024 )
       Pike_error("Too many headers\n");
     THP->hsize += 8192;
@@ -251,7 +251,7 @@ static void f_make_http_headers( INT32 args )
  */
 {
   int total_len = 0, e;
-  char *pnt;
+  unsigned char *pnt;
   struct mapping *m;
   struct keypair *k;
   struct pike_string *res;
@@ -286,14 +286,14 @@ static void f_make_http_headers( INT32 args )
   total_len += 2;
 
   res = begin_shared_string( total_len );
-  pnt = (char *)res->str;
+  pnt = STR0(res);
 #define STRADD(X)\
     for( l=X.u.string->len,s=X.u.string->str,c=0; c<l; c++ )\
       *(pnt++)=*(s++);
 
   NEW_MAPPING_LOOP( m->data )
   {
-    char *s;
+    unsigned char *s;
     ptrdiff_t l, c;
     if( k->val.type == PIKE_T_STRING )
     {
