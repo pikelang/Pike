@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_jpeg.c,v 1.69 2004/10/07 22:49:58 nilsson Exp $
+|| $Id: image_jpeg.c,v 1.70 2005/04/08 17:19:51 grubba Exp $
 */
 
 #include "global.h"
@@ -222,7 +222,7 @@ static boolean my_jpeg_marker_parser(j_decompress_ptr cinfo)
    mm->next=mds->first_marker;
    mds->first_marker=mm;
 
-   d=mm->data;
+   d = (char *)mm->data;
    while (length--) *(d++)=(char)jpeg_getc(cinfo);
 
    if (mm->id==JPEG_APP0+14)
@@ -1138,7 +1138,7 @@ static void img_jpeg_decode(INT32 args,int mode)
       {
 	 struct my_marker *mm=mds.first_marker;
 	 push_int(mm->id);
-	 push_string(make_shared_binary_string(mm->data,mm->len));
+	 push_string(make_shared_binary_string((char *)mm->data, mm->len));
 	 m++;
 	 mds.first_marker=mm->next;
 	 free(mm);
