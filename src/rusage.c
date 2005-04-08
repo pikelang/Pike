@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.43 2004/12/30 13:46:22 grubba Exp $
+|| $Id: rusage.c,v 1.44 2005/04/08 17:02:41 grubba Exp $
 */
 
 #include "global.h"
@@ -319,7 +319,7 @@ cpu_time_t get_real_time (void)
     return (cpu_time_t) -1;
 }
 
-#elif defined (HAVE_WORKING_GETHRVTIME)
+#elif 0 && defined (HAVE_WORKING_GETHRVTIME)
 
 cpu_time_t get_cpu_time (void)
 {
