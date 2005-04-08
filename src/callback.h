@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: callback.h,v 1.18 2002/10/11 01:39:30 nilsson Exp $
+|| $Id: callback.h,v 1.19 2005/04/08 16:54:19 grubba Exp $
 */
 
 #ifndef CALLBACK_H
@@ -25,7 +25,7 @@ typedef void (*callback_func)(struct callback *, void *,void *);
 #include "block_alloc_h.h"
 /* Prototypes begin here */
 struct callback;
-BLOCK_ALLOC(callback, CALLBACK_CHUNK)
+BLOCK_ALLOC(callback, CALLBACK_CHUNK);
 PMOD_EXPORT void low_call_callback(struct callback_list *lst, void *arg);
 PMOD_EXPORT struct callback *debug_add_to_callback(struct callback_list *lst,
 						   callback_func call,

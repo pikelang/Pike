@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.h,v 1.90 2005/02/09 16:35:50 mast Exp $
+|| $Id: object.h,v 1.91 2005/04/08 16:55:53 grubba Exp $
 */
 
 #ifndef OBJECT_H
@@ -75,7 +75,7 @@ enum object_destruct_reason {
 
 #include "block_alloc_h.h"
 /* Prototypes begin here */
-BLOCK_ALLOC_FILL_PAGES(object, 2)
+BLOCK_ALLOC_FILL_PAGES(object, 2);
 PMOD_EXPORT struct object *low_clone(struct program *p);
 PMOD_EXPORT void call_c_initializers(struct object *o);
 void call_prog_event(struct object *o, int event);
@@ -92,7 +92,7 @@ struct object *decode_value_clone_object(struct svalue *prog);
 PMOD_EXPORT struct object *get_master(void);
 PMOD_EXPORT struct object *debug_master(void);
 struct destroy_called_mark;
-PTR_HASH_ALLOC(destroy_called_mark,128)
+PTR_HASH_ALLOC(destroy_called_mark,128);
 PMOD_EXPORT struct program *get_program_for_object_being_destructed(struct object * o);
 PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason reason);
 #define destruct(o) destruct_object (o, DESTRUCT_EXPLICIT)

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.93 2004/01/22 23:17:27 nilsson Exp $
+|| $Id: pike_types.h,v 1.94 2005/04/08 16:57:11 grubba Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -39,7 +39,7 @@ extern size_t pike_type_hash_size;
 #define CDR_TO_INT(TYPE) ((char *) (TYPE)->cdr - (char *) 0)
 
 #include "block_alloc_h.h"
-BLOCK_ALLOC(pike_type, n/a)
+BLOCK_ALLOC(pike_type, n/a);
 
 /* pike_type flags: */
 #define PT_FLAG_MARKER	1	/* Type contains markers. */

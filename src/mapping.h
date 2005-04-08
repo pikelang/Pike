@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.h,v 1.59 2004/09/28 23:58:26 mast Exp $
+|| $Id: mapping.h,v 1.60 2005/04/08 16:55:53 grubba Exp $
 */
 
 #ifndef MAPPING_H
@@ -108,7 +108,7 @@ extern struct mapping *gc_internal_mapping;
 PMOD_PROTO void really_free_mapping(struct mapping *md);
 
 /* Prototypes begin here */
-BLOCK_ALLOC_FILL_PAGES(mapping, 2)
+BLOCK_ALLOC_FILL_PAGES(mapping, 2);
 
 
 

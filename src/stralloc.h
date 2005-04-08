@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.91 2005/01/11 19:35:12 nilsson Exp $
+|| $Id: stralloc.h,v 1.92 2005/04/08 16:57:35 grubba Exp $
 */
 
 #ifndef STRALLOC_H
@@ -208,9 +208,9 @@ PMOD_EXPORT struct pike_string *findstring(const char *foo);
 struct short_pike_string0;
 struct short_pike_string1;
 struct short_pike_string2;
-BLOCK_ALLOC(short_pike_string0, SHORT_STRING_BLOCK)
-BLOCK_ALLOC(short_pike_string1, SHORT_STRING_BLOCK)
-BLOCK_ALLOC(short_pike_string2, SHORT_STRING_BLOCK)
+BLOCK_ALLOC(short_pike_string0, SHORT_STRING_BLOCK);
+BLOCK_ALLOC(short_pike_string1, SHORT_STRING_BLOCK);
+BLOCK_ALLOC(short_pike_string2, SHORT_STRING_BLOCK);
 
 
 

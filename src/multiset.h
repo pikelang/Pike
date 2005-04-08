@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.h,v 1.39 2004/09/30 14:00:15 mast Exp $
+|| $Id: multiset.h,v 1.40 2005/04/08 16:55:53 grubba Exp $
 */
 
 #ifndef MULTISET_H
@@ -250,7 +250,7 @@ union msnode *debug_check_msnode (
 
 #endif
 
-BLOCK_ALLOC_FILL_PAGES (multiset, 2)
+BLOCK_ALLOC_FILL_PAGES (multiset, 2);
 
 /* See rbtree.h for a description of the operations.
  *

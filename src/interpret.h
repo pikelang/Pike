@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.158 2005/01/25 18:23:52 grubba Exp $
+|| $Id: interpret.h,v 1.159 2005/04/08 16:55:53 grubba Exp $
 */
 
 #ifndef INTERPRET_H
@@ -667,7 +667,7 @@ void print_return_value(void);
 void reset_evaluator(void);
 struct backlog;
 void dump_backlog(void);
-BLOCK_ALLOC(pike_frame,128)
+BLOCK_ALLOC(pike_frame,128);
 
 #ifdef PIKE_USE_MACHINE_CODE
 #if defined(OPCODE_INLINE_BRANCH) || defined(INS_F_JUMP) || \

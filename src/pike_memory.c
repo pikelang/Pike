@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.159 2005/02/26 22:01:52 nilsson Exp $
+|| $Id: pike_memory.c,v 1.160 2005/04/08 17:00:09 grubba Exp $
 */
 
 #include "global.h"
@@ -693,9 +693,9 @@ static struct memhdr *my_find_memhdr(void *, int);
 
 #include "block_alloc_h.h"
 
-BLOCK_ALLOC_FILL_PAGES(memloc, n/a)
-BLOCK_ALLOC_FILL_PAGES(memory_map, n/a)
-BLOCK_ALLOC_FILL_PAGES(memory_map_entry, n/a)
+BLOCK_ALLOC_FILL_PAGES(memloc, n/a);
+BLOCK_ALLOC_FILL_PAGES(memory_map, n/a);
+BLOCK_ALLOC_FILL_PAGES(memory_map_entry, n/a);
 
 #include "block_alloc.h"
 

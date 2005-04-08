@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: constants.h,v 1.33 2004/12/30 12:57:24 grubba Exp $
+|| $Id: constants.h,v 1.34 2005/04/08 16:54:41 grubba Exp $
 */
 
 #ifndef ADD_EFUN_H
@@ -50,7 +50,7 @@ void low_add_efun(struct pike_string *name, struct svalue *fun);
 void low_add_constant(const char *name, struct svalue *fun);
 void add_pike_string_constant(const char *name, const char *str, int len);
 PMOD_EXPORT void add_global_program(const char *name, struct program *p);
-BLOCK_ALLOC_FILL_PAGES(callable,2)
+BLOCK_ALLOC_FILL_PAGES(callable,2);
 PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
 				   struct pike_string *name,
 				   struct pike_type *type,

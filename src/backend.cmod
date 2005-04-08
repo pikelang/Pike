@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.172 2005/02/26 21:59:56 nilsson Exp $
+ * $Id: backend.cmod,v 1.173 2005/04/08 16:53:08 grubba Exp $
  *
  * Backend object.
  */
@@ -86,7 +86,7 @@
 /* Declarations for the legacy backend interface stuff. */
 
 #include "block_alloc_h.h"
-BLOCK_ALLOC (compat_cb_box, N/A)
+BLOCK_ALLOC (compat_cb_box, N/A);
 static int compat_box_dispatcher (struct fd_callback_box *box, int event);
 static void update_fd_set (struct Backend_struct *me, int fd,
 			   int old_events, int new_events);
