@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.159 2005/01/08 16:41:08 grubba Exp $
+|| $Id: efuns.c,v 1.160 2005/04/08 01:55:49 nilsson Exp $
 */
 
 #include "global.h"
@@ -1611,7 +1611,7 @@ void init_files_efuns(void)
 #endif
 
 /* function(string,int|void:object) */
-  ADD_EFUN("file_stat",f_file_stat,tFunc(tStr tOr(tInt,tVoid),tObj), OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+  ADD_EFUN("file_stat",f_file_stat,tFunc(tStr tOr(tInt,tVoid),tObjIs_STDIO_STAT), OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 
   /* function(string,int:int(0..1)) */
   ADD_EFUN("file_truncate",f_file_truncate,tFunc(tStr tInt,tInt),OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
