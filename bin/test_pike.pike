@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.107 2004/10/22 13:14:55 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.108 2005/04/09 03:11:28 nilsson Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -460,6 +460,12 @@ int main(int argc, array(string) argv)
       foreach(testsuites, string testsuite) {
 	Stdio.File p = Stdio.File();
 	Stdio.File p2 = p->pipe();
+	if(!p2) {
+	  werror("Failed to create pipe.\n");
+	  if(fail) exit(1);
+	  errors++;
+	  continue;
+	}
 	object pid =
 	  Process.create_process(forked + ({ testsuite }),
 				 ([ "stdout":p2 ]));
