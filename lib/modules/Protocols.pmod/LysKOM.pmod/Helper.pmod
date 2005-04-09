@@ -45,7 +45,7 @@ class LysKOMError
       __backtrace=__backtrace[..sizeof(__backtrace)-3];
    }
 
-   object clone(int status)
+   LysKOMError clone(int status)
    {
       return LysKOMError(no,name,desc,status);
    }
@@ -61,7 +61,7 @@ class LysKOMError
    }
 }
 
-object lyskom_error(int no,void|int status)
+LysKOMError lyskom_error(int no,void|int status)
 {
    return LysKOMError(@_lyskomerror[no],status);
 }
