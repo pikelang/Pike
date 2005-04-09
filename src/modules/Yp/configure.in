@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.11 2004/04/14 12:06:29 grubba Exp $
+# $Id: configure.in,v 1.12 2005/04/09 10:18:05 grubba Exp $
 AC_INIT(yp.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -72,5 +72,38 @@ AC_DEFINE_UNQUOTED(YP_ORDER_TYPE, $pike_cv_yp_order_type)
 AC_MSG_RESULT($pike_cv_yp_order_type)
 
 AC_CHECK_FUNCS(yperr_string)
+
+if test "$av_cv_func_yperr_string" = "yes"; then
+  AC_MSG_CHECKING(if we need a prototype for yperr_string)
+  AC_CACHE_VAL(pike_cv_prototype_yperr_string_missing, [
+    AC_TRY_COMPILE([
+#if defined(HAVE_RPCSVC_YPCLNT_H) && defined(HAVE_RPCSVC_YP_PROT_H)
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif /* HAVE_SYS_TYPES_H */
+#ifdef HAVE_RPC_TYPES_H
+#include <rpc/types.h>
+#endif /* HAVE_RPC_TYPES_H */
+#ifdef HAVE_RPC_RPC_H
+#include <rpc/rpc.h>
+#endif /* HAVE_RPC_RPC_H */
+#ifdef HAVE_RPC_CLNT_H
+#include <rpc/clnt.h>
+#endif /* HAVE_RPC_CLNT_H */
+#include <rpcsvc/yp_prot.h>
+#include <rpcsvc/ypclnt.h>
+
+char *yperr_string(int incode);
+    ],[],[
+      pike_cv_prototype_yperr_string_missing="yes"
+    ],[
+      pike_cv_prototype_yperr_string_missing="no"
+    ])
+  ])
+  AC_MSG_RESULT($pike_cv_protype_yperr_string_missing)
+  if test "$pike_cv_protype_yperr_string_missing" = "yes"; then
+    AC_DEFINE(YPERR_STRING_PROTOTYPE_MISSING)
+  fi
+fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

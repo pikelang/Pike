@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: yp.c,v 1.32 2004/10/07 22:49:58 nilsson Exp $
+|| $Id: yp.c,v 1.33 2005/04/09 10:18:05 grubba Exp $
 */
 
 #include "global.h"
@@ -38,6 +38,10 @@
 #define sp Pike_sp
 
 #ifdef HAVE_YPERR_STRING
+#ifdef YPERR_STRING_PROTOTYPE_MISSING
+char *yperr_string(int incode);
+#endif /* YPERR_STRING_PROTOTYPE_MISSING */
+
 #define YPERROR(e) do{ if(err) Pike_error("%s\n", yperr_string(e)); }while(0)
 #else /* !HAVE_YPERR_STRING */
 #define YPERROR(e) do{ if(e) Pike_error("YP error %d.\n", (e)); }while(0)
