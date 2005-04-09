@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.406 2005/03/14 23:52:02 nilsson Exp $
+# $Id: Makefile.in,v 1.407 2005/04/09 03:09:15 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -752,9 +752,13 @@ gdb_verify: testsuites testsuite master-stamp
 	else :; fi
 	@echo >>.gdbinit break debug_fatal
 	@echo >>.gdbinit break pike_gdb_breakpoint
-	@if test "$(TESTARGS)" = "" ; then args="-F -a -v -v" ; else \
+	@if test "$(TESTARGS)" = "" ; then args="-a -v -v" ; else \
 	  args="$(TESTARGS)" ; fi;  \
-	echo >>.gdbinit set args -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike --no-watchdog $$args
+	echo >>.gdbinit set args \
+	  -m`echo "$(TMP_BUILDDIR)/master.pike" | ./posix_to_native.sh` \
+	  $(PIKEOPTS) \
+	  `echo "$(TMP_BINDIR)/test_pike.pike" | ./posix_to_native.sh` \
+	  --no-watchdog $$args
 	gdb $(TMP_BUILDDIR)/pike
 	@rm .gdbinit
 
