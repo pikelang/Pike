@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.176 2005/02/16 19:36:59 grubba Exp $
+|| $Id: system.c,v 1.177 2005/04/09 10:42:22 grubba Exp $
 */
 
 /*
@@ -630,7 +630,7 @@ void f_cleargroups(INT32 args)
 #endif
 
   pop_n_elems(args);
-  err = setgroups(0, gids);
+  err = setgroups(0, (gid_t *)gids);
   if (err < 0) {
     report_error("cleargroups");
   }
@@ -1768,6 +1768,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port, i
     name = NULL;
 
 #ifdef HAVE_GETADDRINFO
+/*   fprintf(stderr, "get_inet_addr(): Trying getaddrinfo\n"); */
   if(!name) {
     hints.ai_flags = AI_PASSIVE;
     /* Avoid creating an IPv6 address for "*". */
@@ -1778,27 +1779,36 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port, i
   if(!service)
     sprintf(servnum_buf, "%"PRINTPIKEINT"d", (port<0? 0:port));
   if(!getaddrinfo(name, (service? service : servnum_buf), &hints, &res)) {
-    struct addrinfo *p;
+    struct addrinfo *p, *found = NULL;
     size_t addr_len=0;
     for(p=res; p; p=p->ai_next) {
-      if(p->ai_addrlen > 0 && p->ai_addrlen <= sizeof(*addr))
-	break;
+      if(p->ai_addrlen > addr_len &&
+	 p->ai_addrlen <= sizeof(*addr) &&
+	 p->ai_addr)
+	addr_len = (found = p)->ai_addrlen;
     }
-    if(p && p->ai_addr)
-      MEMCPY((char *)addr, (char *)p->ai_addr, addr_len = p->ai_addrlen);
+    if(found) {
+/*       fprintf(stderr, "Got %d bytes (family: %d (%d))\n", */
+/* 	      addr_len, found->ai_addr->sa_family, found->ai_family); */
+      MEMCPY((char *)addr, (char *)found->ai_addr, addr_len);
+    }
     freeaddrinfo(res);
-    if(addr_len)
+    if(addr_len) {
+/*       fprintf(stderr, "family: %d\n", SOCKADDR_FAMILY(*addr)); */
       return addr_len;
+    }
   }
 #endif /* HAVE_GETADDRINFO */
   
   SOCKADDR_FAMILY(*addr) = AF_INET;
   if(!name)
   {
+/*     fprintf(stderr, "get_inet_addr(): ANY\n"); */
     addr->ipv4.sin_addr.s_addr=htonl(INADDR_ANY);
   }
   else if(my_isipnr(name)) /* I do not entirely trust inet_addr */
   {
+/*     fprintf(stderr, "get_inet_addr(): IP\n"); */
     if (((IN_ADDR_T)inet_addr(name)) == ((IN_ADDR_T)-1))
       Pike_error("Malformed ip number.\n");
 
@@ -1808,6 +1818,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port, i
   {
 #ifdef GETHOST_DECLARE
     GETHOST_DECLARE;
+/*     fprintf(stderr, "get_inet_addr(): Trying gethostbyname()\n"); */
     CALL_GETHOSTBYNAME(name);
 
     if(!ret) {
@@ -1841,6 +1852,7 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port, i
   if(service) {
 #ifdef GETSERV_DECLARE
     GETSERV_DECLARE;
+/*     fprintf(stderr, "get_inet_addr(): Trying getserv()\n"); */
     CALL_GETSERVBYNAME(service, (udp? "udp":"tcp"));
 
     if(!ret) {
@@ -1859,10 +1871,13 @@ int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port, i
       Pike_error("Invalid service\n");
     }
 #endif
-  } else if(port >= 0)
+  } else if(port >= 0) {
+/*     fprintf(stderr, "get_inet_addr(): port()\n"); */
     addr->ipv4.sin_port = htons((unsigned INT16)port);
-  else
+  } else {
+/*     fprintf(stderr, "get_inet_addr(): ANY port()\n"); */
     addr->ipv4.sin_port = 0;
+  }
 
   return (SOCKADDR_FAMILY(*addr) == AF_INET? sizeof(addr->ipv4):sizeof(*addr));
 }

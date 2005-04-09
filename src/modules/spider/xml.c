@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.72 2004/11/18 01:47:23 mast Exp $
+|| $Id: xml.c,v 1.73 2005/04/09 10:40:47 grubba Exp $
 */
 
 #include "global.h"
@@ -3188,7 +3188,8 @@ static void autoconvert(INT32 args)
 
 	  push_constant_text("Locale.Charset.decoder");
 	  APPLY_MASTER("resolv",1);
-	  push_string(make_shared_binary_string(STR0(s)+encstart,pos-encstart));
+	  push_string(make_shared_binary_string0(STR0(s)+encstart,
+						 pos-encstart));
 	  f_call_function(2);
 	  push_constant_text("feed");
 	  f_index(2);

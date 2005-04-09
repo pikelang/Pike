@@ -2,14 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: spider.c,v 1.128 2004/10/07 22:49:58 nilsson Exp $
+|| $Id: spider.c,v 1.129 2005/04/09 10:39:22 grubba Exp $
 */
 
 #include "global.h"
 #include "config.h"
 
-
-#include "machine.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -34,10 +32,19 @@
 #include <unistd.h>
 #endif
 
+/* Some <sys/mman.h>'s (eg AIX 5L/ia64) contain a #define of MAP_VARIABLE
+ * for use as the opposite of MAP_FIXED.
+ *
+ * "program.h" included indirectly below has a conflicting definition of
+ * MAP_VARIABLE.
+ */
+#ifdef MAP_VARIABLE
+#undef MAP_VARIABLE
+#endif /* MAP_VARIABLE */
+
 #include "fdlib.h"
 #include "stralloc.h"
 #include "pike_macros.h"
-#include "machine.h"
 #include "object.h"
 #include "constants.h"
 #include "interpret.h"
