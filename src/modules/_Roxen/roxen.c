@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.43 2005/04/08 17:24:39 grubba Exp $
+|| $Id: roxen.c,v 1.44 2005/04/09 10:35:53 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -137,7 +137,7 @@ static void f_hp_feed( INT32 args )
     {
       push_constant_text( "" );
       /* This includes (all eventual) \r\n etc. */
-      push_text( hp->headers ); 
+      push_text((char *)hp->headers); 
       f_aggregate_mapping( 0 );
       f_aggregate( 3 );
       return;
@@ -146,7 +146,8 @@ static void f_hp_feed( INT32 args )
     return;
   }
 
-  push_string( make_shared_binary_string( pp, hp->pnt - pp ) ); /*leftovers*/
+  /*leftovers*/
+  push_string(make_shared_binary_string((char *)pp, hp->pnt - pp));
   headers = allocate_mapping( 5 );
   in = hp->headers;
   l = pp - hp->headers;
@@ -156,7 +157,7 @@ static void f_hp_feed( INT32 args )
     if((in[i] == '\n') || (in[i] == '\r'))
       break;
 
-  push_string( make_shared_binary_string( in, i ) );
+  push_string(make_shared_binary_string((char *)in, i));
 
   if((in[i] == '\r') && (in[i+1] == '\n'))
     i++;
@@ -287,9 +288,9 @@ static void f_make_http_headers( INT32 args )
 
   res = begin_shared_string( total_len );
   pnt = STR0(res);
-#define STRADD(X)\
-    for( l=X.u.string->len,s=X.u.string->str,c=0; c<l; c++ )\
-      *(pnt++)=*(s++);
+#define STRADD(X)							\
+  for( l=(X).u.string->len, s=STR0((X).u.string), c=0; c<l; c++ )	\
+    *(pnt++)=*(s++)
 
   NEW_MAPPING_LOOP( m->data )
   {
