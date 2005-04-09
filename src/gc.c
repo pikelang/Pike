@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.264 2005/04/06 19:18:25 grubba Exp $
+|| $Id: gc.c,v 1.265 2005/04/09 10:52:52 grubba Exp $
 */
 
 #include "global.h"
@@ -2681,7 +2681,7 @@ static void free_obj_arr(void *oa)
 /*! @endclass
  */
 
-static void warn_bad_cycles()
+static void warn_bad_cycles(void)
 {
   /* The reason for the extra level of indirection, is that it might
    * be clobbered by the longjump() in SET_ONERROR otherwise.

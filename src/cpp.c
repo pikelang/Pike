@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.157 2004/12/22 18:46:15 grubba Exp $
+|| $Id: cpp.c,v 1.158 2005/04/09 10:52:16 grubba Exp $
 */
 
 #include "global.h"
@@ -602,7 +602,7 @@ void cpp_func_constant(struct cpp *this, INT32 args)
 
 /* Macro handling. */
 
-static struct mapping *initial_predefs_mapping()
+static struct mapping *initial_predefs_mapping(void)
 {
   struct pike_predef_s *def;
   struct mapping *map = allocate_mapping (0);
