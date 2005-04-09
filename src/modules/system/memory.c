@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: memory.c,v 1.31 2005/02/25 23:36:04 nilsson Exp $
+|| $Id: memory.c,v 1.32 2005/04/09 10:51:02 grubba Exp $
 */
 
 /*! @module System
@@ -239,7 +239,7 @@ static void memory_shm( INT32 args )
   THIS->flags = MEM_READ|MEM_WRITE|MEM_FREE_SHMDEL;
   pop_n_elems(args);
   push_int(1);
-#else /* HAVE_MMAP */
+#else /* HAVE_SYS_SHM_H */
 #ifdef WIN32SHM
   {
     HANDLE handle;
@@ -269,10 +269,10 @@ static void memory_shm( INT32 args )
 	Pike_error("Failed to create segment\n");
     }
   }
-#else
+#else /* !WIN32SHM */
    Pike_error("Memory.shmat(): system has no shmat() (sorry)\n");
-#endif
-#endif
+#endif /* WIN32SHM */
+#endif /* HAVE_SYS_SHM_H */
 }
 
 static void memory__mmap(INT32 args,int complain,int private)
@@ -369,7 +369,7 @@ static void memory__mmap(INT32 args,int complain,int private)
 #ifdef PAGE_SIZE
    if (offset%PAGE_SIZE)
       Pike_error("Memory.mmap(): mapped offset not aligned to PAGE_SIZE "
-		 "(%d aka system.PAGE_SIZE)\n",(int)offset);
+		 "(%d aka System.PAGE_SIZE)\n",(int)offset);
 #endif
 
    if (private) flags|=MAP_PRIVATE;
@@ -666,13 +666,14 @@ static void copy_reverse_string1_to_2(unsigned char *d,
 }
 
 #define MAKE_REVERSE_ORDER_STRINGN(N)					\
-   static struct pike_string*						\
-      make_reverse_order_string##N(unsigned char *s,size_t len)		\
+  static struct pike_string *PIKE_CONCAT(make_reverse_order_string, N)	\
+       (unsigned char *s, size_t len)					\
    {									\
-      struct pike_string *ps;						\
-      ps=begin_wide_shared_string(len,N);				\
-      copy_reverse_string##N(ps->str, (unsigned char *)s, len);		\
-      return end_shared_string(ps);					\
+     struct pike_string *ps;						\
+     ps = begin_wide_shared_string(len, N);				\
+     PIKE_CONCAT(copy_reverse_string, N)				\
+       (PIKE_CONCAT(STR, N)(ps), s, len);				\
+     return end_shared_string(ps);					\
    }
 
 MAKE_REVERSE_ORDER_STRINGN(1)
@@ -737,34 +738,34 @@ static void pwrite_n(INT32 args,int shift,int reverse,char *func)
 #endif
 
    if (rlen) 
-      switch (ps->size_shift*10 + shift)
+      switch (ps->size_shift*010 + shift)
       {
-	 case 22: /* 2 -> 2 */
+	 case 022: /* 2 -> 2 */
 	    if (reverse)
 	      copy_reverse_string2(d, (unsigned char *)ps->str, ps->len);
 	    else MEMCPY(d,ps->str,ps->len*4);
 	    break;
-	 case 12: /* 1 -> 2 */
+	 case 012: /* 1 -> 2 */
 	    if (reverse)
 	      copy_reverse_string1_to_2(d, (unsigned char *)ps->str, ps->len);
-	    else convert_1_to_2((p_wchar2*)d,(p_wchar1*)ps->str,ps->len);
+	    else convert_1_to_2((p_wchar2*)d, STR1(ps), ps->len);
 	    break;
-	 case 02: /* 0 -> 2 */
+	 case 002: /* 0 -> 2 */
 	    if (reverse)
 	      copy_reverse_string0_to_2(d, (unsigned char *)ps->str, ps->len);
-	    else convert_0_to_2((p_wchar2*)d,ps->str,ps->len);
+	    else convert_0_to_2((p_wchar2*)d, STR0(ps), ps->len);
 	    break;
-	 case 11: /* 1 -> 1 */
+	 case 011: /* 1 -> 1 */
 	    if (reverse)
 	      copy_reverse_string1(d, (unsigned char *)ps->str,ps->len);
 	    else MEMCPY(d,ps->str,ps->len*2);
 	    break;
-	 case 01: /* 0 -> 1 */
+	 case 001: /* 0 -> 1 */
 	    if (reverse)
 	      copy_reverse_string0_to_1(d, (unsigned char *)ps->str,ps->len);
-	    else convert_0_to_1((p_wchar1*)d,ps->str,ps->len);
+	    else convert_0_to_1((p_wchar1*)d, STR0(ps), ps->len);
 	    break;
-	 case 00:
+	 case 000:
 	    MEMCPY(d,ps->str,ps->len);
 	    break;
 	 default:
