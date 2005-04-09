@@ -1,0 +1,10 @@
+# $Id: Makefile.in,v 1.1 2005/04/09 21:07:21 jonasw Exp $
+@make_variables@
+VPATH=@srcdir@
+OBJS=sd.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
+@dependencies@

@@ -159,6 +159,7 @@ testfont binary
 /lib/modules/Pike.pmod/module.pmod foreign_ident
 /lib/modules/Protocols.pmod/Bittorrent.pmod/Torrent.pike foreign_ident
 /lib/modules/Protocols.pmod/DNS.pmod foreign_ident
+/lib/modules/Protocols.pmod/DNS_SD.pmod foreign_ident
 /lib/modules/Protocols.pmod/HTTP.pmod/Query.pike foreign_ident
 /lib/modules/Protocols.pmod/HTTP.pmod/Session.pike foreign_ident
 /lib/modules/Protocols.pmod/IMAP.pmod/imap_server.pike foreign_ident
@@ -675,6 +676,10 @@ testfont binary
 /src/modules/_Image_XFace/configure.in foreign_ident
 /src/modules/_Image_XFace/image_xface.c foreign_ident
 /src/modules/_Image_XFace/testsuite.in foreign_ident
+/src/modules/_Protocols_DNS_SD/Makefile.in foreign_ident
+/src/modules/_Protocols_DNS_SD/acconfig.h foreign_ident
+/src/modules/_Protocols_DNS_SD/configure.in foreign_ident
+/src/modules/_Protocols_DNS_SD/sd.c foreign_ident
 /src/modules/_Regexp_PCRE/Makefile.in foreign_ident
 /src/modules/_Regexp_PCRE/acconfig.h foreign_ident
 /src/modules/_Regexp_PCRE/configure.in foreign_ident
