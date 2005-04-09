@@ -45,16 +45,17 @@ class Process
 #endif /* __NT__ */
 				  );
     }
-    if( m )
-      ::create( [array(string)]args, [mapping(string:mixed)]m );
-    else
+    if( !m )
       ::create( [array(string)]args );
+    else {
+      ::create( [array(string)]args, [mapping(string:mixed)]m );
 
-    if(read_cb=m->read_callback)
-      call_out(watcher, 0.1);
+      if(read_cb=m->read_callback)
+	call_out(watcher, 0.1);
 
-    if( (timeout_cb=m->timeout_callback) || m->timeout )
-      call_out(killer, m->timeout||15);
+      if( (timeout_cb=m->timeout_callback) || m->timeout )
+	call_out(killer, m->timeout||15);
+    }
   }
 
   static void destroy() {
