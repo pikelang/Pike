@@ -140,4 +140,8 @@ test_pike_token("'\\ '")
 test_pike_token("\"\"")
 test_pike_token("\" \"")
 test_pike_token("\"\\\"\"")
+
+test_equal( Parser.Pike.split("\n// x\n"), ({ "\n", "// x", "\n\n" }) )
+test_equal( Parser.Pike.split("\n// x"), ({ "\n", "// x", "\n" }) )
+
 END_MARKER
