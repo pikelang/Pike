@@ -1,0 +1,44 @@
+START_MARKER
+
+test_do([[
+  add_constant( "db", Sql.Sql("mysql://localhost") );
+]])
+
+ifefun(db,[[
+  test_equal( db->query("select 1"), ({ ([ ".1":"1", "1":"1" ]) }) )
+  test_eq( db->big_query("select 1")->num_rows(), 1 )
+  test_eq( db->big_query("select 1,2")->num_fields(), 2 )
+  test_equal( db->big_query("select 1")->fetch_fields()->name, ({ "1" }) )
+  test_true( objectp(db->big_query("select 1")->master_res) )
+  test_eq( db->big_query("select 1")->index, 0 )
+  test_any([[
+    object q=db->big_query("show status");
+    q->seek(2);
+    return q->index;
+  ]], 2 )
+  test_equal( db->big_query("select 1,2")->fetch_row(), ({ "1", "2" }) )
+  test_do([[
+    object q=db->big_query("show status");
+    q->seek( q->num_rows()+7 );
+  ]])
+  test_do( add_constant("db") )
+]])
+
+test_eq( Sql.sql_array_result(({(["1":"1"])}))->num_rows(), 1 )
+test_eq( Sql.sql_array_result(({(["a":"1","b":"2"])}))->num_fields(), 2 )
+test_equal( Sql.sql_array_result(({(["a":"1","b":"2"])}))->fetch_fields(),
+            ({ ([ "name":"a" ]), ([ "name":"b" ]) }) )
+test_true( arrayp(Sql.sql_array_result(({(["1":"1"])}))->master_res) )
+test_eq( Sql.sql_array_result(({(["1":"1"])}))->index, 0 )
+test_any([[
+  object q=Sql.sql_array_result(({(["a":"1"]),(["a":"2"])}));
+  q->seek(1);
+  return q->index;
+]], 1 )
+test_equal( Sql.sql_array_result(({(["a":"1"])}))->fetch_row(), ({ "1" }) )
+test_do([[
+  object q=Sql.sql_array_result(({(["a":"1"]),(["a":"2"])}));
+  q->seek(77);
+]])
+
+END_MARKER
