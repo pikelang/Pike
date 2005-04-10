@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.78 2004/06/14 07:31:10 mast Exp $
+ * $Id: Sql.pike,v 1.79 2005/04/10 03:29:39 nilsson Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -179,7 +179,7 @@ void create(string|object host, void|string|mapping(string:int|string) db,
     if ((user && user != "") || (password && password != "") ||
 	(options && sizeof(options))) {
       ERROR("Only the database argument is supported when "
-	    "first argument is an object\n");
+	    "first argument is an object.\n");
     }
     if (db && db != "") {
       master_sql->select_db(db);
@@ -248,10 +248,10 @@ void create(string|object host, void|string|mapping(string:int|string) db,
     if (!program_name) {
       ERROR("No protocol specified.\n");
     }
-    /* Don't call ourselves... */
+    // Don't call ourselves...
     if ((sizeof(program_name / "_result") != 1) ||
 	  ((< "Sql", "sql", "sql_util", "module" >)[program_name]) ) {
-      ERROR("Unsupported protocol: %O\n", program_name);
+      ERROR("Unsupported protocol %O.\n", program_name);
     }
 
 
@@ -272,7 +272,8 @@ void create(string|object host, void|string|mapping(string:int|string) db,
 	master_sql = p();
       }
     } else {
-      ERROR("Failed to index module Sql.%s or Sql.Provider.%s\n", program_name, program_name);
+      ERROR("Failed to index module Sql.%s or Sql.Provider.%s.\n",
+	    program_name, program_name);
     }
   }
 
@@ -295,7 +296,7 @@ static private array(mapping(string:mixed)) res_obj_to_array(object res_obj)
 {
   if (res_obj) 
   {
-    /* Not very efficient, but sufficient */
+    // Not very efficient, but sufficient
     array(mapping(string:mixed)) res = ({});
     array(string) fieldnames;
     array(mixed) row;
@@ -365,7 +366,7 @@ private array(string|mapping(string|int:mixed))
       args[j]=s;
       continue;
     }
-    ERROR("Wrong type to query argument #"+(j+1)+"\n");
+    ERROR("Wrong type to query argument #"+(j+1)+".\n");
   }
   if(!sizeof(b)) b=0;
 
@@ -423,23 +424,23 @@ private array(string|mapping(string|int:mixed))
 array(mapping(string:mixed)) query(object|string q,
                                    mixed ... extraargs)
 {
-  mapping(string|int:mixed) bindings=0;
   if (sizeof(extraargs)) {
+    mapping(string|int:mixed) bindings;
+
     if (mappingp(extraargs[0]))
       bindings=extraargs[0];
     else
       [q,bindings]=handle_extraargs(q,extraargs);
+
+    if(bindings) {
+      if(master_sql->query)
+	return master_sql->query(q, bindings);
+      return res_obj_to_array(master_sql->big_query(q, bindings));
+    }
   }
 
-  if (master_sql->query) {
-    if (bindings)
-      return master_sql->query(q, bindings);
-    else
+  if (master_sql->query)
       return master_sql->query(q);
-  }
-
-  if (bindings)
-    return res_obj_to_array(master_sql->big_query(q, bindings));
   return res_obj_to_array(master_sql->big_query(q));
 }
 
@@ -451,27 +452,36 @@ array(mapping(string:mixed)) query(object|string q,
 int|object big_query(object|string q, mixed ... extraargs)
 {
   object|array(mapping) pre_res;
-  mapping(string|int:mixed) bindings=0;
 
   if (sizeof(extraargs)) {
+    mapping(string|int:mixed) bindings;
+
     if (mappingp(extraargs[0]))
       bindings=extraargs[0];
     else
       [q,bindings]=handle_extraargs(q,extraargs);
-  }
 
-  if (master_sql->big_query) {
-    if (bindings)
-      pre_res = master_sql->big_query(q, bindings);
-    else
+    if(bindings) {
+      if(master_sql->big_query)
+	pre_res = master_sql->big_query(q, bindings);
+      else
+	pre_res = master_sql->query(q, bindings);
+    }
+  }
+  else {
+    if (master_sql->big_query)
       pre_res = master_sql->big_query(q);
+    else
+      pre_res = master_sql->query(q);
   }
-  else if (bindings)
-    pre_res = master_sql->query(q, bindings);
-  else
-    pre_res = master_sql->query(q);
 
-  return pre_res && Sql.sql_result(pre_res);
+  if(pre_res) {
+    if(objectp(pre_res))
+      return .sql_object_result(pre_res);
+    else
+      return .sql_array_result(pre_res);
+  }
+  return 0;
 }
 
 //! Create a new database.
@@ -498,7 +508,7 @@ void shutdown()
   if (functionp(master_sql->shutdown)) {
     master_sql->shutdown();
   } else {
-    ERROR("Not supported by this database\n");
+    ERROR("Not supported by this database.\n");
   }
 }
 
@@ -508,7 +518,7 @@ void reload()
   if (functionp(master_sql->reload)) {
     master_sql->reload();
   } else {
-    /* Probably safe to make this a NOOP */
+    // Probably safe to make this a NOOP
   }
 }
 
@@ -548,9 +558,9 @@ array(string) list_dbs(string|void wild)
     };
   }
   if (res && sizeof(res) && mappingp(res[0])) {
-    res = Array.map(res, lambda (mapping m) {
-      return values(m)[0];	/* Hope that there's only one field */
-    } );
+    res = map(res, lambda (mapping m) {
+		     return values(m)[0]; // Hope that there's only one field
+		   } );
   }
   if (res && wild) {
     res = filter(res,
@@ -577,9 +587,9 @@ array(string) list_tables(string|void wild)
     };
   }
   if (res && sizeof(res) && mappingp(res[0])) {
-    res = Array.map(res, lambda (mapping m) {
-      return values(m)[0];	/* Hope that there's only one field */
-    } );
+    res = map(res, lambda (mapping m) {
+		     return values(m)[0]; // Hope that there's only one field
+		   } );
   }
   if (res && wild) {
     res = filter(res,
@@ -622,16 +632,16 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
   };
   res = res && Array.map(res, lambda (mapping m, string table) {
     foreach(indices(m), string str) {
-      /* Add the lower case variants */
+      // Add the lower case variants
       string low_str = lower_case(str);
       if (low_str != str && !m[low_str]) {
 	m[low_str] = m[str];
-	m_delete(m, str);	/* Remove duplicate */
+	m_delete(m, str);	// Remove duplicate
       }
     }
     if ((!m->name) && m->field) {
       m["name"] = m->field;
-      m_delete(m, "field");	/* Remove duplicate */
+      m_delete(m, "field");	// Remove duplicate
     }
     if (!m->table) {
       m["table"] = table;
