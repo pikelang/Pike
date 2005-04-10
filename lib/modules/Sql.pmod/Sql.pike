@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.79 2005/04/10 03:29:39 nilsson Exp $
+ * $Id: Sql.pike,v 1.80 2005/04/10 03:38:54 nilsson Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -302,14 +302,14 @@ static private array(mapping(string:mixed)) res_obj_to_array(object res_obj)
     array(mixed) row;
     array(mapping) fields = res_obj->fetch_fields();
 
-    fieldnames = (Array.map(fields,
-                            lambda (mapping(string:mixed) m) {
-                              return (m->table||"") + "." + m->name;
-                            }) +
+    fieldnames = (map(fields,
+		      lambda (mapping(string:mixed) m) {
+			return (m->table||"") + "." + m->name;
+		      }) +
                   fields->name);
 
     if (case_convert)
-      fieldnames = Array.map(fieldnames, lower_case);
+      fieldnames = map(fieldnames, lower_case);
 
 
     while (row = res_obj->fetch_row())
@@ -630,22 +630,20 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
       res = query("show fields from \'" + table + "\'");
     }
   };
-  res = res && Array.map(res, lambda (mapping m, string table) {
+  res = res && map(res, lambda (mapping m, string table) {
     foreach(indices(m), string str) {
       // Add the lower case variants
       string low_str = lower_case(str);
-      if (low_str != str && !m[low_str]) {
-	m[low_str] = m[str];
-	m_delete(m, str);	// Remove duplicate
-      }
+      if (low_str != str && !m[low_str])
+	m[low_str] = m_delete(m, str);
     }
-    if ((!m->name) && m->field) {
-      m["name"] = m->field;
-      m_delete(m, "field");	// Remove duplicate
-    }
-    if (!m->table) {
+
+    if ((!m->name) && m->field)
+      m["name"] = m_delete(m, "field");
+
+    if (!m->table)
       m["table"] = table;
-    }
+
     return m;
   }, table);
   return res;
