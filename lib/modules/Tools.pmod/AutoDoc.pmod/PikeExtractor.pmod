@@ -56,7 +56,7 @@ static private class Extractor {
     }
 
     if (sizeof(ignores))
-      error("PikeExtractor: @ignore without matchin @endignore in %s.\n", ignores[0]);
+      error("PikeExtractor: @ignore without matching @endignore in %s.\n", ignores[0]);
 
     parser->setTokens(new_tokens, new_positions);
   }
