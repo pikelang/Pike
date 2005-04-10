@@ -684,45 +684,45 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
   }
 }
 
-// special() removes all whitespaces except for \n, which it
-// puts in separate "\n" strings in the array
-// It also removes all comments that are not doc comments,
-// and removes all preprocessor stuff.
-// FIXME: how do we handle multiline strings: #" ... " ???
-static private array(string) special(array(string) in) {
-  array(string) ret = ({ });
-  foreach (in, string s) {
-    // remove blanks that are not "\n"
-    // separate multiple adjacent "\n"
-    int c = String.count(s, "\n");
-    if (c)
-      ret += ({ "\n" }) * c;
-    else if (sizeof(replace(s, ({" ", "\t", "\r" }), ({ "","","" }) )))
-      ret += ({ s });
-  }
-  return ret;
-}
-
-array(array(string)|array(int)) tokenize(string s, string filename, int line) {
-  array(string) a = special(Parser.Pike.split(s)) + ({ EOF });
+array(array(string)|array(int)) tokenize(string s, int line) {
+  array(string) a = Parser.Pike.split(s) + ({ EOF });
 
   array(string) t = ({ });
-  array(int) p = ({ } );
+  array(int) p = ({ });
 
   for(int i = 0; i < sizeof(a); ++i) {
     string s = a[i];
     int pos = line;
 
-    line += sizeof(s / "\n") - 1;
+    line += String.count(s, "\n");
 
     // remove preprocessor directives:
-    if (sizeof(s) > 1 && s[0..0] == "#")
+    if (sizeof(s) > 1 && s[0..0] == "#") {
+      t += ({ "\n" });
+      p += ({ pos });
       continue;
+    }
     // remove non-doc comments
     if (sizeof(s) >= 2 &&
         (s[0..1] == "/*" || s[0..1] == "//") &&
-        !isDocComment(s))
+	(sizeof(s)==2 || s[2]!='!'))
       continue;
+    if(sizeof(s) >= 2 && s[0..1]=="/*") {
+      werror("Illegal comment %O in .\n", s, filename);
+      continue;
+    }
+    if( sizeof(s) && (< ' ', '\t', '\r', '\n' >)[s[0]] ) {
+      string clean = s-" "-"\t"-"\r";
+      if(!sizeof(clean)) continue;
+      if(clean=="\n"*sizeof(clean)) {
+	int i = sizeof(clean);
+	while(i--) {
+	  t += ({ "\n" });
+	  p += ({ pos++ });
+	}
+	continue;
+      }
+    }
 
     t += ({ s });
     p += ({ pos });
@@ -753,7 +753,7 @@ static void create(string|void s,
     if (!line)
       error("PikeParser::create() called without line arg.\n");
 
-    [tokens, positions] = tokenize(s, filename, line);
+    [tokens, positions] = tokenize(s, line);
   }
   else {
     tokens = ({});

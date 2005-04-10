@@ -26,7 +26,7 @@ static private class Extractor {
 
     array(string) tokens;
     array(int) positions;
-    [tokens, positions] = parser->tokenize(s, filename, 1);
+    [tokens, positions] = parser->tokenize(s, 1);
 
     array(string) new_tokens = ({});
     array(int) new_positions = ({});
