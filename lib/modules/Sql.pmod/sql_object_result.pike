@@ -1,12 +1,14 @@
 
+#pike __REAL_VERSION__
+
 inherit .sql_result;
 
 object master_res;
 
 void create(object res) {
-  master_res = res;
   if(!res || !objectp(res))
-    error("Bad argument to sql_array_result\n");
+    error("Bad argument.\n");
+  master_res = res;
 }
 
 int num_rows() {
@@ -24,7 +26,7 @@ array(mapping(string:mixed)) fetch_fields() {
 void seek(int skip) {
 
   if(functionp(master_res->seek)) {
-    if(skip<0) error("Skip argument not positive\n");
+    if(skip<0) error("Skip argument not positive.\n");
     index += skip;
     master_res->seek(skip);
   }

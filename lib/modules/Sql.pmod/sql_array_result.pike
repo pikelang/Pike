@@ -1,12 +1,14 @@
 
+#pike __REAL_VERSION__
+
 inherit .sql_result;
 
 array master_res;
 
 void create(array res) {
-  master_res = res;
   if(!res || !arrayp(res))
-    error("Bad argument to sql_array_result\n");
+    error("Bad argument.\n");
+  master_res = res;
 }
 
 int num_rows() {
@@ -21,8 +23,8 @@ int eof() {
   return index >= sizeof(master_res);
 }
 
+// Only supports the name field.
 array(mapping(string:mixed)) fetch_fields() {
-  /* Only supports the name field */
   array(mapping(string:mixed)) res = allocate(sizeof(master_res[0]));
   int i;
 
@@ -33,7 +35,7 @@ array(mapping(string:mixed)) fetch_fields() {
 }
 
 void seek(int skip) {
-  if(skip<0) error("Skip argument not positive\n");
+  if(skip<0) error("Skip argument not positive.\n");
   index += skip;
 }
 
