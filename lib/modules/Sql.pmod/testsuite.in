@@ -1,7 +1,9 @@
 START_MARKER
 
 test_do([[
-  add_constant( "db", Sql.Sql("mysql://localhost") );
+  catch {
+    add_constant( "db", Sql.Sql("mysql://localhost") );
+  };
 ]])
 
 ifefun(db,[[
