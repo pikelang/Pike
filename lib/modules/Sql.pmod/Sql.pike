@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.80 2005/04/10 03:38:54 nilsson Exp $
+ * $Id: Sql.pike,v 1.81 2005/04/10 18:08:51 nilsson Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -393,7 +393,7 @@ private array(string|mapping(string|int:mixed))
 //!   query("SELECT foo FROM bar WHERE gazonk=:baz",
 //!     ([":baz":"value"]));
 //! };
-//! if(!intp(err)) 
+//! if(err)
 //!   werror("An error occured.");
 //! @endcode
 //!
@@ -421,6 +421,9 @@ private array(string|mapping(string|int:mixed))
 //!
 //! @throws
 //!   Throws an exception if the query fails.
+//!
+//! @seealso
+//!   @[big_query]
 array(mapping(string:mixed)) query(object|string q,
                                    mixed ... extraargs)
 {
@@ -444,16 +447,23 @@ array(mapping(string:mixed)) query(object|string q,
   return res_obj_to_array(master_sql->big_query(q));
 }
 
-//! Send an SQL query to the underlying SQL-server. The result is returned
-//! as a Sql.sql_result object. This allows for having results larger than
-//! the available memory, and returning some more info about the result.
-//! Returns 0 if the query didn't return any result (e.g. INSERT or similar).
-//! For the other arguments, they are the same as for the @[query()] function.
+//! Send an SQL query to the underlying SQL-server. The result is
+//! returned as an Sql.sql_result object. This allows for having some
+//! more info about the result as well as processing the result in a
+//! streaming fashion, although the result itself wasn't obtained
+//! streamingly from the server. Returns @expr{0@} if the query didn't
+//! return any result (e.g. INSERT or similar). For the other
+//! arguments, they are the same as for the @[query()] function.
+//!
+//! @seealso
+//!   @[query], @[streaming_query]
 int|object big_query(object|string q, mixed ... extraargs)
 {
   object|array(mapping) pre_res;
 
-  if (sizeof(extraargs)) {
+  switch( sizeof(extraargs) ) {
+
+  default:
     mapping(string|int:mixed) bindings;
 
     if (mappingp(extraargs[0]))
@@ -466,13 +476,16 @@ int|object big_query(object|string q, mixed ... extraargs)
 	pre_res = master_sql->big_query(q, bindings);
       else
 	pre_res = master_sql->query(q, bindings);
+      break;
     }
-  }
-  else {
+    // Fallthrough
+
+  case 0:
     if (master_sql->big_query)
       pre_res = master_sql->big_query(q);
     else
       pre_res = master_sql->query(q);
+    break;
   }
 
   if(pre_res) {
@@ -481,6 +494,46 @@ int|object big_query(object|string q, mixed ... extraargs)
     else
       return .sql_array_result(pre_res);
   }
+  return 0;
+}
+
+//! Send an SQL query to the underlying SQL-server. The result is
+//! returned as a streaming Sql.sql_result object. This allows for
+//! having results larger than the available memory, and returning
+//! some more info about the result. Returns @expr{0@} if the query
+//! didn't return any result (e.g. INSERT or similar). For the other
+//! arguments, they are the same as for the @[query()] function.
+//!
+//! @seealso
+//!   @[big_query]
+int|object streaming_query(object|string q, mixed ... extraargs)
+{
+  if(!master_sql->streaming_query) return 0;
+  object pre_res;
+
+  switch( sizeof(extraargs) ) {
+
+  default:
+    mapping(string|int:mixed) bindings;
+
+    if(mappingp(extraargs[0]))
+      bindings=extraargs[0];
+    else
+      [q,bindings]=handle_extraargs(q,extraargs);
+
+    if(bindings) {
+      pre_res = master_sql->streaming_query(q,bindings);
+      break;
+    }
+    // Fallthough
+
+  case 0:
+    pre_res = master_sql->streaming_query(q);
+    break;
+  }
+
+  if(pre_res)
+    return .sql_object_result(pre_res);
   return 0;
 }
 
