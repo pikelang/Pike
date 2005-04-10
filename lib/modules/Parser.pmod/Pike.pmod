@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.38 2005/03/24 16:52:56 nilsson Exp $
+// $Id: Pike.pmod,v 1.39 2005/04/10 17:53:22 nilsson Exp $
 
 //! This module parses and tokenizes Pike source code.
 
@@ -36,10 +36,8 @@ array(string) split(string data, void|mapping state) {
 
   array new = ({});
   for(int i; i<sizeof(r); i++)
-    if(r[i][..2]=="//") {
-      new += ({ r[i]+"\n" });
-      i++;
-    }
+    if(r[i][..1]=="//" && r[i][-1]=='\n')
+      new += ({ r[i][..<1], "\n" });
     else
       new += ({ r[i] });
 
