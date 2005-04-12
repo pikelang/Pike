@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.475 2005/04/02 14:25:13 mast Exp $
+|| $Id: builtin_functions.c,v 1.476 2005/04/12 09:59:01 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.475 2005/04/02 14:25:13 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.476 2005/04/12 09:59:01 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1598,34 +1598,24 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
        */
 
       if ((c & 0xc0) == 0x80) {
-	bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,
-		       NULL, Pike_sp - args,
-		       "Invalid continuation character 0x%02x "
-		       "at index %"PRINTPTRDIFFT"d.\n",
-		       c, i);
+	Pike_error ("utf8_to_string: Invalid continuation character 0x%02x "
+		    "at index %"PRINTPTRDIFFT"d.\n", c, i);
       }
 
 #define GET_CONT_CHAR(in, i, c) do {					\
 	i++;								\
 	if (i >= in->len)						\
-	  bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
-			 NULL, Pike_sp - args,				\
-			 "Truncated UTF-8 sequence at end of string.\n"); \
+	  Pike_error ("utf8_to_string: "				\
+		      "Truncated UTF-8 sequence at end of string.\n");	\
 	c = ((unsigned char *)(in->str))[i];				\
 	if ((c & 0xc0) != 0x80)						\
-	  bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
-			 NULL, Pike_sp - args,				\
-			 "Expected continuation character at index %d, " \
-			 "got 0x%02x.\n",				\
-			 i, c);						\
+	  Pike_error ("utf8_to_string: Expected continuation character " \
+		      "at index %d, got 0x%02x.\n", i, c);		\
       } while (0)
 
 #define UTF8_SEQ_ERROR(prefix, c, i, problem) do {			\
-	bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
-		       NULL, Pike_sp - args,				\
-		       "UTF-8 sequence beginning with %s0x%02x "	\
-		       "at index %"PRINTPTRDIFFT"d %s.\n",		\
-		       prefix, c, i, problem);				\
+	Pike_error ("utf8_to_string: UTF-8 sequence beginning with %s0x%02x " \
+		    "at index %"PRINTPTRDIFFT"d %s.\n", prefix, c, i, problem); \
       } while (0)
 
       if ((c & 0xe0) == 0xc0) {
@@ -1672,10 +1662,8 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 	}
 
 	else if (c == 0xff)
-	  bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,
-			 NULL, Pike_sp - args,
-			 "Invalid character 0xff at index %"PRINTPTRDIFFT"d.\n",
-			 i);
+	  Pike_error ("utf8_to_string: "
+		 "Invalid character 0xff at index %"PRINTPTRDIFFT"d.\n", i);
 
 	else {
 	  if ((c & 0xfc) == 0xf8) {
