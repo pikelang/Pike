@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.34 2005/01/20 10:48:34 nilsson Exp $
+|| $Id: result.c,v 1.35 2005/04/12 00:38:04 nilsson Exp $
 */
 
 /*
@@ -63,6 +63,7 @@
 #include "threads.h"
 #include "multiset.h"
 #include "bignum.h"
+#include "module_support.h"
 
 /* Local includes */
 #include "precompiled_mysql.h"
@@ -199,6 +200,12 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
       break;
     case FIELD_TYPE_NEWDATE:
       push_text("newdate");
+      break;
+    case FIELD_TYPE_ENUM:
+      push_text("enum");
+      break;
+    case FIELD_TYPE_SET:
+      push_text("set");
       break;
     default:
       push_text("unknown");
@@ -368,11 +375,14 @@ static void f_field_seek(INT32 args)
 static void f_eof(INT32 args)
 {
   pop_n_elems(args);
+  push_int(PIKE_MYSQL_RES->eof);
+#if 0
   if (PIKE_MYSQL_RES->result) {
     push_int(mysql_eof(PIKE_MYSQL_RES->result));
   } else {
     push_int(0);
   }
+#endif
 }
 
 #ifdef SUPPORT_FIELD_SEEK
@@ -472,20 +482,13 @@ static void f_fetch_fields(INT32 args)
  */
 static void f_seek(INT32 args)
 {
-  if (!args) {
-    Pike_error("Too few arguments to mysql_result->seek()\n");
-  }
-  if (sp[-args].type != T_INT) {
-    Pike_error("Bad argument 1 to mysql_result->seek()\n");
-  }
-  if (sp[-args].u.integer < 0) {
-    Pike_error("Negative argument 1 to mysql_result->seek()\n");
-  }
-  if (!PIKE_MYSQL_RES->result) {
-    Pike_error("Can't seek in uninitialized result object.\n");
-  }
+  INT_TYPE skip;
+  get_all_args("seek",args,"%+",&skip);
 
-  mysql_data_seek(PIKE_MYSQL_RES->result, sp[-args].u.integer);
+  if (!PIKE_MYSQL_RES->result)
+    Pike_error("Can't seek in uninitialized result object.\n");
+
+  mysql_data_seek(PIKE_MYSQL_RES->result, skip);
 
   pop_n_elems(args);
 }
@@ -538,6 +541,7 @@ static void f_fetch_row(INT32 args)
 	  case FIELD_TYPE_SHORT:
 	  case FIELD_TYPE_LONG:
 	  case FIELD_TYPE_INT24:
+	  case FIELD_TYPE_DECIMAL:
 #if 0
 	    /* This one will not always fit in an INT32 */
           case FIELD_TYPE_LONGLONG:
@@ -545,7 +549,6 @@ static void f_fetch_row(INT32 args)
 	    push_int(atoi(row[i]));
 	    break;
 	    /* Floating point types */
-	  case FIELD_TYPE_DECIMAL:	/* Is this a float or an int? */
 	  case FIELD_TYPE_FLOAT:
 	  case FIELD_TYPE_DOUBLE:
 	    push_float(atof(row[i]));
@@ -577,6 +580,7 @@ static void f_fetch_row(INT32 args)
     f_aggregate(num_fields);
   } else {
     /* No rows left in result */
+    PIKE_MYSQL_RES->eof = 1;
     push_int(0);
   }
 
