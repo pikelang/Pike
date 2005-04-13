@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.37 2005/03/08 15:29:10 anders Exp $
+// $Id: HTML.pmod,v 1.38 2005/04/13 14:58:22 anders Exp $
 
 // Filter for text/html
 
@@ -57,7 +57,7 @@ Output filter(Standards.URI uri, string|Stdio.File data,
       case "author":
       case "intrawise.type":
 	res->fields[lower_case(n)] =
-	  Parser.parse_html_entities(m->contents||m->content||m->data||"");
+	  Parser.parse_html_entities(m->contents||m->content||m->data||"", 1);
 	break;
       case "robots":
 	res->fields->robots = (stringp(res->fields->robots)? res->fields->robots+",": "")+
@@ -72,11 +72,11 @@ Output filter(Standards.URI uri, string|Stdio.File data,
 
   void ladd(string html_href)
   {
-    low_ladd(Parser.parse_html_entities(html_href));
+    low_ladd(Parser.parse_html_entities(html_href, 1));
   };
 
   array(string) parse_title(Parser.HTML p, mapping m, string c) {
-    res->fields->title=Parser.parse_html_entities(c);
+    res->fields->title=Parser.parse_html_entities(c, 1);
     return ({ "" });
   };
 
