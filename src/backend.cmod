@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.173 2005/04/08 16:53:08 grubba Exp $
+ * $Id: backend.cmod,v 1.174 2005/04/13 14:16:43 grubba Exp $
  *
  * Backend object.
  */
@@ -313,7 +313,15 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
   ((poll_request.dp_timeout = (TIMEOUT)),			\
    (ioctl(PFD, DP_POLL, &poll_request, sizeof(poll_request))))
 
-int POLL_DEVICE_SET_EVENTS(int pfd, int fd, INT32 events)
+#ifdef _REENTRANT
+  /* FIXME: Ought to be CVARs. */
+  static int set_busy;
+  static COND_T set_change;
+  void backend_wake_up_backend(struct Backend_struct *me);
+#endif
+
+int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
+			   int pfd, int fd, INT32 events)
 {
   struct pollfd poll_state[2];
   int e;
@@ -331,8 +339,25 @@ int POLL_DEVICE_SET_EVENTS(int pfd, int fd, INT32 events)
     /* We're not interrested in the fd anymore. */
     sz = sizeof(poll_state[0]);
   }
+
+#ifdef _REENTRANT
+  /* Release the poll set from the backend. */
+  while (set_busy) {
+    co_wait_interpreter(&set_change);
+  }
+  set_busy = 1;
+  backend_wake_up_backend(me);
+  /* The backend is now waiting in wakeup_callback(). */
+#endif /* _REENTRANT */
+
   while (((e = write(pfd, poll_state, sz)) < 0) && (errno == EINTR))
     ;
+
+#ifdef _REENTRANT
+  /* Release the backend from wakeup_callback(). */
+  set_busy = 0;
+  co_broadcast(&set_change);
+#endif /* _REENTRANT */
 
   if (e < 0) {
     Pike_fatal("Failed to set state for fd %d in " PIKE_POLL_DEVICE
@@ -420,9 +445,11 @@ _syscall4(int, epoll_wait, int, epfd, struct epoll_event *, pevents,
 #define MY_POLL(PFD, TIMEOUT)				\
   epoll_wait(PFD, poll_fds, POLL_SET_SIZE, TIMEOUT)
 
-int POLL_DEVICE_SET_EVENTS(int pfd, int fd, INT32 events)
+int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
+			   int pfd, int fd, INT32 events)
 {
   int e;
+
   if (events) {
     struct epoll_event ev;
     ev.events = events;
@@ -839,6 +866,11 @@ PIKECLASS Backend
 #ifdef OPEN_POLL_DEVICE
   CVAR int set;
 #define active_set set
+#ifdef _REENTRANT
+  /* FIXME: Ought to be CVARs. */
+  static int set_busy;
+  static COND_T set_change;
+#endif
 #else /* !BACKEND_USES_POLL_DEVICE */
   CVAR struct selectors set;
   CVAR struct active_selectors active_set;
@@ -878,6 +910,11 @@ PIKECLASS Backend
     {
       char buffer[1024];
       fd_read(box->fd, buffer, sizeof(buffer)); /* Clear 'flag' */
+#if defined(OPEN_POLL_DEVICE) && defined(_REENTRANT)
+      while (set_busy) {
+	co_wait_interpreter(&set_change);
+      }
+#endif /* OPEN_POLL_DEVICE && _REENTRANT */
       return 0;
     }
 
@@ -1985,7 +2022,7 @@ PIKECLASS Backend
 
     IF_PD(fprintf(stderr, "UPDATE_BLACK_BOX(%d, %d) ==> events: 0x%08x\n",
 		  me->set, fd, events));
-    POLL_DEVICE_SET_EVENTS(me->set, fd, events);
+    POLL_DEVICE_SET_EVENTS(me, me->set, fd, events);
   }
 #elif defined(BACKEND_USES_KQUEUE)
   /* Note: Only used by REOPEN_POLL_DEVICE on a freshly opened kqueue. */
@@ -3722,6 +3759,10 @@ PMOD_EXPORT void debug_check_fd_not_in_use (int fd)
 
 void init_backend(void)
 {
+#if defined(OPEN_POLL_DEVICE) && defined(_REENTRANT)
+  set_busy = 0;
+  co_init(&set_change);
+#endif /* OPEN_POLL_DEVICE && _REENTRANT */
   init_call_out_s_blocks();
   init_compat_cb_box_blocks();
   INIT;
