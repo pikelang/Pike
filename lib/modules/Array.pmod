@@ -81,6 +81,36 @@ array shuffle(array arr)
   return arr;
 }
 
+//! Returns an array of all combinations of length @[len] of
+//! elements from @[arr].
+//!
+//! @seealso
+//!   @[permute()]
+array(array) combinations(array arr, int len)
+{
+  if (len > sizeof(arr)) return ({});
+  if (len == sizeof(arr)) return ({arr+({})});
+  if (!len) return ({({})});
+  if (len < 0) error("Negative length.\n");
+  array(int) stack = allocate(len+1);
+  array selection = allocate(len);
+  array(array) res = allocate(Math.choose(sizeof(arr), len));
+  int depth;
+  int pos;
+  stack[0] = -1;
+  for (pos = 0; pos < sizeof(res); pos++) {
+    selection[depth] = arr[stack[depth+1]];
+    for(depth++;depth < len; depth++) {
+      selection[depth] = arr[stack[depth+1] = stack[depth]+1];
+    }
+    res[pos] = selection + ({});
+    do {
+      stack[depth--]++;
+    } while (depth && (stack[depth+1]+len == sizeof(arr)+depth+1));
+  }
+  return res;
+}
+
 //! @[search_array()] works like @[map()], only it returns the index
 //! of the first call that returnes true instead.
 //!
