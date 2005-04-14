@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.118 2005/04/08 16:54:55 grubba Exp $
+|| $Id: gc.h,v 1.119 2005/04/14 16:48:00 mast Exp $
 */
 
 #ifndef GC_H
@@ -150,12 +150,12 @@ extern int gc_keep_markers;
   num_objects-- ;							\
 }while(0)
 
-struct gc_frame;
+struct gc_pop_frame;
 
 struct marker
 {
   struct marker *next;
-  struct gc_frame *frame;	/* Pointer into the cycle check stack. */
+  struct gc_pop_frame *frame;	/* Pointer to the cycle check pop frame. */
   void *data;
   INT32 refs;
   /* Internal references (both weak and nonweak). Increased during
