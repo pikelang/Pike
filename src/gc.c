@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.266 2005/04/14 16:48:00 mast Exp $
+|| $Id: gc.c,v 1.267 2005/04/14 17:30:50 mast Exp $
 */
 
 #include "global.h"
@@ -198,7 +198,7 @@ void debug_free_gc_stack_frame (struct gc_stack_frame *f)
     gc_fatal (f->data, 0, "Freeing freed gc_stack_frame.\n");
   f->frameflags |= GC_LINK_FREED;
   f->s_prev = (struct gc_stack_frame *) (ptrdiff_t) -1;
-  if (f->frameflags |= GC_POP_FRAME) {
+  if (f->frameflags & GC_POP_FRAME) {
     struct gc_pop_frame *p = (struct gc_pop_frame *) f;
     p->prev = p->next = (struct gc_pop_frame *)(ptrdiff_t) -1;
   }
