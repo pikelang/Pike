@@ -63,6 +63,7 @@ testfont binary
 /lib/7.4/modules/SSL.pmod/constants.pike foreign_ident
 /lib/7.4/modules/SSL.pmod/sslfile.pike foreign_ident
 /lib/7.4/modules/Stdio.pmod/module.pmod foreign_ident
+/lib/7.4/modules/Tools.pmod/Standalone.pmod/extract_autodoc.pike foreign_ident
 /lib/7.4/modules/__default.pmod foreign_ident
 /lib/include/profiling.h foreign_ident
 /lib/master.pike.in foreign_ident
