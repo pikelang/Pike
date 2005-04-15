@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.353 2005/01/26 21:01:17 mast Exp $
+// $Id: master.pike.in,v 1.354 2005/04/15 18:24:23 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -2331,8 +2331,8 @@ void _main(array(string) orig_argv, array(string) env)
 	     "                " + "\n");
   };
 
-  mixed main_resolv(string sym) {
-    mixed v = resolv(sym);
+  mixed main_resolv(string sym, CompatResolver|void resolver) {
+    mixed v = (resolver||this_object())->resolv(sym);
     if(!v)
       error("Could not resolv %s. "
 	    "(Perhaps the installed pike tree has been moved.)\n", sym);
@@ -2606,7 +2606,9 @@ void _main(array(string) orig_argv, array(string) env)
 	     "Available tools:\n");
       mapping t = ([]);
       int i;
-      object ts = main_resolv( "Tools.Standalone" );
+      object ts = main_resolv("Tools.Standalone",
+			      get_compilation_handler(compat_major,
+						      compat_minor));
       foreach (indices(ts), string s) {
 	mixed val = ts[s];
 	if (programp (val)) {
@@ -2620,7 +2622,9 @@ void _main(array(string) orig_argv, array(string) env)
 	werror(" %-"+i+"s %s\n", s, t[s]);
       exit(1);
     }
-    main_resolv( "Tools.Hilfe" )->StdinHilfe();
+    main_resolv("Tools.Hilfe",
+		get_compilation_handler(compat_major,
+					compat_minor))->StdinHilfe();
     exit(0);
   }
   else
@@ -2630,7 +2634,8 @@ void _main(array(string) orig_argv, array(string) env)
 
   if(run_tool) {
     mixed err = catch {
-      prog=main_resolv( "Tools.Standalone." + argv[0] );
+      prog = main_resolv("Tools.Standalone." + argv[0],
+			 get_compilation_handler(compat_major, compat_minor));
     };
 
     if (err)
