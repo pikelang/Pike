@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.372 2005/03/14 17:22:59 per Exp $
+// $Id: master.pike.in,v 1.373 2005/04/15 09:57:58 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -803,8 +803,15 @@ static program low_findprog(string pname,
 				  get_codec)(fname, mkobj, handler));
 	      DEC_RESOLV_MSG_DEPTH();
 	      resolv_debug ("low_findprog %s: dump decode ok\n", fname);
-	      return programs[fname] = ret;
-
+	      if (ret && ret->this_program_does_not_exist) {
+		resolv_debug ("low_findprog %s: program claims not to exist\n",
+			      fname);
+		return programs[fname] = 0;
+	      }
+	      else {
+		resolv_debug("low_findprog %s: returning %O\n", fname, ret);
+		return programs[fname]=ret;
+	      }
 	    };
 	    DEC_RESOLV_MSG_DEPTH();
 	    resolv_debug ("low_findprog %s: dump decode failed\n", fname);
@@ -1024,6 +1031,8 @@ program cast_to_program(string pname,
 //! with catch().
 void handle_error(array|object trace)
 {
+  // NB: Use predef::trace() to modify trace level here.
+  // predef::trace(2);
   if(mixed x=catch {
     werror(describe_backtrace(trace));
   }) {
@@ -1032,11 +1041,14 @@ void handle_error(array|object trace)
     // tune up the STACK_MARGIN values in interpret.c then.
     werror("Error in handle_error in master object:\n");
     if(catch {
+      // NB: Splited werror calls to retain some information
+      //     even if/when werror throws.
       catch {
 	if (catch {
 	  string msg = [string]x[0];
 	  array bt = [array]x[1];
-	  werror("%s%O\n", msg, bt);
+	  werror("%s", msg);
+	  werror("%O\n", bt);
 	}) {
 	  werror("%O\n", x);
 	}
@@ -1047,6 +1059,7 @@ void handle_error(array|object trace)
       werror("sprintf() failed to write error.\n");
     }
   }
+  // predef::trace(0);
 }
 
 /* This array contains the names of the functions
