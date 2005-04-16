@@ -198,6 +198,12 @@ private string normalize(string in) {
 		      ({ "_",".",":","-","(",")" }),
 		      ({ "","","","","","" }));
 
+  if (has_prefix(out, "unicode")) {
+    // The mailserver at wi2-96.rz.fh-wiesbaden.de uses the encoding
+    // unicode-1-1-utf-7. We're not interested in the Unicode version...
+    sscanf(out, "unicode%*d%s", out);
+  }
+
   if( (out=="isoir91" || out=="isoir92") && in[-2]!='9')
     return sprintf("%s-%c", out[..sizeof(out)-2], out[-1]);
 
