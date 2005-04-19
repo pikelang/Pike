@@ -23,7 +23,14 @@ test_eq(dirname("a/b"),"a")
 test_eq(dirname("a/"),"a")
 test_eq(dirname("a"),"")
 
-dnl error
+test_eq( catch(error("x"))[0], "x" )
+test_eq( catch(error("X"))[1][0]->fun, master()->_main )
+
+test_true( true )
+test_false( false )
+test_do( bool x=true; )
+test_do( bool x=false; )
+
 dnl is_absolute_path
 dnl normalize_path
 dnl putenv
