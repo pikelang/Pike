@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.95 2005/04/07 18:36:15 mast Exp $
+// $Id: client.pike,v 1.96 2005/04/20 15:20:22 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -309,7 +309,7 @@ static function(string:string) get_attr_encoder (string attr)
 	resultstring = 0;
       else if (ldap_version >= 3)
 	resultstring = utf8_to_string (resultstring);
-      DWRITE(sprintf("result.create: str=%s\n",resultstring));
+      DWRITE(sprintf("result.create: str=%O\n",resultstring));
 #ifdef V3_REFERRALS
       // referral (v3 mode)
       if(resultcode == 10) {
@@ -560,7 +560,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|mapping(string:mixed)|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.95 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.96 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -1384,7 +1384,7 @@ object get_default_filter()
 			       Standards.ASN1.Types.asn1_integer(0x7fffffff),
 			       cookie,			// cookie
 			     }))->get_der(),
-			   sizeof(cookie->value)?0:0xff)});
+			   sizeof(cookie->value))});
 	    },);
 	  object controls;
 	  if (sizeof(ctrls)) {
