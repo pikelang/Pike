@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.476 2005/04/12 09:59:01 mast Exp $
+|| $Id: builtin_functions.c,v 1.477 2005/04/21 15:45:06 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.476 2005/04/12 09:59:01 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.477 2005/04/21 15:45:06 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1610,7 +1610,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 	c = ((unsigned char *)(in->str))[i];				\
 	if ((c & 0xc0) != 0x80)						\
 	  Pike_error ("utf8_to_string: Expected continuation character " \
-		      "at index %d, got 0x%02x.\n", i, c);		\
+		      "at index %"PRINTPTRDIFFT"d, got 0x%02x.\n", i, c); \
       } while (0)
 
 #define UTF8_SEQ_ERROR(prefix, c, i, problem) do {			\
