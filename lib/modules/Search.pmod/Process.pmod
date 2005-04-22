@@ -44,7 +44,6 @@ class Indexer(Variable wa_var, void|function get_sb_workarea_view_url, Configura
     acvar->loaders[conf]->online_db->acdb->
       close_backdoor(userpass);
   }
-  static mapping hostcache = ([]);
   
   static array prepare_cb(string _url, mapping headers)
   {
@@ -66,15 +65,11 @@ class Indexer(Variable wa_var, void|function get_sb_workarea_view_url, Configura
       headers["Request-Invisible"]="";
       sb_url = get_sb_workarea_view_url(url);
       headers["host"]=sprintf("%s:%d", sb_url->host, sb_url->port);
-      if(!hostcache[sb_url->host])
-      {
-        array a = gethostbyname(sb_url->host);
-        if(a && arrayp(a) && arrayp(a[1]) && sizeof(a[1]))
-          hostcache[sb_url->host] = a[1][0];
-        else
-          hostcache[sb_url->host] = sb_url->host;
-      }
-      sb_url->host = hostcache[sb_url->host];
+      string ip;
+      if(!sscanf(sb_url->fragment, "ip=%s", ip))
+	error("Error: No ip number found in fragment of url %O\n.", sb_url);
+      sb_url->host = ip;
+      sb_url->fragment = 0;
       return ({ (string)sb_url, headers });
     }
     else {
