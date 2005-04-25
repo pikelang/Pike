@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.96 2005/04/20 15:20:22 mast Exp $
+// $Id: client.pike,v 1.97 2005/04/25 19:48:43 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -131,7 +131,7 @@ static function(string:string) get_attr_decoder (string attr,
 #ifdef DEBUG
   else if (!nowarn && !has_suffix (attr, ";binary") && !has_value (attr, ";binary;"))
     werror ("Warning: Couldn't fetch attribute description for %O - "
-	    "binary content assumed.\n%s", attr, describe_backtrace(backtrace()));
+	    "binary content assumed.\n", attr);
 #endif
   return 0;
 }
@@ -560,7 +560,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|mapping(string:mixed)|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.96 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.97 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
