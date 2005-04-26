@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.90 2005/02/08 20:11:45 mast Exp $
+/* $Id: sslfile.pike,v 1.91 2005/04/26 19:16:56 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -650,7 +650,7 @@ string read (void|int length, void|int(0..1) not_all)
     if (stream)
       if (not_all) {
 	if (!sizeof (read_buffer))
-	  RUN_MAYBE_BLOCKING (!sizeof (read_buffer), 0, 1,
+	  RUN_MAYBE_BLOCKING (!sizeof (read_buffer) && !(conn->closing & 2), 0, 1,
 			      if (sizeof (read_buffer)) {
 				// Got data to return first. Push the
 				// error back so it'll get reported by
@@ -662,7 +662,8 @@ string read (void|int length, void|int(0..1) not_all)
       }
       else {
 	if (sizeof (read_buffer) < length || zero_type (length))
-	  RUN_MAYBE_BLOCKING (sizeof (read_buffer) < length || zero_type (length),
+	  RUN_MAYBE_BLOCKING ((sizeof (read_buffer) < length || zero_type (length)) &&
+			      !(conn->closing & 2),
 			      nonblocking_mode, 1,
 			      if (sizeof (read_buffer)) {
 				// Got data to return first. Push the
