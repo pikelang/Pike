@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.79 2005/03/16 12:19:08 grubba Exp $
+// $Id: treeopt.in,v 1.80 2005/04/26 13:22:27 grubba Exp $
 //
 // The tree optimizer
 //
@@ -1012,6 +1012,15 @@ F_FOR(0 = +[node_is_true($$)], -):
   /* Infinite loop */
   $$ = mknode(F_FOR, $0, mknode(':',
 				mkefuncallnode("sleep", mkintnode(255)),
+				0));
+}
+;
+
+F_FOR(0 = +[node_is_tossable($$)], -):
+{
+  /* CPU-wasting delay loop [bug 3907]. */
+  $$ = mknode(F_FOR, $0, mknode(':',
+				mkefuncallnode("sleep", mkintnode(1)),
 				0));
 }
 ;
