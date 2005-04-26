@@ -130,6 +130,10 @@ static void f_tokenize( INT32 args )
   }
 
   UNSET_ONERROR(tmp);
+  if (!res->size) {
+    free_array(res);
+    add_ref(res = &empty_array);
+  }
   push_array(res);
   push_string( left_s );
   f_aggregate( 2 );
