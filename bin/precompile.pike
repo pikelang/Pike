@@ -1538,8 +1538,6 @@ class ParseBlock
 			    0,
 			    DEFINE("tObjImpl_"+upper_case(lname), "tObj")),
 		    })+
-		    IFDEF("THIS_"+upper_case(lname),
-			  ({ sprintf("\n  %s_storage_offset=ADD_STORAGE(struct %s_struct);\n",lname,lname) }) )+
 		    subclass->addfuncs+
 		    ({
 		      attributes->program_flags?
@@ -1720,6 +1718,13 @@ class ParseBlock
 		  "};\n",
 		    })
 	  +declarations;
+	addfuncs = ({
+	  IFDEF("THIS_"+upper_case(base), ({
+		  PC.Token(sprintf("  %s_storage_offset = "
+				   "ADD_STORAGE(struct %s);",
+				   base, structname)),
+		})),
+	}) + addfuncs;
       }
 
       x=ret/({"DECLARE_STORAGE"});
