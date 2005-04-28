@@ -1,5 +1,5 @@
 //
-// $Id: connection.pike,v 1.40 2005/02/08 20:01:42 mast Exp $
+// $Id: connection.pike,v 1.41 2005/04/28 19:56:47 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -314,6 +314,8 @@ string|int got_data(string|int s)
 	alert_callback(packet, current_read_state->seq_num, alert_context);
       if ((!packet) || (!this) || (packet->level == ALERT_fatal))
 	return -1;
+      if (alert_callback)
+	break;
     }
     else
     {
