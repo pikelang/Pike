@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.81 2005/04/26 19:16:56 mast Exp $
+/* $Id: sslfile.pike,v 1.82 2005/04/28 20:26:34 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -137,6 +137,11 @@ static int got_extra_read_call_out;
 // for more details. -1 if we've switched to non-callback mode and
 // therefore has removed the call out temporarily but need to restore
 // it when switching back. 0 otherwise.
+
+static int alert_cb_called;
+// Need to know if the alert callback has been called in
+// ssl_read_callback since it can't continue in that case. This is
+// only set temporarily while ssl_read_callback runs.
 
 // This macro is used in all user called functions that can report I/O
 // errors, both at the beginning and after
@@ -423,6 +428,7 @@ static void create (Stdio.File stream, SSL.context ctx,
     close_packet_send_state = CLOSE_PACKET_NOT_SCHEDULED;
     local_errno = cb_errno = 0;
     got_extra_read_call_out = 0;
+    alert_cb_called = 0;
 #endif
 
     stream->set_read_callback (0);
@@ -545,11 +551,14 @@ Stdio.File shutdown()
       // anyway as long as the transport isn't used for anything else.
       conn->closing |= 2;
 
-    SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): %s close\n",
+    SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): %s\n",
 		    conn->closing & 2 &&
 		    close_packet_send_state == CLOSE_PACKET_QUEUED_OR_DONE &&
 		    !sizeof (write_buffer) ?
-		    "Proper" : "Abrupt");
+		    "Proper close" :
+		    close_state == STREAM_OPEN ?
+		    "Not closed" :
+		    "Abrupt close");
 
     if ((conn->closing & 2) && sizeof (conn->left_over || "")) {
 #ifdef DEBUG
@@ -586,14 +595,18 @@ Stdio.File shutdown()
     stream->set_write_callback (0);
     stream->set_close_callback (0);
 
-    if (close_state != CLEAN_CLOSE) {
-      SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): Nonclean close - closing stream\n");
-      stream->close();
-      RETURN (0);
-    }
-    else {
-      SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): Clean close - leaving stream\n");
-      RETURN (stream);
+    switch (close_state) {
+      case CLEAN_CLOSE:
+	SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): Clean close - leaving stream\n");
+	RETURN (stream);
+      case STREAM_OPEN:
+	close_state = STREAM_UNINITIALIZED;
+	SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): Not closed - leaving stream\n");
+	RETURN (stream);
+      default:
+	SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): Nonclean close - closing stream\n");
+	stream->close();
+	RETURN (0);
     }
   } LEAVE;
 }
@@ -973,7 +986,12 @@ void set_alert_callback (function(object,int|object,string:void) alert)
   if (close_state == STREAM_UNINITIALIZED || !conn)
     error ("Doesn't have any connection.\n");
 #endif
-  conn->set_alert_callback (alert);
+  conn->set_alert_callback (
+    lambda (object packet, int|object seq_num, string alert_context) {
+      SSL3_DEBUG_MSG ("Calling alert callback %O\n", alert);
+      alert (packet, seq_num, alert_context);
+      alert_cb_called = 1;
+    });
 }
 
 function(object,int|object,string:void) query_alert_callback()
@@ -1330,53 +1348,59 @@ static int ssl_read_callback (int called_from_real_backend, string input)
       werror ("ssl_read_callback: Got data: %O\n", data);
 #endif
 
-      int write_res;
-      if (stringp(data) || (data > 0)) {
-#ifdef DEBUG
-	if (!stream)
-	  error ("Got zapped stream in callback.\n");
-#endif
-	// got_data might have put more packets in the write queue if
-	// we're handshaking.
-	write_res = queue_write();
-      }
+      if (alert_cb_called)
+	SSL3_DEBUG_MSG ("ssl_read_callback: After alert cb call\n");
 
-      cb_errno = 0;
-
-      if (stringp (data)) {
-	if (!handshake_already_finished && conn->handshake_finished) {
-	  SSL3_DEBUG_MSG ("ssl_read_callback: Handshake finished\n");
-	  update_internal_state();
-	  if (called_from_real_backend && accept_callback) {
+      else {
+	int write_res;
+	if (stringp(data) || (data > 0)) {
 #ifdef DEBUG
-	    if (close_state >= NORMAL_CLOSE)
-	      error ("Didn't expect the connection to be explicitly closed already.\n");
+	  if (!stream)
+	    error ("Got zapped stream in callback.\n");
 #endif
-	    call_accept_cb = 1;
+	  // got_data might have put more packets in the write queue if
+	  // we're handshaking.
+	  write_res = queue_write();
+	}
+
+	cb_errno = 0;
+
+	if (stringp (data)) {
+	  if (!handshake_already_finished && conn->handshake_finished) {
+	    SSL3_DEBUG_MSG ("ssl_read_callback: Handshake finished\n");
+	    update_internal_state();
+	    if (called_from_real_backend && accept_callback) {
+#ifdef DEBUG
+	      if (close_state >= NORMAL_CLOSE)
+		error ("Didn't expect the connection to be "
+		       "explicitly closed already.\n");
+#endif
+	      call_accept_cb = 1;
+	    }
 	  }
+
+	  SSL3_DEBUG_MSG ("ssl_read_callback: "
+			  "Got %d bytes of application data\n", sizeof (data));
+	  read_buffer->add (data);
 	}
 
-	SSL3_DEBUG_MSG ("ssl_read_callback: "
-			"Got %d bytes of application data\n", sizeof (data));
-	read_buffer->add (data);
-      }
-
-      else if (data < 0 || write_res < 0) {
-	SSL3_DEBUG_MSG ("ssl_read_callback: "
-			"Got abrupt remote close - simulating System.EPIPE\n");
-	cb_errno = System.EPIPE;
-      }
-
-      // Don't use data > 0 here since we might have processed some
-      // application data and a close in the same got_data call.
-      if (conn->closing & 2) {
-	if (close_packet_send_state == CLOSE_PACKET_MAYBE_IGNORED_WRITE_ERROR) {
-	  SSL3_DEBUG_MSG ("ssl_read_callback: Got close packet - "
-			  "ignoring failure to send one\n");
-	  close_packet_send_state = CLOSE_PACKET_QUEUED_OR_DONE;
+	else if (data < 0 || write_res < 0) {
+	  SSL3_DEBUG_MSG ("ssl_read_callback: "
+			  "Got abrupt remote close - simulating System.EPIPE\n");
+	  cb_errno = System.EPIPE;
 	}
-	else
-	  SSL3_DEBUG_MSG ("ssl_read_callback: Got close packet\n");
+
+	// Don't use data > 0 here since we might have processed some
+	// application data and a close in the same got_data call.
+	if (conn->closing & 2) {
+	  if (close_packet_send_state == CLOSE_PACKET_MAYBE_IGNORED_WRITE_ERROR) {
+	    SSL3_DEBUG_MSG ("ssl_read_callback: Got close packet - "
+			    "ignoring failure to send one\n");
+	    close_packet_send_state = CLOSE_PACKET_QUEUED_OR_DONE;
+	  }
+	  else
+	    SSL3_DEBUG_MSG ("ssl_read_callback: Got close packet\n");
+	}
       }
     }
 
@@ -1393,32 +1417,52 @@ static int ssl_read_callback (int called_from_real_backend, string input)
 
     // Figure out what we need to do. call_accept_cb is already set
     // from above.
-    int(0..1) call_read_cb =
-      called_from_real_backend && read_callback && sizeof (read_buffer) &&
-      close_state < NORMAL_CLOSE;
-    int(0..1) do_close_stuff =
-      !!((conn->closing & 2) || cb_errno);
+    int(0..1) call_read_cb;
+    int(0..1) do_close_stuff;
+    if (alert_cb_called) {
+      if (!conn) {
+	SSL3_DEBUG_MSG ("ssl_read_callback: Shut down from alert callback\n");
+	RESTORE;
+	return 0;
+      }
+    }
+    else {
+      call_read_cb =
+	called_from_real_backend && read_callback && sizeof (read_buffer) &&
+	close_state < NORMAL_CLOSE;
+      do_close_stuff =
+	!!((conn->closing & 2) || cb_errno);
+    }
 
-    if (call_accept_cb + call_read_cb + do_close_stuff > 1) {
+    if (alert_cb_called || call_accept_cb + call_read_cb + do_close_stuff > 1) {
       // Need to do a call out to ourselves; see comment above.
 #ifdef DEBUG
-      if (!called_from_real_backend)
+      if (!alert_cb_called && !called_from_real_backend)
 	error ("Internal confusion.\n");
-      if (got_extra_read_call_out < 0)
+      if (called_from_real_backend && got_extra_read_call_out < 0)
 	error ("Ended up in ssl_read_callback from real backend "
 	       "when no callbacks are supposed to be installed.\n");
 #endif
       if (!got_extra_read_call_out) {
-	real_backend->call_out (ssl_read_callback, 0, 1, 0);
-	got_extra_read_call_out = 1;
-	SSL3_DEBUG_MSG ("ssl_read_callback: Too much to do (%O, %O, %O) - "
-			"queued another call\n",
-			call_accept_cb, call_read_cb, do_close_stuff);
+	if (called_from_real_backend) {
+	  real_backend->call_out (ssl_read_callback, 0, 1, 0);
+	  got_extra_read_call_out = 1;
+	  SSL3_DEBUG_MSG ("ssl_read_callback: Too much to do (%O, %O, %O, %O) - "
+			  "queued another call\n", alert_cb_called, call_accept_cb,
+			  call_read_cb, do_close_stuff);
+	}
+	else {
+	  got_extra_read_call_out = -1;
+	  SSL3_DEBUG_MSG ("ssl_read_callback: Too much to do (%O, %O, %O, %O) - "
+			  "scheduled another call\n", alert_cb_called, call_accept_cb,
+			  call_read_cb, do_close_stuff);
+	}
       }
       else
-	SSL3_DEBUG_MSG ("ssl_read_callback: Too much to do (%O, %O, %O) - "
+	SSL3_DEBUG_MSG ("ssl_read_callback: Too much to do (%O, %O, %O, %O) - "
 			"another call already queued\n",
-			call_accept_cb, call_read_cb, do_close_stuff);
+			alert_cb_called, call_accept_cb, call_read_cb, do_close_stuff);
+      alert_cb_called = 0;
     }
 
     else
