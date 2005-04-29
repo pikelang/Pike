@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.160 2005/04/08 01:55:49 nilsson Exp $
+|| $Id: efuns.c,v 1.161 2005/04/29 15:10:12 per Exp $
 */
 
 #include "global.h"
@@ -136,6 +136,206 @@ struct array *encode_stat(PIKE_STAT_T *s)
   ITEM(a)[6].u.integer=s->st_gid;
   return a;
 }
+
+#if defined(HAVE_FSETXATTR) && defined(HAVE_FGETXATTR) && defined(HAVE_FLISTXATTR)
+#include <attr/xattr.h>
+/*! @decl array(string) listxattr( string file, void|int(0..1) symlink )
+ *! 
+ *! Return an array of all extended attributes set on the file
+ */
+
+static void f_listxattr(INT32 args)
+{
+  char buffer[1024];
+  char *ptr = buffer;
+  char *name;
+  int do_free = 0;
+  int nofollow = 0;
+  ssize_t res;
+  if( args > 1)
+      get_all_args( "listxattr", args, "%s%d", &name, &nofollow );
+  else
+      get_all_args( "listxattr", args, "%s", &name );
+
+  THREADS_ALLOW();
+  do {
+      res = (nofollow?&llistxattr:&listxattr)( name, buffer, sizeof(buffer) ); /* First try, for speed.*/
+  } while( res < 0 && errno == EINTR );
+  THREADS_DISALLOW();
+
+  if( res<0 && errno==ERANGE )
+  {
+    /* Too little space in stackbuffer.*/
+    do_free = 1;
+    int blen = 65536;
+    ptr = xalloc( 1 );
+    do {
+      char *tmp = realloc( buffer, blen );
+      if( !tmp )
+	break;
+      ptr = tmp;
+      THREADS_ALLOW();
+      do {
+	res = (nofollow?&llistxattr:&listxattr)( name, buffer, blen );
+      } while( res < 0 && errno == EINTR );
+      THREADS_DISALLOW();
+      blen *= 2;
+    }
+    while( (res < 0) && (errno == ERANGE) );
+  }
+
+  pop_n_elems( args );
+  if( res < 0 )
+  {
+    if( do_free && ptr )
+      free(ptr);
+    push_int(0);
+    return;
+  }
+
+  push_string( make_shared_binary_string( ptr, res ) );
+  ptr[0]=0;
+  push_string( make_shared_binary_string( ptr, 1 ) );
+  o_divide();
+  push_text( "" );
+  f_aggregate(1);
+  o_subtract();
+
+  if( do_free && ptr ) 
+    free( ptr );
+}
+
+/*! @decl string getxattr(string file, string attr, void|int(0..1) symlink)
+ *! 
+ *! Return the value of a specified attribute, or 0 if it does not exist.
+ */
+static void f_getxattr(INT32 args)
+{
+  char buffer[1024];
+  char *ptr = buffer;
+  int do_free = 0;
+  ssize_t res;
+  char *name, *file;
+  int nofollow=0;
+  if( args > 2 )
+      get_all_args( "getxattr", args, "%s%s%d", &file, &name, &nofollow );
+  else
+      get_all_args( "getxattr", args, "%s%s", &file, &name );
+
+  THREADS_ALLOW();
+  do {
+      res = (nofollow?&getxattr:&lgetxattr)( file, name, buffer, sizeof(buffer) ); /* First try, for speed.*/
+  } while( res < 0 && errno == EINTR );
+  THREADS_DISALLOW();
+
+  if( res<0 && errno==ERANGE )
+  {
+    /* Too little space in buffer.*/
+    do_free = 1;
+    int blen = 65536;
+    ptr = xalloc( 1 );
+    do {
+      char *tmp = realloc( buffer, blen );
+      if( !tmp )
+	break;
+      ptr = tmp;
+      THREADS_ALLOW();
+      do {
+	  res = (nofollow?&getxattr:&lgetxattr)( file, name, buffer, sizeof(buffer) );
+      } while( res < 0 && errno == EINTR );
+      THREADS_DISALLOW();
+      blen *= 2;
+    }
+    while( (res < 0) && (errno == ERANGE) );
+  }
+
+  if( res < 0 )
+  {
+    if( do_free && ptr )
+      free(ptr);
+    push_int(0);
+    return;
+  }
+
+  push_string( make_shared_binary_string( ptr, res ) );
+  if( do_free && ptr ) 
+    free( ptr );
+}
+
+
+/*! @decl void removexattr( string file, string attr , void|int(0..1) symlink)
+ *! Remove the specified extended attribute.
+ */
+static void f_removexattr( INT32 args )
+{
+  char *name, *file;
+  int nofollow=0, rv;
+  
+  if( args > 2)
+    get_all_args( "removexattr", args, "%s%s%d", &file, &name, &nofollow );
+  else
+    get_all_args( "removexattr", args, "%s%s", &file, &name );
+
+  THREADS_ALLOW();
+  while( (rv=(nofollow?&removexattr:&lremovexattr)( file, name )) && errno == EINTR);
+  THREADS_DISALLOW();
+
+  pop_n_elems(args);
+  if( rv < 0 )
+  {
+    push_int(0);
+  }
+  else
+  {
+    push_int(1);
+  }
+}
+
+/*! @decl void setxattr( string file, string attr, string value, int flags,void|int(0..1) symlink)
+ *!
+ *! Set the attribute @[attr] to the value @[value].
+ *!
+ *! The flags parameter can be used to refine the semantics of the operation.  
+ *!
+ *! @[XATTR_CREATE] specifies a pure create, which
+ *! fails if the named attribute exists already.  
+ *!
+ *! @[XATTR_REPLACE] specifies a pure replace operation, which fails if the named
+ *! attribute does not already exist. 
+ *!
+ *! By default (no flags), the extended attribute will be created if need be, 
+ *! or will simply replace the value if the attribute exists.
+ *!
+ *! @returns
+ *! 1 if successful, 0 otherwise, setting errno.
+ */
+static void f_setxattr( INT32 args )
+{
+  char *ind, *file;
+  struct pike_string *val;  
+  int flags;
+  int rv;
+  int nofollow=0;
+  if( args > 4 )
+      get_all_args( "setxattr", args, "%s%s%S%d%d", &file, &ind, &val, &flags, &nofollow );
+  else
+      get_all_args( "setxattr", args, "%s%s%S%d", &file, &ind, &val, &flags );
+
+  THREADS_ALLOW();
+  while( (rv=(nofollow?&setxattr:&lsetxattr)( file, ind, val->str, 
+					      (val->len<<val->size_shift), flags )) 
+	 && errno == EINTR);
+  THREADS_DISALLOW();
+  pop_n_elems(args);
+  if( rv < 0 )
+  {
+    push_int(0);
+  }
+  else
+    push_int(1);
+}
+#endif
+
 
 /*! @decl Stdio.Stat file_stat(string path, void|int(0..1) symlink)
  *!
@@ -1616,6 +1816,12 @@ void init_files_efuns(void)
   /* function(string,int:int(0..1)) */
   ADD_EFUN("file_truncate",f_file_truncate,tFunc(tStr tInt,tInt),OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
 
+#if defined(HAVE_FSETXATTR) && defined(HAVE_FGETXATTR) && defined(HAVE_FLISTXATTR)
+  ADD_EFUN( "listxattr", f_listxattr, tFunc(tStr tOr(tVoid,tInt),tArr(tStr)), OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+  ADD_EFUN( "setxattr", f_setxattr, tFunc(tStr tStr tStr tInt tOr(tVoid,tInt),tInt), OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+  ADD_EFUN( "getxattr", f_getxattr, tFunc(tStr tStr tOr(tVoid,tInt),tStr), OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+  ADD_EFUN( "removexattr", f_removexattr, tFunc(tStr tStr  tOr(tVoid,tInt),tInt), OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+#endif
 
 #if defined(HAVE_STATVFS) || defined(HAVE_STATFS) || defined(HAVE_USTAT) || defined(__NT__)
   

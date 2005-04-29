@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.35 2005/04/08 17:32:40 grubba Exp $
+|| $Id: file_functions.h,v 1.36 2005/04/29 15:10:12 per Exp $
 */
 
 #define CB_FUNC tFunc(tNone,tOr(tVoid,tMixed))
@@ -150,6 +150,13 @@ FILE_FUNC("set_keepalive",file_set_keepalive, tFunc(tInt,tInt))
 #ifdef HAVE_NOTIFICATIONS
 /*  function(int,function,void|int:void) */
 FILE_FUNC("notify", file_set_notify, tFunc(tInt tFunction tOr(tVoid,tInt),tVoid))
+#endif
+
+#if defined(HAVE_FSETXATTR) && defined(HAVE_FGETXATTR) && defined(HAVE_FLISTXATTR)
+FILE_FUNC( "listxattr", file_listxattr, tFunc(tVoid,tArr(tStr)))
+FILE_FUNC( "setxattr", file_setxattr, tFunc(tStr tStr tInt,tInt))
+FILE_FUNC( "getxattr", file_getxattr, tFunc(tStr,tStr))
+FILE_FUNC( "removexattr", file_removexattr, tFunc(tStr,tInt))
 #endif
 
 #undef FILE_FUNC

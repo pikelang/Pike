@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.346 2005/04/08 17:32:18 grubba Exp $
+|| $Id: file.c,v 1.347 2005/04/29 15:10:12 per Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -2113,6 +2113,193 @@ static void file_stat(INT32 args)
   }
 }
 
+#if defined(HAVE_FSETXATTR) && defined(HAVE_FGETXATTR) && defined(HAVE_FLISTXATTR)
+#include <attr/xattr.h>
+/* All A-OK.*/
+
+/*! @decl array(string) listxattr( )
+ *! 
+ *! Return an array of all extended attributes set on the file
+ */
+static void file_listxattr(INT32 args)
+{
+  char buffer[1024];
+  char *ptr = buffer;
+  int mfd = FD, do_free = 0;
+  ssize_t res;
+
+  pop_n_elems( args );
+
+  THREADS_ALLOW();
+  do {
+    res = flistxattr( mfd, buffer, sizeof(buffer) ); /* First try, for speed.*/
+  } while( res < 0 && errno == EINTR );
+  THREADS_DISALLOW();
+
+  if( res<0 && errno==ERANGE )
+  {
+    /* Too little space in buffer.*/
+
+    do_free = 1;
+    int blen = 65536;
+    ptr = xalloc( 1 );
+    do {
+      char *tmp = realloc( buffer, blen );
+      if( !tmp )
+	break;
+      ptr = tmp;
+      THREADS_ALLOW();
+      do {
+	res = flistxattr( mfd, buffer, blen ); /* First try, for speed.*/
+      } while( res < 0 && errno == EINTR );
+      THREADS_DISALLOW();
+      blen *= 2;
+    }
+    while( (res < 0) && (errno == ERANGE) );
+  }
+
+  if( res < 0 )
+  {
+    if( do_free && ptr )
+      free(ptr);
+    push_int(0);
+    ERRNO=errno;
+    return;
+  }
+
+  push_string( make_shared_binary_string( ptr, res ) );
+  ptr[0]=0;
+  push_string( make_shared_binary_string( ptr, 1 ) );
+  o_divide();
+  push_text( "" );
+  f_aggregate(1);
+  o_subtract();
+
+  if( do_free && ptr ) 
+    free( ptr );
+}
+
+/*! @decl string getxattr(string attr)
+ *! 
+ *! Return the value of a specified attribute, or 0 if it does not exist
+ */
+static void file_getxattr(INT32 args)
+{
+  char buffer[1024];
+  char *ptr = buffer;
+  int mfd = FD, do_free = 0;
+  ssize_t res;
+  char *name;
+  
+  get_all_args( "getxattr", args, "%s", &name );
+
+  THREADS_ALLOW();
+  do {
+    res = fgetxattr( mfd, name, buffer, sizeof(buffer) ); /* First try, for speed.*/
+  } while( res < 0 && errno == EINTR );
+  THREADS_DISALLOW();
+
+  if( res<0 && errno==ERANGE )
+  {
+    /* Too little space in buffer.*/
+    do_free = 1;
+    int blen = 65536;
+    ptr = xalloc( 1 );
+    do {
+      char *tmp = realloc( buffer, blen );
+      if( !tmp )
+	break;
+      ptr = tmp;
+      THREADS_ALLOW();
+      do {
+	res = fgetxattr( mfd, name, buffer, blen ); /* First try, for speed.*/
+      } while( res < 0 && errno == EINTR );
+      THREADS_DISALLOW();
+      blen *= 2;
+    }
+    while( (res < 0) && (errno == ERANGE) );
+  }
+
+  if( res < 0 )
+  {
+    if( do_free && ptr )
+      free(ptr);
+    push_int(0);
+    ERRNO=errno;
+    return;
+  }
+
+  push_string( make_shared_binary_string( ptr, res ) );
+  if( do_free && ptr ) 
+    free( ptr );
+}
+
+
+/*! @decl void removexattr( string attr )
+ *! Remove the specified extended attribute.
+ */
+static void file_removexattr( INT32 args )
+{
+  char *name;
+  int mfd = FD;
+  int rv;
+  get_all_args( "removexattr", args, "%s", &name );
+  THREADS_ALLOW();
+  while( (rv=fremovexattr( mfd, name )) && errno == EINTR);
+  THREADS_DISALLOW();
+
+  pop_n_elems(args);
+  if( rv < 0 )
+  {
+    ERRNO=errno;
+    push_int(0);
+  }
+  else
+  {
+    push_int(1);
+  }
+}
+
+/*! @decl void setxattr( string attr, string value, int flags)
+ *!
+ *! Set the attribute @[attr] to the value @[value].
+ *!
+ *! The flags parameter can be used to refine the semantics of the operation.  
+ *!
+ *! @[XATTR_CREATE] specifies a pure create, which
+ *! fails if the named attribute exists already.  
+ *!
+ *! @[XATTR_REPLACE] specifies a pure replace operation, which fails if the named
+ *! attribute does not already exist. 
+ *!
+ *! By default (no flags), the extended attribute will be created if need be, 
+ *! or will simply replace the value if the attribute exists.
+ *!
+ *! @returns
+ *! 1 if successful, 0 otherwise, setting errno.
+ */
+static void file_setxattr( INT32 args )
+{
+  char *ind;
+  struct pike_string *val;
+  int flags;
+  int rv;
+  int mfd = FD;
+  get_all_args( "setxattr", args, "%s%S%d", &ind, &val, &flags );
+  THREADS_ALLOW();
+  while( (rv=fsetxattr( mfd, ind, val->str, (val->len<<val->size_shift), flags )) && errno == EINTR);
+  THREADS_DISALLOW();
+  pop_n_elems(args);
+  if( rv < 0 )
+  {
+    ERRNO=errno;
+    push_int(0);
+  }
+  else
+    push_int(1);
+}
+#endif
+
 /*! @decl int errno()
  *!
  *! Return the errno for the latest failed file operation.
@@ -4126,6 +4313,10 @@ PIKE_MODULE_INIT
   init_sendfile();
   init_udp();
 
+#if defined(HAVE_FSETXATTR)
+  add_integer_constant("XATTR_CREATE", XATTR_CREATE, 0 );
+  add_integer_constant("XATTR_REPLACE", XATTR_REPLACE, 0 );
+#endif
   add_integer_constant("PROP_IPC",fd_INTERPROCESSABLE,0);
   add_integer_constant("PROP_NONBLOCK",fd_CAN_NONBLOCK,0);
   add_integer_constant("PROP_SHUTDOWN",fd_CAN_SHUTDOWN,0);
