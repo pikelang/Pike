@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fuse.c,v 1.1 2005/04/29 14:01:20 per Exp $
+|| $Id: fuse.c,v 1.2 2005/04/29 20:07:26 grubba Exp $
 */
 
 #include "global.h"
@@ -450,4 +450,4 @@ PIKE_MODULE_EXIT
 PIKE_MODULE_INIT
 {
 }
-#endif // HAVE_LIBFUSE
+#endif /* HAVE_LIBFUSE */
