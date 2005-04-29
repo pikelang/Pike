@@ -1,7 +1,6 @@
 AC_INIT(fuse.c)
 AC_MODULE_INIT()
 AC_CONFIG_HEADER(config.h)
-PIKE_FEATURE_WITHOUT(Fuse)
 AC_ARG_WITH(fuse,  [  --without-fuse       no support for the Fuse user filesystem module],[],[with_fuse=yes])
 
 PIKE_FEATURE_WITHOUT(Fuse)
