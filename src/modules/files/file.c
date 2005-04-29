@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.347 2005/04/29 15:10:12 per Exp $
+|| $Id: file.c,v 1.348 2005/04/29 18:35:36 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -2139,18 +2139,17 @@ static void file_listxattr(INT32 args)
   if( res<0 && errno==ERANGE )
   {
     /* Too little space in buffer.*/
-
-    do_free = 1;
     int blen = 65536;
+    do_free = 1;
     ptr = xalloc( 1 );
     do {
-      char *tmp = realloc( buffer, blen );
+      char *tmp = realloc( ptr, blen );
       if( !tmp )
 	break;
       ptr = tmp;
       THREADS_ALLOW();
       do {
-	res = flistxattr( mfd, buffer, blen ); /* First try, for speed.*/
+	res = flistxattr( mfd, ptr, blen );
       } while( res < 0 && errno == EINTR );
       THREADS_DISALLOW();
       blen *= 2;
@@ -2202,17 +2201,17 @@ static void file_getxattr(INT32 args)
   if( res<0 && errno==ERANGE )
   {
     /* Too little space in buffer.*/
-    do_free = 1;
     int blen = 65536;
+    do_free = 1;
     ptr = xalloc( 1 );
     do {
-      char *tmp = realloc( buffer, blen );
+      char *tmp = realloc( ptr, blen );
       if( !tmp )
 	break;
       ptr = tmp;
       THREADS_ALLOW();
       do {
-	res = fgetxattr( mfd, name, buffer, blen ); /* First try, for speed.*/
+	res = fgetxattr( mfd, name, ptr, blen );
       } while( res < 0 && errno == EINTR );
       THREADS_DISALLOW();
       blen *= 2;
@@ -2245,7 +2244,8 @@ static void file_removexattr( INT32 args )
   int rv;
   get_all_args( "removexattr", args, "%s", &name );
   THREADS_ALLOW();
-  while( (rv=fremovexattr( mfd, name )) && errno == EINTR);
+  while( ((rv=fremovexattr( mfd, name )) < 0) && (errno == EINTR))
+    ;
   THREADS_DISALLOW();
 
   pop_n_elems(args);
@@ -2287,7 +2287,10 @@ static void file_setxattr( INT32 args )
   int mfd = FD;
   get_all_args( "setxattr", args, "%s%S%d", &ind, &val, &flags );
   THREADS_ALLOW();
-  while( (rv=fsetxattr( mfd, ind, val->str, (val->len<<val->size_shift), flags )) && errno == EINTR);
+  while( ((rv=fsetxattr( mfd, ind, val->str,
+			 (val->len<<val->size_shift), flags )) < 0) &&
+	 (errno == EINTR))
+    ;
   THREADS_DISALLOW();
   pop_n_elems(args);
   if( rv < 0 )

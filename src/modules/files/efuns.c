@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.161 2005/04/29 15:10:12 per Exp $
+|| $Id: efuns.c,v 1.162 2005/04/29 18:31:42 grubba Exp $
 */
 
 #include "global.h"
@@ -166,17 +166,17 @@ static void f_listxattr(INT32 args)
   if( res<0 && errno==ERANGE )
   {
     /* Too little space in stackbuffer.*/
+    size_t blen = 65536;
     do_free = 1;
-    int blen = 65536;
     ptr = xalloc( 1 );
     do {
-      char *tmp = realloc( buffer, blen );
+      char *tmp = realloc( ptr, blen );
       if( !tmp )
 	break;
       ptr = tmp;
       THREADS_ALLOW();
       do {
-	res = (nofollow?&llistxattr:&listxattr)( name, buffer, blen );
+	res = (nofollow?&llistxattr:&listxattr)( name, ptr, blen );
       } while( res < 0 && errno == EINTR );
       THREADS_DISALLOW();
       blen *= 2;
@@ -231,17 +231,17 @@ static void f_getxattr(INT32 args)
   if( res<0 && errno==ERANGE )
   {
     /* Too little space in buffer.*/
+    size_t blen = 65536;
     do_free = 1;
-    int blen = 65536;
     ptr = xalloc( 1 );
     do {
-      char *tmp = realloc( buffer, blen );
+      char *tmp = realloc( ptr, blen );
       if( !tmp )
 	break;
       ptr = tmp;
       THREADS_ALLOW();
       do {
-	  res = (nofollow?&getxattr:&lgetxattr)( file, name, buffer, sizeof(buffer) );
+	  res = (nofollow?&getxattr:&lgetxattr)( file, name, ptr, blen );
       } while( res < 0 && errno == EINTR );
       THREADS_DISALLOW();
       blen *= 2;
@@ -277,7 +277,9 @@ static void f_removexattr( INT32 args )
     get_all_args( "removexattr", args, "%s%s", &file, &name );
 
   THREADS_ALLOW();
-  while( (rv=(nofollow?&removexattr:&lremovexattr)( file, name )) && errno == EINTR);
+  while( ((rv=(nofollow?&removexattr:&lremovexattr)( file, name )) < 0) &&
+	 (errno == EINTR))
+    ;
   THREADS_DISALLOW();
 
   pop_n_elems(args);
@@ -322,9 +324,11 @@ static void f_setxattr( INT32 args )
       get_all_args( "setxattr", args, "%s%s%S%d", &file, &ind, &val, &flags );
 
   THREADS_ALLOW();
-  while( (rv=(nofollow?&setxattr:&lsetxattr)( file, ind, val->str, 
-					      (val->len<<val->size_shift), flags )) 
-	 && errno == EINTR);
+  while( ((rv=(nofollow?&setxattr:&lsetxattr)( file, ind, val->str, 
+					       (val->len<<val->size_shift),
+					       flags )) < 0) &&
+	 (errno == EINTR))
+    ;
   THREADS_DISALLOW();
   pop_n_elems(args);
   if( rv < 0 )
