@@ -397,6 +397,7 @@ testfont binary
 /src/modules/DVB/dvb.h foreign_ident
 /src/modules/DVB/psparser.c foreign_ident
 /src/modules/Fuse/acconfig.h foreign_ident
+/src/modules/Fuse/example/remountcwd.pike foreign_ident
 /src/modules/Fuse/fuse.c foreign_ident
 /src/modules/Gdbm/Makefile.in foreign_ident
 /src/modules/Gdbm/acconfig.h foreign_ident

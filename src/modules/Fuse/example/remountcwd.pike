@@ -1,7 +1,8 @@
 // Re-mount CWD somewhere else.
+//
+// $Id: remountcwd.pike,v 1.2 2005/04/29 18:39:49 grubba Exp $
 // 
 // To test: mkdir /tmp/test; pike test.pike -d /tmp/test
-#include "/usr/include/asm/errno.h"
 
 class CBS
 {
@@ -20,7 +21,7 @@ class CBS
 	    }
 	    return 0;
 	};
-	return ENOENT;
+	return System.ENOENT;
     }
 
     mapping statfs(string path)
@@ -37,7 +38,7 @@ class CBS
 	    string res = fd->read( len );
 	    return res;
 	};
-	return ENOENT;
+	return System.ENOENT;
     }
 }
 
