@@ -6,7 +6,7 @@ AC_ARG_WITH(fuse,  [  --without-fuse       no support for the Fuse user filesyst
 
 PIKE_FEATURE_WITHOUT(Fuse)
 
-if test x$with_mysql = xno; then
+if test x$with_fuse = xno; then
   :
 else
   PIKE_FEATURE_NODEP(Fuse)
