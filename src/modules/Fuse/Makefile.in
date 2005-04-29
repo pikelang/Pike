@@ -8,6 +8,6 @@ OBJS=fuse.o
 @dynamic_module_makefile@
 
 MODNAME=Fuse
-MODULE_LDFLAGS=@LDFLAGS@ -lfuse
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
 @dependencies@
