@@ -1,0 +1,24 @@
+AC_INIT(fuse.c)
+AC_MODULE_INIT()
+AC_CONFIG_HEADER(config.h)
+PIKE_FEATURE_WITHOUT(Fuse)
+AC_ARG_WITH(fuse,  [  --without-fuse       no support for the Fuse user filesystem module],[],[with_fuse=yes])
+
+PIKE_FEATURE_WITHOUT(Fuse)
+
+if test x$with_mysql = xno; then
+  :
+else
+  PIKE_FEATURE_NODEP(Fuse)
+  AC_DEFINE(_FILE_OFFSET_BITS,64,[Needed for FUSE])
+  AC_CHECK_HEADERS(fuse.h)
+  if test x$ac_cv_header_fuse_h = xyes ; then
+    AC_CHECK_LIB(fuse, fuse_read_cmd, [ 
+            LIBS="${LIBS-} -lfuse" 
+            AC_DEFINE(HAVE_LIBFUSE,1,[Define if libfuse and fuse.h is available]) 
+            PIKE_FEATURE_OK(Fuse)
+     ])
+  fi
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )

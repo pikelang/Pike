@@ -1,0 +1,13 @@
+@make_variables@
+
+VPATH=@srcdir@
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+OBJS=fuse.o
+
+@dynamic_module_makefile@
+
+MODNAME=Fuse
+MODULE_LDFLAGS=@LDFLAGS@ -lfuse
+
+@dependencies@

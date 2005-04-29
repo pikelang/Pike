@@ -1,0 +1,249 @@
+//! Fuse - Filesystem in USErspace
+//!
+//! FUSE (Filesystem in USErspace) provides a simple interface for
+//! userspace programs to export a virtual filesystem to the Linux
+//! kernel.  FUSE also aims to provide a secure method for non
+//! privileged users to create and mount their own filesystem
+//! implementations.
+//!
+//! FUSE is only available on Linux.
+//!
+//! See http://sourceforge.net/projects/fuse/ for more information
+//!
+//! This module maps the Fuse library more or less directly to pike.
+//!
+//! A tip: /usr/include/asm/errno.h can be included in pike programs on Linux.
+
+inherit @module@;
+#if constant(@module@.run)
+#include "/usr/include/asm/errno.h"
+
+
+class Operations
+//! This is the interface you have to implement to write a FUSE filesystem
+//! If something goes wrong in your callback, always return errno.
+//! Unless the function returns a specific value (Stat, string or similar), 
+//! return 0 if all is well.
+//!
+//! You do not have to implement all functions. Unimplemented
+//! functions have a default implementation that returns -ENOIMPL.
+{
+
+    //! @[open] mode flags.
+    enum {
+	O_APPEND=02000,
+	O_ACCMODE=3,
+	O_RDONLY=0,
+	O_WRONLY=1,
+	O_RDWR=2,
+    };
+
+
+    //! Stat a file.
+    //! @note 
+    //! This function is required.
+    //! @returns
+    //! The symlink contents or errno
+    Stdio.Stat|int(1..) getattr( string path );
+
+    //! Read a symlink.
+    //! @returns
+    //! The symlink contents or errno
+    string|int(1..) readlink( string path );
+
+    //! Get directory contents. The callback get the arguments
+    //! filename, filetype and file inode. 
+    //! @note 
+    //! This function is required.
+    //! @returns
+    //! errno or 0
+    int readdir( string path, function(string,int,int:void) callback );
+
+    //! Create a node (file, device special, or named pipe).
+    //! See man 2 mknod
+    //! @returns
+    //! errno or 0
+    int mknod( string path, int mode, int rdev );
+
+    //! Create a directory.
+    //! @returns
+    //! errno or 0
+    int mkdir( string path, int mode );
+
+    //! Remove a file
+    //! @returns
+    //! errno or 0
+    int unlink( string path );
+
+    //! Remove a directory
+    //! @returns
+    //! errno or 0
+    int rmdir( string path );
+    
+    //! Create a symlink from source to destination.
+    //! @returns
+    //! errno or 0
+    int symlink( string source, string destination );
+
+    //! Create a hard link from source to destination.
+    //! @returns
+    //! errno or 0
+    int link( string source, string destination );
+
+    //! Rename @[source] to @[destination].
+    //! @returns
+    //! errno or 0
+    int rename( string source, string destination );
+    
+    //! Change mode
+    //! @returns
+    //! errno or 0
+    int chmod( string path, int mode );
+    
+    //! Change owner
+    //! @returns
+    //! errno or 0
+    int chown( string path, int uid, int gid);
+    
+    //! Shrink or enlarge file
+    //! @returns
+    //! errno or 0
+    int truncate( string path, int new_length);
+
+    //! Set access and modification time
+    //! @returns
+    //! errno or 0
+    int utime( string path, int atime, int mtime );
+
+    //! Open 'path'. mode is as for the system call open.
+    //! (mode & O_ACCMODE) is one of O_RDONLY, O_WRONLY and O_RDWR.
+    //! The mode can also contain other flags, most notably O_APPEND.
+    //! @note
+    //! You do not really have to implement this function.
+    //! It's useful to start prefetch and to cache open files, and
+    //! check that the user has permission to read/write the file.
+    //! @returns
+    //! errno or 0
+    int open( string path, int mode );
+
+    //! Read data from a file. You have to return exactly len bytes, unless an error occurs.
+    //! @returns
+    //! errno or data
+    string|int(1..) read( string path, int len, int offset );
+
+    //! Write data to the file. Should write all data.
+    //! @returns
+    //! errno or amount written (bytes)
+    int write( string path, string data, int offset  );
+
+    //! Stat a filesystem.
+    //! Mapping as from @[filesystem_stat]
+    //! @note
+    //! required for 'df' support, without this function there is an error each time 'df' is run.
+    mapping(string:int) statfs( string path );
+
+
+    //! The inverse of open. 
+    //! @note 
+    //! The file might very well be openend multiple times. 
+    //! Keep reference counts.
+    int release( string path );  
+
+    //! Flush data and user-data to disk. Not required.
+    //! If the @[datasync] parameter is non-zero, then only the user data
+    //! should be flushed, not the meta data.
+    int fsync( string path, int datasync );
+}
+
+static class MyOps
+{
+    inherit Operations;
+    object handler;
+    Thread.Farm farm = Thread.Farm();
+    array(Thread.Thread) threads;
+    Thread.Queue queue = Thread.Queue();
+
+    void handle_thread()
+    {
+	while( function cb = queue->read() )
+	    if( mixed err = catch(cb()) )
+	    {
+		werror("Fatal error while processing FUSE commands: %s\n", 
+		       describe_backtrace(err) );
+		exit(-1);
+	    }
+    }
+
+    void ___process_cmd( function cb )
+    {
+	if( !sizeof( threads ) )
+	    cb();
+	else
+	    queue->write( cb );
+    }
+
+    void create( object _handler, int _nthreads )
+    {
+	handler = _handler;
+	threads = ({});
+	if( _nthreads )
+	    while( --_nthreads )
+		threads += ({ thread_create( handle_thread ) });
+    }
+
+
+#define WRAP(X) mixed X(mixed ... args){if(!handler->X)return ENOENT;return handler->X(@args);	}
+#define WRAPC(X) mixed X(mixed ... args){if(!handler->X)return EACCES;return handler->X(@args);}
+#define WRAP0(X) mixed X(mixed ... args){if(!handler->X)return 0;return handler->X(@args);}
+
+    WRAP(getattr);
+    WRAP(readlink);
+    WRAP(readdir);
+    WRAPC(mknod);
+    WRAPC(mkdir);
+    WRAP(unlink);
+    WRAP(rmdir);
+    WRAP(symlink);
+    WRAP(link);
+    WRAPC(rename);
+    WRAPC(chmod);
+    WRAPC(chown);
+    WRAPC(truncate);
+    WRAPC(utime);
+    WRAPC(read);
+    WRAPC(write);
+    WRAP(statfs);
+
+    WRAP0(open);
+    WRAP0(release);
+    WRAP0(fsync);
+}
+
+//! Start fuse. Args is as in argv in main().
+//! The first argument (argv[0], program name) is used as the filesystem name.
+//! The first non-flag argument after argv[0] is used as the mountpoint.
+//! Otherwise these arguments are supported:
+//! @pre
+//!     -d                  enable debug output (implies -f)
+//!     -f                  foreground operation
+//!     -s                  disable multithreaded operation
+//!     -r                  mount read only (equivalent to '-o ro')
+//!     -o opt,[opt...]     mount options
+//!     -h                  print help
+//! 
+//! Mount options:
+//!     default_permissions    enable permission checking
+//!     allow_other            allow access to other users
+//!     allow_root             allow access to root
+//!     kernel_cache           cache files in kernel
+//!     large_read             issue large read requests (2.4 only)
+//!     direct_io              use direct I/O
+//!     max_read=N             set maximum size of read requests (default 128K)
+//!     hard_remove            immediate removal (don't hide files)
+//!     debug                  enable debug output
+//!     fsname=NAME            set filesystem name in mtab (overrides argv[0])
+void run( Operations handler, int nthreads, array(string) args )
+{
+    ::run( MyOps( handler, nthreads ), args );
+}
+#endif
