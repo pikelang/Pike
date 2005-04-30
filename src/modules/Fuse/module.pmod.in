@@ -158,6 +158,7 @@ static class MyOps
 {
     inherit Operations;
     object handler;
+#if constant(thread_create)
     array(Thread.Thread) threads;
     Thread.Queue queue = Thread.Queue();
 
@@ -179,14 +180,22 @@ static class MyOps
 	else
 	    queue->write( cb );
     }
+#else /* !constant(thread_create) */
+    void ___process_cmd( function cb )
+    {
+      cb();
+    }
+#endif /* constant(thread_create) */
 
     void create( object _handler, int _nthreads )
     {
 	handler = _handler;
+#if constant(thread_create)
 	threads = ({});
 	if( _nthreads )
 	    while( --_nthreads )
 		threads += ({ thread_create( handle_thread ) });
+#endif /* constant(thread_create) */
     }
 
 
