@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.162 2005/04/29 18:31:42 grubba Exp $
+|| $Id: efuns.c,v 1.163 2005/04/30 15:14:18 grubba Exp $
 */
 
 #include "global.h"
@@ -74,6 +74,10 @@
 #include <process.h>
 #endif
 
+#ifdef HAVE_SYS_XATTR_H
+#include <sys/xattr.h>
+#endif /* HAVE_SYS_XATTR_H */
+
 #define sp Pike_sp
 
 /* #define DEBUG_FILE */
@@ -138,7 +142,6 @@ struct array *encode_stat(PIKE_STAT_T *s)
 }
 
 #if defined(HAVE_FSETXATTR) && defined(HAVE_FGETXATTR) && defined(HAVE_FLISTXATTR)
-#include <attr/xattr.h>
 /*! @decl array(string) listxattr( string file, void|int(0..1) symlink )
  *! 
  *! Return an array of all extended attributes set on the file
