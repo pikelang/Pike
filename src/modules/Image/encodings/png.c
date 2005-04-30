@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.72 2005/04/30 18:52:14 nilsson Exp $
+|| $Id: png.c,v 1.73 2005/04/30 19:10:08 nilsson Exp $
 */
 
 #include "global.h"
@@ -1079,6 +1079,8 @@ static void img_png_decode(INT32 args,int header_only)
 	  b->item[1].type!=T_STRING ||
 	  b->item[0].u.string->len!=4)
 	 Pike_error("Image.PNG._decode: Illegal stuff in array index %d\n",i);
+#else
+      b = a->item[i].u.array;
 #endif
 
       data = (unsigned char *)b->item[1].u.string->str;
