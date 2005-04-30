@@ -16,7 +16,6 @@
 
 inherit @module@;
 #if constant(@module@.run)
-#include "/usr/include/asm/errno.h"
 
 
 class Operations
@@ -192,9 +191,18 @@ static class MyOps
     }
 
 
-#define WRAP(X) mixed X(mixed ... args){if(!handler->X)return ENOENT;return handler->X(@args);	}
-#define WRAPC(X) mixed X(mixed ... args){if(!handler->X)return EACCES;return handler->X(@args);}
-#define WRAP0(X) mixed X(mixed ... args){if(!handler->X)return 0;return handler->X(@args);}
+#define WRAP(X) mixed X(mixed ... args) {	\
+    if(!handler->X) return System.ENOENT;	\
+    return handler->X(@args);			\
+  }
+#define WRAPC(X) mixed X(mixed ... args) {	\
+    if(!handler->X) return System.EACCES;	\
+    return handler->X(@args);			\
+  }
+#define WRAP0(X) mixed X(mixed ... args) {	\
+    if(!handler->X)return 0;			\
+    return handler->X(@args);			\
+  }
 
     WRAP(getattr);
     WRAP(readlink);
