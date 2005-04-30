@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.71 2005/04/30 15:18:06 nilsson Exp $
+|| $Id: png.c,v 1.72 2005/04/30 18:52:14 nilsson Exp $
 */
 
 #include "global.h"
@@ -133,7 +133,7 @@ static void png_decompress(int style)
    struct object *o;
 
    if (style)
-      Pike_error("Internal error: illegal decompression style %d\n",style);
+      Pike_error("Internal error: Illegal decompression style %d.\n",style);
    
    o=clone_object(gz_inflate,0);
    apply(o,"inflate",1);
@@ -145,7 +145,7 @@ static void png_compress(int style)
    struct object *o;
 
    if (style)
-      Pike_error("Internal error: illegal decompression style %d\n",style);
+      Pike_error("Internal error: Illegal decompression style %d.\n",style);
    
    push_int(8);
    o=clone_object(gz_deflate,1);
@@ -167,11 +167,12 @@ static void image_png__chunk(INT32 args)
    if (args!=2 ||
        sp[-args].type!=T_STRING ||
        sp[1-args].type!=T_STRING)
-      Pike_error("Image.PNG.chunk: Illegal argument(s)\n");
+      PIKE_ERROR("Image.PNG._chunk", "Illegal argument(s).\n", sp, args);
    
    a=sp[-args].u.string;
    if (a->len!=4)
-      Pike_error("Image.PNG: Chunk type string not 4 characters\n");
+      PIKE_ERROR("Image.PNG._chunk", "Type string not 4 characters.\n",
+		 sp ,args);
    b=sp[1-args].u.string;
    pop_n_elems(args-2);
    sp-=2;
@@ -225,7 +226,6 @@ static void image_png___decode(INT32 args)
    add_ref(str=sp[-args].u.string);
    data=(unsigned char*)str->str;
    len=str->len;
-   SET_ONERROR(uwp,do_free_string,str);
 
    pop_n_elems(args);
 
@@ -239,12 +239,12 @@ static void image_png___decode(INT32 args)
        data[6]!=26 ||
        data[7]!=10)
    {
-      UNSET_ONERROR(uwp);
       free_string(str);
       push_int(0);
       return;
    }
 
+   SET_ONERROR(uwp,do_free_string,str);
    len-=8; data+=8;
 
    while (len>8)
@@ -687,20 +687,21 @@ static int _png_write_rgb(rgb_group *w1,
 	 {
 	    free(w1);
 	    free(wa1);
-	    Pike_error("Image.PNG.decode: No palette (PLTE entry), but color type (3) needs one\n");
+	    Pike_error("Image.PNG.decode: No palette, but color type 3 needs one.\n");
 	 }
 	 if (ct->type!=NCT_FLAT)
 	 {
 	    free(w1);
 	    free(wa1);
-	    Pike_error("Image.PNG.decode: Internal error (created palette isn't flat)\n");
+	    Pike_error("Image.PNG.decode: Internal error (created palette isn't flat).\n");
 	 }
 	 mz=ct->u.flat.numentries;
 	 if (mz==0)
 	 {
 	    free(w1);
 	    free(wa1);
-	    Pike_error("Image.PNG.decode: palette is zero entries long; need at least one color.\n");
+	    Pike_error("Image.PNG.decode: Palette is zero entries long;"
+		       " need at least one color.\n");
 	 }
 
 #define CUTPLTE(X,Z) (((X)>=(Z))?0:(X))
@@ -941,7 +942,7 @@ static int _png_write_rgb(rgb_group *w1,
 	       break;
 	    default:
 	       free(wa1); free(w1);
-	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d(rgba)/%d bit.\n",
+	       Pike_error("Image.PNG._decode: Unsupported color type/bit depth %d (rgba)/%d bit.\n",
 		     type,bpp);
 	 }
 	 return 1; /* alpha channel */
@@ -950,7 +951,9 @@ static int _png_write_rgb(rgb_group *w1,
 	 Pike_error("Image.PNG._decode: Unknown color type %d (bit depth %d).\n",
 	       type,bpp);
    }
-   Pike_error("Image.PNG._decode: illegal state\n");
+#ifdef PIKE_DEBUG
+   Pike_fatal("Image.PNG._decode: illegal state\n");
+#endif
    return 0; /* stupid */
 }
 
@@ -996,7 +999,7 @@ static void img_png_decode(INT32 args,int header_only)
       int compression; /* 0 */
       int filter; 
       int interlace;
-   } ihdr={-1,-1,-1,0,-1,-1,-1};
+   } ihdr={-1,-1,-1,-1,-1,-1,-1};
 
    if (args<1)
      SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG._decode", 1);
@@ -1017,7 +1020,9 @@ static void img_png_decode(INT32 args,int header_only)
 	 case T_OBJECT:
 	    push_text("cast");
 	    if (sp[-1].type==T_INT)
-	       Pike_error("Image.PNG._decode: illegal value of option \"palette\"\n");
+	       PIKE_ERROR("Image.PNG._decode",
+			  "Illegal value of option \"palette\".\n",
+			  sp, args);
 	    f_index(2);
 	    push_text("array");
 	    f_call_function(2);
@@ -1028,7 +1033,8 @@ static void img_png_decode(INT32 args,int header_only)
 	    ct=(struct neo_colortable*)get_storage(sp[-1].u.object,
 						   image_colortable_program);
 	    if (!ct)
-	       Pike_error("Image.PNG._decode: internal error: cloned colortable isn't colortable\n");
+	       PIKE_ERROR("Image.PNG._decode",
+			  "Internal error: cloned colortable isn't colortable.\n", sp, args);
 	    ref_push_string(param_palette);
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
@@ -1037,7 +1043,9 @@ static void img_png_decode(INT32 args,int header_only)
 	    pop_n_elems(1);
 	    break;
 	 default:
-	    Pike_error("Image.PNG._decode: illegal value of option \"palette\"\n");
+	    PIKE_ERROR("Image.PNG._decode",
+		       "Illegal value of option \"palette\".\n",
+		       sp, args);
       }
    }
 
@@ -1051,7 +1059,7 @@ static void img_png_decode(INT32 args,int header_only)
       push_int(1); /* no care crc */
       image_png___decode(2);
       if (sp[-1].type!=T_ARRAY)
-	 Pike_error("Image.PNG._decode: Not PNG data\n");
+	 PIKE_ERROR("Image.PNG._decode", "Not PNG data.\n", sp ,args);
    }
    else if (sp[-1].type!=T_ARRAY)
      SIMPLE_BAD_ARG_ERROR("Image.PNG._decode", 1, "string");
@@ -1064,12 +1072,14 @@ static void img_png_decode(INT32 args,int header_only)
       unsigned char *data;
       size_t len;
 
+#ifdef PIKE_DEBUG
       if (a->item[i].type!=T_ARRAY ||
 	  (b=a->item[i].u.array)->size!=3 ||
 	  b->item[0].type!=T_STRING ||
 	  b->item[1].type!=T_STRING ||
 	  b->item[0].u.string->len!=4)
 	 Pike_error("Image.PNG._decode: Illegal stuff in array index %d\n",i);
+#endif
 
       data = (unsigned char *)b->item[1].u.string->str;
       len = (size_t)b->item[1].u.string->len;
@@ -1077,7 +1087,8 @@ static void img_png_decode(INT32 args,int header_only)
       if (!i &&
 	  int_from_32bit((unsigned char*)b->item[0].u.string->str)
 	  != 0x49484452 )
-	 Pike_error("Imge.PNG.decode: first chunk isn't IHDR\n");
+	 PIKE_ERROR("Imge.PNG.decode", "First chunk isn't IHDR.\n",
+		    sp, args);
 
       switch (int_from_32bit((unsigned char*)b->item[0].u.string->str))
       {
@@ -1085,7 +1096,8 @@ static void img_png_decode(INT32 args,int header_only)
          case 0x49484452: /* IHDR */
 	    /* header info */
 	    if (b->item[1].u.string->len!=13)
-	       Pike_error("Image.PNG._decode: illegal header (IHDR chunk)\n");
+	       PIKE_ERROR("Image.PNG._decode",
+			  "Illegal header (IHDR chunk).\n", sp, args);
 
 	    ihdr.width=int_from_32bit(data+0);
 	    ihdr.height=int_from_32bit(data+4);
@@ -1280,19 +1292,19 @@ static void img_png_decode(INT32 args,int header_only)
       f_add(n);
 
    if (ihdr.type==-1)
-   {
-      Pike_error("Image.PNG._decode: missing header (IHDR chunk)\n");
-   }
+      PIKE_ERROR("Image.PNG._decode", "Missing header (IHDR chunk).\n",
+		 sp, args);
+
    if (ihdr.type==3 && !ct)
-   {
-      Pike_error("Image.PNG._decode: missing palette (PLTE chunk)\n");
-   }
+      PIKE_ERROR("Image.PNG._decode", "Missing palette (PLTE chunk).\n",
+		 sp, args);
 
    if (ihdr.compression==0)
    {
       png_decompress(ihdr.compression);
       if (sp[-1].type!=T_STRING)
-	 Pike_error("Image.PNG._decode: got weird stuff from decompression\n");
+	 PIKE_ERROR("Image.PNG._decode",
+		    "Got illegal data from decompression.\n", sp ,args);
    }
    else
       Pike_error("Image.PNG._decode: illegal compression type 0x%02x\n",
@@ -1402,7 +1414,8 @@ static void img_png_decode(INT32 args,int header_only)
 
 	 break;
       default:
-	 Pike_error("Image.PNG._decode: Unknown interlace type\n");
+	 PIKE_ERROR("Image.PNG._decode", "Unknown interlace type.\n",
+		    sp, args);
    }
 
    UNSET_ONERROR(a_err);
@@ -1505,7 +1518,7 @@ static void image_png_encode(INT32 args)
      SIMPLE_BAD_ARG_ERROR("Image.PNG.encode", 1, "Image.Image");
 
    if (!img->img)
-      Pike_error("Image.PNG.encode: no image\n");
+      PIKE_ERROR("Image.PNG.encode", "No image.\n", sp, args);
 
    if (args>1)
    {
