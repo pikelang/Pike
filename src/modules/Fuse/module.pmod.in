@@ -158,7 +158,6 @@ static class MyOps
 {
     inherit Operations;
     object handler;
-    Thread.Farm farm = Thread.Farm();
     array(Thread.Thread) threads;
     Thread.Queue queue = Thread.Queue();
 
