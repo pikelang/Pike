@@ -14,9 +14,8 @@
 //!
 //! A tip: /usr/include/asm/errno.h can be included in pike programs on Linux.
 
-inherit @module@;
 #if constant(@module@.run)
-
+inherit @module@;
 
 class Operations
 //! This is the interface you have to implement to write a FUSE filesystem
@@ -27,29 +26,44 @@ class Operations
 //! You do not have to implement all functions. Unimplemented
 //! functions have a default implementation that returns -ENOIMPL.
 {
+    //! Unkown directory entry type
+    constant DT_UNKNOWN = 0;
 
-    //! @[getdir] filetype values 
-    enum {
-	DT_UNKNOWN = 0,
-	DT_FIFO = 1,
-	DT_CHR = 2,
-	DT_DIR = 4,
-	DT_BLK = 6,
-	DT_REG = 8,
-	DT_LNK = 10,
-	DT_SOCK = 12,
-	DT_WHT = 14
-    };
+    //! FIFO directory entry
+    constant DT_FIFO = 1;
 
-    //! @[open] mode flags.
-    enum {
-	O_APPEND=02000,
-	O_ACCMODE=3,
-	O_RDONLY=0,
-	O_WRONLY=1,
-	O_RDWR=2,
-    };
+    //! Character special directory entry
+    constant DT_CHR = 2;
+    
+    //! Directory directory entry
+    constant DT_DIR = 4;
 
+    //! Block special directory entry
+    constant DT_BLK = 6;
+
+    //! Normal file directory entry
+    constant DT_REG = 8;
+
+    //! Symlink directory entry
+    constant DT_LNK = 10;
+
+    //! Socket directory entry
+    constant DT_SOCK = 12;
+
+    //! Open for append 
+    constant O_APPEND=02000;
+
+    //! Mask for read/write/rdwr
+    constant O_ACCMODE=3;
+
+    //! Open read only
+    constant O_RDONLY=0;
+
+    //! Open write only
+    constant O_WRONLY=1;
+
+    //! Open read/write only
+    constant O_RDWR=2;
 
     //! Stat a file.
     //! @note 
@@ -154,7 +168,6 @@ class Operations
     //! required for 'df' support, without this function there is an error each time 'df' is run.
     mapping(string:int) statfs( string path );
 
-
     //! The inverse of open. 
     //! @note 
     //! The file might very well be openend multiple times. 
@@ -165,6 +178,18 @@ class Operations
     //! If the @[datasync] parameter is non-zero, then only the user data
     //! should be flushed, not the meta data.
     int fsync( string path, int datasync );
+
+    //! Return a list of all available extended attributes on @[path]
+    array(string)|int listxattr(string path);
+
+    //! Remove the extended attribute @[name] from @[path]
+    int removexattr(string path, string name);
+    
+    //! Get the extended attribute @[name] on @[path]
+    string getxattr( string path, string name );
+
+    //! Set the extended attribute @[name] on @[path] to @[value]
+    string setxattr(string path, string name, string value, int flags );
 }
 
 static class MyOps
@@ -225,6 +250,7 @@ static class MyOps
     return handler->X(@args);			\
   }
 
+    //! @ignore
     WRAP(getattr);
     WRAP(readlink);
     WRAP(readdir);
@@ -243,16 +269,21 @@ static class MyOps
     WRAPC(write);
     WRAP(statfs);
 
+    WRAPC(removexattr);
+    WRAPC(getxattr);
+    WRAPC(setxattr);
+    WRAPC(listxattr);
     WRAP0(open);
     WRAP0(release);
     WRAP0(fsync);
+    //! @endignore
 }
 
 //! Start fuse. Args is as in argv in main().
 //! The first argument (argv[0], program name) is used as the filesystem name.
 //! The first non-flag argument after argv[0] is used as the mountpoint.
 //! Otherwise these arguments are supported:
-//! @pre
+//! @pre{
 //!     -d                  enable debug output (implies -f)
 //!     -f                  foreground operation
 //!     -s                  disable multithreaded operation
@@ -271,6 +302,7 @@ static class MyOps
 //!     hard_remove            immediate removal (don't hide files)
 //!     debug                  enable debug output
 //!     fsname=NAME            set filesystem name in mtab (overrides argv[0])
+//! @}
 void run( Operations handler, int nthreads, array(string) args )
 {
     ::run( MyOps( handler, nthreads ), args );

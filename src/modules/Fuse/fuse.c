@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fuse.c,v 1.2 2005/04/29 20:07:26 grubba Exp $
+|| $Id: fuse.c,v 1.3 2005/04/30 23:48:24 per Exp $
 */
 
 #include "global.h"
@@ -316,44 +316,60 @@ static int pf_fsync(const char *path, int isdatasync,
     return -Pike_sp[-1].u.integer;
 }
 
-//// TODO
-// #ifdef HAVE_SETXATTR
-// /* xattr operations are optional and can safely be left unimplemented */
-// static int xmp_setxattr(const char *path, const char *name, const char *value,
-//                         size_t size, int flags)
-// {
-//     int res = lsetxattr(path, name, value, size, flags);
-//     if(res == -1)
-//         return -errno;
-//     return 0;
-// }
-// 
-// static int xmp_getxattr(const char *path, const char *name, char *value,
-//                     size_t size)
-// {
-//     int res = lgetxattr(path, name, value, size);
-//     if(res == -1)
-//         return -errno;
-//     return res;
-// }
-// 
-// static int xmp_listxattr(const char *path, char *list, size_t size)
-// {
-//     int res = llistxattr(path, list, size);
-//     if(res == -1)
-//         return -errno;
-//     return res;
-// }
-// 
-// static int xmp_removexattr(const char *path, const char *name)
-// {
-//     int res = lremovexattr(path, name);
-//     if(res == -1)
-//         return -errno;
-//     return 0;
-// }
-// #endif /* HAVE_SETXATTR */
+static int pf_setxattr(const char *path, const char *name, const char *value,
+			size_t size, int flags)
+{
+    push_text( path );
+    push_text( name );
+    push_string( make_shared_binary_string( value, size ) );
+    push_int( flags );
+    apply( global_fuse_obj, "setxattr", 4 );
+    return -Pike_sp[-1].u.integer;
+}
+ 
+static int pf_getxattr(const char *path, const char *name, char *value,
+		       size_t size)
+{
+    push_text( path );
+    push_text( name );
+    apply( global_fuse_obj, "getxattr", 2 );
+    if( Pike_sp[-1].type != PIKE_T_STRING )
+	DEFAULT_ERRNO();
+    int ds = Pike_sp[-1].u.string->len <<Pike_sp[-1].u.string->size_shift;
+    if( !size )
+	return ds;
+    if( size < ds )
+	return -ERANGE;
+    memcpy( value, Pike_sp[-1].u.string->str, ds );
+    return ds;
+}
 
+static int pf_listxattr(const char *path, char *list, size_t size)
+{
+    push_text( path );
+    apply( global_fuse_obj, "listxattr", 1 );
+    if( Pike_sp[-1].type != PIKE_T_ARRAY )
+	DEFAULT_ERRNO();
+    push_string( make_shared_binary_string( "\0", 1 ) );
+    o_multiply();
+    if( Pike_sp[-1].type != PIKE_T_STRING )
+	DEFAULT_ERRNO();
+    int ds = Pike_sp[-1].u.string->len <<Pike_sp[-1].u.string->size_shift;
+    if( !size )
+	return ds;
+    if( size < ds )
+	return -ERANGE;
+    memcpy( list, Pike_sp[-1].u.string->str, ds );
+    return ds;
+}
+
+static int pf_removexattr(const char *path, const char *name)
+{
+    push_text( path );
+    push_text( name );
+    apply( global_fuse_obj, "removexattr", 2 );
+    return -Pike_sp[-1].u.integer;
+}
 
 static struct fuse_operations pike_fuse_oper = {
     .getattr	= pf_getattr,
@@ -376,12 +392,10 @@ static struct fuse_operations pike_fuse_oper = {
     .statfs	= pf_statfs,
     .release	= pf_release,
     .fsync	= pf_fsync,
-/* #ifdef HAVE_SETXATTR */
-/*     .setxattr	= pf_setxattr, */
-/*     .getxattr	= pf_getxattr, */
-/*     .listxattr	= pf_listxattr, */
-/*     .removexattr= pf_removexattr, */
-/* #endif */
+    .setxattr	= pf_setxattr,
+    .getxattr	= pf_getxattr,
+    .listxattr	= pf_listxattr,
+    .removexattr= pf_removexattr,
 };
 
 static void f_fuse_run( INT32 nargs )
