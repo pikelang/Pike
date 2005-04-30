@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.70 2005/01/23 13:30:04 nilsson Exp $
+|| $Id: png.c,v 1.71 2005/04/30 15:18:06 nilsson Exp $
 */
 
 #include "global.h"
@@ -171,7 +171,7 @@ static void image_png__chunk(INT32 args)
    
    a=sp[-args].u.string;
    if (a->len!=4)
-      Pike_error("Image.PNG.chunk: Type string not 4 characters\n");
+      Pike_error("Image.PNG: Chunk type string not 4 characters\n");
    b=sp[1-args].u.string;
    pop_n_elems(args-2);
    sp-=2;
@@ -1136,21 +1136,75 @@ static void img_png_decode(INT32 args,int header_only)
 	    /* end of file */
 	    break;
 
-	 /* ------ minor chunks ------------ */
+        /* ------ minor chunks ------------ */
 
-         case 0x6348524d: /* cHRM */
+          case 0x6348524d: /* cHRM */
+	  {
+	    int i;
+	    if(b->item[1].u.string->len!=32) break;
+	    for(i=0; i<32; i+=4)
+	      push_float(int_from_32bit(b->item[1].u.string->str+i)/100000.0);
+	    f_aggregate(8);
+	    push_text("chroma");
+	    mapping_insert(m,sp-1,sp-2);
+	    pop_n_elems(2);
+	  }
+	  break;
+
+          case 0x73424954: /* sBIT */
+	  {
+	    int i;
+	    for(i=0; i<b->item[1].u.string->len; i++)
+	      push_int(b->item[1].u.string->str[i]);
+	    f_aggregate(b->item[1].u.string->len);
+	    push_text("sbit");
+	    mapping_insert(m,sp-1,sp-2);
+	    pop_n_elems(2);
+	  }
+	  break;
+
+          case 0x67414d41: /* gAMA */
+	    if(b->item[1].u.string->len!=4) break;
+	    push_text("gamma");
+	    push_float(int_from_32bit(b->item[1].u.string->str)/100000.0);
+	    mapping_insert(m,sp-2,sp-1);
+	    pop_n_elems(2);
 	    break;
 
-         case 0x67414d41: /* gAMA */
+          case 0x70485973: /* pHYs */
+	    if(b->item[1].u.string->len!=9) break;
+	    push_int(b->item[1].u.string->str[8]);
+	    push_int(int_from_32bit(b->item[1].u.string->str));
+	    push_int(int_from_32bit(b->item[1].u.string->str+4));
+	    f_aggregate(3);
+	    push_text("physical");
+	    mapping_insert(m,sp-1,sp-2);
+	    pop_n_elems(2);
 	    break;
 
-         case 0x73524742: /* sRGB */
-	   break;
+          case 0x6f464673: /* oFFs */
+	    if(b->item[1].u.string->len!=9) break;
+	    push_int(b->item[1].u.string->str[8]);
+	    push_int(int_from_32bit(b->item[1].u.string->str));
+	    push_int(int_from_32bit(b->item[1].u.string->str+4));
+	    f_aggregate(3);
+	    push_text("offset");
+	    mapping_insert(m,sp-1,sp-2);
+	    pop_n_elems(2);
+	    break;
 
-         case 0x69434350: /* iCCP */
-	   break;
-
-         case 0x73424954: /* sBIT */
+          case 0x74494d45: /* tIME */
+	    if(b->item[1].u.string->len!=7) break;
+	    push_int(int_from_16bit(b->item[1].u.string->str));
+	    push_int(b->item[1].u.string->str[2]);
+	    push_int(b->item[1].u.string->str[3]);
+	    push_int(b->item[1].u.string->str[4]);
+	    push_int(b->item[1].u.string->str[5]);
+	    push_int(b->item[1].u.string->str[6]);
+	    f_aggregate(6);
+	    push_text("time");
+	    mapping_insert(m,sp-1,sp-2);
+	    pop_n_elems(2);
 	    break;
 
          case 0x624b4744: /* bKGD */
@@ -1200,9 +1254,6 @@ static void img_png_decode(INT32 args,int header_only)
 	    pop_n_elems(2);
 	    break;
 
-         case 0x68495354: /* hIST */
-	    break;
-
          case 0x74524e53: /* tRNS */
 	    push_string(trns=b->item[1].u.string);
 	    push_int(-2);
@@ -1210,39 +1261,11 @@ static void img_png_decode(INT32 args,int header_only)
 	    sp-=2; /* we have no own ref to trns */
 	    break;
 
-         case 0x70485973: /* pHYs */
-	    break;
-
-         case 0x74494d45: /* tIME */
-	    break;
-
-         case 0x7a455874: /* tEXt */
-	    break;
-
-         case 0x7a545874: /* zTXt */
-	    break;
-
-         case 0x69545874: /* iTXt */
-	   break;
-
-         /* Extensions */
-         case 0x6f464673: /* oFFs */
-	   break;
-
-         case 0x7043414c: /* pCAL */
-	   break;
-
-         case 0x7343414c: /* sCAL */
-	   break;
-
-         case 0x67494667: /* gIFg */
-	   break;
-
-         case 0x67494678: /* gIFg */
-	   break;
-
-         case 0x66524163: /* fRAc */
-	   break;
+         default:
+	    ref_push_string(b->item[1].u.string);
+	    ref_push_string(b->item[0].u.string);
+	    mapping_insert(m,sp-1,sp-2);
+	    pop_n_elems(2);
       }
    }
 
@@ -1499,6 +1522,7 @@ static void image_png_encode(INT32 args)
 	    PIKE_ERROR("Image.PNG.encode",
 		       "Option (arg 2) \"alpha\" has illegal type.\n",
 		       sp, args);
+
       pop_stack();
 
       if (alpha &&
@@ -1507,6 +1531,7 @@ static void image_png_encode(INT32 args)
 	 PIKE_ERROR("Image.PNG.encode",
 		    "Option (arg 2) \"alpha\"; images differ in size.\n",
 		    sp, args);
+
       if (alpha && !alpha->img)
 	PIKE_ERROR("Image.PNG.encode", "Option (arg 2) \"alpha\"; no image\n",
 		   sp, args);
