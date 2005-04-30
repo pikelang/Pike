@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.348 2005/04/29 18:35:36 grubba Exp $
+|| $Id: file.c,v 1.349 2005/04/30 13:51:33 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -65,6 +65,10 @@
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
 #endif /* HAVE_SYS_UIO_H */
+
+#ifdef HAVE_SYS_XATTR_H
+#include <sys/xattr.h>
+#endif /* HAVE_SYS_XATTR_H */
 
 #if defined(HAVE_WINSOCK_H) || defined(HAVE_WINSOCK2_H)
 #ifndef EWOULDBLOCK
@@ -2114,7 +2118,6 @@ static void file_stat(INT32 args)
 }
 
 #if defined(HAVE_FSETXATTR) && defined(HAVE_FGETXATTR) && defined(HAVE_FLISTXATTR)
-#include <attr/xattr.h>
 /* All A-OK.*/
 
 /*! @decl array(string) listxattr( )
