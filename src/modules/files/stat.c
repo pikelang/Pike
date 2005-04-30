@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stat.c,v 1.30 2004/09/18 20:50:57 nilsson Exp $
+|| $Id: stat.c,v 1.31 2005/04/30 18:40:59 per Exp $
 */
 
 #include "global.h"
@@ -15,6 +15,7 @@
 #include "builtin_functions.h"
 #include "operators.h"
 #include "program_id.h"
+#include "file_machine.h"
 
 #include <sys/stat.h>
 #ifdef HAVE_SYS_PARAM_H
@@ -204,7 +205,7 @@ static struct mapping *stat_map=NULL;
 enum stat_query
 {STAT_DEV=1, STAT_INO, STAT_MODE, STAT_NLINK, STAT_UID, STAT_GID, STAT_RDEV, 
  STAT_SIZE,
-#if 0
+#ifdef HAVE_STRUCT_STAT_BLOCKS
  STAT_BLKSIZE, STAT_BLOCKS,
 #endif
  STAT_ATIME, STAT_MTIME, STAT_CTIME,
@@ -349,7 +350,7 @@ static void stat_create (INT32 args)
       ASSIGN_INDEX (STAT_INO);
       ASSIGN_INDEX (STAT_NLINK);
       ASSIGN_INDEX (STAT_RDEV);
-#if 0
+#ifdef HAVE_STRUCT_STAT_BLOCKS
       ASSIGN_INDEX (STAT_BLKSIZE);
       ASSIGN_INDEX (STAT_BLOCKS);
 #endif
@@ -433,10 +434,10 @@ static void stat_index(INT32 args)
 	    case STAT_GID: push_int(THIS_STAT->s.st_gid); break;
 	    case STAT_RDEV: push_int(THIS_STAT->s.st_rdev); break;
 	    case STAT_SIZE: push_int64(THIS_STAT->s.st_size); break;
-#if 0
+#ifdef HAVE_STRUCT_STAT_BLOCKS
 	    case STAT_BLKSIZE: push_int(THIS_STAT->s.st_blksize); break;
 	    case STAT_BLOCKS: push_int(THIS_STAT->s.st_blocks); break;
-#endif /* 0 */
+#endif
 	    case STAT_ATIME: push_int64(THIS_STAT->s.st_atime); break;
 	    case STAT_MTIME: push_int64(THIS_STAT->s.st_mtime); break;
 	    case STAT_CTIME: push_int64(THIS_STAT->s.st_ctime); break;
@@ -810,10 +811,10 @@ static void stat_index_set (INT32 args)
 	  case STAT_GID: DO_NOT_WARN(THIS_STAT->s.st_gid = int_val); break;
 	  case STAT_RDEV: DO_NOT_WARN(THIS_STAT->s.st_rdev = int_val); break;
 	  case STAT_SIZE: DO_NOT_WARN(THIS_STAT->s.st_size = int_val); break;
-#if 0
+#ifdef HAVE_STRUCT_STAT_BLOCKS
 	  case STAT_BLKSIZE: DO_NOT_WARN(THIS_STAT->s.st_blksize = int_val); break;
 	  case STAT_BLOCKS: DO_NOT_WARN(THIS_STAT->s.st_blocks = int_val); break;
-#endif /* 0 */
+#endif
 	  case STAT_ATIME: DO_NOT_WARN(THIS_STAT->s.st_atime = int_val); break;
 	  case STAT_MTIME: DO_NOT_WARN(THIS_STAT->s.st_mtime = int_val); break;
 	  case STAT_CTIME: DO_NOT_WARN(THIS_STAT->s.st_ctime = int_val); break;
@@ -953,7 +954,7 @@ void init_files_stat()
    INIT_INDEX (STAT_GID, "gid");
    INIT_INDEX (STAT_RDEV, "rdev");
    INIT_INDEX (STAT_SIZE, "size");
-#if 0
+#ifdef HAVE_STRUCT_STAT_BLOCKS
    INIT_INDEX (STAT_BLKSIZE, "blksize");
    INIT_INDEX (STAT_BLOCKS, "blocks");
 #endif

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.23 2004/04/15 10:52:34 grubba Exp $
+|| $Id: acconfig.h,v 1.24 2005/04/30 18:40:59 per Exp $
 */
 
 #ifndef FILE_MACHINE_H
@@ -25,6 +25,9 @@
 
 /* Define this if you have a struct iovec */
 #undef HAVE_STRUCT_IOVEC
+
+/* Define this if you have a struct stat with 'blocks' member */
+#undef HAVE_STRUCT_STAT_BLOCKS
 
 /* Define if your statfs() call takes 4 arguments */
 #undef HAVE_SYSV_STATFS
