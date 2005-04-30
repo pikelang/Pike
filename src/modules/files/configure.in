@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.99 2005/04/29 15:10:12 per Exp $
+# $Id: configure.in,v 1.100 2005/04/30 13:50:57 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -12,7 +12,7 @@ AC_HAVE_HEADERS(sys/types.h arpa/inet.h sys/socketvar.h netinet/in.h \
  sys/socket.h sys/stream.h sys/protosw.h netdb.h sys/sysproto.h winsock.h \
  direct.h sys/wait.h process.h sys/file.h net/netdb.h limits.h unistd.h \
  termios.h poll.h sys/poll.h sys/select.h sys/un.h netinet/tcp.h \
- sys/sendfile.h sys/ioctl.h linux/if.h)
+ sys/sendfile.h sys/ioctl.h linux/if.h sys/xattr.h)
 
 if test "x$ac_cv_header_sys_sendfile_h" = "xyes"; then
   AC_MSG_CHECKING([if <sys/sendfile.h> supports _FILE_OFFSET_BITS=64])
