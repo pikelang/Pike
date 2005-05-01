@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.157 2005/03/22 15:42:14 grubba Exp $
+|| $Id: builtin.cmod,v 1.158 2005/05/01 12:13:07 per Exp $
 */
 
 #include "global.h"
@@ -2739,7 +2739,7 @@ PIKECLASS Timer
   PIKEFUN void create( int|void fast )
   {
     extern struct timeval current_time;
-    THIS->hard_update = !(fast || fast->u.integer);
+    THIS->hard_update = !(fast && fast->u.integer);
     if( THIS->hard_update )
       GETTIMEOFDAY( &current_time );
     THIS->last_time = current_time; 
