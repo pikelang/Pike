@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fuse.c,v 1.3 2005/04/30 23:48:24 per Exp $
+|| $Id: fuse.c,v 1.4 2005/05/01 00:56:42 per Exp $
 */
 
 #include "global.h"
@@ -115,7 +115,7 @@ static int pf_readlink(const char *path, char *buf, size_t size)
         return -errno;
     if( Pike_sp[-1].type != PIKE_T_STRING )
 	DEFAULT_ERRNO();
-    if( Pike_sp[-1].u.string->len >= size )
+    if( Pike_sp[-1].u.string->len >= (int)size )
 	return -ENAMETOOLONG;
     memcpy( buf, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len);
     buf[Pike_sp[-1].u.string->len] = '\0';
@@ -287,7 +287,7 @@ static int pf_statfs(const char *path, struct statfs *stbuf)
     memset( stbuf, 0, sizeof(*stbuf) );
     stbuf->f_namelen = 4096;
     stbuf->f_bsize = 1024;
-#define STSET(X)    if(val=simple_mapping_string_lookup( m,#X )) stbuf->f_##X=val->u.integer;
+#define STSET(X)    if((val=simple_mapping_string_lookup( m,#X ))) stbuf->f_##X=val->u.integer;
     STSET(type);
     STSET(bsize);
     STSET(blocks);
@@ -335,7 +335,7 @@ static int pf_getxattr(const char *path, const char *name, char *value,
     apply( global_fuse_obj, "getxattr", 2 );
     if( Pike_sp[-1].type != PIKE_T_STRING )
 	DEFAULT_ERRNO();
-    int ds = Pike_sp[-1].u.string->len <<Pike_sp[-1].u.string->size_shift;
+    unsigned int ds = Pike_sp[-1].u.string->len <<Pike_sp[-1].u.string->size_shift;
     if( !size )
 	return ds;
     if( size < ds )
@@ -354,7 +354,7 @@ static int pf_listxattr(const char *path, char *list, size_t size)
     o_multiply();
     if( Pike_sp[-1].type != PIKE_T_STRING )
 	DEFAULT_ERRNO();
-    int ds = Pike_sp[-1].u.string->len <<Pike_sp[-1].u.string->size_shift;
+    unsigned int ds = Pike_sp[-1].u.string->len <<Pike_sp[-1].u.string->size_shift;
     if( !size )
 	return ds;
     if( size < ds )
@@ -431,12 +431,14 @@ static void f_fuse_run( INT32 nargs )
 	Pike_error("Fuse init failed\n");
 
     our_fuse_loop( fuse );
-
+    global_fuse_obj=NULL;
     fuse_teardown(fuse, fd, mountpoint);
 }
 
 PIKE_MODULE_EXIT
 {
+  free_program( getdir_program );
+  free_program( fuse_cmd_program );
 }
 
 PIKE_MODULE_INIT
