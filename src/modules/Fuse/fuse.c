@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fuse.c,v 1.4 2005/05/01 00:56:42 per Exp $
+|| $Id: fuse.c,v 1.5 2005/05/03 09:49:29 grubba Exp $
 */
 
 #include "global.h"
@@ -113,12 +113,12 @@ static int pf_readlink(const char *path, char *buf, size_t size)
     res = readlink(path, buf, size - 1);
     if(res == -1)
         return -errno;
-    if( Pike_sp[-1].type != PIKE_T_STRING )
+    if( (Pike_sp[-1].type != PIKE_T_STRING) ||
+	(Pike_sp[-1].u.string->size_shift) )
 	DEFAULT_ERRNO();
     if( Pike_sp[-1].u.string->len >= (int)size )
 	return -ENAMETOOLONG;
-    memcpy( buf, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len);
-    buf[Pike_sp[-1].u.string->len] = '\0';
+    memcpy( buf, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len+1);
     return 0;
 }
 
@@ -260,8 +260,12 @@ static int pf_read(const char *path, char *buf, size_t size, off_t offset,
     push_int64( offset );
     apply( global_fuse_obj, "read", 3 );
     
-    if( Pike_sp[-1].type != PIKE_T_STRING )
+    if( (Pike_sp[-1].type != PIKE_T_STRING) ||
+	(Pike_sp[-1].u.string->size_shift) )
 	DEFAULT_ERRNO();
+    if (Pike_sp[-1].u.string->len > size) {
+	return -ENAMETOOLONG;
+    }
     memcpy( buf, Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len );
     return Pike_sp[-1].u.string->len;
 }
@@ -324,6 +328,8 @@ static int pf_setxattr(const char *path, const char *name, const char *value,
     push_string( make_shared_binary_string( value, size ) );
     push_int( flags );
     apply( global_fuse_obj, "setxattr", 4 );
+    if (Pike_sp[-1].type != T_INT)
+	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
  
@@ -333,7 +339,8 @@ static int pf_getxattr(const char *path, const char *name, char *value,
     push_text( path );
     push_text( name );
     apply( global_fuse_obj, "getxattr", 2 );
-    if( Pike_sp[-1].type != PIKE_T_STRING )
+    if( Pike_sp[-1].type != PIKE_T_STRING ||
+	(Pike_sp[-1].u.string->size_shift) )
 	DEFAULT_ERRNO();
     unsigned int ds = Pike_sp[-1].u.string->len <<Pike_sp[-1].u.string->size_shift;
     if( !size )
@@ -352,7 +359,8 @@ static int pf_listxattr(const char *path, char *list, size_t size)
 	DEFAULT_ERRNO();
     push_string( make_shared_binary_string( "\0", 1 ) );
     o_multiply();
-    if( Pike_sp[-1].type != PIKE_T_STRING )
+    if( Pike_sp[-1].type != PIKE_T_STRING ||
+	(Pike_sp[-1].u.string->size_shift) )
 	DEFAULT_ERRNO();
     unsigned int ds = Pike_sp[-1].u.string->len <<Pike_sp[-1].u.string->size_shift;
     if( !size )
@@ -368,6 +376,8 @@ static int pf_removexattr(const char *path, const char *name)
     push_text( path );
     push_text( name );
     apply( global_fuse_obj, "removexattr", 2 );
+    if (Pike_sp[-1].type != T_INT)
+	DEFAULT_ERRNO();
     return -Pike_sp[-1].u.integer;
 }
 
