@@ -90,8 +90,8 @@ static void f_tokenize( INT32 args )
   if(!data->len)
   {
     pop_n_elems(args);
-    ref_push_array(&empty_array);
-    ref_push_string(empty_pike_string);
+    push_empty_array();
+    push_empty_string();
     f_aggregate(2);
     return;
   }
@@ -123,9 +123,10 @@ static void f_tokenize( INT32 args )
   pop_n_elems(args);
   if (!res->size) {
     free_array(res);
-    add_ref(res = &empty_array);
+    push_empty_array();
   }
-  push_array(res);
+  else
+    push_array(res);
   push_string( left_s );
   f_aggregate( 2 );
 }
