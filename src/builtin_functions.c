@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.596 2005/04/02 15:06:02 mast Exp $
+|| $Id: builtin_functions.c,v 1.597 2005/05/05 20:42:02 nilsson Exp $
 */
 
 #include "global.h"
@@ -1924,7 +1924,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
   struct pike_string *out;
   ptrdiff_t len = 0;
   int shift = 0;
-  ptrdiff_t i,j;
+  ptrdiff_t i,j=0;
   INT_TYPE extended = 0;
 
   get_all_args("utf8_to_string", args, "%S.%i", &in, &extended);
@@ -2107,7 +2107,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
   switch (shift) {
     case 0: {
       p_wchar0 *out_str = STR0 (out);
-      for(j=i=0; i < in->len;) {
+      for(i=0; i < in->len;) {
 	unsigned int c = STR0(in)[i++];
 	/* NOTE: No tests here since we've already tested the string above. */
 	if (c & 0x80) {
@@ -2123,7 +2123,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 
     case 1: {
       p_wchar1 *out_str = STR1 (out);
-      for(j=i=0; i < in->len;) {
+      for(i=0; i < in->len;) {
 	unsigned int c = STR0(in)[i++];
 	/* NOTE: No tests here since we've already tested the string above. */
 	if (c & 0x80) {
@@ -2147,7 +2147,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 
     case 2: {
       p_wchar2 *out_str = STR2 (out);
-      for(j=i=0; i < in->len;) {
+      for(i=0; i < in->len;) {
 	unsigned int c = STR0(in)[i++];
 	/* NOTE: No tests here since we've already tested the string above. */
 	if (c & 0x80) {
