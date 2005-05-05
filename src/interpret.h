@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.159 2005/04/08 16:55:53 grubba Exp $
+|| $Id: interpret.h,v 1.160 2005/05/05 20:42:56 nilsson Exp $
 */
 
 #ifndef INTERPRET_H
@@ -280,6 +280,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     _sp_->type=PIKE_T_ARRAY;						\
   }while(0)
 
+#define push_empty_array() ref_push_array(&empty_array)
+
 #define push_multiset(L) do{						\
     struct multiset *_=(L);						\
     struct svalue *_sp_ = Pike_sp++;					\
@@ -300,6 +302,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     _sp_->u.string=_;							\
     _sp_->type=PIKE_T_STRING;						\
   }while(0)
+
+#define push_empty_string() ref_push_string(empty_pike_string)
 
 #define push_type_value(S) do{						\
     struct pike_type *_=(S);						\
