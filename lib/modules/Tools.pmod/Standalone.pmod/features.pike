@@ -44,21 +44,20 @@ void m(string sym) {
 
 #define F(X) f(#X)
 #define M(X) m(#X)
-
-#define N() write("\n");
+#define I(X) item(#X, !!(X))
 
 int main() {
 
   write("Compilation options\n");
   f("Debug.reset_dmalloc", "DEBUG_MALLOC");
-  f("__leak", "PIKE_DEBUG");
+  f("_leak", "PIKE_DEBUG");
   f("get_profiling_info", "PROFILING");
   f("load_module", "USE_DYNAMIC_MODULES");
 
   test_ipv6();
 
   write("\nBuiltin functions\n");
-  F(__leak); // PIKE_DEBUG marker
+  F(_leak); // PIKE_DEBUG marker
   F(alarm);
   F(chown);
   F(chroot);
@@ -134,6 +133,9 @@ int main() {
 
   write("\nDVB\n");
   M(DVB.dvb);
+
+  write("\nFuse\n");
+  M(Fuse.Operations);
 
   write("\nGdbm\n");
   M(Gdbm.gdbm);
@@ -225,13 +227,16 @@ int main() {
   // Perl
 
   write("\nPike\n");
-  F(Pike.Security.get_user);
+  F(Pike.Security);
 
   // Pipe
 
   write("\nProcess\n");
   f("kill","Process.Process->kill");
   F(Process.TraceProcess); // HAVE_PTRACE
+
+  write("\nProtocols\n");
+  M(Protocols.DNS_SD.Service);
 
   write("\nPostgres\n");
   M(Postgres.postgres);
@@ -269,6 +274,20 @@ int main() {
   F(Stdio.SOCK.RDM);
   F(Stdio.SOCK.PACKET);
   F(Stdio.sendfile); // _REENTRANT marker
+  I(Stdio.File()->peek);
+  I(Stdio.File()->sync);
+  I(Stdio.File()->connect_unix);
+  I(Stdio.File()->proxy);
+  I(Stdio.File()->lock);
+  I(Stdio.File()->trylock);
+  I(Stdio.File()->openpt);
+  I(Stdio.File()->grantpt);
+  item("Stdio.File()->tcgetattr/tcsetattr/tcsendbrak/tcflush",
+       !!Stdio.File()->tcgetattr);
+  I(Stdio.File()->set_keepalive);
+  I(Stdio.File()->notify);
+  item("Stdio.File()->listxattr/setxattr/getxattr/removexattr",
+       !!Stdio.File()->listxattr);
 
   write("\nsybase\n");
   M(sybase.sybase);
