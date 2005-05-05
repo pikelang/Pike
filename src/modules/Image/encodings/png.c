@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.73 2005/04/30 19:10:08 nilsson Exp $
+|| $Id: png.c,v 1.74 2005/05/05 23:13:34 nilsson Exp $
 */
 
 #include "global.h"
@@ -1171,7 +1171,7 @@ static void img_png_decode(INT32 args,int header_only)
 	    for(i=0; i<b->item[1].u.string->len; i++)
 	      push_int(b->item[1].u.string->str[i]);
 	    f_aggregate(b->item[1].u.string->len);
-	    push_text("sbit");
+	    push_constant_text("sbit");
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
 	  }
@@ -1179,7 +1179,7 @@ static void img_png_decode(INT32 args,int header_only)
 
           case 0x67414d41: /* gAMA */
 	    if(b->item[1].u.string->len!=4) break;
-	    push_text("gamma");
+	    push_constant_text("gamma");
 	    push_float(int_from_32bit(b->item[1].u.string->str)/100000.0);
 	    mapping_insert(m,sp-2,sp-1);
 	    pop_n_elems(2);
@@ -1191,7 +1191,7 @@ static void img_png_decode(INT32 args,int header_only)
 	    push_int(int_from_32bit(b->item[1].u.string->str));
 	    push_int(int_from_32bit(b->item[1].u.string->str+4));
 	    f_aggregate(3);
-	    push_text("physical");
+	    push_constant_text("physical");
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
 	    break;
@@ -1202,7 +1202,7 @@ static void img_png_decode(INT32 args,int header_only)
 	    push_int(int_from_32bit(b->item[1].u.string->str));
 	    push_int(int_from_32bit(b->item[1].u.string->str+4));
 	    f_aggregate(3);
-	    push_text("offset");
+	    push_constant_text("offset");
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
 	    break;
@@ -1216,7 +1216,7 @@ static void img_png_decode(INT32 args,int header_only)
 	    push_int(b->item[1].u.string->str[5]);
 	    push_int(b->item[1].u.string->str[6]);
 	    f_aggregate(6);
-	    push_text("time");
+	    push_constant_text("time");
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
 	    break;
@@ -1289,7 +1289,7 @@ static void img_png_decode(INT32 args,int header_only)
 
    /* IDAT stuff on stack, now */
    if (!n) 
-      push_text("");
+      push_empty_string();
    else
       f_add(n);
 
@@ -1658,13 +1658,13 @@ static void image_png_encode(INT32 args)
 	 free(tmp);
       }
    }
-   else
+   else {
+     struct pike_string *ps;
+     unsigned char *d;
+     ps=begin_shared_string(y*(img->xsize*(3+!!alpha)+1));
+     d=(unsigned char*)ps->str;
       while (y--)
       {
-	 struct pike_string *ps;
-	 unsigned char *d;
-	 ps=begin_shared_string(img->xsize*(3+!!alpha)+1);
-	 d=(unsigned char*)ps->str;
 	 x=img->xsize;
 	 *(d++)=0; /* filter */
 	 if (alpha)
@@ -1685,14 +1685,14 @@ static void image_png_encode(INT32 args)
 	       *(d++)=s->b;
 	       s++;
 	    }
-	 push_string(end_shared_string(ps));
       }
-   f_add(img->ysize);
+      push_string(end_shared_string(ps));
+   }
    png_compress(0);
    push_png_chunk("IDAT",NULL);
    n++;
 
-   push_text("");
+   push_empty_string();
    push_png_chunk("IEND",NULL);
    n++;
 
