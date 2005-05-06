@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: requestobject.c,v 1.29 2004/03/10 16:31:41 nilsson Exp $
+|| $Id: requestobject.c,v 1.30 2005/05/06 00:48:32 nilsson Exp $
 */
 
 #include "global.h"
@@ -617,7 +617,7 @@ void f_aap_index_op(INT32 args)
       f_index( 2 );
       ref_push_string(s_client);
       f_aap_index_op( 1 );
-      push_constant_text("");
+      push_empty_string();
       f_multiply( 2 );
       apply_svalue( sp-2, 1 );
       push_string(s_supports);

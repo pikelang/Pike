@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.177 2005/01/08 20:11:57 grubba Exp $
+|| $Id: builtin.cmod,v 1.178 2005/05/06 00:41:40 nilsson Exp $
 */
 
 #include "global.h"
@@ -1878,7 +1878,7 @@ PIKECLASS Buffer
 	}
       }
     }
-    push_text("");
+    push_empty_string();
     return;
   }
 
@@ -1900,7 +1900,7 @@ PIKECLASS Buffer
       RETURN s;
     }
     pop_n_elems(args);
-    push_text("");
+    push_empty_string();
     return;
   }
 

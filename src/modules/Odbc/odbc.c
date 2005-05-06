@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.37 2005/01/26 18:50:43 grubba Exp $
+|| $Id: odbc.c,v 1.38 2005/05/06 00:47:01 nilsson Exp $
 */
 
 /*
@@ -221,12 +221,12 @@ static void f_create(INT32 args)
     }
   }
   if (!user) {
-    push_constant_text("");
+    push_empty_string();
     user = sp[-1].u.string;
     args++;
   }
   if (!pwd) {
-    push_constant_text("");
+    push_empty_string();
     pwd = sp[-1].u.string;
     args++;
   }

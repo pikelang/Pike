@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.73 2005/04/09 10:40:47 grubba Exp $
+|| $Id: xml.c,v 1.74 2005/05/06 00:45:14 nilsson Exp $
 */
 
 #include "global.h"
@@ -860,7 +860,7 @@ static int gobble(struct xmldata *data, char *s)
     f_replace(3);				\
     push_constant_text(" ");			\
     o_divide();					\
-    push_constant_text("");			\
+    push_empty_string();			\
     f_aggregate(1);                             \
     o_subtract();				\
     push_constant_text(" ");			\
@@ -1105,7 +1105,7 @@ static int gobble(struct xmldata *data, char *s)
 #define INTERMISSION(X) do {			\
    if((X).s->len) {                             \
      check_stack(4);				\
-     push_constant_text("");			\
+     push_empty_string();			\
      push_int(0); /* No name */			\
      push_int(0); /* No attributes */		\
      push_string(finish_string_builder(&(X)));	\
@@ -1997,7 +1997,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 			break;
 
 		      case '(': /* Enumeration */
-			push_constant_text("");
+			push_empty_string();
 			READ(1);
 			SKIPSPACE();
 			
@@ -2076,7 +2076,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 			break;
 
 		      default:
-			push_constant_text("");
+			push_empty_string();
 
 		    comefrom_fixed:
 #ifdef VERBOSE_XMLDEBUG

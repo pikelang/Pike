@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.349 2005/04/30 13:51:33 grubba Exp $
+|| $Id: file.c,v 1.350 2005/05/06 00:45:46 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -1106,7 +1106,7 @@ static void file_write(INT32 args)
     if (args > 1) {
 #endif /* HAVE_WRITEV */
       ref_push_array(a);
-      push_constant_text("");
+      push_empty_string();
       o_multiply();
       Pike_sp--;
       dmalloc_touch_svalue(Pike_sp);
@@ -2173,7 +2173,7 @@ static void file_listxattr(INT32 args)
   ptr[0]=0;
   push_string( make_shared_binary_string( ptr, 1 ) );
   o_divide();
-  push_text( "" );
+  push_empty_string();
   f_aggregate(1);
   o_subtract();
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.39 2005/01/20 10:47:55 nilsson Exp $
+|| $Id: odbc_result.c,v 1.40 2005/05/06 00:47:01 nilsson Exp $
 */
 
 /*
@@ -425,7 +425,7 @@ static void f_fetch_row(INT32 args)
 #endif /* ODBC_DEBUG */
 	    if (!num_strings) {
 	      num_strings++;
-	      push_constant_text("");
+	      push_empty_string();
 	    }
 	    break;
 	  }

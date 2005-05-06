@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_gif.c,v 1.21 2004/10/07 22:49:58 nilsson Exp $
+|| $Id: image_gif.c,v 1.22 2005/05/06 00:46:32 nilsson Exp $
 */
 
 /*
@@ -1328,7 +1328,7 @@ static void _decode_get_extension(unsigned char **s,
    if (*len) { (*len)-=1; (*s)+=1; }
 
    if (!n)
-      push_string(make_shared_binary_string("",0));
+      push_empty_string();
    else
       f_add(DO_NOT_WARN(n));
 
@@ -1414,7 +1414,7 @@ static void _decode_get_render(unsigned char **s,
    if (*len) { (*len)-=1; (*s)+=1; }
 
    if (!n)
-      push_string(make_shared_binary_string("",0));
+      push_empty_string();
    else
       f_add(n);
 
@@ -2544,7 +2544,7 @@ static void image_gif_lzw_decode(INT32 args)
    if (len<1)
    {
       pop_n_elems(args);
-      push_string(make_shared_binary_string("",0));
+      push_empty_string();
       return;
    }
 

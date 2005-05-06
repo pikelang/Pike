@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: spider.c,v 1.129 2005/04/09 10:39:22 grubba Exp $
+|| $Id: spider.c,v 1.130 2005/05/06 00:45:14 nilsson Exp $
 */
 
 #include "global.h"
@@ -196,7 +196,7 @@ void f_parse_html(INT32 args)
   if(!ss->len)
   {
     pop_n_elems(args);
-    push_text("");
+    push_empty_string();
     return;
   }
 
@@ -237,7 +237,7 @@ void f_parse_html(INT32 args)
   if(strings > 1)
     f_add(strings);
   else if(!strings)
-    push_text("");
+    push_empty_string();
 }
 
 
@@ -263,7 +263,7 @@ void f_parse_html_lines(INT32 args)
   if(!ss->len)
   {
     pop_n_elems(args);
-    push_text("");
+    push_empty_string();
     return;
   }
 
@@ -303,7 +303,7 @@ void f_parse_html_lines(INT32 args)
   if(strings > 1)
     f_add(strings);
   else if(!strings)
-    push_text("");
+    push_empty_string();
 /*   fprintf(stderr, "sp=%p (strings=%d)\n", sp, strings); */
 }
 
@@ -404,7 +404,7 @@ done:
   if(strs > 1)
     f_add(strs);
   else if(!strs)
-    push_text("");
+    push_empty_string();
 
   SKIP_SPACE();
   return i;
@@ -627,7 +627,7 @@ void do_html_parse(struct pike_string *ss,
 	  do_html_parse(ss2,cont,single,strings,recurse_left-1,extra_args);
 	  continue;
 	} else if (sp[-1].type==T_ARRAY) {
-	  push_text("");
+	  push_empty_string();
 	  f_multiply(2);
 	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
@@ -710,7 +710,7 @@ void do_html_parse(struct pike_string *ss,
 	  continue;
 
 	} else if (sp[-1].type==T_ARRAY) {
-	  push_text("");
+	  push_empty_string();
 	  f_multiply(2);
 	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
@@ -770,7 +770,7 @@ void do_html_parse(struct pike_string *ss,
 
 
 #define PARSE_RETURN(END) do{					\
-  push_text("");						\
+  push_empty_string();						\
   f_multiply(2);						\
   (*strings)++;							\
   if (last!=i-1)						\
@@ -1105,7 +1105,7 @@ void f__dump_obj_table(INT32 args)
 
 PIKE_MODULE_INIT
 {
-  push_constant_text("");
+  push_empty_string();
   empty_string_svalue = sp[-1];
   pop_stack();
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.357 2005/02/28 12:55:46 grubba Exp $
+|| $Id: language.yacc,v 1.358 2005/05/06 00:41:54 nilsson Exp $
 */
 
 %pure_parser
@@ -412,7 +412,7 @@ low_program_ref: string_constant
     {
       ref_push_string(Pike_compiler->last_identifier);
     }else{
-      push_constant_text("");
+      push_empty_string();
     }
     $$=$1;
 
@@ -4007,7 +4007,7 @@ void low_yyerror(struct pike_string *str)
       /* yyerror() can be called from define_function(), which
        * can be called by the C module initialization code.
        */
-      push_constant_text("");
+      push_empty_string();
     }
     push_int(lex.current_line);
     ref_push_string(str);

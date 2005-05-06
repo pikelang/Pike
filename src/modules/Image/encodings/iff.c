@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iff.c,v 1.15 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: iff.c,v 1.16 2005/05/06 00:48:09 nilsson Exp $
 */
 
 #include "global.h"
@@ -109,7 +109,7 @@ struct pike_string *make_iff(char *id, struct array *chunks)
     if(chunks->size > 1)
       f_add(chunks->size);
   } else
-    push_text("");
+    push_empty_string();
   f_add(2);
   f_aggregate(2);
   res = low_make_iff(&sp[-1]);

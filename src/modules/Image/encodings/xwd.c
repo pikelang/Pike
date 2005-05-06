@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xwd.c,v 1.28 2005/01/23 13:30:05 nilsson Exp $
+|| $Id: xwd.c,v 1.29 2005/05/06 00:48:09 nilsson Exp $
 */
 
 /*
@@ -304,7 +304,7 @@ void img_xwd__decode(INT32 args,int header_only,int skipcmap)
       push_text("image");
 
       if (s->len-(int)(header.header_size+header.ncolors*12)<0)
-	 push_text("");
+	 push_empty_string();
       else
 	 push_string(make_shared_binary_string(
 	    s->str+(header.header_size+header.ncolors*12),

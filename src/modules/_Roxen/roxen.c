@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.44 2005/04/09 10:35:53 grubba Exp $
+|| $Id: roxen.c,v 1.45 2005/05/06 00:46:06 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -135,7 +135,7 @@ static void f_hp_feed( INT32 args )
      */
     if( (spc < 2) && tot_slash_n )
     {
-      push_constant_text( "" );
+      push_empty_string();
       /* This includes (all eventual) \r\n etc. */
       push_text((char *)hp->headers); 
       f_aggregate_mapping( 0 );

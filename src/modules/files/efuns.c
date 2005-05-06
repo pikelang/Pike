@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.163 2005/04/30 15:14:18 grubba Exp $
+|| $Id: efuns.c,v 1.164 2005/05/06 00:45:46 nilsson Exp $
 */
 
 #include "global.h"
@@ -200,7 +200,7 @@ static void f_listxattr(INT32 args)
   ptr[0]=0;
   push_string( make_shared_binary_string( ptr, 1 ) );
   o_divide();
-  push_text( "" );
+  push_empty_string();
   f_aggregate(1);
   o_subtract();
 
@@ -1031,7 +1031,7 @@ void f_get_dir(INT32 args)
 
   if(!str) {
 #if defined(__amigaos4__)
-    push_constant_text("");
+    push_empty_string();
 #else
     push_constant_text(".");
 #endif

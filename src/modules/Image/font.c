@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: font.c,v 1.84 2004/05/19 00:10:10 nilsson Exp $
+|| $Id: font.c,v 1.85 2005/05/06 00:47:42 nilsson Exp $
 */
 
 #include "global.h"
@@ -536,7 +536,7 @@ void font_write(INT32 args)
 
    if (args==0)
    {
-      push_text("");
+      push_empty_string();
       args=1;
    }
 
@@ -756,7 +756,7 @@ void font_text_extents(INT32 args)
 
   if (args==0)
   {
-     push_text("");
+     push_empty_string();
      args=1;
   }
 

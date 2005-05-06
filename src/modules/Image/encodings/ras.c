@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ras.c,v 1.24 2005/01/23 13:30:04 nilsson Exp $
+|| $Id: ras.c,v 1.25 2005/05/06 00:48:09 nilsson Exp $
 */
 
 /*
@@ -492,7 +492,7 @@ static void img_ras_encode(INT32 args)
     image_colortable_initiate_dither(ct, &dith, img->xsize);
     ctfunc = image_colortable_index_8bit_function(ct);
   } else
-    push_text("");
+    push_empty_string();
 
   if(!rs.ras_depth) {
     INT32 px = img->xsize * img->ysize;

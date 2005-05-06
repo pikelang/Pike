@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.89 2005/04/02 20:45:21 nilsson Exp $
+|| $Id: mysql.c,v 1.90 2005/05/06 00:47:26 nilsson Exp $
 */
 
 /*
@@ -658,9 +658,10 @@ static void mysql__sprintf(INT32 args)
       if (PIKE_MYSQL->mysql->options.use_ssl) {
 	push_text("using SSL");
       }
-      else push_text("");
+      else
+	push_empty_string();
 #else
-      push_text("");
+      push_empty_string();
 #endif /* HAVE_MYSQL_SSL */
 
       f_sprintf(3);
