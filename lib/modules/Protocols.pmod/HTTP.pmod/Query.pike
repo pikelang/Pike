@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.75 2004/11/30 17:37:44 mast Exp $
+// $Id: Query.pike,v 1.76 2005/05/06 00:49:30 nilsson Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -999,6 +999,8 @@ class PseudoFile
 
       if (len && p+n>len) n=len-p;
 
+      // FIXME? A real file object returns as much data as it has,
+      // not 0.
       if (sizeof(buf)<n && con)
       {
 	 string s=con->read(n-sizeof(buf));
