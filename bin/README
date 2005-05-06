@@ -1,5 +1,8 @@
 The files in this directory:
 
+ci_tests.pike
+  Creates upper/lower case tests for testsuite.in.
+
 export.pike
   Creates a Pike source distribution.
 
