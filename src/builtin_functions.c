@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.597 2005/05/05 20:42:02 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.598 2005/05/08 11:15:24 nilsson Exp $
 */
 
 #include "global.h"
@@ -411,8 +411,8 @@ PMOD_EXPORT void f_copy_value(INT32 args)
 
 struct case_info {
   INT32 low;	/* low end of range. */
-  INT32 mode;
-  INT32 data;
+  INT16 mode;
+  INT16 data;
 };
 
 #define CIM_NONE	0	/* Case-less */
