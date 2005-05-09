@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.63 2004/04/20 08:19:03 grubba Exp $
+|| $Id: png.c,v 1.64 2005/05/09 11:23:17 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.63 2004/04/20 08:19:03 grubba Exp $");
+RCSID("$Id: png.c,v 1.64 2005/05/09 11:23:17 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -1320,7 +1320,7 @@ static void img_png_decode(INT32 args,int header_only)
 	    free(w1); 
 	    if (wa1) free(wa1); 
 	    if (ta1) free(ta1); 
-	    if (ta1) free(t1); 
+	    if (t1) free(t1);
 	    Pike_error("Image.PNG._decode: out of memory (close one)\n");
 	 }
 	 /* loop over adam7 interlace's 
