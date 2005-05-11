@@ -141,7 +141,7 @@ class Operations
     //! errno or 0
     int utime( string path, int atime, int mtime );
 
-    //! Open 'path'. mode is as for the system call open.
+    //! Open @[path]. @[mode] is as for the system call open.
     //! (mode & O_ACCMODE) is one of O_RDONLY, O_WRONLY and O_RDWR.
     //! The mode can also contain other flags, most notably O_APPEND.
     //! @note
@@ -152,7 +152,8 @@ class Operations
     //! errno or 0
     int open( string path, int mode );
 
-    //! Read data from a file. You have to return exactly len bytes, unless an error occurs.
+    //! Read data from a file. You have to return at most @[len] bytes,
+    //! unless an error occurs.
     //! @returns
     //! errno or data
     string|int(1..) read( string path, int len, int offset );
@@ -165,7 +166,8 @@ class Operations
     //! Stat a filesystem.
     //! Mapping as from @[filesystem_stat]
     //! @note
-    //! required for 'df' support, without this function there is an error each time 'df' is run.
+    //!   required for @tt{'df'@} support, without this function there
+    //!   is an error each time @tt{'df'@} is run.
     mapping(string:int) statfs( string path );
 
     //! The inverse of open. 
@@ -290,8 +292,10 @@ static class MyOps
 //!     -r                  mount read only (equivalent to '-o ro')
 //!     -o opt,[opt...]     mount options
 //!     -h                  print help
+//! @}
 //! 
 //! Mount options:
+//! @pre{
 //!     default_permissions    enable permission checking
 //!     allow_other            allow access to other users
 //!     allow_root             allow access to root
