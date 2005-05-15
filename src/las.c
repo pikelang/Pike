@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.243 2003/03/21 12:23:28 grubba Exp $");
+RCSID("$Id: las.c,v 1.244 2005/05/15 13:16:56 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -550,7 +550,7 @@ static node *freeze_node(node *orig)
 
 void free_all_nodes(void)
 {
-  if(!Pike_compiler->compiler_frame)
+  if(!Pike_compiler->previous)
   {
     node *tmp;
     struct node_s_block *tmp2;
