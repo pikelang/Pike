@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.754 2005/05/06 03:44:05 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.755 2005/05/17 22:31:50 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -6958,6 +6958,8 @@ test_any(mixed a=(<1>); a[1]=0; return equal(a,(<>)),1)
 test_any(mixed a=(<1>); a[0]=0; return equal(a,(<1>)),1)
 test_any(mixed a=([1:1]); a[0]=0; return equal(a,([1:1,0:0])),1)
 test_any(mixed a=([1:1]); a[1]=0; return equal(a,([1:0])),1)
+test_any(mixed a="hej"; a[1]='o'; return a,"hoj")
+test_do( string x=" "*73; x[64]=1; x[65]=1; )
 
 test_define_program(test,[[public int q,w,e,r; mixed t; mixed getw() { return w; } void setw(int _) { w=_; }]])
 test_eq(test()->q,0)
