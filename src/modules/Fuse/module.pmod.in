@@ -77,13 +77,12 @@ class Operations
     //! The symlink contents or errno
     string|int(1..) readlink( string path );
 
-    //! Get directory contents. The callback get the arguments
-    //! filename, filetype and file inode. 
+    //! Get directory contents. The callback get the filename.
     //! @note 
     //! This function is required.
     //! @returns
     //! errno or 0
-    int readdir( string path, function(string,int,int:void) callback );
+    int readdir( string path, function(string:void) callback );
 
     //! Create a node (file, device special, or named pipe).
     //! See man 2 mknod

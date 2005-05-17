@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fuse.c,v 1.6 2005/05/04 17:03:46 grubba Exp $
+|| $Id: fuse.c,v 1.7 2005/05/17 21:51:43 per Exp $
 */
 
 #include "global.h"
@@ -132,10 +132,8 @@ struct getdir_storage
 static void f_getdir_callback( INT32 args )
 {
     char *name;
-    int type;
-    int ino;
-    get_all_args( "getdircallback", args, "%s%d%d", &name, &type, &ino );
-    THISGD->filler( THISGD->h, name, type, ino );
+    get_all_args( "getdircallback", args, "%s", &name );
+    THISGD->filler( THISGD->h, name, 0, 0 );
 }
 
 static void push_getdir_callback( fuse_dirh_t h, fuse_dirfil_t filler )
@@ -492,7 +490,7 @@ PIKE_MODULE_INIT
     start_new_program( );
     {
 	ADD_STORAGE( struct getdir_storage );
-	ADD_FUNCTION( "`()", f_getdir_callback, tFunc(tStr tInt tInt,tVoid ), 0 );
+	ADD_FUNCTION( "`()", f_getdir_callback, tFunc(tStr tOr(tInt,tVoid) tOr(tInt,tVoid),tVoid ), 0 );
     }
     getdir_program = end_program();
 
