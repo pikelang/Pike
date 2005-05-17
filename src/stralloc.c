@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.199 2005/05/17 21:44:30 grubba Exp $
+|| $Id: stralloc.c,v 1.200 2005/05/17 22:27:42 nilsson Exp $
 */
 
 #include "global.h"
@@ -1651,9 +1651,11 @@ PMOD_EXPORT struct pike_string *modify_shared_string(struct pike_string *a,
     if((((unsigned int)index) >= HASH_PREFIX) && (index < a->len-8))
     {
       struct pike_string *old;
+#ifdef PIKE_DEBUG
       if (wrong_hash(a)) {
 	Pike_fatal("Broken hash optimization.\n");
       }
+#endif
       /* Doesn't change hash value - sneak it in there */
       old = internal_findstring(a->str, a->len, a->size_shift, a->hval);
       if (old) {
