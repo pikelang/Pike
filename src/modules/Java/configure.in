@@ -73,6 +73,13 @@ if test "x$with_java" = xyes; then
   ])
   AC_MSG_RESULT($pike_cv_java_arch)
 
+  java_arch_dirs=$pike_cv_java_arch
+  if test x$java_arch_dirs = xx86_64; then
+    # Some dists (e.g. Ubuntu) has decided to use "amd64" as arch
+    # specifier in dirs etc even though uname -m returns "x86_64".
+    java_arch_dirs="x86_64 amd64"
+  fi
+
   AC_MSG_CHECKING(what kind of threads to use)
   AC_CACHE_VAL(pike_cv_java_threads_type, [
     if test "x$THREADS_FLAG" = x; then
@@ -121,18 +128,27 @@ if test "x$with_java" = xyes; then
     if test "x$JAVA_HOME" = x; then
       pike_cv_java_java_home=no
       java_home_guess=`"$srcdir/find_java_home.sh"`
-      for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/java/jdk*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* /usr/local/j2sdk*/jre /usr/local/j2re* "$java_home_guess" "$pike_java_user_lib_directory"/..; do
-        if test -d $tmp_java_home/.; then
-          if "$LS" "$tmp_java_home/lib/$pike_cv_java_arch/$pike_cv_java_threads_type"/libjvm* >/dev/null 2>&1 || \
-	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/libjvm* >/dev/null 2>&1 || \
-	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/classic/libjvm* >/dev/null 2>&1 || \
+      for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/java/jdk*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* /usr/local/j2sdk*/jre /usr/local/j2re* /usr/lib/j2se/*/jre "$java_home_guess" "$pike_java_user_lib_directory"/..; do
+	if test -d $tmp_java_home/.; then
+	  tmp_arch_dir=nowhere
+	  for ad in $java_arch_dirs; do
+	    if test -d "$tmp_java_home/lib/$ad"; then
+	      tmp_arch_dir="$tmp_java_home/lib/$ad"
+	      tmp_arch="$ad"
+	      break
+	    fi
+	  done
+	  if "$LS" "$tmp_arch_dir/$pike_cv_java_threads_type"/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_arch_dir"/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_arch_dir"/classic/libjvm* >/dev/null 2>&1 || \
 	    "$LS" "$tmp_java_home/bin"/classic/libjvm* >/dev/null 2>&1 || \
-	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/client/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_arch_dir"/client/libjvm* >/dev/null 2>&1 || \
 	    "$LS" "$tmp_java_home/bin"/client/libjvm* >/dev/null 2>&1 || \
-	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/server/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_arch_dir"/server/libjvm* >/dev/null 2>&1 || \
 	    "$LS" "$tmp_java_home/bin"/server/libjvm* >/dev/null 2>&1 || \
 	    "$LS" "$tmp_java_home/Libraries"/libjvm* >/dev/null 2>&1; then
 	      pike_cv_java_java_home="$tmp_java_home"
+	      java_arch_dir=$tmp_arch
 	  else
 	    :
 	  fi
@@ -150,6 +166,8 @@ if test "x$with_java" = xyes; then
   ])
   AC_MSG_RESULT($pike_cv_java_java_home)
 
+  # Known buglet: $java_arch_dir isn't cached, so the following must
+  # also be cached when $pike_cv_java_java_home is.
   AC_MSG_CHECKING(for Java libraries)
   AC_CACHE_VAL(pike_cv_java_lib_dir, [
     pike_cv_java_lib_dir=""
@@ -159,10 +177,10 @@ if test "x$with_java" = xyes; then
       tmp_java_lib_dir="$pike_java_user_lib_directory"
     fi
     # NOTE: Loops in reverse priority order.
-    for i in "$pike_cv_java_arch/client" "../bin/client" \
-	     "$pike_cv_java_arch/server" "../bin/server" \
-	     "$pike_cv_java_arch/$pike_cv_java_threads_type" \
-             "$pike_cv_java_arch/classic" "$pike_cv_java_arch" \
+    for i in "$java_arch_dir/client" "../bin/client" \
+	     "$java_arch_dir/server" "../bin/server" \
+	     "$java_arch_dir/$pike_cv_java_threads_type" \
+             "$java_arch_dir/classic" "$java_arch_dir" \
 	     "." "../bin" "../bin/classic"; do
       if test -d "$tmp_java_lib_dir/$i/." && "$LS" $tmp_java_lib_dir/$i/lib* >/dev/null 2>&1; then
         pike_cv_java_lib_dir="$pike_cv_java_lib_dir$tmp_java_lib_dir/$i "
@@ -214,12 +232,12 @@ if test "x$with_java" = xyes; then
     else
       :
     fi
-    if test -d "$pike_cv_java_include_dir/$pike_cv_java_arch/."; then
-      echo "Adding $pike_cv_java_include_dir/$pike_cv_java_arch to the include search path."
-      CPPFLAGS="-I$pike_cv_java_include_dir/$pike_cv_java_arch ${CPPFLAGS}"
-    else
-      :
-    fi
+    for d in "$pike_cv_java_include_dir/$java_arch_dir/."; do
+      if test -d "$d"; then
+	echo "Adding $d to the include search path."
+	CPPFLAGS="-I$d ${CPPFLAGS}"
+      fi
+    done
   fi
 
   AC_MSG_CHECKING([for JavaVM (MacOS X)])
@@ -433,7 +451,7 @@ if test "x$with_java" = xyes; then
     case $pike_cv_java_arch  in
       sparc) pike_cv_java_cpu=sparc;;
       i386|x86) pike_cv_java_cpu=x86;;
-      x86_64) pike_cv_java_cpy=x86_64;;
+      x86_64) pike_cv_java_cpu=x86_64;;
       powerpc|ppc) pike_cv_java_cpu=ppc;;
       alpha) pike_cv_java_cpu=alpha;;
       *) pike_cv_java_cpu=no;;
