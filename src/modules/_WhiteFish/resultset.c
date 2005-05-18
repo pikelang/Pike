@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.27 2005/02/24 17:53:24 jonasw Exp $");
+RCSID("$Id: resultset.c,v 1.28 2005/05/18 13:43:48 mast Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -10,6 +10,7 @@ RCSID("$Id: resultset.c,v 1.27 2005/02/24 17:53:24 jonasw Exp $");
 #include "array.h"
 #include "bignum.h"
 #include "module_support.h"
+#include "fsort.h"
 
 #include "config.h"
 
@@ -905,7 +906,7 @@ static void f_dateset_before( INT32 args )
 
   if (source) {
     for( i = 0; i<source->num_docs; i++ )
-      if( source->hits[i].ranking < before )
+      if( (int) source->hits[i].ranking < before )
 	res->hits[res->num_docs++] = source->hits[i];
   }
 }
@@ -922,7 +923,7 @@ static void f_dateset_after( INT32 args )
 
   if (source) {
     for( i = 0; i<source->num_docs; i++ )
-      if( source->hits[i].ranking > after )
+      if( (int) source->hits[i].ranking > after )
 	res->hits[res->num_docs++] = source->hits[i];
   }
 }
@@ -942,8 +943,8 @@ static void f_dateset_between( INT32 args )
       return;
 
     for( i = 0; i<source->num_docs; i++ )
-      if( (source->hits[i].ranking > after) &&
-	  (source->hits[i].ranking < before) )
+      if( ((int) source->hits[i].ranking > after) &&
+	  ((int) source->hits[i].ranking < before) )
 	res->hits[res->num_docs++] = source->hits[i];
   }
 }
@@ -963,8 +964,8 @@ static void f_dateset_not_between( INT32 args )
       return;
 
     for( i = 0; i<source->num_docs; i++ )
-      if( (source->hits[i].ranking < after) ||
-	  (source->hits[i].ranking > before) )
+      if( ((int) source->hits[i].ranking < after) ||
+	  ((int) source->hits[i].ranking > before) )
 	res->hits[res->num_docs++] = source->hits[i];
   }
 }
