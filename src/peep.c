@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.98 2004/03/12 21:56:52 mast Exp $
+|| $Id: peep.c,v 1.99 2005/05/18 12:36:53 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.98 2004/03/12 21:56:52 mast Exp $");
+RCSID("$Id: peep.c,v 1.99 2005/05/18 12:36:53 mast Exp $");
 
 static void asm_opt(void);
 
@@ -421,8 +421,9 @@ INT32 assemble(int store_linenumbers)
   {
 #ifdef PIKE_DEBUG
     if (c != (((p_instr *)instrbuf.s.str)+e)) {
-      Pike_fatal("Instruction loop deviates. 0x%04x != 0x%04x\n",
-		 e, DO_NOT_WARN((INT32)(c - ((p_instr *)instrbuf.s.str))));
+      Pike_fatal("Instruction loop deviates. "
+		 "0x%04"PRINTPTRDIFFT"x != 0x%04"PRINTPTRDIFFT"x\n",
+		 e, c - ((p_instr *)instrbuf.s.str));
     }
     if((a_flag > 2 && store_linenumbers) || a_flag > 3)
     {
@@ -683,7 +684,7 @@ INT32 assemble(int store_linenumbers)
   if (a_flag > 6) {
     size_t len = (Pike_compiler->new_program->num_program - fun_start)*
       sizeof(PIKE_OPCODE_T);
-    fprintf(stderr, "Code at offset %d through %d:\n",
+    fprintf(stderr, "Code at offset %"PRINTSIZET"d through %"PRINTSIZET"d:\n",
 	    fun_start, Pike_compiler->new_program->num_program-1);
 #ifdef DISASSEMBLE_CODE
     DISASSEMBLE_CODE(Pike_compiler->new_program->program + fun_start, len);

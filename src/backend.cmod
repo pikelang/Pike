@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.145 2005/02/08 18:46:44 mast Exp $
+|| $Id: backend.cmod,v 1.146 2005/05/18 12:36:53 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.145 2005/02/08 18:46:44 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.146 2005/05/18 12:36:53 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -74,7 +74,7 @@ RCSID("$Id: backend.cmod,v 1.145 2005/02/08 18:46:44 mast Exp $");
 #endif
 
 #ifdef PIKE_THREADS
-#define THR_NO PTR_TO_INT (THREAD_T_TO_PTR (th_self()))
+#define THR_NO (int) PTR_TO_INT (THREAD_T_TO_PTR (th_self()))
 #else
 #define THR_NO getpid()
 #endif
@@ -194,7 +194,8 @@ static void low_set_backend_for_fd(int fd, struct Backend_struct *b)
     }
     if(!fd_map)
       Pike_fatal("Out of memory in backend:low_set_backend_for_fd.\n"
-	"Tried to allocate %d bytes.\n",sizeof(struct Backend_struct *) * fd_map_size);
+		 "Tried to allocate %"PRINTSIZET"d bytes.\n",
+		 sizeof(struct Backend_struct *) * fd_map_size);
     
     MEMSET(fd_map+old,0,sizeof(struct Backend_struct *) * (fd_map_size-old));
   }

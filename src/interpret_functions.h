@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.169 2004/10/06 18:35:02 mast Exp $
+|| $Id: interpret_functions.h,v 1.170 2005/05/18 12:36:53 mast Exp $
 */
 
 /*
@@ -2148,7 +2148,7 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
       Pike_fatal("Function popped too many arguments: %s\n",		 \
 	    s->u.efun->name->str);					 \
     if(Pike_sp>expected_stack+1)					 \
-      Pike_fatal("Function left %d droppings on stack: %s\n",		 \
+      Pike_fatal("Function left %"PRINTPTRDIFFT"d droppings on stack: %s\n", \
            Pike_sp-(expected_stack+1),					 \
 	    s->u.efun->name->str);					 \
     if(Pike_sp == expected_stack && !s->u.efun->may_return_void)	 \

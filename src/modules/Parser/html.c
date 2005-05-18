@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.172 2004/04/15 00:09:31 nilsson Exp $
+|| $Id: html.c,v 1.173 2005/05/18 12:36:54 mast Exp $
 */
 
 #include "global.h"
@@ -592,8 +592,9 @@ found_start:
    CC->num_look_for_start=n;
 #ifdef PIKE_DEBUG
    if (n > NELEM (CC->look_for_start))
-     Pike_fatal ("Static size of calc_chars.look_for_start is %d but %d required.\n",
-	    NELEM (CC->look_for_start), n);
+     Pike_fatal ("Static size of calc_chars.look_for_start is "
+		 "%"PRINTSIZET"d but %"PRINTSIZET"d required.\n",
+		 NELEM (CC->look_for_start), n);
 #endif
 
    for (k=0; k < NARGQ (this); k++)
@@ -619,14 +620,16 @@ found_start:
       CC->num_look_for_end[k]=n;
 #ifdef PIKE_DEBUG
       if (n > NELEM (CC->look_for_end[k]))
-	Pike_fatal ("Static size of calc_chars.look_for_end[k] is %d but %d required.\n",
-	       NELEM (CC->look_for_end[k]), n);
+	Pike_fatal ("Static size of calc_chars.look_for_end[k] is "
+		    "%"PRINTSIZET"d but %"PRINTSIZET"d required.\n",
+		    NELEM (CC->look_for_end[k]), n);
 #endif
    }
 #ifdef PIKE_DEBUG
    if (k > NELEM (CC->look_for_end))
-     Pike_fatal ("Static size of calc_chars.look_for_end is %d but %d required.\n",
-	    NELEM (CC->look_for_end), k);
+     Pike_fatal ("Static size of calc_chars.look_for_end is "
+		 "%"PRINTSIZET"d but %"PRINTSIZET"d required.\n",
+		 NELEM (CC->look_for_end), k);
 #endif
 
    n = check_fin ? 4 : 3;
@@ -654,8 +657,9 @@ found_start:
 #else
 #ifdef PIKE_DEBUG
    if (CC->n_arg_break_chars > NELEM (CC->arg_break_chars))
-     Pike_fatal ("Static size of calc_chars.arg_break_chars is %d but %d required.\n",
-	    NELEM (CC->arg_break_chars), CC->n_arg_break_chars);
+     Pike_fatal ("Static size of calc_chars.arg_break_chars is "
+		 "%"PRINTSIZET"d but %"PRINTSIZET"d required.\n",
+		 NELEM (CC->arg_break_chars), CC->n_arg_break_chars);
 #endif
 #endif
 
@@ -1648,7 +1652,7 @@ static int scan_forward(struct piece *feed,
 			struct piece **destp,
 			ptrdiff_t *d_p,
 			const p_wchar2 *look_for,
-			int num_look_for) /* negative = skip those */
+			ptrdiff_t num_look_for) /* negative = skip those */
 {
    int rev=0;
 

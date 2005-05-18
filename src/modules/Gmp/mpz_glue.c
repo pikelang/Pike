@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.161 2004/03/23 18:56:25 nilsson Exp $
+|| $Id: mpz_glue.c,v 1.162 2005/05/18 12:36:54 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.161 2004/03/23 18:56:25 nilsson Exp $");
+RCSID("$Id: mpz_glue.c,v 1.162 2005/05/18 12:36:54 mast Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -1858,7 +1858,7 @@ static void mpzmod_random(INT32 args)
   push_int(mpz_size(THIS)*sizeof(mp_limb_t) + 4);
   f_random_string(1);
   if (sp[-1].type != T_STRING) {
-    Pike_error("random_string(%d) returned non string.\n",
+    Pike_error("random_string(%"PRINTSIZET"d) returned non string.\n",
 	       mpz_size(THIS)*sizeof(mp_limb_t) + 4);
   }
   get_mpz_from_digits(OBTOMPZ(res), sp[-1].u.string, 256);

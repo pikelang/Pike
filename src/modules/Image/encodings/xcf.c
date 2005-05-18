@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xcf.c,v 1.48 2004/03/06 00:07:00 nilsson Exp $
+|| $Id: xcf.c,v 1.49 2005/05/18 12:36:54 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.48 2004/03/06 00:07:00 nilsson Exp $");
+RCSID("$Id: xcf.c,v 1.49 2005/05/18 12:36:54 mast Exp $");
 
 #include "image_machine.h"
 
@@ -85,8 +85,8 @@ static void f_substring_index( INT32 args )
 
   if( i < 0 ) i = s->len + i;
   if( i >= s->len ) {
-    Pike_error("Index out of bounds, %d > %ld\n", i,
-	  DO_NOT_WARN((long)s->len-1) );
+    Pike_error("Index out of bounds, %"PRINTPTRDIFFT"d > %"PRINTPTRDIFFT"d\n",
+	       i, s->len-1);
   }
   push_int( ((unsigned char *)s->s->str)[s->offset+i] );
 }

@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.237 2004/06/29 03:09:42 aldem Exp $
+|| $Id: threads.c,v 1.238 2005/05/18 12:36:54 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.237 2004/06/29 03:09:42 aldem Exp $");
+RCSID("$Id: threads.c,v 1.238 2005/05/18 12:36:54 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -692,7 +692,7 @@ void debug_list_all_threads(void)
     for(s=thread_table_chains[x]; s; s=s->hashlink) {
       struct object *o = THREADSTATE2OBJ(s);
       fprintf(stderr,"ThTab[%d]: state=%p, obj=%p, "
-	      "swapped=%d, sp=%p (%+d), fp=%p, stackbase=%p",
+	      "swapped=%d, sp=%p (%+"PRINTPTRDIFFT"d), fp=%p, stackbase=%p",
 	      x, s, o, s->swapped,
 	      s->state.stack_pointer,
 	      s->state.stack_pointer - s->state.evaluator_stack,

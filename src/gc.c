@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.256 2004/09/30 12:12:10 mast Exp $
+|| $Id: gc.c,v 1.257 2005/05/18 12:36:53 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.256 2004/09/30 12:12:10 mast Exp $");
+RCSID("$Id: gc.c,v 1.257 2005/05/18 12:36:53 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -998,7 +998,7 @@ again:
       {
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
       fprintf(stderr, "%*s* " #NAME " %p[%"PRINTSIZET"u]\n", \
-              indent, "", p->NAME, p->PIKE_CONCAT(num_,NAME));
+	      indent, "", p->NAME, (size_t) p->PIKE_CONCAT(num_,NAME));
 #include "program_areas.h"
       }
 
@@ -1058,7 +1058,7 @@ again:
     {
       struct pike_string *s=(struct pike_string *)a;
       fprintf(stderr,"%*s**size_shift: %d, len: %"PRINTPTRDIFFT"d, hash: %"PRINTSIZET"x\n",
-	      indent,"", s->len, s->size_shift, s->hval);
+	      indent,"", s->size_shift, s->len, s->hval);
       if (!s->size_shift && s->refs > 0) {
 	if(s->len>77)
 	{

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.163 2005/02/14 15:54:59 mast Exp $
+|| $Id: array.c,v 1.164 2005/05/18 12:36:53 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "multiset.h"
 #include "mapping.h"
 
-RCSID("$Id: array.c,v 1.163 2005/02/14 15:54:59 mast Exp $");
+RCSID("$Id: array.c,v 1.164 2005/05/18 12:36:53 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -91,7 +91,7 @@ PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size, ptrdiff_t extra_spa
     return &empty_array;
   }
 
-  if( (size+extra_space-1) >
+  if( (size_t) (size+extra_space-1) >
       (ULONG_MAX-sizeof(struct array))/sizeof(struct svalue) )
     Pike_error("Too large array (memory size exceeds size of size_t)\n");
   v=(struct array *)malloc(sizeof(struct array)+
@@ -270,8 +270,7 @@ PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
 	if (a->size) {
 	  index_error(0,0,0,&tmp,ind,
 		      "Index %"PRINTPIKEINT"d is out of array range "
-		      "%"PRINTPTRDIFFT"d..%"PRINTPTRDIFFT"d.\n",
-		      p, -a->size, a->size-1);
+		      "%d..%d.\n", p, -a->size, a->size-1);
 	} else {
 	  index_error(0,0,0,&tmp,ind,
 		      "Attempt to index the empty array with %"PRINTPIKEINT"d.\n", p);
@@ -323,8 +322,7 @@ PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct sval
       if(i<0 || i>=a->size) {
 	if (a->size) {
 	  Pike_error("Index %"PRINTPIKEINT"d is out of array range "
-		     "%"PRINTPTRDIFFT"d..%"PRINTPTRDIFFT"d.\n",
-		     p, -a->size, a->size-1);
+		     "%d..%d.\n", p, -a->size, a->size-1);
 	} else {
 	  Pike_error("Attempt to index the empty array with %"PRINTPIKEINT"d.\n", p);
 	}
@@ -1288,8 +1286,7 @@ PMOD_EXPORT union anything *array_get_item_ptr(struct array *a,
   if(i<0 || i>=a->size) {
     if (a->size) {
       Pike_error("Index %"PRINTPIKEINT"d is out of array range "
-		 "%"PRINTPTRDIFFT"d..%"PRINTPTRDIFFT"d.\n",
-		 p, -a->size, a->size-1);
+		 "%d..%d.\n", p, -a->size, a->size-1);
     } else {
       Pike_error("Attempt to index the empty array with %"PRINTPIKEINT"d.\n", p);
     }
@@ -2155,7 +2152,7 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args)
   check_stack(120 + args + 1);
 
   /* FIXME: Ought to use a better key on the arguments below. */
-  if (!(cycl = (struct array *)BEGIN_CYCLIC(a, args))) {
+  if (!(cycl = (struct array *)BEGIN_CYCLIC(a, (ptrdiff_t) args))) {
     BEGIN_AGGREGATE_ARRAY(a->size) {
       SET_CYCLIC_RET(Pike_sp[-1].u.array);
       for (e=0;e<a->size;e++) {

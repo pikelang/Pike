@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.554 2005/04/02 14:25:13 mast Exp $
+|| $Id: builtin_functions.c,v 1.555 2005/05/18 12:36:53 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.554 2005/04/02 14:25:13 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.555 2005/05/18 12:36:53 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1835,8 +1835,8 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 	if ((c & 0xc0) != 0x80)						\
 	  bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
 			 NULL, Pike_sp - args,				\
-			 "Expected continuation character at index %d, " \
-			 "got 0x%02x.\n",				\
+			 "Expected continuation character "		\
+			 "at index %"PRINTPTRDIFFT"d, got 0x%02x.\n",	\
 			 i, c);						\
       } while (0)
 
@@ -1989,7 +1989,8 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
   }
 #ifdef PIKE_DEBUG
   if (j != len) {
-    Pike_fatal("utf8_to_string(): Calculated and actual lengths differ: %d != %d\n",
+    Pike_fatal("utf8_to_string(): Calculated and actual lengths differ: "
+	       "%"PRINTPTRDIFFT"d != %"PRINTPTRDIFFT"d\n",
 	  len, j);
   }
 #endif /* PIKE_DEBUG */

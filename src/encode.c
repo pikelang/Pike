@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.213 2004/05/19 09:19:23 grubba Exp $
+|| $Id: encode.c,v 1.214 2005/05/18 12:36:53 mast Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.213 2004/05/19 09:19:23 grubba Exp $");
+RCSID("$Id: encode.c,v 1.214 2005/05/18 12:36:53 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -2252,7 +2252,8 @@ static INT32 decode_portable_bytecode(INT32 string_no)
   bytecode = p->strings[string_no];
 
   if (bytecode->len % 3) {
-    Pike_error("Bad bytecode string length: %d (expected multiple of 3).\n",
+    Pike_error("Bad bytecode string length: "
+	       "%"PRINTPTRDIFFT"d (expected multiple of 3).\n",
 	       bytecode->len);
   }
 
@@ -3411,7 +3412,7 @@ static void decode_value2(struct decode_data *data)
 	   * __pragma_save_parent__.
 	   */
 	  lex.pragmas = (old_pragmas & ~ID_SAVE_PARENT)|ID_DONT_SAVE_PARENT;
-	  SET_ONERROR(err2, set_lex_pragmas, old_pragmas);
+	  SET_ONERROR(err2, set_lex_pragmas, (ptrdiff_t) old_pragmas);
 
 	  /* Start the new program. */
 	  orig_compilation_depth = compilation_depth;
@@ -3505,7 +3506,7 @@ static void decode_value2(struct decode_data *data)
 	    for (e=0; e<(int)local_num_relocations; e++) {
 	      size_t reloc;
 	      decode_number(reloc, data);
-	      CHECK_RELOC(reloc, local_num_program);
+	      CHECK_RELOC(reloc, (size_t) local_num_program);
 	      add_to_relocations(reloc);
 	    }
 
@@ -4041,9 +4042,10 @@ static void decode_value2(struct decode_data *data)
 	  if (PIKE_CONCAT(local_num_, NAME) != p->PIKE_CONCAT(num_,NAME)) { \
 	    ref_push_program (p);					\
 	    decode_error(Pike_sp - 1, NULL,				\
-			 "Value mismatch for num_" TOSTR(NAME) ": %d != %d\n", \
-			 PIKE_CONCAT(local_num_, NAME),			\
-			 p->PIKE_CONCAT(num_, NAME));			\
+			 "Value mismatch for num_" TOSTR(NAME) ": "	\
+			 "%"PRINTSIZET"d != %"PRINTSIZET"d\n",		\
+			 (size_t) PIKE_CONCAT(local_num_, NAME),	\
+			 (size_t) p->PIKE_CONCAT(num_, NAME));		\
           }
 #include "program_areas.h"
 

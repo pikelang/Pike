@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.194 2004/09/25 19:21:57 grubba Exp $
+|| $Id: svalue.c,v 1.195 2005/05/18 12:36:54 mast Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: svalue.c,v 1.194 2004/09/25 19:21:57 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.195 2005/05/18 12:36:54 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1362,7 +1362,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	  int fun=FIND_LFUN(prog, LFUN__SPRINTF);
 	  debug_malloc_touch(prog);
 	  if(fun != -1) {
-	    if (!BEGIN_CYCLIC(obj, fun)) {
+	    if (!BEGIN_CYCLIC(obj, (ptrdiff_t) fun)) {
 	      /* We require some tricky coding to make this work
 	       * with tracing...
 	       */
@@ -1630,7 +1630,7 @@ PMOD_EXPORT void print_svalue_compact (FILE *out, const struct svalue *s)
 	sval.u.string = string_slice (s->u.string, 0, 80);
 	print_svalue (out, &sval);
 	free_string (sval.u.string);
-	fprintf (out, "... (%d chars more)", s->u.string->len - 80);
+	fprintf (out, "... (%"PRINTPTRDIFFT"d chars more)", s->u.string->len - 80);
 	break;
       }
       /* Fall through. */

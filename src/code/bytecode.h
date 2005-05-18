@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bytecode.h,v 1.10 2003/06/03 18:05:58 mast Exp $
+|| $Id: bytecode.h,v 1.11 2005/05/18 12:36:54 mast Exp $
 */
 
 #define UPDATE_PC()
@@ -25,7 +25,7 @@
 #define CHECK_RELOC(REL, PROG_SIZE)		\
   do {						\
     if ((REL) > (PROG_SIZE)-4) {		\
-      Pike_error("Bad relocation: %d > %d\n",	\
+      Pike_error("Bad relocation: %"PRINTSIZET"d > %"PRINTSIZET"d\n",	\
 		 (REL), (PROG_SIZE)-4);		\
     }						\
   } while(0)

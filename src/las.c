@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.346 2005/02/18 13:32:22 grubba Exp $
+|| $Id: las.c,v 1.347 2005/05/18 12:36:53 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.346 2005/02/18 13:32:22 grubba Exp $");
+RCSID("$Id: las.c,v 1.347 2005/05/18 12:36:53 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -637,7 +637,7 @@ void free_all_nodes(void)
 	}
 #ifdef PIKE_DEBUG
 	if(!cumulative_parse_error)
-	  Pike_fatal("Failed to free %d nodes when compiling!\n",e2);
+	  Pike_fatal("Failed to free %"PRINTSIZET"d nodes when compiling!\n",e2);
 #endif
       }
 #ifndef PIKE_DEBUG

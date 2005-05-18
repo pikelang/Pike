@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.235 2004/08/16 16:20:18 mast Exp $
+|| $Id: pike_types.c,v 1.236 2005/05/18 12:36:53 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.235 2004/08/16 16:20:18 mast Exp $");
+RCSID("$Id: pike_types.c,v 1.236 2005/05/18 12:36:53 mast Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -338,7 +338,8 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
 
   /* PIKE_DEBUG code */
   if (index >= pike_type_hash_size) {
-    Pike_fatal("Modulo operation failed for hash:%u, index:%u, size:%u.\n",
+    Pike_fatal("Modulo operation failed for hash:%u, index:%u, "
+	       "size:%"PRINTSIZET"d.\n",
 	       hash, index, pike_type_hash_size);
   }
   /* End PIKE_DEBUG code */
@@ -944,7 +945,7 @@ struct pike_type *debug_pop_unfinished_type(void)
   len = pop_stack_mark();
 
   if (len != 1) {
-    Pike_fatal("pop_unfinished_type(): Unexpected len: %d\n", len);
+    Pike_fatal("pop_unfinished_type(): Unexpected len: %"PRINTPTRDIFFT"d\n", len);
   }
 
   TYPE_STACK_DEBUG("pop_unfinished_type");
@@ -965,7 +966,7 @@ static void internal_parse_typeA(const char **_s)
   for(len=0;isidchar(EXTRACT_UCHAR(s[0]+len));len++)
   {
     if(len>=sizeof(buf)) {
-      my_yyerror("Buffer overflow in parse_type(\"%s\") (limit %d).",
+      my_yyerror("Buffer overflow in parse_type(\"%s\") (limit %"PRINTSIZET"d).",
 		 *s, sizeof(buf));
       push_type(T_MIXED);
       return;
