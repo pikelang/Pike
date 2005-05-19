@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.37 2005/02/17 16:37:50 grubba Exp $
+|| $Id: iso2022.c,v 1.38 2005/05/19 22:35:37 mast Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -802,6 +802,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	}
 	if (c < 0) {
 	  /* User reserved character. */
+	  /* FIXME: This doesn't work since p_wchar2 is unsigned. */
 	} else
 #ifdef OPTIMIZE_ISO2022
 	/* This optimization breaks on some 2022 decoders,

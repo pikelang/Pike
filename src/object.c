@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.266 2005/03/18 14:44:24 grubba Exp $
+|| $Id: object.c,v 1.267 2005/05/19 22:35:30 mast Exp $
 */
 
 #include "global.h"
@@ -477,7 +477,8 @@ static struct pike_string *low_read_file(const char *file)
 	  }
 	  Pike_fatal("low_read_file(%s) failed, errno=%d\n",file,errno);
 	}
-	Pike_fatal("low_read_file(%s) failed, short read: %d < %d\n",
+	Pike_fatal("low_read_file(%s) failed, short read: "
+		   "%"PRINTPTRDIFFT"d < %"PRINTPTRDIFFT"d\n",
 		   file, pos, len);
       }
       pos+=tmp;

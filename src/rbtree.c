@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rbtree.c,v 1.24 2004/09/18 20:50:55 nilsson Exp $
+|| $Id: rbtree.c,v 1.25 2005/05/19 22:35:34 mast Exp $
 */
 
 /* An implementation of a threaded red/black balanced binary tree.
@@ -1711,7 +1711,7 @@ void debug_dump_rb_tree (struct rb_node_hdr *root, dump_data_fn *dump_data,
     struct rb_node_hdr *node = root;
     struct rb_node_hdr *n, *n2;
     struct rbstack_ptr p;
-    size_t depth = 0;
+    int depth = 0;
     RBSTACK_INIT (rbstack);
 
     LOW_RB_TRAVERSE (
@@ -1839,7 +1839,8 @@ void debug_check_rb_tree (struct rb_node_hdr *root, dump_data_fn *dump_data, voi
   if (root) {
     struct rb_node_hdr *node = root, *n, *n2;
     struct rbstack_ptr p;
-    size_t blacks = 1, max_blacks = 0, depth = 0;
+    size_t blacks = 1, max_blacks = 0;
+    int depth = 0;
     RBSTACK_INIT (rbstack);
 
     if (root->flags & RB_RED) custom_rb_fatal (root, dump_data, extra,
@@ -1862,8 +1863,9 @@ void debug_check_rb_tree (struct rb_node_hdr *root, dump_data_fn *dump_data, voi
 	if (max_blacks) {
 	  if (blacks != max_blacks)
 	    custom_rb_fatal (root, dump_data, extra,
-			     "Unbalanced tree - leftmost branch is %d, "
-			     "prev @ %p is %d.\n", max_blacks, node, blacks);
+			     "Unbalanced tree - leftmost branch is %"PRINTSIZET"d, "
+			     "prev @ %p is %"PRINTSIZET"d.\n",
+			     max_blacks, node, blacks);
 	}
 	else max_blacks = blacks;
 
@@ -1888,8 +1890,9 @@ void debug_check_rb_tree (struct rb_node_hdr *root, dump_data_fn *dump_data, voi
       }, {			/* next is leaf. */
 	if (blacks != max_blacks)
 	  custom_rb_fatal (root, dump_data, extra,
-			   "Unbalanced tree - leftmost branch is %d, "
-			   "next @ %p is %d.\n", max_blacks, node, blacks);
+			   "Unbalanced tree - leftmost branch is %"PRINTSIZET"d, "
+			   "next @ %p is %"PRINTSIZET"d.\n",
+			   max_blacks, node, blacks);
 
 	p = rbstack;
 	n2 = node;

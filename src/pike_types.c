@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.246 2005/04/06 17:38:15 grubba Exp $
+|| $Id: pike_types.c,v 1.247 2005/05/19 22:35:31 mast Exp $
 */
 
 #include "global.h"
@@ -358,7 +358,8 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
 	       car, cdr);
   }
   if (index >= pike_type_hash_size) {
-    Pike_fatal("Modulo operation failed for hash:%u, index:%u, size:%u.\n",
+    Pike_fatal("Modulo operation failed for hash:%u, index:%u, "
+	       "size:%"PRINTSIZET"d.\n",
 	       hash, index, pike_type_hash_size);
   }
   /* End PIKE_DEBUG code */
@@ -1001,7 +1002,7 @@ struct pike_type *debug_pop_unfinished_type(void)
   len = pop_stack_mark();
 
   if (len != 1) {
-    Pike_fatal("pop_unfinished_type(): Unexpected len: %d\n", len);
+    Pike_fatal("pop_unfinished_type(): Unexpected len: %"PRINTPTRDIFFT"d\n", len);
   }
 
   TYPE_STACK_DEBUG("pop_unfinished_type");
@@ -1022,7 +1023,7 @@ static void internal_parse_typeA(const char **_s)
   for(len=0;isidchar(EXTRACT_UCHAR(s[0]+len));len++)
   {
     if(len>=sizeof(buf)) {
-      my_yyerror("Buffer overflow in parse_type(\"%s\") (limit %d).",
+      my_yyerror("Buffer overflow in parse_type(\"%s\") (limit %"PRINTSIZET"d).",
 		 *s, sizeof(buf));
       push_type(T_MIXED);
       return;

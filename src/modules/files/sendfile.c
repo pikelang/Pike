@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.71 2005/01/23 01:50:41 nilsson Exp $
+|| $Id: sendfile.c,v 1.72 2005/05/19 22:35:39 mast Exp $
 */
 
 /*
@@ -345,7 +345,7 @@ void low_do_sendfile(struct pike_sendfile *this)
 {
 #if defined(SOL_TCP) && (defined(TCP_CORK) || defined(TCP_NODELAY))
   int old_val = -1;
-  size_t old_len = sizeof(old_val);	/* Might want to use socklen_t here. */
+  socklen_t old_len = (socklen_t) sizeof(old_val);
 #ifdef TCP_CORK
   int new_val = 1;
 #else /* !TCP_CORK */

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.363 2005/04/06 17:54:43 grubba Exp $
+|| $Id: las.c,v 1.364 2005/05/19 22:35:29 mast Exp $
 */
 
 #include "global.h"
@@ -642,7 +642,7 @@ void free_all_nodes(void)
 	}
 #ifdef PIKE_DEBUG
 	if(!cumulative_parse_error)
-	  Pike_fatal("Failed to free %d nodes when compiling!\n",e2);
+	  Pike_fatal("Failed to free %"PRINTSIZET"d nodes when compiling!\n",e2);
 #endif
       }
 #ifndef PIKE_DEBUG

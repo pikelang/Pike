@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.269 2005/04/14 22:50:12 mast Exp $
+|| $Id: gc.c,v 1.270 2005/05/19 22:35:27 mast Exp $
 */
 
 #include "global.h"
@@ -535,8 +535,7 @@ void describe_location(void *real_memblock,
 		e, p->constants[e].name ? p->constants[e].name->str : "no name");
 #else /* !0 */
 	fprintf(stderr,"%*s  **In p->constants[%"PRINTPTRDIFFT"d] "
-		"(%"PRINTPTRDIFFT"d)\n",
-		indent,"",
+		"(%"PRINTPTRDIFFT"d)\n",indent,"",
 		e, p->constants[e].offset);
 #endif /* 0 */
 	break;
@@ -1099,7 +1098,7 @@ again:
       {
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
       fprintf(stderr, "%*s* " #NAME " %p[%"PRINTSIZET"u]\n", \
-              indent, "", p->NAME, (size_t)p->PIKE_CONCAT(num_,NAME));
+	      indent, "", p->NAME, (size_t)p->PIKE_CONCAT(num_,NAME));
 #include "program_areas.h"
       }
 

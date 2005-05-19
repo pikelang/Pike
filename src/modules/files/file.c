@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.350 2005/05/06 00:45:46 nilsson Exp $
+|| $Id: file.c,v 1.351 2005/05/19 22:35:38 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -199,7 +199,7 @@ static void debug_check_internals (struct my_file *f)
   for (ev = 0; ev < NELEM (f->event_cbs); ev++)
     if (f->event_cbs[ev].type == PIKE_T_INT &&
 	f->box.backend && f->box.events & (1 << ev))
-      Pike_fatal ("Got event flag but no callback for event %d.\n", ev);
+      Pike_fatal ("Got event flag but no callback for event %"PRINTSIZET"d.\n", ev);
 }
 #else
 #define debug_check_internals(f) do {} while (0)

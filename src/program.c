@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.587 2005/04/08 17:01:02 grubba Exp $
+|| $Id: program.c,v 1.588 2005/05/19 22:35:32 mast Exp $
 */
 
 #include "global.h"
@@ -2666,7 +2666,7 @@ void dump_program_tables (struct program *p, int indent)
   for (d=0; d < p->num_inherits; d++) {
     struct inherit *inh = p->inherits + d;
 
-    fprintf(stderr, "%*s  %4d: %5d %7d %8d %12d %6d %8d %10d %11d\n",
+    fprintf(stderr, "%*s  %4d: %5d %7d %8d %12"PRINTPTRDIFFT"d %6d %8d %10d %11"PRINTSIZET"d\n",
 	    indent, "",
 	    d, inh->inherit_level,
 	    inh->prog ? inh->prog->id : -1,
@@ -2682,7 +2682,7 @@ void dump_program_tables (struct program *p, int indent)
   for (d=0; d < p->num_identifiers; d++) {
     struct identifier *id = p->identifiers + d;
 
-    fprintf(stderr, "%*s  %4d: %5x %6d %4d \"%s\"\n",
+    fprintf(stderr, "%*s  %4d: %5x %6"PRINTPTRDIFFT"d %4d \"%s\"\n",
 	    indent, "",
 	    d, id->identifier_flags, id->func.offset,
 	    id->run_time_type, id->name->str);
@@ -2709,7 +2709,7 @@ void dump_program_tables (struct program *p, int indent)
 	    d, get_name_of_type (c->sval.type),
 	    c->name?"\"":"",c->name?c->name->str:"NULL",c->name?"\"":"");
 #else /* !0 */
-    fprintf(stderr, "%*s  %4d: %-15s %d\n",
+    fprintf(stderr, "%*s  %4d: %-15s %"PRINTPTRDIFFT"d\n",
 	    indent, "",
 	    d, get_name_of_type (c->sval.type),
 	    c->offset);
@@ -2922,8 +2922,9 @@ void check_program(struct program *p)
 	  if(ID_FROM_INT(p,variable_positions[offset+q])->run_time_type !=
 	     i->run_time_type)
 	  {
-	    fprintf(stderr, "Storage offset: 0x%08x vs 0x%08x\n"
-		    "Func offset: 0x%08x vs 0x%08x\n"
+	    fprintf(stderr, "Storage offset: "
+		    "0x%08"PRINTPTRDIFFT"x vs 0x%08"PRINTPTRDIFFT"x\n"
+		    "Func offset: 0x%08"PRINTPTRDIFFT"x vs 0x%08"PRINTPTRDIFFT"x\n"
 		    "Type: %s vs %s\n",
 		    INHERIT_FROM_INT(p, variable_positions[offset+q])->
 		    storage_offset,
@@ -2935,7 +2936,9 @@ void check_program(struct program *p)
 		    get_name_of_type(i->run_time_type));
 	    if (i->name) {
 	      Pike_fatal("Variable '%s' and '%s' overlap\n"
-		    "Offset 0x%08x - 0x%08x overlaps with 0x%08x - 0x%08x\n",
+			 "Offset 0x%08"PRINTPTRDIFFT"x - 0x%08"PRINTPTRDIFFT"x "
+			 "overlaps with "
+			 "0x%08"PRINTPTRDIFFT"x - 0x%08"PRINTPTRDIFFT"x\n",
 		    ID_FROM_INT(p, variable_positions[offset+q])->name->str,
 		    i->name->str,
 		    INHERIT_FROM_INT(p, variable_positions[offset+q])->
@@ -2949,7 +2952,9 @@ void check_program(struct program *p)
 		    offset, offset+size-1);
 	    } else {
 	      Pike_fatal("Variable '%s' and anonymous variable (%d) overlap\n"
-		    "Offset 0x%08x - 0x%08x overlaps with 0x%08x - 0x%08x\n",
+			 "Offset 0x%08"PRINTPTRDIFFT"x - 0x%08"PRINTPTRDIFFT"x "
+			 "overlaps with "
+			 "0x%08"PRINTPTRDIFFT"x - 0x%08"PRINTPTRDIFFT"x\n",
 		    ID_FROM_INT(p, variable_positions[offset+q])->name->str,
 		    e,
 		    INHERIT_FROM_INT(p, variable_positions[offset+q])->
@@ -5611,7 +5616,7 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
 	cnt += len<<shift;
 	if (a_flag > 100) {
 	  fprintf(stderr, "Filename entry:\n"
-		  "  len: %d, shift: %d\n",
+		  "  len: %"PRINTSIZET"d, shift: %d\n",
 		  len, shift);
 	}
       }
@@ -5637,7 +5642,7 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
 	    "    (line : %d ?= %d)!\n"
 	    "    (  pc : %d ?= %d)!\n"
 	    "    (shift: %d ?= %d)!\n"
-	    "    (len  : %d ?= %d)!\n"
+	    "    (len  : %"PRINTSIZET"d ?= %"PRINTSIZET"d)!\n"
 	    "    (file : %s ?= %s)!\n",
 	    Pike_compiler->last_line, line,
 	    Pike_compiler->last_pc, off,

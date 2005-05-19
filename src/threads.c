@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.243 2005/03/31 02:19:46 nilsson Exp $
+|| $Id: threads.c,v 1.244 2005/05/19 22:35:34 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
@@ -692,7 +692,7 @@ void debug_list_all_threads(void)
     for(s=thread_table_chains[x]; s; s=s->hashlink) {
       struct object *o = THREADSTATE2OBJ(s);
       fprintf(stderr,"ThTab[%d]: state=%p, obj=%p, "
-	      "swapped=%d, sp=%p (%+d), fp=%p, stackbase=%p",
+	      "swapped=%d, sp=%p (%+"PRINTPTRDIFFT"d), fp=%p, stackbase=%p",
 	      x, s, o, s->swapped,
 	      s->state.stack_pointer,
 	      s->state.stack_pointer - s->state.evaluator_stack,

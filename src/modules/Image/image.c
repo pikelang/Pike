@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.221 2005/03/18 15:35:05 grubba Exp $
+|| $Id: image.c,v 1.222 2005/05/19 22:35:35 mast Exp $
 */
 
 /*
@@ -4727,7 +4727,7 @@ void image__decode( INT32 args )
     w = a->item[0].u.integer;
     h = a->item[1].u.integer;
 
-    if( w*h*sizeof(rgb_group) != a->item[2].u.string->len )
+    if( w*h*(ptrdiff_t) sizeof(rgb_group) != a->item[2].u.string->len )
 	Pike_error("Illegal image data\n");
 
     if( THIS->img )

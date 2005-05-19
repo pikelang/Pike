@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.598 2005/05/08 11:15:24 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.599 2005/05/19 22:35:25 mast Exp $
 */
 
 #include "global.h"
@@ -2190,7 +2190,8 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 
 #ifdef PIKE_DEBUG
   if (j != len) {
-    Pike_fatal("utf8_to_string(): Calculated and actual lengths differ: %d != %d\n",
+    Pike_fatal("utf8_to_string(): Calculated and actual lengths differ: "
+	       "%"PRINTPTRDIFFT"d != %"PRINTPTRDIFFT"d\n",
 	  len, j);
   }
 #endif /* PIKE_DEBUG */

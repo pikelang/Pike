@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: memory.c,v 1.33 2005/05/06 00:42:35 nilsson Exp $
+|| $Id: memory.c,v 1.34 2005/05/19 22:35:40 mast Exp $
 */
 
 /*! @module System
@@ -672,7 +672,7 @@ static void copy_reverse_string1_to_2(unsigned char *d,
      struct pike_string *ps;						\
      ps = begin_wide_shared_string(len, N);				\
      PIKE_CONCAT(copy_reverse_string, N)				\
-       (PIKE_CONCAT(STR, N)(ps), s, len);				\
+       ((unsigned char *) PIKE_CONCAT(STR, N)(ps), s, len);		\
      return end_shared_string(ps);					\
    }
 

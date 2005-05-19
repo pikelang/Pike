@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.74 2005/05/06 00:45:14 nilsson Exp $
+|| $Id: xml.c,v 1.75 2005/05/19 22:35:39 mast Exp $
 */
 
 #include "global.h"
@@ -702,7 +702,7 @@ ISWRAP(isHexChar)
 #ifdef PIKE_DEBUG
 #define CHECK_INPUT(INPUT) do {					\
     if ((INPUT).len < 0) {					\
-      Pike_fatal("Negative input length: %d\n", (INPUT).len);	\
+      Pike_fatal("Negative input length: %"PRINTPTRDIFFT"d\n", (INPUT).len); \
     }								\
   } while(0)
 #else /* !PIKE_DEBUG */

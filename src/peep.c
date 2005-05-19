@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.105 2004/12/30 13:41:08 grubba Exp $
+|| $Id: peep.c,v 1.106 2005/05/19 22:35:30 mast Exp $
 */
 
 #include "global.h"
@@ -427,8 +427,9 @@ INT32 assemble(int store_linenumbers)
   {
 #ifdef PIKE_DEBUG
     if (c != (((p_instr *)instrbuf.s.str)+e)) {
-      Pike_fatal("Instruction loop deviates. 0x%04x != 0x%04x\n",
-		 e, DO_NOT_WARN((INT32)(c - ((p_instr *)instrbuf.s.str))));
+      Pike_fatal("Instruction loop deviates. "
+		 "0x%04"PRINTPTRDIFFT"x != 0x%04"PRINTPTRDIFFT"x\n",
+		 e, c - ((p_instr *)instrbuf.s.str));
     }
     if((a_flag > 2 && store_linenumbers) || a_flag > 3)
     {
@@ -689,7 +690,7 @@ INT32 assemble(int store_linenumbers)
   if (a_flag > 6) {
     size_t len = (Pike_compiler->new_program->num_program - fun_start)*
       sizeof(PIKE_OPCODE_T);
-    fprintf(stderr, "Code at offset %d through %d:\n",
+    fprintf(stderr, "Code at offset %"PRINTSIZET"d through %"PRINTSIZET"d:\n",
 	    fun_start, Pike_compiler->new_program->num_program-1);
 #ifdef DISASSEMBLE_CODE
     DISASSEMBLE_CODE(Pike_compiler->new_program->program + fun_start, len);
