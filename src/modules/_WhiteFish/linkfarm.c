@@ -1,10 +1,11 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: linkfarm.c,v 1.5 2004/08/07 15:26:56 js Exp $");
+RCSID("$Id: linkfarm.c,v 1.6 2005/05/19 22:35:47 mast Exp $");
 #include "interpret.h"
 #include "program.h"
 #include "array.h"
+#include "module_support.h"
 
 #include "config.h"
 
@@ -55,7 +56,7 @@ static void free_hash( struct hash *h )
 
 static void find_hash( struct linkfarm *d, struct pike_string *s )
 {
-  unsigned int r = (((unsigned int)s>>3)) % HSIZE;
+  unsigned int r = (((unsigned int) (size_t) s>>3) % HSIZE);
   struct hash *h = d->hash[ r ];
   while( h )
   {

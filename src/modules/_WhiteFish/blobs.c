@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blobs.c,v 1.13 2004/08/18 12:24:30 grubba Exp $");
+RCSID("$Id: blobs.c,v 1.14 2005/05/19 22:35:47 mast Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -20,7 +20,7 @@ static void exit_blobs_struct( );
 #define HSIZE 10007
 
 #define THIS ((struct blobs *)Pike_fp->current_storage)
-#define HASH(X) (((unsigned int)(X)) % HSIZE)
+#define HASH(X) (((unsigned int) (size_t)(X)) % HSIZE)
 
 struct hash
 {
