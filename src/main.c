@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.223 2005/01/03 13:17:07 agehall Exp $
+|| $Id: main.c,v 1.224 2005/05/20 10:39:04 mast Exp $
 */
 
 #include "global.h"
@@ -93,7 +93,7 @@ static char master_location[MAXPATHLEN * 2] = MASTER_COOKIE;
 static void set_master(const char *file)
 {
   if (strlen(file) >= MAXPATHLEN*2 - CONSTANT_STRLEN(MASTER_COOKIE)) {
-    fprintf(stderr, "Too long path to master: \"%s\" (limit:%d)\n",
+    fprintf(stderr, "Too long path to master: \"%s\" (limit:%"PRINTPTRDIFFT"d)\n",
 	    file, MAXPATHLEN*2 - CONSTANT_STRLEN(MASTER_COOKIE));
     exit(1);
   }
