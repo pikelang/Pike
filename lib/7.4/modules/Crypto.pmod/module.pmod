@@ -1,8 +1,8 @@
 #pike 7.6
 
-#if constant(Crypto.crypt_md5)
-//! From Pike 7.5 @[pw] and @[salt] are binary strings, so
-//! the result is different if any of these includes @expr{"\0"@}.
+#if constant(Nettle.crypt_md5)
+//! From Pike 7.5 an in Nettle @[pw] and @[salt] are binary strings, so
+//! the result is different if any of these contains @expr{"\0"@}.
 //!
 //! The return type is also changed from string to int|string. If
 //! the second argument is a hash, @[pw] will be hashed with the
@@ -13,7 +13,7 @@ string crypt_md5(string pw, void|string salt) {
     sscanf(salt, "%s\0", salt);
     sscanf(salt, "$1$%s", salt);
   }
-  return Crypto.crypt_md5(pw,salt);
+  return Nettle.crypt_md5(pw,salt);
 }
 #endif
 
