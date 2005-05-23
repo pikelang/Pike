@@ -1,5 +1,9 @@
 static string pike_binary = replace( getenv("PIKE"), "\\", "/");
 
+#ifdef SEARCH_CRAWLER_DEBUG
+int index_log_count;
+#endif
+
 class Indexer(Variable wa_var, void|function get_sb_workarea_view_url, Configuration conf)
 {
   // Provided API
@@ -133,6 +137,11 @@ class Indexer(Variable wa_var, void|function get_sb_workarea_view_url, Configura
 
 #ifdef SEARCH_CRAWLER_DEBUG
     debug_args += ({"-DSEARCH_DEBUG"});
+    string logfilename = "crawler_log." + getpid() + "." + index_log_count++;
+    Stdio.File logfile = Stdio.File ("../logs/debug/" + logfilename, "wct");
+#endif
+#ifdef CRAWLER_HTTP_QUERY_DEBUG
+    debug_args += ({"-DHTTP_QUERY_DEBUG"});
 #endif
 
     crawler=Process.create_process(
@@ -144,7 +153,19 @@ class Indexer(Variable wa_var, void|function get_sb_workarea_view_url, Configura
 	"modules/search/programs/multiprocess_crawler.pike",
 	"single_process",
       }),
-      ([  "env":env,"priority":"low"  ]) );
+      ([  "env":env,
+	  "priority":"low",
+#ifdef SEARCH_CRAWLER_DEBUG
+	  "stdout": logfile,
+	  "stderr": logfile,
+#endif
+      ]) );
+
+#ifdef SEARCH_CRAWLER_DEBUG
+    werror ("Spawned search crawler: pid %d, logfile %s\n",
+	    crawler->pid(), logfilename);
+#endif
+
     return 1;
   }
 
@@ -154,6 +175,10 @@ class Indexer(Variable wa_var, void|function get_sb_workarea_view_url, Configura
       return 0;
 
     crawler_remote = 0;
+
+#ifdef SEARCH_CRAWLER_DEBUG
+    werror ("Killing search crawler: pid %d\n", crawler->pid());
+#endif
 
 #ifdef __NT__
     crawler->kill( 9 );
