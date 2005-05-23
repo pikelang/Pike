@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Base.pike,v 1.15 2003/03/19 10:53:26 jonasw Exp $
+// $Id: Base.pike,v 1.16 2005/05/23 14:57:38 anders Exp $
 
 //! The MIME content types this class can filter.
 constant contenttypes = ({ });
@@ -51,7 +51,7 @@ string my_popen(array(string) args, string|void cwd, int|void wait_for_exit)
   Stdio.File pipe1 = pipe0->pipe(Stdio.PROP_IPC);
   if(!pipe1)
     if(!pipe1) error("my_popen failed (couldn't create pipe).\n");
-  mapping setup = ([ "env":getenv(), "stdout":pipe1 ]);
+  mapping setup = ([ "env":getenv(), "stdout":pipe1, "nice": 20 ]);
   if (cwd)
     setup["cwd"] = cwd;
   Process.create_process proc = Process.create_process(args, setup);
