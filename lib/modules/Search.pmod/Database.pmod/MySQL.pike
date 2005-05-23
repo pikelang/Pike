@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.81 2004/12/20 12:04:49 anders Exp $
+// $Id: MySQL.pike,v 1.82 2005/05/23 15:18:13 anders Exp $
 
 inherit .Base;
 
@@ -657,7 +657,7 @@ static void store_to_db( void|string mergedfilename )
 #ifdef SEARCH_DEBUG  
   werror("----------- sync() %4d docs --------------\n", docs);
 #endif  
-  db->query("LOCK TABLES word_hit WRITE");
+  db->query("LOCK TABLES word_hit LOW_PRIORITY WRITE");
   String.Buffer multi_query = String.Buffer();
 
   do
@@ -680,11 +680,8 @@ static void store_to_db( void|string mergedfilename )
 
     q++;
 
-    if(!(q%100))
-    {
-      db->query("UNLOCK TABLES");
-      db->query("LOCK TABLES word_hit LOW_PRIORITY WRITE");
-    }
+    db->query("UNLOCK TABLES");
+    db->query("LOCK TABLES word_hit LOW_PRIORITY WRITE");
 
     int first_doc_id;
     array old=db->query("SELECT first_doc_id,length(hits) as l "+
@@ -703,7 +700,7 @@ static void store_to_db( void|string mergedfilename )
 		    "(word,first_doc_id,hits) "
 		    "VALUES (%s,%d,%s)", word, @blob_pair);
       }
-      db->query("UPDATE LOW_PRIORITY word_hit SET hits=CONCAT(hits,%s) "+
+      db->query("UPDATE word_hit SET hits=CONCAT(hits,%s) "+
 		"WHERE word=%s and first_doc_id=%d", blob, word, last_doc_id);
     }
     else
