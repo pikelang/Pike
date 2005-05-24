@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.h,v 1.22 2003/12/09 17:44:59 grubba Exp $
+|| $Id: ppc32.h,v 1.23 2005/05/24 17:35:42 jonasw Exp $
 */
 
 #define PPC_INSTR_B_FORM(OPCD,BO,BI,BD,AA,LK)			\
@@ -75,7 +75,7 @@
 #define PPC_REG_PIKE_FP 9
 #define PPC_REG_PIKE_SP 10
 
-#define PPC_REG_PIKE_INTERP 31
+#define PPC_REG_PIKE_INTERP 29 /* 31 */
 
 extern int ppc32_codegen_state, ppc32_codegen_last_pc;
 void ppc32_flush_code_generator_state(void);
@@ -234,11 +234,11 @@ void ppc32_decode_program(struct program *p);
 
 #define CALL_MACHINE_CODE(pc)						    \
   __asm__ __volatile__( "	mtctr %0\n"				    \
-			"	mr "PPC_REGNAME(31)",%1\n"		    \
+			"	mr "PPC_REGNAME(29)",%1\n"		    \
 			"	bctr"					    \
 			:						    \
 			: "r" (pc), "r" (&Pike_interpreter)		    \
-			: "ctr", "lr", "cc", "memory", "r31", "r0",	    \
+			: "ctr", "lr", "cc", "memory", "r29", "r0",	    \
 			  "r3", "r4", "r5", "r6", "r7", "r8", "r9",	    \
 			  "r10", "r11", "r12")
 
