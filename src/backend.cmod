@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.147 2005/05/24 00:43:34 bill Exp $
+|| $Id: backend.cmod,v 1.148 2005/05/24 15:07:30 bill Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.147 2005/05/24 00:43:34 bill Exp $");
+RCSID("$Id: backend.cmod,v 1.148 2005/05/24 15:07:30 bill Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -827,12 +827,12 @@ PIKECLASS Backend
 
   /* An array indexed on fd with arbitrary upper and lower bounds. A
    * lower bould is used to cut down the size for backends that
+   * handle a single or only a few fd's. */
 #ifdef _REENTRANT
   /* FIXME: Ought to be CVARS. */
   static int set_busy;
   static COND_T set_change;
 #endif
-   * handle a single or only a few fd's. */
   CVAR struct fd_callback_box **fd_boxes;
   CVAR int fd_boxes_start, fd_boxes_size;
 
