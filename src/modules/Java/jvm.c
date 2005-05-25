@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.75 2005/04/08 17:17:21 grubba Exp $
+|| $Id: jvm.c,v 1.76 2005/05/25 09:54:18 grubba Exp $
 */
 
 /*
@@ -3603,6 +3603,11 @@ PIKE_MODULE_INIT
     fprintf(stderr, "ibmFindDLL(): \"%s\"\n", ibmFindDLL());
   }
 #endif
+
+  /* Restore any signal handlers that may have been zapped
+   * when the jvm was loaded.
+   */
+  low_init_signals();
 
   start_new_program();
   ADD_STORAGE(struct jobj_storage);
