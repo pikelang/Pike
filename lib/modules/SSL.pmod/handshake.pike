@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-/* $Id: handshake.pike,v 1.54 2004/08/10 12:46:08 mast Exp $
+/* $Id: handshake.pike,v 1.55 2005/05/25 12:59:09 mast Exp $
  *
  */
 
@@ -524,7 +524,7 @@ mapping state_descriptions = lambda()
 mapping type_descriptions = lambda()
 {
   array inds = glob("HANDSHAKE_*", indices(SSL.Constants));
-  array vals = map(inds, lambda(string ind) { return SSL.Constants()[ind]; });
+  array vals = map(inds, lambda(string ind) { return SSL.Constants[ind]; });
   return mkmapping(vals, inds);
 }();
 
@@ -1098,7 +1098,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	    werror("Other certificates than RSA not supported!\n");
 #endif
 	    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
-			      "SSL.session->handle_handshake: unexpected message\n",
+			      "SSL.session->handle_handshake: Unsupported certificate type\n",
 			      backtrace()));
 	    return -1;
 	  }
@@ -1110,7 +1110,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  werror("Failed to decode certificate!\n");
 #endif
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
-			    "SSL.session->handle_handshake: unexpected message\n",
+			    "SSL.session->handle_handshake: Failed to decode certificate\n",
 			    backtrace()));
 	  return -1;
 	}
@@ -1162,6 +1162,25 @@ int(-1..1) handle_handshake(int type, string data, string raw)
        * ChangeCipherSpec as appropriate, and then Finished.
        */
       {
+
+      check_serv_cert: {
+	  switch (session->cipher_spec->sign) {
+	    case .Cipher.rsa_sign:
+	      if (context->rsa) break check_serv_cert;
+	      break;
+	    case .Cipher.dsa_sign:
+	      if (context->dsa) break check_serv_cert;
+	      break;
+	  }
+
+#ifdef SSL3_DEBUG
+	  werror ("Certificate message required from server.\n");
+#endif
+	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
+			    "SSL.session->handle_handshake: Certificate message missing\n",
+			    backtrace()));
+	  return -1;
+	}
 
       if (context->certificates)
       {
