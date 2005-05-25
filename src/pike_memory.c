@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.160 2005/04/08 17:00:09 grubba Exp $
+|| $Id: pike_memory.c,v 1.161 2005/05/25 16:59:29 grubba Exp $
 */
 
 #include "global.h"
@@ -10,6 +10,21 @@
 #include "pike_error.h"
 #include "pike_macros.h"
 #include "gc.h"
+#include "fd_control.h"
+
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
+
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+
+#include <errno.h>
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -332,6 +347,86 @@ char *debug_qalloc(size_t size)
   /* NOT_REACHED */
   return NULL;	/* Keep the compiler happy. */
 }
+
+#ifdef HAVE_MMAP
+#ifndef PAGESIZE
+#define PAGESIZE	8192
+#endif /* !PAGESIZE */
+/* FIXME: More memory efficient implementation! */
+static int dev_zero = -1;
+void *mexec_alloc(size_t sz)
+{
+  size_t *ptr;
+  if (!sz) return NULL;
+  if (dev_zero < 0) {
+    if ((dev_zero = open("/dev/zero", O_RDONLY)) < 0) {
+      fprintf(stderr, "Failed to open /dev/zero.\n");
+      return NULL;
+    }
+    debug_malloc_accept_leak_fd(dev_zero);
+    set_close_on_exec(dev_zero, 1);
+  }
+  sz = (sz + sizeof(ptr[0]) + (PAGESIZE-1)) & ~(PAGESIZE-1);
+  ptr = mmap(NULL, sz, PROT_EXEC|PROT_READ|PROT_WRITE,
+	     MAP_PRIVATE, dev_zero, 0);
+  if (ptr == MAP_FAILED) {
+    return NULL;
+  }
+  ptr[0] = sz;
+  return ptr+1;
+}
+void *mexec_realloc(void *ptr, size_t sz)
+{
+  size_t *old_ptr;
+  size_t *new_ptr;
+  if ((old_ptr = ptr)) old_ptr--;
+  if (!sz) {
+    return NULL;
+  }
+  sz += sizeof(old_ptr[0]);
+  if (old_ptr && (old_ptr[0] >= sz)) return ptr;
+  if (dev_zero < 0) {
+    if ((dev_zero = open("/dev/zero", O_RDONLY)) < 0) {
+      fprintf(stderr, "Failed to open /dev/zero.\n");
+      return NULL;
+    }
+    debug_malloc_accept_leak_fd(dev_zero);
+    set_close_on_exec(dev_zero, 1);
+  }
+  sz = (sz + (PAGESIZE-1)) & ~(PAGESIZE-1);
+  new_ptr = mmap(old_ptr, sz, PROT_EXEC|PROT_READ|PROT_WRITE,
+		 MAP_PRIVATE, dev_zero, 0);
+  if (new_ptr == MAP_FAILED) {
+    return NULL;
+  }
+  memcpy(new_ptr, old_ptr, old_ptr[0]);
+  munmap(old_ptr, old_ptr[0]);
+  new_ptr[0] = sz;
+  new_ptr++;
+  return new_ptr;
+}
+void mexec_free(void *ptr)
+{
+  size_t *old_ptr;
+  if (!ptr) return;
+  old_ptr = ((size_t *)ptr)-1;
+  munmap(old_ptr, old_ptr[0]);
+}
+#else
+void *mexec_alloc(size_t sz)
+{
+  return malloc(sz);
+}
+void *mexec_realloc(void *ptr, size_t sz)
+{
+  if (ptr) return realloc(ptr, sz);
+  return malloc(sz);
+}
+void mexec_free(void *ptr)
+{
+  free(ptr);
+}
+#endif /* HAVE_MMAP */
 
 /* #define DMALLOC_TRACE */
 /* #define DMALLOC_TRACELOGSIZE	256*1024 */
