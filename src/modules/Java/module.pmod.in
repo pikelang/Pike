@@ -759,6 +759,15 @@ static void create()
   program jvm = this->jvm;
   if(jvm)
     machine = jvm(getenv("CLASSPATH"));
+  int sigchld = signum("SIGCHLD");
+  if (sigchld >= 0) {
+    // Restore SIGCHLD handler that might have been zapped
+    // by initializing the JVM.
+    //
+    // NOTE: We still have a race!
+    function(int:void) handler = signal(sigchld);
+    if (handler) signal(sigchld, handler);
+  }
   if(machine)
     pkg = package("", (["jvm":machine]));
 }
