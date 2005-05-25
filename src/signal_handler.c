@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.313 2005/05/25 09:19:06 grubba Exp $
+|| $Id: signal_handler.c,v 1.314 2005/05/25 13:03:04 grubba Exp $
 */
 
 #include "global.h"
@@ -4619,6 +4619,8 @@ void f_atexit(INT32 args)
  */
 PMOD_EXPORT void low_init_signals(void)
 {
+  int e;
+
   /* SIGCHLD */
 #ifdef USE_SIGCHILD
   my_signal(SIGCHLD, receive_sigchild);
