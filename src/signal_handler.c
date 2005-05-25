@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.312 2004/11/20 16:17:43 nilsson Exp $
+|| $Id: signal_handler.c,v 1.313 2005/05/25 09:19:06 grubba Exp $
 */
 
 #include "global.h"
@@ -1196,7 +1196,14 @@ static void report_child(int pid,
 	      p->result = WEXITSTATUS(status);
 	    } else {
 	      if (WIFSIGNALED(status)) {
+		if (WTERMSIG(status) != 9) {
+		  fprintf(stderr, "Process %d died of signal %d.\n",
+			  pid, WTERMSIG(status));
+		}
 		p->sig = WTERMSIG(status);
+	      } else {
+		fprintf(stderr, "Process %d died of strange cause 0x%08lx.\n",
+			pid, (unsigned long)status);
 	      }
 	      p->result=-1;
 	    }
@@ -1368,6 +1375,12 @@ static TH_RETURN_TYPE wait_thread(void *data)
     {
       switch(err)
       {
+#if 0
+        case 0:
+	  /* Some versions of FreeBSD have a waitpid that fails with
+	   * errno 0. See [bug 3917].
+	   */
+#endif /* 0 */
 	case EINTR:
 	case ECHILD:
 	  break;
@@ -3804,7 +3817,7 @@ void f_create_process(INT32 args)
 	    int remapped = -1;
 	    for (fd2 = fd+1; fd2 < num_fds; fd2++) {
 	      if (fds[fd2] == fd) {
-		/* We need to temorarily remap this fd,
+		/* We need to temporarily remap this fd,
 		 * since it's in the way
 		 */
 		if (remapped == -1) {
@@ -4601,37 +4614,20 @@ void f_atexit(INT32 args)
   pop_n_elems(args);
 }
 
-
-void init_signals(void)
+/* This fuction may be called from modules that may have thrashed
+ * the signal handler state on load. eg the Java module.
+ */
+PMOD_EXPORT void low_init_signals(void)
 {
-  int e;
-
-  INIT_FIFO(sig, unsigned char);
-  INIT_FIFO(wait,wait_data);
-
-#ifdef __NT__
-  init_interleave_mutex(&handle_protection_mutex);
-#endif /* __NT__ */
-
+  /* SIGCHLD */
 #ifdef USE_SIGCHILD
   my_signal(SIGCHLD, receive_sigchild);
 #endif
-
-#ifdef USE_PID_MAPPING
-  pid_mapping=allocate_mapping(2);
-
-#ifndef USE_WAIT_THREAD
-  mapping_set_flags(pid_mapping, MAPPING_FLAG_WEAK);
-#endif
-#endif
-
 #ifdef USE_WAIT_THREAD
-  co_init(& process_status_change);
-  co_init(& start_wait_thread);
-  mt_init(& wait_thread_mutex);
   my_signal(SIGCHLD, SIG_DFL);
 #endif
 
+  /* SIGPIPE */
 #ifdef SIGPIPE
   my_signal(SIGPIPE, SIG_IGN);
 #endif
@@ -4645,13 +4641,57 @@ void init_signals(void)
 #endif
 #endif
 
+  /* SIGFPE */
 #ifdef IGNORE_SIGFPE
   my_signal(SIGFPE, SIG_IGN);
 #endif
 
+  /* Restore aby custom signals if needed. */
+  for(e=0;e<MAX_SIGNALS;e++) {
+    
+    if ((signal_callbacks[e].type != PIKE_T_INT) ||
+	default_signals[e])
+    {
+      sigfunctype func = receive_signal;
+#ifdef USE_SIGCHILD
+      if (e == SIGCHLD) {
+	func = receive_sigchild;
+      }
+#endif
+      my_signal(e, func);      
+    }
+  }
+}
+
+void init_signals(void)
+{
+  int e;
+
+  INIT_FIFO(sig, unsigned char);
+  INIT_FIFO(wait,wait_data);
+
+#ifdef __NT__
+  init_interleave_mutex(&handle_protection_mutex);
+#endif /* __NT__ */
 
   for(e=0;e<MAX_SIGNALS;e++)
     signal_callbacks[e].type = PIKE_T_INT;
+
+  low_init_signals();
+
+#ifdef USE_PID_MAPPING
+  pid_mapping=allocate_mapping(2);
+
+#ifndef USE_WAIT_THREAD
+  mapping_set_flags(pid_mapping, MAPPING_FLAG_WEAK);
+#endif
+#endif
+
+#ifdef USE_WAIT_THREAD
+  co_init(& process_status_change);
+  co_init(& start_wait_thread);
+  mt_init(& wait_thread_mutex);
+#endif
 
 #if 0
   if(!signal_evaluator_callback)

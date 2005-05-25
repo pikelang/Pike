@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.h,v 1.16 2003/02/28 18:48:29 grubba Exp $
+|| $Id: signal_handler.h,v 1.17 2005/05/25 09:19:21 grubba Exp $
 */
 
 #ifndef SIGNAL_H
@@ -22,6 +22,7 @@ struct pid_status;
 struct perishables;
 struct plimit;
 struct perishables;
+PMOD_EXPORT void low_init_signals(void);
 void f_set_priority( INT32 args );
 void f_create_process(INT32 args);
 void Pike_f_fork(INT32 args);
