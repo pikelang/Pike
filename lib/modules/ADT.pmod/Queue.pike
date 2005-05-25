@@ -1,4 +1,4 @@
-// $Id: Queue.pike,v 1.12 2004/06/18 09:17:26 grubba Exp $
+// $Id: Queue.pike,v 1.13 2005/05/25 12:20:38 mast Exp $
 
 //! A simple FIFO queue.
 
@@ -99,5 +99,5 @@ static mixed cast(string to) {
 }
 
 static string _sprintf(int t) {
-  return t=='O' && sprintf("%O%O", this_program, cast("array"));
+  return t=='O' && l && sprintf("%O%O", this_program, cast("array"));
 }
