@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.148 2005/05/24 15:07:30 bill Exp $
+|| $Id: backend.cmod,v 1.149 2005/05/25 00:51:28 bill Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.148 2005/05/24 15:07:30 bill Exp $");
+RCSID("$Id: backend.cmod,v 1.149 2005/05/25 00:51:28 bill Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -31,7 +31,6 @@ RCSID("$Id: backend.cmod,v 1.148 2005/05/24 15:07:30 bill Exp $");
 #include "bignum.h"
 #include "svalue.h"
 #include "gc.h"
-
 /*
  * Things to do
  *
@@ -313,13 +312,13 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
    (ioctl(PFD, DP_POLL, &poll_request, sizeof(poll_request))))
 
 #ifdef _REENTRANT
-  /* FIXME: Ought to be CVARs. */
+  /* FIXME: Ought to be CVARS. */
   static int set_busy;
   static COND_T set_change;
   void backend_wake_up_backend(struct Backend_struct *me);
-#endif
+#endif /* _REENTRANT */
 
-int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me, 
+int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
                            int pfd, int fd, INT32 events)
 {
   struct pollfd poll_state[2];
@@ -347,16 +346,16 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
   set_busy = 1;
   backend_wake_up_backend(me);
   /* The backend is now waiting in wakeup_callback(). */
-#endif */ _REENTRANT */
+#endif /* _REENTRANT */
 
   while (((e = write(pfd, poll_state, sz)) < 0) && (errno == EINTR))
     ;
 
-#ifdef _REENTRANT
+#ifdef _REENTRANT 
   /* Release the backend from wakeup_callback(). */
   set_busy = 0;
   co_broadcast(&set_change);
-#endif /* _REENTRANT */
+#endif /* _REENTRANT */ 
 
   if (e < 0) {
     Pike_fatal("Failed to set state for fd %d in " PIKE_POLL_DEVICE
@@ -828,11 +827,6 @@ PIKECLASS Backend
   /* An array indexed on fd with arbitrary upper and lower bounds. A
    * lower bould is used to cut down the size for backends that
    * handle a single or only a few fd's. */
-#ifdef _REENTRANT
-  /* FIXME: Ought to be CVARS. */
-  static int set_busy;
-  static COND_T set_change;
-#endif
   CVAR struct fd_callback_box **fd_boxes;
   CVAR int fd_boxes_start, fd_boxes_size;
 
@@ -846,6 +840,11 @@ PIKECLASS Backend
 #ifdef OPEN_POLL_DEVICE
   CVAR int set;
 #define active_set set
+#ifdef _REENTRANT
+  /* FIXME: Ought to be CVARS. */
+  static int set_busy;
+  static COND_T set_change;
+#endif /* _REENTRANT */
 #else /* !USE_POLL_DEVICE */
   CVAR struct selectors set;
   CVAR struct active_selectors active_set;
@@ -871,11 +870,6 @@ PIKECLASS Backend
   CVAR int inside_call_out;
 #endif
 
-#if defined(OPEN_POLL_DEVICE) && defined(_REENTRANT)
-      while (set_busy) {
-        co_wait_interpreter(&set_change);
-      }
-#endif /* OPEN_POLL_DEVICE && _REENTRANT */
   /* The object we're in. This ref isn't refcounted. */
   CVAR struct object *backend_obj;
 
@@ -890,6 +884,12 @@ PIKECLASS Backend
     {
       char buffer[1024];
       fd_read(box->fd, buffer, sizeof(buffer)); /* Clear 'flag' */
+#if defined(OPEN_POLL_DEVICE) && defined(_REENTRANT)
+      while (set_busy) {
+        co_wait_interpreter(&set_change);
+      }
+#endif /* OPEN_POLL_DEVICE && _REENTRANT */
+
       return 0;
     }
 
@@ -3555,10 +3555,6 @@ PMOD_EXPORT void debug_check_fd_not_in_use (int fd)
   if (fd < 0) Pike_fatal ("Invalid fd: %d\n", fd);
   if (fd < fd_map_size && fd_map[fd])
     Pike_fatal ("fd %d already in use by backend %d.\n", fd, fd_map[fd]->id);
-#if defined(OPEN_POLL_DEVICE) && defined(_REENTRANT)
-  set_busy = 0;
-  co_init(&set_change);
-#endif /* OPEN_POLL_DEVICE && _REENTRANT */
 }
 
 #endif /* PIKE_DEBUG */
@@ -3566,6 +3562,10 @@ PMOD_EXPORT void debug_check_fd_not_in_use (int fd)
 
 void init_backend(void)
 {
+#if defined(OPEN_POLL_DEVICE) && defined(_REENTRANT)
+  set_busy = 0;
+  co_init(&set_change);
+#endif /* OPEN_POLL_DEVICE && _REENTRANT */
   init_call_out_s_blocks();
   init_compat_cb_box_blocks();
   INIT;
