@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.364 2005/05/19 22:35:29 mast Exp $
+|| $Id: las.c,v 1.365 2005/05/25 14:34:59 mast Exp $
 */
 
 #include "global.h"
@@ -3488,7 +3488,9 @@ void fix_type_field(node *n)
 	 *	/grubba 2005-02-15
 	 */
 	if (((CDR(n)->token != F_INDEX && CDR(n)->token != F_ARROW) ||
-	     !match_types(array_type_string, CADR(n)->type)) &&
+	     !((TEST_COMPAT (7, 6) && /* Bug compatibility. */
+		match_types(array_type_string, CDR(n)->type)) ||
+	       match_types(array_type_string, CADR(n)->type))) &&
 	    !match_types(CDR(n)->type,CAR(n)->type)) {
 	  yytype_error("Bad type in assignment.",
 		       CDR(n)->type, CAR(n)->type, 0);
