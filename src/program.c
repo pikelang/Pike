@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.588 2005/05/19 22:35:32 mast Exp $
+|| $Id: program.c,v 1.589 2005/05/25 17:09:41 grubba Exp $
 */
 
 #include "global.h"
@@ -1226,6 +1226,38 @@ int get_small_number(char **q);
    (NUMTYPE)(sizeof(NUMTYPE)==1?254: (sizeof(NUMTYPE)==2?65534:4294967294U))
 #endif
 
+#ifdef PIKE_USE_MACHINE_CODE
+/* Special cases for low_add_to_program and add_to_program since
+ * many OSes require us to use mmap to allocate memory for our
+ * machine code.
+ */
+#define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)					\
+void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
+                                    TYPE ARG) {				\
+  NUMTYPE m = state->malloc_size_program->PIKE_CONCAT(num_,NAME);	\
+  CHECK_FOO(NUMTYPE,TYPE,NAME);						\
+  if(m == state->new_program->PIKE_CONCAT(num_,NAME)) {			\
+    TYPE *tmp;								\
+    if(m==MAXVARS(NUMTYPE)) {						\
+      yyerror("Too many " #NAME ".");					\
+      return;								\
+    }									\
+    m = MINIMUM(m*2+1,MAXVARS(NUMTYPE));				\
+    tmp = mexec_realloc((void *)state->new_program->NAME,		\
+			sizeof(TYPE) * m);				\
+    if(!tmp) Pike_fatal("Out of memory.\n");				\
+    PIKE_CONCAT(RELOCATE_,NAME)(state->new_program, tmp);		\
+    state->malloc_size_program->PIKE_CONCAT(num_,NAME)=m;		\
+    state->new_program->NAME=tmp;					\
+  }									\
+  state->new_program->							\
+    NAME[state->new_program->PIKE_CONCAT(num_,NAME)++]=(ARG);		\
+}									\
+void PIKE_CONCAT(add_to_,NAME) (ARGTYPE ARG) {				\
+  PIKE_CONCAT(low_add_to_,NAME) ( Pike_compiler, ARG );			\
+}
+#endif /* PIKE_USE_MACHINE_CODE */
+
 /* Funny guys use the uppermost value for nonexistant variables and
    the like. Hence -2 and not -1. Y2K. */
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)					\
@@ -1729,6 +1761,11 @@ void optimize_program(struct program *p)
   /* Already done (shouldn't happen, but who knows?) */
   if(p->flags & PROGRAM_OPTIMIZED) return;
 
+#ifdef PIKE_USE_MACHINE_CODE
+  /* Don't move our mexec-allocated memory into the malloc... */
+#define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)
+#endif /* PIKE_USE_MACHINE_CODE */ 
+
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
   size=DO_ALIGN(size, ALIGNOF(TYPE)); \
   size+=p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0]);
@@ -1742,6 +1779,11 @@ void optimize_program(struct program *p)
   }
 
   size=0;
+
+#ifdef PIKE_USE_MACHINE_CODE
+  /* As above. */
+#define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)
+#endif /* PIKE_USE_MACHINE_CODE */ 
 
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
   size=DO_ALIGN(size, ALIGNOF(TYPE)); \
@@ -2252,8 +2294,9 @@ void low_start_new_program(struct program *p,
 
   if(Pike_compiler->new_program->program)
   {
-#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
-    Pike_compiler->malloc_size_program->PIKE_CONCAT(num_,NAME)=Pike_compiler->new_program->PIKE_CONCAT(num_,NAME);
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)					\
+    Pike_compiler->malloc_size_program->PIKE_CONCAT(num_,NAME) =	\
+      Pike_compiler->new_program->PIKE_CONCAT(num_,NAME);
 #include "program_areas.h"
 
 
@@ -2295,13 +2338,26 @@ void low_start_new_program(struct program *p,
     struct inherit i;
 
 #define START_SIZE 64
+#ifdef PIKE_USE_MACHINE_CODE
+#define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)	\
+    if (Pike_compiler->new_program->NAME) {				\
+      mexec_free(Pike_compiler->new_program->NAME);			\
+      Pike_compiler->new_program->PIKE_CONCAT(num_,NAME) = 0;		\
+    }									\
+    Pike_compiler->malloc_size_program->PIKE_CONCAT(num_,NAME) =	\
+      START_SIZE;							\
+    Pike_compiler->new_program->NAME =					\
+      (TYPE *)mexec_alloc(sizeof(TYPE) * START_SIZE);
+#endif /* PIKE_USE_MACHINE_CODE */ 
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)					\
     if (Pike_compiler->new_program->NAME) {				\
       free (Pike_compiler->new_program->NAME);				\
       Pike_compiler->new_program->PIKE_CONCAT(num_,NAME) = 0;		\
     }									\
-    Pike_compiler->malloc_size_program->PIKE_CONCAT(num_,NAME)=START_SIZE; \
-    Pike_compiler->new_program->NAME=(TYPE *)xalloc(sizeof(TYPE) * START_SIZE);
+    Pike_compiler->malloc_size_program->PIKE_CONCAT(num_,NAME) =	\
+      START_SIZE;							\
+    Pike_compiler->new_program->NAME =					\
+      (TYPE *)xalloc(sizeof(TYPE) * START_SIZE);
 #include "program_areas.h"
 
     i.prog=Pike_compiler->new_program;
@@ -2430,21 +2486,29 @@ static void exit_program_struct(struct program *p)
     free_object(p->facet_group);
   }
 
+#if defined(PIKE_USE_MACHINE_CODE) && defined(VALGRIND_DISCARD_TRANSLATIONS)
+  if(p->program) {
+    VALGRIND_DISCARD_TRANSLATIONS(p->program,
+				  p->num_program*sizeof(p->program[0]));
+  }
+#endif /* PIKE_USE_MACHINE_CODE && VALGRIND_DISCARD_TRANSLATIONS */
   if(p->flags & PROGRAM_OPTIMIZED)
   {
     if(p->program) {
 #ifdef PIKE_USE_MACHINE_CODE
-#ifdef VALGRIND_DISCARD_TRANSLATIONS
-      VALGRIND_DISCARD_TRANSLATIONS(p->program,
-				    p->num_program*sizeof(p->program[0]));
-#endif /* VALGRIND_DISCARD_TRANSLATIONS */
-#endif /* PIKE_USE_MACHINE_CODE */
+      mexec_free(p->program);
+#else /* PIKE_USE_MACHINE_CODE */
       dmfree(p->program);
+#endif /* PIKE_USE_MACHINE_CODE */
     }
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) p->NAME=0;
 #include "program_areas.h"
   }else{
-#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
+#ifdef PIKE_USE_MACHINE_CODE
+#define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)				\
+    if(p->NAME) { mexec_free((char *)p->NAME); p->NAME=0; }
+#endif /* PIKE_USE_MACHINE_CODE */
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)			\
     if(p->NAME) { dmfree((char *)p->NAME); p->NAME=0; }
 #include "program_areas.h"
   }
@@ -8077,17 +8141,46 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
 #include <sys/mman.h>
 #endif
 
+#ifndef PAGESIZE
+/* A reasonable default... */
+#define PAGESIZE	8192
+#endif /* !PAGESIZE */
+
 void make_program_executable(struct program *p)
 {
-#ifdef _WIN32
-  DWORD old_prot;
-  VirtualProtect((void *)p->program, p->num_program*sizeof(p->program[0]),
-                 PAGE_EXECUTE_READWRITE, &old_prot);
+  void *addr;
+  size_t len;
 
+  if (!p->num_program) return;
+  if ((p->event_handler == compat_event_handler) &&
+      ((p->num_program * sizeof(p->program[0]) <=
+	(NUM_PROG_EVENTS * sizeof(p->event_handler))))) {
+    /* Only event handlers. */
+    return;
+  }
+
+  /* Perform page alignment. */
+  addr = (void *)(((size_t)p->program) & ~(PAGESIZE-1));
+  len = (((char *)(p->program + p->num_program)) - ((char *)addr) +
+	 (PAGESIZE - 1)) & ~(PAGESIZE-1);  
+
+#ifdef _WIN32
+  {
+    DWORD old_prot;
+    VirtualProtect(addr, len, PAGE_EXECUTE_READWRITE, &old_prot);
+  }
 #else  /* _WIN32 */
 
-  mprotect((void *)p->program, p->num_program*sizeof(p->program[0]),
-	   PROT_EXEC | PROT_READ | PROT_WRITE);
+  if (mprotect(addr, len, PROT_EXEC | PROT_READ | PROT_WRITE) < 0) {
+#if 0
+    fprintf(stderr, "%p:%d: mprotect(%p, %lu, 0x%04x): errno: %d\n",
+	    (void *)p->program,
+	    (unsigned long)(p->num_program*sizeof(p->program[0])),
+	    addr, len,
+	    PROT_EXEC | PROT_READ | PROT_WRITE,
+	    errno);
+#endif /* 0 */
+  }
 
 #endif /* _WIN32 */
 
