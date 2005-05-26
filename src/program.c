@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.589 2005/05/25 17:09:41 grubba Exp $
+|| $Id: program.c,v 1.590 2005/05/26 17:04:38 mast Exp $
 */
 
 #include "global.h"
@@ -3151,9 +3151,11 @@ struct program *end_first_pass(int finish)
     }
 
 #ifdef PIKE_DEBUG
-    check_program(prog);
-    if(l_flag)
-      dump_program_desc(prog);
+    if (prog) {
+      check_program(prog);
+      if(l_flag)
+	dump_program_desc(prog);
+    }
 #endif
   }
 
