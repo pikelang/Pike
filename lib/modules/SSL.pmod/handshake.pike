@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-/* $Id: handshake.pike,v 1.56 2005/05/25 14:43:37 mast Exp $
+/* $Id: handshake.pike,v 1.57 2005/05/26 12:03:59 mast Exp $
  *
  */
 
@@ -299,7 +299,7 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
       struct->put_var_string(cert, 3);
     send_packet(handshake_packet(HANDSHAKE_certificate, struct->pop_data()));
   }
-  else if (context->cipher_spec->sign != .Cipher.anon_sign)
+  else if (session->cipher_spec->sign != .Cipher.anon_sign)
     // Otherwise the server will just silently send an invalid
     // ServerHello sequence.
     error ("Certificate(s) missing.\n");
