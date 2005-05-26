@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.77 2005/05/26 12:41:27 grubba Exp $
+|| $Id: jvm.c,v 1.78 2005/05/26 12:42:00 grubba Exp $
 */
 
 /*
@@ -2345,7 +2345,10 @@ static void f_natives_create(INT32 args)
   }
 
   if((env = jvm_procure_env(c->jvm))) {
-    if (n->jnms) free(n->jnms);
+    if (n->jnms) {
+      free(n->jnms);
+      n->jnms = NULL;
+    }
     n->jnms = (JNINativeMethod *)
       xalloc(arr->size * sizeof(JNINativeMethod));
 
