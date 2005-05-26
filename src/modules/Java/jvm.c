@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.69 2004/04/17 16:51:28 marcus Exp $
+|| $Id: jvm.c,v 1.70 2005/05/26 12:50:17 grubba Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.69 2004/04/17 16:51:28 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.70 2005/05/26 12:50:17 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -2227,7 +2227,7 @@ static void exit_natives_struct(struct object *o)
       if(n->cons[i].sig)
 	free_string(n->cons[i].sig);
     }
-    free(n->cons);
+    mexec_free(n->cons);
   }
 }
 
@@ -2284,11 +2284,21 @@ static void f_natives_create(INT32 args)
   }
 
   if((env = jvm_procure_env(c->jvm))) {
-
-    n->cons = (struct native_method_context *)
-      xalloc(arr->size * sizeof(struct native_method_context));
+    if (n->jnms) {
+      free(n->jnms);
+      n->jnms = NULL;
+    }
     n->jnms = (JNINativeMethod *)
       xalloc(arr->size * sizeof(JNINativeMethod));
+
+    if (n->cons) {
+      mexec_free(n->cons);
+    }
+
+    if (!(n->cons = (struct native_method_context *)
+	  mexec_alloc(arr->size * sizeof(struct native_method_context)))) {
+      Pike_error("Out of memory.\n");
+    }
 
     for(i=0; i<arr->size; i++) {
       struct array *nm;
