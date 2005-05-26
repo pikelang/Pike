@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.152 2004/09/27 21:37:13 mast Exp $
+|| $Id: pike_memory.c,v 1.153 2005/05/26 11:59:36 grubba Exp $
 */
 
 #include "global.h"
@@ -10,8 +10,24 @@
 #include "pike_error.h"
 #include "pike_macros.h"
 #include "gc.h"
+#include "fd_control.h"
+#include "dmalloc.h"
 
-RCSID("$Id: pike_memory.c,v 1.152 2004/09/27 21:37:13 mast Exp $");
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
+
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+
+#include <errno.h>
+
+RCSID("$Id: pike_memory.c,v 1.153 2005/05/26 11:59:36 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -334,6 +350,292 @@ char *debug_qalloc(size_t size)
   /* NOT_REACHED */
   return NULL;	/* Keep the compiler happy. */
 }
+
+/*
+ * mexec_*()
+ *
+ * Allocation of executable memory.
+ */
+
+#ifdef HAVE_MMAP
+#ifndef PAGESIZE
+#define PAGESIZE	8192
+#endif /* !PAGESIZE */
+static int dev_zero = -1;
+struct mexec_block {
+  struct mexec_block *next;
+  size_t size;
+};
+static struct mexec_hdr {
+  struct mexec_block *next;
+  size_t size;
+  char *bottom;
+  struct mexec_block *free;	/* Ordered according to reverse address. */
+} *mexec_hdrs = NULL;		/* Ordered according to reverse address. */
+
+static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
+{
+  struct mexec_hdr *wanted = NULL;
+  struct mexec_hdr *hdr;
+  if (!sz) return NULL;
+  if (dev_zero < 0) {
+    if ((dev_zero = open("/dev/zero", O_RDONLY)) < 0) {
+      fprintf(stderr, "Failed to open /dev/zero.\n");
+      return NULL;
+    }
+    set_close_on_exec(dev_zero, 1);
+  }
+  sz = (sz + sizeof(struct mexec_hdr) + (PAGESIZE-1)) & ~(PAGESIZE-1);
+
+  if (base) {
+    wanted = (struct mexec_hdr *)(((char *)base) + base->size);
+  }
+  
+  hdr = mmap(wanted, sz, PROT_EXEC|PROT_READ|PROT_WRITE,
+	     MAP_PRIVATE, dev_zero, 0);
+  if (hdr == MAP_FAILED) {
+    return NULL;
+  }
+  if (hdr == wanted) {
+    /* We succeeded in growing. */
+    base->size += sz;
+    return base;
+  }
+  /* Find insertion slot in hdr list. */
+  if ((wanted = mexec_hdrs)) {
+    while ((size_t)wanted->next > (size_t)hdr) {
+      wanted = (struct mexec_hdr *)wanted->next;
+    }
+    if (wanted->next) {
+      if ((((char *)wanted->next)+wanted->next->size) == (char *)hdr) {
+	/* We succeeded in growing some other hdr. */
+	wanted->next->size += sz;
+	return (struct mexec_hdr *)wanted->next;
+      }
+    }
+    hdr->next = wanted->next;
+    wanted->next = (struct mexec_block *)hdr;
+  } else {
+    hdr->next = NULL;
+    mexec_hdrs = hdr;
+  }
+  hdr->size = sz;
+  hdr->free = NULL;
+  hdr->bottom = (char *)(hdr+1);
+  return hdr;
+}
+
+/* Assumes sz has sufficient alignment and has space for a mexec_block. */
+static struct mexec_block *low_mexec_alloc(struct mexec_hdr *hdr, size_t sz)
+{
+  struct mexec_block **free;
+  struct mexec_block *res;
+    
+  if (!hdr) return NULL;
+  free = &hdr->free;
+  while (*free && ((*free)->size < sz)) {
+    free = &((*free)->next);
+  }
+  if ((res = *free)) {
+    if ((res->size + 2*sizeof(struct mexec_block)) >= sz) {
+      /* No space for a split. */
+      *free = res->next;
+    } else {
+      /* Split the block. */
+      struct mexec_block *next = (struct mexec_block *)(((char *)res) + sz);
+      next->next = res->next;
+      next->size = res->size - sz;
+      *free = next;
+    }
+  } else if ((hdr->bottom + sz) <= (((char *)hdr) + hdr->size)) {
+    res = (struct mexec_block *)hdr->bottom;
+    hdr->bottom += sz;
+  } else {
+    return NULL;
+  }
+  res->size = sz;
+  res->next = (struct mexec_block *)hdr;
+  return res;
+}
+
+void mexec_free(void *ptr)
+{
+  struct mexec_block *prev_prev = NULL;
+  struct mexec_block *prev = NULL;
+  struct mexec_block *next = NULL;
+  struct mexec_block *blk;
+  struct mexec_hdr *hdr;
+
+  /* fprintf(stderr, "mexec_free(%p)\n", ptr); */
+
+  if (!ptr) return;
+  blk = ((struct mexec_block *)ptr)-1;
+  hdr = (struct mexec_hdr *)blk->next;
+  next = hdr->free;
+  while ((size_t)next > (size_t)blk) {
+    prev_prev = prev;
+    prev = next;
+    next = next->next;
+  }
+
+  if (next && ((((char *)next) + next->size) == (char *)blk)) {
+    /* Join with successor. */
+    next->size += blk->size;
+    blk = next;
+  } else {
+    blk->next = next;
+  }
+
+  if (prev) {
+    if ((((char *)blk) + blk->size) == (char *)prev) {
+      /* Join with prev. */
+      blk->size += prev->size;
+      if (prev_prev) {
+	prev_prev->next = blk;
+      } else {
+	hdr->free = blk;
+      }
+    } else {
+      prev->next = blk;
+    }
+  } else {
+    if ((((char *)blk) + blk->size) == hdr->bottom) {
+      /* Join with bottom. */
+      hdr->bottom = (char *)blk;
+      hdr->free = blk->next;
+#if 0
+      if (hdr->bottom == (char *)(hdr + 1)) {
+	/* The entire mmapped block is free.
+	 * FIXME: Consider unmaopping it.
+	 */
+      }
+#endif /* 0 */
+    } else {
+      hdr->free = blk;
+    }
+  }
+}
+
+void *mexec_alloc(size_t sz)
+{
+  struct mexec_hdr *hdr;
+  struct mexec_block *res;
+
+  /* fprintf(stderr, "mexec_alloc(%lu)", sz); */
+
+  if (!sz) {
+    /* fprintf(stderr, " ==> NULL (no size)\n"); */
+    return NULL;
+  }
+  /* 32 byte alignment. */
+  sz = (sz + sizeof(struct mexec_block) + 0x1f) & ~0x1f;
+  hdr = mexec_hdrs;
+  while (hdr && !(res = low_mexec_alloc(hdr, sz))) {
+    hdr = (struct mexec_hdr *)hdr->next;
+  }
+  if (!hdr) {
+    hdr = grow_mexec_hdr(NULL, sz);
+    if (!hdr) {
+      /* fprintf(stderr, " ==> NULL (grow failed)\n"); */
+      return NULL;
+    }
+    res = low_mexec_alloc(hdr, sz);
+#ifdef PIKE_DEBUG
+    if (!res) {
+      Pike_fatal("mexec_alloc(%d) failed to allocate from grown hdr!\n",
+		 sz);
+    }
+#endif /* PIKE_DEBUG */
+  }
+  /* fprintf(stderr, " ==> %p\n", res + 1); */
+  return res + 1;
+}
+
+void *mexec_realloc(void *ptr, size_t sz)
+{
+  struct mexec_hdr *hdr;
+  struct mexec_block *old;
+  struct mexec_block *res = NULL;
+
+  /* fprintf(stderr, "mexec_realloc(%p, %lu)", ptr, sz); */
+
+  if (!sz) {
+    /* fprintf(stderr, " ==> NULL (no size)\n"); */
+    return NULL;
+  }
+  if (!ptr) {
+    /* fprintf(stderr, " ==> "); */
+    return mexec_alloc(sz);
+  }
+  old = ((struct mexec_block *)ptr)-1;
+  hdr = (struct mexec_hdr *)old->next;
+
+  sz = (sz + sizeof(struct mexec_block) + 0x1f) & ~0x1f;
+  if (old->size >= sz) {
+    /* fprintf(stderr, " ==> %p (space existed)\n", ptr); */
+    return ptr;			/* FIXME: Shrinking? */
+  }
+
+  if ((((char *)old) + old->size) == hdr->bottom) {
+    /* Attempt to grow the block. */
+    if (((((char *)old) + sz) <= (((char *)hdr) + hdr->size)) ||
+	((res = low_mexec_alloc(hdr, sz)) == old)) {
+      old->size = sz;
+      hdr->bottom = ((char *)old) + sz;
+      /* fprintf(stderr, " ==> %p (succeded in growing)\n", ptr); */
+      return ptr;
+    }
+  } else {
+    res = low_mexec_alloc(hdr, sz);
+  }
+  if (!res) {
+    hdr = mexec_hdrs;
+    while (hdr && !(res = low_mexec_alloc(hdr, sz))) {
+      hdr = hdr->next;
+    }
+    if (!hdr) {
+      hdr = grow_mexec_hdr(NULL, sz);
+      if (!hdr) {
+	/* fprintf(stderr, " ==> NULL (grow failed)\n"); */
+	return NULL;
+      }
+      res = low_mexec_alloc(hdr, sz);
+#ifdef PIKE_DEBUG
+      if (!res) {
+	Pike_fatal("mexec_alloc(%d) failed to allocate from grown hdr!\n",
+		   sz);
+      }
+#endif /* PIKE_DEBUG */
+    }
+  }
+
+  if (!res) {
+    /* fprintf(stderr, " ==> NULL (low_mexec_alloc failed)\n"); */
+    return NULL;
+  }
+
+  /* fprintf(stderr, " ==> %p\n", res + 1); */
+
+  memcpy(res+1, old+1, old->size - sizeof(old));
+  mexec_free(ptr);
+
+  return res + 1;
+}
+#else
+void *mexec_alloc(size_t sz)
+{
+  return malloc(sz);
+}
+void *mexec_realloc(void *ptr, size_t sz)
+{
+  if (ptr) return realloc(ptr, sz);
+  return malloc(sz);
+}
+void mexec_free(void *ptr)
+{
+  free(ptr);
+}
+#endif /* HAVE_MMAP */
 
 /* #define DMALLOC_TRACE */
 /* #define DMALLOC_TRACELOGSIZE	256*1024 */
