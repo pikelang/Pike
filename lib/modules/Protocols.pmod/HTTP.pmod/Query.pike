@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.76 2005/05/06 00:49:30 nilsson Exp $
+// $Id: Query.pike,v 1.77 2005/05/26 12:16:54 mast Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -181,8 +181,8 @@ static void connect(string server,int port,int blocking)
    werror("<- %O\n",request);
 #endif
 
-#if constant(SSL.Cipher.CipherAlgorithm)
    if(https) {
+#if constant(SSL.Cipher.CipherAlgorithm)
      // Create a context
      SSL.context context = SSL.context();
      // Allow only strong crypto
@@ -213,8 +213,10 @@ static void connect(string server,int port,int blocking)
        ssl->set_close_callback(close_callback);
      }
      con=ssl;
-   }
+#else
+     error ("HTTPS not supported (Nettle support is required).\n");
 #endif
+   }
 
    if (con->write(request) != sizeof (request)) {
      errno = con->errno();
@@ -228,11 +230,8 @@ static void connect(string server,int port,int blocking)
 
 static void async_close()
 {
-  if(!https)
-  {
-    con->set_blocking();
-    ponder_answer();
-  }
+  con->set_blocking();
+  ponder_answer();
 }
 
 static void async_read(mixed dummy,string s)
@@ -316,8 +315,8 @@ void async_got_host(string server,int port)
 		      {
 			if (success) {
 			  // Connect ok.
-#if constant(SSL.Cipher.CipherAlgorithm)
 			  if(https) {
+#if constant(SSL.Cipher.CipherAlgorithm)
 			    //Create a context
 			    SSL.context context = SSL.context();
 			    // Allow only strong crypto
@@ -333,9 +332,12 @@ void async_got_host(string server,int port)
 			    ssl = SSL.sslfile(con, context, 1,0);
 			    ssl->set_nonblocking(0,async_connected,async_failed);
 			    con=ssl;
+#else
+			    error ("HTTPS not supported "
+				   "(Nettle support is required).\n");
+#endif
 			  }
 			  else
-#endif
 			    async_connected();
 			} else {
 			  // Connect failed.
