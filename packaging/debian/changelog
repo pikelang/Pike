@@ -2,8 +2,9 @@ pike7.6 (7.6.27-1) unstable; urgency=low
 
   * The latest cvs snapshot
   * Closes: #310631: debian/rules version detection could be better
+  * Closes: #282939: fails to start in interactive mode
 
- -- Marek Habersack <grendel@debian.org>  Thu, 26 May 2005 02:10:36 +0200
+ -- Marek Habersack <grendel@debian.org>  Thu, 26 May 2005 02:12:22 +0200
 
 pike7.6 (7.6.26-1) unstable; urgency=low
 
