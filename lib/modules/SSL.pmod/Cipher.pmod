@@ -1,5 +1,5 @@
 //
-//  $Id: Cipher.pmod,v 1.14 2004/07/06 15:41:47 grubba Exp $
+//  $Id: Cipher.pmod,v 1.15 2005/05/26 12:07:02 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -477,4 +477,6 @@ array lookup(int suite,int version)
   return ({ ke_method, res });
 }
 
-#endif // constant(Crypto.Hash)
+#else // constant(Crypto.Hash)
+constant this_program_does_not_exist = 1;
+#endif
