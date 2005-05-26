@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.h,v 1.41 2003/05/30 00:09:24 mast Exp $
+|| $Id: pike_memory.h,v 1.42 2005/05/26 12:00:14 grubba Exp $
 */
 
 #ifndef MEMORY_H
@@ -168,6 +168,10 @@ PMOD_EXPORT void *debug_xmalloc(size_t s);
 PMOD_EXPORT void debug_xfree(void *mem);
 PMOD_EXPORT void *debug_xrealloc(void *m, size_t s);
 PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s);
+
+void *mexec_alloc(size_t sz);
+void *mexec_realloc(void *ptr, size_t sz);
+void mexec_free(void *ptr);
 
 #undef BLOCK_ALLOC
 
