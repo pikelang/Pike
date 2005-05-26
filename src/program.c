@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.566 2005/05/18 12:36:53 mast Exp $
+|| $Id: program.c,v 1.567 2005/05/26 12:00:44 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.566 2005/05/18 12:36:53 mast Exp $");
+RCSID("$Id: program.c,v 1.567 2005/05/26 12:00:44 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1195,6 +1195,38 @@ int get_small_number(char **q);
    (NUMTYPE)(sizeof(NUMTYPE)==1?254: (sizeof(NUMTYPE)==2?65534:4294967294U))
 #endif
 
+#ifdef PIKE_USE_MACHINE_CODE
+/* Special cases for low_add_to_program and add_to_program since
+ * many OSes require us to use mmap to allocate memory for our
+ * machine code.
+ */
+#define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)					\
+void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
+                                    TYPE ARG) {				\
+  NUMTYPE m = state->malloc_size_program->PIKE_CONCAT(num_,NAME);	\
+  CHECK_FOO(NUMTYPE,TYPE,NAME);						\
+  if(m == state->new_program->PIKE_CONCAT(num_,NAME)) {			\
+    TYPE *tmp;								\
+    if(m==MAXVARS(NUMTYPE)) {						\
+      yyerror("Too many " #NAME ".");					\
+      return;								\
+    }									\
+    m = MINIMUM(m*2+1,MAXVARS(NUMTYPE));				\
+    tmp = mexec_realloc((void *)state->new_program->NAME,		\
+			sizeof(TYPE) * m);				\
+    if(!tmp) Pike_fatal("Out of memory.\n");				\
+    PIKE_CONCAT(RELOCATE_,NAME)(state->new_program, tmp);		\
+    state->malloc_size_program->PIKE_CONCAT(num_,NAME)=m;		\
+    state->new_program->NAME=tmp;					\
+  }									\
+  state->new_program->							\
+    NAME[state->new_program->PIKE_CONCAT(num_,NAME)++]=(ARG);		\
+}									\
+void PIKE_CONCAT(add_to_,NAME) (ARGTYPE ARG) {				\
+  PIKE_CONCAT(low_add_to_,NAME) ( Pike_compiler, ARG );			\
+}
+#endif /* PIKE_USE_MACHINE_CODE */
+
 /* Funny guys use the uppermost value for nonexistant variables and
    the like. Hence -2 and not -1. Y2K. */
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)					\
@@ -1707,6 +1739,11 @@ void optimize_program(struct program *p)
   /* Already done (shouldn't happen, but who knows?) */
   if(p->flags & PROGRAM_OPTIMIZED) return;
 
+#ifdef PIKE_USE_MACHINE_CODE
+  /* Don't move our mexec-allocated memory into the malloc... */
+#define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)
+#endif /* PIKE_USE_MACHINE_CODE */ 
+
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
   size=DO_ALIGN(size, ALIGNOF(TYPE)); \
   size+=p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0]);
@@ -1720,6 +1757,11 @@ void optimize_program(struct program *p)
   }
 
   size=0;
+
+#ifdef PIKE_USE_MACHINE_CODE
+  /* As above. */
+#define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)
+#endif /* PIKE_USE_MACHINE_CODE */ 
 
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
   size=DO_ALIGN(size, ALIGNOF(TYPE)); \
@@ -2272,6 +2314,17 @@ void low_start_new_program(struct program *p,
     struct inherit i;
 
 #define START_SIZE 64
+#ifdef PIKE_USE_MACHINE_CODE
+#define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)	\
+    if (Pike_compiler->new_program->NAME) {				\
+      mexec_free(Pike_compiler->new_program->NAME);			\
+      Pike_compiler->new_program->PIKE_CONCAT(num_,NAME) = 0;		\
+    }									\
+    Pike_compiler->malloc_size_program->PIKE_CONCAT(num_,NAME) =	\
+      START_SIZE;							\
+    Pike_compiler->new_program->NAME =					\
+      (TYPE *)mexec_alloc(sizeof(TYPE) * START_SIZE);
+#endif /* PIKE_USE_MACHINE_CODE */ 
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)					\
     if (Pike_compiler->new_program->NAME) {				\
       free (Pike_compiler->new_program->NAME);				\
@@ -2400,20 +2453,28 @@ static void exit_program_struct(struct program *p)
 
   DOUBLEUNLINK(first_program, p);
 
+#if defined(PIKE_USE_MACHINE_CODE) && defined(VALGRIND_DISCARD_TRANSLATIONS)
+  if(p->program) {
+    VALGRIND_DISCARD_TRANSLATIONS(p->program,
+				  p->num_program*sizeof(p->program[0]));
+  }
+#endif /* PIKE_USE_MACHINE_CODE && VALGRIND_DISCARD_TRANSLATIONS */
   if(p->flags & PROGRAM_OPTIMIZED)
   {
     if(p->program) {
 #ifdef PIKE_USE_MACHINE_CODE
-#ifdef VALGRIND_DISCARD_TRANSLATIONS
-      VALGRIND_DISCARD_TRANSLATIONS(p->program,
-				    p->num_program*sizeof(p->program[0]));
-#endif /* VALGRIND_DISCARD_TRANSLATIONS */
-#endif /* PIKE_USE_MACHINE_CODE */
+      mexec_free(p->program);
+#else /* PIKE_USE_MACHINE_CODE */
       dmfree(p->program);
+#endif /* PIKE_USE_MACHINE_CODE */
     }
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) p->NAME=0;
 #include "program_areas.h"
   }else{
+#ifdef PIKE_USE_MACHINE_CODE
+#define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)				\
+    if(p->NAME) { mexec_free((char *)p->NAME); p->NAME=0; }
+#endif /* PIKE_USE_MACHINE_CODE */
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) \
     if(p->NAME) { dmfree((char *)p->NAME); p->NAME=0; }
 #include "program_areas.h"
