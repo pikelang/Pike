@@ -122,7 +122,7 @@ if test "x$with_java" = xyes; then
     if test "x$JAVA_HOME" = x; then
       pike_cv_java_java_home=no
       java_home_guess=`"$srcdir/find_java_home.sh"`
-      for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/java/jdk*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* /usr/local/j2sdk*/jre /usr/local/j2re* "$java_home_guess" "$pike_java_user_lib_directory"/..; do
+      for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/java/jdk*/jre /usr/java/j2sdk*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* /usr/local/j2sdk*/jre /usr/local/j2re* "$java_home_guess" "$pike_java_user_lib_directory"/..; do
         if test -d $tmp_java_home/.; then
           if "$LS" "$tmp_java_home/lib/$pike_cv_java_arch/$pike_cv_java_threads_type"/libjvm* >/dev/null 2>&1 || \
 	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/libjvm* >/dev/null 2>&1 || \
@@ -191,7 +191,7 @@ if test "x$with_java" = xyes; then
   AC_MSG_CHECKING(for the Java include directory)
   AC_CACHE_VAL(pike_cv_java_include_dir, [
     pike_cv_java_include_dir=no
-    for tmp_java_incdir in /usr/java* /usr/local/java* /usr/local/jdk* /usr/local/jre* /usr/local/j2sdk* "$pike_cv_java_java_home"/../.. "$pike_cv_java_java_home"/.. "$pike_cv_java_java_home" "$pike_java_user_include_directory"; do
+    for tmp_java_incdir in /usr/java* /usr/local/java* /usr/local/jdk* /usr/local/jre* /usr/java/j2sdk* /usr/local/j2sdk* "$pike_cv_java_java_home"/../.. "$pike_cv_java_java_home"/.. "$pike_cv_java_java_home" "$pike_java_user_include_directory"; do
       if test -d $tmp_java_incdir/. && "$LS" "$tmp_java_incdir/include/jni.h" >/dev/null 2>&1 ; then
 	 pike_cv_java_include_dir="$tmp_java_incdir/include"
       else
