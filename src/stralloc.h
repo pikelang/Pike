@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.92 2005/04/08 16:57:35 grubba Exp $
+|| $Id: stralloc.h,v 1.93 2005/05/27 18:33:20 mast Exp $
 */
 
 #ifndef STRALLOC_H
@@ -152,6 +152,22 @@ extern struct shared_string_location *all_shared_string_locations;
   var = str_.s;						\
 }while(0)
 
+#define MAKE_CONST_STRING_CODE(var, code) do {				\
+    static struct shared_string_location str_;				\
+    if (!str_.s) {							\
+      {code;}								\
+      str_.s = var;							\
+      DO_IF_DEBUG (							\
+	if (!str_.s)							\
+	  Pike_fatal ("Code at " __FILE__ ":" DEFINETOSTR (__LINE__)	\
+		      " failed to produce a string in " #var ".\n");	\
+      );								\
+      str_.next=all_shared_string_locations;				\
+      all_shared_string_locations=&str_;				\
+    }									\
+    else var = str_.s;							\
+  } while (0)
+
 #else
 
 #define MAKE_CONST_STRING(var, text)						\
@@ -160,10 +176,29 @@ extern struct shared_string_location *all_shared_string_locations;
     var = str_;									\
  }while(0)
 
+#define MAKE_CONST_STRING_CODE(var, code) do {				\
+    static struct pike_string *str_;					\
+    if (!str_) {							\
+      {code;}								\
+      str_ = var;							\
+      DO_IF_DEBUG (							\
+	if (!str_)							\
+	  Pike_fatal ("Code at " __FILE__ ":" DEFINETOSTR (__LINE__)	\
+		      " failed to produce a string in " #var ".\n");	\
+      );								\
+    }									\
+    else var = str_;							\
+  } while (0)
+
 #endif
 
 #define REF_MAKE_CONST_STRING(var, text) do {				\
     MAKE_CONST_STRING(var, text);					\
+    reference_shared_string(var);					\
+  } while (0)
+
+#define REF_MAKE_CONST_STRING_CODE(var, code) do {			\
+    MAKE_CONST_STRING_CODE(var, code);					\
     reference_shared_string(var);					\
   } while (0)
 

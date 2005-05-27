@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.160 2005/05/05 20:42:56 nilsson Exp $
+|| $Id: interpret.h,v 1.161 2005/05/27 18:33:20 mast Exp $
 */
 
 #ifndef INTERPRET_H
@@ -353,6 +353,12 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     _sp_->subtype=0;							\
     REF_MAKE_CONST_STRING(_sp_->u.string,T);				\
     _sp_->type=PIKE_T_STRING;						\
+  }while(0)
+
+#define push_constant_string_code(STR, CODE) do{			\
+    struct pike_string *STR;						\
+    REF_MAKE_CONST_STRING_CODE (STR, CODE);				\
+    push_string (STR);							\
   }while(0)
 
 #define push_function(OBJ, FUN) do {					\
