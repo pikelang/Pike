@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: version.c,v 1.142 2004/09/18 20:50:56 nilsson Exp $
+|| $Id: version.c,v 1.143 2005/05/27 18:34:22 mast Exp $
 */
 
 #include "global.h"
@@ -32,4 +32,15 @@ void f_version(INT32 args)
 		      DEFINETOSTR (PIKE_MINOR_VERSION)
 		      " release "
 		      DEFINETOSTR (PIKE_BUILD_VERSION));
+}
+
+void push_compact_version()
+{
+  push_constant_string_code (str, {
+      str = begin_wide_shared_string (3, 2);
+      STR2(str)[0] = PIKE_MAJOR_VERSION;
+      STR2(str)[1] = PIKE_MINOR_VERSION;
+      STR2(str)[2] = PIKE_BUILD_VERSION;
+      str = end_shared_string (str);
+    });
 }
