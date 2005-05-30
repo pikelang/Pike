@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.163 2005/05/30 13:22:55 grubba Exp $
+|| $Id: pike_memory.c,v 1.164 2005/05/30 15:47:22 grubba Exp $
 */
 
 #include "global.h"
@@ -371,11 +371,19 @@ static struct mexec_hdr {
   struct mexec_block *free;	/* Ordered according to reverse address. */
 } *mexec_hdrs = NULL;		/* Ordered according to reverse address. */
 
+#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+#define MAP_ANONYMOUS	MAP_ANON
+#endif /* !MAP_ANONYMOUS && MAP_ANON */
+
 static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
 {
   struct mexec_hdr *wanted = NULL;
   struct mexec_hdr *hdr;
   if (!sz) return NULL;
+#ifndef MAP_ANONYMOUS
+  /* Neither MAP_ANONYMOUS nor MAP_ANON.
+   * Map /dev/zero.
+   */
   if (dev_zero < 0) {
     if ((dev_zero = open("/dev/zero", O_RDONLY)) < 0) {
       fprintf(stderr, "Failed to open /dev/zero.\n");
@@ -384,6 +392,8 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
     dmalloc_accept_leak_fd(dev_zero);
     set_close_on_exec(dev_zero, 1);
   }
+#define MAP_ANONYMOUS	0
+#endif /* !MAP_ANONYMOUS */
   sz = (sz + sizeof(struct mexec_hdr) + (PAGESIZE-1)) & ~(PAGESIZE-1);
 
   if (base) {
@@ -391,7 +401,7 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
   }
   
   hdr = mmap(wanted, sz, PROT_EXEC|PROT_READ|PROT_WRITE,
-	     MAP_PRIVATE, dev_zero, 0);
+	     MAP_PRIVATE|MAP_ANONYMOUS, dev_zero, 0);
   if (hdr == MAP_FAILED) {
     fprintf(stderr, "mmap failed, errno=%d.\n", errno);
     return NULL;
