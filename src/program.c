@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.495 2005/05/26 12:00:56 grubba Exp $
+|| $Id: program.c,v 1.496 2005/05/30 12:43:04 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.495 2005/05/26 12:00:56 grubba Exp $");
+RCSID("$Id: program.c,v 1.496 2005/05/30 12:43:04 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1114,7 +1114,7 @@ struct node_s *resolve_identifier(struct pike_string *ident)
 	}
 	pop_stack();
       }
-      else
+      else {
 	if(Pike_compiler->compiler_pass==2) {
 	  if (throw_value.type == T_STRING && !throw_value.u.string->size_shift) {
 	    yyerror(throw_value.u.string->str);
@@ -1137,6 +1137,16 @@ struct node_s *resolve_identifier(struct pike_string *ident)
 	    free_svalue(&thrown);
 	  }
 	}
+	else {
+	  struct svalue thrown = throw_value;
+	  throw_value.type = T_INT;
+#ifdef PIKE_DEBUG
+	  yywarning ("Ignoring resolv() exception in pass 1:");
+	  yy_describe_exception (&thrown, 1);
+#endif
+	  free_svalue (&thrown);
+	}
+      }
     }
     END_CYCLIC();
     if(ret) return ret;
