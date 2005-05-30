@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.590 2005/05/26 17:04:38 mast Exp $
+|| $Id: program.c,v 1.591 2005/05/30 12:36:08 mast Exp $
 */
 
 #include "global.h"
@@ -1563,7 +1563,7 @@ struct node_s *resolve_identifier(struct pike_string *ident)
 	}
 	pop_stack();
       }
-      else
+      else {
 	if(Pike_compiler->compiler_pass==2) {
 	  if (throw_value.type == T_STRING) {
 	    my_yyerror("%S", throw_value.u.string);
@@ -1574,6 +1574,29 @@ struct node_s *resolve_identifier(struct pike_string *ident)
 	    handle_compile_exception ("Error resolving %S.", ident);
 	  }
 	}
+	else {
+	  /* FIXME: Error goes to /dev/null. Now we get a warning at
+	   * least in rtldebug mode, but this borken, borken, boRKen. :P */
+	  struct svalue thrown;
+	  move_svalue (&thrown, &throw_value);
+	  throw_value.type = T_INT;
+#ifdef PIKE_DEBUG
+	  {
+	    struct pike_string *msg = format_exception_for_error_msg (&thrown);
+	    if (msg) {
+	      yywarning ("Ignoring resolv() exception in pass %d:",
+			 Pike_compiler->compiler_pass);
+	      yywarning ("%S", msg);
+	      free_string (msg);
+	    }
+	    else
+	      yywarning ("Ignoring resolv() exception in pass %d",
+			 Pike_compiler->compiler_pass);
+	  }
+#endif
+	  free_svalue (&thrown);
+	}
+      }
     }
     END_CYCLIC();
 
