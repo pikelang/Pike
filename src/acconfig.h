@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.146 2005/02/04 10:47:18 grubba Exp $
+|| $Id: acconfig.h,v 1.147 2005/05/30 13:22:55 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -285,6 +285,9 @@
 
 /* Define if you have a working, 8-bit-clean memcmp */
 #undef HAVE_MEMCMP
+
+/* Define if it is possible to allocate PROT_EXEC memory with mmap */
+#undef MEXEC_USES_MMAP
 
 /* Define if you have gethostname */
 #undef HAVE_GETHOSTNAME

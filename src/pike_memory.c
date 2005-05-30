@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.162 2005/05/26 09:58:54 grubba Exp $
+|| $Id: pike_memory.c,v 1.163 2005/05/30 13:22:55 grubba Exp $
 */
 
 #include "global.h"
@@ -355,7 +355,7 @@ char *debug_qalloc(size_t size)
  * Allocation of executable memory.
  */
 
-#ifdef HAVE_MMAP
+#if defined(HAVE_MMAP) && defined(MEXEC_USES_MMAP)
 #ifndef PAGESIZE
 #define PAGESIZE	8192
 #endif /* !PAGESIZE */
@@ -393,6 +393,7 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
   hdr = mmap(wanted, sz, PROT_EXEC|PROT_READ|PROT_WRITE,
 	     MAP_PRIVATE, dev_zero, 0);
   if (hdr == MAP_FAILED) {
+    fprintf(stderr, "mmap failed, errno=%d.\n", errno);
     return NULL;
   }
   if (hdr == wanted) {
@@ -634,7 +635,7 @@ void mexec_free(void *ptr)
 {
   free(ptr);
 }
-#endif /* HAVE_MMAP */
+#endif /* HAVE_MMAP && MEXEC_USES_MMAP */
 
 /* #define DMALLOC_TRACE */
 /* #define DMALLOC_TRACELOGSIZE	256*1024 */
