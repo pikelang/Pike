@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.682 2004/11/09 13:24:24 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.683 2005/05/30 13:23:52 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3064,6 +3064,96 @@ LIBOBJS="${OLD_LIBOBJS}"
 ########################################################################
 
 AC_FUNC_MMAP
+
+if test "x$ac_cv_func_mmap" = "xyes"; then
+  # Mac OS X has an mmap that fails with ENODEV if we try
+  # to use it for mexec_alloc et al.
+  AC_MSG_CHECKING([if mmap can be used to allocate PROT_EXEC])
+  AC_CACHE_VAL(pike_cv_mmap_PROT_EXEC, [
+    AC_TRY_RUN([
+#include <stdio.h>
+
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
+
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+
+#include <errno.h>
+
+      int main(int argc, char **argv)
+      {
+        void *ptr;
+	int dev_zero = open("/dev/zero", O_RDONLY);
+	if (dev_zero < 0) {
+	  fprintf(stderr, "open(\"/dev/zero\", O_RDONLY) failed. errno: %d\n",
+		  errno);
+	  return 1;
+	}
+	if ((ptr = mmap(NULL, 8192, PROT_EXEC|PROT_READ|PROT_WRITE,
+		        MAP_PRIVATE, dev_zero, 0)) == MAP_FAILED) {
+	  fprintf(stderr, "mmap(NULL, 8192, PROT_EXEC|PROT_READ|PROT_WRITE,\n"
+			  "MAP_PRIVATE, %d, 0) failed. errno: %d\n",
+		  dev_zero,
+		  errno);
+	  return 2;
+	}
+	return 0;
+      }
+    ], [
+      pike_cv_mmap_PROT_EXEC="yes"
+    ], [
+      pike_cv_mmap_PROT_EXEC="no"
+    ], [
+      AC_TRY_COMPILE([
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
+
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+
+#include <errno.h>
+      ], [
+        void *ptr;
+	int dev_zero = open("/dev/zero", O_RDONLY);
+	if (dev_zero < 0) return 1;
+	if ((ptr = mmap(NULL, 8192, PROT_EXEC|PROT_READ|PROT_WRITE,
+		        MAP_PRIVATE, dev_zero, 0)) == MAP_FAILED) {
+	  return 2;
+	}
+	return 0;
+      ], [
+        pike_cv_mmap_PROT_EXEC="yes"
+      ], [
+        pike_cv_mmap_PROT_EXEC="no"
+      ])
+    ])
+  ])
+  AC_MSG_RESULT($pike_cv_mmap_PROT_EXEC)
+  if test "x$pike_cv_mmap_PROT_EXEC" = "xyes"; then
+    AC_DEFINE(MEXEC_USES_MMAP)
+  fi
+fi
 
 AC_CHECK_FUNCS( \
  _alldiv \

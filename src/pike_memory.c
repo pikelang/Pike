@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.140 2005/05/26 12:00:14 grubba Exp $
+|| $Id: pike_memory.c,v 1.141 2005/05/30 13:23:53 grubba Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 
 #include <errno.h>
 
-RCSID("$Id: pike_memory.c,v 1.140 2005/05/26 12:00:14 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.141 2005/05/30 13:23:53 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -656,7 +656,7 @@ char *debug_qalloc(size_t size)
  * Allocation of executable memory.
  */
 
-#ifdef HAVE_MMAP
+#if defined(HAVE_MMAP) && defined(MEXEC_USES_MMAP)
 #ifndef PAGESIZE
 #define PAGESIZE	8192
 #endif /* !PAGESIZE */
@@ -934,7 +934,7 @@ void mexec_free(void *ptr)
 {
   free(ptr);
 }
-#endif /* HAVE_MMAP */
+#endif /* HAVE_MMAP && MEXEC_USES_MMAP */
 
 /* #define DMALLOC_TRACE */
 /* #define DMALLOC_TRACELOGSIZE	256*1024 */
