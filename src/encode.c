@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.214 2005/05/18 12:36:53 mast Exp $
+|| $Id: encode.c,v 1.215 2005/05/31 15:33:38 mast Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.214 2005/05/18 12:36:53 mast Exp $");
+RCSID("$Id: encode.c,v 1.215 2005/05/31 15:33:38 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1818,7 +1818,6 @@ struct decode_data
 #ifdef ENCODE_DEBUG
   int debug, depth;
 #endif
-  struct Supporter supporter;
 };
 
 static void decode_value2(struct decode_data *data);
@@ -2766,9 +2765,6 @@ static void decode_value2(struct decode_data *data)
 	  
 	  if(data->pass == 1)
 	  {
-	    if(! data->supporter.prog)
-	      data->supporter.prog = p;
-
 	    debug_malloc_touch(p);
 	    ref_push_program(p);
 	    apply(data->codec, "__register_new_program", 1);
@@ -3170,8 +3166,7 @@ static void decode_value2(struct decode_data *data)
 
 	  ref_push_program(p);
 
-	  if(!(p->flags & PROGRAM_FINISHED) &&
-	     !data->supporter.depends_on)
+	  if(!(p->flags & PROGRAM_FINISHED))
 	  {
 	    /* Logic for the PROGRAM_FINISHED flag:
 	     * The purpose of this code is to make sure that the PROGRAM_FINISHED
@@ -4146,8 +4141,6 @@ static struct decode_data *current_decode = NULL;
 
 static void free_decode_data(struct decode_data *data)
 {
-  int delay;
-
   debug_malloc_touch(data);
 
   if (current_decode == data) {
@@ -4165,17 +4158,6 @@ static void free_decode_data(struct decode_data *data)
       Pike_fatal("Decode data fell off the stack!\n");
     }
 #endif /* PIKE_DEBUG */
-  }
-
-  
-  delay=unlink_current_supporter(&data->supporter);
-  call_dependants(& data->supporter, 1);
-
-  if(delay)
-  {
-    debug_malloc_touch(data);
-    /* We have been delayed */
-    return;
   }
 
   free_mapping(data->decoded);
@@ -4235,14 +4217,6 @@ static void low_do_decode (struct decode_data *data)
 
   UNSET_ONERROR(err);
   free_decode_data(data);
-}
-
-/* Run pass2 */
-int re_decode(struct decode_data *data, int ignored)
-{
-  data->next = current_decode;
-  low_do_decode (data);
-  return 1;
 }
 
 static INT32 my_decode(struct pike_string *tmp,
@@ -4312,10 +4286,6 @@ static INT32 my_decode(struct pike_string *tmp,
   }
 
   data->decoded=allocate_mapping(128);
-
-  init_supporter(& data->supporter,
-		 (supporter_callback *) re_decode,
-		 (void *)data);
 
   low_do_decode (data);
 
