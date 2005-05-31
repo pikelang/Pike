@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.230 2005/05/31 12:00:07 grubba Exp $
+|| $Id: encode.c,v 1.231 2005/05/31 16:22:59 mast Exp $
 */
 
 #include "global.h"
@@ -1829,6 +1829,7 @@ struct unfinished_obj_link
 
 struct decode_data
 {
+  struct pike_string *data_str;
   unsigned char *data;
   ptrdiff_t len;
   ptrdiff_t ptr;
@@ -1843,11 +1844,16 @@ struct decode_data
   struct decode_data *next;
 #ifdef PIKE_THREADS
   struct thread_state *thread_state;
+  struct object *thread_obj;
 #endif
 #ifdef ENCODE_DEBUG
   int debug, depth;
 #endif
+#if TWO_PASS_DECODE_WORKS
+  /* The delay stuff can trig a second pass through the decoder,
+   * but it doesn't seem to really handle that. /mast */
   struct Supporter supporter;
+#endif
 };
 
 static void decode_value2(struct decode_data *data);
@@ -2816,8 +2822,10 @@ static void decode_value2(struct decode_data *data)
 	  
 	  if(data->pass == 1)
 	  {
+#if TWO_PASS_DECODE_WORKS
 	    if(! data->supporter.prog)
 	      data->supporter.prog = p;
+#endif
 
 	    debug_malloc_touch(p);
 	    ref_push_program(p);
@@ -3234,8 +3242,11 @@ static void decode_value2(struct decode_data *data)
 
 	  ref_push_program(p);
 
-	  if(!(p->flags & PROGRAM_FINISHED) &&
-	     !data->supporter.depends_on)
+	  if(!(p->flags & PROGRAM_FINISHED)
+#if TWO_PASS_DECODE_WORKS
+	     && !data->supporter.depends_on
+#endif
+	    )
 	  {
 	    /* Logic for the PROGRAM_FINISHED flag:
 	     * The purpose of this code is to make sure that the PROGRAM_FINISHED
@@ -3483,6 +3494,10 @@ static void decode_value2(struct decode_data *data)
 	  compilation_depth = -1;
 	  low_start_new_program(p, 1, NULL, 0, NULL);
 	  p = Pike_compiler->new_program;
+#if TWO_PASS_DECODE_WORKS
+	  if(! data->supporter.prog)
+	    data->supporter.prog = p;
+#endif
 
 	  p->flags = p_flags;
 
@@ -4230,9 +4245,13 @@ static int init_placeholder(struct object *placeholder)
 
 static struct decode_data *current_decode = NULL;
 
-static void free_decode_data(struct decode_data *data)
+static void free_decode_data (struct decode_data *data, int delay,
+			      int free_after_error)
 {
-  int delay;
+#ifdef PIKE_DEBUG
+  int e;
+  struct keypair *k;
+#endif
 
   debug_malloc_touch(data);
 
@@ -4246,16 +4265,7 @@ static void free_decode_data(struct decode_data *data)
 	break;
       }
     }
-#ifdef PIKE_DEBUG
-    if (!d) {
-      Pike_fatal("Decode data fell off the stack!\n");
-    }
-#endif /* PIKE_DEBUG */
   }
-
-  
-  delay=unlink_current_supporter(&data->supporter);
-  call_dependants(& data->supporter, 1);
 
   if(delay)
   {
@@ -4264,14 +4274,26 @@ static void free_decode_data(struct decode_data *data)
     return;
   }
 
-  free_mapping(data->decoded);
-
 #ifdef PIKE_DEBUG
-  if(data->unfinished_programs)
-    Pike_fatal("We have unfinished programs left in decode()!\n");
-  if(data->unfinished_objects)
-    Pike_fatal("We have unfinished objects left in decode()!\n");
+  if (!free_after_error) {
+    NEW_MAPPING_LOOP (data->decoded->data) {
+      if (k->val.type == T_PROGRAM &&
+	  !(k->val.u.program->flags & PROGRAM_FINISHED)) {
+	decode_error (NULL, &k->val,
+		      "Got unfinished program <%"PRINTPIKEINT"d> "
+		      "after decode: ", k->ind.u.integer);
+      }
+    }
+    if(data->unfinished_programs)
+      Pike_fatal("We have unfinished programs left in decode()!\n");
+    if(data->unfinished_objects)
+      Pike_fatal("We have unfinished objects left in decode()!\n");
+  }
 #endif
+
+  free_string (data->data_str);
+  free_object (data->codec);
+  free_mapping(data->decoded);
 
   while(data->unfinished_programs)
   {
@@ -4286,8 +4308,10 @@ static void free_decode_data(struct decode_data *data)
     data->unfinished_objects=tmp->next;
     free((char *)tmp);
   }
+
 #ifdef PIKE_THREADS
   data->thread_state = NULL;
+  free_object (data->thread_obj);
 #endif
 
   free( (char *) data);
@@ -4295,7 +4319,9 @@ static void free_decode_data(struct decode_data *data)
 
 static void low_do_decode (struct decode_data *data)
 {
-  decode_value2(current_decode = data);
+  current_decode = data;
+
+  decode_value2(data);
 
   while (data->ptr < data->len) {
     decode_value2 (data);
@@ -4303,15 +4329,45 @@ static void low_do_decode (struct decode_data *data)
   }
 }
 
+#if TWO_PASS_DECODE_WORKS
 /* Run pass2 */
 int re_decode(struct decode_data *data, int ignored)
 {
-  ONERROR err;
-  SET_ONERROR(err, free_decode_data, data);
-  data->next = current_decode;
-  low_do_decode (data);
-  CALL_AND_UNSET_ONERROR(err);
-  return 1;
+  JMP_BUF recovery;
+  struct svalue orig_thrown;
+  move_svalue (&orig_thrown, &throw_value);
+  throw_value.type = T_INT;
+
+  if (SETJMP (recovery)) {
+    UNSETJMP (recovery);
+    call_handle_error();
+    move_svalue (&throw_value, &orig_thrown);
+    free_decode_data (data, 0, 1);
+    return 0;
+  }
+
+  else {
+    data->next = current_decode;
+    low_do_decode (data);
+    UNSETJMP (recovery);
+    move_svalue (&throw_value, &orig_thrown);
+    free_decode_data (data, 0, 0);
+    return 1;
+  }
+}
+#endif
+
+static void error_free_decode_data (struct decode_data *data)
+{
+  int delay;
+  debug_malloc_touch (data);
+#if TWO_PASS_DECODE_WORKS
+  delay=unlink_current_supporter(&data->supporter);
+  call_dependants(& data->supporter, 1);
+#else
+  delay = 0;
+#endif
+  free_decode_data (data, delay, 1);
 }
 
 static INT32 my_decode(struct pike_string *tmp,
@@ -4322,8 +4378,6 @@ static INT32 my_decode(struct pike_string *tmp,
 		      )
 {
   struct decode_data *data;
-  int e;
-  struct keypair *k;
   ONERROR err;
 
   /* Attempt to avoid infinite recursion on circular structures. */
@@ -4354,6 +4408,7 @@ static INT32 my_decode(struct pike_string *tmp,
   data->counter.type=T_INT;
   data->counter.subtype=NUMBER_NUMBER;
   data->counter.u.integer=COUNTER_START;
+  data->data_str = tmp;
   data->data=(unsigned char *)tmp->str;
   data->len=tmp->len;
   data->ptr=0;
@@ -4366,6 +4421,7 @@ static INT32 my_decode(struct pike_string *tmp,
   data->next = current_decode;
 #ifdef PIKE_THREADS
   data->thread_state = Pike_interpreter.thread_state;
+  data->thread_obj = Pike_interpreter.thread_state->thread_obj;
 #endif
 #ifdef ENCODE_DEBUG
   data->debug = debug;
@@ -4385,27 +4441,32 @@ static INT32 my_decode(struct pike_string *tmp,
 
   data->decoded=allocate_mapping(128);
 
-  SET_ONERROR(err, free_decode_data, data);
+  add_ref (data->data_str);
+  add_ref (data->codec);
+  add_ref (data->thread_obj);
+  SET_ONERROR(err, error_free_decode_data, data);
 
+#if TWO_PASS_DECODE_WORKS
   init_supporter(& data->supporter,
 		 (supporter_callback *) re_decode,
 		 (void *)data);
+#endif
 
   low_do_decode (data);
 
-#ifdef PIKE_DEBUG
-  NEW_MAPPING_LOOP (data->decoded->data) {
-    if (k->val.type == T_PROGRAM &&
-	!(k->val.u.program->flags & PROGRAM_FINISHED)) {
-      decode_error (Pike_sp-1, &k->val,
-		    "Got unfinished program <k:%"PRINTPIKEINT"d> "
-		    "after decode: ",
-		    k->ind.u.integer);
-    }
-  }
-#endif
+  UNSET_ONERROR(err);
 
-  CALL_AND_UNSET_ONERROR(err);
+  {
+    int delay;
+#if TWO_PASS_DECODE_WORKS
+    delay=unlink_current_supporter(&data->supporter);
+    call_dependants(& data->supporter, 1);
+#else
+    delay = 0;
+#endif
+    free_decode_data (data, delay, 0);
+  }
+
   return 1;
 }
 
