@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.166 2005/05/31 12:04:37 grubba Exp $
+|| $Id: pike_memory.c,v 1.167 2005/05/31 16:35:40 grubba Exp $
 */
 
 #include "global.h"
@@ -361,8 +361,8 @@ char *debug_qalloc(size_t size)
 #endif /* !PAGESIZE */
 #if 0
 #define MEXEC_MAGIC	0xdeadfeedf00dfaddLL
-static int dev_zero = -1;
 #endif /* 0 */
+static int dev_zero = -1;
 struct mexec_block {
   struct mexec_block *next;
   size_t size;
