@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.164 2005/05/30 15:47:22 grubba Exp $
+|| $Id: pike_memory.c,v 1.165 2005/05/31 09:51:13 grubba Exp $
 */
 
 #include "global.h"
@@ -365,7 +365,7 @@ struct mexec_block {
   size_t size;
 };
 static struct mexec_hdr {
-  struct mexec_block *next;
+  struct mexec_hdr *next;
   size_t size;
   char *bottom;
   struct mexec_block *free;	/* Ordered according to reverse address. */
@@ -414,17 +414,17 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
   /* Find insertion slot in hdr list. */
   if ((wanted = mexec_hdrs)) {
     while ((size_t)wanted->next > (size_t)hdr) {
-      wanted = (struct mexec_hdr *)wanted->next;
+      wanted = wanted->next;
     }
     if (wanted->next) {
       if ((((char *)wanted->next)+wanted->next->size) == (char *)hdr) {
 	/* We succeeded in growing some other hdr. */
 	wanted->next->size += sz;
-	return (struct mexec_hdr *)wanted->next;
+	return wanted->next;
       }
     }
     hdr->next = wanted->next;
-    wanted->next = (struct mexec_block *)hdr;
+    wanted->next = hdr;
   } else {
     hdr->next = NULL;
     mexec_hdrs = hdr;
@@ -541,7 +541,7 @@ void *mexec_alloc(size_t sz)
   sz = (sz + sizeof(struct mexec_block) + 0x1f) & ~0x1f;
   hdr = mexec_hdrs;
   while (hdr && !(res = low_mexec_alloc(hdr, sz))) {
-    hdr = (struct mexec_hdr *)hdr->next;
+    hdr = hdr->next;
   }
   if (!hdr) {
     hdr = grow_mexec_hdr(NULL, sz);
@@ -564,6 +564,7 @@ void *mexec_alloc(size_t sz)
 void *mexec_realloc(void *ptr, size_t sz)
 {
   struct mexec_hdr *hdr;
+  struct mexec_hdr *old_hdr = NULL;
   struct mexec_block *old;
   struct mexec_block *res = NULL;
 
@@ -595,6 +596,8 @@ void *mexec_realloc(void *ptr, size_t sz)
       /* fprintf(stderr, " ==> %p (succeded in growing)\n", ptr); */
       return ptr;
     }
+    /* FIXME: Consider using grow_mexec_hdr to grow our hdr. */
+    old_hdr = hdr;
   } else {
     res = low_mexec_alloc(hdr, sz);
   }
@@ -604,10 +607,17 @@ void *mexec_realloc(void *ptr, size_t sz)
       hdr = hdr->next;
     }
     if (!hdr) {
-      hdr = grow_mexec_hdr(NULL, sz);
+      hdr = grow_mexec_hdr(old_hdr, sz);
       if (!hdr) {
 	/* fprintf(stderr, " ==> NULL (grow failed)\n"); */
 	return NULL;
+      }
+      if (hdr == old_hdr) {
+	/* Succeeded in growing our old hdr. */
+	old->size = sz;
+	hdr->bottom = ((char *)old) + sz;
+	/* fprintf(stderr, " ==> %p (succeded in growing hdr)\n", ptr); */
+	return ptr;
       }
       res = low_mexec_alloc(hdr, sz);
 #ifdef PIKE_DEBUG
