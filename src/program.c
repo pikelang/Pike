@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.591 2005/05/30 12:36:08 mast Exp $
+|| $Id: program.c,v 1.592 2005/05/31 11:59:04 grubba Exp $
 */
 
 #include "global.h"
@@ -2457,6 +2457,7 @@ static void exit_program_struct(struct program *p)
     free_program(parent);
   }
 
+  /* fprintf(stderr, "Exiting program: %p, id:%d\n", p, p->id); */
 
   if(id_to_program_cache[p->id & (ID_TO_PROGRAM_CACHE_SIZE-1)]==p)
     id_to_program_cache[p->id & (ID_TO_PROGRAM_CACHE_SIZE-1)]=0;
@@ -3223,6 +3224,14 @@ struct program *end_first_pass(int finish)
 
   exit_threads_disable(NULL);
 
+#if 0
+#ifdef PIKE_USE_MACHINE_CODE
+  if (prog &&
+      (((unsigned long long *)prog->program)[-1] != 0xdeadfeedf00dfaddLL)) {
+    Pike_fatal("Bad mexec magic!\n");
+  }
+#endif /* PIKE_USE_MACHINE_CODE */
+#endif /* 0 */
   return prog;
 }
 
@@ -7666,6 +7675,7 @@ PMOD_EXPORT struct program *program_from_function(const struct svalue *f)
   return low_program_from_function(f->u.object->prog, f->subtype);
 }
 
+/* NOTE: Does not add references to the return value! */
 PMOD_EXPORT struct program *program_from_svalue(const struct svalue *s)
 {
   switch(s->type)
