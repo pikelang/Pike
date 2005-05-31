@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.94 2005/02/01 18:43:05 mast Exp $
+|| $Id: socket.c,v 1.95 2005/05/31 16:34:24 bill Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -344,7 +344,7 @@ static void unix_bind(INT32 args)
 
   do_close(p);
 
-  get_all_args("Port->bind_unix", args, "%s.%*", &path, &cb);
+  get_all_args("Port->bind_unix", args, "%n%*", &path, &cb);
 
   tmp = sizeof(addr.sun_path);
 
