@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.165 2005/05/31 09:51:13 grubba Exp $
+|| $Id: pike_memory.c,v 1.166 2005/05/31 12:04:37 grubba Exp $
 */
 
 #include "global.h"
@@ -359,10 +359,16 @@ char *debug_qalloc(size_t size)
 #ifndef PAGESIZE
 #define PAGESIZE	8192
 #endif /* !PAGESIZE */
+#if 0
+#define MEXEC_MAGIC	0xdeadfeedf00dfaddLL
 static int dev_zero = -1;
+#endif /* 0 */
 struct mexec_block {
   struct mexec_block *next;
   size_t size;
+#ifdef MEXEC_MAGIC
+  unsigned long long magic;
+#endif /* MEXEC_MAGIC */
 };
 static struct mexec_hdr {
   struct mexec_hdr *next;
@@ -465,6 +471,9 @@ static struct mexec_block *low_mexec_alloc(struct mexec_hdr *hdr, size_t sz)
   }
   res->size = sz;
   res->next = (struct mexec_block *)hdr;
+#ifdef MEXEC_MAGIC
+  res->magic = MEXEC_MAGIC;
+#endif /* MEXEC_MAGIC */
   return res;
 }
 
@@ -481,6 +490,13 @@ void mexec_free(void *ptr)
   if (!ptr) return;
   blk = ((struct mexec_block *)ptr)-1;
   hdr = (struct mexec_hdr *)blk->next;
+#ifdef MEXEC_MAGIC
+  if (blk->magic != MEXEC_MAGIC) {
+    Pike_fatal("mexec_free() called with non mexec pointer.\n"
+	       "ptr: %p, magic: 0x%016llx, hdr: %p\n",
+	       ptr, blk->magic, hdr);
+  }
+#endif /* MEXEC_MAGIC */
   next = hdr->free;
   while ((size_t)next > (size_t)blk) {
     prev_prev = prev;
@@ -558,6 +574,12 @@ void *mexec_alloc(size_t sz)
 #endif /* PIKE_DEBUG */
   }
   /* fprintf(stderr, " ==> %p\n", res + 1); */
+#ifdef PIKE_DEBUG
+  if (((struct mexec_hdr *)res->next) != hdr) {
+    Pike_fatal("mexec_alloc: Resulting block is not member of hdr: %p != %p\n",
+	       res->next, hdr);
+  }
+#endif /* PIKE_DEBUG */
   return res + 1;
 }
 
@@ -581,6 +603,14 @@ void *mexec_realloc(void *ptr, size_t sz)
   old = ((struct mexec_block *)ptr)-1;
   hdr = (struct mexec_hdr *)old->next;
 
+#ifdef MEXEC_MAGIC
+  if (old->magic != MEXEC_MAGIC) {
+    Pike_fatal("mexec_realloc() called with non mexec pointer.\n"
+	       "ptr: %p, magic: 0x%016llx, hdr: %p\n",
+	       ptr, old->magic, hdr);
+  }
+#endif /* MEXEC_MAGIC */
+
   sz = (sz + sizeof(struct mexec_block) + 0x1f) & ~0x1f;
   if (old->size >= sz) {
     /* fprintf(stderr, " ==> %p (space existed)\n", ptr); */
@@ -594,6 +624,13 @@ void *mexec_realloc(void *ptr, size_t sz)
       old->size = sz;
       hdr->bottom = ((char *)old) + sz;
       /* fprintf(stderr, " ==> %p (succeded in growing)\n", ptr); */
+#ifdef PIKE_DEBUG
+      if (((struct mexec_hdr *)old->next) != hdr) {
+	Pike_fatal("mexec_realloc: "
+		   "Grown block is not member of hdr: %p != %p\n",
+		   old->next, hdr);
+      }
+#endif /* PIKE_DEBUG */
       return ptr;
     }
     /* FIXME: Consider using grow_mexec_hdr to grow our hdr. */
@@ -617,13 +654,20 @@ void *mexec_realloc(void *ptr, size_t sz)
 	old->size = sz;
 	hdr->bottom = ((char *)old) + sz;
 	/* fprintf(stderr, " ==> %p (succeded in growing hdr)\n", ptr); */
+#ifdef PIKE_DEBUG
+	if (((struct mexec_hdr *)old->next) != hdr) {
+	  Pike_fatal("mexec_realloc: "
+		     "Grown block is not member of hdr: %p != %p\n",
+		     old->next, hdr);
+	}
+#endif /* PIKE_DEBUG */
 	return ptr;
       }
       res = low_mexec_alloc(hdr, sz);
 #ifdef PIKE_DEBUG
       if (!res) {
-	Pike_fatal("mexec_alloc(%d) failed to allocate from grown hdr!\n",
-		   sz);
+	Pike_fatal("mexec_realloc(%p, %d) failed to allocate from grown hdr!\n",
+		   ptr, sz);
       }
 #endif /* PIKE_DEBUG */
     }
@@ -638,6 +682,14 @@ void *mexec_realloc(void *ptr, size_t sz)
 
   memcpy(res+1, old+1, old->size - sizeof(old));
   mexec_free(ptr);
+
+#ifdef PIKE_DEBUG
+  if (((struct mexec_hdr *)res->next) != hdr) {
+    Pike_fatal("mexec_realloc: "
+	       "Resulting block is not member of hdr: %p != %p\n",
+	       res->next, hdr);
+  }
+#endif /* PIKE_DEBUG */
 
   return res + 1;
 }
