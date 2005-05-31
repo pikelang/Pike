@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.842 2005/05/30 13:23:21 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.843 2005/05/31 16:39:49 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3485,7 +3485,7 @@ LIBOBJS="${OLD_LIBOBJS}"
 
 AC_FUNC_MMAP
 
-if test "x$ac_cv_func_mmap" = "xyes"; then
+if test "x$ac_cv_func_mmap_fixed_mapped" = "xyes"; then
   # Mac OS X has an mmap that fails with ENODEV if we try
   # to use it for mexec_alloc et al.
   AC_MSG_CHECKING([if mmap can be used to allocate PROT_EXEC])
