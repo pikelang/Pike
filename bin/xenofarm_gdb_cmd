@@ -1,7 +1,7 @@
 echo \nActive threads\n
 info threads
-echo \nBacktrace\n
-bt
+echo \nBacktraces\n
+thread apply all bt
 echo \nSource code for frame 0\n
 list
 echo \nDisassembly of frame 0\n
