@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.165 2005/06/01 13:40:06 per Exp $
+|| $Id: efuns.c,v 1.166 2005/06/01 16:20:08 grubba Exp $
 */
 
 #include "global.h"
@@ -147,6 +147,14 @@ struct array *encode_stat(PIKE_STAT_T *s)
  *! Return an array of all extended attributes set on the file
  */
 
+#ifdef HAVE_DARWIN_XATTR
+#define LISTXATTR(PATH, BUF, SZ)	listxattr(PATH, BUF, SZ, 0)
+#define LLISTXATTR(PATH, BUF, SZ)	listxattr(PATH, BUF, SZ, XATTR_NOFOLLOW)
+#else
+#define LISTXATTR(PATH, BUF, SZ)	listxattr(PATH, BUF, SZ)
+#define LLISTXATTR(PATH, BUF, SZ)	llistxattr(PATH, BUF, SZ)
+#endif /* !HAVE_DARWIN_XATTR */
+
 static void f_listxattr(INT32 args)
 {
   char buffer[1024];
@@ -162,11 +170,11 @@ static void f_listxattr(INT32 args)
 
   THREADS_ALLOW();
   do {
-#ifdef HAVE_DARWIN_XATTR
-    res = listxattr( name, buffer, sizeof(buffer),0 );
-#else
-      res = (nofollow?&llistxattr:&listxattr)( name, buffer, sizeof(buffer),0 ); /* First try, for speed.*/
-#endif /* HAVE_DARWIN_XATTR */
+    /* First try, for speed.*/
+    if (nofollow)
+      res = LLISTXATTR(name, buffer, sizeof(buffer));
+    else
+      res = LISTXATTR( name, buffer, sizeof(buffer));
   } while( res < 0 && errno == EINTR );
   THREADS_DISALLOW();
 
@@ -183,11 +191,10 @@ static void f_listxattr(INT32 args)
       ptr = tmp;
       THREADS_ALLOW();
       do {
-#ifdef HAVE_DARWIN_XATTR
-	res = listxattr( name, ptr, blen, 0 );
-#else
-	res = (nofollow?&llistxattr:&listxattr)( name, ptr, blen );
-#endif /* HAVE_DARWIN_XATTR */
+	if (nofollow)
+	  res = LLISTXATTR(name, buffer, sizeof(buffer));
+	else
+	  res = LISTXATTR(name, ptr, blen);
       } while( res < 0 && errno == EINTR );
       THREADS_DISALLOW();
       blen *= 2;
@@ -216,6 +223,14 @@ static void f_listxattr(INT32 args)
     free( ptr );
 }
 
+#ifdef HAVE_DARWIN_XATTR
+#define GETXATTR(PATH, NAME, BUF, SZ)	getxattr(PATH, NAME, BUF, SZ, 0, 0)
+#define LGETXATTR(PATH, NAME, BUF, SZ)	getxattr(PATH, NAME, BUF, SZ, 0, XATTR_NOFOLLOW)
+#else
+#define GETTXATTR(PATH, NAME, BUF, SZ)	getxattr(PATH, NAME, BUF, SZ)
+#define LGETXATTR(PATH, NAME, BUF, SZ)	lgetxattr(PATH, NAME, BUF, SZ)
+#endif /* !HAVE_DARWIN_XATTR */
+
 /*! @decl string getxattr(string file, string attr, void|int(0..1) symlink)
  *! 
  *! Return the value of a specified attribute, or 0 if it does not exist.
@@ -235,11 +250,11 @@ static void f_getxattr(INT32 args)
 
   THREADS_ALLOW();
   do {
-#ifdef HAVE_DARWIN_XATTR
-	res = getxattr( file, name, buffer, sizeof(buffer), 0, 0 );
-#else
-      res = (nofollow?&getxattr:&lgetxattr)( file, name, buffer, sizeof(buffer) ); /* First try, for speed.*/
-#endif /* HAVE_DARWIN_XATTR */
+    /* First try, for speed.*/
+    if (nofollow)
+      LGETXATTR(file, name, buffer, sizeof(buffer));
+    else
+      GETXATTR(file, name, buffer, sizeof(buffer));
   } while( res < 0 && errno == EINTR );
   THREADS_DISALLOW();
 
@@ -256,11 +271,10 @@ static void f_getxattr(INT32 args)
       ptr = tmp;
       THREADS_ALLOW();
       do {
-#ifdef HAVE_DARWIN_XATTR
-	res = getxattr( file, name, ptr, blen, 0, 0 );
-#else
-	  res = (nofollow?&getxattr:&lgetxattr)( file, name, ptr, blen );
-#endif /* HAVE_DARWIN_XATTR */
+	if (nofollow)
+	  LGETXATTR(file, name, ptr, blen);
+	else
+	  GETXATTR(file, name, ptr, blen);
       } while( res < 0 && errno == EINTR );
       THREADS_DISALLOW();
       blen *= 2;
@@ -282,6 +296,14 @@ static void f_getxattr(INT32 args)
 }
 
 
+#ifdef HAVE_DARWIN_XATTR
+#define REMOVEXATTR(PATH, NAME)		removexattr(PATH, NAME, 0)
+#define LREMOVEXATTR(PATH, NAME)	removexattr(PATH, NAME, XATTR_NOFOLLOW)
+#else
+#define REMOVEXATTR(PATH, NAME)		removexattr(PATH, NAME)
+#define LREMOVEXATTR(PATH, NAME)	lremovexattr(PATH, NAME)
+#endif /* !HAVE_DARWIN_XATTR */
+
 /*! @decl void removexattr( string file, string attr , void|int(0..1) symlink)
  *! Remove the specified extended attribute.
  */
@@ -296,14 +318,13 @@ static void f_removexattr( INT32 args )
     get_all_args( "removexattr", args, "%s%s", &file, &name );
 
   THREADS_ALLOW();
-#ifdef HAVE_DARWIN_XATTR
-  while( ((rv=removexattr( file, name, 0 )) < 0) && (errno == EINTR))
-    ;
-#else
-  while( ((rv=(nofollow?&removexattr:&lremovexattr)( file, name )) < 0) &&
-	 (errno == EINTR))
-    ;
-#endif /* HAVE_DARWIN_XATTR */
+  if (nofollow) {
+    while(((rv=LREMOVEXATTR(file, name)) < 0) && (errno == EINTR))
+      ;
+  } else {
+    while(((rv=REMOVEXATTR(file, name)) < 0) && (errno == EINTR))
+      ;
+  }
   THREADS_DISALLOW();
 
   pop_n_elems(args);
@@ -316,6 +337,14 @@ static void f_removexattr( INT32 args )
     push_int(1);
   }
 }
+
+#ifdef HAVE_DARWIN_XATTR
+#define SETXATTR(PATH, NAME, BUF, SZ, FL)	setxattr(PATH, NAME, BUF, SZ, 0, FL)
+#define LSETXATTR(PATH, NAME, BUF, SZ, FL)	setxattr(PATH, NAME, BUF, SZ, 0, (FL)|XATTR_NOFOLLOW)
+#else
+#define SETTXATTR(PATH, NAME, BUF, SZ, FL)	setxattr(PATH, NAME, BUF, SZ, FL)
+#define LSETXATTR(PATH, NAME, BUF, SZ, FL)	lsetxattr(PATH, NAME, BUF, SZ, FL)
+#endif /* !HAVE_DARWIN_XATTR */
 
 /*! @decl void setxattr( string file, string attr, string value, int flags,void|int(0..1) symlink)
  *!
@@ -348,17 +377,17 @@ static void f_setxattr( INT32 args )
       get_all_args( "setxattr", args, "%s%s%S%d", &file, &ind, &val, &flags );
 
   THREADS_ALLOW();
-#ifdef HAVE_DARWIN_XATTR
-  while( ((rv=setxattr( file, ind, val->str,
-			 (val->len<<val->size_shift), 0, flags )) < 0) &&
-	 (errno == EINTR))
-    ;
-#else
-  while( ((rv=setxattr( file, ind, val->str,
-			 (val->len<<val->size_shift), flags )) < 0) &&
-	 (errno == EINTR))
-    ;
-#endif /* HAVE_DARWIN_XATTR */
+  if (nofollow) {
+    while(((rv=LSETXATTR(file, ind, val->str,
+			  (val->len<<val->size_shift), flags )) < 0) &&
+	  (errno == EINTR))
+      ;
+  } else {
+    while(((rv=SETXATTR(file, ind, val->str,
+			(val->len<<val->size_shift), flags )) < 0) &&
+	  (errno == EINTR))
+      ;
+  }
   THREADS_DISALLOW();
   pop_n_elems(args);
   if( rv < 0 )
