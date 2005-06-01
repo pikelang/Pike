@@ -138,10 +138,10 @@ class Indexer(Variable wa_var, void|function get_sb_workarea_view_url, Configura
 
     array debug_args = ({});
 
+    Roxen.LogPipe log_pipe = Roxen.get_log_pipe();
+
 #ifdef SEARCH_CRAWLER_DEBUG
     debug_args += ({"-DSEARCH_DEBUG"});
-    string logfilename = "crawler_log." + getpid() + "." + index_log_count++;
-    Stdio.File logfile = Stdio.File ("../logs/debug/" + logfilename, "wct");
 #endif
 #ifdef CRAWLER_HTTP_QUERY_DEBUG
     debug_args += ({"-DHTTP_QUERY_DEBUG"});
@@ -158,15 +158,14 @@ class Indexer(Variable wa_var, void|function get_sb_workarea_view_url, Configura
       }),
       ([  "env":env,
 	  "priority":"low",
-#ifdef SEARCH_CRAWLER_DEBUG
-	  "stdout": logfile,
-	  "stderr": logfile,
-#endif
+	  "stdout": log_pipe,
+	  "stderr": log_pipe,
       ]) );
 
+    log_pipe->set_prefix ("Crawler " + crawler->pid() + ": ");
+
 #ifdef SEARCH_CRAWLER_DEBUG
-    werror ("Spawned search crawler: pid %d, logfile %s\n",
-	    crawler->pid(), logfilename);
+    werror ("Spawned search crawler: pid %d\n", crawler->pid());
 #endif
 
     return 1;
