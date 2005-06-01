@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.167 2005/06/01 16:28:38 grubba Exp $
+|| $Id: efuns.c,v 1.168 2005/06/01 16:29:25 grubba Exp $
 */
 
 #include "global.h"
@@ -342,7 +342,7 @@ static void f_removexattr( INT32 args )
 #define SETXATTR(PATH, NAME, BUF, SZ, FL)	setxattr(PATH, NAME, BUF, SZ, 0, FL)
 #define LSETXATTR(PATH, NAME, BUF, SZ, FL)	setxattr(PATH, NAME, BUF, SZ, 0, (FL)|XATTR_NOFOLLOW)
 #else
-#define SETTXATTR(PATH, NAME, BUF, SZ, FL)	setxattr(PATH, NAME, BUF, SZ, FL)
+#define SETXATTR(PATH, NAME, BUF, SZ, FL)	setxattr(PATH, NAME, BUF, SZ, FL)
 #define LSETXATTR(PATH, NAME, BUF, SZ, FL)	lsetxattr(PATH, NAME, BUF, SZ, FL)
 #endif /* !HAVE_DARWIN_XATTR */
 
