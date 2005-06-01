@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.684 2005/05/31 16:39:34 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.685 2005/06/01 15:14:47 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3805,8 +3805,9 @@ AC_CACHE_VAL(pike_cv_hardware_stack_direction,
 [
   AC_TRY_RUN([
 #include <stdio.h>
-static int find_stack_direction(void *foo)
+static int find_stack_direction(void *foo, int cnt)
 {
+  if (cnt) return 1*find_stack_direction(foo, cnt>>1);
   if (((void *)&foo) > foo) {
     return 1;
   } else {
@@ -3814,7 +3815,7 @@ static int find_stack_direction(void *foo)
   }
 }
 
-int main() { void *bar; exit( find_stack_direction(&bar) > 0); }
+int main() { void *bar; exit( find_stack_direction(&bar, 0x10) > 0); }
   ], [ pike_cv_hardware_stack_direction=down
   ], [ pike_cv_hardware_stack_direction=up
   ], [
