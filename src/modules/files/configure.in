@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.102 2005/06/01 03:02:22 bill Exp $
+# $Id: configure.in,v 1.103 2005/06/01 16:21:12 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -211,7 +211,16 @@ if test x$ac_cv_func_getxattr = xyes ; then
   AC_MSG_CHECKING(if getxattr takes 4(Linux) or 6(Darwin) arguments)
   AC_CACHE_VAL(pike_cv_func_darwin_getxattr, [
     AC_TRY_COMPILE([
-#include "../../machine.h"
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -219,19 +228,53 @@ if test x$ac_cv_func_getxattr = xyes ; then
 #ifdef HAVE_SYS_XATTR_H
 #include <sys/xattr.h>
 #endif
-], [
-  exit(0);
+    ], [
+      exit(0);
 
-  /* NOT REACHED */
-  getxattr(0, 0, 0, 0, 0, 0);
-],pike_cv_func_darwin_getxattr=yes,pike_cv_func_darwin_getxattr=no)
+      /* NOT REACHED */
+      getxattr(0, 0, 0, 0, 0, 0);
+    ], [
+      AC_TRY_COMPILE([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
+#ifndef POSIX_SOURCE
+#define POSIX_SOURCE
+#endif
+#include <sys/types.h>
+#ifdef HAVE_SYS_XATTR_H
+#include <sys/xattr.h>
+#endif
+      ], [
+        exit(0);
+
+        /* NOT REACHED */
+        getxattr(0, 0, 0, 0);
+      ], [
+        # Missing prototype.
+        pike_cv_func_darwin_getxattr=unknown
+      ], [
+        pike_cv_func_darwin_getxattr=yes
+      ])
+    ], [
+      pike_cv_func_darwin_getxattr=no
+    ])
   ])
 
   if test x$pike_cv_func_darwin_getxattr = xyes ; then
-AC_MSG_RESULT(6 - Darwin)
-AC_DEFINE(HAVE_DARWIN_XATTR)
-  else
+    AC_MSG_RESULT(6 - Darwin)
+    AC_DEFINE(HAVE_DARWIN_XATTR)
+  elif test x$pike_cv_func_darwin_getxattr = xno ; then
     AC_MSG_RESULT(4 - Linux)
+  else
+    AC_MSG_RESULT(Unknown - Missing prototype)
   fi
 
 fi
