@@ -1,8 +1,32 @@
-# $Id: configure.in,v 1.7 2003/12/17 22:04:50 marcus Exp $
+# $Id: configure.in,v 1.8 2005/06/01 14:08:53 per Exp $
 AC_INIT(SDL.cmod)
 
 AC_MODULE_INIT()
 AC_CONFIG_HEADER(sdl_config.h)
+
+if /bin/test "x`uname`" = "xDarwin" ; then
+    PIKE_FEATURE_NODEP(SDL)
+    OLD_CFLAGS=$CFLAGS
+    oldLIBS="$LIBS"
+    AC_MSG_CHECKING(for SDL_Init in SDL.framework -lsdl)
+    AC_DEFINE_UNQUOTED(HAVE_SDL_SDL_H)
+    LIBS="$LIBS -framework SDL"
+    AC_CACHE_VAL(pike_cv_lib_SDL, [
+      AC_TRY_LINK([
+#include <SDL/SDL.h>
+#undef main
+], [ SDL_Init(0); ], [pike_cv_lib_SDL=yes],[pike_cv_lib_SDL=no])
+ ])
+ if test x"$pike_cv_lib_SDL" = xyes; then
+    AC_MSG_RESULT(yes)
+    SDL_CFLAGS="-framework SDL"
+    SDL_LIBS="-framework SDL"
+    AC_DEFINE_UNQUOTED(HAVE_SDL)
+  else
+    AC_MSG_RESULT(no)
+  fi
+  LIBS="$oldLIBS"
+else
 
 dnl AM_PATH_SDL([MINIMUM-VERSION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]]])
 dnl Test for SDL, and define SDL_CFLAGS and SDL_LIBS
@@ -212,7 +236,14 @@ int main(int argc, char *argv[])
 
 dnl Check for SDL
 SDL_VERSION=1.2.0
-AM_PATH_SDL($SDL_VERSION, [
+AM_PATH_SDL($SDL_VERSION, [],[])
+fi
+
+if /bin/test x"$SDL_CFLAGS" = "x" 
+then
+  PIKE_FEATURE_NODEP(SDL)
+  PIKE_FEATURE_NODEP(SDL_mixer)
+else
 	PIKE_FEATURE_OK(SDL)
 	CFLAGS="$CFLAGS $SDL_CFLAGS"
 	LIBS="$LIBS $SDL_LIBS"
@@ -290,9 +321,7 @@ AM_PATH_SDL($SDL_VERSION, [
         if test "x${pike_cv_sdl_joystick}" = "xyes" ; then
            AC_DEFINE(HAVE_LIBSDL_JOYSTICK)
         fi
+fi
 
-	], [
-		PIKE_FEATURE_NODEP(SDL)
-		PIKE_FEATURE_NODEP(SDL_mixer) ] )
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

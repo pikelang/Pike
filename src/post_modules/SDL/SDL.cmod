@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.27 2004/11/12 13:42:44 grubba Exp $
+|| $Id: SDL.cmod,v 1.28 2005/06/01 14:08:53 per Exp $
 */
 
 #include "global.h"
@@ -88,7 +88,12 @@ static struct object *image_make_rgb_color(INT32 r,INT32 g,INT32 b)
 
 /* SDL needs this defined in it its own way */
 #undef DECLSPEC
-#include <SDL.h>
+#ifdef HAVE_SDL_SDL_H
+# include <SDL/SDL.h>
+#else
+# include <SDL.h>
+#endif
+
 #include "constants.h"
 
 #ifdef HAVE_SDL_MIXER
