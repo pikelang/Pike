@@ -19,7 +19,7 @@ string destination_dir = "";
 #define GOBBLE() ((sizeof(t)>i)?t[i++]:0)
 #define PEEK()    ((sizeof(t)>i)?t[i]:0)
 #define SYNTAX(X,T) do{werror("\n%s:%d:\tSyntax error:\t"+replace((X),"%","%%")+"\n",T->file,T->line);exit(1);}while(0)
-#define ERROR(X,T) do{werror("\n%s:%d:\Error:\t"+replace((X),"%","%%")+"\n",T->file,T->line);exit(1);}while(0)
+#define ERROR(X,T) do{werror("\n%s:%d:\tError:\t"+replace((X),"%","%%")+"\n",T->file,T->line);exit(1);}while(0)
 #define WARN(X,T) ERROR(X,T)
 #define SEMICOLON(X)  if(GOBBLE()!=";") SYNTAX("Missing ; after "+(X),token);
 #define NEED_CLASS(X) if(!current_class) current_class = get_class_define("_global",file,(tk?tk:token)->line);
