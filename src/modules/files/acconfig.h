@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.24 2005/04/30 18:40:59 per Exp $
+|| $Id: acconfig.h,v 1.25 2005/06/01 03:02:22 bill Exp $
 */
 
 #ifndef FILE_MACHINE_H
@@ -61,6 +61,9 @@
 
 /* Define if your readdir_r is HPUX compatible. */
 #undef HAVE_HPUX_READDIR_R
+
+/* Define if you have Darwin/MacOSX style xattr */
+#undef HAVE_DARWIN_XATTR
 
 /* Define if you have strerror.  */
 #undef HAVE_STRERROR

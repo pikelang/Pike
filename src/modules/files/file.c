@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.351 2005/05/19 22:35:38 mast Exp $
+|| $Id: file.c,v 1.352 2005/06/01 03:02:22 bill Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -2135,7 +2135,11 @@ static void file_listxattr(INT32 args)
 
   THREADS_ALLOW();
   do {
+#ifdef HAVE_DARWIN_XATTR
+    res = flistxattr( mfd, buffer, sizeof(buffer),  0 ); /* First try, for speed.*/
+#else
     res = flistxattr( mfd, buffer, sizeof(buffer) ); /* First try, for speed.*/
+#endif /* HAVE_DARWIN_XATTR */
   } while( res < 0 && errno == EINTR );
   THREADS_DISALLOW();
 
@@ -2152,7 +2156,11 @@ static void file_listxattr(INT32 args)
       ptr = tmp;
       THREADS_ALLOW();
       do {
+#ifdef HAVE_DARWIN_XATTR
+	res = flistxattr( mfd, ptr, blen, 0 );
+#else
 	res = flistxattr( mfd, ptr, blen );
+#endif /* HAVE_DARWIN_XATTR */
       } while( res < 0 && errno == EINTR );
       THREADS_DISALLOW();
       blen *= 2;
@@ -2197,7 +2205,11 @@ static void file_getxattr(INT32 args)
 
   THREADS_ALLOW();
   do {
+#ifdef HAVE_DARWIN_XATTR
+    res = fgetxattr( mfd, name, buffer, sizeof(buffer), 0, 0 ); /* First try, for speed.*/
+#else
     res = fgetxattr( mfd, name, buffer, sizeof(buffer) ); /* First try, for speed.*/
+#endif /* HAVE_DARWIN_XATTR */
   } while( res < 0 && errno == EINTR );
   THREADS_DISALLOW();
 
@@ -2214,7 +2226,11 @@ static void file_getxattr(INT32 args)
       ptr = tmp;
       THREADS_ALLOW();
       do {
+#ifdef HAVE_DARWIN_XATTR
+	res = fgetxattr( mfd, name, ptr, blen, 0, 0 );
+#else
 	res = fgetxattr( mfd, name, ptr, blen );
+#endif /* HAVE_DARWIN_XATTR */
       } while( res < 0 && errno == EINTR );
       THREADS_DISALLOW();
       blen *= 2;
@@ -2247,8 +2263,13 @@ static void file_removexattr( INT32 args )
   int rv;
   get_all_args( "removexattr", args, "%s", &name );
   THREADS_ALLOW();
+#ifdef HAVE_DARWIN_XATTR
+  while( ((rv=fremovexattr( mfd, name, 0 )) < 0) && (errno == EINTR))
+    ;
+#else
   while( ((rv=fremovexattr( mfd, name )) < 0) && (errno == EINTR))
     ;
+#endif /* HAVE_DARWIN_XATTR */
   THREADS_DISALLOW();
 
   pop_n_elems(args);
@@ -2290,10 +2311,17 @@ static void file_setxattr( INT32 args )
   int mfd = FD;
   get_all_args( "setxattr", args, "%s%S%d", &ind, &val, &flags );
   THREADS_ALLOW();
+#ifdef HAVE_DARWIN_XATTR
+  while( ((rv=fsetxattr( mfd, ind, val->str,
+			 (val->len<<val->size_shift), 0, flags )) < 0) &&
+	 (errno == EINTR))
+    ;
+#else
   while( ((rv=fsetxattr( mfd, ind, val->str,
 			 (val->len<<val->size_shift), flags )) < 0) &&
 	 (errno == EINTR))
     ;
+#endif /* HAVE_DARWIN_XATTR */
   THREADS_DISALLOW();
   pop_n_elems(args);
   if( rv < 0 )

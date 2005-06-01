@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.101 2005/04/30 18:40:59 per Exp $
+# $Id: configure.in,v 1.102 2005/06/01 03:02:22 bill Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -206,6 +206,35 @@ AC_TRY_COMPILE([
 
 AC_MSG_RESULT($pike_cv_func_mkdir_args)
 AC_DEFINE_UNQUOTED(MKDIR_ARGS,$pike_cv_func_mkdir_args)
+
+if test x$ac_cv_func_getxattr = xyes ; then
+  AC_MSG_CHECKING(if getxattr takes 4(Linux) or 6(Darwin) arguments)
+  AC_CACHE_VAL(pike_cv_func_darwin_getxattr, [
+    AC_TRY_COMPILE([
+#include "../../machine.h"
+#ifndef POSIX_SOURCE
+#define POSIX_SOURCE
+#endif
+#include <sys/types.h>
+#ifdef HAVE_SYS_XATTR_H
+#include <sys/xattr.h>
+#endif
+], [
+  exit(0);
+
+  /* NOT REACHED */
+  getxattr(0, 0, 0, 0, 0, 0);
+],pike_cv_func_darwin_getxattr=yes,pike_cv_func_darwin_getxattr=no)
+  ])
+
+  if test x$pike_cv_func_darwin_getxattr = xyes ; then
+AC_MSG_RESULT(6 - Darwin)
+AC_DEFINE(HAVE_DARWIN_XATTR)
+  else
+    AC_MSG_RESULT(4 - Linux)
+  fi
+
+fi
 
 if test x$ac_cv_func_readdir_r = xyes ; then
   AC_MSG_CHECKING(if readdir_r takes 2(old Solaris & HPUX) or 3(Posix) arguments)
@@ -1235,5 +1264,3 @@ else
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-
