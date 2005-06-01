@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.231 2005/05/31 16:22:59 mast Exp $
+|| $Id: encode.c,v 1.232 2005/06/01 09:06:59 grubba Exp $
 */
 
 #include "global.h"
@@ -4443,7 +4443,9 @@ static INT32 my_decode(struct pike_string *tmp,
 
   add_ref (data->data_str);
   add_ref (data->codec);
+#ifdef PIKE_THREADS
   add_ref (data->thread_obj);
+#endif
   SET_ONERROR(err, error_free_decode_data, data);
 
 #if TWO_PASS_DECODE_WORKS
