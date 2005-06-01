@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.20 2003/06/16 17:44:26 mast Exp $
+# $Id: configure.in,v 1.21 2005/06/01 14:33:23 per Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -29,16 +29,18 @@ else
   AC_CHECK_HEADERS(OpenGL/gl.h)
   if test "x$ac_cv_header_OpenGL_gl_h" = "xno"; then
     CPPFLAGS="$old_CPPFLAGS"
+  else
+    mac=1
   fi
+
 
   if test "x$ac_cv_header_windef_h$ac_cv_header_GL_gl_h$ac_cv_header_GL_glx_h" = "xnonono"; then
     # Solaris 7 comes with libGL, but without the headerfiles by default.
     :
   else
-
-    AC_CHECK_LIB(X11,XDrawPoint)
-    AC_CHECK_LIB(Xext,XShmPutImage)
-
+    if test x$mac = x ; then
+      AC_CHECK_LIB(X11,XDrawPoint)
+      AC_CHECK_LIB(Xext,XShmPutImage)
     AC_CHECK_LIB(GL, glOrtho, AC_DEFINE_UNQUOTED(HAVE_LIBGL),,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
     AC_CHECK_LIB(MesaGL, glOrtho, AC_DEFINE_UNQUOTED(HAVE_LIBMESAGL),,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
     oldLIBS="$LIBS"
@@ -79,6 +81,7 @@ else
     else
       AC_MSG_RESULT(no)
     fi
+    fi # End not mac
 
     # MacOS X
     AC_MSG_CHECKING(for glOrtho in OpenGL.framework)
@@ -96,7 +99,9 @@ else
     LIBS="$oldLIBS"
 
     tmp_gl_fail=no
-    if test x"$with_lib_GL" = "xyes" -a x"$ac_cv_lib_GL_glOrtho" = xyes; then
+    if test x"$pike_cv_framework_OpenGL" = xyes; then
+      LIBS="-framework OpenGL $LIBS"
+    elif test x"$with_lib_GL" = "xyes" -a x"$ac_cv_lib_GL_glOrtho" = xyes; then
       LIBS="-lGL $LIBS $X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS"
     elif test x"$with_lib_GL" = "xyes" -a x"$pike_cv_lib_OpenGL" = xyes; then
       LIBS="-lOpenGL $LIBS"
@@ -110,8 +115,6 @@ else
       LIBS="-lOpenGL $LIBS"
     elif test x"$pike_cv_lib_OpenGL32" = xyes; then
       LIBS="-lOpenGL32 $LIBS"
-    elif test x"$pike_cv_framework_OpenGL" = xyes; then
-      LIBS="-framework OpenGL $LIBS"
     elif test x"$ac_cv_lib_MesaGL_glOrtho" = xyes; then
       LIBS="-lMesaGL $LIBS $X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS"
     else
