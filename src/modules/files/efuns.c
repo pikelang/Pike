@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.166 2005/06/01 16:20:08 grubba Exp $
+|| $Id: efuns.c,v 1.167 2005/06/01 16:28:38 grubba Exp $
 */
 
 #include "global.h"
@@ -227,7 +227,7 @@ static void f_listxattr(INT32 args)
 #define GETXATTR(PATH, NAME, BUF, SZ)	getxattr(PATH, NAME, BUF, SZ, 0, 0)
 #define LGETXATTR(PATH, NAME, BUF, SZ)	getxattr(PATH, NAME, BUF, SZ, 0, XATTR_NOFOLLOW)
 #else
-#define GETTXATTR(PATH, NAME, BUF, SZ)	getxattr(PATH, NAME, BUF, SZ)
+#define GETXATTR(PATH, NAME, BUF, SZ)	getxattr(PATH, NAME, BUF, SZ)
 #define LGETXATTR(PATH, NAME, BUF, SZ)	lgetxattr(PATH, NAME, BUF, SZ)
 #endif /* !HAVE_DARWIN_XATTR */
 
