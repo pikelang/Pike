@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.164 2005/05/06 00:45:46 nilsson Exp $
+|| $Id: efuns.c,v 1.165 2005/06/01 13:40:06 per Exp $
 */
 
 #include "global.h"
@@ -162,7 +162,11 @@ static void f_listxattr(INT32 args)
 
   THREADS_ALLOW();
   do {
-      res = (nofollow?&llistxattr:&listxattr)( name, buffer, sizeof(buffer) ); /* First try, for speed.*/
+#ifdef HAVE_DARWIN_XATTR
+    res = listxattr( name, buffer, sizeof(buffer),0 );
+#else
+      res = (nofollow?&llistxattr:&listxattr)( name, buffer, sizeof(buffer),0 ); /* First try, for speed.*/
+#endif /* HAVE_DARWIN_XATTR */
   } while( res < 0 && errno == EINTR );
   THREADS_DISALLOW();
 
@@ -179,7 +183,11 @@ static void f_listxattr(INT32 args)
       ptr = tmp;
       THREADS_ALLOW();
       do {
+#ifdef HAVE_DARWIN_XATTR
+	res = listxattr( name, ptr, blen, 0 );
+#else
 	res = (nofollow?&llistxattr:&listxattr)( name, ptr, blen );
+#endif /* HAVE_DARWIN_XATTR */
       } while( res < 0 && errno == EINTR );
       THREADS_DISALLOW();
       blen *= 2;
@@ -227,7 +235,11 @@ static void f_getxattr(INT32 args)
 
   THREADS_ALLOW();
   do {
+#ifdef HAVE_DARWIN_XATTR
+	res = getxattr( file, name, buffer, sizeof(buffer), 0, 0 );
+#else
       res = (nofollow?&getxattr:&lgetxattr)( file, name, buffer, sizeof(buffer) ); /* First try, for speed.*/
+#endif /* HAVE_DARWIN_XATTR */
   } while( res < 0 && errno == EINTR );
   THREADS_DISALLOW();
 
@@ -244,7 +256,11 @@ static void f_getxattr(INT32 args)
       ptr = tmp;
       THREADS_ALLOW();
       do {
+#ifdef HAVE_DARWIN_XATTR
+	res = getxattr( file, name, ptr, blen, 0, 0 );
+#else
 	  res = (nofollow?&getxattr:&lgetxattr)( file, name, ptr, blen );
+#endif /* HAVE_DARWIN_XATTR */
       } while( res < 0 && errno == EINTR );
       THREADS_DISALLOW();
       blen *= 2;
@@ -280,9 +296,14 @@ static void f_removexattr( INT32 args )
     get_all_args( "removexattr", args, "%s%s", &file, &name );
 
   THREADS_ALLOW();
+#ifdef HAVE_DARWIN_XATTR
+  while( ((rv=removexattr( file, name, 0 )) < 0) && (errno == EINTR))
+    ;
+#else
   while( ((rv=(nofollow?&removexattr:&lremovexattr)( file, name )) < 0) &&
 	 (errno == EINTR))
     ;
+#endif /* HAVE_DARWIN_XATTR */
   THREADS_DISALLOW();
 
   pop_n_elems(args);
@@ -327,11 +348,17 @@ static void f_setxattr( INT32 args )
       get_all_args( "setxattr", args, "%s%s%S%d", &file, &ind, &val, &flags );
 
   THREADS_ALLOW();
-  while( ((rv=(nofollow?&setxattr:&lsetxattr)( file, ind, val->str, 
-					       (val->len<<val->size_shift),
-					       flags )) < 0) &&
+#ifdef HAVE_DARWIN_XATTR
+  while( ((rv=setxattr( file, ind, val->str,
+			 (val->len<<val->size_shift), 0, flags )) < 0) &&
 	 (errno == EINTR))
     ;
+#else
+  while( ((rv=setxattr( file, ind, val->str,
+			 (val->len<<val->size_shift), flags )) < 0) &&
+	 (errno == EINTR))
+    ;
+#endif /* HAVE_DARWIN_XATTR */
   THREADS_DISALLOW();
   pop_n_elems(args);
   if( rv < 0 )
