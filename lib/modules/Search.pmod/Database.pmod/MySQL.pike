@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.83 2005/05/27 11:39:51 mast Exp $
+// $Id: MySQL.pike,v 1.84 2005/06/02 16:27:22 mast Exp $
 
 inherit .Base;
 
@@ -280,19 +280,23 @@ int allocate_field_id(string field)
   if(sizeof(a))
     return (int)a[0]->id;
   db->query("lock tables field write");
-  for(int i=1; i<64; i++)
-  {
-    array a=db->query("select name from field where id=%d",i);
-    if(!sizeof(a))
-    {
-      a=db->query("replace into field (id,name) values (%d,%s)",
-		  i, field);
-      list_fields_cache=0;
-      db->query("unlock tables");
-      return i;
-    }
-  }
-  db->query("unlock tables");
+  mixed err = catch {
+      for(int i=1; i<64; i++)
+      {
+	array a=db->query("select name from field where id=%d",i);
+	if(!sizeof(a))
+	{
+	  a=db->query("replace into field (id,name) values (%d,%s)",
+		      i, field);
+	  list_fields_cache=0;
+	  db->query("unlock tables");
+	  return i;
+	}
+      }
+    };
+  mixed unlock_err = catch (db->query("unlock tables"));
+  if (err) throw (err);
+  if (unlock_err) throw (unlock_err);
   return -1;
 }
 
@@ -665,6 +669,8 @@ static void store_to_db( void|string mergedfilename )
   werror("----------- sync() %4d docs --------------\n", docs);
 #endif  
   db->query("LOCK TABLES word_hit LOW_PRIORITY WRITE");
+
+  mixed err = catch {
   String.Buffer multi_query = String.Buffer();
 
   do
@@ -736,11 +742,14 @@ static void store_to_db( void|string mergedfilename )
       }
     }
   } while( 1 );
-  
+
   if( sizeof( multi_query ) )
     db->query( multi_query->get());
-    
-  db->query("UNLOCK TABLES");
+
+  };				// catch
+  mixed unlock_err = catch (db->query("UNLOCK TABLES"));
+  if (err) throw (err);
+  if (unlock_err) throw (unlock_err);
   
   if( sync_callback )
     sync_callback();
