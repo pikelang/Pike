@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.63 2004/10/25 12:10:41 grubba Exp $
+dnl $Id: aclocal.m4,v 1.64 2005/06/02 15:29:48 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer autoconf call substr m4_substr
@@ -69,6 +69,22 @@ pushdef([AC_PROG_CC],
     AC_MSG_RESULT(no)
     TCC=no
   fi
+])
+
+define([ORIG_AC_FUNC_MMAP], defn([AC_FUNC_MMAP]))
+define([AC_FUNC_MMAP], [
+  if_autoconf(2,50,[],[
+    cat >>confdefs.h <<\EOF
+/* KLUDGE for broken prototype in the autoconf 1.13 version of the test. */
+char *my_malloc(unsigned long sz) { return malloc(sz); } /* KLUDGE */
+#define malloc	my_malloc	/* KLUDGE */
+EOF
+  ])
+  ORIG_AC_FUNC_MMAP
+  if_autoconf(2,50,[],[
+    sed -e '/\/\* KLUDGE /d' <confdefs.h >confdefs.h.tmp
+    mv confdefs.h.tmp confdefs.h
+  ])
 ])
 
 dnl option, descr, with, without, default
@@ -172,7 +188,7 @@ define([ORIG_CHECK_HEADERS], defn([AC_CHECK_HEADERS]))
 pushdef([AC_CHECK_HEADERS],
 [
   if test "x$enable_binary" != "xno"; then
-    ORIG_CHECK_HEADERS($1,$2,$3,$4)
+    ORIG_CHECK_HEADERS($1,$2,$3,$4,$5)
   else
     for ac_hdr in $1
     do
@@ -299,7 +315,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.63 2004/10/25 12:10:41 grubba Exp $
+# $Id: aclocal.m4,v 1.64 2005/06/02 15:29:48 grubba Exp $
 
 MY_AC_PROG_CC
 
