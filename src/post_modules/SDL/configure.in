@@ -1,31 +1,33 @@
-# $Id: configure.in,v 1.8 2005/06/01 14:08:53 per Exp $
+# $Id: configure.in,v 1.9 2005/06/03 08:30:38 grubba Exp $
 AC_INIT(SDL.cmod)
 
 AC_MODULE_INIT()
 AC_CONFIG_HEADER(sdl_config.h)
 
-if /bin/test "x`uname`" = "xDarwin" ; then
-    PIKE_FEATURE_NODEP(SDL)
-    OLD_CFLAGS=$CFLAGS
-    oldLIBS="$LIBS"
-    AC_MSG_CHECKING(for SDL_Init in SDL.framework -lsdl)
-    AC_DEFINE_UNQUOTED(HAVE_SDL_SDL_H)
-    LIBS="$LIBS -framework SDL"
-    AC_CACHE_VAL(pike_cv_lib_SDL, [
-      AC_TRY_LINK([
+PIKE_FEATURE_NODEP(SDL)
+PIKE_FEATURE_NODEP(SDL_mixer)
+
+AC_MSG_CHECKING(for SDL_Init in SDL.framework -lsdl)
+AC_CACHE_VAL(pike_cv_option_framework_SDL, [
+  OLD_CFLAGS=$CFLAGS
+  CFLAGS="$CFLAGS -framework SDL"
+  OLD_LIBS="$LIBS"
+  LIBS="$LIBS -framework SDL"
+  AC_TRY_LINK([
 #include <SDL/SDL.h>
 #undef main
-], [ SDL_Init(0); ], [pike_cv_lib_SDL=yes],[pike_cv_lib_SDL=no])
- ])
- if test x"$pike_cv_lib_SDL" = xyes; then
-    AC_MSG_RESULT(yes)
-    SDL_CFLAGS="-framework SDL"
-    SDL_LIBS="-framework SDL"
-    AC_DEFINE_UNQUOTED(HAVE_SDL)
-  else
-    AC_MSG_RESULT(no)
-  fi
-  LIBS="$oldLIBS"
+  ], [
+    SDL_Init(0);
+  ], [pike_cv_option_framework_SDL=yes],[pike_cv_option_framework_SDL=no])
+  CFLAGS="$OLD_CFLAGS"
+  LIBS="$OLD_LIBS"
+])
+AC_MSG_RESULT($pike_cv_option_framework_SDL)
+if test x"$pike_cv_option_framework_SDL" = xyes; then
+  SDL_CFLAGS="-framework SDL"
+  SDL_LIBS="-framework SDL"
+  AC_DEFINE_UNQUOTED(HAVE_SDL_SDL_H)
+  AC_DEFINE_UNQUOTED(HAVE_SDL)
 else
 
 dnl AM_PATH_SDL([MINIMUM-VERSION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]]])
@@ -239,11 +241,7 @@ SDL_VERSION=1.2.0
 AM_PATH_SDL($SDL_VERSION, [],[])
 fi
 
-if /bin/test x"$SDL_CFLAGS" = "x" 
-then
-  PIKE_FEATURE_NODEP(SDL)
-  PIKE_FEATURE_NODEP(SDL_mixer)
-else
+if test x"$SDL_CFLAGS" = "x" ; then :; else
 	PIKE_FEATURE_OK(SDL)
 	CFLAGS="$CFLAGS $SDL_CFLAGS"
 	LIBS="$LIBS $SDL_LIBS"
@@ -293,14 +291,11 @@ else
 
 	AC_CHECK_LIB(SDL_mixer, Mix_OpenAudio)
 	AC_CHECK_HEADERS(SDL_mixer.h SDL/SDL_mixer.h)
-	if test x$ac_cv_header_SDL_mixer_h = xyes -o x$ac_cv_header_SDL_SDL_mixer_h = xyes; then
+	if test x$ac_cv_header_SDL_mixer_h = xyes -o \
+		x$ac_cv_header_SDL_SDL_mixer_h = xyes; then
           if test x$ac_cv_lib_SDL_mixer_Mix_OpenAudio = xyes; then
             PIKE_FEATURE_OK(SDL_mixer)
-          else
-            PIKE_FEATURE_NODEP(SDL_mixer)
           fi
-        else
-          PIKE_FEATURE_NODEP(SDL_mixer)
         fi
 
         AC_CACHE_VAL(pike_cv_sdl_joystick,
