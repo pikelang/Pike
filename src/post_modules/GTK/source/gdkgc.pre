@@ -19,7 +19,7 @@ void create( GTK.Widget|GDK.Drawable context )
   else
     THIS->obj = (void *)gdk_gc_new( GTK_WIDGET(get_gtkobject(o))->window );
 }
-void destoy()
+void destroy()
 //! Free the gc, called automatically by pike when the object is destroyed.
 {
   gdk_gc_destroy( (GdkGC*)THIS->obj );
