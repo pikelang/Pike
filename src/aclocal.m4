@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.99 2005/06/03 10:56:13 grubba Exp $
+dnl $Id: aclocal.m4,v 1.100 2005/06/03 16:17:02 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -102,6 +102,7 @@ define([AC_FUNC_MMAP], [
   if_autoconf(2,50,[],[
     cat >>confdefs.h <<\EOF
 /* KLUDGE for broken prototype in the autoconf 1.13 version of the test. */
+#include <stdlib.h> /* KLUDGE */
 char *my_malloc(sz) unsigned long sz; { return malloc(sz); } /* KLUDGE */
 #define malloc	my_malloc	/* KLUDGE */
 EOF
@@ -373,7 +374,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.99 2005/06/03 10:56:13 grubba Exp $
+  # $Id: aclocal.m4,v 1.100 2005/06/03 16:17:02 grubba Exp $
 
   MY_AC_PROG_CC
 
