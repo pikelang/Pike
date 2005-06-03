@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.247 2005/05/19 22:35:31 mast Exp $
+|| $Id: pike_types.c,v 1.248 2005/06/03 14:54:36 grubba Exp $
 */
 
 #include "global.h"
@@ -341,6 +341,9 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
 				    ~(0x10001*PTR_TO_INT(cdr)));
   unsigned INT32 index = hash % pike_type_hash_size;
   struct pike_type *t;
+#ifdef PIKE_EXTRA_DEBUG
+  static unsigned INT32 extra_debug_index = (unsigned INT32)~0;
+#endif /* PIKE_EXTRA_DEBUG */
 
   /* PIKE_DEBUG code */
   if (type & ~255) {
@@ -364,22 +367,44 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
   }
   /* End PIKE_DEBUG code */
 
+#ifdef PIKE_EXTRA_DEBUG
+  if ((!~extra_debug_index) &&
+      (type == T_FUNCTION) &&
+      (car->type == T_STRING) &&
+      (cdr->type == T_FUNCTION) &&
+      (cdr->car->type == T_STRING) &&
+      (cdr->cdr->type == T_MANY) &&
+      (cdr->cdr->car->type == T_VOID) &&
+      (cdr->cdr->cdr->type == T_STRING)) {
+    /* Attempt to detect why we get a core-dump on OSF/1
+     * when loading Unicode.so from test_resolv.
+     *
+     * The problem triggs when the type for normalize() is created.
+     * function(string,string:string)
+     *	/grubba 2005-02-04
+     *
+     * Load order:
+     *   Module		Hashtable status	Note
+     *   Nettle.so	OK
+     *   ___Oracle.so	-			load_module() fails.
+     *   Image.so	-			loads ok.
+     *   Unicode.so	FAIL
+     *
+     * pike_type node:
+     *   Field		Before			After
+     *     t		1404b5020		1404b5020
+     *     t->type	4 (function)		65535 (unknown)
+     *     t->car	1404863f8 (1404863f8)	140557560 (1404863f8)
+     *     t->cdr	1404b43d8 (1404b43d8)	400000000 (1404b43d8)
+     *     t->next	0			100000000
+     *  /grubba 2005-06-03
+     */
+    extra_debug_index = index;
+  }
+#endif /* PIKE_EXTRA_DEBUG */
   for(t = pike_type_hash[index]; t; t = t->next) {
 #ifdef PIKE_EXTRA_DEBUG
-    if ((type == T_FUNCTION) &&
-	(car->type == T_STRING) &&
-	(cdr->type == T_FUNCTION) &&
-	(cdr->car->type == T_STRING) &&
-	(cdr->cdr->type == T_MANY) &&
-	(cdr->cdr->car->type == T_VOID) &&
-	(cdr->cdr->cdr->type == T_STRING)) {
-      /* Attempt to detect why we get a core-dump on OSF/1
-       * when loading Unicode.so from test_resolv.
-       *
-       * The problem triggs when the type for normalize() is created.
-       * function(string,string:string)
-       *	/grubba 2005-02-04
-       */
+    if (index == extra_debug_index) {
       fprintf(stderr,
 	      "  %s:%d:PIKE_EXTRA_DEBUG:\n"
 	      "    t: %p\n",
