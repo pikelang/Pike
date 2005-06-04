@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.10 2004/01/11 00:49:55 nilsson Exp $
+// $Id: module.pmod,v 1.11 2005/06/04 23:47:44 marcus Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -234,6 +234,18 @@ static string remap(array(string) item)
     return item[0];
 }
 
+static array(string) reremap(string word, string|function(string:string) selector,
+			     string|void replacement,function(string:string)|void repcb)
+{
+  if(max(@values(word))<128)
+    return ({ word,0 });
+  string s = stringp(selector)? selector : selector(word);
+  return s?
+    ({ master()->resolv("Locale")["Charset"]
+       ->encoder(s,replacement,repcb)->feed(word)->drain(), s }) :
+    ({ word,0 });
+}
+
 //! Separates a header value containing @i{text@} into units and calls
 //! @[MIME.decode_word()] on them.  The result is an array where each element
 //! is a result from @[decode_word()].
@@ -381,6 +393,9 @@ array(array(string|int))
 //!   Either @expr{"base64"@} or @expr{"quoted-printable"@}
 //!  (or either @expr{"b"@} or @expr{"q"@} for short).
 //!
+//! @seealso
+//! @[MIME.encode_words_text_remapped]
+//!
 string encode_words_text(array(string|array(string)) phrase, string encoding)
 {
   phrase = filter(phrase, lambda(string|array(string) w) {
@@ -402,6 +417,54 @@ string encode_words_text(array(string|array(string)) phrase, string encoding)
   return res;
 }
 
+//! This is the reverse of @[MIME.decode_words_text_remapped()].  A
+//! single UNICODE string is provided, which is separated into
+//! fragments and transcoded to selected character sets by this
+//! function as needed.
+//!
+//! @param encoding
+//!   Either @expr{"base64"@} or @expr{"quoted-printable"@}
+//!  (or either @expr{"b"@} or @expr{"q"@} for short).
+//! @param charset
+//!   Either the name of a character set to use, or a function returning
+//!   a character set to use given a text fragment as input.
+//! @param replacement
+//!   The @[replacement] argument to use when calling @[Locale.Charset.encoder]
+//! @param repcb
+//!   The @[repcb] argument to use when calling @[Locale.Charset.encoder]
+//!
+//! @seealso
+//! @[MIME.encode_words_tokenized_remapped]
+//!
+string encode_words_text_remapped(string text, string encoding,
+				  string|function(string:string) charset,
+				  string|void replacement,
+				  function(string:string)|void repcb)
+{
+  array(array(string)) out = ({});
+  string lastword = "";
+  while(sizeof(text)) {
+    sscanf(text, "%[ \t\n\r]%[^ \t\n\r]%s", string ws, string word, text);
+    array(string) ww = reremap(word, charset, replacement, repcb);
+    if(sizeof(ws))
+      if(!ww[1])
+	ww[0] = ws + ww[0];
+      else if(!sizeof(out))
+	out = ({({ws,0})});
+      else if(!out[-1][1])
+	out[-1][0] += ws;
+      else {
+	/* Two encoded words joined by whitespace - not possible */
+	word = lastword+ws+word;
+	ww = reremap(word, charset, replacement, repcb);
+	out = out[..sizeof(out)-2];
+      }
+    lastword = word;
+    out += ({ ww });
+  }
+  return encode_words_text(out, encoding);
+}
+
 //! The inverse of @[decode_words_tokenized()], this functions accepts
 //! an array like the argument to @[quote()], but instead of simple strings
 //! for atoms and quoted-strings, it will also accept pairs of strings to
@@ -412,6 +475,7 @@ string encode_words_text(array(string|array(string)) phrase, string encoding)
 //!  (or either @expr{"b"@} or @expr{"q"@} for short).
 //!
 //! @seealso
+//!   @[MIME.encode_words_quoted_remapped()]
 //!   @[MIME.encode_words_quoted_labled()]
 //!
 string encode_words_quoted(array(array(string)|int) phrase, string encoding)
@@ -420,6 +484,27 @@ string encode_words_quoted(array(array(string)|int) phrase, string encoding)
 				   return intp(item)? item :
 				     encode_word(item, encoding);
 				 }));
+}
+
+//! The inverse of @[decode_words_tokenized_remapped()], this functions
+//! accepts an array equivalent to the argument of @[quote()], but also
+//! performs on demand word encoding in the same way as
+//! @[encode_words_text_remapped()].
+//!
+//! @seealso
+//!   @[MIME.encode_words_text_remapped()]
+//!   @[MIME.encode_words_quoted_labled_remapped()]
+//!
+string encode_words_quoted_remapped(array(string|int) phrase, string encoding,
+				    string|function(string:string) charset,
+				    string|void replacement,
+				    function(string:string)|void repcb)
+{
+  return encode_words_quoted(map(phrase, lambda(string|int item) {
+					   return intp(item)? item :
+					     reremap(item, charset,
+						     replacement, repcb);
+					 }), encoding);
 }
 
 //! The inverse of @[decode_words_tokenized_labled()], this functions accepts
@@ -436,6 +521,7 @@ string encode_words_quoted(array(array(string)|int) phrase, string encoding)
 //!
 //! @seealso
 //!   @[MIME.encode_words_quoted()]
+//!   @[MIME.encode_words_quoted_labled_remapped()]
 //!
 string encode_words_quoted_labled(array(array(string|int|array(string|array(string)))) phrase, string encoding)
 {
@@ -458,6 +544,44 @@ string encode_words_quoted_labled(array(array(string|int|array(string|array(stri
 			       return item;
 			     }
 			   }));
+}
+
+//! The inverse of @[decode_words_tokenized_labled_remapped()], this function
+//! accepts an array equivalent to the argument of @[quote_labled()], but also
+//! performs on demand word encoding in the same way as
+//! @[encode_words_text_remapped()].
+//!
+string encode_words_quoted_labled_remapped(array(array(string|int)) phrase,
+					   string encoding,
+					   string|function(string:string) charset,
+					   string|void replacement,
+					   function(string:string)|void repcb)
+{
+  return quote_labled(map(phrase, lambda(array(string|int) item) {
+				    switch(item[0]) {
+				    case "word":
+				      item = item[..0]+reremap(item[1],
+							       charset,
+							       replacement,
+							       repcb);
+				      if(sizeof(item)>2 && item[2])
+					return ({
+					  "encoded-word",
+					  encode_word(item[1..], encoding) });
+				      else
+					return item;
+				    case "comment":
+				      return ({
+					"comment",
+					encode_words_text_remapped(item[1],
+								   encoding,
+								   charset,
+								   replacement,
+								   repcb) });
+				    default:
+				      return item;
+				    }
+				  }));
 }
 
 //! Provide a reasonable default for the subtype field.
