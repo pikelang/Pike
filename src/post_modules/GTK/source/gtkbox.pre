@@ -53,7 +53,7 @@ mapping(string:int) query_child_packing(GTK.Widget child)
   push_int( pa );
   push_constant_text( "type" );
   push_int( ty );
-  f_aggregate_mapping( 6 );
+  f_aggregate_mapping( 8 );
 }
 
 
