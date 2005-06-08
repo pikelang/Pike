@@ -61,13 +61,13 @@ back to normal integer?</fixme></p>
 integers. Also note these functions:</p>
 
 <dl>
-<dt><tt>int intp(mixed <i>x</i>)</tt></dt>
+<dt><tt>int <ref>intp</ref>(mixed <i>x</i>)</tt></dt>
 <dd>This function returns 1 if <i>x</i> is an int, 0 otherwise.</dd>
-<dt><tt>int random(int <i>x</i>)</tt></dt>
+<dt><tt>int <ref>random</ref>(int <i>x</i>)</tt></dt>
 <dd>This function returns a random number greater or equal to zero and smaller than <i>x</i>.</dd>
-<dt><tt>int reverse(int <i>x</i>)</tt></dt>
+<dt><tt>int <ref>reverse</ref>(int <i>x</i>)</tt></dt>
 <dd>This function reverses the order of the bits in <i>x</i> and returns the new number. It is not very useful.</dd>
-<dt><tt>int sqrt(int <i>x</i>)</tt></dt>
+<dt><tt>int <ref>sqrt</ref>(int <i>x</i>)</tt></dt>
 <dd>This computes the square root of <i>x</i>. The value is always rounded down.</dd>
 </dl>
 </subsection>
@@ -100,36 +100,36 @@ Also, these functions operates on floats:</p>
 
 <dl>
 <dt>trigonometric functions</dt>
-<dd> The trigonometric functions are: <tt>sin</tt>, <tt>asin</tt>,
-     <tt>cos</tt>, <tt>acos</tt>, <tt>tan</tt> and <tt>atan</tt>.
+<dd> The trigonometric functions are: <ref>sin</ref>, <ref>asin</ref>,
+     <ref>cos</ref>, <ref>acos</ref>, <ref>tan</ref> and <ref>atan</ref>.
      If you do not know what these functions do you probably don't
      need them. Asin, acos and atan are of course short for
      arc sine, arc cosine and arc tangent. On a calculator they
      are often known as inverse sine, inverse cosine and
      inverse tangent.</dd>
 
-<dt><tt>float log(float <i>x</i>)</tt></dt>
+<dt><tt>float <ref>log</ref>(float <i>x</i>)</tt></dt>
 <dd>This function computes the natural logarithm of <i>x</i>,</dd>
 
-<dt><tt>float exp(float <i>x</i>)</tt></dt>
+<dt><tt>float <ref>exp</ref>(float <i>x</i>)</tt></dt>
 <dd>This function computes <b>e</b> raised to the power of <i>x</i>.</dd>
 
-<dt><tt>float pow(float|int <i>x</i>, float|int <i>y</i>)</tt></dt>
+<dt><tt>float <ref>pow</ref>(float|int <i>x</i>, float|int <i>y</i>)</tt></dt>
 <dd>This function computes <i>x</i> raised to the power of <i>y</i>.</dd>
 
-<dt><tt>float sqrt(float <i>x</i>)</tt></dt>
+<dt><tt>float <ref>sqrt</ref>(float <i>x</i>)</tt></dt>
 <dd>This computes the square root of <i>x</i>.</dd>
 
-<dt><tt>float floor(float <i>x</i>)</tt></dt>
+<dt><tt>float <ref>floor</ref>(float <i>x</i>)</tt></dt>
 <dd>This function computes the largest integer value less than or equal
     to <i>x</i>. Note that the value is returned as a <tt>float</tt>,
     not an <tt>int</tt>.</dd>
 
-<dt><tt>float ceil(float <i>x</i>)</tt></dt>
+<dt><tt>float <ref>ceil</ref>(float <i>x</i>)</tt></dt>
 <dd>This function computes the smallest integer value greater than or
     equal to <i>x</i> and returns it as a <tt>float</tt>.</dd>
 
-<dt><tt>float round(float <i>x</i>)</tt></dt>
+<dt><tt>float <ref>round</ref>(float <i>x</i>)</tt></dt>
 <dd>This function computes the closest integer value to <i>x</i> 
     and returns it as a <tt>float</tt>.</dd>
 </dl>
@@ -225,7 +225,8 @@ s[6]='w';
 <p>However, you should be aware that this does in fact create a new string and
 it may need to copy the string <i>s</i> to do so. This means that the above
 operation can be quite slow for large strings. You have been warned.
-Most of the time, you can use <tt>replace</tt>, <tt>sscanf</tt>, <tt>`/</tt>
+Most of the time, you can use <ref>replace</ref>, <ref>sscanf</ref>,
+<ref>`/</ref>
 or some other high-level string operation to avoid having to use the above
 construction too much.</p>
 
@@ -266,41 +267,42 @@ construction too much.</p>
 <p>Also, these functions operates on strings:</p>
 
 <dl>
-<dt><tt>string String.capitalize(string <i>s</i>)</tt></dt>
+<dt><tt>string <ref>String.capitalize</ref>(string <i>s</i>)</tt></dt>
 <dd>Returns <i>s</i> with the first character converted to upper case.</dd>
 
-<dt><tt>int String.count(string <i>haystack</i>, string <i>needle</i>)</tt></dt>
+<dt><tt>int <ref>String.count</ref>(string <i>haystack</i>, string <i>needle</i>)</tt></dt>
 <dd>Returns the number of occurances of <i>needle</i> in <i>haystack</i>.
-    Equvivalent to <tt>sizeof(<i>haystack</i>/<i>needle</i>)-1</tt>.</dd>
+    Equvivalent to <tt><ref>sizeof</ref>(<i>haystack</i>/<i>needle</i>)-1</tt>.</dd>
 
-<dt><tt>int String.width(string <i>s</i>)</tt></dt>
+<dt><tt>int <ref>String.width</ref>(string <i>s</i>)</tt></dt>
 <dd>Returns the width <i>s</i> in bits (8, 16 or 32).</dd>
 
-<dt><tt>string lower_case(string <i>s</i>)</tt></dt>
+<dt><tt>string <ref>lower_case</ref>(string <i>s</i>)</tt></dt>
 <dd>Returns <i>s</i> with all the upper case characters converted to lower case.</dd>
 
-<dt><tt>string replace(string <i>s</i>, string <i>from</i>, string <i>to</i>)</tt></dt>
+<dt><tt>string <ref>replace</ref>(string <i>s</i>, string <i>from</i>, string <i>to</i>)</tt></dt>
 <dd>This function replaces all occurrences of the string <i>from</i>
     in <i>s</i> with <i>to</i> and returns the new string.</dd>
 
-<dt><tt>string reverse(string <i>s</i>)</tt></dt>
+<dt><tt>string <ref>reverse</ref>(string <i>s</i>)</tt></dt>
 <dd>This function returns a copy of <i>s</i> with the last byte from <i>s</i>
     first, the second last in second place and so on.</dd>
 
-<dt><tt>int search(string <i>haystack</i>, string <i>needle</i>)</tt></dt>
+<dt><tt>int <ref>search</ref>(string <i>haystack</i>, string <i>needle</i>)</tt></dt>
 <dd>This function finds the first occurrence of <i>needle</i> in
     <i>haystack</i> and returns where it found it.</dd>
 
-<dt><tt>string sizeof(string <i>s</i>)</tt></dt>
-<dd>Same as <tt>strlen(<i>s</i>)</tt>, returns the length of the string.</dd>
+<dt><tt>string <ref>sizeof</ref>(string <i>s</i>)</tt></dt>
+<dd>Same as <tt><ref>strlen</ref>(<i>s</i>)</tt>,
+returns the length of the string.</dd>
 
-<dt><tt>int stringp(mixed <i>s</i>)</tt></dt>
+<dt><tt>int <ref>stringp</ref>(mixed <i>s</i>)</tt></dt>
 <dd>This function returns 1 if <i>s</i> is a string, 0 otherwise.</dd>
 
-<dt><tt>int strlen(string <i>s</i>)</tt></dt>
+<dt><tt>int <ref>strlen</ref>(string <i>s</i>)</tt></dt>
 <dd>Returns the length of the string <i>s</i>.</dd>
 
-<dt><tt>string upper_case(string <i>s</i>)</tt></dt>
+<dt><tt>string <ref>upper_case</ref>(string <i>s</i>)</tt></dt>
 <dd>This function returns <i>s</i> with all lower case characters converted
     to upper case.</dd>
 </dl>
@@ -407,19 +409,19 @@ As you can see, it is a very simple memory structure.</p>
      the part of the array that was not included by dividing <i>a</i> by
      <i>b</i>.</dd>
 
-<dt><tt>array aggregate(mixed ... <i>elems</i>)</tt></dt>
+<dt><tt>array <ref>aggregate</ref>(mixed ... <i>elems</i>)</tt></dt>
 <dd> This function does the same as the <tt>({ })</tt> operator; it creates an
      array from all arguments given to it. In fact, writing <tt>({1,2,3})</tt>
      is the same as writing <tt>aggregate(1,2,3)</tt>.</dd>
 
-<dt><tt>array allocate(int <i>size</i>)</tt></dt>
+<dt><tt>array <ref>allocate</ref>(int <i>size</i>)</tt></dt>
 <dd>This function allocates a new array of size <tt>size</tt>. All the elements
     in the new array will be zeroes.</dd>
 
-<dt><tt>int arrayp(mixed <i>a</i>)</tt></dt>
+<dt><tt>int <ref>arrayp</ref>(mixed <i>a</i>)</tt></dt>
 <dd>This function returns 1 if <i>a</i> is an array, 0 otherwise.</dd>
 
-<dt><tt>array column(array(mixed) <i>a</i>, mixed <i>ind</i>)</tt></dt>
+<dt><tt>array <ref>column</ref>(array(mixed) <i>a</i>, mixed <i>ind</i>)</tt></dt>
 <dd>This function goes through the array <i>a</i> and indexes every element
     in it on <i>ind</i> and builds an array of the results. So if you have
     an array <i>a</i> in which each element is a also an array. This function
@@ -428,12 +430,12 @@ As you can see, it is a very simple memory structure.</p>
     <tt>column( ({ ({1,2,3}), ({4,5,6}), ({7,8,9}) }), 2)</tt> will return
     <tt>({3,6,9})</tt>.</dd>
 
-<dt><tt>int equal(mixed <i>a</i>, mixed <i>b</i>)</tt></dt>
+<dt><tt>int <ref>equal</ref>(mixed <i>a</i>, mixed <i>b</i>)</tt></dt>
 <dd> This function returns 1 if if <i>a</i> and <i>b</i> look the same. They
      do not have to be pointers to the same array, as long as they are the same
      size and contain equal data.</dd>
 
-<dt><tt>array filter(array <i>a</i>, mixed <i>func</i>, mixed ... <i>args</i>)</tt></dt>
+<dt><tt>array <ref>filter</ref>(array <i>a</i>, mixed <i>func</i>, mixed ... <i>args</i>)</tt></dt>
 <dd><tt>filter</tt> returns every element in <i>a</i> for which
     <i>func</i> returns <b>true</b> when called with that element as
     first argument, and <i>args</i> for the second, third, etc.
@@ -441,42 +443,42 @@ As you can see, it is a very simple memory structure.</p>
     the reference for <tt><ref>filter</ref></tt> for
     details about that.)</dd>
 
-<dt><tt>array map(array <i>a</i>, mixed <i>func</i>, mixed ... <i>args</i>)</tt></dt>
-<dd>This function works similar to <tt>filter</tt> but returns the
+<dt><tt>array <ref>map</ref>(array <i>a</i>, mixed <i>func</i>, mixed ... <i>args</i>)</tt></dt>
+<dd>This function works similar to <ref>filter</ref> but returns the
     results of the function <i>func</i> instead of returning the
     elements from <i>a</i> for which <i>func</i> returns <b>true</b>.
-    (Like <tt>filter</tt>, this function accepts other things for
+    (Like <ref>filter</ref>, this function accepts other things for
     <i>a</i> and <i>func</i>; see the reference for <ref>map</ref>.)</dd>
 
-<dt><tt>array replace(array <i>a</i>, mixed <i>from</i>, mixed <i>to</i>)</tt></dt>
+<dt><tt>array <ref>replace</ref>(array <i>a</i>, mixed <i>from</i>, mixed <i>to</i>)</tt></dt>
 <dd>This function will create a copy of <i>a</i> with all elements equal to
     <i>from</i> replaced by <i>to</i>.</dd>
 
-<dt><tt>array reverse(array <i>a</i>)</tt></dt>
+<dt><tt>array <ref>reverse</ref>(array <i>a</i>)</tt></dt>
 <dd><tt>Reverse</tt> will create a copy of <i>a</i> with the last element first,
     the last but one second, and so on.</dd>
 
-<dt><tt>array rows(array <i>a</i>, array <i>indexes</i>)</tt></dt>
-<dd>This function is similar to <tt>column</tt>. It indexes <i>a</i> with
+<dt><tt>array <ref>rows</ref>(array <i>a</i>, array <i>indexes</i>)</tt></dt>
+<dd>This function is similar to <ref>column</ref>. It indexes <i>a</i> with
     each element from <i>indexes</i> and returns the results in an array.
     For example: <tt>rows( ({"a","b","c"}), ({ 2,1,2,0}) ) </tt> will return
     <tt>({"c","b","c","a"})</tt>.</dd>
 
-<dt><tt>int search(array <i>haystack</i>, mixed <i>needle</i>)</tt></dt>
+<dt><tt>int <ref>search</ref>(array <i>haystack</i>, mixed <i>needle</i>)</tt></dt>
 <dd>This function returns the index of the first occurrence of an element
     equal (tested with <tt>==</tt>) to <i>needle</i> in the array
     <i>haystack</i>.</dd>
 
-<dt><tt>int sizeof(mixed <i>arr</i>)</tt></dt>
+<dt><tt>int <ref>sizeof</ref>(mixed <i>arr</i>)</tt></dt>
 <dd>This function returns the number of elements in the array <i>arr</i>.</dd>
 
-<dt><tt>array sort(array <i>arr</i>, array ... <i>rest</i>)</tt></dt>
+<dt><tt>array <ref>sort</ref>(array <i>arr</i>, array ... <i>rest</i>)</tt></dt>
 <dd>This function sorts <i>arr</i> in smaller-to-larger order. Numbers, floats
     and strings can be sorted. If there are any additional arguments, they
     will be permutated in the same manner as <i>arr</i>. See
     <!-- <ref to=functions> --> functions for more details.</dd>
 
-<dt><tt>array uniq(array <i>a</i>)</tt></dt>
+<dt><tt>array <ref>Array.uniq</ref>(array <i>a</i>)</tt></dt>
 <dd>This function returns a copy of the array <i>a</i> with all duplicate
     elements removed. Note that this function can return the elements
     in any order.</dd>
@@ -542,43 +544,43 @@ mappings.</p>
 <dt> not same ( <tt><i>a</i> != <i>b</i></tt> )</dt>
 <dd> Returns 0 if <i>a</i> is <b>the same</b> mapping as <i>b</i>, 1 otherwise.</dd>
 
-<dt><tt>array indices(mapping <i>m</i>)</tt></dt>
+<dt><tt>array <ref>indices</ref>(mapping <i>m</i>)</tt></dt>
 <dd><tt>Indices</tt> returns an array containing all the indices in the mapping <i>m</i>.</dd>
 
-<dt><tt>mixed m_delete(mapping <i>m</i>, mixed <i>ind</i>)</tt></dt>
+<dt><tt>mixed <ref>m_delete</ref>(mapping <i>m</i>, mixed <i>ind</i>)</tt></dt>
 <dd>This function removes the index-value pair with the index <i>ind</i> from the mapping <i>m</i>.
     It will return the value that was removed.</dd>
 
-<dt><tt>int mappingp(mixed <i>m</i>)</tt></dt>
+<dt><tt>int <ref>mappingp</ref>(mixed <i>m</i>)</tt></dt>
 <dd>This function returns 1 if <i>m</i> is a mapping, 0 otherwise.</dd>
 
-<dt><tt>mapping mkmapping(array <i>ind</i>, array <i>val</i>)</tt></dt>
+<dt><tt>mapping <ref>mkmapping</ref>(array <i>ind</i>, array <i>val</i>)</tt></dt>
 <dd>This function constructs a mapping from the two arrays <i>ind</i> and
     <i>val</i>. Element 0 in <i>ind</i> and element 0 in <i>val</i> becomes
     one index-value pair. Element 1 in <i>ind</i> and element 1 in <i>val</i>
     becomes another index-value pair, and so on..</dd>
 
-<dt><tt>mapping replace(mapping <i>m</i>, mixed <i>from</i>, mixed <i>to</i>)</tt></dt>
+<dt><tt>mapping <ref>replace</ref>(mapping <i>m</i>, mixed <i>from</i>, mixed <i>to</i>)</tt></dt>
 <dd>This function creates a copy of the mapping <i>m</i> with all values equal to
     <i>from</i> replaced by <i>to</i>.</dd>
 
-<dt><tt>mixed search(mapping <i>m</i>, mixed <i>val</i>)</tt></dt>
+<dt><tt>mixed <ref>search</ref>(mapping <i>m</i>, mixed <i>val</i>)</tt></dt>
 <dd>This function returns the index of the 'first' index-value pair which has the value <i>val</i>.</dd>
 
-<dt><tt>int sizeof(mapping <i>m</i>)</tt></dt>
+<dt><tt>int <ref>sizeof</ref>(mapping <i>m</i>)</tt></dt>
 <dd><tt>Sizeof</tt> returns how many index-value pairs there are in the mapping.</dd>
 
-<dt><tt>array values(mapping <i>m</i>)</tt></dt>
-<dd>This function does the same as <tt>indices</tt>, but returns an array with all the values instead.
-    If <tt>indices</tt> and <tt>values</tt> are called on the same mapping after each other, without
+<dt><tt>array <ref>values</ref>(mapping <i>m</i>)</tt></dt>
+<dd>This function does the same as <ref>indices</ref>, but returns an array with all the values instead.
+    If <ref>indices</ref> and <ref>values</ref> are called on the same mapping after each other, without
     any other mapping operations in between, the returned arrays will be in the same order. They can
-    in turn be used as arguments to <tt>mkmapping</tt> to rebuild the mapping <i>m</i> again.</dd>
+    in turn be used as arguments to <ref>mkmapping</ref> to rebuild the mapping <i>m</i> again.</dd>
 
-<dt><tt>int zero_type(mixed t)</tt></dt>
+<dt><tt>int <ref>zero_type</ref>(mixed t)</tt></dt>
 <dd>When indexing a mapping and the index is not found, zero is returned. However, problems can arise
     if you have also stored zeroes in the mapping. This function allows you to see the difference between
     the two cases. If <tt>zero_type(<i>m</i> [ <i>ind</i> ])</tt> returns 1, it means that the value was
-    not present in the mapping. If the value was present in the mapping, <tt>zero_type</tt> will return
+    not present in the mapping. If the value was present in the mapping, <ref>zero_type</ref> will return
     something else than 1.</dd>
 </dl>
 </subsection>
@@ -707,26 +709,31 @@ section again.</p>
      <b>clone</b> the program. This is accomplished by using a pointer
      to the <tt>program</tt> as if it was a function and call it. That
      creates a new object and calls the function <tt>create</tt> in the
-     new object with the arguments. It is also possible to use the
+     new object with the arguments.
+
+<!--
+     It is also possible to use the
      functions <tt>new()</tt> and <tt>clone()</tt> which do exactly the
      same thing except you can use a string to specify what program you
-     want to clone.</dd>
+     want to clone.
+-->
+</dd>
 
 <dt> compiling</dt>
 <dd> All programs are generated by compiling a string. The string may of
      course be read from a file. For this purpose there are three functions:
 <expr>
-program compile(string p);
-program compile_file(string filename);
-program compile_string(string p, string filename);
+program <ref>compile</ref>(string p);
+program <ref>compile_file</ref>(string filename);
+program <ref>compile_string</ref>(string p, string filename);
 </expr>
-     <tt>compile_file</tt> simply reads the file given as argument, compiles
-     it and returns the resulting program. <tt>compile_string</tt> instead
+     <ref>compile_file</ref> simply reads the file given as argument, compiles
+     it and returns the resulting program. <ref>compile_string</ref> instead
      compiles whatever is in the string <i>p</i>. The second argument,
      <i>filename</i>, is only used in debug printouts when an error occurs
-     in the newly made program. Both <tt>compile_file</tt> and
-     <tt>compile_string</tt> calls <tt>compile</tt> to actually compile
-     the string after calling <tt>cpp</tt> on it.</dd>
+     in the newly made program. Both <ref>compile_file</ref> and
+     <ref>compile_string</ref> call <ref>compile</ref> to actually compile
+     the string after having called <ref>cpp</ref> on it.</dd>
 
 <dt> casting</dt>
 <dd> Another way of compiling files to program is to use the <b>cast</b>
@@ -735,7 +742,7 @@ program compile_string(string p, string filename);
      The master also keeps the program in a cache, so if you later need the
      same program again it will not be re-compiled.</dd>
 
-<dt> <tt>int programp(mixed <i>p</i>)</tt></dt>
+<dt> <tt>int <ref>programp</ref>(mixed <i>p</i>)</tt></dt>
 <dd> This function returns 1 if <i>p</i> is a program, 0 otherwise.</dd>
 
 <dt> comparisons</dt>
@@ -753,11 +760,11 @@ program compile_string(string p, string filename);
                 <tt><i>p</i> -> <i>identifier</i></tt> )</dt>
 <dd> Retreives the value of the named constant from a program.</dd>
 
-<dt> <tt>array(string) indices(program <i>p</i>)</tt></dt>
+<dt> <tt>array(string) <ref>indices</ref>(program <i>p</i>)</tt></dt>
 <dd> Returns an array with the names of all non-static constants in the
      program.</dd>
 
-<dt> <tt>array(mixed) values(program <i>p</i>)</tt></dt>
+<dt> <tt>array(mixed) <ref>values</ref>(program <i>p</i>)</tt></dt>
 <dd> Returns an array with the values of all non-static constants in the
      program.</dd>
 </dl>
@@ -831,38 +838,34 @@ the <tt>record</tt> program.</p>
      This means that <tt>o-&gt;foo</tt> is the same as <tt>o["foo"]</tt></dd>
 
 <dt> cloning</dt>
-<dd> As discussed in the section about programs, cloning a program can be done
-     in two different ways:
-     <ol>
-     <li> Use a pointer to the program as a function and call it.</li>
-     <li> Use the functions <tt>new</tt> or <tt>clone</tt>. (They are the same function.)</li>
-     </ol>
+<dd> As discussed in the section about programs, cloning a program is done
+     by using a pointer to the program as a function and calling it.
      Whenever you clone an object, all the global variables will be
      initialized. After that the function <tt>create</tt> will be called
      with any arguments you call the program with.</dd>
 
-<dt> <tt>void destruct(object <i>o</i>)</tt></dt>
+<dt> <tt>void <ref>destruct</ref>(object <i>o</i>)</tt></dt>
 <dd> This function invalidates all references to the object <i>o</i> and
      frees all variables in that object. This function is also called when
      <i>o</i> runs out of references. If there is a function named
      <tt>destroy</tt> in the object, it will be called before the actual
      destruction of the object.</dd>
 
-<dt> <tt>array(string) indices(object <i>o</i>)</tt></dt>
+<dt> <tt>array(string) <ref>indices</ref>(object <i>o</i>)</tt></dt>
 <dd> This function returns a list of all identifiers in the object <i>o</i>.</dd>
 
-<dt> <tt>program object_program(object <i>o</i>)</tt></dt>
+<dt> <tt>program <ref>object_program</ref>(object <i>o</i>)</tt></dt>
 <dd> This function returns the program from which <i>o</i> was cloned.</dd>
 
-<dt> <tt>int objectp(mixed <i>o</i>)</tt></dt>
+<dt> <tt>int <ref>objectp</ref>(mixed <i>o</i>)</tt></dt>
 <dd> This function returns 1 if <i>o</i> is an object, 0 otherwise.
      Note that if <i>o</i> has been destructed, this function will return 0.</dd>
 
-<dt> <tt>object this_object()</tt></dt>
+<dt> <tt>object <ref>this_object</ref>()</tt></dt>
 <dd> This function returns the object in which the interpreter is currently
      executing.</dd>
 
-<dt> <tt>array values(object <i>o</i>)</tt></dt>
+<dt> <tt>array <ref>values</ref>(object <i>o</i>)</tt></dt>
 <dd> This function returns the same as <tt>rows(o,indices(o))</tt>.
      That means it returns all the values of the identifiers in the
      object <i>o</i>.</dd>
@@ -882,7 +885,7 @@ in the object a <tt>function</tt> is returned. Despite its name, a
 <!-- <image src=function.fig>fig 4.6 -->
 
 <p>When the function pointer is called, the interpreter sets
-<tt>this_object()</tt> to the object in which the function is located and
+<ref>this_object()</ref> to the object in which the function is located and
 proceeds to execute the function it points to. Also note that function pointers
 can be passed around just like any other data type:</p>
 
@@ -931,17 +934,17 @@ integer argument and another function 'foo' which takes a float argument.</p>
 <dd> As mentioned earlier, all function pointers can be called. In this example
      the function <i>f</i> is called with the arguments <i>args</i>.</dd>
 
-<dt> <tt>string function_name(function <i>f</i>)</tt></dt>
+<dt> <tt>string <ref>function_name</ref>(function <i>f</i>)</tt></dt>
 <dd> This function returns the name of the function <i>f</i> is pointing at.</dd>
 
-<dt> <tt>object function_object(function <i>f</i>)</tt></dt>
+<dt> <tt>object <ref>function_object</ref>(function <i>f</i>)</tt></dt>
 <dd> This function returns the object the function <i>f</i> is located in.</dd>
 
-<dt> <tt>int functionp(mixed <i>f</i>)</tt></dt>
+<dt> <tt>int <ref>functionp</ref>(mixed <i>f</i>)</tt></dt>
 <dd> This function returns 1 if <i>f</i> is a <tt>function</tt>, 0 otherwise.
      If <i>f</i> is located in a destructed object, 0 is returned.</dd>
 
-<dt> <tt>function this_function()</tt></dt>
+<dt> <tt>function <ref>this_function</ref>()</tt></dt>
 <dd> This function returns a pointer to the function it is called from.
      This is normally only used with <b>lambda</b> functions because they
      do not have a name.</dd>
@@ -971,7 +974,7 @@ int main(int argc, array(string) argv)
 <p>This program will of course write <tt>Hello world.</tt></p>
 
 <p>Sometimes you want to create a copy of a mapping, array or object. To
-do so you simply call <tt>copy_value</tt> with whatever you want to copy
+do so you simply call <ref>copy_value</ref> with whatever you want to copy
 as argument. Copy_value is recursive, which means that if you have an
 array containing arrays, copies will be made of all those arrays.</p>
 
