@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.885 2005/06/01 15:14:31 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.886 2005/06/08 17:27:52 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -291,91 +291,96 @@ fi
 AC_DEFUN(AC_SYS_COMPILER_FLAG,
 [
   AC_MSG_CHECKING($1)
-  AC_CACHE_VAL(pike_cv_option_$2,
-  [
-    OLD_CPPFLAGS="[$]CPPFLAGS"
-    CPPFLAGS="[$]OLD_CPPFLAGS $1"
-    old_ac_link="[$]ac_link"
-    ac_link="[$]old_ac_link 2>conftezt.out.2"
-    AC_TRY_RUN([
-      int foo;
-      int main(int argc, char **argv)
-      {
-        /* The following code triggs gcc:s generation of aline opcodes,
-	 * which some versions of as does not support.
-	 */
-	if (argc > 0) argc = 0;
-	return argc;
-      }
-    ],pike_cv_option_$2=yes,
-      pike_cv_option_$2=no, [
-      AC_TRY_LINK([], [], pike_cv_option_$2=yes, pike_cv_option_$2=no)
-    ])
-    if grep -i 'unrecognized option' <conftezt.out.2 >/dev/null; then
-      pike_cv_option_$2=no
-    elif grep -i 'unknown option' <conftezt.out.2 >/dev/null; then
-      # cc/HPUX says the following regarding -q64:
-      #
-      # cc: warning 422: Unknown option "6" ignored.
-      # cc: warning 422: Unknown option "4" ignored.
-      pike_cv_option_$2=no
-    elif grep -i 'optimizer bugs' <conftezt.out.2 >/dev/null; then
-      # gcc/FreeBSD-4.6/alpha says the following regarding -O2:
-      #
-      # cc1: warning: 
-      # ***
-      # ***     The -O2 flag TRIGGERS KNOWN OPTIMIZER BUGS ON THIS PLATFORM
-      # ***
-      pike_cv_option_$2=no
-    elif grep -i 'not found' <conftezt.out.2 >/dev/null; then
-      # cc/AIX says the following regarding +O3:
-      #
-      # cc: 1501-228 input file +O3 not found
-      pike_cv_option_$2=no
-    elif grep -i 'ignored' <conftezt.out.2 >/dev/null; then
-      # gcc/AIX says the following regarding -fpic:
-      #
-      # cc1: warning: -fpic ignored (all code is position independent)
-      pike_cv_option_$2=no
-    elif grep -i 'ignoring option'  <conftezt.out.2 >/dev/null; then
-      # icc/Linux says the following regarding -Wcomment:
-      #
-      # icc: Command line warning: ignoring option '-W'; no argument required
-      pike_cv_option_$2=no
-    elif grep -i 'not supported' <conftezt.out.2 >/dev/null; then
-      # icc/Linux says the following regarding -W:
-      #
-      # icc: Command line remark: option '-W' not supported
-      pike_cv_option_$2=no
-    elif grep -i 'illegal option' <conftezt.out.2 >/dev/null; then
-      # cc/Solaris says the following regarding -xdepend:
-      #
-      # cc: Warning: illegal option -xdepend
-      pike_cv_option_$2=no
-    else :; fi
-    ifelse([$6], , ,[
-    if test "$pike_cv_option_$2" = yes; then
-      :
-      $6
-    else :; fi
-    ]) dnl
-    CPPFLAGS="[$]OLD_CPPFLAGS"
-    ac_link="[$]old_ac_link"
-    rm conftezt.out.2
-  ])
-  
-  if test x"[$]pike_cv_option_$2" = "xyes" ; then
-    $3="[$]$3 $1"
-    case "$3" in
-      OPTIMIZE)
-        CFLAGS="[$]CFLAGS $1"
-      ;;
-    esac
-    AC_MSG_RESULT(yes)
-    $5
-  else
-    AC_MSG_RESULT(no)
+  if test "x[$]pike_disabled_option_$2" = "xyes"; then
+    AC_MSG_RESULT(disabled)
     $4
+  else
+    AC_CACHE_VAL(pike_cv_option_$2,
+    [
+      OLD_CPPFLAGS="[$]CPPFLAGS"
+      CPPFLAGS="[$]OLD_CPPFLAGS $1"
+      old_ac_link="[$]ac_link"
+      ac_link="[$]old_ac_link 2>conftezt.out.2"
+      AC_TRY_RUN([
+        int foo;
+        int main(int argc, char **argv)
+        {
+          /* The following code triggs gcc:s generation of aline opcodes,
+  	 * which some versions of as does not support.
+  	 */
+  	if (argc > 0) argc = 0;
+  	return argc;
+        }
+      ],pike_cv_option_$2=yes,
+        pike_cv_option_$2=no, [
+        AC_TRY_LINK([], [], pike_cv_option_$2=yes, pike_cv_option_$2=no)
+      ])
+      if grep -i 'unrecognized option' <conftezt.out.2 >/dev/null; then
+        pike_cv_option_$2=no
+      elif grep -i 'unknown option' <conftezt.out.2 >/dev/null; then
+        # cc/HPUX says the following regarding -q64:
+        #
+        # cc: warning 422: Unknown option "6" ignored.
+        # cc: warning 422: Unknown option "4" ignored.
+        pike_cv_option_$2=no
+      elif grep -i 'optimizer bugs' <conftezt.out.2 >/dev/null; then
+        # gcc/FreeBSD-4.6/alpha says the following regarding -O2:
+        #
+        # cc1: warning: 
+        # ***
+        # ***     The -O2 flag TRIGGERS KNOWN OPTIMIZER BUGS ON THIS PLATFORM
+        # ***
+        pike_cv_option_$2=no
+      elif grep -i 'not found' <conftezt.out.2 >/dev/null; then
+        # cc/AIX says the following regarding +O3:
+        #
+        # cc: 1501-228 input file +O3 not found
+        pike_cv_option_$2=no
+      elif grep -i 'ignored' <conftezt.out.2 >/dev/null; then
+        # gcc/AIX says the following regarding -fpic:
+        #
+        # cc1: warning: -fpic ignored (all code is position independent)
+        pike_cv_option_$2=no
+      elif grep -i 'ignoring option'  <conftezt.out.2 >/dev/null; then
+        # icc/Linux says the following regarding -Wcomment:
+        #
+        # icc: Command line warning: ignoring option '-W'; no argument required
+        pike_cv_option_$2=no
+      elif grep -i 'not supported' <conftezt.out.2 >/dev/null; then
+        # icc/Linux says the following regarding -W:
+        #
+        # icc: Command line remark: option '-W' not supported
+        pike_cv_option_$2=no
+      elif grep -i 'illegal option' <conftezt.out.2 >/dev/null; then
+        # cc/Solaris says the following regarding -xdepend:
+        #
+        # cc: Warning: illegal option -xdepend
+        pike_cv_option_$2=no
+      else :; fi
+      ifelse([$6], , ,[
+      if test "$pike_cv_option_$2" = yes; then
+        :
+        $6
+      else :; fi
+      ]) dnl
+      CPPFLAGS="[$]OLD_CPPFLAGS"
+      ac_link="[$]old_ac_link"
+      rm conftezt.out.2
+    ])
+    
+    if test x"[$]pike_cv_option_$2" = "xyes" ; then
+      $3="[$]$3 $1"
+      case "$3" in
+        OPTIMIZE)
+          CFLAGS="[$]CFLAGS $1"
+        ;;
+      esac
+      AC_MSG_RESULT(yes)
+      $5
+    else
+      AC_MSG_RESULT(no)
+      $4
+    fi
   fi
 ])
 
@@ -413,6 +418,68 @@ fi
 
 #############################################################################
 
+# ABI selection.
+
+AC_ARG_WITH(abi, MY_DESCR([--with-abi=32/64],
+			  [specify ABI to use in case there are multiple]))
+AC_MSG_CHECKING([which ABI to use])
+case "x$with_abi" in
+  *32)
+    with_abi="32"
+  ;;
+  *64)
+    with_abi="64"
+  ;;
+  *)
+    # Defaults
+    with_abi="32"
+    case "x`uname -m`" in
+      xia64)
+        with_abi="64"
+      ;;
+      xx86_64)
+	with_abi="64"
+      ;;
+    esac
+    if type isainfo 2>/dev/null >/dev/null; then
+      # Solaris
+      with_abi="`isainfo -b`"
+    elif type sysctl 2>/dev/null >/dev/null; then
+      # MacOS X or Linux.
+      #
+      # On MacOS X hw.optional.64bitop is set to 1 if
+      # 64bit is supported and useful.
+      if test "`sysctl -n hw.optional.64bitops 2>/dev/null`" = "1"; then
+        with_abi="64"
+      fi
+    fi
+  ;;
+esac
+AC_MSG_RESULT($with_abi)
+
+if test "x$with_abi" = "x64"; then
+  #
+  # We want 64bit mode if possible.
+  #
+  AC_SYS_COMPILER_FLAG(-q64, q64, CFLAGS)
+  AC_SYS_COMPILER_FLAG(-m64, m64, CFLAGS)
+else
+  #
+  # Try to force 32bit mode.
+  #
+  AC_SYS_COMPILER_FLAG(-q32, q32, CFLAGS)
+  AC_SYS_COMPILER_FLAG(-m32, m32, CFLAGS)
+  #
+  # Make sure no later tests will add -q64 or -m64.
+  #
+  pike_disabled_option_q64=yes
+  pike_disabled_option_m64=yes
+fi
+
+# FIXME: Detect which architecture the ABI corresponds to.
+
+#############################################################################
+
 if test "x$GCC" = "x"; then
   GCC=no
 else
@@ -420,11 +487,6 @@ else
 fi
 
 if test "x$GCC" = "xno" -a "x$TCC" = "xno"; then
-  #
-  # We want 64bit mode if possible.
-  #
-
-  AC_SYS_COMPILER_FLAG(-q64, q64, CFLAGS)
 
   if test "x$ac_cv_prog_cc_cross" = "xyes"; then
     # The AIX 5L/cc beta can not generate working binaries without a
@@ -2261,7 +2323,7 @@ if test "x$PIKE_PATH_TRANSLATE" = "x"; then
     # MinGW system.
     cat <<\EOF
 #!/bin/sh
-# Automatically generated by $Id: configure.in,v 1.885 2005/06/01 15:14:31 grubba Exp $.
+# Automatically generated by $Id: configure.in,v 1.886 2005/06/08 17:27:52 grubba Exp $.
 # MinGW-version. Do NOT edit.
 posix_name="`cat`"
 posix_prefix="/"
@@ -2299,7 +2361,7 @@ EOF
     # Native POSIX system.
   cat <<\EOF
 #!/bin/sh
-# Automatically generated by $Id: configure.in,v 1.885 2005/06/01 15:14:31 grubba Exp $.
+# Automatically generated by $Id: configure.in,v 1.886 2005/06/08 17:27:52 grubba Exp $.
 # POSIX-version. Do NOT edit.
 cat
 EOF
@@ -2308,7 +2370,7 @@ else
   # rntcl-style
   cat <<\EOF
 #!/bin/sh
-# Automatically generated by $Id: configure.in,v 1.885 2005/06/01 15:14:31 grubba Exp $.
+# Automatically generated by $Id: configure.in,v 1.886 2005/06/08 17:27:52 grubba Exp $.
 # RNTCL-version. Do NOT edit.
 sed -e "$PIKE_PATH_TRANSLATE"
 EOF
@@ -2410,7 +2472,7 @@ if test $ldflags_is_set = no ; then
   do
     if test "$dd" = "/lib"; then continue; fi
     if test "$dd" = "/usr/lib"; then continue; fi
-    for suff in '' 32 64 '/64'; do
+    for suff in "$with_abi" "/$with_abi" ""; do
       d="$dd$suff"
       AC_MSG_CHECKING($d)
       if test -d "$d/." ; then
@@ -7805,6 +7867,7 @@ cat >>config.info <<EOF
 build information:
 source path..... $srcdir
 build path...... $BUILDDIR
+ABI............. $with_abi
 cpp............. $CPP
 cc.............. $CC
 ld.............. $LD
