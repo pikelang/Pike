@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.347 2005/05/18 12:36:53 mast Exp $
+|| $Id: las.c,v 1.348 2005/06/09 17:57:56 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.347 2005/05/18 12:36:53 mast Exp $");
+RCSID("$Id: las.c,v 1.348 2005/06/09 17:57:56 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -562,7 +562,7 @@ static node *freeze_node(node *orig)
 
 void free_all_nodes(void)
 {
-  if(!Pike_compiler->compiler_frame)
+  if(!Pike_compiler->previous)
   {
     node *tmp;
     struct node_s_block *tmp2;
