@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.365 2005/05/25 14:34:59 mast Exp $
+|| $Id: las.c,v 1.366 2005/06/09 17:57:57 mast Exp $
 */
 
 #include "global.h"
@@ -567,7 +567,7 @@ static node *freeze_node(node *orig)
 
 void free_all_nodes(void)
 {
-  if(!Pike_compiler->compiler_frame)
+  if(!Pike_compiler->previous)
   {
     node *tmp;
     struct node_s_block *tmp2;
