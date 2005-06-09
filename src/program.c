@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.496 2005/05/30 12:43:04 mast Exp $
+|| $Id: program.c,v 1.497 2005/06/09 09:25:43 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.496 2005/05/30 12:43:04 mast Exp $");
+RCSID("$Id: program.c,v 1.497 2005/06/09 09:25:43 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2026,13 +2026,23 @@ static void exit_program_struct(struct program *p)
 #endif /* PIKE_USE_MACHINE_CODE && VALGRIND_DISCARD_TRANSLATIONS */
   if(p->flags & PROGRAM_OPTIMIZED)
   {
-    if(p->program) {
 #ifdef PIKE_USE_MACHINE_CODE
-      mexec_free(p->program);
+    do {
+      /* NOTE: Assumes all BAR's are before any FOO. */
+#define BAR(NUMTYPE,TYPE,NAME)			\
+      if (p->NAME) mexec_free(p->NAME);
+#define FOO(NUMTYPE,TYPE,NAME)			\
+      if (p->NAME) {				\
+	dmfree(p->NAME);			\
+	break;					\
+      }
+#include "program_areas.h"
+    } while(0);
 #else /* PIKE_USE_MACHINE_CODE */
+    if(p->program) {
       dmfree(p->program);
-#endif /* PIKE_USE_MACHINE_CODE */
     }
+#endif /* PIKE_USE_MACHINE_CODE */
 #define FOO(NUMTYPE,TYPE,NAME) p->NAME=0;
 #include "program_areas.h"
   }else{
