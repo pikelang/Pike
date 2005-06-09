@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.244 2005/05/15 13:16:56 grubba Exp $");
+RCSID("$Id: las.c,v 1.245 2005/06/09 17:57:50 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3084,6 +3084,8 @@ void fix_type_field(node *n)
       char *name;
       INT32 max_args,args;
 
+      type_stack_mark();
+
       push_type(T_MIXED); /* match any return type */
       push_type(T_VOID);  /* even void */
       push_type(T_OR);
@@ -3093,7 +3095,9 @@ void fix_type_field(node *n)
       function_type_max=0;
       low_build_function_type(CDR(n));
       push_type(T_FUNCTION);
-      s = pop_type();
+
+      s = pop_unfinished_type();
+
       f = CAR(n)->type?CAR(n)->type:mixed_type_string;
       n->type = check_call(s, f,
 			   (lex.pragmas & ID_STRICT_TYPES) &&
