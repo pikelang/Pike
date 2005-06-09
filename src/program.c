@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.592 2005/05/31 11:59:04 grubba Exp $
+|| $Id: program.c,v 1.593 2005/06/09 09:25:11 grubba Exp $
 */
 
 #include "global.h"
@@ -2518,13 +2518,23 @@ static void exit_program_struct(struct program *p)
 #endif /* PIKE_USE_MACHINE_CODE && VALGRIND_DISCARD_TRANSLATIONS */
   if(p->flags & PROGRAM_OPTIMIZED)
   {
-    if(p->program) {
 #ifdef PIKE_USE_MACHINE_CODE
-      mexec_free(p->program);
+    do {
+      /* NOTE: Assumes all BAR's are before any FOO. */
+#define BAR(NUMTYPE,TYPE,ARGTYPE,NAME)		\
+      if (p->NAME) mexec_free(p->NAME);
+#define FOO(NUMTYPE,TYPE,ARGTYPE,NAME)		\
+      if (p->NAME) {				\
+	dmfree(p->NAME);			\
+	break;					\
+      }
+#include "program_areas.h"
+    } while(0);
 #else /* PIKE_USE_MACHINE_CODE */
+    if(p->program) {
       dmfree(p->program);
-#endif /* PIKE_USE_MACHINE_CODE */
     }
+#endif /* PIKE_USE_MACHINE_CODE */
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) p->NAME=0;
 #include "program_areas.h"
   }else{
