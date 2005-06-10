@@ -1,0 +1,186 @@
+<chapter title="Backward Compatibility">
+
+<p>Pike is a language under active development. This can lead to
+   incompatibilities between different versions of Pike. To alleviate
+   this problem Pike has a backward compatibility layer.</p>
+
+<p>The backward compatibility layer can be engaged in two ways;
+   either by starting the Pike interpreter with the <tt>-V</tt> option,
+   or by using the <tt>#pike</tt> preprocessor directive.</p>
+
+<p>The backward compatibility layer affects both the compiler and the
+   available modules.</p>
+
+<p>The remainder of this chapter describes the main incompatibilities
+   between the various versions of Pike and the current version.</p>
+
+<section title="Pike 7.6">
+  <subsection title="Global Functions">
+  </subsection>
+  <subsection title="Modules">
+  </subsection>
+  <subsection title="Compiler">
+  </subsection>
+</section>
+<section title="Pike 7.4">
+  <subsection title="Global Functions">
+  </subsection>
+  <subsection title="Modules">
+  </subsection>
+  <subsection title="Compiler">
+  </subsection>
+</section>
+<section title="Pike 7.2">
+  <subsection title="Modules">
+    <p><ref>7.2::Parser.XML.Simple</ref>, <ref>7.2::Parser.XML.Validating</ref>
+      as well as <ref>7.2::Parser.XML.Tree.parse_input()</ref> used to be more
+      lenient.</p>
+    <p>Most functions in <ref>7.2::Protocols.LDAP.client</ref> used to
+      have different calling conventions.</p>
+    <p><ref>7.2::Thread.Condition()->wait()</ref> used to support being called
+      without a <ref>Thread.Mutex</ref>. This support was removed since it
+      introduced race-conditions in almost all code that used the feature.</p>
+    <p><ref>7.2::dirname()</ref> used to return <tt>""</tt> for the path
+      <tt>"/"</tt>.</p>
+    <p><ref>7.2::new()</ref> and <ref>7.2::clone()</ref> have been obsoleted
+      by <expr>((program)prog)(@args)</expr>.</p>
+    <p>The following modules and functions have moved, been renamed or
+      been deleted:
+      <matrix>
+        <r><c><ref>7.2::Gmp.pow</ref></c><c><ref>pow</ref></c></r>
+        <r><c><ref>7.2::LR</ref></c><c><ref>Parser.LR</ref></c></r>
+        <r><c><ref>7.2::LR.item</ref></c>
+           <c><ref>Parser.LR.Parser.Item</ref> (static)</c></r>
+        <r><c><ref>7.2::LR.parser</ref></c>
+           <c><ref>Parser.LR.Parser</ref></c></r>
+        <r><c><ref>7.2::LR.priority</ref></c>
+           <c><ref>Parser.LR.Priority</ref></c></r>
+        <r><c><ref>7.2::LR.rule</ref></c><c><ref>Parser.LR.Rule</ref></c></r>
+        <r><c><ref>7.2::LR.scanner</ref></c><c>(deleted)</c></r>
+        <r><c><ref>7.2::String.strmult</ref></c>
+           <c>(deprecated by <ref>`*</ref>)</c></r>
+        <r><c><ref>7.2::String.String_buffer</ref></c>
+           <c>(deprecated by <ref>String.Buffer</ref>)</c></r>
+        <r><c><ref>7.2::system</ref></c><c><ref>System</ref></c></r>
+        <r><c><ref>7.2::sleep</ref></c><c><ref>delay</ref></c></r>
+        <r><c><ref>7.2::default_yp_domain</ref></c>
+           <c><ref>Yp.default_domain</ref></c></r>
+        <r><c><ref>7.2::_low_program_name</ref></c>
+           <c><ref>spider._low_program_name</ref></c></r>
+        <r><c><ref>7.2::set_start_quote</ref></c>
+           <c><ref>spider.set_start_quote</ref></c></r>
+        <r><c><ref>7.2::set_end_quote</ref></c>
+           <c><ref>spider.set_end_quote</ref></c></r>
+        <r><c><ref>7.2::parse_accessed_database</ref></c>
+           <c><ref>spider.parse_accessed_database</ref></c></r>
+        <r><c><ref>7.2::_dump_obj_table</ref></c>
+           <c><ref>spider._dump_obj_table</ref></c></r>
+        <r><c><ref>7.2::parse_html</ref></c>
+           <c><ref>spider.parse_html</ref></c></r>
+        <r><c><ref>7.2::parse_html_lines</ref></c>
+           <c><ref>spider.parse_html_lines</ref></c></r>
+        <r><c><ref>7.2::discdate</ref></c>
+           <c><ref>spider.discdate</ref></c></r>
+        <r><c><ref>7.2::stardate</ref></c>
+           <c><ref>spider.stardate</ref></c></r>
+        <r><c><ref>7.2::get_all_active_fd</ref></c>
+           <c><ref>spider.get_all_active_fd</ref></c></r>
+        <r><c><ref>7.2::fd_info</ref></c>
+           <c><ref>spider.fd_info</ref></c></r>
+      </matrix>
+    </p>
+  </subsection>
+  <subsection title="Compiler">
+  </subsection>
+</section>
+<section title="Pike 7.0">
+  <subsection title="Simulate">
+    <p><tt>#include</tt> of <tt>&lt;simulate.h&gt;</tt> or import of
+    the <ref>7.0::Simulate</ref> module provided some compatibility
+    with LPC.</p>
+    <p>The compatibility functions were
+    <ref>7.0::Simulate.member_array()</ref>,
+    <ref>7.0::Simulate.previous_object()</ref>,
+    <ref>7.0::Simulate.this_function()</ref>,
+    <ref>7.0::Simulate.get_function()</ref>,
+    <ref>7.0::Simulate.map_regexp()</ref>
+    as well was various functions from the <ref>Array</ref>, <ref>String</ref>
+    and <ref>Process</ref> modules.</p>
+    <p>The following functions were provided under alternate names:
+      <matrix>
+        <r><c><ref>7.0::Simulate.all_efuns</ref></c>
+           <c><ref>all_constants</ref></c></r>
+        <r><c><ref>7.0::Simulate.explode</ref></c>
+           <c><ref>`/</ref></c></r>
+        <r><c><ref>7.0::Simulate.filter_array</ref></c>
+           <c><ref>filter</ref></c></r>
+        <r><c><ref>7.0::Simulate.map_array</ref></c>
+           <c><ref>map</ref></c></r>
+        <r><c><ref>7.0::Simulate.implode</ref></c>
+           <c><ref>`*</ref></c></r>
+        <r><c><ref>7.0::Simulate.m_indices</ref></c>
+           <c><ref>indices</ref></c></r>
+        <r><c><ref>7.0::Simulate.m_sizeof</ref></c>
+           <c><ref>sizeof</ref></c></r>
+        <r><c><ref>7.0::Simulate.m_values</ref></c>
+           <c><ref>values</ref></c></r>
+        <r><c><ref>7.0::Simulate.strstr</ref></c>
+           <c><ref>search</ref></c></r>
+        <r><c><ref>7.0::Simulate.sum</ref></c>
+           <c><ref>`+</ref></c></r>
+        <r><c><ref>7.0::Simulate.add_efun</ref></c>
+           <c><ref>add_constant</ref></c></r>
+        <r><c><ref>7.0::Simulate.l_sizeof</ref></c>
+           <c><ref>sizeof</ref></c></r>
+        <r><c><ref>7.0::Simulate.listp</ref></c>
+           <c><ref>multisetp</ref></c></r>
+        <r><c><ref>7.0::Simulate.mklist</ref></c>
+           <c><ref>mkmultiset</ref></c></r>
+        <r><c><ref>7.0::Simulate.aggregate_list</ref></c>
+           <c><ref>aggregate_multiset</ref></c></r>
+        <r><c><ref>7.0::Simulate.query_host_name</ref></c>
+           <c><ref>gethostname</ref></c></r>
+      </matrix>
+    </p>
+    <p>A single mathematical constant was also provided;
+      <ref>7.0::Simulate.PI</ref> with a value close to
+      <tt>3.1415926535897932384626433832795080</tt>.
+    </p>
+  </subsection>
+  <subsection title="Modules">
+    <p>The <ref>7.0::Colors</ref> module contained lots of color definitions
+       with three-element arrays containing the Red, Green and Blue components.
+       These color definitions are now provided by the <ref>Image.Colors</ref>
+       module.</p>
+    <p><ref>7.0::Stdio.File()->stat()</ref> and
+       <ref>7.0::Stdio.FILE()->stat()</ref> as well as
+       <ref>7.2::file_stat()</ref> used to return an array with
+       integers and not a <ref>Stdio.Stat</ref> object.</p>
+    <p><ref>7.0::_typeof()</ref> used to return a string and not a type.</p>
+    <p><ref>7.0::m_delete()</ref> used to return the mapping and not
+       the deleted value.</p>
+    <p>The following modules and functions have moved or been renamed:
+      <matrix>
+        <r><c><ref>7.0::Calendar</ref></c><c><ref>Calendar_I</ref></c></r>
+        <r><c><ref>7.0::hash</ref></c><c><ref>hash_7_0</ref></c></r>
+        <r><c><ref>7.0::Stack.stack</ref></c><c><ref>ADT.Stack</ref></c></r>
+      </matrix>
+    </p>
+  </subsection>
+  <subsection title="Compiler">
+  </subsection>
+</section>
+<section title="Pike 0.6">
+  <subsection title="Laxer Types">
+    <p>Several functions, including <ref>0.6::Array.map</ref> and
+    <ref>0.6::aggregate</ref>, had much more lenient types than in
+    later versions.</p>
+  </subsection>
+  <subsection title="readline">
+    <p>There was a global function <ref>0.6::readline()</ref> that
+    provided some simple readline support. This was obsoleted by
+    the <ref>Readline</ref> module.</p>
+  </subsection>
+</section>
+
+</chapter>
