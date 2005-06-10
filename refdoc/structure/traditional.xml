@@ -5,7 +5,7 @@
 <!-- The description in this file will compile a reference manual -->
 <!-- similar to the old "Pike Tutorial". -->
 
-<!-- $Id: traditional.xml,v 1.22 2004/03/11 19:32:10 grubba Exp $ -->
+<!-- $Id: traditional.xml,v 1.23 2005/06/10 17:16:04 grubba Exp $ -->
 
 <manual>
   <dir name="traditional_manual">
@@ -125,6 +125,9 @@
     <chapter title="The rest">
       <insert-move entity=""/>
     </chapter>
+  </file>
+  <file>
+    <chapter-ref file="chapters/compatibility.xml"/>
   </file>
   <file>
     <chapter-ref file="chapters/modules.xml"/>
