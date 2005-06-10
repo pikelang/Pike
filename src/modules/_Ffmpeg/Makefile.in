@@ -1,8 +1,9 @@
-# $Id: Makefile.in,v 1.6 2005/06/09 17:51:23 grubba Exp $
+# $Id: Makefile.in,v 1.7 2005/06/10 16:15:06 grubba Exp $
 @make_variables@
 VPATH=@srcdir@
 OBJS=ffmpeg.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+MODULE_CPPFLAGS=@CPPFLAGS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
 MODULE_CLEAN_EXTRA=codecs_auto.h
 DUMMY=codecs_auto.h
