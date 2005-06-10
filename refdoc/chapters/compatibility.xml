@@ -23,9 +23,77 @@
   </subsection>
 </section>
 <section title="Pike 7.4">
-  <subsection title="Global Functions">
+  <subsection title="SQL Headerfiles">
+    <p>Pike 7.4 had some SQL-related headerfiles <tt>msql.h</tt>,
+      <tt>mysql.h</tt> and <tt>postgres.h</tt> that just performed
+      <tt>import</tt> of the corresponding module, and nothing else.</p>
   </subsection>
   <subsection title="Modules">
+    <p><ref>7.4::Standards.PKCS.Signature.build_digest()</ref> used to
+      expect a <ref>7.4::Crypto.md5</ref>-style hash object as
+      the second argument.</p>
+    <p>The lifetime for the <ref>Stdio.Fd</ref> object used by a
+      <ref>7.4::Stdio.File</ref> object could differ from the lifetime
+      of the using object. This could in theory cause problems for code
+      that uses <ref>Stdio.File()->dup()</ref> or
+      <ref>Stdio.File()->assign()</ref>.</p>
+    <p>Destructing a locked <ref>7.4::Thread.Mutex</ref> object had
+      the effect of also destructing the corresponding key object.</p>
+    <p><ref>7.4::Tools.Standalone.extract_autodoc</ref> had a different
+      argument list.</p>
+    <p><ref>7.4::explode_path()</ref> splitted a string on <tt>/</tt>
+      on all systems except NT, where it spitted on both <tt>/</tt> and
+      <tt>\</tt>.</p>
+    <p>The following modules and functions have moved, been renamed or
+      been deleted:
+      <matrix>
+        <r><c><ref>7.4::ADT.Heap()->top()</ref></c>
+           <c><ref>ADT.Heap()->pop()</ref></c></r>
+        <r><c><ref>7.4::Crypto</ref></c>
+           <c>(deprecated by <ref>Nettle</ref>)</c></r>
+        <r><c><ref>7.4::_Crypto</ref></c>
+           <c>(deprecated by <ref>Nettle</ref>)</c></r>
+        <r><c><ref>7.4::Locale.Charset.ascii</ref></c>
+           <c>(deprecated by <ref>Locale.Charset.ASCIIDec</ref>)</c></r>
+        <r><c><ref>7.4::Locale.Charset._encoder</ref></c>
+           <c><ref>Locale.Charset.Encoder</ref></c></r>
+        <r><c><ref>7.4::Protocols.SMTP.protocol</ref></c>
+           <c><ref>Protocols.SMTP.Protocol</ref></c></r>
+        <r><c><ref>7.4::Protocols.SMTP.client</ref></c>
+           <c><ref>Protocols.SMTP.Client</ref></c></r>
+        <r><c><ref>7.4::Protocols.SMTP.client()->reply_codes</ref></c>
+           <c><ref>Protocols.SMTP.replycodes</ref></c></r>
+        <r><c><ref>7.4::Regexp</ref></c>
+           <c><ref>Regexp.SimpleRegexp</ref></c></r>
+        <r><c><ref>7.4::Sql.sql</ref></c><c><ref>Sql.Sql</ref></c></r>
+        <r><c><ref>7.4::Standards.ASN1.Encode</ref></c>
+           <c>(deprecated by <ref>Standards.ASN1.Types</ref>)</c></r>
+        <r><c><ref>7.4::rusage()</ref></c>
+           <c>(deprecated by <ref>System.getrusage</ref>)</c></r>
+        <r><c><ref>7.4::hash()</ref></c>
+           <c><ref>hash_7_4()</ref></c></r>
+        <r><c><ref>7.4::call_with_creds()</ref></c>
+           <c><ref>__builtin.security.call_with_creds()</ref></c></r>
+        <r><c><ref>7.4::get_current_creds()</ref></c>
+           <c><ref>__builtin.security.get_current_creds()</ref></c></r>
+        <r><c><ref>7.4::get_object_creds()</ref></c>
+           <c><ref>__builtin.security.get_object_creds()</ref></c></r>
+        <r><c><ref>7.4::_pipe_debug()</ref></c>
+           <c><ref>Pipe._pipe_debug()</ref></c></r>
+        <r><c><ref>7.4::getpwent()</ref></c>
+           <c><ref>System.getpwent()</ref></c></r>
+        <r><c><ref>7.4::endpwent()</ref></c>
+           <c><ref>System.endpwent()</ref></c></r>
+        <r><c><ref>7.4::setpwent()</ref></c>
+           <c><ref>System.setpwent()</ref></c></r>
+        <r><c><ref>7.4::getgrent()</ref></c>
+           <c><ref>System.getgrent()</ref></c></r>
+        <r><c><ref>7.4::endgrent()</ref></c>
+           <c><ref>System.endgrent()</ref></c></r>
+        <r><c><ref>7.4::setgrent()</ref></c>
+           <c><ref>System.getgrent()</ref></c></r>
+      </matrix>
+    </p>
   </subsection>
   <subsection title="Compiler">
   </subsection>
