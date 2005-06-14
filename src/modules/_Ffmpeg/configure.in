@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.12 2005/06/09 15:56:43 grubba Exp $
+# $Id: configure.in,v 1.13 2005/06/14 16:09:36 grubba Exp $
 #
 AC_INIT(ffmpeg.c)
 AC_CONFIG_HEADER(config.h)
@@ -135,19 +135,39 @@ dnl my libavcodec needs libmp3lame that needs libm /Mirar
 #include <avcodec.h>
 #endif
 #endif
-        ], [
+      ], [
 	uint8_t s[20];
-        ], [
-          pike_cv_ffmpeg_uint8_t=yes
-        ], [
-          pike_cv_ffmpeg_uint8_t=no
-        ])
+      ], [
+        pike_cv_ffmpeg_uint8_t=yes
+      ], [
+        pike_cv_ffmpeg_uint8_t=no
       ])
-      AC_MSG_RESULT($pike_cv_ffmpeg_uint8_t)
-      if test "x$pike_cv_ffmpeg_uint8_t" = "xyes"; then
-        AC_DEFINE(HAVE_UINT8_T)
-      fi
+    ])
+    AC_MSG_RESULT($pike_cv_ffmpeg_uint8_t)
+    if test "x$pike_cv_ffmpeg_uint8_t" = "xyes"; then
+      AC_DEFINE(HAVE_UINT8_T)
+    fi
 
+    AC_MSG_CHECKING(if AVCodecContext has frame_rate)
+    AC_CACHE_VAL(pike_cv_AVCodecContext_has_frame_rate, [
+      AC_TRY_COMPILE([
+#ifdef HAVE_FFMPEG_AVCODEC_H
+#include <ffmpeg/avcodec.h>
+#else
+#ifdef HAVE_AVCODEC_H
+#include <avcodec.h>
+#endif
+#endif
+      ], [
+        AVCodecContext context;
+	context.frame_rate = 0;
+      ], pike_cv_AVCodecContext_has_frame_rate=yes,
+      pike_cv_AVCodecContext_has_frame_rate=no)
+    ])
+    AC_MSG_RESULT($pike_cv_AVCodecContext_has_frame_rate)
+    if test "x$pike_cv_AVCodecContext_has_frame_rate" = "xyes"; then
+      AC_DEFINE(HAVE_AVCODECCONTEXT_FRAME_RATE)
+    fi
   fi
 fi
 

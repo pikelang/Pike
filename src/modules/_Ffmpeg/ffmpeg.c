@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ffmpeg.c,v 1.19 2004/04/14 12:10:43 grubba Exp $
+|| $Id: ffmpeg.c,v 1.20 2005/06/14 16:09:36 grubba Exp $
 */
 
 /*
@@ -93,7 +93,6 @@ static struct program *ffmpeg_program;
 typedef struct {
   AVCodec		*codec;
   AVCodecContext	 codec_context;
-  AVCodecContext	*c;
   int			 encoder;
   uint8_t		*outbuf;
 } ffmpeg_data;
@@ -131,7 +130,9 @@ int encoder_flg(AVCodec *codec) {
  *!   object otherwise.
  *!
  */
-static void f_create(INT32 args) {
+static void f_create(INT32 args)
+{
+  AVCodec *codec = NULL;
   int codec_id = CODEC_ID_MP2;
   int rate, wide, chns;
 
@@ -167,21 +168,19 @@ static void f_create(INT32 args) {
       codec_id = (u_short)Pike_sp[-1].u.integer;
       Pike_sp--;
       if(THIS->encoder) {
-        THIS->codec = avcodec_find_encoder(codec_id);
-        if(!THIS->codec)
-	  Pike_error("Codec for encoder not found.\n");
+        codec = avcodec_find_encoder(codec_id);
+        if(!codec)
+	  Pike_error("Codec for encoder 0x%02x not found.\n", codec_id);
       } else {
-        THIS->codec = avcodec_find_decoder(codec_id);
-        if(!THIS->codec)
-	  Pike_error("Codec for decoder not found.\n");
+        codec = avcodec_find_decoder(codec_id);
+        if(!codec)
+	  Pike_error("Codec for decoder 0x%02x not found.\n", codec_id);
       }
-      if(!THIS->codec)
-	Pike_error("Codec not found.\n");
 
-      THIS->c = &THIS->codec_context;
-      memset(THIS->c, 0, sizeof(*THIS->c));
-      if (avcodec_open(THIS->c, THIS->codec) < 0)
+      memset(&THIS->codec_context, 0, sizeof(THIS->codec_context));
+      if (avcodec_open(&THIS->codec_context, codec) < 0)
         Pike_error("Could not open codec.\n");
+      THIS->codec = codec;
 
       if(THIS->outbuf != NULL)
         FF_FREE(THIS->outbuf);
@@ -208,7 +207,7 @@ static void f_create(INT32 args) {
 static void f_codec_info(INT32 args) {
 
   pop_n_elems(args);
-  if(THIS->codec != NULL) {
+  if(THIS->codec) {
     push_text("name");		push_text( THIS->codec->name );
     push_text("type");		push_int( THIS->codec->type );
     push_text("id");		push_int( THIS->codec->id );
@@ -246,7 +245,7 @@ static void f_set_codec_param(INT32 args) {
     if(Pike_sp[-1].type != T_INT)
       Pike_error("Invalid argument 2, expected integer.\n");
     /* FIXME: test correct value of bit rate argument */
-    THIS->c->bit_rate = Pike_sp[-1].u.integer;
+    THIS->codec_context.bit_rate = Pike_sp[-1].u.integer;
     pop_n_elems(args);
     push_int(1);
     return;
@@ -257,7 +256,7 @@ static void f_set_codec_param(INT32 args) {
     if(Pike_sp[-1].type != T_INT)
       Pike_error("Invalid argument 2, expected integer.\n");
     /* FIXME: test correct value of bit rate argument */
-    THIS->c->sample_rate = Pike_sp[-1].u.integer;
+    THIS->codec_context.sample_rate = Pike_sp[-1].u.integer;
     pop_n_elems(args);
     push_int(1);
     return;
@@ -268,7 +267,7 @@ static void f_set_codec_param(INT32 args) {
     if(Pike_sp[-1].type != T_INT)
       Pike_error("Invalid argument 2, expected integer.\n");
     /* FIXME: test correct value of bit rate argument */
-    THIS->c->channels = (u_short)Pike_sp[-1].u.integer;
+    THIS->codec_context.channels = (u_short)Pike_sp[-1].u.integer;
     pop_n_elems(args);
     push_int(1);
     return;
@@ -289,27 +288,37 @@ static void f_get_codec_status(INT32 args) {
   int cnt = 0;
 
   pop_n_elems(args);
-  if(THIS->codec == NULL || THIS->c == NULL)
+  if(THIS->codec == NULL) {
     push_int(0);
+    return;
+  }
   
   push_text("name");		push_text( THIS->codec->name );
   push_text("type");		push_int( THIS->codec->type );
   push_text("id");		push_int( THIS->codec->id );
   push_text("encoder_flg");	push_int( encoder_flg(THIS->codec) );
-  push_text("flags");		push_int( THIS->c->flags );
+  push_text("flags");		push_int( THIS->codec_context.flags );
   cnt = 5;
 
   if(THIS->codec->type == CODEC_TYPE_AUDIO) {
     /* audio only */
-    push_text("sample_rate");	push_int( THIS->c->sample_rate );
-    push_text("channels");	push_int( THIS->c->channels );
+    push_text("sample_rate");	push_int( THIS->codec_context.sample_rate );
+    push_text("channels");	push_int( THIS->codec_context.channels );
     cnt += 2;
   }
 
   if(THIS->codec->type == CODEC_TYPE_VIDEO) {
     /* video only */
-    push_text("frame_rate");	push_int( THIS->c->frame_rate );
-    push_text("width");		push_int( THIS->c->width );
+    push_text("frame_rate");
+#ifdef HAVE_AVCODECCONTEXT_FRAME_RATE
+    /* avcodec.h 1.392 (LIBAVCODEC_BUILD 4753) and earlier. */
+    push_int(THIS->codec_context.frame_rate);
+#else /* !HAVE_AVCODECCONTEXT_FRAME_RATE */
+    /* avcodec.h 1.393 (LIBAVCODEC_BUILD 4754) and later. */
+    push_int(THIS->codec_context.time_base.den/
+	     THIS->codec_context.time_base.num);
+#endif /* HAVE_AVCODECCONTEXT_FRAME_RATE */
+    push_text("width");		push_int( THIS->codec_context.width );
     cnt += 2;
   }
 
@@ -346,10 +355,10 @@ static void f_decode(INT32 args) {
 
   idata = Pike_sp[-args].u.string;
 
-  if(THIS->c == NULL)
+  if(!THIS->codec)
     Pike_error("Codec wasn't inited.\n");
 
-  if(THIS->outbuf == NULL)
+  if(!THIS->outbuf)
     Pike_error("Low memory? Decoder buffer doesn't exist.\n");
 
   if(!idata->len)
@@ -368,10 +377,12 @@ static void f_decode(INT32 args) {
 #endif
     pop_n_elems(args);
     push_int(0);
+    return;
   }
 
   /* one pass decoding */
-  len = avcodec_decode_audio(THIS->c, (short *)THIS->outbuf, &samples_size,
+  len = avcodec_decode_audio(&THIS->codec_context,
+			     (short *)THIS->outbuf, &samples_size,
 		  	     STR0(idata), idata->len);
   if(len < 0)
     Pike_error("Error while decoding.\n");
@@ -387,7 +398,6 @@ static void f_decode(INT32 args) {
   }
   pop_n_elems(args);
   push_int(len);
-
 }
 
 /* @decl mapping|int encode(string data)
@@ -506,7 +516,7 @@ static void init_ffmpeg_data(struct object *obj) {
 static void exit_ffmpeg_data(struct object *obj) {
 
   if(THIS->codec != NULL)
-    avcodec_close(THIS->c);
+    avcodec_close(&THIS->codec_context);
   if(THIS->outbuf != NULL)
     FF_FREE(THIS->outbuf);
 }
