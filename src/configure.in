@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.844 2005/06/01 15:15:03 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.845 2005/06/14 16:55:46 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6614,10 +6614,10 @@ if test -z "$LDSHARED" ; then
     DYNIX/ptx*) LDSHARED="ld -G";;
     next*) LDSHARED="$REALCC $CFLAGS -nostdlib -r";;
     Linux*) LDSHARED="$REALCC -shared";;
-    GNU*) LDSHARED="ld -Bshareable";;
+    GNU*) LDSHARED="$REALCC -Wl,-Bshareable";;
     FreeBSD*) LDSHARED="$REALCC -Wl,-Bshareable";;
-    NetBSD*) LDSHARED="ld -Bshareable";;
-    OpenBSD*) LDSHARED="ld -Bshareable";;
+    NetBSD*) LDSHARED="$REALCC -Wl,-Bshareable";;
+    OpenBSD*) LDSHARED="$REALCC -Wl,-Bshareable";;
     BSD/OS*)
       case "`uname -r`" in
        [4-9].*) LDSHARED="$REALCC -shared";;
@@ -6729,6 +6729,7 @@ then
       ;;
       GNU*) LINKFORSHARED="-rdynamic";;
       NetBSD*) LINKFORSHARED="-Wl,-E";;
+      OpenBSD*) LINKFORSHARED="-Wl,-E";;
       next*) LINKFORSHARED="-u libsys_s";;
       SCO_SV*) LINKFORSHARED="-fpic -Wl,-Bexport";;
       # What about UNIX_SV?
