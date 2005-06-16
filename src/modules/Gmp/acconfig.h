@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.6 2003/05/19 19:22:54 mast Exp $
+|| $Id: acconfig.h,v 1.7 2005/06/16 09:21:43 grubba Exp $
 */
 
 #ifndef GMP_MACHINE_H
@@ -55,5 +55,11 @@
 
 /* Define if mpz_set_si works for LONG_MIN. */
 #undef MPZ_SET_SI_WORKS
+
+/* Define if GMP_LIMB_BITS lies. */
+#undef PIKE_GMP_LIMB_BITS_INVALID
+
+/* Define to the actual number of numb bits if known. */
+#undef PIKE_GMP_NUMB_BITS
 
 #endif

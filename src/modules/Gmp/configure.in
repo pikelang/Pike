@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.45 2005/03/17 15:49:43 grubba Exp $
+# $Id: configure.in,v 1.46 2005/06/16 09:21:43 grubba Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -240,7 +240,66 @@ if test x$with_gmp = xyes ; then
 #elif defined (HAVE_GMP_H)
 #include <gmp.h>
 #endif'
+
   AC_CHECK_SIZEOF(mp_limb_t, 0)
+
+  # Some packages of gmp have a gmp.h that lies about the number
+  # bits in limbs when running with the non-default ABI.
+  # (eg /opt/csw/include/gmp.h on Solaris 10/sparc).
+  AC_MSG_CHECKING(if GMP_NUMB_BITS is valid and lacks nails)
+  AC_CACHE_VAL([pike_cv_gmp_numb_bits_valid], [
+    AC_TRY_COMPILE([
+#if GMP_NUMB_BITS != SIZEOF_MP_LIMB_T * CHAR_BIT
+#error Cannot cope with GMP using nail bits.
+#endif
+    ], [], [pike_cv_gmp_numb_bits_valid=yes], [pike_cv_gmp_numb_bits_valid=no])
+  ])
+  AC_MSG_RESULT($pike_cv_gmp_numb_bits_valid)
+
+  if test "x$pike_cv_gmp_numb_bits_valid" = "xno"; then
+    AC_DEFINE(PIKE_GMP_LIMB_BITS_INVALID)
+
+    AC_MSG_CHECKING(for the actual number of numb bits)
+    AC_CACHE_VAL([pike_cv_actual_gmp_numb_bits], [
+      rm -f confdefs.out.2
+      AC_TRY_RUN([
+#include <stdio.h>
+
+        int main(int argc, char **argv)
+	{
+	  mpz_t mpz;
+	  mp_limb_t limb;
+	  int bits = 0;
+	  FILE *fp = fopen("confdefs.out.2", "w");
+	  /* weird filename to circumvent configure weirdness */
+	  if (!fp) return 1;
+
+	  mpz_init(mpz);
+	  mpz_set_ui(mpz, 1);
+	  limb = mpz_getlimbn(mpz, 0);
+	  while ((mpz->_mp_size < 2) || !(mpz_getlimbn(mpz, 1) & 1)) {
+	    mpz_mul_2exp(mpz, mpz, 1);
+	    bits++;
+	  }
+	  fprintf(fp, "%d\n", bits);
+	  return 0;
+	}
+      ], [
+        pike_cv_actual_gmp_numb_bits="`cat confdefs.out.2`"
+	rm -f confdefs.out.2
+      ], [
+        pike_cv_actual_gmp_numb_bits=""
+      ], [
+        pike_cv_actual_gmp_numb_bits=""
+      ])
+    ])
+    if test "x$pike_cv_actual_gmp_numb_bits" = "x"; then
+      AC_MSG_RESULT([unknown - using $ac_cv_sizeof_mp_limb_t * CHAR_BIT])
+    else
+      AC_MSG_RESULT($pike_cv_actual_gmp_numb_bits)
+      AC_DEFINE_UNQUOTED(PIKE_GMP_NUMB_BITS, $pike_cv_actual_gmp_numb_bits)
+    fi
+  fi
 
   AC_MSG_CHECKING([if mpz_getlimbn works])
   AC_CACHE_VAL([pike_cv_mpz_getlimbn_works], [

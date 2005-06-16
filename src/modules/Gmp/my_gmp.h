@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: my_gmp.h,v 1.23 2003/05/20 08:56:13 grubba Exp $
+|| $Id: my_gmp.h,v 1.24 2005/06/16 09:21:43 grubba Exp $
 */
 
 /*
@@ -30,6 +30,16 @@
 #else /* !USE_GMP2 */
 #include <gmp.h>
 #endif /* USE_GMP2 */
+
+#ifdef PIKE_GMP_LIMB_BITS_INVALID
+/* Attempt to repair the header file... */
+#undef GMP_LIMB_BITS
+#define GMP_LIMB_BITS (SIZEOF_MP_LIMB_T * CHAR_BIT)
+#ifdef PIKE_GMP_NUMB_BITS
+#undef GMP_NUMB_BITS
+#define GMP_NUMB_BITS PIKE_GMP_NUMB_BITS
+#endif /* PIKE_GMP_NUMB_BITS */
+#endif /* PIKE_GMP_LIMB_BITS_INVALID */
 
 #ifndef mpz_odd_p
 #define mpz_odd_p(z)   ((int) ((z)->_mp_size != 0) & (int) (z)->_mp_d[0])
