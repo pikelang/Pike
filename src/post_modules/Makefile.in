@@ -1,8 +1,8 @@
-# $Id: Makefile.in,v 1.15 2005/03/13 23:44:02 nilsson Exp $
+# $Id: Makefile.in,v 1.16 2005/06/17 21:27:20 grubba Exp $
 
 @make_variables@
 
-MODULES=@subdirs@
+MODULES=@module_names@
 MODULE_SEGMENTS=@MODULE_SEGMENTS@
 MODULE_LINKOPTS=@MODULE_LINKOPTS@
 

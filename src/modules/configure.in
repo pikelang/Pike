@@ -1,9 +1,10 @@
-# $Id: configure.in,v 1.7 2005/06/17 15:47:27 grubba Exp $
+# $Id: configure.in,v 1.8 2005/06/17 21:27:12 grubba Exp $
 AC_INIT(dynamic_module_makefile.in)
 
 AC_SET_MAKE
 
 dirs=
+module_names=
 MODULE_LINKOBJS=
 MODULE_SEGMENTS=
 
@@ -31,6 +32,7 @@ done
 
 AC_SUBST(MODULE_LINKOPTS)
 AC_SUBST(MODULE_SEGMENTS)
+AC_SUBST(module_names)
 
 AC_SUBST_FILE(dependencies)
 dependencies=$srcdir/dependencies
