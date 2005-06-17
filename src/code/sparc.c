@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.39 2004/03/13 15:44:14 grubba Exp $
+|| $Id: sparc.c,v 1.40 2005/06/17 15:34:28 grubba Exp $
 */
 
 /*
@@ -96,10 +96,14 @@
 
 #define SPARC_OP3_LDUW		0x00
 #define SPARC_OP3_LDUH		0x02
+#define SPARC_OP3_LDUB		0x01
 #define SPARC_OP3_LDSW		0x08
 #define SPARC_OP3_LDSH		0x0a
+#define SPARC_OP3_LDSB		0x08
+#define SPARC_OP3_LDX		0x0b
 #define SPARC_OP3_STW		0x04
 #define SPARC_OP3_STH		0x06
+#define SPARC_OP3_STX		0x0e
 
 #define SPARC_MEM_OP(OP3, D, S1, S2, I) \
     add_to_program(0xc0000000|((D)<<25)|((OP3)<<19)|((S1)<<14)|((I)<<13)| \
@@ -108,6 +112,7 @@
 #define SPARC_OR(D,S1,S2,I)	SPARC_ALU_OP(SPARC_OP3_OR, D, S1, S2, I)
 
 #define SPARC_SRA(D,S1,S2,I)	SPARC_ALU_OP(SPARC_OP3_SRA, D, S1, S2, I)
+#define SPARC_SLL(D,S1,S2,I)	SPARC_ALU_OP(SPARC_OP3_SLL, D, S1, S2, I)
 
 #define SPARC_ADD(D,S1,S2,I)	SPARC_ALU_OP(SPARC_OP3_ADD, D, S1, S2, I)
 #define SPARC_SUBcc(D,S1,S2,I)	SPARC_ALU_OP(SPARC_OP3_SUBcc, D, S1, S2, I)
@@ -120,9 +125,11 @@
 #define SPARC_RET()		SPARC_JMPL(SPARC_REG_G0, SPARC_REG_I7, 8, 1)
 #define SPARC_RESTORE(D,S1,S2,I) SPARC_ALU_OP(SPARC_OP3_RESTORE, D, S1, S2, I)
 
+#define SPARC_LDX(D,S1,S2,I)	SPARC_MEM_OP(SPARC_OP3_LDX, D, S1, S2, I)
 #define SPARC_LDUW(D,S1,S2,I)	SPARC_MEM_OP(SPARC_OP3_LDUW, D, S1, S2, I)
 #define SPARC_LDUH(D,S1,S2,I)	SPARC_MEM_OP(SPARC_OP3_LDUH, D, S1, S2, I)
 
+#define SPARC_STX(D,S1,S2,I)	SPARC_MEM_OP(SPARC_OP3_STX, D, S1, S2, I)
 #define SPARC_STW(D,S1,S2,I)	SPARC_MEM_OP(SPARC_OP3_STW, D, S1, S2, I)
 #define SPARC_STH(D,S1,S2,I)	SPARC_MEM_OP(SPARC_OP3_STH, D, S1, S2, I)
 
@@ -140,12 +147,13 @@
 
 
 #define SET_REG(REG, X) do {						\
-    INT32 val_ = X;							\
+    INT64 val_ = X;							\
     INT32 reg_ = REG;							\
+    fprintf(stderr, "SET_REG(0x%02x, %p)\n", reg_, (void *)val_);	\
     if ((-4096 <= val_) && (val_ <= 4095)) {				\
       /* or %g0, val_, reg */						\
       SPARC_OR(reg_, SPARC_REG_G0, val_, 1);				\
-    } else {								\
+    } else if ((-0x80000000LL <= val_) && (val_ <= 0x7fffffffLL)) {	\
       /* sethi %hi(val_), reg */					\
       SPARC_SETHI(reg_, val_);						\
       if (val_ & 0x3ff) {						\
@@ -157,11 +165,25 @@
 	/* sra reg, %g0, reg */						\
         SPARC_SRA(reg_, reg_, SPARC_REG_G0, 0);				\
       }									\
+    } else {								\
+      /* FIXME: SPARC64 */						\
+      if (!(val_>>34)) {						\
+	/* The top 30 bits are zero. */					\
+	SPARC_SETHI(reg_, val_>>2);					\
+	SPARC_SLL(reg_, reg_, 2, 1);					\
+	if (val_ & 0xfff) {						\
+	  SPARC_OR(reg_, reg_, val_ & 0xfff, 1);			\
+	}								\
+      }	else {								\
+	Pike_fatal("Value out of range: %p\n", (void *)val_);		\
+      }									\
     }									\
   } while(0)
 
+      /* FIXME: SPARC64 */
 #define ADD_CALL(X, DELAY_OK) do {					\
-    INT32 delta_;							\
+    PIKE_OPCODE_T *ptr_ = (PIKE_OPCODE_T *)(X);				\
+    ptrdiff_t delta_;							\
     struct program *p_ = Pike_compiler->new_program;			\
     INT32 off_ = p_->num_program;					\
     /* noop		*/						\
@@ -173,10 +195,22 @@
     } else {								\
       add_to_program(0); /* Placeholder... */				\
     }									\
+    fprintf(stderr, "call %p (pc:%p)\n", ptr_, p_->program);		\
     /* call X	*/							\
-    delta_ = ((PIKE_OPCODE_T *)(X)) - (p_->program + off_);		\
-    p_->program[off_] = 0x40000000 | (delta_ & 0x3fffffff);		\
-    add_to_relocations(off_);						\
+    delta_ = ptr_ - (p_->program + off_);				\
+    if ((-0x20000000L <= delta_) && (delta_ <= 0x1fffffff)) {		\
+      p_->program[off_] = 0x40000000 | (delta_ & 0x3fffffff);		\
+      add_to_relocations(off_);						\
+    } else {								\
+      /* NOTE: Assumes top 30 bits are zero! */				\
+      /* sethi %hi(ptr_>>2), %o7 */					\
+      p_->program[off_] =						\
+	0x01000000|(SPARC_REG_O7<<25)|((((size_t)ptr_)>>12)&0x3fffff);	\
+      /* sll %o7, 2, %o7 */						\
+      SPARC_SLL(SPARC_REG_O7, SPARC_REG_O7, 2, 1);			\
+      /* call %o7 + %lo(ptr_) */					\
+      SPARC_JMPL(SPARC_REG_O7, SPARC_REG_O7, ((size_t)ptr_)&0xfff, 1);	\
+    }									\
     add_to_program(delay_);						\
     sparc_last_pc = off_;	/* Value in %o7. */			\
     sparc_codegen_state |= SPARC_CODEGEN_PC_IS_SET;			\
@@ -212,12 +246,21 @@
  * Code generator state.
  */
 unsigned INT32 sparc_codegen_state = 0;
-int sparc_last_pc = 0;
+ptrdiff_t sparc_last_pc = 0;
+
+#ifdef PIKE_BYTECODE_SPARC64
+#define PIKE_LDPTR	SPARC_LDX
+#define PIKE_STPTR	SPARC_STX
+#else /* !PIKE_BYTECODE_SPARC64 */
+#error
+#define PIKE_LDPTR	SPARC_LDUW
+#define PIKE_STPTR	SPARC_STW
+#endif /* PIKE_BYTECODE_SPARC64 */
 
 #define LOAD_PIKE_INTERPRETER() do {				\
     if (!(sparc_codegen_state & SPARC_CODEGEN_IP_IS_SET)) {	\
       SET_REG(SPARC_REG_PIKE_IP,				\
-	      ((INT32)(&Pike_interpreter)));			\
+	      ((ptrdiff_t)(&Pike_interpreter)));		\
       sparc_codegen_state |= SPARC_CODEGEN_IP_IS_SET;		\
     }								\
   } while(0)
@@ -226,7 +269,7 @@ int sparc_last_pc = 0;
     if (!(sparc_codegen_state & SPARC_CODEGEN_FP_IS_SET)) {		\
       LOAD_PIKE_INTERPRETER();						\
       /* lduw [ %ip, %offset(Pike_interpreter, frame_pointer) ], %l1 */	\
-      SPARC_LDUW(SPARC_REG_PIKE_FP, SPARC_REG_PIKE_IP,			\
+      PIKE_LDPTR(SPARC_REG_PIKE_FP, SPARC_REG_PIKE_IP,			\
 		 OFFSETOF(Pike_interpreter, frame_pointer), 1);		\
       sparc_codegen_state |= SPARC_CODEGEN_FP_IS_SET;			\
     }									\
@@ -236,7 +279,7 @@ int sparc_last_pc = 0;
     if (!(sparc_codegen_state & SPARC_CODEGEN_SP_IS_SET)) {		\
       LOAD_PIKE_INTERPRETER();						\
       /* lduw [ %ip, %offset(Pike_interpreter, stack_pointer) ], %l2 */	\
-      SPARC_LDUW(SPARC_REG_PIKE_SP, SPARC_REG_PIKE_IP,			\
+      PIKE_LDPTR(SPARC_REG_PIKE_SP, SPARC_REG_PIKE_IP,			\
 		 OFFSETOF(Pike_interpreter, stack_pointer), 1);		\
       sparc_codegen_state |= SPARC_CODEGEN_SP_IS_SET;			\
     }									\
@@ -246,7 +289,7 @@ int sparc_last_pc = 0;
     if (!(sparc_codegen_state & SPARC_CODEGEN_MARK_SP_IS_SET)) {	\
       LOAD_PIKE_INTERPRETER();						\
       /* lduw [ %ip, %offset(Pike_interpreter, mark_stack_pointer) ], %l2 */	\
-      SPARC_LDUW(SPARC_REG_PIKE_MARK_SP, SPARC_REG_PIKE_IP,		\
+      PIKE_LDPTR(SPARC_REG_PIKE_MARK_SP, SPARC_REG_PIKE_IP,		\
 		 OFFSETOF(Pike_interpreter, mark_stack_pointer), 1);	\
       sparc_codegen_state |= SPARC_CODEGEN_MARK_SP_IS_SET;		\
     }									\
@@ -255,14 +298,14 @@ int sparc_last_pc = 0;
 #define SPARC_FLUSH_UNSTORED()	do {					\
     if (sparc_codegen_state & SPARC_CODEGEN_MARK_SP_NEEDS_STORE) {	\
       /* stw %pike_mark_sp, [ %ip, %offset(Pike_interpreter, mark_stack_pointer) ] */	\
-      SPARC_STW(SPARC_REG_PIKE_MARK_SP, SPARC_REG_PIKE_IP,		\
-		OFFSETOF(Pike_interpreter, mark_stack_pointer), 1);	\
+      PIKE_STPTR(SPARC_REG_PIKE_MARK_SP, SPARC_REG_PIKE_IP,		\
+		 OFFSETOF(Pike_interpreter, mark_stack_pointer), 1);	\
       sparc_codegen_state &= ~SPARC_CODEGEN_MARK_SP_NEEDS_STORE;	\
     }									\
     if (sparc_codegen_state & SPARC_CODEGEN_SP_NEEDS_STORE) {		\
       /* stw %pike_sp, [ %ip, %offset(Pike_interpreter, stack_pointer) ] */	\
-      SPARC_STW(SPARC_REG_PIKE_SP, SPARC_REG_PIKE_IP,			\
-		OFFSETOF(Pike_interpreter, stack_pointer), 1);		\
+      PIKE_STPTR(SPARC_REG_PIKE_SP, SPARC_REG_PIKE_IP,			\
+		 OFFSETOF(Pike_interpreter, stack_pointer), 1);		\
       sparc_codegen_state &= ~SPARC_CODEGEN_SP_NEEDS_STORE;		\
     }									\
   } while(0)
@@ -290,9 +333,15 @@ void sparc_flush_codegen_state(void)
  */
 void sparc_ins_entry(void)
 {
+#ifdef PIKE_BYTECODE_SPARC64
+  /* save	%sp, -224, %sp */
+  add_to_program(0x81e02000|(SPARC_REG_SP<<25)|
+		 (SPARC_REG_SP<<14)|((-224)&0x1fff));
+#else /* !PIKE_BYTECODE_SPARC64 */
   /* save	%sp, -112, %sp */
   add_to_program(0x81e02000|(SPARC_REG_SP<<25)|
 		 (SPARC_REG_SP<<14)|((-112)&0x1fff));
+#endif /* PIKE_BYTECODE_SPARC64 */
   FLUSH_CODE_GENERATOR_STATE();
 }
 
@@ -300,12 +349,12 @@ void sparc_ins_entry(void)
 void sparc_update_pc(void)
 {
   LOAD_PIKE_FP();
-#if 0
+#ifdef PIKE_BYTECODE_SPARC64
   /* The ASR registers are implementation specific in Sparc V7 and V8. */
   /* rd %pc, %i0 */
   SPARC_RD(SPARC_REG_I0, SPARC_RD_REG_PC);
-  /* stw %pc, [ %pike_fp + pc ] */
-  SPARC_STW(SPARC_REG_I0, SPARC_REG_PIKE_FP, OFFSETOF(pike_frame, pc), 1);
+  /* stx %pc, [ %pike_fp + pc ] */
+  SPARC_STX(SPARC_REG_I0, SPARC_REG_PIKE_FP, OFFSETOF(pike_frame, pc), 1);
 #else /* !0 */
   /* call .+8 */
   SPARC_CALL(8);
@@ -325,7 +374,8 @@ static void sparc_incr_mark_sp(int delta)
 {
   LOAD_PIKE_MARK_SP();
   /* add %pike_mark_sp, %pike_mark_sp, 4 * delta */
-  SPARC_ADD(SPARC_REG_PIKE_MARK_SP, SPARC_REG_PIKE_MARK_SP, 4*delta, 1);
+  SPARC_ADD(SPARC_REG_PIKE_MARK_SP, SPARC_REG_PIKE_MARK_SP,
+	    sizeof(void *)*delta, 1);
   sparc_codegen_state |= SPARC_CODEGEN_MARK_SP_NEEDS_STORE;
 }    
 
@@ -344,10 +394,10 @@ static void sparc_mark(int off)
       SPARC_ADD(SPARC_REG_I0, SPARC_REG_PIKE_SP, SPARC_REG_I0, 0);
     }
     /* stw %i0, [ %pike_mark_sp, %g0 ] */
-    SPARC_STW(SPARC_REG_I0, SPARC_REG_PIKE_MARK_SP, SPARC_REG_G0, 0);
+    PIKE_STPTR(SPARC_REG_I0, SPARC_REG_PIKE_MARK_SP, SPARC_REG_G0, 0);
   } else {
     /* stw %pike_sp, [ %pike_mark_sp, %g0 ] */
-    SPARC_STW(SPARC_REG_PIKE_SP, SPARC_REG_PIKE_MARK_SP, SPARC_REG_G0, 0);
+    PIKE_STPTR(SPARC_REG_PIKE_SP, SPARC_REG_PIKE_MARK_SP, SPARC_REG_G0, 0);
   }
   sparc_incr_mark_sp(1);
 }
@@ -355,12 +405,14 @@ static void sparc_mark(int off)
 static void sparc_push_int(INT32 x, int sub_type)
 {
   INT32 type_word = MAKE_TYPE_WORD(PIKE_T_INT, sub_type);
+  int reg = SPARC_REG_G0;
 
   LOAD_PIKE_SP();
 
   if (sizeof(struct svalue) > 8) {
     size_t e;
     for (e = 4; e < sizeof(struct svalue); e += 4) {
+      /* Pad until we reach the anything field. */
       if (e == OFFSETOF(svalue, u.integer)) continue;
       /* stw %g0, [ %pike_sp, e ] */
       SPARC_STW(SPARC_REG_G0, SPARC_REG_PIKE_SP, e, 1);
@@ -368,9 +420,12 @@ static void sparc_push_int(INT32 x, int sub_type)
   }
   if (x) {
     SET_REG(SPARC_REG_I1, x);
-    SPARC_STW(SPARC_REG_I1, SPARC_REG_PIKE_SP, OFFSETOF(svalue, u.integer), 1);
+    reg = SPARC_REG_I1;
+  }
+  if (sizeof(INT_TYPE) == 4) {
+    SPARC_STW(reg, SPARC_REG_PIKE_SP, OFFSETOF(svalue, u.integer), 1);
   } else {
-    SPARC_STW(SPARC_REG_G0, SPARC_REG_PIKE_SP, OFFSETOF(svalue, u.integer), 1);
+    SPARC_STX(reg, SPARC_REG_PIKE_SP, OFFSETOF(svalue, u.integer), 1);
   }
   if (x != type_word) {
     SET_REG(SPARC_REG_I1, type_word);
@@ -401,11 +456,11 @@ static void sparc_push_lfun(unsigned int no)
   LOAD_PIKE_FP();
   LOAD_PIKE_SP();
   /* lduw [ %pike_fp, %offset(pike_frame, current_object) ], %pike_obj */
-  SPARC_LDUW(SPARC_REG_PIKE_OBJ, SPARC_REG_PIKE_FP,
+  PIKE_LDPTR(SPARC_REG_PIKE_OBJ, SPARC_REG_PIKE_FP,
 	     OFFSETOF(pike_frame, current_object), 1);
   /* stw %pike_obj, [ %pike_sp, %offset(svalue, u.object) ] */
-  SPARC_STW(SPARC_REG_PIKE_OBJ, SPARC_REG_PIKE_SP,
-	    OFFSETOF(svalue, u.object), 1);
+  PIKE_STPTR(SPARC_REG_PIKE_OBJ, SPARC_REG_PIKE_SP,
+	     OFFSETOF(svalue, u.object), 1);
   /* lduw [ %pike_obj, %offset(object, refs) ], %i0 */
   SPARC_LDUW(SPARC_REG_I0, SPARC_REG_PIKE_OBJ,
 	     OFFSETOF(object, refs), 1);
@@ -438,21 +493,21 @@ void sparc_local_lvalue(unsigned int no)
   no *= sizeof(struct svalue);
   if (no < 4096) {
     /* lduw [ %pike_fp, %offset(pike_frame, locals) ], %i2 */
-    SPARC_LDUW(SPARC_REG_I2, SPARC_REG_PIKE_FP,
+    PIKE_LDPTR(SPARC_REG_I2, SPARC_REG_PIKE_FP,
 	       OFFSETOF(pike_frame, locals), 1);
     /* add %i2, no * sizeof(struct svalue), %i2 */
     SPARC_ADD(SPARC_REG_I2, SPARC_REG_I2, no, 1);
   } else {
     SET_REG(SPARC_REG_I1, no);
     /* lduw [ %pike_fp, %offset(pike_frame, locals) ], %i2 */
-    SPARC_LDUW(SPARC_REG_I2, SPARC_REG_PIKE_FP,
+    PIKE_LDPTR(SPARC_REG_I2, SPARC_REG_PIKE_FP,
 	       OFFSETOF(pike_frame, locals), 1);
     /* add %i2, %i1, %i2 */
     SPARC_ADD(SPARC_REG_I2, SPARC_REG_I2, SPARC_REG_I1, 0);
   }
   /* stw %i2, [ %pike_sp, %offset(svalue, u.lval) ] */
-  SPARC_STW(SPARC_REG_I2, SPARC_REG_PIKE_SP,
-	    OFFSETOF(svalue, u.lval), 1);
+  PIKE_STPTR(SPARC_REG_I2, SPARC_REG_PIKE_SP,
+	     OFFSETOF(svalue, u.lval), 1);
   /* add %pike_sp, sizeof(struct svalue) * 2, %pike_sp */
   SPARC_ADD(SPARC_REG_PIKE_SP, SPARC_REG_PIKE_SP, sizeof(struct svalue)*2, 1);
   /* sth %i0, [ %pike_sp , -sizeof(struct svalue) ] */
@@ -464,7 +519,7 @@ void sparc_escape_catch(void)
 {
   LOAD_PIKE_FP();
   SPARC_FLUSH_UNSTORED();
-#if 0
+#ifdef PIKE_BYTECODE_SPARC64
   /* The asr registers are implementation specific in Sparc V7 and V8. */
   /* rd %pc, %i0 */
   SPARC_RD(SPARC_REG_I0, SPARC_RD_REG_PC);
@@ -478,9 +533,9 @@ void sparc_escape_catch(void)
   SPARC_ADD(SPARC_REG_I0, SPARC_REG_O7, 6*4, 1);
 #endif /* 0 */
   /* stw %i0, [ %pike_fp, %offset(pike_frame, return_addr) ] */
-  SPARC_STW(SPARC_REG_I0, SPARC_REG_PIKE_FP,
-	    OFFSETOF(pike_frame, return_addr), 1);
-#if 0
+  PIKE_STPTR(SPARC_REG_I0, SPARC_REG_PIKE_FP,
+	     OFFSETOF(pike_frame, return_addr), 1);
+#ifdef PIKE_BYTECODE_SPARC64
   /* The following code is Sparc V9 only code. */
   /* return %i7 + 8 */
   SPARC_RETURN(SPARC_REG_I7, 8, 1);
@@ -541,17 +596,29 @@ static void ins_sparc_debug()
   if (state &
       (SPARC_CODEGEN_FP_IS_SET|SPARC_CODEGEN_SP_IS_SET|
        SPARC_CODEGEN_IP_IS_SET|SPARC_CODEGEN_MARK_SP_IS_SET)) {
-    SET_REG(SPARC_REG_PIKE_DEBUG,
-	    ((INT32)(&d_flag)));
+    SET_REG(SPARC_REG_PIKE_DEBUG, ((ptrdiff_t)(&d_flag)));
     SPARC_LDUW(SPARC_REG_PIKE_DEBUG, SPARC_REG_PIKE_DEBUG, SPARC_REG_G0, 0);
     SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_PIKE_DEBUG, SPARC_REG_G0, 0);
     SET_REG(SPARC_REG_O0, state);
+#ifdef PIKE_BYTECODE_SPARC64
+    SPARC_BE(8*4, 0);
+    SPARC_OR(SPARC_REG_O1, SPARC_REG_PIKE_IP, SPARC_REG_G0, 0);
+    SPARC_SETHI(SPARC_REG_O7, ((ptrdiff_t)sparc_debug_check_registers)>>2);
+    SPARC_OR(SPARC_REG_O2, SPARC_REG_PIKE_FP, SPARC_REG_G0, 0);
+    SPARC_SLL(SPARC_REG_O7, SPARC_REG_O7, 2, 1);
+    SPARC_OR(SPARC_REG_O3, SPARC_REG_PIKE_SP, SPARC_REG_G0, 0);
+    SPARC_JMPL(SPARC_REG_O7, SPARC_REG_O7,
+	       ((ptrdiff_t)sparc_debug_check_registers) & 0xfff, 1);
+    SPARC_OR(SPARC_REG_O4, SPARC_REG_PIKE_MARK_SP, SPARC_REG_G0, 0);
+#else /* !PIKE_BYTECODE_SPARC64 */
+    /* NOTE: Assumes ADD_CALL below is a single instruction. */
     SPARC_BE(6*4, 0);
-    SPARC_ADD(SPARC_REG_O1, SPARC_REG_PIKE_IP, SPARC_REG_G0, 0);
-    SPARC_ADD(SPARC_REG_O2, SPARC_REG_PIKE_FP, SPARC_REG_G0, 0);
-    SPARC_ADD(SPARC_REG_O3, SPARC_REG_PIKE_SP, SPARC_REG_G0, 0);
-    SPARC_ADD(SPARC_REG_O4, SPARC_REG_PIKE_MARK_SP, SPARC_REG_G0, 0);
+    SPARC_OR(SPARC_REG_O1, SPARC_REG_PIKE_IP, SPARC_REG_G0, 0);
+    SPARC_OR(SPARC_REG_O2, SPARC_REG_PIKE_FP, SPARC_REG_G0, 0);
+    SPARC_OR(SPARC_REG_O3, SPARC_REG_PIKE_SP, SPARC_REG_G0, 0);
+    SPARC_OR(SPARC_REG_O4, SPARC_REG_PIKE_MARK_SP, SPARC_REG_G0, 0);
     ADD_CALL(sparc_debug_check_registers, 1);
+#endif /* PIKE_BYTECODE_SPARC64 */
   }
 }
 #else /* !PIKE_DEBUG */
