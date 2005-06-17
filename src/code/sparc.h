@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.h,v 1.24 2005/06/17 15:34:28 grubba Exp $
+|| $Id: sparc.h,v 1.25 2005/06/17 17:50:11 grubba Exp $
 */
 
 #define PIKE_OPCODE_ALIGN	4
@@ -59,11 +59,11 @@ void sparc_update_pc(void);
 #define read_pointer(OFF)					      \
   ((((INT64)Pike_compiler->new_program->program[(INT32)(OFF)])<<32) | \
    (Pike_compiler->new_program->program[((INT32)(OFF))+1]))
-#define upd_pointer(OFF, PTR) do {			\
-    Pike_compiler->new_program->program[(INT32)(OFF)] = \
-      (INT32)(((INT64)(PTR))>>32);			\
-    Pike_compiler->new_program->program[(INT32)(OFF)] = \
-      (INT32)(INT64)(PTR);				\
+#define upd_pointer(OFF, PTR) do {			  \
+    Pike_compiler->new_program->program[(INT32)(OFF)] =	  \
+      (INT32)(((INT64)(PTR))>>32);			  \
+    Pike_compiler->new_program->program[(INT32)(OFF)+1] = \
+      (INT32)(INT64)(PTR);				  \
   } while(0)
     
 #else /* !PIKE_BYTECODE_SPARC64 */
