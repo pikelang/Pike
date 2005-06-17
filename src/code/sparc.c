@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.40 2005/06/17 15:34:28 grubba Exp $
+|| $Id: sparc.c,v 1.41 2005/06/17 16:56:08 grubba Exp $
 */
 
 /*
@@ -149,7 +149,7 @@
 #define SET_REG(REG, X) do {						\
     INT64 val_ = X;							\
     INT32 reg_ = REG;							\
-    fprintf(stderr, "SET_REG(0x%02x, %p)\n", reg_, (void *)val_);	\
+    /*fprintf(stderr, "SET_REG(0x%02x, %p)\n", reg_, (void *)val_);*/	\
     if ((-4096 <= val_) && (val_ <= 4095)) {				\
       /* or %g0, val_, reg */						\
       SPARC_OR(reg_, SPARC_REG_G0, val_, 1);				\
@@ -195,7 +195,7 @@
     } else {								\
       add_to_program(0); /* Placeholder... */				\
     }									\
-    fprintf(stderr, "call %p (pc:%p)\n", ptr_, p_->program);		\
+    /*fprintf(stderr, "call %p (pc:%p)\n", ptr_, p_->program);*/	\
     /* call X	*/							\
     delta_ = ptr_ - (p_->program + off_);				\
     if ((-0x20000000L <= delta_) && (delta_ <= 0x1fffffff)) {		\
@@ -252,7 +252,6 @@ ptrdiff_t sparc_last_pc = 0;
 #define PIKE_LDPTR	SPARC_LDX
 #define PIKE_STPTR	SPARC_STX
 #else /* !PIKE_BYTECODE_SPARC64 */
-#error
 #define PIKE_LDPTR	SPARC_LDUW
 #define PIKE_STPTR	SPARC_STW
 #endif /* PIKE_BYTECODE_SPARC64 */
