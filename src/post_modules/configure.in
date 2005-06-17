@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.2 2003/02/06 17:05:23 grubba Exp $
+# $Id: configure.in,v 1.3 2005/06/17 15:47:08 grubba Exp $
 AC_INIT(Makefile.in)
 
 AC_SET_MAKE
@@ -14,10 +14,15 @@ do
       if test -f "$srcdir/$a/configure.in"; then
         yesno=`eval echo \\$with_$a`
         if test "x${yesno-}" != xno ; then
-          dirs="$dirs $a"
           MODULE_LINKOPTS="$MODULE_LINKOPTS $a/linker_options"
           MODULE_SEGMENTS="$MODULE_SEGMENTS $a/modlist_headers"
           module_names="$module_names $a"
+	  if test "x$RECONFIGURE_BUNDLES" = "xyes"; then
+	    if test x`find "$a" -name '*.bundle' -print -exec rm \{\} \;` = x; then
+	      continue;
+	    fi
+	  fi
+  	  dirs="$dirs $a"
         fi
       fi
     fi
