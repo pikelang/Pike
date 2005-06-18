@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.52 2005/06/18 00:10:19 grendel Exp $
+# $Id: rules,v 1.53 2005/06/18 00:19:16 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -19,6 +19,10 @@ ifdef CCVER
 CC=gcc-$(CCVER)
 else
 CC=gcc
+endif
+
+ifdef SSP
+SSP_FLAGS=-fstack-protector
 endif
 
 CFLAGS=-DDEBIAN
@@ -59,6 +63,10 @@ else
 MACHINE_OPTS=--without-machine-code
 endif
 
+ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
+	INSTALL_PROGRAM += -s
+endif
+
 VERSION:=$(shell dpkg-parsechangelog | grep ^Version | sed -e 's/Version: //;s/-[0-9.]*$$//')
 OS:=$(shell uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_')
 BUILDDIR=build/$(OS)
@@ -82,16 +90,12 @@ CFARGS=$(CFARGSEXTRA) \
        --with-perl \
        --without-ffmpeg \
        --without-libpdf \
-       --without-libpanda --without-machine-code
+       --without-libpanda $(MACHINE_OPTS) $(EXTRA_ARGS)
 
 RUNPIKE=$(CURDIR)/$(BUILDDIR)/pike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(CURDIR)/$(BUILDDIR)/master.pike
 RUNPIKE2=$(CURDIR)/debian/$(PIKE)-core/usr/bin/pike -m$(CURDIR)/$(BUILDDIR)/lib/master.pike
 PIKE_FAKEROOT=$(CURDIR)/debian/$(PIKE)-core
 PIKE_FAKEROOT_OMIT=$(BUILDDIR)*:$(CURDIR)/lib*:$(CURDIR)/src*:$(CURDIR)/bin*:$(CURDIR)/man*:$(BUILDDIR)/lib*:$(CURDIR)*:$(CURDIR)/debian/$(PIKE)-core*
-
-ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
-	INSTALL_PROGRAM += -s
-endif
 
 export CFLAGS CC PIKE VERSION
 
