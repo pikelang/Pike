@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.52 2005/05/26 00:11:15 grendel Exp $
+# $Id: rules,v 1.53 2005/06/18 02:20:14 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -21,8 +21,37 @@ else
 CC=gcc
 endif
 
+CFLAGS = -DDEBIAN
+
 ifdef SSP
 SSP_FLAGS=-fstack-protector
+endif
+
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+CFLAGS += -O0
+CFARGSEXTRA=--with-rtldebug --with-cdebug --with-debug --without-copt
+else
+CFLAGS += -O2
+CFARGSEXTRA=--without-rtldebug --without-cdebug --without-debug
+endif
+
+# Temporary workaround for hppa linker issues
+ifeq ($(DEB_BUILD_ARCH),hppa)
+CFLAGS += -ffunction-sections
+endif
+
+ifneq (,$(findstring debug,$(DEB_BUILD_OPTIONS)))
+CFLAGS += -g3 -ggdb3
+endif
+
+CFLAGS += $(SSP_FLAGS)
+# Temporary workaround for hppa linker issues
+ifeq ($(DEB_BUILD_ARCH),hppa)
+CFLAGS+=-ffunction-sections
+endif
+
+ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
+	INSTALL_PROGRAM += -s
 endif
 
 EXTRA_ARGS=--with-security
@@ -44,13 +73,11 @@ else
 MACHINE_OPTS=--without-machine-code
 endif
 
-VERSION:=$(shell dpkg-parsechangelog | grep ^Version | sed -e 's/Version://;s/-[^-]*$$//')
+VERSION:=$(shell dpkg-parsechangelog | grep ^Version | sed -e 's/Version: //;s/-[^-]*$$//')
 OS=$(shell uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_')
 BUILDDIR=build/$(OS)
-CFARGS=--without-rtldebug \
-       --without-cdebug \
-       --without-ssleay \
-       --with-security \
+CFARGS=$(CFARGSEXTRA) \
+       --with-cflags="$(CFLAGS)" \
        --with-bignums \
        --with-gmp \
        --with-poll \
@@ -69,25 +96,12 @@ CFARGS=--without-rtldebug \
        --with-perl \
        --without-ffmpeg \
        --without-libpdf \
-       --without-libpanda --without-machine-code
+       --without-libpanda $(MACHINE_OPTS) $(EXTRA_ARGS)
 
 RUNPIKE=$(CURDIR)/$(BUILDDIR)/pike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(CURDIR)/$(BUILDDIR)/master.pike
 RUNPIKE2=$(CURDIR)/debian/$(PIKE)-core/usr/bin/pike -m$(CURDIR)/$(BUILDDIR)/lib/master.pike
 PIKE_FAKEROOT=$(CURDIR)/debian/$(PIKE)-core
 PIKE_FAKEROOT_OMIT=$(BUILDDIR)*:$(CURDIR)/lib*:$(CURDIR)/src*:$(CURDIR)/bin*:$(CURDIR)/man*:$(BUILDDIR)/lib*:$(CURDIR)*:$(CURDIR)/debian/$(PIKE)-core*
-
-CFLAGS=-O2 -s $(SSP_FLAGS)
-# Temporary workaround for hppa linker issues
-ifeq ($(DEB_BUILD_ARCH),hppa)
-CFLAGS+=-ffunction-sections
-endif
-
-ifneq (,$(findstring debug,$(DEB_BUILD_OPTIONS)))
-	CFLAGS += -g
-endif
-ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
-	INSTALL_PROGRAM += -s
-endif
 
 export CFLAGS CC PIKE VERSION
 

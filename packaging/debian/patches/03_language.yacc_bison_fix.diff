@@ -1,0 +1,24 @@
+diff -U3 -Narp pike7.6-7.6.27/src/language.c pike7.6-7.6.27.new/src/language.c
+--- pike7.6-7.6.27/src/language.c	2005-06-18 02:46:36.000000000 +0200
++++ pike7.6-7.6.27.new/src/language.c	2005-06-18 02:53:45.009538576 +0200
+@@ -326,7 +326,7 @@ typedef union YYSTYPE {
+ #include <stdio.h>
+ int yylex(YYSTYPE *yylval);
+ /* Bison is stupid, and tries to optimize for space... */
+-#ifdef YYBISON
++#if defined(YYBISON) && !defined(DEBIAN)
+ #define short int
+ #endif /* YYBISON */
+ 
+diff -U3 -Narp pike7.6-7.6.27/src/language.yacc pike7.6-7.6.27.new/src/language.yacc
+--- pike7.6-7.6.27/src/language.yacc	2005-04-22 01:34:27.000000000 +0200
++++ pike7.6-7.6.27.new/src/language.yacc	2005-06-18 02:53:36.265867816 +0200
+@@ -193,7 +193,7 @@ static void __yy_memcpy(char *to, YY_FRO
+ #include <stdio.h>
+ int yylex(YYSTYPE *yylval);
+ /* Bison is stupid, and tries to optimize for space... */
+-#ifdef YYBISON
++#if defined(YYBISON) && !defined(DEBIAN)
+ #define short int
+ #endif /* YYBISON */
+ 
