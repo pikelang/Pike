@@ -1,7 +1,6 @@
-diff -U3 -r -N pike7.4-7.4.35.orig/lib/master.pike.in pike7.4-7.4.35/lib/master.pike.in
---- pike7.4-7.4.35.orig/lib/master.pike.in	2003-12-03 23:07:20.000000000 +0100
-+++ pike7.4-7.4.35/lib/master.pike.in	2003-12-04 00:16:47.000000000 +0100
-@@ -817,6 +817,14 @@
+--- pike7.4-7.4.315/lib/master.pike.in	2005-06-14 03:17:32.000000000 +0200
++++ pike7.4-7.4.315.new/lib/master.pike.in	2005-06-18 01:59:16.873370792 +0200
+@@ -995,6 +995,14 @@ void create()
  #if "¤include_prefix¤"[0]!='¤'
    include_prefix = "¤include_prefix¤";
  #endif
