@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.104 2005/06/08 14:25:38 grubba Exp $
+# $Id: configure.in,v 1.105 2005/06/18 09:58:21 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -6,13 +6,17 @@ AC_MODULE_INIT()
 
 AC_DEFINE(WITH_TERMIOS)
 
-AC_HAVE_HEADERS(sys/socket.h sys/types.h arpa/inet.h sys/socketvar.h \
+AC_HAVE_HEADERS(sys/types.h sys/socket.h arpa/inet.h sys/socketvar.h \
   netinet/in.h poll.h sys/poll.h sys/uio.h sys/mman.h linux/mman.h sys/time.h \
   sys/mount.h ustat.h sys/statfs.h sys/statvfs.h sys/vfs.h sys/param.h \
   sys/stream.h sys/protosw.h netdb.h sys/sysproto.h winsock.h \
   direct.h sys/wait.h process.h sys/file.h net/netdb.h limits.h unistd.h \
   termios.h poll.h sys/poll.h sys/select.h sys/un.h netinet/tcp.h \
   sys/sendfile.h sys/ioctl.h linux/if.h sys/xattr.h,,,[
+/* Needed for <sys/socket.h> on FreeBSD 4.9. */
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 /* Needed for <sys/socketvar.h> on Solaris 10. */
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
