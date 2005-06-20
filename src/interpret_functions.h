@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.184 2005/05/19 22:35:28 mast Exp $
+|| $Id: interpret_functions.h,v 1.185 2005/06/20 12:52:01 grubba Exp $
 */
 
 /*
@@ -429,9 +429,7 @@ OPCODE2(F_EXTERNAL_LVALUE, "& external", I_UPDATE_SP, {
   });
 
   ref_push_object(loc.o);
-  Pike_sp->type=T_OBJ_INDEX;
-  Pike_sp->u.integer=arg1 + loc.inherit->identifier_level;
-  Pike_sp++;
+  push_obj_index(arg1 + loc.inherit->identifier_level);
 });
 
 OPCODE1(F_MARK_AND_LOCAL, "mark & local", I_UPDATE_SP|I_UPDATE_M_SP, {
@@ -659,7 +657,6 @@ OPCODE0(F_LTOSVAL2, "ltosval2", I_UPDATE_SP, {
   Pike_sp[-1].type = PIKE_T_INT;
   Pike_sp++;
   lvalue_to_svalue_no_free(Pike_sp-2, Pike_sp-4);
-
   /* This is so that foo+=bar (and similar things) will be faster.
    * It's done by freeing the old reference to foo after it has been
    * pushed on the stack. That way foo can have only 1 reference if we
@@ -852,8 +849,7 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", I_UPDATE_SP, {
 
 OPCODE1(F_GLOBAL_LVALUE, "& global", I_UPDATE_SP, {
   ref_push_object(Pike_fp->current_object);
-  push_int(arg1 + Pike_fp->context.identifier_level);
-  Pike_sp[-1].type = T_OBJ_INDEX;
+  push_obj_index(rg1 + Pike_fp->context.identifier_level);
 });
 
 OPCODE0(F_INC, "++x", I_UPDATE_SP, {
