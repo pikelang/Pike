@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.h,v 1.25 2005/06/17 17:50:11 grubba Exp $
+|| $Id: sparc.h,v 1.26 2005/06/21 09:58:56 grubba Exp $
 */
 
 #define PIKE_OPCODE_ALIGN	4
@@ -11,19 +11,13 @@
 #define PIKE_BYTECODE_SPARC64
 #endif
 
-#ifdef PIKE_BYTECODE_SPARC64
-#define LOW_GET_JUMP()	(((INT64)PROG_COUNTER[0])<<32 | PROG_COUNTER[1])
-#define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + 2))
-#else /* !PIKE_BYTECODE_SPARC64 */
-#define LOW_GET_JUMP()	(PROG_COUNTER[0])
-#define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + 1))
-#endif /* PIKE_BYTECODE_SPARC64 */
-
 #define DEF_PROG_COUNTER	register unsigned INT32 *reg_pc __asm__ ("%i7")
 #define GLOBAL_DEF_PROG_COUNTER	DEF_PROG_COUNTER
 #define PROG_COUNTER		(reg_pc + 2)
 #define SET_PROG_COUNTER(X)	(reg_pc = ((unsigned INT32 *)(X))-2)
 
+#define LOW_GET_JUMP()	(PROG_COUNTER[0])
+#define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + 1))
 
 /*
  * Code generator state.
@@ -51,26 +45,9 @@ void sparc_ins_entry(void);
 void sparc_update_pc(void);
 #define UPDATE_PC()	sparc_update_pc()
 
-#ifdef PIKE_BYTECODE_SPARC64
-#define ins_pointer(PTR)  do {				\
-    add_to_program((INT32)(((INT64)(PTR))>>32));	\
-    add_to_program((INT32)(INT64)(PTR));		\
-  } while(0)
-#define read_pointer(OFF)					      \
-  ((((INT64)Pike_compiler->new_program->program[(INT32)(OFF)])<<32) | \
-   (Pike_compiler->new_program->program[((INT32)(OFF))+1]))
-#define upd_pointer(OFF, PTR) do {			  \
-    Pike_compiler->new_program->program[(INT32)(OFF)] =	  \
-      (INT32)(((INT64)(PTR))>>32);			  \
-    Pike_compiler->new_program->program[(INT32)(OFF)+1] = \
-      (INT32)(INT64)(PTR);				  \
-  } while(0)
-    
-#else /* !PIKE_BYTECODE_SPARC64 */
 #define ins_pointer(PTR)  add_to_program((INT32)(PTR))
 #define read_pointer(OFF) (Pike_compiler->new_program->program[(INT32)(OFF)])
 #define upd_pointer(OFF,PTR) (Pike_compiler->new_program->program[(INT32)(OFF)] = (INT32)(PTR))
-#endif /* PIKE_BYTECODE_SPARC64 */
 
 #define ins_align(ALIGN)
 #define ins_byte(VAL)	  add_to_program((INT32)(VAL))
