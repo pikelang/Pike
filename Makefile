@@ -1,11 +1,11 @@
 #
-# $Id: Makefile,v 1.149 2005/06/21 08:38:08 grubba Exp $
+# $Id: Makefile,v 1.150 2005/06/21 09:53:27 grubba Exp $
 #
 # Meta Makefile
 #
 
 # Use this to pass arguments to configure. Leave empty to keep previous args.
-CONFIGUREARGS=`echo $$CONFIGUREARGS`
+CONFIGUREARGS=`echo $${CONFIGUREARGS-}`
 
 # Set this to any generic make options you'd otherwise would have to
 # pass on the command line. (Using the magic MAKEFLAGS variable
