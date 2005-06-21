@@ -1,11 +1,11 @@
 #
-# $Id: Makefile,v 1.148 2004/10/16 22:03:11 nilsson Exp $
+# $Id: Makefile,v 1.149 2005/06/21 08:38:08 grubba Exp $
 #
 # Meta Makefile
 #
 
 # Use this to pass arguments to configure. Leave empty to keep previous args.
-CONFIGUREARGS=
+CONFIGUREARGS=`echo $$CONFIGUREARGS`
 
 # Set this to any generic make options you'd otherwise would have to
 # pass on the command line. (Using the magic MAKEFLAGS variable
@@ -324,6 +324,7 @@ xenofarm:
 	-rm -rf xenofarm_result
 	mkdir xenofarm_result
 	-CCACHE_LOGFILE="`pwd`/xenofarm_result/ccache.log.txt" \
+	  CONFIGUREARGS="$(CONFIGUREARGS)" \
 	  MAKE="$(MAKE_CMD)" BUILDDIR="$(BUILDDIR)" /bin/sh bin/xenofarm.sh
 	cd xenofarm_result && tar cf - . > ../xenofarm_result.tar
 	gzip -f9 xenofarm_result.tar
