@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.42 2005/06/20 14:17:04 grubba Exp $
+|| $Id: sparc.c,v 1.43 2005/06/21 09:59:41 grubba Exp $
 */
 
 /*
@@ -350,17 +350,15 @@ void sparc_update_pc(void)
   LOAD_PIKE_FP();
 #ifdef PIKE_BYTECODE_SPARC64
   /* The ASR registers are implementation specific in Sparc V7 and V8. */
-  /* rd %pc, %i0 */
-  SPARC_RD(SPARC_REG_I0, SPARC_RD_REG_PC);
-  /* stx %pc, [ %pike_fp + pc ] */
-  SPARC_STX(SPARC_REG_I0, SPARC_REG_PIKE_FP, OFFSETOF(pike_frame, pc), 1);
+  /* rd %pc, %o7 */
+  SPARC_RD(SPARC_REG_O7, SPARC_RD_REG_PC);
 #else /* !0 */
   /* call .+8 */
   SPARC_CALL(8);
   /* The new %o7 is available in the delay slot. */
-  /* stw %o7, [ %pike_fp + pc ] */
-  SPARC_STW(SPARC_REG_O7, SPARC_REG_PIKE_FP, OFFSETOF(pike_frame, pc), 1);
 #endif /* 0 */
+  /* stw %o7, [ %pike_fp + pc ] */
+  PIKE_STPTR(SPARC_REG_O7, SPARC_REG_PIKE_FP, OFFSETOF(pike_frame, pc), 1);
 }
 
 /*
@@ -644,16 +642,9 @@ static void low_ins_call(void *addr, int delay_ok, int i_flags)
        *       (Sparc Architecture Manual V9 p149.)
        */
 
-#ifdef PIKE_OPCODE_SPARC64
-      /* stx %o7, [ %pike_fp, %offsetof(pike_frame, pc) ] */
-      add_to_program(0xc0702000|(SPARC_REG_O7<<25)|(SPARC_REG_PIKE_FP<<14)|
-		     OFFSETOF(pike_frame, pc));
-#else /* !PIKE_OPCODE_SPARC64 */
       /* stw %o7, [ %pike_fp, %offsetof(pike_frame, pc) ] */
-      add_to_program(0xc0202000|(SPARC_REG_O7<<25)|(SPARC_REG_PIKE_FP<<14)|
-		     OFFSETOF(pike_frame, pc));
-#endif /* PIKE_OPCODE_SPARC64 */
-      
+      PIKE_STPTR(SPARC_REG_O7, SPARC_REG_PIKE_FP, OFFSETOF(pike_frame, pc), 1);
+
       delay_ok = 1;
     }
   }
