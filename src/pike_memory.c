@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.168 2005/06/22 09:15:55 grubba Exp $
+|| $Id: pike_memory.c,v 1.169 2005/06/22 16:00:10 grubba Exp $
 */
 
 #include "global.h"
@@ -381,6 +381,54 @@ static struct mexec_hdr {
   struct mexec_free_block *free;/* Ordered according to reverse address. */
 } *mexec_hdrs = NULL;		/* Ordered according to reverse address. */
 
+#ifdef PIKE_DEBUG
+static void low_verify_mexec_hdr(struct mexec_hdr *hdr,
+				 const char *file, int line)
+{
+  struct mexec_free_block *ptr;
+  char *blk_ptr;
+  if (!hdr) return;
+  if (d_flag) {
+    if (hdr->bottom > ((char *)hdr) + hdr->size) {
+      Pike_fatal("%s:%d:Bad bottom %p > %p\n",
+		 file, line,
+		 hdr->bottom, ((char *)hdr) + hdr->size);
+    }
+    for (blk_ptr = (char *)(hdr+1); blk_ptr < hdr->bottom;) {
+      struct mexec_free_block *blk = (struct mexec_free_block *)blk_ptr;
+      if (blk->size <= 0) {
+	Pike_fatal("%s:%d:Bad block size: %p\n",
+		   file, line,
+		   (void *)blk->size);
+      }
+      blk_ptr += blk->size;
+    }
+    if (blk_ptr != hdr->bottom) {
+      Pike_fatal("%s:%d:Block reaches past bottom! %p > %p\n",
+		 file, line,
+		 blk_ptr, hdr->bottom);
+    }
+    if (d_flag > 1) {
+      for (ptr = hdr->free; ptr; ptr = ptr->next) {
+	if (ptr < (struct mexec_free_block *)(hdr+1)) {
+	  Pike_fatal("%s:%d:Free block before start of header. %p < %p\n",
+		     file, line,
+		     ptr, hdr+1);
+	}
+	if (((char *)ptr) >= hdr->bottom) {
+	  Pike_fatal("%s:%d:Free block past bottom. %p >= %p\n",
+		     file, line,
+		     ptr, hdr->bottom);
+	}
+      }
+    }
+  }
+}
+#define verify_mexec_hdr(HDR)	low_verify_mexec_hdr(HDR, __FILE__, __LINE__)
+#else /* !PIKE_DEBUG */
+#define verify_mexec_hdr(HDR)
+#endif /* PIKE_DEBUG */
+
 #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
 #define MAP_ANONYMOUS	MAP_ANON
 #endif /* !MAP_ANONYMOUS && MAP_ANON */
@@ -408,6 +456,7 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
   sz = (sz + sizeof(struct mexec_hdr) + (PAGESIZE-1)) & ~(PAGESIZE-1);
 
   if (base) {
+    verify_mexec_hdr(base);
     wanted = (struct mexec_hdr *)(((char *)base) + base->size);
   }
   
@@ -420,6 +469,7 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
   if (hdr == wanted) {
     /* We succeeded in growing. */
     base->size += sz;
+    verify_mexec_hdr(base);
     return base;
   }
   /* Find insertion slot in hdr list. */
@@ -431,6 +481,7 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
       if ((((char *)wanted->next)+wanted->next->size) == (char *)hdr) {
 	/* We succeeded in growing some other hdr. */
 	wanted->next->size += sz;
+	verify_mexec_hdr(wanted->next);
 	return wanted->next;
       }
     }
@@ -443,6 +494,7 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
   hdr->size = sz;
   hdr->free = NULL;
   hdr->bottom = (char *)(hdr+1);
+  verify_mexec_hdr(hdr);
   return hdr;
 }
 
@@ -454,6 +506,7 @@ static struct mexec_block *low_mexec_alloc(struct mexec_hdr *hdr, size_t sz)
     
   /* fprintf(stderr, "low_mexec_alloc(%p, %p)\n", hdr, (void *)sz); */
   if (!hdr) return NULL;
+  verify_mexec_hdr(hdr);
   free = &hdr->free;
   while (*free && ((*free)->size < (ptrdiff_t)sz)) {
     free = &((*free)->next);
@@ -487,6 +540,7 @@ static struct mexec_block *low_mexec_alloc(struct mexec_hdr *hdr, size_t sz)
 #ifdef MEXEC_MAGIC
   res->magic = MEXEC_MAGIC;
 #endif /* MEXEC_MAGIC */
+  verify_mexec_hdr(hdr);
   return res;
 }
 
@@ -511,6 +565,7 @@ void mexec_free(void *ptr)
 	       ptr, mblk->magic, hdr);
   }
 #endif /* MEXEC_MAGIC */
+  verify_mexec_hdr(hdr);
   blk = (struct mexec_free_block *)mblk;
 
   next = hdr->free;
@@ -556,6 +611,7 @@ void mexec_free(void *ptr)
       hdr->free = blk;
     }
   }
+  verify_mexec_hdr(hdr);
 }
 
 void *mexec_alloc(size_t sz)
@@ -581,6 +637,7 @@ void *mexec_alloc(size_t sz)
       /* fprintf(stderr, " ==> NULL (grow failed)\n"); */
       return NULL;
     }
+    verify_mexec_hdr(hdr);
     res = low_mexec_alloc(hdr, sz);
 #ifdef PIKE_DEBUG
     if (!res) {
@@ -596,6 +653,7 @@ void *mexec_alloc(size_t sz)
 	       res->hdr, hdr);
   }
 #endif /* PIKE_DEBUG */
+  verify_mexec_hdr(hdr);
   return res + 1;
 }
 
@@ -626,6 +684,7 @@ void *mexec_realloc(void *ptr, size_t sz)
 	       ptr, old->magic, hdr);
   }
 #endif /* MEXEC_MAGIC */
+  verify_mexec_hdr(hdr);
 
   sz = (sz + sizeof(struct mexec_block) + 0x1f) & ~0x1f;
   if (old->size >= (ptrdiff_t)sz) {
@@ -635,9 +694,7 @@ void *mexec_realloc(void *ptr, size_t sz)
 
   if ((((char *)old) + old->size) == hdr->bottom) {
     /* Attempt to grow the block. */
-#if 0
-    if (((((char *)old) - ((char *)hdr)) <= (hdr->size - sz)) ||
-	((res = low_mexec_alloc(hdr, sz)) == old)) {
+    if ((((char *)old) - ((char *)hdr)) <= (hdr->size - (ptrdiff_t)sz)) {
       old->size = sz;
       hdr->bottom = ((char *)old) + sz;
       /* fprintf(stderr, " ==> %p (succeded in growing)\n", ptr); */
@@ -645,15 +702,16 @@ void *mexec_realloc(void *ptr, size_t sz)
       if (old->hdr != hdr) {
 	Pike_fatal("mexec_realloc: "
 		   "Grown block is not member of hdr: %p != %p\n",
-		   old->next, hdr);
+		   old->hdr, hdr);
       }
 #endif /* PIKE_DEBUG */
+      verify_mexec_hdr(hdr);
       return ptr;
     }
-#endif /* 0 */
     /* FIXME: Consider using grow_mexec_hdr to grow our hdr. */
     old_hdr = hdr;
   } else {
+    fprintf(stderr, "low_mexec_alloc(%p, %p)\n", hdr, (void *)sz);
     res = low_mexec_alloc(hdr, sz);
   }
   if (!res) {
@@ -679,6 +737,7 @@ void *mexec_realloc(void *ptr, size_t sz)
 		     old->hdr, hdr);
 	}
 #endif /* PIKE_DEBUG */
+	verify_mexec_hdr(hdr);
 	return ptr;
       }
       res = low_mexec_alloc(hdr, sz);
@@ -688,6 +747,7 @@ void *mexec_realloc(void *ptr, size_t sz)
 		   ptr, sz);
       }
 #endif /* PIKE_DEBUG */
+      verify_mexec_hdr(hdr);
     }
   }
 
@@ -698,7 +758,7 @@ void *mexec_realloc(void *ptr, size_t sz)
 
   /* fprintf(stderr, " ==> %p\n", res + 1); */
 
-  memcpy(res+1, old+1, old->size - sizeof(old));
+  memcpy(res+1, old+1, old->size - sizeof(*old));
   mexec_free(ptr);
 
 #ifdef PIKE_DEBUG
@@ -708,7 +768,7 @@ void *mexec_realloc(void *ptr, size_t sz)
 	       res->hdr, hdr);
   }
 #endif /* PIKE_DEBUG */
-
+  verify_mexec_hdr(hdr);
   return res + 1;
 }
 #else
