@@ -13,9 +13,9 @@ constant dont_dump_program = 1;
 
 #if constant(Postgres.postgres)
 
-//! This is an interface to the Postgres (Postgres95, pgsql) database
+//! This is an interface to the Postgres (Postgres95, PostgreSQL) database
 //! server. This module may or may not be available on your Pike,
-//! depending whether the appropriate include and library files could
+//! depending on whether or not the appropriate include and library files could
 //! be found at compile-time. Note that you @b{do not@} need to have a
 //! Postgres server running on your host to use this module: you can
 //! connect to the database over a TCP/IP socket.
@@ -26,8 +26,8 @@ constant dont_dump_program = 1;
 //!
 //! @note
 //! Also note that @b{this module uses blocking I/O@} to connect
-//! to the server. It is thread-safe, and so it can be used in a
-//! multithread environment.
+//! to the server, but it is thread-safe, and so it can be used in a
+//! multithreaded environment.
 //!
 //! The behavior of the Postgres C API also depends on certain
 //! environment variables defined in the environment of the Pike
@@ -37,22 +37,44 @@ constant dont_dump_program = 1;
 //! @string
 //!   @value "PGHOST"
 //!     Sets the name of the default host to connect to. It defaults
-//! 	to @expr{"localhost"@}.
+//!     to @expr{"localhost"@}.
+//!   @value "PGHOSTADDR"
+//!     Set the numeric IP address to connect to.  This may be set instead of
+//!     or in addition to PGHOST to avoid DNS lookups.
+//!   @value "PGPORT"
+//!     Sets the default port or unix domain socket file extension to connect to,
+//!     otherwise it will use compile-time defaults (that is: the time you compiled
+//!     the postgres library, not the Pike driver).
+//!   @value "PGDATABASE"
+//!     Sets the default database to connect to.
+//!   @value "PGUSER"
+//!     Sets the default username used to connect to the database.
+//!   @value "PGPASSWORD"
+//!     Set the default password used to connect to the database.  This is not
+//!     recommended for security reasons, some operating systems allow non-root
+//!     users to see process environment variables.  Use your ~/.pgpass file instead.
+//!   @value "PGSERVICE"
+//!     Sets the service name to be looked up in pg_service.conf.  This is a
+//!     shorter way to set all the parameters.
+//!   @value "PGSSLMODE"
+//!     This determines how SSL connections will be negotiated.  If set to @b{disable@},
+//!     it will require an unencrypted connection; @b{allow@} will negotiate a non-SSL
+//!     connection, and if it fails try an SSL connection; @b{prefer@} will attempt SSL
+//!     connections first, falling back to non-SSL if SSL fails; and @b{require@} will
+//!     force an SSL connection or cause an error if SSL is not available.
 //!   @value "PGOPTIONS"
 //!     Sets some extra flags for the frontend-backend connection.
 //!     @b{do not set@} unless you're sure of what you're doing.
-//!   @value "PGPORT"
-//!     Sets the default port to connect to, otherwise it will use
-//!     compile-time defaults (that is: the time you compiled the postgres
-//! 	library, not the Pike driver).
+//!   @value "PGREALM"
+//!     Sets the Kerberos realm for authentication, if it is different
+//!     from the local realm.  PostgreSQL will attempt to authenticate
+//!     with servers for this realm and use seperate ticket files to avoid
+//!     conflicts with local ticket files.  This variable is only used if
+//!     Keberos authentication is selected in PostgreSQL.
 //!   @value "PGTTY"
 //!     Sets the file to be used for Postgres frontend debugging.
 //!     Do not use, unless you're sure of what you're doing.
-//!   @value "PGDATABASE"
-//!     Sets the default database to connect to.
-//!   @value "PGREALM"
-//!     Sets the default realm for Kerberos authentication. I never used
-//!   	this, so I can't help you.
+//!     This variable is ignored in recent versions of PostgreSQL.
 //! @endstring
 //!
 //! Refer to the Postgres documentation for further details.
@@ -143,14 +165,8 @@ protected private int mkbool(string s) {
 //! @expr{0@} or @expr{""@}, it will try to connect to the specified
 //! database.
 //!
-//! The username and password arguments are silently ignored, since
-//! the Postgres C API doesn't allow to connect to the server as any
-//! user different than the user running the interface.
-//!
 //! @note
-//! You need to have a database selected before using the sql-object,
-//! otherwise you'll get exceptions when you try to query it. Also
-//! notice that this function @b{can@} raise exceptions if the db
+//! Notice that this function @b{can@} raise exceptions if the db
 //! server doesn't respond, if the database doesn't exist or is not
 //! accessible by you.
 //!
