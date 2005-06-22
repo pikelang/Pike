@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.169 2005/06/22 16:00:10 grubba Exp $
+|| $Id: pike_memory.c,v 1.170 2005/06/22 16:03:06 grubba Exp $
 */
 
 #include "global.h"
@@ -711,7 +711,6 @@ void *mexec_realloc(void *ptr, size_t sz)
     /* FIXME: Consider using grow_mexec_hdr to grow our hdr. */
     old_hdr = hdr;
   } else {
-    fprintf(stderr, "low_mexec_alloc(%p, %p)\n", hdr, (void *)sz);
     res = low_mexec_alloc(hdr, sz);
   }
   if (!res) {
