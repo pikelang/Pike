@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.155 2005/06/22 09:18:45 grubba Exp $
+|| $Id: pike_memory.c,v 1.156 2005/06/22 16:00:54 grubba Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 
 #include <errno.h>
 
-RCSID("$Id: pike_memory.c,v 1.155 2005/06/22 09:18:45 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.156 2005/06/22 16:00:54 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -700,7 +700,7 @@ void *mexec_realloc(void *ptr, size_t sz)
 
   /* fprintf(stderr, " ==> %p\n", res + 1); */
 
-  memcpy(res+1, old+1, old->size - sizeof(old));
+  memcpy(res+1, old+1, old->size - sizeof(*old));
   mexec_free(ptr);
 
 #ifdef PIKE_DEBUG
