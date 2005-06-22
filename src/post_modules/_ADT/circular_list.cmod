@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: circular_list.cmod,v 1.15 2004/11/12 13:45:30 grubba Exp $
+|| $Id: circular_list.cmod,v 1.16 2005/06/22 15:49:54 grubba Exp $
 */
 
 #include "global.h"
@@ -59,13 +59,13 @@ PIKECLASS CircularList
   
   //convert an index in the circular list to the index in the underlaying array
   //add the pos and take modulo of the size
-  inline int circ2array(int index)
+  static inline int circ2array(int index)
     {
       return (index+THIS->pos)%THIS->a->size;
     }
   
   //convert an index in the underlaying array to the array in the circular list
-  inline int array2circ(int index)
+  static inline int array2circ(int index)
     {
       return (index-THIS->pos)%THIS->a->size;
     }
