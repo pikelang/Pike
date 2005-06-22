@@ -43,4 +43,5 @@ mapping(string:object) get()
   }
   else
     push_int(0);
+  f_aggregate_mapping(4);
 }
