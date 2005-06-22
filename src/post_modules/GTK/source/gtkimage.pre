@@ -42,5 +42,6 @@ FUNCTION(get, "function(void:mapping)");
   }
   else
     push_int(0);
+  f_aggregate_mapping(4);
 }
 
