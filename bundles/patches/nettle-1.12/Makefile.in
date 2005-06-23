@@ -19,10 +19,10 @@ TARGETS = aesdata$(EXEEXT) desdata$(EXEEXT) shadata$(EXEEXT) \
 
 all check install uninstall:
 	$(MAKE) $@-here
-	set -e; for d in $(SUBDIRS); do $(MAKE) -C $$d $@; done
+	set -e; for d in $(SUBDIRS); do (cd $$d && $(MAKE) $@); done
 
 clean distclean mostlyclean maintainer-clean:
-	set -e; for d in $(SUBDIRS); do $(MAKE) -C $$d $@; done
+	set -e; for d in $(SUBDIRS); do (cd $$d && $(MAKE) $@); done
 	$(MAKE) $@-here
 
 check-here:
