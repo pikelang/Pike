@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.593 2005/06/09 09:25:11 grubba Exp $
+|| $Id: program.c,v 1.594 2005/06/23 13:33:03 grubba Exp $
 */
 
 #include "global.h"
@@ -5968,7 +5968,13 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
 	memcpy(res->str, file, len<<shift);
 	return end_shared_string(res);
       }
+    } else {
+      fprintf(stderr, "Bad offset: pc:%p program:%p (%p)\n",
+	      pc, prog->program, (void *)prog->num_program);
     }
+  } else {
+    fprintf(stderr, "No program of linenumbers program:%p linenumbers:%p\n",
+	    prog->program, prog->linenumbers);
   }
 
   return NULL;
@@ -8229,9 +8235,12 @@ void make_program_executable(struct program *p)
 
 #endif /* _WIN32 */
 
-#ifdef FLUSH_INSTRUCTION_CACHE
+#ifdef HAVE_SYNC_INSTRUCTION_MEMORY
+  sync_instruction_memory(p->program,
+			  p->num_program*sizeof(p->program[0]));
+#elif defined(FLUSH_INSTRUCTION_CACHE)
   FLUSH_INSTRUCTION_CACHE(p->program,
 			  p->num_program*sizeof(p->program[0]));
-#endif /* FLUSH_INSTRUCTION_CACHE */
+#endif /* HAVE_SYNC_INSTRUCTION_MEMORY || FLUSH_INSTRUCTION_CACHE */
 }
 #endif
