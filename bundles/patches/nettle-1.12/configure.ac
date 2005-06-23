@@ -89,11 +89,11 @@ case "$host" in
     asm_path=x86
     ;;
   *sparc*-*-*)
-    AC_TRY_CPP([
+    AC_TRY_COMPILE([
 #if defined(__sparcv9) || defined(__arch64__)
 #error 64-bit sparc
 #endif
-    ], [
+    ], [], [
       asm_path=sparc
     ], [
       asm_path=sparc64
