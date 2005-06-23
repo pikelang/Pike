@@ -1,0 +1,59 @@
+@SET_MAKE@
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+top_srcdir = @top_srcdir@
+
+include ../config.make
+
+PRE_CPPFLAGS = -I.. -I$(top_srcdir)
+PRE_LDFLAGS = -L..
+
+TARGETS = sexp-conv nettle-lfib-stream
+
+all: $(TARGETS)
+
+sexp_conv_SOURCES = sexp-conv.c input.c output.c parse.c \
+	getopt.c getopt1.c misc.c
+
+SOURCES = $(sexp_conv_SOURCES) nettle-lfib-stream.c
+
+DISTFILES = $(SOURCES) Makefile.in getopt.h input.h misc.h output.h parse.h
+
+sexp-conv: $(sexp_conv_SOURCES:.c=.$(OBJEXT)) ../libnettle.a
+	$(LINK) $^ -lnettle $(LIBS) -o $@
+
+nettle-lfib-stream: nettle-lfib-stream.$(OBJEXT) ../libnettle.a
+	$(LINK) $^ -lnettle $(LIBS) -o $@
+
+.c.$(OBJEXT):
+	$(COMPILE) -c $< && $(DEP_PROCESS)
+
+
+Makefile: $(srcdir)/Makefile.in ../config.status
+	cd .. && $(SHELL) ./config.status tools/$@
+
+check:
+	true
+
+install: $(TARGETS)
+	$(INSTALL) -d $(DESTDIR)$(bindir)
+	$(INSTALL_PROGRAM) $(TARGETS) $(DESTDIR)$(bindir)
+
+uninstall:
+	for f in $(TARGETS) ; do \
+	  rm -f $(DESTDIR)$(bindir)/$$f ; \
+	done
+
+distdir: $(DISTFILES)
+	cp $^ $(distdir)
+
+clean:
+	-rm -f $(TARGETS) *.o *.d
+
+distclean: clean
+	-rm -f Makefile
+
+# The following line only works with gnu make.
+# -include $(SOURCES:.c=.$(OBJEXT).d)

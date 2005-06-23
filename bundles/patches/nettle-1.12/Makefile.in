@@ -1,0 +1,327 @@
+# Nettle Makefile
+
+@SET_MAKE@
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+LIBOBJS = @LIBOBJS@
+
+SUBDIRS = tools testsuite examples
+
+include config.make
+
+PRE_CPPFLAGS = -I.
+
+TARGETS = aesdata$(EXEEXT) desdata$(EXEEXT) shadata$(EXEEXT) \
+	  libnettle.a $(SHLIBTARGET) \
+	  nettle.info nettle.html
+
+all check install uninstall:
+	$(MAKE) $@-here
+	set -e; for d in $(SUBDIRS); do $(MAKE) -C $$d $@; done
+
+clean distclean mostlyclean maintainer-clean:
+	set -e; for d in $(SUBDIRS); do $(MAKE) -C $$d $@; done
+	$(MAKE) $@-here
+
+check-here:
+	true
+
+# These targets aren't supported, but they are expected by the
+# automake generated Makefiles in the lsh build.
+dvi installcheck uninstallcheck:
+	true
+
+.SUFFIXES:
+.SUFFIXES: .asm .html .c .dvi .info .$(OBJEXT) .p$(OBJEXT) .exe .pdf .ps .texinfo
+
+all-here: $(TARGETS)
+
+nettle_SOURCES = aes.c \
+	         aes-decrypt-table.c aes-decrypt.c \
+		 aes-encrypt-table.c aes-encrypt.c \
+		 aes-set-encrypt-key.c aes-set-decrypt-key.c aes-meta.c \
+		 arcfour.c arcfour-crypt.c arcfour-meta.c \
+		 arctwo.c arctwo-meta.c \
+		 base16-encode.c base16-decode.c base16-meta.c \
+                 base64-encode.c base64-decode.c base64-meta.c \
+		 cast128.c cast128-meta.c \
+		 blowfish.c \
+		 cbc.c \
+		 des.c \
+		 des3.c des-compat.c \
+		 hmac.c hmac-md5.c hmac-sha1.c hmac-sha256.c \
+		 knuth-lfib.c \
+		 md2.c md2-meta.c md4.c md4-meta.c \
+		 md5.c md5-compat.c md5-meta.c \
+		 sha1.c sha1-compress.c sha1-meta.c sha256.c sha256-meta.c \
+		 serpent.c serpent-meta.c \
+		 twofish.c twofish-meta.c \
+		 yarrow256.c yarrow_key_event.c \
+		 sexp.c sexp-format.c \
+		 sexp-transport.c sexp-transport-format.c \
+		 bignum.c bignum-random.c sexp2bignum.c \
+		 pkcs1.c pkcs1-rsa-md5.c pkcs1-rsa-sha1.c \
+		 rsa.c rsa-sign.c rsa-verify.c \
+		 rsa-md5-sign.c rsa-md5-verify.c \
+		 rsa-sha1-sign.c rsa-sha1-verify.c \
+		 rsa-encrypt.c rsa-decrypt.c \
+		 rsa-keygen.c rsa-compat.c \
+		 rsa2sexp.c sexp2rsa.c \
+		 dsa.c dsa-sign.c dsa-verify.c dsa-keygen.c \
+		 sexp2dsa.c \
+		 pgp-encode.c rsa2openpgp.c \
+		 buffer.c buffer-init.c realloc.c \
+		 nettle-internal.c
+
+HEADERS = aes.h arcfour.h arctwo.h bignum.h blowfish.h \
+	  base16.h base64.h buffer.h cast128.h \
+	  cbc.h \
+	  des.h des-compat.h dsa.h \
+	  hmac.h \
+	  knuth-lfib.h \
+	  macros.h \
+	  md2.h md4.h \
+	  md5.h md5-compat.h \
+	  memxor.h \
+	  nettle-meta.h \
+	  pgp.h pkcs1.h realloc.h rsa.h rsa-compat.h \
+	  sexp.h \
+	  serpent.h sha.h twofish.h \
+	  yarrow.h
+
+INSTALL_HEADERS = $(HEADERS) nettle-types.h
+
+SOURCES = $(nettle_SOURCES) aesdata.c desdata.c shadata.c
+
+DISTFILES = $(SOURCES) $(HEADERS) .bootstrap aclocal.m4 configure.ac \
+	configure stamp-h.in \
+	config.guess config.sub install-sh texinfo.tex \
+	config.h.in config.m4.in config.make.in	Makefile.in \
+	README AUTHORS COPYING INSTALL NEWS TODO ChangeLog \
+	memxor.c $(des_headers) descore.README \
+	aes-internal.h cast128_sboxes.h desinfo.h desCode.h \
+	serpent_sboxes.h nettle-internal.h \
+	asm.m4 \
+	nettle.texinfo nettle.info nettle.html sha-example.c
+
+# Rules building libnettle.a
+# FIXME: Do we really need to delete the archive first?
+libnettle.a: $(nettle_SOURCES:.c=.o) $(LIBOBJS)
+	-rm -f $@
+	$(AR) $(ARFLAGS) $@ $^
+	$(RANLIB) $@
+
+.c.$(OBJEXT):
+	$(COMPILE) $(CCPIC_MAYBE) -c $< \
+	&& $(DEP_PROCESS)
+
+# Rules building libnettle.so
+$(SHLIBFORLINK): $(nettle_SOURCES:.c=.p$(OBJEXT)) $(LIBOBJS:.$(OBJEXT)=.p$(OBJEXT))
+	$(SHLIBLINK) $^ -o $@ $(SHLIBLIBS)
+	-mkdir .lib 2>/dev/null
+	[ -z "$(SHLIBSONAME)" ] || (cd .lib \
+          && ln -sf ../$(SHLIBFORLINK) $(SHLIBSONAME))
+
+.c.p$(OBJEXT):
+	$(COMPILE) $(SHLIBCFLAGS) -c $< -o $@ \
+	&& $(DEP_PROCESS)
+
+.o$(EXEEXT):
+	$(LINK) $^ $(LIBS) -o $@
+
+# aesdata.$(OBJEXT) : aesdata.c
+# 	$(COMPILE) -c $< && $(DEP_PROCESS)
+aesdata$(EXEEXT): aesdata.$(OBJEXT)
+	$(LINK) $^ $(LIBS) -o $@
+
+# desdata.$(OBJEXT) : desdata.c
+# 	$(COMPILE)  -c $< && $(DEP_PROCESS)
+desdata$(EXEEXT): desdata.$(OBJEXT)
+	$(LINK) $^ $(LIBS) -o $@
+
+# shadata.$(OBJEXT) : shadata.c
+# 	$(COMPILE)  -c $< && $(DEP_PROCESS)
+shadata$(EXEEXT): shadata.$(OBJEXT)
+	$(LINK) $^ $(LIBS) -lm -o $@
+
+# desCore rules
+# It seems using $(srcdir)/ doesn't work with GNU make 3.79.1
+# des_headers = $(srcdir)/parity.h $(srcdir)/rotors.h $(srcdir)/keymap.h 
+des_headers = parity.h rotors.h keymap.h 
+
+# Generate DES headers.
+$(des_headers): desdata.c
+	$(MAKE) desdata$(EXEEXT)
+	./desdata$(EXEEXT) $(@F) > $@T
+	test -s $@T && mv -f $@T $@
+
+des.o: des.c des.h $(des_headers)
+
+.asm.$(OBJEXT):
+	$(M4) $(srcdir)/asm.m4 machine.m4 config.m4 \
+		$< >$*.s
+	$(COMPILE) $(CCPIC_MAYBE) -c $*.s
+	echo "$@ : $< $(srcdir)/asm.m4 machine.m4 config.m4" >$@.d 
+
+.asm.p$(OBJEXT):
+	$(M4) $(srcdir)/asm.m4 machine.m4 config.m4 \
+		$< >$*.s
+	$(COMPILE) $(SHLIBCFLAGS) -c $*.s -o $@
+	echo "$@ : $< $(srcdir)/asm.m4 machine.m4 config.m4" >$@.d 
+
+# Texinfo rules
+.texinfo.info:
+	cd $(srcdir) && $(MAKEINFO) --output $@T `basename $<` \
+	&& test -s $@T && mv -f $@T $@
+
+.texinfo.html:
+	cd $(srcdir) && $(MAKEINFO) --html --no-split \
+	  --output $@T `basename $<` \
+	  && test -s $@T && mv -f $@T $@
+
+# Configure-related rules, mostly copied from the autoconf manual. No
+# $(srcdir) prefixes on the targets, though.
+
+configure: configure.ac aclocal.m4
+	cd $(srcdir) && $(AUTOCONF)
+
+# autoheader might not change config.h.in, so touch a stamp file.
+config.h.in: stamp-h.in
+stamp-h.in: configure.ac aclocal.m4
+	cd $(srcdir) && autoheader
+	echo timestamp > $(srcdir)/stamp-h.in
+
+config.status: configure
+	./config.status --recheck
+
+config.h: stamp-h
+stamp-h: config.h.in config.status
+	./config.status config.h
+	echo timestamp > stamp-h
+
+Makefile: Makefile.in config.status
+	./config.status $@
+
+config.make: config.make.in config.status
+	./config.status $@
+
+# Installation
+install-here: install-info install-headers libnettle.a $(SHLIBINSTALL)
+	$(INSTALL) -d $(DESTDIR)$(libdir)
+	$(INSTALL_DATA) libnettle.a $(DESTDIR)$(libdir)
+
+install-shared: $(SHLIBFORLINK)
+	$(INSTALL) -d $(DESTDIR)$(libdir)
+	$(INSTALL_PROGRAM) $(SHLIBFORLINK) $(DESTDIR)$(libdir)/$(SHLIBFILE)
+	[ -z "$(SHLIBSONAME)" ] \
+                || (cd $(DESTDIR)$(libdir) \
+		&& ln -sf $(SHLIBFILE) $(SHLIBSONAME) \
+		&& ln -sf $(SHLIBFILE) $(SHLIBFORLINK) )
+
+install-info: nettle.info
+	$(INSTALL) -d $(DESTDIR)$(infodir)
+	$(INSTALL_DATA) $< $(DESTDIR)$(infodir)
+	if (install-info --version && \
+	    install-info --version 2>&1 | sed 1q | grep -i -v debian) >/dev/null 2>&1; then \
+	  install-info --info-dir="$(DESTDIR)$(infodir)" $< ; \
+	else : ; fi
+
+install-headers: $(INSTALL_HEADERS)
+	$(INSTALL) -d $(DESTDIR)$(includedir)/nettle
+	$(INSTALL_DATA) $^ $(DESTDIR)$(includedir)/nettle
+
+# Uninstall
+uninstall-here: uninstall-info uninstall-headers uninstall-shared
+	rm -f $(DESTDIR)$(libdir)/libnettle.a
+
+uninstall-headers:
+	for f in $(INSTALL_HEADERS) ; do \
+	  rm -f $(DESTDIR)$(includedir)/nettle/$$f ; \
+	done
+
+uninstall-info:
+	if (install-info --version && \
+	    install-info --version 2>&1 | sed 1q | grep -i -v debian) >/dev/null 2>&1; then \
+	  install-info --info-dir="$(DESTDIR)$(infodir)" --remove "$(DESTDIR)$(infodir)"/nettle.info ; \
+	else : ; fi
+	-rm -f $(DESTDIR)$(infodir)/nettle.info
+
+# FIXME: Leaves the links around
+uninstall-shared:
+	test -z "$(SHLIBINSTALL)" || rm -f $(DESTDIR)$(libdir)/$(SHLIBFILE)
+
+# Distribution
+distdir = $(PACKAGE_NAME)-$(PACKAGE_VERSION)
+top_distdir = $(distdir)
+
+# $(distdir) must always be a relative path!
+distdir: $(DISTFILES)
+	rm -rf $(distdir)
+	mkdir $(distdir)
+	cp $^ $(distdir)
+	set -e; for d in sparc x86 ; do \
+	  mkdir $(distdir)/$$d ; \
+	  cp $(srcdir)/$$d/*.asm $(srcdir)/$$d/*.m4 $(distdir)/$$d ; \
+	done
+	set -e; for d in $(SUBDIRS); do \
+	  sd=$(distdir)/$$d ; \
+	  mkdir $$sd && $(MAKE) -C $$d distdir=../$$sd $@ ; \
+	done
+
+dist: distdir
+	tar cf - $(distdir) | gzip -c >$(distdir).tar.gz	
+	rm -rf $(distdir)
+
+rm_distcheck = test ! -d distcheck-tmp \
+	    || { find distcheck-tmp -type d ! -perm -200 -exec chmod u+w {} ';' \
+                 && rm -fr distcheck-tmp; }; 
+
+distcheck: dist
+	$(rm_distcheck)
+	mkdir distcheck-tmp
+	gzip -d < $(distdir).tar.gz \
+	  | { cd distcheck-tmp && tar xf - && chmod -R a-w $(distdir) ; }
+	mkdir distcheck-tmp/build
+	mkdir distcheck-tmp/install
+	cd distcheck-tmp/build && ../$(distdir)/configure --prefix="`cd ../install && pwd`"
+	cd distcheck-tmp/build && $(MAKE)
+	cd distcheck-tmp/build && $(MAKE) check
+	cd distcheck-tmp/build && $(MAKE) install
+	cd distcheck-tmp/build && $(MAKE) uninstall
+	cd distcheck-tmp && find install -type f -print > leftover-install-files
+	@test `cat distcheck-tmp/leftover-install-files | wc -l` -le 1  \
+	  || { echo "ERROR: files left after uninstall:" ; \
+	       cat distcheck-tmp/leftover-install-files ; \
+	       exit 1; }
+	chmod -R a-w distcheck-tmp/install
+	mkdir distcheck-tmp/destdir
+	destdir="`cd distcheck-tmp/destdir && pwd`" \
+	  && cd distcheck-tmp/build \
+	  && $(MAKE) install DESTDIR="$$destdir" \
+	  && $(MAKE) uninstall DESTDIR="$$destdir"
+	cd distcheck-tmp && find destdir -type f -print > leftover-destdir-files
+	@test `cat distcheck-tmp/leftover-destdir-files | wc -l` -le 1  \
+	  || { echo "ERROR: destdir files left after uninstall:" ; \
+	       cat distcheck-tmp/leftover-destdir-files ; \
+	       exit 1; }	
+	cd distcheck-tmp/build && $(MAKE) dist
+	cd distcheck-tmp/build && rm *.gz
+	cd distcheck-tmp/build && $(MAKE) distclean
+	cd distcheck-tmp && find build -type f -print > leftover-build-files
+	@test `cat distcheck-tmp/leftover-build-files | wc -l` -eq 0  \
+	  || { echo "ERROR: files left in build directory after distclean:" ; \
+	       cat distcheck-tmp/leftover-build-files ; \
+	       exit 1; }
+	$(rm_distcheck)
+
+clean-here:
+	-rm -f $(TARGETS) *.$(OBJEXT) *.p$(OBJEXT) *.d *.s
+
+distclean-here: clean-here
+	-rm -f config.h stamp-h config.log config.status \
+	config.make config.m4 Makefile nettle-types.h
+
+# The following line only works with gnu make.
+# -include $(SOURCES:.c=.$(OBJEXT).d) $(SOURCES:.c=.p$(OBJEXT).d)
