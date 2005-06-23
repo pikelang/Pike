@@ -1,0 +1,77 @@
+# Makefile settings shared between Makefiles.
+
+CC = @CC@
+CFLAGS = @CFLAGS@
+CCPIC = @CCPIC@
+CCPIC_MAYBE = @CCPIC_MAYBE@
+CPPFLAGS = @CPPFLAGS@
+DEFS = @DEFS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+LIBOBJS = @LIBOBJS@
+
+OBJEXT = @OBJEXT@
+EXEEXT = @EXEEXT@
+
+INSTALL = @INSTALL@
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
+INSTALL_STRIP_PROGRAM = $(INSTALL_PROGRAM) -s
+
+DEP_FLAGS = @DEP_FLAGS@
+DEP_PROCESS = @DEP_PROCESS@
+
+PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
+PACKAGE_NAME = @PACKAGE_NAME@
+PACKAGE_STRING = @PACKAGE_STRING@
+PACKAGE_TARNAME = @PACKAGE_TARNAME@
+PACKAGE_VERSION = @PACKAGE_VERSION@
+
+SHLIBCFLAGS = @SHLIBCFLAGS@
+SHLIBFILE = @SHLIBFILE@
+SHLIBFORLINK = @SHLIBFORLINK@
+SHLIBINSTALL = @SHLIBINSTALL@
+SHLIBLIBS = @SHLIBLIBS@
+SHLIBLINK = @SHLIBLINK@
+SHLIBMAJOR = @SHLIBMAJOR@
+SHLIBMINOR = @SHLIBMINOR@
+SHLIBSONAME = @SHLIBSONAME@
+SHLIBTARGET = @SHLIBTARGET@
+
+AR = ar
+ARFLAGS = cru
+AUTOCONF = autoconf
+AUTOHEADER = autoheader
+M4 = @M4@
+MAKEINFO = makeinfo
+RANLIB = @RANLIB@
+
+prefix	=	@prefix@
+exec_prefix =	@exec_prefix@
+bindir =	@bindir@
+libdir =	@libdir@
+includedir =	@includedir@
+infodir =	@infodir@
+
+# PRE_CPPFLAGS and PRE_LDFLAGS lets each Makefile.in prepend its own
+# flags before CPPFLAGS and LDFLAGS.
+
+COMPILE = $(CC) $(PRE_CPPFLAGS) $(CPPFLAGS) $(DEFS) $(CFLAGS) $(CCPIC) $(DEP_FLAGS)
+LINK = $(CC) $(CFLAGS) $(PRE_LDFLAGS) $(LDFLAGS)
+
+# The default rule
+default-all : all
+
+# Disable builtin rule
+%$(EXEEXT) : %.c
+
+# Keep object files
+.PRECIOUS: %.o
+
+.PHONY: all check install uninstall clean distclean mostlyclean maintainer-clean distdir \
+	all-here check-here install-here clean-here distclean-here mostlyclean-here \
+	maintainer-clean-here distdir-here \
+	install-shared install-info install-headers \
+	uninstall-shared uninstall-info uninstall-headers \
+	dist distcleancheck
