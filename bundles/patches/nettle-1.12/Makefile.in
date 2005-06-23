@@ -162,13 +162,15 @@ des.o: des.c des.h $(des_headers)
 .asm.$(OBJEXT):
 	$(M4) $(srcdir)/asm.m4 machine.m4 config.m4 \
 		$< >$*.s
-	$(COMPILE) $(CCPIC_MAYBE) -c $*.s
+#	$(COMPILE) $(CCPIC_MAYBE) -c $*.s
+	$(CC) $(PRE_CPPFLAGS) $(CPPFLAGS) $(DEFS) $(CCPIC) $(DEP_FLAGS) $(CCPIC_MAYBE) -c $*.s
 	echo "$@ : $< $(srcdir)/asm.m4 machine.m4 config.m4" >$@.d 
 
 .asm.p$(OBJEXT):
 	$(M4) $(srcdir)/asm.m4 machine.m4 config.m4 \
 		$< >$*.s
-	$(COMPILE) $(SHLIBCFLAGS) -c $*.s -o $@
+#	$(COMPILE) $(SHLIBCFLAGS) -c $*.s -o $@
+	$(CC) $(PRE_CPPFLAGS) $(CPPFLAGS) $(DEFS) $(CCPIC) $(DEP_FLAGS) $(CCPIC_MAYBE) -c $*.s -o $@
 	echo "$@ : $< $(srcdir)/asm.m4 machine.m4 config.m4" >$@.d 
 
 # Texinfo rules
