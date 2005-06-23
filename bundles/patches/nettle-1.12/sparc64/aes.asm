@@ -167,14 +167,15 @@ define(<AES_FINAL_ROUND>, <
 	
 C The stack frame looks like (sparc64 aka sparcv9)
 C
-C %fp -   8: OS-dependent link field
-C %fp -  16: OS-dependent link field
-C %fp -  32: tmp, uint32_t[4]
-C %fp -  48: wtxt, uint32_t[4]
-C %fp - 240: OS register save area.
+C %fp -   8: OS-dependent link field (8 bytes)
+C %fp -  16: OS-dependent link field (8 bytes)
+C %fp -  32: tmp, uint32_t[4] (16 bytes)
+C %fp -  48: wtxt, uint32_t[4] (16 bytes)
+C %fp - 224: OS register save area. (22*8 == 176 bytes)
 C
 C /grubba 2005-06-22
-define(<FRAME_SIZE>, 240)
+define(<FRAME_SIZE>, 224)
+define(<BIAS>, 2047)
 
 	.section	".text"
 	.align 16
@@ -187,9 +188,9 @@ _nettle_aes_crypt:
 	cmp	length, 0
 	be	.Lend
 	! wtxt
-	add	%fp, -32, wtxt
+	add	%fp, BIAS-32, wtxt
 	
-	add	%fp, -48, tmp
+	add	%fp, BIAS-48, tmp
 	ld	[ctx + AES_NROUNDS], nrounds
 	! Compute xor, so that we can swap efficiently.
 	xor	wtxt, tmp, diff
