@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.43 2005/06/21 09:59:41 grubba Exp $
+|| $Id: sparc.c,v 1.44 2005/06/23 15:09:42 grubba Exp $
 */
 
 /*
@@ -325,6 +325,25 @@ void sparc_flush_codegen_state(void)
     sparc_codegen_state |= SPARC_CODEGEN_PC_IS_SET;	\
   } while(0)
 
+#if 0
+static void sparc_trace_fun(PIKE_OPCODE_T *pc)
+{
+  struct program *prog = NULL;
+  if (Pike_fp->current_object && (prog = Pike_fp->current_object->prog)) {
+    struct pike_string *fname;
+    INT32 lineno;
+    if (fname = low_get_line(pc + 4, prog, &lineno)) {
+      fprintf(stderr, "TRACE: %p: %s:%d\n",
+	      pc, fname->str, lineno);
+      free_string(fname);
+      return;
+    }
+  }
+  fprintf(stderr, "TRACE: %p: %p, %p\n",
+	  pc, Pike_fp->current_object, prog);
+}
+#endif /* 0 */
+
 /*
  * Allocate a stack frame.
  *
@@ -335,12 +354,16 @@ void sparc_ins_entry(void)
 #ifdef PIKE_BYTECODE_SPARC64
   /* save	%sp, -224, %sp */
   add_to_program(0x81e02000|(SPARC_REG_SP<<25)|
-		 (SPARC_REG_SP<<14)|((-224)&0x1fff));
+		 (SPARC_REG_SP<<14)|((-176)&0x1fff));
 #else /* !PIKE_BYTECODE_SPARC64 */
   /* save	%sp, -112, %sp */
   add_to_program(0x81e02000|(SPARC_REG_SP<<25)|
 		 (SPARC_REG_SP<<14)|((-112)&0x1fff));
 #endif /* PIKE_BYTECODE_SPARC64 */
+#if 0
+  SPARC_OR(SPARC_REG_O0, SPARC_REG_G0, SPARC_REG_O7, 0);
+  ADD_CALL(sparc_trace_fun, 1);
+#endif /* 0 */
   FLUSH_CODE_GENERATOR_STATE();
 }
 
@@ -399,13 +422,14 @@ static void sparc_mark(int off)
   sparc_incr_mark_sp(1);
 }
 
-static void sparc_push_int(INT32 x, int sub_type)
+static void sparc_push_int(INT_TYPE x, int sub_type)
 {
   INT32 type_word = MAKE_TYPE_WORD(PIKE_T_INT, sub_type);
   int reg = SPARC_REG_G0;
 
   LOAD_PIKE_SP();
 
+#ifdef PIKE_DEBUG
   if (sizeof(struct svalue) > 8) {
     size_t e;
     for (e = 4; e < sizeof(struct svalue); e += 4) {
@@ -415,6 +439,7 @@ static void sparc_push_int(INT32 x, int sub_type)
       SPARC_STW(SPARC_REG_G0, SPARC_REG_PIKE_SP, e, 1);
     }
   }
+#endif /* PIKE_DEBUG */
   if (x) {
     SET_REG(SPARC_REG_I1, x);
     reg = SPARC_REG_I1;
