@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.44 2005/06/23 15:09:42 grubba Exp $
+|| $Id: sparc.c,v 1.45 2005/06/23 16:30:02 grubba Exp $
 */
 
 /*
@@ -246,6 +246,7 @@
  * Code generator state.
  */
 unsigned INT32 sparc_codegen_state = 0;
+static int sparc_pike_sp_bias = 0;
 ptrdiff_t sparc_last_pc = 0;
 
 #ifdef PIKE_BYTECODE_SPARC64
@@ -281,6 +282,13 @@ ptrdiff_t sparc_last_pc = 0;
       PIKE_LDPTR(SPARC_REG_PIKE_SP, SPARC_REG_PIKE_IP,			\
 		 OFFSETOF(Pike_interpreter, stack_pointer), 1);		\
       sparc_codegen_state |= SPARC_CODEGEN_SP_IS_SET;			\
+      sparc_pike_sp_bias = 0;						\
+    } else if (sparc_pike_sp_bias > 0xf00) {				\
+      /* Make sure there's always space for at least 256 bytes. */	\
+      SPARC_ADD(SPARC_REG_PIKE_SP, SPARC_REG_PIKE_SP,			\
+		sparc_pike_sp_bias, 1);					\
+      sparc_pike_sp_bias = 0;						\
+      sparc_codegen_state |= SPARC_CODEGEN_SP_NEEDS_STORE;		\
     }									\
   } while(0)
 
@@ -295,6 +303,12 @@ ptrdiff_t sparc_last_pc = 0;
   } while(0)
 
 #define SPARC_FLUSH_UNSTORED()	do {					\
+    if (sparc_pike_sp_bias) {						\
+      SPARC_ADD(SPARC_REG_PIKE_SP, SPARC_REG_PIKE_SP,			\
+		sparc_pike_sp_bias, 1);					\
+      sparc_pike_sp_bias = 0;						\
+      sparc_codegen_state |= SPARC_CODEGEN_SP_NEEDS_STORE;		\
+    }									\
     if (sparc_codegen_state & SPARC_CODEGEN_MARK_SP_NEEDS_STORE) {	\
       /* stw %pike_mark_sp, [ %ip, %offset(Pike_interpreter, mark_stack_pointer) ] */	\
       PIKE_STPTR(SPARC_REG_PIKE_MARK_SP, SPARC_REG_PIKE_IP,		\
@@ -399,12 +413,13 @@ static void sparc_incr_mark_sp(int delta)
   sparc_codegen_state |= SPARC_CODEGEN_MARK_SP_NEEDS_STORE;
 }    
 
-static void sparc_mark(int off)
+static void sparc_mark(ptrdiff_t off)
 {
   LOAD_PIKE_SP();
   LOAD_PIKE_MARK_SP();
+  off *= sizeof(struct svalue);
+  off += sparc_pike_sp_bias;
   if (off) {
-    off *= sizeof(struct svalue);
     if ((-4096 <= off) && (off < 4096)) {
       /* add %i0, %pike_sp, off */
       SPARC_ADD(SPARC_REG_I0, SPARC_REG_PIKE_SP, off, 1);
@@ -436,7 +451,7 @@ static void sparc_push_int(INT_TYPE x, int sub_type)
       /* Pad until we reach the anything field. */
       if (e == OFFSETOF(svalue, u.integer)) continue;
       /* stw %g0, [ %pike_sp, e ] */
-      SPARC_STW(SPARC_REG_G0, SPARC_REG_PIKE_SP, e, 1);
+      SPARC_STW(SPARC_REG_G0, SPARC_REG_PIKE_SP, sparc_pike_sp_bias + e, 1);
     }
   }
 #endif /* PIKE_DEBUG */
@@ -445,18 +460,19 @@ static void sparc_push_int(INT_TYPE x, int sub_type)
     reg = SPARC_REG_I1;
   }
   if (sizeof(INT_TYPE) == 4) {
-    SPARC_STW(reg, SPARC_REG_PIKE_SP, OFFSETOF(svalue, u.integer), 1);
+    SPARC_STW(reg, SPARC_REG_PIKE_SP,
+	      sparc_pike_sp_bias + OFFSETOF(svalue, u.integer), 1);
   } else {
-    SPARC_STX(reg, SPARC_REG_PIKE_SP, OFFSETOF(svalue, u.integer), 1);
+    SPARC_STX(reg, SPARC_REG_PIKE_SP,
+	      sparc_pike_sp_bias + OFFSETOF(svalue, u.integer), 1);
   }
   if (x != type_word) {
     SET_REG(SPARC_REG_I1, type_word);
   }
   /* This is safe since type_word is never zero. */
   /* stw %i1, [ %pike_sp ] */
-  SPARC_STW(SPARC_REG_I1, SPARC_REG_PIKE_SP, 0, 1);
-  /* add %pike_sp, %pike_sp, sizeof(struct svalue) */
-  SPARC_ADD(SPARC_REG_PIKE_SP, SPARC_REG_PIKE_SP, sizeof(struct svalue), 1);
+  SPARC_STW(SPARC_REG_I1, SPARC_REG_PIKE_SP, sparc_pike_sp_bias, 1);
+  sparc_pike_sp_bias += sizeof(struct svalue);
   sparc_codegen_state |= SPARC_CODEGEN_SP_NEEDS_STORE;
 }
 
@@ -464,13 +480,15 @@ static void sparc_clear_string_subtype(void)
 {
   LOAD_PIKE_SP();
   /* lduh [ %pike_sp, %g0 ], %i0 */
-  SPARC_LDUH(SPARC_REG_I0, SPARC_REG_PIKE_SP, OFFSETOF(svalue, type), 1);
+  SPARC_LDUH(SPARC_REG_I0, SPARC_REG_PIKE_SP,
+	     sparc_pike_sp_bias + OFFSETOF(svalue, type), 1);
   /* subcc %g0, %i0, 8 */
   SPARC_SUBcc(SPARC_REG_G0, SPARC_REG_I0, PIKE_T_INT, 1);
   /* be,a .+8 */
   SPARC_BE(8, 1);
   /* sth %g0, [ %pike_sp, 2 ] */
-  SPARC_STH(SPARC_REG_G0, SPARC_REG_PIKE_SP, OFFSETOF(svalue, subtype), 1);
+  SPARC_STH(SPARC_REG_G0, SPARC_REG_PIKE_SP,
+	    sparc_pike_sp_bias + OFFSETOF(svalue, subtype), 1);
 }
 
 static void sparc_push_lfun(unsigned int no)
@@ -482,7 +500,7 @@ static void sparc_push_lfun(unsigned int no)
 	     OFFSETOF(pike_frame, current_object), 1);
   /* stw %pike_obj, [ %pike_sp, %offset(svalue, u.object) ] */
   PIKE_STPTR(SPARC_REG_PIKE_OBJ, SPARC_REG_PIKE_SP,
-	     OFFSETOF(svalue, u.object), 1);
+	     sparc_pike_sp_bias + OFFSETOF(svalue, u.object), 1);
   /* lduw [ %pike_obj, %offset(object, refs) ], %i0 */
   SPARC_LDUW(SPARC_REG_I0, SPARC_REG_PIKE_OBJ,
 	     OFFSETOF(object, refs), 1);
@@ -498,9 +516,8 @@ static void sparc_push_lfun(unsigned int no)
   /* add %i1, %i2, %i1 */
   SPARC_ADD(SPARC_REG_I1, SPARC_REG_I1, SPARC_REG_I2, 0);
   /* stw %i1, [ %pike_sp, %g0 ] */
-  SPARC_STW(SPARC_REG_I1, SPARC_REG_PIKE_SP, SPARC_REG_G0, 0);
-  /* add %pike_sp, sizeof(struct svalue), %pike_sp */
-  SPARC_ADD(SPARC_REG_PIKE_SP, SPARC_REG_PIKE_SP, sizeof(struct svalue), 1);
+  SPARC_STW(SPARC_REG_I1, SPARC_REG_PIKE_SP, sparc_pike_sp_bias, 1);
+  sparc_pike_sp_bias += sizeof(struct svalue);
   sparc_codegen_state |= SPARC_CODEGEN_SP_NEEDS_STORE;
 }
 
@@ -510,7 +527,7 @@ void sparc_local_lvalue(unsigned int no)
   LOAD_PIKE_FP();
   SET_REG(SPARC_REG_I0, T_SVALUE_PTR);
   /* sth %i0, [ %pike_sp, %g0 ] */
-  SPARC_STH(SPARC_REG_I0, SPARC_REG_PIKE_SP, SPARC_REG_G0, 0);
+  SPARC_STH(SPARC_REG_I0, SPARC_REG_PIKE_SP, sparc_pike_sp_bias, 1);
   SET_REG(SPARC_REG_I0, T_VOID);
   no *= sizeof(struct svalue);
   if (no < 4096) {
@@ -529,11 +546,11 @@ void sparc_local_lvalue(unsigned int no)
   }
   /* stw %i2, [ %pike_sp, %offset(svalue, u.lval) ] */
   PIKE_STPTR(SPARC_REG_I2, SPARC_REG_PIKE_SP,
-	     OFFSETOF(svalue, u.lval), 1);
-  /* add %pike_sp, sizeof(struct svalue) * 2, %pike_sp */
-  SPARC_ADD(SPARC_REG_PIKE_SP, SPARC_REG_PIKE_SP, sizeof(struct svalue)*2, 1);
+	     sparc_pike_sp_bias + OFFSETOF(svalue, u.lval), 1);
+  sparc_pike_sp_bias += sizeof(struct svalue) * 2;
   /* sth %i0, [ %pike_sp , -sizeof(struct svalue) ] */
-  SPARC_STH(SPARC_REG_I0, SPARC_REG_PIKE_SP, -sizeof(struct svalue), 1);
+  SPARC_STH(SPARC_REG_I0, SPARC_REG_PIKE_SP,
+	    sparc_pike_sp_bias - sizeof(struct svalue), 1);
   sparc_codegen_state |= SPARC_CODEGEN_SP_NEEDS_STORE;
 }
 
@@ -628,7 +645,7 @@ static void ins_sparc_debug()
     SPARC_SETHI(SPARC_REG_O7, ((ptrdiff_t)sparc_debug_check_registers)>>2);
     SPARC_OR(SPARC_REG_O2, SPARC_REG_PIKE_FP, SPARC_REG_G0, 0);
     SPARC_SLL(SPARC_REG_O7, SPARC_REG_O7, 2, 1);
-    SPARC_OR(SPARC_REG_O3, SPARC_REG_PIKE_SP, SPARC_REG_G0, 0);
+    SPARC_ADD(SPARC_REG_O3, SPARC_REG_PIKE_SP, sparc_pike_sp_bias, 1);
     SPARC_JMPL(SPARC_REG_O7, SPARC_REG_O7,
 	       ((ptrdiff_t)sparc_debug_check_registers) & 0xfff, 1);
     SPARC_OR(SPARC_REG_O4, SPARC_REG_PIKE_MARK_SP, SPARC_REG_G0, 0);
@@ -637,7 +654,7 @@ static void ins_sparc_debug()
     SPARC_BE(6*4, 0);
     SPARC_OR(SPARC_REG_O1, SPARC_REG_PIKE_IP, SPARC_REG_G0, 0);
     SPARC_OR(SPARC_REG_O2, SPARC_REG_PIKE_FP, SPARC_REG_G0, 0);
-    SPARC_OR(SPARC_REG_O3, SPARC_REG_PIKE_SP, SPARC_REG_G0, 0);
+    SPARC_ADD(SPARC_REG_O3, SPARC_REG_PIKE_SP, sparc_pike_sp_bias, 1);
     SPARC_OR(SPARC_REG_O4, SPARC_REG_PIKE_MARK_SP, SPARC_REG_G0, 0);
     ADD_CALL(sparc_debug_check_registers, 1);
 #endif /* PIKE_BYTECODE_SPARC64 */
@@ -791,13 +808,13 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
     sparc_push_int(b, 0);
     return;
   case F_NEG_NUMBER:
-    sparc_push_int(-b, 0);
+    sparc_push_int(-(ptrdiff_t)b, 0);
     return;
   case F_LFUN:
     sparc_push_lfun(b);
     return;
   case F_MARK_X:
-    sparc_mark(-b);
+    sparc_mark(-(ptrdiff_t)b);
     return;
   case F_LOCAL_LVALUE:
     sparc_local_lvalue(b);
@@ -844,7 +861,7 @@ void sparc_encode_program(struct program *p, struct dynamic_buffer_s *buf)
 #endif /* PIKE_DEBUG */
     /* Relocate to being relative to NULL */
     opcode = 0x40000000 |
-      ((p->program[off] + (((INT32)(p->program)>>2))) & 0x3fffffff);
+      ((p->program[off] + (((INT32)(ptrdiff_t)(p->program)>>2))) & 0x3fffffff);
     adddata2(&opcode, 1);
     prev = off+1;
   }
@@ -855,7 +872,7 @@ void sparc_decode_program(struct program *p)
 {
   /* Relocate the program... */
   PIKE_OPCODE_T *prog = p->program;
-  INT32 delta = ((INT32)p->program)>>2;
+  INT32 delta = ((INT32)(ptrdiff_t)p->program)>>2;
   size_t rel = p->num_relocations;
   while (rel--) {
 #ifdef PIKE_DEBUG
