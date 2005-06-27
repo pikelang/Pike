@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.45 2005/06/23 16:30:02 grubba Exp $
+|| $Id: sparc.c,v 1.46 2005/06/27 18:00:12 grubba Exp $
 */
 
 /*
@@ -110,6 +110,7 @@
 		   ((S2)&0x1fff))
 
 #define SPARC_OR(D,S1,S2,I)	SPARC_ALU_OP(SPARC_OP3_OR, D, S1, S2, I)
+#define SPARC_XOR(D,S1,S2,I)	SPARC_ALU_OP(SPARC_OP3_XOR, D, S1, S2, I)
 
 #define SPARC_SRA(D,S1,S2,I)	SPARC_ALU_OP(SPARC_OP3_SRA, D, S1, S2, I)
 #define SPARC_SLL(D,S1,S2,I)	SPARC_ALU_OP(SPARC_OP3_SLL, D, S1, S2, I)
@@ -153,28 +154,33 @@
     if ((-4096 <= val_) && (val_ <= 4095)) {				\
       /* or %g0, val_, reg */						\
       SPARC_OR(reg_, SPARC_REG_G0, val_, 1);				\
-    } else if ((-0x80000000LL <= val_) && (val_ <= 0x7fffffffLL)) {	\
-      /* sethi %hi(val_), reg */					\
-      SPARC_SETHI(reg_, val_);						\
-      if (val_ & 0x3ff) {						\
-	/* or reg, %lo(val_), reg */					\
-        SPARC_OR(reg_, reg_, val_ & 0x3ff, 1);				\
-      }									\
-      if (val_ < 0) {							\
-        /* Sign extend. */						\
-	/* sra reg, %g0, reg */						\
-        SPARC_SRA(reg_, reg_, SPARC_REG_G0, 0);				\
+    } else if (val_ < 0) {						\
+      if ((-0x80000000LL <= val_)) {					\
+	/* sethi %hi(~val_) */						\
+	SPARC_SETHI(reg_, ~val_);					\
+	/* xor reg, %lo(val_)|0x1c00, reg */				\
+	SPARC_XOR(reg_, reg_, (val_ & 0x3ff)|0x1c00, 1);		\
+      } else {								\
+	/* FIXME: SPARC64 */						\
+	Pike_fatal("Value out of range: %p\n", (void *)val_);		\
       }									\
     } else {								\
-      /* FIXME: SPARC64 */						\
-      if (!(val_>>34)) {						\
+      if (val_ <= 0x7fffffffLL) {					\
+	/* sethi %hi(val_), reg */					\
+	SPARC_SETHI(reg_, val_);					\
+	if (val_ & 0x3ff) {						\
+	  /* or reg, %lo(val_), reg */					\
+	  SPARC_OR(reg_, reg_, val_ & 0x3ff, 1);			\
+	}								\
+      } else if (!(val_>>34)) {						\
 	/* The top 30 bits are zero. */					\
 	SPARC_SETHI(reg_, val_>>2);					\
 	SPARC_SLL(reg_, reg_, 2, 1);					\
 	if (val_ & 0xfff) {						\
 	  SPARC_OR(reg_, reg_, val_ & 0xfff, 1);			\
 	}								\
-      }	else {								\
+      } else {								\
+	/* FIXME: SPARC64 */						\
 	Pike_fatal("Value out of range: %p\n", (void *)val_);		\
       }									\
     }									\
@@ -819,6 +825,15 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
   case F_LOCAL_LVALUE:
     sparc_local_lvalue(b);
     return;
+  case F_POS_INT_INDEX:
+    sparc_push_int(b, 0);
+    low_ins_f_byte(F_INDEX, 1);
+    return;
+  case F_NEG_INT_INDEX:
+    sparc_push_int(-(ptrdiff_t)b, 0);
+    low_ins_f_byte(F_INDEX, 1);
+    return;
+
   }
   SET_REG(SPARC_REG_O0, b);
   low_ins_f_byte(a, 1);
