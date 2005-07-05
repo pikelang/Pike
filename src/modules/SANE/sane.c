@@ -2,18 +2,16 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sane.c,v 1.21 2005/01/20 10:46:54 nilsson Exp $
+|| $Id: sane.c,v 1.22 2005/07/05 16:20:38 grubba Exp $
 */
 
 #include "config.h"
 
-#if defined(HAVE_SANE_SANE_H) || defined(HAVE_SANE_H)
+#if (defined(HAVE_SANE_SANE_H) || defined(HAVE_SANE_H)) && defined(HAVE_LIBSANE)
 #ifdef HAVE_SANE_SANE_H
 #include <sane/sane.h>
-#else
-#ifdef HAVE_SANE_H
+#elif defined(HAVE_SANE_H)
 #include <sane.h>
-#endif
 #endif
 #include <stdio.h>
 
