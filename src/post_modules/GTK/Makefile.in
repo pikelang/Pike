@@ -49,8 +49,10 @@ compile1:
 	    test -f "$$f" || ln -s "$(srcdir)/$$f" "$$f"; \
 	  done; \
 	else :; fi
+	@echo "Original CFLAGS:$(CFLAGS)"
+	@echo "Modified CFLAGS:`echo $(CFLAGS) | sed -e 's/-g[^ ]*//g' -e 's/-W[^ ]*//g'`"
 	@$(MAKE) OBJS="`cat files_to_compile`" \
-               CFLAGS="`echo $(CFLAGS) | sed -e 's/-g//g' -e 's/-W[^ ]*//g'`" \
+               CFLAGS="`echo $(CFLAGS) | sed -e 's/-g[^ ]*//g' -e 's/-W[^ ]*//g'`" \
                   all
 
 compile2: compile1

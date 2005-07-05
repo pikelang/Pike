@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.13 2004/03/25 19:47:29 grubba Exp $
+# $Id: Makefile.in,v 1.14 2005/07/05 15:05:57 grubba Exp $
 @make_variables@
 VPATH=@srcdir@
 OBJS=top.o @AUTO_OBJS@
@@ -8,7 +8,7 @@ MODULE_CFLAGS=@X_CFLAGS@
 
 override:
 	@$(MAKE) \
-	  CFLAGS="`echo $(CFLAGS) | sed -e 's/-g//g' -e 's/-W[^ ]*//g' -e 's/-O[^ ]*//g'` -O" \
+	  CFLAGS="`echo $(CFLAGS) | sed -e 's/-g[^ ]*//g' -e 's/-W[^ ]*//g' -e 's/-O[^ ]*//g'` -O" \
 	  all
 
 @dynamic_module_makefile@
