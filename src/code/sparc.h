@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.h,v 1.26 2005/06/21 09:58:56 grubba Exp $
+|| $Id: sparc.h,v 1.27 2005/07/05 13:58:14 grubba Exp $
 */
 
 #define PIKE_OPCODE_ALIGN	4
@@ -16,7 +16,7 @@
 #define PROG_COUNTER		(reg_pc + 2)
 #define SET_PROG_COUNTER(X)	(reg_pc = ((unsigned INT32 *)(X))-2)
 
-#define LOW_GET_JUMP()	(PROG_COUNTER[0])
+#define LOW_GET_JUMP()	((INT32)PROG_COUNTER[0])
 #define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + 1))
 
 /*
