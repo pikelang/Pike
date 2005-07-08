@@ -1,11 +1,11 @@
 #
-# $Id: Makefile,v 1.150 2005/06/21 09:53:27 grubba Exp $
+# $Id: Makefile,v 1.151 2005/07/08 17:59:17 grubba Exp $
 #
 # Meta Makefile
 #
 
 # Use this to pass arguments to configure. Leave empty to keep previous args.
-CONFIGUREARGS=`echo $${CONFIGUREARGS-}`
+#CONFIGUREARGS=
 
 # Set this to any generic make options you'd otherwise would have to
 # pass on the command line. (Using the magic MAKEFLAGS variable
@@ -16,7 +16,7 @@ CONFIGUREARGS=`echo $${CONFIGUREARGS-}`
 # Set to a flag for parallelizing make, e.g. -j2. It's given to make
 # at the level where it's most effective. (Don't use when the make
 # program has smart job control, e.g. GNU make.)
-MAKE_PARALLEL=
+#MAKE_PARALLEL=
 
 VPATH=.
 OS=`uname -s -r -m|sed \"s/ /-/g\"|tr \"[A-Z]\" \"[a-z]\"|tr \"/()\" \"___\"`
@@ -410,3 +410,7 @@ pikefun_TAGS:
 	`find . -type f -name '*.[ch]' -print`
 	cd lib/modules && ../../bin/pike_etags.sh \
 	  `find . -type f '(' -name '*.pmod' -o -name '*.pike' ')' -print`
+
+test:
+	echo CONFIGUREARGS:"$(CONFIGUREARGS)"
+	echo "$${CONFIGUREARGS}"
