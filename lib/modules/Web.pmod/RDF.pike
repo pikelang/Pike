@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.45 2005/01/06 01:44:56 nilsson Exp $
+// $Id: RDF.pike,v 1.46 2005/07/11 18:33:01 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -234,6 +234,8 @@ this_program add_statement(Resource|string|multiset(string) subj,
       error("Subject multiset attribute must only contain one string.\n");
     subj = make_resource(subj);
   }
+  else if( function_object(object_program(subj)) != this )
+    error("Subject from different RDF domain.\n");
 
   if(stringp(pred))
     pred = LiteralResource(pred);
@@ -242,6 +244,8 @@ this_program add_statement(Resource|string|multiset(string) subj,
       error("Predicate multiset attribute must only contain one string.\n");
     pred = make_resource(pred);
   }
+  else if( function_object(object_program(pred)) != this )
+    error("Predicate from different RDF domain. %O %O\n",pred->domain,this);
 
   if(stringp(obj))
     obj = LiteralResource(obj);
@@ -250,6 +254,8 @@ this_program add_statement(Resource|string|multiset(string) subj,
       error("Object multiset attribute must only contain one string.\n");
     obj = make_resource(obj);
   }
+  else if( function_object(object_program(obj)) != this )
+    error("Object from different RDF domain.\n");
 
   if(!is_resource(subj) || !is_resource(pred) || !is_resource(obj))
     error("Non-resource argument to add_statement");
@@ -1106,10 +1112,10 @@ static string _sprintf(int t) {
 static this_program `|(mixed data) {
   if(sprintf("%t", data)!="object" ||
      !functionp(data->find_statements))
-    error("Can only or an RDF object with another RDF object.\n");
+    error("Can only OR an RDF object with another RDF object.\n");
 
   Resource normalize(Resource r) {
-    if(r->is_literal_resource) return r;
+    if(r->is_literal_resource) return LiteralResource(r->get_literal());
     if(r==data->rdf_Statement) return rdf_Statement;
     if(r==data->rdf_predicate) return rdf_predicate;
     if(r==data->rdf_subject) return rdf_subject;
