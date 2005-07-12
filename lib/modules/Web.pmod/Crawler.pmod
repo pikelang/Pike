@@ -33,7 +33,7 @@
 //! @enddl
 
 // Author:  Johan Schön.
-// $Id: Crawler.pmod,v 1.17 2003/12/03 13:43:52 anders Exp $
+// $Id: Crawler.pmod,v 1.18 2005/07/12 15:35:26 mast Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -748,7 +748,7 @@ class Crawler
 	error_cb(real_uri, status, headers, @args);
 	if(status>=300 && status <=307)
 	  if(headers->location && sizeof(headers->location))
-	    add_links(({ Standards.URI(headers->location) }));
+	    add_links(({ Standards.URI(headers->location, real_uri) }));
       }
       if(queue->get_stage(real_uri)<=1)
 	queue->set_stage(real_uri, 5);
