@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.374 2005/04/15 18:19:22 grubba Exp $
+// $Id: master.pike.in,v 1.375 2005/07/12 17:22:08 nilsson Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -919,7 +919,7 @@ void unregister(program p)
     object n;
     if ( fname!="" && objectp (n = fc[fname]) )
       if (n->is_resolv_dirnode || n->is_resolv_joinnode)
-	n->delete_value (p);
+	n[""]["delete_value"](p);
   }
 
   object o = objects[p];
@@ -1225,7 +1225,6 @@ class dirnode
 {
   string dirname;
   object|void compilation_handler;
-  constant is_resolv_dirnode = 1;
   // objectp() is intentionally not used on the module object, to
   // allow a module to deny its own existence with `!.
   mixed module;
@@ -1460,6 +1459,10 @@ class dirnode
     return low_ind(index);
   }
 
+  mixed selfindex(string index) {
+    return ::`[](index);
+  }
+
   mixed `[](string index)
   {
     mixed ret;
@@ -1481,7 +1484,18 @@ class dirnode
 #endif
       return UNDEFINED;
     }
-    ret=ind(index);
+
+    switch(index) {
+    case "":
+      ret = selfindex;
+      break;
+    case "is_resolv_dirnode":
+      ret = 1;
+      break;
+    default:
+      ret = ind(index);
+      break;
+    }
 
     // We might have gotten placeholder objects in the first pass
     // which must not be cached to the second.
@@ -1495,6 +1509,10 @@ class dirnode
 
     cache[index] = zero_type(ret) ? ZERO_TYPE : ret;
     return ret;
+  }
+
+  mixed `->(string index) {
+    return `[](index);
   }
 
   mixed safe_index(string index)
@@ -1573,7 +1591,6 @@ class dirnode
 //!   @[dirnode]
 class joinnode
 {
-  constant is_resolv_joinnode = 1;
   array(object|mapping) joined_modules;
   mapping(string:mixed) cache=([]);
 
@@ -1582,6 +1599,10 @@ class joinnode
   // NOTE: Uses the empty mapping as the default fallback
   // for simplified code.
   joinnode|mapping(mixed:int(0..0)) fallback_module = ([]);
+
+  void set_fallback_module(joinnode n) {
+    fallback_module = n;
+  }
 
   string _sprintf(int as)
   {
@@ -1660,6 +1681,10 @@ class joinnode
     return fallback_module[index];
   }
 
+  mixed selfindex(string index) {
+    return ::`[](index);
+  }
+
   mixed `[](string index)
   {
     mixed ret;
@@ -1669,7 +1694,18 @@ class joinnode
       }
       return UNDEFINED;
     }
-    ret = ind(index);
+
+    switch(index) {
+    case "":
+      ret = selfindex;
+      break;
+    case "is_resolv_joinnode":
+      ret = 1;
+      break;
+    default:
+      ret = ind(index);
+      break;
+    }
 
     // We might have gotten placeholder objects in the first pass
     // which must not be cached to the second.
@@ -1681,6 +1717,10 @@ class joinnode
       cache[index] = ret;
     }
     return ret;
+  }
+
+  mixed `->(string index) {
+    return `[](index);
   }
 
   static int _cache_full;
@@ -1734,7 +1774,7 @@ class joinnode
 	i--;
       }
       else if (objectp (o) && (o->is_resolv_dirnode || o->is_resolv_joinnode))
-	o->delete_value (val);
+	o[""]("delete_value")(val);
       else if (string name = mappingp (o) && search (o, val))
 	m_delete (o, name);
     }
@@ -1743,7 +1783,8 @@ class joinnode
   int `== (mixed other)
   {
     return objectp (other) && other->is_resolv_joinnode &&
-      equal (mkmultiset (joined_modules), mkmultiset (other->joined_modules));
+      equal (mkmultiset (joined_modules),
+	     mkmultiset (other[""]("joined_modules")));
   }
 
   array(object) _encode()
@@ -1788,6 +1829,7 @@ joinnode handle_import(string path, string|void current_file,
     module_node("import::"+path, 0, current_handler);
 #endif /* 0 */
   joinnode node = joinnode(({}), current_handler);
+  function add_path = node[""]("add_path");
 #ifdef PIKE_MODULE_RELOC
   // If we have PIKE_MODULE_RELOC enabled, 
   // we might need to map to multiple directories.
@@ -1795,11 +1837,11 @@ joinnode handle_import(string path, string|void current_file,
      has_prefix(path, "/${PIKE_MODULE_PATH}/")) {
     string tmp = path[21..];
     foreach(pike_module_path, string prefix) {
-      node->add_path(sizeof(tmp)? combine_path(prefix, tmp) : prefix);
+      add_path(sizeof(tmp)? combine_path(prefix, tmp) : prefix);
     }
   } else
 #endif /* PIKE_MODULE_RELOC */
-    node->add_path(path);
+    add_path(path);
   return node;
 }
 
@@ -1951,11 +1993,11 @@ class CompatResolver
     ver=(string)version;
 #if 0
     if (version) {
-      root_module->symbol = ver + "::";
+      root_module[""]("symbol") = ver + "::";
     }
 #endif
     if (CompatResolver::fallback_resolver = fallback_resolver) {
-      root_module->fallback_module = fallback_resolver->root_module;
+      root_module[""]("set_fallback_module")(fallback_resolver->root_module);
     }
     predefines = initial_predefines;
   }
@@ -2001,7 +2043,7 @@ class CompatResolver
   void add_module_path(string tmp)
     {
       tmp=normalize_path(combine_path_with_cwd(tmp));
-      root_module->add_path(tmp);
+      root_module[""]("add_path")(tmp);
       pike_module_path = ({ tmp }) + (pike_module_path - ({ tmp }));
     }
 
@@ -2015,7 +2057,7 @@ class CompatResolver
   void remove_module_path(string tmp)
     {
       tmp=normalize_path(combine_path_with_cwd(tmp));
-      root_module->rem_path(tmp);
+      root_module[""]("rem_path")(tmp);
       pike_module_path -= ({ tmp });
     }
 
@@ -2157,16 +2199,16 @@ class CompatResolver
 
     node = joinnode(({ instantiate_static_modules(static_modules),
 		       // Copy relevant stuff from the root module.
-		       @filter(root_module->joined_modules,
+		       @filter(root_module[""]("joined_modules"),
 			       lambda(mixed x) {
 				 return objectp(x) && x->is_resolv_dirnode;
 			       }) }),
 		    current_handler,
-		    root_module->fallback_module);
+		    root_module[""]("fallback_module"));
 
     // FIXME: Is this needed?
     // Kluge to get _static_modules to work at top level.
-    node->cache->_static_modules = static_modules;
+    node[""]("cache")->_static_modules = static_modules;
 
     return node;
   }
@@ -3857,14 +3899,15 @@ class Encoder
 	  break compare;
 	}
 
-	if (resolved->is_resolv_dirnode)
-	  if (resolved->module == what) {
+	if (resolved->is_resolv_dirnode) {
+	  mixed module = resolved[""]("module");
+	  if (module == what) {
 	    ENC_MSG ("  compare_resolved: %O is dirnode module of %O\n", what, resolved);
 	    append = ({'m'});
-	    resolved = resolved->module;
+	    resolved = module;
 	    break compare;
 	  }
-	  else if (object_program (resolved->module) == what) {
+	  else if (object_program (module) == what) {
 	    ENC_MSG ("  compare_resolved: %O is program of dirnode module of %O\n",
 		     what, resolved);
 	    append = ({'m', 'p'});
@@ -3872,7 +3915,8 @@ class Encoder
 	  }
 	  else
 	    ENC_MSG ("  compare_resolved: %O is different from dirnode module %O\n",
-		     what, resolved->module);
+		     what, module);
+	}
 
 #if 0
 	// This is only safe if the joinnode modules don't conflict,
@@ -3880,7 +3924,7 @@ class Encoder
 	if (resolved->is_resolv_joinnode) {
 	  ENC_MSG ("  compare_resolved: searching for %O in joinnode %O\n",
 		   what, resolved);
-	  foreach (resolved->joined_modules, mixed part)
+	  foreach (resolved[""]("joined_modules"), mixed part)
 	    if (string|array name = compare_resolved (name, what, part,
 						      module_object)) {
 	      if (module_object) module_object[0] = resolved;
@@ -3931,7 +3975,7 @@ class Encoder
 
       if (what->is_resolv_dirnode) {
 	ENC_MSG ("  is a dirnode\n");
-	string name = program_path_to_name (what->dirname);
+	string name = program_path_to_name (what[""]("dirname"));
 	if (string|array ref = compare_resolved (name, what, resolv (name),
 						 module_object))
 	  ENC_RETURN (ref);
@@ -3939,7 +3983,7 @@ class Encoder
 
       else if (what->is_resolv_joinnode) {
 	ENC_MSG ("  is a joinnode\n");
-	object modules = Builtin.array_iterator (what->joined_modules);
+	object modules = Builtin.array_iterator (what[""]("joined_modules"));
 	object|mapping value;
       check_dirnode:
 	if (modules && objectp (value = modules->value()) &&
@@ -4214,8 +4258,7 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
 	  case 'm':
 	    if (objectp (subres) && ([object]subres)->is_resolv_joinnode) {
 	      dirnode found;
-	      foreach (([object(joinnode)]subres)->joined_modules,
-		       object|mapping part)
+	      foreach (subres[""]("joined_modules"), object|mapping part)
 		if (objectp (part) && part->is_resolv_dirnode && part->module) {
 		  if (found)
 		    error ("There are ambiguous module objects in %O.\n",
@@ -4227,8 +4270,8 @@ class Decoder (void|string fname, void|int mkobj, void|object handler)
 	    }
 
 	    if (objectp (subres) && ([object]subres)->is_resolv_dirnode) {
-	      if (([object]subres)->module) {
-		subres = ([object]subres)->module;
+	      if (subres[""]("module")) {
+		subres = subres[""]("module");
 		DEC_MSG ("  got dirnode module %O\n", subres);
 	      }
 	      else
