@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.366 2005/06/09 17:57:57 mast Exp $
+|| $Id: las.c,v 1.367 2005/07/12 18:41:47 grubba Exp $
 */
 
 #include "global.h"
@@ -1781,6 +1781,11 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
   JMP_BUF tmp;
 
   check_tree(n,0);
+
+  if (!is_const(n)) {
+    if (n) add_ref(n);
+    return mknode(F_INDEX, n, mkstrnode(id));
+  }
 
   if(SETJMP(tmp))
   {
