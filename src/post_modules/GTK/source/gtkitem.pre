@@ -2,7 +2,7 @@ class GTK.Item;
 inherit GTK.Bin;
 //! This class is inherited by all 'item' type of widgets.
 signal select;
-signal delselect;
+signal deselect;
 signal toggle;
 void select();
 //! Emulate a 'select' event.
