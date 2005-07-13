@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.38 2005/02/22 11:59:58 grubba Exp $ */
+/* $Id: socktest.pike,v 1.39 2005/07/13 19:18:43 grubba Exp $ */
 
 // #define OOB_DEBUG
 
@@ -327,7 +327,16 @@ array(object(Socket)) stdtest()
 #ifdef IPV6
 #if constant(System.ENETUNREACH)
     if (sock->errno() == System.ENETUNREACH) {
+      /* No IPv6 support on this machine (Solaris). */
       werror("Connect failed: Network unreachable.\n"
+	     "IPv6 not configured?\n");
+      exit(0);
+    }
+#endif /* ENETUNREACH */
+#if constant(System.EADDRNOTAVAIL)
+    if (sock->errno() == System.EADDRNOTAVAIL) {
+      /* No IPv6 support on this machine (OSF/1). */
+      werror("Connect failed: Address not available.\n"
 	     "IPv6 not configured?\n");
       exit(0);
     }
@@ -600,7 +609,9 @@ int main()
   if (err) {
 #ifdef IPV6
     if (has_prefix(describe_error(err), "Invalid address")) {
-      werror("\nIPv6 addresses not supported.\n");
+      /* No IPv6 support at all. */
+      werror("\nBind failed: Invalid address.\n"
+	     "IPv6 addresses not supported.\n");
       exit(0);
     }
 #endif /* IPV6 */
@@ -612,7 +623,9 @@ int main()
 #ifdef IPV6
 #if constant(System.EAFNOSUPPORT)
     if (port1::errno() == System.EAFNOSUPPORT) {
-      werror("\nIPv6 not supported.\n");
+      /* No IPv6 support on this machine (Linux). */
+      werror("\nBind failed: Address familty not supported.\n"
+	     "IPv6 not supported.\n");
       exit(0);      
     }
 #endif /* EAFNOSUPPORT */
