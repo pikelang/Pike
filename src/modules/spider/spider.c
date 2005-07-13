@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: spider.c,v 1.130 2005/05/06 00:45:14 nilsson Exp $
+|| $Id: spider.c,v 1.131 2005/07/13 19:05:26 grubba Exp $
 */
 
 #include "global.h"
@@ -64,10 +64,6 @@
 #endif
 
 #include "defs.h"
-
-#ifdef HAVE_SYS_CONF_H
-#include <sys/conf.h>
-#endif
 
 #ifdef HAVE_STROPTS_H
 #include <stropts.h>
