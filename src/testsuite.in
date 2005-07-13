@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.755 2005/05/17 22:31:50 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.756 2005/07/13 18:16:29 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -2440,6 +2440,11 @@ test_compile_error_any([[
   class B {inherit A;}
 ]])
 
+test_any([[
+  // Test dynamic module indexing.
+  object protocols = Protocols;
+  return protocols.HTTP.get_url_data;
+]], [[ Protocols.HTTP.get_url_data ]])
 
 test_compile([[float x=(gauge { return; },1.0);]])
 cond( [[ master()->resolv("Gmp")->mpz ]],
