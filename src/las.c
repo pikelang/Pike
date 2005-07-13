@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.367 2005/07/12 18:41:47 grubba Exp $
+|| $Id: las.c,v 1.368 2005/07/13 09:14:40 grubba Exp $
 */
 
 #include "global.h"
@@ -1782,9 +1782,9 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 
   check_tree(n,0);
 
-  if (!is_const(n)) {
-    if (n) add_ref(n);
-    return mknode(F_INDEX, n, mkstrnode(id));
+  if (!is_const(n) && !TEST_COMPAT(7, 6)) {
+    /* Index dynamically. */
+    return mknode(F_INDEX, copy_node(n), mkstrnode(id));
   }
 
   if(SETJMP(tmp))
