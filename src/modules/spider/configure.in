@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.29 2003/12/18 19:07:37 marcus Exp $
+# $Id: configure.in,v 1.30 2005/07/14 09:08:39 grubba Exp $
 AC_INIT(spider.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -10,7 +10,6 @@ AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(net, __get_socket_descriptor)
 
 AC_HAVE_HEADERS(arpa/inet.h netinet/in.h sys/mman.h netdb.h \
-        sys/socket.h sys/sockio.h sys/conf.h stropts.h \
-	sys/uio.h unistd.h)
+        sys/socket.h sys/sockio.h stropts.h sys/uio.h unistd.h)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

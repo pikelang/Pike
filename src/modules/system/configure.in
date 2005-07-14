@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.73 2005/02/16 19:37:34 grubba Exp $
+# $Id: configure.in,v 1.74 2005/07/14 09:08:08 grubba Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -19,7 +19,7 @@ if test x"$pike_cv_sys_os" = xWindows_NT ; then
 fi
 
 AC_HAVE_HEADERS(syslog.h sys/syslog.h sys/types.h errno.h unistd.h pwd.h \
-	sys/conf.h sys/socket.h netinet/in.h arpa/inet.h netdb.h stdarg.h \
+	sys/socket.h netinet/in.h arpa/inet.h netdb.h stdarg.h \
 	sys/utsname.h pwd.h passwd.h shadow.h grp.h sys/stat.h winsock.h \
         sys/systeminfo.h windows.h sys/param.h utime.h sys/utime.h sys/id.h \
 	sys/time.h sys/shm.h sys/mman.h fcntl.h sys/fcntl.h netinfo/ni.h \
