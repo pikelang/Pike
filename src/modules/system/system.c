@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.177 2005/04/09 10:42:22 grubba Exp $
+|| $Id: system.c,v 1.178 2005/07/14 09:07:29 grubba Exp $
 */
 
 /*
@@ -51,9 +51,6 @@
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif /* HAVE_PWD_H */
-#ifdef HAVE_SYS_CONF_H
-#include <sys/conf.h>
-#endif /* HAVE_SYS_CONF_H */
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif /* HAVE_SYS_SOCKET_H */
