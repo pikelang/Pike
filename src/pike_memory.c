@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.170 2005/06/22 16:03:06 grubba Exp $
+|| $Id: pike_memory.c,v 1.171 2005/07/14 09:50:11 grubba Exp $
 */
 
 #include "global.h"
@@ -1967,6 +1967,35 @@ int dmalloc_mark_as_free(void *p, int already_gone)
   return ret;
 }
 
+static void flush_blocks_to_free(void)
+{
+  int i;
+
+  if(verbose_debug_malloc)
+    fprintf(stderr, "flush_blocks_to_free()\n");
+
+  for (i=0; i < FREE_DELAY; i++) {
+    void *p;
+    if ((p = blocks_to_free[i])) {
+      struct memhdr *mh = my_find_memhdr(p, 1);
+      if (!mh) {
+	fprintf(stderr, "Lost track of a freed memory block: %p!\n", p);
+	abort();
+      }
+
+      blocks_to_free[i] = 0;
+
+      PIKE_MEM_RW_RANGE((char *) p - DEBUG_MALLOC_PAD,
+			(mh->size > 0 ? mh->size : ~mh->size) + 2 * DEBUG_MALLOC_PAD);
+#ifdef DMALLOC_TRACK_FREE
+      unregister_memhdr(mh,0);
+#else /* !DMALLOC_TRACK_FREE */
+      remove_memhdr(p);
+#endif /* DMALLOC_TRACK_FREE */
+      real_free( ((char *)p) - DEBUG_MALLOC_PAD );
+    }
+  }
+}
 
 void *debug_malloc(size_t s, LOCATION location)
 {
@@ -1984,6 +2013,12 @@ void *debug_malloc(size_t s, LOCATION location)
   {
     m=do_pad(m, s);
     low_make_memhdr(m, s, location)->flags|=MEM_PADDED;
+  } else {
+    flush_blocks_to_free();
+    if (m=(char *)real_malloc(s + DEBUG_MALLOC_PAD*2)) {
+      m=do_pad(m, s);
+      low_make_memhdr(m, s, location)->flags|=MEM_PADDED;
+    }
   }
 
   if(verbose_debug_malloc)
