@@ -1,6 +1,6 @@
 /* Misc stuff for dealing with floats.
  *
- * $Id: pike_float.h,v 1.7 2004/06/02 00:10:42 nilsson Exp $
+ * $Id: pike_float.h,v 1.8 2005/07/15 18:16:52 grubba Exp $
  */
 
 #ifndef PIKE_FLOAT_H
@@ -43,6 +43,14 @@ static INLINE int pike_isnan(double x)
 #define PIKE_ISNAN(X)	pike_isnan(X)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
+
+/* isinf()...
+ */
+#ifdef HAVE_ISINF
+#define PIKE_ISINF(X)	isinf(X)
+#else /* HAVE_ISINF */
+#define PIKE_ISINF(X)	((X) && ((X)+(X) == (X)))
+#endif /* HAVE_ISINF */
 
 #ifdef HAVE_ISUNORDERED
 #define PIKE_ISUNORDERED(X,Y) isunordered(X,Y)
