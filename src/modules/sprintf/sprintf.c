@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.123 2004/11/16 16:20:44 nilsson Exp $
+|| $Id: sprintf.c,v 1.124 2005/07/15 18:17:12 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -1386,7 +1386,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	  fs->fsp->b = MKPCHARP("nan", 0);
 	  fs->fsp->len = 3;
 	  break;
-	} else if (tf && (tf+tf == tf)) {
+	} else if (PIKE_ISINF(tf)) {
 	  /* Infinity. */
 	  if (tf > 0.0) {
 	    fs->fsp->b = MKPCHARP("inf", 0);
