@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.38 2004/02/03 10:13:58 nilsson Exp $
+|| $Id: postgres.c,v 1.39 2005/07/16 17:21:14 nilsson Exp $
 */
 
 /*
@@ -72,7 +72,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.38 2004/02/03 10:13:58 nilsson Exp $");
+RCSID("$Id: postgres.c,v 1.39 2005/07/16 17:21:14 nilsson Exp $");
 
 static void set_error (char * newerror)
 {
@@ -257,12 +257,12 @@ static void f_create (INT32 args)
 	switch(args) {
 		default:
 		case 5:
-			if (Pike_sp[2-args].type==PIKE_T_INT &&  /*this check is maybe redundant*/
-					Pike_sp[2-args].u.integer <=65535 && 
-			    		Pike_sp[2-args].u.integer >= 0) {
-				if (Pike_sp[2-args].u.integer>0) {
+			if (Pike_sp[4-args].type==PIKE_T_INT &&  /*this check is maybe redundant*/
+					Pike_sp[4-args].u.integer <=65535 &&
+			    		Pike_sp[4-args].u.integer >= 0) {
+				if (Pike_sp[4-args].u.integer>0) {
 					port=xalloc(10*sizeof(char)); /*we only need 6, we just checked.*/
-					sprintf(port,"%"PRINTPIKEINT"d",Pike_sp[2-args].u.integer);
+					sprintf(port,"%"PRINTPIKEINT"d",Pike_sp[4-args].u.integer);
 				}
 			}
 		case 4:
