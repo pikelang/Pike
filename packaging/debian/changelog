@@ -1,3 +1,9 @@
+pike7.6 (7.6.27-2) unstable; urgency=high
+
+  * Force a recompile to match the new libgmp3 package name
+
+ -- Marek Habersack <grendel@debian.org>  Tue, 19 Jul 2005 12:06:53 +0200
+
 pike7.6 (7.6.27-1) unstable; urgency=low
 
   * The latest cvs snapshot
