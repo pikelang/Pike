@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.159 2005/07/20 08:57:51 grubba Exp $
+// $Id: install.pike,v 1.160 2005/07/22 20:26:27 nilsson Exp $
 
 #define USE_GTK
 
@@ -1444,7 +1444,7 @@ do
     case \"$1\" in
               -v|\\
        --version) echo \""+version()+
-#" Copyright (C) 1994-2004 IDA, Linköping University
+#" Copyright (C) 1994-2005 IDA, Linköping University
 Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you
 are welcome to redistribute it under certain conditions; Read the
 files COPYING and COPYRIGHT in the Pike distribution for more details.

@@ -3127,9 +3127,9 @@ string find_in_path(string cmd)
 
 int main(int argc, array(string) argv)
 {
-  write(#"UNBUG $Id: unbug,v 1.22 2004/07/01 11:24:55 nilsson Exp $
+  write(#"UNBUG $Id: unbug,v 1.23 2005/07/22 20:26:27 nilsson Exp $
 Copyright 2001-2002, Roxen Internet Software AB.
-Copyright 2002-2004, Department of Computer and Information Science,
+Copyright 2002-2005, Department of Computer and Information Science,
                      Linköping University
 UNBUG is free software, covered by the GNU General Public License, and you are
 welcome to change it and/or distribute copies of it under certain conditions.
