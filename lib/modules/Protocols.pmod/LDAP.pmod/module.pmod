@@ -1,4 +1,6 @@
-// $Id: module.pmod,v 1.23 2005/04/08 12:27:34 grubba Exp $
+#pike __REAL_VERSION__
+
+// $Id: module.pmod,v 1.24 2005/07/22 20:32:19 nilsson Exp $
 
 #include "ldap_globals.h"
 

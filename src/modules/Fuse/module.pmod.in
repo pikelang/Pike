@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! Fuse - Filesystem in USErspace
 //!
 //! FUSE (Filesystem in USErspace) provides a simple interface for
