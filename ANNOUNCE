@@ -1,5 +1,5 @@
-PIKE 7.5 ANNOUNCEMENT
-$Id: ANNOUNCE,v 1.12 2003/04/07 02:35:55 nilsson Exp $ 
+PIKE 7.7 ANNOUNCEMENT
+$Id: ANNOUNCE,v 1.13 2005/07/22 20:30:49 nilsson Exp $ 
 
 Pike is an interpreted, object-oriented programming language with a
 syntax reminiscent of C and Java, and freely available and distributable
