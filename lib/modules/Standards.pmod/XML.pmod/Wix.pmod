@@ -1,4 +1,6 @@
-// $Id: Wix.pmod,v 1.1 2004/11/08 18:12:01 grubba Exp $
+#pike __REAL_VERSION__
+
+// $Id: Wix.pmod,v 1.2 2005/07/22 20:16:46 nilsson Exp $
 //
 // 2004-11-01 Henrik Grubbström
 

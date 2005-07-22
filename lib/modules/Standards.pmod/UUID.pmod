@@ -1,8 +1,10 @@
+#pike __REAL_VERSION__
+
 //!
 //! Support for Universal Unique Identifiers (UUID) and
 //! Globally Unique Identifiers (GUID).
 //!
-// $Id: UUID.pmod,v 1.2 2004/11/08 18:11:14 grubba Exp $
+// $Id: UUID.pmod,v 1.3 2005/07/22 20:16:46 nilsson Exp $
 //
 // 2004-10-01 Henrik Grubbström
 // 2004-10-04 Martin Nilsson
