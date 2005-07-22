@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.162 2005/06/20 12:51:45 grubba Exp $
+|| $Id: interpret.h,v 1.163 2005/07/22 21:46:33 nilsson Exp $
 */
 
 #ifndef INTERPRET_H
@@ -34,8 +34,8 @@ struct Pike_interpreter {
   int c_stack_margin;
 
 #ifdef PROFILING
-  cpu_time_t accounted_time;	/* Time spent and accounted for so far. */
-  cpu_time_t unlocked_time;	/* Time spent unlocked so far. */
+  cpu_time_t accounted_time;	/** Time spent and accounted for so far. */
+  cpu_time_t unlocked_time;	/** Time spent unlocked so far. */
   char *stack_bottom;
 #endif
 
@@ -47,27 +47,27 @@ struct Pike_interpreter {
 #endif
 struct pike_frame
 {
-  INT32 refs; /* must be first */
-  INT32 args;			/* Actual number of arguments. */
-  unsigned INT16 fun;		/* Function number. */
-  INT16 num_locals;		/* Number of local variables. */
-  INT16 num_args;		/* Number of argument variables. */
-  unsigned INT16 flags;		/* PIKE_FRAME_* */
+  INT32 refs;/* must be first */
+  INT32 args;			/** Actual number of arguments. */
+  unsigned INT16 fun;		/** Function number. */
+  INT16 num_locals;		/** Number of local variables. */
+  INT16 num_args;		/** Number of argument variables. */
+  unsigned INT16 flags;		/** PIKE_FRAME_* */
   INT16 ident;
   struct pike_frame *next;
   struct pike_frame *scope;
-  PIKE_OPCODE_T *pc;		/* Address of current opcode. */
-  PIKE_OPCODE_T *return_addr;	/* Address of opcode to continue at after call. */
-  struct svalue *locals;	/* Start of local variables. */
+  PIKE_OPCODE_T *pc;		/** Address of current opcode. */
+  PIKE_OPCODE_T *return_addr;	/** Address of opcode to continue at after call. */
+  struct svalue *locals;	/** Start of local variables. */
 
-  /*  This is <= locals, and this is where the
+  /** This is <= locals, and this is where the
    * return value should go.
    */
   struct svalue *save_sp;
 
-  /* This tells us the current level of
-   * svalues on the stack that can be discarded once the
-   * current function is done with them
+  /**
+   * This tells us the current level of svalues on the stack that can
+   * be discarded once the current function is done with them
    */
   struct svalue *expendible;
   struct svalue **save_mark_sp;
@@ -76,8 +76,8 @@ struct pike_frame
 
   DO_IF_SECURITY(struct object *current_creds;)
 #if defined(PROFILING)
-  cpu_time_t children_base;	/* Accounted time when the frame started. */
-  cpu_time_t start_time;	/* Adjusted time when thr frame started. */
+  cpu_time_t children_base;	/** Accounted time when the frame started. */
+  cpu_time_t start_time;	/** Adjusted time when thr frame started. */
   cpu_time_t self_time_base;	/* ??? */
 #endif
   struct inherit context;
