@@ -2,7 +2,8 @@ pike7.6 (7.6.29-1) unstable; urgency=high
 
   * The latest cvs snapshot
   * Again urgency high to rush the recompile so that Caudium 1.4 can
-    enter the archive.
+    be recompiled on the non-x86 architectures. The previous upload
+    of Pike was a bit rushed.
 
  -- Marek Habersack <grendel@debian.org>  Fri, 22 Jul 2005 22:20:25 +0200
 
