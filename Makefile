@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.151 2005/07/08 17:59:17 grubba Exp $
+# $Id: Makefile,v 1.152 2005/07/25 01:55:36 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -207,13 +207,15 @@ install: bin/pike
 	@$(DO_MAKE) "METATARGET=install" _make_in_builddir
 
 install_nodoc: bin/pike
-	@$(DO_MAKE) "METATARGET=install_nodoc" _make_in_builddir
+	@INSTALLARGS="--no-autodoc $(INSTALLARGS)"
+	@$(DO_MAKE) "METATARGET=install" _make_in_builddir
 
 install_interactive: bin/pike
 	@$(DO_MAKE) "METATARGET=install_interactive" _make_in_builddir
 
 install_interactive_nodoc: bin/pike
-	@$(DO_MAKE) "METATARGET=install_interactive_nodoc" _make_in_builddir
+	@INSTALLARGS="--no-audodoc $(INSTALLARGS)"
+	@$(DO_MAKE) "METATARGET=install_interactive" _make_in_builddir
 
 tinstall: bin/pike
 	@$(DO_MAKE) "METATARGET=tinstall" _make_in_builddir
@@ -269,6 +271,19 @@ source:
 	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=source" _make_in_builddir
 
 export:
+	@if [ -f "$(BUILDDIR)/autodoc.xml" ]; then : ; else \
+	  echo ; \
+	  echo 'No documentation source built!'; \
+	  echo 'Type "make doc" to make a documentation source file'; \
+	  echo 'or "make export_nodoc" to install without a documentation'; \
+	  echo 'source.' ; \
+	  echo ; \
+	  exit 1; \
+	fi
+	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
+	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=export" _make_in_builddir
+
+export_nodoc:
 	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=export" _make_in_builddir
 

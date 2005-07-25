@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.160 2005/07/22 20:26:27 nilsson Exp $
+// $Id: install.pike,v 1.161 2005/07/25 01:55:36 nilsson Exp $
 
 #define USE_GTK
 
@@ -903,6 +903,22 @@ int install_file(string from,
   return ret;
 }
 
+// Install the file if it exists, but don't complain if it doesn't.
+int try_install_file(string from,
+		 string to,
+		 void|int mode,
+		 void|int dump)
+{
+  if(file_stat(from)) {
+    if(query_num_arg()==2)
+      return install_file(from, to);
+    else
+      return install_file(from, to, mode, dump);
+  }
+  return 0;
+}
+
+
 void create_file(string dest, string content)
 {
   status("Creating", dest);
@@ -921,7 +937,7 @@ string stripslash(string s)
 }
 
 
-void install_dir(string from, string to,int dump)
+void install_dir(string from, string to, int dump)
 {
   from=stripslash(from);
   to=stripslash(to);
@@ -951,6 +967,15 @@ void install_dir(string from, string to,int dump)
 		     from, file, combine_path(from, file)));
     }
   }
+}
+
+// Install the file if it exists, but don't complain if it doesn't.
+void try_install_dir(string from,
+		    string to,
+		    int dump)
+{
+  if(file_stat(from))
+    install_dir(from, to, dump);
 }
 
 void install_header_files(string from, string to)
@@ -2417,22 +2442,22 @@ void do_install()
 
     if (!no_autodoc) {
       // install the core extracted autodocs
-      install_file(combine_path(vars->TMP_BUILDDIR, "autodoc.xml"),
-		   combine_path(doc_prefix, "src", "core_autodoc.xml"));
+      try_install_file(combine_path(vars->TMP_BUILDDIR, "autodoc.xml"),
+		       combine_path(doc_prefix, "src", "core_autodoc.xml"));
 
       // create a directory for extracted module documentation
       if(!export)
 	mkdirhier(combine_path(doc_prefix, "src", "extracted"));
 
-      install_dir(combine_path(vars->TMP_BUILDDIR, "doc_build", "images"),
+      try_install_dir(combine_path(vars->TMP_BUILDDIR, "doc_build", "images"),
 		  combine_path(doc_prefix, "src", "images"), 0);
-      install_dir(combine_path(vars->DOCDIR_SRC, "presentation"),
+      try_install_dir(combine_path(vars->DOCDIR_SRC, "presentation"),
 		  combine_path(doc_prefix, "src", "presentation"), 0);
-      install_dir(combine_path(vars->DOCDIR_SRC, "src_images"),
+      try_install_dir(combine_path(vars->DOCDIR_SRC, "src_images"),
 		  combine_path(doc_prefix, "src", "src_images"), 0);
-      install_dir(combine_path(vars->DOCDIR_SRC, "structure"),
+      try_install_dir(combine_path(vars->DOCDIR_SRC, "structure"),
 		  combine_path(doc_prefix, "src", "structure"), 0);
-      install_file(combine_path(vars->DOCDIR_SRC,"Makefile"),
+      try_install_file(combine_path(vars->DOCDIR_SRC,"Makefile"),
 		   combine_path(doc_prefix, "src", "Makefile"));
     }
     else if(!export) {
