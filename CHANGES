@@ -1,4 +1,5 @@
 Changes since Pike 7.6.24
+----------------------------------------------------------------------
 
 Changes in Pike code:
 
@@ -23,14 +24,21 @@ o ADT.Relation.Binary: bugfixes, added cast().
 o Hilfe: backport of additions from 7.7
 o Protocols.LDAP.client: filter value unescaping function complies more 
   closely to the somewhat peculiar escape method in RFC 1960.
+o Protocols.LDAP.client: The paged result control should be optional in 
+  the first search query and critical in the rest, not the other way 
+  around. This fixes servers that don't support paged queries in the whole 
+  tree.
 o SSL.sslfile: Various fixes: notably the close callback is also called 
   on errors, which is consistent with Stdio.File. Added 
-  set_(non)blocking_keep_callbacks.
+  set_(non)blocking_keep_callbacks. See also Pike.Backend.
 o Stdio: Propogates return values from callbacks properly.
 o Stdio: Always check that the user callbacks are installed before 
   calling them.
 o Protocols.HTTP.Server.Request: allow methods other than POST to send 
   data in the request body, as long as the content-length header is set.
+o Added support for versioned pike -x.
+o Standards.EXIF: bugfix for BIAS.
+o Web.Crawler: bugfix to cope better with non-absolute redirects.
 
 Changes in C code:
 
@@ -40,7 +48,7 @@ o Searches for 64 bit mysql libraries.
 o Displays errors when the compile time replace() optimizer fails.
 o Zero-type is correctly cleared in a number of opcodes.
 o Fixed leak in Oracle module when Oracle.Date objects are created or cast. 
-o Fixes for compiling under Solaris 10 and AmigaOS4.
+o Fixes for compiling under Solaris 10 and AmigaOS4, OpenBSD and MacOS X.
 o Machine code disabled under FreeBSD 5.x.
 o Preprocessor now handles escaped newlines in ordinary text.
 o #if expressions can now be broken with escaped newlines.
@@ -57,11 +65,26 @@ o Pike.Backend: Fixed bug in timeout calculation that caused the timeout
   to be zero (effectively causing busylooping) if one requested infinite 
   timeout to Backend.(). (This doesn't affect the default backend since 
   it has a timeout of 3600.0.)
+o Pike.Backend: proper closing of kqueue descriptors on *BSD systems that 
+  use kqueue instead of poll()
+o Pike.Backend: backport of a fix that caused delays when setting 
+  callbacks. Fixes bad performance for SSL.sslfile based servers.
 o language.yacc backport of fix for error message?
+o Sybase: SybaseOpenClient framework on MacOS X.
+o CMOD precompiler: fixes for polymorphic function overloading and module 
+  level functions.
+o Do not decode non-shortest forms in utf8_to_string and _Charset, for 
+  security reasons and unicode 3.1 compliance.
+o Image.PNG: fix a memory leak.
+o Postgres: Fixes to create() variable 5 parsing.
+o GTK: a number of typos were fixed.
+o A large number of fixes for 64 bit architectures.
 
 Other Changes:
 
 o Windows installer fixes
+o Updated Nettle included
+o Bug reports fixed: 3855, 3928, 3941, 3950 
 
 Changes since Pike 7.6.6
 ----------------------------------------------------------------------
@@ -122,7 +145,7 @@ o Mysql module support Mysql 4.1.3.
 o Bugfix in dbdate_cast() in the Oracle module.
 o Several bugfixes in Shuffler.
 o Added Stdio.Port()->bind_unix().
-o Several bugfixes for rare array probles.
+o Several bugfixes for rare array problems.
 o Several cpp fixes to ensure that #if constant never interrupts
   compiliation. Use --show-all-cpp-warnings to see such failures.
 o cpp expressions are now short-circuited.
