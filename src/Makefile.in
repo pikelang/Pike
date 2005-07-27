@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.385 2004/12/04 16:46:36 grubba Exp $
+# $Id: Makefile.in,v 1.386 2005/07/27 12:26:58 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -488,15 +488,6 @@ force :
 
 # install
 install: pike tools
-	@if [ -f autodoc.xml ]; then : ; else \
-	  echo ; \
-	  echo 'No documentation source built!'; \
-	  echo 'Type "make doc" to make a documentation source file'; \
-	  echo 'or "make install_nodoc" to install without a documentation'; \
-	  echo 'source.' ; \
-	  echo ; \
-	  exit 1; \
-	fi
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike \
 	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
@@ -506,41 +497,13 @@ install: pike tools
 	fakeroot="$(buildroot)" PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)" \
 	$(INSTALLARGS)
 
-install_nodoc: pike tools
-	@$(RUNPIKE) $(TMP_BINDIR)/install.pike \
-	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
-	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
-	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
-	MANDIR_SRC="$(MANDIR_SRC)" \
-	man_prefix="$(man_prefix)" pike_name=$(pike_name) \
-	fakeroot="$(buildroot)" PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)" \
-	--no-autodoc $(INSTALLARGS)
-
 install_interactive: pike tools
-	@if [ -f autodoc.xml ]; then : ; else \
-	  echo ; \
-	  echo 'No documentation source built!'; \
-	  echo 'Type "make doc" to make a documentation source file'; \
-	  echo 'or "make install_interactive_nodoc" to install without a'; \
-	  echo 'documentation source.' ; \
-	  echo ; \
-	  exit 1; \
-	fi
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --interactive \
 	exec_prefix="$(exec_prefix)"  prefix=$(prefix) \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" DOCDIR_SRC="$(DOCDIR_SRC)" \
 	MANDIR_SRC="$(MANDIR_SRC)" \
 	fakeroot="$(buildroot)" PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
-
-install_interactive_nodoc: pike tools
-	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --interactive \
-	exec_prefix="$(exec_prefix)"  prefix=$(prefix) \
-	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
-	SRCDIR="$(SRCDIR)" DOCDIR_SRC="$(DOCDIR_SRC)" \
-	MANDIR_SRC="$(MANDIR_SRC)" \
-	fakeroot="$(buildroot)" PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)" \
-	--no-autodoc
 
 # tidy up a bit
 tidy:
