@@ -1,0 +1,6 @@
+require gnomecanvas;
+
+class Gnome2.CanvasEllipse;
+inherit Gnome2.CanvasRE;
+
+

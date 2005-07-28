@@ -1,0 +1,13 @@
+require gtk26;
+
+class GTK2.CellRendererCombo;
+inherit GTK2.CellRendererText;
+
+//! Properties:
+//! int has-entry
+//! GTK2.TreeModel model
+//! int text-column
+
+void create();
+//! Creates a new W(CellRendererCombo).
+endrequire;

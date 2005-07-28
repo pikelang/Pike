@@ -1,0 +1,164 @@
+/* -*- C -*- */
+class GTK2.Menu;
+inherit GTK2.MenuShell;
+
+//! A GTK2.Menu is a W(MenuShell) that implements a drop down menu
+//! consisting of a list of W(MenuItem) objects which can be navigated
+//! and activated by the user to perform application functions.
+//! <p>
+//! A GTK2.Menu is most commonly dropped down by activating a W(MenuItem)
+//! in a W(MenuBar) or popped up by activating a W(MenuItem) in another
+//! GTK2.Menu.
+//! </p><p>
+//! A GTK2.Menu can also be popped up by activating a
+//! W(OptionMenu). Other composite widgets such as the W(Notebook) can
+//! pop up a GTK2.Menu as well.
+//! </p><p>
+//! Applications can display a GTK2.Menu as a popup menu by calling the
+//! popup() function. The example below shows how an application can
+//! pop up a menu when the 3rd mouse button is pressed.
+//! </p><p>
+//! <pre><font size="-1">
+//! &nbsp; GTK2.Menu menu = create_menu();
+//! &nbsp; GTK2.Window window = create_window();
+//! &nbsp; window->signal_connect( "button_press_event", lambda(GTK2.Menu m,
+//! &nbsp;                                                      GTK2.Window w,
+//! &nbsp;                                                      mapping e ) {
+//! &nbsp;           if( e->button == 3 )
+//! &nbsp;            menu->popup();
+//! &nbsp;        }, menu );
+//! </font></pre></p>
+
+//! Properties:
+require gtk26;
+//! int tearoff-state
+endrequire;
+//! string tearoff-title
+//! <p>
+//! Child properties:
+//! int bottom-attach
+//! int left-attach
+//! int right-attach
+//! int top-attach
+//! <p>
+//! Style properties:
+//! int horizontal-offset
+//! int vertical-offset
+//! int vertical-padding
+
+signal move_scroll;
+
+void create();
+//! Creates a new GTK2.Menu widget.
+
+/*
+void set_screen(GDK2.Screen screen);
+//! Sets the screen on which the menu is displayed.
+*/
+
+void reorder_child(GTK2.Widget child, int position);
+//! Moves a W(MenuItem) to a new position within the GTK2.Menu.
+
+require gtk24;
+void attach(GTK2.Widget child, int left_attach, int right_attach,
+		int top_attach, int bottom_attach);
+//! Adds a new W(MenuItem) to a (table) menu.  The number of 'cells'
+//! that an item will occupy is specified by left_attach, right_attach,
+//! top_attach, and bottom_attach.  These each represent the
+//! leftmost, rightmost, uppermost and lower column row numbers of
+//! the table.
+endrequire;
+
+void popup(int|void button_pressed_to_show_menu)
+//! The default button is 3.
+{
+  INT_TYPE button = 3;
+  if (args)
+    get_all_args("popup",args,"%i",&button);
+  gtk_menu_popup(GTK_MENU(THIS->obj),NULL,NULL,NULL,NULL,
+                 button,pgtk_last_event_time());
+  RETURN_THIS();
+}
+
+void set_accel_group(GTK2.AccelGroup accelerators);
+//! Set the W(AccelGroup) which holds global accelerators for the menu.
+
+GTK2.AccelGroup get_accel_group();
+//! Gets the W(AccelGroup) which holds global accelerators for the menu.
+
+void set_accel_path(string accel_path);
+//! Sets an accelerator path for this menu.
+
+void set_title(string new_title);
+//! Sets the title string for the menu.  The title is displayed when the
+//! menu is shown as a tearoff menu.
+
+int get_tearoff_state();
+//! Returns whether the menu is torn off.
+
+string get_title();
+//! Returns the title of the menu.
+
+void popdown();
+//! Removes the menu from the screen.
+
+void reposition();
+//! Repositions the menu according to its position function.
+
+GTK2.Widget get_active();
+//! Returns the selected menu item from the menu.  This is used by
+//! the W(OptionMenu).
+
+void set_active(int activep);
+//! Selects the specified menu item within the menu. This is used by
+//! the W(OptionMenu).
+
+void set_tearoff_state(int torn_off);
+//! Changes the tearoff state of the menu.  A menu is normally displayed
+//! as a drop down menu which persists as long as the menu is active.  It
+//! can also be displayed as a tearoff menu which persists until it is
+//! closed or reattached.
+
+void detach();
+//!  Detaches the menu from the widget to which it had been attached.
+
+/*
+void attach_to_widget(GTK2.Widget widget, function detacher);
+//! Attach the menu to a widget
+//! Not implemented yet.
+*/
+
+void detach();
+//! Detaches the menu from the widget to which it had been attached.
+
+GTK2.Widget get_attach_widget();
+//! Returns the W(Widget) that the menu is attached to.
+
+require gtk26;
+array get_for_attach_widget()
+//! Returns a list of the menus which are attached to this widget.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GList *gl,*g2;
+    int i=0; 
+    gl=g2=gtk_menu_get_for_attach_widget(GTK_WIDGET(THIS->obj));
+    while (g2) {
+      push_gobject(g2->data);
+      g_object_ref(g2->data);
+      i++;
+      g2=g_list_next(g2);
+    }
+    f_aggregate(i);
+    g_list_free(gl);
+  }
+}
+endrequire;
+
+require gtk24;
+/*
+void set_monitor(int monitor_num);
+//! Informs GTK2+ on which monitor a menu should be popped up.
+*/
+endrequire;

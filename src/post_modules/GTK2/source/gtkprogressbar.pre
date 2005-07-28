@@ -1,0 +1,69 @@
+class GTK2.ProgressBar;
+inherit GTK2.Progress;
+
+//! A simple progress bar. Useful when you are doing things that take a long
+//! time. Try to always have an 'abort' button whenever it makes sence.
+//! IMG: GTK2.ProgressBar()->update(0.1)
+//! IMG: GTK2.ProgressBar()->set_show_text(1)->update(0.3)
+//! IMG: GTK2.ProgressBar()->update(0.6)
+//! IMG: GTK2.ProgressBar()->update(1.0)
+
+//! Properties:
+//! int discrete-blocks
+//! int ellipsize CONST(PANGO_ELLIPSIZE_)
+//! float fraction
+//! int orientation CONST(GTK_PROGRESS_)
+//! float pulse-step
+//! string text
+
+void create();
+//! Create a new progress bar.
+//! The default values are:<br />
+//! Min 0.0, max 1.0, current 0.0<br />
+
+void pulse();
+//! Indicates that some progress is made, but you don't know how much.  Causes
+//! the progress bar to enter "activity mode", where a block bounces back and
+//! forth.  Each call to pulse() causes the block to move by a little bit (the
+//! amount of movement per pulse is determined by set_pulse_step()).
+
+void set_text(string text);
+//! Causes the given text to appear superimposed on the progress bar.
+
+void set_fraction(float fraction);
+//! Causes the progress bar to "fill in" the given fraction of the bar.  The
+//! fraction should be between 0.0 and 1.0, inclusive.
+
+void set_pulse_step(float fraction);
+//! Sets the fraction of total progress bar length to move the bouncing block
+//! for each call to pulse().
+
+void set_orientation(int style);
+//! Causes the progress bar to switch to a different orientation
+//! (left-to-right, right-to-left, top-to-bottom, or bottom-to-top).
+//! One of CONST(GTK_PROGRESS_).
+
+require gtk26;
+void set_ellipsize(int mode);
+//! Sets the mode used to ellipsize (add an ellipsis: "...") the text if there
+//! is not enough space to render the entire string.  One of 
+//! CONST(PANGO_ELLIPSIZE_).
+endrequire;
+
+string get_text();
+//! Retrieves the text displayed superimposed on the progress bar, if any.
+
+float get_fraction();
+//! Returns the current fraction of the task that's been completed.
+
+float get_pulse_step();
+//! Retrieves the pulse step.
+
+int get_orientation();
+//! Retrieves the current progress bar orientation.
+
+require gtk26;
+int get_ellipsize();
+//! Returns the ellipsizing position of the progressbar.
+endrequire;
+

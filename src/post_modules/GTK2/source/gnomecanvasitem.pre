@@ -1,0 +1,21 @@
+require gnomecanvas;
+
+class Gnome2.CanvasItem;
+inherit GTK2.Object;
+
+//! This is the base class for all canvas items.  Canvas items are the drawing
+//! elements of a Gnome2.Canvas.  Example items include lines, ellipses,
+//! polygons, images, text, curves, and even arbitary GTK+ widgets.
+//! <p>
+
+//! Properties:
+//! Gnome2.CanvasItem parent
+
+signal event;
+
+/*
+void create(Gnome2.CanvasGroup parent, string|int type);
+//! Creates a new canvas item with parent as its parent group.  The item is
+//! created at the top of its parent's stack, and starts up as visible.
+//! The item is of the specified type.
+*/

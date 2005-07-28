@@ -1,0 +1,140 @@
+/* -*- C -*- */
+class G.Object;
+
+//! The base object.  All GDK and GTK classes inherit from this.
+//! The Pango classes also inherit from this class.
+
+signal notify;
+
+void destroy()
+//! Destructor.
+{
+  if (THIS->obj)
+    g_object_unref(THIS->obj);
+  THIS->obj=NULL;
+  my_pop_n_elems(args);
+  push_int(0);
+}
+
+void set_property(string property, mixed value)
+//! Set a property on a G.Object (and any derived types) to value.
+{
+  pgtk_verify_inited();
+  {
+    char *prop;
+    struct svalue *sv;
+    get_all_args("set_property",args,"%s%*",&prop,&sv);
+    pgtk_set_property(G_OBJECT(THIS->obj),prop,sv);
+  }
+  RETURN_THIS();
+}
+
+mixed get_property(string property)
+//! Get a property.
+{
+  pgtk_verify_inited();
+  {
+    char *prop;
+    get_all_args("get_property",args,"%s",&prop);
+    pgtk_get_property(G_OBJECT(THIS->obj),prop);
+    stack_swap();
+    my_pop_n_elems(args);
+  }
+}
+
+int signal_connect(string signal, function callback, mixed|void callback_arg)
+//! Connect a signal to a pike function.  The function will be called with
+//! the last argument to this function as it's first argument (defaults to 0),
+//! the second argument is always the widget, and any other arguments are the
+//! ones supplied by GTK.
+//! <p>
+//! The return value of this function can be used to remove a signal with
+//! signal_disconnect(), and block and unblock the signal with signal_block()
+//! and signal_unblock().
+{
+  char *a;
+  int id;
+  struct signal_data *b;
+  struct svalue *tmp1,*tmp2;
+  b=(struct signal_data *)g_malloc0(sizeof(struct signal_data));
+  if (b==NULL)
+    SIMPLE_OUT_OF_MEMORY_ERROR("signal_connect",sizeof(struct signal_data));
+  if (args==2) {
+    push_int(0);
+    args++;
+  }
+  get_all_args("signal_connect",args,"%s%*%*",&a,&tmp1,&tmp2);
+
+  assign_svalue_no_free(&b->cb,tmp1);
+  assign_svalue_no_free(&b->args,tmp2);
+
+  b->signal_id=g_signal_lookup(a,G_TYPE_FROM_INSTANCE(THIS->obj));
+  if (!b->signal_id) {
+    xfree(b);
+    Pike_error("Signal \"%s\" is not defined in the '%s' class ancestry.\n",
+		a,g_type_name(G_TYPE_FROM_INSTANCE(THIS->obj)));
+  }
+
+  id=g_signal_connect_data(G_OBJECT(THIS->obj),a,
+			   G_CALLBACK(pgtk_signal_func_wrapper),
+			   b,
+			   (GClosureNotify)pgtk_free_signal_data,
+			   G_CONNECT_SWAPPED);
+  my_pop_n_elems(args);
+  push_int(id);
+}
+
+void signal_disconnect(int signal_id)
+//! Remove a signal formerly added by signal_connect.  The argument is the
+//! return value of signal_connect().  See signal_connect() for more info.
+{
+  INT_TYPE i;
+  get_all_args("signal_disconnect",args,"%i",&i);
+  g_signal_handler_disconnect(G_OBJECT(THIS->obj),i);
+}
+
+void signal_block(int signal_id)
+//! Temporarily block a signal handler.  No signals will be received while the
+//! handler is blocked.
+//! See signal_connect() for more info.
+{
+  INT_TYPE i;
+  get_all_args("signal_block",args,"%i",&i);
+  g_signal_handler_block(G_OBJECT(THIS->obj),i);
+}
+
+void signal_unblock(int signal_id)
+//! Unblock a formerly blocked signal handler.  See signal_block() and
+//! signal_connect() for more info.
+{
+  INT_TYPE i;
+  get_all_args("signal_unblock",args,"%i",&i);
+  g_signal_handler_unblock(G_OBJECT(THIS->obj),i);
+}
+
+void signal_emit(string signal_name)
+//! Send the current named signal.
+{
+  char *s;
+  get_all_args("signal_emit",args,"%s",&s);
+  g_signal_emit_by_name(G_OBJECT(THIS->obj),s,NULL);
+}
+
+void notify(string property);
+//! Emits a "notify" signal for the named property on the object.
+
+void accel_groups_activate(int accel_key, int accel_mods)
+//! Finds the first accelerator in an GTK.AccelGroup attached to this object
+//! that matches accel_key and accel_mods, and activates that accelerator.
+{
+  pgtk_verify_inited();
+  {
+    guint accel_key;
+    GdkModifierType accel_mods;
+    get_all_args("accel_groups_activate",args,"%i%i",&accel_key,&accel_mods);
+    gtk_accel_groups_activate(G_OBJECT(THIS->obj),accel_key,accel_mods);
+  }
+  RETURN_THIS();
+}
+
+

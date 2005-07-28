@@ -1,0 +1,59 @@
+require gnome;
+class Gnome.Dock;
+inherit GTK.Container;
+
+//! GnomeDock is a container widget designed to let users move around
+//! widgets such as toolbars, menubars and so on.
+//! <p>
+//! Every GnomeDock contains a widget called the "client area". On the
+//! four sides of the client area, there are four "dock areas", which
+//! can contain an arbitrary number of dockable widgets. All the
+//! dockable widgets should be GnomeDockItem widgets; the GnomeDockItem
+//! widget can in turn contain any kind of widget, and implements the
+//! dragging functionality: every GnomeDockItem has a handle that users
+//! can use to move them within the dock, or even move them outside it,
+//! so that they become "floating items".
+//! </p><p>
+//! Every "dock area" is implemented by means of zero or more "dock
+//! bands": a dock band is a horizontal or vertical stripe containing
+//! one or more dock items, and is implemented by the GnomeDockBand
+//! widget. Items are ordered from top to bottom in vertical bands, and
+//! from left to right in horizontal bands. Every dock item in a band
+//! is given an offset value that defines the distance, in pixels, from
+//! the previous item in the same band; if the item is first in the
+//! band, the offset defines the distance from the start of the band.
+//! </p><p>
+//! As a consequence, the position of an item in the dock can be
+//! specified by means of the following values: a "placement"
+//! specifying what area is being used (top, bottom, left, right), a
+//! "band number" specifying the number of the band within the
+//! specified area, a "position" within the band and a "offset" from
+//! the previous item in the same band.
+//! </p>
+
+signal layout_changed;
+
+void create( );
+void allow_floating_items( int allow );
+void add_item( Gnome.DockItem item,
+               int placement, int band_num, int position,
+               int offset, int new_band );
+//!  Add item to dock. placement can be either Gnome.DOCK_TOP,
+//!  Gnome.DOCK_RIGHT, Gnome.DOCK_BOTTOM or Gnome.DOCK_LEFT, and
+//!  specifies what area of the dock should contain the item. If
+//!  in_new_band is TRUE, a new dock band is created at the position
+//!  specified by band_num; otherwise, the item is added to the
+//!  band_num'th band.
+
+void add_floating_item( Gnome.DockItem item, int x, int y, int orientation );
+//! Add item to dock and make it floating at the specified (x, y)
+//! coordinates (relative to the root window of the screen).
+
+void set_client_area( GTK.Widget area );
+//!  Specify a widget for the dock's client area.
+GTK.Widget get_client_area( );
+Gnome.DockItem  get_item_by_name( string name, null, null, null, null );
+/* layout stuff left */
+
+
+

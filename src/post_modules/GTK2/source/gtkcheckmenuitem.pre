@@ -1,0 +1,64 @@
+class GTK2.CheckMenuItem;
+inherit GTK2.MenuItem;
+
+//! A check menu item is more or less identical to a check button, but it
+//! should be used in menus.
+//! IMG: GTK2.CheckMenuItem("Hi there")
+//! IMG: GTK2.CheckMenuItem("Hi there")->set_active(1)
+
+//! Properties:
+//! int active
+//! int draw-as-radio
+//! int inconsistent
+//! <p>
+//! Style properties:
+//! int indicator-size
+
+signal toggled;
+//! Called when the state of the menu item is changed
+
+void create(?string label)
+//! The argument, if specified, is the label of the item.
+//! If no label is specified, use object->add() to add some
+//! other widget (such as an pixmap or image widget)
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    gchar *s=PGTK_GETSTR(Pike_sp-args);
+    if (s) {
+      THIS->obj=G_OBJECT(gtk_check_menu_item_new_with_mnemonic(s));
+      PGTK_FREESTR(s);
+    } else
+      THIS->obj=G_OBJECT(gtk_check_menu_item_new());
+  } else {
+    THIS->obj=G_OBJECT(gtk_check_menu_item_new());
+  }
+  pgtk__init_this_object();
+}
+
+void set_active(int new_state);
+//! State is either 1 or 0. If 1, the button will be 'pressed'.
+
+int get_active();
+//! Get whether item is active.
+
+void toggled();
+//! Emulate a toggled event
+
+int get_inconsistent();
+//! Retrieves the value set by set_inconsistent().
+
+void set_inconsistent(int setting);
+//! If the user has selected a range of elements (such as some text or
+//! spreadsheet cells) that are affected by a boolean setting, and the current
+//! values in that range are inconsistent, you may want to display the check
+//! in an "in between" state.  This function turns on "in between" display.
+
+require gtk24;
+void set_draw_as_radio(int draw_as_radio);
+//! Set whether check menu item is drawn like a radio button.
+
+int get_draw_as_radio();
+//! Get whether check menu item is drawn like a radio button.
+endrequire;

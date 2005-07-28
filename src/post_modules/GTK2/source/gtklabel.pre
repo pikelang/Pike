@@ -1,0 +1,258 @@
+class GTK2.Label;
+inherit GTK2.Misc;
+
+//! A simple text label.
+//! IMG: GTK2.Label("A simple text label")
+//! IMG: GTK2.Label("Multi\nline text\nlabel here")
+//! IMG: GTK2.Label("Multi\nline text\nlabel here")->set_justify(GTK2.JUSTIFY_LEFT)
+//! IMG: GTK2.Label("Multi\nline text\nlabel here")->set_justify(GTK2.JUSTIFY_RIGHT)
+
+//! Properties:
+//! float angle
+require pango;
+//! Pango.AttrList attributes
+endrequire;
+//! int cursor-position
+//! int ellipsize CONST(PANGO_ELLIPSIZE_)
+//! int justfy CONST(GTK_JUSTIFY_)
+//! string label
+//! int max-width-chars
+//! int mnemonic-keyval
+//! int mnemonic-widget
+//! string pattern
+//! int selectable
+//! int single-line-mode
+//! int use-markup
+//! int use-underline
+//! int width-chars
+//! int wrap
+
+signal copy_clipboard;
+signal move_cursor;
+signal populate_popup;
+
+void create(string text);
+//! Creates a new label.
+
+void set_text(string text);
+//! Set the text in the label
+
+require pango;
+void set_markup(string text)
+//! Parses text which is marked up with the Pango text markup language,
+//! setting the label's text and attribute list based on the parse results.
+{
+  pgtk_verify_inited();
+  {
+    gchar *str;
+    get_all_args("set_markup",args,"%s",&str);
+    gtk_label_set_markup(GTK_LABEL(THIS->obj),str);
+  }
+  RETURN_THIS();
+}
+
+void set_markup_with_mnemonic(string text)
+//! Parses text which is marked up with the Pango text markup language,
+//! setting the label's text and attribute list based on the parse results.
+//! If characters in text are preceded by an underscore, they are underline
+//! indicating that they represent a keyboard accelerator called a mnemonic.
+//! <p>
+//! The mnemonic key can be used to activate another widget, chosen
+//! automatically, or explicitly using set_mnemonic_widget().
+{
+  pgtk_verify_inited();
+  {
+    gchar *str;
+    get_all_args("set_markup_with_mnemonic",args,"%s",&str);
+    gtk_label_set_markup_with_mnemonic(GTK_LABEL(THIS->obj),str);
+  }
+  RETURN_THIS();
+}
+endrequire;
+
+void set_pattern(string pattern_string);
+//! A string with either spaces or underscores.<br />
+//! It should be of the same length as the text.
+//! <p>
+//! When a character in the text has a matching _ in the pattern, the
+//! character in the label will be underlined.
+//! </p>
+
+void set_justify(int jtype);
+//! Sets the alignment of the lines in the text of the label relative to each
+//! other.  GTK2.JUSTIFY_LEFT is the default value when the widget is first
+//! created.  If you instead want to set the alignment of the label as a
+//! whole, use set_alignment() instead.  set_justify() has no efect on labels
+//! containing only a single line.  One of CONST(GTK_JUSTIFY_).
+
+require gtk26;
+void set_ellipsize(int mode);
+//! Sets the mode used to ellipsize (add an ellipsis: "...") to the text if
+//! there is not enough space to render the entire string.
+//! One of CONST(PANGO_ELLIPSIZE_).
+
+void set_width_chars(int n_chars);
+//! Sets the desired width in characters to n_chars.
+
+void set_max_width_chars(int n_chars);
+//! Sets the desired maximum width in characters to n_chars.
+endrequire;
+
+void set_line_wrap(int wrap);
+//! Toggles line wrapping within the widget.  True makes it break lines if
+//! text exceeds the widget's size.  False lets the text get cut off by the
+//! edge of the widget if it exceeds the widget size.
+
+require pango;
+mapping(string:int) get_layout_offsets()
+//! Obtains the coordinates where the label will draw the Pango.Layout
+//! representing the text in the label; useful to convert mouse events into
+//! coordinates inside the Pango.Layout, e.g. to take some action if some part
+//! of the label is clicked.  Of course, you will need to create a GTK2.EventBox
+//! to receive the events, and pack the label inside it, since labels are a
+//! GTK2.NO_WINDOW widget.  Remember when using the Pango.Layout functions you
+//! need to convert to and from pixels using GTK2.PANGO_SCALE.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    gint x,y;
+    gtk_label_get_layout_offsets(GTK_LABEL(THIS->obj),&x,&y);
+    push_text("x"); push_int(x);
+    push_text("y"); push_int(y);
+    f_aggregate_mapping(4);
+  }
+}
+endrequire;
+
+int get_mnemonic_keyval();
+//! If the label has been set so that is has a mnemonic key, this function
+//! returns the keyval used for the mnemonic accelerator.  If there is no
+//! mnemonic set up it returns GDK_VoidSymbol.
+
+int get_selectable();
+//! Gets the value set by set_selectable().
+
+string get_text();
+//! Fetches the text from a label widget, as displayed on the screen.  This
+//! does not include any embedded underlines indicating mnemonics or Pango
+//! markup. (see get_label()).
+
+void select_region(int start_offset, int end_offset);
+//! Selects a range of characters in the label, if the label is selectable.
+//! See set_selectable().  If the label is not selectable, this function has
+//! no effect.  If start_offset or end_offset are -1, then the end of the
+//! label will be substituted.
+
+void set_mnemonic_widget(GTK2.Widget widget);
+//! If the label has been set so that it has a mnemonic key (using i.e. 
+//! set_markup_with_mnemonic(), set_text_with_mnemonic(), or the 
+//! "use_underline" property) the label can be associated with a widget that
+//! is the target of the mnemonic.  When the label is inside a widget (like a
+//! GTK2.Button or GTK2.Notebook tab) it is automatically associated with the
+//! correct widget, but sometimes (i.e. when the target is a GTK2.Entry next
+//! to the label) you need to set it explicitly using this function.
+//! <p>
+//! The target widget will be accelerated by emitting "mnemonic_activate" on
+//! it.  The default handler for this signal will activate the widget if there
+//! are no mnemonic collisions and toggle focus between the colliding widgets
+//! otherwise.
+
+void set_selectable(int setting);
+//! Selectable labels allow the user to select text from the label, for copy
+//! and past.
+
+void set_text_with_mnemonic(string text);
+//! Sets the label's text from the string text.  If characters in text are
+//! preceded by an underscore, they are underlined indicating that they
+//! represent a keyboard accelerator called a mnemonic.  The mnemonic key can
+//! be used to activate another widget, chose automatically, or explicitly
+//! using set_mnemonic_widget().
+
+int get_justify();
+//! Returns the justification of the label.
+
+require gtk26;
+int get_ellipsize();
+//! Returns the ellipsizing position of the label.
+
+int get_width_chars();
+//! Retrieves the desired width, in characters.
+
+int get_max_width_chars();
+//! Retrieves the desired maximum width, in characters.
+endrequire;
+
+string get_label();
+//! Fetches the text from a label widget including any underlines indicating
+//! mnemonics and Pango markup.
+
+require pango;
+Pango.Layout get_layout();
+//! Gets the Pango.Layout used to display the label.  The layout is useful to
+//! e.g. convert text positions to pixel positions, in combination with
+//! get_layout_offsets().
+endrequire;
+
+int get_line_wrap();
+//! Returns whether lines in the label are automatically wrapped.
+
+GTK2.Widget get_mnemonic_widget();
+//! Retrieves the target of the mnemonic (keyboard shortcut).
+
+mapping(string:int) get_selection_bounds()
+//! Gets the selected range of characters in the label.  If there isn't a
+//! selection, returns -1 for both start and end.
+{
+  pgtk_verify_inited();
+  {
+    gint start,end;
+    int res=gtk_label_get_selection_bounds(GTK_LABEL(THIS->obj),&start,&end);
+    my_pop_n_elems(args);
+    push_text("start");
+    push_int(res?start:-1);
+    push_text("end");
+    push_int(res?end:-1);
+    f_aggregate_mapping(4);
+  }
+}
+
+int get_use_markup();
+//! Returns whether the label's text is interpreted as marked up with the
+//! Pango text markup language.
+
+int get_use_underline();
+//! Returns whether an embedded underline in the label indicates a mnemonic.
+
+require gtk26;
+int get_single_line_mode();
+//! Returns whether the label is in single line mode.
+
+float get_angle();
+//! Gets the angle of rotation for the label.
+endrequire;
+
+void set_label(string text);
+//! Sets the text of the label.  The label is interpreted as including
+//! embedded underlines and/or Pango markup depending on the values of
+//! use-underline and use-markup.
+
+void set_use_markup(int setting);
+//! Sets whether the text of the label contains markup in Pango's text markup
+//! language.
+
+void set_use_underline(int setting);
+//! If true, an underline in the text indicates the next character should be
+//! used for the mnemonic accelerator key.
+
+require gtk26;
+void set_single_line_mode(int mode);
+//! Sets whether the label is in single line mode.
+
+void set_angle(double angle);
+//! Sets the angle of rotation for the label.  An angle of 90 reads from 
+//! bottom to top, and angle of 270, from top to bottom.  The angle setting
+//! for the label is igrnored if the lable is selectable, wrapped, or 
+//! ellipsized.
+endrequire;
+

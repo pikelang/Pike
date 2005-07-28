@@ -1,0 +1,21 @@
+class GTK2.Arrow;
+inherit GTK2.Misc;
+
+//! An arrow pointing in one of four directions. The 'etched' shadow
+//! types does not work.
+
+//! IMG: GTK2.Arrow(GTK2.ARROW_UP, GTK2.SHADOW_OUT)
+//! IMG: GTK2.Arrow(GTK2.ARROW_LEFT, GTK2.SHADOW_IN)
+//! IMG: GTK2.Arrow(GTK2.ARROW_RIGHT, GTK2.SHADOW_IN)
+//! IMG: GTK2.Arrow(GTK2.ARROW_DOWN, GTK2.SHADOW_OUT)
+
+//! Properties:
+//! int arrow-type CONST(GTK_ARROW_)
+//! int shadow-type CONST(GTK_SHADOW_)
+
+void create(int arrow_type, int shadow_type);
+//! First argument is one of CONST(GTK_ARROW), second one of CONST(GTK_SHADOW).
+
+void set(int arrow_type, int shadow_type);
+//! First argument is one of CONST(GTK_ARROW), second one of CONST(GTK_SHADOW).
+

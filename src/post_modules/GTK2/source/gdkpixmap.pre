@@ -1,0 +1,113 @@
+class GDK2.Pixmap;
+inherit GDK2.Drawable;
+
+//! This class creates a GDK2.Pixmap from either an GDK2.Image or
+//! Image.image object (or a numeric ID, see your X-manual for XIDs).
+//! <p> The GDK2.Pixmap object can be used in a lot
+//! of different GTK widgets.  The most notable is the W(Pixmap)
+//! widget.</p>
+//!
+//! NOIMG
+%{
+#ifdef __NT__
+#include <gdk/win32/gdkwin32.h>
+#else
+#include <gdk/gdkx.h>
+#endif
+
+GdkImage *pgtk_pixmap_setup(struct object *o, int *free)
+{
+  if (get_gdkobject(o,image))
+    return get_gdkobject(o,image);
+  else {
+    *free=1;
+    return gdkimage_from_pikeimage(o,GDK_IMAGE_FASTEST,0);
+  }
+}
+
+void pgtk__pixmap_draw(GdkImage *i)
+{
+  GdkGC *gc;
+  if (THIS->extra_data)
+    gc=THIS->extra_data;
+  else
+    THIS->extra_data=gc=gdk_gc_new(GDK_WINDOW(THIS->obj));
+  gdk_draw_image(GDK_WINDOW(THIS->obj),gc,i,0,0,0,0,
+		  i->width,i->height);
+}
+%}
+
+void create(int|object image)
+//! Create a new GDK2.Pixmap object.
+//! Argument is a GDK2.Image object or a Image.Image object
+{
+  GdkImage *i;
+  int f=0;
+  struct object *o;
+  pgtk_verify_setup();
+  pgtk_verify_not_inited();
+
+  if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+    get_all_args("create",args,"%o",&o);
+    i=pgtk_pixmap_setup(o,&f);
+
+    THIS->obj=G_OBJECT(gdk_pixmap_new(0,i->width,i->height,i->depth));
+    if (!THIS->obj) {
+      if (f)
+	g_object_unref(i);
+      Pike_error("Failed to create pixmap.\n");
+    }
+    pgtk__pixmap_draw(i);
+    if (f)
+      g_object_unref(i);
+  } else if (args && Pike_sp[-1].type==PIKE_T_INT) {
+    THIS->obj=G_OBJECT(gdk_pixmap_foreign_new(Pike_sp[-1].u.integer));
+    if (!THIS->obj)
+      Pike_error("Failed to find remote pixmap\n");
+  }
+}
+
+void set(GDK2.Image|Image.Image image)
+//! Argument is a GDK2.Image object or an Image.image object.
+//! It is much faster to use an gdkImage object, especially one
+//! allocated in shared memory. This is only an issue if you are
+//! going to change the contents of the pixmap often, toggling between
+//! a small number of images.
+{
+  struct object *o;
+  int f=0;
+  GdkImage *i;
+  get_all_args("set", args, "%o", &o );
+  pgtk__pixmap_draw(i=pgtk_pixmap_setup(o,&f));
+  if (f)
+    g_object_unref(i);
+
+  RETURN_THIS();
+}
+
+void destroy()
+//! Destructor. Destroys the pixmap.
+{
+  if (THIS->obj)
+    g_object_unref(THIS->obj);
+  THIS->obj=0;
+
+  if (THIS->extra_data)
+    g_object_unref(THIS->extra_data);
+  THIS->extra_data=0;
+}
+
+void ref()
+//! Ref this object.
+{
+  g_object_ref(THIS->obj);
+  RETURN_THIS();
+}
+
+void unref()
+//! Unref this object.
+{
+  g_object_unref(THIS->obj);
+  RETURN_THIS();
+}
+

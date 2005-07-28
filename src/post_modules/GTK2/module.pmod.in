@@ -1,0 +1,71 @@
+/*
+ * $Id: module.pmod.in,v 1.1 2005/07/28 15:26:09 nilsson Exp $
+ *
+ * GTK2 glue code.
+ */
+
+#pike __REAL_VERSION__
+
+#if constant(@module@.Widget)
+
+string unsillycaps(string what)
+{
+  string res=upper_case(what[0..0]);
+  foreach(what[1..]/"", string q)
+    if(lower_case(q)==q)
+      res += q;
+    else
+      res += "_"+lower_case(q);
+  return res;
+}
+
+inherit @module@;
+
+#define INDEX(x) predef::`->(this_object(),(x))
+
+array(string) setup_gtk(array(string)|string|void name, int|void norc)
+{
+  array res;
+  if(stringp(name))
+    name = ({ name });
+  if(name)
+    res = ::setup_gtk(name);
+  else
+    res = ::setup_gtk();
+  if(!norc)
+  {
+    if(file_stat( getenv("HOME")+"/.pgtkrc" ))
+      parse_rc( cpp(Stdio.read_bytes(getenv("HOME")+"/.pgtkrc")) ||"");
+    else if(file_stat( getenv("HOME")+"/.gtkrc" ))
+      parse_rc( Stdio.read_bytes(getenv("HOME")+"/.gtkrc") );
+  }
+  return res;
+}
+
+mixed `[](string what)
+{
+  if(what == "destroy")
+    if(sizeof(backtrace())>2)
+    {
+      werror(describe_backtrace(backtrace()));
+      return s_destroy;
+    }
+    else
+     return ([])[0];
+
+  if(what == "_module_value") return ([])[0];
+
+  if(!zero_type(INDEX(what)))
+    return INDEX(what);
+  if(!zero_type(INDEX("s_"+what)))
+    return INDEX("s_"+what);
+  if(!zero_type(INDEX(upper_case(what))))
+    return INDEX(upper_case(what));
+//if(!zero_type(INDEX(unsillycaps(what))))
+//  return INDEX(unsillycaps(what));
+  if(!zero_type(INDEX(upper_case(unsillycaps(what)))))
+    return INDEX(upper_case(unsillycaps(what)));
+  //  return  GTKSupport[what];
+}
+
+#endif

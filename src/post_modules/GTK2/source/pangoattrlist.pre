@@ -1,0 +1,16 @@
+class Pango.AttrList;
+
+//! A PangoAttrList.
+
+void create();
+//! Create a new empty attribute list.
+
+Pango.AttrList copy()
+//! Copy the list.
+{
+  pgtk_verify_inited();
+  {
+    PangoAttrList *pal=pango_attr_list_copy((PangoAttrList *)THIS->obj);
+    push_gobjectclass(pal,ppango_attr_list_program);
+  }
+}

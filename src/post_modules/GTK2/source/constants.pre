@@ -1,0 +1,1639 @@
+/* -*- c -*- */
+constant int FALSE;
+constant int TRUE;
+
+/* GDK: The GdkPixbufStructure: GdkPixbufError */
+constant int GDK_PIXBUF_ERROR_CORRUPT_IMAGE;
+constant int GDK_PIXBUF_ERROR_INSUFFICIENT_MEMORY;
+constant int GDK_PIXBUF_ERROR_BAD_OPTION;
+constant int GDK_PIXBUF_ERROR_UNKNOWN_TYPE;
+constant int GDK_PIXBUF_ERROR_UNSUPPORTED_OPERATION;
+constant int GDK_PIXBUF_ERROR_FAILED;
+
+/* GDK: The GdkPixbufStructure: GdkColorspace */
+constant int GDK_COLORSPACE_RGB;
+
+/* GDK: The GdkPixbufStructure: GdkPixbufAlphaMode */
+constant int GDK_PIXBUF_ALPHA_BILEVEL;
+constant int GDK_PIXBUF_ALPHA_FULL;
+
+/* GDK: Scaling: GdkInterpType */
+constant int GDK_INTERP_NEAREST;
+constant int GDK_INTERP_TILES;
+constant int GDK_INTERP_BILINEAR;
+constant int GDK_INTERP_HYPER;
+
+require gtk26;
+/* GDK: Scaling: GdkPixbufRotation */
+constant int GDK_PIXBUF_ROTATE_NONE;
+constant int GDK_PIXBUF_ROTATE_COUNTERCLOCKWISE;
+constant int GDK_PIXBUF_ROTATE_UPSIDEDOWN;
+constant int GDK_PIXBUF_ROTATE_CLOCKWISE;
+endrequire;
+
+/* GDK: General: GdkGrabStatus */
+constant int GDK_GRAB_SUCCESS;
+constant int GDK_GRAB_ALREADY_GRABBED;
+constant int GDK_GRAB_INVALID_TIME;
+constant int GDK_GRAB_NOT_VIEWABLE;
+constant int GDK_GRAB_FROZEN;
+
+/* GDK: Points, Rectangles and Regions: GdkFillRule */
+constant int GDK_EVEN_ODD_RULE;
+constant int GDK_WINDING_RULE;
+
+/* GDK: Points, Rectangles and Regions: GdkOverlapType */
+constant int GDK_OVERLAP_RECTANGLE_IN;
+constant int GDK_OVERLAP_RECTANGLE_OUT;
+constant int GDK_OVERLAP_RECTANGLE_PART;
+
+/* GDK: Graphics Contexts: GdkGCValuesMask */
+constant int GDK_GC_FOREGROUND;
+constant int GDK_GC_BACKGROUND;
+constant int GDK_GC_FONT;
+constant int GDK_GC_FUNCTION;
+constant int GDK_GC_FILL;
+constant int GDK_GC_TILE;
+constant int GDK_GC_STIPPLE;
+constant int GDK_GC_CLIP_MASK;
+constant int GDK_GC_SUBWINDOW;
+constant int GDK_GC_TS_X_ORIGIN;
+constant int GDK_GC_TS_Y_ORIGIN;
+constant int GDK_GC_CLIP_X_ORIGIN;
+constant int GDK_GC_CLIP_Y_ORIGIN;
+constant int GDK_GC_EXPOSURES;
+constant int GDK_GC_LINE_WIDTH;
+constant int GDK_GC_LINE_STYLE;
+constant int GDK_GC_CAP_STYLE;
+constant int GDK_GC_JOIN_STYLE;
+
+/* GDK: Graphics Contexts: GdkSubwindowMode */
+constant int GDK_CLIP_BY_CHILDREN;
+constant int GDK_INCLUDE_INFERIORS;
+
+/* GTK: GtkCList: GtkCellType
+ deprecated
+constant int GTK_CELL_EMPTY;
+constant int GTK_CELL_TEXT;
+constant int GTK_CELL_PIXMAP;
+constant int GTK_CELL_PIXTEXT;
+constant int GTK_CELL_WIDGET;
+*/
+
+/* GTK: Standard Enumerations: GtkDirectionType */
+constant int GTK_DIR_TAB_FORWARD;
+constant int GTK_DIR_TAB_BACKWARD;
+constant int GTK_DIR_UP;
+constant int GTK_DIR_DOWN;
+constant int GTK_DIR_LEFT;
+constant int GTK_DIR_RIGHT;
+
+/* GTK: Standard Enumerations: GtkShadowType */
+constant int GTK_SHADOW_NONE;
+constant int GTK_SHADOW_IN;
+constant int GTK_SHADOW_OUT;
+constant int GTK_SHADOW_ETCHED_IN;
+constant int GTK_SHADOW_ETCHED_OUT;
+
+/* GTK: Standard Enumerations: GtkArrowType */
+constant int GTK_ARROW_UP;
+constant int GTK_ARROW_DOWN;
+constant int GTK_ARROW_LEFT;
+constant int GTK_ARROW_RIGHT;
+
+/* GTK: Standard Enumerations: GtkPackType */
+constant int GTK_PACK_START;
+constant int GTK_PACK_END;
+
+/* GTK: Standard Enumerations: GtkPathPriorityType */
+constant int GTK_PATH_PRIO_LOWEST;
+constant int GTK_PATH_PRIO_GTK;
+constant int GTK_PATH_PRIO_APPLICATION;
+constant int GTK_PATH_PRIO_THEME;
+constant int GTK_PATH_PRIO_RC;
+constant int GTK_PATH_PRIO_HIGHEST;
+
+/* GTK: Standard Enumerations: GtkPathType */
+constant int GTK_PATH_WIDGET;
+constant int GTK_PATH_WIDGET_CLASS;
+constant int GTK_PATH_CLASS;
+
+/* GTK: Standard Enumerations: GtkPolicyType */
+constant int GTK_POLICY_ALWAYS;
+constant int GTK_POLICY_AUTOMATIC;
+constant int GTK_POLICY_NEVER;
+
+/* GTK: Standard Enumerations: GtkUpdateType */
+constant int GTK_UPDATE_CONTINUOUS;
+constant int GTK_UPDATE_DISCONTINUOUS;
+constant int GTK_UPDATE_DELAYED;
+
+/* GTK: Standard Enumerations: GtkAttachOptions */
+constant int GTK_EXPAND;
+constant int GTK_SHRINK;
+constant int GTK_FILL;
+
+/* GTK: Standard Enumerations: GtkExpanderStyle */
+constant int GTK_EXPANDER_COLLAPSED;
+constant int GTK_EXPANDER_SEMI_COLLAPSED;
+constant int GTK_EXPANDER_SEMI_EXPANDED;
+constant int GTK_EXPANDER_EXPANDED;
+
+/* GTK: Standard Enumerations: GtkIMPreeditStyle */
+require gtk22;
+constant int GTK_IM_PREEDIT_NOTHING;
+constant int GTK_IM_PREEDIT_CALLBACK;
+endrequire;
+require gtk24;
+constant int GTK_IM_PREEDIT_NONE;
+endrequire;
+
+/* GTK: Standard Enumerations: GtkIMStatusStyle */
+require gtk22;
+constant int GTK_IM_STATUS_NOTHING;
+constant int GTK_IM_STATUS_CALLBACK;
+endrequire;
+require gtk24;
+constant int GTK_IM_STATUS_NONE;
+endrequire;
+
+/* GTK: Signals: GtkSignalRunType
+ deprecated... use G_SIGNAL_* instead
+constant int GTK_RUN_FIRST;
+constant int GTK_RUN_LAST;
+constant int GTK_RUN_BOTH;
+constant int GTK_RUN_NO_RECURSE;
+constant int GTK_RUN_ACTION;
+constant int GTK_RUN_NO_HOOKS;
+*/
+
+/* GTK: Standard Enumerations: GtkWindowPosition */
+constant int GTK_WIN_POS_NONE;
+constant int GTK_WIN_POS_CENTER;
+constant int GTK_WIN_POS_MOUSE;
+constant int GTK_WIN_POS_CENTER_ALWAYS;
+constant int GTK_WIN_POS_CENTER_ON_PARENT;
+
+/* GTK: Standard Enumerations: GtkSubmenuDirection
+ deprecated
+constant int GTK_DIRECTION_LEFT;
+constant int GTK_DIRECTION_RIGHT;
+*/
+
+/* GTK: Standard Enumerations: GtkSubmenuPlacement
+ deprecated
+constant int GTK_TOP_BOTTOM;
+constant int GTK_LEFT_RIGHT;
+*/
+
+/* GTK: Standard Enumerations: GtkMetricType */
+constant int GTK_PIXELS;
+constant int GTK_INCHES;
+constant int GTK_CENTIMETERS;
+
+/* GTK: Standard Enumerations: GtkMovementStep */
+constant int GTK_MOVEMENT_LOGICAL_POSITIONS;
+constant int GTK_MOVEMENT_VISUAL_POSITIONS;
+constant int GTK_MOVEMENT_WORDS;
+constant int GTK_MOVEMENT_DISPLAY_LINES;
+constant int GTK_MOVEMENT_DISPLAY_LINE_ENDS;
+constant int GTK_MOVEMENT_PARAGRAPHS;
+constant int GTK_MOVEMENT_PARAGRAPH_ENDS;
+constant int GTK_MOVEMENT_PAGES;
+constant int GTK_MOVEMENT_BUFFER_ENDS;
+require gtk24;
+constant int GTK_MOVEMENT_HORIZONTAL_PAGES;
+endrequire;
+
+/* GTK: Standard Enumerations: GtkScrollStep */
+require gtk24;
+constant int GTK_SCROLL_STEPS;
+constant int GTK_SCROLL_PAGES;
+constant int GTK_SCROLL_ENDS;
+constant int GTK_SCROLL_HORIZONTAL_STEPS;
+constant int GTK_SCROLL_HORIZONTAL_PAGES;
+constant int GTK_SCROLL_HORIZONTAL_ENDS;
+endrequire;
+
+/* GTK: Standard Enumerations: GtkScrollType */
+constant int GTK_SCROLL_NONE;
+constant int GTK_SCROLL_JUMP;
+constant int GTK_SCROLL_STEP_BACKWARD;
+constant int GTK_SCROLL_STEP_FORWARD;
+constant int GTK_SCROLL_PAGE_BACKWARD;
+constant int GTK_SCROLL_PAGE_FORWARD;
+constant int GTK_SCROLL_STEP_UP;
+constant int GTK_SCROLL_STEP_DOWN;
+constant int GTK_SCROLL_PAGE_UP;
+constant int GTK_SCROLL_PAGE_DOWN;
+constant int GTK_SCROLL_STEP_LEFT;
+constant int GTK_SCROLL_STEP_RIGHT;
+constant int GTK_SCROLL_PAGE_LEFT;
+constant int GTK_SCROLL_PAGE_RIGHT;
+constant int GTK_SCROLL_START;
+constant int GTK_SCROLL_END;
+
+/*
+constant int GTK_TROUGH_NONE;
+constant int GTK_TROUGH_START;
+constant int GTK_TROUGH_END;
+constant int GTK_TROUGH_JUMP;
+*/
+
+/* GTK: Standard Enumerations: GtkPositionType */
+constant int GTK_POS_LEFT;
+constant int GTK_POS_RIGHT;
+constant int GTK_POS_TOP;
+constant int GTK_POS_BOTTOM;
+
+/* GTK: Standard Enumerations: GtkPreviewType
+ deprecated
+constant int GTK_PREVIEW_COLOR;
+constant int GTK_PREVIEW_GRAYSCALE;
+*/
+
+/* GTK: Standard Enumerations: GtkJustification */
+constant int GTK_JUSTIFY_LEFT;
+constant int GTK_JUSTIFY_RIGHT;
+constant int GTK_JUSTIFY_CENTER;
+constant int GTK_JUSTIFY_FILL;
+
+/* GTK: Standard Enumerations: GtkSelectionMode */
+constant int GTK_SELECTION_NONE;
+constant int GTK_SELECTION_SINGLE;
+constant int GTK_SELECTION_BROWSE;
+constant int GTK_SELECTION_MULTIPLE;
+/*constant int GTK_SELECTION_EXTENDED; */
+
+/* GTK: Standard Enumerations: GtkOrientation */
+constant int GTK_ORIENTATION_HORIZONTAL;
+constant int GTK_ORIENTATION_VERTICAL;
+
+/* GTK: Standard Enumerations: GtkToolbarStyle */
+constant int GTK_TOOLBAR_ICONS;
+constant int GTK_TOOLBAR_TEXT;
+constant int GTK_TOOLBAR_BOTH;
+constant int GTK_TOOLBAR_BOTH_HORIZ;
+
+/* GTK: Standard Enumerations: GtkVisibility */
+constant int GTK_VISIBILITY_NONE;
+constant int GTK_VISIBILITY_PARTIAL;
+constant int GTK_VISIBILITY_FULL;
+
+/* GTK: Standard Enumerations: GtkButtonBoxStyle */
+constant int GTK_BUTTONBOX_DEFAULT_STYLE;
+constant int GTK_BUTTONBOX_SPREAD;
+constant int GTK_BUTTONBOX_EDGE;
+constant int GTK_BUTTONBOX_START;
+constant int GTK_BUTTONBOX_END;
+
+/* GDK: Windows: GdkWindowType */
+constant int GDK_WINDOW_ROOT;
+constant int GDK_WINDOW_TOPLEVEL;
+constant int GDK_WINDOW_CHILD;
+constant int GDK_WINDOW_DIALOG;
+constant int GDK_WINDOW_TEMP;
+constant int GDK_WINDOW_FOREIGN;
+/*
+ constant int GDK_WINDOW_PIXMAP;
+*/
+
+/* GDK: Windows: GdkWindowClass */
+constant int GDK_INPUT_OUTPUT;
+constant int GDK_INPUT_ONLY;
+
+/* GDK: Windows: GdkWindowHints */
+constant int GDK_HINT_POS;
+constant int GDK_HINT_MIN_SIZE;
+constant int GDK_HINT_MAX_SIZE;
+constant int GDK_HINT_BASE_SIZE;
+constant int GDK_HINT_ASPECT;
+constant int GDK_HINT_RESIZE_INC;
+constant int GDK_HINT_USER_POS;
+constant int GDK_HINT_USER_SIZE;
+
+/* GDK: Windows: GdkGravity */
+constant int GDK_GRAVITY_NORTH_WEST;
+constant int GDK_GRAVITY_NORTH;
+constant int GDK_GRAVITY_NORTH_EAST;
+constant int GDK_GRAVITY_WEST;
+constant int GDK_GRAVITY_CENTER;
+constant int GDK_GRAVITY_EAST;
+constant int GDK_GRAVITY_SOUTH_WEST;
+constant int GDK_GRAVITY_SOUTH;
+constant int GDK_GRAVITY_SOUTH_EAST;
+constant int GDK_GRAVITY_STATIC;
+
+/* GDK: Windows: GdkWindowEdge */
+constant int GDK_WINDOW_EDGE_NORTH_WEST;
+constant int GDK_WINDOW_EDGE_NORTH;
+constant int GDK_WINDOW_EDGE_NORTH_EAST;
+constant int GDK_WINDOW_EDGE_WEST;
+constant int GDK_WINDOW_EDGE_EAST;
+constant int GDK_WINDOW_EDGE_SOUTH_WEST;
+constant int GDK_WINDOW_EDGE_SOUTH;
+constant int GDK_WINDOW_EDGE_SOUTH_EAST;
+
+/* GDK: Windows: GdkWindowTypeHint */
+constant int GDK_WINDOW_TYPE_HINT_NORMAL;
+constant int GDK_WINDOW_TYPE_HINT_DIALOG;
+constant int GDK_WINDOW_TYPE_HINT_MENU;
+constant int GDK_WINDOW_TYPE_HINT_TOOLBAR;
+require gtk22;
+constant int GDK_WINDOW_TYPE_HINT_SPLASHSCREEN;
+constant int GDK_WINDOW_TYPE_HINT_UTILITY;
+constant int GDK_WINDOW_TYPE_HINT_DOCK;
+constant int GDK_WINDOW_TYPE_HINT_DESKTOP;
+endrequire;
+
+/* GDK: Windows: GdkWindowAttributesType */
+constant int GDK_WA_TITLE;
+constant int GDK_WA_X;
+constant int GDK_WA_Y;
+constant int GDK_WA_CURSOR;
+constant int GDK_WA_COLORMAP;
+constant int GDK_WA_VISUAL;
+constant int GDK_WA_WMCLASS;
+constant int GDK_WA_NOREDIR;
+
+/* GDK: Windows: GdkFilterReturn */
+constant int GDK_FILTER_CONTINUE;
+constant int GDK_FILTER_TRANSLATE;
+constant int GDK_FILTER_REMOVE;
+
+
+/* GTK: Standard Enumerations: GtkWindowType */
+constant int GTK_WINDOW_TOPLEVEL;
+constant int GTK_WINDOW_POPUP;
+
+/* GTK: Standard Enumerations: GtkStateType */
+constant int GTK_STATE_NORMAL;
+constant int GTK_STATE_ACTIVE;
+constant int GTK_STATE_PRELIGHT;
+constant int GTK_STATE_SELECTED;
+constant int GTK_STATE_INSENSITIVE;
+
+/* GTK: Standard Enumerations: GtkCornerType */
+constant int GTK_CORNER_TOP_LEFT;
+constant int GTK_CORNER_BOTTOM_LEFT;
+constant int GTK_CORNER_TOP_RIGHT;
+constant int GTK_CORNER_BOTTOM_RIGHT;
+
+/* GDK: Cursors: GdkCursorType */
+constant int GDK_X_CURSOR;
+constant int GDK_ARROW;
+constant int GDK_BASED_ARROW_DOWN;
+constant int GDK_BASED_ARROW_UP;
+constant int GDK_BOAT;
+constant int GDK_BOGOSITY;
+constant int GDK_BOTTOM_LEFT_CORNER;
+constant int GDK_BOTTOM_RIGHT_CORNER;
+constant int GDK_BOTTOM_SIDE;
+constant int GDK_BOTTOM_TEE;
+constant int GDK_BOX_SPIRAL;
+constant int GDK_CENTER_PTR;
+constant int GDK_CIRCLE;
+constant int GDK_CLOCK;
+constant int GDK_COFFEE_MUG;
+constant int GDK_CROSS;
+constant int GDK_CROSS_REVERSE;
+constant int GDK_CROSSHAIR;
+constant int GDK_DIAMOND_CROSS;
+constant int GDK_DOT;
+constant int GDK_DOTBOX;
+constant int GDK_DOUBLE_ARROW;
+constant int GDK_DRAFT_LARGE;
+constant int GDK_DRAFT_SMALL;
+constant int GDK_DRAPED_BOX;
+constant int GDK_EXCHANGE;
+constant int GDK_FLEUR;
+constant int GDK_GOBBLER;
+constant int GDK_GUMBY;
+constant int GDK_HAND1;
+constant int GDK_HAND2;
+constant int GDK_HEART;
+constant int GDK_ICON;
+constant int GDK_IRON_CROSS;
+constant int GDK_LEFT_PTR;
+constant int GDK_LEFT_SIDE;
+constant int GDK_LEFT_TEE;
+constant int GDK_LEFTBUTTON;
+constant int GDK_LL_ANGLE;
+constant int GDK_LR_ANGLE;
+constant int GDK_MAN;
+constant int GDK_MIDDLEBUTTON;
+constant int GDK_MOUSE;
+constant int GDK_PENCIL;
+constant int GDK_PIRATE;
+constant int GDK_PLUS;
+constant int GDK_QUESTION_ARROW;
+constant int GDK_RIGHT_PTR;
+constant int GDK_RIGHT_SIDE;
+constant int GDK_RIGHT_TEE;
+constant int GDK_RIGHTBUTTON;
+constant int GDK_RTL_LOGO;
+constant int GDK_SAILBOAT;
+constant int GDK_SB_DOWN_ARROW;
+constant int GDK_SB_H_DOUBLE_ARROW;
+constant int GDK_SB_LEFT_ARROW;
+constant int GDK_SB_RIGHT_ARROW;
+constant int GDK_SB_UP_ARROW;
+constant int GDK_SB_V_DOUBLE_ARROW;
+constant int GDK_SHUTTLE;
+constant int GDK_SIZING;
+constant int GDK_SPIDER;
+constant int GDK_SPRAYCAN;
+constant int GDK_STAR;
+constant int GDK_TARGET;
+constant int GDK_TCROSS;
+constant int GDK_TOP_LEFT_ARROW;
+constant int GDK_TOP_LEFT_CORNER;
+constant int GDK_TOP_RIGHT_CORNER;
+constant int GDK_TOP_SIDE;
+constant int GDK_TOP_TEE;
+constant int GDK_TREK;
+constant int GDK_UL_ANGLE;
+constant int GDK_UMBRELLA;
+constant int GDK_UR_ANGLE;
+constant int GDK_WATCH;
+constant int GDK_XTERM;
+constant int GDK_LAST_CURSOR;
+constant int GDK_CURSOR_IS_PIXMAP;
+
+/* GDK: Input Devices: GdkExtensionMode */
+constant int GDK_EXTENSION_EVENTS_NONE;
+constant int GDK_EXTENSION_EVENTS_ALL;
+constant int GDK_EXTENSION_EVENTS_CURSOR;
+
+/* GDK: Selections: Defines
+ deprecated
+constant int GDK_SELECTION_TYPE_ATOM;
+constant int GDK_SELECTION_TYPE_BITMAP;
+constant int GDK_SELECTION_TYPE_COLORMAP;
+constant int GDK_SELECTION_TYPE_DRAWABLE;
+constant int GDK_SELECTION_TYPE_INTEGER;
+constant int GDK_SELECTION_TYPE_PIXMAP;
+constant int GDK_SELECTION_TYPE_WINDOW;
+constant int GDK_SELECTION_TYPE_STRING;
+*/
+
+/* GDK: Windows: GdkWMDecoration */
+constant int GDK_DECOR_ALL;
+constant int GDK_DECOR_BORDER;
+constant int GDK_DECOR_RESIZEH;
+constant int GDK_DECOR_TITLE;
+constant int GDK_DECOR_MENU;
+constant int GDK_DECOR_MINIMIZE;
+constant int GDK_DECOR_MAXIMIZE;
+
+/* GDK: Windows: GdkWMFunction */
+constant int GDK_FUNC_ALL;
+constant int GDK_FUNC_RESIZE;
+constant int GDK_FUNC_MOVE;
+constant int GDK_FUNC_MINIMIZE;
+constant int GDK_FUNC_MAXIMIZE;
+constant int GDK_FUNC_CLOSE;
+
+/* GDK: Events: GdkEventType */
+constant int GDK_NOTHING;
+constant int GDK_DELETE;
+constant int GDK_DESTROY;
+constant int GDK_EXPOSE;
+constant int GDK_MOTION_NOTIFY;
+constant int GDK_BUTTON_PRESS;
+constant int GDK_2BUTTON_PRESS;
+constant int GDK_3BUTTON_PRESS;
+constant int GDK_BUTTON_RELEASE;
+constant int GDK_KEY_PRESS;
+constant int GDK_KEY_RELEASE;
+constant int GDK_ENTER_NOTIFY;
+constant int GDK_LEAVE_NOTIFY;
+constant int GDK_FOCUS_CHANGE;
+constant int GDK_CONFIGURE;
+constant int GDK_MAP;
+constant int GDK_UNMAP;
+constant int GDK_PROPERTY_NOTIFY;
+constant int GDK_SELECTION_CLEAR;
+constant int GDK_SELECTION_REQUEST;
+constant int GDK_SELECTION_NOTIFY;
+constant int GDK_PROXIMITY_IN;
+constant int GDK_PROXIMITY_OUT;
+constant int GDK_DRAG_ENTER;
+constant int GDK_DRAG_LEAVE;
+constant int GDK_DRAG_MOTION;
+constant int GDK_DRAG_STATUS;
+constant int GDK_DROP_START;
+constant int GDK_DROP_FINISHED;
+constant int GDK_CLIENT_EVENT;
+constant int GDK_VISIBILITY_NOTIFY;
+constant int GDK_NO_EXPOSE;
+constant int GDK_SCROLL;
+constant int GDK_WINDOW_STATE;
+constant int GDK_SETTING;
+require gtk26;
+constant int GDK_OWNER_CHANGE;
+endrequire;
+
+/* GDK: Selections: Defines
+ deprecated
+constant int GDK_TARGET_BITMAP;
+constant int GDK_TARGET_COLORMAP;
+constant int GDK_TARGET_DRAWABLE;
+constant int GDK_TARGET_PIXMAP;
+constant int GDK_TARGET_STRING;
+*/
+
+/* GDK: Windows: GdkModifierType */
+constant int GDK_SHIFT_MASK;
+constant int GDK_LOCK_MASK;
+constant int GDK_CONTROL_MASK;
+constant int GDK_MOD1_MASK;
+constant int GDK_MOD2_MASK;
+constant int GDK_MOD3_MASK;
+constant int GDK_MOD4_MASK;
+constant int GDK_MOD5_MASK;
+constant int GDK_BUTTON1_MASK;
+constant int GDK_BUTTON2_MASK;
+constant int GDK_BUTTON3_MASK;
+constant int GDK_BUTTON4_MASK;
+constant int GDK_BUTTON5_MASK;
+constant int GDK_RELEASE_MASK;
+constant int GDK_MODIFIER_MASK;
+
+/* GTK: GtkTree: GtkTreeViewMode
+ deprecated
+constant int GTK_TREE_VIEW_LINE;
+constant int GTK_TREE_VIEW_ITEM;
+*/
+
+/* GDK: Events: GdkEventMask */
+constant int GDK_EXPOSURE_MASK;
+constant int GDK_POINTER_MOTION_MASK;
+constant int GDK_POINTER_MOTION_HINT_MASK;
+constant int GDK_BUTTON_MOTION_MASK;
+constant int GDK_BUTTON1_MOTION_MASK;
+constant int GDK_BUTTON2_MOTION_MASK;
+constant int GDK_BUTTON3_MOTION_MASK;
+constant int GDK_BUTTON_PRESS_MASK;
+constant int GDK_BUTTON_RELEASE_MASK;
+constant int GDK_KEY_PRESS_MASK;
+constant int GDK_KEY_RELEASE_MASK;
+constant int GDK_ENTER_NOTIFY_MASK;
+constant int GDK_LEAVE_NOTIFY_MASK;
+constant int GDK_FOCUS_CHANGE_MASK;
+constant int GDK_STRUCTURE_MASK;
+constant int GDK_PROPERTY_CHANGE_MASK;
+constant int GDK_VISIBILITY_NOTIFY_MASK;
+constant int GDK_PROXIMITY_IN_MASK;
+constant int GDK_PROXIMITY_OUT_MASK;
+constant int GDK_SUBSTRUCTURE_MASK;
+constant int GDK_SCROLL_MASK;
+constant int GDK_ALL_EVENTS_MASK;
+
+/* GDK: Event Structures: GdkScrollDirection */
+constant int GDK_SCROLL_UP;
+constant int GDK_SCROLL_DOWN;
+constant int GDK_SCROLL_LEFT;
+constant int GDK_SCROLL_RIGHT;
+
+/* GDK: Event Structures: GdkVisibilityState */
+constant int GDK_VISIBILITY_UNOBSCURED;
+constant int GDK_VISIBILITY_PARTIAL;
+constant int GDK_VISIBILITY_FULLY_OBSCURED;
+
+/* GDK: Event Structures: GdkCrossingMode */
+constant int GDK_CROSSING_NORMAL;
+constant int GDK_CROSSING_GRAB;
+constant int GDK_CROSSING_UNGRAB;
+
+/* GDK: Event Structures: GdkNotifyType */
+constant int GDK_NOTIFY_ANCESTOR;
+constant int GDK_NOTIFY_VIRTUAL;
+constant int GDK_NOTIFY_INFERIOR;
+constant int GDK_NOTIFY_NONLINEAR;
+constant int GDK_NOTIFY_NONLINEAR_VIRTUAL;
+constant int GDK_NOTIFY_UNKNOWN;
+
+/* GDK: Event Structures: GdkPropertyState */
+constant int GDK_PROPERTY_NEW_VALUE;
+constant int GDK_PROPERTY_DELETE;
+
+/* GDK: Event Structures: GdkWindowState */
+constant int GDK_WINDOW_STATE_WITHDRAWN;
+constant int GDK_WINDOW_STATE_ICONIFIED;
+constant int GDK_WINDOW_STATE_MAXIMIZED;
+constant int GDK_WINDOW_STATE_STICKY;
+require gtk22;
+constant int GDK_WINDOW_STATE_FULLSCREEN;
+endrequire;
+require gtk24;
+constant int GDK_WINDOW_STATE_ABOVE;
+constant int GDK_WINDOW_STATE_BELOW;
+endrequire;
+
+/* GDK: Event Structures: GdkSettingAction */
+constant int GDK_SETTING_ACTION_NEW;
+constant int GDK_SETTING_ACTION_CHANGED;
+constant int GDK_SETTING_ACTION_DELETED;
+
+require gtk26;
+/* GDK: Event Structures: GdkOwnerChange */
+constant int GDK_OWNER_CHANGE_NEW_OWNER;
+constant int GDK_OWNER_CHANGE_DESTROY;
+constant int GDK_OWNER_CHANGE_CLOSE;
+endrequire;
+
+/* GDK: Properties and Atoms: GdkPropMode */
+constant int GDK_PROP_MODE_REPLACE;
+constant int GDK_PROP_MODE_PREPEND;
+constant int GDK_PROP_MODE_APPEND;
+
+/* GDK: Input: GdkInputCondition */
+constant int GDK_INPUT_READ;
+constant int GDK_INPUT_WRITE;
+constant int GDK_INPUT_EXCEPTION;
+
+/* GDK: Input Devices: GdkInputSource */
+constant int GDK_SOURCE_MOUSE;
+constant int GDK_SOURCE_PEN;
+constant int GDK_SOURCE_ERASER;
+constant int GDK_SOURCE_CURSOR;
+
+/* GDK: Input Devices: GdkInputMode */
+constant int GDK_MODE_DISABLED;
+constant int GDK_MODE_SCREEN;
+constant int GDK_MODE_WINDOW;
+
+/* GDK: Input Devices: GdkAxisUse */
+constant int GDK_AXIS_IGNORE;
+constant int GDK_AXIS_X;
+constant int GDK_AXIS_Y;
+constant int GDK_AXIS_PRESSURE;
+constant int GDK_AXIS_XTILT;
+constant int GDK_AXIS_YTILT;
+constant int GDK_AXIS_WHEEL;
+constant int GDK_AXIS_LAST;
+
+/* GTK: Standard Enumerations: GtkCornerType */
+constant int GTK_CURVE_TYPE_LINEAR;
+constant int GTK_CURVE_TYPE_SPLINE;
+constant int GTK_CURVE_TYPE_FREE;
+
+/* GTK: Standard Enumerations: GtkDeleteType */
+constant int GTK_DELETE_CHARS;
+constant int GTK_DELETE_WORD_ENDS;
+constant int GTK_DELETE_WORDS;
+constant int GTK_DELETE_DISPLAY_LINES;
+constant int GTK_DELETE_DISPLAY_LINE_ENDS;
+constant int GTK_DELETE_PARAGRAPH_ENDS;
+constant int GTK_DELETE_PARAGRAPHS;
+constant int GTK_DELETE_WHITESPACE;
+
+/* GTK: Standard Enumerations: GtkAccelFlags */
+constant int GTK_ACCEL_VISIBLE;
+constant int GTK_ACCEL_LOCKED;
+constant int GTK_ACCEL_MASK;
+
+/* GTK: Standard Enumerations: GtkResizeMode */
+constant int GTK_RESIZE_PARENT;
+constant int GTK_RESIZE_QUEUE;
+constant int GTK_RESIZE_IMMEDIATE;
+
+/* GTK: Standard Enumerations: GtkReliefStyle */
+constant int GTK_RELIEF_HALF;
+constant int GTK_RELIEF_NORMAL;
+constant int GTK_RELIEF_NONE;
+
+/* GTK: GtkProgressBar: GtkProgressBarOrientation */
+constant int GTK_PROGRESS_LEFT_TO_RIGHT;
+constant int GTK_PROGRESS_RIGHT_TO_LEFT;
+constant int GTK_PROGRESS_BOTTOM_TO_TOP;
+constant int GTK_PROGRESS_TOP_TO_BOTTOM;
+
+/* GTK: GtkProgressBar: GtkProgressBarStyle */
+constant int GTK_PROGRESS_CONTINUOUS;
+constant int GTK_PROGRESS_DISCRETE;
+
+/* GDK: Graphics Contexts: GdkFunction */
+constant int GDK_COPY;
+constant int GDK_INVERT;
+constant int GDK_XOR;
+constant int GDK_CLEAR;
+constant int GDK_AND;
+constant int GDK_AND_REVERSE;
+constant int GDK_AND_INVERT;
+constant int GDK_NOOP;
+constant int GDK_OR;
+constant int GDK_EQUIV;
+constant int GDK_OR_REVERSE;
+constant int GDK_COPY_INVERT;
+constant int GDK_OR_INVERT;
+constant int GDK_NAND;
+constant int GDK_NOR;
+constant int GDK_SET;
+
+/* GDK: Graphics Contexts: GdkFill */
+constant int GDK_SOLID;
+constant int GDK_TILED;
+constant int GDK_STIPPLED;
+constant int GDK_OPAQUE_STIPPLED;
+
+/* GDK: Graphics Contexts: GdkLineStyle */
+constant int GDK_LINE_SOLID;
+constant int GDK_LINE_ON_OFF_DASH;
+constant int GDK_LINE_DOUBLE_DASH;
+
+/* GDK: Graphics Contexts: GdkCapStyle */
+constant int GDK_CAP_NOT_LAST;
+constant int GDK_CAP_BUTT;
+constant int GDK_CAP_ROUND;
+constant int GDK_CAP_PROJECTING;
+
+/* GDK: Graphics Contexts: GdkJoinStyle */
+constant int GDK_JOIN_MITER;
+constant int GDK_JOIN_ROUND;
+constant int GDK_JOIN_BEVEL;
+
+/*
+constant int GDK_IM_PREEDIT_AREA;
+constant int GDK_IM_PREEDIT_CALLBACKS;
+constant int GDK_IM_PREEDIT_POSITION;
+constant int GDK_IM_PREEDIT_NOTHING;
+constant int GDK_IM_PREEDIT_NONE;
+constant int GDK_IM_PREEDIT_MASK;
+
+constant int GDK_IM_STATUS_AREA;
+constant int GDK_IM_STATUS_CALLBACKS;
+constant int GDK_IM_STATUS_NOTHING;
+constant int GDK_IM_STATUS_NONE;
+constant int GDK_IM_STATUS_MASK;
+*/
+
+/* GDK: Drag and Drop: GdkDragAction */
+constant int GDK_ACTION_DEFAULT;
+constant int GDK_ACTION_COPY;
+constant int GDK_ACTION_MOVE;
+constant int GDK_ACTION_LINK;
+constant int GDK_ACTION_PRIVATE;
+constant int GDK_ACTION_ASK;
+
+/* GTK: Drag and Drop: GtkDestDefaults */
+constant int GTK_DEST_DEFAULT_MOTION;
+constant int GTK_DEST_DEFAULT_HIGHLIGHT;
+constant int GTK_DEST_DEFAULT_DROP;
+constant int GTK_DEST_DEFAULT_ALL;
+
+/* GTK: Drag and Drop: GtkTargetFlags */
+constant int GTK_TARGET_SAME_APP;
+constant int GTK_TARGET_SAME_WIDGET;
+
+/* GTK: GtkIconTheme: GtkIconLookupFlags */
+require gtk24;
+constant int GTK_ICON_LOOKUP_NO_SVG;
+constant int GTK_ICON_LOOKUP_FORCE_SVG;
+constant int GTK_ICON_LOOKUP_USE_BUILTIN;
+endrequire;
+
+/* GTK: GtkIconTheme: GtkIconThemeError */
+require gtk24;
+constant int GTK_ICON_THEME_NOT_FOUND;
+constant int GTK_ICON_THEME_FAILED;
+endrequire;
+
+/* GTK: Themeable Stock Images: GtkIconSize */
+constant int GTK_ICON_SIZE_INVALID;
+constant int GTK_ICON_SIZE_MENU;
+constant int GTK_ICON_SIZE_SMALL_TOOLBAR;
+constant int GTK_ICON_SIZE_LARGE_TOOLBAR;
+constant int GTK_ICON_SIZE_BUTTON;
+constant int GTK_ICON_SIZE_DND;
+constant int GTK_ICON_SIZE_DIALOG;
+
+/* GTK: Resource Files: GtkRcFlags */
+constant int GTK_RC_FG;
+constant int GTK_RC_BG;
+constant int GTK_RC_TEXT;
+constant int GTK_RC_BASE;
+
+/* GTK: Resource Files: GtkRcTokenType */
+constant int GTK_RC_TOKEN_INVALID;
+constant int GTK_RC_TOKEN_INCLUDE;
+constant int GTK_RC_TOKEN_NORMAL;
+constant int GTK_RC_TOKEN_ACTIVE;
+constant int GTK_RC_TOKEN_PRELIGHT;
+constant int GTK_RC_TOKEN_SELECTED;
+constant int GTK_RC_TOKEN_INSENSITIVE;
+constant int GTK_RC_TOKEN_FG;
+constant int GTK_RC_TOKEN_BG;
+constant int GTK_RC_TOKEN_TEXT;
+constant int GTK_RC_TOKEN_BASE;
+constant int GTK_RC_TOKEN_XTHICKNESS;
+constant int GTK_RC_TOKEN_YTHICKNESS;
+constant int GTK_RC_TOKEN_FONT;
+constant int GTK_RC_TOKEN_FONTSET;
+constant int GTK_RC_TOKEN_FONT_NAME;
+constant int GTK_RC_TOKEN_BG_PIXMAP;
+constant int GTK_RC_TOKEN_PIXMAP_PATH;
+constant int GTK_RC_TOKEN_STYLE;
+constant int GTK_RC_TOKEN_BINDING;
+constant int GTK_RC_TOKEN_BIND;
+constant int GTK_RC_TOKEN_WIDGET;
+constant int GTK_RC_TOKEN_WIDGET_CLASS;
+constant int GTK_RC_TOKEN_CLASS;
+constant int GTK_RC_TOKEN_LOWEST;
+constant int GTK_RC_TOKEN_GTK;
+constant int GTK_RC_TOKEN_APPLICATION;
+constant int GTK_RC_TOKEN_THEME;
+constant int GTK_RC_TOKEN_RC;
+constant int GTK_RC_TOKEN_HIGHEST;
+constant int GTK_RC_TOKEN_ENGINE;
+constant int GTK_RC_TOKEN_MODULE_PATH;
+constant int GTK_RC_TOKEN_IM_MODULE_PATH;
+constant int GTK_RC_TOKEN_IM_MODULE_FILE;
+constant int GTK_RC_TOKEN_STOCK;
+constant int GTK_RC_TOKEN_LTR;
+constant int GTK_RC_TOKEN_RTL;
+constant int GTK_RC_TOKEN_LAST;
+
+/* GDK: Drag and Drop: GdkDragProtocol */
+constant int GDK_DRAG_PROTO_MOTIF;
+constant int GDK_DRAG_PROTO_XDND;
+constant int GDK_DRAG_PROTO_ROOTWIN;
+constant int GDK_DRAG_PROTO_NONE;
+constant int GDK_DRAG_PROTO_WIN32_DROPFILES;
+constant int GDK_DRAG_PROTO_OLE2;
+constant int GDK_DRAG_PROTO_LOCAL;
+
+/*
+ constant int GTK_FONT_METRIC_PIXELS;
+ constant int GTK_FONT_METRIC_POINTS;
+ constant int GTK_FONT_BITMAP;
+ constant int GTK_FONT_SCALABLE;
+ constant int GTK_FONT_SCALABLE_BITMAP;
+ constant int GTK_FONT_ALL;
+*/
+
+/* GTK: Standard Enumerations: GtkSortType */
+constant int GTK_SORT_ASCENDING;
+constant int GTK_SORT_DESCENDING;
+
+/* GTK: GtkWidget: GtkWidgetFlags */
+constant int GTK_TOPLEVEL;
+constant int GTK_NO_WINDOW;
+constant int GTK_REALIZED;
+constant int GTK_MAPPED;
+constant int GTK_VISIBLE;
+constant int GTK_SENSITIVE;
+constant int GTK_PARENT_SENSITIVE;
+constant int GTK_CAN_FOCUS;
+constant int GTK_HAS_FOCUS;
+constant int GTK_CAN_DEFAULT;
+constant int GTK_HAS_DEFAULT;
+constant int GTK_HAS_GRAB;
+constant int GTK_RC_STYLE;
+constant int GTK_COMPOSITE_CHILD;
+constant int GTK_NO_REPARENT;
+constant int GTK_APP_PAINTABLE;
+constant int GTK_RECEIVES_DEFAULT;
+constant int GTK_DOUBLE_BUFFERED;
+require gtk24;
+constant int GTK_NO_SHOW_ALL;
+endrequire;
+
+/* GTK: GtkWidget: GtkWidgetHelpType */
+constant int GTK_WIDGET_HELP_TOOLTIP;
+constant int GTK_WIDGET_HELP_WHATS_THIS;
+
+/* GTK: GtkSpinButton: GtkSpinType */
+constant int GTK_SPIN_STEP_FORWARD;
+constant int GTK_SPIN_STEP_BACKWARD;
+constant int GTK_SPIN_PAGE_FORWARD;
+constant int GTK_SPIN_PAGE_BACKWARD;
+constant int GTK_SPIN_HOME;
+constant int GTK_SPIN_END;
+constant int GTK_SPIN_USER_DEFINED;
+
+/* GTK: GtkSpinButton: GtkSpinButtonUpdatePolicy */
+constant int GTK_UPDATE_ALWAYS;
+constant int GTK_UPDATE_IF_VALID;
+
+/* GTK: GtkCList: GtkCListDragPos
+ deprecated
+constant int GTK_CLIST_DRAG_NONE;
+constant int GTK_CLIST_DRAG_BEFORE;
+constant int GTK_CLIST_DRAG_INTO;
+constant int GTK_CLIST_DRAG_AFTER;
+*/
+
+/* GTK: gtkclist.h: clist flags
+ deprecated
+constant int GTK_CLIST_IN_DRAG;
+constant int GTK_CLIST_ROW_HEIGHT_SET;
+constant int GTK_CLIST_SHOW_TITLES;
+constant int GTK_CLIST_ADD_MODE;
+constant int GTK_CLIST_AUTO_SORT;
+constant int GTK_CLIST_AUTO_RESIZE_BLOCKED;
+constant int GTK_CLIST_REORDERABLE;
+constant int GTK_CLIST_USE_DRAG_ICONS;
+constant int GTK_CLIST_DRAW_DRAG_LINE;
+constant int GTK_CLIST_DRAW_DRAG_RECT;
+*/
+
+/* GTK: GtkCList: GtkButtonAction
+ deprecated
+constant int GTK_BUTTON_IGNORED;
+constant int GTK_BUTTON_SELECTS;
+constant int GTK_BUTTON_DRAGS;
+constant int GTK_BUTTON_EXPANDS;
+*/
+
+/*
+constant int GTK_PACK_EXPAND;
+constant int GTK_FILL_X;
+constant int GTK_FILL_Y;
+*/
+
+/* GTK: Standard Enumerations: GtkSideType
+ deprecated
+constant int GTK_SIDE_TOP;
+constant int GTK_SIDE_BOTTOM;
+constant int GTK_SIDE_LEFT;
+constant int GTK_SIDE_RIGHT;
+*/
+
+/* GTK: Standard Enumerations: GtkAnchorType */
+constant int GTK_ANCHOR_CENTER;
+constant int GTK_ANCHOR_NORTH;
+constant int GTK_ANCHOR_NORTH_WEST;
+constant int GTK_ANCHOR_NORTH_EAST;
+constant int GTK_ANCHOR_SOUTH;
+constant int GTK_ANCHOR_SOUTH_WEST;
+constant int GTK_ANCHOR_SOUTH_EAST;
+constant int GTK_ANCHOR_WEST;
+constant int GTK_ANCHOR_EAST;
+constant int GTK_ANCHOR_N;
+constant int GTK_ANCHOR_NW;
+constant int GTK_ANCHOR_NE;
+constant int GTK_ANCHOR_S;
+constant int GTK_ANCHOR_SW;
+constant int GTK_ANCHOR_SE;
+constant int GTK_ANCHOR_W;
+constant int GTK_ANCHOR_E;
+
+/* GTK: GtkCTree: GtkCTreePos
+ deprecated
+constant int GTK_CTREE_POS_BEFORE;
+constant int GTK_CTREE_POS_AS_CHILD;
+constant int GTK_CTREE_POS_AFTER;
+
+ GTK: GtkCTree: GtkCTreeLineStyle
+ deprecated
+constant int GTK_CTREE_LINES_NONE;
+constant int GTK_CTREE_LINES_SOLID;
+constant int GTK_CTREE_LINES_DOTTED;
+constant int GTK_CTREE_LINES_TABBED;
+
+ GTK: GtkCTree: GtkCTreeExpanderStyle
+ deprecated
+constant int GTK_CTREE_EXPANDER_NONE;
+constant int GTK_CTREE_EXPANDER_SQUARE;
+constant int GTK_CTREE_EXPANDER_TRIANGLE;
+constant int GTK_CTREE_EXPANDER_CIRCULAR;
+
+ GTK: GtkCTree: GtkCTreeExpansionType
+ deprecated
+constant int GTK_CTREE_EXPANSION_EXPAND;
+constant int GTK_CTREE_EXPANSION_EXPAND_RECURSIVE;
+constant int GTK_CTREE_EXPANSION_COLLAPSE;
+constant int GTK_CTREE_EXPANSION_COLLAPSE_RECURSIVE;
+constant int GTK_CTREE_EXPANSION_TOGGLE;
+constant int GTK_CTREE_EXPANSION_TOGGLE_RECURSIVE;
+*/
+
+/* GTK: GtkCalendar: GtkCalendarDisplayOptions */
+constant int GTK_CALENDAR_SHOW_HEADING;
+constant int GTK_CALENDAR_SHOW_DAY_NAMES;
+constant int GTK_CALENDAR_NO_MONTH_CHANGE;
+constant int GTK_CALENDAR_SHOW_WEEK_NUMBERS;
+constant int GTK_CALENDAR_WEEK_START_MONDAY;
+
+/* GDK: GdkRGB: GdkRbgDither */
+constant int GDK_RGB_DITHER_NONE;
+constant int GDK_RGB_DITHER_NORMAL;
+constant int GDK_RGB_DITHER_MAX;
+
+/* GDK: Images: GdkImageType */
+constant int GDK_IMAGE_NORMAL;
+constant int GDK_IMAGE_SHARED;
+constant int GDK_IMAGE_FASTEST;
+
+/* GDK: Visuals: GdkVisualType */
+constant int GDK_VISUAL_STATIC_GRAY;
+constant int GDK_VISUAL_GRAYSCALE;
+constant int GDK_VISUAL_STATIC_COLOR;
+constant int GDK_VISUAL_PSEUDO_COLOR;
+constant int GDK_VISUAL_TRUE_COLOR;
+constant int GDK_VISUAL_DIRECT_COLOR;
+
+/* GDK: Visuals: GdkByteOrder */
+constant int GDK_LSB_FIRST;
+constant int GDK_MSB_FIRST;
+
+/* GTK: GktDialog: GtkDialogFlags */
+constant int GTK_DIALOG_MODAL;
+constant int GTK_DIALOG_DESTROY_WITH_PARENT;
+constant int GTK_DIALOG_NO_SEPARATOR;
+
+/* GTK: GtkDialog: GtkResponseType */
+constant int GTK_RESPONSE_NONE;
+constant int GTK_RESPONSE_REJECT;
+constant int GTK_RESPONSE_ACCEPT;
+constant int GTK_RESPONSE_DELETE_EVENT;
+constant int GTK_RESPONSE_OK;
+constant int GTK_RESPONSE_CANCEL;
+constant int GTK_RESPONSE_CLOSE;
+constant int GTK_RESPONSE_YES;
+constant int GTK_RESPONSE_NO;
+constant int GTK_RESPONSE_APPLY;
+constant int GTK_RESPONSE_HELP;
+
+/* GTK: GtkMessageDialog: GtkMessageType */
+constant int GTK_MESSAGE_INFO;
+constant int GTK_MESSAGE_WARNING;
+constant int GTK_MESSAGE_QUESTION;
+constant int GTK_MESSAGE_ERROR;
+
+/* GTK: GtkMessageDialog: GtkButtonsType */
+constant int GTK_BUTTONS_NONE;
+constant int GTK_BUTTONS_OK;
+constant int GTK_BUTTONS_CLOSE;
+constant int GTK_BUTTONS_CANCEL;
+constant int GTK_BUTTONS_YES_NO;
+constant int GTK_BUTTONS_OK_CANCEL;
+
+/* GTK: GtkImage: GtkImageType */
+constant int GTK_IMAGE_EMPTY;
+constant int GTK_IMAGE_PIXMAP;
+constant int GTK_IMAGE_IMAGE;
+constant int GTK_IMAGE_PIXBUF;
+constant int GTK_IMAGE_STOCK;
+constant int GTK_IMAGE_ICON_SET;
+constant int GTK_IMAGE_ANIMATION;
+require gtk26;
+constant int GTK_IMAGE_ICON_NAME; 
+endrequire;
+
+/* GTK: GtkTextIter: GtkTextSearchFlags */
+constant int GTK_TEXT_SEARCH_VISIBLE_ONLY;
+constant int GTK_TEXT_SEARCH_TEXT_ONLY;
+
+/* GTK: GtkTextTag: GtkWrapMode */
+constant int GTK_WRAP_NONE;
+constant int GTK_WRAP_CHAR;
+constant int GTK_WRAP_WORD;
+require gtk24;
+constant int GTK_WRAP_WORD_CHAR;
+endrequire;
+
+/* GTK: GtkTextView: GtkTextWindowType */
+constant int GTK_TEXT_WINDOW_PRIVATE;
+constant int GTK_TEXT_WINDOW_WIDGET;
+constant int GTK_TEXT_WINDOW_TEXT;
+constant int GTK_TEXT_WINDOW_LEFT;
+constant int GTK_TEXT_WINDOW_RIGHT;
+constant int GTK_TEXT_WINDOW_TOP;
+constant int GTK_TEXT_WINDOW_BOTTOM;
+
+/* GTK: GtkTreeModel: GtkTreeModelFlags */
+constant int GTK_TREE_MODEL_ITERS_PERSIST;
+constant int GTK_TREE_MODEL_LIST_ONLY;
+
+/* GTK: GtkTreeViewcolumn: GtkTreeViewColumnSizing */
+constant int GTK_TREE_VIEW_COLUMN_GROW_ONLY;
+constant int GTK_TREE_VIEW_COLUMN_AUTOSIZE;
+constant int GTK_TREE_VIEW_COLUMN_FIXED;
+
+/* GTK: GtkTreeView: GtkTreeViewDropPosition */
+constant int GTK_TREE_VIEW_DROP_BEFORE;
+constant int GTK_TREE_VIEW_DROP_AFTER;
+constant int GTK_TREE_VIEW_DROP_INTO_OR_BEFORE;
+constant int GTK_TREE_VIEW_DROP_INTO_OR_AFTER;
+
+/* GTK: GtkCellRenderer: GtkCellRendererState */
+constant int GTK_CELL_RENDERER_SELECTED;
+constant int GTK_CELL_RENDERER_PRELIT;
+constant int GTK_CELL_RENDERER_INSENSITIVE;
+constant int GTK_CELL_RENDERER_SORTED;
+require gtk22;
+constant int GTK_CELL_RENDERER_FOCUSED;
+endrequire;
+
+/* GTK: GtkCellRenderer: GtkCellRendererMode */
+constant int GTK_CELL_RENDERER_MODE_INERT;
+constant int GTK_CELL_RENDERER_MODE_ACTIVATABLE;
+constant int GTK_CELL_RENDERER_MODE_EDITABLE;
+
+/* GTK: GtkMenuShell: GtkMenuDirectionType */
+constant int GTK_MENU_DIR_PARENT;
+constant int GTK_MENU_DIR_CHILD;
+constant int GTK_MENU_DIR_NEXT;
+constant int GTK_MENU_DIR_PREV;
+
+/* GTK: GtkToolbar: GtkToolbarChildType
+ deprecated
+constant int GTK_TOOLBAR_CHILD_SPACE;
+constant int GTK_TOOLBAR_CHILD_BUTTON;
+constant int GTK_TOOLBAR_CHILD_TOGGLEBUTTON;
+constant int GTK_TOOLBAR_CHILD_RADIOBUTTON;
+constant int GTK_TOOLBAR_CHILD_WIDGET;
+*/
+
+/* GTK: GtkToolbar: GtkToolbarSpaceStyle */
+constant int GTK_TOOLBAR_SPACE_EMPTY;
+constant int GTK_TOOLBAR_SPACE_LINE;
+
+/* GTK: GtkUIManager: GtkUIManagerItemType */
+require gtk24;
+constant int GTK_UI_MANAGER_AUTO;
+constant int GTK_UI_MANAGER_MENUBAR;
+constant int GTK_UI_MANAGER_MENU;
+constant int GTK_UI_MANAGER_TOOLBAR;
+constant int GTK_UI_MANAGER_PLACEHOLDER;
+constant int GTK_UI_MANAGER_POPUP;
+constant int GTK_UI_MANAGER_MENUITEM;
+constant int GTK_UI_MANAGER_TOOLITEM;
+constant int GTK_UI_MANAGER_SEPARATOR;
+constant int GTK_UI_MANAGER_ACCELERATOR;
+endrequire;
+
+/* GTK: GtkFileChooser: GtkFileChooserAction */
+require gtk24;
+constant int GTK_FILE_CHOOSER_ACTION_OPEN;
+constant int GTK_FILE_CHOOSER_ACTION_SAVE;
+constant int GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER;
+constant int GTK_FILE_CHOOSER_ACTION_CREATE_FOLDER;
+endrequire;
+
+/* GTK: GtkFileChooser: GtkFileChooserError */
+require gtk24;
+constant int GTK_FILE_CHOOSER_ERROR_NONEXISTENT;
+constant int GTK_FILE_CHOOSER_ERROR_BAD_FILENAME;
+endrequire;
+
+/* GTK: GtkFilefilter: GtkFileFilterFlags */
+require gtk24;
+constant int GTK_FILE_FILTER_FILENAME;
+constant int GTK_FILE_FILTER_URI;
+constant int GTK_FILE_FILTER_DISPLAY_NAME;
+constant int GTK_FILE_FILTER_MIME_TYPE;
+endrequire;
+
+/* GTK: GtkSizeGroup:  GtkSizeGroupMode */
+constant int GTK_SIZE_GROUP_NONE;
+constant int GTK_SIZE_GROUP_HORIZONTAL;
+constant int GTK_SIZE_GROUP_VERTICAL;
+constant int GTK_SIZE_GROUP_BOTH;
+
+/* GTK: GtkObject: GtkObjectFlags; */
+constant int GTK_IN_DESTRUCTION;
+constant int GTK_FLOATING;
+constant int GTK_RESERVED_1;
+constant int GTK_RESERVED_2;
+
+/* GTK: GtkObject: GtkArgFlags
+ deprecated... use G_PARAM_* instead
+constant int GTK_ARG_READABLE;
+constant int GTK_ARG_WRITABLE;
+constant int GTK_ARG_CONSTRUCT;
+constant int GTK_ARG_CONSTRUCT_ONLY;
+constant int GTK_ARG_CHILD_ARG;
+*/
+
+/* GTK: GtkWidget: GtkTextDirection */
+constant int GTK_TEXT_DIR_NONE;
+constant int GTK_TEXT_DIR_LTR;
+constant int GTK_TEXT_DIR_RTL;
+
+/* GTK: gtkstock.h: GTK_STOCK_* */
+require gtk24;
+constant string GTK_STOCK_DIALOG_AUTHENTICATION;
+endrequire;
+constant string GTK_STOCK_DIALOG_INFO;
+constant string GTK_STOCK_DIALOG_WARNING;
+constant string GTK_STOCK_DIALOG_ERROR;
+constant string GTK_STOCK_DIALOG_QUESTION;
+constant string GTK_STOCK_DND;
+constant string GTK_STOCK_DND_MULTIPLE;
+constant string GTK_STOCK_ADD;
+constant string GTK_STOCK_APPLY;
+constant string GTK_STOCK_BOLD;
+constant string GTK_STOCK_CANCEL;
+constant string GTK_STOCK_CDROM;
+constant string GTK_STOCK_CLEAR;
+constant string GTK_STOCK_CLOSE;
+require gtk22;
+constant string GTK_STOCK_COLOR_PICKER;
+endrequire;
+constant string GTK_STOCK_CONVERT;
+constant string GTK_STOCK_COPY;
+constant string GTK_STOCK_CUT;
+constant string GTK_STOCK_DELETE;
+constant string GTK_STOCK_EXECUTE;
+constant string GTK_STOCK_FIND;
+constant string GTK_STOCK_FIND_AND_REPLACE;
+constant string GTK_STOCK_FLOPPY;
+constant string GTK_STOCK_GOTO_BOTTOM;
+constant string GTK_STOCK_GOTO_FIRST;
+constant string GTK_STOCK_GOTO_LAST;
+constant string GTK_STOCK_GOTO_TOP;
+constant string GTK_STOCK_GO_BACK;
+constant string GTK_STOCK_GO_DOWN;
+constant string GTK_STOCK_GO_FORWARD;
+constant string GTK_STOCK_GO_UP;
+require gtk24;
+constant string GTK_STOCK_HARDDISK;
+endrequire;
+constant string GTK_STOCK_HELP;
+constant string GTK_STOCK_HOME;
+constant string GTK_STOCK_INDEX;
+require gtk24;
+constant string GTK_STOCK_INDENT;
+constant string GTK_STOCK_UNINDENT;
+endrequire;
+constant string GTK_STOCK_ITALIC;
+constant string GTK_STOCK_JUMP_TO;
+constant string GTK_STOCK_JUSTIFY_CENTER;
+constant string GTK_STOCK_JUSTIFY_FILL;
+constant string GTK_STOCK_JUSTIFY_LEFT;
+constant string GTK_STOCK_JUSTIFY_RIGHT;
+constant string GTK_STOCK_MISSING_IMAGE;
+require gtk24;
+constant string GTK_STOCK_NETWORK;
+endrequire;
+constant string GTK_STOCK_NEW;
+constant string GTK_STOCK_NO;
+constant string GTK_STOCK_OK;
+constant string GTK_STOCK_OPEN;
+constant string GTK_STOCK_PASTE;
+constant string GTK_STOCK_PREFERENCES;
+constant string GTK_STOCK_PRINT;
+constant string GTK_STOCK_PRINT_PREVIEW;
+constant string GTK_STOCK_PROPERTIES;
+constant string GTK_STOCK_QUIT;
+constant string GTK_STOCK_REDO;
+constant string GTK_STOCK_REFRESH;
+constant string GTK_STOCK_REMOVE;
+constant string GTK_STOCK_REVERT_TO_SAVED;
+constant string GTK_STOCK_SAVE;
+constant string GTK_STOCK_SAVE_AS;
+constant string GTK_STOCK_SELECT_COLOR;
+constant string GTK_STOCK_SELECT_FONT;
+constant string GTK_STOCK_SORT_ASCENDING;
+constant string GTK_STOCK_SORT_DESCENDING;
+constant string GTK_STOCK_SPELL_CHECK;
+constant string GTK_STOCK_STOP;
+constant string GTK_STOCK_STRIKETHROUGH;
+constant string GTK_STOCK_UNDELETE;
+constant string GTK_STOCK_UNDERLINE;
+constant string GTK_STOCK_UNDO;
+constant string GTK_STOCK_YES;
+constant string GTK_STOCK_ZOOM_100;
+constant string GTK_STOCK_ZOOM_FIT;
+constant string GTK_STOCK_ZOOM_IN;
+constant string GTK_STOCK_ZOOM_OUT;
+
+require pango;
+
+/* Pango: Tab Stops: PangoTabAlign */
+require pango12;
+constant int PANGO_TAB_LEFT;
+endrequire;
+
+/* Pango: Text Attributes: PangoAttrType */
+constant int PANGO_ATTR_INVALID;
+constant int PANGO_ATTR_LANGUAGE;
+constant int PANGO_ATTR_FAMILY;
+constant int PANGO_ATTR_STYLE;
+constant int PANGO_ATTR_WEIGHT;
+constant int PANGO_ATTR_VARIANT;
+constant int PANGO_ATTR_STRETCH;
+constant int PANGO_ATTR_SIZE;
+constant int PANGO_ATTR_FONT_DESC;
+constant int PANGO_ATTR_FOREGROUND;
+constant int PANGO_ATTR_BACKGROUND;
+constant int PANGO_ATTR_UNDERLINE;
+constant int PANGO_ATTR_STRIKETHROUGH;
+constant int PANGO_ATTR_RISE;
+constant int PANGO_ATTR_SHAPE;
+constant int PANGO_ATTR_SCALE;
+require pango14;
+constant int PANGO_ATTR_FALLBACK;
+endrequire;
+require pango16;
+constant int PANGO_ATTR_LETTER_SPACING;
+endrequire;
+/* constant int PANGO_ATTR_UNDERLINE_COLOR; */
+/* constant int PANGO_ATTR_STRIKETHROUGH_COLOR; */
+/* constant int PANGO_ATTR_ABSOLUTE_SIZE; */
+
+/* Pango: Fonts: PangoStyle */
+constant int PANGO_STYLE_NORMAL;
+constant int PANGO_STYLE_OBLIQUE;
+constant int PANGO_STYLE_ITALIC;
+
+/* Pango: Glyph Storage: PANGO_SCALE */
+constant int PANGO_SCALE;
+
+/* Pango: Fonts: PangoWeight */
+constant int PANGO_WEIGHT_ULTRALIGHT;
+constant int PANGO_WEIGHT_LIGHT;
+constant int PANGO_WEIGHT_NORMAL;
+/* constant int PANGO_WEIGHT_SEMIBOLD; */
+constant int PANGO_WEIGHT_BOLD;
+constant int PANGO_WEIGHT_ULTRABOLD;
+constant int PANGO_WEIGHT_HEAVY;
+
+/* Pango: Fonts: PangoVariant */
+constant int PANGO_VARIANT_NORMAL;
+constant int PANGO_VARIANT_SMALL_CAPS;
+
+/* Pango: Fonts: PangoStretch */
+constant int PANGO_STRETCH_ULTRA_CONDENSED;
+constant int PANGO_STRETCH_EXTRA_CONDENSED;
+constant int PANGO_STRETCH_CONDENSED;
+constant int PANGO_STRETCH_SEMI_CONDENSED;
+constant int PANGO_STRETCH_NORMAL;
+constant int PANGO_STRETCH_SEMI_EXPANDED;
+constant int PANGO_STRETCH_EXPANDED;
+constant int PANGO_STRETCH_EXTRA_EXPANDED;
+constant int PANGO_STRETCH_ULTRA_EXPANDED;
+
+/* Pango: Fonts: PangoFontMask */
+constant int PANGO_FONT_MASK_FAMILY;
+constant int PANGO_FONT_MASK_STYLE;
+constant int PANGO_FONT_MASK_VARIANT;
+constant int PANGO_FONT_MASK_WEIGHT;
+constant int PANGO_FONT_MASK_STRETCH;
+constant int PANGO_FONT_MASK_SIZE;
+
+/* Pango: Text Attributes: PANGO_SCALE_* */
+constant float PANGO_SCALE_XX_SMALL;
+constant float PANGO_SCALE_X_SMALL;
+constant float PANGO_SCALE_SMALL;
+constant float PANGO_SCALE_MEDIUM;
+constant float PANGO_SCALE_LARGE;
+constant float PANGO_SCALE_X_LARGE;
+constant float PANGO_SCALE_XX_LARGE;
+
+/* Pango: Text Attributes: PangoUnderline */
+constant int PANGO_UNDERLINE_NONE;
+constant int PANGO_UNDERLINE_SINGLE;
+constant int PANGO_UNDERLINE_DOUBLE;
+constant int PANGO_UNDERLINE_LOW;
+require pango14;
+constant int PANGO_UNDERLINE_ERROR;
+endrequire;
+
+endrequire;
+
+require gnome;
+/* constant int GNORBA_INIT_SERVER_FUNC; */
+/* constant int GNORBA_INIT_DISABLE_COOKIES; */
+/* constant int GNORBA_INIT_CORBA_PRIO_HIGH; */
+
+/* GnomeDialogType */
+constant int GNOME_DIALOG_ERROR;
+constant int GNOME_DIALOG_NORMAL;
+
+/* GnomeRestartStyle */
+constant int GNOME_RESTART_IF_RUNNING;
+constant int GNOME_RESTART_ANYWAY;
+constant int GNOME_RESTART_IMMEDIATELY;
+constant int GNOME_RESTART_NEVER;
+
+/* GnomeClientFlags */
+constant int GNOME_CLIENT_IS_CONNECTED;
+constant int GNOME_CLIENT_RESTARTED;
+constant int GNOME_CLIENT_RESTORED;
+
+/* GnomeSaveStyle */
+constant int GNOME_SAVE_GLOBAL;
+constant int GNOME_SAVE_LOCAL;
+constant int GNOME_SAVE_BOTH;
+
+/* GnomeInteractStyle */
+constant int GNOME_INTERACT_NONE;
+constant int GNOME_INTERACT_ERRORS;
+constant int GNOME_INTERACT_ANY;
+
+/* GnomePreferencesType */
+constant int GNOME_PREFERENCES_NEVER;
+constant int GNOME_PREFERENCES_USER;
+constant int GNOME_PREFERENCES_ALWAYS;
+
+/* GnomeEdgePosition */
+constant int GNOME_EDGE_START;
+constant int GNOME_EDGE_FINISH;
+constant int GNOME_EDGE_OTHER;
+constant int GNOME_EDGE_LAST;
+
+/* GnomeDateEditFlags */
+constant int GNOME_DATE_EDIT_SHOW_TIME;
+constant int GNOME_DATE_EDIT_24_HR;
+constant int GNOME_DATE_EDIT_WEEK_STARTS_ON_MONDAY;
+
+/*
+constant int GNOME_DOCK_ITEM_BEH_NORMAL;
+constant int GNOME_DOCK_ITEM_BEH_EXCLUSIVE;
+constant int GNOME_DOCK_ITEM_BEH_NEVER_FLOATING;
+constant int GNOME_DOCK_ITEM_BEH_NEVER_VERTICAL;
+constant int GNOME_DOCK_ITEM_BEH_NEVER_HORIZONTAL;
+constant int GNOME_DOCK_ITEM_BEH_LOCKED;
+
+constant int GNOME_DOCK_LEFT;
+constant int GNOME_DOCK_RIGHT;
+constant int GNOME_DOCK_TOP;
+constant int GNOME_DOCK_BOTTOM;
+
+constant int GNOME_STOCK_PIXMAP_TYPE_NONE;
+constant int GNOME_STOCK_PIXMAP_TYPE_DATA;
+constant int GNOME_STOCK_PIXMAP_TYPE_FILE;
+constant int GNOME_STOCK_PIXMAP_TYPE_PATH;
+constant int GNOME_STOCK_PIXMAP_TYPE_WIDGET;
+constant int GNOME_STOCK_PIXMAP_TYPE_IMLIB;
+constant int GNOME_STOCK_PIXMAP_TYPE_IMLIB_SCALED;
+constant int GNOME_STOCK_PIXMAP_TYPE_GPIXMAP;
+
+constant int GNOME_FONT_PICKER_MODE_PIXMAP;
+constant int GNOME_FONT_PICKER_MODE_FONT_INFO;
+constant int GNOME_FONT_PICKER_MODE_USER_WIDGET;
+constant int GNOME_FONT_PICKER_MODE_UNKNOWN;
+
+constant string GNOME_STOCK_PIXMAP_NEW;
+constant string GNOME_STOCK_PIXMAP_OPEN;
+constant string GNOME_STOCK_PIXMAP_CLOSE;
+constant string GNOME_STOCK_PIXMAP_REVERT;
+constant string GNOME_STOCK_PIXMAP_SAVE;
+constant string GNOME_STOCK_PIXMAP_SAVE_AS;
+constant string GNOME_STOCK_PIXMAP_CUT;
+constant string GNOME_STOCK_PIXMAP_COPY;
+constant string GNOME_STOCK_PIXMAP_PASTE;
+constant string GNOME_STOCK_PIXMAP_CLEAR;
+constant string GNOME_STOCK_PIXMAP_PROPERTIES;
+constant string GNOME_STOCK_PIXMAP_PREFERENCES;
+constant string GNOME_STOCK_PIXMAP_HELP;
+constant string GNOME_STOCK_PIXMAP_SCORES;
+constant string GNOME_STOCK_PIXMAP_PRINT;
+constant string GNOME_STOCK_PIXMAP_SEARCH;
+constant string GNOME_STOCK_PIXMAP_SRCHRPL;
+constant string GNOME_STOCK_PIXMAP_BACK;
+constant string GNOME_STOCK_PIXMAP_FORWARD;
+constant string GNOME_STOCK_PIXMAP_FIRST;
+constant string GNOME_STOCK_PIXMAP_LAST;
+constant string GNOME_STOCK_PIXMAP_HOME;
+constant string GNOME_STOCK_PIXMAP_STOP;
+constant string GNOME_STOCK_PIXMAP_REFRESH;
+constant string GNOME_STOCK_PIXMAP_UNDO;
+constant string GNOME_STOCK_PIXMAP_REDO;
+constant string GNOME_STOCK_PIXMAP_TIMER;
+constant string GNOME_STOCK_PIXMAP_TIMER_STOP;
+constant string GNOME_STOCK_PIXMAP_MAIL;
+constant string GNOME_STOCK_PIXMAP_MAIL_RCV;
+constant string GNOME_STOCK_PIXMAP_MAIL_SND;
+constant string GNOME_STOCK_PIXMAP_MAIL_RPL;
+constant string GNOME_STOCK_PIXMAP_MAIL_FWD;
+constant string GNOME_STOCK_PIXMAP_MAIL_NEW;
+constant string GNOME_STOCK_PIXMAP_TRASH;
+constant string GNOME_STOCK_PIXMAP_TRASH_FULL;
+constant string GNOME_STOCK_PIXMAP_UNDELETE;
+constant string GNOME_STOCK_PIXMAP_SPELLCHECK;
+constant string GNOME_STOCK_PIXMAP_MIC;
+constant string GNOME_STOCK_PIXMAP_LINE_IN;
+constant string GNOME_STOCK_PIXMAP_CDROM;
+constant string GNOME_STOCK_PIXMAP_VOLUME;
+constant string GNOME_STOCK_PIXMAP_MIDI;
+constant string GNOME_STOCK_PIXMAP_BOOK_RED;
+constant string GNOME_STOCK_PIXMAP_BOOK_GREEN;
+constant string GNOME_STOCK_PIXMAP_BOOK_BLUE;
+constant string GNOME_STOCK_PIXMAP_BOOK_YELLOW;
+constant string GNOME_STOCK_PIXMAP_BOOK_OPEN;
+constant string GNOME_STOCK_PIXMAP_ABOUT;
+constant string GNOME_STOCK_PIXMAP_QUIT;
+constant string GNOME_STOCK_PIXMAP_MULTIPLE;
+constant string GNOME_STOCK_PIXMAP_NOT;
+constant string GNOME_STOCK_PIXMAP_CONVERT;
+constant string GNOME_STOCK_PIXMAP_JUMP_TO;
+constant string GNOME_STOCK_PIXMAP_UP;
+constant string GNOME_STOCK_PIXMAP_DOWN;
+constant string GNOME_STOCK_PIXMAP_TOP;
+constant string GNOME_STOCK_PIXMAP_BOTTOM;
+constant string GNOME_STOCK_PIXMAP_ATTACH;
+constant string GNOME_STOCK_PIXMAP_INDEX;
+constant string GNOME_STOCK_PIXMAP_FONT;
+constant string GNOME_STOCK_PIXMAP_EXEC;
+constant string GNOME_STOCK_PIXMAP_ALIGN_LEFT;
+constant string GNOME_STOCK_PIXMAP_ALIGN_RIGHT;
+constant string GNOME_STOCK_PIXMAP_ALIGN_CENTER;
+constant string GNOME_STOCK_PIXMAP_ALIGN_JUSTIFY;
+constant string GNOME_STOCK_PIXMAP_TEXT_BOLD;
+constant string GNOME_STOCK_PIXMAP_TEXT_ITALIC;
+constant string GNOME_STOCK_PIXMAP_TEXT_UNDERLINE;
+constant string GNOME_STOCK_PIXMAP_TEXT_STRIKEOUT;
+constant string GNOME_STOCK_PIXMAP_TEXT_INDENT;
+constant string GNOME_STOCK_PIXMAP_TEXT_UNINDENT;
+constant string GNOME_STOCK_PIXMAP_EXIT;
+constant string GNOME_STOCK_PIXMAP_COLORSELECTOR;
+constant string GNOME_STOCK_PIXMAP_ADD;
+constant string GNOME_STOCK_PIXMAP_REMOVE;
+constant string GNOME_STOCK_PIXMAP_TABLE_BORDERS;
+constant string GNOME_STOCK_PIXMAP_TABLE_FILL;
+constant string GNOME_STOCK_PIXMAP_TEXT_BULLETED_LIST;
+constant string GNOME_STOCK_PIXMAP_TEXT_NUMBERED_LIST;
+constant string GNOME_STOCK_PIXMAP_REGULAR;
+constant string GNOME_STOCK_PIXMAP_DISABLED;
+constant string GNOME_STOCK_PIXMAP_FOCUSED;
+constant string GNOME_STOCK_BUTTON_OK;
+constant string GNOME_STOCK_BUTTON_CANCEL;
+constant string GNOME_STOCK_BUTTON_YES;
+constant string GNOME_STOCK_BUTTON_NO;
+constant string GNOME_STOCK_BUTTON_CLOSE;
+constant string GNOME_STOCK_BUTTON_APPLY;
+constant string GNOME_STOCK_BUTTON_HELP;
+constant string GNOME_STOCK_BUTTON_NEXT;
+constant string GNOME_STOCK_BUTTON_PREV;
+constant string GNOME_STOCK_BUTTON_UP;
+constant string GNOME_STOCK_BUTTON_DOWN;
+constant string GNOME_STOCK_BUTTON_FONT;
+
+constant string GNOME_STOCK_MENU_BLANK;
+constant string GNOME_STOCK_MENU_NEW;
+constant string GNOME_STOCK_MENU_SAVE;
+constant string GNOME_STOCK_MENU_SAVE_AS;
+constant string GNOME_STOCK_MENU_REVERT;
+constant string GNOME_STOCK_MENU_OPEN;
+constant string GNOME_STOCK_MENU_CLOSE;
+constant string GNOME_STOCK_MENU_QUIT;
+constant string GNOME_STOCK_MENU_CUT;
+constant string GNOME_STOCK_MENU_COPY;
+constant string GNOME_STOCK_MENU_PASTE;
+constant string GNOME_STOCK_MENU_PROP;
+constant string GNOME_STOCK_MENU_PREF;
+constant string GNOME_STOCK_MENU_ABOUT;
+constant string GNOME_STOCK_MENU_SCORES;
+constant string GNOME_STOCK_MENU_UNDO;
+constant string GNOME_STOCK_MENU_REDO;
+constant string GNOME_STOCK_MENU_PRINT;
+constant string GNOME_STOCK_MENU_SEARCH;
+constant string GNOME_STOCK_MENU_SRCHRPL;
+constant string GNOME_STOCK_MENU_BACK;
+constant string GNOME_STOCK_MENU_FORWARD;
+constant string GNOME_STOCK_MENU_FIRST;
+constant string GNOME_STOCK_MENU_LAST;
+constant string GNOME_STOCK_MENU_HOME;
+constant string GNOME_STOCK_MENU_STOP;
+constant string GNOME_STOCK_MENU_REFRESH;
+constant string GNOME_STOCK_MENU_MAIL;
+constant string GNOME_STOCK_MENU_MAIL_RCV;
+constant string GNOME_STOCK_MENU_MAIL_SND;
+constant string GNOME_STOCK_MENU_MAIL_RPL;
+constant string GNOME_STOCK_MENU_MAIL_FWD;
+constant string GNOME_STOCK_MENU_MAIL_NEW;
+constant string GNOME_STOCK_MENU_TRASH;
+constant string GNOME_STOCK_MENU_TRASH_FULL;
+constant string GNOME_STOCK_MENU_UNDELETE;
+constant string GNOME_STOCK_MENU_TIMER;
+constant string GNOME_STOCK_MENU_TIMER_STOP;
+constant string GNOME_STOCK_MENU_SPELLCHECK;
+constant string GNOME_STOCK_MENU_MIC;
+constant string GNOME_STOCK_MENU_LINE_IN;
+constant string GNOME_STOCK_MENU_CDROM;
+constant string GNOME_STOCK_MENU_VOLUME;
+constant string GNOME_STOCK_MENU_MIDI;
+constant string GNOME_STOCK_MENU_BOOK_RED;
+constant string GNOME_STOCK_MENU_BOOK_GREEN;
+constant string GNOME_STOCK_MENU_BOOK_BLUE;
+constant string GNOME_STOCK_MENU_BOOK_YELLOW;
+constant string GNOME_STOCK_MENU_BOOK_OPEN;
+constant string GNOME_STOCK_MENU_CONVERT;
+constant string GNOME_STOCK_MENU_UP;
+constant string GNOME_STOCK_MENU_DOWN;
+constant string GNOME_STOCK_MENU_TOP;
+constant string GNOME_STOCK_MENU_BOTTOM;
+constant string GNOME_STOCK_MENU_ATTACH;
+constant string GNOME_STOCK_MENU_INDEX;
+constant string GNOME_STOCK_MENU_FONT;
+constant string GNOME_STOCK_MENU_EXEC;
+constant string GNOME_STOCK_MENU_ALIGN_LEFT;
+constant string GNOME_STOCK_MENU_ALIGN_RIGHT;
+constant string GNOME_STOCK_MENU_ALIGN_CENTER;
+constant string GNOME_STOCK_MENU_ALIGN_JUSTIFY;
+constant string GNOME_STOCK_MENU_TEXT_BOLD;
+constant string GNOME_STOCK_MENU_TEXT_ITALIC;
+constant string GNOME_STOCK_MENU_TEXT_UNDERLINE;
+constant string GNOME_STOCK_MENU_TEXT_STRIKEOUT;
+constant string GNOME_STOCK_MENU_EXIT;
+constant string GNOME_STOCK_MENU_JUMP_TO;
+*/
+endrequire;
+
+

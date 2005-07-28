@@ -1,0 +1,165 @@
+require gnome;
+
+class Gnome2.DruidPageEdge;
+inherit Gnome2.DruidPage;
+
+/*
+member string title;
+member string text;
+member GDK2.Pixbuf logo_image;
+member GDK2.Pixbuf watermark_image;
+member GDK2.Pixbuf top_watermark_image;
+member GDK2.Color background_color;
+member GDK2.Color textbox_color;
+member GDK2.Color logo_background_color;
+member GDK2.Color title_color;
+member GDK2.Color text_color;
+member int position;
+*/
+
+void create(int position, ?int anti_alias)
+//! Create a new Gnome2.DruidPageEdge, with optional anti-aliasing.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    int pos,aa=-1;
+    if (args==1) {
+      get_all_args("create",args,"%i",&pos);
+      THIS->obj=G_OBJECT(gnome_druid_page_edge_new(pos));
+    } else {
+      get_all_args("create",args,"%i%i",&pos,&aa);
+      THIS->obj=G_OBJECT(gnome_druid_page_edge_new_aa(pos));
+    }
+  }
+  pgtk__init_this_object();
+}
+
+void set_bg_color(GDK2.Color color)
+//! This will set the background color.
+{
+  pgtk_verify_inited();
+  {
+    GdkColor *color;
+    struct object *o1;
+    get_all_args("set_bg_color",args,"%o",&o1);
+    color=(GdkColor *)get_gdkobject(o1,color);
+    gnome_druid_page_edge_set_bg_color(GNOME_DRUID_PAGE_EDGE(THIS->obj),
+			color);
+  }
+  RETURN_THIS();
+}
+
+void set_textbox_color(GDK2.Color color)
+//! Sets the color of the background in the main text area of the page.
+{
+  pgtk_verify_inited();
+  {
+    GdkColor *color;
+    struct object *o1;
+    get_all_args("set_textbox_color",args,"%o",&o1);
+    color=(GdkColor *)get_gdkobject(o1,color);
+    gnome_druid_page_edge_set_textbox_color(GNOME_DRUID_PAGE_EDGE(THIS->obj),
+			color);
+  }
+  RETURN_THIS();
+}
+
+void set_logo_bg_color(GDK2.Color color)
+//! Sets the color behind the druid page's logo.
+{
+  pgtk_verify_inited();
+  {
+    GdkColor *color;
+    struct object *o1;
+    get_all_args("set_logo_bg_color",args,"%o",&o1);
+    color=(GdkColor *)get_gdkobject(o1,color);
+    gnome_druid_page_edge_set_logo_bg_color(GNOME_DRUID_PAGE_EDGE(THIS->obj),
+			color);
+  }
+  RETURN_THIS();
+}
+
+void set_title_color(GDK2.Color color)
+//! Sets the color of the title text.
+{
+  pgtk_verify_inited();
+  {
+    GdkColor *color;
+    struct object *o1;
+    get_all_args("set_title_color",args,"%o",&o1);
+    color=(GdkColor *)get_gdkobject(o1,color);
+    gnome_druid_page_edge_set_title_color(GNOME_DRUID_PAGE_EDGE(THIS->obj),
+			color);
+  }
+  RETURN_THIS();
+}
+
+void set_text_color(GDK2.Color color)
+//! Sets the color of the text in the body of the page.
+{
+  pgtk_verify_inited();
+  {
+    GdkColor *color;
+    struct object *o1;
+    get_all_args("set_text_color",args,"%o",&o1);
+    color=(GdkColor *)get_gdkobject(o1,color);
+    gnome_druid_page_edge_set_text_color(GNOME_DRUID_PAGE_EDGE(THIS->obj),
+			color);
+  }
+  RETURN_THIS();
+}
+
+void set_text(string text);
+//! Sets the contents of the text portion.
+
+void set_title(string title);
+//! Sets the contents of the page's title text.
+
+void set_logo(?GDK2.Pixbuf logo)
+//! Sets a GDK2.Pixbuf as the logo in the top right corner.  If omitted, then no 
+//! logo will be displayed.
+{
+  pgtk_verify_inited();
+  if (args) {
+    struct object *o1;
+    get_all_args("set_logo",args,"%o",&o1);
+    gnome_druid_page_edge_set_logo(GNOME_DRUID_PAGE_EDGE(THIS->obj),
+			GDK_PIXBUF(get_gobject(o1)));
+  } else {
+    gnome_druid_page_edge_set_logo(GNOME_DRUID_PAGE_EDGE(THIS->obj),NULL);
+  }
+  RETURN_THIS();
+}
+
+void set_watermark(?GDK2.Pixbuf watermark)
+//! Sets a GDK2.Pixbuf as the watermark on the left strip on the druid.  If
+//! watermark is omitted, it is reset to the normal color.
+{
+  pgtk_verify_inited();
+  if (args) {
+    struct object *o1;
+    get_all_args("set_watermark",args,"%o",&o1);
+    gnome_druid_page_edge_set_watermark(GNOME_DRUID_PAGE_EDGE(THIS->obj),
+			GDK_PIXBUF(get_gobject(o1)));
+  } else
+    gnome_druid_page_edge_set_watermark(GNOME_DRUID_PAGE_EDGE(THIS->obj),NULL);
+  RETURN_THIS();
+}
+
+void set_top_watermark(?GDK2.Pixbuf watermark)
+//! Sets a GDK2.Pixbuf as the watermark on top of the top strip on the druid.
+//! If watermark is omitted, it is reset to the normal color.
+{
+  pgtk_verify_inited();
+  if (args) {
+    struct object *o1;
+    get_all_args("set_top_watermark",args,"%o",&o1);
+    gnome_druid_page_edge_set_top_watermark(GNOME_DRUID_PAGE_EDGE(THIS->obj),
+			GDK_PIXBUF(get_gobject(o1)));
+  } else
+    gnome_druid_page_edge_set_top_watermark(
+			GNOME_DRUID_PAGE_EDGE(THIS->obj),NULL);
+  RETURN_THIS();
+}
+

@@ -1,0 +1,108 @@
+class GTK2.TextTag;
+inherit G.Object;
+
+//! Properties:
+//! string background
+//! int background-full-height
+//! int background-full-height-set
+//! GDK2.Color background-gdk
+//! int background-set
+//! GDK2.Pixmap background-stipple
+//! int background-stipple-set
+//! int direction
+//!   One of CONST(GTK_TEXT_DIRECTION)
+//! int editable
+//! int editable-set
+//! string family
+//! int family-set
+//! string font
+require pango;
+//! Pango.FontDescription font-desc
+endrequire;
+//! string foreground
+//! GDK2.Color foreground-gdk
+//! int foreground-set
+//! GDK2.Pixmap foreground-stipple
+//! int foreground-stipple-set
+//! int indent
+//! int indent-set
+//! int invisible
+//! int invisible_set
+//! int justification
+//!   One of CONST(GTK_JUSTIFICATION_)
+//! int justification-set
+//! string language;
+//! int language-set;
+//! int left-margin;
+//! int left-margin-set;
+//! string name;
+//! int pixels-above-lines;
+//! int pixels-above-lines-set;
+//! int pixels-below-lines;
+//! int pixels-below-lines-set;
+//! int pixels-inside-wrap;
+//! int pixels-inside-wrap-set;
+//! int right-margin;
+//! int right-margin-set;
+//! int rise;
+//! int rise-set;
+//! float scale;
+//! int scale-set;
+//! int size;
+//! double size-points;
+//! int size-set;
+require pango;
+//! int stretch;
+//!   One of CONST(PANGO_STRETCH)
+//! int stretch-set;
+endrequire;
+//! int strikethrough;
+//! int strikethrough-set;
+require pango;
+//! int style;
+//!   One of CONST(PANGO_STYLE_)
+//! int style-set;
+//! Pango.TabArray tabs
+//! int tabs-set;
+//! int underline;
+//!   One of CONST(PANGO_UNDERLINE_)
+//! int underline-set;
+//! int variant;
+//!   One of CONST(PANGO_VARIANT_)
+//! int variant-set;
+endrequire;
+//! int weight;
+//! int weight-set;
+//! int wrap-mode;
+//!   One of CONST(GTK_WRAP_MODE_)
+//! int wrap-mode-set;
+
+signal event;
+
+void create(string name);
+//! Creates a new text tag.
+
+int get_priority();
+//! Gets the tag priority.
+
+void set_priority(int priority);
+//! Sets the priority.  Valid priorities start at 0 and go to 1 less
+//! than W(TextTagTable)->get_size().
+
+int event(G.Object event_object, GDK2.Event event, GTK2.TextIter iter)
+//! Emits the 'event' signal.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2,*o3;
+    int res;
+    get_all_args("event",args,"%o%o%o",&o1,&o2,&o3);
+    res=gtk_text_tag_event(GTK_TEXT_TAG(THIS->obj),
+			G_OBJECT(get_gobject(o1)),
+			(GdkEvent *)get_gobject(o2),
+			(GtkTextIter *)get_pgobject(o3,pgtk_text_iter_program));
+   my_pop_n_elems(args);
+   push_int(res);
+  }
+}
+

@@ -1,0 +1,218 @@
+class GTK2.TreePath;
+
+//! TreePath.
+
+void create(?string path)
+//! Creates a new GTK2.TreePath.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    char *s;
+    get_all_args("create",args,"%s",&s);
+    if (s) {
+      THIS->obj=(void *)gtk_tree_path_new_from_string(s);
+    } else {
+      THIS->obj=(void *)gtk_tree_path_new_first();
+    }
+  } else {
+    THIS->obj=(void *)gtk_tree_path_new_first();
+  }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
+
+string _sprintf(int flag)
+{
+  int mode=0;
+  pgtk_verify_inited();
+  if (args)
+    get_all_args("_sprintf",args,"%i",&mode);
+  my_pop_n_elems(args);
+  if (mode!='O') {
+    push_undefined();
+    return;
+  }
+  {
+    gchar *s=gtk_tree_path_to_string((GtkTreePath *)THIS->obj);
+    if (s) {
+      push_text("GTK2.TreePath( \"");
+      push_text(s);
+      push_text("\" );");
+      f_add(3);
+      g_free(s);
+    } else
+      push_undefined();
+  }
+}
+
+string to_string()
+//! Generates a string representation of the path.
+//! This string is a ':' separated list of numbers.
+//! For example, "4:10:0:3" would be an acceptable return value
+//! for this string.
+{
+  pgtk_verify_inited();
+  {
+    const gchar *a1;
+    a1=gtk_tree_path_to_string((GtkTreePath *)THIS->obj);
+    my_pop_n_elems(args);
+    PGTK_PUSH_GCHAR(a1);
+  }
+}
+
+void append_index(int index)
+//! Appends a new index to path.  As a result, the depth
+//! of the path is increased.
+{
+  pgtk_verify_inited();
+  if (args) {
+    int index;
+    get_all_args("append_index",args,"%i",&index);
+    gtk_tree_path_append_index((GtkTreePath *)THIS->obj,index);
+  }
+  RETURN_THIS();
+}
+
+void prepend_index(int index)
+//! Prepends a new index to a path.  As a result, the depth
+//! of the path is increased.
+{
+  pgtk_verify_inited();
+  if (args) {
+    int index;
+    get_all_args("prepend_index",args,"%i",&index);
+    gtk_tree_path_prepend_index((GtkTreePath *)THIS->obj,index);
+  }
+  RETURN_THIS();
+}
+
+int get_depth()
+//! Returns the current depth of path.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  PGTK_PUSH_INT(gtk_tree_path_get_depth((GtkTreePath *)THIS->obj));
+}
+
+array(int) get_indices()
+//! Returns the current indices of path as an array
+//! of integers, each representing a node in a tree.
+{
+  int n=0;
+  gint *arr=gtk_tree_path_get_indices((GtkTreePath *)THIS->obj);
+  my_pop_n_elems(args);
+  while (arr[n])
+    PGTK_PUSH_INT(arr[n++]);
+  if (!n) {
+    ref_push_array(&empty_array);
+  } else
+    f_aggregate(n);
+}
+
+void destroy()
+//! Destructor.
+{
+  if (THIS->obj)
+    gtk_tree_path_free((GtkTreePath *)THIS->obj);
+  THIS->obj=0;
+  my_pop_n_elems(args);
+  PGTK_PUSH_INT(0);
+}
+
+GTK2.TreePath copy()
+//! Creates a new GTK2.TreePath as a copy.
+{
+  pgtk_verify_inited();
+  {
+    GtkTreePath *a1;
+    a1=(GtkTreePath *)gtk_tree_path_copy((GtkTreePath *)THIS->obj);
+    my_pop_n_elems(args);
+    push_gobjectclass(a1,pgtk_tree_path_program);
+  }
+}
+
+int compare(GTK2.TreePath b)
+//! Compares two paths.  If this path appears before b, -1 is returned.
+//! If b before this path, 1 is return.  If they are equal, 0 is returned.
+{
+  pgtk_verify_inited();
+  {
+    GtkTreePath *gp=NULL;
+    struct object *o1;
+    int res;
+    get_all_args("compare",args,"%o",&o1);
+    if (o1)
+      gp=(GtkTreePath *)get_pgobject(o1,pgtk_tree_path_program);
+    res=gtk_tree_path_compare((GtkTreePath *)THIS->obj,gp);
+    my_pop_n_elems(args);
+    PGTK_PUSH_INT(res);
+  }
+}
+
+void next()
+//! Moves the path to point to the next node at the current depth.
+{
+  pgtk_verify_inited();
+  gtk_tree_path_next((GtkTreePath *)THIS->obj);
+  RETURN_THIS();
+}
+
+void prev()
+//! Moves the path to point to the previous node at the current depth,
+//! if it exists.  Returns TRUE if the move was made.
+{
+  pgtk_verify_inited();
+  gtk_tree_path_prev((GtkTreePath *)THIS->obj);
+  RETURN_THIS();
+}
+
+int up()
+//! Moves the path to point to its parent node, if it has a parent.
+{
+  pgtk_verify_inited();
+  gtk_tree_path_up((GtkTreePath *)THIS->obj);
+  RETURN_THIS();
+}
+
+void down()
+//! Moves path to point to the first child of the current path.
+{
+  pgtk_verify_inited();
+  gtk_tree_path_down((GtkTreePath *)THIS->obj);
+  RETURN_THIS();
+}
+
+int is_ancestor(GTK2.TreePath descendant)
+//! Returns TRUE if descendant is a descendant of this path.
+{
+  pgtk_verify_inited();
+  {
+    GtkTreePath *gp=NULL;
+    struct object *o1;
+    int res;
+    get_all_args("is_ancestor",args,"%o",&o1);
+    if (o1)
+      gp=(GtkTreePath *)get_pgobject(o1,pgtk_tree_path_program);
+    res=gtk_tree_path_is_ancestor((GtkTreePath *)THIS->obj,gp);
+    my_pop_n_elems(args);
+    PGTK_PUSH_INT(res);
+  }
+} 
+
+int is_descendant(GTK2.TreePath ancestor)
+//! Returns TRUE if this path is a descendant of ancestor.
+{
+  pgtk_verify_inited();
+  {
+    GtkTreePath *gp;
+    struct object *o1;
+    int res;
+    get_all_args("is_descendant",args,"%o",&o1);
+    if (o1)
+      gp=(GtkTreePath *)get_pgobject(o1,pgtk_tree_path_program);
+    res=gtk_tree_path_is_descendant((GtkTreePath *)THIS->obj,gp);
+    my_pop_n_elems(args);
+    PGTK_PUSH_INT(res);
+  }
+}

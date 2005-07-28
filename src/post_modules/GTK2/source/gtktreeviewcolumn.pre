@@ -1,0 +1,300 @@
+class GTK2.TreeViewColumn;
+inherit GTK2.Data;
+
+//! Properties:
+//! float alignment
+//! int clickable
+//! int expand
+//! int fixed-width
+//! int max-width
+//! int min-width
+//! int reorderable
+//! int resizable
+//! int sizing CONST(GTK_TREE_VIEW_COLUMN_)
+//! int sort-indicator
+//! int sort-order CONST(GTK_SORT_)
+//! int spacing
+//! string title
+//! int visible
+//! GTK2.Widget widget
+//! int width
+
+signal clicked;
+
+void create(string title, GTK2.CellRenderer renderer,
+	    string property, int col)
+//! Creates a new W(TreeViewColumn).
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    char *title,*prop;
+    struct object *o1;
+    int col;
+    get_all_args("create",args,"%s%o%s%i",&title,&o1,&prop,&col);
+    THIS->obj=G_OBJECT(gtk_tree_view_column_new_with_attributes(
+			title,GTK_CELL_RENDERER(get_gobject(o1)),prop,col,NULL));
+  }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
+
+void pack_start(GTK2.CellRenderer cell, int expand);
+//! Packs the cell into the beginning of the column.  If expand is false, then
+//! the cell is allocated no more space than it needs.  Any unused space is
+//! divied evenly between cels for which expand is true.
+
+void pack_end(GTK2.CellRenderer cell, int expand);
+//! Packs the cell to the end of the column.
+
+void clear();
+//! Unsets all the mappings on all renderers.
+
+array get_cell_renderers()
+//! Returns an array of all the cell renderers in the column, in no partciular
+//! order.
+{
+  pgtk_verify_inited();
+  {
+    GList *gl,*g2;
+    int i=0;
+    my_pop_n_elems(args);
+    gl=g2=gtk_tree_view_column_get_cell_renderers(GTK_TREE_VIEW_COLUMN(THIS->obj));
+    while (g2) {
+      push_gobject(GTK_CELL_RENDERER(g2->data));
+      g_object_ref(g2->data);
+      i++;
+      g2=g_list_next(g2);
+    }
+    f_aggregate(i);
+    g_list_free(gl);
+  }
+}
+
+void add_attribute(GTK2.CellRenderer cell_renderer, string attribute,
+		   int column);
+//! Adds an attribute mapping to the list.  The column is the column of the
+//! model to get a value from, and the attribute is the parameter on
+//! cell_rendere to be set from the value.  So for example if column 2 of
+//! the model contains strings, you could have the "text" attribute of a
+//! W(CellRendererText) get its values from column 2.
+
+void clear_attributes(GTK2.CellRenderer cell_renderer);
+//! Clears all existing attributes previously set.
+
+void set_spacing(int spacing);
+//! Sets the spacing field, which is the number of pixels to place between
+//! cell renderers packed into it.
+
+int get_spacing();
+//! Returns the spacing.
+
+void set_visible(int visible);
+//! Sets the visibility.
+
+int get_visible();
+//! Returns true if the column is visible.
+
+void set_resizable(int resizable);
+//! If resizable is true, then the user can explicitly resize the column by
+//! grabbing the outer edge of the column button.  If resizable is ture and
+//! the sizing mode of the column is GTK2.TREE_VIEW_COLUMN_AUTOSIZE, then the
+//! sizing mode is changed to GTK2.TREE_VIEW_COLUMN_GROW_ONLY.
+
+int get_resizable();
+//! Returns true if the column can be resized by the end user.
+
+void set_sizing(int type);
+//! Sets the growth behavior of this columnt to type.
+//! One of CONST(GTK_TREE_VIEW_COLUMN_).
+
+int get_sizing();
+//! Returns the current type.
+
+int get_width();
+//! Returns the current size in pixels.
+
+int get_fixed_width();
+//! Gets the fixed width of the column.
+
+void set_fixed_width(int fixed_width);
+//! Sets the size of the column in pixels.  The is meaningful only if the
+//! sizing type is GTK2.TREE_VIEW_COLUMN_FIXED.  The size of the column is
+//! clamped to the min/max width for the column.  Please note that the
+//! min/max width of the column doesn't actually affect the "fixed-width"
+//! property of the widget, just the actual size when displayed.
+
+void set_min_width(int min_width);
+//! Sets the minimum width.  If min_width is -1, then the minimum width is
+//! unset.
+
+int get_min_width();
+//! Returns the minimum width in pixels, or -1 if no minimum width is set.
+
+void set_max_width(int max_width);
+//! Sets the maximum width.  If max_width is -1, then the maximum width is
+//! unset.  Note, the column can actually be wider than max width if it's the
+//! last column in a view.  In this case, the column expands to fill any
+//! extra space.
+
+int get_max_width();
+//! Returns the maximum width in pixels, or -1 if no maximum width is set.
+
+void clicked();
+//! Emits the "clicked" signal on the column.  This function will only work
+//! if this column is clickable.
+
+void set_title(string title);
+//! Sets the title.  If a custom widget has been set, then this value is
+//! ignored.
+
+string get_title();
+//! Returns the title of the widget.
+
+require gtk24;
+void set_expand(int expand);
+//! Sets the column to take available extra space.  This space is shared
+//! equally amongst all columns that have the expand set to true.  If no
+//! column has this option set, then the last column gets all extra space.
+//! By default, every column is created with this false.
+
+int get_expand();
+//! Return true if the column expands to take any available space.
+endrequire;
+
+void set_clickable(int clickable);
+//! Sets the header to be active if clickable is true.  When the header is
+//! active, then it can take keyboard focus, and can be clicked.
+
+int get_clickable();
+//! Returns true if the user can click on the header for the column.
+
+void set_widget(?GTK2.Widget widget);
+//! Sets the widget in the header to be widget.  If widget is omitted, then
+//! the header button is set with a W(Label) set to the title.
+
+GTK2.Widget get_widget();
+//! Returns the W(Widget) in the button on the column header.  If a custom
+//! widget has not been set then 0 is returned.
+
+void set_alignment(float xalign);
+//! Sets the alignment of the title or custom widget inside the column header.
+//! The alignment determines its location inside the button - 0.0 for left,
+//! 0.5 for center, 1.0 for right.
+
+float get_alignment();
+//! Returns the current x alignment.  This value can range between 0.0 and 1.0.
+
+void set_reorderable(int reorderable);
+//! If reorderable is true, then the column can be reorderd by the end user
+//! dragging the header.
+
+int get_reorderable();
+//! Returns true if the column can be reordered by the user.
+
+void set_sort_column_id(int column_id);
+//! Sets the logical column_id that this column sorts on when this column is
+//! selected for sorting.  Doing so makes the column header clickable.
+
+int get_sort_column_id();
+//! Gets the logical column_id that the model sorts on when this column is
+//! selected for sorting.
+
+void set_sort_indicator(int setting);
+//! Call this function with a setting of true to display an arrow in the
+//! header button indicating the column is sorted.  Call set_sort_order()
+//! to change the direction of the arrow.
+
+int get_sort_indicator();
+//! Gets the value set by set_sort_indicator();
+
+void set_sort_order(int order);
+//! Changes the appearance of the sort indicator.
+//! <p>
+//! This does not actually sort the model.  Use set_sort_column_id() if you
+//! wnat automatic sorting support.  This function is primarily for custom
+//! sorting behavior, and should be used in conjunction with 
+//! GTK2.TreeSortable->set_sort_column() to do that.  For custom models, the
+//! mechanism will vary.
+//! <p>
+//! The sort indicator changes direction to indicate normal sort or reverse
+//! sort.  Note that you must have the sort indicator enabled to see anything
+//! when calling this function.
+//! One of CONST(GTK_SORT_).
+
+int get_sort_order();
+//! Gets the value set by set_sort_order().
+
+void cell_set_cell_data(GTK2.TreeModel model, GTK2.TreeIter iter,
+		int is_expander, int is_expanded)
+//! Sets the cell renderer based on the model and iter.  That is, for every
+//! attribute mapping in this column, it will get a value from the set column
+//! on the iter, and use that value to set the attribute on the cell renderer.
+//! This is used primarily by the W(TreeView).
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2;
+    int expander,expanded;
+    get_all_args("cell_set_cell_data",args,"%o%o%i%i",&o1,&o2,&expander,
+			&expanded);
+    gtk_tree_view_column_cell_set_cell_data(GTK_TREE_VIEW_COLUMN(THIS->obj),
+			GTK_TREE_MODEL(get_gobject(o1)),
+			(GtkTreeIter *)get_gobject(o2),expander,expanded);
+  }
+  RETURN_THIS();
+}
+
+mapping(string:int) cell_get_size(GDK2.Rectangle cell_area)
+//! Obtains the width and height needed to render the column.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    gint x_offset,y_offset,width,height;
+    get_all_args("cell_get_size",args,"%o",&o1);
+    my_pop_n_elems(args);
+    gtk_tree_view_column_cell_get_size(GTK_TREE_VIEW_COLUMN(THIS->obj),
+			(GdkRectangle *)get_gdkobject(o1,rectangle),
+			&x_offset,&y_offset,&width,&height);
+    push_text("x_offset"); push_int(x_offset);
+    push_text("y_offset"); push_int(y_offset);
+    push_text("width"); push_int(width);
+    push_text("height"); push_int(height);
+    f_aggregate_mapping(8);
+  }
+}
+
+require gtk22;
+mapping cell_get_position(GTK2.CellRenderer cell_renderer)
+//! Obtains the horizontal position and size of a cell in a column.  If the
+//! cell is not found in the column, returns -1 for start_pos and width.
+{
+  pgtk_verify_inited();
+  {
+    gint start_pos,width;
+    struct object *o1;
+    int res;
+    get_all_args("cell_get_position",args,"%o",&o1);
+    my_pop_n_elems(args);
+    res=gtk_tree_view_column_cell_get_position(GTK_TREE_VIEW_COLUMN(THIS->obj),
+		GTK_CELL_RENDERER(get_gobject(o1)),&start_pos,&width);
+    push_text("start_pos"); push_int(start_pos);
+    push_text("width"); push_int(width);
+    f_aggregate_mapping(4);
+  }
+}
+endrequire;
+
+int cell_is_visible();
+//! Returns true if any of the cells packed into the colum are visible.  For
+//! this to be meaningful, you must first initialize the cells with
+//! cell_set_cell_data().
+
+require gtk22;
+void focus_cell(GTK2.CellRenderer cell);
+//! Sets the current keyboard focus to be at cell, if the column contains 2
+//! or more editable and activatable cells.
+endrequire;
+
+#include "gtkcelllayout.inc"

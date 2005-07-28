@@ -1,0 +1,37 @@
+require gnome;
+
+class Gnome2.Href;
+inherit GTK2.Button;
+
+//! This widget is a GtkButton button that contains a URL. When clicked
+//! it invokes the configured browser for the URL you provided.
+//! <p>
+//! IMG: Gnome2.Href( "http://www.gnome.org", "GNOME Web Site" )
+//! IMG: Gnome2.Href( "http://www.gnome.org" )
+//! </p>
+
+//! Properties:
+//! string text
+//! string url
+//! <p>
+//! Style properties:
+//! GDK.Color link-color
+
+void create(string url, ?string label);
+//! Created a GNOME href object, a label widget with a clickable action
+//! and an associated URL. If label is set to 0, url is used as the
+//! label.
+
+void set_url(string url);
+//! Sets the internal URL
+
+string get_url();
+//! Return the url
+
+void set_text(string text);
+//! Sets the internal label widget text (used to display a URL's link
+//! text) to the given value.
+
+string get_text();
+//! Returns the contents of the label widget used to display the link text.
+

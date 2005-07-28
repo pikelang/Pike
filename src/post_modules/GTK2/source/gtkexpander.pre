@@ -1,0 +1,88 @@
+require gtk24;
+
+class GTK2.Expander;
+inherit GTK2.Bin;
+
+//! Properties:
+//! int expanded
+//! string label
+//! GTK2.Widget label-widget
+//! int spacing
+//! int use-markup
+//! int use-underline
+//! <p>
+//! Style properties:
+//! int expander-size
+//! int expander-spacing
+
+signal activate;
+
+void create(string label, ?int mnemonic)
+//! Create a new GTK2.Expander.  Set mnemonic to 1
+//! for a mnemonic expander, otherwise omitting it
+//! creates a regular expander.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    gchar *label;
+    INT_TYPE x;
+    if (args>1) {
+      get_all_args("create",args,"%s%i",&label,&x);
+      if (x)
+	THIS->obj=G_OBJECT(gtk_expander_new_with_mnemonic(label));
+      else
+	THIS->obj=G_OBJECT(gtk_expander_new(label));
+    } else {
+      get_all_args("create",args,"%s",&label);
+      THIS->obj=G_OBJECT(gtk_expander_new(label));
+    }
+  }
+  pgtk__init_this_object();
+}
+
+void set_expanded(int expanded);
+//! Sets the state of the expander.  Set to true if you want the
+//! child widget to be revealed, and false if you want the child
+//! widget to be hidden.
+
+int get_expanded();
+//! Returns true if the child widget is revealed.
+
+void set_spacing(int spacing);
+//! Sets the spacing field of the expander, which is the number
+//! of pixels to place between the expander and the child.
+
+int get_spacing();
+//! Returns the spacing.
+
+void set_label(string label);
+//! Sets the text of the label of the expander.
+
+string get_label();
+//! Fetches the text from the label of the expander.
+
+void set_use_underline(int use_underline);
+//! If true, an underline in the text of the label indicates
+//! the next character should be used for the mnemonic
+//! accelarator key.
+
+int get_use_underline();
+//! Returns whether an embedded underline in the label
+//! indicates a mnemonic.
+
+void set_use_markup(int use_markup);
+//! Sets whether the text of the label contains markup in
+//! Pango's text markup language.
+
+int get_use_markup();
+//! Returns whether the label's text is interpreted as marked up
+//! with the Pango text markup language.
+
+void set_label_widget(GTK2.Widget label);
+//! Set the label widget for the expander.  This is the widget
+//! that will appear embedded alongside the expander arrow.
+
+GTK2.Widget get_label_widget();
+//! Retrieves the label widget for the frame.
+endrequire;

@@ -1,0 +1,527 @@
+class GTK2.TextView;
+inherit GTK2.Container;
+
+//! Properties:
+//! int accepts-tab
+//! GTK2.TextBuffer buffer
+//! int cursor-visible
+//! int editable
+//! int indent
+//! int justification
+//! int left-margin
+//! int overwrite
+//! int pixels-above-lines
+//! int pixels-below-lines
+//! int pixels-inside-wrap
+//! int right-margin
+//! Pango.TabArray tabs
+//! int wrap-mode
+//! <p>
+//! Style properties:
+//! GDK2.Color error-underline-color
+
+signal backspace;
+signal copy_clipboard;
+signal cut_clipboard;
+signal delete_from_cursor;
+signal insert_at_cursor;
+signal move_cursor;
+signal move_focus;
+signal move_viewpoert;
+signal page_horizontally;
+signal paste_clipboard;
+signal populate_popup;
+signal select_all;
+signal set_anchor;
+signal set_scroll_adjustments;
+signal toggle_overwrite;
+
+void create(?GTK2.TextBuffer buffer)
+//! Create a new W(TextView).  
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    struct object *o1;
+    get_all_args("create",args,"%o",&o1);
+    THIS->obj=G_OBJECT(gtk_text_view_new_with_buffer(
+			GTK_TEXT_BUFFER(get_gobject(o1))));
+  } else {
+    THIS->obj=G_OBJECT(gtk_text_view_new());
+  }
+  pgtk__init_this_object();
+}
+
+void set_buffer(GTK2.TextBuffer buffer);
+//! Sets buffer as the buffer being displayed.  
+
+GTK2.TextBuffer get_buffer();
+//! Returns the buffer displayed by this view.
+
+void scroll_to_mark(GTK2.TextMark mark, float within_margin,
+		int use_align, float xalign, float yalign);
+//! Scrolls the view so that mark is on the screen in the position indicated
+//! by xalign and yalign.  An alignment of 0.0 indicates left or top, 1.0
+//! indicates right or bottom, 0.5 means center.  If use_align is false,
+//! the text scrolls the minimal distance to get the mark onscreen, possibly
+//! not scrolling at all.  The effective screen for purposes of this function
+//! is reduced by the margin of size within_margin.
+
+void scroll_to_iter(GTK2.TextIter iter, float within_margin,
+		int use_align, float xalign, float yalign)
+//! Scrolls the view so that iter is on the screen as with scroll_to_mark().
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    gdouble within_margin,xalign,yalign;
+    gint use_align;
+    get_all_args("scroll_to_iter",args,"%o%f%i%f%f",&o1,&within_margin,
+			&use_align,&xalign,&yalign);
+    gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),within_margin,use_align,
+		xalign,yalign);
+  }
+  RETURN_THIS();
+}
+
+void scroll_mark_onscreen(GTK2.TextMark mark);
+//! Scrolls the view the minimum distance such that mark is contained
+//! within the visible area.
+
+int move_mark_onscreen(GTK2.TextMark mark);
+//! Moves a mark within the buffer so that it's located within the currently
+//! visible text-area.
+
+int place_cursor_onscreen();
+//! Moves the cursor to the currently visible region of the buffer, if it
+//! isn't there already.
+
+GDK2.Rectangle get_visible_rect()
+//! Returns a rectangle with the currently-visible region of the buffer,
+//! in buffer coordinates.  Convert to window coordinates with
+//! buffer_to_window_coords().
+{
+  pgtk_verify_inited();
+  {
+    GdkRectangle *gdr;
+    gdr=g_malloc(sizeof(GdkRectangle));
+    if (gdr==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_visible_rect",sizeof(GdkRectangle));
+    gtk_text_view_get_visible_rect(GTK_TEXT_VIEW(THIS->obj),
+			gdr);
+    my_pop_n_elems(args);
+    push_gdkobject(gdr,rectangle);
+  }
+}
+
+GDK2.Rectangle get_iter_location(GTK2.TextIter iter)
+//! Gets a rectangle which roughly contains the character at iter.  The
+//! rectangle position is in buffer coordinates; use buffer_to_window_coords()
+//! to convert these coordinates to coordinates for one of the windows in
+//! the text view.
+{
+  pgtk_verify_inited();
+  {
+    GdkRectangle *gdr;
+    struct object *o1;
+    gdr=g_malloc(sizeof(GdkRectangle));
+    if (gdr==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_location",sizeof(GdkRectangle));
+    get_all_args("get_iter_location",args,"%o",&o1);
+    my_pop_n_elems(args);
+    gtk_text_view_get_iter_location(GTK_TEXT_VIEW(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),gdr);
+    push_gdkobject(gdr,rectangle);
+  }
+}
+
+GTK2.TextIter get_line_at_y(int y)
+//! Returns a W(TextIter) for the start of the line containing the coordinate
+//! y.  y is in buffer coordinates, convert from window coordinates with
+//! window_to_buffer_coords().
+{
+  pgtk_verify_inited();
+  {
+    gint y;
+    GtkTextIter *gti;
+    get_all_args("get_line_at_y",args,"%i",&y);
+    my_pop_n_elems(args);
+    gti=g_malloc(sizeof(GtkTextIter));
+    if (gti==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_line_at_y",sizeof(GtkTextIter));
+    gtk_text_view_get_line_at_y(GTK_TEXT_VIEW(THIS->obj),
+		gti,y,NULL);
+    push_gobjectclass(gti,pgtk_text_iter_program);
+  }
+}
+
+mapping get_line_yrange(GTK2.TextIter iter)
+//! Gets the y coordinate of the top of the line containing iter, and the
+//! height of the line.  The coordinate is a buffer coordinate; convert to
+//! window coordinates with buffer_to_window_coords().
+{
+  pgtk_verify_inited();
+  {
+    gint y,height;
+    struct object *o1;
+    get_all_args("get_line_yrange",args,"%o",&o1);
+    my_pop_n_elems(args);
+    gtk_text_view_get_line_yrange(GTK_TEXT_VIEW(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),&y,&height);
+    push_text("y"); push_int(y);
+    push_text("height"); push_int(height);
+    f_aggregate_mapping(4);
+  }
+}
+
+GTK2.TextIter get_iter_at_location(int x, int y)
+//! Retrieves the iterator at buffer coordinates x and y.  Buffer coordinates
+//! are coordinates for the entire buffer, not just the currently-displayed
+//! portions.  If you have coordinates from an event, you have to convert
+//! those to buffer coordinates with window_to_buffer_coords().
+{
+  pgtk_verify_inited();
+  {
+    gint x,y;
+    GtkTextIter *iter;
+    get_all_args("get_iter_at_location",args,"%i%i",&x,&y);
+    my_pop_n_elems(args);
+    iter=g_malloc(sizeof(GtkTextIter));
+    if (iter==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_location",sizeof(GtkTextIter));
+    gtk_text_view_get_iter_at_location(GTK_TEXT_VIEW(THIS->obj),
+		iter,x,y);
+    push_gobjectclass(iter,pgtk_text_iter_program);
+  }
+}
+
+require gtk26;
+GTK2.TextIter get_iter_at_position(int x, int y)
+//! Retrieves the iterator pointing to the character at buffer coordinates
+//! x and y.
+{
+  pgtk_verify_inited();
+  {
+    GtkTextIter *iter;
+    gint x,y;
+    gint trailing;
+    get_all_args("get_iter_at_position",args,"%i%i",&x,&y);
+    my_pop_n_elems(args);
+    iter=g_malloc(sizeof(GtkTextIter));
+    if (iter==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_position",sizeof(GtkTextIter));
+    gtk_text_view_get_iter_at_position(GTK_TEXT_VIEW(THIS->obj),
+		iter,&trailing,x,y);
+    push_gobjectclass(iter,pgtk_text_iter_program);
+  }
+}
+endrequire;
+
+array buffer_to_window_coords(int wintype, int buffer_x, int buffer_y)
+//! Converts coordinate (buffer_x,buffer_y) to coordinates for the window
+//! win, and returns the results.  wintype is one of CONST(GTK_TEXT_WINDOW_).
+{
+  pgtk_verify_inited();
+  {
+    gint win_x,win_y,buffer_x,buffer_y,wintype;
+    get_all_args("buffer_to_window_coords",args,"%i%i%i",&wintype,
+			&buffer_x,&buffer_y);
+    my_pop_n_elems(args);
+    gtk_text_view_buffer_to_window_coords(GTK_TEXT_VIEW(THIS->obj),
+		wintype,buffer_x,buffer_y,&win_x,&win_y);
+    push_int(win_x);
+    push_int(win_y);
+  }
+}
+
+array window_to_buffer_coords(int wintype, int window_x, int window_y)
+//! Converts coordinates on the window identified by wintype to buffer
+//! coordinates, returning the result.
+{
+  pgtk_verify_inited();
+  {
+    gint wintype,win_x,win_y,buffer_x,buffer_y;
+    get_all_args("window_to_buffer_coords",args,"%i%i%i",&wintype,
+		&win_x,&win_y);
+    my_pop_n_elems(args);
+    gtk_text_view_window_to_buffer_coords(GTK_TEXT_VIEW(THIS->obj),
+		wintype,win_x,win_y,&buffer_x,&buffer_y);
+    push_int(buffer_x);
+    push_int(buffer_y);
+  }
+}
+
+GDK2.Window get_window(int wintype);
+//! Retrieves the GDK2.Window corresponding to an area of the text view;
+//! possible windows include the overall widget window, child windows on the
+//! left, right, top, bottom, and the window that displays the text buffer.
+//! Windows are 0 and nonexistent if their width or height is 0, and are
+//! nonexistent before the widget has been realized.
+
+int get_window_type(GDK2.Window window);
+//! Usually used to find out which window an event corresponds to.  If you
+//! connect to an event signal, this function should be called on
+//! event->window to see which window it was.  One of CONST(GTK_TEXT_WINDOW_).
+
+void set_border_window_size(int wintype, int size);
+//! Sets the width of GTK2.TEXT_WINDOW_LEFT or GTK2.TEXT_WINDOW_RIGHT, or the
+//! height of GTK2.TEXT_WINDOW_TOP or GTK2.TEXT_WINDOW_BOTTOM.  Automatically
+//! destroys the corresponding window if the size is set to 0, and creates
+//! the window if the size is set to non-zero.  This function can only be
+//! used for the "border windows", it doesn't work with GTK2.TEXT_WINDOW_WIDGET,
+//! GTK2.TEXT_WINDOW_TEXT, or GTK2.TEXT_WINDOW_PRIVATE.
+
+int get_border_window_size(int wintype);
+//! Gets the width of the specified border window.
+
+int forward_display_line(GTK2.TextIter iter)
+//! Moves iter forward by one display (wrapped) line.  A display line is
+//! different from a paragraph.  Paragraphs are separated by newlines or
+//! other paragraph separator characters.  Display lines are created by
+//! line-wrapping a paragraph.  If wrapping is turned off, display lines and
+//! paragraphs will be the same.  Display lines are divided differently for
+//! each view, since they depend on the view's width; paragraphs are the same
+//! in all view, since they depend on the contents of the W(TextBuffer).
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    int res;
+    get_all_args("forward_display_line",args,"%o",&o1);
+    my_pop_n_elems(args);
+    res=gtk_text_view_forward_display_line(GTK_TEXT_VIEW(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+    push_int(res);
+  }
+}
+
+int backward_display_line(GTK2.TextIter iter)
+//! See forward_display_line().
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    int res;
+    get_all_args("backward_display_line",args,"%o",&o1);
+    my_pop_n_elems(args);
+    res=gtk_text_view_backward_display_line(GTK_TEXT_VIEW(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+    push_int(res);
+  }
+}
+
+int forward_display_line_end(GTK2.TextIter iter)
+//! Moves the iter forward to the next display line end.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    int res;
+    get_all_args("forward_display_line_end",args,"%o",&o1);
+    my_pop_n_elems(args);
+    res=gtk_text_view_forward_display_line_end(GTK_TEXT_VIEW(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+    push_int(res);
+  }
+}
+
+int backward_display_line_start(GTK2.TextIter iter)
+//! Moves the iter backward to the next display line start.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    int res;
+    get_all_args("backward_display_line_start",args,"%o",&o1);
+    my_pop_n_elems(args);
+    res=gtk_text_view_backward_display_line_start(GTK_TEXT_VIEW(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+    push_int(res);
+  }
+}
+
+int starts_display_line(GTK2.TextIter iter)
+//! Determines whether iter is at the start of a display line.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    int res;
+    get_all_args("starts_display_line",args,"%o",&o1);
+    my_pop_n_elems(args);
+    res=gtk_text_view_starts_display_line(GTK_TEXT_VIEW(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+    push_int(res);
+  }
+}
+
+int move_visually(GTK2.TextIter iter, int count)
+//! Move the iterator a given number of characters visually, treating it as
+//! the strong cursor position.  If count is positive, then the new strong
+//! cursor position will be count positions to the right of the old cursor
+//! position.  If count is negative then the new strong cursor position will
+//! be count positions to the left of the old cursor position.
+//! <p>
+//! In the presence of bidirection text, the correspondence between logical
+//! and visual order will depend on the direction of the current run, and
+//! there may be jumps when the cursor is moved off the end of a run.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    gint count;
+    int res;
+    get_all_args("move_visually",args,"%o%i",&o1,&count);
+    my_pop_n_elems(args);
+    res=gtk_text_view_move_visually(GTK_TEXT_VIEW(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),count);
+    push_int(res);
+  }
+}
+
+void add_child_at_anchor(GTK2.Widget child, GTK2.TextChildAnchor anchor);
+//! Adds a child widget in the text buffer, at the given anchor.
+
+void add_child_in_window(GTK2.Widget child, int wintype, int xpos, int ypos);
+//! Adds a child at fixed coordinates in one of the text widget's windows.
+//! The window must have nonzero size (see                                      //! GTK2.TextView->set_border_window_size()).  Note that the child coordinates
+//! are given relative to the GDK2.Window in question, and that these
+//! coordinates have no sane relationship to scrolling.  When placing a child
+//! in GTK2.TEXT_WINDOW_WIDGET, scrolling is irrelevant, the child floats above
+//! all scrollable areas.  But when placing a child in one of the scrollable
+//! windows (border windows or text window), you'll need to compute the child's
+//! correct position in buffer coordinates any time scrolling occurs or buffer
+//! changes occur, and then call GTK2.TextView->move_child() to update the
+//! child's position.  Unfortunately there's no good way to detect that
+//! scrolling has occured, using the current API; a possible hack would be to
+//! update all child positions when the scroll adjustments change or the text
+//! buffer changes.
+
+void move_child(GTK2.Widget child, int x, int y);
+//! Updates the position of a child.
+
+void set_wrap_mode(int wrap_mode);
+//! Sets the line wrapping.  One of CONST(GTK_WRAP_).
+
+int get_wrap_mode();
+//! Gets the line wrapping mode.
+
+void set_editable(int setting);
+//! Sets the default editability.  You can override this default setting with
+//! tags in the buffer, using the "editable" attribute of tags.
+
+int get_editable();
+//! Gets the default editability.
+
+void set_cursor_visible(int setting);
+//! Toggles whether the insertion point is displayed.  A buffer with no
+//! editable text probably shouldn't have a visible cursor, so you may want
+//! to turn the cursor off.
+
+int get_cursor_visible();
+//! Find out whether the cursor is being displayed.
+
+require gtk24;
+void set_overwrite(int overwrite);
+//! Changes the overwrite mode, true for on, false for off.
+
+int get_overwrite();
+//! Returns whether the view is in overwrite mode or not.
+endrequire;
+
+void set_pixels_above_lines(int pixels);
+//! Sets the default number of blank pixels above paragraphs.  Tags in
+//! the buffer may override the defaults.
+
+int get_pixels_above_lines();
+//! Gets the default number of pixels to put above paragraphs.
+
+void set_pixels_below_lines(int pixels);
+//! Sets the default number of blank pixels to put below paragraphs.  May be
+//! overridden by tags applied to the buffer.
+
+int get_pixels_below_lines();
+//! Gets the value set by set_pixels_below_lines().
+
+void set_pixels_inside_wrap(int pixels);
+//! Sets the default number of pixels of blank space to leave between
+//! displayed/wrapped lines within a paragraph.  May be overridden by tags.
+
+int get_pixels_inside_wrap();
+//! Gets the value set by set_pixels_inside_wrap().
+
+void set_justification(int just);
+//! Sets the default justification of text.  One of CONST(GTK_JUSTIFY_).
+
+int get_justification();
+//! Gets the default justification.
+
+void set_left_margin(int margin);
+//! Sets the default left margin.  May be overridden by tags.
+
+int get_left_margin();
+//! Gets the default left margin size of paragraphs.
+
+void set_right_margin(int margin);
+//! Sets the default right margin.  May be overridden by tags.
+
+int get_right_margin();
+//! Gets the default right margin size of paragraphs.
+
+void set_indent(int indent);
+//! Sets the default indentation for paragraphs.  May be overridden by tags.
+
+int get_indent();
+//! Gets the default indentation for paragraphs.
+
+void set_tabs(Pango.TabArray tabs)
+//! Sets the default tab stops for paragraphs.  Tags in the buffer may
+//! override the default.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    get_all_args("set_tabs",args,"%o",&o1);
+    gtk_text_view_set_tabs(GTK_TEXT_VIEW(THIS->obj),
+		(PangoTabArray *)get_gobject(o1));
+  }
+  RETURN_THIS();
+}
+
+Pango.TabArray get_tabs()
+//! Gets the default tabs.  Tags in the buffer may override the defaults.
+//! The return value will be 0 if "standard" (8-space) tabs are used.
+{
+  pgtk_verify_inited();
+  {
+    PangoTabArray *pta;
+    my_pop_n_elems(args);
+    pta=gtk_text_view_get_tabs(GTK_TEXT_VIEW(THIS->obj));
+    push_gobjectclass(pta,ppango_tab_array_program);
+  }
+}
+
+require gtk24;
+void set_accepts_tab(int accepts_tab);
+//! Sets the behavior of the text widget when the Tab key is pressed.  If
+//! accepts_tab is true a tab character is inserted.  If accepts_tab is false
+//! the keyboard focus is moved to the next widget in the focus chain.
+
+int get_accepts_tab();
+//! Returns whether pressing the Tab key inserts a tab character.
+endrequire;
+
+GTK2.TextAttributes get_default_attributes()
+//! Obtains a copy of the default text attributes.  These are the attributes
+//! used for text unless a tag overrides them.
+{
+  pgtk_verify_inited();
+  {
+    GtkTextAttributes *gta;
+    gta=gtk_text_view_get_default_attributes(GTK_TEXT_VIEW(THIS->obj));
+    my_pop_n_elems(args);
+    push_gobjectclass(gta,pgtk_text_attributes_program);
+  }
+}
+

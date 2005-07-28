@@ -1,0 +1,70 @@
+class Pango.LayoutLine;
+
+//! PangoLayoutLine.
+
+array(mapping(string:int)) get_extents()
+//! Computes the logical and ink extents of a layout line.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    PangoRectangle pos1,pos2;
+    pango_layout_line_get_extents((PangoLayoutLine *)THIS->obj,&pos1,&pos2);
+    push_pango_rectangle(&pos1);
+    push_pango_rectangle(&pos2);
+    f_aggregate(2);
+  }
+}
+
+array(mapping(string:int)) get_pixel_extents()
+//! Computes the logical and ink extents of a layout line, in device units.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    PangoRectangle pos1,pos2;
+    pango_layout_line_get_extents((PangoLayoutLine *)THIS->obj,&pos1,&pos2);
+    push_pango_rectangle(&pos1);
+    push_pango_rectangle(&pos2);
+    f_aggregate(2);
+  }
+}
+
+int index_to_x(int index, int trailing)
+//! Converts an index within a line to an x position.
+{
+  pgtk_verify_inited();
+  {
+    int index,trailing,x_pos;
+    get_all_args("index_to_x",args,"5i%i",&index,&trailing);
+    my_pop_n_elems(args);
+    pango_layout_line_index_to_x((PangoLayoutLine *)THIS->obj,index,trailing,
+			&x_pos);
+    push_int(x_pos);
+  }
+}
+
+mapping(string:int) x_to_index(int x_pos)
+//! Converts from x offset to the byte index of the corresponding character
+//! within the text of the layout.  If x_pos is outside the line, index and
+//! trailing will point to the very first or very last position in the line.
+//! This determination is based on the resolved direction of the paragraph;
+//! for example, if the resolved direction is right-to-left, then an X position
+//! to the right of the line (after it) results in 0 being stored in index and
+//! trailing.  An X position to the left of the line results in index pointing
+//! to the (logical) last grapheme in the line and trailing set to the number
+//! of characters in that grapheme.  The reverse is true for a left-to-right
+//! line.
+{
+  pgtk_verify_inited();
+  {
+    int x_pos,index,trailing;
+    get_all_args("x_to_index",args,"%i",&x_pos);
+    my_pop_n_elems(args);
+    pango_layout_line_x_to_index((PangoLayoutLine *)THIS->obj,x_pos,&index,
+			&trailing);
+    push_text("index"); push_int(index);
+    push_text("trailing"); push_int(trailing);
+    f_aggregate_mapping(4);
+  }
+}

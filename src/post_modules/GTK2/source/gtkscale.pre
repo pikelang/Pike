@@ -1,0 +1,64 @@
+class GTK2.Scale;
+inherit GTK2.Range;
+
+//! The GTK2.Scale widget is an abstract class, used only for deriving
+//! the subclasses GTK2.Hscale and GTK2.Vscale.
+//! <p>
+//! See W(Range) for generic range documentation
+//! </p>
+
+//! Properties:
+//! int digits
+//! int draw-value
+//! int value-pos
+//! <p>
+//! Style properties:
+//! int slider-length
+//! int value-spacing
+
+signal format_value;
+
+void set_digits(int precision);
+//! Sets the number of decimal places that are displayed in the value.
+
+void set_draw_value(int drawp);
+//! Specifies whether the current value is displayed as a string next
+//! to the slider.
+
+void set_value_pos( int where );
+//! Sets the position in which the current value is displayed. One of
+//! CONST(GTK_POS)
+
+int get_digits();
+//! Gets the number of decimal places that are displayed.
+
+int get_draw_value();
+//! Returns whether the current value is displayed as a string next to the
+//! slider.
+
+int get_value_pos();
+//! Gets the position in which the current value is displayed.
+
+require pango;
+require gtk24;
+Pango.Layout get_layout();
+//! Gets the Pango.Layout used to display the scale.
+
+mapping(string:int) get_layout_offsets()
+//! Obtains the coordinates where the scale will draw the Pango.Layout
+//! representing the text in the scale.  Remember when using the Pango.Layout
+//! function you need to convert to and from pixels using PANGO_SCALE.
+{
+  pgtk_verify_inited();
+  {
+    gint x,y;
+    my_pop_n_elems(args);
+    gtk_scale_get_layout_offsets(GTK_SCALE(THIS->obj),&x,&y);
+    push_text("x"); push_int(x);
+    push_text("y"); push_int(y);
+    f_aggregate_mapping(4);
+  }
+}
+endrequire;
+endrequire;
+

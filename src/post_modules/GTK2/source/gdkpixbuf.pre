@@ -1,0 +1,685 @@
+class GDK2.Pixbuf;
+inherit G.Object;
+
+%{
+#ifdef __NT__
+#include <gdk/win32/gdkwin32.h>
+#else
+#include <gdk-pixbuf/gdk-pixbuf.h>
+#endif
+%}
+
+//! Properties that can be notified:
+//! int bits-per-sample
+//! int colorspace (GdkColorspace)
+//! int has-alpha
+//! int height
+//! int n-channels
+//! object pixels
+//! int rowstride
+//! int width
+
+/*
+void create(mapping options)
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    struct mapping *m;
+    struct svalue *sv;
+    char *val;
+    get_all_args("create",args,"%m",&m);
+    sv=simple_mapping_string_lookup(m,"type");
+    val=PGTK_GETSTR(sv);
+    if (!strcmp(val,"file")) {
+      struct svalue *sv2;
+      char *filename;
+      char *v1;
+      int width=8,height=8;
+      sv2=simple_mapping_string_lookup(m,"filename");
+      filename=PGTK_GETSTR(sv2);
+      sv2=simple_mapping_string_lookup(m,"scale");
+      if (sv2 && PGTK_GETINT(sv2)) {
+#ifdef HAVE_GTK26
+	int pres=0;
+	struct svalue *sv3=simple_mapping_string_lookup(m,"preserve_aspect");
+        if (sv3)
+	  pres=PGTK_GETINT(sv3);
+	sv3=simple_mapping_string_lookup(m,"width");
+	if (sv3)
+	  width=PGTK_GETINT(sv3);
+	sv3=simple_mapping_string_lookup(m,"height");
+	if (sv3)
+	  height=PGTK_GETINT(sv3);
+	THIS->obj=G_OBJECT(gdk_pixbuf_new_from_file_at_scale(
+			filename,width,height,pres,NULL));
+#else
+	THIS->obj=G_OBJECT(gdk_pixbuf_new_from_file(filename));
+#endif
+      } else {
+#ifdef HAVE_GTK24
+	struct svalue *sv3;
+	width=height=-1;
+	sv3=simple_mapping_string_lookup(m,"width");
+        if (sv3)
+	  width=PGTK_GETINT(sv3);
+	sv3=simple_mapping_string_lookup(m,"height");
+	if (sv3)
+	  height=PGTK_GETINT(sv3);
+	if (width==-1 && height==-1) {
+	  THIS->obj=G_OBJECT(gdk_pixbuf_new_from_file(filename));
+	} else {
+	  THIS->obj=G_OBJECT(gdk_pixbuf_new_from_file_at_size(
+			filename,width,height));
+	}
+#else
+        THIS->obj=G_OBJECT(gdk_pixbuf_new_from_file(filename));
+      }
+    } else if (!strcmp(val,"xpm")) {
+      
+    }
+  }
+  pgtk__init_this_object();
+}
+*/
+
+void create(?int has_alpha, ?int bits_per_sample, 
+	    ?int width, ?int height)
+//! Create a GDK2.Pixbuf object.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    GdkColorspace colorspace=GDK_COLORSPACE_RGB;
+    gboolean has_alpha=0;
+    int bits_per_sample=8,width=640,height=480;
+    if (args==1)
+      get_all_args("create",args,"%i",&has_alpha);
+    else if (args==2)
+      get_all_args("create",args,"%i%i",&has_alpha,&bits_per_sample);
+    else if (args==3)
+      get_all_args("create",args,"%i%i%i",&has_alpha,&bits_per_sample,
+			&width);
+    else if (args>4)
+      get_all_args("create",args,"%i%i%i%i",&has_alpha,&bits_per_sample,
+			&width,&height);
+
+    THIS->obj=G_OBJECT(gdk_pixbuf_new(colorspace,has_alpha,
+			bits_per_sample,width,height));
+    my_pop_n_elems(args);
+    pgtk__init_this_object();
+  }
+}
+
+%{
+void pixel_data_free(guchar *pixels, gpointer data) {
+  g_free(pixels);
+}
+%}
+
+void set_from_data(string data, int has_alpha,
+		   int width, int height, int rowstride)
+//! Creates a new GDK2.Pixbuf out of in-memory image data.
+//! Currently only RGB images with 8 bits per sample are supported.
+{
+  pgtk_verify_inited();
+//  if (THIS->obj)
+//    g_object_unref(THIS->obj);
+  {
+    int width,height,rowstride,has_alpha;
+    gchar *s;
+    guchar *data;
+    get_all_args("new_from_data",args,"%s%i%i%i%i",&data,&has_alpha,
+		&width,&height,&rowstride);
+    my_pop_n_elems(args);
+    data=g_malloc(height*rowstride+width+1);
+    if (data==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("",height*rowstride+width+1);
+    THIS->obj=G_OBJECT(gdk_pixbuf_new_from_data(data,GDK_COLORSPACE_RGB,
+			has_alpha,8,width,height,rowstride,
+			pixel_data_free,NULL));
+  }
+  RETURN_THIS();
+}
+
+void set_from_xpm_data(array data)
+//! Creates a new pixbuf by parsing XPM data in memory.
+{
+  pgtk_verify_inited();
+//  if (THIS->obj)
+//    g_object_unref(THIS->obj);
+  {
+    const gchar **data;
+    int i,j;
+    struct array *a;
+    get_all_args("new_from_xpm_data",args,"%a",&a);
+    my_pop_n_elems(args);
+    if (a->size) {
+      data=g_malloc(sizeof(gchar *)*a->size);
+      if (data==NULL)
+	SIMPLE_OUT_OF_MEMORY_ERROR("",sizeof(gchar *)*a->size);
+      for (i=j=0; i<a->size; i++) {
+	if ((ITEM(a)+i)->type!=PIKE_T_STRING)
+	  continue;
+	data[j++]=g_strdup((ITEM(a)+i)->u.string->str);
+      }
+      THIS->obj=G_OBJECT(gdk_pixbuf_new_from_xpm_data(data));
+      for (i=0; i<j; i++)
+	g_free((void *)data[i]);
+      g_free(data);
+    } else
+      THIS->obj=0;
+  }
+  RETURN_THIS();
+}
+
+void set_from_inline(int data_length, string data)
+//! Create a GDK2.Pixbuf from a flat representation that is suitable
+//! for storing as inline data in a program.
+//! If data_length is -1 it will disable length checks.
+{
+  pgtk_verify_inited();
+//  if (THIS->obj)
+//    g_object_unref(THIS->obj);
+  {
+    int data_length;
+    const guint8 *data;
+    get_all_args("new_from_inline",args,"%i%s",&data_length,&data);
+    my_pop_n_elems(args);
+    THIS->obj=G_OBJECT(gdk_pixbuf_new_from_inline(data_length,data,FALSE,NULL));
+  }
+  RETURN_THIS();
+}
+
+void set_from_file(string filename)
+//! Create a new pixbuf by loading an image from a file.
+{
+  pgtk_verify_inited();
+//  if (THIS->obj)
+//    g_object_unref(THIS->obj);
+  {
+    const char *filename;
+    GError *error=NULL;
+    get_all_args("new_from_file",args,"%s",&filename);
+    my_pop_n_elems(args);
+    THIS->obj=G_OBJECT(gdk_pixbuf_new_from_file(filename,&error));
+    g_object_ref(THIS->obj);
+    if (THIS->obj==NULL)
+      Pike_error("Unable to load file %s: %s\n",filename,error->message);
+  }
+  RETURN_THIS();
+}
+
+require gtk24;
+void set_from_file_at_size(string filename, int width, int height)
+//! Create a new pixbuf by loading an image from a file.  The image
+//! will be scaled to fit in the requested size, preserving the
+//! image's aspect ratio.
+{
+  pgtk_verify_inited();
+//  if (THIS->obj)
+//    g_object_unref(THIS->obj);
+  {
+    const char *filename;
+    GError *error=NULL;
+    int width,height;
+    get_all_args("new_from_file_at_size",args,"%s%i%i",&filename,
+			&width,&height);
+    my_pop_n_elems(args);
+    THIS->obj=G_OBJECT(
+	gdk_pixbuf_new_from_file_at_size(filename,width,height,&error));
+    if (THIS->obj==NULL)
+      Pike_error("Unable to load file %s: %s\n",filename,error->message);
+  }
+  RETURN_THIS();
+}
+endrequire;
+
+require gtk26;
+void set_from_file_at_scale(string filename, int width, int height,
+		int preserve_aspect_ratio)
+//! Create a new pixbuf by loading an image from a file.  The file
+//! format is detected automatically.  The image will be scaled to
+//! fit the requested size, optionally preserving the image's aspect
+//! ratio.
+{
+  pgtk_verify_inited();
+//  if (THIS->obj)
+//    g_object_unref(THIS->obj);
+  {
+    const char *filename;
+    GError *error=NULL;
+    int width,height,preserve;
+    get_all_args("new_from_file_at_scale",args,"%s%i%i%i",&filename,
+		&width,&height,&preserve);
+    my_pop_n_elems(args);
+    THIS->obj=G_OBJECT(
+	gdk_pixbuf_new_from_file_at_scale(filename,width,height,preserve,
+		&error));
+    if (THIS->obj==NULL)
+      Pike_error("Unable to load file %s: %s\n",filename,error->message);
+  }
+  RETURN_THIS();
+}
+endrequire;
+
+require gtk22;
+int set_option(string key, string value)
+//! Attaches a key/value pair as an option.  If the key already exists
+//! in the list of options, the new value is ignored.
+{
+  pgtk_verify_inited();
+  {
+    const gchar *key,*value;
+    get_all_args("set_option",args,"%s%s",&key,&value);
+    my_pop_n_elems(args);
+    push_int(gdk_pixbuf_set_option(GDK_PIXBUF(THIS->obj),
+		key,value));
+  }
+}
+endrequire;
+
+require gtk26;
+
+%{
+void my_gdk_pixbuf_format_set_disabled(GdkPixbufFormat *format,
+		gboolean disabled)
+{
+}
+%}
+
+endrequire;
+
+GDK2.Pixbuf new_subpixbuf(int src_x, int src_y, int width, int height)
+//! Creates a new pixbuf which represents a sub-region of src.  The new
+//! pixbuf shares its pixels with the original pixbuf, so writing to one
+//! affects both.  The new pixbuf holds a reference to this one, so
+//! this object will not be finalized until the new pixbuf is finalized.
+{
+  pgtk_verify_inited();
+  {
+    int src_x,src_y,width,height;
+    get_all_args("new_subpixbuf",args,"%i%i%i%i",&src_x,&src_y,
+			&width,&height);
+    my_pop_n_elems(args);
+    push_gobject(gdk_pixbuf_new_subpixbuf(GDK_PIXBUF(THIS->obj),
+			src_x,src_y,width,height));
+  }
+}
+
+int save(string filename, string type, ?string quality)
+//! Save to a file in format type.  "jpeg", "png", "ico", "bmp",
+//! are the only valid writable types at this time.
+//! Quality is only valid for jpeg images.
+{
+  pgtk_verify_inited();
+  {
+    char *filename,*type,*quality;
+    int res;
+    GError *error=NULL;
+    if (args==2)
+      get_all_args("save",args,"%s%s",&filename,&type);
+    else
+      get_all_args("save",args,"%s%s%s",&filename,&type,&quality);
+    my_pop_n_elems(args);
+    if (!strcmp(type,"jpeg")) {
+      res=gdk_pixbuf_save(GDK_PIXBUF(THIS->obj),filename,type,&error,
+		"quality",quality,NULL);
+    } else {
+      res=gdk_pixbuf_save(GDK_PIXBUF(THIS->obj),filename,type,&error,NULL);
+    }
+    if (!res) {
+      Pike_error("Unable to save file %s: %s\n",filename,error->message);
+      push_int(1);
+    } else
+      push_int(0);
+  }
+}
+
+/*
+mapping(string:mixed) save_to_buffer(string type)
+//! Returns a mapping containing the image.
+//! Key "size" is length in bytes.
+//! Key "data" is data.
+{
+  pgtk_verify_inited();
+  {
+    char *type;
+    int res;
+    GError *error=NULL;
+    gchar *buffer;
+    int buffer_size;
+    get_all_args("save_to_buffer",args,"%s",&type);
+    my_pop_n_elems(args);
+    res=gdk_pixbuf_save_to_buffer(GDK_PIXBUF(THIS->obj),
+		&buffer,&buffer_size,type,&error,NULL);
+    if (!res) {
+      Pike_error("Unable to write data: %s\n",error->message);
+    } else {
+      push_text("size");
+      push_int(buffer_size);
+      push_text
+*/
+
+%{
+#define GTK_GDKPIXBUF(X) GDK_PIXBUF(X)
+%}
+
+GDK2.Pixbuf copy();
+//! Creates a new GDK2.Pixbuf with a copy of this one.
+
+int get_colorspace()
+//! Queries the color space.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gdk_pixbuf_get_colorspace(GDK_PIXBUF(THIS->obj)));
+}
+
+int get_n_channels()
+//! Queries the number of channels.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gdk_pixbuf_get_n_channels(GDK_PIXBUF(THIS->obj)));
+}
+
+int get_has_alpha()
+//! Queries whether a pixbuf has an alpha channel.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gdk_pixbuf_get_has_alpha(GDK_PIXBUF(THIS->obj)));
+}
+
+int get_bits_per_sample()
+//! Queries the number of bits per color sample.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gdk_pixbuf_get_bits_per_sample(GDK_PIXBUF(THIS->obj)));
+}
+
+string get_pixels()
+//! Returns the pixel data as a string.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    int nchan,rowstride,w,h;
+    guchar *p;
+    struct pike_string *ps;
+    nchan=gdk_pixbuf_get_n_channels(GDK_PIXBUF(THIS->obj));
+    w=gdk_pixbuf_get_width(GDK_PIXBUF(THIS->obj));
+    h=gdk_pixbuf_get_height(GDK_PIXBUF(THIS->obj));
+    rowstride=gdk_pixbuf_get_rowstride(GDK_PIXBUF(THIS->obj));
+    p=gdk_pixbuf_get_pixels(GDK_PIXBUF(THIS->obj));
+    ps=make_shared_binary_string((gchar *)p,h*rowstride+w*nchan+1);
+    push_string(ps);
+  }
+}
+
+int get_width()
+//! Queries the width.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gdk_pixbuf_get_width(GDK_PIXBUF(THIS->obj)));
+}
+
+int get_height()
+//! Queries the height.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gdk_pixbuf_get_height(GDK_PIXBUF(THIS->obj)));
+}
+
+int get_rowstride()
+//! Queries the rowstride of a pixbuf, which is the number of bytes
+//! between the start of a row and the start of the next row.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gdk_pixbuf_get_rowstride(GDK_PIXBUF(THIS->obj)));
+}
+
+string get_option(string key)
+//! Looks up key in the list of options that may have been attached
+//! to the pixbuf when it was loaded.
+{
+  pgtk_verify_inited();
+  {
+    gchar *s;
+    get_all_args("get_option",args,"%s",&s);
+    my_pop_n_elems(args);
+    PGTK_PUSH_GCHAR(gdk_pixbuf_get_option(GDK_PIXBUF(THIS->obj),
+		s));
+  }
+}
+
+GDK2.Pixbuf scale_simple(int dest_width, int dest_height, ?int interp_type)
+//! Create a new W(Pixbuf) containing a copy of this W(Pixbuf) scaled to
+//! dest_width x dest_height.  Leaves this W(Pixbuf) unaffected.
+//! intertype should be GDK2.INTERP_NEAREST if you want maximum speed
+//! (but when scaling down GDK2.INTERP_NEAREST is usually unusably ugly).
+//! The default interp_type should be GDK2.INTERP_BILINEAR which offers
+//! reasonable quality and speed.
+//! You can scale a sub-portion by create a sub-pixbuf with new_subpixbuf().
+{
+  pgtk_verify_inited();
+  {
+    GdkPixbuf *gp1;
+    int width,height,type=GDK_INTERP_BILINEAR;
+    if (args==2)
+      get_all_args("scale_simple",args,"%i%i",&width,&height);
+    else
+      get_all_args("scale_simple",args,"%i%i%i",&width,&height,&type);
+    my_pop_n_elems(args);
+    gp1=gdk_pixbuf_scale_simple(GDK_PIXBUF(THIS->obj),width,height,type);
+    push_gobject(gp1);
+  }
+}
+
+GDK2.Pixbuf scale(GDK2.Pixbuf dest, int dest_x, int dest_y, int dest_width,
+		int dest_height, float offset_x, float offset_y,
+		float scale_x, float scale_y, int type)
+//! Creates a transformation of the source image by scaling by scale_x
+//! and scale_y, then translating by offset_x and offset_y, then renders
+//! the rectangle (dest_x,dest_y,dest_width,dest_height) of the
+//! resulting image onto the destination image replacing the previous
+//! contents.
+//! Try to use scale_simple() first, this function is the industrial-
+//! strength power tool you can fall back to if scale_simple() isn't
+//! powerful enough.
+{
+  pgtk_verify_inited();
+  {
+    GdkPixbuf *dest;
+    struct object *o1;
+    int dest_x,dest_y,dest_width,dest_height;
+    FLOAT_TYPE offset_x,offset_y,scale_x,scale_y;
+    int type;
+    get_all_args("scale",args,"%o%i%i%i%i%f%f%f%f%i",&o1,&dest_x,&dest_y,
+		&dest_width,&dest_height,&offset_x,&offset_y,
+		&scale_x,&scale_y,&type);
+    my_pop_n_elems(args);
+    dest=GDK_PIXBUF(get_gobject(o1));
+    gdk_pixbuf_scale(GDK_PIXBUF(THIS->obj),dest,dest_x,dest_y,dest_width,
+		dest_height,offset_x,offset_y,scale_x,scale_y,type);
+    push_gobject(dest);
+  }
+}
+
+GDK2.Pixbuf composite_color_simple(int dest_width, int dest_height,
+		int type, int overall_alpha, int check_size, int color1,
+		int color2);
+//! Creates a new W(Pixbuf) by scalling src to dest_width x dest_height
+//! and compositing the result with a checkboard of colors color1 and
+//! color2.
+
+GDK2.Pixbuf composite(GDK2.Pixbuf dest, int dest_x, int dest_y, int dest_width,
+		int dest_height, float offset_x, float offset_y,
+		float scale_x, float scale_y, int type, int overall_alpha)
+//! Creates a transformation of the source image by scalling by scale_x
+//! and scale_y, then translating by offset_x and offset_y.  This gives
+//! an image in the coordinates of the destination pixbuf.  The rectangle
+//! (dest_x,dest_y,dest_width,dest_height) is then composited onto the
+//! corresponding rectangle of the original destination image.
+//! when the destination rectangle contain parts not in the source image,
+//! the data at the edges of the source image is replicated to infinity.
+{
+  pgtk_verify_inited();
+  {
+    GdkPixbuf *dest;
+    struct object *o1;
+    int dest_x,dest_y,dest_width,dest_height;
+    FLOAT_TYPE offset_x,offset_y,scale_x,scale_y;
+    int type,overall_alpha;
+    get_all_args("composite",args,"%o%i%i%i%i%f%f%f%f%i%i",&o1,&dest_x,
+		&dest_y,&dest_width,&dest_height,&offset_x,&offset_y,
+		&scale_x,&scale_y,&type,&overall_alpha);
+    my_pop_n_elems(args);
+    dest=GDK_PIXBUF(get_gobject(o1));
+    gdk_pixbuf_composite(GDK_PIXBUF(THIS->obj),dest,dest_x,dest_y,
+		dest_width,dest_height,offset_x,offset_y,scale_x,scale_y,
+		type,overall_alpha);
+    push_gobject(dest);
+  }
+}
+
+GDK2.Pixbuf composite_color(GDK2.Pixbuf dest, int dest_x, int dest_y,
+	int dest_width, int dest_height, float offset_x, float offset_y,
+	float scale_x, float scale_y, int type, int overall_alpha,
+	int check_x, int check_y, int check_size, int color1, int color2)
+//! Creates a transformation of the source image by scaling by scale_x
+//! and scale_y, then translating by offset_x and offset_y, then
+//! composites the rectangle (dest_x,dest_y,dest_width,dest_height) of
+//! the resulting image with a checkboard of the colors color1 and color2
+//! and renders it onto the destination image.
+//! see composite_color_simple() for a simpler variant of this function
+//! suitable for many tasks.
+{
+  pgtk_verify_inited();
+  {
+    GdkPixbuf *dest;
+    struct object *o1;
+    int dest_x,dest_y,dest_width,dest_height;
+    FLOAT_TYPE offset_x,offset_y,scale_x,scale_y;
+    int type,overall_alpha,check_x,check_y,check_size;
+    gint32 color1,color2;
+    get_all_args("composite_color",args,"%o%i%i%i%i%f%f%f%f%i%i%i%i%i%i%",
+		&o1,&dest_x,&dest_y,&dest_width,&dest_height,&offset_x,
+		&offset_y,&scale_x,&scale_y,&type,&overall_alpha,&check_x,
+		&check_y,&check_size,&color1,&color2);
+    my_pop_n_elems(args);
+    dest=GDK_PIXBUF(get_gobject(o1));
+    gdk_pixbuf_composite_color(GDK_PIXBUF(THIS->obj),dest,dest_x,dest_y,
+		dest_width,dest_height,offset_x,offset_y,scale_x,scale_y,
+		type,overall_alpha,check_x,check_y,check_size,color1,
+		color2);
+    push_gobject(dest);
+  }
+}
+
+require gtk26;
+
+GDK2.Pixbuf rotate_simple(int angle);
+//! Rotates a pixbuf by a multiple of 90 degress, and returns the result
+//! in a new pixbuf.  angle is either a multiple of 90 degress (0,90,180,270),
+//! or one of CONST(GDK_PIXBUF_ROTATE_), which are merely aliases.
+
+GDK2.Pixbuf flip(int horizontal);
+//! Flips a pixbuf horizontally or vertically and returns the result in
+//! a new pixbuf.
+
+endrequire;
+
+GDK2.Pixbuf add_alpha(int substitute_color, int r, int g, int b);
+//! Adds an alpha channel to this pixbuf and returns a copy.  If it
+//! already has an alpha channel, the channel values are copied from the
+//! original; otherwise, the alpha channel is initialized to 255 (full
+//! opacity).
+//! If substitute_color is true, then the color specified by (r,g,b)
+//! will be assigned zero opacity.  That is, if you pass (255,255,255)
+//! for the substitute color, all white pixels will become full
+//! transparent.
+
+GDK2.Pixbuf copy_area(GDK2.Pixbuf dest, int src_x, int src_y, int width,
+		int height, int dest_x, int dest_y)
+//! Copies a rectangular area from this pixbuf to dest.  Conversion of
+//! pixbuf formats is done automatically.
+{
+  pgtk_verify_inited();
+  {
+    GdkPixbuf *dest;
+    struct object *o1;
+    int src_x,src_y,width,height,dest_x,dest_y;
+    get_all_args("copy_area",args,"%o%i%i%i%i%i%i",&o1,&src_x,&src_y,
+		&width,&height,&dest_x,&dest_y);
+    my_pop_n_elems(args);
+    dest=GDK_PIXBUF(get_gobject(o1));
+    gdk_pixbuf_copy_area(GDK_PIXBUF(THIS->obj),src_x,src_y,width,height,
+		dest,dest_x,dest_y);
+    push_gobject(dest);
+  }
+}
+
+void saturate_and_pixelate(GDK2.Pixbuf dest, float saturation,
+		int pixelate);
+//! Modifies saturation and optionally pixelates this pixbuf, placing
+//! the result in dest.  The source and dest may be the same pixbuf
+//! with no ill effects.  If saturation is 1.0 then saturation is not
+//! changed.  If it's less than 1.0, saturation is reduced (the image
+//! is darkened); if greater than 1.0, saturation is increased (the image
+//! is brightened).  If pixelate is true, then pixels are faded in a
+//! checkerboard pattern to create a pixelated image.  This pixbuf and
+//! dest must have the same image format, size, and rowstride.
+
+
+void fill(array|mapping|int pixel)
+//! Clears a pixbuf to the given RGBA value, converting the RGBA value
+//! into the pixbuf's pixel format.  The alpha will be ignored if the
+//! pixbuf doesn't have an alpha channel.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE pixel=0;
+    if (args) {
+      if (pgtk_is_int(&Pike_sp[-args])) {
+        pixel=PGTK_GETINT(&Pike_sp[-args]);
+	gdk_pixbuf_fill(GDK_PIXBUF(THIS->obj),pixel);
+      } else if (Pike_sp[-args].type==PIKE_T_ARRAY) {
+	struct array *a=Pike_sp[-args].u.array;
+	if (a->size>=1)
+	  pixel=PGTK_GETINT(ITEM(a))<<24;
+	if (a->size>=2)
+	  pixel&=PGTK_GETINT(ITEM(a)+1)<<16;
+	if (a->size>=3)
+	  pixel&=PGTK_GETINT(ITEM(a)+2)<<8;
+	if (a->size>=4)
+	  pixel&=PGTK_GETINT(ITEM(a)+3);
+	gdk_pixbuf_fill(GDK_PIXBUF(THIS->obj),pixel);
+      } else { /* mapping */
+	struct mapping *m;
+	struct svalue *sv;
+	INT_TYPE r,g,b,a,pixel;
+	get_all_args("fill",args,"%m",&m);
+	sv=simple_mapping_string_lookup(m,"red");
+	r=PGTK_GETINT(sv);
+	sv=simple_mapping_string_lookup(m,"green");
+	g=PGTK_GETINT(sv);
+	sv=simple_mapping_string_lookup(m,"blue");
+	b=PGTK_GETINT(sv);
+	sv=simple_mapping_string_lookup(m,"alpha");
+	a=PGTK_GETINT(sv);
+        pixel=(r<<24)+(g<<16)+(b<<8)+a;
+	gdk_pixbuf_fill(GDK_PIXBUF(THIS->obj),pixel);
+      }
+    } else {
+      gdk_pixbuf_fill(GDK_PIXBUF(THIS->obj),255);
+    }
+  }
+  my_pop_n_elems(args);
+  RETURN_THIS();
+}

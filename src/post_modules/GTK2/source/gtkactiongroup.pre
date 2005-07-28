@@ -1,0 +1,335 @@
+require gtk24;
+
+class GTK2.ActionGroup;
+inherit G.Object;
+
+//! Actions are organized into groups.  An action group is essentially a map
+//! from names to GTK2.Action objects.
+//! <p>
+//! All actions that would make sense to use in a particular context should be
+//! in a single group.  Multiple action groups may be used for a particular
+//! user interface.  In fact, it is expected that most non-trivial applications
+//! will make use of multiple groups.  For example, in an application that can
+//! edit multiple documents, one group holding global actions (e.g. quit,
+//! about, new), and one group per document holding actions that act on that
+//! document (eg. save, cut/copy/paste, etc).  Each window's menus would be
+//! constructed from a combination of two action groups.
+//! <p>
+//! Accelerators are handled by the GTK2+ accelerator map.  All actions are
+//! assigned an accelerator path (which normally has the form
+//! &lt;Actions&gt;/group-name/action-name) and a shortcut is associated with
+//! this accelerator path.  All menuitems and toolitems take on this
+//! accelerator path.  The GTK2+ accelerator map code makes sure that the
+//! correct shortcut is displayed next to the menu item.
+
+//! Properties:
+//! string name
+//! int sensitive
+//! int visible
+
+signal connect_proxy;
+signal disconnect_proxy;
+signal post_activate;
+signal pre_activate;
+
+void create(string name);
+//! Creates a new GTK2.ActionGroup object.  The name of the action group is
+//! used when associating keybindings with the actions.
+
+string get_name();
+//! Gets the name of the action group.
+
+int get_sensitive();
+//! Returns true if the group is sensitive.  The constituent actions can only
+//! be logically sensitive if they are sensitive and their group is sensitive.
+
+void set_sensitive(int setting);
+//! Changes the sensitivity.
+
+int get_visible();
+//! Returns true if the group is visible.  The constituent actions can only be
+//! logically visible if they are visible and their group is visible.
+
+void set_visible(int setting);
+//! Changes the visibility.
+
+GTK2.Action get_action(string name);
+//! Looks up an action in the action group by name.
+
+array(GTK2.Action) list_actions()
+//! Lists the actions in the action group.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GList *gl,*g2;
+    int i=0;
+    gl=g2=gtk_action_group_list_actions(GTK_ACTION_GROUP(THIS->obj));
+    while (g2) {
+      push_gobject(g2->data);
+      g_object_ref(g2->data);
+      i++;
+      g2=g_list_next(g2);
+    }
+    g_list_free(gl);
+    f_aggregate(i);
+  }
+}
+
+void add_action(GTK2.Action action, ?string accelerator)
+//! Adds an action object to the action group and sets up the accelerator.
+//! <p>
+//! If accelerator is omitted, attempts to use the accelerator associated with
+//! the stock_id of the action.
+//! <p>
+//! Accel paths are set to &lt;Actions&gt;/group-name/action-name.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    char *accel=NULL;
+    if (args==1)
+      get_all_args("add_action",args,"%o",&o1);
+    else
+      get_all_args("add_action",args,"%o%s",&o1,&accel);
+    gtk_action_group_add_action_with_accel(GTK_ACTION_GROUP(THIS->obj),
+			GTK_ACTION(get_gobject(o1)),accel);
+  }
+  RETURN_THIS();
+}
+
+void remove_action(GTK2.Action action);
+//! Removes an action object.
+
+%{
+int pgtk_action_callback(GtkAction *action, struct signal_data *d) {
+  int res;
+  push_gobject(action);
+  push_svalue(&d->args);
+  apply_svalue(&d->cb,2);
+  res=Pike_sp[-1].u.integer;
+  pop_stack();
+  return res;
+}
+
+void pgtk_radio_action_callback(GtkAction *action, GtkRadioAction *current,
+				struct signal_data *d) {
+  push_gobject(action);
+  push_gobject(current);
+  push_svalue(&d->args);
+  apply_svalue(&d->cb,3);
+  pop_stack();
+}
+%}
+
+void add_actions(array(mapping(string:mixed)) entries)
+//! This is a convenience function to create a number of actions and add them
+//! to the action group.
+//! <p>
+//! The "activate" signals of the actions are connect to the callbacks and
+//! their accel paths are set to <Actions>/group-name/action-name.
+//! <p>
+//! Mapping is:
+//! ([ "name": string,
+//!    "stock_id": string,
+//!    "label": string,
+//!    "accelerator": string,
+//!    "tooltip": string,
+//!    "callback": function(callback)
+//!    "data": mixed
+//! ]);
+{
+  pgtk_verify_inited();
+  {
+    struct array *a;
+    struct mapping *m;
+    GtkActionEntry gta;
+    struct svalue *sv;
+    struct signal_data *sd;
+    int i;
+    get_all_args("add_actions",args,"%A",&a);
+    if (a==NULL || a->size<1)
+      Pike_error("Invalid array argument 1.\n");
+    for (i=0; i<a->size; i++) {
+      memset(&gta,0,sizeof(GtkActionEntry));
+      sd=NULL;
+      if ((ITEM(a)+i)->type!=PIKE_T_MAPPING)
+	continue;
+      m=(ITEM(a)+i)->u.mapping;
+      sv=simple_mapping_string_lookup(m,"name");
+      if (sv && sv->type==PIKE_T_STRING) {
+	gta.name=(const gchar *)STR0(sv->u.string);
+      } else
+        continue;
+      sv=simple_mapping_string_lookup(m,"stock_id");
+      if (sv && sv->type==PIKE_T_STRING) {
+	gta.stock_id=(const gchar *)STR0(sv->u.string);
+      }
+      sv=simple_mapping_string_lookup(m,"label");
+      if (sv && sv->type==PIKE_T_STRING) {
+	gta.label=(const gchar *)STR0(sv->u.string);
+      } else
+	continue;
+      sv=simple_mapping_string_lookup(m,"accelerator");
+      if (sv && sv->type==PIKE_T_STRING) {
+	gta.accelerator=(const gchar *)STR0(sv->u.string);
+      }
+      sv=simple_mapping_string_lookup(m,"tooltip");
+      if (sv && sv->type==PIKE_T_STRING) {
+	gta.tooltip=(const gchar *)STR0(sv->u.string);
+      }
+      sv=simple_mapping_string_lookup(m,"callback");
+      if (sv) {
+	gta.callback=G_CALLBACK(pgtk_action_callback);
+	sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
+	if (sd==NULL)
+	  SIMPLE_OUT_OF_MEMORY_ERROR("add_actions",sizeof(struct signal_data));
+	assign_svalue_no_free(&sd->cb,sv);
+	sv=simple_mapping_string_lookup(m,"data");
+	assign_svalue_no_free(&sd->args,sv);
+      }
+      gtk_action_group_add_actions(GTK_ACTION_GROUP(THIS->obj),&gta,1,sd);
+    }
+  }
+  RETURN_THIS();
+}
+
+void add_toggle_actions(array(mapping(string:mixed)) entries)
+//! This is a convenience function to create a number of toggle actions and
+//! add them to the action group.
+//! <p>
+//! Mapping is:
+//! ([ "name": string,
+//!    "stock_id": string,
+//!    "label": string,
+//!    "accelerator": string,
+//!    "tooltip": string,
+//!    "callback": function(callback),
+//!    "data": mixed,
+//!    "is_active": int
+//! ]);
+{
+  pgtk_verify_inited();
+  {
+    struct array *a;
+    struct mapping *m;
+    GtkToggleActionEntry gta;
+    struct svalue *sv;
+    struct signal_data *sd;
+    int i;
+    get_all_args("add_toggle_actions",args,"%A",&a);
+    if (a==NULL || a->size<1)
+      Pike_error("Invalid array argument 1.\n");
+    for (i=0; i<a->size; i++) {
+      memset(&gta,0,sizeof(GtkToggleActionEntry));
+      if ((ITEM(a)+i)->type!=PIKE_T_MAPPING)
+	continue;
+      m=(ITEM(a)+i)->u.mapping;
+      sv=simple_mapping_string_lookup(m,"name");
+      if (sv && sv->type==PIKE_T_STRING)
+	gta.name=(const gchar *)STR0(sv->u.string);
+      else
+	continue;
+      sv=simple_mapping_string_lookup(m,"stock_id");
+      if (sv && sv->type==PIKE_T_STRING)
+	gta.stock_id=(const gchar *)STR0(sv->u.string);
+      sv=simple_mapping_string_lookup(m,"label");
+      if (sv && sv->type==PIKE_T_STRING)
+	gta.label=(const gchar *)STR0(sv->u.string);
+      else
+	continue;
+      sv=simple_mapping_string_lookup(m,"accelerator");
+      if (sv && sv->type==PIKE_T_STRING)
+	gta.accelerator=(const gchar *)STR0(sv->u.string);
+      sv=simple_mapping_string_lookup(m,"callback");
+      if (sv) {
+	gta.callback=G_CALLBACK(pgtk_action_callback);
+	sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
+	if (sd==NULL)
+	  SIMPLE_OUT_OF_MEMORY_ERROR("add_toggle_actions",sizeof(struct signal_data));
+	assign_svalue_no_free(&sd->cb,sv);
+	sv=simple_mapping_string_lookup(m,"data");
+	assign_svalue_no_free(&sd->args,sv);
+      }
+      sv=simple_mapping_string_lookup(m,"is_active");
+      if (sv)
+	gta.is_active=PGTK_GETINT(sv);
+      gtk_action_group_add_toggle_actions(GTK_ACTION_GROUP(THIS->obj),
+			&gta,1,sd);
+    }
+  }
+}
+
+void add_radio_actions(array(mapping(string:mixed)) entries,
+		       function cb, mixed user_data)
+//! This is a convenience routine to create a group of radio actions and add
+//! them to the action group.
+//! <p>
+//! Mapping is:
+//! ([ "name": string,
+//!    "stock_id": string,
+//!    "label": string,
+//!    "accelerator": string,
+//!    "tooltip": string,
+//!    "value": int
+//! ]);
+{
+  pgtk_verify_inited();
+  {
+    struct array *a;
+    struct mapping *m;
+    GtkRadioActionEntry *gta;
+    struct svalue *sv,*sv2,*sv3;
+    struct signal_data *sd;
+    int i,j;
+    get_all_args("add_radio_actions",args,"%A%*%*",&a,&sv2,&sv3);
+    if (a==NULL || a->size<1)
+      Pike_error("Invalid array argument 1.\n");
+    gta=(GtkRadioActionEntry *)g_malloc0(sizeof(GtkRadioActionEntry)*a->size);
+    if (gta==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("add_radio_actions",sizeof(GtkRadioActionEntry)*a->size);
+    for (i=j=0; i<a->size; i++) {
+      if ((ITEM(a)+i)->type!=PIKE_T_MAPPING)
+	continue;
+      m=(ITEM(a)+i)->u.mapping;
+      sv=simple_mapping_string_lookup(m,"name");
+      if (sv && sv->type==PIKE_T_STRING)
+	gta[j].name=(const gchar *)STR0(sv->u.string);
+      else
+	continue;
+      sv=simple_mapping_string_lookup(m,"stock_id");
+      if (sv && sv->type==PIKE_T_STRING)
+	gta[j].stock_id=(const gchar *)STR0(sv->u.string);
+      sv=simple_mapping_string_lookup(m,"label");
+      if (sv && sv->type==PIKE_T_STRING)
+	gta[j].label=(const gchar *)STR0(sv->u.string);
+      else
+	continue;
+      sv=simple_mapping_string_lookup(m,"accelerator");
+      if (sv && sv->type==PIKE_T_STRING)
+	gta[j].accelerator=(const gchar *)STR0(sv->u.string);
+      sv=simple_mapping_string_lookup(m,"tooltip");
+      if (sv && sv->type==PIKE_T_STRING)
+	gta[j].tooltip=(const gchar *)STR0(sv->u.string);
+      sv=simple_mapping_string_lookup(m,"value");
+      if (sv)
+	gta[j].value=PGTK_GETINT(sv);
+      j++;
+    }
+    if (sv2 && sv2->type!=PIKE_T_FUNCTION) {
+      g_free(gta);
+      Pike_error("Invalid callback.\n");
+    }
+    sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
+    if (sd==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("add_radio_actions",sizeof(struct signal_data));
+    assign_svalue_no_free(&sd->cb,sv2);
+    assign_svalue_no_free(&sd->args,sv3);
+    gtk_action_group_add_radio_actions(GTK_ACTION_GROUP(THIS->obj),
+			gta,j,0,G_CALLBACK(pgtk_radio_action_callback),
+			sd);
+    g_free(gta);
+  }
+}
+
+endrequire;

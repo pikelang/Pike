@@ -1,0 +1,52 @@
+require gtk24;
+
+class GTK2.RadioAction;
+inherit GTK2.ToggleAction;
+
+//! Properties
+//! GTK2.RadioAction group
+//! int value
+
+signal changed;
+
+void create(string name, string label, string tooltip, string stock_id,
+	    int value);
+//! Creates a new GTK2.ToggleAction object.
+
+array(GTK2.RadioAction) get_group()
+//! Returns the list representing the radio group.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GSList *gl,*g2;
+    int i=0;
+    gl=g2=gtk_radio_action_get_group(GTK_RADIO_ACTION(THIS->obj));
+    while (g2) {
+      push_gobject(g2->data);
+      g_object_ref(g2->data);
+      i++;
+      g2=g_slist_next(g2);
+    }
+    f_aggregate(i);
+  }
+}
+
+void set_group(GTK2.RadioAction member)
+//! Sets the radio group.
+{
+  pgtk_verify_inited();
+  {
+    GSList *gl;
+    struct object *o1;
+    get_all_args("set_group",args,"%o",&o1);
+    gl=gtk_radio_action_get_group(GTK_RADIO_ACTION(get_gobject(o1)));
+    gtk_radio_action_set_group(GTK_RADIO_ACTION(THIS->obj),gl);
+  }
+  RETURN_THIS();
+}
+
+int get_current_value();
+//! Obtains the value property of the currently active member.
+
+endrequire;

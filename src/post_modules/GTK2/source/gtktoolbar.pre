@@ -1,0 +1,113 @@
+class GTK2.Toolbar;
+inherit GTK2.Container;
+
+//! Toolbars are usually used to group some number of widgets in order
+//! to simplify customization of their look and layout. Typically a
+//! toolbar consists of buttons with icons, labels and tooltips, but
+//! any other widget can also be put inside a toolbar. Finally, items
+//! can be arranged horizontally or vertically and buttons can be
+//! displayed with icons, labels, or both.
+
+//! <p>
+//! Examples:
+//! IMG: lambda(){object t=GTK2.Toolbar( GTK2.ORIENTATION_HORIZONTAL, GTK2.TOOLBAR_TEXT );t->append_item( "Button 1", "Tooltip 1", "", GTK2.Frame(), lambda(){},0);t->append_space();t->append_item( "Button 2", "Tooltip 2", "", GTK2.Frame(), lambda(){},0);t->append_item( "Button 3", "Tooltip 3", "", GTK2.Frame(), lambda(){},0);t->append_space();t->append_item( "Button 4", "Tooltip 4", "", GTK2.Frame(), lambda(){},0);t->append_item( "Button 5", "Tooltip 5", "", GTK2.Frame(), lambda(){},0);return t;}()
+//! IMG: lambda(){object t=GTK2.Toolbar( GTK2.ORIENTATION_VERTICAL, GTK2.TOOLBAR_TEXT );t->append_item( "Button 1", "Tooltip 1", "", GTK2.Frame(), lambda(){},0);t->append_space();t->append_item( "Button 2", "Tooltip 2", "", GTK2.Frame(), lambda(){},0);t->append_item( "Button 3", "Tooltip 3", "", GTK2.Frame(), lambda(){},0);t->append_space();t->append_item( "Button 4", "Tooltip 4", "", GTK2.Frame(), lambda(){},0);t->append_item( "Button 5", "Tooltip 5", "", GTK2.Frame(), lambda(){},0);return t;}()
+//! IMG: lambda(){object i=GDK2.Image()->set(Image.image(20,20)->test());object t=GTK2.Toolbar( GTK2.ORIENTATION_HORIZONTAL, GTK2.TOOLBAR_BOTH );t->append_item( "Button 1", "Tooltip 1", "", GTK2.Image(i), lambda(){},0);t->append_space();t->append_item( "Button 2", "Tooltip 2", "", GTK2.Image(i), lambda(){},0);t->append_item( "Button 3", "Tooltip 3", "", GTK2.Image(i), lambda(){},0);t->append_space();t->append_item( "Button 4", "Tooltip 4", "", GTK2.Image(i), lambda(){},0);t->append_item( "Button 5", "Tooltip 5", "", GTK2.Image(i), lambda(){},0);return t;}()
+//! </p>
+
+//! Properties:
+//! int orientation
+//! int show-arrow
+//! int toolbar-style
+//! <p>
+//! Child properties:
+//! int expand
+//! int homogeneous
+//! <p>
+//! Style properties:
+//! int button-relief
+//! int internal-padding
+//! int shadow-type
+//! int space-size
+//! int space-style
+
+signal orientation_changed;
+signal popup_context_menu;
+signal style_changed;
+
+void create();
+//! Creates a new toolbar.
+
+require gtk24;
+void insert(GTK2.ToolItem item, int pos);
+//! Insert a W(ToolItem) into the toolbar at position pos.  If pos is 0
+//! the item is prepended to the start of the toolbar.  If pos is negative,
+//! the item is appended to the end of the toolbar.
+
+int get_item_index(GTK2.ToolItem item);
+//! Returns the position of item on the toolbar, starting from 0.
+
+int get_n_items();
+//! Returns the number of items on the toolbar.
+
+GTK2.ToolItem get_nth_item(int n);
+//! Returns the n's item on the toolbar, or empty if the toolbar does not
+//! contain an n'th item.
+
+int get_drop_index(int x, int y);
+//! Returns the position corresponding to the indicated point on the toolbar.
+//! This is useful when dragging items to the toolbar: this function returns
+//! the position a new item should be inserted.
+//! <p>
+//! x and y are in toolbar coordinates.
+
+void set_drop_highlight_item(GTK2.ToolItem item, int index);
+//! Highlights the toolbar to give an ide aof what it would like if item was
+//! added at the position indicated by index.
+//! <p>
+//! The item passed to this function must not be part of any widget hierarchy.
+//! When an item is set as drop highlight item it can not be added to any
+//! widget hierarchy or used as highlight item for another toolbar.
+
+void set_show_arrow(int show_arrow);
+//! Sets whether to show an overflow menu when the toolbar doesn't have room
+//! for all items on it.  If true, items for which there are not room are
+//! are available through an overflow menu.
+endrequire;
+
+void set_orientation(int orientation);
+//! Sets whether a toolbar should appear horizontally or vertically.
+//! One of CONST(GTK_ORIENTATION_).
+
+void set_tooltips(int enable);
+//! Sets if the tooltips should be active or not.
+
+require gtk24;
+int get_show_arrow();
+//! Returns whether the toolbar has an overflow menu.
+endrequire;
+
+int get_orientation();
+//! Retrieves the current orientation of the toolbar.
+
+int get_style();
+//! Retrieves whether the toolbar has text, icons, or both.  One of
+//! CONST(GTK_TOOLBAR_);
+
+int get_icon_size();
+//! Retrieves the icon size for the toolbar.  One of CONST(GTK_ICON_SIZE_).
+
+int get_tooltips();
+//! Retrieves whether tooltips are enabled.
+
+require gtk24;
+int get_relief_style();
+//! Returns the relief style of buttons.
+endrequire;
+
+void set_style(int style);
+//! Set the style, one of CONST(GTK_TOOLBAR)
+
+void unset_style();
+//! Unsets a toolbar style, so that user preferences will be used to
+//! determine the toolbar style.

@@ -1,0 +1,102 @@
+class GTK2.ScrolledWindow;
+inherit GTK2.Bin;
+
+//! Scrolled windows are used to create a scrollable area with another
+//! widget insite it.  You may insert any type of widget into a scrolled
+//! window, and it will be accessible regardless of the size by using
+//! the scrollbars.
+//!<p>
+//! IMG: GTK2.ScrolledWindow(GTK2.Adjustment(),GTK2.Adjustment())->add(GTK2.Label("A small label"))->set_policy(GTK2.POLICY_AUTOMATIC,GTK2.POLICY_AUTOMATIC)
+//! IMG: GTK2.ScrolledWindow(GTK2.Adjustment(),GTK2.Adjustment())->add(GTK2.Label("A small label"))->set_policy(GTK2.POLICY_AUTOMATIC,GTK2.POLICY_AUTOMATIC)
+//! IMG: GTK2.ScrolledWindow(GTK2.Adjustment(),GTK2.Adjustment())->add(GTK2.Label("A small label"))
+//! IMG: GTK2.ScrolledWindow(GTK2.Adjustment(),GTK2.Adjustment())->add(GTK2.Label("a ver huge label"))
+//! </p>
+
+//! Properties:
+//! GTK2.Adjustment hadjustment
+//! int hscrollbar-policy
+//! int shadow-type
+//! GTK2.Adjustment vadjustment
+//! int vscrollbar-policy
+//! int window-placement
+//! <p>
+//! Style properties:
+//! int scrollbar-spacing
+
+signal move_focus_out;
+signal scroll_child;
+
+void create(?GTK2.Adjustment hadjustment, ?GTK2.Adjustment vadjustments);
+//! The two adjustments are most commonly set to 0.
+
+GTK2.Adjustment get_hadjustment();
+//! Get the horizontal adjustment.
+
+GTK2.Adjustment get_vadjustment();
+//! Get the vertical adjustment.
+
+void set_policy(int xpolicy, int ypolicy);
+//! Vertical and horizontal policy.  Both are one of CONST(GTK_POLICY_)
+
+void add(GTK2.Widget victim)
+//! Add a widget to this container.
+//! This is equivalent to the
+//! C-GTK function gtk_scrolled_window_add_with_viewport or
+//! gtk_container_add, depending on whether or not the child supports
+//! the set_scroll_adjustments signal.
+//! <p>
+//! What this means in practice is that you do not have to care about
+//! this at all, it's all handled automatically.
+//! </p>
+{
+  GtkWidget *victim;
+  struct object *o;
+
+  get_all_args("add",args,"%o",&o);
+  victim=GTK_WIDGET(get_gobject(o));
+  if (!(GTK_WIDGET_GET_CLASS(victim)->set_scroll_adjustments_signal))
+    gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(THIS->obj),
+		victim);
+  else
+    gtk_container_add(GTK_CONTAINER(THIS->obj),victim);
+  RETURN_THIS();
+}
+
+void set_placement(int window_placement);
+//! The location of the window relative to the scrollbars.
+//! One of CONST(GTK_CORNER_)
+
+void set_shadow_type(int type);
+//! Changes the type of shadow drawn around the contents.
+//! One of CONST(GTK_SHADOW_)
+
+void set_hadjustment(GTK2.Adjustment hadjustment);
+//! Set the horizontal adjustment object.
+
+void set_vadjustment(GTK2.Adjustment vadjustment);
+//! Set the vertical adjustment object.
+
+int get_placement();
+//! Gets the placement of the scrollbars.
+
+mapping(string:int) get_policy()
+//! Returns the current policy values for the horizontal and vertical
+//! scrollbars.
+//! ([ "h-policy": horizontal policy,
+//!    "v-policy": vertical policy
+//! ]);
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GtkPolicyType hpol,vpol;
+    gtk_scrolled_window_get_policy(GTK_SCROLLED_WINDOW(THIS->obj),
+			&hpol,&vpol);
+    push_text("h-policy"); push_int(hpol);
+    push_text("v-policy"); push_int(vpol);
+    f_aggregate_mapping(4);
+  }
+}
+
+int get_shadow_type();
+//! Gets the shadow type.

@@ -1,0 +1,6 @@
+class GTK2.Separator;
+inherit GTK2.Widget;
+
+//! A generic separator. Basicaly a line, like &lt;hr&gt; in HTML.
+
+

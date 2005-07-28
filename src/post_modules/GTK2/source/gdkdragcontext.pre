@@ -1,0 +1,128 @@
+/* -*- C -*- */
+class GDK2.DragContext;
+
+//! The drag context contains all information about the drag'n'drop
+//! connected to the signal to which it is an argument.
+//! <p>
+//! NOIMG
+//! </p>
+
+GTK2.Widget get_source_widget()
+//! Return the drag source widget.
+{
+  my_pop_n_elems(args);
+  push_gobjectclass(gtk_drag_get_source_widget(((GdkDragContext *)THIS->obj)),
+                      pgtk_widget_program);
+}
+
+void drag_finish(int success,int del,int time)
+//! If success is true, the drag succeded.
+//! If del is true, the source should be deleted.
+//! time is the current time.
+{
+  INT_TYPE a, b, t;
+  get_all_args("drag_finish", args, "%i%i%i", &a, &b, &t );
+  gtk_drag_finish(((GdkDragContext *)THIS->obj), a, b, t);
+  RETURN_THIS();
+}
+
+void drag_status(int action, int time)
+//! Setting action to -1 means use the suggested action
+{
+  INT_TYPE o, t;
+  get_all_args( "status", args, "%i%i", &o, &t );
+  if( o == -1 )
+    o = ((GdkDragContext *)THIS->obj)->suggested_action;
+  gdk_drag_status( ((GdkDragContext *)THIS->obj), o, t );
+  RETURN_THIS();
+}
+
+void drag_drop(int time)
+//! Drag drop.
+{
+  INT_TYPE t;
+  get_all_args( "drop", args, "%i", &t );
+  gdk_drag_drop( ((GdkDragContext *)THIS->obj), t);
+  RETURN_THIS();
+}
+
+
+void drag_abort(int time)
+//! Abort the drag
+{
+  INT_TYPE t;
+  get_all_args( "abort", args, "%i", &t );
+  gdk_drag_abort( ((GdkDragContext *)THIS->obj), t);
+  RETURN_THIS();
+}
+
+void drop_reply(int ok, int time)
+//! Drop reply.
+{
+  INT_TYPE t, o;
+  get_all_args( "reply", args, "%i%i", &o, &t );
+  gdk_drop_reply( ((GdkDragContext *)THIS->obj), o, t);
+  RETURN_THIS();
+}
+
+void drag_set_icon_widget(GTK2.Widget widget,int hot_x,int hot_y)
+//! Set the drag widget. This is a widget that will be shown, and then
+//! dragged around by the user during this drag.
+{
+  struct object *_o;
+  INT_TYPE x, y;
+  get_all_args( "drag_set_icon_window", args, "%o%i%i",
+                &_o, &x, &y);
+  gtk_drag_set_icon_widget(((GdkDragContext *)THIS->obj),
+                           GTK_WIDGET(get_pgobject(_o,pgtk_widget_program)),
+                           x,y );
+  RETURN_THIS();
+}
+
+void drag_set_icon_default()
+//! Use the default drag icon associated with the source widget.
+{
+  gtk_drag_set_icon_default( ((GdkDragContext *)THIS->obj) );
+  RETURN_THIS();
+}
+
+void drag_set_icon_pixmap(GDK2.Pixmap p, GDK2.Bitmap b, int hot_x, int hot_y )
+//! Set the drag pixmap, and optionally mask.<br />
+//! The hot_x and hot_y coordinates will be the location of the mouse pointer,
+//! relative to the upper left corner of the pixmap.
+{
+  struct object *p=NULL, *m=NULL;
+  int x, y;
+  if(args != 4)
+    Pike_error("Too few arguments to drag_set_icon_pixmap\n");
+  if(Pike_sp[-args].type == PIKE_T_OBJECT)
+    p = Pike_sp[-args].u.object;
+  if(Pike_sp[-args+1].type == PIKE_T_OBJECT)
+    m = Pike_sp[-args+1].u.object;
+  x  = Pike_sp[-args+2].u.integer;
+  y  = Pike_sp[-args+3].u.integer;
+
+  gtk_drag_set_icon_pixmap( ((GdkDragContext *)THIS->obj),
+                            gdk_colormap_get_system(),
+                            get_gdkobject( p, pixmap ),
+                            get_gdkobject( m, bitmap ),
+                             x,y);
+  RETURN_THIS();
+}
+
+member int suggested_action;
+//! One of CONST(GDK_ACTION);
+member int actions;
+//! A bitwise or of one or more of CONST(GDK_ACTION);
+member int action;
+//! One of CONST(GDK_ACTION);
+member int start_time;
+//! The start time of this drag, as a unix time_t (seconds since 0:00 1/1 1970)
+member int protocol;
+//! One of CONST(GDK_DRAG_PROTO)
+member int is_source;
+//! Is this application the source?
+
+
+
+

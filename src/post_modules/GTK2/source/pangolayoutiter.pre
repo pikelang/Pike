@@ -1,0 +1,157 @@
+class Pango.LayoutIter;
+
+//! PangoLayoutIter.
+
+void destroy()
+//! Destructor.
+{
+  if (THIS->obj)
+    pango_layout_iter_free((PangoLayoutIter *)THIS->obj);
+  THIS->obj=0;
+  push_int(0);
+}
+
+%{
+#define PANGO_LAYOUT_ITER(X) ((PangoLayoutIter *)(X))
+%}
+
+int next_run();
+//! Moves forward to the next run in visual order.  If it was already at the
+//! end of the layout, returns false.
+
+int next_char();
+//! Moves forward to the next character in visual order.  If it was already at
+//! the end of the layout, returns false.
+
+int next_cluster();
+//! Moves forward to the next cluster in visual order.  If it was already at
+//! the end of the layout, returns false.
+
+int next_line();
+//! Moves forward to the start of the next line.  If it is already on the last
+//! line, returns false.
+
+int at_last_line();
+//! Determines whether this iter is on the last line of the layout.
+
+int get_index();
+//! Gets the current byte index.  Note that iterating forward by char moves in
+//! visual order, not logical order, so indexes may not be sequential.  Also,
+//! the index may be equal to the length of the text in the layout.
+
+int get_baseline();
+//! Gets the y position of the current line's baseline, in layout coordinates
+//! (origin at top left of the entire layout).
+
+Pango.LayoutLine get_line()
+//! Gets the current line.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    PangoLayoutLine *pll;
+    pll=pango_layout_iter_get_line(PANGO_LAYOUT_ITER(THIS->obj));
+    push_gobjectclass(pll,ppango_layout_line_program);
+  }
+}
+
+%{
+void push_pango_rectangle(PangoRectangle *pos) {
+  push_text("x"); push_int(pos->x);
+  push_text("y"); push_int(pos->y);
+  push_text("width"); push_int(pos->width);
+  push_text("height"); push_int(pos->height);
+  f_aggregate_mapping(8);
+}
+%}
+
+mapping(string:int) get_char_extents()
+//! Gets the extents of the current character, in layout coordinates (origin
+//! is the top left of the entire layout).
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    PangoRectangle pos;
+    pango_layout_iter_get_char_extents((PangoLayoutIter *)THIS->obj,&pos);
+    push_pango_rectangle(&pos);
+  }
+}
+
+array(mapping(string:int)) get_cluster_extents()
+//! Gets the extents of the current cluster, in layout coordinates.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    PangoRectangle pos1,pos2;
+    pango_layout_iter_get_cluster_extents((PangoLayoutIter *)THIS->obj,
+			&pos1,&pos2);
+    push_pango_rectangle(&pos1);
+    push_pango_rectangle(&pos2);
+    f_aggregate(2);
+  }
+}
+
+array(mapping(string:int)) get_run_extents()
+//! Gets the extents of the current run in layout coordinates.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    PangoRectangle pos1,pos2;
+    pango_layout_iter_get_run_extents((PangoLayoutIter *)THIS->obj,
+			&pos1,&pos2);
+    push_pango_rectangle(&pos1);
+    push_pango_rectangle(&pos2);
+    f_aggregate(2);
+  }
+}
+
+array get_line_yrange()
+//! Divides the vertical space being iterated over between the lines in the
+//! layout, and returns the space belonging to the current line.  A line's
+//! range includes the line's logical extents, plus half of the spacing above
+//! and below the line, if Pango.Layout->set_spacing() has been called to set 
+//! layout spacing.  The y positions are in layout coordinates.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    int y0,y1;
+    pango_layout_iter_get_line_yrange((PangoLayoutIter *)THIS->obj,&y0,&y1);
+    push_int(y0);
+    push_int(y1);
+    f_aggregate(2);
+  }
+}
+
+array(mapping(string:int)) get_line_extents()
+//! Obtains the extents of the current line.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    PangoRectangle pos1,pos2;
+    pango_layout_iter_get_line_extents((PangoLayoutIter *)THIS->obj,
+			&pos1,&pos2);
+    push_pango_rectangle(&pos1);
+    push_pango_rectangle(&pos2);
+    f_aggregate(2);
+  }
+}
+
+array(mapping(string:int)) get_layout_extents()
+//! Obtains the extents of the layout.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    PangoRectangle pos1,pos2;
+    pango_layout_iter_get_layout_extents((PangoLayoutIter *)THIS->obj,
+			&pos1,&pos2);
+    push_pango_rectangle(&pos1);
+    push_pango_rectangle(&pos2);
+    f_aggregate(2);
+  }
+}

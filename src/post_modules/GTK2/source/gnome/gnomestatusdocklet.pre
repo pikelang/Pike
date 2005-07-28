@@ -1,0 +1,61 @@
+require docklets;
+class Gnome.StatusDocklet;
+inherit GTK.Object;
+%{
+#include <status-docklet.h>
+#define GNOME_STATUS_DOCKLET(X) ((StatusDocklet *)X)
+#define GnomeStatusDocklet StatusDocklet
+#define gnome_status_docklet_new status_docklet_new
+#define gnome_status_docklet_run status_docklet_run
+%}
+//! Some apps want to embed a very small icon or widget in the panel to
+//! display the status of the app. This can be done without the
+//! operational overhead of an applet. The status docklet will embed a
+//! 22 by 22 window inside the panel. This is not a separate applet and
+//! thus is minimally intrusive to the user and is meant for very
+//! temporary status displays for which a full applet would not be
+//! appropriate.
+//! <p>
+//! The way StatusDocklet works is a little different from how the
+//! AppletWidget works. Firstly, StatusDocklet object is not a widget,
+//! it is just an abstract GTK+ object. You create a new StatusDocklet
+//! object and then bind
+//! the "build_plug" signal which is emitted when the panel was
+//! contacted and a widget must be built. After binding the
+//! "build_plug" signal, you call run() to actually start
+//! trying to contacting the panel. StatusDocklet is safe to use
+//! without a panel. By default it will try to locate a panel for 15
+//! minutes and after that it will give up. It will also handle panel
+//! restarts by default. If it does, your widget will be destroyed and
+//! "build_plug" will be emitted again when the new panel starts. Even
+//! though the panel will never restart by itself, the user might not
+//! run session management and thus might restart panel by hand, or due
+//! to a bug, the panel might crash and restart itself.
+//! </p><p>
+//! Docklets are not available in GNOME 1.0.
+//! </p>
+signal build_plug;
+//! This signal is emitted when you actually need to build the widget
+//! that you want to place inside the plug in the status docklet. It
+//! should be 22 by 22, and if it is larger it will be cropped.
+member GTK.Plug plug;
+//! the current W(plug) holding the docklet
+void create();
+//! Creates a new status docklet object with the default parameters. By
+//! default the docklet object will try to contact a panel 20 times. It
+//! will try to find a panel every 15 seconds. You need to bind the
+//! build_plug signal in which you build your own widget and add it to
+//! the provided container. By default the docklet object will handle a
+//! panel restart, in which case your widget will be destroyed and when
+//! the panel is contacted again the build_plug signal will be emitted
+//! again. You also must call the status_docklet_run function after you
+//! bind the build_plug signal.
+void run();
+//! Search for the panel and add the plug if it finds it. This function
+//! is also called internally from the timeout. If called externally
+//! more times, a panel lookup will be forced and one try will be
+//! wasted. You need to call this function at least once after binding
+//! the build_plug signal to tell the status docklet to start looking
+//! for the panel. If the status docklet handles restarts you don't
+//! have to call this function ever again.
+

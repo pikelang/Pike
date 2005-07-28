@@ -1,0 +1,24 @@
+/* -*- C -*- */
+class GTK2.Object;
+inherit G.Object;
+
+//! The basic GTK class.
+//! All other GTK classes inherit this class.
+//! The only user-callable functions are the signal related ones.
+
+//! Properties:
+//! gpointer user-data
+
+signal destroy;
+
+void destroy()
+//! Destructor.
+{
+  if (!args && THIS->obj) {
+    gtk_object_destroy(GTK_OBJECT(THIS->obj));
+    THIS->obj=NULL;
+  }
+  my_pop_n_elems(args);
+  push_int(0);
+}
+

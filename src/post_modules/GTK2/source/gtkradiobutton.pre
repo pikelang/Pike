@@ -1,0 +1,83 @@
+class GTK2.RadioButton;
+inherit GTK2.CheckButton;
+
+//! Radio buttons are similar to check buttons except they are grouped
+//! so that only one may be selected/depressed at a time. This is good
+//! for places in your application where you need to select from a
+//! short list of options.
+
+//! <p> To connect the buttons, use another button in the desired group
+//! as the second argument to GTK2.RadioButton().
+//! </p>
+//! IMG: GTK2.Radio_button("Button");
+
+//! Properties:
+//! GTK2.RadioButton group
+
+signal group_changed;
+
+void create(?string title, ?GTK2.RadioButton groupmember)
+//!  Normal creation:<p>
+//! object GTK2.RadioButton(string title) - First button (with label)<br />
+//! object GTK2.RadioButton()->add(widget) - First button (with widget)<br />
+//! object GTK2.RadioButton(title, another_radio_button) - Second to n:th button (with title)<br />
+//! object GTK2.RadioButton(0,another_radio_button)->add(widget) - Second to n:th button (with widget)<br />
+//! </p>
+{
+  GSList *mylist = NULL;
+  gchar *label=NULL;
+  struct object *o=NULL;
+  if (args) {
+    if (Pike_sp[-args].type==PIKE_T_STRING)
+      label=(gchar *)Pike_sp[-args].u.string->str;
+    if (args==2 && (Pike_sp[-1].type==PIKE_T_OBJECT))
+	o=Pike_sp[-1].u.object;
+  }
+
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+
+  if(o)
+    mylist=gtk_radio_button_group(GTK_RADIO_BUTTON(get_gobject(o)));
+
+  if(label)
+    THIS->obj=G_OBJECT(gtk_radio_button_new_with_label(mylist,label));
+  else
+    THIS->obj=G_OBJECT(gtk_radio_button_new(mylist));
+  pgtk__init_this_object();
+}
+
+void set_group(GTK2.RadioButton groupmember)
+//! the argument is another radio button to whose group this button
+//! should be added to. It is prefereable to use the second argument to
+//! the constructor instead, but if you for some reason want to move
+//! the button to another group, use this function.
+{
+  struct object *o=NULL;
+  GSList *mylist;
+  get_all_args("set_group", args, "%o", &o );
+
+  mylist=gtk_radio_button_get_group(GTK_RADIO_BUTTON(get_gobject(o)));
+  gtk_radio_button_set_group(GTK_RADIO_BUTTON(THIS->obj),mylist);
+  RETURN_THIS();
+}
+
+array(GTK2.RadioButton) get_group()
+//! Returns an array of members in this group.
+{
+  pgtk_verify_inited();
+  {
+    GSList *gsl,*gs2;
+    int i=0;
+    gsl=gs2=gtk_radio_button_get_group(GTK_RADIO_BUTTON(THIS->obj));
+    while (gs2) {
+      push_gobject(gs2->data);
+      g_object_ref(G_OBJECT(gs2->data));
+      i++;
+      gs2=g_slist_next(gs2);
+    }
+    f_aggregate(i);
+    g_slist_free(gsl);
+  }
+}
+

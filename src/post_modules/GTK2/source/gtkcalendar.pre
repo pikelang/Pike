@@ -1,0 +1,126 @@
+/* -*- C -*- */
+class GTK2.Calendar;
+inherit GTK2.Widget;
+
+//! A calendar widget.
+//! IMG: GTK2.Calendar();
+//! IMG: GTK2.Calendar()->select_day( 16 );
+
+//! Properties:
+//! int day
+//! int month
+//! int no-month-change
+//! int show-day-names
+//! int show-heading
+//! int show-week-numbers
+//! int year
+
+signal day_selected;
+signal day_selected_double_click;
+signal month_changed;
+signal next_month;
+signal next_year;
+signal prev_month;
+signal prev_year;
+
+void create();
+//! Create a new calendar widget
+
+int select_month(int month, int year);
+//! Select the month to be viewed.
+
+void select_day(int day_of_month);
+//! Select a certain day of the currently selected month
+
+void mark_day(int day_of_month);
+//! Mark a day
+
+void unmark_day(int day_of_month);
+//! Unmark a day
+
+void clear_marks();
+//! Remove all day markers
+
+require gtk24;
+int get_display_options();
+//! Returns the current display options.
+
+void set_display_options(int options);
+//! Bitwise or of one or more of CONST(GTK_CALENDAR).
+endrequire;
+
+mapping get_date()
+//! returns a mapping:<br />
+//! ([ "year":year, "month":month, "day":day ])
+{
+  guint y, m, d;
+  gtk_calendar_get_date(GTK_CALENDAR(THIS->obj),&y,&m,&d);
+  push_text("year");
+  push_int(y);
+  push_text("month");
+  push_int(m);
+  push_text("day");
+  push_int(d);
+  f_aggregate_mapping(6);
+}
+
+void freeze();
+
+//! Suspend all dynamic updating of the widget
+void thaw();
+//! Resume dynamic updating of the widget
+
+array(int) get_marked_dates()
+//! Returns an array (with 31 elements) with 1es and 0es.
+{
+  int i;
+  for(i=0; i<31; i++)
+    push_int(GTK_CALENDAR(THIS->obj)->marked_date[i]);
+  f_aggregate(31);
+}
+
+/*
+array(array(int)) get_day_month()
+//! Return an array of 6x7 days, representing the cells in the
+//! currently viewed calendar month.  The value is the day of month.
+{
+  int i,j;
+  for(i=0; i<6; i++) {
+    for(j=0; j<7; i++)
+      push_int(GTK_CALENDAR(THIS->obj)->day_month[i][j]);
+    f_aggregate(7);
+  }
+  f_aggregate(6);
+}
+
+array(array(int)) get_day()
+//! Return an array of 6x7 days, representing the cells in the
+//! currently viewed calendar month.
+{
+  int i,j;
+  for(i=0; i<6; i++)
+  {
+    for(j=0; j<7; i++)
+      push_int( GTK_CALENDAR( THIS->obj )->day[i][j] );
+    f_aggregate( 7 );
+  }
+  f_aggregate( 6 );
+}
+
+void set_marked_date_color(int index, GDK2.Color color)
+//! Set the color to use to mark dates
+{
+  INT_TYPE n;
+  struct object *o;
+  get_all_args("set_marked_date_color",args,"%i%o",&n,&o);
+  if(!get_gdkobject(o,color))
+    Pike_error("Argument 2 is not a GDK2.Color object\n");
+  n--;
+  if(n > 30 || n<0)
+    Pike_error("Argument 1 is not between 1 and 31, inclusive\n");
+  GTK_CALENDAR( THIS->obj )->marked_date_color[n] =
+                *(GdkColor*)get_gdkobject(o, color);
+  RETURN_THIS();
+}
+
+*/

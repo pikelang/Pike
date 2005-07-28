@@ -1,0 +1,13 @@
+class Pango.Context;
+inherit G.Object;
+
+//! PangoContext.
+
+void destroy()
+//! Destructor.
+{
+  if (THIS->obj)
+    g_object_unref((PangoContext *)THIS->obj);
+  THIS->obj=0;
+  push_int(0);
+}

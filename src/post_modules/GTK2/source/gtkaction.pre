@@ -1,0 +1,122 @@
+require gtk24;
+
+class GTK2.Action;
+inherit G.Object;
+
+//! Properties:
+//! GTK2.ActionGroup action-group
+//! int hide-if-empty
+//! int is-important
+//! string label
+//! string name
+//! int sensitive
+//! string short-label
+//! string stock-id
+//! string tooltip
+//! int visible
+//! int visible-horizontal
+require gtk26;
+//! int visible-overflown
+endrequire;
+//! int visible-vertical
+
+signal activate;
+
+void create(string name, string label, string tooltip, string stock_id);
+//! Creates a new object.
+
+string get_name();
+//! Returns the name of the action.
+
+int is_sensitive();
+//! Returns whether the action is effectively sensitive.
+
+int get_sensitive();
+//! Returns whether the action itself is sensitive.  Note that this doesn't
+//! necessarily mean effective sensitivity.
+
+require gtk26;
+void set_sensitive(int setting);
+//! Sets the sensitive property.
+endrequire;
+
+int is_visible();
+//! Returns whether the action is effectively visible.
+
+int get_visible();
+//! Returns whether the action itself is visible.
+
+require gtk26;
+void set_visible(int setting);
+//! Sets the visible property.
+endrequire;
+
+void activate();
+//! Emits the "activate" signal, if it isn't insensitive.
+
+GTK2.Widget create_icon(int icon_size);
+//! This function is intended for use by action implementations to create
+//! icons displayed in the proxy widgets.  One of CONST(GTK_ICON_SIZE_).
+
+GTK2.Widget create_menu_item();
+//! Creates a menu item widget that proxies for the action.
+
+GTK2.Widget create_tool_item();
+//! Creates a toolbar item widget that proxies for the action.
+
+void connect_proxy(GTK2.Widget proxy);
+//! Connects a widget to an action object as a proxy.  Synchronises various
+//! properties of the action with the widget (such as label text, icon,
+//! tooltip, etc), and attaches a callback so that the action gets activated
+//! when the proxy widget does.
+
+void disconnect_proxy(GTK2.Widget proxy);
+//! Disconnects a proxy widget.  Does not destroy the widget.
+
+array(GTK2.Widget) get_proxies()
+//! Returns the proxy widgets.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GSList *gl;
+    int i=0;
+    gl=gtk_action_get_proxies(GTK_ACTION(THIS->obj));
+    while (gl) {
+      push_gobject(gl->data);
+      g_object_ref(gl->data);
+      i++;
+      gl=g_slist_next(gl);
+    }
+    f_aggregate(i);
+  }
+}
+
+void connect_accelerator();
+//! Installs the accelerator if this action widget has an accel path and group.
+
+void disconnect_accelerator();
+//! Undoes the effect of one call to connect_accelerator().
+
+void block_activate_from(GTK2.Widget proxy);
+//! Disables calls to the activate() function by signals on the proxy. This is
+//! used to break notification loops for things like check or radio actions.
+
+void unblock_activate_from(GTK2.Widget proxy);
+//! Re-enables calls to the activate() function.
+
+require gtk26;
+string get_accel_path();
+//! Returns the accel path for this action.
+endrequire;
+
+void set_accel_path(string accel_path);
+//! Sets the accel path for this action.  All proxy widgets associated with
+//! this action will have this accel path, so that their accelerators are
+//! consistent.
+
+void set_accel_group(GTK2.AccelGroup group);
+//! Sets the GTK2.AccelGroup in which the accelerator for this action will be
+//! installed.
+
+endrequire;

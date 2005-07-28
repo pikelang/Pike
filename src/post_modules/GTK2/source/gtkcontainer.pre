@@ -1,0 +1,102 @@
+/* -*- c -*- */
+class GTK2.Container;
+inherit GTK2.Widget;
+
+//! The basic container class.
+
+//! Properties:
+//! int border-width
+//! GTK2.Widget child
+//! int resize-mode CONST(GTK_RESIZE_)
+
+signal add;
+//! Called when a new object is added to the container. (used internally)
+signal check_resize;
+//! Called when the container needs resizing (used internally)
+signal remove;
+//! Called when a object is removed from the container (used internally)
+signal set_focus_child;
+
+void set_border_width( int external_border_width );
+//! Set the border width. The border width is the size of the
+//! padding around the container.
+//! Calling this function might result in a resize of the container.
+
+void add(GTK2.Widget widget);
+//! Add a subwidget to the container. Don't forget to call show() in
+//! the subwidget. Some (even most) containers can only contain one child.
+//! Calling this function might result in a resize of the container.
+
+void remove(GTK2.Widget widget);
+//! Remove a child from the container. The argument is the child to remove.
+//! Calling this function might result in a resize of the container.
+
+int get_resize_mode();
+//! Returns the resize mode.
+
+void set_resize_mode(int mode);
+//! One of CONST(GTK_RESIZE)
+
+void check_resize();
+//! Undocumented
+
+void set_reallocate_redraws(int setting);
+//! Sets the reallocate_redraws flag.
+
+/* SIMPLE_FUNCTION(block_resize); */
+/* // (temporarily) disable all automatic resize actions */
+/* SIMPLE_FUNCTION(unblock_resize); */
+/* // reenable all automatic resize actions. */
+
+array(GTK2.Widget) get_children()
+//! This function returns all children of the container
+//! as an array.
+{
+  GList *g,*g1;
+  int n=0;
+  my_pop_n_elems(args);
+  g=g1=gtk_container_get_children(GTK_CONTAINER(THIS->obj));
+  while (g1) {
+    push_gobject(g->data);
+    n++;
+    g1=g_list_next(g1);
+  }
+  f_aggregate(n);
+  g_list_free(g);
+}
+
+void set_focus_child(GTK2.Widget child);
+//! Emulate a set_focus_child signal. Focus on the specified child.
+
+GTK2.Adjustment get_focus_vadjustment();
+//! Retrieves the vertical focus adjustment.
+
+void set_focus_vadjustment(GTK2.Adjustment adj);
+//! Set the vadjustment used to focus children.
+
+GTK2.Adjustment get_focus_hadjustment();
+//! Retrieves the horizontal focus adjustment.
+
+void set_focus_hadjustment(GTK2.Adjustment adj);
+//! Set the hadjustment used to focus children.
+
+void resize_children();
+//! Undocumented.
+
+void child_set_property(GTK2.Widget child, string property, mixed value)
+//! Set child property.
+{
+  pgtk_verify_inited();
+  pg_object_set_property(args-1);
+}
+
+int get_border_width();
+//! Retrieves the border width.
+
+void set_border_width(int width);
+//! Sets the border width.
+
+/*
+void focus( int focus_direction );
+//! Emulate a focus event. direction is one of CONST(GTK_DIR_).
+*/

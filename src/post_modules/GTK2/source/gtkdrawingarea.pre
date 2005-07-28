@@ -1,0 +1,20 @@
+class GTK2.DrawingArea;
+inherit GTK2.Widget;
+
+//! The drawing area is a window you can draw in.
+//! Please note that you <b>must</b> handle refresh and resize events
+//! on your own. Use W(pDrawingArea) for a drawingarea with automatic
+//! refresh/resize handling.
+//! IMG: GTK2.DrawingArea()->set_size_request(100,100)
+
+void create();
+//! Create a new drawing area.
+
+%{
+#undef TWIN
+#undef _GC
+#define TWIN GTK_WIDGET(THIS->obj)->window
+#define GC(X) ((GdkGC*)get_gdkobject(X,gc))
+%}
+
+#include "common_draw.inc"

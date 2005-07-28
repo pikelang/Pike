@@ -1,0 +1,7 @@
+class GTK2.Bin;
+inherit GTK2.Container;
+
+//! A container that can only contain one child.
+
+GTK2.Widget get_child();
+//! Return the child.

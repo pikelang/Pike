@@ -1,0 +1,138 @@
+require gtk24;
+
+class GTK2.ColorButton;
+inherit GTK2.Button;
+
+//! Properties:
+//! int alpha
+//! GDK2.Color color
+//! string title
+//! int use-alpha
+
+signal color_set;
+
+//! When a user selects a color.
+void create(?int red, ?int green, ?int blue)
+//! Create a new W(ColorButton).
+{
+  GdkColor gcolor;
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  gcolor.red=gcolor.green=gcolor.blue=gcolor.pixel=0;
+  if (args) {
+    if (Pike_sp[0-args].type!=PIKE_T_INT)
+      Pike_error("Illegal argument 1, expected int\n");
+    gcolor.red=(gint)PGTK_GETINT(&Pike_sp[0-args]);
+    if (args>1) {
+      if (Pike_sp[1-args].type!=PIKE_T_INT)
+	Pike_error("Illegal argument 2, expected int\n");
+      gcolor.green=(gint)PGTK_GETINT(&Pike_sp[1-args]);
+    }
+    if (args>2) {
+      if (Pike_sp[2-args].type!=PIKE_T_INT)
+	Pike_error("Illegal argument 3, expected int\n");
+      gcolor.blue=(gint)PGTK_GETINT(&Pike_sp[2-args]);
+    }
+    THIS->obj=G_OBJECT(gtk_color_button_new_with_color(&gcolor));
+  } else {
+    THIS->obj=G_OBJECT(gtk_color_button_new());
+  }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
+
+void set_color(int red, int green, int blue)
+//! Sets the current color.
+{
+  pgtk_verify_inited();
+  {
+    GdkColor gcolor;
+    if (args<3)
+      Pike_error("Too few arguments, %d reguired, got %d\n",3,args);
+    gcolor.red=(gint)PGTK_GETINT(&Pike_sp[0-args]);
+    gcolor.green=(gint)PGTK_GETINT(&Pike_sp[1-args]);
+    gcolor.blue=(gint)PGTK_GETINT(&Pike_sp[2-args]);
+    gtk_color_button_set_color(GTK_COLOR_BUTTON(THIS->obj),&gcolor);
+  }
+  my_pop_n_elems(args);
+  RETURN_THIS();
+}
+
+GDK2.Color get_color()
+//! Returns the current color.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GdkColor *color;
+    color=(GdkColor *)g_malloc(sizeof(GdkColor));
+    if (color==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_color",sizeof(GdkColor));
+    gtk_color_button_get_color(GTK_COLOR_BUTTON(THIS->obj),color);
+    push_gdkobject(color,color);
+  }
+}
+
+void set_alpha(int alpha);
+//! Sets the current opacity to alpha.
+
+int get_alpha();
+//! Get the current alpha value.
+
+void set_use_alpha(int use_alpha);
+//! Sets whether or not the color button should use the alpha channel.
+
+int get_use_alpha();
+//! Gets whether the color button uses the alpha channel.
+
+void set_title(string title);
+//! Sets the title for the color selection dialog.
+
+string get_title();
+//! Get the title.
+
+void set_property(string property, mixed value)
+//! Set property.
+{
+  pgtk_verify_inited();
+  {
+    char *prop;
+    struct svalue *sv;
+    get_all_args("set_property",args,"%s%*",&prop,&sv);
+    if (!strcmp(prop,"color")) {
+      GdkColor *color;
+      if (sv->type!=PIKE_T_OBJECT)
+	Pike_error("Improper type for this property.\n");
+      color=(GdkColor *)get_gdkobject(sv->u.object,color);
+      setprop(prop,color);
+    } else {
+      pg_object_set_property(args);
+    }
+  }
+}
+
+mixed get_property(string property)
+//! Get property.
+{
+  pgtk_verify_inited();
+  {
+    char *prop;
+    get_all_args("get_property",args,"%s",&prop);
+    if (!strcmp(prop,"color")) {
+      GdkColor *color;
+      gpointer *v;
+      color=(GdkColor *)g_malloc(sizeof(GdkColor));
+      if (color==NULL)
+	SIMPLE_OUT_OF_MEMORY_ERROR("get_property",sizeof(GdkColor));
+      g_object_get(G_OBJECT(THIS->obj),prop,&color,NULL);
+/*      color=g_value_get_boxed(G_BOXED(v),color); */
+      my_pop_n_elems(args);
+      push_gdkobject(color,color);
+    } else {
+      pgtk_get_property(G_OBJECT(THIS->obj),prop);
+    }
+  }
+}
+
+endrequire;
+

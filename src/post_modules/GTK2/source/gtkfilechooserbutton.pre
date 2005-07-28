@@ -1,0 +1,28 @@
+require gtk26;
+
+class GTK2.FileChooserButton;
+inherit GTK2.Hbox;
+
+//! Properties:
+//! GTK2.FileChooserDialog dialog
+//! string title
+//! int width-chars
+
+void create(string title, int action);
+//! Create a new file-selecting button widget.
+//! action is one of CONST(GTK_FILE_CHOOSER_ACTION_)
+
+string get_title();
+//! Retrieves the title of the browse dialog.
+
+void set_title(string title);
+//! Modifies the title of the browse dialog.
+
+int get_width_chars();
+//! Retrieves the width in characters of the button widget's
+//! entry and/or label.
+
+void set_width_chars(int n_chars);
+//! Sets the width (in characters) that the button will use.
+
+endrequire;

@@ -1,0 +1,8 @@
+class GTK2.Vseparator;
+inherit GTK2.Separator;
+
+//! Simply creates a vertical separator. No bells or whistles.
+//! IMG: GTK2.Vseparator()->set_size_request(3,50)
+
+void create();
+//! Used to create a new vseparator widget.

@@ -1,0 +1,154 @@
+class GTK2.ColorSelection;
+inherit GTK2.Vbox;
+
+//! The color selection widget is, not surprisingly, a widget for
+//! interactive selection of colors.  This composite widget lets the
+//! user select a color by manipulating RGB (Red, Green, Blue) and HSV
+//! (Hue, Saturation, Value) triples. This is done either by adjusting
+//! single values with sliders or entries, or by picking the desired
+//! color from a hue-saturation wheel/value bar.  Optionally, the
+//! opacity of the color can also be set.
+//! <p>
+//! The color selection widget currently emits only one signal,
+//! "color_changed", which is emitted whenever the current color in the
+//! widget changes, either when the user changes it or if it's set
+//! explicitly through set_color().
+//! </p>
+//! IMG: GTK2.ColorSelection()
+
+//! Properties:
+//! int current-alpha
+//! GDK2.Color current-color
+//! int has-opacity-control
+//! int has-palette
+
+signal color_changed;
+
+void create();
+//! Create a new color selection.
+
+void set_has_opacity_control(int setting);
+//! Sets whether or not to use opacity.
+
+int get_has_opacity_control();
+//! Determines whether the colorsel has an opacity control.
+
+void set_has_palette(int has_palette);
+//! Shows and hides the palette based upon the value of has_palette
+
+int get_has_palette();
+//! Determines whether the color selector has a color palette.
+
+int get_current_alpha();
+//! Returns the current alpha value.
+
+void set_current_alpha(int alpha);
+//! Sets the current opacity to be alpha.  The first time this
+//! is called, it will also set the original opacity to be alpha too.
+
+mapping(string:int) get_current_color()
+//!  When you need to query the current color, typically when you've
+//!  received a "color_changed" signal, you use this function. The
+//!  return value is an array of floats, See the set_color() function
+//!  for the description of this array.
+{
+  pgtk_verify_inited();
+  {
+    GdkColor color;
+    gtk_color_selection_get_current_color(GTK_COLOR_SELECTION(THIS->obj),
+		&color);
+    push_text("pixel"); push_int(color.pixel);
+    push_text("red"); push_int(color.red);
+    push_text("green"); push_int(color.green);
+    push_text("blue"); push_int(color.blue);
+    f_aggregate_mapping(8);
+  }
+}
+
+void set_current_color(mapping(string:int) color)
+//! You can set the current color explicitly by calling this function
+//! with an array of colors (floats). The length of the array depends
+//! on whether opacity is enabled or not. Position 0 contains the red
+//! component, 1 is green, 2 is blue and opacity is at position 3 (only
+//! if opacity is enabled, see set_opacity()) All values are between
+//! 0 and 65535
+{
+  pgtk_verify_inited();
+  {
+    struct svalue *sv;
+    struct mapping *m;
+    GdkColor color;
+    get_all_args("set_current_color",args,"%m",&m);
+    sv=simple_mapping_string_lookup(m,"pixel");
+    if (sv)
+      color.pixel=PGTK_GETINT(sv);
+    sv=simple_mapping_string_lookup(m,"red");
+    if (sv)
+      color.red=PGTK_GETINT(sv);
+    sv=simple_mapping_string_lookup(m,"green");
+    if (sv)
+      color.green=PGTK_GETINT(sv);
+    sv=simple_mapping_string_lookup(m,"blue");
+    if (sv)
+      color.blue=PGTK_GETINT(sv);
+    gtk_color_selection_set_current_color(GTK_COLOR_SELECTION(THIS->obj),
+		&color);
+  }
+  RETURN_THIS();
+}
+
+int get_previous_alpha();
+//! Returns the previous alpha value.
+
+void set_previous_alpha(int alpha);
+//! Sets the 'previous' alpha to be alpha.  This function should
+//! be called with some hesitation, as it might seem confusing
+//! to have that alpha change.
+
+mapping(string:int) get_previous_color()
+//! Returns the original color value.
+{
+  pgtk_verify_inited();
+  {
+    GdkColor color;
+    gtk_color_selection_get_previous_color(GTK_COLOR_SELECTION(THIS->obj),
+		&color);
+    push_text("pixel"); push_int(color.pixel);
+    push_text("red"); push_int(color.red);
+    push_text("green"); push_int(color.green);
+    push_text("blue"); push_int(color.blue);
+    f_aggregate_mapping(8);
+  }
+}
+
+void set_previous_color(mapping(string:int) colors)
+//! Sets the 'previous' color to be color.
+{
+  pgtk_verify_inited();
+  {
+    struct mapping *m;
+    struct svalue *sv;
+    GdkColor color;
+    get_all_args("set_current_color",args,"%m",&m);
+    sv=simple_mapping_string_lookup(m,"pixel");
+    if (sv)
+      color.pixel=PGTK_GETINT(sv);
+    sv=simple_mapping_string_lookup(m,"red");
+    if (sv)
+      color.red=PGTK_GETINT(sv);
+    sv=simple_mapping_string_lookup(m,"green");
+    if (sv)
+      color.green=PGTK_GETINT(sv);
+    sv=simple_mapping_string_lookup(m,"blue");
+    if (sv)
+      color.blue=PGTK_GETINT(sv);
+    gtk_color_selection_set_previous_color(GTK_COLOR_SELECTION(THIS->obj),
+		&color);
+  }
+  RETURN_THIS();
+}
+
+int is_adjusting();
+//! Gets the current state of the colorsel.
+
+

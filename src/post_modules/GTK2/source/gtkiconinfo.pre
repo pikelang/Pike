@@ -1,0 +1,84 @@
+require gtk24;
+
+class GTK2.IconInfo;
+
+void destroy()
+//! Destructor.
+{
+  if (THIS->obj)
+    gtk_icon_info_free((GtkIconInfo *)THIS->obj);
+  THIS->obj=NULL;
+  push_int(0);
+}
+
+GTK2.IconInfo copy()
+//! Make a copy.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GtkIconInfo *gi=gtk_icon_info_copy((GtkIconInfo *)THIS->obj);
+    push_gobjectclass(gi,pgtk_icon_info_program);
+  }
+}
+
+int get_base_size()
+//! Gets the base size for the icon.  The base size is a size for the icon that
+//! was specified by the icon theme creator.  This may be different than the
+//! actual size of image; an example of this is small emblem icons that can be
+//! attached to a larger icon.  These icons will be given the same base size
+//! as the larger icons to which they are attached.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  PGTK_PUSH_INT(gtk_icon_info_get_base_size((GtkIconInfo *)THIS->obj));
+}
+
+string get_filename()
+//! Gets the filename for the icon.  If the GTK2.ICON_LOOKUP_USE_BUILTIN flag
+//! was passed to GTK2.IconTheme->lookup_icon(), there may be no filename if a
+//! builtin icon is returned; in this case, you should use get_builtin_pixbuf().
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    const char *s=gtk_icon_info_get_filename((GtkIconInfo *)THIS->obj);
+    if (s)
+      PGTK_PUSH_GCHAR(s);
+    else
+      push_string(empty_pike_string);
+  }
+}
+
+GDK2.Pixbuf get_builtin_pixbuf()
+//! Gets the built-in image for this icon, if any.  To allow GTK2+ to use
+//! built-in icon images, you must pass the GTK2.ICON_LOOKUP_USE_BUILTIN to
+//! GTK2.IconTheme->lookup_icon().
+{
+  pgtk_verify_inited();
+  {
+    GdkPixbuf *pixbuf=gtk_icon_info_get_builtin_pixbuf((GtkIconInfo *)THIS->obj);
+    if (pixbuf)
+      push_gobject(pixbuf);
+    else
+      push_int(0);
+  }
+}
+
+GDK2.Pixbuf load_icon()
+//! Renders an icon previously looked up in an icon theme using 
+//! GTK2.IconTheme->lookup_icon(); the size will be based on the size passed to
+//! GTK2.IconTheme->lookup_icon().  Note that the resulting pixbuf may not be
+//! exactly this size; an icon theme may have icons that differe slightly from
+//! their nominal sizes, and in addition GTK2+ will avoid scaling icons that it
+//! considers sufficiently close to the requested size or for which the source
+//! image would have to be scaled up too far. (This maintains sharpness.)
+{
+  pgtk_verify_inited();
+  {
+    GdkPixbuf *pixbuf=gtk_icon_info_load_icon((GtkIconInfo *)THIS->obj,NULL);
+    push_gobject(pixbuf);
+  }
+}
+
+endrequire;

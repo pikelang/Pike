@@ -1,0 +1,125 @@
+class GTK2.Button;
+inherit GTK2.Bin;
+
+//! A container that can only contain one child, and accepts events.
+//! draws a bevelbox around itself.
+//! IMG: GTK2.Button("A button")
+//! IMG: GTK2.Button("A button\nwith multiple lines\nof text")
+//! IMG: GTK2.Button()->add(GTK2.Image(GDK2.Image(0)->set(Image.image(100,40)->test())))
+
+//! Properties:
+//! int focus-on-click
+//! GTK2.Widget image
+//! string label
+//! int relief
+//! int use-stock
+//! int use-underline
+require gtk24;
+//! float xalign
+//! float yalign
+endrequire;
+//! <p>
+//! Style properties:
+//! int child-displacement-x
+//! int child-displacement-y
+//! GTK2.Border default-border
+//! GTK2.Border default-outside-border
+require gtk26;
+//! int displace-focus
+endrequire;
+
+signal activate;
+signal pressed;
+//! Called when the button is pressed
+signal released;
+//! Called when the button is released
+signal clicked;
+//! Called when the button is pressed, and then released
+signal enter;
+//! Called when the mouse enters the button
+signal leave;
+//! Called when the mouse leaves the button
+
+void create(?string label_text)
+//! If a string is supplied, a W(Label) is created and added to the button.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if(args) {
+    gchar *s=PGTK_GETSTR(Pike_sp-args);
+    if (s) {
+/*      THIS->obj=G_OBJECT(gtk_button_new_with_label(s)); */
+/* Add a stock button if we can, otherwise add mnemonic button */
+      THIS->obj=G_OBJECT(gtk_button_new_from_stock(s));
+      PGTK_FREESTR(s);
+    } else
+      THIS->obj=G_OBJECT(gtk_button_new());
+    my_pop_n_elems(args);
+  } else {
+    THIS->obj=G_OBJECT(gtk_button_new());
+  }
+  pgtk__init_this_object();
+/*  fprintf(stderr,"gtk.button: obj==%p\n",THIS->obj); */
+}
+
+void pressed();
+//! Emulate a 'press' event.
+
+void released();
+//! Emulate a 'release' event.
+
+void clicked();
+//! Emulate a 'clicked' event (press followed by release).
+
+void enter();
+//! Emulate a 'enter' event.
+
+void leave();
+//! Emulate a 'leave' event.
+
+void set_relief( int newstyle );
+//! One of CONST(GTK_RELIEF)
+
+int get_relief();
+//! One of CONST(GTK_RELIEF), set with set_relief()
+
+string get_label();
+//! Get the text from the label of the button.
+
+void set_label(string label);
+//! Set the text of the label.
+
+int get_use_stock();
+//! Returns whether the button label is a stock item.
+
+void set_use_stock(int use_stock);
+//! If true, the label set on the button is used as a stock id
+//! to select the stock item for the button.
+
+int get_use_underline();
+//! Returns whether an embedded underline in the button indicates
+//! a mnemonic.
+
+void set_use_underline(int use_underline);
+//! If true, an underline in the text of the button label indicates the
+//! next character should be used for the mnemonic accelerator key.
+
+require gtk24;
+void set_focus_on_click(int focus_on_click);
+//! Sets whether the button will grab focus when it is clicked.
+
+int get_focus_on_click();
+//! Returns whether the button grabs focus when it is clicked.
+
+void set_alignment(float xalign, float yalign);
+//! Sets the alignment of the child.
+endrequire;
+
+require gtk26;
+void set_image(GTK2.Widget widget);
+//! Set the image of the button to the given widget.  Note that it depends on
+//! the gtk-button-images setting whether the image will be displayed or not.
+
+GTK2.Widget get_image();
+//! Gets the widget that is currently set as the image of the button.
+endrequire;

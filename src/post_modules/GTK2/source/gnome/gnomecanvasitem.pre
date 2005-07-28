@@ -1,0 +1,70 @@
+DISABLED {
+require gnome;
+class Gnome.CanvasItem;
+inherit GTK.Object;
+// The base canvas item class
+signal event;
+
+void move( float dx, float dy );
+// Moves a canvas item by creating an affine transformation matrix for
+// translation by using the specified values.
+void scale( float x, float y, float scale_x, float scale_y );
+void rotate( float x, float y, float angle );
+void raise( int positions );
+// Raises the item in its parent's stack by the specified number of
+// positions. If the number of positions is greater than the distance
+// to the top of the stack, then the item is put at the top.
+void lower( int positions );
+// Lowers the item in its parent's stack by the specified number of
+// positions. If the number of positions is greater than the distance
+// to the bottom of the stack, then the item is put at the bottom.
+void raise_to_top();
+// Raises an item to the top of its parent's stack.
+void lower_to_bottom();
+// Lowers an item to the bottom of its parent's stack.
+void show();
+// Shows a canvas item. If the item was already shown, then no action is taken.
+void hide();
+// Hides a canvas item. If the item was already hidden, then no action
+// is taken.
+void reparent( gnome_canvas_group new_group );
+// Changes the parent of the specified item to be the new group. The
+// item keeps its group-relative coordinates as for its old parent, so
+// the item may change its absolute position within the canvas.
+void grab_focus();
+// Makes the specified item take the keyboard focus, so all keyboard
+// events will be sent to it. If the canvas widget itself did not have
+// the focus, it grabs it as well.
+FUNCTION(set, "function(string,object|string|int|float:object)");
+RETURNS(Gnome.CanvasItem);
+NAME_ARGS(variable_name,variable_value);
+{
+  gdouble d;
+  gint i;
+  void *p;
+  GnomeCanvasItem *tci = (void *)THIS->obj;
+  if( args != 2 || Pike_sp[-2].type != PIKE_T_STRING )
+    error("Bad argument 1 to set\n");
+  switch( Pike_sp[-1].type )
+  {
+   case PIKE_T_OBJECT:
+     p = get_pgtkobject(Pike_sp[-1].u.object,pgtk_object_program);
+     gnome_canvas_item_set( tci, Pike_sp[-2].u.string->str, p );
+     break;
+   case PIKE_T_STRING:
+     p = Pike_sp[-1].u.string->str;
+     gnome_canvas_item_set( tci, Pike_sp[-2].u.string->str, p );
+     break;
+   case PIKE_T_INT:
+     i = Pike_sp[-1].u.integer;
+     gnome_canvas_item_set( tci, Pike_sp[-2].u.string->str, i );
+     break;
+   case PIKE_T_FLOAT:
+     d = Pike_sp[-1].u.float_number;
+     gnome_canvas_item_set( tci, Pike_sp[-2].u.string->str, d );
+     break;
+   default:
+     error("Bad argument 2 to set\n");
+  }
+}
+};

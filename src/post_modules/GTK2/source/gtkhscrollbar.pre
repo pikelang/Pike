@@ -1,0 +1,10 @@
+class GTK2.Hscrollbar;
+inherit GTK2.Scrollbar;
+
+//! A horizontal scrollbar.<p>
+//! General documentation: See W(Scrollbar)
+//! IMG: GTK2.Hscrollbar(GTK2.Adjustment())->set_size_request(300,15)
+//!</p>
+
+void create(?GTK2.Adjustment adjustment);
+//! Used to create a new hscrollbar widget.

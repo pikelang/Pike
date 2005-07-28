@@ -1,0 +1,107 @@
+/* -*- C -*- */
+class GDK2.Color;
+
+//! The GDK2.Color object is used to represent a color.
+//! When you call GDK2.Color(r,g,b) the color will be allocated
+//! from the X-server. The constructor can return an  exception if there are
+//! no more colors to allocate.
+//! NOIMG
+
+void create(object|int color_or_r,int|void g,int|void b)
+//! r g and b are in the range 0 to 255, inclusive.
+//! If color is specified, it should be an Image.Color object, and the
+//! only argument.
+{
+  INT_TYPE r,g,b;
+  GdkColormap *col=gdk_colormap_get_system();
+  GdkColor *c;
+  pgtk_verify_setup();
+  pgtk_verify_not_inited();
+  if (args==1) {
+    struct object *o;
+    get_all_args("GdkColor",args,"%o",&o);
+    if (!get_color_from_pikecolor(o,&r,&g,&b))
+      Pike_error("Bad argument 1 to GDK2.Color(). Exptected color object\n");
+  } else {
+    get_all_args("GdkColor",args,"%i%i%i",&r,&g,&b);
+    r*=257;
+    g*=257;
+    b*=257;
+  }
+
+  c=g_malloc(sizeof(GdkColor));
+  if (c==NULL)
+    SIMPLE_OUT_OF_MEMORY_ERROR("",sizeof(GdkColor));
+  THIS->obj=(void *)c;
+  c->red=r;
+  c->green=g;
+  c->blue=b;
+  c->pixel=0;
+/*  if(!gdk_color_alloc( col, c )) */
+  if (!gdk_colormap_alloc_color(col,c,TRUE,FALSE)) {
+    g_free(c);
+    THIS->obj=0;
+    Pike_error("Failed to allocate color.\n");
+  }
+}
+
+array(int) rgb()
+//! Returns the red green and blue color components as an array.
+{
+  push_int(((GdkColor *)THIS->obj)->red/257);
+  push_int(((GdkColor *)THIS->obj)->green/257);
+  push_int(((GdkColor *)THIS->obj)->blue/257);
+  f_aggregate(3);
+}
+
+int red()
+//! Returns the red color component.
+{
+  push_int(((GdkColor *)THIS->obj)->red/257);
+}
+
+int green()
+//! Returns the green color component.
+{
+  push_int(((GdkColor *)THIS->obj)->green/257);
+}
+
+int blue()
+//! Returns the blue color component.
+{
+  push_int(((GdkColor *)THIS->obj)->blue/257);
+}
+
+int pixel()
+//! Returns the pixel value of the color. See <a href="gdk.image.xml#set_pixel">GDK2.Image->set_pixel</a>.
+{
+  push_int(((GdkColor *)THIS->obj)->pixel);
+}
+
+Image.Color.Color image_color_object()
+//! Return a Image.Color.Color instance.<br />
+//! This gives better precision than the rgb function.
+{
+  char colorname[4+4+4+2];
+  sprintf((char *)colorname,"#%04x%04x%04x",
+          ((GdkColor *)THIS->obj)->red,
+          ((GdkColor *)THIS->obj)->green,
+          ((GdkColor *)THIS->obj)->blue);
+
+  my_pop_n_elems(args);
+  pgtk_get_image_module();
+  pgtk_index_stack("Color");
+  pgtk_index_stack((char *)colorname);
+}
+
+void destroy()
+//! Destroys the color object. Please note that this function does
+//! not free the color from the X-colormap (in case of pseudocolor)
+//! right now.
+{
+  if (THIS->obj) {
+    g_free(THIS->obj);
+    THIS->obj=0;
+  }
+}
+

@@ -1,0 +1,71 @@
+require gnome;
+class Gnome.MessageBox;
+inherit Gnome.Dialog;
+//! The GnomeMessageBox widget creates dialog boxes (of type
+//! GnomeDialog) that contain a severity level (indicated by an icon
+//! and a title), a message to be displayed and a list of buttons that
+//! will be in the dialog.
+//! <p>
+//! The programmer will use strings desired for each button. If the
+//! strings are any of the GNOME_STOCK macros, then instead of creating
+//! a button with the text, the button will be a GNOME stock button
+//! with a stock icon.
+//! </p><p>
+//! The list of known types for message boxes are:
+//! CONST(GNOME_MESSAGE_BOX).
+//! TIMG: Gnome.MessageBox( "This is a nice message", Gnome.MessageBoxInfo, Gnome.StockButtonOk,  Gnome.StockButtonCancel );
+//! TIMG: Gnome.MessageBox( "This is another not so nice message", Gnome.MessageBoxError, Gnome.StockButtonClose,  Gnome.StockButtonCancel );
+//! </p>
+constant string GNOME_MESSAGE_BOX_INFO;
+constant string GNOME_MESSAGE_BOX_WARNING;
+constant string GNOME_MESSAGE_BOX_ERROR;
+constant string GNOME_MESSAGE_BOX_QUESTION;
+constant string GNOME_MESSAGE_BOX_GENERIC;
+
+void create(string message, string messagebox_type, string ... buttons)
+//! Creates a dialog box of type message_box_type with message. A
+//! number of buttons are inserted on it. You can use the GNOME stock
+//! identifiers to create gnome stock buttons.
+{
+  char *message, *type;
+  char **buttons;
+  int i;
+  pgtk_verify_gnome_setup();
+  pgtk_verify_not_inited();
+  
+  if(!PGTK_ISSTR( Pike_sp - args ) )
+    Pike_error( "Bad argument 1, expected string (message)\n");
+  message = PGTK_GETSTR( Pike_sp - args );
+
+  if(!PGTK_ISSTR( Pike_sp - args + 1) )
+    Pike_error( "Bad argument 2, expected string (type)\n");
+  type = PGTK_GETSTR( Pike_sp - args );
+
+  buttons = g_malloc( (args-1)*sizeof( gchar *) );
+  buttons[args-2] = NULL;
+  for( i = 2; i<args; i++ )
+    if( !PGTK_ISSTR( Pike_sp - args + i) )
+    {
+      int j;
+      for( j = 2; j<i; j++ )  PGTK_FREESTR( buttons[j-2] );
+      g_free( buttons );
+      PGTK_FREESTR( message );
+      PGTK_FREESTR( type );
+      Pike_error( "Bad argument %d, should be string\n", i );
+    }
+    else
+      buttons[i-2] = PGTK_GETSTR( Pike_sp-args+i );
+
+  THIS->obj = GTK_OBJECT( gnome_message_box_newv( (const gchar *)message,
+                                                  (const gchar *)type,
+                                                  (const gchar **)buttons ) );
+  pgtk__init_object( Pike_fp->current_object );
+  PGTK_FREESTR( message );
+  PGTK_FREESTR( type );
+  for( i = 0; i<args-1; i++ )
+    PGTK_FREESTR( buttons[i] );
+  g_free( buttons );
+  pop_n_elems( args );
+  push_int( 0 );
+}
+

@@ -1,0 +1,82 @@
+class GTK2.MenuItem;
+inherit GTK2.Item;
+
+//! Menu items, to be added to menus.
+
+//! Style properties:
+//! int arrow-spacing
+//! int horizontal-padding
+//! int selected-shadow-type
+//! int toggle-spacing
+
+signal activate;
+signal activate_item;
+signal toggle_size_allocate;
+signal toggle_size_request;
+
+void create(?string label)
+//! If a string is supplied, a W(Label) widget is created using that
+//! string and added to the item. Otherwise, you should add another
+//! widget to the list item with -&gt;add().
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    gchar *s=PGTK_GETSTR(Pike_sp-args);
+    if (s) {
+      THIS->obj=G_OBJECT(gtk_menu_item_new_with_mnemonic(s));
+      PGTK_FREESTR(s);
+    } else
+      THIS->obj=G_OBJECT(gtk_menu_item_new());
+  } else {
+    THIS->obj=G_OBJECT(gtk_menu_item_new());
+  }
+  pgtk__init_this_object();
+}
+
+void set_submenu(GTK2.Widget menu);
+//! Set the submenu for this menu button.
+
+GTK2.Widget get_submenu();
+//! Gets the submenu underneath this menu item.
+
+void set_accel_path(string path);
+//! Sets the accelerator path.
+
+void remove_submenu();
+//! Remove the submenu for this menu button.
+
+void select();
+//! Emulate a select signal
+
+void deselect();
+//! Emulate a deselect signal
+
+void activate();
+//! Emulate an activate signal
+
+int toggle_size_request(int requisition)
+//! Emits the "toggle-size-request" signal on the given item.
+{
+  pgtk_verify_inited();
+  {
+    gint req;
+    get_all_args("toggle_size_request",args,"%i",&req);
+    my_pop_n_elems(args);
+    gtk_menu_item_toggle_size_request(GTK_MENU_ITEM(THIS->obj),&req);
+    push_int(req);
+  }
+}
+
+void set_right_justified(int setting);
+//! Make the menu item stick to the right edge of it's container.
+
+void toggle_size_allocate(int allocation);
+//! Emits the "toggle_size_allocate" signal on the given item.
+
+int get_right_justified();
+//! Gets whether the menu item appears justified at the right side of the menu
+//! bar.
+
+GTK2.Widget get_submenu();
+//! Gets the submenu underneath this menu item.

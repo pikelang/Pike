@@ -1,0 +1,108 @@
+require gtk22;
+
+class GTK2.Clipboard;
+inherit G.Object;
+
+//! Clipboard implementation.
+
+/*
+void create()
+//! Constructor.
+{
+  pgtk_verify_setup();
+  pgtk_verify_not_inited();
+  THIS->obj=g_malloc(sizeof(GtkClipboard));
+  if (THIS->obj==NULL)
+    SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(GtkClipboard));
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
+*/
+
+void destroy()
+//! Destructor.
+{
+/*
+  if (THIS->obj)
+    g_free(THIS->obj);
+*/
+  THIS->obj=0;
+  my_pop_n_elems(args);
+  push_int(0);
+}
+
+GTK2.Clipboard get(GDK2.Atom selection)
+//! Returns the clipboard object for the given selection.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    get_all_args("get",args,"%o",&o1);
+    THIS->obj=G_OBJECT(gtk_clipboard_get(get_gdkatom(o1)));
+  }
+  RETURN_THIS();
+}
+
+require gtk22;
+GTK2.Clipboard get_for_display(GDK2.Display display, GDK2.Atom selection)
+//! Returns the clipboard object for the given selection.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2;
+    get_all_args("get_for_display",args,"%o",&o1,&o2);
+    THIS->obj=G_OBJECT(gtk_clipboard_get_for_display(
+		(GdkDisplay *)get_gdkobject(o1,display),get_gdkatom(o2)));
+  }
+  RETURN_THIS();
+}
+
+GDK2.Display get_display();
+//! Gets the GDK2.Display associated with this clipboard.
+endrequire;
+
+void clear();
+//! Clears the contents of the clipboard.
+
+void set_text(string text, int len);
+//! Sets the contents of the clipboard to the given UTF-8 string.
+
+require gtk26;
+void set_image(GDK2.Pixbuf pixbuf);
+//! Sets the contents of the clipboard to the given GDK2(Pixbuf).
+endrequire;
+
+/*
+// TODO
+string request_text();
+//! Requests the contents of the clipboard.
+*/
+
+/* TODO
+require gtk26;
+string request_image();
+//! Requests the contents of the clipboard as image.
+endrequire; 
+*/
+
+string wait_for_text();
+//! Requests the contents of the clipboard as text and converts the result
+//! to UTF-8 if necessary.
+
+require gtk26;
+GDK2.Pixbuf wait_for_image();
+//! Requests the contents of the clipboard as image and converts the result
+//! to a GDK2.Pixbuf.
+endrequire;
+
+int wait_is_text_available();
+//! Test to see if there is text available to be pasted.  This is done by
+//! requesting the TARGETS atom and checking if it contains any of the
+//! supported text targets.
+
+require gtk26;
+int wait_is_image_available();
+//! Test to see if tehre is an image available to be pasted.
+endrequire;
+
+endrequire;

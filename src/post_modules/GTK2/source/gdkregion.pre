@@ -1,0 +1,162 @@
+/* -*- C -*- */
+class GDK2.Region;
+
+//! Region information.
+
+%{
+static void return_gdkregion( int n, void *r )
+{
+  struct object *o;
+  if( n )
+    my_pop_n_elems( n );
+  o = low_clone( pgdk_region_program );
+  call_c_initializers( o );
+  ((struct object_wrapper *)o->storage)->obj = r;
+  push_object( o );
+}
+%}
+
+void create()
+//! Create a new (empty) region
+//!
+//! NOIMG
+{
+  pgtk_verify_setup();
+  pgtk_verify_not_inited();
+  THIS->obj = (void *)gdk_region_new();
+}
+
+void destroy()
+//! Destructor.
+{
+  gdk_region_destroy((GdkRegion *)THIS->obj);
+}
+
+int equal(GDK2.Region victim)
+//! Return true if the region used as an argument is equal to the
+//! current region. Also available as a==b when a is a region.
+{
+  struct object *o;
+  GdkRegion *r;
+  get_all_args( "equal", args, "%o", &o);
+  r = get_gdkobject( o, region );
+  if(!r)
+  {
+    my_pop_n_elems(args);
+    push_int(0);
+    return;
+  } else {
+    int eq = gdk_region_equal( (GdkRegion *)THIS->obj, r );
+    my_pop_n_elems(args);
+    push_int(eq);
+  }
+}
+
+int point_in(int x, int y)
+//! Returns true if the given point resides in the given region
+{
+  INT_TYPE x, y;
+  get_all_args( "point_in", args, "%i%i", &x, &y );
+  my_pop_n_elems(args);
+  push_int( gdk_region_point_in( (GdkRegion *)THIS->obj, x, y ) );
+}
+
+int rect_in(GDK2.Rectangle r)
+//! Returns true if the given rectangle resides inside the given region
+{
+  struct object *o;
+  GdkRectangle *r;
+  get_all_args( "rect_in", args, "%o", &o );
+  if(!(r = get_gdkobject( o, rectangle )))
+  {
+    Pike_error("Bad argument 1 to GDK2.rect_in( GDK2.Rectangle r )\n");
+  } else {
+    int b = gdk_region_rect_in((GdkRegion *)THIS->obj,  r);
+    my_pop_n_elems(args);
+    push_int( b );
+  }
+}
+
+void offset(int dx, int dy)
+//! Offset(move) the region by dx,dy pixels.
+{
+  INT_TYPE dx, dy;
+  get_all_args( "offset", args, "%i%i", &dx, &dy );
+  gdk_region_offset( (GdkRegion *)THIS->obj, dx, dy );
+  RETURN_THIS();
+}
+
+
+void shrink(int dx, int dy)
+//! reduces the size of a region by a
+//! specified amount.  Positive values shrink the size of the
+//! region, and negative values expand the region.
+{
+  INT_TYPE dx, dy;
+  get_all_args( "shrink", args, "%i%i", &dx, &dy );
+  gdk_region_shrink( (GdkRegion *)THIS->obj, dx, dy );
+  RETURN_THIS();
+}
+
+GDK2.Region union(GDK2.Region victim)
+//! Computes the union of the given rectangle or region and the region. 
+//! Also available as region | rectangle, region | region, region +
+//! region and region + rectangle.
+{
+  struct object *o;
+  void *v;
+  get_all_args( "union", args, "%o", &o );
+  if( (v = get_gdkobject(o, rectangle )) )
+    gdk_region_union_with_rect( (GdkRegion *)THIS->obj, v);
+  else if( (v=get_gdkobject(o, region )) )
+    gdk_region_union( (GdkRegion *)THIS->obj, v);
+  else
+    Pike_error("Bad argument to union: Not Region or Rectangle\n");
+  RETURN_THIS();
+}
+
+GDK2.Region intersect(GDK2.Region victim)
+//! Computes the intersection of the given region and the region. Also
+//! available as region &amp; region
+{
+  struct object *o;
+  void *v;
+  get_all_args( "intersect", args, "%o", &o );
+  if( (v=get_gdkobject(o, region )) ) {
+    gdk_region_union( (GdkRegion *)THIS->obj, v);
+  } else {
+    Pike_error("Bad argument to intersect: Not a GDK2.Region object\n");
+  }
+  RETURN_THIS();
+}
+
+GDK2.Region subtract(GDK2.Region victim)
+//! Computes the difference of the given region and the region.
+//! Also available as region - region
+{
+  struct object *o;
+  void *v;
+  get_all_args( "subtract", args, "%o", &o );
+  if( (v=get_gdkobject(o, region )) ) {
+    gdk_region_subtract( (GdkRegion *)THIS->obj, v);
+  } else {
+    Pike_error("Bad argument to subtract: Not a GDK2.Region object\n");
+  }
+  RETURN_THIS();
+}
+
+GDK2.Region xor(GDK2.Region victim)
+//! Computes the exlusive or of the given region and the region.
+//! Also available as region ^ region
+{
+  struct object *o;
+  void *v;
+  get_all_args( "xor", args, "%o", &o );
+  if( (v=get_gdkobject(o, region )) ) {
+    gdk_region_xor( (GdkRegion *)THIS->obj, v);
+  } else {
+    Pike_error("Bad argument to xor: Not a GDK2.Region object\n");
+  }
+  RETURN_THIS();
+}
+

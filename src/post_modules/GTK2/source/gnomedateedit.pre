@@ -1,0 +1,45 @@
+require gnome;
+
+class Gnome2.DateEdit;
+inherit GTK2.Hbox;
+
+//! The GnomeDateEdit widget provides a way to enter dates and times
+//! with a helper calendar to let the user select the date.
+//! IMG: Gnome2.DateEdit(time(),1,1);
+//! IMG: Gnome2.DateEdit(time(),0,1);
+
+//! Properties:
+//! int dateedit-flags
+//! int initial-time
+//! int lower-hour
+//! int time
+//! int upper-hour
+
+signal date_changed;
+signal time_changed;
+
+void create(int the_time, int show_time, int use_24_format);
+//! Creates a new GnomeDateEdit widget which can be used to provide an
+//! easy to use way for entering dates and times.
+
+void set_time(int the_time);
+//! Changes the displayed date and time in the GnomeDateEdit widget to
+//! be the one represented by the_time.
+
+int get_time();
+//! Return the time entered in the widget.
+
+void set_popup_range(int low_hour, int up_hour);
+//! Sets the range of times that will be provide by the time popup
+//! selectors.
+
+void set_flags(int flags);
+//! Bitwise or of CONST(GNOME_DATE_EDIT_).
+
+int get_flags();
+//! Get the flags.
+
+int get_initial_time();
+//! Queries the initial time that was set using set_time() or during creation.
+
+

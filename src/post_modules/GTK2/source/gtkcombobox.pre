@@ -1,0 +1,198 @@
+require gtk24;
+
+class GTK2.ComboBox;
+inherit GTK2.Bin;
+
+//! Properties:
+//! int active
+//! int add-tearoffs
+//! int column-span-column
+//! int focus-on-click
+//! int has-frame
+//! GTK2.TreeModel model
+//! int row-span-column
+//! int wrap-width
+//! <p>
+//! Style properties:
+//! int appears-as-list
+
+signal changed;
+
+void create(mixed model)
+//! Create a new ComboBox, either empty or with a model.  If a string is passed
+//! int instead, it will create a new W(ComboBox) with only text strings.
+//! If you do so, you should only manipulate it with the following functions:
+//! append_text(), insert_text(), prepend_text(), and remove_text().
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    struct object *o1;
+    gchar *text;
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      get_all_args("create",args,"%s",&text);
+      THIS->obj=G_OBJECT(gtk_combo_box_new_text());
+    } else {
+      get_all_args("create",args,"%o",&o1);
+      THIS->obj=G_OBJECT(gtk_combo_box_new_with_model(
+		GTK_TREE_MODEL(get_gobject(o1))));
+    }
+  } else {
+    THIS->obj=G_OBJECT(gtk_combo_box_new());
+  }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
+
+require gtk26;
+int get_wrap_width();
+//! Returns the wrap width which is used to determine
+//! the number of columns for the popup menu.  If the wrap
+//! width is larger than 1, the combo box is in table mode.
+endrequire;
+
+void set_wrap_width(int width);
+//! Sets the wrap width.  The wrap width is basically the preferred
+//! number of columns when you want the popup to be layed out in
+//! a table.
+
+require gtk26;
+int get_row_span_column();
+//! Returns the column with row span information.
+
+int get_column_span_column();
+//! Returns the column with column span information.
+endrequire;
+
+void set_row_span_column(int row_span);
+//! Sets the column with row span information.  The row span column
+//! contains integers which indicate how many rows an item
+//! should span.
+
+void set_column_span_column(int column_span);
+//! Sets the column span information.  The column span column
+//! contains integers which indicate how many columns
+//! an item should span.
+
+int get_active();
+//! Returns the index of the currently active item, or -1 if none.
+//! If the model is a non-flat treemodel, and the active item
+//! is not an immediate child of teh root of the tree, this
+//! function returns path_get_indices(path)[0], where path is
+//! the GTK2.TreePath of the active item.
+
+void set_active(int index_);
+//! Sets the active item.
+
+GTK2.TreeIter get_active_iter()
+//! Get the current active item.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GtkTreeIter *iter=NULL;
+    int res;
+
+    iter=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
+    if (iter==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_active_iter",sizeof(GtkTreeIter));
+    res=gtk_combo_box_get_active_iter(GTK_COMBO_BOX(THIS->obj),
+		iter);
+    if (res)
+      push_gobjectclass(iter,pgtk_tree_iter_program);
+    else
+      push_int(0);
+  }
+}
+
+void set_active_iter(GTK2.TreeIter iter)
+//! Sets the current active item to be the one referenced by iter.
+//! iter must correspond to a path of depth one.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    get_all_args("set_active_iter",args,"%o",&o1);
+    my_pop_n_elems(args);
+    gtk_combo_box_set_active_iter(GTK_COMBO_BOX(THIS->obj),
+		(GtkTreeIter *)get_gobject(o1));
+  }
+  RETURN_THIS();
+}
+
+GTK2.TreeModel get_model();
+//! Get the GTK2.TreeModel which is acting as a data source.
+
+void set_model(?GTK2.TreeModel model);
+//! Sets the model used by this widget.  Will unset a previously
+//! set model.  If no arguments are passed, then it will unset
+//! the model.
+
+void append_text(string text);
+//! Appends text to the list of strings stored in this combo box.
+//! Note that you can only use this function with combo boxes
+//! constructed with GTK2.ComboBox("a string").
+
+void insert_text(int position, string text);
+//! Inserts string at position in the list of strings stored.
+//! Note that you can only use this function with combo boxes
+//! constructed with GTK2.ComboBox("a string").
+
+void prepend_text(string text);
+//! Prepends string to the list of strings stored in this combo box.
+//! Note that you can only use this function with combo boxes
+//! constructed with GTK2.ComboBox("a string").
+
+void remove_text(int position);
+//! Removes the string at position from this combo box.
+//! Note that you can only use this function with combo boxes
+//! constructed with GTK2.ComboBox("a string").
+
+require gtk26;
+string get_active_text()
+//! Returns the currently active string.
+//! Note that you can only use this function with combo boxes
+//! constructed with GTK2.ComboBox("a string").
+{
+  pgtk_verify_inited();
+  {
+    const gchar *a1;
+    a1=gtk_combo_box_get_active_text(GTK_COMBO_BOX(THIS->obj));
+    if (a1==NULL)
+      push_string(empty_pike_string);
+    else
+      PGTK_PUSH_GCHAR(a1);
+  }
+}
+endrequire;
+
+void popup();
+//! Pops up the menu or dropdown list.
+
+void popdown();
+//! Hides the menu or dropdown list.
+
+require gtk26;
+/*
+ATK.Object get_popup_accessible();
+//! Gets the accessible object corresponding to this popup.
+*/
+
+void set_add_tearoffs(int setting);
+//! Sets whether the popup menu should have a tearoff menu item.
+
+int get_add_tearoffs();
+//! Gets whether the popup menu has tearoff items.
+
+void set_focus_on_click(int setting);
+//! Sets whether the combo box will grab focus when it is
+//! clicked with the mouse.
+
+int get_focus_on_click();
+//! Returns whether the combo box grabs focus when it is
+//! clicked with the mouse.
+endrequire;
+
+#include "gtkcelllayout.inc"
+
+endrequire;

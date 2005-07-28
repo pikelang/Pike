@@ -1,0 +1,6 @@
+class GTK2.TreeModel;
+inherit G.Object;
+
+//! Class used for the TreeModel funtions.
+
+#include "gtktreemodel.inc"

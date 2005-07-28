@@ -1,0 +1,19 @@
+require gtk24;
+
+class GTK2.SeparatorToolItem;
+inherit GTK2.ToolItem;
+
+//! Properties:
+//! int draw
+
+void create();
+//! Create a new GTK2.SeparatorToolItem.
+
+void set_draw(int draw);
+//! When a SeparatorToolItem is drawn as a line,
+//! or just a blank.
+
+int get_draw();
+//! Returns whether SeparatorToolItem is drawn as a line,
+//! or just a blank
+endrequire;

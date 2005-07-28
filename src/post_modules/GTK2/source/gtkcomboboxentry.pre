@@ -1,0 +1,43 @@
+require gtk24;
+
+class GTK2.ComboBoxEntry;
+inherit GTK2.ComboBox;
+
+//! Properties:
+//! int text-column
+
+
+void create(string|GTK2.TreeModel model, ?int text_column)
+//! Create a new ComboBoxEntry, either empty or with a model.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    struct object *o1;
+    gchar *text;
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      get_all_args("create",args,"%s",&text);
+      THIS->obj=G_OBJECT(gtk_combo_box_entry_new_text());
+    } else {
+      struct object *o1;
+      INT_TYPE text_column;
+      get_all_args("create",args,"%o%i",&o1,&text_column);
+      THIS->obj=G_OBJECT(gtk_combo_box_entry_new_with_model(
+		GTK_TREE_MODEL(get_gobject(o1)),text_column));
+    }
+  } else {
+    THIS->obj=G_OBJECT(gtk_combo_box_entry_new());
+  }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
+
+void set_text_column(int text_column);
+//! Sets the model column which this widget should use to get strings
+//! from.
+
+int get_text_column();
+//! Returns the column which this widget is using to get the strings
+//! from.
+
+endrequire;

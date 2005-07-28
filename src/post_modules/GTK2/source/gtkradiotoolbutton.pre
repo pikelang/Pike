@@ -1,0 +1,63 @@
+require gtk24;
+
+class GTK2.RadioToolButton;
+inherit GTK2.ToggleToolButton;
+
+//! Properties:
+//! GTK2.RadioToolButton group
+
+void create(?GTK2.RadioToolButton groupmember)
+//! Create a GTK2.RadioToolButton.
+//! Use without a parameter for a new group.
+//! Use with another GTK2.RadioToolButton to add another
+//!   button to the same group as a previous button.
+{
+  GSList *mylist=NULL;
+  struct object *o1=NULL;
+
+  if (args)
+    get_all_args("create",args,"%o",&o1);
+
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (o1) {
+    THIS->obj=G_OBJECT(gtk_radio_tool_button_new_from_widget(
+		GTK_RADIO_TOOL_BUTTON(get_gobject(o1))));
+  } else {
+    THIS->obj=G_OBJECT(gtk_radio_tool_button_new(NULL));
+  }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
+
+array get_group()
+//! Get the group this button belongs to.
+{
+  pgtk_verify_inited();
+  {
+    GSList *ml=gtk_radio_tool_button_get_group(
+		GTK_RADIO_TOOL_BUTTON(THIS->obj));
+    struct array *a;
+    GSList *m2;
+    int num;
+    m2=ml;
+    while (m2) {
+      push_text(m2->data);
+      g_object_ref(GTK_RADIO_TOOL_BUTTON(m2->data));
+      num++;
+      g_slist_next(m2);
+    }
+    f_aggregate(num);
+    g_slist_free(ml);
+  }
+}
+
+/*
+void set_group(GTK2.RadioToolButton group_member)
+//! Adds this button to the same group as group_member, and removes from the
+//! old group.
+{
+  pgtk_verify_inited();
+  
+*/
+endrequire;

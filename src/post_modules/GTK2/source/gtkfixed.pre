@@ -1,0 +1,50 @@
+class GTK2.Fixed;
+inherit GTK2.Container;
+
+//! A fixed container is a container that keeps it's children at fixed
+//! locations and give them fixed sizes, both given in pixels.
+//! <p>
+//!  Example:
+//! IMG: GTK2.Fixed()->put(GTK2.Label("100,100"), 100, 100)->put(GTK2.Label("0,0"), 0, 0)->set_size_request(150,115)
+//! </p>
+
+//! Child properties:
+//! int x
+//! int y
+
+void create();
+//! Create a new fixed widget
+
+void put(GTK2.Widget widget, int x, int y);
+//! Place the widget at xpos,ypos.
+
+void move(GTK2.Widget widget, int new_xpos, int new_ypos);
+//! Move the widget to new_xpos,new_ypos from it's old location.
+
+int get_has_window();
+//! Gets whether GTK2.Fixed has its own GDK2.Window.
+
+void set_has_window(int has_window);
+//! Sets wither a GTK2.Fixed widget is created with a separate
+//! GDK2.Window for the window or now.
+
+array(mapping(string:mixed)) get_children()
+//! Get a list of the children and their x,y positions.
+{
+  pgtk_verify_inited();
+  {
+    GList *gl=GTK_FIXED(THIS->obj)->children;
+    int i=0;
+    GtkFixedChild *gfc;
+    while (gl) {
+      gfc=(GtkFixedChild *)gl->data;
+      push_text("widget"); push_gobject(gfc->widget);
+      push_text("x"); push_int(gfc->x);
+      push_text("y"); push_int(gfc->y);
+      f_aggregate_mapping(6);
+      i++;
+      gl=g_list_next(gl);
+    }
+    f_aggregate(i);
+  }
+}

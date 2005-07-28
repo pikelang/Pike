@@ -1,0 +1,67 @@
+require gtk26;
+
+class GTK2.MenuToolButton;
+inherit GTK2.ToolButton;
+
+//! Properties to be notified.
+//! GTK2.Menu menu
+
+signal show_menu;
+
+void create(GTK2.Widget|string icon, ?string label)
+//! Create a new GTK2.MenuToolButton.
+//! If icon is a string, label should be omitted.  If it isn't,
+//! it will be igrnored.  The result will be a button from
+//! a stock item, one of CONST(GTK_STOCK).
+//! If icon is a GTK2.Widget, it will be used as the icon, and label
+//! will be the label.  The label must exist if that is the case.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    const gchar *s;
+    if (args==1 || Pike_sp[-args].type==PIKE_T_STRING) {
+      get_all_args("create",args,"%s",&s);
+      if (s)
+	THIS->obj=G_OBJECT(gtk_menu_tool_button_new_from_stock(s));
+      else
+	Pike_error("Invalid argument 1\n");
+    } else {
+      const gchar *s;
+      struct object *o1;
+      get_all_args("create",args,"%o%s",&o1,&s);
+      if (s && o1)
+	THIS->obj=G_OBJECT(gtk_menu_tool_button_new(GTK_WIDGET(get_gobject(o1)),s));
+      else
+	Pike_error("Invalid arguments.\n");
+    }
+  }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
+
+void set_menu(GTK2.Widget menu);
+//! Sets the GTK2.Menu that is popped up when the user clicks on the arrow.
+
+GTK2.Widget get_menu();
+//! Returns the GTK2.Menu.
+
+void set_arrow_tooltip(GTK2.Tooltips tooltips, string tip_text, string tip_private);
+//! Sets the GTK2.Tooltips object to be used for the arrow button
+//! which pops up the menu.
+/*
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    char *t1,*t2;
+    get_all_args("set_arrow_tooltip",args,"%o%s%s",&o1,&t1,&t2);
+    gtk_menu_tool_button_set_arrow_tooltip(GTK_MENU_TOOL_BUTTON(THIS->obj),
+		GTK_TOOLTIPS(get_gobject(o1)),t1,t2);
+  }
+  RETURN_THIS();
+}
+*/
+
+endrequire;
+

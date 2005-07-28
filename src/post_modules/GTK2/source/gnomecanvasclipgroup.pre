@@ -1,0 +1,8 @@
+require gnomecanvas;
+
+class Gnome2.CanvasClipgroup;
+inherit Gnome2.CanvasGroup;
+
+//! Properties:
+//! string path
+//! int wind

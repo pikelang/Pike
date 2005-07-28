@@ -1,0 +1,373 @@
+class Pango.Layout;
+
+//! Pango Layout.
+
+void create(Pango.Context context)
+//! Create a new layout with attributes initialized to default values for
+//! a particular Pango.Context
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    struct object *o1;
+    get_all_args("create",args,"%o",&o1);
+    THIS->obj=(void *)pango_layout_new((PangoContext *)get_gobject(o1));
+  }
+  pgtk__init_this_object();
+}
+
+Pango.Layout copy(Pango.Layout src)
+//! Does a copy of the src.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    PangoLayout *pl;
+    get_all_args("copy",args,"%o",&o1);
+    my_pop_n_elems(args);
+    pl=pango_layout_copy((PangoLayout *)get_gobject(o1));
+    push_gobjectclass(pl,ppango_layout_program);
+  }
+}
+
+Pango.Context get_context()
+//! Returns the Pango.Context.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    PangoContext *pc=pango_layout_get_context((PangoLayout *)THIS->obj);
+    g_object_ref(pc);
+    push_gobjectclass(pc,ppango_context_program);
+  }
+}
+
+void context_changed();
+//! Forces recomputation of any state in the layout that might depend on the
+//! layout's context.  This function should be called if you make changes
+//! to the context subsequent to creating the layout.
+
+void set_text(string text, int length);
+//! Sets the text of the layout.
+
+string get_text();
+//! Gets the text.
+
+void set_markup(string markup, int length);
+//! Same as set_markup_with_accel(), but the markup text isn't scanned for
+//! accelerators.
+
+void set_markup_with_accel(string markup, int length, ?int accel_marker)
+//! Sets the layout text and attribute from marked-up text.  Replaces the
+//! current text and attribute list.
+//! <p>
+//! If accel_marker is nonzero, the given character will mark the character
+//! following it as an accelerator.  For example, the accel marker might be an
+//! ampersand or underscore.  All characters marked as an acclerator will
+//! receive a GTK2.PANGO_UNDERLINE_LOW attribute, and the first character so
+//! marked will be returned.  Two accel_marker characters following each other
+//! produce a single literal accel_marker character.
+{
+  pgtk_verify_inited();
+  {
+    const char *markup;
+    int len;
+    gunichar accel_marker=0,accel_char;
+    if (args==2)
+      get_all_args("set_markup_with_accel",args,"%s%i",&markup,&len);
+    else
+      get_all_args("set_markup_with_acdel",args,"%s%i%i",&markup,&len,
+				&accel_marker);
+    my_pop_n_elems(args);
+    pango_layout_set_markup_with_accel((PangoLayout *)THIS->obj,
+		markup,len,accel_marker,&accel_char);
+    push_int(accel_char);
+  }
+}
+
+void set_font_description(Pango.FontDescription desc)
+//! Sets the default font description for the layout.  If no font
+//! description is set on the layout, the font descriptions from the layout's
+//! context is used.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    get_all_args("set_font_description",args,"%o",&o1);
+    pango_layout_set_font_description((PangoLayout *)THIS->obj,
+		(PangoFontDescription *)get_gobject(o1));
+  }
+  RETURN_THIS();
+}
+
+/*
+Pango.FontDescription get_font_description()
+//! Gets the font description for the layout, if any.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    const PangoFontDescription *pfd=pango_layout_get_font_description(
+			(PangoLayout *)THIS->obj);
+    if (pfd) {
+      PangoFontDescription *p2=pango_font_description_copy(pfd);
+      push_gobjectclass(p2,ppango_font_description_program);
+    } else
+      push_int(0);
+  }
+}
+*/
+
+void set_width(int width);
+//! Sets the width to which the lines should be wrapped.
+
+int get_width();
+//! Gets the line wrap width.
+
+void set_wrap(int wrap);
+//! Sets the wrap mode; the wrap mode only has an effect if a width is set on
+//! the layout with set_width().  To turn off wrapping, set the width to -1.
+//! One of CONST(PANGO_WRAP_).
+
+int get_wrap();
+//! Gets the wrap mode for the layout.
+
+/*
+void set_ellipsize(int ellipsize);
+//! Sets the type of ellipsization being performed.
+*/
+
+void set_indent(int indent);
+//! Sets the width in pango units to indent each paragraph.  A negative value
+//! of indent will produce a hanging indent.  That is, the first line will
+//! have the full width, and subsequent lines will be indented by the absolute
+//! value of indent.
+
+int get_indent();
+//! Gets the paragraph indent in pango units.  A negative value indicates a
+//! hanging indent.
+
+int get_spacing();
+//! Gets the amount of spacing between the lines.
+
+void set_spacing(int spacing);
+//! Sets the amount of spacing between the lines.
+
+void set_justify(int justify);
+//! Sets whether or not each complete line should be stretched to fill the
+//! entire width of the layout.  This stretching is typically done by adding
+//! whitespace, but for some scripts (such as Arabic), the justification is
+//! done by extending the characters.
+
+int get_justify();
+//! Gets whether or not each complete line should be stretched to fill the
+//! entire width of the layout.
+
+require pango14;
+void set_auto_dir(int auto_dir);
+//! Sets whether to calculate the bidirectional base direction for the layout
+//! according to the contents of the layout; when this flag is on (the
+//! default), then paragraphs that begin with strong right-to-left characters
+//! (Arabic and Hebrew principally), will have right-left-layout, paragraphs
+//! with letters from other scripts will have left-to-right layout.
+//! Paragraphs with only neutral characters get their direction from the
+//! surrounding paragraphs.
+//! <p>
+//! When false, the choice between left-to-right and right-to-left layout is
+//! done by according to the base direction of the Pango.Context.
+
+int get_auto_dir();
+//! Gets whether to calculate the bidirectional base direction for the layout
+//! according to the contents of the layout.
+endrequire;
+
+void set_alignment(int alignment);
+//! Sets the alignment for the layout (how partial lines are positioned within
+//! the horizontal space available.)  One of CONST(PANGO_ALIGN_).
+
+int get_alignment();
+//! Gets the alignment.
+
+void set_tabs(?Pango.TabArray tabs)
+//! Sets the tabs to use, overriding the default tabs (by default, tabs are
+//! every 8 spaces).  If tabs is omitted, the default tabs are reinstated.
+{
+  pgtk_verify_inited();
+  if (args) {
+    struct object *o1;
+    get_all_args("set_tabs",args,"%o",&o1);
+    pango_layout_set_tabs((PangoLayout *)THIS->obj,
+		(PangoTabArray *)get_gobject(o1));
+  } else
+    pango_layout_set_tabs((PangoLayout *)THIS->obj,NULL);
+  RETURN_THIS();
+}
+
+Pango.TabArray get_tabs()
+//! Gets the current W(TabArray) used by this layout.  If no W(TabArray) has
+//! been set, then the default tabs are in use and 0 is returned.  Default
+//! tabs are every 8 spaces.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    PangoTabArray *pta=pango_layout_get_tabs((PangoLayout *)THIS->obj);
+    push_gobjectclass(pta,ppango_tab_array_program);
+  }
+}
+
+void set_single_paragraph_mode(int setting);
+//! If setting is true, do not treat newlines and similar characters as
+//! paragraph separators; instead, keep all text in a single paragraph, and
+//! display a glyph for paragraph separator characters.  Used when you want to
+//! allow editing of newlines on a single text line.
+
+int get_single_paragraph_mode();
+//! Gets the value set by set_single_paragraph_mode().
+
+mapping(string:int) xy_to_index(int x, int y)
+//! Converts from x and y position within a layout to the byte index to the
+//! character at that logical position.  If the y position is not inside the
+//! layout, the closest position is chosen (the position will be clamped inside
+//! the layout).  If the X position is not within the layout, then the start
+//! or the end of the line is chosen as describe for x_to_index().  If either
+//! the x or y positions were not inside the layout, then returns 0.
+//! <p>
+//! Returns:
+//! ([ "index": byte index, "trailing": where in grapheme user clicked ]).
+{
+  pgtk_verify_inited();
+  {
+    int x,y,index,trailing,res;
+    get_all_args("xy_to_index",args,"%i%i",&x,&y);
+    my_pop_n_elems(args);
+    res=pango_layout_xy_to_index((PangoLayout *)THIS->obj,x,y,&index,&trailing);
+    if (res) {
+      push_text("index"); push_int(index);
+      push_text("trailing"); push_int(trailing);
+      f_aggregate_mapping(4);
+    } else {
+      push_int(0);
+    }
+  }
+}
+
+mapping(string:int) index_to_pos(int index)
+//! Converts from an index to the onscreen position corresponding to the
+//! grapheme at that index, which is represented as a rectangle.  Note that
+//! x is always the leading edge of the grapheme and x+width the trailing
+//! edge of the grapheme.  If the direction of the grapheme is right-to-left,
+//! then width will be negative.
+//! <p>
+//! Returns:
+//! ([ "x": x coordinate, "y": y coordinate,
+//!    "width": width of the rectangle, "height": height of the rectangle ])
+{
+  pgtk_verify_inited();
+  {
+    int index;
+    PangoRectangle pos;
+    get_all_args("index_to_pos",args,"%i",&index);
+    my_pop_n_elems(args);
+    pango_layout_index_to_pos((PangoLayout *)THIS->obj,index,&pos);
+    push_text("x"); push_int(pos.x);
+    push_text("y"); push_int(pos.y);
+    push_text("width"); push_int(pos.width);
+    push_text("height"); push_int(pos.height);
+    f_aggregate_mapping(8);
+  }
+}
+
+array(mapping(string:int)) get_cursor_pos(int index)
+//! Given an index within a layout, determines the positions of the strong and
+//! weak cursors if the insertion point is at that index.  The position of
+//! each cursor is stored as a zero-width rectangle.  The strong cursor is
+//! the location where characters of the directionality equal to the base
+//! direction of the layout are inserted.  The weak cursor location is the
+//! location where characters of the directionality opposite to the base
+//! direction of the layout are inserted.
+//! Returns:
+//! array of mappings, each mapping is the same as index_to_pos().
+{
+  pgtk_verify_inited();
+  {
+    int index;
+    PangoRectangle pos1,pos2;
+    get_all_args("get_cursor_pos",args,"%i",&index);
+    my_pop_n_elems(args);
+    pango_layout_get_cursor_pos((PangoLayout *)THIS->obj,index,&pos1,&pos2);
+    push_text("x"); push_int(pos1.x);
+    push_text("y"); push_int(pos1.y);
+    push_text("width"); push_int(pos1.width);
+    push_text("height"); push_int(pos1.height);
+    f_aggregate_mapping(8);
+    push_text("x"); push_int(pos2.x);
+    push_text("y"); push_int(pos2.y);
+    push_text("width"); push_int(pos2.width);
+    push_text("height"); push_int(pos2.height);
+    f_aggregate_mapping(8);
+    f_aggregate(2);
+  }
+}
+
+mapping(string:int) move_cursor_visually(int strong, int old_index, 
+		int old_trailing, int dir)
+//! Computes a new cursor position from an old position and a count of
+//! positions to move visually.  If count is positive, then the new strong
+//! cursor position will be one position to the right of the old cursor
+//! position.  If count is negative, then the new strong cursor position will
+//! be one position to the left of the old cursor position.
+//! <p>
+//! In the presence of bidirectional text, the correspondence between logical
+//! and visual order will depend on the direction of the current run, and there
+//! may be jumps when the cursor is moved off the end of a run.
+//! <p>
+//! Motion here is in cursor positions, not in characters, so a single call to
+//! move_cursor_visually() may move the cursor over multiple characters when
+//! multiple characters combine to form a single grapheme.
+{
+  pgtk_verify_inited();
+  {
+    int strong,old_index,old_trailing,dir;
+    int new_index,new_trailing;
+    get_all_args("move_cursor_visually",args,"%i%i%i%i",&strong,&old_index,
+			&old_trailing,&dir);
+    my_pop_n_elems(args);
+    pango_layout_move_cursor_visually((PangoLayout *)THIS->obj,
+		strong,old_index,old_trailing,dir,&new_index,&new_trailing);
+    push_text("index"); push_int(new_index);
+    push_text("trailing"); push_int(new_trailing);
+    f_aggregate_mapping(4);
+  }
+}
+
+mapping(string:int) get_size()
+//! Determines the logical width and height in Pango units.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    int width,height;
+    pango_layout_get_size((PangoLayout *)THIS->obj,&width,&height);
+    push_text("width"); push_int(width);
+    push_text("height"); push_int(height);
+    f_aggregate_mapping(4);
+  }
+}
+
+int get_line_count();
+//! Retrieves the count of lines.
+
+Pango.LayoutLine get_line(int line)
+//! Retrieves a specific line.
+{
+  pgtk_verify_inited();
+  {
+    int line;
+    PangoLayoutLine *pll;
+    get_all_args("get_line",args,"%i",&line);
+    my_pop_n_elems(args);
+    pll=pango_layout_get_line(PANGO_LAYOUT(THIS->obj),line);
+    push_gobjectclass(pll,ppango_layout_line_program);
+  }
+}

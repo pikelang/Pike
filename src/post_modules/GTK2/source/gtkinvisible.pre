@@ -1,0 +1,10 @@
+class GTK2.Invisible;
+inherit GTK2.Widget;
+
+//! An invisible container, useful, eh? :)
+
+//! Properties:
+//! GDK2.Screen screen
+
+void create();
+//! Create a new invisible widget

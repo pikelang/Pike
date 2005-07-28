@@ -1,0 +1,40 @@
+
+int drag_data_received(GTK2.TreePath path, GTK2.SelectionData sel)
+//! Asks to insert a row before the path dest, deriving the contents of the
+//! row from the sel.  If this dest is outside the tree so that inserting
+//! before it is impossible, false will be returned.  Also, false may be
+//! returned if the new row is not created for some model-specific reason.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2;
+    int res;
+    get_all_args("drag_data_receive",args,"%o%o",&o1,&o2);
+    res=gtk_tree_drag_dest_drag_data_received(
+			GTK_TREE_DRAG_DEST(THIS->obj),
+			(GtkTreePath *)get_gobject(o1),
+			(GtkSelectionData *)get_gobject(o2));
+    my_pop_n_elems(args);
+    PGTK_PUSH_INT(res);
+  }
+}
+
+int row_drop_possible(GTK2.TreePath path, GTK2.SelectionData sel)
+//! Determines whether a drop is possible before past, at the same depth as
+//! path.  i.e., can we drop the data in sel at that location.  path does not
+//! have to exist; the return value will almost certainly be false if the
+//! parent of path doesn't exist, though.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2;
+    int res;
+    get_all_args("row_drop_possible",args,"%o%o",&o1,&o2);
+    res=gtk_tree_drag_dest_row_drop_possible(
+			GTK_TREE_DRAG_DEST(THIS->obj),
+			(GtkTreePath *)get_gobject(o1),
+			(GtkSelectionData *)get_gobject(o2));
+    my_pop_n_elems(args);
+    PGTK_PUSH_INT(res);
+  }
+}

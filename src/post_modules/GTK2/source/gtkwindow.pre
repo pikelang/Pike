@@ -1,0 +1,575 @@
+class GTK2.Window;
+inherit GTK2.Bin;
+
+//! The basic window. Nothing much to say about it. It can only contain
+//! one child widget. Show the main window last to avoid annoying
+//! flashes when the subwidget (and it's subwidgets) are added to it,
+//! this is done automatically by calling 'window->show_all' when you
+//! are done with your widget packing.
+
+//! Properties:
+//! int accept-focus
+//! int allow-grow
+//! int allow-shrink
+//! int decorated
+//! int default-height
+//! int default-width
+//! int destroy-with-parent
+//! int focus-on-map
+require gtk24;
+//! int gravity CONST(GDK_GRAVITY_)
+endrequire;
+//! int has-toplevel-focus
+//! GDK2.Pixbuf icon
+require gtk26;
+//! string icon-name
+endrequire;
+//! int is-active
+//! int modal
+//! int resizable
+//! string role
+//! GDK2.Screen screen
+//! int skip-pager-hint
+//! int skip-taskbar-hint
+//! string title
+//! int type CONST(GTK_WINDOW_)
+//! int type-hint CONST(GDK_WINDOW_TYPE_HINT_)
+//! int window-position CONST(GTK_WIN_POS_)
+
+signal activate_default;
+signal activate_focus;
+signal frame_event;
+signal keys_changed;
+signal move_focus;
+signal set_focus;
+
+void create(int window_type);
+//! Argument is one of CONST(GTK_WINDOW)
+
+void set_title(string title);
+//! Set the window title. The default title is the value sent to
+//! setup_gtk, or if none is sent, Pike GTK.
+
+void set_wmclass(string name, string class);
+//! Set the window manager application name and class.
+
+void set_resizable(int setting);
+//! Sets whether the user can resize a window.  Windows are user resizable by
+//! default.
+
+void get_resizable();
+//! Gets the whether this window is resizable.
+
+void add_accel_group(GTK2.AccelGroup group);
+//! This function adds an accelerator group to the window. The shortcuts in
+//! the table will work in the window, it's child, and all children of
+//! it's child that do not select keyboard input.
+
+void remove_accel_group(GTK2.AccelGroup group);
+//! Reverses the effects of add_accel_group().
+
+int activate_focus();
+//! Activates the current focused widget.
+
+int activate_default();
+//! Activates the default widget, unless the current focused widget has been
+//! configured to receive the default action, in which case the focuses widget
+//! is activated.
+
+void set_modal(int setting);
+//! Sets a window modal or non-modal.  Modal windows prevent interaction with
+//! other windows in the same application.  To keep modal dialogs on top of
+//! main application windows, use set_transient_for() to make the dialog
+//! transient for the parent; most window managers will then disallow lowering
+//! the dialog below the parent.
+
+void set_default_size(int width, int height);
+//! Sets the default size of a window.  If the window's "natural" size (its
+//! size request) is larger than the default, the default will be ignored.
+//! more generally, if the default size does not obey the geometry hints for
+//! the window (set_geometry_hints() can be used to set these explicitly), the
+//! default size will be clamped to the nearest permitted size.
+//! <p>
+//! Unlike set_size_request(), which sets a size request for a widget and thus
+//! would keep users from shrinking the window, this function only sets the
+//! initial size, just as if the user had resized the window themselves.  Users
+//! can still shrink the window again as they normally would.  Setting a
+//! default size of -1 means to use the "natural" default size (the size
+//! request of the window).
+//! <p>
+//! For more control over a window's initial size and how resizing works,
+//! investigate set_geometry_hints().
+//! <p>
+//! For some uses, resize() is a more appropriate function.  resize() changes
+//! the current size of the window, rather than the size to be used on initial
+//! display.  resize() always affects the window itself, not the geometry
+//! widget.
+//! <p>
+//! The default size of a window only affects the first time a window is shown;
+//! if a window is hidden and re-shown, it will remember the size it had prior
+//! to hiding, rather than using the default size.
+//! <p>
+//! Window scan't actually be 0x0 in size, they must be at least 1x1, but
+//! passing 0 for width and height is OK, resulting in a 1x1 default size.
+
+%{
+#ifdef GET_ARG
+#undef GET_ARG
+#endif
+#define GET_ARG(x,y,z) pgtk_get_mapping_arg( m, #x, y, z, &geo.x, &mask, sizeof(geo.x))
+%}
+
+void set_geometry_hints(GTK2.Widget widget, mapping(string:int) geometry)
+//! This function sets up hints about how a window can be resized by the user.
+//! You can set a minimum and maximum size; allowed resized increments (e.g.
+//! for xterm, you can only resize by the size of a character); aspect ratios;
+//! and more.
+//! geometry is a mapping with the following fields.  Any field which is
+//! omitted is left as the default:
+//! ([ "min_width": int,
+//!    "min_height": int,
+//!    "max_width": int,
+//!    "max_height": int,
+//!    "base_width": int,
+//!    "base_height": int,
+//!    "width_inc": int,
+//!    "height_inc": int,
+//!    "min_aspect": float,
+//!    "max_aspect": float,
+//!    "win_gravity": int, CONST(GDK_GRAVITY_)
+//! ]);
+//! min_width/min_height/max_width/max_height may be set to -1, and it will
+//! substitute the size request of the window or geometry widget.  If the
+//! minimum size hint is not provided, it will use its requisition as the
+//! minimum size.  If the minimum size is provided and a geometry widget is
+//! set, it will take the minimum size as the minimum size of the geometry
+//! widget rather than the entire window.  The base size is treat similarly.
+//! min_width: minimum width of the window (-1 to use requisition)
+//! min_height: minimum height of window (-1 to use requisition)
+//! max_width: maximum width of window (-1 to use requisition)
+//! max_height: maximum height of window (-1 to use requisition)
+//! base_width: allow window widths are base_width+width_inc*N (-1 allowed)
+//! base_height: allowed window widths are base_height+height_inc*N (-1 allowed)
+//! width_inc: width resize increment
+//! height_inc: height resize increment
+//! min_aspect: minimum width/height ratio
+//! max_aspect: maximum width/height ratio
+//! win_gravity: window gravity
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    struct mapping *m;
+    GdkGeometry geo;
+/*    GdkWindowHints mask; */
+    long mask;
+    get_all_args("set_geometry_hints",args,"%o%m",&o1,&m);
+    GET_ARG(min_width,PIKE_T_INT,GDK_HINT_MIN_SIZE);
+    GET_ARG(min_height,PIKE_T_INT,GDK_HINT_MIN_SIZE);
+    GET_ARG(max_width,PIKE_T_INT,GDK_HINT_MAX_SIZE);
+    GET_ARG(max_height,PIKE_T_INT,GDK_HINT_MAX_SIZE);
+    GET_ARG(base_width,PIKE_T_INT,GDK_HINT_BASE_SIZE);
+    GET_ARG(base_height,PIKE_T_INT,GDK_HINT_BASE_SIZE);
+    GET_ARG(width_inc,PIKE_T_INT,GDK_HINT_RESIZE_INC);
+    GET_ARG(height_inc,PIKE_T_INT,GDK_HINT_RESIZE_INC);
+    GET_ARG(min_aspect,PIKE_T_FLOAT,GDK_HINT_ASPECT);
+    GET_ARG(max_aspect,PIKE_T_FLOAT,GDK_HINT_ASPECT);
+    GET_ARG(win_gravity,PIKE_T_INT,GDK_HINT_WIN_GRAVITY);
+    gtk_window_set_geometry_hints(GTK_WINDOW(THIS->obj),
+			GTK_WIDGET(get_gobject(o1)),&geo,mask);
+  }
+  RETURN_THIS();
+}
+
+void set_gravity(int gravity);
+//! Window gravity defines the meaning of coordinates passed to move().
+//! <p>
+//! The default window gravity is GDK2.GRAVITY_NORTH_WEST, which will typically
+//! "do what you mean."
+
+void get_gravity();
+//! Gets the value set by set_gravity().
+
+void set_position(int pos);
+//! Sets a position contraint for this window.  If the old or new constraint
+//! is GTK2.WIN_POS_CENTER_ALWAYS, this will also cause the window to be
+//! repositioned to satisfy the new constraint.
+
+void set_transient_for(GTK2.Window parent);
+//! Dialog window should be set transient for the main application window they
+//! were spawned from.  This allows window managers to e.g. keep the dialog on
+//! top of the main window, or center the dialog over the main window.
+//! W(Dialog) and other convenience objects in GTK+ will sometimes call
+//! set_transient_for on your behalf.
+
+void set_destroy_with_parent(int setting);
+//! If setting is true, then destroying the transient parent of this window
+//! will also destroy the window itself.  This is useful for dialogs that
+//! shouldn't persist beyond the lifetime of the main window they're associated
+//! with, for example.
+
+require gtk24;
+int is_active();
+//! Returns whether the window is part of the current active toplevel.  (That
+//! is, the toplevel window receiving keystrokes.)  The return value is true
+//! if the window is active toplevel itself, but also if it is, say, a W(Plug)
+//! embedded in the active toplevel.  You might use this function if you wanted
+//! to draw a widget differently in an active window from a widget in an
+//! inactive window().
+
+int has_toplevel_focus();
+//! Returns whether the input focus is within this window.  For real toplevel
+//! windows, this is identical to is_active(), but for embedded windows, like
+//! W(Plug), the results will differ.
+endrequire;
+
+void add_mnemonic(int keyval, GTK2.Widget target);
+//! Adds a mnemonic to this window.
+
+void remove_mnemonic(int keyval, GTK2.Widget target);
+//! Removes a mnemonic from this window.
+
+int mnemonic_activate(int keyval, int modifier);
+//! Activates the targets associated with the mnemonic.  modifier is one of
+//! GDK2.SHIFT_MASK, GDK2.LOCK_MASK, GDK2.CONTROL_MASK, GDK2.MOD1_MASK,
+//! GDK2.MOD2_MASK, GDK2.MOD3_MASK, GDK2.MOD4_MASK, GDK2.MOD5_MASK, 
+//! GDK2.BUTTON1_MASK, GDK2.BUTTON2_MASK, GDK2.BUTTON3_MASK, GDK2.BUTTON4_MASK
+//! GDK2.BUTTON5_MASK, GDK2.RELEASE_MASK, GDK2.MODIFIER_MASK
+
+GTK2.Widget get_focus();
+//! Retrieves the current focused widget within the window.  Note that this is
+//! the widget that would have the focus if the toplevel window focused; if the
+//! toplevel window is not focused then has_focus() will not be true for the
+//! widget.
+
+void set_focus(GTK2.Widget child);
+//! If child is not the current focus widget, and is focusable, sets it as the
+//! focus widget for the window.  If child is 0, unsets the focus widget for
+//! this window.  To set the focus to a particular widget in the toplevel, it
+//! is usually more convenient to use GTK2.Widget->grab_focus() instead of this
+//! function.
+
+void set_default(GTK2.Widget child);
+//! The default widget is the widget that's activated when the user presses
+//! Enter in a dialog (for example).  This function sets or unsets the default
+//! widget.  When setting (rather than unsetting) the default widget it's
+//! generally easier to call GTK2.Widget->grab_focus() on the widget.
+
+
+void present();
+//! Presents this window to the user.  This may mean raising the window
+//! in the stacking order, deiconifying it, moving it to the current
+//! desktop, and/or giving it the keyboard focus, possibly dependent
+//! on the user's platform, window manager, and preferences.
+//! <p>
+//! If hidden, it calls show() as well.
+
+void iconify();
+//! Asks to iconify (minimize) this window.  Note that you shouldn't
+//! assume the window is definitely iconified afterward, because other
+//! entities (e.g. the user or window manager) could deiconify it again,
+//! or there may not be a window manager in which case iconification isn't
+//! possible, etc.
+
+void deiconify();
+//! Opposite of iconify().
+
+void stick();
+//! Makes this window sticky.  Same caveats as iconify().
+
+void unstick();
+//! Opposite of stick().
+
+void maximize();
+//! Maximize a window.  Same caveats as iconify().
+
+void unmaximize();
+//! Opposite of maximize().
+
+require gtk22;
+void fullscreen();
+//! Asks to place this window in the fullscreen state.  Same caveats iconify().
+
+void unfullscreen();
+//! Opposite of fullscreen().
+endrequire;
+
+require gtk24;
+void set_keep_above(int setting);
+//! Keep window above.
+
+void set_keep_below(int setting);
+//! Keep window below.
+endrequire;
+
+void set_decorated(int setting);
+//! Add title bar, resize controls, etc.
+//! Default is true, so you may only need to use this function if
+//! you want to remove decorations.  Depending on the system, this
+//! function may not have any effect when called on a window that is
+//! already visible, so you should call it before calling show().
+
+void set_mnemonic_modifier(int modifier);
+//! Sets the mnemonic modifer for this window.
+
+void set_type_hint(int hint);
+//! Set type of window.  Values are CONST(GDK_WINDOW_TYPE_HINT)
+
+require gtk22;
+void set_skip_taskbar_hint(int setting);
+//! Windows may set a hint asking the desktop environment not to display the
+//! window in the task bar.  This function sets this hint.
+
+void set_skip_pager_hint(int setting);
+//! Windows may set a hint asking the desktop environment not to display the
+//! window in the pager.
+endrequire;
+
+require gtk24;
+void set_accept_focus(int setting);
+//! Windows may set a hint asking the desktop environment not to receive the
+//! input focus.
+endrequire;
+
+require gtk26;
+void set_focus_on_map(int setting);
+//! Windows may set a hint asking the desktop environment not to receive the
+//! input focus when the window is mapped.
+endrequire;
+
+int get_decorated();
+//! Returns whether the window has been set to have decorations such as a title
+//! bar.
+
+mapping(string:int) get_default_size()
+//! Gets the default size of the window.  A value of -1 for the width or height
+//! indicates that a default size has not been explicitly set for that
+//! dimeension, so the "natural" size of the window will be used.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    gint width,height;
+    gtk_window_get_default_size(GTK_WINDOW(THIS->obj),&width,&height);
+    push_text("width"); push_int(width);
+    push_text("height"); push_int(height);
+    f_aggregate_mapping(4);
+  }
+}
+
+int get_destroy_with_parent();
+//! Returns whether the window will be destroyed with its transient parent.
+
+GDK2.Pixbuf get_icon()
+//! Gets the value set by set_icon().
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GdkPixbuf *pix;
+    pix=gtk_window_get_icon(GTK_WINDOW(THIS->obj));
+    push_gobject(pix);
+  }
+}
+
+array(GDK2.Pixbuf) get_icon_list()
+//! Retrieves the list of icons set by set_icon_list().
+{
+  GList *gl=gtk_window_get_icon_list(GTK_WINDOW(THIS->obj));
+  GList *g2=gl;
+  int i=0;
+  while (g2) {
+    push_gobject(g2->data);
+    g_object_ref(GDK_PIXBUF(g2->data));
+    i++;
+    g2=g_list_next(g2);
+  }
+  f_aggregate(i);
+  g_list_free(gl);
+}
+
+require gtk26;
+string get_icon_name();
+//! Returns the name of the themed icon for the window.
+endrequire;
+
+int get_mnemonic_modifier();
+//! Returns the mnemonic modifier for this window.
+
+int get_modal();
+//! Returns whether the window is modal.
+
+mapping(string:int) get_position()
+//! This function returns the position you need to pass to move() to keep this
+//! window in its current position.  This means that the meaning of the
+//! returned value varies with window gravity.
+//! <p>
+//! If you haven't changed the window gravity, its gravity will be
+//! GDK2.GRAVITY_NORTH_WEST.  This means that get_position() gets the position
+//! of the top-left corner of the window manager frame for the window.  move()
+//! sets the position of this same top-left corner.
+//! <p>
+//! get_position() is not 100% reliable because X does not specify a way to
+//! obtain the geometry of the decorations placed on a window by the window
+//! manager.  Thus GTK+ is using a "best guess" that works with most window
+//! managers.
+//! <p>
+//! Moreover, nearly all window managers are historically broken with respect
+//! to their handling of window gravity.  So moving a window to its current
+//! position as returned by get_position() tends to result in moving the window
+//! slightly.  Window managers are slowly getting better over time.
+//! <p>
+//! If a window has gravity GDK2.GRAVITY_STATIC the window manager frame is not
+//! relevant, and thus get_position() will always produc accurate results.
+//! However you can't use static gravity to do things like place a window in a
+//! corner of the screen, because static gravity ignores the window manager
+//! decorations.
+//! <p>
+//! If you are saving and restoring your application's window positions, you
+//! should know that it's impossible for applications to do this without
+//! getting it somewhat wrong because applications do not have sufficient
+//! knowledge of window manager state.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    gint root_x,root_y;
+    gtk_window_get_position(GTK_WINDOW(THIS->obj),&root_x,&root_y);
+    push_text("x"); push_int(root_x);
+    push_text("y"); push_int(root_y);
+    f_aggregate_mapping(4);
+  }
+}
+
+mapping(string:int) get_size()
+//! Obtains the current size of window.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    gint width,height;
+    gtk_window_get_size(GTK_WINDOW(THIS->obj),&width,&height);
+    push_text("width"); push_int(width);
+    push_text("height"); push_int(height);
+    f_aggregate_mapping(4);
+  }
+}
+
+string get_title();
+//! Retrieves the title of the window.
+
+GTK2.Window get_transient_for();
+//! Fetches the transient parent for this window.
+
+int get_type_hint();
+//! Gets the type hint.
+
+require gtk22;
+int get_skip_taskbar_hint();
+//! Gets the value set by set_skip_taskbar_hint().
+
+int get_skip_pager_hint();
+//! Gets the value set by set_skip_pager_hint().
+endrequire;
+
+require gtk24;
+int get_accept_focus();
+//! Gets the value set by set_accept_focus().
+endrequire;
+
+require gtk26;
+int get_focus_on_map();
+//! Gets the value set by set_focus_on_map().
+endrequire;
+
+void move(int x, int y);
+//! Asks the window manage to move the window to the given position.  Window
+//! managers are free to ignore this; most window managers ignore request for
+//! initial window positions (instead using a user-defined placement algorithm)
+//! and honor requests after the window has already been shown.
+//! <p>
+//! Note: the position is the position of the gravity-determined reference
+//! point for the window.  The gravity determines two things: first, the
+//! location of the reference point in root window coordinates; and second,
+//! which point on the window is position at the reference point.
+//! <p>
+//! By default the gravity is GDK2.GRAVITY_NORTH_WEST, so the reference point is
+//! simply the x,y supplied to move().  The top-left corner of the window
+//! decorations (aka window frame or border) will be place at x,y.  Therefore,
+//! to position a window at the top left of the screen, you want to use the
+//! default gravity (which is GDK2.GRAVITY_NORTH_WEST) and move the window to
+//! 0,0.
+//! <p>
+//! To position a window at the bottom right corner of the screen, you would
+//! set GDK2.GRAVITY_SOUTH_EAST, which means that the reference point is at
+//! x + the window width and y + the window height, and the bottom-right corner
+//! of the window border will be placed at that reference point.
+
+int parse_geometry(string geometry);
+//! Parses a standard X geometry string.
+
+void reshow_with_initial_size();
+//! Hides the window, then reshows it, resetting the default size and position
+//! of the window.
+
+void resize(int width, int height);
+//! Resizes the window as if the user had done so, obeying geometry 
+//! constraints.
+
+void set_icon(GDK2.Pixbuf icon);
+//! Sets up the icon representing this window.  This icon is used when the
+//! window is minimized (also know as iconified).  Some window managers or
+//! desktop environments may also place it in the window frame, or display it
+//! in other contexts.
+//! <p>
+//! The icon should be provided in whatever size it was naturally drawn; that
+//! is, don't scale the image before passing it.  Scaling is postponed until
+//! the last minute, when the desired final size is known, to allow best
+//! quality.
+//! <p>
+//! If you have your icon hand-drawn in multiple sizes, use set_icon_list().
+//! Then the best size will be used.
+
+/*
+void set_icon_list(array(GDK2.Pixbuf) list)
+//! Set up the icons for minimizing.
+//! <p>
+//! set_icon_list() allows you to pass in the same icon in several hand-drawn
+//! sizes.  The list should contain the natural sizes your icon is avilable in;
+//! that is, don't scale the image before passing it.  Scaling is postponed
+//! until the last minute, when the desired final size is known, to allow best
+//! quality.
+//! <p>
+//! By passing several sizes, you may improve the final image quality of the
+//! icon, by reducing or eliminating automatic image scaling.
+//! <p>
+//! Recommended sizes to provide: 16x16, 32x32, 48x48 at minimum, and larger
+//! images (64x64, 128x128) if you have them.
+{
+}
+*/
+
+require gtk22;
+int set_icon_from_file(string filename, null);
+//! Sets the icon from a file.
+endrequire;
+
+require gtk26;
+void set_icon_name(string name);
+//! Sets the icon for the window from a named themed icon.
+endrequire;
+
+void raise()
+//! Raise this window if the window manager allows that.
+{
+  gdk_window_raise(GTK_WIDGET(THIS->obj)->window);
+  RETURN_THIS();
+}
+
+void lower()
+//! Lower this window if the window manager allows that.
+{
+  gdk_window_lower(GTK_WIDGET(THIS->obj)->window);
+  RETURN_THIS();
+}
+

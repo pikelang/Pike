@@ -1,0 +1,961 @@
+class GTK2.TextBuffer;
+inherit G.Object;
+
+//! Properties:
+//! GTK2.TextTagTable tag_table
+
+signal apply_tag;
+signal begin_user_action;
+signal changed;
+signal delete_range;
+signal end_user_action;
+signal insert_child_anchor;
+signal insert_pixbuf;
+signal insert_text;
+signal mark_deleted;
+signal mark_set;
+signal modified_changed;
+signal remove_tag;
+
+void create(?GTK2.TextTagTable table)
+//! Creates a new text buffer.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    GtkTextTagTable *gt=NULL;
+    struct object *o1;
+    if (args) {
+      get_all_args("create",args,"%o",&o1);
+      gt=GTK_TEXT_TAG_TABLE(get_gobject(o1));
+    }
+    THIS->obj=G_OBJECT(gtk_text_buffer_new(gt));
+    my_pop_n_elems(args);
+  }
+  pgtk__init_this_object();
+}
+
+int get_line_count();
+//! Obtains the number of lines in the buffer.
+
+int get_char_count();
+//! Gets the number of characters in the buffer; note that characters
+//! and bytes are not the same, you can't e.g. expect the contents of
+//! the buffer in string form to be this many bytes long.
+
+GTK2.TextTagTable get_tag_table();
+//! Get the W(TextTagTable) associated with this buffer.
+
+void insert(GTK2.TextIter iter, string text, int len)
+//! Insert len bytes of text at position iter.  If len is -1, string
+//! will be inserted in its entirely.  Emits the 'insert-text' signal.
+//! iter is invalidated after insertion, but the default signal handler
+//! revalidates it to point to the end of the inserted text.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    const gchar *text;
+    INT_TYPE len;
+    get_all_args("insert",args,"%o%s%i",&o1,&text,&len);
+    gtk_text_buffer_insert(GTK_TEXT_BUFFER(THIS->obj),
+	(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),text,len);
+  }
+  RETURN_THIS();
+}
+
+void insert_at_cursor(string text, int len);
+//! Simply calls insert(), using the current cursor position as the
+//! insertion point.
+
+int insert_interactive(GTK2.TextIter iter, string text, int len,
+		int default_editable)
+//! Like insert(), but the insertion will not occur if iter is at a non-
+//! editable location in the buffer.  Usually you want to prevent insertions
+//! at ineditable locations if the insertion results from a user action
+//! (is interactive).
+//! <p>
+//! default_edtibale indicates the editability of text that doesn't have a
+//! tag affecting editability applied to it.  Typically the result of
+//! get_editable() is appropriate here.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    const gchar *text;
+    INT_TYPE len,defed;
+    int res;
+    get_all_args("insert_interactive",args,"%o%s%i%i",&o1,&text,&len,&defed);
+    res=gtk_text_buffer_insert_interactive(GTK_TEXT_BUFFER(THIS->obj),
+	(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),text,len,defed);
+    push_int(res);
+  }
+}
+
+int insert_interactive_at_cursor(string text,int len, int default_editable);
+//! Calls insert_interactive() at the cursor position.
+
+void insert_range(GTK2.TextIter iter, GTK2.TextIter start, GTK2.TextIter end)
+//! Copies text, tags, and pixbufs between start and end (the order of
+//! start and end doesn't matter) and inserts the copy at iter.  Used
+//! instead of simply getting/inserting text because it preserves images
+//! and tags.  If start and end are in a different buffer from this buffer,
+//! the two buffers must share the same tag table.
+//! <p>
+//! Implemented via emissions of the insert-text and apply-tag signals, so
+//! expect those.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2,*o3;
+    get_all_args("insert_range",args,"%o%o%o",&o1,&o2,&o3);
+    gtk_text_buffer_insert_range(GTK_TEXT_BUFFER(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
+		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program),
+		(GtkTextIter *)get_pgobject(o3,pgtk_text_iter_program));
+  }
+  RETURN_THIS();
+}
+
+int insert_range_interactive(GTK2.TextIter iter, GTK2.TextIter start,
+		GTK2.TextIter end, int default_editable)
+//! Same as insert_range(), but does nothing if the insertion point isn't
+//! editable.  The default_editable parameter indicates whether the text is
+//! editable at iter if no tags enclosing iter affect editability.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2,*o3;
+    INT_TYPE defed;
+    int res;
+    get_all_args("insert_range_interactive",args,"%o%o%o%i",&o1,&o2,&o3,&defed);
+    res=gtk_text_buffer_insert_range_interactive(GTK_TEXT_BUFFER(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
+		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program),
+		(GtkTextIter *)get_pgobject(o3,pgtk_text_iter_program),defed);
+    my_pop_n_elems(args);
+    push_int(res);
+  }
+}
+
+void insert_with_tags(GTK2.TextIter iter, string text, int len, array tags)
+//! Inserts text into the buffer at iter, applying the list of tags to the
+//! newly-inserted text.  Equivalent to calling insert(), then apply_tag() on
+//! the insert text; insert_with_tags() is just a convenience function.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    struct array *a;
+    char *text;
+    int len;
+    int start_offset;
+    int i;
+    GtkTextIter *iter,start;
+    GtkTextTag *tag;
+    get_all_args("insert_with_tags",args,"%o%s%i%A",&o1,&text,&len,&a);
+    iter=(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program);
+    start_offset=gtk_text_iter_get_offset(iter);
+    gtk_text_buffer_insert(GTK_TEXT_BUFFER(THIS->obj),iter,text,len);
+    gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(THIS->obj),&start,start_offset);
+    if (a==NULL)
+      Pike_error("Invalid array.\n");
+    for (i=0; i<a->size; i++) {
+      if ((ITEM(a)+i)->type==PIKE_T_OBJECT) {
+	if (G_OBJECT_TYPE(get_gobject((ITEM(a)+i)->u.object))==GTK_TYPE_TEXT_TAG) {
+	  tag=GTK_TEXT_TAG(get_gobject((ITEM(a)+i)->u.object));
+	  gtk_text_buffer_apply_tag(GTK_TEXT_BUFFER(THIS->obj),
+				tag,&start,iter);
+	}
+      }
+    }
+  }
+  RETURN_THIS();
+}
+
+void insert_with_tags_by_name(GTK2.TextIter iter, string text, int len,
+			      array tag_names)
+//! Same as insert_with_tags(), but allows you to pass in tag names instead of
+//! tag objects.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    struct array *a;
+    char *text;
+    char *tag_name;
+    int len;
+    int start_offset;
+    int i;
+    GtkTextIter *iter,start;
+    GtkTextTag *tag;
+    GtkTextTagTable *table;
+    get_all_args("insert_with_tags_by_name",args,"%o%s%i%A",&o1,&text,&len,&a);
+    iter=(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program);
+    start_offset=gtk_text_iter_get_offset(iter);
+    gtk_text_buffer_insert(GTK_TEXT_BUFFER(THIS->obj),iter,text,len);
+    gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(THIS->obj),&start,start_offset);
+    if (a==NULL)
+      Pike_error("Invalid array\n");
+    table=gtk_text_buffer_get_tag_table(GTK_TEXT_BUFFER(THIS->obj));
+    for (i=0; i<a->size; i++) {
+      if ((ITEM(a)+i)->type==PIKE_T_STRING) {
+	tag_name=(char *)STR0((ITEM(a)+i)->u.string);
+	tag=gtk_text_tag_table_lookup(table,tag_name);
+	if (tag==NULL) {
+	  fprintf(stderr,"tag %s doesn't exist!\n",tag_name);
+	  continue;
+	}
+	gtk_text_buffer_apply_tag(GTK_TEXT_BUFFER(THIS->obj),
+				tag,&start,iter);
+      }
+    }
+  }
+  RETURN_THIS();
+}
+
+void delete(GTK2.TextIter start, GTK2.TextIter end)
+//! Deletes text between start and end.  The order of start and end is not
+//! actually relevant; delete() will reorder them.  This function actually
+//! emits the "delete-range" signal, and the default handler of that signal
+//! deletes the text.  Because the buffer is modified, all outstanding
+//! iterators become invalid after calling this function; however, start
+//! and end will be re-initialized to point to the location where text was
+//! deleted.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2;
+    get_all_args("delete",args,"%o%o",&o1,&o2);
+    gtk_text_buffer_delete(GTK_TEXT_BUFFER(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
+		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program));
+  }
+  RETURN_THIS();
+}
+
+int delete_interactive(GTK2.TextIter start, GTK2.TextIter end,
+		int default_editable)
+//! Deletes all editable text in the given range.  Calls delete() for each
+//! editable sub-range of [start,end).  start and end are revalidated to
+//! point to the location of the last deleted range, or left untouched if no
+//! text was deleted.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2;
+    INT_TYPE defed;
+    int res;
+    get_all_args("delete_interactive",args,"%o%o%i",&o1,&o2,&defed);
+    res=gtk_text_buffer_delete_interactive(GTK_TEXT_BUFFER(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
+		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program),defed);
+    my_pop_n_elems(args);
+    push_int(res);
+  }
+}
+
+require gtk26;
+int backspace(GTK2.TextIter iter, int interactive, int default_editable)
+//! Performs the appropriate action as if the user hit the delete key with
+//! the cursor at the position specified by iter.  In the normal case a
+//! single character will be deleted, but when combining accents are
+//! involved, more than one character can be deleted, and when precomposed
+//! character and accent combinations are involved, less than one character
+//! will be deleted.
+//! <p>
+//! Because the buffer is modified, all outstanding iterators become invalid
+//! after calling this function;  however, iter will be re-initialized to
+//! point to the location where text was deleted.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    INT_TYPE inter,defed;
+    int res;
+    get_all_args("backspace",args,"%o%i%i",&o1,&inter,&defed);
+    res=gtk_text_buffer_backspace(GTK_TEXT_BUFFER(THIS->obj),
+	(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),inter,defed);
+    my_pop_n_elems(args);
+    push_int(res);
+  }
+}
+endrequire;
+
+void set_text(string text, int len);
+//! Deletes current contents of this buffer, and inserts text instead.  If
+//! len is -1, text must be nul-terminated.  text must be valid UTF-8.
+
+string get_text(GTK2.TextIter start, GTK2.TextIter end,
+	int include_hidden_chars)
+//! Returns the text int the range [start,end).  Excludes undisplayed text
+//! (text marked with tags that set the invisibility attribute) if
+//! include_hidden_chars is false.  Does not include characters representing
+//! embedded images, so byte and character indexes into the returned
+//! string do not correspond to byte and character indexes into the buffer.
+//! Contrast with get_slice().
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2;
+    INT_TYPE inc;
+    gchar *s;
+    get_all_args("get_text",args,"%o%o%i",&o1,&o2,&inc);
+    s=gtk_text_buffer_get_text(GTK_TEXT_BUFFER(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
+		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program),inc);
+    my_pop_n_elems(args);
+    PGTK_PUSH_GCHAR(s);
+    g_free(s);
+  }
+}
+
+string get_slice(GTK2.TextIter start, GTK2.TextIter end,
+		int include_hidden_chars)
+//! Returns the text in the range [start,end).  Excludes undisplayed text
+//! (text marked with tags that set the invisibility attribute) if
+//! include_hidden_chars is false.  The returned string includes a 0xFFFC
+//! character whenever the buffer contains embedded images, so byte and
+//! character indexes into the returned string do correspond to byte and
+//! character indexes into the buffer.  Contrast with get_text().  Note that
+//! 0xFFFC can occur in normal text as well, so it is not a reliable
+//! indicator that a pixbuf or widget is in the buffer.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2;
+    INT_TYPE inc;
+    gchar *s;
+    get_all_args("get_slice",args,"%o%o%i",&o1,&o2,&inc);
+    s=gtk_text_buffer_get_slice(GTK_TEXT_BUFFER(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
+		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program),inc);
+    my_pop_n_elems(args);
+    PGTK_PUSH_GCHAR(s);
+    g_free(s);
+  }
+}
+
+void insert_pixbuf(GTK2.TextIter iter, GDK2.Pixbuf pixbuf)
+//! Inserts an image into the text buffer at iter.  The image will be
+//! counted as one character in character counts, and when obtaining the
+//! contents as a string, will be represented by the Unicode
+//! "object replacement character" 0xFFFC.  Note that the "slice" variants
+//! for obtaining portions of the buffer as a string include this character
+//! for pixbufs, but the "text" variants do not.  e.g. see get_slice()
+//! and get_text().
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2;
+    get_all_args("insert_pixbuf",args,"%o%o",&o1,&o2);
+    gtk_text_buffer_insert_pixbuf(GTK_TEXT_BUFFER(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
+		GDK_PIXBUF(get_gobject(o2)));
+  }
+  RETURN_THIS();
+}
+
+void insert_child_anchor(GTK2.TextIter iter, GTK2.TextChildAnchor anchor)
+//! Inserts a child widget anchor into the buffer at iter.  The anchor will
+//! be counted as one character in character counts, and when obtaining
+//! the buffer contents as a string, will be represented by the Unicode
+//! "object replacement character" oxFFFC.  Note that the "slice" variants
+//! for obtaining portions of the buffer as a string include this character
+//! for child anchors, but the "text" variants do not.  e.g. see get_slice()
+//! and get_text().  Consider create_child_anchor() as a more convenient
+//! alternative to this function.  The buffer will add a reference to the
+//! anchor, so you can unref it after insertion.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2;
+    get_all_args("insert_child_anchor",args,"%o%o",&o1,&o2);
+    gtk_text_buffer_insert_child_anchor(GTK_TEXT_BUFFER(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
+		GTK_TEXT_CHILD_ANCHOR(get_gobject(o2)));
+  }
+  RETURN_THIS();
+}
+
+GTK2.TextChildAnchor create_child_anchor(GTK2.TextIter iter)
+//! This is a convenience function which simply creates a child anchor with
+//! GTK2.TextChildAnchor->create() and inserts it into the buffer with
+//! insert_child_anchor().  The new anchor is owned by the buffer; no
+//! reference count is returned.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    GtkTextChildAnchor *gtca;
+    get_all_args("create_child_anchor",args,"%o",&o1);
+    gtca=gtk_text_buffer_create_child_anchor(GTK_TEXT_BUFFER(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+    my_pop_n_elems(args);
+    push_gobject(gtca);
+  }
+}
+
+GTK2.TextMark create_mark(GTK2.TextIter where,
+		int left_gravity, ?string mark_name)
+//! Creates a mark at position where.  If mark_name is omitted, the mark is
+//! anonymous; otherwise, the mark can be retrieve by name using get_mark().
+//!  If a mark has left gravity, and text is inserted at the mark's current
+//! location, the mark will be moved to the left of the newly-inserted text.
+//! If the mark has right gravity, the mark will end up on the right of the
+//! newly-inserted text.  The standard left-to-right cursor is a mark with
+//! right gravity (when you type, the cursor stays on the right side of the
+//! text you're typing).
+//! Emits the "mark-set" signal as notification of the mark's initial
+//! placement.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    INT_TYPE left;
+    const gchar *mark_name=NULL;
+    GtkTextMark *gtm;
+    if (args==2)
+      get_all_args("create_mark",args,"%o%i",&o1,&left);
+    else
+      get_all_args("create_mark",args,"%o%i%s",&o1,&left,&mark_name);
+    gtm=gtk_text_buffer_create_mark(GTK_TEXT_BUFFER(THIS->obj),
+	mark_name,(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),left);
+    my_pop_n_elems(args);
+    push_gobject(gtm);
+  }
+}
+
+void move_mark(GTK2.TextMark mark, GTK2.TextIter where)
+//! Moves mark to the new location where.  Emits the "mark-set" signal as
+//! notification of the move.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2;
+    get_all_args("move_mark",args,"%o%o",&o1,&o2);
+    gtk_text_buffer_move_mark(GTK_TEXT_BUFFER(THIS->obj),
+		GTK_TEXT_MARK(get_gobject(o1)),
+		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program));
+  }
+  RETURN_THIS();
+}
+
+void move_mark_by_name(string name, GTK2.TextIter where)
+//! Moves the mark named name (which must exist) to location where.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    const gchar *name;
+    get_all_args("move_mark_by_name",args,"%s%o",&name,&o1);
+    gtk_text_buffer_move_mark_by_name(GTK_TEXT_BUFFER(THIS->obj),
+		name,(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+  }
+  RETURN_THIS();
+}
+
+void delete_mark(GTK2.TextMark mark);
+//! Deletes mark, so that it's no longer located anywhere in the buffer.
+//! Removes the reference the buffer holds to the mark.  There is no way
+//! to undelete a mark.
+//! The "mark-deleted" signal will be emitted as notification after the mark
+//! is deleted.
+
+void delete_mark_by_name(string name);
+//! Deletes the mark named name; the mark must exist.
+
+GTK2.TextMark get_mark(string name);
+//! Returns the mark named name.
+
+GTK2.TextMark get_insert();
+//! Returns the mark that represents the cursor (insertion point).
+//! Equivalent to calling get_mark() to get the mark named "insert", but very
+//! slightly more efficient, and involves less typing.
+
+GTK2.TextMark get_selection_bound();
+//! Returns the mark that represents the selection bound.  Equivalent to
+//! calling get_mark() to get the mark named "selection_bound", but very
+//! slightly more efficient, and involves less typing.
+//! <p>
+//! The currently-selected text in the buffer is the region between the
+//! "selection_bound" and "insert" marks.  If "selection_bound" and "insert"
+//! are in the same place, then there is no current selection.
+//! get_selection_bounds() is another convenient function for handling the
+//! selection, if you just want to know whether there's a selection and
+//! what its bounds are.
+
+void place_cursor(GTK2.TextIter where)
+//! This function moves the "insert" and "selection_bound" marks
+//! simultaneously.  If you move them to the same place in two steps with
+//! move_mark(), you will temporarily select a region in between their old
+//! and new locations, which can be pretty inefficient since the 
+//! temporarily-selected region will force stuff to be recalculated.  This
+//! function moves them as a unit, which can be optimized.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    get_all_args("place_cursor",args,"%o",&o1);
+    gtk_text_buffer_place_cursor(GTK_TEXT_BUFFER(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+  }
+  RETURN_THIS();
+}
+
+require gtk24;
+void select_range(GTK2.TextIter ins, GTK2.TextIter bound)
+//! This function removes the "insert" and "selection_bound" marks
+//! simultaneously.  If you move them in two steps with move_mark(), you will
+//! temporarily select a region in between their old and new locations, which
+//! can be pretty inefficient since the temporarily-selected region will
+//! force stuff to be recalculated.  This function moves them as a unit,
+//! which can be optimized.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2;
+    get_all_args("select_range",args,"%o%o",&o1,&o2);
+    gtk_text_buffer_select_range(GTK_TEXT_BUFFER(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
+		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program));
+  }
+  RETURN_THIS();
+}
+endrequire;
+
+void apply_tag(GTK2.TextTag tag, GTK2.TextIter start, GTK2.TextIter end)
+//! Emits the "apply-tag" signal.  The default handler for the signal
+//! applies tag to the given range, start and end do not have to be in order.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2,*o3;
+    get_all_args("apply_tag",args,"%o%o%o",&o1,&o2,&o3);
+    gtk_text_buffer_apply_tag(GTK_TEXT_BUFFER(THIS->obj),
+		GTK_TEXT_TAG(get_gobject(o1)),
+		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program),
+		(GtkTextIter *)get_pgobject(o3,pgtk_text_iter_program));
+  }
+  RETURN_THIS();
+}
+
+void remove_tag(GTK2.TextTag tag, GTK2.TextIter start, GTK2.TextIter end)
+//! Emits the "remove-tag" signal.  The default handler for the signal removes
+//! all occurrences of tag from the given range.  start and end do not have to
+//! be in order.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2,*o3;
+    get_all_args("remove_tag",args,"%o%o%o",&o1,&o2,&o3);
+    gtk_text_buffer_remove_tag(GTK_TEXT_BUFFER(THIS->obj),
+		GTK_TEXT_TAG(get_gobject(o1)),
+		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program),
+		(GtkTextIter *)get_pgobject(o3,pgtk_text_iter_program));
+  }
+  RETURN_THIS();
+}
+
+void apply_tag_by_name(string name, GTK2.TextIter start, GTK2.TextIter end)
+//! Calls GTK2.TextTagTable->lookup() on the buffers tag table to get a
+//! GTK2.TextTag, then calls apply_tag().
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2;
+    const gchar *name;
+    get_all_args("apply_tag_by_name",args,"%s%o%o",&name,&o1,&o2);
+    gtk_text_buffer_apply_tag_by_name(GTK_TEXT_BUFFER(THIS->obj),
+		name,(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
+		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program));
+  }
+  RETURN_THIS();
+}
+
+void remove_tag_by_name(string name, GTK2.TextIter start, GTK2.TextIter end)
+//! Removes a tag.  See apply_tag_by_name().
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2;
+    const gchar *name;
+    get_all_args("remove_tag_by_name",args,"%s%o%o",&name,&o1,&o2);
+    gtk_text_buffer_remove_tag_by_name(GTK_TEXT_BUFFER(THIS->obj),
+		name,(GtkTextIter  *)get_pgobject(o1,pgtk_text_iter_program),
+		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program));
+  }
+  RETURN_THIS();
+}
+
+void remove_all_tags(GTK2.TextIter start, GTK2.TextIter end)
+//! Removes all tags in the range between start and end.  Be careful with
+//! this function; it could remove tags added in code unrelated to the code
+//! you're currently writing.  That is, using this function is probably a
+//! bad idea if you have two or more unrelated code sections that add tags.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2;
+    get_all_args("remove_all_tags",args,"%o%o",&o1,&o2);
+    gtk_text_buffer_remove_all_tags(GTK_TEXT_BUFFER(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
+		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program));
+  }
+  RETURN_THIS();
+}
+
+GTK2.TextTag create_tag(string tag_name, mapping props)
+//! Creates a tag and adds it to the tag table.  Equivalent to calling
+//! GTK2.TextTag->create() and then adding the tag to the tag table.  The
+//! returned tag is owned by the tag table.
+{
+  pgtk_verify_inited();
+  {
+    struct mapping *m;
+    char *name;
+    GtkTextTag *tag;
+    struct keypair *k;
+    int e;
+    get_all_args("create_tag",args,"%s%m",&name,&m);
+    tag=gtk_text_tag_new(name);
+    gtk_text_tag_table_add(gtk_text_buffer_get_tag_table(GTK_TEXT_BUFFER(THIS->obj)),tag);
+    NEW_MAPPING_LOOP(m->data) {
+      if (k->ind.type==PIKE_T_STRING) {
+	char *s=PGTK_GETSTR(&k->ind);
+	pgtk_set_property(G_OBJECT(tag),s,&k->val);
+	PGTK_FREESTR(s);
+      }
+    }
+    my_pop_n_elems(args);
+    push_gobject(tag);
+  }
+}
+
+    
+/*
+GTK2.TextTag create_tag(string tag_name, string prop_name, mixed value)
+//! Createa a tag and adds it to the tag table.  Equivalent to calling
+//! W(TextTag)->create() and then adding the tag to the tag table.  The
+//! returned tag is owned by the tag table.
+{
+  pgtk_verify_inited();
+  {
+    const gchar *tag_name,*prop_name;
+    struct svalue *sv;
+    GtkTextTag *gtt;
+    get_all_args("create_tag",args,"%s%s%*",&tag_name,&prop_name,&sv);
+    my_pop_n_elems(args);
+    switch (sv->type) {
+      case PIKE_T_INT:
+	{
+	  INT_TYPE x;
+	  x=PGTK_GETINT(sv);
+	  gtt=gtk_text_buffer_create_tag(GTK_TEXT_BUFFER(THIS->obj),
+			tag_name,prop_name,x,NULL);
+	}
+	break;
+      case PIKE_T_STRING:
+	{
+	  gchar *g1;
+	  g1=PGTK_GETSTR(sv);
+	  gtt=gtk_text_buffer_create_tag(GTK_TEXT_BUFFER(THIS->obj),
+			tag_name,prop_name,g1,NULL);
+	  PGTK_FREESTR(g1);
+	}
+	break;
+      case PIKE_T_FLOAT:
+	{
+	  FLOAT_TYPE x;
+	  x=pgtk_get_float(sv);
+	  gtt=gtk_text_buffer_create_tag(GTK_TEXT_BUFFER(THIS->obj),
+			tag_name,prop_name,x,NULL);
+	}
+	break;
+      case PIKE_T_OBJECT:
+	if (PGTK_ISINT(sv)) {
+	  INT_TYPE x;
+	  x=PGTK_GETINT(sv);
+	  gtt=gtk_text_buffer_create_tag(GTK_TEXT_BUFFER(THIS->obj),
+			tag_name,prop_name,x,NULL);
+	} else {
+	  if (G_IS_OBJECT(get_gobject(sv->u.object))) {
+	    gtt=gtk_text_buffer_create_tag(GTK_TEXT_BUFFER(THIS->obj),
+			tag_name,prop_name,G_OBJECT(get_gobject(sv->u.object)));
+	  }
+	}
+	break;
+      default:
+	Pike_error("Unable to handle this type for argument 2\n");
+	break;
+    }
+    push_gobject(gtt);
+  }
+}
+*/
+
+GTK2.TextIter get_iter_at_line_offset(int line_number, int char_offset)
+//! Obtains an iterator pointing to char_offset within the given line.  The
+//! char_offset must exist, offsets off the end of the line are not allowed.
+//! Note characters, not bytes;  UTF-8 may encode one character as multiple
+//! bytes.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE line,ch;
+    GtkTextIter *gti;
+    get_all_args("get_iter_at_line_offset",args,"%i%i",&line,&ch);
+    my_pop_n_elems(args);
+    gti=g_malloc(sizeof(GtkTextIter));
+    if (gti==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_line_offset",sizeof(GtkTextIter));
+    gtk_text_buffer_get_iter_at_line_offset(GTK_TEXT_BUFFER(THIS->obj),
+		gti,line,ch);
+    push_gobjectclass(gti,pgtk_text_iter_program);
+  }
+}
+
+GTK2.TextIter get_iter_at_offset(int offset)
+//! Returns an iterator at position offset chars from the start of the
+//! entire buffer.  If offset is -1 or greater than the number of characters
+//! in the buffer, returns the end iterator, the iterator one past the last
+//! valid character in the buffer.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE ch;
+    GtkTextIter *gti;
+    get_all_args("get_iter_at_offset",args,"%i",&ch);
+    my_pop_n_elems(args);
+    gti=g_malloc(sizeof(GtkTextIter));
+    if (gti==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_offset",sizeof(GtkTextIter));
+    gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(THIS->obj),
+		gti,ch);
+    push_gobjectclass(gti,pgtk_text_iter_program);
+  }
+}
+
+GTK2.TextIter get_iter_at_line(int line)
+//! Returns a W(TextIter) to the start of the given line.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE line;
+    GtkTextIter *gti;
+    get_all_args("get_iter_at_line",args,"%i",&line);
+    my_pop_n_elems(args);
+    gti=g_malloc(sizeof(GtkTextIter));
+    if (gti==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_line",sizeof(GtkTextIter));
+    gtk_text_buffer_get_iter_at_line(GTK_TEXT_BUFFER(THIS->obj),
+		gti,line);
+    push_gobjectclass(gti,pgtk_text_iter_program);
+  }
+}
+
+GTK2.TextIter get_iter_at_line_index(int line, int byte_index)
+//! Obtains an iterator point to byte_index with the given line.  byte_index
+//! must be the start of a UTF-8 character, and must not be beyond the end
+//! of the line.  Note bytes, not characters; UTF-8 may encode one character
+//! as multiple bytes.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE line,index;
+    GtkTextIter *gti;
+    get_all_args("get_iter_at_line_index",args,"%i%i",&line,&index);
+    my_pop_n_elems(args);
+    gti=g_malloc(sizeof(GtkTextIter));
+    if (gti==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_line_index",sizeof(GtkTextIter));
+    gtk_text_buffer_get_iter_at_line_index(GTK_TEXT_BUFFER(THIS->obj),
+		gti,line,index);
+    push_gobjectclass(gti,pgtk_text_iter_program);
+  }
+}
+
+GTK2.TextIter get_iter_at_mark(GTK2.TextMark mark)
+//! Returns an iterator with the current position of mark.
+{
+  pgtk_verify_inited();
+  {
+    GtkTextIter *gti;
+    struct object *o1;
+    get_all_args("get_iter_at_mark",args,"%o",&o1);
+    my_pop_n_elems(args);
+    gti=g_malloc(sizeof(GtkTextIter));
+    if (gti==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_mark",sizeof(GtkTextIter));
+    gtk_text_buffer_get_iter_at_mark(GTK_TEXT_BUFFER(THIS->obj),
+		gti,GTK_TEXT_MARK(get_gobject(o1)));
+    push_gobjectclass(gti,pgtk_text_iter_program);
+  }
+}
+
+GTK2.TextIter get_iter_at_child_anchor(GTK2.TextChildAnchor anchor)
+//! Returns the location of anchor.
+{
+  pgtk_verify_inited();
+  {
+    GtkTextIter *gti;
+    struct object *o1;
+    get_all_args("get_iter_at_mark",args,"%o",&o1);
+    my_pop_n_elems(args);
+    gti=g_malloc(sizeof(GtkTextIter));
+    if (gti==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_child_anchor",sizeof(GtkTextIter));
+    gtk_text_buffer_get_iter_at_child_anchor(GTK_TEXT_BUFFER(THIS->obj),
+		gti,GTK_TEXT_CHILD_ANCHOR(get_gobject(o1)));
+    push_gobjectclass(gti,pgtk_text_iter_program);
+  }
+}
+
+GTK2.TextIter get_start_iter()
+//! Returns an iterator with the first position in the text buffer.  This is
+//! the same as using get_iter_at_offset() to get the iter at character
+//! offset 0.
+{
+  pgtk_verify_inited();
+  {
+    GtkTextIter *gti;
+    my_pop_n_elems(args);
+    gti=g_malloc(sizeof(GtkTextIter));
+    if (gti==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_start_iter",sizeof(GtkTextIter));
+    gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(THIS->obj),gti);
+    push_gobjectclass(gti,pgtk_text_iter_program);
+  }
+}
+
+GTK2.TextIter get_end_iter()
+//! Returns the "end iterator", one past the last valid character in the
+//! buffer.  If dereferenced with W(TextIter)->get_char(), the end iterator
+//! has a character value of 0.  The entire buffer lies in the range from
+//! the first position in the buffer to the end iterator.
+{
+  pgtk_verify_inited();
+  {
+    GtkTextIter *gti;
+    my_pop_n_elems(args);
+    gti=g_malloc(sizeof(GtkTextIter));
+    if (gti==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_end_iter",sizeof(GtkTextIter));
+    gtk_text_buffer_get_end_iter(GTK_TEXT_BUFFER(THIS->obj),gti);
+    push_gobjectclass(gti,pgtk_text_iter_program);
+  }
+}
+
+array(GTK2.TextIter) get_bounds()
+//! Retrieves the first and last iterators in the buffer, i.e. the entire
+//! buffer lies within the range [start,end).
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GtkTextIter *gti,*gt2;
+    gti=g_malloc(sizeof(GtkTextIter));
+    gt2=g_malloc(sizeof(GtkTextIter));
+    if (gti==NULL || gt2==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_bounds",sizeof(GtkTextIter));
+    gtk_text_buffer_get_bounds(GTK_TEXT_BUFFER(THIS->obj),gti,gt2);
+    push_gobjectclass(gti,pgtk_text_iter_program);
+    push_gobjectclass(gt2,pgtk_text_iter_program);
+    f_aggregate(2);
+  }
+}
+
+int get_modified();
+//! Indicates whether the buffer has been modified since the last call to
+//! set_modified() set the modification flag to false.  Used for example to
+//! enable a "save" function in a text editor.
+
+void set_modified(int setting);
+//! Used to keep track of whether the buffer has been modified since the last
+//! time it was saved.  Whenever the buffer is saved to disk, call
+//! set_modified(0).  When the buffer is modified, it will automatically
+//! toggle on the modified bit again.  When the modifed bit flips, the
+//! buffer emits a "modified-changed" signal.
+
+int delete_selection(int interactive, int default_editable);
+//! Deletes the range between the "insert" and "selection_bound" marks, that
+//! is, the currently-selected text.  If interactive is true, the editability
+//! of the selection will be considered (users can't delete uneditable text).
+
+require gtk22;
+void paste_clipboard(GTK2.Clipboard clipboard, ?int default_editable,
+		?GTK2.TextIter location)
+//! Pastes the contents of a clipboard at the insertion point, or at
+//! override_location.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2=NULL;
+    INT_TYPE defed=0;
+    if (args==1)
+      get_all_args("paste_clipboard",args,"%o",&o1);
+    else if (args==2)
+      get_all_args("paste_clipboard",args,"%o%i",&o1,&defed);
+    else
+      get_all_args("paste_clipboard",args,"%o%i%o",&o1,&defed,&o2);
+    gtk_text_buffer_paste_clipboard(GTK_TEXT_BUFFER(THIS->obj),
+		GTK_CLIPBOARD(get_gobject(o1)),
+		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program),
+		defed);
+  }
+  RETURN_THIS();
+}
+endrequire;
+
+
+require gtk22;
+void copy_clipboard(GTK2.Clipboard clipboard);
+//! Copies the currently-selected text to a clipboard.
+
+void cut_clipboard(GTK2.Clipboard clipboard, int default_editable);
+//! Copies the currently-selected text to a clipboard, then deletes said
+//! text if it's editable.
+endrequire;
+
+array get_selection_bounds()
+//! Returns either a start and end W(TextIter) if some text is selected, or
+//! 2 0's.
+{
+  pgtk_verify_inited();
+  {
+    GtkTextIter *start,*end;
+    gtk_text_buffer_get_selection_bounds(GTK_TEXT_BUFFER(THIS->obj),
+		start,end);
+    my_pop_n_elems(args);
+    push_gobject(start);
+    push_gobject(end);
+  }
+}
+
+void begin_user_action();
+//! Called to indicate that the buffer operations between here and call
+//! end_user_action() are part of a single user-visible operation.  The
+//! operations between begin_user_action() and end_user_action() can then be
+//! grouped when creating an undo stack.  W(TextBuffer) maintains a count of
+//! calls to begin_user_action() that have not been closed with a call to
+//! end_user_action(), and emits the "begin-user-action" and
+//! "end-user-action" signals only for the outermost pair of calls.  This
+//! allows you to build user actions from other user actions.
+//! <p>
+//! The "interactive" buffer mutation functions, such as insert_interactive(),
+//! automatically call begin/end user action around the buffer operations
+//! they perform, so there's no need to add extra calls if your user action
+//! consists solely of a single call to one of those functions.
+
+void end_user_action();
+//! Should be paired with begin_user_action();
+
+require gtk22;
+void add_selection_clipboard(GTK2.Clipboard clipboard);
+//! Adds clipboard to the list of clipboards in which the selection contents
+//! of the buffer are available.  In most cases, clipboard will be the
+//! GTK2.Clipboard of GDK2.SELECTION_PRIMARY for a view of this buffer.
+
+void remove_selection_clipboard(GTK2.Clipboard clipboard);
+//! Removes a clipboard that was added with add_selection_clipboard().
+endrequire;

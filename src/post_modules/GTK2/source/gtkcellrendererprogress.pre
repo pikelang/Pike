@@ -1,0 +1,18 @@
+require gtk26;
+
+class GTK2.CellRendererProgress;
+inherit GTK2.CellRenderer;
+
+//! Properties:
+//! string text
+//! int value
+
+void create();
+//! Create a new W(CellRendererProgress).
+
+/*
+int get_type();
+//! Get the type.  Not really useful.
+*/
+
+endrequire;

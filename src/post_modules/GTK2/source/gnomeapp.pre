@@ -1,0 +1,172 @@
+/* -*- C -*- */
+require gnome;
+
+class Gnome2.App;
+inherit GTK2.Window;
+
+//! Toplevel GNOME applications would normally use one Gnome2.App widget
+//! as their toplevel window. You can create as many Gnome2.App widgets
+//! as you want, for example, some people use one GnomeApp per document
+//! their application loads.
+//! <p>
+//! Once you have created one instance of this widget, you would add
+//! your main application view information to this window by using
+//! set_contents() routine.
+//! </p><p>
+//! The GnomeApp has support for including a menubar, one or more
+//! toolbars and a statusbar for your application. It also takes care
+//! of intalling the accelerators for you when used in conjuction with
+//! the gnome-app-helper routines. The toolbars are inserted into
+//! Gnome2.Dock widgets.
+//! </p><p>
+//! The gnome-app-helper module provides various helper routines to
+//! simplify the configuration of your menus and toolbars, but you can
+//! create those yourself and use the set_menus(), add_toolbar(),
+//! set_toolbar(), add_dock_item() and add_docked().</p>
+
+//! Properties:
+//! string app-id
+
+void create(string appname, ?string title);
+//! Create a new (empty) application window. You must specify the
+//! application's name (used internally as an identifier). title can be
+//! left as 0, in which case the window's title will not be set.
+
+void set_menus(GTK2.MenuBar menu_bar);
+//! Sets the menu bar of the application window.
+
+void set_toolbar(GTK2.Toolbar toolbar);
+//! Sets the main toolbar of the application window.
+
+void set_statusbar(GTK2.Widget statusbar);
+//! Sets the status bar of the application window.
+
+void set_statusbar_custom(GTK2.Widget container, GTK2.Widget statusbar);
+//! Sets the status bar of the application window, but use container as its
+//! container.
+
+void set_contents(GTK2.Widget contents);
+//! Sets the status bar of the application window.
+
+void add_toolbar(GTK2.Toolbar toolbar, string name,
+                 int behavior, int placement, int band_num,
+                 int band_position, ?int offset);
+//! Create a new Gnome2.DockItem widget containing toolbar, and add it
+//! to app's dock with the specified layout information. Notice that,
+//! if automatic layout configuration is enabled, the layout is
+//! overridden by the saved configuration, if any.
+//! <p>
+//!
+//! toolbar : Toolbar to be added to app's dock<br />
+//! name : Name for the dock item that will contain toolbar<br />
+//! behavior : Behavior for the new dock item. One or more of CONST(GNOME_DOCK_ITEM_BEH)
+//! placement :  Placement for the new dock item, one of Gnome2.DockTop,  Gnome2.DockRight,  Gnome2.DockBottom,  Gnome2.DockLeft and  Gnome2.DockFloating <br />
+//! band_num : Number of the band where the dock item should be placed<br />
+//! band_position : Position of the new dock item in band band_num<br />
+//! offset : Offset from the previous dock item in the band; if there is no previous item, offset from the beginning of the band.
+//! </p>
+
+void add_docked(GTK2.Widget widget, string name,
+                int behavior, int placement,
+                int band_num, int band_position, ?int offset);
+//! Create a new Gnome2.DockItem widget containing widget, and add it
+//! to app's dock with the specified layout information. Notice that,
+//! if automatic layout configuration is enabled, the layout is
+//! overridden by the saved configuration, if any.
+//! <p>
+//!
+//! widget : Widget to be added to app's dock<br />
+//! name : Name for the dock item that will contain toolbar<br />
+//! behavior : Behavior for the new dock item. One of CONST(GNOME_DOCK_ITEM_BEH)
+//! placement :  Placement for the new dock item, one of Gnome2.DockTop,  Gnome2.DockRight,  Gnome2.DockBottom,  Gnome2.DockLeft and  Gnome2.DockFloating <br />
+//! band_num : Number of the band where the dock item should be placed <br />
+//! band_position : Position of the new dock item in band band_num <br />
+//! offset : Offset from the previous dock item in the band; if there is no previous item, offset from the beginning of the band.
+//! </p>
+
+/*
+void add_dock_item(Gnome2.DockItem item, int placement, int band_num,
+                    int band_position, ?int offset);
+//! Create a new Gnome2.DockItem widget containing widget, and add it
+//! to app's dock with the specified layout information. Notice that,
+//! if automatic layout configuration is enabled, the layout is
+//! overridden by the saved configuration, if any.
+//! <p>
+//!
+//! item : Item to be added to app's dock<br />
+//! placement :  Placement for the new dock item, one of Gnome2.DockTop,  Gnome2.DockRight,  Gnome2.DockBottom,  Gnome2.DockLeft and  Gnome2.DockFloating <br />
+//! band_num : Number of the band where the dock item should be placed <br />
+//! band_position : Position of the new dock item in band band_num<br />
+//! offset : Offset from the previous dock item in the band; if there is no previous item, offset from the beginning of the band.
+//! </p>
+*/
+
+void enable_layout_config(int enable);
+//! Specify whether the the dock's layout configuration should be
+//! automatically saved via gnome-config whenever it changes, or not.
+
+/*
+Gnome2.Dock get_dock();
+//! Retrieves the Gnome2.Dock widget contained in the App
+*/
+
+/*
+Gnome2.DockItem get_dock_item_by_name(string name);
+*/
+
+/*
+Gnome2.Dialog message( string message );
+//! A simple message, in an OK dialog or the status bar. Requires
+//! confirmation from the user before it goes away.
+//! Returns 0 or a dialog widget. If 0, the message is displayed in the
+//! status bar.
+
+void flash( string flash );
+//! Flash the message in the statusbar for a few moments; if no
+//! statusbar, do nothing. For trivial little status messages,
+//! e.g. "Auto saving..."
+
+Gnome2.Dialog error( string error );
+//! An important fatal error; if it appears in the statusbar, it might
+//! gdk_beep() and require acknowledgement.
+
+Gnome2.Dialog warning( string warning );
+//! A not-so-important error, but still marked better than a flash
+*/
+
+%{
+static void replyfunc(int reply, struct signal_data *d)
+{
+  push_int(reply);
+  push_svalue(&d->args);
+  apply_svalue(&d->cb,2);
+  pop_stack();
+  xfree(d);
+}
+
+static void sreplyfunc(char *reply, struct signal_data *d)
+{
+  PGTK_PUSH_GCHAR(reply);
+  push_svalue(&d->args);
+  apply_svalue(&d->cb,2);
+  pop_stack();
+  xfree(d);
+  g_free( reply ); /* should we? */
+}
+
+static gdouble progressfunc(struct signal_data *d)
+{
+  gdouble res;
+  push_svalue(&d->args);
+  apply_svalue(&d->cb,1);
+  res=(gdouble)Pike_sp[-1].u.float_number;
+  pop_stack();
+  return res;
+}
+
+static void progresscancelfunc( struct signal_data *d )
+{
+  xfree(d);
+}
+%}
+

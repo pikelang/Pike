@@ -1,0 +1,65 @@
+class GTK2.Frame;
+inherit GTK2.Bin;
+
+//! The frame widget is a Bin that surrounds its child with a
+//! decorative frame and an optional label. If present, the label is
+//! drawn in a gap in the top side of the frame. The position of the
+//! label can be controlled with set_label_align().
+//! <p>
+//! Used to visually group objects.
+//! </p><p>
+//! IMG: GTK2.Frame("Title")->add(GTK2.Label("Contents"))
+//! IMG: GTK2.Frame()->add(GTK2.Label("Contents"))
+//! IMG: GTK2.Frame()->add(GTK2.Label("Contents"))->set_shadow_type(GTK2.SHADOW_IN)
+//! </p>
+
+//! Properties:
+//! string label
+//! GTK2.Widget label-widget
+//! float label-xalign
+//! float label-yalign
+//! int shadow
+//! int shadow-type
+
+void create(?string label_text);
+//! Create a new W(Frame) widget.
+
+void set_label(?string label_text);
+//! Set the text of the label.
+
+void set_label_widget(GTK2.Widget label);
+//! Sets the label widget for the frame.  This is the widget that will appear
+//! embedded in the top edge of the frame as a title.
+
+void set_label_align(float xalign, float yalign);
+//! Arguments are xalignment and yalignment.
+//! 0.0 is left or topmost, 1.0 is right or bottommost.<br />
+//! The default value for a newly created Frame is 0.0.
+
+void set_shadow_type(int shadow_type);
+//! Set the shadow type for the Frame widget. The type is one of
+//! CONST(GTK_SHADOW)
+
+string get_label();
+//! Return the text in the label widget.
+
+mapping(string:float) get_label_align()
+//! Retrieves the x and y alignment of the label.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    gfloat x,y;
+    gtk_frame_get_label_align(GTK_FRAME(THIS->obj),&x,&y);
+    push_text("x"); push_float(x);
+    push_text("y"); push_float(y);
+    f_aggregate_mapping(4);
+  }
+}
+
+GTK2.Widget get_label_widget();
+//! Retrieves the label widget.
+
+int get_shadow_type();
+//! Return the shadow type.
+

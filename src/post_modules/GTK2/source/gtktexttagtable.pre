@@ -1,0 +1,25 @@
+class GTK2.TextTagTable;
+inherit G.Object;
+
+//! Table of text tags.
+
+signal tag_added;
+signal tag_changed;
+signal tag_removed;
+
+void create();
+//! Creates a new W(TextTagTable).
+
+void add(GTK2.TextTag tag);
+//! Add a tag to the table.  The tag is assigned the highest priority
+//! in the table.
+
+void remove(GTK2.TextTag tag);
+//! Remove a tag from the table.
+
+GTK2.TextTag lookup(string name);
+//! Look up a named tag.
+
+int get_size();
+//! Returns the size of the table (number of tags).
+

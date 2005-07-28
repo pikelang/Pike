@@ -1,0 +1,12 @@
+require gnome;
+class Gnome.DruidPage;
+//! This widget is a virtual widget to define the interface to a druid
+//! page. It's descendants are placed in a W(Gnome.Druid) widget.
+
+inherit GTK.Bin;
+signal next;
+signal prepare;
+signal back;
+signal cancel;
+signal finish;
+

@@ -1,0 +1,154 @@
+class GTK2.RcStyle;
+inherit G.Object;
+
+//! RC settings.
+
+void create();
+//! Creates a new W(Rc).
+
+GTK2.RcStyle copy();
+//! Makes a copy.
+
+void set_name(string name)
+//! Set the name.
+{
+  pgtk_verify_inited();
+  {
+    gchar *name;
+    GtkRcStyle *style;
+    get_all_args("set_name",args,"%s",&name);
+    style=GTK_RC_STYLE(THIS->obj);
+    style->name=g_strdup(name);
+  }
+  RETURN_THIS();
+}
+
+void set_bg_pixmap_name(array(string) names)
+//! Set bg_pixmap_name.
+{
+  pgtk_verify_inited();
+  {
+    gchar *name;
+    struct array *a;
+    int i;
+    GtkRcStyle *style;
+    style=GTK_RC_STYLE(THIS->obj);
+    get_all_args("set_bg_pixmap_name",args,"%a",&a);
+    for (i=0; i<(a->size>5?5:a->size); i++) {
+      style->bg_pixmap_name[i]=g_strdup(PGTK_GETSTR(ITEM(a)+i));
+    }
+  }
+  RETURN_THIS();
+}
+
+void set_color_flags(array(int) flags)
+//! Set color_flags.
+{
+  pgtk_verify_inited();
+  {
+    struct array *a;
+    int i;
+    GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
+    get_all_args("set_color_flags",args,"%a",&a);
+    for (i=0; i<(a->size>5?5:a->size); i++) {
+      style->color_flags[i]=PGTK_GETINT(ITEM(a)+i);
+    }
+  }
+  RETURN_THIS();
+}
+
+%{
+void set_colors(struct array *a, GdkColor *b) {
+  int i;
+  GdkColor *color;
+  for (i=0; i<(a->size>5?5:a->size); i++) {
+    if ((ITEM(a)+i)->type==PIKE_T_OBJECT) {
+      color=(GdkColor *)get_gdkobject((ITEM(a)+i)->u.object,color);
+      if (color) {
+	b[i].pixel=color->pixel;
+	b[i].red=color->red;
+	b[i].green=color->green;
+	b[i].blue=color->blue;
+      }
+    }
+  }
+}
+%}
+
+void set_fg(array(GDK2.Color) colors)
+//! Set fg.
+{
+  pgtk_verify_inited();
+  {
+    struct array *a;
+    GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
+    get_all_args("set_fg",args,"%a",&a);
+    set_colors(a,style->fg);
+  }
+  RETURN_THIS();
+}
+
+void set_bg(array(GDK2.Color) colors)
+//! Set bg.
+{
+  pgtk_verify_inited();
+  {
+    struct array *a;
+    GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
+    get_all_args("set_bg",args,"%a",&a);
+    set_colors(a,style->bg);
+  }
+  RETURN_THIS();
+}
+
+void set_text(array(GDK2.Color) colors)
+//! Set text.
+{
+  pgtk_verify_inited();
+  {
+    struct array *a;
+    GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
+    get_all_args("set_text",args,"%a",&a);
+    set_colors(a,style->text);
+  }
+  RETURN_THIS();
+}
+
+void set_base(array(GDK2.Color) colors)
+//! Set base.
+{
+  pgtk_verify_inited();
+  {
+    struct array *a;
+    GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
+    get_all_args("set_base",args,"%a",&a);
+    set_colors(a,style->base);
+  }
+  RETURN_THIS();
+}
+
+void set_xthickness(int value)
+//! Set xthickness.
+{
+  pgtk_verify_inited();
+  {
+    GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
+    int val;
+    get_all_args("set_xthickness",args,"%i",&val);
+    style->xthickness=val;
+  }
+  RETURN_THIS();
+}
+
+void set_ythickness(int value)
+//! Set ythickness.
+{
+  pgtk_verify_inited();
+  {
+    GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
+    int val;
+    get_all_args("set_ythickness",args,"%a",&val);
+    style->ythickness=val;
+  }
+  RETURN_THIS();
+}

@@ -1,0 +1,80 @@
+class GDK2.Drawable;
+inherit G.Object;
+
+%{
+#ifndef __NT__
+#include <gdk/gdkx.h>
+#else
+#include <gdk/win32/gdkwin32.h>
+#endif
+%}
+//! The GDK2.Bitmap, GDK2.Window and GDK2.Pixmap classes are all GDK drawables.
+//! <br />
+//! This means that you can use the same set of functions to draw in them.<br />
+//! <p>
+//! Pixmaps are offscreen drawables. They can be drawn upon with the
+//! standard drawing primitives, then copied to another drawable (such
+//! as a GDK2.Window) with window->draw_pixmap(), set as the background
+//! for a window or widget, or otherwise used to show graphics (in a
+//! W(Pixmap), as an example). The depth of a pixmap is the number of
+//! bits per pixels. Bitmaps are simply pixmaps with a depth of
+//! 1. (That is, they are monochrome bitmaps - each pixel can be either
+//! on or off).
+//! </p><p>
+//! Bitmaps are mostly used as masks when drawing pixmaps, or as a
+//! shape for a GDK2.Window or a W(Widget)
+//! </p>
+%{
+#undef TWIN
+#undef GC
+#define TWIN (GDK_DRAWABLE(THIS->obj))
+/*
+#define GC(X) (get_gdkobject(X, gc))
+*/
+#define  GC(X) GDK_GC(get_gobject(X))
+%}
+
+#include "common_draw.inc"
+
+int xid()
+//! Return the xwindow id.
+{
+  pop_n_elems(args);
+  push_int((INT_TYPE)GDK_WINDOW_XWINDOW(GDK_DRAWABLE(THIS->obj)));
+}
+
+int xsize()
+//! Returns the width of the drawable specified in pixels
+{
+  int s;
+/*  gdk_window_get_size( TWIN, &s, 0 ); */
+  gdk_drawable_get_size(TWIN,&s,0);
+  push_int(s);
+}
+
+int ysize()
+//! Returns the height of the drawable specified in pixels
+{
+  int s;
+/*  gdk_window_get_size( TWIN, 0, &s ); */
+  gdk_drawable_get_size(TWIN,0,&s);
+  push_int(s);
+}
+
+mapping(string:int) get_geometry()
+//! Get width, height position and depth of the drawable as a mapping.
+//! <br />
+//! ([ "x":xpos, "y":ypos, "width":xsize, "height":ysize,
+//!    "depth":bits_per_pixel ])
+{
+  int x=0,y=0;
+  int w=0,h=0,d=0;
+  gdk_window_get_geometry(TWIN,&x,&y,&w,&h,&d);
+  push_text("x");  push_int(x);
+  push_text("y");  push_int(y);
+  push_text("width");  push_int(w);
+  push_text("height"); push_int(h);
+  push_text("depth"); push_int(d);
+  f_aggregate_mapping(10);
+}
+

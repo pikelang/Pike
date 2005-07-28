@@ -1,0 +1,39 @@
+class GTK2.HandleBox;
+inherit GTK2.Bin;
+
+//! The contents of a handle box can be 'dragged' out of the box by the user.
+//! The contents will then be placed in a separate window.
+//! IMG: GTK2.HandleBox()->add(GTK2.Label("The contents"))
+
+//! Properties:
+//! int handle-position
+//! int shadow
+//! int shadow-type
+//! int snap-edge
+//! int snap-edge-set
+
+signal child_attached;
+//! Called when a new child is added to the box
+signal child_detached;
+//! Called when a child is removed from the box
+
+void create();
+//! Create a new handle box widget.
+
+void set_shadow_type(int shadow_type);
+//! One of CONST(GTK_SHADOW)
+
+int get_shadow_type();
+//! Get the shadow type.
+
+void set_handle_position(int pos);
+//! The position of the handle. One of CONST(GTK_POS_)
+
+int get_handle_position();
+//! Get the handle position.
+
+void set_snap_edge(int pos);
+//! The edge to snap to. One of CONST(GTK_POS_), or -1 for unset.
+
+int get_snap_edge();
+//! Get the snap edge.

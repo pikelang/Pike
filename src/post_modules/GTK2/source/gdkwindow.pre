@@ -1,0 +1,482 @@
+/* -*- C -*- */
+class GDK2.Window;
+inherit GDK2.Drawable;
+
+%{
+#ifndef __NT__
+#include <gdk/gdkx.h>
+#else
+#include <gdk/win32/gdkwin32.h>
+#endif
+%}
+//! a GDK2.Window object.
+//!
+//! NOIMG
+
+void create(GDK2.Window|int parent, mapping|void attributes)
+//! Not for non-experts. I promise.
+{
+  pgtk_verify_setup();
+  pgtk_verify_not_inited();
+  if (Pike_sp[-args].type==PIKE_T_INT)
+  {
+    INT_TYPE id;
+    get_all_args("GdkWindow",args,"%i",&id);
+    THIS->obj=G_OBJECT(gdk_window_foreign_new(id));
+    if (!THIS->obj)
+      Pike_error("The window with id 0x%x does not exist\n",id);
+  } else if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+    struct object *parent;
+    struct mapping *m;
+    GdkWindowAttr attrs;
+    long mask=0;
+    MEMSET(&attrs,0,sizeof(attrs));
+    get_all_args("GdkWindow",args,"%o%m",&parent,&m);
+
+#define GET_ARG(x,y,z) pgtk_get_mapping_arg( m, #x, y, z, &attrs.x, &mask, sizeof(attrs.x))
+
+    GET_ARG(title, PIKE_T_STRING, GDK_WA_TITLE);
+    GET_ARG(x, PIKE_T_INT, GDK_WA_X);
+    GET_ARG(y, PIKE_T_INT, GDK_WA_Y);
+    GET_ARG(width, PIKE_T_INT, 0);
+    GET_ARG(height, PIKE_T_INT, 0);
+    GET_ARG(window_type, PIKE_T_INT, 0);
+    GET_ARG(wmclass_name, PIKE_T_STRING, 0);
+    GET_ARG(wmclass_class, PIKE_T_STRING, 0);
+    GET_ARG(override_redirect, PIKE_T_INT, GDK_WA_NOREDIR);
+
+    THIS->obj=G_OBJECT(gdk_window_new(GDK_WINDOW(get_gobject(parent)),&attrs,mask));
+  }
+}
+
+int is_viewable()
+//! Return 1 if the window is mapped.
+{
+  my_pop_n_elems(args);
+  push_int(gdk_window_is_viewable(GDK_WINDOW(THIS->obj)));
+}
+
+int is_visible()
+//! Return 1 if the window, or a part of the window, is visible right now.
+{
+  my_pop_n_elems(args);
+  push_int(gdk_window_is_visible(GDK_WINDOW(THIS->obj)));
+}
+
+void set_cursor(int new_cursor)
+//! Change the window cursor.<table border="0" cellpadding="3" cellspacing="0">
+//! CURS(GDK2.Arrow)
+//! CURS(GDK2.BasedArrowDown)
+//! CURS(GDK2.BasedArrowUp)
+//! CURS(GDK2.Boat)
+//! CURS(GDK2.Bogosity)
+//! CURS(GDK2.BottomLeftCorner)
+//! CURS(GDK2.BottomRightCorner)
+//! CURS(GDK2.BottomSide)
+//! CURS(GDK2.BottomTee)
+//! CURS(GDK2.BoxSpiral)
+//! CURS(GDK2.CenterPtr)
+//! CURS(GDK2.Circle)
+//! CURS(GDK2.Clock)
+//! CURS(GDK2.CoffeeMug)
+//! CURS(GDK2.Cross)
+//! CURS(GDK2.CrossReverse)
+//! CURS(GDK2.Crosshair)
+//! CURS(GDK2.DiamondCross)
+//! CURS(GDK2.Dot)
+//! CURS(GDK2.Dotbox)
+//! CURS(GDK2.DoubleArrow)
+//! CURS(GDK2.DraftLarge)
+//! CURS(GDK2.DraftSmall)
+//! CURS(GDK2.DrapedBox)
+//! CURS(GDK2.Exchange)
+//! CURS(GDK2.Fleur)
+//! CURS(GDK2.Gobbler)
+//! CURS(GDK2.Gumby)
+//! CURS(GDK2.Hand1)
+//! CURS(GDK2.Hand2)
+//! CURS(GDK2.Heart)
+//! CURS(GDK2.Icon)
+//! CURS(GDK2.IronCross)
+//! CURS(GDK2.LeftPtr)
+//! CURS(GDK2.LeftSide)
+//! CURS(GDK2.LeftTee)
+//! CURS(GDK2.Leftbutton)
+//! CURS(GDK2.LlAngle)
+//! CURS(GDK2.LrAngle)
+//! CURS(GDK2.Man)
+//! CURS(GDK2.Middlebutton)
+//! CURS(GDK2.Mouse)
+//! CURS(GDK2.Pencil)
+//! CURS(GDK2.Pirate)
+//! CURS(GDK2.Plus)
+//! CURS(GDK2.QuestionArrow)
+//! CURS(GDK2.RightPtr)
+//! CURS(GDK2.RightSide)
+//! CURS(GDK2.RightTee)
+//! CURS(GDK2.Rightbutton)
+//! CURS(GDK2.RtlLogo)
+//! CURS(GDK2.Sailboat)
+//! CURS(GDK2.SbDownArrow)
+//! CURS(GDK2.SbHDoubleArrow)
+//! CURS(GDK2.SbLeftArrow)
+//! CURS(GDK2.SbRightArrow)
+//! CURS(GDK2.SbUpArrow)
+//! CURS(GDK2.SbVDoubleArrow)
+//! CURS(GDK2.Shuttle)
+//! CURS(GDK2.Sizing)
+//! CURS(GDK2.Spider)
+//! CURS(GDK2.Spraycan)
+//! CURS(GDK2.Star)
+//! CURS(GDK2.Target)
+//! CURS(GDK2.Tcross)
+//! CURS(GDK2.TopLeftArrow)
+//! CURS(GDK2.TopLeftCorner)
+//! CURS(GDK2.TopRightCorner)
+//! CURS(GDK2.TopSide)
+//! CURS(GDK2.TopTee)
+//! CURS(GDK2.Trek)
+//! CURS(GDK2.UlAngle)
+//! CURS(GDK2.Umbrella)
+//! CURS(GDK2.UrAngle)
+//! CURS(GDK2.Watch)
+//! CURS(GDK2.Xterm)
+//! </table>
+{
+  GdkCursor *c;
+  static GdkCursor *font_cursors[256];
+  INT_TYPE i;
+
+  get_all_args("set_cursor",args,"%i",&i);
+
+  if (i>255)
+    Pike_error("No such cursor\n");
+
+  if (font_cursors[i])
+    c=font_cursors[i];
+  else
+    c=font_cursors[i]=gdk_cursor_new(i);
+  gdk_window_set_cursor(GDK_WINDOW(THIS->obj),c);
+
+  RETURN_THIS();
+}
+
+void set_bitmap_cursor(GDK2.Bitmap image, GDK2.Bitmap mask,
+                       GDK2.Color fg, GDK2.Color bg,
+                       int xhot, int yhot)
+//! xhot,yhot are the locations of the x and y hotspot relative to the
+//! upper left corner of the cursor image.
+{
+  struct object *s,*m,*fg,*bg;
+  INT_TYPE xh,yh;
+  get_all_args("set_bitmap_cursor",args,"%o%o%o%o%i%i",
+	       &s,&m,&fg,&bg,&xh,&yh);
+  gdk_window_set_cursor(GDK_WINDOW(THIS->obj),
+                          gdk_cursor_new_from_pixmap(GDK_PIXMAP(get_gobject(s)),
+                                                     GDK_PIXMAP(get_gobject(m)),
+                                                     get_gdkobject(fg,color),
+                                                     get_gdkobject(bg,color),
+                                                      xh,yh));
+  RETURN_THIS();
+}
+
+void shape_combine_mask(GDK2.Bitmap mask, int xoffset, int yoffset)
+//! Set the shape of the widget, or, rather, it's window, to that of
+//! the supplied bitmap.
+{
+  struct object *m;
+  INT_TYPE x,y;
+  get_all_args("shape_combine",args,"%o%i%i",&m,&x,&y);
+  gdk_window_shape_combine_mask(GDK_WINDOW(THIS->obj),
+                                 get_gdkobject(m,bitmap),x,y);
+  RETURN_THIS();
+}
+
+array(GDK2.Window) children()
+//! Returns an array of GDK2.Window objects.
+{
+  GList *l;
+  int n=0;
+
+  l=gdk_window_get_children(GDK_WINDOW(THIS->obj));
+
+  while (l) {
+    struct object *o;
+    o=low_clone(pgdk_window_program);
+    call_c_initializers(o);
+    /* ugly...*/
+    ((struct object_wrapper *)o->storage)->obj=(void *)l->data;
+    push_object(o);
+    n++;
+    l=g_list_next(l);
+  }
+  my_pop_n_elems(args);
+  f_aggregate(n);
+}
+
+void set_events(int events)
+//! events is a bitwise or of one or more of the following constants:
+//! GDK2.ExposureMask,
+//! GDK2.PointerMotionMask,
+//! GDK2.PointerMotion_HINTMask,
+//! GDK2.ButtonMotionMask,
+//! GDK2.Button1MotionMask,
+//! GDK2.Button2MotionMask,
+//! GDK2.Button3MotionMask,
+//! GDK2.ButtonPressMask,
+//! GDK2.ButtonReleaseMask,
+//! GDK2.KeyPressMask,
+//! GDK2.KeyReleaseMask,
+//! GDK2.EnterNotifyMask,
+//! GDK2.LeaveNotifyMask,
+//! GDK2.FocusChangeMask,
+//! GDK2.StructureMask,
+//! GDK2.PropertyChangeMask,
+//! GDK2.VisibilityNotifyMask,
+//! GDK2.ProximityInMask,
+//! GDK2.ProximityOutMask and
+//! GDK2.AllEventsMask
+{
+  INT_TYPE a;
+  get_all_args("set_events",args,"%i",&a);
+  gdk_window_set_events(GDK_WINDOW(THIS->obj),a);
+  RETURN_THIS();
+}
+
+void set_icon(GDK2.Pixmap pixmap,GDK2.Bitmap mask, GDK2.Window|void window)
+//! Set the icon to the specified image (with mask) or the specified
+//! GDK2.Window.  It is up to the window manager to display the icon.
+//! Most window manager handles window and pixmap icons, but only a few
+//! can handle the mask argument. If you want a shaped icon, the only
+//! safe bet is a shaped window.
+{
+  GdkPixmap *p=NULL;
+  GdkBitmap *m=NULL;
+  GdkWindow *w=NULL;
+  switch (args) {
+   default:
+   case 3:
+     if (Pike_sp[-args+2].type==PIKE_T_OBJECT)
+       w=GDK_WINDOW(get_gobject(Pike_sp[-args+2].u.object));
+   case 2:
+     if (Pike_sp[-args+1].type == PIKE_T_OBJECT)
+       m=get_gdkobject(Pike_sp[-args+1].u.object,bitmap);
+   case 1:
+     if (Pike_sp[-args].type==PIKE_T_OBJECT)
+       p=GDK_PIXMAP(get_gobject(Pike_sp[-args].u.object));
+     /*    case 0:
+      * Some commercial CC breaks with empty case.
+      * // David
+      */
+  }
+  gdk_window_set_icon(GDK_WINDOW(THIS->obj),w,p,m);
+  RETURN_THIS();
+}
+
+
+void set_icon_name(string name)
+//! Set the icon name to the specified string.
+{
+  gchar *t;
+  get_all_args("set_icon_name",args,"%s",&t);
+  gdk_window_set_icon_name(GDK_WINDOW(THIS->obj),t);
+  RETURN_THIS();
+}
+
+void raise()
+//! Raise this window if the window manager allows that.
+{
+  gdk_window_raise(GDK_WINDOW(THIS->obj));
+  RETURN_THIS();
+}
+
+void move_resize(int x, int y, int w, int h)
+//! Move and resize the window in one call.
+{
+  INT_TYPE x,y,w,h;
+  get_all_args("move_resize",args,"%i%i%i%i",&x,&y,&w,&h);
+  gdk_window_move_resize(GDK_WINDOW(THIS->obj),x,y,w,h);
+  RETURN_THIS();
+}
+
+mapping(string:int) get_geometry()
+//! Returns ([ "x":xpos, "y":ypos, "width":width, "height":height, "depth":bits_per_pixel ])
+{
+  gint x,y,w,h,d;
+  gdk_window_get_geometry(GDK_WINDOW(THIS->obj),&x,&y,&w,&h,&d);
+  push_constant_text("x"); push_int(x);
+  push_constant_text("y"); push_int(y);
+  push_constant_text("width");  push_int(w);
+  push_constant_text("height");  push_int(h);
+  push_constant_text("depth"); push_int(d);
+  f_aggregate_mapping(10);
+}
+
+
+void lower()
+//! Lower this window if the window manager allows that.
+{
+  gdk_window_lower(GDK_WINDOW(THIS->obj));
+  RETURN_THIS();
+}
+
+
+mapping get_property(GDK2.Atom atom, int|void offset, int|void delete_when_done)
+//! Returns the value (as a string) of the specified property.
+//! The arguments are:
+//! <p>
+//! property: The property atom, as an example GDK2.Atom.__SWM_VROOT<br />
+//! offset (optional): The starting offset, in elements<br />
+//! delete_when_done (optional): If set, the property will be deleted when it has
+//! been fetched.<br />
+//! </p><p>
+//! Example usage: Find the 'virtual' root window (many window managers
+//! put large windows over the screen)
+//! </p><p>
+//! <pre>
+//! &nbsp; GDK2.Window root = GTK.root_window();
+//! &nbsp; array maybe=root->children()->
+//! &nbsp;             get_property(GDK2.Atom.__SWM_VROOT)-({0});
+//! &nbsp; if(sizeof(maybe))
+//! &nbsp;   root=GDK2.Window( maybe[0]->data[0] );
+//! </pre></p>
+{
+  guchar *retdata;
+  GdkAtom actual_property_type;
+  int actual_format_type,actual_length;
+  struct object *o;
+  INT_TYPE offset=0;
+  INT_TYPE delete_when_done=0;
+  if (args==3)
+    get_all_args("get_property",args,"%o%i%i",&o,&offset,&delete_when_done);
+  else if (args==2)
+    get_all_args("get_property",args,"%o%i",&o,&offset);
+  else
+    get_all_args("get_property",args,"%o",&o);
+
+  if (gdk_property_get(GDK_WINDOW(THIS->obj),
+                       get_gdkatom(o),
+#ifdef AnyPropertyType
+                       AnyPropertyType,
+#else
+		       None,
+#endif
+                       offset,
+                       1024*1024*1024,
+                       delete_when_done,
+                       &actual_property_type,
+                       &actual_format_type,
+                       &actual_length,
+                       &retdata))
+  {
+    struct object *o;
+    my_pop_n_elems(args);
+    push_text("type");
+    push_text(gdk_atom_name(actual_property_type));
+    push_text("width");
+    push_int(actual_format_type);
+    push_text("data");
+    switch (actual_format_type)
+    {
+     case 8:
+       push_string(make_shared_binary_string((char *)retdata,actual_length));
+       break;
+
+     case 16:
+       push_string(make_shared_binary_string1((p_wchar1 *)retdata,actual_length));
+      break;
+
+     case 32: /* here data is _longs_, not ints. Huh */
+       push_Xpseudo32bitstring(retdata,actual_length);
+       break;
+    }
+    g_free(retdata);
+    f_aggregate_mapping(6);
+    return;
+  }
+  my_pop_n_elems(args);
+  push_int(0);
+}
+
+void change_property(GDK2.Atom property, GDK2.Atom type, int mode, string data)
+//! mode is one of CONST(GDK_PROP_MODE)
+{
+  struct object *o,*t;
+  struct pike_string *s;
+  INT_TYPE m;
+  get_all_args("change_property",args,"%o%o%i%W",&o,&t,&m,&s);
+
+  gdk_property_change(GDK_WINDOW(THIS->obj),get_gdkatom(o),
+                       get_gdkatom(t),8<<s->size_shift,
+                       m,(unsigned char *)s->str,
+                       s->len);
+
+  RETURN_THIS();
+}
+
+void delete_property(GDK2.Atom a)
+//! Delete a property.
+{
+  struct object *o;
+  get_all_args("delete_property",args,"%o",&o);
+  gdk_property_delete(GDK_WINDOW(THIS->obj),get_gdkatom(o));
+  RETURN_THIS();
+}
+
+void set_background(GDK2.Color|GDK2.Pixmap to)
+//! Set the background color or image.
+//! The argument is either a GDK2.Pixmap or a GDK2.Color object.
+{
+  struct object *o;
+#if PIKE_SECURITY
+  get_all_args("set_background",args,"%O",&o);
+#else
+  get_all_args("set_background",args,"%o",&o);
+#endif
+
+/*   gdk_error_trap_push(); */
+  if (!o)
+    gdk_window_set_back_pixmap(GDK_WINDOW(THIS->obj),NULL,1);
+  if (get_pgobject(o,pgdk_pixmap_program))
+    gdk_window_set_back_pixmap(GDK_WINDOW(THIS->obj),
+                               GDK_PIXMAP(get_gobject(o)),0);
+  else if (get_pgobject(o,pgdk_window_program))
+    gdk_window_set_back_pixmap(GDK_WINDOW(THIS->obj),
+                               GDK_WINDOW(get_gobject(o)),0);
+  else if (get_gdkobject(o,bitmap))
+    gdk_window_set_back_pixmap(GDK_WINDOW(THIS->obj),
+                               get_gdkobject(o,bitmap),0);
+  else if (get_pgobject(o,pgdk_drawable_program))
+    gdk_window_set_back_pixmap(GDK_WINDOW(THIS->obj),
+                               GDK_DRAWABLE(get_gobject(o)),0);
+  else if (get_gdkobject(o,color))
+    gdk_window_set_background(GDK_WINDOW(THIS->obj),get_gdkobject(o,color));
+  else
+    Pike_error("Set the background to what?\n");
+
+/*   if(gdk_error_trap_pop()) */
+/*     error("Failed to set the background\n"); */
+
+  RETURN_THIS();
+}
+
+require x11;
+
+/* Low-level X11 related functions */
+
+void grab_input_focus( )
+//! Forcibly grab the input focus.
+//!
+//! Useful for override-redirect windows in games. Note that the only
+//! way to get rid of the focus is to close the window, be careful.
+{
+  GdkWindowPrivate *pr=(GdkWindowPrivate*)THIS->obj;
+
+  XSetInputFocus(pr->xdisplay,pr->xwindow,RevertToParent,CurrentTime);
+  XGrabPointer(pr->xdisplay,pr->xwindow,1,0,GrabModeAsync,GrabModeAsync,
+	       pr->xwindow,None,CurrentTime);
+  RETURN_THIS();
+}
+
+
+endrequire;

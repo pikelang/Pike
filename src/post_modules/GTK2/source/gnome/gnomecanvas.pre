@@ -1,0 +1,50 @@
+/* -*- C -*- */
+DISABLED {
+
+require gnome;
+class Gnome.Canvas;
+inherit GTK.Layout;
+//! The GNOME canvas is an engine for displaying structured graphics
+//! and simplifying the development of complex graphic-based
+//! applications.
+//! <p>
+//! It is, however, not yet wrapped in Pike GTK.
+//! </p>
+FUNCTION(create, "function(int|void:void)");
+NAME_ARGS(anti_alias);
+{
+  INT_TYPE anti;
+  pgtk_verify_gnome_setup();
+  pgtk_verify_not_inited();
+  if( args )
+    get_all_args( "create", args, "%i", &anti );
+  pop_n_elems( args );
+  if( anti )
+    THIS->obj = GTK_OBJECT(gnome_canvas_new_aa());
+  else
+    THIS->obj = GTK_OBJECT(gnome_canvas_new());
+  pgtk__init_this_object();
+  push_int( 0 );
+}
+
+void set_scroll_region( float x1, float y1, float x2, float y2 );
+//! Sets the scrolling region of a canvas to the specified
+//! rectangle. The canvas will then be able to scroll only within this
+//! region. The view of the canvas is adjusted as appropriate to
+//! display as much of the new region as possible.
+void set_pixels_per_unit( float n );
+//! Sets the zooming factor of a canvas by specifying the number of
+//! pixels that correspond to one canvas unit.
+void scroll_to( int cx, int cy );
+//! Makes a canvas scroll to the specified offsets, given in canvas
+//! pixel units. The canvas will adjust the view so that it is not
+//! outside the scrolling region. This function is typically not used,
+//! as it is better to hook scrollbars to the canvas layout's scrolling
+//! adjusments.
+void update_now();
+//! Forces an immediate update and redraw of a canvas. If the canvas
+//! does not have any pending update or redraw requests, then no action
+//! is taken. This is typically only used by applications that need
+//! explicit control of when the display is updated, like games. It is
+//! not needed by normal applications.
+};

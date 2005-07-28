@@ -1,0 +1,26 @@
+class GTK2.AspectFrame;
+inherit GTK2.Frame;
+
+//! A W(Frame) widget  that always maintain a specified ratio
+//! between width and height. width/height == ratio
+//!
+//! IMG: GTK2.Aspect_frame("Title",0.5,0.5,0.4,0)->add( GTK2.Label("Wrong aspect"))->set_size_request(200,200)
+
+//! Properties:
+//! int obey-child
+//! float ratio
+//! float xalign
+//! float yalign
+
+void set(float xalign, float yalign, float ratio, int obey_child);
+//! Set the aspec values. Arguments are xalign, yalign, ratio, obey_child
+//! xalign is floats between 0 and 1, 0.0 is upper (or leftmost), 1.0 is
+//! lower (or rightmost). If 'obey_child' is true, the frame will use the
+//! aspect ratio of it's (one and only) child widget instead of 'ratio'.
+
+void create(string label, float xalign, float yalign,
+	    float ratio, int obey_child);
+//! Create a new frame. Arguments are label, xalign, yalign, ratio, obey_child
+//! xalign is floats between 0 and 1, 0.0 is upper (or leftmost), 1.0 is
+//! lower (or rightmost). If 'obey_child' is true, the frame will use the
+//! aspect ratio of it's (one and only) child widget instead of 'ratio'.

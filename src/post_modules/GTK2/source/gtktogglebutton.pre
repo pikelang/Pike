@@ -1,0 +1,65 @@
+class GTK2.ToggleButton;
+inherit GTK2.Button;
+
+//! Toggle buttons are derived from normal buttons and are very
+//! similar, except they will always be in one of two states,
+//! alternated by a click. They may be depressed, and when you click
+//! again, they will pop back up. Click again, and they will pop back
+//! down.
+//! <p>
+//! IMG: GTK2.ToggleButton("Toggle button")
+//! IMG: GTK2.ToggleButton("Toggle button")->set_active( 1 )
+//! </p>
+
+//! Properties:
+//! int active
+//! int draw-indicator
+//! int inconsistent
+
+signal toggled;
+
+void create(?string label)
+//! If you supply a string, a label will be created and inserted in the button.
+//! Otherwise, use -&gt;add(widget) to create the contents of the button.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if(args) {
+    gchar *s=PGTK_GETSTR(Pike_sp-args);
+    if (s) {
+      THIS->obj=G_OBJECT(gtk_toggle_button_new_with_label(s));
+      PGTK_FREESTR(s);
+    } else
+      THIS->obj=G_OBJECT(gtk_toggle_button_new());
+  } else {
+    THIS->obj=G_OBJECT(gtk_toggle_button_new());
+  }
+  pgtk__init_this_object();
+}
+
+void set_mode(int mode);
+//! If true, draw indicator
+
+int get_mode();
+//! Retrieves whether the button is displayed as a separator indicator and
+//! label.
+
+int get_active();
+//! Returns true if button is pressed, and false if it is raised.
+
+void set_active(int activep);
+//! If activep is true, the toggle button will be activated.
+
+int get_inconsistent();
+//! Gets the value set by set_inconsistent().
+
+void set_inconsistent(int setting);
+//! If the user has selected a range of elements (such as some text or
+//! spreadsheet cells) that are affected by a toggle button, and the current
+//! values in that range are inconsistent, you may want to display the toggle
+//! in an "in between" state.  This function turns on "in between" display.
+
+void toggled();
+//! emulate a 'toggle' of the button. This will emit a 'toggled' signal.
+
+

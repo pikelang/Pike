@@ -1,0 +1,182 @@
+require libglade;
+
+class GTK2.GladeXML;
+inherit G.Object;
+
+%{
+#include <glade/glade.h>
+
+/* This function is used by signal_autoconnect to handle signal connection.
+ * Basically it uses a mapping and data from the stack to do signal callbacks
+ * exactly in the same way as normal signals in PiGTK.
+ */
+static void pgtk__signal_connect(const gchar *handler_name,
+				 GObject *object,
+				 const gchar *signal_name,
+				 const gchar *signal_data,
+				 GObject *connect_object,
+				 gboolean after,
+				 gpointer args)
+{
+  struct mapping *callbacks;
+  struct svalue *data;
+  int id;
+  struct signal_data *b;
+  struct svalue *cb;
+  struct pike_string *funname;
+  guint signal_id;
+#ifdef GLADE_CONNECT_DEBUG
+  fprintf(stderr,"Connecting handler %s, signal %s,\n data %s, "
+		 "after: %d\n",
+		 handler_name,signal_name,signal_data,after);
+#endif
+  get_all_args("GTK2.GladeXML->_signal_connect",*(INT32 *)args,
+	       "%m%*",&callbacks,&data);
+/*
+  funname=make_shared_string(handler_name);
+  cb=low_mapping_string_lookup(callbacks,funname);
+  free_string(funname);
+*/
+  cb=simple_mapping_string_lookup(callbacks,handler_name);
+  if (cb==NULL) {
+    fprintf(stderr,"** WARNING **: Unknown function %s for signal %s\n",
+	    handler_name,signal_name);
+    return;
+  } else if (cb->type!=PIKE_T_FUNCTION) {
+    fprintf(stderr,"** WARNING **: Value for handler %s for signal %s not a function.\n",
+	    handler_name,signal_name);
+    return;
+  }
+  b=(struct signal_data *)g_malloc(sizeof(struct signal_data));
+  if (b==NULL)
+    Pike_error("Out of memory.\n");
+  assign_svalue_no_free(&b->cb,cb);
+  assign_svalue_no_free(&b->args,data);
+  b->signal_id=g_signal_lookup(signal_name,G_TYPE_FROM_INSTANCE(object));
+  if (!b->signal_id) {
+    g_free(b);
+    fprintf(stderr,
+	    "** WARNING **; Signal \"%s\" not defined in the '%s' "
+	    "class ancestry.\n",
+	    signal_name,g_type_name(G_TYPE_FROM_INSTANCE(object)));
+  }
+  id=g_signal_connect_data(G_OBJECT(object),signal_name,
+			   G_CALLBACK(pgtk_signal_func_wrapper),b,
+			   (GClosureNotify)pgtk_free_signal_data,
+			   G_CONNECT_SWAPPED);
+}
+%}
+
+//! Glade is a free GUI builder for GTK2+ and Gnome.  It's normally used to
+//! create C-code, but can also produce code for other languages.  Libglade
+//! is a utility library that builds the GI from the Glade XML save files.
+//! This module uses libglade and allows you to easily make GUI designs to be
+//! used with your Pike applications.
+
+void create(string filename_or_buffer, ?int size, ?string root, ?string domain)
+//! Creates a new GladeXML object (and the corresponding widgets) from the
+//! XML file.  Optionally it will only build the interface from the widget
+//! node root.  This feature is useful if you only want to build say a
+//! toolbar or menu from the XML file, but not the window it is embedded in.
+//! Note also that the XML parse tree is cached to speed up creating another
+//! GladeXML object from the same file.  The third optional argument is used to
+//! specify a different translation domain from the default to be used.
+//! If xml description is in a string buffer instead, specify the size (or -1
+//! to auto-calculate).  If size is 0, then it will assume a file with root
+//! and/or domain specified.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    char *fname,*root=NULL,*dom=NULL;
+    int size=0;
+    if (args==1)
+      get_all_args("create",args,"%s",&fname);
+    else if (args==2)
+      get_all_args("create",args,"%s%i",&fname,&size);
+    else if (args==3)
+      get_all_args("create",args,"%s%i%s",&fname,&size,&root);
+    else
+      get_all_args("create",args,"%s%i%s%s",&fname,&size,&root,&dom);
+    if (size==0)
+      THIS->obj=G_OBJECT(glade_xml_new(fname,root,dom));
+    else if (size==-1)
+      THIS->obj=G_OBJECT(glade_xml_new_from_buffer(fname,strlen(fname),root,dom));
+    else
+      THIS->obj=G_OBJECT(glade_xml_new_from_buffer(fname,size,root,dom));
+  }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
+
+GTK2.Widget get_widget(string name)
+//! This function is used to get the widget corresponding to name in the
+//! interface description.  You would use this if you have to do anything to
+//! the widget after loading.
+{
+  pgtk_verify_inited();
+  {
+    char *name;
+    GtkWidget *widget;
+    get_all_args("get_widget",args,"%s",&name);
+    widget=glade_xml_get_widget(GLADE_XML(THIS->obj),name);
+    my_pop_n_elems(args);
+    push_gobject(widget);
+  }
+}
+
+array(GTK2.Widget) get_widget_prefix(string name)
+//! This function is used to get a list GTK2.Widgets with names that start with
+//! the string name in the interface description.
+{
+  pgtk_verify_inited();
+  {
+    char *name;
+    GList *gl,*g2;
+    int i=0;
+    get_all_args("get_widget_prefix",args,"%s",&name);
+    gl=g2=glade_xml_get_widget_prefix(GLADE_XML(THIS->obj),name);
+    my_pop_n_elems(args);
+    while (g2) {
+      push_gobject(g2->data);
+      g_object_ref(g2->data);
+      i++;
+      g2=g_list_next(g2);
+    }
+    f_aggregate(i);
+    g_list_free(gl);
+  }
+}
+
+string get_widget_name(GTK2.Widget widget)
+//! Used to get the name of a widget that was generated by a GladeXML object.
+{
+  pgtk_verify_inited();
+  {
+    const char *s;
+    struct object *o1;
+    GtkWidget *widget;
+    get_all_args("get_widget_name",args,"%o",&o1);
+    widget=GTK_WIDGET(get_gobject(o1));
+    if (!widget)
+      Pike_error("GladeXML->get_widget_name:  Invalid argument 1, wanted GTK2 object of type WIDGET.\n");
+    s=glade_get_widget_name(widget);
+    my_pop_n_elems(args);
+    push_text(s);
+    g_free((void *)s);
+  }
+}
+
+void signal_autoconnect(mapping(string:function) callbacks, mixed data)
+//! Try to connect functions to all signals in the interface.  The mapping
+//! should consist of handler name : function pairs.  The data argument will
+//! be saved and sent as the first argument to all callback functions.
+{
+  pgtk_verify_inited();
+  if (args!=2 || Pike_sp[-args].type!=PIKE_T_MAPPING)
+    Pike_error("GTK2.GladeXML->signal_autoconnect: Invalid arguments, expected (mapping,mixed)\n");
+  glade_xml_signal_autoconnect_full(GLADE_XML(THIS->obj),pgtk__signal_connect,&args);
+  RETURN_THIS();
+}
+
+endrequire;

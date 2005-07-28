@@ -1,0 +1,27 @@
+require gnome;
+class Gnome.Calculator;
+inherit GTK.Vbox;
+//! This widget provides a simple calculator that you can embed in your
+//! applications for doing quick computations.
+//! <p>
+//! The widget consists of a fully functional calculator including
+//! standard arithmetic functions as well as trigonometric
+//! capabilities, exponents, factorials, nested equations, and others.
+//! IMG: Gnome.Calculator()
+//! </p>
+
+signal result_changed;
+//! This signal is emited by the widget when the result has been changed.
+void create();
+//! Create a new calculator widget
+void clear(int reset);
+//! Resets the calculator back to zero. If reset is TRUE, results
+//! stored in memory and the calculator mode are cleared also.
+void set( float result );
+//! Sets the value stored in the calculator's result buffer to the
+//! given result.
+float get_result();
+//! Value currently stored in calculator buffer.
+
+
+

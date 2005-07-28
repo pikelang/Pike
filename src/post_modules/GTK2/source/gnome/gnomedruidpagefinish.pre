@@ -1,0 +1,22 @@
+require gnome;
+class Gnome.DruidPageFinish;
+inherit Gnome.DruidPage;
+//! This is a W(GnomeDruidPage).
+void create();
+//! Creates a new Gnome.DruidPageStandard widget.
+void set_bg_color( GDK.Color color );
+//! This will set the background color to be the specified color.
+void set_textbox_color( GDK.Color color );
+//! This will set the textbox color to be the specified color.
+void set_logo_bg_color( GDK.Color color );
+//! This will set the background color of the logo
+void set_title_color( GDK.Color color );
+//! Set the title color
+void set_text_color( GDK.Color color );
+//! Set the text color
+void set_text( string text );
+//! Set the text
+void set_title( string title );
+//! Set the title
+/* set logo and set watermark has GdkImlibImage objects.. */
+

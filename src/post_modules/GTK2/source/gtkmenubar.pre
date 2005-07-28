@@ -1,0 +1,19 @@
+class GTK2.MenuBar;
+inherit GTK2.MenuShell;
+
+//! Basically a horizontal W(Menu).
+//! <p>The menu image cannot be
+//! grabbed automatically, but this is how you would create a menu all
+//! in one line. This is not the recommended coding style.</p><p>
+//! IMG: GTK2.MenuBar()->add(GTK2.Menu_item("Menu")->set_submenu(GTK2.Menu()->add(GTK2.Menu_item("Sub")))->select()->activate())->add(GTK2.Menu_item("Bar"))
+//! </p>
+
+//! Style properties:
+//! int internal-padding
+//! int shadow-type
+
+
+void create();
+//! Create a new menu bar.
+
+

@@ -1,0 +1,134 @@
+require gtk24;
+
+class GTK2.FileChooserDialog;
+inherit GTK2.Dialog;
+
+//! GtkFileChooserDialog should be used to retrieve file or directory names
+//! from the user. It will create a new dialog window containing a
+//! directory list, and a file list corresponding to the current
+//! working directory. The filesystem can be navigated using the
+//! directory list, the drop-down history menu, or the TAB key can be
+//! used to navigate using filename completion common in text based
+//! editors such as emacs and jed.
+//! <p>
+//! The default filename can be set using set_filename() and the
+//! selected filename retrieved using get_filename().
+//! </p><p>
+//! Use complete() to display files that match a given pattern. This
+//! can be used for example, to show only *.txt files, or only files
+//! beginning with gtk*.
+//! </p><p>
+//! Simple file operations; create directory, delete file, and rename
+//! file, are available from buttons at the top of the dialog. These
+//! can be hidden using hide_fileop_buttons() and shown again using
+//! show_fileop_buttons().
+//! </p><p>
+//! TIMG: GTK2.FileChooserDialog("File selector")
+//! </p>
+
+void create( string title, int|GTK2.Window parent, int mode,
+		array(array(string:int)) buttons)
+//! Creates a new File Chooser Dialog box.
+//! Title is the title of the window.  May be empty or 0 for no title.
+//! Parent is the transient parent.  May be 0 for none.
+//! Mode is wither this is open or save mode.  See
+//! GTK2.FileChooser.set_action() for modes.
+{
+  GPtrArray *gpa;
+  struct array *a;
+  char *s1;
+  INT_TYPE mm,xx;
+  struct object *o;
+  int i;
+
+  if (Pike_sp[2-1-args].type==PIKE_T_INT)
+    get_all_args("create",args,"%s%i%i%a",&s1,&xx,&mm,&a);
+  else
+    get_all_args("create",args,"%s%O%i%a",&s1,&o,&mm,&a); 
+  gpa=g_ptr_array_new();
+  if (Pike_sp[4-1-args].type!=PIKE_T_ARRAY)
+    Pike_error("Wrong type of argument 4.\n");
+  a=Pike_sp[4-1-args].u.array;
+  if (a->size>5)
+    Pike_error("Too many buttons.\n");
+  for (i=0; i<a->size; i++) {
+    fprintf(stderr,"i==%d\n",i);
+    struct array *b;
+    gchar *s2;
+    INT_TYPE *m1;
+    if ((ITEM(a)+i)->type!=PIKE_T_ARRAY)
+      continue;
+    b=(ITEM(a)+i)->u.array;
+    if (ITEM(b)->type!=PIKE_T_STRING || (ITEM(b)+1)->type!=PIKE_T_INT)
+      continue;
+    s2=PGTK_GETSTR(ITEM(b));
+    g_ptr_array_add(gpa,s2);
+    m1=g_malloc(sizeof(INT_TYPE));
+    if (m1==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(INT_TYPE));
+    *m1=PGTK_GETINT(ITEM(b)+1);
+    g_ptr_array_add(gpa,m1);
+  }
+  switch (a->size) {
+    case 0:
+      Pike_error("Not enough buttons.\n");
+    case 1:
+      THIS->obj=(void *)gtk_file_chooser_dialog_new(s1,
+	(Pike_sp[2-1-args].type==PIKE_T_INT)?0:GTK_WINDOW(get_gobject(o)),
+	mm,
+	(gchar *)g_ptr_array_index(gpa,0),*(int *)g_ptr_array_index(gpa,1),
+	NULL);
+      break;
+    case 2:
+      THIS->obj=(void *)gtk_file_chooser_dialog_new(s1,
+	(Pike_sp[2-1-args].type==PIKE_T_INT)?0:GTK_WINDOW(get_gobject(o)),
+	mm,
+	(gchar *)g_ptr_array_index(gpa,0),*(int *)g_ptr_array_index(gpa,1),
+	(gchar *)g_ptr_array_index(gpa,2),*(int *)g_ptr_array_index(gpa,3),
+	NULL);
+      break;
+    case 3:
+      THIS->obj=(void *)gtk_file_chooser_dialog_new(s1,
+	(Pike_sp[2-1-args].type==PIKE_T_INT)?0:GTK_WINDOW(get_gobject(o)),
+	mm,
+	(gchar *)g_ptr_array_index(gpa,0),*(int *)g_ptr_array_index(gpa,1),
+	(gchar *)g_ptr_array_index(gpa,2),*(int *)g_ptr_array_index(gpa,3),
+	(gchar *)g_ptr_array_index(gpa,4),*(int *)g_ptr_array_index(gpa,5),
+	NULL);
+      break;
+    case 4:
+      THIS->obj=(void *)gtk_file_chooser_dialog_new(s1,
+	(Pike_sp[2-1-args].type==PIKE_T_INT)?0:GTK_WINDOW(get_gobject(o)),
+	mm,
+	(gchar *)g_ptr_array_index(gpa,0),*(int *)g_ptr_array_index(gpa,1),
+	(gchar *)g_ptr_array_index(gpa,2),*(int *)g_ptr_array_index(gpa,3),
+	(gchar *)g_ptr_array_index(gpa,4),*(int *)g_ptr_array_index(gpa,5),
+	(gchar *)g_ptr_array_index(gpa,6),*(int *)g_ptr_array_index(gpa,7),
+	NULL);
+      break;
+    case 5:
+      THIS->obj=(void *)gtk_file_chooser_dialog_new(s1,
+	(Pike_sp[2-1-args].type==PIKE_T_INT)?0:GTK_WINDOW(get_gobject(o)),
+	mm,
+	(gchar *)g_ptr_array_index(gpa,0),*(int *)g_ptr_array_index(gpa,1),
+	(gchar *)g_ptr_array_index(gpa,2),*(int *)g_ptr_array_index(gpa,3),
+	(gchar *)g_ptr_array_index(gpa,4),*(int *)g_ptr_array_index(gpa,5),
+	(gchar *)g_ptr_array_index(gpa,6),*(int *)g_ptr_array_index(gpa,7),
+	(gchar *)g_ptr_array_index(gpa,8),*(int *)g_ptr_array_index(gpa,9),
+	NULL);
+      break;
+    default:
+      Pike_error("Invalid number of buttons.\n");
+  }
+  g_ptr_array_free(gpa,1);
+  my_pop_n_elems(args);
+}
+
+//! Creates a new file selection dialog box. By default it will list
+//! the files in the current working directory. Operation buttons
+//! allowing the user to create a directory, delete files, and rename
+//! files will also be present by default.
+
+#include "gtkfilechooser.inc"
+
+endrequire;

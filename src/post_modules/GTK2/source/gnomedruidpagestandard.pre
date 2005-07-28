@@ -1,0 +1,147 @@
+require gnome;
+
+class Gnome2.DruidPageStandard;
+inherit Gnome2.DruidPage;
+
+//! Properties:
+//! string background
+//! GDK2.Color background-gdk
+//! int background-set
+//! string contents-background
+//! GDK2.Color contents-background-gdk
+//! int contents-background-set
+//! GDK2.Pixbuf logo
+//! string logo-background
+//! GDK2.Color logo-background-gdk
+//! int logo-background-set
+//! string title
+//! string title-foreground
+//! GDK2.Color title-foreground-gdk
+//! int title-foreground-set
+//! GDK2.Pixbuf top-watermark
+
+void create(?string title, ?GDK2.Pixbuf logo, ?GDK2.Pixbuf top_watermark)
+//! Construct a new Gnome2.DruidPageStandard.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    char *title;
+    struct object *o1,*o2;
+    get_all_args("create",args,"%s%o%o",&title,&o1,&o2);
+    THIS->obj=G_OBJECT(gnome_druid_page_standard_new_with_vals(
+			title,
+			GDK_PIXBUF(get_gobject(o1)),
+			GDK_PIXBUF(get_gobject(o2))));
+  } else {
+    THIS->obj=G_OBJECT(gnome_druid_page_standard_new());
+  }
+  pgtk__init_this_object();
+}
+
+void set_title(string title);
+//! Sets the title.
+
+void set_logo(?GDK2.Pixbuf logo)
+//! Sets a GDK2.Pixbuf as the logo in the top right corner.  If omitted, then
+//! no logo will be displayed.
+{
+  pgtk_verify_inited();
+  if (args) {
+    struct object *o1;
+    get_all_args("set_logo",args,"%o",&o1);
+    gnome_druid_page_standard_set_logo(GNOME_DRUID_PAGE_STANDARD(THIS->obj),
+			GDK_PIXBUF(get_gobject(o1)));
+  } else
+    gnome_druid_page_standard_set_logo(
+			GNOME_DRUID_PAGE_STANDARD(THIS->obj),NULL);
+  RETURN_THIS();
+}
+
+void set_top_watermark(?GDK2.Pixbuf watermark)
+//! Sets a GDK2.Pixbuf as the watermark on top of the top strip on the druid.
+//! If watermark is omitted, it is reset to the normal color.
+{
+  pgtk_verify_inited();
+  if (args) {
+    struct object *o1;
+    get_all_args("set_top_watermark",args,"%o",&o1);
+    gnome_druid_page_standard_set_top_watermark(
+			GNOME_DRUID_PAGE_STANDARD(THIS->obj),
+			GDK_PIXBUF(get_gobject(o1)));
+  } else
+    gnome_druid_page_standard_set_top_watermark(
+			GNOME_DRUID_PAGE_STANDARD(THIS->obj),NULL);
+  RETURN_THIS();
+}
+
+void set_title_foreground(GDK2.Color color)
+//! Sets the title text to the specified color.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    GdkColor *color;
+    get_all_args("set_title_foreground",args,"%o",&o1);
+    color=(GdkColor *)get_gdkobject(o1,color);
+    gnome_druid_page_standard_set_title_foreground(
+			GNOME_DRUID_PAGE_STANDARD(THIS->obj),color);
+  }
+  RETURN_THIS();
+}
+
+void set_background(GDK2.Color color)
+//! Sets the background color of the top section.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    GdkColor *color;
+    get_all_args("set_background",args,"%o",&o1);
+    color=(GdkColor *)get_gdkobject(o1,color);
+    gnome_druid_page_standard_set_background(
+			GNOME_DRUID_PAGE_STANDARD(THIS->obj),color);
+  }
+  RETURN_THIS();
+}
+
+void set_logo_background(GDK2.Color color)
+//! Sets the background color of the logo.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    GdkColor *color;
+    get_all_args("set_logo_background",args,"%o",&o1);
+    color=(GdkColor *)get_gdkobject(o1,color);
+    gnome_druid_page_standard_set_logo_background(
+			GNOME_DRUID_PAGE_STANDARD(THIS->obj),color);
+  }
+  RETURN_THIS();
+}
+
+void set_contents_background(GDK2.Color color)
+//! Sets the color of the main contents section's background.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    GdkColor *color;
+    get_all_args("set_contents_background",args,"%o",&o1);
+    color=(GdkColor *)get_gdkobject(o1,color);
+    gnome_druid_page_standard_set_contents_background(
+			GNOME_DRUID_PAGE_STANDARD(THIS->obj),color);
+  }
+  RETURN_THIS();
+}
+
+void append_item(string question, GTK2.Widget item,
+		 string additional_info);
+//! Convenience function to add a GTK2.Widget to the vbox.  This function
+//! creates a new contents section that has the question text followed by the
+//! item widget and then the additional_info text, all stacked vertically from
+//! top to bottom.
+//! <p>
+//! The item widget could be something like a set of radio checkbuttons
+//! requesting a choice from the user.
+

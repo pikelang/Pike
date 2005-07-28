@@ -1,0 +1,8 @@
+class GTK2.Hseparator;
+inherit GTK2.Separator;
+
+//! Simply creates a horizontal separator. No bells or whistles.
+//! IMG: GTK2.Hseparator()->set_size_request(300,3)
+
+void create();
+//! Used to create a new hseparator widget.

@@ -1,0 +1,16 @@
+class GTK2.ColorSelectionDialog;
+inherit GTK2.Dialog;
+
+//! Color Selection Dialog
+
+member GTK2.Widget colorsel;
+//! The Color Selection widget contained within the dialog
+member GTK2.Widget ok_button;
+//! The OK button.
+member GTK2.Widget cancel_button;
+//! The Cancel button.
+member GTK2.Widget help_button;
+//! The Help button.
+
+void create(string title);
+//! Create a new Color Selection Dialog

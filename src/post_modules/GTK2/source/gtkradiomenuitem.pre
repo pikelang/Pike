@@ -1,0 +1,84 @@
+class GTK2.RadioMenuItem;
+inherit GTK2.CheckMenuItem;
+
+//! Exactly like W(RadioButton), but it is an menu item.
+//! IMG: GTK2.RadioMenuItem("Menu item")
+
+signal group_changed;
+
+void create(?string title, ?GTK2.RadioMenuItem groupmember)
+//! object GTK2.RadioMenuItem(string title) - First button (with label)<br />
+//! object GTK2.RadioMenuItem()->add(widget) - First button (with widget)<br />
+//! object GTK2.RadioMenuItem(title, another_radio_button) - Second to n:th button (with title)<br />
+//! object GTK2.RadioMenuItem(0,another_radio_button)->add(widget) - Second to n:th button (with widget)<br />
+{
+  GSList *mylist = NULL;
+  gchar *label=NULL;
+  struct object *o=NULL;
+  if (args) {
+    if (Pike_sp[-args].type==PIKE_T_STRING)
+      label=(gchar *)Pike_sp[-args].u.string->str;
+    if (args==2 && (Pike_sp[-1].type == PIKE_T_OBJECT))
+	o=Pike_sp[-1].u.object;
+  }
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (o) {
+#ifdef HAVE_GTK24
+    if (label) {
+      THIS->obj=
+	G_OBJECT(gtk_radio_menu_item_new_with_label_from_widget(
+	  GTK_RADIO_MENU_ITEM(get_gobject(o)),label));
+    } else {
+      THIS->obj=
+	G_OBJECT(gtk_radio_menu_item_new_from_widget(
+	  GTK_RADIO_MENU_ITEM(get_gobject(o))));
+    }
+#else
+    THIS->obj=G_OBJECT(gtk_radio_menu_item_new(mylist));
+#endif
+  } else {
+    if (label) {
+      THIS->obj=
+	G_OBJECT(gtk_radio_menu_item_new_with_mnemonic(mylist,label));
+    } else {
+      THIS->obj=
+	G_OBJECT(gtk_radio_menu_item_new(mylist));
+    }
+  }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
+
+void set_group(GTK2.RadioMenuItem groupmember)
+//! The argument is another radio menu item to whose group this button
+//! should be added to. It is prefereable to use the second argument to
+//! the constructor instead, but if you for some reason want to move
+//! the button to another group, use this function.
+{
+  struct object *o;
+  GSList *mylist;
+  get_all_args("set_group",args,"%o",&o);
+  mylist=gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(get_gobject(o)));
+  gtk_radio_menu_item_set_group(GTK_RADIO_MENU_ITEM(THIS->obj),mylist);
+  RETURN_THIS();
+}
+
+array(GTK2.RadioMenuItem) get_group()
+//! Returns the group to which the radio menu item belongs.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GSList *ml,*m2;
+    int i=0;
+    ml=m2=gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(THIS->obj));
+    while (m2) {
+      push_gobject(m2->data);
+      g_object_ref(GTK_RADIO_MENU_ITEM(m2->data));
+      i++;
+      m2=g_slist_next(m2);
+    }
+    f_aggregate(i);
+  }
+}

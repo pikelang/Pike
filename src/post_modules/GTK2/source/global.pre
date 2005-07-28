@@ -1,0 +1,718 @@
+/* -*- C -*- */
+
+
+%{
+#ifndef __NT__
+#include <gdk/gdkprivate.h>
+#include <gdk/gdkx.h>
+#else
+#include <gdk/gdkprivate.h>
+#include <gdk/win32/gdkwin32.h>
+#endif
+/* The main stuff.. */
+
+int pigtk_is_setup = 0, gnome_is_setup = 0;
+/* Not used in this file, really, but we need the require
+ * 'preprocessor' stuff..
+ */
+
+int IS_OBJECT_PROGRAM(struct program *X)
+{
+#ifdef GTK_TYPE_TEXT_ITER
+  if ((X)==pgtk_text_iter_program)
+    return 0;
+#endif
+#ifdef PANGO_TYPE_TAB_ARRAY
+  if ((X)==ppango_tab_array_program)
+    return 0;
+#endif
+#ifdef GTK_TYPE_TEXT_ATTRIBUTES
+  if ((X)==pgtk_text_attributes_program)
+    return 0;
+#endif
+#ifdef GTK_TYPE_TREE_ITER
+  if ((X)==pgtk_tree_iter_program)
+    return 0;
+#endif
+#ifdef PANGO_TYPE_ATTR_LIST
+  if ((X)==ppango_attr_list_program)
+    return 0;
+#endif
+#ifdef GTK_TYPE_TREE_PATH
+  if ((X)==pgtk_tree_path_program)
+    return 0;
+#endif
+#ifdef PANGO_TYPE_FONT_DESCRIPTION
+  if ((X)==ppango_font_description_program)
+    return 0;
+#endif
+  return 1;
+}
+
+static void backend_callback(struct callback *_cb,
+                             void *arg,
+                             void *post_select)
+{
+  if( !post_select )
+  {
+    struct timeval timeout = current_time;
+    timeout.tv_usec += 20000;
+    if(timeout.tv_usec > 1000000)
+    {
+      timeout.tv_usec-=1000000;
+      timeout.tv_sec+=1;
+    }
+    if (my_timercmp (&timeout, <, &next_timeout))
+      next_timeout = timeout;
+  } else
+    while(g_main_iteration( 0 ) );
+}
+
+static struct callback *backend_cb;
+%}
+void parse_rc(string rc)
+//! Takes a string and reads it as a gtkrc file.
+{
+  char *s;
+  get_all_args("parse_rc",args,"%s",&s);
+  gtk_rc_parse_string(s);
+  my_pop_n_elems(args);
+  push_int(0);
+/*   gtk_widget_propagate_default_style(); */
+}
+
+GDK2.Window root_window()
+//! Returns the root window of the current display
+{
+  static struct object *_pgtk_root_window;
+  my_pop_n_elems( args );
+  if(_pgtk_root_window && _pgtk_root_window->prog )
+  {
+    ref_push_object( _pgtk_root_window );
+    return;
+  } else if( _pgtk_root_window )
+    free_object( _pgtk_root_window );
+  _pgtk_root_window = low_clone( pgdk_window_program );
+  call_c_initializers( _pgtk_root_window );
+  /* ugly...*/
+#ifdef GDK_ROOT_PARENT
+  ((struct object_wrapper *)_pgtk_root_window->storage)->obj=
+    (void *)GDK_ROOT_PARENT();
+#else
+  ((struct object_wrapper *)_pgtk_root_window->storage)->obj=
+    (void *)&gdk_root_parent;
+#endif
+  add_ref( _pgtk_root_window  );
+  ref_push_object( _pgtk_root_window );
+}
+
+
+require gnome;
+
+/*
+array(string) gnome_init(string app_id, string app_version,
+			 array(string) argv, int|void corba_init_flags)
+*/
+array(string) gnome_init(string app_id, string app_version,
+			 array(string) argv)
+//! Initializes the application. This sets up all of the GNOME
+//! internals and prepares them (gdk/gtk, session-management,
+//! triggers, sound, user preferences). If corba init flags are specified,
+//! corba initialization is done as well as gnome initialization.
+//! corba_init_flags is 0 or more of GNORBA_INIT_SERVER_FUNC (1),
+//! GNORBA_INIT_DISABLE_COOKIES (2) and GNORBA_INIT_CORBA_PRIO_HIGH (4)
+{
+  gchar **data;
+  char *id, *vers;
+  gint argc;
+  INT_TYPE flags=0;
+
+  if( pigtk_is_setup )
+    Pike_error( "You should only call GTK2.setup_gtk() or Gnome.init() once\n");
+
+  switch( args )
+  {
+   default:
+     Pike_error( "Too few arguments, expected at least 3\n");
+   case 4:
+     flags = PGTK_GETINT( Pike_sp-1 );
+   case 3:
+     if( !PGTK_ISSTR( Pike_sp-args ) ||
+         !PGTK_ISSTR( Pike_sp-args+1 ) )
+       Pike_error("Illegal argument to Gnome.init()\n");
+     id = PGTK_GETSTR( Pike_sp-args );
+     vers = PGTK_GETSTR( Pike_sp-args+1 );
+     data = get_argv( &argc, args-2 );
+  }
+  gnome_is_setup = 1;
+  pigtk_is_setup = 1;
+
+  gtk_set_locale();
+
+/*
+  if( args == 4 )
+    applet_widget_init( id, vers, argc, data, NULL, flags, NULL );
+  else
+*/
+    gnome_program_init(id,vers,LIBGNOME_MODULE,argc,data,NULL);
+
+  backend_cb = (void *)add_backend_callback( backend_callback, 0, 0);
+
+  my_pop_n_elems(args);
+  push_and_free_argv( data, argc, 1 );
+}
+
+/*
+void applet_widget_gtk_main_quit()
+//! Exit from the applet_widget_gtk_main function on the next iteration.
+{
+  gtk_main_quit();
+}
+
+void applet_widget_gtk_main()
+//! Special corba main loop for gnome panel applets
+{
+  applet_widget_gtk_main();
+}
+*/
+endrequire;
+
+%{
+static gchar **get_argv( int *argc_ret, int an )
+{
+  struct array *a;
+  int argc;
+  gchar **data;
+  if( Pike_sp[-an].type != PIKE_T_ARRAY )
+    Pike_error("Expected array\n");
+  a = Pike_sp[-an].u.array;
+  if (!a->size)
+    Pike_error ("Expected array with at least one element.\n");
+  data=g_malloc0(sizeof(char *)*(a->size+1));
+  if (data==NULL)
+    Pike_error("Out of memory.\n");
+  for( argc=0; argc<a->size; argc++ )
+    if (!PGTK_ISSTR(ITEM(a)+argc))
+    {
+      g_free(data);
+      Pike_error("Index %d in the array given as argv  "
+                 "is not a valid string.\n", argc);
+    }
+    else
+      data[argc] = PGTK_GETSTR( ITEM(a)+argc );
+  *argc_ret = argc;
+  return data;
+}
+
+static void push_and_free_argv(gchar **data, int argc, int np) {
+  int i; 
+  for (i=0; i<argc; i++) {
+    PGTK_PUSH_GCHAR(data[i]);
+    if (!np)
+      PGTK_FREESTR(data[i]);
+  }
+  if (!np)
+    f_aggregate(argc);
+  else
+    push_int(0);
+  g_free(data);
+}
+%}
+
+array(string) setup_gtk(array(string)|void argv, int|void do_not_parse_rc)
+//! Initialize GTK, and all that comes with it.
+//! Also parses $HOME/.pgtkrc and $HOME/.gtkrc if they exists.
+//! The single argument, if supplied, is the argument array passed to
+//! the program. This is used to set default window titles etc.
+//! The second argument, if supplied, indicates that pike specific *rc files
+//! should <b>not</b> be parsed.
+//! <p>
+//! The most common usage is GTK2.setup_gtk(argv);</p>
+{
+  gchar **data;
+  int argc;
+
+  if (pigtk_is_setup)
+    Pike_error("You should only call GTK2.setup_gtk() or Gnome.init() once\n");
+
+  if (args)
+    data=get_argv(&argc,args);
+  else {
+    data=g_malloc(sizeof(char *)*2);
+    if (data==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("setup_gtk",sizeof(char *)*2);
+    data[0]=g_strdup("Pike GTK");
+    argc=1;
+  }
+  pigtk_is_setup=1;
+  gtk_set_locale();
+  gtk_init(&argc,&data);
+  g_type_init();
+
+  backend_cb=(void *)add_backend_callback(backend_callback,0,0);
+  my_pop_n_elems(args);
+  push_and_free_argv(data,argc,0);
+}
+
+void flush()
+//! Flush GDK. Not normally needed, can be useful while doing calculations.
+{
+  gdk_flush();
+  while(g_main_iteration( 0 ) );
+  my_pop_n_elems(args);
+  push_int(0);
+}
+
+void low_flush()
+//! Flush, but do not process events. Not normally needed.
+{
+#ifndef __NT__
+  XFlush( GDK_DISPLAY() );
+#else
+  gdk_flush();
+#endif
+  my_pop_n_elems( args );
+  push_int( 0 );
+}
+
+array(string) gtk_init(array(string)|void argc, int|void no_pgtkrc)
+//! Low level GTK init function (used by setup_gtk).
+//! This function is more or less equivalent to the C-GTK+ function gtk_init.
+//! setup_gtk does some extra things (such as parsing ~/.pgtkrc).
+{
+  pgtk_setup_gtk( args );
+}
+
+
+void main()
+//! Start GTK in blocking mode.<br />
+//! Doing this disables asynchronous I/O in pike.<br />
+//! You can return -1 from main in pike to run GTK (and the rest of
+//! pike) in asynchronous mode.
+{
+  gtk_main();
+}
+
+void main_quit()
+//! Exit from the gtk_main function on the next iteration.
+{
+  gtk_main_quit();
+}
+
+int main_level()
+//! Return the current recursion depth.
+{
+  push_int( gtk_main_level() );
+}
+
+int main_iteration_do(int block)
+//! Run one iteration in the mainloop. If block is true, wait for an
+//! event before returning.
+{
+  INT_TYPE n;
+  get_all_args( "gtk_main_iteration_do", args, "%i", &n );
+  push_int( g_main_iteration( n ) );
+}
+
+int true()
+//! Always returns true.
+{
+  push_int(1);
+}
+
+int false()
+//! Always returns false.
+{
+  push_int(0);
+}
+
+void grab_add(GTK2.Widget widget)
+//! Grab a widget.
+{
+  struct object *o;
+  get_all_args("gtk_grab_add",args,"%o",&o);
+  gtk_grab_add(GTK_WIDGET(get_gobject(o)));
+  my_pop_n_elems(args);
+}
+
+void grab_remove(GTK2.Widget widget)
+//! Remove the grab.
+{
+  struct object *o;
+  get_all_args("gtk_grab_remove",args,"%o",&o);
+  gtk_grab_remove(GTK_WIDGET(get_gobject(o)));
+  my_pop_n_elems(args);
+}
+
+
+require x11;
+
+/* Low-level X11 related functions */
+%{
+#ifdef HAVE_XDPMS
+#include <X11/Xext.h>
+#include <X11/extensions/dpms.h>
+#endif
+
+  /* screen-saver on/off status variables.
+   *
+   * TODO: Add an atexit() that restores the screensaver.
+   */
+  static int timeout_save, dpms_off;
+%}
+
+void saver_disable( )
+//! Disable the screensaver.
+//! This is a low-level X11 function, and thus only works when GDK uses X11
+{
+  int interval, prefer_blank, allow_exp;
+  XGetScreenSaver(GDK_DISPLAY(),
+		  &timeout_save, &interval, &prefer_blank, &allow_exp);
+  if (timeout_save)
+    XSetScreenSaver(GDK_DISPLAY(), 0, interval, prefer_blank, allow_exp);
+
+#ifdef HAVE_XDPMS
+    if (DPMSQueryExtension(GDK_DISPLAY(), &interval, &interval))
+    {
+      CARD16 state;
+      DPMSInfo(GDK_DISPLAY(), &state, &dpms_off);
+      if (dpms_off)
+	DPMSDisable(mDisplay);  /* monitor powersave off */
+    }
+#endif
+}
+
+void saver_enable( )
+//! Enable the screensaver again after @[saver_disable] has been called.
+//! This is a low-level X11 function, and thus only works when GDK uses X11.
+{
+  if( timeout_save )
+  {
+    int dummy, interval, prefer_blank, allow_exp;
+    XGetScreenSaver(GDK_DISPLAY(),
+		    &dummy, &interval, &prefer_blank, &allow_exp);
+    XSetScreenSaver(GDK_DISPLAY(),
+		    timeout_save, interval, prefer_blank, allow_exp);
+  }
+
+#ifdef HAVE_XDPMS
+    if (dpms_off)
+    {
+      DPMSEnable(mDisplay);  /* monitor powersave on */
+      dpms_off=0;
+    }
+#endif
+}
+
+
+void move_cursor( int dx, int dy )
+//! Move the mouse-cursor dx,dy pixels, relative to it's current position.
+//! This will generate a normal motion event.
+//!
+//! Note that this is a low-level X11 function, and thus only works
+//! when GDK uses X11.
+{
+  INT_TYPE x, y;
+  get_all_args( "move_cursor", args, "%i%i", &x, &y );
+  
+  XWarpPointer( GDK_DISPLAY(), None, None, 0, 0, 0, 0, x, y );
+}
+
+void move_cursor_abs( GDK2.Window w, int dx, int dy )
+//! Move the mouse-cursor to x,y, relative to the upper left corner of
+//! the specified window. This will generate a normal motion event.
+//!
+//! Note that this is a low-level X11 function, and thus only works
+//! when GDK uses X11.
+{
+  INT_TYPE x, y;
+  struct object *o;
+  GdkWindowPrivate *priv;
+  get_all_args("move_cursor_abs",args,"%o%i%i",&o,&x,&y);
+  priv = (GdkWindowPrivate *)get_gdkobject( o, window );
+  if( !priv )
+    Pike_error("No window specified!\n");
+  XWarpPointer(GDK_DISPLAY(),None,priv->xwindow,0,0,0,0,x,y);
+}
+
+endrequire; /* x11 */
+
+require gtk22;
+array(mapping(string:mixed)) get_formats()
+//! Get information about the image formats supported.
+{
+  GSList *gsl,*gs2;
+  gchar **gca;
+  int i=0,j,k;
+  pgtk_verify_setup();
+  my_pop_n_elems(args);
+  gs2=gsl=gdk_pixbuf_get_formats();
+  while (gs2) {
+    i++;
+    k=0;
+    push_text("name");
+    push_text(gdk_pixbuf_format_get_name(gs2->data));
+    k++;
+
+    push_text("description");
+    push_text(gdk_pixbuf_format_get_description(gs2->data));
+    k++;
+
+    push_text("mime_types");
+    gca=gdk_pixbuf_format_get_mime_types(gs2->data);
+    j=0;
+    while (gca[j]) {
+      PGTK_PUSH_GCHAR(gca[j]);
+      j++;
+    }
+    f_aggregate(j);
+    g_strfreev(gca);
+    k++;
+
+    push_text("extensions");
+    gca=gdk_pixbuf_format_get_extensions(gs2->data);
+    j=0;
+    while (gca[j]) {
+      PGTK_PUSH_GCHAR(gca[j]);
+      j++;
+    }
+    f_aggregate(j);
+    g_strfreev(gca);
+    k++;
+
+#ifdef HAVE_GTK26
+    push_text("disabled");
+    push_int(gdk_pixbuf_format_is_disabled(gs2->data));
+    k++;
+#endif
+
+#ifdef HAVE_GTK26
+    push_text("license");
+    push_text(gdk_pixbuf_format_get_license(gs2->data));
+    k++;
+#endif
+
+    push_text("is_writable");
+    push_int(gdk_pixbuf_format_is_writable(gs2->data));
+    k++;
+
+#ifdef HAVE_GTK26
+    push_text("is_scalable");
+    push_int(gdk_pixbuf_format_is_scalable(gs2->data));
+    k++;
+#endif
+ 
+    f_aggregate_mapping(k*2);
+    gs2=g_slist_next(gs2);
+  }
+  f_aggregate(i);
+  g_slist_free(gsl);
+}
+endrequire;
+
+require gtk24;
+mapping(string:mixed) get_file_info(string filename)
+//! Parses an image file far enough to determine its format
+//! and size.
+{
+  GdkPixbufFormat *gpf;
+  gchar **gca;
+  int j,k;
+  char *filename;
+  int width,height;
+
+  get_all_args("get_file_info",args,"%s",&filename);
+  my_pop_n_elems(args);
+  gpf=gdk_pixbuf_get_file_info(filename,&width,&height);
+  k=0;
+  push_text("name");
+  push_text(gdk_pixbuf_format_get_name(gpf));
+  k++;
+
+  push_text("description");
+  push_text(gdk_pixbuf_format_get_description(gpf));
+  k++;
+  
+  push_text("mime_types");
+  gca=gdk_pixbuf_format_get_mime_types(gpf);
+  j=0;
+  while (gca[j]) {
+    PGTK_PUSH_GCHAR(gca[j]);
+    j++;
+  }
+  f_aggregate(j);
+  g_strfreev(gca);
+  k++;
+
+  push_text("extensions");
+  gca=gdk_pixbuf_format_get_extensions(gpf);
+  j=0;
+  while (gca[j]) {
+    PGTK_PUSH_GCHAR(gca[j]);
+    j++;
+  }
+  f_aggregate(j);
+  g_strfreev(gca);
+  k++;
+
+#ifdef HAVE_GTK26
+  push_text("disabled");
+  push_int(gdk_pixbuf_format_is_disabled(gpf));
+  k++;
+#endif
+
+#ifdef HAVE_GTK26
+  push_text("license");
+  push_text(gdk_pixbuf_format_get_license(gpf));
+  k++;
+#endif
+
+  push_text("is_writable");
+  push_int(gdk_pixbuf_format_is_writable(gpf));
+  k++;
+
+#ifdef HAVE_GTK26
+  push_text("is_scalable");
+  push_int(gdk_pixbuf_format_is_scalable(gpf));
+  k++;
+#endif
+  
+  push_text("width");
+  push_int(width);
+  k++;
+
+  push_text("height");
+  push_int(height);
+  k++;
+
+  f_aggregate_mapping(k*2);
+}
+
+void set_default_icon(GDK2.Pixbuf icon)
+//! Sets an icon to be used as fallback for windows that haven't had set_icon()
+//! called on them from a pixbuf.
+{
+  struct object *o1;
+  get_all_args("set_default_icon",args,"%o",&o1);
+  my_pop_n_elems(args);
+  gtk_window_set_default_icon(GDK_PIXBUF(get_gobject(o1)));
+}
+endrequire;
+
+require gtk22;
+void set_default_icon_from_file(string filename)
+//! Sets an icon to be used as fallback for windows that haven't had
+//! set_icon_list() called on them from a file on disk.
+{
+  struct svalue *sv;
+  get_all_args("set_default_icon_from_file",args,"%*",&sv);
+  my_pop_n_elems(args);
+  gtk_window_set_default_icon_from_file(PGTK_GETSTR(sv),NULL);
+}
+endrequire;
+
+void set_default_icon_list(array(GDK2.Pixbuf) list)
+//! Sets an icon list to be used as fallback for windows that haven't had
+//! set_icon_list() called on them to set up a window-specific icon list.  This
+//! function allows you to set up the icon for all windows in your app at once.
+{
+}
+
+require gtk26;
+void set_default_icon_name(string name)
+//! Sets an icon to be as fallback for windows that haven't had set_icon_list()
+//! called on them from a themed icon.
+{
+  char *s;
+  get_all_args("set_default_icon_name",args,"%s",&s);
+  gtk_window_set_default_icon_name(s);
+  my_pop_n_elems(args);
+}
+endrequire;
+
+array(GTK2.Widget) list_toplevels()
+//! Returns a list of all existing toplevel windows.
+{
+  GList *gl=gtk_window_list_toplevels();
+  GList *g2=gl;
+  int i=0;
+  while (g2) {
+    push_gobject(g2->data);
+    i++;
+    g2=g_list_next(g2);
+  }
+  f_aggregate(i);
+  g_list_free(gl);
+}
+
+array(GDK2.Pixbuf) get_default_icon_list()
+//! Gets the value set by set_default_icon_list().
+{
+  GList *gl=gtk_window_get_default_icon_list();
+  GList *g2=gl;
+  int i=0;
+  while (g2) {
+    push_gobject(g2->data);
+    g_object_ref(GDK_PIXBUF(g2->data));
+    i++;
+    g2=g_list_next(g2);
+  }
+  f_aggregate(i);
+  g_list_free(gl);
+}
+
+/*
+void set_default_icon_list(array(GDK2.Pixbuf) icons)
+//! Set an icon list to be used.
+{
+}
+
+void set_default_icon(GDK2.Pixbuf pix)
+//! Sets an icon to be used as fallback for windows that haven't had
+//! set_icon() called on them.
+{
+}
+
+int set_default_icon_from_file(string filename)
+//! Sets an icon to be used as fallback from a file on disk.
+{
+}
+
+require gtk26;
+void set_default_icon_name(string name)
+{
+}
+endrequire;
+*/
+
+require gtk24;
+GTK2.IconTheme get_default_icon_theme()
+//! Gets the icon theme.
+{
+  GtkIconTheme *git=gtk_icon_theme_get_default();
+  my_pop_n_elems(args);
+  push_gobject(git);
+}
+
+void add_builtin_icon(string name, int size, GDK2.Pixbuf pixbuf)
+//! Registers a built-in icon for icon theme lookups.  The idea of build-in
+//! icons is to allow an application or library that uses themed icons to
+//! function requiring files to be present in the file system.  For instance,
+//! the default images for all of GTK2+'s stock icons are registered as built-in
+//! icons.
+//! <p>
+//! In general, if you use add_builtin_icon() you should also install the icon
+//! in the icon theme, so that the icon is generally available.
+{
+  pgtk_verify_inited();
+  {
+    char *name;
+    int size;
+    struct object *o1;
+    get_all_args("add_builtin_icon",args,"%s%i%o",&name,&size,&o1);
+    gtk_icon_theme_add_builtin_icon(name,size,GDK_PIXBUF(get_gobject(o1)));
+  }
+  my_pop_n_elems(args);
+}
+endrequire;
+

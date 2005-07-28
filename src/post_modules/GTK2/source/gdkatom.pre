@@ -1,0 +1,31 @@
+class GDK2._Atom;
+
+//! An X-atom. You most likely want to use GDK2.Atom.atom_name
+//! instead of GDK2._Atom(name).
+
+void create(string atom_name,int|void only_if_exists)
+//! Create a new low-level atom. You should normally not call this
+//! function directly. Use GDK2.Atom[name] instead of GDK2._Atom(name,0).
+{
+  gchar *atom_name;
+  gint only_if_exists;
+  pgtk_verify_setup();
+  pgtk_verify_not_inited();
+  atom_name=PGTK_GETSTR(Pike_sp-args);
+  if (!atom_name)
+    Pike_error("Illegal argument 1 to _Atom");
+  only_if_exists=PGTK_GETINT(Pike_sp-args+1);
+  THIS->obj=(void *)gdk_atom_intern(atom_name,only_if_exists);
+  PGTK_FREESTR(atom_name);
+  pop_n_elems(args);
+  push_int(0);
+}
+
+string get_name()
+//! Returns the name of the atom.
+{
+  my_pop_n_elems(args);
+  push_text( gdk_atom_name( (GdkAtom)THIS->obj ) );
+}
+
+

@@ -1,0 +1,1115 @@
+class GTK2.TextIter;
+
+//! A TextIter.
+
+GTK2.TextBuffer get_buffer()
+//! Returns the W(TextBuffer) this iterator is associated with.
+{
+  my_pop_n_elems(args);
+  push_gobjectclass(gtk_text_iter_get_buffer((GtkTextIter *)(THIS->obj)),
+			pgtk_text_buffer_program);
+}
+
+void destroy()
+//! Destructor.
+{
+  if (THIS->obj)
+    gtk_text_iter_free((GtkTextIter *)(THIS->obj));
+  THIS->obj=0;
+  my_pop_n_elems(args);
+  push_int(0);
+}
+
+void free()
+//! Free an iterator.
+{
+  pgtk_text_iter_destroy(args);
+}
+
+int get_offset()
+//! Returns the character offset of an iterator.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_get_offset((GtkTextIter *)(THIS->obj)));
+}
+
+int get_line()
+//! Returns the line number containing this iterator.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_get_line((GtkTextIter *)(THIS->obj)));
+}
+
+int get_line_offset()
+//! Returns the character offset of the iterator, counting from the
+//! start of a newline-terminated line.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_get_line_offset((GtkTextIter *)(THIS->obj)));
+}
+
+int get_line_index()
+//! Returns the byte index of the iterator, counting from the start
+//! of a newline-terminated line.  Rember that W(TextBuffer) encodes
+//! text in UTF-8, and that characters can require a variable number
+//! of bytes to represent.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_get_line_offset((GtkTextIter *)(THIS->obj)));
+}
+
+int get_visible_line_index()
+//! Returns the number of bytes from the start of the line to this iter,
+//! not counting bytes that are invisible due to tags with the invisible
+//! flag toggled on.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_get_visible_line_index((GtkTextIter *)(THIS->obj)));
+}
+
+int get_visible_line_offset()
+//! Returns the offset in characters from the start of the line, not
+//! not counting characters that are invisible due to tags with the
+//! invisible tag toggled on.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_get_visible_line_offset((GtkTextIter *)(THIS->obj)));
+}
+
+int get_char()
+//! Returns the Unicode character at this iterator.  If the element
+//! at this iterator is a non-character element, such as an image
+//! embedded in the buffer, the Unicode "unknown" character 0xFFFc
+//! is returned.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_get_char((GtkTextIter *)(THIS->obj)));
+}
+
+string get_slice(GTK2.TextIter end)
+//! Returns the text in the given range.  A "slice" is an array of
+//! characters encoded in UTF-8 foramt, including the Unicode "unknown"
+//! character 0xFFFC for iterable non-character elements in the buffer,
+//! such as images.  Because images are encoded in the slice, byte and
+//! character offsets in the returned array will correspond to bytes
+//! offsets in the text buffer.  Note that 0xFFFC can occur in normal
+//! text as well, so it is not a reliable indicator that a pixbuf or
+//! widget is in the buffer.
+{
+  pgtk_verify_inited();
+  {
+    gchar *s;
+    struct object *o1;
+    get_all_args("get_slice",args,"%o",&o1);
+    my_pop_n_elems(args);
+    s=gtk_text_iter_get_slice((GtkTextIter *)(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+    PGTK_PUSH_GCHAR(s);
+  }
+}
+
+string get_text(GTK2.TextIter end)
+//! Returns text in the given range.  If the range contains non-text
+//! elements such as images, the character and byte offsets in the
+//! returned string will not correspond to character and bytes offsets
+//! in the buffer.
+{
+  pgtk_verify_inited();
+  {
+    gchar *s;
+    struct object *o1;
+    get_all_args("get_text",args,"%o",&o1);
+    my_pop_n_elems(args);
+    s=gtk_text_iter_get_text((GtkTextIter *)(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+    PGTK_PUSH_GCHAR(s);
+  }
+}
+
+string get_visible_slice(GTK2.TextIter end)
+//! Like get_slice(), but invisible text is not included.
+{
+  pgtk_verify_inited();
+  {
+    gchar *s;
+    struct object *o1;
+    get_all_args("get_visible_slice",args,"%o",&o1);
+    my_pop_n_elems(args);
+    s=gtk_text_iter_get_visible_slice((GtkTextIter *)(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+    PGTK_PUSH_GCHAR(s);
+  }
+}
+
+string get_visible_text(GTK2.TextIter end)
+//! Like get_text(), but invisible text is not include.
+{
+  pgtk_verify_inited();
+  {
+    gchar *s;
+    struct object *o1;
+    get_all_args("get_visible_text",args,"%o",&o1);
+    my_pop_n_elems(args);
+    s=gtk_text_iter_get_visible_text((GtkTextIter *)(THIS->obj),
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+    PGTK_PUSH_GCHAR(s);
+  }
+}
+
+GDK2.Pixbuf get_pixbuf()
+//! If the element at iter is a pixbuf, it is returned.
+{
+  pgtk_verify_inited();
+  {
+    GdkPixbuf *gp;
+    my_pop_n_elems(args);
+    gp=gtk_text_iter_get_pixbuf((GtkTextIter *)(THIS->obj));
+    if (gp) {
+      push_gdkobject(gp,pixmap);
+    } else {
+      push_int(0);
+    }
+  }
+}
+
+array get_marks()
+//! Returns a list of W(TextMark) at this location.  Because marks are not
+//! iterable (they don't take up any "space" in the buffer, they are just
+//! marks in between iterable locations), multiple marks can exist in the
+//! same place.  The returned list is not in any meaningful order.
+{
+  pgtk_verify_inited();
+  {
+    GSList *gsl,*gs2;
+    int i=0;
+    gsl=gs2=gtk_text_iter_get_marks((GtkTextIter *)THIS->obj);
+    my_pop_n_elems(args);
+    while (gs2) {
+      push_gobject(gs2->data);
+      i++;
+      gs2=g_slist_next(gs2);
+    }
+    f_aggregate(i);
+    g_slist_free(gsl);
+  }
+}
+
+array get_toggle_tags(int toggled_on)
+//! Returns a list of W(TextTag) that are toggled on or off at this point.
+//! (If toggled_on is true, the list contains tags that are toggled on).
+//! If a tag is toggled on at this iterator, then some non-empty range
+//! of characters following this iter has that tag applied to it.  If a
+//! tag is toggled off, then some non-empty range following this iter does
+//! not have the tag applied to it.
+{
+  pgtk_verify_inited();
+  {
+    GSList *gsl,*gs2;
+    int i=0,toggled_on;
+    get_all_args("get_toggle_tags",args,"%i",&toggled_on);
+    my_pop_n_elems(args);
+    gsl=gs2=gtk_text_iter_get_toggled_tags((GtkTextIter *)THIS->obj,toggled_on);
+    while (gs2) {
+      push_gobject(gs2->data);
+      i++;
+      gs2=g_slist_next(gs2);
+    }
+    f_aggregate(i);
+    g_slist_free(gsl);
+  }
+}
+
+int begins_tag(?GTK2.TextTag tag)
+//! Returns true if tag is toggled on at exactly this point.  If tag is
+//! omitted, returns true if any tag is toggled on at this point.  Note
+//! that begins_tag() returns true if this iter is the start of the tagged
+//! range; has_tag() tells you whether an iterator is within a tagged range.
+{
+  pgtk_verify_inited();
+  {
+    if (args) {
+      struct object *o1;
+      get_all_args("begins_tag",args,"%o",&o1);
+      my_pop_n_elems(args);
+      push_int(gtk_text_iter_begins_tag((GtkTextIter *)THIS->obj,
+			GTK_TEXT_TAG(get_gobject(o1))));
+    } else {
+      my_pop_n_elems(args);
+      push_int(gtk_text_iter_begins_tag((GtkTextIter *)THIS->obj,NULL));
+    }
+  }
+}
+
+int ends_tag(?GTK2.TextTag tag)
+//! Returns true if tag is toggled off at exactly this point.  If tag is
+//! omitted, returns true if any tag is toggled off at this point.  Not that
+//! ends_tag() returns true if this iter it at the end of the tagged range;
+//! has_tag() tells you whether an iterator is within a tagged range.
+{
+  pgtk_verify_inited();
+  {
+    if (args) {
+      struct object *o1;
+      get_all_args("ends_tag",args,"%o",&o1);
+      my_pop_n_elems(args);
+      push_int(gtk_text_iter_ends_tag((GtkTextIter *)THIS->obj,
+			GTK_TEXT_TAG(get_gobject(o1))));
+    } else {
+      my_pop_n_elems(args);
+      push_int(gtk_text_iter_ends_tag((GtkTextIter *)THIS->obj,NULL));
+    }
+  }
+}
+
+int toggles_tag(?GTK2.TextTag tag)
+//! This is equivalent to begins_tag()||ends_tag(), i.e it tells you
+//! whether a range with tag applied to it beings or ends here.
+{
+  pgtk_verify_inited();
+  {
+    if (args) {
+      struct object *o1;
+      get_all_args("toggles_tag",args,"%o",&o1);
+      my_pop_n_elems(args);
+      push_int(gtk_text_iter_toggles_tag((GtkTextIter *)THIS->obj,
+			GTK_TEXT_TAG(get_gobject(o1))));
+    } else {
+      my_pop_n_elems(args);
+      push_int(gtk_text_iter_toggles_tag((GtkTextIter *)THIS->obj,NULL));
+    }
+  }
+}
+
+int has_tag(GTK2.TextTag tag)
+//! Returns true if this iterator is within a range tagged with tag.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    get_all_args("has_tag",args,"%o",&o1);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_has_tag((GtkTextIter *)THIS->obj,
+			GTK_TEXT_TAG(get_gobject(o1))));
+  }
+}
+
+array get_tags()
+//! Returns a list of tags that apply to iter, in ascending order of
+//! priority (highest-priority tags are last).
+{
+  pgtk_verify_inited();
+  {
+    GSList *gsl,*gs2;
+    int i=0;
+    my_pop_n_elems(args);
+    gsl=gs2=gtk_text_iter_get_tags((GtkTextIter *)THIS->obj);
+    while (gs2) {
+      push_gobject(gs2->data);
+      i++;
+      gs2=g_slist_next(gs2);
+    }
+    f_aggregate(i);
+    g_slist_free(gsl);
+  }
+}
+
+int editable(int default_setting)
+//! Returns whether the character at this location is within an editable
+//! region of text.  Non-editable text is "locked" and can't be changed
+//! by the user via W(TextView).  This function is simply a convenience
+//! wrapper around get_attributes().  If no tags applied to this text
+//! editability, default_setting will be returned.
+//! <p>
+//! You don't want to use this function to decide whether text can be
+//! inserted here, because for insertion you don't want to know whether
+//! the char at iter is inside an editable range, you want to know whether
+//! a new characer inserted here would be inside an editable range.  Use
+//! can_insert() to handle this case.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE i;
+    get_all_args("editable",args,"%i",&i);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_editable((GtkTextIter *)THIS->obj,i));
+  }
+}
+
+int can_insert(int default_editability)
+//! Considering the default editability of the buffer, and tags that
+//! affect editability, determines whether text inserted here would be
+//! editabled.  If text inserted here would be editabled then the user
+//! should be allowed to insert text here.  insert_interactive() uses this
+//! function to decide whether insertions are allowed at a given position.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE i;
+    get_all_args("can_insert",args,"%i",&i);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_can_insert((GtkTextIter *)THIS->obj,i));
+  }
+}
+
+int starts_word()
+//! Determines whether this iter begins a natural-language word.  Word
+//! breaks are determined by Pango and should be correct for nearly any
+//! language (if not, the correct fix would be to the Pango word break
+//! algorithms).
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_starts_word((GtkTextIter *)THIS->obj));
+}
+
+int ends_word()
+//! Determines whether this iter ends a natural-language word.  Word breaks
+//! are determined by Pango and should be correct for nearly any language
+//! (if not, the correct fix would be to the Pango word break algorithms).
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_ends_word((GtkTextIter *)THIS->obj));
+}
+
+int inside_word()
+//! Determines whether this iter is inside a natural-language word
+//! ass opposed to say inside some whitespace).
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_inside_word((GtkTextIter *)THIS->obj));
+}
+
+int starts_line()
+//! Returns true if this iter begins a paragraph, i.e. if get_line_offset()
+//! would return 0.  However this function is potentially more efficient
+//! than get_line_offset() because it doesn't have to computer the offset,
+//! it just has to see whether it's 0.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_starts_line((GtkTextIter *)THIS->obj));
+}
+
+int ends_line()
+//! Returns true if iter points to the start of the paragraph delimiter
+//! characters for a line (delimiters will be either a newline, a carriage
+//! return, a carriage return followed by a newline, or a Unicode paragraph
+//! separator character).  Note that an iterator pointing to the \n of a
+//! \r\n pair will not be counted as the end of a line, the line ends before
+//! the \r.  The end iterator is considered to be at the end of a line,
+//! even though there are no paragraph delimiter chars there.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_ends_line((GtkTextIter *)THIS->obj));
+}
+
+int starts_sentence()
+//! Determines whether this iter begins a sentence.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_starts_sentence((GtkTextIter *)THIS->obj));
+}
+
+int ends_sentence()
+//! Determines whether this iter ends a sentence.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_ends_sentence((GtkTextIter *)THIS->obj));
+}
+
+int inside_sentence()
+//! Determines whether this is inside a sentence (as opposed to int between
+//! two sentences, e.g. after a period and before the first letter of the
+//! next sentence).  Sentence boundaries are determined by Pango and should
+//! be correct for nearly language (if not, the correct fix would be to the
+//! Pango text boundary algorithms).
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_inside_sentence((GtkTextIter *)THIS->obj));
+}
+
+int is_cursor_position()
+//! See forward_cursor_position() or Pango.LangAttr or pango_break() for
+//! details on what a cursor position is.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_is_cursor_position((GtkTextIter *)THIS->obj));
+}
+
+int get_chars_in_line()
+//! Returns the number of characters in the line, including the paragraph
+//! delimiters.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_get_chars_in_line((GtkTextIter *)THIS->obj));
+}
+
+int get_bytes_in_line()
+//! Returns the number of bytes in the line, including the paragraph
+//! delimiters.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_get_bytes_in_line((GtkTextIter *)THIS->obj));
+}
+
+/*
+Pango.Language get_language()
+//! A convenience wrapper around get_attributes(), which returns the
+//! language in effect at this location.  If no tags affecting language
+//! apply, the return value is identical to that of 
+//! GTK2.get_default_language().
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_get_langauge((GtkTextIter *)THIS->obj));
+}
+*/
+
+int is_end()
+//! Returns true if this location is the end iterator, i.e. one past the
+//! last dereferenceable iterator in the buffer.  is_end() is the most
+//! efficient way to check whether an iterator is the end iterator.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_is_end((GtkTextIter *)THIS->obj));
+}
+
+int is_start()
+//! Returns true if this is the first iterator in the buffer, that is if
+//! it has a character offset of 0.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_is_start((GtkTextIter *)THIS->obj));
+}
+
+int forward_char()
+//! Moves this iterator forward by one character offset.  Note that images
+//! embedded in the buffer occopy 1 character slot, to forward_char() may
+//! actually move onto an image instead of a character, if you have images
+//! in your buffer.  If this iterator is the end iterator or one character
+//! before it, it will now point at the end iterator, and forward_char()
+//! returns false for convenience when writing loops.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_forward_char((GtkTextIter *)THIS->obj));
+}
+
+int backward_char()
+//! Moves backward by one character offset.  Returns true if the movement
+//! was possible; if it was the first in the buffer (character offset 0),
+//! backward_char() returns false for convenience when writing loops.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_backward_char((GtkTextIter *)THIS->obj));
+}
+
+int forward_chars(int count)
+//! Moves count characters if possible (if count would move past the start or
+//! end of the buffer, moves to the start or end of the buffer).  The return
+//! value indicates whether the new position is different from its original
+//! position, and dereferenceable (the last iterator in the buffer is not).
+//! If count is 0, the function does nothing and returns false.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE count;
+    get_all_args("forward_chars",args,"%i",&count);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_forward_chars((GtkTextIter *)THIS->obj,count));
+  }
+}
+
+int backward_chars(int count)
+//! Moves count characters backward, if possible (if count would mmove past
+//! the start or end of the buffer, moves to the start or end of the buffer).
+//! The return value indicates whether the iterator moved onto a
+//! dereferenceable position; if it didn't move, or moved onto the end
+//! iterator, then false is returned.  If count is 0, the function does
+//! nothing and returns false.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE count;
+    get_all_args("backward_chars",args,"%i",&count);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_backward_chars((GtkTextIter *)THIS->obj,count));
+  }
+}
+
+int forward_line()
+//! Moves to the start of the next line.  Returns true if there was a next
+//! line to move to, and false if this iter was simply moved to the end
+//! of the buffer and is now not dereferenceable, or if it was already at
+//! the end of the buffer.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_forward_line((GtkTextIter *)THIS->obj));
+}
+
+int backward_line()
+//! Moves to the start of the previous line.  Returns true if this iter
+//! could be moved; i.e. if iter was at character offset 0, this function
+//! returns false.  Therefore if it was already on line 0, but not at
+//! the start of the line, it is snapped to the start of the line and the
+//! function returns true.  (Note that this implies that in a loop calling
+//! this function, the line number may not change on every iteration, if
+//! your first iteration is on line 0.)
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_backward_line((GtkTextIter *)THIS->obj));
+}
+
+int forward_lines(int count)
+//! Moves count lines forward, if possible (if count would move past the
+//! start or end of the buffer, moves to the start or end of the buffer).
+//! The return value indicates whether the iterator moved onto a
+//! dereferenceable position; if the iterator didn't move, or moved onto the
+//! end iterator, then false is returned.  If count is 0, the function does
+//! nothing and returns false.  If count is negative, moves backward by
+//! 0 - count lines.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE count;
+    get_all_args("forward_lines",args,"%i",&count);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_forward_lines((GtkTextIter *)THIS->obj,count));
+  }
+}
+
+int backward_lines(int count)
+//! Moves count lines backward.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE count;
+    get_all_args("backward_lines",args,"%i",&count);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_backward_lines((GtkTextIter *)THIS->obj,count));
+  }
+}
+
+int forward_word_ends(int count)
+//! Calls forward_word_end() up to count times.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE count;
+    get_all_args("forward_word_ends",args,"%i",&count);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_forward_word_ends((GtkTextIter *)THIS->obj,count));
+  }
+}
+
+int backward_word_starts(int count)
+//! Calls backward_word_start() up to count times.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE count;
+    get_all_args("backward_word_starts",args,"%i",&count);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_backward_word_starts((GtkTextIter *)THIS->obj,count));
+  }
+}
+
+int forward_word_end()
+//! Moves forward to the next word end.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_forward_word_end((GtkTextIter *)THIS->obj));
+}
+
+int backward_word_start()
+//! Moves backward to the previous word start.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_backward_word_start((GtkTextIter *)THIS->obj));
+}
+
+int forward_cursor_position()
+//! Moves this iterator forward by a single cursor position.  Cursor
+//! positions are (unsurprisingly) positions where the cursor can appear.
+//! Perhaps surprisingly, there may not be a cursor position between all
+//! characters.  The most common example for European languages would be
+//! a carriage return/newline sequence.  For some Unicode characters, the
+//! equivalent of say the letter "a" with an accent mark will be
+//! represented as two characters, first the letter then a "combining mark"
+//! that causes the accent to be rendered; so the cursor can't go between
+//! those two characters.  See also Pango.LogAttr and pango_break().
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_forward_cursor_position((GtkTextIter *)THIS->obj));
+}
+
+int backward_cursor_position()
+//! Like forward_cursor_position(), but moves backward.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_backward_cursor_position((GtkTextIter *)THIS->obj));
+}
+
+int forward_cursor_positions(int count)
+//! Moves up to count cursor positions.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE count;
+    get_all_args("forward_cursor_positions",args,"%i",&count);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_forward_cursor_positions((GtkTextIter *)THIS->obj,count));
+  }
+}
+
+int backward_cursor_positions(int count)
+//! Moves up to count cursor positions.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE count;
+    get_all_args("backward_cursor_positions",args,"%i",&count);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_backward_cursor_positions((GtkTextIter *)THIS->obj,count));
+  }
+}
+
+int backward_sentence_start()
+//! Moves backward to the previous sentence start.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_backward_sentence_start((GtkTextIter *)THIS->obj));
+}
+
+int backward_sentence_starts(int count)
+//! Call backward_sentence_start() count times.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE count;
+    get_all_args("backward_sentence_starts",args,"%i",&count);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_backward_sentence_starts((GtkTextIter *)THIS->obj,count));
+  }
+}
+
+int forward_sentence_end()
+//! Moves forward to the next sentence end.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_forward_sentence_end((GtkTextIter *)THIS->obj));
+}
+
+int forward_sentence_ends(int count)
+//! Call forward_sentence_ends() count times.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE count;
+    get_all_args("forward_sentence_ends",args,"%i",&count);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_forward_sentence_ends((GtkTextIter *)THIS->obj,count));
+  }
+}
+
+require gtk24;
+int forward_visible_word_ends(int count)
+//! Call forward_visible_word_end() count times.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE count;
+    get_all_args("forward_visible_word_ends",args,"%i",&count);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_forward_visible_word_ends((GtkTextIter *)THIS->obj,count));
+  }
+}
+
+int backward_visible_word_starts(int count)
+//! Call backward_visible_word_start() count times
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE count;
+    get_all_args("backward_visible_word_starts",args,"%i",&count);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_backward_visible_word_starts((GtkTextIter *)THIS->obj,count));
+  }
+}
+
+int forward_visible_word_end()
+//! Moves forward to the next visible word end.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_forward_visible_word_end((GtkTextIter *)THIS->obj));
+}
+
+int backward_visible_word_start()
+//! Moves backward to the previous visible word start.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_backward_visible_word_start((GtkTextIter *)THIS->obj));
+}
+
+int forward_visible_cursor_position()
+//! Moves forward to the next visible cursor position.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_forward_visible_cursor_position((GtkTextIter *)THIS->obj));
+}
+
+int backward_visible_cursor_position()
+//! Moves backward to the previous visible cursor position.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_backward_visible_cursor_position((GtkTextIter *)THIS->obj));
+}
+
+int forward_visible_cursor_positions(int count)
+//! Moves up to count visible cursor positions.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE count;
+    get_all_args("forward_visible_cursor_positions",args,"%i",&count);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_forward_visible_cursor_positions(
+		(GtkTextIter *)THIS->obj,count));
+  }
+}
+
+int backward_visible_cursor_positions(int count)
+//! Moves up to count visible cursor positions.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE count;
+    get_all_args("backward_visible_cursor_positions",args,"%i",&count);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_backward_visible_cursor_positions(
+		(GtkTextIter *)THIS->obj,count));
+  }
+}
+endrequire;
+
+void set_offset(int char_offset)
+//! Sets to point to char_offset.  char_offset counts from the start of the
+//! entire text buffer, starting with 0.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE ch;
+    get_all_args("set_offset",args,"%i",&ch);
+    gtk_text_iter_set_offset((GtkTextIter *)THIS->obj,ch);
+  }
+  RETURN_THIS();
+}
+
+void set_line(int line_number)
+//! Moves the iterator to the start of the line line_number.  If line_number
+//! is negative or larger than the number of lines in the buffer, moves to
+//! the start of the last line in the buffer.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE line_number;
+    get_all_args("set_line",args,"%i",&line_number);
+    gtk_text_iter_set_line((GtkTextIter *)THIS->obj,line_number);
+  }
+  RETURN_THIS();
+}
+
+void set_line_offset(int offset)
+//! Moves iterator within a line, to a new character (not byte) offset.  The
+//! given character offset must be less than or equal to the number of
+//! characters in the line; if equal, iterator moves to the start of the
+//! next line.  See set_line_index() if you have a byte index rather than
+//! a character offset.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE offset;
+    get_all_args("set_line_offset",args,"%i",&offset);
+    gtk_text_iter_set_line_offset((GtkTextIter *)THIS->obj,offset);
+  }
+  RETURN_THIS();
+}
+
+void set_line_index(int index)
+//! Same as set_line_offset(), but works with a byte index.  The given
+//! byte index must be at the start of a character, it can't be in the
+//! middle of a UTF-8 encoded character.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE index;
+    get_all_args("set_line_index",args,"%i",&index);
+    gtk_text_iter_set_line_index((GtkTextIter *)THIS->obj,index);
+  }
+  RETURN_THIS();
+}
+
+void set_visible_line_offset(int offset)
+//! Like set_line_offset(), but the offset is in visible characters, i.e.
+//! text with a tag making it invisible is not counted in the offset.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE index;
+    get_all_args("set_visible_line_offset",args,"%i",&index);
+    gtk_text_iter_set_visible_line_offset((GtkTextIter *)THIS->obj,index);
+  }
+  RETURN_THIS();
+}
+
+void forward_to_end()
+//! Moves forward to the "end iterator", which points one past the last
+//! valid character in the buffer.  get_char() called on the end iterator
+//! returns 0, which is convenient for writing loops.
+{
+  pgtk_verify_inited();
+  gtk_text_iter_forward_to_end((GtkTextIter *)THIS->obj);
+  RETURN_THIS();
+}
+
+int forward_to_line_end()
+//! Moves the iterator to point to the paragraph delimiter characters, which
+//! will be either a newline, a carriage return, a carriage return/newline
+//! sequence, or the Unicode paragraph separator character.  If the iterator
+//! is already at the paragraph delimiter characters, moves to the
+//! paragraph delimiter characters for the next line.  If iter is on the
+//! last line in the buffer, which does not end in paragraph delimiters,
+//! moves to the end iterator (end of the last line), and returns false.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_forward_to_line_end((GtkTextIter *)THIS->obj));
+}
+
+int forward_to_tag_toggle(?GTK2.TextTag tag)
+//! Moves forward to the next toggle (on or off) of tag, or to the next
+//! toggle of any tag if tag is omitted.  If no matching tag toggles are
+//! found, returns false, otherwise true.  Does not return toggles located
+//! at this iter, only toggles after.  Sets this iter to the location of
+//! the toggle, or to the end of the buffer if no toggle is found.
+{
+  pgtk_verify_inited();
+  {
+    if (args) {
+      struct object *o1;
+      get_all_args("forward_to_tag_toggle",args,"%o",&o1);
+      my_pop_n_elems(args);
+      push_int(gtk_text_iter_forward_to_tag_toggle((GtkTextIter *)THIS->obj,
+			GTK_TEXT_TAG(get_gobject(o1))));
+    } else {
+      my_pop_n_elems(args);
+      push_int(gtk_text_iter_forward_to_tag_toggle((GtkTextIter *)THIS->obj,NULL));
+    }
+  }
+}
+
+int backward_to_tag_toggle(?GTK2.TextTag tag)
+//! Moves backward to the next toggle.  See forward_to_tag_toggle().
+{
+  pgtk_verify_inited();
+  {
+    if (args) {
+      struct object *o1;
+      get_all_args("backward_to_tag_toggle",args,"%o",&o1);
+      my_pop_n_elems(args);
+      push_int(gtk_text_iter_backward_to_tag_toggle((GtkTextIter *)THIS->obj,
+			GTK_TEXT_TAG(get_gobject(o1))));
+    } else {
+      my_pop_n_elems(args);
+      push_int(gtk_text_iter_backward_to_tag_toggle((GtkTextIter *)THIS->obj,NULL));
+    }
+  }
+}
+
+array forward_search(string str, int flags, ?GTK2.TextIter limit)
+//! Searches forward for str.  Returns two GTK2.TextIter objects, one
+//! pointing to the first character of the match, and the second pointing
+//! to the first character after the match.  The search will not continue
+//! past limit.  Note that a search is a linear or O(n) operation, so you
+//! may wish to use limit to avoid locking up your UI on large buffers.
+//! <p>
+//! If the GTK2.TEXT_SEARCH_VISIBLE_ONLY flag is present, the match may have
+//! invisible text interspersed in str, i.e. str will be a possibly
+//! non-contiguous subsequence of the matched range.  Similarly, if you
+//! specify GTK2.TEXT_SEARCH_TEXT_ONLY, the match may have pixbufs or
+//! child widgets mixed inside the matched range.  If these flags are not
+//! given, the match must be exact; the special 0xFFFC character in str
+//! will match embedded pixbufs or child widgets.
+{
+  pgtk_verify_inited();
+  {
+    GtkTextIter *match_start,*match_end,*limit=NULL;
+    GtkTextBuffer *tb;
+    const gchar *str;
+    INT_TYPE flags;
+    struct object *o1;
+    int res;
+
+    match_start=g_malloc(sizeof(GtkTextIter));
+    match_end=g_malloc(sizeof(GtkTextIter));
+    if (match_start==NULL || match_end==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("forward_search",sizeof(GtkTextIter));
+    tb=gtk_text_iter_get_buffer((GtkTextIter *)THIS->obj);
+    gtk_text_buffer_get_start_iter(tb,match_start);
+    gtk_text_buffer_get_start_iter(tb,match_end);
+
+    if (args>2)
+      get_all_args("forward_search",args,"%s%i%o",&str,&flags,&o1);
+    else
+      get_all_args("forward_search",args,"%s%i",&str,&flags);
+    my_pop_n_elems(args);
+    limit=(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program);
+    res=gtk_text_iter_forward_search((GtkTextIter *)THIS->obj,
+		str,flags,match_start,match_end,limit);
+    push_int(res);
+    push_gobject(match_start);
+    push_gobject(match_end);
+  }
+}
+
+array backward_search(string str, int flags, ?GTK2.TextIter limit)
+//! Same as forward_search(), but searches backward.
+{
+  pgtk_verify_inited();
+  {
+    GtkTextIter *match_start,*match_end,*limit=NULL;
+    GtkTextBuffer *tb;
+    const gchar *str;
+    INT_TYPE flags;
+    struct object *o1;
+    int res;
+
+    match_start=g_malloc(sizeof(GtkTextIter));
+    match_end=g_malloc(sizeof(GtkTextIter));
+    if (match_start==NULL || match_end==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("backward_search",sizeof(GtkTextIter));
+    tb=gtk_text_iter_get_buffer((GtkTextIter *)THIS->obj);
+    gtk_text_buffer_get_start_iter(tb,match_start);
+    gtk_text_buffer_get_start_iter(tb,match_end);
+
+    if (args>2)
+      get_all_args("backward_search",args,"%s%i%o",&str,&flags,&o1);
+    else
+      get_all_args("backward_search",args,"%s%i",&str,&flags);
+    my_pop_n_elems(args);
+    limit=(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program);
+    res=gtk_text_iter_backward_search((GtkTextIter *)THIS->obj,
+		str,flags,match_start,match_end,limit);
+    push_int(res);
+    push_gobject(match_start);
+    push_gobject(match_end);
+  }
+}
+
+int equal(GTK2.TextIter rhs)
+//! Tests whether two iterators are equal, using the fastest possible
+//! mechanism.  This function is very fast; you can expect it to perform
+//! better than e.g. getting the character offset for each iterator and
+//! comparing offsets yourself.  Also, it's a bit faster than compare().
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    int res;
+    GtkTextIter *t1,*t2;
+    get_all_args("equal",args,"%o",&o1);
+    my_pop_n_elems(args);
+/*    fputs("GTK2.TextIter->equal()\n",stderr); */
+    t1=(GtkTextIter *)THIS->obj;
+    t2=(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program);
+/*    fprintf(stderr,"obj==%p  o1==%p\n",THIS,o1);
+    fprintf(stderr,"t1==%p  t2==%p\n",t1,t2); */
+    res=gtk_text_iter_equal(t1,t2);
+/*    fprintf(stderr,"res==%d\n",res); */
+    push_int(res);
+/*    push_int(gtk_text_iter_equal((GtkTextIter *)THIS->obj,
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program)));
+*/
+  }
+}
+
+int compare(GTK2.TextIter rhs)
+//! Returns -1 if this iterator is less than rhs, 1 if greater than,
+//! and 0 if they're equal.  Ordering is in character offset order, i.e.
+//! the first character in the buffer is less than the second character
+//! in the buffer.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    get_all_args("compare",args,"%o",&o1);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_equal((GtkTextIter *)THIS->obj,
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program)));
+  }
+}
+
+int in_range(GTK2.TextIter start, GTK2.TextIter end)
+//! Checks whether this iterator falls in the range [start,end).  start
+//! and end must be in ascending order.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2;
+    get_all_args("in_range",args,"%o%o",&o1,&o2);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_in_range((GtkTextIter *)THIS->obj,
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
+		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program)));
+  }
+}
+
+int order(GTK2.TextIter second)
+//! Swaps this iter for second if second comes first in the buffer.  That is,
+//! ensures that this iterator and second are in sequence.  Most text
+//! buffer functions that take a range call this automatically on your
+//! behalf, so there's no real reason to call it yourself in those cases.
+//! There are some exceptions, such as in_range(), that expect a
+//! pre-sorted range.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    get_all_args("order",args,"%o",&o1);
+    my_pop_n_elems(args);
+    gtk_text_iter_order((GtkTextIter *)THIS->obj,
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+  }
+  RETURN_THIS();
+}

@@ -1,0 +1,13 @@
+require gnomecanvas;
+
+class Gnome2.CanvasWidget;
+inherit Gnome2.CanvasItem;
+
+//! Properties:
+//! int anchor
+//! float height
+//! int size-pixels
+//! GTK2.Widget widget
+//! float width
+//! float x
+//! float y

@@ -1,0 +1,149 @@
+class GTK2.CellRenderer;
+inherit GTK2.Data;
+
+//! Properties:
+//! string cell-background
+//! GDK2.Color cell-background-gdk
+//! int cell-background-set
+//! int height
+//! int is-expanded
+//! int is-expander
+//! int mode CONST(GTK_CELL_RENDERER_MODE_)
+//! int sensitive
+//! int visible
+//! int width
+//! float xalign
+//! int xpad
+//! float yalign
+//! int ypad
+
+signal editing_canceled;
+require gtk26;
+signal editing_started;
+endrequire;
+
+mapping(string:int) get_size(GTK2.Widget widget, ?GDK2.Rectangle cell_area)
+//! Obtains the width and heigh needed to render the cell.  Used by widgets
+//! to determine the appropriate size for the cell_area passed to render().
+//! If cell_area is present, fills in the x and y offset of the cell relative
+//! to this location.  Please note that the values set in width and height,
+//! as well as those in x_offset and y_offset are inclusive of the xpad and
+//! ypad properties.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2=NULL;
+    gint x_offset,y_offset,width,height;
+    if (args==1)
+      get_all_args("get_size",args,"%o",&o1);
+    else
+      get_all_args("get_size",args,"%o%o",&o1,&o2);
+    my_pop_n_elems(args);
+    gtk_cell_renderer_get_size(GTK_CELL_RENDERER(THIS->obj),
+		GTK_WIDGET(get_gobject(o1)),
+		o2?(GdkRectangle *)get_gdkobject(o2,rectangle):NULL,
+		&x_offset,&y_offset,&width,&height);
+    push_text("x_offset"); push_int(x_offset);
+    push_text("y_offset"); push_int(y_offset);
+    push_text("width"); push_int(width);
+    push_text("height"); push_int(height);
+    f_aggregate_mapping(8);
+  }
+}
+
+void render(GDK2.Window window, GTK2.Widget widget, 
+	    GDK2.Rectangle background_area, GDK2.Rectangle cell_area,
+	    GDK2.Rectangle expose_area, int flags)
+//! Invokes the virtual render function of the W(CellRenderer).  The three
+//! passed-in rectangles are areas of window.  Most renderers will draw within
+//! cell_area; the xalign, yalign, xpad, and ypad fields of the W(CellRenderer)
+//! should be honored with respect to cell_area.  background_area includes the
+//! blank space around the cell, and also the area containing the tree
+//! expander; so the background_area rectangles for all cells tile to cover the
+//! entire window.  expose_area is a clip rectangle.
+//! flags is one of CONST(GTK_CELL_RENDERER_).
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2,*o3,*o4,*o5;
+    GtkCellRendererState flags;
+    get_all_args("render",args,"%o%o%o%o%o%i",&o1,&o2,&o3,&o4,&o5,&flags);
+    gtk_cell_renderer_render(GTK_CELL_RENDERER(THIS->obj),
+		GDK_WINDOW(get_gobject(o1)),
+		GTK_WIDGET(get_gobject(o2)),
+		(GdkRectangle *)get_gdkobject(o3,rectangle),
+		(GdkRectangle *)get_gdkobject(o4,rectangle),
+		(GdkRectangle *)get_gdkobject(o5,rectangle),flags);
+  }
+  RETURN_THIS();
+}
+
+int activate(GDK2.Event event, GTK2.Widget widget, string path,
+	     GDK2.Rectangle background_area, GDK2.Rectangle cell_area,
+	     int flags)
+//! Passes an activate event to the cell renderer for possible processing.
+//! Some cell renderers may use events; for example, W(CellRendererToggle)
+//! toggles when it gets a mouse click.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2,*o3,*o4;
+    const gchar *path;
+    GtkCellRendererState flags;
+    int res;
+    get_all_args("activate",args,"%o%o%s%o%o%i",&o1,&o2,&path,&o3,&o4,&flags);
+    my_pop_n_elems(args);
+    res=gtk_cell_renderer_activate(GTK_CELL_RENDERER(THIS->obj),
+		(GdkEvent *)get_gdkobject(o1,event),
+		GTK_WIDGET(get_gobject(o2)),
+		path,(GdkRectangle *)get_gdkobject(o3,rectangle),
+		(GdkRectangle *)get_gdkobject(o4,rectangle),flags);
+    push_int(res);
+  }
+}
+
+void start_editing(GDK2.Event event, GTK2.Widget widget, string path,
+		   GDK2.Rectangle background_area, GDK2.Rectangle cell_area,
+		   int flags)
+//! Passes an activate event to the cell renderer for possible processing.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2,*o3,*o4;
+    const gchar *path;
+    GtkCellRendererState flags;
+    get_all_args("start_editing",args,"%o%o%s%o%o%i",&o1,&o2,&path,&o3,&o4,&flags);
+    my_pop_n_elems(args);
+    gtk_cell_renderer_start_editing(GTK_CELL_RENDERER(THIS->obj),
+		(GdkEvent *)get_gdkobject(o1,event),
+		GTK_WIDGET(get_gobject(o2)),path,
+		(GdkRectangle *)get_gdkobject(o3,rectangle),
+		(GdkRectangle *)get_gdkobject(o4,rectangle),flags);
+  }
+}
+  
+require gtk26;
+void stop_editing(int canceled);
+//! Informs the cell renderer that the editing is stopped.  If canceled is
+//! true, the cell renderer will emit the "editing-canceled" signal.  This
+//! function should be called by cell renderer implementations in response to
+//! the "editing-done" signal of W(CellEditable).
+endrequire;
+
+mapping get_fixed_size()
+//! Fills in width and height with the appropriate size of the cell.
+{
+  pgtk_verify_inited();
+  {
+    gint width,height;
+    my_pop_n_elems(args);
+    gtk_cell_renderer_get_fixed_size(GTK_CELL_RENDERER(THIS->obj),
+			&width,&height);
+    push_text("width"); push_int(width);
+    push_text("height"); push_int(height);
+    f_aggregate_mapping(4);
+  }
+}
+
+void set_fixed_size(int width, int height);
+//! Sets the renderer size to be explicit, independent of the properties set.

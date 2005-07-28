@@ -1,0 +1,28 @@
+require gtk24;
+
+class GTK2.ToggleAction;
+inherit GTK2.Action;
+
+//! Properties
+//! int draw-as-radio
+
+signal toggled;
+
+void create(string name, string label, string tooltip, string stock_id);
+//! Creates a new GTK2.ToggleAction object.
+
+void toggled();
+//! Emits the "toggled" signal.
+
+void set_active(int setting);
+//! Sets the checked state.
+
+int get_active();
+//! Returns the checked state.
+
+void set_draw_as_radio(int setting);
+//! Sets whether the action should have proxies like a radio action.
+
+int get_draw_as_radio();
+//! Returns whether the action should have proxies like a radio action.
+endrequire;

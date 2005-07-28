@@ -1,0 +1,241 @@
+require gnomecanvas;
+
+class Gnome2.Canvas;
+inherit GTK2.Layout;
+
+//! Gnome2.Canvas is an engine for structured graphics that offers a rich
+//! imaging model, high performance rendering, and a powerful, high level API.
+//! It offers a choice of two rendering back-ends, one based on Xlib for
+//! extremely fast display, and another based on Libart, a sophisticated,
+//! antialiased, alpha-compositing engine.  This widget can be used for
+//! flexible display of graphics and for creating interactive user interface
+//! elements.
+//! <p>
+//! A Gnome2.Canvas widget contains one or more Gnome2.CanvasItem objects.
+//! Items consist of graphing elements like lines, ellipses, polygons, images,
+//! text, and curves.  These items are organized using Gnome2.CanvasGroup
+//! objects, which are themselves derived from Gnome2.CanvasItem.  Since a
+//! group is an item it can be contained within other groups, forming a tree
+//! of canvas items.  Certain operations, like translating and scaling, can be
+//! performed on all items in a group.
+//! See <a href="http://developer.gnome.org/doc/API/2.0/libgnomecanvas/GnomeCanvas.html">
+//! http://developer.gnome.org/doc/API/2.0/libgnomecanvas/GnomeCanvas.html
+//! </a> for more information.
+
+//! Properties:
+//! int aa
+
+signal draw_background;
+signal render_background;
+
+void create(?int anti_alias)
+//! Create a new Gnome2.Canvas widget.  Set anti_alias to true to create
+//! a canvas in antialias mode.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    int aa;
+    get_all_args("create",args,"%i",&aa);
+    if (aa)
+      THIS->obj=G_OBJECT(gnome_canvas_new_aa());
+    else
+      THIS->obj=G_OBJECT(gnome_canvas_new());
+  } else
+    THIS->obj=G_OBJECT(gnome_canvas_new());
+  pgtk__init_this_object();
+}
+
+Gnome2.CanvasGroup root();
+//! Queries the root group.
+
+void set_scroll_region(float x1, float y1, float x2, float y2);
+//! Sets the scrolling region of a canvas to the specified rectangle.  The
+//! canvas will then be able to scroll only within this region.  The view of
+//! the canvas is adjusted as appropriate to display as much of the new region
+//! as possible.
+
+mapping(string:int) get_scroll_region()
+//! Queries the scrolling region of a canvas.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    double x1,y1,x2,y2;
+    gnome_canvas_get_scroll_region(GNOME_CANVAS(THIS->obj),
+			&x1,&y1,&x2,&y2);
+    push_text("x1"); push_float(x1);
+    push_text("y1"); push_float(y1);
+    push_text("x2"); push_float(x2);
+    push_text("y2"); push_float(y2);
+    f_aggregate_mapping(8);
+  }
+}
+
+void set_center_scroll_region(int setting);
+//! When the scrolling region of the canvas is smaller than the canvas window,
+//! e.g. the allocation of the canvas, it can be either centered on the
+//! window or simply made to be on the upper-left corner on the window.
+
+int get_center_scroll_region();
+//! Returns whether the canvas is set to center the scrolling region in the
+//! window if the former is smaller than the canvas' allocation.
+
+void set_pixels_per_unit(float n);
+//! Sets the zooming factor of a canvas by specifying the number of pixels that
+//! correspond to one canvas unit.
+//! <p>
+//! The anchor point for zooming, i.e. the point that stays fixed and all
+//! others zoom inwards or outwards from it, depends on whether the canvas is
+//! set to center the scrolling region or not.  You can contorl this using the
+//! set_center_scroll_region() function.  If the canvas is set to center the
+//! scroll region, then the center of the canvas window is used as the anchor
+//! point for zooming.  Otherwise, the upper-left corner of the canvas window
+//! is used as the anchor point.
+
+void scroll_to(int cx, int cy);
+//! Makes a canvas scroll to the specified offsets, given in canvas pixel
+//! units.  The canvas will adjust the view so that it is not outside the
+//! scrolling region.  This function is typically not used, as it is better to
+//! hook scrollbars to the canvas layout's scrolling adjustments.
+
+array(int) get_scroll_offsets()
+//! Queries the scrolling offsets of a canvas.  The values are returned in
+//! canvas pixel units.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    int cx,cy;
+    gnome_canvas_get_scroll_offsets(GNOME_CANVAS(THIS->obj),&cx,&cy);
+    PGTK_PUSH_INT(cx);
+    PGTK_PUSH_INT(cy);
+  }
+}
+
+Gnome2.CanvasItem get_item_at(float x, float y);
+//! Looks for the item that is under the specified position, which must be
+//! specified in world coordinates.
+
+array(float) w2c_affine()
+//! Gets the affine transform that converts from world coordinates to canvas
+//! pixel coordinates.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    double affine[6];
+    int i;
+    gnome_canvas_w2c_affine(GNOME_CANVAS(THIS->obj),affine);
+    for (i=0; i<6; i++)
+      push_float(affine[i]);
+  }
+}
+
+array(int) w2c(float wx, float wy)
+//! Converts world coordinates into canvas pixel coordinates.
+{
+  pgtk_verify_inited();
+  {
+    FLOAT_TYPE wx,wy;
+    int cx,cy;
+    get_all_args("w2c",args,"%f%f",&wx,&wy);
+    gnome_canvas_w2c(GNOME_CANVAS(THIS->obj),wx,wy,&cx,&cy);
+    my_pop_n_elems(args);
+    PGTK_PUSH_INT(cx);
+    PGTK_PUSH_INT(cy);
+  }
+}
+
+array(float) w2c_d(float wx, float wy)
+//! Converts world coordinates into canvas pixel coordinates.  This version
+//! returns coordinates in floating point coordinates, for greater precision.
+{
+  pgtk_verify_inited();
+  {
+    FLOAT_TYPE wx,wy;
+    double cx,cy;
+    get_all_args("w2c_d",args,"%f%f",&wx,&wy);
+    gnome_canvas_w2c_d(GNOME_CANVAS(THIS->obj),wx,wy,&cx,&cy);
+    my_pop_n_elems(args);
+    push_float(cx);
+    push_float(cy);
+  }
+}
+
+array(float) c2w(int cx, int cy)
+//! Converts canvas pixel coordinates to world coordinates.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE cx,cy;
+    double wx,wy;
+    get_all_args("c2w",args,"%i%i",&cx,&cy);
+    gnome_canvas_c2w(GNOME_CANVAS(THIS->obj),cx,cy,&wx,&wy);
+    push_float(wx);
+    push_float(wy);
+  }
+}
+
+array(float) window_to_world(float winx, float winy)
+//! Converts window-relative coordinates into world coordinates.  You can use
+//! this when you need to convert mouse coordinates into world coordinates, for
+//! example.
+{
+  pgtk_verify_inited();
+  {
+    FLOAT_TYPE winx,winy;
+    double worldx,worldy;
+    get_all_args("window_to_world",args,"%f%f",&winx,&winy);
+    gnome_canvas_window_to_world(GNOME_CANVAS(THIS->obj),winx,winy,
+			&worldx,&worldy);
+    push_float(worldx);
+    push_float(worldy);
+  }
+}
+
+array(float) world_to_window(float worldx, float worldy)
+//! Converts world coordinates into window-relative coordinates.
+{
+  pgtk_verify_inited();
+  {
+    FLOAT_TYPE worldx,worldy;
+    double winx,winy;
+    get_all_args("world_to_window",args,"%f%f",&worldx,&worldy);
+    gnome_canvas_world_to_window(GNOME_CANVAS(THIS->obj),worldx,worldy,
+			&winx,&winy);
+    push_float(winx);
+    push_float(winy);
+  }
+}
+
+GDK2.Color get_color(?string spec)
+//! Allocates a color based on the specified X color specification.  An
+//! omitted or empty string is considered transparent.
+{
+  pgtk_verify_inited();
+  {
+    GdkColor *color;
+    char *spec=NULL;
+    color=(GdkColor *)g_malloc(sizeof(GdkColor));
+    if (color==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_color",sizeof(GdkColor));
+    if (args)
+      get_all_args("get_color",args,"%s",&color);
+    gnome_canvas_get_color(GNOME_CANVAS(THIS->obj),spec,color);
+    my_pop_n_elems(args);
+    push_gdkobject(color,color);
+  }
+}
+
+int get_color_pixel(int rgba);
+//! Allocates a color from the RGBA value passed into this function.  The
+//! alpha opacity value is discarded, since normal X colors do not support it.
+
+void set_dither(int dither);
+//! Controls the dithered rendering for antialiased canvases.  The value of
+//! dither should be GDK2.RgbDitherNone, GDK2.RgbDitherNormal, or
+//! GDK2.RgbDitherMax.  The default canvas setting is GDK2.RgbDitherNormal.
+
+int get_dither();
+//! Returns the type of dithering used to render an antialiased canvas.

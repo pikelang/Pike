@@ -1,0 +1,107 @@
+require gtk26;
+class GTK2.CellView;
+inherit GTK2.Widget;
+
+//! Properties:
+//! string background
+//! GDK2.Color background-gdk
+//! int background-set
+
+void create(string|GDK2.Pixbuf|void text, int|void markup)
+//! Create a new W(CellView) widget.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args==1) {
+    if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+      struct object *o1;
+      get_all_args("create",args,"%o",&o1);
+      THIS->obj=G_OBJECT(gtk_cell_view_new_with_pixbuf(
+		(GdkPixbuf *)get_gdkobject(o1,pixbuf)));
+    } else {
+      char *str;
+      get_all_args("create",args,"%s",&str);
+      THIS->obj=G_OBJECT(gtk_cell_view_new_with_text(str));
+    }
+  } else if (args==2) {
+    char *str;
+    int mark;
+    get_all_args("create",args,"%s%i",&str,&mark);
+    if (mark)
+      THIS->obj=G_OBJECT(gtk_cell_view_new_with_markup(str));
+    else
+      THIS->obj=G_OBJECT(gtk_cell_view_new_with_text(str));
+  } else {
+    THIS->obj=G_OBJECT(gtk_cell_view_new());
+  }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
+
+void set_model(GTK2.TreeModel model);
+//! Sets the model.  If this view already has a model set, it will remove it
+//! before setting the new model.
+
+void set_displayed_row(?GTK2.TreePath path)
+//! Sets the row of the model that is currently displayed.  If the path is
+//! omitted, then the contents of the cellview "stick" at their last value;
+//! this is not normally a desired result, but may be a needed intermediate
+//! state if say, the mode becomes temporarily empty.
+{
+  pgtk_verify_inited();
+  if (args) {
+    struct object *o1;
+    get_all_args("set_displayed_row",args,"%o",&o1);
+    gtk_cell_view_set_displayed_row(GTK_CELL_VIEW(THIS->obj),
+			(GtkTreePath *)get_gobject(o1));
+  } else {
+    gtk_cell_view_set_displayed_row(GTK_CELL_VIEW(THIS->obj),NULL);
+  }
+  RETURN_THIS();
+}
+
+GTK2.TreePath get_displayed_row()
+//! Returns a W(TreePath) referring to the currently displayed row.  If no
+//! row is currently displayed, 0 is returned.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GtkTreePath *path=gtk_cell_view_get_displayed_row(GTK_CELL_VIEW(THIS->obj));
+    push_gobjectclass(path,pgtk_tree_path_program);
+  }
+}
+
+mapping(string:int) get_size_of_row(GTK2.TreePath path)
+//! Returns width and height of the size needed to display the model row
+//! pointed to by path.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    GtkRequisition req;
+    get_all_args("get_size_of_row",args,"%o",&o1);
+    gtk_cell_view_get_size_of_row(GTK_CELL_VIEW(THIS->obj),
+			(GtkTreePath *)get_gobject(o1),&req);
+    push_text("width"); push_int(req.width);
+    push_text("height"); push_int(req.height);
+    f_aggregate_mapping(4);
+  }
+}
+
+void set_background_color(GDK2.Color color)
+//! Sets the background color.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    get_all_args("set_background_color",args,"%o",&o1);
+    gtk_cell_view_set_background_color(GTK_CELL_VIEW(THIS->obj),
+		(GdkColor *)get_gdkobject(o1,color));
+  }
+  RETURN_THIS();
+}
+
+#include "gtkcelllayout.inc"
+endrequire;
+

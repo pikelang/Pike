@@ -1,0 +1,7 @@
+class GTK2.SeparatorMenuItem;
+inherit GTK2.MenuItem;
+
+//! A separator menu item.
+
+void create();
+//! Create a new GTK2.SeparatorMenuItem.

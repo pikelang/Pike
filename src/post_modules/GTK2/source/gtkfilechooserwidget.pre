@@ -1,0 +1,16 @@
+require gtk24;
+
+class GTK2.FileChooserWidget;
+inherit GTK2.Vbox;
+
+//! File chooser widget that can be embedded in other widgets.
+//! IMG: GTK2.FileChooserWidget(GTK2.FILE_CHOOSER_ACTION_OPEN);
+
+void create(int action);
+//! Create a new file chooser widget.
+//! action is one of CONST(GTK_FILE_CHOOSER_ACTION)
+
+#include "gtkfilechooser.inc"
+
+endrequire;
+

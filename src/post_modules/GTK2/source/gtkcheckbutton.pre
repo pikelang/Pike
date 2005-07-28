@@ -1,0 +1,34 @@
+class GTK2.CheckButton;
+inherit GTK2.ToggleButton;
+
+//! Check buttons inherent many properties and functions from the the
+//! toggle buttons, but look a little different. Rather than
+//! being buttons with text inside them, they are small squares with
+//! the text to the right of them. These are often used for toggling
+//! options on and off in applications.
+//! IMG: GTK2.Check_button( "title" )
+
+//! Style properties:
+//! int indicator-size
+//! int indicator-spacing
+
+void create(?string label)
+//! The argument, if specified, is the label of the item.
+//! If no label is specified, use object->add() to add some
+//! other widget (such as an pixmap or image widget)
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    gchar *s=PGTK_GETSTR(Pike_sp-args);
+    if (s) {
+      THIS->obj=G_OBJECT(gtk_check_button_new_with_mnemonic(s));
+      PGTK_FREESTR(s);
+    } else
+      THIS->obj=G_OBJECT(gtk_check_button_new());
+  } else {
+    THIS->obj=G_OBJECT(gtk_check_button_new());
+  }
+  pgtk__init_this_object();
+}
+

@@ -1,0 +1,20 @@
+DISABLED {
+require gnome;
+class Gnome.CanvasLine;
+inherit Gnome.CanvasItem;
+
+FUNCTION(create, "function(object:void)");
+NAME_ARGS(parent);
+{
+  struct object *o;
+  get_all_args( "create", args, "%O", &o );
+  pgtk_verify_gnome_setup();
+  pgtk_verify_not_inited();
+  THIS->obj =(void *)
+      gnome_canvas_item_new((void *)get_pgtkobject(o,pgtk_gnome_canvas_item_program),
+                            gnome_canvas_line_get_type(), "smooth", 1);
+  pgtk__init_object( Pike_fp->current_object );
+  pop_n_elems(args);
+  push_int( 0 );
+}
+};

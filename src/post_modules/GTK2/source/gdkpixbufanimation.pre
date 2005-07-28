@@ -1,0 +1,63 @@
+class GDK2.PixbufAnimation;
+inherit G.Object;
+
+//! The GdkPixbufAnimation object.  Holds animations, like gifs.
+
+void create(string filename)
+//! Create a new PixbufAnimation.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    const char *filename;
+    GError *error=NULL;
+    get_all_args("create",args,"%s",&filename);
+    my_pop_n_elems(args);
+    THIS->obj=G_OBJECT(gdk_pixbuf_animation_new_from_file(filename,&error));
+    if (THIS->obj==NULL)
+      Pike_error("Unable to load file %s: %s\n",filename,error->message);
+  }
+  pgtk__init_this_object();
+}
+
+int get_width();
+//! Returns the width of the bounding box.
+
+int get_height();
+//! Returns the height of the bounding box.
+
+GDK2.PixbufAnimationIter get_iter()
+//! Get an iterator for displaying an animation.  The iterator provides the
+//! frames that should be displayed at a given time.
+//! <p>
+//! Returns the beginning of the animation.  Afterwards you should probably
+//! immediately display the pixbuf return by 
+//! GDK2.PixbufAnimationIter->get_pixbuf().  Then, you should install a timeout
+//! or by some other mechanism ensure that you'll update the image after
+//! GDK2.PixbufAnimationIter->get_delay_time() milliseconds.  Each time the
+//! image is updated, you should reinstall the timeout with the new, possibly
+//! changed delay time.
+//! <p>
+//! To update the image, call GDK2.PixbufAnimationIter->advance().
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GdkPixbufAnimationIter *iter;
+    iter=gdk_pixbuf_animation_get_iter(GDK_PIXBUF_ANIMATION(THIS->obj),NULL);
+    push_gdkobject(iter,pixbuf_animation_iter);
+  }
+}
+
+int is_static_image();
+//! If the file turns out to be a plain, unanimated image, this function will
+//! return true.  Use get_static_image() to retrieve the image.
+
+GDK2.Pixbuf get_static_image();
+//! If an animation is really just a plain image (has only one frame), this
+//! function returns that image.  If the animation is an animation, this
+//! function returns reasonable thing to display as a static unanimated image,
+//! which might be the first frame, or something more sophisticated.  If an
+//! animation hasn't loaded any frames yet, this function will return 0.
+
+

@@ -1,0 +1,69 @@
+require gtk24;
+
+class GTK2.FontButton;
+inherit GTK2.Button;
+
+//! Properties:
+//! string font-name
+//! int show-size
+//! int show-style
+//! string title
+//! int use-font
+//! int use-size
+
+signal font_set;
+
+void create(?string font)
+//! Create a new font picker widget.  If font is specified, it will be
+//! displayed in the font selection dialog.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    const gchar *font;
+    get_all_args("create",args,"%s",&font);
+    THIS->obj=G_OBJECT(gtk_font_button_new_with_font(font));
+  } else {
+    THIS->obj=G_OBJECT(gtk_font_button_new());
+  }
+  pgtk__init_this_object();
+}
+
+int set_font_name(string font);
+//! Sets or updates the currently-displayed font.
+
+string get_font_name();
+//! Retrieves the name of the currently selected font.
+
+void set_show_style(int setting);
+//! If setting is true, the font style will be displayed along with the name
+//! of the selected font.
+
+int get_show_style();
+//! Returns whether the name of the font style will be shown in the label.
+
+void set_show_size(int setting);
+//! If setting is true, the font size will be displayed along with the name of
+//! the selected of the selected font.
+
+int get_show_size();
+//! Returns whether the font size will be shown in the label.
+
+void set_use_font(int setting);
+//! If setting is true, the font name will be written using the selected font.
+
+int get_use_font();
+//! Returns whether the selected font is used in the label.
+
+void set_use_size(int setting);
+//! If setting is true, the font name will be written using the selected size.
+
+int get_use_size();
+//! Returns whether the selected size is used in the label.
+
+void set_title(string title);
+//! Sets the title for the font selection dialog.
+
+string get_title();
+//! Retrieves the title of the font selection dialog.
+endrequire;

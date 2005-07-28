@@ -1,0 +1,158 @@
+/* -*- C -*- */
+class GDK2.GC;
+inherit G.Object;
+
+//! A GC, or Graphics Context, is used for most low-level drawing operations.
+//! <p>
+//! As an example, the foreground color, background color, and drawing
+//! function is stored in the GC.</p>
+//!
+//! NOIMG
+
+void create(GTK2.Widget|GDK2.Drawable context)
+//! The argument is either a W(Widget) or a GDK2(Drawable) in
+//! which the gc will be valid.
+{
+  struct object *o;
+  pgtk_verify_setup();
+  pgtk_verify_not_inited();
+  get_all_args("'()",args,"%o",&o);
+  if (get_gobject(o))
+    THIS->obj=G_OBJECT(gdk_gc_new(GDK_WINDOW(get_gobject(o))));
+  else
+    THIS->obj=G_OBJECT(gdk_gc_new(GTK_WIDGET(get_gobject(o))->window));
+}
+
+void destroy()
+//! Free the gc, called automatically by pike when the object is destroyed.
+{
+  g_object_unref(GDK_GC(THIS->obj));
+  destruct(Pike_fp->current_object);
+}
+
+mapping(string:mixed) get_values()
+//! Get all (or rather most) values from the GC.
+//! Even though GdkGCValues contains a GdkFont object, we won't return
+//! this value because GdkFont is deprecated.  The Pango methods should
+//! be used instead.
+{
+  GdkGCValues v;
+  struct svalue *osp;
+  if (args)
+    my_pop_n_elems(args);
+
+  gdk_gc_get_values(GDK_GC(THIS->obj),&v);
+
+  osp=Pike_sp;
+  push_text("join_style");  push_int(v.join_style);
+  push_text("cap_style");   push_int(v.cap_style);
+  push_text("line_style");  push_int(v.line_style);
+  push_text("line_width");  push_int(v.line_width);
+  push_text("clip_x_origin");  push_int(v.clip_x_origin);
+  push_text("clip_y_origin");  push_int(v.clip_y_origin);
+  push_text("ts_x_origin");  push_int(v.ts_x_origin);
+  push_text("ts_y_origin");  push_int(v.ts_y_origin);
+  push_text("subwindow_mode");  push_int(v.subwindow_mode);
+  push_text("clip_mask");  push_gobject(v.clip_mask);
+  push_text("stipple");    push_gobject(v.stipple);
+  push_text("tile");       push_gobject(v.tile);
+/*push_text("font");       push_gdkobject(v.font,font); */
+
+/*if (v.font)  g_object_ref(v.font); */
+  if (v.tile)
+    g_object_ref(v.tile);
+  if (v.stipple)
+    g_object_ref(v.stipple);
+  if (v.clip_mask)
+    g_object_ref(v.clip_mask);
+
+  push_text("fill");  push_int(v.fill);
+  push_text("function");  push_int(v.function);
+  {
+    GdkColor *f=g_malloc(sizeof(GdkColor));
+    if (f==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("",sizeof(GdkColor));
+    GdkColor *b=g_malloc(sizeof(GdkColor));
+    if (b==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("",sizeof(GdkColor));
+    *f=v.foreground;
+    *b=v.background;
+    push_text("foreground");  push_gdkobject(f,color);
+    push_text("background");  push_gdkobject(b,color);
+  }
+  f_aggregate_mapping(Pike_sp-osp);
+}
+
+void set_foreground(GDK2.Color color)
+//! Set the foreground to the specified GDK2.Color.
+{
+  struct object *o;
+  get_all_args("set_foreground",args,"%o",&o);
+  gdk_gc_set_foreground(GDK_GC(THIS->obj),get_gdkobject(o,color));
+  RETURN_THIS();
+}
+
+void set_background(GDK2.Color color)
+//! Set the background to the specified GDK2.Color.
+{
+  struct object *o;
+  get_all_args("set_background",args,"%o",&o);
+  gdk_gc_set_background(GDK_GC(THIS->obj),get_gdkobject(o,color));
+  RETURN_THIS();
+}
+
+/*
+void set_font(GDK22.Font font)
+//! Set the font to the specified GDK2.Font.
+//! Deprecated: Use Pango.Layout instead.
+{
+  struct object *o;
+  get_all_args("set_font",args,"%o",&o);
+  gdk_gc_set_font(GDK_GC(THIS->obj),get_gdkobject(o,font));
+  RETURN_THIS();
+}
+*/
+
+void set_clip_origin(int x, int y)
+//! Set the clip mask origin to the specified point.
+{
+  INT_TYPE x,y;
+  get_all_args("set_clip_origin",args,"%i%i",&x,&y);
+  gdk_gc_set_clip_origin(GDK_GC(THIS->obj),x,y);
+  RETURN_THIS();
+}
+
+void set_clip_mask(GDK2.Bitmap mask)
+//! Set the clip mask to the specified GDK2.Bitmap
+{
+  if (args==1) {
+    struct object *o;
+    get_all_args("set_clip_mask",args,"%o",&o);
+    gdk_gc_set_clip_mask(GDK_GC(THIS->obj),GDK_DRAWABLE(get_gobject(o)));
+  } else
+    gdk_gc_set_clip_mask(GDK_GC(THIS->obj),0);
+
+  RETURN_THIS();
+}
+
+void set_function(int fun)
+//! Set the function to the specified one.  One of GDK2.Xor,
+//! GDK2.Invert and GDK2.Copy.
+{
+  INT_TYPE a;
+  get_all_args("set_function",args,"%i",&a);
+  gdk_gc_set_function(GDK_GC(THIS->obj),a);
+  RETURN_THIS();
+}
+
+void set_subwindow(int draw_on_subwindows)
+//! If set, anything drawn with this GC will draw on subwindows as well
+//! as the window in which the drawing is done.
+{
+  INT_TYPE a;
+  get_all_args("set_subwindow",args,"%i",&a);
+  gdk_gc_set_subwindow(GDK_GC(THIS->obj),a);
+  RETURN_THIS();
+}
+
+/* TODO: a lot of functions left. */

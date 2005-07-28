@@ -1,0 +1,83 @@
+class GTK2.Box;
+inherit GTK2.Container;
+
+//! A box is a container that can contain more than one child.
+//! The basic 'Box' class cannot be instantiated, it is a virtual class
+//! that only defines some common 'Box' functions shared with all other
+//! Box widgets.
+
+//! Properties:
+//! int homogeneous
+//! int spacing
+//! <p>
+//! Child properties:
+//! int expand
+//! int fill
+//! int pack-type
+//! int padding
+//! int position
+
+void pack_start(GTK2.Widget widget, int expandp, int fillp, int padding);
+//! Pack from the left (or top) of the box.
+//! Argument are widget, expand, fill, padding
+//! pack(widget,1,1,0) is equivalent to 'add' or 'pack_start_defaults'
+
+void pack_end(GTK2.Widget widget, int expandp, int fillp, int padding);
+//! Pack from the right (or bottom) of the box.
+//! Arguments are widget, expand, fill, paddingb
+//! widget, expand, fill, padding
+
+void pack_start_defaults(GTK2.Widget widget);
+//! The argument is the widget to add. This function is equivalent to 'add'
+
+void pack_end_defaults(GTK2.Widget widget);
+//! The argument is the widget to add.
+
+int get_homogeneous();
+//! Returns whether the box is homogeneous.
+
+void set_homogeneous(int homogeneousp);
+//! If true, all widgets in the box will get exactly the same amount of space
+
+int get_spacing();
+//! Gets the spacing.
+
+void set_spacing(int spacing);
+//! This is the amount of spacing (in pixels) inserted beween all widgets
+
+void reorder_child(GTK2.Widget child, int new_position);
+//! Move widget to pos, pos is an integer,
+//! between 0 and sizeof(box->children())-1
+
+void set_child_packing(GTK2.Widget child_widget, int expandp, int fillp,
+                        int padding, int pack_type);
+//! widget, expand, fill, padding, pack_type.
+//! If exand is true, the widget will be expanded when the box is resized.
+//! If 'fill' is true, the widget will be resized to fill up all available
+//! space. Padding is the amount of padding to use, and pack_type is
+//! one of CONST(GTK_PACK).
+//! <p>
+//! You can emulate pack_start and pack_end with add and set_child_packing.</p>
+
+mapping(string:int) query_child_packing(GTK2.Widget child)
+//! Return a mapping:<br />
+//! ([ "expand":expandp, "fill":fillp, "padding":paddingp, "type":type ])
+{
+  struct object *o;
+  guint pa;
+  gboolean ex,fi;
+  GtkPackType ty;
+  get_all_args("query_child_packing",args,"%o",&o);
+  gtk_box_query_child_packing(GTK_BOX(THIS->obj),
+                              GTK_WIDGET(get_gobject(o)),
+                              &ex,&fi,&pa,&ty);
+  my_pop_n_elems(args);
+  push_constant_text("expand"); push_int(ex);
+  push_constant_text("fill"); push_int(fi);
+  push_constant_text("padding"); push_int(pa);
+  push_constant_text("type"); push_int(ty);
+  f_aggregate_mapping(8);
+}
+
+
+

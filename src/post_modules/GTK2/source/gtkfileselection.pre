@@ -1,0 +1,111 @@
+class GTK2.FileSelection;
+inherit GTK2.Dialog;
+
+//! GtkFileSelection should be used to retrieve file or directory names
+//! from the user. It will create a new dialog window containing a
+//! directory list, and a file list corresponding to the current
+//! working directory. The filesystem can be navigated using the
+//! directory list, the drop-down history menu, or the TAB key can be
+//! used to navigate using filename completion common in text based
+//! editors such as emacs and jed.
+//! <p>
+//! The default filename can be set using set_filename() and the
+//! selected filename retrieved using get_filename().
+//! </p><p>
+//! Use complete() to display files that match a given pattern. This
+//! can be used for example, to show only *.txt files, or only files
+//! beginning with gtk*.
+//! </p><p>
+//! Simple file operations; create directory, delete file, and rename
+//! file, are available from buttons at the top of the dialog. These
+//! can be hidden using hide_fileop_buttons() and shown again using
+//! show_fileop_buttons().
+//! </p><p>
+//! TIMG: GTK2.FileSelection("File selector")
+//! </p>
+
+//! Properties:
+//! string filename
+//! int select-multiple
+//! int show-fileops
+
+member GTK2.Dialog fileop_dialog;
+//! Dialog box for GTK2.FileSelection
+member GTK2.Button ok_button;
+//! The ok button
+member GTK2.Button cancel_button;
+//! The cancel button
+member GTK2.Button help_button;
+//! The help button
+member GTK2.Button fileop_c_dir;
+//! The create directory button in the file operation button group
+member GTK2.Button fileop_del_file;
+//! The delete file button in the file operation button group
+member GTK2.Button fileop_ren_file;
+//! The rename file button in the file operation button group
+member GTK2.HbuttonBox button_area;
+//! The button area
+member GTK2.Vbox action_area;
+//! The action area
+member GTK2.Vbox main_vbox;
+//! The main vbox
+
+string get_filename();
+//! Returns the currently entered filename as a string
+
+void create(string window_title);
+//! Creates a new file selection dialog box. By default it will list
+//! the files in the current working directory. Operation buttons
+//! allowing the user to create a directory, delete files, and rename
+//! files will also be present by default.
+
+void set_filename(string fname);
+//! Sets a default path for the file requestor. If filename includes a
+//! directory path, then the requestor will open with that path as its
+//! current working directory.
+
+string get_filename();
+//! Return the filename.
+
+void show_fileop_buttons();
+//! Shows the file operation buttons, if they have previously been
+//! hidden. The rest of the widgets in the dialog will be resized
+//! accordingly.
+
+void hide_fileop_buttons();
+//! Hides the file operation buttons that normally appear at the top of
+//! the dialog. Useful if you wish to create a custom file selector,
+//! based on GTK2.FileSelection.
+
+void complete(string pattern);
+//! Will attempt to match pattern to a valid filename in the current
+//! directory. If a match can be made, the matched filename will appear
+//! in the text entry field of the file selection dialog. If a partial
+//! match can be made, the "Files" list will contain those file names
+//! which have been partially matched.
+
+array(string) get_selection()
+//! Retrieves the list of selections the user has made.
+{
+  pgtk_verify_inited();
+  {
+    gchar **names=gtk_file_selection_get_selections(
+		GTK_FILE_SELECTION(THIS->obj));
+
+    gchar *n1=*names;
+    int i=0;
+    while (n1) {
+      push_text(n1);
+      i++;
+      n1++;
+    }
+    f_aggregate(i);
+    g_strfreev(names);
+  }
+}
+
+void set_select_multiple(int select_multiple);
+//! Sets whether the user is allowed to select multiple files.
+
+int get_select_multiple();
+//! Gets whether the user is allowed to select multiple files.

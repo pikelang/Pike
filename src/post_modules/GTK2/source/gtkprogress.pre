@@ -1,0 +1,9 @@
+class GTK2.Progress;
+inherit GTK2.Widget;
+
+//! Properties:
+//! int activity-mode
+//! int show-text
+//! float text-xalign
+//! float text-yalign
+

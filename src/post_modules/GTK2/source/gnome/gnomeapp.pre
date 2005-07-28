@@ -1,0 +1,302 @@
+/* -*- C -*- */
+require gnome;
+class Gnome.App;
+inherit GTK.Window;
+//! Toplevel GNOME applications would normally use one Gnome.App widget
+//! as their toplevel window. You can create as many Gnome.App widgets
+//! as you want, for example, some people use one GnomeApp per document
+//! their application loads.
+//! <p>
+//! Once you have created one instance of this widget, you would add
+//! your main application view information to this window by using
+//! set_contents() routine.
+//! </p><p>
+//! The GnomeApp has support for including a menubar, one or more
+//! toolbars and a statusbar for your application. It also takes care
+//! of intalling the accelerators for you when used in conjuction with
+//! the gnome-app-helper routines. The toolbars are inserted into
+//! Gnome.Dock widgets.
+//! </p><p>
+//! The gnome-app-helper module provides various helper routines to
+//! simplify the configuration of your menus and toolbars, but you can
+//! create those yourself and use the set_menus(), add_toolbar(),
+//! set_toolbar(), add_dock_item() and add_docked().</p>
+
+void create( string appname, ?string title );
+//! Create a new (empty) application window. You must specify the
+//! application's name (used internally as an identifier). title can be
+//! left as 0, in which case the window's title will not be set.
+
+void set_menus( GTK.MenuBar menu_bar );
+//! Sets the menu bar of the application window.
+
+void set_toolbar( GTK.Toolbar toolbar );
+//! Sets the main toolbar of the application window.
+
+void set_statusbar( GTK.Widget statusbar );
+//! Sets the status bar of the application window.
+
+void set_contents( GTK.Widget contents );
+//! Sets the status bar of the application window.
+
+void add_toolbar( GTK.Toolbar toolbar, string name,
+                  int behavior, int placement, int band_num,
+                  int band_position, ?int offset );
+//! Create a new Gnome.DockItem widget containing toolbar, and add it
+//! to app's dock with the specified layout information. Notice that,
+//! if automatic layout configuration is enabled, the layout is
+//! overridden by the saved configuration, if any.
+//! <p>
+//!
+//! toolbar : Toolbar to be added to app's dock<br />
+//! name : Name for the dock item that will contain toolbar<br />
+//! behavior : Behavior for the new dock item. One or more of CONST(GNOME_DOCK_ITEM_BEH)
+//! placement :  Placement for the new dock item, one of Gnome.DockTop,  Gnome.DockRight,  Gnome.DockBottom,  Gnome.DockLeft and  Gnome.DockFloating <br />
+//! band_num : Number of the band where the dock item should be placed<br />
+//! band_position : Position of the new dock item in band band_num<br />
+//! offset : Offset from the previous dock item in the band; if there is no previous item, offset from the beginning of the band.
+//! </p>
+void add_docked( GTK.Widget widget, string name,
+                 int behavior, int placement,
+                 int band_num, int band_position, ?int offset );
+//! Create a new Gnome.DockItem widget containing widget, and add it
+//! to app's dock with the specified layout information. Notice that,
+//! if automatic layout configuration is enabled, the layout is
+//! overridden by the saved configuration, if any.
+//! <p>
+//!
+//! widget : Widget to be added to app's dock<br />
+//! name : Name for the dock item that will contain toolbar<br />
+//! behavior : Behavior for the new dock item. One of CONST(GNOME_DOCK_ITEM_BEH)
+//! placement :  Placement for the new dock item, one of Gnome.DockTop,  Gnome.DockRight,  Gnome.DockBottom,  Gnome.DockLeft and  Gnome.DockFloating <br />
+//! band_num : Number of the band where the dock item should be placed <br />
+//! band_position : Position of the new dock item in band band_num <br />
+//! offset : Offset from the previous dock item in the band; if there is no previous item, offset from the beginning of the band.
+//! </p>
+void add_dock_item( Gnome.DockItem item, int placement, int band_num,
+                    int band_position, ?int offset );
+//! Create a new Gnome.DockItem widget containing widget, and add it
+//! to app's dock with the specified layout information. Notice that,
+//! if automatic layout configuration is enabled, the layout is
+//! overridden by the saved configuration, if any.
+//! <p>
+//!
+//! item : Item to be added to app's dock<br />
+//! placement :  Placement for the new dock item, one of Gnome.DockTop,  Gnome.DockRight,  Gnome.DockBottom,  Gnome.DockLeft and  Gnome.DockFloating <br />
+//! band_num : Number of the band where the dock item should be placed <br />
+//! band_position : Position of the new dock item in band band_num<br />
+//! offset : Offset from the previous dock item in the band; if there is no previous item, offset from the beginning of the band.
+//! </p>
+void enable_layout_config( int enable );
+//! Specify whether the the dock's layout configuration should be
+//! automatically saved via gnome-config whenever it changes, or not.
+
+Gnome.Dock get_dock();
+//! retrieved the Gnome.Dock widget contained in the App
+
+Gnome.DockItem get_dock_item_by_name( string name );
+
+
+Gnome.Dialog message( string message );
+//! A simple message, in an OK dialog or the status bar. Requires
+//! confirmation from the user before it goes away.
+//! Returns 0 or a dialog widget. If 0, the message is displayed in the
+//! status bar.
+
+void flash( string flash );
+//! Flash the message in the statusbar for a few moments; if no
+//! statusbar, do nothing. For trivial little status messages,
+//! e.g. "Auto saving..."
+
+Gnome.Dialog error( string error );
+//! An important fatal error; if it appears in the statusbar, it might
+//! gdk_beep() and require acknowledgement.
+
+Gnome.Dialog warning( string warning );
+//! A not-so-important error, but still marked better than a flash
+
+%{
+static void replyfunc(int reply, struct signal_data *d)
+{
+  push_int( reply );
+  push_svalue( &d->args );
+  apply_svalue( &d->cb, 2 );
+  pop_stack();
+  xfree( d );
+}
+
+static void sreplyfunc(char *reply, struct signal_data *d)
+{
+  PGTK_PUSH_GCHAR( reply );
+  push_svalue( &d->args );
+  apply_svalue( &d->cb, 2 );
+  pop_stack();
+  xfree( d );
+  g_free( reply ); /* should we? */
+}
+
+static gdouble progressfunc(struct signal_data *d)
+{
+  gdouble res;
+  push_svalue( &d->args );
+  apply_svalue( &d->cb, 1 );
+  res = (gdouble)Pike_sp[-1].u.float_number;
+  pop_stack();
+  return res;
+}
+
+static void progresscancelfunc( struct signal_data *d )
+{
+  xfree( d );
+}
+%}
+
+void question(string question,
+              function(int,mixed:void) reply_callback,
+              mixed cb_arg2 )
+//! Ask a yes or no question, and call the callback when it's answered.
+{
+  struct signal_data * d  = (void *)xalloc( sizeof(struct signal_data) );
+  gchar *message;
+  if( args != 3 || !PGTK_ISSTR(Pike_sp-args))  Pike_error("Illegal arguments to question");
+  message=PGTK_GETSTR(Pike_sp-args);
+  d->cb = Pike_sp[1-args];
+  d->args = Pike_sp[2-args];
+  gnome_app_question( GNOME_APP(THIS->obj), message, (void *)replyfunc, d );
+  PGTK_FREESTR( message );
+  pop_n_elems( args );
+  RETURN_THIS();
+}
+
+void question_modal(string question,
+                    function(int,mixed:void) callback,
+                    mixed cb_arg2 )
+//! Ask a yes or no question, block the application while it is asked,
+//! and call the callback when it's answered.
+{
+  struct signal_data * d  = (void *)xalloc( sizeof(struct signal_data) );
+  gchar *message;
+  if( args != 3 || !PGTK_ISSTR(Pike_sp-args))  Pike_error("Illegal arguments to question_modal");
+  message=PGTK_GETSTR(Pike_sp-args);
+  d->cb = Pike_sp[1-args];
+  d->args = Pike_sp[2-args];
+  gnome_app_question_modal(GNOME_APP(THIS->obj),message,(void *)replyfunc,d );
+  PGTK_FREESTR( message );
+  pop_n_elems( args );
+  RETURN_THIS();
+}
+
+void ok_cancel(string question,
+               function(int,mixed:void) callback,
+               mixed cb_arg2 )
+//! Ask a ok or cancel question
+//! and call the callback when it's answered.
+{
+  struct signal_data * d  = (void *)xalloc( sizeof(struct signal_data) );
+  gchar *message;
+  if( args != 3 || !PGTK_ISSTR(Pike_sp-args))  Pike_error("Illegal arguments to question_modal");
+  message=PGTK_GETSTR(Pike_sp-args);
+  d->cb = Pike_sp[1-args];
+  d->args = Pike_sp[2-args];
+  gnome_app_ok_cancel(GNOME_APP(THIS->obj),message,(void *)replyfunc,d );
+  PGTK_FREESTR( message );
+  pop_n_elems( args );
+  RETURN_THIS();
+}
+
+void ok_cancel_modal(string question,
+                     function(int,mixed:void) callback,
+                     mixed cb_arg2 )
+//! Ask a ok or cancel question, block the application while it is asked,
+//! and call the callback when it's answered.
+{
+  struct signal_data * d  = (void *)xalloc( sizeof(struct signal_data) );
+  char *message;
+  get_all_args( "ok_cancel_modal", args, "%s%*%*", &message,&d->cb, &d->args );
+  gnome_app_ok_cancel_modal(GNOME_APP(THIS->obj),message,(void *)replyfunc,d );
+  pop_n_elems( args );
+  RETURN_THIS();
+}
+
+void request_string(string question,
+                    function(string,mixed:void) callback,
+                    mixed cb_arg2 )
+//! Request a string, and call the callback when it's answered.
+{
+  struct signal_data * d  = (void *)xalloc( sizeof(struct signal_data) );
+  char *message;
+  get_all_args( "request_string", args, "%s%*%*", &message,&d->cb, &d->args );
+  gnome_app_request_string(GNOME_APP(THIS->obj),message,(void *)sreplyfunc,d);
+  pop_n_elems( args );
+  RETURN_THIS();
+}
+
+void request_password(string question,
+                      function(string,mixed:void) callback,
+                      mixed cb_arg2 )
+//! As request string, but do not show the string
+{
+  struct signal_data * d  = (void *)xalloc( sizeof(struct signal_data) );
+  char *message;
+  get_all_args( "request_password", args, "%s%*%*", &message,&d->cb, &d->args );
+  gnome_app_request_password(GNOME_APP(THIS->obj),message,(void *)sreplyfunc,d);
+  pop_n_elems( args );
+  RETURN_THIS();
+}
+
+Gnome.AppProgressKey progress_timeout(string prompt,
+                                      int interval,
+                                      function(mixed:float) cb,
+                                      mixed cb_arg1)
+{
+  struct signal_data * d  = (void *)xalloc( sizeof(struct signal_data) );
+  char *message;
+  INT_TYPE interval;
+  GnomeAppProgressKey k;
+  struct object *res;
+  get_all_args( "progress_timeout", args, "%s%i%*%*",
+                &message, &interval, &d->cb, &d->args );
+  k = gnome_app_progress_timeout(GNOME_APP(THIS->obj), message, interval,
+                                 (void *)progressfunc,
+                                 (void *)progresscancelfunc,d);
+  pop_n_elems( args );
+  push_pgdkobject( k, pgnome_app_progress_key_program );
+}
+
+Gnome.AppProgressKey progress_manual(string prompt)
+{
+  char *message;
+  GnomeAppProgressKey k;
+  get_all_args( "progress_manual", args, "%s", &message );
+  k = gnome_app_progress_manual(GNOME_APP(THIS->obj), message, 0, 0 );
+  pop_n_elems( args );
+  push_pgdkobject( k, pgnome_app_progress_key_program );
+}
+
+
+class Gnome.AppProgressKey;
+//! Wrapper for the opaque GnomeAppProgressKey type
+void set(float percent)
+{
+  if(args!=1 || Pike_sp[-1].type != PIKE_T_FLOAT )
+    Pike_error("Bad argument 1 to set\n");
+  if( THIS->obj )
+    gnome_app_set_progress( (GnomeAppProgressKey)THIS->obj,
+                            (gdouble)Pike_sp[-1].u.float_number );
+  RETURN_THIS();
+}
+
+void destroy()
+{
+  if( THIS->obj )
+    gnome_app_progress_done( (GnomeAppProgressKey)THIS->obj );
+}
+
+void done()
+{
+  gnome_app_progress_done( (GnomeAppProgressKey)THIS->obj );
+  THIS->obj = 0;
+  RETURN_THIS();
+}
+
+

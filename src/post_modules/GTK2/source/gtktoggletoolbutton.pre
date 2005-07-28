@@ -1,0 +1,32 @@
+require gtk24;
+
+class GTK2.ToggleToolButton;
+inherit GTK2.ToolButton;
+
+signal toggled;
+
+void create(?string stock_id)
+//! Creates a new toggle tool button, with or without
+//! a stock id.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    const gchar *s;
+    get_all_args("create",args,"%s",&s);
+    THIS->obj=G_OBJECT(gtk_toggle_tool_button_new_from_stock(s));
+  } else
+    THIS->obj=G_OBJECT(gtk_toggle_tool_button_new());
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
+
+void set_active(int is_active);
+//! Sets the status of the toggle tool button.  Set to true
+//! if you want the button to be pressed in, and false to
+//! raise it.  This causes the toggled signal to be emitted.
+
+int get_active();
+//! Returns the status of the toggle tool button, true if it
+//! is pressed in and false if it isn't.
+endrequire;

@@ -1,0 +1,17 @@
+class GTK2.Item;
+inherit GTK2.Bin;
+
+//! This class is inherited by all 'item' type of widgets.
+
+signal select;
+signal deselect;
+signal toggle;
+
+void select();
+//! Emulate a 'select' event.
+void deselect();
+//! Emulate a 'deselect' event.
+void toggle();
+//! Emulate a 'toggle' event.
+
+

@@ -1,0 +1,35 @@
+class GTK2.TextChildAnchor;
+inherit G.Object;
+
+//! Anchors for embedding widgets in a TextBuffer.
+
+void create();
+//! Creates a new W(TextChildAnchor).  Usually you would then insert it into
+//! W(TextBuffer) with W(TextBuffer)->insert_child_anchor().  To perform the
+//! creation and insertion in one step, use the convenience function
+//! W(TextBuffer)->create_child_anchor().
+
+array get_widgets()
+//! Gets a list of all widgets anchored at this child anchor.
+{
+  pgtk_verify_inited();
+  {
+    GList *gl,*g2;
+    int i,j=0;
+    my_pop_n_elems(args);
+    gl=gtk_text_child_anchor_get_widgets(GTK_TEXT_CHILD_ANCHOR(THIS->obj));
+    i=g_list_length(gl);
+    g2=g_list_first(gl);
+    while (j<i) {
+      push_gobject(g2->data);
+      j++;
+      g2=g_list_next(g2);
+    }
+    f_aggregate(i);
+    g_list_free(gl);
+  }
+}
+
+int get_deleted();
+//! Determines whether a child anchor has been deleted from the buffer.
+

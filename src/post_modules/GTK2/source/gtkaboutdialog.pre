@@ -1,0 +1,84 @@
+require gtk26;
+
+class GTK2.AboutDialog;
+inherit GTK2.Dialog;
+
+//! Properties:
+//! string comments
+//! string copyright
+//! string license
+//! GDK2.Pixbuf logo
+//! string logo-icon-name
+//! string name
+//! string translator-credits
+//! string version
+//! string website
+//! string website-label
+//! <p>
+//! Style properties:
+//! GDK2.Color link-color
+
+void create();
+//! Create a new GTK.AboutDialog.
+
+string get_name();
+//! Returns the program name.
+
+void set_name(string name);
+//! Sets the name to display.
+
+string get_version();
+//! Returns the version string.
+
+void set_version(string version);
+//! Sets the version string.
+
+string get_copyright();
+//! Returns the copyright string.
+
+void set_copyright(string copyright);
+//! Sets the copyright string.
+
+string get_comments();
+//! Returns the comments string.
+
+void set_comments(string comments);
+//! Sets the comment string.
+
+string get_license();
+//! Returns the license information.
+
+void set_license(string license);
+//! Sets the license information.
+
+string get_website();
+//! Returns the website URL.
+
+void set_website(string website);
+//! Sets the URL to use for the website link.
+
+string get_website_label();
+//! Returns the label used for the website link.
+
+void set_website_label(string label);
+//! Sets the label used for the website link.  Defaults to the website URL.
+
+string get_translator_credits();
+//! Returns the translator credis.
+
+void set_translator_credits(string credits);
+//! Sets the translator credits.
+
+GDK2.Pixbuf get_logo();
+//! Returns the pixbuf displayed as logo.
+
+void set_logo(GDK2.Pixbuf logo);
+//! Sets the pixbuf to be displayed as the logo.
+
+string get_logo_icon_name();
+//! Returns the icon name.
+
+void set_logo_icon_name(string name);
+//! Sets the icon name.
+
+endrequire;

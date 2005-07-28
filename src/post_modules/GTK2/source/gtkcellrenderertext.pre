@@ -1,0 +1,85 @@
+class GTK2.CellRendererText;
+inherit GTK2.CellRenderer;
+
+//! Properties:
+require pango;
+//! Pango.AttrList attributes
+endrequire;
+//! string background
+//! GDK2.Color background-gdk
+//! int background-set
+//! int editable
+//! int editable-set
+require pango;
+require pango16;
+//! int ellipsize CONST(PANGO_ELLIPSIZE_)
+//! int ellipsize-set
+endrequire;
+//! string family
+//! int family-set
+//! string font
+//! Pango.FontDescription font-desc
+endrequire;
+//! string foreground
+//! GDK2.Color foreground-gdk
+//! int foreground-set
+//! string language
+//! int language-set
+require pango;
+//! string markup
+endrequire;
+//! int rise
+//! int rise-set
+//! float scale
+//! int scale-set
+//! int single-paragraph-mode
+//! int size
+//! float size-points
+//! int size-set
+require pango;
+//! int stretch CONST(PANGO_STRETCH_)
+//! int stretch-set
+endrequire;
+//! int strikethrough
+//! int strikethrough-set
+require pango;
+//! int style CONST(PANGO_STYLE_)
+//! int style-set
+endrequire;
+//! string text
+require pango;
+//! int underline CONST(PANGO_UNDERLINE_)
+//! int underline-set
+//! int variant CONST(PANGO_VARIANT_)
+//! int variant-set
+//! int weight
+//! int weight-set
+endrequire;
+//! int width-chars
+
+signal edited;
+
+void create()
+//! Creates a new W(CellRendererText).  Adjust how text is drawn using object
+//! properties.  Object properties can be set globally (with G.Object->set()).
+//! Also, with W(TreeViewColumn), you can bind a property to a value in a
+//! W(TreeModel).  For example, you can bind the "text" property on the cell
+//! renderer to a string value in the model, thus rendering a different string
+//! in each row of the W(TreeView).
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  THIS->obj=G_OBJECT(gtk_cell_renderer_text_new());
+  pgtk__init_this_object();
+}
+
+void set_fixed_height_from_font(int number_of_rows);
+//! Sets the height of a renderer to explicitly be determined by the "font"
+//! and "y_bad" property set on it.  Further changes in these properties do not
+//! affect the height, so they must be accompanied by a subsequent call to
+//! this function.  Using this function is unflexible, and should really only
+//! be used if calculating the size of cell is too slow (i.e., a massive
+//! number of cells displayed).  If number_of_rows is -1, then the fixed height
+//! is unset, and the height is determined by the properties again.
+
+

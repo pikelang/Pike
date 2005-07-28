@@ -1,0 +1,37 @@
+require gnome;
+class Gnome.DockItem;
+inherit GTK.Bin;
+
+signal dock_drag_begin;
+//! This signal is emitted as soon as the user starts dragging the dock item.
+signal dock_drag_end;
+//! This signal is emitted at the end of a dock item drag.
+signal dock_drag_motion;
+//! This signal is emitted while the item is being dragged and reports
+//! that the pointer position has changed.
+signal dock_detatch;
+//! This signal is emitted when an item is detached from its parent
+//! dock band and thus becomes a floating item.
+
+
+void create( string name, int behavior );
+//! Create a new GnomeDockItem named name, with the specified behavior.<p>
+//!  Gnome.DockItemBehExclusive specifies that the dock item is always the only one in its band. </p><p>
+//!  Gnome.DockItemBehNeverFloating specifies that users cannot detach the dock item from the dock. </p><p>
+//!  Gnome.DockItemBehNeverVertical specifies that the dock item must be kept horizontal, and users cannot move it to a vertical band.</p><p>
+//!  Gnome.DockItemBehNeverHorizontal specifies that the dock item must be kept horizontal, and users cannot move it to a vertical band.</p><p>
+//!  Gnome.DockItemBehLocked specifies that users cannot drag the item around.
+//! </p>
+GTK.Widget get_child( );
+//! Retrieve the child of the item.
+
+string get_name( );
+//! Retrieve the name
+void set_shadow_type( int shadow_type);
+//! One of CONST(GTK_SHADOW)
+int  get_shadow_type( );
+//! One of CONST(GTK_SHADOW)
+void set_orientation( int orientation);
+int get_orientation( );
+int get_behavior( );
+

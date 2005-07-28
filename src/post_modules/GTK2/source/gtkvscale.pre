@@ -1,0 +1,37 @@
+class GTK2.Vscale;
+inherit GTK2.Scale;
+
+//! The GTK2.HScale widget is used to allow the user to select a value
+//! using a horizontal slider. A GTK2.Adjustment is used to set the
+//! initial value, the lower and upper bounds, and the step and page
+//! increments.
+//! <p>
+//! See W(Scale) for details
+//! </p><p>
+//! The position to show the current value, and the number of decimal
+//! places shown can be set using the parent W(Scale) class's
+//! functions.
+//! </p>
+//! IMG: GTK2.Vscale(GTK2.Adjustment())->set_size_request(300,30)
+
+void create(GTK2.Adjustment|float settings_or_min, ?float max,
+	    ?float step)
+//! Used to create a new hscale widget.
+//! Either pass an W(Adjustment), or three floats representing min, max, and
+//! step values.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args==1) {
+    struct object *o1;
+    get_all_args("create",args,"%o",&o1);
+    my_pop_n_elems(args);
+    THIS->obj=G_OBJECT(gtk_vscale_new(GTK_ADJUSTMENT(get_gobject(o1))));
+  } else {
+    FLOAT_TYPE min,max,step;
+    get_all_args("create",args,"%f%f%f",&min,&max,&step);
+    my_pop_n_elems(args);
+    THIS->obj=G_OBJECT(gtk_vscale_new_with_range(min,max,step));
+  }
+  pgtk__init_this_object();
+}
