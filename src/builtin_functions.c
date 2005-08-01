@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.599 2005/05/19 22:35:25 mast Exp $
+|| $Id: builtin_functions.c,v 1.600 2005/08/01 15:31:25 mast Exp $
 */
 
 #include "global.h"
@@ -1876,7 +1876,6 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
       out->str[j++] = 0x80 | ((c >> 6) & 0x3f);
       out->str[j++] = 0x80 | (c & 0x3f);
     } else {
-      /* This and onwards is extended UTF-8 encoding. */
       /* 32 - 36bit */
       out->str[j++] = DO_NOT_WARN((char)0xfe);
       out->str[j++] = 0x80 | ((c >> 30) & 0x3f);
@@ -1906,13 +1905,12 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
  *! @note
  *!   Throws an error if the stream is not a legal UTF-8 byte-stream.
  *!
- *!   Accepts and decodes the extension used by @[string_to_utf8()], if
+ *!   Accepts and decodes the extension used by @[string_to_utf8()] if
  *!   @[extended] is @expr{1@}.
  *!
  *! @note
  *!   In conformance with RFC 3629 and Unicode 3.1 and later,
- *!   non-shortest forms are not decoded. An error will be thrown
- *!   instead.
+ *!   non-shortest forms are not decoded. An error is thrown instead.
  *!
  *! @seealso
  *!   @[Locale.Charset.encoder()], @[string_to_unicode()], @[string_to_utf8()],
@@ -5185,8 +5183,10 @@ static int does_match(struct pike_string *s,int j,
  *!   When the second argument is a string and @[str] matches
  *!   the glob @[glob] @expr{1@} will be returned, @expr{0@} (zero) otherwise.
  *!
- *!   If the second array is an array and array containing the strings in
- *!   @[arr] that match @[glob] will be returned.
+ *!   When the second argument is an array then an array is returned
+ *!   that only contains the strings in it that match @[glob]. The
+ *!   order among the returned strings is the same as in the input
+ *!   array.
  *!
  *! @seealso
  *!   @[sscanf()], @[Regexp]
