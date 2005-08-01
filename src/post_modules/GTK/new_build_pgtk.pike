@@ -583,7 +583,7 @@ class Type
     {
       subtypes = map( q, Type );
       int ind;
-      if( (ind = has_value( subtypes->name, "void" )) )
+      if( (ind = search( subtypes->name, "void" )) != -1 )
       {
         opt = 1;
         subtypes = subtypes[..ind-1] + subtypes[ind+1..];
