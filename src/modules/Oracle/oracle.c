@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.77 2004/10/12 17:01:04 mast Exp $
+|| $Id: oracle.c,v 1.78 2005/08/03 18:35:10 grubba Exp $
 */
 
 /*
@@ -54,7 +54,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.77 2004/10/12 17:01:04 mast Exp $");
+RCSID("$Id: oracle.c,v 1.78 2005/08/03 18:35:10 grubba Exp $");
 
 
 /* User-changable defines: */
@@ -84,7 +84,7 @@ RCSID("$Id: oracle.c,v 1.77 2004/10/12 17:01:04 mast Exp $");
 /* #define REUSE_DEFINES */
 
 /*
- * This define crippes the Pike module to use static define buffers.
+ * This define cripples the Pike module to use static define buffers.
  * It may be required to work around bugs in some versions of the
  * oracle libraries - Hubbe
  */
@@ -94,7 +94,7 @@ RCSID("$Id: oracle.c,v 1.77 2004/10/12 17:01:04 mast Exp $");
  * -Hubbe
  */
 
-/* #define STATIC_BUFFERS 8000 */
+#define STATIC_BUFFERS 8000
 
 /* End user-changable defines */
 
@@ -161,7 +161,7 @@ DEFINE_MUTEX(oracle_serialization_mutex);
 #define tOr(X,Y) X "|" Y
 #define tArr(X) "array(" X ")"
 #define tFunc(X,Y) "function(" X ":" Y ")"
-#define tFuncV(X,Z,Y) "function(" X Z "...:" Y ")"
+#define tFuncV(X,Z,Y) "function(" X " " Z "...:" Y ")"
 #define tComma ","
 
 #define string_builder dynamic_buffer_s
@@ -407,11 +407,11 @@ struct inout
     char shortstr[32];
     OCIDate date;
     OCINumber num;
+    OCILobLocator *lob;
 #ifdef STATIC_BUFFERS
     char str[STATIC_BUFFERS];
 #endif
   } u;
-  OCILobLocator *lob;
 };
 
 static void free_inout(struct inout *i);
@@ -673,6 +673,12 @@ static void ora_error_handler(OCIError *err, sword rc, char *func)
 #endif
 
   OCIErrorGet(err,1,0,&errcode,msgbuf,sizeof(msgbuf),OCI_HTYPE_ERROR);
+
+#ifdef ORACLE_DEBUG
+  fprintf(stderr,"%s:code=%d:errcode=%d:%s\n",
+	  func?func:"Oracle", rc, errcode, msgbuf);
+#endif
+
   if(func)
     Pike_error("%s:code=%d:%s",func,rc,msgbuf);
   else
@@ -749,8 +755,14 @@ static sb4 output_callback(struct inout *inout,
 			   ub2 **rcodepp)
 {
 #ifdef ORACLE_DEBUG
-  fprintf(stderr,"%s(%d)\n",__FUNCTION__,inout->ftype);
+  fprintf(stderr,"%s(%p[%d], %d, %p[%p], %p[%p[%d]], %p, %p[%p], %p[%d])\n",
+	  __FUNCTION__, inout, inout->ftype, index, bufpp, *bufpp,
+	  alenpp, *alenpp, (*alenpp)?(**alenpp):0,
+	  piecep, indpp, *indpp, rcodepp, *rcodepp);
 #endif
+
+  CHECK_INTERPRETER_LOCK();
+
   debug_malloc_touch(bufpp);
   debug_malloc_touch(*bufpp);
   debug_malloc_touch(alenpp);
@@ -765,6 +777,11 @@ static sb4 output_callback(struct inout *inout,
   *rcodepp=&inout->rcode;
   *alenpp=&inout->xlen;
 
+#ifdef ORACLE_DEBUG
+  fprintf(stderr, "  indicator:%p, rcode: %d, xlen: %d\n",
+	  inout->indicator, inout->rcode, inout->xlen);
+#endif
+
   switch(inout->ftype)
   {
     default:
@@ -778,14 +795,26 @@ static sb4 output_callback(struct inout *inout,
     case SQLT_LNG:
       if(!STRING_BUILDER_STR(inout->output))
       {
+#ifdef ORACLE_DEBUG
+	fprintf(stderr, "New string builder.\n");
+#endif
 	init_string_builder(& inout->output,0);
       }else{
-	STRING_BUILDER_LEN(inout->output)+=inout->xlen-BLOCKSIZE;
-	inout->xlen=0;
+#ifdef ORACLE_DEBUG
+	fprintf(stderr, "Grow string builder (%d + %d).\n",
+		STRING_BUILDER_LEN(inout->output), inout->xlen);
+#endif
+	STRING_BUILDER_LEN(inout->output)+=inout->xlen;
       }
       
-      inout->xlen=BLOCKSIZE;
+      inout->xlen = BLOCKSIZE;
       *bufpp=string_builder_allocate(& inout->output, inout->xlen, 0);
+      STRING_BUILDER_LEN(inout->output) -= inout->xlen;
+#ifdef ORACLE_DEBUG
+      fprintf(stderr, "Grown string builder: %d (malloced: %d).\n",
+	      STRING_BUILDER_LEN(inout->output),
+	      inout->output.malloced);
+#endif
       *piecep = OCI_NEXT_PIECE;
 #ifdef ORACLE_DEBUG
       MEMSET(*bufpp, '#', inout->xlen);
@@ -795,8 +824,8 @@ static sb4 output_callback(struct inout *inout,
 
   case SQLT_CLOB:
   case SQLT_BLOB:
-    *bufpp=inout->lob;
-    inout->xlen=sizeof(inout->lob); /* ? */
+    *bufpp=inout->u.lob;
+    inout->xlen=sizeof(inout->u.lob); /* ? */
     *piecep = OCI_ONE_PIECE;
     return OCI_CONTINUE;
 
@@ -812,7 +841,7 @@ static sb4 output_callback(struct inout *inout,
       *piecep = OCI_ONE_PIECE;
       return OCI_CONTINUE;
 
-    case SQLT_NUM:
+    case SQLT_VNU:
       *bufpp=&inout->u.num;
       inout->xlen=sizeof(inout->u.num);
       *piecep = OCI_ONE_PIECE;
@@ -829,20 +858,22 @@ static sb4 output_callback(struct inout *inout,
 
 }
 			   
-
-static sb4 define_callback(void *dbresultinfo,
+/* NOTE: May be called by OCIStmtFetch() in a THREADS_ALLOW context. */
+static sb4 define_callback(dvoid *dbresultinfo,
 			   OCIDefine *def,
 			   ub4 iter,
-			   void **bufpp,
+			   dvoid **bufpp,
 			   ub4 **alenpp,
 			   ub1 *piecep,
 			   dvoid **indpp,
 			   ub2 **rcodep)
 {
+  sb4 res;
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s ..",__FUNCTION__);
 #endif
-  return
+
+  res =
     output_callback( &((struct dbresultinfo *)dbresultinfo)->data,
 		     iter,
 		     bufpp,
@@ -850,6 +881,12 @@ static sb4 define_callback(void *dbresultinfo,
 		     piecep,
 		     indpp,
 		     rcodep);
+
+#ifdef ORACLE_DEBUG
+  fprintf(stderr, "  ==> %d (buf: %p[%d])\n",
+	  res, *bufpp, **alenpp);
+#endif
+  return res;
 }
 
 
@@ -949,8 +986,9 @@ static void f_fetch_fields(INT32 args)
 	ora_error_handler(dbcon->error_handle, rc, errfunc);
 
 #ifdef ORACLE_DEBUG
-      name[namelen]=0;
-      fprintf(stderr,"FIELD: name=%s length=%d type=%d\n",name,size,type);
+      /* name[namelen]=0; */
+      fprintf(stderr,"FIELD: name=%.*s length=%d type=%d\n",
+	      namelen,name,size,type);
 #endif
 
 
@@ -989,7 +1027,7 @@ static void f_fetch_fields(INT32 args)
 /* 	    OCINumberSetZero(dbcon->error_handle, &info->data.u.num); */
 	    MEMSET(&info->data.u.num, 0, data_size);
 #endif
-	    type=SQLT_NUM;
+	    type=SQLT_VNU;
 #endif
 	  }
 	  break;
@@ -1019,9 +1057,10 @@ static void f_fetch_fields(INT32 args)
 	  type_name = "blob";
 	else
 	  type_name="clob";
+	info->data.u.lob = 0;
 	if ((rc = OCIDescriptorAlloc(
 				    (dvoid *) get_oracle_environment(),
-				    (dvoid **) &info->data.lob, 
+				    (dvoid **) &info->data.u.lob, 
 				    (ub4)OCI_DTYPE_LOB, 
 				    (size_t) 0, 
 				    (dvoid **) 0)))
@@ -1029,11 +1068,11 @@ static void f_fetch_fields(INT32 args)
 #ifdef ORACLE_DEBUG
 	    fprintf(stderr,"OCIDescriptorAlloc failed!\n");
 #endif
-	    info->data.lob = 0;
+	    info->data.u.lob = 0;
 	    info->define_handle = 0;
 	    ora_error_handler(dbcon->error_handle, rc, "OCIDescriptorAlloc");
 	  }
-	data_size=sizeof(info->data.lob); /* ? */
+	data_size=sizeof(info->data.u.lob); /* ? */
 	break;
 
 	case SQLT_RID:
@@ -1082,13 +1121,15 @@ static void f_fetch_fields(INT32 args)
 			&info->define_handle,
 			dbcon->error_handle,
 			i+1,
-			info->data.lob ? 
-			(void *)(&info->data.lob):
-			(void *)(&info->data.u),
+			/* NOTE: valuep is ignored in
+			 * OCI_DYNAMIC_FETCH mode. */
+			&info->data.u,
 #ifdef STATIC_BUFFERS
 			data_size<0? STATIC_BUFFERS :data_size,
 #else
-			data_size<0? 8000 :data_size,
+			/* But value_sz is used as the maximum piece
+			 * size if OCIDefineDynamic() is used. */
+			data_size<0? BLOCKSIZE :data_size,
 #endif
 			type,
 			& info->data.indicator,
@@ -1097,7 +1138,8 @@ static void f_fetch_fields(INT32 args)
 #ifdef STATIC_BUFFERS
 			0
 #else
-			OCI_DYNAMIC_FETCH
+			/* No need to use callbacks for fixed-length fields. */
+			data_size<0? OCI_DYNAMIC_FETCH :0
 #endif
 	);
 
@@ -1112,12 +1154,14 @@ static void f_fetch_fields(INT32 args)
 	ora_error_handler(dbcon->error_handle, rc, "OCIDefineByPos");
 
 #ifndef STATIC_BUFFERS
-      rc=OCIDefineDynamic(info->define_handle,
-			  dbcon->error_handle,
-			  info,
-			  define_callback);
-      if(!IS_SUCCESS(rc))
-	ora_error_handler(dbcon->error_handle, rc, "OCIDefineDynamic");
+      if (data_size < 0) {
+	rc=OCIDefineDynamic(info->define_handle,
+			    dbcon->error_handle,
+			    info,
+			    define_callback);
+	if(!IS_SUCCESS(rc))
+	  ora_error_handler(dbcon->error_handle, rc, "OCIDefineDynamic");
+      }
 #endif
       debug_malloc_touch(dbcon->error_handle);
       debug_malloc_touch(dbquery->statement);
@@ -1141,9 +1185,11 @@ static void push_inout_value(struct inout *inout,
   sb4 bsize=100;
   int rslt;
   char *errfunc=0;
+  sword ret;
   
 #ifdef ORACLE_DEBUG
-  fprintf(stderr,"%s .. (type = %d, indicator = %d, len= %d)\n",__FUNCTION__,inout->ftype,inout->indicator, inout->xlen);
+  fprintf(stderr,"%s .. (type = %d, indicator = %d, len= %d)\n",
+	  __FUNCTION__,inout->ftype,inout->indicator, inout->xlen);
 #endif
 
   if(inout->indicator)
@@ -1168,6 +1214,7 @@ static void push_inout_value(struct inout *inout,
 	break;
 	
       case SQLT_NUM:
+      case SQLT_VNU:
       case SQLT_INT:
 	ref_push_object(nullint_object);
 	break;
@@ -1200,10 +1247,21 @@ static void push_inout_value(struct inout *inout,
 	break;
       }
 #endif
-      STRING_BUILDER_LEN(inout->output)+=inout->xlen-BLOCKSIZE;
+      STRING_BUILDER_LEN(inout->output) += inout->xlen;
       if(inout->ftype == SQLT_STR) 
 	STRING_BUILDER_LEN(inout->output)--;
+
+#if 0
+      for(ret=0;ret<STRING_BUILDER_LEN(inout->output);ret++)
+	fprintf(stderr,"%02x ",((unsigned char *)inout->output.s->str)[ret]);
+      fprintf(stderr,"\n");
+#endif
+
       inout->xlen=0;
+#ifdef ORACLE_DEBUG
+      fprintf(stderr, "  STRING_BUILDER_LEN(inout->output): %d\n",
+	      STRING_BUILDER_LEN(inout->output));
+#endif
       push_string(finish_string_builder(& inout->output));
       STRING_BUILDER_STR(inout->output)=0;;
       break;
@@ -1211,9 +1269,8 @@ static void push_inout_value(struct inout *inout,
     case SQLT_CLOB:
     case SQLT_BLOB:
     {
-      sword ret;
       if((ret = OCILobGetLength(dbcon->context, dbcon->error_handle,
-				inout->lob, &loblen)) != OCI_SUCCESS) {
+				inout->u.lob, &loblen)) != OCI_SUCCESS) {
 #ifdef ORACLE_DEBUG
 	fprintf(stderr,"OCILobGetLength failed.\n");
 #endif
@@ -1223,7 +1280,7 @@ static void push_inout_value(struct inout *inout,
 	if((bufp = malloc(loblen))) {
 	  if((ret = OCILobRead(dbcon->context,
 			       dbcon->error_handle,
-			       inout->lob, 
+			       inout->u.lob, 
 			       &amtp, 
 			       1, 
 			       (dvoid *) bufp,
@@ -1257,31 +1314,39 @@ static void push_inout_value(struct inout *inout,
 #if 0
       /*  Handle automatically freed when environment handle is deallocated.
 	  Not needed according according to doc.*/
-      if(inout->lob)
-	OCIDescriptorFree((dvoid *) inout->lob, (ub4) OCI_DTYPE_LOB);
+      /* WARNING: Do not enable! */
+      if(inout->u.lob)
+	OCIDescriptorFree((dvoid *) inout->u.lob, (ub4) OCI_DTYPE_LOB);
 #endif
       }
       break;
 	
     case SQLT_ODT:
     case SQLT_DAT:
+#if 0
+      for(ret=0;ret<sizeof(inout->u.date);ret++)
+	fprintf(stderr,"%02x ",((unsigned char *)&inout->u.date)[ret]);
+      fprintf(stderr,"\n");
+#endif
+
       push_object(low_clone(Date_program));
       call_c_initializers(Pike_sp[-1].u.object);
       ((struct dbdate *)STORAGE(Pike_sp[-1].u.object))->date = inout->u.date;
       break;
 
     case SQLT_NUM:
+      /* Kluge -- Convert it to a VNU. */
+      MEMMOVE(inout->u.shortstr+1,inout->u.shortstr,inout->xlen);
+      inout->u.shortstr[0]=inout->xlen;
+
+      /* FALL_THROUGH */
+    case SQLT_VNU:
     {
 #ifdef INT64
       INT64 integer;
 #else
       INT32 integer;
 #endif
-      sword ret;
-
-      /* Kluge */
-      MEMMOVE(inout->u.shortstr+1,inout->u.shortstr,inout->xlen);
-      inout->u.shortstr[0]=inout->xlen;
 
 #if 0
       for(ret=0;ret<22;ret++)
@@ -1382,9 +1447,16 @@ static void f_fetch_row(INT32 args)
     pop_stack();
   }
 
-  THREADS_ALLOW();
+  /* THREADS_ALLOW(); */
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"OCIStmtFetch\n");
+  {
+    static text msgbuf[512];
+    ub4 errcode;
+    OCIErrorGet(dbcon->error_handle,1,0,&errcode,
+		msgbuf,sizeof(msgbuf),OCI_HTYPE_ERROR);
+    fprintf(stderr, "  Before: errcode=%d:%s\n", errcode, msgbuf);
+  }
 #endif
   rc=OCIStmtFetch(dbquery->statement,
 		  dbcon->error_handle,
@@ -1392,9 +1464,9 @@ static void f_fetch_row(INT32 args)
 		  OCI_FETCH_NEXT,
 		  OCI_DEFAULT);
 #ifdef ORACLE_DEBUG
-  fprintf(stderr,"OCIStmtFetch done\n");
+  fprintf(stderr,"OCIStmtFetch done rc=%d\n", rc);
 #endif
-  THREADS_DISALLOW();
+  /* THREADS_DISALLOW(); */
 
   if(rc==OCI_NO_DATA)
   {
@@ -1651,14 +1723,11 @@ struct bind
   struct inout data;
 };
 
-#define MAX_NUMBER_OF_BINDINGS 256
-
 struct bind_block
 {
-  struct bind bind[MAX_NUMBER_OF_BINDINGS];
+  struct bind *bind;
   int bindnum;
 };
-
 
 static sb4 input_callback(void *vbind_struct,
 			   OCIBind *bindp,
@@ -1722,6 +1791,10 @@ static void free_bind_block(struct bind_block *bind)
     free_inout(& bind->bind[bind->bindnum].data);
     bind->bindnum--;
   }
+  if (bind->bind) {
+    free(bind->bind);
+    bind->bind = NULL;
+  }
 }
 
 /*
@@ -1740,10 +1813,7 @@ static void f_big_typed_query_create(INT32 args)
   int i,num;
   struct object *new_parent=0;
   struct bind_block bind;
-
   extern int d_flag;
-
-  bind.bindnum=-1;
 
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
@@ -1779,8 +1849,14 @@ static void f_big_typed_query_create(INT32 args)
     case 0: break;
   }
 
-  if(bnds && m_sizeof(bnds) > MAX_NUMBER_OF_BINDINGS)
-    Pike_error("Too many variables.\n");
+  bind.bindnum=-1;    
+  bind.bind = NULL;
+
+  SET_ONERROR(err, free_bind_block, &bind);
+
+  if (bnds && m_sizeof(bnds)) {
+    bind.bind = xalloc(sizeof(struct bind) * m_sizeof(bnds));
+  }
 
   destruct_objects_to_destruct();
 
@@ -1813,12 +1889,14 @@ static void f_big_typed_query_create(INT32 args)
   }
 #endif
 
-  SET_ONERROR(err, free_bind_block, &bind);
-
-  if(bnds != NULL)
+  if(bnds && m_sizeof(bnds))
   {
     INT32 e;
     struct keypair *k;
+#ifdef ORACLE_DEBUG
+    fprintf(stderr, "Binding %d variables...\n",
+	    m_sizeof(bnds));
+#endif
     MAPPING_LOOP(bnds)
       {
 	struct svalue *value=&k->val;
@@ -2059,8 +2137,7 @@ static void f_big_typed_query_create(INT32 args)
     }
   }
 
-  free_bind_block(&bind);
-  UNSET_ONERROR(err);
+  CALL_AND_UNSET_ONERROR(err);
 
 #ifdef _REENTRANT
   if(d_flag)
@@ -2203,6 +2280,8 @@ static void dbnull_not(INT32 args)
 PIKE_MODULE_INIT
 {
   long offset=0;
+  sword ret;
+
 #ifdef ORACLE_HOME
   if(getenv("ORACLE_HOME")==NULL)
     putenv("ORACLE_HOME="ORACLE_HOME);
@@ -2216,13 +2295,23 @@ PIKE_MODULE_INIT
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
 
-  
-  if(OCIInitialize(
-    OCI_OBJECT | ORACLE_INIT_FLAGS,
-    0, ocimalloc, ocirealloc, ocifree) != OCI_SUCCESS)
+  if ((ret = 
+#if 0
+       /* Oracle 9 */
+       OCIEnvCreate( &oracle_environment,
+		     OCI_OBJECT | ORACLE_INIT_FLAGS,
+		     NULL,
+		     ocimalloc, ocirealloc, ocifree,
+		     0, NULL)
+#else
+       /* Oracle 8 */
+       OCIInitialize( OCI_OBJECT | ORACLE_INIT_FLAGS,
+		      0, ocimalloc, ocirealloc, ocifree)
+#endif
+       ) != OCI_SUCCESS)
   {
 #ifdef ORACLE_DEBUG
-    fprintf(stderr,"OCIInitialize failed\n");
+    fprintf(stderr,"OCIInitialize failed: %d\n", ret);
 #endif
     return;
   }
