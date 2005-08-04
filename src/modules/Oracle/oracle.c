@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.78 2005/08/03 18:35:10 grubba Exp $
+|| $Id: oracle.c,v 1.79 2005/08/04 12:03:54 grubba Exp $
 */
 
 /*
@@ -54,7 +54,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.78 2005/08/03 18:35:10 grubba Exp $");
+RCSID("$Id: oracle.c,v 1.79 2005/08/04 12:03:54 grubba Exp $");
 
 
 /* User-changable defines: */
@@ -92,9 +92,22 @@ RCSID("$Id: oracle.c,v 1.78 2005/08/03 18:35:10 grubba Exp $");
 /* For some reason this crashes if I make this larger than 8000
  * I suspect a static buffer somewhere in Oracle, but I have no proof.
  * -Hubbe
+ *
+ * One possible cause could be running out of stack in
+ * f_big_typed_query_create() due to the old struct bind_block
+ * being huge. I haven't tried raising the limit since shrinking
+ * struct bind_block.
+ * -Grubba 2005-08-04
  */
 
 #define STATIC_BUFFERS 8000
+
+/* This define causes dynamically sized data to be fetched via the polling
+ * api rather than by the callback api.
+ * NOTE: Ignored if STATIC_BUFFERS above is enabled.
+ */
+
+/* #define POLLING_FETCH */
 
 /* End user-changable defines */
 
@@ -755,10 +768,10 @@ static sb4 output_callback(struct inout *inout,
 			   ub2 **rcodepp)
 {
 #ifdef ORACLE_DEBUG
-  fprintf(stderr,"%s(%p[%d], %d, %p[%p], %p[%p[%d]], %p, %p[%p], %p[%d])\n",
+  fprintf(stderr,"%s(inout %p[%d], index %d, bufpp %p[%p], alenpp %p[%p[%d]], piecep %p[%d], indpp %p[%p], rcodepp %p[%d])\n",
 	  __FUNCTION__, inout, inout->ftype, index, bufpp, *bufpp,
 	  alenpp, *alenpp, (*alenpp)?(**alenpp):0,
-	  piecep, indpp, *indpp, rcodepp, *rcodepp);
+	  piecep, *piecep, indpp, *indpp, rcodepp, *rcodepp);
 #endif
 
   CHECK_INTERPRETER_LOCK();
@@ -778,8 +791,8 @@ static sb4 output_callback(struct inout *inout,
   *alenpp=&inout->xlen;
 
 #ifdef ORACLE_DEBUG
-  fprintf(stderr, "  indicator:%p, rcode: %d, xlen: %d\n",
-	  inout->indicator, inout->rcode, inout->xlen);
+  fprintf(stderr, "  indicator:%p (%p), rcode: %d (%p), xlen: %d (%p)\n",
+	  inout->indicator, *indpp, inout->rcode, *rcodepp, inout->xlen, *alenpp);
 #endif
 
   switch(inout->ftype)
@@ -808,7 +821,7 @@ static sb4 output_callback(struct inout *inout,
       }
       
       inout->xlen = BLOCKSIZE;
-      *bufpp=string_builder_allocate(& inout->output, inout->xlen, 0);
+      *bufpp = string_builder_allocate (&inout->output, inout->xlen, 0);
       STRING_BUILDER_LEN(inout->output) -= inout->xlen;
 #ifdef ORACLE_DEBUG
       fprintf(stderr, "Grown string builder: %d (malloced: %d).\n",
@@ -1153,7 +1166,7 @@ static void f_fetch_fields(INT32 args)
       if(!IS_SUCCESS(rc))
 	ora_error_handler(dbcon->error_handle, rc, "OCIDefineByPos");
 
-#ifndef STATIC_BUFFERS
+#if !defined(STATIC_BUFFERS) && !defined(POLLING_FETCH)
       if (data_size < 0) {
 	rc=OCIDefineDynamic(info->define_handle,
 			    dbcon->error_handle,
@@ -1429,7 +1442,7 @@ static void free_inout(struct inout *i)
 
 static void f_fetch_row(INT32 args)
 {
-  int i;
+  int i = 0;
   sword rc;
   struct dbresult *dbresult = THIS_RESULT;
   struct dbquery *dbquery = THIS_RESULT_QUERY;
@@ -1447,32 +1460,148 @@ static void f_fetch_row(INT32 args)
     pop_stack();
   }
 
-  /* THREADS_ALLOW(); */
-#ifdef ORACLE_DEBUG
-  fprintf(stderr,"OCIStmtFetch\n");
-  {
-    static text msgbuf[512];
-    ub4 errcode;
-    OCIErrorGet(dbcon->error_handle,1,0,&errcode,
-		msgbuf,sizeof(msgbuf),OCI_HTYPE_ERROR);
-    fprintf(stderr, "  Before: errcode=%d:%s\n", errcode, msgbuf);
-  }
+  do {
+#if defined(STATIC_BUFFERS) || defined(POLLING_FETCH)
+    /* NOTE: output_callback() is currently not safe to run
+     *       in a THREADS_ALLOW() context.
+     */
+    THREADS_ALLOW();
 #endif
-  rc=OCIStmtFetch(dbquery->statement,
-		  dbcon->error_handle,
-		  1,
-		  OCI_FETCH_NEXT,
-		  OCI_DEFAULT);
 #ifdef ORACLE_DEBUG
-  fprintf(stderr,"OCIStmtFetch done rc=%d\n", rc);
+    fprintf(stderr,"OCIStmtFetch\n");
+    {
+      static text msgbuf[512];
+      ub4 errcode;
+      OCIErrorGet(dbcon->error_handle,1,0,&errcode,
+		  msgbuf,sizeof(msgbuf),OCI_HTYPE_ERROR);
+      fprintf(stderr, "  Before: errcode=%d:%s\n", errcode, msgbuf);
+    }
 #endif
-  /* THREADS_DISALLOW(); */
+    rc=OCIStmtFetch(dbquery->statement,
+		    dbcon->error_handle,
+		    1,
+		    OCI_FETCH_NEXT,
+		    OCI_DEFAULT);
+#ifdef ORACLE_DEBUG
+    fprintf(stderr,"OCIStmtFetch done rc=%d\n", rc);
+#endif
+#if defined(STATIC_BUFFERS) || defined(POLLING_FETCH)
+    THREADS_DISALLOW();
+#endif
 
-  if(rc==OCI_NO_DATA)
-  {
-    push_int(0);
-    return;
-  }
+    if(rc==OCI_NO_DATA)
+    {
+      push_int(0);
+      return;
+    }
+#ifdef POLLING_FETCH
+    if (rc == OCI_NEED_DATA) {
+      OCIDefine *define;
+      ub4 htype;
+      ub1 direction;
+      ub4 iter;
+      ub4 index;
+      ub1 piece;
+      ub4 ret = OCIStmtGetPieceInfo(dbquery->statement,
+				    dbcon->error_handle,
+				    (void **)&define,
+				    &htype,
+				    &direction,
+				    &iter,
+				    &index,
+				    &piece);
+      struct dbresultinfo *info = NULL;
+      struct inout *inout;
+      char *buf;
+
+      if (!IS_SUCCESS(ret))
+	ora_error_handler(dbcon->error_handle, ret, "OCIStmtGetPieceInfo");
+#ifdef ORACLE_DEBUG
+      fprintf(stderr, "OCIStmtGetPieceInfo ==>\n"
+	      "  define: %p\n"
+	      "  htype: %d\n"
+	      "  direction: %d\n"
+	      "  iter: %d\n"
+	      "  index: %d\n"
+	      "  piece: %d\n",
+	      define, htype, direction, iter, index, piece);
+#endif
+      if (htype != OCI_HTYPE_DEFINE)
+	break;	/* Not supported. */
+      /* NOTE: Columns come in order, so there's no need to
+       *       rescan the first columns in every pass.
+       */
+      for (; i < dbquery->field_info->size; i++) {
+	if (dbquery->field_info->item[i].type == T_OBJECT) {
+	  struct object *o = dbquery->field_info->item[i].u.object;
+	  if (o->prog == dbresultinfo_program) {
+	    struct dbresultinfo *in = (struct dbresultinfo *)STORAGE(o);
+	    if (in->define_handle == define) {
+	      info = in;
+#ifdef ORACLE_DEBUG
+	      fprintf(stderr, "Found info %p for define %p (i:%d)\n",
+		      in, define, i);
+#endif
+	      break;
+	    }
+	  }
+	}
+      }
+      if (!info) {
+	/* Not found! */
+#ifdef ORACLE_DEBUG
+	fprintf(stderr, "Failed to find info for define %p\n",
+		define);
+#endif
+	break;
+      }
+      inout = &info->data;
+      if ((inout->ftype != SQLT_LNG) && (inout->ftype != SQLT_LBI)) {
+	/* Unsupported */
+#ifdef ORACLE_DEBUG
+	fprintf(stderr, "Piecewise access for ftype %d not supported.\n",
+		inout->ftype);
+#endif
+	break;
+      }
+      if(!STRING_BUILDER_STR(inout->output))
+      {
+#ifdef ORACLE_DEBUG
+	fprintf(stderr, "New string builder.\n");
+#endif
+	init_string_builder(& inout->output,0);
+      }else{
+#ifdef ORACLE_DEBUG
+	fprintf(stderr, "Grow string builder (%d + %d).\n",
+		STRING_BUILDER_LEN(inout->output), inout->xlen);
+#endif
+	STRING_BUILDER_LEN(inout->output)+=inout->xlen;
+      }
+      
+      inout->xlen = BLOCKSIZE;
+      buf = string_builder_allocate (&inout->output, inout->xlen, 0);
+      STRING_BUILDER_LEN(inout->output) -= inout->xlen;
+#ifdef ORACLE_DEBUG
+      fprintf(stderr, "Grown string builder: %d (malloced: %d).\n",
+	      STRING_BUILDER_LEN(inout->output),
+	      inout->output.malloced);
+#endif
+      /* piece = OCI_NEXT_PIECE; */
+#ifdef ORACLE_DEBUG
+      MEMSET(buf, '#', inout->xlen);
+      buf[inout->xlen-1]=0;
+#endif
+      ret = OCIStmtSetPieceInfo(define, htype, dbcon->error_handle,
+				buf, &inout->xlen, piece,
+				&inout->indicator,
+				&inout->rcode);
+      if(!IS_SUCCESS(ret))
+	ora_error_handler(dbcon->error_handle, rc, "OCIStmtSetPieceInfo");
+    }
+#else /* !POLLING_FETCH */
+    break;
+#endif /* POLLING_FETCH */
+  } while (rc == OCI_NEED_DATA);
 
   if(!IS_SUCCESS(rc))
     ora_error_handler(dbcon->error_handle, rc, "OCIStmtFetch");
