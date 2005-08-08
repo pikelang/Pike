@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.160 2004/03/23 18:06:11 nilsson Exp $
+|| $Id: sscanf.c,v 1.161 2005/08/08 09:44:54 jonasw Exp $
 */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: sscanf.c,v 1.160 2004/03/23 18:06:11 nilsson Exp $");
+RCSID("$Id: sscanf.c,v 1.161 2005/08/08 09:44:54 jonasw Exp $");
 
 /* 
  * helper functions for sscanf %O
@@ -950,22 +950,30 @@ CHAROPT2(								 \
 	      return matches;						 \
 	    }								 \
 									 \
-	    sval.type=T_STRING;						 \
-	    DO_IF_CHECKER(sval.subtype=0);				 \
-	    sval.u.string=PIKE_CONCAT(make_shared_binary_string,	 \
-                                      INPUT_SHIFT)(input+eye,		 \
-						   field_length);	 \
+	    if (no_assign) {						 \
+	      no_assign = 2;						 \
+	    } else {							 \
+	      sval.type=T_STRING;					 \
+	      DO_IF_CHECKER(sval.subtype=0);				 \
+	      sval.u.string=PIKE_CONCAT(make_shared_binary_string,	 \
+					INPUT_SHIFT)(input+eye,		 \
+						     field_length);	 \
+	    }								 \
 	    eye+=field_length;						 \
 	    break;							 \
 	  }								 \
 									 \
 	  if(cnt+1>=match_len)						 \
 	  {								 \
-	    sval.type=T_STRING;						 \
-	    DO_IF_CHECKER(sval.subtype=0);				 \
-	    sval.u.string=PIKE_CONCAT(make_shared_binary_string,	 \
-				      INPUT_SHIFT)(input+eye,		 \
-						   input_len-eye);	 \
+	    if (no_assign) {						 \
+	      no_assign = 2;						 \
+	    } else {							 \
+	      sval.type=T_STRING;					 \
+	      DO_IF_CHECKER(sval.subtype=0);				 \
+	      sval.u.string=PIKE_CONCAT(make_shared_binary_string,	 \
+					INPUT_SHIFT)(input+eye,		 \
+						     input_len-eye);	 \
+	    }								 \
 	    eye=input_len;						 \
 	    break;							 \
 	  }else{							 \
@@ -1064,11 +1072,15 @@ CHAROPT2(								 \
 	    end_str_end=match+e;					 \
 									 \
 	    if (end_str_end == end_str_start) {				 \
-	      sval.type=T_STRING;					 \
-	      DO_IF_CHECKER(sval.subtype=0);				 \
-	      sval.u.string=PIKE_CONCAT(make_shared_binary_string,	 \
-	      				INPUT_SHIFT)(input+eye,		 \
-	      					     input_len-eye);	 \
+	      if (no_assign) {						 \
+		no_assign = 2;						 \
+	      } else {							 \
+		sval.type=T_STRING;					 \
+		DO_IF_CHECKER(sval.subtype=0);				 \
+		sval.u.string=PIKE_CONCAT(make_shared_binary_string,	 \
+					  INPUT_SHIFT)(input+eye,	 \
+						       input_len-eye);	 \
+	      }								 \
 	      eye=input_len;						 \
 	      break;							 \
 	    } else if(!contains_percent_percent)			 \
@@ -1109,11 +1121,15 @@ CHAROPT2(								 \
 	      new_eye=p2-input;						 \
 	    }								 \
 									 \
-	    sval.type=T_STRING;						 \
-	    DO_IF_CHECKER(sval.subtype=0);				 \
-	    sval.u.string=PIKE_CONCAT(make_shared_binary_string,	 \
-				      INPUT_SHIFT)(input+start,		 \
-						   eye-start);		 \
+	    if (no_assign) {						 \
+	      no_assign = 2;						 \
+	    } else {							 \
+	      sval.type=T_STRING;					 \
+	      DO_IF_CHECKER(sval.subtype=0);				 \
+	      sval.u.string=PIKE_CONCAT(make_shared_binary_string,	 \
+					INPUT_SHIFT)(input+start,	 \
+						     eye-start);	 \
+	    }								 \
 									 \
 	    cnt=end_str_end-match-1;					 \
 	    eye=new_eye;						 \
@@ -1166,10 +1182,14 @@ CHAROPT2(								 \
 	    }								 \
 	  }								 \
           if(set.a) { free_array(set.a); set.a=0; }			 \
-	  sval.type=T_STRING;						 \
-	  DO_IF_CHECKER(sval.subtype=0);				 \
-	  sval.u.string=PIKE_CONCAT(make_shared_binary_string,		 \
-				    INPUT_SHIFT)(input+e,eye-e);	 \
+	  if (no_assign) {						 \
+	    no_assign = 2;						 \
+	  } else {							 \
+	    sval.type=T_STRING;						 \
+	    DO_IF_CHECKER(sval.subtype=0);				 \
+	    sval.u.string=PIKE_CONCAT(make_shared_binary_string,	 \
+				      INPUT_SHIFT)(input+e,eye-e);	 \
+	  }								 \
 	  break;							 \
 									 \
         case 'O':							 \
@@ -1214,8 +1234,9 @@ CHAROPT2(								 \
 									 \
     if(no_assign)							 \
     {									 \
-      free_svalue(&sval);						 \
-    }else{								 \
+      if (no_assign == 1)						 \
+	free_svalue(&sval);						 \
+    } else {								 \
       check_stack(1);							 \
       *sp++=sval;							 \
       dmalloc_touch_svalue(Pike_sp-1);					 \
