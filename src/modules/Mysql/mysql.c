@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.90 2005/05/06 00:47:26 nilsson Exp $
+|| $Id: mysql.c,v 1.91 2005/08/09 16:17:31 grubba Exp $
 */
 
 /*
@@ -322,12 +322,12 @@ static void pike_mysql_set_options(struct mapping *options)
   if ((val = simple_mapping_string_lookup(options, "mysql_local_infile")) &&
       (val->type == T_INT)) {
     unsigned int allowed = (unsigned int)val->u.integer;
-    mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_CONNECT_TIMEOUT,
+    mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_LOCAL_INFILE,
 		  (char *)&allowed);
   } else {
     /* Default to not allowed */
     unsigned int allowed = 0;
-    mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_CONNECT_TIMEOUT,
+    mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_LOCAL_INFILE,
 		  (char *)&allowed);    
   }
 #endif /* MYSQL_OPT_LOCAL_INFILE */
@@ -573,12 +573,12 @@ static void pike_mysql_reconnect(void)
  */
 static void f_create(INT32 args)
 {
-#ifdef HAVE_MYSQL_OPTIONS
+#if defined(HAVE_MYSQL_OPTIONS) && defined(HAVE_MYSQL_OPT_LOCAL_INFILE)
   /* Default to not allowed */
   unsigned int allowed = 0;
-  mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_CONNECT_TIMEOUT,
+  mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_LOCAL_INFILE,
 		(char *)&allowed);    
-#endif /* HAVE_MYSQL_OPTIONS */
+#endif /* HAVE_MYSQL_OPTIONS && HAVE_MYSQL_OPT_LOCAL_INFILE */
 
   if (args >= 1) {
     CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->create", 1);
