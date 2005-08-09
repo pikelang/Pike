@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.80 2005/04/26 13:22:27 grubba Exp $
+// $Id: treeopt.in,v 1.81 2005/08/09 16:18:13 grubba Exp $
 //
 // The tree optimizer
 //
@@ -99,6 +99,39 @@ F_APPLY(0 = F_CONSTANT
 			   3 = +[pike_types_le($$->type, int_type_string)]))):
   F_APPLY($1, F_ARG_LIST(F_APPLY($0, $2), $3));
 			   
+// sscanf(s[A..], "xxxx", ...)
+//
+//   =>
+//
+// (sscanf(s, "%*" + A + "s" + "xxxx", ...) || 1) - 1
+F_SSCANF(F_ARG_LIST(F_RANGE(0 = +[ pike_types_le($$->type,
+						 string_type_string)],
+			    ':'(F_RANGE_FROM_BEG(1 = +[ pike_types_le($$->type,
+								      int_type_string)], -),
+				F_RANGE_OPEN)),
+		    2 = +), 3):
+{
+  struct pike_string *percent_star_string;
+  struct pike_string *s_string;
+  MAKE_CONST_STRING(percent_star_string, "%*");
+  MAKE_CONST_STRING(s_string, "s");
+  $$ = mkopernode("`-",
+		  mknode(F_LOR,
+			 mknode(F_SSCANF,
+				mknode(F_ARG_LIST, $0,
+				       mkopernode("`+",
+						  mknode(F_ARG_LIST,
+							 mkstrnode(percent_star_string),
+							 $1),
+						  mknode(F_ARG_LIST,
+							 mkstrnode(s_string),
+							 $2))),
+				$3),
+			 mkintnode(1)),
+		  mkintnode(1));
+}
+;
+
 
 // FIXME: Similar rule for sizeof(A+B) => sizeof(A)+sizeof(B)
 //        when not A+B is not a mapping or object.
