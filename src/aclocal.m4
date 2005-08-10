@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.101 2005/08/10 13:09:13 grubba Exp $
+dnl $Id: aclocal.m4,v 1.102 2005/08/10 13:09:34 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -374,7 +374,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.101 2005/08/10 13:09:13 grubba Exp $
+  # $Id: aclocal.m4,v 1.102 2005/08/10 13:09:34 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -779,7 +779,7 @@ define(PIKE_ENABLE_BUNDLE, [
     ifelse([$3], , :, [ AC_MSG_ERROR([$3]) ])
   elif test -f "$pike_bundle_prefix/installed/[$1]"; then
     # Bundle already installed.
-    echo "Bundle [$1]already installed."
+    echo "Bundle [$1] already installed."
     ifelse([$3], , :, [ AC_MSG_ERROR([$3]) ])
   else
     # Note: OSF/1 /bin/sh does not support glob expansion of
