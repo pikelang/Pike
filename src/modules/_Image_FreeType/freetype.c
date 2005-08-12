@@ -1,6 +1,6 @@
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.5 2002/10/29 09:43:03 grubba Exp $");
+RCSID("$Id: freetype.c,v 1.6 2005/08/12 14:59:00 grubba Exp $");
 
 #ifdef HAVE_LIBFT2
 #include <freetype/freetype.h>
@@ -77,6 +77,20 @@ static void image_ft_face_write_char( INT32 args )
         for( x = 0; x<i->xsize; x++ )
         {
           int pv = (s[ x + y*p ] * g) >> 8;
+          d->r = pv;
+          d->g = pv;
+          d->b = pv;
+          d++;
+        }
+  } else if( slot->bitmap.pixel_mode == ft_pixel_mode_mono ) {
+    int p = slot->bitmap.pitch;
+    char *s = slot->bitmap.buffer;
+    p *= 8;
+    if( s )
+      for( y = 0; y<i->ysize; y++ )
+        for( x = 0; x<i->xsize; x++ )
+        {
+          int pv =  ( ((s[(x + y*p) / 8]) << ((x + y*p) % 8)) & 128) ? 255 : 0;
           d->r = pv;
           d->g = pv;
           d->b = pv;
