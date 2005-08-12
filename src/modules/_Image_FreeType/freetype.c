@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freetype.c,v 1.25 2004/11/12 13:31:58 grubba Exp $
+|| $Id: freetype.c,v 1.26 2005/08/12 14:59:30 grubba Exp $
 */
 
 #include "config.h"
@@ -140,6 +140,20 @@ static void image_ft_face_write_char( INT32 args )
         for( x = 0; x<i->xsize; x++ )
         {
           int pv = (s[ x + y*p ] * g) >> 8;
+          d->r = pv;
+          d->g = pv;
+          d->b = pv;
+          d++;
+        }
+  } else if( slot->bitmap.pixel_mode == ft_pixel_mode_mono ) {
+    int p = slot->bitmap.pitch;
+    char *s = slot->bitmap.buffer;
+    p *= 8;
+    if( s )
+      for( y = 0; y<i->ysize; y++ )
+        for( x = 0; x<i->xsize; x++ )
+        {
+          int pv =  ( ((s[(x + y*p) / 8]) << ((x + y*p) % 8)) & 128) ? 255 : 0;
           d->r = pv;
           d->g = pv;
           d->b = pv;
