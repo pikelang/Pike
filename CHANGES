@@ -52,6 +52,8 @@ o Displays errors when the compile time replace() optimizer fails.
 o Zero-type is correctly cleared in a number of opcodes.
 o Fixed leak in Oracle module when Oracle.Date objects are created or
   cast.
+o Several fixes for improved performance and compatibility with
+  Oracle 9.
 o Fixes for compiling under Solaris 10, AmigaOS4, OpenBSD and MacOS X.
 o Machine code disabled under FreeBSD 5.x.
 o Preprocessor now handles escaped newlines in ordinary text.
@@ -79,9 +81,11 @@ o CMOD precompiler: fixes for polymorphic function overloading and
 o Do not decode non-shortest forms in utf8_to_string and _Charset, for
   security reasons and unicode 3.1 compliance.
 o Image.PNG: fix a memory leak.
+o Image.FreeType: Added support for monochrome pixel fonts.
 o Postgres: Fixes to create() variable 5 parsing.
 o GTK: a number of typos were fixed.
 o A large number of fixes for 64 bit architectures.
+o Significant optimization of sscanf %*s and %*[...].
 
 Other Changes:
 
