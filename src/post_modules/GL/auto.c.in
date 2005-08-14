@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.47 2003/12/12 17:50:51 nilsson Exp $
+|| $Id: auto.c.in,v 1.48 2005/08/14 15:29:10 per Exp $
 */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.47 2003/12/12 17:50:51 nilsson Exp $");
+RCSID("$Id: auto.c.in,v 1.48 2005/08/14 15:29:10 per Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -272,6 +272,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     img->width = rgbstor->w;
     img->height = rgbstor->h;
     img->pixels = pp = xalloc(img->width*img->height*4);
+    img->alloc = 1;
     img->format = GL_RGBA;
     img->type = GL_UNSIGNED_BYTE;
     cnt = img->width * img->height;
@@ -288,6 +289,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     img->width = lumstor->w;
     img->height = lumstor->h;
     img->pixels = pp = xalloc(img->width*img->height);
+    img->alloc = 1;
     img->format = GL_LUMINANCE;
     img->type = GL_UNSIGNED_BYTE;
     cnt = img->width * img->height;
@@ -299,6 +301,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     img->width = astor->w;
     img->height = astor->h;
     img->pixels = pp = xalloc(img->width*img->height);
+    img->alloc = 1;
     img->format = GL_ALPHA;
     img->type = GL_UNSIGNED_BYTE;
     cnt = img->width * img->height;
@@ -310,6 +313,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     img->width = lumstor->w;
     img->height = lumstor->h;
     img->pixels = pp = xalloc(img->width*img->height*2);
+    img->alloc = 1;
     img->format = GL_LUMINANCE_ALPHA;
     img->type = GL_UNSIGNED_BYTE;
     cnt = img->width * img->height;
@@ -558,8 +562,11 @@ static void my_glDeleteTextures( INT32 args )
     for( i = 0; i<args; i++ )
     {
       if( Pike_sp[i-args].type != PIKE_T_INT )
+      {
+	free(ls);
 	Pike_error("Illegal argument %d to glDeleteTextures: Expected integer\n",
 		   i);
+      }
       ls[i] = Pike_sp[i-args].u.integer;
     }
     pop_n_elems(args);
@@ -578,7 +585,10 @@ static void my_glCallLists( INT32 args )
     for( i = 0; i<args; i++ )
     {
       if( Pike_sp[i-args].type != PIKE_T_INT )
+      {
+	free(ls);
 	Pike_error("Illegal argument %d to glCallLists: Expected integer\n",i);
+      }
       ls[i] = Pike_sp[i-args].u.integer;
     }
     pop_n_elems(args);
