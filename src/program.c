@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.497 2005/06/09 09:25:43 grubba Exp $
+|| $Id: program.c,v 1.498 2005/08/14 11:27:24 jonasw Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.497 2005/06/09 09:25:43 grubba Exp $");
+RCSID("$Id: program.c,v 1.498 2005/08/14 11:27:24 jonasw Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4668,7 +4668,13 @@ int store_constant(struct svalue *foo,
     struct program_constant tmp;
     unsigned int e;
 
+#ifdef USE_VALGRIND
+    int is_int = foo->type == T_INT;
+    int is_num_locked = is_int && (foo->subtype == NUMBER_LOCKED);
+    if (is_num_locked) {
+#else
     if ((foo->type == T_INT) && (foo->subtype == NUMBER_LOCKED)) {
+#endif
       /* Allocate a locked entry. */
       e = Pike_compiler->new_program->num_constants;
     } else {
@@ -4678,7 +4684,13 @@ int store_constant(struct svalue *foo,
 	/* Assume that if `==() throws an error, the svalues aren't equal. */
 	if (!SETJMP(tmp1)) {
 	  struct program_constant *c= Pike_compiler->new_program->constants+e;
+#ifdef USE_VALGRIND
+	  int is_int = c->sval.type == T_INT;
+	  int is_num_locked = is_int && (c->sval.subtype == NUMBER_LOCKED);
+	  if (is_num_locked) {
+#else
 	  if ((c->sval.type == T_INT) && (c->sval.subtype == NUMBER_LOCKED)) {
+#endif
 	    /* Never share locked entries. */
 	  } else {
 	    if((equal ? is_equal(& c->sval,foo) : is_eq(& c->sval,foo)) &&
