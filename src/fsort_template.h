@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fsort_template.h,v 1.13 2002/10/11 01:39:31 nilsson Exp $
+|| $Id: fsort_template.h,v 1.14 2005/08/14 11:24:28 jonasw Exp $
 */
 
 #ifndef SWAP
@@ -136,7 +136,8 @@ static void MKNAME(_do_sort)(register TYPE *bas,
 #endif
       }
       DEC(a);
-      SWAP(a,bas);
+      if (a != bas)
+	SWAP(a,bas);
       DEC(a);
       
       if(  (char *)a - (char *)bas < (char *)last - (char *)b )
