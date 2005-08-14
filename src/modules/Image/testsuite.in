@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.20 2004/05/12 23:50:14 nilsson Exp $
+dnl $Id: testsuite.in,v 1.21 2005/08/14 02:22:09 nilsson Exp $
 
 test_eq([[ Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n"
   "1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0") ]],
@@ -484,6 +484,10 @@ test_do([[
   i->make_ascii(@a);
 ]])
 
+// MISSING COMPATIBILITY TEST: map_closest
+// MISSING COMPATIBILITY TEST: map_fast
+// MISSING COMPATIBILITY TEST: map_fs
+
 // MISSING TEST: match
 
 // max tests above
@@ -493,6 +497,7 @@ test_any([[
   Image.Image i=img();
   return i->mirrorx()->mirrorx() == i;
 ]], 1)
+
 test_any([[
   Image.Image i=img();
   return i->mirrory()->mirrory() == i;
@@ -505,12 +510,109 @@ test_do( img()->noise(({0,({255,0,0}),0.3,({0,255,0}),0.6,({0,0,255}),0.8,
 test_do( img()->noise(({0,({255,0,0}),0.3,({0,255,0}),0.6,({0,0,255}),0.8,
   ({255,255,0})}), 0.2,0.0,0.0,1.0) )
 
-// MISSING TEST: orient
+test_do( img()->orient() )
 
-test_do( img()->orient4() )
+test_eq( sizeof(img()->orient4()), 4 )
+
+test_do( img()->outline() )
+test_do( img()->outline(12, 34, 56) )
+test_do( img()->outline(55, 55, 55, 78, 90, 123) )
+test_do( img()->outline( ({({1,1,0}),({1,1,1}),({0,0,1})}) ) )
+test_do( img()->outline( ({({1,1,0}),({1,1,1}),({0,0,1})}),
+         33, 44, 55 ) )
+test_do( img()->outline( ({({1,1,0}),({1,1,1}),({0,0,1})}),
+         47, 11, 00, 17, 42, 242 ) )
+
+test_do( img()->outline_mask() )
+test_do( img()->outline_mask(99, 99, 112) )
+test_do( img()->outline_mask( ({({1,1,0}),({1,1,1}),({0,0,1})}) ) )
+test_do( img()->outline_mask( ({({1,1,0}),({1,1,1}),({0,0,1})}),
+         101, 202, 33 ) )
+
+// MISSING TEST: paste
+// MISSING TEST: paste_alpha
+// MISSING TEST: paste_alpha_color
+// MISSING TEST: paste_mask
+
+test_do( img()->phaseh() )
+test_do( img()->phasev() )
+test_do( img()->phasevh() )
+test_do( img()->phasehv() )
+
+test_do( Image.Image(100,100)->setcolor(255,0,0,128)->
+  polyfill( ({20,20, 80,20, 80,80 }) ) )
+
+test_true( img()->random() != img()->random() )
+test_true( img()->random(17) == img()->random(17) )
+
+test_do( img()->randomgrey() )
+
+test_eq( img()->write_lsb_rgb("hello")->read_lsb_rgb(), "hello"+"\0"*933 )
+test_eq( img()->write_lsb_grey("hello")->read_lsb_grey(), "hello"+"\0"*308 )
+
+test_do( img()->rgb_to_hsv() )
+
+test_do( img()->rotate(17) )
+test_do( img()->rotate(33.333) )
+test_do( img()->rotate(44, 250, 1, 2) )
+
+test_do( img()->rotate_expand(18) )
+test_do( img()->rotate_expand(34.333) )
+test_do( img()->rotate_expand(45, 241, 2, 3) )
+
+test_do( img()->rotate_ccw() )
+test_do( img()->rotate_cw() )
+
+test_do( img()->scale(0.5) )
+test_do( img()->scale(3.7) )
+test_do( img()->scale(2.1, 0.9) )
+test_do( img()->scale(101, 99) )
+test_do( img()->scale(0, 55) )
+test_do( img()->scale(0, 33) )
+test_do( img()->scale(55, 0) )
+test_do( img()->scale(33, 0) )
+
+// MISSING COMPATIBILITY TEST: select_colors
+
+test_do( img()->setcolor( 255, 0, 128 ) )
+test_do( img()->setcolor( 128, 255, 0, 192 ) )
+
+test_do( img()->setpixel( 37, 48 ) )
+test_do( img()->setpixel( 50, 50 ) )
+test_do( img()->setpixel( 11, 12, Image.Color.red ) )
+test_do( img()->setpixel( 11, 12, 13, 14, 15 ) )
+test_do( img()->setpixel( 22, 23, 24, 25, 26, 27 ) )
+
+test_do( img()->skewx(10) )
+test_do( img()->skewx(16.4) )
+test_do( img()->skewx(13, 26, 36, 47) )
+test_do( img()->skewx(22.8, 100, 75, 26) )
+
+test_do( img()->skewy(10) )
+test_do( img()->skewy(16.4) )
+test_do( img()->skewy(13, 26, 36, 47) )
+test_do( img()->skewy(22.8, 100, 75, 26) )
 
 // sum tests above
 // sumf tests above
+
+// test tests above
+
+test_do( img()->threshold() )
+test_do( img()->threshold(28) )
+test_do( img()->threshold(128, 255, 111) )
+test_do( img()->threshold(Image.Color.green) )
+
+test_do( img()->tuned_box(10,10,40,40,
+  ({({255,0,0}),({255,255,255}),({128,100,0}),({0,70,255})}) ) )
+test_do( img()->tuned_box(10,10,40,40,
+  ({({255,0,0,0}),({255,255,255,240}),({128,100,0,230}),({0,70,255,7})}) ) )
+
+test_do( img()->turbulence( ({0, ({229,204,204}), 0.9,({229,20,20}),
+  0.9,Image.Color.black}) ) )
+
+test_eq( img(77,88)->xsize(), 77 )
+test_eq( img(77,88)->ysize(), 88 )
 
 test_do( add_constant("img") )
 
