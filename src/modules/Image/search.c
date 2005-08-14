@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: search.c,v 1.31 2005/08/14 04:47:16 nilsson Exp $
+|| $Id: search.c,v 1.32 2005/08/14 05:01:17 nilsson Exp $
 */
 
 /*
@@ -252,8 +252,7 @@ static INLINE int my_abs(int a) { return (a<0)?-a:a; }
 */
 
 /* FIXME: This functions does not depend on the actual image object
-   and should be removed or reworked. Last line of output contains
-   garbage.*/
+   and should be removed from the object or reworked. */
 void image_make_ascii(INT32 args)
 {
   struct object *objs[4];
@@ -269,9 +268,13 @@ void image_make_ascii(INT32 args)
 	       &tlevel, &xchar_size, &ychar_size);
 
   for(i=0; i<4; i++) {
-    /* FIXME: Check that object type is Image.Image */
-    /* FIXME: Check that image sizes are identical */
-    img[i]=(struct image*)objs[i]->storage;
+    img[i]=(struct image*)get_storage(objs[i],image_program);
+    if(!img[i])
+      SIMPLE_BAD_ARG_ERROR("make_ascii",i+1,"Image.Image");
+    if(i!=0 &&
+       img[0]->xsize!=img[i]->xsize &&
+       img[0]->ysize!=img[i]->ysize)
+      Pike_error("make_ascii: Different sized images.\n");
   }
 
   if (!tlevel) tlevel=40;
