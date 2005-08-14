@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.48 2004/10/07 22:19:08 nilsson Exp $
+|| $Id: auto.c.in,v 1.49 2005/08/14 15:21:47 per Exp $
 */
 
 #include "global.h"
@@ -271,6 +271,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     img->width = rgbstor->w;
     img->height = rgbstor->h;
     img->pixels = pp = xalloc(img->width*img->height*4);
+    img->alloc = 1;
     img->format = GL_RGBA;
     img->type = GL_UNSIGNED_BYTE;
     cnt = img->width * img->height;
@@ -287,6 +288,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     img->width = lumstor->w;
     img->height = lumstor->h;
     img->pixels = pp = xalloc(img->width*img->height);
+    img->alloc = 1;
     img->format = GL_LUMINANCE;
     img->type = GL_UNSIGNED_BYTE;
     cnt = img->width * img->height;
@@ -298,6 +300,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     img->width = astor->w;
     img->height = astor->h;
     img->pixels = pp = xalloc(img->width*img->height);
+    img->alloc = 1;
     img->format = GL_ALPHA;
     img->type = GL_UNSIGNED_BYTE;
     cnt = img->width * img->height;
@@ -310,6 +313,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     img->height = lumstor->h;
     img->pixels = pp = xalloc(img->width*img->height*2);
     img->format = GL_LUMINANCE_ALPHA;
+    img->alloc = 1;
     img->type = GL_UNSIGNED_BYTE;
     cnt = img->width * img->height;
     p1 = lumstor->img;
