@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: search.c,v 1.30 2005/08/14 02:26:40 nilsson Exp $
+|| $Id: search.c,v 1.31 2005/08/14 04:47:16 nilsson Exp $
 */
 
 /*
@@ -22,6 +22,7 @@
 #include "svalue.h"
 #include "threads.h"
 #include "pike_error.h"
+#include "module_support.h"
 
 #include "image.h"
 
@@ -250,38 +251,28 @@ static INLINE int my_abs(int a) { return (a<0)?-a:a; }
 **!	output in later versions
 */
 
-
+/* FIXME: This functions does not depend on the actual image object
+   and should be removed or reworked. Last line of output contains
+   garbage.*/
 void image_make_ascii(INT32 args)
 {
-  struct image *img[4],*this;
+  struct object *objs[4];
+  struct image *img[4];
   INT32 xchar_size=0; 
   INT32 ychar_size=0;
   INT32 tlevel=0;
   int i, x, y,xy=0,y2=0, xmax=0,ymax=0,max;
   struct pike_string *s;
 
-  if (!THIS->img)
-    Pike_error("Called Image.Image object is not initialized\n");
-
-  this=THIS;
-
-  if (args<4)
-    SIMPLE_TOO_FEW_ARGS_ERROR("Image.Image->make_ascii", 4);
+  get_all_args("make_ascii", args, "%o%o%o%o.%d%d%d",
+	       &objs[0], &objs[1], &objs[2], &objs[3],
+	       &tlevel, &xchar_size, &ychar_size);
 
   for(i=0; i<4; i++) {
-    if(sp[i-args].type!=T_OBJECT)
-      SIMPLE_BAD_ARG_ERROR("Image.Image->make_ascii", i+1, "Image.Image");
     /* FIXME: Check that object type is Image.Image */
     /* FIXME: Check that image sizes are identical */
-    img[i]=(struct image*)sp[i-args].u.object->storage;
+    img[i]=(struct image*)objs[i]->storage;
   }
-
-  if (args>=4)
-    tlevel=sp[4-args].u.integer;
-  if (args>=5)
-    xchar_size=sp[5-args].u.integer;
-  if (args>=6)
-    ychar_size=sp[6-args].u.integer;
 
   if (!tlevel) tlevel=40;
   if (!xchar_size) xchar_size=5;
@@ -378,13 +369,19 @@ void image_make_ascii(INT32 args)
 	  
 	}
     }
-  
+
+
+  /* Temp fix to hide garbage */
+  for(x=0; x<xmax-1; x++)
+    s->str[(ymax-1)*xmax+x] = ' ';
+
+
   /*fix end of rows*/
   
   /*fix middle*/
   
   
-  /*fixa last row*/
+  /*fix last row*/
   
   /*fix last position*/ 
   /*
