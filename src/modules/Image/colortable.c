@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colortable.c,v 1.123 2005/03/15 21:03:41 per Exp $
+|| $Id: colortable.c,v 1.124 2005/08/14 02:25:28 nilsson Exp $
 */
 
 #include "global.h"
@@ -3696,7 +3696,7 @@ void image_colortable_map(INT32 args)
    dest=(struct image*)(o->storage);
    *dest=*src;
 
-   dest->img=malloc(sizeof(rgb_group)*src->xsize*src->ysize +1);
+   dest->img=malloc(sizeof(rgb_group)*src->xsize*src->ysize);
    if (!dest->img)
    {
       free_object(o);

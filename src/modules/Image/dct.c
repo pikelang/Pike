@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dct.c,v 1.27 2004/05/19 00:10:10 nilsson Exp $
+|| $Id: dct.c,v 1.28 2005/08/14 02:25:46 nilsson Exp $
 */
 
 /*
@@ -88,9 +88,9 @@ void image_dct(INT32 args)
 	   DO_NOT_WARN((unsigned long)(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)));
 #endif
 
-   area=xalloc(sizeof(rgbd_group)*THIS->xsize*THIS->ysize+1);
+   area=xalloc(sizeof(rgbd_group)*THIS->xsize*THIS->ysize);
 
-   if (!(costbl=malloc(sizeof(double)*THIS->xsize+1)))
+   if (!(costbl=malloc(sizeof(double)*THIS->xsize)))
    {
       free(area);
       resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
