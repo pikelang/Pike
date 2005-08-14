@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.223 2005/08/14 02:23:55 nilsson Exp $
+|| $Id: image.c,v 1.224 2005/08/14 02:33:31 nilsson Exp $
 */
 
 /*
@@ -2420,6 +2420,8 @@ void image_threshold(INT32 args)
       get_all_args("threshold",args,"%i",&level),level*=3;
    else if (!getrgb(THIS,0,args,args,"Image.Image->threshold()"))
       rgb.r=rgb.g=rgb.b=0;
+   else
+     rgb=THIS->rgb;
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
