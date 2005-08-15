@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.49 2005/08/14 15:21:47 per Exp $
+|| $Id: auto.c.in,v 1.50 2005/08/15 08:16:30 grubba Exp $
 */
 
 #include "global.h"
@@ -312,6 +312,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     img->width = lumstor->w;
     img->height = lumstor->h;
     img->pixels = pp = xalloc(img->width*img->height*2);
+    img->alloc = 1;
     img->format = GL_LUMINANCE_ALPHA;
     img->alloc = 1;
     img->type = GL_UNSIGNED_BYTE;
