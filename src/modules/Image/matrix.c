@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: matrix.c,v 1.50 2005/08/14 02:24:33 nilsson Exp $
+|| $Id: matrix.c,v 1.51 2005/08/15 17:00:39 grubba Exp $
 */
 
 /*
@@ -185,7 +185,7 @@ CHRONO("scale begin");
    if (newx<1) newx=1;
    if (newy<1) newy=1;
 
-   new=xalloc(newx*newy*sizeof(rgbd_group));
+   new=xalloc(newx*newy*sizeof(rgbd_group)+1);
 
    THREADS_ALLOW();
 
@@ -216,7 +216,7 @@ CHRONO("scale begin");
 			source->img, y, source->xsize);
    }
 
-   dest->img=d=malloc(newx*newy*sizeof(rgb_group));
+   dest->img=d=malloc(newx*newy*sizeof(rgb_group)+1);
    if (d) 
    {
 
@@ -258,7 +258,7 @@ void img_scale2(struct image *dest, struct image *source)
    if (!newx) newx = 1;
    if (!newy) newy = 1;
 
-   new=xalloc(newx*newy*sizeof(rgb_group));
+   new=xalloc(newx*newy*sizeof(rgb_group)+1);
 
    THREADS_ALLOW();
    MEMSET(new,0,newx*newy*sizeof(rgb_group));
@@ -460,7 +460,7 @@ void image_ccw(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
       SIMPLE_OUT_OF_MEMORY_ERROR("ccw",
@@ -493,7 +493,7 @@ static void img_cw(struct image *is,struct image *id)
 
    if (id->img) free(id->img);
    *id=*is;
-   if (!(id->img=malloc(sizeof(rgb_group)*is->xsize*is->ysize)))
+   if (!(id->img=malloc(sizeof(rgb_group)*is->xsize*is->ysize+1)))
       resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 
    id->xsize=is->ysize;
@@ -519,7 +519,7 @@ void img_ccw(struct image *is,struct image *id)
 
    if (id->img) free(id->img);
    *id=*is;
-   if (!(id->img=malloc(sizeof(rgb_group)*is->xsize*is->ysize)))
+   if (!(id->img=malloc(sizeof(rgb_group)*is->xsize*is->ysize+1)))
       resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
 
    id->xsize=is->ysize;
@@ -569,11 +569,11 @@ void image_cw(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
       SIMPLE_OUT_OF_MEMORY_ERROR("cw",
-				 sizeof(rgb_group)*THIS->xsize*THIS->ysize);
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
    }
    ys=img->xsize=THIS->ysize;
    i=xs=img->ysize=THIS->xsize;
@@ -623,11 +623,11 @@ void image_mirrorx(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
       SIMPLE_OUT_OF_MEMORY_ERROR("mirrorx",
-				 sizeof(rgb_group)*THIS->xsize*THIS->ysize);
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
    }
 
    i=THIS->ysize;
@@ -674,11 +674,11 @@ void image_mirrory(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
       SIMPLE_OUT_OF_MEMORY_ERROR("mirrory",
-				 sizeof(rgb_group)*THIS->xsize*THIS->ysize);
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
    }
 
    i=THIS->ysize;
@@ -720,7 +720,7 @@ static void img_skewx(struct image *src,
    len=src->xsize;
 
    if (!src->xsize) dest->xsize=0;
-   d=dest->img=malloc(sizeof(rgb_group)*dest->xsize*dest->ysize);
+   d=dest->img=malloc(sizeof(rgb_group)*dest->xsize*dest->ysize+1);
    if (!d) return;
    s=src->img;
 
@@ -808,7 +808,7 @@ static void img_skewy(struct image *src,
    len=src->ysize;
 
    if (!src->ysize) dest->ysize=0;
-   d=dest->img=malloc(sizeof(rgb_group)*dest->ysize*dest->xsize);
+   d=dest->img=malloc(sizeof(rgb_group)*dest->ysize*dest->xsize+1);
    if (!d) return;
    s=src->img;
 
@@ -1198,11 +1198,11 @@ void img_translate(INT32 args,int expand)
    img->xsize=THIS->xsize+(xt!=0);
    img->ysize=THIS->ysize+(xt!=0);
 
-   if (!(img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize)))
+   if (!(img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize+1)))
    {
       free_object(o);
       SIMPLE_OUT_OF_MEMORY_ERROR("translate",
-				 sizeof(rgb_group)*img->xsize*img->ysize);
+				 sizeof(rgb_group)*img->xsize*img->ysize+1);
    }
 
    if (!xt)

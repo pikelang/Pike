@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pattern.c,v 1.32 2005/08/14 02:26:25 nilsson Exp $
+|| $Id: pattern.c,v 1.33 2005/08/15 17:00:39 grubba Exp $
 */
 
 /*
@@ -379,11 +379,11 @@ void image_noise(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
       SIMPLE_OUT_OF_MEMORY_ERROR("noise",
-				 sizeof(rgb_group)*THIS->xsize*THIS->ysize);
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
    }
 
    cscale*=COLORRANGE_LEVELS;
@@ -460,11 +460,11 @@ void image_turbulence(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize)))
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
       SIMPLE_OUT_OF_MEMORY_ERROR("noise",
-				 sizeof(rgb_group)*THIS->xsize*THIS->ysize);
+				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
    }
 
    cscale*=COLORRANGE_LEVELS;
