@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.48 2005/08/14 15:29:10 per Exp $
+|| $Id: auto.c.in,v 1.49 2005/08/15 15:28:09 nilsson Exp $
 */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.48 2005/08/14 15:29:10 per Exp $");
+RCSID("$Id: auto.c.in,v 1.49 2005/08/15 15:28:09 nilsson Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -565,7 +565,7 @@ static void my_glDeleteTextures( INT32 args )
       {
 	free(ls);
 	Pike_error("Illegal argument %d to glDeleteTextures: Expected integer\n",
-		   i);
+		   i+1);
       }
       ls[i] = Pike_sp[i-args].u.integer;
     }
@@ -587,7 +587,8 @@ static void my_glCallLists( INT32 args )
       if( Pike_sp[i-args].type != PIKE_T_INT )
       {
 	free(ls);
-	Pike_error("Illegal argument %d to glCallLists: Expected integer\n",i);
+	Pike_error("Illegal argument %d to glCallLists: Expected integer\n",
+		   i+1);
       }
       ls[i] = Pike_sp[i-args].u.integer;
     }
