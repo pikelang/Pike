@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.50 2005/08/15 08:16:30 grubba Exp $
+|| $Id: auto.c.in,v 1.51 2005/08/15 15:29:29 nilsson Exp $
 */
 
 #include "global.h"
@@ -314,7 +314,6 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     img->pixels = pp = xalloc(img->width*img->height*2);
     img->alloc = 1;
     img->format = GL_LUMINANCE_ALPHA;
-    img->alloc = 1;
     img->type = GL_UNSIGNED_BYTE;
     cnt = img->width * img->height;
     p1 = lumstor->img;
@@ -561,9 +560,10 @@ static void my_glDeleteTextures( INT32 args )
     int i;
     for( i = 0; i<args; i++ )
     {
-      if( Pike_sp[i-args].type != PIKE_T_INT )
-	Pike_error("Illegal argument %d to glDeleteTextures: Expected integer\n",
-		   i);
+      if( Pike_sp[i-args].type != PIKE_T_INT ) {
+	free( ls );
+	SIMPLE_BAD_ARG_ERROR("glDeleteTextures", i+1, "int");
+      }
       ls[i] = Pike_sp[i-args].u.integer;
     }
     pop_n_elems(args);
@@ -581,8 +581,10 @@ static void my_glCallLists( INT32 args )
     int i;
     for( i = 0; i<args; i++ )
     {
-      if( Pike_sp[i-args].type != PIKE_T_INT )
-	Pike_error("Illegal argument %d to glCallLists: Expected integer\n",i);
+      if( Pike_sp[i-args].type != PIKE_T_INT ) {
+	free( ls );
+	SIMPLE_BAD_ARG_ERROR("glCallLists", i+1, "int");
+      }
       ls[i] = Pike_sp[i-args].u.integer;
     }
     pop_n_elems(args);
