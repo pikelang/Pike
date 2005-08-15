@@ -1,6 +1,8 @@
-pike7.4 (7.4.325-1) unstable; urgency=low
+pike7.4 (7.4.325-1) unstable; urgency=high
 
   * The latest cvs snapshot
+  * Rushing the recompile to get the correct binary dependencies in order
+    to be able to upload new Pexts fixing an RC bug.
 
  -- Marek Habersack <grendel@debian.org>  Thu, 4 Aug 2005 15:08:59 +0200
 
