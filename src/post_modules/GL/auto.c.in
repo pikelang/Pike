@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.51 2005/08/15 15:29:29 nilsson Exp $
+|| $Id: auto.c.in,v 1.52 2005/08/15 15:48:39 nilsson Exp $
 */
 
 #include "global.h"
@@ -270,11 +270,11 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     /* RGBA */
     img->width = rgbstor->w;
     img->height = rgbstor->h;
-    img->pixels = pp = xalloc(img->width*img->height*4);
+    cnt = img->width * img->height;
+    img->pixels = pp = xalloc( cnt*4 );
     img->alloc = 1;
     img->format = GL_RGBA;
     img->type = GL_UNSIGNED_BYTE;
-    cnt = img->width * img->height;
     p1 = rgbstor->img;
     p2 = astor->img;
     while(cnt--) {
@@ -287,11 +287,11 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     /* Y */
     img->width = lumstor->w;
     img->height = lumstor->h;
-    img->pixels = pp = xalloc(img->width*img->height);
+    cnt = img->width * img->height;
+    img->pixels = pp = xalloc( cnt );
     img->alloc = 1;
     img->format = GL_LUMINANCE;
     img->type = GL_UNSIGNED_BYTE;
-    cnt = img->width * img->height;
     p1 = lumstor->img;
     while(cnt--)
       *pp++ = p1++->r;
@@ -299,11 +299,11 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     /* A */
     img->width = astor->w;
     img->height = astor->h;
-    img->pixels = pp = xalloc(img->width*img->height);
+    cnt = img->width * img->height;
+    img->pixels = pp = xalloc( cnt );
     img->alloc = 1;
     img->format = GL_ALPHA;
     img->type = GL_UNSIGNED_BYTE;
-    cnt = img->width * img->height;
     p1 = astor->img;
     while(cnt--)
       *pp++ = p1++->r;
@@ -311,11 +311,11 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     /* YA */
     img->width = lumstor->w;
     img->height = lumstor->h;
-    img->pixels = pp = xalloc(img->width*img->height*2);
+    cnt = img->width * img->height;
+    img->pixels = pp = xalloc( cnt*2 );
     img->alloc = 1;
     img->format = GL_LUMINANCE_ALPHA;
     img->type = GL_UNSIGNED_BYTE;
-    cnt = img->width * img->height;
     p1 = lumstor->img;
     p2 = astor->img;
     while(cnt--) {
