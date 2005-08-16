@@ -1,0 +1,20 @@
+--- 7.6.orig/src/Makefile.in	2005-07-28 01:19:28.618585000 +0200
++++ 7.6/src/Makefile.in	2005-08-16 12:53:13.127535720 +0200
+@@ -53,7 +53,7 @@ man_prefix = $(prefix)/man
+ # TESTARGS = -F -a
+ 
+ # Arguments for install.pike used by the install targets.
+-INSTALLARGS = --new-style
++INSTALLARGS ?= --new-style
+ 
+ #
+ # use bison please, yacc isn't good enough.
+@@ -495,7 +495,7 @@ install: pike tools
+ 	MANDIR_SRC="$(MANDIR_SRC)" \
+ 	man_prefix="$(man_prefix)" pike_name=$(pike_name) \
+ 	fakeroot="$(buildroot)" PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)" \
+-	$(INSTALLARGS)
++	include_prefix="$(include_prefix)" $(INSTALLARGS)
+ 
+ install_interactive: pike tools
+ 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --interactive \

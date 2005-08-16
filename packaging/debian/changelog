@@ -1,3 +1,12 @@
+pike7.6 (7.6.33-2) unstable; urgency=low
+
+  * /usr/lib/pike/7.6.24/include/pike/specs is missing (Closes: #322851)
+    Using own version of specs.in, since the pike-generated one does not
+    make sense on a Debian system.
+  * Updated the Standards-Version, no changes
+
+ -- Marek Habersack <grendel@debian.org>  Tue, 16 Aug 2005 13:38:09 +0200
+
 pike7.6 (7.6.33-1) unstable; urgency=high
 
   * The latest cvs snapshot

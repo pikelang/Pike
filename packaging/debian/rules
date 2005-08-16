@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.53 2005/06/18 02:20:14 grendel Exp $
+# $Id: rules,v 1.54 2005/08/16 12:21:18 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -116,7 +116,7 @@ configure-stamp:
 	touch patched-stamp
 
 	# Add here commands to configure the package.
-	(cd $(BUILDDIR); $(CURDIR)/src/configure --prefix=/usr $(CFARGS) $(EXTRA_ARGS))
+	(cd $(BUILDDIR); $(CURDIR)/src/configure --prefix=/usr $(CFARGS))
 	touch configure-stamp
 
 
@@ -210,8 +210,12 @@ install: build
 	dh_installdirs
 
 	# Add here commands to install the package into debian/$(PIKE).
-	$(MAKE) -C$(BUILDDIR)/ buildroot=$(CURDIR)/debian/$(PIKE)-core \
-	        prefix=/usr/lib pike_name=/usr/bin/$(PIKE) install
+	$(MAKE) -C$(BUILDDIR)/ \
+	        buildroot=$(CURDIR)/debian/$(PIKE)-core \
+	        prefix=/usr/lib \
+		pike_name=/usr/bin/$(PIKE) \
+		include_prefix="/usr/include/pike/$(VERSION)/" \
+		install
 
 	# Some cleaning
 	-rm -f `find $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/ -name ".autodoc" -type f -print`
@@ -277,6 +281,11 @@ install: build
 	for f in `cat $(CURDIR)/debian/tocoredoc.txt`; do \
 		dh_link -p$$f /usr/share/doc/$(PIKE)-core /usr/share/doc/$$f ; \
 	done
+
+	# install the specs file
+	sed -e 's/@PIKEVERSION@/$(VERSION)/g' \
+	    -e 's/@CONFIGURE_ARGS@/$(CFARGS)/g' \
+	    < $(CURDIR)/debian/specs.in > $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/specs
 
 	rm -r $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/doc
 	dh_movefiles --sourcedir=debian/$(PIKE)-core
