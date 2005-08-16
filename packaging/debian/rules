@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.54 2005/08/16 12:21:18 grendel Exp $
+# $Id: rules,v 1.55 2005/08/16 12:34:50 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -284,7 +284,7 @@ install: build
 
 	# install the specs file
 	sed -e 's/@PIKEVERSION@/$(VERSION)/g' \
-	    -e 's/@CONFIGURE_ARGS@/$(CFARGS)/g' \
+	    -e 's;@CONFIGURE_ARGS@;$(CFARGS);g' \
 	    < $(CURDIR)/debian/specs.in > $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/specs
 
 	rm -r $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/doc
