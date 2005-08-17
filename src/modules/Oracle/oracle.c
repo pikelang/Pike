@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.85 2005/08/05 16:50:52 grubba Exp $
+|| $Id: oracle.c,v 1.86 2005/08/17 09:30:04 grubba Exp $
 */
 
 /*
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.85 2005/08/05 16:50:52 grubba Exp $");
+RCSID("$Id: oracle.c,v 1.86 2005/08/17 09:30:04 grubba Exp $");
 
 
 /* User-changable defines: */
@@ -449,7 +449,6 @@ struct dbcon
   DEFINE_MUTEX(lock);
 
   int resultobject_busy;
-  int timeout_limit;
 };
 
 static void init_dbcon_struct(struct object *o)
@@ -462,7 +461,6 @@ static void init_dbcon_struct(struct object *o)
 #endif
   THIS_DBCON->error_handle=0;
   THIS_DBCON->context=0;
-  THIS_DBCON->timeout_limit = 30; /* default value */
   THIS_DBCON->resultobject_busy = 0;
 #ifdef LOCAL_ENV
   THIS_DBCON->env=0;
@@ -1732,27 +1730,6 @@ static void f_oracle_create(INT32 args)
   return;
 }
 
-static void f_dbcon_timeout_limit(INT32 args)
-{
-  struct dbcon *dbcon=THIS_DBCON;
-  /* No arguments: get timeout. One argument: set timeout. */
-#ifdef ORACLE_DEBUG
-  fprintf(stderr, "%s, dbcon=%p, args=%d\n", __FUNCTION__, dbcon, args);
-#endif
-  if (args)
-  {
-    INT_TYPE new_timeout;
-    get_all_args("Oracle->timeout", args, "%i", &new_timeout);
-    if (new_timeout < 0)
-      Pike_error("Negative timeout specified.\n");
-    if (new_timeout > 3600) /* max one hour */
-      new_timeout = 3600;
-    dbcon->timeout_limit = new_timeout;
-  }
-  pop_n_elems(args);
-  push_int(dbcon->timeout_limit);
-}
-
 static void f_compile_query_create(INT32 args)
 {
   int rc;
@@ -1776,21 +1753,8 @@ static void f_compile_query_create(INT32 args)
 
   if (dbcon->resultobject_busy)
   {
-    int t, timeout_limit = threads_disabled ? 0 : dbcon->timeout_limit;
-
-    for(t = 0; t < timeout_limit && dbcon->resultobject_busy; ++t)
-    {
-      THREADS_ALLOW();
-#ifdef __NT__
-      Sleep(1000);
-#else
-      sleep(1);
-#endif
-      THREADS_DISALLOW();
-    }
-    if (dbcon->resultobject_busy)
-      Pike_error("Oracle connection busy; previous result object "
-		 "still active.\n");
+    Pike_error("Oracle connection busy; previous result object "
+	       "still active.\n");
   }
 
   THREADS_ALLOW();
@@ -2505,9 +2469,6 @@ PIKE_MODULE_INIT
 #endif
       MY_END_CLASS(compile_query);
     }
-
-    ADD_FUNCTION("timeout_limit", f_dbcon_timeout_limit,
-		 tFunc(tOr(tInt,tVoid), tInt), ID_PUBLIC);
 
     ADD_FUNCTION("create", f_oracle_create,tFunc(tOr(tStr,tVoid) tComma tOr(tStr,tVoid) tComma tOr(tStr,tVoid) tComma tOr(tStr,tVoid),tVoid), ID_PUBLIC);
     
