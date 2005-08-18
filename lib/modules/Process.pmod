@@ -82,6 +82,63 @@ class Process
   }
 }
 
+// FIXME: Should probably be located elsewhere.
+string locate_binary(array(string) path, string name)
+{
+  string dir;
+  Stdio.Stat info;
+  foreach(path, dir)
+  {
+    string fname = dir + "/" + name;
+    if ((info = file_stat(fname))
+	&& (info[0] & 0111))
+      return fname;
+  }
+  return 0;
+}
+
+static array(string) runpike;
+
+//! Spawn a new pike process similar to the current.
+//!
+//! @param argv
+//!   Arguments for the new process.
+//!
+//! @param options
+//!   Process creation options. See @[Process.Process] for details.
+//!
+//! @seealso
+//!   @[Process.Process]
+Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
+{
+  if (!runpike) {
+    array(string) res = ({
+      master()->_pike_file_name,
+    });
+    if (master()->_master_file_name)
+      res+=({"-m"+master()->_master_file_name});
+    foreach (master()->pike_module_path;;string path)
+      res+=({"-M"+path});
+
+    // FIXME: Defines? pike_program_path?
+
+    if (sizeof(res) && !has_value(res[0],"/")
+#ifdef __NT__
+	&& !has_value(res[0], "\\")
+#endif /* __NT__ */
+	)
+      res[0] = locate_binary(getenv("PATH")/
+#if defined(__NT__) || defined(__amigaos__)
+			     ";"
+#else
+			     ":"
+#endif
+			     ,res[0]);
+    runpike = res;
+  }
+  return Process(runpike + argv, options);
+}
+
 #if constant(exece)
 //!
 int exec(string file,string ... foo)
