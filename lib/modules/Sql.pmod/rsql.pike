@@ -27,9 +27,19 @@ static void low_reconnect()
   object losock = Stdio.File();
   if(sock)
     destruct(sock);
-  if(!losock->connect(host, port||RSQL_PORT))
-    ERROR("Can't connect to "+host+(port? ":"+port:"")+": "+
-	  strerror(losock->errno())+"\n");
+  if (host == "") {
+#ifdef ENABLE_SPAWN_RSQLD
+    Process.spawn_pike(({ "-x", "rsqld", "--stdin" }), ([
+			 "stdin":losock->pipe(),
+		       ]));
+#else /* !ENABLE_SPAWN_RSQLD */
+    ERROR("Automatic spawning of rsqld not enabled.\n");
+#endif /* ENABLE_SPAWN_RSQLD */
+  } else {
+    if(!losock->connect(host, port||RSQL_PORT))
+      ERROR("Can't connect to "+host+(port? ":"+port:"")+": "+
+	    strerror(losock->errno())+"\n");
+  }
   if(8!=losock->write("RSQL%4c", RSQL_VERSION) ||
      losock->read(4) != "SQL!") {
     destruct(losock);
