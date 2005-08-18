@@ -1,5 +1,5 @@
 #! /usr/bin/env pike
-// $Id: rsqld.pike,v 1.10 2004/01/11 00:40:07 nilsson Exp $
+// $Id: rsqld.pike,v 1.11 2005/08/18 17:42:34 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -303,7 +303,7 @@ class Connection
     }
   }
 
-  void create(object s, mapping(string:string) u)
+  void create(object s, mapping(string:string)|void u)
   {
     users = u;
     clntsock = s;
@@ -341,6 +341,13 @@ class Server
   }
 }
 
+class Killer
+{
+  void destroy()
+  {
+    exit(0);
+  }
+}
 
 int main(int argc, array(string) argv)
 {
@@ -350,6 +357,7 @@ int main(int argc, array(string) argv)
     ({ "port",  Getopt.HAS_ARG,  "-p,--port"/"," }),
     ({ "ip",    Getopt.HAS_ARG,  "-i,--ip"/","   }),
     ({ "help",  Getopt.NO_ARG,   "-h,--help"/"," }),
+    ({ "stdin", Getopt.NO_ARG,   "--stdin"/"," }),
   })), array opt)
     switch(opt[0])
     {
@@ -360,6 +368,11 @@ int main(int argc, array(string) argv)
     case "ip":
       ip=opt[1];
       break;
+    case "stdin":
+      Stdio.File fd = Stdio.File(0);
+      fd->set_id(Killer());
+      Connection(fd);
+      return -17;
     case "help":
       write(doc);
       return 0;
@@ -381,4 +394,5 @@ Options:
   -p#, --port=#  The rsqld port. Defaults to 3994.
   -i#, --ip=#    The ip to open the port on.
   -h, --help     Displays this message.
+  --stdin        Use stdin for a single connection.
 ";
