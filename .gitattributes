@@ -817,6 +817,7 @@ testfont binary
 /src/post_modules/GTK/source/encode_truecolor.c foreign_ident
 /src/post_modules/GTK/source/support.c foreign_ident
 /src/post_modules/GTK/testsuite.in foreign_ident
+/src/post_modules/GTK2/acconfig.h foreign_ident
 /src/post_modules/GTK2/gdkeventstrings.h foreign_ident
 /src/post_modules/GTK2/module.pmod.in foreign_ident
 /src/post_modules/GTK2/pgtk.h foreign_ident
