@@ -1,3 +1,9 @@
+pike7.6 (7.6.34-1) unstable; urgency=low
+
+  * Release number bumped by export.pike.
+
+ -- Marek Habersack <grendel@debian.org>  Sat, 20 Aug 2005 16:24:41 +0200
+
 pike7.6 (7.6.33-2) unstable; urgency=low
 
   * /usr/lib/pike/7.6.24/include/pike/specs is missing (Closes: #322851)
