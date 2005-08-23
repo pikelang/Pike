@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.50 2005/08/23 13:05:55 grubba Exp $
+// $Id: Query.pike,v 1.51 2005/08/23 17:45:04 grubba Exp $
 
 //!	Open and execute an HTTP query.
 
@@ -895,8 +895,8 @@ void async_fetch(function callback,mixed ... extra)
 //!
 //! @seealso
 //!   @[async_fetch()], @[async_request()], @[set_callbacks()]
-void timed_async_fetch(function(object, mixed ...) ok_callback,
-		       function(object, mixed ...) fail_callback,
+void timed_async_fetch(function(object, mixed ...:void) ok_callback,
+		       function(object, mixed ...:void) fail_callback,
 		       mixed ... extra) {
   if (!con)
   {
