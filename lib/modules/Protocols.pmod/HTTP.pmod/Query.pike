@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.79 2005/08/23 17:44:39 grubba Exp $
+// $Id: Query.pike,v 1.80 2005/08/23 17:47:24 grubba Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -1133,7 +1133,7 @@ void timed_async_fetch(function(object, mixed ...:void) ok_callback,
 		       mixed ... extra) {
   if (!con)
   {
-    callback_fail(@extra); // nothing to do, stupid...
+    call_out(fail_callback, 0, @extra); // nothing to do, stupid...
     return;
   }
   
