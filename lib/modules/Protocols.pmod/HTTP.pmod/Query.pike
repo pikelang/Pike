@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.72 2004/11/30 17:44:34 mast Exp $
+// $Id: Query.pike,v 1.73 2005/08/23 13:06:18 grubba Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -49,7 +49,8 @@ string protocol;
 int status;
 string status_desc;
 
-int timeout=120; // seconds
+int data_timeout = 120;	// seconds
+int timeout = 120;	// seconds
 
 // internal
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -369,7 +370,11 @@ void async_fetch_close()
      //destruct(con);
      con=0;
    }
-   if (request_ok) (request_ok)(@extra_args);
+   if (errno) {
+     if (request_fail) (request_fail)(this_object(), @extra_args);
+   } else {
+     if (request_ok) (request_ok)(this_object(), @extra_args);
+   }
 }
 
 /****** utilities **************************************************/
@@ -733,6 +738,28 @@ string data(int|void max_length)
 		  {
 		     s=con->read(8192,1);
 		     if (!s || s=="") return lbuf;
+}
+
+//! Like @[async_fetch()], except with a timeout and a corresponding fail 
+//! callback function
+//!
+//! @seealso
+//!   @[async_fetch()], @[async_request()], @[set_callbacks()]
+void timed_async_fetch(function(object, mixed ...) ok_callback,
+		       function(object, mixed ...) fail_callback,
+		       mixed ... extra) {
+  if (!con)
+  {
+    callback_fail(@extra); // nothing to do, stupid...
+    return;
+  }
+  
+  extra_args = extra;
+  request_ok = ok_callback;
+  request_fail = fail_callback;
+  call_out(async_timeout, data_timeout);
+  
+  con->set_nonblocking(async_fetch_read,0, async_fetch_close);
 		     rbuf+=s;
 		     buf+=s;
 		  }
@@ -1019,7 +1046,10 @@ static void destroy()
    //catch { destruct(con); };
 }
 
-//!	Fetch all data in background.
+//! Fetch all data in background.
+//!
+//! @seealso
+//!   @[timed_async_fetch()], @[async_request()], @[set_callbacks()]
 void async_fetch(function callback,mixed ... extra)
 {
    if (sizeof(buf)-datapos>=(int)headers["content-length"])
