@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.73 2005/08/23 13:06:18 grubba Exp $
+// $Id: Query.pike,v 1.74 2005/08/23 17:46:16 grubba Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -738,28 +738,6 @@ string data(int|void max_length)
 		  {
 		     s=con->read(8192,1);
 		     if (!s || s=="") return lbuf;
-}
-
-//! Like @[async_fetch()], except with a timeout and a corresponding fail 
-//! callback function
-//!
-//! @seealso
-//!   @[async_fetch()], @[async_request()], @[set_callbacks()]
-void timed_async_fetch(function(object, mixed ...) ok_callback,
-		       function(object, mixed ...) fail_callback,
-		       mixed ... extra) {
-  if (!con)
-  {
-    callback_fail(@extra); // nothing to do, stupid...
-    return;
-  }
-  
-  extra_args = extra;
-  request_ok = ok_callback;
-  request_fail = fail_callback;
-  call_out(async_timeout, data_timeout);
-  
-  con->set_nonblocking(async_fetch_read,0, async_fetch_close);
 		     rbuf+=s;
 		     buf+=s;
 		  }
@@ -1066,6 +1044,28 @@ void async_fetch(function callback,mixed ... extra)
    extra_args=extra;
    request_ok=callback;
    con->set_nonblocking(async_fetch_read,0,async_fetch_close);
+}
+
+//! Like @[async_fetch()], except with a timeout and a corresponding fail 
+//! callback function
+//!
+//! @seealso
+//!   @[async_fetch()], @[async_request()], @[set_callbacks()]
+void timed_async_fetch(function(object, mixed ...:void) ok_callback,
+		       function(object, mixed ...:void) fail_callback,
+		       mixed ... extra) {
+  if (!con)
+  {
+    callback_fail(@extra); // nothing to do, stupid...
+    return;
+  }
+  
+  extra_args = extra;
+  request_ok = ok_callback;
+  request_fail = fail_callback;
+  call_out(async_timeout, data_timeout);
+  
+  con->set_nonblocking(async_fetch_read,0, async_fetch_close);
 }
 
 static string _sprintf(int t)
