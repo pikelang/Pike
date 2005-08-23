@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.218 2005/01/20 13:08:23 grubba Exp $
+|| $Id: svalue.c,v 1.219 2005/08/23 16:55:21 grubba Exp $
 */
 
 #include "global.h"
@@ -1272,8 +1272,18 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	  switch(j = index_shared_string(s->u.string,i))
           {
 	  case '\n':
-	    my_putchar('\\');
-	    my_putchar('n');
+	    if (i == s->u.string->len-1) {
+	      /* String ends with a new-line. */
+	      my_strcat("\\n");
+	    } else {
+	      int e;
+	      /* Add line breaks to make the output easier to read. */
+	      my_strcat("\\n\"\n");
+	      for (e = 2; e < indent; e++) {
+		my_putchar(' ');
+	      }
+	      my_putchar('\"');
+	    }
 	    break;
 
 	  case '\t':
