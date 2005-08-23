@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.78 2005/08/23 13:06:34 grubba Exp $
+// $Id: Query.pike,v 1.79 2005/08/23 17:44:39 grubba Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -661,28 +661,6 @@ this_program sync_request(string server, int port, string query,
       if (ponder_answer() == -1) {
 	// The keepalive connection was closed from the server end.
 	// Retry with a new one.
-}
-
-//! Like @[async_fetch()], except with a timeout and a corresponding fail 
-//! callback function
-//!
-//! @seealso
-//!   @[async_fetch()], @[async_request()], @[set_callbacks()]
-void timed_async_fetch(function(object, mixed ...) ok_callback,
-		       function(object, mixed ...) fail_callback,
-		       mixed ... extra) {
-  if (!con)
-  {
-    callback_fail(@extra); // nothing to do, stupid...
-    return;
-  }
-  
-  extra_args = extra;
-  request_ok = ok_callback;
-  request_fail = fail_callback;
-  call_out(async_timeout, data_timeout);
-  
-  con->set_nonblocking(async_fetch_read,0, async_fetch_close);
 	con->close();
 	con = 0;
 	return sync_request (server, port, query, http_headers, data);
@@ -1143,6 +1121,28 @@ void async_fetch(function callback,mixed ... extra)
    extra_args=extra;
    request_ok=callback;
    con->set_nonblocking(async_fetch_read,0,async_fetch_close);
+}
+
+//! Like @[async_fetch()], except with a timeout and a corresponding fail 
+//! callback function
+//!
+//! @seealso
+//!   @[async_fetch()], @[async_request()], @[set_callbacks()]
+void timed_async_fetch(function(object, mixed ...:void) ok_callback,
+		       function(object, mixed ...:void) fail_callback,
+		       mixed ... extra) {
+  if (!con)
+  {
+    callback_fail(@extra); // nothing to do, stupid...
+    return;
+  }
+  
+  extra_args = extra;
+  request_ok = ok_callback;
+  request_fail = fail_callback;
+  call_out(async_timeout, data_timeout);
+  
+  con->set_nonblocking(async_fetch_read,0, async_fetch_close);
 }
 
 static string _sprintf(int t)
