@@ -204,8 +204,10 @@ int up_to_date( )
            string f )
   {
     Stdio.Stat s;
-    if( !(s = file_stat( f ) ) )
+    if( !(s = file_stat( f ) ) ) {
       werror("Failed to stat "+f+"\n");
+      return 0;
+    }
     if( s->mtime > last_time )
       return 0;
   }
