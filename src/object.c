@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.166 2003/09/08 15:27:58 mast Exp $");
+RCSID("$Id: object.c,v 1.167 2005/08/26 15:14:04 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1584,9 +1584,12 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
   if(!loc.o) Pike_error("Illegal magic index call.\n");
 
   loc.parent_identifier=Pike_fp->fun;
-  loc.inherit=INHERIT_FROM_INT(Pike_fp->current_object->prog, Pike_fp->fun);
-  
+  if (loc.o->prog)
+    loc.inherit=INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);  
   find_external_context(&loc, parent_level);
+
+  if (!loc.o->prog)
+    Pike_error ("Cannot index in destructed parent object.\n");
 
   magic=low_clone(type);
   add_ref(MAGIC_O2S(magic)->o=loc.o);
