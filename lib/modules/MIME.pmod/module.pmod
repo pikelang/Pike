@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.6 2003/04/14 13:58:42 marcus Exp $
+// $Id: module.pmod,v 1.7 2005/08/26 11:48:36 jonasw Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -1081,8 +1081,11 @@ class Message {
       string epilogue = parts[-1];
       if ((sscanf(epilogue, "--%*[ \t]%s", epilogue)<2 ||
 	   (epilogue != "" && epilogue[0] != '\n' &&
-	    epilogue[0..1] != "\r\n")) && !guess)
-	error("multipart message improperly terminated (%O)\n", parts[-1]);
+	    epilogue[0..1] != "\r\n")) && !guess) {
+	error("multipart message improperly terminated (%O%s)\n",
+	      epilogue[..200],
+	      sizeof(epilogue) > 201 ? "[...]" : "");
+      }
       encoded_data = 0;
       decoded_data = parts[0][1..];
       if(sizeof(decoded_data) && decoded_data[-1]=='\r')
