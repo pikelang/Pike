@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.c,v 1.35 2004/05/25 09:10:51 grubba Exp $
+|| $Id: ppc32.c,v 1.36 2005/08/27 20:31:24 jonasw Exp $
 */
 
 /*
@@ -17,6 +17,13 @@
 #include "builtin_functions.h"
 #include "pikecode.h"
 #include "interpret.h"
+
+
+/* Get MakeDataExecutable from CarbonLib on Mac OS X */
+#ifdef HAVE_CORESERVICES_CORESERVICES_H
+#include <CoreServices/CoreServices.h>
+#endif
+
 
 #if PIKE_BYTEORDER == 1234
 #define MAKE_TYPE_WORD(t,st) ((t)|((st)<<16))
@@ -627,6 +634,12 @@ INT32 ppc32_read_f_jump(INT32 offset)
 void ppc32_flush_instruction_cache(void *addr, size_t len)
 {
   INT32 a;
+
+#ifdef HAVE_MAKEDATAEXECUTABLE
+  /* Call optimized cache flushing in Mac OS X */
+  MakeDataExecutable(addr, len);
+  return;
+#endif
 
 #ifdef _POWER
 #ifdef _AIX

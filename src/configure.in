@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.685 2005/06/01 15:14:47 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.686 2005/08/27 20:31:24 jonasw Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1556,6 +1556,9 @@ if test "$cflags_is_set" = "no"; then
     AC_SYS_COMPILER_FLAG(-framework Foundation, framework_Foundation, LDFLAGS)
     AC_SYS_COMPILER_FLAG(-framework System, framework_System, LDFLAGS)
 
+    # Needed for MakeDataExecutable which comes from CarbonLib
+    AC_SYS_COMPILER_FLAG(-framework CoreServices, framework_CoreServices, LDFLAGS)
+    
     # -flat_namespace only needed for linking with libMallocDebug
     # AC_SYS_COMPILER_FLAG(-flat_namespace, flat_namespace, LDFLAGS)
 
@@ -2349,7 +2352,7 @@ grp.h pwd.h passwd.h group.h winsock2.h signal.h sys/file.h poll.h sys/poll.h \
 socket.h ieeefp.h fp_class.h floatingpoint.h  sys/priocntl.h sys/sched.h \
 windows.h float.h errno.h stddef.h mmx.h sys/termio.h sys/termios.h valgrind.h \
 valgrind/memcheck.h memcheck.h sys/prctl.h sys/ioctl.h mach/task_info.h \
-mach/task.h mach/mach_init.h)
+mach/task.h mach/mach_init.h CoreServices/CoreServices.h)
 
 # some Linux systems have a broken resource.h that compiles anyway /Mirar
 AC_MSG_CHECKING([for sys/resource.h])
@@ -3240,6 +3243,7 @@ AC_CHECK_FUNCS( \
  nanosleep \
  thr_yield \
  prctl \
+ MakeDataExecutable \
 )
 
 AC_MSG_CHECKING(for the type of the last argument to accept)
