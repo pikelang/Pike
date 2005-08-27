@@ -54,14 +54,14 @@ o Fixed leak in Oracle module when Oracle.Date objects are created or
   cast.
 o Several fixes for improved performance and compatibility with
   Oracle 9.
-o Fixes for compiling under Solaris 10, AmigaOS4, OpenBSD and MacOS X.
+o Fixes for compiling under Solaris 10, AmigaOS4, OpenBSD and Mac OS X.
 o Machine code disabled under FreeBSD 5.x.
 o Preprocessor now handles escaped newlines in ordinary text.
 o #if expressions can now be broken with escaped newlines.
 o sprintf() %f segfaults fixed.
 o Stdio.UDP->wait() now handles EINTR.
 o Stdio.File sockets are properly released when connect() fails.
-o xml parser fixes (see Pike code changes).
+o XML parser fixes (see Pike code changes).
 o mktime() works before 1970 now in all situations.
 o gmtime() works for localtime now, and maps to closest valid time
   when presented with an invalid time.
@@ -75,7 +75,7 @@ o Pike.Backend: proper closing of kqueue descriptors on *BSD systems
   that use kqueue instead of poll().
 o Pike.Backend: fixed a bug that caused delays when setting callbacks.
   Fixes bad performance for SSL.sslfile based servers.
-o Sybase: SybaseOpenClient framework on MacOS X.
+o Sybase: SybaseOpenClient framework on Mac OS X.
 o CMOD precompiler: fixes for polymorphic function overloading and
   module level functions.
 o Do not decode non-shortest forms in utf8_to_string and _Charset, for
@@ -86,6 +86,8 @@ o Postgres: Fixes to create() variable 5 parsing.
 o GTK: a number of typos were fixed.
 o A large number of fixes for 64 bit architectures.
 o Significant optimization of sscanf %*s and %*[...].
+o Optimized Mac OS X cache management in machine code generation
+  resulting in better performance in some areas (e.g. startup time).
 
 Other Changes:
 
