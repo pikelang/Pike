@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.845 2005/06/14 16:55:46 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.846 2005/08/27 20:30:57 jonasw Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1781,6 +1781,9 @@ if test "$cflags_is_set" = "no"; then
     AC_SYS_COMPILER_FLAG(-framework Foundation, framework_Foundation, LDFLAGS)
     AC_SYS_COMPILER_FLAG(-framework System, framework_System, LDFLAGS)
 
+    # Needed for MakeDataExecutable which comes from CarbonLib
+    AC_SYS_COMPILER_FLAG(-framework CoreServices, framework_CoreServices, LDFLAGS)
+    
     # -flat_namespace only needed for linking with libMallocDebug
     # AC_SYS_COMPILER_FLAG(-flat_namespace, flat_namespace, LDFLAGS)
 
@@ -2617,7 +2620,8 @@ AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 		 stddef.h mmx.h asm/mmx.h sys/termio.h sys/termios.h \
 		 ws2tcpip.h valgrind/memcheck.h memcheck.h valgrind.h \
 		 sys/prctl.h sys/ioctl.h mach/task_info.h mach/task.h \
-		 mach/mach_init.h syscall.h sys/syscall.h devices/timer.h)
+		 mach/mach_init.h syscall.h sys/syscall.h devices/timer.h \
+		 CoreServices/CoreServices.h)
 
 # Make it possible to disable use of /dev/poll.
 if test "x$with_devpoll" = "xno"; then :; else
@@ -3663,6 +3667,7 @@ AC_CHECK_FUNCS( \
  nanosleep \
  thr_yield \
  prctl \
+ MakeDataExecutable \
 )
 
 # SunOS 4 realloc() returns NULL when reallocing NULL.
