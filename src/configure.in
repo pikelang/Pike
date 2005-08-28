@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.846 2005/08/27 20:30:57 jonasw Exp $")
+AC_REVISION("$Id: configure.in,v 1.847 2005/08/28 12:53:08 jonasw Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -938,7 +938,6 @@ LC_REQ="-lc"
 
 case "$pike_cv_sys_os" in
   Darwin*)
-      LC_REQ="-lc -lcc_dynamic"
       ;;
   SCO*)
      case "$CFLAGS" in
@@ -6598,7 +6597,7 @@ if test -z "$LDSHARED" ; then
       fi
     ;;
     Darwin*)
-      LDSHARED="ld -bundle -bind_at_load -flat_namespace -undefined suppress -lbundle1.o"
+      LDSHARED="gcc -bundle -bind_at_load -flat_namespace -undefined suppress"
     ;;
     IRIX*)
       if test "$GCC" = yes ; then
