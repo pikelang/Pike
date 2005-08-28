@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.687 2005/08/28 12:23:14 jonasw Exp $")
+AC_REVISION("$Id: configure.in,v 1.688 2005/08/28 18:51:06 jonasw Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3057,7 +3057,9 @@ OLD_LIBOBJS="${LIBOBJS}"
 
 AC_FUNC_MEMCMP
 
-if test "x$ac_cv_func_memcmp_clean" = "xyes"; then
+# Old Autoconf set memcmp_clean while newer define memcmp_working
+if test "x$ac_cv_func_memcmp_clean" = "xyes" -o \
+        "x$ac_cv_func_memcmp_working" = "xyes"; then
   AC_DEFINE(HAVE_MEMCMP)
 fi
 
