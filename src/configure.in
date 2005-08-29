@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.848 2005/08/28 18:51:37 jonasw Exp $")
+AC_REVISION("$Id: configure.in,v 1.849 2005/08/29 10:45:45 jonasw Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2621,6 +2621,14 @@ AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 		 sys/prctl.h sys/ioctl.h mach/task_info.h mach/task.h \
 		 mach/mach_init.h syscall.h sys/syscall.h devices/timer.h \
 		 CoreServices/CoreServices.h)
+
+# Setjmp.
+#
+# POSIX defines sigsetjmp().
+# BSD defines both _setjmp() and setjmp(), where setjmp()
+# saves the signal mask.
+# SVID explicitly defines setjmp() not to save the signal mask.
+AC_CHECK_FUNCS(sigsetjmp setjmp _setjmp siglongjmp longjmp _longjmp)
 
 # Make it possible to disable use of /dev/poll.
 if test "x$with_devpoll" = "xno"; then :; else
