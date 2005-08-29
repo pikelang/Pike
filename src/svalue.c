@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.219 2005/08/23 16:55:21 grubba Exp $
+|| $Id: svalue.c,v 1.220 2005/08/29 12:46:50 grubba Exp $
 */
 
 #include "global.h"
@@ -965,6 +965,14 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
   check_type(b->type);
   check_refs(a);
   check_refs(b);
+
+  if ((a->type == b->type) && (a->type == T_INT)) {
+    /* Common case...
+     * Note: the case in the switch still needs to be kept,
+     *       since a or b may be a destructed object.
+     */
+    return a->u.integer < b->u.integer;
+  }
 
   safe_check_destructed(a);
   safe_check_destructed(b);
