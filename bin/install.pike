@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.161 2005/07/25 01:55:36 nilsson Exp $
+// $Id: install.pike,v 1.162 2005/08/29 13:25:07 grubba Exp $
 
 #define USE_GTK
 
@@ -22,8 +22,17 @@ string version_str = sprintf("%d.%d.%d",
 			     __REAL_MAJOR__,
 			     __REAL_MINOR__,
 			     __REAL_BUILD__);
+#if constant(Standards.UUID.make_version3)
+#define SUPPORT_WIX
 string version_guid = Standards.UUID.make_version3(pike_upgrade_guid,
 						   version_str)->str();
+Directory root = Directory("SourceDir",
+			   Standards.UUID.UUID(version_guid)->encode(),
+			   "TARGETDIR");
+#else /* !constant(Standards.UUID.make_version3) */
+#warning Standards.UUID.make_version3 not available.
+#warning Wix support disabled.
+#endif
 
 int last_len;
 int redump_all;
@@ -32,9 +41,6 @@ array(string) files_to_delete=({});
 array(string) files_to_not_delete=({});
 array(string) to_dump=({});
 array(string) to_export=({});
-Directory root = Directory("SourceDir",
-			   Standards.UUID.UUID(version_guid)->encode(),
-			   "TARGETDIR");
 
 
 int export;
@@ -783,6 +789,8 @@ int compare_to_file(string data,string a)
   return 0;
 }
 
+#ifdef SUPPORT_WIX
+
 int low_install_regkey(string path, string root, string key,
 		       string name, string value, string id)
 {
@@ -808,6 +816,8 @@ int low_uninstall_file(string path)
   root->uninstall_file(path);
 }
 
+#endif /* SUPPORT_WIX */
+
 int low_install_file(string from,
 		     string to,
 		     void|int mode,
@@ -817,12 +827,16 @@ int low_install_file(string from,
   if(export)
   {
     if (export == 2) {
+#ifdef SUPPORT_WIX
       mapping translator = ([
 	"":"",
 	prefix:"",
 	getcwd():"",
       ]);
       root->install_file(translate(to, translator), from, id);
+#else /* !SUPPORT_WIX */
+      error("Wix mode not supported.\n");
+#endif /* SUPPORT_WIX */
     } else {
       to_export+=({ from });
     }
@@ -1081,6 +1095,7 @@ constant tmpdir="~piketmp";
 void do_export()
 {
   if (export == 2) {
+#ifdef SUPPORT_WIX
     status("Creating", "Pike_module.wxs");
 
     // Minimize the number of src directives.
@@ -1349,6 +1364,9 @@ void do_export()
 
     Stdio.write_file(export_base_name+".wxs", xml_root->render_xml());
 #endif /* 0 */
+#else /* !SUPPORT_WIX */
+    error("Wix mode not supported.\n");
+#endif /* SUPPORT_WIX */
   } else {
 #ifdef __NT__
   status("Creating",export_base_name+".burk");
@@ -1974,8 +1992,12 @@ int pre_install(array(string) argv)
     status1("Installing master done.");
     return 0;
   case "--wix":
+#ifdef SUPPORT_WIX
     make_wix();
     status1("Creating wix done.");
+#else /* !SUPPORT_WIX */
+    error("Wix mode not supported with this pike.\n");
+#endif /* SUPPORT_WIX */
     return 0;
   }
   break;
@@ -1985,6 +2007,7 @@ int pre_install(array(string) argv)
   return 0;
 }
 
+#ifdef SUPPORT_WIX
 // Create a versioned root wix file that installs Pike_module.msm.
 void make_wix()
 {
@@ -2094,6 +2117,7 @@ void make_wix()
 
   create_file("Pike.wxs", root_node->render_xml());
 }
+#endif /* SUPPORT_WIX */
 
 // Create a master.pike with the correct lib_prefix
 void make_master(string dest, string master, string lib_prefix,
@@ -2268,6 +2292,7 @@ void finalize_pike()
 
   if(export) {
     low_install_file(pike_bin_file, pike, 0, "BIN_PIKE");
+#ifdef SUPPORT_WIX
     if (export == 2) {
       low_install_regkey("bin", "HKLM",
 			 "SYSTEM\\CurrentControlSet\\Services\\SharedAccess\\Parameters\\FirewallPolicy\\StandardProfile\\AuthorizedApplications\\List",
@@ -2276,6 +2301,7 @@ void finalize_pike()
 			 "RE__BIN_PIKE");
       low_uninstall_file("bin/*.old");
     }
+#endif /* SUPPORT_WIX */
   } else {
     status("Finalizing",pike_bin_file);
     string pike_bin=Stdio.read_file(pike_bin_file);
