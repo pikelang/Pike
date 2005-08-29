@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.688 2005/08/28 18:51:06 jonasw Exp $")
+AC_REVISION("$Id: configure.in,v 1.689 2005/08/29 10:45:08 jonasw Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2352,6 +2352,14 @@ socket.h ieeefp.h fp_class.h floatingpoint.h  sys/priocntl.h sys/sched.h \
 windows.h float.h errno.h stddef.h mmx.h sys/termio.h sys/termios.h valgrind.h \
 valgrind/memcheck.h memcheck.h sys/prctl.h sys/ioctl.h mach/task_info.h \
 mach/task.h mach/mach_init.h CoreServices/CoreServices.h)
+
+# Setjmp.
+#
+# POSIX defines sigsetjmp().
+# BSD defines both _setjmp() and setjmp(), where setjmp()
+# saves the signal mask.
+# SVID explicitly defines setjmp() not to save the signal mask.
+AC_CHECK_FUNCS(sigsetjmp setjmp _setjmp siglongjmp longjmp _longjmp)
 
 # some Linux systems have a broken resource.h that compiles anyway /Mirar
 AC_MSG_CHECKING([for sys/resource.h])

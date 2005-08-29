@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.25 2003/02/18 10:40:00 mast Exp $
+|| $Id: pike_error.h,v 1.26 2005/08/29 10:45:08 jonasw Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -16,6 +16,24 @@
 #endif
 
 #include <stdarg.h>
+
+#if defined(HAVE_SIGSETJMP) && defined(HAVE_SIGLONGJMP)
+#define HAVE_AND_USE_SIGSETJMP
+#define LOW_JMP_BUF		sigjmp_buf
+#define LOW_SETJMP(X)		sigsetjmp(X, 0)
+#define LOW_LONGJMP(X, Y)	siglongjmp(X, Y)
+#elif defined(HAVE__SETJMP) && defined(HAVE__LONGJMP)
+#define HAVE_AND_USE__SETJMP
+#define LOW_JMP_BUF		jmp_buf
+#define LOW_SETJMP(X)		_setjmp(X)
+#define LOW_LONGJMP(X, Y)	_longjmp(X, Y)
+#else
+/* Assume we have setjmp and longjmp, they are after all defined by ANSI C. */
+#define HAVE_AND_USE_SETJMP
+#define LOW_JMP_BUF		jmp_buf
+#define LOW_SETJMP(X)		setjmp(X)
+#define LOW_LONGJMP(X, Y)	longjmp(X, Y)
+#endif
 
 #if 1
 PMOD_EXPORT extern const char msg_fatal_error[];
@@ -72,7 +90,7 @@ typedef struct ONERROR
 typedef struct JMP_BUF
 {
   struct JMP_BUF *previous;
-  jmp_buf recovery;
+  LOW_JMP_BUF recovery;
   struct pike_frame *frame_pointer;
   ptrdiff_t stack_pointer;
   ptrdiff_t mark_sp;
@@ -111,14 +129,14 @@ PMOD_EXPORT extern const char msg_unsetjmp_nosync_2[];
 #endif
 
 #define DEBUG_LINE_ARGS ,char *location
-#define SETJMP(X) setjmp((init_recovery(&X, 0, PERR_LOCATION())->recovery))
+#define SETJMP(X) LOW_SETJMP((init_recovery(&X, 0, PERR_LOCATION())->recovery))
 #define SETJMP_SP(jmp, stack_pop_levels)				\
-  setjmp((init_recovery(&jmp, stack_pop_levels, PERR_LOCATION())->recovery))
+  LOW_SETJMP((init_recovery(&jmp, stack_pop_levels, PERR_LOCATION())->recovery))
 #else
 #define DEBUG_LINE_ARGS 
-#define SETJMP(X) setjmp((init_recovery(&X, 0)->recovery))
+#define SETJMP(X) LOW_SETJMP((init_recovery(&X, 0)->recovery))
 #define SETJMP_SP(jmp, stack_pop_levels)				\
-  setjmp((init_recovery(&jmp, stack_pop_levels)->recovery))
+  LOW_SETJMP((init_recovery(&jmp, stack_pop_levels)->recovery))
 #define UNSETJMP(X) Pike_interpreter.recoveries=X.previous
 #endif
 
