@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.368 2005/07/13 09:14:40 grubba Exp $
+|| $Id: las.c,v 1.369 2005/08/29 18:33:51 grubba Exp $
 */
 
 #include "global.h"
@@ -440,7 +440,7 @@ static void sub_node(node *n)
 
 #ifdef PIKE_DEBUG
   if (!node_hash.size) {
-    return;
+    Pike_fatal("sub_node(): node_hash.size is zero.\n");
   }
 #endif /* PIKE_DEBUG */
 
@@ -474,6 +474,7 @@ static node *freeze_node(node *orig)
    * way for the time being since I've grown tired of waiting for the
    * issue to be resolved one way or the other. /mast */
   orig->tree_info |= OPT_NOT_SHARED;
+  orig->node_info |= OPT_NOT_SHARED;
 
   if (orig->tree_info & OPT_NOT_SHARED) {
     /* No need to have this node in the hash-table. */
@@ -832,13 +833,15 @@ void debug_free_node(node *n)
 node *debug_check_node_hash(node *n)
 {
 #if defined(PIKE_DEBUG) && defined(SHARED_NODES)
-  if (n && !(n->tree_info & (OPT_DEFROSTED|OPT_NOT_SHARED)) && (n->hash != hash_node(n))) {
-    fprintf(stderr,"Bad node hash at %p, (%s:%d) (token=%d).\n",
-	    (void *)n, n->current_file->str, n->line_number,
-	    n->token);
-    debug_malloc_dump_references(n,0,0,0);
-    print_tree(n);
-    Pike_fatal("Bad node hash!\n");
+  if (n && !(n->tree_info & (OPT_DEFROSTED|OPT_NOT_SHARED))) {
+    if (n->hash != hash_node(n)) {
+      fprintf(stderr,"Bad node hash at %p, (%s:%d) (token=%d).\n",
+	      (void *)n, n->current_file->str, n->line_number,
+	      n->token);
+      debug_malloc_dump_references(n,0,0,0);
+      print_tree(n);
+      Pike_fatal("Bad node hash!\n");
+    }
   }
 #endif /* PIKE_DEBUG && SHARED_NODES */
   return n;
