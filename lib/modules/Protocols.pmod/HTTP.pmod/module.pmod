@@ -79,6 +79,9 @@ constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
 //!   Old connection object.
 //! @param data
 //!   Data payload to be transmitted in the request.
+//!
+//! @seealso
+//!   @[do_sync_method()]
 .Query do_method(string method,
 		 string|Standards.URI url,
 		 void|mapping(string:int|string) query_variables,
@@ -89,7 +92,8 @@ constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
     url=Standards.URI(url);
 
   if( (< "httpu", "httpmu" >)[url->scheme] ) {
-    return do_udp_method(method, url, query_variables, request_headers, data);
+    return do_udp_method(method, url, query_variables, request_headers,
+			 con, data);
   }
 
   if(!con)
@@ -146,10 +150,10 @@ constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
 }
 
 static .Query do_udp_method(string method, Standards.URI url,
-			       void|mapping(string:int|string) query_variables,
-			       void|mapping(string:string|array(string))
-			       request_headers, void|Stdio.UDP udp,
-			       void|string data)
+			    void|mapping(string:int|string) query_variables,
+			    void|mapping(string:string|array(string))
+			    request_headers, void|Protocols.HTTP.Query con,
+			    void|string data)
 {
   if(!request_headers)
     request_headers = ([]);
@@ -162,30 +166,111 @@ static .Query do_udp_method(string method, Standards.URI url,
       path = "/";
   }
   string msg = method + " " + path + " HTTP/1.1\r\n";
-  if(!udp) {
-    udp = Stdio.UDP();
-    int port = 10000 + random(1000);
-    int i;
-    while(1) {
-      if( !catch( udp->bind(port++) ) ) break;
-      if( i++ > 1000 ) error("Could not open a UDP port.\n");
-    }
-    if(url->method=="httpmu") {
-      mapping ifs = Stdio.gethostip();
-      if(!sizeof(ifs)) error("No Internet interface found.\n");
-      foreach(ifs; string i; mapping data)
-	if(sizeof(data->ips)) {
-	  udp->enable_multicast(data->ips[0]);
-	  break;
-	}
-      udp->add_membership(url->host, 0, 0);
-    }
-    udp->set_multicast_ttl(4);
+
+  Stdio.UDP udp = Stdio.UDP();
+  int port = 10000 + random(1000);
+  int i;
+  while(1) {
+    if( !catch( udp->bind(port++) ) ) break;
+    if( i++ > 1000 ) error("Could not open a UDP port.\n");
   }
+  if(url->method=="httpmu") {
+    mapping ifs = Stdio.gethostip();
+    if(!sizeof(ifs)) error("No Internet interface found.\n");
+    foreach(ifs; string i; mapping data)
+      if(sizeof(data->ips)) {
+	udp->enable_multicast(data->ips[0]);
+	break;
+      }
+    udp->add_membership(url->host, 0, 0);
+  }
+  udp->set_multicast_ttl(4);
   udp->send(url->host, url->port, msg);
-  .Query q=.Query();
-  q->con = udp;
-  return q;
+  if (!con) {
+    con = .Query();
+  }
+  con->con = udp;
+  return con;
+}
+
+//! Low level asynchronous HTTP call method.
+//!
+//! @param method
+//!   The HTTP method to use, e.g. @expr{"GET"@}.
+//! @param url
+//!   The URL to perform @[method] on. Should be a complete URL,
+//!   including protocol, e.g. @expr{"https://pike.ida.liu.se/"@}.
+//! @param query_variables
+//!   Calls @[http_encode_query] and appends the result to the URL.
+//! @param request_headers
+//!   The HTTP headers to be added to the request. By default the
+//!   headers User-agent, Host and, if needed by the url,
+//!   Authorization will be added, with generated contents.
+//!   Providing these headers will override the default. Setting
+//!   the value to 0 will remove that header from the request.
+//! @param con
+//!   Previously initialized connection object.
+//!   In particular the callbacks must have been set
+//!   (@[Query.set_callbacks()]).
+//! @param data
+//!   Data payload to be transmitted in the request.
+//!
+//! @seealso
+//!   @[do_method()], @[Query.set_callbacks()]
+void do_async_method(string method,
+		     string|Standards.URI url,
+		     void|mapping(string:int|string) query_variables,
+		     void|mapping(string:string|array(string)) request_headers,
+		     Protocols.HTTP.Query con, void|string data)
+{
+  if(stringp(url))
+    url=Standards.URI(url);
+
+  if( (< "httpu", "httpmu" >)[url->scheme] ) {
+    error("Asynchronous httpu or httpmu not yet supported.\n");
+  }
+
+#if constant(SSL.sslfile) 	
+  if(url->scheme!="http" && url->scheme!="https")
+    error("Can't handle %O or any other protocols than HTTP or HTTPS.\n",
+	  url->scheme);
+
+  con->https = (url->scheme=="https")? 1 : 0;
+#else
+  if(url->scheme!="http")
+    error("Can't handle %O or any other protocol than HTTP.\n",
+	  url->scheme);
+#endif
+
+  if(!request_headers)
+    request_headers = ([]);
+  mapping default_headers = ([
+    "user-agent" : "Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client)"
+    " Pike/" + __REAL_MAJOR__ + "." + __REAL_MINOR__ + "." + __REAL_BUILD__,
+    "host" : url->host + 
+    (url->port!=(url->scheme=="https"?443:80)?":"+url->port:"")]);
+
+  if(url->user || url->passwd)
+    default_headers->authorization = "Basic "
+				   + MIME.encode_base64(url->user + ":" +
+							(url->password || ""));
+  request_headers = default_headers | request_headers;
+
+  string query=url->query;
+  if(query_variables && sizeof(query_variables))
+  {
+    if(query)
+      query+="&"+http_encode_query(query_variables);
+    else
+      query=http_encode_query(query_variables);
+  }
+
+  string path=url->path;
+  if(path=="") path="/";
+
+  con->async_sync_request(url->host, url->port,
+			  method+" "+path+(query?("?"+query):"")+" HTTP/1.0",
+			  request_headers, data);
 }
 
 //! Sends a HTTP GET request to the server in the URL and returns the
