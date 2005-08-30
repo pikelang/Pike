@@ -76,7 +76,11 @@ class NSNode {
 
   static string make_prefix(string ns) {
     // FIXME: Cache?
+#if constant(Crypto.MD5)
     return String.string2hex(Crypto.MD5->hash(ns))[..10];
+#else /* !constant(Crypto.MD5) */
+    return sprintf("%08x", hash(ns));
+#endif /* constant(Crypto.MD5) */
   }
 
   //! Returns the element name as it occurs in xml files. E.g.

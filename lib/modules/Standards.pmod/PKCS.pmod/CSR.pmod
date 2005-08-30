@@ -1,12 +1,12 @@
 //
-// $Id: CSR.pmod,v 1.12 2004/04/14 20:19:26 nilsson Exp $
+// $Id: CSR.pmod,v 1.13 2005/08/30 11:38:34 grubba Exp $
 
 //! Handling of Certifikate Signing Requests (PKCS-10)
 
 #pike __REAL_VERSION__
 // #pragma strict_types
 
-#if constant(Standards.ASN1.Types)
+#if constant(Standards.ASN1.Types) && constant(Crypto.RSA)
 
 import Standards.ASN1.Types;
 

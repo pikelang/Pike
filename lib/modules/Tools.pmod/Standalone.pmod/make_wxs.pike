@@ -1,13 +1,15 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: make_wxs.pike,v 1.8 2005/07/22 20:50:53 nilsson Exp $
+ * $Id: make_wxs.pike,v 1.9 2005/08/30 11:38:34 grubba Exp $
  *
  * Make a Wix modules source XML file from an existing set of
  * directories or files.
  *
  * 2004-11-02 Henrik Grubbström
  */
+
+#if constant(Standards.UUID.make_version3)
 
 int main(int argc, array(string) argv)
 {
@@ -36,7 +38,7 @@ int main(int argc, array(string) argv)
       if (stringp(opt[1])) {
 	version_str = opt[1];
       } else {
-	write("$Revision: 1.8 $\n");
+	write("$Revision: 1.9 $\n");
 	exit(0);
       }
       break;
@@ -103,3 +105,9 @@ int main(int argc, array(string) argv)
 					 manufacturer, descr, version_guid,
 					 comments)->render_xml());
 }
+
+#else /* !constant(Standards.UUID.make_version3) */
+
+constant this_program_does_not_exist=1;
+
+#endif /* constant(Standards.UUID.make_version3) */

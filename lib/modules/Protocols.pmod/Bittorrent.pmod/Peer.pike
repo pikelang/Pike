@@ -1,6 +1,8 @@
 // Bittorrent client - originally by Mirar 
 #pike __REAL_VERSION__
 
+#if constant(.Torrent)
+
 constant dont_dump_program = 1;
 
 Stdio.File fd=Stdio.File();
@@ -1057,3 +1059,9 @@ void bandwidth_o_meter()
    bandwidth_out_count=0;
    bandwidth_t=t1;
 }
+
+#else /* !constant(.Torrent) */
+
+constant this_program_does_not_exist=1;
+
+#endif /* constant(.Torrent) */

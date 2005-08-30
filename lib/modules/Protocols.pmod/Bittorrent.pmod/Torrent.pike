@@ -58,9 +58,11 @@
 
 #pike __REAL_VERSION__
 
+#if constant(Crypto.SHA1)
+
 import .Bencoding;
 
-constant cvsid="$Id: Torrent.pike,v 1.33 2004/09/19 12:13:13 grubba Exp $";
+constant cvsid="$Id: Torrent.pike,v 1.34 2005/08/30 11:38:34 grubba Exp $";
 
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 
@@ -1348,3 +1350,9 @@ void destroy()
 }
 
 // ----------------------------------------------------------------
+
+#else /* !constant(Crypto.SHA1) */
+
+constant this_program_does_not_exist=1;
+
+#endif /* constant(Crypto.SHA1) */
