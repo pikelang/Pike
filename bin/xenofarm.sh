@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# $Id: xenofarm.sh,v 1.27 2004/12/21 12:40:05 grubba Exp $
+# $Id: xenofarm.sh,v 1.28 2005/08/31 16:37:16 grubba Exp $
 # This file scripts the xenofarm actions and creates a result package
 # to send back.
 
@@ -76,8 +76,7 @@ log_start response_assembly
   # Configuration
   (
     cd "$BUILDDIR"
-    test -f config.log && cat config.log
-    for f in `find modules post_modules -name config.log -type f`; do
+    for f in `find . -name config.log -type f | sort`; do
       echo
       echo '###################################################'
       echo '##' `dirname "$f"`
