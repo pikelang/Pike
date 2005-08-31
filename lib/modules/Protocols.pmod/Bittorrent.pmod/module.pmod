@@ -20,4 +20,10 @@
 // test: failed to peek at "Protocols.Bittorrent.Port": Compilation failed.
 
 #pike __REAL_VERSION__
+#if constant(.Torrent)
 static private function dummy=.Torrent;
+#else /* !constant(.Torrent) */
+
+constant this_program_does_not_exist=1;
+
+#endif /* constant(.Torrent) */

@@ -1,5 +1,6 @@
 #pike 7.5
 
+#if constant(Crypto.Pipe)
 inherit Crypto.Pipe;
 
 static class Wrapper(object a) {
@@ -45,3 +46,7 @@ string name() { return upper_case(::name()); }
 array(int) query_key_length() { return key_size(); }
 int query_block_size() { return block_size(); }
 string crypt_block(string p) { return crypt(p); }
+
+#else /* constant(Crypto.Pipe) */
+constant this_program_does_not_exist=1;
+#endif /* constant(Crypto.Pipe) */

@@ -1,6 +1,7 @@
 // Bittorrent client - originally by Mirar 
 #pike __REAL_VERSION__
 
+#if constant(.Torrent)
 constant dont_dump_program = 1;
 
 Stdio.Port port;
@@ -53,3 +54,8 @@ static void new_connection()
 	"port":(int)v[1],
 	"fd":fd ]) );
 }
+#else /* !constant(.Torrent) */
+
+constant this_program_does_not_exist=1;
+
+#endif /* constant(.Torrent) */

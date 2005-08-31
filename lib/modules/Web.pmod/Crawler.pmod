@@ -33,7 +33,7 @@
 //! @enddl
 
 // Author:  Johan Schön.
-// $Id: Crawler.pmod,v 1.21 2004/05/18 10:14:34 nilsson Exp $
+// $Id: Crawler.pmod,v 1.22 2005/08/31 08:43:15 grubba Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -520,12 +520,16 @@ class ComplexQueue(Stats stats, Policy policy)
   {
     inherit ADT.Stack;
     int last_mod;
-    multiset(string) uris_md5=(<>);
+    static multiset(string) uris_md5=(<>);
     int num_active;
 
-    string do_md5(string in)
+    static string do_md5(string in)
     {
+#if constant(Crypto.MD5)
       return Crypto.MD5->hash(in);
+#else /* !constant(Crypto.MD5) */
+      return in;
+#endif /* constant(Crypto.MD5) */
     }
 
     void push(mixed val)

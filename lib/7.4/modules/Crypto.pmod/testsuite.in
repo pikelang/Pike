@@ -25,9 +25,11 @@ programp(Crypto.md4)]])
 test_true([[
 #pike 7.4
 programp(Crypto.md5)]])
+cond_resolv(Crypto.Pipe, [[
 test_true([[
 #pike 7.4
 programp(Crypto.pipe)]])
+]])
 test_true([[programp(
 #pike 7.4
 Crypto.sha)]])
