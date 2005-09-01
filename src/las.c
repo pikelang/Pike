@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.369 2005/08/29 18:33:51 grubba Exp $
+|| $Id: las.c,v 1.370 2005/09/01 13:44:51 grubba Exp $
 */
 
 #include "global.h"
@@ -2006,8 +2006,8 @@ node *low_mkconstantsvaluenode(struct svalue *s)
   res->token = F_CONSTANT;
   assign_svalue_no_free(& res->u.sval, s);
 #ifdef SHARED_NODES
-  if (s->type != T_INT && s->type != T_FUNCTION)
-    /* The subtype is part of the hash, so make sure it got a defined
+  if (s->type != T_INT && s->type != T_FUNCTION && s->type != T_OBJECT)
+    /* The subtype is part of the hash, so make sure it gets a defined
      * value here. */
     res->u.sval.subtype = 0;
 #endif
