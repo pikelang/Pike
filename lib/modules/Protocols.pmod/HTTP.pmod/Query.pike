@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.52 2005/08/23 17:49:13 grubba Exp $
+// $Id: Query.pike,v 1.53 2005/09/01 13:58:31 grubba Exp $
 
 //!	Open and execute an HTTP query.
 
@@ -288,8 +288,8 @@ void async_got_host(string server,int port)
 		      {
 			if (success) {
 			  // Connect ok.
-#if constant(SSL.sslfile) 
 			  if(https) {
+#if constant(SSL.sslfile) 
 			    //Create a context
 			    SSL.context context = SSL.context();
 			    // Allow only strong crypto
@@ -306,9 +306,11 @@ void async_got_host(string server,int port)
 			    ssl = SSL.sslfile(con, context, 1,0);
 			    ssl->set_nonblocking(0,async_connected,async_failed);
 			    con=ssl;
+#else
+			    error("HTTPS not supported (Crypto support is required).\n");
+#endif
 			  }
 			  else
-#endif
 			    async_connected();
 			} else {
 			  // Connect failed.
@@ -335,6 +337,7 @@ void async_fetch_close()
    catch (con->close());
    //destruct(con);
    con=0;
+   remove_call_out(async_timeout);
    if (errno) {
      if (request_fail) (request_fail)(this_object(), @extra_args);
    } else {
