@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.164 2005/07/31 15:19:43 jonasw Exp $
+|| $Id: sscanf.c,v 1.165 2005/09/01 12:59:20 mast Exp $
 */
 
 #include "global.h"
@@ -1403,9 +1403,10 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
  *!     brackets. Ranges of characters can be defined by using a minus
  *!     character between the first and the last character to be included in
  *!     the range. Example: %[0-9H] means any number or 'H'. Note that sets
- *!     that includes the character - must have it first in the brackets to
+ *!     that includes the character '-' must have it first in the brackets to
  *!     avoid having a range defined. Sets including the character ']' must
- *!     list this first (even before -) too, for natural reasons.
+ *!     list this first too. If both '-' and ']' should be included
+ *!     then put ']' first and '-' last.
  *!   @value "%{format%}"
  *!     Repeatedly matches 'format' as many times as possible and assigns an
  *!     array of arrays with the results to the lvalue.
