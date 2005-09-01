@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.75 2005/08/23 17:48:22 grubba Exp $
+// $Id: Query.pike,v 1.76 2005/09/01 13:58:43 grubba Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -370,6 +370,7 @@ void async_fetch_close()
      //destruct(con);
      con=0;
    }
+   remove_call_out(async_timeout);
    if (errno) {
      if (request_fail) (request_fail)(this_object(), @extra_args);
    } else {
