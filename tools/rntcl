@@ -83,7 +83,8 @@ string o_to_obj(string fname)
 
 array|object paranoia_stat(string f)
 {
-  for (int i=0; i < 10; i++) {
+  // Let the client have 10 seconds to flush the data...
+  for (int i=0; i < 100; i++) {
     array|object st = file_stat(f);
     if (st) return st;
     sleep(0.1);
