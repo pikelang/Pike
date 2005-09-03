@@ -1,8 +1,8 @@
---- pike7.5-7.5.3/lib/master.pike.in.orig	2003-03-18 12:23:33.000000000 +0100
-+++ pike7.5-7.5.3/lib/master.pike.in	2003-03-20 16:53:13.000000000 +0100
-@@ -864,6 +864,14 @@
- #if "¤include_prefix¤"[0]!='¤'
-   include_prefix = "¤include_prefix¤";
+--- pike7.7-7.7.21.orig/lib/master.pike.in	2005-08-17 01:03:03.000000000 +0200
++++ pike7.7-7.7.21/lib/master.pike.in	2005-09-03 03:06:50.159517736 +0200
+@@ -581,6 +581,14 @@ string normalize_path( string path )
+ #else
+   return replace(path,"\\","/");
  #endif
 +
 +  // Debian paths
@@ -14,4 +14,4 @@
 +  add_module_path("/usr/local/share/pike"+__REAL_MAJOR__+"."+__REAL_MINOR__+"/site_pike");
  }
  
- 
+ //! Mapping containing the cache of currently compiled files.

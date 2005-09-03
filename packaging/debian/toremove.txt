@@ -33,7 +33,6 @@ usr/lib/pike/@VERSION@/include/pike/precompile.sh
 usr/lib/pike/@VERSION@/include/pike/smartlink
 usr/lib/pike/@VERSION@/include/pike/test_pike.pike
 usr/lib/pike/@VERSION@/include/pike/aclocal.m4
-usr/lib/pike/@VERSION@/include/pike/specs
 usr/lib/pike/@VERSION@/lib/master.pike.in
 usr/lib/pike/@VERSION@/bin/pike.syms
 usr/lib/pike/@VERSION@/bin/rsif

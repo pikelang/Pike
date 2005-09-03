@@ -1,6 +1,16 @@
 pike7.7 (7.7.21-1) experimental; urgency=low
 
   * The latest cvs snapshot
+  * Updated the Standards-Version, no changes
+  * Using own version of specs.in, since the pike-generated one does not
+    make sense on a Debian system.
+  * Implemented configurable include_prefix for the install process
+  * GTK v1 is no longer used. Using GTK v2 and GNOME v2.x instead
+  * Turned on several experimental features, for wider testing
+  * Added new modules:
+     - SQLite
+     - Fuse
+     - DNS-SD (libhowl)
 
  -- Marek Habersack <grendel@debian.org>  Fri, 3 Jun 2005 16:45:28 +0200
 
