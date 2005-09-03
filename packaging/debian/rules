@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.52 2005/09/03 02:41:41 grendel Exp $
+# $Id: rules,v 1.53 2005/09/03 03:21:21 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -81,8 +81,7 @@ endif
 #
 # These are on so that people can report problems with them
 #
-EXPERIMENTAL_CFARGS=--with-computed-goto \
-		    --with-keypair-loop
+EXPERIMENTAL_CFARGS=--with-keypair-loop
 
 VERSION:=$(shell dpkg-parsechangelog | grep ^Version | sed -e 's/Version: //;s/-[^-]*$$//')
 OS=$(shell uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_')
@@ -90,7 +89,7 @@ BUILDDIR=build/$(OS)
 CFARGS=$(CFARGSEXTRA) \
        $(EXPERIMENTAL_CFARGS) \
        --disable-rpath \
-       --disable-smartlink-binary \
+       --disable-smartlink_binary \
        --with-relocatable-dumped-modules \
        --without-bundles \
        --with-cflags="$(CFLAGS)" \
@@ -113,7 +112,8 @@ CFARGS=$(CFARGSEXTRA) \
        --with-perl \
        --without-ffmpeg \
        --without-libpdf \
-       --with-GTK2 \
+       --without-gtk \
+       --without-GTK2 \
        --with-sqlite \
        --without-libpanda $(MACHINE_OPTS) $(EXTRA_ARGS)
 
