@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.55 2005/08/16 12:34:50 grendel Exp $
+# $Id: rules,v 1.56 2005/09/03 01:58:32 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -22,6 +22,10 @@ CC=gcc
 endif
 
 CFLAGS = -DDEBIAN
+
+ifeq (,$(DEB_BUILD_ARCH))
+DEB_BUILD_ARCH=$(shell dpkg-architecture -qDEB_BUILD_ARCH)
+endif
 
 ifdef SSP
 SSP_FLAGS=-fstack-protector
