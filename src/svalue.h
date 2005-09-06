@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.134 2005/03/21 07:09:38 nilsson Exp $
+|| $Id: svalue.h,v 1.135 2005/09/06 16:56:17 grubba Exp $
 */
 
 #ifndef SVALUE_H
@@ -339,6 +339,7 @@ do{ \
 #ifdef PIKE_DEBUG
 PMOD_EXPORT extern void describe(void *); /* defined in gc.c */
 PMOD_EXPORT extern const char msg_type_error[];
+PMOD_EXPORT extern const char msg_assign_svalue_error[];
 #define check_type(T) if(T > MAX_TYPE && T!=T_SVALUE_PTR && T!=T_OBJ_INDEX && T!=T_VOID && T!=T_DELETED && T!=T_ARRAY_LVALUE) Pike_fatal(msg_type_error,T)
 
 #define check_svalue(S) debug_check_svalue(dmalloc_check_svalue(S,DMALLOC_LOCATION()))
@@ -494,12 +495,15 @@ static INLINE union anything *dmalloc_check_union(union anything *u,int type, ch
 }while(0)
 
 #define assign_svalue_no_free_unlocked(X,Y) do {	\
-  struct svalue _tmp;					\
   struct svalue *_to=(X);				\
   const struct svalue *_from=(Y);			\
   check_type(_from->type); check_refs(_from);		\
-  *_to=_tmp=*_from;					\
-  if(_tmp.type <= MAX_REF_TYPE) add_ref(_tmp.u.dummy);	\
+  DO_IF_DEBUG(if (_to == _from) {			\
+		Pike_fatal(msg_assign_svalue_error,	\
+			   _to);			\
+	      });					\
+  *_to=*_from;						\
+  if(_to->type <= MAX_REF_TYPE) add_ref(_to->u.dummy);	\
 }while(0)
 
 #define assign_svalue_unlocked(X,Y) do {	\
