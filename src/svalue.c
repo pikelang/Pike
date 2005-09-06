@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.220 2005/08/29 12:46:50 grubba Exp $
+|| $Id: svalue.c,v 1.221 2005/09/06 16:55:22 grubba Exp $
 */
 
 #include "global.h"
@@ -40,6 +40,8 @@ const struct svalue dest_ob_zero = {
 #ifdef PIKE_DEBUG
 PMOD_EXPORT const char msg_type_error[] =
   "Type error: %d\n";
+PMOD_EXPORT const char msg_assign_svalue_error[] =
+  "assign_svalue_no_free(): to and from are both %p.\n";
 PMOD_EXPORT const char msg_sval_obj_wo_refs[] =
   "Svalue to object without references.\n";
 PMOD_EXPORT const char msg_ssval_obj_wo_refs[] =
