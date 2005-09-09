@@ -1,3 +1,10 @@
+pike7.4 (7.4.325-2) unstable; urgency=low
+
+  * pike7.4_7.4.325-1: FTBFS: "USE_SSL" define conflicts with libpq-dev
+    (Closes: #327352). Build-depends on libssl-dev now.
+
+ -- Marek Habersack <grendel@debian.org>  Fri,  9 Sep 2005 18:37:21 +0200
+
 pike7.4 (7.4.325-1) unstable; urgency=high
 
   * The latest cvs snapshot
