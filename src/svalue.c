@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.161 2004/09/25 19:21:50 grubba Exp $
+|| $Id: svalue.c,v 1.162 2005/09/09 14:51:52 grubba Exp $
 */
 
 #include "global.h"
@@ -72,7 +72,7 @@ static int pike_isnan(double x)
 #define PIKE_ISUNORDERED(X,Y) (PIKE_ISNAN(X)||PIKE_ISNAN(Y))
 #endif /* HAVE_ISUNORDERED */
 
-RCSID("$Id: svalue.c,v 1.161 2004/09/25 19:21:50 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.162 2005/09/09 14:51:52 grubba Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1160,6 +1160,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 {
   char buf[50];
 
+  check_c_stack(1024);
   check_type(s->type);
   check_refs(s);
 
