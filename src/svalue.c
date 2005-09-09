@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.222 2005/09/09 14:50:27 grubba Exp $
+|| $Id: svalue.c,v 1.223 2005/09/09 15:09:09 mast Exp $
 */
 
 #include "global.h"
@@ -1257,7 +1257,10 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 {
   char buf[50];
 
-  check_c_stack(1024);
+  /* This needs to be a bit lower than LOW_C_STACK_MARGIN so that the
+   * the raw error can be printed in exit_on_error. */
+  check_c_stack(250);
+
   check_type(s->type);
   check_refs(s);
 
