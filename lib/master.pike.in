@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.355 2005/07/22 20:16:10 nilsson Exp $
+// $Id: master.pike.in,v 1.356 2005/09/09 17:48:21 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1020,8 +1020,9 @@ void handle_error(array|object trace)
       catch {
 	if (catch {
 	  string msg = [string]x[0];
+	  werror("%s", msg);
 	  array bt = [array]x[1];
-	  werror("%s%O\n", msg, bt);
+	  werror("%O\n", bt);
 	}) {
 	  werror("%O\n", x);
 	}
