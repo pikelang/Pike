@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.124 2005/07/15 18:17:12 grubba Exp $
+|| $Id: sprintf.c,v 1.125 2005/09/09 16:03:05 mast Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -981,6 +981,8 @@ static void low_pike_sprintf(struct format_stack *fs,
   PCHARP a,begin;
   PCHARP format_end=ADD_PCHARP(format,format_len);
 
+  check_c_stack (250);
+
   start=fs->fsp;
   for(a=format;COMPARE_PCHARP(a,<,format_end);INC_PCHARP(a,1))
   {
@@ -1629,19 +1631,28 @@ static void low_pike_sprintf(struct format_stack *fs,
   }
 }
 
+struct f_sprintf_data
+{
+  struct string_builder r;
+  struct format_stack *fs;
+};
+
+static void free_f_sprintf_data (struct f_sprintf_data *d)
+{
+  free_string_builder (&d->r);
+  free_sprintf_strings (d->fs);
+  free (d->fs);
+}
+
 /* The efun */
 void f_sprintf(INT32 args)
 {
-  ONERROR err_string_builder, err_format_stack;
+  ONERROR uwp;
   struct pike_string *ret;
   struct svalue *argp;
-  struct string_builder r;
-
-  struct format_stack fs;
+  struct f_sprintf_data d;
 
   argp=Pike_sp-args;
-  
-  fs.fsp = fs.format_info_stack-1;
 
   if(argp[0].type != T_STRING) {
     if (argp[0].type == T_OBJECT) {
@@ -1661,19 +1672,21 @@ void f_sprintf(INT32 args)
     }
   }
 
-  init_string_builder(&r,0);
-  SET_ONERROR(err_format_stack, free_sprintf_strings, &fs);
-  SET_ONERROR(err_string_builder, free_string_builder, &r);
-  low_pike_sprintf(&fs,
-		   &r,
+  d.fs = ALLOC_STRUCT (format_stack);
+  d.fs->fsp = d.fs->format_info_stack-1;
+
+  init_string_builder(&d.r,0);
+  SET_ONERROR(uwp, free_f_sprintf_data, &d);
+  low_pike_sprintf(d.fs,
+		   &d.r,
 		   MKPCHARP_STR(argp->u.string),
 		   argp->u.string->len,
 		   argp+1,
 		   args-1,
 		   0);
-  UNSET_ONERROR(err_string_builder);
-  UNSET_ONERROR(err_format_stack);
-  ret=finish_string_builder(&r);
+  UNSET_ONERROR(uwp);
+  ret=finish_string_builder(&d.r);
+  free (d.fs);
 
   pop_n_elems(args);
   push_string(ret);
