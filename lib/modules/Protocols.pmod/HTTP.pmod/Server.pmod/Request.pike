@@ -86,6 +86,18 @@ void attach_fd(Stdio.File _fd, Port server,
       read_cb(0,already_data);
 }
 
+
+// Some (wap-gateways, specifically) servers send multiple
+// content-length, as an example..
+constant singular_headers = ({
+    "content-length",
+    "content-type",
+    "connection",
+    "if-modified-since",
+    "date",
+    "range",
+});
+
 static void read_cb(mixed dummy,string s)
 {
 
@@ -101,6 +113,11 @@ static void read_cb(mixed dummy,string s)
       headerparser=0;
       buf=v[0];
       request_headers=v[2];
+
+      foreach( singular_headers, string x )
+	  if( arrayp(request_headers[x]) )
+	      request_headers[x] = request_headers[x][-1];
+
       request_raw=v[1];
       parse_request();
 
