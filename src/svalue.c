@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.221 2005/09/06 16:55:22 grubba Exp $
+|| $Id: svalue.c,v 1.222 2005/09/09 14:50:27 grubba Exp $
 */
 
 #include "global.h"
@@ -1257,6 +1257,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 {
   char buf[50];
 
+  check_c_stack(1024);
   check_type(s->type);
   check_refs(s);
 

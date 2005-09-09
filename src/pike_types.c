@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.248 2005/06/03 14:54:36 grubba Exp $
+|| $Id: pike_types.c,v 1.249 2005/09/09 14:50:18 grubba Exp $
 */
 
 #include "global.h"
@@ -1670,6 +1670,7 @@ void describe_all_types(void)
 
 static void low_describe_type(struct pike_type *t)
 {
+  check_c_stack(1024);
   /**** FIXME: ****/
   switch(t->type)
   {
