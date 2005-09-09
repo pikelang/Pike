@@ -2,7 +2,7 @@ Source: pike7.4
 Section: interpreters
 Priority: optional
 Maintainer: Marek Habersack <grendel@debian.org>
-Standards-Version: 3.6.1
+Standards-Version: 3.6.2.1
 Build-Depends: debhelper (>> 4.0.0), libgdbm-dev, libgmp3-dev, libz-dev|zlib1g-dev, libjpeg-dev, libttf-dev, libmysqlclient10-dev, perl5, bison-1.35, freeglut3-dev (>= 2.2.0-6.1) [alpha hppa] | libglut3-dev, freeglut3-dev [!alpha !hppa] | libglut3-dev, xlibmesa-glu-dev | libglu-dev, xlibmesa-gl-dev | libgl-dev, libxpm-dev, libglade0-dev, libxml2-dev, libgtkxmhtml-dev, libgtk1.2-dev, libfreetype6-dev, autoconf2.13, automake1.4|automake1.6|automake1.7, libiodbc2-dev, libsane-dev, postgresql-dev, librsvg2-dev (>= 2.7), libsdl-mixer1.2-dev, libsdl1.2-dev, libperl-dev, sharutils, libpng3-dev, libtiff4-dev, libungif4-dev, bc, libssl-dev
 Build-Conflicts: libutahglx-dev
 
