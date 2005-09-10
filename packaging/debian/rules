@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.53 2005/06/18 00:19:16 grendel Exp $
+# $Id: rules,v 1.54 2005/09/10 01:59:28 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -21,27 +21,29 @@ else
 CC=gcc
 endif
 
+ifeq (,$(DEB_BUILD_ARCH))
+DEB_BUILD_ARCH=$(shell dpkg-architecture -qDEB_BUILD_ARCH)
+endif
+
 ifdef SSP
 SSP_FLAGS=-fstack-protector
 endif
 
-CFLAGS=-DDEBIAN
+CPPFLAGS_EXTRA=-DDEBIAN
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-CFLAGS += -O0
-CFARGSEXTRA=--with-rtldebug --with-cdebug --with-debug --without-copt
+CFARGSEXTRA=--without-rtldebug --without-cdebug --without-debug --without-copt
 else
-CFLAGS += -O2
 CFARGSEXTRA=--without-rtldebug --without-cdebug --without-debug
+endif
+
+ifneq (,$(findstring debug,$(DEB_BUILD_OPTIONS)))
+CFARGSEXTRA += --with-rtldebug --with-cdebug --with-debug
 endif
 
 # Temporary workaround for hppa linker issues
 ifeq ($(DEB_BUILD_ARCH),hppa)
-CFLAGS += -ffunction-sections
-endif
-
-ifneq (,$(findstring debug,$(DEB_BUILD_OPTIONS)))
-CFLAGS += -g3 -ggdb3
+CFLAGS_EXTRA += -ffunction-sections
 endif
 
 EXTRA_ARGS=--with-security
@@ -71,7 +73,8 @@ VERSION:=$(shell dpkg-parsechangelog | grep ^Version | sed -e 's/Version: //;s/-
 OS:=$(shell uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_')
 BUILDDIR=build/$(OS)
 CFARGS=$(CFARGSEXTRA) \
-       --with-cflags="$(CFLAGS)" \
+       --with-cflags="$(CFLAGS_EXTRA)" \
+       --with-cppflags="$(CPPFLAGS_EXTRA)" \
        --without-ssleay \
        --with-bignums \
        --with-gmp \
@@ -110,7 +113,7 @@ configure-stamp:
 	touch patched-stamp
 
 	# Add here commands to configure the package.
-	(cd $(BUILDDIR); $(CURDIR)/src/configure --prefix=/usr $(CFARGS) $(EXTRA_ARGS))
+	(cd $(BUILDDIR); $(CURDIR)/src/configure --prefix=/usr $(CFARGS))
 	touch configure-stamp
 
 

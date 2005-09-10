@@ -1,0 +1,24 @@
+diff -U3 -Narp pike7.4-7.4.325/src/modules/dynamic_module_makefile.in pike7.4-7.4.325.new/src/modules/dynamic_module_makefile.in
+--- pike7.4-7.4.325/src/modules/dynamic_module_makefile.in	2005-09-10 03:23:05.269095808 +0200
++++ pike7.4-7.4.325.new/src/modules/dynamic_module_makefile.in	2005-09-10 02:01:36.000000000 +0200
+@@ -63,7 +63,7 @@ dummy:	Makefile $(DUMMY) linker_options 
+ .c.o:
+ 	@echo "Compiling $<" ;\
+ 	rm -f $@.fail >/dev/null 2>&1; \
+-	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ; else \
++	if $(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@ ; then : ; else \
+ 	  status=$$?; \
+ 	  if test x"@noopt_retry@" = xyes ; then \
+ 	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
+diff -U3 -Narp pike7.4-7.4.325/src/modules/static_module_makefile.in pike7.4-7.4.325.new/src/modules/static_module_makefile.in
+--- pike7.4-7.4.325/src/modules/static_module_makefile.in	2002-11-05 20:40:00.000000000 +0100
++++ pike7.4-7.4.325.new/src/modules/static_module_makefile.in	2005-09-10 03:22:51.099249952 +0200
+@@ -51,7 +51,7 @@ dummy:	Makefile linker_options modlist_h
+ .c.o:
+ 	@echo "Compiling $<" ;\
+ 	rm -f $@.fail >/dev/null 2>&1; \
+-	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ; else \
++	if $(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@ ; then : ; else \
+ 	  status=$$?; \
+ 	  if test x"@noopt_retry@" = xyes ; then \
+ 	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
