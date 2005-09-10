@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.53 2005/09/03 03:21:21 grendel Exp $
+# $Id: rules,v 1.54 2005/09/10 02:20:46 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -25,35 +25,28 @@ ifeq (,$(DEB_BUILD_ARCH))
 DEB_BUILD_ARCH=$(shell dpkg-architecture -qDEB_BUILD_ARCH)
 endif
 
-CFLAGS = -DDEBIAN
-CPPFLAGS =  -I/usr/include/howl
+CPPFLAGS_EXTRA = -DDEBIAN -I/usr/include/howl
 
 ifdef SSP
 SSP_FLAGS=-fstack-protector
 endif
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-CFLAGS += -O0
-CFARGSEXTRA=--with-rtldebug --with-cdebug --with-debug --without-copt
+CFARGSEXTRA=--without-rtldebug --without-cdebug --without-debug --without-copt
 else
-CFLAGS += -O2
 CFARGSEXTRA=--without-rtldebug --without-cdebug --without-debug
 endif
 
 # Temporary workaround for hppa linker issues
 ifeq ($(DEB_BUILD_ARCH),hppa)
-CFLAGS += -ffunction-sections
+CFLAGS_EXTRA += -ffunction-sections
 endif
 
 ifneq (,$(findstring debug,$(DEB_BUILD_OPTIONS)))
-CFLAGS += -g3 -ggdb3
+CFARGSEXTRA += --with-rtldebug --with-cdebug --with-debug
 endif
 
-CFLAGS += $(SSP_FLAGS)
-# Temporary workaround for hppa linker issues
-ifeq ($(DEB_BUILD_ARCH),hppa)
-CFLAGS+=-ffunction-sections
-endif
+CFLAGS_EXTRA += $(SSP_FLAGS)
 
 ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 	INSTALL_PROGRAM += -s
@@ -92,8 +85,8 @@ CFARGS=$(CFARGSEXTRA) \
        --disable-smartlink_binary \
        --with-relocatable-dumped-modules \
        --without-bundles \
-       --with-cflags="$(CFLAGS)" \
-       --with-cppflags="$(CPPFLAGS)" \
+       --with-cflags="$(CFLAGS_EXTRA)" \
+       --with-cppflags="$(CPPFLAGS_EXTRA)" \
        --with-bignums \
        --with-gmp \
        --with-poll \
