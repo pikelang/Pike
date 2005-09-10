@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.h,v 1.33 2005/01/28 18:21:13 grubba Exp $
+|| $Id: backend.h,v 1.34 2005/09/10 00:44:53 grendel Exp $
 */
 
 #ifndef BACKEND_H
@@ -109,34 +109,34 @@ struct fd_callback_box;
 
 typedef int (*fd_box_callback) (struct fd_callback_box *box, int event);
 
-/* The callback user should keep an instance of this struct around for as long
+/** The callback user should keep an instance of this struct around for as long
  * as callbacks are wanted. Use hook_fd_callback_box and
  * unhook_fd_callback_box to connect/disconnect it to/from a backend. */
 struct fd_callback_box
 {
-  struct Backend_struct *backend; /* Not refcounted. Cleared when the backend
+  struct Backend_struct *backend; /**< Not refcounted. Cleared when the backend
 				   * is destructed or the box is unhooked. */
-  struct object *ref_obj;	/* If set, it's the object containing the box.
+  struct object *ref_obj;	/**< If set, it's the object containing the box.
 				 * It then acts as the ref from the backend to
 				 * the object and is refcounted by the backend
 				 * whenever any event is wanted. */
-  struct fd_callback_box *next;	/* Circular list of active fds in a backend.
+  struct fd_callback_box *next;	/**< Circular list of active fds in a backend.
 				 * NULL if the fd is not active in some
 				 * backend. Note: ref_obj MUST be freed if
 				 * the box is unlinked. */
-  int fd;			/* Use change_fd_for_box to change this. May
+  int fd;			/**< Use change_fd_for_box to change this. May
 				 * be negative, in which case only the ref
 				 * magic on backend and ref_obj is done. The
 				 * backend might change a negative value to a
 				 * different negative value. */
-  int events;			/* Bitfield with wanted events. Always use
+  int events;			/**< Bitfield with wanted events. Always use
 				 * set_fd_callback_events to change this. It's
 				 * ok to have hooked boxes where no events are
 				 * wanted. */
-  int revents;			/* Bitfield with active events. Always clear
+  int revents;			/**< Bitfield with active events. Always clear
 				 * the corresponding event if you perform an
 				 * action that might affect it. */
-  fd_box_callback callback;	/* Function to call. Assumed to be valid if
+  fd_box_callback callback;	/**< Function to call. Assumed to be valid if
 				 * any event is wanted. */
 };
 
