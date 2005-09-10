@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.h,v 1.60 2005/04/08 16:55:53 grubba Exp $
+|| $Id: mapping.h,v 1.61 2005/09/10 02:15:45 grendel Exp $
 */
 
 #ifndef MAPPING_H
@@ -87,6 +87,13 @@ extern struct mapping *gc_internal_mapping;
 
 #endif /* PIKE_MAPPING_KEYPAIR_LOOP */
 
+/** Free a previously allocated mapping. The preferred method of freeing
+  * a mapping is by calling the @ref do_free_mapping function.
+  *
+  * @param M The mapping to be freed
+  * @see do_free_mapping
+  * @see free_mapping_data
+  */
 #define free_mapping(M) do{						\
     struct mapping *m_=(M);						\
     debug_malloc_touch(m_);						\
@@ -98,6 +105,14 @@ extern struct mapping *gc_internal_mapping;
       really_free_mapping(m_);						\
   }while(0)
 
+/** Free only the mapping data leaving the mapping structure itself intact.
+  *
+  * @param M The mapping structure 'data' member of the mapping whose data is to be removed
+  * @see free_mapping
+  * @see really_free_mapping_data
+  * @see mapping_data
+  * @see mapping
+  */
 #define free_mapping_data(M) do{ \
  struct mapping_data *md_=(M); \
  debug_malloc_touch(md_); \
@@ -116,8 +131,32 @@ BLOCK_ALLOC_FILL_PAGES(mapping, 2);
 
 
 PMOD_EXPORT struct mapping *debug_allocate_mapping(int size);
+
+/** Function that actually frees the mapping data, called by the wrapper
+  * macro free_mapping_data.
+  *
+  * @param M The mapping structure data member of the mapping whose data is to be removed
+  * @see free_mapping
+  * @see really_free_mapping_data
+  * @see mapping_data
+  * @see mapping
+  */
 PMOD_EXPORT void really_free_mapping_data(struct mapping_data *md);
+
+/** A wrapper function for the free_mapping macro. Should be used instead of
+  * the macro as it checks whether the passed mapping is NULL or not.
+  *
+  * @param m The mapping to be freed
+  * @see free_mapping
+  */
 PMOD_EXPORT void do_free_mapping(struct mapping *m);
+
+/** Makes a copy of the passed mapping data and returns it to the caller.
+  *
+  * @param md The mapping structure data member to be copied
+  * @return Copy of the passed data
+  * @see mapping
+  */
 struct mapping_data *copy_mapping_data(struct mapping_data *md);
 PMOD_EXPORT void mapping_fix_type_field(struct mapping *m);
 PMOD_EXPORT void mapping_set_flags(struct mapping *m, int flags);
@@ -125,6 +164,17 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 				    const struct svalue *key,
 				    const struct svalue *val,
 				    int overwrite);
+
+/** Inserts the specified key and value into the indicated mapping. If
+  * the key already exists in the mapping, its value is replaced with the
+  * new one. For other modes of dealing with existing keys you need to
+  * use the @ref low_mapping_insert function.
+  *
+  * @param m mapping the key/value are to be inserted to
+  * @param key the new entry key
+  * @param value the new entry value
+  * @see low_mapping_insert
+  */
 PMOD_EXPORT void mapping_insert(struct mapping *m,
 				const struct svalue *key,
 				const struct svalue *val);

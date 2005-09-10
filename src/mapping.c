@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.183 2004/09/18 20:50:52 nilsson Exp $
+|| $Id: mapping.c,v 1.184 2005/09/10 02:15:45 grendel Exp $
 */
 
 #include "global.h"
@@ -110,7 +110,8 @@ BLOCK_ALLOC_FILL_PAGES(mapping, 2)
 #endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
 
 #ifdef PIKE_DEBUG
-/* This function checks that the type field isn't lacking any bits.
+
+/** This function checks that the type field isn't lacking any bits.
  * It is used for debugging purposes only.
  */
 static void check_mapping_type_fields(struct mapping *m)
@@ -146,7 +147,7 @@ static struct mapping_data weak_val_empty_data =
 static struct mapping_data weak_both_empty_data =
   { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0, MAPPING_WEAK, 0,{0}};
 
-/* This function allocates the hash table and svalue space for a mapping
+/** This function allocates the hash table and svalue space for a mapping
  * struct. The size is the max number of indices that can fit in the
  * allocated space.
  */
@@ -212,8 +213,13 @@ static void init_mapping(struct mapping *m,
 #endif
 }
 
-/* This function allocates an empty mapping with initial room
+/** This function allocates an empty mapping with initial room
  * for 'size' values.
+ *
+ * @param size initial number of values
+ * @return the newly allocated mapping
+ * @see do_free_mapping
+ * @see free_mapping
  */
 PMOD_EXPORT struct mapping *debug_allocate_mapping(int size)
 {
@@ -264,7 +270,7 @@ PMOD_EXPORT void do_free_mapping(struct mapping *m)
     free_mapping(m);
 }
 
-/* This function is used to rehash a mapping without loosing the internal
+/** This function is used to rehash a mapping without loosing the internal
  * order in each hash chain. This is to prevent mappings from becoming
  * inefficient just after being rehashed.
  */
@@ -340,9 +346,13 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
   md->size++;
 }
 
-/* This function re-allocates a mapping. It adjusts the max no. of
+/** This function re-allocates a mapping. It adjusts the max no. of
  * values can be fitted into the mapping. It takes a bit of time to
  * run, but is used seldom enough not to degrade preformance significantly.
+ *
+ * @param m the mapping to be rehashed
+ * @param new_size new mappingsize
+ * @return the rehashed mapping
  */
 static struct mapping *rehash(struct mapping *m, int new_size)
 {
@@ -584,8 +594,8 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
 #define PREPARE_FOR_INDEX_CHANGE() \
  if(md->refs>1) COPYMAP()
 
-/* This function brings the type fields in the mapping up to speed.
- * I only use it when the type fields MUST be correct, which is not
+/** This function brings the type fields in the mapping up to speed.
+ * It should be used only when the type fields MUST be correct, which is not
  * very often.
  */
 PMOD_EXPORT void mapping_fix_type_field(struct mapping *m)
@@ -638,13 +648,13 @@ PMOD_EXPORT void mapping_set_flags(struct mapping *m, int flags)
 }
 
 
-/* This function inserts key:val into the mapping m.
+/** This function inserts key:val into the mapping m.
  * Same as doing m[key]=val; in pike.
  *
- * overwrite:
- *   0: Do not replace the value if the entry exists.
- *   1: Replace the value if the entry exists.
- *   2: Replace both the index and the value if the entry exists.
+ * @param overwrite how to deal with existing values@n
+ *   @b 0: Do not replace the value if the entry exists.@n
+ *   @b 1: Replace the value if the entry exists.@n
+ *   @b 2: Replace both the index and the value if the entry exists.
  */
 PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 				    const struct svalue *key,
