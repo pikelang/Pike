@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.184 2005/09/10 02:15:45 grendel Exp $
+|| $Id: mapping.c,v 1.185 2005/09/11 00:40:10 grendel Exp $
 */
 
 #include "global.h"
@@ -647,15 +647,6 @@ PMOD_EXPORT void mapping_set_flags(struct mapping *m, int flags)
   md->flags = flags;
 }
 
-
-/** This function inserts key:val into the mapping m.
- * Same as doing m[key]=val; in pike.
- *
- * @param overwrite how to deal with existing values@n
- *   @b 0: Do not replace the value if the entry exists.@n
- *   @b 1: Replace the value if the entry exists.@n
- *   @b 2: Replace both the index and the value if the entry exists.
- */
 PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 				    const struct svalue *key,
 				    const struct svalue *val,
