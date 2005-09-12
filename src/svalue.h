@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.135 2005/09/06 16:56:17 grubba Exp $
+|| $Id: svalue.h,v 1.136 2005/09/12 07:45:47 bill Exp $
 */
 
 #ifndef SVALUE_H
@@ -59,9 +59,11 @@ struct processing
    
 struct ref_dummy;
 
+/** the union of possible types in an svalue.
+*/
 union anything
 {
-  INT_TYPE integer;		/* Union initializations assume this first. */
+  INT_TYPE integer;		/**< Union initializations assume this first. */
   struct callable *efun;
   struct array *array;
   struct mapping *mapping;
@@ -73,8 +75,8 @@ union anything
   INT32 *refs;
   struct ref_dummy *dummy;
   FLOAT_TYPE float_number;
-  int identifier;		/* Used with T_OBJ_INDEX. */
-  struct svalue *lval;		/* Used with T_SVALUE_PTR. */
+  int identifier;		/**< Used with T_OBJ_INDEX. */
+  struct svalue *lval;		/**< Used with T_SVALUE_PTR. */
   void *ptr;
 };
 
@@ -85,11 +87,13 @@ union anything
 /* Note: At least multisets overlays the type field and uses the top 4
  * bits in it internally. */
 
+/**
+ */
 struct svalue
 {
-  unsigned INT16 type;
-  unsigned INT16 subtype;
-  union anything u;
+  unsigned INT16 type; /**< the data type, see PIKE_T_... */
+  unsigned INT16 subtype; /**< used to store the zero type, among others */
+  union anything u; /**< contains the value */
 };
 
 #define PIKE_T_ARRAY 0
@@ -103,30 +107,32 @@ struct svalue
 #define PIKE_T_INT 8
 #define PIKE_T_FLOAT 9
 
-#define PIKE_T_ZERO  14	/* Can return 0, but nothing else */
+#define PIKE_T_ZERO  14	/**< Can return 0, but nothing else */
+
+
 #define T_UNFINISHED 15
 
-#define T_VOID       16
-/* Can't return any value. Also used on stack to fill out the second
+#define T_VOID       16 /**< Can't return any value. Also used on stack to fill out the second
  * svalue on an lvalue when it isn't used. */
+
 
 #define T_MANY       17
 
 #define PIKE_T_RING 240
-#define PIKE_T_NAME 241		/* Named type. */
-#define PIKE_T_SCOPE 243	/* Not supported yet */
-#define PIKE_T_TUPLE 244	/* Not supported yet */
+#define PIKE_T_NAME 241		/**< Named type. */
+#define PIKE_T_SCOPE 243	/**< Not supported yet */
+#define PIKE_T_TUPLE 244	/**< Not supported yet */
 #define T_ASSIGN 245
 #define T_DELETED 246
 #define PIKE_T_UNKNOWN 247
 
-#define T_OBJ_INDEX 248
-/* svalue.u.identifer is an identifier index in an object. Primarily
+/** svalue.u.identifer is an identifier index in an object. Primarily
  * used in lvalues on stack. */
+#define T_OBJ_INDEX 248
 
-#define T_SVALUE_PTR 249
-/* svalue.u.lval points to an svalue. Primarily used in lvalues on
+/** svalue.u.lval points to an svalue. Primarily used in lvalues on
  * stack. */
+#define T_SVALUE_PTR 249
 
 #define T_ARRAY_LVALUE 250
 #define PIKE_T_MIXED 251
@@ -236,16 +242,16 @@ struct svalue
 
 #define BIT_ZERO (1<<PIKE_T_ZERO)
 
-/* Used to signify that the type field hasn't been set according to
+/** Used to signify that the type field hasn't been set according to
  * reality. */
 #define BIT_UNFINISHED (1 << T_UNFINISHED)
 
-/* This is only used in typechecking to signify that this 
+/** This is only used in typechecking to signify that this 
  * argument may be omitted.
  */
 #define BIT_VOID (1 << T_VOID)
 
-/* This is used in typechecking to signify that the rest of the
+/** This is used in typechecking to signify that the rest of the
  * arguments has to be of this type.
  */
 #define BIT_MANY (1 << T_MANY)

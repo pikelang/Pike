@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.181 2005/05/19 22:35:23 mast Exp $
+|| $Id: array.c,v 1.182 2005/09/12 07:45:47 bill Exp $
 */
 
 #include "global.h"
@@ -228,7 +228,7 @@ PMOD_EXPORT void array_index(struct svalue *s,struct array *v,INT32 index)
   free_array(v);
 }
 
-/* Is destructive on data if destructive is set and it only has one ref. */
+/** Is destructive on data if destructive is set and it only has one ref. */
 PMOD_EXPORT struct array *array_column (struct array *data, struct svalue *index,
 					int destructive)
 {
@@ -334,7 +334,12 @@ PMOD_EXPORT void array_free_index(struct array *v,INT32 index)
   free_svalue(ITEM(v) + index);
 }
 
-
+/** set an element in an array to a value.
+ *
+ *  @param a the array whose element is to be set
+ *  @param ind an int or string containing the index to set
+ *  @param s the value to set
+ */
 PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s)
 {
   switch (ind->type) {
@@ -550,6 +555,9 @@ PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
 
 /**
  * Search for in svalue in an array.
+ * @param v the array to search
+ * @param s the value to search for
+ * @param start the index to start search at
  * @return the index if found, -1 otherwise
  */
 PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
@@ -594,6 +602,9 @@ PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
 
 /**
  * Slice a piece of an array (nondestructively)
+ * @param v the array to slice
+ * @param start the beginning element to be included
+ * @param end the element beyond the end of the slice
  * @return an array consisting of v[start..end-1]
  */
 PMOD_EXPORT struct array *slice_array(struct array *v, ptrdiff_t start,
@@ -667,6 +678,8 @@ PMOD_EXPORT struct array *friendly_slice_array(struct array *v,
 
 /**
  * Copy an array.
+ * @param v the array to be copied.
+ * @returns the copy of the input array.
  */
 PMOD_EXPORT struct array *copy_array(struct array *v)
 {
@@ -1441,6 +1454,11 @@ PMOD_EXPORT struct array *array_zip(struct array *a, struct array *b,INT32 *zipp
   return ret;
 }
 
+/** add an arbitrary number of arrays together
+* @param argp an array of svalues containing the arrays to be concatenated
+* @param args the number of elements in argp
+* @returns the resulting struct array.
+*/
 PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
 {
   INT32 e, size;
@@ -1770,7 +1788,7 @@ PMOD_EXPORT struct array *merge_array_without_order2(struct array *a, struct arr
 }
 
 
-/* merge two arrays without paying attention to the order
+/** merge two arrays without paying attention to the order
  * the elements has presently
  */
 PMOD_EXPORT struct array *merge_array_without_order(struct array *a,
@@ -1811,8 +1829,8 @@ PMOD_EXPORT struct array *merge_array_without_order(struct array *a,
 #endif
 }
 
-/* subtract an array from another */
-
+/** subtract an array from another 
+*/
 PMOD_EXPORT struct array *subtract_arrays(struct array *a, struct array *b)
 {
 #ifdef PIKE_DEBUG
@@ -1837,7 +1855,9 @@ PMOD_EXPORT struct array *subtract_arrays(struct array *a, struct array *b)
   }
 }
 
-/* and two arrays */
+/**
+ *  and two arrays 
+ */
 PMOD_EXPORT struct array *and_arrays(struct array *a, struct array *b)
 {
 #ifdef PIKE_DEBUG
@@ -1938,6 +1958,9 @@ node *make_node_from_array(struct array *a)
   }
 }
 
+/**
+*  push elements of an array onto the stack.
+*/
 PMOD_EXPORT void push_array_items(struct array *a)
 {
   check_stack(a->size);
@@ -2049,6 +2072,11 @@ PMOD_EXPORT struct array *aggregate_array(INT32 args)
   return a;
 }
 
+/** add an element to the end of an array by resizing the array.
+ *
+ * @param a the array to be appended
+ * @param s the value to be added to the new element in the array
+ */
 PMOD_EXPORT struct array *append_array(struct array *a, struct svalue *s)
 {
   a=resize_array(a,a->size+1);
@@ -2058,6 +2086,12 @@ PMOD_EXPORT struct array *append_array(struct array *a, struct svalue *s)
 
 typedef char *(* explode_searchfunc)(void *,void *,size_t);
 
+/**  explode a string by a delimiter
+ * 
+ * @param str the string to be split
+ * @param del the string to split str by
+ * @returns an array containing the elements of the split string
+ */
 PMOD_EXPORT struct array *explode(struct pike_string *str,
 		       struct pike_string *del)
 {
@@ -2145,6 +2179,14 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
   return ret;
 }
 
+/** implode an array by creating a string with all of the array's elements
+ *  separated by a delimiter
+ *
+ * @param a the array containing elements to be imploded
+ * @param del the delimiter used to separate the array's elements in the resulting string
+ * @returns the imploded string
+ * 
+ */
 PMOD_EXPORT struct pike_string *implode(struct array *a,struct pike_string *del)
 {
   INT32 len,e, inited;
@@ -2188,6 +2230,8 @@ PMOD_EXPORT struct pike_string *implode(struct array *a,struct pike_string *del)
   return low_end_shared_string(ret);
 }
 
+/** deeply copy an array
+ */
 PMOD_EXPORT struct array *copy_array_recursively(struct array *a,
 						 struct mapping *m)
 {
@@ -2221,6 +2265,8 @@ PMOD_EXPORT struct array *copy_array_recursively(struct array *a,
   return ret;
 }
 
+/** apply the elements of an array
+ */
 PMOD_EXPORT void apply_array(struct array *a, INT32 args)
 {
   INT32 e;
@@ -2258,6 +2304,10 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args)
   stack_pop_n_elems_keep_top(args);
 }
 
+/** reverse the elements in an array
+ *  if the array has more than one reference, the array will be reversed
+ *  into a new array. otherwise, the same array is reversed.
+ */
 PMOD_EXPORT struct array *reverse_array(struct array *a)
 {
   INT32 e;
