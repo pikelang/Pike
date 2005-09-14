@@ -1,6 +1,6 @@
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.6 2005/08/12 14:59:00 grubba Exp $");
+RCSID("$Id: freetype.c,v 1.7 2005/09/14 08:32:50 grubba Exp $");
 
 #ifdef HAVE_LIBFT2
 #include <freetype/freetype.h>
@@ -40,6 +40,11 @@ struct face
 #define FACE(X) ((struct face*)get_storage(X,face_program))->face
 #define TFACE   FACE(fp->current_object)
 
+
+static void image_ft_face_init( struct object *o )
+{
+  TFACE = NULL;
+}
 
 static void image_ft_face_free( struct object *o )
 {
@@ -215,6 +220,7 @@ void pike_module_init()
     ADD_FUNCTION("get_kerning",image_ft_face_get_kerning,
                  tFunc(tInt tInt,tInt),0);
     
+    set_exit_callback( image_ft_face_init );
     set_exit_callback( image_ft_face_free );
     
     face_program = end_program();
