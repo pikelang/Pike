@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.71 2004/11/06 21:40:42 peter Exp $
+|| $Id: udp.c,v 1.72 2005/09/14 12:51:19 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -196,6 +196,10 @@ static void udp_bind(INT32 args)
      (Pike_sp[-args].type != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift))
     SIMPLE_BAD_ARG_ERROR("Stdio.UDP->bind", 1, "int|string (8bit)");
+
+  f_backtrace(0);
+  APPLY_MASTER("handle_error", 1);
+  pop_stack();
 
   if(FD != -1)
   {
@@ -496,7 +500,7 @@ void udp_wait(INT32 args)
   FD_SET(fd, &rset);
   tv.tv_sec = DO_NOT_WARN((int)timeout);
   tv.tv_usec = DO_NOT_WARN((int)((timeout - ((int)timeout)) * 1000000.0));
-  res = select(fd+1, &rset, NULL, NULL, &tv);
+  res = fd_select(fd+1, &rset, NULL, NULL, &tv);
   e = errno;
 
   THREADS_DISALLOW();
