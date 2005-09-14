@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freetype.c,v 1.26 2005/08/12 14:59:30 grubba Exp $
+|| $Id: freetype.c,v 1.27 2005/09/14 08:32:20 grubba Exp $
 */
 
 #include "config.h"
@@ -101,6 +101,11 @@ static void image_ft_error(const char *msg, FT_Error errcode)
  *! A FreeType font face. We recommend using the more generic font handling
  *! interfaces in @[Image.Fonts] instead.
  */
+static void image_ft_face_init( struct object *o )
+{
+  TFACE = NULL;
+}
+
 static void image_ft_face_free( struct object *o )
 {
   FT_Done_Face( TFACE );
@@ -399,6 +404,7 @@ PIKE_MODULE_INIT
     ADD_FUNCTION("get_kerning",image_ft_face_get_kerning,
                  tFunc(tInt tInt,tInt),0);
     
+    set_exit_callback( image_ft_face_init );
     set_exit_callback( image_ft_face_free );
 
     face_program = end_program();
