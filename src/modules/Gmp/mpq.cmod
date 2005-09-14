@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpq.cmod,v 1.25 2004/10/07 22:49:56 nilsson Exp $
+|| $Id: mpq.cmod,v 1.26 2005/09/14 18:59:34 marcus Exp $
 */
 
 #include "global.h"
@@ -290,16 +290,25 @@ PIKECLASS mpq
 	/* or int num / den */
 	
 	if (sp[1-args].type != T_INT)
+#ifdef AUTO_BIGNUM
+	  if(sp[1-args].type != T_OBJECT ||
+	     sp[1-args].u.object->prog != bignum_program ||
+	     sp[-args].type == T_STRING)
+#endif
 	  SIMPLE_ARG_TYPE_ERROR ("Gmp.mpq", 2, "int");
 
 	switch(sp[-args].type)
 	{
-	  default:
-	    SIMPLE_ARG_TYPE_ERROR ("Gmp.mpq", 1, "int|string");
-
 	  case T_STRING:
 	    get_mpq_from_digits(THISMPQ, sp[-args].u.string, sp[1-args].u.integer);
 	    break;
+
+#ifdef AUTO_BIGNUM
+	  case T_OBJECT:
+	    if(sp[-args].u.object->prog != bignum_program)
+#endif
+	  default:
+	      SIMPLE_ARG_TYPE_ERROR ("Gmp.mpq", 1, "int|string");
 
 	  case T_INT:
 	    mpq_set_num(THISMPQ,get_mpz(sp-args, 1, "Gmp.mpq", 1, args));
