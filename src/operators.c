@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.205 2005/09/15 12:30:46 grubba Exp $
+|| $Id: operators.c,v 1.206 2005/09/15 15:38:57 grubba Exp $
 */
 
 #include "global.h"
@@ -1273,8 +1273,10 @@ PMOD_EXPORT void f_add(INT32 args)
 			    LFUN_RADD)) != -1)
 	  {
 	    /* There's an object with a lfun::``+() at argument @[e]. */
-	    if ((args = low_rop(o, i, e, args)) > 1)
+	    if ((args = low_rop(o, i, e, args)) > 1) {
 	      goto tail_recurse;
+	    }
+	    return;
 	  }
 	}
       }
