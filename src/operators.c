@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.204 2005/04/08 16:59:18 grubba Exp $
+|| $Id: operators.c,v 1.205 2005/09/15 12:30:46 grubba Exp $
 */
 
 #include "global.h"
@@ -1082,6 +1082,67 @@ COMPARISON(f_ge,"`>=",is_ge)
     stack_pop_keep_top();						\
   } while (0)
 
+/* Helper function for calling ``-operators.
+ *
+ * Assumes o is at Pike_sp[e - args].
+ *
+ * i is the resolved lfun to call.
+ *
+ * Returns the number of remaining elements on the stack.
+ */
+PMOD_EXPORT INT32 low_rop(struct object *o, int i, INT32 e, INT32 args)
+{
+  if (e == args-1) {
+    /* The object is the last argument. */
+    ONERROR err;
+    Pike_sp--;
+    SET_ONERROR(err, do_free_object, o);
+    apply_low(o, i, e);
+    CALL_AND_UNSET_ONERROR(err);
+    return args - e;
+  } else {
+    /* Rotate the stack, so that the @[e] first elements come last.
+     */
+    struct svalue *tmp;
+    if (e*2 < args) {
+      tmp = xalloc(e*sizeof(struct svalue));
+      memcpy(tmp, Pike_sp-args, e*sizeof(struct svalue));
+      memmove(Pike_sp-args, (Pike_sp-args)+e,
+	      (args-e)*sizeof(struct svalue));
+      memcpy(Pike_sp-e, tmp, e*sizeof(struct svalue));
+    } else {
+      tmp = xalloc((args-e)*sizeof(struct svalue));
+      memcpy(tmp, (Pike_sp-args)+e, (args-e)*sizeof(struct svalue));
+      memmove(Pike_sp-e, Pike_sp-args, e*sizeof(struct svalue));
+      memcpy(Pike_sp-args, tmp, (args-e)*sizeof(struct svalue));
+    }
+    free(tmp);
+    /* Now the stack is:
+     *
+     * -args	object with the lfun.
+     *  ...
+     *  ...	other arguments
+     *  ...
+     *   -e	first argument.
+     *  ...
+     *   -1	last argument before the object.
+     */
+#ifdef PIKE_DEBUG
+    if (Pike_sp[-args].type != T_OBJECT ||
+	Pike_sp[-args].u.object != o ||
+	!o->prog) {
+      Pike_fatal("low_rop() Lost track of object.\n");
+    }
+#endif /* PIKE_DEBUG */
+    apply_low(o, i, e);
+    args -= e;
+    /* Replace the object with the result. */
+    assign_svalue(Pike_sp-(args+1), Pike_sp-1);
+    pop_stack();
+    return args;
+  }
+}
+
 /*! @decl mixed `+(mixed arg)
  *! @decl mixed `+(object arg, mixed ... more)
  *! @decl int `+(int arg, int ... more)
@@ -1212,55 +1273,8 @@ PMOD_EXPORT void f_add(INT32 args)
 			    LFUN_RADD)) != -1)
 	  {
 	    /* There's an object with a lfun::``+() at argument @[e]. */
-	    if (e == args-1) {
-	      /* The object is the last argument. */
-	      ONERROR err;
-	      Pike_sp--;
-	      SET_ONERROR(err, do_free_object, o);
-	      apply_low(o, i, e);
-	      CALL_AND_UNSET_ONERROR(err);
-	      return;
-	    } else {
-	      /* Rotate the stack, so that the @[e] first elements come last.
-	       */
-	      struct svalue *tmp;
-	      if (e*2 < args) {
-		tmp = xalloc(e*sizeof(struct svalue));
-		memcpy(tmp, Pike_sp-args, e*sizeof(struct svalue));
-		memmove(Pike_sp-args, (Pike_sp-args)+e,
-			(args-e)*sizeof(struct svalue));
-		memcpy(Pike_sp-e, tmp, e*sizeof(struct svalue));
-	      } else {
-		tmp = xalloc((args-e)*sizeof(struct svalue));
-		memcpy(tmp, (Pike_sp-args)+e, (args-e)*sizeof(struct svalue));
-		memmove(Pike_sp-e, Pike_sp-args, e*sizeof(struct svalue));
-		memcpy(Pike_sp-args, tmp, (args-e)*sizeof(struct svalue));
-	      }
-	      free(tmp);
-	      /* Now the stack is:
-	       *
-	       * -args	object with lfun::``+()
-	       *  ...
-	       *  ...	other arguments
-	       *  ...
-	       *   -e	first argument.
-	       *  ...
-	       *   -1	last argument before the object.
-	       */
-#ifdef PIKE_DEBUG
-	      if (Pike_sp[-args].type != T_OBJECT ||
-		  Pike_sp[-args].u.object != o ||
-		  !o->prog) {
-		Pike_fatal("`+() Lost track of object.\n");
-	      }
-#endif /* PIKE_DEBUG */
-	      apply_low(o, i, e);
-	      args -= e;
-	      /* Replace the object with the result. */
-	      assign_svalue(Pike_sp-(args+1), Pike_sp-1);
-	      pop_stack();
+	    if ((args = low_rop(o, i, e, args)) > 1)
 	      goto tail_recurse;
-	    }
 	  }
 	}
       }
