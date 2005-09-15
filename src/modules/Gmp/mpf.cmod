@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpf.cmod,v 1.31 2005/09/15 12:45:51 grubba Exp $
+|| $Id: mpf.cmod,v 1.32 2005/09/15 15:32:39 nilsson Exp $
 */
 
 #include "global.h"
@@ -478,8 +478,7 @@ PIKECLASS mpf
 #endif
 	     )
 	  {
-	    fprintf(stderr, "get_mpf: got mpz or bignum.\n");
-	    prec=mpz_size(OBTOMPZ(s->u.object)) * 
+	    prec=mpz_size(OBTOMPZ(s->u.object)) *
 	      sizeof(mp_limb_t) * CHAR_BITS;
 	    break;
 	  }
