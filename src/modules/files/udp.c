@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.72 2005/09/14 12:51:19 grubba Exp $
+|| $Id: udp.c,v 1.73 2005/09/15 09:47:38 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -197,9 +197,11 @@ static void udp_bind(INT32 args)
       Pike_sp[-args].u.string->size_shift))
     SIMPLE_BAD_ARG_ERROR("Stdio.UDP->bind", 1, "int|string (8bit)");
 
+#if 0
   f_backtrace(0);
   APPLY_MASTER("handle_error", 1);
   pop_stack();
+#endif /* 0 */
 
   if(FD != -1)
   {
