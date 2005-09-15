@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpf.cmod,v 1.30 2004/11/12 13:26:31 grubba Exp $
+|| $Id: mpf.cmod,v 1.31 2005/09/15 12:45:51 grubba Exp $
 */
 
 #include "global.h"
@@ -137,7 +137,11 @@ PIKECLASS mpf
 	  break;
 	  
 	case T_OBJECT:
-	  if(s->u.object->prog == mpzmod_program)
+	  if((s->u.object->prog == mpzmod_program)
+#ifdef AUTO_BIGNUM
+	     || (s->u.object->prog == bignum_program)
+#endif
+	     )
 	  {
 	    mpf_set_z(tmp, OBTOMPZ(s->u.object));
 	    break;
@@ -468,8 +472,13 @@ PIKECLASS mpf
 	  if(s->u.object->prog == mpf_program)
 	    return (MP_FLT *)s->u.object->storage;
 
-	  if(s->u.object->prog == mpzmod_program)
+	  if((s->u.object->prog == mpzmod_program)
+#ifdef AUTO_BIGNUM
+	     || (s->u.object->prog == bignum_program)
+#endif
+	     )
 	  {
+	    fprintf(stderr, "get_mpf: got mpz or bignum.\n");
 	    prec=mpz_size(OBTOMPZ(s->u.object)) * 
 	      sizeof(mp_limb_t) * CHAR_BITS;
 	    break;
