@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.h,v 1.17 2004/11/27 22:48:11 mast Exp $
+|| $Id: operators.h,v 1.18 2005/09/15 11:57:42 grubba Exp $
 */
 
 #ifndef OPERATORS_H
@@ -48,6 +48,7 @@ COMPARISON(f_le,"`<=", is_le)
 COMPARISON(f_gt,"`>" , is_gt)
 COMPARISON(f_ge,"`>=", is_ge)
 
+PMOD_EXPORT INT32 low_rop(struct object *o, int i, INT32 e, INT32 args);
 PMOD_EXPORT void f_add(INT32 args);
 PMOD_EXPORT void o_subtract(void);
 PMOD_EXPORT void f_minus(INT32 args);
