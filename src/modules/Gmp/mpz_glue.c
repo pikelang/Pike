@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.165 2005/04/08 17:05:17 grubba Exp $
+|| $Id: mpz_glue.c,v 1.166 2005/09/15 12:48:22 grubba Exp $
 */
 
 #include "global.h"
@@ -1002,7 +1002,7 @@ double double_from_sval(struct svalue *s)
 #define DO_IF_AUTO_BIGNUM(X)
 #endif
 
-#define BINFUN2(name, errmsg_op, fun, OP)				\
+#define BINFUN2(name, errmsg_op, fun, OP, f_op, LFUN)			\
 static void name(INT32 args)						\
 {									\
   INT32 e;								\
@@ -1011,10 +1011,38 @@ static void name(INT32 args)						\
   if(THIS_PROGRAM == bignum_program)					\
   {									\
     double ret;								\
+  tail_recurse:								\
     for(e=0; e<args; e++)						\
     {									\
       switch(sp[e-args].type)						\
       {									\
+      case T_OBJECT:							\
+	{								\
+	  struct object *o = sp[e-args].u.object;			\
+	  struct program *p = NULL;					\
+	  int fun = -1;							\
+	  if (o->prog &&						\
+	      ((p = o->prog->inherits[sp[e-args].subtype].prog) !=	\
+	       bignum_program) &&					\
+	      ((fun = FIND_LFUN(p, PIKE_CONCAT(LFUN_R, LFUN))) !=	\
+	       -1)) {							\
+	    /* Found non-bignum program with double back operator. */	\
+	    memmove(Pike_sp+1-args, Pike_sp-args,			\
+		    args * sizeof(struct svalue));			\
+	    Pike_sp++;							\
+	    args++;							\
+	    e++;							\
+	    Pike_sp[-args].type = T_OBJECT;				\
+	    Pike_sp[-args].subtype = 0; /* FIXME? */			\
+	    add_ref(Pike_sp[-args].u.object = Pike_fp->current_object);	\
+	    args = low_rop(o, fun, e, args);				\
+	    if (args > 1) {						\
+	      f_op(args);						\
+	    }								\
+	    return;							\
+	  }								\
+	}								\
+	break;								\
        case T_FLOAT:                                                    \
 	ret=mpz_get_d(THIS);						\
 	for(e=0; e<args; e++)						\
@@ -1146,7 +1174,7 @@ static void PIKE_CONCAT(name,_eq)(INT32 args)				\
  */
 /*! @decl Gmp.mpz `+=(int|float|Gmp.mpz ... x)
  */
-BINFUN2(mpzmod_add, "+", mpz_add, +)
+BINFUN2(mpzmod_add, "+", mpz_add, +, f_add, ADD)
 
 #undef STRINGCONV
 #define STRINGCONV(X)
@@ -1157,7 +1185,7 @@ BINFUN2(mpzmod_add, "+", mpz_add, +)
  */
 /*! @decl Gmp.mpz `*=(int|float|Gmp.mpz ... x)
  */
-BINFUN2(mpzmod_mul, "*", mpz_mul, *)
+BINFUN2(mpzmod_mul, "*", mpz_mul, *, f_multiply, MULTIPLY)
 
 /*! @decl Gmp.mpz gcd(object|int|float|string... arg)
  *! 
