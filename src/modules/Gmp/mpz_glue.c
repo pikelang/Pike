@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.166 2005/09/15 12:48:22 grubba Exp $
+|| $Id: mpz_glue.c,v 1.167 2005/09/15 15:39:55 grubba Exp $
 */
 
 #include "global.h"
@@ -1065,7 +1065,7 @@ static void name(INT32 args)						\
   } )									\
   for(e=0; e<args; e++)							\
     if(sp[e-args].type != T_INT || !FITS_ULONG (sp[e-args].u.integer))	\
-     get_mpz(sp+e-args, 1, "Gmp.mpz->`" errmsg_op, e + 1, args);	\
+      get_mpz(sp+e-args, 1, "Gmp.mpz->`" errmsg_op, e + 1, args);	\
   res = fast_clone_object(THIS_PROGRAM);				\
   mpz_set(OBTOMPZ(res), THIS);						\
   for(e=0;e<args;e++)							\
@@ -1109,7 +1109,7 @@ static void PIKE_CONCAT(name,_rhs)(INT32 args)				\
   } )									\
   for(e=0; e<args; e++)							\
     if(sp[e-args].type != T_INT || !FITS_ULONG (sp[e-args].u.integer))	\
-     get_mpz(sp+e-args, 1, "Gmp.mpz->``" errmsg_op, e + 1, args);	\
+      get_mpz(sp+e-args, 1, "Gmp.mpz->``" errmsg_op, e + 1, args);	\
   res = fast_clone_object(THIS_PROGRAM);				\
   mpz_set(OBTOMPZ(res), THIS);						\
   for(e=0;e<args;e++)							\
