@@ -756,3 +756,63 @@ array(array) partition( array a, function(mixed, mixed ...:mixed) arbiter,
       second += ({ elem });
   return ({ first, second });
 }
+
+//! Threats an Array as a stack and pushes the element onto the
+//! end.
+//! @example
+//!   Array.push(({ "a", "b", "c", "d" }), "e");
+//!   > ({ "a", "b", "c", "d", "e" })
+//! @seealso
+//!   @[ADT.Stack], @[ADT.Stack.push]
+array push(array list, mixed element) {
+  return list + ({ element });
+}
+
+//! Pops and returns the last value of the array, shortening the
+//! array by one element.
+//! If there are no elements in the array then 0 is returned otherwise
+//! an array is returned where the first returned element is the popped
+//! value, and the second element is the modified array.
+//! @example
+//!   Array.pop(({ "a", "b", "c", "d" }));
+//!   > ({ "d", ({ "a", "b", "c" }) })
+//! @seealso
+//!   @[ADT.Stack], @[ADT.Stack.pop], @[ADT.Stack.quick_pop]
+array pop(array list) {
+  if (sizeof(list) == 1)
+    return ({ list[0], ({}) });
+  else if (sizeof(list) > 1) {
+    mixed elem = list[sizeof(list)-1];
+    list = list[0..sizeof(list)-2];
+    return ({ elem, list });
+  }
+}
+
+//! Shifts the first value of the array off and returns it, shortening
+//! the array by 1 and moving everything down.  If there are no elements
+//! in the array it returns 0.
+//! Returns an array where the first element is the shifted value and the
+//! second element is the modified array.
+//! @example
+//!   Array.shift(({ "a", "b", "c", "d"}));
+//!   > ({ "a", ({ "b", "c", "d" }) })
+//! @seealso
+//!   @[ADT.Stack]
+array shift(array list) {
+  if (sizeof(list))
+    return ({ list[0], list[1..] });
+  else
+    return 0;
+}
+
+//! Does the opposite of "shift".  Or the opposite of a "push",
+//! depending on how you look at it.  Prepends the element to
+//! the front of the array and returns the new array.
+//! @example
+//!   Array.unshift(({ "b", "c", "d" }), "a");
+//!   > ({ "a", "b", "c", "d" })
+//! @seealso
+//!   @[ADT.Stack]
+array unshift(array list, mixed element) {
+  return ({ element }) + list;
+}
