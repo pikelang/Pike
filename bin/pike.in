@@ -66,18 +66,12 @@ EOF`
   echo "set args $args" >> .gdbinit.$$
   echo break debug_fatal >> .gdbinit.$$
   echo break pike_gdb_breakpoint >> .gdbinit.$$
-  if test -f .gdbinit; then
-    cat .gdbinit >> .gdbinit.$$
-    mv .gdbinit .gdbinit.orig
-  fi
-  mv .gdbinit.$$ .gdbinit
   gdbcmd=`expr "$gdb" : '--gdb=\(.*\)'`
   if test x"$gdbcmd" != x; then
-    echo "$gdbcmd" >> .gdbinit
+    echo "$gdbcmd" >> .gdbinit.$$
   fi
-  $valgrind $vgargs gdb "$BUILDDIR/pike"
-  rm .gdbinit
-  test -f .gdbinit.orig && mv .gdbinit.orig .gdbinit
+  $valgrind $vgargs gdb -x .gdbinit.$$ "$BUILDDIR/pike"
+  rm .gdbinit.$$
 else
   exec $valgrind $vgargs "$BUILDDIR/pike" "-DPRECOMPILED_SEARCH_MORE" "-m$BUILDDIR/master.pike" "$@"
 fi
