@@ -27,18 +27,18 @@ Runs Pike directly from the build directory. Some arguments are
 handled by this script if they occur before any other:
 
 --gdb[=cmd]
-  Pike will be loaded inside a gdb session with the remaining
-  arguments. If a value is given, e.g. --gdb=run, it will be passed
-  as a command to be executed initially by gdb.
+  Pike is loaded inside a gdb session with the remaining arguments. If
+  a value is given, e.g. --gdb=run, it's passed as a command to be
+  executed initially by gdb.
 
 --valgrind[=args]
-  Pike will be loaded inside the memory leak detector Valgrind. If a
-  value is given, e.g. --valgrind="--num-callers=20 -v", it will be
-  split and passed as arguments to valgrind.
+  Pike is loaded inside the memory leak detector Valgrind. If a value
+  is given, e.g. --valgrind="--num-callers=20 -v", it's split and
+  passed as arguments to valgrind.
 
 --help
-  Show this message, but doesn't remove --help from the argument
-  list.
+  Shows this message. It's not removed from the argument list, so Pike
+  will also act on it.
 
 Note: It's typically not very useful to specify both --gdb and
 --valgrind. You probably want to try --valgrind="--gdb-attach=yes"
