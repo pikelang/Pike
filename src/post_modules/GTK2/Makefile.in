@@ -1,0 +1,87 @@
+# This line is needed on some machines.
+@make_variables@
+VPATH=@srcdir@
+MODNAME=GTK2
+DEST=@prefix@/lib/pike/modules/
+OBJS=dummy.o
+MODULE_LDFLAGS=@LDFLAGS@ @PGTK_LIBS@ @GTK_LIBS@
+MODULE_CFLAGS=@PGTK_CFLAGS@
+CONFIG_HEADERS=pgtk_config.h
+MODULE_CLEAN_EXTRA=p*.c
+MODULE_INSTALL=pre_install
+
+# WITH_GTK == 2
+#   override -> compile2 -> compile1 -> [SET OBJS] -> all
+#
+# WITH_GTK == 1
+#   override -> compile1 -> [SET OBJS] -> all
+#
+# WITH_GTK == 0
+#   override -> compile0 -> all
+#
+
+#MYRUNPIKE=../../pike -DNOT_INSTALLED -m../../master.pike
+
+override:  compile@WITH_GTK@
+	@:
+
+@dynamic_module_makefile@
+
+docs:  doc@WITH_GTK@
+
+doc0:
+
+doc1:
+	$(RUNPIKE) $(SRCDIR)/build_pgtk.pike --source='$(SRCDIR)/source/'\
+                   --destination="$(SRCDIR)/refdoc/" \
+                   $(SRCDIR)/output/doc-pikeref.pike
+
+doc2: doc1
+
+compile0:
+	@echo "Pike-GTK disabled."
+	$(MAKE) all
+
+compile1:
+	$(RUNPIKE) $(SRCDIR)/build_pgtk.pike --source='$(SRCDIR)/source/'\
+                   $(SRCDIR)/output/few.pike
+	@if [ "x@VPATH_KLUDGE@" = "xyes" ]; then \
+	  for f in `cat files_to_compile | sed -e 's/\.o/\.c/g'`; do \
+	    test -f "$$f" || ln -s "$(srcdir)/$$f" "$$f"; \
+	  done; \
+	else :; fi
+	@$(MAKE) OBJS="`cat files_to_compile`" \
+               CFLAGS="`echo $(CFLAGS) | sed -e 's/-g//g' -e 's/-W[^ ]*//g'`" \
+                  all
+
+compile2: compile1
+
+options: config.status
+	./config.status 
+
+pre_install: GDK2.pmod Gnome2.pmod Pango.pmod
+	$(TMP_BINDIR)/install_module GDK2.pmod $(SYSTEM_MODULE_PATH)/$(MODDIR)GDK2.pmod
+	$(TMP_BINDIR)/install_module Gnome2.pmod $(SYSTEM_MODULE_PATH)/$(MODDIR)Gnome2.pmod
+	$(TMP_BINDIR)/install_module Pango.pmod $(SYSTEM_MODULE_PATH)/$(MODDIR)Pango.pmod
+
+# Do not re-generate the 'dependencies' file in this directory.
+depend: 
+	@:
+
+# Some hand-made dependencies:
+
+#$(OBJS) : $(SRCDIR)/pgtk.h pgtk_config.h \
+# $(SRCDIR)/../../global.h \
+# $(SRCDIR)/../../svalue.h \
+# $(SRCDIR)/../../program.h \
+# $(SRCDIR)/../../pike_types.h \
+# $(SRCDIR)/../../interpret.h \
+# $(SRCDIR)/../../module_support.h \
+# $(SRCDIR)/../../pike_error.h \
+# $(SRCDIR)/../../array.h \
+# $(SRCDIR)/../../backend.h \
+# $(SRCDIR)/../../stralloc.h \
+# $(SRCDIR)/../../mapping.h \
+# $(SRCDIR)/../../object.h \
+# $(SRCDIR)/../../threads.h \
+# $(SRCDIR)/../../operators.h

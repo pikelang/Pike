@@ -1,0 +1,211 @@
+dnl test
+
+AC_INIT(build_pgtk.pike)
+AC_CONFIG_HEADER(pgtk_config.h)
+
+PIKE_FEATURE_WITHOUT(GTK2)
+dnl PIKE_FEATURE_WITHOUT(Gnome)
+dnl PIKE_FEATURE_WITHOUT(GTK.GladeXML)
+dnl PIKE_FEATURE_WITHOUT(GTK.GlArea)
+
+AC_MODULE_INIT()
+
+AC_CHECK_FUNCS( gethrtime signal sigaction )
+
+dnl AC_DEFINE(FUNCPROTO)
+dnl AC_DEFINE(HAVE_GNOME)
+dnl AC_DEFINE(HAVE_DPMS)
+dnl AC_DEFINE(PGTK_AUTO_UTF8)
+
+AC_DEFINE(FUNCPROTO)
+
+AC_HEADER_STDC
+
+AC_CHECK_HEADERS( signal.h netinet/in.h arpa/inet.h sys/types.h sys/stat.h fcntl.h )
+
+AC_PATH_PROG(PKG_CONFIG,${ac_tool_prefix}pkg-config,no)
+
+AC_SUBST(have_x11)
+AC_SUBST(pgtk_has_gtk26)
+pgtk_has_gtk26=nogtk26
+AC_SUBST(pgtk_has_gtk24)
+pgtk_has_gtk24=nogtk24
+AC_SUBST(pgtk_has_gtk22)
+pgtk_has_gtk22=nogtk22
+AC_SUBST(pgtk_has_gnome)
+pgtk_has_gnome=nognome
+AC_SUBST(pgtk_has_pango)
+pgtk_has_pango=nopango
+AC_SUBST(pgtk_has_pango16)
+pgtk_has_pango16=nopango16
+AC_SUBST(pgtk_has_atk)
+pgtk_has_atk=noatk
+AC_SUBST(pgtk_has_atk18)
+pgtk_has_atk18=noatk18
+AC_SUBST(pgtk_has_gnomecanvas)
+pgtk_has_gnomecanvas=nognomecanvas
+
+if test "$PKG_CONFIG" = "no" ; then
+  echo "*** pkg-config must be in your path!!!"
+  WITH_GTK=0
+else
+  WITH_GTK=1
+  gtk_test_libs="gtk+-2.0 libgnome-2.0 libglade-2.0 libgnomeui-2.0 libpanelapplet-2.0"
+  gtk_final_libs=""
+  AC_MSG_CHECKING([for gtk+-2.0])
+  if ${ac_tool_prefix}pkg-config gtk+-2.0 2>/dev/null ; then
+    AC_MSG_RESULT(yes)
+    PIKE_FEATURE_OK(GTK2)
+    pgtk_has_pango=pango
+    pgtk_has_atk=atk
+    AC_DEFINE(HAVE_PANGO)
+    AC_DEFINE(HAVE_ATK)
+    gtk_final_libs="gtk+-2.0"
+    AC_MSG_CHECKING([for gtk+ version])
+    gtkvers=`${ac_tool_prefix}pkg-config --modversion gtk+-2.0 2>/dev/null`
+    OIFS="$IFS"
+    IFS="."
+    set $gtkvers
+    IFS="$OIFS"
+    gtkmajorvers=$1
+    gtkminorvers=$2
+    gtkpatchvers=$3
+    if test $gtkminorvers -ge 2 ; then
+      pgtk_has_gtk22=gtk22
+      AC_DEFINE(HAVE_GTK22)
+    fi
+    if test $gtkminorvers -ge 4 ; then
+      pgtk_has_gtk24=gtk24
+      AC_DEFINE(HAVE_GTK24)
+    fi
+    if test $gtkminorvers -ge 6 ; then
+      pgtk_has_gtk26=gtk26
+      AC_DEFINE(HAVE_GTK26)
+    fi
+    AC_MSG_RESULT($gtkvers)
+    AC_MSG_CHECKING([for pango])
+    if ${ac_tool_prefix}pkg-config pango 2>/dev/null ; then
+      AC_MSG_RESULT(yes)
+      pgtk_has_pango=pango
+      gtk_final_libs="$gtk_final_libs pango"
+      AC_MSG_CHECKING([for pango version])
+      pangovers=`${ac_tool_prefix}pkg-config --modversion pango 2>/dev/null`
+      OIFS="$IFS"
+      IFS="."
+      set $pangovers
+      IFS="$OIFS"
+      pangomajorvers=$1
+      pangominorvers=$2
+      pangopatchvers=$3
+      if test $pangominorvers -ge 6 ; then
+	pgtk_has_pango16=pango16
+	AC_DEFINE(HAVE_PANGO16)
+      fi
+      if test $pangominorvers -ge 4 ; then
+	pgtk_has_pango14=pango14
+	AC_DEFINE(HAVE_PANGO14)
+      fi
+      if test $pangominorvers -ge 2 ; then
+	pgtk_has_pango12=pango12
+	AC_DEFINE(HAVE_PANGO12)
+      fi
+      AC_MSG_RESULT($pangovers)
+    fi
+    AC_MSG_CHECKING([for atk])
+    if ${ac_tool_prefix}pkg-config atk 2>/dev/null ; then
+      AC_MSG_RESULT(yes)
+      pgtk_has_atk=atk
+      gtk_final_libs="$gtk_final_libs atk"
+      AC_MSG_CHECKING([for atk version])
+      atkvers=`${ac_tool_prefix}pkg-config --modversion atk 2>/dev/null`
+      OIFS="$IFS"
+      IFS="."
+      set $atkvers
+      IFS="$OIFS"
+      atkmajorvers=$1
+      atkminorvers=$2
+      atkpatchvers=$3
+      if test $atkminorvers -ge 8 ; then
+	pgtk_has_atk18=atk18
+	AC_DEFINE(HAVE_ATK18)
+      fi
+      AC_MSG_RESULT($atkvers)
+    fi
+    AC_MSG_CHECKING([for libgnome-2.0])
+    if ${ac_tool_prefix}pkg-config libgnome-2.0 2>/dev/null ; then
+      AC_MSG_RESULT(yes);
+      dnl PIKE_FEATURE_OK(Gnome)
+      AC_DEFINE(HAVE_GNOME)
+      pgtk_has_gnome=gnome
+      gtk_final_libs="$gtk_final_libs libgnome-2.0"
+    else
+      AC_MSG_RESULT(no);
+    fi
+    AC_MSG_CHECKING([for libglade-2.0])
+    if ${ac_tool_prefix}pkg-config libglade-2.0 2>/dev/null ; then
+      dnl PIKE_FEATURE_OK(GTK.GladeXML)
+      AC_MSG_RESULT(yes);
+      pgtk_has_libglade=libglade
+      gtk_final_libs="$gtk_final_libs libglade-2.0"
+    else
+      AC_MSG_RESULT(no);
+    fi
+    AC_MSG_CHECKING([for libgnomeui-2.0])
+    if ${ac_tool_prefix}pkg-config libgnomeui-2.0 2>/dev/null ; then
+      dnl PIKE_FEATURE_OK(Gnome.UI)
+      AC_MSG_RESULT(yes);
+      gtk_final_libs="$gtk_final_libs libgnomeui-2.0"
+    else
+      AC_MSG_RESULT(no);
+    fi
+    AC_MSG_CHECKING([for libpanelapplet-2.0])
+    if ${ac_tool_prefix}pkg-config libpanelapplet-2.0 2>/dev/null ; then
+      dnl PIKE_FEATURE_OK(Gnome.Applets)
+      AC_MSG_RESULT(yes);
+      gtk_final_libs="$gtk_final_libs libpanelapplet-2.0"
+    else
+      AC_MSG_RESULT(no);
+    fi
+    AC_MSG_CHECKING([for libgnomecanvas-2.0])
+    if ${ac_tool_prefix}pkg-config libgnomecanvas-2.0 2>/dev/null ; then
+      dnl PIKE_FEATURE_OK(Gnome.Canvas)
+      AC_MSG_RESULT(yes);
+      AC_DEFINE(HAVE_GNOMECANVAS)
+      pgtk_has_gnomecanvas=gnomecanvas
+      gtk_final_libs="$gtk_final_libs libgnomecanvas-2.0"
+    else
+      AC_MSG_RESULT(no);
+    fi
+    GTK_CFLAGS="`${ac_tool_prefix}pkg-config --cflags ${gtk_final_libs}`"
+    GTK_LIBS="`${ac_tool_prefix}pkg-config --libs ${gtk_final_libs}`"
+
+    AC_DEFINE(PGTK_AUTO_UTF8)
+  else
+    WITH_GTK=0
+    AC_MSG_RESULT(no);
+  fi
+fi
+
+AC_SUBST(pgtk_has_libglade)
+AC_SUBST(pgtk_has_gtk26)
+AC_SUBST(pgtk_has_gtk24)
+AC_SUBST(pgtk_has_gtk22)
+AC_SUBST(pgtk_has_pango)
+AC_SUBST(pgtk_has_pango16)
+AC_SUBST(pgtk_has_pango14)
+AC_SUBST(pgtk_has_pango12)
+AC_SUBST(pgtk_has_atk)
+AC_SUBST(pgtk_has_atk18)
+AC_SUBST(PGTK_CFLAGS)
+AC_SUBST(PGTK_LIBS)
+AC_SUBST(GTK_CFLAGS)
+AC_SUBST(GTK_LIBS)
+AC_SUBST(pgtk_has_gnome)
+AC_SUBST(pgtk_has_gnomecanvas)
+
+AC_SUBST(WITH_GTK)
+PGTK_CFLAGS="$GTK_CFLAGS"
+PGTK_LIBS="$GTK_LIBS"
+CFLAGS="$CFLAGS $GTK_CFLAGS"
+LIBS="$MODULE_LDFLAGS $LIBS"
+AC_OUTPUT(Makefile options)
