@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.168 2005/06/01 16:29:25 grubba Exp $
+|| $Id: efuns.c,v 1.169 2005/10/04 07:19:05 nilsson Exp $
 */
 
 #include "global.h"
@@ -252,9 +252,9 @@ static void f_getxattr(INT32 args)
   do {
     /* First try, for speed.*/
     if (nofollow)
-      LGETXATTR(file, name, buffer, sizeof(buffer));
+      res = LGETXATTR(file, name, buffer, sizeof(buffer));
     else
-      GETXATTR(file, name, buffer, sizeof(buffer));
+      res = GETXATTR(file, name, buffer, sizeof(buffer));
   } while( res < 0 && errno == EINTR );
   THREADS_DISALLOW();
 
@@ -272,9 +272,9 @@ static void f_getxattr(INT32 args)
       THREADS_ALLOW();
       do {
 	if (nofollow)
-	  LGETXATTR(file, name, ptr, blen);
+	  res = LGETXATTR(file, name, ptr, blen);
 	else
-	  GETXATTR(file, name, ptr, blen);
+	  res = GETXATTR(file, name, ptr, blen);
       } while( res < 0 && errno == EINTR );
       THREADS_DISALLOW();
       blen *= 2;
