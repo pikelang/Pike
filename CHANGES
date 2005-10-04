@@ -18,6 +18,7 @@ o better garbage generation for Remote.
 o SSL.sslfile: added wrapper for Stdio.File.is_open().
 o Protocols.HTTP.Query: keepalive operation fixed when remote has
   closed.
+o Protocols.HTTP.Quert: added timed_async_fetch().
 o UNDEFINED arguments are better described in backtraces.
 o Protocols.DNS: improved support for T_TXT.
 o Cache.Policy: made some debug output optional.
