@@ -1,0 +1,13 @@
+@have_x11@
+@pgtk_has_libglade@
+@pgtk_has_gnome@
+@pgtk_has_gtk26@
+@pgtk_has_gtk24@
+@pgtk_has_gtk22@
+@pgtk_has_pango@
+@pgtk_has_pango16@
+@pgtk_has_pango14@
+@pgtk_has_pango12@
+@pgtk_has_atk@
+@pgtk_has_atk18@
+@pgtk_has_gnomecanvas@
