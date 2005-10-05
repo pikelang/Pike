@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.169 2005/10/04 07:19:05 nilsson Exp $
+|| $Id: efuns.c,v 1.170 2005/10/05 09:12:33 grubba Exp $
 */
 
 #include "global.h"
@@ -1192,19 +1192,21 @@ void f_get_dir(INT32 args)
     char buffer[MAXPATHLEN * 4];
     char *ptrs[FPR];
     ptrdiff_t lens[FPR];
-
-    if (!(tmp =
+    ptrdiff_t name_max = -1;
 #ifdef _PC_NAME_MAX
-	  malloc(sizeof(struct dirent) + 
-		 ((pathconf(str->str, _PC_NAME_MAX) < 1024)?1024:
-		  pathconf(str->str, _PC_NAME_MAX)) + 1)
-#else /* !_PC_NAME_MAX */
+#if defined(HAVE_FPATHCONF) && defined(HAVE_DIRFD)
+    name_max = fpathconf(dirfd(dir), _PC_NAME_MAX);
+#elif defined(HAVE_PATHCONF)
+    name_max = pathconf(str->str, _PC_NAME_MAX);
+#endif /* _PC_NAME_MAX */
 #ifndef NAME_MAX
 #define NAME_MAX 1024
 #endif
-	  malloc(sizeof(struct dirent) + NAME_MAX+ 1024 + 1)
-#endif /* _PC_NAME_MAX */
-      )) {
+    if (name_max < NAME_MAX)
+      name_max = NAME_MAX;
+    if (name_max < 1024) name_max = 1024;
+
+    if (!(tmp = malloc(sizeof(struct dirent) + name_max + 1))) {
       closedir(dir);
       Pike_error("get_dir(): Out of memory\n");
     }
