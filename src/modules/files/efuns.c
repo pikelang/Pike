@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.172 2005/10/05 10:03:16 grubba Exp $
+|| $Id: efuns.c,v 1.173 2005/10/05 14:11:21 grubba Exp $
 */
 
 #include "global.h"
@@ -1066,7 +1066,7 @@ void f_mkdir(INT32 args)
 #define USE_FDOPENDIR
 #define USE_FPATHCONF
 #elif defined(HAVE_DIRFD)
-#defined USE_FPATHCONF
+#define USE_FPATHCONF
 #endif
 
 #endif /* HAVE_FPATHCONF */
