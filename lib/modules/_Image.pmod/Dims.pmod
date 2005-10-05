@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//   $Id: Dims.pmod,v 1.7 2004/08/26 00:38:41 nilsson Exp $
+//   $Id: Dims.pmod,v 1.8 2005/10/05 10:19:21 nilsson Exp $
 //
 //   Imagedimensionreadermodule for Pike.
 //   Created by Johan Schön, <js@roxen.com>.
@@ -78,18 +78,13 @@ static int first_marker(Stdio.File f)
 
 static int next_marker(Stdio.File f)
 {
-  int c;
-  int discarded_bytes = 0;
-    
-  /* Find 0xFF byte; count and skip any non-FFs. */
-  c = read_1_byte(f);
-  while (c != 0xFF) {
-    discarded_bytes++;
+  // Find 0xFF byte; count and skip any non-FFs.
+  int c = read_1_byte(f);
+  while (c != 0xFF)
     c = read_1_byte(f);
-  }
-  /* Get marker code byte, swallowing any duplicate FF bytes.  Extra FFs
-   * are legal as pad bytes, so don't count them in discarded_bytes.
-   */
+
+  // Get marker code byte, swallowing any duplicate FF bytes.  Extra FFs
+  // are legal as pad bytes.
   do {
     c = read_1_byte(f);
   } while (c == 0xFF);
@@ -110,16 +105,13 @@ static int skip_variable(Stdio.File f)
 //! width and height, or if the file isn't a valid image, 0.
 array(int) get_JPEG(Stdio.File f)
 {
-  int marker;
-
   if (!first_marker(f))
     return 0;
     
   /* Scan miscellaneous markers until we reach SOS. */
   for (;;)
   {
-    marker = next_marker(f);
-    switch (marker) {
+    switch (next_marker(f)) {
     case M_SOF0:		/* Baseline */
     case M_SOF1:		/* Extended sequential, Huffman */
     case M_SOF2:		/* Progressive, Huffman */
