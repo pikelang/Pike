@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.123 2005/10/05 14:12:03 grubba Exp $
+|| $Id: efuns.c,v 1.124 2005/10/05 16:09:33 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.123 2005/10/05 14:12:03 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.124 2005/10/05 16:09:33 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -870,7 +870,9 @@ void f_get_dir(INT32 args)
 #else
   dir = opendir(str->str);
 #ifdef USE_FPATHCONF
-  name_max = fpathconf(dirfd(dir), _PC_NAME_MAX);
+  if (dir) {
+    name_max = fpathconf(dirfd(dir), _PC_NAME_MAX);
+  }
 #endif
 #endif /* !HAVE_FDOPENDIR */
 #ifdef USE_PATHCONF
