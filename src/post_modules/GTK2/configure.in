@@ -176,8 +176,13 @@ else
     else
       AC_MSG_RESULT(no);
     fi
-    GTK_CFLAGS="`${ac_tool_prefix}pkg-config --cflags ${gtk_final_libs}`"
-    GTK_LIBS="`${ac_tool_prefix}pkg-config --libs ${gtk_final_libs}`"
+    # Note: ORBit-2.0.pc on Solaris 10/x86 adds -mt to cflags,
+    #       which gcc doesn't like...
+    #       The manual for cc says that -mt is -D_REENTRANT plus -lthread;
+    #       both of which should already be present.
+    #   /grubba 2005-10-05
+    GTK_CFLAGS="`${ac_tool_prefix}pkg-config --cflags ${gtk_final_libs} | sed -e 's/ -mt / /g'`"
+    GTK_LIBS="`${ac_tool_prefix}pkg-config --libs ${gtk_final_libs} | sed -e 's/ -mt / /g'`"
 
     AC_DEFINE(PGTK_AUTO_UTF8)
   else
