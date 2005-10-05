@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.170 2005/10/05 09:12:33 grubba Exp $
+|| $Id: efuns.c,v 1.171 2005/10/05 09:52:14 grubba Exp $
 */
 
 #include "global.h"
@@ -1057,6 +1057,27 @@ void f_mkdir(INT32 args)
 #define HAVE_READDIR_R
 #endif
 
+#if defined(_REENTRANT) && defined(HAVE_READDIR_R)
+
+#ifdef _PC_NAME_MAX
+#ifdef HAVE_FPATHCONF
+
+#ifdef HAVE_FDOPENDIR
+#define USE_FDOPENDIR
+#define USE_FPATHCONF
+#elif defined(HAVE_DIRFD)
+#defined USE_FPATHCONF
+#endif
+
+#endif /* HAVE_FPATHCONF */
+
+#if defined(HAVE_PATHCONF) && !defined(USE_FPATHCONF)
+#define USE_PATHCONF
+#endif
+#endif /* _PC_NAME_MAX */
+
+#endif /* _REENTRANT && HAVE_READDIR_R */
+
 /*! @decl array(string) get_dir(void|string dirname)
  *!
  *! Returns an array of all filenames in the directory @[dirname], or
@@ -1073,7 +1094,13 @@ void f_get_dir(INT32 args)
   WIN32_FIND_DATAW d;
   struct string_builder sb;
 #else /* !__NT__ */
-  DIR *dir;
+#ifdef USE_FDOPENDIR
+  int dir_fd;
+#endif
+  DIR *dir = NULL;
+#ifdef HAVE_READDIR_R
+  ptrdiff_t name_max = -1;
+#endif
 #endif /* __NT__ */
   struct pike_string *str=0;
 
@@ -1181,7 +1208,24 @@ void f_get_dir(INT32 args)
   }
 
   THREADS_ALLOW_UID();
+#ifdef USE_FDOPENDIR
+  dir_fd = open(str->str, O_RDONLY);
+  if (dir_fd != -1) {
+#ifdef USE_FPATHCONF
+    name_max = fpathconf(dir_fd, _PC_NAME_MAX);
+#endif /* USE_FPATHCONF */
+    dir = fdopendir(dir_fd);
+  }
+  if (!dir) close(dir_fd);
+#else
   dir = opendir(str->str);
+#ifdef USE_FPATHCONF
+  name_max = fpathconf(dirfd(dir), _PC_NAME_MAX);
+#endif
+#endif /* !HAVE_FDOPENDIR */
+#ifdef USE_PATHCONF
+  name_max = pathconf(str->str, _PC_NAME_MAX);
+#endif
   THREADS_DISALLOW_UID();
   if(dir)
   {
@@ -1192,13 +1236,7 @@ void f_get_dir(INT32 args)
     char buffer[MAXPATHLEN * 4];
     char *ptrs[FPR];
     ptrdiff_t lens[FPR];
-    ptrdiff_t name_max = -1;
-#ifdef _PC_NAME_MAX
-#if defined(HAVE_FPATHCONF) && defined(HAVE_DIRFD)
-    name_max = fpathconf(dirfd(dir), _PC_NAME_MAX);
-#elif defined(HAVE_PATHCONF)
-    name_max = pathconf(str->str, _PC_NAME_MAX);
-#endif /* _PC_NAME_MAX */
+
 #ifndef NAME_MAX
 #define NAME_MAX 1024
 #endif
