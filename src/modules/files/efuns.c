@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.144 2005/10/05 10:04:07 grubba Exp $
+|| $Id: efuns.c,v 1.145 2005/10/05 14:11:38 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.144 2005/10/05 10:04:07 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.145 2005/10/05 14:11:38 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -824,7 +824,7 @@ void f_mkdir(INT32 args)
 #define USE_FDOPENDIR
 #define USE_FPATHCONF
 #elif defined(HAVE_DIRFD)
-#defined USE_FPATHCONF
+#define USE_FPATHCONF
 #endif
 
 #endif /* HAVE_FPATHCONF */
