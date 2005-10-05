@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.173 2005/10/05 14:11:21 grubba Exp $
+|| $Id: efuns.c,v 1.174 2005/10/05 16:09:25 grubba Exp $
 */
 
 #include "global.h"
@@ -1220,7 +1220,9 @@ void f_get_dir(INT32 args)
 #else
   dir = opendir(str->str);
 #ifdef USE_FPATHCONF
-  name_max = fpathconf(dirfd(dir), _PC_NAME_MAX);
+  if (dir) {
+    name_max = fpathconf(dirfd(dir), _PC_NAME_MAX);
+  }
 #endif
 #endif /* !HAVE_FDOPENDIR */
 #ifdef USE_PATHCONF
