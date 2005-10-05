@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.143 2004/10/04 08:13:38 grubba Exp $
+|| $Id: efuns.c,v 1.144 2005/10/05 10:04:07 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.143 2004/10/04 08:13:38 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.144 2005/10/05 10:04:07 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -815,6 +815,27 @@ void f_mkdir(INT32 args)
 #define HAVE_READDIR_R
 #endif
 
+#if defined(_REENTRANT) && defined(HAVE_READDIR_R)
+
+#ifdef _PC_NAME_MAX
+#ifdef HAVE_FPATHCONF
+
+#ifdef HAVE_FDOPENDIR
+#define USE_FDOPENDIR
+#define USE_FPATHCONF
+#elif defined(HAVE_DIRFD)
+#defined USE_FPATHCONF
+#endif
+
+#endif /* HAVE_FPATHCONF */
+
+#if defined(HAVE_PATHCONF) && !defined(USE_FPATHCONF)
+#define USE_PATHCONF
+#endif
+#endif /* _PC_NAME_MAX */
+
+#endif /* _REENTRANT && HAVE_READDIR_R */
+
 /*! @decl array(string) get_dir(string dirname)
  *!
  *! Returns an array of all filenames in the directory @[dirname], or
@@ -825,7 +846,13 @@ void f_mkdir(INT32 args)
  */
 void f_get_dir(INT32 args)
 {
+#ifdef USE_FDOPENDIR
+  int dir_fd;
+#endif
   DIR *dir;
+#ifdef HAVE_READDIR_R
+  ptrdiff_t name_max = -1;
+#endif
   struct pike_string *str;
 
   VALID_FILE_IO("get_dir","read");
@@ -841,7 +868,24 @@ void f_get_dir(INT32 args)
   }
 
   THREADS_ALLOW_UID();
+#ifdef USE_FDOPENDIR
+  dir_fd = open(str->str, O_RDONLY);
+  if (dir_fd != -1) {
+#ifdef USE_FPATHCONF
+    name_max = fpathconf(dir_fd, _PC_NAME_MAX);
+#endif /* USE_FPATHCONF */
+    dir = fdopendir(dir_fd);
+    if (!dir) close(dir_fd);
+  }
+#else
   dir = opendir(str->str);
+#ifdef USE_FPATHCONF
+  name_max = fpathconf(dirfd(dir), _PC_NAME_MAX);
+#endif
+#endif /* !HAVE_FDOPENDIR */
+#ifdef USE_PATHCONF
+  name_max = pathconf(str->str, _PC_NAME_MAX);
+#endif
   THREADS_DISALLOW_UID();
   if(dir)
   {
@@ -853,18 +897,14 @@ void f_get_dir(INT32 args)
     char *ptrs[FPR];
     ptrdiff_t lens[FPR];
 
-    if (!(tmp =
-#ifdef _PC_NAME_MAX
-	  malloc(sizeof(struct dirent) + 
-		 ((pathconf(str->str, _PC_NAME_MAX) < 1024)?1024:
-		  pathconf(str->str, _PC_NAME_MAX)) + 1)
-#else /* !_PC_NAME_MAX */
 #ifndef NAME_MAX
 #define NAME_MAX 1024
 #endif
-	  malloc(sizeof(struct dirent) + NAME_MAX+ 1024 + 1)
-#endif /* _PC_NAME_MAX */
-      )) {
+    if (name_max < NAME_MAX)
+      name_max = NAME_MAX;
+    if (name_max < 1024) name_max = 1024;
+
+    if (!(tmp = malloc(sizeof(struct dirent) + name_max + 1))) {
       closedir(dir);
       Pike_error("get_dir(): Out of memory\n");
     }
