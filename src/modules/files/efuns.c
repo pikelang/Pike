@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.124 2005/10/05 16:09:33 grubba Exp $
+|| $Id: efuns.c,v 1.125 2005/10/06 09:03:25 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.124 2005/10/05 16:09:33 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.125 2005/10/06 09:03:25 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -188,12 +188,14 @@ void f_file_stat(INT32 args)
   }
 
   THREADS_ALLOW_UID();
+  do {
 #ifdef HAVE_LSTAT
-  if(l)
-    i=fd_lstat(str->str, &st);
-  else
+    if(l)
+      i=fd_lstat(str->str, &st);
+    else
 #endif
-    i=fd_stat(str->str, &st);
+      i=fd_stat(str->str, &st);
+  } while ((i == -1) && (errno == EINTR));
 
   THREADS_DISALLOW_UID();
   pop_n_elems(args);
