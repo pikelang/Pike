@@ -356,7 +356,7 @@ array decode_layers( string|mapping what, mapping|void opts )
                                                        (int)(255*lo)));
         }
 
-	if (opts->crop_to_bounds) {
+	if (opts->crop_to_bounds && lay->image()) {
 	  //  Crop/expand this layer so it matches the image bounds.
 	  //  This will lose data which extends beyond the image bounds
 	  //  but keeps the image dimensions consistent.
