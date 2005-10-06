@@ -1,7 +1,7 @@
-// -*- pike -*-
-
 class GTK2.TreeSelection;
 inherit G.Object;
+
+// -*- pike -*-
 
 //! Selections on a treestore.
 
