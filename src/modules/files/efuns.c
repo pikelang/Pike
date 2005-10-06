@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.175 2005/10/06 09:01:00 grubba Exp $
+|| $Id: efuns.c,v 1.176 2005/10/06 09:03:57 grubba Exp $
 */
 
 #include "global.h"
@@ -461,6 +461,7 @@ void f_file_stat(INT32 args)
 #endif
       i=fd_stat(str->str, &st);
   } while ((i == -1) && (errno == EINTR));
+
   THREADS_DISALLOW_UID();
   pop_n_elems(args);
   if(i==-1)
