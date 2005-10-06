@@ -256,7 +256,7 @@ class Function(Class parent,
     return "void p"+c_name()+"( INT32 args );\n";
   }
 
-  string c_defenition()
+  string c_definition()
   {
     string res = "";
     void emit( string what )
@@ -442,7 +442,7 @@ class Member( string name, Type type, int set,
     return "void p"+c_name()+"( INT32 args );\n";
   }
 
-  string c_defenition()
+  string c_definition()
   {
     if( set )
       return
@@ -478,7 +478,7 @@ class Property( string name, Type type, int set,
 {
   inherit Member;
 
-  string c_defenition()
+  string c_definition()
   {
     string ret;
     if( set ) {
@@ -1381,7 +1381,7 @@ Class get_class_define( string name, string file, int line )
     {
       werror("\n");
       werror(file+":"+line+"\tError: "+name+" redefined\n" );
-      werror(res->file+":"+res->line+"\t       Previous defenition\n" );
+      werror(res->file+":"+res->line+"\t       Previous definition\n" );
       exit(1);
     }
     res->file = file;
@@ -1474,14 +1474,14 @@ array parse_args( array tokens )
   foreach( q, array one )
   {
     if( !sizeof( one ) )
-      SYNTAX("Illegal argument defenition ''", tokens[0]);
+      SYNTAX("Illegal argument definition ''", tokens[0]);
     if( one[0] == "null"  && sizeof(one) == 1 )
     {
       types += ({ parse_type( one[0] ) });
       names += ({ "undef" });
     } else {
       if( sizeof(one) < 2 )
-        SYNTAX("Illegal argument defenition '"+(one->text*" ")+"'", one[0] );
+        SYNTAX("Illegal argument definition '"+(one->text*" ")+"'", one[0] );
       types += ({ parse_type( one[..sizeof(one)-2] ) });
       if( !is_identifier( one[-1] ) )
         SYNTAX( "Expected identifier after type", (arrayp(one[-1])?one[-1][0]:one[-1]) );
@@ -1695,14 +1695,14 @@ string parse_pre_file( string file )
          /*
           * type identifier( type identifier, ... )
           * ;  || { code }
-          * makes a function defenition.
+          * makes a function definition.
           */
          if(!current_class )
-           SYNTAX("Need class before function defenition\n",  token);
+           SYNTAX("Need class before function definition\n",  token);
          i--;
-         NEED_CLASS("function defenition");
-         TYPE("function defenition");       type = tk;
-         IDENTIFIER("function defenition"); name = tk;
+         NEED_CLASS("function definition");
+         TYPE("function definition");       type = tk;
+         IDENTIFIER("function definition"); name = tk;
          args = GOBBLE();
          if(!arrayp(args) || args[0] != "(" || args[-1] != ")")
            SYNTAX("Expected argument array",args);

@@ -25,7 +25,7 @@ static void output_class( Class cls, int lvl )
     current_data += COMPOSE( cls->pre );
   void output_thing( object thing )
   {
-    if( mixed err=catch( current_data += thing->c_defenition() ) )
+    if( mixed err=catch( current_data += thing->c_definition() ) )
       werror(thing->file+":"+thing->line+": Error: "+
              (stringp(err)?err:describe_backtrace(err))+"\n" );
   };
