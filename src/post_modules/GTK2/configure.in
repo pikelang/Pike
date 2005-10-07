@@ -26,6 +26,8 @@ AC_CHECK_HEADERS( signal.h netinet/in.h arpa/inet.h sys/types.h sys/stat.h fcntl
 AC_PATH_PROG(PKG_CONFIG,${ac_tool_prefix}pkg-config,no)
 
 AC_SUBST(have_x11)
+AC_SUBST(pgtk_has_gtk_beta)
+pgtk_has_gtk_beta=nogtk_beta
 AC_SUBST(pgtk_has_gtk26)
 pgtk_has_gtk26=nogtk26
 AC_SUBST(pgtk_has_gtk24)
@@ -34,6 +36,8 @@ AC_SUBST(pgtk_has_gtk22)
 pgtk_has_gtk22=nogtk22
 AC_SUBST(pgtk_has_gnome)
 pgtk_has_gnome=nognome
+AC_SUBST(pgtk_has_pango_beta)
+pgtk_has_pango_beta=nopango_beta
 AC_SUBST(pgtk_has_pango)
 pgtk_has_pango=nopango
 AC_SUBST(pgtk_has_pango16)
@@ -70,17 +74,22 @@ else
     gtkmajorvers=$1
     gtkminorvers=$2
     gtkpatchvers=$3
-    if test $gtkminorvers -ge 2 ; then
-      pgtk_has_gtk22=gtk22
-      AC_DEFINE(HAVE_GTK22)
-    fi
-    if test $gtkminorvers -ge 4 ; then
-      pgtk_has_gtk24=gtk24
-      AC_DEFINE(HAVE_GTK24)
-    fi
-    if test $gtkminorvers -ge 6 ; then
-      pgtk_has_gtk26=gtk26
-      AC_DEFINE(HAVE_GTK26)
+    if test $gtkmajorvers -le 1 ; then
+      # The old betas had major 1; eg 1.3.2
+      pgtk_has_gtk_beta=gtk_beta
+    else
+      if test $gtkminorvers -ge 2 ; then
+	pgtk_has_gtk22=gtk22
+	AC_DEFINE(HAVE_GTK22)
+      fi
+      if test $gtkminorvers -ge 4 ; then
+	pgtk_has_gtk24=gtk24
+	AC_DEFINE(HAVE_GTK24)
+      fi
+      if test $gtkminorvers -ge 6 ; then
+	pgtk_has_gtk26=gtk26
+	AC_DEFINE(HAVE_GTK26)
+      fi
     fi
     AC_MSG_RESULT($gtkvers)
     AC_MSG_CHECKING([for pango])
@@ -97,17 +106,22 @@ else
       pangomajorvers=$1
       pangominorvers=$2
       pangopatchvers=$3
-      if test $pangominorvers -ge 6 ; then
-	pgtk_has_pango16=pango16
-	AC_DEFINE(HAVE_PANGO16)
-      fi
-      if test $pangominorvers -ge 4 ; then
-	pgtk_has_pango14=pango14
-	AC_DEFINE(HAVE_PANGO14)
-      fi
-      if test $pangominorvers -ge 2 ; then
-	pgtk_has_pango12=pango12
-	AC_DEFINE(HAVE_PANGO12)
+      if test $pangomajorvers -le 0 ; then
+	# The old betas had major 0; eg 0.13
+	pgtk_has_pango_beta=pango_beta
+      else
+	if test $pangominorvers -ge 6 ; then
+	  pgtk_has_pango16=pango16
+	  AC_DEFINE(HAVE_PANGO16)
+	fi
+	if test $pangominorvers -ge 4 ; then
+	  pgtk_has_pango14=pango14
+	  AC_DEFINE(HAVE_PANGO14)
+	fi
+	if test $pangominorvers -ge 2 ; then
+	  pgtk_has_pango12=pango12
+	  AC_DEFINE(HAVE_PANGO12)
+	fi
       fi
       AC_MSG_RESULT($pangovers)
     fi
