@@ -1,3 +1,5 @@
+/* -*- C -*- */
+not gtk_beta;
 class GDK2.PixbufAnimation;
 inherit G.Object;
 
@@ -61,3 +63,4 @@ GDK2.Pixbuf get_static_image();
 //! animation hasn't loaded any frames yet, this function will return 0.
 
 
+endnot;

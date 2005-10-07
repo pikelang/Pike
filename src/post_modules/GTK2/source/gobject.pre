@@ -79,7 +79,13 @@ int signal_connect(string signal, function callback, mixed|void callback_arg)
 			   G_CALLBACK(pgtk_signal_func_wrapper),
 			   b,
 			   (GClosureNotify)pgtk_free_signal_data,
-			   G_CONNECT_SWAPPED);
+#ifdef HAVE_G_SIGNAL_CONNECT_DATA_WITH_SIX_ARGS
+			   G_CONNECT_SWAPPED
+#else /* !HAVE_G_SIGNAL_CONNECT_DATA_WITH_SIX_ARGS */
+			   /* Old-style. */
+			   1 /* swapped */, 0 /* after */
+#endif /* !HAVE_G_SIGNAL_CONNECT_DATA_WITH_SIX_ARGS */
+			   );
   my_pop_n_elems(args);
   push_int(id);
 }

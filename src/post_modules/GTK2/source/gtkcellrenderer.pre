@@ -1,3 +1,4 @@
+/* -* C -*- */
 class GTK2.CellRenderer;
 inherit GTK2.Data;
 
@@ -39,6 +40,14 @@ mapping(string:int) get_size(GTK2.Widget widget, ?GDK2.Rectangle cell_area)
     else
       get_all_args("get_size",args,"%o%o",&o1,&o2);
     my_pop_n_elems(args);
+#ifdef HAVE_GTK_BETA
+    gtk_cell_renderer_get_size(GTK_CELL_RENDERER(THIS->obj),
+		GTK_WIDGET(get_gobject(o1)),
+		&width,&height);
+    push_text("width"); push_int(width);
+    push_text("height"); push_int(height);
+    f_aggregate_mapping(4);
+#else /* !HAVE_GTK_BETA */
     gtk_cell_renderer_get_size(GTK_CELL_RENDERER(THIS->obj),
 		GTK_WIDGET(get_gobject(o1)),
 		o2?(GdkRectangle *)get_gdkobject(o2,rectangle):NULL,
@@ -48,6 +57,7 @@ mapping(string:int) get_size(GTK2.Widget widget, ?GDK2.Rectangle cell_area)
     push_text("width"); push_int(width);
     push_text("height"); push_int(height);
     f_aggregate_mapping(8);
+#endif /* HAVE_GTK_BETA */
   }
 }
 

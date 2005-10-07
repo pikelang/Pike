@@ -1,3 +1,5 @@
+/* -*- C -*- */
+not gtk_beta;
 class GDK2.PixbufAnimationIter;
 inherit G.Object;
 
@@ -36,3 +38,4 @@ GDK2.Pixbuf get_pixbuf()
 		(GdkPixbufAnimationIter *)THIS->obj));
 }
 
+endnot;
