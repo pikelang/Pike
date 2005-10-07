@@ -5,7 +5,12 @@ constant int TRUE;
 /* GDK: The GdkPixbufStructure: GdkPixbufError */
 constant int GDK_PIXBUF_ERROR_CORRUPT_IMAGE;
 constant int GDK_PIXBUF_ERROR_INSUFFICIENT_MEMORY;
+not gtk_beta;
 constant int GDK_PIXBUF_ERROR_BAD_OPTION;
+endnot;
+require gtk_beta;
+constant int GDK_PIXBUF_ERROR_BAD_OPTION_VALUE;
+endrequire;
 constant int GDK_PIXBUF_ERROR_UNKNOWN_TYPE;
 constant int GDK_PIXBUF_ERROR_UNSUPPORTED_OPERATION;
 constant int GDK_PIXBUF_ERROR_FAILED;
@@ -109,7 +114,9 @@ constant int GTK_PACK_END;
 constant int GTK_PATH_PRIO_LOWEST;
 constant int GTK_PATH_PRIO_GTK;
 constant int GTK_PATH_PRIO_APPLICATION;
+not gtk_beta;
 constant int GTK_PATH_PRIO_THEME;
+endnot;
 constant int GTK_PATH_PRIO_RC;
 constant int GTK_PATH_PRIO_HIGHEST;
 
@@ -134,10 +141,12 @@ constant int GTK_SHRINK;
 constant int GTK_FILL;
 
 /* GTK: Standard Enumerations: GtkExpanderStyle */
+not gtk_beta;
 constant int GTK_EXPANDER_COLLAPSED;
 constant int GTK_EXPANDER_SEMI_COLLAPSED;
 constant int GTK_EXPANDER_SEMI_EXPANDED;
 constant int GTK_EXPANDER_EXPANDED;
+endnot;
 
 /* GTK: Standard Enumerations: GtkIMPreeditStyle */
 require gtk22;
@@ -222,6 +231,7 @@ constant int GTK_SCROLL_STEP_BACKWARD;
 constant int GTK_SCROLL_STEP_FORWARD;
 constant int GTK_SCROLL_PAGE_BACKWARD;
 constant int GTK_SCROLL_PAGE_FORWARD;
+not gtk_beta;
 constant int GTK_SCROLL_STEP_UP;
 constant int GTK_SCROLL_STEP_DOWN;
 constant int GTK_SCROLL_PAGE_UP;
@@ -232,6 +242,7 @@ constant int GTK_SCROLL_PAGE_LEFT;
 constant int GTK_SCROLL_PAGE_RIGHT;
 constant int GTK_SCROLL_START;
 constant int GTK_SCROLL_END;
+endnot;
 
 /*
 constant int GTK_TROUGH_NONE;
@@ -259,7 +270,9 @@ constant int GTK_JUSTIFY_CENTER;
 constant int GTK_JUSTIFY_FILL;
 
 /* GTK: Standard Enumerations: GtkSelectionMode */
+not gtk_beta;
 constant int GTK_SELECTION_NONE;
+endnot;
 constant int GTK_SELECTION_SINGLE;
 constant int GTK_SELECTION_BROWSE;
 constant int GTK_SELECTION_MULTIPLE;
@@ -309,8 +322,10 @@ constant int GDK_HINT_MAX_SIZE;
 constant int GDK_HINT_BASE_SIZE;
 constant int GDK_HINT_ASPECT;
 constant int GDK_HINT_RESIZE_INC;
+not gtk_beta;
 constant int GDK_HINT_USER_POS;
 constant int GDK_HINT_USER_SIZE;
+endnot;
 
 /* GDK: Windows: GdkGravity */
 constant int GDK_GRAVITY_NORTH_WEST;
@@ -325,6 +340,7 @@ constant int GDK_GRAVITY_SOUTH_EAST;
 constant int GDK_GRAVITY_STATIC;
 
 /* GDK: Windows: GdkWindowEdge */
+not gtk_beta;
 constant int GDK_WINDOW_EDGE_NORTH_WEST;
 constant int GDK_WINDOW_EDGE_NORTH;
 constant int GDK_WINDOW_EDGE_NORTH_EAST;
@@ -333,12 +349,15 @@ constant int GDK_WINDOW_EDGE_EAST;
 constant int GDK_WINDOW_EDGE_SOUTH_WEST;
 constant int GDK_WINDOW_EDGE_SOUTH;
 constant int GDK_WINDOW_EDGE_SOUTH_EAST;
+endnot;
 
 /* GDK: Windows: GdkWindowTypeHint */
+not gtk_beta;
 constant int GDK_WINDOW_TYPE_HINT_NORMAL;
 constant int GDK_WINDOW_TYPE_HINT_DIALOG;
 constant int GDK_WINDOW_TYPE_HINT_MENU;
 constant int GDK_WINDOW_TYPE_HINT_TOOLBAR;
+endnot;
 require gtk22;
 constant int GDK_WINDOW_TYPE_HINT_SPLASHSCREEN;
 constant int GDK_WINDOW_TYPE_HINT_UTILITY;
@@ -528,8 +547,10 @@ constant int GDK_CLIENT_EVENT;
 constant int GDK_VISIBILITY_NOTIFY;
 constant int GDK_NO_EXPOSE;
 constant int GDK_SCROLL;
+not gtk_beta;
 constant int GDK_WINDOW_STATE;
 constant int GDK_SETTING;
+endnot;
 require gtk26;
 constant int GDK_OWNER_CHANGE;
 endrequire;
@@ -619,10 +640,12 @@ constant int GDK_PROPERTY_NEW_VALUE;
 constant int GDK_PROPERTY_DELETE;
 
 /* GDK: Event Structures: GdkWindowState */
+not gtk_beta;
 constant int GDK_WINDOW_STATE_WITHDRAWN;
 constant int GDK_WINDOW_STATE_ICONIFIED;
 constant int GDK_WINDOW_STATE_MAXIMIZED;
 constant int GDK_WINDOW_STATE_STICKY;
+endnot;
 require gtk22;
 constant int GDK_WINDOW_STATE_FULLSCREEN;
 endrequire;
@@ -632,9 +655,11 @@ constant int GDK_WINDOW_STATE_BELOW;
 endrequire;
 
 /* GDK: Event Structures: GdkSettingAction */
+not gtk_beta;
 constant int GDK_SETTING_ACTION_NEW;
 constant int GDK_SETTING_ACTION_CHANGED;
 constant int GDK_SETTING_ACTION_DELETED;
+endnot;
 
 require gtk26;
 /* GDK: Event Structures: GdkOwnerChange */
@@ -801,13 +826,15 @@ constant int GTK_ICON_THEME_FAILED;
 endrequire;
 
 /* GTK: Themeable Stock Images: GtkIconSize */
-constant int GTK_ICON_SIZE_INVALID;
 constant int GTK_ICON_SIZE_MENU;
 constant int GTK_ICON_SIZE_SMALL_TOOLBAR;
 constant int GTK_ICON_SIZE_LARGE_TOOLBAR;
 constant int GTK_ICON_SIZE_BUTTON;
-constant int GTK_ICON_SIZE_DND;
 constant int GTK_ICON_SIZE_DIALOG;
+not gtk_beta;
+constant int GTK_ICON_SIZE_DND;
+constant int GTK_ICON_SIZE_INVALID;
+endnot;
 
 /* GTK: Resource Files: GtkRcFlags */
 constant int GTK_RC_FG;
@@ -843,7 +870,9 @@ constant int GTK_RC_TOKEN_CLASS;
 constant int GTK_RC_TOKEN_LOWEST;
 constant int GTK_RC_TOKEN_GTK;
 constant int GTK_RC_TOKEN_APPLICATION;
+not gtk_beta;
 constant int GTK_RC_TOKEN_THEME;
+endnot;
 constant int GTK_RC_TOKEN_RC;
 constant int GTK_RC_TOKEN_HIGHEST;
 constant int GTK_RC_TOKEN_ENGINE;
@@ -901,8 +930,10 @@ constant int GTK_NO_SHOW_ALL;
 endrequire;
 
 /* GTK: GtkWidget: GtkWidgetHelpType */
+not gtk_beta;
 constant int GTK_WIDGET_HELP_TOOLTIP;
 constant int GTK_WIDGET_HELP_WHATS_THIS;
+endnot;
 
 /* GTK: GtkSpinButton: GtkSpinType */
 constant int GTK_SPIN_STEP_FORWARD;
@@ -1042,7 +1073,9 @@ constant int GDK_MSB_FIRST;
 /* GTK: GktDialog: GtkDialogFlags */
 constant int GTK_DIALOG_MODAL;
 constant int GTK_DIALOG_DESTROY_WITH_PARENT;
+not gtk_beta;
 constant int GTK_DIALOG_NO_SEPARATOR;
+endnot;
 
 /* GTK: GtkDialog: GtkResponseType */
 constant int GTK_RESPONSE_NONE;
@@ -1078,19 +1111,25 @@ constant int GTK_IMAGE_IMAGE;
 constant int GTK_IMAGE_PIXBUF;
 constant int GTK_IMAGE_STOCK;
 constant int GTK_IMAGE_ICON_SET;
+not gtk_beta;
 constant int GTK_IMAGE_ANIMATION;
+endnot;
 require gtk26;
 constant int GTK_IMAGE_ICON_NAME; 
 endrequire;
 
 /* GTK: GtkTextIter: GtkTextSearchFlags */
+not gtk_beta;
 constant int GTK_TEXT_SEARCH_VISIBLE_ONLY;
 constant int GTK_TEXT_SEARCH_TEXT_ONLY;
+endnot;
 
 /* GTK: GtkTextTag: GtkWrapMode */
+not gtk_beta;
 constant int GTK_WRAP_NONE;
 constant int GTK_WRAP_CHAR;
 constant int GTK_WRAP_WORD;
+endnot;
 require gtk24;
 constant int GTK_WRAP_WORD_CHAR;
 endrequire;
@@ -1106,32 +1145,40 @@ constant int GTK_TEXT_WINDOW_BOTTOM;
 
 /* GTK: GtkTreeModel: GtkTreeModelFlags */
 constant int GTK_TREE_MODEL_ITERS_PERSIST;
+not gtk_beta;
 constant int GTK_TREE_MODEL_LIST_ONLY;
 
 /* GTK: GtkTreeViewcolumn: GtkTreeViewColumnSizing */
 constant int GTK_TREE_VIEW_COLUMN_GROW_ONLY;
+endnot;
 constant int GTK_TREE_VIEW_COLUMN_AUTOSIZE;
 constant int GTK_TREE_VIEW_COLUMN_FIXED;
 
 /* GTK: GtkTreeView: GtkTreeViewDropPosition */
+not gtk_beta;
 constant int GTK_TREE_VIEW_DROP_BEFORE;
 constant int GTK_TREE_VIEW_DROP_AFTER;
 constant int GTK_TREE_VIEW_DROP_INTO_OR_BEFORE;
 constant int GTK_TREE_VIEW_DROP_INTO_OR_AFTER;
+endnot;
 
 /* GTK: GtkCellRenderer: GtkCellRendererState */
 constant int GTK_CELL_RENDERER_SELECTED;
 constant int GTK_CELL_RENDERER_PRELIT;
 constant int GTK_CELL_RENDERER_INSENSITIVE;
+not gtk_beta;
 constant int GTK_CELL_RENDERER_SORTED;
+endnot;
 require gtk22;
 constant int GTK_CELL_RENDERER_FOCUSED;
 endrequire;
 
 /* GTK: GtkCellRenderer: GtkCellRendererMode */
+not gtk_beta;
 constant int GTK_CELL_RENDERER_MODE_INERT;
 constant int GTK_CELL_RENDERER_MODE_ACTIVATABLE;
 constant int GTK_CELL_RENDERER_MODE_EDITABLE;
+endnot;
 
 /* GTK: GtkMenuShell: GtkMenuDirectionType */
 constant int GTK_MENU_DIR_PARENT;
@@ -1189,13 +1236,17 @@ constant int GTK_FILE_FILTER_MIME_TYPE;
 endrequire;
 
 /* GTK: GtkSizeGroup:  GtkSizeGroupMode */
+not gtk_beta;
 constant int GTK_SIZE_GROUP_NONE;
 constant int GTK_SIZE_GROUP_HORIZONTAL;
 constant int GTK_SIZE_GROUP_VERTICAL;
 constant int GTK_SIZE_GROUP_BOTH;
+endnot;
 
 /* GTK: GtkObject: GtkObjectFlags; */
+not gtk_beta;
 constant int GTK_IN_DESTRUCTION;
+endnot;
 constant int GTK_FLOATING;
 constant int GTK_RESERVED_1;
 constant int GTK_RESERVED_2;
@@ -1222,6 +1273,7 @@ constant string GTK_STOCK_DIALOG_INFO;
 constant string GTK_STOCK_DIALOG_WARNING;
 constant string GTK_STOCK_DIALOG_ERROR;
 constant string GTK_STOCK_DIALOG_QUESTION;
+not gtk_beta;
 constant string GTK_STOCK_DND;
 constant string GTK_STOCK_DND_MULTIPLE;
 constant string GTK_STOCK_ADD;
@@ -1231,9 +1283,11 @@ constant string GTK_STOCK_CANCEL;
 constant string GTK_STOCK_CDROM;
 constant string GTK_STOCK_CLEAR;
 constant string GTK_STOCK_CLOSE;
+endnot;
 require gtk22;
 constant string GTK_STOCK_COLOR_PICKER;
 endrequire;
+not gtk_beta;
 constant string GTK_STOCK_CONVERT;
 constant string GTK_STOCK_COPY;
 constant string GTK_STOCK_CUT;
@@ -1250,16 +1304,20 @@ constant string GTK_STOCK_GO_BACK;
 constant string GTK_STOCK_GO_DOWN;
 constant string GTK_STOCK_GO_FORWARD;
 constant string GTK_STOCK_GO_UP;
+endnot;
 require gtk24;
 constant string GTK_STOCK_HARDDISK;
 endrequire;
 constant string GTK_STOCK_HELP;
+not gtk_beta;
 constant string GTK_STOCK_HOME;
 constant string GTK_STOCK_INDEX;
+endnot;
 require gtk24;
 constant string GTK_STOCK_INDENT;
 constant string GTK_STOCK_UNINDENT;
 endrequire;
+not gtk_beta;
 constant string GTK_STOCK_ITALIC;
 constant string GTK_STOCK_JUMP_TO;
 constant string GTK_STOCK_JUSTIFY_CENTER;
@@ -1267,24 +1325,32 @@ constant string GTK_STOCK_JUSTIFY_FILL;
 constant string GTK_STOCK_JUSTIFY_LEFT;
 constant string GTK_STOCK_JUSTIFY_RIGHT;
 constant string GTK_STOCK_MISSING_IMAGE;
+endnot;
 require gtk24;
 constant string GTK_STOCK_NETWORK;
 endrequire;
 constant string GTK_STOCK_NEW;
+not gtk_beta;
 constant string GTK_STOCK_NO;
 constant string GTK_STOCK_OK;
+endnot;
 constant string GTK_STOCK_OPEN;
+not gtk_beta;
 constant string GTK_STOCK_PASTE;
 constant string GTK_STOCK_PREFERENCES;
 constant string GTK_STOCK_PRINT;
 constant string GTK_STOCK_PRINT_PREVIEW;
 constant string GTK_STOCK_PROPERTIES;
+endnot;
 constant string GTK_STOCK_QUIT;
+not gtk_beta;
 constant string GTK_STOCK_REDO;
 constant string GTK_STOCK_REFRESH;
 constant string GTK_STOCK_REMOVE;
 constant string GTK_STOCK_REVERT_TO_SAVED;
+endnot;
 constant string GTK_STOCK_SAVE;
+not gtk_beta;
 constant string GTK_STOCK_SAVE_AS;
 constant string GTK_STOCK_SELECT_COLOR;
 constant string GTK_STOCK_SELECT_FONT;
@@ -1301,6 +1367,7 @@ constant string GTK_STOCK_ZOOM_100;
 constant string GTK_STOCK_ZOOM_FIT;
 constant string GTK_STOCK_ZOOM_IN;
 constant string GTK_STOCK_ZOOM_OUT;
+endnot;
 
 require pango;
 
@@ -1310,8 +1377,13 @@ constant int PANGO_TAB_LEFT;
 endrequire;
 
 /* Pango: Text Attributes: PangoAttrType */
+not pango_beta;
 constant int PANGO_ATTR_INVALID;
 constant int PANGO_ATTR_LANGUAGE;
+endnot;
+require pango_beta
+constant int PANGO_ATTR_LANG;
+endrequire;
 constant int PANGO_ATTR_FAMILY;
 constant int PANGO_ATTR_STYLE;
 constant int PANGO_ATTR_WEIGHT;
@@ -1369,14 +1441,17 @@ constant int PANGO_STRETCH_EXTRA_EXPANDED;
 constant int PANGO_STRETCH_ULTRA_EXPANDED;
 
 /* Pango: Fonts: PangoFontMask */
+not pango_beta;
 constant int PANGO_FONT_MASK_FAMILY;
 constant int PANGO_FONT_MASK_STYLE;
 constant int PANGO_FONT_MASK_VARIANT;
 constant int PANGO_FONT_MASK_WEIGHT;
 constant int PANGO_FONT_MASK_STRETCH;
 constant int PANGO_FONT_MASK_SIZE;
+endnot;
 
 /* Pango: Text Attributes: PANGO_SCALE_* */
+not pango_beta;
 constant float PANGO_SCALE_XX_SMALL;
 constant float PANGO_SCALE_X_SMALL;
 constant float PANGO_SCALE_SMALL;
@@ -1384,6 +1459,7 @@ constant float PANGO_SCALE_MEDIUM;
 constant float PANGO_SCALE_LARGE;
 constant float PANGO_SCALE_X_LARGE;
 constant float PANGO_SCALE_XX_LARGE;
+endnot;
 
 /* Pango: Text Attributes: PangoUnderline */
 constant int PANGO_UNDERLINE_NONE;
