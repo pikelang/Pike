@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.2 2005/10/07 16:24:03 grubba Exp $
+|| $Id: acconfig.h,v 1.3 2005/10/07 16:25:40 grubba Exp $
 */
 
 #undef FUNCPROTO
@@ -21,3 +21,4 @@
 #undef HAVE_PANGO14
 #undef HAVE_PANGO12
 #undef HAVE_GNOMECANVAS
+#undef HAVE_G_SIGNAL_CONNECT_DATA_WITH_SIX_ARGS
