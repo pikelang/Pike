@@ -218,7 +218,7 @@ AC_CHECK_FUNCS(gtk_tree_selection_unselect_range)
 AC_MSG_CHECKING([if g_signal_connect_data takes six args])
 AC_CACHE_VAL(pgtk_cv_g_signal_connect_has_six_args, [
   AC_TRY_COMPILE([
-#include <gobject/gsignal.h>
+#include <glib-object.h>
   ],[
     g_signal_connect_data(0,0,0,0,0,0);
   ], [ pgtk_cv_g_signal_connect_has_six_args="yes"
