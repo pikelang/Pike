@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.76 2005/09/01 13:58:43 grubba Exp $
+// $Id: Query.pike,v 1.77 2005/10/08 18:57:16 mast Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -275,6 +275,9 @@ static void async_connected()
 
 static void async_failed()
 {
+#ifdef HTTP_QUERY_DEBUG
+   werror("** calling failed cb %O", request_fail);
+#endif
    if (con) errno=con->errno(); else errno=113; // EHOSTUNREACH
    ok=0;
    if (request_fail) request_fail(this,@extra_args);
@@ -299,6 +302,9 @@ static void async_timeout()
 
 void async_got_host(string server,int port)
 {
+#ifdef HTTP_QUERY_DEBUG
+   werror("async_got_host %s:%d\n", server, port);
+#endif
    if (!server)
    {
       async_failed();
@@ -352,7 +358,8 @@ void async_fetch_read(mixed dummy,string data)
 #endif
    buf+=data;
 
-   if (sizeof(buf)-datapos>=(int)headers["content-length"])
+   if (!zero_type (headers["content-length"]) &&
+       sizeof(buf)-datapos>=(int)headers["content-length"])
    {
       con->set_nonblocking(0,0,0);
       request_ok(@extra_args);
@@ -422,6 +429,9 @@ static mixed async_id;
 // Check if it's time to clean up the async dns object.
 static void clean_async_dns()
 {
+#ifdef HTTP_QUERY_NOISE
+  werror("clean_async_dns\n");
+#endif
   int time_left = last_async_dns + PROTOCOLS_HTTP_DNS_OBJECT_TIMEOUT - time(1);
   if (time_left >= 0) {
     // Not yet.
@@ -436,6 +446,9 @@ static void clean_async_dns()
 void dns_lookup_callback(string name,string ip,function callback,
 			 mixed ...extra)
 {
+#ifdef HTTP_QUERY_DEBUG
+  werror("dns_lookup_callback %s = %s\n", name, ip);
+#endif
    hostname_cache[name]=ip;
    if (functionp(callback))
       callback(ip,@extra);
@@ -657,6 +670,10 @@ this_program sync_request(string server, int port, string query,
 this_program async_request(string server,int port,string query,
 			   void|mapping|string headers,void|string data)
 {
+#ifdef HTTP_QUERY_DEBUG
+  werror("async_request %s:%d\n", server, port);
+#endif
+
    // start open the connection
 
    call_out(async_timeout,timeout);
@@ -737,6 +754,9 @@ string data(int|void max_length)
 		  int i;
 		  if ((i=search(rbuf,"\r\n\r\n"))==-1)
 		  {
+#ifdef HTTP_QUERY_DEBUG
+		    werror ("<- data() read\n");
+#endif
 		     s=con->read(8192,1);
 		     if (!s || s=="") return lbuf;
 		     rbuf+=s;
@@ -757,6 +777,9 @@ string data(int|void max_length)
 	    {
 	       if (strlen(s)<len)
 	       {
+#ifdef HTTP_QUERY_DEBUG
+		 werror ("<- data() read 2\n");
+#endif
 		  string t=con->read(len-strlen(s)+6); // + crlfx3
 		  if (!t || t=="") return lbuf+s;
 		  buf+=t;
@@ -772,6 +795,9 @@ string data(int|void max_length)
 	 }
 	 else
 	 {
+#ifdef HTTP_QUERY_DEBUG
+	   werror ("<- data() read 3\n");
+#endif
 	    s=con->read(8192,1);
 	    if (!s || s=="") return lbuf;
 	    buf+=s;
@@ -801,12 +827,18 @@ string data(int|void max_length)
    {
      if(headers->server == "WebSTAR")
      { // Some servers reporting this name exhibit some really hideous behaviour:
+#ifdef HTTP_QUERY_DEBUG
+       werror ("<- data() read 4\n");
+#endif
        buf += con->read(); // First, they may well lie about the content-length
        if(!discarded_bytes && buf[datapos..datapos+1] == "\r\n")
 	 datapos += 2; // And, as if that wasn't enough! *mumble*
      }
      else
      {
+#ifdef HTTP_QUERY_DEBUG
+       werror ("<- data() read 5\n");
+#endif
 	buf += con->read(l);
      }
    }
@@ -1031,7 +1063,8 @@ static void destroy()
 //!   @[timed_async_fetch()], @[async_request()], @[set_callbacks()]
 void async_fetch(function callback,mixed ... extra)
 {
-   if (sizeof(buf)-datapos>=(int)headers["content-length"])
+   if (!zero_type (headers["content-length"]) &&
+       sizeof(buf)-datapos>=(int)headers["content-length"])
    {
       callback(@extra);
       return;
@@ -1055,6 +1088,14 @@ void async_fetch(function callback,mixed ... extra)
 void timed_async_fetch(function(object, mixed ...:void) ok_callback,
 		       function(object, mixed ...:void) fail_callback,
 		       mixed ... extra) {
+
+  if (!zero_type (headers["content-length"]) &&
+      sizeof(buf)-datapos>=(int)headers["content-length"])
+  {
+    call_out(ok_callback, 0, this_object(), @extra);
+    return;
+  }
+
   if (!con)
   {
     // nothing to do, stupid...
