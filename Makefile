@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.142 2005/07/27 12:26:57 nilsson Exp $
+# $Id: Makefile,v 1.143 2005/10/09 15:26:25 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -256,6 +256,16 @@ export:
 	  echo 'or "make export_nodoc" to export without a documentation'; \
 	  echo 'source.' ; \
 	  echo ; \
+	  exit 1; \
+	fi
+	@if ls bundles/gmp-*.tar.gz > /dev/null 2>&1; then : ; else \
+	  echo ; \
+	  echo 'Missing GMP bundle.'; \
+	  exit 1; \
+	fi
+	@if ls bundles/nettle-*.tar.gz > /dev/null 2>&1; then : ; else \
+	  echo ; \
+	  echo 'Missing Nettle bundle.'; \
 	  exit 1; \
 	fi
 	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
