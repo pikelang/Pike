@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.6 2002/08/05 17:24:41 kiwi Exp $
+# $Id: configure.in,v 1.7 2005/10/11 23:26:01 nilsson Exp $
 #
 AC_INIT(pdflib_glue.c)
 AC_CONFIG_HEADER(pdf_machine.h)
@@ -17,8 +17,9 @@ if test x$with_libpdf = xyes ; then
   if test x$ac_cv_header_pdflib_h = xyes ; then
 
 # PDFlib might need these
-    AC_CHECK_LIB(png, png_read_image, [ LIBS="${LIBS-} -lpng" ])
     AC_CHECK_LIB(z,   deflate,        [ LIBS="${LIBS-} -lz" ])
+    AC_CHECK_LIB(jpeg,jpeg_CreateCompress, [ LIBS=${LIBS-} -ljpeg ])
+    AC_CHECK_LIB(png, png_read_image, [ LIBS="${LIBS-} -lpng" ])
     AC_CHECK_LIB(tiff,TIFFOpen,       [ LIBS="${LIBS-} -ltiff" ])
 
 # now check
