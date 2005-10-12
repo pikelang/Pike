@@ -3,7 +3,7 @@ int main(int argc, array(string) argv)
   object oWordApp;
 
   // Start the word application
-  oWordApp = Roxen.COM.CreateObject("Word.Application");
+  oWordApp = COM.CreateObject("Word.Application");
 
   // Get the Name property from the object
   object name = oWordApp->Name;
@@ -12,7 +12,7 @@ int main(int argc, array(string) argv)
   werror("name: %s\n", oWordApp->Name);
   
   // Get all constants defined in the applications type library
-  mapping consts = Roxen.COM.GetConstants(oWordApp);
+  mapping consts = COM.GetConstants(oWordApp);
 
   // Set the visible property to make Word show up on screen
   oWordApp->Visible = 1;

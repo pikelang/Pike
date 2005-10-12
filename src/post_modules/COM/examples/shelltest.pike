@@ -1,6 +1,6 @@
 int main(int argc, array(string) argv)
 {
-  object sa = Roxen.COM.CreateObject("Shell.Application");
+  object sa = COM.CreateObject("Shell.Application");
 
   object fold = sa->BrowseForFolder(0, "Select folder for Pike shell test", 0);
 
