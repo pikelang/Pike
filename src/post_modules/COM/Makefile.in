@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.2 2005/10/12 13:49:48 grubba Exp $
+# $Id: Makefile.in,v 1.3 2005/10/12 15:45:57 grubba Exp $
 #
 
 @make_variables@
@@ -8,7 +8,6 @@ MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
 OBJS=com.o
 MODULE_LDFLAGS=@LDFLAGS@ @COM_LIBS@
 LINKER_OPTIONS=@LINKER_OPTIONS@
-INSTALL_NAME=Roxen.pmod/COM
 
 DUMMY=module.pmod.in
 
