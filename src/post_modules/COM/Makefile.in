@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.1 2003/09/01 14:05:58 tomas Exp $
+# $Id: Makefile.in,v 1.2 2005/10/12 13:49:48 grubba Exp $
 #
 
 @make_variables@
@@ -16,7 +16,7 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
 
-module.pmod.in: $(SRCDIR)/module.pmod.in.in config.status
-	CONFIG_FILES=module.pmod.in CONFIG_HEADERS="" ./config.status
+# module.pmod.in: $(SRCDIR)/module.pmod.in.in config.status
+# 	CONFIG_FILES=module.pmod.in CONFIG_HEADERS="" ./config.status
 
 @dependencies@

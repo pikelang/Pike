@@ -336,4 +336,4 @@ AC_SUBST(LINKER_OPTIONS)
 AC_SUBST(COM_LIBS)
 AC_SUBST(COM_AVAILABLE)
 
-AC_OUTPUT(Makefile module.pmod.in,echo FOO >stamp-h )
+AC_OUTPUT(Makefile, echo FOO >stamp-h )
