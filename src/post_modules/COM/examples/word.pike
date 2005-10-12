@@ -3,13 +3,13 @@ int main(int argc, array(string) argv)
   object oWordApp;
 
   //oWordApp = Com.GetObject("c:\TEMPtest.doc", "Word.Document");
-  oWordApp = Roxen.COM.CreateObject("Word.Application");
+  oWordApp = COM.CreateObject("Word.Application");
 
   werror(sprintf("name: %O\n", oWordApp->Name));
   werror(sprintf("name: %s\n", oWordApp->Name));
   
   object name = oWordApp->Name;
-  mapping consts = Roxen.COM.GetConstants(oWordApp);
+  mapping consts = COM.GetConstants(oWordApp);
 
   oWordApp->Visible = 1;
   oWordApp->Documents->Add();
