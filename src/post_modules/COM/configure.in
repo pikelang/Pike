@@ -22,7 +22,7 @@ AC_ARG_WITH(com-lib-dir,
 
 if test "x$with_com" = xyes -a "x$enable_binary" != xno; then
 
-  AC_MSG_CHECKING(which operating system we're using)
+  AC_MSG_CHECKING(which operating system we are using)
   AC_CACHE_VAL(pike_cv_com_sysos, [
     pike_cv_com_sysos="`uname | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'`"
     case "$pike_cv_com_sysos" in
@@ -35,7 +35,7 @@ if test "x$with_com" = xyes -a "x$enable_binary" != xno; then
   ])
   AC_MSG_RESULT($pike_cv_com_sysos)
 
-  AC_MSG_CHECKING(which architecture we're using)
+  AC_MSG_CHECKING(which architecture we are using)
   AC_CACHE_VAL(pike_cv_com_arch, [
     if test "x$pike_cv_com_sysos" = xwindows_nt; then
       uname=uname
@@ -91,29 +91,6 @@ if test "x$with_com" = xyes -a "x$enable_binary" != xno; then
   AC_CACHE_VAL(pike_cv_com_com_home, [[
     if test "x$COM_HOME" = x; then
       pike_cv_com_com_home=no
-
-#       # balance brackets: [ 
-#       #
-#       # I know this is bloody ugly, bug in modern (>2.13) 
-#       # autoconf's changequote doesn't work (and this is 
-#       # the only thing that breaks so far) /Mirar
-
-#       java_home_guess="`java -verbose 2>&1 | sed -e 's:^\[[^]/]*\(/.*\)/[^/]*\.jar[] ].*$:\1:' -e t -e d | sed -e 's:/[Cc]lasses$::' -e 's:/lib$::' -e 1q`"
-#       for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/java/jdk*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* "$java_home_guess" "$pike_java_user_lib_directory"/..; do
-#         if test -d $tmp_java_home/.; then
-#           if "$LS" "$tmp_java_home/lib/$pike_cv_java_arch/$pike_cv_java_threads_type"/libjvm* >/dev/null 2>&1 || \
-# 	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/libjvm* >/dev/null 2>&1 || \
-# 	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/classic/libjvm* >/dev/null 2>&1 || \
-# 	    "$LS" "$tmp_java_home/bin"/classic/libjvm* >/dev/null 2>&1 || \
-# 	    "$LS" "$tmp_java_home/Libraries"/libjvm* >/dev/null 2>&1; then
-# 	      pike_cv_java_java_home="$tmp_java_home"
-# 	  else
-# 	    :
-# 	  fi
-#         else
-#           :
-#         fi
-#       done
     else
       pike_cv_com_com_home="$COM_HOME"
     fi
@@ -217,74 +194,6 @@ if test "x$with_com" = xyes -a "x$enable_binary" != xno; then
     :
   fi
 
-#   if test "$pike_cv_com" = yes; then
-#     AC_MSG_CHECKING(if the JVM really works)
-#     AC_CACHE_VAL(pike_cv_java_working, [
-#       OLD_CPPFLAGS="$CPPFLAGS"
-#       CPPFLAGS="-I$srcdir $OLD_CPPFLAGS"
-#       AC_TRY_RUN([#ifdef HAVE_JNI_H
-# #include <jni.h>
-# #endif
-# #ifdef HAVE_SETJMP_H
-# #include <setjmp.h>
-# #endif
-# #include <stdio.h>
-# #ifdef __NT__
-# #include <windows.h>
-# #include "ntdl.c"
-# #endif
-#         int main(int argc, char *argv[])
-#         {
-#           JavaVM *jvm;
-#           JNIEnv *env;
-#           JavaVMInitArgs vm_args;
-#           JavaVMOption vm_options[2];
-# 	  jint res;
-# 	  jmp_buf jbuf;
-# #ifndef __NT__
-# 	  alarm(50);
-# #endif
-# #ifdef __NT__
-# 	  switch(open_nt_dll()) {
-# 	    case -1:
-# 	      fprintf(stderr, "Can't load DLL\\n");
-#               exit(1);
-# 	    case -2:
-#               fprintf(stderr, "Can't GetProcAddress %s\\n", "JNI_CreateJavaVM");
-# 	    default:
-#               exit(1);
-# 	    case 0:
-# 	      ;
-# 	  }
-# #endif
-#           vm_args.version = 0x00010002;
-#           vm_args.nOptions = 0;
-#           vm_args.options = vm_options;
-#           vm_args.ignoreUnrecognized = JNI_TRUE;
-# #ifndef __NT__
-#           vm_options[0].optionString = "-Djava.library.path=$JAVA_LIBPATH";
-#           vm_options[0].extraInfo = NULL;
-#           vm_args.nOptions++;
-# #endif
-#           if((res=JNI_CreateJavaVM(&jvm, (void**)&env, &vm_args))) {
-# 	    fprintf(stderr, "JNI_CreateJavaVM failed code %d\\n", (int)res);
-#             exit(1);
-# 	  }
-# 	  if(!setjmp(jbuf))
-# 	    longjmp(jbuf,1);
-# 	  return 0;
-#         };
-#       ], [pike_cv_java_working=yes], [pike_cv_java_working=no])
-#       CPPFLAGS="$OLD_CPPFLAGS"
-#     ])
-#     AC_MSG_RESULT($pike_cv_java_working)
-#     if test "$pike_cv_java_working" = no; then
-#       pike_cv_java=no;
-#     fi
-#   else
-#     :
-#   fi
-
   if test "x$pike_cv_com" = xno; then
     LIBS="$OLD_LIBS"
     CPPFLAGS="$OLD_CPPFLAGS"
@@ -298,23 +207,6 @@ if test "x$with_com" = xyes -a "x$enable_binary" != xno; then
       AC_DEFINE_UNQUOTED(COM_HOME, "${pike_cv_com_com_home}")
     fi
   fi
-
-#   AC_MSG_CHECKING(for known machine language)
-#   AC_CACHE_VAL(pike_cv_java_cpu, [
-#     case $pike_cv_java_arch  in
-#       sparc) pike_cv_java_cpu=sparc;;
-#       i386|x86) pike_cv_java_cpu=x86;;
-#       powerpc) pike_cv_java_cpu=ppc;;
-#       *) pike_cv_java_cpu=no;;
-#     esac
-#   ])
-#   AC_MSG_RESULT($pike_cv_java_cpu)
-
-#   case $pike_cv_java_cpu in
-#     sparc) AC_DEFINE(HAVE_SPARC_CPU);;
-#     x86) AC_DEFINE(HAVE_X86_CPU);;
-#     ppc) AC_DEFINE(HAVE_PPC_CPU);;
-#   esac
 
   if test "x$COM_LIBPATH" = x; then :; else
     AC_DEFINE_UNQUOTED(COM_LIBPATH, "${COM_LIBPATH}")
