@@ -1,5 +1,5 @@
 /*
- * $Id: com.c,v 1.1 2003/09/01 14:05:58 tomas Exp $
+ * $Id: com.c,v 1.2 2005/10/12 13:41:32 grubba Exp $
  *
  * Pike interface to Common Object Model (COM)
  *
@@ -18,7 +18,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: com.c,v 1.1 2003/09/01 14:05:58 tomas Exp $");
+RCSID("$Id: com.c,v 1.2 2005/10/12 13:41:32 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -85,9 +85,6 @@ struct cval_storage {
 #define TYPEINFO_VAR_CONST       0x0400
 #define TYPEINFO_VAR_DISPATCH    0x0800
 
-
-/* must be included last */
-#include "module_magic.h"
 
 /*
 TODO:
@@ -1917,11 +1914,9 @@ static void f_com__sprintf(INT32 args)
   push_int(0);
 }
 
-#else
-#include "module_magic.h"
 #endif /* HAVE_COM */
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
 #ifdef HAVE_COM
   struct svalue prog;
@@ -2041,7 +2036,7 @@ void pike_module_init(void)
 #endif /* HAVE_COM */
 }
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
 #ifdef HAVE_COM
 #ifdef USE_COM_PROG
