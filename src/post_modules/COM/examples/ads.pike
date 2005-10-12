@@ -5,7 +5,7 @@ int main(int argc, array(string) argv)
   object propList;
 
   //oWordApp = Com.GetObject("c:\TEMPtest.doc", "Word.Document");
-  propList = Roxen.COM.GetObject("LDAP://ldap.roxen.com/DC=roxen,DC=com");
+  propList = COM.GetObject("LDAP://ldap.roxen.com/DC=roxen,DC=com");
 
   propList->GetInfo();
   int count = propList->PropertyCount->_value;
@@ -19,12 +19,12 @@ int main(int argc, array(string) argv)
 //     werror("%O", v->CaseIgnoreString->_value);
 //   }
 
-  werror("Consts: %O\n",Roxen.COM.GetConstants(propList));
+  werror("Consts: %O\n", COM.GetConstants(propList));
 
   for (int i=0; i<count; i++)
   {
     object propEntry = propList->Item(i);
-    werror("Consts: %O\n",Roxen.COM.GetConstants(propEntry));
+    werror("Consts: %O\n", COM.GetConstants(propEntry));
     werror("Name: %O, ADsType: %O\n", propEntry->Name->_value,
            propEntry->ADsType->_value);
 
@@ -33,7 +33,7 @@ int main(int argc, array(string) argv)
     foreach (a || ({ }), object v)
     {
       werror("%d: %s\n", v->ADsType, v->CaseIgnoreString);
-      werror("Consts: %O\n",Roxen.COM.GetConstants(v));
+      werror("Consts: %O\n", COM.GetConstants(v));
     }
   }
 }
