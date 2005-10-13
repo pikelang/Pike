@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.358 2005/05/06 00:41:54 nilsson Exp $
+|| $Id: language.yacc,v 1.359 2005/10/13 14:47:33 mast Exp $
 */
 
 %pure_parser
@@ -194,9 +194,9 @@ static void __yy_memcpy(char *to, YY_FROM_CONST char *from,
 #include <stdio.h>
 int yylex(YYSTYPE *yylval);
 /* Bison is stupid, and tries to optimize for space... */
-#ifdef YYBISON
-#define short int
-#endif /* YYBISON */
+#ifdef BISON_SHORT_EXPANSION
+#define short BISON_SHORT_EXPANSION
+#endif
 
 %}
 
