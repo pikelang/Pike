@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.55 2005/10/13 01:00:37 nilsson Exp $
+|| $Id: iterators.cmod,v 1.56 2005/10/13 01:03:02 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.55 2005/10/13 01:00:37 nilsson Exp $");
+RCSID("$Id: iterators.cmod,v 1.56 2005/10/13 01:03:02 nilsson Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1025,7 +1025,7 @@ PIKECLASS file_line_iterator
 	Pike_error("iterators cannot be reused.\n");
       }
       if (!feed) {
-	Pike_error("iterator create arguement must be function(:string).\n");
+	Pike_error("iterator create argument must be function(:string).\n");
       }
       assign_svalue( &THIS->feed, feed );
       apply_svalue( &THIS->feed, 0 );
