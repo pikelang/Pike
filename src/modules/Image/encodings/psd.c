@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: psd.c,v 1.36 2003/09/24 08:47:35 jonasw Exp $
+|| $Id: psd.c,v 1.37 2005/10/13 15:50:15 jonasw Exp $
 */
 
 #include "global.h"
-RCSID("$Id: psd.c,v 1.36 2003/09/24 08:47:35 jonasw Exp $");
+RCSID("$Id: psd.c,v 1.37 2005/10/13 15:50:15 jonasw Exp $");
 
 #include "image_machine.h"
 
@@ -579,7 +579,7 @@ void push_psd_image( struct psd_image *i )
   ref_push_string( s_height ); push_int( i->rows );
   ref_push_string( s_width );  push_int( i->columns );
   ref_push_string( s_compression ); push_int( i->compression );
-  ref_push_string( s_depth ); push_int( i->compression );
+  ref_push_string( s_depth ); push_int( i->depth );
   ref_push_string( s_mode ); push_int( i->mode );
   ref_push_string( s_color_data ); push_buffer( &i->color_data );
 /*   ref_push_string( s_resource_data ); push_buffer( &i->resource_data ); */
