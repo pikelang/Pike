@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.689 2005/08/29 10:45:08 jonasw Exp $")
+AC_REVISION("$Id: configure.in,v 1.690 2005/10/13 14:56:24 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2226,6 +2226,74 @@ if test "x$YACC" = "xNone" ; then
 else
   AC_MSG_RESULT($YACC)
 fi
+
+#############################################################################
+
+AC_MSG_CHECKING(how bison uses short)
+AC_CACHE_VAL(pike_cv_short_use,
+[
+  pike_cv_short_use=unknown
+  for short_use in CT_SHORT CT_SHORT_INT; do
+    cat >conftest.y <<EOF
+%{
+#define $short_use
+#ifdef CT_SHORT
+#define short int
+#else
+#define short
+#endif
+void parse();
+void yyerror(char *);
+%}
+%%
+foo: 'f' x y ;
+x: 'o' ;
+y: 'o' ;
+%%
+int context = 0;
+
+int yylex(YYSTYPE *yylval)
+{
+  switch(context++)
+  {
+    case 0: return 'f';
+    case 1: return 'o';
+    case 2: return 'o';
+    default: return 0;
+  }
+}
+
+int errors=0;
+void yyerror(char *fel) { errors++; }
+EOF
+    if $YACC -d conftest.y 1>&AC_FD_CC 2>&AC_FD_CC; then
+      AC_TRY_COMPILE([
+#include "y.tab.c"
+],[
+yyparse();
+exit(errors);
+],ok=yes,ok=no)
+      if test "$ok" = "yes"; then
+	pike_cv_short_use=$short_use
+	break
+      fi
+    fi
+  done
+])
+
+case "$pike_cv_short_use" in
+  CT_SHORT)
+    AC_MSG_RESULT(short)
+    AC_DEFINE(BISON_SHORT_EXPANSION,int)
+    ;;
+  CT_SHORT_INT)
+    AC_MSG_RESULT(short int)
+    AC_DEFINE(BISON_SHORT_EXPANSION,[])
+    ;;
+  *)
+    AC_MSG_RESULT(unknown)
+    ;;
+esac
 
 #############################################################################
 

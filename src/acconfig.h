@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.118 2005/05/30 13:23:53 grubba Exp $
+|| $Id: acconfig.h,v 1.119 2005/10/13 14:54:25 mast Exp $
 */
 
 #ifndef MACHINE_H
@@ -73,6 +73,10 @@
 
 /* Enable internal profiling */
 #undef INTERNAL_PROFILING
+
+/* If possible, the expansion for a "#define short" to avoid that bison
+ * uses short everywhere internally. */
+#undef BISON_SHORT_EXPANSION
 
 /* The following USE_* are used by smartlink */
 /* Define this if your ld sets the run path with -rpath */
