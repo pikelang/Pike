@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: psd.c,v 1.43 2005/01/23 13:30:04 nilsson Exp $
+|| $Id: psd.c,v 1.44 2005/10/13 16:48:41 anders Exp $
 */
 
 #include "global.h"
@@ -170,15 +170,15 @@ struct layer
 {
   struct layer *next;
   struct layer *prev;
-  unsigned int top;
-  unsigned int left;
-  unsigned int right;
-  unsigned int bottom;
+  int top;
+  int left;
+  int right;
+  int bottom;
 
-  unsigned int mask_top;
-  unsigned int mask_left;
-  unsigned int mask_right;
-  unsigned int mask_bottom;
+  int mask_top;
+  int mask_left;
+  int mask_right;
+  int mask_bottom;
   unsigned int mask_default_color;
   unsigned int mask_flags;
 
