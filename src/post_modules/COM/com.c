@@ -1,5 +1,5 @@
 /*
- * $Id: com.c,v 1.3 2005/10/13 09:08:30 nilsson Exp $
+ * $Id: com.c,v 1.4 2005/10/13 19:05:27 grubba Exp $
  *
  * Pike interface to Common Object Model (COM)
  *
@@ -128,32 +128,31 @@ static void stack_swap2(int args)
 static void com_throw_error(HRESULT hr)
 {
   LPVOID lpMsgBuf;
-  char buf[1024];
+  ONERROR tmp;
   FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | 
                 FORMAT_MESSAGE_FROM_SYSTEM | 
                 FORMAT_MESSAGE_IGNORE_INSERTS, NULL, hr,
                 MAKELANGID(LANG_NEUTRAL, 
                            SUBLANG_DEFAULT),(LPTSTR) &lpMsgBuf,
                 0, NULL);
-  _snprintf(buf, sizeof(buf), "%s", lpMsgBuf);
-  LocalFree( lpMsgBuf );
-  Pike_error("Com Error: %s\n", buf);
+  SET_ONERROR(tmp, LocalFree, lpMsgBuf);
+  Pike_error("Com Error: %s\n", lpMsgBuf);
+  /* NOT_REACHED */
+  ACC_AND_UNSET_ONERROR(tmp);
 }
 
 static void com_throw_error2(HRESULT hr, EXCEPINFO excep)
 {
-    if (hr==DISP_E_EXCEPTION && excep.bstrDescription)
-    {
-        char errDesc[512];
-        char errMsg[512];
-        wcstombs(errDesc, excep.bstrDescription, 512);
-        _snprintf(errMsg, sizeof(errMsg), "Run-time error %d:\n\n %s",
-		  excep.scode & 0x0000FFFF,  //Lower 16-bits of SCODE
-		  errDesc);                  //Text error description
-        Pike_error("Server Error:%s\n", errMsg);
-    }
-    else
-      com_throw_error(hr);
+  if (hr==DISP_E_EXCEPTION && excep.bstrDescription)
+  {
+    char errDesc[512];
+    wcstombs(errDesc, excep.bstrDescription, 512);
+    Pike_error("Server Error: Run-time error %d:\n\n %s\n",
+	       excep.scode & 0x0000FFFF,  //Lower 16-bits of SCODE
+	       errDesc);                  //Text error description
+  }
+  else
+    com_throw_error(hr);
 }
 
 static void set_variant_arg(VARIANT *v, struct svalue *sv)
@@ -831,6 +830,7 @@ static void f_cval__sprintf(INT32 args)
 /*   INT_TYPE base = 0, mask_shift = 0; */
 /*   struct pike_string *s = 0; */
   INT_TYPE flag_left, method;
+  struct string_builder s;
   
 /*   get_all_args("_sprintf",args,"%i",&x); */
   if (args < 1 || Pike_sp[-args].type != PIKE_T_INT)
@@ -865,16 +865,10 @@ static void f_cval__sprintf(INT32 args)
   switch (method = Pike_sp[-args].u.integer)
   {
     case 'O':
-      n=0;
-      n++;push_constant_text("Com.cval(\"");
-      n++;ref_push_string(cval->method);
-      n++;push_constant_text("\" ");
-      n++;push_int(cval->dispid);
-      n++;push_constant_text(" ");
-      sprintf(buf, "%x", cval->pIDispatch);
-      n++;push_text(buf);
-      n++;push_constant_text(")");
-      f_add(n);
+      init_string_builder(&s, 0);
+      string_builder_vsprintf(&s, "Com.cval(\"%s\" %d %x)",
+			      cval->method, cval->dispind, cval->pIDispatch);
+      push_string(finish_string_builder(&s));
       stack_pop_n_elems_keep_top(args);
       return;
 
@@ -1213,12 +1207,10 @@ static void f_cobj__sprintf(INT32 args)
   switch (Pike_sp[-args].u.integer)
   {
     case 'O':
-      n=0;
-      n++;push_constant_text("Com.cobj(");
-      sprintf(buf, "%x", cobj->pIDispatch);
-      n++;push_text(buf);
-      n++;push_constant_text(")");
-      f_add(n);
+      init_string_builder(&s, 0);
+      string_builder_vsprintf(&s, "Com.cobj(%x)",
+			      cobj->pIDispatch);
+      push_string(finish_string_builder(&s));
       stack_pop_n_elems_keep_top(args);
       return;
   }
