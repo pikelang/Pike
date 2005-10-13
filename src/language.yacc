@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.338 2005/02/08 16:37:46 grubba Exp $
+|| $Id: language.yacc,v 1.339 2005/10/13 14:48:08 mast Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.338 2005/02/08 16:37:46 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.339 2005/10/13 14:48:08 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -193,9 +193,9 @@ static void __yy_memcpy(char *to, YY_FROM_CONST char *from,
 #include <stdio.h>
 int yylex(YYSTYPE *yylval);
 /* Bison is stupid, and tries to optimize for space... */
-#ifdef YYBISON
-#define short int
-#endif /* YYBISON */
+#ifdef BISON_SHORT_EXPANSION
+#define short BISON_SHORT_EXPANSION
+#endif
 
 %}
 
