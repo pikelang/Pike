@@ -49,22 +49,36 @@ pgtk_has_atk18=noatk18
 AC_SUBST(pgtk_has_gnomecanvas)
 pgtk_has_gnomecanvas=nognomecanvas
 
+WITH_GTK=0
 if test "$PKG_CONFIG" = "no" ; then
   echo "*** pkg-config must be in your path!!!"
-  WITH_GTK=0
 else
-  WITH_GTK=1
   gtk_test_libs="gtk+-2.0 libgnome-2.0 libglade-2.0 libgnomeui-2.0 libpanelapplet-2.0"
   gtk_final_libs=""
   AC_MSG_CHECKING([for gtk+-2.0])
   if ${ac_tool_prefix}pkg-config gtk+-2.0 2>/dev/null ; then
     AC_MSG_RESULT(yes)
-    PIKE_FEATURE_OK(GTK2)
-    pgtk_has_pango=pango
-    pgtk_has_atk=atk
-    AC_DEFINE(HAVE_PANGO)
-    AC_DEFINE(HAVE_ATK)
-    gtk_final_libs="gtk+-2.0"
+    PIKE_FEATURE_NODEP(GTK2)
+    OLD_CFLAGS="$CFLAGS"
+    OLD_LIBS="$LIBS"
+    LIBS="`${ac_tool_prefix}pkg-config --libs gtk+-2.0` $LIBS"
+    CFLAGS="`${ac_tool_prefix}pkg-config --cflags gtk+-2.0` $CFLAGS"
+    AC_CHECK_FUNCS(gtk_init)
+    LIBS="$OLD_LIBS"
+    CFLAGS="$OLD_CFLAGS"
+    if test "x$ac_cv_func_gtk_init" = "xyes"; then
+      PIKE_FEATURE_OK(GTK2)
+      pgtk_has_pango=pango
+      pgtk_has_atk=atk
+      AC_DEFINE(HAVE_PANGO)
+      AC_DEFINE(HAVE_ATK)
+      gtk_final_libs="gtk+-2.0"
+      WITH_GTK=1
+    fi
+  else
+    AC_MSG_RESULT(no);
+  fi
+  if test "x$WITH_GTK" = "x1"; then
     AC_MSG_CHECKING([for gtk+ version])
     gtkvers=`${ac_tool_prefix}pkg-config --modversion gtk+-2.0 2>/dev/null`
     OIFS="$IFS"
@@ -201,9 +215,6 @@ else
     GTK_LIBS="`${ac_tool_prefix}pkg-config --libs ${gtk_final_libs} | sed -e 's/ -mt / /g'`"
 
     AC_DEFINE(PGTK_AUTO_UTF8)
-  else
-    WITH_GTK=0
-    AC_MSG_RESULT(no);
   fi
 fi
 
