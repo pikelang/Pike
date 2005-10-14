@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.359 2005/10/13 14:47:33 mast Exp $
+|| $Id: language.yacc,v 1.360 2005/10/14 08:43:04 grubba Exp $
 */
 
 %pure_parser
@@ -194,9 +194,9 @@ static void __yy_memcpy(char *to, YY_FROM_CONST char *from,
 #include <stdio.h>
 int yylex(YYSTYPE *yylval);
 /* Bison is stupid, and tries to optimize for space... */
-#ifdef BISON_SHORT_EXPANSION
-#define short BISON_SHORT_EXPANSION
-#endif
+#ifdef YYBISON
+#define short int
+#endif /* YYBISON */
 
 %}
 
@@ -730,7 +730,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
     int e;
     /* construct the function type */
     push_finished_type(Pike_compiler->compiler_frame->current_type);
-    if ($3 && (Pike_compiler->compiler_pass == 2)) {
+    if ($3 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while(--$3>=0) push_type(T_ARRAY);
@@ -1211,7 +1211,7 @@ soft_cast: open_bracket_with_line_info type ']'
 full_type: type4
   | full_type '*'
   {
-    if (Pike_compiler->compiler_pass == 2) {
+    if (Pike_compiler->compiler_pass == 2 && !TEST_COMPAT (0, 6)) {
        yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     push_type(T_ARRAY);
@@ -1222,7 +1222,7 @@ type6: type | identifier_type ;
   
 type: type '*'
   {
-    if (Pike_compiler->compiler_pass == 2) {
+    if (Pike_compiler->compiler_pass == 2 && !TEST_COMPAT (0, 6)) {
        yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     push_type(T_ARRAY);
@@ -1232,7 +1232,7 @@ type: type '*'
 
 type7: type7 '*'
   {
-    if (Pike_compiler->compiler_pass == 2) {
+    if (Pike_compiler->compiler_pass == 2 && !TEST_COMPAT (0, 6)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     push_type(T_ARRAY);
@@ -1586,7 +1586,7 @@ new_name: optional_stars TOK_IDENTIFIER
   {
     struct pike_type *type;
     push_finished_type(Pike_compiler->compiler_frame->current_type);
-    if ($1 && (Pike_compiler->compiler_pass == 2)) {
+    if ($1 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
@@ -1601,7 +1601,7 @@ new_name: optional_stars TOK_IDENTIFIER
   {
     struct pike_type *type;
     push_finished_type(Pike_compiler->compiler_frame->current_type);
-    if ($1 && (Pike_compiler->compiler_pass == 2)) {
+    if ($1 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
@@ -1642,7 +1642,7 @@ new_local_name: optional_stars TOK_IDENTIFIER
   {
     int id;
     push_finished_type($<n>0->u.sval.u.type);
-    if ($1 && (Pike_compiler->compiler_pass == 2)) {
+    if ($1 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
@@ -1658,7 +1658,7 @@ new_local_name: optional_stars TOK_IDENTIFIER
   {
     int id;
     push_finished_type($<n>0->u.sval.u.type);
-    if ($1 && (Pike_compiler->compiler_pass == 2)) {
+    if ($1 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
@@ -2160,7 +2160,7 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
     
     push_finished_type($<n>0->u.sval.u.type);
-    if ($1 && (Pike_compiler->compiler_pass == 2)) {
+    if ($1 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
@@ -2295,7 +2295,7 @@ create_arg: modifiers type_or_error optional_stars optional_dot_dot_dot TOK_IDEN
     }
 
     push_finished_type(Pike_compiler->compiler_frame->current_type);
-    if ($3 && (Pike_compiler->compiler_pass == 2)) {
+    if ($3 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($3--) push_type(T_ARRAY);
