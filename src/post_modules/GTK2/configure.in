@@ -49,35 +49,50 @@ pgtk_has_atk18=noatk18
 AC_SUBST(pgtk_has_gnomecanvas)
 pgtk_has_gnomecanvas=nognomecanvas
 
+# lib, symbol, ok, fail, feature
+AC_DEFUN([AC_CHECK_PKG],
+[
+  AC_MSG_CHECKING([for $1])
+  if ${ac_tool_prefix}pkg-config $1 2>/dev/null; then
+    AC_MSG_RESULT(yes)
+
+    ifelse([$5],,,[PIKE_FEATURE_NODEP([$5])])dnl
+
+    # Note: ORBit-2.0.pc on Solaris 10/x86 adds -mt to cflags,
+    #       which gcc doesn't like...
+    #       The manual for cc says that -mt is -D_REENTRANT plus -lthread;
+    #       both of which should already be present.
+    #   /grubba 2005-10-05
+    OLD_CFLAGS="$CFLAGS"
+    OLD_LIBS="$LIBS"
+    LIBS="`${ac_tool_prefix}pkg-config --libs $gtk_final_libs $1 | sed -e 's/ -mt / /g'` $LIBS"
+    CFLAGS="`${ac_tool_prefix}pkg-config --cflags $gtk_final_libs $1 | sed -e 's/ -mt / /g'` $CFLAGS"
+    AC_CHECK_FUNCS($2)
+    LIBS="$OLD_LIBS"
+    CFLAGS="$OLD_CFLAGS"
+    if test "x$ac_cv_func_$2" = "xyes"; then
+      gtk_final_libs="$gtk_final_libs $1"
+      ifelse([$3],,ifelse([$5],,,[PIKE_FEATURE_OK([$5])]),[$3])dnl
+    else
+      echo "Disabled use of $1."
+      ifelse([$4],,,[$4])dnl
+    fi
+  else
+    AC_MSG_RESULT(no)
+    ifelse([$4],,,[$4])dnl
+  fi
+])
+
 WITH_GTK=0
 if test "$PKG_CONFIG" = "no" ; then
   echo "*** pkg-config must be in your path!!!"
 else
   gtk_test_libs="gtk+-2.0 libgnome-2.0 libglade-2.0 libgnomeui-2.0 libpanelapplet-2.0"
   gtk_final_libs=""
-  AC_MSG_CHECKING([for gtk+-2.0])
-  if ${ac_tool_prefix}pkg-config gtk+-2.0 2>/dev/null ; then
-    AC_MSG_RESULT(yes)
-    PIKE_FEATURE_NODEP(GTK2)
-    OLD_CFLAGS="$CFLAGS"
-    OLD_LIBS="$LIBS"
-    LIBS="`${ac_tool_prefix}pkg-config --libs gtk+-2.0` $LIBS"
-    CFLAGS="`${ac_tool_prefix}pkg-config --cflags gtk+-2.0` $CFLAGS"
-    AC_CHECK_FUNCS(gtk_init)
-    LIBS="$OLD_LIBS"
-    CFLAGS="$OLD_CFLAGS"
-    if test "x$ac_cv_func_gtk_init" = "xyes"; then
-      PIKE_FEATURE_OK(GTK2)
-      pgtk_has_pango=pango
-      pgtk_has_atk=atk
-      AC_DEFINE(HAVE_PANGO)
-      AC_DEFINE(HAVE_ATK)
-      gtk_final_libs="gtk+-2.0"
-      WITH_GTK=1
-    fi
-  else
-    AC_MSG_RESULT(no);
-  fi
+  AC_CHECK_PKG(gtk+-2.0, gtk_init, [
+    PIKE_FEATURE_OK(GTK2)
+    WITH_GTK=1
+  ],,GTK2)
   if test "x$WITH_GTK" = "x1"; then
     AC_MSG_CHECKING([for gtk+ version])
     gtkvers=`${ac_tool_prefix}pkg-config --modversion gtk+-2.0 2>/dev/null`
@@ -107,11 +122,10 @@ else
       fi
     fi
     AC_MSG_RESULT($gtkvers)
-    AC_MSG_CHECKING([for pango])
-    if ${ac_tool_prefix}pkg-config pango 2>/dev/null ; then
-      AC_MSG_RESULT(yes)
+    AC_CHECK_PKG(pango, pango_context_new, [
       pgtk_has_pango=pango
-      gtk_final_libs="$gtk_final_libs pango"
+      AC_DEFINE(HAVE_PANGO)
+
       AC_MSG_CHECKING([for pango version])
       pangovers=`${ac_tool_prefix}pkg-config --modversion pango 2>/dev/null`
       OIFS="$IFS"
@@ -140,12 +154,11 @@ else
 	fi
       fi
       AC_MSG_RESULT($pangovers)
-    fi
-    AC_MSG_CHECKING([for atk])
-    if ${ac_tool_prefix}pkg-config atk 2>/dev/null ; then
-      AC_MSG_RESULT(yes)
+    ])
+    AC_CHECK_PKG(atk, atk_relation_new, [
       pgtk_has_atk=atk
-      gtk_final_libs="$gtk_final_libs atk"
+      AC_DEFINE(HAVE_ATK)
+
       AC_MSG_CHECKING([for atk version])
       atkvers=`${ac_tool_prefix}pkg-config --modversion atk 2>/dev/null`
       OIFS="$IFS"
@@ -160,52 +173,20 @@ else
 	AC_DEFINE(HAVE_ATK18)
       fi
       AC_MSG_RESULT($atkvers)
-    fi
-    AC_MSG_CHECKING([for libgnome-2.0])
-    if ${ac_tool_prefix}pkg-config libgnome-2.0 2>/dev/null ; then
-      AC_MSG_RESULT(yes);
-      dnl PIKE_FEATURE_OK(Gnome)
+    ])
+    AC_CHECK_PKG(libgnome-2.0, gnome_program_init, [
       AC_DEFINE(HAVE_GNOME)
       pgtk_has_gnome=gnome
-      gtk_final_libs="$gtk_final_libs libgnome-2.0"
-    else
-      AC_MSG_RESULT(no);
-    fi
-    AC_MSG_CHECKING([for libglade-2.0])
-    if ${ac_tool_prefix}pkg-config libglade-2.0 2>/dev/null ; then
-      dnl PIKE_FEATURE_OK(GTK.GladeXML)
-      AC_MSG_RESULT(yes);
+    ])
+    AC_CHECK_PKG(libglade-2.0, glade_init, [
       pgtk_has_libglade=libglade
-      gtk_final_libs="$gtk_final_libs libglade-2.0"
-    else
-      AC_MSG_RESULT(no);
-    fi
-    AC_MSG_CHECKING([for libgnomeui-2.0])
-    if ${ac_tool_prefix}pkg-config libgnomeui-2.0 2>/dev/null ; then
-      dnl PIKE_FEATURE_OK(Gnome.UI)
-      AC_MSG_RESULT(yes);
-      gtk_final_libs="$gtk_final_libs libgnomeui-2.0"
-    else
-      AC_MSG_RESULT(no);
-    fi
-    AC_MSG_CHECKING([for libpanelapplet-2.0])
-    if ${ac_tool_prefix}pkg-config libpanelapplet-2.0 2>/dev/null ; then
-      dnl PIKE_FEATURE_OK(Gnome.Applets)
-      AC_MSG_RESULT(yes);
-      gtk_final_libs="$gtk_final_libs libpanelapplet-2.0"
-    else
-      AC_MSG_RESULT(no);
-    fi
-    AC_MSG_CHECKING([for libgnomecanvas-2.0])
-    if ${ac_tool_prefix}pkg-config libgnomecanvas-2.0 2>/dev/null ; then
-      dnl PIKE_FEATURE_OK(Gnome.Canvas)
-      AC_MSG_RESULT(yes);
+    ])
+    AC_CHECK_PKG(libgnomeui-2.0, gnome_window_icon_init)
+    AC_CHECK_PKG(libpanelapplet-2.0, panel_applet_factory_main)
+    AC_CHECK_PKG(libgnomecanvas-2.0, gnome_canvas_new, [
       AC_DEFINE(HAVE_GNOMECANVAS)
       pgtk_has_gnomecanvas=gnomecanvas
-      gtk_final_libs="$gtk_final_libs libgnomecanvas-2.0"
-    else
-      AC_MSG_RESULT(no);
-    fi
+    ])
     # Note: ORBit-2.0.pc on Solaris 10/x86 adds -mt to cflags,
     #       which gcc doesn't like...
     #       The manual for cc says that -mt is -D_REENTRANT plus -lthread;
