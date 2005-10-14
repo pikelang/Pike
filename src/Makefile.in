@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.346 2004/12/01 20:09:01 grubba Exp $
+# $Id: Makefile.in,v 1.347 2005/10/14 08:56:15 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -844,7 +844,10 @@ $(SRCDIR)/language.c $(SRCDIR)/language.h_src: $(SRCDIR)/language.yacc
 	( cd $(SRCDIR) && \
 	 $(YACC) $(YFLAGS) $(SRCDIR)/language.yacc && \
 	 sed -e 's/YY_COUNT_TYPE/@YY_COUNT_TYPE@/' \
-	     -e 's/YY_FROM_CONST/@YY_FROM_CONST@/' <y.tab.c >language.c && \
+	     -e 's/YY_FROM_CONST/@YY_FROM_CONST@/' \
+	    -e 's/short[ 	]*int[ 	]/\/* short *\/ int /g' \
+	    -e 's/(short[ 	]*int)/(\/* short *\/ int)/g' \
+	    <y.tab.c >language.c && \
 	 mv y.tab.h language.h_src && rm y.tab.c)
 
 $(SRCDIR)/interpret_functions_fixed.h: $(SRCDIR)/interpret_functions.h precompile.sh-stamp
