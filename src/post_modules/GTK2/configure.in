@@ -65,8 +65,8 @@ AC_DEFUN([AC_CHECK_PKG],
     #   /grubba 2005-10-05
     OLD_CFLAGS="$CFLAGS"
     OLD_LIBS="$LIBS"
-    LIBS="`${ac_tool_prefix}pkg-config --libs $gtk_final_libs $1 | sed -e 's/ -mt / /g'` $LIBS"
-    CFLAGS="`${ac_tool_prefix}pkg-config --cflags $gtk_final_libs $1 | sed -e 's/ -mt / /g'` $CFLAGS"
+    LIBS="`${ac_tool_prefix}pkg-config --libs $gtk_final_libs $1 | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'` $LIBS"
+    CFLAGS="`${ac_tool_prefix}pkg-config --cflags $gtk_final_libs $1 | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'` $CFLAGS"
     AC_CHECK_FUNCS($2)
     LIBS="$OLD_LIBS"
     CFLAGS="$OLD_CFLAGS"
@@ -192,8 +192,8 @@ else
     #       The manual for cc says that -mt is -D_REENTRANT plus -lthread;
     #       both of which should already be present.
     #   /grubba 2005-10-05
-    GTK_CFLAGS="`${ac_tool_prefix}pkg-config --cflags ${gtk_final_libs} | sed -e 's/ -mt / /g'`"
-    GTK_LIBS="`${ac_tool_prefix}pkg-config --libs ${gtk_final_libs} | sed -e 's/ -mt / /g'`"
+    GTK_CFLAGS="`${ac_tool_prefix}pkg-config --cflags ${gtk_final_libs} | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'`"
+    GTK_LIBS="`${ac_tool_prefix}pkg-config --libs ${gtk_final_libs} | sed -e 's/\(.*\)/ \1 /' | sed -e 's/ -mt / /g'`"
 
     AC_DEFINE(PGTK_AUTO_UTF8)
   fi
