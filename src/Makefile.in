@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.386 2005/07/27 12:26:58 nilsson Exp $
+# $Id: Makefile.in,v 1.387 2005/10/14 08:39:28 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -958,6 +958,8 @@ $(SRCDIR)/y.tab.c: $(SRCDIR)/language.yacc
 $(SRCDIR)/language.c: $(SRCDIR)/y.tab.c
 	sed -e 's/YY_COUNT_TYPE/@YY_COUNT_TYPE@/' \
 	    -e 's/YY_FROM_CONST/@YY_FROM_CONST@/' \
+	    -e 's/short[ 	]*int[ 	]/\/* short *\/ int /g' \
+	    -e 's/(short[ 	]*int)/(\/* short *\/ int)/g' \
 	    < $(SRCDIR)/y.tab.c > $(SRCDIR)/language.c
 
 $(SRCDIR)/language.h_src: $(SRCDIR)/y.tab.c
