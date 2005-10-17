@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_module.c,v 1.21 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: image_module.c,v 1.22 2005/10/17 11:26:12 nilsson Exp $
 */
 
 #include "global.h"
@@ -15,6 +15,7 @@
 #include "program_id.h"
 #include "object.h"
 #include "operators.h"
+#include "module_support.h"
 
 #include "image.h"
 #include "assembly.h"
@@ -303,6 +304,12 @@ PIKE_MODULE_INIT
 
    quick_add_function("`[]",3,image_magic_index,
 		      type_of_index,CONSTANT_STRLEN(type_of_index),0,0);
+
+#ifndef FAKE_DYNAMIC_LOAD
+   PIKE_MODULE_EXPORT(Image, image_program );
+   PIKE_MODULE_EXPORT(Image, image_colortable_program);
+   PIKE_MODULE_EXPORT(Image, image_layer_program );
+#endif
 
    /* compat stuff */
    add_program_constant("font",image_font_program,0); 
