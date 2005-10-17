@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_gif.c,v 1.22 2005/05/06 00:46:32 nilsson Exp $
+|| $Id: image_gif.c,v 1.23 2005/10/17 14:20:44 nilsson Exp $
 */
 
 /*
@@ -2737,74 +2737,72 @@ struct program *image_encoding_gif_program=NULL;
 PIKE_MODULE_INIT
 {
 #ifdef DYNAMIC_MODULE
-  /* These could be re-written to use PIKE_MODULE_IMPORT */
-   push_text("Image");
-   SAFE_APPLY_MASTER("resolv",1);
-   if (sp[-1].type==T_OBJECT) 
-   {
-      stack_dup();
-      stack_dup();
-      push_text("Image");
-      f_index(2);
-      image_program=program_from_svalue(sp-1);
-      pop_stack();
-      push_text("Colortable");
-      f_index(2);
-      image_colortable_program=program_from_svalue(sp-1);
-      pop_stack();
-      push_text("Layer");
-      f_index(2);
-      image_layer_program=program_from_svalue(sp-1);
-   }
-   pop_stack();
+  image_program = PIKE_MODULE_IMPORT(Image, image_program);
+  image_colortable_program=PIKE_MODULE_IMPORT(Image, image_colortable_program);
+  image_layer_program = PIKE_MODULE_IMPORT(Image, image_layer_program);
 #endif /* DYNAMIC_MODULE */
 
    if (image_program && image_colortable_program && image_layer_program) {
-      add_function("render_block",image_gif_render_block,
- 		   "function(object,object,void|int,void|int,void|int,void|object,void|int,void|int,void|int,void|int,void|int,void|int,void|int:string)"
- 		   "|function(object,object,void|int,void|int,void|int,void|int,void|int,void|int,void|int,void|int:string)",0);
-      add_function("_gce_block",image_gif__gce_block,
- 		   "function(int,int,int,int,int:string)",0);
-      add_function("_render_block",image_gif__render_block,
- 		   "function(int,int,int,int,string,void|string,int:string)",0);
-      add_function("header_block",image_gif_header_block,
- 		   "function(int,int,int|object,void|int,void|int,void|int,void|int,void|int,void|int,void|int:string)",0);
-      add_function("end_block",image_gif_end_block,
- 		   "function(:string)",0);
-      add_function("encode",image_gif_encode,
- 		   "function(object,mixed...:string)",0);
-      add_function("encode_trans",image_gif_encode,
- 		   "function(object,mixed...:string)",0);
-      add_function("encode_fs",image_gif_encode_fs,
- 		   "function(object,mixed...:string)",0);
-      add_function("netscape_loop_block",image_gif_netscape_loop_block,
- 		   "function(int|void:string)",0);
-   
-      add_function("__decode",image_gif___decode,
- 		   "function(string:array)",0);
-      add_function("_decode",image_gif__decode,
- 		   "function(string|array:array)",0);
-      add_function("decode",image_gif_decode,
- 		   "function(string|array:object)",0);
-      add_function("decode_layers",image_gif_decode_layers,
- 		   "function(string|array:array(object))",0);
-      add_function("decode_layer",image_gif_decode_layer,
- 		   "function(string|array:object)",0);
-      add_function("decode_map",image_gif_decode_map,
- 		   "function(string|array:mapping)",0);
-   
-      add_function("_encode",image_gif__encode,
- 		   "function(array:string)",0);
-      add_function("_encode_render",image_gif__encode_render,
- 		   "function(array:string)",0);
-      add_function("_encode_extension",image_gif__encode_extension,
- 		   "function(array:string)",0);
-   
-      add_function("lzw_encode",image_gif_lzw_encode,
- 		   "function(string,void|int,void|int:string)",0);
-      add_function("lzw_decode",image_gif_lzw_decode,
- 		   "function(string,void|int,void|int:string)",0);
-   
+      ADD_FUNCTION("render_block", image_gif_render_block,
+		   tFunc(tObj tObj
+			 tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tVoid)
+			 tOr3(tInt,tObj,tVoid)
+			 tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tVoid)
+			 tOr(tInt,tVoid) tOr(tInt,tVoid)
+			 tOr(tInt,tVoid) tOr(tInt,tVoid), tStr), 0);
+      ADD_FUNCTION("_gce_block", image_gif__gce_block,
+		   tFunc(tInt tInt tInt tInt tInt, tStr), 0);
+      ADD_FUNCTION("_render_block", image_gif__render_block,
+		   tFunc(tInt tInt tInt tInt tInt tStr tStr tInt, tStr), 0);
+
+      ADD_FUNCTION("header_block", image_gif_header_block,
+		   tFunc(tInt tInt tOr(tInt,tObj)
+			 tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tVoid)
+			 tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tVoid)
+			 tOr(tInt,tVoid), tStr), 0);
+      ADD_FUNCTION("end_block", image_gif_end_block,
+		   tFunc(tNone,tStr), 0);
+      ADD_FUNCTION("encode", image_gif_encode,
+		   tFunc(tObj tOr3(tInt,tObj,tVoid) tOr3(tInt,tObj,tVoid)
+			 tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tVoid),
+			 tStr), 0);
+      ADD_FUNCTION("encode_trans",image_gif_encode,
+		   tFunc(tObj tOr3(tInt,tObj,tVoid) tOr3(tInt,tObj,tVoid)
+			 tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tVoid),
+			 tStr), 0);
+      ADD_FUNCTION("encode_fs", image_gif_encode_fs,
+		   tFunc(tObj tOr3(tInt,tObj,tVoid) tOr3(tInt,tObj,tVoid)
+			 tOr(tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tVoid),
+			 tStr), 0);
+
+      ADD_FUNCTION("netscape_loop_block", image_gif_netscape_loop_block,
+		   tFunc(tOr(tInt,tVoid),tStr), 0);
+
+      ADD_FUNCTION("__decode", image_gif___decode,
+		   tFunc(tStr,tArray), 0);
+      ADD_FUNCTION("_decode", image_gif__decode,
+		   tFunc(tOr(tStr,tArray),tArray), 0);
+      ADD_FUNCTION("decode", image_gif_decode,
+		   tFunc(tOr(tStr,tArray),tObj), 0);
+      ADD_FUNCTION("decode_layers", image_gif_decode_layers,
+		   tFunc(tOr(tStr,tArray),tArr(tObj)), 0);
+      ADD_FUNCTION("decode_layer", image_gif_decode_layer,
+		   tFunc(tOr(tStr,tArray),tObj), 0);
+      ADD_FUNCTION("decode_map", image_gif_decode_map,
+		   tFunc(tOr(tStr,tArray),tMapping), 0);
+
+      ADD_FUNCTION("_encode", image_gif__encode,
+		   tFunc(tArray,tStr), 0);
+      ADD_FUNCTION("_encode_render", image_gif__encode_render,
+		   tFunc(tArray,tStr), 0);
+      ADD_FUNCTION("_encode_extension", image_gif__encode_extension,
+		   tFunc(tArray,tStr), 0);
+
+      ADD_FUNCTION("lzw_encode", image_gif_lzw_encode,
+		   tFunc(tStr tOr(tInt,tVoid) tOr(tInt,tVoid), tStr), 0);
+      ADD_FUNCTION("lzw_decode", image_gif_lzw_decode,
+		   tFunc(tStr tOr(tInt,tVoid) tOr(tInt,tVoid), tStr), 0);
+
       /** constants **/
    
       add_integer_constant("RENDER",GIF_RENDER,0);
