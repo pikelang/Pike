@@ -1,5 +1,69 @@
 START_MARKER
 cond([[ master()->resolv("_Image_GIF")->encode ]],
 [[
+
+dnl  NOTE: We are just testing the API here, not if the module actually
+dnl  performed correctly.
+
+test_equal(Image.GIF.__decode(Image.GIF.encode(Image.Image(3,3))),
+({3,3,2,"\0"*6,({0,0,0}),({1,0,0,3,3,0,0,2,"\4|\a\5"})}))
+
+dnl test_equal(Image.GIF._decode(Image.GIF.encode(Image.Image(3,3))),
+Image.GIF._decode(Image.GIF.__decode(Image.GIF.encode(Image.Image(3,3)))))
+test_do( Image.GIF._decode(Image.GIF.encode(Image.Image(3,3))) )
+test_do( Image.GIF._decode(Image.GIF.__decode(Image.GIF.encode(Image.Image(3,3)))) )
+
+test_eq(Image.GIF.render_block(Image.Image(1,1),Image.Colortable(({Image.Color.black})),0,0,0),[[",\0\0\0\0\1\0\1\0\0\2\2D\1\0"]])
+test_eq(Image.GIF.render_block(Image.Image(1,1),Image.Colortable(({Image.Color.black})),0,0,0,Image.Image(1,1)),[["!ù\4\1\0\0\1\0,\0\0\0\0\1\0\1\0\0\2\2L\1\0"]])
+test_eq(Image.GIF.render_block(Image.Image(1,1),Image.Colortable(({Image.Color.black})),0,0,0,Image.Image(1,1),1,2,3),[["!ù\4\1\0\0\1\0,\0\0\0\0\1\0\1\0\0\2\2L\1\0"]])
+test_eq(Image.GIF.render_block(Image.Image(1,1),Image.Colortable(({Image.Color.black})),0,0,0,50,0,1,0,0),[["!ù\4\1""2\0\0\0,\0\0\0\0\1\0\1\0@\2\2D\1\0"]])
+test_eq(Image.GIF.render_block(Image.Image(1,1),Image.Colortable(({Image.Color.black})),0,0,0,Image.Image(1,1),0,0,0,50,0,0,0),[["!ù\4\1""2\0\1\0,\0\0\0\0\1\0\1\0\0\2\2L\1\0"]])
+
+test_eq(Image.GIF._gce_block(1,2,3,4,5), "!ù\4\27\3\0\2\0")
+
+test_eq(Image.GIF._render_block(1,2,3,4,8,"\0"*(3*4),0,1),
+[[",\1\0\2\0\3\0\4\0G\b\v\0\1\0\20""8p`A\0\1\1\0"]])
+test_eq(Image.GIF._render_block(1,2,3,4,2,"\0"*(3*4),"\0"*4*3,1),
+[[",\1\0\2\0\3\0\4\0Á\0\0\0\0\0\0\0\0\0\0\0\0\2\4\4|\227P\0"]])
+
+test_eq(Image.GIF.header_block(14,15,16), "GIF89a\16\0\17\0""3\0\0")
+test_eq(Image.GIF.header_block(14,15,Image.Colortable(({0,0,0}))),
+"GIF89a\16\0\17\0\200\0\0\0\0\0\0\0\0")
+test_eq(Image.GIF.header_block(14,15,Image.Colortable(({0,0,0})),0,1,2,3),
+"GIF87a\16\0\17\0\200\0\33\0\0\0\0\0\0")
+test_eq(Image.GIF.header_block(14,15,Image.Colortable(({0,0,0})),0,0,2,3,99,99,99), "GIF89a\16\0\17\0\200\0\33ccc\0\0\0")
+
+test_eq(Image.GIF.end_block(),";")
+
+test_eq(Image.GIF.encode(Image.Image(1,1)),
+[["GIF89a\1\0\1\0\200\0\0\0\0\0\0\0\0,\0\0\0\0\1\0\1\0\0\2\2D\1\0;"]])
+test_eq(Image.GIF.encode(Image.Image(1,1),1),
+[["GIF89a\1\0\1\0\200\0\0\0\0\0\0\0\0,\0\0\0\0\1\0\1\0\0\2\2D\1\0;"]])
+test_eq(Image.GIF.encode(Image.Image(1,1),Image.Colortable(({Image.Color.red}))),
+[["GIF89a\1\0\1\0\200\0\0\377\0\0\0\0\0,\0\0\0\0\1\0\1\0\0\2\2D\1\0;"]])
+test_eq(Image.GIF.encode(Image.Image(1,1),Image.Image(1,1)),
+[["GIF89a\1\0\1\0\200\377\0\0\0\0\0\0\0!ù\4\1\0\0\1\0,\0\0\0\0\1\0\1\0\0\2\2L\1\0;"]])
+test_eq(Image.GIF.encode(Image.Image(1,1),45,46,47),
+[["GIF89a\1\0\1\0\200\0\0\0\0\0\0\0\0!ù\4\1\0\0\0\0,\0\0\0\0\1\0\1\0\0\2\2D\1\0;"]])
+test_eq(Image.GIF.encode(Image.Image(1,1),1,Image.Image(1,1)),
+[["GIF89a\1\0\1\0\200\1\0\0\0\0\0\0\0!ù\4\1\0\0\1\0,\0\0\0\0\1\0\1\0\0\2\2L\1\0;"]])
+test_eq(Image.GIF.encode(Image.Image(1,1),1,45,46,47),
+[["GIF89a\1\0\1\0\200\0\0\0\0\0\0\0\0!ù\4\1\0\0\0\0,\0\0\0\0\1\0\1\0\0\2\2D\1\0;"]])
+test_eq(Image.GIF.encode(Image.Image(1,1),1,Image.Image(1,1),45,46,47),
+[["GIF89a\1\0\1\0\200\1\0\0\0\0-./!ù\4\1\0\0\1\0,\0\0\0\0\1\0\1\0\0\2\2L\1\0;"]])
+test_eq(Image.GIF.encode(Image.Image(1,1),Image.Colortable(({Image.Color.red})),Image.Image(1,1)),
+[["GIF89a\1\0\1\0\200\1\0\377\0\0\0\0\0!ù\4\1\0\0\1\0,\0\0\0\0\1\0\1\0\0\2\2L\1\0;"]])
+test_eq(Image.GIF.encode(Image.Image(1,1),Image.Colortable(({Image.Color.red})),45,46,47),
+[["GIF89a\1\0\1\0\200\0\0\377\0\0\0\0\0!ù\4\1\0\0\0\0,\0\0\0\0\1\0\1\0\0\2\2D\1\0;"]])
+test_eq(Image.GIF.encode(Image.Image(1,1),Image.Colortable(({Image.Color.red})),Image.Image(1,1),45,46,47),
+[["GIF89a\1\0\1\0\200\1\0\377\0\0-./!ù\4\1\0\0\1\0,\0\0\0\0\1\0\1\0\0\2\2L\1\0;"]])
+test_eq(Image.GIF.encode(Image.Image(1,1),Image.Colortable(({Image.Color.red})),0),
+[["GIF89a\1\0\1\0\200\0\0\377\0\0\0\0\0!ù\4\1\0\0\0\0,\0\0\0\0\1\0\1\0\0\2\2D\1\0;"]]
+)
+
+test_true( functionp(Image.GIF.encode_trans) )
+
+test_true( functionp(Image.GIF.encode_fs) )
+
 ]])
 END_MARKER
