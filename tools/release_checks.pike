@@ -182,7 +182,7 @@ void test_fncases(void|string dir) {
   foreach(d, string fn) {
     if( d2[lower_case(fn)] )
       write("%O with different casings in %O.\n", fn, dir);
-    if( Stdio.is_dir(dir+"/"+fn) )
+    if( Stdio.is_dir(dir+"/"+fn) && dir!="refdoc" )
       test_fncases(dir+"/"+fn);
     d2[lower_case(fn)]=1;
   }
