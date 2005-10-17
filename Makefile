@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.152 2005/07/25 01:55:36 nilsson Exp $
+# $Id: Makefile,v 1.153 2005/10/17 10:25:11 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -203,6 +203,9 @@ bin/pike: force
 pike: bin/pike
 	@$(DO_MAKE) "METATARGET=pike" _make_in_builddir
 
+lib:
+	@$(DO_MAKE) "METATARGET=pike.so" _make_in_builddir
+
 install: bin/pike
 	@$(DO_MAKE) "METATARGET=install" _make_in_builddir
 
@@ -271,19 +274,29 @@ source:
 	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=source" _make_in_builddir
 
 export:
-	@if [ -f "$(BUILDDIR)/autodoc.xml" ]; then : ; else \
-	  echo ; \
-	  echo 'No documentation source built!'; \
-	  echo 'Type "make doc" to make a documentation source file'; \
-	  echo 'or "make export_nodoc" to install without a documentation'; \
-	  echo 'source.' ; \
+	@EXPORT_PREREQ=yepp ; echo ; \
+	if [ -f "$(BUILDDIR)/autodoc.xml" ]; then : ; else \
+	  echo 'No documentation source built.'; \
+	  EXPORT_PREREQ=FAIL ; \
+	fi ; \
+	if ls bundles/gmp-*.tar.gz > /dev/null 2>&1; then : ; else \
+	  echo 'Missing GMP bundle.'; \
+	  EXPORT_PREREQ=FAIL ; \
+	fi ; \
+	if ls bundles/nettle-*.tar.gz > /dev/null 2>&1; then : ; else \
+	  echo 'Missing Nettle bundle.'; \
+	  EXPORT_PREREQ=FAIL ; \
+	fi ; \
+	if [ "$$EXPORT_PREREQ" = "FAIL" ]; then : \
+	  echo 'Fix the above error(s) and rerun "make export", or'; \
+	  echo '"make export_forced" to bypass these checks.';\
 	  echo ; \
 	  exit 1; \
 	fi
 	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=export" _make_in_builddir
 
-export_nodoc:
+export_forced:
 	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=export" _make_in_builddir
 
