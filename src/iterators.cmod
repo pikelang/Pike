@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.57 2004/12/22 18:46:15 grubba Exp $
+|| $Id: iterators.cmod,v 1.58 2005/10/17 10:34:29 nilsson Exp $
 */
 
 #include "global.h"
@@ -1029,7 +1029,7 @@ PIKECLASS file_line_iterator
       RETURN !THIS->current;
     }
 
-  PIKEFUN void create(function(:string)|void feed)
+  PIKEFUN void create(function(:string) feed)
     {
       if (THIS->buffer) {
 	Pike_error("iterators cannot be reused.\n");
