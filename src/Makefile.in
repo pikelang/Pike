@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.408 2005/07/25 01:55:36 nilsson Exp $
+# $Id: Makefile.in,v 1.409 2005/10/17 19:31:08 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -613,12 +613,12 @@ testsuites:
 just_verify: testsuites testsuite master-stamp
 	if test "x$(TESTARGS)" = x ; then args="-F -a -v" ; \
 	else args="$(TESTARGS)" ; fi; \
-	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike $$args
+	$(RUNPIKE) -x test_pike $$args
 
 valgrind_just_verify: testsuites testsuite master-stamp
 	if test "x$(TESTARGS)" = x ; then args="-F -a -v" ; \
 	else args="$(TESTARGS)" ; fi; \
-	$(VALGRIND) $(VALGRINDARGS) $(RUNPIKE) $(TMP_BINDIR)/test_pike.pike $$args
+	$(VALGRIND) $(VALGRINDARGS) $(RUNPIKE) -x test_pike $$args
 
 # Testsuite for dynamic loading debugging
 test_dlopen: dynloadtest.sh
@@ -660,12 +660,12 @@ verify: testsuites testsuite tinstall
 	if test "$(TESTARGS)" = "" ; then args="-F -a -v" ; else \
 	  args="$(TESTARGS)" ; fi; \
 	if test -f ./test-pike ; then \
-	  ./test-pike -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; \
+	  ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
 	else \
 	  if test -f some-sprsh-test ; then \
-	    sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; \
+	    sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
 	  else \
-	    `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; \
+	    `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
 	  fi \
 	fi
 
@@ -674,9 +674,9 @@ valgrind_verify: testsuites testsuite tinstall
 	if test "$(TESTARGS)" = "" ; then args="-F -a -v" ; else \
 	  args="$(TESTARGS)" ; fi; \
 	if test -f ./test-pike ; then \
-	  $(VALGRIND) $(VALGRINDARGS) ./test-pike -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; \
+	  $(VALGRIND) $(VALGRINDARGS) ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
 	else \
-	  sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; \
+	  sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
 	fi
 
 bench: tinstall
@@ -693,7 +693,7 @@ bench: tinstall
 verify_installed: testsuites testsuite master-stamp
 	if test "$(TESTARGS)" = "" ; then args="-F -a -v" ; else \
 	  args="$(TESTARGS)" ; fi; \
-	$(exec_prefix)/pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args
+	$(exec_prefix)/pike $(PIKEOPTS) -x test_pike $$args
 
 check: verify
 
@@ -702,7 +702,7 @@ sure: verify
 # verify / debug verbose
 verbose_verify: testsuites testsuite master-stamp
 	if test "$(TESTARGS)" = "" ; then args="-F -a" ; else args="$(TESTARGS)" ; fi; \
-	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike -v -v $$args
+	$(RUNPIKE) -x test_pike -v -v $$args
 
 # verify & debug VERBOSE
 gdb_verify: testsuites testsuite master-stamp
@@ -719,9 +719,7 @@ gdb_verify: testsuites testsuite master-stamp
 	  args="$(TESTARGS)" ; fi;  \
 	echo >>.gdbinit set args \
 	  -m`echo "$(TMP_BUILDDIR)/master.pike" | ./posix_to_native.sh` \
-	  $(PIKEOPTS) \
-	  `echo "$(TMP_BINDIR)/test_pike.pike" | ./posix_to_native.sh` \
-	  --no-watchdog $$args
+	  $(PIKEOPTS) -x test_pike --no-watchdog $$args
 	gdb $(TMP_BUILDDIR)/pike
 	@rm .gdbinit
 
@@ -742,8 +740,14 @@ gdb_hilfe: master.pike
 # fast test
 fast_verify_testsuite: testsuite
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
-	if test "$(TESTARGS)" = "" ; then args="-F -a" ; else args="$(TESTARGS)" ; fi; \
-	if test -f ./test-pike ; then ./test-pike -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; else sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; fi
+	if test "$(TESTARGS)" = "" ; then args="-F -a" ; \
+	else args="$(TESTARGS)" ; fi; \
+	if test -f ./test-pike ; then \
+	  ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
+	else \
+	  sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED \
+	    $(PIKEOPTS) -x test_pike $$args ; \
+	fi
 
 # run hilfe, for interactive testing
 run_hilfe: master.pike
@@ -1232,4 +1236,3 @@ $(SRCDIR)/pikecode.c: \
 	touch $(SRCDIR)/pikecode.c
 
 @dependencies@
-
