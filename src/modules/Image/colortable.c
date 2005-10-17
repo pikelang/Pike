@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colortable.c,v 1.125 2005/08/15 17:00:39 grubba Exp $
+|| $Id: colortable.c,v 1.126 2005/10/17 12:53:53 nilsson Exp $
 */
 
 #include "global.h"
@@ -2123,7 +2123,7 @@ void image_colortable_free_dither(struct nct_dither *dith)
 
 static void image_colortable_add(INT32 args)
 {
-   if (!args) 
+   if (!args)
    {
       pop_n_elems(args);
       ref_push_object(THISOBJ);
@@ -2142,7 +2142,7 @@ static void image_colortable_add(INT32 args)
 	 if (ct2)
 	 {
 #ifdef COLORTABLE_DEBUG
-	    fprintf(stderr,"COLORTABLE added %lx and %lx to %lx (args=%d)\n",
+	    fprintf(stderr,"COLORTABLE added %p and %p to %p (args=%d)\n",
 		           THIS,ct2,THIS,args);
 #endif
 	    _img_add_colortable(THIS,ct2);
@@ -2154,7 +2154,7 @@ static void image_colortable_add(INT32 args)
 
 #ifdef COLORTABLE_DEBUG
       fprintf(stderr,
-	      "COLORTABLE %lx isn't empty; create new and add (args=%d)\n",
+	      "COLORTABLE %p isn't empty; create new and add (args=%d)\n",
 	      THIS,args);
 #endif
       o=clone_object(image_colortable_program,args);
@@ -2162,16 +2162,15 @@ static void image_colortable_add(INT32 args)
       image_colortable_add(1);
 
 #ifdef COLORTABLE_DEBUG
-      fprintf(stderr,
-	      "COLORTABLE done (%lx isn't empty...)\n",
-	      THIS,args);
+      fprintf(stderr, "COLORTABLE done (%p isn't empty...)\n", THIS);
 #endif
       return;
    }
 
    /* initiate */
 #ifdef COLORTABLE_DEBUG
-   fprintf(stderr,"COLORTABLE %lx created with %d args, sp-args=%lx\n",THIS,args,sp-args);
+   fprintf(stderr, "COLORTABLE %p created with %d args, sp-args=%p\n",
+	   THIS, args, sp-args);
 #endif
 
    if (sp[-args].type==T_OBJECT)
@@ -2299,7 +2298,8 @@ static void image_colortable_add(INT32 args)
    ref_push_object(THISOBJ);
 
 #ifdef COLORTABLE_DEBUG
-   fprintf(stderr,"COLORTABLE done (%lx created, %d args was left, sp-1=%lx)\n",THIS,args,sp-1);
+   fprintf(stderr, "COLORTABLE done (%p created, %d args was left, sp-1=%p)\n",
+	   THIS, args, sp-1);
 #endif
 
 }
@@ -4557,7 +4557,7 @@ void init_image_colortable(void)
 		"function(array(array(int)|string|object):void)|"
 		"function(object,void|int,mixed ...:void)|"
 		"function(int,int,int,void|int ...:void) */
-   ADD_FUNCTION("add",image_colortable_create,tOr4(tFunc(tVoid,tVoid),tFunc(tArr(tColor),tVoid),tFuncV(tObj tOr(tVoid,tInt),tMix,tVoid),tFuncV(tInt tInt tInt,tOr(tVoid,tInt),tVoid)),0);
+   ADD_FUNCTION("add",image_colortable_add,tOr4(tFunc(tVoid,tVoid),tFunc(tArr(tColor),tVoid),tFuncV(tObj tOr(tVoid,tInt),tMix,tVoid),tFuncV(tInt tInt tInt,tOr(tVoid,tInt),tVoid)),0);
 
    /* function(int:object) */
    ADD_FUNCTION("reduce",image_colortable_reduce,tFunc(tInt,tObj),0);
