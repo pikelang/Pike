@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.108 2005/10/17 20:31:08 grubba fake $ */
+/* $Id: test_pike.pike,v 1.109 2005/10/18 08:00:52 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -268,7 +268,12 @@ int main(int argc, array(string) argv)
 
   array(string) args=backtrace()[0][3];
   array(string) testsuites=({});
+  // FIXME: Make this code more robust!
   args=args[..sizeof(args)-1-argc];
+  if (sizeof(args) && args[-1] == "-x") {
+    // pike -x test_pike
+    args = args[..sizeof(args)-2];
+  }
   add_constant("RUNPIKE_ARRAY", args);
   add_constant("RUNPIKE", map(args, Process.sh_quote)*" ");
 
