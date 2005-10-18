@@ -170,8 +170,8 @@ static void parse_request()
    sscanf(not_query=full_query,"%s?%s",not_query,query);
 
    if (request_headers->cookie)
-      foreach (Array.arrayify(request_headers->cookie);;string cookie)
-	 if (sscanf(cookie,"%s=%s",string a,string b)==2)
+      foreach (request_headers->cookie/";";;string cookie)
+         if (sscanf(String.trim_whites(cookie),"%s=%s",string a,string b)==2)
 	    cookies[a]=b;
 }
 
