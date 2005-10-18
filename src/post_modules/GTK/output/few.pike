@@ -11,6 +11,9 @@ void output_current_data()
   // Processing done. Actually write the file.
   if( sizeof( current_data ) )
   {
+    if( sizeof(current_data)>LIMIT+10240 )
+      werror("WARNING: current_data resized (content size = %d).\n",
+	     sizeof(current_data));
     fcount++;
     write_file( dir + "pgtk_"+(fcount)+".c", current_data->get() );
     files += ({ "pgtk_"+(fcount)+".c" });
