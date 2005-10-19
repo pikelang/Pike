@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_jpeg.c,v 1.70 2005/04/08 17:19:51 grubba Exp $
+|| $Id: image_jpeg.c,v 1.71 2005/10/19 12:44:04 nilsson Exp $
 */
 
 #include "global.h"
@@ -1508,26 +1508,21 @@ PIKE_MODULE_INIT
 {
 #ifdef HAVE_JPEGLIB_H
 #ifdef DYNAMIC_MODULE
-   push_text("Image.Image");
-   SAFE_APPLY_MASTER("resolv",1);
-   if (sp[-1].type==T_PROGRAM)
-      image_program=program_from_svalue(sp-1);
-   pop_n_elems(1);
+    image_program = PIKE_MODULE_IMPORT(Image, image_program);
+    if(!image_program)
+      yyerror("Could not load Image module.\n");
 #endif /* DYNAMIC_MODULE */
 
-   if (image_program)
-   {
 #define tOptions tMap(tStr,tOr3(					\
     tInt,								\
     tStr,								\
     tMap(tInt,tOr(tStr,tArr(tOr(tInt,tArr(tInt)))))))
 
-      ADD_FUNCTION("decode",image_jpeg_decode,tFunc(tStr tOr(tVoid,tOptions),tObj),0);
-      ADD_FUNCTION("_decode",image_jpeg__decode,tFunc(tStr tOr(tVoid,tOptions),tMap(tStr,tMixed)),0);
-      ADD_FUNCTION("decode_header",image_jpeg_decode_header,
-		   tFunc(tStr tOr(tVoid,tOptions),tMap(tStr,tOr4(tStr,tInt,tFlt,tMap(tInt,tStr)))),0);
-      ADD_FUNCTION("encode",image_jpeg_encode,tFunc(tOr(tObj,tStr) tOr(tVoid,tOptions),tStr),0);
-   }
+    ADD_FUNCTION("decode",image_jpeg_decode,tFunc(tStr tOr(tVoid,tOptions),tObj),0);
+    ADD_FUNCTION("_decode",image_jpeg__decode,tFunc(tStr tOr(tVoid,tOptions),tMap(tStr,tMixed)),0);
+    ADD_FUNCTION("decode_header",image_jpeg_decode_header,
+		 tFunc(tStr tOr(tVoid,tOptions),tMap(tStr,tOr4(tStr,tInt,tFlt,tMap(tInt,tStr)))),0);
+    ADD_FUNCTION("encode",image_jpeg_encode,tFunc(tOr(tObj,tStr) tOr(tVoid,tOptions),tStr),0);
 
    add_integer_constant("IFAST", JDCT_IFAST, 0);
    add_integer_constant("FLOAT", JDCT_FLOAT, 0);
