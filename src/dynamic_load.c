@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.86 2004/11/12 13:02:18 grubba Exp $
+|| $Id: dynamic_load.c,v 1.87 2005/10/19 12:39:43 nilsson Exp $
 */
 
 #ifdef TESTING
@@ -602,6 +602,7 @@ void f_load_module(INT32 args)
       new_module->exit();
       dlclose(module);
       dynamic_module_list = new_module->next;
+      free_string(new_module->name);
       free(new_module);
       Pike_error("Failed to initialize dynamic module \"%S\".\n",
 		 module_name);
