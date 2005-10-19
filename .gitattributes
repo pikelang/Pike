@@ -243,6 +243,8 @@ testfont binary
 /lib/modules/Tools.pmod/Legal.pmod/License.pmod/LGPL.pmod foreign_ident
 /lib/modules/Tools.pmod/Legal.pmod/License.pmod/MPL.pmod foreign_ident
 /lib/modules/Tools.pmod/Legal.pmod/License.pmod/module.pmod foreign_ident
+/lib/modules/Tools.pmod/Monger.pmod/MongerDeveloper.pike foreign_ident
+/lib/modules/Tools.pmod/Monger.pmod/MongerUser.pike foreign_ident
 /lib/modules/Tools.pmod/Standalone.pmod/assemble_autodoc.pike foreign_ident
 /lib/modules/Tools.pmod/Standalone.pmod/benchmark.pike foreign_ident
 /lib/modules/Tools.pmod/Standalone.pmod/cgrep.pike foreign_ident
