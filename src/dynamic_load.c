@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.83 2004/04/18 02:19:38 mast Exp $
+|| $Id: dynamic_load.c,v 1.84 2005/10/19 12:41:20 nilsson Exp $
 */
 
 #ifdef TESTING
@@ -24,7 +24,7 @@
 #  include "lex.h"
 #  include "object.h"
 
-RCSID("$Id: dynamic_load.c,v 1.83 2004/04/18 02:19:38 mast Exp $");
+RCSID("$Id: dynamic_load.c,v 1.84 2005/10/19 12:41:20 nilsson Exp $");
 
 #else /* TESTING */
 
@@ -612,6 +612,7 @@ void f_load_module(INT32 args)
       new_module->exit();
       dlclose(module);
       dynamic_module_list = new_module->next;
+      free_string(new_module->name);
       free(new_module);
       if (strlen(module_name->str) < 1024) {
 	Pike_error("Failed to initialize dynamic module \"%s\".\n",
