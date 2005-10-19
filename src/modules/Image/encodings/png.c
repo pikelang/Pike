@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.74 2005/05/05 23:13:34 nilsson Exp $
+|| $Id: png.c,v 1.75 2005/10/19 14:22:21 nilsson Exp $
 */
 
 #include "global.h"
@@ -17,6 +17,7 @@
 #include "stralloc.h"
 #include "builtin_functions.h"
 #include "operators.h"
+#include "module_support.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -29,7 +30,14 @@ extern struct program *image_program;
 
 static struct program *gz_inflate=NULL;
 static struct program *gz_deflate=NULL;
-static struct svalue gz_crc32;
+
+#ifdef DYNAMIC_MODULE
+typedef unsigned INT32 (_crc32)(unsigned INT32, unsigned char*,
+				unsigned INT32);
+_crc32 *crc32;
+#else
+extern unsigned INT32 crc32(unsigned INT32, unsigned char*, unsigned INT32);
+#endif
 
 static struct pike_string *param_palette;
 static struct pike_string *param_spalette;
@@ -83,31 +91,6 @@ static INLINE COLORTYPE _png_c16(unsigned long z,int bpp)
    }
 }
 
-static INLINE INT32 call_gz_crc32(INT32 args)
-{
-   INT32 z;
-   apply_svalue(&gz_crc32,args);
-   if (sp[-1].type!=T_INT)
-      PIKE_ERROR("Image.PNG", "Internal error (not integer from Gz.crc32).\n",
-		 sp, args);
-   z=sp[-1].u.integer;
-   pop_stack();
-   return z;
-}
-
-static INLINE void add_crc_string(void)
-{
-   push_svalue(sp-1);
-   push_nbo_32bit(call_gz_crc32(1));
-}
-
-static INLINE INT32 my_crc32(INT32 init,const unsigned char *data,INT32 len)
-{
-   push_string(make_shared_binary_string((char*)data,len));
-   push_int(init);
-   return call_gz_crc32(2);
-}
-
 static void push_png_chunk(const char *type,    /* 4 bytes */
 			   struct pike_string *data) /* (freed) or on stack */
 {
@@ -124,7 +107,8 @@ static void push_png_chunk(const char *type,    /* 4 bytes */
    push_string(make_shared_binary_string(type,4));
    push_string(data);
    f_add(2);
-   add_crc_string();
+   push_nbo_32bit(crc32(0,(unsigned char*)sp[-1].u.string->str,
+			(unsigned INT32)(sp[-1].u.string->len)));
    f_add(3);
 }
 
@@ -264,8 +248,8 @@ static void image_png___decode(INT32 args)
       }
       push_string(make_shared_binary_string((char*)data,x));
       if (!nocrc && x+4<=len)
-	 push_int( my_crc32(my_crc32(0,NULL,0),data-4,x+4) ==
-		   (INT32)int_from_32bit(data+x) );
+	 push_int( crc32(crc32(0,NULL,0),data-4,x+4) ==
+		   int_from_32bit(data+x) );
       else
 	 push_int(0);
       if (x+4>len) break;
@@ -1791,7 +1775,6 @@ void exit_image_png(void)
    free_string(param_bpp);
    free_string(param_background);
    free_string(param_type);
-   free_svalue(&gz_crc32);
 
    if(gz_inflate)
      free_program(gz_inflate);
@@ -1802,6 +1785,12 @@ void exit_image_png(void)
 
 void init_image_png(void)
 {
+#ifdef DYNAMIC_MODULE
+   crc32 = PIKE_MODULE_IMPORT(Gz, crc32);
+   if(!crc32)
+     yyerror("Could not load Image module.\n");
+#endif
+
    push_text("Gz");
    SAFE_APPLY_MASTER("resolv",1);
    if (sp[-1].type==T_OBJECT) 
@@ -1821,18 +1810,10 @@ void init_image_png(void)
      if(gz_deflate) 
        add_ref(gz_deflate);
      pop_stack();
-
-     stack_dup();
-     push_text("crc32");
-     f_index(2);
-     gz_crc32=sp[-1];
-     sp--;
-   }else{
-     gz_crc32.type=T_INT;
    }
    pop_stack();
 
-   if (gz_deflate && gz_inflate && gz_crc32.type!=T_INT)
+   if (gz_deflate && gz_inflate)
    {
      ADD_FUNCTION2("_chunk",image_png__chunk,tFunc(tStr tStr,tStr),0,
 		  OPT_TRY_OPTIMIZE);
@@ -1842,20 +1823,18 @@ void init_image_png(void)
      ADD_FUNCTION2("decode_header",image_png_decode_header,
 		   tFunc(tStr,tMapping),0,OPT_TRY_OPTIMIZE);
 
-      if (gz_deflate)
-      {
-	ADD_FUNCTION("_decode",image_png__decode,
-		     tFunc(tOr(tArray,tStr) tOr(tVoid,tMap(tStr,tMix)),
-			   tMapping),0);
+     ADD_FUNCTION("_decode",image_png__decode,
+		  tFunc(tOr(tArray,tStr) tOr(tVoid,tMap(tStr,tMix)),
+			tMapping),0);
 
-	 ADD_FUNCTION("decode",image_png_decode,
-		      tFunc(tStr tOr(tVoid,tMap(tStr,tMix)), tObj),0);
-	 ADD_FUNCTION("decode_alpha",image_png_decode_alpha,
-		      tFunc(tStr tOr(tVoid,tMap(tStr,tMix)), tObj),0);
-      }
-      ADD_FUNCTION2("encode",image_png_encode,
-		    tFunc(tObj tOr(tVoid,tMap(tStr,tMix)),tStr),0,
-		    OPT_TRY_OPTIMIZE);
+     ADD_FUNCTION("decode",image_png_decode,
+		  tFunc(tStr tOr(tVoid,tMap(tStr,tMix)), tObj),0);
+     ADD_FUNCTION("decode_alpha",image_png_decode_alpha,
+		  tFunc(tStr tOr(tVoid,tMap(tStr,tMix)), tObj),0);
+
+     ADD_FUNCTION2("encode",image_png_encode,
+		   tFunc(tObj tOr(tVoid,tMap(tStr,tMix)),tStr),0,
+		   OPT_TRY_OPTIMIZE);
    }
 
    param_palette=make_shared_string("palette");
