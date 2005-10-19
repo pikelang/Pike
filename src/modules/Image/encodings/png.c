@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.75 2005/10/19 14:22:21 nilsson Exp $
+|| $Id: png.c,v 1.76 2005/10/19 20:25:05 nilsson Exp $
 */
 
 #include "global.h"
@@ -1787,8 +1787,10 @@ void init_image_png(void)
 {
 #ifdef DYNAMIC_MODULE
    crc32 = PIKE_MODULE_IMPORT(Gz, crc32);
-   if(!crc32)
-     yyerror("Could not load Image module.\n");
+   if(!crc32) {
+     yyerror("Could not load Image module.");
+     return;
+   }
 #endif
 
    push_text("Gz");
