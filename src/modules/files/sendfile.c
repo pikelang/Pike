@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.63 2003/12/09 09:57:14 grubba Exp $
+|| $Id: sendfile.c,v 1.64 2005/10/19 15:24:59 grubba Exp $
 */
 
 /*
@@ -230,14 +230,23 @@ static void sf_call_callback(struct pike_sendfile *this)
   debug_malloc_touch(this->args);
 
   if (this->callback.type != T_INT) {
-    int sz = this->args->size;
+    if (((this->callback.type == T_OBJECT) ||
+	 ((this->callback.type == T_FUNCTION) &&
+	  (this->callback.subtype != FUNCTION_BUILTIN))) &&
+	!this->callback.u.object->prog) {
+      /* Destructed object or function. */
+      free_array(this->args);
+      this->args = NULL;
+    } else {
+      int sz = this->args->size;
 
-    push_int64(this->sent);
-    push_array_items(this->args);
-    this->args = NULL;
+      push_int64(this->sent);
+      push_array_items(this->args);
+      this->args = NULL;
 
-    apply_svalue(&this->callback, 1 + sz);
-    pop_stack();
+      apply_svalue(&this->callback, 1 + sz);
+      pop_stack();
+    }
 
     free_svalue(&this->callback);
     this->callback.type = T_INT;
