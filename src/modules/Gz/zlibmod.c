@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.67 2004/10/07 22:49:56 nilsson Exp $
+|| $Id: zlibmod.c,v 1.68 2005/10/19 14:21:12 nilsson Exp $
 */
 
 #include "global.h"
@@ -27,6 +27,7 @@
 #include "threads.h"
 #include "dynamic_buffer.h"
 #include "operators.h"
+#include "module_support.h"
 
 #include <zlib.h>
 
@@ -677,6 +678,7 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("crc32",gz_crc32,tFunc(tStr tOr(tVoid,tInt),tInt),
 	       OPT_TRY_OPTIMIZE);
 
+  PIKE_MODULE_EXPORT(Gz, crc32);
 #endif
 }
 
