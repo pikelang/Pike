@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_tiff.c,v 1.43 2004/10/07 22:49:58 nilsson Exp $
+|| $Id: image_tiff.c,v 1.44 2005/10/19 12:52:39 nilsson Exp $
 */
 
 #include "global.h"
@@ -996,36 +996,25 @@ void my_tiff_error_handler(const char *module, const char *fmt, va_list x)
 PIKE_MODULE_INIT
 {
 #ifdef HAVE_WORKING_LIBTIFF
+   opt_compression = 0;
 #ifdef DYNAMIC_MODULE
-   push_text("Image");
-   SAFE_APPLY_MASTER("resolv",1);
-   if (sp[-1].type==T_OBJECT) 
-   {
-     stack_dup();
-     push_text("Image");
-     f_index(2);
-     image_program=program_from_svalue(sp-1);
-     pop_stack();
-
-     push_text("Colortable");
-     f_index(2);
-     image_colortable_program=program_from_svalue(sp-1);
-     pop_stack();
-   }
+   image_program = PIKE_MODULE_IMPORT(Image, image_program);
+   image_colortable_program = PIKE_MODULE_IMPORT(Image,
+						image_colortable_program);
+   if(!image_program || !image_colortable_program)
+    yyerror("Could not load Image module.\n");
 #endif /* DYNAMIC_MODULE */
 
    TIFFSetWarningHandler(my_tiff_warning_handler);
    TIFFSetErrorHandler(my_tiff_error_handler);
 
-   if (image_program)
-   {
-     add_function("decode",image_tiff_decode,"function(string:object)",0);
-     add_function("_decode",image_tiff__decode,"function(string:mapping)",0);
-     add_function("encode",image_tiff_encode,
-                  "function(object,mapping|void:string)",0); 
-     add_function("_encode",image_tiff_encode,
-                  "function(object,mapping|void:string)",0); 
-   }
+   ADD_FUNCTION("decode",image_tiff_decode,tFunc(tStr,tObj),0);
+   ADD_FUNCTION("_decode",image_tiff__decode,tFunc(tStr,tMapping),0);
+   ADD_FUNCTION("encode",image_tiff_encode,
+		tFunc(tObj tOr(tMapping,tVoid),tStr),0);
+   ADD_FUNCTION("_encode",image_tiff_encode,
+		tFunc(tObj tOr(tMapping,tVoid),tStr), 0);
+
    add_integer_constant( "COMPRESSION_NONE", COMPRESSION_NONE,0 );
 #ifdef CCITT_SUPPORT
    add_integer_constant( "COMPRESSION_CCITTRLE", COMPRESSION_CCITTRLE,0);
@@ -1062,6 +1051,7 @@ PIKE_MODULE_INIT
 PIKE_MODULE_EXIT
 {
 #ifdef HAVE_WORKING_LIBTIFF
+  if(!opt_compression) return;
   free_string(opt_compression);
   free_string(opt_name);
   free_string(opt_comment);
