@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freetype.c,v 1.28 2005/10/19 12:45:53 nilsson Exp $
+|| $Id: freetype.c,v 1.29 2005/10/19 16:35:53 grubba Exp $
 */
 
 #include "config.h"
@@ -385,8 +385,10 @@ PIKE_MODULE_INIT
   {
 #ifdef DYNAMIC_MODULE
     image_program = PIKE_MODULE_IMPORT(Image, image_program);
-    if(!image_program)
-      yyerror("Could not load Image module.\n");
+    if(!image_program) {
+      yyerror("Could not load Image module.");
+      return;
+    }
 #endif /* DYNAMIC_MODULE */
 
     start_new_program( );
@@ -421,6 +423,8 @@ PIKE_MODULE_INIT
     add_integer_constant( "STYLE_FLAG_ITALIC", FT_STYLE_FLAG_ITALIC, 0 );
     add_integer_constant( "STYLE_FLAG_BOLD", FT_STYLE_FLAG_BOLD, 0 );
 
+  } else {
+    yyerror("Failed to initialize FreeType.");
   }
 }
 #else

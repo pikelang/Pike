@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_tiff.c,v 1.44 2005/10/19 12:52:39 nilsson Exp $
+|| $Id: image_tiff.c,v 1.45 2005/10/19 16:35:53 grubba Exp $
 */
 
 #include "global.h"
@@ -1001,8 +1001,10 @@ PIKE_MODULE_INIT
    image_program = PIKE_MODULE_IMPORT(Image, image_program);
    image_colortable_program = PIKE_MODULE_IMPORT(Image,
 						image_colortable_program);
-   if(!image_program || !image_colortable_program)
-    yyerror("Could not load Image module.\n");
+   if(!image_program || !image_colortable_program) {
+      yyerror("Could not load Image module.");
+      return;
+   }
 #endif /* DYNAMIC_MODULE */
 
    TIFFSetWarningHandler(my_tiff_warning_handler);

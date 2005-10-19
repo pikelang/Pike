@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_gif.c,v 1.24 2005/10/19 12:47:09 nilsson Exp $
+|| $Id: image_gif.c,v 1.25 2005/10/19 16:35:53 grubba Exp $
 */
 
 /*
@@ -2742,8 +2742,10 @@ PIKE_MODULE_INIT
   image_layer_program = PIKE_MODULE_IMPORT(Image, image_layer_program);
 #endif /* DYNAMIC_MODULE */
 
-  if (!image_program || !image_colortable_program || !image_layer_program)
-    yyerror("Could not load Image module.\n");
+  if (!image_program || !image_colortable_program || !image_layer_program) {
+    yyerror("Could not load Image module.");
+    return;
+  }
 
   ADD_FUNCTION("render_block", image_gif_render_block,
 	       tFunc(tObj tObj

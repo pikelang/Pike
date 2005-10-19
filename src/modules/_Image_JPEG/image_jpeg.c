@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_jpeg.c,v 1.71 2005/10/19 12:44:04 nilsson Exp $
+|| $Id: image_jpeg.c,v 1.72 2005/10/19 16:35:53 grubba Exp $
 */
 
 #include "global.h"
@@ -97,7 +97,7 @@ extern struct program *image_program;
 
 #endif /* HAVE_JPEGLIB_H */
 
-static struct pike_string *param_baseline;
+static struct pike_string *param_baseline = NULL;
 static struct pike_string *param_quality;
 static struct pike_string *param_optimize;
 static struct pike_string *param_smoothing;
@@ -1483,6 +1483,7 @@ void image_jpeg_quant_tables(INT32 args)
 
 PIKE_MODULE_EXIT
 {
+   if (!param_baseline) return;
    free_string(param_baseline);
    free_string(param_quality);
    free_string(param_optimize);
@@ -1509,8 +1510,10 @@ PIKE_MODULE_INIT
 #ifdef HAVE_JPEGLIB_H
 #ifdef DYNAMIC_MODULE
     image_program = PIKE_MODULE_IMPORT(Image, image_program);
-    if(!image_program)
-      yyerror("Could not load Image module.\n");
+    if(!image_program) {
+       yyerror("Could not load Image module.");
+       return;
+    }
 #endif /* DYNAMIC_MODULE */
 
 #define tOptions tMap(tStr,tOr3(					\
