@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sd.c,v 1.3 2005/10/13 09:08:57 nilsson Exp $
+|| $Id: sd.c,v 1.4 2005/10/22 03:22:06 bill Exp $
 */
 
 
@@ -154,6 +154,8 @@ static DNSServiceErrorType start_service(struct service *svc,
                            txtlen, txt, start_service_callback, NULL);
   if (err == kDNSServiceErr_NoError)
     svc->service_ref = ref;
+
+  err = DNSServiceProcessResult(ref);
   return err;
 }
 
