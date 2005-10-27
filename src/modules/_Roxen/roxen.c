@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.40 2004/01/27 15:01:05 grubba Exp $
+|| $Id: roxen.c,v 1.41 2005/10/27 16:54:10 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -247,7 +247,8 @@ static void f_hp_create( INT32 args )
 
 static void f_make_http_headers( INT32 args )
 /*! @decl string @
- *!          make_http_headers(mapping(string:string|array(string)) headers)
+ *!          make_http_headers(mapping(string:string|array(string)) headers, @
+ *!                            int(0..1)|void no_terminator)
  */
 {
   int total_len = 0, e;
@@ -255,10 +256,19 @@ static void f_make_http_headers( INT32 args )
   struct mapping *m;
   struct keypair *k;
   struct pike_string *res;
-  if( Pike_sp[-1].type != PIKE_T_MAPPING )
-    Pike_error("Wrong argument type to make_http_headers(mapping heads)\n");
+  int terminator = 2;
 
-  m = Pike_sp[-1].u.mapping;
+  if( Pike_sp[-args].type != PIKE_T_MAPPING )
+    Pike_error("Wrong argument type to make_http_headers(mapping heads)\n");
+  m = Pike_sp[-args].u.mapping;
+
+  if (args > 1) {
+    if (Pike_sp[1-args].type != PIKE_T_INT)
+      Pike_error("Bad argument 2 to make_http_headers(). Expected int.\n");
+    if (Pike_sp[1-args].u.integer)
+      terminator = 0;
+  }
+
   /* loop to check len */
   NEW_MAPPING_LOOP( m->data )
   {
@@ -283,7 +293,7 @@ static void f_make_http_headers( INT32 args )
             "mapping(string(8bit):string(8bit)|"
             "array(string(8bit))) heads)\n");
   }
-  total_len += 2;
+  total_len += terminator;
 
   res = begin_shared_string( total_len );
   pnt = (char *)res->str;
@@ -311,8 +321,10 @@ static void f_make_http_headers( INT32 args )
       }
     }
   }
-  *(pnt++) = '\r';
-  *(pnt++) = '\n';
+  if (terminator) {
+    *(pnt++) = '\r';
+    *(pnt++) = '\n';
+  }
 
   pop_n_elems( args );
   push_string( end_shared_string( res ) );
@@ -543,7 +555,7 @@ static void f_html_encode_string( INT32 args )
 PIKE_MODULE_INIT
 {
   pike_add_function("make_http_headers", f_make_http_headers,
-               "function(mapping(string:string|array(string)):string)", 0 );
+               "function(mapping(string:string|array(string)), int|void:string)", 0 );
 
   pike_add_function("http_decode_string", f_http_decode_string,
                "function(string:string)", 0 );
