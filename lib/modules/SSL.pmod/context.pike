@@ -1,5 +1,5 @@
 //
-// $Id: context.pike,v 1.31 2004/02/29 02:56:04 nilsson Exp $
+// $Id: context.pike,v 1.32 2005/10/28 19:49:39 bill Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -17,6 +17,23 @@ import .Constants;
 Crypto.RSA rsa;
 
 /* For client authentication */
+
+//! The client's private key (used with client certificate authentication)
+Crypto.RSA client_rsa;
+
+//! An array of certificate chains a client may present to a server
+//! when client certificate authentication is requested.
+array(array(string)) client_certificates = ({});
+
+//! A function which will select an acceptable client certificate for 
+//! presentation to a remote server. This function will receive
+//! the SSL context, an array of acceptable certificate types,
+//! and a list of DNs of acceptable certificate authorities. This function
+//! should return an array of strings containing a certificate chain,
+//! with the client certificate first, (and the root certificate last, if
+//! applicable.) 
+function (.context,array(int),array(string):array(string))client_certificate_selector
+  = internal_select_client_certificate;
 
 //! Policy for client authentication. One of @[SSL.Constants.AUTHLEVEL_none],
 //! @[SSL.Constants.AUTHLEVEL_ask] and @[SSL.Constants.AUTHLEVEL_require].
@@ -251,6 +268,39 @@ private void update_authorities()
     authorities_cache += ({ Tools.X509.decode_certificate(a)});
   }
 
+}
+
+// FIXME: we only really know that RSA and DSS keys will get caught here.
+private array(string) internal_select_client_certificate(.context context, 
+array(int) acceptable_types, array(string) acceptable_authority_dns)
+{
+  if(!context->client_certificates|| 
+         ![int]sizeof((context->client_certificates)))
+    return ({});
+
+  array(mapping(string:mixed)) c = ({});
+  int i = 0;
+  foreach(context->client_certificates, array(string) chain)
+  {
+    if(!sizeof(chain)) { i++; continue; }
+
+    c += ({ (["cert":Tools.X509.decode_certificate(chain[0]), "chain":i ]) });
+    i++;
+  }
+
+  string wantedtype;
+  mapping cert_types = ([1:"rsa", 2:"dss", 3:"rsa_fixed_dh", 4:"dss_fixed_dh"]);
+  foreach(acceptable_types, int t)
+  {
+      wantedtype= [string]cert_types[t];
+
+      foreach(c, mapping(string:mixed) cert)
+      {
+        object crt = [object](cert->cert);
+        if((string)((object)(crt->public_key))->type == "rsa")
+          return context->client_certificates[[int](cert->chain)];
+      }
+  }
 }
 
 // update the cached decoded issuers list

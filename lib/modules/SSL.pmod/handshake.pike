@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-/* $Id: handshake.pike,v 1.57 2005/05/26 12:03:59 mast Exp $
+/* $Id: handshake.pike,v 1.58 2005/10/28 19:49:40 bill Exp $
  *
  */
 
@@ -62,8 +62,13 @@ Crypto.RSA temp_key; /* Key used for session key exchange (if not the same
 int rsa_message_was_bad;
 array(int) version;
 array(int) remote_version;
-
+int anonymous = 0;
 int reuse;
+
+//! a few storage variables for client certificate handling on the client side. */
+array(int) client_cert_types;
+array(string) client_cert_distinguished_names;
+
 
 //! Random cookies, sent and received with the hello-messages.
 string client_random;
@@ -187,6 +192,8 @@ Packet server_key_exchange_packet()
   case KE_dhe_dss:
   case KE_dhe_rsa:
   case KE_dh_anon:
+    // anonymous, not used on the server, but here for completeness.
+    anonymous = 1;
     struct = ADT.struct();
 
     /* werror("dh_params = %O\n", context->dh_params); */
@@ -237,6 +244,7 @@ Packet client_key_exchange_packet()
 #ifdef SSL3_DEBUG
     werror("FIXME: Not handled yet\n");
 #endif
+    anonymous = 1;
     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
 		      backtrace()));
@@ -247,6 +255,21 @@ Packet client_key_exchange_packet()
   }
 
   return handshake_packet(HANDSHAKE_client_key_exchange, data);
+}
+
+Packet certificate_verify_packet()
+{
+
+  ADT.struct struct = ADT.struct();
+
+  .context cx = .context();
+  cx->rsa = context->client_rsa;
+  
+  session->cipher_spec->sign(cx, handshake_messages, struct);
+
+  return handshake_packet (HANDSHAKE_certificate_verify,
+			  struct->pop_data());
+  
 }
 
 int(-1..0) reply_new_session(array(int) cipher_suites,
@@ -288,16 +311,7 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
    */
   if (context->certificates)
   {
-    ADT.struct struct = ADT.struct();
-    
-    int len = `+( @ Array.map(context->certificates, sizeof));
-#ifdef SSL3_DEBUG
-//    werror("SSL.handshake: certificate_message size %d\n", len);
-#endif
-    struct->put_uint(len + 3 * sizeof(context->certificates), 3);
-    foreach(context->certificates, string cert)
-      struct->put_var_string(cert, 3);
-    send_packet(handshake_packet(HANDSHAKE_certificate, struct->pop_data()));
+    send_packet(certificate_packet(context->certificates));
   }
   else if (session->cipher_spec->sign != .Cipher.anon_sign)
     // Otherwise the server will just silently send an invalid
@@ -311,29 +325,9 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   }
   if (context->auth_level >= AUTHLEVEL_ask)
   {
-    // if we have no authorities, this is all rather pointless. throw an error.
-
-    if(!context->authorities_cache || !sizeof(context->authorities_cache))
-      error("No certificate authorities provided.\n");
- 
-    /* Send a CertificateRequest message */
-    ADT.struct struct = ADT.struct();
-    struct->put_var_uint_array(context->preferred_auth_methods, 1, 1);
-
-    int len; 
-
-    // we should never get to a point where we send an empty certificate request.
-    if(sizeof(context->authorities_cache))
-    {
-      len = `+(@ Array.map(context->authorities_cache,
-			     lambda(Tools.X509.TBSCertificate s)
-       { return sizeof(s->subject->get_der());} ));
-      struct->put_uint(len + 2 * sizeof(context->authorities_cache), 2);
-      foreach(context->authorities_cache, Tools.X509.TBSCertificate auth)
-        struct->put_var_string(auth->subject->get_der(), 2);
-    }
-    send_packet(handshake_packet(HANDSHAKE_certificate_request,
-				 struct->pop_data()));
+    // we can send a certificate request packet, even if we don't have
+    // any authorized issuers.
+    send_packet(certificate_request_packet(context)); 
     certificate_state = CERT_requested;
   }
   send_packet(handshake_packet(HANDSHAKE_server_hello_done, ""));
@@ -369,6 +363,47 @@ Packet finished_packet(string sender)
 	   return handshake_packet(HANDSHAKE_finished, hash_messages(sender));
 }
 
+Packet certificate_request_packet(SSL.context context)
+{
+    /* Send a CertificateRequest message */
+    ADT.struct struct = ADT.struct();
+    struct->put_var_uint_array(context->preferred_auth_methods, 1, 1);
+
+    int len; 
+
+    // an empty certificate request is allowed.
+    if(context->authorities_cache && sizeof(context->authorities_cache))
+      len = `+(@ Array.map(context->authorities_cache,
+			     lambda(Tools.X509.TBSCertificate s)
+       { return sizeof(s->subject->get_der());} ));
+
+    struct->put_uint(len + 2 * sizeof(context->authorities_cache), 2);
+    foreach(context->authorities_cache, Tools.X509.TBSCertificate auth)
+      struct->put_var_string(auth->subject->get_der(), 2);
+    return handshake_packet(HANDSHAKE_certificate_request,
+				 struct->pop_data());
+}
+
+Packet certificate_packet(array(string) certificates)
+{
+  Packet p;
+
+  ADT.struct struct = ADT.struct();
+  int len = 0;
+  
+  if(certificates && sizeof(certificates))
+    len = `+( @ Array.map(certificates, sizeof));
+#ifdef SSL3_DEBUG
+  //    werror("SSL.handshake: certificate_message size %d\n", len);
+#endif
+  struct->put_uint(len + 3 * sizeof(certificates), 3);
+  foreach(certificates, string cert)
+    struct->put_var_string(cert, 3);
+
+  return handshake_packet(HANDSHAKE_certificate, struct->pop_data());
+
+}
+
 string server_derive_master_secret(string data)
 {
   string premaster_secret;
@@ -402,6 +437,8 @@ string server_derive_master_secret(string data)
     /* Fall through */
   case KE_dh_anon:
   {
+    anonymous = 1;
+
     /* Explicit encoding */
     ADT.struct struct = ADT.struct(data);
 
@@ -551,6 +588,16 @@ int verify_certificate_chain(array(string) certs)
   // do we need to verify the certificate chain?
   if(!context->verify_certificates)
     return 1;
+
+  // if we're not requiring the certificate, and we don't provide one, 
+  // that should be okay. 
+  if((context->auth_level < AUTHLEVEL_require) && !sizeof(certs))
+    return 1;
+
+  // a lack of certificates when we requre and must verify the certificates 
+  // is probably a failure.
+  if(!certs || !sizeof(certs))
+    return 0;
 
   int issuer_known = 0;
 
@@ -885,7 +932,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       werror("client_key_exchange\n");
 #endif
       if (certificate_state == CERT_requested)
-      { /* Certificate should be sent before key exchange message */
+      { /* Certificate must be sent before key exchange message */
 	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			  "SSL.session->handle_handshake: unexpected message\n",
 			  backtrace()));
@@ -907,17 +954,23 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	werror("certificate_state: %d\n", certificate_state);
 #endif
       }
-      if (certificate_state != CERT_received)
+      // TODO: we need to determine whether the certificate has signing abilities.
+      if (certificate_state == CERT_received)
+      {
+	handshake_state = STATE_server_wait_for_verify;
+      }
+      else
       {
 	handshake_state = STATE_server_wait_for_finish;
 	expect_change_cipher = 1;
       }
-      else
-	handshake_state = STATE_server_wait_for_verify;
 
       break;
     case HANDSHAKE_certificate:
      {
+#ifdef SSL3_DEBUG
+      werror("client_certificate\n");
+#endif
        if (certificate_state != CERT_requested)
        {
 	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
@@ -925,14 +978,19 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			   backtrace()));
 	 return -1;
        }
-       if (catch {
+       mixed e;
+       if (e = catch {
 	 int certs_len = input->get_uint(3);
+#ifdef SSL3_DEBUG
+      werror("got %d certificate bytes\n", certs_len);
+#endif
 	 array(string) certs = ({ });
 	 while(!input->is_empty())
 	   certs += ({ input->get_var_string(3) });
 
 	  // we have the certificate chain in hand, now we must verify them.
-          if(!verify_certificate_chain(certs))
+          if((!sizeof(certs) && context->auth_level == AUTHLEVEL_require) || 
+                     !verify_certificate_chain(certs))
           {
 	     send_packet(Alert(ALERT_fatal, ALERT_bad_certificate, version[1],
 			       "SSL.session->handle_handshake: bad certificate\n",
@@ -951,13 +1009,14 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	 return -1;
        }	
 
-       certificate_state = CERT_received;
+       if(session->peer_certificate_chain && sizeof(session->peer_certificate_chain))
+          certificate_state = CERT_received;
+       else certificate_state = CERT_no_certificate;
        break;
      }
     }
     break;
   case STATE_server_wait_for_verify:
-    // handshake_messages += raw;
     // compute challenge first, then update handshake_messages /Sigge
     switch(type)
     {
@@ -1063,7 +1122,10 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       return -1;
     case HANDSHAKE_certificate:
       {
-      // FIXME: If anonymous connection, we don't need a cert.
+      // we're anonymous, so no certificate is requred.
+      if(anonymous)
+         break;
+
       SSL3_DEBUG_MSG("Handshake: Certificate message received\n");
       int certs_len = input->get_uint(3);
       array(string) certs = ({ });
@@ -1073,11 +1135,11 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       // we have the certificate chain in hand, now we must verify them.
       if(!verify_certificate_chain(certs))
       {
+        werror("Unable to verify peer certificate chain.\n");
         send_packet(Alert(ALERT_fatal, ALERT_bad_certificate, version[1],
 			  "SSL.session->handle_handshake: bad certificate\n",
 			  backtrace()));
-        error("Unable to verify peer certificate chain.\n");
-//  	return -1;
+  	return -1;
       }
       else
       {
@@ -1149,22 +1211,83 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       }
 
     case HANDSHAKE_certificate_request:
-      {
 #ifdef SSL3_DEBUG
-	werror("Certificate request not yet implemented.\n");
+	werror("Certificate request received.\n");
 #endif
-	array(int) cert_types = input->get_var_uint_array(1, 1);
-//       int num_distinguished_names = input->get_uint(2);
-//       array(string) distinguished_names =
-	send_packet(Alert(ALERT_warning, ALERT_no_certificate, version[1],
-			  "", backtrace()));
-      }
+        // it is a fatal handshake_failure alert for an anonymous server to 
+        // request client authentication.
+        if(anonymous)
+        {
+	  send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1],
+			    "SSL.session->handle_handshake: anonymous server "
+			    "requested authentication by certificate\n",
+			    backtrace()));
+	  return -1;
+        }
+
+        client_cert_types = input->get_var_uint_array(1, 1);
+        client_cert_distinguished_names = ({});
+        int num_distinguished_names = input->get_uint(2);
+        if(num_distinguished_names)
+        {
+          ADT.struct s = ADT.struct(input->get_fix_string(num_distinguished_names));
+          while(!s->is_empty())
+          {
+            object asn = Standards.ASN1.Decode.simple_der_decode((string)s->get_var_string(2));
+            if(object_program(asn) != Standards.ASN1.Types.Sequence)
+            {
+                    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
+                            "SSL.session->handle_handshake: Badly formed Certificate Request.\n",
+                            backtrace()));              
+            }
+            Standards.ASN1.Types.Sequence seq = [object(Standards.ASN1.Types.Sequence)]asn;
+            client_cert_distinguished_names += ({ (string)Standards.PKCS.Certificate.get_dn_string( 
+                                            seq ) }); 
+#ifdef SSL3_DEBUG
+            werror("got an authorized issuer: %O\n", client_cert_distinguished_names[-1]);
+#endif
+           }
+        }
+
+      certificate_state = CERT_requested;
       break;
 
     case HANDSHAKE_server_hello_done:
       /* Send Certificate, ClientKeyExchange, CertificateVerify and
        * ChangeCipherSpec as appropriate, and then Finished.
        */
+      /* only send a certificate if it's been requested. */
+      if(certificate_state == CERT_requested)
+      {
+        // okay, we have a list of certificate types and dns that are
+        // acceptable to the remote server. we should weed out the certs
+        // we have so that we only send certificates that match what they 
+        // want.
+
+        array(string) certs = context->client_certificate_selector(context, 
+                                          client_cert_types, 
+                                          client_cert_distinguished_names);
+        if(!certs || !sizeof(certs))
+          certs = ({});
+
+#ifdef SSL3_DEBUG
+        foreach(certs, string c)
+        {
+werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.X509.decode_certificate(c)->subject) + "\n");
+        }
+#endif
+
+	send_packet(certificate_packet(certs));
+        if(!sizeof(certs))
+          certificate_state = CERT_no_certificate;
+        else
+        {
+          certificate_state = CERT_received; // we use this as a way of saying "the server received our certificate"
+          session->certificate_chain = certs;
+        }
+      }
+
+
       {
 
       check_serv_cert: {
@@ -1186,27 +1309,16 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  return -1;
 	}
 
-      if (context->certificates)
-      {
-	ADT.struct struct = ADT.struct();
-    
-	int len = `+( @ Array.map(context->certificates, sizeof));
-#ifdef SSL3_DEBUG
-	//    werror("SSL.handshake: certificate_message size %d\n", len);
-#endif
-	struct->put_uint(len + 3 * sizeof(context->certificates), 3);
-	foreach(context->certificates, string cert)
-	  struct->put_var_string(cert, 3);
-	send_packet(handshake_packet(HANDSHAKE_certificate, struct->pop_data()));
-      }
-
-
       Packet key_exchange = client_key_exchange_packet();
 
       if (key_exchange)
 	send_packet(key_exchange);
 
       // FIXME: Certificate verify
+      if(certificate_state == CERT_received) // we sent a certificate, so we should send the verification.
+      {
+         send_packet(certificate_verify_packet());
+      }
 
       send_packet(change_cipher_packet());
 

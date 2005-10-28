@@ -1,5 +1,5 @@
 //
-// $Id: session.pike,v 1.35 2004/07/05 17:02:36 grubba Exp $
+// $Id: session.pike,v 1.36 2005/10/28 19:49:40 bill Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -46,8 +46,11 @@ mapping cert_data;
 
 array(int) version;
 
-//!
+//! the peer certificate chain
 array(string) peer_certificate_chain;
+
+//! our certificate chain
+array(string) certificate_chain;
 
 //! Sets the proper authentication method and cipher specification
 //! for the given cipher @[suite] and @[verison].
