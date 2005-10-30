@@ -1,15 +1,16 @@
 //!
-//!  Retrieves information about a CGI request from the environment and creates
-//!  an object with the request information easily formatted.
+//!  Retrieves information about a CGI request from the environment
+//!  and creates an object with the request information easily
+//!  formatted.
 //! 
 
-#define D(x) werror(sprintf("%O\n", x))
+static constant http_decode_string = _Roxen.http_decode_string;
 
-import Stdio;
-function http_decode_string = Protocols.HTTP.Server.http_decode_string;
+//!
+mapping(string:array(string)) variables = ([ ]);
 
-mapping (string:string) variables = ([ ]);
-mapping (string:mixed) misc = ([ ]);
+//!
+mapping(string:int|string|array(string)) misc = ([ ]);
 
 //!
 string query, rest_query;
@@ -17,29 +18,32 @@ string query, rest_query;
 //! 
 string data;
 
-//! If used with Roxen or Caudium webservers, this field will be populated with "prestate" information.
-multiset   (string) prestate     = (< >);
+//! If used with Roxen or Caudium webservers, this field will be
+//! populated with "prestate" information.
+multiset(string) prestate;
 
-//! If used with Roxen or Caudium webservers, this field will be populated with "config" information.
-multiset   (string) config       = (< >);
+//! If used with Roxen or Caudium webservers, this field will be
+//! populated with "config" information.
+multiset(string) config;
 
-//! If used with Roxen or Caudium webservers, this field will be populated with "supports" information.
-multiset   (string) supports     = (< >);
+//! If used with Roxen or Caudium webservers, this field will be
+//! populated with "supports" information.
+multiset(string) supports;
 
 //!
 string remoteaddr, remotehost;
 
 //!
-array  (string) client      = ({ });
+array(string) client;
 
 //!
-array  (string) referer     = ({ });
+array(string) referer;
 
 //!
-multiset (string) pragma      = (< >);
+multiset(string) pragma;
 
 //!
-mapping (string:string) cookies = ([ ]);
+mapping(string:string) cookies;
 
 //!
 string prot;
@@ -47,86 +51,81 @@ string prot;
 //!
 string method;
 
-static private void decode_query() {
-  string v, a, b;	
-  variables = ([]);
-  if(!query)
-    query = "";
-  rest_query = "";
-  foreach(query / "&", v)
+static void add_variable(string name, string value) {
+  if(variables[name])
+    variables[name] += ({ value });
+  else
+    variables[name] = ({ value });
+}
+
+static void decode_query() {
+  if(!query) return;
+  foreach(query / "&", string v) {
+    string a, b;
     if(sscanf(v, "%s=%s", a, b) == 2)
     {
       a = http_decode_string(replace(a, "+", " "));
       b = http_decode_string(replace(b, "+", " "));
-      
-      if(variables[ a ])
-	variables[ a ] +=  "\0" + b;
-      else
-	variables[ a ] = b;
+
+      add_variable(a, b);
     } else
-      if(strlen( rest_query ))
+      if( rest_query )
 	rest_query += "&" + http_decode_string( v );
       else
 	rest_query = http_decode_string( v );
-  rest_query=replace(rest_query, "+", "\000"); /* IDIOTIC STUPID STANDARD */
+  }
+  rest_query=replace(rest_query, "+", "\0"); /* IDIOTIC STUPID STANDARD */
 }
 
-static private void decode_cookies()
+static void decode_cookies(string data)
 {
-  string c;
-  foreach(misc->cookies/";", c)
+  cookies = ([]);
+  foreach(data/";", string c)
   {
     string name, value;
-    while(c[0]==' ') c=c[1..];
+    sscanf(c, "%*[ ]%s", c);
     if(sscanf(c, "%s=%s", name, value) == 2)
     {
       value=http_decode_string(value);
       name=http_decode_string(name);
       cookies[ name ]=value;
-      if(name == "RoxenConfig" && strlen(value))
-      {
-	array tmpconfig = value/"," + ({ });
-	string m;
-	config = aggregate_multiset(@tmpconfig);
-      }
+      if(name == "RoxenConfig" && sizeof(value))
+	config = (multiset)(value/",");
     }
   }
 }
 
 
-private void decode_post()
+static void decode_post()
 {
   string a, b;
   if(!data) data="";
   int wanted_data=misc->len;
-  int have_data=strlen(data);
+  int have_data=sizeof(data);
   if(have_data < misc->len) // \r are included. 
   {
     werror("WWW.CGI parse: Short stdin read.\n");
-    return 0;
+    return;
   }
   data = data[..misc->len];
   switch(lower_case(((misc["content-type"]||"")/";")[0]-" "))
   {
    default: // Normal form data.
-    string v;
     if(misc->len < 200000)
     {
-      foreach(replace(data-"\n", "+", " ")/"&", v)
+      foreach(replace(data-"\n", "+", " ")/"&", string v)
 	if(sscanf(v, "%s=%s", a, b) == 2)
 	{
 	  a = http_decode_string( a );
 	  b = http_decode_string( b );
 	  
-	  if(variables[ a ])
-	    variables[ a ] +=  "\0" + b;
-	  else
-	    variables[ a ] = b;
+	  add_variable(a, b);
 	}
-      break;
     }
+    break;
+
    case "multipart/form-data":
-    object messg = MIME.Message(data, misc);
+    MIME.Message messg = MIME.Message(data, misc);
     foreach(messg->body_parts, object part) {
       if(part->disp_params->filename) {
 	variables[part->disp_params->name]=part->getdata();
@@ -136,68 +135,68 @@ private void decode_post()
 	  misc->files = ({ part->disp_params->name });
 	else
 	  misc->files += ({ part->disp_params->name });
-      } else {
-	variables[part->disp_params->name]=part->getdata();
-      }
+      } else
+	add_variable(part->disp_params->name, part->getdata());
     }
     break;
   }
 }
 
 //!
-//! creates the request object. To use, create a Request object while running in a CGI environment.
-//! Environment variables will be parsed and inserted in the appropriate fields of the resulting object.
+//! creates the request object. To use, create a Request object while
+//! running in a CGI environment. Environment variables will be parsed
+//! and inserted in the appropriate fields of the resulting object.
 static void create()
 {
   string contents;
 
   contents = getenv("CONTENT_LENGTH");
-  if(stringp(contents))
+  if(contents && sizeof(contents))
     misc->len = (int)(contents - " ");
 
   contents = getenv("CONTENT_TYPE");
-  if(contents)
+  if(contents && sizeof(contents))
     misc["content-type"] = contents;
 
   contents = getenv("HTTP_HOST");
-  if(stringp(contents) && strlen(contents)) 
+  if(contents && sizeof(contents))
     misc->host = contents;
 
   contents = getenv("HTTP_CONNECTION");
-  if(stringp(contents) && strlen(contents)) 
+  if(contents && sizeof(contents))
     misc->connection = contents;
 
   contents = getenv("REMOTE_HOST");
-  if(stringp(contents) && strlen(contents)) 
+  if(contents && sizeof(contents))
     remotehost = contents;
 
-  remoteaddr = getenv("REMOTE_ADDR") ||"unknown";
-  referer = (contents = getenv("HTTP_REFERER")) ? contents / " ": ({});
+  remoteaddr = getenv("REMOTE_ADDR") || "unknown";
+  referer = (contents = getenv("HTTP_REFERER")) ? contents/" " : ({});
   
   contents = getenv("SUPPORTS");
-  if(stringp(contents) && strlen(contents))
+  if(contents && sizeof(contents))
     supports = mkmultiset(contents / " ");
 
   contents = getenv("HTTP_USER_AGENT");
-  if(stringp(contents))
+  if(contents)
     client = contents / " ";
 
   contents = getenv("HTTP_COOKIE"); 
-  if(stringp(contents) && strlen(contents)) {
+  if(contents && sizeof(contents)) {
     misc->cookies = contents;
-    decode_cookies();
+    decode_cookies(contents);
   }
 
   contents = getenv("PRESTATES");
-  if(stringp(contents) && strlen(contents))
-    prestate = mkmultiset(Array.map(contents / " ",
-				    lambda(string s) {
+  if(contents && sizeof(contents))
+    prestate = mkmultiset(map(contents / " ",
+			      lambda(string s) {
       return http_decode_string(replace(s, "+", " "));
     }));
 
   contents = getenv("HTTP_PRAGMA");
-  if(stringp(contents) && strlen(contents))
-    pragma |= aggregate_multiset(@replace(contents, " ", "")/ ",");
+  if(contents && sizeof(contents))
+    pragma = aggregate_multiset(@replace(contents, " ", "")/ ",");
 
   query = getenv("QUERY_STRING");
   method = getenv("REQUEST_METHOD") || "GET";
@@ -222,7 +221,7 @@ static void create()
   
   
   if(misc->len)
-    data = File("stdin")->read(misc->len);
+    data = Stdio.stdin->read(misc->len);
   
   decode_query(); // Decode the query string
 
