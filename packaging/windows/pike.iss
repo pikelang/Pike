@@ -2,10 +2,10 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 [Setup]
-AppName=Pike 7.6
-AppVerName=Pike 7.6.48, SDL, OpenGL, MySQL, Freetype, Gz and GTK+
-AppVersion=7.6.48
-VersionInfoVersion=7.6.48.0
+AppName=Pike 7.6 *BETA*
+AppVerName=Pike 7.6.49, SDL, OpenGL, MySQL, Freetype, Gz and GTK+
+AppVersion=7.6.49
+VersionInfoVersion=7.6.49.0
 AppPublisher=The Pike Team
 AppPublisherURL=http://pike.ida.liu.se/
 AppSupportURL=http://pike.ida.liu.se/
