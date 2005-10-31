@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.5 2004/05/02 18:31:43 nilsson Exp $
+// $Id: testsuite.in,v 1.6 2005/10/31 11:38:07 nilsson Exp $
 
 // DOM
 
@@ -16,6 +16,8 @@ test_eq([[ Parser.XML.Tree.parse_input("<a>hej &x.y; hopp</a>")->render_xml(1); 
 [[ "<a>hej &x.y; hopp</a>" ]])
 test_eq([[ (string)Parser.XML.Tree.parse_input("<a><b> <c/> </b></a>") ]],
 [[ "<a><b> <c/> </b></a>" ]])
+test_eq([[ Parser.XML.Tree.parse_input("<p>a<![CDATA[b]""]>c</p>")[0][0]->get_text() ]],
+[[ "abc" ]])
 
 // NSTree
 
