@@ -1,6 +1,6 @@
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.7 2005/09/14 08:32:50 grubba Exp $");
+RCSID("$Id: freetype.c,v 1.8 2005/10/31 09:11:54 grubba Exp $");
 
 #ifdef HAVE_LIBFT2
 #include <freetype/freetype.h>
@@ -220,7 +220,7 @@ void pike_module_init()
     ADD_FUNCTION("get_kerning",image_ft_face_get_kerning,
                  tFunc(tInt tInt,tInt),0);
     
-    set_exit_callback( image_ft_face_init );
+    set_init_callback( image_ft_face_init );
     set_exit_callback( image_ft_face_free );
     
     face_program = end_program();
