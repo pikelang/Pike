@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freetype.c,v 1.24 2005/09/14 08:32:33 grubba Exp $
+|| $Id: freetype.c,v 1.25 2005/10/31 09:12:18 grubba Exp $
 */
 
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.24 2005/09/14 08:32:33 grubba Exp $");
+RCSID("$Id: freetype.c,v 1.25 2005/10/31 09:12:18 grubba Exp $");
 #include "module.h"
 #include "pike_error.h"
 
@@ -405,7 +405,7 @@ PIKE_MODULE_INIT
     ADD_FUNCTION("get_kerning",image_ft_face_get_kerning,
                  tFunc(tInt tInt,tInt),0);
     
-    set_exit_callback( image_ft_face_init );
+    set_init_callback( image_ft_face_init );
     set_exit_callback( image_ft_face_free );
 
     face_program = end_program();
