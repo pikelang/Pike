@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.570 2005/06/09 09:26:09 grubba Exp $
+|| $Id: program.c,v 1.571 2005/11/01 21:53:00 jonasw Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.570 2005/06/09 09:26:09 grubba Exp $");
+RCSID("$Id: program.c,v 1.571 2005/11/01 21:53:00 jonasw Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -8078,8 +8078,10 @@ void make_program_executable(struct program *p)
 
 #else  /* _WIN32 */
 
+#if !defined(HAVE_MMAP) || !defined(MEXEC_USES_MMAP)
   mprotect((void *)p->program, p->num_program*sizeof(p->program[0]),
 	   PROT_EXEC | PROT_READ | PROT_WRITE);
+#endif /* !HAVE_MMAP || !MEXEC_USES_MMAP */
 
 #endif /* _WIN32 */
 
