@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.498 2005/08/14 11:27:24 jonasw Exp $
+|| $Id: program.c,v 1.499 2005/11/01 21:53:24 jonasw Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.498 2005/08/14 11:27:24 jonasw Exp $");
+RCSID("$Id: program.c,v 1.499 2005/11/01 21:53:24 jonasw Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -7314,8 +7314,11 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
 
 void make_program_executable(struct program *p)
 {
+#if !defined(HAVE_MMAP) || !defined(MEXEC_USES_MMAP)
   mprotect((void *)p->program, p->num_program*sizeof(p->program[0]),
 	   PROT_EXEC | PROT_READ | PROT_WRITE);
+#endif /* !HAVE_MMAP || !MEXEC_USES_MMAP */
+
 #ifdef FLUSH_INSTRUCTION_CACHE
   FLUSH_INSTRUCTION_CACHE(p->program,
 			  p->num_program*sizeof(p->program[0]));
