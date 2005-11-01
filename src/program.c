@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.595 2005/08/10 11:55:49 grubba Exp $
+|| $Id: program.c,v 1.596 2005/11/01 10:16:08 grubba Exp $
 */
 
 #include "global.h"
@@ -8222,6 +8222,8 @@ void make_program_executable(struct program *p)
   }
 #else  /* _WIN32 */
 
+
+#if !defined(HAVE_MMAP) || !defined(MEXEC_USES_MMAP)
   if (mprotect(addr, len, PROT_EXEC | PROT_READ | PROT_WRITE) < 0) {
 #if 0
     fprintf(stderr, "%p:%d: mprotect(%p, %lu, 0x%04x): errno: %d\n",
@@ -8232,6 +8234,7 @@ void make_program_executable(struct program *p)
 	    errno);
 #endif /* 0 */
   }
+#endif /* !HAVE_MMAP || !MEXEC_USES_MMAP */
 
 #endif /* _WIN32 */
 
