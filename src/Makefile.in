@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.387 2005/10/14 08:39:28 grubba Exp $
+# $Id: Makefile.in,v 1.388 2005/11/01 18:59:03 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -951,19 +951,18 @@ lex_t.o: $(SRCDIR)/lex_t.c $(SRCDIR)/interpret_protos.h
 
 language.o: $(SRCDIR)/language.c $(SRCDIR)/object.h $(SRCDIR)/interpret.h $(SRCDIR)/program.h
 
-$(SRCDIR)/y.tab.c: $(SRCDIR)/language.yacc
+$(SRCDIR)/language.c_src $(SRCDIR)/language.h_src: $(SRCDIR)/language.yacc
 	@echo "Expect 1 shift/reduce conflict."
 	cd $(SRCDIR) && $(YACC) $(YFLAGS) language.yacc
+	mv $(SRCDIR)/y.tab.c $(SRCDIR)/language.c_src
+	mv $(SRCDIR)/y.tab.h $(SRCDIR)/language.h_src
 
-$(SRCDIR)/language.c: $(SRCDIR)/y.tab.c
+$(SRCDIR)/language.c: $(SRCDIR)/language.c_src
 	sed -e 's/YY_COUNT_TYPE/@YY_COUNT_TYPE@/' \
 	    -e 's/YY_FROM_CONST/@YY_FROM_CONST@/' \
 	    -e 's/short[ 	]*int[ 	]/\/* short *\/ int /g' \
 	    -e 's/(short[ 	]*int)/(\/* short *\/ int)/g' \
-	    < $(SRCDIR)/y.tab.c > $(SRCDIR)/language.c
-
-$(SRCDIR)/language.h_src: $(SRCDIR)/y.tab.c
-	mv $(SRCDIR)/y.tab.h $(SRCDIR)/language.h_src
+	    < $(SRCDIR)/language.c_src > $(SRCDIR)/language.c
 
 $(SRCDIR)/interpret_functions_fixed.h: $(SRCDIR)/interpret_functions.h precompile.sh-stamp
 	./precompile.sh --cache make_interpret_functions.pike >"$@" "$(SRCDIR)/interpret_functions.h" || { rm "$@"; exit 1; }
