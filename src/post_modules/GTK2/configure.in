@@ -181,7 +181,9 @@ else
     AC_CHECK_PKG(libglade-2.0, glade_init, [
       pgtk_has_libglade=libglade
     ])
-    AC_CHECK_PKG(libgnomeui-2.0, gnome_window_icon_init)
+    AC_CHECK_PKG(libgnomeui-2.0, gnome_window_icon_init, [
+      AC_DEFINE(HAVE_GNOMEUI)
+    ])
     AC_CHECK_PKG(libpanelapplet-2.0, panel_applet_factory_main)
     AC_CHECK_PKG(libgnomecanvas-2.0, gnome_canvas_new, [
       AC_DEFINE(HAVE_GNOMECANVAS)
