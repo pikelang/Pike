@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgtk.h,v 1.1 2005/07/28 15:24:58 nilsson Exp $
+|| $Id: pgtk.h,v 1.2 2005/11/02 14:16:19 grubba Exp $
 */
 
 /* Sort of unnessesary, and decreases code-size with 140Kb */
@@ -30,7 +30,7 @@
 */
 #include <gtk/gtk.h>
 #if defined(HAVE_GNOME)
-# include <gnome.h>
+# include <libgnome.h>
 /*# include <libgnorba/gnorba.h> */
 #endif
 
