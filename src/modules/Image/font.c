@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: font.c,v 1.87 2005/08/15 17:00:39 grubba Exp $
+|| $Id: font.c,v 1.88 2005/11/03 16:08:51 grubba Exp $
 */
 
 #include "global.h"
@@ -183,10 +183,13 @@ static INLINE void free_font_struct(struct font *font)
       if (font->mem && font->mem!=image_default_font)
       {
 #ifdef HAVE_MMAP
-	 munmap(font->mem,font->mmaped_size);
+	 if (font->mmaped_size) {
+	    munmap(font->mem,font->mmaped_size);
+	 } else
 #else
-	 free(font->mem);
+	   free(font->mem);
 #endif
+	 font->mem = NULL;
       }
       free(font);
    }
@@ -220,11 +223,10 @@ static INLINE int char_width(struct font *this, INT32 c)
   return this->charinfo[c].width;
 }  
 
-#ifndef HAVE_MMAP
-static INLINE ptrdiff_t my_read(int from, void *t, size_t towrite)
+static INLINE ptrdiff_t my_read(int fd, void *t, size_t towrite)
 {
   ptrdiff_t res;
-  while((res = fd_read(from, t, towrite)) < 0)
+  while((res = fd_read(fd, t, towrite)) < 0)
   {
     switch(errno)
     {
@@ -238,7 +240,6 @@ static INLINE ptrdiff_t my_read(int from, void *t, size_t towrite)
   }
   return res;
 }
-#endif
 
 static INLINE off_t file_size(int fd)
 {
@@ -290,222 +291,212 @@ static INLINE void write_char(struct _char *ci,
  *!  @[write]
  */
 
-/*! @decl void create(string filename)
- *!  Loads a font file to this font object.
- *!  Similar to @[load()].
- */
-
-void font_load(INT32 args);
-
-void font_create(INT32 args)
-{
-   font_load(args);
-   pop_stack();
-}
+#ifndef MAP_FAILED
+#define MAP_FAILED	((void *)-1)
+#endif
 
 void font_load(INT32 args)
 {
-   int fd = -1;
-   size_t size;
-
-   if (THIS)
-   {
-      free_font_struct(THIS);
-      THIS=NULL;
-   }
-
-   if (!args) 
-   {
-      THIS=(struct font *)xalloc(sizeof(struct font));
-      THIS->mem=(void *)image_default_font;
-      size=IMAGE_DEFAULT_FONT_SIZE;
-      goto loading_default;
-   }
-
-   if (sp[-args].type!=T_STRING)
-      Pike_error("font->read: illegal or wrong number of arguments\n");
-   
-   do 
-   {
-#ifdef FONT_DEBUG
-     fprintf(stderr,"FONT open '%s'\n",sp[-args].u.string->str);
+  struct file_head 
+  {
+    unsigned INT32 cookie;
+    unsigned INT32 version;
+    unsigned INT32 chars;
+    unsigned INT32 height;
+    unsigned INT32 baseline;
+    unsigned INT32 o[1];
+  } *fh = NULL;
+#ifdef HAVE_MMAP
+  size_t mmaped_size = 0;
 #endif
-     fd = fd_open(sp[-args].u.string->str,fd_RDONLY,0);
-     if (errno == EINTR) check_threads_etc();
-   } while(fd < 0 && errno == EINTR);
+  size_t size = 0;
 
-   if (fd >= 0)
-   {
-      struct font *new_font;
+  if (args && Pike_sp[-args].type != T_STRING)
+    Pike_error("font->read: illegal or wrong number of arguments\n");
 
+  if (!args) 
+  {
+    fh = (struct file_head *)image_default_font;
+    size = IMAGE_DEFAULT_FONT_SIZE;
+  } else {
+    int fd = -1;
+
+    do
+    {
+#ifdef FONT_DEBUG
+      fprintf(stderr,"FONT open '%s'\n",sp[-args].u.string->str);
+#endif
+      fd = fd_open(sp[-args].u.string->str,fd_RDONLY,0);
+      if (errno == EINTR) check_threads_etc();
+    } while(fd < 0 && errno == EINTR);
+
+    if (fd >= 0)
+    {
       size = (size_t) file_size(fd);
       if (size > 0)
       {
-	 new_font=(struct font *)xalloc(sizeof(struct font));
-
-	 THREADS_ALLOW();
+	THREADS_ALLOW();
 #ifdef HAVE_MMAP
-	 new_font->mem = 
-	    mmap(0,size,PROT_READ,MAP_SHARED,fd,0);
-#ifdef MAP_FAILED
-	 if ((char *)new_font->mem == (char *)MAP_FAILED)
-#else
-	 if (new_font->mem==(void*)-1)
+	fh = (struct file_head *)
+	  mmap(0, size, PROT_READ, MAP_SHARED, fd, 0);
+	if (fh != (struct file_head *)MAP_FAILED)
+	  mmaped_size = size;
+	else
+	{
 #endif
-	 {
-	    new_font->mem=0;
-	    new_font->mmaped_size=0;
-	 }
-	 else
-	    new_font->mmaped_size=size;
-#else
-	 new_font->mem = malloc(size);
+	  fh = (struct file_head *)malloc(size);
 #ifdef FONT_DEBUG
-	 fprintf(stderr,"FONT Malloced %p (%d)\n",new_font->mem,size);
+	  fprintf(stderr,"FONT Malloced %p (%d)\n", fh, size);
 #endif
-	 if ((new_font->mem) && (!my_read(fd,new_font->mem,size))) 
-	 {
-	   free(new_font->mem);
-	   new_font->mem = NULL;
-	 }
-#endif
-	 THREADS_DISALLOW();
-
-	 if (THIS)
-	   /* In case font_load got called again in the THREADS_ALLOW block. */
-	   free_font_struct(THIS);
-	 THIS = new_font;
-
-loading_default:
-
-	 if (THIS->mem)
-	 {
-	    struct file_head 
-	    {
-	       unsigned INT32 cookie;
-	       unsigned INT32 version;
-	       unsigned INT32 chars;
-	       unsigned INT32 height;
-	       unsigned INT32 baseline;
-	       unsigned INT32 o[1];
-	    } *fh;
-	    struct char_head
-	    {
-	       unsigned INT32 width;
-	       unsigned INT32 spacing;
-	       unsigned char data[1];
-	    } *ch;
-
-#ifdef FONT_DEBUG
-	    fprintf(stderr,"FONT mapped ok\n");
-#endif
-
-	    fh=(struct file_head*)THIS->mem;
-
-	    if (ntohl(fh->cookie)==0x464f4e54) /* "FONT" */
-	    {
-#ifdef FONT_DEBUG
-	       fprintf(stderr,"FONT cookie ok\n");
-#endif
-	       if (ntohl(fh->version)==1)
-	       {
-		  unsigned long i;
-
-#ifdef FONT_DEBUG
-		  fprintf(stderr,"FONT version 1\n");
-#endif
-
-		  THIS->chars=ntohl(fh->chars);
-
-		  new_font=malloc(sizeof(struct font)+
-			     sizeof(struct _char)*(THIS->chars-1));
-		  if(!new_font) {
-		    free(THIS);
-		    SIMPLE_OUT_OF_MEMORY_ERROR(0,0);
-		  }
-		  new_font->mem=THIS->mem;
+	  if (fh && (!my_read(fd, fh, size))) 
+	  {
+	    free(fh);
+	    fh = NULL;
+	  }
 #ifdef HAVE_MMAP
-		  new_font->mmaped_size=THIS->mmaped_size;
+	}
 #endif
-		  new_font->chars=THIS->chars;
-		  new_font->xspacing_scale = 1.0;
-		  new_font->yspacing_scale = 1.0;
-		  new_font->justification = J_LEFT;
-		  free(THIS);
-		  THIS=new_font;
+	THREADS_DISALLOW();
 
-		  THIS->height=ntohl(fh->height);
-		  THIS->baseline=ntohl(fh->baseline);
-
-		  for (i=0; i<THIS->chars; i++)
-		  {
-		     if (i*sizeof(INT32)<(size_t)size
-			 && ntohl(fh->o[i])<(size_t)size
-			 && ! ( ntohl(fh->o[i]) % 4) ) /* must be aligned */
-		     {
-			ch=(struct char_head*)
-			   ((char *)(THIS->mem)+ntohl(fh->o[i]));
-			THIS->charinfo[i].width = ntohl(ch->width);
-			THIS->charinfo[i].spacing = ntohl(ch->spacing);
-			THIS->charinfo[i].pixels = ch->data;
-		     }
-		     else /* illegal <tm> offset or illegal align */
-		     {
-#ifdef FONT_DEBUG
-			fprintf(stderr,"FONT failed on char %02xh %d '%c'\n",
-				i,i,i);
-#endif
-			free_font_struct(new_font);
-			THIS=NULL;
-			if (fd >= 0) {
-			  fd_close(fd);
-			}
-			pop_n_elems(args);
-			push_int(0);
-			return;
-		     }
-
-		  }
-
-		  if (!args) goto done;
-
-		  fd_close(fd);
-		  pop_n_elems(args);
-		  ref_push_object(THISOBJ);   /* success */
-#ifdef FONT_DEBUG
-		  fprintf(stderr,"FONT successfully loaded\n");
-#endif
-		  return;
-	       } /* wrong version */
-#ifdef FONT_DEBUG
-	       else fprintf(stderr,"FONT unknown version\n");
-#endif
-	    } /* wrong cookie */
-#ifdef FONT_DEBUG
-	    else fprintf(stderr,"FONT wrong cookie\n");
-#endif
-	    if (!args) goto done; /* just in case */
-	 } /* mem failure */
-#ifdef FONT_DEBUG
-	 else fprintf(stderr,"FONT mem failure\n");
-#endif
-	 free_font_struct(THIS);
-	 THIS=NULL;
       } /* size failure */
 #ifdef FONT_DEBUG
       else fprintf(stderr,"FONT size failure\n");
 #endif
       fd_close(fd);
-   } /* fd failure */
+    } /* fd failure */
 #ifdef FONT_DEBUG
-   else fprintf(stderr,"FONT fd failure\n");
+    else fprintf(stderr,"FONT fd failure\n");
+#endif
+  }
+
+  if (THIS)
+  {
+    free_font_struct(THIS);
+    THIS=NULL;
+  }
+
+  if (fh)
+  {
+    struct char_head
+    {
+      unsigned INT32 width;
+      unsigned INT32 spacing;
+      unsigned char data[1];
+    } *ch;
+
+#ifdef FONT_DEBUG
+    fprintf(stderr,"FONT mapped ok\n");
 #endif
 
-done:
+    if (ntohl(fh->cookie)==0x464f4e54) /* "FONT" */
+    {
+#ifdef FONT_DEBUG
+      fprintf(stderr,"FONT cookie ok\n");
+#endif
+      if (ntohl(fh->version)==1)
+      {
+	struct font *new_font;
+	unsigned long num_chars;
+	unsigned long i;
 
-   pop_n_elems(args);
-   push_int(0);
-   return;
+#ifdef FONT_DEBUG
+	fprintf(stderr,"FONT version 1\n");
+#endif
+
+	num_chars = ntohl(fh->chars);
+
+	new_font=malloc(sizeof(struct font)+
+			sizeof(struct _char)*(num_chars-1));
+	if(!new_font) {
+	  if (args) {
+#ifdef HAVE_MMAP
+	    if (mmaped_size)
+	      munmap((void *)fh, mmaped_size);
+	    else
+#endif
+	      free(fh);
+	  }
+	  SIMPLE_OUT_OF_MEMORY_ERROR(0,0);
+	}
+
+	new_font->mem = (void *)fh;
+#ifdef HAVE_MMAP
+	new_font->mmaped_size = mmaped_size;
+#endif
+	new_font->chars = num_chars;
+	new_font->xspacing_scale = 1.0;
+	new_font->yspacing_scale = 1.0;
+	new_font->justification = J_LEFT;
+	new_font->height=ntohl(fh->height);
+	new_font->baseline=ntohl(fh->baseline);
+
+	for (i=0; i<num_chars; i++)
+	{
+	  if (i*sizeof(INT32)<size
+	      && ntohl(fh->o[i])<size
+	      && ! ( ntohl(fh->o[i]) % 4) ) /* must be aligned */
+	  {
+	    ch = (struct char_head*)
+	      (((char *)(fh)) + ntohl(fh->o[i]));
+	    new_font->charinfo[i].width = ntohl(ch->width);
+	    new_font->charinfo[i].spacing = ntohl(ch->spacing);
+	    new_font->charinfo[i].pixels = ch->data;
+	  }
+	  else /* illegal <tm> offset or illegal align */
+	  {
+#ifdef FONT_DEBUG
+	    fprintf(stderr,"FONT failed on char %02xh %d '%c'\n",
+		    i,i,i);
+#endif
+	    free_font_struct(new_font);
+	    pop_n_elems(args);
+	    push_int(0);
+	    return;
+	  }
+	}
+
+	pop_n_elems(args);
+	THIS = new_font;
+	ref_push_object(THISOBJ);   /* success */
+#ifdef FONT_DEBUG
+	fprintf(stderr,"FONT successfully loaded\n");
+#endif
+	return;
+      } /* wrong version */
+#ifdef FONT_DEBUG
+      else fprintf(stderr,"FONT unknown version\n");
+#endif
+    } /* wrong cookie */
+#ifdef FONT_DEBUG
+    else fprintf(stderr,"FONT wrong cookie\n");
+#endif
+    if (args) {
+#ifdef HAVE_MMAP
+      if (mmaped_size)
+	munmap((void *)fh, mmaped_size);
+      else
+#endif
+	free(fh);
+    }
+  } /* mem failure */
+#ifdef FONT_DEBUG
+  else fprintf(stderr,"FONT mem failure\n");
+#endif
+
+  pop_n_elems(args);
+  push_int(0);
+  return;
+}
+
+/*! @decl void create(string filename)
+ *!  Loads a font file to this font object.
+ *!  Similar to @[load()].
+ */
+
+void font_create(INT32 args)
+{
+   font_load(args);
+   pop_stack();
 }
 
 /*! @decl Image.Image write(string text, string ... more_text_lines)
@@ -705,8 +696,7 @@ void font_write(INT32 args)
 	Pike_fatal("Illegal shift size!\n");
      }
    }
-   UNSET_ONERROR(err);
-   free(width_of);
+   CALL_AND_UNSET_ONERROR(err);
 
    pop_n_elems(args);
    push_object(o);
