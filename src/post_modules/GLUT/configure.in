@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.21 2004/02/26 21:02:28 nilsson Exp $
+# $Id: configure.in,v 1.22 2005/11/03 17:21:42 grubba Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -11,7 +11,7 @@ if test x$without_GLUT = xyes; then
   AUTO=""
 else
   AC_PATH_XTRA()
-  # The variables from the PATH_EXTRA macro are missnamed...
+  # The variables from the PATH_XTRA macro are missnamed...
   #
   #   Variable     Function	Contents
   #   X_CFLAGS     CPPFLAGS	-I
@@ -27,13 +27,15 @@ else
 
   AC_CHECK_HEADERS(GL/glut.h)
 
-  # MaxOS X
-  old_CPPFLAGS="$CPPFLAGS"
-  CPPFLAGS="-framework GLUT $CPPFLAGS"
+  DO_IF_OS(Darwin,
+  [
+    # MaxOS X
+    # NOTE: These tests may need to move to the main configure script.
+    #       cf comments in the Darwin section of the main configure script.
+    AC_SYS_COMPILER_FLAG(-framework GLUT, framework_GLUT, LDFLAGS)
+    AC_SYS_COMPILER_FLAG(-framework GLUT, framework_GLUT, CPPFLAGS)
+  ])
   AC_CHECK_HEADERS(GLUT/glut.h)
-  if test x"$ac_cv_header_GLUT_glut_h" = xno; then
-    CPPFLAGS="$old_CPPFLAGS"
-  fi
 
   CPPFLAGS="$CPPFLAGS $X_CFLAGS"
   LIBS="$X_EXTRA_LIBS $LIBS"
@@ -69,6 +71,8 @@ else
   else
     AC_MSG_RESULT(no)
   fi
+
+  # FIXME: Ought to just check -lobjc, since -framework GLUT is checked above.
   AC_MSG_CHECKING(for glutSolidTeapot in GLUT.framework)
   AC_CACHE_VAL(pike_cv_framework_GLUT, [
     oldLIBS="$LIBS"
