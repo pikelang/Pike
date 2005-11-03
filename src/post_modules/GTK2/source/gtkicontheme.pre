@@ -126,6 +126,7 @@ array(string) list_icons(?string context)
     if (args)
       get_all_args("list_icons",args,"%s",&context);
     gl=g2=gtk_icon_theme_list_icons(GTK_ICON_THEME(THIS->obj),context);
+    my_pop_n_elems(args);
     while (g2) {
       PGTK_PUSH_GCHAR(g2->data);
       g_free(g2->data);

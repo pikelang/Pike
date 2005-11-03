@@ -18,7 +18,7 @@ inherit GTK2.Bin;
 
 signal changed;
 
-void create(mixed model)
+void create(GTK2.TreeModel|mapping(string:mixed)|string|void model_or_props)
 //! Create a new ComboBox, either empty or with a model.  If a string is passed
 //! int instead, it will create a new W(ComboBox) with only text strings.
 //! If you do so, you should only manipulate it with the following functions:
@@ -27,20 +27,26 @@ void create(mixed model)
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   if (args) {
-    struct object *o1;
-    gchar *text;
+    GtkWidget *gcb;
     if (Pike_sp[-args].type==PIKE_T_STRING) {
+      char *text;
       get_all_args("create",args,"%s",&text);
-      THIS->obj=G_OBJECT(gtk_combo_box_new_text());
-    } else {
+      gcb=gtk_combo_box_new_text();
+      THIS->obj=G_OBJECT(gcb);
+    } else if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+      struct object *o1;
       get_all_args("create",args,"%o",&o1);
-      THIS->obj=G_OBJECT(gtk_combo_box_new_with_model(
-		GTK_TREE_MODEL(get_gobject(o1))));
+      gcb=gtk_combo_box_new_with_model(GTK_TREE_MODEL(get_gobject(o1)));
+      THIS->obj=G_OBJECT(gcb);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_COMBO_BOX);
     }
+    my_pop_n_elems(args);
   } else {
-    THIS->obj=G_OBJECT(gtk_combo_box_new());
+    GtkWidget *gcb;
+    gcb=gtk_combo_box_new();
+    THIS->obj=G_OBJECT(gcb);
   }
-  my_pop_n_elems(args);
   pgtk__init_this_object();
 }
 
@@ -77,7 +83,7 @@ void set_column_span_column(int column_span);
 int get_active();
 //! Returns the index of the currently active item, or -1 if none.
 //! If the model is a non-flat treemodel, and the active item
-//! is not an immediate child of teh root of the tree, this
+//! is not an immediate child of the root of the tree, this
 //! function returns path_get_indices(path)[0], where path is
 //! the GTK2.TreePath of the active item.
 
@@ -113,15 +119,24 @@ void set_active_iter(GTK2.TreeIter iter)
   {
     struct object *o1;
     get_all_args("set_active_iter",args,"%o",&o1);
-    my_pop_n_elems(args);
     gtk_combo_box_set_active_iter(GTK_COMBO_BOX(THIS->obj),
 		(GtkTreeIter *)get_gobject(o1));
+    my_pop_n_elems(args);
   }
   RETURN_THIS();
 }
 
-GTK2.TreeModel get_model();
+GTK2.TreeModel get_model()
 //! Get the GTK2.TreeModel which is acting as a data source.
+{
+  pgtk_verify_inited();
+  {
+    GtkTreeModel *gtm;
+    gtm=gtk_combo_box_get_model(GTK_COMBO_BOX(THIS->obj));
+    my_pop_n_elems(args);
+    push_gobject(gtm);
+  }
+}
 
 void set_model(?GTK2.TreeModel model);
 //! Sets the model used by this widget.  Will unset a previously
@@ -155,6 +170,7 @@ string get_active_text()
 //! constructed with GTK2.ComboBox("a string").
 {
   pgtk_verify_inited();
+  my_pop_n_elems(args);
   {
     const gchar *a1;
     a1=gtk_combo_box_get_active_text(GTK_COMBO_BOX(THIS->obj));
@@ -194,5 +210,6 @@ int get_focus_on_click();
 endrequire;
 
 #include "gtkcelllayout.inc"
+#include "gtkcelleditable.inc"
 
 endrequire;

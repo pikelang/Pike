@@ -32,9 +32,24 @@ signal disconnect_proxy;
 signal post_activate;
 signal pre_activate;
 
-void create(string name);
+void create(string|mapping(string:mixed) name_or_props)
 //! Creates a new GTK2.ActionGroup object.  The name of the action group is
 //! used when associating keybindings with the actions.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (Pike_sp[-args].type==PIKE_T_STRING) {
+    char *name;
+    GtkActionGroup *gag;
+    get_all_args("create",args,"%s",&name);
+    gag=gtk_action_group_new(name);
+    THIS->obj=G_OBJECT(gag);
+  } else {
+    INIT_WITH_PROPS(GTK_TYPE_ACTION_GROUP);
+  }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
 
 string get_name();
 //! Gets the name of the action group.
@@ -88,10 +103,7 @@ void add_action(GTK2.Action action, ?string accelerator)
   {
     struct object *o1;
     char *accel=NULL;
-    if (args==1)
-      get_all_args("add_action",args,"%o",&o1);
-    else
-      get_all_args("add_action",args,"%o%s",&o1,&accel);
+    get_all_args("add_action",args,"%o.%s",&o1,&accel);
     gtk_action_group_add_action_with_accel(GTK_ACTION_GROUP(THIS->obj),
 			GTK_ACTION(get_gobject(o1)),accel);
   }
@@ -112,13 +124,16 @@ int pgtk_action_callback(GtkAction *action, struct signal_data *d) {
   return res;
 }
 
-void pgtk_radio_action_callback(GtkAction *action, GtkRadioAction *current,
+int pgtk_radio_action_callback(GtkAction *action, GtkRadioAction *current,
 				struct signal_data *d) {
+  int res;
   push_gobject(action);
   push_gobject(current);
   push_svalue(&d->args);
   apply_svalue(&d->cb,3);
+  res=Pike_sp[-1].u.integer;
   pop_stack();
+  return res;
 }
 %}
 
@@ -258,6 +273,7 @@ void add_toggle_actions(array(mapping(string:mixed)) entries)
 			&gta,1,sd);
     }
   }
+  RETURN_THIS();
 }
 
 void add_radio_actions(array(mapping(string:mixed)) entries,
@@ -330,6 +346,7 @@ void add_radio_actions(array(mapping(string:mixed)) entries,
 			sd);
     g_free(gta);
   }
+  RETURN_THIS();
 }
 
 endrequire;

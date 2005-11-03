@@ -43,11 +43,13 @@ void create(object|int color_or_r,int|void g,int|void b)
     THIS->obj=0;
     Pike_error("Failed to allocate color.\n");
   }
+  my_pop_n_elems(args);
 }
 
 array(int) rgb()
 //! Returns the red green and blue color components as an array.
 {
+  my_pop_n_elems(args);
   push_int(((GdkColor *)THIS->obj)->red/257);
   push_int(((GdkColor *)THIS->obj)->green/257);
   push_int(((GdkColor *)THIS->obj)->blue/257);
@@ -57,24 +59,28 @@ array(int) rgb()
 int red()
 //! Returns the red color component.
 {
+  my_pop_n_elems(args);
   push_int(((GdkColor *)THIS->obj)->red/257);
 }
 
 int green()
 //! Returns the green color component.
 {
+  my_pop_n_elems(args);
   push_int(((GdkColor *)THIS->obj)->green/257);
 }
 
 int blue()
 //! Returns the blue color component.
 {
+  my_pop_n_elems(args);
   push_int(((GdkColor *)THIS->obj)->blue/257);
 }
 
 int pixel()
 //! Returns the pixel value of the color. See <a href="gdk.image.xml#set_pixel">GDK2.Image->set_pixel</a>.
 {
+  my_pop_n_elems(args);
   push_int(((GdkColor *)THIS->obj)->pixel);
 }
 
@@ -103,5 +109,7 @@ void destroy()
     g_free(THIS->obj);
     THIS->obj=0;
   }
+  my_pop_n_elems(args);
+  push_int(0);
 }
 

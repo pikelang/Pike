@@ -35,6 +35,7 @@ void create(int|Image.Image xsize_or_image, int|void ysize, string|void bitmap)
   if (!THIS->obj)
     Pike_error("Failed to create bitmap\n");
   my_pop_n_elems(args);
+  pgtk__init_this_object();
 }
 
 void destroy()
@@ -43,6 +44,7 @@ void destroy()
   if (THIS->obj)
 /*    gdk_bitmap_unref( (void *)THIS->obj ); */
     g_object_unref((void *)THIS->obj);
+  my_pop_n_elems(args);
   THIS->obj=0;
 }
 

@@ -18,21 +18,33 @@ inherit GTK2.Button;
 
 signal toggled;
 
-void create(?string label)
+void create(string|mapping|void label_or_props)
 //! If you supply a string, a label will be created and inserted in the button.
 //! Otherwise, use -&gt;add(widget) to create the contents of the button.
 {
   pgtk_verify_not_inited();
   pgtk_verify_setup();
-  if(args) {
-    gchar *s=PGTK_GETSTR(Pike_sp-args);
-    if (s) {
-      THIS->obj=G_OBJECT(gtk_toggle_button_new_with_label(s));
-      PGTK_FREESTR(s);
-    } else
-      THIS->obj=G_OBJECT(gtk_toggle_button_new());
+  if (args) {
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      struct pike_string *t;
+      GtkWidget *gt;
+      get_all_args("create",args,"%T",&t);
+      if (t) {
+	if (g_utf8_validate((char *)STR0(t),t->len,NULL))
+	  gt=gtk_toggle_button_new_with_label((char *)STR0(t));
+	else
+	  gt=gtk_toggle_button_new();
+      } else
+	gt=gtk_toggle_button_new();
+      THIS->obj=G_OBJECT(gt);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_TOGGLE_BUTTON);
+    }
+    my_pop_n_elems(args);
   } else {
-    THIS->obj=G_OBJECT(gtk_toggle_button_new());
+    GtkWidget *gt;
+    gt=gtk_toggle_button_new();
+    THIS->obj=G_OBJECT(gt);
   }
   pgtk__init_this_object();
 }

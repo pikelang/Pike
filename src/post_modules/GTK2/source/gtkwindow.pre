@@ -43,8 +43,26 @@ signal keys_changed;
 signal move_focus;
 signal set_focus;
 
-void create(int window_type);
-//! Argument is one of CONST(GTK_WINDOW)
+void create(int|mapping(string:mixed) props)
+//! Argument is one of CONST(GTK_WINDOW), or a mapping of allowed properties.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    int wt;
+    
+    if (Pike_sp[-args].type==PIKE_T_INT) {
+      GtkWidget *gw;
+      get_all_args("create",args,"%i",&wt);
+      gw=gtk_window_new(wt);
+      THIS->obj=G_OBJECT(gw); 
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_WINDOW);
+    }
+    my_pop_n_elems(args);
+  }
+  pgtk__init_this_object();
+}
 
 void set_title(string title);
 //! Set the window title. The default title is the value sent to
@@ -255,7 +273,6 @@ void set_default(GTK2.Widget child);
 //! widget.  When setting (rather than unsetting) the default widget it's
 //! generally easier to call GTK2.Widget->grab_focus() on the widget.
 
-
 void present();
 //! Presents this window to the user.  This may mean raising the window
 //! in the stacking order, deiconifying it, moving it to the current
@@ -325,6 +342,12 @@ void set_skip_pager_hint(int setting);
 //! window in the pager.
 endrequire;
 
+require gtk28;
+void set_urgency_hint(int setting);
+//! Windows may set a hint asking the desktop environment to draw the users
+//! attention to the window.  This function sets this hint.
+endrequire;
+
 require gtk24;
 void set_accept_focus(int setting);
 //! Windows may set a hint asking the desktop environment not to receive the
@@ -375,17 +398,21 @@ GDK2.Pixbuf get_icon()
 array(GDK2.Pixbuf) get_icon_list()
 //! Retrieves the list of icons set by set_icon_list().
 {
-  GList *gl=gtk_window_get_icon_list(GTK_WINDOW(THIS->obj));
-  GList *g2=gl;
-  int i=0;
-  while (g2) {
-    push_gobject(g2->data);
-    g_object_ref(GDK_PIXBUF(g2->data));
-    i++;
-    g2=g_list_next(g2);
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GList *gl,*g2;
+    int i=0;
+    gl=g2=gtk_window_get_icon_list(GTK_WINDOW(THIS->obj));
+    while (g2) {
+      push_gobject(g2->data);
+      g_object_ref(GDK_PIXBUF(g2->data));
+      i++;
+      g2=g_list_next(g2);
+    }
+    f_aggregate(i);
+    g_list_free(gl);
   }
-  f_aggregate(i);
-  g_list_free(gl);
 }
 
 require gtk26;
@@ -470,6 +497,11 @@ int get_skip_taskbar_hint();
 
 int get_skip_pager_hint();
 //! Gets the value set by set_skip_pager_hint().
+endrequire;
+
+require gtk28;
+int get_urgency_hint();
+//! Gets the value set by set_urgency_hint().
 endrequire;
 
 require gtk24;

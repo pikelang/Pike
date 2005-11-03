@@ -32,7 +32,7 @@ void register_alias(string alias, int target)
   int target;
   get_all_args("register_alias",args,"%s%i",&alias,&target);
   gtk_icon_size_register_alias(alias,target);
-  my_pop_n_elems(args);
+  RETURN_THIS();
 }
 
 int register(string name, int width, int height)
@@ -41,7 +41,9 @@ int register(string name, int width, int height)
 {
   char *name;
   int width,height;
+  int res;
   get_all_args("register",args,"%s%i%i",&name,&width,&height);
-  gtk_icon_size_register(name,width,height);
+  res=gtk_icon_size_register(name,width,height);
   my_pop_n_elems(args);
+  PGTK_PUSH_INT(res);
 }

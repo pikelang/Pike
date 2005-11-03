@@ -14,7 +14,7 @@ signal activate_item;
 signal toggle_size_allocate;
 signal toggle_size_request;
 
-void create(?string label)
+void create(string|mapping(string:mixed)|void label_or_props)
 //! If a string is supplied, a W(Label) widget is created using that
 //! string and added to the item. Otherwise, you should add another
 //! widget to the list item with -&gt;add().
@@ -22,14 +22,23 @@ void create(?string label)
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   if (args) {
-    gchar *s=PGTK_GETSTR(Pike_sp-args);
-    if (s) {
-      THIS->obj=G_OBJECT(gtk_menu_item_new_with_mnemonic(s));
-      PGTK_FREESTR(s);
-    } else
-      THIS->obj=G_OBJECT(gtk_menu_item_new());
+    GtkWidget *gm;
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      char *label;
+      get_all_args("create",args,"%s",&label);
+      if (label)
+	gm=gtk_menu_item_new_with_mnemonic(label);
+      else
+	gm=gtk_menu_item_new();
+      THIS->obj=G_OBJECT(gm);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_MENU_ITEM);
+    }
+    my_pop_n_elems(args);
   } else {
-    THIS->obj=G_OBJECT(gtk_menu_item_new());
+    GtkWidget *gm;
+    gm=gtk_menu_item_new();
+    THIS->obj=G_OBJECT(gm);
   }
   pgtk__init_this_object();
 }
@@ -72,7 +81,7 @@ void set_right_justified(int setting);
 //! Make the menu item stick to the right edge of it's container.
 
 void toggle_size_allocate(int allocation);
-//! Emits the "toggle_size_allocate" signal on the given item.
+//! Emits the "toggle-size-allocate" signal on the given item.
 
 int get_right_justified();
 //! Gets whether the menu item appears justified at the right side of the menu

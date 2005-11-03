@@ -13,18 +13,27 @@ inherit GTK2.Button;
 
 signal font_set;
 
-void create(?string font)
+void create(string|mapping(string:mixed)|void font_or_props)
 //! Create a new font picker widget.  If font is specified, it will be
 //! displayed in the font selection dialog.
 {
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   if (args) {
-    const gchar *font;
-    get_all_args("create",args,"%s",&font);
-    THIS->obj=G_OBJECT(gtk_font_button_new_with_font(font));
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      const gchar *font;
+      GtkWidget *gf;
+      get_all_args("create",args,"%s",&font);
+      gf=gtk_font_button_new_with_font(font);
+      THIS->obj=G_OBJECT(gf);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_FONT_BUTTON);
+    }
+    my_pop_n_elems(args);
   } else {
-    THIS->obj=G_OBJECT(gtk_font_button_new());
+    GtkWidget *gf;
+    gf=gtk_font_button_new();
+    THIS->obj=G_OBJECT(gf);
   }
   pgtk__init_this_object();
 }

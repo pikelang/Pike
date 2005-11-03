@@ -12,7 +12,7 @@ inherit GTK2.ToolItem;
 
 signal clicked;
 
-void create(GTK2.Widget|string icon, ?string label)
+void create(GTK2.Widget|string|mapping(string:mixed) icon, ?string label)
 //! Create a new GTK2.ToolButton.
 //! If icon is a string, label should be omitted.  If it isn't,
 //! it will be ignored.  The result will be a button from
@@ -23,24 +23,29 @@ void create(GTK2.Widget|string icon, ?string label)
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   {
-    const gchar *s;
-    if (args==1 || Pike_sp[-args].type==PIKE_T_STRING) {
-      get_all_args("create",args,"%s",&s);
-      if (s)
-        THIS->obj=G_OBJECT(gtk_tool_button_new_from_stock(s));
-      else
-        Pike_error("Invalid argument 1\n");
-    } else {
-      const gchar *s;
+    GtkToolItem *gt;
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      char *icon;
+      get_all_args("create",args,"%s",&icon);
+      gt=gtk_tool_button_new_from_stock(icon);
+      THIS->obj=G_OBJECT(gt);
+    } else if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+      struct pike_string *t;
       struct object *o1;
-      get_all_args("create",args,"%o%s",&o1,&s);
-      if (s && o1)
-        THIS->obj=G_OBJECT(gtk_tool_button_new(GTK_WIDGET(get_gobject(o1)),s));
-      else
+      get_all_args("create",args,"%o%T",&o1,&t);
+      if (t && o1) {
+	if (g_utf8_validate((char *)STR0(t),t->len,NULL))
+	  gt=gtk_tool_button_new(GTK_WIDGET(get_gobject(o1)),(char *)STR0(t));
+	else
+	  Pike_error("Invalid string.\n");
+      } else
         Pike_error("Invalid arguments\n");
+      THIS->obj=G_OBJECT(gt);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_TOOL_BUTTON);
     }
+    my_pop_n_elems(args);
   }
-  my_pop_n_elems(args);
   pgtk__init_this_object();
 }
 
@@ -65,6 +70,16 @@ void set_stock_id(string stock_id);
 
 string get_stock_id();
 //! Returns the name of the stock item.
+
+require gtk28;
+void set_icon_name(string name);
+//! Sets the icon for the tool button from a named themed icon.  The
+//! "icon-name" property only has an effect if not overridden by non-NULL
+//! "label", "icon-widget", and "stock-id" properties.
+
+string get_icon_name();
+//! Returns the name of the themed icon for the tool button.
+endrequire;
 
 void set_icon_widget(GTK2.Widget icon_widget);
 //! Sets icon_widget as the widget used as the icon on the button.

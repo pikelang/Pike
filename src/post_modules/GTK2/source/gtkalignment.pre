@@ -28,7 +28,8 @@ inherit GTK2.Bin;
 //! float yalign
 //! float yscale
 
-void create(float xalign, float yalign, float xscale, float yscale);
+void create(float|mapping(string:int) xalign_or_props, ?float yalign, 
+	    ?float xscale, ?float yscale)
 //! <table>
 //! <tr><td>xalign :</td>
 //! <td>the horizontal alignment of the child widget, from 0 (left) to 1 (right).</td></tr>
@@ -39,6 +40,21 @@ void create(float xalign, float yalign, float xscale, float yscale);
 //! <tr><td>                  yscale :</td>
 //! <td>the amount that the child widget expands vertically to fill up unused space, from 0 to 1. The values are similar to xscale.</td></tr>
 //! </table>
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args==4) {
+    FLOAT_TYPE xalign,yalign,xscale,yscale;
+    GtkWidget *ga;
+    get_all_args("create",args,"%f%f%f%f",&xalign,&yalign,&xscale,&yscale);
+    ga=gtk_alignment_new(xalign,yalign,xscale,yscale);
+    THIS->obj=G_OBJECT(ga);
+  } else {
+    INIT_WITH_PROPS(GTK_TYPE_ALIGNMENT);
+  }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
 
 void set(float xalign, float yalign, float xscale, float yscale);
 //! <table>

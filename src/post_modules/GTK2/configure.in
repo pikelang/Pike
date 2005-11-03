@@ -7,6 +7,8 @@ PIKE_FEATURE_WITHOUT(GTK2)
 dnl PIKE_FEATURE_WITHOUT(Gnome)
 dnl PIKE_FEATURE_WITHOUT(GTK.GladeXML)
 dnl PIKE_FEATURE_WITHOUT(GTK.GlArea)
+dnl PIKE_FEATURE_WITHOUT(GTK.Databox)
+dnl PIKE_FEATURE_WITHOUT(GTK.Sourceview)
 
 AC_MODULE_INIT()
 
@@ -28,6 +30,8 @@ AC_PATH_PROG(PKG_CONFIG,${ac_tool_prefix}pkg-config,no)
 AC_SUBST(have_x11)
 AC_SUBST(pgtk_has_gtk_beta)
 pgtk_has_gtk_beta=nogtk_beta
+AC_SUBST(pgtk_has_gtk28)
+pgtk_has_gtk28=nogtk28
 AC_SUBST(pgtk_has_gtk26)
 pgtk_has_gtk26=nogtk26
 AC_SUBST(pgtk_has_gtk24)
@@ -40,6 +44,10 @@ AC_SUBST(pgtk_has_pango_beta)
 pgtk_has_pango_beta=nopango_beta
 AC_SUBST(pgtk_has_pango)
 pgtk_has_pango=nopango
+AC_SUBST(pgtk_has_pango110)
+pgtk_has_pango110=nopango110
+AC_SUBST(pgtk_has_pango18)
+pgtk_has_pango18=nopango18
 AC_SUBST(pgtk_has_pango16)
 pgtk_has_pango16=nopango16
 AC_SUBST(pgtk_has_atk)
@@ -48,6 +56,14 @@ AC_SUBST(pgtk_has_atk18)
 pgtk_has_atk18=noatk18
 AC_SUBST(pgtk_has_gnomecanvas)
 pgtk_has_gnomecanvas=nognomecanvas
+AC_SUBST(pgtk_has_gnomeui)
+pgtk_has_gnomeui=nognomeui
+AC_SUBST(pgtk_has_libglade)
+pgtk_has_libglade=nolibglade
+AC_SUBST(pgtk_has_gtkdatabox)
+pgtk_has_gtkdatabox=nogtkdatabox
+AC_SUBST(pgtk_has_gtksourceview)
+pgtk_has_gtksourceview=nogtksourceview
 
 # lib, symbol, ok, fail, feature
 AC_DEFUN([AC_CHECK_PKG],
@@ -120,6 +136,10 @@ else
 	pgtk_has_gtk26=gtk26
 	AC_DEFINE(HAVE_GTK26)
       fi
+      if test $gtkminorvers -ge 8 ; then
+        pgtk_has_gtk28=gtk28
+        AC_DEFINE(HAVE_GTK28)
+      fi
     fi
     AC_MSG_RESULT($gtkvers)
     AC_CHECK_PKG(pango, pango_context_new, [
@@ -140,6 +160,14 @@ else
 	pgtk_has_pango_beta=pango_beta
 	AC_DEFINE(HAVE_PANGO_BETA)
       else
+        if test $pangominorvers -ge 10 ; then
+          pgtk_has_pango110=pango110
+          AC_DEFINE(HAVE_PANGO110)
+        fi
+        if test $pangominorvers -ge 8 ; then
+          pgtk_has_pango18=pango18
+          AC_DEFINE(HAVE_PANGO18)
+        fi
 	if test $pangominorvers -ge 6 ; then
 	  pgtk_has_pango16=pango16
 	  AC_DEFINE(HAVE_PANGO16)
@@ -179,16 +207,27 @@ else
       pgtk_has_gnome=gnome
     ])
     AC_CHECK_PKG(libglade-2.0, glade_init, [
+      AC_DEFINE(HAVE_GLADE)
       pgtk_has_libglade=libglade
     ])
     AC_CHECK_PKG(libgnomeui-2.0, gnome_window_icon_init, [
       AC_DEFINE(HAVE_GNOMEUI)
+      pgtk_has_gnomeui=gnomeui
     ])
     AC_CHECK_PKG(libpanelapplet-2.0, panel_applet_factory_main)
     AC_CHECK_PKG(libgnomecanvas-2.0, gnome_canvas_new, [
       AC_DEFINE(HAVE_GNOMECANVAS)
       pgtk_has_gnomecanvas=gnomecanvas
     ])
+    AC_CHECK_PKG(gtkdatabox, gtk_databox_data_add, [
+      AC_DEFINE(HAVE_GTKDATABOX)
+      pgtk_has_gtkdatabox=gtkdatabox
+    ])
+    AC_CHECK_PKG(gtksourceview-1.0, gtk_source_view_new, [
+      AC_DEFINE(HAVE_GTKSOURCEVIEW)
+      pgtk_has_gtksourceview=gtksourceview
+    ])
+
     # Note: ORBit-2.0.pc on Solaris 10/x86 adds -mt to cflags,
     #       which gcc doesn't like...
     #       The manual for cc says that -mt is -D_REENTRANT plus -lthread;
@@ -229,21 +268,27 @@ LIBS="$OLD_LIBS"
 CFLAGS="$OLD_CFLAGS"
 
 AC_SUBST(pgtk_has_libglade)
+AC_SUBST(pgtk_has_gtk28)
 AC_SUBST(pgtk_has_gtk26)
 AC_SUBST(pgtk_has_gtk24)
 AC_SUBST(pgtk_has_gtk22)
 AC_SUBST(pgtk_has_pango)
+AC_SUBST(pgtk_has_pango110)
+AC_SUBST(pgtk_has_pango18)
 AC_SUBST(pgtk_has_pango16)
 AC_SUBST(pgtk_has_pango14)
 AC_SUBST(pgtk_has_pango12)
 AC_SUBST(pgtk_has_atk)
 AC_SUBST(pgtk_has_atk18)
+AC_SUBST(pgtk_has_gnomeui)
 AC_SUBST(PGTK_CFLAGS)
 AC_SUBST(PGTK_LIBS)
 AC_SUBST(GTK_CFLAGS)
 AC_SUBST(GTK_LIBS)
 AC_SUBST(pgtk_has_gnome)
 AC_SUBST(pgtk_has_gnomecanvas)
+AC_SUBST(pgtk_has_gtkdatabox)
+AC_SUBST(pgtk_has_gtksourceview)
 
 AC_SUBST(WITH_GTK)
 PGTK_CFLAGS="$GTK_CFLAGS"

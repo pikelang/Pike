@@ -33,13 +33,27 @@ inherit GTK2.Container;
 signal plug_added;
 signal plug_removed;
 
-void create();
+void create(?mapping(string:mixed) props)
 //! Create a new GTK2.Socket.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_SOCKET);
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gs;
+    gs=gtk_socket_new();
+    THIS->obj=G_OBJECT(gs);
+  }
+  pgtk__init_this_object();
+}
 
 int id()
 //! Returns the window id, to be sent to the application providing the plug.
 //! <br />You must realize this widget before calling this function.
 {
+  my_pop_n_elems(args);
   push_int((INT_TYPE)GDK_WINDOW_XWINDOW( GTK_WIDGET( THIS->obj )->window ));
 }
 
@@ -55,6 +69,7 @@ int get_id();
 int has_plug()
 //! Returns true if this socket is occupied
 {
+  my_pop_n_elems(args);
   if( GTK_SOCKET( THIS->obj )->plug_window
       || gtk_container_children( GTK_CONTAINER( THIS->obj )) )
     push_int( 1 );

@@ -6,47 +6,56 @@ inherit GTK2.CheckMenuItem;
 
 signal group_changed;
 
-void create(?string title, ?GTK2.RadioMenuItem groupmember)
+void create(string|mapping(string:mixed)|void title,
+	    ?GTK2.RadioMenuItem groupmember)
 //! object GTK2.RadioMenuItem(string title) - First button (with label)<br />
 //! object GTK2.RadioMenuItem()->add(widget) - First button (with widget)<br />
 //! object GTK2.RadioMenuItem(title, another_radio_button) - Second to n:th button (with title)<br />
 //! object GTK2.RadioMenuItem(0,another_radio_button)->add(widget) - Second to n:th button (with widget)<br />
 {
-  GSList *mylist = NULL;
-  gchar *label=NULL;
-  struct object *o=NULL;
-  if (args) {
-    if (Pike_sp[-args].type==PIKE_T_STRING)
-      label=(gchar *)Pike_sp[-args].u.string->str;
-    if (args==2 && (Pike_sp[-1].type == PIKE_T_OBJECT))
-	o=Pike_sp[-1].u.object;
-  }
   pgtk_verify_not_inited();
   pgtk_verify_setup();
-  if (o) {
+  if (args) {
+    GtkWidget *gr;
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      GSList *mylist = NULL;
+      char *label=NULL;
+      struct object *o1=NULL;
+
+      if (args=2)
+	get_all_args("create",args,"%s%o",&label,&o1);
+      else
+	get_all_args("create",args,"%s",&label);
+      if (o1) {
 #ifdef HAVE_GTK24
-    if (label) {
-      THIS->obj=
-	G_OBJECT(gtk_radio_menu_item_new_with_label_from_widget(
-	  GTK_RADIO_MENU_ITEM(get_gobject(o)),label));
-    } else {
-      THIS->obj=
-	G_OBJECT(gtk_radio_menu_item_new_from_widget(
-	  GTK_RADIO_MENU_ITEM(get_gobject(o))));
-    }
+	if (label) {
+	  gr=gtk_radio_menu_item_new_with_label_from_widget(
+		GTK_RADIO_MENU_ITEM(get_gobject(o1)),label);
+	} else {
+	  gr=gtk_radio_menu_item_new_from_widget(
+		GTK_RADIO_MENU_ITEM(get_gobject(o1)));
+	}
 #else
-    THIS->obj=G_OBJECT(gtk_radio_menu_item_new(mylist));
+	gr=gtk_radio_menu_item_new(mylist);
 #endif
-  } else {
-    if (label) {
-      THIS->obj=
-	G_OBJECT(gtk_radio_menu_item_new_with_mnemonic(mylist,label));
+        THIS->obj=G_OBJECT(gr);
+      } else {
+	if (label) {
+	  gr=gtk_radio_menu_item_new_with_mnemonic(mylist,label);
+	} else {
+	  gr=gtk_radio_menu_item_new(mylist);
+	}
+	THIS->obj=G_OBJECT(gr);
+      }
     } else {
-      THIS->obj=
-	G_OBJECT(gtk_radio_menu_item_new(mylist));
+      INIT_WITH_PROPS(GTK_TYPE_RADIO_MENU_ITEM);
     }
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gr;
+    gr=gtk_radio_menu_item_new(NULL);
+    THIS->obj=G_OBJECT(gr);
   }
-  my_pop_n_elems(args);
   pgtk__init_this_object();
 }
 

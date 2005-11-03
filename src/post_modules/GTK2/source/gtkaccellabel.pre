@@ -7,8 +7,25 @@ inherit GTK2.Label;
 //! GTK2.Widget accel-widget
 
 
-void create(string text);
+void create(string|mapping(string:mixed) text_or_props)
 //! Creates a new W(AccelLabel).
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      struct pike_string *t;
+      GtkWidget *ga;
+      get_all_args("create",args,"%T",&t);
+      ga=gtk_accel_label_new((char *)STR0(t));
+      THIS->obj=G_OBJECT(ga);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_ACCEL_LABEL);
+    }
+    my_pop_n_elems(args);
+  }
+  pgtk__init_this_object();
+}
 
 GTK2.Widget get_accel_widget();
 //! Fetches the widget monitored by this accelerator label.

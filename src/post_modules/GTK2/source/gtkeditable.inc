@@ -24,6 +24,7 @@ array get_selection_bounds()
     my_pop_n_elems(args);
     PGTK_PUSH_INT(start);
     PGTK_PUSH_INT(end);
+    f_aggregate(2);
   }
 }
 
@@ -48,7 +49,6 @@ void delete_text(int start, int end)
   {
     int start,end;
     get_all_args("delete_text",args,"%i%i",&start,&end);
-    my_pop_n_elems(args);
     gtk_editable_delete_text(GTK_EDITABLE(THIS->obj),start,end);
   }
   RETURN_THIS();

@@ -20,7 +20,7 @@ void create(int x, int y, int width, int height)
   r->y=y;
   r->width=w;
   r->height=h;
-  RETURN_THIS();
+//  RETURN_THIS();
 }
 
 void set(int x, int y, int width, int height )
@@ -70,5 +70,7 @@ void destroy()
 //! Destroy rectangle.
 {
   g_free(THIS->obj);
+  my_pop_n_elems(args);
+  push_int(0);
 }
 

@@ -107,7 +107,6 @@ int data_offset( string what )
 	      gbl_data[ off..off+sizeof(what)-1 ], what );
     return ocache[what]=off;
   }
-//   write("New string: %O\n", what);
 
   gbl_data += what;
 
@@ -138,7 +137,6 @@ string unsillycaps(string what)
       res += q;
     else
       res += "_"+lower_case(q);
-  //  res=replace(res,"gtk2","gtk");
   return res;
 }
 
@@ -228,7 +226,6 @@ class Function(Class parent,
   {
     if( c->c_name() == "" )
       return "pgtk";
-    //    predef::write("c_name==%s\n",c->c_name());
     return "p"+c->c_name();
     
   }
@@ -239,20 +236,15 @@ class Function(Class parent,
     string base = parent->c_name();
     if( parent->c_name() == "" )
       res="gtk_"+name;
-    //      return "gtk_"+name;
     else if( name == "create" )
       res=base+"_new";
-    //      return base+"_new";
     else
       res=base+"_"+name;
-    //    return base+"_"+name;
-    //    predef::write("c_name==%s\n",res);
     return res;
   }
 
   string c_prototype()
   {
-    //    predef::write("c_name==%s\n",c_name());
     return "void p"+c_name()+"( INT32 args );\n";
   }
 
@@ -574,7 +566,7 @@ class Type
   string pike_type( int is, int|void nc )
   {
     if( subtypes )
-      return subtypes->pike_type(is,1)*"|";
+      return subtypes->pike_type(is,1)*"|"+(opt?"|void":"");
     string optp = "";
     if( opt )
       optp = "|void";
@@ -643,9 +635,10 @@ class Type
     {
       subtypes = map( q, Type );
       int ind;
-      if( (ind = has_value( subtypes->name, "void" )) )
+      if( (has_value( subtypes->name, "void" )) )
       {
         opt = 1;
+	ind=search(values(subtypes->name),"void");
         subtypes = subtypes[..ind-1] + subtypes[ind+1..];
       }
       name = subtypes[0]->name;
@@ -857,10 +850,10 @@ class Type
        declare = " CONST gchar *a%[0]d = 0;\n";
 //       declare = "  gchar *a%[0]d = 0;\n";
        fetch =
-             " if( Pike_sp[%[0]d-args].type != PIKE_T_STRING )\n"
-             "   Pike_error( "+S("Illegal argument %d, expected string\n",1,0,16)+",\n                %[0]d);\n"
+             "  if( Pike_sp[%[0]d-args].type != PIKE_T_STRING )\n"
+             "    Pike_error( "+S("Illegal argument %d, expected string\n",1,0,16)+",\n                %[0]d);\n"
              "  a%[0]d = PGTK_GETSTR( &Pike_sp[%[0]d-args] );\n";
-       free = "   PGTK_FREESTR( a%[0]d );\n";
+       free = "  PGTK_FREESTR( a%[0]d );\n";
        pass = "a%[0]d";
        break;
 
@@ -1255,7 +1248,6 @@ class Class( string name, string file, int line )
        _push="  push_gobjectclass( %s, p"+c_name()+"_program );";
        break;
     }
-    //    predef::write("_push==%s\n",_push);
     return sprintf( _push, vv );
   }
 
@@ -1805,7 +1797,6 @@ void main(int argc, array argv)
   werror("Parsing input files...     ");
   float t1 = gauge {
   foreach( glob( "*.pre",get_dir( source_dir )), string f) {
-//    werror("file: %s\n",f);
     parse_pre_file( source_dir + f );
   }
   };

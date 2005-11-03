@@ -8,9 +8,27 @@ inherit GTK2.Hbox;
 //! string title
 //! int width-chars
 
-void create(string title, int action);
+void create(string|mapping(string:mixed) title_or_props, ?int action)
 //! Create a new file-selecting button widget.
 //! action is one of CONST(GTK_FILE_CHOOSER_ACTION_)
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      char *title;
+      int action;
+      GtkWidget *gf;
+      get_all_args("create",args,"%s%i",&title,&action);
+      gf=gtk_file_chooser_button_new(title,action);
+      THIS->obj=G_OBJECT(gf);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_FILE_CHOOSER_BUTTON);
+    }
+    my_pop_n_elems(args);
+  }
+  pgtk__init_this_object();
+}
 
 string get_title();
 //! Retrieves the title of the browse dialog.

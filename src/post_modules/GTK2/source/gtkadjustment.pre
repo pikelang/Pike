@@ -30,10 +30,10 @@ signal changed;
 signal value_changed;
 //! The value changed
 
-void create(?float value,
+void create(float|mapping(string:mixed)|void value_or_props,
             ?float lower, ?float upper,
             ?float step_increment, ?float page_increment,
-            ?float page_size );
+            ?float page_size)
 //! The value argument is the initial value you want to give to the
 //! adjustment, usually corresponding to the topmost or leftmost
 //! position of an adjustable widget. The lower argument specifies the
@@ -49,6 +49,45 @@ void create(?float value,
 //!
 //! All values are optional, they default to 0.0.
 //! For most widgets the unit is pixels.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    GtkObject *ga;
+    if (Pike_sp[-args].type==PIKE_T_FLOAT) {
+      FLOAT_TYPE val,lower,upper,step_inc,page_inc,page_size;
+      val=lower=upper=step_inc=page_inc=page_size=0.0;
+/*
+      if (args==6)
+	get_all_args("create",args,"%f%f%f%f%f%f",&val,&lower,&upper,
+			&step_inc,&page_inc,&page_size);
+      else if (args==5)
+	get_all_args("create",args,"%f%f%f%f%f",&val,&lower,&upper,
+			&step_inc,&page_inc);
+      else if (args==4)
+	get_all_args("create",args,"%f%f%f%f",&val,&lower,&upper,&step_inc);
+      else if (args==3)
+	get_all_args("create",args,"%f%f%f",&val,&lower,&upper);
+      else if (args==2)
+	get_all_args("create",args,"%f%f",&val,&lower);
+      else
+	get_all_args("create",args,"%f",&val);
+*/
+      get_all_args("create",args,"%f.%f%f%f%f%f",&val,&lower,&upper,
+			&step_inc,&page_inc,&page_size);
+      ga=gtk_adjustment_new(val,lower,upper,step_inc,page_inc,page_size);
+      THIS->obj=G_OBJECT(ga);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_ADJUSTMENT);
+    }
+    my_pop_n_elems(args);
+  } else {
+    GtkObject *ga;
+    ga=gtk_adjustment_new(0.0,0.0,0.0,0.0,0.0,0.0);
+    THIS->obj=G_OBJECT(ga);
+  }
+  pgtk__init_this_object();
+}
 
 float get_value();
 //! Gets the current value.

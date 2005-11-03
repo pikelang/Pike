@@ -24,12 +24,15 @@ void create()
   pgtk_verify_setup();
   pgtk_verify_not_inited();
   THIS->obj = (void *)gdk_region_new();
+  my_pop_n_elems(args);
 }
 
 void destroy()
 //! Destructor.
 {
   gdk_region_destroy((GdkRegion *)THIS->obj);
+  my_pop_n_elems(args);
+  push_int(0);
 }
 
 int equal(GDK2.Region victim)
@@ -38,15 +41,14 @@ int equal(GDK2.Region victim)
 {
   struct object *o;
   GdkRegion *r;
-  get_all_args( "equal", args, "%o", &o);
-  r = get_gdkobject( o, region );
-  if(!r)
-  {
+  get_all_args("equal",args,"%o",&o);
+  r=get_gdkobject(o,region);
+  if (!r) {
     my_pop_n_elems(args);
     push_int(0);
     return;
   } else {
-    int eq = gdk_region_equal( (GdkRegion *)THIS->obj, r );
+    int eq=gdk_region_equal((GdkRegion *)THIS->obj,r);
     my_pop_n_elems(args);
     push_int(eq);
   }
@@ -66,14 +68,13 @@ int rect_in(GDK2.Rectangle r)
 {
   struct object *o;
   GdkRectangle *r;
-  get_all_args( "rect_in", args, "%o", &o );
-  if(!(r = get_gdkobject( o, rectangle )))
-  {
+  get_all_args("rect_in",args,"%o",&o);
+  if (!(r=get_gdkobject(o,rectangle))) {
     Pike_error("Bad argument 1 to GDK2.rect_in( GDK2.Rectangle r )\n");
   } else {
-    int b = gdk_region_rect_in((GdkRegion *)THIS->obj,  r);
+    int b=gdk_region_rect_in((GdkRegion *)THIS->obj,r);
     my_pop_n_elems(args);
-    push_int( b );
+    push_int(b);
   }
 }
 

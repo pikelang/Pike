@@ -17,7 +17,7 @@ inherit GTK2.MenuItem;
 signal toggled;
 //! Called when the state of the menu item is changed
 
-void create(?string label)
+void create(string|mapping(string:mixed)|void label_or_props)
 //! The argument, if specified, is the label of the item.
 //! If no label is specified, use object->add() to add some
 //! other widget (such as an pixmap or image widget)
@@ -25,14 +25,23 @@ void create(?string label)
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   if (args) {
-    gchar *s=PGTK_GETSTR(Pike_sp-args);
-    if (s) {
-      THIS->obj=G_OBJECT(gtk_check_menu_item_new_with_mnemonic(s));
-      PGTK_FREESTR(s);
-    } else
-      THIS->obj=G_OBJECT(gtk_check_menu_item_new());
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      char *label;
+      GtkWidget *gc;
+      get_all_args("create",args,"%s",&label);
+      if (label)
+	gc=gtk_check_menu_item_new_with_mnemonic(label);
+      else
+	gc=gtk_check_menu_item_new();
+      THIS->obj=G_OBJECT(gc);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_CHECK_MENU_ITEM);
+    }
+    my_pop_n_elems(args);
   } else {
-    THIS->obj=G_OBJECT(gtk_check_menu_item_new());
+    GtkWidget *gc;
+    gc=gtk_check_menu_item_new();
+    THIS->obj=G_OBJECT(gc);
   }
   pgtk__init_this_object();
 }

@@ -19,8 +19,26 @@ member GTK2.Button apply_button;
 member GTK2.Button cancel_button;
 //! The cancel button
 
-void create(string title);
+void create(string title)
 //! Create a new font selection dialog with the specified window title
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    char *title;
+
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      GtkWidget *gf;
+      get_all_args("create",args,"%s",&title);
+      gf=gtk_font_selection_dialog_new(title);
+      THIS->obj=G_OBJECT(gf);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_FONT_SELECTION_DIALOG);
+    }
+    my_pop_n_elems(args);
+  }
+  pgtk__init_this_object();
+}
 
 string get_font_name();
 //! Gets the currently-selected font name.

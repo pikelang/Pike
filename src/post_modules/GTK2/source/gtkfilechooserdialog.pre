@@ -26,8 +26,9 @@ inherit GTK2.Dialog;
 //! TIMG: GTK2.FileChooserDialog("File selector")
 //! </p>
 
-void create( string title, int|GTK2.Window parent, int mode,
-		array(array(string:int)) buttons)
+/*
+void create(string title, int|GTK2.Window parent, int mode,
+	    array(array(string:int)) buttons)
 //! Creates a new File Chooser Dialog box.
 //! Title is the title of the window.  May be empty or 0 for no title.
 //! Parent is the transient parent.  May be 0 for none.
@@ -123,11 +124,51 @@ void create( string title, int|GTK2.Window parent, int mode,
   g_ptr_array_free(gpa,1);
   my_pop_n_elems(args);
 }
+*/
 
+void create(string title, GTK2.Window parent, int mode,
+	    array(mapping(string:int)) buttons)
 //! Creates a new file selection dialog box. By default it will list
 //! the files in the current working directory. Operation buttons
 //! allowing the user to create a directory, delete files, and rename
 //! files will also be present by default.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    char *title;
+    INT_TYPE mode;
+    struct object *o1;
+    struct array *a;
+    int i;
+    GtkWidget *gf;
+
+    get_all_args("create",args,"%s%O%i%A",&title,&o1,&mode,&a);
+    gf=gtk_file_chooser_dialog_new(title,
+		GTK_WINDOW(get_gobject(o1)),mode,NULL);
+    THIS->obj=G_OBJECT(gf);
+    if (a) {
+      for (i=0; i<a->size; i++) {
+	char *text;
+	int response_id;
+	struct svalue *sv;
+        struct mapping *m;
+	if ((ITEM(a)+i)->type!=PIKE_T_MAPPING)
+	  continue;
+	m=(ITEM(a)+i)->u.mapping;
+	sv=simple_mapping_string_lookup(m,"text");
+	if (sv==NULL)
+	  continue;
+	text=(char *)STR0(sv->u.string); 
+	sv=simple_mapping_string_lookup(m,"id");
+	response_id=PGTK_GETINT(sv);
+	gtk_dialog_add_button(GTK_DIALOG(THIS->obj),text,response_id);
+      }
+    }
+    my_pop_n_elems(args);
+  }
+  pgtk__init_this_object();
+}
 
 #include "gtkfilechooser.inc"
 

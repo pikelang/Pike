@@ -11,9 +11,26 @@ inherit GTK2.Window;
 
 signal embedded;
 
-void create(int socket_id);
+void create(int|mapping(string:mixed) socket_id_or_props)
 //! Create a new plug, the socket_id is the window into which this plug
 //! will be plugged.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    if (Pike_sp[-args].type==PIKE_T_INT) {
+      int id;
+      GtkWidget *gp;
+      get_all_args("create",args,"%i",&id);
+      gp=gtk_plug_new(id);
+      THIS->obj=G_OBJECT(gp);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_PLUG);
+    }
+    my_pop_n_elems(args);
+  }
+  pgtk__init_this_object();
+}
 
 int get_id();
 //! Gets the window id of this widget.

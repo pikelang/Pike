@@ -14,8 +14,8 @@ inherit GTK2.Scale;
 //! </p>
 //! IMG: GTK2.Vscale(GTK2.Adjustment())->set_size_request(300,30)
 
-void create(GTK2.Adjustment|float settings_or_min, ?float max,
-	    ?float step)
+void create(GTK2.Adjustment|float|mapping(string:mixed) settings_or_min_props,
+	    ?float max, ?float step)
 //! Used to create a new hscale widget.
 //! Either pass an W(Adjustment), or three floats representing min, max, and
 //! step values.
@@ -23,15 +23,22 @@ void create(GTK2.Adjustment|float settings_or_min, ?float max,
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   if (args==1) {
-    struct object *o1;
-    get_all_args("create",args,"%o",&o1);
-    my_pop_n_elems(args);
-    THIS->obj=G_OBJECT(gtk_vscale_new(GTK_ADJUSTMENT(get_gobject(o1))));
+    if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+      struct object *o1;
+      GtkWidget *gv;
+      get_all_args("create",args,"%o",&o1);
+      gv=gtk_vscale_new(GTK_ADJUSTMENT(get_gobject(o1)));
+      THIS->obj=G_OBJECT(gv);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_VSCALE);
+    }
   } else {
     FLOAT_TYPE min,max,step;
+    GtkWidget *gv;
     get_all_args("create",args,"%f%f%f",&min,&max,&step);
-    my_pop_n_elems(args);
-    THIS->obj=G_OBJECT(gtk_vscale_new_with_range(min,max,step));
+    gv=gtk_vscale_new_with_range(min,max,step);
+    THIS->obj=G_OBJECT(gv);
   }
+  my_pop_n_elems(args);
   pgtk__init_this_object();
 }

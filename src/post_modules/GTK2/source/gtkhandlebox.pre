@@ -17,8 +17,21 @@ signal child_attached;
 signal child_detached;
 //! Called when a child is removed from the box
 
-void create();
+void create(?mapping(string:mixed) props)
 //! Create a new handle box widget.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_HANDLE_BOX);
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gh;
+    gh=gtk_handle_box_new();
+    THIS->obj=G_OBJECT(gh);
+  }
+  pgtk__init_this_object();
+}
 
 void set_shadow_type(int shadow_type);
 //! One of CONST(GTK_SHADOW)

@@ -13,10 +13,21 @@ inherit GTK2.CellRenderer;
 
 signal toggled;
 
-void create();
+void create(?mapping(string:mixed) props)
 //! Creates a new W(CellRendererToggle).  Adjust rendering parameters using
 //! object properties.  Object properties can be set globally with
 //! set().
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_CELL_RENDERER_TOGGLE);
+    my_pop_n_elems(args);
+  } else {
+    THIS->obj=G_OBJECT(gtk_cell_renderer_toggle_new());
+  }
+  pgtk__init_this_object();
+}
 
 int get_radio();
 //! Returns whether we're rendering radio toggles rather than checkboxes.

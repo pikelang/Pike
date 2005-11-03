@@ -9,9 +9,25 @@ inherit GTK2.ToggleAction;
 
 signal changed;
 
-void create(string name, string label, string tooltip, string stock_id,
-	    int value);
+void create(string|mapping(string:mixed) name_or_props, ?string label,
+	    ?string tooltip, ?string stock_id, ?int value)
 //! Creates a new GTK2.ToggleAction object.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args==4) {
+    char *name,*label,*tooltip,*stock_id;
+    int val;
+    GtkRadioAction *gr;
+    get_all_args("create",args,"%s%s%s%s%i",&name,&label,&tooltip,&stock_id,&val);
+    gr=gtk_radio_action_new(name,label,tooltip,stock_id,val);
+    THIS->obj=G_OBJECT(gr);
+  } else {
+    INIT_WITH_PROPS(GTK_TYPE_RADIO_ACTION);
+  }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
 
 array(GTK2.RadioAction) get_group()
 //! Returns the list representing the radio group.

@@ -12,9 +12,24 @@ inherit GTK2.Box;
 //! IMG: GTK2.Vbox(1,0)->add(GTK2.Button("Hello"))->add(GTK2.Button("World"))->pack_end_defaults(GTK2.Button("From right"))->pack_start_defaults(GTK2.Button("From left"))
 //! IMG: GTK2.Vbox(1,40)->add(GTK2.Button("Hello"))->add(GTK2.Button("World"))->pack_end_defaults(GTK2.Button("From right"))->pack_start_defaults(GTK2.Button("From left"))
 
-void create(int uniformp, int padding);
+void create(int|mapping(string:mixed) uniformp_or_props, ?int padding)
 //! Create a new vertical box widget.
 //! If all_same_size is true, all widgets will have exactly the same size.
 //! padding is added to the top and bottom of the children.
-
-
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    if (Pike_sp[-args].type==PIKE_T_INT) {
+      int uniformp,padding;
+      GtkWidget *gv;
+      get_all_args("create",args,"%i%i",&uniformp,&padding);
+      gv=gtk_vbox_new(uniformp,padding);
+      THIS->obj=G_OBJECT(gv);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_VBOX);
+    }
+    my_pop_n_elems(args);
+  }
+  pgtk__init_this_object();
+}

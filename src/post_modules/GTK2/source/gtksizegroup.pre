@@ -38,8 +38,23 @@ inherit G.Object;
 //!    The directions in which the size group effects the requested sizes of
 //!    its componenent widgets.
 
-void create(int mode);
+void create(int|mapping(string:mixed) mode_or_props)
 //! Create a new group.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (Pike_sp[-args].type==PIKE_T_INT) {
+    int mode;
+    GtkSizeGroup *gs;
+    get_all_args("create",args,"%i",&mode);
+    gs=gtk_size_group_new(mode);
+    THIS->obj=G_OBJECT(gs);
+  } else {
+    INIT_WITH_PROPS(GTK_TYPE_SIZE_GROUP);
+  }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
 
 void set_mode(int mode);
 //! Sets the mode of the size group.  One of CONST(GTK_SIZE_GROUP_).  The mode
@@ -49,6 +64,14 @@ void set_mode(int mode);
 
 int get_mode();
 //! Gets the current mode.
+
+require gtk28;
+void set_ignore_hidden(int setting);
+//! Sets whether invisible widgets should be ignored when calculating the size.
+
+int get_ignore_hidden();
+//! Returns if invisible widgets are ignored when calculating the size.
+endrequire;
 
 void add_widget(GTK2.Widget widget);
 //! Adds a widget to the group.  In the future, the requisition of the widget

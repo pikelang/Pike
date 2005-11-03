@@ -52,7 +52,7 @@ signal output;
 signal value_changed;
 
 
-void create(GTK2.Adjustment|float range_or_min, 
+void create(GTK2.Adjustment|float|mapping(string:mixed) range_or_min_or_props, 
 	    float climb_rate_or_max, 
 	    int|float precision_or_step)
 //!  The climb_rate argument take a value between 0.0 and 1.0 and
@@ -64,16 +64,22 @@ void create(GTK2.Adjustment|float range_or_min,
   pgtk_verify_setup();
   if (Pike_sp[-args].type==PIKE_T_FLOAT) {
     FLOAT_TYPE min,max,step;
+    GtkWidget *gs;
     get_all_args("create",args,"%f%f%f",&min,&max,&step);
-    THIS->obj=G_OBJECT(gtk_spin_button_new_with_range(min,max,step));
-  } else {
+    gs=gtk_spin_button_new_with_range(min,max,step);
+    THIS->obj=G_OBJECT(gs);
+  } else if (Pike_sp[-args].type==PIKE_T_OBJECT) {
     struct object *o1;
     FLOAT_TYPE climb;
     INT_TYPE prec;
+    GtkWidget *gs;
     get_all_args("create",args,"%o%f%i",&o1,&climb,&prec);
-    THIS->obj=G_OBJECT(gtk_spin_button_new(
-		GTK_ADJUSTMENT(get_gobject(o1)),climb,prec));
+    gs=gtk_spin_button_new(GTK_ADJUSTMENT(get_gobject(o1)),climb,prec);
+    THIS->obj=G_OBJECT(gs);
+  } else {
+    INIT_WITH_PROPS(GTK_TYPE_SPIN_BUTTON);
   }
+  my_pop_n_elems(args);
   pgtk__init_this_object();
 }
 
@@ -202,3 +208,10 @@ int get_wrap();
 //! Returns whether the value wraps around to the opposite limit when the
 //! upper or lower limit of the range is exceeded.
 
+int get_entry()
+//! Returns W(Entry) of this widget.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_gobjectclass(GTK_ENTRY(THIS->obj),pgtk_entry_program);
+}

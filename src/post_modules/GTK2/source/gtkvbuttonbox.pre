@@ -12,7 +12,18 @@ inherit GTK2.ButtonBox;
 //! IMG: GTK2.VbuttonBox()->add(GTK2.Button("Hello"))->add(GTK2.Button("World"))->set_layout(GTK2.BUTTONBOX_START)->set_size_request(100,300)
 //! IMG: GTK2.VbuttonBox()->add(GTK2.Button("Hello"))->add(GTK2.Button("World"))->set_layout(GTK2.BUTTONBOX_END)->set_size_request(100,300)
 
-void create();
+void create(?mapping(string:mixed) props)
 //! Create a new vertical button box
-
-
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_VBUTTON_BOX);
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gv;
+    gv=gtk_vbutton_box_new();
+    THIS->obj=G_OBJECT(gv);
+  }
+  pgtk__init_this_object();
+}

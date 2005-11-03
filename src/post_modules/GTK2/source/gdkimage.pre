@@ -31,8 +31,10 @@ void create(int|void fast_mode, Image.Image|void image)
     pop_stack();
     pgdk_image_set(1);
   }
+  my_pop_n_elems(args);
 /* Do not add one extra ref for the internal gdk object..*/
 /*  add_ref(Pike_fp->current_object); */
+  pgtk__init_this_object();
 }
 
 void destroy()
@@ -42,6 +44,8 @@ void destroy()
   if (THIS->obj)
     g_object_unref(G_OBJECT(THIS->obj));
   THIS->obj=0;
+  my_pop_n_elems(args);
+  push_int(0);
 }
 %{
 #define HEADER "P6\n%d %d\n255\n"
@@ -59,6 +63,7 @@ string get_pnm()
   char header[100];
   int x,y,len;
 
+  my_pop_n_elems(args);
   sprintf(header,HEADER,i->width,i->height);
   len=strlen(header)+i->width*i->height*3;
   res=begin_shared_string(len);
@@ -102,7 +107,7 @@ void grab(GTK2.Widget widget, int xoffset, int yoffset, int width, int height)
     g_object_unref(THIS->obj);
 
   THIS->obj=G_OBJECT(gdk_drawable_get_image(win,x,y,w,h));
-
+  
   RETURN_THIS();
 }
 
@@ -115,16 +120,18 @@ void set(Image.Image|int image_or_xsize,int|void ysize)
   if (args==1) {
     get_all_args("init",args,"%o",&img);
     /* Might throw an error!*/
+    if (THIS->obj)
+      g_object_unref(THIS->obj);
     THIS->obj=G_OBJECT(gdkimage_from_pikeimage(img,THIS->extra_int,
 						 (void *)THIS->obj));
   } else {
     INT_TYPE x,y;
+    GdkImage *gi;
     get_all_args("set",args,"%i%i",&x,&y);
     if (THIS->obj)
       g_object_unref(THIS->obj);
-    THIS->obj=G_OBJECT(gdk_image_new(THIS->extra_int,
-				      gdk_visual_get_system(),
-				      x, y));
+    gi=gdk_image_new(THIS->extra_int,gdk_visual_get_system(),x,y);
+    THIS->obj=G_OBJECT(gi);
     if (!THIS->obj)
       Pike_error("Failed to create GDK2.Image from size.\n");
   }
@@ -144,7 +151,7 @@ int get_pixel(int x, int y)
   push_int(gdk_image_get_pixel(GDK_IMAGE(THIS->obj),x,y));
 }
 
-void set_pixel(int x,int y,int pixel)
+void set_pixel(int x, int y, int pixel)
 //! Set the pixel value of a pixel. Please note that the pixel argument
 //! is a X-pixel value, which is not easily gotten from a RGB color. 
 //! See get_pixel and set.

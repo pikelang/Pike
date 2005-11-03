@@ -83,18 +83,76 @@ void set_focus_hadjustment(GTK2.Adjustment adj);
 void resize_children();
 //! Undocumented.
 
+/*
 void child_set_property(GTK2.Widget child, string property, mixed value)
 //! Set child property.
 {
   pgtk_verify_inited();
   pg_object_set_property(args-1);
 }
+*/
 
 int get_border_width();
 //! Retrieves the border width.
 
 void set_border_width(int width);
 //! Sets the border width.
+
+array get_focus_chain()
+//! Returns the focus chain.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GList *gl;
+    gtk_container_get_focus_chain(GTK_CONTAINER(THIS->obj),&gl);
+    if (gl==NULL)
+      ref_push_array(&empty_array);
+    else {
+      GList *g2=gl;
+      int i=0;
+      while (g2) {
+	push_gobject(g2->data);
+	g_object_ref(g2->data);
+	i++;
+	g2=g_list_next(g2);
+      }
+      f_aggregate(i);
+      g_list_free(gl);
+    }
+  }
+}
+
+void set_focus_chain(array focusable_widgets)
+//! Sets a focus chain, overriding the one computer automatically by GTK+.
+//! <p>
+//! In principle each widget in the chain should be a descendant of the
+//! container, but this is not enforced by this method, since it's allowed to
+//! set the focus chain before you pack the widgets, or have a widget in the
+//! chain that isn't always packed.  The necessary checks are done when the
+//! focus chain is actually traversed.
+{
+  pgtk_verify_inited();
+  {
+    GList *gl;
+    struct array *a;
+    get_all_args("set_focus_chain",args,"%A",&a);
+    if (a==NULL)
+      Pike_error("Invalid argument.\n");
+    if (a->size) {
+      int i;
+      GtkWidget *w;
+      for (i=0; i<a->size; i++) {
+	if ((ITEM(a)+i)->type==PIKE_T_OBJECT) {
+	  w=GTK_WIDGET(get_gobject((ITEM(a)+i)->u.object));
+	  gl=g_list_append(gl,w);
+	}
+      }
+      gtk_container_set_focus_chain(GTK_CONTAINER(THIS->obj),gl);
+    }
+  }
+  RETURN_THIS();
+}
 
 /*
 void focus( int focus_direction );

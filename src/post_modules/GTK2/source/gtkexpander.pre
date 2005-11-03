@@ -17,7 +17,7 @@ inherit GTK2.Bin;
 
 signal activate;
 
-void create(string label, ?int mnemonic)
+void create(string|mapping(string:mixed) label)
 //! Create a new GTK2.Expander.  Set mnemonic to 1
 //! for a mnemonic expander, otherwise omitting it
 //! creates a regular expander.
@@ -25,18 +25,16 @@ void create(string label, ?int mnemonic)
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   {
-    gchar *label;
-    INT_TYPE x;
-    if (args>1) {
-      get_all_args("create",args,"%s%i",&label,&x);
-      if (x)
-	THIS->obj=G_OBJECT(gtk_expander_new_with_mnemonic(label));
-      else
-	THIS->obj=G_OBJECT(gtk_expander_new(label));
-    } else {
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      char *label;
+      GtkWidget *ge;
       get_all_args("create",args,"%s",&label);
-      THIS->obj=G_OBJECT(gtk_expander_new(label));
+      ge=gtk_expander_new_with_mnemonic(label);
+      THIS->obj=G_OBJECT(ge);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_EXPANDER);
     }
+    my_pop_n_elems(args);
   }
   pgtk__init_this_object();
 }

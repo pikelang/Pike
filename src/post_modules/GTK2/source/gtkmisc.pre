@@ -63,6 +63,7 @@ mapping(string:int) get_padding()
     gtk_misc_get_padding(GTK_MISC(THIS->obj),&xpad,&ypad);
     push_text("xpad"); push_int(xpad);
     push_text("ypad"); push_int(ypad);
+    f_aggregate_mapping(4);
   }
 }
 

@@ -24,8 +24,21 @@ inherit GTK2.Vbox;
 
 signal color_changed;
 
-void create();
+void create(?mapping(string:mixed) props)
 //! Create a new color selection.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_COLOR_SELECTION);
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gc;
+    gc=gtk_color_selection_new();
+    THIS->obj=G_OBJECT(gc);
+  }
+  pgtk__init_this_object();
+}
 
 void set_has_opacity_control(int setting);
 //! Sets whether or not to use opacity.
@@ -57,6 +70,7 @@ mapping(string:int) get_current_color()
     GdkColor color;
     gtk_color_selection_get_current_color(GTK_COLOR_SELECTION(THIS->obj),
 		&color);
+    my_pop_n_elems(args);
     push_text("pixel"); push_int(color.pixel);
     push_text("red"); push_int(color.red);
     push_text("green"); push_int(color.green);
@@ -113,6 +127,7 @@ mapping(string:int) get_previous_color()
     GdkColor color;
     gtk_color_selection_get_previous_color(GTK_COLOR_SELECTION(THIS->obj),
 		&color);
+    my_pop_n_elems(args);
     push_text("pixel"); push_int(color.pixel);
     push_text("red"); push_int(color.red);
     push_text("green"); push_int(color.green);

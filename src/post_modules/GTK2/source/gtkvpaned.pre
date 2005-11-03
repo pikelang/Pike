@@ -9,5 +9,18 @@ inherit GTK2.Paned;
 //!
 //! IMG: GTK2.Vpaned()->add1(GTK2.Label("Top Side Of Pane"))->add2(GTK2.Label("Bottom"))->set_size_request(100,100)
 
-void create();
+void create(?mapping(string:mixed) props)
 //! Create a new W(Vpaned) widget.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_VPANED);
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gv;
+    gv=gtk_vpaned_new();
+    THIS->obj=G_OBJECT(gv);
+  }
+  pgtk__init_this_object();
+}

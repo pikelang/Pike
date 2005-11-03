@@ -88,6 +88,7 @@ void create(string filename_or_buffer, ?int size, ?string root, ?string domain)
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   {
+    GladeXML *gl;
     char *fname,*root=NULL,*dom=NULL;
     int size=0;
     if (args==1)
@@ -99,11 +100,12 @@ void create(string filename_or_buffer, ?int size, ?string root, ?string domain)
     else
       get_all_args("create",args,"%s%i%s%s",&fname,&size,&root,&dom);
     if (size==0)
-      THIS->obj=G_OBJECT(glade_xml_new(fname,root,dom));
+      gl=glade_xml_new(fname,root,dom);
     else if (size==-1)
-      THIS->obj=G_OBJECT(glade_xml_new_from_buffer(fname,strlen(fname),root,dom));
+      gl=glade_xml_new_from_buffer(fname,strlen(fname),root,dom);
     else
-      THIS->obj=G_OBJECT(glade_xml_new_from_buffer(fname,size,root,dom));
+      gl=glade_xml_new_from_buffer(fname,size,root,dom);
+    THIS->obj=G_OBJECT(gl);
   }
   my_pop_n_elems(args);
   pgtk__init_this_object();

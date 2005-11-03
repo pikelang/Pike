@@ -13,8 +13,34 @@ inherit GTK2.Container;
 
 signal set_scroll_adjustments;
 
-void create(?GTK2.Adjustment hadjustment, ?GTK2.Adjustment vadjustment);
+void create(GTK2.Adjustment|mapping(string:mixed)|void hadjustment_or_props,
+	    ?GTK2.Adjustment vadjustment)
 //! Creates a new GTK2.Layout.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+      struct object *o1,*o2=NULL;
+      GtkWidget *gl;
+      if (args==2)
+	get_all_args("create",args,"%o%o",&o1,&o2);
+      else
+	get_all_args("create",args,"%o",&o1);
+      gl=gtk_layout_new(GTK_ADJUSTMENT(get_gobject(o1)),
+			GTK_ADJUSTMENT(get_gobject(o1)));
+      THIS->obj=G_OBJECT(gl);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_LAYOUT);
+    }
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gl;
+    gl=gtk_layout_new(NULL,NULL);
+    THIS->obj=G_OBJECT(gl);
+  }
+  pgtk__init_this_object();
+}
 
 void put(GTK2.Widget widget, int x, int y);
 //! Adds widget to the layout at position (x,y).

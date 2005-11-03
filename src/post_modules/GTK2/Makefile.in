@@ -8,7 +8,7 @@ MODULE_LDFLAGS=@LDFLAGS@ @PGTK_LIBS@ @GTK_LIBS@
 MODULE_CFLAGS=@PGTK_CFLAGS@
 CONFIG_HEADERS=pgtk_config.h
 MODULE_CLEAN_EXTRA=p*.c
-MODULE_INSTALL=pre_install
+#MODULE_INSTALL=pre_install
 
 # WITH_GTK == 2
 #   override -> compile2 -> compile1 -> [SET OBJS] -> all
@@ -20,7 +20,7 @@ MODULE_INSTALL=pre_install
 #   override -> compile0 -> all
 #
 
-#MYRUNPIKE=../../pike -DNOT_INSTALLED -m../../master.pike
+MYRUNPIKE=../../pike -DNOT_INSTALLED -m../../master.pike
 
 override:  compile@WITH_GTK@
 	@:
@@ -50,6 +50,8 @@ compile1:
 	    test -f "$$f" || ln -s "$(srcdir)/$$f" "$$f"; \
 	  done; \
 	else :; fi
+        @echo "Original CFLAGS:$(CFLAGS)"
+        @echo "Modified CFLAGS:`echo $(CFLAGS) | sed -e 's/-g[^ ]*//g' -e 's/-W[^ ]*//g'`"
 	@$(MAKE) OBJS="`cat files_to_compile`" \
                CFLAGS="`echo $(CFLAGS) | sed -e 's/-g[^ ]*//g' -e 's/-W[^ ]*//g'`" \
                   all
@@ -59,10 +61,10 @@ compile2: compile1
 options: config.status
 	./config.status 
 
-pre_install: GDK2.pmod Gnome2.pmod Pango.pmod
-	$(TMP_BINDIR)/install_module GDK2.pmod $(SYSTEM_MODULE_PATH)/$(MODDIR)GDK2.pmod
-	$(TMP_BINDIR)/install_module Gnome2.pmod $(SYSTEM_MODULE_PATH)/$(MODDIR)Gnome2.pmod
-	$(TMP_BINDIR)/install_module Pango.pmod $(SYSTEM_MODULE_PATH)/$(MODDIR)Pango.pmod
+#pre_install: GDK2.pmod Gnome2.pmod Pango.pmod
+#	$(TMP_BINDIR)/install_module GDK2.pmod $(SYSTEM_MODULE_PATH)/$(MODDIR)GDK2.pmod
+#	$(TMP_BINDIR)/install_module Gnome2.pmod $(SYSTEM_MODULE_PATH)/$(MODDIR)Gnome2.pmod
+#	$(TMP_BINDIR)/install_module Pango.pmod $(SYSTEM_MODULE_PATH)/$(MODDIR)Pango.pmod
 
 # Do not re-generate the 'dependencies' file in this directory.
 depend: 
@@ -70,18 +72,18 @@ depend:
 
 # Some hand-made dependencies:
 
-#$(OBJS) : $(SRCDIR)/pgtk.h pgtk_config.h \
-# $(SRCDIR)/../../global.h \
-# $(SRCDIR)/../../svalue.h \
-# $(SRCDIR)/../../program.h \
-# $(SRCDIR)/../../pike_types.h \
-# $(SRCDIR)/../../interpret.h \
-# $(SRCDIR)/../../module_support.h \
-# $(SRCDIR)/../../pike_error.h \
-# $(SRCDIR)/../../array.h \
-# $(SRCDIR)/../../backend.h \
-# $(SRCDIR)/../../stralloc.h \
-# $(SRCDIR)/../../mapping.h \
-# $(SRCDIR)/../../object.h \
-# $(SRCDIR)/../../threads.h \
-# $(SRCDIR)/../../operators.h
+$(OBJS) : $(SRCDIR)/pgtk.h pgtk_config.h \
+ $(SRCDIR)/../../global.h \
+ $(SRCDIR)/../../svalue.h \
+ $(SRCDIR)/../../program.h \
+ $(SRCDIR)/../../pike_types.h \
+ $(SRCDIR)/../../interpret.h \
+ $(SRCDIR)/../../module_support.h \
+ $(SRCDIR)/../../pike_error.h \
+ $(SRCDIR)/../../array.h \
+ $(SRCDIR)/../../backend.h \
+ $(SRCDIR)/../../stralloc.h \
+ $(SRCDIR)/../../mapping.h \
+ $(SRCDIR)/../../object.h \
+ $(SRCDIR)/../../threads.h \
+ $(SRCDIR)/../../operators.h

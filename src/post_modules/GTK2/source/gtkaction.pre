@@ -22,8 +22,24 @@ endrequire;
 
 signal activate;
 
-void create(string name, string label, string tooltip, string stock_id);
+void create(string|mapping(string:mixed) name_or_props, ?string label,
+	    ?string tooltip, ?string stock_id)
 //! Creates a new object.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args==4) {
+    char *name,*label,*tooltip,*stock_id;
+    GtkAction *ga;
+    get_all_args("create",args,"%s%s%s%s",&name,&label,&tooltip,&stock_id);
+    ga=gtk_action_new(name,label,tooltip,stock_id);
+    THIS->obj=G_OBJECT(ga);
+  } else {
+    INIT_WITH_PROPS(GTK_TYPE_ACTION);
+  }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
 
 string get_name();
 //! Returns the name of the action.

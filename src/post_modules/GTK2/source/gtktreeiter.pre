@@ -2,6 +2,7 @@ class GTK2.TreeIter;
 
 //! TreeIter.
 
+/*
 void create()
 //! Create a new TreeIter.
 {
@@ -12,7 +13,8 @@ void create()
     SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(GtkTreeIter));
   pgtk__init_this_object();
 }
-    
+*/
+   
 GTK2.TreeIter copy()
 //! Creates a copy of this tree iter.
 {

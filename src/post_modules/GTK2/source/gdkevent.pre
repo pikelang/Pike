@@ -35,6 +35,8 @@ void destroy()
   if( THIS->obj )
     g_free( THIS->obj );
   THIS->obj = 0;
+  my_pop_n_elems(args);
+  push_int(0);
 }
 
 mixed _index(string ind)

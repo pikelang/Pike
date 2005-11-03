@@ -12,32 +12,44 @@ inherit GTK2.Button;
 signal color_set;
 
 //! When a user selects a color.
-void create(?int red, ?int green, ?int blue)
+void create(GDK2.Color|mapping(string:mixed)|int|void red_or_props, ?int green, ?int blue)
 //! Create a new W(ColorButton).
 {
-  GdkColor gcolor;
   pgtk_verify_not_inited();
   pgtk_verify_setup();
-  gcolor.red=gcolor.green=gcolor.blue=gcolor.pixel=0;
   if (args) {
-    if (Pike_sp[0-args].type!=PIKE_T_INT)
-      Pike_error("Illegal argument 1, expected int\n");
-    gcolor.red=(gint)PGTK_GETINT(&Pike_sp[0-args]);
-    if (args>1) {
-      if (Pike_sp[1-args].type!=PIKE_T_INT)
-	Pike_error("Illegal argument 2, expected int\n");
-      gcolor.green=(gint)PGTK_GETINT(&Pike_sp[1-args]);
+    if (Pike_sp[-args].type==PIKE_T_INT) {
+      GdkColor color;
+      GtkWidget *gcb;
+      color.red=color.green=color.blue=color.pixel=0;
+      if (args==3)
+	get_all_args("create",args,"%i%i%i",&color.red,&color.green,&color.blue);
+      else if (args==2)
+	get_all_args("create",args,"%i%i",&color.red,&color.green);
+      else
+	get_all_args("create",args,"%i",&color.red);
+      gcb=gtk_color_button_new_with_color(&color);
+      THIS->obj=G_OBJECT(gcb);
+    } else if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+      struct object *o1;
+      GdkColor *col;
+      GtkWidget *gcb;
+      get_all_args("create",args,"%o",&o1);
+      col=(GdkColor *)get_gdkobject(o1,color);
+      if (col)
+	gcb=gtk_color_button_new_with_color(col);
+      else
+	gcb=gtk_color_button_new();
+      THIS->obj=G_OBJECT(gcb);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_COLOR_BUTTON);
     }
-    if (args>2) {
-      if (Pike_sp[2-args].type!=PIKE_T_INT)
-	Pike_error("Illegal argument 3, expected int\n");
-      gcolor.blue=(gint)PGTK_GETINT(&Pike_sp[2-args]);
-    }
-    THIS->obj=G_OBJECT(gtk_color_button_new_with_color(&gcolor));
+    my_pop_n_elems(args);
   } else {
-    THIS->obj=G_OBJECT(gtk_color_button_new());
+    GtkWidget *gcb;
+    gcb=gtk_color_button_new();
+    THIS->obj=G_OBJECT(gcb);
   }
-  my_pop_n_elems(args);
   pgtk__init_this_object();
 }
 
@@ -54,7 +66,6 @@ void set_color(int red, int green, int blue)
     gcolor.blue=(gint)PGTK_GETINT(&Pike_sp[2-args]);
     gtk_color_button_set_color(GTK_COLOR_BUTTON(THIS->obj),&gcolor);
   }
-  my_pop_n_elems(args);
   RETURN_THIS();
 }
 
@@ -105,6 +116,7 @@ void set_property(string property, mixed value)
 	Pike_error("Improper type for this property.\n");
       color=(GdkColor *)get_gdkobject(sv->u.object,color);
       setprop(prop,color);
+      RETURN_THIS();
     } else {
       pg_object_set_property(args);
     }
@@ -129,7 +141,10 @@ mixed get_property(string property)
       my_pop_n_elems(args);
       push_gdkobject(color,color);
     } else {
-      pgtk_get_property(G_OBJECT(THIS->obj),prop);
+      char *s=g_strdup(prop);
+      my_pop_n_elems(args);
+      pgtk_get_property(G_OBJECT(THIS->obj),s);
+      g_free(s);
     }
   }
 }

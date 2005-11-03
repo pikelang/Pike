@@ -1,5 +1,5 @@
-/* -*- C -*- */
 not gtk_beta;
+
 class GDK2.PixbufAnimation;
 inherit G.Object;
 
@@ -12,12 +12,14 @@ void create(string filename)
   pgtk_verify_setup();
   {
     const char *filename;
+    GdkPixbufAnimation *gpa;
     GError *error=NULL;
     get_all_args("create",args,"%s",&filename);
+    gpa=gdk_pixbuf_animation_new_from_file(filename,&error);
     my_pop_n_elems(args);
-    THIS->obj=G_OBJECT(gdk_pixbuf_animation_new_from_file(filename,&error));
-    if (THIS->obj==NULL)
+    if (gpa==NULL)
       Pike_error("Unable to load file %s: %s\n",filename,error->message);
+    THIS->obj=G_OBJECT(gpa);
   }
   pgtk__init_this_object();
 }
@@ -61,6 +63,5 @@ GDK2.Pixbuf get_static_image();
 //! function returns reasonable thing to display as a static unanimated image,
 //! which might be the first frame, or something more sophisticated.  If an
 //! animation hasn't loaded any frames yet, this function will return 0.
-
 
 endnot;

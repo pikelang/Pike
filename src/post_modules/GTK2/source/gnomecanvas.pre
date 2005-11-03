@@ -36,13 +36,20 @@ void create(?int anti_alias)
   pgtk_verify_setup();
   if (args) {
     int aa;
+    GtkWidget *gc;
     get_all_args("create",args,"%i",&aa);
     if (aa)
-      THIS->obj=G_OBJECT(gnome_canvas_new_aa());
+      gc=gnome_canvas_new_aa();
     else
-      THIS->obj=G_OBJECT(gnome_canvas_new());
-  } else
-    THIS->obj=G_OBJECT(gnome_canvas_new());
+      gc=gnome_canvas_new();
+    THIS->obj=G_OBJECT(gc);
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gc;
+    gc=gnome_canvas_new();
+    THIS->obj=G_OBJECT(gc);
+  }
+
   pgtk__init_this_object();
 }
 
@@ -110,6 +117,7 @@ array(int) get_scroll_offsets()
     gnome_canvas_get_scroll_offsets(GNOME_CANVAS(THIS->obj),&cx,&cy);
     PGTK_PUSH_INT(cx);
     PGTK_PUSH_INT(cy);
+    f_aggregate(2);
   }
 }
 
@@ -129,6 +137,7 @@ array(float) w2c_affine()
     gnome_canvas_w2c_affine(GNOME_CANVAS(THIS->obj),affine);
     for (i=0; i<6; i++)
       push_float(affine[i]);
+    f_aggregate(6);
   }
 }
 
@@ -144,6 +153,7 @@ array(int) w2c(float wx, float wy)
     my_pop_n_elems(args);
     PGTK_PUSH_INT(cx);
     PGTK_PUSH_INT(cy);
+    f_aggregate(2);
   }
 }
 
@@ -160,6 +170,7 @@ array(float) w2c_d(float wx, float wy)
     my_pop_n_elems(args);
     push_float(cx);
     push_float(cy);
+    f_aggregate(2);
   }
 }
 
@@ -172,8 +183,10 @@ array(float) c2w(int cx, int cy)
     double wx,wy;
     get_all_args("c2w",args,"%i%i",&cx,&cy);
     gnome_canvas_c2w(GNOME_CANVAS(THIS->obj),cx,cy,&wx,&wy);
+    my_pop_n_elems(args);
     push_float(wx);
     push_float(wy);
+    f_aggregate(2);
   }
 }
 
@@ -189,8 +202,10 @@ array(float) window_to_world(float winx, float winy)
     get_all_args("window_to_world",args,"%f%f",&winx,&winy);
     gnome_canvas_window_to_world(GNOME_CANVAS(THIS->obj),winx,winy,
 			&worldx,&worldy);
+    my_pop_n_elems(args);
     push_float(worldx);
     push_float(worldy);
+    f_aggregate(2);
   }
 }
 
@@ -204,8 +219,10 @@ array(float) world_to_window(float worldx, float worldy)
     get_all_args("world_to_window",args,"%f%f",&worldx,&worldy);
     gnome_canvas_world_to_window(GNOME_CANVAS(THIS->obj),worldx,worldy,
 			&winx,&winy);
+    my_pop_n_elems(args);
     push_float(winx);
     push_float(winy);
+    f_aggregate(2);
   }
 }
 

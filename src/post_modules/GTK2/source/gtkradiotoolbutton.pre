@@ -6,27 +6,38 @@ inherit GTK2.ToggleToolButton;
 //! Properties:
 //! GTK2.RadioToolButton group
 
-void create(?GTK2.RadioToolButton groupmember)
+void create(GTK2.RadioToolButton|mapping(string:mixed)|void groupmember)
 //! Create a GTK2.RadioToolButton.
 //! Use without a parameter for a new group.
 //! Use with another GTK2.RadioToolButton to add another
 //!   button to the same group as a previous button.
 {
-  GSList *mylist=NULL;
-  struct object *o1=NULL;
-
-  if (args)
-    get_all_args("create",args,"%o",&o1);
-
   pgtk_verify_not_inited();
   pgtk_verify_setup();
-  if (o1) {
-    THIS->obj=G_OBJECT(gtk_radio_tool_button_new_from_widget(
-		GTK_RADIO_TOOL_BUTTON(get_gobject(o1))));
+  if (args) {
+    if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+      GSList *mylist=NULL;
+      struct object *o1=NULL;
+      GtkToolItem *gr;
+
+      get_all_args("create",args,"%o",&o1);
+
+      if (o1) {
+	gr=gtk_radio_tool_button_new_from_widget(
+		GTK_RADIO_TOOL_BUTTON(get_gobject(o1)));
+      } else {
+	gr=gtk_radio_tool_button_new(NULL);
+      }
+      THIS->obj=G_OBJECT(gr);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_RADIO_TOOL_BUTTON);
+    }
+    my_pop_n_elems(args);
   } else {
-    THIS->obj=G_OBJECT(gtk_radio_tool_button_new(NULL));
+    GtkToolItem *gr;
+    gr=gtk_radio_tool_button_new(NULL);
+    THIS->obj=G_OBJECT(gr);
   }
-  my_pop_n_elems(args);
   pgtk__init_this_object();
 }
 
@@ -34,21 +45,20 @@ array get_group()
 //! Get the group this button belongs to.
 {
   pgtk_verify_inited();
+  my_pop_n_elems(args);
   {
-    GSList *ml=gtk_radio_tool_button_get_group(
-		GTK_RADIO_TOOL_BUTTON(THIS->obj));
-    struct array *a;
-    GSList *m2;
+    GSList *gl,*g2;
     int num;
-    m2=ml;
-    while (m2) {
-      push_text(m2->data);
-      g_object_ref(GTK_RADIO_TOOL_BUTTON(m2->data));
+    gl=g2=gtk_radio_tool_button_get_group(
+		GTK_RADIO_TOOL_BUTTON(THIS->obj));
+    while (g2) {
+      push_text(g2->data);
+      g_object_ref(GTK_RADIO_TOOL_BUTTON(g2->data));
       num++;
-      g_slist_next(m2);
+      g2=g_slist_next(g2);
     }
     f_aggregate(num);
-    g_slist_free(ml);
+    g_slist_free(gl);
   }
 }
 

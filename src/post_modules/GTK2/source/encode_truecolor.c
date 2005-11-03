@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode_truecolor.c,v 1.1 2005/07/28 15:19:36 nilsson Exp $
+|| $Id: encode_truecolor.c,v 1.2 2005/11/03 13:49:45 ldillon Exp $
 */
 
 static unsigned char swap_bits[256] = 

@@ -17,6 +17,7 @@ void create()
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   THIS->obj=G_OBJECT(gdk_display_get_default());
+  my_pop_n_elems(args);
   pgtk__init_this_object();
 }
 
@@ -135,11 +136,13 @@ mapping get_window_at_pointer()
 //! another application).
 {
   pgtk_verify_inited();
+  my_pop_n_elems(args);
   {
     gint x,y;
     GdkWindow *gw;
     gw=gdk_display_get_window_at_pointer(GDK_DISPLAY_OBJECT(THIS->obj),&x,&y);
-    push_text("window"); push_gdkobject(gw,window);
+/*    push_text("window"); push_gdkobject(gw,window); */
+    push_text("window"); push_gobject(gw);
     push_text("x"); push_int(x);
     push_text("y"); push_int(y);
     f_aggregate_mapping(6);
@@ -166,6 +169,7 @@ mapping get_maximal_cursor_size()
     guint width,height;
     gdk_display_get_maximal_cursor_size(GDK_DISPLAY_OBJECT(THIS->obj),
 			&width,&height);
+    my_pop_n_elems(args);
     push_text("width"); push_int(width);
     push_text("height"); push_int(height);
     f_aggregate_mapping(4);

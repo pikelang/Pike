@@ -38,20 +38,28 @@ signal set_scroll_adjustments;
 signal toggle_cursor_item;
 signal unselect_all;
 
-void create(?GTK2.TreeModel model)
+void create(GTK2.TreeModel|mapping(string:mixed)|void model_or_props)
 //! Creates a new GTK2.IconView widget
 //! Not implemented yet.
 {
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   if (args) {
-    struct object *o1;
-    get_all_args("create",args,"%o",&o1);
+    if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+      struct object *o1;
+      GtkWidget *gi;
+      get_all_args("create",args,"%o",&o1);
+      my_pop_n_elems(args);
+      gi=gtk_icon_view_new_with_model(GTK_TREE_MODEL(get_gobject(o1)));
+      THIS->obj=G_OBJECT(gi);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_ICON_VIEW);
+    }
     my_pop_n_elems(args);
-    THIS->obj=G_OBJECT(gtk_icon_view_new_with_model(
-			GTK_TREE_MODEL(get_gobject(o1))));
   } else {
-    THIS->obj=G_OBJECT(gtk_icon_view_new());
+    GtkWidget *gi;
+    gi=gtk_icon_view_new();
+    THIS->obj=G_OBJECT(gi);
   }
   pgtk__init_this_object();
 }
@@ -93,6 +101,78 @@ GTK2.TreePath get_path_at_pos(int x, int y)
     push_gobjectclass(path,pgtk_tree_path_program);
   }
 }
+
+require gtk28;
+array get_item_at_pos(int x, int y)
+//! Finds the path at the point (x,y) relative to widget coordinates.  In
+//! contrast to get_path_at_pos(), this function also obtains the cell at the
+//! specified position.
+{
+  pgtk_verify_inited();
+  {
+    int x,y;
+    GtkTreePath *path;
+    GtkCellRenderer *cell;
+    int res;
+    get_all_args("get_item_at_pos",args,"%i%i",&x,&y);
+    my_pop_n_elems(args);
+    res=gtk_icon_view_get_item_at_pos(GTK_ICON_VIEW(THIS->obj),x,y,&path,&cell);
+    if (res) {
+      push_gobjectclass(path,pgtk_tree_path_program);
+      push_gobject(cell);
+      f_aggregate(2);
+    } else 
+      ref_push_array(&empty_array);
+  }
+}
+
+void set_cursor(GTK2.TreePath path, ?GTK2.CellRenderer cell, ?int start_editing)
+//! Sets the current keyboard focus to be at path, and selects it.  This is
+//! usefull when you want to focus the user's attention on a particular item.
+//! If cell is not 0, then focus is given to the cell speicified by it.
+//! Additionally, if start_editing is TRUE, then editing should be started in
+//! the specified cell.
+//! <p>
+//! This function is often followed by grab_focus() in order to give keyboard
+//! focus to the widget.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2=NULL;
+    int se=0;
+    get_all_args("set_cursor",args,"%o.%o%i",&o1,&o2,&se);
+    gtk_icon_view_set_cursor(GTK_ICON_VIEW(THIS->obj),
+			(GtkTreePath *)get_gobject(o1),
+			GTK_CELL_RENDERER(get_gobject(o2)),
+			se);
+  }
+  RETURN_THIS();
+}
+
+array get_cursor()
+//! Returns the GTK2.TreePath and GTK2.CellRenderer of the current cursor path
+//! and cell.  If the cursor isn't currently set, then path will be 0.  If no
+//! cell currently has focus, then cell will be 0.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GtkTreePath *path;
+    GtkCellRenderer *cell;
+    int res;
+    res=gtk_icon_view_get_cursor(GTK_ICON_VIEW(THIS->obj),&path,&cell);
+    if (path)
+      push_gobjectclass(path,pgtk_tree_path_program);
+    else
+      push_int(0);
+    if (cell)
+      push_gobject(cell);
+    else
+      push_int(0);
+    f_aggregate(2);
+  }
+}
+endrequire;
 
 void set_selection_mode(int mode);
 //! Sets the selection mode.
@@ -201,6 +281,7 @@ array(GTK2.TreePath) get_selected_items()
     GList *gl,*g2;
     int i=0;
     gl=g2=gtk_icon_view_get_selected_items(GTK_ICON_VIEW(THIS->obj));
+    my_pop_n_elems(args);
     while (g2) {
       push_gobjectclass(g2->data,pgtk_tree_path_program);
       i++;
@@ -220,7 +301,7 @@ void unselect_all();
 //! Unselects all the icons.
 
 void item_activated(GTK2.TreePath path)
-//! Activates teh item determined by path.
+//! Activates the item determined by path.
 {
   pgtk_verify_inited();
   {
@@ -231,5 +312,68 @@ void item_activated(GTK2.TreePath path)
   }
   RETURN_THIS();
 }
+
+endrequire;
+
+require gtk28;
+void scroll_to_path(GTK2.TreePath path, int use_align,
+		    float row_align, float col_align)
+//! Moves the alignments to the position specified by path.  row_align
+//! determines where the row is placed, and col_align determines where column
+//! is placed.  Both are expected to be between 0.0 and 1.0.  0.0 means
+//! left/top alignment, 1.0 means right/bottom alignment, 0.5 means center.
+//! <p>
+//! If use_align is FALSE, then the alignment arguments are ignored, and the
+//! tree does the minimum amount of work to scroll the item onto the screen.
+//! This means that the item will be scrolled to the edge closest to its
+//! current position.  If the item is currently visible on the screen, nothing
+//! is done.
+//! <p>
+//! This funciton only works if the model is set, and path is a valid row on
+//! the model.  If the model changes before this icon view is realized, the
+//! centered path will be modified to reflect this change.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    int use_align;
+    FLOAT_TYPE row_align,col_align;
+    get_all_args("scroll_to_path",args,"%o%i%f%f",&o1,&use_align,&row_align,
+			&col_align);
+    gtk_icon_view_scroll_to_path(GTK_ICON_VIEW(THIS->obj),
+			(GtkTreePath *)get_gobject(o1),use_align,
+			row_align,col_align);
+  }
+  RETURN_THIS();
+}
+
+array get_visible_range()
+//! Returns the first and last visible path.  Note that there may be invisible
+//! paths in between.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GtkTreePath *s,*e;
+    int res;
+    res=gtk_icon_view_get_visible_range(GTK_ICON_VIEW(THIS->obj),&s,&e);
+    if (res) {
+      push_gobjectclass(s,pgtk_tree_path_program);
+      push_gobjectclass(e,pgtk_tree_path_program);
+      f_aggregate(2);
+    } else
+      ref_push_array(&empty_array);
+  }
+}
+
+void set_reorderable(int setting);
+//! This function is a convenience function to allow you to reorder models.
+//! Both GTK2.TreeStore and GTK2.ListStore support this.  If setting is TRUE,
+//! then the user can reorder the model by dragging and dropping rows.  The
+//! developer can listen to these changes by connecting to the model's
+//! "row-inserted" and "row-deleted" signals.
+
+int get_reorderable();
+//! Retrieves whether the user can reorder the list via drag-and-drop.
 
 endrequire;

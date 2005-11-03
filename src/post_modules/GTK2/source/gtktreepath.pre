@@ -66,7 +66,7 @@ void append_index(int index)
 //! of the path is increased.
 {
   pgtk_verify_inited();
-  if (args) {
+  {
     int index;
     get_all_args("append_index",args,"%i",&index);
     gtk_tree_path_append_index((GtkTreePath *)THIS->obj,index);
@@ -79,7 +79,7 @@ void prepend_index(int index)
 //! of the path is increased.
 {
   pgtk_verify_inited();
-  if (args) {
+  {
     int index;
     get_all_args("prepend_index",args,"%i",&index);
     gtk_tree_path_prepend_index((GtkTreePath *)THIS->obj,index);
@@ -104,9 +104,9 @@ array(int) get_indices()
   my_pop_n_elems(args);
   while (arr[n])
     PGTK_PUSH_INT(arr[n++]);
-  if (!n) {
+  if (!n)
     ref_push_array(&empty_array);
-  } else
+  else
     f_aggregate(n);
 }
 
@@ -167,7 +167,7 @@ void prev()
   RETURN_THIS();
 }
 
-int up()
+void up()
 //! Moves the path to point to its parent node, if it has a parent.
 {
   pgtk_verify_inited();

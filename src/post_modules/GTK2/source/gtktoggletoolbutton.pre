@@ -5,19 +5,23 @@ inherit GTK2.ToolButton;
 
 signal toggled;
 
-void create(?string stock_id)
+void create(string|mapping(string:mixed)|void stock_id)
 //! Creates a new toggle tool button, with or without
 //! a stock id.
 {
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   if (args) {
-    const gchar *s;
-    get_all_args("create",args,"%s",&s);
-    THIS->obj=G_OBJECT(gtk_toggle_tool_button_new_from_stock(s));
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      char *s;
+      get_all_args("create",args,"%s",&s);
+      THIS->obj=G_OBJECT(gtk_toggle_tool_button_new_from_stock(s));
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_TOGGLE_TOOL_BUTTON);
+    }
+    my_pop_n_elems(args);
   } else
     THIS->obj=G_OBJECT(gtk_toggle_tool_button_new());
-  my_pop_n_elems(args);
   pgtk__init_this_object();
 }
 

@@ -9,8 +9,22 @@ inherit GTK2.Vbox;
 //! string font-name
 //! string preview-text
 
-void create();
+void create(?mapping(string:mixed) props)
 //! Create a new GTK2.FontSelection widget.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_FONT_SELECTION);
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gf;
+    gf=gtk_font_selection_new();
+    THIS->obj=G_OBJECT(gf);
+  }
+  pgtk__init_this_object();
+}
+
 
 string get_font_name();
 //! Gets the currently-selected font name.

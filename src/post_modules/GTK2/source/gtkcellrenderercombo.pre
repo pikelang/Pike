@@ -8,6 +8,19 @@ inherit GTK2.CellRendererText;
 //! GTK2.TreeModel model
 //! int text-column
 
-void create();
+void create(?mapping(string:mixed) props)
 //! Creates a new W(CellRendererCombo).
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_CELL_RENDERER_COMBO);
+    my_pop_n_elems(args);
+  } else {
+    GtkCellRenderer *gcr;
+    gcr=gtk_cell_renderer_combo_new();
+    THIS->obj=G_OBJECT(gcr);
+  }
+  pgtk__init_this_object();
+}
 endrequire;

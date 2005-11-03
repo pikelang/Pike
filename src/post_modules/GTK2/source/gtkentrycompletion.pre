@@ -20,8 +20,21 @@ signal insert_prefix;
 endrequire;
 signal match_selected;
 
-void create();
+void create(?mapping(string:mixed) props)
 //! Creates a new widget.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_ENTRY_COMPLETION);
+    my_pop_n_elems(args);
+  } else {
+    GtkEntryCompletion *ge;
+    ge=gtk_entry_completion_new();
+    THIS->obj=G_OBJECT(ge);
+  }
+  pgtk__init_this_object();
+}
 
 GTK2.Widget get_entry();
 //! Gets the entry this widget has been attached to.
@@ -96,6 +109,25 @@ void set_popup_completion(int setting);
 
 int get_popup_completion();
 //! Returns whether completions should be presented in a popup window.
+endrequire;
+
+require gtk28;
+void set_popup_set_width(int setting);
+//! Sets whether the completion popup window will be resized to be the same
+//! width as the entry.
+
+int get_popup_set-width();
+//! Returns whether the completion popup window will be resized to the width
+//! of the entry.
+
+void set_popup_single_match(int setting);
+//! Sets whether the completion popup window will appear even if there is only
+//! a single match.  YOu may want to set this to 0 if you are using inline
+//! completion.
+
+int get_popup_single_match();
+//! Returns whether the completion popup window will appear even if there is
+//! only a single match.
 endrequire;
 
 #include "gtkcelllayout.inc"

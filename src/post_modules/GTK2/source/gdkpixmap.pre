@@ -31,8 +31,8 @@ void pgtk__pixmap_draw(GdkImage *i)
   if (THIS->extra_data)
     gc=THIS->extra_data;
   else
-    THIS->extra_data=gc=gdk_gc_new(GDK_WINDOW(THIS->obj));
-  gdk_draw_image(GDK_WINDOW(THIS->obj),gc,i,0,0,0,0,
+    THIS->extra_data=gc=gdk_gc_new(GDK_DRAWABLE(THIS->obj));
+  gdk_draw_image(GDK_DRAWABLE(THIS->obj),gc,i,0,0,0,0,
 		  i->width,i->height);
 }
 %}
@@ -44,6 +44,7 @@ void create(int|object image)
   GdkImage *i;
   int f=0;
   struct object *o;
+  GdkPixmap *gp;
   pgtk_verify_setup();
   pgtk_verify_not_inited();
 
@@ -51,7 +52,8 @@ void create(int|object image)
     get_all_args("create",args,"%o",&o);
     i=pgtk_pixmap_setup(o,&f);
 
-    THIS->obj=G_OBJECT(gdk_pixmap_new(0,i->width,i->height,i->depth));
+    gp=gdk_pixmap_new(0,i->width,i->height,i->depth);
+    THIS->obj=G_OBJECT(gp);
     if (!THIS->obj) {
       if (f)
 	g_object_unref(i);
@@ -61,10 +63,13 @@ void create(int|object image)
     if (f)
       g_object_unref(i);
   } else if (args && Pike_sp[-1].type==PIKE_T_INT) {
-    THIS->obj=G_OBJECT(gdk_pixmap_foreign_new(Pike_sp[-1].u.integer));
+    gp=gdk_pixmap_foreign_new(Pike_sp[-1].u.integer);
+    THIS->obj=G_OBJECT(gp);
     if (!THIS->obj)
       Pike_error("Failed to find remote pixmap\n");
   }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
 }
 
 void set(GDK2.Image|Image.Image image)
@@ -95,6 +100,8 @@ void destroy()
   if (THIS->extra_data)
     g_object_unref(THIS->extra_data);
   THIS->extra_data=0;
+  my_pop_n_elems(args);
+  push_int(0);
 }
 
 void ref()

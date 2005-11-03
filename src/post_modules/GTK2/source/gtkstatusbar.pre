@@ -25,8 +25,22 @@ inherit GTK2.Hbox;
 signal text_pushed;
 signal text_popped;
 
-void create();
+void create(?mapping(string:mixed) props)
 //! Create a new statusbar widget
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_STATUSBAR);
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gs;
+    gs=gtk_statusbar_new();
+    THIS->obj=G_OBJECT(gs);
+  }
+  pgtk__init_this_object();
+}
+
 
 int get_context_id(string context);
 //! Create a new context id (or get the id of an old one). The argument

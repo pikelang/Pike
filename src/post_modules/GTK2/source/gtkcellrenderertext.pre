@@ -59,7 +59,7 @@ endrequire;
 
 signal edited;
 
-void create()
+void create(?mapping(string:mixed) props)
 //! Creates a new W(CellRendererText).  Adjust how text is drawn using object
 //! properties.  Object properties can be set globally (with G.Object->set()).
 //! Also, with W(TreeViewColumn), you can bind a property to a value in a
@@ -69,7 +69,14 @@ void create()
 {
   pgtk_verify_not_inited();
   pgtk_verify_setup();
-  THIS->obj=G_OBJECT(gtk_cell_renderer_text_new());
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_CELL_RENDERER_TEXT);
+    my_pop_n_elems(args);
+  } else {
+    GtkCellRenderer *gcr;
+    gcr=gtk_cell_renderer_text_new();
+    THIS->obj=G_OBJECT(gcr);
+  }
   pgtk__init_this_object();
 }
 

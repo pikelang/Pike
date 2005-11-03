@@ -49,8 +49,21 @@ signal pre_activate;
 //!   &lt;/toolbar&gt;
 //! &lt;/ui&gt;
 
-void create();
+void create(?mapping(string:mixed) props)
 //! Creates a new ui manager object.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_UI_MANAGER);
+    my_pop_n_elems(args);
+  } else {
+    GtkUIManager *gu;
+    gu=gtk_ui_manager_new();
+    THIS->obj=G_OBJECT(gu);
+  }
+  pgtk__init_this_object();
+}
 
 void set_add_tearoffs(int setting);
 //! Sets the "add-tearoffs" property, which controls whether menus generated
@@ -74,6 +87,7 @@ array(GTK2.ActionGroup) get_action_groups()
 //! Returns the list of action groups.
 {
   pgtk_verify_inited();
+  my_pop_n_elems(args);
   {
     GList *gl;
     int i=0;
@@ -91,7 +105,7 @@ array(GTK2.ActionGroup) get_action_groups()
 GTK2.AccelGroup get_accel_group();
 //! Returns the GTK2.AccelGroup associated with this.
 
-GTK2.Widget get_widget(string path);
+GTK2.Widget get_widget(string path)
 //! Looks up a widget by following a path.  The path consists of the names
 //! specified in the xml description of the ui, separated by '/'.  Elements
 //! which don't have a name or action attribute in the xml (e.g. &gt;popup&lt;)
@@ -100,6 +114,17 @@ GTK2.Widget get_widget(string path);
 //! <p>
 //! Note that the widget found be following a path that ends in a &gt;menu&lt;
 //! element is the menuitem to which the menu is attached, not the menu itself.
+{
+  pgtk_verify_inited();
+  {
+    char *path;
+    GtkWidget *w;
+    get_all_args("get_widget",args,"%s",&path);
+    w=gtk_ui_manager_get_widget(GTK_UI_MANAGER(THIS->obj),path);
+    my_pop_n_elems(args);
+    push_gobject(w);
+  }
+}
 
 array(GTK2.Widget) get_toplevels(int types)
 //! Obtains a list of all toplevel widgets of the requested types.  Bitwise or
@@ -134,10 +159,12 @@ int add_ui_from_string(string buffer)
   pgtk_verify_inited();
   {
     const gchar *buff;
+    int res;
     get_all_args("add_ui_from_string",args,"%s",&buff);
+    res=gtk_ui_manager_add_ui_from_string(GTK_UI_MANAGER(THIS->obj),
+			buff,-1,NULL);
     my_pop_n_elems(args);
-    push_int(gtk_ui_manager_add_ui_from_string(GTK_UI_MANAGER(THIS->obj),
-			buff,-1,NULL));
+    PGTK_PUSH_INT(res);
   }
 }
 

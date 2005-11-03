@@ -15,8 +15,13 @@ void create()
 {
   pgtk_verify_setup();
   pgtk_verify_not_inited();
-  THIS->obj = G_OBJECT(gtk_accel_group_new());
+  {
+    GtkAccelGroup *ga;
+    ga=gtk_accel_group_new();
+    THIS->obj=G_OBJECT(ga);
+  }
 /* add_ref(fp->current_object);   one extra ref... No, not really */
+  my_pop_n_elems(args);
   pgtk__init_this_object();
 }
 
@@ -29,12 +34,12 @@ int pgtk_accel_group_activate_key_callback(GtkAccelGroup *accel_group,
 {
   int res;
   push_svalue(&d->args);
-  push_gobjectclass(accel_group,pgtk_accel_group_program);
-  push_gobjectclass(acceleratable,pg_object_program);
+  push_gobject(accel_group);
+  push_gobject(acceleratable);
   push_int(accel_key);
   push_int(accel_mods);
-  f_aggregate(4);
-  apply_svalue(&d->cb,2);
+  f_aggregate(5);
+  apply_svalue(&d->cb,1);
   res=Pike_sp[-1].u.integer;
   pop_stack();
   return res;

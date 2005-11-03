@@ -18,9 +18,27 @@ void set(float xalign, float yalign, float ratio, int obey_child);
 //! lower (or rightmost). If 'obey_child' is true, the frame will use the
 //! aspect ratio of it's (one and only) child widget instead of 'ratio'.
 
-void create(string label, float xalign, float yalign,
-	    float ratio, int obey_child);
+void create(mapping|string label, ?float xalign, ?float yalign,
+	    ?float ratio, ?int obey_child)
 //! Create a new frame. Arguments are label, xalign, yalign, ratio, obey_child
 //! xalign is floats between 0 and 1, 0.0 is upper (or leftmost), 1.0 is
 //! lower (or rightmost). If 'obey_child' is true, the frame will use the
 //! aspect ratio of it's (one and only) child widget instead of 'ratio'.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args==5) {
+    char *label;
+    FLOAT_TYPE xalign,yalign,ratio,obey_child;
+    GtkWidget *gaf;
+    get_all_args("create",args,"%s%f%f%f%f",&label,&xalign,&yalign,
+			&ratio,&obey_child);
+    gaf=gtk_aspect_frame_new(label,xalign,yalign,ratio,obey_child);
+    THIS->obj=G_OBJECT(gaf);
+  } else {
+    INIT_WITH_PROPS(GTK_TYPE_ASPECT_FRAME);
+  }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
+

@@ -64,7 +64,9 @@ void create(array(mixed) types)
       }
     }
     if (sd->n_cols) {
-      THIS->obj=G_OBJECT(gtk_list_store_newv(sd->n_cols,sd->types));
+      GtkListStore *gl;
+      gl=gtk_list_store_newv(sd->n_cols,sd->types);
+      THIS->obj=G_OBJECT(gl);
       g_object_set_data_full(THIS->obj,"store-data",sd,
 		(GDestroyNotify)pgtk_destroy_store_data);
     } else {
@@ -224,6 +226,7 @@ GTK2.TreeIter append()
 //! Append a new row.
 {
   pgtk_verify_inited();
+  my_pop_n_elems(args);
   {
     GtkTreeIter *gt=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
     if (gt==NULL)

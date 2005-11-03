@@ -35,8 +35,21 @@ signal orientation_changed;
 signal popup_context_menu;
 signal style_changed;
 
-void create();
+void create(?mapping(string:mixed) props)
 //! Creates a new toolbar.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_TOOLBAR);
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gt;
+    gt=gtk_toolbar_new();
+    THIS->obj=G_OBJECT(gt);
+  }
+  pgtk__init_this_object();
+}
 
 require gtk24;
 void insert(GTK2.ToolItem item, int pos);

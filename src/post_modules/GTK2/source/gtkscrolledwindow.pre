@@ -26,14 +26,49 @@ inherit GTK2.Bin;
 signal move_focus_out;
 signal scroll_child;
 
-void create(?GTK2.Adjustment hadjustment, ?GTK2.Adjustment vadjustments);
+void create(?GTK2.Adjustment|mapping(string:mixed)|void hadjustment_or_props,
+	    ?GTK2.Adjustment vadjustments)
 //! The two adjustments are most commonly set to 0.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+      struct object *o1,*o2=NULL;
+      GtkWidget *gs;
+      if (args==2)
+	get_all_args("create",args,"%o%o",&o1,&o2);
+      else
+	get_all_args("create",args,"%o",&o1);
+      gs=gtk_scrolled_window_new(
+			GTK_ADJUSTMENT(get_gobject(o1)),
+			GTK_ADJUSTMENT(get_gobject(o2)));
+      THIS->obj=G_OBJECT(gs);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_SCROLLED_WINDOW);
+    }
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gs;
+    gs=gtk_scrolled_window_new(NULL,NULL);
+    THIS->obj=G_OBJECT(gs);
+  }
+  pgtk__init_this_object();
+}
 
 GTK2.Adjustment get_hadjustment();
 //! Get the horizontal adjustment.
 
 GTK2.Adjustment get_vadjustment();
 //! Get the vertical adjustment.
+
+require gtk28;
+GTK2.Hscrollbar get_hscrollbar();
+//! Returns the horizontal scrollbar.
+
+GTK2.Vscrollbar get_vscrollbar();
+//! Returns the vertical scrollbar.
+endrequire;
 
 void set_policy(int xpolicy, int ypolicy);
 //! Vertical and horizontal policy.  Both are one of CONST(GTK_POLICY_)

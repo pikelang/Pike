@@ -8,6 +8,7 @@ void destroy()
   if (THIS->obj)
     gtk_icon_info_free((GtkIconInfo *)THIS->obj);
   THIS->obj=NULL;
+  my_pop_n_elems(args);
   push_int(0);
 }
 
@@ -56,6 +57,7 @@ GDK2.Pixbuf get_builtin_pixbuf()
 //! GTK2.IconTheme->lookup_icon().
 {
   pgtk_verify_inited();
+  my_pop_n_elems(args);
   {
     GdkPixbuf *pixbuf=gtk_icon_info_get_builtin_pixbuf((GtkIconInfo *)THIS->obj);
     if (pixbuf)
@@ -75,6 +77,7 @@ GDK2.Pixbuf load_icon()
 //! image would have to be scaled up too far. (This maintains sharpness.)
 {
   pgtk_verify_inited();
+  my_pop_n_elems(args);
   {
     GdkPixbuf *pixbuf=gtk_icon_info_load_icon((GtkIconInfo *)THIS->obj,NULL);
     push_gobject(pixbuf);

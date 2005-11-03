@@ -16,7 +16,7 @@ inherit GTK2.CheckButton;
 
 signal group_changed;
 
-void create(?string title, ?GTK2.RadioButton groupmember)
+void create(string|mapping|void title, ?GTK2.RadioButton groupmember)
 //!  Normal creation:<p>
 //! object GTK2.RadioButton(string title) - First button (with label)<br />
 //! object GTK2.RadioButton()->add(widget) - First button (with widget)<br />
@@ -24,26 +24,36 @@ void create(?string title, ?GTK2.RadioButton groupmember)
 //! object GTK2.RadioButton(0,another_radio_button)->add(widget) - Second to n:th button (with widget)<br />
 //! </p>
 {
-  GSList *mylist = NULL;
-  gchar *label=NULL;
-  struct object *o=NULL;
-  if (args) {
-    if (Pike_sp[-args].type==PIKE_T_STRING)
-      label=(gchar *)Pike_sp[-args].u.string->str;
-    if (args==2 && (Pike_sp[-1].type==PIKE_T_OBJECT))
-	o=Pike_sp[-1].u.object;
-  }
-
   pgtk_verify_not_inited();
   pgtk_verify_setup();
+  if (args) {
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      GtkWidget *gr;
+      struct pike_string *t;
+      struct object *o1=NULL;
+      GSList *mylist=NULL;
 
-  if(o)
-    mylist=gtk_radio_button_group(GTK_RADIO_BUTTON(get_gobject(o)));
-
-  if(label)
-    THIS->obj=G_OBJECT(gtk_radio_button_new_with_label(mylist,label));
-  else
-    THIS->obj=G_OBJECT(gtk_radio_button_new(mylist));
+      if (args==2)
+	get_all_args("create",args,"%T.%o",&t,&o1);
+      if (o1)
+	mylist=gtk_radio_button_group(GTK_RADIO_BUTTON(get_gobject(o1)));
+      if (t) {
+	if (g_utf8_validate((char *)STR0(t),t->len,NULL))
+	  gr=gtk_radio_button_new_with_label(mylist,(char *)STR0(t));
+	else
+	  gr=gtk_radio_button_new(mylist);
+      } else
+	gr=gtk_radio_button_new(mylist);
+      THIS->obj=G_OBJECT(gr);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_RADIO_BUTTON);
+    }
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gr;
+    gr=gtk_radio_button_new(NULL);
+    THIS->obj=G_OBJECT(gr);
+  }
   pgtk__init_this_object();
 }
 
@@ -66,6 +76,7 @@ array(GTK2.RadioButton) get_group()
 //! Returns an array of members in this group.
 {
   pgtk_verify_inited();
+  my_pop_n_elems(args);
   {
     GSList *gsl,*gs2;
     int i=0;

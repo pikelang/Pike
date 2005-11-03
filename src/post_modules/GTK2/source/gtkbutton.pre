@@ -40,26 +40,34 @@ signal enter;
 signal leave;
 //! Called when the mouse leaves the button
 
-void create(?string label_text)
+void create(string|mapping|void label_or_props)
 //! If a string is supplied, a W(Label) is created and added to the button.
 {
   pgtk_verify_not_inited();
   pgtk_verify_setup();
-  if(args) {
-    gchar *s=PGTK_GETSTR(Pike_sp-args);
-    if (s) {
-/*      THIS->obj=G_OBJECT(gtk_button_new_with_label(s)); */
-/* Add a stock button if we can, otherwise add mnemonic button */
-      THIS->obj=G_OBJECT(gtk_button_new_from_stock(s));
-      PGTK_FREESTR(s);
-    } else
-      THIS->obj=G_OBJECT(gtk_button_new());
+  if (args) {
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      struct pike_string *t;
+      GtkWidget *gb;
+      get_all_args("create",args,"%T",&t);
+      if (t) {
+	if (g_utf8_validate((char *)STR0(t),t->len,NULL))
+	  gb=gtk_button_new_from_stock((char *)STR0(t)); 
+	else
+	  gb=gtk_button_new();
+      } else
+	gb=gtk_button_new();
+      THIS->obj=G_OBJECT(gb); 
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_BUTTON);
+    }
     my_pop_n_elems(args);
   } else {
-    THIS->obj=G_OBJECT(gtk_button_new());
+    GtkWidget *gb;
+    gb=gtk_button_new();
+    THIS->obj=G_OBJECT(gb);
   }
   pgtk__init_this_object();
-/*  fprintf(stderr,"gtk.button: obj==%p\n",THIS->obj); */
 }
 
 void pressed();

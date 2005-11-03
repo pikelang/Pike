@@ -48,8 +48,21 @@ endrequire;
 
 signal move_scroll;
 
-void create();
+void create(?mapping(string:mixed) props)
 //! Creates a new GTK2.Menu widget.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_MENU);
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gm;
+    gm=gtk_menu_new();
+    THIS->obj=G_OBJECT(gm);
+  }
+  pgtk__init_this_object();
+}
 
 /*
 void set_screen(GDK2.Screen screen);

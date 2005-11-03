@@ -46,8 +46,21 @@ signal select_page;
 signal switch_page;
 //! Called when a different page is selected
 
-void create();
+void create(?mapping(string:mixed) props)
 //! Create a W(Notebook) widget with no pages.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_NOTEBOOK);
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gn;
+    gn=gtk_notebook_new();
+    THIS->obj=G_OBJECT(gn);
+  }
+  pgtk__init_this_object();
+}
 
 void append_page(GTK2.Widget contents, ?GTK2.Widget label);
 //! Add a new 'page' to the notebook. The first argument is the contents of

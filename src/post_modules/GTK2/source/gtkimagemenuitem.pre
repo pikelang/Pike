@@ -4,26 +4,35 @@ inherit GTK2.MenuItem;
 //! Properties:
 //! GTK2.Widget image
 
-void create(?string label)
+void create(string|mapping(string:mixed)|void label)
 //! Create a new ImageMenuItem.
 {
   pgtk_verify_not_inited();
   pgtk_verify_setup();
 
   if (args) {
-    char *s1;
-    GtkStockItem item;
-    int t;
-    get_all_args("create",args,"%s",&s1);
-    t=gtk_stock_lookup(s1,&item);
-    if (t)
-      THIS->obj=G_OBJECT(gtk_image_menu_item_new_from_stock(s1,NULL));
-    else
-      THIS->obj=G_OBJECT(gtk_image_menu_item_new_with_label(s1));
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      char *s1;
+      GtkStockItem item;
+      GtkWidget *gi;
+      int t;
+
+      get_all_args("create",args,"%s",&s1);
+      t=gtk_stock_lookup(s1,&item);
+      if (t)
+	gi=gtk_image_menu_item_new_from_stock(s1,NULL);
+      else
+	gi=gtk_image_menu_item_new_with_label(s1);
+      THIS->obj=G_OBJECT(gi);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_IMAGE_MENU_ITEM);
+    }
+    my_pop_n_elems(args);
   } else {
-    THIS->obj=G_OBJECT(gtk_image_menu_item_new());
+    GtkWidget *gi;
+    gi=gtk_image_menu_item_new();
+    THIS->obj=G_OBJECT(gi);
   }
-  my_pop_n_elems(args);
   pgtk__init_this_object();
 }
 

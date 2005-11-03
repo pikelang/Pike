@@ -31,8 +31,35 @@ signal copy_clipboard;
 signal move_cursor;
 signal populate_popup;
 
-void create(string text);
+void create(string|mapping(string:mixed)|void text_or_props)
 //! Creates a new label.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      struct pike_string *t;
+      GtkWidget *gl;
+      get_all_args("create",args,"%T",&t);
+      if (t) {
+        if (g_utf8_validate((char *)STR0(t),t->len,NULL))
+	  gl=gtk_label_new((char *)STR0(t));
+	else
+	  gl=gtk_label_new(NULL);
+      } else
+	gl=gtk_label_new(NULL);
+      THIS->obj=G_OBJECT(gl);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_LABEL);
+    }
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gl;
+    gl=gtk_label_new(NULL);
+    THIS->obj=G_OBJECT(gl);
+  }
+  pgtk__init_this_object();
+}
 
 void set_text(string text);
 //! Set the text in the label

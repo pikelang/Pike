@@ -16,5 +16,18 @@ inherit GTK2.MenuItem;
 //! </p><p> IMG: GTK2.TearoffMenuItem()->set_size_request(100,0)
 //! </p>
 
-void create();
+void create(?mapping(string:mixed) props)
 //! Create a new tearoff menu item
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_TEAROFF_MENU_ITEM);
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gt;
+    gt=gtk_tearoff_menu_item_new();
+    THIS->obj=G_OBJECT(gt);
+  }
+  pgtk__init_this_object();
+}

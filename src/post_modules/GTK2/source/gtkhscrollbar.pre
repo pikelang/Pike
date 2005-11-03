@@ -6,5 +6,27 @@ inherit GTK2.Scrollbar;
 //! IMG: GTK2.Hscrollbar(GTK2.Adjustment())->set_size_request(300,15)
 //!</p>
 
-void create(?GTK2.Adjustment adjustment);
+void create(GTK2.Adjustment|mapping(string:mixed)|void adjustment_or_props)
 //! Used to create a new hscrollbar widget.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+      struct object *o1;
+      GtkWidget *gh;
+      get_all_args("create",args,"%o",&o1);
+      gh=gtk_hscrollbar_new(GTK_ADJUSTMENT(get_gobject(o1)));
+      THIS->obj=G_OBJECT(gh);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_HSCROLLBAR);
+    }
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gh;
+    gh=gtk_hscrollbar_new(NULL);
+    THIS->obj=G_OBJECT(gh);
+  }
+  pgtk__init_this_object();
+}
+

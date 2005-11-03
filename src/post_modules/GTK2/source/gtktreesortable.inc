@@ -4,7 +4,6 @@ void sort_column_changed()
 //! Emits a "sort-column-changed" signal.
 {
   pgtk_verify_inited();
-  my_pop_n_elems(args);
   gtk_tree_sortable_sort_column_changed(GTK_TREE_SORTABLE(THIS->obj));
   RETURN_THIS();
 }

@@ -29,8 +29,29 @@ signal paste_clipboard;
 signal populate_popup;
 signal toggle_overwrite;
 
-void create();
+void create(int|mapping(string:mixed)|void maxlen_or_props)
 //! Create a new W(Entry) widget.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    if (Pike_sp[-args].type==PIKE_T_INT) {
+      int max;
+      GtkWidget *ge;
+      get_all_args("create",args,"%i",&max);
+      ge=gtk_entry_new_with_max_length(max);
+      THIS->obj=G_OBJECT(ge);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_ENTRY);
+    }
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *ge;
+    ge=gtk_entry_new();
+    THIS->obj=G_OBJECT(ge);
+  }
+  pgtk__init_this_object();
+}
 
 void set_text(string text);
 //! Set the text to the specified string, replacing the current contents.

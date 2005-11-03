@@ -21,8 +21,36 @@ inherit GTK2.Bin;
 //! int shadow
 //! int shadow-type
 
-void create(?string label_text);
+void create(string|mapping|void label_or_props)
 //! Create a new W(Frame) widget.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      struct pike_string *t;
+      GtkWidget *gf;
+      get_all_args("create",args,"%T",&t);
+      if (t) {
+	if (g_utf8_validate((char *)STR0(t),t->len,NULL))
+	  gf=gtk_frame_new((char *)STR0(t));
+	else
+	  gf=gtk_frame_new(NULL);
+      } else
+	gf=gtk_frame_new(NULL);
+      THIS->obj=G_OBJECT(gf);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_FRAME);
+    }
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gf;
+    gf=gtk_frame_new(NULL);
+    THIS->obj=G_OBJECT(gf);
+  }
+  pgtk__init_this_object();
+}
+
 
 void set_label(?string label_text);
 //! Set the text of the label.

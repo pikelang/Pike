@@ -118,6 +118,24 @@ int get_show_hidden()
 }
 endrequire;
 
+require gtk28;
+void set_do_overwrite_confirmation(int setting);
+//! Sets whether a file chooser in GTK2.FILE_CHOOSER_ACTION_SAVE mode will
+//! present a confirmation dialog if the users types a file name that already
+//! exists.  This is FALSE by default.
+//! <p>
+//! Regardless of this setting, the chooser will emit the "confirm-overwrite"
+//! signal when appropriate.
+//! <p>
+//! If all you need is the stock confirmation dialog, set this property to TRUE.
+//! You can override the way confirmation is done by actually handling the
+//! "confirm-overwrite" signal.
+
+int get_do_overwrite_confirmation();
+//! Queries whether a file chooser is set to confirm for overwriting when the
+//! user types a file name that already exists.
+endrequire;
+
 void set_current_name(string filename)
 //! Sets current name.
 {
@@ -580,6 +598,7 @@ array(string) list_shortcut_folders()
 //! Queries the list of shortcut folders.
 {
   pgtk_verify_inited();
+  my_pop_n_elems(args);
   {
     GSList *gsl,*gs2;
     int i=0;
@@ -627,6 +646,7 @@ array(string) list_shortcut_folder_uris()
 //! Queries the list of shortcut folders.
 {
   pgtk_verify_inited();
+  my_pop_n_elems(args);
   {
     GSList *gsl,*gs2;
     int i=0;

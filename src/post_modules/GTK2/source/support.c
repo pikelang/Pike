@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.1 2005/07/28 15:19:44 nilsson Exp $
+|| $Id: support.c,v 1.2 2005/11/03 13:49:47 ldillon Exp $
 */
 
 #include <version.h>
@@ -13,13 +13,13 @@ void pgtk_encode_grey(struct image *i, unsigned char *dest, int bpp, int bpl);
 
 void pgtk_verify_setup() {
   if (!pigtk_is_setup)
-    Pike_error("You must call GTK.setup_gtk( argv ) first\n");
+    Pike_error("You must call GTK2.setup_gtk( argv ) first\n");
 }
 
 void pgtk_verify_gnome_setup() {
   extern int gnome_is_setup;
   if (!gnome_is_setup)
-    Pike_error("You must call Gnome.init( app,version,argv[,do_corba] ) first\n");
+    Pike_error("You must call Gnome2.init( app,version,argv ) first\n");
 }
 
 void pgtk_verify_inited() {
@@ -368,7 +368,7 @@ GdkAtom get_gdkatom(struct object *o) {
     pop_stack();
     return r;
   }
-  Pike_error("Got non GDK.Atom object to get_gdkatom()\n");
+  Pike_error("Got non GDK2.Atom object to get_gdkatom()\n");
 }
 
 
@@ -545,6 +545,13 @@ static int pgtk_push_object_param(GValue *a) {
   return PUSHED_VALUE;
 }
 
+static int pgtk_push_pike_object_param(GValue *a) {
+  struct object *o=g_value_get_pointer(a);
+  if (o)
+    ref_push_object(o);
+  return PUSHED_VALUE;
+}
+
 static int pgtk_push_gparamspec_param(GValue *a) {
 }
 
@@ -604,7 +611,7 @@ static void build_push_callbacks() {
 
   CB( G_TYPE_NONE,    NULL ); 
   
-  CB( G_TYPE_POINTER,  NULL );
+  CB( G_TYPE_POINTER,  pgtk_push_pike_object_param );
 
   CB( G_TYPE_PARAM, pgtk_push_gparamspec_param );
 /*
@@ -613,7 +620,7 @@ static void build_push_callbacks() {
  *   This might not be exactly what we want */
 }
 
-static void push_gvalue_r(GValue *param, GType t) {
+void push_gvalue_r(GValue *param, GType t) {
   int i;
   struct push_callback *cb=push_cbtable[t%63];
 
@@ -676,18 +683,20 @@ int pgtk_signal_func_wrapper(struct signal_data *d, ...) {
       continue;
     }
     push_gvalue_r(&v,opts->param_types[i]);
+    j++;
   }
-  if (opts->n_params)
-    f_aggregate(opts->n_params);
+  if (j /*opts->n_params*/)
+    f_aggregate(j /*opts->n_params*/);
   {
     GObject *obj=va_arg(ptr,GObject *);
     push_gobject(obj);
   }
   va_end(ptr);
-  if (opts->n_params)
+
+  if (j /*opts->n_params*/)
     stack_swap();
   push_svalue(&d->args);
-  if (opts->n_params)
+  if (j /*opts->n_params*/)
     apply_svalue(&d->cb,3);
   else
     apply_svalue(&d->cb,2);
@@ -822,8 +831,10 @@ void pgtk_set_property(GObject *g, char *prop, struct svalue *sv) {
     return;
   }
 */
-  if (gps->value_type==GDK_TYPE_PIXMAP) {
-    g_object_set(g,prop,get_gobject(sv->u.object),NULL);
+  if (sv->type==PIKE_T_OBJECT && get_gobject(sv->u.object) &&
+		G_IS_OBJECT(get_gobject(sv->u.object))) {
+    if (gps->value_type==GDK_TYPE_PIXMAP || gps->value_type==GTK_TYPE_WIDGET)
+      g_object_set(g,prop,get_gobject(sv->u.object),NULL);
     return;
   }
 #define do_type(X) do { X i=PGTK_GETINT(sv); g_object_set(g,prop,i,NULL); } while(0)
@@ -1031,69 +1042,79 @@ void pgtk_destroy_store_data(gpointer data) {
 }
 
 void pgtk_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
+  g_value_init(gv,gt);
+  if (G_TYPE_IS_ENUM(gt)) {
+    g_value_set_enum(gv,(gint)PGTK_GETINT(sv));
+    return;
+  }
+/*  if (G_TYPE_IS_OBJECT(gt)) { */
+  if (G_TYPE_IS_OBJECT(gt) || gt==GDK_TYPE_DISPLAY || 
+      gt==GDK_TYPE_PIXBUF || gt==GDK_TYPE_PIXMAP || gt==GDK_TYPE_IMAGE ||
+      gt==GDK_TYPE_WINDOW || gt==GDK_TYPE_VISUAL || gt==GDK_TYPE_SCREEN ||
+      gt==GDK_TYPE_DRAWABLE || gt==GDK_TYPE_GC) {
+    if (sv->type==PIKE_T_OBJECT && get_gobject(sv->u.object) &&
+		G_IS_OBJECT(get_gobject(sv->u.object)))
+      g_value_set_object(gv,get_gobject(sv->u.object));
+    return;
+  }
+  if (gt==GDK_TYPE_COLOR) {
+    if (sv->type==PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
+      g_value_set_boxed(gv,get_gdkobject(sv->u.object,color));
+    return;
+  }
+  if (gt==GDK_TYPE_RECTANGLE) {
+    if (sv->type==PIKE_T_OBJECT && get_gdkobject(sv->u.object,rectangle))
+      g_value_set_boxed(gv,get_gdkobject(sv->u.object,rectangle));
+    return;
+  }
   switch (gt) {
     case G_TYPE_INT:
-      g_value_init(gv,G_TYPE_INT);
       g_value_set_int(gv,(gint)PGTK_GETINT(sv));
       break;
     case G_TYPE_UINT:
-      g_value_init(gv,G_TYPE_UINT);
       g_value_set_uint(gv,(guint)PGTK_GETINT(sv));
       break;
     case G_TYPE_CHAR:
-      g_value_init(gv,G_TYPE_CHAR);
       g_value_set_char(gv,(gchar)PGTK_GETINT(sv));
       break;
     case G_TYPE_UCHAR:
-      g_value_init(gv,G_TYPE_UCHAR);
       g_value_set_uchar(gv,(guchar)PGTK_GETINT(sv));
       break;
     case G_TYPE_LONG:
-      g_value_init(gv,G_TYPE_LONG);
       g_value_set_long(gv,(glong)PGTK_GETINT(sv));
       break;
     case G_TYPE_ULONG:
-      g_value_init(gv,G_TYPE_ULONG);
       g_value_set_ulong(gv,(gulong)PGTK_GETINT(sv));
       break;
     case G_TYPE_INT64:
-      g_value_init(gv,G_TYPE_INT64);
       g_value_set_int64(gv,(gint64)PGTK_GETINT(sv));
       break;
     case G_TYPE_UINT64:
-      g_value_init(gv,G_TYPE_UINT64);
       g_value_set_uint64(gv,(guint64)PGTK_GETINT(sv));
       break;
     case G_TYPE_ENUM:
-      g_value_init(gv,G_TYPE_ENUM);
       g_value_set_enum(gv,(gint)PGTK_GETINT(sv));
       break;
     case G_TYPE_FLAGS:
-      g_value_init(gv,G_TYPE_FLAGS);
       g_value_set_flags(gv,(gint)PGTK_GETINT(sv));
       break;
     case G_TYPE_BOOLEAN:
-      g_value_init(gv,G_TYPE_BOOLEAN);
       g_value_set_boolean(gv,(gboolean)PGTK_GETINT(sv));
       break;
     case G_TYPE_FLOAT:
-      g_value_init(gv,G_TYPE_FLOAT);
       g_value_set_float(gv,(gfloat)pgtk_get_float(sv));
       break;
     case G_TYPE_DOUBLE:
-      g_value_init(gv,G_TYPE_DOUBLE);
       g_value_set_double(gv,(gdouble)pgtk_get_float(sv));
       break;
     case G_TYPE_STRING:
       {
 	char *s=PGTK_GETSTR(sv);
-	g_value_init(gv,G_TYPE_STRING);
 	g_value_set_string(gv,s);
 	PGTK_FREESTR(s);
       }
       break;
     case G_TYPE_OBJECT:
-      g_value_init(gv,G_TYPE_OBJECT);
       if (sv->type==PIKE_T_OBJECT && get_gobject(sv->u.object) &&
 		G_IS_OBJECT(get_gobject(sv->u.object)))
 	g_value_set_object(gv,get_gobject(sv->u.object));
@@ -1101,7 +1122,6 @@ void pgtk_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
 	g_value_set_object(gv,NULL);
       break;
     case G_TYPE_POINTER:
-      g_value_init(gv,G_TYPE_POINTER);
       if (sv->type==PIKE_T_OBJECT) {
 	g_value_set_pointer(gv,sv->u.object);
 	add_ref(sv->u.object);
@@ -1109,7 +1129,7 @@ void pgtk_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
 	g_value_set_pointer(gv,NULL);
       break;
     default:
-      Pike_error("Unable to handle type %d.\n",gt);
+      Pike_error("Unable to handle type %d - %s.\n",gt,g_type_name(gt));
   }
 }
 
@@ -1120,8 +1140,44 @@ int pgtk_tree_sortable_callback(GtkTreeModel *model, GtkTreeIter *a,
   push_gobjectclass(a,pgtk_tree_iter_program);
   push_gobjectclass(b,pgtk_tree_iter_program);
   push_svalue(&d->args);
-  apply_svalue(&d->cb,3);
+  apply_svalue(&d->cb,4);
   res=Pike_sp[-1].u.integer;
   pop_stack();
   return res;
+}
+
+GObject *pgtk_create_new_obj_with_properties(GType type, struct mapping *m) {
+  GParamSpec *pspec;
+  GObject *obj;
+  GObjectClass *class;
+  GParameter *params;
+  struct keypair *k;
+  int e;
+  int i=0,j;
+
+  class=g_type_class_ref(type);
+  if (class==NULL)
+    Pike_error("Could not get a reference to type %s.\n",g_type_name(type));
+  params=g_new0(GParameter,m_sizeof(m));
+  NEW_MAPPING_LOOP(m->data) {
+    if (k->ind.type==PIKE_T_STRING) {
+      gchar *s=PGTK_GETSTR(&k->ind);
+      pspec=g_object_class_find_property(class,s);
+      if (!pspec) {
+	PGTK_FREESTR(s);
+	continue;
+      }
+/*      g_value_init(&params[i].value,G_PARAM_SPEC_VALUE_TYPE(pspec)); */
+      pgtk_set_gvalue(&params[i].value,G_PARAM_SPEC_VALUE_TYPE(pspec),&k->val);
+      params[i++].name=s;
+    }
+  }
+  obj=g_object_newv(type,i,params);
+  for (j=0; j<i; j++) {
+    PGTK_FREESTR((gchar *)params[j].name);
+    g_value_unset(&params[j].value);
+  }
+  g_free(params);
+  g_type_class_unref(class);
+  return obj;
 }

@@ -76,3 +76,13 @@ require gtk24;
 void cancel();
 //! Cancels the selection within the menu shell.
 endrequire;
+
+require gtk28;
+void set_take_focus(int setting);
+//! If setting is TRUE (the default), the menu shell will take the keyboard
+//! focus so that it will receive all keyboard events which is needed to enable
+//! keyboard navigation in menus.
+
+int get_take_focus();
+//! Returns TRUE if the menu shell will take the keyboard focus on popup.
+endrequire;

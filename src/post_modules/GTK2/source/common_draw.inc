@@ -206,3 +206,28 @@ void draw_image(GDK2.GC gc, GDK2.Image image, int xsrc, int ysrc,
 */
 
 
+void set_background(GDK2.Color|GDK2.Pixmap|GDK2.Bitmap to)
+//! Set the background color or image.
+//! The argument is either a GDK2.Pixmap or a GDK2.Color object.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    get_all_args("set_background",args,"%o",&o1);
+
+    if (!o1)
+      gdk_window_set_back_pixmap(TWIN,NULL,1);
+    if (get_pgobject(o1,pgdk_pixmap_program)) {
+      gdk_window_set_back_pixmap(TWIN,GDK_PIXMAP(get_gobject(o1)),0);
+    } else if (get_pgobject(o1,pgdk_bitmap_program)) {
+      gdk_window_set_back_pixmap(TWIN,GDK_DRAWABLE(get_gobject(o1)),0);
+    } else if (get_pgobject(o1,pgdk_drawable_program)) {
+      gdk_window_set_back_pixmap(TWIN,GDK_DRAWABLE(get_gobject(o1)),0);
+    } else if (get_gdkobject(o1,color)) {
+      gdk_window_set_background(TWIN,(GdkColor *)get_gdkobject(o1,color));
+    } else {
+      Pike_error("Set the background to what?\n");
+    }
+  }
+  RETURN_THIS();
+}

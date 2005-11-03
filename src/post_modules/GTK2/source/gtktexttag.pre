@@ -79,8 +79,25 @@ endrequire;
 
 signal event;
 
-void create(string name);
+void create(string|mapping(string:mixed) name_or_props)
 //! Creates a new text tag.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      char *name;
+      GtkTextTag *gt;
+      get_all_args("create",args,"%s",&name);
+      gt=gtk_text_tag_new(name);
+      THIS->obj=G_OBJECT(gt);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_TEXT_TAG);
+    }
+    my_pop_n_elems(args);
+  }
+  pgtk__init_this_object();
+}
 
 int get_priority();
 //! Gets the tag priority.

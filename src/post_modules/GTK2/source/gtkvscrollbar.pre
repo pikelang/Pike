@@ -4,5 +4,26 @@ inherit GTK2.Scrollbar;
 //! General documentation: See W(Scrollbar)
 //! IMG: GTK2.Vscrollbar(GTK2.Adjustment())->set_size_request(15,60)
 
-void create(?GTK2.Adjustment pos);
+void create(GTK2.Adjustment|mapping(string:mixed)|void pos_or_props)
 //! Used to create a new vscrollbar widget.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+      struct object *o1;
+      GtkWidget *gv;
+      get_all_args("create",args,"%o",&o1);
+      gv=gtk_vscrollbar_new(GTK_ADJUSTMENT(get_gobject(o1)));
+      THIS->obj=G_OBJECT(gv);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_VSCROLLBAR);
+    }
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gv;
+    gv=gtk_vscrollbar_new(NULL);
+    THIS->obj=G_OBJECT(gv);
+  }
+  pgtk__init_this_object();
+}

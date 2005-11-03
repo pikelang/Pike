@@ -39,9 +39,12 @@ array get_selected()
     if (iter==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_selected",sizeof(GtkTreeIter));
     my_pop_n_elems(args);
-    gtk_tree_selection_get_selected(GTK_TREE_SELECTION(THIS->obj),
+    res=gtk_tree_selection_get_selected(GTK_TREE_SELECTION(THIS->obj),
 		&model,iter);
-    push_gobjectclass(iter,pgtk_tree_iter_program);
+    if (res)
+      push_gobjectclass(iter,pgtk_tree_iter_program);
+    else
+      PGTK_PUSH_INT(0);
     push_gobject(model);
     f_aggregate(2);
   }
@@ -70,7 +73,10 @@ array get_selected_rows(GTK2.TreeModel model)
       i++;
       g2=g_list_next(g2);
     }
-    f_aggregate(i);
+    if (i)
+      f_aggregate(i);
+    else
+      ref_push_array(&empty_array);
     g_list_free(gl);
   }
 }
@@ -184,6 +190,7 @@ void select_range(GTK2.TreePath start, GTK2.TreePath end)
   RETURN_THIS();
 }
 
+require gtk22;
 void unselect_range(GTK2.TreePath start, GTK2.TreePath end)
 //! Unselects a range of nodes, determined by start and end inclusive.
 {
@@ -191,15 +198,10 @@ void unselect_range(GTK2.TreePath start, GTK2.TreePath end)
   {
     struct object *o1,*o2;
     get_all_args("unselect_range",args,"%o%o",&o1,&o2);
-#ifdef HAVE_GTK_TREE_SELECTION_UNSELECT_RANGE
-    // This function is not available in old versions of GTK 2.0
     gtk_tree_selection_unselect_range(GTK_TREE_SELECTION(THIS->obj),
 			(GtkTreePath *)get_pgobject(o1,pgtk_tree_path_program),
 			(GtkTreePath *)get_pgobject(o2,pgtk_tree_path_program));
-#else /* !HAVE_GTK_TREE_SELECTION_UNSELECT_RANGE */
-    // FIXME: Do it by hand.
-    Pike_error("Operation not supported.\n");
-#endif /* HAVE_GTK_TREE_SELECTION_UNSELECT_RANGE */
   }
   RETURN_THIS();
 }
+endrequire;

@@ -28,13 +28,17 @@ void create(?string title, ?GDK2.Pixbuf logo, ?GDK2.Pixbuf top_watermark)
   if (args) {
     char *title;
     struct object *o1,*o2;
+    GtkWidget *gps;
     get_all_args("create",args,"%s%o%o",&title,&o1,&o2);
-    THIS->obj=G_OBJECT(gnome_druid_page_standard_new_with_vals(
-			title,
+    gps=gnome_druid_page_standard_new_with_vals(title,
 			GDK_PIXBUF(get_gobject(o1)),
-			GDK_PIXBUF(get_gobject(o2))));
+			GDK_PIXBUF(get_gobject(o2)));
+    THIS->obj=G_OBJECT(gps);
+    my_pop_n_elems(args);
   } else {
-    THIS->obj=G_OBJECT(gnome_druid_page_standard_new());
+    GtkWidget *gps;
+    gps=gnome_druid_page_standard_new();
+    THIS->obj=G_OBJECT(gps);
   }
   pgtk__init_this_object();
 }

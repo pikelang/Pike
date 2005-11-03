@@ -23,6 +23,7 @@ void create(?string desc)
       THIS->obj=(void *)pango_font_description_from_string(str);
     else
       THIS->obj=(void *)pango_font_description_new();
+    my_pop_n_elems(args);
   } else
     THIS->obj=(void *)pango_font_description_new();
   pgtk__init_this_object();
@@ -46,10 +47,13 @@ int equal(Pango.FontDescription desc)
   pgtk_verify_inited();
   {
     struct object *o1;
+    int res;
+
     get_all_args("equal",args,"%o",&o1);
+    res=pango_font_description_equal((PangoFontDescription *)THIS->obj,
+		(PangoFontDescription *)get_gobject(o1));
     my_pop_n_elems(args);
-    push_int(pango_font_description_equal((PangoFontDescription *)THIS->obj,
-		(PangoFontDescription *)get_gobject(o1)));
+    PGTK_PUSH_INT(res);
   }
 }
 
@@ -59,6 +63,7 @@ void destroy()
   if (THIS->obj)
     pango_font_description_free((PangoFontDescription *)THIS->obj);
   THIS->obj=0;
+  my_pop_n_elems(args);
   push_int(0);
 }
 
@@ -254,14 +259,11 @@ int better_match(Pango.FontDescription new, ?Pango.FontDescription old)
   {
     struct object *o1,*o2=NULL;
     int res;
-    if (args==1)
-      get_all_args("better_match",args,"%o",&o1);
-    else
-      get_all_args("better_match",args,"%o%o",&o1,&o2);
-    my_pop_n_elems(args);
+    get_all_args("better_match",args,"%o.%o",&o1,&o2);
     res=pango_font_description_better_match((PangoFontDescription *)THIS->obj,
 		(PangoFontDescription *)get_gobject(o2),
 		(PangoFontDescription *)get_gobject(o1));
+    my_pop_n_elems(args);
     push_int(res);
   }
 }

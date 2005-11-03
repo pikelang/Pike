@@ -12,5 +12,22 @@ member GTK2.Widget cancel_button;
 member GTK2.Widget help_button;
 //! The Help button.
 
-void create(string title);
+void create(string|mapping(string:mixed) title_or_props)
 //! Create a new Color Selection Dialog
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    char *title;
+    GtkWidget *gc;
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      get_all_args("create",args,"%s",&title);
+      gc=gtk_color_selection_dialog_new(title);
+      THIS->obj=G_OBJECT(gc);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_COLOR_SELECTION_DIALOG);
+    }
+    my_pop_n_elems(args);
+  }
+  pgtk__init_this_object();
+}

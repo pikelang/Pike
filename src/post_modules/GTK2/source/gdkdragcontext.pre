@@ -11,29 +11,32 @@ GTK2.Widget get_source_widget()
 //! Return the drag source widget.
 {
   my_pop_n_elems(args);
+/*
   push_gobjectclass(gtk_drag_get_source_widget(((GdkDragContext *)THIS->obj)),
                       pgtk_widget_program);
+*/
+  push_gobject(gtk_drag_get_source_widget((GdkDragContext *)THIS->obj));
 }
 
-void drag_finish(int success,int del,int time)
+void drag_finish(int success, int del)
 //! If success is true, the drag succeded.
 //! If del is true, the source should be deleted.
 //! time is the current time.
 {
-  INT_TYPE a, b, t;
-  get_all_args("drag_finish", args, "%i%i%i", &a, &b, &t );
-  gtk_drag_finish(((GdkDragContext *)THIS->obj), a, b, t);
+  INT_TYPE a,b,t;
+  get_all_args("drag_finish",args,"%i%i",&a,&b);
+  gtk_drag_finish((GdkDragContext *)THIS->obj,a,b,time(NULL));
   RETURN_THIS();
 }
 
-void drag_status(int action, int time)
+void drag_status(int action)
 //! Setting action to -1 means use the suggested action
 {
-  INT_TYPE o, t;
-  get_all_args( "status", args, "%i%i", &o, &t );
-  if( o == -1 )
-    o = ((GdkDragContext *)THIS->obj)->suggested_action;
-  gdk_drag_status( ((GdkDragContext *)THIS->obj), o, t );
+  INT_TYPE o,t;
+  get_all_args("status",args,"%i",&o);
+  if (o==-1)
+    o=((GdkDragContext *)THIS->obj)->suggested_action;
+  gdk_drag_status((GdkDragContext *)THIS->obj,o,time(NULL));
   RETURN_THIS();
 }
 
@@ -41,8 +44,8 @@ void drag_drop(int time)
 //! Drag drop.
 {
   INT_TYPE t;
-  get_all_args( "drop", args, "%i", &t );
-  gdk_drag_drop( ((GdkDragContext *)THIS->obj), t);
+  get_all_args("drop",args,"%i",&t);
+  gdk_drag_drop((GdkDragContext *)THIS->obj,t);
   RETURN_THIS();
 }
 
@@ -51,38 +54,38 @@ void drag_abort(int time)
 //! Abort the drag
 {
   INT_TYPE t;
-  get_all_args( "abort", args, "%i", &t );
-  gdk_drag_abort( ((GdkDragContext *)THIS->obj), t);
+  get_all_args("abort",args,"%i",&t);
+  gdk_drag_abort((GdkDragContext *)THIS->obj,t);
   RETURN_THIS();
 }
 
-void drop_reply(int ok, int time)
+void drop_reply(int ok)
 //! Drop reply.
 {
-  INT_TYPE t, o;
-  get_all_args( "reply", args, "%i%i", &o, &t );
-  gdk_drop_reply( ((GdkDragContext *)THIS->obj), o, t);
+  INT_TYPE t,o;
+  get_all_args("reply",args,"%i",&o);
+  gdk_drop_reply((GdkDragContext *)THIS->obj,o,time(NULL));
   RETURN_THIS();
 }
 
-void drag_set_icon_widget(GTK2.Widget widget,int hot_x,int hot_y)
+void drag_set_icon_widget(GTK2.Widget widget, int hot_x, int hot_y)
 //! Set the drag widget. This is a widget that will be shown, and then
 //! dragged around by the user during this drag.
 {
   struct object *_o;
-  INT_TYPE x, y;
-  get_all_args( "drag_set_icon_window", args, "%o%i%i",
-                &_o, &x, &y);
-  gtk_drag_set_icon_widget(((GdkDragContext *)THIS->obj),
-                           GTK_WIDGET(get_pgobject(_o,pgtk_widget_program)),
-                           x,y );
+  INT_TYPE x,y;
+  get_all_args("drag_set_icon_window",args,"%o%i%i",
+                &_o,&x,&y);
+  gtk_drag_set_icon_widget((GdkDragContext *)THIS->obj,
+                           GTK_WIDGET(get_gobject(_o)),
+                           x,y);
   RETURN_THIS();
 }
 
 void drag_set_icon_default()
 //! Use the default drag icon associated with the source widget.
 {
-  gtk_drag_set_icon_default( ((GdkDragContext *)THIS->obj) );
+  gtk_drag_set_icon_default((GdkDragContext *)THIS->obj);
   RETURN_THIS();
 }
 
@@ -91,22 +94,22 @@ void drag_set_icon_pixmap(GDK2.Pixmap p, GDK2.Bitmap b, int hot_x, int hot_y )
 //! The hot_x and hot_y coordinates will be the location of the mouse pointer,
 //! relative to the upper left corner of the pixmap.
 {
-  struct object *p=NULL, *m=NULL;
-  int x, y;
-  if(args != 4)
+  struct object *p=NULL,*m=NULL;
+  int x,y;
+  if (args!=4)
     Pike_error("Too few arguments to drag_set_icon_pixmap\n");
-  if(Pike_sp[-args].type == PIKE_T_OBJECT)
-    p = Pike_sp[-args].u.object;
-  if(Pike_sp[-args+1].type == PIKE_T_OBJECT)
-    m = Pike_sp[-args+1].u.object;
-  x  = Pike_sp[-args+2].u.integer;
-  y  = Pike_sp[-args+3].u.integer;
+  if (Pike_sp[-args].type==PIKE_T_OBJECT)
+    p=Pike_sp[-args].u.object;
+  if (Pike_sp[-args+1].type==PIKE_T_OBJECT)
+    m=Pike_sp[-args+1].u.object;
+  x=Pike_sp[-args+2].u.integer;
+  y=Pike_sp[-args+3].u.integer;
 
-  gtk_drag_set_icon_pixmap( ((GdkDragContext *)THIS->obj),
-                            gdk_colormap_get_system(),
-                            get_gdkobject( p, pixmap ),
-                            get_gdkobject( m, bitmap ),
-                             x,y);
+  gtk_drag_set_icon_pixmap((GdkDragContext *)THIS->obj,
+                           gdk_colormap_get_system(),
+                           get_gdkobject(p,pixmap),
+                           get_gdkobject(m,bitmap),
+                           x,y);
   RETURN_THIS();
 }
 

@@ -12,7 +12,7 @@ inherit GTK2.ToggleButton;
 //! int indicator-size
 //! int indicator-spacing
 
-void create(?string label)
+void create(string|mapping|void label_or_props)
 //! The argument, if specified, is the label of the item.
 //! If no label is specified, use object->add() to add some
 //! other widget (such as an pixmap or image widget)
@@ -20,14 +20,26 @@ void create(?string label)
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   if (args) {
-    gchar *s=PGTK_GETSTR(Pike_sp-args);
-    if (s) {
-      THIS->obj=G_OBJECT(gtk_check_button_new_with_mnemonic(s));
-      PGTK_FREESTR(s);
-    } else
-      THIS->obj=G_OBJECT(gtk_check_button_new());
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      struct pike_string *t;
+      GtkWidget *gcb;
+      get_all_args("create",args,"%T",&t);
+      if (t) {
+	if (g_utf8_validate((char *)STR0(t),t->len,NULL))
+	  gcb=gtk_check_button_new_with_mnemonic((char *)STR0(t));
+	else
+	  gcb=gtk_check_button_new();
+      } else
+	gcb=gtk_check_button_new();
+      THIS->obj=G_OBJECT(gcb);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_CHECK_BUTTON);
+    }
+    my_pop_n_elems(args);
   } else {
-    THIS->obj=G_OBJECT(gtk_check_button_new());
+    GtkWidget *gcb;
+    gcb=gtk_check_button_new();
+    THIS->obj=G_OBJECT(gcb);
   }
   pgtk__init_this_object();
 }

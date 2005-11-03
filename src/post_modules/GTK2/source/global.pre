@@ -177,6 +177,14 @@ void applet_widget_gtk_main()
 */
 endrequire;
 
+require gnome_vfs;
+void gnome_vfs_init()
+//! Initialize gnome-vfs.  Usually done automatically by gnome_init().
+{
+  gnome_vfs_init();
+}
+endrequire;
+
 %{
 static gchar **get_argv( int *argc_ret, int an )
 {
@@ -290,18 +298,21 @@ void main()
 //! You can return -1 from main in pike to run GTK (and the rest of
 //! pike) in asynchronous mode.
 {
+  my_pop_n_elems(args);
   gtk_main();
 }
 
 void main_quit()
 //! Exit from the gtk_main function on the next iteration.
 {
+  my_pop_n_elems(args);
   gtk_main_quit();
 }
 
 int main_level()
 //! Return the current recursion depth.
 {
+  my_pop_n_elems(args);
   push_int( gtk_main_level() );
 }
 
@@ -311,18 +322,21 @@ int main_iteration_do(int block)
 {
   INT_TYPE n;
   get_all_args( "gtk_main_iteration_do", args, "%i", &n );
+  my_pop_n_elems(args);
   push_int( g_main_iteration( n ) );
 }
 
 int true()
 //! Always returns true.
 {
+  my_pop_n_elems(args);
   push_int(1);
 }
 
 int false()
 //! Always returns false.
 {
+  my_pop_n_elems(args);
   push_int(0);
 }
 
@@ -366,6 +380,7 @@ void saver_disable( )
 //! This is a low-level X11 function, and thus only works when GDK uses X11
 {
   int interval, prefer_blank, allow_exp;
+  my_pop_n_elems(args);
   XGetScreenSaver(GDK_DISPLAY(),
 		  &timeout_save, &interval, &prefer_blank, &allow_exp);
   if (timeout_save)
@@ -386,6 +401,7 @@ void saver_enable( )
 //! Enable the screensaver again after @[saver_disable] has been called.
 //! This is a low-level X11 function, and thus only works when GDK uses X11.
 {
+  my_pop_n_elems(args);
   if( timeout_save )
   {
     int dummy, interval, prefer_blank, allow_exp;
@@ -414,7 +430,7 @@ void move_cursor( int dx, int dy )
 {
   INT_TYPE x, y;
   get_all_args( "move_cursor", args, "%i%i", &x, &y );
-  
+  my_pop_n_elems(args);
   XWarpPointer( GDK_DISPLAY(), None, None, 0, 0, 0, 0, x, y );
 }
 
@@ -433,6 +449,7 @@ void move_cursor_abs( GDK2.Window w, int dx, int dy )
   if( !priv )
     Pike_error("No window specified!\n");
   XWarpPointer(GDK_DISPLAY(),None,priv->xwindow,0,0,0,0,x,y);
+  my_pop_n_elems(args);
 }
 
 endrequire; /* x11 */
@@ -522,9 +539,10 @@ mapping(string:mixed) get_file_info(string filename)
   int width,height;
 
   get_all_args("get_file_info",args,"%s",&filename);
-  my_pop_n_elems(args);
   gpf=gdk_pixbuf_get_file_info(filename,&width,&height);
+  my_pop_n_elems(args);
   k=0;
+
   push_text("name");
   push_text(gdk_pixbuf_format_get_name(gpf));
   k++;
@@ -594,8 +612,8 @@ void set_default_icon(GDK2.Pixbuf icon)
 {
   struct object *o1;
   get_all_args("set_default_icon",args,"%o",&o1);
-  my_pop_n_elems(args);
   gtk_window_set_default_icon(GDK_PIXBUF(get_gobject(o1)));
+  my_pop_n_elems(args);
 }
 endrequire;
 
@@ -606,8 +624,9 @@ void set_default_icon_from_file(string filename)
 {
   struct svalue *sv;
   get_all_args("set_default_icon_from_file",args,"%*",&sv);
-  my_pop_n_elems(args);
+
   gtk_window_set_default_icon_from_file(PGTK_GETSTR(sv),NULL);
+  my_pop_n_elems(args);
 }
 endrequire;
 
@@ -636,6 +655,7 @@ array(GTK2.Widget) list_toplevels()
   GList *gl=gtk_window_list_toplevels();
   GList *g2=gl;
   int i=0;
+  my_pop_n_elems(args);
   while (g2) {
     push_gobject(g2->data);
     i++;
@@ -651,6 +671,7 @@ array(GDK2.Pixbuf) get_default_icon_list()
   GList *gl=gtk_window_get_default_icon_list();
   GList *g2=gl;
   int i=0;
+  my_pop_n_elems(args);
   while (g2) {
     push_gobject(g2->data);
     g_object_ref(GDK_PIXBUF(g2->data));

@@ -33,6 +33,7 @@ void create()
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   THIS->obj=(void *)gtk_icon_source_new();
+  my_pop_n_elems(args);
   pgtk__init_this_object();
 }
 

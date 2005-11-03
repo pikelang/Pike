@@ -6,9 +6,26 @@ inherit GTK2.Vbox;
 //! File chooser widget that can be embedded in other widgets.
 //! IMG: GTK2.FileChooserWidget(GTK2.FILE_CHOOSER_ACTION_OPEN);
 
-void create(int action);
+void create(int|mapping(string:mixed) action_or_props)
 //! Create a new file chooser widget.
 //! action is one of CONST(GTK_FILE_CHOOSER_ACTION)
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    if (Pike_sp[-args].type==PIKE_T_INT) {
+      int action;
+      GtkWidget *gf;
+      get_all_args("create",args,"%i",&action);
+      gf=gtk_file_chooser_widget_new(action);
+      THIS->obj=G_OBJECT(gf);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_FILE_CHOOSER_WIDGET);
+    }
+    my_pop_n_elems(args);
+  }
+  pgtk__init_this_object();
+}
 
 #include "gtkfilechooser.inc"
 

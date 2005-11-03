@@ -19,6 +19,20 @@ void create(GTK2.TreeModel model, GTK2.TreePath path)
   pgtk__init_this_object();
 }
 
+require gtk28;
+GTK2.TreeModel get_model()
+//! Returns the model which this references is monitoring.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args):
+  {
+    GtkTreeModel *gtm;
+    gtm=gtk_tree_row_reference_get_model((GtkTreeRowReference *)THIS->obj);
+    push_gobject(gtm);
+  }
+}
+endrequire;
+
 GTK2.TreePath get_path()
 //! Returns a path that the row reference currently points to.
 {

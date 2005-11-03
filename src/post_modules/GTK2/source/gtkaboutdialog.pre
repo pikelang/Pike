@@ -4,8 +4,11 @@ class GTK2.AboutDialog;
 inherit GTK2.Dialog;
 
 //! Properties:
+//! array(string) artists
+//! array(string) authors
 //! string comments
 //! string copyright
+//! array(string) documenters
 //! string license
 //! GDK2.Pixbuf logo
 //! string logo-icon-name
@@ -18,8 +21,21 @@ inherit GTK2.Dialog;
 //! Style properties:
 //! GDK2.Color link-color
 
-void create();
+void create(?mapping(string:mixed) props)
 //! Create a new GTK.AboutDialog.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_ABOUT_DIALOG);
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *ga;
+    ga=gtk_about_dialog_new();
+    THIS->obj=G_OBJECT(ga);
+  }
+  pgtk__init_this_object();
+}
 
 string get_name();
 //! Returns the program name.
@@ -51,6 +67,14 @@ string get_license();
 void set_license(string license);
 //! Sets the license information.
 
+require gtk28;
+int get_wrap_license();
+//! Returns whether the license text is automatically wrapped.
+
+void set_wrap_license(int setting);
+//! Sets whether the license text is automatically wrapped.
+endrequire;
+
 string get_website();
 //! Returns the website URL.
 
@@ -62,6 +86,138 @@ string get_website_label();
 
 void set_website_label(string label);
 //! Sets the label used for the website link.  Defaults to the website URL.
+
+array(string) get_authors()
+//! Returns the strings which are displayed in the authors tab of the
+//! secondary credits dialog.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    const gchar * const *auth;
+    int i=0;
+    auth=gtk_about_dialog_get_authors(GTK_ABOUT_DIALOG(THIS->obj));
+    while (auth[i])
+      push_text(auth[i++]);
+    f_aggregate(i);
+  }
+}
+
+void set_authors(array(string) auth)
+//! Sets the strings which are displayed in the authors tab of the secondary
+//! credits dialog.
+{
+  pgtk_verify_inited();
+  {
+    struct array *a;
+    int i,j;
+    const gchar **auth;
+    get_all_args("set_authors",args,"%A",&a);
+    if (a==NULL)
+      Pike_error("Invalid array.\n");
+    auth=xmalloc(sizeof(gchar *)*(a->size+1));
+    for (i=j=0; i<a->size; i++) {
+      if ((ITEM(a)+i)->type==PIKE_T_STRING) {
+	auth[j]=xmalloc(sizeof(gchar)*(strlen(STR0((ITEM(a)+i)->u.string))+1));
+	strcpy(auth[j++],STR0((ITEM(a)+i)->u.string));
+      }
+    }
+    auth[j]=NULL;
+    gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(THIS->obj),auth);
+    for (i=0; i<=j; i++)
+      xfree(auth[i]);
+    xfree(auth);
+  }
+  RETURN_THIS();
+}
+
+array(string) get_artists()
+//! Returns the strings which are displayed in the artists tab of the
+//! secondary credits dialog.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    const gchar * const *art;
+    int i=0;
+    art=gtk_about_dialog_get_artists(GTK_ABOUT_DIALOG(THIS->obj));
+    while (art[i])
+      push_text(art[i++]);
+    f_aggregate(i);
+  }
+}
+
+void set_artists(array(string) art)
+//! Sets the strings which are displayed in the artists tab of the secondary
+//! credits dialog.
+{
+  pgtk_verify_inited();
+  {
+    struct array *a;
+    int i,j;
+    const gchar **art;
+    get_all_args("set_artists",args,"%A",&a);
+    if (a==NULL)
+      Pike_error("Invalid array.\n");
+    art=xmalloc(sizeof(gchar *)*(a->size+1));
+    for (i=j=0; i<a->size; i++) {
+      if ((ITEM(a)+i)->type==PIKE_T_STRING) {
+	art[j]=xmalloc(sizeof(gchar)*(strlen(STR0((ITEM(a)+i)->u.string))+1));
+	strcpy(art[j++],STR0((ITEM(a)+i)->u.string));
+      }
+    }
+    art[j]=NULL;
+    gtk_about_dialog_set_artists(GTK_ABOUT_DIALOG(THIS->obj),art);
+    for (i=0; i<=j; i++)
+      xfree(art[i]);
+    xfree(art);
+  }
+  RETURN_THIS();
+}
+
+array(string) get_documenters()
+//! Returns the strings which are displayed in the documenters tab of the
+//! secondary credits dialog.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    const gchar * const *doc;
+    int i=0;
+    doc=gtk_about_dialog_get_documenters(GTK_ABOUT_DIALOG(THIS->obj));
+    while (doc[i])
+      push_text(doc[i++]);
+    f_aggregate(i);
+  }
+}
+
+void set_documenters(array(string) doc)
+//! Sets the strings which are displayed in the documenters tab of the
+//! secondary credits dialog.
+{
+  pgtk_verify_inited();
+  {
+    struct array *a;
+    int i,j;
+    const gchar **doc;
+    get_all_args("set_documenters",args,"%A",&a);
+    if (a==NULL)
+      Pike_error("Invalid array.\n");
+    doc=xmalloc(sizeof(gchar *)*(a->size+1));
+    for (i=j=0; i<a->size; i++) {
+      if ((ITEM(a)+i)->type==PIKE_T_STRING) {
+	doc[j]=xmalloc(sizeof(gchar)*(strlen(STR0((ITEM(a)+i)->u.string))+1));
+	strcpy(doc[j++],STR0((ITEM(a)+i)->u.string));
+      }
+    }
+    doc[j]=NULL;
+    gtk_about_dialog_set_artists(GTK_ABOUT_DIALOG(THIS->obj),doc);
+    for (i=0; i<=j; i++)
+      xfree(doc[i]);
+    xfree(doc);
+  }
+  RETURN_THIS();
+}
 
 string get_translator_credits();
 //! Returns the translator credis.
@@ -80,5 +236,30 @@ string get_logo_icon_name();
 
 void set_logo_icon_name(string name);
 //! Sets the icon name.
+
+mixed get_property(string property)
+//! Get property.
+{
+  pgtk_verify_inited();
+  {
+    char *prop;
+    get_all_args("get_property",args,"%s",&prop);
+    if (!strcmp(prop,"artists") || !strcmp(prop,"authors") ||
+	!strcmp(prop,"documenters")) {
+      gchar **a;
+      int i=0;
+      g_object_get(G_OBJECT(THIS->obj),prop,&a,NULL);
+      while (a[i])
+	push_text(a[i]);
+      f_aggregate(i);
+      g_strfreev(a);
+    } else {
+      char *s=g_strdup(prop);
+      my_pop_n_elems(args);
+      pgtk_get_property(G_OBJECT(THIS->obj),s);
+      g_free(s);
+    }
+  }
+}
 
 endrequire;

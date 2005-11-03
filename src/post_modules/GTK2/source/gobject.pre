@@ -81,7 +81,7 @@ int signal_connect(string signal, function callback, mixed|void callback_arg)
 			   (GClosureNotify)pgtk_free_signal_data,
 #ifdef HAVE_G_SIGNAL_CONNECT_DATA_WITH_SIX_ARGS
 			   G_CONNECT_SWAPPED
-#else /* !HAVE_G_SIGNAL_CONNECT_DATA_WITH_SIX_ARGS */
+#else /* !HAVE_G_SIGNAL_CONNECT_DATA_WITH_SIX_ARGS
 			   /* Old-style. */
 			   1 /* swapped */, 0 /* after */
 #endif /* !HAVE_G_SIGNAL_CONNECT_DATA_WITH_SIX_ARGS */
@@ -97,6 +97,7 @@ void signal_disconnect(int signal_id)
   INT_TYPE i;
   get_all_args("signal_disconnect",args,"%i",&i);
   g_signal_handler_disconnect(G_OBJECT(THIS->obj),i);
+  RETURN_THIS();
 }
 
 void signal_block(int signal_id)
@@ -107,6 +108,7 @@ void signal_block(int signal_id)
   INT_TYPE i;
   get_all_args("signal_block",args,"%i",&i);
   g_signal_handler_block(G_OBJECT(THIS->obj),i);
+  RETURN_THIS();
 }
 
 void signal_unblock(int signal_id)
@@ -116,6 +118,7 @@ void signal_unblock(int signal_id)
   INT_TYPE i;
   get_all_args("signal_unblock",args,"%i",&i);
   g_signal_handler_unblock(G_OBJECT(THIS->obj),i);
+  RETURN_THIS();
 }
 
 void signal_emit(string signal_name)
@@ -124,6 +127,7 @@ void signal_emit(string signal_name)
   char *s;
   get_all_args("signal_emit",args,"%s",&s);
   g_signal_emit_by_name(G_OBJECT(THIS->obj),s,NULL);
+  RETURN_THIS();
 }
 
 void notify(string property);

@@ -8,7 +8,7 @@ inherit GTK2.ToolButton;
 
 signal show_menu;
 
-void create(GTK2.Widget|string icon, ?string label)
+void create(GTK2.Widget|string|mapping(string:mixed) icon, ?string label)
 //! Create a new GTK2.MenuToolButton.
 //! If icon is a string, label should be omitted.  If it isn't,
 //! it will be igrnored.  The result will be a button from
@@ -19,24 +19,29 @@ void create(GTK2.Widget|string icon, ?string label)
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   {
-    const gchar *s;
-    if (args==1 || Pike_sp[-args].type==PIKE_T_STRING) {
-      get_all_args("create",args,"%s",&s);
-      if (s)
-	THIS->obj=G_OBJECT(gtk_menu_tool_button_new_from_stock(s));
-      else
-	Pike_error("Invalid argument 1\n");
-    } else {
-      const gchar *s;
+    GtkToolItem *gm;
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      char *icon;
+      get_all_args("create",args,"%s",&icon);
+      gm=gtk_menu_tool_button_new_from_stock(icon);
+      THIS->obj=G_OBJECT(gm);
+    } else if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+      struct pike_string *t;
       struct object *o1;
-      get_all_args("create",args,"%o%s",&o1,&s);
-      if (s && o1)
-	THIS->obj=G_OBJECT(gtk_menu_tool_button_new(GTK_WIDGET(get_gobject(o1)),s));
-      else
+      get_all_args("create",args,"%o%T",&o1,&t);
+      if (t && o1) {
+	if (g_utf8_validate((char *)STR0(t),t->len,NULL))
+	  gm=gtk_menu_tool_button_new(GTK_WIDGET(get_gobject(o1)),(char *)STR0(t));
+	else
+	  Pike_error("Invalid string.\n");
+      } else
 	Pike_error("Invalid arguments.\n");
+      THIS->obj=G_OBJECT(gm);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_MENU_TOOL_BUTTON);
     }
+    my_pop_n_elems(args);
   }
-  my_pop_n_elems(args);
   pgtk__init_this_object();
 }
 

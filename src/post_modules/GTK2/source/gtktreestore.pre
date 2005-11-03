@@ -65,7 +65,9 @@ void create(array(mixed) types)
       }
     }
     if (sd->n_cols) {
-      THIS->obj=G_OBJECT(gtk_tree_store_newv(sd->n_cols,sd->types));
+      GtkTreeStore *gt;
+      gt=gtk_tree_store_newv(sd->n_cols,sd->types);
+      THIS->obj=G_OBJECT(gt);
       g_object_set_data_full(THIS->obj,"store-data",sd,
 		(GDestroyNotify)pgtk_destroy_store_data);
     } else {

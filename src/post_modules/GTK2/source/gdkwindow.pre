@@ -20,15 +20,18 @@ void create(GDK2.Window|int parent, mapping|void attributes)
   pgtk_verify_not_inited();
   if (Pike_sp[-args].type==PIKE_T_INT)
   {
+    GdkWindow *w;
     INT_TYPE id;
     get_all_args("GdkWindow",args,"%i",&id);
-    THIS->obj=G_OBJECT(gdk_window_foreign_new(id));
+    w=gdk_window_foreign_new(id);
+    THIS->obj=G_OBJECT(w);
     if (!THIS->obj)
       Pike_error("The window with id 0x%x does not exist\n",id);
   } else if (Pike_sp[-args].type==PIKE_T_OBJECT) {
     struct object *parent;
     struct mapping *m;
     GdkWindowAttr attrs;
+    GdkWindow *w;
     long mask=0;
     MEMSET(&attrs,0,sizeof(attrs));
     get_all_args("GdkWindow",args,"%o%m",&parent,&m);
@@ -45,8 +48,11 @@ void create(GDK2.Window|int parent, mapping|void attributes)
     GET_ARG(wmclass_class, PIKE_T_STRING, 0);
     GET_ARG(override_redirect, PIKE_T_INT, GDK_WA_NOREDIR);
 
-    THIS->obj=G_OBJECT(gdk_window_new(GDK_WINDOW(get_gobject(parent)),&attrs,mask));
+    w=gdk_window_new(GDK_WINDOW(get_gobject(parent)),&attrs,mask);
+    THIS->obj=G_OBJECT(w);
   }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
 }
 
 int is_viewable()
@@ -195,22 +201,31 @@ void shape_combine_mask(GDK2.Bitmap mask, int xoffset, int yoffset)
 array(GDK2.Window) children()
 //! Returns an array of GDK2.Window objects.
 {
-  GList *l;
+  GList *gl,*g2;
   int n=0;
 
-  l=gdk_window_get_children(GDK_WINDOW(THIS->obj));
+  my_pop_n_elems(args);
+  gl=g2=gdk_window_get_children(GDK_WINDOW(THIS->obj));
 
-  while (l) {
+  while (g2) {
+    push_gdkobject(g2->data,window);
+
+
+/*
     struct object *o;
     o=low_clone(pgdk_window_program);
     call_c_initializers(o);
+*/
     /* ugly...*/
+/*
     ((struct object_wrapper *)o->storage)->obj=(void *)l->data;
     push_object(o);
+*/
+    g_object_ref(g2->data);
     n++;
-    l=g_list_next(l);
+    g2=g_list_next(g2);
   }
-  my_pop_n_elems(args);
+  g_list_free(gl);
   f_aggregate(n);
 }
 
@@ -243,7 +258,7 @@ void set_events(int events)
   RETURN_THIS();
 }
 
-void set_icon(GDK2.Pixmap pixmap,GDK2.Bitmap mask, GDK2.Window|void window)
+void set_icon(GDK2.Pixmap pixmap, GDK2.Bitmap mask, GDK2.Window|void window)
 //! Set the icon to the specified image (with mask) or the specified
 //! GDK2.Window.  It is up to the window manager to display the icon.
 //! Most window manager handles window and pixmap icons, but only a few
@@ -304,6 +319,7 @@ mapping(string:int) get_geometry()
 {
   gint x,y,w,h,d;
   gdk_window_get_geometry(GDK_WINDOW(THIS->obj),&x,&y,&w,&h,&d);
+  my_pop_n_elems(args);
   push_constant_text("x"); push_int(x);
   push_constant_text("y"); push_int(y);
   push_constant_text("width");  push_int(w);

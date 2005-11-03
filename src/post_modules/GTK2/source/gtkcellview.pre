@@ -7,32 +7,40 @@ inherit GTK2.Widget;
 //! GDK2.Color background-gdk
 //! int background-set
 
-void create(string|GDK2.Pixbuf|void text, int|void markup)
+void create(string|GDK2.Pixbuf|mapping(string:mixed)|void text, ?int markup)
 //! Create a new W(CellView) widget.
 {
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   if (args==1) {
+    GtkWidget *gcv;
     if (Pike_sp[-args].type==PIKE_T_OBJECT) {
       struct object *o1;
       get_all_args("create",args,"%o",&o1);
-      THIS->obj=G_OBJECT(gtk_cell_view_new_with_pixbuf(
-		(GdkPixbuf *)get_gdkobject(o1,pixbuf)));
-    } else {
+      gcv=gtk_cell_view_new_with_pixbuf(GDK_PIXBUF(get_gobject(o1)));
+      THIS->obj=G_OBJECT(gcv);
+    } else if (Pike_sp[-args].type==PIKE_T_STRING) {
       char *str;
       get_all_args("create",args,"%s",&str);
-      THIS->obj=G_OBJECT(gtk_cell_view_new_with_text(str));
+      gcv=gtk_cell_view_new_with_text(str);
+      THIS->obj=G_OBJECT(gcv);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_CELL_VIEW);
     }
   } else if (args==2) {
     char *str;
     int mark;
+    GtkWidget *gcv;
     get_all_args("create",args,"%s%i",&str,&mark);
     if (mark)
-      THIS->obj=G_OBJECT(gtk_cell_view_new_with_markup(str));
+      gcv=gtk_cell_view_new_with_markup(str);
     else
-      THIS->obj=G_OBJECT(gtk_cell_view_new_with_text(str));
+      gcv=gtk_cell_view_new_with_text(str);
+    THIS->obj=G_OBJECT(gcv);
   } else {
-    THIS->obj=G_OBJECT(gtk_cell_view_new());
+    GtkWidget *gcv;
+    gcv=gtk_cell_view_new();
+    THIS->obj=G_OBJECT(gcv);
   }
   my_pop_n_elems(args);
   pgtk__init_this_object();
@@ -83,6 +91,7 @@ mapping(string:int) get_size_of_row(GTK2.TreePath path)
     get_all_args("get_size_of_row",args,"%o",&o1);
     gtk_cell_view_get_size_of_row(GTK_CELL_VIEW(THIS->obj),
 			(GtkTreePath *)get_gobject(o1),&req);
+    my_pop_n_elems(args);
     push_text("width"); push_int(req.width);
     push_text("height"); push_int(req.height);
     f_aggregate_mapping(4);

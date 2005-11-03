@@ -1,5 +1,5 @@
-/* -*- C -*- */
 not gtk_beta;
+
 class GDK2.PixbufAnimationIter;
 inherit G.Object;
 
@@ -8,6 +8,7 @@ inherit G.Object;
 int advance()
 //! Possibly advance an animation to a new frame.
 {
+  my_pop_n_elems(args);
   push_int(gdk_pixbuf_animation_iter_advance(
 		(GdkPixbufAnimationIter *)THIS->obj,NULL));
 }
@@ -16,6 +17,7 @@ int get_delay_time()
 //! Gets the number of milliseconds the current pixbuf should be displayed, or
 //! -1 if the current pixbuf should be displayed forever.
 {
+  my_pop_n_elems(args);
   push_int(gdk_pixbuf_animation_iter_get_delay_time(
 		(GdkPixbufAnimationIter *)THIS->obj));
 }
@@ -24,6 +26,7 @@ int on_currently_loading_frame()
 //! Used to determine how to respond to the area_updated signal on
 //! GDK2.PixbufLoader when loading an animation.
 {
+  my_pop_n_elems(args);
   push_int(gdk_pixbuf_animation_iter_on_currently_loading_frame(
 		(GdkPixbufAnimationIter *)THIS->obj));
 }
@@ -34,6 +37,7 @@ GDK2.Pixbuf get_pixbuf()
 //! GDK2.PixbufAnimation->get_height()).  This pixbuf should be displayed for
 //! get_delay_time() milliseconds.
 {
+  my_pop_n_elems(args);
   push_gobject(gdk_pixbuf_animation_iter_get_pixbuf(
 		(GdkPixbufAnimationIter *)THIS->obj));
 }

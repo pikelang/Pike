@@ -16,8 +16,21 @@ inherit GTK2.Window;
 signal close;
 signal response;
 
-void create();
+void create(?mapping(string:mixed) props)
 //! Create a new dialog widget.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_DIALOG);
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gd;
+    gd=gtk_dialog_new();
+    THIS->obj=G_OBJECT(gd);
+  }
+  pgtk__init_this_object();
+}
 
 int run();
 //! Run the selected dialog.
@@ -49,6 +62,11 @@ void set_has_separator(int setting);
 void set_response_sensitive(int response_id, int setting);
 //! Calls GTK2.Widget->set_sensitive() for each widget in the dialog's action
 //! area with the given response_id.
+
+require gtk28;
+int get_response_for_widget(GTK2.Widget widget);
+//! Gets the response id of a widget in the action area.
+endrequire;
 
 member GTK2.Vbox vbox;
 //! The vertical box that should contain the contents of the dialog

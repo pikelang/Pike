@@ -14,13 +14,17 @@ void create(GTK2.Widget|GDK2.Drawable context)
 //! which the gc will be valid.
 {
   struct object *o;
+  GdkGC *gc;
   pgtk_verify_setup();
   pgtk_verify_not_inited();
   get_all_args("'()",args,"%o",&o);
-  if (get_gobject(o))
-    THIS->obj=G_OBJECT(gdk_gc_new(GDK_WINDOW(get_gobject(o))));
+  if (G_TYPE_FROM_INSTANCE(get_gobject(o))==GDK_TYPE_DRAWABLE)
+    gc=gdk_gc_new(GDK_WINDOW(get_gobject(o)));
   else
-    THIS->obj=G_OBJECT(gdk_gc_new(GTK_WIDGET(get_gobject(o))->window));
+    gc=gdk_gc_new(GTK_WIDGET(get_gobject(o))->window);
+  THIS->obj=G_OBJECT(gc);
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
 }
 
 void destroy()
@@ -28,6 +32,8 @@ void destroy()
 {
   g_object_unref(GDK_GC(THIS->obj));
   destruct(Pike_fp->current_object);
+  my_pop_n_elems(args);
+  push_int(0);
 }
 
 mapping(string:mixed) get_values()
@@ -69,10 +75,11 @@ mapping(string:mixed) get_values()
   push_text("fill");  push_int(v.fill);
   push_text("function");  push_int(v.function);
   {
-    GdkColor *f=g_malloc(sizeof(GdkColor));
+    GdkColor *f,*b;
+    f==g_malloc(sizeof(GdkColor));
     if (f==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("",sizeof(GdkColor));
-    GdkColor *b=g_malloc(sizeof(GdkColor));
+    b=g_malloc(sizeof(GdkColor));
     if (b==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("",sizeof(GdkColor));
     *f=v.foreground;

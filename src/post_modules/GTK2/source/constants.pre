@@ -244,6 +244,7 @@ constant int GTK_SCROLL_START;
 constant int GTK_SCROLL_END;
 endnot;
 
+
 /*
 constant int GTK_TROUGH_NONE;
 constant int GTK_TROUGH_START;
@@ -1147,8 +1148,10 @@ constant int GTK_TEXT_WINDOW_BOTTOM;
 constant int GTK_TREE_MODEL_ITERS_PERSIST;
 not gtk_beta;
 constant int GTK_TREE_MODEL_LIST_ONLY;
+endnot;
 
 /* GTK: GtkTreeViewcolumn: GtkTreeViewColumnSizing */
+not gtk_beta;
 constant int GTK_TREE_VIEW_COLUMN_GROW_ONLY;
 endnot;
 constant int GTK_TREE_VIEW_COLUMN_AUTOSIZE;
@@ -1276,6 +1279,9 @@ constant string GTK_STOCK_DIALOG_QUESTION;
 not gtk_beta;
 constant string GTK_STOCK_DND;
 constant string GTK_STOCK_DND_MULTIPLE;
+require gtk26;
+constant string GTK_STOCK_ABOUT;
+endrequire;
 constant string GTK_STOCK_ADD;
 constant string GTK_STOCK_APPLY;
 constant string GTK_STOCK_BOLD;
@@ -1287,15 +1293,31 @@ endnot;
 require gtk22;
 constant string GTK_STOCK_COLOR_PICKER;
 endrequire;
+require gtk26;
+constant string GTK_STOCK_CONNECT;
+endrequire;
 not gtk_beta;
 constant string GTK_STOCK_CONVERT;
 constant string GTK_STOCK_COPY;
 constant string GTK_STOCK_CUT;
 constant string GTK_STOCK_DELETE;
+require gtk26;
+constant string GTK_STOCK_DIRECTORY;
+constant string GTK_STOCK_DISCONNECT;
+endrequire;
+require gtk26;
+constant string GTK_STOCK_EDIT;
+endrequire;
 constant string GTK_STOCK_EXECUTE;
+require gtk26;
+constant string GTK_STOCK_FILE;
+endrequire;
 constant string GTK_STOCK_FIND;
 constant string GTK_STOCK_FIND_AND_REPLACE;
 constant string GTK_STOCK_FLOPPY;
+require gtk28;
+constant string GTK_STOCK_FULLSCREEN;
+endrequire;
 constant string GTK_STOCK_GOTO_BOTTOM;
 constant string GTK_STOCK_GOTO_FIRST;
 constant string GTK_STOCK_GOTO_LAST;
@@ -1313,6 +1335,9 @@ not gtk_beta;
 constant string GTK_STOCK_HOME;
 constant string GTK_STOCK_INDEX;
 endnot;
+require gtk28;
+constant string GTK_STOCK_INFO;
+endrequire;
 require gtk24;
 constant string GTK_STOCK_INDENT;
 constant string GTK_STOCK_UNINDENT;
@@ -1324,6 +1349,19 @@ constant string GTK_STOCK_JUSTIFY_CENTER;
 constant string GTK_STOCK_JUSTIFY_FILL;
 constant string GTK_STOCK_JUSTIFY_LEFT;
 constant string GTK_STOCK_JUSTIFY_RIGHT;
+require gtk28;
+constant string GTK_STOCK_LEAVE_FULLSCREEN;
+endrequire;
+require gtk26;
+constant string GTK_STOCK_MEDIA_FORWARD;
+constant string GTK_STOCK_MEDIA_NEXT;
+constant string GTK_STOCK_MEDIA_PAUSE;
+constant string GTK_STOCK_MEDIA_PLAY;
+constant string GTK_STOCK_MEDIA_PREVIOUS;
+constant string GTK_STOCK_MEDIA_RECORD;
+constant string GTK_STOCK_MEDIA_REWIND;
+constant string GTK_STOCK_MEDIA_STOP;
+endrequire;
 constant string GTK_STOCK_MISSING_IMAGE;
 endnot;
 require gtk24;
@@ -1381,7 +1419,7 @@ not pango_beta;
 constant int PANGO_ATTR_INVALID;
 constant int PANGO_ATTR_LANGUAGE;
 endnot;
-require pango_beta
+require pango_beta;
 constant int PANGO_ATTR_LANG;
 endrequire;
 constant int PANGO_ATTR_FAMILY;
@@ -1478,6 +1516,7 @@ require gnome;
 /* constant int GNORBA_INIT_CORBA_PRIO_HIGH; */
 
 /* GnomeDialogType */
+require gnomeui;
 constant int GNOME_DIALOG_ERROR;
 constant int GNOME_DIALOG_NORMAL;
 
@@ -1517,6 +1556,7 @@ constant int GNOME_EDGE_LAST;
 constant int GNOME_DATE_EDIT_SHOW_TIME;
 constant int GNOME_DATE_EDIT_24_HR;
 constant int GNOME_DATE_EDIT_WEEK_STARTS_ON_MONDAY;
+endrequire;
 
 /*
 constant int GNOME_DOCK_ITEM_BEH_NORMAL;

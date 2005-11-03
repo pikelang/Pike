@@ -15,10 +15,36 @@ inherit GTK2.Bin;
 
 signal set_scroll_adjustments;
 
-void create(?GTK2.Adjustment xscroll, ?GTK2.Adjustment yscroll);
+void create(GTK2.Adjustment|mapping(string:mixed)|void xscroll_or_props,
+	    ?GTK2.Adjustment yscroll)
 //! Create a new viewport.  The adjustments are used to select what
 //! part of the viewport to view to the user. They are normally
 //! connected to a scrollbar or something similar.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+      struct object *o1,*o2=NULL;
+      GtkWidget *gv;
+      if (args==2)
+	get_all_args("create",args,"%o%o",&o1,&o2);
+      else
+	get_all_args("create",args,"%o",&o1);
+      gv=gtk_viewport_new(GTK_ADJUSTMENT(get_gobject(o1)),
+			GTK_ADJUSTMENT(get_gobject(o2)));
+      THIS->obj=G_OBJECT(gv);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_VIEWPORT);
+    }
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gv;
+    gv=gtk_viewport_new(NULL,NULL);
+    THIS->obj=G_OBJECT(gv);
+  }
+  pgtk__init_this_object();
+}
 
 GTK2.Adjustment get_hadjustment();
 //! Return the current horizontal adjustment object

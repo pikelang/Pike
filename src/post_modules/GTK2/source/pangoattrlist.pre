@@ -9,6 +9,7 @@ Pango.AttrList copy()
 //! Copy the list.
 {
   pgtk_verify_inited();
+  my_pop_n_elems(args);
   {
     PangoAttrList *pal=pango_attr_list_copy((PangoAttrList *)THIS->obj);
     push_gobjectclass(pal,ppango_attr_list_program);

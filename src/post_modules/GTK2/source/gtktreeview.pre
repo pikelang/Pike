@@ -46,23 +46,32 @@ signal test_expand_row;
 signal toggle_cursor_row;
 signal unselect_all;
 
-void create(?GTK2.TreeModel model)
+void create(GTK2.TreeModel|mapping(string:mixed)|void model_or_props)
 //! Create a new W(TreeView), with or without a default model.
 {
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   if (args) {
-    struct object *o1;
-    get_all_args("create",args,"%o",&o1);
-    GtkTreeModel *gtm=GTK_TREE_MODEL(get_gobject(o1));
-    if (gtm) {
-      THIS->obj=G_OBJECT(gtk_tree_view_new_with_model(gtm));
+    if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+      struct object *o1;
+      GtkTreeModel *gtm;
+      GtkWidget *gt;
+      get_all_args("create",args,"%o",&o1);
+      gtm=GTK_TREE_MODEL(get_gobject(o1));
+      if (gtm) {
+	gt=gtk_tree_view_new_with_model(gtm);
+      } else {
+	gt=gtk_tree_view_new();
+      }
+      THIS->obj=G_OBJECT(gt);
     } else {
-      THIS->obj=G_OBJECT(gtk_tree_view_new());
+      INIT_WITH_PROPS(GTK_TYPE_TREE_VIEW);
     }
     my_pop_n_elems(args);
   } else {
-    THIS->obj=G_OBJECT(gtk_tree_view_new());
+    GtkWidget *gt;
+    gt=gtk_tree_view_new();
+    THIS->obj=G_OBJECT(gt);
   }
   pgtk__init_this_object();
 }
@@ -138,6 +147,7 @@ array(GTK2.TreeViewColumn) get_columns()
 //! Returns an array of all the W(TreeViewColumn)'s current in the view.
 {
   pgtk_verify_inited();
+  my_pop_n_elems(args);
   {
     GList *gl,*g2;
     int i=0;
@@ -198,19 +208,12 @@ void scroll_to_cell(GTK2.TreePath path, GTK2.TreeViewColumn column,
   {
     struct object *o1,*o2;
     gfloat row_align=0,col_align=0;
-    if (args==2) {
-      get_all_args("scroll_to_cell",args,"%o%o",&o1,&o2);
-      gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1),
-			GTK_TREE_VIEW_COLUMN(get_gobject(o2)),
-			0,0,0);
-    } else {
-      get_all_args("scroll_to_cell",args,"%o%o%i%i",&o1,&o2,&row_align,&col_align);
-      gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(THIS->obj),
+    get_all_args("scroll_to_cell",args,"%o%o.%i%i",&o1,&o2,
+			&row_align,&col_align);
+    gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(THIS->obj),
 			(GtkTreePath *)get_gobject(o1),
 			GTK_TREE_VIEW_COLUMN(get_gobject(o2)),
 			1,row_align,col_align);
-    }
   }
   RETURN_THIS();
 }
@@ -261,6 +264,8 @@ void set_cursor_on_cell(GTK2.TreePath path, ?GTK2.TreeViewColumn focus_column,
   {
     struct object *o1,*o2=NULL,*o3=NULL;
     int ed=0;
+    get_all_args("set_cursor_on_cell",args,"%o.%o%i%o",&o1,&o2,&ed,&o3);
+/*
     if (args==1)
       get_all_args("set_cursor_on_cell",args,"%o",&o1);
     else if (args==2)
@@ -269,6 +274,7 @@ void set_cursor_on_cell(GTK2.TreePath path, ?GTK2.TreeViewColumn focus_column,
       get_all_args("set_cursor_on_cell",args,"%o%o%i",&o1,&o2,&ed);
     else
       get_all_args("set_cursor_on_cell",args,"%o%o%i%o",&o1,&o2,&ed,&o3);
+*/
     gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(THIS->obj),
 			(GtkTreePath *)get_gobject(o1),
 			GTK_TREE_VIEW_COLUMN(get_gobject(o2)),
@@ -365,10 +371,12 @@ int row_expanded(GTK2.TreePath path)
   pgtk_verify_inited();
   {
     struct object *o1;
+    int res;
     get_all_args("row_expanded",args,"%o",&o1);
+    res=gtk_tree_view_row_expanded(GTK_TREE_VIEW(THIS->obj),
+			(GtkTreePath *)get_gobject(o1));
     my_pop_n_elems(args);
-    push_int(gtk_tree_view_row_expanded(GTK_TREE_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1)));
+    PGTK_PUSH_INT(res);
   }
 }
 
@@ -385,7 +393,6 @@ void set_reorderable(int reorderable);
 int get_reorderable();
 //! Retrieves whether the user can reorder the tree via drag-and-drop.
 
-/*
 mapping get_path_at_pos(int x, int y)
 //! Finds the path at the point (x,y) relative to widget coordinates.  That
 //! is, x and y are relative to an events coordinates.  x and y must come from
@@ -443,14 +450,14 @@ GDK2.Rectangle get_cell_area(?GTK2.TreePath path, ?GTK2.TreeViewColumn column)
       get_all_args("get_cell_area",args,"%o",&o1);
     else if (args==2)
       get_all_args("get_cell_area",args,"%o%o",&o1,&o2);
-    my_pop_n_elems(args);
     rect=(GdkRectangle *)g_malloc(sizeof(GdkRectangle));
     if (rect==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_cell_area",sizeof(GdkRectangle));
     gtk_tree_view_get_cell_area(GTK_TREE_VIEW(THIS->obj),
 			(GtkTreePath *)get_gobject(o1),
 			GTK_TREE_VIEW_COLUMN(get_gobject(o2)),
-			&rect);
+			rect);
+    my_pop_n_elems(args);
     push_gdkobject(rect,rectangle);
   }
 }
@@ -471,14 +478,14 @@ GDK2.Rectangle get_background_area(?GTK2.TreePath path,
       get_all_args("get_background_area",args,"%o",&o1);
     else if (args==2)
       get_all_args("get_background_area",args,"%o%o",&o1,&o2);
-    my_pop_n_elems(args);
     rect=(GdkRectangle *)g_malloc(sizeof(GdkRectangle));
     if (rect==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_background_area",sizeof(GdkRectangle));
     gtk_tree_view_get_background_area(GTK_TREE_VIEW(THIS->obj),
 			(GtkTreePath *)get_gobject(o1),
 			GTK_TREE_VIEW_COLUMN(get_gobject(o2)),
-			&rect);
+			rect);
+    my_pop_n_elems(args);
     push_gdkobject(rect,rectangle);
   }
 }
@@ -490,6 +497,7 @@ GDK2.Rectangle get_visible_rect()
 //! tree, and cover the entire scrollable area of the tree.
 {
   pgtk_verify_inited();
+  my_pop_n_elems(args);
   {
     GdkRectangle *gr;
     my_pop_n_elems(args);
@@ -500,6 +508,27 @@ GDK2.Rectangle get_visible_rect()
     push_gdkobject(gr,rectangle);
   }
 }
+
+require gtk28;
+array get_visible_range()
+//! Returns the first and last visible path.  Note that there may be invisible
+//! paths in between.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GtkTreePath *s,*e;
+    int res;
+    res=gtk_tree_view_get_visible_range(GTK_TREE_VIEW(THIS->obj),&s,&e);
+    if (res) {
+      push_gobjectclass(s,pgtk_tree_path_program);
+      push_gobjectclass(e,pgtk_tree_path_program);
+      f_aggregate(2);
+    } else
+      ref_push_array(&empty_array);
+  }
+}
+endrequire;
 
 GDK2.Window get_bin_window();
 //! Returns the window that this view renders to.  This is used primarily to
@@ -638,6 +667,7 @@ array get_selected()
     if (gtk_tree_selection_get_selected(sel,&model,iter)) {
       push_gobjectclass(iter,pgtk_tree_iter_program);
       push_gobject(model);
+      f_aggregate(2);
     } else
       push_int(0);
   }

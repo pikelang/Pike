@@ -16,10 +16,23 @@ inherit GTK2.Progress;
 //! float pulse-step
 //! string text
 
-void create();
+void create(?mapping(string:mixed) props)
 //! Create a new progress bar.
 //! The default values are:<br />
 //! Min 0.0, max 1.0, current 0.0<br />
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_PROGRESS_BAR);
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gp;
+    gp=gtk_progress_bar_new();
+    THIS->obj=G_OBJECT(gp);
+  }
+  pgtk__init_this_object();
+}
 
 void pulse();
 //! Indicates that some progress is made, but you don't know how much.  Causes

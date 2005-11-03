@@ -36,7 +36,7 @@ int index_to_x(int index, int trailing)
   pgtk_verify_inited();
   {
     int index,trailing,x_pos;
-    get_all_args("index_to_x",args,"5i%i",&index,&trailing);
+    get_all_args("index_to_x",args,"%i%i",&index,&trailing);
     my_pop_n_elems(args);
     pango_layout_line_index_to_x((PangoLayoutLine *)THIS->obj,index,trailing,
 			&x_pos);

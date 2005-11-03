@@ -10,6 +10,7 @@ void create()
   if (gta==NULL)
     SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(GtkTextAttributes));
   THIS->obj=(void *)gta;
+  my_pop_n_elems(args);
   pgtk__init_this_object();
 }
 
@@ -32,9 +33,9 @@ GTK2.TextAttributes copy_values(GTK2.TextAttributes dest)
   {
     struct object *a1;
     get_all_args("copy_values",args,"%o",&a1);
-    my_pop_n_elems(args);
     gtk_text_attributes_copy_values((GtkTextAttributes *)(THIS->obj),
 		(GtkTextAttributes *)get_gobject(a1));
+    my_pop_n_elems(args);
     push_gobjectclass(a1,pgtk_text_attributes_program);
   }
 }
@@ -53,8 +54,7 @@ int get_justification()
 //! Get justification.
 {
   pgtk_verify_inited();
-  if (args)
-    Pike_error("Too many arguments.\n");
+  my_pop_n_elems(args);
   push_int(((GtkTextAttributes *)THIS->obj)->justification);
 }
 
@@ -62,8 +62,7 @@ int get_direction()
 //! Get direction.
 {
   pgtk_verify_inited();
-  if (args)
-    Pike_error("Too many arguments.\n");
+  my_pop_n_elems(args);
   push_int(((GtkTextAttributes *)THIS->obj)->direction);
 }
 
@@ -71,8 +70,7 @@ float get_font_scale()
 //! Get font scale.
 {
   pgtk_verify_inited();
-  if (args)
-    Pike_error("Too many arguments.\n");
+  my_pop_n_elems(args);
   push_float(((GtkTextAttributes *)THIS->obj)->font_scale);
 }
 
@@ -80,8 +78,7 @@ int get_left_margin()
 //! Get left margin.
 {
   pgtk_verify_inited();
-  if (args)
-    Pike_error("Too many arguments.\n");
+  my_pop_n_elems(args);
   push_int(((GtkTextAttributes *)THIS->obj)->left_margin);
 }
 
@@ -89,8 +86,7 @@ int get_indent()
 //! Get indent.
 {
   pgtk_verify_inited();
-  if (args)
-    Pike_error("Too many arguments.\n");
+  my_pop_n_elems(args);
   push_int(((GtkTextAttributes *)THIS->obj)->indent);
 }
 
@@ -98,8 +94,7 @@ int get_right_margin()
 //! Get right margin.
 {
   pgtk_verify_inited();
-  if (args)
-    Pike_error("Too many arguments.\n");
+  my_pop_n_elems(args);
   push_int(((GtkTextAttributes *)THIS->obj)->right_margin);
 }
 
@@ -107,8 +102,7 @@ int get_pixels_above_lines()
 //! Get pixels above lines.
 {
   pgtk_verify_inited();
-  if (args)
-    Pike_error("Too many arguments.\n");
+  my_pop_n_elems(args);
   push_int(((GtkTextAttributes *)THIS->obj)->pixels_above_lines);
 }
 
@@ -116,8 +110,7 @@ int get_pixels_below_lines()
 //! Get pixels below lines.
 {
   pgtk_verify_inited();
-  if (args)
-    Pike_error("Too many arguments.\n");
+  my_pop_n_elems(args);
   push_int(((GtkTextAttributes *)THIS->obj)->pixels_below_lines);
 }
 
@@ -125,8 +118,7 @@ int get_pixels_inside_wrap()
 //! Get pixels inside wrap.
 {
   pgtk_verify_inited();
-  if (args)
-    Pike_error("Too many arguments.\n");
+  my_pop_n_elems(args);
   push_int(((GtkTextAttributes *)THIS->obj)->pixels_inside_wrap);
 }
 
@@ -134,8 +126,7 @@ Pango.TabArray get_tabs()
 //! Get tabs.
 {
   pgtk_verify_inited();
-  if (args)
-    Pike_error("Too many arguments.\n");
+  my_pop_n_elems(args);
   {
     PangoTabArray *pta=pango_tab_array_copy(((GtkTextAttributes *)THIS->obj)->tabs);
     push_gobjectclass(pta,ppango_tab_array_program);
@@ -146,8 +137,7 @@ int get_wrap_mode()
 //! Get wrap mode.
 {
   pgtk_verify_inited();
-  if (args)
-    Pike_error("Too many arguments.\n");
+  my_pop_n_elems(args);
   push_int(((GtkTextAttributes *)THIS->obj)->wrap_mode);
 }
 
@@ -155,8 +145,7 @@ int get_invisible()
 //! Get invisible.
 {
   pgtk_verify_inited();
-  if (args)
-    Pike_error("Too many arguments.\n");
+  my_pop_n_elems(args);
   push_int(((GtkTextAttributes *)THIS->obj)->invisible);
 }
 
@@ -164,8 +153,7 @@ int get_bg_full_height()
 //! Get bg_full_height.
 {
   pgtk_verify_inited();
-  if (args)
-    Pike_error("Too many arguments.\n");
+  my_pop_n_elems(args);
   push_int(((GtkTextAttributes *)THIS->obj)->bg_full_height);
 }
 
@@ -173,8 +161,7 @@ int get_editable()
 //! Get editable.
 {
   pgtk_verify_inited();
-  if (args)
-    Pike_error("Too many arguments.\n");
+  my_pop_n_elems(args);
   push_int(((GtkTextAttributes *)THIS->obj)->editable);
 }
 
@@ -182,8 +169,7 @@ int get_realized()
 //! Get realized.
 {
   pgtk_verify_inited();
-  if (args)
-    Pike_error("Too many arguments.\n");
+  my_pop_n_elems(args);
   push_int(((GtkTextAttributes *)THIS->obj)->realized);
 }
 

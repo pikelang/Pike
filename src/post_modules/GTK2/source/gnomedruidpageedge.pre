@@ -24,14 +24,18 @@ void create(int position, ?int anti_alias)
   pgtk_verify_setup();
   {
     int pos,aa=-1;
+    GtkWidget *gpe;
     if (args==1) {
       get_all_args("create",args,"%i",&pos);
-      THIS->obj=G_OBJECT(gnome_druid_page_edge_new(pos));
+      gpe=gnome_druid_page_edge_new(pos);
+      THIS->obj=G_OBJECT(gpe);
     } else {
       get_all_args("create",args,"%i%i",&pos,&aa);
-      THIS->obj=G_OBJECT(gnome_druid_page_edge_new_aa(pos));
+      gpe=gnome_druid_page_edge_new_aa(pos);
+      THIS->obj=G_OBJECT(gpe);
     }
   }
+  my_pop_n_elems(args);
   pgtk__init_this_object();
 }
 

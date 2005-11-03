@@ -12,6 +12,7 @@ void create(Pango.Context context)
     struct object *o1;
     get_all_args("create",args,"%o",&o1);
     THIS->obj=(void *)pango_layout_new((PangoContext *)get_gobject(o1));
+    my_pop_n_elems(args);
   }
   pgtk__init_this_object();
 }
@@ -24,8 +25,8 @@ Pango.Layout copy(Pango.Layout src)
     struct object *o1;
     PangoLayout *pl;
     get_all_args("copy",args,"%o",&o1);
-    my_pop_n_elems(args);
     pl=pango_layout_copy((PangoLayout *)get_gobject(o1));
+    my_pop_n_elems(args);
     push_gobjectclass(pl,ppango_layout_program);
   }
 }
@@ -73,14 +74,11 @@ void set_markup_with_accel(string markup, int length, ?int accel_marker)
     const char *markup;
     int len;
     gunichar accel_marker=0,accel_char;
-    if (args==2)
-      get_all_args("set_markup_with_accel",args,"%s%i",&markup,&len);
-    else
-      get_all_args("set_markup_with_acdel",args,"%s%i%i",&markup,&len,
+    get_all_args("set_markup_with_accel",args,"%s%i.%i",&markup,&len,
 				&accel_marker);
-    my_pop_n_elems(args);
     pango_layout_set_markup_with_accel((PangoLayout *)THIS->obj,
 		markup,len,accel_marker,&accel_char);
+    my_pop_n_elems(args);
     push_int(accel_char);
   }
 }

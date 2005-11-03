@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgtk.h,v 1.4 2005/11/02 21:30:58 grubba Exp $
+|| $Id: pgtk.h,v 1.5 2005/11/03 13:49:44 ldillon Exp $
 */
 
 /* Sort of unnessesary, and decreases code-size with 140Kb */
@@ -29,13 +29,11 @@
 #include <glib-object.h>
 */
 #include <gtk/gtk.h>
-
-#ifdef HAVE_GNOME
-# include <libgnome/libgnome.h>
-# ifdef HAVE_GNOMEUI
-#  include <libgnomeui/libgnomeui.h>
-# endif
+#if defined(HAVE_GNOMEUI)
+# include <gnome.h>
 /*# include <libgnorba/gnorba.h> */
+#elif defined(HAVE_GNOME)
+# include <libgnome/libgnome.h>
 #endif
 
 #ifdef __NT__
@@ -66,7 +64,8 @@
 #undef GTK_ACCEL_GROUP
 #define GTK_ACCEL_GROUP(X) ((void *)X)
 */
-#include "../../modules/Image/image.h"
+/*#include "../../modules/Image/image.h" */
+#include "image.h"
 
 struct object_wrapper {
   GObject *obj;
@@ -78,7 +77,6 @@ struct object_wrapper {
 struct signal_data {
   struct svalue cb;
   struct svalue args;
-  int new_interface;
   int signal_id;
 };
 
@@ -249,3 +247,11 @@ void pgtk_destroy_store_data(gpointer data);
 void pgtk_set_gvalue(GValue *gv, GType gt, struct svalue *sv);
 int pgtk_tree_sortable_callback(GtkTreeModel *model, GtkTreeIter *a,
 				GtkTreeIter *b, struct signal_data *d);
+GObject *pgtk_create_new_obj_with_properties(GType type, struct mapping *m);
+
+#define INIT_WITH_PROPS(X) do {	\
+	struct mapping *m;	\
+	get_all_args("create",args,"%m",&m);	\
+	THIS->obj=pgtk_create_new_obj_with_properties(X,m);	\
+      } while(0)
+void push_gvalue_r(GValue *param, GType t);

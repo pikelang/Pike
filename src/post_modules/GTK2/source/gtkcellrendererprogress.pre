@@ -7,8 +7,21 @@ inherit GTK2.CellRenderer;
 //! string text
 //! int value
 
-void create();
+void create(?mapping(string:mixed) props)
 //! Create a new W(CellRendererProgress).
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_CELL_RENDERER_PROGRESS);
+    my_pop_n_elems(args);
+  } else {
+    GtkCellRenderer *gcr;
+    gcr=gtk_cell_renderer_progress_new();
+    THIS->obj=G_OBJECT(gcr);
+  }
+  pgtk__init_this_object();
+}
 
 /*
 int get_type();

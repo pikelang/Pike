@@ -36,18 +36,26 @@ signal set_anchor;
 signal set_scroll_adjustments;
 signal toggle_overwrite;
 
-void create(?GTK2.TextBuffer buffer)
+void create(GTK2.TextBuffer|mapping(string:mixed)|void buffer_or_props)
 //! Create a new W(TextView).  
 {
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   if (args) {
-    struct object *o1;
-    get_all_args("create",args,"%o",&o1);
-    THIS->obj=G_OBJECT(gtk_text_view_new_with_buffer(
-			GTK_TEXT_BUFFER(get_gobject(o1))));
+    if (Pike_sp[-args].type==PIKE_T_OBJECT) {
+      struct object *o1;
+      GtkWidget *gt;
+      get_all_args("create",args,"%o",&o1);
+      gt=gtk_text_view_new_with_buffer(GTK_TEXT_BUFFER(get_gobject(o1)));
+      THIS->obj=G_OBJECT(gt);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_TEXT_VIEW);
+    }
+    my_pop_n_elems(args);
   } else {
-    THIS->obj=G_OBJECT(gtk_text_view_new());
+    GtkWidget *gt;
+    gt=gtk_text_view_new();
+    THIS->obj=G_OBJECT(gt);
   }
   pgtk__init_this_object();
 }
@@ -129,9 +137,9 @@ GDK2.Rectangle get_iter_location(GTK2.TextIter iter)
     if (gdr==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_location",sizeof(GdkRectangle));
     get_all_args("get_iter_location",args,"%o",&o1);
-    my_pop_n_elems(args);
     gtk_text_view_get_iter_location(GTK_TEXT_VIEW(THIS->obj),
 		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),gdr);
+    my_pop_n_elems(args);
     push_gdkobject(gdr,rectangle);
   }
 }
@@ -166,9 +174,9 @@ mapping get_line_yrange(GTK2.TextIter iter)
     gint y,height;
     struct object *o1;
     get_all_args("get_line_yrange",args,"%o",&o1);
-    my_pop_n_elems(args);
     gtk_text_view_get_line_yrange(GTK_TEXT_VIEW(THIS->obj),
 		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),&y,&height);
+    my_pop_n_elems(args);
     push_text("y"); push_int(y);
     push_text("height"); push_int(height);
     f_aggregate_mapping(4);
@@ -232,6 +240,7 @@ array buffer_to_window_coords(int wintype, int buffer_x, int buffer_y)
 		wintype,buffer_x,buffer_y,&win_x,&win_y);
     push_int(win_x);
     push_int(win_y);
+    f_aggregate(2);
   }
 }
 
@@ -249,6 +258,7 @@ array window_to_buffer_coords(int wintype, int window_x, int window_y)
 		wintype,win_x,win_y,&buffer_x,&buffer_y);
     push_int(buffer_x);
     push_int(buffer_y);
+    f_aggregate(2);
   }
 }
 
@@ -289,9 +299,9 @@ int forward_display_line(GTK2.TextIter iter)
     struct object *o1;
     int res;
     get_all_args("forward_display_line",args,"%o",&o1);
-    my_pop_n_elems(args);
     res=gtk_text_view_forward_display_line(GTK_TEXT_VIEW(THIS->obj),
 		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+    my_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -304,9 +314,9 @@ int backward_display_line(GTK2.TextIter iter)
     struct object *o1;
     int res;
     get_all_args("backward_display_line",args,"%o",&o1);
-    my_pop_n_elems(args);
     res=gtk_text_view_backward_display_line(GTK_TEXT_VIEW(THIS->obj),
 		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+    my_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -319,9 +329,9 @@ int forward_display_line_end(GTK2.TextIter iter)
     struct object *o1;
     int res;
     get_all_args("forward_display_line_end",args,"%o",&o1);
-    my_pop_n_elems(args);
     res=gtk_text_view_forward_display_line_end(GTK_TEXT_VIEW(THIS->obj),
 		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+    my_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -334,9 +344,9 @@ int backward_display_line_start(GTK2.TextIter iter)
     struct object *o1;
     int res;
     get_all_args("backward_display_line_start",args,"%o",&o1);
-    my_pop_n_elems(args);
     res=gtk_text_view_backward_display_line_start(GTK_TEXT_VIEW(THIS->obj),
 		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+    my_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -349,9 +359,9 @@ int starts_display_line(GTK2.TextIter iter)
     struct object *o1;
     int res;
     get_all_args("starts_display_line",args,"%o",&o1);
-    my_pop_n_elems(args);
     res=gtk_text_view_starts_display_line(GTK_TEXT_VIEW(THIS->obj),
 		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+    my_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -373,9 +383,9 @@ int move_visually(GTK2.TextIter iter, int count)
     gint count;
     int res;
     get_all_args("move_visually",args,"%o%i",&o1,&count);
-    my_pop_n_elems(args);
     res=gtk_text_view_move_visually(GTK_TEXT_VIEW(THIS->obj),
 		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),count);
+    my_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -385,7 +395,8 @@ void add_child_at_anchor(GTK2.Widget child, GTK2.TextChildAnchor anchor);
 
 void add_child_in_window(GTK2.Widget child, int wintype, int xpos, int ypos);
 //! Adds a child at fixed coordinates in one of the text widget's windows.
-//! The window must have nonzero size (see                                      //! GTK2.TextView->set_border_window_size()).  Note that the child coordinates
+//! The window must have nonzero size (see
+//! GTK2.TextView->set_border_window_size()).  Note that the child coordinates
 //! are given relative to the GDK2.Window in question, and that these
 //! coordinates have no sane relationship to scrolling.  When placing a child
 //! in GTK2.TEXT_WINDOW_WIDGET, scrolling is irrelevant, the child floats above

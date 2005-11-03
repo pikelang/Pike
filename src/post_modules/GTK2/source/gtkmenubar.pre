@@ -8,12 +8,42 @@ inherit GTK2.MenuShell;
 //! IMG: GTK2.MenuBar()->add(GTK2.Menu_item("Menu")->set_submenu(GTK2.Menu()->add(GTK2.Menu_item("Sub")))->select()->activate())->add(GTK2.Menu_item("Bar"))
 //! </p>
 
+//! Properties:
+//! int child-pack-direction
+//! int pack-direction
+//! <p>
 //! Style properties:
 //! int internal-padding
 //! int shadow-type
 
 
-void create();
+void create(?mapping(string:mixed) props)
 //! Create a new menu bar.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_MENU_BAR);
+    my_pop_n_elems(args);
+  } else {
+    GtkWidget *gm;
+    gm=gtk_menu_bar_new();
+    THIS->obj=G_OBJECT(gm);
+  }
+  pgtk__init_this_object();
+}
 
+require gtk28;
+void set_pack_direction(int setting);
+//! Sets how items should be packed inside a menubar.  One of
+//! CONST(GTK_PACK_DIRECTION).
 
+int get_pack_direction();
+//! Retrieves the current pack direction of the menubar.
+
+void set_child_pack_direction(int setting);
+//! Sets how widgets should be packed inside the children of a menubar.
+
+int get_child_pack_direction();
+//! Retrieves the current child pack direction.
+endrequire;

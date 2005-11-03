@@ -108,9 +108,9 @@ string get_slice(GTK2.TextIter end)
     gchar *s;
     struct object *o1;
     get_all_args("get_slice",args,"%o",&o1);
-    my_pop_n_elems(args);
     s=gtk_text_iter_get_slice((GtkTextIter *)(THIS->obj),
 		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+    my_pop_n_elems(args);
     PGTK_PUSH_GCHAR(s);
   }
 }
@@ -126,9 +126,9 @@ string get_text(GTK2.TextIter end)
     gchar *s;
     struct object *o1;
     get_all_args("get_text",args,"%o",&o1);
-    my_pop_n_elems(args);
     s=gtk_text_iter_get_text((GtkTextIter *)(THIS->obj),
 		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+    my_pop_n_elems(args);
     PGTK_PUSH_GCHAR(s);
   }
 }
@@ -141,9 +141,9 @@ string get_visible_slice(GTK2.TextIter end)
     gchar *s;
     struct object *o1;
     get_all_args("get_visible_slice",args,"%o",&o1);
-    my_pop_n_elems(args);
     s=gtk_text_iter_get_visible_slice((GtkTextIter *)(THIS->obj),
 		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+    my_pop_n_elems(args);
     PGTK_PUSH_GCHAR(s);
   }
 }
@@ -156,9 +156,9 @@ string get_visible_text(GTK2.TextIter end)
     gchar *s;
     struct object *o1;
     get_all_args("get_visible_text",args,"%o",&o1);
-    my_pop_n_elems(args);
     s=gtk_text_iter_get_visible_text((GtkTextIter *)(THIS->obj),
 		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+    my_pop_n_elems(args);
     PGTK_PUSH_GCHAR(s);
   }
 }
@@ -172,7 +172,7 @@ GDK2.Pixbuf get_pixbuf()
     my_pop_n_elems(args);
     gp=gtk_text_iter_get_pixbuf((GtkTextIter *)(THIS->obj));
     if (gp) {
-      push_gdkobject(gp,pixmap);
+      push_gobject(gp);
     } else {
       push_int(0);
     }
@@ -234,16 +234,14 @@ int begins_tag(?GTK2.TextTag tag)
 {
   pgtk_verify_inited();
   {
-    if (args) {
-      struct object *o1;
+    struct object *o1;
+    int res;
+    if (args)
       get_all_args("begins_tag",args,"%o",&o1);
-      my_pop_n_elems(args);
-      push_int(gtk_text_iter_begins_tag((GtkTextIter *)THIS->obj,
-			GTK_TEXT_TAG(get_gobject(o1))));
-    } else {
-      my_pop_n_elems(args);
-      push_int(gtk_text_iter_begins_tag((GtkTextIter *)THIS->obj,NULL));
-    }
+    res=gtk_text_iter_begins_tag((GtkTextIter *)THIS->obj,
+			GTK_TEXT_TAG(get_gobject(o1)));
+    my_pop_n_elems(args);
+    PGTK_PUSH_INT(res);
   }
 }
 
@@ -255,16 +253,14 @@ int ends_tag(?GTK2.TextTag tag)
 {
   pgtk_verify_inited();
   {
-    if (args) {
-      struct object *o1;
+    struct object *o1;
+    int res;
+    if (args)
       get_all_args("ends_tag",args,"%o",&o1);
-      my_pop_n_elems(args);
-      push_int(gtk_text_iter_ends_tag((GtkTextIter *)THIS->obj,
-			GTK_TEXT_TAG(get_gobject(o1))));
-    } else {
-      my_pop_n_elems(args);
-      push_int(gtk_text_iter_ends_tag((GtkTextIter *)THIS->obj,NULL));
-    }
+    res=gtk_text_iter_ends_tag((GtkTextIter *)THIS->obj,
+			GTK_TEXT_TAG(get_gobject(o1)));
+    my_pop_n_elems(args);
+    PGTK_PUSH_INT(res);
   }
 }
 
@@ -274,16 +270,14 @@ int toggles_tag(?GTK2.TextTag tag)
 {
   pgtk_verify_inited();
   {
-    if (args) {
-      struct object *o1;
+    struct object *o1;
+    int res;
+    if (args)
       get_all_args("toggles_tag",args,"%o",&o1);
-      my_pop_n_elems(args);
-      push_int(gtk_text_iter_toggles_tag((GtkTextIter *)THIS->obj,
-			GTK_TEXT_TAG(get_gobject(o1))));
-    } else {
-      my_pop_n_elems(args);
-      push_int(gtk_text_iter_toggles_tag((GtkTextIter *)THIS->obj,NULL));
-    }
+    res=gtk_text_iter_toggles_tag((GtkTextIter *)THIS->obj,
+			GTK_TEXT_TAG(get_gobject(o1)));
+    my_pop_n_elems(args);
+    PGTK_PUSH_INT(res);
   }
 }
 
@@ -293,10 +287,12 @@ int has_tag(GTK2.TextTag tag)
   pgtk_verify_inited();
   {
     struct object *o1;
+    int res;
     get_all_args("has_tag",args,"%o",&o1);
+    res=gtk_text_iter_has_tag((GtkTextIter *)THIS->obj,
+			GTK_TEXT_TAG(get_gobject(o1)));
     my_pop_n_elems(args);
-    push_int(gtk_text_iter_has_tag((GtkTextIter *)THIS->obj,
-			GTK_TEXT_TAG(get_gobject(o1))));
+    PGTK_PUSH_INT(res);
   }
 }
 
@@ -823,6 +819,69 @@ int backward_visible_cursor_positions(int count)
 }
 endrequire;
 
+require gtk28;
+int forward_visible_line()
+//! Moves to the start of the next visible line.  Returns TRUE if there was a
+//! next line to move to, and FALSE if iter was simply moved to the end of the
+//! buffer and is now not dereferenceable, or if iter was already at the end
+//! of the buffer.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_forward_visible_line((GtkTextIter *)THIS->obj));
+}
+
+int backward_visible_line()
+//! Moves to the start of the previous visible line.  Returns TRUE if iter
+//! could be moved; i.e. if iter was at character offset 0, this function
+//! returns FALSE.  Therefore if iter was alreayd on line 0, but not at the
+//! start of the line, iter is snapped to the start of the line and the
+//! function returns TRUE. (Note that this implies that in a loop calling this
+//! function, the line number may not change on every iteration, if your first
+//! iteration is on line 0).
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_int(gtk_text_iter_backward_visible_line((GtkTextIter *)THIS->obj));
+}
+
+int forward_visible_lines(int count)
+//! Moves count visible lines forward, if possible (if count would move past
+//! the start or end of the buffer, moves to the start or end of the buffer).
+//! The return value indicates whether the iterator moved onto a
+//! dereferenceable position; if the iterator didn't move, or moved onto the
+//! end iterator, then FALSE is returned.  If count is 0, the function does
+//! nothing and returns FALSE.  If count is negative, moves backward by
+//! 0 - count lines.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE count;
+    get_all_args("forward_visible_lines",args,"%i",&count);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_forward_visible_lines((GtkTextIter *)THIS->obj,count));
+  }
+}
+
+int backward_visible_lines(int count)
+//! Moves count visible lines backward, if possible (if count would move past
+//! the start or end of the buffer, moves to the start or end of the buffer).
+//! The return value indicates whether the iterator moved onto a
+//! dereferenceable position; if the iterator didn't move, or moved onto the
+//! end iterator, then FALSE is returned.  If count is 0, the function does
+//! nothing and returns FALSE.  If count is negative, moves forward by 0 -
+//! count lines.
+{
+  pgtk_verify_inited();
+  {
+    INT_TYPE count;
+    get_all_args("backward_visible_lines",args,"%i",&count);
+    my_pop_n_elems(args);
+    push_int(gtk_text_iter_backward_visible_lines((GtkTextIter *)THIS->obj,count));
+  }
+}
+endrequire;
+
 void set_offset(int char_offset)
 //! Sets to point to char_offset.  char_offset counts from the start of the
 //! entire text buffer, starting with 0.
@@ -926,16 +985,14 @@ int forward_to_tag_toggle(?GTK2.TextTag tag)
 {
   pgtk_verify_inited();
   {
-    if (args) {
-      struct object *o1;
+    struct object *o1;
+    int res;
+    if (args)
       get_all_args("forward_to_tag_toggle",args,"%o",&o1);
-      my_pop_n_elems(args);
-      push_int(gtk_text_iter_forward_to_tag_toggle((GtkTextIter *)THIS->obj,
-			GTK_TEXT_TAG(get_gobject(o1))));
-    } else {
-      my_pop_n_elems(args);
-      push_int(gtk_text_iter_forward_to_tag_toggle((GtkTextIter *)THIS->obj,NULL));
-    }
+    res=gtk_text_iter_forward_to_tag_toggle((GtkTextIter *)THIS->obj,
+			GTK_TEXT_TAG(get_gobject(o1)));
+    my_pop_n_elems(args);
+    PGTK_PUSH_INT(res);
   }
 }
 
@@ -944,16 +1001,14 @@ int backward_to_tag_toggle(?GTK2.TextTag tag)
 {
   pgtk_verify_inited();
   {
-    if (args) {
-      struct object *o1;
+    struct object *o1;
+    int res;
+    if (args)
       get_all_args("backward_to_tag_toggle",args,"%o",&o1);
-      my_pop_n_elems(args);
-      push_int(gtk_text_iter_backward_to_tag_toggle((GtkTextIter *)THIS->obj,
-			GTK_TEXT_TAG(get_gobject(o1))));
-    } else {
-      my_pop_n_elems(args);
-      push_int(gtk_text_iter_backward_to_tag_toggle((GtkTextIter *)THIS->obj,NULL));
-    }
+    res=gtk_text_iter_backward_to_tag_toggle((GtkTextIter *)THIS->obj,
+			GTK_TEXT_TAG(get_gobject(o1)));
+    my_pop_n_elems(args);
+    PGTK_PUSH_INT(res);
   }
 }
 
@@ -987,19 +1042,20 @@ array forward_search(string str, int flags, ?GTK2.TextIter limit)
       SIMPLE_OUT_OF_MEMORY_ERROR("forward_search",sizeof(GtkTextIter));
     tb=gtk_text_iter_get_buffer((GtkTextIter *)THIS->obj);
     gtk_text_buffer_get_start_iter(tb,match_start);
-    gtk_text_buffer_get_start_iter(tb,match_end);
+    gtk_text_buffer_get_end_iter(tb,match_end);
 
     if (args>2)
       get_all_args("forward_search",args,"%s%i%o",&str,&flags,&o1);
     else
       get_all_args("forward_search",args,"%s%i",&str,&flags);
-    my_pop_n_elems(args);
     limit=(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program);
     res=gtk_text_iter_forward_search((GtkTextIter *)THIS->obj,
 		str,flags,match_start,match_end,limit);
+    my_pop_n_elems(args);
     push_int(res);
-    push_gobject(match_start);
-    push_gobject(match_end);
+    push_gobjectclass(match_start,pgtk_text_iter_program);
+    push_gobjectclass(match_end,pgtk_text_iter_program);
+    f_aggregate(3);
   }
 }
 
@@ -1021,19 +1077,20 @@ array backward_search(string str, int flags, ?GTK2.TextIter limit)
       SIMPLE_OUT_OF_MEMORY_ERROR("backward_search",sizeof(GtkTextIter));
     tb=gtk_text_iter_get_buffer((GtkTextIter *)THIS->obj);
     gtk_text_buffer_get_start_iter(tb,match_start);
-    gtk_text_buffer_get_start_iter(tb,match_end);
+    gtk_text_buffer_get_end_iter(tb,match_end);
 
     if (args>2)
       get_all_args("backward_search",args,"%s%i%o",&str,&flags,&o1);
     else
       get_all_args("backward_search",args,"%s%i",&str,&flags);
-    my_pop_n_elems(args);
     limit=(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program);
     res=gtk_text_iter_backward_search((GtkTextIter *)THIS->obj,
 		str,flags,match_start,match_end,limit);
+    my_pop_n_elems(args);
     push_int(res);
-    push_gobject(match_start);
-    push_gobject(match_end);
+    push_gobjectclass(match_start,pgtk_text_iter_program);
+    push_gobjectclass(match_end,pgtk_text_iter_program);
+    f_aggregate(3);
   }
 }
 
@@ -1049,13 +1106,13 @@ int equal(GTK2.TextIter rhs)
     int res;
     GtkTextIter *t1,*t2;
     get_all_args("equal",args,"%o",&o1);
-    my_pop_n_elems(args);
 /*    fputs("GTK2.TextIter->equal()\n",stderr); */
     t1=(GtkTextIter *)THIS->obj;
     t2=(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program);
 /*    fprintf(stderr,"obj==%p  o1==%p\n",THIS,o1);
     fprintf(stderr,"t1==%p  t2==%p\n",t1,t2); */
     res=gtk_text_iter_equal(t1,t2);
+    my_pop_n_elems(args);
 /*    fprintf(stderr,"res==%d\n",res); */
     push_int(res);
 /*    push_int(gtk_text_iter_equal((GtkTextIter *)THIS->obj,
@@ -1073,10 +1130,12 @@ int compare(GTK2.TextIter rhs)
   pgtk_verify_inited();
   {
     struct object *o1;
+    int res;
     get_all_args("compare",args,"%o",&o1);
+    res=gtk_text_iter_equal((GtkTextIter *)THIS->obj,
+		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
     my_pop_n_elems(args);
-    push_int(gtk_text_iter_equal((GtkTextIter *)THIS->obj,
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program)));
+    PGTK_PUSH_INT(res);
   }
 }
 
@@ -1087,15 +1146,17 @@ int in_range(GTK2.TextIter start, GTK2.TextIter end)
   pgtk_verify_inited();
   {
     struct object *o1,*o2;
+    int res;
     get_all_args("in_range",args,"%o%o",&o1,&o2);
-    my_pop_n_elems(args);
-    push_int(gtk_text_iter_in_range((GtkTextIter *)THIS->obj,
+    res=gtk_text_iter_in_range((GtkTextIter *)THIS->obj,
 		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
-		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program)));
+		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program));
+    my_pop_n_elems(args);
+    PGTK_PUSH_INT(res);
   }
 }
 
-int order(GTK2.TextIter second)
+void order(GTK2.TextIter second)
 //! Swaps this iter for second if second comes first in the buffer.  That is,
 //! ensures that this iterator and second are in sequence.  Most text
 //! buffer functions that take a range call this automatically on your
@@ -1107,7 +1168,6 @@ int order(GTK2.TextIter second)
   {
     struct object *o1;
     get_all_args("order",args,"%o",&o1);
-    my_pop_n_elems(args);
     gtk_text_iter_order((GtkTextIter *)THIS->obj,
 		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
   }
