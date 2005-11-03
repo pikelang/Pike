@@ -53,7 +53,7 @@ compile1:
         @echo "Original CFLAGS:$(CFLAGS)"
         @echo "Modified CFLAGS:`echo $(CFLAGS) | sed -e 's/-g[^ ]*//g' -e 's/-W[^ ]*//g'`"
 	@$(MAKE) OBJS="`cat files_to_compile`" \
-               CFLAGS="`echo $(CFLAGS) | sed -e 's/-g[^ ]*//g' -e 's/-W[^ ]*//g'`" \
+               CFLAGS="`echo $(CFLAGS) | sed -e 's/ -g[^ ]*/ /g' -e 's/ -W[^ ]*/ /g'`" \
                   all
 
 compile2: compile1
@@ -72,18 +72,18 @@ depend:
 
 # Some hand-made dependencies:
 
-$(OBJS) : $(SRCDIR)/pgtk.h pgtk_config.h \
- $(SRCDIR)/../../global.h \
- $(SRCDIR)/../../svalue.h \
- $(SRCDIR)/../../program.h \
- $(SRCDIR)/../../pike_types.h \
- $(SRCDIR)/../../interpret.h \
- $(SRCDIR)/../../module_support.h \
- $(SRCDIR)/../../pike_error.h \
- $(SRCDIR)/../../array.h \
- $(SRCDIR)/../../backend.h \
- $(SRCDIR)/../../stralloc.h \
- $(SRCDIR)/../../mapping.h \
- $(SRCDIR)/../../object.h \
- $(SRCDIR)/../../threads.h \
- $(SRCDIR)/../../operators.h
+#$(OBJS) : $(SRCDIR)/pgtk.h pgtk_config.h \
+# $(PIKE_SRC_DIR)/global.h \
+# $(PIKE_SRC_DIR)/svalue.h \
+# $(PIKE_SRC_DIR)/program.h \
+# $(PIKE_SRC_DIR)/pike_types.h \
+# $(PIKE_SRC_DIR)/interpret.h \
+# $(PIKE_SRC_DIR)/module_support.h \
+# $(PIKE_SRC_DIR)/pike_error.h \
+# $(PIKE_SRC_DIR)/array.h \
+# $(PIKE_SRC_DIR)/backend.h \
+# $(PIKE_SRC_DIR)/stralloc.h \
+# $(PIKE_SRC_DIR)/mapping.h \
+# $(PIKE_SRC_DIR)/object.h \
+# $(PIKE_SRC_DIR)/threads.h \
+# $(PIKE_SRC_DIR)/operators.h
