@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.200 2005/05/17 22:27:42 nilsson Exp $
+|| $Id: stralloc.c,v 1.201 2005/11/03 16:19:50 grubba Exp $
 */
 
 #include "global.h"
@@ -205,6 +205,7 @@ PMOD_EXPORT void low_set_index(struct pike_string *s, ptrdiff_t pos,
     default:
       Pike_fatal("Illegal shift size!\n");
   }
+  s->flags |= STRING_NOT_HASHED;
 }
 
 #ifdef PIKE_DEBUG
@@ -546,6 +547,13 @@ static void stralloc_rehash(void)
 
 /* Use the BLOCK_ALLOC() stuff for short strings */
 
+#undef INIT_BLOCK
+#define INIT_BLOCK(NEW_STR) do {				\
+    (NEW_STR)->refs = 1;					\
+    (NEW_STR)->flags =						\
+      STRING_NOT_HASHED|STRING_NOT_SHARED|STRING_IS_SHORT;	\
+  } while(0)
+
 #define SHORT_STRING_BLOCK	256
 #define SHORT_STRING_THRESHOLD	15 /* % 4 === -1 */
 
@@ -567,6 +575,9 @@ struct short_pike_string2 {
 BLOCK_ALLOC(short_pike_string0, SHORT_STRING_BLOCK)
 BLOCK_ALLOC(short_pike_string1, SHORT_STRING_BLOCK)
 BLOCK_ALLOC(short_pike_string2, SHORT_STRING_BLOCK)
+
+#undef INIT_BLOCK
+#define INIT_BLOCK(x)
 
 #define really_free_short_pike_string(s) do { \
      if (!s->size_shift) { \
@@ -605,7 +616,9 @@ PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
     t=(struct pike_string *)alloc_short_pike_string0();
   } else {
     t=(struct pike_string *)xalloc(len + sizeof(struct pike_string));
+    t->flags = STRING_NOT_HASHED | STRING_NOT_SHARED;
   }
+  t->refs = 1;
   t->str[len]=0;
   t->len=len;
   t->size_shift=0;
@@ -615,12 +628,20 @@ PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
 static void link_pike_string(struct pike_string *s, size_t hval)
 {
   size_t h;
+
+#ifdef PIKE_DEBUG
+  if (!(s->flags & STRING_NOT_SHARED)) {
+    debug_dump_pike_string(s, 70);
+    Pike_fatal("String already linked.\n");
+  }
+#endif
+
   LOCK_BUCKET(hval);
   h=HMODULO(hval);
-  s->refs = 0;
   s->next = base_table[h];
   base_table[h] = s;
   s->hval=hval;
+  s->flags &= ~(STRING_NOT_HASHED|STRING_NOT_SHARED);
   num_strings++;
   UNLOCK_BUCKET(hval);
 
@@ -710,11 +731,20 @@ PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int s
     }
   } else {
     t=(struct pike_string *)xalloc((len<<shift) + sizeof(struct pike_string));
+    t->flags = STRING_NOT_HASHED|STRING_NOT_SHARED;
   }
+  t->refs = 1;
   t->len=len;
   t->size_shift=shift;
   low_set_index(t,len,0);
   return t;
+}
+
+PMOD_EXPORT void hash_string(struct pike_string *s)
+{
+  if (!(s->flags & STRING_NOT_HASHED)) return;
+  s->hval=do_hash(s);
+  s->flags &= ~STRING_NOT_HASHED;
 }
 
 /*
@@ -728,7 +758,10 @@ PMOD_EXPORT struct pike_string *low_end_shared_string(struct pike_string *s)
   struct pike_string *s2;
 
   len = s->len;
-  h = do_hash(s);
+  if (s->flags & STRING_NOT_HASHED) {
+    h = s->hval = do_hash(s);
+    s->flags &= ~STRING_NOT_HASHED;
+  }
   s2 = internal_findstring(s->str, len, s->size_shift, h);
 #ifdef PIKE_DEBUG
   if(s2==s) 
@@ -737,12 +770,12 @@ PMOD_EXPORT struct pike_string *low_end_shared_string(struct pike_string *s)
 
   if(s2)
   {
-    really_free_pike_string(s);
+    free_string(s);
     s = s2;
+    add_ref(s);
   }else{
     link_pike_string(s, h);
   }
-  add_ref(s);
 
   return s;
   
@@ -767,14 +800,14 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
 	case 0:
 	  s2=begin_shared_string(s->len);
 	  convert_2_to_0(STR0(s2),STR2(s),s->len);
-	  really_free_pike_string(s);
+	  free_string(s);
 	  s=s2;
 	  break;
 
 	case 1:
 	  s2=begin_wide_shared_string(s->len,1);
 	  convert_2_to_1(STR1(s2),STR2(s),s->len);
-	  really_free_pike_string(s);
+	  free_string(s);
 	  s=s2;
 	  /* Fall though */
       }
@@ -785,7 +818,7 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
       {
 	s2=begin_shared_string(s->len);
 	convert_1_to_0(STR0(s2),STR1(s),s->len);
-	really_free_pike_string(s);
+	free_string(s);
 	s=s2;
       }
       break;
@@ -812,7 +845,7 @@ PMOD_EXPORT struct pike_string *end_and_resize_shared_string(struct pike_string 
     return end_shared_string(str);
   }
   tmp = make_shared_binary_pcharp(MKPCHARP_STR(str),len);
-  really_free_pike_string(str);
+  free_string(str);
   return tmp;
 }
 
@@ -968,6 +1001,7 @@ PMOD_EXPORT void unlink_pike_string(struct pike_string *s)
 #endif
   num_strings--;
   UNLOCK_BUCKET(s->hval);
+  s->flags |= STRING_NOT_SHARED;
 }
 
 PMOD_EXPORT void do_free_string(struct pike_string *s)
@@ -1011,7 +1045,8 @@ PMOD_EXPORT void really_free_string(struct pike_string *s)
 	  s->size_shift);
   }
 #endif
-  unlink_pike_string(s);
+  if (!(s->flags & STRING_NOT_SHARED))
+    unlink_pike_string(s);
   really_free_pike_string(s);
   GC_FREE_SIMPLE_BLOCK(s);
 }
@@ -1487,7 +1522,7 @@ PMOD_EXPORT struct pike_string *realloc_unlinked_string(struct pike_string *a,
     } else {
       MEMCPY(r->str, a->str, size<<a->size_shift);
     }
-    really_free_pike_string(a);
+    free_string(a);
   }
 
   r->len=size;
@@ -1660,7 +1695,7 @@ PMOD_EXPORT struct pike_string *modify_shared_string(struct pike_string *a,
       old = internal_findstring(a->str, a->len, a->size_shift, a->hval);
       if (old) {
 	/* The new string is equal to some old string. */
-	really_free_pike_string(a);
+	free_string(a);
 	add_ref(a = old);
       } else {
 	link_pike_string(a, a->hval);
@@ -1705,6 +1740,7 @@ PMOD_EXPORT struct pike_string *add_and_free_shared_strings(struct pike_string *
     a = realloc_shared_string(a,alen + b->len);
     MEMCPY(a->str+(alen<<a->size_shift),b->str,b->len<<b->size_shift);
     free_string(b);
+    a->flags |= STRING_NOT_HASHED;
     return end_shared_string(a);
   }else{
     struct pike_string *ret=add_shared_strings(a,b);
@@ -2100,7 +2136,7 @@ PMOD_EXPORT void string_build_mkspace(struct string_builder *s,
     pike_string_cpy(MKPCHARP_STR(n),s->s);
     n->len=s->s->len;
     s->s->len = s->malloced;	/* Restore the real length */
-    really_free_pike_string(s->s);
+    free_string(s->s);
     s->malloced=l;
     s->s=n;
   }
@@ -2778,7 +2814,7 @@ PMOD_EXPORT void reset_string_builder(struct string_builder *s)
 PMOD_EXPORT void free_string_builder(struct string_builder *s)
 {
   s->s->len = s->malloced;
-  really_free_pike_string(s->s);
+  free_string(s->s);
 }
 
 PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s)
