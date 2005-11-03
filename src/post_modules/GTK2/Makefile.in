@@ -33,8 +33,8 @@ doc0:
 
 doc1:
 	$(RUNPIKE) $(SRCDIR)/build_pgtk.pike --source='$(SRCDIR)/source/'\
-                   --destination="$(SRCDIR)/refdoc/" \
-                   $(SRCDIR)/output/doc-pikeref.pike
+	           --destination="$(SRCDIR)/refdoc/" \
+	           $(SRCDIR)/output/doc-pikeref.pike
 
 doc2: doc1
 
@@ -43,18 +43,18 @@ compile0:
 	$(MAKE) all
 
 compile1:
-	$(RUNPIKE) $(SRCDIR)/build_pgtk.pike --source='$(SRCDIR)/source/'\
-                   $(SRCDIR)/output/few.pike
+	$(RUNPIKE) $(SRCDIR)/build_pgtk.pike --source='$(SRCDIR)/source/' \
+	           $(SRCDIR)/output/few.pike
 	@if [ "x@VPATH_KLUDGE@" = "xyes" ]; then \
 	  for f in `cat files_to_compile | sed -e 's/\.o/\.c/g'`; do \
 	    test -f "$$f" || ln -s "$(srcdir)/$$f" "$$f"; \
 	  done; \
 	else :; fi
-        @echo "Original CFLAGS:$(CFLAGS)"
-        @echo "Modified CFLAGS:`echo $(CFLAGS) | sed -e 's/-g[^ ]*//g' -e 's/-W[^ ]*//g'`"
+	@echo "Original CFLAGS:$(CFLAGS)"
+	@echo "Modified CFLAGS:`echo $(CFLAGS) | sed -e 's/-g[^ ]*//g' -e 's/-W[^ ]*//g'`"
 	@$(MAKE) OBJS="`cat files_to_compile`" \
-               CFLAGS="`echo $(CFLAGS) | sed -e 's/ -g[^ ]*/ /g' -e 's/ -W[^ ]*/ /g'`" \
-                  all
+	         CFLAGS="`echo $(CFLAGS) | sed -e 's/ -g[^ ]*/ /g' -e 's/ -W[^ ]*/ /g'`" \
+	         all
 
 compile2: compile1
 
@@ -72,18 +72,18 @@ depend:
 
 # Some hand-made dependencies:
 
-#$(OBJS) : $(SRCDIR)/pgtk.h pgtk_config.h \
-# $(PIKE_SRC_DIR)/global.h \
-# $(PIKE_SRC_DIR)/svalue.h \
-# $(PIKE_SRC_DIR)/program.h \
-# $(PIKE_SRC_DIR)/pike_types.h \
-# $(PIKE_SRC_DIR)/interpret.h \
-# $(PIKE_SRC_DIR)/module_support.h \
-# $(PIKE_SRC_DIR)/pike_error.h \
-# $(PIKE_SRC_DIR)/array.h \
-# $(PIKE_SRC_DIR)/backend.h \
-# $(PIKE_SRC_DIR)/stralloc.h \
-# $(PIKE_SRC_DIR)/mapping.h \
-# $(PIKE_SRC_DIR)/object.h \
-# $(PIKE_SRC_DIR)/threads.h \
-# $(PIKE_SRC_DIR)/operators.h
+$(OBJS) : $(SRCDIR)/pgtk.h pgtk_config.h \
+	$(PIKE_SRC_DIR)/global.h \
+	$(PIKE_SRC_DIR)/svalue.h \
+	$(PIKE_SRC_DIR)/program.h \
+	$(PIKE_SRC_DIR)/pike_types.h \
+	$(PIKE_SRC_DIR)/interpret.h \
+	$(PIKE_SRC_DIR)/module_support.h \
+	$(PIKE_SRC_DIR)/pike_error.h \
+	$(PIKE_SRC_DIR)/array.h \
+	$(PIKE_SRC_DIR)/backend.h \
+	$(PIKE_SRC_DIR)/stralloc.h \
+	$(PIKE_SRC_DIR)/mapping.h \
+	$(PIKE_SRC_DIR)/object.h \
+	$(PIKE_SRC_DIR)/threads.h \
+	$(PIKE_SRC_DIR)/operators.h
