@@ -1,0 +1,11 @@
+require gtksourceview;
+
+class GTK2.LineCommentTag;
+inherit GTK2.SourceTag;
+
+%{
+#include "gtksourceview/gtksourceview.h"
+%}
+
+void create(string id, string name, string pattern_start);
+//! Creates a new line comment tag object with the provided arguments.
