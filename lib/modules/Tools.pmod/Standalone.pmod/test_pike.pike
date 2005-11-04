@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.109 2005/10/18 08:00:52 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.110 2005/11/04 21:57:41 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -327,11 +327,17 @@ int main(int argc, array(string) argv)
 	case "fail": fail=1; break;
         case "forked": {
  	  array(string) orig_argv = backtrace()[0][3];
-	  int i = search(orig_argv, argv[0]);
+	  int i = search(orig_argv, "-x");
 	  if (i < 0) {
-	    werror("Forked operation failed: Failed to find %O in %O\n",
-		   argv[0], orig_argv);
-	    break;
+	    i = search(orig_argv, argv[0]);
+	    if (i < 0) {
+	      werror("Forked operation failed: Failed to find %O in %O\n",
+		     argv[0], orig_argv);
+	      break;
+	    }
+	  } else {
+	    // pike -x test_pike
+	    i++;
 	  }
 	  forked = orig_argv[..i];
 	  break;
