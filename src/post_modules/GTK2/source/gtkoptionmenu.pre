@@ -1,7 +1,7 @@
 not gtk24;
 
-class GTK.OptionMenu;
-inherit GTK.Button;
+class GTK2.OptionMenu;
+inherit GTK2.Button;
 
 //! A OptionMenu is a widget that allows the user to choose from a
 //! list of valid choices. The OptionMenu displays the selected
