@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.2 2005/11/03 13:49:47 ldillon Exp $
+|| $Id: support.c,v 1.3 2005/11/04 19:07:34 grubba Exp $
 */
 
 #include <version.h>
@@ -1048,9 +1048,12 @@ void pgtk_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
     return;
   }
 /*  if (G_TYPE_IS_OBJECT(gt)) { */
-  if (G_TYPE_IS_OBJECT(gt) || gt==GDK_TYPE_DISPLAY || 
+  if (G_TYPE_IS_OBJECT(gt) ||
+#ifdef HAVE_GTK22
+      gt==GDK_TYPE_DISPLAY || gt==GDK_TYPE_SCREEN ||
+#endif
       gt==GDK_TYPE_PIXBUF || gt==GDK_TYPE_PIXMAP || gt==GDK_TYPE_IMAGE ||
-      gt==GDK_TYPE_WINDOW || gt==GDK_TYPE_VISUAL || gt==GDK_TYPE_SCREEN ||
+      gt==GDK_TYPE_WINDOW || gt==GDK_TYPE_VISUAL ||
       gt==GDK_TYPE_DRAWABLE || gt==GDK_TYPE_GC) {
     if (sv->type==PIKE_T_OBJECT && get_gobject(sv->u.object) &&
 		G_IS_OBJECT(get_gobject(sv->u.object)))
