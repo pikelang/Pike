@@ -1,0 +1,140 @@
+require gtksourceview;
+
+class GTK2.SourceView;
+inherit GTK2.TextView;
+
+//! Properties:
+//! int auto-indent
+//! int highlight-current-line
+//! int insert-spaces-instead-of-tabs
+//! int margin
+//! int show-line-markers
+//! int show-line-numbers
+//! int show-margin
+//! int smart-home-end
+//! int tabs-width
+
+signal redo;
+signal undo;
+
+%{
+#include "gtksourceview/gtksourceview.h"
+%}
+
+void create(?GTK2.SourceBuffer buffer)
+//! Create a new W(SourceView).  If a buffer isn't specified, an empty default
+//! buffer will be created.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    struct object *o1;
+    GtkWidget *gs;
+    get_all_args("create",args,"%o",&o1);
+    gs=gtk_source_view_new_with_buffer(
+			GTK_SOURCE_BUFFER(get_gobject(o1)));
+    THIS->obj=G_OBJECT(gs);
+  } else {
+    GtkWidget *gs;
+    gs=gtk_source_view_new();
+    THIS->obj=G_OBJECT(gs);
+  }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
+
+void set_show_line_numbers(int setting);
+//! If true, line numbers will be displayed beside the text.
+
+int get_show_line_numbers();
+//! Returns whether line numbers are displayed beside the text.
+
+void set_show_line_markers(int setting);
+//! If true, line makers will be displayed beside the text.
+
+int get_show_line_numbers();
+//! Returns whether line markers are displayed beside the text.
+
+void set_tabs_width(int width);
+//! Sets the width of tabulation in characters.
+
+int get_tabs_width();
+//! Returns the width of tabulation in characters.
+
+void set_auto_indent(int setting);
+//! If true, auto indentation of text is enabled.
+
+int get_auto_indent();
+//! Returns whether auto indentation of text is enabled.
+
+void set_insert_spaces_instead_of_tabs(int setting);
+//! If true, any tabulator character inserted is replaced by a group of space
+//! characters.
+
+int get_insert_spaces_instead_of_tabs();
+//! Returns whether when inserting a tabulator character it should be replaced
+//! by a group of space characters.
+
+void set_show_margin(int setting);
+//! If true, a margin is displayed.
+
+int get_show_margin();
+//! Returns whether a margin is displayed.
+
+void set_margin(int setting);
+//! Sets the position of the right margin in the given view.
+
+int get_margin();
+//! Gets the position of the right margin.
+
+void set_marker_pixbuf(string type, GDK2.Pixbuf pixbuf)
+//! Associates a given pixbuf with a given marker type.
+{
+  pgtk_verify_inited();
+  {
+    char *type;
+    struct object *o1;
+    get_all_args("set_marker_pixbuf",args,"%s%o",&type,&o1);
+    gtk_source_view_set_marker_pixbuf(GTK_SOURCE_VIEW(THIS->obj),type,
+			GDK_PIXBUF(get_gobject(o1)));
+  }
+  RETURN_THIS();
+}
+
+GDK2.Pixbuf get_marker_pixbuf(string type)
+//! Gets the pixbuf which is associated with the given type.
+{
+  pgtk_verify_inited();
+  {
+    char *type;
+    GdkPixbuf *gp;
+    get_all_args("get_marker_pixbuf",args,"%s",&type);
+    gp=gtk_source_view_get_marker_pixbuf(GTK_SOURCE_VIEW(THIS->obj),type);
+    my_pop_n_elems(args);
+    if (gp)
+      push_gobject(gp);
+    else
+      push_int(0);
+  }
+}
+
+void set_smart_home_end(int setting);
+//! If true, HOME and END keys will move to the first/last non-space character
+//! of the line before moving to the start/end.
+
+int get_smart_home_end();
+//! Returns whether HOME and END keys will move to the first/last non-space
+//! character of the line before moving to the start/end.
+
+/* from GtkSourceStyleScheme */
+GTK2.SourceStyleScheme get_default()
+//! Gets the default style scheme.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GtkSourceStyleScheme *gss;
+    gss=gtk_source_style_scheme_get_default();
+    push_gobjectclass(gss,pgtk_source_style_scheme_program);
+  }
+}

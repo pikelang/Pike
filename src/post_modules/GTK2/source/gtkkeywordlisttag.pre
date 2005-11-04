@@ -1,0 +1,45 @@
+require gtksourceview;
+
+class GTK2.KeywordListTag;
+inherit GTK2.SourceTag;
+
+%{
+#include "gtksourceview/gtksourceview.h"
+%}
+
+void create(string id, string name, array(string) keywords,
+	    int case_sensitive, int match_empty_string_at_beginning,
+	    int match_empty_string_at_end, string beginning_regex,
+	    string end_regex)
+//! Creates a new keyword list tag object with the provided arguments.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    GtkTextTag *gtt;
+    char *id,*name,*begin,*end;
+    int sense,matchb,matche;
+    struct array *a;
+    struct svalue *sv;
+    GSList *gsl=NULL;
+    int i;
+    get_all_args("create",args,"%s%s%A%i%i%i%s%s",&id,&name,&a,&sense,
+		 &matchb,&matche,&begin,&end);
+    if (a==NULL || a->size<1) {
+      THIS->obj=0;
+      push_int(0);
+      return;
+    }
+    for (i=0; i<a->size; i++) {
+      if ((ITEM(a)+i)->type!=PIKE_T_STRING)
+	continue;
+      gsl=g_slist_prepend(gsl,STR0((ITEM(a)+i)->u.string));
+    }
+    gtt=gtk_keyword_list_tag_new(id,name,gsl,sense,matchb,matche,
+			begin,end);
+    THIS->obj=G_OBJECT(gtt);
+  }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
+

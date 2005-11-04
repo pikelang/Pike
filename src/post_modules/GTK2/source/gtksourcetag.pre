@@ -1,0 +1,92 @@
+require gtksourceview;
+
+class GTK2.SourceTag;
+inherit GTK2.TextTag;
+
+%{
+#include "gtksourceview/gtksourceview.h"
+#include "gtksourceview/gtksourcetag.h"
+%}
+
+//! Properties:
+//! string id
+//! GTK2.SourceTagStyle tag-style
+
+mapping(string:mixed) get_style()
+//! Gets the style associated with this tag.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GtkSourceTagStyle *gs;
+    GdkColor *fg,*bg;
+    gs=gtk_source_tag_get_style(GTK_SOURCE_TAG(THIS->obj));
+    if (gs) {
+      push_text("default"); push_int(gs->is_default);
+      push_text("mask"); push_int(gs->mask);
+      fg=(GdkColor *)g_malloc(sizeof(GdkColor));
+      bg=(GdkColor *)g_malloc(sizeof(GdkColor));
+      if (fg==NULL || bg==NULL)
+	SIMPLE_OUT_OF_MEMORY_ERROR("get_style",sizeof(GdkColor));
+      *fg=gs->foreground;
+      *bg=gs->background;
+      push_text("foreground"); push_gdkobject(fg,color);
+      push_text("background"); push_gdkobject(bg,color);
+      push_text("italic"); push_int(gs->italic);
+      push_text("bold"); push_int(gs->bold);
+      push_text("underline"); push_int(gs->underline);
+      push_text("strikethrough"); push_int(gs->strikethrough);
+      f_aggregate_mapping(16);
+    } else
+      push_int(0);
+  }
+}
+
+void set_style(mapping(string:mixed) style)
+//! Associates a style with this tag.
+//! See GTK2.SourceBuffer->set_bracket_match_style() for format.
+{
+  pgtk_verify_inited();
+  {
+    GtkSourceTagStyle *sts;
+    struct mapping *m;
+    struct svalue *sv;
+    get_all_args("set_style",args,"%m",&m);
+    if (m==NULL)
+      Pike_error("No mapping.\n");
+    sts=gtk_source_tag_style_new();
+    if (sts==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("set_style",sizeof(GtkSourceTagStyle));
+    sv=simple_mapping_string_lookup(m,"default");
+    if (sv)
+      sts->is_default=PGTK_GETINT(sv);
+    sv=simple_mapping_string_lookup(m,"mask");
+    if (sv)
+      sts->mask=PGTK_GETINT(sv);
+    sv=simple_mapping_string_lookup(m,"foreground");
+    if (sv) {
+      if (sv->type==PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
+	sts->foreground=*(GdkColor *)get_gdkobject(sv->u.object,color);
+    }
+    sv=simple_mapping_string_lookup(m,"background");
+    if (sv) {
+      if (sv->type==PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
+	sts->background=*(GdkColor *)get_gdkobject(sv->u.object,color);
+    }
+    sv=simple_mapping_string_lookup(m,"italic");
+    if (sv)
+      sts->italic=PGTK_GETINT(sv);
+    sv=simple_mapping_string_lookup(m,"bold");
+    if (sv)
+      sts->bold=PGTK_GETINT(sv);
+    sv=simple_mapping_string_lookup(m,"underline");
+    if (sv)
+      sts->underline=PGTK_GETINT(sv);
+    sv=simple_mapping_string_lookup(m,"strikethrough");
+    if (sv)
+      sts->strikethrough=PGTK_GETINT(sv);
+    gtk_source_tag_set_style(GTK_SOURCE_TAG(THIS->obj),sts);
+    gtk_source_tag_style_free(sts);
+  }
+  RETURN_THIS();
+}

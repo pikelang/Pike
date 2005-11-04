@@ -1,0 +1,29 @@
+require gtksourceview;
+
+class GTK2.SourceMarker;
+
+%{
+#include "gtksourceview/gtksourceview.h"
+#include "gtksourceview/gtksourcemarker.h"
+%}
+
+void set_marker_type(string type);
+//! Not documented.
+
+string get_marker_type();
+//! Gets the marker type of this marker.
+
+int get_line();
+//! Gets the line number of this marker.
+
+string get_name();
+//! Gets the name of this marker.
+
+GTK2.SourceBuffer get_buffer();
+//! Gets the buffer associated with this marker.
+
+GTK2.SourceMarker next();
+//! Gets the next marker after this.
+
+GTK2.SourceMarker prev();
+//! Gets the previous marker before this.

@@ -1,0 +1,11 @@
+require gtksourceview;
+
+class GTK2.PatternTag;
+inherit GTK2.SourceTag;
+
+%{
+#include "gtksourceview/gtksourceview.h"
+%}
+
+void create(string id, string name, string pattern);
+//! Creates a new pattern tag object with the provided arguments.

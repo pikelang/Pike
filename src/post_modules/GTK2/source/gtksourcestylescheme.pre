@@ -1,0 +1,48 @@
+require gtksourceview;
+
+class GTK2.SourceStyleScheme;
+
+%{
+#include "gtksourceview/gtksourceview.h"
+%}
+
+mapping(string:mixed) get_tag_style(string name)
+//! Gets the tag associated with the given name in this style.
+{
+  pgtk_verify_inited();
+  {
+    GtkSourceTagStyle *gs;
+    char *name;
+    GdkColor *fg,*bg;
+    get_all_args("get_tag_style",args,"%s",&name);
+    gs=gtk_source_style_scheme_get_tag_style((GtkSourceStyleScheme *)THIS->obj,
+			name);
+    my_pop_n_elems(args);
+    if (gs) {
+      push_text("default"); push_int(gs->is_default);
+      push_text("mask"); push_int(gs->mask);
+      fg=(GdkColor *)g_malloc(sizeof(GdkColor));
+      bg=(GdkColor *)g_malloc(sizeof(GdkColor));
+      if (fg==NULL || bg==NULL)
+	SIMPLE_OUT_OF_MEMORY_ERROR("get_tag_style",sizeof(GdkColor));
+      *fg=gs->foreground;
+      *bg=gs->background;
+      push_text("foreground"); push_gdkobject(fg,color);
+      push_text("background"); push_gdkobject(bg,color);
+      push_text("italic"); push_int(gs->italic);
+      push_text("bold"); push_int(gs->bold);
+      push_text("underline"); push_int(gs->underline);
+      push_text("strikethrough"); push_int(gs->strikethrough);
+      f_aggregate_mapping(16);
+    } else
+      push_int(0);
+  }
+}
+
+string get_name()
+//! Gets the name of this scheme.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  push_text(gtk_source_style_scheme_get_name((GtkSourceStyleScheme *)THIS->obj));
+}

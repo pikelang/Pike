@@ -1,0 +1,100 @@
+require gtksourceview;
+
+class GTK2.SourceIter;
+inherit GTK2.TextIter;
+
+%{
+#include "gtksourceview/gtksourceview.h"
+#include "gtksourceview/gtksourceiter.h"
+%}
+add_global {
+#include "gtksourceview/gtksourceiter.h"
+};
+
+constant int GTK_SOURCE_SEARCH_VISIBLE_ONLY;
+constant int GTK_SOURCE_SEARCH_TEXT_ONLY;
+constant int GTK_SOURCE_SEARCH_CASE_INSENSITIVE;
+
+array backward_search(string str, int flags, ?GTK2.TextIter limit)
+//! Same as GTK2.TextIter->backward_search(), but supports case insensitive
+//! searching.
+{
+  pgtk_verify_inited();
+  {
+    GtkTextIter *match_start,*match_end,*limit=NULL;
+    GtkTextBuffer *sb;
+    char *str;
+    INT_TYPE flags;
+    struct object *o1;
+    int res;
+
+    match_start=g_malloc(sizeof(GtkTextIter));
+    match_end=g_malloc(sizeof(GtkTextIter));
+    if (match_start==NULL || match_end==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("backward_search",sizeof(GtkTextIter));
+    sb=gtk_text_iter_get_buffer((GtkTextIter *)THIS->obj);
+    gtk_text_buffer_get_start_iter(sb,match_start);
+    gtk_text_buffer_get_end_iter(sb,match_end);
+
+    if (args>2)
+      get_all_args("backward_search",args,"%s%i%o",&str,&flags,&o1);
+    else
+      get_all_args("backward_search",args,"%s%i",&str,&flags);
+    res=gtk_source_iter_backward_search((GtkTextIter *)THIS->obj,
+			str,flags,match_start,match_end,limit);
+    my_pop_n_elems(args);
+    push_int(res);
+    push_gobjectclass(match_start,pgtk_text_iter_program);
+    push_gobjectclass(match_end,pgtk_text_iter_program);
+    f_aggregate(3);
+  }
+}
+
+array forward_search(string str, int flags, ?GTK2.TextIter limit)
+//! Same as GTK2.TextIter->backward_search(), but supports case insensitive
+//! searching.
+{
+  pgtk_verify_inited();
+  {
+    GtkTextIter *match_start,*match_end,*limit=NULL;
+    GtkTextBuffer *sb;
+    char *str;
+    INT_TYPE flags;
+    struct object *o1;
+    int res;
+
+    match_start=g_malloc(sizeof(GtkTextIter));
+    match_end=g_malloc(sizeof(GtkTextIter));
+    if (match_start==NULL || match_end==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("backward_search",sizeof(GtkTextIter));
+    sb=gtk_text_iter_get_buffer((GtkTextIter *)THIS->obj);
+    gtk_text_buffer_get_start_iter(sb,match_start);
+    gtk_text_buffer_get_end_iter(sb,match_end);
+
+    if (args>2)
+      get_all_args("forward_search",args,"%s%i%o",&str,&flags,&o1);
+    else
+      get_all_args("forward_search",args,"%s%i",&str,&flags);
+    res=gtk_source_iter_forward_search((GtkTextIter *)THIS->obj,
+			str,flags,match_start,match_end,limit);
+    my_pop_n_elems(args);
+    push_int(res);
+    push_gobjectclass(match_start,pgtk_text_iter_program);
+    push_gobjectclass(match_end,pgtk_text_iter_program);
+    f_aggregate(3);
+  }
+}
+
+int find_matching_bracket()
+//! Tries to match the bracket character currently at this iter with its
+//! opening/closing counterpart, and if found moves iter to the position where
+//! it was found.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    int res;
+    res=gtk_source_iter_find_matching_bracket((GtkTextIter *)THIS->obj);
+    push_int(res);
+  }
+}

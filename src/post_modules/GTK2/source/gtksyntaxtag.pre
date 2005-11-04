@@ -1,0 +1,12 @@
+require gtksourceview;
+
+class GTK2.SyntaxTag;
+inherit GTK2.SourceTag;
+
+%{
+#include "gtksourceview/gtksourceview.h"
+%}
+
+void create(string id, string name, string pattern_start,
+	    string pattern_end);
+//! Creates a new syntax tag object with the provided arguments.

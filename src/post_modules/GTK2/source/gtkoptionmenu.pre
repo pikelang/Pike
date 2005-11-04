@@ -1,0 +1,44 @@
+not gtk24;
+
+class GTK.OptionMenu;
+inherit GTK.Button;
+
+//! A OptionMenu is a widget that allows the user to choose from a
+//! list of valid choices. The OptionMenu displays the selected
+//! choice. When activated the OptionMenu displays a popup W(Menu)
+//! which allows the user to make a new choice.
+//! <p>
+//! IMG: GTK.OptionMenu()->set_menu(GTK.Menu()->add( GTK.Menu_item("Option 1") ));
+//! </p>
+//! Properties:
+//! GTK2.Menu menu
+//! Style properties:
+//! int indicator-size
+//! int indicator-spacing
+
+void create();
+//! Create a new option menu widget
+
+void set_menu(GTK2.Menu(GTK2.Widget) menu);
+//! Provides the GtkMenu that is popped up to allow the user to choose
+//! a new value. You should provide a simple menu avoiding the use of
+//! tearoff menu items, submenus, and accelerators.
+
+void remove_menu();
+//! Remove the menu.
+
+void set_history(int index);
+//! Selects the menu item specified by index making it the newly
+//! selected value for the option menu.
+
+int get_history();
+//! Retrieves the index of the currently selected menu item.  The menu items
+//! are numbered from top to bottom, starting with 0.
+
+GTK2.Menu get_menu();
+//! Returns the W(Menu) associated with the OptionMenu.
+
+signal changed;
+
+endnot;
+

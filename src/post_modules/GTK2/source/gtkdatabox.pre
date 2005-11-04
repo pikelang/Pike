@@ -1,0 +1,299 @@
+require gtkdatabox;
+
+class GTK2.Databox;
+inherit GTK2.Vbox;
+
+%{
+#include <gtkdatabox.h>
+%}
+add_global {
+#include <gtkdatabox.h>
+};
+
+//! GtkDatabox is designed to display large amounts of numerical data
+//! fast and easy. Thousands of data points (X and Y coordinate) may be
+//! displayed without any problems, zooming and scrolling as well as
+//! optional rulers are already included.
+//! <p>
+//! The widget may be used as display for oscilloscopes or other
+//! applications that need to display fast changes in their data.
+//! </p>
+//! IMG:   GTK2.Databox x=GTK2.Databox(); x->data_add_x_y(3, ({ 1.0, 0.5, 0.0 }), ({1.0, -1.0, 0.0}),GDK2.Color(Image.Color.red), GTK2.DataboxLines,2); x->rescale(); x->set_size_request(300,300); return x;
+
+constant int GTK_DATABOX_NOT_DISPLAYED;
+constant int GTK_DATABOX_POINTS;
+constant int GTK_DATABOX_LINES;
+constant int GTK_DATABOX_BARS;
+constant int GTK_DATABOX_CROSS_SIMPLE;
+constant int GTK_DATABOX_GRID;
+
+signal zoomed;
+signal marked;
+signal selection_started;
+signal selection_changed;
+signal selection_stopped;
+signal selection_canceled;
+
+void create();
+//! Create a new databox widget
+
+void redraw();
+//! Redraw.
+
+%{
+struct data_wrapper {
+  gfloat *X,*Y;
+};
+%}
+
+/*
+void data_add(array(float) X, array(float) Y, GDK2.Color color,
+	      int type, int dot_size)
+//! Add data to the box.
+{
+  pgtk_verify_inited();
+  {
+    struct array *a1,*a2;
+    struct object *o1;
+    int type,dot_size;
+    GdkColor *color;
+    struct data_wrapper *dw;
+    int i,len;
+    int ind;
+    get_all_args("data_add",args,"%A%A%o%i%i",&a1,&a2,&o1,&type,&dot_size);
+    if (a1==NULL || a2==NULL || a1->size<1 || a2->size<1)
+      Pike_error("Not arrays!\n");
+    color=(GdkColor *)get_gdkobject(o1,color);
+    dw=(struct data_wrapper *)g_malloc(sizeof(struct data_wrapper));
+    if (dw==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("data_add",sizeof(struct data_wrapper));
+    len=MAX(a1->size,a2->size);
+    dw->X=(gfloat *)g_malloc(sizeof(gfloat)*len);
+    dw->Y=(gfloat *)g_malloc(sizeof(gfloat)*len);
+    if (dw->X==NULL || dw->Y==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("data_add",sizeof(gfloat)*len*2);
+    for (i=0; i<len; i++) {
+      dw->X[i]=pgtk_get_float(ITEM(a1)+i);
+      dw->Y[i]=pgtk_get_float(ITEM(a2)+i);
+    }
+    if (THIS->extra_data) {
+      if (THIS->extra_data->X)
+	g_free(THIS->extra_data->X);
+      if (THIS->extra_data->Y)
+	g_free(THIS->extra_data->Y);
+      g_free(THIS->extra_data);
+    }
+    THIS->extra_data=dw;
+    ind=gtk_databox_data_add(GTK_DATABOX(THIS->obj),len,dw->X,dw->Y,
+			 *color,type,dot_size);
+    my_pop_n_elems(args);
+    push_int(ind);
+  }
+}
+*/
+
+void set_rulers_enable(int setting);
+//! Set whether rulers will be displayed.
+
+void get_rulers_enable();
+//! Get whether rulers will be displayed.
+
+void set_selection_enable(int setting);
+//! Set whether selection is enabled.
+
+int get_selection_enable();
+//! Get whether selection is enabled.
+
+void set_selection_fill_enable(int setting);
+//! Set whether the selection will be filled.
+
+int get_selection_fill_enable();
+//! Get whether the selection will be filled.
+
+void set_scrollbars_enable(int setting);
+//! Set whether scrollbars will be displayed.
+
+void get_scrollbars_enable();
+//! Get whether scrollbars will be displayed.
+
+void set_zoom_enable(int setting);
+//! Set whether zoom is enabled.
+
+void get_zoom_enable();
+//! Get whether zoom is enabled.
+
+void set_zoom_limit(float limit);
+//! Set the zoom limit.  Default is 0.01, which is 100 times.
+
+float get_zoom_limit();
+//! Get the zoom limit.
+
+%{
+static GtkDataboxCoord get_coord(int offset, int args) {
+  GtkDataboxCoord c;
+  if (args<offset+2)
+    Pike_error("too few arguments\n");
+  if (Pike_sp[-args+offset].type!=PIKE_T_INT)
+    Pike_error("Bad argument %d\n",offset);
+  else
+    c.x=Pike_sp[-args+offset].u.integer;
+  if (Pike_sp[-args+offset+1].type!=PIKE_T_INT)
+    Pike_error("Bad argument %d\n",offset);
+  else
+    c.y=Pike_sp[-args+offset+1].u.integer;
+  return c;
+}
+
+static GtkDataboxValue get_value(int offset, int args) {
+  GtkDataboxValue c;
+  if (args<offset+2)
+    Pike_error("too few arguments\n");
+  if (Pike_sp[-args+offset].type!=PIKE_T_FLOAT)
+    Pike_error("Bad argument %d\n",offset);
+  else
+    c.x=Pike_sp[-args+offset].u.float_number;
+  if (Pike_sp[-args+offset+1].type!=PIKE_T_FLOAT)
+    Pike_error("Bad argument %d\n",offset);
+  else
+    c.y=Pike_sp[-args+offset+1].u.float_number;
+  return c;
+}
+
+static void push_value(GtkDataboxValue v) {
+  push_text("x"); push_float(v.x);
+  push_text("y"); push_float(v.y);
+  f_aggregate_mapping(4);
+}
+%}
+
+mapping(string:float) data_get_value(int x, int y)
+{
+  GtkDataboxValue v;
+  gtk_databox_data_get_value(GTK_DATABOX(THIS->obj),get_coord(0,args),&v);
+  my_pop_n_elems(args);
+  push_value(v);
+}
+
+array(mapping(string:float)) data_get_visible_extrema()
+{
+  GtkDataboxValue v1,v2;
+  my_pop_n_elems(args);
+  gtk_databox_data_get_visible_extrema(GTK_DATABOX(THIS->obj), &v1, &v2 );
+  push_value( v1 );
+  push_value( v2 );
+  f_aggregate(2);
+}
+
+array(mapping(string:float)) data_get_extrema()
+{
+  GtkDataboxValue v1,v2;
+  my_pop_n_elems(args);
+  gtk_databox_data_get_extrema(GTK_DATABOX(THIS->obj),&v1,&v2);
+  push_value(v1);
+  push_value(v2);
+  f_aggregate(2);
+}
+
+void rescale();
+
+void rescale_with_values(float minx, float miny, float maxx, float maxy)
+{
+  gtk_databox_rescale_with_values(GTK_DATABOX(THIS->obj),
+                                  get_value(0,args),
+                                  get_value(2,args));
+  RETURN_THIS();
+}
+
+void rescale_inverted(int invertX, int invertY);
+//! Rescale with an inverted x and/or y direction.
+
+int data_set_color(int index, *GDK2.Color color);
+
+void set_background_color(*GDK2.Color color);
+//! Set the background color.
+
+GDK2.Color data_get_color(int index)
+//! Get the color at index.
+{
+  pgtk_verify_inited();
+  {
+    int index;
+    GdkColor *col;
+    get_all_args("get_color",args,"%i",&index);
+    col=(GdkColor *)g_malloc(sizeof(GdkColor));
+    if (col==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_color",sizeof(GdkColor));
+    gtk_databox_data_get_color(GTK_DATABOX(THIS->obj),index,col);
+    my_pop_n_elems(args);
+    if (col)
+      push_gdkobject(col,color);
+    else
+      push_int(0);
+  }
+}
+
+int data_set_type(int index, int type, int dot_size);
+//! Type is one of CONST(GTK_DATABOX_)
+
+array(int) data_get_type(int index)
+//! Return type and dot size at index.
+{
+  pgtk_verify_inited();
+  {
+    int index;
+    guint dot_size;
+    GtkDataboxDataType type;
+    get_all_args("data_get_type",args,"%i",&index);
+    my_pop_n_elems(args);
+    gtk_databox_data_get_type(GTK_DATABOX(THIS->obj),index,&type,&dot_size);
+    push_int(type);
+    push_int(dot_size);
+    f_aggregate(2);
+  }
+}
+int data_add(int nelems, array(float,nofree) x, array(float,nofree) y,
+                 *GDK2.Color color, int type, int dot_size);
+//! Type is one of CONST(GTK_DATABOX_)
+
+/*
+int data_add_x(int nelems, array(float,nofree) x,
+               int shared_Y_index, *GDK2.Color color,
+               int type, int dot_size);
+//! Type is one of CONST(GTK_DATABOX_)
+
+int data_add_y(int nelems, array(float,nofree) y, int shared_X_index,
+               *GDK2.Color color, int type, int dot_size);
+//! Type is one of CONST(GTK_DATABOX_)
+*/
+
+int data_remove(int index);
+//! Remove data at index.
+
+int data_remove_all();
+//! Remove all data.
+
+/*
+int data_destroy(int index);
+
+int data_destroy_all();
+*/
+
+int data_set_grid_config(int index, int hlines, int vlines);
+//! Not useful unless the data type is GTK2.DATABOX_GRID.
+
+int data_get_grid_config(int index)
+//! See data_set_grid_config().
+{
+  pgtk_verify_inited();
+  {
+    int index;
+    unsigned int hlines,vlines;
+    get_all_args("data_get_grid_config",args,"%i",&index);
+    my_pop_n_elems(args);
+    gtk_databox_data_get_grid_config(GTK_DATABOX(THIS->obj),index,
+			&hlines,&vlines);
+    push_int(hlines);
+    push_int(vlines);
+    f_aggregate(2);
+  }
+}

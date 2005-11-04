@@ -1,0 +1,86 @@
+require gtksourceview;
+
+class GTK2.SourceLanguagesManager;
+inherit G.Object;
+
+%{
+#include "gtksourceview/gtksourceview.h"
+#include "gtksourceview/gtksourcelanguagesmanager.h"
+%}
+
+void create();
+//! Create a new language manager.
+
+array(GTK2.SourceLanguage) get_available_languages()
+//! Gets a list of available languages.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    const GSList *gsl;
+    int i=0;
+    gsl=gtk_source_languages_manager_get_available_languages(
+			GTK_SOURCE_LANGUAGES_MANAGER(THIS->obj));
+    while (gsl) {
+      push_gobject(gsl->data);
+      g_object_ref(gsl->data);
+      i++;
+      gsl=g_slist_next(gsl);
+    }
+    f_aggregate(i);
+  }
+}
+
+GTK2.SourceLanguage get_language_from_mime_type(string type);
+//! Gets the GTK2.SourceLanguage which is associated with the given type in the
+//! language manager.
+
+GTK2.SourceLanguage get_language_from_name(string name)
+//! Gets the GTK2.SourceLanguage which has this name.
+{
+  pgtk_verify_inited();
+  if (args) {
+    char *name;
+    const GSList *gsl;
+    int sel=0;
+    name=PGTK_GETSTR(&Pike_sp[-args]);
+    my_pop_n_elems(args);
+    gsl=gtk_source_languages_manager_get_available_languages(
+			GTK_SOURCE_LANGUAGES_MANAGER(THIS->obj));
+    while (gsl) {
+      if (!strcmp(gtk_source_language_get_name(
+		GTK_SOURCE_LANGUAGE(gsl->data)),name)) {
+	push_gobject(gsl->data);
+	g_object_ref(gsl->data);
+	sel=1;
+	break;
+      }
+      gsl=g_slist_next(gsl);
+    }
+    if (!sel)
+      push_int(0);
+    PGTK_FREESTR(name);
+  } else {
+    Pike_error("Expected 1 arg, got 0.\n");
+  }
+}
+
+array(string) get_lang_files_dirs()
+//! Gets a list of language files directories.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    const GSList *gsl,*gs2;
+    int i=0;
+    gsl=gs2=gtk_source_languages_manager_get_lang_files_dirs(
+			GTK_SOURCE_LANGUAGES_MANAGER(THIS->obj));
+    while (gs2) {
+      push_text(gs2->data);
+      i++;
+      gs2=g_slist_next(gs2);
+    }
+    f_aggregate(i);
+  }
+}
+

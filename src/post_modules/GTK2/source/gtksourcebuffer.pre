@@ -1,0 +1,420 @@
+require gtksourceview;
+
+class GTK2.SourceBuffer;
+inherit GTK2.TextBuffer;
+
+%{
+#include "gtksourceview/gtksourceview.h"
+%}
+add_global {
+#include "gtksourceview/gtksourceview.h"
+};
+
+//! Text buffer object for GTK2.SourceView
+//! <p>
+//! Properties:
+//! int check-brackets
+//! int escape-char
+//! int highlight
+//! GTK2.SourceLanguage language
+//! int max-undo-levels
+
+signal can_redo;
+signal can_undo;
+signal highlight_updated;
+signal marker_updated;
+
+void create(GTK2.SourceTagTable|GTK2.SourceLanguage|void table_or_lang)
+//! Creates a new source buffer.  If table_or_lang is a GTK2.SourceLanguage,
+//! it will create a buffer using the highlighting patterns of that language.
+//! If it is a GTK2.SourceTagTable, it will use that table, otherwise it will
+//! be a new source buffer with a new tag table.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    struct object *o1;
+    GtkSourceBuffer *gs;
+    get_all_args("create",args,"%o",&o1);
+    if (G_TYPE_FROM_INSTANCE(get_gobject(o1))==GTK_TYPE_SOURCE_TAG_TABLE) {
+      gs=gtk_source_buffer_new(
+			GTK_SOURCE_TAG_TABLE(get_gobject(o1)));
+    } else {
+      gs=gtk_source_buffer_new_with_language(
+			GTK_SOURCE_LANGUAGE(get_gobject(o1)));
+    }
+    THIS->obj=G_OBJECT(gs);
+  } else {
+    GtkSourceBuffer *gs;
+    gs=gtk_source_buffer_new(NULL);
+    THIS->obj=G_OBJECT(gs);
+  }
+  my_pop_n_elems(args);
+  pgtk__init_this_object();
+}
+
+int get_check_brackets();
+//! Determines whether bracket match highlighting is activated.
+
+void set_check_brackets(int setting);
+//! Controls the bracket match highlighting function in the buffer.  If
+//! activated, when you position your cursor over a bracket character (a
+//! parenthesis, a square bracket, etc.) the matching opening or closing
+//! bracket character will be highlighted.  You can specify the style with the
+//! set_bracket_match_style() function.
+
+void set_bracket_match_style(mapping(string:mixed) style)
+//! Sets the style used for highlighting matching brackets.
+//! <code>
+//! ([ "default": boolean,
+//!    "mask": int,
+//!    "foreground": GDK2.Color,
+//!    "background": GDK2.Color,
+//!    "italic": boolean,
+//!    "bold": boolean,
+//!    "underline": boolean,
+//!    "strikethrough": boolean
+//! ]);
+//! </code>
+{
+  pgtk_verify_inited();
+  {
+    GtkSourceTagStyle *sts;
+    struct mapping *m;
+    struct svalue *sv;
+    get_all_args("set_bracket_match_style",args,"%m",&m);
+    if (m==NULL)
+      Pike_error("No mapping.\n");
+    sts=gtk_source_tag_style_new();
+    if (sts==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("set_bracket_match_style",sizeof(GtkSourceTagStyle));
+    sv=simple_mapping_string_lookup(m,"default");
+    if (sv)
+      sts->is_default=PGTK_GETINT(sv);
+    sv=simple_mapping_string_lookup(m,"mask");
+    if (sv)
+      sts->mask=PGTK_GETINT(sv);
+    sv=simple_mapping_string_lookup(m,"foreground");
+    if (sv) {
+      if (sv->type==PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
+	sts->foreground=*(GdkColor *)get_gdkobject(sv->u.object,color);
+    }
+    sv=simple_mapping_string_lookup(m,"background");
+    if (sv) {
+      if (sv->type==PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
+	sts->background=*(GdkColor *)get_gdkobject(sv->u.object,color);
+    }
+    sv=simple_mapping_string_lookup(m,"italic");
+    if (sv)
+      sts->italic=PGTK_GETINT(sv);
+    sv=simple_mapping_string_lookup(m,"bold");
+    if (sv)
+      sts->bold=PGTK_GETINT(sv);
+    sv=simple_mapping_string_lookup(m,"underline");
+    if (sv)
+      sts->underline=PGTK_GETINT(sv);
+    sv=simple_mapping_string_lookup(m,"strikethrough");
+    if (sv)
+      sts->strikethrough=PGTK_GETINT(sv);
+    gtk_source_buffer_set_bracket_match_style(GTK_SOURCE_BUFFER(THIS->obj),sts);
+    gtk_source_tag_style_free(sts);
+  }
+  RETURN_THIS();
+}
+
+int get_highlight();
+//! Determines whether text highlighting is activated in the source buffer.
+
+void set_highlight(int setting);
+//! Controls whether text is highlighted in the buffer.  If setting is true,
+//! the text will be highlighted according to the patterns installed in the
+//! buffer (either set with set_language() or by adding individual
+//! GTK2.SourceTag tags to the buffer's tag table).  Otherwise, any current
+//! highlighted text will be restored to the default buffer style.
+//! <p>
+//! Tags not of GTK2.SourceTag type will not be removed by this option, and
+//! normal GTK2.TextTag priority settings apply when highlighting is enabled.
+//! <p>
+//! If not using a GTK2.SourceLanguage for setting the highlighting patterns in
+//! the buffer, it is recommended for performance reasons that you add all the
+//! GTK2.SourceTag tags with highlighting disabled and enable it when finished.
+
+int get_max_undo_levels();
+//! Determines the number of undo levels the buffer will track for buffer edits.
+
+void set_max_undo_levels(int setting);
+//! Sets the number of undo levels for user actions the buffer will track.  If
+//! the number of user actions exceeds the limit set by this funcction, older
+//! actions will be discarded.
+//! <p>
+//! A new action is started whenever the function begin_user_action() is
+//! called.  In general, this happens whenever the user presses any key which
+//! modifies the buffer, but the undo manager will try to merge similar
+//! consecutive actions, such as multiple character insertions into one action.
+//! But, inserting a newline does start a new action.
+
+GTK2.SourceLanguage get_language()
+//! Determines the GTK2.SourceLanguage used by the buffer.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GtkSourceLanguage *sl;
+    sl=gtk_source_buffer_get_language(GTK_SOURCE_BUFFER(THIS->obj));
+    g_object_ref(sl);
+    push_gobject(sl);
+  }
+}
+
+void set_language(GTK2.SourceLanguage lang);
+//! Sets the source language the source buffer will use, adding GTK2.SourceTag
+//! tags with the language's patterns and setting the escape character with
+//! set_escape_char().  Note that this will remove any GTK2.SourceTag tags
+//! currently in the buffer's tag table.
+
+int get_escape_char();
+//! Determines the escaping character used by the source buffer highlighting
+//! engine.
+
+void set_escape_char(int escape_char);
+//! Sets the escape character to be used by the highlighting engine.
+//! <p>
+//! When performing the initial analysis, the engine will discard a matching
+//! syntax pattern if it's prefixed with an odd number of escape characters.
+//! This allows for example to correctly highlight strings with escaped quotes
+//! embedded.
+//! <p>
+//! This setting affects only syntax patterns.
+
+int can_undo();
+//! Determines whether a source buffer can undo the last action.
+
+int can_redo();
+//! Determines whether a source buffer can redo the last action.
+
+void undo();
+//! Undoes the last user action which modified the buffer.  Use can_undo() to
+//! check whether a call to this function will have any effect.
+//! <p>
+//! Actions are defined as groups of operations between a call to
+//! GTK2.TextBuffer->begin_user_action() and GTK2.TextBuffer->end_user_action(),
+//! or sequences of similar edits (inserts or deletes) on the same line.
+
+void redo();
+//! Redoes the last undo operation.  Use can_redo() to check whether a call to
+//! this function will have any effect.
+
+void begin_not_undoable_action();
+//! Marks the beginning of a not undoable action on the buffer, disabling the
+//! undo manager.  Typically you would call this function before initially
+//! setting the contents of the buffer (e.g. when loading a file in a text
+//! editor).
+//! <p>
+//! You may nest begin_no_undoable_action()/end_not_undoable_action() blocks.
+
+void end_not_undoable_action();
+//! Marks the end of a not undoable action on the buffer.  When the last not
+//! undoable block is closed through a call to this function, the list of undo
+//! actions is cleared and the undo manager is re-enabled.
+
+GTK2.SourceMarker create_marker(string name, string type, GTK2.TextIter where)
+//! Creates a marker in the buffer of type type.  A marker is semantically very
+//! similar to a GTK2.TextMark, except it has a type which is used by the
+//! GTK2.SourceView displaying the buffer to show a pixmap on the left margin,
+//! at the line the marker is in.  Becuase of this, a marker is generally
+//! associated to a line and not a character position.  Markers are also
+//! accessible through a position or range in the buffer.
+//! <p>
+//! Markers are implemented using GTK2.TextMark, so all characteristics and
+//! restrictions to marks apply to markers too.  These include life cycle
+//! issues and "mark-set" and "mark-deleted" signal emissions.
+//! <p>
+//! Like a GTK2.TextMark, a GTK2.SourceMarker can be anonymous if the passed
+//! name is 0.
+//! <p>
+//! Markers always have left gravity and are moved to the beginning of the line
+//! when the users deletes the line they were in.  Also, if the user deletes a
+//! region of text which contained lines with markers, those are deleted.
+//! <p>
+//! Typical uses for a marker are bookmarks, breakpoints, current executing
+//! instruction indication in a source file, etc.
+{
+  pgtk_verify_inited();
+  {
+    char *name=NULL,*type;
+    struct object *o1;
+    GtkSourceMarker *gm;
+    int g;
+    if (Pike_sp[-args].type==PIKE_T_INT)
+      get_all_args("create_marker",args,"%i%s%o",&g,&type,&o1);
+    else
+      get_all_args("create_marker",args,"%s%s%o",&name,&type,&o1);
+    gm=gtk_source_buffer_create_marker(GTK_SOURCE_BUFFER(THIS->obj),
+			name,type,
+			(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+    my_pop_n_elems(args);
+    push_gobjectclass(gm,pgtk_source_marker_program);
+  }
+}
+
+void move_marker(GTK2.SourceMarker marker, GTK2.TextIter where)
+//! Moves marker to the new location.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2;
+    get_all_args("move_marker",args,"%o%o",&o1,&o2);
+    gtk_source_buffer_move_marker(GTK_SOURCE_BUFFER(THIS->obj),
+			(GtkSourceMarker *)get_gobject(o1),
+			(GtkTextIter *)get_gobject(o2));
+  }
+  RETURN_THIS();
+}
+
+void delete_marker(GTK2.SourceMarker marker)
+//! Deletes marker from the source buffer.  The same conditions as for
+//! GTK2.TextMark apply here.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    get_all_args("delete_marker",args,"%o",&o1);
+    gtk_source_buffer_delete_marker(GTK_SOURCE_BUFFER(THIS->obj),
+			(GtkSourceMarker *)get_gobject(o1));
+  }
+  RETURN_THIS();
+}
+
+GTK2.SourceMarker get_marker(string name)
+//! Looks up the GTK2.SourceMarker named name, or returns 0 if it doesn't exist.
+{
+  pgtk_verify_inited();
+  {
+    char *name;
+    GtkSourceMarker *gm;
+    get_all_args("get_marker",args,"%s",&name);
+    gm=gtk_source_buffer_get_marker(GTK_SOURCE_BUFFER(THIS->obj),name);
+    my_pop_n_elems(args);
+    if (gm)
+      push_gobjectclass(gm,pgtk_source_marker_program);
+    else
+      push_int(0);
+  }
+}
+
+array(GTK2.SourceMarker) get_markers_in_region(GTK2.TextIter begin,
+			GTK2.TextIter end)
+//! Returns an ordered (by position) list of GTK2.SourceMarker objects inside
+//! the region delimited by the GTK2.TextIters begin and end.  The iters may
+//! be in any order.
+{
+  pgtk_verify_inited();
+  {
+    GSList *gsl,*gs2;
+    struct object *o1,*o2;
+    int i=0;
+    get_all_args("get_markers_in_region",args,"%o%o",&o1,&o2);
+    gsl=gs2=gtk_source_buffer_get_markers_in_region(GTK_SOURCE_BUFFER(THIS->obj),
+			(GtkTextIter *)get_gobject(o1),
+			(GtkTextIter *)get_gobject(o2));
+    my_pop_n_elems(args);
+    while (gs2) {
+      push_gobjectclass(gs2->data,pgtk_source_marker_program);
+      g_object_ref(gs2->data);
+      i++;
+      gs2=g_slist_next(gs2);
+    }
+    f_aggregate(i);
+    g_slist_free(gsl);
+  }
+}
+
+GTK2.SourceMarker get_first_marker()
+//! Returns the first (nearest to the top of the buffer) marker.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GtkSourceMarker *gm;
+    gm=gtk_source_buffer_get_first_marker(GTK_SOURCE_BUFFER(THIS->obj));
+    if (gm)
+      push_gobjectclass(gm,pgtk_source_marker_program);
+    else
+      push_int(0);
+  }
+}
+
+GTK2.SourceMarker get_last_marker()
+//! Returns the last (nearest to the bottom of the buffer) marker.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    GtkSourceMarker *gm;
+    gm=gtk_source_buffer_get_last_marker(GTK_SOURCE_BUFFER(THIS->obj));
+    if (gm)
+      push_gobjectclass(gm,pgtk_source_marker_program);
+    else
+      push_int(0);
+  }
+}
+
+GTK2.TextIter get_iter_at_marker(GTK2.SourceMarker marker)
+//! Returns a GTK2.TextIter at marker.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    GtkTextIter *gti;
+    get_all_args("get_iter_at_marker",args,"%o",&o1);
+    gti=g_malloc(sizeof(GtkTextIter));
+    if (gti==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_marker",sizeof(GtkTextIter));
+    gtk_source_buffer_get_iter_at_marker(GTK_SOURCE_BUFFER(THIS->obj),
+			gti,(GtkSourceMarker *)get_gobject(o1));
+    my_pop_n_elems(args);
+    push_gobjectclass(gti,pgtk_text_iter_program);
+  }
+}
+
+GTK2.SourceMarker get_next_marker(GTK2.TextIter iter)
+//! Returns the nearest marker to the right of iter.  If there are multiple
+//! markers at the same position, this function will always return the first
+//! one (from the internal linked list), even if starting the search exactly
+//! at its location.  You can get the others using next().
+{
+  pgtk_verify_inited();
+  {
+    GtkSourceMarker *gm;
+    struct object *o1;
+    get_all_args("get_next_marker",args,"%o",&o1);
+    gm=gtk_source_buffer_get_next_marker(GTK_SOURCE_BUFFER(THIS->obj),
+			(GtkTextIter *)get_gobject(o1));
+    my_pop_n_elems(args);
+    if (gm)
+      push_gobjectclass(gm,pgtk_source_marker_program);
+    else
+      push_int(0);
+  }
+}
+
+GTK2.SourceMarker get_prev_marker(GTK2.TextIter iter)
+//! Returns the nearest marker to the left of iter.  If there are multiple
+//! markers at the same position, this function will always return the last one
+//! (from the internal linked list), even if starting the search exactly at
+//! its location.  You can get the others using prev().
+{
+  pgtk_verify_inited();
+  {
+    GtkSourceMarker *gm;
+    struct object *o1;
+    get_all_args("get_prev_marker",args,"%o",&o1);
+    gm=gtk_source_buffer_get_prev_marker(GTK_SOURCE_BUFFER(THIS->obj),
+			(GtkTextIter *)get_gobject(o1));
+    my_pop_n_elems(args);
+    if (gm)
+      push_gobjectclass(gm,pgtk_source_marker_program);
+    else
+      push_int(0);
+  }
+}

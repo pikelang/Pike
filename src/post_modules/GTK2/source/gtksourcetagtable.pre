@@ -1,0 +1,52 @@
+require gtksourceview;
+
+class GTK2.SourceTagTable;
+inherit GTK2.TextTagTable;
+
+%{
+#include "gtksourceview/gtksourceview.h"
+%}
+
+//! Derived from GTK2.TextTagTable
+
+signal changed;
+
+void create();
+//! Creates a new table.  The table contains no tags be default.
+
+void add_tags(array(GTK2.TextTag) tags)
+//! Adds a list of tags to the table.  The added tags are assigned the highest
+//! priority in the table.
+//! <p>
+//! If a tag is already present in the table or has the same name as an already
+//! added tag, then it is not added to the table.
+{
+  pgtk_verify_inited();
+  {
+    GSList *gsl=NULL;
+    struct array *a;
+    int i;
+    struct svalue *sv;
+    get_all_args("create",args,"%A",&a);
+    if (a==NULL)
+      Pike_error("No array!\n");
+    if (a->size<1)
+      Pike_error("Empty array!\n");
+    for (i=0; i<a->size; i++) {
+      sv=(ITEM(a)+i);
+      if (sv->type!=PIKE_T_OBJECT)
+	continue;
+      if (G_TYPE_FROM_INSTANCE(get_gobject(sv->u.object))!=GTK_TYPE_TEXT_TAG)
+	continue;
+      gsl=g_slist_prepend(gsl,get_gobject(sv->u.object));
+    }
+    gtk_source_tag_table_add_tags(GTK_SOURCE_TAG_TABLE(THIS->obj),gsl);
+    g_slist_free(gsl);
+  }
+  RETURN_THIS();
+}
+
+void remove_source_tags();
+//! Removes all source tags from the table.  This will remove the table's
+//! reference to the tags, so be careful - tags will end up destroyed if you
+//! don't have a reference to them.

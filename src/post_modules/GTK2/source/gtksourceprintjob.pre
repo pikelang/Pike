@@ -1,0 +1,269 @@
+require gtksourceview;
+
+class GTK2.SourcePrintJob;
+inherit G.Object;
+
+//! Properties:
+//! GTK2.SourceBuffer buffer
+//! Gnome.PrintConfig config
+//! string font
+//! Pango.FontDescription font-desc
+//! string header-footer-font
+//! Pango.FontDescription header-footer-font-desc
+//! int highlight
+//! string numbers-font
+//! Pango.FontDescript numbers-font-desc
+//! int print-footer
+//! int print-header
+//! int print-numbers
+//! int tabs-width
+//! int wrap-mode
+
+signal begin_page;
+signal finished;
+
+%{
+#include "gtksourceview/gtksourceview.h"
+#include "gtksourceview/gtksourceprintjob.h"
+
+#define PANGO_FONT_DESCRIPTION(X) ((PangoFontDescription *)X)
+%}
+
+void create(?GTK2.SourceBuffer buffer)
+//! Creates a new print job object.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if (args) {
+    struct object *o1;
+    GtkSourcePrintJob *gs;
+    get_all_args("create",args,"%o",&o1);
+    gs=gtk_source_print_job_new_with_buffer(NULL,
+			GTK_SOURCE_BUFFER(get_gobject(o1)));
+    THIS->obj=G_OBJECT(gs);
+    my_pop_n_elems(args);
+  } else {
+    GtkSourcePrintJob *gs;
+    gs=gtk_source_print_job_new(NULL);
+    THIS->obj=G_OBJECT(gs);
+  }
+  pgtk__init_this_object();
+}
+
+void set_buffer(GTK2.SourceBuffer buffer);
+//! Sets the GTK2.SourceBuffer the print job will print.  You need to specify
+//! a buffer to print, either by the use of this function or by creating the
+//! print job with create().
+
+GTK2.SourceBuffer get_buffer();
+//! Gets the GTK2.SourceBuffer the print job would print.
+
+void setup_from_view(GTK2.SourceView view);
+//! Convenience function to set several configuration options at once, so that
+//! the printed output matches view.  The options set are buffer (if not set
+//! already), tabs width, highlighting, wrap mode and default font.
+
+void set_tabs_width(int tabs_width);
+//! Sets the width (equivalent spaces) of tabulations for the printed text.
+//! The width in printing units will be calculated as the width of a string
+//! containing tabs_width spaces of the default font.  Tabulation stops are
+//! set for the full width of printed text.
+
+int get_tabs_width();
+//! Determines the configured width (in equivalent spaces) of tabulations.  The
+//! default value is 8.
+
+void set_wrap_mode(int setting);
+//! Sets the wrap mode for lines of text larger than the printable width.
+
+int get_wrap_mode();
+//! Determines the wrapping style for text lines wider than the printable
+//! width.  The default is no wrapping.
+
+
+void set_highlight(int setting);
+//! Sets whether the printed text will be highlighted according to the buffer
+//! rules.  Both color and font style are applied.
+
+int get_highlight();
+//! Determines if the job is configured to print the text highlighted with
+//! colors and font styles.  Note that highlighting will happen only if the
+//! buffer to print has highlighting activated.
+
+require pango;
+void set_font_desc(Pango.FontDescription desc);
+//! Sets the default font for the printed text.
+/*
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    get_all_args("set_font_desc",args,"%o",&o1);
+    gtk_source_print_job_set_font_desc(GTK_SOURCE_PRINT_JOB(THIS->obj),
+			(PangoFontDescription *)THIS-
+*/
+
+Pango.FontDescription get_font_desc();
+//! Determines the default font to be used for the printed text.  The returned
+//! string is of the form "Fontfamily Style Size", for example
+//! "Monospace Regular 10.0".
+
+void set_numbers_font_desc(?Pango.FontDescription desc);
+//! Sets the font for printing line numbers on the left margin.  If omitted,
+//! the default font (i.e. the one being used for the text) will be used
+//! instead.
+
+Pango.FontDescription get_numbers_font_desc();
+//! Determines the font to be used for the line numbers.
+endrequire;
+
+void set_print_numbers(int interval);
+//! Sets the interval for printed line numbers.  If interval is 0 no numbers
+//! will be printed.  If greater than 0, a number will be printed every
+//! interval lines (i.e. 1 will print all line numbers).
+
+int get_print_numbers();
+//! Determines the interval used for line number printing.  If the value is
+//! 0, no line numbers will be printed.  The default value is 1 (i.e. numbers
+//! printed in all lines).
+
+void set_text_margins(float top, float bottom, float left, float right);
+//! Sets the four user margins for the print job.  These margins are in
+//! addition to the document margins provided in the GnomePrintConfig and will
+//! not be used for headers, footers, or line numbers (those are calculated
+//! separately).  You can print in the space allocate by these margins by
+//! connecting to the "begin-page" signal.  The space is around the printed
+//! text, and inside the margins specified in the GnomePrintConfig.
+//! <p>
+//! The margin numbers are given in device units.  If any of the given values
+//! is less than 0, that particular margin is not altered by this function.
+
+mapping(string:float) get_text_margins()
+//! Determines the user set margins for the job.  The default for all four
+//! margins is 0.0.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    gdouble t,b,l,r;
+    gtk_source_print_job_get_text_margins(GTK_SOURCE_PRINT_JOB(THIS->obj),
+			&t,&b,&l,&r);
+    push_text("top"); push_float(t);
+    push_text("bottom"); push_float(b);
+    push_text("left"); push_float(l);
+    push_text("right"); push_float(r);
+    f_aggregate_mapping(8);
+  }
+}
+
+void print();
+//! Print the document.
+
+void print_range(GTK2.TextIter start, GTK2.TextIter end)
+//! Similar to print(), except you can specify a range of text to print.
+//! start and end can be in any order.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2;
+    void *res;
+    get_all_args("print_range",args,"%o%o",&o1,&o2);
+    res=gtk_source_print_job_print_range(GTK_SOURCE_PRINT_JOB(THIS->obj),
+			(GtkTextIter *)get_gobject(o1),
+			(GtkTextIter *)get_gobject(o2));
+    if (res==NULL)
+      Pike_error("Could not print!\n");
+  }
+  RETURN_THIS();
+}
+
+void print_range_async(GTK2.TextIter start, GTK2.TextIter end)
+//! Starts to print job asynchronously.  This function will ready the job for
+//! printing and install an idle handler that will render one page at a time.
+//! <p>
+//! This function will not return immediately, as only page rendering is done
+//! asynchronously.  Text retrieval and paginating happens within this
+//! function.  Also, if highlighting is enabled, the whole buffer needs to be
+//! highlighted first.
+//! <p>
+//! To get notification when the job has finished, you must connect to the
+//! "finished" signal.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2;
+    int res;
+    get_all_args("print_range_async",args,"%o%o",&o1,&o2);
+    res=gtk_source_print_job_print_range_async(GTK_SOURCE_PRINT_JOB(THIS->obj),
+			(GtkTextIter *)get_gobject(o1),
+			(GtkTextIter *)get_gobject(o2));
+  }
+  RETURN_THIS();
+}
+
+void cancel();
+//! Cancels an asynchronous printing operation.  This will remove any pending
+//! print idle handler.
+
+int get_page();
+//! Determines the currently printing page number.
+
+int get_page_count();
+//! Determines the total number of pages the job will print.  The returned
+//! value is only meaningful after pagination has finished.  In practice, for
+//! synchronous printing this means when "begin_page" is emitted, or after
+//! print_range_async() has returned.
+
+void set_print_header(int setting);
+//! Sets whether you want to print a header in each page.  The default header
+//! consists of three pieces of text and an optional line separator,
+//! configurable with set_header_format().
+//! <p>
+//! Note that by default the header format is unspecified, and if it's empty
+//! it will not be printed, regardless of this setting.
+
+int get_print_header();
+//! Determines if a header is set to be printed for each page.  A header will
+//! be printed if this function returns true and some format strings have been
+//! specified with set_header_format().
+
+void set_print_footer(int setting);
+//! Sets whether you want to print a footer in each page.  The default footer
+//! consists of three pieces of text and an optional line separator,
+//! configurable with set_footer_format().
+//! <p>
+//! Note that be default the footer format is unspecified, and if it's empty it
+//! will not be printed, regardless of this setting.
+
+int get_print_footer();
+//! Determines if a footer is set to be printed for each page.  A footer will
+//! be printed if this function returns true and some format strings have been
+//! specified with set_footer_format().
+
+require pango;
+void set_header_footer_font_desc(?Pango.FontDescription desc);
+//! Sets the font for printing headers and footers.  If omitted, the default
+//! font (i.e. the one being used for the text) will be used instead.
+
+Pango.FontDescription get_header_footer_font_desc();
+//! Determines the font to be used for the header and footer.
+endrequire;
+
+void set_header_format(string|void left, string|void center, string|void right,
+		       int separator);
+//! Sets strftime like header format strings, to be printed on the left, center
+//! and right of the top of each page.  The strings may include strftime(3)
+//! codes which will be expanded at print time.  All strftime() codes are
+//! accepted, with the addition of N for the page number and Q for the page
+//! count.
+//! <p>
+//! separator specifies if a solid line should be drawn to separate the header
+//! from the document text.
+//! <p>
+//! If 0 is given for any of the three arguments, that particular string will
+//! not be printed.  For the header to be printed, in addition to specifying
+//! format strings, you need to enable header printing with set_print_header().
+
+void set_footer_format(string|void left, string|void center, string|void right,
+		       int separator);
+//! Like set_header_format(), but for the footer.
