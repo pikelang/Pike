@@ -104,10 +104,12 @@ void set_font_desc(Pango.FontDescription desc);
 			(PangoFontDescription *)THIS-
 */
 
+require gtksourcereview11;
 Pango.FontDescription get_font_desc();
 //! Determines the default font to be used for the printed text.  The returned
 //! string is of the form "Fontfamily Style Size", for example
 //! "Monospace Regular 10.0".
+endrequire;
 
 void set_numbers_font_desc(?Pango.FontDescription desc);
 //! Sets the font for printing line numbers on the left margin.  If omitted,

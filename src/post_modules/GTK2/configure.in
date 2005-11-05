@@ -226,6 +226,21 @@ else
     AC_CHECK_PKG(gtksourceview-1.0, gtk_source_view_new, [
       AC_DEFINE(HAVE_GTKSOURCEVIEW)
       pgtk_has_gtksourceview=gtksourceview
+
+      AC_MSG_CHECKING([for gtksourceview version])
+      gtksourceviewvers=`${ac_tool_prefix}pkg-config --modversion gtksourceview-1.0 2>/dev/null`
+      OIFS="$IFS"
+      IFS="."
+      set $gtksourceviewvers
+      IFS="$OIFS"
+      gtksourceviewversmajorvers=$1
+      gtksourceviewversminorvers=$2
+      gtksourceviewverspatchvers=$3
+      if test $gtksourceviewversminorvers -ge 1 ; then
+	pgtk_has_gtksourceviewvers11=gtksourceviewvers11
+	AC_DEFINE(HAVE_GTKSOURCEVIEWVERS11)
+      fi
+      AC_MSG_RESULT($gtksourceviewvers)
     ])
 
     # Note: ORBit-2.0.pc on Solaris 10/x86 adds -mt to cflags,

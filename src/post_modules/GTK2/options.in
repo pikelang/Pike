@@ -18,4 +18,5 @@
 @pgtk_has_gnomecanvas@
 @pgtk_has_gtkdatabox@
 @pgtk_has_gtksourceview@
+@pgtk_has_gtksourceview11@
 @pgtk_has_gnomeui@

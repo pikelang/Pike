@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.5 2005/11/03 13:49:44 ldillon Exp $
+|| $Id: acconfig.h,v 1.6 2005/11/05 20:43:51 grubba Exp $
 */
 
 #undef FUNCPROTO
@@ -24,6 +24,7 @@
 #undef HAVE_GNOMECANVAS
 #undef HAVE_GTKDATABOX
 #undef HAVE_GTKSOURCEVIEW
+#undef HAVE_GTKSOURCEVIEW11
 #undef HAVE_G_SIGNAL_CONNECT_DATA_WITH_SIX_ARGS
 #undef HAVE_GTK_BETA
 #undef HAVE_PANGO_BETA
