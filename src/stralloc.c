@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.201 2005/11/03 16:19:50 grubba Exp $
+|| $Id: stralloc.c,v 1.202 2005/11/05 15:28:00 grubba Exp $
 */
 
 #include "global.h"
@@ -861,9 +861,9 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string(const char *str
     s=begin_shared_string(len);
     MEMCPY(s->str, str, len);
     link_pike_string(s, h);
+  } else {
+    add_ref(s);
   }
-
-  add_ref(s);
 
   return s;
 }
@@ -916,9 +916,9 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1
     s=begin_wide_shared_string(len,1);
     MEMCPY(s->str, str, len<<1);
     link_pike_string(s, h);
+  } else {
+    add_ref(s);
   }
-
-  add_ref(s);
 
   return s;
 }
@@ -951,9 +951,9 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string2(const p_wchar2
     s=begin_wide_shared_string(len,2);
     MEMCPY(s->str, str, len<<2);
     link_pike_string(s, h);
+  } else {
+    add_ref(s);
   }
-
-  add_ref(s);
 
   return s;
 }
@@ -1699,7 +1699,6 @@ PMOD_EXPORT struct pike_string *modify_shared_string(struct pike_string *a,
 	add_ref(a = old);
       } else {
 	link_pike_string(a, a->hval);
-	add_ref(a);
       }
     }else{
       a = end_shared_string(a);
@@ -1834,8 +1833,8 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 
   if(!str->len)
   {
-    add_ref(str);
-    return str;
+    add_ref(empty_pike_string);
+    return empty_pike_string;
   }
 
   shift=MAXIMUM(str->size_shift,to->size_shift);
