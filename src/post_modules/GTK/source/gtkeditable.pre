@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Editable;
 inherit GTK.Widget;
 //! The GTK.Editable class is a base class for widgets for editing text,

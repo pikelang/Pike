@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.Dialog;
 inherit GTK2.Window;
 

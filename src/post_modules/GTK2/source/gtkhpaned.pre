@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.Hpaned;
 inherit GTK2.Paned;
 

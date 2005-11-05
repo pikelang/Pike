@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Text;
 inherit GTK.Editable;
 //! The Text widget allows multiple lines of text to be displayed and

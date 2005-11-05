@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.ButtonBox;
 //! More or less equivalent to a normal box, but you can set a few
 //! layout schemes that are not available for normal boxes.

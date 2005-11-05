@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.ScrolledWindow;
 inherit GTK.Window;
 //! Scrolled windows are used to create a scrollable area with another

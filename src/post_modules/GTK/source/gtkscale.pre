@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Scale;
 //! The GTK.Scale widget is an abstract class, used only for deriving
 //! the subclasses GTK.Hscale and GTK.Vscale.

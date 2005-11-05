@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Adjustment;
 inherit GTK.Data;
 //! The GTK.Adjustment object represents a value which has an associated

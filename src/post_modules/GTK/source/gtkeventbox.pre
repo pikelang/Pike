@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.EventBox;
 inherit GTK.Bin;
 //! Some gtk widgets don't have associated X windows, so they just draw

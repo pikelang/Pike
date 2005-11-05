@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Progress;
 inherit GTK.Widget;
 void set_show_text( int textp );

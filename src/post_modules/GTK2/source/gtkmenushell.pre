@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.MenuShell;
 inherit GTK2.Container;
 

@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.CellRendererPixbuf;
 inherit GTK2.CellRenderer;
 

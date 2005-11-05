@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.InputDialog;
 inherit GTK.Dialog;
 //! This dialog is used to enable XInput devices.  By default, no

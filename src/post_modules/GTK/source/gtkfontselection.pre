@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.FontSelection;
 inherit GTK.Notebook;
 //! IMG: GTK.FontSelection()

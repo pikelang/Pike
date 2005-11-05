@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Misc;
 inherit GTK.Widget;
 //! The GTK.Misc widget is an abstract widget which is not useful

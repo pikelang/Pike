@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.ColorSelection;
 inherit GTK.Vbox;
 //! The color selection widget is, not surprisingly, a widget for

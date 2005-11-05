@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Item;
 inherit GTK.Bin;
 //! This class is inherited by all 'item' type of widgets.

@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Dialog;
 inherit GTK.Window;
 //! A dialog is a window with a few default widgets added.

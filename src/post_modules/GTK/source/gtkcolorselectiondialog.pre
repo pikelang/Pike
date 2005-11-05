@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.ColorSelectionDialog;
 inherit GTK.Window;
 //! The color selection dialog widget is, not surprisingly, a color selection

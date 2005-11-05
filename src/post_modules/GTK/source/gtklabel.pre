@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Label;
 inherit GTK.Misc;
 //! A simple text label.

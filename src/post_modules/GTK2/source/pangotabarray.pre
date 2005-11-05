@@ -1,3 +1,4 @@
+/* -*- C -*- */
 require pango;
 
 class Pango.TabArray;

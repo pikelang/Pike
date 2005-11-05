@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.TextBuffer;
 inherit G.Object;
 

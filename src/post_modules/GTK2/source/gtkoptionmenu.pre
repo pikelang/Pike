@@ -1,3 +1,4 @@
+/* -*- C -*- */
 not gtk24;
 
 class GTK2.OptionMenu;

@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.MenuItem;
 inherit GTK2.Item;
 

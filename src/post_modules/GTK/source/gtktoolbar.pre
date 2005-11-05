@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Toolbar;
 inherit GTK.Container;
 //! Toolbars are usually used to group some number of widgets in order

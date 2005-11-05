@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.Data;
 inherit GTK2.Object;
 

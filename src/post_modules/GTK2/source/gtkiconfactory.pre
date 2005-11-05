@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.IconFactory;
 inherit G.Object;
 

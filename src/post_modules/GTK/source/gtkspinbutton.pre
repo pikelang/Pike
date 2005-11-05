@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.SpinButton;
 inherit GTK.Entry;
 //! The Spin Button widget is generally used to allow the user to

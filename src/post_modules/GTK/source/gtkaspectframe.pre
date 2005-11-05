@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.AspectFrame;
 inherit GTK.Frame;
 //! A W(Frame) widget  that always maintain a specified ratio

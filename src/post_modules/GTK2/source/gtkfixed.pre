@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.Fixed;
 inherit GTK2.Container;
 

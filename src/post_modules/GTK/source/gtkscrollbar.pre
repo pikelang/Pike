@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Scrollbar;
 inherit GTK.Range;
 //!  These are your standard, run-of-the-mill scrollbars. These should

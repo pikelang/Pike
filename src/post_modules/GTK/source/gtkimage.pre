@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Image;
 inherit GTK.Misc;
 //! An image is a image object stored in client, not X server, memory.

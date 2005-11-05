@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.Separator;
 inherit GTK2.Widget;
 

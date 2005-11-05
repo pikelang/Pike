@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.ToggleButton;
 inherit GTK.Button;
 //! Toggle buttons are derived from normal buttons and are very

@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.FileSelection;
 inherit GTK2.Dialog;
 

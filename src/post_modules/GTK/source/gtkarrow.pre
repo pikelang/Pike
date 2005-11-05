@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Arrow;
 inherit GTK.Misc;
 //! An arrow pointing in one of four directions. The 'etched' shadow

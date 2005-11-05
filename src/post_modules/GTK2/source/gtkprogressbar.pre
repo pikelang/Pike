@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.ProgressBar;
 inherit GTK2.Progress;
 

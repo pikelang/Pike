@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Separator;
 inherit GTK.Widget;
 //! A generic separator. Basicaly a line, like &lt;hr&gt; in HTML.

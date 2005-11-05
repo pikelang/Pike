@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.RadioMenuItem;
 inherit GTK.MenuItem;
 //! Exactly like W(RadioButton), but it is an menu item.

@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Pixmap;
 inherit GTK.Misc;
 //! Pixmaps are data structures that contain pictures. These pictures

@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.DrawingArea;
 inherit GTK2.Widget;
 

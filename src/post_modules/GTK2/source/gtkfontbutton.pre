@@ -1,3 +1,4 @@
+/* -*- C -*- */
 require gtk24;
 
 class GTK2.FontButton;

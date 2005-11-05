@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Statusbar;
 inherit GTK.Hbox;
 //! Statusbars are simple widgets used to display a text message. They

@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Invisible;
 inherit GTK.Bin;
 //! An invisible container, useful, eh? :)

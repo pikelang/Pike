@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.MenuShell;
 inherit GTK.Container;
 //! A GTK.MenuShell is the abstract base class used to derive the

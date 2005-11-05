@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.TearoffMenuItem;
 inherit GTK.MenuItem;
 //! a GTK.TearoffMenuItem is a special W(MenuItem) which is used to

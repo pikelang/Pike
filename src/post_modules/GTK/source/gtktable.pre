@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Table;
 inherit GTK.Container;
 //! The Gtk.Table allow the programmer to arrange widgets in rows and

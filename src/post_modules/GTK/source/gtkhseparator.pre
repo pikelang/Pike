@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Hseparator;
 inherit GTK.Separator;
 //! Simply creates a horizontal separator. No bells or whistles.

@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.RadioButton;
 inherit GTK.CheckButton;
 //! Radio buttons are similar to check buttons except they are grouped

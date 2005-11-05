@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GDK._Atom;
 //! An X-atom. You most likely want to use GDK.Atom.atom_name
 //! instead of GDK._Atom(name).

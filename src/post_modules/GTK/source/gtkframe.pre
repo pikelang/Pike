@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Frame;
 inherit GTK.Container;
 //! The frame widget is a Bin that surrounds its child with a

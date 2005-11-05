@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.DrawingArea;
 inherit GTK.Widget;
 //! The drawing area is a window you can draw in.

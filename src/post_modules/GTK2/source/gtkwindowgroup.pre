@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.WindowGroup;
 inherit G.Object;
 

@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.Entry;
 inherit GTK2.Widget;
 

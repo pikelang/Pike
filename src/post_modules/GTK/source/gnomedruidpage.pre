@@ -1,3 +1,4 @@
+/* -*- C -*- */
 require gnome;
 class Gnome.DruidPage;
 //! This widget is a virtual widget to define the interface to a druid

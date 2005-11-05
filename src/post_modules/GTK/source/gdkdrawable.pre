@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GDK.Drawable;
 %{
 #ifndef __NT__

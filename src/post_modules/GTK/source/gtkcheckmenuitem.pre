@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.CheckMenuItem;
 inherit GTK.MenuItem;
 //! A check menu item is more or less identical to a check button, but it

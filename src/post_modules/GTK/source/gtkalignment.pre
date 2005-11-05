@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Alignment;
 inherit GTK.Bin;
 //! The W(Alignment) widget controls the alignment and size of its

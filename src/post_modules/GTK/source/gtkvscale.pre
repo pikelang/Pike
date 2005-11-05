@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Vscale;
 inherit GTK.Scale;
 //! The GTK.VScale widget is used to allow the user to select a value

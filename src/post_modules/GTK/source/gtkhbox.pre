@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Hbox;
 inherit GTK.Box;
 //! Most packing is done by creating boxes. These are invisible widget

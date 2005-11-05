@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Box;
 //! A box is a container that can contain more than one child.
 //! The basic 'Box' class cannot be instantiated, it is a virtual class

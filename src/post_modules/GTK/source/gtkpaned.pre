@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Paned;
 inherit GTK.Container;
 //! GTK.Paned is the base class for widgets with two panes, arranged

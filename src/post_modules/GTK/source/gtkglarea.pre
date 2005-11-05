@@ -1,3 +1,4 @@
+/* -*- C -*- */
 require glarea;
 class GTK.GLArea;
 inherit GTK.DrawingArea;

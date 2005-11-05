@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.ToggleButton;
 inherit GTK2.Button;
 

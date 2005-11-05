@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Notebook;
 inherit GTK.Container;
 //! The NoteBook Widget is a collection of 'pages' that overlap each

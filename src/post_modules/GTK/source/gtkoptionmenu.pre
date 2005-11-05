@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.OptionMenu;
 inherit GTK.Button;
 //! A OptionMenu is a widget that allows the user to choose from a

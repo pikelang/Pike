@@ -1,3 +1,4 @@
+/* -*- C -*- */
 require gtksourceview;
 
 class GTK2.KeywordListTag;

@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GDK2.Event;
 
 //! Gdk events.

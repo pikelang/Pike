@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.CheckButton;
 //! Check buttons inherent many properties and functions from the the
 //! toggle buttons, but look a little different. Rather than

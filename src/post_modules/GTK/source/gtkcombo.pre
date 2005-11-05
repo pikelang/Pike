@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Combo;
 inherit GTK.Hbox;
 //! Thee combo box is another fairly simple widget that is really just

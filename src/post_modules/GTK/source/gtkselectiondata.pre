@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.SelectionData;
 //! The data associated with a selection.
 string data()

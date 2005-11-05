@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.Table;
 inherit GTK2.Container;
 

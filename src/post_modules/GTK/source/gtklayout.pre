@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Layout;
 inherit GTK.Container;
 void create( GTK.Adjustment hadjustment, GTK.Adjustment vadjustment );

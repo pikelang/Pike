@@ -1,3 +1,4 @@
+/* -*- C -*- */
 DISABLED {
 class GTK.ListItem;
 //! This type of items can be placed in a 'List' widget. 

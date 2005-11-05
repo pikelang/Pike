@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.ColorSelectionDialog;
 inherit GTK2.Dialog;
 

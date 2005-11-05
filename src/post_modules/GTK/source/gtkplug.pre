@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Plug;
 inherit GTK.Window;
 //! Together with W(Socket), GTK.Plug provides the ability to embed

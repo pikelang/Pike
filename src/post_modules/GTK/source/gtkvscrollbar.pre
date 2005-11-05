@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Vscrollbar;
 inherit GTK.Scrollbar;
 //! General documentation: See W(Scrollbar)

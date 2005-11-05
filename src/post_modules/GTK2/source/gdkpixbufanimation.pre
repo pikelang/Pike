@@ -1,3 +1,4 @@
+/* -*- C -*- */
 not gtk_beta;
 
 class GDK2.PixbufAnimation;

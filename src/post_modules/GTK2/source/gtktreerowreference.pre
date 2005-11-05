@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.TreeRowReference;
 
 //! A TreeRowReference.

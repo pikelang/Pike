@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Button;
 inherit GTK.Container;
 //! A container that can only contain one child, and accepts events.

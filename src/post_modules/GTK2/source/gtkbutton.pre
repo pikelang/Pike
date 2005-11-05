@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.Button;
 inherit GTK2.Bin;
 

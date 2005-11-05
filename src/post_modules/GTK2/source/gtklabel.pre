@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.Label;
 inherit GTK2.Misc;
 

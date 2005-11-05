@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.Style;
 inherit G.Object;
 

@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Hscrollbar;
 inherit GTK.Scrollbar;
 //! A horizontal scrollbar.<p>

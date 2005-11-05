@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Viewport;
 inherit GTK.Bin;
 //! This is a container that can be scrolled around, but it has no scrollbars.

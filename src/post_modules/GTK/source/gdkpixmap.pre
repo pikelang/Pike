@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GDK.Pixmap;
 inherit GDK.Drawable;
 //! This class creates a GDK.Pixmap from either an GDK.Image or

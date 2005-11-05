@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.TreeViewColumn;
 inherit GTK2.Data;
 

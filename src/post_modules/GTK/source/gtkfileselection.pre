@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.FileSelection;
 inherit GTK.Window;
 //! GtkFileSelection should be used to retrieve file or directory names

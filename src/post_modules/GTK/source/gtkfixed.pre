@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Fixed;
 inherit GTK.Container;
 //! A fixed container is a container that keeps it's children at fixed

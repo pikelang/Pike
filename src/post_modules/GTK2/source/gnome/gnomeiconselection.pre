@@ -1,3 +1,4 @@
+/* -*- C -*- */
 require gnome;
 class Gnome.IconSelection;
 inherit GTK.Vbox;

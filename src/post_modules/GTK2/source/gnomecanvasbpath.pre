@@ -1,3 +1,4 @@
+/* -*- C -*- */
 require gnomecanvas;
 
 class Gnome2.CanvasBpath;

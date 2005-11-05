@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Ruler;
 inherit GTK.Widget;
 //! Ruler widgets are used to indicate the location of the mouse

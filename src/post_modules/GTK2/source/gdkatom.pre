@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GDK2._Atom;
 
 //! An X-atom. You most likely want to use GDK2.Atom.atom_name

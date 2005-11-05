@@ -1,3 +1,4 @@
+/* -*- C -*- */
 require gtk_120;
 class GTK.HandleBox;
 //! The contents of a handle box can be 'dragged' out of the box by the user.

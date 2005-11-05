@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.Range;
 inherit GTK.Widget;
 //! The category of range widgets includes the ubiquitous scrollbar

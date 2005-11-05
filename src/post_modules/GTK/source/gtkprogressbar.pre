@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK.ProgressBar;
 inherit GTK.Progress;
 //! A simple progress bar. Useful when you are doing things that take a long
