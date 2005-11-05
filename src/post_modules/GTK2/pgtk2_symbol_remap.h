@@ -1,5 +1,5 @@
 /*
- * $Id: pgtk2_symbol_remap.h,v 1.1 2005/11/05 20:06:46 grubba Exp $
+ * $Id: pgtk2_symbol_remap.h,v 1.2 2005/11/05 20:07:45 grubba Exp $
  *
  * Remap symbols in GTK2 so that they don't conflict with the GTK module.
  * NOTE: This is a temporary kludge until build_pgtk.pike et al are fixed.
@@ -11,6 +11,7 @@
 #define PGTK2_SYMBOL_REMAP_H
 
 /* Hand coded. */
+#define __pgtk_string_data	__pgtk2_string_data
 #define IS_OBJECT_PROGRAM	PGTK2_IS_OBJECT_PROGRAM
 #define gdkimage_from_pikeimage	pgtk2_gdkimage_from_pikeimage
 #define get_color_from_pikecolor	pgtk2_get_color_from_pikecolor
