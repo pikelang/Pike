@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgtk.h,v 1.7 2005/11/04 11:33:32 grubba Exp $
+|| $Id: pgtk.h,v 1.8 2005/11/05 18:58:51 grubba Exp $
 */
 
 /* Sort of unnessesary, and decreases code-size with 140Kb */
@@ -34,6 +34,10 @@
 /*# include <libgnorba/gnorba.h> */
 #elif defined(HAVE_GNOME)
 # include <libgnome/libgnome.h>
+#endif
+
+#ifdef HAVE_GNOMECANVAS
+#include <libgnomecanvas/libgnomecanvas.h>
 #endif
 
 #ifdef __NT__
