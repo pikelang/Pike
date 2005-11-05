@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgtk.h,v 1.8 2005/11/05 18:58:51 grubba Exp $
+|| $Id: pgtk.h,v 1.9 2005/11/05 20:06:45 grubba Exp $
 */
 
 /* Sort of unnessesary, and decreases code-size with 140Kb */
@@ -48,7 +48,6 @@
 #ifdef HAVE_GTKEXTRA_GTKEXTRA_H
 # include <gtkextra/gtkextra.h>
 #endif
-#include "prototypes.h"
 #ifdef HAVE_SIGNAL_H
 #include <signal.h>
 #endif
@@ -95,6 +94,9 @@ struct my_pixel {
   unsigned char b;
   unsigned char padding;
 };
+
+#include "pgtk2_symbol_remap.h"
+#include "prototypes.h"
 
 extern const char __pgtk_string_data[];
 extern int pigtk_is_setup;
