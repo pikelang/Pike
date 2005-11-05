@@ -180,18 +180,17 @@ static int parse_variables()
    if (query!="")
       .http_decode_urlencoded_query(query,variables);
 
-   if(((int)request_headers["content-length"]<=sizeof(buf)))
+   if (request_type=="POST")
    {
-      if(request_type=="POST" &&
-         request_headers["content-type"]=="application/x-www-form-urlencoded")
-         parse_post();
-      return 1;
-   }
-   else
-   {
+      if ((int)request_headers["content-length"]<=sizeof(buf))
+      {
+	 parse_post();
+	 return 1;
+      }
       my_fd->set_read_callback(read_cb_post);
-      return 0;
+      return 0; // delay
    }
+   return 1;
 }
 
 static void populate_raw()
@@ -207,8 +206,23 @@ static void parse_post()
 
    string s=buf[..n-1];
    buf=buf[n..];
+   if (
+        has_prefix(request_headers["content-type"], "multipart/form-data"))
+   {
+       MIME.Message messg = MIME.Message(s, request_headers);
 
-   .http_decode_urlencoded_query(s,variables);
+      foreach(messg->body_parts, object part) {
+        if(part->disp_params->filename) {
+          variables[part->disp_params->name]=part->getdata();
+          variables[part->disp_params->name+".filename"]=
+            part->disp_params->filename;
+        } else
+          variables[part->disp_params->name] = part->getdata();
+     }
+   }
+
+   else
+     .http_decode_urlencoded_query(s,variables);
 }
 
 static void read_cb_post(mixed dummy,string s)
