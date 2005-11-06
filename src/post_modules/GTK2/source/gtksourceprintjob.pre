@@ -92,6 +92,7 @@ int get_highlight();
 //! buffer to print has highlighting activated.
 
 require pango;
+require gtksourcereview11;
 void set_font_desc(Pango.FontDescription desc);
 //! Sets the default font for the printed text.
 /*
@@ -104,12 +105,10 @@ void set_font_desc(Pango.FontDescription desc);
 			(PangoFontDescription *)THIS-
 */
 
-require gtksourcereview11;
 Pango.FontDescription get_font_desc();
 //! Determines the default font to be used for the printed text.  The returned
 //! string is of the form "Fontfamily Style Size", for example
 //! "Monospace Regular 10.0".
-endrequire;
 
 void set_numbers_font_desc(?Pango.FontDescription desc);
 //! Sets the font for printing line numbers on the left margin.  If omitted,
@@ -118,6 +117,7 @@ void set_numbers_font_desc(?Pango.FontDescription desc);
 
 Pango.FontDescription get_numbers_font_desc();
 //! Determines the font to be used for the line numbers.
+endrequire;
 endrequire;
 
 void set_print_numbers(int interval);
@@ -244,12 +244,14 @@ int get_print_footer();
 //! specified with set_footer_format().
 
 require pango;
+require gtksourcereview11;
 void set_header_footer_font_desc(?Pango.FontDescription desc);
 //! Sets the font for printing headers and footers.  If omitted, the default
 //! font (i.e. the one being used for the text) will be used instead.
 
 Pango.FontDescription get_header_footer_font_desc();
 //! Determines the font to be used for the header and footer.
+endrequire;
 endrequire;
 
 void set_header_format(string|void left, string|void center, string|void right,
