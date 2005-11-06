@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.596 2005/11/01 10:16:08 grubba Exp $
+|| $Id: program.c,v 1.597 2005/11/06 21:42:54 grubba Exp $
 */
 
 #include "global.h"
@@ -1742,8 +1742,10 @@ struct program *id_to_program(INT32 id)
     default:
       if ((id >= 100) && (id <= 300)) {
 	module = "Image";
-      } else if ((id >= 1000) && (id <= 2000)) {
+      } else if ((id >= 1000) && (id < 2000)) {
 	module = "___GTK";
+      } else if ((id >= 2000) && (id < 3000)) {
+	module = "___GTK2";
       }
       break;
     }
