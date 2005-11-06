@@ -1034,7 +1034,7 @@ class Type
   }
 }
 
-int last_class_id = 1000;
+int last_class_id = 2000;
 
 class Class( string name, string file, int line )
 {
