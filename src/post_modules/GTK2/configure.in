@@ -64,6 +64,8 @@ AC_SUBST(pgtk_has_gtkdatabox)
 pgtk_has_gtkdatabox=nogtkdatabox
 AC_SUBST(pgtk_has_gtksourceview)
 pgtk_has_gtksourceview=nogtksourceview
+AC_SUBST(pgtk_has_gtksourceview11)
+pgtk_has_gtksourceview11=nogtksourceview11
 
 # lib, symbol, ok, fail, feature
 AC_DEFUN([AC_CHECK_PKG],
@@ -237,8 +239,8 @@ else
       gtksourceviewversminorvers=$2
       gtksourceviewverspatchvers=$3
       if test $gtksourceviewversminorvers -ge 1 ; then
-	pgtk_has_gtksourceviewvers11=gtksourceviewvers11
-	AC_DEFINE(HAVE_GTKSOURCEVIEWVERS11)
+	pgtk_has_gtksourceview11=gtksourceview11
+	AC_DEFINE(HAVE_GTKSOURCEVIEW11)
       fi
       AC_MSG_RESULT($gtksourceviewvers)
     ])
