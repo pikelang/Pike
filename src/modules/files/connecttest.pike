@@ -28,7 +28,7 @@ void ok()
 void fail()
 { 
    werror(PRE "can't connect to open port; failure reported\n");
-   exit(1); // ok
+   exit(1); // fail
 }
 
 void ok()
@@ -85,13 +85,24 @@ int main()
    // NOTE: Some OS's (NT) signal connection failure on the
    //       error callback.
    f->set_nonblocking(rcb,ok,fail);
-   if (catch { f->connect("127.0.0.1",z); } &&
-       catch { f->connect("localhost",z); })
+   int ok;
+   if (catch { ok = f->connect("127.0.0.1",z); } &&
+       catch { ok = f->connect("localhost",z); })
    {
       werror(PRE "failed to connect "
-	     "to \"localhost\" nor \"127.0.0.1\"\n");
+	     "to neither \"localhost\" nor \"127.0.0.1\"\n");
       werror(PRE "reporting ok\n");
       return 0;
+   } else if (!ok) {
+     werror(PRE "connect() failed with errno %d: %s\n",
+	    f->errno(), strerror(f->errno()));
+#ifdef TEST_NORMAL
+     werror(PRE "reporting failure\n");
+     return 1;
+#else
+     werror(PRE "reporting ok\n");
+     return 0;
+#endif
    }
    call_out(timeout, 10);
    return -1;
