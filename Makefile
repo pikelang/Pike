@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.153 2005/10/17 10:25:11 nilsson Exp $
+# $Id: Makefile,v 1.154 2005/11/07 21:21:36 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -203,7 +203,7 @@ bin/pike: force
 pike: bin/pike
 	@$(DO_MAKE) "METATARGET=pike" _make_in_builddir
 
-lib:
+lib: force
 	@$(DO_MAKE) "METATARGET=pike.so" _make_in_builddir
 
 install: bin/pike
