@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.363 2005/01/25 18:23:51 grubba Exp $
+|| $Id: interpret.c,v 1.364 2005/11/08 12:17:41 grubba Exp $
 */
 
 #include "global.h"
@@ -320,6 +320,9 @@ PMOD_EXPORT void init_interpreter(void)
       SET_INSTR_ADDRESS(F_SSCANF,		o_sscanf);
 #endif /* PIKE_USE_MACHINE_CODE && !PIKE_DEBUG */
       tables_need_init=0;
+#ifdef INIT_INTERPRETER_STATE
+      INIT_INTERPRETER_STATE();
+#endif
     }
   }
 #endif /* HAVE_COMPUTED_GOTO || PIKE_USE_MACHINE_CODE */
@@ -1299,6 +1302,9 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
       Pike_fatal("Odd offset!\n");
     }
 #endif /* PIKE_OPCODE_ALIGN */
+#ifdef DISASSEMBLE_CODE
+    DISASSEMBLE_CODE(pc, 16*4);
+#else /* !DISASSEMBLE_CODE */
     for (i=0; i < 16; i+=4) {
       fprintf(stderr,
 	      "  0x%08x 0x%08x 0x%08x 0x%08x\n",
@@ -1307,6 +1313,7 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 	      ((int *)pc)[i+2],
 	      ((int *)pc)[i+3]);
     }
+#endif /* DISASSEMBLE_CODE */
   }
   return eval_instruction_low(pc);
 }
@@ -2171,6 +2178,19 @@ PMOD_EXPORT void call_handle_error(void)
       s=simple_free_buf(&save_buf);
       fprintf(stderr,"%s\n",s);
       free(s);
+      if (Pike_sp[-1].type == PIKE_T_OBJECT && Pike_sp[-1].u.object->prog) {
+	int fun = find_identifier("backtrace", Pike_sp[-1].u.object->prog);
+	if (fun != -1) {
+	  fprintf(stderr, "Attempting to extract the backtrace.\n");
+	  safe_apply_low2(Pike_sp[-1].u.object, fun, 0, 0);
+	  init_buf(&save_buf);
+	  describe_svalue(Pike_sp - 1, 0, 0);
+	  pop_stack();
+	  s=simple_free_buf(&save_buf);
+	  fprintf(stderr,"%s\n",s);
+	  free(s);
+	}
+      }
     }
 
     pop_stack();
