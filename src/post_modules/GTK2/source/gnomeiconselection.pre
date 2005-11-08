@@ -1,5 +1,5 @@
 /* -*- C -*- */
-require gnome;
+require gnomeui;
 
 class Gnome2.IconSelection;
 inherit GTK2.Vbox;

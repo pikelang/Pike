@@ -1,5 +1,5 @@
 /* -*- C -*- */
-require gnome;
+require gnomeui;
 
 class Gnome2.DruidPageEdge;
 inherit Gnome2.DruidPage;
