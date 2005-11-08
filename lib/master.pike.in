@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.377 2005/07/22 20:26:09 nilsson Exp $
+// $Id: master.pike.in,v 1.378 2005/11/08 20:03:54 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -981,7 +981,7 @@ program low_cast_to_program(string pname,
   if(IS_ABSOLUTE_PATH(pname))
   {
     program|NoValue prog = programs[pname];
-    if (programp (prog)) return prog;
+    if ((!zero_type(prog)) && (prog != no_value)) return prog;
     pname=combine_path("",pname);
     return findprog(pname,ext,handler,mkobj);
   }
