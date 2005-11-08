@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.90 2004/09/30 14:00:15 mast Exp $
+|| $Id: multiset.c,v 1.91 2005/11/08 12:02:29 grubba Exp $
 */
 
 #include "global.h"
@@ -4203,13 +4203,25 @@ void init_multiset()
   test.i.ind.subtype = (1 << 16) - 1;
   test.i.ind.u.refs = (INT32 *) (ptrdiff_t) -1;
   if (HDR (&test)->flags & (MULTISET_FLAG_MASK))
-    Pike_fatal ("The ind svalue overlays the flags field in an unexpected way.\n");
+    Pike_fatal("The ind svalue overlays the flags field in an unexpected way.\n"
+	       "flags: 0x%08x, MULTISET_FLAG_MASK: 0x%08x\n",
+	       HDR(&test)->flags, MULTISET_FLAG_MASK);
   HDR (&test)->flags |= RB_FLAG_MASK;
   if (test.i.ind.type & MULTISET_FLAG_MARKER)
-    Pike_fatal ("The ind svalue overlays the flags field in an unexpected way.\n");
+    Pike_fatal("The ind svalue overlays the flags field in an unexpected way.\n"
+	       "flags: 0x%08x, MULTISET_FLAG_MASK: 0x%08x\n"
+	       "RB_FLAG_MASK: 0x%08x, MULTISET_FLAG_MARKER: 0x%08x\n",
+	       HDR(&test)->flags, MULTISET_FLAG_MASK,
+	       RB_FLAG_MASK, MULTISET_FLAG_MARKER);
   test.i.ind.type |= MULTISET_FLAG_MARKER;
   if ((test.i.ind.type & ~MULTISET_FLAG_MASK) != (1 << 8) - 1)
-    Pike_fatal ("The ind svalue overlays the flags field in an unexpected way.\n");
+    Pike_fatal("The ind svalue overlays the flags field in an unexpected way.\n"
+	       "flags: 0x%08x, MULTISET_FLAG_MASK: 0x%08x\n"
+	       "RB_FLAG_MASK: 0x%08x, MULTISET_FLAG_MARKER: 0x%08x\n"
+	       "type: 0x%08x\n",
+	       HDR(&test)->flags, MULTISET_FLAG_MASK,
+	       RB_FLAG_MASK, MULTISET_FLAG_MARKER,
+	       test.i.ind.type);
 #endif
 #ifndef HAVE_UNION_INIT
   svalue_int_one.u.integer = 1;
