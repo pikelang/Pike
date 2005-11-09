@@ -164,7 +164,6 @@ testfont binary
 /src/modules/Gz/configure.in foreign_ident
 /src/modules/Gz/testsuite.in foreign_ident
 /src/modules/Gz/zlibmod.c foreign_ident
-/src/modules/Image/Makefile foreign_ident
 /src/modules/Image/Makefile.in foreign_ident
 /src/modules/Image/acconfig.h foreign_ident
 /src/modules/Image/blit.c foreign_ident
