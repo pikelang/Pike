@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_jpeg.c,v 1.72 2005/10/19 16:35:53 grubba Exp $
+|| $Id: image_jpeg.c,v 1.73 2005/11/09 12:36:21 nilsson Exp $
 */
 
 #include "global.h"
@@ -89,7 +89,7 @@
 #include "../Image/image.h"
 
 #ifdef DYNAMIC_MODULE
-static struct program *image_program=NULL;
+static struct program *image_program;
 #else
 extern struct program *image_program; 
 /* Image module is probably linked static too. */
