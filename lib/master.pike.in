@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.378 2005/11/08 20:03:54 grubba Exp $
+// $Id: master.pike.in,v 1.379 2005/11/09 16:26:22 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -306,21 +306,25 @@ string basename(string x)
 int autoreload_on;
 int newest;
 
-#define AUTORELOAD_CHECK_FILE(X) \
-   if(autoreload_on) if(Stat s=master_file_stat(X)) if(s->mtime>newest) newest=[int]s->mtime;
-
 #define AUTORELOAD_BEGIN() \
     int ___newest=newest;  \
     newest=0
 
+#define AUTORELOAD_CHECK_FILE(X) do {					\
+    if(autoreload_on)							\
+      if(Stat s=master_file_stat(X))					\
+	if(s->mtime>newest) newest=[int]s->mtime;			\
+  } while(0)
+
 #define AUTORELOAD_FINISH(VAR, CACHE, FILE)				\
   if(autoreload_on) {							\
     mixed val = CACHE[FILE];						\
-    if(!zero_type (val) && val != no_value && newest <= load_time[FILE]) { \
+    if(!zero_type (val) && val != no_value &&				\
+       newest <= load_time[FILE]) {					\
       VAR = val;							\
     }									\
   }									\
-  load_time[FILE]=time();						\
+  load_time[FILE] = newest;						\
   if(___newest > newest) newest=___newest;
 
 
@@ -748,16 +752,6 @@ static program low_findprog(string pname,
   fname = unrelocate_module(fname);
 #endif
 
-#ifdef PIKE_AUTORELOAD
-  if(!autoreload_on || load_time[fname]>=time())
-#endif
-  {
-    if(!zero_type (ret=programs[fname]) && ret != no_value) {
-      resolv_debug ("low_findprog %s: returning cached (no autoreload)\n", fname);
-      return ret;
-    }
-  }
-
 #ifdef __NT__
   // Ugly kluge to work better with cygwin32 "/X:/" paths.
   if(getenv("OSTYPE")=="cygwin32")
@@ -775,10 +769,20 @@ static program low_findprog(string pname,
 
   if( (s=master_file_stat(fakeroot(fname))) && s->isreg )
   {
+#ifdef PIKE_AUTORELOAD
+    if(!autoreload_on || load_time[fname] >= s->mtime)
+#endif
+    {
+      if(!zero_type (ret=programs[fname]) && ret != no_value) {
+	resolv_debug ("low_findprog %s: returning cached (no autoreload)\n", fname);
+	return ret;
+      }
+    }
+
     AUTORELOAD_BEGIN();
 
 #ifdef PIKE_AUTORELOAD
-    if (load_time[fname] > s->mtime)
+    if (load_time[fname] >= s->mtime)
       if (!zero_type (ret=programs[fname]) && ret != no_value) {
 	resolv_debug ("low_findprog %s: returning cached (autoreload)\n", fname);
 	return ret;
