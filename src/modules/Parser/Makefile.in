@@ -1,7 +1,7 @@
-# $Id: Makefile.in,v 1.9 2004/10/05 21:15:09 nilsson Exp $
+# $Id: Makefile.in,v 1.10 2005/11/12 22:22:41 nilsson Exp $
 @make_variables@
 VPATH=@srcdir@
-OBJS=parser.o html.o rcs.o c.o pike.o
+OBJS=parser.o html.o rcs.o c.o pike.o xml.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
 CONFIG_HEADERS=@CONFIG_HEADERS@

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: initstuff.h,v 1.7 2004/10/05 21:16:54 nilsson Exp $
+|| $Id: initstuff.h,v 1.8 2005/11/12 22:22:41 nilsson Exp $
 */
 
 #ifndef PARSER_INITER
@@ -18,6 +18,7 @@ PARSER_CLASS("HTML", init_parser_html, exit_parser_html,
 PARSER_SUBMODULE("_RCS", init_parser_rcs, exit_parser_rcs )
 PARSER_SUBMODULE("_C", init_parser_c, exit_parser_c )
 PARSER_SUBMODULE("_Pike", init_parser_pike, exit_parser_pike )
+PARSER_SUBMODULE("XML", init_parser_xml, exit_parser_xml )
 
    /*
 for documentation purpose:

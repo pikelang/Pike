@@ -599,6 +599,7 @@ testfont binary
 /src/modules/Parser/initstuff.h foreign_ident
 /src/modules/Parser/parser.c foreign_ident
 /src/modules/Parser/parser.h foreign_ident
+/src/modules/Parser/xml.c foreign_ident
 /src/modules/Perl/Makefile.in foreign_ident
 /src/modules/Perl/README.txt foreign_ident
 /src/modules/Perl/acconfig.h foreign_ident
