@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.352 2005/06/01 03:02:22 bill Exp $
+|| $Id: file.c,v 1.353 2005/11/12 20:21:53 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -1670,7 +1670,7 @@ static void file_open(INT32 args)
   {
      str=Pike_sp[-args].u.string;
 
-     if (strlen(str->str) != (size_t)str->len) {
+     if (string_has_null(str)) {
        /* Filenames with NUL are not supported. */
        ERRNO = errno = ENOENT;
        pop_n_elems(args);

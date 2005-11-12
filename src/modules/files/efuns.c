@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.176 2005/10/06 09:03:57 grubba Exp $
+|| $Id: efuns.c,v 1.177 2005/11/12 20:21:36 nilsson Exp $
 */
 
 #include "global.h"
@@ -444,7 +444,7 @@ void f_file_stat(INT32 args)
   str = sp[-args].u.string;
   l = (args>1 && !UNSAFE_IS_ZERO(sp+1-args))?1:0;
 
-  if (strlen(str->str) != (size_t)str->len) {
+  if (string_has_null(str)) {
     /* Filenames with NUL are not supported. */
     errno = ENOENT;
     pop_n_elems(args);
@@ -512,7 +512,7 @@ void f_file_truncate(INT32 args)
 
   str = sp[-args].u.string;
 
-  if (strlen(str->str) != (size_t)str->len) {
+  if (string_has_null(str)) {
     /* Filenames with NUL are not supported. */
     errno = ENOENT;
     pop_n_elems(args);
@@ -732,7 +732,7 @@ void f_filesystem_stat(INT32 args)
 
   str = sp[-args].u.string;
 
-  if (strlen(str->str) != (size_t)str->len) {
+  if (string_has_null(str)) {
     /* Filenames with NUL are not supported. */
     errno = ENOENT;
     pop_n_elems(args);
@@ -869,7 +869,7 @@ void f_rm(INT32 args)
 
   str = sp[-args].u.string;
   
-  if (strlen(str->str) != (size_t)str->len) {
+  if (string_has_null(str)) {
     /* Filenames with NUL are not supported. */
     errno = ENOENT;
     pop_n_elems(args);
@@ -960,7 +960,7 @@ void f_mkdir(INT32 args)
 
   str = sp[-args].u.string;
 
-  if (strlen(str->str) != (size_t)str->len) {
+  if (string_has_null(str)) {
     /* Filenames with NUL are not supported. */
     errno = EINVAL;
     pop_n_elems(args);
@@ -1201,7 +1201,7 @@ void f_get_dir(INT32 args)
 
 #else /* !__NT__ */
 
-  if (strlen(str->str) != (size_t)str->len) {
+  if (string_has_null(str)) {
     /* Filenames with NUL are not supported. */
     errno = ENOENT;
     pop_n_elems(args);
@@ -1418,7 +1418,7 @@ void f_cd(INT32 args)
 
   str = sp[-args].u.string;
 
-  if (strlen(str->str) != (size_t)str->len) {
+  if (string_has_null(str)) {
     /* Filenames with NUL are not supported. */
     errno = ENOENT;
     pop_n_elems(args);
@@ -1656,10 +1656,9 @@ void f_mv(INT32 args)
   str1 = sp[-args].u.string;
   str2 = sp[1-args].u.string;
 
-  if ((strlen(str1->str) != (size_t)str1->len) ||
-      (strlen(str2->str) != (size_t)str2->len)) {
+  if (string_has_null(str1) || string_has_null(str2)) {
     /* Filenames with NUL are not supported. */
-    if (strlen(str1->str) != (size_t)str1->len) {
+    if (string_has_null(str1)) {
       errno = ENOENT;
     } else {
       errno = EINVAL;

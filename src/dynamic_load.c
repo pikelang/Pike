@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.87 2005/10/19 12:39:43 nilsson Exp $
+|| $Id: dynamic_load.c,v 1.88 2005/11/12 20:21:13 nilsson Exp $
 */
 
 #ifdef TESTING
@@ -438,7 +438,7 @@ void f_load_module(INT32 args)
 
   if((Pike_sp[-args].type != T_STRING) ||
      (module_name->size_shift) ||
-     ((INT32) strlen(module_name->str) != module_name->len)) {
+     string_has_null(module_name)) {
     Pike_error("Bad argument 1 to load_module()\n");
   }
 

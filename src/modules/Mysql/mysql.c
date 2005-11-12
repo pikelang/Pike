@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.91 2005/08/09 16:17:31 grubba Exp $
+|| $Id: mysql.c,v 1.92 2005/11/12 20:22:13 nilsson Exp $
 */
 
 /*
@@ -159,8 +159,7 @@ static MUTEX_T stupid_port_lock;
 #define CHECK_8BIT_NONBINARY_STRING(FUNC, ARG) do {			\
     if (sp[ARG-1-args].type != T_STRING ||				\
 	sp[ARG-1-args].u.string->size_shift ||				\
-	((ptrdiff_t) strlen (sp[ARG-1-args].u.string->str) !=		\
-	 sp[ARG-1-args].u.string->len))					\
+        string_has_null(sp[ARG-1-args].u.string))			\
       SIMPLE_BAD_ARG_ERROR (FUNC, ARG, "string (nonbinary 8bit)");	\
   } while (0)
 
