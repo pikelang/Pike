@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.757 2005/09/14 17:49:31 marcus Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.758 2005/11/12 20:23:53 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -10439,8 +10439,13 @@ test_do(trace(0))
 test_eq(trace(0),0)
 
 // - ualarm
+
 // - umask
+test_true(intp(System.umask()))
+test_eq(System.umask(System.umask()),System.umask())
+
 // - uname
+test_true(mappingp(uname()))
 
 // - unicode_to_string
 // See string_to_unicode
