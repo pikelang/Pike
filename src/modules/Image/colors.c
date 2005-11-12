@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colors.c,v 1.74 2005/03/15 20:56:20 per Exp $
+|| $Id: colors.c,v 1.75 2005/11/12 20:36:07 nilsson Exp $
 */
 
 /*
@@ -1778,6 +1778,8 @@ void init_image_colors(void)
    image_color_program->flags |= 
      PROGRAM_CONSTANT |
      PROGRAM_NO_EXPLICIT_DESTRUCT ;
+
+   PIKE_MODULE_EXPORT(Image, image_color_program);
 
    /* this is the Image.Color stuff */
    
