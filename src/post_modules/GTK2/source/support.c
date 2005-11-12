@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.3 2005/11/04 19:07:34 grubba Exp $
+|| $Id: support.c,v 1.4 2005/11/12 21:22:53 nilsson Exp $
 */
 
 #include <version.h>
@@ -60,17 +60,24 @@ void pgtk_index_stack(char *what) {
 #endif
 }
 
+#ifdef DYNAMIC_MODULE
+struct program *image_color_program = NULL;
+#else
+extern struct program *image_color_program;
+#endif
+
 int get_color_from_pikecolor(struct object *o, INT_TYPE *r, INT_TYPE *g, INT_TYPE *b) {
   struct color_struct *col;
-  static struct program *pike_color_program;
-  if (!pike_color_program) {
-    pgtk_get_image_module();
-    pgtk_index_stack("Color");
-    pgtk_index_stack("Color");
-    pike_color_program=program_from_svalue(--Pike_sp);
-  }
 
-  col=(struct color_struct *)get_storage(o,pike_color_program);
+#ifdef DYNAMIC_MODULE
+  if (!image_color_program) {
+    image_color_program = PIKE_MODULE_IMPORT(Image, image_color_program);
+    if(!image_color_program)
+      Pike_error("Could not load Image module.\n");
+  }
+#endif
+
+  col=(struct color_struct *)get_storage(o,image_color_program);
   if (!col)
     return 0;
   *r=col->rgbl.r/(COLORLMAX/65535);
@@ -79,18 +86,33 @@ int get_color_from_pikecolor(struct object *o, INT_TYPE *r, INT_TYPE *g, INT_TYP
   return 1;
 }
 
+#ifdef DYNAMIC_MODULE
+struct program *image_program = NULL;
+#else
+extern struct program *image_program;
+#endif
 
 GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GdkImage *i) {
   GdkColormap *col=gdk_colormap_get_system();
   GdkVisual *vis=gdk_visual_get_system();
+  struct image *img_data;
   INT_TYPE x,y;
 
-  /* 1a: create the actual image... */
   TIMER_INIT("Getting extents");
-  apply(img,"xsize",0);
-  apply(img,"ysize",0);
-  get_all_args("internal",2,"%i%i",&x,&y);
-  pop_n_elems(2);
+
+#ifdef DYNAMIC_MODULE
+  if(!image_program) {
+    image_program = PIKE_MODULE_IMPORT(Image, image_program);
+    if(!image_program)
+      Pike_error("Could not load Image module.\n");
+  }
+#endif
+
+  img_data=(struct image*)get_storage(img, image_program);
+
+  /* 1a: create the actual image... */
+  x = img_data->xsize;
+  y = img_data->ysize;
 
 
   if (x==0 || y==0)
@@ -118,7 +140,7 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GdkImage *i) {
     int native_byteorder;
     PFTIME("Convert");
     if (vis->type==GDK_VISUAL_STATIC_GRAY)
-      pgtk_encode_grey((void *)img->storage,i->mem,i->bpp,i->bpl);
+      pgtk_encode_grey(img_data,i->mem,i->bpp,i->bpl);
     else {
       if (i->bpl!=(i->bpp*x))
 	switch(i->bpl & 3) {
@@ -129,7 +151,7 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GdkImage *i) {
 	}
       else
 	pad=0;
-      pgtk_encode_truecolor_masks((void *)img->storage,i->bpp*8,pad*8,
+      pgtk_encode_truecolor_masks(img_data,i->bpp*8,pad*8,
                                   (i->byte_order!=1),vis->red_mask,
                                   vis->green_mask,vis->blue_mask,
                                   i->mem, i->bpl*y);
