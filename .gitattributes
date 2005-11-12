@@ -734,7 +734,6 @@ testfont binary
 /src/modules/spider/discdate.c foreign_ident
 /src/modules/spider/spider.c foreign_ident
 /src/modules/spider/stardate.c foreign_ident
-/src/modules/spider/xml.c foreign_ident
 /src/modules/sprintf/Makefile.in foreign_ident
 /src/modules/sprintf/acconfig.h foreign_ident
 /src/modules/sprintf/configure.in foreign_ident

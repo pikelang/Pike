@@ -1,7 +1,7 @@
-# $Id: Makefile.in,v 1.21 2003/05/04 13:32:21 mast Exp $
+# $Id: Makefile.in,v 1.22 2005/11/12 22:34:52 nilsson Exp $
 @make_variables@
 VPATH=@srcdir@
-OBJS=spider.o discdate.o stardate.o xml.o
+OBJS=spider.o discdate.o stardate.o
 MODULE_LDFLAGS=@LDFLAGS@
 
 CONFIG_HEADERS=@CONFIG_HEADERS@

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: spider.c,v 1.131 2005/07/13 19:05:26 grubba Exp $
+|| $Id: spider.c,v 1.132 2005/11/12 22:34:52 nilsson Exp $
 */
 
 #include "global.h"
@@ -1174,18 +1174,9 @@ PIKE_MODULE_INIT
 
   /* function(int:string) */
   ADD_FUNCTION("fd_info", f_fd_info,tFunc(tInt,tStr), OPT_EXTERNAL_DEPEND);
-
-  {
-    extern void init_xml(void);
-    init_xml();
-  }
 }
 
 
 PIKE_MODULE_EXIT
 {
-  {
-    extern void exit_xml(void);
-    exit_xml();
-  }
 }
