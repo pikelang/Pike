@@ -1183,7 +1183,7 @@ class AbstractDOMParser
 class NonValidatingDOMParser
 {
   inherit AbstractDOMParser;
-  static inherit Parser.XML.Simple : xml;
+  static inherit .Simple : xml;
 
   static string autoconvert(string data, InputSource input)
   {

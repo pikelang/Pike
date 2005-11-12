@@ -347,7 +347,7 @@ static NSNode|int(0..0) parse_xml_callback(string type, string name,
 //!   parsing.
 NSNode parse_input(string data, void|string default_ns)
 {
-  object xp = spider.XML();
+  .Simple xp = .Simple();
   Node mRoot;
   
   xp->allow_rxml_entities(1);

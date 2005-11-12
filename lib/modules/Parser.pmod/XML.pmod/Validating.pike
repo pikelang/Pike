@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-inherit Parser.XML.Simple;
+inherit .Simple;
 
 static private mapping(string:array(function)) __element_content = ([]);
 static private mapping(string:mapping(string:array)) __element_attrs = ([]);

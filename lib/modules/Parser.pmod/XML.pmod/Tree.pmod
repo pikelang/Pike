@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.57 2005/10/31 11:37:49 nilsson Exp $
+ * $Id: Tree.pmod,v 1.58 2005/11/12 22:25:00 nilsson Exp $
  *
  */
 
@@ -741,6 +741,12 @@ static class VirtualNode {
   {
     if (mNodeType & (XML_ELEMENT | XML_PI))
       mTagName = name;
+  }
+
+  //! Return the (resolved) namespace for this node.
+  string get_namespace()
+  {
+    return mNamespace;
   }
 
   //! Return fully qualified name of the element node.
@@ -1657,7 +1663,7 @@ SimpleNode simple_parse_input(string data,
 			      void|mapping predefined_entities,
 			      ParseFlags|void flags)
 {
-  Parser.XML.Simple xp = Parser.XML.Simple();
+  .Simple xp = .Simple();
   SimpleNode mRoot;
 
   if (!(flags & PARSE_DISALLOW_RXML_ENTITIES))
@@ -1737,7 +1743,7 @@ Node parse_input(string data, void|int(0..1) no_fallback,
 		 void|int(0..1) parse_namespaces,
 		 ParseFlags|void flags)
 {
-  Parser.XML.Simple xp = Parser.XML.Simple();
+  .Simple xp = .Simple();
   Node mRoot;
 
   if (!(flags & PARSE_DISALLOW_RXML_ENTITIES))
