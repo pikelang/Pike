@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.28 2005/06/01 14:08:53 per Exp $
+|| $Id: SDL.cmod,v 1.29 2005/11/12 20:37:07 nilsson Exp $
 */
 
 #include "global.h"
@@ -44,18 +44,6 @@
 
 /* To be able to access image functionality */
 #include  "modules/Image/image.h" 
-struct svalue _image_program = {
-  T_INT, 0,
-#ifdef HAVE_UNION_INIT
-  {0}, /* Only to avoid warnings. */
-#endif
-};
-struct svalue _image_color_program = {
-  T_INT, 0,
-#ifdef HAVE_UNION_INIT
-  {0}, /* Only to avoid warnings. */
-#endif
-};
 
 #ifdef DYNAMIC_MODULE
 struct program *image_program;
@@ -2759,37 +2747,19 @@ PIKE_MODULE_INIT
   init_sdl_constants();
    
 #ifdef DYNAMIC_MODULE
-  push_text("Image.Image");
-  SAFE_APPLY_MASTER("resolv", 1);
+  image_program = PIKE_MODULE_IMPORT(Image, image_program);
+  image_color_program = PIKE_MODULE_IMPORT(Image, image_color_program);
 
-  _image_program = Pike_sp[-1];
-  dmalloc_touch_svalue(&_image_program);
-  image_program = program_from_svalue(&_image_program);
-
-  Pike_sp--;
-
-  push_text("Image.Color.Color");
-  SAFE_APPLY_MASTER("resolv", 1);
-  
-  _image_color_program = Pike_sp[-1];
-  dmalloc_touch_svalue(&_image_color_program);
-  image_color_program = program_from_svalue(&_image_color_program);
-
-  Pike_sp--;
+  if(!image_program || !image_color_program) {
+    yyerror("Could not load Image module.");
+    return;
+  }
 #endif
 }
 
 PIKE_MODULE_EXIT
 {
   EXIT;
-#ifdef DYNAMIC_MODULE
-  free_svalue(&_image_color_program);
-  _image_color_program.type = PIKE_T_INT;
-  image_color_program = NULL;
-  free_svalue(&_image_program);
-  _image_program.type = PIKE_T_INT;
-  image_program = NULL;
-#endif
   SDL_Quit();
 }
 
