@@ -98,8 +98,10 @@ array(string) get_authors()
     const gchar * const *auth;
     int i=0;
     auth=gtk_about_dialog_get_authors(GTK_ABOUT_DIALOG(THIS->obj));
-    while (auth[i])
+    while (auth[i]) {
       push_text(auth[i++]);
+      f_utf8_to_string(1);
+    }
     f_aggregate(i);
   }
 }
@@ -110,24 +112,41 @@ void set_authors(array(string) auth)
 {
   pgtk_verify_inited();
   {
+    ONERROR err;
     struct array *a;
     int i,j;
     const gchar **auth;
     get_all_args("set_authors",args,"%A",&a);
     if (a==NULL)
       Pike_error("Invalid array.\n");
-    auth=xmalloc(sizeof(gchar *)*(a->size+1));
+
+    /* Make sure we have space for the strings on the stack. */
+    check_stack(a->size+2);
+
+    auth=xalloc(sizeof(gchar *)*(a->size+1));
+    SET_ONERROR(err, free, auth);
+
     for (i=j=0; i<a->size; i++) {
-      if ((ITEM(a)+i)->type==PIKE_T_STRING) {
-	auth[j]=xmalloc(sizeof(gchar)*(strlen(STR0((ITEM(a)+i)->u.string))+1));
-	strcpy(auth[j++],STR0((ITEM(a)+i)->u.string));
+      if (ITEM(a)[i].type == PIKE_T_STRING) {
+	ref_push_string(ITEM(a)[i].u.string);
+	f_string_to_utf8(1);
+#ifdef PIKE_DEBUG
+	if ((Pike_sp[-1].type != PIKE_T_STRING) ||
+	    (Pike_sp[-1].u.string->size_shift)) {
+	  Pike_fatal("Unexpected result from string_to_utf8: %s\n",
+		     get_name_of_type(Pike_sp[-1].u.type));
+	}
+#endif /* PIKE_DEBUG */
+	auth[j++] = Pike_sp[-1].u.string->str;
       }
     }
     auth[j]=NULL;
+
     gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(THIS->obj),auth);
-    for (i=0; i<=j; i++)
-      xfree(auth[i]);
-    xfree(auth);
+
+    pop_n_elems(j);
+
+    CALL_AND_UNSET_ONERROR(err);
   }
   RETURN_THIS();
 }
@@ -142,8 +161,10 @@ array(string) get_artists()
     const gchar * const *art;
     int i=0;
     art=gtk_about_dialog_get_artists(GTK_ABOUT_DIALOG(THIS->obj));
-    while (art[i])
+    while (art[i]) {
       push_text(art[i++]);
+      f_utf8_to_string(1);
+    }
     f_aggregate(i);
   }
 }
@@ -154,24 +175,41 @@ void set_artists(array(string) art)
 {
   pgtk_verify_inited();
   {
+    ONERROR err;
     struct array *a;
     int i,j;
     const gchar **art;
     get_all_args("set_artists",args,"%A",&a);
     if (a==NULL)
       Pike_error("Invalid array.\n");
-    art=xmalloc(sizeof(gchar *)*(a->size+1));
+
+    /* Make sure we have space for the strings on the stack. */
+    check_stack(a->size+2);
+
+    art=xalloc(sizeof(gchar *)*(a->size+1));
+    SET_ONERROR(err, free, art);
+
     for (i=j=0; i<a->size; i++) {
-      if ((ITEM(a)+i)->type==PIKE_T_STRING) {
-	art[j]=xmalloc(sizeof(gchar)*(strlen(STR0((ITEM(a)+i)->u.string))+1));
-	strcpy(art[j++],STR0((ITEM(a)+i)->u.string));
+      if (ITEM(a)[i].type == PIKE_T_STRING) {
+	ref_push_string(ITEM(a)[i].u.string);
+	f_string_to_utf8(1);
+#ifdef PIKE_DEBUG
+	if ((Pike_sp[-1].type != PIKE_T_STRING) ||
+	    (Pike_sp[-1].u.string->size_shift)) {
+	  Pike_fatal("Unexpected result from string_to_utf8: %s\n",
+		     get_name_of_type(Pike_sp[-1].u.type));
+	}
+#endif /* PIKE_DEBUG */
+	art[j++] = Pike_sp[-1].u.string->str;
       }
     }
     art[j]=NULL;
+
     gtk_about_dialog_set_artists(GTK_ABOUT_DIALOG(THIS->obj),art);
-    for (i=0; i<=j; i++)
-      xfree(art[i]);
-    xfree(art);
+
+    pop_n_elems(j);
+
+    CALL_AND_UNSET_ONERROR(err);
   }
   RETURN_THIS();
 }
@@ -186,8 +224,10 @@ array(string) get_documenters()
     const gchar * const *doc;
     int i=0;
     doc=gtk_about_dialog_get_documenters(GTK_ABOUT_DIALOG(THIS->obj));
-    while (doc[i])
+    while (doc[i]) {
       push_text(doc[i++]);
+      f_utf8_to_string(1);
+    }
     f_aggregate(i);
   }
 }
@@ -198,24 +238,41 @@ void set_documenters(array(string) doc)
 {
   pgtk_verify_inited();
   {
+    ONERROR err;
     struct array *a;
     int i,j;
     const gchar **doc;
     get_all_args("set_documenters",args,"%A",&a);
     if (a==NULL)
       Pike_error("Invalid array.\n");
-    doc=xmalloc(sizeof(gchar *)*(a->size+1));
+
+    /* Make sure we have space for the strings on the stack. */
+    check_stack(a->size+2);
+
+    doc=xalloc(sizeof(gchar *)*(a->size+1));
+    SET_ONERROR(err, free, doc);
+
     for (i=j=0; i<a->size; i++) {
-      if ((ITEM(a)+i)->type==PIKE_T_STRING) {
-	doc[j]=xmalloc(sizeof(gchar)*(strlen(STR0((ITEM(a)+i)->u.string))+1));
-	strcpy(doc[j++],STR0((ITEM(a)+i)->u.string));
+      if (ITEM(a)[i].type == PIKE_T_STRING) {
+	ref_push_string(ITEM(a)[i].u.string);
+	f_string_to_utf8(1);
+#ifdef PIKE_DEBUG
+	if ((Pike_sp[-1].type != PIKE_T_STRING) ||
+	    (Pike_sp[-1].u.string->size_shift)) {
+	  Pike_fatal("Unexpected result from string_to_utf8: %s\n",
+		     get_name_of_type(Pike_sp[-1].u.type));
+	}
+#endif /* PIKE_DEBUG */
+	doc[j++] = Pike_sp[-1].u.string->str;
       }
     }
     doc[j]=NULL;
+
     gtk_about_dialog_set_artists(GTK_ABOUT_DIALOG(THIS->obj),doc);
-    for (i=0; i<=j; i++)
-      xfree(doc[i]);
-    xfree(doc);
+
+    pop_n_elems(j);
+
+    CALL_AND_UNSET_ONERROR(err);
   }
   RETURN_THIS();
 }
