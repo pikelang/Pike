@@ -15,14 +15,14 @@ static private multiset(string) __notations_used = (<>);
 
 static int isname(string s)
 {
-  return sizeof(s) && spider.isfirstnamechar(s[0]) &&
-    sizeof(filter(s[1..], spider.isnamechar)) == sizeof(s)-1;
+  return sizeof(s) && .isfirstnamechar(s[0]) &&
+    sizeof(filter(s[1..], .isnamechar)) == sizeof(s)-1;
 }
 
 static int isnmtoken(string s)
 {
   return sizeof(s) &&
-    sizeof(filter(s, spider.isnamechar)) == sizeof(s);
+    sizeof(filter(s, .isnamechar)) == sizeof(s);
 }
 
 static int isnames(string s)
