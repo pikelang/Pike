@@ -1,18 +1,17 @@
-; Configuration file for Inno Setup 4
+; Configuration file for Inno Setup 5
 ; By Martin Nilsson
 
 #define MAJOR "7"
 #define MINOR "6"
-#define BUILD "24"
-#define INST  "2"
+#define BUILD "50"
+#define INST  "6"
 
 [Setup]
 InternalCompressLevel=ultra
 SolidCompression=true
-Compression=lzma
+Compression=lzma/ultra
 SetupIconFile=pikeinstall.ico
-UninstallIconFile=icons\pike_red.ico
-#emit 'OutputBaseFilename=Pike-'+MAJOR+'.'+MINOR+'.'+BUILD+'-win32-nilsson-beta'+inst
+#emit 'OutputBaseFilename=Pike-v'+MAJOR+'.'+MINOR+'.'+BUILD+'.'+inst+'-win32'
 
 LicenseFile=Copying.txt
 AllowNoIcons=true
@@ -26,6 +25,9 @@ AllowNoIcons=true
 DefaultDirName={pf}\Pike
 DefaultGroupName=Pike
 AppPublisherURL=http://pike.ida.liu.se/
+ShowLanguageDialog=yes
+AppID={{6E40542B-DCFC-49FC-AD8A-B0F978E2935E}
+UninstallDisplayIcon=icons\pike_red.ico
 
 [Files]
 
@@ -60,6 +62,7 @@ Source: dlls\iconv-1.3.dll; DestDir: {app}; Flags: ignoreversion restartreplace 
 ; SDL
 Source: ~piketmp\build\lib\modules\SDL.so; DestDir: {app}\lib\modules\; Flags: ignoreversion; Components: sdl
 Source: dlls\SDL.dll; DestDir: {app}; Flags: restartreplace ignoreversion sharedfile; Components: sdl
+Source: dlls\SDL_mixer.dll; DestDir: {app}; Flags: restartreplace ignoreversion sharedfile; Components: sdl
 
 
 [Components]
