@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: font.c,v 1.88 2005/11/03 16:08:51 grubba Exp $
+|| $Id: font.c,v 1.89 2005/11/13 12:14:28 nilsson Exp $
 */
 
 #include "global.h"
@@ -310,9 +310,9 @@ void font_load(INT32 args)
   size_t mmaped_size = 0;
 #endif
   size_t size = 0;
+  char *filename;
 
-  if (args && Pike_sp[-args].type != T_STRING)
-    Pike_error("font->read: illegal or wrong number of arguments\n");
+  get_all_args("Image.Font->load()", args, ".%s", &filename);
 
   if (!args) 
   {
@@ -326,7 +326,7 @@ void font_load(INT32 args)
 #ifdef FONT_DEBUG
       fprintf(stderr,"FONT open '%s'\n",sp[-args].u.string->str);
 #endif
-      fd = fd_open(sp[-args].u.string->str,fd_RDONLY,0);
+      fd = fd_open(filename,fd_RDONLY,0);
       if (errno == EINTR) check_threads_etc();
     } while(fd < 0 && errno == EINTR);
 
@@ -586,8 +586,10 @@ void font_write(INT32 args)
 	   }
 	 }
 	 break;
+#ifdef PIKE_DEBUG
        default:
 	 Pike_fatal("Illegal shift size!\n");
+#endif
       }
       width_of[j]=max;
       if (max>maxwidth2) maxwidth2=max;
@@ -692,8 +694,10 @@ void font_write(INT32 args)
 	}
 	/* THREADS_DISALLOW(); */
 	break;
+#ifdef PIKE_DEBUG
       default:
 	Pike_fatal("Illegal shift size!\n");
+#endif
      }
    }
    CALL_AND_UNSET_ONERROR(err);
