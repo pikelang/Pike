@@ -1,5 +1,7 @@
 #pike 7.7
 
+inherit spider;
+
 constant XML = Parser._parser.XML.Simple;
 
 #define DEF(X) constant X = Parser._parser.XML.##X
