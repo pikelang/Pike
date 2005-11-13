@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fuse.c,v 1.7 2005/05/17 21:51:43 per Exp $
+|| $Id: fuse.c,v 1.8 2005/11/13 12:25:06 nilsson Exp $
 */
 
 #include "global.h"
@@ -458,10 +458,11 @@ static void f_fuse_run( INT32 nargs )
     argv = malloc( sizeof(char *) * args->size );
     for( i = 0; i<args->size; i++ )
     {
-	if( args->item[i].type != PIKE_T_STRING )
+	if( args->item[i].type != PIKE_T_STRING ||
+	    string_has_null(args->item[i].u.string) )
 	{
 	    free( argv );
-	    Pike_error("Argument %d is not a string\n", i );
+	    Pike_error("Argument %d is not a nonbinary string\n", i );
 	}
 	argv[i] = args->item[i].u.string->str;
     }
