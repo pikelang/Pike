@@ -36,4 +36,48 @@ test_true(
 #pike 7.6
 functionp(Standards.UUID.new_string))
 
+test_true(
+#pike 7.6
+objectp(spider.XML()))
+
+test_true(
+#pike 7.6
+functionp(spider.isbasechar))
+
+test_true(
+#pike 7.6
+functionp(spider.iscombiningchar))
+
+test_true(
+#pike 7.6
+functionp(spider.isdigit))
+
+test_true(
+#pike 7.6
+functionp(spider.isextender))
+
+test_true(
+#pike 7.6
+functionp(spider.isfirstnamechar))
+
+test_true(
+#pike 7.6
+functionp(spider.ishexchar))
+
+test_true(
+#pike 7.6
+functionp(spider.isidographic))
+
+test_true(
+#pike 7.6
+functionp(spider.isletter))
+
+test_true(
+#pike 7.6
+functionp(spider.isnamechar))
+
+test_true(
+#pike 7.6
+functionp(spider.isspace))
+
 END_MARKER
