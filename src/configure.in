@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.850 2005/10/13 14:48:08 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.851 2005/11/13 04:30:07 peter Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2058,6 +2058,11 @@ if test "$cflags_is_set" = "no"; then
       pike_cv_sys_dynamic_loading=yes
       with_dynamic_modules=yes
       AC_DEFINE(USE_MY_WIN32_DLOPEN)
+    fi
+
+    if echo foo "$CC" | egrep 'rntc.|rnt.cl' >/dev/null; then
+      #Add icon resource to pike.exe
+      EXTRA_OBJS="${EXTRA_OBJS} icons.RES"
     fi
   ])
 

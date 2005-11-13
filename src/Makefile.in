@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.388 2005/11/01 18:59:03 grubba Exp $
+# $Id: Makefile.in,v 1.389 2005/11/13 04:30:07 peter Exp $
 #
 
 # This line is needed on some machines.
@@ -322,7 +322,7 @@ pixie: pike
 	mv pike.pixie.threads pixie
 	@echo Make sure you have '.' in your LD_LIBRARY_PATH.
 
-tools: hilfe rsif
+tools: hilfe rsif icons.RES
 
 hilfe: $(TMP_BINDIR)/hilfe Makefile
 	@echo "Creating hilfe..."; \
@@ -334,7 +334,18 @@ rsif: $(TMP_BINDIR)/rsif Makefile
 	( sed -e 's!pike!$(exec_prefix)/pike!' <$(TMP_BINDIR)/rsif \
 	  >./rsif && chmod 755 ./rsif) || exit 1 ;
 
-dump_modules: pike master-stamp
+icons.RES: $(PACKAGINGDIR)/windows/icons/icons.rc
+	@case " $(CC)" in \
+	  *\ rnt*) \
+	    echo "Compiling Windows icon resource..." ;\
+	    cp $(PACKAGINGDIR)/windows/icons/pike_*.ico $(TMP_BUILDDIR)/ ;\
+	    cp $(PACKAGINGDIR)/windows/icons/icons.rc $(TMP_BUILDDIR)/ ;\
+	    sprsh rc /r icons.rc && \
+	    echo "Done." ;\
+	  ;; \
+	esac
+
+dump_modules: 
 	-rm dumpmodule.log
 	args="$(DUMPARGS)"; \
 	args=$${args:-"--log-file --update-only=dumpversion --report-failed"}; \
