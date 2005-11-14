@@ -1,6 +1,6 @@
 /* XImage.pmod
  *
- * $Id: XImage.pmod,v 1.21 2004/01/11 00:46:12 nilsson Exp $
+ * $Id: XImage.pmod,v 1.22 2005/11/14 22:12:08 nilsson Exp $
  */
 
 /*
@@ -106,7 +106,7 @@ class XImage
   object /*(Types.RootWindow)*/ root; // extends window
   object /*(Types.Visual)*/ visual;
   object /*(Types.Colormap)*/ colormap;
-  object (Image.colortable) ccol;
+  Image.Colortable ccol;
   object /*(Types.GC)*/ dgc;
 
   int best;
@@ -123,7 +123,7 @@ class XImage
     if(type == "best") best=1;
   }
 
-  object allocate_colortable()
+  Image.Colortable allocate_colortable()
   {
 //     werror("Allocating colortable\n");
     array wanted;
@@ -134,7 +134,7 @@ class XImage
 
     if(sizeof(wanted) < 10) 
     {
-      object i = Image.image(100,100);
+      object i = Image.Image(100,100);
       i->tuned_box(0,0, 100, 50,
 		   ({ ({0,255,255 }),({255,255,255 }),
 		      ({0,0,255 }),({255,0,255 }) }));
@@ -162,7 +162,7 @@ class XImage
     foreach(values(colormap->alloced), mapping m)
       if(m) res[ m->pixel ] = ({ m->red/257, m->green/257, m->blue/257 });
 
-    object ct = Image.colortable( res );
+    Image.Colortable ct = Image.Colortable( res );
     ct->cubicles(12, 12, 12);
     if(best)
       ct->floyd_steinberg();
@@ -284,10 +284,10 @@ class XImage
     switch(_Xlib.visual_classes[visual->c_class])
     {
      case "StaticGray":
-       ccol = Image.colortable(0,0,0, ({0,0,0}), ({255,255,255}), 1<<depth);
+       ccol = Image.Colortable(0,0,0, ({0,0,0}), ({255,255,255}), 1<<depth);
        converter = Image.X.encode_pseudocolor;
        break;
-//     ccol = Image.colortable(0,0,0, ({0,0,0}), ({255,255,255}), 1<<depth);
+//     ccol = Image.Colortable(0,0,0, ({0,0,0}), ({255,255,255}), 1<<depth);
 //     converter = Image.X.encode_pseudocolor;
 //     break;
      case "GrayScale":
@@ -299,7 +299,7 @@ class XImage
        if(depth <= 16)
        {
 #define BITS(Y) (Image.X.examine_mask(Y)[0])
-	 ccol = Image.colortable(1<<BITS(rmask),
+	 ccol = Image.Colortable(1<<BITS(rmask),
 				 1<<BITS(gmask),
 				 1<<BITS(bmask));
 	 ccol->ordered();
