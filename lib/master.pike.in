@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.379 2005/11/09 16:26:22 grubba Exp $
+// $Id: master.pike.in,v 1.380 2005/11/14 19:56:18 nilsson Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -643,7 +643,7 @@ program objects_reverse_lookup (object obj)
   if (sizeof (rev_objects) < sizeof (objects)) {
     foreach (objects; program prog; object|NoValue obj)
       if (obj == no_value)
-	m_delete (objects, obj);
+	m_delete (rev_objects, obj);
       else
 	rev_objects[obj] = prog;
   }
