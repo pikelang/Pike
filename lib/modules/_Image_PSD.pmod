@@ -39,7 +39,7 @@ Layer decode_layer(mapping layer, mapping i)
   l->height = layer->bottom-layer->top;
   l->xoffset = layer->left;
   l->yoffset = layer->top;
-  l->image = Image.image( l->width, l->height );
+  l->image = Image.Image( l->width, l->height );
   l->mode = layer->mode;
   l->flags = layer->flags;
   l->name = layer->name;
@@ -108,7 +108,7 @@ Layer decode_layer(mapping layer, mapping i)
                  ({0,255,0,}),
                  ({0,0,255,}),
                }) + ({ 255,255,255 }) * 24;
-     l->image = Image.image( l->width, l->height, 255, 255, 255);
+     l->image = Image.Image( l->width, l->height, 255, 255, 255);
      break;
 
    case Indexed:

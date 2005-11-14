@@ -33,7 +33,7 @@ this_program size(int x, int y)
   if(!bgc) bgc = GDK.GC( background_pix||backing_store||this );
   object nb;
   if((x>_xsize || y>_ysize) && x && y)
-    nb = GDK.Pixmap( Image.image(max(x,_xsize),max(y,_ysize)) );
+    nb = GDK.Pixmap( Image.Image(max(x,_xsize),max(y,_ysize)) );
   if(nb && backing_store)
   {
     nb->draw_pixmap( bgc, backing_store, 0,0,0,0, _xsize, _ysize );
