@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module_support.h,v 1.16 2002/10/21 17:05:07 marcus Exp $
+|| $Id: module_support.h,v 1.17 2005/11/14 20:43:47 nilsson Exp $
 */
 
 #ifndef MODULE_SUPPORT_H
@@ -31,6 +31,7 @@ struct expect_result {
 #define PIKE_MODULE_IMPORT(MOD, SYM) \
   pike_module_import_symbol(#MOD "." #SYM, CONSTANT_STRLEN(#MOD "." #SYM), #MOD, CONSTANT_STRLEN(#MOD))
 
+#define HIDE_MODULE() ADD_INT_CONSTANT("this_program_does_not_exist",1,0)
 
 /* Prototypes begin here */
 PMOD_EXPORT int check_args(int args, ...);
