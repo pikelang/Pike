@@ -6,8 +6,6 @@
 
 #include "graph.h"
 
-import Image;
-
 inherit "polyline.pike";
 inherit "create_graph.pike";
 
@@ -33,7 +31,7 @@ mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
   //Fix defaultcolors!
   setinitcolors(diagram_data);
 
-  object(image) barsdiagram;
+  Image.Image barsdiagram;
 
   START_DEBUG("init_bg");
   init_bg(diagram_data);
@@ -185,10 +183,10 @@ mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
 	->write(UNICODE(label,diagram_data["encoding"]))
 	->scale(0,diagram_data["labelsize"]);
     else
-      labelimg=image(diagram_data["labelsize"],diagram_data["labelsize"]);
+      labelimg=Image.Image(diagram_data["labelsize"],diagram_data["labelsize"]);
 
     if (labelimg->xsize()<1)
-      labelimg=image(diagram_data["labelsize"],diagram_data["labelsize"]);
+      labelimg=Image.Image(diagram_data["labelsize"],diagram_data["labelsize"]);
 
     if (labelimg->xsize()>
 	diagram_data["xsize"]/2)
@@ -734,10 +732,10 @@ mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
       labelimg=notext
 	->write(label)->scale(0,diagram_data["labelsize"]);
     else
-      labelimg=image(diagram_data["labelsize"],diagram_data["labelsize"]);
+      labelimg=Image.Image(diagram_data["labelsize"],diagram_data["labelsize"]);
     
     if (labelimg->xsize()<1)
-      labelimg=image(diagram_data["labelsize"],diagram_data["labelsize"]);
+      labelimg=Image.Image(diagram_data["labelsize"],diagram_data["labelsize"]);
     
     if (labelimg->xsize()>
 	diagram_data["xsize"])
