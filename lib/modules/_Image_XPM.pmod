@@ -78,8 +78,8 @@ mapping _decode( string what, void|mapping opts )
 //   else
     colors = sort(data[1..ncolors]);
   TD("Creating images");
-  object i = Image.image( width, height );
-  object a = Image.image( width, height,255,255,255 );
+  object i = Image.Image( width, height );
+  object a = Image.Image( width, height,255,255,255 );
   TD("Decoding image");
 //   for(int y = 0; y<height && y<sizeof(data); y++)
   _xpm_write_rows( i,a,cpp,colors,data );

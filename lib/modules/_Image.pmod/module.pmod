@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.41 2005/07/22 20:35:32 nilsson Exp $
+// $Id: module.pmod,v 1.42 2005/11/14 21:29:19 nilsson Exp $
 
 static constant fmts = ([
   "image/x-pnm" : "PNM",
@@ -23,7 +23,7 @@ static constant fmts = ([
 //! has some limited ability to decode macbinary files as well.
 mapping _decode( string data )
 {
-  Image.image i, a;
+  Image.Image i, a;
   string format;
 
   if(!data)
