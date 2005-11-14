@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module_support.c,v 1.64 2004/12/13 19:09:58 mast Exp $
+|| $Id: module_support.c,v 1.65 2005/11/14 20:00:25 nilsson Exp $
 */
 
 #include "global.h"
@@ -287,7 +287,10 @@ static int va_get_args_2(struct svalue *s,
     case 's':
       if(s->type != T_STRING) goto type_err;
       if(s->u.string->size_shift) goto type_err;
-      /* Ought to check for embedded NUL here? */
+
+      /* FIXME: Should set a better error message. */
+      if(string_has_null(s->u.string)) goto type_err;
+
       *va_arg(ap, char **)=s->u.string->str;
       break;
 
