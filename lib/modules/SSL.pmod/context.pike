@@ -1,5 +1,5 @@
 //
-// $Id: context.pike,v 1.32 2005/10/28 19:49:39 bill Exp $
+// $Id: context.pike,v 1.33 2005/11/14 19:51:57 nilsson Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -238,7 +238,7 @@ void record_session(.session s)
 }
 
 //! Remove a session from the cache.
-void purge_session(object s)
+void purge_session(.session s)
 {
 #ifdef SSL3_DEBUG
   werror("SSL.context->purge_session: %O\n", s->identity || "");
