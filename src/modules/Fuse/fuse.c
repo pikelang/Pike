@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fuse.c,v 1.8 2005/11/13 12:25:06 nilsson Exp $
+|| $Id: fuse.c,v 1.9 2005/11/14 21:15:25 nilsson Exp $
 */
 
 #include "global.h"
@@ -509,5 +509,7 @@ PIKE_MODULE_EXIT
 
 PIKE_MODULE_INIT
 {
+  if(!TEST_COMPAT(7,6))
+    HIDE_MODULE();
 }
 #endif /* HAVE_LIBFUSE */

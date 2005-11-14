@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.92 2005/11/12 20:22:13 nilsson Exp $
+|| $Id: mysql.c,v 1.93 2005/11/14 21:15:25 nilsson Exp $
 */
 
 /*
@@ -1812,6 +1812,9 @@ PIKE_MODULE_INIT
 #endif /* HAVE_MYSQL_PORT */
 
   init_mysql_res_programs();
+#else
+  if(!TEST_COMPAT(7,6))
+    HIDE_MODULE();
 #endif /* HAVE_MYSQL */
 }
 

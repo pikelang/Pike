@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.38 2005/05/06 00:47:01 nilsson Exp $
+|| $Id: odbc.c,v 1.39 2005/11/14 21:15:25 nilsson Exp $
 */
 
 /*
@@ -546,6 +546,9 @@ PIKE_MODULE_INIT
 
   init_odbc_res_programs();
 
+#else
+  if(!TEST_COMPAT(7,6))
+    HIDE_MODULE();
 #endif /* HAVE_ODBC */
 }
 

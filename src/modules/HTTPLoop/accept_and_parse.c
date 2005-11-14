@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: accept_and_parse.c,v 1.37 2005/02/10 15:02:52 per Exp $
+|| $Id: accept_and_parse.c,v 1.38 2005/11/14 21:15:25 nilsson Exp $
 */
 
 /* Hohum. Here we go. This is try number four for a more optimized
@@ -763,6 +763,9 @@ PIKE_MODULE_INIT
   set_init_callback( aap_init_request_object );
   set_exit_callback( aap_exit_request_object );
   add_program_constant("prog", (c_request_program = end_program()), 0);
+#else
+  if(!TEST_COMPAT(7,6))
+    HIDE_MODULE();
 #endif /* _REENTRANT */
 }
 

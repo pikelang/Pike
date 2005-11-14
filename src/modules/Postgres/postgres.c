@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.42 2005/07/16 17:19:23 nilsson Exp $
+|| $Id: postgres.c,v 1.43 2005/11/14 21:15:25 nilsson Exp $
 */
 
 /*
@@ -809,6 +809,10 @@ PIKE_MODULE_EXIT
 
 #else /* HAVE_POSTGRES */
 #include "module.h"
-PIKE_MODULE_INIT {}
+#include "module_support.h"
+PIKE_MODULE_INIT {
+  if(!TEST_COMPAT(7,6))
+    HIDE_MODULE();
+}
 PIKE_MODULE_EXIT {}
 #endif /* HAVE_POSTGRES */

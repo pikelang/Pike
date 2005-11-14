@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gettext.c,v 1.23 2004/10/07 22:49:56 nilsson Exp $
+|| $Id: gettext.c,v 1.24 2005/11/14 21:15:25 nilsson Exp $
 */
 
 #include "global.h"
@@ -510,7 +510,11 @@ PIKE_MODULE_EXIT
 
 #include "module.h"
 
-PIKE_MODULE_INIT {}
+PIKE_MODULE_INIT {
+  if(!TEST_COMPAT(7,6))
+    HIDE_MODULE();
+}
+
 PIKE_MODULE_EXIT {}
 
 #endif

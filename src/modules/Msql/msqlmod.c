@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: msqlmod.c,v 1.27 2005/03/22 10:56:48 grubba Exp $
+|| $Id: msqlmod.c,v 1.28 2005/11/14 21:15:25 nilsson Exp $
 */
 
 /* All this code is pretty useless if we don't have a msql library...*/
@@ -1072,7 +1072,10 @@ PIKE_MODULE_INIT
 }
 
 #else /*HAVE_MSQL*/
-PIKE_MODULE_INIT {}
+PIKE_MODULE_INIT {
+  if(!TEST_COMPAT(7,6))
+    HIDE_MODULE();
+}
 #endif /*HAVE_MSQL*/
 
 PIKE_MODULE_EXIT { }

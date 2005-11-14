@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gdbmmod.c,v 1.27 2004/10/07 22:49:56 nilsson Exp $
+|| $Id: gdbmmod.c,v 1.28 2005/11/14 21:15:25 nilsson Exp $
 */
 
 #include "global.h"
@@ -490,5 +490,8 @@ PIKE_MODULE_INIT
   set_init_callback(init_gdbm_glue);
   set_exit_callback(exit_gdbm_glue);
   end_class("gdbm",0);
+#else
+  if(!TEST_COMPAT(7,6))
+    HIDE_MODULE();
 #endif
 }
