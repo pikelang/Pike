@@ -1,5 +1,5 @@
 
-#pike __REAL_VERSION__
+#pike 7.7
 
 inherit Image.Image;
 
