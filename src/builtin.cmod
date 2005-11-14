@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.178 2005/05/06 00:41:40 nilsson Exp $
+|| $Id: builtin.cmod,v 1.179 2005/11/14 19:57:54 nilsson Exp $
 */
 
 #include "global.h"
@@ -832,13 +832,8 @@ PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
 PIKEFUN mixed m_delete(object|mapping map, mixed index)
   efun;
   optflags OPT_SIDE_EFFECT;
+  rawtype tOr(tFunc(tMap(tSetvar(0,tMix),tSetvar(1,tMix)) tVar(0),tVar(1)),tFunc(tObj tMix,tMix))
 {
-  /*FIXME: Should be
-   *     type function(mapping(1=mixed:2=mixed),1:2)|
-   *     function(object,mixed:mixed);
-   *
-   *     or similar
-   */
   struct program *p;
   if( map->type == T_MAPPING )
   {
