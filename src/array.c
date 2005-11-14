@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.182 2005/09/12 07:45:47 bill Exp $
+|| $Id: array.c,v 1.183 2005/11/14 19:56:54 nilsson Exp $
 */
 
 #include "global.h"
@@ -2304,9 +2304,9 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args)
   stack_pop_n_elems_keep_top(args);
 }
 
-/** reverse the elements in an array
- *  if the array has more than one reference, the array will be reversed
- *  into a new array. otherwise, the same array is reversed.
+/** Reverse the elements in an array. If the array has more than one
+ *  reference, the array will be reversed into a new array. Otherwise
+ *  the array will be destructively reversed in place.
  */
 PMOD_EXPORT struct array *reverse_array(struct array *a)
 {
