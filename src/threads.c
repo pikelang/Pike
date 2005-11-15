@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.205 2004/04/26 16:21:18 mast Exp $
+|| $Id: threads.c,v 1.206 2005/11/15 10:31:40 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: threads.c,v 1.205 2004/04/26 16:21:18 mast Exp $");
+RCSID("$Id: threads.c,v 1.206 2005/11/15 10:31:40 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1341,9 +1341,10 @@ void exit_mutex_key_obj(struct object *o)
     THIS_KEY->mutex_obj = NULL;
     if (mut->num_waiting)
       co_signal(&mut->condition);
-    else if (!mutex_obj->prog)
+    else if (mutex_obj && !mutex_obj->prog)
       co_destroy (&mut->condition);
-    free_object(mutex_obj);
+    if (mutex_obj)
+      free_object(mutex_obj);
   }
 }
 
