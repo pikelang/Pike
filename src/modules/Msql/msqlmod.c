@@ -2,13 +2,16 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: msqlmod.c,v 1.28 2005/11/14 21:15:25 nilsson Exp $
+|| $Id: msqlmod.c,v 1.29 2005/11/15 00:36:58 nilsson Exp $
 */
 
 /* All this code is pretty useless if we don't have a msql library...*/
 #include "global.h"
 #include "module.h"
 #include "msql_config.h"
+#include "program.h"
+#include "module_support.h"
+
 #ifdef HAVE_MSQL
 
 /* #define MSQL_DEBUG 1 */
@@ -24,9 +27,7 @@
 #include "machine.h"
 #include "interpret.h"
 #include "builtin_functions.h"
-#include "module_support.h"
 #include "svalue.h"
-#include "program.h"
 #include "array.h"
 #include "mapping.h"
 #include "stralloc.h"
