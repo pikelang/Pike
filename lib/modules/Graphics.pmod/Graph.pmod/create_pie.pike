@@ -1,5 +1,5 @@
 //! Graph sub-module for drawing pie-charts.
-// $Id: create_pie.pike,v 1.10 2005/11/14 22:11:02 nilsson Exp $
+// $Id: create_pie.pike,v 1.11 2005/11/15 00:43:17 nilsson Exp $
 //
 // These functions were written by Henrik "Hedda" Wallin (hedda@roxen.com)
 // Create_pie can draw pie charts in different forms.
@@ -8,9 +8,7 @@
 
 #include "graph.h"
 
-inherit "polyline.pike";
-inherit "create_graph.pike";
-inherit "create_bars.pike";
+inherit .create_bars;
 
 mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 {

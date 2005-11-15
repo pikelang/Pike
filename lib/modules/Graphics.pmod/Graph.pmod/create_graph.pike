@@ -11,7 +11,7 @@
 
 #include "graph.h"
 
-inherit "polyline.pike";
+inherit .polyline;
 
 object tileimage(object img, int xs, int ys)
 {

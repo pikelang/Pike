@@ -6,8 +6,7 @@
 
 #include "graph.h"
 
-inherit "polyline.pike";
-inherit "create_graph.pike";
+inherit .create_graph;
 
 #ifdef BG_DEBUG
 # define START_DEBUG(X) diagram_data->bg_timers[(X)]=gethrtime()
