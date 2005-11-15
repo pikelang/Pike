@@ -1,5 +1,5 @@
 //! Graph sub-module for drawing pie-charts.
-// $Id: create_pie.pike,v 1.12 2005/11/15 15:45:04 nilsson Exp $
+// $Id: create_pie.pike,v 1.13 2005/11/15 16:08:44 nilsson Exp $
 //
 // These functions were written by Henrik "Hedda" Wallin (hedda@roxen.com)
 // Create_pie can draw pie charts in different forms.
@@ -31,19 +31,19 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
   init(diagram_data);
 
   //Initiate values
-  int|void  size=diagram_data->xsize;
+  int size=diagram_data->xsize;
   array(int|float) numbers=diagram_data->data[0];
-  void | array(string) names=diagram_data->xnames;
-  void|int twoD=diagram_data->drawtype=="2D";
-  void|array(array(int)) colors=diagram_data->datacolors;
-  array(int)bg=diagram_data->bgcolor;
-  array(int)fg=diagram_data->textcolor;
+  array(string) names=diagram_data->xnames;
+  int twoD=diagram_data->drawtype=="2D";
+  array(array(int)) colors=diagram_data->datacolors;
+  array(int) bg=diagram_data->bgcolor;
+  array(int) fg=diagram_data->textcolor;
   int tone=diagram_data->tone;
 
   for(int i; i<sizeof(numbers); i++)
     if ((float)numbers[i]<0.0)
       numbers[i]*=-1.0;
-  
+
 
 
 
