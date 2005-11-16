@@ -1,13 +1,14 @@
 Package: pike7.6
-Version: 7.6.13
-Revision: 2
+Version: 7.6.50
+Revision: 3
+
 Description: Programming language with a C-like syntax
 DescDetail: <<
  Pike is an interpreted, object-oriented programming language. 
  It looks a bit like C and C++, but it is much easier to learn and use. It 
  can be used for small scripts as well as for large programs. 
  
- Pike is 
+ Pike is:
  - High-level and powerful, which means that even very complex 
   things are easy to do.
  - Object-oriented, which means that you can use modern programming
@@ -22,38 +23,206 @@ DescDetail: <<
  - Easy to extend, which means that you can create plug-ins, written in
   Pike as well as in C or C++, and integrate them with the rest of Pike.
 <<
+
 CustomMirror: <<
-Primary: ftp://ftp.oav.net/pike/7.6/
+	Primary: http://pike.ida.liu.se/pub/pike/latest-stable/
 <<
-Source: mirror:custom:pike-%v.tar.gz
-Source-MD5: 9a3eade39e89f58b8979a3b698ada5b7
-BuildDepends: gmp,fileutils,libjpeg,freetype,freetype2,gdbm3,pdflib,fftw3,dlcompat-dev,mysql12-dev,nettle
-Depends: gmp-shlibs,libjpeg-shlibs,freetype-shlibs,freetype2-shlibs,gdbm3-shlibs,pdflib-shlibs,libtiff-shlibs,ffmpeg,fftw3-shlibs,dlcompat-shlibs,mysql12-shlibs
-SourceDirectory: pike-%v
-CompileScript: <<
-make CONFIGUREARGS="%c --without-GL --without-postgres --with-freetype --without-GTK --with-mysql=%p --with-libpdf --without-debug --with-double-precision --disable-rpath --without-rtldebug --without-cdebug --without-copt --without-security --with-oob --with-max-fd=60000 --without-relocatable-dumped-modules --without-libpanda --without-perl --with-threads --with-readline --with-tiff --without-ssleay --with-ttflib --without-pgsql --without-msql --without-sane --without-GLUT --without-gnome --without-glade --without-poll --without-machine-code --with-relocatable-dumped-module"
-<<
-InstallScript: <<
- cd build/`uname -s -r -m|sed "s/ /-/g"|tr "[A-Z]" "[a-z]"|tr "/()" "___"`
- make install_nodoc DESTDIR=%d prefix=%p buildroot=%d exec_prefix=%p/bin/ share_prefix=%p/share/pike/%n/ lib_prefix=%p/lib/pike/%n/ man_prefix=%p/share/man/ include_path=%p/inclide/pike74/ INSTALLARGS=--traditional
- mv %i/bin/pike %i/bin/pike76
- mv %i/bin/hilfe %i/bin/hilfe76
- mv %i/share/man/man1/pike.1 %i/share/man/man1/pike76.1
-<<
-DocFiles: ANNOUNCE COPYING COPYRIGHT README README-CVS
-License: GPL/LGPL
-Homepage: http://pike.ida.liu.se/
-Maintainer: Xavier BEAUDOUIN <kiwi@caudium.net>
-PostInstScript: <<
-update-alternatives --install %p/bin/pike pike %p/bin/pike76 40
-update-alternatives --install %p/bin/hilfe hilfe %p/bin/hifle76 40
-update-alternatives --install %p/share/man/man1/pike.1 pike.1 %p/share/man/man/pike76.1 40
-<<
-PreRmScript: <<
-if [ $1 != "upgrade" ]; then
-  update-alternatives --remove pike %p/bin/pike76
-  update-alternatives --remove pike %p/bin/hilfe76
-  update-alternatives --remove pike %p/share/man/man1/pike76.1
-fi
+Source: mirror:custom:Pike-v%v.tar.gz
+Source-MD5: 20aa2b8ff088733b6c5fc048d47aa712
+SourceDirectory: Pike-v%v
+
+# TODO: fileutils because of buggy Apple's ls (return 0 on non existant files).
+# Should be OK on Tiger, so it could be removed.
+BuildDepends: <<
+	nettle,
+	gmp,
+	fileutils,
+	libjpeg,
+	freetype,
+	freetype2,
+	gdbm,
+	pdflib,
+	fftw,
+	mysql12-dev
 <<
 
+# bzip2-shlibs is a core package, but requiring it anyway won't hurt
+# nettle is required for crypto
+# pcre-shlibs is required by monger
+Depends: <<
+	bzip2-shlibs,
+	pcre-shlibs
+<<
+
+# TODO: why the SplitOff are not upgraded when pike7.6 is upgraded?
+#Replaces: %N (<< %v-%r)
+
+# TODO: remove as '--without-' as possible here now:
+# 	- pros:
+# 		- more features availables;
+#			- people using binary dist will only install Depends for their SplitOff
+# 	- cons:
+# 		- people building from source will have a shitload of BuildDepends
+CompileScript: <<
+	make CONFIGUREARGS="%c --without-GL --without-postgres --with-freetype --without-GTK --with-mysql=%p --with-libpdf --without-debug --with-double-precision --disable-rpath --without-rtldebug --without-cdebug --without-copt --without-security --with-oob --with-max-fd=60000 --without-relocatable-dumped-modules --without-libpanda --with-threads --with-readline --with-tiff --without-ssleay --with-ttflib --without-pgsql --without-msql --without-sane --without-GLUT --without-gnome --without-glade --without-poll --without-machine-code --with-relocatable-dumped-module"
+<<
+
+InstallScript: <<
+	# TODO: make docs in the future, too
+	make testsuites
+	make install_nodoc DESTDIR=%d prefix=%p buildroot=%d exec_prefix=%p/bin/ share_prefix=%p/share/pike/%n/ lib_prefix=%p/lib/pike/%n/ man_prefix=%p/share/man/ INSTALLARGS=--traditional
+
+	# Rename some files so that they don't conflict with other pike versions
+	mv %i/bin/pike %i/bin/pike7.6
+	mv %i/bin/hilfe %i/bin/hilfe7.6
+	# TODO: change /usr/local to the proper path in the man page
+	mv %i/share/man/man1/pike.1 %i/share/man/man1/pike7.6.1
+
+	# Move the doc to an appropriate place
+	# Doing this here since make doc_prefix seems not to work
+	mkdir -p %i/share/doc/%N
+	mv %i/doc %i/share/doc/%N
+
+	# Create a place for putting the testsuites...
+	mkdir -p %i/share/pike/%N/testsuites
+	# ... and copy the testsuites that contains data there
+	(cd build/`uname -s -r -m|sed "s/ /-/g"|tr "[A-Z]" "[a-z]"|tr "/()" "___"` && find . -name testsuite -not -size 0 -exec cp --parents -pr {} %i/share/pike/%N/testsuites \;)
+<<
+
+DocFiles: ANNOUNCE COPYING COPYRIGHT README README-CVS
+
+PostInstScript: <<
+	update-alternatives --install %p/bin/pike pike %p/bin/pike7.6 40
+	update-alternatives --install %p/bin/hilfe hilfe %p/bin/hilfe7.6 40
+	# TODO: alternatives for Pike manpage seems not to work well
+	update-alternatives --install %p/share/man/man1/pike.1 pike.1 %p/share/man/man/pike7.6.1 40
+<<
+PreRmScript: <<
+	if [ $1 != "upgrade" ]; then
+		update-alternatives --remove pike %p/bin/pike7.6
+		update-alternatives --remove pike %p/bin/hilfe7.6
+  	update-alternatives --remove pike %p/share/man/man1/pike7.6.1
+	fi
+<<
+
+SplitOff2: <<
+	Package: %N-mysql
+	Description: MySQL module for the Pike language
+	Depends: mysql12-shlibs, %N (= %v-%r)
+	Files: <<
+		%p/lib/pike/%N/7.4/include/mysql.h
+		%p/lib/pike/%N/modules/Cache.pmod/Storage.pmod/MySQL.pike
+		%p/lib/pike/%N/modules/Mysql.so
+		%p/lib/pike/%N/modules/Sql.pmod/mysql.pike
+		%p/lib/pike/%N/modules/Sql.pmod/mysql_result.pike
+		%p/lib/pike/%N/modules/Sql.pmod/mysqls.pike
+		%p/lib/pike/%N/modules/Sql.pmod/mysqls_result.pike
+	<<
+<<
+
+# TODO: GMP seems mandatory, this SplitOff should be removed
+#SplitOff3: <<
+#	Package: %N-gmp
+#	Description: GMP (bignums) module for the Pike language
+#	Files: %p/lib/pike/%N/7.2/modules/Gmp.pmod %p/lib/pike/%N/modules/Gmp.so
+#	Depends: gmp-shlibs
+#<<
+
+SplitOff4: <<
+	Package: %N-jpeg
+	Description: JPEG module for the Pike language
+	Depends: libjpeg-shlibs, %N (= %v-%r)
+	Files: %p/lib/pike/%N/modules/_Image_JPEG.so
+<<
+
+SplitOff5: <<
+	Package: %N-freetype
+	Description: Freetype module for the Pike language
+	# TODO: understand this message about freetype2 package if that's deprecated
+	# or not
+	Depends: freetype2-shlibs, %N (= %v-%r), %N-math (= %v-%r)
+	Files: %p/lib/pike/%N/modules/_Image_FreeType.so
+<<
+
+SplitOff6: <<
+	Package: %N-gdbm
+	Description: GDBM module for the Pike language
+	Depends: gdbm-shlibs, %N (= %v-%r)
+	Files: <<
+		%p/lib/pike/%N/modules/Cache.pmod/Storage.pmod/Gdbm.pike
+		%p/lib/pike/%N/modules/Gdbm.so
+		%p/share/pike/%N/testsuites/modules/Gdbm/testsuite
+	<<
+<<
+
+SplitOff7: <<
+	Package: %N-pdf
+	Description: PDF module for the Pike language
+	Depends: libtiff-shlibs, libpng3-shlibs, pdflib-shlibs, %N (= %v-%r)
+	Files: %p/lib/pike/%N/modules/PDF.so
+<<
+
+SplitOff8: <<
+	Package: %N-tiff
+	Description: TIFF module for the Pike language
+	Depends: libtiff-shlibs, libjpeg-shlibs, %N (= %v-%r)
+	Files: %p/lib/pike/%N/modules/_Image_TIFF.so
+<<
+
+SplitOff10: <<
+	Package: %N-math
+	Description: Math module for the Pike language
+	Depends: fftw-shlibs, %N (= %v-%r)
+	Files: <<
+		%p/lib/pike/%N/modules/___Math.so
+		%p/share/pike/%N/testsuites/modules/_math/testsuite
+	<<
+<<
+
+SplitOff11: <<
+	Package: %N-ttf
+	Description: TTF module for the Pike language
+	Depends: freetype-shlibs, %N (= %v-%r)
+	Files: %p/lib/pike/%N/modules/_Image_TTF.so
+<<
+
+SplitOff12: <<
+	Package: %N-xface
+	Description: X-Face module for the Pike language
+	Depends: gmp-shlibs, %N (= %v-%r)
+	Files: %p/lib/pike/pike7.6/modules/_Image_XFace.so
+<<
+
+SplitOff13: <<
+	Package: %N-gettext
+	Description: Gettext module for the Pike language
+	Depends: gettext, %N (= %v-%r)
+	Files: <<
+		%p/lib/pike/%N/modules/Gettext.so
+		%p/share/pike/%N/testsuites/modules/Gettext/testsuite
+	<<
+<<
+
+# TODO: Nettle testsuite don't work because the path for the test program are 
+# in %i, _and_ these tests are not installed in %d (because it was not their
+# goal to be installed i guess)
+SplitOff14: <<
+	Package: %N-nettle
+	Depends: nettle, gmp-shlibs, %N (= %v-%r)
+	Description: Nettle (crypto) module for the Pike language
+	Files: <<
+		%p/lib/pike/pike7.6/modules/Nettle.so
+		%p/share/pike/%N/testsuites/post_modules/Nettle/testsuite
+	<<
+<<
+
+SplitOff15: <<
+	Package: %N-sdl
+	Description: SDL module for the Pike language
+	Depends: sdl-shlibs, %N (= %v-%r)
+	Files: %p/lib/pike/pike7.6/modules/SDL.so
+<<
+
+License: GPL/LGPL/MPL
+Homepage: http://pike.ida.liu.se/
+Maintainer: Bertrand LUPART <bertrand@caudium.net>
