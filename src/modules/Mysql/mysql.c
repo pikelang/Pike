@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.95 2005/11/16 15:58:31 grubba Exp $
+|| $Id: mysql.c,v 1.96 2005/11/16 16:20:19 grubba Exp $
 */
 
 /*
@@ -77,7 +77,6 @@
 #include "fd_control.h"
 #include "mapping.h"
 #include "bignum.h"
-#include "cpp.h"
 #include "module_support.h"
 
 /* System includes */
