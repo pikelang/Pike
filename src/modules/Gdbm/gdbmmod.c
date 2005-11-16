@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gdbmmod.c,v 1.28 2005/11/14 21:15:25 nilsson Exp $
+|| $Id: gdbmmod.c,v 1.29 2005/11/16 13:52:33 grubba Exp $
 */
 
 #include "global.h"
@@ -15,6 +15,8 @@
 #include "svalue.h"
 #include "stralloc.h"
 #include "module.h"
+#include "cpp.h"
+#include "module_support.h"
 
 #if defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM)
 

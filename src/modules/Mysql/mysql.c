@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.93 2005/11/14 21:15:25 nilsson Exp $
+|| $Id: mysql.c,v 1.94 2005/11/16 13:51:43 grubba Exp $
 */
 
 /*
@@ -77,6 +77,8 @@
 #include "fd_control.h"
 #include "mapping.h"
 #include "bignum.h"
+#include "cpp.h"
+#include "module_support.h"
 
 /* System includes */
 #ifdef HAVE_STRING_H
