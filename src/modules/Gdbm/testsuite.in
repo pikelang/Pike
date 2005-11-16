@@ -1,8 +1,8 @@
 START_MARKER
-// $Id: testsuite.in,v 1.7 2004/05/02 18:44:33 nilsson Exp $
+// $Id: testsuite.in,v 1.8 2005/11/16 18:41:20 grubba Exp $
 
 // gdbm
-cond( [[ master()->resolv("Gdbm")->gdbm ]],
+cond( [[ master()->resolv("Gdbm") ]],
 [[
   test_true(programp(Gdbm.gdbm))
   test_do(destruct(Gdbm.gdbm()))
