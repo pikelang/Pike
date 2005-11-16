@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.94 2005/11/16 13:51:43 grubba Exp $
+|| $Id: mysql.c,v 1.95 2005/11/16 15:58:31 grubba Exp $
 */
 
 /*
@@ -823,8 +823,12 @@ static void f_select_db(INT32 args)
   pop_n_elems(args);
 }
 
+#ifndef STDCALL
+#define STDCALL
+#endif
+
 static void low_query(INT32 args, char *name,
-		      MYSQL_RES* (*mysql_func)(MYSQL*))
+		      MYSQL_RES* STDCALL (*mysql_func)(MYSQL*))
 {
   MYSQL *socket = PIKE_MYSQL->socket;
   MYSQL_RES *result = NULL;
