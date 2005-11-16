@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.499 2005/11/01 21:53:24 jonasw Exp $
+|| $Id: program.c,v 1.500 2005/11/16 13:15:26 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.499 2005/11/01 21:53:24 jonasw Exp $");
+RCSID("$Id: program.c,v 1.500 2005/11/16 13:15:26 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -7079,7 +7079,10 @@ static int low_is_compatible(struct program *a, struct program *b)
       continue;		/* It's ok... */
     }
 
-    if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
+    /* Note: Use weaker check for constant integers. */
+    if(((bid->run_time_type != PIKE_T_INT) ||
+	(ID_FROM_INT(a, i)->run_time_type != PIKE_T_INT)) &&
+       !match_types(ID_FROM_INT(a,i)->type, bid->type)) {
 #if 0
       fprintf(stderr, "Identifier \"%s\" is incompatible.\n",
 	      bid->name->str);
