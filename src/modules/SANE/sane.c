@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sane.c,v 1.23 2005/11/14 21:15:25 nilsson Exp $
+|| $Id: sane.c,v 1.24 2005/11/16 13:48:39 grubba Exp $
 */
 
 #include "config.h"
@@ -825,6 +825,7 @@ PIKE_MODULE_EXIT
 }
 
 #else
+#include "cpp.h"
 #include "module.h"
 #include "module_support.h"
 PIKE_MODULE_INIT {

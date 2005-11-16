@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.43 2005/11/14 21:15:25 nilsson Exp $
+|| $Id: postgres.c,v 1.44 2005/11/16 13:47:37 grubba Exp $
 */
 
 /*
@@ -808,6 +808,7 @@ PIKE_MODULE_EXIT
 }
 
 #else /* HAVE_POSTGRES */
+#include "cpp.h"
 #include "module.h"
 #include "module_support.h"
 PIKE_MODULE_INIT {
