@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.74 2005/11/16 16:07:01 grubba Exp $
+|| $Id: udp.c,v 1.75 2005/11/16 16:10:32 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -26,7 +26,6 @@
 #include "pike_types.h"
 #include "threads.h"
 #include "bignum.h"
-#include "pike_netlib.h"
 
 #include "module_support.h"
 #include "builtin_functions.h"
