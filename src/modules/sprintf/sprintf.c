@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.126 2005/11/17 18:39:10 nilsson Exp $
+|| $Id: sprintf.c,v 1.127 2005/11/17 22:00:23 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -1702,11 +1702,13 @@ static node *optimize_sprintf(node *n)
      (*arg0)->token == F_CONSTANT &&
      (*arg0)->u.sval.type == T_STRING)
   {
+    /* First argument is a constant string. */
     if(arg1 && num_args == 2 && 
        (*arg0)->u.sval.u.string->size_shift == 0 &&
        (*arg0)->u.sval.u.string->len == 2 &&
        STR0((*arg0)->u.sval.u.string)[0]=='%')
     {
+      /* First argument is a two character format string. */
       switch(STR0((*arg0)->u.sval.u.string)[1])
       {
       case 'c':
@@ -1726,29 +1728,90 @@ static node *optimize_sprintf(node *n)
 		      ret = mkefuncallnode("int2hex",*arg1);
 	  );
 	return ret;
+      case '%':
+	{
+	  struct pike_string *percent_string;
+	  yywarning("Ignoring second argument to sprintf.");
+	  MAKE_CONST_STRING(percent_string, "%");
+	  return mkstrnode(percent_string);
+	}
 
       default: break;
       }
-    }
+    } else if(num_args == 1) {
+      struct pike_string *fmt = (*arg0)->u.sval.u.string;
+      int i,j;
+      int num_percent=0;
+      struct pike_string *res;
 
-    if( num_args==1 )
-    {
-      PCHARP fmt = MKPCHARP_STR((*arg0)->u.sval.u.string);
-      char c;
-      int has_proc=0;
-      while( (c=EXTRACT_PCHARP(fmt)) ) {
-        if( c=='%' )
-        {
-          has_proc = 1;
-          break;
-        }
-        INC_PCHARP(fmt, 1);
+      switch(fmt->size_shift) {
+#define PERCENT_CHECK(SHIFT)					\
+	case SHIFT:						\
+	  for(i=0; i < fmt->len; i++) {				\
+	    if (PIKE_CONCAT(STR, SHIFT)(fmt)[i] == '%') {	\
+	      num_percent++;					\
+	      i++;						\
+	      if (PIKE_CONCAT(STR, SHIFT)(fmt)[i] != '%') {	\
+		yywarning("Missing argument to sprintf.\n");	\
+		return 0;					\
+	      }							\
+	    }							\
+	  }							\
+	break
+	PERCENT_CHECK(0);
+	PERCENT_CHECK(1);
+	PERCENT_CHECK(2);
+#undef PERCENT_CHECK
+#ifdef PIKE_DEBUG
+      default:
+	Pike_fatal("Unsupported size shift (%d)!\n", fmt->size_shift);
+	break;
+#endif
       }
-      if( !has_proc )
+      if (!num_percent)
       {
-          ADD_NODE_REF(*arg0);
-          return *arg0;
+	ADD_NODE_REF2(*arg0, ret = *arg0);
+	return ret;
       }
+      res = begin_wide_shared_string(fmt->len - num_percent, fmt->size_shift);
+      switch(fmt->size_shift) {
+#define PERCENT_CHECK(SHIFT)					\
+	case SHIFT:						\
+	  for(i=j=0; i < fmt->len; i++) {			\
+	    if ((PIKE_CONCAT(STR, SHIFT)(res)[j++] =		\
+		 PIKE_CONCAT(STR, SHIFT)(fmt)[i]) == '%') {	\
+	      num_percent--;					\
+	      i++;						\
+	      if (PIKE_CONCAT(STR, SHIFT)(fmt)[i] != '%') {	\
+		Pike_fatal("Missing argument to sprintf.\n");	\
+	      }							\
+	    }							\
+	  }							\
+	break
+	PERCENT_CHECK(0);
+	PERCENT_CHECK(1);
+	PERCENT_CHECK(2);
+#undef PERCENT_CHECK
+#ifdef PIKE_DEBUG
+      default:
+	Pike_fatal("Unsupported size shift (%d)!\n", fmt->size_shift);
+	break;
+#endif
+      }
+#ifdef PIKE_DEBUG
+      if (num_percent) {
+	Pike_fatal("Number of percent characters differ between passes: %d\n",
+		   num_percent);
+      }
+      if (j != res->len) {
+	Pike_fatal("Unexpected string length: %d != %d\n",
+		   j, res->len);
+      }
+#endif
+      res = end_shared_string(res);
+      ret = mkstrnode(res);
+      free_string(res);
+      return ret;
     }
   }
   return 0;
