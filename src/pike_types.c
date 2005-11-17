@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.250 2005/11/08 11:46:05 grubba Exp $
+|| $Id: pike_types.c,v 1.251 2005/11/17 18:21:15 grubba Exp $
 */
 
 #include "global.h"
@@ -4207,7 +4207,7 @@ static int low_minimum_arguments(struct pike_type *q)
   }
 }
 
-/* Count the minimum number of arguments for a funciton type.
+/* Count the minimum number of arguments for a function type.
  */
 int minimum_arguments(struct pike_type *s)
 {
