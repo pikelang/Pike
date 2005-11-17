@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.96 2005/11/16 16:20:19 grubba Exp $
+|| $Id: mysql.c,v 1.97 2005/11/17 13:39:09 grubba Exp $
 */
 
 /*
@@ -822,12 +822,9 @@ static void f_select_db(INT32 args)
   pop_n_elems(args);
 }
 
-#ifndef STDCALL
-#define STDCALL
-#endif
+#define PIKE_MYSQL_FLAG_STORE_RESULT	1
 
-static void low_query(INT32 args, char *name,
-		      MYSQL_RES* STDCALL (*mysql_func)(MYSQL*))
+static void low_query(INT32 args, char *name, int flags)
 {
   MYSQL *socket = PIKE_MYSQL->socket;
   MYSQL_RES *result = NULL;
@@ -857,7 +854,11 @@ static void low_query(INT32 args, char *name,
 #endif /* HAVE_MYSQL_REAL_QUERY */
 
     if (!tmp) {
-      result = mysql_func(socket);
+      if (flags & PIKE_MYSQL_FLAG_STORE_RESULT) {
+	result = mysql_store_result(socket);
+      } else {
+	result = mysql_use_result(socket);
+      }
     }
 
     MYSQL_DISALLOW();
@@ -889,7 +890,11 @@ static void low_query(INT32 args, char *name,
 #endif /* HAVE_MYSQL_REAL_QUERY */
 
     if (!tmp) {
-      result = mysql_func(socket);
+      if (flags & PIKE_MYSQL_FLAG_STORE_RESULT) {
+	result = mysql_store_result(socket);
+      } else {
+	result = mysql_use_result(socket);
+      }
     }
 
     MYSQL_DISALLOW();
@@ -970,7 +975,7 @@ static void low_query(INT32 args, char *name,
  */
 static void f_big_query(INT32 args)
 {
-  low_query(args, "big_query", mysql_store_result);
+  low_query(args, "big_query", PIKE_MYSQL_FLAG_STORE_RESULT);
 }
 
 /*! @decl Mysql.mysql_result big_query(string query)
@@ -990,7 +995,7 @@ static void f_big_query(INT32 args)
  */
 static void f_streaming_query(INT32 args)
 {
-  low_query(args, "streaming_query", mysql_use_result);
+  low_query(args, "streaming_query", 0);
 }
 
 
