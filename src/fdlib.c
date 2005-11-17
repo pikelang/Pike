@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.71 2005/03/10 01:16:46 nilsson Exp $
+|| $Id: fdlib.c,v 1.72 2005/11/17 13:30:50 grubba Exp $
 */
 
 #include "global.h"
@@ -913,15 +913,25 @@ PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
   mt_unlock(&fd_mutex);
 
 #ifdef INT64
-  /* FIXME: Needs configure test for SetFilePointerEx to work with
-     anything but Windows XP/2000 Pro. */
-  if( !SetFilePointerEx(h, (LARGE_INTEGER)pos, (LARGE_INTEGER*)&ret, where) ) {
-    errno = GetLastError();
-    return -1;
+  {
+    /* FIXME: Needs configure test for SetFilePointerEx to work with
+       anything but Windows XP/2000 Pro. */
+    LARGE_INTEGER li_pos;
+    LARGE_INTEGER li_ret;
+    li_pos.QuadPart = pos;
+    li_ret.QuadPart = 0;
+    if(!SetFilePointerEx(h, li_pos, &li_ret, where)) {
+      errno = GetLastError();
+      return -1;
+    }
+    ret = li_ret.QuadPart;
   }
-#else
+#else /* !INT64 */
 
 #ifdef INT64
+  /* NOTE: Currently dead code, but should be enabled when there's
+   *       a configure test for SetFilePointerEx (see above).
+   */
   if (pos >= ((INT64) 1 << 32)) {
     LONG high = DO_NOT_WARN ((LONG) (pos >> 32));
     DWORD err;
@@ -944,7 +954,7 @@ PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
       return -1;
     }
   }
-#endif
+#endif /* INT64 */
 
   return ret;
 }
