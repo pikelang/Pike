@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.125 2005/09/09 16:03:05 mast Exp $
+|| $Id: sprintf.c,v 1.126 2005/11/17 18:39:10 nilsson Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -1698,23 +1698,25 @@ static node *optimize_sprintf(node *n)
   node **arg1 = my_get_arg(&_CDR(n), 1);
   node *ret;
   int num_args=count_args(CDR(n));
-  if(arg0 && arg1 && num_args == 2 &&
+  if(arg0 &&
      (*arg0)->token == F_CONSTANT &&
-     (*arg0)->u.sval.type == T_STRING &&
-     (*arg0)->u.sval.u.string->size_shift == 0 &&
-     (*arg0)->u.sval.u.string->len == 2 &&
-     STR0((*arg0)->u.sval.u.string)[0]=='%')
+     (*arg0)->u.sval.type == T_STRING)
   {
-    switch(STR0((*arg0)->u.sval.u.string)[1])
+    if(arg1 && num_args == 2 && 
+       (*arg0)->u.sval.u.string->size_shift == 0 &&
+       (*arg0)->u.sval.u.string->len == 2 &&
+       STR0((*arg0)->u.sval.u.string)[0]=='%')
     {
+      switch(STR0((*arg0)->u.sval.u.string)[1])
+      {
       case 'c':
-	ADD_NODE_REF2(*arg1,
+        ADD_NODE_REF2(*arg1,
 		      ret = mkefuncallnode("int2char",*arg1);
-	  );
+          );
 	return ret;
 
       case 't':
-	ADD_NODE_REF2(*arg1,
+        ADD_NODE_REF2(*arg1,
 		      ret = mkefuncallnode("basetype",*arg1);
 	  );
 	return ret;
@@ -1726,6 +1728,27 @@ static node *optimize_sprintf(node *n)
 	return ret;
 
       default: break;
+      }
+    }
+
+    if( num_args==1 )
+    {
+      PCHARP fmt = MKPCHARP_STR((*arg0)->u.sval.u.string);
+      char c;
+      int has_proc=0;
+      while( (c=EXTRACT_PCHARP(fmt)) ) {
+        if( c=='%' )
+        {
+          has_proc = 1;
+          break;
+        }
+        INC_PCHARP(fmt, 1);
+      }
+      if( !has_proc )
+      {
+          ADD_NODE_REF(*arg0);
+          return *arg0;
+      }
     }
   }
   return 0;
