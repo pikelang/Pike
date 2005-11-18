@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.57 2005/09/10 02:18:45 grendel Exp $
+# $Id: rules,v 1.58 2005/11/18 23:03:35 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -91,6 +91,7 @@ CFARGS=$(CFARGSEXTRA) \
        --without-libpdf \
        --without-libpanda \
        --without-sybase \
+       --without-java \
        --with-odbc \
        --with-sane \
        --with-postgres \
@@ -129,7 +130,6 @@ build-arch-stamp:
 
 	# Add here command to compile/build the package.
 	$(MAKE) -C$(BUILDDIR)
-	$(MAKE) -C$(BUILDDIR) documentation
 
 	touch build-arch-stamp
 
@@ -279,6 +279,11 @@ install: build
 	  file $$f | grep "script" >/dev/null \
             && perl -pi -e 's@#\!.*/usr/bin/env.*pike@#\!/usr/bin/$(PIKE)@' $$f; \
 	done; exit 0
+
+	# Some more permission changes
+	for f in run_autoconf precompile.sh smartlink fixdepends.sh install_module; do \
+	    chmod 755 $(CURDIR)/debian/$(PIKE)-dev/usr/include/pike/$(VERSION)/$$f ; \
+	done
 
 	# Create the documentation links to save space
 	for f in `cat $(CURDIR)/debian/tocoredoc.txt`; do \

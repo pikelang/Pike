@@ -1,6 +1,7 @@
 pike7.6 (7.6.51-1) unstable; urgency=low
 
   * The latest cvs snapshot
+  * Some fixes to make pike -x module work better on Debian.
 
  -- Marek Habersack <grendel@debian.org>  Wed, 2 Nov 2005 17:40:42 +0100
 
