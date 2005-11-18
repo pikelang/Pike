@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.128 2005/11/18 09:23:51 grubba Exp $
+|| $Id: sprintf.c,v 1.129 2005/11/18 09:26:02 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -1736,7 +1736,10 @@ static node *optimize_sprintf(node *n)
 	  struct pike_string *percent_string;
 	  yywarning("Ignoring second argument to sprintf.");
 	  MAKE_CONST_STRING(percent_string, "%");
-	  return mkstrnode(percent_string);
+	  ADD_NODE_REF2(*arg2,
+			ret = mknode(F_COMMA_EXPR, *arg2,
+				     mkstrnode(percent_string)));
+	  return ret;
 	}
 
       default: break;
