@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.72 2005/02/26 01:14:23 nilsson Exp $
+|| $Id: nt.c,v 1.73 2005/11/18 14:11:58 grubba Exp $
 */
 
 /*
@@ -3153,7 +3153,7 @@ static void f_nt_uname(INT32 args)
       break;
   }
 
-  snprintf(buf, sizeof(buf), "Windows %s %ld.%ld.%ld",
+  SNPRINTF(buf, sizeof(buf), "Windows %s %ld.%ld.%ld",
 	  version,
 	  osversion.dwMajorVersion,
 	  osversion.dwMinorVersion,
