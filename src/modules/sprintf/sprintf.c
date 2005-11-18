@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.127 2005/11/17 22:00:23 grubba Exp $
+|| $Id: sprintf.c,v 1.128 2005/11/18 09:23:51 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -1730,6 +1730,9 @@ static node *optimize_sprintf(node *n)
 	return ret;
       case '%':
 	{
+	  /* FIXME: This code can be removed when the generic
+	   *        argument check is in place.
+	   */
 	  struct pike_string *percent_string;
 	  yywarning("Ignoring second argument to sprintf.");
 	  MAKE_CONST_STRING(percent_string, "%");
@@ -1739,80 +1742,10 @@ static node *optimize_sprintf(node *n)
       default: break;
       }
     } else if(num_args == 1) {
-      struct pike_string *fmt = (*arg0)->u.sval.u.string;
-      int i,j;
-      int num_percent=0;
-      struct pike_string *res;
-
-      switch(fmt->size_shift) {
-#define PERCENT_CHECK(SHIFT)					\
-	case SHIFT:						\
-	  for(i=0; i < fmt->len; i++) {				\
-	    if (PIKE_CONCAT(STR, SHIFT)(fmt)[i] == '%') {	\
-	      num_percent++;					\
-	      i++;						\
-	      if (PIKE_CONCAT(STR, SHIFT)(fmt)[i] != '%') {	\
-		yywarning("Missing argument to sprintf.\n");	\
-		return 0;					\
-	      }							\
-	    }							\
-	  }							\
-	break
-	PERCENT_CHECK(0);
-	PERCENT_CHECK(1);
-	PERCENT_CHECK(2);
-#undef PERCENT_CHECK
-#ifdef PIKE_DEBUG
-      default:
-	Pike_fatal("Unsupported size shift (%d)!\n", fmt->size_shift);
-	break;
-#endif
-      }
-      if (!num_percent)
-      {
-	ADD_NODE_REF2(*arg0, ret = *arg0);
-	return ret;
-      }
-      res = begin_wide_shared_string(fmt->len - num_percent, fmt->size_shift);
-      switch(fmt->size_shift) {
-#define PERCENT_CHECK(SHIFT)					\
-	case SHIFT:						\
-	  for(i=j=0; i < fmt->len; i++) {			\
-	    if ((PIKE_CONCAT(STR, SHIFT)(res)[j++] =		\
-		 PIKE_CONCAT(STR, SHIFT)(fmt)[i]) == '%') {	\
-	      num_percent--;					\
-	      i++;						\
-	      if (PIKE_CONCAT(STR, SHIFT)(fmt)[i] != '%') {	\
-		Pike_fatal("Missing argument to sprintf.\n");	\
-	      }							\
-	    }							\
-	  }							\
-	break
-	PERCENT_CHECK(0);
-	PERCENT_CHECK(1);
-	PERCENT_CHECK(2);
-#undef PERCENT_CHECK
-#ifdef PIKE_DEBUG
-      default:
-	Pike_fatal("Unsupported size shift (%d)!\n", fmt->size_shift);
-	break;
-#endif
-      }
-#ifdef PIKE_DEBUG
-      if (num_percent) {
-	Pike_fatal("Number of percent characters differ between passes: %d\n",
-		   num_percent);
-      }
-      if (j != res->len) {
-	Pike_fatal("Unexpected string length: %d != %d\n",
-		   j, res->len);
-      }
-#endif
-      res = end_shared_string(res);
-      ret = mkstrnode(res);
-      free_string(res);
-      return ret;
+      /* Constant folding will take care of this case. */
+      return 0;
     }
+    /* FIXME: Add argument check. */
   }
   return 0;
 }
