@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.130 2005/11/18 10:25:58 grubba Exp $
+|| $Id: sprintf.c,v 1.131 2005/11/18 21:23:38 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -1696,20 +1696,20 @@ static node *optimize_sprintf(node *n)
 {
   node **arg0 = my_get_arg(&_CDR(n), 0);
   node **arg1 = my_get_arg(&_CDR(n), 1);
-  node *ret;
+  node *ret = NULL;
   int num_args=count_args(CDR(n));
   if(arg0 &&
      (*arg0)->token == F_CONSTANT &&
      (*arg0)->u.sval.type == T_STRING)
   {
     /* First argument is a constant string. */
+    struct pike_string *fmt = (*arg0)->u.sval.u.string;
+
     if(arg1 && num_args == 2 && 
-       (*arg0)->u.sval.u.string->size_shift == 0 &&
-       (*arg0)->u.sval.u.string->len == 2 &&
-       STR0((*arg0)->u.sval.u.string)[0]=='%')
+       fmt->size_shift == 0 && fmt->len == 2 && STR0(fmt)[0]=='%')
     {
       /* First argument is a two character format string. */
-      switch(STR0((*arg0)->u.sval.u.string)[1])
+      switch(STR0(fmt)[1])
       {
       case 'c':
         ADD_NODE_REF2(*arg1,
@@ -1750,7 +1750,8 @@ static node *optimize_sprintf(node *n)
     }
     /* FIXME: Add argument check. */
   }
-  return 0;
+  /* FIXME: Convert into compile_sprintf(args[0])->format(@args[1..])? */
+  return ret;
 }
 
 PIKE_MODULE_INIT
