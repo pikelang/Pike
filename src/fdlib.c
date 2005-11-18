@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.72 2005/11/17 13:30:50 grubba Exp $
+|| $Id: fdlib.c,v 1.73 2005/11/18 14:13:11 grubba Exp $
 */
 
 #include "global.h"
@@ -912,10 +912,10 @@ PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
   h = da_handle[fd];
   mt_unlock(&fd_mutex);
 
-#ifdef INT64
   {
-    /* FIXME: Needs configure test for SetFilePointerEx to work with
-       anything but Windows XP/2000 Pro. */
+#ifdef INT64
+#ifdef HAVE_SETFILEPOINTEREX
+    /* Windows NT based. */
     LARGE_INTEGER li_pos;
     LARGE_INTEGER li_ret;
     li_pos.QuadPart = pos;
@@ -925,36 +925,28 @@ PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
       return -1;
     }
     ret = li_ret.QuadPart;
-  }
-#else /* !INT64 */
-
-#ifdef INT64
-  /* NOTE: Currently dead code, but should be enabled when there's
-   *       a configure test for SetFilePointerEx (see above).
-   */
-  if (pos >= ((INT64) 1 << 32)) {
-    LONG high = DO_NOT_WARN ((LONG) (pos >> 32));
+#else /* !HAVE_SETFILEPOINTEREX */
+    /* Windows 9x based. */
+    LONG high = DO_NOT_WARN((LONG)(pos >> 32));
     DWORD err;
     pos &= (1 << 32) - 1;
-    ret = SetFilePointer (h, DO_NOT_WARN ((LONG) pos), &high, where);
+    ret = SetFilePointer(h, DO_NOT_WARN((LONG)pos), &high, where);
     if (ret == INVALID_SET_FILE_POINTER &&
 	(err = GetLastError()) != NO_ERROR) {
       errno = err;
       return -1;
     }
     ret += (INT64) high << 32;
-  }
-  else
-#endif /* INT64 */
-  {
-    ret = SetFilePointer (h, DO_NOT_WARN ((LONG) pos), NULL, where);
+#endif /* HAVE_SETFILEPOINTEREX */
+#else /* !INT64 */
+    ret = SetFilePointer(h, (LONG)pos, NULL, where);
     if(ret == INVALID_SET_FILE_POINTER)
     {
-      errno=GetLastError();
+      errno = GetLastError();
       return -1;
     }
-  }
 #endif /* INT64 */
+  }
 
   return ret;
 }
