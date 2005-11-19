@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.234 2005/11/19 22:45:14 grubba Exp $
+|| $Id: encode.c,v 1.235 2005/11/19 23:18:52 grubba Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-#define ENCODE_DEBUG
+/* #define ENCODE_DEBUG */
 
 /* Use the old encoding method for programs. */
 /* #define OLD_PIKE_ENCODE_PROGRAM */
