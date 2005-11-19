@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.232 2005/06/01 09:06:59 grubba Exp $
+|| $Id: encode.c,v 1.233 2005/11/19 22:40:28 grubba Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-/* #define ENCODE_DEBUG */
+#define ENCODE_DEBUG
 
 /* Use the old encoding method for programs. */
 /* #define OLD_PIKE_ENCODE_PROGRAM */
@@ -1433,7 +1433,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		    /* Code the number of the string containing
 		     * the raw bytecode.
 		     */
-		    code_number(((INT32 *)(p->program+id->func.offset))[-1],
+		    code_number(read_data(p->program + id->func_offset, -1),
 				data);
 		  } else {
 		    /* Prototype */
