@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.h,v 1.25 2005/01/04 17:58:51 grubba Exp $
+|| $Id: ia32.h,v 1.26 2005/11/19 22:38:51 grubba Exp $
 */
 
 /* #define ALIGN_PIKE_JUMPS 8 */
@@ -52,6 +52,7 @@
   } while(0)
 #define ins_byte(VAL)		add_to_program(VAL)
 #define ins_data(VAL)		ins_int((VAL), (void (*)(char))add_to_program)
+#define read_data(PTR, OFF)	EXTRACT_INT((PTR) + (sizeof(INT32)*(OFF)))
 
 void ia32_update_pc(void);
 
