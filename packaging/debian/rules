@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.59 2005/11/19 00:22:01 grendel Exp $
+# $Id: rules,v 1.60 2005/11/19 01:41:32 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -156,8 +156,6 @@ clean:
 	    mkdir -p src/lib/modules; \
 	    $(MAKE) -Csrc/ spotless; \
 	fi
-	- rm -rf refdoc/modref/
-	- rm -rf refdoc/traditional_manual/
 	- rm -rf refdoc/build/
 	- $(MAKE) cvsclean
 	- rm -f `find src -name "*.o" -print`
@@ -259,7 +257,6 @@ install: build
 	done
 	dh_link && rm -f $(CURDIR)/debian/links
 
-	dh_install --sourcedir=$(CURDIR) -p$(PIKE)-dev debian/pike.el usr/share/emacs
 	sed -e "`$(RUNPIKE) -e 'write("s#@CFLAGS@#%s#g;s/@LDFLAGS@//g;s/@MAJOR@/%d/g; s/@MINOR@/%d/g; s/@BUILD@/%d/g","-I/usr/include/pike/$(VERSION)/", __REAL_MAJOR__, __REAL_MINOR__, __REAL_BUILD__);'`" \
 		$(CURDIR)/debian/pike-config.in > $(CURDIR)/debian/$(PIKE)-dev/usr/bin/$(PIKE)-config
 
