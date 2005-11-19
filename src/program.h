@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.218 2005/03/15 09:59:28 grubba Exp $
+|| $Id: program.h,v 1.219 2005/11/19 20:06:00 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -18,6 +18,7 @@
 #include "program_id.h"
 #include "pike_rusage.h"
 #include "block_alloc_h.h"
+#include "pikecode.h"
 
 /* Needed to support dynamic loading on NT */
 PMOD_PROTO extern struct program_state * Pike_compiler;
@@ -134,6 +135,10 @@ struct object;
 #define PIKE_BYTECODE_SPARC	2
 #define PIKE_BYTECODE_IA32	3
 #define PIKE_BYTECODE_PPC32     4
+
+#ifndef PIKE_BYTECODE_METHOD
+#error PIKE_BYTECODE_METHOD not set.
+#endif
 
 #if PIKE_BYTECODE_METHOD == PIKE_BYTECODE_IA32
 #define PIKE_OPCODE_T unsigned INT8
