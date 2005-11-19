@@ -5,7 +5,7 @@ pike7.6 (7.6.51-1) unstable; urgency=low
   * Manuals are no longer built during the binary build process. Instead,
     they are contained in the .orig tarball.
 
- -- Marek Habersack <grendel@debian.org>  Wed, 2 Nov 2005 17:40:42 +0100
+ -- Marek Habersack <grendel@debian.org>  Wed, 19 Nov 2005 01:22:34 +0100
 
 pike7.6 (7.6.50-1) unstable; urgency=low
 
