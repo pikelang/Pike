@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.600 2005/08/01 15:31:25 mast Exp $
+|| $Id: builtin_functions.c,v 1.601 2005/11/19 17:14:35 grubba Exp $
 */
 
 #include "global.h"
@@ -2466,7 +2466,7 @@ void f__exit(INT32 args)
   int code;
   ASSERT_SECURITY_ROOT("_exit");
 
-  get_all_args("_exit", args, "%i", &code);
+  get_all_args("_exit", args, "%d", &code);
 
 #ifdef PIKE_DEBUG
   {
