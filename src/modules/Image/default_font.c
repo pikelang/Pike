@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: default_font.c,v 1.8 2004/03/05 23:04:02 nilsson Exp $
+|| $Id: default_font.c,v 1.9 2005/11/19 17:39:38 grubba Exp $
 */
 
 /* Use cpp to RLE-encode... */
@@ -17,6 +17,7 @@
 #define FF32	FF16,FF16
 #define FF64	FF32,FF32
 
+static const long force_alignment = 0;
 const unsigned char image_default_font[] = {
   70,79,78,84,0,0,0,1,0,0,1,Z4,11,0,0,0,
   9,0,0,4,20,0,0,4,32,0,0,4,44,0,0,4,
