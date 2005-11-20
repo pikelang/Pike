@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.380 2005/11/14 19:56:18 nilsson Exp $
+// $Id: master.pike.in,v 1.381 2005/11/20 23:18:41 nilsson Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -2327,6 +2327,14 @@ object backend_thread()
 
 mapping(string:string) initial_predefines = ([]);
 
+static mixed main_resolv(string sym, CompatResolver|void resolver) {
+  mixed v = (resolver||this)->resolv(sym);
+  if(!v)
+    error("Could not resolv %s. "
+	  "(Perhaps the installed pike tree has been moved.)\n", sym);
+  return v;
+};
+
 //! This function is called when all the driver is done with all setup
 //! of modules, efuns, tables etc. etc. and is ready to start executing
 //! _real_ programs. It receives the arguments not meant for the driver
@@ -2384,14 +2392,6 @@ void _main(array(string) orig_argv, array(string) env)
 	     "                " + "\n"
 	     "Program path..: " + pike_program_path*"\n"
 	     "                " + "\n");
-  };
-
-  mixed main_resolv(string sym, CompatResolver|void resolver) {
-    mixed v = (resolver||this)->resolv(sym);
-    if(!v)
-      error("Could not resolv %s. "
-	    "(Perhaps the installed pike tree has been moved.)\n", sym);
-    return v;
   };
 
   if(sizeof(argv)>1 && sizeof(argv[1]) && argv[1][0]=='-')
@@ -3507,6 +3507,13 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	(sizeof([array]trace[0]) > 2) &&
 	(([array]trace[0])[2] == _main))
       end = 1;
+
+    if( end==1 && (sizeof(trace)>2) &&
+	arrayp(trace[1]) && (sizeof([array]trace[1])>2) &&
+	(([array]trace[1])[2] == main_resolv) &&
+	arrayp(trace[-1]) && (sizeof([array]trace[-1])>2) &&
+	(([array]trace[-1]))[2] == compile_string )
+      end = sizeof(trace);
 
     mapping(string:int) prev_pos = ([]);
     array(string) frames = ({});
