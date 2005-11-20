@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.120 2005/01/27 18:44:22 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.121 2005/11/20 23:15:36 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -2105,9 +2105,10 @@ class Evaluator {
       _compiler_trace(compiler_trace_level);
 #endif
 
-    last_compile_time = gethrtime();
-    err = catch(p=compile_string(prog, "HilfeInput", handler));
-    last_compile_time = gethrtime()-last_compile_time;
+    float compile_time = gauge {
+      err = catch(p=compile_string(prog, "HilfeInput", handler));
+    };
+    last_compile_time = (int)(compile_time*1000000);
 
 #if constant(_assembler_debug)
     _assembler_debug(0);
@@ -2147,16 +2148,17 @@ class Evaluator {
     object o;
     if( o=hilfe_compile(a) )
     {
-      mixed res;
-      last_eval_time = gethrtime();
-      mixed err = catch{
-	res = o->___HilfeWrapper();
-	trace(0);
+      mixed res, err;
+      float eval_time = gauge {
+	err = catch {
+	  res = o->___HilfeWrapper();
+	  trace(0);
 #if constant(_debug)
-	_debug(0);
+	  _debug(0);
 #endif
+	};
       };
-      last_eval_time = gethrtime()-last_eval_time;
+      last_eval_time = (int)(eval_time*1000000);
 
       if( err || (err=catch(a=sprintf("%O", res))) )
       {
