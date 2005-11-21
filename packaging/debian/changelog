@@ -1,3 +1,11 @@
+pike7.6 (7.6.51-2) unstable; urgency=low
+
+  * pike7.6_7.6.33-2 (alpha/unstable): FTBFS: glibc aborts in free()
+    (Closes: #333072)
+  * pike7.4-core: doesn't clean out /usr/local stuff (Closes: #339963)
+
+ -- Marek Habersack <grendel@debian.org>  Mon, 21 Nov 2005 21:21:23 +0100
+
 pike7.6 (7.6.51-1) unstable; urgency=low
 
   * The latest cvs snapshot
@@ -5,7 +13,7 @@ pike7.6 (7.6.51-1) unstable; urgency=low
   * Manuals are no longer built during the binary build process. Instead,
     they are contained in the .orig tarball.
 
- -- Marek Habersack <grendel@debian.org>  Wed, 19 Nov 2005 01:22:34 +0100
+ -- Marek Habersack <grendel@debian.org>  Mon, 21 Nov 2005 21:20:49 +0100
 
 pike7.6 (7.6.50-1) unstable; urgency=low
 
