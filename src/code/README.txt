@@ -40,7 +40,7 @@ void ins_byte(INT32 val);
 void ins_data(INT32 val);
 	Insert a 32bit value at the current offset.
 
-INT32 read_data(PIKE_OPCODE_T *origin, int offset)
+INT32 read_program_data(PIKE_OPCODE_T *origin, int offset)
 	Read a data item stored by ins_data. Note that the offset
 	is in number of data units.
 
@@ -75,6 +75,12 @@ INT32 READ_INCR_BYTE(PIKE_OPCODE_T *pc);
 	'pc' to the next legal position.
 
 Optional macros:
+
+void INIT_INTERPRETER_STATE(void)
+	Called once during initialization of the interpreter. Typically
+	used to detect and configure CPU specific options. Since it
+	get called after the instrs table has been initialized (but before
+	it has been used), it may alter it.
 
 void CALL_MACHINE_CODE(PIKE_OPCODE_T *pc)
 	Start execution of the machine-code located at 'pc'.

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.h,v 1.26 2005/11/19 22:38:51 grubba Exp $
+|| $Id: ppc32.h,v 1.27 2005/11/21 10:38:22 grubba Exp $
 */
 
 #define PPC_INSTR_B_FORM(OPCD,BO,BI,BD,AA,LK)			\
@@ -172,7 +172,7 @@ void ppc32_flush_code_generator_state(void);
 #define ins_align(ALIGN)
 #define ins_byte(VAL)	  add_to_program((INT32)(VAL))
 #define ins_data(VAL)	  add_to_program((INT32)(VAL))
-#define read_data(PTR, OFF)	((INT32)((PTR)[OFF]))
+#define read_program_data(PTR, OFF)	((INT32)((PTR)[OFF]))
 
 INT32 ppc32_ins_f_jump(unsigned int a, int backward_jump);
 INT32 ppc32_ins_f_jump_with_arg(unsigned int a, unsigned INT32 b, int backward_jump);
