@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sybase.c,v 1.15 2005/01/20 10:46:09 nilsson Exp $
+|| $Id: sybase.c,v 1.16 2005/11/22 01:43:46 nilsson Exp $
 */
 
 /*
@@ -77,11 +77,6 @@
 #else
 #define sybdebug(X)
 #define errdebug(err)
-#endif
-
-/* pike 0.6 compatibility stuff */
-#ifndef ADD_STORAGE
-#define ADD_STORAGE(X) add_storage(sizeof(X))
 #endif
 
 
