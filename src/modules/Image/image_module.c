@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_module.c,v 1.22 2005/10/17 11:26:12 nilsson Exp $
+|| $Id: image_module.c,v 1.23 2005/11/23 00:44:38 nilsson Exp $
 */
 
 #include "global.h"
@@ -310,11 +310,6 @@ PIKE_MODULE_INIT
    PIKE_MODULE_EXPORT(Image, image_colortable_program);
    PIKE_MODULE_EXPORT(Image, image_layer_program );
 #endif
-
-   /* compat stuff */
-   add_program_constant("font",image_font_program,0); 
-   add_program_constant("image",image_program,0); 
-   add_program_constant("colortable",image_colortable_program,0);
 }
 
 PIKE_MODULE_EXIT
