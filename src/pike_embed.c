@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.c,v 1.5 2005/04/19 22:02:43 nilsson Exp $
+ * $Id: pike_embed.c,v 1.6 2005/11/23 10:39:36 grubba Exp $
  *
  * Pike embedding API.
  *
@@ -509,7 +509,7 @@ PMOD_EXPORT struct callback *add_exit_callback(callback_func call,
   return add_to_callback(&exit_callbacks, call, arg, free_func);
 }
 
-void pike_do_exit(int num)
+DECLSPEC(noreturn) void pike_do_exit(int num)
 {
   call_callback(&exit_callbacks, NULL);
   free_callback_list(&exit_callbacks);
