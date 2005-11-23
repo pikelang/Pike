@@ -3,6 +3,8 @@ pike7.4 (7.4.341-2) unstable; urgency=low
   * Apparently Pike builds correctly with the new Bison now. Build-time
     dependency on bison-1.35 removed, depending on the 'normal' bison
     now.
+  * Also, it seems it's OK to depend on libmysqlclient14 now. Build-depending
+    on libmysqlclient14-dev package now.
 
  -- Marek Habersack <grendel@debian.org>  Wed, 23 Nov 2005 20:49:30 +0100
 
