@@ -28,6 +28,18 @@ test_true(
 #pike 7.6
 functionp(Image.Image()->map_fs))
 
+test_eq(
+#pike 7.6
+Image.image,Image.Image)
+
+test_eq(
+#pike 7.6
+Image.font,Image.Font)
+
+test_eq(
+#pike 7.6
+Image.colortable,Image.Colortable)
+
 test_true(
 #pike 7.6
 functionp(Standards.UUID.new))
