@@ -92,4 +92,19 @@ test_true(
 #pike 7.6
 functionp(spider.isspace))
 
+
+test_do([[
+  catch {
+#pike 7.6
+    add_constant( "db", Sql.Sql("mysql://localhost") );
+  };
+]])
+
+ifefun(db,[[
+  test_equal(
+db->query("select 1"), ({ ([ ".1":"1", "1":"1" ]) }) )
+  test_do( add_constant("db") )
+]])
+
+
 END_MARKER
