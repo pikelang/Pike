@@ -17,7 +17,7 @@
 //!      2570   : v3 description
 //!
 
-// $Id: protocol.pike,v 1.14 2005/11/26 03:58:55 nilsson Exp $
+// $Id: protocol.pike,v 1.15 2005/11/26 04:01:43 nilsson Exp $
 
 
 #include "snmp_globals.h"
@@ -208,9 +208,8 @@ private array extra_args;
 //! @param loc_addr
 //!   local address and UDP port (optional)
 //!
-void create(int|void rem_port, string|void rem_addr, int|void loc_port, string|void loc_addr) {
-
-  werror("%O\n", wait);
+void create(int|void rem_port, string|void rem_addr, int|void loc_port,
+	    string|void loc_addr) {
 
   int lport = loc_port;
 
