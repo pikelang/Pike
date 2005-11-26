@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.84 2005/11/24 23:15:57 nilsson Exp $
+ * $Id: Sql.pike,v 1.85 2005/11/26 03:14:06 nilsson Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -292,7 +292,7 @@ static string _sprintf(int type, mapping|void flags)
     return sprintf("Sql.%O", master_sql);
 }
 
-static private array(mapping(string:mixed)) res_obj_to_array(object res_obj)
+static array(mapping(string:mixed)) res_obj_to_array(object res_obj)
 {
   if (res_obj) 
   {
@@ -359,7 +359,7 @@ string|object compile_query(string q)
 }
 
 //! Handle sprintf-based quoted arguments
-private array(string|mapping(string|int:mixed))
+static array(string|mapping(string|int:mixed))
   handle_extraargs(string query, array(mixed) extraargs) {
 
   array(mixed) args=allocate(sizeof(extraargs));
