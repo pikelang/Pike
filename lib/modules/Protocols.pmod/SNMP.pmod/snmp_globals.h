@@ -1,7 +1,7 @@
 //
 // snmp_globals.h
 //
-// $Id: snmp_globals.h,v 1.3 2002/12/04 19:14:00 bill Exp $
+// $Id: snmp_globals.h,v 1.4 2005/11/26 03:58:55 nilsson Exp $
 //
 
 #define SNMP_DEFAULT_PORT       161
@@ -25,13 +25,11 @@
 
 // debug
 #ifdef DEBUG_PIKE_PROTOCOL_SNMP
-#define DWRITE(X)	werror("Protocols.SNMP: "+X)
-#define DWRITE_HI(X)	werror("Protocols.SNMP: "+X)
-#define THROW(X)	throw(X)
+#define DWRITE(X,Y ...)	werror("Protocols.SNMP: "+X, Y)
+#define ERROR(X)	error(X)
 #else
-#define DWRITE(X)
-#define DWRITE_HI(X)
-#define THROW(X)
+#define DWRITE(X,Y ...)
+#define ERROR(X)
 #endif
 
 
