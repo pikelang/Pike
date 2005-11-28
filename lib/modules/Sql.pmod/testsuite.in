@@ -7,7 +7,7 @@ test_do([[
 ]])
 
 ifefun(db,[[
-  test_equal( db->query("select 1"), ({ ([ ".1":"1", "1":"1" ]) }) )
+  test_equal( db->query("select 1"), ({ ([ "1":"1" ]) }) )
   test_eq( db->big_query("select 1")->num_rows(), 1 )
   test_eq( db->big_query("select 1,2")->num_fields(), 2 )
   test_equal( db->big_query("select 1")->fetch_fields()->name, ({ "1" }) )
