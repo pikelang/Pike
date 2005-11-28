@@ -64,7 +64,7 @@ class Snowflake
       gc->set_clip_origin(ix,iy);
       root->draw_rectangle(gc,1,ix,iy,xsize,ysize);
     }
-    if( collided( this_object() ) )
+    if( collided( this ) )
       init_flake();
   }
 
@@ -117,12 +117,17 @@ int collided( Snowflake f )
   int x = (int)f->x, y = (int)f->y;
   int w = (int)f->xsize;
   int h = (int)f->ysize;
-//   if( region->point_in( x, y+h ) || region->point_in( x+w, y+h ))
-//   {
-//     region |= GDK.Rectangle( x, y+h/2+h/4, w, h );
-  if( y > 1200 )
-    return 1;
-//   }
+   if( region->point_in( x, y+h ) || region->point_in( x+w, y+h ))
+   {
+       // Expand region somewhat, unless it's at the top.
+       if( y > 100 && x > 10)
+       {
+	   
+	   region |= GDK.Rectangle( x+w/2, y+h/2+h/4, w/2, h/2 );
+       }
+//   if( y > 1200 )
+     return 1;
+   }
   return 0;
 }
 
@@ -146,7 +151,7 @@ int main()
     if(o->is_visible())
     {
       mapping g = o->get_geometry();
-      if(g->width == rg->width)
+      if(g->width >= rg->width*0.7)
         continue;
       region |= GDK.Rectangle( g->x, g->y, g->width, g->height );
     }
