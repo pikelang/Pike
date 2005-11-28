@@ -195,9 +195,6 @@ private void read_cb_chunked( mixed dummy, string data )
   remove_call_out(connection_timeout);
   while( chunked_state == FINISHED || strlen( buf ) )
   {
-    werror("%O %O %O\n\r", 
-	   search( mkmapping(indices(this),values(this)), chunked_state), 
-	   strlen(buf), buf[..10]);
     switch( chunked_state )
     {
       case READ_SIZE:
@@ -232,10 +229,8 @@ private void read_cb_chunked( mixed dummy, string data )
       case READ_TRAILER:
 	trailers += buf;
 	buf = "";
-	werror("%O\n", trailers);
 	if( has_value( trailers, "\r\n\r\n" ) || has_prefix( trailers, "\r\n" ) )
 	{
-	  werror("FINITO\n");
 	  chunked_state = FINISHED;
 	  if( !has_prefix( trailers, "\r\n" ) )
 	    sscanf( trailers, "%s\r\n\r\n%s", trailers, buf );
