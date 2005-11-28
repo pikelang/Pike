@@ -86,6 +86,26 @@ void attach_fd(Stdio.File _fd, Port server,
       read_cb(0,already_data);
 }
 
+
+// Some (wap-gateways, specifically) servers send multiple
+// content-length, as an example..
+constant singular_headers = ({
+    "content-length",
+    "content-type",
+    "connection",
+    "transfer-encoding",
+    "if-modified-since",
+    "date",
+    "range",
+});
+
+// We use these as if we only got one, regardless of the number of
+// headers received.
+constant singular_use_headers = ({
+    "cookie",
+    "cookie2",
+});    
+
 static void read_cb(mixed dummy,string s)
 {
 
@@ -101,15 +121,12 @@ static void read_cb(mixed dummy,string s)
       headerparser=0;
       buf=v[0];
       request_headers=v[2];
+
       request_raw=v[1];
       parse_request();
 
       if (parse_variables())
-      {
-	 my_fd->set_blocking();
-	 populate_raw();
-	 request_callback(this);
-      }
+	finalize();
    }
    else
       call_out(connection_timeout,connection_timeout_delay);
@@ -153,9 +170,106 @@ static void parse_request()
    sscanf(not_query=full_query,"%s?%s",not_query,query);
 
    if (request_headers->cookie)
-      foreach(request_headers->cookie/";";;string cookie)
-	 if (sscanf(String.trim_whites(cookie),"%s=%s",string a,string b)==2)
+      foreach (request_headers->cookie/";";;string cookie)
+         if (sscanf(String.trim_whites(cookie),"%s=%s",string a,string b)==2)
 	    cookies[a]=b;
+}
+
+enum ChunkedState {
+    READ_SIZE = 1,
+    READ_CHUNK,
+    READ_POSTNL,
+    READ_TRAILER,
+    FINISHED,
+};
+
+private ChunkedState chunked_state = READ_SIZE;
+private int chunk_size;
+private string current_chunk = "";
+private string actual_data = "";
+private string trailers = "";
+
+private void read_cb_chunked( mixed dummy, string data )
+{
+  buf += data;
+  remove_call_out(connection_timeout);
+  while( chunked_state == FINISHED || strlen( buf ) )
+  {
+    switch( chunked_state )
+    {
+      case READ_SIZE:
+	if( !has_value( buf, "\r\n" ) )
+	  return;
+	// SIZE[ extension]*\r\n
+	sscanf( buf, "%x%*[^\r\n]\r\n%s", chunk_size, buf);
+	if( chunk_size == 0 )
+	  chunked_state = READ_TRAILER;
+	else
+	  chunked_state = READ_CHUNK;
+	break;
+
+      case READ_CHUNK:
+	int l = min( strlen(buf), chunk_size );
+	chunk_size -= l;
+	actual_data += buf[..l-1];
+	buf = buf[l..];
+	if( !chunk_size )
+	  chunked_state = READ_POSTNL;
+	break;
+
+      case READ_POSTNL:
+	if( strlen( buf ) < 2 )
+	  return;
+	if( has_prefix( buf, "\r\n" ) )
+	  buf = buf[2..];
+	chunked_state = READ_SIZE;
+	break;
+	
+
+      case READ_TRAILER:
+	trailers += buf;
+	buf = "";
+	if( has_value( trailers, "\r\n\r\n" ) || has_prefix( trailers, "\r\n" ) )
+	{
+	  chunked_state = FINISHED;
+	  if( !has_prefix( trailers, "\r\n" ) )
+	    sscanf( trailers, "%s\r\n\r\n%s", trailers, buf );
+	  else
+	  {
+	    buf = buf[2..];
+	    trailers = "";
+	  }
+	}
+	break;
+
+      case FINISHED:
+	foreach( trailers/"\r\n"-({""}), string header )
+	{
+	  string hk, hv;
+	  if( sscanf( header, "%s:%s", hk, hv ) == 2 )
+	  {
+	    hk = String.trim_whites(lower_case(hk));
+	    hv = String.trim_whites(hv);
+	    if( request_headers[hk] )
+	    {
+	      if( !arrayp( request_headers[hk] ) )
+		request_headers[hk] = ({request_headers[hk]});
+	      request_headers[hk]+=({hv});
+	    }
+	    else
+	      request_headers[hk] = hk;
+	  }
+	}
+
+
+	// And FINALLY we are done..
+	buf = actual_data + buf;
+	request_headers["content-length"] = ""+strlen(actual_data);
+	finalize();
+	return;
+    }
+  }
+  call_out(connection_timeout,connection_timeout_delay);
 }
 
 static int parse_variables()
@@ -163,18 +277,22 @@ static int parse_variables()
    if (query!="")
       .http_decode_urlencoded_query(query,variables);
 
-   if(((int)request_headers["content-length"]<=sizeof(buf)))
+   foreach( singular_headers, string x )
+       if( arrayp(request_headers[x]) )
+	   request_headers[x] = request_headers[x][-1];
+
+   if( request_headers["transfer-encoding"] && 
+       has_value(lower_case(request_headers["transfer-encoding"]),"chunked"))
    {
-      if(request_type=="POST" &&
-         request_headers["content-type"]=="application/x-www-form-urlencoded")
-         parse_post();
-      return 1;
+       my_fd->set_read_callback(read_cb_chunked);
+       read_cb_chunked(0,"");
+       return 0;
    }
-   else
-   {
-      my_fd->set_read_callback(read_cb_post);
-      return 0;
-   }
+   
+   if ((int)request_headers["content-length"]<=sizeof(buf))
+       return 1;
+   my_fd->set_read_callback(read_cb_post);
+   return 0; // delay
 }
 
 static void populate_raw()
@@ -190,23 +308,53 @@ static void parse_post()
 
    string s=buf[..n-1];
    buf=buf[n..];
+   raw = s;
+   if ( request_headers["content-type"] && 
+	has_prefix(request_headers["content-type"], "multipart/form-data") )
+   {
+       MIME.Message messg = MIME.Message(s, request_headers);
 
-   .http_decode_urlencoded_query(s,variables);
+      foreach(messg->body_parts, object part) {
+        if(part->disp_params->filename) {
+          variables[part->disp_params->name]=part->getdata();
+          variables[part->disp_params->name+".filename"]=
+            part->disp_params->filename;
+        } else
+          variables[part->disp_params->name] = part->getdata();
+     }
+   }
+   else if( request_headers["content-type"] && 
+	    has_value(request_headers["content-type"], "url-encoded"))
+     .http_decode_urlencoded_query(s,variables);
+
+   foreach( singular_headers, string x )
+       if( arrayp(request_headers[x]) )
+	   request_headers[x] = request_headers[x][-1];
+
+   foreach( singular_use_headers, string x )
+       if( arrayp(request_headers[x]) )
+	   request_headers[x] = request_headers[x]*";";
+}
+
+static void finalize()
+{
+  my_fd->set_blocking();
+  parse_post();
+  populate_raw();
+  request_callback(this);
 }
 
 static void read_cb_post(mixed dummy,string s)
 {
-   raw+=s;
-   buf+=s;
+  buf+=s;
 
-   if (sizeof(buf)>=(int)request_headers["content-length"] ||
-       sizeof(buf)>MAXIMUM_REQUEST_SIZE)
-   {
-      my_fd->set_blocking();
-      populate_raw();
-      parse_post();
-      request_callback(this);
-   }
+  remove_call_out(connection_timeout);
+
+  if (sizeof(buf)>=(int)request_headers["content-length"] ||
+      sizeof(buf)>MAXIMUM_REQUEST_SIZE)
+    finalize();
+  else
+    call_out(connection_timeout,connection_timeout_delay);
 }
 
 static void close_cb()
@@ -264,7 +412,7 @@ string make_response_header(mapping m)
    
    res+=({"Server: "+(m->server || .http_serverid)});
 
-   string http_now = .http_date(time());
+   string http_now = .http_date(time(1));
    res+=({"Date: "+http_now});
 
    if (!m->stat && m->file)
@@ -460,12 +608,12 @@ void finish(int clean)
    my_fd=0; // and drop this object
 }
 
-int sent;
-string send_buf="";
-int send_pos;
-Stdio.File send_fd=0;
-int send_stop;
-int keep_alive=0;
+private int sent;
+private string send_buf="";
+private int send_pos;
+private Stdio.File send_fd=0;
+private int send_stop;
+private int keep_alive=0;
 
 void send_write()
 {
