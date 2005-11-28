@@ -43,7 +43,7 @@ string http_date(int t)
 
 class request_program 
 {
-  inherit HTTPLoop.prog;
+  inherit HTTPAccept.prog;
 }
 
 mixed handle(object o)
@@ -169,7 +169,7 @@ int main(int argc, array (string) argv)
     return 1;
   }
   
-  l = HTTPLoop.Loop( port, request_program, handle, 0, 1024*1024, 0, 
+  l = HTTPAccept.Loop( port, request_program, handle, 0, 1024*1024, 0, 
 		       0);
   werror("WWW-server listening to port "+PORT+".\n");
   return -1;
