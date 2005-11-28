@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.41 2005/10/27 16:54:10 grubba Exp $
+|| $Id: roxen.c,v 1.42 2005/11/28 16:55:46 per Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -47,10 +47,10 @@
 #define THP ((struct header_buf *)Pike_fp->current_storage)
 struct  header_buf
 {
-  char *headers;
-  char *pnt;
+  unsigned char *headers;
+  unsigned char *pnt;
   ptrdiff_t hsize, left;
-  int slash_n, spc;
+  int slash_n, tslash_n, spc;
 };
 
 static void f_hp_init( struct object *o )
@@ -59,7 +59,7 @@ static void f_hp_init( struct object *o )
   THP->pnt = NULL;
   THP->hsize = 0;
   THP->left = 0;
-  THP->spc = THP->slash_n = 0;
+  THP->spc = THP->slash_n = THP->tslash_n = 0;
 }
 
 static void f_hp_exit( struct object *o )
@@ -78,8 +78,8 @@ static void f_hp_feed( INT32 args )
   struct pike_string *str = Pike_sp[-1].u.string;
   struct header_buf *hp = THP;
   int str_len;
-  int tot_slash_n=hp->slash_n, slash_n = 0, spc = hp->spc;
-  char *pp,*ep;
+  int tot_slash_n=hp->slash_n, slash_n = hp->tslash_n, spc = hp->spc;
+  unsigned char *pp,*ep;
   struct svalue *tmp;
   struct mapping *headers;
   ptrdiff_t os=0, i, j, l;
@@ -92,23 +92,23 @@ static void f_hp_feed( INT32 args )
   str_len = str->len;
   while( str_len >= hp->left )
   {
-    char *buf;
-    if( THP->hsize > 512 * 1024 )
+    unsigned char *buf;
+    if( hp->hsize > 512 * 1024 )
       Pike_error("Too many headers\n");
-    THP->hsize += 8192;
-    buf = THP->headers;
-    THP->headers = realloc( THP->headers, THP->hsize );
-    if( !THP->headers )
+    hp->hsize += 8192;
+    buf = hp->headers;
+    hp->headers = realloc( hp->headers, hp->hsize );
+    if( !hp->headers )
     {
       free(buf);
-      THP->hsize = 0;
-      THP->left = 0;
-      THP->spc = THP->slash_n = 0;
-      THP->pnt = NULL;
+      hp->hsize = 0;
+      hp->left = 0;
+      hp->spc = hp->slash_n = 0;
+      hp->pnt = NULL;
       Pike_error("Running out of memory in header parser\n");
     }
-    THP->left += 8192;
-    THP->pnt = (THP->headers + THP->hsize - THP->left);
+    hp->left += 8192;
+    hp->pnt = (hp->headers + hp->hsize - hp->left);
   }
 
   MEMCPY( hp->pnt, str->str, str_len );
@@ -117,13 +117,24 @@ static void f_hp_feed( INT32 args )
   /* FIXME: The below does not support lines terminated with just \r. */
   for( ep=(hp->pnt+str_len),pp=MAXIMUM(hp->headers,hp->pnt-3);
        pp<ep && slash_n<2; pp++ )
-    if( *pp == ' ' )  spc++;
-    else if( *pp == '\n' ) slash_n++, tot_slash_n++;
-    else if( *pp != '\r' ) slash_n=0;
+    if( *pp == ' ' )  
+    {
+      spc++;
+      slash_n = 0;
+    }
+    else if( *pp == '\n' )
+    {
+      slash_n++;
+      tot_slash_n++;
+    }
+    else if( *pp != '\r' ) 
+    {
+      slash_n=0;
+    }
 
   hp->slash_n = tot_slash_n;
   hp->spc = spc;
-  
+  hp->tslash_n  = slash_n;
   hp->left -= str_len;
   hp->pnt += str_len;
   hp->pnt[0] = 0;
@@ -135,9 +146,9 @@ static void f_hp_feed( INT32 args )
      */
     if( (spc < 2) && tot_slash_n )
     {
-      push_constant_text( "" );
+      push_empty_string();
       /* This includes (all eventual) \r\n etc. */
-      push_text( hp->headers ); 
+      push_text((char *)hp->headers); 
       f_aggregate_mapping( 0 );
       f_aggregate( 3 );
       return;
@@ -145,18 +156,19 @@ static void f_hp_feed( INT32 args )
     push_int( 0 );
     return;
   }
-
-  push_string( make_shared_binary_string( pp, hp->pnt - pp ) ); /*leftovers*/
+  
+  /*leftovers*/
+  push_string(make_shared_binary_string((char *)pp, hp->pnt - pp));
   headers = allocate_mapping( 5 );
   in = hp->headers;
   l = pp - hp->headers;
 
   /* find first line here */
   for( i = 0; i < l; i++ )
-    if((in[i] == '\n') || (in[i] == '\r'))
+    if( (in[i] == '\n') || (in[i] == '\r') )
       break;
 
-  push_string( make_shared_binary_string( in, i ) );
+  push_string(make_shared_binary_string((char *)in, i));
 
   if((in[i] == '\r') && (in[i+1] == '\n'))
     i++;
@@ -252,7 +264,7 @@ static void f_make_http_headers( INT32 args )
  */
 {
   int total_len = 0, e;
-  char *pnt;
+  unsigned char *pnt;
   struct mapping *m;
   struct keypair *k;
   struct pike_string *res;
@@ -296,14 +308,14 @@ static void f_make_http_headers( INT32 args )
   total_len += terminator;
 
   res = begin_shared_string( total_len );
-  pnt = (char *)res->str;
-#define STRADD(X)\
-    for( l=X.u.string->len,s=X.u.string->str,c=0; c<l; c++ )\
-      *(pnt++)=*(s++);
+  pnt = STR0(res);
+#define STRADD(X)							\
+  for( l=(X).u.string->len, s=STR0((X).u.string), c=0; c<l; c++ )	\
+    *(pnt++)=*(s++)
 
   NEW_MAPPING_LOOP( m->data )
   {
-    char *s;
+    unsigned char *s;
     ptrdiff_t l, c;
     if( k->val.type == PIKE_T_STRING )
     {
@@ -405,7 +417,7 @@ static void f_http_decode_string(INT32 args)
 	 *dest=*(bar++);
        }
    } else {
-     foo = newstr->str;
+     foo = STR0(newstr);
      for (proc=0; bar<end; foo++)
        if (*bar=='%') {
 	 if (bar[1] == 'u' || bar[1] == 'U') {
@@ -554,21 +566,22 @@ static void f_html_encode_string( INT32 args )
 
 PIKE_MODULE_INIT
 {
-  pike_add_function("make_http_headers", f_make_http_headers,
-               "function(mapping(string:string|array(string)), int|void:string)", 0 );
+  ADD_FUNCTION("make_http_headers", f_make_http_headers,
+	       tFunc(tMap(tStr,tOr(tStr,tArr(tStr))) tOr(tInt01,tVoid), tStr),
+	       0);
 
-  pike_add_function("http_decode_string", f_http_decode_string,
-               "function(string:string)", 0 );
+  ADD_FUNCTION("http_decode_string", f_http_decode_string,
+	       tFunc(tStr,tStr), 0 );
 
-  pike_add_function("html_encode_string", f_html_encode_string,
-		    "function(mixed:string)", 0 );
+  ADD_FUNCTION("html_encode_string", f_html_encode_string,
+	       tFunc(tMix,tStr), 0 );
 
   start_new_program();
   ADD_STORAGE( struct header_buf  );
   set_init_callback( f_hp_init );
   set_exit_callback( f_hp_exit );
-  pike_add_function( "feed", f_hp_feed, "function(string:array(string|mapping))",0 );
-  pike_add_function( "create", f_hp_create, "function(:void)", ID_STATIC );
+  ADD_FUNCTION( "feed", f_hp_feed, tFunc(tStr,tArr(tOr(tStr,tMapping))), 0 );
+  ADD_FUNCTION( "create", f_hp_create, tFunc(tNone,tVoid), ID_STATIC );
   end_class( "HeaderParser", 0 );
 }
 
