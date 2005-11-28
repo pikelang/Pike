@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.46 2005/10/27 16:49:54 grubba Exp $
+|| $Id: roxen.c,v 1.47 2005/11/28 14:53:47 per Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -50,7 +50,7 @@ struct  header_buf
   unsigned char *headers;
   unsigned char *pnt;
   ptrdiff_t hsize, left;
-  int slash_n, spc;
+  int slash_n, tslash_n, spc;
 };
 
 static void f_hp_init( struct object *o )
@@ -59,7 +59,7 @@ static void f_hp_init( struct object *o )
   THP->pnt = NULL;
   THP->hsize = 0;
   THP->left = 0;
-  THP->spc = THP->slash_n = 0;
+  THP->spc = THP->slash_n = THP->tslash_n = 0;
 }
 
 static void f_hp_exit( struct object *o )
@@ -78,7 +78,7 @@ static void f_hp_feed( INT32 args )
   struct pike_string *str = Pike_sp[-1].u.string;
   struct header_buf *hp = THP;
   int str_len;
-  int tot_slash_n=hp->slash_n, slash_n = 0, spc = hp->spc;
+  int tot_slash_n=hp->slash_n, slash_n = hp->tslash_n, spc = hp->spc;
   unsigned char *pp,*ep;
   struct svalue *tmp;
   struct mapping *headers;
@@ -93,22 +93,22 @@ static void f_hp_feed( INT32 args )
   while( str_len >= hp->left )
   {
     unsigned char *buf;
-    if( THP->hsize > 512 * 1024 )
+    if( hp->hsize > 512 * 1024 )
       Pike_error("Too many headers\n");
-    THP->hsize += 8192;
-    buf = THP->headers;
-    THP->headers = realloc( THP->headers, THP->hsize );
-    if( !THP->headers )
+    hp->hsize += 8192;
+    buf = hp->headers;
+    hp->headers = realloc( hp->headers, hp->hsize );
+    if( !hp->headers )
     {
       free(buf);
-      THP->hsize = 0;
-      THP->left = 0;
-      THP->spc = THP->slash_n = 0;
-      THP->pnt = NULL;
+      hp->hsize = 0;
+      hp->left = 0;
+      hp->spc = hp->slash_n = 0;
+      hp->pnt = NULL;
       Pike_error("Running out of memory in header parser\n");
     }
-    THP->left += 8192;
-    THP->pnt = (THP->headers + THP->hsize - THP->left);
+    hp->left += 8192;
+    hp->pnt = (hp->headers + hp->hsize - hp->left);
   }
 
   MEMCPY( hp->pnt, str->str, str_len );
@@ -117,13 +117,24 @@ static void f_hp_feed( INT32 args )
   /* FIXME: The below does not support lines terminated with just \r. */
   for( ep=(hp->pnt+str_len),pp=MAXIMUM(hp->headers,hp->pnt-3);
        pp<ep && slash_n<2; pp++ )
-    if( *pp == ' ' )  spc++;
-    else if( *pp == '\n' ) slash_n++, tot_slash_n++;
-    else if( *pp != '\r' ) slash_n=0;
+    if( *pp == ' ' )  
+    {
+      spc++;
+      slash_n = 0;
+    }
+    else if( *pp == '\n' )
+    {
+      slash_n++;
+      tot_slash_n++;
+    }
+    else if( *pp != '\r' ) 
+    {
+      slash_n=0;
+    }
 
   hp->slash_n = tot_slash_n;
   hp->spc = spc;
-  
+  hp->tslash_n  = slash_n;
   hp->left -= str_len;
   hp->pnt += str_len;
   hp->pnt[0] = 0;
@@ -145,7 +156,7 @@ static void f_hp_feed( INT32 args )
     push_int( 0 );
     return;
   }
-
+  
   /*leftovers*/
   push_string(make_shared_binary_string((char *)pp, hp->pnt - pp));
   headers = allocate_mapping( 5 );
@@ -154,7 +165,7 @@ static void f_hp_feed( INT32 args )
 
   /* find first line here */
   for( i = 0; i < l; i++ )
-    if((in[i] == '\n') || (in[i] == '\r'))
+    if( (in[i] == '\n') || (in[i] == '\r') )
       break;
 
   push_string(make_shared_binary_string((char *)in, i));
