@@ -175,14 +175,15 @@ static void parse_request()
 	    cookies[a]=b;
 }
 
-private enum ChunkedState {
-    READ_SIZE = 0,
+enum ChunkedState {
+    READ_SIZE = 1,
     READ_CHUNK,
+    READ_POSTNL,
     READ_TRAILER,
     FINISHED,
 };
 
-private ChunkedState chunked_state;
+private ChunkedState chunked_state = READ_SIZE;
 private int chunk_size;
 private string current_chunk = "";
 private string actual_data = "";
@@ -191,8 +192,12 @@ private string trailers = "";
 private void read_cb_chunked( mixed dummy, string data )
 {
   buf += data;
-  while( strlen( buf ) )
+  remove_call_out(connection_timeout);
+  while( chunked_state == FINISHED || strlen( buf ) )
   {
+    werror("%O %O %O\n\r", 
+	   search( mkmapping(indices(this),values(this)), chunked_state), 
+	   strlen(buf), buf[..10]);
     switch( chunked_state )
     {
       case READ_SIZE:
@@ -201,15 +206,10 @@ private void read_cb_chunked( mixed dummy, string data )
 	// SIZE[ extension]*\r\n
 	sscanf( buf, "%x%*[^\r\n]\r\n%s", chunk_size, buf);
 	if( chunk_size == 0 )
-	{
 	  chunked_state = READ_TRAILER;
-	  continue;
-	}
 	else
 	  chunked_state = READ_CHUNK;
-	if( !strlen(buf) )
-	  return;
-	/* Fallthrough */
+	break;
 
       case READ_CHUNK:
 	int l = min( strlen(buf), chunk_size );
@@ -217,20 +217,31 @@ private void read_cb_chunked( mixed dummy, string data )
 	actual_data += buf[..l-1];
 	buf = buf[l..];
 	if( !chunk_size )
-	  chunked_state = READ_SIZE;
-	continue;
+	  chunked_state = READ_POSTNL;
+	break;
+
+      case READ_POSTNL:
+	if( strlen( buf ) < 2 )
+	  return;
+	if( has_prefix( buf, "\r\n" ) )
+	  buf = buf[2..];
+	chunked_state = READ_SIZE;
+	break;
+	
 
       case READ_TRAILER:
 	trailers += buf;
 	buf = "";
+	werror("%O\n", trailers);
 	if( has_value( trailers, "\r\n\r\n" ) || has_prefix( trailers, "\r\n" ) )
 	{
+	  werror("FINITO\n");
 	  chunked_state = FINISHED;
 	  if( !has_prefix( trailers, "\r\n" ) )
 	    sscanf( trailers, "%s\r\n\r\n%s", trailers, buf );
 	  else
 	  {
-	    sscanf( trailers, "\r\n%s", buf );
+	    buf = buf[2..];
 	    trailers = "";
 	  }
 	}
@@ -263,6 +274,7 @@ private void read_cb_chunked( mixed dummy, string data )
 	return;
     }
   }
+  call_out(connection_timeout,connection_timeout_delay);
 }
 
 static int parse_variables()
@@ -341,9 +353,13 @@ static void read_cb_post(mixed dummy,string s)
 {
   buf+=s;
 
+  remove_call_out(connection_timeout);
+
   if (sizeof(buf)>=(int)request_headers["content-length"] ||
       sizeof(buf)>MAXIMUM_REQUEST_SIZE)
     finalize();
+  else
+    call_out(connection_timeout,connection_timeout_delay);
 }
 
 static void close_cb()
@@ -401,7 +417,7 @@ string make_response_header(mapping m)
    
    res+=({"Server: "+(m->server || .http_serverid)});
 
-   string http_now = .http_date(time());
+   string http_now = .http_date(time(1));
    res+=({"Date: "+http_now});
 
    if (!m->stat && m->file)
@@ -597,12 +613,12 @@ void finish(int clean)
    my_fd=0; // and drop this object
 }
 
-int sent;
-string send_buf="";
-int send_pos;
-Stdio.File send_fd=0;
-int send_stop;
-int keep_alive=0;
+private int sent;
+private string send_buf="";
+private int send_pos;
+private Stdio.File send_fd=0;
+private int send_stop;
+private int keep_alive=0;
 
 void send_write()
 {
