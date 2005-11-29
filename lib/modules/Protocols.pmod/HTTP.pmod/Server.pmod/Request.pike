@@ -22,7 +22,7 @@ Port server_port;
 string buf="";    // content buffer
 
 //! raw unparsed full request (headers and body)
-string raw;
+string raw="";
 
 //! raw unparsed body of the request (@[raw] minus request line and headers)
 string body_raw;
@@ -108,10 +108,7 @@ constant singular_use_headers = ({
 
 static void read_cb(mixed dummy,string s)
 {
-
-   if(!raw) raw="";
    raw+=s;
-
    remove_call_out(connection_timeout);
 
    array v=headerparser->feed(s);
@@ -191,6 +188,7 @@ private string trailers = "";
 
 private void read_cb_chunked( mixed dummy, string data )
 {
+  raw += data;
   buf += data;
   remove_call_out(connection_timeout);
   while( chunked_state == FINISHED || strlen( buf ) )
@@ -263,7 +261,7 @@ private void read_cb_chunked( mixed dummy, string data )
 
 
 	// And FINALLY we are done..
-	buf = actual_data + buf;
+	body_raw = actual_data;
 	request_headers["content-length"] = ""+strlen(actual_data);
 	finalize();
 	return;
@@ -274,85 +272,95 @@ private void read_cb_chunked( mixed dummy, string data )
 
 static int parse_variables()
 {
-   if (query!="")
-      .http_decode_urlencoded_query(query,variables);
+  if (query!="")
+    .http_decode_urlencoded_query(query,variables);
 
-   foreach( singular_headers, string x )
-       if( arrayp(request_headers[x]) )
-	   request_headers[x] = request_headers[x][-1];
+  foreach( singular_headers, string x )
+    if( arrayp(request_headers[x]) )
+      request_headers[x] = request_headers[x][-1];
 
-   if( request_headers["transfer-encoding"] && 
-       has_value(lower_case(request_headers["transfer-encoding"]),"chunked"))
-   {
-       my_fd->set_read_callback(read_cb_chunked);
-       read_cb_chunked(0,"");
-       return 0;
-   }
+  if( request_headers["transfer-encoding"] && 
+      has_value(lower_case(request_headers["transfer-encoding"]),"chunked"))
+  {
+    my_fd->set_read_callback(read_cb_chunked);
+    read_cb_chunked(0,"");
+    return 0;
+  }
    
-   if ((int)request_headers["content-length"]<=sizeof(buf))
-       return 1;
-   my_fd->set_read_callback(read_cb_post);
-   return 0; // delay
+  int l = (int)request_headers["content-length"];
+  if (l<=sizeof(buf))
+  {
+    int zap = strlen(buf) - l;
+    raw = raw[..sizeof(raw)-zap];
+    body_raw = buf[..l-1];
+    buf = buf[l..];
+    return 1;
+  }
+
+  my_fd->set_read_callback(read_cb_post);
+  return 0; // delay
 }
 
 static void populate_raw()
 {
-   int i=search(raw, "\r\n\r\n");
-   if(i>0) body_raw=raw[i+4..];
-   return;
+  if( !strlen(body_raw) )
+  {
+    int i=search(raw, "\r\n\r\n");
+    if(i>0) body_raw=raw[i+4..];
+    return;
+  }
 }
 
 static void parse_post()
 {
-   int n=(int)request_headers["content-length"];
+  if ( request_headers["content-type"] && 
+       has_prefix(request_headers["content-type"], "multipart/form-data") )
+  {
+    MIME.Message messg = MIME.Message(body_raw, request_headers);
 
-   string s=buf[..n-1];
-   buf=buf[n..];
-   raw = s;
-   if ( request_headers["content-type"] && 
-	has_prefix(request_headers["content-type"], "multipart/form-data") )
-   {
-       MIME.Message messg = MIME.Message(s, request_headers);
+    foreach(messg->body_parts, object part) {
+      if(part->disp_params->filename) {
+	variables[part->disp_params->name]=part->getdata();
+	variables[part->disp_params->name+".filename"]=
+	  part->disp_params->filename;
+      } else
+	variables[part->disp_params->name] = part->getdata();
+    }
+  }
+  else if( request_headers["content-type"] && 
+	   has_value(request_headers["content-type"], "url-encoded"))
+    .http_decode_urlencoded_query(body_raw,variables);
 
-      foreach(messg->body_parts, object part) {
-        if(part->disp_params->filename) {
-          variables[part->disp_params->name]=part->getdata();
-          variables[part->disp_params->name+".filename"]=
-            part->disp_params->filename;
-        } else
-          variables[part->disp_params->name] = part->getdata();
-     }
-   }
-   else if( request_headers["content-type"] && 
-	    has_value(request_headers["content-type"], "url-encoded"))
-     .http_decode_urlencoded_query(s,variables);
+  foreach( singular_headers, string x )
+    if( arrayp(request_headers[x]) )
+      request_headers[x] = request_headers[x][-1];
 
-   foreach( singular_headers, string x )
-       if( arrayp(request_headers[x]) )
-	   request_headers[x] = request_headers[x][-1];
-
-   foreach( singular_use_headers, string x )
-       if( arrayp(request_headers[x]) )
-	   request_headers[x] = request_headers[x]*";";
+  foreach( singular_use_headers, string x )
+    if( arrayp(request_headers[x]) )
+      request_headers[x] = request_headers[x]*";";
 }
 
 static void finalize()
 {
   my_fd->set_blocking();
-  parse_post();
   populate_raw();
+  parse_post();
   request_callback(this);
 }
 
 static void read_cb_post(mixed dummy,string s)
 {
-  buf+=s;
-
+  raw += s;
   remove_call_out(connection_timeout);
 
-  if (sizeof(buf)>=(int)request_headers["content-length"] ||
-      sizeof(buf)>MAXIMUM_REQUEST_SIZE)
+  int l = (int)request_headers["content-length"];
+  if (sizeof(raw)>=l || sizeof(raw)>MAXIMUM_REQUEST_SIZE)
+  {
+    int ll = min(l,MAXIMUM_REQUEST_SIZE);
+    buf = raw[ll..];
+    raw = raw[..ll-1];
     finalize();
+  }
   else
     call_out(connection_timeout,connection_timeout_delay);
 }
@@ -561,7 +569,6 @@ void response_and_finish(mapping m, function|void _log_cb)
    {
       sent = my_fd->write(send_buf);
       send_buf="";
-      raw="";
       finish(1);
       return;
    }
@@ -582,7 +589,6 @@ void response_and_finish(mapping m, function|void _log_cb)
       send_buf=send_buf[..send_stop-1];
 
    call_out(send_timeout,send_timeout_delay);
-   raw="";
 }
 
 void finish(int clean)
@@ -603,7 +609,7 @@ void finish(int clean)
    // create new request
 
    this_program r=this_program();
-   r->attach_fd(my_fd,server_port,request_callback,raw);
+   r->attach_fd(my_fd,server_port,request_callback,buf);
 
    my_fd=0; // and drop this object
 }
@@ -667,5 +673,5 @@ void send_close()
 
 void send_read(mixed dummy,string s)
 {
-   raw+=s; // for HTTP/1.1
+  buf+=s; // for HTTP/1.1
 }
