@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.144 2005/10/17 10:14:40 nilsson Exp $
+# $Id: Makefile,v 1.145 2005/11/29 16:24:47 peter Exp $
 #
 # Meta Makefile
 #
@@ -251,15 +251,15 @@ source:
 export:
 	@EXPORT_PREREQ=yepp ; echo ; \
 	if [ -f "$(BUILDDIR)/autodoc.xml" ]; then : ; else \
-	  echo 'No documentation source built.'; \
+	  echo 'No documentation source built. (make doc to correct)'; \
 	  EXPORT_PREREQ=FAIL ; \
 	fi ; \
 	if ls bundles/gmp-*.tar.gz > /dev/null 2>&1; then : ; else \
-	  echo 'Missing GMP bundle.'; \
+	  echo 'Missing GMP bundle. (ftp://ftp.gnu.org/pub/gnu/gmp/)'; \
 	  EXPORT_PREREQ=FAIL ; \
 	fi ; \
 	if ls bundles/nettle-*.tar.gz > /dev/null 2>&1; then : ; else \
-	  echo 'Missing Nettle bundle.'; \
+	  echo 'Missing Nettle bundle. (ftp://ftp.lysator.liu.se/pub/security/lsh/)'; \
 	  EXPORT_PREREQ=FAIL ; \
 	fi ; \
 	if [ "$$EXPORT_PREREQ" = "FAIL" ]; then : \
