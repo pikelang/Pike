@@ -1,3 +1,26 @@
+Changes since Pike 7.6.50
+----------------------------------------------------------------------
+
+Changes in Pike code:
+
+o Support chunked transfer encoding and handle unexpected multiple
+  headers in HTTP.Server.Request.
+o Fixed some bugs in Protocol.HTTP.http_{en|de}code_string.
+
+Other:
+
+o Added compatibility for more odbc drivers.
+o Optimized XML.Tree.
+o Backported fix for reference underflow in modify_shared_string()
+o Fixed segfault when exiting uninitialized mutex keys.
+
+Build fixes:
+
+o Fixed win32 compilation.
+o Fixed detection of SDL.Joystick on win32
+o Automaticly add Pike icon to win32 binary.
+
+
 Changes since Pike 7.6.24
 ----------------------------------------------------------------------
 
