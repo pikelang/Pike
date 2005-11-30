@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.353 2005/11/12 20:21:53 nilsson Exp $
+|| $Id: file.c,v 1.354 2005/11/30 17:07:27 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -1011,6 +1011,9 @@ static void file__enable_callbacks(INT32 args)
     Pike_error("File is not open.\n");
 
   debug_check_internals (f);
+
+  if (!(fd_query_properties(FD, fd_CAN_NONBLOCK) & fd_CAN_NONBLOCK))
+    Pike_error("Callback operations not supported for this file.\n");
 
   for (ev = 0; ev < NELEM (f->event_cbs); ev++)
     if (!UNSAFE_IS_ZERO (&f->event_cbs[ev]))
