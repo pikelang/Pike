@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.176 2005/06/15 01:10:19 bill Exp $
+ * $Id: backend.cmod,v 1.177 2005/11/30 17:13:01 grubba Exp $
  *
  * Backend object.
  */
@@ -2978,6 +2978,9 @@ PIKECLASS Backend
 #ifdef WSAEBADF
 	  case WSAEBADF:
 #endif
+#ifdef ENOTSOCK
+	  case ENOTSOCK:
+#endif
 #ifdef WSAENOTSOCK
 	  case WSAENOTSOCK:
 #endif
@@ -2995,6 +2998,9 @@ PIKECLASS Backend
 	      {
 #ifdef WSAEBADF
 		case WSAEBADF:
+#endif
+#ifdef ENOTSOCK
+	        case ENOTSOCK:
 #endif
 #ifdef WSAENOTSOCK
 		case WSAENOTSOCK:
@@ -3026,6 +3032,9 @@ PIKECLASS Backend
 			case EBADF:
 #ifdef WSAEBADF
 			case WSAEBADF:
+#endif
+#ifdef ENOTSOCK
+		        case ENOTSOCK:
 #endif
 #ifdef WSAENOTSOCK
 			case WSAENOTSOCK:
@@ -3107,10 +3116,10 @@ PIKECLASS Backend
     }
     else
       timeout.tv_sec = -1;
-    pop_n_elems (args);
 
     low_backend_once(THIS, &timeout);
 
+    pop_n_elems (args);
     if (timeout.tv_sec < 0)
       push_int (0);
     else
