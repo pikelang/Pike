@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.4 2004/05/03 23:33:05 nilsson Exp $
+// $Id: module.pmod,v 1.5 2005/11/30 17:53:20 grubba Exp $
 #pike 7.5
 
 //! The life length of the Fd instance has changed. In newer versions
@@ -22,7 +22,9 @@ class File
   int open(string file, string mode, void|int bits)
   {
     _fd=Stdio.Fd();
-    return ::open(file,mode,bits);
+    if (query_num_arg() == 3)
+      return ::open(file, mode, bits);
+    return ::open(file, mode);
   }
 
 #if constant(files.__HAVE_OPENPT__)
