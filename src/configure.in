@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.690 2005/10/13 14:56:24 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.691 2005/11/30 12:28:56 grendel Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -655,7 +655,7 @@ AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
         pike_cv_run_path_method=r
       fi
     ;;
-    Linux\ 2.*)
+    Linux\ 2.* | *kFreeBSD*)
       pike_cv_run_path_method=wl
     ;;
     UnixWare\ 7.*|OpenUNIX\ 8.*)
@@ -5939,6 +5939,7 @@ if test -z "$LDSHARED" ; then
     DYNIX/ptx*) LDSHARED="ld -G";;
     next*) LDSHARED="$REALCC $CFLAGS -nostdlib -r";;
     Linux*) LDSHARED="$REALCC -shared";;
+    GNU/kFreeBSD*) LDSHARED="$REALCC -shared";;
     GNU*) LDSHARED="ld -Bshareable";;
     FreeBSD*) LDSHARED="$REALCC -Wl,-Bshareable";;
     NetBSD*) LDSHARED="ld -Bshareable";;
@@ -6242,7 +6243,7 @@ case "x$pike_cv_sys_os" in
     signal_handler="custom NT"
   ;;
 
-  xLinux)
+  xLinux|*kFreeBSD*)
     # Linux's stupid thread implementation doesn't survive USE_WAIT_THREAD.
     signal_handler="SIGCHILD"
     AC_DEFINE(USE_SIGCHILD)
