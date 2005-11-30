@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.54 2005/09/10 02:20:46 grendel Exp $
+# $Id: rules,v 1.55 2005/11/30 21:57:35 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -25,7 +25,7 @@ ifeq (,$(DEB_BUILD_ARCH))
 DEB_BUILD_ARCH=$(shell dpkg-architecture -qDEB_BUILD_ARCH)
 endif
 
-CPPFLAGS_EXTRA = -DDEBIAN -I/usr/include/howl
+CPPFLAGS_EXTRA = -DDEBIAN
 
 ifdef SSP
 SSP_FLAGS=-fstack-protector
@@ -47,6 +47,10 @@ CFARGSEXTRA += --with-rtldebug --with-cdebug --with-debug
 endif
 
 CFLAGS_EXTRA += $(SSP_FLAGS)
+# Temporary workaround for hppa linker issues
+ifeq ($(DEB_BUILD_ARCH),hppa)
+CFLAGS_EXTRA += -ffunction-sections
+endif
 
 ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 	INSTALL_PROGRAM += -s
@@ -70,11 +74,6 @@ MACHINE_OPTS=--with-machine-code
 else
 MACHINE_OPTS=--without-machine-code
 endif
-
-#
-# These are on so that people can report problems with them
-#
-EXPERIMENTAL_CFARGS=--with-keypair-loop
 
 VERSION:=$(shell dpkg-parsechangelog | grep ^Version | sed -e 's/Version: //;s/-[^-]*$$//')
 OS=$(shell uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_')
@@ -105,8 +104,6 @@ CFARGS=$(CFARGSEXTRA) \
        --with-perl \
        --without-ffmpeg \
        --without-libpdf \
-       --without-gtk \
-       --without-GTK2 \
        --with-sqlite \
        --without-libpanda $(MACHINE_OPTS) $(EXTRA_ARGS)
 
@@ -115,7 +112,7 @@ RUNPIKE2=$(CURDIR)/debian/$(PIKE)-core/usr/bin/pike -m$(CURDIR)/$(BUILDDIR)/lib/
 PIKE_FAKEROOT=$(CURDIR)/debian/$(PIKE)-core
 PIKE_FAKEROOT_OMIT=$(BUILDDIR)*:$(CURDIR)/lib*:$(CURDIR)/src*:$(CURDIR)/bin*:$(CURDIR)/man*:$(BUILDDIR)/lib*:$(CURDIR)*:$(CURDIR)/debian/$(PIKE)-core*
 
-export CFLAGS CC PIKE VERSION CPPFLAGS
+export CFLAGS CC PIKE VERSION
 
 configure: configure-stamp
 configure-stamp:
@@ -138,7 +135,6 @@ build-arch-stamp:
 
 	# Add here command to compile/build the package.
 	$(MAKE) -C$(BUILDDIR)
-	$(MAKE) -C$(BUILDDIR) documentation
 
 	touch build-arch-stamp
 
@@ -165,8 +161,6 @@ clean:
 	    mkdir -p src/lib/modules; \
 	    $(MAKE) -Csrc/ spotless; \
 	fi
-	- rm -rf refdoc/modref/
-	- rm -rf refdoc/traditional_manual/
 	- rm -rf refdoc/build/
 	- $(MAKE) cvsclean
 	- rm -f `find src -name "*.o" -print`
@@ -268,7 +262,6 @@ install: build
 	done
 	dh_link && rm -f $(CURDIR)/debian/links
 
-	dh_install --sourcedir=$(CURDIR) -p$(PIKE)-dev debian/pike.el usr/share/emacs
 	sed -e "`$(RUNPIKE) -e 'write("s#@CFLAGS@#%s#g;s/@LDFLAGS@//g;s/@MAJOR@/%d/g; s/@MINOR@/%d/g; s/@BUILD@/%d/g","-I/usr/include/pike/$(VERSION)/", __REAL_MAJOR__, __REAL_MINOR__, __REAL_BUILD__);'`" \
 		$(CURDIR)/debian/pike-config.in > $(CURDIR)/debian/$(PIKE)-dev/usr/bin/$(PIKE)-config
 
@@ -288,6 +281,21 @@ install: build
 	  file $$f | grep "script" >/dev/null \
             && perl -pi -e 's@#\!.*/usr/bin/env.*pike@#\!/usr/bin/$(PIKE)@' $$f; \
 	done; exit 0
+
+	# Some more permission changes
+	for f in run_autoconf precompile.sh smartlink fixdepends.sh install_module mktestsuite; do \
+	    chmod 755 $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/$$f ; \
+	done
+
+	# pike -x module fix
+	echo 's;\$$\(MODULE_BASE\)/dynamic_module_makefile;\$$\(PIKE_SRC_DIR\)/dynamic_module_makefile;g' > \
+	  $(CURDIR)/debian/sed-script.tmp
+	sed -r -f $(CURDIR)/debian/sed-script.tmp < \
+	  $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/dynamic_module_makefile > \
+	  $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/dynamic_module_makefile.new
+	mv $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/dynamic_module_makefile.new \
+	   $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/dynamic_module_makefile
+	rm -f $(CURDIR)/debian/sed-script.tmp
 
 	# Create the documentation links to save space
 	for f in `cat $(CURDIR)/debian/tocoredoc.txt`; do \

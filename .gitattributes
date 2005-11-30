@@ -286,6 +286,8 @@ testfont binary
 /man/pike.1 foreign_ident
 /packaging/debian/README.Debian foreign_ident
 /packaging/debian/pike-config.in foreign_ident
+/packaging/debian/pike7.7-core.postinst foreign_ident
+/packaging/debian/pike7.7-core.prerm foreign_ident
 /packaging/debian/postinst foreign_ident
 /packaging/debian/prerm foreign_ident
 /packaging/debian/rules foreign_ident
