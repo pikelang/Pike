@@ -1,7 +1,7 @@
-// $Id: module.pmod,v 1.1 2004/09/01 17:19:02 mast Exp $
-#pike __REAL_VERSION__
+// $Id: module.pmod,v 1.2 2005/11/30 17:46:59 grubba Exp $
+#pike 7.7
 
-inherit "../../../modules/Stdio.pmod/module.pmod";
+inherit Stdio.module;
 
 //! @decl string read_file(string filename)
 //! @decl string read_file(string filename, int start, int len)
