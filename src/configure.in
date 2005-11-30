@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.851 2005/11/13 04:30:07 peter Exp $")
+AC_REVISION("$Id: configure.in,v 1.852 2005/11/30 13:16:55 grendel Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -796,7 +796,7 @@ AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
         pike_cv_run_path_method=r
       fi
     ;;
-    Linux\ 2.*)
+    Linux\ 2.* | *kFreeBSD*)
       if $REALCC -V 2>&1 | head -1 | grep "Intel(R) C" >/dev/null; then
         # icc or ecc.
         pike_cv_run_path_method=qoption
@@ -6701,6 +6701,7 @@ if test -z "$LDSHARED" ; then
     DYNIX/ptx*) LDSHARED="ld -G";;
     next*) LDSHARED="$REALCC $CFLAGS -nostdlib -r";;
     Linux*) LDSHARED="$REALCC -shared";;
+    GNU/kFreeBSD*) LDSHARED="$REALCC -shared";;
     GNU*) LDSHARED="$REALCC -Wl,-Bshareable";;
     FreeBSD*) LDSHARED="$REALCC -Wl,-Bshareable";;
     NetBSD*) LDSHARED="$REALCC -Wl,-Bshareable";;
@@ -7022,7 +7023,7 @@ case "x$pike_cv_sys_os" in
     signal_handler="custom AmigaOS"
   ;;
 
-  xLinux)
+  xLinux|*kFreeBSD*)
     # Linux's stupid thread implementation doesn't survive USE_WAIT_THREAD.
     signal_handler="SIGCHILD"
     AC_DEFINE(USE_SIGCHILD)
