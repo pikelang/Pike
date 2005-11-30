@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.852 2005/11/30 13:16:55 grendel Exp $")
+AC_REVISION("$Id: configure.in,v 1.853 2005/11/30 14:28:51 grendel Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -796,7 +796,7 @@ AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
         pike_cv_run_path_method=r
       fi
     ;;
-    Linux\ 2.* | *kFreeBSD*)
+    Linux\ 2.* | GNU/kFreeBSD* )
       if $REALCC -V 2>&1 | head -1 | grep "Intel(R) C" >/dev/null; then
         # icc or ecc.
         pike_cv_run_path_method=qoption
@@ -3360,9 +3360,11 @@ pthread_t gazonk;
 
     # On Linux the threads don't inherit euid & egid from the main thread.
     # FIXME: Add a real test here!
-    if test "x$pike_cv_sys_os" = "xLinux"; then
-      AC_DEFINE(HAVE_BROKEN_LINUX_THREAD_EUID)
-    else :; fi
+	case "$pike_cv_sys_os" in
+	  Linux* | *kFreeBSD*)
+		AC_DEFINE(HAVE_BROKEN_LINUX_THREAD_EUID)
+	  ;;
+	esac
 
     AC_MSG_CHECKING([behaviour of the pthread_t type])
     AC_CACHE_VAL(pike_cv_thread_t_type, [
@@ -7023,7 +7025,7 @@ case "x$pike_cv_sys_os" in
     signal_handler="custom AmigaOS"
   ;;
 
-  xLinux|*kFreeBSD*)
+  xLinux | *kFreeBSD*)
     # Linux's stupid thread implementation doesn't survive USE_WAIT_THREAD.
     signal_handler="SIGCHILD"
     AC_DEFINE(USE_SIGCHILD)
