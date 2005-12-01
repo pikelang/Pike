@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.410 2005/11/01 18:59:10 grubba Exp $
+# $Id: Makefile.in,v 1.411 2005/12/01 00:49:29 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -870,13 +870,15 @@ source: depend
 full_export: source
 	chmod +x $(SRCDIR)/install-sh
 	$(RUNPIKE) $(TMP_BINDIR)/export.pike --srcdir="$(SRCDIR)"  \
-	--exportlist=src/export_list --name=Pike-v%maj.%min.%bld --tag
+	--exportlist="$(SRCDIR)/src/export_list" --name=Pike-v%maj.%min.%bld \
+	--tag $(EXPORTARGS)
 
 EXPORT_NAME=Pike-v%maj.%min-%Y%M%D
 snapshot_export: source
 	chmod +x $(SRCDIR)/install-sh
 	$(RUNPIKE) $(TMP_BINDIR)/export.pike --srcdir="$(SRCDIR)"  \
-	--exportlist=src/export_list --name=$(EXPORT_NAME) $(EXPORTARGS)
+	--exportlist="$(SRCDIR)/src/export_list" --name=$(EXPORT_NAME) \
+	$(EXPORTARGS)
 
 export: full_export
 
