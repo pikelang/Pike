@@ -5,7 +5,7 @@ Changes in Pike code:
 
 o Support chunked transfer encoding and handle unexpected multiple
   headers in HTTP.Server.Request.
-o Fixed some bugs in Protocol.HTTP.http_{en|de}code_string.
+o Fixed some bugs in Protocol.HTTP.Server.HeaderParser.
 
 Other:
 
