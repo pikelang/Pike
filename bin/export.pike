@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.69 2004/09/20 21:51:11 nilsson Exp $ */
+/* $Id: export.pike,v 1.70 2005/12/01 00:32:04 nilsson Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -131,6 +131,7 @@ void bump_version(int|void is_release)
 			     )->wait();
 
   }
+#if 0
   s = Stdio.read_file(pike_base_name+"/packaging/windows/pike.iss");
   if (s) {
     werror("Bumping Win32 setup script.\n");
@@ -163,6 +164,7 @@ void bump_version(int|void is_release)
     }
     Stdio.write_file(pike_base_name+"/packaging/windows/pike.iss",
 		     lines*"\r\n");
+#endif
     Process.create_process( ({ "cvs", "commit", "-m",
 			       "release number bumped to "+rel+" by export.pike",
 			       "pike.iss" }),
