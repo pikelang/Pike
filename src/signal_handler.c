@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.314 2005/05/25 13:03:04 grubba Exp $
+|| $Id: signal_handler.c,v 1.315 2005/12/02 20:43:04 grubba Exp $
 */
 
 #include "global.h"
@@ -107,6 +107,11 @@
 #define _ASM_IA64_CURRENT_H
 #endif
 #include <sys/ptrace.h>
+#endif
+
+#ifdef HAVE_SYS_PARAM_H
+/* Needed for <sys/user.h> on OpenBSD. */
+#include <sys/param.h>
 #endif
 
 #ifdef HAVE_SYS_USER_H
