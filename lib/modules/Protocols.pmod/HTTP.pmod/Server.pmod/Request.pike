@@ -25,7 +25,7 @@ string buf="";    // content buffer
 string raw="";
 
 //! raw unparsed body of the request (@[raw] minus request line and headers)
-string body_raw;
+string body_raw="";
 
 //! full request line (@[request_type] + @[full_query] + @[protocol])
 string request_raw;
