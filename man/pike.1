@@ -1,11 +1,11 @@
-.\" $Id: pike.1,v 1.24 2004/09/12 18:12:12 nilsson Exp $
+.\" $Id: pike.1,v 1.25 2005/12/02 14:05:31 nilsson Exp $
 .\" name section last-modified title section-name product/status architecture
 .ds ]L Pike
-.TH pike 1 "$Date: 2004/09/12 18:12:12 $" Pike "Pike Manual" Pike
-.\" On Solaris ]L will contain "Last modified $Date: 2004/09/12 18:12:12 $"
+.TH pike 1 "$Date: 2005/12/02 14:05:31 $" Pike "Pike Manual" Pike
+.\" On Solaris ]L will contain "Last modified $Date: 2005/12/02 14:05:31 $"
 .\" while HPUX uses ]L to contain "Pike".
 .\" On OSF/1 ]L will already contain the wanted string.
-.if !\*(]LPike .ds ]L $Date: 2004/09/12 18:12:12 $ \" Solaris nroff
+.if !\*(]LPike .ds ]L $Date: 2005/12/02 14:05:31 $ \" Solaris nroff
 .\" Major (mj) and minor (mn) version of Pike
 .nr mj 7
 .nr mn 6
@@ -284,24 +284,24 @@ An error occurred. See output on stderr (fd #2) for reason.
 .\" Set the paragraph distance to zero
 .PD 0
 .\" Basedirectory (bd)
-.ds bd /usr/local/pike/\n(mj.\n(mn.*
+.ds bd @PREFIX@
 .TP 24
-.B \*(bd/lib/master.pike
+.B \*(bd/lib/pike/pike\n(mj.\n(mn/master.pike
 default master program
 .TP
-.B \*(bd/lib/modules/*
+.B \*(bd/lib/pike/pike\n(mj.\n(mn/modules/*
 default module directory
 .TP
-.B \*(bd/lib/?.?/*
+.B \*(bd/lib/pike/pike\n(mj.\n(mn/?.?/*
 backward compatibility modules
 .TP
-.B \*(bd/lib/include/*
+.B \*(bd/lib/pike/pike\n(mj.\n(mn/include/*
 pike include files
 .TP
 .B \*(bd/tools/pike.el
 emacs fontlock definitions for pike-mode
 .TP
-.B \*(bd/include/pike/*
+.B \*(bd/include/pike/pike\n(mn.\n(mn/*
 C-include files
 .TP
 .B \*(bd/man/*
