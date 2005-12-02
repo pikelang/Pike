@@ -351,14 +351,15 @@ static void finalize()
 static void read_cb_post(mixed dummy,string s)
 {
   raw += s;
+  buf += s;
   remove_call_out(connection_timeout);
 
   int l = (int)request_headers["content-length"];
-  if (sizeof(raw)>=l || sizeof(raw)>MAXIMUM_REQUEST_SIZE)
+  if (sizeof(buf)>=l || sizeof(buf)>MAXIMUM_REQUEST_SIZE)
   {
-    int ll = min(l,MAXIMUM_REQUEST_SIZE);
-    buf = raw[ll..];
-    raw = raw[..ll-1];
+    body_raw=buf[..l-1];
+    buf = buf[l..];
+    raw = raw[..strlen(raw)-strlen(buf)];
     finalize();
   }
   else
