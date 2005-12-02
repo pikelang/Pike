@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.4 2005/08/24 00:27:49 nilsson Exp $
+# $Id: configure.in,v 1.5 2005/12/02 08:53:44 grendel Exp $
 AC_INIT(gettext.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -10,10 +10,9 @@ AC_HAVE_HEADERS(locale.h libintl.h)
 #   gettext checking (localization)
 ########################################################################
 
-AC_CHECK_FUNCS(setlocale)
-AC_CHECK_LIB(iconv, libiconv)
+AC_CHECK_LIB(libiconv, iconv)
 AC_CHECK_LIB(intl, gettext)
-AC_CHECK_FUNC(gettext)
+AC_CHECK_FUNCS(setlocale gettext iconv)
 
 AC_ARG_WITH(nlsdir, 
 	[  --with-nlsdir=PATH      specify where the locale stuff should go ])
