@@ -1,6 +1,6 @@
 Package: pike7.6
 Version: 7.6.50
-Revision: 3
+Revision: 5
 
 Description: Programming language with a C-like syntax
 DescDetail: <<
@@ -33,13 +33,13 @@ SourceDirectory: Pike-v%v
 
 # TODO: fileutils because of buggy Apple's ls (return 0 on non existant files).
 # Should be OK on Tiger, so it could be removed.
+# TODO: make a decision for freetype2
 BuildDepends: <<
 	nettle,
 	gmp,
 	fileutils,
 	libjpeg,
 	freetype,
-	freetype2,
 	gdbm,
 	pdflib,
 	fftw,
@@ -47,7 +47,6 @@ BuildDepends: <<
 <<
 
 # bzip2-shlibs is a core package, but requiring it anyway won't hurt
-# nettle is required for crypto
 # pcre-shlibs is required by monger
 Depends: <<
 	bzip2-shlibs,
@@ -57,25 +56,26 @@ Depends: <<
 # TODO: why the SplitOff are not upgraded when pike7.6 is upgraded?
 #Replaces: %N (<< %v-%r)
 
+Patch: %f.patch
+PatchScript: <<
+	# Put the good fink prefix in the man page
+	perl -pi -e 's,\@PREFIX\@,%p,g' man/pike.1
+<<
+
 # TODO: remove as '--without-' as possible here now:
-# 	- pros:
-# 		- more features availables;
-#			- people using binary dist will only install Depends for their SplitOff
-# 	- cons:
-# 		- people building from source will have a shitload of BuildDepends
+# GL, postgres, GTK, copt?, security?, libpanda, ssleay, pgsql, msql, sane, gnome, glade, poll?, machine-code?
 CompileScript: <<
-	make CONFIGUREARGS="%c --without-GL --without-postgres --with-freetype --without-GTK --with-mysql=%p --with-libpdf --without-debug --with-double-precision --disable-rpath --without-rtldebug --without-cdebug --without-copt --without-security --with-oob --with-max-fd=60000 --without-relocatable-dumped-modules --without-libpanda --with-threads --with-readline --with-tiff --without-ssleay --with-ttflib --without-pgsql --without-msql --without-sane --without-GLUT --without-gnome --without-glade --without-poll --without-machine-code --with-relocatable-dumped-module"
+	make CONFIGUREARGS="%c --without-GL --without-postgres --with-freetype --without-GTK --with-mysql=%p --with-libpdf --without-debug --with-double-precision --disable-rpath --without-rtldebug --without-cdebug --without-copt --without-security --with-oob --with-max-fd=60000 --without-libpanda --with-threads --with-readline --with-tiff --without-ssleay --with-ttflib --without-pgsql --without-msql --without-sane --with-GLUT --without-gnome --without-glade --without-poll --without-machine-code --with-relocatable-dumped-module"
 <<
 
 InstallScript: <<
 	# TODO: make docs in the future, too
 	make testsuites
-	make install_nodoc DESTDIR=%d prefix=%p buildroot=%d exec_prefix=%p/bin/ share_prefix=%p/share/pike/%n/ lib_prefix=%p/lib/pike/%n/ man_prefix=%p/share/man/ INSTALLARGS=--traditional
+	make install_nodoc DESTDIR=%d prefix=%p buildroot=%d exec_prefix=%p/bin/ share_prefix=%p/share/pike/%n/ include_prefix="%p/include/pike/%n/" lib_prefix=%p/lib/pike/%n/ man_prefix=%p/share/man/ INSTALLARGS=--traditional
 
 	# Rename some files so that they don't conflict with other pike versions
 	mv %i/bin/pike %i/bin/pike7.6
 	mv %i/bin/hilfe %i/bin/hilfe7.6
-	# TODO: change /usr/local to the proper path in the man page
 	mv %i/share/man/man1/pike.1 %i/share/man/man1/pike7.6.1
 
 	# Move the doc to an appropriate place
@@ -86,7 +86,7 @@ InstallScript: <<
 	# Create a place for putting the testsuites...
 	mkdir -p %i/share/pike/%N/testsuites
 	# ... and copy the testsuites that contains data there
-	(cd build/`uname -s -r -m|sed "s/ /-/g"|tr "[A-Z]" "[a-z]"|tr "/()" "___"` && find . -name testsuite -not -size 0 -exec cp --parents -pr {} %i/share/pike/%N/testsuites \;)
+	(cd build/`uname -s -r -m|sed "s/ /-/g"|tr "[A-Z]" "[a-z]"|tr "/()" "___"` && find . -name testsuite -not -size 0 -exec cp --parent -pr {} %i/share/pike/%N/testsuites \;)
 <<
 
 DocFiles: ANNOUNCE COPYING COPYRIGHT README README-CVS
@@ -94,14 +94,13 @@ DocFiles: ANNOUNCE COPYING COPYRIGHT README README-CVS
 PostInstScript: <<
 	update-alternatives --install %p/bin/pike pike %p/bin/pike7.6 40
 	update-alternatives --install %p/bin/hilfe hilfe %p/bin/hilfe7.6 40
-	# TODO: alternatives for Pike manpage seems not to work well
-	update-alternatives --install %p/share/man/man1/pike.1 pike.1 %p/share/man/man/pike7.6.1 40
+	update-alternatives --install %p/share/man/man1/pike.1 pike.1 %p/share/man/man1/pike7.6.1 40
 <<
 PreRmScript: <<
 	if [ $1 != "upgrade" ]; then
 		update-alternatives --remove pike %p/bin/pike7.6
-		update-alternatives --remove pike %p/bin/hilfe7.6
-  	update-alternatives --remove pike %p/share/man/man1/pike7.6.1
+		update-alternatives --remove hilfe %p/bin/hilfe7.6
+  	update-alternatives --remove pike.1 %p/share/man/man1/pike7.6.1
 	fi
 <<
 
@@ -208,7 +207,7 @@ SplitOff13: <<
 # goal to be installed i guess)
 SplitOff14: <<
 	Package: %N-nettle
-	Depends: nettle, gmp-shlibs, %N (= %v-%r)
+	Depends: gmp-shlibs, %N (= %v-%r)
 	Description: Nettle (crypto) module for the Pike language
 	Files: <<
 		%p/lib/pike/pike7.6/modules/Nettle.so
@@ -223,6 +222,6 @@ SplitOff15: <<
 	Files: %p/lib/pike/pike7.6/modules/SDL.so
 <<
 
-License: GPL/LGPL/MPL
+License: GPL/LGPL
 Homepage: http://pike.ida.liu.se/
 Maintainer: Bertrand LUPART <bertrand@caudium.net>
