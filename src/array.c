@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.183 2005/11/14 19:56:54 nilsson Exp $
+|| $Id: array.c,v 1.184 2005/12/04 18:57:23 nilsson Exp $
 */
 
 #include "global.h"
@@ -56,7 +56,7 @@ PMOD_EXPORT struct array weak_empty_array=
 
 struct array *first_array = &empty_array;
 struct array *gc_internal_array = 0;
-static struct array *gc_mark_array_pos = 0;
+static struct array *gc_mark_array_pos;
 
 #ifdef TRACE_UNFINISHED_TYPE_FIELDS
 PMOD_EXPORT int accept_unfinished_type_fields = 0;
