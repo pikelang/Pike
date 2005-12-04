@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.136 2005/09/12 07:45:47 bill Exp $
+|| $Id: svalue.h,v 1.137 2005/12/04 19:23:55 nilsson Exp $
 */
 
 #ifndef SVALUE_H
@@ -118,6 +118,8 @@ struct svalue
 
 #define T_MANY       17
 
+#define PIKE_T_INT_UNTYPED  18 /* Optimization of int type size */
+
 #define PIKE_T_RING 240
 #define PIKE_T_NAME 241		/**< Named type. */
 #define PIKE_T_SCOPE 243	/**< Not supported yet */
@@ -174,7 +176,7 @@ struct svalue
 #define tStr "\006"
 #define tString "\006"
 #define tType(T) "\007" T
-#define tInt "\010\200\000\000\000\177\377\377\377"
+#define tInt "\022"
 #define tInt0 "\010\000\000\000\000\000\000\000\000"
 #define tInt1 "\010\000\000\000\001\000\000\000\001"
 #define tInt2 "\010\000\000\000\002\000\000\000\002"
