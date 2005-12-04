@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module_support.h,v 1.17 2005/11/14 20:43:47 nilsson Exp $
+|| $Id: module_support.h,v 1.18 2005/12/04 18:58:06 nilsson Exp $
 */
 
 #ifndef MODULE_SUPPORT_H
@@ -40,9 +40,11 @@ int va_get_args(struct svalue *s,
 		INT32 num_args,
 		const char *fmt,
 		va_list ap);
+#ifdef NOT_USED
 PMOD_EXPORT int get_args(struct svalue *s,
 	     INT32 num_args,
 	     const char *fmt, ...);
+#endif
 PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
 			      const char *format,  ... );
 PMOD_EXPORT void pike_module_export_symbol(const char *str,
