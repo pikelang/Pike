@@ -1,3 +1,9 @@
+pike7.6 (7.6.55-2) unstable; urgency=low
+
+  * Fix for -x module
+
+ -- Marek Habersack <grendel@debian.org>  Sun,  4 Dec 2005 02:58:15 +0100
+
 pike7.6 (7.6.55-1) unstable; urgency=low
 
   * The latest cvs snapshot
