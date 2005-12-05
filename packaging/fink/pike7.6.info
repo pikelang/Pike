@@ -71,7 +71,7 @@ CompileScript: <<
 InstallScript: <<
 	# TODO: make docs in the future, too
 	make testsuites
-	make install_nodoc DESTDIR=%d prefix=%p buildroot=%d exec_prefix=%p/bin/ share_prefix=%p/share/pike/%n/ include_prefix="%p/include/pike/%n/" lib_prefix=%p/lib/pike/%n/ man_prefix=%p/share/man/ INSTALLARGS=--traditional
+	make install DESTDIR=%d prefix=%p buildroot=%d exec_prefix=%p/bin/ share_prefix=%p/share/pike/%n/ lib_prefix=%p/lib/pike/%n/ man_prefix=%p/share/man/ INSTALLARGS='include_prefix="%p/include/pike/%n/" --traditional'
 
 	# Rename some files so that they don't conflict with other pike versions
 	mv %i/bin/pike %i/bin/pike7.6
@@ -222,6 +222,6 @@ SplitOff15: <<
 	Files: %p/lib/pike/pike7.6/modules/SDL.so
 <<
 
-License: GPL/LGPL
+License: OSI-Approved
 Homepage: http://pike.ida.liu.se/
 Maintainer: Bertrand LUPART <bertrand@caudium.net>
