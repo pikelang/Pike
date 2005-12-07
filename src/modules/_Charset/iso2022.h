@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.h,v 1.8 2004/09/27 21:45:35 nilsson Exp $
+|| $Id: iso2022.h,v 1.9 2005/12/07 00:03:22 marcus Exp $
 */
 
 #include "global.h"
@@ -38,3 +38,9 @@ struct multichar_table {
   const unsigned int hi;
   const UNICHAR *const table;
 };
+
+extern const UNICHAR * const iso2022_94[];
+extern const UNICHAR * const iso2022_96[];
+extern const UNICHAR * const iso2022_9494[];
+extern const UNICHAR * const iso2022_9696[];
+

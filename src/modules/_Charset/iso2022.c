@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.38 2005/05/19 22:35:37 mast Exp $
+|| $Id: iso2022.c,v 1.39 2005/12/07 00:03:22 marcus Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -60,13 +60,8 @@ struct iso2022enc_stor {
 extern struct charset_def charset_map[];
 extern int num_charset_def;
 
-extern const UNICHAR *iso2022_94[];
-extern const UNICHAR *iso2022_96[];
-extern const UNICHAR *iso2022_9494[];
-extern const UNICHAR *iso2022_9696[];
-
-static const UNICHAR **transltab[4] = { iso2022_94, iso2022_96,
-					iso2022_9494, iso2022_9696 };
+static const UNICHAR * const *transltab[4] = { iso2022_94, iso2022_96,
+					       iso2022_9494, iso2022_9696 };
 
 static ptrdiff_t eat_text(unsigned char *src, ptrdiff_t srclen,
 			  struct iso2022_stor *s, struct gdesc *g)
