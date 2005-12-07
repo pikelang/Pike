@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.50 2005/04/02 22:48:55 mast Exp $
+|| $Id: charsetmod.c,v 1.51 2005/12/07 00:03:55 marcus Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -71,7 +71,7 @@ struct utf7_stor {
 static size_t utf7_stor_offs = 0;
 
 struct euc_stor {
-  UNICHAR const *table;
+  UNICHAR const *table, *table2, *table3;
 };
 static size_t euc_stor_offs = 0;
 
@@ -520,6 +520,8 @@ static ptrdiff_t feed_euc(const p_wchar0 *p, ptrdiff_t l,
 {
   struct euc_stor *euc = (struct euc_stor *)(((char*)s)+euc_stor_offs);
   UNICHAR const *map = euc->table;
+  UNICHAR const *map2 = euc->table2;
+  UNICHAR const *map3 = euc->table3;
 
   while(l>0) {
     unsigned INT32 ch = *p++;
@@ -537,6 +539,28 @@ static ptrdiff_t feed_euc(const p_wchar0 *p, ptrdiff_t l,
 	ch = 0xfffd;
       string_builder_putchar(&s->strbuild, ch);
       l -= 2;
+    } else if(ch == 0x8e) {
+      if(l<2)
+	return l;
+      ch = (*p++)|0x80;
+      if(ch > 0xa0 && ch < 0xff)
+	ch = map2[ch-0xa1];
+      else
+	ch = 0xfffd;
+      string_builder_putchar(&s->strbuild, ch);
+      l -= 2;
+    } else if(ch == 0x8f) {
+      int lo;
+      if(l<3)
+	return l;
+      ch = (*p++)|0x80;
+      lo = (*p++)|0x80;
+      if(ch > 0xa0 && ch < 0xff && lo > 0xa0 && lo < 0xff)
+	ch = map3[(ch-0xa1)*94+(lo-0xa1)];
+      else
+	ch = 0xfffd;
+      string_builder_putchar(&s->strbuild, ch);
+      l -= 3;
     } else {
       string_builder_putchar(&s->strbuild, 0xfffd);
       --l;
@@ -580,6 +604,14 @@ static void f_create_euc(INT32 args)
 
   if(s->table == NULL)
     Pike_error("Unknown charset in EUCDec\n");
+
+  if(s->table == iso2022_9494[2]) {
+    s->table2 = iso2022_94[9];
+    s->table3 = iso2022_9494[4];
+  } else {
+    s->table2 = NULL;
+    s->table3 = NULL;
+  }
 
   pop_n_elems(args);
   push_int(0);
