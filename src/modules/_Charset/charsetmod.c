@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.51 2005/12/07 00:03:55 marcus Exp $
+|| $Id: charsetmod.c,v 1.52 2005/12/07 23:14:04 marcus Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -89,6 +89,7 @@ static size_t std8e_stor_offs = 0;
 struct std16e_stor {
   p_wchar1 *revtab;
   unsigned int lowtrans, lo, hi;
+  int sshift;
 };
 static size_t std16e_stor_offs = 0;
 
@@ -739,7 +740,7 @@ static void f_create_euce(INT32 args)
   }
 
   if(table == NULL)
-    Pike_error("Unknown charset in EUCDec\n");
+    Pike_error("Unknown charset in EUCEnc\n");
 
   s->lowtrans = 128;
   s->lo = 128;
@@ -757,6 +758,31 @@ static void f_create_euce(INT32 args)
 	  s->hi = c+1;
       }
     }
+
+  if(table == iso2022_9494[2]) {
+    s->sshift = 1;
+    table = iso2022_94[9];
+    for(j=33; j<=126; j++) {
+      UNICHAR c;
+      if((c=table[j-33])!=0xfffd && c>=s->lo &&
+	 !s->revtab[c-s->lo]) {
+	s->revtab[c-s->lo]=j;
+	if(c>=s->hi)
+	  s->hi = c+1;
+      }
+    }
+    table = iso2022_9494[4];
+    for(z=0, i=33; i<=126; i++, z+=94)
+      for(j=33; j<=126; j++) {
+	UNICHAR c;
+	if((c=table[z+j-33])!=0xfffd && c>=s->lo &&
+	   !s->revtab[c-s->lo]) {
+	  s->revtab[c-s->lo]=(i<<8)|j|0x8000;
+	  if(c>=s->hi)
+	    s->hi = c+1;
+	}
+      }
+  }
 
   f_create(args-1);
   pop_stack();
@@ -1499,6 +1525,7 @@ static void std_16bite_init_stor(struct object *o)
   s16->lowtrans = 32;
   s16->lo = 0;
   s16->hi = 0;
+  s16->sshift = 0;
 }
 
 static void std_16bite_exit_stor(struct object *o)
@@ -1517,6 +1544,7 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
   ptrdiff_t l = str->len;
   p_wchar1 *tab = s16->revtab;
   unsigned int lowtrans = s16->lowtrans, lo = s16->lo, hi = s16->hi;
+  int sshift = s16->sshift;
   p_wchar1 ch;
 
   switch(str->size_shift) {
@@ -1527,6 +1555,10 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 	if((c=*p++)<lowtrans)
 	  string_builder_putchar(sb, c);
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0) {
+	  if(sshift && !(ch & 0x80)) {
+	    ch |= 0x80;
+	    string_builder_putchar(sb, (ch > 0xff? 0x8f : 0x8e));
+	  }
 	  if(ch > 0xff)
 	    string_builder_putchar(sb, (ch>>8)&0xff);
 	  string_builder_putchar(sb, ch&0xff);
@@ -1541,6 +1573,10 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 	if((c=*p++)<lowtrans)
 	  string_builder_putchar(sb, c);
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0) {
+	  if(sshift && !(ch & 0x80)) {
+	    ch |= 0x80;
+	    string_builder_putchar(sb, (ch > 0xff? 0x8f : 0x8e));
+	  }
 	  if(ch > 0xff)
 	    string_builder_putchar(sb, (ch>>8)&0xff);
 	  string_builder_putchar(sb, ch&0xff);
@@ -1555,6 +1591,10 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 	if((c=*p++)<lowtrans)
 	  string_builder_putchar(sb, c);
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0) {
+	  if(sshift && !(ch & 0x80)) {
+	    ch |= 0x80;
+	    string_builder_putchar(sb, (ch > 0xff? 0x8f : 0x8e));
+	  }
 	  if(ch > 0xff)
 	    string_builder_putchar(sb, (ch>>8)&0xff);
 	  string_builder_putchar(sb, ch&0xff);
