@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.11 2005/04/02 22:48:55 mast Exp $
+// $Id: testsuite.in,v 1.12 2005/12/07 23:14:33 marcus Exp $
 
 // _Charset.decoder
 test_true([[objectp(_Charset)]])
@@ -96,6 +96,10 @@ test_eq([[_Charset.encoder("utf-16LE")->feed("hej")->drain()]],"h\0e\0j\0")
 // Multichar
 test_eq([[_Charset.decoder("gbk")->feed("hej\x81\x40")->drain()]],"hej\x4e02")
 test_eq([[_Charset.decoder("949")->feed("hej\x81\x41")->drain()]],"hej\xac02")
+
+// EUC-JP
+test_eq([[_Charset.decoder("euc-jp")->feed("\xa1\xd8\x8f\xb0\xa2\x8f\xb0\xa3\xa1\xd9\x8e\xb6\x8e\xc5")->drain()]],"\x300e\x4e04\x4e05\x300f\xff76\xff85")
+test_eq([[_Charset.encoder("euc-jp")->feed("\x300e\x4e04\x4e05\x300f\xff76\xff85")->drain()]],"\xa1\xd8\x8f\xb0\xa2\x8f\xb0\xa3\xa1\xd9\x8e\xb6\x8e\xc5")
 
 // Find codecs for all IANA names
 define(test_codec,[[
