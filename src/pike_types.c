@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.207 2004/03/12 21:20:20 grubba Exp $
+|| $Id: pike_types.c,v 1.208 2005/12/07 09:38:02 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.207 2004/03/12 21:20:20 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.208 2005/12/07 09:38:02 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -2080,6 +2080,11 @@ static struct pike_type *low_object_lfun_type(struct pike_type *t, short lfun)
  * match two type strings, return zero if they don't match, and return
  * the part of 'a' that _did_ match if it did.
  */
+#ifdef PIKE_TYPE_DEBUG
+static struct pike_type *low_match_types2(struct pike_type *a,
+					  struct pike_type *b,
+					  int flags);
+#endif
 static struct pike_type *low_match_types(struct pike_type *a,
 					 struct pike_type *b,
 					 int flags)
@@ -2087,9 +2092,6 @@ static struct pike_type *low_match_types(struct pike_type *a,
 {
   int e;
   char *s;
-  static struct pike_type *low_match_types2(struct pike_type *a,
-					    struct pike_type *b,
-					    int flags);
 
   if (l_flag>2) {
     init_buf();
@@ -2632,14 +2634,16 @@ static struct pike_type *low_match_types2(struct pike_type *a,
  * with a mapping(int:int) won't change the type of the mapping after the
  * operation.
  */
+#ifdef PIKE_TYPE_DEBUG
+static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
+			      int array_cnt, unsigned int flags);
+#endif
 static int low_pike_types_le(struct pike_type *a, struct pike_type *b,
 			     int array_cnt, unsigned int flags)
 #ifdef PIKE_TYPE_DEBUG
 {
   int e;
   char *s;
-  static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
-				int array_cnt, unsigned int flags);
   int res;
   char buf[50];
 
