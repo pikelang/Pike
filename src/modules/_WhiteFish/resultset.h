@@ -14,9 +14,6 @@ struct object *wf_not_resultset( struct object *o );
 # define WF_RESULTSET(X) X
 #endif
 
-#define WS_RESULTSET_SET(o) (((struct result_set_p*)(WS_RESULTSET(o)->storage))->d)
-/* Returns the ResultSet member for the given resultset class */
-
 void init_resultset_program(void);
 void exit_resultset_program(void);
 
