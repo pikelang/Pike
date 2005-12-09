@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.39 2005/12/07 00:03:22 marcus Exp $
+|| $Id: iso2022.c,v 1.40 2005/12/09 23:40:03 marcus Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -969,7 +969,10 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 		index = 0x13;
 		break;
 	      }
-	    else if(c >= 0xf900) {
+	    else if(c >= 0xff61 && c <= 0xff9f) {
+	      mode = MODE_94;
+	      index = 0x19;
+	    } else if(c >= 0xf900) {
 	      mode = MODE_9494;
 	      index = 0x13;
 	    } else {
@@ -1137,9 +1140,12 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 		if(*ttt>=0x100 && *ttt!=0xfffd)
 		  rmap[*ttt-0x100]=((ch+33)<<8)|(ch2+33);
 	      if(rmap[c-0x100]) {
-		/* Argh.  This should really be `\033$(', but that won't work with
-		   Netscape (yet again)... */
-		string_builder_strcat(&s->strbuild, "\033$");
+		if(index < 0x13) {
+		  /* Argh.  This should really be `\033$(', but that won't work with
+		     Netscape (yet again)... */
+		  string_builder_strcat(&s->strbuild, "\033$");
+		} else
+		  string_builder_strcat(&s->strbuild, "\033$(");
 		string_builder_putchar(&s->strbuild, 48+index);
 		string_builder_putchar(&s->strbuild, rmap[c-0x100]>>8);
 		string_builder_putchar(&s->strbuild, rmap[c-0x100]&0xff);
