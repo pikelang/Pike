@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
+/* $Id: nettle.cmod,v 1.37 2005/12/11 18:01:46 nilsson Exp $ */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.36 2004/03/24 00:08:30 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -235,8 +235,8 @@ static const char *crypto_functions[] = {
   0
 };
 
-static const char * assert_is_crypto_object(struct program *p,
-				    const char **required) {
+static const char *assert_is_crypto_object(struct program *p,
+				    const char *const *required) {
   while (*required) {
     if (find_identifier( (char *) *required, p) < 0)
       return *required;
@@ -329,7 +329,7 @@ PIKECLASS CBC
     THIS->iv = 0;
   }
 
-  INLINE static void cbc_encrypt_step(const unsigned INT8 *source,
+  INLINE static void cbc_encrypt_step(const unsigned INT8 *const source,
 				      unsigned INT8 *dest)
   {
     INT32 block_size = THIS->block_size;
@@ -353,7 +353,7 @@ PIKECLASS CBC
     pop_stack();
   }
 
-  INLINE static void cbc_decrypt_step(const unsigned INT8 *source,
+  INLINE static void cbc_decrypt_step(const unsigned INT8 *const source,
 				      unsigned INT8 *dest)
   {
     INT32 block_size = THIS->block_size;
@@ -497,7 +497,7 @@ PIKECLASS CBC
     if(data->len % THIS->block_size)
       Pike_error("Data length not multiple of block size.\n");
     if(!(result = alloca(data->len)))
-      Pike_error("Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("crypt", data->len);
 
     if(THIS->mode == 0) {
       while (offset < data->len) {
@@ -660,7 +660,7 @@ PIKECLASS Proxy {
     ptrdiff_t len;
 
     if (!(result = alloca(data->len + THIS->block_size)))
-      Pike_error("Out of memory\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("crypt", data->len + THIS->block_size);
 
     if (THIS->backlog_len) {
       if (data->len >= (THIS->block_size - THIS->backlog_len)) {
