@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: crypt_md5.c,v 1.7 2005/01/27 19:15:01 nilsson Exp $
+|| $Id: crypt_md5.c,v 1.8 2005/12/12 20:52:28 nilsson Exp $
 */
 
 /*
@@ -78,9 +78,9 @@ char *pike_crypt_md5(int pl, const char *const pw,
   /* Then something really weird... */
   for (i = pl; i ; i >>= 1)
     if(i&1)
-      md5_update(&ctx, 1, "\0");
+      md5_update(&ctx, 1, (const uint8_t *)"\0");
     else
-      md5_update(&ctx, 1, (uint8_t *) pw);
+      md5_update(&ctx, 1, (const uint8_t *) pw);
 
   md5_digest(&ctx, MD5_DIGEST_SIZE, final);
 
@@ -90,17 +90,17 @@ char *pike_crypt_md5(int pl, const char *const pw,
      md5_digest at the bottom of the loop. */
   for(i=0; i<1000; i++) {
     if(i & 1)
-      md5_update(&ctx, pl, (uint8_t *) pw);
+      md5_update(&ctx, pl, (const uint8_t *) pw);
     else
-      md5_update(&ctx, MD5_DIGEST_SIZE, (uint8_t *) final);
+      md5_update(&ctx, MD5_DIGEST_SIZE, (const uint8_t *) final);
 
     if(i % 3) md5_update(&ctx, sl, (uint8_t *) salt);
     if(i % 7) md5_update(&ctx, pl, (uint8_t *) pw);
 
     if(i & 1)
-      md5_update(&ctx, MD5_DIGEST_SIZE, (uint8_t *) final);
+      md5_update(&ctx, MD5_DIGEST_SIZE, (const uint8_t *) final);
     else
-      md5_update(&ctx, pl, (uint8_t *) pw);
+      md5_update(&ctx, pl, (const uint8_t *) pw);
 
     md5_digest(&ctx, MD5_DIGEST_SIZE, final);
   }

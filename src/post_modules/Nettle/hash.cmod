@@ -1,5 +1,5 @@
 /* hash.cmod -*- c -*- */
-/* $Id: hash.cmod,v 1.26 2004/10/16 07:27:29 agehall Exp $ */
+/* $Id: hash.cmod,v 1.27 2005/12/12 20:51:40 nilsson Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -122,11 +122,11 @@ PIKECLASS HashInfo
 
     THREADS_ALLOW();
     meta->init(ctx);
-    meta->update(ctx, in->len, in->str);
+    meta->update(ctx, in->len, (const uint8_t *)in->str);
 
     digest_length = meta->digest_size;
     out = begin_shared_string(digest_length);
-    meta->digest(ctx, digest_length, out->str);
+    meta->digest(ctx, digest_length, (uint8_t *)out->str);
     THREADS_DISALLOW();
 
     pop_n_elems(args);
@@ -201,19 +201,19 @@ PIKECLASS HashInfo
       int bytes_left = bytes->u.integer;
       int read_bytes = MINIMUM(8192, bytes_left);
       while(read_bytes>0 && (len=fd_read(fd, read_buffer, read_bytes))>0) {
-	meta->update(ctx, len, read_buffer);
+	meta->update(ctx, len, (const uint8_t *)read_buffer);
 	bytes_left -= read_bytes;
 	read_bytes = MINIMUM(8192, bytes_left);
       }
     }
     else
       while((len=fd_read(fd, read_buffer, 8192))>0)
-	meta->update(ctx, len, read_buffer);
+	meta->update(ctx, len, (const uint8_t *)read_buffer);
 
     free(read_buffer);
 
     out = begin_shared_string(meta->digest_size);
-    meta->digest(ctx, meta->digest_size, out->str);
+    meta->digest(ctx, meta->digest_size, (uint8_t *)out->str);
     THREADS_DISALLOW();
 
     pop_n_elems(args);
@@ -263,7 +263,7 @@ PIKECLASS HashState
 
       NO_WIDE_STRING(data);
       THREADS_ALLOW();
-      meta->update(ctx, data->len, data->str);
+      meta->update(ctx, data->len, (const uint8_t *)data->str);
       THREADS_DISALLOW();
 
       push_object(this_object());
@@ -307,7 +307,7 @@ PIKECLASS HashState
 	}
       
       digest = begin_shared_string(length);
-      meta->digest(THIS->ctx, length, digest->str);
+      meta->digest(THIS->ctx, length, (uint8_t *)digest->str);
       push_string(end_shared_string(digest));
     }
 

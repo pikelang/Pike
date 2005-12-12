@@ -1,5 +1,5 @@
 /* cipher.cmod -*- c -*- */
-/* $Id: cipher.cmod,v 1.34 2004/10/16 07:27:29 agehall Exp $ */
+/* $Id: cipher.cmod,v 1.35 2005/12/12 20:51:40 nilsson Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -274,7 +274,8 @@ PIKECLASS CipherState
 	Pike_error("Data must be an integral number of blocks.\n");
 
       s = begin_shared_string(data->len);
-      THIS->crypt(THIS->ctx, data->len, s->str, data->str);
+      THIS->crypt(THIS->ctx, data->len, (uint8_t *)s->str,
+                  (const uint8_t *)data->str);
       push_string(end_shared_string(s));
     }
 
@@ -315,7 +316,7 @@ pike_aes_set_encrypt_key(void *ctx,
 			 int force)
 {
   if (length == 16 || length == 24 || length == 32)
-    aes_set_encrypt_key(ctx, length, key);
+    aes_set_encrypt_key(ctx, length, (const uint8_t *)key);
   else
     Pike_error("AES_Info: Bad keysize for AES.\n");
 }
@@ -326,7 +327,7 @@ pike_aes_set_decrypt_key(void *ctx,
 			 int force)
 {
   if (length == 16 || length == 24 || length == 32)
-    aes_set_decrypt_key(ctx, length, key);
+    aes_set_decrypt_key(ctx, length, (const uint8_t *)key);
   else
     Pike_error("AES_Info: Bad keysize for AES.\n");
 }
@@ -380,7 +381,7 @@ pike_arcfour_set_key(void *ctx,
   if (length < ARCFOUR_MIN_KEY_SIZE || length > ARCFOUR_MAX_KEY_SIZE)
     Pike_error("ARCFOUR_Info: Bad keysize for ARCFOUR.\n");
 
-  arcfour_set_key(ctx, length, key);
+  arcfour_set_key(ctx, length, (const uint8_t *)key);
 }
 #define pike_arcfour_set_encrypt_key pike_arcfour_set_key
 #define pike_arcfour_set_decrypt_key pike_arcfour_set_key
@@ -436,7 +437,7 @@ pike_blowfish_set_key(void *ctx,
 {
   if (length < BLOWFISH_MIN_KEY_SIZE || length > BLOWFISH_MAX_KEY_SIZE)
     Pike_error("BLOWFISH_Info: Bad keysize for BLOWFISH.\n");
-  if (!blowfish_set_key(ctx, length, key))
+  if (!blowfish_set_key(ctx, length, (const uint8_t *)key))
     Pike_error("BLOWFISH_Info: Key is weak (and force flag is currently ignored).\n");
 }
 #define pike_blowfish_set_encrypt_key pike_blowfish_set_key
@@ -491,8 +492,8 @@ pike_cast128_set_key(void *ctx,
 {
   if (length < CAST128_MIN_KEY_SIZE || length > CAST128_MAX_KEY_SIZE)
     Pike_error("CAST128_info: Bad keysize for CAST128.\n");
-  
-  cast128_set_key(ctx, length, key);
+
+  cast128_set_key(ctx, length, (const uint8_t *)key);
 }
 #define pike_cast128_set_encrypt_key pike_cast128_set_key
 #define pike_cast128_set_decrypt_key pike_cast128_set_key
@@ -547,7 +548,7 @@ pike_des_set_key(void *c,
   if (length != 8)
     Pike_error("DES_INFO: Bad keysize for DES.\n");
 
-  if (!des_set_key(ctx, key))
+  if (!des_set_key(ctx, (const uint8_t *)key))
   {
     switch (ctx->status)
     {
@@ -614,7 +615,7 @@ PIKECLASS DES_Info
       MEMCPY(buf, key->str, 8);
 
     des_fix_parity(8, buf, buf);
-    RETURN make_shared_binary_string(buf, 8);
+    RETURN make_shared_binary_string((char *)buf, 8);
   }
 }
 
@@ -723,7 +724,7 @@ pike_des3_set_key(void *c,
    * currently work with nettle's des3_set_key function. So we set the
    * individual keys by ourself. */
   for (i = 0; i<3; i++, key += DES_KEY_SIZE)
-    if (!des_set_key(&ctx->des[i], key))
+    if (!des_set_key(&ctx->des[i], (const uint8_t *)key))
       switch (ctx->des[i].status)
       {
       case DES_WEAK_KEY:
@@ -851,7 +852,7 @@ pike_serpent_set_key(void *ctx,
   if (length < SERPENT_MIN_KEY_SIZE || length > SERPENT_MAX_KEY_SIZE)
     Pike_error("SERPENT_Info: Bad keysize for SERPENT.\n");
   
-  serpent_set_key(ctx, length, key);
+  serpent_set_key(ctx, length, (const uint8_t *)key);
 }
 #define pike_serpent_set_encrypt_key pike_serpent_set_key
 #define pike_serpent_set_decrypt_key pike_serpent_set_key
@@ -905,7 +906,7 @@ pike_twofish_set_key(void *ctx,
   if (length < TWOFISH_MIN_KEY_SIZE || length > TWOFISH_MAX_KEY_SIZE)
     Pike_error("TWOFISH_Info: Bad keysize for TWOFISH.\n");
 
-  twofish_set_key(ctx, length, key);
+  twofish_set_key(ctx, length, (const uint8_t *)key);
 }
 #define pike_twofish_set_encrypt_key pike_twofish_set_key
 #define pike_twofish_set_decrypt_key pike_twofish_set_key
