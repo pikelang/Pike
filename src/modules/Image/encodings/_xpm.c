@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: _xpm.c,v 1.35 2005/01/23 13:30:04 nilsson Exp $
+|| $Id: _xpm.c,v 1.36 2005/12/12 20:25:34 nilsson Exp $
 */
 
 #include "global.h"
@@ -83,6 +83,9 @@ static rgba_group decode_color( struct buffer *s )
   } 
   if(s->len==4&&(!strncmp(s->str,"None",4)||!strncmp(s->str,"none",4)))
   {
+#ifdef HIDE_WARNINGS
+      res.r = res.g = res.b = 0;
+#endif
     res.alpha = 0;
     return res;
   }
@@ -310,7 +313,7 @@ void f__xpm_write_rows( INT32 args )
           adst++;
         } else {
           dst++;
-          adst->r = adst->g = adst->b = color.alpha;
+          adst->r = adst->g = adst->b = 0;
 	  adst++;
         }
       }
