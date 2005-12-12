@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.76 2005/10/19 20:25:05 nilsson Exp $
+|| $Id: png.c,v 1.77 2005/12/12 20:25:57 nilsson Exp $
 */
 
 #include "global.h"
@@ -1141,7 +1141,8 @@ static void img_png_decode(INT32 args,int header_only)
 	    int i;
 	    if(b->item[1].u.string->len!=32) break;
 	    for(i=0; i<32; i+=4)
-	      push_float(int_from_32bit(b->item[1].u.string->str+i)/100000.0);
+	      push_float(int_from_32bit((unsigned char*)b->
+                                        item[1].u.string->str+i)/100000.0);
 	    f_aggregate(8);
 	    push_text("chroma");
 	    mapping_insert(m,sp-1,sp-2);
@@ -1164,7 +1165,8 @@ static void img_png_decode(INT32 args,int header_only)
           case 0x67414d41: /* gAMA */
 	    if(b->item[1].u.string->len!=4) break;
 	    push_constant_text("gamma");
-	    push_float(int_from_32bit(b->item[1].u.string->str)/100000.0);
+	    push_float(int_from_32bit((unsigned char*)b->
+                                      item[1].u.string->str)/100000.0);
 	    mapping_insert(m,sp-2,sp-1);
 	    pop_n_elems(2);
 	    break;
@@ -1172,8 +1174,10 @@ static void img_png_decode(INT32 args,int header_only)
           case 0x70485973: /* pHYs */
 	    if(b->item[1].u.string->len!=9) break;
 	    push_int(b->item[1].u.string->str[8]);
-	    push_int(int_from_32bit(b->item[1].u.string->str));
-	    push_int(int_from_32bit(b->item[1].u.string->str+4));
+	    push_int(int_from_32bit((unsigned char*)b->
+                                    item[1].u.string->str));
+	    push_int(int_from_32bit((unsigned char*)b->
+                                    item[1].u.string->str+4));
 	    f_aggregate(3);
 	    push_constant_text("physical");
 	    mapping_insert(m,sp-1,sp-2);
@@ -1183,8 +1187,10 @@ static void img_png_decode(INT32 args,int header_only)
           case 0x6f464673: /* oFFs */
 	    if(b->item[1].u.string->len!=9) break;
 	    push_int(b->item[1].u.string->str[8]);
-	    push_int(int_from_32bit(b->item[1].u.string->str));
-	    push_int(int_from_32bit(b->item[1].u.string->str+4));
+	    push_int(int_from_32bit((unsigned char*)b->
+                                    item[1].u.string->str));
+	    push_int(int_from_32bit((unsigned char*)b->
+                                    item[1].u.string->str+4));
 	    f_aggregate(3);
 	    push_constant_text("offset");
 	    mapping_insert(m,sp-1,sp-2);
