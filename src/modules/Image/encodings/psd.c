@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: psd.c,v 1.44 2005/10/13 16:48:41 anders Exp $
+|| $Id: psd.c,v 1.45 2005/12/12 20:26:20 nilsson Exp $
 */
 
 #include "global.h"
@@ -333,6 +333,11 @@ static void f_decode_packbits_encoded(INT32 args)
   struct buffer b, ob, d;
   if(sp[-args].type != T_STRING)
     Pike_error("Internal argument error.\n");
+
+#ifdef HIDE_WARNINGS
+  b.str = NULL;
+  b.len = 0;
+#endif
 
 
   if(args == 5)
