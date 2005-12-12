@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.225 2005/08/15 16:50:43 grubba Exp $
+|| $Id: image.c,v 1.226 2005/12/12 20:24:46 nilsson Exp $
 */
 
 /*
@@ -1719,6 +1719,9 @@ image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
   int x,y;
   rgb_group color, *from, old;
   if(!xsize || !maxheight) return;
+#ifdef HIDE_WARNINGS
+  old.r = old.g = old.b = 0;
+#endif
   if(length > 128)
   {
     for(y=0; y<maxheight; y++)
@@ -2418,8 +2421,13 @@ void image_threshold(INT32 args)
 
    if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");
 
-   if (args==1 && sp[-args].type==T_INT)
-      get_all_args("threshold",args,"%i",&level),level*=3;
+   if (args==1 && sp[-args].type==T_INT) {
+      get_all_args("threshold",args,"%i",&level);
+      level*=3;
+#ifdef HIDE_WARNINGS
+      rgb.r=rgb.g=rgb.b=0;
+#endif
+   }
    else if (!getrgb(THIS,0,args,args,"Image.Image->threshold()"))
       rgb.r=rgb.g=rgb.b=0;
    else
