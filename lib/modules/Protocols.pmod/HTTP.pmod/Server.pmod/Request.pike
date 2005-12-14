@@ -1,5 +1,35 @@
 #pike __REAL_VERSION__
 
+// There are three different read callbacks that can be active, which
+// has the following call graphs. read_cb is the default read
+// callback, installed by attach_fd.
+//
+//   | (Incoming data)
+//   v
+// read_cb
+//   | If complete headers are read
+//   v
+// parse_request
+//   v
+// parse_variables
+//   | If callback isn't changed to read_cb_chunked or read_cb_post
+//   v
+// finalize
+//
+//   | (Incoming data)
+//   v
+// read_cb_post
+//   | If enough data has been received
+//   v
+// finalize
+//
+//   | (Incoming data)
+//   v
+// read_cb_chunked
+//   | If all data chunked transfer-encoding needs
+//   v
+// finalize
+
 constant MAXIMUM_REQUEST_SIZE=1000000;
 
 static class Port {
@@ -106,6 +136,22 @@ constant singular_use_headers = ({
     "cookie2",
 });    
 
+static void flatten_headers()
+{
+  foreach( singular_headers, string x )
+    if( arrayp(request_headers[x]) )
+      request_headers[x] = request_headers[x][-1];
+
+  foreach( singular_use_headers, string x )
+    if( arrayp(request_headers[x]) )
+      request_headers[x] = request_headers[x]*";";
+}
+
+// Appends data to raw and feeds the header parse with data. Once the
+// header parser has enough data parse_request() and parse_variables()
+// are called. If parse_variables() deems the request to be finished
+// finalize() is called. If not parse_variables() has replaced the
+// read callback.
 static void read_cb(mixed dummy,string s)
 {
    raw+=s;
@@ -134,6 +180,8 @@ static void connection_timeout()
    finish(0);
 }
 
+// Parses the request and populates protocol, full_query, query and
+// not_query.
 static void parse_request()
 {
    array v=request_raw/" ";
@@ -157,19 +205,17 @@ static void parse_request()
 	    full_query=v[1..sizeof(v)-2]*" ";
 	    break;
 	 }
+         // Fallthrough
       case 2:
 	 request_type=v[0];
 	 protocol="HTTP/0.9";
 	 full_query=v[1..]*" ";
 	 break;
    }
-   query="";
-   sscanf(not_query=full_query,"%s?%s",not_query,query);
 
-   if (request_headers->cookie)
-      foreach (request_headers->cookie/";";;string cookie)
-         if (sscanf(String.trim_whites(cookie),"%s=%s",string a,string b)==2)
-	    cookies[a]=b;
+   query = "";
+   not_query = full_query;
+   sscanf(full_query, "%s?%s", not_query, query);
 }
 
 enum ChunkedState {
@@ -186,6 +232,9 @@ private string current_chunk = "";
 private string actual_data = "";
 private string trailers = "";
 
+// Appends data to raw and buf. Parses the data with the clunky-
+// chunky-algorithm and, when all data has been received, updates
+// body_raw and request_headers and calls finalize.
 private void read_cb_chunked( mixed dummy, string data )
 {
   raw += data;
@@ -275,9 +324,7 @@ static int parse_variables()
   if (query!="")
     .http_decode_urlencoded_query(query,variables);
 
-  foreach( singular_headers, string x )
-    if( arrayp(request_headers[x]) )
-      request_headers[x] = request_headers[x][-1];
+  flatten_headers();
 
   if( request_headers["transfer-encoding"] && 
       has_value(lower_case(request_headers["transfer-encoding"]),"chunked"))
@@ -330,24 +377,26 @@ static void parse_post()
   else if( request_headers["content-type"] && 
 	   has_value(request_headers["content-type"], "url-encoded"))
     .http_decode_urlencoded_query(body_raw,variables);
-
-  foreach( singular_headers, string x )
-    if( arrayp(request_headers[x]) )
-      request_headers[x] = request_headers[x][-1];
-
-  foreach( singular_use_headers, string x )
-    if( arrayp(request_headers[x]) )
-      request_headers[x] = request_headers[x]*";";
 }
 
 static void finalize()
 {
   my_fd->set_blocking();
+
   populate_raw();
+  flatten_headers();
   parse_post();
+
+  if (request_headers->cookie)
+    foreach (request_headers->cookie/";";;string cookie)
+      if (sscanf(String.trim_whites(cookie),"%s=%s",string a,string b)==2)
+        cookies[a]=b;
+
   request_callback(this);
 }
 
+// Adds incoming data to raw and buf. Once content-length or
+// MAXIMUM_REQUEST_SIZE data has been received, finalize is called.
 static void read_cb_post(mixed dummy,string s)
 {
   raw += s;
