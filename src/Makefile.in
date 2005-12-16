@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.390 2005/12/11 16:50:57 nilsson Exp $
+# $Id: Makefile.in,v 1.391 2005/12/16 18:55:44 marcus Exp $
 #
 
 # This line is needed on some machines.
@@ -53,7 +53,7 @@ man_prefix = $(prefix)/man
 # TESTARGS = -F -a
 
 # Arguments for install.pike used by the install targets.
-INSTALLARGS ?= --new-style
+INSTALLARGS = --new-style
 
 #
 # use bison please, yacc isn't good enough.
