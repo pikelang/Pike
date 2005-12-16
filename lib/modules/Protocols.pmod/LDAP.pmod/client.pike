@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.61 2005/04/20 15:37:41 mast Exp $
+// $Id: client.pike,v 1.62 2005/12/16 16:32:30 jonasw Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -157,7 +157,10 @@ import SSL.Constants;
 
       foreach(ar, string raw1)  {
 	oder = (.ldap_privates.ldap_der_decode(raw1)->elements[1]);
-	attrs = (["dn":({ASN1_DECODE_DN(oder)})]);
+	string dn = ASN1_DECODE_DN(oder);
+	if (ldap_version == 3)
+	  dn = utf2s(dn);
+	attrs = (["dn" : ({ dn }) ]);
 	if(catch(entry1 = ASN1_GET_ATTR_ARRAY(oder))) continue;
 	foreach(entry1, object attr1) {
 	  attrs += ([ASN1_GET_ATTR_NAME(attr1):_get_attr_values(ldap_version, attr1)]);
@@ -370,7 +373,7 @@ import SSL.Constants;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.61 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.62 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
