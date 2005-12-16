@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.h,v 1.6 2003/12/17 00:15:44 marcus Exp $
+|| $Id: iso2022.h,v 1.7 2005/12/16 23:28:25 marcus Exp $
 */
 
 #include "global.h"
@@ -32,3 +32,9 @@ struct charset_def {
   UNICHAR const *table;
   int mode;
 };
+
+extern const UNICHAR * const iso2022_94[];
+extern const UNICHAR * const iso2022_96[];
+extern const UNICHAR * const iso2022_9494[];
+extern const UNICHAR * const iso2022_9696[];
+

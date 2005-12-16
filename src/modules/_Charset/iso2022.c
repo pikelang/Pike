@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.32 2004/04/14 12:07:50 grubba Exp $
+|| $Id: iso2022.c,v 1.33 2005/12/16 23:28:25 marcus Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -10,7 +10,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.32 2004/04/14 12:07:50 grubba Exp $");
+RCSID("$Id: iso2022.c,v 1.33 2005/12/16 23:28:25 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -31,7 +31,7 @@ static struct program *iso2022dec_program = NULL;
 static struct program *iso2022enc_program = NULL;
 
 struct gdesc {
-  UNICHAR *transl;
+  const UNICHAR *transl;
   int mode, index;
 };
 
@@ -61,13 +61,8 @@ struct iso2022enc_stor {
 extern struct charset_def charset_map[];
 extern int num_charset_def;
 
-extern UNICHAR *iso2022_94[];
-extern UNICHAR *iso2022_96[];
-extern UNICHAR *iso2022_9494[];
-extern UNICHAR *iso2022_9696[];
-
-static UNICHAR **transltab[4] = { iso2022_94, iso2022_96,
-				  iso2022_9494, iso2022_9696 };
+static const UNICHAR * const *transltab[4] = { iso2022_94, iso2022_96,
+					       iso2022_9494, iso2022_9696 };
 
 static ptrdiff_t eat_text(unsigned char *src, ptrdiff_t srclen,
 			  struct iso2022_stor *s, struct gdesc *g)
@@ -870,7 +865,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	  /* Need to switch to another map */
 
 	  int mode=0, index=0, ch, ch2;
-	  UNICHAR *ttab = NULL, *ttt;
+	  const UNICHAR *ttab = NULL, *ttt;
 	  p_wchar1 *rmap = NULL;
 
 	  if(s->variant)
@@ -968,7 +963,10 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 		index = 0x13;
 		break;
 	      }
-	    else if(c >= 0xf900) {
+	    else if(c >= 0xff61 && c <= 0xff9f) {
+	      mode = MODE_94;
+	      index = 0x19;
+	    } else if(c >= 0xf900) {
 	      mode = MODE_9494;
 	      index = 0x13;
 	    } else {
@@ -1052,9 +1050,12 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 		if(*ttt>=0x100 && *ttt!=0xfffd)
 		  rmap[*ttt-0x100]=((ch+33)<<8)|(ch2+33);
 	      if(rmap[c-0x100]) {
-		/* Argh.  This should really be `\033$(', but that won't work with
-		   Netscape (yet again)... */
-		string_builder_strcat(&s->strbuild, "\033$");
+		if(index < 0x13) {
+		  /* Argh.  This should really be `\033$(', but that won't work with
+		     Netscape (yet again)... */
+		  string_builder_strcat(&s->strbuild, "\033$");
+		} else
+		  string_builder_strcat(&s->strbuild, "\033$(");
 		string_builder_putchar(&s->strbuild, 48+index);
 		string_builder_putchar(&s->strbuild, rmap[c-0x100]>>8);
 		string_builder_putchar(&s->strbuild, rmap[c-0x100]&0xff);

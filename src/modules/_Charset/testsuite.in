@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.8 2005/04/02 22:22:57 mast Exp $
+// $Id: testsuite.in,v 1.9 2005/12/16 23:28:26 marcus Exp $
 
 // _Charset.decoder
 test_true([[objectp(_Charset)]])
@@ -26,15 +26,19 @@ test_eq([[_Charset.encoder("iso-2022-cn")->
 test_eq([[_Charset.encoder("iso-2022-jp")->
 	feed("\x5143\x6c17")->drain()]], [["\33$B855$"]])
 test_eq([[_Charset.encoder("iso-2022-kr")->
-	feed("\x5143\x6c23")->drain()]], [["\33$Cj*Q("]])
+	feed("\x5143\x6c23")->drain()]], [["\33$(Cj*Q("]])
 test_eq([[_Charset.encoder("iso-2022-jp2")->
 	feed("\x9ed8\x9ed5\x9ec9\x9ec3")->drain()]],
-	[["\33$B`T\33$Dlt\33$AYd\33$C|\\"]])
+	[["\33$B`T\33$(Dlt\33$AYd\33$(C|\\"]])
 test_eq([[_Charset.encoder("iso-2022")->
-	feed("\x9ed8\x9ed5\x9ec9\x9ec3")->drain()]],
-	[["\33$B`T\33$Dlt\33$AYd\33$C|\\"]])
+	feed("\x9ed8\x9ed5\x9ec9\x9ec3\xff76\xff85")->drain()]],
+	[["\33$B`T\33$(Dlt\33$AYd\33$(C|\\\33(I6E"]])
 test_eval_error([[_Charset.encoder("iso-2022-jp")->
 		feed("\x9ed8\x9ed5\x9ec9\x9ec3")->drain()]])
+test_eval_error([[_Charset.encoder("iso-2022-jp")->
+		feed("\xff76\xff85")->drain()]])
+test_eval_error([[_Charset.encoder("iso-2022-jp2")->
+		feed("\xff76\xff85")->drain()]])
 
 // _Charset.UTF7
 test_eq([[_Charset.decoder("utf-7")->
@@ -73,6 +77,10 @@ test_eq([[_Charset.decoder("utf-16BE")->feed("\0h\0e\0j")->drain()]],"hej")
 test_eq([[_Charset.encoder("utf-16BE")->feed("hej")->drain()]],"\0h\0e\0j")
 test_eq([[_Charset.decoder("utf-16LE")->feed("h\0e\0j\0")->drain()]],"hej")
 test_eq([[_Charset.encoder("utf-16LE")->feed("hej")->drain()]],"h\0e\0j\0")
+
+// EUC-JP
+test_eq([[_Charset.decoder("euc-jp")->feed("\xa1\xd8\x8f\xb0\xa2\x8f\xb0\xa3\xa1\xd9\x8e\xb6\x8e\xc5")->drain()]],"\x300e\x4e04\x4e05\x300f\xff76\xff85")
+test_eq([[_Charset.encoder("euc-jp")->feed("\x300e\x4e04\x4e05\x300f\xff76\xff85")->drain()]],"\xa1\xd8\x8f\xb0\xa2\x8f\xb0\xa3\xa1\xd9\x8e\xb6\x8e\xc5")
 
 // Find codecs for all IANA names
 define(test_codec,[[
