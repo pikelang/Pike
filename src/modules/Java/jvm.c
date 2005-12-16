@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.78 2005/05/26 12:42:00 grubba Exp $
+|| $Id: jvm.c,v 1.79 2005/12/16 00:17:23 marcus Exp $
 */
 
 /*
@@ -1485,8 +1485,17 @@ struct native_method_context;
 
 #ifdef HAVE_SPARC_CPU
 
+#ifdef _LP64
+#define VARARG_NATIVE_DISPATCH 1
+#define SPARCV9
+#endif
+
 struct cpu_context {
+#ifdef SPARCV9
+  unsigned INT32 code[27];
+#else
   unsigned INT32 code[19];
+#endif
 };
 
 static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
@@ -1495,6 +1504,20 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 {
   unsigned INT32 *p = ctx->code;
 
+#ifdef SPARCV9
+  int i, fp;
+
+  flt_args |= dbl_args;
+  if(!statc)
+    *p++ = 0xd273a887;  /* stx  %o1, [ %sp + 0x887 ] */
+  for(i=fp=0; i<4; i++) {
+    if(flt_args&(1<<i))
+      *p++ = 0xc13ba88f+((fp++)<<26)+(i<<3); /* std %fM, [ %sp + 0x88f+8*N ] */
+    else
+      *p++ = 0xd473a88f+(i<<25)+(i<<3);  /* stx  %oN, [ %sp + 0x88f+8*N ] */
+  }
+  *p++ = 0x9de3bf40;  /* save  %sp, -192, %sp    */
+#else
   if(!statc)
     *p++ = 0xd223a048;  /* st  %o1, [ %sp + 0x48 ] */
   *p++ = 0xd423a04c;  /* st  %o2, [ %sp + 0x4c ] */
@@ -1502,25 +1525,60 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
   *p++ = 0xd823a054;  /* st  %o4, [ %sp + 0x54 ] */
   *p++ = 0xda23a058;  /* st  %o5, [ %sp + 0x58 ] */
   *p++ = 0x9de3bf90;  /* save  %sp, -112, %sp    */
+#endif
 
+#ifdef SPARCV9
+  *p++ = 0x11000000|(((unsigned INT32)(((unsigned INT64)data)>>32))>>10);
+                      /* sethi  %hi(data>>32), %o0   */
+  *p++ = 0x90122000|(((unsigned INT32)(((unsigned INT64)data)>>32))&0x3ff);
+                      /* or  %o0, %lo(data>>32), %o0 */
+  *p++ = 0x832a3020;  /* sllx %o0, 32, %g1 */
+  *p++ = 0x11000000|(((unsigned INT32)(unsigned INT64)data)>>10);
+                      /* sethi  %hi(data), %o0   */
+  *p++ = 0x90122000|(((unsigned INT32)(unsigned INT64)data)&0x3ff);
+                      /* or  %o0, %lo(data), %o0 */
+  *p++ = 0x90020001;  /* add %o0, %g1, %o0 */
+#else
   *p++ = 0x11000000|(((unsigned INT32)data)>>10);
                       /* sethi  %hi(data), %o0   */
   *p++ = 0x90122000|(((unsigned INT32)data)&0x3ff);
                       /* or  %o0, %lo(data), %o0 */
+#endif
 
   *p++ = 0x92162000;  /* mov  %i0, %o1           */
   if(statc) {
     *p++ = 0x94100019;  /* mov  %i1, %o2           */
+#ifdef SPARCV9
+    *p++ = 0x9607a88f;  /* add  %fp, 0x88f, %o3     */
+#else
     *p++ = 0x9607a04c;  /* add  %fp, 0x4c, %o3     */
+#endif
   } else {
     *p++ = 0x94100000;  /* mov  %g0, %o2           */
+#ifdef SPARCV9
+    *p++ = 0x9607a887;  /* add  %fp, 0x887, %o3     */
+#else
     *p++ = 0x9607a048;  /* add  %fp, 0x48, %o3     */
+#endif
   }
 
+#ifdef SPARCV9
+  *p++ = 0x19000000|(((unsigned INT32)(((unsigned INT64)(void *)dispatch)>>32))>>10);
+                      /* sethi  %hi(dispatch>>32), %o4   */
+  *p++ = 0x98132000|(((unsigned INT32)(((unsigned INT64)(void *)dispatch)>>32))&0x3ff);
+                      /* or  %o4, %lo(dispatch>>32), %o4 */
+  *p++ = 0x832b3020;  /* sllx %o4, 32, %g1 */
+  *p++ = 0x19000000|(((unsigned INT32)(unsigned INT64)(void *)dispatch)>>10);
+                      /* sethi  %hi(dispatch), %o4   */
+  *p++ = 0x98132000|(((unsigned INT32)(unsigned INT64)(void *)dispatch)&0x3ff);
+                      /* or  %o4, %lo(dispatch), %o4 */
+  *p++ = 0x98030001;  /* add %o4, %g1, %o4 */
+#else
   *p++ = 0x19000000|(((unsigned INT32)(void *)dispatch)>>10);
                       /* sethi  %hi(dispatch), %o4   */
   *p++ = 0x98132000|(((unsigned INT32)(void *)dispatch)&0x3ff);
                       /* or  %o4, %lo(dispatch), %o4 */
+#endif
 
   *p++ = 0x9fc30000;  /* call  %o4               */
   *p++ = 0x01000000;  /* nop                     */
@@ -1629,7 +1687,7 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 
 /* SVR4 ABI */
 
-#define VARARG_NATIVE_DISPATCH
+#define VARARG_NATIVE_DISPATCH 2
 
 #define NUM_FP_SAVE 8
 #define REG_SAVE_AREA_SIZE (8*NUM_FP_SAVE+4*8+8)
@@ -1930,8 +1988,13 @@ static void make_java_exception(struct object *jvm, JNIEnv *env,
 
 #ifdef VARARG_NATIVE_DISPATCH
 
+#if VARARG_NATIVE_DISPATCH == 1
+#define ARGS_TYPE va_list
+#define GET_NATIVE_ARG(ty) va_arg(args,ty)
+#elif VARARG_NATIVE_DISPATCH == 2
 #define ARGS_TYPE va_list*
 #define GET_NATIVE_ARG(ty) va_arg(*args,ty)
+#endif
 #define NATIVE_ARG_JFLOAT_TYPE jdouble
 
 #else

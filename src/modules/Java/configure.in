@@ -79,6 +79,12 @@ if test "x$with_java" = xyes; then
     # specifier in dirs etc even though uname -m returns "x86_64".
     java_arch_dirs="x86_64 amd64"
   fi
+  if test "x$java_arch_dirs" = xsparc; then
+    case "$CC" in
+      *" -q64"*|*" -m64"*|*" -xtarget=generic64"*|*" -xarch=generic64"*)
+	java_arch_dirs="sparcv9 sparc";;
+    esac
+  fi
 
   AC_MSG_CHECKING(what kind of threads to use)
   AC_CACHE_VAL(pike_cv_java_threads_type, [
