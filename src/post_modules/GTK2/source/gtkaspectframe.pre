@@ -28,13 +28,17 @@ void create(mapping|string label, ?float xalign, ?float yalign,
 {
   pgtk_verify_not_inited();
   pgtk_verify_setup();
-  if (args==5) {
-    char *label;
-    FLOAT_TYPE xalign,yalign,ratio,obey_child;
+  if (args>0 && Pike_sp[-args].type==PIKE_T_STRING) {
+    struct pike_string *label;
+    FLOAT_TYPE xalign=0.5,yalign=0.5,ratio=1.0;
+    INT_TYPE obey_child=1;
     GtkWidget *gaf;
-    get_all_args("create",args,"%s%f%f%f%f",&label,&xalign,&yalign,
+    get_all_args("create",args,"%t.%f%f%f%i",&label,&xalign,&yalign,
 			&ratio,&obey_child);
-    gaf=gtk_aspect_frame_new(label,xalign,yalign,ratio,obey_child);
+    ref_push_string(label);
+    f_string_to_utf8(1);
+    gaf=gtk_aspect_frame_new(STR0(Pike_sp[-1].u.string),xalign,yalign,ratio,obey_child);
+    pop_stack();
     THIS->obj=G_OBJECT(gaf);
   } else {
     INIT_WITH_PROPS(GTK_TYPE_ASPECT_FRAME);

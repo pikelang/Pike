@@ -33,12 +33,15 @@ int insert_text(string text, int length, int pos)
 {
   pgtk_verify_inited();
   {
-    char *text;
+    struct pike_string *text;
     INT_TYPE len,pos;
     int pos2;
-    get_all_args("insert_text",args,"%s%i%i",&text,&len,&pos);
+    get_all_args("insert_text",args,"%t%i%i",&text,&len,&pos);
     pos2 = pos;
-    gtk_editable_insert_text(GTK_EDITABLE(THIS->obj),text,len,&pos2);
+    ref_push_string(text);
+    f_string_to_utf8(1);
+    gtk_editable_insert_text(GTK_EDITABLE(THIS->obj),STR0(Pike_sp[-1].u.string),len,&pos2);
+    pop_stack();
     my_pop_n_elems(args);
     PGTK_PUSH_INT(pos2);
   }

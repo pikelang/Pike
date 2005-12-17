@@ -19,11 +19,14 @@ void create(string|mapping(string:mixed) title_or_props)
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   {
-    char *title;
+    struct pike_string *title;
     GtkWidget *gc;
     if (Pike_sp[-args].type==PIKE_T_STRING) {
-      get_all_args("create",args,"%s",&title);
-      gc=gtk_color_selection_dialog_new(title);
+      get_all_args("create",args,"%t",&title);
+      ref_push_string(title);
+      f_string_to_utf8(1);
+      gc=gtk_color_selection_dialog_new(STR0(Pike_sp[-1].u.string));
+      pop_stack();
       THIS->obj=G_OBJECT(gc);
     } else {
       INIT_WITH_PROPS(GTK_TYPE_COLOR_SELECTION_DIALOG);

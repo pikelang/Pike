@@ -27,13 +27,13 @@ void create(string|mapping(string:mixed)|void label_or_props)
   pgtk_verify_setup();
   if (args) {
     if (Pike_sp[-args].type==PIKE_T_STRING) {
-      char *label;
+      struct pike_string *label;
       GtkWidget *gc;
-      get_all_args("create",args,"%s",&label);
-      if (label)
-	gc=gtk_check_menu_item_new_with_mnemonic(label);
-      else
-	gc=gtk_check_menu_item_new();
+      get_all_args("create",args,"%t",&label);
+      ref_push_string(label);
+      f_string_to_utf8(1);
+      gc=gtk_check_menu_item_new_with_mnemonic(STR0(Pike_sp[-1].u.string));
+      pop_stack();
       THIS->obj=G_OBJECT(gc);
     } else {
       INIT_WITH_PROPS(GTK_TYPE_CHECK_MENU_ITEM);

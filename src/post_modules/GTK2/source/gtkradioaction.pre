@@ -17,11 +17,25 @@ void create(string|mapping(string:mixed) name_or_props, ?string label,
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   if (args==4) {
-    char *name,*label,*tooltip,*stock_id;
-    INT_TYPE int val;
+    char *name,*stock_id;
+    struct pike_string *label, *tooltip;
+    char *label2=NULL, *tooltip2=NULL;
+    INT_TYPE val;
     GtkRadioAction *gr;
-    get_all_args("create",args,"%s%s%s%s%i",&name,&label,&tooltip,&stock_id,&val);
-    gr=gtk_radio_action_new(name,label,tooltip,stock_id,val);
+    get_all_args("create",args,"%s%t%t%s%i",&name,&label,&tooltip,&stock_id,&val);
+    if(label) {
+      ref_push_string(label);
+      f_string_to_utf8(1);
+      label2 = STR0(Pike_sp[-1].u.string);
+    }
+    if(tooltip) {
+      ref_push_string(tooltip);
+      f_string_to_utf8(1);
+      tooltip2 = STR0(Pike_sp[-1].u.string);
+    }
+    gr=gtk_radio_action_new(name,label2,tooltip2,stock_id,val);
+    if(tooltip) pop_stack();
+    if(label) pop_stack();
     THIS->obj=G_OBJECT(gr);
   } else {
     INIT_WITH_PROPS(GTK_TYPE_RADIO_ACTION);

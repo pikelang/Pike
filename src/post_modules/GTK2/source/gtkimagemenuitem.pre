@@ -13,17 +13,22 @@ void create(string|mapping(string:mixed)|void label)
 
   if (args) {
     if (Pike_sp[-args].type==PIKE_T_STRING) {
-      char *s1;
+      struct pike_string *s1;
       GtkStockItem item;
       GtkWidget *gi;
-      int t;
+      int t=0;
 
-      get_all_args("create",args,"%s",&s1);
-      t=gtk_stock_lookup(s1,&item);
+      get_all_args("create",args,"%t",&s1);
+      if(s1->size_shift==0)
+	t=gtk_stock_lookup(STR0(s1),&item);
       if (t)
-	gi=gtk_image_menu_item_new_from_stock(s1,NULL);
-      else
-	gi=gtk_image_menu_item_new_with_label(s1);
+	gi=gtk_image_menu_item_new_from_stock(STR0(s1),NULL);
+      else {
+	ref_push_string(s1);
+	f_string_to_utf8(1);
+	gi=gtk_image_menu_item_new_with_label(STR0(Pike_sp[-1].u.string));
+	pop_stack();
+      }
       THIS->obj=G_OBJECT(gi);
     } else {
       INIT_WITH_PROPS(GTK_TYPE_IMAGE_MENU_ITEM);

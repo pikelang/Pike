@@ -21,22 +21,28 @@ void create(string|GDK2.Pixbuf|mapping(string:mixed)|void text, ?int markup)
       gcv=gtk_cell_view_new_with_pixbuf(GDK_PIXBUF(get_gobject(o1)));
       THIS->obj=G_OBJECT(gcv);
     } else if (Pike_sp[-args].type==PIKE_T_STRING) {
-      char *str;
-      get_all_args("create",args,"%s",&str);
-      gcv=gtk_cell_view_new_with_text(str);
+      struct pike_string *str;
+      get_all_args("create",args,"%t",&str);
+      ref_push_string(str);
+      f_string_to_utf8(1);
+      gcv=gtk_cell_view_new_with_text(STR0(Pike_sp[-1].u.string));
+      pop_stack();
       THIS->obj=G_OBJECT(gcv);
     } else {
       INIT_WITH_PROPS(GTK_TYPE_CELL_VIEW);
     }
   } else if (args==2) {
-    char *str;
+    struct pike_string *str;
     INT_TYPE mark;
     GtkWidget *gcv;
-    get_all_args("create",args,"%s%i",&str,&mark);
+    get_all_args("create",args,"%t%i",&str,&mark);
+    ref_push_string(str);
+    f_string_to_utf8(1);
     if (mark)
-      gcv=gtk_cell_view_new_with_markup(str);
+      gcv=gtk_cell_view_new_with_markup(STR0(Pike_sp[-1].u.string));
     else
-      gcv=gtk_cell_view_new_with_text(str);
+      gcv=gtk_cell_view_new_with_text(STR0(Pike_sp[-1].u.string));
+    pop_stack();
     THIS->obj=G_OBJECT(gcv);
   } else {
     GtkWidget *gcv;
