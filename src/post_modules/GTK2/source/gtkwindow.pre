@@ -50,7 +50,7 @@ void create(int|mapping(string:mixed) props)
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   {
-    int wt;
+    INT_TYPE wt;
     
     if (Pike_sp[-args].type==PIKE_T_INT) {
       GtkWidget *gw;

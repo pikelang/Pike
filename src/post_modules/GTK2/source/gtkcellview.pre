@@ -30,7 +30,7 @@ void create(string|GDK2.Pixbuf|mapping(string:mixed)|void text, ?int markup)
     }
   } else if (args==2) {
     char *str;
-    int mark;
+    INT_TYPE mark;
     GtkWidget *gcv;
     get_all_args("create",args,"%s%i",&str,&mark);
     if (mark)

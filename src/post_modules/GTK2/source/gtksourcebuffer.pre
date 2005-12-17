@@ -245,7 +245,7 @@ GTK2.SourceMarker create_marker(string name, string type, GTK2.TextIter where)
     char *name=NULL,*type;
     struct object *o1;
     GtkSourceMarker *gm;
-    int g;
+    INT_TYPE g;
     if (Pike_sp[-args].type==PIKE_T_INT)
       get_all_args("create_marker",args,"%i%s%o",&g,&type,&o1);
     else

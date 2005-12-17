@@ -36,7 +36,7 @@ void create(?int anti_alias)
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   if (args) {
-    int aa;
+    INT_TYPE aa;
     GtkWidget *gc;
     get_all_args("create",args,"%i",&aa);
     if (aa)

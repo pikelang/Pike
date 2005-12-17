@@ -18,7 +18,7 @@ void create(string|mapping(string:mixed) name_or_props, ?string label,
   pgtk_verify_setup();
   if (args==4) {
     char *name,*label,*tooltip,*stock_id;
-    int val;
+    INT_TYPE int val;
     GtkRadioAction *gr;
     get_all_args("create",args,"%s%s%s%s%i",&name,&label,&tooltip,&stock_id,&val);
     gr=gtk_radio_action_new(name,label,tooltip,stock_id,val);

@@ -213,7 +213,8 @@ array get_toggle_tags(int toggled_on)
   pgtk_verify_inited();
   {
     GSList *gsl,*gs2;
-    int i=0,toggled_on;
+    int i=0;
+    INT_TYPE toggled_on;
     get_all_args("get_toggle_tags",args,"%i",&toggled_on);
     my_pop_n_elems(args);
     gsl=gs2=gtk_text_iter_get_toggled_tags((GtkTextIter *)THIS->obj,toggled_on);

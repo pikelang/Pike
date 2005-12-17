@@ -156,7 +156,7 @@ void insert_with_tags(GTK2.TextIter iter, string text, int len, array tags)
     struct object *o1;
     struct array *a;
     char *text;
-    int len;
+    INT_TYPE len;
     int start_offset;
     int i;
     GtkTextIter *iter,start;
@@ -192,7 +192,7 @@ void insert_with_tags_by_name(GTK2.TextIter iter, string text, int len,
     struct array *a;
     char *text;
     char *tag_name;
-    int len;
+    INT_TYPE len;
     int start_offset;
     int i;
     GtkTextIter *iter,start;

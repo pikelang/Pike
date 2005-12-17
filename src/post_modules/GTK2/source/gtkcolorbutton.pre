@@ -22,13 +22,17 @@ void create(GDK2.Color|mapping(string:mixed)|int|void red_or_props, ?int green, 
     if (Pike_sp[-args].type==PIKE_T_INT) {
       GdkColor color;
       GtkWidget *gcb;
-      color.red=color.green=color.blue=color.pixel=0;
+      INT_TYPE red=0, green=0, blue=0;
+      color.pixel=0;
       if (args==3)
-	get_all_args("create",args,"%i%i%i",&color.red,&color.green,&color.blue);
+	get_all_args("create",args,"%i%i%i",&red,&green,&blue);
       else if (args==2)
-	get_all_args("create",args,"%i%i",&color.red,&color.green);
+	get_all_args("create",args,"%i%i",&red,&green);
       else
-	get_all_args("create",args,"%i",&color.red);
+	get_all_args("create",args,"%i",&red);
+      color.red = red;
+      color.green = green;
+      color.blue = blue;
       gcb=gtk_color_button_new_with_color(&color);
       THIS->obj=G_OBJECT(gcb);
     } else if (Pike_sp[-args].type==PIKE_T_OBJECT) {

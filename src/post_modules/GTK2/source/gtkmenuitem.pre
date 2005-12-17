@@ -70,11 +70,13 @@ int toggle_size_request(int requisition)
 {
   pgtk_verify_inited();
   {
-    gint req;
+    INT_TYPE req;
+    gint req2;
     get_all_args("toggle_size_request",args,"%i",&req);
     my_pop_n_elems(args);
-    gtk_menu_item_toggle_size_request(GTK_MENU_ITEM(THIS->obj),&req);
-    push_int(req);
+    req2 = req;
+    gtk_menu_item_toggle_size_request(GTK_MENU_ITEM(THIS->obj),&req2);
+    push_int(req2);
   }
 }
 

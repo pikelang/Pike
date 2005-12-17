@@ -25,7 +25,7 @@ void create(?string path)
 
 string _sprintf(int flag)
 {
-  int mode=0;
+  INT_TYPE mode=0;
   pgtk_verify_inited();
   if (args)
     get_all_args("_sprintf",args,"%i",&mode);
@@ -68,7 +68,7 @@ void append_index(int index)
 {
   pgtk_verify_inited();
   {
-    int index;
+    INT_TYPE index;
     get_all_args("append_index",args,"%i",&index);
     gtk_tree_path_append_index((GtkTreePath *)THIS->obj,index);
   }
@@ -81,7 +81,7 @@ void prepend_index(int index)
 {
   pgtk_verify_inited();
   {
-    int index;
+    INT_TYPE index;
     get_all_args("prepend_index",args,"%i",&index);
     gtk_tree_path_prepend_index((GtkTreePath *)THIS->obj,index);
   }

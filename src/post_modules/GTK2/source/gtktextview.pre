@@ -83,8 +83,8 @@ void scroll_to_iter(GTK2.TextIter iter, float within_margin,
   pgtk_verify_inited();
   {
     struct object *o1;
-    gdouble within_margin,xalign,yalign;
-    gint use_align;
+    FLOAT_TYPE within_margin,xalign,yalign;
+    INT_TYPE use_align;
     get_all_args("scroll_to_iter",args,"%o%f%i%f%f",&o1,&within_margin,
 			&use_align,&xalign,&yalign);
     gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(THIS->obj),
@@ -152,7 +152,7 @@ GTK2.TextIter get_line_at_y(int y)
 {
   pgtk_verify_inited();
   {
-    gint y;
+    INT_TYPE y;
     GtkTextIter *gti;
     get_all_args("get_line_at_y",args,"%i",&y);
     my_pop_n_elems(args);
@@ -192,7 +192,7 @@ GTK2.TextIter get_iter_at_location(int x, int y)
 {
   pgtk_verify_inited();
   {
-    gint x,y;
+    INT_TYPE x,y;
     GtkTextIter *iter;
     get_all_args("get_iter_at_location",args,"%i%i",&x,&y);
     my_pop_n_elems(args);
@@ -213,7 +213,7 @@ GTK2.TextIter get_iter_at_position(int x, int y)
   pgtk_verify_inited();
   {
     GtkTextIter *iter;
-    gint x,y;
+    INT_TYPE x,y;
     gint trailing;
     get_all_args("get_iter_at_position",args,"%i%i",&x,&y);
     my_pop_n_elems(args);
@@ -233,7 +233,8 @@ array buffer_to_window_coords(int wintype, int buffer_x, int buffer_y)
 {
   pgtk_verify_inited();
   {
-    gint win_x,win_y,buffer_x,buffer_y,wintype;
+    gint win_x,win_y;
+    INT_TYPE buffer_x,buffer_y,wintype;
     get_all_args("buffer_to_window_coords",args,"%i%i%i",&wintype,
 			&buffer_x,&buffer_y);
     my_pop_n_elems(args);
@@ -251,7 +252,8 @@ array window_to_buffer_coords(int wintype, int window_x, int window_y)
 {
   pgtk_verify_inited();
   {
-    gint wintype,win_x,win_y,buffer_x,buffer_y;
+    INT_TYPE wintype,win_x,win_y;
+    gint buffer_x,buffer_y;
     get_all_args("window_to_buffer_coords",args,"%i%i%i",&wintype,
 		&win_x,&win_y);
     my_pop_n_elems(args);
@@ -381,7 +383,7 @@ int move_visually(GTK2.TextIter iter, int count)
   pgtk_verify_inited();
   {
     struct object *o1;
-    gint count;
+    INT_TYPE count;
     int res;
     get_all_args("move_visually",args,"%o%i",&o1,&count);
     res=gtk_text_view_move_visually(GTK_TEXT_VIEW(THIS->obj),

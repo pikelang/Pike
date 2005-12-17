@@ -56,7 +56,7 @@ void data_add(array(float) X, array(float) Y, GDK2.Color color,
   {
     struct array *a1,*a2;
     struct object *o1;
-    int type,dot_size;
+    INT_TYPE type,dot_size;
     GdkColor *color;
     struct data_wrapper *dw;
     int i,len;
@@ -218,7 +218,7 @@ GDK2.Color data_get_color(int index)
 {
   pgtk_verify_inited();
   {
-    int index;
+    INT_TYPE index;
     GdkColor *col;
     get_all_args("get_color",args,"%i",&index);
     col=(GdkColor *)g_malloc(sizeof(GdkColor));
@@ -241,7 +241,7 @@ array(int) data_get_type(int index)
 {
   pgtk_verify_inited();
   {
-    int index;
+    INT_TYPE index;
     guint dot_size;
     GtkDataboxDataType type;
     get_all_args("data_get_type",args,"%i",&index);
@@ -287,7 +287,7 @@ int data_get_grid_config(int index)
 {
   pgtk_verify_inited();
   {
-    int index;
+    INT_TYPE index;
     unsigned int hlines,vlines;
     get_all_args("data_get_grid_config",args,"%i",&index);
     my_pop_n_elems(args);

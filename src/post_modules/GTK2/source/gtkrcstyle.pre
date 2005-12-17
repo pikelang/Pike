@@ -134,7 +134,7 @@ void set_xthickness(int value)
   pgtk_verify_inited();
   {
     GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
-    int val;
+    INT_TYPE val;
     get_all_args("set_xthickness",args,"%i",&val);
     style->xthickness=val;
   }

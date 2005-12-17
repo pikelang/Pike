@@ -353,7 +353,7 @@ void shape_combine_mask(GDK2.Bitmap shape_mask, int offset_x, int offset_y)
   pgtk_verify_inited();
   {
     struct object *o1;
-    gint x,y;
+    INT_TYPE x,y;
     get_all_args("shape_combine_mask",args,"%o%i%i",&o1,&x,&y);
     gtk_widget_shape_combine_mask(GTK_WIDGET(THIS->obj),
                 (GdkBitmap *)get_gdkobject(o1,bitmap),x,y);
@@ -420,7 +420,7 @@ void modify_fg(int state, ?GDK2.Color color)
   pgtk_verify_inited();
   {
     struct object *o1=NULL;
-    int state;
+    INT_TYPE state;
     if (args==1)
       get_all_args("modify_fg",args,"%i",&state);
     else
@@ -438,7 +438,7 @@ void modify_bg(int state, ?GDK2.Color color)
   pgtk_verify_inited();
   {
     struct object *o1=NULL;
-    int state;
+    INT_TYPE state;
     if (args==1)
       get_all_args("modify_bg",args,"%i",&state);
     else
@@ -456,7 +456,7 @@ void modify_text(int state, ?GDK2.Color color)
   pgtk_verify_inited();
   {
     struct object *o1=NULL;
-    int state;
+    INT_TYPE state;
     if (args==1)
       get_all_args("modify_text",args,"%i",&state);
     else
@@ -474,7 +474,7 @@ void modify_base(int state, ?GDK2.Color color)
   pgtk_verify_inited();
   {
     struct object *o1=NULL;
-    int state;
+    INT_TYPE state;
     if (args==1)
       get_all_args("modify_base",args,"%i",&state);
     else
@@ -540,7 +540,7 @@ GDK2.Pixbuf render_icon(string stock_id, int size, string detail)
   pgtk_verify_inited();
   {
     const gchar *stock_id,*detail;
-    int size;
+    INT_TYPE size;
     GdkPixbuf *gp;
     get_all_args("render_icon",args,"%s%i%s",&stock_id,&size,&detail);
     gp=gtk_widget_render_icon(GTK_WIDGET(THIS->obj),stock_id,size,detail);
@@ -706,7 +706,7 @@ void set_flags(int flags)
 {
   pgtk_verify_inited();
   {
-    int flags;
+    INT_TYPE flags;
     get_all_args("set_flags",args,"%i",&flags);
     GTK_WIDGET_SET_FLAGS(GTK_WIDGET(THIS->obj),flags);
   }
@@ -718,7 +718,7 @@ void unset_flags(int flags)
 {
   pgtk_verify_inited();
   {
-    int flags;
+    INT_TYPE flags;
     get_all_args("unset_flags",args,"%i",&flags);
     GTK_WIDGET_UNSET_FLAGS(GTK_WIDGET(THIS->obj),flags);
   }

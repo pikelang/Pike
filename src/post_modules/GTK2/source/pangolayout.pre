@@ -73,8 +73,8 @@ void set_markup_with_accel(string markup, int length, ?int accel_marker)
   pgtk_verify_inited();
   {
     const char *markup;
-    int len;
-    gunichar accel_marker=0,accel_char;
+    INT_TYPE len, accel_marker=0;
+    gunichar accel_char;
     get_all_args("set_markup_with_accel",args,"%s%i.%i",&markup,&len,
 				&accel_marker);
     pango_layout_set_markup_with_accel((PangoLayout *)THIS->obj,
@@ -237,7 +237,8 @@ mapping(string:int) xy_to_index(int x, int y)
 {
   pgtk_verify_inited();
   {
-    int x,y,index,trailing,res;
+    INT_TYPE x,y;
+    int index,trailing,res;
     get_all_args("xy_to_index",args,"%i%i",&x,&y);
     my_pop_n_elems(args);
     res=pango_layout_xy_to_index((PangoLayout *)THIS->obj,x,y,&index,&trailing);
@@ -264,7 +265,7 @@ mapping(string:int) index_to_pos(int index)
 {
   pgtk_verify_inited();
   {
-    int index;
+    INT_TYPE index;
     PangoRectangle pos;
     get_all_args("index_to_pos",args,"%i",&index);
     my_pop_n_elems(args);
@@ -290,7 +291,7 @@ array(mapping(string:int)) get_cursor_pos(int index)
 {
   pgtk_verify_inited();
   {
-    int index;
+    INT_TYPE index;
     PangoRectangle pos1,pos2;
     get_all_args("get_cursor_pos",args,"%i",&index);
     my_pop_n_elems(args);
@@ -327,7 +328,7 @@ mapping(string:int) move_cursor_visually(int strong, int old_index,
 {
   pgtk_verify_inited();
   {
-    int strong,old_index,old_trailing,dir;
+    INT_TYPE strong,old_index,old_trailing,dir;
     int new_index,new_trailing;
     get_all_args("move_cursor_visually",args,"%i%i%i%i",&strong,&old_index,
 			&old_trailing,&dir);
@@ -362,7 +363,7 @@ Pango.LayoutLine get_line(int line)
 {
   pgtk_verify_inited();
   {
-    int line;
+    INT_TYPE line;
     PangoLayoutLine *pll;
     get_all_args("get_line",args,"%i",&line);
     my_pop_n_elems(args);

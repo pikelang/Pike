@@ -20,7 +20,7 @@ void create(int|mapping(string:mixed) socket_id_or_props)
   pgtk_verify_setup();
   {
     if (Pike_sp[-args].type==PIKE_T_INT) {
-      int id;
+      INT_TYPE id;
       GtkWidget *gp;
       get_all_args("create",args,"%i",&id);
       gp=gtk_plug_new(id);

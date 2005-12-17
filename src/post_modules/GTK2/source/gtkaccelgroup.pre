@@ -105,8 +105,8 @@ void disconnect(int accel_key, int accel_mods)
 {
   pgtk_verify_inited();
   {
-    guint accel_key;
-    GdkModifierType accel_mods;
+    INT_TYPE accel_key;
+    INT_TYPE accel_mods;
     get_all_args("disconnect",args,"%i%i",&accel_key,&accel_mods);
     gtk_accel_group_disconnect_key(GTK_ACCEL_GROUP(THIS->obj),
 			accel_key,accel_mods);

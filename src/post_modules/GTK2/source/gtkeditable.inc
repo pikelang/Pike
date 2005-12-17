@@ -7,7 +7,7 @@ void select_region(int start, int end)
 {
   pgtk_verify_inited();
   {
-    int start,end;
+    INT_TYPE start,end;
     get_all_args("select_region",args,"%i%i",&start,&end);
     gtk_editable_select_region(GTK_EDITABLE(THIS->obj),start,end);
   }
@@ -34,11 +34,13 @@ int insert_text(string text, int length, int pos)
   pgtk_verify_inited();
   {
     char *text;
-    int len,pos;
+    INT_TYPE len,pos;
+    int pos2;
     get_all_args("insert_text",args,"%s%i%i",&text,&len,&pos);
-    gtk_editable_insert_text(GTK_EDITABLE(THIS->obj),text,len,&pos);
+    pos2 = pos;
+    gtk_editable_insert_text(GTK_EDITABLE(THIS->obj),text,len,&pos2);
     my_pop_n_elems(args);
-    PGTK_PUSH_INT(pos);
+    PGTK_PUSH_INT(pos2);
   }
 }
 
@@ -47,7 +49,7 @@ void delete_text(int start, int end)
 {
   pgtk_verify_inited();
   {
-    int start,end;
+    INT_TYPE start,end;
     get_all_args("delete_text",args,"%i%i",&start,&end);
     gtk_editable_delete_text(GTK_EDITABLE(THIS->obj),start,end);
   }
@@ -60,7 +62,7 @@ string get_chars(int start, int end)
   pgtk_verify_inited();
   {
     gchar *s;
-    int start,end;
+    INT_TYPE start,end;
     get_all_args("get_chars",args,"%i%i",&start,&end);
     my_pop_n_elems(args);
     s=gtk_editable_get_chars(GTK_EDITABLE(THIS->obj),start,end);
@@ -109,7 +111,7 @@ void set_position(int pos)
 {
   pgtk_verify_inited();
   {
-    int pos;
+    INT_TYPE pos;
     get_all_args("set_position",args,"%i",&pos);
     gtk_editable_set_position(GTK_EDITABLE(THIS->obj),pos);
   }
@@ -132,7 +134,7 @@ void set_editable(int setting)
 {
   pgtk_verify_inited();
   {
-    int ed;
+    INT_TYPE ed;
     get_all_args("set_editable",args,"%i",&ed);
     gtk_editable_set_editable(GTK_EDITABLE(THIS->obj),ed);
   }

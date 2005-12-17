@@ -21,7 +21,7 @@ void create(int|mapping(string:mixed) arrow_type_or_props, ?int shadow_type)
   pgtk_verify_setup();
   {
     if (Pike_sp[-args].type==PIKE_T_INT) {
-      int arrow,shadow;
+      INT_TYPE arrow,shadow;
       GtkWidget *ga;
       get_all_args("create",args,"%i%i",&arrow,&shadow);
       ga=gtk_arrow_new(arrow,shadow);

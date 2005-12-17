@@ -45,7 +45,7 @@ void create(int|mapping(string:mixed) mode_or_props)
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   if (Pike_sp[-args].type==PIKE_T_INT) {
-    int mode;
+    INT_TYPE mode;
     GtkSizeGroup *gs;
     get_all_args("create",args,"%i",&mode);
     gs=gtk_size_group_new(mode);

@@ -159,7 +159,7 @@ GTK2.TreeIter insert(GTK2.TreeIter parent, int position)
   pgtk_verify_inited();
   {
     struct object *o1;
-    int pos;
+    INT_TYPE pos;
     GtkTreeIter *gt;
     get_all_args("insert",args,"%o%i",&o1,&pos);
     gt=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));

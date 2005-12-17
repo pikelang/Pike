@@ -8,7 +8,7 @@ void pack_start(GTK2.CellRenderer cell, int expand)
   pgtk_verify_inited();
   {
     struct object *o1;
-    int expand;
+    INT_TYPE expand;
     get_all_args("pack_start",args,"%o%i",&o1,&expand);
     gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(THIS->obj),
                 GTK_CELL_RENDERER(get_gobject(o1)),expand);
@@ -22,7 +22,7 @@ void pack_end(GTK2.CellRenderer cell, int expand)
   pgtk_verify_inited();
   {
     struct object *o1;
-    int expand;
+    INT_TYPE expand;
     get_all_args("pack_end",args,"%o%i",&o1,&expand);
     gtk_cell_layout_pack_end(GTK_CELL_LAYOUT(THIS->obj),
                 GTK_CELL_RENDERER(get_gobject(o1)),expand);
@@ -36,7 +36,7 @@ void reorder(GTK2.CellRenderer cell, int position)
   pgtk_verify_inited();
   {
     struct object *o1;
-    int pos;
+    INT_TYPE pos;
     get_all_args("reorder",args,"%o%i",&o1,&pos);
     gtk_cell_layout_reorder(GTK_CELL_LAYOUT(THIS->obj),
                 GTK_CELL_RENDERER(get_gobject(o1)),pos);
@@ -59,7 +59,7 @@ void add_attribute(GTK2.CellRenderer cell, string attribute, int column)
   {
     struct object *o1;
     char *att;
-    int col;
+    INT_TYPE col;
     get_all_args("add_attribute",args,"%o%s%i",&o1,&att,&col);
     gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(THIS->obj),
                 GTK_CELL_RENDERER(get_gobject(o1)),att,col);

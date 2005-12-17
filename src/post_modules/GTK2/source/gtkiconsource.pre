@@ -136,7 +136,7 @@ void set_direction(int dir)
 {
   pgtk_verify_inited();
   {
-    int dir;
+    INT_TYPE dir;
     get_all_args("set_direction",args,"%i",&dir);
     gtk_icon_source_set_direction((GtkIconSource *)THIS->obj,dir);
   }
@@ -155,7 +155,7 @@ void set_direction_wildcarded(int setting)
 {
   pgtk_verify_inited();
   {
-    int set;
+    INT_TYPE set;
     get_all_args("set_direction_wildcarded",args,"%i",&set);
     gtk_icon_source_set_direction_wildcarded((GtkIconSource *)THIS->obj,set);
   }
@@ -208,7 +208,7 @@ void set_size(int size)
 {
   pgtk_verify_inited();
   {
-    int size;
+    INT_TYPE size;
     get_all_args("set_size",args,"%i",&size);
     gtk_icon_source_set_size((GtkIconSource *)THIS->obj,size);
   }
@@ -223,7 +223,7 @@ void set_size_wildcarded(int setting)
 {
   pgtk_verify_inited();
   {
-    int set;
+    INT_TYPE set;
     get_all_args("set_size_wildcarded",args,"%i",&set);
     gtk_icon_source_set_size_wildcarded((GtkIconSource *)THIS->obj,set);
   }
@@ -235,7 +235,7 @@ void set_state(int state)
 {
   pgtk_verify_inited();
   {
-    int state;
+    INT_TYPE state;
     get_all_args("set_state",args,"%i",&state);
     gtk_icon_source_set_state((GtkIconSource *)THIS->obj,state);
   }
@@ -250,7 +250,7 @@ void set_state_wildcarded(int setting)
 {
   pgtk_verify_inited();
   {
-    int set;
+    INT_TYPE set;
     get_all_args("set_state_wildcarded",args,"%i",&set);
     gtk_icon_source_set_state_wildcarded((GtkIconSource *)THIS->obj,set);
   }

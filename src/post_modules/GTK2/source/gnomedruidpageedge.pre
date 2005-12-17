@@ -24,7 +24,7 @@ void create(int position, ?int anti_alias)
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   {
-    int pos,aa=-1;
+    INT_TYPE pos,aa=-1;
     GtkWidget *gpe;
     if (args==1) {
       get_all_args("create",args,"%i",&pos);

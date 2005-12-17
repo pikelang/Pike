@@ -91,7 +91,7 @@ void create(string filename_or_buffer, ?int size, ?string root, ?string domain)
   {
     GladeXML *gl;
     char *fname,*root=NULL,*dom=NULL;
-    int size=0;
+    INT_TYPE size=0;
     if (args==1)
       get_all_args("create",args,"%s",&fname);
     else if (args==2)

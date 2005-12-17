@@ -208,8 +208,8 @@ void scroll_to_cell(GTK2.TreePath path, GTK2.TreeViewColumn column,
   pgtk_verify_inited();
   {
     struct object *o1,*o2;
-    gfloat row_align=0,col_align=0;
-    get_all_args("scroll_to_cell",args,"%o%o.%i%i",&o1,&o2,
+    FLOAT_TYPE row_align=0,col_align=0;
+    get_all_args("scroll_to_cell",args,"%o%o.%f%f",&o1,&o2,
 			&row_align,&col_align);
     gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(THIS->obj),
 			(GtkTreePath *)get_gobject(o1),
@@ -233,7 +233,7 @@ void set_cursor(GTK2.TreePath path, ?GTK2.TreeViewColumn focus_column,
   pgtk_verify_inited();
   if (args>1) {
     struct object *o1,*o2;
-    int ed;
+    INT_TYPE ed;
     get_all_args("set_cursor",args,"%o%o%i",&o1,&o2,&ed);
     gtk_tree_view_set_cursor(GTK_TREE_VIEW(THIS->obj),
 			(GtkTreePath *)get_gobject(o1),
@@ -264,7 +264,7 @@ void set_cursor_on_cell(GTK2.TreePath path, ?GTK2.TreeViewColumn focus_column,
   pgtk_verify_inited();
   {
     struct object *o1,*o2=NULL,*o3=NULL;
-    int ed=0;
+    INT_TYPE ed=0;
     get_all_args("set_cursor_on_cell",args,"%o.%o%i%o",&o1,&o2,&ed,&o3);
 /*
     if (args==1)
@@ -345,7 +345,7 @@ int expand_row(GTK2.TreePath path, int open_all)
   pgtk_verify_inited();
   {
     struct object *o1;
-    int op;
+    INT_TYPE op;
     get_all_args("expand_row",args,"%o%i",&o1,&op);
     gtk_tree_view_expand_row(GTK_TREE_VIEW(THIS->obj),
 			(GtkTreePath *)get_gobject(o1),op);
@@ -405,7 +405,7 @@ mapping get_path_at_pos(int x, int y)
 {
   pgtk_verify_inited();
   {
-    int x,y;
+    INT_TYPE x,y;
     GtkTreePath *path;
     GtkTreeViewColumn *col;
     gint cell_x,cell_y;
@@ -543,7 +543,7 @@ mapping widget_to_tree_coords(int wx, int wy)
   pgtk_verify_inited();
   {
     gint tx,ty;
-    int wx,wy;
+    INT_TYPE wx,wy;
     get_all_args("widget_to_tree_coords",args,"%i%i",&wx,&wy);
     my_pop_n_elems(args);
     gtk_tree_view_widget_to_tree_coords(GTK_TREE_VIEW(THIS->obj),wx,wy,&tx,&ty);
@@ -560,7 +560,7 @@ mapping tree_to_widget_coords(int tx, int ty)
   pgtk_verify_inited();
   {
     gint wx,wy;
-    int tx,ty;
+    INT_TYPE tx,ty;
     get_all_args("tree_to_widget_coords",args,"%i%i",&tx,&ty);
     my_pop_n_elems(args);
     gtk_tree_view_tree_to_widget_coords(GTK_TREE_VIEW(THIS->obj),tx,ty,&wx,&wy);

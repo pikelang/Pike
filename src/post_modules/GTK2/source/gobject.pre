@@ -139,8 +139,8 @@ void accel_groups_activate(int accel_key, int accel_mods)
 {
   pgtk_verify_inited();
   {
-    guint accel_key;
-    GdkModifierType accel_mods;
+    INT_TYPE accel_key;
+    INT_TYPE accel_mods;
     get_all_args("accel_groups_activate",args,"%i%i",&accel_key,&accel_mods);
     gtk_accel_groups_activate(G_OBJECT(THIS->obj),accel_key,accel_mods);
   }

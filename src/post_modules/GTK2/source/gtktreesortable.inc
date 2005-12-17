@@ -32,7 +32,7 @@ void set_sort_column_id(int column, int order)
 {
   pgtk_verify_inited();
   {
-    int col,order;
+    INT_TYPE col,order;
     get_all_args("set_sort_column_id",args,"%i%i",&col,&order);
     gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(THIS->obj),
 			col,order);
@@ -48,7 +48,7 @@ void set_sort_func(int column, function f, mixed user_data)
   pgtk_verify_inited();
   {
     struct svalue *sv1,*sv2;
-    int col;
+    INT_TYPE col;
     struct signal_data *sd;
     get_all_args("set_sort_func",args,"%i%*%*",&col,&sv1,&sv2);
     sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));

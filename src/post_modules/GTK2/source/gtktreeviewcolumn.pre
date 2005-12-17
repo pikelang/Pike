@@ -34,7 +34,7 @@ void create(string|mapping(string:mixed) title_or_props,
     } else {
       char *title,*prop;
       struct object *o1;
-      int col;
+      INT_TYPE col;
       GtkTreeViewColumn *gt;
       get_all_args("create",args,"%s%o%s%i",&title,&o1,&prop,&col);
       gt=gtk_tree_view_column_new_with_attributes(
@@ -244,7 +244,7 @@ void cell_set_cell_data(GTK2.TreeModel model, GTK2.TreeIter iter,
   pgtk_verify_inited();
   {
     struct object *o1,*o2;
-    int expander,expanded;
+    INT_TYPE expander,expanded;
     get_all_args("cell_set_cell_data",args,"%o%o%i%i",&o1,&o2,&expander,
 			&expanded);
     gtk_tree_view_column_cell_set_cell_data(GTK_TREE_VIEW_COLUMN(THIS->obj),

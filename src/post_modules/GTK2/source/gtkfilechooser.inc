@@ -26,7 +26,7 @@ void set_action(int action)
 {
   pgtk_verify_inited();
   {
-    int action;
+    INT_TYPE action;
     get_all_args("set_action",args,"%i",&action);
     gtk_file_chooser_set_action(GTK_FILE_CHOOSER(THIS->obj),action);
   }
@@ -49,7 +49,7 @@ void set_local_only(int local_only)
 {
   pgtk_verify_inited();
   {
-    int loc;
+    INT_TYPE loc;
     get_all_args("set_local_only",args,"%i",&loc);
     gtk_file_chooser_set_local_only(GTK_FILE_CHOOSER(THIS->obj),loc);
   }
@@ -75,7 +75,7 @@ void set_select_multiple(int select_multiple)
 {
   pgtk_verify_inited();
   {
-    int sel;
+    INT_TYPE sel;
     get_all_args("set_select_multiple",args,"%i",&sel);
     gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(THIS->obj),sel);
   }
@@ -99,7 +99,7 @@ void set_show_hidden(int setting)
 {
   pgtk_verify_inited();
   {
-    int set;
+    INT_TYPE set;
     get_all_args("set_show_hidden",args,"%i",&set);
     gtk_file_chooser_set_show_hidden(GTK_FILE_CHOOSER(THIS->obj),set);
   }
@@ -428,7 +428,7 @@ void set_preview_widget_active(int setting)
 {
   pgtk_verify_inited();
   {
-    int set;
+    INT_TYPE set;
     get_all_args("set_preview_widget_active",args,"%i",&set);
     gtk_file_chooser_set_preview_widget_active(GTK_FILE_CHOOSER(THIS->obj),set);
   }
@@ -456,7 +456,7 @@ void set_use_preview_label(int setting)
 {
   pgtk_verify_inited();
   {
-    int set;
+    INT_TYPE set;
     get_all_args("set_use_preview_label",args,"%i",&set);
     gtk_file_chooser_set_use_preview_label(GTK_FILE_CHOOSER(THIS->obj),set);
   }

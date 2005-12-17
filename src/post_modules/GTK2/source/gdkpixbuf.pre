@@ -29,8 +29,8 @@ void create(string|int|void filename_or_alpha,
   pgtk_verify_setup();
   if (args) {
     GdkColorspace colorspace=GDK_COLORSPACE_RGB;
-    gboolean has_alpha=0;
-    int bits=8,w=326,h=480;
+    INT_TYPE has_alpha=0;
+    INT_TYPE bits=8,w=326,h=480;
     struct mapping *m=NULL;
     char *file;
     int scale;
@@ -192,8 +192,8 @@ void create(?int has_alpha, ?int bits_per_sample,
   pgtk_verify_setup();
   {
     GdkColorspace colorspace=GDK_COLORSPACE_RGB;
-    gboolean has_alpha=0;
-    int bits_per_sample=8,width=640,height=480;
+    INT_TYPE has_alpha=0;
+    INT_TYPE bits_per_sample=8,width=640,height=480;
     GdkPixbuf *gp;
     if (args==1)
       get_all_args("create",args,"%i",&has_alpha);
@@ -227,7 +227,7 @@ void set_from_data(string data, int has_alpha,
 {
   pgtk_verify_inited();
   {
-    int width,height,rowstride,has_alpha;
+    INT_TYPE width,height,rowstride,has_alpha;
     gchar *s;
     guchar *data;
     GdkPixbuf *p;
@@ -291,7 +291,7 @@ void set_from_inline(int data_length, string data)
 {
   pgtk_verify_inited();
   {
-    int data_length;
+    INT_TYPE data_length;
     const guint8 *data;
     GdkPixbuf *p;
     get_all_args("new_from_inline",args,"%i%s",&data_length,&data);
@@ -338,7 +338,7 @@ void set_from_file_at_size(string filename, int width, int height)
   {
     const char *filename;
     GError *error=NULL;
-    int width,height;
+    INT_TYPE width,height;
     GdkPixbuf *p;
     get_all_args("new_from_file_at_size",args,"%s%i%i",&filename,
 			&width,&height);
@@ -365,7 +365,7 @@ void set_from_file_at_scale(string filename, int width, int height,
   {
     const char *filename;
     GError *error=NULL;
-    int width,height,preserve;
+    INT_TYPE width,height,preserve;
     GdkPixbuf *p;
     get_all_args("new_from_file_at_scale",args,"%s%i%i%i",&filename,
 		&width,&height,&preserve);
@@ -416,7 +416,7 @@ GDK2.Pixbuf new_subpixbuf(int src_x, int src_y, int width, int height)
 {
   pgtk_verify_inited();
   {
-    int src_x,src_y,width,height;
+    INT_TYPE src_x,src_y,width,height;
     get_all_args("new_subpixbuf",args,"%i%i%i%i",&src_x,&src_y,
 			&width,&height);
     my_pop_n_elems(args);
@@ -542,7 +542,7 @@ int put_pixel(int x, int y, int r, int g, int b)
 {
   pgtk_verify_inited();
   {
-    int x,y,r,g,b;
+    INT_TYPE x,y,r,g,b;
     int nchan,rowstride,w,h;
     guchar *p,*p1;
     get_all_args("put_pixel",args,"%i%i%i%i%i",&x,&y,&r,&g,&b);
@@ -563,7 +563,7 @@ int set_alpha(int x, int y, int setting)
 {
   pgtk_verify_inited();
   {
-    int x,y,a;
+    INT_TYPE x,y,a;
     int nchan,rowstride,w,h;
     guchar *p,*p1;
     get_all_args("set_alpha",args,"%i%i%i",&x,&y,&a);
@@ -629,7 +629,7 @@ GDK2.Pixbuf scale_simple(int dest_width, int dest_height, ?int interp_type)
   pgtk_verify_inited();
   {
     GdkPixbuf *gp1;
-    int width,height,type=GDK_INTERP_BILINEAR;
+    INT_TYPE width,height,type=GDK_INTERP_BILINEAR;
     get_all_args("scale_simple",args,"%i%i.%i",&width,&height,&type);
     my_pop_n_elems(args);
     gp1=gdk_pixbuf_scale_simple(GDK_PIXBUF(THIS->obj),width,height,type);
@@ -653,9 +653,9 @@ GDK2.Pixbuf scale(GDK2.Pixbuf dest, int dest_x, int dest_y, int dest_width,
   {
     GdkPixbuf *dest;
     struct object *o1;
-    int dest_x,dest_y,dest_width,dest_height;
+    INT_TYPE dest_x,dest_y,dest_width,dest_height;
     FLOAT_TYPE offset_x,offset_y,scale_x,scale_y;
-    int type;
+    INT_TYPE type;
     get_all_args("scale",args,"%o%i%i%i%i%f%f%f%f%i",&o1,&dest_x,&dest_y,
 		&dest_width,&dest_height,&offset_x,&offset_y,
 		&scale_x,&scale_y,&type);
@@ -689,9 +689,9 @@ GDK2.Pixbuf composite(GDK2.Pixbuf dest, int dest_x, int dest_y, int dest_width,
   {
     GdkPixbuf *dest;
     struct object *o1;
-    int dest_x,dest_y,dest_width,dest_height;
+    INT_TYPE dest_x,dest_y,dest_width,dest_height;
     FLOAT_TYPE offset_x,offset_y,scale_x,scale_y;
-    int type,overall_alpha;
+    INT_TYPE type,overall_alpha;
     get_all_args("composite",args,"%o%i%i%i%i%f%f%f%f%i%i",&o1,&dest_x,
 		&dest_y,&dest_width,&dest_height,&offset_x,&offset_y,
 		&scale_x,&scale_y,&type,&overall_alpha);
@@ -720,10 +720,10 @@ GDK2.Pixbuf composite_color(GDK2.Pixbuf dest, int dest_x, int dest_y,
   {
     GdkPixbuf *dest;
     struct object *o1;
-    int dest_x,dest_y,dest_width,dest_height;
+    INT_TYPE dest_x,dest_y,dest_width,dest_height;
     FLOAT_TYPE offset_x,offset_y,scale_x,scale_y;
-    int type,overall_alpha,check_x,check_y,check_size;
-    gint32 color1,color2;
+    INT_TYPE type,overall_alpha,check_x,check_y,check_size;
+    INT_TYPE color1,color2;
     get_all_args("composite_color",args,"%o%i%i%i%i%f%f%f%f%i%i%i%i%i%i%",
 		&o1,&dest_x,&dest_y,&dest_width,&dest_height,&offset_x,
 		&offset_y,&scale_x,&scale_y,&type,&overall_alpha,&check_x,
@@ -770,7 +770,7 @@ GDK2.Pixbuf copy_area(GDK2.Pixbuf dest, int src_x, int src_y, int width,
   {
     GdkPixbuf *dest;
     struct object *o1;
-    int src_x,src_y,width,height,dest_x,dest_y;
+    INT_TYPE src_x,src_y,width,height,dest_x,dest_y;
     get_all_args("copy_area",args,"%o%i%i%i%i%i%i",&o1,&src_x,&src_y,
 		&width,&height,&dest_x,&dest_y);
     dest=GDK_PIXBUF(get_gobject(o1));
@@ -848,7 +848,7 @@ GDK2.Bitmap render_threshold_alpha(int src_x, int src_y, int dest_x,
 {
   pgtk_verify_inited();
   {
-    int x,y,dx,dy,w,h,a;
+    INT_TYPE x,y,dx,dy,w,h,a;
     GdkBitmap *b;
     get_all_args("render_threshold_alpha",args,"%i%i%i%i%i%i%i",&x,&y,&dx,&dy,
 		 &w,&h,&a);

@@ -77,7 +77,7 @@ void render(GDK2.Window window, GTK2.Widget widget,
   pgtk_verify_inited();
   {
     struct object *o1,*o2,*o3,*o4,*o5;
-    GtkCellRendererState flags;
+    INT_TYPE flags;
     get_all_args("render",args,"%o%o%o%o%o%i",&o1,&o2,&o3,&o4,&o5,&flags);
     gtk_cell_renderer_render(GTK_CELL_RENDERER(THIS->obj),
 		GDK_WINDOW(get_gobject(o1)),
@@ -100,7 +100,7 @@ int activate(GDK2.Event event, GTK2.Widget widget, string path,
   {
     struct object *o1,*o2,*o3,*o4;
     const gchar *path;
-    GtkCellRendererState flags;
+    INT_TYPE flags;
     int res;
     get_all_args("activate",args,"%o%o%s%o%o%i",&o1,&o2,&path,&o3,&o4,&flags);
     res=gtk_cell_renderer_activate(GTK_CELL_RENDERER(THIS->obj),
@@ -122,7 +122,7 @@ void start_editing(GDK2.Event event, GTK2.Widget widget, string path,
   {
     struct object *o1,*o2,*o3,*o4;
     const gchar *path;
-    GtkCellRendererState flags;
+    INT_TYPE flags;
     get_all_args("start_editing",args,"%o%o%s%o%o%i",&o1,&o2,&path,&o3,&o4,&flags);
     gtk_cell_renderer_start_editing(GTK_CELL_RENDERER(THIS->obj),
 		(GdkEvent *)get_gdkobject(o1,event),

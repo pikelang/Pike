@@ -728,7 +728,7 @@ void add_builtin_icon(string name, int size, GDK2.Pixbuf pixbuf)
   pgtk_verify_inited();
   {
     char *name;
-    int size;
+    INT_TYPE size;
     struct object *o1;
     get_all_args("add_builtin_icon",args,"%s%i%o",&name,&size,&o1);
     gtk_icon_theme_add_builtin_icon(name,size,GDK_PIXBUF(get_gobject(o1)));

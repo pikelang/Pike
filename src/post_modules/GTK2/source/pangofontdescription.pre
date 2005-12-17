@@ -100,7 +100,7 @@ void set_style(int style)
 {
   pgtk_verify_inited();
   {
-    int style;
+    INT_TYPE style;
     get_all_args("set_style",args,"%i",&style);
     pango_font_description_set_style((PangoFontDescription *)THIS->obj,style);
   }
@@ -120,7 +120,7 @@ void set_variant(int variant)
 {
   pgtk_verify_inited();
   {
-    int var;
+    INT_TYPE var;
     get_all_args("set_variant",args,"%i",&var);
     pango_font_description_set_variant((PangoFontDescription *)THIS->obj,var);
   }
@@ -143,7 +143,7 @@ void set_weight(int weight)
 {
   pgtk_verify_inited();
   {
-    int we;
+    INT_TYPE we;
     get_all_args("set_weight",args,"%i",&we);
     pango_font_description_set_weight((PangoFontDescription *)THIS->obj,we);
   }
@@ -165,7 +165,7 @@ void set_stretch(int stretch)
 {
   pgtk_verify_inited();
   {
-    int st;
+    INT_TYPE st;
     get_all_args("set_stretch",args,"%i",&st);
     pango_font_description_set_stretch((PangoFontDescription *)THIS->obj,st);
   }
@@ -192,7 +192,7 @@ void set_size(int size)
 {
   pgtk_verify_inited();
   {
-    int size;
+    INT_TYPE size;
     get_all_args("set_size",args,"%i",&size);
     pango_font_description_set_size((PangoFontDescription *)THIS->obj,size);
   }
@@ -216,8 +216,8 @@ void set_absolute_size(float size)
 {
   pgtk_verify_inited();
   {
-    double size;
-    get_all_args("set_absolute_size",args,"%i",&size);
+    FLOAT_TYPE size;
+    get_all_args("set_absolute_size",args,"%f",&size);
     pango_font_description_set_absolute_size((PangoFontDescription *)THIS->obj,
 		size);
   }
@@ -242,7 +242,7 @@ void merge(Pango.FontDescription desc, int replace)
 {
   pgtk_verify_inited();
   {
-    int rep;
+    INT_TYPE rep;
     struct object *o1;
     get_all_args("merge",args,"%o%i",&o1,&rep);
     pango_font_description_merge((PangoFontDescription *)THIS->obj,

@@ -42,7 +42,7 @@ void create(int|mapping(string:mixed) width_or_props,
   pgtk_verify_setup();
   {
     if (Pike_sp[-args].type==PIKE_T_INT) {
-      int w,h,hom;
+      INT_TYPE w,h,hom;
       GtkWidget *gt;
       get_all_args("create",args,"%i%i%i",&w,&h,&hom);
       gt=gtk_table_new(w,h,hom);

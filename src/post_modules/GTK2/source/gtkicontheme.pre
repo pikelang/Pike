@@ -85,7 +85,7 @@ GTK2.IconInfo lookup_icon(string name, int size, int flags)
   pgtk_verify_inited();
   {
     char *name;
-    int size,flags;
+    INT_TYPE size,flags;
     GtkIconInfo *gi;
     get_all_args("lookup_icon",args,"%s%i%i",&name,&size,&flags);
     gi=gtk_icon_theme_lookup_icon(GTK_ICON_THEME(THIS->obj),name,size,flags);
@@ -105,7 +105,7 @@ GDK2.Pixbuf load_icon(string name, int size, int flags)
   {
     GdkPixbuf *pixbuf;
     char *name;
-    int size,flags;
+    INT_TYPE size,flags;
     get_all_args("load_icon",args,"%s%i%i",&name,&size,&flags);
     pixbuf=gtk_icon_theme_load_icon(GTK_ICON_THEME(THIS->obj),name,size,flags,NULL);
     my_pop_n_elems(args);

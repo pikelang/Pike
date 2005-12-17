@@ -56,7 +56,7 @@ GDK2.Pixbuf render_icon(GTK2.Style style, int direction, int state, int size,
 {
   pgtk_verify_inited();
   {
-    int dir,state,size;
+    INT_TYPE dir,state,size;
     struct object *o1,*o2;
     GdkPixbuf *pixbuf;
     get_all_args("render_icon",args,"%o%i%i%i%o",&o1,&dir,&state,&size,&o2);

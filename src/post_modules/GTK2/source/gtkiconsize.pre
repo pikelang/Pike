@@ -6,7 +6,7 @@ class GTK2.IconSize;
 string get_name(int size)
 //! Gets the canonical name of the given icon size.
 {
-  int size;
+  INT_TYPE size;
   const gchar *res;
   get_all_args("get_name",args,"%i",&size);
   res=gtk_icon_size_get_name(size);
@@ -30,7 +30,7 @@ void register_alias(string alias, int target)
 //! GTK2.IconSize->from_name() with alias will return target.
 {
   char *alias;
-  int target;
+  INT_TYPE target;
   get_all_args("register_alias",args,"%s%i",&alias,&target);
   gtk_icon_size_register_alias(alias,target);
   RETURN_THIS();
@@ -41,7 +41,7 @@ int register(string name, int width, int height)
 //! Returns the integer value for the size.
 {
   char *name;
-  int width,height;
+  INT_TYPE width,height;
   int res;
   get_all_args("register",args,"%s%i%i",&name,&width,&height);
   res=gtk_icon_size_register(name,width,height);

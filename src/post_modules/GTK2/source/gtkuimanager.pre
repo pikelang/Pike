@@ -135,7 +135,7 @@ array(GTK2.Widget) get_toplevels(int types)
   {
     GSList *gl,*g2;
     int i=0;
-    int type;
+    INT_TYPE type;
     get_all_args("get_toplevels",args,"%i",&type);
     my_pop_n_elems(args);
     gl=g2=gtk_ui_manager_get_toplevels(GTK_UI_MANAGER(THIS->obj),type);

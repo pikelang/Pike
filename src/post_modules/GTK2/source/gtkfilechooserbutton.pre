@@ -18,7 +18,7 @@ void create(string|mapping(string:mixed) title_or_props, ?int action)
   {
     if (Pike_sp[-args].type==PIKE_T_STRING) {
       char *title;
-      int action;
+      INT_TYPE action;
       GtkWidget *gf;
       get_all_args("create",args,"%s%i",&title,&action);
       gf=gtk_file_chooser_button_new(title,action);

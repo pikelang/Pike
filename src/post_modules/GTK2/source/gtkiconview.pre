@@ -94,7 +94,7 @@ GTK2.TreePath get_path_at_pos(int x, int y)
 {
   pgtk_verify_inited();
   {
-    int x,y;
+    INT_TYPE x,y;
     GtkTreePath *path;
     get_all_args("get_path_at_pos",args,"%i%i",&x,&y);
     my_pop_n_elems(args);
@@ -111,7 +111,7 @@ array get_item_at_pos(int x, int y)
 {
   pgtk_verify_inited();
   {
-    int x,y;
+    INT_TYPE x,y;
     GtkTreePath *path;
     GtkCellRenderer *cell;
     int res;
@@ -140,7 +140,7 @@ void set_cursor(GTK2.TreePath path, ?GTK2.CellRenderer cell, ?int start_editing)
   pgtk_verify_inited();
   {
     struct object *o1,*o2=NULL;
-    int se=0;
+    INT_TYPE se=0;
     get_all_args("set_cursor",args,"%o.%o%i",&o1,&o2,&se);
     gtk_icon_view_set_cursor(GTK_ICON_VIEW(THIS->obj),
 			(GtkTreePath *)get_gobject(o1),
@@ -337,7 +337,7 @@ void scroll_to_path(GTK2.TreePath path, int use_align,
   pgtk_verify_inited();
   {
     struct object *o1;
-    int use_align;
+    INT_TYPE use_align;
     FLOAT_TYPE row_align,col_align;
     get_all_args("scroll_to_path",args,"%o%i%f%f",&o1,&use_align,&row_align,
 			&col_align);

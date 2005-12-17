@@ -22,7 +22,7 @@ void create(int|mapping(string:mixed) uniformp_or_props, int hpadding)
   pgtk_verify_setup();
   {
     if (Pike_sp[-args].type==PIKE_T_INT) {
-      int uniformp,padding;
+      INT_TYPE uniformp,padding;
       GtkWidget *gh;
       get_all_args("create",args,"%i%i",&uniformp,&padding);
       gh=gtk_hbox_new(uniformp,padding);

@@ -19,7 +19,7 @@ void create(string id, string name, array(string) keywords,
   {
     GtkTextTag *gtt;
     char *id,*name,*begin,*end;
-    int sense,matchb,matche;
+    INT_TYPE sense,matchb,matche;
     struct array *a;
     struct svalue *sv;
     GSList *gsl=NULL;

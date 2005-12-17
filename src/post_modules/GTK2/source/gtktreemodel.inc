@@ -31,7 +31,7 @@ int get_column_type(int index)
 {
   pgtk_verify_inited();
   {
-    int index;
+    INT_TYPE index;
     get_all_args("get_column_type",args,"%i",&index);
     my_pop_n_elems(args);
     PGTK_PUSH_INT(gtk_tree_model_get_column_type(GTK_TREE_MODEL(THIS->obj),
@@ -230,7 +230,7 @@ mixed get_value(GTK2.TreeIter iter, int column)
   {
     GValue v={0,};
     struct object *o1;
-    int col;
+    INT_TYPE col;
 
     get_all_args("get_value",args,"%o%i",&o1,&col);
     gtk_tree_model_get_value(GTK_TREE_MODEL(THIS->obj),
@@ -375,7 +375,8 @@ GTK2.TreeIter iter_nth_child(GTK2.TreeIter parent, int index)
   {
     GtkTreeIter *iter;
     struct object *o1;
-    int res,n;
+    int res;
+    INT_TYPE n;
     iter=g_malloc(sizeof(GtkTreeIter));
     if (iter==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("iter_nth_child",sizeof(GtkTreeIter));
