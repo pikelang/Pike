@@ -295,6 +295,8 @@ void set_from_inline(int data_length, string data)
     const guint8 *data;
     GdkPixbuf *p;
     get_all_args("new_from_inline",args,"%i%s",&data_length,&data);
+    if(data_length > Pike_sp[1-args].u.string->len)
+      Pike_error("Inline string is too short\n");
     p=gdk_pixbuf_new_from_inline(data_length,data,FALSE,NULL);
     if (p==NULL)
       Pike_error("Unable to set pixbuf from data\n");

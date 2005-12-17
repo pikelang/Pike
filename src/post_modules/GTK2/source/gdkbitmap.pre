@@ -17,6 +17,8 @@ void create(int|Image.Image xsize_or_image, int|void ysize, string|void bitmap)
   pgtk_verify_not_inited();
   if (args==3) {
     get_all_args("create",args,"%i%i%s",&x,&y,&d);
+    if(x*y > Pike_sp[2-args].u.string->len)
+      Pike_error("Bitmap string is too short\n");
   } else if (args==1) {
     struct object *o;
     get_all_args("create",args,"%o",&o);
