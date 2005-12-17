@@ -26,10 +26,10 @@ void create(string|mapping|void label_or_props)
       GtkWidget *gcb;
       get_all_args("create",args,"%T",&t);
       if (t) {
-	if (g_utf8_validate((char *)STR0(t),t->len,NULL))
-	  gcb=gtk_check_button_new_with_mnemonic((char *)STR0(t));
-	else
-	  gcb=gtk_check_button_new();
+	ref_push_string(t);
+	f_string_to_utf8(1);
+	gcb=gtk_check_button_new_with_mnemonic((char *)STR0(Pike_sp[-1].u.string));
+	pop_stack();
       } else
 	gcb=gtk_check_button_new();
       THIS->obj=G_OBJECT(gcb);

@@ -31,10 +31,10 @@ void create(string|mapping|void label_or_props)
       GtkWidget *gt;
       get_all_args("create",args,"%T",&t);
       if (t) {
-	if (g_utf8_validate((char *)STR0(t),t->len,NULL))
-	  gt=gtk_toggle_button_new_with_label((char *)STR0(t));
-	else
-	  gt=gtk_toggle_button_new();
+	ref_push_string(t);
+	f_string_to_utf8(1);
+	gt=gtk_toggle_button_new_with_label((char *)STR0(Pike_sp[-1].u.string));
+	pop_stack();
       } else
 	gt=gtk_toggle_button_new();
       THIS->obj=G_OBJECT(gt);

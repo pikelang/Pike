@@ -31,10 +31,10 @@ void create(GTK2.Widget|string|mapping(string:mixed) icon, ?string label)
       struct object *o1;
       get_all_args("create",args,"%o%T",&o1,&t);
       if (t && o1) {
-	if (g_utf8_validate((char *)STR0(t),t->len,NULL))
-	  gm=gtk_menu_tool_button_new(GTK_WIDGET(get_gobject(o1)),(char *)STR0(t));
-	else
-	  Pike_error("Invalid string.\n");
+	ref_push_string(t);
+	f_string_to_utf8(1);
+	gm=gtk_menu_tool_button_new(GTK_WIDGET(get_gobject(o1)),(char *)STR0(Pike_sp[-1].u.string));
+	pop_stack();
       } else
 	Pike_error("Invalid arguments.\n");
       THIS->obj=G_OBJECT(gm);

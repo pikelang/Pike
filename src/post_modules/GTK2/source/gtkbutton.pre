@@ -52,10 +52,10 @@ void create(string|mapping|void label_or_props)
       GtkWidget *gb;
       get_all_args("create",args,"%T",&t);
       if (t) {
-	if (g_utf8_validate((char *)STR0(t),t->len,NULL))
-	  gb=gtk_button_new_from_stock((char *)STR0(t)); 
-	else
-	  gb=gtk_button_new();
+	ref_push_string(t);
+	f_string_to_utf8(1);
+	gb=gtk_button_new_from_stock((char *)STR0(Pike_sp[-1].u.string)); 
+	pop_stack();
       } else
 	gb=gtk_button_new();
       THIS->obj=G_OBJECT(gb); 

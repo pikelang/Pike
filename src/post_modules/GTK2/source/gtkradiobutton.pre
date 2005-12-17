@@ -39,10 +39,10 @@ void create(string|mapping|void title, ?GTK2.RadioButton groupmember)
       if (o1)
 	mylist=gtk_radio_button_group(GTK_RADIO_BUTTON(get_gobject(o1)));
       if (t) {
-	if (g_utf8_validate((char *)STR0(t),t->len,NULL))
-	  gr=gtk_radio_button_new_with_label(mylist,(char *)STR0(t));
-	else
-	  gr=gtk_radio_button_new(mylist);
+	ref_push_string(t);
+	f_string_to_utf8(1);
+	gr=gtk_radio_button_new_with_label(mylist,(char *)STR0(Pike_sp[-1].u.string));
+	pop_stack();
       } else
 	gr=gtk_radio_button_new(mylist);
       THIS->obj=G_OBJECT(gr);
