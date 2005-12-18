@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.854 2005/12/05 19:35:02 peter Exp $")
+AC_REVISION("$Id: configure.in,v 1.855 2005/12/18 16:42:10 jonasw Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3582,6 +3582,8 @@ AC_FUNC_MMAP
 if test "x$ac_cv_func_mmap_fixed_mapped" = "xyes"; then
   # Mac OS X has an mmap that fails with ENODEV if we try
   # to use it for mexec_alloc et al.
+  #
+  # NB: mmap with MAP_ANON does however work.
   AC_MSG_CHECKING([if mmap can be used to allocate PROT_EXEC])
   AC_CACHE_VAL(pike_cv_mmap_PROT_EXEC, [
     AC_TRY_RUN([
@@ -3605,19 +3607,31 @@ if test "x$ac_cv_func_mmap_fixed_mapped" = "xyes"; then
 
 #include <errno.h>
 
+#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+#define MAP_ANONYMOUS	MAP_ANON
+#endif /* !MAP_ANONYMOUS && MAP_ANON */
+
       int main(int argc, char **argv)
       {
         void *ptr;
-	int dev_zero = open("/dev/zero", O_RDONLY);
+	int dev_zero = -1;
+#ifndef MAP_ANONYMOUS
+        /* Neither MAP_ANONYMOUS nor MAP_ANON.
+         * Map some /dev/zero.
+         */
+        dev_zero = open("/dev/zero", O_RDONLY);
 	if (dev_zero < 0) {
 	  fprintf(stderr, "open(\"/dev/zero\", O_RDONLY) failed. errno: %d\n",
 		  errno);
 	  return 1;
 	}
+#define MAP_ANONYMOUS	0
+#endif /* !MAP_ANONYMOUS */
 	if ((ptr = mmap(NULL, 8192, PROT_EXEC|PROT_READ|PROT_WRITE,
-		        MAP_PRIVATE, dev_zero, 0)) == MAP_FAILED) {
+		        MAP_PRIVATE|MAP_ANONYMOUS,
+			dev_zero, 0)) == MAP_FAILED) {
 	  fprintf(stderr, "mmap(NULL, 8192, PROT_EXEC|PROT_READ|PROT_WRITE,\n"
-			  "MAP_PRIVATE, %d, 0) failed. errno: %d\n",
+			  "MAP_PRIVATE|MAP_ANONYMOUS, %d, 0) failed. errno: %d\n",
 		  dev_zero,
 		  errno);
 	  return 2;
@@ -3647,12 +3661,28 @@ if test "x$ac_cv_func_mmap_fixed_mapped" = "xyes"; then
 #endif
 
 #include <errno.h>
+
+#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+#define MAP_ANONYMOUS	MAP_ANON
+#endif /* !MAP_ANONYMOUS && MAP_ANON */
+
+#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+#define MAP_ANONYMOUS	MAP_ANON
+#endif /* !MAP_ANONYMOUS && MAP_ANON */
       ], [
         void *ptr;
-	int dev_zero = open("/dev/zero", O_RDONLY);
+	int dev_zero = -1;
+#ifndef MAP_ANONYMOUS
+        /* Neither MAP_ANONYMOUS nor MAP_ANON.
+         * Map some /dev/zero.
+         */
+        dev_zero = open("/dev/zero", O_RDONLY);
 	if (dev_zero < 0) return 1;
+#define MAP_ANONYMOUS	0
+#endif /* !MAP_ANONYMOUS */
 	if ((ptr = mmap(NULL, 8192, PROT_EXEC|PROT_READ|PROT_WRITE,
-		        MAP_PRIVATE, dev_zero, 0)) == MAP_FAILED) {
+		        MAP_PRIVATE|MAP_ANONYMOUS,
+			dev_zero, 0)) == MAP_FAILED) {
 	  return 2;
 	}
 	return 0;
