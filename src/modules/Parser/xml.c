@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.78 2005/11/12 22:22:41 nilsson Exp $
+|| $Id: xml.c,v 1.79 2005/12/18 03:25:18 nilsson Exp $
 */
 
 #include "global.h"
@@ -1526,14 +1526,15 @@ static void parse_optional_xmldecl(struct xmldata *data)
 
     push_constant_text("<?xml");
     push_int(0);
-    push_mapping(m = allocate_mapping(10)); /* Attributes */
-    
+    push_mapping(m = allocate_mapping(3)); /* Attributes */
+
     SIMPLE_READ_ATTRIBUTES(0);
-    
+
     if(PEEK(0) != '?' && PEEK(1)!='>')
       XMLERROR("Missing '?>' at end of XML header.");
     else
       READ(2);
+
 
     if (!(THIS->flags & COMPAT_ALLOW_7_6_ERRORS)) {
       struct pike_string *str_version;
@@ -2411,26 +2412,15 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	switch(PEEK(1))
 	{
 	  case '?': /* Ends with ?> */
-	    if ((THIS->flags & COMPAT_ALLOW_7_6_ERRORS) &&
-		PEEK(2)=='x' &&
+	    if (PEEK(2)=='x' &&
 		PEEK(3)=='m' &&
 		PEEK(4)=='l' &&
 		isSpace(PEEK(5))) {
-	      /* Since parse_optional_xmldecl is used to parse the
-	       * initial xml header, I can't see why this case
-	       * exists. /mast */
-	      push_constant_text("<?xml");
-	      READ(6);
-	      push_int(0);
-	      push_mapping(allocate_mapping(10)); /* Attributes */
 
-	      SIMPLE_READ_ATTRIBUTES(0);
-	      
-	      if(PEEK(0) != '?' && PEEK(1)!='>')
-		XMLERROR("Missing ?> at end of <?xml.");
-	      READ(2);
-	      
-	      push_int(0); /* No data */
+                /* Strictly we should throw an error if XMLDecl is
+                   anywhere but first in the document. */
+                parse_optional_xmldecl(data);
+                break;
 	    }else{
 	      READ(2);
 	      push_constant_text("<?");
@@ -2768,11 +2758,13 @@ static int low_parse_xml(struct xmldata *data,
   return !!end;
 }
 
-/*! @module spider
+/*! @module Parser
  */
 
-/*! @class XML
- *! @appears Parser.XML.Simple
+/*! @module XML
+ */
+
+/*! @class Simple
  */
 
 /*! @decl array parse(string xml, function cb)
@@ -2794,16 +2786,6 @@ static void parse_xml(INT32 args)
   }
   s=sp[-args].u.string;
 
-#if 0
-  if(!s->size_shift)
-  {
-    if(STR0(s)[0]==0xfe && STR1(s)[0]==0xff)
-    {
-      /* String is UTF8, convert to unicode here */
-      
-    }
-  }
-#endif
   data.input.datap=MKPCHARP_STR(s);
   data.input.len=s->len;
   data.input.pos=0;
@@ -2823,7 +2805,6 @@ static void parse_xml(INT32 args)
   data.allow_pesmeg_everywhere=0;
 
   SET_ONERROR(e,free_xmldata, &data);
-  parse_optional_xmldecl(&data);
   low_parse_xml(&data,0, &doc_seq_pos);
   if (doc_seq_pos != DOC_AFTER_ROOT_ELEM &&
       !(THIS->flags & COMPAT_ALLOW_7_6_ERRORS))
@@ -3237,6 +3218,9 @@ static void init_xml_struct(struct object *o)
 }
 
 /*! @endclass
+ */
+
+/*! @endmodule
  */
 
 /*! @endmodule
