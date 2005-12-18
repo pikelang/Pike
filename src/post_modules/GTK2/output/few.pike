@@ -1,9 +1,10 @@
 inherit "split";
 
 #define LIMIT 150*1024
+#define OVERFLOW 16*1024
 
 array files = ({});
-String.Buffer current_data = String.Buffer(LIMIT + 10240);
+String.Buffer current_data = String.Buffer(LIMIT + OVERFLOW);
 int fcount;
 
 void output_current_data()
@@ -11,7 +12,7 @@ void output_current_data()
   // Processing done. Actually write the file.
   if( sizeof( current_data ) )
   {
-    if( sizeof(current_data)>LIMIT+10240 )
+    if( sizeof(current_data)>LIMIT+OVERFLOW )
       werror("WARNING: current_data resized (content size = %d).\n",
 	     sizeof(current_data));
     fcount++;
