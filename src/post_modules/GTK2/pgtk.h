@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgtk.h,v 1.9 2005/11/05 20:06:45 grubba Exp $
+|| $Id: pgtk.h,v 1.10 2005/12/18 19:25:25 nilsson Exp $
 */
 
 /* Sort of unnessesary, and decreases code-size with 140Kb */
@@ -222,6 +222,9 @@ void pgtk_free_str(gchar *s);
 # define PGTK_PUSH_GCHAR(X) push_text( X )
 #endif
 */
+
+#define GSTR0(X) (gchar*)STR0(X)
+#define CGSTR0(X) (const gchar*)STR0(X)
 
 /* Somewhat more complex than one could expect. Consider bignums. */
 LONGEST pgtk_get_int(struct svalue *s);
