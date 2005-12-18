@@ -64,10 +64,10 @@ GTK2.Adjustment get_vadjustment();
 //! Get the vertical adjustment.
 
 require gtk28;
-GTK2.Hscrollbar get_hscrollbar();
+GTK2.HScrollbar get_hscrollbar();
 //! Returns the horizontal scrollbar.
 
-GTK2.Vscrollbar get_vscrollbar();
+GTK2.VScrollbar get_vscrollbar();
 //! Returns the vertical scrollbar.
 endrequire;
 

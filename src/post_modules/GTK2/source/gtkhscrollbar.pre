@@ -1,5 +1,5 @@
 /* -*- C -*- */
-class GTK2.Hscrollbar;
+class GTK2.HScrollbar;
 inherit GTK2.Scrollbar;
 
 //! A horizontal scrollbar.<p>
