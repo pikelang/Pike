@@ -19,6 +19,8 @@ static void output_class( Class cls, int lvl )
   if( !cls->functions["_sprintf"] )
     cls->create_default_sprintf();
 
+  cls->create_init_exit();
+
   /* Start output */
   current_data += "#define EXTPRG extern\n"+sfhead;
   if( sizeof( cls->pre ) )
@@ -90,7 +92,6 @@ static void build_pike_fadds( Class cls, int lvl )
       else
       {
         res += "  ADD_STORAGE(struct object_wrapper);\n";
-        res += "  set_init_callback(pgtk_clear_obj_struct);\n";
       }
     }
 
@@ -116,6 +117,14 @@ static void build_pike_fadds( Class cls, int lvl )
     }
     res += "}\n\n";
     toplevel += res;
+
+    if( cls->name == "_global" )
+    {
+      if(sizeof(cls->init))
+	initfun += "  gtk__init();\n";
+      if(sizeof(cls->exit))
+	exitfun += "  gtk__exit();\n";
+    }
   } )
     werror(cls->file+":"+cls->line+": Error: "+
            (stringp(e)?e:describe_backtrace(e))+"\n" );

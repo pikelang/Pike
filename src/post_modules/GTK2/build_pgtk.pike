@@ -158,6 +158,8 @@ class Function(Class parent,
 
   string pike_type( )
   {
+    if(!return_type)
+      return 0;
     string rt = return_type->pike_type( 1 );
     if( parent->name != "_global" && has_prefix(rt, "void" ) )
       rt = parent->pike_type( 1 );
@@ -182,6 +184,12 @@ class Function(Class parent,
 
   string pike_add( )
   {
+    if(!return_type) {
+      if(parent->name == "_global")
+	return "";
+      else
+	return sprintf("    set%s_callback(p%s);\n", name, c_name());
+    }
     string type = function_type( pike_type( ) );
 #ifdef EXTERMINATE_MIXED
     if( search( pike_type(), "mixed" ) != -1 )
@@ -245,11 +253,18 @@ class Function(Class parent,
 
   string c_prototype()
   {
-    return "void p"+c_name()+"( INT32 args );\n";
+    return "void p"+c_name()+"( "+
+      (return_type? "INT32 args" :
+       (parent->name == "_global"? "" : "struct object *object"))+
+      " );\n";
   }
 
   string c_definition()
   {
+    if(!return_type)
+      return c_prototype()-";"+"{\n" +
+	COMPOSE( body )+"}\n";
+
     string res = "";
     void emit( string what )
     {
@@ -1047,7 +1062,8 @@ class Class( string name, string file, int line )
 
   array pre  = ({});
   string post = "";
-
+  array init = ({});
+  array exit = ({});
 
   string _pass;
   string _fetch;
@@ -1106,6 +1122,20 @@ class Class( string name, string file, int line )
                            file, line ) );
   }
   
+  void create_init_exit( )
+  {
+    if( !inherits && name != "_global" )
+      init = SPLIT("{\n  pgtk_clear_obj_struct( object );\n}\n",
+		   file) + init;
+
+    if( sizeof(init) )
+      add_function( Function(this_object(), "_init", 0, ({}), ({}),
+			     init, ({}), "", file, line ) );
+    if( sizeof(exit) )
+      add_function( Function(this_object(), "_exit", 0, ({}), ({}),
+			     exit, ({}), "", file, line ) );
+  }
+
   string c_type_define()
   {
     array q = c_name()/"_";
@@ -1298,6 +1328,18 @@ class Class( string name, string file, int line )
   Class add_ref( string f, int l, Class c )
   {
     references += ({ Ref( f, l, c ) });
+    return this_object();
+  }
+
+  Class add_init( array code )
+  {
+    init += code;
+    return this_object();
+  }
+
+  Class add_exit( array code )
+  {
+    exit += code;
     return this_object();
   }
 }
@@ -1645,6 +1687,22 @@ string parse_pre_file( string file )
                             current_class);
          SEMICOLON("inherit");
          break;
+
+       case "INIT":
+	 NEED_CLASS("INIT");
+         tk = GOBBLE();
+         if( !arrayp(tk) || tk[0] != "{" || tk[-1] != "}" )
+           SYNTAX("Expected INIT { code }",token);
+         current_class->add_init( tk );
+	 break;
+
+       case "EXIT":
+	 NEED_CLASS("EXIT");
+         tk = GOBBLE();
+         if( !arrayp(tk) || tk[0] != "{" || tk[-1] != "}" )
+           SYNTAX("Expected EXIT { code }",token);
+         current_class->add_exit( tk );
+	 break;
 
        case "%":
          NEED_CLASS("%{ %}");

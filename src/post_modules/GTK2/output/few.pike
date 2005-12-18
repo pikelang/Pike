@@ -31,6 +31,8 @@ static void output_class( Class cls, int lvl )
   if( !cls->functions["_sprintf"] )
     cls->create_default_sprintf();
 
+  cls->create_init_exit();
+
   /* Start output */
   if(!sizeof( current_data ) )
     current_data->add( "#define EXTPRG extern\n", sfhead );
