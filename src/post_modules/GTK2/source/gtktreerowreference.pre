@@ -25,7 +25,7 @@ GTK2.TreeModel get_model()
 //! Returns the model which this references is monitoring.
 {
   pgtk_verify_inited();
-  my_pop_n_elems(args):
+  my_pop_n_elems(args);
   {
     GtkTreeModel *gtm;
     gtm=gtk_tree_row_reference_get_model((GtkTreeRowReference *)THIS->obj);
