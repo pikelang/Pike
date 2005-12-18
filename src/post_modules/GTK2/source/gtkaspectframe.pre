@@ -37,7 +37,8 @@ void create(mapping|string label, ?float xalign, ?float yalign,
 			&ratio,&obey_child);
     ref_push_string(label);
     f_string_to_utf8(1);
-    gaf=gtk_aspect_frame_new(STR0(Pike_sp[-1].u.string),xalign,yalign,ratio,obey_child);
+    gaf=gtk_aspect_frame_new(CGSTR0(Pike_sp[-1].u.string),
+                             xalign,yalign,ratio,obey_child);
     pop_stack();
     THIS->obj=G_OBJECT(gaf);
   } else {

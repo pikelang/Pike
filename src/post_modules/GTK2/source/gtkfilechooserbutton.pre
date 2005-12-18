@@ -23,7 +23,7 @@ void create(string|mapping(string:mixed) title_or_props, ?int action)
       get_all_args("create",args,"%t%i",&title,&action);
       ref_push_string(title);
       f_string_to_utf8(1);
-      gf=gtk_file_chooser_button_new(STR0(Pike_sp[-1].u.string),action);
+      gf=gtk_file_chooser_button_new(CGSTR0(Pike_sp[-1].u.string),action);
       pop_stack();
       THIS->obj=G_OBJECT(gf);
     } else {

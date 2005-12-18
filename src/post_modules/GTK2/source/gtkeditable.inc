@@ -40,7 +40,8 @@ int insert_text(string text, int length, int pos)
     pos2 = pos;
     ref_push_string(text);
     f_string_to_utf8(1);
-    gtk_editable_insert_text(GTK_EDITABLE(THIS->obj),STR0(Pike_sp[-1].u.string),len,&pos2);
+    gtk_editable_insert_text(GTK_EDITABLE(THIS->obj),
+			     CGSTR0(Pike_sp[-1].u.string),len,&pos2);
     pop_stack();
     my_pop_n_elems(args);
     PGTK_PUSH_INT(pos2);

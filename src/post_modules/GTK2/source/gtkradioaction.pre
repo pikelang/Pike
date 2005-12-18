@@ -19,19 +19,19 @@ void create(string|mapping(string:mixed) name_or_props, ?string label,
   if (args==4) {
     char *name,*stock_id;
     struct pike_string *label, *tooltip;
-    char *label2=NULL, *tooltip2=NULL;
+    gchar *label2=NULL, *tooltip2=NULL;
     INT_TYPE val;
     GtkRadioAction *gr;
     get_all_args("create",args,"%s%t%t%s%i",&name,&label,&tooltip,&stock_id,&val);
     if(label) {
       ref_push_string(label);
       f_string_to_utf8(1);
-      label2 = STR0(Pike_sp[-1].u.string);
+      label2 = GSTR0(Pike_sp[-1].u.string);
     }
     if(tooltip) {
       ref_push_string(tooltip);
       f_string_to_utf8(1);
-      tooltip2 = STR0(Pike_sp[-1].u.string);
+      tooltip2 = GSTR0(Pike_sp[-1].u.string);
     }
     gr=gtk_radio_action_new(name,label2,tooltip2,stock_id,val);
     if(tooltip) pop_stack();

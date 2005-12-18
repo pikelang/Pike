@@ -130,7 +130,8 @@ void draw_text(GDK2.GC gc, int x, int y, string text)
     ref_push_string(text);
     f_string_to_utf8(1);
     pc=gtk_widget_get_pango_context(GTK_WIDGET(THIS->obj));
-    pl=gtk_widget_create_pango_layout(GTK_WIDGET(THIS->obj),STR0(Pike_sp[-1].u.string));
+    pl=gtk_widget_create_pango_layout(GTK_WIDGET(THIS->obj),
+                                      CGSTR0(Pike_sp[-1].u.string));
     gdk_draw_layout(TWIN,GC(g),x,y,pl);
     g_object_unref(pc);
     g_object_unref(pl);

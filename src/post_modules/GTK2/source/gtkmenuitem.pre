@@ -29,7 +29,7 @@ void create(string|mapping(string:mixed)|void label_or_props)
       get_all_args("create",args,"%t",&label);
       ref_push_string(label);
       f_string_to_utf8(1);
-      gm=gtk_menu_item_new_with_mnemonic(STR0(Pike_sp[-1].u.string));
+      gm=gtk_menu_item_new_with_mnemonic(CGSTR0(Pike_sp[-1].u.string));
       pop_stack();
       THIS->obj=G_OBJECT(gm);
     } else {

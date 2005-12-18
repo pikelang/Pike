@@ -20,13 +20,13 @@ void create(string|mapping(string:mixed)|void label)
 
       get_all_args("create",args,"%t",&s1);
       if(s1->size_shift==0)
-	t=gtk_stock_lookup(STR0(s1),&item);
+	t=gtk_stock_lookup(CGSTR0(s1),&item);
       if (t)
-	gi=gtk_image_menu_item_new_from_stock(STR0(s1),NULL);
+	gi=gtk_image_menu_item_new_from_stock(CGSTR0(s1),NULL);
       else {
 	ref_push_string(s1);
 	f_string_to_utf8(1);
-	gi=gtk_image_menu_item_new_with_label(STR0(Pike_sp[-1].u.string));
+	gi=gtk_image_menu_item_new_with_label(CGSTR0(Pike_sp[-1].u.string));
 	pop_stack();
       }
       THIS->obj=G_OBJECT(gi);

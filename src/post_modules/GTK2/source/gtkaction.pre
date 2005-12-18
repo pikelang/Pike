@@ -32,18 +32,18 @@ void create(string|mapping(string:mixed) name_or_props, ?string label,
   if (args>0 && Pike_sp[-args].type==PIKE_T_STRING) {
     char *name, *stock_id=NULL;
     struct pike_string *label=NULL,*tooltip=NULL;
-    char *label2=NULL, *tooltip2=NULL;
+    gchar *label2=NULL, *tooltip2=NULL;
     GtkAction *ga;
     get_all_args("create",args,"%s.%t%t%s",&name,&label,&tooltip,&stock_id);
     if(label) {
       ref_push_string(label);
       f_string_to_utf8(1);
-      label2 = STR0(Pike_sp[-1].u.string);
+      label2 = GSTR0(Pike_sp[-1].u.string);
     }
     if(tooltip) {
       ref_push_string(tooltip);
       f_string_to_utf8(1);
-      tooltip2 = STR0(Pike_sp[-1].u.string);
+      tooltip2 = GSTR0(Pike_sp[-1].u.string);
     }
     ga=gtk_action_new(name,label2,tooltip2,stock_id);
     if(tooltip) pop_stack();

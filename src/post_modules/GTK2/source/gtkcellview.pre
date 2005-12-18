@@ -25,7 +25,7 @@ void create(string|GDK2.Pixbuf|mapping(string:mixed)|void text, ?int markup)
       get_all_args("create",args,"%t",&str);
       ref_push_string(str);
       f_string_to_utf8(1);
-      gcv=gtk_cell_view_new_with_text(STR0(Pike_sp[-1].u.string));
+      gcv=gtk_cell_view_new_with_text(CGSTR0(Pike_sp[-1].u.string));
       pop_stack();
       THIS->obj=G_OBJECT(gcv);
     } else {
@@ -39,9 +39,9 @@ void create(string|GDK2.Pixbuf|mapping(string:mixed)|void text, ?int markup)
     ref_push_string(str);
     f_string_to_utf8(1);
     if (mark)
-      gcv=gtk_cell_view_new_with_markup(STR0(Pike_sp[-1].u.string));
+      gcv=gtk_cell_view_new_with_markup(CGSTR0(Pike_sp[-1].u.string));
     else
-      gcv=gtk_cell_view_new_with_text(STR0(Pike_sp[-1].u.string));
+      gcv=gtk_cell_view_new_with_text(CGSTR0(Pike_sp[-1].u.string));
     pop_stack();
     THIS->obj=G_OBJECT(gcv);
   } else {
