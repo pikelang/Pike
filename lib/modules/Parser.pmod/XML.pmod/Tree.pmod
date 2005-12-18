@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.59 2005/12/18 03:34:24 nilsson Exp $
+ * $Id: Tree.pmod,v 1.60 2005/12/18 14:32:19 nilsson Exp $
  *
  */
 
@@ -1222,9 +1222,9 @@ class XMLParser
   }
 
   static this_program|int(0..0)
-      parse_xml_callback(string type, string name,
-                         mapping attr, string|array contents,
-                         mixed location, mixed ...extra)
+    parse_xml_callback(string type, string name,
+                       mapping attr, string|array contents,
+                       mixed location, mixed ...extra)
   {
     this_program node;
 
@@ -1256,9 +1256,9 @@ class XMLParser
         //  Convert tag and attribute names to lowercase
         //  if requested.
         if (extra[0]->force_lc) {
-            name = lower_case(name);
-            attr = mkmapping(map(indices(attr), lower_case),
-                             values(attr));
+          name = lower_case(name);
+          attr = mkmapping(map(indices(attr), lower_case),
+                           values(attr));
         }
         //  Parse namespace information of available.
         if (extra[0]->xmlns) {
@@ -1311,7 +1311,7 @@ class XMLParser
       }
 
       if( modified )
-          contents -= ({ 0 });
+        contents -= ({ 0 });
       node->replace_children( contents );
       return (node);
 
