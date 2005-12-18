@@ -66,20 +66,11 @@ void set_text(string text);
 //! Set the text in the label
 
 require pango;
-void set_markup(string text)
+void set_markup(string text);
 //! Parses text which is marked up with the Pango text markup language,
 //! setting the label's text and attribute list based on the parse results.
-{
-  pgtk_verify_inited();
-  {
-    gchar *str;
-    get_all_args("set_markup",args,"%s",&str);
-    gtk_label_set_markup(GTK_LABEL(THIS->obj),str);
-  }
-  RETURN_THIS();
-}
 
-void set_markup_with_mnemonic(string text)
+void set_markup_with_mnemonic(string text);
 //! Parses text which is marked up with the Pango text markup language,
 //! setting the label's text and attribute list based on the parse results.
 //! If characters in text are preceded by an underscore, they are underline
@@ -87,15 +78,6 @@ void set_markup_with_mnemonic(string text)
 //! <p>
 //! The mnemonic key can be used to activate another widget, chosen
 //! automatically, or explicitly using set_mnemonic_widget().
-{
-  pgtk_verify_inited();
-  {
-    gchar *str;
-    get_all_args("set_markup_with_mnemonic",args,"%s",&str);
-    gtk_label_set_markup_with_mnemonic(GTK_LABEL(THIS->obj),str);
-  }
-  RETURN_THIS();
-}
 endrequire;
 
 void set_pattern(string pattern_string);
