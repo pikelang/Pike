@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.2 2004/05/02 18:28:04 nilsson Exp $
+// $Id: testsuite.in,v 1.3 2005/12/18 22:48:00 nilsson Exp $
 
 define(test_xmlrpc, [[DOTEST(EQUAL,dnl
 array params =
@@ -44,5 +44,20 @@ test_xmlrpc([[
   Protocols.XMLRPC.decode_response(Protocols.XMLRPC.encode_response_fault
 					      (42, fault_string))->fault_string;
 ]], fault_string)
+
+test_equal([[
+  Protocols.XMLRPC.decode_response("<?xml version=\"1.0\"?>"
+    "<methodResponse><params><param><value><struct>"
+    "<member><name>message</name><value>Thanks&#32;for&#32;the&#32;ping."
+    "</value></member>"
+    "<member><name>flerror</name><value><boolean>0</boolean></value></member>"
+    "</struct></value></param>"
+    "<param><value><array><data><value><i4>3</i4></value><value><int>4</int>"
+    "</value><value><string>5</string></value></data></array></value></param>"
+    "</params></methodResponse>") ]],
+[[ ({ ([
+ "flerror" : 0,
+ "message" : "Thanks for the ping."
+]), ({ 3, 4, "5" }) }) ]])
 
 END_MARKER
