@@ -1,23 +1,43 @@
 START_MARKER
-// $Id: testsuite.in,v 1.6 2005/10/31 11:38:07 nilsson Exp $
+// $Id: testsuite.in,v 1.7 2005/12/18 03:34:50 nilsson Exp $
 
 // DOM
 
 // Tree
 
+define(test_tree_eq,[[
+  test_eq(Parser.XML.Tree.parse_input $1 ,$2)
+  test_eq(Parser.XML.Tree.simple_parse_input $1 ,$2)
+  test_eq(Parser.XML.Tree.Node $1 ,$2)
+  test_eq(Parser.XML.Tree.SimpleNode $1 ,$2)
+]])
+
 test_eval_error([[ Parser.XML.Tree.parse_input("<foo>", 0, 0, 0, 1); ]])
-test_eq([[ Parser.XML.Tree.parse_input("<a>foo &gt; hej &x.y; hopp &lt; bar</a>")->render_xml(); ]],
+test_tree_eq([[ ("<a>foo &gt; hej &x.y; hopp &lt; bar</a>")->render_xml() ]],
 [[ "<a>foo &gt; hej &amp;x.y; hopp &lt; bar</a>" ]])
-test_eq([[ Parser.XML.Tree.parse_input("<a>foo &gt; hej &x.y; hopp &lt; bar</a>")->render_xml(1); ]],
+test_tree_eq([[ ("<a>foo &gt; hej &x.y; hopp &lt; bar</a>")->render_xml(1); ]],
 [[ "<a>foo &gt; hej &x.y; hopp &lt; bar</a>" ]])
-test_eq([[ Parser.XML.Tree.parse_input("<a>hej &x.y; hopp</a>")->render_xml(); ]],
+test_tree_eq([[ ("<a>hej &x.y; hopp</a>")->render_xml(); ]],
 [[ "<a>hej &amp;x.y; hopp</a>" ]])
-test_eq([[ Parser.XML.Tree.parse_input("<a>hej &x.y; hopp</a>")->render_xml(1); ]],
+test_tree_eq([[ ("<a>hej &x.y; hopp</a>")->render_xml(1); ]],
 [[ "<a>hej &x.y; hopp</a>" ]])
 test_eq([[ (string)Parser.XML.Tree.parse_input("<a><b> <c/> </b></a>") ]],
 [[ "<a><b> <c/> </b></a>" ]])
-test_eq([[ Parser.XML.Tree.parse_input("<p>a<![CDATA[b]""]>c</p>")[0][0]->get_text() ]],
+test_tree_eq([[ ("<p>a<![CDATA[b]""]>c</p>")[0][0]->get_text() ]],
 [[ "abc" ]])
+test_tree_eq([[ ("<?xml version=\"1.0\"?><!DOCTYPE greeting SYSTEM \"hello.dtd\"><!-- comment -- --><x/>")->render_xml() ]],
+[[ "<?xml version='1.0' encoding='utf-8'?><!DOCTYPE greeting SYSTEM \"hello.dtd\"><!-- comment -- --><x/>" ]])
+
+test_any([[
+
+class A {
+  inherit Parser.XML.Tree.Node;
+  public array(this_program) mChildren = ({});
+};
+
+return sizeof(A("<!-- --><!-- --><x/>")->mChildren);
+]], 3)
+
 
 // NSTree
 
