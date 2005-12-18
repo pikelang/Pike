@@ -6,11 +6,12 @@ Changes in Pike code:
 o Support chunked transfer encoding and handle unexpected multiple
   headers in HTTP.Server.Request.
 o Fixed some bugs in Protocol.HTTP.Server.HeaderParser.
+o Fixed decoding boolean datatype in Protocols.XMLRPC.
 
 Other:
 
 o Added compatibility for more odbc drivers.
-o Optimized XML.Tree.
+o Optimized XML.Tree simplenode creation.
 o Backported fix for reference underflow in modify_shared_string()
 o Fixed segfault when exiting uninitialized mutex keys.
 
