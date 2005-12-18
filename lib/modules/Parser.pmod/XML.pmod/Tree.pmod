@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.58 2005/11/12 22:25:00 nilsson Exp $
+ * $Id: Tree.pmod,v 1.59 2005/12/18 03:34:24 nilsson Exp $
  *
  */
 
@@ -64,6 +64,44 @@ constant XML_NODE     = (XML_ROOT | XML_ELEMENT | XML_TEXT |
 #define  XML_NODE     (XML_ROOT | XML_ELEMENT | XML_TEXT |    \
 					   XML_PI | XML_COMMENT | XML_ATTR)
 
+constant type_names = ([
+    XML_ROOT : "ROOT",
+    XML_ELEMENT : "ELEMENT",
+    XML_TEXT : "TEXT",
+    XML_HEADER : "HEADER",
+    XML_PI : "PI",
+    XML_COMMENT : "COMMENT",
+    XML_DOCTYPE : "DOCTYPE",
+    XML_ATTR : "ATTR",
+]);
+
+string get_type_name(int type)
+{
+    if( type_names[type] ) return type_names[type];
+    return (string)type;
+}
+
+//! Flags used together with @[simple_parse_input()] and
+//! @[simple_parse_file()].
+enum ParseFlags {
+  PARSE_WANT_ERROR_CONTEXT =		0x1,
+#define PARSE_WANT_ERROR_CONTEXT	0x1
+  PARSE_FORCE_LOWERCASE =		0x2,
+#define PARSE_FORCE_LOWERCASE		0x2
+  PARSE_ENABLE_NAMESPACES =		0x4,
+#define PARSE_ENABLE_NAMESPACES		0x4
+  // Negated flag for compatibility.
+  PARSE_DISALLOW_RXML_ENTITIES =	0x8,
+#define PARSE_DISALLOW_RXML_ENTITIES	0x8
+  
+  PARSE_COMPAT_ALLOW_ERRORS_7_2 =	0x10,
+#define PARSE_COMPAT_ALLOW_ERRORS_7_2	0x10
+  PARSE_COMPAT_ALLOW_ERRORS_7_6 =	0x20,
+#define PARSE_COMPAT_ALLOW_ERRORS_7_6	0x20
+  // The following exists for compatibility only.
+  PARSE_CHECK_ALL_ERRORS =		0,
+}
+
 //! Quotes the string given in @[data] by escaping &, < and >.
 string text_quote(string data)
 {
@@ -111,14 +149,11 @@ string roxen_attribute_quote(string data)
 		    "'":"&apos;" ]));
 }
 
-void throw_error(mixed ...args)
+void throw_error(string str, mixed ... args)
 {
   //  Put message in debug log and throw exception
-  args[0] = "Parser.XML.Tree: " + args[0];
-  if (sizeof(args) == 1)
-	error(args[0]);
-  else
-	error(sprintf(@args));
+  str = "Parser.XML.Tree: " + str;
+  error(str, @args);
 }
 
 //! Namespace aware parser.
@@ -373,11 +408,12 @@ class AbstractSimpleNode {
 	return STOP_WALK;
   }
 
-  //! Traverse the node subtree in postorder, first subtrees from left to
-  //! right, then the root node, calling the function @[callback] for every
-  //! node. If the function @[callback] returns @[STOP_WALK] the traverse
-  //! is promptly aborted and @[STOP_WALK] is returned.
-  int walk_postorder(function(AbstractSimpleNode, mixed ...:int|void) callback,
+  //! Traverse the node subtree in postorder, first subtrees from left
+  //! to right, then the root node, calling the function @[callback]
+  //! for every node. If the function @[callback] returns @[STOP_WALK]
+  //! the traverse is promptly aborted and @[STOP_WALK] is returned.
+  int walk_postorder(function(AbstractSimpleNode,
+                              mixed ...:int|void) callback,
 		     mixed ... args)
   {
     foreach(mChildren, AbstractSimpleNode c)
@@ -387,10 +423,12 @@ class AbstractSimpleNode {
       return STOP_WALK;
   }
 
-  //! Iterates over the nodes children from left to right, calling the function
-  //! @[callback] for every node. If the callback function returns @[STOP_WALK]
-  //! the iteration is promptly aborted and @[STOP_WALK] is returned.
-  int iterate_children(function(AbstractSimpleNode, mixed ...:int|void) callback,
+  //! Iterates over the nodes children from left to right, calling the
+  //! function @[callback] for every node. If the callback function
+  //! returns @[STOP_WALK] the iteration is promptly aborted and
+  //! @[STOP_WALK] is returned.
+  int iterate_children(function(AbstractSimpleNode,
+                                mixed ...:int|void) callback,
 		       mixed ... args)
   {
     foreach(mChildren, AbstractSimpleNode c)
@@ -573,8 +611,8 @@ class AbstractNode {
     return (reverse(siblings[..(pos - 1)]));
   }
 
-  //! Returns all following siblings, i.e. all siblings present after this node
-  //! in the parents children list.
+  //! Returns all following siblings, i.e. all siblings present after
+  //! this node in the parents children list.
   array(AbstractNode) get_following_siblings()
   {
     array  siblings;
@@ -675,7 +713,6 @@ static class VirtualNode {
   static string		mShortNamespace = "";	// Namespace prefix
   static string		mNamespace;	// Resolved namespace
   static string         mTagName;
-//   private int            mTagCode;
   static mapping        mAttributes;		// Resolved attributes
   static mapping	mShortAttributes;	// Shortened attributes
   static array(Node) mAttrNodes;   //  created on demand
@@ -775,7 +812,6 @@ static class VirtualNode {
       }
     }
     mNodeType = type;
-//     mTagCode = kTagMapping[name] || kUnsupportedTagMapping[name];
     mAttributes = attr;
     mText = text;
     mAttrNodes = 0;
@@ -927,7 +963,7 @@ static class VirtualNode {
 	foreach(indices(attr), string a)
 	  data->add(" ", a, "='", attrq(attr[a]), "'");
       }
-      data->add("?>\n");
+      data->add("?>");
       break;
 
     case XML_PI:
@@ -941,6 +977,12 @@ static class VirtualNode {
     case XML_COMMENT:
       data->add("<!--", n->get_text(), "-->");
       break;
+
+  case XML_DOCTYPE:
+      data->add("<!DOCTYPE ", n->get_short_name());
+      foreach(n->get_attributes(); string index; string value)
+          data->add(" ", index, " \"", value, "\"");
+      data->add(">");
     }
 
     array(Node) children = n->get_children();
@@ -1120,8 +1162,183 @@ static class VirtualNode {
   }
 
   string _sprintf(int t) {
-    return t=='O' && sprintf("%O(#%d:%d,%s)", this_program, mDocOrder,
-			     get_node_type(), get_full_name()||"NULL");
+    return t=='O' && sprintf("%O(#%d:%s,%O)", this_program, mDocOrder,
+			     get_type_name(get_node_type()), get_full_name());
+  }
+}
+
+class XMLParser
+{
+  this_program add_child(this_program);
+  void create(int, string, mapping, string);
+
+  void parse(string data,
+             void|mapping predefined_entities,
+             ParseFlags|void flags)
+  {
+    .Simple xp = .Simple();
+
+    if (!(flags & PARSE_DISALLOW_RXML_ENTITIES))
+      xp->allow_rxml_entities(1);
+
+    if (flags & PARSE_COMPAT_ALLOW_ERRORS_7_2)
+      xp->compat_allow_errors ("7.2");
+    else if (flags & PARSE_COMPAT_ALLOW_ERRORS_7_6)
+      xp->compat_allow_errors ("7.6");
+  
+    //  Init parser with predefined entities
+    if (predefined_entities)
+      foreach(indices(predefined_entities), string entity)
+        xp->define_entity_raw(entity, predefined_entities[entity]);
+  
+    // Construct tree from string
+    mixed err = catch
+    {
+      mapping(string:mixed) extras = ([]);
+      if (flags & PARSE_FORCE_LOWERCASE) {
+        extras->force_lc = 1;
+      }
+      if (flags & PARSE_ENABLE_NAMESPACES) {
+        extras->xmlns = XMLNSParser();
+      }
+      catch( data=xp->autoconvert(data) );
+      foreach(xp->parse(data, parse_xml_callback,
+                        sizeof(extras) && extras),
+              this_program child)
+        add_child(child);
+    };
+
+    if(err)
+    {
+      //  If string msg is found we propagate the error. If error message
+      //  contains " [Offset: 4711]" we add the input data to the string.
+      if (stringp(err) && (flags & PARSE_WANT_ERROR_CONTEXT))
+      {
+        if (sscanf(err, "%s [Offset: %d]", err, int ofs) == 2)
+          err += report_error_context(data, ofs);
+      }
+      throw(err);
+    }
+  }
+
+  static this_program|int(0..0)
+      parse_xml_callback(string type, string name,
+                         mapping attr, string|array contents,
+                         mixed location, mixed ...extra)
+  {
+    this_program node;
+
+    switch (type) {
+    case "":
+    case "<![CDATA[":
+      //  Create text node
+      return this_program(XML_TEXT, "", 0, contents);
+
+    case "<!--":
+      //  Create comment node
+      return this_program(XML_COMMENT, "", 0, contents);
+
+    case "<?xml":
+      //  XML header tag
+      return this_program(XML_HEADER, "", attr, "");
+
+    case "<!DOCTYPE":
+      return this_program(XML_DOCTYPE, name, attr, "");
+
+    case "<?":
+      //  XML processing instruction
+      return this_program(XML_PI, name, attr, contents);
+
+    case "<>":
+      //  Create new tag node.
+      if (arrayp(extra) && sizeof(extra) &&
+          mappingp(extra[0])) {
+        //  Convert tag and attribute names to lowercase
+        //  if requested.
+        if (extra[0]->force_lc) {
+            name = lower_case(name);
+            attr = mkmapping(map(indices(attr), lower_case),
+                             values(attr));
+        }
+        //  Parse namespace information of available.
+        if (extra[0]->xmlns) {
+          XMLNSParser xmlns = extra[0]->xmlns;
+          attr = xmlns->Enter(attr);
+          name = xmlns->Decode(name);
+          xmlns->Leave();
+        }
+      }
+      return this_program(XML_ELEMENT, name, attr, "");
+
+    case ">":
+      //  Create tree node for this container
+      if (arrayp(extra) && sizeof(extra) && mappingp(extra[0])) {
+        //  Convert tag and attribute names to lowercase
+        //  if requested.
+        if (extra[0]->force_lc) {
+          name = lower_case(name);
+          attr = mkmapping(map(indices(attr), lower_case), values(attr));
+        }
+        //  Parse namespace information of available.
+        if (extra[0]->xmlns) {
+          XMLNSParser xmlns = extra[0]->xmlns;
+          name = xmlns->Decode(name);
+          xmlns->Leave();
+        }
+      }
+      node = this_program(XML_ELEMENT, name, attr, "");
+	
+      //  Add children to our tree node. We need to merge consecutive text
+      //  children since two text elements can't be neighbors according to
+      //  the W3 spec. This is necessary since CDATA sections are
+      //  converted to text nodes which might need to be concatenated
+      //  with neighboring text nodes.
+      Node text_node;
+      int(0..1) modified;
+
+      foreach(contents; int i; Node child) {
+        if (child->get_node_type() == XML_TEXT) {
+          if (text_node) {
+            //  Add this text string to the previous text node.
+            text_node->_add_to_text (child->get_text());
+            contents[i]=0;
+            modified=1;
+          }
+          else
+            text_node = child;
+        } else
+          text_node = 0;
+      }
+
+      if( modified )
+          contents -= ({ 0 });
+      node->replace_children( contents );
+      return (node);
+
+    case "error":
+      //  Error message present in contents. If "location" is present in the
+      //  "extra" mapping we encode that value in the message string so the
+      //  handler for this throw() can display the proper error context.
+      if (name) {
+        // We append the name of the tag that caused the error to be triggered.
+        contents += sprintf(" [Tag: %O]", name);
+      }
+      if (location && mappingp(location))
+        throw_error(contents + " [Offset: " + location->location + "]\n");
+      else
+        throw_error(contents + "\n");
+
+    case "<":
+      if (arrayp(extra) && sizeof(extra) && mappingp(extra[0]) &&
+          extra[0]->xmlns) {
+        XMLNSParser xmlns = extra[0]->xmlns;
+        attr = xmlns->Enter(attr);
+      }
+      return 0;
+
+    default:
+      return 0;
+    }
   }
 }
 
@@ -1130,12 +1347,203 @@ class SimpleNode
 {
   inherit AbstractSimpleNode;
   inherit VirtualNode;
+  inherit XMLParser;
+
+  // void create(string data, void|mapping predefined, void|ParseFlags flags)
+  // void create(int type, string name, mapping attr, string text)
+  void create(string|int type, void|mapping|string name,
+              void|ParseFlags|mapping attr, void|string text)
+  {
+      if(stringp(type)) {
+        ::create(XML_ROOT, "", 0, "");
+        parse(type, name, attr);
+      }
+      else {
+        ::create(type, name, attr, text);
+      }
+  }
 
   // Needed for cross-overloading
   SimpleNode low_clone()
   {
     return VirtualNode::low_clone();
   }
+}
+
+
+//! XML node with parent pointers.
+class Node
+{
+  inherit AbstractNode;
+  inherit VirtualNode;
+  inherit XMLParser;
+
+  // void create(string data, void|mapping predefined, void|ParseFlags flags)
+  // void create(int type, string name, mapping attr, string text)
+  void create(string|int type, void|mapping|string name,
+              void|ParseFlags|mapping attr, void|string text)
+  {
+      if(stringp(type)) {
+        ::create(XML_ROOT, "", 0, "");
+        parse(type, name, attr);
+      }
+      else {
+        ::create(type, name, attr, text);
+      }
+  }
+
+  // Needed for cross-overloading
+  Node low_clone()
+  {
+    return VirtualNode::low_clone();
+  }
+
+  //! Returns the name of the element node, or the nearest element above if
+  //! an attribute node.
+  string get_tag_name()
+  {
+    //  Fake ATTR nodes query their parent
+    return ((mNodeType == XML_ATTR) ? get_parent()->get_tag_name() : mTagName);
+  }
+
+  //! Returns the name of the attribute node.
+  string get_attr_name()
+  {
+    //  Only works for fake ATTR nodes
+    return ((mNodeType == XML_ATTR) ? mTagName : "");
+  }
+
+  //! Creates and returns an array of new nodes; they will not be
+  //! added as proper children to the parent node, but the parent
+  //! link in the nodes are set so that upwards traversal is made
+  //! possible.
+  array(Node) get_attribute_nodes()
+  {
+    Node   node;
+    int       node_num;
+
+    //  Return if already computed
+    if (mAttrNodes)
+      return (mAttrNodes);
+	
+    //  Only applicable for XML_ROOT and XML_ELEMENT
+    if ((mNodeType != XML_ROOT) && (mNodeType != XML_ELEMENT))
+      return ({ });
+
+    //  After creating these nodes we need to give them node numbers
+    //  which harmonize with the existing numbers. Fortunately we
+    //  inserted a gap in the series when first numbering the original
+    //  nodes.
+    mAttrNodes = ({ });
+    node_num = get_doc_order() + 1;
+    foreach(indices(mAttributes), string attr) {
+      node = AttributeNode(attr, mAttributes[attr]);
+      node->set_parent(this);
+      node->set_doc_order(node_num++);
+      mAttrNodes += ({ node });
+    }
+    return (mAttrNodes);
+  }  
+
+  //  Override AbstractNode::`[]
+  static Node `[](string|int pos)
+  {
+    //  If string indexing we find attributes which match the string
+    if (stringp(pos)) {
+      //  Make sure attribute node list is instantiated
+      array(Node) attr = get_attribute_nodes();
+	  
+      //  Find attribute name
+      foreach(attr, Node n)
+	if (n->get_attr_name() == pos)
+	  return (n);
+      return (0);
+    } else
+      //  Call inherited method
+      return (AbstractNode::`[](pos));
+  }
+}
+
+string report_error_context(string data, int ofs)
+{
+  string pre = reverse(data[..ofs - 1]);
+  string post = data[ofs..];
+  sscanf(pre, "%s\n", pre);
+  pre = reverse(pre);
+  sscanf(post, "%s\n", post);
+  return "\nContext: " + pre + post + "\n";
+}
+
+//
+// --- Compatibility below this point
+//
+
+//! Takes an XML string and produces a @[SimpleNode] tree.
+SimpleNode simple_parse_input(string data,
+			      void|mapping predefined_entities,
+			      ParseFlags|void flags)
+{
+  return SimpleNode(data, predefined_entities, flags);
+}
+
+//! Loads the XML file @[path], creates a @[SimpleNode] tree representation and
+//! returns the root node.
+SimpleNode simple_parse_file(string path,
+			     void|mapping predefined_entities,
+			     ParseFlags|void flags)
+{
+  Stdio.File  file = Stdio.File(path, "r");
+  string      data;
+  
+  //  Try loading file and parse its contents
+  if(catch {
+    data = file->read();
+    file->close();
+  })
+    throw_error("Could not read XML file %O.\n", path);
+  else
+    return simple_parse_input(data, predefined_entities, flags);
+}
+
+//! Takes an XML string and produces a node tree.
+//!
+//! @note
+//! @[flags] is not used for @[PARSE_WANT_ERROR_CONTEXT],
+//! @[PARSE_FORCE_LOWERCASE] or @[PARSE_ENABLE_NAMESPACES] since they
+//! are covered by the separate flag arguments.
+Node parse_input(string data, void|int(0..1) no_fallback,
+		 void|int(0..1) force_lowercase,
+		 void|mapping(string:string) predefined_entities,
+		 void|int(0..1) parse_namespaces,
+		 ParseFlags|void flags)
+{
+    if(no_fallback)
+        flags |= PARSE_WANT_ERROR_CONTEXT;
+
+    if(force_lowercase)
+        flags |= PARSE_FORCE_LOWERCASE;
+
+    if(parse_namespaces)
+        flags |= PARSE_ENABLE_NAMESPACES;
+
+    return Node(data, predefined_entities, flags);
+}
+  
+//! Loads the XML file @[path], creates a node tree representation and
+//! returns the root node.
+Node parse_file(string path, int(0..1)|void parse_namespaces)
+{
+  Stdio.File  file = Stdio.File(path, "r");
+  string      data;
+  
+  //  Try loading file and parse its contents
+  if(catch {
+    data = file->read();
+    file->close();
+  })
+    throw_error("Could not read XML file %O.\n", path);
+  else
+    return parse_input(data, 0, 0, 0, parse_namespaces);
 }
 
 // Convenience stuff for creation of @[SimpleNode]s.
@@ -1216,91 +1624,6 @@ class SimpleElementNode
   static void create(string name, mapping(string:string) attrs)
   {
     ::create(XML_ELEMENT, name, attrs, "");
-  }
-}
-
-//! XML node with parent pointers.
-class Node
-{
-  inherit AbstractNode;
-  inherit VirtualNode;
-
-  // Needed for cross-overloading
-  Node low_clone()
-  {
-    return VirtualNode::low_clone();
-  }
-
-//   int get_tag_code()
-//   {
-//     //  Fake ATTR nodes query their parent
-//     return ((mNodeType == XML_ATTR) ? get_parent()->get_tag_code() : mTagCode);
-//   }
-  
-
-  //! Returns the name of the element node, or the nearest element above if
-  //! an attribute node.
-  string get_tag_name()
-  {
-    //  Fake ATTR nodes query their parent
-    return ((mNodeType == XML_ATTR) ? get_parent()->get_tag_name() : mTagName);
-  }
-
-  //! Returns the name of the attribute node.
-  string get_attr_name()
-  {
-    //  Only works for fake ATTR nodes
-    return ((mNodeType == XML_ATTR) ? mTagName : "");
-  }
-
-  //! Creates and returns an array of new nodes; they will not be
-  //! added as proper children to the parent node, but the parent
-  //! link in the nodes are set so that upwards traversal is made
-  //! possible.
-  array(Node) get_attribute_nodes()
-  {
-    Node   node;
-    int       node_num;
-
-    //  Return if already computed
-    if (mAttrNodes)
-      return (mAttrNodes);
-	
-    //  Only applicable for XML_ROOT and XML_ELEMENT
-    if ((mNodeType != XML_ROOT) && (mNodeType != XML_ELEMENT))
-      return ({ });
-
-    //  After creating these nodes we need to give them node numbers
-    //  which harmonize with the existing numbers. Fortunately we
-    //  inserted a gap in the series when first numbering the original
-    //  nodes.
-    mAttrNodes = ({ });
-    node_num = get_doc_order() + 1;
-    foreach(indices(mAttributes), string attr) {
-      node = AttributeNode(attr, mAttributes[attr]);
-      node->set_parent(this);
-      node->set_doc_order(node_num++);
-      mAttrNodes += ({ node });
-    }
-    return (mAttrNodes);
-  }  
-
-  //  Override AbstractNode::`[]
-  static Node `[](string|int pos)
-  {
-    //  If string indexing we find attributes which match the string
-    if (stringp(pos)) {
-      //  Make sure attribute node list is instantiated
-      array(Node) attr = get_attribute_nodes();
-	  
-      //  Find attribute name
-      foreach(attr, Node n)
-	if (n->get_attr_name() == pos)
-	  return (n);
-      return (0);
-    } else
-      //  Call inherited method
-      return (AbstractNode::`[](pos));
   }
 }
 
@@ -1396,416 +1719,4 @@ class AttributeNode
   {
     ::create(XML_ATTR, name, 0, value);
   }
-}
-
-private SimpleNode|int(0..0)
-  simple_parse_xml_callback(string type, string name,
-			    mapping attr, string|array contents,
-			    mixed location, mixed ...extra)
-{
-  SimpleNode node;
-
-  switch (type) {
-  case "":
-  case "<![CDATA[":
-    //  Create text node
-    return SimpleTextNode(contents);
-
-  case "<!--":
-    //  Create comment node
-    return SimpleCommentNode(contents);
-
-  case "<?xml":
-    //  XML header tag
-    return SimpleHeaderNode(attr);
-
-  case "<?":
-    //  XML processing instruction
-    return SimplePINode(name, attr, contents);
-
-  case "<>":
-    //  Create new tag node.
-    if (arrayp(extra) && sizeof(extra) &&
-	mappingp(extra[0])) {
-      //  Convert tag and attribute names to lowercase
-      //  if requested.
-      if (extra[0]->force_lc) {
-	name = lower_case(name);
-	attr = mkmapping(map(indices(attr), lower_case), values(attr));
-      }
-      //  Parse namespace information of available.
-      if (extra[0]->xmlns) {
-	XMLNSParser xmlns = extra[0]->xmlns;
-	attr = xmlns->Enter(attr);
-	name = xmlns->Decode(name);
-	xmlns->Leave();
-      }
-    }
-    return SimpleElementNode(name, attr);
-
-  case ">":
-    //  Create tree node for this container
-    if (arrayp(extra) && sizeof(extra) && mappingp(extra[0])) {
-      //  Convert tag and attribute names to lowercase
-      //  if requested.
-      if (extra[0]->force_lc) {
-	name = lower_case(name);
-	attr = mkmapping(map(indices(attr), lower_case), values(attr));
-      }
-      //  Parse namespace information of available.
-      if (extra[0]->xmlns) {
-	XMLNSParser xmlns = extra[0]->xmlns;
-	name = xmlns->Decode(name);
-	xmlns->Leave();
-      }
-    }
-    node = SimpleElementNode(name, attr);
-	
-    //  Add children to our tree node. We need to merge consecutive text
-    //  children since two text elements can't be neighbors according to
-    //  the W3 spec. This is necessary since CDATA sections are
-    //  converted to text nodes which might need to be concatenated
-    //  with neighboring text nodes.
-    Node text_node;
-    int(0..1) modified;
-
-    foreach(contents; int i; Node child) {
-      if (child->get_node_type() == XML_TEXT) {
-	if (text_node) {
-	  //  Add this text string to the previous text node.
-	  text_node->_add_to_text (child->get_text());
-	  contents[i]=0;
-	  modified=1;
-	}
-	else
-	  text_node = child;
-      } else
-	text_node = 0;
-    }
-
-    if( modified )
-      contents -= ({ 0 });
-    node->replace_children( contents );
-    return (node);
-
-  case "error":
-    //  Error message present in contents. If "location" is present in the
-    //  "extra" mapping we encode that value in the message string so the
-    //  handler for this throw() can display the proper error context.
-    if (name) {
-      // We append the name of the tag that caused the error to be triggered.
-      contents += sprintf(" [Tag: %O]", name);
-    }
-    if (location && mappingp(location))
-      throw_error(contents + " [Offset: " + location->location + "]\n");
-    else
-      throw_error(contents + "\n");
-
-  case "<":
-    if (arrayp(extra) && sizeof(extra) && mappingp(extra[0]) &&
-	extra[0]->xmlns) {
-      XMLNSParser xmlns = extra[0]->xmlns;
-      attr = xmlns->Enter(attr);
-    }
-  case "<!DOCTYPE":
-  default:
-    return 0;
-  }
-}
-
-private Node|int(0..0)
-  parse_xml_callback(string type, string name,
-		     mapping attr, string|array contents,
-		     mixed location, mixed ...extra)
-{
-  Node node;
-
-  switch (type) {
-  case "":
-  case "<![CDATA[":
-    //  Create text node
-    return TextNode(contents);
-
-  case "<!--":
-    //  Create comment node
-    return CommentNode(contents);
-
-  case "<?xml":
-    //  XML header tag
-    return HeaderNode(attr);
-
-  case "<?":
-    //  XML processing instruction
-    return PINode(name, attr, contents);
-
-  case "<>":
-    //  Create new tag node.
-    if (arrayp(extra) && sizeof(extra) &&
-	mappingp(extra[0])) {
-      //  Convert tag and attribute names to lowercase
-      //  if requested.
-      if (extra[0]->force_lc) {
-	name = lower_case(name);
-	attr = mkmapping(map(indices(attr), lower_case), values(attr));
-      }
-      //  Parse namespace information if available.
-      if (extra[0]->xmlns) {
-	XMLNSParser xmlns = extra[0]->xmlns;
-	attr = xmlns->Enter(attr);
-	name = xmlns->Decode(name);
-	xmlns->Leave();
-      }
-    }
-    return ElementNode(name, attr);
-
-  case ">":
-    //  Create tree node for this container
-    if (arrayp(extra) && sizeof(extra) && mappingp(extra[0])) {
-      //  Convert tag and attribute names to lowercase
-      //  if requested.
-      if (extra[0]->force_lc) {
-	name = lower_case(name);
-	attr = mkmapping(map(indices(attr), lower_case), values(attr));
-      }
-      //  Parse namespace information of available.
-      if (extra[0]->xmlns) {
-	XMLNSParser xmlns = extra[0]->xmlns;
-	name = xmlns->Decode(name);
-	xmlns->Leave();
-      }
-    }
-    node = ElementNode(name, attr);
-	
-    //  Add children to our tree node. We need to merge consecutive text
-    //  children since two text elements can't be neighbors according to
-    //  the W3 spec. This is necessary since CDATA sections are
-    //  converted to text nodes which might need to be concatenated
-    //  with neighboring text nodes.
-    Node text_node;
-    foreach(contents, Node child) {
-      if (child->get_node_type() == XML_TEXT) {
-	if (text_node)
-	  //  Add this text string to the previous text node.
-	  text_node->_add_to_text (child->get_text());
-	else
-	  text_node = child;
-      } else {
-	//  Process buffered text before this child is added
-	if (text_node) {
-	  node->tmp_add_child(text_node);
-	  text_node = 0;
-	}
-	node->tmp_add_child(child);
-      }
-    }
-    if (text_node)
-      node->tmp_add_child(text_node);
-    return (node);
-
-  case "error":
-    //  Error message present in contents. If "location" is present in the
-    //  "extra" mapping we encode that value in the message string so the
-    //  handler for this throw() can display the proper error context.
-    if (name) {
-      // We append the name of the tag that caused the error to be triggered.
-      contents += sprintf(" [Tag: %O]", name);
-    }
-    if (location && mappingp(location))
-      throw_error(contents + " [Offset: " + location->location + "]\n");
-    else
-      throw_error(contents + "\n");
-
-  case "<":
-    if (arrayp(extra) && sizeof(extra) && mappingp(extra[0]) &&
-	extra[0]->xmlns) {
-      XMLNSParser xmlns = extra[0]->xmlns;
-      attr = xmlns->Enter(attr);
-    }
-  case "<!DOCTYPE":
-  default:
-    return 0;
-  }
-}
-
-string report_error_context(string data, int ofs)
-{
-  string pre = reverse(data[..ofs - 1]);
-  string post = data[ofs..];
-  sscanf(pre, "%s\n", pre);
-  pre = reverse(pre);
-  sscanf(post, "%s\n", post);
-  return "\nContext: " + pre + post + "\n";
-}
-
-//! Flags used together with @[simple_parse_input()] and
-//! @[simple_parse_file()].
-enum ParseFlags {
-  PARSE_WANT_ERROR_CONTEXT =		0x1,
-#define PARSE_WANT_ERROR_CONTEXT	0x1
-  PARSE_FORCE_LOWERCASE =		0x2,
-#define PARSE_FORCE_LOWERCASE		0x2
-  PARSE_ENABLE_NAMESPACES =		0x4,
-#define PARSE_ENABLE_NAMESPACES		0x4
-  // Negated flag for compatibility.
-  PARSE_DISALLOW_RXML_ENTITIES =	0x8,
-#define PARSE_DISALLOW_RXML_ENTITIES	0x8
-  
-  PARSE_COMPAT_ALLOW_ERRORS_7_2 =	0x10,
-#define PARSE_COMPAT_ALLOW_ERRORS_7_2	0x10
-  PARSE_COMPAT_ALLOW_ERRORS_7_6 =	0x20,
-#define PARSE_COMPAT_ALLOW_ERRORS_7_6	0x20
-  // The following exists for compatibility only.
-  PARSE_CHECK_ALL_ERRORS =		0,
-}
-
-//! Takes an XML string and produces a @[SimpleNode] tree.
-SimpleNode simple_parse_input(string data,
-			      void|mapping predefined_entities,
-			      ParseFlags|void flags)
-{
-  .Simple xp = .Simple();
-  SimpleNode mRoot;
-
-  if (!(flags & PARSE_DISALLOW_RXML_ENTITIES))
-    xp->allow_rxml_entities(1);
-
-  if (flags & PARSE_COMPAT_ALLOW_ERRORS_7_2)
-    xp->compat_allow_errors ("7.2");
-  else if (flags & PARSE_COMPAT_ALLOW_ERRORS_7_6)
-    xp->compat_allow_errors ("7.6");
-  
-  //  Init parser with predefined entities
-  if (predefined_entities)
-    foreach(indices(predefined_entities), string entity)
-      xp->define_entity_raw(entity, predefined_entities[entity]);
-  
-  // Construct tree from string
-  mixed err = catch
-  {
-    mapping(string:mixed) extras = ([]);
-    if (flags & PARSE_FORCE_LOWERCASE) {
-      extras->force_lc = 1;
-    }
-    if (flags & PARSE_ENABLE_NAMESPACES) {
-      extras->xmlns = XMLNSParser();
-    }
-    mRoot = SimpleRootNode();
-    catch( data=xp->autoconvert(data) );
-    foreach(xp->parse(data, simple_parse_xml_callback,
-		      sizeof(extras) && extras),
-	    SimpleNode child)
-      mRoot->add_child(child);
-  };
-
-  if(err)
-  {
-    //  If string msg is found we propagate the error. If error message
-    //  contains " [Offset: 4711]" we add the input data to the string.
-    if (stringp(err) && (flags & PARSE_WANT_ERROR_CONTEXT))
-    {
-      if (sscanf(err, "%s [Offset: %d]", err, int ofs) == 2)
-	err += report_error_context(data, ofs);
-    }
-    throw(err);
-  }
-  else
-    return mRoot;
-}
-  
-//! Loads the XML file @[path], creates a @[SimpleNode] tree representation and
-//! returns the root node.
-SimpleNode simple_parse_file(string path,
-			     void|mapping predefined_entities,
-			     ParseFlags|void flags)
-{
-  Stdio.File  file = Stdio.File(path, "r");
-  string      data;
-  
-  //  Try loading file and parse its contents
-  if(catch {
-    data = file->read();
-    file->close();
-  })
-    throw_error("Could not read XML file %O.\n", path);
-  else
-    return simple_parse_input(data, predefined_entities, flags);
-}
-
-//! Takes an XML string and produces a node tree.
-//!
-//! @note
-//! @[flags] is not used for @[PARSE_WANT_ERROR_CONTEXT],
-//! @[PARSE_FORCE_LOWERCASE] or @[PARSE_ENABLE_NAMESPACES] since they
-//! are covered by the separate flag arguments.
-Node parse_input(string data, void|int(0..1) no_fallback,
-		 void|int(0..1) force_lowercase,
-		 void|mapping(string:string) predefined_entities,
-		 void|int(0..1) parse_namespaces,
-		 ParseFlags|void flags)
-{
-  .Simple xp = .Simple();
-  Node mRoot;
-
-  if (!(flags & PARSE_DISALLOW_RXML_ENTITIES))
-    xp->allow_rxml_entities(1);
-
-  if (flags & PARSE_COMPAT_ALLOW_ERRORS_7_2)
-    xp->compat_allow_errors ("7.2");
-  else if (flags & PARSE_CHECK_ALL_ERRORS)
-    xp->compat_allow_errors (0);
-  
-  //  Init parser with predefined entities
-  if (predefined_entities)
-    foreach(indices(predefined_entities), string entity)
-      xp->define_entity_raw(entity, predefined_entities[entity]);
-  
-  // Construct tree from string
-  mixed err = catch
-  {
-    mapping(string:mixed) extras = ([]);
-    if (force_lowercase) {
-      extras->force_lc = 1;
-    }
-    if (parse_namespaces) {
-      extras->xmlns = XMLNSParser();
-    }
-    mRoot = RootNode();
-    catch( data=xp->autoconvert(data) );
-    foreach(xp->parse(data, parse_xml_callback,
-		      sizeof(extras) && extras),
-	    Node child)
-      mRoot->tmp_add_child(child);
-    mRoot->fix_tree();
-  };
-
-  if(err)
-  {
-    //  If string msg is found we propagate the error. If error message
-    //  contains " [Offset: 4711]" we add the input data to the string.
-    if (stringp(err) && no_fallback)
-    {
-      if (sscanf(err, "%s [Offset: %d]", err, int ofs) == 2)
-	err += report_error_context(data, ofs);
-    }
-    throw(err);
-  }
-  else
-    return mRoot;
-}
-  
-//! Loads the XML file @[path], creates a node tree representation and
-//! returns the root node.
-Node parse_file(string path, int(0..1)|void parse_namespaces)
-{
-  Stdio.File  file = Stdio.File(path, "r");
-  string      data;
-  
-  //  Try loading file and parse its contents
-  if(catch {
-    data = file->read();
-    file->close();
-  })
-    throw_error("Could not read XML file %O.\n", path);
-  else
-    return parse_input(data, 0, 0, 0, parse_namespaces);
 }
