@@ -1,3 +1,9 @@
+pike7.6 (7.6.56-1) unstable; urgency=low
+
+  * Release number bumped by export.pike.
+
+ -- Marek Habersack <grendel@debian.org>  Mon, 19 Dec 2005 5:05:38 +0100
+
 pike7.6 (7.6.55-2) unstable; urgency=low
 
   * Fix for -x module
