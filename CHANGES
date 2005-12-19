@@ -3,8 +3,8 @@ Changes since Pike 7.6.50
 
 Changes in Pike code:
 
-o Support chunked transfer encoding and handle unexpected multiple
-  headers in HTTP.Server.Request.
+o Added support for chunked transfer encoding and handle unexpected
+  multiple headers in HTTP.Server.Request.
 o Fixed some bugs in Protocol.HTTP.Server.HeaderParser.
 o Fixed decoding boolean datatype in Protocols.XMLRPC.
 
@@ -12,7 +12,7 @@ Other:
 
 o Added compatibility for more odbc drivers.
 o Optimized XML.Tree simplenode creation.
-o Backported fix for reference underflow in modify_shared_string()
+o Fixed reference underflow in modify_shared_string()
 o Fixed segfault when exiting uninitialized mutex keys.
 
 Build fixes:
@@ -20,6 +20,9 @@ Build fixes:
 o Fixed win32 compilation.
 o Fixed detection of SDL.Joystick on win32
 o Automaticly add Pike icon to win32 binary.
+o Fixed signal_handler compilation on OperBSD.
+o Fixed gcc 4.0 compatibility.
+o Added mmap PROT_EXEC support to MacOS X via MAP_ANON.
 
 
 Changes since Pike 7.6.24
