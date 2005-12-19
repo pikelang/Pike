@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.107 2005/10/05 09:49:39 grubba Exp $
+# $Id: configure.in,v 1.108 2005/12/19 20:25:44 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -8,7 +8,7 @@ AC_DEFINE(WITH_TERMIOS)
 
 AC_HAVE_HEADERS(sys/types.h sys/socket.h arpa/inet.h sys/socketvar.h \
   netinet/in.h poll.h sys/poll.h sys/uio.h sys/mman.h linux/mman.h sys/time.h \
-  sys/mount.h ustat.h sys/statfs.h sys/statvfs.h sys/vfs.h sys/param.h \
+  sys/param.h sys/mount.h ustat.h sys/statfs.h sys/statvfs.h sys/vfs.h \
   sys/stream.h sys/protosw.h netdb.h sys/sysproto.h winsock.h \
   direct.h sys/wait.h process.h sys/file.h net/netdb.h limits.h unistd.h \
   termios.h poll.h sys/poll.h sys/select.h sys/un.h netinet/tcp.h \
@@ -20,6 +20,10 @@ AC_HAVE_HEADERS(sys/types.h sys/socket.h arpa/inet.h sys/socketvar.h \
 /* Needed for <sys/socketvar.h> on Solaris 10. */
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+/* Needed for <sys/mount.h> on OpenBSD */
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
 #endif
 ])
 
