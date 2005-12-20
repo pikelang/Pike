@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tables.c,v 1.23 2005/12/07 23:13:43 marcus Exp $
+|| $Id: tables.c,v 1.24 2005/12/20 15:44:22 grubba Exp $
 */
 
 #include "iso2022.h"
@@ -16670,6 +16670,8 @@ const struct charset_def charset_map[] = {
   { "iso2intlrefversion", map_ISO_646_irv_1983, MODE_94 },
   { "iso42jisc62261978", map_JIS_C6226_1978, MODE_9494 },
   { "iso47bsviewdata", map_BS_viewdata, MODE_94 },
+  { "iso4873", map_ISO_646_irv_1983, MODE_94 },                       /* :: iso_4873 */
+  { "iso4873dv", map_ISO_646_irv_1983, MODE_94 },                     /* :: iso_4873.dv */
   { "iso49inis", map_INIS, MODE_94 },
   { "iso4unitedkingdom", map_BS_4730, MODE_94 },
   { "iso50inis8", map_INIS_8, MODE_94 },
@@ -16696,6 +16698,7 @@ const struct charset_def charset_map[] = {
   { "iso646fr1", map_NF_Z_62_010_1973, MODE_94 },                     /* :: iso646-fr1 */
   { "iso646gb", map_BS_4730, MODE_94 },                               /* :: iso646-gb */
   { "iso646hu", map_MSZ_7795_3, MODE_94 },                            /* :: iso646-hu */
+  { "iso646irv", map_ISO_646_irv_1983, MODE_94 },                     /* :: iso_646.irv */
   { "iso646irv1983", map_ISO_646_irv_1983, MODE_94 },                 /* :: iso_646.irv:1983 */
   { "iso646irv1991", map_ANSI_X3_4_1968, MODE_94 },                   /* :: iso_646.irv:1991 */
   { "iso646it", map_IT, MODE_94 },                                    /* :: iso646-it */
