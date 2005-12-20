@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Wix.pmod,v 1.2 2005/07/22 20:16:46 nilsson Exp $
+// $Id: Wix.pmod,v 1.3 2005/12/20 18:31:23 jonasw Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -155,6 +155,7 @@ class Directory
       }
     }
     if ((sizeof(base) > 8) || truncated) {
+      base = replace(base, " ", "_");
       int cnt;
       for (cnt = 0; cnt < 1000; cnt++) {
 	if (cnt < 10) {
