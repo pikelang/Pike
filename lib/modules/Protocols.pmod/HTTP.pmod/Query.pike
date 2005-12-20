@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.84 2005/10/08 19:10:19 mast Exp $
+// $Id: Query.pike,v 1.85 2005/12/20 17:37:18 grubba Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -568,7 +568,8 @@ this_program thread_request(string server, int port, string query,
 
    // prepare the request
 
-   errno = ok = protocol = headers = status_desc = status = datapos = 0;
+   errno = ok = protocol = this_program::headers = status_desc = status =
+     datapos = 0;
    buf = "";
 
    if (!data) data="";
