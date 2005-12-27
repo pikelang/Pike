@@ -421,10 +421,7 @@ void modify_fg(int state, ?GDK2.Color color)
   {
     struct object *o1=NULL;
     INT_TYPE state;
-    if (args==1)
-      get_all_args("modify_fg",args,"%i",&state);
-    else
-      get_all_args("modify_fg",args,"%i%o",&state,&o1);
+    get_all_args("modify_fg",args,"%i.%o",&state,&o1);
     gtk_widget_modify_fg(GTK_WIDGET(THIS->obj),
                 state,(GdkColor *)get_gdkobject(o1,color));
   }
@@ -439,10 +436,7 @@ void modify_bg(int state, ?GDK2.Color color)
   {
     struct object *o1=NULL;
     INT_TYPE state;
-    if (args==1)
-      get_all_args("modify_bg",args,"%i",&state);
-    else
-      get_all_args("modify_bg",args,"%i%o",&state,&o1);
+    get_all_args("modify_bg",args,"%i.%o",&state,&o1);
     gtk_widget_modify_bg(GTK_WIDGET(THIS->obj),
                 state,(GdkColor *)get_gdkobject(o1,color));
   }
@@ -457,10 +451,7 @@ void modify_text(int state, ?GDK2.Color color)
   {
     struct object *o1=NULL;
     INT_TYPE state;
-    if (args==1)
-      get_all_args("modify_text",args,"%i",&state);
-    else
-      get_all_args("modify_text",args,"%i%o",&state,&o1);
+    get_all_args("modify_text",args,"%i.%o",&state,&o1);
     gtk_widget_modify_text(GTK_WIDGET(THIS->obj),
                 state,(GdkColor *)get_gdkobject(o1,color));
   }
@@ -475,10 +466,7 @@ void modify_base(int state, ?GDK2.Color color)
   {
     struct object *o1=NULL;
     INT_TYPE state;
-    if (args==1)
-      get_all_args("modify_base",args,"%i",&state);
-    else
-      get_all_args("modify_base",args,"%i%o",&state,&o1);
+    get_all_args("modify_base",args,"%i.%o",&state,&o1);
     gtk_widget_modify_base(GTK_WIDGET(THIS->obj),
                 state,(GdkColor *)get_gdkobject(o1,color));
   }

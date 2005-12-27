@@ -432,15 +432,14 @@ int save(string filename, string type, ?string quality)
 //! are the only valid writable types at this time.
 //! Quality is only valid for jpeg images.
 {
+  /* FIXME: Should be save(string fn, string type, void|mapping options) */
+  /* FIXME: Shouldn't use strcmp but compare pike strings. */
   pgtk_verify_inited();
   {
-    char *filename,*type,*quality;
+    char *filename,*type,*quality=NULL;
     int res;
     GError *error=NULL;
-    if (args==2)
-      get_all_args("save",args,"%s%s",&filename,&type);
-    else
-      get_all_args("save",args,"%s%s%s",&filename,&type,&quality);
+    get_all_args("save",args,"%s%s.%s",&filename,&type,&quality);
     if (!strcmp(type,"jpeg")) {
       res=gdk_pixbuf_save(GDK_PIXBUF(THIS->obj),filename,type,&error,
 		"quality",quality,NULL);
@@ -448,11 +447,9 @@ int save(string filename, string type, ?string quality)
       res=gdk_pixbuf_save(GDK_PIXBUF(THIS->obj),filename,type,&error,NULL);
     }
     my_pop_n_elems(args);
-    if (!res) {
+    if (!res)
       Pike_error("Unable to save file %s: %s\n",filename,error->message);
-      push_int(1);
-    } else
-      push_int(0);
+    push_int(0);
   }
 }
 

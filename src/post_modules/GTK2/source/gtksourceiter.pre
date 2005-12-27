@@ -29,6 +29,8 @@ array backward_search(string str, int flags, ?GTK2.TextIter limit)
     struct object *o1;
     int res;
 
+    get_all_args("backward_search",args,"%s%i.%o",&str,&flags,&o1);
+
     match_start=g_malloc(sizeof(GtkTextIter));
     match_end=g_malloc(sizeof(GtkTextIter));
     if (match_start==NULL || match_end==NULL)
@@ -37,10 +39,6 @@ array backward_search(string str, int flags, ?GTK2.TextIter limit)
     gtk_text_buffer_get_start_iter(sb,match_start);
     gtk_text_buffer_get_end_iter(sb,match_end);
 
-    if (args>2)
-      get_all_args("backward_search",args,"%s%i%o",&str,&flags,&o1);
-    else
-      get_all_args("backward_search",args,"%s%i",&str,&flags);
     res=gtk_source_iter_backward_search((GtkTextIter *)THIS->obj,
 			str,flags,match_start,match_end,limit);
     my_pop_n_elems(args);
@@ -64,6 +62,8 @@ array forward_search(string str, int flags, ?GTK2.TextIter limit)
     struct object *o1;
     int res;
 
+    get_all_args("forward_search",args,"%s%i.%o",&str,&flags,&o1);
+
     match_start=g_malloc(sizeof(GtkTextIter));
     match_end=g_malloc(sizeof(GtkTextIter));
     if (match_start==NULL || match_end==NULL)
@@ -72,10 +72,6 @@ array forward_search(string str, int flags, ?GTK2.TextIter limit)
     gtk_text_buffer_get_start_iter(sb,match_start);
     gtk_text_buffer_get_end_iter(sb,match_end);
 
-    if (args>2)
-      get_all_args("forward_search",args,"%s%i%o",&str,&flags,&o1);
-    else
-      get_all_args("forward_search",args,"%s%i",&str,&flags);
     res=gtk_source_iter_forward_search((GtkTextIter *)THIS->obj,
 			str,flags,match_start,match_end,limit);
     my_pop_n_elems(args);

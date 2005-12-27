@@ -230,20 +230,15 @@ void set_cursor(GTK2.TreePath path, ?GTK2.TreeViewColumn focus_column,
 //! widget.  Please note that editing can only happen when the widget is 
 //! realized.
 {
+  struct object *o1,*o2=NULL;
+  INT_TYPE ed=0;
+
   pgtk_verify_inited();
-  if (args>1) {
-    struct object *o1,*o2;
-    INT_TYPE ed;
-    get_all_args("set_cursor",args,"%o%o%i",&o1,&o2,&ed);
-    gtk_tree_view_set_cursor(GTK_TREE_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1),
-			GTK_TREE_VIEW_COLUMN(get_gobject(o2)),ed);
-  } else {
-    struct object *o1;
-    get_all_args("set_cursor",args,"%o",&o1);
-    gtk_tree_view_set_cursor(GTK_TREE_VIEW(THIS->obj),
-			(GtkTreePath *)get_gobject(o1),NULL,0);
-  }
+
+  get_all_args("set_cursor",args,"%o.%o%i",&o1,&o2,&ed);
+  gtk_tree_view_set_cursor(GTK_TREE_VIEW(THIS->obj),
+                           (GtkTreePath *)get_gobject(o1),
+                           GTK_TREE_VIEW_COLUMN(get_gobject(o2)),ed);
   RETURN_THIS();
 }
 
@@ -266,16 +261,6 @@ void set_cursor_on_cell(GTK2.TreePath path, ?GTK2.TreeViewColumn focus_column,
     struct object *o1,*o2=NULL,*o3=NULL;
     INT_TYPE ed=0;
     get_all_args("set_cursor_on_cell",args,"%o.%o%i%o",&o1,&o2,&ed,&o3);
-/*
-    if (args==1)
-      get_all_args("set_cursor_on_cell",args,"%o",&o1);
-    else if (args==2)
-      get_all_args("set_cursor_on_cell",args,"%o%o",&o1,&o2);
-    else if (args==3)
-      get_all_args("set_cursor_on_cell",args,"%o%o%i",&o1,&o2,&ed);
-    else
-      get_all_args("set_cursor_on_cell",args,"%o%o%i%o",&o1,&o2,&ed,&o3);
-*/
     gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(THIS->obj),
 			(GtkTreePath *)get_gobject(o1),
 			GTK_TREE_VIEW_COLUMN(get_gobject(o2)),
@@ -445,12 +430,9 @@ GDK2.Rectangle get_cell_area(?GTK2.TreePath path, ?GTK2.TreeViewColumn column)
 {
   pgtk_verify_inited();
   {
-    struct object *o1=NULL,*o2=NULL;
+    struct object *o1,*o2=NULL;
     GdkRectangle *rect;
-    if (args==1)
-      get_all_args("get_cell_area",args,"%o",&o1);
-    else if (args==2)
-      get_all_args("get_cell_area",args,"%o%o",&o1,&o2);
+    get_all_args("get_cell_area",args,"%o.%o",&o1,&o2);
     rect=(GdkRectangle *)g_malloc(sizeof(GdkRectangle));
     if (rect==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_cell_area",sizeof(GdkRectangle));
@@ -473,12 +455,9 @@ GDK2.Rectangle get_background_area(?GTK2.TreePath path,
 {
   pgtk_verify_inited();
   {
-    struct object *o1=NULL,*o2=NULL;
+    struct object *o1,*o2=NULL;
     GdkRectangle *rect;
-    if (args==1)
-      get_all_args("get_background_area",args,"%o",&o1);
-    else if (args==2)
-      get_all_args("get_background_area",args,"%o%o",&o1,&o2);
+    get_all_args("get_background_area",args,"%o.%o",&o1,&o2);
     rect=(GdkRectangle *)g_malloc(sizeof(GdkRectangle));
     if (rect==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_background_area",sizeof(GdkRectangle));

@@ -37,10 +37,7 @@ void create(?GTK2.Adjustment|mapping(string:mixed)|void hadjustment_or_props,
     if (Pike_sp[-args].type==PIKE_T_OBJECT) {
       struct object *o1,*o2=NULL;
       GtkWidget *gs;
-      if (args==2)
-	get_all_args("create",args,"%o%o",&o1,&o2);
-      else
-	get_all_args("create",args,"%o",&o1);
+      get_all_args("create",args,"%o.%o",&o1,&o2);
       gs=gtk_scrolled_window_new(
 			GTK_ADJUSTMENT(get_gobject(o1)),
 			GTK_ADJUSTMENT(get_gobject(o2)));

@@ -23,10 +23,8 @@ void create(string|mapping(string:mixed)|void title,
       char *label=NULL;
       struct object *o1=NULL;
 
-      if (args=2)
-	get_all_args("create",args,"%s%o",&label,&o1);
-      else
-	get_all_args("create",args,"%s",&label);
+      get_all_args("create",args,"%s.%o",&label,&o1);
+
       if (o1) {
 #ifdef HAVE_GTK24
 	if (label) {

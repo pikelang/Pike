@@ -182,10 +182,7 @@ GTK2.TreeIter insert_before(?GTK2.TreeIter parent, ?GTK2.TreeIter sibling)
     struct object *o1,*o2;
     GtkTreeIter *gt;
     o1=o2=NULL;
-    if (args==1)
-      get_all_args("insert_before",args,"%o",&o1);
-    else if (args==2)
-      get_all_args("insert_before",args,"%o%o",&o1,&o2);
+    get_all_args("insert_before",args,"%o.%o",&o1,&o2);
     gt=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
     if (gt==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("insert_before",sizeof(GtkTreeIter));
@@ -208,10 +205,7 @@ GTK2.TreeIter insert_after(?GTK2.TreeIter parent, ?GTK2.TreeIter sibling)
     struct object *o1,*o2;
     GtkTreeIter *gt;
     o1=o2=NULL;
-    if (args==1)
-      get_all_args("insert_after",args,"%o",&o1);
-    else if (args==2)
-      get_all_args("insert_after",args,"%o%o",&o1,&o2);
+    get_all_args("insert_after",args,"%o.%o",&o1,&o2);
     gt=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
     if (gt==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("insert_after",sizeof(GtkTreeIter));
@@ -231,11 +225,9 @@ GTK2.TreeIter prepend(?GTK2.TreeIter parent)
 {
   pgtk_verify_inited();
   {
-    struct object *o1;
+    struct object *o1=NULL;
     GtkTreeIter *gt;
-    o1=NULL;
-    if (args)
-      get_all_args("prepend",args,"%o",&o1);
+    get_all_args("prepend",args,".%o",&o1);
     gt=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
     if (gt==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("prepend",sizeof(GtkTreeIter));
@@ -253,11 +245,9 @@ GTK2.TreeIter append(?GTK2.TreeIter parent)
 {
   pgtk_verify_inited();
   {
-    struct object *o1;
+    struct object *o1=NULL;
     GtkTreeIter *gt;
-    o1=NULL;
-    if (args)
-      get_all_args("append",args,"%o",&o1);
+    get_all_args("append",args,".%o",&o1);
     gt=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
     if (gt==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("append",sizeof(GtkTreeIter));
@@ -340,12 +330,7 @@ void move_before(GTK2.TreeIter iter, ?GTK2.TreeIter position)
   {
     struct object *o1,*o2;
     o2=NULL;
-    if (args<1)
-      Pike_error("Expected at least 1 arg, got 0\n");
-    if (args==1)
-      get_all_args("move_before",args,"%o",&o1);
-    else
-      get_all_args("move_before",args,"%o%o",&o1,&o2);
+    get_all_args("move_before",args,"%o.%o",&o1,&o2);
     gtk_tree_store_move_before(GTK_TREE_STORE(THIS->obj),
 	(GtkTreeIter *)get_pgobject(o1,pgtk_tree_iter_program),
 	(GtkTreeIter *)get_pgobject(o2,pgtk_tree_iter_program));
@@ -363,12 +348,7 @@ void move_after(GTK2.TreeIter iter, ?GTK2.TreeIter position)
   {
     struct object *o1,*o2;
     o2=NULL;
-    if (args<1)
-      Pike_error("Expected at least 1 arg, got 0\n");
-    if (args==1)
-      get_all_args("move_after",args,"%o",&o1);
-    else
-      get_all_args("move_after",args,"%o%o",&o1,&o2);
+    get_all_args("move_after",args,"%o.%o",&o1,&o2);
     gtk_tree_store_move_after(GTK_TREE_STORE(THIS->obj),
 	(GtkTreeIter *)get_pgobject(o1,pgtk_tree_iter_program),
 	(GtkTreeIter *)get_pgobject(o2,pgtk_tree_iter_program));

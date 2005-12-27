@@ -36,10 +36,7 @@ mapping(string:int) get_size(GTK2.Widget widget, ?GDK2.Rectangle cell_area)
   {
     struct object *o1,*o2=NULL;
     gint x_offset,y_offset,width,height;
-    if (args==1)
-      get_all_args("get_size",args,"%o",&o1);
-    else
-      get_all_args("get_size",args,"%o%o",&o1,&o2);
+    get_all_args("get_size",args,"%o.%o",&o1,&o2);
 #ifdef HAVE_GTK_BETA
     gtk_cell_renderer_get_size(GTK_CELL_RENDERER(THIS->obj),
 		GTK_WIDGET(get_gobject(o1)),
