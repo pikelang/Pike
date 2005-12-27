@@ -160,10 +160,7 @@ void set_pixmap(int row, int col, GDK.Pixmap image, GDK.Bitmap mask )
   struct object *a, *b=0;
   GdkPixmap *img;
   GdkBitmap *mask = NULL;
-  if(args == 3)
-    get_all_args("set_pixmap", args, "%i%i%o", &y,&x,&a );
-  else
-    get_all_args("set_pixmap", args, "%i%i%o%o", &y,&x,&a,&b );
+  get_all_args("set_pixmap", args, "%i%i%o.%o", &y,&x,&a,&b );
 
   img = get_gdkobject( a, pixmap );
   if(b) mask = get_gdkobject( b, bitmap );
@@ -212,10 +209,7 @@ void set_pixtext(int row, int column, string text,
   char *t;
   GdkPixmap *img;
   GdkBitmap *mask = NULL;
-  if(args == 5)
-    get_all_args("set_pixmap", args, "%i%i%s%i%o", &y,&x, &t, &s, &a );
-  else
-    get_all_args("set_pixmap", args, "%i%i%s%i%o%o", &y,&x, &t, &s,&a,&b );
+  get_all_args("set_pixtext", args, "%i%i%s%i%o.%o", &y,&x, &t, &s,&a,&b );
 
   img = get_gdkobject( a, pixmap );
   if(b) mask = get_gdkobject( b, bitmap );
