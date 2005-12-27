@@ -70,7 +70,7 @@ GTK2.TreeIter get_iter_from_string(string path)
     GtkTreeIter *iter;
     int res;
     const gchar *s;
-    get_all_args("get_iter",args,"%s",&s);
+    get_all_args("get_iter_from_string",args,"%s",&s);
 
     iter=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
     if (iter==NULL)

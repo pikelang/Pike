@@ -145,7 +145,7 @@ void set_previous_color(mapping(string:int) colors)
     struct mapping *m;
     struct svalue *sv;
     GdkColor color;
-    get_all_args("set_current_color",args,"%m",&m);
+    get_all_args("set_previous_color",args,"%m",&m);
     sv=simple_mapping_string_lookup(m,"pixel");
     if (sv)
       color.pixel=PGTK_GETINT(sv);
