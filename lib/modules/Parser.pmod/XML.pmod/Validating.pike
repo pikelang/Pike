@@ -283,7 +283,8 @@ static private mixed validate(string kind, string name, mapping attributes,
    case "<":
    case "<>":
      if(!__element_content[name])
-       return callback("error", 0, 0, "Element not declared.",
+       return callback("error", 0, 0, sprintf("Element %O not declared.",
+                                              name),
 		       info, @extra);
      if(!sizeof(__element_stack))
        if(name != __root_element_name)
