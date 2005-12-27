@@ -140,7 +140,7 @@ mixed signal_connect_new(string signal,
     push_int( 0 );
     args++;
   }
-  get_all_args("signal_connect", args, "%s%*%*", &a, &tmp1, &tmp2 );
+  get_all_args("signal_connect_new", args, "%s%*%*", &a, &tmp1, &tmp2 );
 
   assign_svalue_no_free( &b->cb, tmp1 );
   assign_svalue_no_free( &b->args, tmp2 );
