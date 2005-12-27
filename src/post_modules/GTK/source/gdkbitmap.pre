@@ -15,16 +15,22 @@ void create(int|Image.Image xsize_or_image, int|void ysize, string|void bitmap)
   pgtk_verify_not_inited();
   if(args == 3)
   {
-    get_all_args("create", args, "%i%i%s", &x, &y, &d );
+    struct pike_string *str;
+    get_all_args("create", args, "%i%i%n", &x, &y, &str );
+    if( str->len*8 < x*y )
+      Pike_error("Too short string.\n");
+    d = str->str;
   } else if(args==1) {
     struct object *o;
+    struct pike_string *str;
     get_all_args("create", args, "%o", &o );
     apply(o, "xsize", 0);  get_all_args("internal", 1, "%i", &x ); pop_stack();
     apply(o, "ysize", 0);  get_all_args("internal", 1, "%i", &y ); pop_stack();
 
     /* Now we have the image size.. Lets create the bitmap... */
     apply(o, "tobitmap", 0);
-    get_all_args( "internal", 1, "%s", &d );
+    get_all_args( "internal", 1, "%n", &str );
+    d = str->str;
     args=2; /* evil me.. */
   } else {
     Pike_error("Wrong number of arguments to GDK.Bitmap()\n");
