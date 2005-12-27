@@ -423,10 +423,7 @@ GTK2.TextMark create_mark(GTK2.TextIter where,
     INT_TYPE left;
     const gchar *mark_name=NULL;
     GtkTextMark *gtm;
-    if (args==2)
-      get_all_args("create_mark",args,"%o%i",&o1,&left);
-    else
-      get_all_args("create_mark",args,"%o%i%s",&o1,&left,&mark_name);
+    get_all_args("create_mark",args,"%o%i.%s",&o1,&left,&mark_name);
     gtm=gtk_text_buffer_create_mark(GTK_TEXT_BUFFER(THIS->obj),
 	mark_name,(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),left);
     my_pop_n_elems(args);
@@ -808,7 +805,7 @@ GTK2.TextIter get_iter_at_child_anchor(GTK2.TextChildAnchor anchor)
   {
     GtkTextIter *gti;
     struct object *o1;
-    get_all_args("get_iter_at_mark",args,"%o",&o1);
+    get_all_args("get_iter_at_child_anchor",args,"%o",&o1);
     gti=g_malloc(sizeof(GtkTextIter));
     if (gti==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_child_anchor",sizeof(GtkTextIter));
@@ -900,14 +897,6 @@ void paste_clipboard(GTK2.Clipboard clipboard, ?int default_editable,
   {
     struct object *o1,*o2=NULL;
     INT_TYPE defed=0;
-/*
-    if (args==1)
-      get_all_args("paste_clipboard",args,"%o",&o1);
-    else if (args==2)
-      get_all_args("paste_clipboard",args,"%o%i",&o1,&defed);
-    else
-      get_all_args("paste_clipboard",args,"%o%i%o",&o1,&defed,&o2);
-*/
     get_all_args("paste_clipboard",args,"%o.%i%o",&o1,&defed,&o2);
     gtk_text_buffer_paste_clipboard(GTK_TEXT_BUFFER(THIS->obj),
 		GTK_CLIPBOARD(get_gobject(o1)),
