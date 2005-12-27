@@ -135,19 +135,15 @@ void set_tag_style(string id, ?mapping(string:mixed) style)
 //! Sets the style of the tag id.  If style is omitted, this function will
 //! restore the default style.
 {
+  char *id;
+  struct mapping *m=NULL;
+  GtkSourceTagStyle *sts;
+
   pgtk_verify_inited();
-  if (args==1) {
-    char *id;
-    get_all_args("set_tag_style",args,"%s",&id);
-    gtk_source_language_set_tag_style(GTK_SOURCE_LANGUAGE(THIS->obj),id,NULL);
-  } else {
-    char *id;
-    struct mapping *m;
-    GtkSourceTagStyle *sts;
+  get_all_args("set_tag_style",args,"%s.%m",&id,&m);
+
+  if (m) {
     struct svalue *sv;
-    get_all_args("set_tag_style",args,"%s%m",&id,&m);
-    if (m==NULL)
-      Pike_error("No mapping.\n");
     sts=gtk_source_tag_style_new();
     if (sts==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("set_bracket_match_style",sizeof(GtkSourceTagStyle));
@@ -179,9 +175,13 @@ void set_tag_style(string id, ?mapping(string:mixed) style)
     sv=simple_mapping_string_lookup(m,"strikethrough");
     if (sv)
       sts->strikethrough=PGTK_GETINT(sv);
-    gtk_source_language_set_tag_style(GTK_SOURCE_LANGUAGE(THIS->obj),id,sts);
-    gtk_source_tag_style_free(sts);
   }
+
+  gtk_source_language_set_tag_style(GTK_SOURCE_LANGUAGE(THIS->obj),id,sts);
+
+  if(sts)
+    gtk_source_tag_style_free(sts);
+
   RETURN_THIS();
 }
 
