@@ -12,15 +12,15 @@ void create(int x, int y, int width, int height)
   INT_TYPE x,y,w,h;
   pgtk_verify_setup();
   pgtk_verify_not_inited();
-  THIS->obj=(void *)(r=g_malloc(sizeof(GdkRectangle)));
+  THIS->obj=(void *)(r=(GdkRectangle *)g_malloc(sizeof(GdkRectangle)));
   if (r==NULL)
     SIMPLE_OUT_OF_MEMORY_ERROR("",sizeof(GdkRectangle));
-  get_all_args("GDK2.Rectangle",args,"%i%i%i%i",&x,&y,&w,&h);
+  get_all_args("create",args,"%i%i%i%i",&x,&y,&w,&h);
   r->x=x;
   r->y=y;
   r->width=w;
   r->height=h;
-//  RETURN_THIS();
+  my_pop_n_elems(args);
 }
 
 void set(int x, int y, int width, int height )
@@ -28,7 +28,7 @@ void set(int x, int y, int width, int height )
 {
   GdkRectangle *r=(GdkRectangle *)THIS->obj;
   INT_TYPE x,y,w,h;
-  get_all_args("GDK2.Rectangle",args, "%i%i%i%i",&x,&y,&w,&h);
+  get_all_args("set",args, "%i%i%i%i",&x,&y,&w,&h);
   r->x=x;
   r->y=y;
   r->width=w;
