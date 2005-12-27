@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.177 2005/11/12 20:21:36 nilsson Exp $
+|| $Id: efuns.c,v 1.178 2005/12/27 21:41:34 nilsson Exp $
 */
 
 #include "global.h"
@@ -163,10 +163,7 @@ static void f_listxattr(INT32 args)
   int do_free = 0;
   int nofollow = 0;
   ssize_t res;
-  if( args > 1)
-      get_all_args( "listxattr", args, "%s%d", &name, &nofollow );
-  else
-      get_all_args( "listxattr", args, "%s", &name );
+  get_all_args( "listxattr", args, "%s.%d", &name, &nofollow );
 
   THREADS_ALLOW();
   do {
@@ -243,10 +240,7 @@ static void f_getxattr(INT32 args)
   ssize_t res;
   char *name, *file;
   int nofollow=0;
-  if( args > 2 )
-      get_all_args( "getxattr", args, "%s%s%d", &file, &name, &nofollow );
-  else
-      get_all_args( "getxattr", args, "%s%s", &file, &name );
+  get_all_args( "getxattr", args, "%s%s.%d", &file, &name, &nofollow );
 
   THREADS_ALLOW();
   do {
@@ -312,10 +306,7 @@ static void f_removexattr( INT32 args )
   char *name, *file;
   int nofollow=0, rv;
   
-  if( args > 2)
-    get_all_args( "removexattr", args, "%s%s%d", &file, &name, &nofollow );
-  else
-    get_all_args( "removexattr", args, "%s%s", &file, &name );
+  get_all_args( "removexattr", args, "%s%s.%d", &file, &name, &nofollow );
 
   THREADS_ALLOW();
   if (nofollow) {
@@ -371,10 +362,7 @@ static void f_setxattr( INT32 args )
   int flags;
   int rv;
   int nofollow=0;
-  if( args > 4 )
-      get_all_args( "setxattr", args, "%s%s%S%d%d", &file, &ind, &val, &flags, &nofollow );
-  else
-      get_all_args( "setxattr", args, "%s%s%S%d", &file, &ind, &val, &flags );
+  get_all_args( "setxattr", args, "%s%s%S%d.%d", &file, &ind, &val, &flags, &nofollow );
 
   THREADS_ALLOW();
   if (nofollow) {
@@ -1109,9 +1097,9 @@ void f_get_dir(INT32 args)
   VALID_FILE_IO("get_dir","read");
 
 #ifdef __NT__
-  get_all_args("get_dir",args,".%W",&str);
+  get_all_args("get_dir",args,".%T",&str);
 #else /* !__NT__ */
-  get_all_args("get_dir",args,".%S",&str);
+  get_all_args("get_dir",args,".%N",&str);
 #endif /* __NT__ */
 
   if(!str) {

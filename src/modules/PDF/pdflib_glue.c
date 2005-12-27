@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pdflib_glue.c,v 1.13 2004/10/07 22:49:58 nilsson Exp $
+|| $Id: pdflib_glue.c,v 1.14 2005/12/27 21:42:17 nilsson Exp $
 */
 
 #include "global.h"
@@ -145,8 +145,7 @@ static void pdf_begin_page(INT32 args)
    struct pdf_storage *this=THIS;
    FLOAT_TYPE w=a4_width,h=a4_height;
 
-   if (args)
-      get_all_args("begin_page",args,"%f%f",&w,&h);
+   get_all_args("begin_page",args,".%f%f",&w,&h);
 
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
@@ -182,8 +181,7 @@ static void pdf_get_value(INT32 args)
    FLOAT_TYPE m=0.0;
    char *s;
 
-   if (args==1) get_all_args("get_value",args,"%s",&s);
-   else get_all_args("get_value",args,"%s%F",&s,&m);
+   get_all_args("get_value",args,"%s.%F",&s,&m);
 
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
@@ -197,10 +195,10 @@ static void pdf_get_value(INT32 args)
 static void pdf_set_value(INT32 args)
 {
    struct pdf_storage *this=THIS;
-   FLOAT_TYPE m=0.0;
+   FLOAT_TYPE m;
    char *s;
 
-   get_all_args("set_value",args,"%s%F",&s);
+   get_all_args("set_value",args,"%s%F",&s,&m);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    THREADS_ALLOW();
@@ -220,8 +218,7 @@ static void pdf_get_parameter(INT32 args)
    FLOAT_TYPE m=0.0;
    char *s;
 
-   if (args==1) get_all_args("get_parameter",args,"%s",&s);
-   else get_all_args("get_parameter",args,"%s%F",&s,&m);
+   get_all_args("get_parameter",args,"%s.%F",&s,&m);
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    push_text(PDF_get_parameter(this->pdf,s,(float)m));
@@ -271,25 +268,14 @@ static void pdf_set_info(INT32 args)
 static void pdf_findfont(INT32 args)
 {
    struct pdf_storage *this=THIS;
-   char *encoding="host";
+   char *encoding=NULL;
    int embed=0;
    int n;
    char *fontname;
 
-   get_all_args("findfont",args,"%s",&fontname);
-   if (args>=2) {
-      if (sp[1-args].type==T_STRING && 
-	  !sp[1-args].u.string->size_shift)
-	 encoding=sp[1-args].u.string->str;
-      else if (sp[1-args].type!=T_INT || sp[-args].u.integer)
-	 SIMPLE_BAD_ARG_ERROR("findfont",2,"8 bit string or void");
-   }
-   if (args>=3) {
-      if (sp[2-args].type==T_INT)
-	 embed=(int)sp[2-args].u.integer;
-      else
-	 SIMPLE_BAD_ARG_ERROR("findfont",3,"int or void");
-   }
+   get_all_args("findfont",args,"%s.%s%d",&fontname,&encoding,&embed);
+   if(!encoding)
+     encoding="host";
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    THREADS_ALLOW();
@@ -394,12 +380,10 @@ static void pdf_show_boxed(INT32 args)
    char *text=NULL,*mode=NULL,*feature="";
    FLOAT_TYPE x=0.0,y=0.0,width=0.0,height=0.0;
    INT_TYPE res=0;
-   if (args>=7)
-      get_all_args("show_boxed",args,"%s%F%F%F%F%s%s",
-		   &text,&x,&y,&width,&height,&mode,&feature);
-   else
-      get_all_args("show_boxed",args,"%s%F%F%F%F%s",
-		   &text,&x,&y,&width,&height,&mode);
+
+   get_all_args("show_boxed",args,"%s%F%F%F%F%s.%s",
+                &text,&x,&y,&width,&height,&mode,&feature);
+
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    res=PDF_show_boxed(this->pdf,text,(float)x,(float)y,(float)width,(float)height,mode,feature);
@@ -821,21 +805,11 @@ static void pdf_open_image_file(INT32 args)
 {
    struct pdf_storage *this=THIS;
    INT_TYPE res=0,intparam=0;
-   char *type=NULL,*filename=NULL,*stringparam="";
-   get_all_args("open_image_file",args,"%s%s",&type,&filename);
-   if (args>=3) {
-      if (sp[2-args].type==T_STRING && 
-	  !sp[2-args].u.string->size_shift)
-	 stringparam=sp[2-args].u.string->str;
-      else if (sp[2-args].type!=T_INT || sp[-args].u.integer)
-	 SIMPLE_BAD_ARG_ERROR("open_image_file",3,"8 bit string or void");
-   }
-   if (args>=4) {
-      if (sp[3-args].type==T_INT)
-	 intparam=(int)sp[3-args].u.integer;
-      else
-	 SIMPLE_BAD_ARG_ERROR("findfont",4,"int or void");
-   }
+   char *type=NULL,*filename=NULL,*stringparam=NULL;
+   get_all_args("open_image_file",args,"%s%s.%s%d",&type,
+                &filename,&stringparam,&intoaram);
+   if (!stringparam)
+     stringparam="";
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    res=PDF_open_image_file(this->pdf,type,filename,stringparam,(int)intparam);
