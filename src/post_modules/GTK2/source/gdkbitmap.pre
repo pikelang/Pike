@@ -12,12 +12,13 @@ void create(int|Image.Image xsize_or_image, int|void ysize, string|void bitmap)
 //! Argument is either an Image.image object, or {xsisze,ysize,xbitmapdata}.
 {
   INT_TYPE x, y;
-  char *d;
+  struct pike_string *d;
+
   pgtk_verify_setup();
   pgtk_verify_not_inited();
   if (args==3) {
-    get_all_args("create",args,"%i%i%s",&x,&y,&d);
-    if(x*y > Pike_sp[2-args].u.string->len)
+    get_all_args("create",args,"%i%i%n",&x,&y,&d);
+    if(d->len*8 < x*y)
       Pike_error("Bitmap string is too short\n");
   } else if (args==1) {
     struct object *o;
@@ -27,13 +28,13 @@ void create(int|Image.Image xsize_or_image, int|void ysize, string|void bitmap)
 
     /* Now we have the image size.. Lets create the bitmap... */
     apply(o,"tobitmap",0);
-    get_all_args("internal",1,"%s",&d);
+    get_all_args("internal",1,"%n",&d);
     args=2; /* evil me.. */
   } else {
     Pike_error("Wrong number of arguments to GDK2.Bitmap()\n");
   }
 
-  THIS->obj=(void *)gdk_bitmap_create_from_data(0,d,x,y);
+  THIS->obj=(void *)gdk_bitmap_create_from_data(0,d->str,x,y);
   if (!THIS->obj)
     Pike_error("Failed to create bitmap\n");
   my_pop_n_elems(args);
