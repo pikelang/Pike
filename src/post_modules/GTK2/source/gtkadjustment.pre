@@ -58,22 +58,6 @@ void create(float|mapping(string:mixed)|void value_or_props,
     if (Pike_sp[-args].type==PIKE_T_FLOAT) {
       FLOAT_TYPE val,lower,upper,step_inc,page_inc,page_size;
       val=lower=upper=step_inc=page_inc=page_size=0.0;
-/*
-      if (args==6)
-	get_all_args("create",args,"%f%f%f%f%f%f",&val,&lower,&upper,
-			&step_inc,&page_inc,&page_size);
-      else if (args==5)
-	get_all_args("create",args,"%f%f%f%f%f",&val,&lower,&upper,
-			&step_inc,&page_inc);
-      else if (args==4)
-	get_all_args("create",args,"%f%f%f%f",&val,&lower,&upper,&step_inc);
-      else if (args==3)
-	get_all_args("create",args,"%f%f%f",&val,&lower,&upper);
-      else if (args==2)
-	get_all_args("create",args,"%f%f",&val,&lower);
-      else
-	get_all_args("create",args,"%f",&val);
-*/
       get_all_args("create",args,"%f.%f%f%f%f%f",&val,&lower,&upper,
 			&step_inc,&page_inc,&page_size);
       ga=gtk_adjustment_new(val,lower,upper,step_inc,page_inc,page_size);
