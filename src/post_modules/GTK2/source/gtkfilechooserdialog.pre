@@ -54,7 +54,6 @@ void create(string title, int|GTK2.Window parent, int mode,
   if (a->size>5)
     Pike_error("Too many buttons.\n");
   for (i=0; i<a->size; i++) {
-    fprintf(stderr,"i==%d\n",i);
     struct array *b;
     gchar *s2;
     INT_TYPE *m1;
