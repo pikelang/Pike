@@ -22,7 +22,7 @@ void create(GDK2.Window|int parent, mapping|void attributes)
   {
     GdkWindow *w;
     INT_TYPE id;
-    get_all_args("GdkWindow",args,"%i",&id);
+    get_all_args("create",args,"%i",&id);
     w=gdk_window_foreign_new(id);
     THIS->obj=G_OBJECT(w);
     if (!THIS->obj)
@@ -34,7 +34,7 @@ void create(GDK2.Window|int parent, mapping|void attributes)
     GdkWindow *w;
     long mask=0;
     MEMSET(&attrs,0,sizeof(attrs));
-    get_all_args("GdkWindow",args,"%o%m",&parent,&m);
+    get_all_args("create",args,"%o%m",&parent,&m);
 
 #define GET_ARG(x,y,z) pgtk_get_mapping_arg( m, #x, y, z, &attrs.x, &mask, sizeof(attrs.x))
 
@@ -363,12 +363,7 @@ mapping get_property(GDK2.Atom atom, int|void offset, int|void delete_when_done)
   struct object *o;
   INT_TYPE offset=0;
   INT_TYPE delete_when_done=0;
-  if (args==3)
-    get_all_args("get_property",args,"%o%i%i",&o,&offset,&delete_when_done);
-  else if (args==2)
-    get_all_args("get_property",args,"%o%i",&o,&offset);
-  else
-    get_all_args("get_property",args,"%o",&o);
+  get_all_args("get_property",args,"%o.%i%i",&o,&offset,&delete_when_done);
 
   if (gdk_property_get(GDK_WINDOW(THIS->obj),
                        get_gdkatom(o),
@@ -444,11 +439,7 @@ void set_background(GDK2.Color|GDK2.Pixmap to)
 //! The argument is either a GDK2.Pixmap or a GDK2.Color object.
 {
   struct object *o;
-#if PIKE_SECURITY
-  get_all_args("set_background",args,"%O",&o);
-#else
   get_all_args("set_background",args,"%o",&o);
-#endif
 
 /*   gdk_error_trap_push(); */
   if (!o)
