@@ -46,7 +46,7 @@ void create(function(Request:void) _callback,
    if(certificate)
      port->set_certificate(certificate);
 
-   if (!port->bind(portno,new_connection,interface))
+   if (!port->bind(portno,new_connection,[string]interface))
       error("HTTP.Server.SSLPort: failed to bind port %s%d: %s\n",
 	    interface?interface+":":"",
 	    portno,strerror(port->errno()));
@@ -142,12 +142,12 @@ Version ::= INTEGER
   }
 
   //!
-  void set_certificate(string|array certificate)
+  void set_certificate(string|array(string) certificate)
   {
     if(arrayp(certificate))
-      certificates = certificate;
+      certificates = [array(string)]certificate;
     else
-      certificates = ({ certificate });
+      certificates = ({ [string]certificate });
   }
 
   void create()
