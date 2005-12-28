@@ -72,13 +72,10 @@ static void new_connection()
 //!
 class MySSLPort
 {
-#pike __REAL_VERSION__
 
-import Stdio;
+  inherit SSL.sslport;
 
-inherit SSL.sslport;
-
-string my_certificate = MIME.decode_base64(
+  string my_certificate = MIME.decode_base64(
   "MIIBxDCCAW4CAQAwDQYJKoZIhvcNAQEEBQAwbTELMAkGA1UEBhMCREUxEzARBgNV\n"
   "BAgTClRodWVyaW5nZW4xEDAOBgNVBAcTB0lsbWVuYXUxEzARBgNVBAoTClRVIEls\n"
   "bWVuYXUxDDAKBgNVBAsTA1BNSTEUMBIGA1UEAxMLZGVtbyBzZXJ2ZXIwHhcNOTYw\n"
@@ -90,7 +87,7 @@ string my_certificate = MIME.decode_base64(
   "AQEEBQADQQB5O9VOLqt28vjLBuSP1De92uAiLURwg41idH8qXxmylD39UE/YtHnf\n"
   "bC6QS0pqetnZpQj1yEsjRTeVfuRfANGw\n");
 
-string my_key = MIME.decode_base64(
+  string my_key = MIME.decode_base64(
   "MIIBOwIBAAJBAMEHpPtsYmFGFFKkMRLGToUqHeIoqumfgpwO0UzRbqzXpBI/PonR\n"
   "nZrTSUPG53CEl9AWRqsnbDjgZ2X/xv517fsCAwEAAQJBALzUbJmkQm1kL9dUVclH\n"
   "A2MTe15VaDTY3N0rRaZ/LmSXb3laiOgBnrFBCz+VRIi88go3wQ3PKLD8eQ5to+SB\n"
@@ -116,16 +113,16 @@ Version ::= INTEGER
 
 */
 
-//!
-void set_default_keycert()
-{
-  set_key(my_key);
-  set_certificate(my_certificate);
-}
+  //!
+  void set_default_keycert()
+  {
+    set_key(my_key);
+    set_certificate(my_certificate);
+  }
 
-//!
-void set_key(string skey)
-{
+  //!
+  void set_key(string skey)
+  {
 #if 0
     array key = SSL.asn1.ber_decode(skey)->get_asn1()[1];
     object n = key[1][1];
@@ -144,14 +141,14 @@ void set_key(string skey)
 
   }
 
-//!
-void set_certificate(string|array certificate)
-{
-  if(arrayp(certificate))
-    certificates = certificate;
-  else
-    certificates = ({ certificate });
-}
+  //!
+  void set_certificate(string|array certificate)
+  {
+    if(arrayp(certificate))
+      certificates = certificate;
+    else
+      certificates = ({ certificate });
+  }
 
   void create()
   {
