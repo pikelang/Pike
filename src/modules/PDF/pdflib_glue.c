@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pdflib_glue.c,v 1.14 2005/12/27 21:42:17 nilsson Exp $
+|| $Id: pdflib_glue.c,v 1.15 2005/12/28 12:20:27 grubba Exp $
 */
 
 #include "global.h"
@@ -807,7 +807,7 @@ static void pdf_open_image_file(INT32 args)
    INT_TYPE res=0,intparam=0;
    char *type=NULL,*filename=NULL,*stringparam=NULL;
    get_all_args("open_image_file",args,"%s%s.%s%d",&type,
-                &filename,&stringparam,&intoaram);
+                &filename,&stringparam,&intparam);
    if (!stringparam)
      stringparam="";
    if (!this->pdf) Pike_error("PDF not initiated\n");
