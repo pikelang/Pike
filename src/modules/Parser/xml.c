@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.80 2005/12/18 14:30:19 nilsson Exp $
+|| $Id: xml.c,v 1.81 2005/12/28 13:51:08 grubba Exp $
 */
 
 #include "global.h"
@@ -1524,8 +1524,10 @@ static void parse_optional_xmldecl(struct xmldata *data)
   {
     struct mapping *m;
 
+#if 0
     if(data->input.pos != 5)
       XMLERROR( "XML header must be at the first byte in the document." );
+#endif
 
     push_constant_text("<?xml");
     push_int(0);
