@@ -121,9 +121,9 @@ static void build_pike_fadds( Class cls, int lvl )
     if( cls->name == "_global" )
     {
       if(sizeof(cls->init))
-	initfun += "  gtk__init();\n";
+	initfun += "  pgtk__init();\n";
       if(sizeof(cls->exit))
-	exitfun += "  gtk__exit();\n";
+	exitfun += "  pgtk__exit();\n";
     }
   } )
     werror(cls->file+":"+cls->line+": Error: "+
@@ -199,7 +199,6 @@ array(string) output( mapping(string:Class) classes,
     initfun += done[w]->pike_add();
   pre += get_string_data()+"\n\n";
   files = ({ "pgtk.c" }) + files;
-
 
   write_file( dir+"pgtk.c",
               pre + toplevel +
