@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.82 2004/11/16 22:17:04 mast Exp $
+|| $Id: preprocessor.h,v 1.83 2005/12/28 18:38:30 grubba Exp $
 */
 
 /*
@@ -364,6 +364,10 @@ static void PUSH_STRING(WCHAR *str,
   string_builder_putchar(buf, '"');
 }
 
+static INLINE ptrdiff_t find_end_brace(struct cpp *this,
+				       WCHAR *data,
+				       ptrdiff_t len,
+				       ptrdiff_t pos);
 static INLINE ptrdiff_t find_end_parenthesis(struct cpp *this,
 					     WCHAR *data,
 					     ptrdiff_t len,
@@ -388,6 +392,7 @@ static INLINE ptrdiff_t find_end_parenthesis(struct cpp *this,
     case '\'': FIND_END_OF_CHAR();  break;
     case '"':  FIND_END_OF_STRING();  break;
     case '(':  pos=find_end_parenthesis(this, data, len, pos); break;
+    case '{':  pos=find_end_brace(this, data, len, pos); break;
     case ')':  return pos;
     case '/':
       if (data[pos] == '*') {
@@ -558,6 +563,15 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 	    push_string(MAKE_BINARY_STRING(data+start, end-start));
 	    arg++;
 	    start = pos;
+	    break;
+	  case '/':
+	    if (data[pos] == '*') {
+	      pos++;
+	      SKIPCOMMENT();
+	    } else if (data[pos] == '/') {
+	      pos++;
+	      FIND_EOL();
+	    }
 	    break;
 	  case '\0':
 	    if (pos > len) {
@@ -1214,6 +1228,16 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		  FIND_END_OF_CHAR();
 		  continue;
 		  
+		case '/':
+		  if (data[pos] == '*') {
+		    pos++;
+		    SKIPCOMMENT();
+		  } else if (data[pos] == '/') {
+		    pos++;
+		    FIND_EOL();
+		  }
+		  continue;
+
 		case '(':
 		  pos=find_end_parenthesis(this, data, len, pos);
 		  continue;
