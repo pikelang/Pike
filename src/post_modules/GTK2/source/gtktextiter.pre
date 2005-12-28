@@ -1104,18 +1104,11 @@ int equal(GTK2.TextIter rhs)
     int res;
     GtkTextIter *t1,*t2;
     get_all_args("equal",args,"%o",&o1);
-/*    fputs("GTK2.TextIter->equal()\n",stderr); */
     t1=(GtkTextIter *)THIS->obj;
     t2=(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program);
-/*    fprintf(stderr,"obj==%p  o1==%p\n",THIS,o1);
-    fprintf(stderr,"t1==%p  t2==%p\n",t1,t2); */
     res=gtk_text_iter_equal(t1,t2);
     my_pop_n_elems(args);
-/*    fprintf(stderr,"res==%d\n",res); */
     push_int(res);
-/*    push_int(gtk_text_iter_equal((GtkTextIter *)THIS->obj,
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program)));
-*/
   }
 }
 

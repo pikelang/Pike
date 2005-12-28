@@ -324,8 +324,6 @@ void set_from_file(string filename)
       g_object_unref(THIS->obj);
 
     THIS->obj=G_OBJECT(p);
-/*    pgtk__init_this_object(); */
-    fprintf(stderr,"THIS->obj==%p\n",THIS->obj);
   }
   RETURN_THIS();
 }
