@@ -737,6 +737,16 @@ void add_builtin_icon(string name, int size, GDK2.Pixbuf pixbuf)
 }
 endrequire;
 
+array(int) version()
+//! Returns the version of the GTK library.
+{
+  pop_n_elems(args);
+  push_int( gtk_major_version );
+  push_int( gtk_minor_version );
+  push_int( gtk_micro_version );
+  f_aggregate(3);
+}
+
 %{
 #ifdef DYNAMIC_MODULE
 struct program *image_color_program = NULL;
