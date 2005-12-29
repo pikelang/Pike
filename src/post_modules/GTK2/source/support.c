@@ -2,12 +2,17 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.5 2005/12/29 00:00:53 nilsson Exp $
+|| $Id: support.c,v 1.6 2005/12/29 22:52:41 nilsson Exp $
 */
 
 #include <version.h>
 #include <bignum.h>
 #include <stdarg.h>
+
+#ifndef INIT_VARIABLES
+extern struct program *image_color_program;
+extern struct program *image_program;
+#endif
 
 void pgtk_encode_grey(struct image *i, unsigned char *dest, int bpp, int bpl);
 
