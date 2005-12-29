@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.4 2005/11/12 21:22:53 nilsson Exp $
+|| $Id: support.c,v 1.5 2005/12/29 00:00:53 nilsson Exp $
 */
 
 #include <version.h>
@@ -60,23 +60,8 @@ void pgtk_index_stack(char *what) {
 #endif
 }
 
-#ifdef DYNAMIC_MODULE
-struct program *image_color_program = NULL;
-#else
-extern struct program *image_color_program;
-#endif
-
 int get_color_from_pikecolor(struct object *o, INT_TYPE *r, INT_TYPE *g, INT_TYPE *b) {
   struct color_struct *col;
-
-#ifdef DYNAMIC_MODULE
-  if (!image_color_program) {
-    image_color_program = PIKE_MODULE_IMPORT(Image, image_color_program);
-    if(!image_color_program)
-      Pike_error("Could not load Image module.\n");
-  }
-#endif
-
   col=(struct color_struct *)get_storage(o,image_color_program);
   if (!col)
     return 0;
@@ -86,12 +71,6 @@ int get_color_from_pikecolor(struct object *o, INT_TYPE *r, INT_TYPE *g, INT_TYP
   return 1;
 }
 
-#ifdef DYNAMIC_MODULE
-struct program *image_program = NULL;
-#else
-extern struct program *image_program;
-#endif
-
 GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GdkImage *i) {
   GdkColormap *col=gdk_colormap_get_system();
   GdkVisual *vis=gdk_visual_get_system();
@@ -99,14 +78,6 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GdkImage *i) {
   INT_TYPE x,y;
 
   TIMER_INIT("Getting extents");
-
-#ifdef DYNAMIC_MODULE
-  if(!image_program) {
-    image_program = PIKE_MODULE_IMPORT(Image, image_program);
-    if(!image_program)
-      Pike_error("Could not load Image module.\n");
-  }
-#endif
 
   img_data=(struct image*)get_storage(img, image_program);
 

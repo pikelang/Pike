@@ -737,3 +737,25 @@ void add_builtin_icon(string name, int size, GDK2.Pixbuf pixbuf)
 }
 endrequire;
 
+%{
+#ifdef DYNAMIC_MODULE
+struct program *image_color_program = NULL;
+struct program *image_program = NULL;
+#else
+extern struct program *image_color_program;
+extern struct program *image_program;
+#endif
+%}
+
+INIT {
+#ifdef DYNAMIC_MODULE
+  image_color_program = PIKE_MODULE_IMPORT(Image, image_color_program);
+  if(!image_color_program)
+    Pike_error("Could not load Image module.\n");
+
+  image_program = PIKE_MODULE_IMPORT(Image, image_program);
+  if(!image_program)
+    Pike_error("Could not load Image module.\n");
+#endif
+}
+
