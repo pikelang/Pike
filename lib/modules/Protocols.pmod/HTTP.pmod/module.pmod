@@ -268,6 +268,25 @@ void do_async_method(string method,
   string path=url->path;
   if(path=="") path="/";
 
+  // Reset the state of con.
+  con->errno = 0;
+  con->ok = 0;
+  con->headers = 0;
+  con->protocol = 0;
+  con->status = 0;
+  con->status_desc = 0;
+  con->data_timeout = 120;
+  con->timeout = 120;
+  if (con->ssl)
+    con->ssl = 0;
+  con->con = 0;
+  con->request = 0;
+  con->buf = "";
+  con->headerbuf = "";
+  con->datapos = 0;
+  con->discarded_bytes = 0;
+  // con->conthread = 0;
+
   con->async_request(url->host, url->port,
 		     method+" "+path+(query?("?"+query):"")+" HTTP/1.0",
 		     request_headers, data);
