@@ -268,9 +268,9 @@ void do_async_method(string method,
   string path=url->path;
   if(path=="") path="/";
 
-  con->async_sync_request(url->host, url->port,
-			  method+" "+path+(query?("?"+query):"")+" HTTP/1.0",
-			  request_headers, data);
+  con->async_request(url->host, url->port,
+		     method+" "+path+(query?("?"+query):"")+" HTTP/1.0",
+		     request_headers, data);
 }
 
 //! Sends a HTTP GET request to the server in the URL and returns the
