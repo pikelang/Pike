@@ -40,17 +40,17 @@ GTK2.SourceLanguage get_language_from_name(string name)
 //! Gets the GTK2.SourceLanguage which has this name.
 {
   pgtk_verify_inited();
-  if (args) {
+  {
     char *name;
     const GSList *gsl;
     int sel=0;
-    name=PGTK_GETSTR(&Pike_sp[-args]);
-    my_pop_n_elems(args);
+    get_all_args("get_language_from_name", "%s", &name);
     gsl=gtk_source_languages_manager_get_available_languages(
 			GTK_SOURCE_LANGUAGES_MANAGER(THIS->obj));
     while (gsl) {
       if (!strcmp(gtk_source_language_get_name(
 		GTK_SOURCE_LANGUAGE(gsl->data)),name)) {
+        my_pop_n_elems(args);
 	push_gobject(gsl->data);
 	g_object_ref(gsl->data);
 	sel=1;
@@ -58,11 +58,10 @@ GTK2.SourceLanguage get_language_from_name(string name)
       }
       gsl=g_slist_next(gsl);
     }
-    if (!sel)
+    if (!sel) {
+      my_pop_n_elems(args);
       push_int(0);
-    PGTK_FREESTR(name);
-  } else {
-    Pike_error("Expected 1 arg, got 0.\n");
+    }
   }
 }
 
