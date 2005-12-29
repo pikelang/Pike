@@ -2,6 +2,13 @@
 class GDK2.Bitmap;
 inherit GDK2.Drawable;
 
+%{
+#ifndef INIT_VARIABLES
+extern struct program *image_program;
+#endif
+%}
+
+
 //! A bitmap is a black and white pixmap. Most commonly used as masks
 //! for images, widgets and pixmaps.
 //!
@@ -22,9 +29,11 @@ void create(int|Image.Image xsize_or_image, int|void ysize, string|void bitmap)
       Pike_error("Bitmap string is too short\n");
   } else if (args==1) {
     struct object *o;
+    struct image *img;
     get_all_args("create",args,"%o",&o);
-    apply(o,"xsize",0); get_all_args("internal",1,"%i",&x); pop_stack();
-    apply(o,"ysize",0); get_all_args("internal",1,"%i",&y); pop_stack();
+    img=(struct image*)get_storage(o, image_program);
+    x = img->xsize;
+    y = img->ysize;
 
     /* Now we have the image size.. Lets create the bitmap... */
     apply(o,"tobitmap",0);
