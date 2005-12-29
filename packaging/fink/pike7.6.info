@@ -1,6 +1,6 @@
 Package: pike7.6
-Version: 7.6.50
-Revision: 5
+Version: 7.6.58
+Revision: 4
 
 Description: Programming language with a C-like syntax
 DescDetail: <<
@@ -25,19 +25,18 @@ DescDetail: <<
 <<
 
 CustomMirror: <<
-	Primary: http://pike.ida.liu.se/pub/pike/latest-stable/
+	Primary: http://pike.ida.liu.se/pub/pike/beta/%v/Pike-v%v.tar.gz
 <<
 Source: mirror:custom:Pike-v%v.tar.gz
-Source-MD5: 20aa2b8ff088733b6c5fc048d47aa712
+Source-MD5: 3220bc3e69c88f63b206029b2815141b 
 SourceDirectory: Pike-v%v
 
-# TODO: fileutils because of buggy Apple's ls (return 0 on non existant files).
-# Should be OK on Tiger, so it could be removed.
+# WARNING: 10.3 users BuildDepends on fileutils (for building Java) because of
+# a buggy ls
 # TODO: make a decision for freetype2
 BuildDepends: <<
 	nettle,
 	gmp,
-	fileutils,
 	libjpeg,
 	freetype,
 	gdbm,
@@ -50,11 +49,9 @@ BuildDepends: <<
 # pcre-shlibs is required by monger
 Depends: <<
 	bzip2-shlibs,
+	gmp-shlibs,
 	pcre-shlibs
 <<
-
-# TODO: why the SplitOff are not upgraded when pike7.6 is upgraded?
-#Replaces: %N (<< %v-%r)
 
 Patch: %f.patch
 PatchScript: <<
@@ -62,16 +59,14 @@ PatchScript: <<
 	perl -pi -e 's,\@PREFIX\@,%p,g' man/pike.1
 <<
 
-# TODO: remove as '--without-' as possible here now:
-# GL, postgres, GTK, copt?, security?, libpanda, ssleay, pgsql, msql, sane, gnome, glade, poll?, machine-code?
+# TODO: remove --without-GL
 CompileScript: <<
-	make CONFIGUREARGS="%c --without-GL --without-postgres --with-freetype --without-GTK --with-mysql=%p --with-libpdf --without-debug --with-double-precision --disable-rpath --without-rtldebug --without-cdebug --without-copt --without-security --with-oob --with-max-fd=60000 --without-libpanda --with-threads --with-readline --with-tiff --without-ssleay --with-ttflib --without-pgsql --without-msql --without-sane --with-GLUT --without-gnome --without-glade --without-poll --without-machine-code --with-relocatable-dumped-module"
+	make CONFIGUREARGS="%c --without-GL --with-mysql=%p --with-double-precision --disable-rpath --with-max-fd=60000 --with-relocatable-dumped-module"
 <<
 
 InstallScript: <<
-	# TODO: make docs in the future, too
 	make testsuites
-	make install DESTDIR=%d prefix=%p buildroot=%d exec_prefix=%p/bin/ share_prefix=%p/share/pike/%n/ lib_prefix=%p/lib/pike/%n/ man_prefix=%p/share/man/ INSTALLARGS='include_prefix="%p/include/pike/%n/" --traditional'
+	make install_nodoc DESTDIR=%d prefix=%p buildroot=%d exec_prefix=%p/bin/ share_prefix=%p/share/pike/%n/ include_prefix="%p/include/pike/%n/" lib_prefix=%p/lib/pike/%n/ man_prefix=%p/share/man/ INSTALLARGS=--traditional
 
 	# Rename some files so that they don't conflict with other pike versions
 	mv %i/bin/pike %i/bin/pike7.6
@@ -118,14 +113,6 @@ SplitOff2: <<
 		%p/lib/pike/%N/modules/Sql.pmod/mysqls_result.pike
 	<<
 <<
-
-# TODO: GMP seems mandatory, this SplitOff should be removed
-#SplitOff3: <<
-#	Package: %N-gmp
-#	Description: GMP (bignums) module for the Pike language
-#	Files: %p/lib/pike/%N/7.2/modules/Gmp.pmod %p/lib/pike/%N/modules/Gmp.so
-#	Depends: gmp-shlibs
-#<<
 
 SplitOff4: <<
 	Package: %N-jpeg
@@ -185,12 +172,14 @@ SplitOff11: <<
 	Files: %p/lib/pike/%N/modules/_Image_TTF.so
 <<
 
-SplitOff12: <<
-	Package: %N-xface
-	Description: X-Face module for the Pike language
-	Depends: gmp-shlibs, %N (= %v-%r)
-	Files: %p/lib/pike/pike7.6/modules/_Image_XFace.so
-<<
+# Since gmp-shlibs is resuired for Pike, there is no need for this SplitOff
+# anymore
+#SplitOff12: <<
+#	Package: %N-xface
+#	Description: X-Face module for the Pike language
+#	Depends: gmp-shlibs, %N (= %v-%r)
+#	Files: %p/lib/pike/pike7.6/modules/_Image_XFace.so
+#<<
 
 SplitOff13: <<
 	Package: %N-gettext
