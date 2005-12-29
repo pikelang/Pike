@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgtk.h,v 1.10 2005/12/18 19:25:25 nilsson Exp $
+|| $Id: pgtk.h,v 1.11 2005/12/29 00:05:13 nilsson Exp $
 */
 
 /* Sort of unnessesary, and decreases code-size with 140Kb */
@@ -96,6 +96,8 @@ struct my_pixel {
 };
 
 #include "pgtk2_symbol_remap.h"
+
+/* Prototypes.h is generated in the build directory. */
 #include "prototypes.h"
 
 extern const char __pgtk_string_data[];
