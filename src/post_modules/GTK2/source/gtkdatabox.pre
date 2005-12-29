@@ -71,8 +71,11 @@ void data_add(array(float) X, array(float) Y, GDK2.Color color,
     len=MAX(a1->size,a2->size);
     dw->X=(gfloat *)g_malloc(sizeof(gfloat)*len);
     dw->Y=(gfloat *)g_malloc(sizeof(gfloat)*len);
-    if (dw->X==NULL || dw->Y==NULL)
+    if (dw->X==NULL || dw->Y==NULL) {
+      if(dw->X) g_free(dw->X);
+      g_free(dw);
       SIMPLE_OUT_OF_MEMORY_ERROR("data_add",sizeof(gfloat)*len*2);
+    }
     for (i=0; i<len; i++) {
       dw->X[i]=pgtk_get_float(ITEM(a1)+i);
       dw->Y[i]=pgtk_get_float(ITEM(a2)+i);

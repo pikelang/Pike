@@ -56,14 +56,16 @@ int signal_connect(string signal, function callback, mixed|void callback_arg)
   int id;
   struct signal_data *b;
   struct svalue *tmp1,*tmp2;
-  b=(struct signal_data *)g_malloc0(sizeof(struct signal_data));
-  if (b==NULL)
-    SIMPLE_OUT_OF_MEMORY_ERROR("signal_connect",sizeof(struct signal_data));
+
   if (args==2) {
     push_int(0);
     args++;
   }
   get_all_args("signal_connect",args,"%s%*%*",&a,&tmp1,&tmp2);
+
+  b=(struct signal_data *)g_malloc0(sizeof(struct signal_data));
+  if (b==NULL)
+    SIMPLE_OUT_OF_MEMORY_ERROR("signal_connect",sizeof(struct signal_data));
 
   assign_svalue_no_free(&b->cb,tmp1);
   assign_svalue_no_free(&b->args,tmp2);

@@ -235,11 +235,10 @@ GDK2.Color get_color(?string spec)
   {
     GdkColor *color;
     char *spec=NULL;
+    get_all_args("get_color",args,".%s",&color);
     color=(GdkColor *)g_malloc(sizeof(GdkColor));
     if (color==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_color",sizeof(GdkColor));
-    if (args)
-      get_all_args("get_color",args,"%s",&color);
     gnome_canvas_get_color(GNOME_CANVAS(THIS->obj),spec,color);
     my_pop_n_elems(args);
     push_gdkobject(color,color);

@@ -256,11 +256,12 @@ void set_from_xpm_data(array data)
     int i,j;
     struct array *a;
     GdkPixbuf *p;
-    get_all_args("new_from_xpm_data",args,"%a",&a);
+    get_all_args("set_from_xpm_data",args,"%a",&a);
     if (a->size) {
       data=g_malloc(sizeof(gchar *)*a->size);
       if (data==NULL)
-	SIMPLE_OUT_OF_MEMORY_ERROR("",sizeof(gchar *)*a->size);
+	SIMPLE_OUT_OF_MEMORY_ERROR("set_from_xpm_data",
+                                   sizeof(gchar *)*a->size);
       for (i=j=0; i<a->size; i++) {
 	if ((ITEM(a)+i)->type!=PIKE_T_STRING)
 	  continue;
@@ -850,6 +851,8 @@ GDK2.Bitmap render_threshold_alpha(int src_x, int src_y, int dest_x,
     get_all_args("render_threshold_alpha",args,"%i%i%i%i%i%i%i",&x,&y,&dx,&dy,
 		 &w,&h,&a);
     b=(GdkBitmap *)g_malloc(sizeof(GdkBitmap));
+    if(!b)
+      SIMPLE_OUT_OF_MEMORY_ERROR("render_threshold_alpha",sizeof(GdkBitmap));
     gdk_pixbuf_render_threshold_alpha(GDK_PIXBUF(THIS->obj),b,
 			x,y,dx,dy,w,h,a);
     my_pop_n_elems(args);

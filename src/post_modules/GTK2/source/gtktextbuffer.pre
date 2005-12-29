@@ -860,8 +860,10 @@ array(GTK2.TextIter) get_bounds()
   {
     GtkTextIter *gti,*gt2;
     gti=g_malloc(sizeof(GtkTextIter));
+    if (gti==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_bounds",sizeof(GtkTextIter));
     gt2=g_malloc(sizeof(GtkTextIter));
-    if (gti==NULL || gt2==NULL)
+    if (gt2==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_bounds",sizeof(GtkTextIter));
     gtk_text_buffer_get_bounds(GTK_TEXT_BUFFER(THIS->obj),gti,gt2);
     push_gobjectclass(gti,pgtk_text_iter_program);

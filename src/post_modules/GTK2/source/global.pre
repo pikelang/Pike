@@ -198,7 +198,7 @@ static gchar **get_argv( int *argc_ret, int an )
     Pike_error ("Expected array with at least one element.\n");
   data=g_malloc0(sizeof(char *)*(a->size+1));
   if (data==NULL)
-    Pike_error("Out of memory.\n");
+    Pike_error(msg_out_of_mem);
   for( argc=0; argc<a->size; argc++ )
     if (!PGTK_ISSTR(ITEM(a)+argc))
     {

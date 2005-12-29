@@ -26,8 +26,10 @@ void create(array(mixed) types)
       if (sd==NULL)
 	SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(struct store_data));
       sd->types=g_malloc(sizeof(GType)*a->size);
-      if (sd->types==NULL)
+      if (sd->types==NULL) {
+        g_free(sd);
 	SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(struct store_data));
+      }
     }
     for (i=sd->n_cols=0; i<a->size; i++) {
       if ((ITEM(a)+i)->type==PIKE_T_STRING) {
@@ -173,11 +175,9 @@ GTK2.TreeIter insert_before(?GTK2.TreeIter sibling)
 {
   pgtk_verify_inited();
   {
-    struct object *o1;
+    struct object *o1=NULL;
     GtkTreeIter *gt;
-    o1=NULL;
-    if (args)
-      get_all_args("insert_before",args,"%o",&o1);
+    get_all_args("insert_before",args,".%o",&o1);
     gt=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
     if (gt==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("insert_before",sizeof(GtkTreeIter));
@@ -197,8 +197,7 @@ GTK2.TreeIter insert_after(?GTK2.TreeIter sibling)
   {
     struct object *o1=NULL;
     GtkTreeIter *gt;
-    if (args)
-      get_all_args("insert_after",args,"%o",&o1);
+    get_all_args("insert_after",args,".%o",&o1);
     gt=(GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
     if (gt==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("insert_after",sizeof(GtkTreeIter));

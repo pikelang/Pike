@@ -78,10 +78,13 @@ mapping(string:mixed) get_values()
     GdkColor *f,*b;
     f==g_malloc(sizeof(GdkColor));
     if (f==NULL)
-      SIMPLE_OUT_OF_MEMORY_ERROR("",sizeof(GdkColor));
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_values",sizeof(GdkColor));
     b=g_malloc(sizeof(GdkColor));
     if (b==NULL)
-      SIMPLE_OUT_OF_MEMORY_ERROR("",sizeof(GdkColor));
+    {
+      g_free(f);
+      SIMPLE_OUT_OF_MEMORY_ERROR("get_values",sizeof(GdkColor));
+    }
     *f=v.foreground;
     *b=v.background;
     push_text("foreground");  push_gdkobject(f,color);

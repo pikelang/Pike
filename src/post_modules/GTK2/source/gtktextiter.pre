@@ -1041,8 +1041,10 @@ array forward_search(string str, int flags, ?GTK2.TextIter limit)
     get_all_args("forward_search",args,"%s%i.%o",&str,&flags,&o1);
 
     match_start=g_malloc(sizeof(GtkTextIter));
+    if (match_start==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("forward_search",sizeof(GtkTextIter));
     match_end=g_malloc(sizeof(GtkTextIter));
-    if (match_start==NULL || match_end==NULL)
+    if (match_end==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("forward_search",sizeof(GtkTextIter));
     tb=gtk_text_iter_get_buffer((GtkTextIter *)THIS->obj);
     gtk_text_buffer_get_start_iter(tb,match_start);
@@ -1074,8 +1076,10 @@ array backward_search(string str, int flags, ?GTK2.TextIter limit)
     get_all_args("backward_search",args,"%s%i.%o",&str,&flags,&o1);
 
     match_start=g_malloc(sizeof(GtkTextIter));
+    if (match_start==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("backward_search",sizeof(GtkTextIter));
     match_end=g_malloc(sizeof(GtkTextIter));
-    if (match_start==NULL || match_end==NULL)
+    if (match_end==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("backward_search",sizeof(GtkTextIter));
     tb=gtk_text_iter_get_buffer((GtkTextIter *)THIS->obj);
     gtk_text_buffer_get_start_iter(tb,match_start);

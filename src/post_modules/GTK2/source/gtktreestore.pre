@@ -26,8 +26,10 @@ void create(array(mixed) types)
       if (sd==NULL)
 	SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(struct store_data));
       sd->types=g_malloc(sizeof(GType)*a->size);
-      if (sd->types==NULL)
+      if (sd->types==NULL) {
+        g_free(sd);
 	SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(GType)*a->size);
+      }
     } else
       Pike_error("Invalid size of array.\n");
     for (i=sd->n_cols=0; i<a->size; i++) {

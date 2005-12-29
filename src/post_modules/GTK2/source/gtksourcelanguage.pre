@@ -114,9 +114,11 @@ mapping(string:mixed) get_tag_style(string id)
       push_text("default"); push_int(gs->is_default);
       push_text("mask"); push_int(gs->mask);
       fg=(GdkColor *)g_malloc(sizeof(GdkColor));
+      if (fg==NULL)
+        SIMPLE_OUT_OF_MEMORY_ERROR("get_tag_style",sizeof(GdkColor));
       bg=(GdkColor *)g_malloc(sizeof(GdkColor));
-      if (fg==NULL || bg==NULL)
-        SIMPLE_OUT_OF_MEMORY_ERROR("get_style",sizeof(GdkColor));
+      if (bg==NULL)
+        SIMPLE_OUT_OF_MEMORY_ERROR("get_tag_style",sizeof(GdkColor));
       *fg=gs->foreground;
       *bg=gs->background;
       push_text("foreground"); push_gdkobject(fg,color);
@@ -201,9 +203,11 @@ mapping(string:mixed) get_tag_default_style(string id)
       push_text("default"); push_int(gs->is_default);
       push_text("mask"); push_int(gs->mask);
       fg=(GdkColor *)g_malloc(sizeof(GdkColor));
+      if (fg==NULL)
+        SIMPLE_OUT_OF_MEMORY_ERROR("get_tag_default_style",sizeof(GdkColor));
       bg=(GdkColor *)g_malloc(sizeof(GdkColor));
-      if (fg==NULL || bg==NULL)
-        SIMPLE_OUT_OF_MEMORY_ERROR("get_style",sizeof(GdkColor));
+      if (bg==NULL)
+        SIMPLE_OUT_OF_MEMORY_ERROR("get_tag_default_style",sizeof(GdkColor));
       *fg=gs->foreground;
       *bg=gs->background;
       push_text("foreground"); push_gdkobject(fg,color);

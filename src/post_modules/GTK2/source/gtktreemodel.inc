@@ -321,10 +321,10 @@ GTK2.TreeIter iter_children(GTK2.TreeIter parent)
     GtkTreeIter *iter;
     struct object *o1;
     int res;
+    get_all_args("iter_children",args,"%o",&o1);
     iter=g_malloc(sizeof(GtkTreeIter));
     if (iter==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("iter_children",sizeof(GtkTreeIter));
-    get_all_args("iter_children",args,"%o",&o1);
     res=gtk_tree_model_iter_children(GTK_TREE_MODEL(THIS->obj),
 		iter,(GtkTreeIter *)get_pgobject(o1,pgtk_tree_iter_program));
     my_pop_n_elems(args);
@@ -377,10 +377,10 @@ GTK2.TreeIter iter_nth_child(GTK2.TreeIter parent, int index)
     struct object *o1;
     int res;
     INT_TYPE n;
+    get_all_args("iter_nth_child",args,"%o%i",&o1,&n);
     iter=g_malloc(sizeof(GtkTreeIter));
     if (iter==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("iter_nth_child",sizeof(GtkTreeIter));
-    get_all_args("iter_nth_child",args,"%o%i",&o1,&n);
     res=gtk_tree_model_iter_nth_child(GTK_TREE_MODEL(THIS->obj),
 		iter,(GtkTreeIter *)get_pgobject(o1,pgtk_tree_iter_program),n);
     my_pop_n_elems(args);
@@ -400,10 +400,10 @@ GTK2.TreeIter iter_parent(GTK2.TreeIter child)
     GtkTreeIter *iter;
     struct object *o1;
     int res;
+    get_all_args("iter_parent",args,"%o",&o1);
     iter=g_malloc(sizeof(GtkTreeIter));
     if (iter==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("iter_parent",sizeof(GtkTreeIter));
-    get_all_args("iter_parent",args,"%o",&o1);
     res=gtk_tree_model_iter_parent(GTK_TREE_MODEL(THIS->obj),
 		iter,(GtkTreeIter *)get_pgobject(o1,pgtk_tree_iter_program));
     my_pop_n_elems(args);

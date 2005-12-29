@@ -14,7 +14,7 @@ void create(int x, int y, int width, int height)
   pgtk_verify_not_inited();
   THIS->obj=(void *)(r=(GdkRectangle *)g_malloc(sizeof(GdkRectangle)));
   if (r==NULL)
-    SIMPLE_OUT_OF_MEMORY_ERROR("",sizeof(GdkRectangle));
+    SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(GdkRectangle));
   get_all_args("create",args,"%i%i%i%i",&x,&y,&w,&h);
   r->x=x;
   r->y=y;

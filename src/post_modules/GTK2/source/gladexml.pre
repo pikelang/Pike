@@ -50,7 +50,7 @@ static void pgtk__signal_connect(const gchar *handler_name,
   }
   b=(struct signal_data *)g_malloc(sizeof(struct signal_data));
   if (b==NULL)
-    Pike_error("Out of memory.\n");
+    Pike_error(msg_out_of_mem);
   assign_svalue_no_free(&b->cb,cb);
   assign_svalue_no_free(&b->args,data);
   b->signal_id=g_signal_lookup(signal_name,G_TYPE_FROM_INSTANCE(object));
