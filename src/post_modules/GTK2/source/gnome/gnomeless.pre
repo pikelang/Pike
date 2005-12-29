@@ -42,7 +42,7 @@ int write_filestream(Stdio.File fd)
 {
   struct object *o;
   extern int fd_from_object( struct object *o );
-  get_all_args( "show_filestream", args, "%o", &o );
+  get_all_args( "write_filestream", args, "%o", &o );
   push_int( gnome_less_write_fd( GNOME_LESS( THIS->obj ),
                                  fd_from_object( o )  ) );
   stack_swap();
