@@ -33,9 +33,9 @@ void create(object|int color_or_r,int|void g,int|void b)
   if (c==NULL)
     SIMPLE_OUT_OF_MEMORY_ERROR("",sizeof(GdkColor));
   THIS->obj=(void *)c;
-  c->red=r;
-  c->green=g;
-  c->blue=b;
+  c->red=(guint16)r;
+  c->green=(guint16)g;
+  c->blue=(guint16)b;
   c->pixel=0;
 /*  if(!gdk_color_alloc( col, c )) */
   if (!gdk_colormap_alloc_color(col,c,TRUE,FALSE)) {

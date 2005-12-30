@@ -96,16 +96,16 @@ void set_current_color(mapping(string:int) color)
     get_all_args("set_current_color",args,"%m",&m);
     sv=simple_mapping_string_lookup(m,"pixel");
     if (sv)
-      color.pixel=PGTK_GETINT(sv);
+      color.pixel=(guint32)PGTK_GETINT(sv);
     sv=simple_mapping_string_lookup(m,"red");
     if (sv)
-      color.red=PGTK_GETINT(sv);
+      color.red=(guint16)PGTK_GETINT(sv);
     sv=simple_mapping_string_lookup(m,"green");
     if (sv)
-      color.green=PGTK_GETINT(sv);
+      color.green=(guint16)PGTK_GETINT(sv);
     sv=simple_mapping_string_lookup(m,"blue");
     if (sv)
-      color.blue=PGTK_GETINT(sv);
+      color.blue=(guint16)PGTK_GETINT(sv);
     gtk_color_selection_set_current_color(GTK_COLOR_SELECTION(THIS->obj),
 		&color);
   }
@@ -148,16 +148,16 @@ void set_previous_color(mapping(string:int) colors)
     get_all_args("set_previous_color",args,"%m",&m);
     sv=simple_mapping_string_lookup(m,"pixel");
     if (sv)
-      color.pixel=PGTK_GETINT(sv);
+      color.pixel=(guint32)PGTK_GETINT(sv);
     sv=simple_mapping_string_lookup(m,"red");
     if (sv)
-      color.red=PGTK_GETINT(sv);
+      color.red=(guint16)PGTK_GETINT(sv);
     sv=simple_mapping_string_lookup(m,"green");
     if (sv)
-      color.green=PGTK_GETINT(sv);
+      color.green=(guint16)PGTK_GETINT(sv);
     sv=simple_mapping_string_lookup(m,"blue");
     if (sv)
-      color.blue=PGTK_GETINT(sv);
+      color.blue=(guint16)PGTK_GETINT(sv);
     gtk_color_selection_set_previous_color(GTK_COLOR_SELECTION(THIS->obj),
 		&color);
   }

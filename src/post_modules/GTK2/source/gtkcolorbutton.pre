@@ -61,9 +61,9 @@ void set_color(int red, int green, int blue)
     GdkColor gcolor;
     if (args<3)
       Pike_error("Too few arguments, %d reguired, got %d\n",3,args);
-    gcolor.red=(gint)PGTK_GETINT(&Pike_sp[0-args]);
-    gcolor.green=(gint)PGTK_GETINT(&Pike_sp[1-args]);
-    gcolor.blue=(gint)PGTK_GETINT(&Pike_sp[2-args]);
+    gcolor.red=(guint16)PGTK_GETINT(&Pike_sp[0-args]);
+    gcolor.green=(guint16)PGTK_GETINT(&Pike_sp[1-args]);
+    gcolor.blue=(guint16)PGTK_GETINT(&Pike_sp[2-args]);
     gtk_color_button_set_color(GTK_COLOR_BUTTON(THIS->obj),&gcolor);
   }
   RETURN_THIS();

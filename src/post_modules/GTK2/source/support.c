@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.6 2005/12/29 22:52:41 nilsson Exp $
+|| $Id: support.c,v 1.7 2005/12/30 21:56:53 nilsson Exp $
 */
 
 #include <version.h>
@@ -151,9 +151,9 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GdkImage *i) {
       MEMSET(allocated,0,sizeof(allocated));
       for (r=0; r<3; r++) for (g=0; g<4; g++) for (b=0; b<3; b++) {
 	GdkColor color;
-	color.red = (int)(r * (65535/2.0));
-	color.green = (int)(g * (65535/3.0));
-	color.blue = (int)(b * (65535/2.0));
+	color.red = (guint16)(r * (65535/2.0));
+	color.green = (guint16)(g * (65535/3.0));
+	color.blue = (guint16)(b * (65535/2.0));
 	color.pixel = 0;
 	if (gdk_color_alloc(col,&color))
           if (color.pixel<COLORMAP_SIZE)
@@ -161,9 +161,9 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GdkImage *i) {
       }
       for (r=0; r<6; r++) for (g=0; g<7; g++) for (b=0; b<6; b++) {
 	GdkColor color;
-	color.red=(int)(r*(65535/5.0));
-	color.green=(int)(g*(65535/6.0));
-	color.blue=(int)(b*(65535/5.0));
+	color.red=(guint16)(r*(65535/5.0));
+	color.green=(guint16)(g*(65535/6.0));
+	color.blue=(guint16)(b*(65535/5.0));
 	color.pixel=0;
 	if (gdk_color_alloc(col,&color))
           if (color.pixel<COLORMAP_SIZE)
