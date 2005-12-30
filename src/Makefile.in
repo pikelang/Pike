@@ -1,11 +1,11 @@
 #
-# $Id: Makefile.in,v 1.412 2005/12/04 20:13:58 nilsson Exp $
+# $Id: Makefile.in,v 1.413 2005/12/30 16:32:42 nilsson Exp $
 #
 
 # This line is needed on some machines.
 @SET_MAKE@
 
-# Pike embed target, either pike.so or pike.a.
+# Pike embed target, either libpike.so or libpike.a.
 PIKE_LIB=@PIKE_LIB@
 
 # Don't change this line.  Define EXTRALIBS before this line if you
@@ -263,16 +263,16 @@ compiler-warnings : clean
 	@echo 'End of summary'
 	@echo '--------------'
 
-pike.so: $(OBJ) modules/linker_options post_modules/linker_options
-	@echo "Linking pike.so";\
-	if $(TMP_BINDIR)/smartlink "$(LDSHARED)" $(LDFLAGS) -o pike.@SO@ \
+libpike.so: $(OBJ) modules/linker_options post_modules/linker_options
+	@echo "Linking libpike.so";\
+	if $(TMP_BINDIR)/smartlink "$(LDSHARED)" $(LDFLAGS) -o libpike.@SO@ \
 	  $(OBJ) `cat modules/linker_options post_modules/linker_options` \
 	  $(LIBS); then \
 	  if test "@SO@" != so ; then mv "module.@SO@" module.so ; \
 	  else :; fi ;\
 	else \
 	  echo "Linking failed:" >&2; \
-	  echo $(TMP_BINDIR)/smartlink "$(LDSHARED)" $(LDFLAGS) -o pike.@SO@ \
+	  echo $(TMP_BINDIR)/smartlink "$(LDSHARED)" $(LDFLAGS) -o libpike.@SO@ \
 	    $(OBJ) `cat modules/linker_options post_modules/linker_options` \
 	    $(LIBS) >&2 ;\
 	  exit 1; \
@@ -280,10 +280,10 @@ pike.so: $(OBJ) modules/linker_options post_modules/linker_options
 
 # FIXME: Static linked version; this doesn't work yet!
 #        Since we need to split linker_options into archives and options.
-pike.a: $(OBJ) modules/linker_options post_modules/linker_options
-	-rm -f pike.a
-	$(AR) cq pike.a $(OBJ)
-	-@RANLIB@ pike.a
+libpike.a: $(OBJ) modules/linker_options post_modules/linker_options
+	-rm -f libpike.a
+	$(AR) cq libpike.a $(OBJ)
+	-@RANLIB@ libpike.a
 
 #pike: main.o @DLOPEN_O@ $(PIKE_LIB) master-stamp pike.syms
 pike: main.o $(OBJ) master-stamp pike.syms modules/linker_options post_modules/linker_options
