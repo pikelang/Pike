@@ -97,7 +97,7 @@ void drag_set_icon_pixmap(GDK2.Pixmap p, GDK2.Bitmap b, int hot_x, int hot_y )
   struct object *p=NULL,*m=NULL;
   int x,y;
   if (args!=4)
-    Pike_error("Too few arguments to drag_set_icon_pixmap\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("drag_set_icon_pixmap", 4);
   if (Pike_sp[-args].type==PIKE_T_OBJECT)
     p=Pike_sp[-args].u.object;
   if (Pike_sp[-args+1].type==PIKE_T_OBJECT)
