@@ -195,16 +195,8 @@ void create(?int has_alpha, ?int bits_per_sample,
     INT_TYPE has_alpha=0;
     INT_TYPE bits_per_sample=8,width=640,height=480;
     GdkPixbuf *gp;
-    if (args==1)
-      get_all_args("create",args,"%i",&has_alpha);
-    else if (args==2)
-      get_all_args("create",args,"%i%i",&has_alpha,&bits_per_sample);
-    else if (args==3)
-      get_all_args("create",args,"%i%i%i",&has_alpha,&bits_per_sample,
-			&width);
-    else if (args>4)
-      get_all_args("create",args,"%i%i%i%i",&has_alpha,&bits_per_sample,
-			&width,&height);
+    get_all_args("create",args,".%i%i%i%i",&has_alpha,&bits_per_sample,
+                 &width,&height);
 
     gp=gdk_pixbuf_new(colorspace,has_alpha,bits_per_sample,width,height);
     THIS->obj=G_OBJECT(gp);
