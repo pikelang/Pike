@@ -135,13 +135,9 @@ void set_clip_origin(int x, int y)
 void set_clip_mask(GDK2.Bitmap mask)
 //! Set the clip mask to the specified GDK2.Bitmap
 {
-  if (args==1) {
-    struct object *o;
-    get_all_args("set_clip_mask",args,"%o",&o);
-    gdk_gc_set_clip_mask(GDK_GC(THIS->obj),GDK_DRAWABLE(get_gobject(o)));
-  } else
-    gdk_gc_set_clip_mask(GDK_GC(THIS->obj),0);
-
+  struct object *o;
+  get_all_args("set_clip_mask",args,"%o",&o);
+  gdk_gc_set_clip_mask(GDK_GC(THIS->obj),GDK_DRAWABLE(get_gobject(o)));
   RETURN_THIS();
 }
 
