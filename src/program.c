@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.597 2005/11/06 21:42:54 grubba Exp $
+|| $Id: program.c,v 1.598 2005/12/31 03:35:58 nilsson Exp $
 */
 
 #include "global.h"
@@ -2148,11 +2148,13 @@ void low_start_new_program(struct program *p,
   int id=0;
   struct svalue tmp;
 
+#ifdef WITH_FACETS
   if(Pike_compiler->compiler_pass == 1 && p) {
     p->facet_class = 0;
     p->facet_index = -1;
     p->facet_group = NULL;
   }
+#endif
 
 #if 0
 #ifdef SHARED_NODES
@@ -2507,10 +2509,12 @@ static void exit_program_struct(struct program *p)
 
   DOUBLEUNLINK(first_program, p);
 
+#ifdef WITH_FACETS
   if(p->facet_group)
   {
     free_object(p->facet_group);
   }
+#endif
 
 #if defined(PIKE_USE_MACHINE_CODE) && defined(VALGRIND_DISCARD_TRANSLATIONS)
   if(p->program) {
@@ -3746,6 +3750,7 @@ static int find_depth(struct program_state *state,
 }
 #endif
 
+#ifdef WITH_FACETS
 void check_for_facet_inherit(struct program *p)
 {
   /* If the inherit statement comes before the facet keyword in the
@@ -3794,6 +3799,7 @@ void check_for_facet_inherit(struct program *p)
     }
   }
 }
+#endif
 
 
 /*
@@ -3830,8 +3836,10 @@ void low_inherit(struct program *p,
     return;
   }
 
+#ifdef WITH_FACETS
   /* Check if inherit is a facet inherit. */
   check_for_facet_inherit(p);
+#endif
 
   if (p == placeholder_program) {
     yyerror("Trying to inherit placeholder program (resolver problem).");

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.220 2005/11/21 11:44:07 grubba Exp $
+|| $Id: program.h,v 1.221 2005/12/31 03:36:07 nilsson Exp $
 */
 
 #ifndef PROGRAM_H
@@ -549,10 +549,12 @@ struct program
   
   INT16 lfuns[NUM_LFUNS];
 
+#ifdef WITH_FACETS
   /* Facet related stuff */
   INT16 facet_class;   /* PROGRAM_IS_X_CLASS (X=FACET/PRODUCT) */
   INT32 facet_index;   /* Index to the facet this facet class belongs to */
   struct object *facet_group;
+#endif
 };
 
 #if 0

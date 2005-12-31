@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.360 2005/10/14 08:43:04 grubba Exp $
+|| $Id: language.yacc,v 1.361 2005/12/31 03:35:45 nilsson Exp $
 */
 
 %pure_parser
@@ -434,6 +434,7 @@ program_ref: low_program_ref
 
 facet: TOK_FACET TOK_IDENTIFIER ':' idents ';'
   {
+#ifdef WITH_FACETS
     struct object *o;
     if (Pike_compiler->compiler_pass == 1) {
       if (Pike_compiler->new_program->facet_class == PROGRAM_IS_FACET_CLASS) {
@@ -447,8 +448,7 @@ facet: TOK_FACET TOK_IDENTIFIER ':' idents ';'
 	  ref_push_string($2->u.sval.u.string);
 	  push_int(Pike_compiler->new_program->id);
 	  push_int(Pike_compiler->new_program->facet_class);
-	  safe_apply_low3(o, find_identifier("add_facet_class",o->prog), 3,
-			  "Failed to add facet class to system.");
+	  safe_apply_low2(o, find_identifier("add_facet_class",o->prog), 3, 0);
 	  if (Pike_sp[-1].type == T_INT &&
 	      Pike_sp[-1].u.integer >= 0) {
 	    Pike_compiler->new_program->facet_class = PROGRAM_IS_FACET_CLASS;
@@ -466,9 +466,11 @@ facet: TOK_FACET TOK_IDENTIFIER ':' idents ';'
     }
     free_node($2);
     free_node($4);
+#else
+    yyerror("No support for facets.");
+#endif
   }
   ;
-
 
 inherit_ref:
   {
@@ -493,6 +495,7 @@ inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
       compiler_do_inherit($3,$1,s);
     }
 
+#ifdef WITH_FACETS
     /* If this is a product class, check that all product classes in its
      * facet-group inherit from all facets */
     if($3 && Pike_compiler->compiler_pass == 2) {
@@ -505,18 +508,17 @@ inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
 	  if (Pike_sp[-1].type == T_INT &&
 	      Pike_sp[-1].u.integer == 0) {
 	    pop_stack();
-	    safe_apply_low3(Pike_compiler->new_program->facet_group,
+	    safe_apply_low2(Pike_compiler->new_program->facet_group,
 			    find_identifier
 			    ("check_product_classes",
 			     Pike_compiler->new_program->facet_group->prog),
-			    0,
-			    "Error in some product classes");
+			    0, o);
 	  }
 	  pop_stack();
 	}
       }
     }
-
+#endif
     if($4) free_node($4);
     pop_stack();
     if ($3) free_node($3);

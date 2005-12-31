@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: facetgroup.cmod,v 1.5 2004/11/06 07:06:14 nilsson Exp $
+|| $Id: facetgroup.cmod,v 1.6 2005/12/31 03:36:44 nilsson Exp $
 */
 
 #include "global.h"
@@ -32,6 +32,8 @@
 #include "block_alloc.h"
 
 DECLARATIONS
+
+#ifdef WITH_FACETS
 
 /*! @class FacetGroup
  *! 
@@ -287,5 +289,8 @@ void exit_facetgroup(void)
 {
   EXIT
 }
-/*! @endclass 
+
+/*! @endclass
  */
+
+#endif

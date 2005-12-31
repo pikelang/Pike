@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.35 2005/03/28 21:56:03 nilsson Exp $
+|| $Id: module.c,v 1.36 2005/12/31 03:36:26 nilsson Exp $
 */
 
 #include "global.h"
@@ -47,7 +47,9 @@
 static void init_builtin_modules(void)
 {
   void init_iterators(void);
+#ifdef WITH_FACETS
   void init_facetgroup(void);
+#endif
 
   init_cpp();
   init_backend();
@@ -63,14 +65,18 @@ static void init_builtin_modules(void)
   init_builtin_efuns();
   init_signals();
   init_dynamic_load();
+#ifdef WITH_FACETS
   init_facetgroup();
+#endif
 }
 
 static void exit_builtin_modules(void)
 {
 #ifdef DO_PIKE_CLEANUP
   void exit_iterators(void);
+#ifdef WITH_FACETS
   void exit_facetgroup(void);
+#endif
 
   /* Clear various global references. */
 
@@ -87,7 +93,9 @@ static void exit_builtin_modules(void)
   cleanup_module_support();
   exit_operators();
   exit_iterators();
+#ifdef WITH_FACETS
   exit_facetgroup();
+#endif
   cleanup_program();
   cleanup_compiler();
   cleanup_error();
