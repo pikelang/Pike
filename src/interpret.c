@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.364 2005/11/08 12:17:41 grubba Exp $
+|| $Id: interpret.c,v 1.365 2005/12/31 03:37:14 nilsson Exp $
 */
 
 #include "global.h"
@@ -2278,20 +2278,6 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   POP_PIKE_FRAME();
 
   return ret;
-}
-
-PMOD_EXPORT void safe_apply_low3(struct object *o,int fun,int args, char *error)
-{
-  JMP_BUF recovery;
-  free_svalue(& throw_value);
-  throw_value.type=T_INT;
-  if(SETJMP_SP(recovery, args))
-  {
-    handle_compile_exception(error);
-  }else{
-    apply_low(o,fun,args);
-  }
-  UNSETJMP(recovery);
 }
 
 PMOD_EXPORT void safe_apply_low2(struct object *o,int fun,int args, int handle_errors)
