@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.361 2005/12/31 03:35:45 nilsson Exp $
+|| $Id: language.yacc,v 1.362 2005/12/31 15:04:13 nilsson Exp $
 */
 
 %pure_parser
@@ -512,7 +512,7 @@ inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
 			    find_identifier
 			    ("check_product_classes",
 			     Pike_compiler->new_program->facet_group->prog),
-			    0, o);
+			    0, 0);
 	  }
 	  pop_stack();
 	}
