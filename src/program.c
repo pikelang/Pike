@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.598 2005/12/31 03:35:58 nilsson Exp $
+|| $Id: program.c,v 1.599 2005/12/31 15:03:57 nilsson Exp $
 */
 
 #include "global.h"
@@ -3775,11 +3775,10 @@ void check_for_facet_inherit(struct program *p)
       push_int(Pike_compiler->new_program->id);
       push_int(p->facet_index);
       push_int(p->id);
-      safe_apply_low3(p->facet_group,
+      safe_apply_low2(p->facet_group,
 		      find_identifier("add_product_class",
 				      p->facet_group->prog),
-		      3,
-		      "Unable to add product class");
+		      3, 0);
       pop_stack();
     }
   }
