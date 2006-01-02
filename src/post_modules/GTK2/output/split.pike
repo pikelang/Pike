@@ -226,7 +226,7 @@ int up_to_date( )
   if(!last_time )
     return 0;
   foreach( map(get_dir( sdir ), lambda(string s){return sdir+s;})|
-           ({ __FILE__, combine_path( __FILE__, "../../new_build_pgtk.pike" )}),
+           ({ __FILE__, combine_path( __FILE__, "../../build_pgtk.pike" )}),
            string f )
   {
     Stdio.Stat s;
