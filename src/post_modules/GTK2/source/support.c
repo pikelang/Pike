@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.7 2005/12/30 21:56:53 nilsson Exp $
+|| $Id: support.c,v 1.8 2006/01/02 21:44:59 marcus Exp $
 */
 
 #include <version.h>
@@ -27,13 +27,23 @@ void pgtk_verify_gnome_setup() {
     Pike_error("You must call Gnome2.init( app,version,argv ) first\n");
 }
 
-void pgtk_verify_inited() {
+void pgtk_verify_obj_inited() {
   if (!THIS->obj)
     Pike_error("Calling function in unitialized object\n");
 }
 
-void pgtk_verify_not_inited() {
+void pgtk_verify_obj_not_inited() {
   if (THIS->obj)
+    Pike_error("Tried to initialize object twice\n");
+}
+
+void pgtk_verify_mixin_inited() {
+  if (!MIXIN_THIS->obj)
+    Pike_error("Calling function in unitialized object\n");
+}
+
+void pgtk_verify_mixin_not_inited() {
+  if (MIXIN_THIS->obj)
     Pike_error("Tried to initialize object twice\n");
 }
 
@@ -754,6 +764,13 @@ void pgtk_clear_obj_struct(struct object *o) {
   MEMSET(Pike_fp->current_storage,0,sizeof(struct object_wrapper));
 }
 
+void pgtk_setup_mixin(struct object *o, struct program *p) {
+  ptrdiff_t offset;
+  offset = low_get_storage(o->prog, p);
+  if(offset == -1)
+    Pike_error("This class can not be instantiated on its own.\n");
+  ((struct mixin_wrapper *)Pike_fp->current_storage)->offset = offset;
+}
 
 LONGEST pgtk_get_int(struct svalue *s) {
   if (s->type==PIKE_T_INT)

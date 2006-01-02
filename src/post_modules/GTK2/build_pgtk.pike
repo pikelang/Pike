@@ -1053,12 +1053,13 @@ int last_class_id = 2000;
 
 class Class( string name, string file, int line )
 {
-  Class inherits;
+  array(Class) inherits = ({});
   mapping(string:Function) functions = ([]);
   mapping(string:Signal)   signals   = ([]);
   mapping(string:Member)   members   = ([]);
   mapping(string:Property) properties= ([]);
   string doc = "";
+  Class mixin_for;
 
   array pre  = ({});
   string post = "";
@@ -1102,7 +1103,7 @@ class Class( string name, string file, int line )
 
   void create_default_sprintf( )
   {
-    if( name == "_global" ) return 0;
+    if( name == "_global" || mixin_for ) return 0;
     add_function( Function(this_object(),
                            "_sprintf",
                            Type("string"), ({
@@ -1124,8 +1125,11 @@ class Class( string name, string file, int line )
   
   void create_init_exit( )
   {
-    if( !inherits && name != "_global" )
-      init = SPLIT("{\n  pgtk_clear_obj_struct( object );\n}\n",
+    if( !sizeof(inherits) && name != "_global" )
+      init = SPLIT((mixin_for?
+		    "{\n  pgtk_setup_mixin( object, p"+
+		    mixin_for->c_name()+"_program);\n}\n"
+		    : "{\n  pgtk_clear_obj_struct( object );\n}\n"),
 		   file) + init;
 
     if( sizeof(init) )
@@ -1146,8 +1150,8 @@ class Class( string name, string file, int line )
   {
     if( name == "G.Object" )
       return 1;
-    if( inherits )
-      return inherits->is_gobject();
+    if( sizeof(inherits) )
+      return max(@inherits->is_gobject());
     return 0;
   }
 
@@ -1681,11 +1685,25 @@ string parse_pre_file( string file )
            tk = ({ tk, GOBBLE() });
          if(!arrayp(tk)) tk = ({ tk });
          current_class->inherits
+           +=  ({ get_class_ref(Array.flatten(tk)->text*"",
+                            file,
+                            tk[-1]->line,
+			    current_class) });
+         SEMICOLON("inherit");
+         break;
+
+       case "mixin_for":
+         NEED_CLASS("mixin_for");
+         tk = GOBBLE();
+         while( PEEK() != ";" )
+           tk = ({ tk, GOBBLE() });
+         if(!arrayp(tk)) tk = ({ tk });
+         current_class->mixin_for
            =  get_class_ref(Array.flatten(tk)->text*"",
                             file,
                             tk[-1]->line,
-                            current_class);
-         SEMICOLON("inherit");
+			    current_class);
+         SEMICOLON("mixin_for");
          break;
 
        case "INIT":
@@ -1873,13 +1891,33 @@ void main(int argc, array argv)
 
 
   int err;
-  foreach( indices( classes ), string c )
-    if( classes[c]->inherits && !classes[c]->inherits->line )
-    {
-      err++;
-      print_refs( classes[c]->inherits->references,
-                  classes[c]->inherits->name );
-    }
+  foreach( indices( classes ), string c ) {
+    foreach( classes[c]->inherits, Class d )
+      if( !d->line )
+      {
+	err++;
+	print_refs( d->references, d->name );
+      }
+    if( classes[c]->mixin_for )
+      if( !classes[c]->mixin_for->line )
+      {
+	err++;
+	print_refs( classes[c]->mixin_for->references,
+		    classes[c]->mixin_for->name );
+      }
+      else if( sizeof(classes[c]->inherits) )
+      {
+	err++;
+	werror( classes[c]->file+":"+classes[c]->line+"   "+classes[c]->name+
+		" is both subclass and mixin at the same time\n");
+      }
+      else if( sizeof(classes[c]->mixin_for->inherits) )
+      {
+	err++;
+	werror( classes[c]->file+":"+classes[c]->line+"   mixin base class "+
+		classes[c]->mixin_for->name+" is not a root class\n");
+      }
+  }
   if( err )
     exit(1);
   werror("Outputting result files...\n");

@@ -1,7 +1,7 @@
 inherit "split";
 
 #define LIMIT 150*1024
-#define OVERFLOW 16*1024
+#define OVERFLOW 64*1024
 
 array files = ({});
 String.Buffer current_data = String.Buffer(LIMIT + OVERFLOW);
@@ -37,6 +37,9 @@ static void output_class( Class cls, int lvl )
   if(!sizeof( current_data ) )
     current_data->add( "#define EXTPRG extern\n", sfhead );
 
+  if(cls->mixin_for)
+    current_data->add( "#define CLASS_TYPE MIXIN\n" );
+
   if( sizeof( cls->pre ) )
     current_data->add( COMPOSE( cls->pre ) );
 
@@ -55,6 +58,9 @@ static void output_class( Class cls, int lvl )
 
   foreach( sort( indices( cls->properties ) ), string prop )
     output_thing( cls->properties[ prop ] );
+
+  if(cls->mixin_for)
+    current_data->add( "#undef CLASS_TYPE\n" );
 
   if( sizeof( current_data ) > LIMIT )
     output_current_data( );

@@ -1,5 +1,5 @@
 /*
- * $Id: pgtk2_symbol_remap.h,v 1.3 2005/11/06 12:44:37 grubba Exp $
+ * $Id: pgtk2_symbol_remap.h,v 1.4 2006/01/02 21:44:59 marcus Exp $
  *
  * Remap symbols in GTK2 so that they don't conflict with the GTK module.
  * NOTE: This is a temporary kludge until build_pgtk.pike et al are fixed.
@@ -2132,8 +2132,10 @@
 #define pgtk_vbutton_box_new	pgtk2_vbutton_box_new
 #define pgtk_vbutton_box_program	pgtk2_vbutton_box_program
 #define pgtk_verify_gnome_setup	pgtk2_verify_gnome_setup
-#define pgtk_verify_inited	pgtk2_verify_inited
-#define pgtk_verify_not_inited	pgtk2_verify_not_inited
+#define pgtk_verify_obj_inited	pgtk2_verify_obj_inited
+#define pgtk_verify_obj_not_inited	pgtk2_verify_obj_not_inited
+#define pgtk_verify_mixin_inited	pgtk2_verify_mixin_inited
+#define pgtk_verify_mixin_not_inited	pgtk2_verify_mixin_not_inited
 #define pgtk_verify_setup	pgtk2_verify_setup
 #define pgtk_viewport__sprintf	pgtk2_viewport__sprintf
 #define pgtk_viewport_get_hadjustment	pgtk2_viewport_get_hadjustment

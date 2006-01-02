@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgtk.h,v 1.11 2005/12/29 00:05:13 nilsson Exp $
+|| $Id: pgtk.h,v 1.12 2006/01/02 21:44:59 marcus Exp $
 */
 
 /* Sort of unnessesary, and decreases code-size with 140Kb */
@@ -76,6 +76,9 @@ struct object_wrapper {
   void *extra_data;
 };
 
+struct mixin_wrapper {
+  ptrdiff_t offset;
+};
 
 struct signal_data {
   struct svalue cb;
@@ -110,8 +113,10 @@ void push_atom(GdkAtom a);
 
 void pgtk_verify_setup();
 void pgtk_verify_gnome_setup();
-void pgtk_verify_inited();
-void pgtk_verify_not_inited();
+void pgtk_verify_obj_inited();
+void pgtk_verify_obj_not_inited();
+void pgtk_verify_mixin_inited();
+void pgtk_verify_mixin_not_inited();
 
 void push_Xpseudo32bitstring(void *f, int nelems);
 
@@ -157,6 +162,7 @@ void push_gobjectclass(void *obj, struct program *def);
 */
 
 void pgtk_clear_obj_struct(struct object *o);
+void pgtk_setup_mixin(struct object *o, struct program *p);
 void pgtk_default__sprintf(int n, int a, int l);
 
 void push_pgdkobject(void *obj, struct program *def);
@@ -170,9 +176,37 @@ struct object *pikeimage_from_gdkimage(GdkImage *img);
 #undef THIS
 #endif
 
-#define THIS ((struct object_wrapper *)Pike_fp->current_storage)
-#define THISO ((struct object_wrapper *)Pike_fp->current_storage)->obj
+#ifdef CLASS_TYPE
+#undef CLASS_TYPE
+#endif
 
+#define OBJ_STORAGE (Pike_fp->current_storage)
+#define MIXIN_STORAGE (Pike_fp->current_object->storage + ((struct mixin_wrapper *)OBJ_STORAGE)->offset)
+
+/* Default when CLASS_TYPE is not defined */
+#define CLASS_TYPE_STORAGE OBJ_STORAGE
+#define STORAGE_FOR(X) PIKE_CONCAT(X,_STORAGE)
+#define STORAGE STORAGE_FOR(CLASS_TYPE)
+
+
+#define THIS ((struct object_wrapper *)STORAGE)
+#define THISO ((struct object_wrapper *)STORAGE)->obj
+
+#define MIXIN_THIS ((struct object_wrapper *)MIXIN_STORAGE)
+
+#define pgtk_verify_MIXIN_inited pgtk_verify_mixin_inited
+#define pgtk_verify_MIXIN_not_inited pgtk_verify_mixin_not_inited
+#define pgtk_verify_OBJ_inited pgtk_verify_obj_inited
+#define pgtk_verify_OBJ_not_inited pgtk_verify_obj_not_inited
+
+/* Default when CLASS_TYPE is not defined */
+#define pgtk_verify_CLASS_TYPE_inited pgtk_verify_OBJ_inited
+#define pgtk_verify_CLASS_TYPE_not_inited pgtk_verify_OBJ_not_inited
+
+#define pgtk_verify_inited_for(X) PIKE_CONCAT3(pgtk_verify_,X,_inited)
+#define pgtk_verify_not_inited_for(X) PIKE_CONCAT3(pgtk_verify_,X,_not_inited)
+#define pgtk_verify_inited pgtk_verify_inited_for(CLASS_TYPE)
+#define pgtk_verify_not_inited pgtk_verify_not_inited_for(CLASS_TYPE)
 
 #define RETURN_THIS()  pgtk_return_this(args)
 

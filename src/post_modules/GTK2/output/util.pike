@@ -80,16 +80,19 @@ void traverse_class_tree( mapping(string:Class) classes, function cb )
         werror(c->file+":"+c->line+":\tRecursive class tree!\n");
       exit(1);
 */
+      return;
     }
 
     cb( c, lvl );
     array q = c->references->c;
     sort( q->name, q );
-    foreach( q, c ) output_class( c, lvl+1,tree+({c}) );
+    foreach( q, c )
+      if( min(1, @rows(done, c->inherits)) )
+	output_class( c, lvl+1,tree+({c}) );
   };
 
   foreach( sort(indices(classes)), string cls ) {
-    if( !classes[cls]->inherits ) {
+    if( !sizeof(classes[cls]->inherits) ) {
       output_class( classes[cls], 0,({classes[cls]}) );
     }  else {
 //      write("class==%s  inherits==%O\n",cls,classes[cls]->inherits);

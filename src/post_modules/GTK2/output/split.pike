@@ -23,6 +23,10 @@ static void output_class( Class cls, int lvl )
 
   /* Start output */
   current_data += "#define EXTPRG extern\n"+sfhead;
+
+  if(cls->mixin_for)
+    current_data += "#define CLASS_TYPE MIXIN\n";
+
   if( sizeof( cls->pre ) )
     current_data += COMPOSE( cls->pre );
   void output_thing( object thing )
@@ -74,11 +78,12 @@ static void build_pike_fadds( Class cls, int lvl )
     if( cls->name != "_global" )
     {
       exitfun += "  free_program( p"+cls->c_name()+"_program );\n";
-      type_switch =
-                  "#ifdef "+cls->c_type_define()+"\n"
-                  "  if(PGTK_CHECK_TYPE(widget, "+cls->c_type_define()+"))\n"
-                  "     return p"+cls->c_name()+"_program;\n"
-                  "#endif\n"+type_switch;
+      if( !cls->mixin_for )
+	type_switch =
+	            "#ifdef "+cls->c_type_define()+"\n"
+	            "  if(PGTK_CHECK_TYPE(widget, "+cls->c_type_define()+"))\n"
+	            "     return p"+cls->c_name()+"_program;\n"
+                    "#endif\n"+type_switch;
     }
     res = "static void _"+init_n+"()\n{\n";
 
@@ -86,12 +91,15 @@ static void build_pike_fadds( Class cls, int lvl )
     {
       res +=
           "   start_new_program(); /* "+cls->name+" */\n";
-      if( cls->inherits )
-        res += "  low_inherit( p"+cls->inherits->c_name()+
-            "_program,0,0,0,0,0);\n";
+      if( sizeof(cls->inherits) )
+	foreach( cls->inherits, Class c )
+	  res += "  low_inherit( p"+c->c_name()+
+                 "_program,0,0,0,0,0);\n";
       else
       {
-        res += "  ADD_STORAGE(struct object_wrapper);\n";
+        res += "  ADD_STORAGE(struct "+
+	  (cls->mixin_for? "mixin_wrapper":"object_wrapper")+
+	  ");\n";
       }
     }
 
