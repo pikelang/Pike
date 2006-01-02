@@ -489,6 +489,7 @@ void set_indent(int indent);
 int get_indent();
 //! Gets the default indentation for paragraphs.
 
+require pango;
 void set_tabs(Pango.TabArray tabs)
 //! Sets the default tab stops for paragraphs.  Tags in the buffer may
 //! override the default.
@@ -515,6 +516,7 @@ Pango.TabArray get_tabs()
     push_gobjectclass(pta,ppango_tab_array_program);
   }
 }
+endrequire;
 
 require gtk24;
 void set_accepts_tab(int accepts_tab);

@@ -1,4 +1,6 @@
 /* -*- C -*- */
+require pango;
+
 class Pango.Context;
 inherit G.Object;
 
@@ -13,3 +15,5 @@ void destroy()
   my_pop_n_elems(args);
   push_int(0);
 }
+
+endrequire;

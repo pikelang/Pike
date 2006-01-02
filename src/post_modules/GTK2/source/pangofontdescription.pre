@@ -1,4 +1,6 @@
 /* -*- C -*- */
+require pango;
+
 class Pango.FontDescription;
 
 //! Pango Font Description.
@@ -296,3 +298,5 @@ string to_filename()
     PGTK_PUSH_GCHAR(str);
   }
 }
+
+endrequire;

@@ -1,4 +1,6 @@
 /* -*- C -*- */
+require pango;
+
 class Pango.AttrList;
 
 //! A PangoAttrList.
@@ -16,3 +18,5 @@ Pango.AttrList copy()
     push_gobjectclass(pal,ppango_attr_list_program);
   }
 }
+
+endrequire;

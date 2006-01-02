@@ -1,4 +1,6 @@
 /* -*- C -*- */
+require pango;
+
 class Pango.Layout;
 
 //! Pango Layout.
@@ -371,3 +373,5 @@ Pango.LayoutLine get_line(int line)
     push_gobjectclass(pll,ppango_layout_line_program);
   }
 }
+
+endrequire;

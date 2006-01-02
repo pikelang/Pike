@@ -1,4 +1,6 @@
 /* -*- C -*- */
+require pango;
+
 class Pango.LayoutIter;
 
 //! PangoLayoutIter.
@@ -157,3 +159,5 @@ array(mapping(string:int)) get_layout_extents()
     f_aggregate(2);
   }
 }
+
+endrequire;

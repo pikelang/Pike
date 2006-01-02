@@ -1,4 +1,6 @@
 /* -*- C -*- */
+require pango;
+
 class Pango.LayoutLine;
 
 //! PangoLayoutLine.
@@ -71,3 +73,5 @@ mapping(string:int) x_to_index(int x_pos)
     f_aggregate_mapping(4);
   }
 }
+
+endrequire;

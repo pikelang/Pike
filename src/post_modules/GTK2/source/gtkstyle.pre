@@ -436,6 +436,7 @@ void paint_expander(GTK2.Widget window, int state, GDK2.Rectangle rect,
   RETURN_THIS();
 }
 
+require pango;
 void paint_layout(GTK2.Widget window, int state, int use_text,
 		  GDK2.Rectangle rect, GTK2.Widget widget, string detail,
 		  int x, int y, Pango.Layout layout)
@@ -456,6 +457,7 @@ void paint_layout(GTK2.Widget window, int state, int use_text,
   }
   RETURN_THIS();
 }
+endrequire;
 
 void paint_resize_grip(GTK2.Widget window, int state, GDK2.Rectangle rect,
 		       GTK2.Widget widget, string detail, int edge, int x,

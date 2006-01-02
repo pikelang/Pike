@@ -123,6 +123,7 @@ int get_pixels_inside_wrap()
   push_int(((GtkTextAttributes *)THIS->obj)->pixels_inside_wrap);
 }
 
+require pango;
 Pango.TabArray get_tabs()
 //! Get tabs.
 {
@@ -133,6 +134,7 @@ Pango.TabArray get_tabs()
     push_gobjectclass(pta,ppango_tab_array_program);
   }
 }
+endrequire;
 
 int get_wrap_mode()
 //! Get wrap mode.
