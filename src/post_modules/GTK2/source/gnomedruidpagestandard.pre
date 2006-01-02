@@ -33,7 +33,7 @@ void create(?string title, ?GDK2.Pixbuf logo, ?GDK2.Pixbuf top_watermark)
     get_all_args("create",args,"%t%o%o",&title,&o1,&o2);
     ref_push_string(title);
     f_string_to_utf8(1);
-    gps=gnome_druid_page_standard_new_with_vals(STR0(Pike_sp[-1].u.string),
+    gps=gnome_druid_page_standard_new_with_vals(GSTR0(Pike_sp[-1].u.string),
 			GDK_PIXBUF(get_gobject(o1)),
 			GDK_PIXBUF(get_gobject(o2)));
     pop_stack();
