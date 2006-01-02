@@ -180,8 +180,8 @@ static void connection_timeout()
    finish(0);
 }
 
-// Parses the request and populates protocol, full_query, query and
-// not_query.
+// Parses the request and populates request_typ, protocol, full_query,
+// query and not_query.
 static void parse_request()
 {
    array v=request_raw/" ";
@@ -202,6 +202,12 @@ static void parse_request()
 	 {
 	    request_type=v[0];
 	    protocol=v[-1];
+            if(!(< "HTTP/1.0", "HTTP/1.1" >)[protocol])
+            {
+              int maj, min;
+              if(sscanf(protocol, "HTTP/%d.%d", maj, min)==2)
+                protocol = sprintf("HTTP/%d.%d", maj, min);
+            }
 	    full_query=v[1..sizeof(v)-2]*" ";
 	    break;
 	 }
