@@ -3,6 +3,7 @@ require gtk24;
 
 class GTK2.FileChooserWidget;
 inherit GTK2.Vbox;
+inherit GTK2.FileChooser;
 
 //! File chooser widget that can be embedded in other widgets.
 //! IMG: GTK2.FileChooserWidget(GTK2.FILE_CHOOSER_ACTION_OPEN);
@@ -27,8 +28,6 @@ void create(int|mapping(string:mixed) action_or_props)
   }
   pgtk__init_this_object();
 }
-
-#include "gtkfilechooser.inc"
 
 endrequire;
 

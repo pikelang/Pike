@@ -3,6 +3,7 @@ require gtk24;
 
 class GTK2.FileChooserDialog;
 inherit GTK2.Dialog;
+inherit GTK2.FileChooser;
 
 //! GtkFileChooserDialog should be used to retrieve file or directory names
 //! from the user. It will create a new dialog window containing a
@@ -172,7 +173,5 @@ void create(string title, GTK2.Window parent, int mode,
   }
   pgtk__init_this_object();
 }
-
-#include "gtkfilechooser.inc"
 
 endrequire;
