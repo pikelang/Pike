@@ -3,6 +3,7 @@ require gtk24;
 
 class GTK2.ComboBoxEntry;
 inherit GTK2.ComboBox;
+inherit GTK2.CellLayout;
 
 //! Properties:
 //! int text-column
@@ -61,5 +62,3 @@ GTK2.Widget entry()
 }
 
 #include "gtkcelleditable.inc"
-#include "gtkcelllayout.inc"
-

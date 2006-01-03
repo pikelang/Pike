@@ -3,6 +3,7 @@ require gtk24;
 
 class GTK2.EntryCompletion;
 inherit G.Object;
+inherit GTK2.CellLayout;
 
 //! Properties:
 require gtk26;
@@ -130,7 +131,5 @@ int get_popup_single_match();
 //! Returns whether the completion popup window will appear even if there is
 //! only a single match.
 endrequire;
-
-#include "gtkcelllayout.inc"
 
 endrequire;

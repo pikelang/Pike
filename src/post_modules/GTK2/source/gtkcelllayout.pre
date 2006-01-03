@@ -1,0 +1,25 @@
+require gtk24;
+class GTK2.CellLayout;
+mixin_for G.Object;
+
+void pack_start(GTK2.CellRenderer cell, int expand);
+//! Packs the cell into the beginning.  If expand is false, then the cell is
+//! allocated no more space than it needs.  Any unused space is divied evenly
+//! between the cells for which expand is true.
+
+void pack_end(GTK2.CellRenderer cell, int expand);
+//! See pack_start().
+
+void reorder(GTK2.CellRenderer cell, int position);
+//! Re-inserts cell at position.
+
+void clear();
+//! Unsets all the mappings on all renderers and removes all renderers.
+
+void add_attribute(GTK2.CellRenderer cell, string attribute, int column);
+//! Adds an attribute mapping.
+
+void clear_attributes(GTK2.CellRenderer cell);
+//! Clears all existing attributes.
+
+endrequire;

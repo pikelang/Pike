@@ -1,6 +1,7 @@
 /* -*- C -*- */
 class GTK2.TreeViewColumn;
 inherit GTK2.Data;
+inherit GTK2.CellLayout;
 
 //! Properties:
 //! float alignment
@@ -311,5 +312,3 @@ void queue_resize();
 //! Flags the column, and the cell renderers added to this column, to have
 //! their sizes renegotiated.
 endrequire;
-
-#include "gtkcelllayout.inc"

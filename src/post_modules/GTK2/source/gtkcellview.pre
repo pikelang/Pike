@@ -2,6 +2,7 @@
 require gtk26;
 class GTK2.CellView;
 inherit GTK2.Widget;
+inherit GTK2.CellLayout;
 
 //! Properties:
 //! string background
@@ -118,6 +119,4 @@ void set_background_color(GDK2.Color color)
   RETURN_THIS();
 }
 
-#include "gtkcelllayout.inc"
 endrequire;
-
