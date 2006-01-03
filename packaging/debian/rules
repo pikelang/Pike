@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.55 2005/11/30 21:57:35 grendel Exp $
+# $Id: rules,v 1.56 2006/01/03 16:21:18 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -309,6 +309,10 @@ install: build
 
 	rm -r $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/doc
 	dh_movefiles --sourcedir=debian/$(PIKE)-core
+
+	# Need to move dynamic_module_makefile back to -core, since it contains platform-specific stuff
+	mv $(CURDIR)/debian/$(PIKE)-dev/usr/include/pike/$(VERSION)/dynamic_module_makefile \
+	   $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/dynamic_module_makefile
 
 # Build architecture-independent files here.
 # Pass -i to all debhelper commands in this target to reduce clutter.

@@ -160,7 +160,7 @@ Description: Fast Fourier Transform module for Pike
 
 Package: pike7.7-dev
 Architecture: all
-Depends: ${shlibs:Depends}
+Depends: ${shlibs:Depends}, pike7.7-core (=${Source-Version})
 Description: Development files for Pike 7.7
  This package contains files you will need to develop  C extension modules 
  for Pike. The package depends on  the recommended set of packages for the 
