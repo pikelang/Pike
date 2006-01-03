@@ -1,0 +1,11 @@
+--- 7.6/src/modules/dynamic_module_makefile.in	2005-12-30 14:33:50.110303750 +0100
++++ 7.6.fix/src/modules/dynamic_module_makefile.in	2005-12-30 14:50:03.367128500 +0100
+@@ -2,7 +2,7 @@
+ # $Id: 07_dynamic_module_makefile.in-libgcc.diff,v 1.1 2006/01/03 16:03:38 grendel Exp $
+ #
+ 
+-LIBGCC=@LIBGCC@
++LIBGCC=$(shell gcc -print-libgcc-file-name)
+ LC_REQ=@LC_REQ@
+ 
+ LINKAGE_CPPFLAGS=

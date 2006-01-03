@@ -1,8 +1,21 @@
 pike7.6 (7.6.61-1) unstable; urgency=low
 
   * The latest cvs snapshot
+  * dynamic_module_makefile moved to pike7.6-core since it contains
+    platform-specific stuff. Also included a patch to detect the
+    libgcc.a path dynamically.
+  * pike7.6-dev depends on pike7.6-core now. It is necessary to both
+    pull in dynamic_module_makefile and to enable compilation of modules
+    with pike -x
+  * Updated the patch for include_prefix change in install.pike
+  * Closes: Bug#345329: pike-public.parser.xml2 - FTBFS:
+    gcc: /usr/lib/gcc/i486-linux-gnu/4.0.3/libgcc.a: No such file or
+    directory - Debian Bug report logs
+  * Closes: Bug#345330: pike-public.network.pcap - FTBFS:
+    gcc: /usr/lib/gcc/i486-linux-gnu/4.0.3/libgcc.a: No such file or
+    directory - Debian Bug report logs
 
- -- Marek Habersack <grendel@debian.org>  Wed, 21 Dec 2005 0:31:20 +0100
+ -- Marek Habersack <grendel@debian.org>  Fri, 30 Dec 2005 17:35:50 +0100
 
 pike7.6 (7.6.60-1) unstable; urgency=low
 

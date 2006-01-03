@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.62 2005/12/04 01:58:31 grendel Exp $
+# $Id: rules,v 1.63 2006/01/03 16:03:38 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -282,16 +282,6 @@ install: build
 	    chmod 755 $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/$$f ; \
 	done
 
-	# pike -x module fix
-	echo 's;\$$\(MODULE_BASE\)/dynamic_module_makefile;\$$\(PIKE_SRC_DIR\)/dynamic_module_makefile;g' > \
-	  $(CURDIR)/debian/sed-script.tmp
-	sed -r -f $(CURDIR)/debian/sed-script.tmp < \
-	  $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/dynamic_module_makefile > \
-	  $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/dynamic_module_makefile.new
-	mv $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/dynamic_module_makefile.new \
-	   $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/dynamic_module_makefile
-	rm -f $(CURDIR)/debian/sed-script.tmp
-
 	# Create the documentation links to save space
 	for f in `cat $(CURDIR)/debian/tocoredoc.txt`; do \
 		dh_link -p$$f /usr/share/doc/$(PIKE)-core /usr/share/doc/$$f ; \
@@ -302,8 +292,22 @@ install: build
 	    -e 's;@CONFIGURE_ARGS@;$(CFARGS);g' \
 	    < $(CURDIR)/debian/specs.in > $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/specs
 
+	# pike -x module fix
+	echo 's;\$$\(MODULE_BASE\)/dynamic_module_makefile;\$$\(PIKE_SRC_DIR\)/dynamic_module_makefile;g' > \
+	  $(CURDIR)/debian/sed-script.tmp
+	sed -r -f $(CURDIR)/debian/sed-script.tmp < \
+	  $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/dynamic_module_makefile > \
+	  $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/dynamic_module_makefile.new
+	mv $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/dynamic_module_makefile.new \
+	   $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/dynamic_module_makefile
+	rm -f $(CURDIR)/debian/sed-script.tmp
+
 	rm -r $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/doc
 	dh_movefiles --sourcedir=debian/$(PIKE)-core
+
+	# Need to move dynamic_module_makefile back to -core, since it contains platform-specific stuff
+	mv $(CURDIR)/debian/$(PIKE)-dev/usr/include/pike/$(VERSION)/dynamic_module_makefile \
+	   $(CURDIR)/debian/$(PIKE)-core/usr/include/pike/$(VERSION)/dynamic_module_makefile
 
 # Build architecture-independent files here.
 # Pass -i to all debhelper commands in this target to reduce clutter.

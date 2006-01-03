@@ -1,14 +1,5 @@
---- 7.6.orig/bin/install.pike	2005-07-28 01:19:17.821227000 +0200
-+++ 7.6/bin/install.pike	2005-08-16 13:41:22.260320776 +0200
-@@ -1038,7 +1038,7 @@ int pre_install(array(string) argv)
-     case "--traditional":
-       exec_prefix=vars->exec_prefix||(prefix+"/bin/");
-       lib_prefix=vars->lib_prefix||(prefix+"/lib/pike/");
--      include_prefix=combine_path(prefix,"include","pike");
-+      include_prefix=vars->include_prefix||combine_path(prefix,"include","pike");
-       doc_prefix=combine_path(prefix, "doc", "pike");
-       man_prefix=vars->man_prefix||(prefix+"/man/");
-       break;
+--- 7.6/bin/install.pike	2005-12-30 14:33:48.450200000 +0100
++++ 7.6.fix/bin/install.pike	2005-12-30 15:14:24.806462750 +0100
 @@ -1197,7 +1197,7 @@ int pre_install(array(string) argv)
        exec_prefix=combine_path(prefix,"bin");
        lib_prefix=combine_path(prefix,"lib");
@@ -18,12 +9,3 @@
        man_prefix=combine_path(prefix,"man");
        if (export) {
  	low_install_file(combine_path(vars->TMP_BINDIR,"install.pike"),
-@@ -1216,7 +1216,7 @@ int pre_install(array(string) argv)
-     prefix = getcwd();
-     exec_prefix = combine_path(prefix, "bin");
-     lib_prefix = combine_path(prefix, "lib");
--    include_prefix = combine_path(prefix,"include","pike");
-+    include_prefix = vars->include_prefix||combine_path(prefix,"include","pike");
-     make_master("lib/master.pike", "lib/master.pike.in",
- 		lib_prefix, include_prefix);
-     status1("Installing master done.");

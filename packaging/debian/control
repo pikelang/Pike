@@ -132,7 +132,7 @@ Description: Bzip2 module for Pike
 
 Package: pike7.6-dev
 Architecture: all
-Depends: ${shlibs:Depends}
+Depends: ${shlibs:Depends}, pike7.6-core (=${Source-Version})
 Description: Development files for Pike 7.6
  This package contains files you will need to develop  C extension modules 
  for Pike. The package depends on  the recommended set of packages for the 
