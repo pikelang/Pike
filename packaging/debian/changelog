@@ -1,3 +1,9 @@
+pike7.7 (7.7.24-1) experimental; urgency=low
+
+  * Release number bumped by export.pike.
+
+ -- Marek Habersack <grendel@debian.org>  Tue, 3 Jan 2006 18:56:39 +0100
+
 pike7.7 (7.7.23-1) experimental; urgency=low
 
   * The latest cvs snapshot
