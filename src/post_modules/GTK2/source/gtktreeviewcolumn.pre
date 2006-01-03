@@ -1,7 +1,9 @@
 /* -*- C -*- */
 class GTK2.TreeViewColumn;
 inherit GTK2.Data;
+require gtk24;
 inherit GTK2.CellLayout;
+endrequire;
 
 //! Properties:
 //! float alignment
