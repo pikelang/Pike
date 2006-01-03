@@ -2,12 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.69 2005/11/14 21:15:25 nilsson Exp $
+|| $Id: zlibmod.c,v 1.70 2006/01/03 11:31:07 marcus Exp $
 */
 
 #include "global.h"
 #include "zlib_machine.h"
 #include "module.h"
+#include "program.h"
+#include "module_support.h"
 
 #if !defined(HAVE_LIBZ) && !defined(HAVE_LIBGZ)
 #undef HAVE_ZLIB_H
@@ -20,14 +22,12 @@
 #include "stralloc.h"
 #include "array.h"
 #include "pike_macros.h"
-#include "program.h"
 #include "stralloc.h"
 #include "object.h"
 #include "pike_types.h"
 #include "threads.h"
 #include "dynamic_buffer.h"
 #include "operators.h"
-#include "module_support.h"
 
 #include <zlib.h>
 
