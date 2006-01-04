@@ -465,7 +465,25 @@ static constant url_to   = sprintf("%%%02x", url_chars[*]);
 //!     The HTTP encoded string
 string http_encode_string(string in)
 {
-  return replace(in, url_from, url_to);
+  string res = replace(in, url_from, url_to);
+  if (String.width(res) == 8) return res;
+
+  // Wide string handling.
+  // FIXME: Could be more efficient...
+  mapping(string:string) wide = ([]);
+  foreach(res/"", string char) {
+    if (char[0] & ~255) {
+      // Wide character.
+      if (!wide[char] && !(char[0] & ~65535)) {
+	// UCS-2 character.
+	// This encoding is used by eg Safari.
+	wide[char] = sprintf("%%u%04x", char[0]);
+      } else {
+	// FIXME: UCS-4 character.
+      }
+    }
+  }
+  return replace(res, wide);
 }
 
 //!    Encode the specified string in as to the HTTP cookie standard.
