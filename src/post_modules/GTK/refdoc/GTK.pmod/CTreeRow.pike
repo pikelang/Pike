@@ -22,7 +22,7 @@ int get_level( );
 //!
 //!
 
-GTK.CTreeNode parent( );
+GTK.CTreeNode get_parent( );
 //! Return the parent node of this node
 //!
 //!

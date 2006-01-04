@@ -10,18 +10,27 @@
 //! 
 //!@expr{ GTK.Combo()@}
 //!@xml{<image>../images/gtk_combo.png</image>@}
+//!
+//!
+//!
 
 inherit GTK.Hbox;
 
 static GTK.Combo create( );
 //! Create a new combo box
+//!
+//!
 
 GTK.Combo disable_activate( );
 //! This will disable the 'activate' signal for the entry widget in the
 //! combo box.
+//!
+//!
 
-GTK.Entry entry( );
+GTK.Entry get_entry( );
 //! The entry widget
+//!
+//!
 
 GTK.Combo set_case_sensitive( int sensitivep );
 //! set_case_sensitive() toggles whether or not GTK searches for
@@ -34,12 +43,18 @@ GTK.Combo set_case_sensitive( int sensitivep );
 //! "Tab". MOD-1 is often mapped to the "Alt" key, by the xmodmap
 //! utility. Note, however that some window managers also use this key
 //! combination, which will override its use within GTK.
+//!
+//!
 
 GTK.Combo set_item_string( GTK.Item item, string text );
 //! The item is one of the ones in the list subwidget.
+//!
+//!
 
 GTK.Combo set_popdown_strings( array strings );
 //! Set the values in the popdown list.
+//!
+//!
 
 GTK.Combo set_use_arrows( int use_arrows );
 //! set_use_arrows() lets the user change the value in the entry using
@@ -52,6 +67,8 @@ GTK.Combo set_use_arrows( int use_arrows );
 //! anyway using TAB). Note that when the current item is the last of
 //! the list and you press arrow-down it changes the focus (the same
 //! applies with the first item and arrow-up).
+//!
+//!
 
 GTK.Combo set_use_arrows_always( int always_arrows );
 //! set_use_arrows_always() allows the use the the up/down arrow keys
@@ -59,8 +76,12 @@ GTK.Combo set_use_arrows_always( int always_arrows );
 //! set_use_arrows, but it wraps around the values in the list,
 //! completely disabling the use of the up and down arrow keys for
 //! changing focus.
+//!
+//!
 
 GTK.Combo set_value_in_list( int value_must_be_in_list, int ok_if_empty );
 //! If value_must_be_in_list is true, the user will not be able to
 //! enter any value that is not in the list. If ok_if_empty is true,
 //! empty values are possible as well as the values in the list.
+//!
+//!

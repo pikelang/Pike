@@ -13,7 +13,7 @@ static GDK.GC create( GTK.Widget context );
 //!
 //!
 
-GDK.GC destoy( );
+GDK.GC destroy( );
 //! Free the gc, called automatically by pike when the object is destroyed.
 //!
 //!

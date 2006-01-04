@@ -2,7 +2,7 @@
 //!
 //!
 //!  Signals:
-//! @b{delselect@}
+//! @b{deselect@}
 //!
 //! @b{select@}
 //!

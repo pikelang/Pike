@@ -181,11 +181,11 @@
 //!
 //!
 //! @b{size_allocate@}
-//! Called when the widget get's the size it should be
+//! Called when the widget gets the size it should be
 //!
 //!
 //! @b{size_request@}
-//! Called when the widget should calculate how big it want's to be
+//! Called when the widget should calculate how big it wants to be
 //!
 //!
 //! @b{state_changed@}
@@ -207,7 +207,7 @@
 //!
 //!
 //! @b{visibility_notify_event@}
-//! The widget has been mapped, unmapped, hidden, or otherwise had it's visibility modified
+//! The widget has been mapped, unmapped, hidden, or otherwise had its visibility modified
 //!
 //!
 
@@ -216,7 +216,7 @@ inherit GTK.Object;
 GTK.Widget activate( );
 //! Activate the widget. This either activates the widget, if possible
 //! (as an example, buttons can be activated), or activates the default
-//! widget of it's parent (or it's parent, or it's parents parent
+//! widget of its parent (or its parent, or its parents parent
 //! etc.)
 //!
 //!
@@ -358,7 +358,7 @@ string get_name( );
 //!
 //!
 
-GTK.Widget parent( );
+GTK.Widget get_parent( );
 //! Returns the parent of this widget, if any, if there is no parent
 //! 0 is returned.
 //!
@@ -413,7 +413,7 @@ GTK.Widget hide( );
 //!
 
 GTK.Widget hide_all( );
-//! Hide this widget and all it's children
+//! Hide this widget and all its children
 //!
 //!
 
@@ -474,7 +474,7 @@ GTK.Widget queue_resize( );
 //!
 
 GTK.Widget realize( );
-//! Realize this widget, and it's children, if nessesary
+//! Realize this widget, and its children, if nessesary
 //!
 //!
 
@@ -728,7 +728,7 @@ GTK.Widget set_style( GTK.Style cf );
 //!
 
 GTK.Widget set_uposition( int xpos, int ypos );
-//! Set the absolute coordinates of the widget relative to it's parent.
+//! Set the absolute coordinates of the widget relative to its parent.
 //!
 //!
 
@@ -742,10 +742,10 @@ GTK.Widget set_usize( int xsize, int ysize );
 //!
 
 GTK.Widget shape_combine_mask( GDK.Bitmap shape, int xoffset, int yoffset );
-//! Set the shape of the widget, or, rather, it's window, to that of
+//! Set the shape of the widget, or, rather, its window, to that of
 //! the supplied bitmap. Notice how the window behind the example
 //! window can be seen because of the rather odd shape the example window has.
-//!@expr{ GTK.Window( GTK.WINDOW_TOPLEVEL )->add(GTK.Label("A rather Oddly shaped\n" "Window\n" "Indeed\n" "Or what do you\nthink?\n" "This text\n" "should\n" "be long enough"))->shape_combine_mask( GDK.Bitmap(Image.image(100,100,255,255,255)->rotate(10,0,0,0) ), 20,20)@}
+//!@expr{ GTK.Window( GTK.WINDOW_TOPLEVEL )->add(GTK.Label("A rather Oddly shaped\n" "Window\n" "Indeed\n" "Or what do you\nthink?\n" "This text\n" "should\n" "be long enough"))->shape_combine_mask( GDK.Bitmap(Image.Image(100,100,255,255,255)->rotate(10,0,0,0) ), 20,20)@}
 //!@xml{<image>../images/gtk_widget_shape_combine_mask.png</image>@}
 //!
 //! NOTE: The widget must be realized before this function can be used
@@ -759,7 +759,7 @@ GTK.Widget show( );
 //!
 
 GTK.Widget show_all( );
-//! Show this widget and all it's children
+//! Show this widget and all its children
 //!
 //!
 
@@ -787,12 +787,12 @@ GTK.Widget unmap( );
 //!
 
 GTK.Widget unparent( );
-//! Remove this widget from it's parent
+//! Remove this widget from its parent
 //!
 //!
 
 GTK.Widget unrealize( );
-//! Unrealize this widget, and it's children, if nessesary
+//! Unrealize this widget, and its children, if nessesary
 //!
 //!
 
