@@ -33,7 +33,7 @@ string destination_dir = "";
   tk=GOBBLE();                                                             \
   if(!tk||arrayp(tk))                                                      \
     SYNTAX("Expected type after "+(X),(tk?tk[0]:token));                   \
-  if( tk == "?" || tk == "*" || tk == "&" )                                \
+  if( tk == "?" || tk == "*" || tk == "&" || tk == "+" )                   \
       tk = ({ tk, GOBBLE() });                                             \
   while( 1 )                                                               \
   {                                                                        \
@@ -524,7 +524,7 @@ class Property( string name, Type type, int set,
 
 class Type
 {
-  int star, amp, opt, copy, ref;
+  int star, amp, opt, copy, ref, plus;
   array(Type) subtypes;
   Type array_type;
 
@@ -668,6 +668,7 @@ class Type
       amp = sscanf( n, "&%s", n );
       star = sscanf( n, "*%s", n );
       opt = sscanf(n, "?%s", n );
+      plus = sscanf(n, "+%s", n );
       name = n;
       if( sscanf( name, "%[^(](%s", name, modifiers ) == 2 )
         modifiers = modifiers[..sizeof(modifiers)-2];
@@ -791,6 +792,8 @@ class Type
        return sprintf( (_push="  push_float( (FLOAT_TYPE)%s );"), vv );
 
      default:
+       if( plus )
+	 return sprintf( (_push="  push_gobject( %s );"), vv );
        if( classes[name] )
          return classes[name]->push( vv );
        throw(sprintf("Cannot push %O, %s is not a class", this_object(),

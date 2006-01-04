@@ -185,7 +185,7 @@ void set_preview_widget(GTK2.Widget widget);
 //! internally generated preview of the current file or it may display no
 //! preview at all.
 
-GTK2.Widget get_preview_widget();
++GTK2.Widget get_preview_widget();
 //! Gets the current preview widget.
 
 void set_preview_widget_active(int setting);
@@ -217,7 +217,7 @@ string get_preview_uri();
 void set_extra_widget(GTK2.Widget widget);
 //! Sets an application-supplied widget to provide extra options to the user.
 
-GTK2.Widget get_extra_widget();
++GTK2.Widget get_extra_widget();
 //! Gets the extra widget.
 
 /* TODO: *shortcut_folder* *filter* */
