@@ -303,7 +303,7 @@ void shape_combine_mask( GDK.Bitmap shape, int xoffset, int yoffset )
 //! Set the shape of the widget, or, rather, its window, to that of
 //! the supplied bitmap. Notice how the window behind the example
 //! window can be seen because of the rather odd shape the example window has.
-//! TIMG: GTK.Window( GTK.WINDOW_TOPLEVEL )->add(GTK.Label("A rather Oddly shaped\n" "Window\n" "Indeed\n" "Or what do you\nthink?\n" "This text\n" "should\n" "be long enough"))->shape_combine_mask( GDK.Bitmap(Image.image(100,100,255,255,255)->rotate(10,0,0,0) ), 20,20)
+//! TIMG: GTK.Window( GTK.WINDOW_TOPLEVEL )->add(GTK.Label("A rather Oddly shaped\n" "Window\n" "Indeed\n" "Or what do you\nthink?\n" "This text\n" "should\n" "be long enough"))->shape_combine_mask( GDK.Bitmap(Image.Image(100,100,255,255,255)->rotate(10,0,0,0) ), 20,20)
 //! <br />NOTE: The widget must be realized before this function can be used
 {
   struct object *m;

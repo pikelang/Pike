@@ -14,8 +14,8 @@ inherit GTK.Misc;
 //! application. If you want to create graphical images which can be
 //! manipulated by the application, look at W(Image).
 //! </p><p>
-//! IMG: GTK.Pixmap( GDK.Pixmap( Image.image(100,100)->test()) )
-//! IMG: GTK.Pixmap( GDK.Pixmap( Image.image(100,100)->test()), GDK.Bitmap(Image.image(100,100,255,255,255)->box(10,10,80,80, 0,0,0) ))
+//! IMG: GTK.Pixmap( GDK.Pixmap( Image.Image(100,100)->test()) )
+//! IMG: GTK.Pixmap( GDK.Pixmap( Image.Image(100,100)->test()), GDK.Bitmap(Image.Image(100,100,255,255,255)->box(10,10,80,80, 0,0,0) ))
 //! </p>
 
 void create( GDK.Pixmap pixmap, ?GDK.Bitmap mask );

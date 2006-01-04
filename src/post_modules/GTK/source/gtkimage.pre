@@ -5,7 +5,7 @@ inherit GTK.Misc;
 //! A pixmap, on the other hand, is a image object stored in the X-server.
 //! See GDK.Image and GDK.Pixmap.
 //!<p>
-//! IMG: GTK.Image( GDK.Image(0)->set(Image.image(200,200)->test() ) );
+//! IMG: GTK.Image( GDK.Image(0)->set(Image.Image(200,200)->test() ) );
 //!</p>
 void create( GDK.Image image, ?GDK.Bitmap mask );
 //! You can skip the mask. The mask is used to mask the drawing of the image
