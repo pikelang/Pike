@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.47 2004/10/05 13:09:51 mast Exp $
+# $Id: configure.in,v 1.48 2006/01/04 19:34:02 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -36,61 +36,67 @@ if test x$with_mysql = xno; then
 else
   PIKE_FEATURE_NODEP(Mysql)
 
-  AC_MSG_CHECKING(for Mysql lib-directory)
+  AC_MSG_CHECKING(for Mysql directory prefix)
+  AC_CACHE_VAL(pike_cv_mysql_lib_dir_prefix, [
+    pike_cv_mysql_lib_dir_prefix=no
+    for dir_prefix in $with_mysql \
+      `echo "${with_site_prefixes}"|sed -e 's/:/ /g'` \
+      `echo $exec_prefix | sed "s@^NONE@$prefix@g" | sed "s@^NONE@$with_root$ac_default_prefix@g"` \
+      $with_root/usr/local $with_root/sw/local $with_root/sw \
+      $with_root/usr/gnu $with_root/opt/gnu $with_root/sw/gnu \
+      $with_root/usr/freeware $with_root/usr/pkg \
+      $with_root/usr/sfw $with_root/opt/sfw $with_root/opt/csw \
+      $with_root/usr $with_root
+    do
+      if test -d "$dir_prefix/."; then :; else continue; fi
 
-  libdirs="$with_root/usr/local/lib/mysql $with_root/usr/local/mysql/lib/mysql $with_root/opt/lib/mysql $with_root/opt/mysql/lib/mysql $with_root/usr/gnu/lib/mysql $with_root/usr/lib/mysql $with_root/lib/mysql $with_root/usr/pkg/lib/mysql $with_root/usr/local/mysql/lib $with_root/usr/local/mysql/mach-lib-thread"
-  incdirs="$with_root/usr/local/include/mysql $with_root/usr/local/mysql/include/mysql $with_root/opt/include/mysql $with_root/opt/mysql/include/mysql $with_root/usr/gnu/include/mysql $with_root/usr/include/mysql $with_root/include/mysql $with_root/usr/pkg/include/mysql $with_root/usr/local/mysql/include no"
-
-  if test x$with_mysql = xyes; then :; else
-    # Mysql installation directory specified.
-
-    libdirs="$with_mysql/lib/mysql $with_mysql/lib $libdirs"
-    incdirs="$with_mysql/include/mysql $with_mysql/include $incdirs"
-  fi
-
-  AC_CACHE_VAL(pike_cv_mysql_lib_dir, [
-    pike_cv_mysql_lib_dir=no
-    for dir in $libdirs; do
-      for sedpat in 's|foo|foo|' \
-		    's|lib/|lib32/|' \
-		    's|lib/|lib64/|' \
-		    's|lib/|lib/64/|'
-      do
-        d=`echo $dir | sed -e $sedpat`
-	if test -d $d/.; then
-	  pike_cv_mysql_lib_dir=$d
-	  break 2
-	else
-	  :
-	fi
+      for subdir in mysql .; do
+        if test -d "$dir_prefix/$subdir/."; then :; else continue; fi
+        for libdir in "lib$with_abi" "lib/$with_abi" "lib"; do
+          if test -d "$dir_prefix/$subdir/$libdir/mysql/."; then
+            pike_cv_mysql_lib_dir_prefix="$dir_prefix/$subdir"
+	    break 3
+          fi
+        done
       done
     done
   ])
+  AC_MSG_RESULT($pike_cv_mysql_lib_dir_prefix)
 
-  AC_MSG_RESULT($pike_cv_mysql_lib_dir)
+  if test "x$pike_cv_mysql_lib_dir_prefix" = "xno"; then :; else
 
-  if test x$pike_cv_mysql_lib_dir = xno; then :; else
-    echo Adding $pike_cv_mysql_lib_dir to the library search path.
-    LDFLAGS="${LDFLAGS} -R$pike_cv_mysql_lib_dir -L$pike_cv_mysql_lib_dir"
-  fi
+    AC_MSG_CHECKING(for Mysql lib directory)
+    AC_CACHE_VAL(pike_cv_mysql_lib_dir, [
+      pike_cv_mysql_lib_dir="no"
+      for libdir in "lib$with_abi" "lib/$with_abi" "lib"; do
+        if test -d "$pike_cv_mysql_lib_dir_prefix/$libdir/mysql/."; then
+          pike_cv_mysql_lib_dir="$pike_cv_mysql_lib_dir_prefix/$libdir/mysql"
+	  break
+        fi
+      done
+    ])
+    AC_MSG_RESULT($pike_cv_mysql_lib_dir)
+    if test "x$pike_cv_mysql_lib_dir" = "xno"; then :; else
+      echo Adding $pike_cv_mysql_lib_dir to the library search path.
+      LDFLAGS="${LDFLAGS} -R$pike_cv_mysql_lib_dir -L$pike_cv_mysql_lib_dir"
+    fi
 
-  AC_MSG_CHECKING(for Mysql include-directory)
+    AC_MSG_CHECKING(for Mysql include-directory)
+    AC_CACHE_VAL(pike_cv_mysql_include_dir, [
+      pike_cv_mysql_include_dir="no"
+      for incdir in include/mysql include; do
+        if test -d "$pike_cv_mysql_lib_dir_prefix/$incdir/."; then
+          $pike_cv_mysql_include_dir="$pike_cv_mysql_lib_dir_prefix/$incdir"
+	  break
+        fi
+      done
+    ])
+    AC_MSG_RESULT($pike_cv_mysql_include_dir)
 
-  AC_CACHE_VAL(pike_cv_mysql_include_dir, [
-    for pike_cv_mysql_include_dir in $incdirs; do
-      if test -d $pike_cv_mysql_include_dir/.; then
-        break
-      else
-	:
-      fi
-    done
-  ])
-
-  AC_MSG_RESULT($pike_cv_mysql_include_dir)
-
-  if test x$pike_cv_mysql_include_dir = xno; then :; else
-    echo Adding $pike_cv_mysql_include_dir to the include search path.
-    CPPFLAGS="${CPPFLAGS} -I$pike_cv_mysql_include_dir"
+    if test x$pike_cv_mysql_include_dir = xno; then :; else
+      echo Adding $pike_cv_mysql_include_dir to the include search path.
+      CPPFLAGS="${CPPFLAGS} -I$pike_cv_mysql_include_dir"
+    fi
   fi
 
   # Header file
