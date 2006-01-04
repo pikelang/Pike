@@ -209,7 +209,7 @@ Description: Pike 7.7 documentation meta package
 
 Package: pike7.7-meta
 Architecture: all
-Depends: pike7.7 (=${Source-Version}), pike7.7-mysql (=${Source-Version}), pike7.7-pg (=${Source-Version}), pike7.7-odbc (=${Source-Version}), pike7.7-image (=${Source-Version}), pike7.7-sdl (=${Source-Version}), pike7.7-gdbm (=${Source-Version}), pike7.7-gtk (=${Source-Version}), pike7.7-gl (=${Source-Version}), pike7.7-sane (=${Source-Version}), pike7.7-doc (=${Source-Version}), pike7.7-dev (=${Source-Version}), pike7.7-perl (=${Source-Version}), pike7.7-svg (=${Source-Version}), pike7.7-pcre (=${Source-Version}), pike7.7-bzip2 (=${Source-Version}), pike7.7-fuse (=${Source-Version}), pike7.7-mdns (=${Source-Version}), pike7.7-sqlite (=${Source-Version}), pike7.7-fftw (=${Source-Version})
+Depends: pike7.7 (=${Source-Version}), pike7.7-mysql (=${Source-Version}), pike7.7-pg (=${Source-Version}), pike7.7-odbc (=${Source-Version}), pike7.7-image (=${Source-Version}), pike7.7-sdl (=${Source-Version}), pike7.7-gdbm (=${Source-Version}), pike7.7-gtk (=${Source-Version}), pike7.7-gl (=${Source-Version}), pike7.7-sane (=${Source-Version}), pike7.7-doc (=${Source-Version}), pike7.7-dev (=${Source-Version}), pike7.7-perl (=${Source-Version}), pike7.7-svg (=${Source-Version}), pike7.7-pcre (=${Source-Version}), pike7.7-bzip2 (=${Source-Version}), pike7.7-fuse (=${Source-Version}), pike7.7-sqlite (=${Source-Version}), pike7.7-fftw (=${Source-Version})
 Description: Meta package for Pike 7.7
  This package depends on all the components that make up the Pike
  language distribution. It will pull in a LOT of packages the
