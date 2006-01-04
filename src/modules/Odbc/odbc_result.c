@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.42 2006/01/03 14:05:36 grubba Exp $
+|| $Id: odbc_result.c,v 1.43 2006/01/04 18:07:28 grendel Exp $
 */
 
 /*
@@ -329,7 +329,7 @@ static void f_execute(INT32 args)
 #ifdef SQL_WCHAR
   get_all_args("odbc_result->execute", args, "%W", &q);
   if (q->size_shift > 1) {
-    SIMPLE_ARG_TYPE_ERROR("execute", (ARG), "string(16bit)");
+    SIMPLE_ARG_TYPE_ERROR("execute", 1, "string(16bit)");
   }
 #else
   get_all_args("odbc_result->execute", args, "%S", &q);
