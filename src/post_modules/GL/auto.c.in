@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.52 2005/08/15 15:48:39 nilsson Exp $
+|| $Id: auto.c.in,v 1.53 2006/01/04 20:09:37 grendel Exp $
 */
 
 #include "global.h"
@@ -172,7 +172,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
     image_program=program_from_svalue(sp-1);
     pop_stack();
     if(image_program == NULL)
-      Pike_error("%s: Can't resolve Image.image!\n", func);
+      Pike_error("%s: Can't resolve Image.Image!\n", func);
   }
 
   img->alloc = 0;

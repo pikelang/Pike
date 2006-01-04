@@ -17,7 +17,7 @@ int windy, edx; // is it windy today? edx is the wind direction.
 #define I(X) Image.PNM.decode(Stdio.read_bytes("snow0" #X ".pbm"))->invert()->scale(1.5)
 
 array (GDK.GC) snow_flake_gcs = ({});
-array (Image.image) snow_flakes=({I(0), I(1), I(2),  I(3), I(4), I(5), I(6)});
+array (Image.Image) snow_flakes=({I(0), I(1), I(2),  I(3), I(4), I(5), I(6)});
 
 #define SPEED 1.0
 

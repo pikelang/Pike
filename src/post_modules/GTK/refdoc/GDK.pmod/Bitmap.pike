@@ -9,7 +9,7 @@ inherit GDK.Drawable;
 
 static GDK.Bitmap create( int|Image.Image xsize_or_image, int|void ysize, string|void bitmap );
 //! Create a new GDK.Bitmap object.
-//! Argument is either an Image.image object, or {xsisze,ysize,xbitmapdata}.
+//! Argument is either an Image.Image object, or {xsisze,ysize,xbitmapdata}.
 //!
 //!
 

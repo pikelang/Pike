@@ -11,7 +11,7 @@ object root()
   return cached_root = root;
 }
 
-array(int) get_max_size( Image.image q)
+array(int) get_max_size( Image.Image q)
 {
   return ({ min( q->xsize(), root()->xsize()-30 ),
             min( q->ysize(), root()->ysize()-30 ) });

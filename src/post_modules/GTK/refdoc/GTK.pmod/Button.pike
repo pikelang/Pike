@@ -6,7 +6,7 @@
 //!@expr{ GTK.Button("A button\nwith multiple lines\nof text")@}
 //!@xml{<image>../images/gtk_button_2.png</image>@}
 //!
-//!@expr{ GTK.Button()->add(GTK.Image(GDK.Image(0)->set(Image.image(100,40)->test())))@}
+//!@expr{ GTK.Button()->add(GTK.Image(GDK.Image(0)->set(Image.Image(100,40)->test())))@}
 //!@xml{<image>../images/gtk_button_3.png</image>@}
 //!
 //!

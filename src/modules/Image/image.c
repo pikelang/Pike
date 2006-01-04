@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.226 2005/12/12 20:24:46 nilsson Exp $
+|| $Id: image.c,v 1.227 2006/01/04 20:09:37 grendel Exp $
 */
 
 /*
@@ -2499,18 +2499,18 @@ void image_threshold(INT32 args)
 **!	<td>->rgb_to_hsv();</td>
 **!	</tr><tr valign=center>
 **!	<td><illustration>
-**!     return Image.image(67,67)->tuned_box(0,0, 67,67,
+**!     return Image.Image(67,67)->tuned_box(0,0, 67,67,
 **!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
 **!                         ({ 255,255,255 }), ({ 0,255,255 })}));
 **!	</illustration></td>
 **!	<td><illustration>
-**!     return Image.image(67,67)->tuned_box(0,0, 67,67,
+**!     return Image.Image(67,67)->tuned_box(0,0, 67,67,
 **!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
 **!                         ({ 255,255,255 }), ({ 0,255,255 })}))
 **!          ->hsv_to_rgb();
 **!	</illustration></td>
 **!	<td><illustration>
-**!     return Image.image(67,67)->tuned_box(0,0, 67,67,
+**!     return Image.Image(67,67)->tuned_box(0,0, 67,67,
 **!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
 **!                         ({ 255,255,255 }), ({ 0,255,255 })}))
 **!          ->rgb_to_hsv();
@@ -2708,18 +2708,18 @@ void image_rgb_to_hsv(INT32 args)
 **!	<td>->rgb_to_yuv();</td>
 **!	</tr><tr valign=center>
 **!	<td><illustration>
-**!     return Image.image(67,67)->tuned_box(0,0, 67,67,
+**!     return Image.Image(67,67)->tuned_box(0,0, 67,67,
 **!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
 **!                         ({ 255,255,255 }), ({ 0,255,255 })}));
 **!	</illustration></td>
 **!	<td><illustration>
-**!     return Image.image(67,67)->tuned_box(0,0, 67,67,
+**!     return Image.Image(67,67)->tuned_box(0,0, 67,67,
 **!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
 **!                         ({ 255,255,255 }), ({ 0,255,255 })}))
 **!          ->yuv_to_rgb();
 **!	</illustration></td>
 **!	<td><illustration>
-**!     return Image.image(67,67)->tuned_box(0,0, 67,67,
+**!     return Image.Image(67,67)->tuned_box(0,0, 67,67,
 **!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
 **!                         ({ 255,255,255 }), ({ 0,255,255 })}))
 **!          ->rgb_to_yuv();

@@ -17,7 +17,7 @@ int main(int argc, array argv)
 {
   GTK.setup_gtk(argv);
 
-  object drag_icon = GDK.Pixmap( Image.image( 64,64 )->test() );
+  object drag_icon = GDK.Pixmap( Image.Image( 64,64 )->test() );
 
   object window = GTK.Window( GTK.WindowToplevel );
   window->signal_connect( "destroy", exit, 0 );

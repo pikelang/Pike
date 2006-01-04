@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_gif.c,v 1.25 2005/10/19 16:35:53 grubba Exp $
+|| $Id: image_gif.c,v 1.26 2006/01/04 20:09:37 grendel Exp $
 */
 
 /*
@@ -615,7 +615,7 @@ CHRONO("gif _render_block end");
 **!	</pre>
 **!
 **!	<illustration type=image/gif>
-**!	object nct=Image.colortable(lena(),32,({({0,0,0})}));
+**!	object nct=Image.Colortable(lena(),32,({({0,0,0})}));
 **!	string s=Image.GIF.header_block(lena()->xsize(),lena()->ysize(),nct);
 **!	foreach ( ({lena()->xsize(),
 **!		    (int)(lena()->xsize()*0.75),
@@ -636,7 +636,7 @@ CHRONO("gif _render_block end");
 **!	return s;
 **!	</illustration>The above animation is thus created:
 **!	<pre>
-**!	object nct=Image.colortable(lena,32,({({0,0,0})}));
+**!	object nct=Image.Colortable(lena,32,({({0,0,0})}));
 **!	string s=GIF.header_block(lena->xsize(),lena->ysize(),nct);
 **!	foreach ( ({lena->xsize(),
 **!		    (int)(lena->xsize()*0.75),

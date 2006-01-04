@@ -1,5 +1,5 @@
 #test Image.image->polyfill 3 (hollow stars)
-   object img=Image.image(100,100,0,0,0);
+   object img=Image.Image(100,100,0,0,0);
    int i;
 
    array a=({}),b=({});
@@ -56,7 +56,7 @@
 	    50+20*cos((i+0.5)*2*3.1415926535/5+0.11) });
    }
 
-   object img=Image.image(100,100,0,0,0);
+   object img=Image.Image(100,100,0,0,0);
    img->setcolor(128,0,16);
    img->polyfill(a);
 
