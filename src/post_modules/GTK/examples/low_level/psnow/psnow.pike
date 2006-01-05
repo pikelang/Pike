@@ -14,12 +14,14 @@ GDK.Window root;
 float mdx, mdy; // Size of the root window.
 int windy, edx; // is it windy today? edx is the wind direction.
 
-#define I(X) Image.PNM.decode(Stdio.read_bytes("snow0" #X ".pbm"))->invert()->scale(1.5)
+#define I(X) Image.PNM.decode(Stdio.read_file(combine_path(__FILE__, "../snow0" #X ".pbm")))->invert()->scale(1.5)
 
 array (GDK.GC) snow_flake_gcs = ({});
 array (Image.Image) snow_flakes=({I(0), I(1), I(2),  I(3), I(4), I(5), I(6)});
 
-#define SPEED 1.0
+#define SPEED 2.0
+
+float cursor_x, cursor_y;
 
 class Snowflake
 {
@@ -31,25 +33,41 @@ class Snowflake
   void init_flake()
   {
     x = (float)random(root->xsize()-8);
-    dx = (random(20)/(10.0*SPEED))-2.0;
-    dy = (random(90)/(10.0*SPEED))+0.5;
+    dx = (random(20)/(100.0*SPEED))-2.0;
+    dy = (random(300)/(100.0*SPEED))+0.5;
     y = 0.0;
     ox = oy = 0;
   }
 
   void step()
   {
-    dx += (random(10)-4.5)/2.0*SPEED;
-    if(abs(dx) > 10.0) dx = 10.0*sgn(dx);
+    dx += (random(10)-4.5)/100.0*SPEED;
+    if(abs(dx) > 1.0) dx = 1.0*sgn(dx);
     x += dx; y += dy;
     if(windy)
     {
-      if(windy > 100) dx2 += edx * 0.2;
-      else if(windy<=100) dx2 -= edx * 0.2;
+      if(windy > 100) dx2 += edx * 0.1;
+      else if(windy<=100) dx2 -= edx * 0.1;
       x+=dx2;
     }
     int ix = (int)x;
     int iy = (int)y;
+
+    float xd = x-cursor_x;
+    float yd = y-cursor_y;
+
+    float d;
+    if( abs(d=sqrt(xd*xd + yd*yd)) < 100.0 )
+    {
+	dx += (100.0-abs(xd))/(windy?100.0:300.0) * sgn(xd);
+	dy += (100.0-abs(yd))/(windy?100.0:300.0) * sgn(yd);
+    }
+
+    if( dy < 0.7 )
+	dy += 0.1;
+
+    if( dy > 1.7 )
+	dy -= 0.1;
 
     if(ix != ox || iy != oy)
     {
@@ -104,6 +122,9 @@ void move_snow()
       }
     } else
       windy--;
+    mapping q = root->get_pointer(0xfedc);
+    cursor_x = q->x;
+    cursor_y = q->y;
     snow->step();
     GTK.low_flush();
     sleep(0.025/SPEED);
@@ -120,11 +141,11 @@ int collided( Snowflake f )
    if( region->point_in( x, y+h ) || region->point_in( x+w, y+h ))
    {
        // Expand region somewhat, unless it's at the top.
-       if( y > 100 && x > 10)
-       {
+//        if( y > 100 && x > 10)
+//        {
 	   
-	   region |= GDK.Rectangle( x+w/2, y+h/2+h/4, w/2, h/2 );
-       }
+// 	   region |= GDK.Rectangle( x+w/2, y+h/2+h/4, w/2, h/2 );
+//        }
 //   if( y > 1200 )
      return 1;
    }
@@ -146,17 +167,17 @@ int main()
       root = GDK.Window( maybe[0]->data[0] );
 
   mapping rg = root->get_geometry();
-  foreach( root->children(), object o )
-  {
-    if(o->is_visible())
-    {
-      mapping g = o->get_geometry();
-      if(g->width >= rg->width*0.7)
-        continue;
-      region |= GDK.Rectangle( g->x, g->y, g->width, g->height );
-    }
-  }
-  region |= GDK.Rectangle( 0, rg->height-1, rg->width, 1 );
+//   foreach( root->children(), object o )
+//   {
+//     if(o->is_visible())
+//     {
+//       mapping g = o->get_geometry();
+//       if(g->width >= rg->width*0.7)
+//         continue;
+//       region |= GDK.Rectangle( g->x, g->y, g->width, g->height );
+//     }
+//   }
+   region |= GDK.Rectangle( 0, rg->height-1, rg->width, 1 );
   mdx = (float)root->xsize(); mdy = (float)root->ysize();
   make_some_snow();
   move_snow();
