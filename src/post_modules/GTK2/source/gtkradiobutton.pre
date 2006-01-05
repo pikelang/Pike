@@ -10,7 +10,7 @@ inherit GTK2.CheckButton;
 //! <p> To connect the buttons, use another button in the desired group
 //! as the second argument to GTK2.RadioButton().
 //! </p>
-//! IMG: GTK2.Radio_button("Button");
+//! IMG: GTK2.RadioButton("Button");
 
 //! Properties:
 //! GTK2.RadioButton group

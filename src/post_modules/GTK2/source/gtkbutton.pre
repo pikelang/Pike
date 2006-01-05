@@ -6,7 +6,7 @@ inherit GTK2.Bin;
 //! draws a bevelbox around itself.
 //! IMG: GTK2.Button("A button")
 //! IMG: GTK2.Button("A button\nwith multiple lines\nof text")
-//! IMG: GTK2.Button()->add(GTK2.Image(GDK2.Image(0)->set(Image.image(100,40)->test())))
+//! IMG: GTK2.Button()->add(GTK2.Image(GTK2.GdkImage(0)->set(Image.Image(100,40)->test())))
 
 //! Properties:
 //! int focus-on-click

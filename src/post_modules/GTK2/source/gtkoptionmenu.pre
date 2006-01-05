@@ -9,7 +9,7 @@ inherit GTK2.Button;
 //! choice. When activated the OptionMenu displays a popup W(Menu)
 //! which allows the user to make a new choice.
 //! <p>
-//! IMG: GTK.OptionMenu()->set_menu(GTK.Menu()->add( GTK.Menu_item("Option 1") ));
+//! IMG: GTK2.OptionMenu()->set_menu(GTK2.Menu()->add( GTK2.MenuItem("Option 1") ));
 //! </p>
 //! Properties:
 //! GTK2.Menu menu

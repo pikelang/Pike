@@ -3,7 +3,7 @@ class GTK2.VScrollbar;
 inherit GTK2.Scrollbar;
 
 //! General documentation: See W(Scrollbar)
-//! IMG: GTK2.Vscrollbar(GTK2.Adjustment())->set_size_request(15,60)
+//! IMG: GTK2.VScrollbar(GTK2.Adjustment())->set_size_request(15,60)
 
 void create(GTK2.Adjustment|mapping(string:mixed)|void pos_or_props)
 //! Used to create a new vscrollbar widget.

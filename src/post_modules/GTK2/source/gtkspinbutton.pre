@@ -31,7 +31,7 @@ inherit GTK2.Entry;
 //! The argument order for the W(Adjustment) constructor is:<br />
 //! value, lower, upper, step_increment, page_increment, page_size<br />
 //!
-//! IMG: GTK2.SpinButton(GTK2.Adjustment(),0.1, 1 )->set_usize(60,20)
+//! IMG: GTK2.SpinButton(GTK2.Adjustment(),0.1, 1 )->set_size_request(60,20)
 //! </p>
 
 //! Properties:

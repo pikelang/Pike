@@ -13,7 +13,7 @@ inherit GTK2.Scale;
 //! places shown can be set using the parent W(Scale) class's
 //! functions.
 //! </p>
-//! IMG: GTK2.Hscale(GTK2.Adjustment())->set_usize(300,30)
+//! IMG: GTK2.Hscale(GTK2.Adjustment())->set_size_request(300,30)
 
 void create(GTK2.Adjustment|float|mapping(string:mixed) settings_or_min_props,
 	    ?float max, ?float step)

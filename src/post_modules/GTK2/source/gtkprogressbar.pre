@@ -4,10 +4,10 @@ inherit GTK2.Progress;
 
 //! A simple progress bar. Useful when you are doing things that take a long
 //! time. Try to always have an 'abort' button whenever it makes sence.
-//! IMG: GTK2.ProgressBar()->update(0.1)
-//! IMG: GTK2.ProgressBar()->set_show_text(1)->update(0.3)
-//! IMG: GTK2.ProgressBar()->update(0.6)
-//! IMG: GTK2.ProgressBar()->update(1.0)
+//! IMG: GTK2.ProgressBar()->set_fraction(0.1)
+//! IMG: GTK2.ProgressBar()->set_property("show_text", 1)->set_fraction(0.3)
+//! IMG: GTK2.ProgressBar()->set_fraction(0.6)
+//! IMG: GTK2.ProgressBar()->set_fraction(1.0)
 
 //! Properties:
 //! int discrete-blocks

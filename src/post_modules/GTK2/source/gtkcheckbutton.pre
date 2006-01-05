@@ -7,7 +7,7 @@ inherit GTK2.ToggleButton;
 //! being buttons with text inside them, they are small squares with
 //! the text to the right of them. These are often used for toggling
 //! options on and off in applications.
-//! IMG: GTK2.Check_button( "title" )
+//! IMG: GTK2.CheckButton( "title" )
 
 //! Style properties:
 //! int indicator-size

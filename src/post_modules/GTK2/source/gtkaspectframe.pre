@@ -5,7 +5,7 @@ inherit GTK2.Frame;
 //! A W(Frame) widget  that always maintain a specified ratio
 //! between width and height. width/height == ratio
 //!
-//! IMG: GTK2.Aspect_frame("Title",0.5,0.5,0.4,0)->add( GTK2.Label("Wrong aspect"))->set_size_request(200,200)
+//! IMG: GTK2.AspectFrame("Title",0.5,0.5,0.4,0)->add( GTK2.Label("Wrong aspect"))->set_size_request(200,200)
 
 //! Properties:
 //! int obey-child
