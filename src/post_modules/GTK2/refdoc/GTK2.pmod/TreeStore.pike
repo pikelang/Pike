@@ -92,6 +92,22 @@ int iter_depth( GTK2.TreeIter iter );
 //!
 //!
 
+GTK2.TreeStore move_after( GTK2.TreeIter iter, GTK2.TreeIter position );
+//! Moves iter to after position.  These should be at the
+//! same level.  This only works if the store is unsorted.
+//! If position is omitted, iter will be moved to the start
+//! of the level.
+//!
+//!
+
+GTK2.TreeStore move_before( GTK2.TreeIter iter, GTK2.TreeIter position );
+//! Moves iter to before position.  These should be at the
+//! same level.  This only works if the store is unsorted.
+//! If position is omitted, iter will be moved to the end
+//! of the level.
+//!
+//!
+
 GTK2.TreeIter prepend( GTK2.TreeIter parent );
 //! Prepend a new row. If parent is valid, then it will prepend
 //! the new row before the first child of parent, otherwise it will
@@ -161,5 +177,10 @@ GTK2.TreeStore set_value( GTK2.TreeIter iter, int column, mixed value );
 
 GTK2.TreeStore sort_column_changed( );
 //! Emits a "sort-column-changed" signal.
+//!
+//!
+
+GTK2.TreeStore swap( GTK2.TreeIter a, GTK2.TreeIter b );
+//! Swap 2 rows.  Only works if this store is unsorted.
 //!
 //!

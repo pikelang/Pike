@@ -7,6 +7,11 @@
 
 inherit G.Object;
 
+int count_selected_rows( );
+//! Returns the number of rows that have been selected.
+//!
+//!
+
 int get_mode( );
 //! Gets the selectiom mode.
 //!
@@ -17,6 +22,14 @@ array get_selected( );
 //! is set to GTK2.SELECTION_SINGLE or GTK2.SELECTION_BROWSE.  Also returns
 //! W(TreeModel) as a convenience.  This function will not work if you this
 //! selection is set to GTK2.SELECTION_MULTIPLE.
+//!
+//!
+
+array get_selected_rows( GTK2.TreeModel model );
+//! Creates a list of W(TreePath)'s for all selected rows.  Additionally, if
+//! you are planning on modified the model after calling this function, you
+//! may want to convert the returned list into a list of W(TreeRowReference)s.
+//! To do this, you can use GTK2.TreeRowReference->create().
 //!
 //!
 
@@ -82,5 +95,10 @@ GTK2.TreeSelection unselect_iter( GTK2.TreeIter iter );
 
 GTK2.TreeSelection unselect_path( GTK2.TreePath path );
 //! Unselects the row at path.
+//!
+//!
+
+GTK2.TreeSelection unselect_range( GTK2.TreePath start, GTK2.TreePath end );
+//! Unselects a range of nodes, determined by start and end inclusive.
 //!
 //!

@@ -48,13 +48,48 @@ static GTK2.Toolbar create( mapping|void props );
 //!
 //!
 
+int get_drop_index( int x, int y );
+//! Returns the position corresponding to the indicated point on the toolbar.
+//! This is useful when dragging items to the toolbar: this function returns
+//! the position a new item should be inserted.
+//! 
+//! x and y are in toolbar coordinates.
+//!
+//!
+
 int get_icon_size( );
 //! Retrieves the icon size for the toolbar.  One of @[ICON_SIZE_BUTTON], @[ICON_SIZE_DIALOG], @[ICON_SIZE_DND], @[ICON_SIZE_INVALID], @[ICON_SIZE_LARGE_TOOLBAR], @[ICON_SIZE_MENU] and @[ICON_SIZE_SMALL_TOOLBAR].
 //!
 //!
 
+int get_item_index( GTK2.ToolItem item );
+//! Returns the position of item on the toolbar, starting from 0.
+//!
+//!
+
+int get_n_items( );
+//! Returns the number of items on the toolbar.
+//!
+//!
+
+GTK2.ToolItem get_nth_item( int n );
+//! Returns the n's item on the toolbar, or empty if the toolbar does not
+//! contain an n'th item.
+//!
+//!
+
 int get_orientation( );
 //! Retrieves the current orientation of the toolbar.
+//!
+//!
+
+int get_relief_style( );
+//! Returns the relief style of buttons.
+//!
+//!
+
+int get_show_arrow( );
+//! Returns whether the toolbar has an overflow menu.
 //!
 //!
 
@@ -69,9 +104,33 @@ int get_tooltips( );
 //!
 //!
 
+GTK2.Toolbar insert( GTK2.ToolItem item, int pos );
+//! Insert a W(ToolItem) into the toolbar at position pos.  If pos is 0
+//! the item is prepended to the start of the toolbar.  If pos is negative,
+//! the item is appended to the end of the toolbar.
+//!
+//!
+
+GTK2.Toolbar set_drop_highlight_item( GTK2.ToolItem item, int index );
+//! Highlights the toolbar to give an ide aof what it would like if item was
+//! added at the position indicated by index.
+//! 
+//! The item passed to this function must not be part of any widget hierarchy.
+//! When an item is set as drop highlight item it can not be added to any
+//! widget hierarchy or used as highlight item for another toolbar.
+//!
+//!
+
 GTK2.Toolbar set_orientation( int orientation );
 //! Sets whether a toolbar should appear horizontally or vertically.
 //! One of @[ORIENTATION_HORIZONTAL] and @[ORIENTATION_VERTICAL].
+//!
+//!
+
+GTK2.Toolbar set_show_arrow( int show_arrow );
+//! Sets whether to show an overflow menu when the toolbar doesn't have room
+//! for all items on it.  If true, items for which there are not room are
+//! are available through an overflow menu.
 //!
 //!
 

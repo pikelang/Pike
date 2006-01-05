@@ -12,8 +12,10 @@
 //! int default-width
 //! int destroy-with-parent
 //! int focus-on-map
+//! int gravity @[GDK_GRAVITY_CENTER], @[GDK_GRAVITY_EAST], @[GDK_GRAVITY_NORTH], @[GDK_GRAVITY_NORTH_EAST], @[GDK_GRAVITY_NORTH_WEST], @[GDK_GRAVITY_SOUTH], @[GDK_GRAVITY_SOUTH_EAST], @[GDK_GRAVITY_SOUTH_WEST], @[GDK_GRAVITY_STATIC] and @[GDK_GRAVITY_WEST]
 //! int has-toplevel-focus
 //! GDK2.Pixbuf icon
+//! string icon-name
 //! int is-active
 //! int modal
 //! int resizable
@@ -23,7 +25,7 @@
 //! int skip-taskbar-hint
 //! string title
 //! int type @[WINDOW_POPUP] and @[WINDOW_TOPLEVEL]
-//! int type-hint @[GDK_WINDOW_TYPE_HINT_DIALOG], @[GDK_WINDOW_TYPE_HINT_MENU], @[GDK_WINDOW_TYPE_HINT_NORMAL] and @[GDK_WINDOW_TYPE_HINT_TOOLBAR]
+//! int type-hint @[GDK_WINDOW_TYPE_HINT_DESKTOP], @[GDK_WINDOW_TYPE_HINT_DIALOG], @[GDK_WINDOW_TYPE_HINT_DOCK], @[GDK_WINDOW_TYPE_HINT_MENU], @[GDK_WINDOW_TYPE_HINT_NORMAL], @[GDK_WINDOW_TYPE_HINT_SPLASHSCREEN], @[GDK_WINDOW_TYPE_HINT_TOOLBAR] and @[GDK_WINDOW_TYPE_HINT_UTILITY]
 //! int window-position @[WIN_POS_CENTER], @[WIN_POS_CENTER_ALWAYS], @[WIN_POS_CENTER_ON_PARENT], @[WIN_POS_MOUSE] and @[WIN_POS_NONE]
 //!
 //!
@@ -77,6 +79,16 @@ GTK2.Window deiconify( );
 //!
 //!
 
+GTK2.Window fullscreen( );
+//! Asks to place this window in the fullscreen state.  Same caveats iconify().
+//!
+//!
+
+int get_accept_focus( );
+//! Gets the value set by set_accept_focus().
+//!
+//!
+
 int get_decorated( );
 //! Returns whether the window has been set to have decorations such as a title
 //! bar.
@@ -103,6 +115,11 @@ GTK2.Widget get_focus( );
 //!
 //!
 
+int get_focus_on_map( );
+//! Gets the value set by set_focus_on_map().
+//!
+//!
+
 GTK2.Window get_gravity( );
 //! Gets the value set by set_gravity().
 //!
@@ -115,6 +132,11 @@ GTK2.GdkPixbuf get_icon( );
 
 array get_icon_list( );
 //! Retrieves the list of icons set by set_icon_list().
+//!
+//!
+
+string get_icon_name( );
+//! Returns the name of the themed icon for the window.
 //!
 //!
 
@@ -171,6 +193,16 @@ mapping get_size( );
 //!
 //!
 
+int get_skip_pager_hint( );
+//! Gets the value set by set_skip_pager_hint().
+//!
+//!
+
+int get_skip_taskbar_hint( );
+//! Gets the value set by set_skip_taskbar_hint().
+//!
+//!
+
 string get_title( );
 //! Retrieves the title of the window.
 //!
@@ -186,12 +218,34 @@ int get_type_hint( );
 //!
 //!
 
+int get_urgency_hint( );
+//! Gets the value set by set_urgency_hint().
+//!
+//!
+
+int has_toplevel_focus( );
+//! Returns whether the input focus is within this window.  For real toplevel
+//! windows, this is identical to is_active(), but for embedded windows, like
+//! W(Plug), the results will differ.
+//!
+//!
+
 GTK2.Window iconify( );
 //! Asks to iconify (minimize) this window.  Note that you shouldn't
 //! assume the window is definitely iconified afterward, because other
 //! entities (e.g. the user or window manager) could deiconify it again,
 //! or there may not be a window manager in which case iconification isn't
 //! possible, etc.
+//!
+//!
+
+int is_active( );
+//! Returns whether the window is part of the current active toplevel.  (That
+//! is, the toplevel window receiving keystrokes.)  The return value is true
+//! if the window is active toplevel itself, but also if it is, say, a W(Plug)
+//! embedded in the active toplevel.  You might use this function if you wanted
+//! to draw a widget differently in an active window from a widget in an
+//! inactive window().
 //!
 //!
 
@@ -281,6 +335,12 @@ GTK2.Window resize( int width, int height );
 //!
 //!
 
+GTK2.Window set_accept_focus( int setting );
+//! Windows may set a hint asking the desktop environment not to receive the
+//! input focus.
+//!
+//!
+
 GTK2.Window set_decorated( int setting );
 //! Add title bar, resize controls, etc.
 //! Default is true, so you may only need to use this function if
@@ -343,6 +403,12 @@ GTK2.Window set_focus( GTK2.Widget child );
 //! this window.  To set the focus to a particular widget in the toplevel, it
 //! is usually more convenient to use GTK2.Widget->grab_focus() instead of this
 //! function.
+//!
+//!
+
+GTK2.Window set_focus_on_map( int setting );
+//! Windows may set a hint asking the desktop environment not to receive the
+//! input focus when the window is mapped.
 //!
 //!
 
@@ -409,6 +475,26 @@ GTK2.Window set_icon( GTK2.GdkPixbuf icon );
 //!
 //!
 
+int set_icon_from_file( string filename );
+//! Sets the icon from a file.
+//!
+//!
+
+GTK2.Window set_icon_name( string name );
+//! Sets the icon for the window from a named themed icon.
+//!
+//!
+
+GTK2.Window set_keep_above( int setting );
+//! Keep window above.
+//!
+//!
+
+GTK2.Window set_keep_below( int setting );
+//! Keep window below.
+//!
+//!
+
 GTK2.Window set_mnemonic_modifier( int modifier );
 //! Sets the mnemonic modifer for this window.
 //!
@@ -436,6 +522,18 @@ GTK2.Window set_resizable( int setting );
 //!
 //!
 
+GTK2.Window set_skip_pager_hint( int setting );
+//! Windows may set a hint asking the desktop environment not to display the
+//! window in the pager.
+//!
+//!
+
+GTK2.Window set_skip_taskbar_hint( int setting );
+//! Windows may set a hint asking the desktop environment not to display the
+//! window in the task bar.  This function sets this hint.
+//!
+//!
+
 GTK2.Window set_title( string title );
 //! Set the window title. The default title is the value sent to
 //! setup_gtk, or if none is sent, Pike GTK.
@@ -452,7 +550,13 @@ GTK2.Window set_transient_for( GTK2.Window parent );
 //!
 
 GTK2.Window set_type_hint( int hint );
-//! Set type of window.  Values are @[GDK_WINDOW_TYPE_HINT_DIALOG], @[GDK_WINDOW_TYPE_HINT_MENU], @[GDK_WINDOW_TYPE_HINT_NORMAL] and @[GDK_WINDOW_TYPE_HINT_TOOLBAR]
+//! Set type of window.  Values are @[GDK_WINDOW_TYPE_HINT_DESKTOP], @[GDK_WINDOW_TYPE_HINT_DIALOG], @[GDK_WINDOW_TYPE_HINT_DOCK], @[GDK_WINDOW_TYPE_HINT_MENU], @[GDK_WINDOW_TYPE_HINT_NORMAL], @[GDK_WINDOW_TYPE_HINT_SPLASHSCREEN], @[GDK_WINDOW_TYPE_HINT_TOOLBAR] and @[GDK_WINDOW_TYPE_HINT_UTILITY]
+//!
+//!
+
+GTK2.Window set_urgency_hint( int setting );
+//! Windows may set a hint asking the desktop environment to draw the users
+//! attention to the window.  This function sets this hint.
 //!
 //!
 
@@ -463,6 +567,11 @@ GTK2.Window set_wmclass( string name, string class );
 
 GTK2.Window stick( );
 //! Makes this window sticky.  Same caveats as iconify().
+//!
+//!
+
+GTK2.Window unfullscreen( );
+//! Opposite of fullscreen().
 //!
 //!
 

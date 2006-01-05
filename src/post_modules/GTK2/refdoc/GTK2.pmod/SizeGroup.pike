@@ -51,6 +51,11 @@ static GTK2.SizeGroup create( int|mapping mode_or_props );
 //!
 //!
 
+int get_ignore_hidden( );
+//! Returns if invisible widgets are ignored when calculating the size.
+//!
+//!
+
 int get_mode( );
 //! Gets the current mode.
 //!
@@ -58,6 +63,11 @@ int get_mode( );
 
 GTK2.SizeGroup remove_widget( GTK2.Widget widget );
 //! Removes a widget.
+//!
+//!
+
+GTK2.SizeGroup set_ignore_hidden( int setting );
+//! Sets whether invisible widgets should be ignored when calculating the size.
 //!
 //!
 

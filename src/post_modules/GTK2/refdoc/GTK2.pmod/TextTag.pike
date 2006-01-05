@@ -13,6 +13,7 @@
 //! string family
 //! int family-set
 //! string font
+//! Pango.FontDescription font-desc
 //! string foreground
 //! GDK2.Color foreground-gdk
 //! int foreground-set
@@ -45,8 +46,22 @@
 //! int size;
 //! double size-points;
 //! int size-set;
+//! int stretch;
+//!   One of @[PANGO_STRETCH_CONDENSED], @[PANGO_STRETCH_EXPANDED], @[PANGO_STRETCH_EXTRA_CONDENSED], @[PANGO_STRETCH_EXTRA_EXPANDED], @[PANGO_STRETCH_NORMAL], @[PANGO_STRETCH_SEMI_CONDENSED], @[PANGO_STRETCH_SEMI_EXPANDED], @[PANGO_STRETCH_ULTRA_CONDENSED] and @[PANGO_STRETCH_ULTRA_EXPANDED]
+//! int stretch-set;
 //! int strikethrough;
 //! int strikethrough-set;
+//! int style;
+//!   One of @[PANGO_STYLE_ITALIC], @[PANGO_STYLE_NORMAL] and @[PANGO_STYLE_OBLIQUE]
+//! int style-set;
+//! Pango.TabArray tabs
+//! int tabs-set;
+//! int underline;
+//!   One of @[PANGO_UNDERLINE_DOUBLE], @[PANGO_UNDERLINE_ERROR], @[PANGO_UNDERLINE_LOW], @[PANGO_UNDERLINE_NONE] and @[PANGO_UNDERLINE_SINGLE]
+//! int underline-set;
+//! int variant;
+//!   One of @[PANGO_VARIANT_NORMAL] and @[PANGO_VARIANT_SMALL_CAPS]
+//! int variant-set;
 //! int weight;
 //! int weight-set;
 //! int wrap-mode;

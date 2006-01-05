@@ -35,6 +35,11 @@ int get_active( );
 //!
 //!
 
+int get_draw_as_radio( );
+//! Get whether check menu item is drawn like a radio button.
+//!
+//!
+
 int get_inconsistent( );
 //! Retrieves the value set by set_inconsistent().
 //!
@@ -42,6 +47,11 @@ int get_inconsistent( );
 
 GTK2.CheckMenuItem set_active( int new_state );
 //! State is either 1 or 0. If 1, the button will be 'pressed'.
+//!
+//!
+
+GTK2.CheckMenuItem set_draw_as_radio( int draw_as_radio );
+//! Set whether check menu item is drawn like a radio button.
 //!
 //!
 

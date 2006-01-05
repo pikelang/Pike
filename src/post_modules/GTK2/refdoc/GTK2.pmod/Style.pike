@@ -101,6 +101,12 @@ GTK2.Style paint_hline( GTK2.Widget window, int state, GTK2.GdkRectangle rect, G
 //!
 //!
 
+GTK2.Style paint_layout( GTK2.Widget window, int state, int use_text, GTK2.GdkRectangle rect, GTK2.Widget widget, string detail, int x, int y, GTK2.Pango.Layout layout );
+//! Draw a pango layout.  Use widget->create_pango_layout() to get a
+//! Pango.Layout.
+//!
+//!
+
 GTK2.Style paint_option( GTK2.Widget window, int state, int shadow, GTK2.GdkRectangle rect, GTK2.Widget widget, string detail, int x, int y, int width, int height );
 //! Draws a radio button indicator in the given rectangle.
 //!

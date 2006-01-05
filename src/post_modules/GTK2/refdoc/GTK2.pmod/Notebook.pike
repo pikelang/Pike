@@ -33,6 +33,11 @@
 //! string tab-label
 //! int tab-pack
 //! 
+//! Style properties:
+//! int has-backward-stepper
+//! int has-forward-stepper
+//! int has-secondary-backward-stepper
+//! int has-secondary-forward-stepper
 //!
 //!
 //!  Signals:
@@ -81,6 +86,11 @@ GTK2.Widget get_menu_label( GTK2.Widget page );
 
 string get_menu_label_text( GTK2.Widget child );
 //! Retrieves the text of the menu label for the page containing child.
+//!
+//!
+
+int get_n_pages( );
+//! Get the number of pages.
 //!
 //!
 

@@ -112,6 +112,11 @@ int forward_display_line_end( GTK2.TextIter iter );
 //!
 //!
 
+int get_accepts_tab( );
+//! Returns whether pressing the Tab key inserts a tab character.
+//!
+//!
+
 int get_border_window_size( int wintype );
 //! Gets the width of the specified border window.
 //!
@@ -151,6 +156,12 @@ GTK2.TextIter get_iter_at_location( int x, int y );
 //!
 //!
 
+GTK2.TextIter get_iter_at_position( int x, int y );
+//! Retrieves the iterator pointing to the character at buffer coordinates
+//! x and y.
+//!
+//!
+
 GTK2.GdkRectangle get_iter_location( GTK2.TextIter iter );
 //! Gets a rectangle which roughly contains the character at iter.  The
 //! rectangle position is in buffer coordinates; use buffer_to_window_coords()
@@ -183,6 +194,11 @@ mapping get_line_yrange( GTK2.TextIter iter );
 //!
 //!
 
+int get_overwrite( );
+//! Returns whether the view is in overwrite mode or not.
+//!
+//!
+
 int get_pixels_above_lines( );
 //! Gets the default number of pixels to put above paragraphs.
 //!
@@ -200,6 +216,12 @@ int get_pixels_inside_wrap( );
 
 int get_right_margin( );
 //! Gets the default right margin size of paragraphs.
+//!
+//!
+
+GTK2.Pango.TabArray get_tabs( );
+//! Gets the default tabs.  Tags in the buffer may override the defaults.
+//! The return value will be 0 if "standard" (8-space) tabs are used.
 //!
 //!
 
@@ -282,6 +304,13 @@ GTK2.TextView scroll_to_mark( GTK2.TextMark mark, float within_margin, int use_a
 //!
 //!
 
+GTK2.TextView set_accepts_tab( int accepts_tab );
+//! Sets the behavior of the text widget when the Tab key is pressed.  If
+//! accepts_tab is true a tab character is inserted.  If accepts_tab is false
+//! the keyboard focus is moved to the next widget in the focus chain.
+//!
+//!
+
 GTK2.TextView set_border_window_size( int wintype, int size );
 //! Sets the width of GTK2.TEXT_WINDOW_LEFT or GTK2.TEXT_WINDOW_RIGHT, or the
 //! height of GTK2.TEXT_WINDOW_TOP or GTK2.TEXT_WINDOW_BOTTOM.  Automatically
@@ -325,6 +354,11 @@ GTK2.TextView set_left_margin( int margin );
 //!
 //!
 
+GTK2.TextView set_overwrite( int overwrite );
+//! Changes the overwrite mode, true for on, false for off.
+//!
+//!
+
 GTK2.TextView set_pixels_above_lines( int pixels );
 //! Sets the default number of blank pixels above paragraphs.  Tags in
 //! the buffer may override the defaults.
@@ -348,8 +382,14 @@ GTK2.TextView set_right_margin( int margin );
 //!
 //!
 
+GTK2.TextView set_tabs( GTK2.Pango.TabArray tabs );
+//! Sets the default tab stops for paragraphs.  Tags in the buffer may
+//! override the default.
+//!
+//!
+
 GTK2.TextView set_wrap_mode( int wrap_mode );
-//! Sets the line wrapping.  One of @[WRAP_CHAR], @[WRAP_NONE] and @[WRAP_WORD].
+//! Sets the line wrapping.  One of @[WRAP_CHAR], @[WRAP_NONE], @[WRAP_WORD] and @[WRAP_WORD_CHAR].
 //!
 //!
 

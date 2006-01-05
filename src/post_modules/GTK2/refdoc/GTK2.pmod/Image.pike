@@ -18,11 +18,16 @@
 //! int pixel-size
 //! GDK2.Pixmap pixmap
 //! string stock
-//! int storage-type @[IMAGE_ANIMATION], @[IMAGE_EMPTY], @[IMAGE_ICON_SET], @[IMAGE_IMAGE], @[IMAGE_PIXBUF], @[IMAGE_PIXMAP] and @[IMAGE_STOCK]
+//! int storage-type @[IMAGE_ANIMATION], @[IMAGE_EMPTY], @[IMAGE_ICON_NAME], @[IMAGE_ICON_SET], @[IMAGE_IMAGE], @[IMAGE_PIXBUF], @[IMAGE_PIXMAP] and @[IMAGE_STOCK]
 //!
 //!
 
 inherit GTK2.Misc;
+
+GTK2.Image clear( );
+//! Resets the image to be empty.
+//!
+//!
 
 static GTK2.Image create( string|GdkPixbuf|GdkPixbufAnimation|GdkImage|GdkPixmap|mapping file_or_props, GTK2.GdkBitmap mask_or_size );
 //! Create a new W(Image) from either a file or a GDK2.Pixbuf.
@@ -34,6 +39,11 @@ GTK2.GdkPixbufAnimation get_animation( );
 //!
 //!
 
+mapping get_icon_name( );
+//! Gets the icon name and size.
+//!
+//!
+
 mapping get_image( );
 //! Returns ([ "image":GDK2.Image img, "mask":GDK2.Bitmap mask ])
 //!
@@ -42,6 +52,11 @@ mapping get_image( );
 GTK2.GdkPixbuf get_pixbuf( );
 //! Gets the GDK2.Pixbuf being displayed.  The storage type of the image must
 //! be GTK2.IMAGE_EMPTY or GTK2.IMAGE_PIXBUF).
+//!
+//!
+
+int get_pixel_size( );
+//! Gets the pixel size used for named icons.
 //!
 //!
 
@@ -58,7 +73,7 @@ mapping get_stock( );
 int get_storage_type( );
 //! Gets the type of representation being used to store data.  If it has no
 //! image data, the return value will be GTK2.IMAGE_EMPTY.
-//! One of @[IMAGE_ANIMATION], @[IMAGE_EMPTY], @[IMAGE_ICON_SET], @[IMAGE_IMAGE], @[IMAGE_PIXBUF], @[IMAGE_PIXMAP] and @[IMAGE_STOCK]
+//! One of @[IMAGE_ANIMATION], @[IMAGE_EMPTY], @[IMAGE_ICON_NAME], @[IMAGE_ICON_SET], @[IMAGE_IMAGE], @[IMAGE_PIXBUF], @[IMAGE_PIXMAP] and @[IMAGE_STOCK]
 //!
 //!
 
@@ -72,6 +87,11 @@ GTK2.Image set_from_file( string filename );
 //!
 //!
 
+GTK2.Image set_from_icon_name( string icon_name, int size );
+//! Sets from an icon name.
+//!
+//!
+
 GTK2.Image set_from_pixbuf( GTK2.GdkPixbuf pixbuf );
 //! Set image from a pixbuf
 //!
@@ -82,5 +102,12 @@ GTK2.Image set_from_stock( string stock_id, int size );
 //! GTK2.STOCK_EXIT.  Sample stock sizes are GTK2.ICON_SIZE_MENU, 
 //! GTK2.ICON_SIZE_SMALL_TOOLBAR.  If the stock name isn't known, the image
 //! will be empty.
+//!
+//!
+
+GTK2.Image set_pixel_size( int pixel_size );
+//! Sets the pixel size to use for named icons.  If the pixel size is set to
+//! a value != -1, it is used instead of the icon size set by
+//! set_from_icon_name().
 //!
 //!

@@ -23,12 +23,20 @@
 
 inherit GTK2.Data;
 
+inherit GTK2.CellLayout;
+
 GTK2.TreeViewColumn add_attribute( GTK2.CellRenderer cell_renderer, string attribute, int column );
 //! Adds an attribute mapping to the list.  The column is the column of the
 //! model to get a value from, and the attribute is the parameter on
 //! cell_rendere to be set from the value.  So for example if column 2 of
 //! the model contains strings, you could have the "text" attribute of a
 //! W(CellRendererText) get its values from column 2.
+//!
+//!
+
+mapping cell_get_position( GTK2.CellRenderer cell_renderer );
+//! Obtains the horizontal position and size of a cell in a column.  If the
+//! cell is not found in the column, returns -1 for start_pos and width.
 //!
 //!
 
@@ -73,6 +81,12 @@ static GTK2.TreeViewColumn create( string|mapping title_or_props, GTK2.CellRende
 //!
 //!
 
+GTK2.TreeViewColumn focus_cell( GTK2.CellRenderer cell );
+//! Sets the current keyboard focus to be at cell, if the column contains 2
+//! or more editable and activatable cells.
+//!
+//!
+
 float get_alignment( );
 //! Returns the current x alignment.  This value can range between 0.0 and 1.0.
 //!
@@ -86,6 +100,11 @@ array get_cell_renderers( );
 
 int get_clickable( );
 //! Returns true if the user can click on the header for the column.
+//!
+//!
+
+int get_expand( );
+//! Return true if the column expands to take any available space.
 //!
 //!
 
@@ -173,6 +192,12 @@ GTK2.TreeViewColumn pack_start( GTK2.CellRenderer cell, int expand );
 //!
 //!
 
+GTK2.TreeViewColumn queue_resize( );
+//! Flags the column, and the cell renderers added to this column, to have
+//! their sizes renegotiated.
+//!
+//!
+
 GTK2.TreeViewColumn set_alignment( float xalign );
 //! Sets the alignment of the title or custom widget inside the column header.
 //! The alignment determines its location inside the button - 0.0 for left,
@@ -183,6 +208,14 @@ GTK2.TreeViewColumn set_alignment( float xalign );
 GTK2.TreeViewColumn set_clickable( int clickable );
 //! Sets the header to be active if clickable is true.  When the header is
 //! active, then it can take keyboard focus, and can be clicked.
+//!
+//!
+
+GTK2.TreeViewColumn set_expand( int expand );
+//! Sets the column to take available extra space.  This space is shared
+//! equally amongst all columns that have the expand set to true.  If no
+//! column has this option set, then the last column gets all extra space.
+//! By default, every column is created with this false.
 //!
 //!
 

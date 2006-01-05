@@ -16,12 +16,15 @@
 //! int relief
 //! int use-stock
 //! int use-underline
+//! float xalign
+//! float yalign
 //! 
 //! Style properties:
 //! int child-displacement-x
 //! int child-displacement-y
 //! GTK2.Border default-border
 //! GTK2.Border default-outside-border
+//! int displace-focus
 //!
 //!
 //!  Signals:
@@ -65,6 +68,16 @@ GTK2.Button enter( );
 //!
 //!
 
+int get_focus_on_click( );
+//! Returns whether the button grabs focus when it is clicked.
+//!
+//!
+
+GTK2.Widget get_image( );
+//! Gets the widget that is currently set as the image of the button.
+//!
+//!
+
 string get_label( );
 //! Get the text from the label of the button.
 //!
@@ -98,6 +111,22 @@ GTK2.Button pressed( );
 
 GTK2.Button released( );
 //! Emulate a 'release' event.
+//!
+//!
+
+GTK2.Button set_alignment( float xalign, float yalign );
+//! Sets the alignment of the child.
+//!
+//!
+
+GTK2.Button set_focus_on_click( int focus_on_click );
+//! Sets whether the button will grab focus when it is clicked.
+//!
+//!
+
+GTK2.Button set_image( GTK2.Widget widget );
+//! Set the image of the button to the given widget.  Note that it depends on
+//! the gtk-button-images setting whether the image will be displayed or not.
 //!
 //!
 

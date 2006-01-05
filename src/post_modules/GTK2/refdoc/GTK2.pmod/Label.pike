@@ -13,6 +13,7 @@
 //!
 //! Properties:
 //! float angle
+//! Pango.AttrList attributes
 //! int cursor-position
 //! int ellipsize 
 //! int justfy @[JUSTIFY_CENTER], @[JUSTIFY_FILL], @[JUSTIFY_LEFT] and @[JUSTIFY_RIGHT]
@@ -44,6 +45,16 @@ static GTK2.Label create( string|mapping text_or_props );
 //!
 //!
 
+float get_angle( );
+//! Gets the angle of rotation for the label.
+//!
+//!
+
+int get_ellipsize( );
+//! Returns the ellipsizing position of the label.
+//!
+//!
+
 int get_justify( );
 //! Returns the justification of the label.
 //!
@@ -55,8 +66,31 @@ string get_label( );
 //!
 //!
 
+GTK2.Pango.Layout get_layout( );
+//! Gets the Pango.Layout used to display the label.  The layout is useful to
+//! e.g. convert text positions to pixel positions, in combination with
+//! get_layout_offsets().
+//!
+//!
+
+mapping get_layout_offsets( );
+//! Obtains the coordinates where the label will draw the Pango.Layout
+//! representing the text in the label; useful to convert mouse events into
+//! coordinates inside the Pango.Layout, e.g. to take some action if some part
+//! of the label is clicked.  Of course, you will need to create a GTK2.EventBox
+//! to receive the events, and pack the label inside it, since labels are a
+//! GTK2.NO_WINDOW widget.  Remember when using the Pango.Layout functions you
+//! need to convert to and from pixels using GTK2.PANGO_SCALE.
+//!
+//!
+
 int get_line_wrap( );
 //! Returns whether lines in the label are automatically wrapped.
+//!
+//!
+
+int get_max_width_chars( );
+//! Retrieves the desired maximum width, in characters.
 //!
 //!
 
@@ -83,6 +117,11 @@ mapping get_selection_bounds( );
 //!
 //!
 
+int get_single_line_mode( );
+//! Returns whether the label is in single line mode.
+//!
+//!
+
 string get_text( );
 //! Fetches the text from a label widget, as displayed on the screen.  This
 //! does not include any embedded underlines indicating mnemonics or Pango
@@ -101,11 +140,31 @@ int get_use_underline( );
 //!
 //!
 
+int get_width_chars( );
+//! Retrieves the desired width, in characters.
+//!
+//!
+
 GTK2.Label select_region( int start_offset, int end_offset );
 //! Selects a range of characters in the label, if the label is selectable.
 //! See set_selectable().  If the label is not selectable, this function has
 //! no effect.  If start_offset or end_offset are -1, then the end of the
 //! label will be substituted.
+//!
+//!
+
+GTK2.Label set_angle( int|float angle );
+//! Sets the angle of rotation for the label.  An angle of 90 reads from 
+//! bottom to top, and angle of 270, from top to bottom.  The angle setting
+//! for the label is igrnored if the lable is selectable, wrapped, or 
+//! ellipsized.
+//!
+//!
+
+GTK2.Label set_ellipsize( int mode );
+//! Sets the mode used to ellipsize (add an ellipsis: "...") to the text if
+//! there is not enough space to render the entire string.
+//! One of .
 //!
 //!
 
@@ -129,6 +188,28 @@ GTK2.Label set_line_wrap( int wrap );
 //! Toggles line wrapping within the widget.  True makes it break lines if
 //! text exceeds the widget's size.  False lets the text get cut off by the
 //! edge of the widget if it exceeds the widget size.
+//!
+//!
+
+GTK2.Label set_markup( string text );
+//! Parses text which is marked up with the Pango text markup language,
+//! setting the label's text and attribute list based on the parse results.
+//!
+//!
+
+GTK2.Label set_markup_with_mnemonic( string text );
+//! Parses text which is marked up with the Pango text markup language,
+//! setting the label's text and attribute list based on the parse results.
+//! If characters in text are preceded by an underscore, they are underline
+//! indicating that they represent a keyboard accelerator called a mnemonic.
+//! 
+//! The mnemonic key can be used to activate another widget, chosen
+//! automatically, or explicitly using set_mnemonic_widget().
+//!
+//!
+
+GTK2.Label set_max_width_chars( int n_chars );
+//! Sets the desired maximum width in characters to n_chars.
 //!
 //!
 
@@ -164,6 +245,11 @@ GTK2.Label set_selectable( int setting );
 //!
 //!
 
+GTK2.Label set_single_line_mode( int mode );
+//! Sets whether the label is in single line mode.
+//!
+//!
+
 GTK2.Label set_text( string text );
 //! Set the text in the label
 //!
@@ -187,5 +273,10 @@ GTK2.Label set_use_markup( int setting );
 GTK2.Label set_use_underline( int setting );
 //! If true, an underline in the text indicates the next character should be
 //! used for the mnemonic accelerator key.
+//!
+//!
+
+GTK2.Label set_width_chars( int n_chars );
+//! Sets the desired width in characters to n_chars.
 //!
 //!

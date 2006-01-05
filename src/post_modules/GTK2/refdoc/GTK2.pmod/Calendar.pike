@@ -54,6 +54,11 @@ mapping get_date( );
 //!
 //!
 
+int get_display_options( );
+//! Returns the current display options.
+//!
+//!
+
 array get_marked_dates( );
 //! Returns an array (with 31 elements) with 1es and 0es.
 //!
@@ -71,6 +76,11 @@ GTK2.Calendar select_day( int day_of_month );
 
 int select_month( int month, int year );
 //! Select the month to be viewed.
+//!
+//!
+
+GTK2.Calendar set_display_options( int options );
+//! Bitwise or of one or more of @[CALENDAR_NO_MONTH_CHANGE], @[CALENDAR_SHOW_DAY_NAMES], @[CALENDAR_SHOW_HEADING], @[CALENDAR_SHOW_WEEK_NUMBERS] and @[CALENDAR_WEEK_START_MONDAY].
 //!
 //!
 

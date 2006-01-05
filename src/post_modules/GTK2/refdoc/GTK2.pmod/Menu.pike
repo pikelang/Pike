@@ -25,6 +25,7 @@
 //!          }, menu );
 //! @}
 //! Properties:
+//! int tearoff-state
 //! string tearoff-title
 //! 
 //! Child properties:
@@ -44,6 +45,15 @@
 //!
 
 inherit GTK2.MenuShell;
+
+GTK2.Menu attach( GTK2.Widget child, int left_attach, int right_attach, int top_attach, int bottom_attach );
+//! Adds a new W(MenuItem) to a (table) menu.  The number of 'cells'
+//! that an item will occupy is specified by left_attach, right_attach,
+//! top_attach, and bottom_attach.  These each represent the
+//! leftmost, rightmost, uppermost and lower column row numbers of
+//! the table.
+//!
+//!
 
 static GTK2.Menu create( mapping|void props );
 //! Creates a new GTK2.Menu widget.
@@ -68,6 +78,11 @@ GTK2.Widget get_active( );
 
 GTK2.Widget get_attach_widget( );
 //! Returns the W(Widget) that the menu is attached to.
+//!
+//!
+
+array get_for_attach_widget( );
+//! Returns a list of the menus which are attached to this widget.
 //!
 //!
 

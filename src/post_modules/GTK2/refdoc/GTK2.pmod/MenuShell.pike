@@ -49,6 +49,11 @@ GTK2.MenuShell append( GTK2.Widget what );
 //!
 //!
 
+GTK2.MenuShell cancel( );
+//! Cancels the selection within the menu shell.
+//!
+//!
+
 GTK2.MenuShell deactivate( );
 //! Deactivates the menu shell. Typically this results in the menu
 //! shell being erased from the screen.
@@ -65,6 +70,11 @@ array get_children( );
 //!
 //!
 
+int get_take_focus( );
+//! Returns TRUE if the menu shell will take the keyboard focus on popup.
+//!
+//!
+
 GTK2.MenuShell insert( GTK2.Widget what, int where );
 //! Add a widget after the specified location
 //!
@@ -76,7 +86,20 @@ GTK2.MenuShell prepend( GTK2.Widget what );
 //!
 //!
 
+GTK2.MenuShell select_first( int search_sensitive );
+//! Select the first visible or selectable child of the menu shell;
+//! don't select tearoff items unless the only item is a tearoff item.
+//!
+//!
+
 GTK2.MenuShell select_item( GTK2.Widget menuitem );
 //! Selects the menu item from the menu shell.
+//!
+//!
+
+GTK2.MenuShell set_take_focus( int setting );
+//! If setting is TRUE (the default), the menu shell will take the keyboard
+//! focus so that it will receive all keyboard events which is needed to enable
+//! keyboard navigation in menus.
 //!
 //!

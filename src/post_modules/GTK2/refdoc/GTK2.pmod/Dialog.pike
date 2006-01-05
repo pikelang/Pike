@@ -47,6 +47,11 @@ int get_has_separator( );
 //!
 //!
 
+int get_response_for_widget( GTK2.Widget widget );
+//! Gets the response id of a widget in the action area.
+//!
+//!
+
 GTK2.Vbox get_vbox( );
 //! The vertical box that should contain the contents of the dialog
 //!

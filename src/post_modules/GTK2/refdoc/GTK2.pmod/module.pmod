@@ -934,6 +934,22 @@ constant GDK_OVERLAP_RECTANGLE_PART;
 //!
 
 
+constant GDK_OWNER_CHANGE;
+//!
+
+
+constant GDK_OWNER_CHANGE_CLOSE;
+//!
+
+
+constant GDK_OWNER_CHANGE_DESTROY;
+//!
+
+
+constant GDK_OWNER_CHANGE_NEW_OWNER;
+//!
+
+
 constant GDK_PENCIL;
 //!
 
@@ -971,6 +987,22 @@ constant GDK_PIXBUF_ERROR_UNKNOWN_TYPE;
 
 
 constant GDK_PIXBUF_ERROR_UNSUPPORTED_OPERATION;
+//!
+
+
+constant GDK_PIXBUF_ROTATE_CLOCKWISE;
+//!
+
+
+constant GDK_PIXBUF_ROTATE_COUNTERCLOCKWISE;
+//!
+
+
+constant GDK_PIXBUF_ROTATE_NONE;
+//!
+
+
+constant GDK_PIXBUF_ROTATE_UPSIDEDOWN;
 //!
 
 
@@ -1398,6 +1430,18 @@ constant GDK_WINDOW_STATE;
 //!
 
 
+constant GDK_WINDOW_STATE_ABOVE;
+//!
+
+
+constant GDK_WINDOW_STATE_BELOW;
+//!
+
+
+constant GDK_WINDOW_STATE_FULLSCREEN;
+//!
+
+
 constant GDK_WINDOW_STATE_ICONIFIED;
 //!
 
@@ -1422,7 +1466,15 @@ constant GDK_WINDOW_TOPLEVEL;
 //!
 
 
+constant GDK_WINDOW_TYPE_HINT_DESKTOP;
+//!
+
+
 constant GDK_WINDOW_TYPE_HINT_DIALOG;
+//!
+
+
+constant GDK_WINDOW_TYPE_HINT_DOCK;
 //!
 
 
@@ -1434,7 +1486,15 @@ constant GDK_WINDOW_TYPE_HINT_NORMAL;
 //!
 
 
+constant GDK_WINDOW_TYPE_HINT_SPLASHSCREEN;
+//!
+
+
 constant GDK_WINDOW_TYPE_HINT_TOOLBAR;
+//!
+
+
+constant GDK_WINDOW_TYPE_HINT_UTILITY;
 //!
 
 
@@ -1447,6 +1507,106 @@ constant GDK_XTERM;
 
 
 constant GDK_X_CURSOR;
+//!
+
+
+constant GNOME_CLIENT_IS_CONNECTED;
+//!
+
+
+constant GNOME_CLIENT_RESTARTED;
+//!
+
+
+constant GNOME_CLIENT_RESTORED;
+//!
+
+
+constant GNOME_DATE_EDIT_24_HR;
+//!
+
+
+constant GNOME_DATE_EDIT_SHOW_TIME;
+//!
+
+
+constant GNOME_DATE_EDIT_WEEK_STARTS_ON_MONDAY;
+//!
+
+
+constant GNOME_DIALOG_ERROR;
+//!
+
+
+constant GNOME_DIALOG_NORMAL;
+//!
+
+
+constant GNOME_EDGE_FINISH;
+//!
+
+
+constant GNOME_EDGE_LAST;
+//!
+
+
+constant GNOME_EDGE_OTHER;
+//!
+
+
+constant GNOME_EDGE_START;
+//!
+
+
+constant GNOME_INTERACT_ANY;
+//!
+
+
+constant GNOME_INTERACT_ERRORS;
+//!
+
+
+constant GNOME_INTERACT_NONE;
+//!
+
+
+constant GNOME_PREFERENCES_ALWAYS;
+//!
+
+
+constant GNOME_PREFERENCES_NEVER;
+//!
+
+
+constant GNOME_PREFERENCES_USER;
+//!
+
+
+constant GNOME_RESTART_ANYWAY;
+//!
+
+
+constant GNOME_RESTART_IF_RUNNING;
+//!
+
+
+constant GNOME_RESTART_IMMEDIATELY;
+//!
+
+
+constant GNOME_RESTART_NEVER;
+//!
+
+
+constant GNOME_SAVE_BOTH;
+//!
+
+
+constant GNOME_SAVE_GLOBAL;
+//!
+
+
+constant GNOME_SAVE_LOCAL;
 //!
 
 
@@ -1622,6 +1782,10 @@ constant CAN_FOCUS;
 //!
 
 
+constant CELL_RENDERER_FOCUSED;
+//!
+
+
 constant CELL_RENDERER_INSENSITIVE;
 //!
 
@@ -1683,6 +1847,30 @@ constant CURVE_TYPE_LINEAR;
 
 
 constant CURVE_TYPE_SPLINE;
+//!
+
+
+constant DATABOX_BARS;
+//!
+
+
+constant DATABOX_CROSS_SIMPLE;
+//!
+
+
+constant DATABOX_GRID;
+//!
+
+
+constant DATABOX_LINES;
+//!
+
+
+constant DATABOX_NOT_DISPLAYED;
+//!
+
+
+constant DATABOX_POINTS;
 //!
 
 
@@ -1794,6 +1982,46 @@ constant EXPANDER_SEMI_EXPANDED;
 //!
 
 
+constant FILE_CHOOSER_ACTION_CREATE_FOLDER;
+//!
+
+
+constant FILE_CHOOSER_ACTION_OPEN;
+//!
+
+
+constant FILE_CHOOSER_ACTION_SAVE;
+//!
+
+
+constant FILE_CHOOSER_ACTION_SELECT_FOLDER;
+//!
+
+
+constant FILE_CHOOSER_ERROR_BAD_FILENAME;
+//!
+
+
+constant FILE_CHOOSER_ERROR_NONEXISTENT;
+//!
+
+
+constant FILE_FILTER_DISPLAY_NAME;
+//!
+
+
+constant FILE_FILTER_FILENAME;
+//!
+
+
+constant FILE_FILTER_MIME_TYPE;
+//!
+
+
+constant FILE_FILTER_URI;
+//!
+
+
 constant FILL;
 //!
 
@@ -1811,6 +2039,18 @@ constant HAS_FOCUS;
 
 
 constant HAS_GRAB;
+//!
+
+
+constant ICON_LOOKUP_FORCE_SVG;
+//!
+
+
+constant ICON_LOOKUP_NO_SVG;
+//!
+
+
+constant ICON_LOOKUP_USE_BUILTIN;
 //!
 
 
@@ -1842,11 +2082,23 @@ constant ICON_SIZE_SMALL_TOOLBAR;
 //!
 
 
+constant ICON_THEME_FAILED;
+//!
+
+
+constant ICON_THEME_NOT_FOUND;
+//!
+
+
 constant IMAGE_ANIMATION;
 //!
 
 
 constant IMAGE_EMPTY;
+//!
+
+
+constant IMAGE_ICON_NAME;
 //!
 
 
@@ -1867,6 +2119,30 @@ constant IMAGE_PIXMAP;
 
 
 constant IMAGE_STOCK;
+//!
+
+
+constant IM_PREEDIT_CALLBACK;
+//!
+
+
+constant IM_PREEDIT_NONE;
+//!
+
+
+constant IM_PREEDIT_NOTHING;
+//!
+
+
+constant IM_STATUS_CALLBACK;
+//!
+
+
+constant IM_STATUS_NONE;
+//!
+
+
+constant IM_STATUS_NOTHING;
 //!
 
 
@@ -1942,6 +2218,10 @@ constant MOVEMENT_DISPLAY_LINE_ENDS;
 //!
 
 
+constant MOVEMENT_HORIZONTAL_PAGES;
+//!
+
+
 constant MOVEMENT_LOGICAL_POSITIONS;
 //!
 
@@ -1967,6 +2247,10 @@ constant MOVEMENT_WORDS;
 
 
 constant NO_REPARENT;
+//!
+
+
+constant NO_SHOW_ALL;
 //!
 
 
@@ -2346,11 +2630,31 @@ constant SCROLL_END;
 //!
 
 
+constant SCROLL_ENDS;
+//!
+
+
+constant SCROLL_HORIZONTAL_ENDS;
+//!
+
+
+constant SCROLL_HORIZONTAL_PAGES;
+//!
+
+
+constant SCROLL_HORIZONTAL_STEPS;
+//!
+
+
 constant SCROLL_JUMP;
 //!
 
 
 constant SCROLL_NONE;
+//!
+
+
+constant SCROLL_PAGES;
 //!
 
 
@@ -2379,6 +2683,10 @@ constant SCROLL_PAGE_UP;
 
 
 constant SCROLL_START;
+//!
+
+
+constant SCROLL_STEPS;
 //!
 
 
@@ -2474,6 +2782,18 @@ constant SORT_DESCENDING;
 //!
 
 
+constant SOURCE_SEARCH_CASE_INSENSITIVE;
+//!
+
+
+constant SOURCE_SEARCH_TEXT_ONLY;
+//!
+
+
+constant SOURCE_SEARCH_VISIBLE_ONLY;
+//!
+
+
 constant SPIN_END;
 //!
 
@@ -2522,6 +2842,10 @@ constant STATE_SELECTED;
 //!
 
 
+constant STOCK_ABOUT;
+//!
+
+
 constant STOCK_ADD;
 //!
 
@@ -2550,6 +2874,14 @@ constant STOCK_CLOSE;
 //!
 
 
+constant STOCK_COLOR_PICKER;
+//!
+
+
+constant STOCK_CONNECT;
+//!
+
+
 constant STOCK_CONVERT;
 //!
 
@@ -2563,6 +2895,10 @@ constant STOCK_CUT;
 
 
 constant STOCK_DELETE;
+//!
+
+
+constant STOCK_DIALOG_AUTHENTICATION;
 //!
 
 
@@ -2582,6 +2918,14 @@ constant STOCK_DIALOG_WARNING;
 //!
 
 
+constant STOCK_DIRECTORY;
+//!
+
+
+constant STOCK_DISCONNECT;
+//!
+
+
 constant STOCK_DND;
 //!
 
@@ -2590,7 +2934,15 @@ constant STOCK_DND_MULTIPLE;
 //!
 
 
+constant STOCK_EDIT;
+//!
+
+
 constant STOCK_EXECUTE;
+//!
+
+
+constant STOCK_FILE;
 //!
 
 
@@ -2603,6 +2955,10 @@ constant STOCK_FIND_AND_REPLACE;
 
 
 constant STOCK_FLOPPY;
+//!
+
+
+constant STOCK_FULLSCREEN;
 //!
 
 
@@ -2638,6 +2994,10 @@ constant STOCK_GO_UP;
 //!
 
 
+constant STOCK_HARDDISK;
+//!
+
+
 constant STOCK_HELP;
 //!
 
@@ -2646,7 +3006,15 @@ constant STOCK_HOME;
 //!
 
 
+constant STOCK_INDENT;
+//!
+
+
 constant STOCK_INDEX;
+//!
+
+
+constant STOCK_INFO;
 //!
 
 
@@ -2674,7 +3042,47 @@ constant STOCK_JUSTIFY_RIGHT;
 //!
 
 
+constant STOCK_LEAVE_FULLSCREEN;
+//!
+
+
+constant STOCK_MEDIA_FORWARD;
+//!
+
+
+constant STOCK_MEDIA_NEXT;
+//!
+
+
+constant STOCK_MEDIA_PAUSE;
+//!
+
+
+constant STOCK_MEDIA_PLAY;
+//!
+
+
+constant STOCK_MEDIA_PREVIOUS;
+//!
+
+
+constant STOCK_MEDIA_RECORD;
+//!
+
+
+constant STOCK_MEDIA_REWIND;
+//!
+
+
+constant STOCK_MEDIA_STOP;
+//!
+
+
 constant STOCK_MISSING_IMAGE;
+//!
+
+
+constant STOCK_NETWORK;
 //!
 
 
@@ -2779,6 +3187,10 @@ constant STOCK_UNDERLINE;
 
 
 constant STOCK_UNDO;
+//!
+
+
+constant STOCK_UNINDENT;
 //!
 
 
@@ -2922,6 +3334,46 @@ constant TREE_VIEW_DROP_INTO_OR_BEFORE;
 //!
 
 
+constant UI_MANAGER_ACCELERATOR;
+//!
+
+
+constant UI_MANAGER_AUTO;
+//!
+
+
+constant UI_MANAGER_MENU;
+//!
+
+
+constant UI_MANAGER_MENUBAR;
+//!
+
+
+constant UI_MANAGER_MENUITEM;
+//!
+
+
+constant UI_MANAGER_PLACEHOLDER;
+//!
+
+
+constant UI_MANAGER_POPUP;
+//!
+
+
+constant UI_MANAGER_SEPARATOR;
+//!
+
+
+constant UI_MANAGER_TOOLBAR;
+//!
+
+
+constant UI_MANAGER_TOOLITEM;
+//!
+
+
 constant UPDATE_ALWAYS;
 //!
 
@@ -3006,10 +3458,258 @@ constant WRAP_WORD;
 //!
 
 
+constant WRAP_WORD_CHAR;
+//!
+
+
+constant PANGO_ATTR_BACKGROUND;
+//!
+
+
+constant PANGO_ATTR_FALLBACK;
+//!
+
+
+constant PANGO_ATTR_FAMILY;
+//!
+
+
+constant PANGO_ATTR_FONT_DESC;
+//!
+
+
+constant PANGO_ATTR_FOREGROUND;
+//!
+
+
+constant PANGO_ATTR_INVALID;
+//!
+
+
+constant PANGO_ATTR_LANGUAGE;
+//!
+
+
+constant PANGO_ATTR_LETTER_SPACING;
+//!
+
+
+constant PANGO_ATTR_RISE;
+//!
+
+
+constant PANGO_ATTR_SCALE;
+//!
+
+
+constant PANGO_ATTR_SHAPE;
+//!
+
+
+constant PANGO_ATTR_SIZE;
+//!
+
+
+constant PANGO_ATTR_STRETCH;
+//!
+
+
+constant PANGO_ATTR_STRIKETHROUGH;
+//!
+
+
+constant PANGO_ATTR_STYLE;
+//!
+
+
+constant PANGO_ATTR_UNDERLINE;
+//!
+
+
+constant PANGO_ATTR_VARIANT;
+//!
+
+
+constant PANGO_ATTR_WEIGHT;
+//!
+
+
+constant PANGO_FONT_MASK_FAMILY;
+//!
+
+
+constant PANGO_FONT_MASK_SIZE;
+//!
+
+
+constant PANGO_FONT_MASK_STRETCH;
+//!
+
+
+constant PANGO_FONT_MASK_STYLE;
+//!
+
+
+constant PANGO_FONT_MASK_VARIANT;
+//!
+
+
+constant PANGO_FONT_MASK_WEIGHT;
+//!
+
+
+constant PANGO_SCALE;
+//!
+
+
+constant PANGO_SCALE_LARGE;
+//!
+
+
+constant PANGO_SCALE_MEDIUM;
+//!
+
+
+constant PANGO_SCALE_SMALL;
+//!
+
+
+constant PANGO_SCALE_XX_LARGE;
+//!
+
+
+constant PANGO_SCALE_XX_SMALL;
+//!
+
+
+constant PANGO_SCALE_X_LARGE;
+//!
+
+
+constant PANGO_SCALE_X_SMALL;
+//!
+
+
+constant PANGO_STRETCH_CONDENSED;
+//!
+
+
+constant PANGO_STRETCH_EXPANDED;
+//!
+
+
+constant PANGO_STRETCH_EXTRA_CONDENSED;
+//!
+
+
+constant PANGO_STRETCH_EXTRA_EXPANDED;
+//!
+
+
+constant PANGO_STRETCH_NORMAL;
+//!
+
+
+constant PANGO_STRETCH_SEMI_CONDENSED;
+//!
+
+
+constant PANGO_STRETCH_SEMI_EXPANDED;
+//!
+
+
+constant PANGO_STRETCH_ULTRA_CONDENSED;
+//!
+
+
+constant PANGO_STRETCH_ULTRA_EXPANDED;
+//!
+
+
+constant PANGO_STYLE_ITALIC;
+//!
+
+
+constant PANGO_STYLE_NORMAL;
+//!
+
+
+constant PANGO_STYLE_OBLIQUE;
+//!
+
+
+constant PANGO_TAB_LEFT;
+//!
+
+
+constant PANGO_UNDERLINE_DOUBLE;
+//!
+
+
+constant PANGO_UNDERLINE_ERROR;
+//!
+
+
+constant PANGO_UNDERLINE_LOW;
+//!
+
+
+constant PANGO_UNDERLINE_NONE;
+//!
+
+
+constant PANGO_UNDERLINE_SINGLE;
+//!
+
+
+constant PANGO_VARIANT_NORMAL;
+//!
+
+
+constant PANGO_VARIANT_SMALL_CAPS;
+//!
+
+
+constant PANGO_WEIGHT_BOLD;
+//!
+
+
+constant PANGO_WEIGHT_HEAVY;
+//!
+
+
+constant PANGO_WEIGHT_LIGHT;
+//!
+
+
+constant PANGO_WEIGHT_NORMAL;
+//!
+
+
+constant PANGO_WEIGHT_ULTRABOLD;
+//!
+
+
+constant PANGO_WEIGHT_ULTRALIGHT;
+//!
+
+
 constant TRUE;
 //!
 
 
+//!
+
+void add_builtin_icon( string name, int size, GTK2.GdkPixbuf pixbuf );
+//! Registers a built-in icon for icon theme lookups.  The idea of build-in
+//! icons is to allow an application or library that uses themed icons to
+//! function requiring files to be present in the file system.  For instance,
+//! the default images for all of GTK2+'s stock icons are registered as built-in
+//! icons.
+//! 
+//! In general, if you use add_builtin_icon() you should also install the icon
+//! in the icon theme, so that the icon is generally available.
+//!
 //!
 
 int false( );
@@ -3024,6 +3724,32 @@ void flush( );
 
 array get_default_icon_list( );
 //! Gets the value set by set_default_icon_list().
+//!
+//!
+
+GTK2.IconTheme get_default_icon_theme( );
+//! Gets the icon theme.
+//!
+//!
+
+mapping get_file_info( string filename );
+//! Parses an image file far enough to determine its format
+//! and size.
+//!
+//!
+
+array get_formats( );
+//! Get information about the image formats supported.
+//!
+//!
+
+array gnome_init( string app_id, string app_version, array argv );
+//! Initializes the application. This sets up all of the GNOME
+//! internals and prepares them (gdk/gtk, session-management,
+//! triggers, sound, user preferences). If corba init flags are specified,
+//! corba initialization is done as well as gnome initialization.
+//! corba_init_flags is 0 or more of GNORBA_INIT_SERVER_FUNC (1),
+//! GNORBA_INIT_DISABLE_COOKIES (2) and GNORBA_INIT_CORBA_PRIO_HIGH (4)
 //!
 //!
 
@@ -3088,10 +3814,28 @@ GTK2.GdkWindow root_window( );
 //!
 //!
 
+void set_default_icon( GTK2.GdkPixbuf icon );
+//! Sets an icon to be used as fallback for windows that haven't had set_icon()
+//! called on them from a pixbuf.
+//!
+//!
+
+void set_default_icon_from_file( string filename );
+//! Sets an icon to be used as fallback for windows that haven't had
+//! set_icon_list() called on them from a file on disk.
+//!
+//!
+
 void set_default_icon_list( array list );
 //! Sets an icon list to be used as fallback for windows that haven't had
 //! set_icon_list() called on them to set up a window-specific icon list.  This
 //! function allows you to set up the icon for all windows in your app at once.
+//!
+//!
+
+void set_default_icon_name( string name );
+//! Sets an icon to be as fallback for windows that haven't had set_icon_list()
+//! called on them from a themed icon.
 //!
 //!
 

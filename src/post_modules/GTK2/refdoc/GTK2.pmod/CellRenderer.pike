@@ -18,6 +18,8 @@
 //!  Signals:
 //! @b{editing_canceled@}
 //!
+//! @b{editing_started@}
+//!
 
 inherit GTK2.Data;
 
@@ -51,7 +53,7 @@ GTK2.CellRenderer render( GTK2.GdkWindow window, GTK2.Widget widget, GTK2.GdkRec
 //! blank space around the cell, and also the area containing the tree
 //! expander; so the background_area rectangles for all cells tile to cover the
 //! entire window.  expose_area is a clip rectangle.
-//! flags is one of @[CELL_RENDERER_INSENSITIVE], @[CELL_RENDERER_MODE_ACTIVATABLE], @[CELL_RENDERER_MODE_EDITABLE], @[CELL_RENDERER_MODE_INERT], @[CELL_RENDERER_PRELIT], @[CELL_RENDERER_SELECTED] and @[CELL_RENDERER_SORTED].
+//! flags is one of @[CELL_RENDERER_FOCUSED], @[CELL_RENDERER_INSENSITIVE], @[CELL_RENDERER_MODE_ACTIVATABLE], @[CELL_RENDERER_MODE_EDITABLE], @[CELL_RENDERER_MODE_INERT], @[CELL_RENDERER_PRELIT], @[CELL_RENDERER_SELECTED] and @[CELL_RENDERER_SORTED].
 //!
 //!
 
@@ -62,5 +64,13 @@ GTK2.CellRenderer set_fixed_size( int width, int height );
 
 GTK2.CellRenderer start_editing( GTK2.GdkEvent event, GTK2.Widget widget, string path, GTK2.GdkRectangle background_area, GTK2.GdkRectangle cell_area, int flags );
 //! Passes an activate event to the cell renderer for possible processing.
+//!
+//!
+
+GTK2.CellRenderer stop_editing( int canceled );
+//! Informs the cell renderer that the editing is stopped.  If canceled is
+//! true, the cell renderer will emit the "editing-canceled" signal.  This
+//! function should be called by cell renderer implementations in response to
+//! the "editing-done" signal of W(CellEditable).
 //!
 //!

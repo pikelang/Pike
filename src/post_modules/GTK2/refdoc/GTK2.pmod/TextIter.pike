@@ -65,6 +65,48 @@ int backward_to_tag_toggle( GTK2.TextTag tag );
 //!
 //!
 
+int backward_visible_cursor_position( );
+//! Moves backward to the previous visible cursor position.
+//!
+//!
+
+int backward_visible_cursor_positions( int count );
+//! Moves up to count visible cursor positions.
+//!
+//!
+
+int backward_visible_line( );
+//! Moves to the start of the previous visible line.  Returns TRUE if iter
+//! could be moved; i.e. if iter was at character offset 0, this function
+//! returns FALSE.  Therefore if iter was alreayd on line 0, but not at the
+//! start of the line, iter is snapped to the start of the line and the
+//! function returns TRUE. (Note that this implies that in a loop calling this
+//! function, the line number may not change on every iteration, if your first
+//! iteration is on line 0).
+//!
+//!
+
+int backward_visible_lines( int count );
+//! Moves count visible lines backward, if possible (if count would move past
+//! the start or end of the buffer, moves to the start or end of the buffer).
+//! The return value indicates whether the iterator moved onto a
+//! dereferenceable position; if the iterator didn't move, or moved onto the
+//! end iterator, then FALSE is returned.  If count is 0, the function does
+//! nothing and returns FALSE.  If count is negative, moves forward by 0 -
+//! count lines.
+//!
+//!
+
+int backward_visible_word_start( );
+//! Moves backward to the previous visible word start.
+//!
+//!
+
+int backward_visible_word_starts( int count );
+//! Call backward_visible_word_start() count times
+//!
+//!
+
 int backward_word_start( );
 //! Moves backward to the previous word start.
 //!
@@ -266,6 +308,45 @@ int forward_to_tag_toggle( GTK2.TextTag tag );
 //! found, returns false, otherwise true.  Does not return toggles located
 //! at this iter, only toggles after.  Sets this iter to the location of
 //! the toggle, or to the end of the buffer if no toggle is found.
+//!
+//!
+
+int forward_visible_cursor_position( );
+//! Moves forward to the next visible cursor position.
+//!
+//!
+
+int forward_visible_cursor_positions( int count );
+//! Moves up to count visible cursor positions.
+//!
+//!
+
+int forward_visible_line( );
+//! Moves to the start of the next visible line.  Returns TRUE if there was a
+//! next line to move to, and FALSE if iter was simply moved to the end of the
+//! buffer and is now not dereferenceable, or if iter was already at the end
+//! of the buffer.
+//!
+//!
+
+int forward_visible_lines( int count );
+//! Moves count visible lines forward, if possible (if count would move past
+//! the start or end of the buffer, moves to the start or end of the buffer).
+//! The return value indicates whether the iterator moved onto a
+//! dereferenceable position; if the iterator didn't move, or moved onto the
+//! end iterator, then FALSE is returned.  If count is 0, the function does
+//! nothing and returns FALSE.  If count is negative, moves backward by
+//! 0 - count lines.
+//!
+//!
+
+int forward_visible_word_end( );
+//! Moves forward to the next visible word end.
+//!
+//!
+
+int forward_visible_word_ends( int count );
+//! Call forward_visible_word_end() count times.
 //!
 //!
 

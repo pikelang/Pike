@@ -48,6 +48,11 @@ string get_filename( );
 //!
 //!
 
+string get_icon_name( );
+//! Retrieves the source icon name, or empty.
+//!
+//!
+
 GTK2.GdkPixbuf get_pixbuf( );
 //! Retrieves the source pixbuf, or 0.  In addition, if a filename source is in
 //! use, this function in some cases will return the pixbuf loaded from the
@@ -103,6 +108,12 @@ GTK2.IconSource set_direction_wildcarded( int setting );
 GTK2.IconSource set_filename( string filename );
 //! Sets the name of an image file to use as a base image when creating icon
 //! variants for GTK2.IconSet.  The filename must be absolute.
+//!
+//!
+
+GTK2.IconSource set_icon_name( string name );
+//! Sets the name of an icon to look up in the current icon theme to use as a
+//! base image.
 //!
 //!
 

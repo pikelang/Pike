@@ -34,3 +34,32 @@ static GTK2.EventBox create( mapping|void props );
 //! Create a new event box widget
 //!
 //!
+
+int get_above_child( );
+//! Returns whether the event box window is above or below
+//! the windows of its child.
+//!
+//!
+
+int get_visible_window( );
+//! Returns whether the event box has a visible window.
+//!
+//!
+
+GTK2.EventBox set_above_child( int above_child );
+//! Sets whether the event box window is positioned above
+//! the windows of its child, as opposed to below it.  If
+//! the window is above, all events inside the event box
+//! will go to the event box.  If the window is below, events
+//! in windows of child widgets will first go to that
+//! widget, and then to its parents.
+//! 
+//! The default is to keep the window below the child.
+//!
+//!
+
+GTK2.EventBox set_visible_window( int visible_window );
+//! Sets whether the event box uses a visible or invisible
+//! child window.  The default is to use visible windows.
+//!
+//!

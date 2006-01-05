@@ -22,3 +22,24 @@ static GTK2.MenuBar create( mapping|void props );
 //! Create a new menu bar.
 //!
 //!
+
+int get_child_pack_direction( );
+//! Retrieves the current child pack direction.
+//!
+//!
+
+int get_pack_direction( );
+//! Retrieves the current pack direction of the menubar.
+//!
+//!
+
+GTK2.MenuBar set_child_pack_direction( int setting );
+//! Sets how widgets should be packed inside the children of a menubar.
+//!
+//!
+
+GTK2.MenuBar set_pack_direction( int setting );
+//! Sets how items should be packed inside a menubar.  One of
+//! .
+//!
+//!

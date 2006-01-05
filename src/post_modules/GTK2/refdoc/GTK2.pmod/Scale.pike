@@ -30,6 +30,18 @@ int get_draw_value( );
 //!
 //!
 
+GTK2.Pango.Layout get_layout( );
+//! Gets the Pango.Layout used to display the scale.
+//!
+//!
+
+mapping get_layout_offsets( );
+//! Obtains the coordinates where the scale will draw the Pango.Layout
+//! representing the text in the scale.  Remember when using the Pango.Layout
+//! function you need to convert to and from pixels using PANGO_SCALE.
+//!
+//!
+
 int get_value_pos( );
 //! Gets the position in which the current value is displayed.
 //!

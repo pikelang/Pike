@@ -55,3 +55,8 @@ GTK2.Alignment set( float xalign, float yalign, float xscale, float yscale );
 //! @xml{</matrix>@}
 //!
 //!
+
+GTK2.Alignment set_padding( int padding_top, int padding_bottom, int padding_left, int padding_right );
+//! Sets the padding on the different sides.
+//!
+//!

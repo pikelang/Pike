@@ -89,8 +89,18 @@ int get_activates_default( );
 //!
 //!
 
+float get_alignment( );
+//! Gets the value set by set_alignment().
+//!
+//!
+
 string get_chars( int start, int end );
 //! Retrieves a sequence of characters.
+//!
+//!
+
+GTK2.EntryCompletion get_completion( );
+//! Returns the completion object.
 //!
 //!
 
@@ -107,6 +117,18 @@ int get_has_frame( );
 int get_invisible_char( );
 //! Retrieves the character displayed in place of the real characters for
 //! entries with visibility set to false.
+//!
+//!
+
+GTK2.Pango.Layout get_layout( );
+//! Gets the Pango.Layout used to display the entry.  The layout is useful to
+//! e.g. convert text positions to pixel positions, in combination with
+//! get_layout_offsets().
+//! 
+//! Keep in mind that the layout text may contain a preedit string, so 
+//! layout_index_to_text_index() and text_index_to_layout_index() are needed
+//! to convert byte indices in the layout to byte indices in the entry
+//! contents.
 //!
 //!
 
@@ -145,6 +167,13 @@ int insert_text( string text, int length, int pos );
 //!
 //!
 
+int layout_index_to_text_index( int layout_index );
+//! Converts from a position in the entry contents (returned by get_text())
+//! to a position in the entry's Pango.Layout (returned by get_layout()),
+//! with text retrieved via Pango.Layout->get_text().
+//!
+//!
+
 GTK2.Entry paste_clipboard( );
 //! Causes the contents of the clipboard to be pasted into the given widget at
 //! the current cursor position.
@@ -167,6 +196,20 @@ GTK2.Entry set_activates_default( int setting );
 //! the window containing the entry.  This usually means that the dialog box
 //! containing the entry will be closed, since the default widget is usually
 //! one of the dialog buttons.
+//!
+//!
+
+GTK2.Entry set_alignment( float align );
+//! Sets the alignment for the ocntents of the entry.  This controls the
+//! horizontal positioning of the contents when the displayed text is shorter
+//! than the width of the entry.
+//!
+//!
+
+GTK2.Entry set_completion( GTK2.EntryCompletion completion );
+//! Sets completion to be the auxiliary completion object to use.  All further
+//! configuration of the completion mechanism is done on completion using
+//! the GTK2.EntryCompletion API.
 //!
 //!
 
@@ -224,5 +267,10 @@ GTK2.Entry start_editing( GTK2.GdkEvent event );
 //! Begins editing.  event is the GDK2.Event that began the editing process.
 //! It may be empty, in the instance that editing was initiated through
 //! programmatic means.
+//!
+//!
+
+int text_index_to_layout_index( int text_index );
+//! Opposite of layout_index_to_text_index().
 //!
 //!

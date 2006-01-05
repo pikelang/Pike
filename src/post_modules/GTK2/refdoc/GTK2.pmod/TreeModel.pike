@@ -55,6 +55,11 @@ array get_row( GTK2.TreeIter iter );
 //!
 //!
 
+string get_string_from_iter( GTK2.TreeIter iter );
+//! Get string representation of iter.
+//!
+//!
+
 mixed get_value( GTK2.TreeIter iter, int column );
 //! Get value at column of iter.
 //!

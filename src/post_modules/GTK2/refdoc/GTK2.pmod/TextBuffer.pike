@@ -30,6 +30,13 @@
 
 inherit G.Object;
 
+GTK2.TextBuffer add_selection_clipboard( GTK2.Clipboard clipboard );
+//! Adds clipboard to the list of clipboards in which the selection contents
+//! of the buffer are available.  In most cases, clipboard will be the
+//! GTK2.Clipboard of GDK2.SELECTION_PRIMARY for a view of this buffer.
+//!
+//!
+
 GTK2.TextBuffer apply_tag( GTK2.TextTag tag, GTK2.TextIter start, GTK2.TextIter end );
 //! Emits the "apply-tag" signal.  The default handler for the signal
 //! applies tag to the given range, start and end do not have to be in order.
@@ -39,6 +46,20 @@ GTK2.TextBuffer apply_tag( GTK2.TextTag tag, GTK2.TextIter start, GTK2.TextIter 
 GTK2.TextBuffer apply_tag_by_name( string name, GTK2.TextIter start, GTK2.TextIter end );
 //! Calls GTK2.TextTagTable->lookup() on the buffers tag table to get a
 //! GTK2.TextTag, then calls apply_tag().
+//!
+//!
+
+int backspace( GTK2.TextIter iter, int interactive, int default_editable );
+//! Performs the appropriate action as if the user hit the delete key with
+//! the cursor at the position specified by iter.  In the normal case a
+//! single character will be deleted, but when combining accents are
+//! involved, more than one character can be deleted, and when precomposed
+//! character and accent combinations are involved, less than one character
+//! will be deleted.
+//! 
+//! Because the buffer is modified, all outstanding iterators become invalid
+//! after calling this function;  however, iter will be re-initialized to
+//! point to the location where text was deleted.
 //!
 //!
 
@@ -56,6 +77,11 @@ GTK2.TextBuffer begin_user_action( );
 //! automatically call begin/end user action around the buffer operations
 //! they perform, so there's no need to add extra calls if your user action
 //! consists solely of a single call to one of those functions.
+//!
+//!
+
+GTK2.TextBuffer copy_clipboard( GTK2.Clipboard clipboard );
+//! Copies the currently-selected text to a clipboard.
 //!
 //!
 
@@ -90,6 +116,12 @@ GTK2.TextTag create_tag( string tag_name, mapping props );
 //! Creates a tag and adds it to the tag table.  Equivalent to calling
 //! GTK2.TextTag->create() and then adding the tag to the tag table.  The
 //! returned tag is owned by the tag table.
+//!
+//!
+
+GTK2.TextBuffer cut_clipboard( GTK2.Clipboard clipboard, int default_editable );
+//! Copies the currently-selected text to a clipboard, then deletes said
+//! text if it's editable.
 //!
 //!
 
@@ -374,6 +406,12 @@ GTK2.TextBuffer move_mark_by_name( string name, GTK2.TextIter where );
 //!
 //!
 
+GTK2.TextBuffer paste_clipboard( GTK2.Clipboard clipboard, int|void default_editable, GTK2.TextIter location );
+//! Pastes the contents of a clipboard at the insertion point, or at
+//! override_location.
+//!
+//!
+
 GTK2.TextBuffer place_cursor( GTK2.TextIter where );
 //! This function moves the "insert" and "selection_bound" marks
 //! simultaneously.  If you move them to the same place in two steps with
@@ -392,6 +430,11 @@ GTK2.TextBuffer remove_all_tags( GTK2.TextIter start, GTK2.TextIter end );
 //!
 //!
 
+GTK2.TextBuffer remove_selection_clipboard( GTK2.Clipboard clipboard );
+//! Removes a clipboard that was added with add_selection_clipboard().
+//!
+//!
+
 GTK2.TextBuffer remove_tag( GTK2.TextTag tag, GTK2.TextIter start, GTK2.TextIter end );
 //! Emits the "remove-tag" signal.  The default handler for the signal removes
 //! all occurrences of tag from the given range.  start and end do not have to
@@ -401,6 +444,16 @@ GTK2.TextBuffer remove_tag( GTK2.TextTag tag, GTK2.TextIter start, GTK2.TextIter
 
 GTK2.TextBuffer remove_tag_by_name( string name, GTK2.TextIter start, GTK2.TextIter end );
 //! Removes a tag.  See apply_tag_by_name().
+//!
+//!
+
+GTK2.TextBuffer select_range( GTK2.TextIter ins, GTK2.TextIter bound );
+//! This function removes the "insert" and "selection_bound" marks
+//! simultaneously.  If you move them in two steps with move_mark(), you will
+//! temporarily select a region in between their old and new locations, which
+//! can be pretty inefficient since the temporarily-selected region will
+//! force stuff to be recalculated.  This function moves them as a unit,
+//! which can be optimized.
 //!
 //!
 

@@ -65,6 +65,11 @@ GDK2.Drawable draw_line( GTK2.GdkGC gc, int x1, int y1, int x2, int y2 );
 //!
 //!
 
+GDK2.Drawable draw_pixbuf( GTK2.GdkGC gc, GTK2.GdkPixbuf pixbuf, int xsrc, int ysrc, int xdest, int ydest, int width, int height );
+//! Draw a GDK2(Pixbuf) in this drawable.
+//!
+//!
+
 GDK2.Drawable draw_pixmap( GTK2.GdkGC gc, GTK2.GdkPixmap pixmap, int xsrc, int ysrc, int xdest, int ydest, int width, int height );
 //! Draw the rectangle specified by xsrc,ysrc+width,height from the
 //! GDK2(Pixmap) at xdest,ydest in the destination drawable

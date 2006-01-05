@@ -17,6 +17,11 @@
 
 inherit GTK2.Box;
 
+int get_child_secondary( GTK2.Widget child );
+//! Returns whether child should appear in a secondary group of children.
+//!
+//!
+
 int get_layout( );
 //! Returns the currently configured layout.
 //! One of  @[BUTTONBOX_DEFAULT_STYLE], @[BUTTONBOX_EDGE], @[BUTTONBOX_END], @[BUTTONBOX_SPREAD] and @[BUTTONBOX_START]

@@ -380,6 +380,20 @@ GTK2.Widget add_events( int events );
 //!
 //!
 
+GTK2.Widget add_mnemonic_label( GTK2.Widget label );
+//! Adds a widget to the list of mnemonic lables for this widget.  Note the
+//! list of mnemonic labels for the widget is cleared when the widget is
+//! destroyed, so the caller must make sure to update it's internal state at
+//! this point as well, by using a connection to the destroy signal.
+//!
+//!
+
+int can_activate_accel( int signal_id );
+//! Determines whether an accelerator that activates the signal signal_id can
+//! currently be activated.
+//!
+//!
+
 GTK2.Widget child_notify( string prop );
 //! Emits a "child-notify" signal for the child property prop.
 //!
@@ -390,9 +404,26 @@ string class_path( );
 //!
 //!
 
+GTK2.Pango.Context create_pango_context( );
+//! Creates a new Pango.Context with the appropriate colormap, font
+//! description, and base direction for drawing text for this widget.
+//!
+//!
+
+GTK2.Pango.Layout create_pango_layout( string text );
+//! Creates a new Pango.Layout with the appropriate colormap, font
+//! description, and base direction for drawing text.
+//!
+//!
+
 GTK2.Widget freeze_child_notify( );
 //! Stops emission of "child-notify" signals.  The signals are queued until
 //! thaw_child_notify() is called on the widget.
+//!
+//!
+
+GTK2.Clipboard get_clipboard( GDK2.Atom selection );
+//! Returns the clipboard object for the given selection.
 //!
 //!
 
@@ -403,6 +434,13 @@ string get_composite_name( );
 
 int get_direction( );
 //! Gets the reading direction.
+//!
+//!
+
+GTK2.GdkDisplay get_display( );
+//! Get the GDK2.Display for the toplevel window associated with this widget.
+//! This function can only be called after the widget has been added to a
+//! widget hierarchy with a GTK2.Window at the top.
 //!
 //!
 
@@ -426,6 +464,11 @@ string get_name( );
 //!
 //!
 
+int get_no_show_all( );
+//! Returns the current value of the "no-show-all" property.
+//!
+//!
+
 GTK2.Widget get_parent( );
 //! Returns the parent container.
 //!
@@ -433,6 +476,11 @@ GTK2.Widget get_parent( );
 
 GTK2.GdkWindow get_parent_window( );
 //! Get the parent window.
+//!
+//!
+
+GTK2.GdkWindow get_root_window( );
+//! Get the root window.
 //!
 //!
 
@@ -487,6 +535,12 @@ int is_focus( );
 //!
 //!
 
+array list_mnemonic_lables( );
+//! Returns a list of the widgets, normally labels, for which this widget is
+//! the target of a mnemonic.
+//!
+//!
+
 GTK2.Widget map( );
 //! Causes this widget to be mapped.
 //!
@@ -513,6 +567,11 @@ GTK2.Widget modify_fg( int state, GTK2.GdkColor color );
 //! Sets the foreground color of the widget in a particular state.
 //! state is one of @[STATE_ACTIVE], @[STATE_INSENSITIVE], @[STATE_NORMAL], @[STATE_PRELIGHT] and @[STATE_SELECTED].
 //! color can be omitted to undo the effect of a previous call.
+//!
+//!
+
+GTK2.Widget modify_font( GTK2.Pango.FontDescription font );
+//! Sets the font.
 //!
 //!
 
@@ -556,8 +615,19 @@ GTK2.Widget queue_resize( );
 //!
 //!
 
+GTK2.Widget queue_resize_no_redraw( );
+//! This function works like queue_resize(), except that the widget is not
+//! invalidated.
+//!
+//!
+
 int remove_accelerator( GTK2.AccelGroup accel_group, int accel_key, int accel_mods );
 //! Removes an accelerator.
+//!
+//!
+
+GTK2.Widget remove_mnemonic_label( GTK2.Widget label );
+//! Removes a widget from the list of mnemonic labels for this widget.
 //!
 //!
 
@@ -632,6 +702,12 @@ GTK2.Widget set_flags( int flags );
 GTK2.Widget set_name( string name );
 //! Widgets can be named, which allows you to refer to them from a gtkrc file.
 //! You can apply a style to widgets with a particular name in the gtkrc file.
+//!
+//!
+
+GTK2.Widget set_no_show_all( int no_show_all );
+//! Sets the "no-show-all" property, which determines whether calls to
+//! show_all() and hide_all() will affect this widget.
 //!
 //!
 

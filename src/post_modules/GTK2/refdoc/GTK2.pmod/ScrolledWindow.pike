@@ -59,6 +59,11 @@ GTK2.Adjustment get_hadjustment( );
 //!
 //!
 
+GTK2.HScrollbar get_hscrollbar( );
+//! Returns the horizontal scrollbar.
+//!
+//!
+
 int get_placement( );
 //! Gets the placement of the scrollbars.
 //!
@@ -80,6 +85,11 @@ int get_shadow_type( );
 
 GTK2.Adjustment get_vadjustment( );
 //! Get the vertical adjustment.
+//!
+//!
+
+GTK2.VScrollbar get_vscrollbar( );
+//! Returns the vertical scrollbar.
 //!
 //!
 

@@ -87,6 +87,11 @@ int get_right_margin( );
 //!
 //!
 
+GTK2.Pango.TabArray get_tabs( );
+//! Get tabs.
+//!
+//!
+
 int get_wrap_mode( );
 //! Get wrap mode.
 //!

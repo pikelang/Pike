@@ -31,6 +31,11 @@ static GTK2.ProgressBar create( mapping|void props );
 //!
 //!
 
+int get_ellipsize( );
+//! Returns the ellipsizing position of the progressbar.
+//!
+//!
+
 float get_fraction( );
 //! Returns the current fraction of the task that's been completed.
 //!
@@ -56,6 +61,13 @@ GTK2.ProgressBar pulse( );
 //! the progress bar to enter "activity mode", where a block bounces back and
 //! forth.  Each call to pulse() causes the block to move by a little bit (the
 //! amount of movement per pulse is determined by set_pulse_step()).
+//!
+//!
+
+GTK2.ProgressBar set_ellipsize( int mode );
+//! Sets the mode used to ellipsize (add an ellipsis: "...") the text if there
+//! is not enough space to render the entire string.  One of 
+//! .
 //!
 //!
 

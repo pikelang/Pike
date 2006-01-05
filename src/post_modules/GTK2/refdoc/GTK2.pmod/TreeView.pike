@@ -1,9 +1,12 @@
 //! Properties:
 //! int enable-search
 //! GTK2.TreeViewColumn expander-column
+//! int fixed-height-mode
 //! GTK2.Adjustment hadjustment
 //! int headers-clickable
 //! int headers-visible
+//! int hover-expand
+//! int hover-selection
 //! GTK2.TreeModel model
 //! int reorderable
 //! int rules-hint
@@ -94,6 +97,12 @@ int expand_row( GTK2.TreePath path, int open_all );
 //!
 //!
 
+GTK2.TreeView expand_to_path( GTK2.TreePath path );
+//! Expands the row at path.  This will also expand all parent rows of path as
+//! necessary.
+//!
+//!
+
 GTK2.GdkRectangle get_background_area( GTK2.TreePath path, GTK2.TreeViewColumn column );
 //! Similar to get_cell_area().  The returned rectangle is equivalent to the
 //! background_area passed to GTK2.CellRenderer->render().  These background
@@ -153,6 +162,11 @@ GTK2.TreeViewColumn get_expander_column( );
 //!
 //!
 
+int get_fixed_height_mode( );
+//! Returns whether fixed height mode is turned on.
+//!
+//!
+
 GTK2.Adjustment get_hadjustment( );
 //! Gets the W(Adjustment) currently being used for the horizontal aspect.
 //!
@@ -160,6 +174,16 @@ GTK2.Adjustment get_hadjustment( );
 
 int get_headers_visible( );
 //! Returns true if the headers are visible.
+//!
+//!
+
+int get_hover_expand( );
+//! Returns whether hover expansion mode is turned on.
+//!
+//!
+
+int get_hover_selection( );
+//! Returns whether hover selection mode is turned on.
 //!
 //!
 
@@ -194,6 +218,12 @@ int get_search_column( );
 //!
 //!
 
+array get_selected( );
+//! Shortcut to GTK2.TreeView->get_selection() and 
+//! GTK2.TreeSelection()->get_selected().
+//!
+//!
+
 GTK2.TreeSelection get_selection( );
 //! Gets the W(TreeSelection) associated with this TreeView.
 //!
@@ -201,6 +231,12 @@ GTK2.TreeSelection get_selection( );
 
 GTK2.Adjustment get_vadjustment( );
 //! Gets the W(Adjustment) currently being used for the vertical aspect.
+//!
+//!
+
+array get_visible_range( );
+//! Returns the first and last visible path.  Note that there may be invisible
+//! paths in between.
 //!
 //!
 
@@ -284,6 +320,20 @@ GTK2.TreeView set_cursor( GTK2.TreePath path, GTK2.TreeViewColumn focus_column, 
 //!
 //!
 
+GTK2.TreeView set_cursor_on_cell( GTK2.TreePath path, GTK2.TreeViewColumn focus_column, int|void start_editing, GTK2.CellRenderer focus_cell );
+//! Sets the current keyboard focus to be at path, and selects it.  This is
+//! useful when you want to focus the user's attention on a particular row.
+//! If focus_column is present, then focus is given to the column specified by
+//! it.  If focus_column and focus_cell are present, and focus_column contains
+//! 2 or more editable or activatable cells, then focus is given to the cell
+//! specified by focus_cell.  Additionally, if focus_column is specified, and
+//! start_editing is true, then editing should be started in the specified
+//! cell.  This function is often followed by grab_focus() in order to give
+//! keyboard focus to the widget.  Please note that editing can only happen
+//! when the widget is realized.
+//!
+//!
+
 GTK2.TreeView set_enable_search( int enable_search );
 //! If enable_search is set, then the user can type in text to search through
 //! the tree interactively (this is sometimes called "typeahead find").
@@ -300,6 +350,14 @@ GTK2.TreeView set_expander_column( GTK2.TreeViewColumn column );
 //!
 //!
 
+GTK2.TreeView set_fixed_height_mode( int enable );
+//! Enables or disables the fixed height mode.  Fixed height mode speeds up
+//! W(TreeView) by assuming that all rows have the same height.  Only enable
+//! this option if all rows are the same height and all columns are of type
+//! GTK2.TREE_VIEW_COLUMN_FIXED.
+//!
+//!
+
 GTK2.TreeView set_hadjustment( GTK2.Adjustment hadj );
 //! Sets the W(Adjustment) for the current horizontal aspect.
 //!
@@ -312,6 +370,19 @@ GTK2.TreeView set_headers_clickable( int setting );
 
 GTK2.TreeView set_headers_visible( int headers_visible );
 //! Sets the visibility state of the headers.
+//!
+//!
+
+GTK2.TreeView set_hover_expand( int expand );
+//! Enables or disables the hover expansion mode.  Hover expansion makes rows
+//! expand or collapse if the pointer moves over them.
+//!
+//!
+
+GTK2.TreeView set_hover_selection( int hover );
+//! Enables or disables the hover selection mode.  Hover selection makes the
+//! selected row follow the pointer.  Currently, this works only for the
+//! selection modes GTK2.SELECTION_SINGLE and GTK2.SELECTION_BROWSE.
 //!
 //!
 

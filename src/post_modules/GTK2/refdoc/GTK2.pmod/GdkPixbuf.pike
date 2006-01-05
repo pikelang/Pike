@@ -77,6 +77,12 @@ GDK2.Pixbuf fill( array|mapping|int pixel );
 //!
 //!
 
+GTK2.GdkPixbuf flip( int horizontal );
+//! Flips a pixbuf horizontally or vertically and returns the result in
+//! a new pixbuf.
+//!
+//!
+
 int get_bits_per_sample( );
 //! Queries the number of bits per color sample.
 //!
@@ -144,6 +150,13 @@ GTK2.GdkBitmap render_threshold_alpha( int src_x, int src_y, int dest_x, int des
 //!
 //!
 
+GTK2.GdkPixbuf rotate_simple( int angle );
+//! Rotates a pixbuf by a multiple of 90 degress, and returns the result
+//! in a new pixbuf.  angle is either a multiple of 90 degress (0,90,180,270),
+//! or one of @[GDK_PIXBUF_ROTATE_CLOCKWISE], @[GDK_PIXBUF_ROTATE_COUNTERCLOCKWISE], @[GDK_PIXBUF_ROTATE_NONE] and @[GDK_PIXBUF_ROTATE_UPSIDEDOWN], which are merely aliases.
+//!
+//!
+
 GDK2.Pixbuf saturate_and_pixelate( GTK2.GdkPixbuf dest, float saturation, int pixelate );
 //! Modifies saturation and optionally pixelates this pixbuf, placing
 //! the result in dest.  The source and dest may be the same pixbuf
@@ -202,6 +215,21 @@ GDK2.Pixbuf set_from_file( string filename );
 //!
 //!
 
+GDK2.Pixbuf set_from_file_at_scale( string filename, int width, int height, int preserve_aspect_ratio );
+//! Create a new pixbuf by loading an image from a file.  The file
+//! format is detected automatically.  The image will be scaled to
+//! fit the requested size, optionally preserving the image's aspect
+//! ratio.
+//!
+//!
+
+GDK2.Pixbuf set_from_file_at_size( string filename, int width, int height );
+//! Create a new pixbuf by loading an image from a file.  The image
+//! will be scaled to fit in the requested size, preserving the
+//! image's aspect ratio.
+//!
+//!
+
 GDK2.Pixbuf set_from_inline( int data_length, string data );
 //! Create a GDK2.Pixbuf from a flat representation that is suitable
 //! for storing as inline data in a program.
@@ -211,5 +239,11 @@ GDK2.Pixbuf set_from_inline( int data_length, string data );
 
 GDK2.Pixbuf set_from_xpm_data( array data );
 //! Creates a new pixbuf by parsing XPM data in memory.
+//!
+//!
+
+int set_option( string key, string value );
+//! Attaches a key/value pair as an option.  If the key already exists
+//! in the list of options, the new value is ignored.
 //!
 //!

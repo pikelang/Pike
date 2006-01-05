@@ -25,9 +25,14 @@
 //! set by the user, by calling set_position().
 //! 
 //! Properties:
+//! int max-position
+//! int min-position
 //! int position
 //! int position-set
 //! 
+//! Child properties:
+//! int resize
+//! int shrink
 //! 
 //! Style properties:
 //! int handle-size
@@ -58,6 +63,16 @@ GTK2.Paned add1( GTK2.Widget left_or_top );
 GTK2.Paned add2( GTK2.Widget right_or_bottom );
 //! Set the right or bottommost item
 //! This is equivalent to pack2(left_or_top,0,1)
+//!
+//!
+
+GTK2.Widget get_child1( );
+//! Obtains the first child of the paned widget.
+//!
+//!
+
+GTK2.Widget get_child2( );
+//! Obtains the second child of the paned widget.
 //!
 //!
 
