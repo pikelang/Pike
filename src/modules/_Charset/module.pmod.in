@@ -277,13 +277,8 @@ Decoder decoder(string name)
     return EUCDec("x0208");
 
 
-  int multi = ([
-    "gbk" : 1,
-    "936" : 1,
-    "949" : 2,
- ])[ name ];
-  if( multi )
-    return MulticharDec(multi);
+  if( (< "gbk", "936", "949" >)[ name ] )
+    return MulticharDec(name);
 
   Decoder o = rfc1345(name);
 
