@@ -309,6 +309,115 @@ static class _ymd_base
       if (y<1) return sprintf("%d BH",1-y);
       return sprintf("%d AH",y);
    }
+
+//badi defaults (baha'i calendar)
+
+   string badi_month_name_from_number(int n)
+   {
+     // Ayyám-i-Há is not a month. it is here at 0 for a lack of a better place
+     // to put it. it will be ignored for now.
+     return ({ "Ayyám-i-Há", "Bahá", "Jalál", "Jamál", "'Azamat", "Núr",
+               "Rahmat", "Kalimát", "Kamál", "Asmá", "'Izzat", "Mashíyyat",
+               "'Ilm", "Qudrat", "Qawl", "Masá'il", "Sharaf", "Sultán", "Mulk",
+               "'Alá" })[n];
+   }
+
+   int badi_month_number_from_name(string n)
+   {
+     return ([ "Bahá":1,       "Baha":1,       "Bh":1,      "Bh":1,      
+               "Jalál":2,      "Jalal":2,      "Jll":2,     "Jl":2, 
+               "Jamál":3,      "Jamal":3,      "Jml":3,     "Jm":3, 
+               "'Azamat":4,    "Azamat":4,     "Azmt":4,    "Az":4, 
+               "Núr":5,        "Nur":5,        "Nr":5,      "Nr":5,
+               "Rahmat":6,     "Rahmat":6,     "Rhmt":6,    "Rh":6, 
+               "Kalimát":7,    "Kalimat":7,    "Klmt":7,    "Kl":7, 
+               "Kamál":8,      "Kamal":8,      "Kml":8,     "Km":8, 
+               "Asmá":9,       "Asma":9,       "Am":9,      "Am":9, 
+               "'Izzat":10,    "Izzat":10,     "Izzt":10,   "Iz":10, 
+               "Mashíyyat":11, "Mashiyyat":11, "Mshyyt":11, "Msh":11,
+               "'Ilm":12,      "Ilm":12,       "Ilm":12,    "Ilm":12, 
+               "Qudrat":13,    "Qudrat":13,    "Qdrt":13,   "Qd":13, 
+               "Qawl":14,      "Qawl":14,      "Qwl":14,    "Qw":14, 
+               "Masá'il":15,   "Masail":15,    "Msl":15,    "Ms":15, 
+               "Sharaf":16,    "Sharaf":16,    "Shrf":16,   "Shr":16, 
+               "Sultán":17,    "Sultan":17,    "Sltn":17,   "Sl":17, 
+               "Mulk":18,      "Mulk":18,      "Mlk":18,    "Ml":18,
+               "'Alá":19,      "Ala":19,       "Al":19,     "Al":19,    
+             ])[n];
+   }
+
+   string badi_month_shortname_from_number(int n)
+   {
+     // i have no idea how to abbreviate these, am just guessing here
+     return ({ 0, "Bh", "Jl", "Jm", "Az", "Nr", "Rh", "Kl", "Km", "Am", "Iz",
+                  "Msh", "Ilm", "Qd", "Qw", "Ms", "Shr", "Sl", "Ml", "Al"})[n];
+   }
+
+   string badi_month_day_name_from_number(int n)
+   {
+     // month day names are the same as month names
+     array names= ({ "Bahá", "Jalál", "Jamál", "'Azamat", "Núr", "Rahmat",
+                     "Kalimát", "Kamál", "Asmá", "'Izzat", "Mashíyyat", "'Ilm",
+                     "Qudrat", "Qawl", "Masá'il", "Sharaf", "Sultán", "Mulk",
+                     "'Alá", "Ayyám-i-Há 1", "Ayyám-i-Há 2", "Ayyám-i-Há 3", "Ayyám-i-Há 4", "Ayyám-i-Há 5" });
+     // not sure if the number should be included here
+     return sprintf("%d (%s)", n, names[n-1]);
+   }
+
+   string badi_week_day_shortname_from_number(int n)
+   {
+     // i have no idea how to abbreviate these, am just guessing here
+     // see badi_week_day_number_from_name for more guesses
+     return ({ 0,  "Jl", "Jm", "Km", "Fd", "Id", 
+                   "Ij", "Iq" })[n];
+   }
+
+   int badi_week_day_number_from_name(string n)
+   {
+     return([ "Jalál":1,    "Jalal":1,    "Jal":1, "Jl":1, "Jll":1,   
+              "Jamál":2,    "Jamal":2,    "Jam":2, "Jm":2, "Jml":2,   
+              "Kamál":3,    "Kamal":3,    "Kam":3, "Km":3, "Kml":3,   
+              "Fidál":4,    "Fidal":4,    "Fid":4, "Fd":4, "Fdl":4,   
+              "'Idál":5,    "Idal":5,     "'Id":5, "Id":5, "'Idl":5,    
+              "Istijlál":6, "Istijlal":6, "Itj":6, "Ij":6, "Istjll":6,
+              "Istiqlál":7, "Istiqlal":7, "Itq":7, "Iq":7, "Istqll":7,
+            ])[n];
+   }
+
+   string badi_week_day_name_from_number(int n)
+   {
+     return({ 0,  "Jalál", "Jamál", "Kamál", "Fidál", "'Idál", 
+                  "Istijlál", "Istiqlál" })[n];
+   }
+
+   string badi_year_name_from_number(int y)
+   {
+     array vahid=({ "Alif", "Bá", "Ab", "Dál", "Báb", "Váv", "Abad", "Jád",
+                    "Bahá", "Hubb", "Bahháj", "Javáb", "Ahad", "Vahháb",
+                    "Vidád", "Badí", "Bahí", "Abhá", "Váhid" });
+     if (y<1) 
+       return sprintf("%d BB",1-y);                // ? before Baha'i?
+     return sprintf("%d BE (%s)", y, vahid[y%19-1]); // Baha'i Era
+     // Váhid is a cycle of 19years with each year having a name.
+     // there is also the period of Kull-i-Shay which is 19 cycles of Váhid
+   }
+
+   int badi_year_number_from_name(string name)
+   {
+      int y;
+      string x;
+      if (sscanf(name,"%*s%d%*[ ]B%[BE]%*s",y,x)==1 || x=="") 
+	 return y>=0?y:y+1; // "-1" == integer year 0
+      if(stringp(x))
+        x-=" ";
+      switch (x)
+      {
+	 case "E": return y; 
+	 case "B": return -y+1;
+	 default:
+	    error("Can't understand year.\n");
+      }
+   }
 }
 
 // ----------------------------------------------------------------
