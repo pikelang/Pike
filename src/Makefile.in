@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.413 2005/12/30 16:32:42 nilsson Exp $
+# $Id: Makefile.in,v 1.414 2006/01/05 01:05:06 marcus Exp $
 #
 
 # This line is needed on some machines.
@@ -804,7 +804,7 @@ modref.xml: autodoc.xml $(DOCDIR)/structure/modref.xml
 	  $(RUNPIKE) -x assemble_autodoc structure/modref.xml \
 	    $(TMP_BUILDDIR)/autodoc.xml) >modref.xml
 
-autodoc.xml: pike doc_build/src doc_build/lib doc_build/images images force
+autodoc.xml: pike doc_build/src doc_build/lib doc_build/images images1 images2 force
 	$(RUNPIKE) -x extract_autodoc -q --srcdir=$(SRCDIR) \
 	  --imgsrc=$(DOCDIR)/src_images --builddir=doc_build/src \
 	  --imgdir=doc_build/images
@@ -817,9 +817,13 @@ autodoc-stamp:
 	@test -f autodoc.xml || $(MAKE) autodoc.xml
 	@test -f autodoc-stamp || echo foo > autodoc-stamp
 
-images: doc_build/src/post_modules/GTK/refdoc/images
+images1: doc_build/src/post_modules/GTK/refdoc/images
 	@cp $(SRCDIR)/post_modules/GTK/refdoc/images/*.png \
 	  doc_build/src/post_modules/GTK/refdoc/images/
+
+images2: doc_build/src/post_modules/GTK2/refdoc/images
+	@cp $(SRCDIR)/post_modules/GTK2/refdoc/images/*.png \
+	  doc_build/src/post_modules/GTK2/refdoc/images/
 
 # Directories
 
@@ -844,6 +848,16 @@ doc_build/src/post_modules/GTK/refdoc/images: doc_build/src
 	  mkdir doc_build/src/post_modules/GTK/refdoc
 	@test -d doc_build/src/post_modules/GTK/refdoc/images || \
 	  mkdir doc_build/src/post_modules/GTK/refdoc/images
+
+doc_build/src/post_modules/GTK2/refdoc/images: doc_build/src
+	@test -d doc_build/src/post_modules || \
+	  mkdir doc_build/src/post_modules
+	@test -d doc_build/src/post_modules/GTK2 || \
+	  mkdir doc_build/src/post_modules/GTK2
+	@test -d doc_build/src/post_modules/GTK2/refdoc || \
+	  mkdir doc_build/src/post_modules/GTK2/refdoc
+	@test -d doc_build/src/post_modules/GTK2/refdoc/images || \
+	  mkdir doc_build/src/post_modules/GTK2/refdoc/images
 
 doc_clean:
 	-rm -f onepage.xml traditional.xml modref.xml autodoc.xml resolution.log
