@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.103 2005/11/03 17:10:02 grubba Exp $
+dnl $Id: aclocal.m4,v 1.104 2006/01/05 14:14:51 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -374,7 +374,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.103 2005/11/03 17:10:02 grubba Exp $
+  # $Id: aclocal.m4,v 1.104 2006/01/05 14:14:51 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -929,3 +929,205 @@ define([DO_IF_OS],
   fi
 ])
 
+# ABI selection.
+
+AC_DEFUN(PIKE_CHECK_DEFAULT_ABI,
+[
+  AC_MSG_CHECKING([default compiler ABI])
+  AC_CACHE_VAL(pike_cv_default_compiler_abi, [
+    cat >"conftest.$ac_ext" <<\EOF
+int main(int argc, char **argv)
+{
+  return 0;
+}
+EOF
+    pike_cv_default_compiler_abi="unknown"
+    if (eval $ac_compile) 2>&AC_FD_CC; then
+      filetype=`file "conftest.$ac_cv_objext" 2>/dev/null | sed -e 's/.*://'`
+      case "$filetype" in
+        *64-bit*)
+          pike_cv_default_compiler_abi=64
+	  ;;
+        *32-bit*)
+          pike_cv_default_compiler_abi=32
+	  ;;
+        *64*)
+          pike_cv_default_compiler_abi=64
+	  ;;
+        *32*)
+          pike_cv_default_compiler_abi=32
+	  ;;
+        *386*)
+          # Probably NT or SCO file for i386:
+          #   iAPX 386 executable (COFF)
+          #   80386 COFF executable
+          pike_cv_default_compiler_abi=32
+	  ;;
+        *)
+          # Unknown. Probably cross-compiling.
+          PIKE_MSG_WARN([Unrecognized object file format: $filetype])
+	  if dd if="conftest.$ac_cv_objext" count=2 bs=1 2>/dev/null | \
+	     grep 'L' >/dev/null; then
+	    # A common case is rntcl...
+	    # If the file begins with 0x4c 0x01 it's a 80386 COFF executable.
+            pike_cv_default_compiler_abi=32
+	  fi
+          ;;
+      esac
+    fi
+    rm -f conftest.$ac_cv_objext conftest.$ac_ext
+  ])
+  AC_MSG_RESULT($pike_cv_default_compiler_abi)
+])
+
+AC_DEFUN(PIKE_WITH_ABI,
+[
+  AC_ARG_WITH(abi, MY_DESCR([--with-abi=32/64],
+			    [specify ABI to use in case there are multiple]))
+
+  AC_MSG_CHECKING([which ABI to use])
+  AC_CACHE_VAL(pike_cv_wanted_abi, [
+    case "x$with_abi" in
+      *32)
+        pike_cv_wanted_abi="32"
+      ;;
+      *64)
+        pike_cv_wanted_abi="64"
+      ;;
+      *)
+        # Defaults
+        pike_cv_wanted_abi="32"
+        case "x`uname -m`" in
+          xia64)
+            pike_cv_wanted_abi="64"
+          ;;
+          xx86_64)
+	    pike_cv_wanted_abi="64"
+          ;;
+          xalpha)
+	    pike_cv_wanted_abi="64"
+          ;;
+        esac
+        if type isainfo 2>/dev/null >/dev/null; then
+          # Solaris
+          pike_cv_wanted_abi="`isainfo -b`"
+        elif type sysctl 2>/dev/null >/dev/null; then
+          # MacOS X or Linux.
+          #
+          # On MacOS X hw.optional.64bitop is set to 1 if
+          # 64bit is supported and useful.
+          if test "`sysctl -n hw.optional.64bitops 2>/dev/null`" = "1"; then
+            pike_cv_wanted_abi="64"
+          fi
+        fi
+      ;;
+    esac
+  ])
+  AC_MSG_RESULT(attempt $pike_cv_wanted_abi)
+])
+
+# if-fail-and-no-default
+AC_DEFUN(PIKE_ATTEMPT_ABI32,
+[
+  #
+  # We want 32bit mode if possible.
+  #
+  AC_SYS_COMPILER_FLAG(-q32, q32, CC)
+  AC_SYS_COMPILER_FLAG(-m32, m32, CC)
+  # Sun Studio 10
+  AC_SYS_COMPILER_FLAG(-xtarget=generic32, xtarget_generic32, CC)
+  AC_SYS_COMPILER_FLAG(-xarch=generic32, xarch_generic32, CC)
+  if test "$pike_cv_option_q32:$pike_cv_option_m32:$pike_cv_option_xtarget_generic32:$pike_cv_option_xarch_generic32" = "no:no:no:no"; then
+    if test "x$pike_cv_default_compiler_abi" = "xunknown"; then
+      :
+      $1
+    else
+      PIKE_MSG_WARN([Using compiler default ABI: $pike_cv_default_compiler_abi])
+      pike_cv_abi="$pike_cv_default_compiler_abi"
+    fi
+  else
+    pike_cv_abi="32"
+  fi
+])
+
+# if-fail-and-no-default
+AC_DEFUN(PIKE_ATTEMPT_ABI64,
+[
+  #
+  # We want 64bit mode if possible.
+  #
+  AC_SYS_COMPILER_FLAG(-q64, q64, CC)
+  AC_SYS_COMPILER_FLAG(-m64, m64, CC)
+  # Sun Studio 10
+  AC_SYS_COMPILER_FLAG(-xtarget=generic64, xtarget_generic64, CC)
+  AC_SYS_COMPILER_FLAG(-xarch=generic64, xarch_generic64, CC)
+  if test "$pike_cv_option_q64:$pike_cv_option_m64:$pike_cv_option_xtarget_generic64:$pike_cv_option_xarch_generic64" = "no:no:no:no"; then
+    if test "x$pike_cv_default_compiler_abi" = "xunknown"; then
+      :
+      $1
+    else
+      PIKE_MSG_WARN([Using compiler default ABI: $pike_cv_default_compiler_abi])
+      pike_cv_abi="$pike_cv_default_compiler_abi"
+    fi
+  else
+    pike_cv_abi="64"
+  fi
+])
+
+AC_DEFUN(PIKE_SELECT_ABI,
+[
+  AC_REQUIRE([PIKE_CHECK_DEFAULT_ABI])dnl
+  AC_REQUIRE([PIKE_WITH_ABI])dnl
+
+  if test "x$pike_cv_wanted_abi" = "x$pike_cv_default_compiler_abi"; then
+    # The compiler defaults to the wanted ABI.
+    pike_cv_abi="$pike_cv_wanted_abi"
+  else
+    if test "x$pike_cv_wanted_abi" = "x64"; then
+      PIKE_ATTEMPT_ABI64([
+        PIKE_ATTEMPT_ABI32([
+          PIKE_MSG_WARN([Found no option to force 64 bit ABI.])
+          # We hope this is correct...
+	  pike_cv_abi="64"
+        ])
+      ])
+    else
+      PIKE_ATTEMPT_ABI32([
+        PIKE_ATTEMPT_ABI64([
+          PIKE_MSG_WARN([Found no option to force 32 bit ABI.])
+          # We hope this is correct...
+	  pike_cv_abi="32"
+        ])
+      ])
+    fi
+  fi
+  if test "x$pike_cv_abi" = "x32"; then
+    #
+    # Make sure no later tests will add -q64 or -m64.
+    #
+    pike_disabled_option_q64=yes
+    pike_disabled_option_m64=yes
+  fi
+
+  echo
+  echo "Using ABI $with_abi."
+  echo
+
+  # ABI-dirs
+  AC_MSG_CHECKING(for ABI lib-suffixes)
+  AC_CACHE_VAL(pike_cv_abi_dirs,
+  [
+    extra_abi_dirs=""
+    if type isainfo 2>/dev/null >/dev/null; then
+      # Solaris
+      # Some installations lack the symlink 64 -> amd64 or sparcv9,
+      # or the corresponding 32 link.
+      extra_abi_dirs=`isainfo -v 2>/dev/null|awk "/$with_abi"'-bit/ { print "/" [$]2 }'`
+    fi
+    pike_cv_abi_suffixes="$pike_cv_abi /$pike_cv_abi $extra_abi_dirs /."
+  ])
+  AC_MSG_RESULT($pike_cv_abi_suffixes)
+
+  # Compat
+  with_abi="$pike_cv_abi"
+])
