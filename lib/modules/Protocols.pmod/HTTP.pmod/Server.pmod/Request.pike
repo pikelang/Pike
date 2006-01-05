@@ -354,16 +354,6 @@ static int parse_variables()
   return 0; // delay
 }
 
-static void populate_raw()
-{
-  if( !strlen(body_raw) )
-  {
-    int i=search(raw, "\r\n\r\n");
-    if(i>0) body_raw=raw[i+4..];
-    return;
-  }
-}
-
 static void parse_post()
 {
   if ( request_headers["content-type"] && 
@@ -388,8 +378,6 @@ static void parse_post()
 static void finalize()
 {
   my_fd->set_blocking();
-
-  populate_raw();
   flatten_headers();
   parse_post();
 
@@ -651,7 +639,11 @@ void finish(int clean)
 {
    if( log_cb )
      log_cb(this);
-   if (send_fd) { send_fd->close(); destruct(send_fd); send_fd=0; }
+   if (send_fd) { 
+       send_fd->close(); 
+       destruct(send_fd); 
+       send_fd=0; 
+   }
    remove_call_out(send_timeout);
 
    if (!clean 
@@ -686,7 +678,7 @@ void send_write()
        send_fd)
    {
       string q;
-      q=send_fd->read(131072);
+      q=send_fd->read(65536);
       if (!q || q=="")
       {
 	 send_fd->close();
