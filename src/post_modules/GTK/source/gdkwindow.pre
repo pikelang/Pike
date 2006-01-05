@@ -365,6 +365,25 @@ void lower()
   RETURN_THIS();
 }
 
+mapping get_pointer( int deviceid )
+//! Get the position of the specified device in this window.
+{
+    gdouble x, y, pressure, xtilt, ytilt;
+    GdkModifierType modifiers;
+    int deviceid;
+    get_all_args("get_pointer", args, "%d", &deviceid);
+    gdk_input_window_get_pointer( (GdkWindow *)THIS->obj,
+				  (guint32)deviceid, 
+				  &x,&y,&pressure,&xtilt,&ytilt,&modifiers);
+    my_pop_n_elems(args);
+    push_constant_text("x"); push_float(x);
+    push_constant_text("y"); push_float(y);
+    push_constant_text("pressure"); push_float(pressure);
+    push_constant_text("xtilt"); push_float(xtilt);
+    push_constant_text("ytilt"); push_float(ytilt);
+    push_constant_text("modifiers"); push_int((int)modifiers);
+    f_aggregate_mapping(12);
+}
 
 mapping get_property(GDK.Atom atom, int|void offset, int|void delete_when_done)
 //! Returns the value (as a string) of the specified property.
