@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.104 2006/01/05 14:14:51 grubba Exp $
+dnl $Id: aclocal.m4,v 1.105 2006/01/05 15:50:26 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -374,7 +374,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.104 2006/01/05 14:14:51 grubba Exp $
+  # $Id: aclocal.m4,v 1.105 2006/01/05 15:50:26 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -1110,7 +1110,7 @@ AC_DEFUN(PIKE_SELECT_ABI,
   fi
 
   echo
-  echo "Using ABI $with_abi."
+  echo "Using ABI pike_cv_abi."
   echo
 
   # ABI-dirs
@@ -1122,7 +1122,7 @@ AC_DEFUN(PIKE_SELECT_ABI,
       # Solaris
       # Some installations lack the symlink 64 -> amd64 or sparcv9,
       # or the corresponding 32 link.
-      extra_abi_dirs=`isainfo -v 2>/dev/null|awk "/$with_abi"'-bit/ { print "/" [$]2 }'`
+      extra_abi_dirs=`isainfo -v 2>/dev/null|awk "/$pike_cv_abi"'-bit/ { print "/" [$]2 }'`
     fi
     pike_cv_abi_suffixes="$pike_cv_abi /$pike_cv_abi $extra_abi_dirs /."
   ])
