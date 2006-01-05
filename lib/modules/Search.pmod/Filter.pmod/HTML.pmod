@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.38 2005/04/13 14:58:22 anders Exp $
+// $Id: HTML.pmod,v 1.39 2006/01/05 13:07:04 jonasw Exp $
 
 // Filter for text/html
 
@@ -48,7 +48,7 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   array(string) parse_meta(Parser.HTML p, mapping m )
   {
     string n = m->name||m["http-equiv"];
-    switch(lower_case(n))
+    switch(lower_case(n || ""))
     {
       case "description": 
       case "keywords":
