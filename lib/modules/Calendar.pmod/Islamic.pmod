@@ -15,7 +15,7 @@
 //! I have currently no idea how the arabic countries
 //! count the week. Follow the same rules as @[ISO]
 //! for now... The time is also suspicious; the @b{day@}
-//! really starts at sunrise (sunset?) and not midnight,
+//! really starts at sunset and not midnight,
 //! the hours of the day is not correct. Also don't know
 //! what to call years before 1 - go for "BH"; positive
 //! years are "AH", anno Hegirac.
