@@ -5,8 +5,10 @@ Changes in Pike code:
 
 o Added support for chunked transfer encoding and handle unexpected
   multiple headers in HTTP.Server.Request.
+o Added iso_646.irv, iso_4873.dv and iso_4873 to charsets.
 o Fixed some bugs in Protocol.HTTP.Server.HeaderParser.
 o Fixed decoding boolean datatype in Protocols.XMLRPC.
+o Fixed short names in Standards.XML.Wix.
 
 Other:
 
