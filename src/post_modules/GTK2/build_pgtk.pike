@@ -1532,6 +1532,39 @@ array parse_args( array tokens )
   return ({ types, names });
 }
 
+mapping(string:string) strings = ([]);
+
+array(string) make_strings(array tokens)
+{
+  array ret = ({});
+  foreach(tokens; int num; array|object token)
+    if( arrayp(token) )
+      ret += make_strings( token );
+    else if( token->text == "_STR" )
+    {
+      if( sizeof(tokens)>num+1 && arrayp(tokens[num+1]) &&
+          sizeof(tokens[num+1])==3 )
+      {
+        string str = tokens[num+1][1]->text;
+        if( str[0] != '\"' ||
+            str[-1] != '\"' )
+            SYNTAX( "_STR needs a string argument.", tokens[num+1][1] );
+        sscanf(str, "%O", str);
+        string tok = "pstr_" + str;
+
+        if( !strings[tok] )
+          strings[tok] = str;
+
+        ret += ({ tok });
+        tokens[num] = Parser.Pike.Token(tok);
+        tokens[num+1] = Parser.Pike.Token("");
+      }
+      else
+        SYNTAX( "_STR statement malformed.", token );
+    }
+  return Array.uniq(ret);
+}
+
 string parse_pre_file( string file )
 {
   array current_require = ({});
@@ -1739,6 +1772,7 @@ string parse_pre_file( string file )
          if( current_class )
            current_class->pre += token;
          break;
+
        default:
          if( token->text[..1] == "/*" ) // comment
            continue;
@@ -1788,11 +1822,22 @@ string parse_pre_file( string file )
            else
              break;
          }
+
          if( !body || (arrayp(body) && (body[0] != "{" || body[-1] != "}"))
              || (objectp(body) && body!=";" ))
            SYNTAX("Expected ; or function block",
                   (arrayp(body)?body[0]:body||token));
          [arg_types,arg_names] = parse_args( args[1..sizeof(args)-2] );
+         if( arrayp(body) ) {
+           array strs = make_strings(body);
+           if(sizeof(strs))
+           {
+             foreach( strs, string str )
+               current_class->pre +=
+                 ({ Parser.Pike.Token("extern struct pike_string * "+
+                                      str+";\n") });
+           }
+         }
          Function f = Function( current_class, name->text, type,
                                 arg_types, arg_names, body, 
                                 current_require, doc, file, token->line );
@@ -1926,7 +1971,7 @@ void main(int argc, array argv)
   werror("Outputting result files...\n");
   float t2 = gauge {
     array files =
-          output_plugin->output( classes, constants, global_pre );
+          output_plugin->output( classes, constants, global_pre, strings );
     if( files )
       Stdio.write_file( destination_dir+"/files_to_compile",
                         replace(files*" ",".c",".o") );

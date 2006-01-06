@@ -162,7 +162,8 @@ void post_class_build()
 
 array(string) output( mapping(string:Class) classes,
                       mapping(string:Constant) constants,
-                      array(Node) global_code )
+                      array(Node) global_code,
+                      mapping(string:string) strings)
 {
   head = Stdio.read_bytes( combine_path( sdir, "../pgtk.c.head" ) );
   if(!head) error("Failed to load ../pgtk.c.head\n");
@@ -205,6 +206,15 @@ array(string) output( mapping(string:Class) classes,
 
   foreach( sort(indices( done )), string w )
     initfun += done[w]->pike_add();
+
+  foreach( strings; string name; string str )
+  {
+    pre += "struct pike_string *" + name + ";\n";
+    initfun += "  " + name + " = make_shared_binary_string(" + S(str,0,2) +
+      "," + sizeof(str) + ");\n";
+    exitfun += "  free_string(" + name + ");\n";
+  }
+
   pre += get_string_data()+"\n\n";
   files = ({ "pgtk.c" }) + files;
 
