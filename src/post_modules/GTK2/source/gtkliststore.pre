@@ -33,30 +33,31 @@ void create(array(mixed) types)
     }
     for (i=sd->n_cols=0; i<a->size; i++) {
       if ((ITEM(a)+i)->type==PIKE_T_STRING) {
-	if (!strcmp("int",(const char *)STR0((ITEM(a)+i)->u.string)))
+        struct pike_string *str = (ITEM(a)+i)->u.string;
+	if (is_same_string(_STR("int"),str))
 	  sd->types[sd->n_cols++]=G_TYPE_INT;
-	else if (!strcmp("uint",(const char *)STR0((ITEM(a)+i)->u.string)))
+	else if (is_same_string(_STR("uint"),str))
 	  sd->types[sd->n_cols++]=G_TYPE_UINT;
-	else if (!strcmp("float",(const char *)STR0((ITEM(a)+i)->u.string)))
+	else if (is_same_string(_STR("float"),str))
 	  sd->types[sd->n_cols++]=G_TYPE_FLOAT;
-	else if (!strcmp("double",(const char *)STR0((ITEM(a)+i)->u.string)))
+	else if (is_same_string(_STR("double"),str))
 	  sd->types[sd->n_cols++]=G_TYPE_DOUBLE;
-	else if (!strcmp("boolean",(const char *)STR0((ITEM(a)+i)->u.string)))
+	else if (is_same_string(_STR("boolean"),str))
 	  sd->types[sd->n_cols++]=G_TYPE_BOOLEAN;
-	else if (!strcmp("long",(const char *)STR0((ITEM(a)+i)->u.string)))
+	else if (is_same_string(_STR("long"),str))
 	  sd->types[sd->n_cols++]=G_TYPE_LONG;
-	else if (!strcmp("ulong",(const char *)STR0((ITEM(a)+i)->u.string)))
+	else if (is_same_string(_STR("ulong"),str))
 	  sd->types[sd->n_cols++]=G_TYPE_ULONG;
-	else if (!strcmp("string",(const char *)STR0((ITEM(a)+i)->u.string)))
+	else if (is_same_string(_STR("string"),str))
 	  sd->types[sd->n_cols++]=G_TYPE_STRING;
-	else if (!strcmp("char",(const char *)STR0((ITEM(a)+i)->u.string)))
+	else if (is_same_string(_STR("char"),str))
 	  sd->types[sd->n_cols++]=G_TYPE_CHAR;
-	else if (!strcmp("uchar",(const char *)STR0((ITEM(a)+i)->u.string)))
+	else if (is_same_string(_STR("uchar"),str))
 	  sd->types[sd->n_cols++]=G_TYPE_UCHAR;
-	else if (!strcmp("object",(const char *)STR0((ITEM(a)+i)->u.string))) {
+	else if (is_same_string(_STR("object"),str)) {
 	  sd->types[sd->n_cols++]=G_TYPE_POINTER;
 	} else {
-	  sd->types[sd->n_cols]=g_type_from_name((const gchar *)STR0((ITEM(a)+i)->u.string));
+	  sd->types[sd->n_cols]=g_type_from_name(CGSTR0((ITEM(a)+i)->u.string));
           if (sd->types[sd->n_cols]==0)
 	    break;
 	  sd->n_cols++;
