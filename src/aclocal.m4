@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.107 2006/01/06 06:34:35 peter Exp $
+dnl $Id: aclocal.m4,v 1.108 2006/01/06 08:29:33 peter Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -374,7 +374,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.107 2006/01/06 06:34:35 peter Exp $
+  # $Id: aclocal.m4,v 1.108 2006/01/06 08:29:33 peter Exp $
 
   MY_AC_PROG_CC
 
@@ -768,6 +768,18 @@ WARNING: $1
 EOF
 ])
 
+dnl PIKE_MSG_NOTE(message) 
+dnl == AC_MSG_RESULT, but more noticable and adds to config.notes.
+define(PIKE_MSG_NOTE, [
+  AC_MSG_RESULT([
+NOTE: $1
+])
+  cat >>config.notes <<EOF
+NOTE: $1
+
+EOF
+])
+
 #############################################################################
 
 dnl PIKE_ENABLE_BUNDLE(bundle_name, invalidate_set, opt_error_msg)
@@ -792,7 +804,7 @@ define(PIKE_ENABLE_BUNDLE, [
         # Notify toplevel that we want the bundle.
 	# Note that invalidation of the cache variables can't be done
 	# until the bundle actually has been built.
-	PIKE_MSG_WARN([Enabling bundle $1 from $pike_bundle_dir/$f.])
+	PIKE_MSG_NOTE([Enabling bundle $1 from $pike_bundle_dir/$f.])
         echo "[$2]" >"[$1].bundle"
 	break
       fi
