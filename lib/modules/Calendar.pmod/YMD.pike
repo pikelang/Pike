@@ -2585,6 +2585,9 @@ static TimeRange dwim_zone(TimeRange origin,string zonename,
 
 static mapping(string:array) parse_format_cache=([]);
 
+static mapping dwim_year=([ "past_lower":70, "past_upper":100, 
+                            "current_century":2000, "past_century":1900 ]);
+
 TimeRange parse(string fmt,string arg,void|TimeRange context)
 {
    [string nfmt,array q]=(parse_format_cache[fmt]||({0,0}));
@@ -2663,7 +2666,10 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 	 if (sizeof(m->d)==6)
 	 {
 	    [y,mo,d]=(array(int))(m->d/2);
-	    if (y<70) y+=2000; else y+=1900;
+	    if (y<dwim_year->past_lower) 
+               y+=dwim_year->current_century; 
+            else 
+               y+=dwim_year->past_century;
 	 }
 	 else if (sizeof(m->d)==8)
 	    [y,mo,d]=(array(int))array_sscanf(m->d,"%4s%2s%2s");
@@ -2679,8 +2685,11 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 	    if (sizeof(m->y)<3) 
 	    {
 	       m->y=(int)m->y;
-	       if (m->y<70) m->y+=2000;
-	       else if (m->y<100) m->y+=1900;
+               // FIXME? these should be adjustable for different calendars.
+	       if (m->y<dwim_year->past_lower) 
+                  m->y+=dwim_year->current_century;
+	       else if (m->y<dwim_year->past_upper) 
+                  m->y+=dwim_year->past_century;
 	    }
 	    low=m->year=cal->Year(m->y);
 	 }

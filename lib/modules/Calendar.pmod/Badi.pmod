@@ -22,6 +22,9 @@ private static mixed __initstuff=lambda()
    f_month_number_from_name="badi_month_number_from_name";
    f_week_name_from_number="week_name_from_number";
    f_year_number_from_name="badi_year_number_from_name";
+   dwim_year=([ "past_lower":0, "past_upper":0,
+                "current_century":0, "past_century":0 ]);
+
 }();
 
 static int year_leap_year(int y) 
@@ -150,7 +153,6 @@ static int year_remaining_days(int y,int yday)
 {
    return 365+year_leap_year(y)-yday;
 }
-
 
 class cYear
 {  
