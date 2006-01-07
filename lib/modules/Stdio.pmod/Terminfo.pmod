@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.20 2005/01/07 10:37:46 grubba Exp $
+// $Id: Terminfo.pmod,v 1.21 2006/01/07 16:39:02 nilsson Exp $
 #pike __REAL_VERSION__
 
 
@@ -15,15 +15,15 @@
 MUTEX
 
 static private array ctrlcharsfrom =
-   Array.map(indices(allocate(32)),
-	     lambda(int z) { return sprintf("^%c",z+64); })+
-   Array.map(indices(allocate(32)),
-	     lambda(int z) { return sprintf("^%c",z+96); });
+   map(indices(allocate(32)),
+       lambda(int z) { return sprintf("^%c",z+64); })+
+   map(indices(allocate(32)),
+       lambda(int z) { return sprintf("^%c",z+96); });
 static private array ctrlcharsto =
-   Array.map(indices(allocate(32)),
-	     lambda(int z) { return sprintf("%c",z); })+
-   Array.map(indices(allocate(32)),
-	     lambda(int z) { return sprintf("%c",z); });
+   map(indices(allocate(32)),
+       lambda(int z) { return sprintf("%c",z); })+
+   map(indices(allocate(32)),
+       lambda(int z) { return sprintf("%c",z); });
 
 
 static private class TermMachine {
@@ -334,7 +334,7 @@ class Terminfo {
 
   static private string swab(string s)
   {
-    return Array.map(s/2, reverse)*"";
+    return predef::map(s/2, reverse)*"";
   }
 
   static private int load_cap(.File f, int|void bug_compat)
@@ -376,12 +376,12 @@ class Terminfo {
       }
       if(sizeof(strbuf)!=sstr)
 	return 0;
-      array(string) strarr = Array.map(array_sscanf(stroffs, "%2c"*nstr),
-				       lambda(int offs, string buf) {
-					 return offs<0xfffe &&
-					   buf[offs..
-					      search(buf, "\0", offs)-1];
-				       }, strbuf+"\0");
+      array(string) strarr = predef::map(array_sscanf(stroffs, "%2c"*nstr),
+                                         lambda(int offs, string buf) {
+                                           return offs<0xfffe &&
+                                             buf[offs..
+                                                 search(buf, "\0", offs)-1];
+                                         }, strbuf+"\0");
       if (sizeof(strarr)>sizeof(strnames))
 	strarr = strarr[..sizeof(strnames)-1];
       mapping(string:string) tmp = mkmapping(strnames[..sizeof(strarr)-1],
@@ -542,13 +542,13 @@ class TermcapDB {
     mapping(int:string) extra = ([]);
     LOCK;
     if (complete_index)
-      res = Array.map(sort(indices(cache)),
-		      [function(string,mapping(int:string):Termcap)]
-		      lambda(string name, mapping(int:string) extra) {
-			if (!objectp(cache[name]) && !extra[cache[name]])
-			  extra[cache[name]] = readat(cache[name]);
-			return cache[name];
-		      }, extra);
+      res = predef::map(sort(indices(cache)),
+                        [function(string,mapping(int:string):Termcap)]
+                        lambda(string name, mapping(int:string) extra) {
+                          if (!objectp(cache[name]) && !extra[cache[name]])
+                            extra[cache[name]] = readat(cache[name]);
+                          return cache[name];
+                        }, extra);
     else {
       array(string) resi = ({});
       string cap;
@@ -570,13 +570,13 @@ class TermcapDB {
     }
     UNLOCK;
     return [array(Termcap)]
-      Array.map(res,
-		lambda(int|Termcap x, mapping(int:Termcap) y) {
-		  return objectp(x)? x : y[x];
-		},
-		mkmapping(indices(extra),
-			  Array.map(values(extra),
-				    Termcap, this)));
+      predef::map(res,
+                  lambda(int|Termcap x, mapping(int:Termcap) y) {
+                    return objectp(x)? x : y[x];
+                  },
+                  mkmapping(indices(extra),
+                            predef::map(values(extra),
+                                        Termcap, this)));
   }
 
   static private string read_next(string find) // quick search
@@ -707,12 +707,12 @@ class TerminfoDB {
 
   array(object) _values()
   {
-    return Array.map(_indices(),
-		     [function(string:object(Terminfo))]
-		     lambda(string name) {
-		       return cache[name] ||
-			 Terminfo(dir+name[..0]+"/"+name);
-		     });
+    return predef::map(_indices(),
+                       [function(string:object(Terminfo))]
+                       lambda(string name) {
+                         return cache[name] ||
+                           Terminfo(dir+name[..0]+"/"+name);
+                       });
   }
 
   Terminfo load(string term)
