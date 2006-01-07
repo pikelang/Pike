@@ -5,15 +5,8 @@
  - Remove all fprintf from the code and instead figure out other ways
    to signal the warnings to the application developer.
 
- - Cast GdkColor members to guint16.
-
  - Verify that all get_all_args calls uses best integer type, or at
    least big enough integers.
-
- - Add functionality to generate strings on module load. Should be
-   accessible directly from the code, e.g.
-
-   if( str == $STRING("color") )
 
  - Add multiple pike prototype support where the types are simply
    or:ed. E.g.
