@@ -1,5 +1,5 @@
 /* nettle.cmod -*- c -*- */
-/* $Id: nettle.cmod,v 1.40 2005/01/27 19:15:01 nilsson Exp $ */
+/* $Id: nettle.cmod,v 1.41 2006/01/07 02:04:53 nilsson Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -93,7 +93,7 @@ PIKECLASS Yarrow
       Pike_error( "Seed must be at least 32 characters.\n" );
 
     NO_WIDE_STRING(data);
-    yarrow256_seed(&THIS->ctx, data->len, data->str);
+    yarrow256_seed(&THIS->ctx, data->len, (const uint8_t *)data->str);
     RETURN this_object();
   }
 
@@ -120,7 +120,7 @@ PIKECLASS Yarrow
   {
     if( !yarrow256_is_seeded(&THIS->ctx) )
       Pike_error("Random generator not seeded.\n");
-    RETURN make_shared_binary_string(THIS->ctx.seed_file,
+    RETURN make_shared_binary_string((const char *)THIS->ctx.seed_file,
 				     YARROW256_SEED_FILE_SIZE);
   }
 
@@ -166,7 +166,8 @@ PIKECLASS Yarrow
       Pike_error("Entropy must be positive.\n");
     if( entropy>(data->len*8) )
       Pike_error("Impossibly large entropy value.\n");
-    RETURN yarrow256_update(&THIS->ctx, source, entropy, data->len, data->str);
+    RETURN yarrow256_update(&THIS->ctx, source, entropy, data->len,
+                            (const uint8_t *)data->str);
   }
 
   /*! @decl int(0..) needed_sources()
@@ -191,7 +192,7 @@ PIKECLASS Yarrow
     if( !yarrow256_is_seeded(&THIS->ctx) )
       Pike_error("Random generator not seeded.\n");
     rnd = begin_shared_string(length);
-    yarrow256_random(&THIS->ctx, length, rnd->str);
+    yarrow256_random(&THIS->ctx, length, (uint8_t *)rnd->str);
     RETURN end_shared_string(rnd);
   }
 
