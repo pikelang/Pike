@@ -122,11 +122,9 @@ void create(mapping options)
   {
     struct mapping *m;
     struct svalue *sv;
-    char *val;
     get_all_args("create",args,"%m",&m);
     sv=simple_mapping_string_lookup(m,"type");
-    val=PGTK_GETSTR(sv);
-    if (!strcmp(val,"file")) {
+    if (is_same_string(_STR("file"), sv->u.string)) {
       struct svalue *sv2;
       char *filename;
       char *v1;
@@ -175,7 +173,7 @@ void create(mapping options)
 	gp=gdk_pixbuf_new_from_file(filename);
         THIS->obj=G_OBJECT(gp);
       }
-    } else if (!strcmp(val,"xpm")) {
+    } else if (is_same_string(_STR("xpm"),sv->u.string)) {
       
     }
   }
@@ -424,18 +422,18 @@ int save(string filename, string type, ?string quality)
 //! Quality is only valid for jpeg images.
 {
   /* FIXME: Should be save(string fn, string type, void|mapping options) */
-  /* FIXME: Shouldn't use strcmp but compare pike strings. */
   pgtk_verify_inited();
   {
-    char *filename,*type,*quality=NULL;
+    char *filename,*quality=NULL;
+    struct pike_string *type;
     int res;
     GError *error=NULL;
-    get_all_args("save",args,"%s%s.%s",&filename,&type,&quality);
-    if (!strcmp(type,"jpeg")) {
-      res=gdk_pixbuf_save(GDK_PIXBUF(THIS->obj),filename,type,&error,
+    get_all_args("save",args,"%s%n.%s",&filename,&type,&quality);
+    if (is_same_string(type,_STR("jpeg"))) {
+      res=gdk_pixbuf_save(GDK_PIXBUF(THIS->obj),filename,type->str,&error,
 		"quality",quality,NULL);
     } else {
-      res=gdk_pixbuf_save(GDK_PIXBUF(THIS->obj),filename,type,&error,NULL);
+      res=gdk_pixbuf_save(GDK_PIXBUF(THIS->obj),filename,type->str,&error,NULL);
     }
     my_pop_n_elems(args);
     if (!res)

@@ -33,7 +33,7 @@ void create(array(mixed) types)
     }
     for (i=sd->n_cols=0; i<a->size; i++) {
       if ((ITEM(a)+i)->type==PIKE_T_STRING) {
-        struct pike_string *str = (ITEM(a)+i)->u.string;
+        const struct pike_string *str = (ITEM(a)+i)->u.string;
 	if (is_same_string(_STR("int"),str))
 	  sd->types[sd->n_cols++]=G_TYPE_INT;
 	else if (is_same_string(_STR("uint"),str))

@@ -107,15 +107,15 @@ void set_property(string property, mixed value)
 {
   pgtk_verify_inited();
   {
-    char *prop;
+    struct pike_string *prop;
     struct svalue *sv;
-    get_all_args("set_property",args,"%s%*",&prop,&sv);
-    if (!strcmp(prop,"color")) {
+    get_all_args("set_property",args,"%n%*",&prop,&sv);
+    if (is_same_string(prop,_STR("color"))) {
       GdkColor *color;
       if (sv->type!=PIKE_T_OBJECT)
 	Pike_error("Improper type for this property.\n");
       color=(GdkColor *)get_gdkobject(sv->u.object,color);
-      setprop(prop,color);
+      setprop(prop->str,color);
       RETURN_THIS();
     } else {
       pg_object_set_property(args);
@@ -128,20 +128,20 @@ mixed get_property(string property)
 {
   pgtk_verify_inited();
   {
-    char *prop;
-    get_all_args("get_property",args,"%s",&prop);
-    if (!strcmp(prop,"color")) {
+    struct pike_string *prop;
+    get_all_args("get_property",args,"%n",&prop);
+    if (is_same_string(prop,_STR("color"))) {
       GdkColor *color;
       gpointer *v;
       color=(GdkColor *)g_malloc(sizeof(GdkColor));
       if (color==NULL)
 	SIMPLE_OUT_OF_MEMORY_ERROR("get_property",sizeof(GdkColor));
-      g_object_get(G_OBJECT(THIS->obj),prop,&color,NULL);
+      g_object_get(G_OBJECT(THIS->obj),prop->str,&color,NULL);
 /*      color=g_value_get_boxed(G_BOXED(v),color); */
       my_pop_n_elems(args);
       push_gdkobject(color,color);
     } else {
-      char *s=g_strdup(prop);
+      char *s=g_strdup(prop->str);
       my_pop_n_elems(args);
       pgtk_get_property(G_OBJECT(THIS->obj),s);
       g_free(s);

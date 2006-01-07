@@ -134,7 +134,7 @@ void set_authors(array(string) auth)
 	if ((Pike_sp[-1].type != PIKE_T_STRING) ||
 	    (Pike_sp[-1].u.string->size_shift)) {
 	  Pike_fatal("Unexpected result from string_to_utf8: %s\n",
-		     get_name_of_type(Pike_sp[-1].u.type));
+		     get_name_of_type(Pike_sp[-1].type));
 	}
 #endif /* PIKE_DEBUG */
 	auth[j++] = Pike_sp[-1].u.string->str;
@@ -197,7 +197,7 @@ void set_artists(array(string) art)
 	if ((Pike_sp[-1].type != PIKE_T_STRING) ||
 	    (Pike_sp[-1].u.string->size_shift)) {
 	  Pike_fatal("Unexpected result from string_to_utf8: %s\n",
-		     get_name_of_type(Pike_sp[-1].u.type));
+		     get_name_of_type(Pike_sp[-1].type));
 	}
 #endif /* PIKE_DEBUG */
 	art[j++] = Pike_sp[-1].u.string->str;
@@ -260,7 +260,7 @@ void set_documenters(array(string) doc)
 	if ((Pike_sp[-1].type != PIKE_T_STRING) ||
 	    (Pike_sp[-1].u.string->size_shift)) {
 	  Pike_fatal("Unexpected result from string_to_utf8: %s\n",
-		     get_name_of_type(Pike_sp[-1].u.type));
+		     get_name_of_type(Pike_sp[-1].type));
 	}
 #endif /* PIKE_DEBUG */
 	doc[j++] = Pike_sp[-1].u.string->str;
@@ -300,19 +300,20 @@ mixed get_property(string property)
 {
   pgtk_verify_inited();
   {
-    char *prop;
-    get_all_args("get_property",args,"%s",&prop);
-    if (!strcmp(prop,"artists") || !strcmp(prop,"authors") ||
-	!strcmp(prop,"documenters")) {
+    struct pike_string *prop;
+    get_all_args("get_property",args,"%n",&prop);
+    if (is_same_string(prop,_STR("artists")) ||
+        is_same_string(prop,_STR("authors")) ||
+	is_same_string(prop,_STR("documenters"))) {
       gchar **a;
       int i=0;
-      g_object_get(G_OBJECT(THIS->obj),prop,&a,NULL);
+      g_object_get(G_OBJECT(THIS->obj),prop->str,&a,NULL);
       while (a[i])
 	push_text(a[i]);
       f_aggregate(i);
       g_strfreev(a);
     } else {
-      char *s=g_strdup(prop);
+      char *s=g_strdup(prop->str);
       my_pop_n_elems(args);
       pgtk_get_property(G_OBJECT(THIS->obj),s);
       g_free(s);
