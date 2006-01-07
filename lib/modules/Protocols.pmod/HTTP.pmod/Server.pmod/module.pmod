@@ -1,24 +1,13 @@
 #pike __REAL_VERSION__
 
-// FIXME! doc bad
-
-//! module Protocols
-//! submodule HTTP
-//! submodule Server
-//! class HeaderParser
-//!	Fast HTTP header parser. 
-
-//! module Protocols
-//! submodule HTTP
-//! submodule Server
-//! method string http_decode_string(string what)
-
+//! Fast HTTP header parser.
 constant HeaderParser=_Roxen.HeaderParser;
+
+//!
 constant http_decode_string=_Roxen.http_decode_string;
 
-//! method mapping(string:string|array(string)) http_decode_urlencoded_query(string query,void|mapping dest)
-//!	Decodes an URL-encoded query into a mapping.
 
+//! Decodes an URL-encoded query into a mapping.
 mapping(string:string|array(string))
    http_decode_urlencoded_query(string query,
 				void|mapping dest)
@@ -40,16 +29,16 @@ mapping(string:string|array(string))
 }
 
 
-//! method string filename_to_type(string filename)
-//! method string extension_to_type(string extension)
-//!	Looks up the file extension in a table to return
-//!	a suitable MIME type.
 
+//! Looks up the file extension in a table to return a suitable MIME
+//! type.
 string extension_to_type(string extension)
 {
    return MIME.ext_to_media_type(extension) || "application/octet-stream";
 }
 
+//! Looks up the file extension in a table to return a suitable MIME
+//! type.
 string filename_to_type(string filename)
 {
    array v=filename/".";
@@ -57,7 +46,6 @@ string filename_to_type(string filename)
    return extension_to_type(v[-1]);
 }
 
-//! method string http_date(int time)
 //!	Makes a time notification suitable for the HTTP protocol.
 //! @param time
 //!  The time in seconds since the 00:00:00 UTC, January 1, 1970
@@ -69,7 +57,6 @@ string http_date(int time)
    return Calendar.ISO_UTC.Second(time)->format_http();
 }
 
-//! method int http_decode_date(string date)
 //! 	Decode a HTTP date to seconds since 1970 (UTC)
 //! @returns
 //!	zero (UNDEFINED) if the given string isn't a HTTP date
