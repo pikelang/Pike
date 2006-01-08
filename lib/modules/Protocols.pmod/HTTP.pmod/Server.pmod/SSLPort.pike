@@ -123,22 +123,7 @@ Version ::= INTEGER
   //!
   void set_key(string skey)
   {
-#if 0
-    array key = SSL.asn1.ber_decode(skey)->get_asn1()[1];
-    object n = key[1][1];
-    object e = key[2][1];
-    object d = key[3][1];
-    object p = key[4][1];
-    object q = key[5][1];
-
-    rsa = Crypto.RSA();
-    rsa->set_public_key(n, e);
-    rsa->set_private_key(d);
-#else /* !0 */
-    // FIXME: Is this correct?
     rsa = Standards.PKCS.RSA.parse_private_key(skey);
-#endif /* 0 */
-
   }
 
   //!
