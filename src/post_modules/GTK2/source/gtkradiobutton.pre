@@ -34,8 +34,7 @@ void create(string|mapping|void title, ?GTK2.RadioButton groupmember)
       struct object *o1=NULL;
       GSList *mylist=NULL;
 
-      if (args==2)
-	get_all_args("create",args,"%T.%o",&t,&o1);
+      get_all_args("create",args,"%T.%o",&t,&o1);
       if (o1)
 	mylist=gtk_radio_button_group(GTK_RADIO_BUTTON(get_gobject(o1)));
       if (t) {
