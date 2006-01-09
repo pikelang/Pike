@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.370 2005/09/01 13:44:51 grubba Exp $
+|| $Id: las.c,v 1.371 2006/01/09 13:16:44 grubba Exp $
 */
 
 #include "global.h"
@@ -3484,8 +3484,9 @@ void fix_type_field(node *n)
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       yyerror("Assigning a void expression.");
       copy_pike_type(n->type, void_type_string);
-      break;
-    } else if(CAR(n) && CDR(n)) {
+    } else if (!CDR(n)) {
+      copy_pike_type(n->type, CAR(n)->type);
+    } else {
       /* Ensure that the type-fields are up to date. */
       fix_type_field(CAR(n));
       fix_type_field(CDR(n));
@@ -3517,8 +3518,8 @@ void fix_type_field(node *n)
 	  free_string(t1);
 	}
       }
+      n->type = and_pike_types(CAR(n)->type, CDR(n)->type);
     }
-    n->type = and_pike_types(CAR(n)->type, CDR(n)->type);
     break;
 
   case F_ARRAY_LVALUE:
