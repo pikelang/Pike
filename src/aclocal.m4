@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.108 2006/01/06 08:29:33 peter Exp $
+dnl $Id: aclocal.m4,v 1.109 2006/01/09 19:20:42 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -374,7 +374,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.108 2006/01/06 08:29:33 peter Exp $
+  # $Id: aclocal.m4,v 1.109 2006/01/09 19:20:42 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -1143,4 +1143,167 @@ AC_DEFUN(PIKE_SELECT_ABI,
 
   # Compat
   with_abi="$pike_cv_abi"
+])
+
+# Directory searching
+
+AC_DEFUN(PIKE_INIT_REAL_DIRS,
+[
+  real_dirs='/ /usr'
+  real_libs='/lib /usr/lib'
+  real_incs='/include /usr/include'
+])
+
+# directory, if-true, if-false, real-variable
+AC_DEFUN(PIKE_CHECK_ABI_DIR,
+[
+  AC_REQUIRE([PIKE_SELECT_ABI])dnl
+  AC_REQUIRE([PIKE_INIT_REAL_DIRS])dnl
+
+  AC_MSG_CHECKING(whether $1 contains $pike_cv_abi-bit ABI files)
+  abi_dir_ok="no"
+  while :; do
+    if test -d "$1/." ; then :; else 
+      AC_MSG_RESULT(no - does not exist)
+      break
+    fi
+    cached="(cached) "
+    real_dir=`cd "$1/." && /bin/pwd 2>/dev/null`
+    if test "x$real_dir" = "x"; then
+      cached="(pwd failed) "
+      real_dir="$1"
+    fi
+    if echo " [$]ifelse([$4], ,real_libs,[$4]) " | \
+       grep " $real_dir " >/dev/null; then
+      AC_MSG_RESULT(already checked)
+      abi_dir_ok="skip"
+      break
+    fi
+    [$]ifelse([$4], ,real_libs,[$4])="[$]ifelse([$4], ,real_libs,[$4]) $real_dir"
+    if echo " $pike_cv_32bit_dirs " | grep " $real_dir " >/dev/null; then
+      abi_32=yes
+    elif echo " $pike_cv_not_32bit_dir " | grep " $real_dir " >/dev/null; then
+      abi_32=no
+    else
+      abi_32=unknown
+    fi
+    if echo " $pike_cv_64bit_dirs " | grep " $real_dir " >/dev/null; then
+      abi_64=yes
+    elif echo " $pike_cv_not_64bit_dirs " | grep " $real_dir " >/dev/null; then
+      abi_64=no
+    else
+      abi_64=unknown
+    fi
+    if text "$abi_32:$abi_64" = "unknown:unknown"; then
+      cached=""
+      for f in "$d"/* no; do
+        if test -f "$f"; then
+          filetype=`file "$f" 2>/dev/null | sed -e 's/.*://'`
+          if echo "$filetype" | grep "32-bit" >/dev/null; then
+  	    abi_32=yes
+	    if test "$abi_64" = "unknown": then :; else
+	      break
+	    fi
+  	  elif echo "$filetype" | grep "64-bit" >/dev/null; then
+  	    abi_64=yes
+	    if test "$abi_32" = "unknown": then :; else
+	      break
+	    fi
+  	  fi
+        fi
+      done
+      if test "x$abi_32" = "yes"; then
+        pike_cv_32bit_dirs="$pike_cv_32bit_dirs $real_dir"
+	if test "x$abi_64" = "unknown"; then
+          abi_64="no"
+	fi
+      else
+        pike_cv_not_32bit_dirs="$pike_cv_not_32bit_dirs $real_dir"
+      fi
+      if test "x$abi_64" = "yes"; then
+        pike_cv_64bit_dirs="$pike_cv_64bit_dirs $real_dir"
+	if test "x$abi_32" = "unknown"; then
+          abi_32="no"
+	fi
+      elif test "x$abi_64" = "no"; then
+        pike_cv_not_64bit_dirs="$pike_cv_not_64bit_dirs $real_dir"
+      fi
+      if test "x$abi_32" = "no"; then
+        pike_cv_not_32bit_dirs="$pike_cv_not_32bit_dirs $real_dir"
+      fi
+    fi
+    if test "$abi_32:$pike_cv_abi" = "no:32" \
+         -o "$abi_64:$pike_cv_abi" = "no:64"; then
+      AC_MSG_RESULT([${cached}no, does not contain any $pike_cv_abi-bit ABI files])
+    else
+      abi_dir_ok="yes"
+      AC_MSG_RESULT(${cached}ABI ok)
+    fi
+    break
+  done
+  if test "$abi_dir_ok" = "yes"; then
+    ifelse([$2], , :, [$2])
+  elif test "$abi_dir_ok" = "no"; then
+    ifelse([$3], , :, [$3])
+  fi
+])
+
+# directory, if-added, if-bad, if-already-added
+AC_DEFUN(PIKE_CHECK_ABI_LIB_DIR,
+[
+  PIKE_CHECK_ABI_DIR($1, [
+    AC_MSG_CHECKING([what to add to LDFLAGS])
+    add_ldflags="-R$d -L$d"
+    case " $LDFLAGS " in
+      *\ -L$d\ *)
+        add_ldflags="-R$d"
+        case " $LDFLAGS " in
+          *\ -R$d\ *)
+            add_ldflags=""
+	  ;;
+        esac	  
+      ;;
+      *\ -R$d\ *)
+        add_ldflags="-L$d"
+      ;;
+    esac
+    if test "x$add_ldflags" = "x"; then
+      AC_MSG_RESULT([nothing - already added])
+      ifelse([$4], , :, [$4])
+    else
+      OLD_LDFLAGS="${LDFLAGS}"
+      LDFLAGS="${LDFLAGS} $add_ldflags -lm"
+      AC_TRY_RUN([
+#include <stdio.h>
+#include <math.h>
+int main(int argc, char **argv)
+{
+  double (*foo)(double) = ceil;
+  exit(0);
+}
+        ],[ LDFLAGS="$OLD_LDFLAGS $add_ldflags"
+    	    AC_MSG_RESULT($add_ldflags)
+        ],[ LDFLAGS="$OLD_LDFLAGS"
+    	    AC_MSG_RESULT(nothing - $add_ldflags causes failures)
+            add_ldflags=""
+        ],[AC_TRY_LINK([
+#include <stdio.h>
+#include <math.h>
+    	   ],[
+    	     double (*foo)(double) = ceil;
+    	     exit(0);
+    	   ],[ LDFLAGS="$OLD_LDFLAGS -R$d -L$d"
+    	       AC_MSG_RESULT($add_ldflags)
+    	   ],[ LDFLAGS="$OLD_LDFLAGS"
+    	       AC_MSG_RESULT(nothing - $add_ldflags causes failures)
+               add_ldflags=""
+        ])
+      ])
+      if test "x$add_ldflags" = "x"; then
+        ifelse([$3], , :, [$3])
+      else
+        ifelse([$2], , :, [$2])
+      fi
+    fi
+  ])
 ])
