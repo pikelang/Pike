@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ffmpeg.c,v 1.20 2005/06/14 16:09:36 grubba Exp $
+|| $Id: ffmpeg.c,v 1.21 2006/01/09 12:57:24 grubba Exp $
 */
 
 /*
@@ -532,7 +532,7 @@ PIKE_MODULE_INIT {
   add_function("list_codecs", f_list_codecs, "function(:array|int)", 0);
 
 #ifdef LIBAVCODEC_VERSION
-  add_string_constant("lib_version", LIBAVCODEC_VERSION, 0);
+  add_string_constant("lib_version", DEFINETOSTR(LIBAVCODEC_VERSION), 0);
 #else
 #ifdef FFMPEG_VERSION
   add_string_constant("lib_version", FFMPEG_VERSION, 0);
