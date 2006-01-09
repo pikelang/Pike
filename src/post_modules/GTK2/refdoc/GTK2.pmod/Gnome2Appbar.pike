@@ -1,7 +1,7 @@
 //!  A bar that GNOME applications put on the bottom of the windows to
 //!  display status, progress, hints for menu items or a minibuffer for
 //!  getting some sort of response. It has a stack for status messages
-//!@expr{ Gnome2.Appbar( 1, 1, Gnome2.PreferencesUser )->set_progress( 0.4 );@}
+//!@expr{ GTK2.Gnome2Appbar( 1, 1, GTK2.GNOME_PREFERENCES_USER )->set_progress_percentage( 0.4 );@}
 //!@xml{<image>../images/gnome2_appbar.png</image>@}
 //!
 //! Properties:

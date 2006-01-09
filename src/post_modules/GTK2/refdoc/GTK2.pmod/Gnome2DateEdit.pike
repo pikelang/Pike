@@ -1,9 +1,9 @@
 //! The GnomeDateEdit widget provides a way to enter dates and times
 //! with a helper calendar to let the user select the date.
-//!@expr{ Gnome2.DateEdit(time(),1,1);@}
+//!@expr{ GTK2.Gnome2DateEdit(time(),1,1);@}
 //!@xml{<image>../images/gnome2_dateedit.png</image>@}
 //!
-//!@expr{ Gnome2.DateEdit(time(),0,1);@}
+//!@expr{ GTK2.Gnome2DateEdit(time(),0,1);@}
 //!@xml{<image>../images/gnome2_dateedit_2.png</image>@}
 //!
 //! Properties:

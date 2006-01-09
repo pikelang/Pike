@@ -6,7 +6,7 @@
 //! The widget may be used as display for oscilloscopes or other
 //! applications that need to display fast changes in their data.
 //! 
-//!@expr{   GTK2.Databox x=GTK2.Databox(); x->data_add_x_y(3, ({ 1.0, 0.5, 0.0 }), ({1.0, -1.0, 0.0}),GDK2.Color(Image.Color.red), GTK2.DataboxLines,2); x->rescale(); x->set_size_request(300,300); return x;@}
+//!@expr{   GTK2.Databox x=GTK2.Databox(); x->data_add_x_y(3, ({ 1.0, 0.5, 0.0 }), ({1.0, -1.0, 0.0}),GTK2.GdkColor(Image.Color.red), GTK2.DataboxLines,2); x->rescale(); x->set_size_request(300,300); return x;@}
 //!@xml{<image>../images/gtk2_databox.png</image>@}
 //!
 //!
@@ -32,7 +32,17 @@ static GTK2.Databox create( );
 //!
 //!
 
-int data_add( int nelems, array x, array y, GTK2.GdkColor color, int type, int dot_size );
+int data_add_x( int nelems, array x, int shared_Y_index, GTK2.GdkColor color, int type, int dot_size );
+//! Type is one of @[DATABOX_BARS], @[DATABOX_CROSS_SIMPLE], @[DATABOX_GRID], @[DATABOX_LINES], @[DATABOX_NOT_DISPLAYED] and @[DATABOX_POINTS]
+//!
+//!
+
+int data_add_x_y( int nelems, array x, array y, GTK2.GdkColor color, int type, int dot_size );
+//! Type is one of @[DATABOX_BARS], @[DATABOX_CROSS_SIMPLE], @[DATABOX_GRID], @[DATABOX_LINES], @[DATABOX_NOT_DISPLAYED] and @[DATABOX_POINTS]
+//!
+//!
+
+int data_add_y( int nelems, array y, int shared_X_index, GTK2.GdkColor color, int type, int dot_size );
 //! Type is one of @[DATABOX_BARS], @[DATABOX_CROSS_SIMPLE], @[DATABOX_GRID], @[DATABOX_LINES], @[DATABOX_NOT_DISPLAYED] and @[DATABOX_POINTS]
 //!
 //!

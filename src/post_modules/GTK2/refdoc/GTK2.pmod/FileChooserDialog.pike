@@ -18,7 +18,7 @@
 //! can be hidden using hide_fileop_buttons() and shown again using
 //! show_fileop_buttons().
 //! 
-//!@expr{ GTK2.FileChooserDialog("File selector")@}
+//!@expr{ GTK2.FileChooserDialog("File selector", 0, GTK2.FILE_CHOOSER_ACTION_OPEN, ({(["text":"Transmogrify", "id":17]), (["text":"Never mind", "id":42])}))@}
 //!@xml{<image>../images/gtk2_filechooserdialog.png</image>@}
 //!
 //! 
