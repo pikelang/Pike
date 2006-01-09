@@ -7,8 +7,8 @@ inherit GTK2.Button;
 //! This widget is a GtkButton button that contains a URL. When clicked
 //! it invokes the configured browser for the URL you provided.
 //! <p>
-//! IMG: Gnome2.Href( "http://www.gnome.org", "GNOME Web Site" )
-//! IMG: Gnome2.Href( "http://www.gnome.org" )
+//! IMG: GTK2.Gnome2Href( "http://www.gnome.org", "GNOME Web Site" )
+//! IMG: GTK2.Gnome2Href( "http://www.gnome.org" )
 //! </p>
 
 //! Properties:

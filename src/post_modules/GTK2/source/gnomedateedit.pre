@@ -6,8 +6,8 @@ inherit GTK2.Hbox;
 
 //! The GnomeDateEdit widget provides a way to enter dates and times
 //! with a helper calendar to let the user select the date.
-//! IMG: Gnome2.DateEdit(time(),1,1);
-//! IMG: Gnome2.DateEdit(time(),0,1);
+//! IMG: GTK2.Gnome2DateEdit(time(),1,1);
+//! IMG: GTK2.Gnome2DateEdit(time(),0,1);
 
 //! Properties:
 //! int dateedit-flags

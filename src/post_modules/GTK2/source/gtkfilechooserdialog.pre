@@ -25,7 +25,7 @@ inherit GTK2.FileChooser;
 //! can be hidden using hide_fileop_buttons() and shown again using
 //! show_fileop_buttons().
 //! </p><p>
-//! TIMG: GTK2.FileChooserDialog("File selector")
+//! TIMG: GTK2.FileChooserDialog("File selector", 0, GTK2.FILE_CHOOSER_ACTION_OPEN, ({(["text":"Transmogrify", "id":17]), (["text":"Never mind", "id":42])}))
 //! </p>
 
 /*
