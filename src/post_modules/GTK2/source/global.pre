@@ -154,7 +154,7 @@ array(string) gnome_init(string app_id, string app_version,
     applet_widget_init( id, vers, argc, data, NULL, flags, NULL );
   else
 */
-    gnome_program_init(id,vers,LIBGNOME_MODULE,argc,data,NULL);
+    gnome_program_init(id,vers,LIBGNOMEUI_MODULE,argc,data,GNOME_PARAM_NONE);
 
   backend_cb = (void *)add_backend_callback( backend_callback, 0, 0);
 
