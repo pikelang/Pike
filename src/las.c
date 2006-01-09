@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.245 2005/06/09 17:57:50 mast Exp $");
+RCSID("$Id: las.c,v 1.246 2006/01/09 13:19:29 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3028,6 +3028,9 @@ void fix_type_field(node *n)
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       my_yyerror("Assigning a void expression.");
       copy_shared_string(n->type, void_type_string);
+      break;
+    } else if (!CDR(n)) {
+      copy_pike_type(n->type, CAR(n)->type);
       break;
     } else if(CAR(n) && CDR(n)) {
       /* Ensure that the type-fields are up to date. */
