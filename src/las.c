@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.328 2005/06/09 17:57:56 mast Exp $
+|| $Id: las.c,v 1.329 2006/01/09 13:18:55 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.328 2005/06/09 17:57:56 mast Exp $");
+RCSID("$Id: las.c,v 1.329 2006/01/09 13:18:55 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3483,6 +3483,9 @@ void fix_type_field(node *n)
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       my_yyerror("Assigning a void expression.");
       copy_pike_type(n->type, void_type_string);
+      break;
+    } else if (!CDR(n)) {
+      copy_pike_type(n->type, CAR(n)->type);
       break;
     } else if(CAR(n) && CDR(n)) {
       /* Ensure that the type-fields are up to date. */
