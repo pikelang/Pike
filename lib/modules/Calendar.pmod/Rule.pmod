@@ -56,7 +56,7 @@ class Language
    string week_day_shortname_from_number(int n);
    int week_day_number_from_name(string name);
 
-   string gregoiran_week_day_name_from_number(int n);
+   string gregorian_week_day_name_from_number(int n);
    string gregorian_week_day_shortname_from_number(int n);
    int gregorian_week_day_number_from_name(string name);
 
