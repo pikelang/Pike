@@ -314,12 +314,19 @@ static class _ymd_base
 
    string badi_month_name_from_number(int n)
    {
-     // Ayyám-i-Há is not a month. it is here at 0 for a lack of a better place
-     // to put it. it will be ignored for now.
+     // Ayyám-i-Há is not a month but the period of 4-5 days before the last
+     // month. it is here at 0 to distinguish it from regular months. 
      return ({ "Ayyám-i-Há", "Bahá", "Jalál", "Jamál", "'Azamat", "Núr",
                "Rahmat", "Kalimát", "Kamál", "Asmá", "'Izzat", "Mashíyyat",
                "'Ilm", "Qudrat", "Qawl", "Masá'il", "Sharaf", "Sultán", "Mulk",
                "'Alá" })[n];
+   }
+
+   string badi_month_shortname_from_number(int n)
+   {
+     // i have no idea how to abbreviate these, am just guessing here
+     return ({ "Ah", "Bh", "Jl", "Jm", "Az", "Nr", "Rh", "Kl", "Km", "Am", "Iz",
+                  "Msh", "Ilm", "Qd", "Qw", "Ms", "Shr", "Sl", "Ml", "Al"})[n];
    }
 
    int badi_month_number_from_name(string n)
@@ -346,22 +353,20 @@ static class _ymd_base
              ])[n];
    }
 
-   string badi_month_shortname_from_number(int n)
+   string badi_month_day_name_from_number(int n)
    {
-     // i have no idea how to abbreviate these, am just guessing here
-     return ({ 0, "Bh", "Jl", "Jm", "Az", "Nr", "Rh", "Kl", "Km", "Am", "Iz",
-                  "Msh", "Ilm", "Qd", "Qw", "Ms", "Shr", "Sl", "Ml", "Al"})[n];
+     return sprintf("%d", (n>19?n-19:n));
    }
 
-   string badi_month_day_name_from_number(int n)
+   string badi_month_day_longname_from_number(int n)
    {
      // month day names are the same as month names
      array names= ({ "Bahá", "Jalál", "Jamál", "'Azamat", "Núr", "Rahmat",
                      "Kalimát", "Kamál", "Asmá", "'Izzat", "Mashíyyat", "'Ilm",
                      "Qudrat", "Qawl", "Masá'il", "Sharaf", "Sultán", "Mulk",
-                     "'Alá", "Ayyám-i-Há 1", "Ayyám-i-Há 2", "Ayyám-i-Há 3", "Ayyám-i-Há 4", "Ayyám-i-Há 5" });
+                     "'Alá", "", "", "", "", "" });
      // not sure if the number should be included here
-     return sprintf("%d (%s)", n, names[n-1]);
+     return sprintf("%d (%s)", (n>19?n-19:n), names[n-1]);
    }
 
    string badi_week_day_shortname_from_number(int n)
@@ -404,6 +409,30 @@ static class _ymd_base
 
    int badi_year_number_from_name(string name)
    {
+      mapping vahid=([ "Alif":1,    "Alif":1,   
+                       "Bá":2,      "Ba":2, 
+                       "Ab":3,      "Ab":3, 
+                       "Dál":4,     "Dal":4, 
+                       "Báb":5,     "Bab":5, 
+                       "Váv":6,     "Vav":6,
+                       "Abad":7,    "Abad":7, 
+                       "Jád":8,     "Jad":8, 
+                       "Bahá":9,    "Baha":9, 
+                       "Hubb":10,   "Hubb":10, 
+                       "Bahháj":11, "Bahhaj":11,
+                       "Javáb":12,  "Javab":12, 
+                       "Ahad":13,   "Ahad":13, 
+                       "Vahháb":14, "Vahhab":14,
+                       "Vidád":15,  "Vidad":15, 
+                       "Badí":16,   "Badi":16, 
+                       "Bahí":17,   "Bahi":17, 
+                       "Abhá":18,   "Abha":18, 
+                       "Váhid":19,  "Vahid":19,    
+                    ]);
+
+      if(vahid[name])
+        return vahid[name];
+
       int y;
       string x;
       if (sscanf(name,"%*s%d%*[ ]B%[BE]%*s",y,x)==1 || x=="") 

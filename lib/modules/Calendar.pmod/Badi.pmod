@@ -24,7 +24,6 @@ private static mixed __initstuff=lambda()
    f_year_number_from_name="badi_year_number_from_name";
    dwim_year=([ "past_lower":0, "past_upper":0,
                 "current_century":0, "past_century":0 ]);
-
 }();
 
 static int year_leap_year(int y) 
@@ -135,6 +134,7 @@ static array(int) week_from_julian_day(int jd)
    return ({y,w,1+(yjd+yday)%7,7,wjd});
 }
 
+// identical to gregorian
 static array(int) week_from_week(int y,int w)
 {
 // [year,week,1 (wd),ndays,week-julian-day]
@@ -149,17 +149,395 @@ static array(int) week_from_week(int y,int w)
 //   fixme
 }
 
+// identical to gregorian
 static int year_remaining_days(int y,int yday)
 {
    return 365+year_leap_year(y)-yday;
 }
 
+//! function method int daystart_offset()
+//!     Returns the offset to the start of the time range object
+//!     
+int daystart_offset()
+{
+  return -21600; // 6 hours earlier
+}
+
+class cFraction
+{
+   inherit Gregorian::cFraction;
+   // nothing from gregorian
+
+   TimeRange make_base()
+   {  
+      base=Day("unix_r",ux-daystart_offset(),rules);
+      if (len) base=base->range(Day("unix_r",ux-daystart_offset()+len,rules));
+      return base;
+   }
+
+   static void make_local()
+   {
+      ::make_local();
+      ls+=daystart_offset();
+   }
+}
+
+class cSecond
+{
+   inherit Gregorian::cSecond;
+   // nothing from gregorian
+
+   TimeRange make_base()
+   {  
+      base=Day("unix_r",ux-daystart_offset(),rules);
+      if (len) base=base->range(Day("unix_r",ux-daystart_offset()+len,rules));
+      return base;
+   }
+
+   static void make_local()
+   {
+      ::make_local();
+      ls+=daystart_offset();
+   }
+}
+
+class cMinute
+{
+   inherit Gregorian::cMinute;
+   // nothing from gregorian
+
+   TimeRange make_base()
+   {  
+      base=Day("unix_r",ux-daystart_offset(),rules);
+      if (len) base=base->range(Day("unix_r",ux-daystart_offset()+len,rules));
+      return base;
+   }
+
+   static void make_local()
+   {
+      ::make_local();
+      ls+=daystart_offset();
+   }
+
+/*
+   int unix_time()
+   {
+      int offset=daystart_offset();
+      int minuteoffset=offset%60;
+      if(houroffset>30)
+        offset+=60-minuteoffset;
+      else
+        offset-=minuteoffset;
+      return ::unix_time()+offset;
+   }
+*/
+}
+
+class cHour
+{
+   inherit Gregorian::cHour;
+   // nothing from gregorian
+
+   TimeRange make_base()
+   {  
+      base=Day("unix_r",ux-daystart_offset(),rules);
+      if (len) base=base->range(Day("unix_r",ux-daystart_offset()+len,rules));
+      return base;
+   }
+
+   static void make_local()
+   {
+      ::make_local();
+      ls+=daystart_offset();
+   }
+
+/*
+   int unix_time()
+   {
+      int houroffset=daystart_offset()%3600;
+      if(houroffset>1800)
+        houroffset-=3600;
+      int ux=::unix_time();
+      werror("cHour:%d:%d:%d\n", daystart_offset(), houroffset, ux);
+      return ux-houroffset;
+   }
+*/
+}
+
+class cDay
+{
+   inherit Gregorian::cDay;
+   // nothing from gregorian
+
+   void create_unixtime_default(int unixtime)
+   {
+      ::create_unixtime_default(unixtime-daystart_offset());
+   }
+
+   string month_name()
+   {
+      if (md > 19)
+        return rules->language[f_month_name_from_number](0);
+      else return ::month_name();
+   }
+
+   string month_shortname()
+   {
+      if (md > 19)
+        return rules->language[f_month_shortname_from_number](0);
+      else return ::month_shortname();
+   }
+
+   int unix_time()
+   {
+      return ::unix_time()+daystart_offset();
+   }
+
+   int number_of_months()
+   {
+      if (n<=1) return 1;
+      if (m==CALUNKNOWN) make_month();
+      [int zy,int zyjd]=year_from_julian_day(jd+n-1);
+      [int zm,int zmd,int znd,int zmyd]=month_from_yday(zy,jd+n-zyjd);
+      return zm-m+1+(zy-y)*19;
+   }
+}
+
+class cWeek
+{
+   inherit Gregorian::cWeek;
+   // string nice_print();
+   // static int weeks_to_week(int y2,int w2);
+   // int number_of_days();
+
+   int unix_time()
+   {
+      return ::unix_time()+daystart_offset();
+   }
+}
+
+class cMonth
+{
+   inherit Gregorian::cMonth;
+   // static int months_to_month(int y2,int m2); // likely wrong
+   // TimeRange place(TimeRange what,int|void force);
+
+   int unix_time()
+   {
+      return ::unix_time()+daystart_offset();
+   }
+}
+
 class cYear
 {  
    inherit Gregorian::cYear;
+   // int number_of_days(); 
+   // int number_of_weeks();
+   // TimeRange place(TimeRange what,void|int force);
 
    int number_of_months()
    {  
       return 19*n;
    }
+
+   int unix_time()
+   {
+      return ::unix_time()+daystart_offset();
+   }
+
+   Vahid vahid(void|int m) 
+   { 
+      if (!m || (!n&&m==-1))
+         return Vahid("ymd_yn",rules,y,1);
+
+      if (m<0) m=number_of_vahids()+m;
+
+      if (m<2) return Vahid("ymd_yn",rules,y,1);
+
+      error("not in range (Vahid 0..%d exist)\n",
+            number_of_vahids()-1);
+   }
+
+   int number_of_vahids()
+   {
+     return 0;
+   }
+}
+
+class Vahid
+{
+   inherit YMD;
+   constant is_vahid=1;
+   int v;   // vahid
+   int vjd; // julian day of the first day of the vahid
+
+   static void create(mixed ...args)
+   {
+      if (!sizeof(args))
+      {
+         create_now();
+         v=y/19+1;
+         y=v*19-18;
+         return;
+      }
+      else switch (args[0])
+      {
+         case "ymd_v":
+            rules=args[1];
+            v=args[2];
+            n=args[3];
+            jd=vjd=julian_day_from_vahid(v);
+            m=md=w=wd=CALUNKNOWN;
+            return;
+         case "ymd_yn":
+            rules=args[1];
+            y=args[2];
+            n=args[3];
+            m=md=w=wd=CALUNKNOWN;
+            yd=1;
+            v=y/19+1;
+            jd=vjd=julian_day_from_vahid(v);
+            return;
+     }
+   }
+
+   int julian_day_from_vahid(int v)
+   {
+     return julian_day_from_year(v*19-18);     
+   }
+
+   void create_julian_day(int|float _jd)
+   {
+      [y,yjd]=year_from_julian_day((int)_jd);
+      [v,vjd]=vahid_from_julian_day((int)_jd);
+      jd=vjd;
+      n=1;
+      md=yd=m=1;
+      wd=w=CALUNKNOWN; // unknown
+   }
+
+   array(int) vahid_from_julian_day(int _jd)
+   {
+      [int _y, int _yjd]=year_from_julian_day(_jd);
+      return ({ _y/19+1, julian_day_from_year((_y/19+1)*19-18) });
+   }
+
+   int unix_time()
+   {
+      return ::unix_time()+daystart_offset();
+   }
+
+   string vahid_name()
+   {
+      return sprintf("v%d", v);
+   }
+
+   string _sprintf(int t,mapping m)
+   {
+      switch (t)
+      {
+         case 'O':
+//            if (n!=1) 
+//               return sprintf("Vahid(%s)",nice_print_period());
+            return sprintf("Vahid(%s)",nice_print());
+         case 't':
+            return "Calendar."+calendar_name()+".Vahid";
+         default:
+            return ::_sprintf(t,m);
+      }
+   }
+
+   string nice_print()
+   {
+      return vahid_name();
+   }
+
+//! method Year year()
+//! method Year year(int n)
+//! method Year year(string name)
+//!     return a year in the vahid by number or name:
+//!
+//!     <tt>vahid-&gt;year("Alif")</tt>
+
+   cYear year(int|string ... yp)
+   {
+      int num;
+      if (sizeof(yp) && 
+          stringp(yp[0]))
+      {
+         num=((int)yp[0]) || 
+            rules->language[f_year_number_from_name](yp[0]);
+         if (!num)
+            error("no such year %O in %O\n",yp[0],this);
+      }
+      else if(sizeof(yp))
+         num=yp[0];
+
+      if (!sizeof(yp) || (num==-1 && !n))
+         return Year("ymd_y",rules,v*19-18,yd,1);
+    
+      if (num<0) num+=1+number_of_years();
+      if(0 < num && num < 20)
+        return Year("ymd_yn",rules,v*19-18+num-1,1);
+
+      error("not in range; Year 1..%d exist in %O\n",
+            number_of_years(),this);
+   }
+
+   array(cYear) years(int ...range)
+   {  
+      int from=1,n=number_of_years(),to=n;
+
+      if (sizeof(range))
+         if (sizeof(range)<2)
+            error("Illegal numbers of arguments to years()\n");
+         else
+         {  
+            [from,to]=range;
+            if (from>n) return ({}); else if (from<1) from=1;
+            if (to>n) to=n; else if (to<from) return ({});
+         }
+
+      return map(enumerate(1+to-from,1,from+m-1),
+                 lambda(int x)
+                 { return Year("ymd_yn",rules,v*19-18+x-1,1); });
+   }
+
+   int number_of_years()
+   {
+     return 19*n;
+   }
+
+   int number_of_days()
+   {
+     return (this+1)->julian_day()-julian_day();
+   }
+
+   TimeRange _move(int m,YMD step)
+   {
+      if (!step->n || !m) 
+         return this;
+
+      if (step->is_vahid)
+         return Vahid("ymd_v",rules,v+m*step->n,n)
+            ->autopromote();
+
+      if (step->is_year)
+         return year()->add(m,step)->set_size(this);
+/*
+      if (step->is_month)
+         return month()->add(m,step)->set_size(this);
+
+//        if (step->is_week)
+//       return week()->add(m,step)->set_size(this);
+*/
+      if (step->is_ymd)
+         return Day("ymd_jd",rules,
+                    vjd+m*step->number_of_days(),number_of_days())
+            ->autopromote();
+      
+      error("_move: Incompatible type %O\n",step);
+   }
+
+   YMD autopromote() { return this; }
 }

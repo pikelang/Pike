@@ -16,7 +16,7 @@ static constant magic= // magic + indices(Calendar.ISO) without YMD
    "calendar_name", "calendar_object", "TimeRange", 
    "nulltimerange", "ruleset", "set_ruleset", "inano", "timezone",
    "set_language", "default_rules", "TimeofDay",
-   "Second", "Fraction", "now" >);
+   "Second", "Fraction", "now", "Bahai" >);
 
 #include "localization.h"
 
@@ -52,6 +52,8 @@ static mixed `[](string what)
    if ( !magic[what] || (stage && what!="default_rules")) return UNDEFINED;
    switch (what)
    {
+      case "Bahai":
+         return master()->resolv("Calendar")["Badi"];
       case "ISO_UTC":
 	 if (!iso_utc)
 	    error("ERROR\n");
