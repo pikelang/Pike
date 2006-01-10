@@ -1,13 +1,13 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.13 2004/10/04 21:34:34 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.14 2006/01/10 17:26:28 grubba Exp $"]]);
 
 // - Standards.ISO639_2
 test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
 test_equal(Standards.ISO639_2.get_language("xxx"),0)
 test_true(sizeof(Standards.ISO639_2.list_languages())>400)
-test_egual(Standards.ISO639_2.map_639_1("sv"),"swe")
-test_egual(Standards.ISO639_2.map_639_1("xx"),0)
-test_true(sizeof(Standards.ISO639_2.list_639_1())==163)
+test_equal(Standards.ISO639_2.map_639_1("sv"),"swe")
+test_equal(Standards.ISO639_2.map_639_1("xx"),0)
+test_equal(sizeof(Standards.ISO639_2.list_639_1()),164)
 test_do(
 class A {
   inherit Standards.ISO639_2;
