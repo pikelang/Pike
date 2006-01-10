@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.8 2005/12/18 14:31:44 nilsson Exp $
+// $Id: testsuite.in,v 1.9 2006/01/10 17:24:28 grubba Exp $
 
 // DOM
 
@@ -319,65 +319,69 @@ test_any([[
   return error || got_header;
 ]], 1)
 
-test_any([[
-  string error;
-  int got_header;
-  object o = Parser.XML.Simple();
-  o->compat_allow_errors (0);
-  o->parse (" <?xml version='1.0'?> <?herk?> <!-- herk --> "
-	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> "
-	    "<foo/> <?herk?> <!-- herk --> ",
-	    lambda (string type, string name, mapping attrs, string data) {
-	      if (type == "error") error = data;
-	      if (type == "<?xml") got_header = 1;
-	    });
-  return error || got_header;
-]], "XML header must be at the first byte in the document.")
-test_any([[
-  string error;
-  int got_header;
-  object o = Parser.XML.Simple();
-  o->compat_allow_errors ("7.6");
-  o->parse (" <?xml version='1.0'?> <?herk?> <!-- herk --> "
-	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> "
-	    "<foo/> <?herk?> <!-- herk --> ",
-	    lambda (string type, string name, mapping attrs, string data) {
-	      if (type == "error") error = data;
-	      if (type == "<?xml") got_header = 1;
-	    });
-  return error || got_header;
-]], "XML header must be at the first byte in the document.")
+cond(0,
+[[
+  // The following tests are currently not valid.
+  test_any([[
+    string error;
+    int got_header;
+    object o = Parser.XML.Simple();
+    o->compat_allow_errors (0);
+    o->parse (" <?xml version='1.0'?> <?herk?> <!-- herk --> "
+  	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> "
+  	    "<foo/> <?herk?> <!-- herk --> ",
+  	    lambda (string type, string name, mapping attrs, string data) {
+  	      if (type == "error") error = data;
+  	      if (type == "<?xml") got_header = 1;
+  	    });
+    return error || got_header;
+  ]], "XML header must be at the first byte in the document.")
+  test_any([[
+    string error;
+    int got_header;
+    object o = Parser.XML.Simple();
+    o->compat_allow_errors ("7.6");
+    o->parse (" <?xml version='1.0'?> <?herk?> <!-- herk --> "
+  	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> "
+  	    "<foo/> <?herk?> <!-- herk --> ",
+  	    lambda (string type, string name, mapping attrs, string data) {
+  	      if (type == "error") error = data;
+  	      if (type == "<?xml") got_header = 1;
+  	    });
+    return error || got_header;
+  ]], "XML header must be at the first byte in the document.")
 
-test_any([[
-  string error;
-  int got_header;
-  object o = Parser.XML.Simple();
-  o->compat_allow_errors (0);
-  o->parse (" <?herk?> <!-- herk --> "
-	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> "
-	    "<?xml version='1.0'?> <?herk?> <!-- herk --> "
-	    "<foo/> <?herk?> <!-- herk --> ",
-	    lambda (string type, string name, mapping attrs, string data) {
-	      if (type == "error") error = data;
-	      if (type == "<?xml") got_header = 1;
-	    });
-  return error || got_header;
-]], "XML header must be at the first byte in the document.")
-test_any([[
-  string error;
-  int got_header;
-  object o = Parser.XML.Simple();
-  o->compat_allow_errors ("7.6");
-  o->parse (" <?herk?> <!-- herk --> "
-	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> "
-	    "<?xml version='1.0'?> <?herk?> <!-- herk --> "
-	    "<foo/> <?herk?> <!-- herk --> ",
-	    lambda (string type, string name, mapping attrs, string data) {
-	      if (type == "error") error = data;
-	      if (type == "<?xml") got_header = 1;
-	    });
-  return error || got_header;
-]], "XML header must be at the first byte in the document.")
+  test_any([[
+    string error;
+    int got_header;
+    object o = Parser.XML.Simple();
+    o->compat_allow_errors (0);
+    o->parse (" <?herk?> <!-- herk --> "
+  	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> "
+  	    "<?xml version='1.0'?> <?herk?> <!-- herk --> "
+  	    "<foo/> <?herk?> <!-- herk --> ",
+  	    lambda (string type, string name, mapping attrs, string data) {
+  	      if (type == "error") error = data;
+  	      if (type == "<?xml") got_header = 1;
+  	    });
+    return error || got_header;
+  ]], "XML header must be at the first byte in the document.")
+  test_any([[
+    string error;
+    int got_header;
+    object o = Parser.XML.Simple();
+    o->compat_allow_errors ("7.6");
+    o->parse (" <?herk?> <!-- herk --> "
+  	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> "
+  	    "<?xml version='1.0'?> <?herk?> <!-- herk --> "
+  	    "<foo/> <?herk?> <!-- herk --> ",
+  	    lambda (string type, string name, mapping attrs, string data) {
+  	      if (type == "error") error = data;
+  	      if (type == "<?xml") got_header = 1;
+  	    });
+    return error || got_header;
+  ]], "XML header must be at the first byte in the document.")
+]])
 
 test_any([[
   string error;
