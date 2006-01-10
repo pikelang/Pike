@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.110 2006/01/10 09:29:27 grubba Exp $
+dnl $Id: aclocal.m4,v 1.111 2006/01/10 16:13:30 marcus Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -374,7 +374,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.110 2006/01/10 09:29:27 grubba Exp $
+  # $Id: aclocal.m4,v 1.111 2006/01/10 16:13:30 marcus Exp $
 
   MY_AC_PROG_CC
 
@@ -1194,7 +1194,7 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
     else
       abi_64=unknown
     fi
-    if text "$abi_32:$abi_64" = "unknown:unknown"; then
+    if test "$abi_32:$abi_64" = "unknown:unknown"; then
       cached=""
       for f in "$d"/* no; do
         if test -f "$f"; then
