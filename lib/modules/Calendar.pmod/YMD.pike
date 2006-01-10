@@ -767,7 +767,7 @@ class YMD
       if (sizeof(mp)) m=mp[0];
       else m=1;
 
-      if (m==-1 && !n)
+      if (!n)
 	 return Day("ymd_yd",rules,y,yjd,jd,yd,1);
 
       if (m<0) m+=1+number_of_days();
