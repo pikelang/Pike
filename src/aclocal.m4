@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.111 2006/01/10 16:13:30 marcus Exp $
+dnl $Id: aclocal.m4,v 1.112 2006/01/10 16:37:38 marcus Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -374,7 +374,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.111 2006/01/10 16:13:30 marcus Exp $
+  # $Id: aclocal.m4,v 1.112 2006/01/10 16:37:38 marcus Exp $
 
   MY_AC_PROG_CC
 
@@ -1179,7 +1179,7 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
       abi_dir_ok="skip"
       break
     fi
-    [$]ifelse([$4], ,real_libs,[$4])="[$]ifelse([$4], ,real_libs,[$4]) $real_dir"
+    ifelse([$4], ,real_libs,[$4])="[$]ifelse([$4], ,real_libs,[$4]) $real_dir"
     if echo " $pike_cv_32bit_dirs " | grep " $real_dir " >/dev/null; then
       abi_32=yes
     elif echo " $pike_cv_not_32bit_dir " | grep " $real_dir " >/dev/null; then
