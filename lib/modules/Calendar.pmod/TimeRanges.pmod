@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.29 2006/01/11 19:15:09 mbaehr Exp $
+// $Id: TimeRanges.pmod,v 1.30 2006/01/11 19:22:30 mbaehr Exp $
 
 #pike __REAL_VERSION__
 
@@ -302,16 +302,18 @@ class TimeRange
 //!	the same as doing <tt>t-><ref>set_size</ref>(t,17)</tt>.
 
    function ``* = `*;
-   TimeRange `*(int n)
+   TimeRange `*(int|float n)
    {
-      return set_size(n,this);
+      return set_size((int)n,this);
    }
 
-//! method array(TimeRange) `/(int n)
-//! method array(TimeRange) split(int n)
+//! method array(TimeRange) `/(int|float n)
+//! method array(TimeRange) split(int|float n, void|TimeRange with)
 //!	This divides the called timerange into
 //!	n pieces. The returned timerange type
 //!	is not neccesarily of the same type as the called one.
+//!     If the optional timerange is specified then the resulting timeranges
+//!     will be multiples of that range (except for the last one).
 //!
 //! known bugs:
 //!	These are currently not defined for 
@@ -327,7 +329,7 @@ class TimeRange
 //!	with the instance of a <ref to=YMD.Year>Year</ref>.
 
 // virtual
-   array(TimeRange) split(int n);
+   array(TimeRange) split(int|float n, void|function|TimeRange with);
 
    int how_many(function|TimeRange with)
    {
@@ -392,9 +394,9 @@ class TimeRange
       }
    }
 
-   array(TimeRange)|int `/(TimeRange|program|int x)
+   array(TimeRange)|int `/(TimeRange|program|int|float x)
    {
-      if (intp(x)) return split(x);
+      if (intp(x) || floatp(x)) return split(x);
       else return how_many(x);
    }
 

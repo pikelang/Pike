@@ -181,6 +181,32 @@ class TimeofDay
       }
    }
 
+   TimeRange `*(int|float n)
+   {  
+      if(intp(n))
+        return set_size(n,this);
+      else
+        return second()*(int)(how_many(Second)*n);
+   }
+
+   array(TimeRange) split(int|float n, void|function|TimeRange with)
+   {  
+      if(!with)
+        with=Second;
+      if (functionp(with)) with=promote_program(with);
+      float length=how_many(with)/(float)n;
+      TimeRange start=beginning();
+      TimeRange end=end();
+      array result=({});
+      while(start+with*length < end)
+      { 
+        result += ({ start->distance(start+with*length) });
+        start=start+with*length;
+      }
+      result += ({ start->distance(end) });
+      return result;
+   }
+
 // default autopromote
    this_program autopromote()
    {
