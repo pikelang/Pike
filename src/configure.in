@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.855 2005/12/18 16:42:10 jonasw Exp $")
+AC_REVISION("$Id: configure.in,v 1.856 2006/01/11 00:40:38 nilsson Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5570,6 +5570,9 @@ AC_TRY_RUN([
 #if STDC_HEADERS
 #include <stdlib.h>
 #include <stddef.h>
+#endif
+#ifdef HAVE_POLL_H
+#include <poll.h>
 #endif
 VOLATILE sig_atomic_t sigrun[2]= { 0, 0 };
 RETSIGTYPE func(int sig)
