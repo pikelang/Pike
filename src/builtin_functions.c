@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.477 2005/04/21 15:45:06 mast Exp $
+|| $Id: builtin_functions.c,v 1.478 2006/01/11 04:46:52 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.477 2005/04/21 15:45:06 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.478 2006/01/11 04:46:52 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2164,7 +2164,7 @@ void f__exit(INT32 args)
  */
 PMOD_EXPORT void f_time(INT32 args)
 {
-  if(!args)
+  if(!args || (Pike_sp[-args].type == T_INT && Pike_sp[-args].u.integer == 0))
   {
     GETTIMEOFDAY(&current_time);
   }else{
