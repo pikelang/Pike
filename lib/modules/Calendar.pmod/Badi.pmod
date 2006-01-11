@@ -65,8 +65,9 @@ static int julian_day_from_year(int y)
 
 static int compat_week_day(int n)
 {
-   // week starts on saturday
-   return n-2;
+   // this is specific to the gregorian calendar.
+   // we just stick with the value as it is
+   return n;
 }
 
 static array(int) year_month_from_month(int y,int m)
@@ -131,16 +132,15 @@ static array(int) week_from_julian_day(int jd)
       w=1;
    }
 
-   return ({y,w,1+(yjd+yday)%7,7,wjd});
+   return ({y,w,1+(1+yjd+yday)%7,7,wjd});
 }
 
-// identical to gregorian
 static array(int) week_from_week(int y,int w)
 {
 // [year,week,1 (wd),ndays,week-julian-day]
 
    int yjd=julian_day_from_year(y);
-   int wjd=-5+yjd-(yjd+3)%7;
+   int wjd=-5+yjd-(yjd+4)%7;
 
    if (w<1 || w>52) // may or may not be out of this year
       return week_from_julian_day(wjd+w*7);
