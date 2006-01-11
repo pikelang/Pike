@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.34 2003/12/23 17:30:51 grubba Exp $
+|| $Id: odbc.c,v 1.35 2006/01/11 17:37:34 grubba Exp $
 */
 
 /*
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.34 2003/12/23 17:30:51 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.35 2006/01/11 17:37:34 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -77,20 +77,35 @@ void odbc_error(const char *fun, const char *msg,
 		RETCODE code, void (*clean)(void))
 {
   RETCODE _code;
+#ifdef SQL_WCHAR
+  SQLWCHAR errcode[256];
+  SQLWCHAR errmsg[SQL_MAX_MESSAGE_LENGTH];
+#else
   unsigned char errcode[256];
   unsigned char errmsg[SQL_MAX_MESSAGE_LENGTH];
+#endif
   SWORD errmsg_len = 0;
   SDWORD native_error;
 
-  _code = SQLError(odbc_henv, odbc->hdbc, hstmt, errcode, &native_error,
-		   errmsg, SQL_MAX_MESSAGE_LENGTH-1, &errmsg_len);
+  _code =
+#ifdef SQL_WCHAR
+    SQLErrorW
+#else
+    SQLError
+#endif
+    (odbc_henv, odbc->hdbc, hstmt, errcode, &native_error,
+		    errmsg, SQL_MAX_MESSAGE_LENGTH-1, &errmsg_len);
   errmsg[errmsg_len] = '\0';
 
   if (odbc) {
     if (odbc->last_error) {
       free_string(odbc->last_error);
     }
+#ifdef SQL_WCHAR
+    odbc->last_error = make_shared_binary_string1(errmsg, errmsg_len);
+#else
     odbc->last_error = make_shared_binary_string((char *)errmsg, errmsg_len);
+#endif
   }
 
   if (clean) {
@@ -99,9 +114,15 @@ void odbc_error(const char *fun, const char *msg,
   switch(_code) {
   case SQL_SUCCESS:
   case SQL_SUCCESS_WITH_INFO:
+#ifdef SQL_WCHAR
+    Pike_error("%s(): %s:\n"
+	  "%d:%ws:%ws\n",
+	  fun, msg, code, errcode, errmsg);
+#else
     Pike_error("%s(): %s:\n"
 	  "%d:%s:%s\n",
 	  fun, msg, code, errcode, errmsg);
+#endif
     break;
   case SQL_ERROR:
     Pike_error("%s(): %s:\n"
@@ -197,14 +218,23 @@ static void f_create(INT32 args)
 		 BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING|BIT_INT|BIT_VOID,
 		 BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING|BIT_VOID|BIT_INT, 0);
 
-  if(args>3 && sp[3-args].type == T_STRING)
-    pwd = sp[3-args].u.string;
-  if(args>2 && sp[2-args].type == T_STRING)
-    user = sp[2-args].u.string;
-  if(args>1 && sp[1-args].type == T_STRING)
-    database = sp[1-args].u.string;
-  if(args>0 && sp[0-args].type == T_STRING)
-    server = sp[0-args].u.string;
+#define GET_ARG(VAR, ARG) do {					\
+    if ((args > (ARG)) && (sp[(ARG)-args].type == T_STRING)) {	\
+      VAR = sp[(ARG)-args].u.string;				\
+      if (VAR->size_shift) {					\
+	Pike_error("create(): Bad argument %d "			\
+		   "(expected string(8bit))\n",			\
+		   (ARG)+1);					\
+      }								\
+    }								\
+  } while(0)
+
+  GET_ARG(pwd, 3);
+  GET_ARG(user, 2);
+  GET_ARG(database, 1);
+  GET_ARG(server, 0);
+
+#undef GET_ARG
 
   /*
    * NOTE:
@@ -238,6 +268,9 @@ static void f_create(INT32 args)
     odbc_check_error("odbc->create", "Disconnecting HDBC",
 		     SQLDisconnect(PIKE_ODBC->hdbc), NULL);
   }
+
+  /* FIXME: Support wide strings. */
+
   odbc_check_error("odbc->create", "Connect failed",
 		   SQLConnect(PIKE_ODBC->hdbc, (unsigned char *)database->str,
 			      DO_NOT_WARN((SQLSMALLINT)database->len),
@@ -408,8 +441,13 @@ static void f_reload(INT32 args)
 
 static void f_list_dbs(INT32 args)
 {
+#ifdef SQL_WCHAR
+  static SQLWCHAR buf[SQL_MAX_DSN_LENGTH+1];
+  static SQLWCHAR descr[256];
+#else
   static UCHAR buf[SQL_MAX_DSN_LENGTH+1];
   static UCHAR descr[256];
+#endif
   SQLSMALLINT buf_len = 0;
   SQLSMALLINT descr_len = 0;
   int cnt = 0;
@@ -417,15 +455,31 @@ static void f_list_dbs(INT32 args)
 
   pop_n_elems(args);
 
-  ret = SQLDataSources(odbc_henv, SQL_FETCH_FIRST,
-		       buf, sizeof(buf), &buf_len,
-		       descr, sizeof(descr), &descr_len);
+  ret =
+#ifdef SQL_WCHAR
+    SQLDataSourcesW
+#else
+    SQLDataSources
+#endif
+    (odbc_henv, SQL_FETCH_FIRST,
+     buf, sizeof(buf), &buf_len,
+     descr, sizeof(descr), &descr_len);
   while ((ret == SQL_SUCCESS) || (ret == SQL_SUCCESS_WITH_INFO)) {
+#ifdef SQL_WCHAR
+    push_string(make_shared_binary_string1(buf, buf_len));
+#else
     push_string(make_shared_binary_string(buf, buf_len));
+#endif
     cnt++;
-    ret = SQLDataSources(odbc_henv, SQL_FETCH_NEXT,
-			 buf, sizeof(buf), &buf_len,
-			 descr, sizeof(descr), &descr_len);
+    ret =
+#ifdef SQL_WCHAR
+      SQLDataSourcesW
+#else
+      SQLDataSources
+#endif
+      (odbc_henv, SQL_FETCH_NEXT,
+       buf, sizeof(buf), &buf_len,
+       descr, sizeof(descr), &descr_len);
   }
   f_aggregate(cnt);
 }
