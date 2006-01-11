@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.601 2005/11/19 17:14:35 grubba Exp $
+|| $Id: builtin_functions.c,v 1.602 2006/01/11 04:46:52 mast Exp $
 */
 
 #include "global.h"
@@ -2501,7 +2501,7 @@ void f__exit(INT32 args)
  */
 PMOD_EXPORT void f_time(INT32 args)
 {
-  if(!args)
+  if(!args || (Pike_sp[-args].type == T_INT && Pike_sp[-args].u.integer == 0))
   {
     GETTIMEOFDAY(&current_time);
   }else{
