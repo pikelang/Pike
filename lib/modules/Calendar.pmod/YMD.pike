@@ -625,12 +625,15 @@ class YMD
 	    object_program(t));
    }
 
-   static TimeRange _add(int n,TimeRange step)
+   static TimeRange _add(int _n,TimeRange step)
    {
       if (step->is_ymd)
-	 return _move(n,step);
+	 return _move(_n,step);
       if (step->is_timeofday)
-	 return second()->range(second(-1))->add(n,step);
+         if (n)
+	    return second()->range(second(-1))->add(_n,step);
+         else
+            return second()->beginning()->add(_n,step);
 
       error("add: incompatible class %O\n",
 	    object_program(step));

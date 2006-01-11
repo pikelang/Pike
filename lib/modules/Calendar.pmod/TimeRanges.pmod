@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.28 2004/03/30 18:11:59 nilsson Exp $
+// $Id: TimeRanges.pmod,v 1.29 2006/01/11 19:15:09 mbaehr Exp $
 
 #pike __REAL_VERSION__
 
@@ -678,9 +678,7 @@ class TimeRange
 
    int(0..1) `==(TimeRange what) 
    { 
-      return object_program(what)==this_program &&
-	 what->ruleset()==ruleset() &&
-	 equals(what); 
+      return what->ruleset()==ruleset() && equals(what); 
    }
 
    int __hash();
