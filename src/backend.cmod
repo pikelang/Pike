@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.42 2005/02/08 18:46:44 mast Exp $
+|| $Id: backend.cmod,v 1.43 2006/01/11 14:48:02 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.42 2005/02/08 18:46:44 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.43 2006/01/11 14:48:02 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1468,10 +1468,10 @@ PIKECLASS Backend
     }
     else
       timeout.tv_sec = -1;
-    pop_n_elems (args);
 
     low_backend_once(THIS, &timeout);
 
+    pop_n_elems (args);
     if (timeout.tv_sec < 0)
       push_int (0);
     else
