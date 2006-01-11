@@ -108,6 +108,7 @@ GDK2.Window root_window()
 
 
 require gnome;
+require gnomeui;
 
 /*
 array(string) gnome_init(string app_id, string app_version,
@@ -175,6 +176,7 @@ void applet_widget_gtk_main()
   applet_widget_gtk_main();
 }
 */
+endrequire;
 endrequire;
 
 require gnome_vfs;
