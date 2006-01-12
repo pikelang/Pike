@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.31 2001/04/07 00:38:34 nilsson Exp $ */
+/* $Id: bmp.c,v 1.32 2006/01/12 14:44:00 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.31 2001/04/07 00:38:34 nilsson Exp $
+**!	$Id: bmp.c,v 1.32 2006/01/12 14:44:00 grubba Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.31 2001/04/07 00:38:34 nilsson Exp $");
+RCSID("$Id: bmp.c,v 1.32 2006/01/12 14:44:00 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -280,8 +280,10 @@ void img_bmp_encode(INT32 args)
    apply(o,"mirrory",0);
    free_object(o);
    if (sp[-1].type!=T_OBJECT ||
-       !(img=(struct image*)get_storage(o=sp[-1].u.object,image_program)))
+       !(img=(struct image*)get_storage(o=sp[-1].u.object,image_program))) {
+      free_object(oc);
       Pike_error("Image.BMP.encode: wierd result from ->mirrory()\n");
+   }
    if (nct) push_object(oc);
 
    /* bitmapinfo */
@@ -503,7 +505,6 @@ void img_bmp_encode(INT32 args)
       stack_swap();
       pop_stack();
    }
-   if (oc) free_object(oc);
    stack_swap();
    pop_stack();  /* get rid of colortable & source objects */
 }
@@ -681,6 +682,10 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	       int_from_32bit(s+14));
    }
 
+   push_text("type");
+   push_text("image/x-MS-bmp");
+   n++;
+
    if (header_only)
    {
       f_aggregate_mapping(n*2);
@@ -691,11 +696,11 @@ void i_img_bmp__decode(INT32 args,int header_only)
 
    if (comp==1195724874) /* "JPEG" */
    {
-      int n=int_from_32bit(os+10);
+      int i=int_from_32bit(os+10);
 
       push_text("image");
 
-      if (olen-n<0)
+      if (olen-i<0)
 	 Pike_error("Image.BMP.decode: unexpected EOF in JFIF data\n");
 
       push_text("Image");
@@ -706,7 +711,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
       push_text("decode");
       f_index(2);
 
-      push_string(make_shared_binary_string((char *)os+n,olen-n));
+      push_string(make_shared_binary_string((char *)os+i,olen-i));
 
       push_text("quant_tables");
 
@@ -787,11 +792,11 @@ void i_img_bmp__decode(INT32 args,int header_only)
 
 	 j=len;
 	 y=img->ysize;
-	 while (j && y--)
+	 while (j>2 && y--)
 	 {
 	    d = img->img+img->xsize*y;
 	    i = img->xsize;
-	    if (i>j) i=j;
+	    if (i*3>j) i=j/3;
 	    j -= i*3;
 	    while (i--)
 	    {
@@ -800,7 +805,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	       d->r=*(s++);
 	       d++;
 	    }
-	    if (j >= skip) { j -= skip; s += skip; }
+	    if (j >= skip) { j -= skip; s += skip; } else { j = 0; }
 	 }
 	 break;
       case 16:
@@ -811,11 +816,11 @@ void i_img_bmp__decode(INT32 args,int header_only)
 
 	 j=len;
 	 y=img->ysize;
-	 while (j && y--)
+	 while (j>1 && y--)
 	 {
 	    d = img->img+img->xsize*y;
 	    i = img->xsize;
-	    if (i>j) i=j; 
+	    if (i*2>j) i=j/2; 
 	    j-=i*2;
 	    while (i--)
 	    {
@@ -826,7 +831,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	       d->b=((dat&0x001f)<<3)|((dat&0x001c)>>2);
 	       d++;
 	    }
-	    if (j>=skip) { j-=skip; s+=skip; }
+	    if (j>=skip) { j-=skip; s+=skip; } else { j = 0; }
 	 }
 	 break;
       case 8:
@@ -901,7 +906,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	    skip=(4-(img->xsize&3))&3;
 	    j=len;
 	    y=img->ysize;
-	    while (j && y--)
+	    while (j>0 && y--)
 	    {
 	       d = img->img+img->xsize*y;
 	       i = img->xsize;
@@ -909,7 +914,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	       j-=i;
 	       while (i--)
 		  *(d++)=nct->u.flat.entries[*(s++)].color;
-	       if (j>=skip) { j-=skip; s+=skip; }
+	       if (j>=skip) { j-=skip; s+=skip; } else { j = 0; }
 	    }
 	 }
 	 break;
@@ -1018,7 +1023,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	    skip=(4-(((img->xsize+1)/2)&3))&3;
 	    j=len;
 	    y=img->ysize;
-	    while (j && y--)
+	    while (j>0 && y--)
 	    {
 	       d=img->img+img->xsize*y;
 	       i=img->xsize;
@@ -1028,7 +1033,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 		  if (i) *(d++)=nct->u.flat.entries[s[0]&15].color,i--;
 		  s++;
 	       }
-	       if (j>=skip) { j-=skip; s+=skip; }
+	       if (j>=skip) { j-=skip; s+=skip; } else { j = 0; }
 	    }
 	 }
 	 break;
@@ -1039,7 +1044,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 skip=(4-(((img->xsize+7)/8)&3))&3;
 	 j=len;
 	 y=img->ysize;
-	 while (j && y--)
+	 while (j>0 && y--)
 	 {
 	    d=img->img+img->xsize*y;
 	    i=img->xsize;
@@ -1055,7 +1060,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	       if (i) *(d++)=nct->u.flat.entries[s[0]&1].color,i--;
 	       s++;
 	    }
-	    if (j>=skip) { j-=skip; s+=skip; }
+	    if (j>=skip) { j-=skip; s+=skip; } else { j = 0; }
 	 }
 	 break;
       default:
