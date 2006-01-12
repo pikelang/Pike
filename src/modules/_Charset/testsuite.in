@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.13 2005/12/09 23:40:03 marcus Exp $
+// $Id: testsuite.in,v 1.14 2006/01/12 17:28:53 grubba Exp $
 
 // _Charset.decoder
 test_true([[objectp(_Charset)]])
@@ -333,6 +333,7 @@ dnl test_codec(UTF-32LE)
 dnl test_codec(BOCU-1,csBOCU-1)
 dnl test_codec(UNICODE-1-1-UTF-7,csUnicode11UTF7)
 test_codec(UTF-8)
+test_codec(UTF-EBCDIC)
 test_codec(ISO-8859-13)
 test_codec(ISO-8859-14,iso-ir-199,ISO_8859-14:1998,ISO_8859-14,latin8,dnl
 iso-celtic,l8)
