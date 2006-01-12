@@ -249,6 +249,7 @@ Decoder decoder(string name)
   program p = ([
     "utf7": UTF7dec,
     "utf8": UTF8dec,
+    "utfebcdic": UTF_EBCDICdec,
     "utf16": UTF16dec,
     "utf16be": UTF16dec,
     "utf16le": UTF16LEdec,
@@ -418,6 +419,7 @@ Encoder encoder(string name, string|void replacement,
   program p = ([
     "utf7": UTF7enc,
     "utf8": UTF8enc,
+    "utfebcdic": UTF_EBCDICenc,
     "utf16": UTF16enc,
     "utf16be": UTF16enc,
     "utf16le": UTF16LEenc,
