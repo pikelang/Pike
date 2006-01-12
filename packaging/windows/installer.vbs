@@ -1,5 +1,5 @@
 '
-' $Id: installer.vbs,v 1.5 2004/12/06 16:50:26 grubba Exp $
+' $Id: installer.vbs,v 1.6 2006/01/12 22:51:23 jonasw Exp $
 '
 ' Companion file to bin/install.pike for custom actions.
 '
@@ -62,7 +62,9 @@ Function FinalizePike()
     " TMP_BUILDDIR=bin", 0, True
 
   ' Extra cleanup.
-  fso.DeleteFile(targetdir & "bin\pike.exe.old")
+  If fso.FileExists(targetdir & "bin\pike.exe.old") Then
+    fso.DeleteFile(targetdir & "bin\pike.exe.old")
+  End If
 
   FinalizePike = 1
 End Function
