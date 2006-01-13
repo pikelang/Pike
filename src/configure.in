@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.856 2006/01/11 00:40:38 nilsson Exp $")
+AC_REVISION("$Id: configure.in,v 1.857 2006/01/13 16:28:27 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -7387,17 +7387,31 @@ $bundle_info])
 	    CFLAGS="$CCSHARED $CFLAGS"
 	    export CFLAGS
 
-	    extra_configure_args=""
+	    # --disable-openssl
+	    #   The Nettle 1.13 checks for openssl aren't strict enough, so
+	    #   linking with openssl is enabled even though there are
+	    #   missing symbols. This also disables compilation of some
+	    #   dead benchmark code.
+	    #
+	    # --disable-dependency-tracking
+	    #   Nettles Makefiles aren't compatible with some makes
+	    #   (BSD make in particular) if this is enabled, and
+	    #   since we build from scratch the dependencies aren't
+	    #   needed anyway.
+	    extra_configure_args="--disable-openssl --disable-dependency-tracking"
+
 	    # Some libraries insist in using config.guess;
 	    # they tend to have problems with rntcl...
 	    # Let's help them along.
+	    # They might also try to assemble machinecode, which is
+	    # not likely to work with rntcl et al.
 	    if echo foo "$CC" | egrep 'rntc.|rnt.cl' >/dev/null; then
 	      cpu="`uname -m`"
 	      if test "$cpu" = "x86"; then
 	        # Normalize the cpu.
 	        cpu="i386"
 	      fi
-	      extra_configure_args="--build=${cpu}-unknown-winnt`uname -r`"
+	      extra_configure_args="${extra_configure_args} --build=${cpu}-unknown-winnt`uname -r|sed -e 's/-/_/g'` --disable-assembler"
 	    fi
 
 	    echo "${CONFIG_SHELL-/bin/sh} \"$bundle_source_dir/configure\"" \
