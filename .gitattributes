@@ -649,6 +649,7 @@ testfont binary
 /src/modules/_Charset/configure.in foreign_ident
 /src/modules/_Charset/iso2022.c foreign_ident
 /src/modules/_Charset/iso2022.h foreign_ident
+/src/modules/_Charset/make_gb18030_h.pike foreign_ident
 /src/modules/_Charset/misc.c foreign_ident
 /src/modules/_Charset/tables.c foreign_ident
 /src/modules/_Charset/testsuite.in foreign_ident

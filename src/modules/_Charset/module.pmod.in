@@ -278,7 +278,7 @@ Decoder decoder(string name)
     return EUCDec("x0208");
 
 
-  if( (< "gbk", "936", "949" >)[ name ] )
+  if( (< "gb18030", "gbk", "936", "949" >)[ name ] )
     return MulticharDec(name);
 
   Decoder o = rfc1345(name);

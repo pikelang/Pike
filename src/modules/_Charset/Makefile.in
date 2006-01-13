@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.7 2003/06/12 20:54:56 mast Exp $
+# $Id: Makefile.in,v 1.8 2006/01/13 19:56:32 grubba Exp $
 #
 
 @make_variables@
@@ -10,5 +10,11 @@ MODULE_LDFLAGS=@LDFLAGS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
+
+charsetmod.o: $(SRCDIR)/gb18030.h
+
+$(SRCDIR)/gb18030.h : $(SRCDIR)/gb-18030-2000.xml $(SRCDIR)/make_gb18030_h.pike
+	$(BUILD_BASE)/precompile.sh  $(SRCDIR)/make_gb18030_h.pike \
+	  $(SRCDIR)/gb-18030-2000.xml $(SRCDIR)/gb18030.h
 
 @dependencies@

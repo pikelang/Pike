@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tables.c,v 1.25 2006/01/05 23:04:00 nilsson Exp $
+|| $Id: tables.c,v 1.26 2006/01/13 19:56:33 grubba Exp $
 */
 
 #include "iso2022.h"
@@ -16589,6 +16589,7 @@ static const struct multichar_table cp949[] = {
 };
 
 const struct multichar_def multichar_map[] = {
+  { "gb18030", GBK },	/* NOTE: MUST be first! */
   { "gbk", GBK },
   { "936", GBK },
   { "949", cp949 },

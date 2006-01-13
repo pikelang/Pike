@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.54 2006/01/12 17:26:04 grubba Exp $
+|| $Id: charsetmod.c,v 1.55 2006/01/13 19:56:32 grubba Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -75,6 +75,7 @@ static size_t euc_stor_offs = 0;
 
 struct multichar_stor {
   const struct multichar_table *table;
+  int is_gb18030;
 };
 static size_t multichar_stor_offs = 0;
 
@@ -747,6 +748,41 @@ static void f_create_multichar(INT32 args)
   }
 
   s->table = def->table;
+  /* NOTE: gb18030 is the first in the multichar map! */
+  s->is_gb18030 = (def == multichar_map);
+}
+
+#include "gb18030.h"
+
+/* Used for gb18030 to decode code points outside GBK. */
+static ptrdiff_t feed_gb18030(const p_wchar0 *p, ptrdiff_t l,
+			      struct std_cs_stor *s)
+{
+  p_wchar2 index = 0;
+  if (l < 4) return l;
+
+  /* First decode the linear offset. */
+
+  if ((p[0] < 0x81) || (p[0] > 0xfe)) return 0;
+  index = p[0] - 0x81;
+
+  if ((p[1] < 0x30) || (p[1] > 0x39)) return 0;
+  index *= 10;
+  index += p[1] - 0x30;
+
+  if ((p[2] < 0x81) || (p[2] > 0xfe)) return 0;
+  index *= 126;
+  index = p[2] - 0x81;
+
+  if ((p[3] < 0x30) || (p[3] > 0x39)) return 0;
+  index *= 10;
+  index += p[3] - 0x30;
+
+  /* Convert to Unicode. */
+  string_builder_putchar(&s->strbuild, gb18030_to_unicode(index));
+
+  /* We've used 4 bytes of input. */
+  return -4;
 }
 
 static ptrdiff_t feed_multichar(const p_wchar0 *p, ptrdiff_t l,
@@ -758,6 +794,9 @@ static ptrdiff_t feed_multichar(const p_wchar0 *p, ptrdiff_t l,
   while(l>0) {
     unsigned INT32 ch = *p++;
     if(ch < 0x81) {
+      /* FIXME: Adjust above to 0x80? Recent GB18030 encodes
+       *        U+0080 as 0x81 0x30 0x81 0x30.
+       */
       string_builder_putchar(&s->strbuild, ch);
       --l;
     }
@@ -769,6 +808,19 @@ static ptrdiff_t feed_multichar(const p_wchar0 *p, ptrdiff_t l,
       }
       ch = *p++;
       if( ch<page.lo || ch>page.hi ) {
+	if (m->is_gb18030) {
+	  int delta = feed_gb18030(--p, l, s);
+	  if (delta < 0) {
+	    p -= delta;
+	    l += delta;
+	    continue;
+	  } else if (delta > 0) {
+	    /* More characters needed. */
+	    return delta;
+	  }
+	  /* Restore p for the pedantic... */
+	  p++;
+	} 
 	Pike_error("Illegal character.\n");
       }
       else
