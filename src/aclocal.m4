@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.112 2006/01/10 16:37:38 marcus Exp $
+dnl $Id: aclocal.m4,v 1.113 2006/01/13 16:16:44 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -374,7 +374,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.112 2006/01/10 16:37:38 marcus Exp $
+  # $Id: aclocal.m4,v 1.113 2006/01/13 16:16:44 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -1212,23 +1212,23 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
   	  fi
         fi
       done
-      if test "x$abi_32" = "yes"; then
+      if test "$abi_32" = "yes"; then
         pike_cv_32bit_dirs="$pike_cv_32bit_dirs $real_dir"
-	if test "x$abi_64" = "unknown"; then
+	if test "$abi_64" = "unknown"; then
           abi_64="no"
 	fi
       else
         pike_cv_not_32bit_dirs="$pike_cv_not_32bit_dirs $real_dir"
       fi
-      if test "x$abi_64" = "yes"; then
+      if test "$abi_64" = "yes"; then
         pike_cv_64bit_dirs="$pike_cv_64bit_dirs $real_dir"
-	if test "x$abi_32" = "unknown"; then
+	if test "$abi_32" = "unknown"; then
           abi_32="no"
 	fi
-      elif test "x$abi_64" = "no"; then
+      elif test "$abi_64" = "no"; then
         pike_cv_not_64bit_dirs="$pike_cv_not_64bit_dirs $real_dir"
       fi
-      if test "x$abi_32" = "no"; then
+      if test "$abi_32" = "no"; then
         pike_cv_not_32bit_dirs="$pike_cv_not_32bit_dirs $real_dir"
       fi
     fi
