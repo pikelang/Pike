@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.220 2005/11/30 17:56:36 grubba Exp $
+// $Id: module.pmod,v 1.221 2006/01/13 23:07:26 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -409,7 +409,7 @@ class File
   //! functions, eg for the fourth argument to
   //! @[String.SplitIterator].
   {
-    return lambda(){ return read( nbytes); };
+    return lambda(){ return read(nbytes); };
   }
 
   String.SplitIterator|LineIterator line_iterator( int|void trim )
