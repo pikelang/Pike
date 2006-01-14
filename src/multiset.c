@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.94 2006/01/14 11:20:29 mast Exp $
+|| $Id: multiset.c,v 1.95 2006/01/14 11:56:16 mast Exp $
 */
 
 #include "global.h"
@@ -4264,18 +4264,18 @@ void init_multiset()
 	       HDR(&test)->flags, MULTISET_FLAG_MASK);
   HDR (&test)->flags |= RB_FLAG_MASK;
   if (test.i.ind.type & MULTISET_FLAG_MARKER)
-    Pike_fatal("The ind svalue overlays the type field in an unexpected way.\n"
+    Pike_fatal("The ind svalue overlays the flags field in an unexpected way.\n"
 	       "type: 0x%08x, MULTISET_FLAG_MASK: 0x%08x\n"
 	       "RB_FLAG_MASK: 0x%08x, MULTISET_FLAG_MARKER: 0x%08x\n",
 	       test.i.ind.type, MULTISET_FLAG_MASK,
 	       RB_FLAG_MASK, MULTISET_FLAG_MARKER);
   test.i.ind.type |= MULTISET_FLAG_MARKER;
   if ((test.i.ind.type & ~MULTISET_FLAG_MASK) != (1 << 8) - 1)
-    Pike_fatal("The ind svalue overlays the type field in an unexpected way.\n"
-	       "type: 0x%08x, MULTISET_FLAG_MASK: 0x%08x\n"
+    Pike_fatal("The ind svalue overlays the flags field in an unexpected way.\n"
+	       "flags: 0x%08x, MULTISET_FLAG_MASK: 0x%08x\n"
 	       "RB_FLAG_MASK: 0x%08x, MULTISET_FLAG_MARKER: 0x%08x\n"
 	       "type: 0x%08x\n",
-	       test.i.ind.type, MULTISET_FLAG_MASK,
+	       HDR(&test)->flags, MULTISET_FLAG_MASK,
 	       RB_FLAG_MASK, MULTISET_FLAG_MARKER,
 	       test.i.ind.type);
 #endif
