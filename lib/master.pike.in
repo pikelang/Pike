@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.381 2005/11/20 23:18:41 nilsson Exp $
+// $Id: master.pike.in,v 1.382 2006/01/14 18:19:19 nilsson Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -2544,7 +2544,7 @@ void _main(array(string) orig_argv, array(string) env)
 	exit(0);
 
       case "version":
-	werror(version() + " Copyright © 1994-2005 Linköping University\n"
+	werror(version() + " Copyright © 1994-2006 Linköping University\n"
 	       "Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n"
 	       "welcome to redistribute it under certain conditions; Read the files\n"
 	       "COPYING and COPYRIGHT in the Pike distribution for more details.\n");
