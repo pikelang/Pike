@@ -1532,14 +1532,14 @@ array parse_args( array tokens )
   return ({ types, names });
 }
 
-mapping(string:string) strings = ([]);
+// String literal : index number
+mapping(string:int) strings = ([]);
 
-array(string) make_strings(array tokens)
+void make_strings(array tokens)
 {
-  array ret = ({});
   foreach(tokens; int num; array|object token)
     if( arrayp(token) )
-      ret += make_strings( token );
+      make_strings( token );
     else if( token->text == "_STR" )
     {
       if( sizeof(tokens)>num+1 && arrayp(tokens[num+1]) &&
@@ -1550,19 +1550,16 @@ array(string) make_strings(array tokens)
             str[-1] != '\"' )
             SYNTAX( "_STR needs a string argument.", tokens[num+1][1] );
         sscanf(str, "%O", str);
-        string tok = "pstr_" + str;
 
-        if( !strings[tok] )
-          strings[tok] = str;
+        if( !strings[str] )
+          strings[str] = sizeof(strings);
 
-        ret += ({ tok });
-        tokens[num] = Parser.Pike.Token(tok);
+        tokens[num] = Parser.Pike.Token("(pstr_vector["+strings[str]+"])");
         tokens[num+1] = Parser.Pike.Token("");
       }
       else
         SYNTAX( "_STR statement malformed.", token );
     }
-  return Array.uniq(ret);
 }
 
 string parse_pre_file( string file )
@@ -1828,16 +1825,8 @@ string parse_pre_file( string file )
            SYNTAX("Expected ; or function block",
                   (arrayp(body)?body[0]:body||token));
          [arg_types,arg_names] = parse_args( args[1..sizeof(args)-2] );
-         if( arrayp(body) ) {
-           array strs = make_strings(body);
-           if(sizeof(strs))
-           {
-             foreach( strs, string str )
-               current_class->pre +=
-                 ({ Parser.Pike.Token("extern struct pike_string * "+
-                                      str+";\n") });
-           }
-         }
+         if( arrayp(body) )
+           make_strings(body);
          Function f = Function( current_class, name->text, type,
                                 arg_types, arg_names, body, 
                                 current_require, doc, file, token->line );

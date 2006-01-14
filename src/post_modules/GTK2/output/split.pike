@@ -163,7 +163,7 @@ void post_class_build()
 array(string) output( mapping(string:Class) classes,
                       mapping(string:Constant) constants,
                       array(Node) global_code,
-                      mapping(string:string) strings)
+                      mapping(string:int) strings)
 {
   head = Stdio.read_bytes( combine_path( sdir, "../pgtk.c.head" ) );
   if(!head) error("Failed to load ../pgtk.c.head\n");
@@ -207,12 +207,22 @@ array(string) output( mapping(string:Class) classes,
   foreach( sort(indices( done )), string w )
     initfun += done[w]->pike_add();
 
-  foreach( strings; string name; string str )
+  if(sizeof(strings))
   {
-    pre += "struct pike_string *" + name + ";\n";
-    initfun += "  " + name + " = make_shared_binary_string(" + S(str,0,2) +
-      "," + sizeof(str) + ");\n";
-    exitfun += "  free_string(" + name + ");\n";
+    pre += "struct pike_string * pstr_vector["+sizeof(strings)+"];\n\n";
+    foreach( strings; string str; int idx )
+    {
+      initfun += sprintf("\n  /* %O */\n", str);
+      initfun += "  pstr_vector[" + idx + "] = make_shared_binary_string(" +
+        S(str,0,2) + "," + sizeof(str) + ");\n";
+    }
+    exitfun += #"
+  {
+    int i;
+    for( i=0; i<NELEM(pstr_vector); i++ )
+      free_string( pstr_vector[i] );
+  }
+";
   }
 
   pre += get_string_data()+"\n\n";

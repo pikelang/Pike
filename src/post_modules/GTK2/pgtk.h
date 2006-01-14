@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgtk.h,v 1.12 2006/01/02 21:44:59 marcus Exp $
+|| $Id: pgtk.h,v 1.13 2006/01/14 00:43:09 nilsson Exp $
 */
 
 /* Sort of unnessesary, and decreases code-size with 140Kb */
@@ -103,6 +103,7 @@ struct my_pixel {
 /* Prototypes.h is generated in the build directory. */
 #include "prototypes.h"
 
+extern struct pike_string * pstr_vector[];
 extern const char __pgtk_string_data[];
 extern int pigtk_is_setup;
 struct program *pgtk_type_to_program(GObject *widget);
