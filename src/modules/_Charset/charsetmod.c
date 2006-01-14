@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.56 2006/01/14 13:17:59 grubba Exp $
+|| $Id: charsetmod.c,v 1.57 2006/01/14 13:50:52 grubba Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -792,7 +792,7 @@ static ptrdiff_t feed_gb18030(const p_wchar0 *p, ptrdiff_t l,
     return 0;
   }
   index *= 126;
-  index = p[2] - 0x81;
+  index += p[2] - 0x81;
 
   if ((p[3] < 0x30) || (p[3] > 0x39)) {
 #if 0

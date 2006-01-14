@@ -1,5 +1,5 @@
 //
-// $Id: make_gb18030_h.pike,v 1.2 2006/01/14 12:03:11 grubba Exp $
+// $Id: make_gb18030_h.pike,v 1.3 2006/01/14 13:50:52 grubba Exp $
 //
 // Create lookup tables and code for GB18030.
 //
@@ -137,7 +137,7 @@ int main(int argc, array(string) argv)
 	dec_table[i..];
     }
   }
-  string code = sprintf("/* Generated automaticlly by\n"
+  string code = sprintf("/* Generated automatically by\n"
 			" * %s\n"
 			" * Do not edit.\n"
 			" */\n"
@@ -157,10 +157,13 @@ int main(int argc, array(string) argv)
 			"static p_wchar2 gb18030_to_unicode(p_wchar2 i)\n"
 			"{\n"
 			"  static int last_j;\n"
+#if 0
+			"  fprintf(stderr, \"gb18030_to_unicode(0x%%06x)\",\n"
+			"          i);\n"
+#endif /* 0 */
 			"  if (gb18030_info[last_j].index > i) {\n"
-			"    int jlo = 0, jhi = last_j;\n"
-			"    while (jlo + 1 < jhi) {\n"
-			"      int jmid = (jlo + jhi)/2;\n"
+			"    int jlo = 0, jhi = last_j, jmid;\n"
+			"    while (jlo < (jmid = (jlo + jhi)/2)) {\n"
 			"      if (gb18030_info[jmid].index <= i) {\n"
 			"        jlo = jmid;\n"
 			"      } else {\n"
@@ -168,10 +171,10 @@ int main(int argc, array(string) argv)
 			"      }\n"
 			"    }\n"
 			"    last_j = jlo;\n"
-			"  } else if (gb18030_info[last_j+1].index < i) {\n"
+			"  } else if (gb18030_info[last_j+1].index <= i) {\n"
 			"    int jlo = last_j + 1, jhi = NUM_GB18030_INFO;\n"
-			"    while (jlo + 1 < jhi) {\n"
-			"      int jmid = (jlo + jhi)/2;\n"
+			"    int jmid;\n"
+			"    while (jlo < (jmid = (jlo + jhi)/2)) {\n"
 			"      if (gb18030_info[jmid].index <= i) {\n"
 			"        jlo = jmid;\n"
 			"      } else {\n"
@@ -180,11 +183,30 @@ int main(int argc, array(string) argv)
 			"    }\n"
 			"    last_j = jlo;\n"
 			"  }\n"
+			"#ifdef PIKE_DEBUG\n"
+			"  if (i < gb18030_info[last_j].index) {\n"
+			"    Pike_fatal(\"GB18030: Bad index: \"\n"
+			"               \"0x%%06x > 0x%%06x (j:%%d)\\n\",\n"
+			"               gb18030_info[last_j].index, i,\n"
+			"               last_j);\n"
+			"  } else if (i >= gb18030_info[last_j+1].index) {\n"
+			"    Pike_fatal(\"GB18030: Bad index: \"\n"
+			"               \"0x%%06x <= 0x%%06x (j:%%d)\\n\",\n"
+			"               gb18030_info[last_j+1].index, i,\n"
+			"               last_j);\n"
+			"  }\n"
+			"#endif /* PIKE_DEBUG */\n"
+#if 0
+			"  fprintf(stderr, \" j: %%d, index: 0x%%06x,\"\n"
+			"          \" ucode: 0x%%06x\\n\",\n"
+			"          last_j, gb18030_info[last_j].index,\n"
+			"          gb18030_info[last_j].ucode);\n"
+#endif /* 0 */
 			"  return i - gb18030_info[last_j].index +\n"
 			"    gb18030_info[last_j].ucode;\n"
 			"}\n"
 			"\n",
-			"$Id: make_gb18030_h.pike,v 1.2 2006/01/14 12:03:11 grubba Exp $",
+			"$Id: make_gb18030_h.pike,v 1.3 2006/01/14 13:50:52 grubba Exp $",
 			chmap->get_attributes()->id || "UNKNOWN",
 			chmap->get_attributes()->version || "UNKNOWN",
 			dec_table,
