@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.69 2006/01/14 11:11:06 mast Exp $
+|| $Id: multiset.c,v 1.70 2006/01/14 11:16:32 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.69 2006/01/14 11:11:06 mast Exp $");
+RCSID("$Id: multiset.c,v 1.70 2006/01/14 11:16:32 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -2190,7 +2190,6 @@ PMOD_EXPORT ptrdiff_t multiset_add (struct multiset *l,
 	  if (prepare_for_add (l, 1)) {
 	    rbstack_shift (rbstack, HDR (msd->nodes), HDR (l->msd->nodes));
 	    msd = l->msd;
-	    gc_mark (msd);
 	  }
 	  ALLOC_MSNODE (msd, l->node_refs, new);
 	  goto add;
@@ -4064,6 +4063,7 @@ void gc_mark_multiset_as_referenced (struct multiset *l)
 	   * shrunk data blocks won't be shared. */
 	  l->msd = resize_multiset_data (msd, ALLOC_SIZE (msd->size), 0);
 	  msd = l->msd;
+	  gc_mark (msd);
 	}
       }
 
@@ -5297,7 +5297,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.69 2006/01/14 11:11:06 mast Exp $");
+RCSID("$Id: multiset.c,v 1.70 2006/01/14 11:16:32 mast Exp $");
 
 struct multiset *first_multiset;
 
