@@ -60,32 +60,32 @@ void set_style(mapping(string:mixed) style)
     sts=gtk_source_tag_style_new();
     if (sts==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("set_style",sizeof(GtkSourceTagStyle));
-    sv=simple_mapping_string_lookup(m,"default");
+    sv=low_mapping_string_lookup(m,_STR("default"));
     if (sv)
       sts->is_default=PGTK_GETINT(sv);
-    sv=simple_mapping_string_lookup(m,"mask");
+    sv=low_mapping_string_lookup(m,_STR("mask"));
     if (sv)
       sts->mask=PGTK_GETINT(sv);
-    sv=simple_mapping_string_lookup(m,"foreground");
+    sv=low_mapping_string_lookup(m,_STR("foreground"));
     if (sv) {
       if (sv->type==PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
 	sts->foreground=*(GdkColor *)get_gdkobject(sv->u.object,color);
     }
-    sv=simple_mapping_string_lookup(m,"background");
+    sv=low_mapping_string_lookup(m,_STR("background"));
     if (sv) {
       if (sv->type==PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
 	sts->background=*(GdkColor *)get_gdkobject(sv->u.object,color);
     }
-    sv=simple_mapping_string_lookup(m,"italic");
+    sv=low_mapping_string_lookup(m,_STR("italic"));
     if (sv)
       sts->italic=PGTK_GETINT(sv);
-    sv=simple_mapping_string_lookup(m,"bold");
+    sv=low_mapping_string_lookup(m,_STR("bold"));
     if (sv)
       sts->bold=PGTK_GETINT(sv);
-    sv=simple_mapping_string_lookup(m,"underline");
+    sv=low_mapping_string_lookup(m,_STR("underline"));
     if (sv)
       sts->underline=PGTK_GETINT(sv);
-    sv=simple_mapping_string_lookup(m,"strikethrough");
+    sv=low_mapping_string_lookup(m,_STR("strikethrough"));
     if (sv)
       sts->strikethrough=PGTK_GETINT(sv);
     gtk_source_tag_set_style(GTK_SOURCE_TAG(THIS->obj),sts);

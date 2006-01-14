@@ -160,11 +160,11 @@ void create(string title, GTK2.Window parent, int mode,
 	if ((ITEM(a)+i)->type!=PIKE_T_MAPPING)
 	  continue;
 	m=(ITEM(a)+i)->u.mapping;
-	sv=simple_mapping_string_lookup(m,"text");
+	sv=low_mapping_string_lookup(m,_STR("text"));
 	if (sv==NULL)
 	  continue;
 	text=(char *)STR0(sv->u.string); 
-	sv=simple_mapping_string_lookup(m,"id");
+	sv=low_mapping_string_lookup(m,_STR("id"));
 	response_id=PGTK_GETINT(sv);
 	gtk_dialog_add_button(GTK_DIALOG(THIS->obj),text,response_id);
       }

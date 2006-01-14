@@ -52,24 +52,24 @@ void create(string|int|void filename_or_alpha,
       get_all_args("create",args,"%s%m",&file,&m);
       if (m) {
 	struct svalue *sv;
-	sv=simple_mapping_string_lookup(m,"scale");
+	sv=low_mapping_string_lookup(m,_STR("scale"));
 	if (sv)
 	  scale=PGTK_GETINT(sv);
-	sv=simple_mapping_string_lookup(m,"width");
+	sv=low_mapping_string_lookup(m,_STR("width"));
 	w=-1;
 	if (sv)
 	  w=PGTK_GETINT(sv);
 	else {
-	  sv=simple_mapping_string_lookup(m,"w");
+	  sv=low_mapping_string_lookup(m,_STR("w"));
 	  if (sv)
 	    w=PGTK_GETINT(sv);
 	}
-	sv=simple_mapping_string_lookup(m,"height");
+	sv=low_mapping_string_lookup(m,_STR("height"));
 	h=-1;
 	if (sv)
 	  h=PGTK_GETINT(sv);
 	else {
-	  sv=simple_mapping_string_lookup(m,"h");
+	  sv=low_mapping_string_lookup(m,_STR("h"));
 	  if (sv)
 	    h=PGTK_GETINT(sv);
 	}
@@ -809,13 +809,13 @@ void fill(array|mapping|int pixel)
 	struct svalue *sv;
 	INT_TYPE r,g,b,a,pixel;
 	get_all_args("fill",args,"%m",&m);
-	sv=simple_mapping_string_lookup(m,"red");
+	sv=low_mapping_string_lookup(m,_STR("red"));
 	r=PGTK_GETINT(sv);
-	sv=simple_mapping_string_lookup(m,"green");
+	sv=low_mapping_string_lookup(m,_STR("green"));
 	g=PGTK_GETINT(sv);
-	sv=simple_mapping_string_lookup(m,"blue");
+	sv=low_mapping_string_lookup(m,_STR("blue"));
 	b=PGTK_GETINT(sv);
-	sv=simple_mapping_string_lookup(m,"alpha");
+	sv=low_mapping_string_lookup(m,_STR("alpha"));
 	a=PGTK_GETINT(sv);
         pixel=(r<<24)+(g<<16)+(b<<8)+a;
 	gdk_pixbuf_fill(GDK_PIXBUF(THIS->obj),pixel);

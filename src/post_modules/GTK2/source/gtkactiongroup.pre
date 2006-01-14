@@ -172,36 +172,36 @@ void add_actions(array(mapping(string:mixed)) entries)
       if ((ITEM(a)+i)->type!=PIKE_T_MAPPING)
 	continue;
       m=(ITEM(a)+i)->u.mapping;
-      sv=simple_mapping_string_lookup(m,"name");
+      sv=low_mapping_string_lookup(m,_STR("name"));
       if (sv && sv->type==PIKE_T_STRING) {
 	gta.name=(const gchar *)STR0(sv->u.string);
       } else
         continue;
-      sv=simple_mapping_string_lookup(m,"stock_id");
+      sv=low_mapping_string_lookup(m,_STR("stock_id"));
       if (sv && sv->type==PIKE_T_STRING) {
 	gta.stock_id=(const gchar *)STR0(sv->u.string);
       }
-      sv=simple_mapping_string_lookup(m,"label");
+      sv=low_mapping_string_lookup(m,_STR("label"));
       if (sv && sv->type==PIKE_T_STRING) {
 	gta.label=(const gchar *)STR0(sv->u.string);
       } else
 	continue;
-      sv=simple_mapping_string_lookup(m,"accelerator");
+      sv=low_mapping_string_lookup(m,_STR("accelerator"));
       if (sv && sv->type==PIKE_T_STRING) {
 	gta.accelerator=(const gchar *)STR0(sv->u.string);
       }
-      sv=simple_mapping_string_lookup(m,"tooltip");
+      sv=low_mapping_string_lookup(m,_STR("tooltip"));
       if (sv && sv->type==PIKE_T_STRING) {
 	gta.tooltip=(const gchar *)STR0(sv->u.string);
       }
-      sv=simple_mapping_string_lookup(m,"callback");
+      sv=low_mapping_string_lookup(m,_STR("callback"));
       if (sv) {
 	gta.callback=G_CALLBACK(pgtk_action_callback);
 	sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
 	if (sd==NULL)
 	  SIMPLE_OUT_OF_MEMORY_ERROR("add_actions",sizeof(struct signal_data));
 	assign_svalue_no_free(&sd->cb,sv);
-	sv=simple_mapping_string_lookup(m,"data");
+	sv=low_mapping_string_lookup(m,_STR("data"));
 	assign_svalue_no_free(&sd->args,sv);
       }
       gtk_action_group_add_actions(GTK_ACTION_GROUP(THIS->obj),&gta,1,sd);
@@ -241,33 +241,33 @@ void add_toggle_actions(array(mapping(string:mixed)) entries)
       if ((ITEM(a)+i)->type!=PIKE_T_MAPPING)
 	continue;
       m=(ITEM(a)+i)->u.mapping;
-      sv=simple_mapping_string_lookup(m,"name");
+      sv=low_mapping_string_lookup(m,_STR("name"));
       if (sv && sv->type==PIKE_T_STRING)
 	gta.name=(const gchar *)STR0(sv->u.string);
       else
 	continue;
-      sv=simple_mapping_string_lookup(m,"stock_id");
+      sv=low_mapping_string_lookup(m,_STR("stock_id"));
       if (sv && sv->type==PIKE_T_STRING)
 	gta.stock_id=(const gchar *)STR0(sv->u.string);
-      sv=simple_mapping_string_lookup(m,"label");
+      sv=low_mapping_string_lookup(m,_STR("label"));
       if (sv && sv->type==PIKE_T_STRING)
 	gta.label=(const gchar *)STR0(sv->u.string);
       else
 	continue;
-      sv=simple_mapping_string_lookup(m,"accelerator");
+      sv=low_mapping_string_lookup(m,_STR("accelerator"));
       if (sv && sv->type==PIKE_T_STRING)
 	gta.accelerator=(const gchar *)STR0(sv->u.string);
-      sv=simple_mapping_string_lookup(m,"callback");
+      sv=low_mapping_string_lookup(m,_STR("callback"));
       if (sv) {
 	gta.callback=G_CALLBACK(pgtk_action_callback);
 	sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
 	if (sd==NULL)
 	  SIMPLE_OUT_OF_MEMORY_ERROR("add_toggle_actions",sizeof(struct signal_data));
 	assign_svalue_no_free(&sd->cb,sv);
-	sv=simple_mapping_string_lookup(m,"data");
+	sv=low_mapping_string_lookup(m,_STR("data"));
 	assign_svalue_no_free(&sd->args,sv);
       }
-      sv=simple_mapping_string_lookup(m,"is_active");
+      sv=low_mapping_string_lookup(m,_STR("is_active"));
       if (sv)
 	gta.is_active=PGTK_GETINT(sv);
       gtk_action_group_add_toggle_actions(GTK_ACTION_GROUP(THIS->obj),
@@ -309,26 +309,26 @@ void add_radio_actions(array(mapping(string:mixed)) entries,
       if ((ITEM(a)+i)->type!=PIKE_T_MAPPING)
 	continue;
       m=(ITEM(a)+i)->u.mapping;
-      sv=simple_mapping_string_lookup(m,"name");
+      sv=low_mapping_string_lookup(m,_STR("name"));
       if (sv && sv->type==PIKE_T_STRING)
 	gta[j].name=(const gchar *)STR0(sv->u.string);
       else
 	continue;
-      sv=simple_mapping_string_lookup(m,"stock_id");
+      sv=low_mapping_string_lookup(m,_STR("stock_id"));
       if (sv && sv->type==PIKE_T_STRING)
 	gta[j].stock_id=(const gchar *)STR0(sv->u.string);
-      sv=simple_mapping_string_lookup(m,"label");
+      sv=low_mapping_string_lookup(m,_STR("label"));
       if (sv && sv->type==PIKE_T_STRING)
 	gta[j].label=(const gchar *)STR0(sv->u.string);
       else
 	continue;
-      sv=simple_mapping_string_lookup(m,"accelerator");
+      sv=low_mapping_string_lookup(m,_STR("accelerator"));
       if (sv && sv->type==PIKE_T_STRING)
 	gta[j].accelerator=(const gchar *)STR0(sv->u.string);
-      sv=simple_mapping_string_lookup(m,"tooltip");
+      sv=low_mapping_string_lookup(m,_STR("tooltip"));
       if (sv && sv->type==PIKE_T_STRING)
 	gta[j].tooltip=(const gchar *)STR0(sv->u.string);
-      sv=simple_mapping_string_lookup(m,"value");
+      sv=low_mapping_string_lookup(m,_STR("value"));
       if (sv)
 	gta[j].value=PGTK_GETINT(sv);
       j++;
