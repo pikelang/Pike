@@ -104,7 +104,7 @@ int test_charset_table(string t) {
     foreach( sort(copy_value(names)); int i; string name)
       if( name != names[i] )
       {
-        write("Problem beings at %O, should be %O\n", names[i], name);
+        write("Problem begins at %O, should be %O\n", names[i], name);
         break;
       }
     status = 0;
