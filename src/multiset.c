@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.93 2005/12/31 02:52:53 nilsson Exp $
+|| $Id: multiset.c,v 1.94 2006/01/14 11:20:29 mast Exp $
 */
 
 #include "global.h"
@@ -276,12 +276,23 @@ void free_multiset_data (struct multiset_data *msd);
 BLOCK_ALLOC_FILL_PAGES (multiset, 2)
 
 /* Note: The returned block has no refs. */
+#ifdef PIKE_DEBUG
+#define low_alloc_multiset_data(ALLOCSIZE, FLAGS) \
+  low_alloc_multiset_data_2 (ALLOCSIZE, FLAGS, 0)
+static struct multiset_data *low_alloc_multiset_data_2 (int allocsize,
+							int flags,
+							int allow_alloc_in_gc)
+#else
 static struct multiset_data *low_alloc_multiset_data (int allocsize, int flags)
+#endif
 {
   struct multiset_data *msd;
 
 #ifdef PIKE_DEBUG
   if (allocsize < 0) Pike_fatal ("Invalid alloc size %d\n", allocsize);
+  if (!allow_alloc_in_gc &&
+      Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
+    Pike_fatal ("Allocating multiset data blocks within gc is not allowed.\n");
 #endif
 
   msd = (struct multiset_data *) xalloc (
@@ -493,8 +504,16 @@ static struct multiset_data *copy_multiset_data (struct multiset_data *old)
  * The resize does not change the refs in referenced svalues, so the
  * old block is always freed. The refs and noval_refs are transferred
  * to the new block. */
+#ifdef PIKE_DEBUG
+#define resize_multiset_data(OLD, NEWSIZE, VERBATIM) \
+  resize_multiset_data_2 (OLD, NEWSIZE, VERBATIM, 0)
+static struct multiset_data *resize_multiset_data_2 (struct multiset_data *old,
+						     int newsize, int verbatim,
+						     int allow_alloc_in_gc)
+#else
 static struct multiset_data *resize_multiset_data (struct multiset_data *old,
 						   int newsize, int verbatim)
+#endif
 {
   struct multiset_data *new;
 
@@ -517,7 +536,11 @@ static struct multiset_data *resize_multiset_data (struct multiset_data *old,
   /* Note approximate code duplication in copy_multiset_data and
    * multiset_set_flags. */
 
+#ifdef PIKE_DEBUG
+  new = low_alloc_multiset_data_2 (newsize, old->flags, allow_alloc_in_gc);
+#else
   new = low_alloc_multiset_data (newsize, old->flags);
+#endif
   move_svalue (&new->cmp_less, &old->cmp_less);
   new->ind_types = old->ind_types;
   new->val_types = old->val_types;
@@ -1244,8 +1267,11 @@ PMOD_EXPORT int msnode_is_deleted (struct multiset *l, ptrdiff_t nodepos)
 
   if (IS_DESTRUCTED (low_use_multiset_index (node, ind))) {
     if (msd->refs == 1) {
+      ONERROR uwp;
       add_msnode_ref (l);
+      SET_ONERROR (uwp, do_sub_msnode_ref, l);
       multiset_delete_node (l, nodepos);
+      UNSET_ONERROR (uwp);
     }
     return 1;
   }
@@ -1634,7 +1660,11 @@ PMOD_EXPORT ptrdiff_t multiset_first (struct multiset *l)
   node = low_multiset_first (msd);
   while (node && IS_DESTRUCTED (low_use_multiset_index (node, ind)))
     if (msd->refs == 1) {
+      ONERROR uwp;
+      add_msnode_ref (l);
+      SET_ONERROR (uwp, do_sub_msnode_ref, l);
       multiset_delete_node (l, MSNODE2OFF (msd, node));
+      UNSET_ONERROR (uwp);
       msd = l->msd;
       node = low_multiset_first (msd);
     }
@@ -1660,7 +1690,11 @@ PMOD_EXPORT ptrdiff_t multiset_last (struct multiset *l)
   node = low_multiset_last (msd);
   while (node && IS_DESTRUCTED (low_use_multiset_index (node, ind)))
     if (msd->refs == 1) {
+      ONERROR uwp;
+      add_msnode_ref (l);
+      SET_ONERROR (uwp, do_sub_msnode_ref, l);
       multiset_delete_node (l, MSNODE2OFF (msd, node));
+      UNSET_ONERROR (uwp);
       msd = l->msd;
       node = low_multiset_last (msd);
     }
@@ -1706,9 +1740,12 @@ PMOD_EXPORT ptrdiff_t multiset_prev (struct multiset *l, ptrdiff_t nodepos)
   while (node && IS_DESTRUCTED (low_use_multiset_index (node, ind))) {
     union msnode *prev = low_multiset_prev (node);
     if (msd->refs == 1) {
+      ONERROR uwp;
       nodepos = prev ? MSNODE2OFF (msd, prev) : -1;
       add_msnode_ref (l);
+      SET_ONERROR (uwp, do_sub_msnode_ref, l);
       multiset_delete_node (l, MSNODE2OFF (msd, node));
+      UNSET_ONERROR (uwp);
       msd = l->msd;
       node = nodepos >= 0 ? OFF2MSNODE (msd, nodepos) : NULL;
     }
@@ -1751,9 +1788,12 @@ PMOD_EXPORT ptrdiff_t multiset_next (struct multiset *l, ptrdiff_t nodepos)
   while (node && IS_DESTRUCTED (low_use_multiset_index (node, ind))) {
     union msnode *next = low_multiset_next (node);
     if (msd->refs == 1) {
+      ONERROR uwp;
       nodepos = next ? MSNODE2OFF (msd, next) : -1;
       add_msnode_ref (l);
+      SET_ONERROR (uwp, do_sub_msnode_ref, l);
       multiset_delete_node (l, MSNODE2OFF (msd, node));
+      UNSET_ONERROR (uwp);
       msd = l->msd;
       node = nodepos >= 0 ? OFF2MSNODE (msd, nodepos) : NULL;
     }
@@ -4066,13 +4106,21 @@ void gc_mark_multiset_as_referenced (struct multiset *l)
 	      break;
 	  }
 
+#if 0
 	  if (msd->refs == 1 && DO_SHRINK (msd, 0)) {
 	    /* Only shrink the multiset if it isn't shared, or else we
 	     * can end up with larger memory consumption since the
 	     * shrunk data blocks won't be shared. */
+#ifdef PIKE_DEBUG
+	    l->msd = resize_multiset_data_2 (msd, ALLOC_SIZE (msd->size), 0,
+					     1);
+#else
 	    l->msd = resize_multiset_data (msd, ALLOC_SIZE (msd->size), 0);
+#endif
 	    msd = l->msd;
+	    gc_mark (msd);
 	  }
+#endif
 	}
 
 	msd->ind_types = ind_types;
