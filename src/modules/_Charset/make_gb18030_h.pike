@@ -1,5 +1,5 @@
 //
-// $Id: make_gb18030_h.pike,v 1.1 2006/01/13 19:56:33 grubba Exp $
+// $Id: make_gb18030_h.pike,v 1.2 2006/01/14 12:03:11 grubba Exp $
 //
 // Create lookup tables and code for GB18030.
 //
@@ -7,6 +7,13 @@
 //
 
 import Parser.XML.Tree;
+
+#if !constant(Parser.XML.Tree.SimpleNode)
+// Old Pike 7.2 or older.
+// Fall back to using fully linked nodes.
+#define SimpleNode Node
+#define simple_parse_input(X)	parse_input(X)
+#endif /* !constant(Parser.XML.Tree.SimpleNode) */
 
 int decode_4bytes(array(string) hex_bytes)
 {
@@ -177,11 +184,11 @@ int main(int argc, array(string) argv)
 			"    gb18030_info[last_j].ucode;\n"
 			"}\n"
 			"\n",
-			"$Id: make_gb18030_h.pike,v 1.1 2006/01/13 19:56:33 grubba Exp $",
+			"$Id: make_gb18030_h.pike,v 1.2 2006/01/14 12:03:11 grubba Exp $",
 			chmap->get_attributes()->id || "UNKNOWN",
 			chmap->get_attributes()->version || "UNKNOWN",
 			dec_table,
-			sizeof(dec_table)+1);
+			sizeof(dec_table));
   //write(code);
   Stdio.write_file(argv[2], code);
   return 0;
