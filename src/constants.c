@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: constants.c,v 1.55 2004/12/30 12:57:24 grubba Exp $
+|| $Id: constants.c,v 1.56 2006/01/14 18:18:45 nilsson Exp $
 */
 
 #include "global.h"
@@ -209,7 +209,7 @@ void present_constant_profiling(void)
 
 void init_builtin_constants(void)
 {
-  builtin_constants = allocate_mapping(280);
+  builtin_constants = allocate_mapping(300);
 }
 
 void exit_builtin_constants(void)
