@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.55 2006/01/13 19:56:32 grubba Exp $
+|| $Id: charsetmod.c,v 1.56 2006/01/14 13:17:59 grubba Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -759,22 +759,48 @@ static ptrdiff_t feed_gb18030(const p_wchar0 *p, ptrdiff_t l,
 			      struct std_cs_stor *s)
 {
   p_wchar2 index = 0;
-  if (l < 4) return l;
+  if (l < 4) {
+    return l;
+  }
 
   /* First decode the linear offset. */
 
-  if ((p[0] < 0x81) || (p[0] > 0xfe)) return 0;
+  if ((p[0] < 0x81) || (p[0] > 0xfe)) {
+#if 0
+    fprintf(stderr, "Illegal character: 0x%02x (expected 0x81 .. 0xfe)\n",
+	    p[0]);
+#endif /* 0 */
+    return 0;
+  }
   index = p[0] - 0x81;
 
-  if ((p[1] < 0x30) || (p[1] > 0x39)) return 0;
+  if ((p[1] < 0x30) || (p[1] > 0x39)) {
+#if 0
+    fprintf(stderr, "Illegal character: 0x%02x (expected 0x30 .. 0x39)\n",
+	    p[0]);
+#endif /* 0 */
+    return 0;
+  }
   index *= 10;
   index += p[1] - 0x30;
 
-  if ((p[2] < 0x81) || (p[2] > 0xfe)) return 0;
+  if ((p[2] < 0x81) || (p[2] > 0xfe)) {
+#if 0
+    fprintf(stderr, "Illegal character: 0x%02x (expected 0x81 .. 0xfe)\n",
+	    p[0]);
+#endif /* 0 */
+    return 0;
+  }
   index *= 126;
   index = p[2] - 0x81;
 
-  if ((p[3] < 0x30) || (p[3] > 0x39)) return 0;
+  if ((p[3] < 0x30) || (p[3] > 0x39)) {
+#if 0
+    fprintf(stderr, "Illegal character: 0x%02x (expected 0x30 .. 0x39)\n",
+	    p[0]);
+#endif /* 0 */
+    return 0;
+  }
   index *= 10;
   index += p[3] - 0x30;
 
@@ -794,7 +820,7 @@ static ptrdiff_t feed_multichar(const p_wchar0 *p, ptrdiff_t l,
   while(l>0) {
     unsigned INT32 ch = *p++;
     if(ch < 0x81) {
-      /* FIXME: Adjust above to 0x80? Recent GB18030 encodes
+      /* FIXME: Adjust above limit to 0x80? Recent GB18030 encodes
        *        U+0080 as 0x81 0x30 0x81 0x30.
        */
       string_builder_putchar(&s->strbuild, ch);
@@ -804,24 +830,22 @@ static ptrdiff_t feed_multichar(const p_wchar0 *p, ptrdiff_t l,
       const struct multichar_table page = table[ ch-0x81 ];
       if(l==1) return 1;
       if(ch==0xff) {
-	Pike_error("Illegal character.\n");
+	Pike_error("Illegal character: 0xff.\n");
       }
       ch = *p++;
       if( ch<page.lo || ch>page.hi ) {
 	if (m->is_gb18030) {
-	  int delta = feed_gb18030(--p, l, s);
+	  int delta = feed_gb18030(p-2, l, s);
 	  if (delta < 0) {
-	    p -= delta;
+	    p -= delta + 2;
 	    l += delta;
 	    continue;
 	  } else if (delta > 0) {
 	    /* More characters needed. */
 	    return delta;
 	  }
-	  /* Restore p for the pedantic... */
-	  p++;
 	} 
-	Pike_error("Illegal character.\n");
+	Pike_error("Illegal character: 0x%02x.\n", ch);
       }
       else
 	string_builder_putchar(&s->strbuild, page.table[ch-page.lo]);
