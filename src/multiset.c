@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.96 2006/01/14 13:03:26 mast Exp $
+|| $Id: multiset.c,v 1.97 2006/01/14 14:01:16 nilsson Exp $
 */
 
 #include "global.h"
@@ -4245,18 +4245,8 @@ size_t gc_free_all_unreferenced_multisets (void)
 void init_multiset()
 {
 #ifdef PIKE_DEBUG
-  /* This test is buggy in GCC 4 */
-  /* Perhaps it works better if the test variable is made volatile? (I
-   * can't really test since it works well anyway in my gcc 4.0.2
-   * 20050808 (prerelease).) /mast */
-#ifndef __GNUC__
-#define __GNUC__ 5
-#endif
-#if __GNUC__ > 4 || \
-    (__GNUC__ == 4 && (__GNUC_MINOR__ > 0 || \
-                       (__GNUC_MINOR__ == 0 && \
-                        __GNUC_PATCHLEVEL__ > 2)))
-  union msnode test;
+  /* This test is buggy in GCC 4.0.1, hence the volatile. */
+  volatile union msnode test;
   HDR (&test)->flags = 0;
   test.i.ind.type = (1 << 8) - 1;
   test.i.ind.subtype = (1 << 16) - 1;
@@ -4281,7 +4271,6 @@ void init_multiset()
 	       HDR(&test)->flags, MULTISET_FLAG_MASK,
 	       RB_FLAG_MASK, MULTISET_FLAG_MARKER,
 	       test.i.ind.type);
-#endif
 #endif
 #ifndef HAVE_UNION_INIT
   svalue_int_one.u.integer = 1;
