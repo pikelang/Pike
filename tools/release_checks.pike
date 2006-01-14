@@ -74,10 +74,16 @@ int test_unbug_year() {
 }
 
 int test_charset_table(string t) {
-  array names = ({});
-  foreach( Stdio.read_file("src/modules/_Charset/"+t)/"\n", string line )
+  array names;
+  foreach( Stdio.read_file("src/modules/_Charset/"+t)/"\n", string line ) {
+    if( !names ) {
+      if( has_value(line, "charset_map") )
+        names = ({});
+      continue;
+    }
     if( sscanf(line, "  { \"%s\", ", string name) )
       names += ({ name });
+  }
 
   string code = Stdio.read_file("src/modules/_Charset/module.pmod.in");
   sscanf(code, "%*sstring normalize(%s return out;\n}", code);
@@ -95,6 +101,12 @@ int test_charset_table(string t) {
 
   if( !equal(names, sort(copy_value(names))) ) {
     write("Incorrect sorting order in %s.\n", t);
+    foreach( sort(copy_value(names)); int i; string name)
+      if( name != names[i] )
+      {
+        write("Problem beings at %O, should be %O\n", names[i], name);
+        break;
+      }
     status = 0;
   }
 
