@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.68 2004/09/16 15:25:34 grubba Exp $
+|| $Id: multiset.c,v 1.69 2006/01/14 11:11:06 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.68 2004/09/16 15:25:34 grubba Exp $");
+RCSID("$Id: multiset.c,v 1.69 2006/01/14 11:11:06 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -1229,8 +1229,11 @@ PMOD_EXPORT int msnode_is_deleted (struct multiset *l, ptrdiff_t nodepos)
 
   if (IS_DESTRUCTED (low_use_multiset_index (node, ind))) {
     if (msd->refs == 1) {
+      ONERROR uwp;
       add_msnode_ref (l);
+      SET_ONERROR (uwp, do_sub_msnode_ref, l);
       multiset_delete_node (l, nodepos);
+      UNSET_ONERROR (uwp);
     }
     return 1;
   }
@@ -1619,7 +1622,11 @@ PMOD_EXPORT ptrdiff_t multiset_first (struct multiset *l)
   node = low_multiset_first (msd);
   while (node && IS_DESTRUCTED (low_use_multiset_index (node, ind)))
     if (msd->refs == 1) {
+      ONERROR uwp;
+      add_msnode_ref (l);
+      SET_ONERROR (uwp, do_sub_msnode_ref, l);
       multiset_delete_node (l, MSNODE2OFF (msd, node));
+      UNSET_ONERROR (uwp);
       msd = l->msd;
       node = low_multiset_first (msd);
     }
@@ -1645,7 +1652,11 @@ PMOD_EXPORT ptrdiff_t multiset_last (struct multiset *l)
   node = low_multiset_last (msd);
   while (node && IS_DESTRUCTED (low_use_multiset_index (node, ind)))
     if (msd->refs == 1) {
+      ONERROR uwp;
+      add_msnode_ref (l);
+      SET_ONERROR (uwp, do_sub_msnode_ref, l);
       multiset_delete_node (l, MSNODE2OFF (msd, node));
+      UNSET_ONERROR (uwp);
       msd = l->msd;
       node = low_multiset_last (msd);
     }
@@ -1689,9 +1700,12 @@ PMOD_EXPORT ptrdiff_t multiset_prev (struct multiset *l, ptrdiff_t nodepos)
   while (node && IS_DESTRUCTED (low_use_multiset_index (node, ind))) {
     union msnode *prev = low_multiset_prev (node);
     if (msd->refs == 1) {
+      ONERROR uwp;
       nodepos = prev ? MSNODE2OFF (msd, prev) : -1;
       add_msnode_ref (l);
+      SET_ONERROR (uwp, do_sub_msnode_ref, l);
       multiset_delete_node (l, MSNODE2OFF (msd, node));
+      UNSET_ONERROR (uwp);
       msd = l->msd;
       node = nodepos >= 0 ? OFF2MSNODE (msd, nodepos) : NULL;
     }
@@ -1732,9 +1746,12 @@ PMOD_EXPORT ptrdiff_t multiset_next (struct multiset *l, ptrdiff_t nodepos)
   while (node && IS_DESTRUCTED (low_use_multiset_index (node, ind))) {
     union msnode *next = low_multiset_next (node);
     if (msd->refs == 1) {
+      ONERROR uwp;
       nodepos = next ? MSNODE2OFF (msd, next) : -1;
       add_msnode_ref (l);
+      SET_ONERROR (uwp, do_sub_msnode_ref, l);
       multiset_delete_node (l, MSNODE2OFF (msd, node));
+      UNSET_ONERROR (uwp);
       msd = l->msd;
       node = nodepos >= 0 ? OFF2MSNODE (msd, nodepos) : NULL;
     }
@@ -2173,6 +2190,7 @@ PMOD_EXPORT ptrdiff_t multiset_add (struct multiset *l,
 	  if (prepare_for_add (l, 1)) {
 	    rbstack_shift (rbstack, HDR (msd->nodes), HDR (l->msd->nodes));
 	    msd = l->msd;
+	    gc_mark (msd);
 	  }
 	  ALLOC_MSNODE (msd, l->node_refs, new);
 	  goto add;
@@ -5279,7 +5297,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.68 2004/09/16 15:25:34 grubba Exp $");
+RCSID("$Id: multiset.c,v 1.69 2006/01/14 11:11:06 mast Exp $");
 
 struct multiset *first_multiset;
 
