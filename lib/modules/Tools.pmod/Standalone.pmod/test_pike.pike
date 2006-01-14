@@ -1,6 +1,7 @@
 #! /usr/bin/env pike
+#pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.110 2005/11/04 21:57:41 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.111 2006/01/14 18:19:39 nilsson Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()

@@ -4,6 +4,8 @@
 //!  formatted.
 //! 
 
+#pike __REAL_VERSION__
+
 static constant http_decode_string = _Roxen.http_decode_string;
 
 //!
