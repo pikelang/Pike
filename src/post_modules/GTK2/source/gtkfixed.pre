@@ -54,9 +54,9 @@ array(mapping(string:mixed)) get_children()
     GtkFixedChild *gfc;
     while (gl) {
       gfc=(GtkFixedChild *)gl->data;
-      push_text("widget"); push_gobject(gfc->widget);
-      push_text("x"); push_int(gfc->x);
-      push_text("y"); push_int(gfc->y);
+      ref_push_string(_STR("widget")); push_gobject(gfc->widget);
+      ref_push_string(_STR("x")); push_int(gfc->x);
+      ref_push_string(_STR("y")); push_int(gfc->y);
       f_aggregate_mapping(6);
       i++;
       gl=g_list_next(gl);

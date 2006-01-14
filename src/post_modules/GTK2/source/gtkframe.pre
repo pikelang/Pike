@@ -80,8 +80,8 @@ mapping(string:float) get_label_align()
   {
     gfloat x,y;
     gtk_frame_get_label_align(GTK_FRAME(THIS->obj),&x,&y);
-    push_text("x"); push_float(x);
-    push_text("y"); push_float(y);
+    ref_push_string(_STR("x")); push_float(x);
+    ref_push_string(_STR("y")); push_float(y);
     f_aggregate_mapping(4);
   }
 }

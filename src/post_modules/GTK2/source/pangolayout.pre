@@ -245,8 +245,8 @@ mapping(string:int) xy_to_index(int x, int y)
     my_pop_n_elems(args);
     res=pango_layout_xy_to_index((PangoLayout *)THIS->obj,x,y,&index,&trailing);
     if (res) {
-      push_text("index"); push_int(index);
-      push_text("trailing"); push_int(trailing);
+      ref_push_string(_STR("index")); push_int(index);
+      ref_push_string(_STR("trailing")); push_int(trailing);
       f_aggregate_mapping(4);
     } else {
       push_int(0);
@@ -272,10 +272,10 @@ mapping(string:int) index_to_pos(int index)
     get_all_args("index_to_pos",args,"%i",&index);
     my_pop_n_elems(args);
     pango_layout_index_to_pos((PangoLayout *)THIS->obj,index,&pos);
-    push_text("x"); push_int(pos.x);
-    push_text("y"); push_int(pos.y);
-    push_text("width"); push_int(pos.width);
-    push_text("height"); push_int(pos.height);
+    ref_push_string(_STR("x")); push_int(pos.x);
+    ref_push_string(_STR("y")); push_int(pos.y);
+    ref_push_string(_STR("width")); push_int(pos.width);
+    ref_push_string(_STR("height")); push_int(pos.height);
     f_aggregate_mapping(8);
   }
 }
@@ -298,15 +298,15 @@ array(mapping(string:int)) get_cursor_pos(int index)
     get_all_args("get_cursor_pos",args,"%i",&index);
     my_pop_n_elems(args);
     pango_layout_get_cursor_pos((PangoLayout *)THIS->obj,index,&pos1,&pos2);
-    push_text("x"); push_int(pos1.x);
-    push_text("y"); push_int(pos1.y);
-    push_text("width"); push_int(pos1.width);
-    push_text("height"); push_int(pos1.height);
+    ref_push_string(_STR("x")); push_int(pos1.x);
+    ref_push_string(_STR("y")); push_int(pos1.y);
+    ref_push_string(_STR("width")); push_int(pos1.width);
+    ref_push_string(_STR("height")); push_int(pos1.height);
     f_aggregate_mapping(8);
-    push_text("x"); push_int(pos2.x);
-    push_text("y"); push_int(pos2.y);
-    push_text("width"); push_int(pos2.width);
-    push_text("height"); push_int(pos2.height);
+    ref_push_string(_STR("x")); push_int(pos2.x);
+    ref_push_string(_STR("y")); push_int(pos2.y);
+    ref_push_string(_STR("width")); push_int(pos2.width);
+    ref_push_string(_STR("height")); push_int(pos2.height);
     f_aggregate_mapping(8);
     f_aggregate(2);
   }
@@ -337,8 +337,8 @@ mapping(string:int) move_cursor_visually(int strong, int old_index,
     my_pop_n_elems(args);
     pango_layout_move_cursor_visually((PangoLayout *)THIS->obj,
 		strong,old_index,old_trailing,dir,&new_index,&new_trailing);
-    push_text("index"); push_int(new_index);
-    push_text("trailing"); push_int(new_trailing);
+    ref_push_string(_STR("index")); push_int(new_index);
+    ref_push_string(_STR("trailing")); push_int(new_trailing);
     f_aggregate_mapping(4);
   }
 }
@@ -351,8 +351,8 @@ mapping(string:int) get_size()
   {
     int width,height;
     pango_layout_get_size((PangoLayout *)THIS->obj,&width,&height);
-    push_text("width"); push_int(width);
-    push_text("height"); push_int(height);
+    ref_push_string(_STR("width")); push_int(width);
+    ref_push_string(_STR("height")); push_int(height);
     f_aggregate_mapping(4);
   }
 }

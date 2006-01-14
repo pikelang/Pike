@@ -18,8 +18,8 @@ mapping(string:int) get_sort_column_id()
     int res=gtk_tree_sortable_get_sort_column_id(
 			GTK_TREE_SORTABLE(THIS->obj),&col,&order);
     my_pop_n_elems(args);
-    push_text("column"); PGTK_PUSH_INT(col);
-    push_text("order"); PGTK_PUSH_INT(order);
+    ref_push_string(_STR("column")); PGTK_PUSH_INT(col);
+    ref_push_string(_STR("order")); PGTK_PUSH_INT(order);
     f_aggregate_mapping(4);
   }
 }

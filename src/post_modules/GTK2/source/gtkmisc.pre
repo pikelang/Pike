@@ -48,8 +48,8 @@ mapping(string:float) get_alignment()
   {
     gfloat xalign,yalign;
     gtk_misc_get_alignment(GTK_MISC(THIS->obj),&xalign,&yalign);
-    push_text("xalign"); push_float(xalign);
-    push_text("yalign"); push_float(yalign);
+    ref_push_string(_STR("xalign")); push_float(xalign);
+    ref_push_string(_STR("yalign")); push_float(yalign);
     f_aggregate_mapping(4);
   }
 }
@@ -62,8 +62,8 @@ mapping(string:int) get_padding()
   {
     gint xpad,ypad;
     gtk_misc_get_padding(GTK_MISC(THIS->obj),&xpad,&ypad);
-    push_text("xpad"); push_int(xpad);
-    push_text("ypad"); push_int(ypad);
+    ref_push_string(_STR("xpad")); push_int(xpad);
+    ref_push_string(_STR("ypad")); push_int(ypad);
     f_aggregate_mapping(4);
   }
 }

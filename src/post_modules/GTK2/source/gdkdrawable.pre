@@ -74,11 +74,11 @@ mapping(string:int) get_geometry()
   int w=0,h=0,d=0;
   gdk_window_get_geometry(TWIN,&x,&y,&w,&h,&d);
   my_pop_n_elems(args);
-  push_text("x");  push_int(x);
-  push_text("y");  push_int(y);
-  push_text("width");  push_int(w);
-  push_text("height"); push_int(h);
-  push_text("depth"); push_int(d);
+  ref_push_string(_STR("x"));  push_int(x);
+  ref_push_string(_STR("y"));  push_int(y);
+  ref_push_string(_STR("width"));  push_int(w);
+  ref_push_string(_STR("height")); push_int(h);
+  ref_push_string(_STR("depth")); push_int(d);
   f_aggregate_mapping(10);
 }
 

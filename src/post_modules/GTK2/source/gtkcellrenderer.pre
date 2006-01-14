@@ -41,8 +41,8 @@ mapping(string:int) get_size(GTK2.Widget widget, ?GDK2.Rectangle cell_area)
     gtk_cell_renderer_get_size(GTK_CELL_RENDERER(THIS->obj),
 		GTK_WIDGET(get_gobject(o1)),
 		&width,&height);
-    push_text("width"); push_int(width);
-    push_text("height"); push_int(height);
+    ref_push_string(_STR("width")); push_int(width);
+    ref_push_string(_STR("height")); push_int(height);
     f_aggregate_mapping(4);
 #else /* !HAVE_GTK_BETA */
     gtk_cell_renderer_get_size(GTK_CELL_RENDERER(THIS->obj),
@@ -50,10 +50,10 @@ mapping(string:int) get_size(GTK2.Widget widget, ?GDK2.Rectangle cell_area)
 		o2?(GdkRectangle *)get_gdkobject(o2,rectangle):NULL,
 		&x_offset,&y_offset,&width,&height);
     my_pop_n_elems(args);
-    push_text("x_offset"); push_int(x_offset);
-    push_text("y_offset"); push_int(y_offset);
-    push_text("width"); push_int(width);
-    push_text("height"); push_int(height);
+    ref_push_string(_STR("x_offset")); push_int(x_offset);
+    ref_push_string(_STR("y_offset")); push_int(y_offset);
+    ref_push_string(_STR("width")); push_int(width);
+    ref_push_string(_STR("height")); push_int(height);
     f_aggregate_mapping(8);
 #endif /* HAVE_GTK_BETA */
   }
@@ -147,8 +147,8 @@ mapping get_fixed_size()
     my_pop_n_elems(args);
     gtk_cell_renderer_get_fixed_size(GTK_CELL_RENDERER(THIS->obj),
 			&width,&height);
-    push_text("width"); push_int(width);
-    push_text("height"); push_int(height);
+    ref_push_string(_STR("width")); push_int(width);
+    ref_push_string(_STR("height")); push_int(height);
     f_aggregate_mapping(4);
   }
 }

@@ -125,8 +125,8 @@ mapping(string:int) get_policy()
     GtkPolicyType hpol,vpol;
     gtk_scrolled_window_get_policy(GTK_SCROLLED_WINDOW(THIS->obj),
 			&hpol,&vpol);
-    push_text("h-policy"); push_int(hpol);
-    push_text("v-policy"); push_int(vpol);
+    ref_push_string(_STR("h-policy")); push_int(hpol);
+    ref_push_string(_STR("v-policy")); push_int(vpol);
     f_aggregate_mapping(4);
   }
 }

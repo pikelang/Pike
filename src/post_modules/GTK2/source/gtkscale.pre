@@ -55,8 +55,8 @@ mapping(string:int) get_layout_offsets()
     gint x,y;
     my_pop_n_elems(args);
     gtk_scale_get_layout_offsets(GTK_SCALE(THIS->obj),&x,&y);
-    push_text("x"); push_int(x);
-    push_text("y"); push_int(y);
+    ref_push_string(_STR("x")); push_int(x);
+    ref_push_string(_STR("y")); push_int(y);
     f_aggregate_mapping(4);
   }
 }

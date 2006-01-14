@@ -37,9 +37,9 @@ string _sprintf(int flag)
   {
     gchar *s=gtk_tree_path_to_string((GtkTreePath *)THIS->obj);
     if (s) {
-      push_text("GTK2.TreePath( \"");
+      ref_push_string(_STR("GTK2.TreePath( \""));
       push_text(s);
-      push_text("\" );");
+      ref_push_string(_STR("\" );"));
       f_add(3);
       g_free(s);
     } else

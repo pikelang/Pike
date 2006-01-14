@@ -124,9 +124,9 @@ mapping get_pointer()
     GdkModifierType mask;
     gdk_display_get_pointer(GDK_DISPLAY_OBJECT(THIS->obj),NULL,&x,&y,&mask);
     my_pop_n_elems(args);
-    push_text("x"); push_int(x);
-    push_text("y"); push_int(y);
-    push_text("mask"); push_int(mask);
+    ref_push_string(_STR("x")); push_int(x);
+    ref_push_string(_STR("y")); push_int(y);
+    ref_push_string(_STR("mask")); push_int(mask);
     f_aggregate_mapping(6);
   }
 }
@@ -143,9 +143,9 @@ mapping get_window_at_pointer()
     GdkWindow *gw;
     gw=gdk_display_get_window_at_pointer(GDK_DISPLAY_OBJECT(THIS->obj),&x,&y);
 /*    push_text("window"); push_gdkobject(gw,window); */
-    push_text("window"); push_gobject(gw);
-    push_text("x"); push_int(x);
-    push_text("y"); push_int(y);
+    ref_push_string(_STR("window")); push_gobject(gw);
+    ref_push_string(_STR("x")); push_int(x);
+    ref_push_string(_STR("y")); push_int(y);
     f_aggregate_mapping(6);
   }
 }
@@ -171,8 +171,8 @@ mapping get_maximal_cursor_size()
     gdk_display_get_maximal_cursor_size(GDK_DISPLAY_OBJECT(THIS->obj),
 			&width,&height);
     my_pop_n_elems(args);
-    push_text("width"); push_int(width);
-    push_text("height"); push_int(height);
+    ref_push_string(_STR("width")); push_int(width);
+    ref_push_string(_STR("height")); push_int(height);
     f_aggregate_mapping(4);
   }
 }

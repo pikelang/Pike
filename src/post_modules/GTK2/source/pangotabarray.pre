@@ -77,8 +77,8 @@ mapping get_tab(int tab_index)
     my_pop_n_elems(args);
     pango_tab_array_get_tab((PangoTabArray *)THIS->obj,tab_index,&alignment,
 			&location);
-    push_text("alignment"); push_int(alignment);
-    push_text("location"); push_int(location);
+    ref_push_string(_STR("alignment")); push_int(alignment);
+    ref_push_string(_STR("location")); push_int(location);
     f_aggregate_mapping(4);
   }
 }
@@ -94,8 +94,8 @@ array get_tabs()
     gint *locations;
     pango_tab_array_get_tabs((PangoTabArray *)THIS->obj,&alignments,&locations);
     for (i=0; i<pango_tab_array_get_size((PangoTabArray *)THIS->obj); i++) {
-      push_text("alignment"); push_int(alignments[i]);
-      push_text("location"); push_int(locations[i]);
+      ref_push_string(_STR("alignment")); push_int(alignments[i]);
+      ref_push_string(_STR("location")); push_int(locations[i]);
       f_aggregate_mapping(4);
     }
     f_aggregate(i-1);

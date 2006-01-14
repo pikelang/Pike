@@ -173,8 +173,8 @@ mapping(string:float) get_increments()
   {
     gdouble step,page;
     gtk_spin_button_get_increments(GTK_SPIN_BUTTON(THIS->obj),&step,&page);
-    push_text("step"); push_float(step);
-    push_text("page"); push_float(page);
+    ref_push_string(_STR("step")); push_float(step);
+    ref_push_string(_STR("page")); push_float(page);
     f_aggregate_mapping(4);
   }
 }
@@ -190,8 +190,8 @@ mapping(string:float) get_range()
   {
     gdouble min,max;
     gtk_spin_button_get_range(GTK_SPIN_BUTTON(THIS->obj),&min,&max);
-    push_text("min"); push_float(min);
-    push_text("max"); push_float(max);
+    ref_push_string(_STR("min")); push_float(min);
+    ref_push_string(_STR("max")); push_float(max);
     f_aggregate_mapping(4);
   }
 }

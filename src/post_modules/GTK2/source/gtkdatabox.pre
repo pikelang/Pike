@@ -164,8 +164,8 @@ static GtkDataboxValue get_value(int offset, int args) {
 }
 
 static void push_value(GtkDataboxValue v) {
-  push_text("x"); push_float(v.x);
-  push_text("y"); push_float(v.y);
+  ref_push_string(_STR("x")); push_float(v.x);
+  ref_push_string(_STR("y")); push_float(v.y);
   f_aggregate_mapping(4);
 }
 %}

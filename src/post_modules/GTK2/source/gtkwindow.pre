@@ -375,8 +375,8 @@ mapping(string:int) get_default_size()
   {
     gint width,height;
     gtk_window_get_default_size(GTK_WINDOW(THIS->obj),&width,&height);
-    push_text("width"); push_int(width);
-    push_text("height"); push_int(height);
+    ref_push_string(_STR("width")); push_int(width);
+    ref_push_string(_STR("height")); push_int(height);
     f_aggregate_mapping(4);
   }
 }
@@ -463,8 +463,8 @@ mapping(string:int) get_position()
   {
     gint root_x,root_y;
     gtk_window_get_position(GTK_WINDOW(THIS->obj),&root_x,&root_y);
-    push_text("x"); push_int(root_x);
-    push_text("y"); push_int(root_y);
+    ref_push_string(_STR("x")); push_int(root_x);
+    ref_push_string(_STR("y")); push_int(root_y);
     f_aggregate_mapping(4);
   }
 }
@@ -477,8 +477,8 @@ mapping(string:int) get_size()
   {
     gint width,height;
     gtk_window_get_size(GTK_WINDOW(THIS->obj),&width,&height);
-    push_text("width"); push_int(width);
-    push_text("height"); push_int(height);
+    ref_push_string(_STR("width")); push_int(width);
+    ref_push_string(_STR("height")); push_int(height);
     f_aggregate_mapping(4);
   }
 }

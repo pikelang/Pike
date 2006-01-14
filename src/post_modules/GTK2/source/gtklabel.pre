@@ -128,8 +128,8 @@ mapping(string:int) get_layout_offsets()
   {
     gint x,y;
     gtk_label_get_layout_offsets(GTK_LABEL(THIS->obj),&x,&y);
-    push_text("x"); push_int(x);
-    push_text("y"); push_int(y);
+    ref_push_string(_STR("x")); push_int(x);
+    ref_push_string(_STR("y")); push_int(y);
     f_aggregate_mapping(4);
   }
 }
@@ -219,9 +219,9 @@ mapping(string:int) get_selection_bounds()
     gint start,end;
     int res=gtk_label_get_selection_bounds(GTK_LABEL(THIS->obj),&start,&end);
     my_pop_n_elems(args);
-    push_text("start");
+    ref_push_string(_STR("start"));
     push_int(res?start:-1);
-    push_text("end");
+    ref_push_string(_STR("end"));
     push_int(res?end:-1);
     f_aggregate_mapping(4);
   }

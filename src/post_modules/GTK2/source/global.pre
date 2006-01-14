@@ -469,15 +469,15 @@ array(mapping(string:mixed)) get_formats()
   while (gs2) {
     i++;
     k=0;
-    push_text("name");
+    ref_push_string(_STR("name"));
     push_text(gdk_pixbuf_format_get_name(gs2->data));
     k++;
 
-    push_text("description");
+    ref_push_string(_STR("description"));
     push_text(gdk_pixbuf_format_get_description(gs2->data));
     k++;
 
-    push_text("mime_types");
+    ref_push_string(_STR("mime_types"));
     gca=gdk_pixbuf_format_get_mime_types(gs2->data);
     j=0;
     while (gca[j]) {
@@ -488,7 +488,7 @@ array(mapping(string:mixed)) get_formats()
     g_strfreev(gca);
     k++;
 
-    push_text("extensions");
+    ref_push_string(_STR("extensions"));
     gca=gdk_pixbuf_format_get_extensions(gs2->data);
     j=0;
     while (gca[j]) {
@@ -500,23 +500,23 @@ array(mapping(string:mixed)) get_formats()
     k++;
 
 #ifdef HAVE_GTK26
-    push_text("disabled");
+    ref_push_string(_STR("disabled"));
     push_int(gdk_pixbuf_format_is_disabled(gs2->data));
     k++;
 #endif
 
 #ifdef HAVE_GTK26
-    push_text("license");
+    ref_push_string(_STR("license"));
     push_text(gdk_pixbuf_format_get_license(gs2->data));
     k++;
 #endif
 
-    push_text("is_writable");
+    ref_push_string(_STR("is_writable"));
     push_int(gdk_pixbuf_format_is_writable(gs2->data));
     k++;
 
 #ifdef HAVE_GTK26
-    push_text("is_scalable");
+    ref_push_string(_STR("is_scalable"));
     push_int(gdk_pixbuf_format_is_scalable(gs2->data));
     k++;
 #endif
@@ -545,15 +545,15 @@ mapping(string:mixed) get_file_info(string filename)
   my_pop_n_elems(args);
   k=0;
 
-  push_text("name");
+  ref_push_string(_STR("name"));
   push_text(gdk_pixbuf_format_get_name(gpf));
   k++;
 
-  push_text("description");
+  ref_push_string(_STR("description"));
   push_text(gdk_pixbuf_format_get_description(gpf));
   k++;
   
-  push_text("mime_types");
+  ref_push_string(_STR("mime_types"));
   gca=gdk_pixbuf_format_get_mime_types(gpf);
   j=0;
   while (gca[j]) {
@@ -564,7 +564,7 @@ mapping(string:mixed) get_file_info(string filename)
   g_strfreev(gca);
   k++;
 
-  push_text("extensions");
+  ref_push_string(_STR("extensions"));
   gca=gdk_pixbuf_format_get_extensions(gpf);
   j=0;
   while (gca[j]) {
@@ -576,32 +576,32 @@ mapping(string:mixed) get_file_info(string filename)
   k++;
 
 #ifdef HAVE_GTK26
-  push_text("disabled");
+  ref_push_string(_STR("disabled"));
   push_int(gdk_pixbuf_format_is_disabled(gpf));
   k++;
 #endif
 
 #ifdef HAVE_GTK26
-  push_text("license");
+  ref_push_string(_STR("license"));
   push_text(gdk_pixbuf_format_get_license(gpf));
   k++;
 #endif
 
-  push_text("is_writable");
+  ref_push_string(_STR("is_writable"));
   push_int(gdk_pixbuf_format_is_writable(gpf));
   k++;
 
 #ifdef HAVE_GTK26
-  push_text("is_scalable");
+  ref_push_string(_STR("is_scalable"));
   push_int(gdk_pixbuf_format_is_scalable(gpf));
   k++;
 #endif
   
-  push_text("width");
+  ref_push_string(_STR("width"));
   push_int(width);
   k++;
 
-  push_text("height");
+  ref_push_string(_STR("height"));
   push_int(height);
   k++;
 

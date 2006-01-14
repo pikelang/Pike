@@ -50,18 +50,18 @@ mapping(string:mixed) get_values()
   gdk_gc_get_values(GDK_GC(THIS->obj),&v);
 
   osp=Pike_sp;
-  push_text("join_style");  push_int(v.join_style);
-  push_text("cap_style");   push_int(v.cap_style);
-  push_text("line_style");  push_int(v.line_style);
-  push_text("line_width");  push_int(v.line_width);
-  push_text("clip_x_origin");  push_int(v.clip_x_origin);
-  push_text("clip_y_origin");  push_int(v.clip_y_origin);
-  push_text("ts_x_origin");  push_int(v.ts_x_origin);
-  push_text("ts_y_origin");  push_int(v.ts_y_origin);
-  push_text("subwindow_mode");  push_int(v.subwindow_mode);
-  push_text("clip_mask");  push_gobject(v.clip_mask);
-  push_text("stipple");    push_gobject(v.stipple);
-  push_text("tile");       push_gobject(v.tile);
+  ref_push_string(_STR("join_style"));  push_int(v.join_style);
+  ref_push_string(_STR("cap_style"));   push_int(v.cap_style);
+  ref_push_string(_STR("line_style"));  push_int(v.line_style);
+  ref_push_string(_STR("line_width"));  push_int(v.line_width);
+  ref_push_string(_STR("clip_x_origin"));  push_int(v.clip_x_origin);
+  ref_push_string(_STR("clip_y_origin"));  push_int(v.clip_y_origin);
+  ref_push_string(_STR("ts_x_origin"));  push_int(v.ts_x_origin);
+  ref_push_string(_STR("ts_y_origin"));  push_int(v.ts_y_origin);
+  ref_push_string(_STR("subwindow_mode"));  push_int(v.subwindow_mode);
+  ref_push_string(_STR("clip_mask"));  push_gobject(v.clip_mask);
+  ref_push_string(_STR("stipple"));    push_gobject(v.stipple);
+  ref_push_string(_STR("tile"));       push_gobject(v.tile);
 /*push_text("font");       push_gdkobject(v.font,font); */
 
 /*if (v.font)  g_object_ref(v.font); */
@@ -72,8 +72,8 @@ mapping(string:mixed) get_values()
   if (v.clip_mask)
     g_object_ref(v.clip_mask);
 
-  push_text("fill");  push_int(v.fill);
-  push_text("function");  push_int(v.function);
+  ref_push_string(_STR("fill"));  push_int(v.fill);
+  ref_push_string(_STR("function"));  push_int(v.function);
   {
     GdkColor *f,*b;
     f==g_malloc(sizeof(GdkColor));
@@ -87,8 +87,8 @@ mapping(string:mixed) get_values()
     }
     *f=v.foreground;
     *b=v.background;
-    push_text("foreground");  push_gdkobject(f,color);
-    push_text("background");  push_gdkobject(b,color);
+    ref_push_string(_STR("foreground"));  push_gdkobject(f,color);
+    ref_push_string(_STR("background"));  push_gdkobject(b,color);
   }
   f_aggregate_mapping(Pike_sp-osp);
 }

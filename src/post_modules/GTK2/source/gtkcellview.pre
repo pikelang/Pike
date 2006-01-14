@@ -100,8 +100,8 @@ mapping(string:int) get_size_of_row(GTK2.TreePath path)
     gtk_cell_view_get_size_of_row(GTK_CELL_VIEW(THIS->obj),
 			(GtkTreePath *)get_gobject(o1),&req);
     my_pop_n_elems(args);
-    push_text("width"); push_int(req.width);
-    push_text("height"); push_int(req.height);
+    ref_push_string(_STR("width")); push_int(req.width);
+    ref_push_string(_STR("height")); push_int(req.height);
     f_aggregate_mapping(4);
   }
 }

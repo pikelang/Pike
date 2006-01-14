@@ -45,13 +45,13 @@ mixed cast(string type)
 
   if (is_same_string(type,_STR("mapping"))) {
     my_pop_n_elems(args);
-    push_text("x");
+    ref_push_string(_STR("x"));
     push_int(r->x);
-    push_text("y");
+    ref_push_string(_STR("y"));
     push_int(r->y);
-    push_text("width");
+    ref_push_string(_STR("width"));
     push_int(r->width);
-    push_text("height");
+    ref_push_string(_STR("height"));
     push_int(r->height);
     f_aggregate_mapping(8);
   } else if(is_same_string(type, _STR("array"))) {

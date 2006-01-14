@@ -23,8 +23,8 @@ mapping(string:mixed) get_style()
     GdkColor *fg,*bg;
     gs=gtk_source_tag_get_style(GTK_SOURCE_TAG(THIS->obj));
     if (gs) {
-      push_text("default"); push_int(gs->is_default);
-      push_text("mask"); push_int(gs->mask);
+      ref_push_string(_STR("default")); push_int(gs->is_default);
+      ref_push_string(_STR("mask")); push_int(gs->mask);
       fg=(GdkColor *)g_malloc(sizeof(GdkColor));
       if (fg==NULL)
 	SIMPLE_OUT_OF_MEMORY_ERROR("get_style",sizeof(GdkColor));
@@ -33,12 +33,12 @@ mapping(string:mixed) get_style()
 	SIMPLE_OUT_OF_MEMORY_ERROR("get_style",sizeof(GdkColor));
       *fg=gs->foreground;
       *bg=gs->background;
-      push_text("foreground"); push_gdkobject(fg,color);
-      push_text("background"); push_gdkobject(bg,color);
-      push_text("italic"); push_int(gs->italic);
-      push_text("bold"); push_int(gs->bold);
-      push_text("underline"); push_int(gs->underline);
-      push_text("strikethrough"); push_int(gs->strikethrough);
+      ref_push_string(_STR("foreground")); push_gdkobject(fg,color);
+      ref_push_string(_STR("background")); push_gdkobject(bg,color);
+      ref_push_string(_STR("italic")); push_int(gs->italic);
+      ref_push_string(_STR("bold")); push_int(gs->bold);
+      ref_push_string(_STR("underline")); push_int(gs->underline);
+      ref_push_string(_STR("strikethrough")); push_int(gs->strikethrough);
       f_aggregate_mapping(16);
     } else
       push_int(0);

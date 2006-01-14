@@ -282,8 +282,8 @@ mapping(string:object) get_cursor()
     GtkTreePath *path;
     GtkTreeViewColumn *col;
     gtk_tree_view_get_cursor(GTK_TREE_VIEW(THIS->obj),&path,&col);
-    push_text("path"); push_gobjectclass(path,pgtk_tree_path_program);
-    push_text("column"); push_gobject(col);
+    ref_push_string(_STR("path")); push_gobjectclass(path,pgtk_tree_path_program);
+    ref_push_string(_STR("column")); push_gobject(col);
     f_aggregate_mapping(4);
   }
 }
@@ -399,19 +399,19 @@ mapping get_path_at_pos(int x, int y)
     my_pop_n_elems(args);
     res=gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(THIS->obj),
 			x,y,&path,&col,&cell_x,&cell_y);
-    push_text("path");
+    ref_push_string(_STR("path"));
     if (res)
       push_gobjectclass(path,pgtk_tree_path_program);
     else
       push_int(0);
-    push_text("column");
+    ref_push_string(_STR("column"));
     if (res)
       push_gobject(col);
     else
       push_int(0);
-    push_text("cell_x");
+    ref_push_string(_STR("cell_x"));
     push_int(res?cell_x:0);
-    push_text("cell_y");
+    ref_push_string(_STR("cell_y"));
     push_int(res?cell_y:0);
     f_aggregate_mapping(8);
   }
@@ -526,8 +526,8 @@ mapping widget_to_tree_coords(int wx, int wy)
     get_all_args("widget_to_tree_coords",args,"%i%i",&wx,&wy);
     my_pop_n_elems(args);
     gtk_tree_view_widget_to_tree_coords(GTK_TREE_VIEW(THIS->obj),wx,wy,&tx,&ty);
-    push_text("x"); push_int(tx);
-    push_text("y"); push_int(ty);
+    ref_push_string(_STR("x")); push_int(tx);
+    ref_push_string(_STR("y")); push_int(ty);
     f_aggregate_mapping(4);
   }
 }
@@ -543,8 +543,8 @@ mapping tree_to_widget_coords(int tx, int ty)
     get_all_args("tree_to_widget_coords",args,"%i%i",&tx,&ty);
     my_pop_n_elems(args);
     gtk_tree_view_tree_to_widget_coords(GTK_TREE_VIEW(THIS->obj),tx,ty,&wx,&wy);
-    push_text("x"); push_int(wx);
-    push_text("y"); push_int(wy);
+    ref_push_string(_STR("x")); push_int(wx);
+    ref_push_string(_STR("y")); push_int(wy);
     f_aggregate_mapping(4);
   }
 }

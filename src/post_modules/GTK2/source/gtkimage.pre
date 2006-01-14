@@ -102,12 +102,12 @@ mapping(string:object) get_image()
     GdkImage *v;
     GdkBitmap *m;
     gtk_image_get_image(GTK_IMAGE(THIS->obj),&v,&m);
-    push_text("image");
+    ref_push_string(_STR("image"));
     if(v)
       push_gobject(v);
     else
       push_int(0);
-    push_text("mask");
+    ref_push_string(_STR("mask"));
     if(m) {
       push_gdkobject(m,bitmap);
       g_object_ref(m);
@@ -131,12 +131,12 @@ mapping(string:object) get_pixmap()
     GdkPixmap *v;
     GdkBitmap *m;
     gtk_image_get_pixmap(GTK_IMAGE(THIS->obj),&v,&m);
-    push_text("pixmap");
+    ref_push_string(_STR("pixmap"));
     if (v)
       push_gobject(v);
     else
       push_int(0);
-    push_text("mask");
+    ref_push_string(_STR("mask"));
     if (m) {
       push_gdkobject(m,bitmap);
       g_object_ref(m);
@@ -155,9 +155,9 @@ mapping(string:mixed) get_stock()
     gchar *stock_id;
     GtkIconSize size;
     gtk_image_get_stock(GTK_IMAGE(THIS->obj),&stock_id,&size);
-    push_text("stock_id");
+    ref_push_string(_STR("stock_id"));
     push_text(stock_id);
-    push_text("size");
+    ref_push_string(_STR("size"));
     push_int(size);
     f_aggregate_mapping(4);
   }
@@ -184,9 +184,9 @@ mapping(string:mixed) get_icon_name()
     const gchar *icon_name;
     GtkIconSize size;
     gtk_image_get_icon_name(GTK_IMAGE(THIS->obj),&icon_name,&size);
-    push_text("icon_name");
+    ref_push_string(_STR("icon_name"));
     push_text(icon_name);
-    push_text("size");
+    ref_push_string(_STR("size"));
     push_int(size);
     f_aggregate_mapping(4);
   }

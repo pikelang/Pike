@@ -129,10 +129,10 @@ mapping(string:int) get_previous_color()
     gtk_color_selection_get_previous_color(GTK_COLOR_SELECTION(THIS->obj),
 		&color);
     my_pop_n_elems(args);
-    push_text("pixel"); push_int(color.pixel);
-    push_text("red"); push_int(color.red);
-    push_text("green"); push_int(color.green);
-    push_text("blue"); push_int(color.blue);
+    ref_push_string(_STR("pixel")); push_int(color.pixel);
+    ref_push_string(_STR("red")); push_int(color.red);
+    ref_push_string(_STR("green")); push_int(color.green);
+    ref_push_string(_STR("blue")); push_int(color.blue);
     f_aggregate_mapping(8);
   }
 }

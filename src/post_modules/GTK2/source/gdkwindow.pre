@@ -382,11 +382,11 @@ mapping get_property(GDK2.Atom atom, int|void offset, int|void delete_when_done)
   {
     struct object *o;
     my_pop_n_elems(args);
-    push_text("type");
+    ref_push_string(_STR("type"));
     push_text(gdk_atom_name(actual_property_type));
-    push_text("width");
+    ref_push_string(_STR("width"));
     push_int(actual_format_type);
-    push_text("data");
+    ref_push_string(_STR("data"));
     switch (actual_format_type)
     {
      case 8:

@@ -69,11 +69,11 @@ mapping get_date()
   guint y, m, d;
   gtk_calendar_get_date(GTK_CALENDAR(THIS->obj),&y,&m,&d);
   my_pop_n_elems(args);
-  push_text("year");
+  ref_push_string(_STR("year"));
   push_int(y);
-  push_text("month");
+  ref_push_string(_STR("month"));
   push_int(m);
-  push_text("day");
+  ref_push_string(_STR("day"));
   push_int(d);
   f_aggregate_mapping(6);
 }

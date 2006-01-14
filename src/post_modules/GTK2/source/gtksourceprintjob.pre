@@ -151,10 +151,10 @@ mapping(string:float) get_text_margins()
     gdouble t,b,l,r;
     gtk_source_print_job_get_text_margins(GTK_SOURCE_PRINT_JOB(THIS->obj),
 			&t,&b,&l,&r);
-    push_text("top"); push_float(t);
-    push_text("bottom"); push_float(b);
-    push_text("left"); push_float(l);
-    push_text("right"); push_float(r);
+    ref_push_string(_STR("top")); push_float(t);
+    ref_push_string(_STR("bottom")); push_float(b);
+    ref_push_string(_STR("left")); push_float(l);
+    ref_push_string(_STR("right")); push_float(r);
     f_aggregate_mapping(8);
   }
 }

@@ -178,8 +178,8 @@ mapping get_line_yrange(GTK2.TextIter iter)
     gtk_text_view_get_line_yrange(GTK_TEXT_VIEW(THIS->obj),
 		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),&y,&height);
     my_pop_n_elems(args);
-    push_text("y"); push_int(y);
-    push_text("height"); push_int(height);
+    ref_push_string(_STR("y")); push_int(y);
+    ref_push_string(_STR("height")); push_int(height);
     f_aggregate_mapping(4);
   }
 }

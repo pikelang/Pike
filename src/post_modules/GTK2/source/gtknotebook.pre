@@ -202,9 +202,9 @@ mapping(string:int) query_tab_label_packing(GTK2.Widget page)
                                        &fill,
                                        &pack_type);
   my_pop_n_elems(args);
-  push_text("expand"); push_int(expand);
-  push_text("fill"); push_int(fill);
-  push_text("pack_type"); push_int(pack_type);
+  ref_push_string(_STR("expand")); push_int(expand);
+  ref_push_string(_STR("fill")); push_int(fill);
+  ref_push_string(_STR("pack_type")); push_int(pack_type);
   f_aggregate_mapping(6);
 }
 
