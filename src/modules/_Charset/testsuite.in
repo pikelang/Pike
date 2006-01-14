@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.14 2006/01/12 17:28:53 grubba Exp $
+// $Id: testsuite.in,v 1.15 2006/01/14 13:51:12 grubba Exp $
 
 // _Charset.decoder
 test_true([[objectp(_Charset)]])
@@ -100,6 +100,51 @@ test_eq([[_Charset.encoder("utf-16LE")->feed("hej")->drain()]],"h\0e\0j\0")
 // Multichar
 test_eq([[_Charset.decoder("gbk")->feed("hej\x81\x40")->drain()]],"hej\x4e02")
 test_eq([[_Charset.decoder("949")->feed("hej\x81\x41")->drain()]],"hej\xac02")
+
+// GB18030
+test_any([[
+  import Parser.XML.Tree;
+
+  string decode_byte_attribute(SimpleNode a, string attr)
+  {
+    mapping(string:string) attrs = a->get_attributes();
+    string hex_bytes;
+    if (!(hex_bytes = attrs[attr]))
+      error("a-node lacks %s attribute.\n", attr);
+    return sprintf("%{%c%}",
+                   array_sscanf(hex_bytes, "%x "*sizeof(hex_bytes/" ")));
+  };
+
+  SimpleNode root = simple_parse_file("]]SRCDIR[[/gb-18030-2000.xml");
+
+  SimpleNode chmap = root->get_first_element("characterMapping");
+  if (!chmap) return "No characterMapping";
+  SimpleNode assignments = chmap->get_first_element("assignments");
+  if (!assignments) return "No assignments";
+  array(SimpleNode) a_nodes = assignments->get_elements("a");
+  // We're only interested in the 4-byte codes for now.
+  a_nodes = filter(a_nodes,
+                   lambda(SimpleNode a) {
+                     string b = a->get_attributes()->b;
+                     return b && (sizeof(b/" ") == 4);
+                   });
+  array(string) ucodes = map(a_nodes, decode_byte_attribute, "u");
+  array(string) bcodes = map(a_nodes, decode_byte_attribute, "b");
+  // Pad both arrays with the 0 element to make sure the algorithm
+  // is reset between characters.
+  string ucode = ucodes * ucodes[0];
+  string bcode = bcodes * bcodes[0];
+  string dcode = Locale.Charset.decoder("GB18030")->feed(bcode)->drain();
+  if (dcode != ucode) {
+    string pref = String.common_prefix(({ucode, dcode}));
+    return sprintf("Failure for character U+%06x "
+                   "(%02x %02x %02x %02x), got U+%06x\n",
+                   ucode[sizeof(pref)],
+                   @values(bcode[sizeof(pref)*4..sizeof(pref)*4 + 3]),
+                   dcode[sizeof(pref)]);
+  }
+  return 0;
+]], 0)
 
 // EUC-JP
 test_eq([[_Charset.decoder("euc-jp")->feed("\xa1\xd8\x8f\xb0\xa2\x8f\xb0\xa3\xa1\xd9\x8e\xb6\x8e\xc5")->drain()]],"\x300e\x4e04\x4e05\x300f\xff76\xff85")
