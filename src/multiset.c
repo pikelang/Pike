@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.95 2006/01/14 11:56:16 mast Exp $
+|| $Id: multiset.c,v 1.96 2006/01/14 13:03:26 mast Exp $
 */
 
 #include "global.h"
@@ -4246,6 +4246,9 @@ void init_multiset()
 {
 #ifdef PIKE_DEBUG
   /* This test is buggy in GCC 4 */
+  /* Perhaps it works better if the test variable is made volatile? (I
+   * can't really test since it works well anyway in my gcc 4.0.2
+   * 20050808 (prerelease).) /mast */
 #ifndef __GNUC__
 #define __GNUC__ 5
 #endif
