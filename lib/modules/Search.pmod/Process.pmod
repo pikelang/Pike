@@ -163,6 +163,7 @@ class Indexer(Variable wa_var, void|function get_sb_workarea_view_url, Configura
       ]) );
 
     log_pipe->set_prefix ("Crawler " + crawler->pid() + ": ");
+    log_pipe->close();
 
 #ifdef SEARCH_CRAWLER_DEBUG
     werror ("Spawned search crawler: pid %d\n", crawler->pid());
