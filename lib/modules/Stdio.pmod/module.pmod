@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.206 2005/01/31 19:20:31 mast Exp $
+// $Id: module.pmod,v 1.207 2006/01/15 06:35:22 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -784,6 +784,23 @@ class File
   // FIXME: No way to specify the maximum to read.
   static int __stdio_read_callback()
   {
+    BE_WERR("__stdio_read_callback()");
+
+    if (!___read_callback) {
+      if (___close_callback) return __stdio_close_callback();
+      return 0;
+    }
+
+    if (!errno()) {
+#if 0
+      if (!(::mode() & PROP_IS_NONBLOCKING))
+	error ("Read callback called on blocking socket!\n"
+	       "Callbacks: %O, %O\n"
+	       "Id: %O\n",
+	       ___read_callback,
+	       ___close_callback,
+	       ___id);
+#endif /* 0 */
 
 /*
 ** 
@@ -802,26 +819,10 @@ class File
 ** Check if we need it first, and set this flag manually.
 ** 
 ** FIXME for NT or internally? /Mirar
-** 
+**
+** NB: This is solved properly in 7.7 and later, so this kludge is
+** gone there. /mast
 */
-
-    BE_WERR("__stdio_read_callback()");
-
-    if (!___read_callback) {
-      if (___close_callback) return __stdio_close_callback();
-      return 0;
-    }
-
-    if (!errno()) {
-#if 0
-      if (!(::mode() & PROP_IS_NONBLOCKING))
-	error ("Read callback called on blocking socket!\n"
-	       "Callbacks: %O, %O\n"
-	       "Id: %O\n",
-	       ___read_callback,
-	       ___close_callback,
-	       ___id);
-#endif /* 0 */
 
 #if !defined(__NT__)
       if (peek_file_before_read_callback)
@@ -875,6 +876,7 @@ class File
 
   static int __stdio_close_callback()
   {
+    BE_WERR ("__stdio_close_callback()");
 #if 0
     if (!(::mode() & PROP_IS_NONBLOCKING)) ::set_nonblocking();
 #endif /* 0 */
@@ -912,6 +914,7 @@ class File
 
   static int __stdio_read_oob_callback()
   {
+    BE_WERR ("__stdio_read_oob_callback()");
     if (!___read_oob_callback) return 0;
     string s;
 #ifdef STDIO_CALLBACK_TEST_MODE
@@ -944,6 +947,7 @@ class File
 
   static int __stdio_write_oob_callback()
   {
+    BE_WERR ("__stdio_write_oob_callback()");
     if (!___write_oob_callback) return 0;
     return ___write_oob_callback(___id);
   }
