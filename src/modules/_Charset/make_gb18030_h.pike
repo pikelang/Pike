@@ -1,5 +1,5 @@
 //
-// $Id: make_gb18030_h.pike,v 1.3 2006/01/14 13:50:52 grubba Exp $
+// $Id: make_gb18030_h.pike,v 1.4 2006/01/15 15:24:10 grubba Exp $
 //
 // Create lookup tables and code for GB18030.
 //
@@ -78,8 +78,11 @@ int main(int argc, array(string) argv)
     }
   }
 
-  // FIXME: For future use.
-  array(array(int)) enc_table = ({});
+  // ulow, uhigh, index||bytes	Where either i = u - ulow + index,
+  //                          	or byte_pair = bytes[(u-ulow)*2..(u-ulow)*2+1].
+  array(array(int|array(int))) enc_table = ({
+    ({ 0x80, 0x80, 0 }),
+  });
 
   // index, offset	Where u = i - index + offset;
   array(array(int)) dec_table = ({
@@ -96,11 +99,31 @@ int main(int argc, array(string) argv)
 	// New entry needed.
 	dec_table += ({ ({ i, u }) });
       }
-    } else {
+      if (!intp(enc_table[-1][2]) ||
+	  ((u - enc_table[-1][0] + enc_table[-1][2]) != i)) {
+	enc_table += ({ ({ u, u, i }) });
+      } else {
+	enc_table[-1][1] = u;
+      }
+    } else if (u >= 0x80) {
+      array(int) byte_pair = array_sscanf(b, "%x %x");
+      if (intp(enc_table[-1][2]) ||
+	  enc_table[-1][1] != u-1) {
+	enc_table += ({ ({ u, u, byte_pair }) });
+      } else {
+	enc_table[-1][1] = u;
+	enc_table[-1][2] += byte_pair;
+      }
       // FIXME: Generate GB2312/GBK here?
       continue;
     }
   }
+#if 0
+  werror("enc_table: ({\n"
+	 "%{  0x%06x, 0x%06x, X\n%}"
+	 "});\n",
+	 enc_table);
+#endif /* 0 */
   foreach(assignments, SimpleNode ass_list) {
     foreach(ass_list->get_elements("range"), SimpleNode range) {
       mapping(string:string) attrs = range->get_attributes();
@@ -135,8 +158,46 @@ int main(int argc, array(string) argv)
       }
       dec_table = dec_table[..i-1] + ({ ({ bFirst, uFirst }) }) +
 	dec_table[i..];
+      int uLast;
+      if (!sscanf(attrs->uLast, "%x", uLast)) {
+	werror("Failed to parse uLast attribute (%O) for node %O.\n",
+	       attrs->uLast, range);
+	return 1;
+      }
+      for(i = 0; i < sizeof(enc_table); i++) {
+	if (enc_table[i][0] > uFirst) {
+	  if (enc_table[i][0] < uLast) {
+	    werror("Overlapping ranges!\n"
+		   "  enc_table.ulow: 0x%06x\n"
+		   "  uLast:          0x%06x\n",
+		   enc_table[i][0], uLast);
+	    return 1;
+	  }
+	  if (enc_table[i-1][1] >= uFirst) {
+	    werror("Overlapping ranges!\n"
+		   "  enc_table.uhi: 0x%06x\n"
+		   "  uFirst:        0x%06x\n",
+		   enc_table[i-1][1], uFirst);
+	    return 1;
+	  }
+	  break;
+	}
+      }
+      enc_table = enc_table[..i-1] + ({ ({ uFirst, uLast, bFirst }) }) +
+	enc_table[i..];
     }
   }
+
+  int ind = 0;
+  array(int) enc_bytes = map(enc_table,
+			     lambda(array(int|array(int)) enc_info) {
+			       array(int) res;
+			       if (intp(res = enc_info[2])) return ({});
+			       enc_info[2] = ~ind;
+			       ind += sizeof(res);
+			       return res;
+			     }) * ({});
+  //werror("enc_bytes: %O\n", enc_bytes);
   string code = sprintf("/* Generated automatically by\n"
 			" * %s\n"
 			" * Do not edit.\n"
@@ -205,12 +266,98 @@ int main(int argc, array(string) argv)
 			"  return i - gb18030_info[last_j].index +\n"
 			"    gb18030_info[last_j].ucode;\n"
 			"}\n"
+			"\n"
+			"/* Encoding tables for %s version %s. */\n"
+			"static const p_wchar0 gb18030e_bytes[] = {\n"
+			"%s\n"
+			"};\n"
+			"\n"
+			"static const struct gb18030e_info {\n"
+			"  p_wchar2 ulow;\n"
+			"  p_wchar2 uhigh;\n"
+			"  INT32 index;\n"
+			"    /* If positive: gb18030 index.\n"
+			"     * If negative: ~index in gb18030e_bytes\n"
+			"     */\n"
+			"} gb18030e_info[] = {\n"
+			"%{  { 0x%06x, 0x%06x, %d },\n%}"
+			"  /* Sentinel */\n"
+			"  { 0x7fffffff, 0x7fffffff, 0 },\n"
+			"};\n"
+			"\n"
+			"#define NUM_GB18030E_INFO %d\n"
+			"\n"
+			"static const struct gb18030e_info * const\n"
+			"  get_gb18030e_info(p_wchar2 u)\n"
+			"{\n"
+			"  static int last_j;\n"
+			"\n"
+			"  if (u < 0x80) return NULL;\n"
+			"\n"
+#if 0
+			"  fprintf(stderr, \"get_gb18030e_info(0x%%06x)\",\n"
+			"          u);\n"
+#endif /* 0 */
+			"  if (gb18030e_info[last_j].ulow > u) {\n"
+			"    int jlo = 0, jhi = last_j, jmid;\n"
+			"    while (jlo < (jmid = (jlo + jhi)/2)) {\n"
+			"      if (gb18030e_info[jmid].ulow <= u) {\n"
+			"        jlo = jmid;\n"
+			"      } else {\n"
+			"        jhi = jmid;\n"
+			"      }\n"
+			"    }\n"
+			"    last_j = jlo;\n"
+			"  } else if (gb18030e_info[last_j+1].ulow <= u) {\n"
+			"    int jlo = last_j + 1, jhi = NUM_GB18030E_INFO;\n"
+			"    int jmid;\n"
+			"    while (jlo < (jmid = (jlo + jhi)/2)) {\n"
+			"      if (gb18030e_info[jmid].ulow <= u) {\n"
+			"        jlo = jmid;\n"
+			"      } else {\n"
+			"        jhi = jmid;\n"
+			"      }\n"
+			"    }\n"
+			"    last_j = jlo;\n"
+			"  }\n"
+			"#ifdef PIKE_DEBUG\n"
+			"  if (u < gb18030e_info[last_j].ulow) {\n"
+			"    Pike_fatal(\"GB18030: Bad ulow: \"\n"
+			"               \"0x%%06x > 0x%%06x (j:%%d)\\n\",\n"
+			"               gb18030e_info[last_j].ulow, u,\n"
+			"               last_j);\n"
+			"  } else if (u >= gb18030e_info[last_j+1].ulow) {\n"
+			"    Pike_fatal(\"GB18030: Bad ulow: \"\n"
+			"               \"0x%%06x <= 0x%%06x (j:%%d)\\n\",\n"
+			"               gb18030e_info[last_j+1].ulow, u,\n"
+			"               last_j);\n"
+			"  }\n"
+			"#endif /* PIKE_DEBUG */\n"
+#if 0
+			"  fprintf(stderr, \" j: %%d, ulow: 0x%%06x,\"\n"
+			"          \" uhigh: 0x%06x index: %d\\n\",\n"
+			"          last_j, gb18030e_info[last_j].ulow,\n"
+			"          gb18030e_info[last_j].uhigh,\n"
+			"          gb18030e_info[last_j].index);\n"
+#endif /* 0 */
+			"  if (gb18030e_info[last_j].uhigh < u) return NULL;\n"
+			"  return gb18030e_info + last_j;\n"
+			"}\n"
 			"\n",
-			"$Id: make_gb18030_h.pike,v 1.3 2006/01/14 13:50:52 grubba Exp $",
+			"$Id: make_gb18030_h.pike,v 1.4 2006/01/15 15:24:10 grubba Exp $",
 			chmap->get_attributes()->id || "UNKNOWN",
 			chmap->get_attributes()->version || "UNKNOWN",
 			dec_table,
-			sizeof(dec_table));
+			sizeof(dec_table),
+
+			chmap->get_attributes()->id || "UNKNOWN",
+			chmap->get_attributes()->version || "UNKNOWN",
+			map(enc_bytes/8.0,
+			    lambda(array(int) bytes) {
+			      return sprintf(" %{ 0x%02x,%}\n", bytes);
+			    }) * "",
+			enc_table,
+			sizeof(enc_table));
   //write(code);
   Stdio.write_file(argv[2], code);
   return 0;
