@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.177 2005/11/30 17:13:01 grubba Exp $
+ * $Id: backend.cmod,v 1.178 2006/01/15 05:21:09 mast Exp $
  *
  * Backend object.
  */
@@ -1404,7 +1404,8 @@ PIKECLASS Backend
 		    tmp.tv_sec, tmp.tv_usec);
 	 else
 	   fprintf (stderr, "BACKEND[%d]: backend_do_call_outs: "
-		    "no outstanding call outs\n");
+		    "no outstanding call outs\n",
+		    me->id);
        );
 
        return call_count;
