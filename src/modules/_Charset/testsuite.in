@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.15 2006/01/14 13:51:12 grubba Exp $
+// $Id: testsuite.in,v 1.16 2006/01/15 15:24:50 grubba Exp $
 
 // _Charset.decoder
 test_true([[objectp(_Charset)]])
@@ -105,7 +105,7 @@ test_eq([[_Charset.decoder("949")->feed("hej\x81\x41")->drain()]],"hej\xac02")
 test_any([[
   import Parser.XML.Tree;
 
-  string decode_byte_attribute(SimpleNode a, string attr)
+  string decode_hex_attribute(SimpleNode a, string attr)
   {
     mapping(string:string) attrs = a->get_attributes();
     string hex_bytes;
@@ -128,8 +128,16 @@ test_any([[
                      string b = a->get_attributes()->b;
                      return b && (sizeof(b/" ") == 4);
                    });
-  array(string) ucodes = map(a_nodes, decode_byte_attribute, "u");
-  array(string) bcodes = map(a_nodes, decode_byte_attribute, "b");
+  array(string) ucodes = map(a_nodes, decode_hex_attribute, "u");
+  array(string) bcodes = map(a_nodes, decode_hex_attribute, "b");
+
+  // Look at the range nodes too.
+  array(SimpleNode) range_nodes = assignments->get_elements("range");
+  ucodes += map(range_nodes, decode_hex_attribute, "uFirst");
+  bcodes += map(range_nodes, decode_hex_attribute, "bFirst");
+  ucodes += map(range_nodes, decode_hex_attribute, "uLast");
+  bcodes += map(range_nodes, decode_hex_attribute, "bLast");
+
   // Pad both arrays with the 0 element to make sure the algorithm
   // is reset between characters.
   string ucode = ucodes * ucodes[0];
