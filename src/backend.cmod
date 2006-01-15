@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.149 2005/05/25 00:51:28 bill Exp $
+|| $Id: backend.cmod,v 1.150 2006/01/15 05:21:09 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.149 2005/05/25 00:51:28 bill Exp $");
+RCSID("$Id: backend.cmod,v 1.150 2006/01/15 05:21:09 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1378,7 +1378,8 @@ PIKECLASS Backend
 		    tmp.tv_sec, tmp.tv_usec);
 	 else
 	   fprintf (stderr, "BACKEND[%d]: backend_do_call_outs: "
-		    "no outstanding call outs\n");
+		    "no outstanding call outs\n",
+		    me->id);
        );
 
        return call_count;
