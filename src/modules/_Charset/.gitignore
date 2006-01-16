@@ -7,6 +7,7 @@
 /configure
 /dependencies
 /gb18030.h
+/gbk_tables.h
 /linker_options
 /make_variables
 /modlist_headers

@@ -1,11 +1,11 @@
 #
-# $Id: Makefile.in,v 1.9 2006/01/13 22:21:10 grubba Exp $
+# $Id: Makefile.in,v 1.10 2006/01/16 18:47:51 grubba Exp $
 #
 
 @make_variables@
 VPATH=@srcdir@
 OBJS=charsetmod.o iso2022.o tables.o misc.o
-SRC_TARGETS=$(SRCDIR)/gb18030.h
+SRC_TARGETS=$(SRCDIR)/gb18030.h $(SRCDIR)/gbk_tables.h
 MODULE_LDFLAGS=@LDFLAGS@
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
@@ -14,8 +14,14 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 charsetmod.o: $(SRCDIR)/gb18030.h
 
+tables.o: $(SRCDIR)/gbk_tables.h
+
 $(SRCDIR)/gb18030.h : $(SRCDIR)/gb-18030-2000.xml $(SRCDIR)/make_gb18030_h.pike
 	$(BUILD_BASE)/precompile.sh  $(SRCDIR)/make_gb18030_h.pike \
 	  $(SRCDIR)/gb-18030-2000.xml $(SRCDIR)/gb18030.h
+
+$(SRCDIR)/gbk_tables.h : $(SRCDIR)/gb-18030-2000.xml $(SRCDIR)/make_gbk_tables_h.pike
+	$(BUILD_BASE)/precompile.sh  $(SRCDIR)/make_gbk_tables_h.pike \
+	  $(SRCDIR)/gb-18030-2000.xml $(SRCDIR)/gbk_tables.h
 
 @dependencies@
