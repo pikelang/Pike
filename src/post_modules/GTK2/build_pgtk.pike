@@ -1551,7 +1551,7 @@ void make_strings(array tokens)
             SYNTAX( "_STR needs a string argument.", tokens[num+1][1] );
         sscanf(str, "%O", str);
 
-        if( !strings[str] )
+        if( zero_type(strings[str]) )
           strings[str] = sizeof(strings);
 
         tokens[num] = Parser.Pike.Token("(pstr_vector["+strings[str]+"])");
