@@ -5,6 +5,17 @@
  - Remove all fprintf from the code and instead figure out other ways
    to signal the warnings to the application developer.
 
+ - Reduce init code by putting programs in a mapping and use loops more.
+
+ - Some set-from-mapping functions leaves values undefined if not all
+   mapping avalues are present. Accepting color objects might be good.
+
+ - Fix gdkevent destructor -> EXIT
+
+ - Fix _STR expansion in %{ %} blocks / .c files.
+
+ - Make real iterator objects of the iterator objects.
+
  - Verify that all get_all_args calls uses best integer type, or at
    least big enough integers.
 
