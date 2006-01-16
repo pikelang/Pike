@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.29 2005/12/07 06:23:58 mast Exp $");
+RCSID("$Id: resultset.c,v 1.30 2006/01/16 06:29:20 mast Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -846,7 +846,14 @@ static void f_resultset_sub( INT32 args )
 
 void exit_resultset_program(void)
 {
-  free_program( resultset_program );
+  if (resultset_program) {
+    free_program (resultset_program);
+    resultset_program = NULL;
+  }
+  if (dateset_program) {
+    free_program (dateset_program);
+    dateset_program = NULL;
+  }
 }
 
 static struct object *dup_dateset()
