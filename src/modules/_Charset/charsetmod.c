@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.58 2006/01/15 15:24:10 grubba Exp $
+|| $Id: charsetmod.c,v 1.59 2006/01/16 15:44:13 grubba Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -845,7 +845,9 @@ static ptrdiff_t feed_multichar(const p_wchar0 *p, ptrdiff_t l,
 	    return delta;
 	  }
 	} 
-	Pike_error("Illegal character: 0x%02x.\n", ch);
+	Pike_error("Illegal character pair: 0x%02x 0x%02x "
+		   "(expected 0x%02x 0x%02x..0x%02x).\n",
+		   p[-2], ch, p[-2], page.lo, page.hi);
       }
       else
 	string_builder_putchar(&s->strbuild, page.table[ch-page.lo]);
