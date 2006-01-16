@@ -30,41 +30,46 @@ void create(string|GDK2.Pixbuf|GDK2.PixbufAnimation|GDK2.Image|GDK2.Pixmap|mappi
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   if (args==1) {
-    GtkWidget *gi;
-    if (Pike_sp[-args].type==PIKE_T_STRING) {
-      char *filename;
-      get_all_args("create",args,"%s",&filename);
-      gi=gtk_image_new_from_file(filename);
-      THIS->obj=G_OBJECT(gi);
-    } else if (Pike_sp[-args].type==PIKE_T_MAPPING) {
+    if (Pike_sp[-args].type==PIKE_T_MAPPING) {
       INIT_WITH_PROPS(GTK_TYPE_IMAGE);
     } else {
-      struct object *o1;
-      GdkPixbufAnimation *gpa;
-      GdkImage *image;
-      get_all_args("create",args,"%o",&o1);
-      if (GDK_TYPE_IMAGE==G_TYPE_FROM_INSTANCE(get_gobject(o1))) {
-	image=GDK_IMAGE(get_gobject(o1));
-	gi=gtk_image_new_from_image(image,NULL);
-	THIS->obj=G_OBJECT(gi);
+      GtkWidget *gi;
+
+      if (Pike_sp[-args].type==PIKE_T_STRING) {
+	char *filename;
+	get_all_args("create",args,"%s",&filename);
+	gi=gtk_image_new_from_file(filename);
       } else {
-        gpa=GDK_PIXBUF_ANIMATION(get_gobject(o1));
-        if (gpa) {
-	  gi=gtk_image_new_from_animation(gpa);
-        } else {
-	  gi=gtk_image_new_from_pixbuf(GDK_PIXBUF(get_gobject(o1)));
+	struct object *o1;
+	GObject *go;
+
+	get_all_args("create",args,"%o",&o1);
+	go=get_gobject(o1);
+	if (GDK_TYPE_IMAGE==G_TYPE_FROM_INSTANCE(go)) {
+	  gi=gtk_image_new_from_image(GDK_IMAGE(go),NULL);
+	} else if (GDK_TYPE_PIXBUF==G_TYPE_FROM_INSTANCE(go)) {
+	  gi=gtk_image_new_from_pixbuf(GDK_PIXBUF(go));
+	} else {
+	  gi=gtk_image_new_from_animation(GDK_PIXBUF_ANIMATION(go));
 	}
-	THIS->obj=G_OBJECT(gi);
       }
+      THIS->obj=G_OBJECT(gi);
     }
   } else if (args==2) {
     if (Pike_sp[1-args].type==PIKE_T_INT) {
-      char *s1;
+      struct pike_string *s1;
       GtkWidget *gi;
+      GtkStockItem item;
       int size;
+      int t=0;
 
-      get_all_args("create",args,"%s%d",&s1,&size);
-      gi=gtk_image_new_from_stock(s1,size);
+      get_all_args("create",args,"%t%d",&s1,&size);
+      if (s1->size_shift==0)
+	t=gtk_stock_lookup(CGSTR0(s1),&item);
+      if (t)
+	gi=gtk_image_new_from_stock(CGSTR0(s1),size);
+      else
+	gi=gtk_image_new();
       THIS->obj=G_OBJECT(gi);
     } else {
       GdkImage *image;
@@ -75,7 +80,8 @@ void create(string|GDK2.Pixbuf|GDK2.PixbufAnimation|GDK2.Image|GDK2.Pixmap|mappi
 
       get_all_args("create",args,"%o%o",&o1,&o2);
       image=GDK_IMAGE(get_gobject(o1));
-      bitmap=(GdkBitmap *)get_gdkobject(o2,bitmap);
+/*      bitmap=(GdkBitmap *)get_gdkobject(o2,bitmap); */
+      bitmap=GDK_PIXMAP(get_gobject(o2));
       if (image) {
 	gi=gtk_image_new_from_image(image,bitmap);
       } else {
