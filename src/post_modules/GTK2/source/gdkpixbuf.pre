@@ -69,12 +69,12 @@ void create(string|mapping options)
       SIMPLE_TOO_FEW_ARGS_ERROR("create",1);
     sv=low_mapping_string_lookup(m,_STR("file"));
     if (sv && sv->type==PIKE_T_STRING) {
-      char *file;
+      const char *file;
 #ifdef HAVE_GTK26
       int scale=0;
 #endif
       
-      file=STR0(sv->u.string);
+      file=(const char *)STR0(sv->u.string);
       sv=low_mapping_string_lookup(m,_STR("width"));
       if (sv)
 	width=PGTK_GETINT(sv);
@@ -124,7 +124,7 @@ void create(string|mapping options)
 	  for (i=j=0; i<a->size; i++) {
 	    if ((ITEM(a)+i)->type!=PIKE_T_STRING)
 	      continue;
-	    data[j++]=STR0((ITEM(a)+i)->u.string);
+	    data[j++]=(const gchar *)STR0((ITEM(a)+i)->u.string);
 	  }
 	  gp=gdk_pixbuf_new_from_xpm_data(data);
 	  g_free(data);
@@ -241,55 +241,55 @@ GDK2.Pixbuf save(string filename, string type, void|mapping options)
     
     get_all_args("save",args,"%s%n.%m",&filename,&type,&m);
     if (is_same_string(type,_STR("jpeg"))) {
-      char *quality;
+      const char *quality;
       
       if (m==NULL) {
         quality="100";
       } else {
 	sv=low_mapping_string_lookup(m,_STR("quality"));
 	if (sv && sv->type==PIKE_T_STRING)
-	  quality=STR0(sv->u.string);
+	  quality=(const char *)STR0(sv->u.string);
 	else
 	  quality="100";
       }
       res=gdk_pixbuf_save(GDK_PIXBUF(THIS->obj),filename,type->str,&error,
 			  "quality",quality,NULL);
     } else if (is_same_string(type,_STR("png"))) {
-      char *compression;
+      const char *compression;
       
       if (m==NULL) {
 	compression="0";
       } else {
 	sv=low_mapping_string_lookup(m,_STR("compression"));
 	if (sv && sv->type==PIKE_T_STRING)
-	  compression=STR0(sv->u.string);
+	  compression=(const char *)STR0(sv->u.string);
 	else
 	  compression="0";
       }
       res=gdk_pixbuf_save(GDK_PIXBUF(THIS->obj),filename,type->str,&error,
 			  "compression",compression,NULL);
     } else if (is_same_string(type,_STR("ico"))) {
-      char *depth;
+      const char *depth;
       
       if (m==NULL) {
 	depth="16";
       } else {
 	int hot=1;
-	char *x_hot,*y_hot;
+	const char *x_hot,*y_hot;
 	
 	sv=low_mapping_string_lookup(m,_STR("depth"));
 	if (sv && sv->type==PIKE_T_STRING)
-	  depth=STR0(sv->u.string);
+	  depth=(const char *)STR0(sv->u.string);
 	else
 	  depth="16";
 	sv=low_mapping_string_lookup(m,_STR("x_hot"));
 	if (sv && sv->type==PIKE_T_STRING)
-	  x_hot=STR0(sv->u.string);
+	  x_hot=(const char *)STR0(sv->u.string);
 	else
 	  hot=0;
 	sv=low_mapping_string_lookup(m,_STR("y_hot"));
 	if (sv && sv->type==PIKE_T_STRING)
-	  y_hot=STR0(sv->u.string);
+	  y_hot=(const char *)STR0(sv->u.string);
 	else
 	  hot=0;
 	if (hot)
