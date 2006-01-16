@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.16 2006/01/15 15:24:50 grubba Exp $
+// $Id: testsuite.in,v 1.17 2006/01/16 15:45:29 grubba Exp $
 
 // _Charset.decoder
 test_true([[objectp(_Charset)]])
@@ -150,6 +150,145 @@ test_any([[
                    ucode[sizeof(pref)],
                    @values(bcode[sizeof(pref)*4..sizeof(pref)*4 + 3]),
                    dcode[sizeof(pref)]);
+  }
+  return 0;
+]], 0)
+test_any([[
+  import Parser.XML.Tree;
+
+  string decode_hex_attribute(SimpleNode a, string attr)
+  {
+    mapping(string:string) attrs = a->get_attributes();
+    string hex_bytes;
+    if (!(hex_bytes = attrs[attr]))
+      error("a-node lacks %s attribute.\n", attr);
+    return sprintf("%{%c%}",
+                   array_sscanf(hex_bytes, "%x "*sizeof(hex_bytes/" ")));
+  };
+
+  SimpleNode root = simple_parse_file("]]SRCDIR[[/gb-18030-2000.xml");
+
+  SimpleNode chmap = root->get_first_element("characterMapping");
+  if (!chmap) return "No characterMapping";
+  SimpleNode assignments = chmap->get_first_element("assignments");
+  if (!assignments) return "No assignments";
+  array(SimpleNode) a_nodes = assignments->get_elements("a");
+  // We're only interested in the 2-byte codes for now.
+  a_nodes = filter(a_nodes,
+                   lambda(SimpleNode a) {
+                     string b = a->get_attributes()->b;
+                     return b && (sizeof(b/" ") == 2);
+                   });
+  array(string) ucodes = map(a_nodes, decode_hex_attribute, "u");
+  array(string) bcodes = map(a_nodes, decode_hex_attribute, "b");
+
+  // Pad both arrays with the 0 element to make sure the algorithm
+  // is reset between characters.
+  string ucode = ucodes * ucodes[0];
+  string bcode = bcodes * bcodes[0];
+  string dcode = Locale.Charset.decoder("GB18030")->feed(bcode)->drain();
+  if (dcode != ucode) {
+    string pref = String.common_prefix(({ucode, dcode}));
+    return sprintf("Failure for character U+%06x (%02x %02x), got U+%06x\n",
+                   ucode[sizeof(pref)],
+                   @values(bcode[sizeof(pref)*2..sizeof(pref)*2 + 1]),
+                   dcode[sizeof(pref)]);
+  }
+  return 0;
+]], 0)
+test_any([[
+  import Parser.XML.Tree;
+
+  string decode_hex_attribute(SimpleNode a, string attr)
+  {
+    mapping(string:string) attrs = a->get_attributes();
+    string hex_bytes;
+    if (!(hex_bytes = attrs[attr]))
+      error("a-node lacks %s attribute.\n", attr);
+    return sprintf("%{%c%}",
+                   array_sscanf(hex_bytes, "%x "*sizeof(hex_bytes/" ")));
+  };
+
+  SimpleNode root = simple_parse_file("]]SRCDIR[[/gb-18030-2000.xml");
+
+  SimpleNode chmap = root->get_first_element("characterMapping");
+  if (!chmap) return "No characterMapping";
+  SimpleNode assignments = chmap->get_first_element("assignments");
+  if (!assignments) return "No assignments";
+  array(SimpleNode) a_nodes = assignments->get_elements("a");
+  // We're only interested in the 4-byte codes for now.
+  a_nodes = filter(a_nodes,
+                   lambda(SimpleNode a) {
+                     string b = a->get_attributes()->b;
+                     return b && (sizeof(b/" ") == 4);
+                   });
+  array(string) ucodes = map(a_nodes, decode_hex_attribute, "u");
+  array(string) bcodes = map(a_nodes, decode_hex_attribute, "b");
+
+  // Look at the range nodes too.
+  array(SimpleNode) range_nodes = assignments->get_elements("range");
+  ucodes += map(range_nodes, decode_hex_attribute, "uFirst");
+  bcodes += map(range_nodes, decode_hex_attribute, "bFirst");
+  ucodes += map(range_nodes, decode_hex_attribute, "uLast");
+  bcodes += map(range_nodes, decode_hex_attribute, "bLast");
+
+  // Pad both arrays with the 0 element to make sure the algorithm
+  // is reset between characters.
+  string ucode = ucodes * ucodes[0];
+  string bcode = bcodes * bcodes[0];
+  string ecode = Locale.Charset.encoder("GB18030")->feed(ucode)->drain();
+  if (ecode != bcode) {
+    string pref = String.common_prefix(({ecode, bcode}));
+    int off = sizeof(pref) & ~3;
+    return sprintf("Failure for character U+%06x "
+                   "(%02x %02x %02x %02x), got %02x %02x %02x %02x\n",
+                   ucode[off/4],
+                   @values(bcode[off..off + 3]),
+                   @values(ecode[off..off + 3]));
+  }
+  return 0;
+]], 0)
+test_any([[
+  import Parser.XML.Tree;
+
+  string decode_hex_attribute(SimpleNode a, string attr)
+  {
+    mapping(string:string) attrs = a->get_attributes();
+    string hex_bytes;
+    if (!(hex_bytes = attrs[attr]))
+      error("a-node lacks %s attribute.\n", attr);
+    return sprintf("%{%c%}",
+                   array_sscanf(hex_bytes, "%x "*sizeof(hex_bytes/" ")));
+  };
+
+  SimpleNode root = simple_parse_file("]]SRCDIR[[/gb-18030-2000.xml");
+
+  SimpleNode chmap = root->get_first_element("characterMapping");
+  if (!chmap) return "No characterMapping";
+  SimpleNode assignments = chmap->get_first_element("assignments");
+  if (!assignments) return "No assignments";
+  array(SimpleNode) a_nodes = assignments->get_elements("a");
+  // We're only interested in the 2-byte codes for now.
+  a_nodes = filter(a_nodes,
+                   lambda(SimpleNode a) {
+                     string b = a->get_attributes()->b;
+                     return b && (sizeof(b/" ") == 2);
+                   });
+  array(string) ucodes = map(a_nodes, decode_hex_attribute, "u");
+  array(string) bcodes = map(a_nodes, decode_hex_attribute, "b");
+
+  // Pad both arrays with the 0 element to make sure the algorithm
+  // is reset between characters.
+  string ucode = ucodes * ucodes[0];
+  string bcode = bcodes * bcodes[0];
+  string ecode = Locale.Charset.encoder("GB18030")->feed(ucode)->drain();
+  if (ecode != bcode) {
+    string pref = String.common_prefix(({ecode, bcode}));
+    int off = sizeof(pref) & ~1;
+    return sprintf("Failure for character U+%06x (%02x %02x), got %02x %02x\n",
+                   ucode[off/2],
+                   @values(bcode[off..off + 1]),
+                   @values(ecode[off..off + 1]));
   }
   return 0;
 ]], 0)
