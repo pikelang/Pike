@@ -73,10 +73,10 @@ mapping(string:int) query_child_packing(GTK2.Widget child)
                               GTK_WIDGET(get_gobject(o)),
                               &ex,&fi,&pa,&ty);
   my_pop_n_elems(args);
-  push_constant_text("expand"); push_int(ex);
-  push_constant_text("fill"); push_int(fi);
-  push_constant_text("padding"); push_int(pa);
-  push_constant_text("type"); push_int(ty);
+  ref_push_string(_STR("expand")); push_int(ex);
+  ref_push_string(_STR("fill")); push_int(fi);
+  ref_push_string(_STR("padding")); push_int(pa);
+  ref_push_string(_STR("type")); push_int(ty);
   f_aggregate_mapping(8);
 }
 
