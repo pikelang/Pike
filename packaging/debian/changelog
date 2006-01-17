@@ -1,6 +1,9 @@
-pike7.7 (7.7.24-1) experimental; urgency=low
+pike7.8 (7.7.24-1) experimental; urgency=low
 
   * Release number bumped by export.pike.
+  * Renamed the source package and binary packages to pike7.8* - this
+    is done so that there is no need to re-accept the package in the
+    Debian archive after the upstream version is changed to 7.8.
 
  -- Marek Habersack <grendel@debian.org>  Tue, 3 Jan 2006 18:56:39 +0100
 

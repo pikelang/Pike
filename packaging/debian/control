@@ -1,4 +1,4 @@
-Source: pike7.7
+Source: pike7.8
 Section: interpreters
 Priority: optional
 Maintainer: Marek Habersack <grendel@debian.org>
@@ -6,11 +6,11 @@ Standards-Version: 3.6.2.1
 Build-Depends: debhelper (>> 4.0.0), libgdbm-dev, libgmp3-dev, libz-dev, libjpeg-dev, libttf-dev, libmysqlclient10-dev, libreadline-dev, perl, bison, debhelper, freeglut3-dev (>= 2.2.0-6.1) [alpha hppa] | libglut3-dev, freeglut3-dev [!alpha !hppa] | libglut3-dev, xlibmesa-glu-dev | libglu-dev, xlibmesa-gl-dev | libgl-dev, libxpm-dev, gnome-devel, libgtkxmhtml-dev, libfreetype6-dev, autoconf, libiodbc2-dev, libsane-dev, postgresql-dev, librsvg2-dev, libsdl-mixer1.2-dev, libsdl1.2-dev, libperl-dev, sharutils, libpng3-dev, gtkglarea5-dev, libtiff4-dev,  bc, libpcre3-dev, libbz2-dev, libnettle-dev, libsqlite3-dev, libfuse-dev, libglade0-dev, fftw3-dev, pkg-config
 Build-Conflicts: libutahglx-dev
 
-Package: pike7.7-core
+Package: pike7.8-core
 Architecture: any
 Depends: ${shlibs:Depends}
-Suggests: pike7.7-doc
-Recommends: pike7.7-image (=${Source-Version})
+Suggests: pike7.8-doc
+Recommends: pike7.8-image (=${Source-Version})
 Description: Powerful interpreted programming language
  Pike is an interpreted, object-oriented, dynamic programming language
  with a syntax similar to C. It includes many powerful data types and
@@ -18,19 +18,19 @@ Description: Powerful interpreted programming language
  with support for graphics formats like SVG, JPG, PNG, GIF, XCF and many
  others,  database connectivity, advanced cryptography, XML/HTML parsers
  and others. To learn more about pike, please visit http://pike.ida.liu.se/
- Note that some of the  Pike features are found in other pike7.7-* packages 
+ Note that some of the  Pike features are found in other pike7.8-* packages 
  (image processing, mysql, postgresql, sane and more).
 
-Package: pike7.7
+Package: pike7.8
 Architecture: all
-Depends: pike7.7-core (=${Source-Version}), pike7.7-image (=${Source-Version}), pike7.7-gdbm (=${Source-Version})
-Recommends: pike7.7-doc (=${Source-Version})
-Suggests: pike7.7-mysql (=${Source-Version}), pike7.7-pg (=${Source-Version}), pike7.7-dev (=${Source-Version})
-Description: Recommended meta package for Pike 7.7
+Depends: pike7.8-core (=${Source-Version}), pike7.8-image (=${Source-Version}), pike7.8-gdbm (=${Source-Version})
+Recommends: pike7.8-doc (=${Source-Version})
+Suggests: pike7.8-mysql (=${Source-Version}), pike7.8-pg (=${Source-Version}), pike7.8-dev (=${Source-Version})
+Description: Recommended meta package for Pike 7.8
  This is a meta package which depends upon several other Pike
  packages that together make up the recommended Pike installation.
  If you want to install every packaged component of the Pike 
- distribution, please install the pike7.7-meta package.
+ distribution, please install the pike7.8-meta package.
  .
  If you want to remove several components this package depends
  upon, you can purge this package without worrying about the
@@ -44,117 +44,117 @@ Description: Recommended meta package for Pike 7.7
  others,  database connectivity, advanced cryptography, XML/HTML parsers
  and others. To learn more about pike, please visit http://pike.ida.liu.se/
 
-Package: pike7.7-mysql
+Package: pike7.8-mysql
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.7-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.8-core (=${Source-Version})
 Description: Mysql module for Pike
  This Pike module provides access to Mysql databases.
 
-Package: pike7.7-pg
+Package: pike7.8-pg
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.7-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.8-core (=${Source-Version})
 Description: Postgres module for Pike
  This Pike module provides access to Postgres databases.
 
-Package: pike7.7-odbc
+Package: pike7.8-odbc
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.7-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.8-core (=${Source-Version})
 Description: Odbc module for Pike
  This Pike module provides glue to the iOdbc interface.
 
-Package: pike7.7-svg
+Package: pike7.8-svg
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.7-core (=${Source-Version})
-Suggests: pike7.7-image (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.8-core (=${Source-Version})
+Suggests: pike7.8-image (=${Source-Version})
 Description: SVG format support for Pike
  This module provides an SVG graphics format module. It has
- been separated from the pike7.7-image module because of its
+ been separated from the pike7.8-image module because of its
  quite extensive dependencies.
 
-Package: pike7.7-image
+Package: pike7.8-image
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.7-core (=${Source-Version})
-Suggests: pike7.7-svg (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.8-core (=${Source-Version})
+Suggests: pike7.8-svg (=${Source-Version})
 Description: Image module for Pike
  This module provides many powerful image processing functions to
  Pike programs.
 
-Package: pike7.7-sdl
+Package: pike7.8-sdl
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.7-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.8-core (=${Source-Version})
 Description: SDL module for Pike
  This module provides the Pike interface to the SDL library.
 
-Package: pike7.7-gdbm
+Package: pike7.8-gdbm
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.7-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.8-core (=${Source-Version})
 Description: Gdbm module for Pike
  This Pike module provides access to gdbm databases.
 
-Package: pike7.7-gtk
+Package: pike7.8-gtk
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.7-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.8-core (=${Source-Version})
 Description: GTK module for Pike
  This Pike module provides access to the GTK+ library.
 
-Package: pike7.7-gl
+Package: pike7.8-gl
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.7-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.8-core (=${Source-Version})
 Description: Mesa module for Pike
  This Pike module provides access to the Mesa 3D graphics library.
 
-Package: pike7.7-sane
+Package: pike7.8-sane
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.7-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.8-core (=${Source-Version})
 Description: SANE module for Pike
  This Pike module provides access to SANE.
 
-Package: pike7.7-perl
+Package: pike7.8-perl
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.7-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.8-core (=${Source-Version})
 Description: Perl module for Pike
  This Pike module enables one to embed perl in the pike
  programs.
 
-Package: pike7.7-pcre
+Package: pike7.8-pcre
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.7-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.8-core (=${Source-Version})
 Description: PCRE module for Pike
  This Pike module enables one to use the PCRE (Perl regular
  expressions) from within the Pike programs.
 
-Package: pike7.7-bzip2
+Package: pike7.8-bzip2
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.7-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.8-core (=${Source-Version})
 Description: Bzip2 module for Pike
  This Pike module enables one to use the Bzip2 compression
  algorithm from within the Pike programs.
 
-Package: pike7.7-fuse
+Package: pike7.8-fuse
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.7-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.8-core (=${Source-Version})
 Description: Filesystem in USErspace support for Pike
  This Pike module enables one to export filesystems to the Linux
  kernel using the FUSE library.
 
-Package: pike7.7-sqlite
+Package: pike7.8-sqlite
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.7-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.8-core (=${Source-Version})
 Description: SQLite module for Pike
  This Pike module enables one to use the SQLite embedded database
  library.
 
-Package: pike7.7-fftw
+Package: pike7.8-fftw
 Architecture: any
-Depends: ${shlibs:Depends}, pike7.7-core (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.8-core (=${Source-Version})
 Description: Fast Fourier Transform module for Pike
  This Pike module enables one to use the Fast Fourier Transform
  library.
 
-Package: pike7.7-dev
+Package: pike7.8-dev
 Architecture: all
-Depends: ${shlibs:Depends}, pike7.7-core (=${Source-Version})
-Description: Development files for Pike 7.7
+Depends: ${shlibs:Depends}, pike7.8-core (=${Source-Version})
+Description: Development files for Pike 7.8
  This package contains files you will need to develop  C extension modules 
  for Pike. The package depends on  the recommended set of packages for the 
  Pike  environment.
@@ -166,10 +166,10 @@ Description: Development files for Pike 7.7
  others,  database connectivity, advanced cryptography, XML/HTML parsers
  and others. To learn more about pike, please visit http://pike.ida.liu.se/
 
-Package: pike7.7-manual
+Package: pike7.8-manual
 Architecture: all
 Section: doc
-Description: Pike 7.7 manual
+Description: Pike 7.8 manual
  The Pike manual auto-generated from the sources.
  .
  Pike is an interpreted, object-oriented, dynamic programming language
@@ -179,10 +179,10 @@ Description: Pike 7.7 manual
  others,  database connectivity, advanced cryptography, XML/HTML parsers
  and others. To learn more about pike, please visit http://pike.ida.liu.se/
 
-Package: pike7.7-reference
+Package: pike7.8-reference
 Architecture: all
 Section: doc
-Description: Pike 7.7 reference
+Description: Pike 7.8 reference
  The Pike reference auto-generated from the sources.
  .
  Pike is an interpreted, object-oriented, dynamic programming language
@@ -192,12 +192,12 @@ Description: Pike 7.7 reference
  others,  database connectivity, advanced cryptography, XML/HTML parsers
  and others. To learn more about pike, please visit http://pike.ida.liu.se/
 
-Package: pike7.7-doc
+Package: pike7.8-doc
 Architecture: all
 Section: doc
-Depends: pike7.7-manual (=${Source-Version}), pike7.7-reference (=${Source-Version})
-Description: Pike 7.7 documentation meta package
- This package depends upon all the Pike 7.7 documentation  packages. Note 
+Depends: pike7.8-manual (=${Source-Version}), pike7.8-reference (=${Source-Version})
+Description: Pike 7.8 documentation meta package
+ This package depends upon all the Pike 7.8 documentation  packages. Note 
  that the download and installation sizes  might be very large.
  .
  Pike is an interpreted, object-oriented, dynamic programming language
@@ -207,10 +207,10 @@ Description: Pike 7.7 documentation meta package
  others,  database connectivity, advanced cryptography, XML/HTML parsers
  and others. To learn more about pike, please visit http://pike.ida.liu.se/
 
-Package: pike7.7-meta
+Package: pike7.8-meta
 Architecture: all
-Depends: pike7.7 (=${Source-Version}), pike7.7-mysql (=${Source-Version}), pike7.7-pg (=${Source-Version}), pike7.7-odbc (=${Source-Version}), pike7.7-image (=${Source-Version}), pike7.7-sdl (=${Source-Version}), pike7.7-gdbm (=${Source-Version}), pike7.7-gtk (=${Source-Version}), pike7.7-gl (=${Source-Version}), pike7.7-sane (=${Source-Version}), pike7.7-doc (=${Source-Version}), pike7.7-dev (=${Source-Version}), pike7.7-perl (=${Source-Version}), pike7.7-svg (=${Source-Version}), pike7.7-pcre (=${Source-Version}), pike7.7-bzip2 (=${Source-Version}), pike7.7-fuse (=${Source-Version}), pike7.7-sqlite (=${Source-Version}), pike7.7-fftw (=${Source-Version})
-Description: Meta package for Pike 7.7
+Depends: pike7.8 (=${Source-Version}), pike7.8-mysql (=${Source-Version}), pike7.8-pg (=${Source-Version}), pike7.8-odbc (=${Source-Version}), pike7.8-image (=${Source-Version}), pike7.8-sdl (=${Source-Version}), pike7.8-gdbm (=${Source-Version}), pike7.8-gtk (=${Source-Version}), pike7.8-gl (=${Source-Version}), pike7.8-sane (=${Source-Version}), pike7.8-doc (=${Source-Version}), pike7.8-dev (=${Source-Version}), pike7.8-perl (=${Source-Version}), pike7.8-svg (=${Source-Version}), pike7.8-pcre (=${Source-Version}), pike7.8-bzip2 (=${Source-Version}), pike7.8-fuse (=${Source-Version}), pike7.8-sqlite (=${Source-Version}), pike7.8-fftw (=${Source-Version})
+Description: Meta package for Pike 7.8
  This package depends on all the components that make up the Pike
  language distribution. It will pull in a LOT of packages the
  Pike components depend upon (including XFree libraries, GTK, GNOME)!

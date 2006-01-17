@@ -1,2 +1,2 @@
-pike7.7-manual
-pike7.7-reference
+pike7.8-manual
+pike7.8-reference

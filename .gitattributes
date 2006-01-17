@@ -288,8 +288,8 @@ testfont binary
 /packaging/debian/README.Debian foreign_ident
 /packaging/debian/patches/06_dynamic_module_makefile.in-libgcc.diff foreign_ident
 /packaging/debian/pike-config.in foreign_ident
-/packaging/debian/pike7.7-core.postinst foreign_ident
-/packaging/debian/pike7.7-core.prerm foreign_ident
+/packaging/debian/pike7.8-core.postinst foreign_ident
+/packaging/debian/pike7.8-core.prerm foreign_ident
 /packaging/debian/postinst foreign_ident
 /packaging/debian/prerm foreign_ident
 /packaging/debian/rules foreign_ident

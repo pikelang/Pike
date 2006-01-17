@@ -20,8 +20,8 @@ set -e
 
 case "$1" in
        purge)
-        for d in include/pike include/pike7.7 lib/pike/site_pike lib/pike lib/pike7.7/site_pike lib/pike7.7 share/pike/site_pike \
-             share/pike share/pike7.7/site_pike share/pike7.7; do
+        for d in include/pike include/pike7.8 lib/pike/site_pike lib/pike lib/pike7.8/site_pike lib/pike7.8 share/pike/site_pike \
+             share/pike share/pike7.8/site_pike share/pike7.8; do
     	     rmdir /usr/local/$d || true
 	done
 	;;

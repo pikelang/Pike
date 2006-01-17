@@ -1,4 +1,4 @@
-?package(pike7.7-core):needs=text section=Apps/Programming\
-  title="Pike 7.7 HILFE" \
-  command="/usr/bin/pike7.7" \
-  icon="/usr/share/pixmaps/pike/pike7.7.xpm"
+?package(pike7.8-core):needs=text section=Apps/Programming\
+  title="Pike 7.8 HILFE" \
+  command="/usr/bin/pike7.8" \
+  icon="/usr/share/pixmaps/pike/pike7.8.xpm"
