@@ -692,7 +692,7 @@ class YMD
 	    if (to>=n) to=n; else if (to<from) return ({});
 	 }
 
-      return map(enumerate(1+to-from,1,y+from),
+      return map(enumerate(1+to-from,1,y+from-1),
 		 lambda(int x) 
 		 { return Year("ymd_yn",rules,x,1); });
    }
