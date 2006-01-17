@@ -426,6 +426,8 @@ Encoder encoder(string name, string|void replacement,
     "utf75": UTF7_5enc,
     "utf7½": UTF7_5enc,
     "gb18030": GB18030Enc,
+    "gbk": GBKenc,
+    "936": GBKenc,
     "shiftjis": ShiftJisEnc,
     "mskanji": ShiftJisEnc,
   ])[name];

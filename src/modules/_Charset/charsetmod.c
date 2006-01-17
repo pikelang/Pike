@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.59 2006/01/16 15:44:13 grubba Exp $
+|| $Id: charsetmod.c,v 1.60 2006/01/17 15:25:29 grubba Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -45,6 +45,7 @@ static struct program *std_big5_program = NULL;
 static struct program *std_8bit_program = NULL, *std_8bite_program = NULL;
 static struct program *std_16bite_program = NULL;
 static struct program *multichar_program = NULL, *gb18030e_program = NULL;
+static struct program *gbke_program = NULL;
 
 struct std_cs_stor { 
   struct string_builder strbuild;
@@ -978,6 +979,85 @@ static void f_feed_gb18030e(INT32 args)
   get_all_args("feed()", args, "%W", &str);
 
   feed_gb18030e(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
+
+  pop_n_elems(args);
+  push_object(this_object());
+}
+
+static void feed_gbke(struct std_cs_stor *cs, struct string_builder *sb,
+		      struct pike_string *str, struct pike_string *rep,
+		      struct svalue *repcb)
+{
+  ptrdiff_t l = str->len;
+  const struct gb18030e_info *e_info;
+
+  switch(str->size_shift) {
+  case 0:
+    {
+      p_wchar0 c, *p = STR0(str);
+      while(l--)
+	if((c=*p++)<=0x7f)
+	  string_builder_putchar(sb, c);
+        else if ((e_info = get_gb18030e_info(c)) &&
+		 (e_info->index < 0)) {
+	  /* Two bytes (ie GBK). */
+	  int off = ~e_info->index + (c - e_info->ulow)*2;
+	  string_builder_putchar(sb, gb18030e_bytes[off]);
+	  string_builder_putchar(sb, gb18030e_bytes[off+1]);
+	} else {
+	  REPLACE_CHAR(c, feed_gbke, cs, p - STR0(str) - 1);
+	}
+    }
+    break;
+  case 1:
+    {
+      p_wchar1 c, *p = STR1(str);
+      while(l--)
+	if((c=*p++)<=0x7f)
+	  string_builder_putchar(sb, c);
+	else if ((e_info = get_gb18030e_info(c)) &&
+		 (e_info->index < 0)) {
+	  /* Two bytes (ie GBK). */
+	  int off = ~e_info->index + (c - e_info->ulow)*2;
+	  string_builder_putchar(sb, gb18030e_bytes[off]);
+	  string_builder_putchar(sb, gb18030e_bytes[off+1]);
+	} else {
+	  REPLACE_CHAR(c, feed_gbke, cs, p - STR1(str) - 1);
+	}
+    }
+    break;
+  case 2:
+    {
+      p_wchar2 c, *p = STR2(str);
+      while(l--) {
+	if((c=*p++)<=0x7f) {
+	  string_builder_putchar(sb, c);
+	}
+	else if ((e_info = get_gb18030e_info(c)) &&
+		 (e_info->index < 0)) {
+	  /* Two bytes (ie GBK). */
+	  int off = ~e_info->index + (c - e_info->ulow)*2;
+	  string_builder_putchar(sb, gb18030e_bytes[off]);
+	  string_builder_putchar(sb, gb18030e_bytes[off+1]);
+	} else {
+	  REPLACE_CHAR(c, feed_gbke, cs, p - STR2(str) - 1);
+	}
+      }
+    }
+    break;
+  default:
+    Pike_fatal("Illegal shift size!\n");
+  }
+}
+
+static void f_feed_gbke(INT32 args)
+{
+  struct pike_string *str;
+  struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
+
+  get_all_args("feed()", args, "%W", &str);
+
+  feed_gbke(cs, &cs->strbuild, str, cs->replace, MKREPCB(cs->repcb));
 
   pop_n_elems(args);
   push_object(this_object());
@@ -2181,6 +2261,12 @@ PIKE_MODULE_INIT
   start_new_program();
   do_inherit(&prog, 0, NULL);
   /* function(string:object) */
+  ADD_FUNCTION("feed", f_feed_gbke,tFunc(tStr,tObj), 0);
+  add_program_constant("GBKenc", gbke_program = end_program(), ID_STATIC|ID_NOMASK);
+
+  start_new_program();
+  do_inherit(&prog, 0, NULL);
+  /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_sjis,tFunc(tStr,tObj), 0);
   add_program_constant("ShiftJisDec", sjis_program = end_program(), ID_STATIC|ID_NOMASK);
 
@@ -2337,6 +2423,9 @@ PIKE_MODULE_EXIT
 
   if(gb18030e_program != NULL)
     free_program(gb18030e_program);
+
+  if(gbke_program != NULL)
+    free_program(gbke_program);
 
   if(multichar_program != NULL)
     free_program(multichar_program);
