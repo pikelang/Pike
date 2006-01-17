@@ -1091,7 +1091,7 @@ class cYear
 //! method void create("julian",int|float julian_day)
 //! method void create(int year)
 //! method void create(string year)
-//!	It's possible to create the standard week
+//!	It's possible to create the standard year
 //!	by using three different methods; either the normal
 //!	way - from standard unix time or the julian day,
 //!	and also, for more practical use, from the year number.
@@ -1490,7 +1490,7 @@ class cMonth
 
    string nice_print_period()
    {
-      if (!n) return day()->nice_print()+" 0:00 sharp";
+      if (!n) return day()->nice_print()+" "+minute()->nice_print()+" sharp";
       cMonth mo=month(-1);
       if (mo->y==y)
 	 return sprintf("%s..%s %s",
@@ -1792,7 +1792,7 @@ class cWeek
 
    string nice_print_period()
    {
-      if (!n) return day()->nice_print()+" 0:00 sharp";
+      if (!n) return day()->nice_print()+" "+minute()->nice_print()+" sharp";
       cWeek wo=week(-1);
       if (wo->y==y)
 	 return sprintf("%s..%s %s",
@@ -2157,7 +2157,7 @@ class cDay
    string nice_print_period()
    {
 //        return nice_print()+" n="+n+"";
-      if (!n) return nice_print()+" 0:00 sharp";
+      if (!n) return nice_print()+" "+minute()->nice_print()+" sharp";
       return nice_print()+" .. "+day(-1)->nice_print();
    }
 
