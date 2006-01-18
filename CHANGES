@@ -1,14 +1,18 @@
 Changes since Pike 7.6.50
 ----------------------------------------------------------------------
 
-Changes in Pike code:
+Changes in Pike:
 
 o Added support for chunked transfer encoding and handle unexpected
   multiple headers in HTTP.Server.Request.
 o Added iso_646.irv, iso_4873.dv and iso_4873 to charsets.
+o Added UCS-2 API support to Odbc.
 o Fixed some bugs in Protocol.HTTP.Server.HeaderParser.
 o Fixed decoding boolean datatype in Protocols.XMLRPC.
 o Fixed short names in Standards.XML.Wix.
+o Fixed time(0) to behave like time(), not time(1). This is considered
+  a bugfix and does not have backward compatibility.
+o Allow _disable_callbacks and _enable_callbacks on closed fd's.
 
 Other:
 
@@ -16,6 +20,12 @@ o Added compatibility for more odbc drivers.
 o Optimized XML.Tree simplenode creation.
 o Fixed reference underflow in modify_shared_string()
 o Fixed segfault when exiting uninitialized mutex keys.
+o Fixed segfault for two special cases of indexing unexisting stuff.
+o Fixed gc problem that could produce an error "gc_mark() called for
+  thing in zap weak pass that wasn't marked before" in pikes compiled
+  with rtldebug.
+o Fixed multiset node ref bugs that affected iterators when the
+  multisets contain destructed objects.
 
 Build fixes:
 
