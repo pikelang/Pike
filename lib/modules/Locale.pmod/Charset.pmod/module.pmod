@@ -2,10 +2,9 @@
 
 #pike __REAL_VERSION__
 //! @ignore
-static private inherit @module@;
+static private inherit _Charset;
 //! @endignore
 
-//! @appears Locale.Charset
 //! The Charset module supports a wide variety of different character sets, and
 //! it is flexible in regard of the names of character sets it accepts. The
 //! character case is ignored, as are the most common non-alaphanumeric

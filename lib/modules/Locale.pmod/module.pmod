@@ -279,7 +279,7 @@ object get_object(string project, string lang) {
       default:
 	object dec;
 	// FIXME: Is this the best way of using Locale.Charset.decoder ?
-	if(catch(dec = _Charset.decoder(encoding))) {
+	if(catch(dec = .Charset.decoder(encoding))) {
 	  werror("\n* Warning: unknown encoding %O in %O\n",
 		 encoding, filename);
 	  break;
