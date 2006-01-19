@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.185 2005/09/11 00:40:10 grendel Exp $
+|| $Id: mapping.c,v 1.186 2006/01/19 18:54:59 grubba Exp $
 */
 
 #include "global.h"
@@ -278,72 +278,108 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
 					  struct keypair *from)
 {
   unsigned INT32 h;
-  struct keypair *k;
+  struct keypair *k, *prev = NULL, *next;
 
-  if(!from) return;
-  mapping_rehash_backwards_evil(md,from->next);
+  if(!(k = from)) return;
 
-  /* unlink */
-  k=md->free_list;
+  /* Reverse the hash chain. */
+  while ((next = k->next)) {
+    k->next = prev;
+    prev = k;
+    k = next;
+  }
+  k->next = prev;
+
+  from = k;
+
+  /* Rehash and reverse the hash chain. */
+  while (from) {
+    /* unlink */
+    k=md->free_list;
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
 #ifdef PIKE_DEBUG
-  if(!k) Pike_fatal("Error in rehash: not enough keypairs.\n");
+    if(!k) Pike_fatal("Error in rehash: not enough keypairs.\n");
 #endif
-  md->free_list=k->next;
+    md->free_list=k->next;
 #else /* PIKE_MAPPING_KEYPAIR_LOOP */
-  md->free_list++;
+    md->free_list++;
 #endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
 
-  /* initialize */
-  *k=*from;
+    /* initialize */
+    *k=*from;
 
-  /* link */
-  h=k->hval;
-  h%=md->hashsize;
-  k->next=md->hash[h];
-  md->hash[h]=k;
+    /* link */
+    h=k->hval;
+    h%=md->hashsize;
+    k->next=md->hash[h];
+    md->hash[h]=k;
 
-  /* update */
-  md->ind_types |= 1<< (k->ind.type);
-  md->val_types |= 1<< (k->val.type);
-  md->size++;
+    /* update */
+    md->ind_types |= 1<< (k->ind.type);
+    md->val_types |= 1<< (k->val.type);
+    md->size++;
+
+    /* Reverse */
+    prev = from->next;
+    from->next = next;
+    next = from;
+    from = prev;
+  }
 }
 
 static void mapping_rehash_backwards_good(struct mapping_data *md,
 					  struct keypair *from)
 {
   unsigned INT32 h;
-  struct keypair *k;
+  struct keypair *k, *prev = NULL, *next;
 
-  if(!from) return;
-  mapping_rehash_backwards_good(md,from->next);
+  if(!(k = from)) return;
 
-  /* unlink */
-  k=md->free_list;
+  /* Reverse the hash chain. */
+  while ((next = k->next)) {
+    k->next = prev;
+    prev = k;
+    k = next;
+  }
+  k->next = prev;
+
+  from = k;
+
+  /* Rehash and reverse the hash chain. */
+  while (from) {
+    /* unlink */
+    k=md->free_list;
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
 #ifdef PIKE_DEBUG
-  if(!k) Pike_fatal("Error in rehash: not enough keypairs.\n");
+    if(!k) Pike_fatal("Error in rehash: not enough keypairs.\n");
 #endif
-  md->free_list=k->next;
+    md->free_list=k->next;
 #else /* PIKE_MAPPING_KEYPAIR_LOOP */
-  md->free_list++;
+    md->free_list++;
 #endif /* !PIKE_MAPPING_KEYPAIR_LOOP */
 
-  /* initialize */
-  k->hval=from->hval;
-  assign_svalue_no_free(&k->ind, &from->ind);
-  assign_svalue_no_free(&k->val, &from->val);
+    /* initialize */
+    k->hval=from->hval;
+    assign_svalue_no_free(&k->ind, &from->ind);
+    assign_svalue_no_free(&k->val, &from->val);
 
-  /* link */
-  h=k->hval;
-  h%=md->hashsize;
-  k->next=md->hash[h];
-  md->hash[h]=k;
+    /* link */
+    h=k->hval;
+    h%=md->hashsize;
+    k->next=md->hash[h];
+    md->hash[h]=k;
 
-  /* update */
-  md->ind_types |= 1<< (k->ind.type);
-  md->val_types |= 1<< (k->val.type);
-  md->size++;
+    /* update */
+    md->ind_types |= 1<< (k->ind.type);
+    md->val_types |= 1<< (k->val.type);
+    md->size++;
+
+    /* Reverse */
+    prev = from->next;
+    from->next = next;
+    next = from;
+    from = prev;
+  }
 }
 
 /** This function re-allocates a mapping. It adjusts the max no. of
