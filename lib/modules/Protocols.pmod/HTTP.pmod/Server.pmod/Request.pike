@@ -360,7 +360,7 @@ static void populate_raw()
 
 static void parse_post()
 {
-  if ( request_headers["content-type"] && 
+  if ( request_headers["content-type"] &&
        has_prefix(request_headers["content-type"], "multipart/form-data") )
   {
     MIME.Message messg = MIME.Message(body_raw, request_headers);
@@ -374,9 +374,13 @@ static void parse_post()
 	variables[part->disp_params->name] = part->getdata();
     }
   }
-  else if( request_headers["content-type"] && 
-	   has_value(request_headers["content-type"], "url-encoded"))
+  else if( request_headers["content-type"] &&
+	   ( has_value(request_headers["content-type"], "url-encoded") ||
+             has_value(request_headers["content-type"], "urlencoded") ))
+
+  {
     .http_decode_urlencoded_query(body_raw,variables);
+  }
 }
 
 static void finalize()
