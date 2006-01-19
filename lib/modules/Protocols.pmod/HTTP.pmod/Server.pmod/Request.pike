@@ -370,9 +370,13 @@ static void parse_post()
 	variables[part->disp_params->name] = part->getdata();
     }
   }
-  else if( request_headers["content-type"] && 
-	   has_value(request_headers["content-type"], "url-encoded"))
+  else if( request_headers["content-type"] &&
+	   ( has_value(request_headers["content-type"], "url-encoded") ||
+             has_value(request_headers["content-type"], "urlencoded") ))
+
+  {
     .http_decode_urlencoded_query(body_raw,variables);
+  }
 }
 
 static void finalize()
