@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.382 2006/01/14 18:19:19 nilsson Exp $
+// $Id: master.pike.in,v 1.383 2006/01/19 21:19:52 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -2932,22 +2932,22 @@ void runtime_warning (string where, string what, mixed... args)
 }
 
 
-static object _charset_mod;
+static object Charset;
 
 //! This function is called by cpp() when it wants to do
 //! character code conversion.
 string decode_charset(string data, string charset)
 {
-  if (!_charset_mod) {
+  if (!Charset) {
     object mod = [object]resolv("Locale");
 
-    _charset_mod = [object](mod && mod["Charset"]);
-    if (!_charset_mod)
-      compile_cb_error ("Cannot handle charset - no Locale.Charset module found.");
+    Charset = [object](mod && mod["Charset"]);
+    if (!Charset)
+      compile_cb_error("Cannot handle charset - no Locale.Charset module found.");
   }
 
   if (mixed err = catch {
-      object decoder = ([function(string:object)]_charset_mod->decoder)(charset);
+      object decoder = ([function(string:object)]Charset.decoder)(charset);
       return ([function(void:string)]([function(string:object)]decoder->
 				      feed)(data)->drain)();
     })
