@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.45 2005/11/16 16:21:55 grubba Exp $
+|| $Id: postgres.c,v 1.46 2006/01/20 01:44:39 nilsson Exp $
 */
 
 /*
@@ -90,6 +90,7 @@ static void pgres_create (struct object * o) {
 	THIS->docommit=0;
 	THIS->dofetch=0;
 	THIS->lastcommit=0;
+        THIS->last_rows=-1;
 #ifdef PQ_THREADSAFE
 	mt_init(&THIS->mutex);
 #endif
@@ -554,6 +555,7 @@ yupbegin:       res=PQexec(conn,"BEGIN");
 		case PGRES_COMMAND_OK:
 			pgdebug("\tOk.\n");
 			THIS->last_result=NULL;
+                        THIS->last_rows=atoi(PQcmdTuples(res));
 			PQclear(res);
 			push_int(0);
 			return;
@@ -571,13 +573,14 @@ yupbegin:       res=PQexec(conn,"BEGIN");
 		case PGRES_TUPLES_OK:
 			pgdebug("\tResult.\n");
 			THIS->last_result=res;
+                        THIS->last_rows=PQntuples(res);
 			push_object(this_object());
 			push_object(clone_object(pgresult_program,1));
 			return;
 		default:
 			Pike_error ("Unimplemented server feature.\n");
 	}
-	Pike_error ("Internal error in postgresmodule.\n");
+	Pike_error ("Internal error in postgres module.\n");
 }
 
 
@@ -594,7 +597,7 @@ yupbegin:       res=PQexec(conn,"BEGIN");
 
 static void f_error (INT32 args)
 {
-	check_all_args("Postgres->error",args,0);
+        pop_n_elems(args);
 
 	if (THIS->last_error)
 		ref_push_string(THIS->last_error);
@@ -619,7 +622,7 @@ static void f_reset (INT32 args)
 	PGconn * conn;
 	PQ_FETCH();
 
-	check_all_args("Postgres->reset",args,0);
+	pop_n_elems(args);
 
 	if (!THIS->dblink)
 		Pike_error ("Not connected.\n");
@@ -711,7 +714,7 @@ static void f_callback(INT32 args)
 
 static void f_host_info (INT32 args)
 {
-	check_all_args("Postgres->host_info",args,0);
+        pop_n_elems(args);
 
 	if (PQstatus(THIS->dblink)!=CONNECTION_BAD) {
 		char buf[64];
@@ -728,6 +731,17 @@ static void f_host_info (INT32 args)
 	}
 	set_error(PQerrorMessage(THIS->dblink));
 	Pike_error ("Bad connection.\n");
+}
+
+/*! @decl int affected_rows()
+ *!
+ *! This function returns the number of rows affected by the last query.
+ */
+
+static void f_affected_rows (INT32 args)
+{
+  pop_n_elems(args);
+  push_int(THIS->last_rows);
 }
 
 /*! @endclass
@@ -763,7 +777,11 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("error", f_error, tFunc(tVoid,tStr), 0);
 
   /* function(void:string) */
-  ADD_FUNCTION("host_info", f_host_info,tFunc(tVoid,tStr), 0);
+  ADD_FUNCTION("host_info", f_host_info, tFunc(tVoid,tStr), 0);
+
+  /* function(void:int) */
+  ADD_FUNCTION("affected_rows", f_affected_rows, tFunc(tVoid,tInt), 0);
+
 
   /* postgres-specific functions */
   /* function(void:void) */
