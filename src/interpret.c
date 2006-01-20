@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.365 2005/12/31 03:37:14 nilsson Exp $
+|| $Id: interpret.c,v 1.366 2006/01/20 17:55:50 grubba Exp $
 */
 
 #include "global.h"
@@ -574,6 +574,19 @@ static struct inherit dummy_inherit
 #endif
 ;
 
+/* Find the lexical scope @[depth] levels out.
+ *
+ * @[loc]:
+ *   Input:
+ *     struct object *o		// object to start from.
+ *     struct inherit *inherit	// inherit in o->prog.
+ *     int parent_identifier	// identifier in o to start from.
+ *
+ *   Output:
+ *     struct object *o		// object containing the scope.
+ *     struct inherit *inherit	// inherit in o->prog being the scope.
+ *     int parent_identifier	// identifier in o from the inherit.
+ */
 PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 				       int depth)
 {
@@ -636,6 +649,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
     {
       default:
 	{
+	  /* Find the program that inherited us. */
 	  int my_level = inh->inherit_level;
 #ifdef PIKE_DEBUG
 	  if(!my_level)
@@ -643,14 +657,30 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 #endif
 	  while(loc->inherit->inherit_level >= my_level)
 	  {
-	    TRACE((5,"-   inherit-- (%d >= %d)\n",loc->inherit->inherit_level, my_level));
+	    TRACE((5,"-   inherit-- (%d >= %d)\n",
+		   loc->inherit->inherit_level, my_level));
 	    loc->inherit--;
+	    TRACE((5, "-   identifier_level: %d\n",
+		   loc->inherit->identifier_level));
 	  }
 
 	  find_external_context(loc, inh->parent_offset);
+	  TRACE((5,
+		 "-    inh->parent_identifier: %d\n"
+		 "-    inh->identifier_level: %d\n"
+		 "-    loc->parent_identifier: %d\n"
+		 "-    loc->inherit->parent_offset: %d\n"
+		 "-    loc->inherit->identifier_level: %d\n",
+		 inh->parent_identifier,
+		 inh->identifier_level,
+		 loc->parent_identifier,
+		 loc->inherit->parent_offset,
+		 loc->inherit->identifier_level));
+
 	  loc->parent_identifier =
 	    inh->parent_identifier +
 	    loc->inherit->identifier_level;
+	  TRACE((5, "-    parent_identifier: %d\n", loc->parent_identifier));
 	}
 	break;
 
@@ -658,6 +688,17 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 	TRACE((5,"-   Following inherit->parent\n"));
 	loc->parent_identifier=inh->parent_identifier;
 	loc->o=inh->parent;
+#ifdef PIKE_DEBUG  
+	TRACE((5, "-   parent_identifier: %d\n"
+	       "-   o: %p\n"
+	       "-   inh: %d\n",
+	       loc->parent_identifier,
+	       loc->o,
+	       loc->inherit - loc->o->prog->inherits));
+	if(Pike_interpreter.trace_level>5) {
+	  dump_program_tables(loc->o->prog, 4);
+	}
+#endif
 	break;
 
       case OBJECT_PARENT:
@@ -672,6 +713,15 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 
 	loc->parent_identifier=LOW_PARENT_INFO(loc->o,p)->parent_identifier;
 	loc->o=LOW_PARENT_INFO(loc->o,p)->parent;
+#ifdef PIKE_DEBUG  
+	TRACE((5, "-   parent_identifier: %d\n"
+	       "-   o: %p\n",
+	       loc->parent_identifier,
+	       loc->o));
+	if(Pike_interpreter.trace_level>5) {
+	  dump_program_tables(loc->o->prog, 4);
+	}
+#endif
 	break;
     }
 
@@ -706,6 +756,8 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 		   loc->parent_identifier);
 #endif
       loc->inherit=INHERIT_FROM_INT(p, loc->parent_identifier);
+      TRACE((5, "-   loc->inherit: %d\n",
+	     loc->inherit - loc->o->prog->inherits));
     }
     else
       /* Return a valid pointer to a dummy inherit for the convenience
