@@ -17,7 +17,7 @@
 //!      2570   : v3 description
 //!
 
-// $Id: protocol.pike,v 1.15 2005/11/26 04:01:43 nilsson Exp $
+// $Id: protocol.pike,v 1.16 2006/01/20 01:30:31 nilsson Exp $
 
 
 #include "snmp_globals.h"
@@ -238,6 +238,9 @@ void create(int|void rem_port, string|void rem_addr, int|void loc_port,
 //! return the whole SNMP message in raw format
 mapping readmsg(int|float|void timeout) {
   mapping rv;
+
+  if(timeout && !wait(timeout))
+    return 0;
 
   rv = read();
   return rv;
