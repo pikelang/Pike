@@ -1,26 +1,35 @@
 START_MARKER
-// $Id: testsuite.in,v 1.1 2006/01/02 02:54:51 nilsson Exp $
+// $Id: testsuite.in,v 1.2 2006/01/20 13:45:30 nilsson Exp $
 
-test_do( add_constant("R", Protocols.HTTP.Server.Request()) )
-test_do([[
-class FD {
-  inherit Stdio.FakeFile;
-  function read_cb;
-  function close_cb;
-  void set_nonblocking(function r, mixed x, function c) {
-    read_cb = r;
-    close_cb = c;
-  }
-  void add(string s) {
-    read_cb(0, s);
-  }
-  void set_read_callback(function r) {
-    read_cb = r;
-  }
-};
-add_constant("FD",FD(""));
+define(setup_request_test,[[
+  test_do( add_constant("R", Protocols.HTTP.Server.Request()) )
+  test_do([[
+  class FD {
+    inherit Stdio.FakeFile;
+    function read_cb;
+    function close_cb;
+    void set_nonblocking(function r, mixed x, function c) {
+      read_cb = r;
+      close_cb = c;
+    }
+    void add(string s) {
+      read_cb(0, s);
+    }
+    void set_read_callback(function r) {
+      read_cb = r;
+    }
+  };
+  add_constant("FD",FD(""));
+  ]])
+  test_do( R->attach_fd(FD, 0, lambda(object x){} ); )
 ]])
-test_do( R->attach_fd(FD, 0, lambda(object x){} ); )
+
+define(clear_request_test,[[
+  test_do( add_constant("R") )
+  test_do( add_constant("FD") )
+]])
+
+setup_request_test()
 
 test_do( FD->add("GET /foo/bar+%20/zuul.html?ha=bla&esp=an&ha=xxor ") )
 test_do( FD->add("HTTP/1.01\r") )
@@ -34,6 +43,7 @@ test_do( FD->add("\r\nH") )
 
 // parse_request and parse_variables called.
 
+test_eq( R->request_raw, "GET /foo/bar+%20/zuul.html?ha=bla&esp=an&ha=xxor HTTP/1.01") )
 test_eq( R->request_type, "GET" )
 test_eq( R->protocol, "HTTP/1.1" )
 test_eq( R->full_query, "/foo/bar+%20/zuul.html?ha=bla&esp=an&ha=xxor" )
@@ -51,12 +61,23 @@ test_do( FD->add("OMG") )
 
 test_eq( R->body_raw, "HELLO" )
 test_equal( R->cookies, ([ "A":"a", "B":"b", "C":"c", "D":"d" ]) )
+test_equal( R->misc, ([]) )
 
-test_do( add_constant("R") )
-test_do( add_constant("FD") )
+clear_request_test()
 
 // FIXME: Test transfer encoding chunked
 // FIXME: Test multipart/formdata
-// FIXME: Test url-encoded
+
+setup_request_test()
+
+test_do( add_constant("req", "POST / HTTP/1.1\r\nUser-Agent: Mozilla/4.0 (compatible; MSIE 6.0; X11; Linux i686; en) Opera 9.00\r\nHost: localhost:8080\r\nAccept: text/html, application/xml;q=0.9, application/xhtml+xml, image/png, image/jpeg, image/gif, image/x-xbitmap, */*;q=0.1\r\nAccept-Language: en\r\nAccept-Encoding: deflate, gzip, x-gzip, identity, *;q=0\r\nReferer: http://localhost:8086/\r\nCookie: show_wurfl_state=65; I=78d69acdb6caee5d6b720b8ae37a387b3db9e10a46feee12a6e1717989f9b3c1; device_state=64\r\nCookie2: $Version=1\r\nContent-Length: 7\r\nContent-Type: application/x-www-form-urlencoded\r\n\r\na=b&c=d") )
+test_do( FD->add(req) )
+
+test_equal( R->variables, ([ "a":"b", "c":"d" ]) )
+test_eq( R->raw, req )
+
+test_do( add_constant("req") )
+clear_request_test()
+
 
 END_MARKER
