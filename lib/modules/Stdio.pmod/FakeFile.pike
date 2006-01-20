@@ -1,4 +1,4 @@
-// $Id: FakeFile.pike,v 1.10 2004/08/27 02:20:53 nilsson Exp $
+// $Id: FakeFile.pike,v 1.11 2006/01/20 15:17:33 nilsson Exp $
 #pike __REAL_VERSION__
 
 //! A string wrapper that pretends to be a @[Stdio.File] object.
@@ -12,27 +12,30 @@ static string data;
 static int ptr;
 static int(0..1) r;
 static int(0..1) w;
+static int mtime;
+
+static function read_cb;
+static function read_oob_cb;
+static function write_cb;
+static function write_oob_cb;
+static function close_cb;
 
 //! @seealso
 //!   @[Stdio.File()->close()]
 int close(void|string direction) {
-  int cr = 1;
-  int cw = 1;
-  if(direction) {
-    direction = lower_case(direction);
-    cr = has_value(direction, "r");
-    cw = has_value(direction, "w");
-  }
+  direction = lower_case(direction||"rw");
+  int cr = has_value(direction, "r");
+  int cw = has_value(direction, "w");
 
   if(cr) {
-    if(!r) error("not open");
     r = 0;
   }
 
   if(cw) {
-    if(!w) error("not open");
     w = 0;
   }
+
+  // FIXME: Close callback
   return 1;
 }
 
@@ -43,6 +46,7 @@ void create(string _data, void|string type, int|void _ptr) {
   if(!_data) error("No data string given to FakeFile.\n");
   data = _data;
   ptr = _ptr;
+  mtime = time();
   if(type) {
     type = lower_case(type);
     if(has_value(type, "r"))
@@ -71,6 +75,15 @@ this_program dup() {
 //! @seealso
 //!   @[Stdio.File()->errno()]
 int errno() { return 0; }
+
+//! Returns size and the creation time of the string.
+Stdio.Stat stat() {
+  Stdio.Stat st = Stdio.Stat();
+  st->size = sizeof(data);
+  st->mtime=st->ctime=mtime;
+  st->atime=time();
+  return st;
+}
 
 //! @seealso
 //!   @[Stdio.File()->line_iterator()]
@@ -123,6 +136,7 @@ string read(void|int(0..) len, void|int(0..1) not_all) {
     end = start+len-1;
   ptr = end+1;
 
+  // FIXME: read callback
   return data[start..end];
 }
 
@@ -132,8 +146,15 @@ int seek(int pos, void|int mult, void|int add) {
   if(mult)
     pos = pos*mult+add;
   if(pos<0)
+  {
     pos = sizeof(data)+pos;
+    if( pos < 0 )
+	pos = 0;
+  }
   ptr = pos;
+  if( ptr > strlen( data ) )
+      ptr = strlen(data);
+  return ptr;
 }
 
 //! Always returns 1.
@@ -169,8 +190,81 @@ int(-1..) write(string|array(string) str, mixed ... extra) {
     data = data[..ptr-1] + str + data[ptr+sizeof(str)..];
     ptr += sizeof(str);
   }
+
+  // FIXME: write callback
   return sizeof(str);
 }
+
+//! @seealso
+//!   @[Stdio.File()->set_blocking]
+void set_blocking() {
+  close_cb = 0;
+  read_cb = 0;
+  read_oob_cb = 0;
+  write_cb = 0;
+  write_oob_cb = 0;
+}
+
+//! @seealso
+//!   @[Stdio.File()->set_blocking_keep_callbacks]
+void set_blocking_keep_callbacks() { }
+
+//! @seealso
+//!   @[Stdio.File()->set_blocking]
+void set_nonblocking(function rcb, function wcb, function ccb,
+		     function rocb, function wocb) {
+  read_cb = rcb;
+  write_cb = wcb;
+  close_cb = ccb;
+  read_oob_cb = rocb;
+  write_oob_cb = wocb;
+}
+
+//! @seealso
+//!   @[Stdio.File()->set_blocking_keep_callbacks]
+void set_nonblocking_keep_callbacks() { }
+
+
+//! @seealso
+//!   @[Stdio.File()->set_close_callback]
+void set_close_callback(function cb) { close_cb = cb; }
+
+//! @seealso
+//!   @[Stdio.File()->set_read_callback]
+void set_read_callback(function cb) { read_cb = cb; }
+
+//! @seealso
+//!   @[Stdio.File()->set_read_oob_callback]
+void set_read_oob_callback(function cb) { read_oob_cb = cb; }
+
+//! @seealso
+//!   @[Stdio.File()->set_write_callback]
+void set_write_callback(function cb) { write_cb = cb; }
+
+//! @seealso
+//!   @[Stdio.File()->set_write_oob_callback]
+void set_write_oob_callback(function cb) { write_oob_cb = cb; }
+
+
+//! @seealso
+//!   @[Stdio.File()->query_close_callback]
+function query_close_callback() { return close_cb; }
+
+//! @seealso
+//!   @[Stdio.File()->query_read_callback]
+function query_read_callback() { return read_cb; }
+
+//! @seealso
+//!   @[Stdio.File()->query_read_oob_callback]
+function query_read_oob_callback() { return read_oob_cb; }
+
+//! @seealso
+//!   @[Stdio.File()->query_write_callback]
+function query_write_callback() { return write_cb; }
+
+//! @seealso
+//!   @[Stdio.File()->query_write_oob_callback]
+function query_write_oob_callback() { return write_oob_cb; }
 
 string _sprintf(int t) {
   return t=='O' && sprintf("%O(%d,%O)", this_program, sizeof(data),
@@ -204,20 +298,6 @@ NOPE(connect_unix);
 NOPE(open);
 NOPE(open_socket);
 NOPE(pipe);
-NOPE(query_close_callback);
-NOPE(query_read_callback);
-NOPE(query_read_oob_callback);
-NOPE(query_write_callback);
-NOPE(query_write_oob_callback);
-NOPE(set_blocking);
-NOPE(set_blocking_keep_callbacks);
-NOPE(set_close_callback);
-NOPE(set_nonblocking);
-NOPE(set_nonblocking_keep_callbacks);
-NOPE(set_read_callback);
-NOPE(set_read_oob_callback);
-NOPE(set_write_callback);
-NOPE(set_write_oob_callback);
 NOPE(tcgetattr);
 NOPE(tcsetattr);
 
@@ -230,7 +310,6 @@ NOPE(query_fd);
 NOPE(read_oob);
 NOPE(set_close_on_exec);
 NOPE(set_keepalive);
-NOPE(stat); // We could implement this
 NOPE(trylock); // We could implement this
 NOPE(write_oob);
 
