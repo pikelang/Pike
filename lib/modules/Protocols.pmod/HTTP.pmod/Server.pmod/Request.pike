@@ -180,8 +180,8 @@ static void connection_timeout()
    finish(0);
 }
 
-// Parses the request and populates protocol, full_query, query and
-// not_query.
+// Parses the request and populates request_type, protocol,
+// full_query, query and not_query.
 static void parse_request()
 {
    array v=request_raw/" ";
@@ -202,6 +202,12 @@ static void parse_request()
 	 {
 	    request_type=v[0];
 	    protocol=v[-1];
+            if(!(< "HTTP/1.0", "HTTP/1.1" >)[protocol])
+            {
+              int maj, min;
+              if(sscanf(protocol, "HTTP/%d.%d", maj, min)==2)
+                protocol = sprintf("HTTP/%d.%d", maj, min);
+            }
 	    full_query=v[1..sizeof(v)-2]*" ";
 	    break;
 	 }
@@ -348,19 +354,9 @@ static int parse_variables()
   return 0; // delay
 }
 
-static void populate_raw()
-{
-  if( !strlen(body_raw) )
-  {
-    int i=search(raw, "\r\n\r\n");
-    if(i>0) body_raw=raw[i+4..];
-    return;
-  }
-}
-
 static void parse_post()
 {
-  if ( request_headers["content-type"] &&
+  if ( request_headers["content-type"] && 
        has_prefix(request_headers["content-type"], "multipart/form-data") )
   {
     MIME.Message messg = MIME.Message(body_raw, request_headers);
@@ -386,8 +382,6 @@ static void parse_post()
 static void finalize()
 {
   my_fd->set_blocking();
-
-  populate_raw();
   flatten_headers();
   parse_post();
 
@@ -649,7 +643,11 @@ void finish(int clean)
 {
    if( log_cb )
      log_cb(this);
-   if (send_fd) { send_fd->close(); destruct(send_fd); send_fd=0; }
+   if (send_fd) { 
+       send_fd->close(); 
+       destruct(send_fd); 
+       send_fd=0; 
+   }
    remove_call_out(send_timeout);
 
    if (!clean 
@@ -684,7 +682,7 @@ void send_write()
        send_fd)
    {
       string q;
-      q=send_fd->read(131072);
+      q=send_fd->read(65536);
       if (!q || q=="")
       {
 	 send_fd->close();
