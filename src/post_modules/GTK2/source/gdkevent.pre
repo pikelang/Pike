@@ -403,7 +403,7 @@ mixed cast(string to)
      ref_push_string(_STR("message_type"));
      push_atom( e->client.message_type );
      ref_push_string(_STR("data_format")); push_int(e->client.data_format);
-     ref_push_string(_STR("data "));
+     ref_push_string(_STR("data"));
      switch( e->client.data_format )
      {
       case 8:
