@@ -458,7 +458,6 @@ class Vahid
 //!     return a year in the vahid by number or name:
 //!
 //!     <tt>vahid-&gt;year("Alif")</tt>
-
    cYear year(int|string ... yp)
    {
       int num;
