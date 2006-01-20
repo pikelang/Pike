@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.371 2006/01/09 13:16:44 grubba Exp $
+|| $Id: las.c,v 1.372 2006/01/20 17:56:46 grubba Exp $
 */
 
 #include "global.h"
@@ -3633,7 +3633,7 @@ void fix_type_field(node *n)
       struct pike_type *f;	/* Expected type. */
       struct pike_type *s;	/* Actual type */
       struct pike_string *name = NULL;
-      char *alternate_name;
+      char *alternate_name = NULL;
       INT32 max_args,args;
 
 #ifdef NEW_ARG_CHECK
