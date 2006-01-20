@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgresult.c,v 1.31 2005/03/22 10:37:21 grubba Exp $
+|| $Id: pgresult.c,v 1.32 2006/01/20 01:32:01 nilsson Exp $
 */
 
 /*
@@ -367,7 +367,13 @@ badresult:
 		  break;
 #endif
 		}
-		push_string(make_shared_binary_string(value,k));
+
+                if (PQgetisnull(THIS->result, THIS->cursor, j)) {
+                  push_int(0);
+                } else {
+                  push_string(make_shared_binary_string(value,k));
+                }
+
 		if(binbuf)
 		  free(binbuf);
 	}
