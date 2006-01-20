@@ -67,6 +67,7 @@ testfont binary
 /lib/7.4/modules/_Crypto.pmod foreign_ident
 /lib/7.4/modules/__default.pmod foreign_ident
 /lib/7.6/modules/Debug.pmod/module.pmod foreign_ident
+/lib/7.6/modules/Locale.pmod/Charset.pmod foreign_ident
 /lib/7.6/modules/Protocols.pmod/LDAP.pmod/client.pike foreign_ident
 /lib/7.6/modules/Standards.pmod/UUID.pmod/module.pmod foreign_ident
 /lib/7.6/modules/Stdio.pmod/module.pmod foreign_ident
