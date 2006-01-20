@@ -18,6 +18,8 @@ constant compiler="icl";
 constant compiler="cl";
 #endif /* ECL */
 
+constant assembler="ias";
+
 constant default_cflags = ({
 #ifdef ECL
   "-Wp64",	// Generate warnings for loss of precision.
