@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.h,v 1.41 2004/10/30 11:38:27 mast Exp $
+|| $Id: opcodes.h,v 1.42 2006/01/21 14:31:34 grubba Exp $
 */
 
 #ifndef OPCODES_H
@@ -227,6 +227,7 @@ enum Pike_opcodes
   F_RANGE_FROM_BEG,		/* a[i.. */
   F_RANGE_FROM_END,		/* a[<i.. */
   F_RANGE_OPEN,			/* a[.. */
+  F_VERSION,
 
   F_ALIGN,
   F_POINTER,
