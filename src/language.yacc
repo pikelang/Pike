@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.362 2005/12/31 15:04:13 nilsson Exp $
+|| $Id: language.yacc,v 1.363 2006/01/21 14:31:09 grubba Exp $
 */
 
 %pure_parser
@@ -89,6 +89,7 @@
 %token TOK_TYPEDEF
 %token TOK_TYPEOF
 %token TOK_VARIANT
+%token TOK_VERSION
 %token TOK_VOID_ID
 %token TOK_WHILE
 %token TOK_XOR_EQ
@@ -278,6 +279,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> optional_rename_inherit
 %type <n> optional_identifier
 %type <n> TOK_IDENTIFIER
+%type <n> TOK_VERSION
 %type <n> assoc_pair
 %type <n> line_number_info
 %type <n> block
@@ -3575,6 +3577,36 @@ low_idents: TOK_IDENTIFIER
   }
   | TOK_PREDEF TOK_COLON_COLON bad_identifier
   {
+    $$=0;
+  }
+  | TOK_VERSION TOK_COLON_COLON TOK_IDENTIFIER
+  {
+    int old_major = Pike_compiler->compat_major;
+    int old_minor = Pike_compiler->compat_minor;
+
+    change_compiler_compatibility($1->u.integer.a, $1->u.integer.b);
+
+    if(Pike_compiler->last_identifier)
+      free_string(Pike_compiler->last_identifier);
+    copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
+    if (!($$ = resolve_identifier(Pike_compiler->last_identifier))) {
+      if((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
+	 (Pike_compiler->compiler_pass==2)) {
+	my_yyerror("Undefined identifier %d.%d::%S.",
+		   $1->u.integer.a, $1->u.integer.b,
+		   Pike_compiler->last_identifier);
+	$$=0;
+      }else{
+	$$=mknode(F_UNDEFINED,0,0);
+      }
+    }
+    change_compiler_compatibility(old_major, old_minor);
+    free_node($1);
+    free_node($3);
+  }
+  | TOK_VERSION TOK_COLON_COLON bad_identifier
+  {
+    free_node($1);
     $$=0;
   }
   | inherit_specifier TOK_IDENTIFIER
