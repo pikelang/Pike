@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.383 2006/01/19 21:19:52 grubba Exp $
+// $Id: master.pike.in,v 1.384 2006/01/21 14:35:45 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -721,6 +721,37 @@ static void call_compile_warning (object handler, string file,
 #define THREADED
 Builtin.mutex compilation_mutex = Builtin()->mutex();
 #endif
+
+#ifdef __NT__
+#define FIX_CASE(X)	lower_case(X)
+#else
+#define FIX_CASE(X)	(X)
+#endif /* __NT__ */
+
+static string base_from_filename(string fname)
+{
+  string low_name = FIX_CASE(fname);
+  if (has_prefix(low_name, ".#")) return 0;
+  if (has_suffix(low_name, ".pike") ||
+      has_suffix(low_name, ".pmod")) {
+    return fname[..sizeof(fname)-6];
+  }
+  if (has_suffix(low_name, ".so")) {
+    return fname[..sizeof(fname)-4];
+  }
+  return 0;
+}
+
+static int prio_from_filename(string fname)
+{
+  fname = FIX_CASE(fname);
+  if (has_suffix(fname, ".pmod")) return 3;
+  if (has_suffix(fname, ".so")) return 2;
+  if (has_suffix(fname, ".pike")) return 1;
+
+  // FIXME: Warn here?
+  return 0;
+}
 
 static program low_findprog(string pname,
 			    string ext,
@@ -4372,7 +4403,7 @@ class Version
   int `<(mixed v) { return objectp(v) && CMP(v) < 0; }
   int `>(mixed v) { return objectp(v) && CMP(v) > 0; }
   int `==(mixed v) { return objectp(v) && CMP(v)== 0; }
-  int _hash() { return major * 4711 + minor ; }
+  int __hash() { return major * 4711 + minor ; }
 
   string _sprintf(int t) {
     switch(t) {
