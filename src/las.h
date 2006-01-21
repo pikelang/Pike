@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.h,v 1.71 2005/02/18 13:50:12 grubba Exp $
+|| $Id: las.h,v 1.72 2006/01/21 14:32:03 grubba Exp $
 */
 
 #ifndef LAS_H
@@ -203,6 +203,7 @@ node *debug_mkprgnode(struct program *p);
 node *debug_mkapplynode(node *func,node *args);
 node *debug_mkefuncallnode(char *function, node *args);
 node *debug_mkopernode(char *oper_id, node *arg1, node *arg2);
+node *debug_mkversionnode(int major, int minor);
 node *debug_mklocalnode(int var, int depth);
 node *debug_mkidentifiernode(int i);
 node *debug_mktrampolinenode(int i, struct compiler_frame *depth);
@@ -254,6 +255,7 @@ void resolv_program(node *n);
 #define mkapplynode(func, args) dmalloc_touch(node *, debug_mkapplynode(dmalloc_touch(node *, func),dmalloc_touch(node *, args)))
 #define mkefuncallnode(function, args) dmalloc_touch(node *, debug_mkefuncallnode(function, dmalloc_touch(node *, args)))
 #define mkopernode(oper_id, arg1, arg2) dmalloc_touch(node *, debug_mkopernode(oper_id, dmalloc_touch(node *, arg1), dmalloc_touch(node *, arg2)))
+#define mkversionnode(major, minor) dmalloc_touch(node *, debug_mkversionnode(major, minor))
 #define mklocalnode(var, depth) dmalloc_touch(node *, debug_mklocalnode(var, depth))
 #define mkidentifiernode(i) dmalloc_touch(node *, debug_mkidentifiernode(i))
 #define mktrampolinenode(i,f) dmalloc_touch(node *, debug_mktrampolinenode(i, f))

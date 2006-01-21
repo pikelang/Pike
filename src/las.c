@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.372 2006/01/20 17:56:46 grubba Exp $
+|| $Id: las.c,v 1.373 2006/01/21 14:32:36 grubba Exp $
 */
 
 #include "global.h"
@@ -57,6 +57,7 @@ int car_is_node(node *n)
   case F_CONSTANT:
   case F_LOCAL:
   case F_THIS:
+  case F_VERSION:
     return 0;
 
   default:
@@ -74,6 +75,7 @@ int cdr_is_node(node *n)
   case F_CONSTANT:
   case F_LOCAL:
   case F_THIS:
+  case F_VERSION:
     return 0;
 
   default:
@@ -90,6 +92,7 @@ int node_is_leaf(node *n)
   case F_TRAMPOLINE:
   case F_CONSTANT:
   case F_LOCAL:
+  case F_VERSION:
     return 1;
   }
   return 0;
@@ -1295,6 +1298,21 @@ node *debug_mkopernode(char *oper_id, node *arg1, node *arg2)
     arg1=mknode(F_ARG_LIST,arg1,arg2);
 
   return mkefuncallnode(oper_id, arg1);
+}
+
+node *debug_mkversionnode(int major, int minor)
+{
+  node *res = mkemptynode();
+  res->token = F_VERSION;
+#ifdef __CHECKER__
+  _CDR(res) = 0;
+#endif
+  res->u.integer.a = major;
+  res->u.integer.b = minor;
+#ifdef SHARED_NODES
+  res->hash = hash_node(res);
+#endif /* SHARED_NODES */
+  return freeze_node(res);
 }
 
 node *debug_mklocalnode(int var, int depth)
