@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.56 2004/11/16 22:17:04 mast Exp $
+|| $Id: lexer.h,v 1.57 2006/01/21 14:33:20 grubba Exp $
 */
 
 /*
@@ -854,14 +854,37 @@ static int low_yylex(YYSTYPE *yylval)
 				    0,
 				    0,
 				    SHIFT);
-      dmalloc_touch_svalue(&sval);
-      yylval->n = mksvaluenode(&sval);
-      free_svalue(&sval);
-
       if(p1>p2)
       {
-	debug_malloc_touch(yylval->n);
-	free_node(yylval->n);
+	/* Floating point or version. */
+	if ((sval.type == PIKE_T_INT) &&
+	    (INDEX_CHARP(p2, 0, SHIFT) == '.')) {
+	  int major = sval.u.integer;
+	  char *p3 = p2;
+	  p2 += (1<<SHIFT);
+	  dmalloc_touch_svalue(&sval);
+
+	  sval.u.integer = 0;
+	  wide_string_to_svalue_inumber(&sval,
+					p2,
+					&p3,
+					0,
+					0,
+					SHIFT);
+	  dmalloc_touch_svalue(&sval);
+	  if ((sval.type == PIKE_T_INT) && (p3 > p2)) {
+	    for (l=0; ISSPACE(INDEX_CHARP(p3, l, SHIFT)); l++)
+	      ;
+	    if ((INDEX_CHARP(p3, l, SHIFT) == ':') &&
+		(INDEX_CHARP(p3, l+1, SHIFT) == ':')) {
+	      /* Version prefix. */
+	      lex.pos = p3;
+	      yylval->n = mkversionnode(major, sval.u.integer);
+	      return TOK_VERSION;
+	    }
+	  }
+	}
+	free_svalue(&sval);
 	yylval->fnum=(FLOAT_TYPE)f;
 #if 0
 	fprintf(stderr, "LEX: \"%.8s\" => %f, %f\n",
@@ -875,6 +898,9 @@ static int low_yylex(YYSTYPE *yylval)
 	}
 	return TOK_FLOAT;
       }else{
+	dmalloc_touch_svalue(&sval);
+	yylval->n = mksvaluenode(&sval);
+	free_svalue(&sval);
 	debug_malloc_touch(yylval->n);
 	lex.pos=p2;
 	if (lex_isidchar (LOOK())) {
