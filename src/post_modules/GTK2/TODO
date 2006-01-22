@@ -2,8 +2,8 @@
  - Rewrite configure test to use gtk_major/minor/micro_version
    directly from the lib instead of looking at gtk+-2.0.pc
 
- - Remove all fprintf from the code and instead figure out other ways
-   to signal the warnings to the application developer.
+ - Remove all fprintf/fputs from the code and instead figure out other
+   ways to signal the warnings to the application developer.
 
  - Reduce init code by putting programs in a mapping and use loops more.
 
@@ -30,3 +30,5 @@
    void set_color(object|int color_or_r, int|void g, int|void b)
 
  - Ensure all arguments are pop:ed from create methods. (?)
+
+ - gnomecanvas.pre / get_scroll_region, gtkcolorselection PRGB.
