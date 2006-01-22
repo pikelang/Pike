@@ -5,6 +5,9 @@ Changes in Pike:
 
 o Added support for chunked transfer encoding and handle unexpected
   multiple headers in HTTP.Server.Request.
+o Added support for "urlencoded" as an alias for "url-encoded" in
+  HTTP.Server.Request.
+o Added callback support to Stdio.FakeFile.
 o Added iso_646.irv, iso_4873.dv and iso_4873 to charsets.
 o Added UCS-2 API support to Odbc.
 o Fixed some bugs in Protocol.HTTP.Server.HeaderParser.
@@ -26,6 +29,7 @@ o Fixed gc problem that could produce an error "gc_mark() called for
   with rtldebug.
 o Fixed multiset node ref bugs that affected iterators when the
   multisets contain destructed objects.
+o Fixed out of C-stack errors when resizing unbalanced mappings.
 
 Build fixes:
 
