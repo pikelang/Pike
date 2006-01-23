@@ -1032,14 +1032,22 @@ class YMD
         with=promote_program(with);
 
       int length=(int)(how_many(with)/n);
+      int remains;
+      if(length && intp(n))
+        remains=(int)(how_many(with)%n);
+      if(!length)
+        length=1;
 
       TimeRange start=beginning();
       TimeRange end=end();
       array result=({});
-      while(start+with*length < end)
+      TimeRange next;
+      while((next=start+with*(length+!!remains)) < end)
       { 
-        result += ({ start->distance(start+with*length) });
-        start=start+with*length;
+        result += ({ start->distance(next) });
+        start=next;
+        if(remains)
+          remains--;
       }
       result += ({ start->distance(end) });
       return result;
