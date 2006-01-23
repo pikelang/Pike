@@ -2,7 +2,7 @@
  * A generic cache front-end
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: cache.pike,v 1.10 2002/11/26 12:33:02 grubba Exp $
+ * $Id: cache.pike,v 1.11 2006/01/23 13:29:04 mast Exp $
  *
  */
 
@@ -145,6 +145,16 @@ private void do_cleanup(function expiry_function, object storage) {
   cleanup_lock=0;
 }
 
+static Thread.Thread cleanup_thread;
+
+static void destroy()
+{
+  if (Thread.Thread t = cleanup_thread) {
+    cleanup_thread = 0;
+    t->wait();
+  }
+}
+
 //!
 void start_cleanup_cycle() {
   if (master()->asyncp()) { //we're asynchronous. Let's use call_outs
@@ -152,7 +162,7 @@ void start_cleanup_cycle() {
     return;
   }
 #if constant(thread_create)
-  thread_create(threaded_cleanup_cycle);
+  cleanup_thread = thread_create(threaded_cleanup_cycle);
 #else
   call_out(async_cleanup_cache,cleanup_cycle); //let's hope we'll get async
                                                //sooner or later.
@@ -176,7 +186,10 @@ void threaded_cleanup_cycle() {
       call_out(async_cleanup_cache,0);
       return;
     }
-    sleep(cleanup_cycle);
+    for (int wait = 0; wait < cleanup_cycle; wait++) {
+      sleep (1);
+      if (!cleanup_thread) return;
+    }
     do_cleanup(policy->expire,storage);
   }
 }
