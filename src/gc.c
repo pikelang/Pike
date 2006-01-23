@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.270 2005/05/19 22:35:27 mast Exp $
+|| $Id: gc.c,v 1.271 2006/01/23 14:00:16 mast Exp $
 */
 
 #include "global.h"
@@ -3323,13 +3323,15 @@ size_t do_gc(void *ignored, int explicit_call)
 	timestr[0] = 0;
 #ifdef DO_PIKE_CLEANUP
       if (gc_destruct_everything)
-	fprintf(stderr, "done (%u was destructed)%s\n",
-		destroy_count, timestr);
+	fprintf(stderr, "done (%u %s destructed)%s\n",
+		destroy_count, destroy_count == 1 ? "was" : "were", timestr);
       else
 #endif
 	fprintf(stderr, "done (%"PRINTSIZET"d of %"PRINTSIZET"d "
-		"was unreferenced)%s\n",
-		unreferenced, start_num_objs, timestr);
+		"%s unreferenced)%s\n",
+		unreferenced, start_num_objs,
+		unreferenced == 1 ? "was" : "were",
+		timestr);
     }
   }
 
