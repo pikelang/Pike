@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.171 2005/07/14 09:50:11 grubba Exp $
+|| $Id: pike_memory.c,v 1.172 2006/01/24 11:57:41 mast Exp $
 */
 
 #include "global.h"
@@ -2147,6 +2147,24 @@ void debug_free(void *p, LOCATION location, int mustfind)
   mt_unlock(&debug_malloc_mutex);
 }
 
+/* Return true if a block is allocated. If must_be_freed is set,
+ * return true if the block is allocated and leaking it is not
+ * accepted. */
+int dmalloc_check_allocated (void *p, int must_be_freed)
+{
+  int res;
+  struct memhdr *mh;
+  mt_lock(&debug_malloc_mutex);
+  mh=my_find_memhdr(p,0);
+  res = mh && mh->size>=0;
+  if (res && must_be_freed)
+    res = !(mh->flags & MEM_IGNORE_LEAK);
+  mt_unlock(&debug_malloc_mutex);
+  return res;
+}
+
+#if 0
+/* Disabled since it isn't used. */
 void dmalloc_check_block_free(void *p, LOCATION location,
 			      char *struct_name, describe_block_fn *describer)
 {
@@ -2169,6 +2187,7 @@ void dmalloc_check_block_free(void *p, LOCATION location,
 
   mt_unlock(&debug_malloc_mutex);
 }
+#endif
 
 void dmalloc_free(void *p)
 {
