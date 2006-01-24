@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.78 2006/01/24 07:32:22 mast Exp $
+|| $Id: block_alloc.h,v 1.79 2006/01/24 12:00:49 mast Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -110,6 +110,7 @@ static struct PIKE_CONCAT(DATA,_context) *PIKE_CONCAT(DATA,_ctxs)=0;	\
 static struct PIKE_CONCAT(DATA,_block) *PIKE_CONCAT(DATA,_blocks)=0;	\
 									\
 /* Points to the last meta-block in the DATA,_block list that isn't full. */ \
+/* -1 when the block alloc isn't initialized. */			\
 static struct PIKE_CONCAT(DATA,_block) *PIKE_CONCAT(DATA,_free_blocks)=	\
   (void*)-1;								\
 									\
@@ -214,36 +215,49 @@ struct DATA *PIKE_CONCAT(alloc_,DATA)(void)			        \
 })									\
 									\
 DO_IF_DMALLOC(                                                          \
-static void PIKE_CONCAT(check_free_,DATA)(struct DATA *d)               \
-{                                                                       \
-  struct PIKE_CONCAT(DATA,_block) *tmp;					\
-  struct PIKE_CONCAT(DATA,_context) *ctx = PIKE_CONCAT(DATA,_ctxs);	\
-  for(tmp=PIKE_CONCAT(DATA,_blocks);tmp;tmp=tmp->next)                  \
-  {                                                                     \
-    if( (char *)d < (char *)tmp) continue;                              \
-    if( (char *)d >= (char *)(tmp->x+(BSIZE))) continue;		\
-    if ((char *) d - (char *) tmp->x !=					\
-	(d - tmp->x) * (ptrdiff_t) sizeof (struct DATA)) break;		\
-    return;                                                             \
-  }                                                                     \
-  while (ctx) {								\
-    for(tmp=ctx->blocks; tmp; tmp=tmp->next)				\
-    {									\
-      if( (char *)d < (char *)tmp) continue;				\
-      if( (char *)d >= (char *)(tmp->x+(BSIZE))) continue;		\
-      if ((char *) d - (char *) tmp->x !=				\
-	  (d - tmp->x) * (ptrdiff_t) sizeof (struct DATA)) break;	\
-      return;								\
-    }									\
-    ctx = ctx->next;							\
-  }									\
-  Pike_fatal("really_free_%s called on non-block_alloc region (%p).\n",	\
-	     #DATA, d);							\
-}                                                                       \
-									\
-static void PIKE_CONCAT (dmalloc_describe_, DATA) (struct DATA *d)	\
+static void PIKE_CONCAT3(dmalloc_,DATA,_not_freed) (struct DATA *d,	\
+						    const char *msg)	\
 {									\
-  DMALLOC_DESCRIBE_BLOCK (d);						\
+  /* Separate function to allow gdb breakpoints. */			\
+  fprintf (stderr, "struct " TOSTR(DATA)				\
+	   " at %p is still in use %s\n", d, msg);			\
+}									\
+									\
+static void PIKE_CONCAT(dmalloc_late_free_,DATA) (struct DATA *d)	\
+{									\
+  /* Separate function to allow gdb breakpoints. */			\
+  fprintf (stderr, "struct " TOSTR(DATA) " at %p freed now (too late)\n", d); \
+  dmalloc_mark_as_free (d, 1);						\
+  dmalloc_unregister (d, 1);						\
+  PIKE_MEM_NA (*d);							\
+}									\
+									\
+static void PIKE_CONCAT3(dmalloc_free_,DATA,_block) (			\
+  struct PIKE_CONCAT(DATA,_block) *blk, const char *msg)		\
+{									\
+  int dont_free = 0;							\
+  size_t i;								\
+  for (i = 0; i < (BSIZE); i++) {					\
+    if (dmalloc_check_allocated (blk->x + i, 1)) {			\
+      PIKE_CONCAT3(dmalloc_,DATA,_not_freed) (blk->x + i, msg);		\
+      dont_free = 1;							\
+      DMALLOC_DESCRIBE_BLOCK ((blk->x + i));				\
+      debug_malloc_dump_references (blk->x + i, 0, 2, 0);		\
+    }									\
+    else								\
+      dmalloc_unregister(blk->x + i, 1);				\
+  }									\
+  if (dont_free) {							\
+    /* If a block still is in use we conciously leak this */		\
+    /* meta-block to allow access to it later. That way we can */	\
+    /* avoid fatals before the leak report. */				\
+    dmalloc_accept_leak (blk);						\
+  }									\
+  else {								\
+    /* Mark meta-block as available, since libc will mess with it. */	\
+    PIKE_MEM_RW (blk->x);						\
+    free ((char *) blk);						\
+  }									\
 }									\
 )									\
 									\
@@ -257,37 +271,53 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
 									\
   DO_IF_DMALLOC({							\
       struct DATA *d2;							\
-      PIKE_CONCAT(check_free_,DATA)(d);					\
-      dmalloc_mark_as_free(d, 1);					\
       blk = PIKE_CONCAT(DATA,_free_blocks);				\
       if(blk == NULL || (char *)d < (char *)blk ||			\
 	 (char *)d >= (char *)(blk->x+(BSIZE))) {			\
 	blk = PIKE_CONCAT(DATA,_blocks);				\
-	while((char *)d < (char *)blk ||				\
-	      (char *)d >= (char *)(blk->x+(BSIZE)))			\
+	while (blk && ((char *)d < (char *)blk ||			\
+		       (char *)d >= (char *)(blk->x+(BSIZE))))		\
 	  blk = blk->next;						\
       }									\
-      blk->used--;							\
-      PIKE_MEM_NA(*d);							\
-      d2 = PIKE_CONCAT(DATA,s_to_free)[PIKE_CONCAT(DATA,s_to_free_ptr)]; \
-      PIKE_CONCAT(DATA,s_to_free)[PIKE_CONCAT(DATA,s_to_free_ptr)] = d; \
-      PIKE_CONCAT(DATA,s_to_free_ptr) =					\
-	(PIKE_CONCAT(DATA,s_to_free_ptr) + 1) %				\
-	NELEM(PIKE_CONCAT(DATA,s_to_free));				\
-      if ((d = d2))							\
-	PIKE_MEM_WO(*d);						\
-      else								\
+      if (blk) {							\
+	if (!dmalloc_check_allocated (d, 0))				\
+	  Pike_fatal ("really_free_" TOSTR(DATA) " called with "	\
+		      "unknown pointer %p (probably already freed)\n", d); \
+	blk->used--;							\
+	dmalloc_mark_as_free(d, 1);					\
+	PIKE_MEM_NA(*d);						\
+	d2 = PIKE_CONCAT(DATA,s_to_free)[PIKE_CONCAT(DATA,s_to_free_ptr)]; \
+	PIKE_CONCAT(DATA,s_to_free)[PIKE_CONCAT(DATA,s_to_free_ptr)] = d; \
+	PIKE_CONCAT(DATA,s_to_free_ptr) =				\
+	  (PIKE_CONCAT(DATA,s_to_free_ptr) + 1) %			\
+	  NELEM(PIKE_CONCAT(DATA,s_to_free));				\
+	if ((d = d2))							\
+	  PIKE_MEM_WO(*d);						\
+	else								\
+	  return;							\
+      }									\
+      else if (dmalloc_check_allocated (d, 0)) {			\
+	PIKE_CONCAT(dmalloc_late_free_,DATA) (d);			\
 	return;								\
+      }									\
     });									\
 									\
   blk = PIKE_CONCAT(DATA,_free_blocks);					\
   if(blk == NULL || (char *)d < (char *)blk ||				\
      (char *)d >= (char *)(blk->x+(BSIZE))) {				\
     blk = PIKE_CONCAT(DATA,_blocks);					\
+    DO_IF_DEBUG (							\
+      if (!blk) Pike_fatal ("really_free_" TOSTR(DATA)			\
+			    " got invalid pointer %p\n", d)		\
+    );									\
     if((char *)d < (char *)blk ||					\
        (char *)d >= (char *)(blk->x+(BSIZE))) {				\
       do {								\
         blk = blk->next;						\
+	DO_IF_DEBUG (							\
+	  if (!blk) Pike_fatal ("really_free_" TOSTR(DATA)		\
+				" got invalid pointer %p\n", d)		\
+	);								\
       } while((char *)d < (char *)blk ||				\
 	      (char *)d >= (char *)(blk->x+(BSIZE)));			\
       if(blk == PIKE_CONCAT(DATA,_free_blocks))				\
@@ -303,6 +333,13 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
     if(PIKE_CONCAT(DATA,_free_blocks) == NULL)				\
       PIKE_CONCAT(DATA,_free_blocks) = blk;				\
   }									\
+									\
+  DO_IF_DEBUG (								\
+    if ((char *) d < (char *) &blk->x ||				\
+	((char *) d - (char *) &blk->x) % sizeof (struct DATA))		\
+      Pike_fatal ("really_free_" TOSTR(DATA)				\
+		  " got misaligned pointer %p\n", d);			\
+  );									\
 									\
   DO_PRE_INIT_BLOCK(d);							\
   d->BLOCK_ALLOC_NEXT = (void *)blk->PIKE_CONCAT3(free_,DATA,s);	\
@@ -323,19 +360,16 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
       blk->next->prev = NULL;						\
     }									\
 									\
-    DO_IF_DMALLOC({							\
-	size_t i;							\
-	for (i = 0; i < (BSIZE); i++) {					\
-	  dmalloc_check_block_free(					\
-	    blk->x + i, DMALLOC_LOCATION(), #DATA,			\
-	    (describe_block_fn *) PIKE_CONCAT (dmalloc_describe_, DATA)); \
-	  dmalloc_unregister(blk->x + i, 1);				\
-	}								\
-      });								\
+    DO_IF_DMALLOC (							\
+      PIKE_CONCAT3(dmalloc_free_,DATA,_block) (				\
+	blk, "in block expected to be empty")				\
+    );									\
+    DO_IF_NOT_DMALLOC(							\
+      /* Mark meta-block as available, since libc will mess with it. */	\
+      PIKE_MEM_RW(*blk);						\
+      free(blk);							\
+    );									\
 									\
-    /* Mark meta-block as available, since libc will mess with it. */	\
-    PIKE_MEM_RW(*blk);							\
-    free(blk);								\
     --PIKE_CONCAT3(num_empty_,DATA,_blocks);				\
   }									\
 									\
@@ -345,27 +379,26 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
 static void PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)(void)		\
 {									\
   struct PIKE_CONCAT(DATA,_block) *tmp;					\
-  DO_IF_DMALLOC(                                                        \
-   MEMSET(PIKE_CONCAT(DATA,s_to_free), 0, sizeof(PIKE_CONCAT(DATA,s_to_free))); \
-   for(tmp=PIKE_CONCAT(DATA,_blocks);tmp;tmp=tmp->next)                 \
-   {                                                                    \
-     size_t tmp2;							\
-     for(tmp2=0;tmp2<(BSIZE);tmp2++)					\
-     {                                                                  \
-       dmalloc_check_block_free(					\
-	 tmp->x+tmp2, DMALLOC_LOCATION(), #DATA,			\
-	 (describe_block_fn *) PIKE_CONCAT (dmalloc_describe_, DATA));	\
-       dmalloc_unregister(tmp->x+tmp2, 1);                              \
-     }                                                                  \
-   }                                                                    \
-  )                                                                     \
-  while((tmp=PIKE_CONCAT(DATA,_blocks)))				\
-  {									\
-    PIKE_CONCAT(DATA,_blocks)=tmp->next;				\
-    /* Mark meta-block as available, since libc will mess with it. */	\
-    PIKE_MEM_RW(tmp->x);						\
-    free((char *)tmp);							\
-  }									\
+									\
+  DO_IF_DMALLOC(							\
+    MEMSET(PIKE_CONCAT(DATA,s_to_free), 0, sizeof(PIKE_CONCAT(DATA,s_to_free))); \
+    while ((tmp = PIKE_CONCAT(DATA,_blocks))) {				\
+      PIKE_CONCAT(DATA,_blocks) = tmp->next;				\
+      PIKE_CONCAT3(dmalloc_free_,DATA,_block) (				\
+	tmp, "in free_all_" TOSTR(DATA) "_blocks");			\
+    }									\
+  );									\
+									\
+  DO_IF_NOT_DMALLOC(							\
+    while((tmp=PIKE_CONCAT(DATA,_blocks)))				\
+    {									\
+      PIKE_CONCAT(DATA,_blocks)=tmp->next;				\
+      /* Mark meta-block as available, since libc will mess with it. */	\
+      PIKE_MEM_RW(tmp->x);						\
+      free((char *)tmp);						\
+    }									\
+  );									\
+									\
   if (PIKE_CONCAT(DATA,_ctxs)) {					\
     struct PIKE_CONCAT(DATA, _context) *ctx = PIKE_CONCAT(DATA,_ctxs);	\
     PIKE_CONCAT(DATA,_blocks)=ctx->blocks;				\
