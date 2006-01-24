@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: callback.c,v 1.35 2004/09/18 20:50:48 nilsson Exp $
+|| $Id: callback.c,v 1.36 2006/01/24 12:02:37 mast Exp $
 */
 
 #include "global.h"
@@ -209,8 +209,11 @@ PMOD_EXPORT struct callback *debug_add_to_callback(struct callback_list *lst,
   l->arg=arg;
   l->free_func=free_func;
 
+#if 0
+  /* This is meaningless - free_func should never be free(). */
   DO_IF_DMALLOC( if(l->free_func == (callback_func)free)
 		 l->free_func=(callback_func)dmalloc_free; )
+#endif
 
   l->next=lst->callbacks;
   lst->callbacks=l;
@@ -225,7 +228,6 @@ PMOD_EXPORT struct callback *debug_add_to_callback(struct callback_list *lst,
  */
 PMOD_EXPORT void *remove_callback(struct callback *l)
 {
-  dmalloc_unregister(l,1);
   l->call=0;
   l->free_func=0;
   return l->arg;
