@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.36 2005/12/31 03:36:26 nilsson Exp $
+|| $Id: module.c,v 1.37 2006/01/24 13:10:27 mast Exp $
 */
 
 #include "global.h"
@@ -354,6 +354,7 @@ void exit_modules(void)
      * always report destructed objects. We use the gc in a special mode
      * for this to get a reasonably sane destruct order. */
     gc_destruct_everything = 1;
+    exit_cleanup_in_progress = 1; /* Warn about object creation from now on. */
     count = do_gc (NULL, 1);
     while (count) {
       size_t new_count = do_gc (NULL, 1);

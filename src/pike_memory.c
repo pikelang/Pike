@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.172 2006/01/24 11:57:41 mast Exp $
+|| $Id: pike_memory.c,v 1.173 2006/01/24 13:10:27 mast Exp $
 */
 
 #include "global.h"
@@ -825,6 +825,7 @@ int dmalloc_print_trace;
 
 #ifdef DO_PIKE_CLEANUP
 int exit_with_cleanup = 1;
+int exit_cleanup_in_progress = 0;
 #endif
 
 #ifdef DEBUG_MALLOC

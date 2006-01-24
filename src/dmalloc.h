@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dmalloc.h,v 1.54 2006/01/24 11:57:41 mast Exp $
+|| $Id: dmalloc.h,v 1.55 2006/01/24 13:10:27 mast Exp $
 */
 
 #ifndef DMALLOC_H
@@ -40,6 +40,7 @@ void gc_check_zapped (void *a, TYPE_T type, const char *file, int line);
 
 #ifdef DO_PIKE_CLEANUP
 extern int exit_with_cleanup;
+extern int exit_cleanup_in_progress;
 #define DO_IF_PIKE_CLEANUP(X) X
 #else
 #define DO_IF_PIKE_CLEANUP(X)

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.268 2006/01/12 12:31:50 grubba Exp $
+|| $Id: object.c,v 1.269 2006/01/24 13:10:27 mast Exp $
 */
 
 #include "global.h"
@@ -115,6 +115,16 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
   o->storage=p->storage_needed ? (char *)xalloc(p->storage_needed) : (char *)NULL;
 
   GC_ALLOC(o);
+
+#ifdef DO_PIKE_CLEANUP
+  if (exit_cleanup_in_progress) {
+    INT32 line;
+    struct pike_string *file = get_program_line (p, &line);
+    fprintf (stderr,
+	     "Warning: Object %p created during exit cleanup from %s:%d\n",
+	     o, file->str, line);
+  }
+#endif
 
 #ifdef DEBUG_MALLOC
   if(!debug_malloc_copy_names(o, p)) 
