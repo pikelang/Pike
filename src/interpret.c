@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.366 2006/01/20 17:55:50 grubba Exp $
+|| $Id: interpret.c,v 1.367 2006/01/24 12:03:19 mast Exp $
 */
 
 #include "global.h"
@@ -2945,6 +2945,7 @@ void really_clean_up_interpret(void)
     for(e=0;e<128;e++)
       debug_malloc_dump_references( p->x + e);
 #endif
+  free_callback_list (&evaluator_callbacks);
   free_all_pike_frame_blocks();
 #endif
 }
