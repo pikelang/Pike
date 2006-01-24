@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.77 2005/04/09 10:54:25 grubba Exp $
+|| $Id: block_alloc.h,v 1.78 2006/01/24 07:32:22 mast Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -30,7 +30,7 @@
 #define COUNT_OTHER()
 #define DMALLOC_DESCRIBE_BLOCK(X)
 #define BLOCK_ALLOC_HSIZE_SHIFT 2
-#define MAX_EMPTY_BLOCKS 4
+#define MAX_EMPTY_BLOCKS 4	/* Must be >= 1. */
 
 #ifndef BLOCK_ALLOC_USED
 #define BLOCK_ALLOC_USED DO_IF_DMALLOC(real_used) DO_IF_NOT_DMALLOC(used)
@@ -104,9 +104,15 @@ struct PIKE_CONCAT(DATA,_context)					\
 };									\
 									\
 static struct PIKE_CONCAT(DATA,_context) *PIKE_CONCAT(DATA,_ctxs)=0;	\
+									\
+/* Points to a double linked list of the meta-blocks. */		\
+/* Full meta-blocks are last on this list. */				\
 static struct PIKE_CONCAT(DATA,_block) *PIKE_CONCAT(DATA,_blocks)=0;	\
+									\
+/* Points to the last meta-block in the DATA,_block list that isn't full. */ \
 static struct PIKE_CONCAT(DATA,_block) *PIKE_CONCAT(DATA,_free_blocks)=	\
   (void*)-1;								\
+									\
 static INT32 PIKE_CONCAT3(num_empty_,DATA,_blocks)=0;			\
 DO_IF_RUN_UNLOCKED(static PIKE_MUTEX_T PIKE_CONCAT(DATA,_mutex);)       \
 DO_IF_DMALLOC(								\
@@ -307,6 +313,8 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
   if(!--blk->BLOCK_ALLOC_USED &&					\
      ++PIKE_CONCAT3(num_empty_,DATA,_blocks) > MAX_EMPTY_BLOCKS) {	\
     if(blk == PIKE_CONCAT(DATA,_free_blocks)) {				\
+      /* blk->prev isn't NULL because MAX_EMPTY_BLOCKS >= 1 so we */	\
+      /* know there's at least one more empty block. */			\
       if((blk->prev->next = blk->next))					\
         blk->next->prev = blk->prev;					\
       PIKE_CONCAT(DATA,_free_blocks) = blk->prev;			\
