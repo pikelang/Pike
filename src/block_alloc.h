@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.79 2006/01/24 12:00:49 mast Exp $
+|| $Id: block_alloc.h,v 1.80 2006/01/25 08:38:26 mast Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -238,14 +238,14 @@ static void PIKE_CONCAT3(dmalloc_free_,DATA,_block) (			\
   int dont_free = 0;							\
   size_t i;								\
   for (i = 0; i < (BSIZE); i++) {					\
-    if (dmalloc_check_allocated (blk->x + i, 1)) {			\
+    if (!dmalloc_check_allocated (blk->x + i, 0))			\
+      dmalloc_unregister (blk->x + i, 1);				\
+    else if (dmalloc_check_allocated (blk->x + i, 1)) {			\
       PIKE_CONCAT3(dmalloc_,DATA,_not_freed) (blk->x + i, msg);		\
-      dont_free = 1;							\
       DMALLOC_DESCRIBE_BLOCK ((blk->x + i));				\
       debug_malloc_dump_references (blk->x + i, 0, 2, 0);		\
+      dont_free = 1;							\
     }									\
-    else								\
-      dmalloc_unregister(blk->x + i, 1);				\
   }									\
   if (dont_free) {							\
     /* If a block still is in use we conciously leak this */		\
