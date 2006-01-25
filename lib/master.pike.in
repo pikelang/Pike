@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.384 2006/01/21 14:35:45 grubba Exp $
+// $Id: master.pike.in,v 1.385 2006/01/25 21:07:58 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -3211,23 +3211,35 @@ string program_path_to_name ( string path,
 //! returned string if it's an object file (i.e. ends with
 //! @expr{".pike"@}).
 {
+  if (path == "/master") return "master" + (object_suffix || "");
+
   array(string) sort_paths_by_length(array(string) paths)
   {
     sort(map(paths, sizeof), paths);
     return reverse(paths);
   };
 
-  if (path == "/master") return "master" + (object_suffix || "");
+  string prefix = "";
 
-  foreach(sort_paths_by_length(map(pike_module_path - ({""}),
-				   lambda(string s) {
-				     if (s[-1] == '/') return s;
-				     return s+"/";
-				   })),
-	  string prefix) {
-    if (has_prefix(path, prefix)) {
-      path = path[sizeof(prefix)..];
-      break;
+  array(Version) versions = reverse(sort(indices(compat_handler_cache)));
+ find_prefix:
+  foreach(versions, Version version) {
+    CompatResolver r = compat_handler_cache[version];
+    if (!r) continue;	// Protection against the gc...
+
+    foreach(sort_paths_by_length(map(r->pike_module_path - ({""}),
+				     lambda(string s) {
+				       if (s[-1] == '/') return s;
+				       return s+"/";
+				     })),
+	    string path_prefix) {
+      if (has_prefix(path, path_prefix)) {
+	path = path[sizeof(path_prefix)..];
+	if (version != currentversion) {
+	  prefix = ((string)version) + "::";
+	}
+	break find_prefix;
+      }
     }
   }
 
@@ -3240,6 +3252,8 @@ string program_path_to_name ( string path,
 
   string modname = replace(path, ".pmod/", ".");
   if(search(modname, "/")<0) path=modname;
+
+  path = prefix + path;
 
   if (has_suffix(path, ".module.pmod")) {
     return (module_prefix || "") + path[..<12] + (module_suffix || "");
@@ -4424,9 +4438,11 @@ class Version
 }
 
 //! Version information about the current Pike version.
-Version currentversion=Version(__MAJOR__,__MINOR__);
+Version currentversion = Version(__REAL_MAJOR__, __REAL_MINOR__);
 
-mapping(Version:CompatResolver) compat_handler_cache = set_weak_flag( ([]), 1);
+mapping(Version:CompatResolver) compat_handler_cache = ([
+  currentversion:this_object(),
+]);
 
 CompatResolver get_compilation_handler(int major, int minor)
 {
@@ -4434,7 +4450,11 @@ CompatResolver get_compilation_handler(int major, int minor)
 
   if(v > currentversion)
   {
-    /* do we want to make an error if major.minor > __MAJOR__.__MINOR ? */
+    /* Do we want to make an error if major.minor > __MAJOR__.__MINOR ?
+     *
+     * No; it's useful for referring to the next version when writing
+     * compat modules.
+     */
     return 0;
   }
 
