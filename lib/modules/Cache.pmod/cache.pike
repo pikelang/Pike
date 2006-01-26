@@ -2,7 +2,7 @@
  * A generic cache front-end
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: cache.pike,v 1.11 2006/01/23 13:29:04 mast Exp $
+ * $Id: cache.pike,v 1.12 2006/01/26 22:40:12 mast Exp $
  *
  */
 
@@ -145,6 +145,7 @@ private void do_cleanup(function expiry_function, object storage) {
   cleanup_lock=0;
 }
 
+#if constant(thread_create)
 static Thread.Thread cleanup_thread;
 
 static void destroy()
@@ -154,6 +155,7 @@ static void destroy()
     t->wait();
   }
 }
+#endif
 
 //!
 void start_cleanup_cycle() {
