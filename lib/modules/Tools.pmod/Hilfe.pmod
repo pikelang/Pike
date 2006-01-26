@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.121 2005/11/20 23:15:36 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.122 2006/01/26 21:13:17 grubba Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -1984,6 +1984,11 @@ class Evaluator {
     mapping(string:mixed) hilfe_symbols;
 
     mapping(string:mixed) get_default_module() {
+      object compat = get_active_compilation_handler();
+      if (compat && compat->get_default_module) {
+	// Support things like @expr{7.4::rusage}.
+	return compat->get_default_module() + hilfe_symbols;
+      }
       return all_constants() + hilfe_symbols;
     }
 
