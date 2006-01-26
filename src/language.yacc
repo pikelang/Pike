@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.363 2006/01/21 14:31:09 grubba Exp $
+|| $Id: language.yacc,v 1.364 2006/01/26 21:14:01 grubba Exp $
 */
 
 %pure_parser
@@ -3583,13 +3583,22 @@ low_idents: TOK_IDENTIFIER
   {
     int old_major = Pike_compiler->compat_major;
     int old_minor = Pike_compiler->compat_minor;
+    extern dynamic_buffer used_modules;
+    struct svalue *predef = (struct svalue *)used_modules.s.str;
+    struct svalue *efun = NULL;
 
     change_compiler_compatibility($1->u.integer.a, $1->u.integer.b);
 
     if(Pike_compiler->last_identifier)
       free_string(Pike_compiler->last_identifier);
     copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
-    if (!($$ = resolve_identifier(Pike_compiler->last_identifier))) {
+
+    /* Check predef:: first, and then the modules. */
+    if (Pike_compiler->num_used_modules &&
+	(predef->type == T_MAPPING) &&
+	(efun = low_mapping_lookup(predef->u.mapping, &($3->u.sval)))) {
+      $$ = mkconstantsvaluenode(efun);
+    } else if (!($$ = resolve_identifier(Pike_compiler->last_identifier))) {
       if((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
 	 (Pike_compiler->compiler_pass==2)) {
 	my_yyerror("Undefined identifier %d.%d::%S.",
