@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.603 2006/01/20 17:51:52 grubba Exp $
+|| $Id: builtin_functions.c,v 1.604 2006/01/26 21:12:43 grubba Exp $
 */
 
 #include "global.h"
@@ -2229,6 +2229,50 @@ PMOD_EXPORT void f_all_constants(INT32 args)
 {
   pop_n_elems(args);
   ref_push_mapping(get_builtin_constants());
+}
+
+/*! @decl object get_active_compilation_handler()
+ *!
+ *!   Returns the currently active compilation compatibility handler, or
+ *!   @tt{0@} (zero) if none is active.
+ *!
+ *! @note
+ *!   This function should only be used during a call of @[compile()].
+ *!
+ *! @seealso
+ *!   @[get_active_error_handler()], @[compile()],
+ *!   @[master()->get_compilation_handler()]
+ */
+PMOD_EXPORT void f_get_active_compilation_handler(INT32 args)
+{
+  pop_n_elems(args);
+  if (compat_handler) {
+    ref_push_object(compat_handler);
+  } else {
+    push_int(0);
+  }
+}
+
+/*! @decl object get_active_error_handler()
+ *!
+ *!   Returns the currently active compilation error handler
+ *!   (argument 4 to @[compile()]), or @tt{0@} (zero) if none
+ *!   is active.
+ *!
+ *! @note
+ *!   This function should only be used during a call of @[compile()].
+ *!
+ *! @seealso
+ *!   @[get_active_compilation_handler()], @[compile()]
+ */
+PMOD_EXPORT void f_get_active_error_handler(INT32 args)
+{
+  pop_n_elems(args);
+  if (error_handler) {
+    ref_push_object(error_handler);
+  } else {
+    push_int(0);
+  }
 }
 
 /*! @decl array allocate(int size)
@@ -8431,10 +8475,20 @@ void init_builtin_efuns(void)
   ADD_EFUN2("aggregate_mapping",f_aggregate_mapping,
 	    tFuncV(tNone,tSetvar(0,tMix),tMap(tVar(0),tVar(0))),
 	    OPT_TRY_OPTIMIZE, fix_aggregate_mapping_type, 0);
-  
+
 /* function(:mapping(string:mixed)) */
   ADD_EFUN("all_constants",f_all_constants,
 	   tFunc(tNone,tMap(tStr,tMix)),OPT_EXTERNAL_DEPEND);
+  
+  /* function(:object) */
+  ADD_EFUN("get_active_compilation_handler",
+	   f_get_active_compilation_handler,
+	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
+  
+  /* function(:object) */
+  ADD_EFUN("get_active_error_handler",
+	   f_get_active_error_handler,
+	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
   
 /* function(int,void|0=mixed:array(0)) */
   ADD_EFUN("allocate", f_allocate,
