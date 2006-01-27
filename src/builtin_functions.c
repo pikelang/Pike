@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.604 2006/01/26 21:12:43 grubba Exp $
+|| $Id: builtin_functions.c,v 1.605 2006/01/27 20:29:28 grubba Exp $
 */
 
 #include "global.h"
@@ -2231,7 +2231,7 @@ PMOD_EXPORT void f_all_constants(INT32 args)
   ref_push_mapping(get_builtin_constants());
 }
 
-/*! @decl object get_active_compilation_handler()
+/*! @decl CompilationHandler get_active_compilation_handler()
  *!
  *!   Returns the currently active compilation compatibility handler, or
  *!   @tt{0@} (zero) if none is active.
@@ -2241,7 +2241,7 @@ PMOD_EXPORT void f_all_constants(INT32 args)
  *!
  *! @seealso
  *!   @[get_active_error_handler()], @[compile()],
- *!   @[master()->get_compilation_handler()]
+ *!   @[master()->get_compilation_handler()], @[CompilationHandler]
  */
 PMOD_EXPORT void f_get_active_compilation_handler(INT32 args)
 {
@@ -2253,17 +2253,17 @@ PMOD_EXPORT void f_get_active_compilation_handler(INT32 args)
   }
 }
 
-/*! @decl object get_active_error_handler()
+/*! @decl CompilationHandler get_active_error_handler()
  *!
  *!   Returns the currently active compilation error handler
- *!   (argument 4 to @[compile()]), or @tt{0@} (zero) if none
+ *!   (second argument to @[compile()]), or @tt{0@} (zero) if none
  *!   is active.
  *!
  *! @note
  *!   This function should only be used during a call of @[compile()].
  *!
  *! @seealso
- *!   @[get_active_compilation_handler()], @[compile()]
+ *!   @[get_active_compilation_handler()], @[compile()], @[CompilationHandler]
  */
 PMOD_EXPORT void f_get_active_error_handler(INT32 args)
 {
@@ -3670,7 +3670,7 @@ node *optimize_replace(node *n)
   return NULL;
 }
 
-/*! @decl program compile(string source, object|void handler, @
+/*! @decl program compile(string source, CompilationHandler|void handler, @
  *!                       int|void major, int|void minor,@
  *!                       program|void target, object|void placeholder)
  *!
@@ -3695,7 +3695,8 @@ node *optimize_replace(node *n)
  *!   call the preprocessor manually by calling @[cpp()].
  *!
  *! @seealso
- *!   @[compile_string()], @[compile_file()], @[cpp()], @[master()]
+ *!   @[compile_string()], @[compile_file()], @[cpp()], @[master()],
+ *!   @[CompilationHandler]
  */
 PMOD_EXPORT void f_compile(INT32 args)
 {

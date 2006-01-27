@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.158 2005/04/09 10:52:16 grubba Exp $
+|| $Id: cpp.c,v 1.159 2006/01/27 20:29:28 grubba Exp $
 */
 
 #include "global.h"
@@ -280,6 +280,39 @@ static void cpp_warning(struct cpp *this, const char *cpp_warn_fmt, ...)
  */
 
 /*! @class CompilationHandler
+ *!
+ *!   Objects used by the compiler to handle references to global symbols,
+ *!   modules, external files, etc.
+ *!
+ *!   There can be up to three active compilation handlers active at the
+ *!   same time during a compilation. They are in order of precedence:
+ *!
+ *!   @ol
+ *!     @item The error handler
+ *!       This is the object passed to @[compile()] as
+ *!       the second argument (if any). This object is returned by
+ *!       @[get_active_error_handler()] during a compilation.
+ *!
+ *!     @item The compatibility handler
+ *!       This is the object returned by
+ *!       @[master()->get_compilation_handler()] (if any), which
+ *!       the compiler calls when it sees @tt{#pike@}-directives,
+ *!       or expressions using the version scope
+ *!       (eg @expr{7.4::rusage@}). This object is returned by
+ *!       @[get_active_compilation_handler()] during a compilation.
+ *!
+ *!     @item The master object.
+ *!       This is returned by @[master()] at any time.
+ *!   @endol
+ *!
+ *!   Any of the objects may implement a subset of the @[CompilationHandler]
+ *!   functions, and the first object that implements a function will be
+ *!   used. The error handler object can thus be used to block certain
+ *!   functionality (eg to restrict the number of available functions).
+ *!
+ *! @seealso
+ *!   @[master()->get_compilation_handler()], @[get_active_error_handler()],
+ *!   @[get_active_compilation_handler()], @[compile()]
  */
 
 /*! @decl void compile_error(string filename, int line, string msg)
