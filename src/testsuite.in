@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.759 2005/12/06 14:08:20 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.760 2006/01/27 20:43:12 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9359,6 +9359,10 @@ test_hash_7_0([["bar",10]],9)
 test_hash_7_0("b\666arqwerty1234", 2142487018, 1858424874)
 test_hash_7_0("",0)
 test_eval_error( return hash_7_0("foo",0) )
+
+// Versioned scope.
+test_eq(7.0::hash, hash_7_0)
+test_eq(7.4::hash, hash_7_4)
 
 // - indices
 test_equal(indices("foo"),({0,1,2}))
