@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.245 2005/11/15 10:31:48 grubba Exp $
+|| $Id: threads.c,v 1.246 2006/01/28 05:17:11 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
@@ -1606,7 +1606,15 @@ void f_cond_signal(INT32 args) { pop_n_elems(args); co_signal(THIS_COND); }
 void f_cond_broadcast(INT32 args) { pop_n_elems(args); co_broadcast(THIS_COND); }
 
 void init_cond_obj(struct object *o) { co_init(THIS_COND); }
-void exit_cond_obj(struct object *o) { co_destroy(THIS_COND); }
+
+void exit_cond_obj(struct object *o)
+{
+  /* FIXME: This fails (at least with pthread) if we're destructed
+   * explicitly and there are threads waiting on this cond. We should
+   * probably do a broadcast here instead and only destroy the cond
+   * when actually running out of refs. */
+  co_destroy(THIS_COND);
+}
 
 /*! @endclass
  */
