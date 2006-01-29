@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.246 2006/01/28 05:17:11 mast Exp $
+|| $Id: threads.c,v 1.247 2006/01/29 16:41:18 grubba Exp $
 */
 
 #ifndef CONFIGURE_TEST
@@ -1480,8 +1480,6 @@ void exit_mutex_key_obj(struct object *o)
 /*! @endclass
  */
 
-#define THIS_COND ((COND_T *)(CURRENT_STORAGE))
-
 /*! @class Condition
  *!
  *! Implementation of condition variables.
@@ -1497,6 +1495,13 @@ void exit_mutex_key_obj(struct object *o)
  *! @seealso
  *!   @[Mutex]
  */
+
+struct pike_cond {
+  COND_T cond;
+  int wait_count;
+};
+
+#define THIS_COND ((pike_cond *)(CURRENT_STORAGE))
 
 /*! @decl void wait(Thread.MutexKey mutex_key)
  *!
@@ -1519,6 +1524,10 @@ void exit_mutex_key_obj(struct object *o)
  *!   versions since it unavoidably leads to programs with races
  *!   and/or deadlocks.
  *!
+ *! @note
+ *!   Note also that any threads waiting on the condition will be
+ *!   waken up when it gets destructed.
+ *!
  *! @seealso
  *!   @[Mutex->lock()]
  */
@@ -1526,7 +1535,7 @@ void f_cond_wait(INT32 args)
 {
   struct object *key, *mutex_obj;
   struct mutex_storage *mut;
-  COND_T *c;
+  struct pike_cond *c;
 
   if(threads_disabled)
     Pike_error("Cannot wait for conditions when threads are disabled!\n");
@@ -1555,7 +1564,9 @@ void f_cond_wait(INT32 args)
     
   /* Wait and allow mutex operations */
   SWAP_OUT_CURRENT_THREAD();
-  co_wait_interpreter(c);
+  c->wait_count++;
+  co_wait_interpreter(&(c->cond));
+  c->wait_count--;
   SWAP_IN_CURRENT_THREAD();
     
   /* Lock mutex */
@@ -1594,7 +1605,11 @@ void f_cond_wait(INT32 args)
  *! @seealso
  *!   @[broadcast()]
  */
-void f_cond_signal(INT32 args) { pop_n_elems(args); co_signal(THIS_COND); }
+void f_cond_signal(INT32 args)
+{
+  pop_n_elems(args);
+  co_signal(&(THIS_COND->cond));
+}
 
 /*! @decl void broadcast()
  *!
@@ -1603,17 +1618,41 @@ void f_cond_signal(INT32 args) { pop_n_elems(args); co_signal(THIS_COND); }
  *! @seealso
  *!   @[signal()]
  */
-void f_cond_broadcast(INT32 args) { pop_n_elems(args); co_broadcast(THIS_COND); }
+void f_cond_broadcast(INT32 args)
+{
+  pop_n_elems(args);
+  co_broadcast(&(THIS_COND->cond));
+}
 
-void init_cond_obj(struct object *o) { co_init(THIS_COND); }
+void init_cond_obj(struct object *o)
+{
+  co_init(&(THIS_COND->cond));
+  THIS_COND->wait_count = 0;
+}
 
 void exit_cond_obj(struct object *o)
 {
-  /* FIXME: This fails (at least with pthread) if we're destructed
-   * explicitly and there are threads waiting on this cond. We should
-   * probably do a broadcast here instead and only destroy the cond
-   * when actually running out of refs. */
-  co_destroy(THIS_COND);
+  /* Wake up any threads that might be waiting on this cond.
+   *
+   * Note that we are already destructed (o->prog == NULL),
+   * so wait_count can't increase.
+   *
+   * FIXME: This code wouldn't be needed if exit callbacks were called
+   *        only when the ref count reaches zero.
+   *	/grubba 2006-01-29
+   */
+  while (THIS_COND->wait_count) {
+    co_broadcast(THIS_COND);
+
+    THREADS_ALLOW();
+#ifdef HAVE_NO_YIELD
+    sleep(0);
+#else /* HAVE_NO_YIELD */
+    th_yield();
+#endif /* HAVE_NO_YIELD */
+    THREADS_DISALLOW();
+  }
+  co_destroy(&(THIS_COND->cond));
 }
 
 /*! @endclass
@@ -2204,7 +2243,7 @@ void th_init(void)
   end_class("mutex_compat_7_4", 0);
 
   START_NEW_PROGRAM_ID(THREAD_CONDITION);
-  ADD_STORAGE(COND_T);
+  ADD_STORAGE(struct pike_cond);
   ADD_FUNCTION("wait",f_cond_wait,
 	       tFunc(tObjIs_THREAD_MUTEX_KEY,tVoid),0);
   ADD_FUNCTION("signal",f_cond_signal,tFunc(tNone,tVoid),0);
