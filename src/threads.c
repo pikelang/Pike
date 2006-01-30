@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.247 2006/01/29 16:41:18 grubba Exp $
+|| $Id: threads.c,v 1.248 2006/01/30 10:03:21 grubba Exp $
 */
 
 #ifndef CONFIGURE_TEST
@@ -1501,7 +1501,7 @@ struct pike_cond {
   int wait_count;
 };
 
-#define THIS_COND ((pike_cond *)(CURRENT_STORAGE))
+#define THIS_COND ((struct pike_cond *)(CURRENT_STORAGE))
 
 /*! @decl void wait(Thread.MutexKey mutex_key)
  *!
