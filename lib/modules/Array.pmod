@@ -407,7 +407,7 @@ array(array(array)) diff3 (array a, array b, array c)
       do apart += ({a[ai++]}), bi++, ci++;
       while ((<0333, 0123, 0312, 0231>)[aeq[ai] << 6 | beq[bi] << 3 | ceq[ci]]);
       cpart = bpart = apart;
-      prevodd = -1;
+      prevodd = -2;
     }
 
     else {
