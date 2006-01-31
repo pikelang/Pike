@@ -1,0 +1,97 @@
+/* -*- C -*- */
+class GTK2.MessageDialog;
+inherit GTK2.Dialog;
+
+//! A dialog with an image representing the type of message (Error, Question).
+//! alongside some message text.  It's simply a convenience widget; you could
+//! construct the equivalent of GTK2.MessageDialog from GTK2.Dialog without too
+//! much effort, but GTK2.MessageDialog saves typing.
+
+//! Properties:
+//! int buttons
+//! int message-type
+//! <p>
+//! Style properties:
+//! int message-border
+//! int use-separator
+
+void create(int flags, int type, int buttons, string message,
+	    ?GTK2.Window parent)
+//! Creates a new message dialog, which is a simple dialog with an icon
+//! indicating the dialog type (error, warning, etc) and some text the user
+//! may want to see.  When the user clicks a button a "response" signal is
+//! emitted with response IDs from CONST(GTK2.RESPONSE_).  See
+//! GTK2.Dialog for more details.
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  {
+    INT_TYPE flags,type,buttons;
+    struct object *o1=NULL;
+    struct pike_string *message;
+    const gchar *msg2;
+    GtkWidget *gmd;
+
+    get_all_args("create",args,"%i%i%i%t.%o1",&flags,&type,&buttons,
+		 &message,&o1);
+    ref_push_string(message);
+    f_string_to_utf8(1);
+    msg2=GSTR0(Pike_sp[-1].u.string);
+    gmd=gtk_message_dialog_new(GTK_WINDOW(get_gobject(o1)),flags,type,
+			       buttons,msg2,NULL);
+    THIS->obj=G_OBJECT(gmd);
+  }
+  my_pop_n_elems(args+1);
+  pgtk__init_this_object();
+}
+
+require gtk24;
+void set_markup(string text);
+//! Sets the text of the message dialog to be text, which is marked up with
+//! the Pango text markup language.
+endrequire;
+
+require gtk26;
+void format_secondary_text(string text)
+//! Sets the secondary text of the message dialog to be text.
+//! <p>
+//! Note that setting a secondary text makes the primary text become bold,
+//! unless you have provided explicit markup.
+{
+  pgtk_verify_inited();
+  {
+    struct pike_string *t;
+    const gchar *t2;
+    get_all_args("format_secondary_text",args,"%t",&t);
+    ref_push_string(t);
+    f_string_to_utf8(1);
+    t2=GSTR0(Pike_sp[-1].u.string);
+    gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(THIS->obj),
+		t2,NULL);
+  }
+  my_pop_n_elems(args+1);
+  RETURN_THIS();
+}
+
+void format_secondary_markup(string text)
+//! Sets the secondary text of the message dialog to be text, which is
+//! marked up with the Pango text markup language.
+//! <p>
+//! Note tha tsetting a secondary text makes the primary text become bold,
+//! unless you have provided explicit markup.
+{
+  pgtk_verify_inited();
+  {
+    struct pike_string *t;
+    const gchar *t2;
+    get_all_args("format_secondary_markup",args,"%t",&t);
+    ref_push_string(t);
+    f_string_to_utf8(1);
+    t2=GSTR0(Pike_sp[-1].u.string);
+    gtk_message_dialog_format_secondary_markup(GTK_MESSAGE_DIALOG(THIS->obj),
+		t2,NULL);
+  }
+  my_pop_n_elems(args+1);
+  RETURN_THIS();
+}
+endrequire;
