@@ -563,7 +563,6 @@ void set_icon(GDK2.Pixbuf icon);
 //! If you have your icon hand-drawn in multiple sizes, use set_icon_list().
 //! Then the best size will be used.
 
-/*
 void set_icon_list(array(GDK2.Pixbuf) list)
 //! Set up the icons for minimizing.
 //! <p>
@@ -579,8 +578,30 @@ void set_icon_list(array(GDK2.Pixbuf) list)
 //! Recommended sizes to provide: 16x16, 32x32, 48x48 at minimum, and larger
 //! images (64x64, 128x128) if you have them.
 {
+  pgtk_verify_inited();
+  {
+    struct array *a;
+    GList *gl=NULL;
+    GdkPixbuf *gp;
+    int i;
+
+    get_all_args("set_icon_list",args,"%A",&a);
+    if (a==NULL)
+      SIMPLE_ARG_ERROR("set_icon_list",args,"Invalid array");
+    for (i=0; i<a->size; i++) {
+      if ((ITEM(a)+i)->type!=PIKE_T_OBJECT)
+	continue;
+      gp=GDK_PIXBUF(get_gobject((ITEM(a)+i)->u.object));
+      if (gp)
+	gl=g_list_append(gl,gp);
+    }
+    if (gl) {
+      gtk_window_set_icon_list(GTK_WINDOW(THIS->obj),gl);
+      g_list_free(gl);
+    }
+  }
+  RETURN_THIS();
 }
-*/
 
 require gtk22;
 int set_icon_from_file(string filename, null);

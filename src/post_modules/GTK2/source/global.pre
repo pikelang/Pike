@@ -632,12 +632,6 @@ void set_default_icon_from_file(string filename)
 }
 endrequire;
 
-void set_default_icon_list(array(GDK2.Pixbuf) list)
-//! Sets an icon list to be used as fallback for windows that haven't had
-//! set_icon_list() called on them to set up a window-specific icon list.  This
-//! function allows you to set up the icon for all windows in your app at once.
-{
-}
 
 require gtk26;
 void set_default_icon_name(string name)
@@ -684,29 +678,82 @@ array(GDK2.Pixbuf) get_default_icon_list()
   g_list_free(gl);
 }
 
-/*
-void set_default_icon_list(array(GDK2.Pixbuf) icons)
-//! Set an icon list to be used.
+void set_default_icon_list(array(GDK2.Pixbuf) list)
+//! Sets an icon list to be used as fallback for windows that haven't had
+//! set_icon_list() called on them to set up a window-specific icon list.  This
+//! function allows you to set up the icon for all windows in your app at once.
 {
+  GList *gl=NULL;
+  struct array *a;
+  int i;
+  GdkPixbuf *gp;
+
+  get_all_args("set_default_icon_list",args,"%A",&a);
+  if (a==NULL)
+    SIMPLE_ARG_ERROR("set_default_icon_list",args,"Invalid array");
+  for (i=0; i<a->size; i++) {
+    if ((ITEM(a)+i)->type!=PIKE_T_OBJECT)
+      continue;
+    gp=GDK_PIXBUF(get_gobject((ITEM(a)+i)->u.object));
+    if (gp)
+      gl=g_list_append(gl,gp);
+  }
+  if (gl) {
+    gtk_window_set_default_icon_list(gl);
+    g_list_free(gl);
+  }
+  my_pop_n_elems(args);
 }
 
+require gtk24;
 void set_default_icon(GDK2.Pixbuf pix)
 //! Sets an icon to be used as fallback for windows that haven't had
 //! set_icon() called on them.
 {
-}
+  struct object *o1;
+  GdkPixbuf *gp;
 
-int set_default_icon_from_file(string filename)
+  get_all_args("set_default_icon",args,"%o",&o1);
+  gp=GDK_PIXBUF(get_gobject(o1));
+  if (gp)
+    gtk_window_set_default_icon(gp);
+  my_pop_n_elems(args);
+}
+endrequire;
+
+require gtk22;
+void set_default_icon_from_file(string filename)
 //! Sets an icon to be used as fallback from a file on disk.
 {
+  GError *err=NULL;
+  char *filename;
+  int res;
+
+  get_all_args("set_default_icon_from_file",args,"%s",&filename);
+  res=gtk_window_set_default_icon_from_file(filename,&err);
+  if (!res)
+    Pike_error("Unable to set icon from file %s: %s\n",filename,err->message);
+  my_pop_n_elems(args);
 }
+endrequire;
 
 require gtk26;
 void set_default_icon_name(string name)
+//! Sets an icon to be used as fallback for windows that haven't had
+//! set_icon_list() called on them from a named themed icon.
 {
+  struct pike_string *t;
+
+  get_all_args("set_default_icon_name",args,"%T",&t);
+  if (t) {
+    ref_push_string(t);
+    f_string_to_utf8(1);
+    gtk_window_set_default_icon_name(CGSTR0(Pike_sp[-1].u.string));
+    pop_stack();
+  }
+  my_pop_n_elems(args);
 }
 endrequire;
-*/
 
 require gtk24;
 GTK2.IconTheme get_default_icon_theme()
@@ -735,6 +782,26 @@ void add_builtin_icon(string name, int size, GDK2.Pixbuf pixbuf)
     get_all_args("add_builtin_icon",args,"%s%i%o",&name,&size,&o1);
     gtk_icon_theme_add_builtin_icon(name,size,GDK_PIXBUF(get_gobject(o1)));
   }
+  my_pop_n_elems(args);
+}
+endrequire;
+
+require gtk22;
+void set_auto_startup_notification(int setting)
+//! By default, after showing the first GTK2.Window for each GDK2.Screen,
+//! GTK+ calls GDK2.Screen->notify_startup_complete().  Call this function to
+//! disable the automatic startup notification.  You might do this if your
+//! first window is a splash screen, and you want to delay notification until
+//! after your real main window has been shown, for example.
+//! <p>
+//! In that example, you would disable startup notification temporarily,
+//! show your splash screen, then re-enable it so that showing the main
+//! window would automatically result in notification.
+{
+  INT_TYPE set;
+
+  get_all_args("set_auto_startup_notification",args,"%i",&set);
+  gtk_window_set_auto_startup_notification(set);
   my_pop_n_elems(args);
 }
 endrequire;
