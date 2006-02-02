@@ -13,6 +13,9 @@ endrequire;
 //! GTK2.TreeModel model
 require gtk26;
 //! int popup-completion
+require gtk28;
+//! int popup-single-match
+endrequire;
 //! int text-column
 endrequire;
 
@@ -38,7 +41,7 @@ void create(?mapping(string:mixed) props)
   pgtk__init_this_object();
 }
 
-GTK2.Widget get_entry();
++GTK2.Widget get_entry();
 //! Gets the entry this widget has been attached to.
 
 void set_model(?GTK2.TreeModel model)
@@ -58,7 +61,7 @@ void set_model(?GTK2.TreeModel model)
   RETURN_THIS();
 }
 
-GTK2.TreeModel get_model();
++GTK2.TreeModel get_model();
 //! Returns the model being used as the data source.
 
 void set_minimum_key_length(int length);
@@ -104,6 +107,10 @@ int get_text_column();
 
 void set_inline_completion(int inline_completion);
 //! Sets whether the common prefix of the possible completions should be
+//! automatically inserted in the entry.
+
+int get_inline_completion();
+//! Returns whether the common prefix of the possible completions should be
 //! automatically inserted in the entry.
 
 void set_popup_completion(int setting);
