@@ -19,21 +19,26 @@ inherit GTK2.Button;
 
 signal toggled;
 
-void create(string|mapping|void label_or_props)
+void create(string|mapping|void label_or_props, ?int mnemonic)
 //! If you supply a string, a label will be created and inserted in the button.
 //! Otherwise, use -&gt;add(widget) to create the contents of the button.
 {
   pgtk_verify_not_inited();
   pgtk_verify_setup();
   if (args) {
-    if (Pike_sp[-args].type==PIKE_T_STRING) {
-      struct pike_string *t;
-      GtkWidget *gt;
-      get_all_args("create",args,"%T",&t);
+    struct pike_string *t;
+    GtkWidget *gt;
+    INT_TYPE nem=0;
+
+    if (Pike_sp[-1].type==PIKE_T_STRING) {
+      get_all_args("create",args,"%T.%i",&t,&nem);
       if (t) {
 	ref_push_string(t);
 	f_string_to_utf8(1);
-	gt=gtk_toggle_button_new_with_label((char *)STR0(Pike_sp[-1].u.string));
+	if (nem)
+	  gt=gtk_toggle_button_new_with_mnemonic(CGSTR0(Pike_sp[-1].u.string));
+	else
+	  gt=gtk_toggle_button_new_with_label(CGSTR0(Pike_sp[-1].u.string));
 	pop_stack();
       } else
 	gt=gtk_toggle_button_new();
