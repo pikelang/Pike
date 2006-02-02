@@ -21,7 +21,7 @@ int get_deleted();
 string get_name();
 //! Returns the mark name;  returns empty for anonymous marks.
 
-GTK2.TextBuffer get_buffer();
++GTK2.TextBuffer get_buffer();
 //! Gets the buffer this mark is located inside, or empty if the mark
 //! is deleted.
 
