@@ -50,11 +50,19 @@ void create(string|mapping|void label_or_props)
     if (Pike_sp[-args].type==PIKE_T_STRING) {
       struct pike_string *t;
       GtkWidget *gb;
+      GtkStockItem item;
+      int i;
+
       get_all_args("create",args,"%T",&t);
-      if (t) {
+      if (t->size_shift==0)
+	t=gtk_stock_lookup(CGSTR0(t),&item);
+      if (i)
+	gb=gtk_button_new_from_stock(CGSTR0(t));
+      else {
 	ref_push_string(t);
 	f_string_to_utf8(1);
-	gb=gtk_button_new_from_stock((char *)STR0(Pike_sp[-1].u.string)); 
+        
+	gb=gtk_button_new_with_label(CGSTR0(Pike_sp[-1].u.string)); 
 	pop_stack();
       } else
 	gb=gtk_button_new();
@@ -122,6 +130,21 @@ int get_focus_on_click();
 
 void set_alignment(float xalign, float yalign);
 //! Sets the alignment of the child.
+
+mapping get_alignment()
+//! Gets the alignment of the child.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    gfloat xalign,yalign;
+
+    gtk_button_get_alignment(GTK_BUTTON(THIS->obj),&xalign,&yalign);
+    ref_push_string(_STR("xalign")); push_float(xalign);
+    ref_push_string(_STR("yalign")); push_float(yalign);
+    f_aggregate_mapping(4);
+  }
+}
 endrequire;
 
 require gtk26;
