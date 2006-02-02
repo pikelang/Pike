@@ -17,7 +17,7 @@ inherit GTK2.CheckButton;
 
 signal group_changed;
 
-void create(string|mapping|void title, ?GTK2.RadioButton groupmember)
+void create(string|mapping|void title, ?GTK2.RadioButton groupmember, ?int mnemonic)
 //!  Normal creation:<p>
 //! object GTK2.RadioButton(string title) - First button (with label)<br />
 //! object GTK2.RadioButton()->add(widget) - First button (with widget)<br />
@@ -32,18 +32,45 @@ void create(string|mapping|void title, ?GTK2.RadioButton groupmember)
       GtkWidget *gr;
       struct pike_string *t;
       struct object *o1=NULL;
-      GSList *mylist=NULL;
+/*      GSList *mylist=NULL; */
+      GtkRadioButton *gb=NULL;
+      INT_TYPE nem=0;
 
-      get_all_args("create",args,"%T.%o",&t,&o1);
+      get_all_args("create",args,"%T.%o%i",&t,&o1,&nem);
+/*
       if (o1)
 	mylist=gtk_radio_button_group(GTK_RADIO_BUTTON(get_gobject(o1)));
+*/
+      if (o1)
+	gb=GTK_RADIO_BUTTON(get_gobject(o1));
       if (t) {
 	ref_push_string(t);
 	f_string_to_utf8(1);
-	gr=gtk_radio_button_new_with_label(mylist,(char *)STR0(Pike_sp[-1].u.string));
+/*
+	if (nem)
+	  gr=gtk_radio_button_new_with_mnemonic(mylist,CGSTR0(Pike_sp[-1].u.string));
+	else
+	  gr=gtk_radio_button_new_with_label(mylist,CGSTR0(Pike_sp[-1].u.string));
+*/
+	if (o1) {
+	  if (nem)
+	    gr=gtk_radio_button_new_with_mnemonic_from_widget(gb,CGSTR0(Pike_sp[-1].u.string));
+	  else
+	    gr=gtk_radio_button_new_with_label_from_widget(gb,CGSTR0(Pike_sp[-1].u.string));
+	} else {
+	  if (nem)
+	    gr=gtk_radio_button_new_with_mnemonic(NULL,CGSTR0(Pike_sp[-1].u.string));
+	  else
+	    gr=gtk_radio_button_new_with_label(NULL,CGSTR0(Pike_sp[-1].u.string));
+	}
 	pop_stack();
-      } else
-	gr=gtk_radio_button_new(mylist);
+      } else {
+	if (o1)
+	  gr=gtk_radio_button_new_from_widget(gb);
+	else
+	  gr=gtk_radio_button_new(NULL);
+      }
+/*	gr=gtk_radio_button_new(mylist); */
       THIS->obj=G_OBJECT(gr);
     } else {
       INIT_WITH_PROPS(GTK_TYPE_RADIO_BUTTON);

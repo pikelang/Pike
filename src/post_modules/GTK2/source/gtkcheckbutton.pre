@@ -13,7 +13,7 @@ inherit GTK2.ToggleButton;
 //! int indicator-size
 //! int indicator-spacing
 
-void create(string|mapping|void label_or_props)
+void create(string|mapping|void label_or_props, ?int mnemonic)
 //! The argument, if specified, is the label of the item.
 //! If no label is specified, use object->add() to add some
 //! other widget (such as an pixmap or image widget)
@@ -24,11 +24,16 @@ void create(string|mapping|void label_or_props)
     if (Pike_sp[-args].type==PIKE_T_STRING) {
       struct pike_string *t;
       GtkWidget *gcb;
-      get_all_args("create",args,"%T",&t);
+      INT_TYPE nem=0;
+
+      get_all_args("create",args,"%T.%i",&t,&nem);
       if (t) {
 	ref_push_string(t);
 	f_string_to_utf8(1);
-	gcb=gtk_check_button_new_with_mnemonic((char *)STR0(Pike_sp[-1].u.string));
+	if (nem)
+	  gcb=gtk_check_button_new_with_mnemonic(CGSTR0(Pike_sp[-1].u.string));
+	else
+	  gcb=gtk_check_button_new_with_label(CGSTR0(Pike_sp[-1].u.string));
 	pop_stack();
       } else
 	gcb=gtk_check_button_new();
