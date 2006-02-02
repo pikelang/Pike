@@ -50,7 +50,7 @@ int get_char_count();
 //! and bytes are not the same, you can't e.g. expect the contents of
 //! the buffer in string form to be this many bytes long.
 
-GTK2.TextTagTable get_tag_table();
++GTK2.TextTagTable get_tag_table();
 //! Get the W(TextTagTable) associated with this buffer.
 
 void insert(GTK2.TextIter iter, string text, int len)
@@ -170,8 +170,10 @@ void insert_with_tags(GTK2.TextIter iter, string text, int len, array tags)
       Pike_error("Invalid array.\n");
     for (i=0; i<a->size; i++) {
       if ((ITEM(a)+i)->type==PIKE_T_OBJECT) {
-	if (G_OBJECT_TYPE(get_gobject((ITEM(a)+i)->u.object))==GTK_TYPE_TEXT_TAG) {
-	  tag=GTK_TEXT_TAG(get_gobject((ITEM(a)+i)->u.object));
+	GObject go=get_gobject((ITEM(a)+i)->u.object);
+/*	if (G_OBJECT_TYPE(go)==GTK_TYPE_TEXT_TAG) { */
+	if (g_type_is_a(GTK_TYPE_TEXT_TAG,G_OBJECT_TYPE(go))) {
+	  tag=GTK_TEXT_TAG(go);
 	  gtk_text_buffer_apply_tag(GTK_TEXT_BUFFER(THIS->obj),
 				tag,&start,iter);
 	}
