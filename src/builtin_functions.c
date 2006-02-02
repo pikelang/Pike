@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.478 2006/01/11 04:46:52 mast Exp $
+|| $Id: builtin_functions.c,v 1.479 2006/02/02 10:23:37 jonasw Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.478 2006/01/11 04:46:52 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.479 2006/02/02 10:23:37 jonasw Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -200,6 +200,36 @@ void f_hash(INT32 args)
   }
   pop_n_elems(args);
   push_int64(i);
+}
+
+/*! @decl int hash_value (mixed value)
+ *!
+ *! Return a hash value for the argument. It's an integer in the
+ *! native integer range.
+ *!
+ *! The hash will be the same for the same value in the running
+ *! process only (the memory address is typically used as the basis
+ *! for the hash value).
+ *!
+ *! If the value is an object with an @[lfun::__hash], that function
+ *! is called and its result is returned.
+ *!
+ *! @note
+ *! This is the hashing method used by mappings.
+ *!
+ *! @seealso
+ *! @[hash]
+ */
+void f_hash_value(INT32 args)
+{
+  unsigned INT32 h;
+
+  if(!args)
+    SIMPLE_TOO_FEW_ARGS_ERROR("hash_value",1);
+
+  h = hash_svalue (Pike_sp - args);
+  pop_n_elems (args);
+  push_int (h);
 }
 
 /*! @decl mixed copy_value(mixed value)
@@ -7998,6 +8028,8 @@ void init_builtin_efuns(void)
 
   ADD_EFUN("hash_7_0",f_compat_hash,
            tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
+
+  ADD_EFUN("hash_value",f_hash_value,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
 
 /* function(string|array:int*)|function(mapping(1=mixed:mixed)|multiset(1=mixed):array(1))|function(object|program:string*) */
   ADD_EFUN2("indices",f_indices,
