@@ -43,7 +43,7 @@ void create(int|mapping(string:mixed)|void maxlen_or_props)
       GtkWidget *ge;
       get_all_args("create",args,"%i",&max);
       ge=gtk_entry_new();
-      gtk_entry_set_max_length(ge,max);
+      gtk_entry_set_max_length(GTK_ENTRY(ge),max);
       THIS->obj=G_OBJECT(ge);
     } else {
       INIT_WITH_PROPS(GTK_TYPE_ENTRY);
