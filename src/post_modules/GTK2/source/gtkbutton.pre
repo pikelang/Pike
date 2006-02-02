@@ -51,7 +51,7 @@ void create(string|mapping|void label_or_props)
       struct pike_string *t;
       GtkWidget *gb;
       GtkStockItem item;
-      int i;
+      int i=0;
 
       get_all_args("create",args,"%T",&t);
       if (t) {
