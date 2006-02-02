@@ -1,6 +1,8 @@
 /* -*- C -*- */
 class GTK2.SpinButton;
 inherit GTK2.Entry;
+inherit GTK2.CellEditable;
+inherit GTK2.Editable;
 
 //! The Spin Button widget is generally used to allow the user to
 //! select a value from a range of numeric values. It consists of a
@@ -89,6 +91,9 @@ void configure(GTK2.Adjustment range, float climb_rate, int precision);
 
 void set_adjustment(GTK2.Adjustment range);
 //! Set a new adjustment.
+
++GTK2.Adjustment get_adjustment();
+//! Get the adjustment associated with this spinbutton.
 
 void set_digits(int precision);
 //! Set the number of digits to show to the user.
