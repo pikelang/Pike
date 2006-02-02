@@ -54,16 +54,20 @@ void create(string|mapping|void label_or_props)
       int i;
 
       get_all_args("create",args,"%T",&t);
-      if (t->size_shift==0)
-	t=gtk_stock_lookup(CGSTR0(t),&item);
-      if (i)
-	gb=gtk_button_new_from_stock(CGSTR0(t));
-      else {
-	ref_push_string(t);
-	f_string_to_utf8(1);
+      if (t) {
+	if (t->size_shift==0)
+	  t=gtk_stock_lookup(CGSTR0(t),&item);
+
+	/* FIXME: i hasn't been initialized yet!!!!!!!!!!!! */
+	if (i)
+	  gb=gtk_button_new_from_stock(CGSTR0(t));
+	else {
+	  ref_push_string(t);
+	  f_string_to_utf8(1);
         
-	gb=gtk_button_new_with_label(CGSTR0(Pike_sp[-1].u.string)); 
-	pop_stack();
+	  gb=gtk_button_new_with_label(CGSTR0(Pike_sp[-1].u.string)); 
+	  pop_stack();
+	}
       } else
 	gb=gtk_button_new();
       THIS->obj=G_OBJECT(gb); 
