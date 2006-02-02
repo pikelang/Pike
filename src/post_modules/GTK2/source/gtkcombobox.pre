@@ -4,6 +4,7 @@ require gtk24;
 class GTK2.ComboBox;
 inherit GTK2.Bin;
 inherit GTK2.CellLayout;
+inherit GTK2.CellEditable;
 
 //! Properties:
 //! int active
@@ -210,7 +211,5 @@ int get_focus_on_click();
 //! Returns whether the combo box grabs focus when it is
 //! clicked with the mouse.
 endrequire;
-
-#include "gtkcelleditable.inc"
 
 endrequire;

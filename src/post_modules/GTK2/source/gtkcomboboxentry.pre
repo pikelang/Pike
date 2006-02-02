@@ -4,6 +4,7 @@ require gtk24;
 class GTK2.ComboBoxEntry;
 inherit GTK2.ComboBox;
 inherit GTK2.CellLayout;
+inherit GTK2.CellEditable;
 
 //! Properties:
 //! int text-column
@@ -60,5 +61,3 @@ GTK2.Widget entry()
     push_gobject(w);
   }
 }
-
-#include "gtkcelleditable.inc"

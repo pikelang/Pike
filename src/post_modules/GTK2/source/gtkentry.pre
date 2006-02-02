@@ -1,6 +1,8 @@
 /* -*- C -*- */
 class GTK2.Entry;
 inherit GTK2.Widget;
+inherit GTK2.CellEditable;
+inherit GTK2.Editable;
 
 //! Use this widget when you want the user to input a single line of text.
 //! IMG: GTK2.Entry()->set_text("Hello world")->set_editable(1)
@@ -40,7 +42,8 @@ void create(int|mapping(string:mixed)|void maxlen_or_props)
       INT_TYPE max;
       GtkWidget *ge;
       get_all_args("create",args,"%i",&max);
-      ge=gtk_entry_new_with_max_length(max);
+      ge=gtk_entry_new();
+      gtk_entry_set_max_length(ge,max);
       THIS->obj=G_OBJECT(ge);
     } else {
       INIT_WITH_PROPS(GTK_TYPE_ENTRY);
@@ -57,6 +60,9 @@ void create(int|mapping(string:mixed)|void maxlen_or_props)
 void set_text(string text);
 //! Set the text to the specified string, replacing the current contents.
 
+string get_text();
+//! Returns the contents of the entry widget.
+
 void set_visibility(int visiblep);
 //! 0 indicates invisible text (password boxes, as an example)
 
@@ -72,9 +78,6 @@ void set_max_length(int maxlen);
 //! Sets the maximum allowed length of the contents.  If the current contents
 //! are longer than the given length, then they will be truncated to fit.
 //! Range is 0-65536.  0 means no maximum.
-
-string get_text();
-//! Returns the contents of the entry widget.
 
 int get_activates_default();
 //! Retrieves the value set by set_activates_default().
@@ -125,6 +128,33 @@ Pango.Layout get_layout();
 //! to convert byte indices in the layout to byte indices in the entry
 //! contents.
 
+mapping get_layout_offsets()
+//! Obtains the position of the Pango.Layout used to render text in the
+//! entry, in widget coordinates.  Useful if you want to line up the text
+//! in an entry with some other text, e.g. when using the entry to implement
+//! editable cells in a sheet widget.
+//! <p>
+//! Also useful to convert mouse events into coordinates inside the
+//! Pango.Layout, e.g. to take some action if some part of the entry text
+//! is clicked.
+//! <p>
+//! Keep in mind that the layout text may contain a preedit string, so 
+//! layout_index_to_text_index() and text_index_to_layout_index() are needed
+//! to convert byte indices in the layout to byte indices in the entry
+//! contents.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    gint x,y;
+
+    gtk_entry_get_layout_offsets(GTK_ENTRY(THIS->obj),&x,&y);
+    ref_push_string(_STR("x")); push_int(x);
+    ref_push_string(_STR("y")); push_int(y);
+    f_aggregate_mapping(4);
+  }
+}
+
 int layout_index_to_text_index(int layout_index);
 //! Converts from a position in the entry contents (returned by get_text())
 //! to a position in the entry's Pango.Layout (returned by get_layout()),
@@ -150,5 +180,3 @@ GTK2.EntryCompletion get_completion();
 //! Returns the completion object.
 endrequire;
 
-#include "gtkcelleditable.inc"
-#include "gtkeditable.inc"
