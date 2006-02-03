@@ -203,33 +203,6 @@ void queue_resize_no_redraw();
 //! invalidated.
 endrequire;
 
-void set_size_request(int width, int height);
-//! Sets the minimum size of a widget; that is, the widget's size request will
-//! be width by height.  You can use this function to force a widget to be
-//! either larger or smaller than it normally would be.
-//! <p>
-//! In most cases, set_default_size() is a better choice for toplevel windows
-//! than this function; setting the default size will still allow users to
-//! shrink the window.  Setting the size request will force them to leave the
-//! window at least as large as the size request.  When dealing with window
-//! sizes, set_geometry_hints() can be a useful function as well.
-//! <p>
-//! Note the inherent danger of setting any fixed size - themes, translations
-//! into other languages, different fonts, and user action can all change the
-//! appropriate size for a given widget.  So, it's basically impossible to
-//! hardcode a size that will always be correct.
-//! <p>
-//! The size request of a widget is the smallest size a widget can accept while
-//! still functioning well and drawing itself correctly.  However in some
-//! strange cases a widget may be allocated less than its requested size, and
-//! in many cases a widget may be allocated more space than it request.
-//! <p>
-//! If the size request in a given direction is -1 (unset), then the "natural"
-//! size request of the widget will be used instead.
-//! <p>
-//! Widgets can't actually be allocated a size less than 1x1, but you can pass
-//! 0,0 to this function to mean "as small as possible".
-
 void add_accelerator(string accel_signal, GTK2.AccelGroup accel_group,
                 int accel_key, int accel_mods, int accel_flags);
 //! Installs an accelerator in accel_group that causes accel_signal to be
@@ -313,13 +286,27 @@ void set_extension_events(int mode);
 int get_extension_events();
 //! Retrieves the extension events the widget will receive.
 
-GTK2.Widget get_toplevel();
++GTK2.Widget get_toplevel();
 //! This function returns the topmost widget in the container hierarchy this
 //! widget is a part of.  If this widget has no parent widgets, it will be
 //! returned as the topmost widget.
 
 int get_events();
 //! Returns the event mask for the widget.
+
+mapping get_pointer()
+//! Obtains the location of the mouse pointer in widget coordinates.
+{
+  pgtk_verify_inited();
+  my_pop_n_elems(args);
+  {
+    gint x,y;
+    gtk_widget_get_pointer(GTK_WIDGET(THIS->obj),&x,&y);
+    ref_push_string(_STR("x")); push_int(x);
+    ref_push_string(_STR("y")); push_int(y);
+    f_aggregate_mapping(4);
+  }
+}
 
 int is_ancestor(GTK2.Widget ancestor);
 //! Determines whether this widget is somewhere inside ancestor.
@@ -391,8 +378,9 @@ string class_path()
 string get_composite_name();
 //! Get the composite name.
 
-void modify_style(GTK2.RcStyle style)
+void modify_style(GTK2.RcStyle style);
 //! Modifies style values.
+/*
 {
   pgtk_verify_inited();
   {
@@ -403,14 +391,17 @@ void modify_style(GTK2.RcStyle style)
   }
   RETURN_THIS();
 }
+*/
 
-GTK2.RcStyle get_modifier_style()
+GTK2.RcStyle get_modifier_style();
 //! Returns the current modifier style.
+/*
 {
   pgtk_verify_inited();
   my_pop_n_elems(args);
   push_gobject(gtk_widget_get_modifier_style(GTK_WIDGET(THIS->obj)));
 }
+*/
 
 void modify_fg(int state, ?GDK2.Color color)
 //! Sets the foreground color of the widget in a particular state.
@@ -487,9 +478,10 @@ void modify_font(Pango.FontDescription font)
   RETURN_THIS();
 }
 
-Pango.Context create_pango_context()
+Pango.Context create_pango_context();
 //! Creates a new Pango.Context with the appropriate colormap, font
 //! description, and base direction for drawing text for this widget.
+/*
 {
   pgtk_verify_inited();
   {
@@ -498,10 +490,16 @@ Pango.Context create_pango_context()
     push_gobject(pc);
   }
 }
+*/
 
-Pango.Layout create_pango_layout(string text)
+Pango.Context get_pango_context();
+//! Gets a Pango.Context with the appropriate colormap, font description, and
+//! base direction for this widget.
+
+Pango.Layout create_pango_layout(string text);
 //! Creates a new Pango.Layout with the appropriate colormap, font
 //! description, and base direction for drawing text.
+/*
 {
   pgtk_verify_inited();
   {
@@ -513,6 +511,7 @@ Pango.Layout create_pango_layout(string text)
     push_gobject(pl);
   }
 }
+*/
 endrequire;
 
 GDK2.Pixbuf render_icon(string stock_id, int size, string detail)
@@ -585,6 +584,10 @@ void freeze_child_notify();
 GTK2.Widget get_parent();
 //! Returns the parent container.
 
+GTK2.Settings get_settings();
+//! Gets the settings object holding the settings (global property settings,
+//! RC file information, etc) used for this widget.
+
 require gtk22;
 GTK2.Clipboard get_clipboard(GDK2.Atom selection)
 //! Returns the clipboard object for the given selection.
@@ -604,21 +607,36 @@ GDK2.Display get_display();
 //! Get the GDK2.Display for the toplevel window associated with this widget.
 //! This function can only be called after the widget has been added to a
 //! widget hierarchy with a GTK2.Window at the top.
+
+GDK2.Window get_root_window();
+//! Get the root window.
+
 /*
+GDK2.Screen get_screen();
+//! Get the GDK2.Screen from the toplevel window associated with this widget.
+*/
+
+int has_screen();
+//! Checks whether there is a GDK2.Screen associated with this widget.
+endrequire;
+
+mapping get_size_request()
+//! Gets the size request that was explicityly set for the widget using
+//! set_size_request().  A value of -1 for width or height indices that that
+//! dimension has not been set explicityly and the natural requisition of
+//! the widget will be used instead.  To get the size a widget will actually
+//! use, call size_request() instead.
 {
   pgtk_verify_inited();
   my_pop_n_elems(args);
   {
-    GdkDisplay *d;
-    d=gtk_widget_get_display(GTK_WIDGET(THIS->obj));
-    push_gdkobject(d,display);
+    gint w,h;
+    gtk_widget_get_size_request(GTK_WIDGET(THIS->obj),&w,&h);
+    ref_push_string(_STR("width")); push_int(w);
+    ref_push_string(_STR("height")); push_int(h);
+    f_aggregate_mapping(4);
   }
 }
-*/
-
-GDK2.Window get_root_window();
-//! Get the root window.
-endrequire;
 
 void set_size_request(int width, int height);
 //! Sets the minimum size of a widget; that is, the widget's size request will
