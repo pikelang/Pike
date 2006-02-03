@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.41 2006/02/03 17:27:41 grubba Exp $
+|| $Id: odbc.c,v 1.42 2006/02/03 17:51:48 grubba Exp $
 */
 
 /*
@@ -69,7 +69,8 @@ void push_sqlwchar(SQLWCHAR *str, size_t num_bytes)
 	       "%zd (shift:%d) (sz:%d)\n", num_bytes, shift, sizeof(SQLWCHAR));
   }
 #endif /* PIKE_DEBUG */
-  push_string(make_shared_pcharp(MKPCHARP(str, shift), num_bytes>>shift));
+  push_string(make_shared_binary_pcharp(MKPCHARP(str, shift),
+					num_bytes>>shift));
 }
 
 void odbc_error(const char *fun, const char *msg,
