@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.40 2006/01/03 14:05:36 grubba Exp $
+|| $Id: odbc.c,v 1.41 2006/02/03 17:27:41 grubba Exp $
 */
 
 /*
@@ -58,21 +58,36 @@ SQLHENV odbc_henv = SQL_NULL_HENV;
  * Helper functions
  */
 
+void push_sqlwchar(SQLWCHAR *str, size_t num_bytes)
+{
+  int shift = 1;
+  struct pike_string *res;
+  if (sizeof(SQLWCHAR) == 4) shift = 2;
+#ifdef PIKE_DEBUG
+  if (num_bytes & ((1<<shift)-1)) {
+    Pike_fatal("Odd number of bytes to push_wstring(): "
+	       "%zd (shift:%d) (sz:%d)\n", num_bytes, shift, sizeof(SQLWCHAR));
+  }
+#endif /* PIKE_DEBUG */
+  push_string(make_shared_pcharp(MKPCHARP(str, shift), num_bytes>>shift));
+}
+
 void odbc_error(const char *fun, const char *msg,
 		struct precompiled_odbc *odbc, SQLHSTMT hstmt,
-		RETCODE code, void (*clean)(void));
+		RETCODE code, void (*clean)(void*), void *clean_arg);
 
 static INLINE void odbc_check_error(const char *fun, const char *msg,
-				    RETCODE code, void (*clean)(void))
+				    RETCODE code,
+				    void (*clean)(void *), void *clean_arg)
 {
   if ((code != SQL_SUCCESS) && (code != SQL_SUCCESS_WITH_INFO)) {
-    odbc_error(fun, msg, PIKE_ODBC, SQL_NULL_HSTMT, code, clean);
+    odbc_error(fun, msg, PIKE_ODBC, SQL_NULL_HSTMT, code, clean, clean_arg);
   }
 }
 
 void odbc_error(const char *fun, const char *msg,
 		struct precompiled_odbc *odbc, SQLHSTMT hstmt,
-		RETCODE code, void (*clean)(void))
+		RETCODE code, void (*clean)(void *), void *clean_arg)
 {
   RETCODE _code;
 #ifdef SQL_WCHAR
@@ -100,14 +115,18 @@ void odbc_error(const char *fun, const char *msg,
       free_string(odbc->last_error);
     }
 #ifdef SQL_WCHAR
-    odbc->last_error = make_shared_binary_string1(errmsg, errmsg_len);
+    if (sizeof(SQLWCHAR) == 2) {
+      odbc->last_error = make_shared_binary_string1(errmsg, errmsg_len);
+    } else {
+      odbc->last_error = make_shared_binary_string2(errmsg, errmsg_len);
+    }
 #else
     odbc->last_error = make_shared_binary_string((char *)errmsg, errmsg_len);
 #endif
   }
 
   if (clean) {
-    clean();
+    clean(clean_arg);
   }
   switch(_code) {
   case SQL_SUCCESS:
@@ -169,7 +188,8 @@ static void init_odbc_struct(struct object *o)
   PIKE_ODBC->last_error = NULL;
 
   odbc_check_error("init_odbc_struct", "ODBC initialization failed",
-		   SQLAllocConnect(odbc_henv, &(PIKE_ODBC->hdbc)), NULL);
+		   SQLAllocConnect(odbc_henv, &(PIKE_ODBC->hdbc)),
+		   NULL, NULL);
 }
 
 static void exit_odbc_struct(struct object *o)
@@ -180,12 +200,14 @@ static void exit_odbc_struct(struct object *o)
     if (PIKE_ODBC->flags & PIKE_ODBC_CONNECTED) {
       PIKE_ODBC->flags &= ~PIKE_ODBC_CONNECTED;
       odbc_check_error("odbc_error", "Disconnecting HDBC",
-		       SQLDisconnect(hdbc), (void (*)(void))exit_odbc_struct);
+		       SQLDisconnect(hdbc),
+		       (void (*)(void *))exit_odbc_struct, NULL);
       /* NOTE: Potential recursion above! */
     }
     PIKE_ODBC->hdbc = SQL_NULL_HDBC;
     odbc_check_error("odbc_error", "Freeing HDBC",
-		     SQLFreeConnect(hdbc), clean_last_error);
+		     SQLFreeConnect(hdbc),
+		     (void (*)(void *))clean_last_error, NULL);
   }
   clean_last_error();
 }
@@ -262,7 +284,7 @@ static void f_create(INT32 args)
     PIKE_ODBC->flags &= ~PIKE_ODBC_CONNECTED;
     /* Disconnect old hdbc */
     odbc_check_error("odbc->create", "Disconnecting HDBC",
-		     SQLDisconnect(PIKE_ODBC->hdbc), NULL);
+		     SQLDisconnect(PIKE_ODBC->hdbc), NULL, NULL);
   }
 
   /* FIXME: Support wide strings. */
@@ -274,7 +296,7 @@ static void f_create(INT32 args)
 			      DO_NOT_WARN((SQLSMALLINT)user->len),
 			      (unsigned char *)pwd->str,
 			      DO_NOT_WARN((SQLSMALLINT)pwd->len)),
-		   NULL);
+		   NULL, NULL);
   PIKE_ODBC->flags |= PIKE_ODBC_CONNECTED;
   pop_n_elems(args);
 }
@@ -295,7 +317,7 @@ static void f_create_dsn(INT32 args)
     PIKE_ODBC->flags &= ~PIKE_ODBC_CONNECTED;
     /* Disconnect old hdbc */
     odbc_check_error("odbc->create_dsn", "Disconnecting HDBC",
-		     SQLDisconnect(PIKE_ODBC->hdbc), NULL);
+		     SQLDisconnect(PIKE_ODBC->hdbc), NULL, NULL);
   }
 /* Microsoft ODBC >= 1.0
 	SQLRETURN SQLDriverConnect(
@@ -317,7 +339,7 @@ static void f_create_dsn(INT32 args)
       DO_NOT_WARN((SQLSMALLINT)1024),
       &stringlength2,
       SQL_DRIVER_NOPROMPT),
-      NULL);
+		   NULL, NULL);
   PIKE_ODBC->flags |= PIKE_ODBC_CONNECTED;
   pop_n_elems(args);
 }
@@ -350,7 +372,7 @@ static void f_big_query(INT32 args)
   struct svalue *save_sp = sp + 1 - args;
 #endif /* PIKE_DEBUG */
 
-  get_all_args("odbc->big_query", args, "%S", &q);
+  get_all_args("odbc->big_query", args, "%W", &q);
 
   add_ref(q);
   SET_ONERROR(ebuf, odbc_free_string, q);
@@ -385,7 +407,7 @@ static void f_big_query(INT32 args)
     /* This breaks with Free TDS. */
     odbc_check_error("odbc->big_query", "Couldn't commit query",
 		     SQLTransact(odbc_henv, PIKE_ODBC->hdbc, SQL_COMMIT),
-		     NULL);
+		     NULL, NULL);
 #endif /* ENABLE_IMPLICIT_COMMIT */
 
     push_int(0);
@@ -506,7 +528,7 @@ static void f_list_dbs(INT32 args)
      descr, sizeof(descr), &descr_len);
   while ((ret == SQL_SUCCESS) || (ret == SQL_SUCCESS_WITH_INFO)) {
 #ifdef SQL_WCHAR
-    push_string(make_shared_binary_string1(buf, buf_len));
+    push_sqlwchar(buf, buf_len);
 #else
     push_string(make_shared_binary_string(buf, buf_len));
 #endif
