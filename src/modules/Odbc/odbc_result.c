@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.39 2006/01/11 18:03:59 grubba Exp $
+|| $Id: odbc_result.c,v 1.40 2006/02/03 17:40:53 grubba Exp $
 */
 
 /*
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.39 2006/01/11 18:03:59 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.40 2006/02/03 17:40:53 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -90,11 +90,12 @@ static void clean_sql_res(void)
 }
 
 static INLINE void odbc_check_error(const char *fun, const char *msg,
-				    RETCODE code, void (*clean)(void))
+				    RETCODE code,
+				    void (*clean)(void *), void *clean_arg)
 {
   if ((code != SQL_SUCCESS) && (code != SQL_SUCCESS_WITH_INFO)) {
     odbc_error(fun, msg, PIKE_ODBC_RES->odbc, PIKE_ODBC_RES->hstmt,
-	       code, clean);
+	       code, clean, clean_arg);
   }
 }
 
@@ -114,7 +115,8 @@ static void exit_res_struct(struct object *o)
     SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
     PIKE_ODBC_RES->hstmt = SQL_NULL_HSTMT;
     odbc_check_error("exit_res_struct", "Freeing of HSTMT failed",
-		     SQLFreeStmt(hstmt, SQL_DROP), clean_sql_res);
+		     SQLFreeStmt(hstmt, SQL_DROP),
+		     (void (*)(void *))clean_sql_res, NULL);
   }
   clean_sql_res();
 }
@@ -161,7 +163,7 @@ static void odbc_fix_fields(void)
 			DO_NOT_WARN((SQLSMALLINT)buf_size),
 			&name_len,
 			&sql_type, &precision, &scale, &nullable),
-		       (void(*)(void))0);
+		       NULL, NULL);
       if (name_len < (ptrdiff_t)buf_size) {
 	break;
       }
@@ -193,7 +195,7 @@ static void odbc_fix_fields(void)
     /* Create the mapping */
     push_text("name");
 #ifdef SQL_WCHAR
-    push_string(make_shared_binary_string1(buf, name_len));
+    push_sqlwchar(buf, name_len);
 #else
     push_string(make_shared_binary_string((char *)buf, name_len));
 #endif
@@ -319,7 +321,8 @@ static void f_create(INT32 args)
   add_ref(PIKE_ODBC_RES->obj = Pike_sp[-args].u.object);
 
   odbc_check_error("odbc_result", "Statement allocation failed",
-		   SQLAllocStmt(PIKE_ODBC_RES->odbc->hdbc, &hstmt), NULL);
+		   SQLAllocStmt(PIKE_ODBC_RES->odbc->hdbc, &hstmt),
+		   NULL, NULL);
   PIKE_ODBC_RES->hstmt = hstmt;
 }
 
@@ -330,7 +333,7 @@ static void f_execute(INT32 args)
 
 #ifdef SQL_WCHAR
   get_all_args("odbc_result->execute", args, "%W", &q);
-  if (q->size_shift > 1) {
+  if ((q->size_shift > 1) && (sizeof(SQLWCHAR) == 2)) {
     SIMPLE_ARG_TYPE_ERROR("execute", 1, "string(16bit)");
   }
 #else
@@ -339,26 +342,34 @@ static void f_execute(INT32 args)
 
 #ifdef SQL_WCHAR
   if (q->size_shift) {
+    char *to_free = NULL;
+    SQLWCHAR *p;
+    if ((sizeof(SQLWCHAR) == 4) && (q->size_shift == 1)) {
+      p = require_wstring2(q, &to_free);
+    } else {
+      p = (SQLWCHAR *)q->str;
+    }
     odbc_check_error("odbc_result->execute", "Query failed",
 		     SQLExecDirectW(hstmt, STR1(q),
 				    DO_NOT_WARN((SQLINTEGER)(q->len))),
-		     NULL);
+		     to_free?(void (*)(void *))free:NULL, to_free);
   } else {
 #endif
     odbc_check_error("odbc_result->execute", "Query failed",
 		     SQLExecDirect(hstmt, STR0(q),
 				   DO_NOT_WARN((SQLINTEGER)(q->len))),
-		     NULL);
+		     NULL, NULL);
 #ifdef SQL_WCHAR
   }
 #endif
 
   odbc_check_error("odbc_result->execute", "Couldn't get the number of fields",
 		   SQLNumResultCols(hstmt, &(PIKE_ODBC_RES->num_fields)),
-		   NULL);
+		   NULL, NULL);
 
   odbc_check_error("odbc_result->execute", "Couldn't get the number of rows",
-		   SQLRowCount(hstmt, &(PIKE_ODBC_RES->num_rows)), NULL);
+		   SQLRowCount(hstmt, &(PIKE_ODBC_RES->num_rows)),
+		   NULL, NULL);
 
   PIKE_ODBC_RES->odbc->affected_rows = PIKE_ODBC_RES->num_rows;
 
@@ -393,16 +404,17 @@ static void f_list_tables(INT32 args)
 			     table_name_pattern->str,
 			     DO_NOT_WARN((SQLSMALLINT)table_name_pattern->len),
 			     "%", 1),
-		   NULL);
+		   NULL, NULL);
 
   odbc_check_error("odbc_result->list_tables",
 		   "Couldn't get the number of fields",
 		   SQLNumResultCols(hstmt, &(PIKE_ODBC_RES->num_fields)),
-		   NULL);
+		   NULL, NULL);
 
   odbc_check_error("odbc_result->list_tables",
 		   "Couldn't get the number of rows",
-		   SQLRowCount(hstmt, &(PIKE_ODBC_RES->num_rows)), NULL);
+		   SQLRowCount(hstmt, &(PIKE_ODBC_RES->num_rows)),
+		   NULL, NULL);
 
   PIKE_ODBC_RES->odbc->affected_rows = PIKE_ODBC_RES->num_rows;
 
@@ -453,7 +465,7 @@ static void f_fetch_row(INT32 args)
     push_int(0);
   } else {
     odbc_check_error("odbc->fetch_row", "Couldn't fetch row",
-		     code, NULL);
+		     code, NULL, NULL);
  
     for (i=0; i < PIKE_ODBC_RES->num_fields; i++) {
 	/* BLOB */
@@ -476,7 +488,7 @@ static void f_fetch_row(INT32 args)
 	    break;
 	  }
 	  odbc_check_error("odbc->fetch_row", "SQLGetData() failed",
-			   code, NULL);
+			   code, NULL, NULL);
 	  if (len == SQL_NULL_DATA) {
 #ifdef ODBC_DEBUG
 	    fprintf(stderr, "ODBC:fetch_row(): NULL\n");
@@ -497,7 +509,7 @@ static void f_fetch_row(INT32 args)
 	    } else {
 	      /* SQL_C_CHAR and SQL_C_WCHAR's are NUL-terminated... */
 #ifdef SQL_WCHAR
-	      push_string(make_shared_binary_string1(blob_buf, BLOB_BUFSIZ - 1));
+	      push_sqlwchar(blob_buf, BLOB_BUFSIZ - 1);
 #else
 	      push_string(make_shared_binary_string(blob_buf, BLOB_BUFSIZ - 1));
 #endif
@@ -512,7 +524,15 @@ static void f_fetch_row(INT32 args)
                 && (len != SQL_NO_TOTAL)
 #endif /* SQL_NO_TOTAL */
                 ) {
-	      push_string(make_shared_binary_string(blob_buf, len));
+#ifdef SQL_WCHAR
+	      if (PIKE_ODBC_RES->field_info[i].type == SQL_C_WCHAR) {
+		push_sqlwchar(blob_buf, len);
+	      } else {
+#endif
+		push_string(make_shared_binary_string(blob_buf, len));
+#ifdef SQL_WCHAR
+	      }
+#endif
 	    } else {
 	      /* Truncated, but no support for chained SQLGetData calls. */
 	      char *buf = xalloc((len+2)
@@ -536,7 +556,7 @@ static void f_fetch_row(INT32 args)
 	      }
 #ifdef SQL_WCHAR
 	      if (PIKE_ODBC_RES->field_info[i].type == SQL_C_WCHAR) {
-		push_string(make_shared_binary_string1(buf, len));
+		push_sqlwchar(buf, len);
 	      } else {
 #endif
 		push_string(make_shared_binary_string(buf, len));
