@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: precompiled_odbc.h,v 1.20 2006/02/03 17:40:53 grubba Exp $
+|| $Id: precompiled_odbc.h,v 1.21 2006/02/03 17:52:51 grubba Exp $
 */
 
 /*
@@ -141,7 +141,7 @@ struct precompiled_odbc_result {
 void push_sqlwchar(SQLWCHAR *str, size_t num_bytes);
 void odbc_error(const char *fun, const char *msg,
 		struct precompiled_odbc *odbc, SQLHSTMT hstmt,
-		RETCODE code, void (*clean)(void));
+		RETCODE code, void (*clean)(void *), void *clean_arg);
 
 void init_odbc_res_programs(void);
 void exit_odbc_res(void);
