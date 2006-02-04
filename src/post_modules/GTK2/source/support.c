@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.9 2006/01/04 23:57:33 marcus Exp $
+|| $Id: support.c,v 1.10 2006/02/04 22:06:55 ldillon Exp $
 */
 
 #include <version.h>
@@ -857,11 +857,13 @@ void pgtk_set_property(GObject *g, char *prop, struct svalue *sv) {
     return;
   }
 */
-  if (sv->type==PIKE_T_OBJECT && get_gobject(sv->u.object) &&
-		G_IS_OBJECT(get_gobject(sv->u.object))) {
-    if (gps->value_type==GDK_TYPE_PIXMAP || gps->value_type==GTK_TYPE_WIDGET)
-      g_object_set(g,prop,get_gobject(sv->u.object),NULL);
-    return;
+  if (sv->type==PIKE_T_OBJECT) {
+    GObject *go=get_gobject(sv->u.object);
+    if (go && G_IS_OBJECT(go)) {
+      if (gps->value_type==GDK_TYPE_PIXMAP || gps->value_type==GTK_TYPE_WIDGET)
+        g_object_set(g,prop,go,NULL);
+      return;
+    }
   }
 #define do_type(X) do { X i=PGTK_GETINT(sv); g_object_set(g,prop,i,NULL); } while(0)
   switch (gps->value_type) {
@@ -1081,10 +1083,13 @@ void pgtk_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
       gt==GDK_TYPE_PIXBUF || gt==GDK_TYPE_PIXMAP || gt==GDK_TYPE_IMAGE ||
       gt==GDK_TYPE_WINDOW || gt==GDK_TYPE_VISUAL ||
       gt==GDK_TYPE_DRAWABLE || gt==GDK_TYPE_GC) {
-    if (sv->type==PIKE_T_OBJECT && get_gobject(sv->u.object) &&
-		G_IS_OBJECT(get_gobject(sv->u.object)))
-      g_value_set_object(gv,get_gobject(sv->u.object));
-    return;
+    if (sv->type==PIKE_T_OBJECT) {
+      GObject *go;
+      go=get_gobject(sv->u.object);
+      if (go && G_IS_OBJECT(go))
+	g_value_set_object(gv,go);
+      return;
+    }
   }
   if (gt==GDK_TYPE_COLOR) {
     if (sv->type==PIKE_T_OBJECT && get_gdkobject(sv->u.object,color))
@@ -1137,17 +1142,19 @@ void pgtk_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
       g_value_set_double(gv,(gdouble)pgtk_get_float(sv));
       break;
     case G_TYPE_STRING:
-      {
-	char *s=PGTK_GETSTR(sv);
-	g_value_set_string(gv,s);
-	PGTK_FREESTR(s);
-      }
+      if (sv->type==PIKE_T_STRING)
+	g_value_set_string(gv,GSTR0(sv->u.string));
+      else
+	g_value_set_string(gv,"");
       break;
     case G_TYPE_OBJECT:
-      if (sv->type==PIKE_T_OBJECT && get_gobject(sv->u.object) &&
-		G_IS_OBJECT(get_gobject(sv->u.object)))
-	g_value_set_object(gv,get_gobject(sv->u.object));
-      else
+      if (sv->type==PIKE_T_OBJECT) {
+	GObject *go=get_gobject(sv->u.object);
+	if (go && G_IS_OBJECT(go))
+	  g_value_set_object(gv,go);
+	else
+	  g_value_set_object(gv,NULL);
+      } else
 	g_value_set_object(gv,NULL);
       break;
     case G_TYPE_POINTER:
@@ -1165,7 +1172,8 @@ void pgtk_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
 int pgtk_tree_sortable_callback(GtkTreeModel *model, GtkTreeIter *a,
 				GtkTreeIter *b, struct signal_data *d) {
   int res;
-  push_gobjectclass(model,pgtk_tree_model_program);
+/*  push_gobjectclass(model,pgtk_tree_model_program); */
+  push_gobject(model);
   push_gobjectclass(a,pgtk_tree_iter_program);
   push_gobjectclass(b,pgtk_tree_iter_program);
   push_svalue(&d->args);
