@@ -217,6 +217,7 @@ mapping size_request()
   }
 }
 
+/*
 mapping size_allocate()
 //! Get the size and position of a widget.
 {
@@ -228,10 +229,11 @@ mapping size_allocate()
     ref_push_string(_STR("x")); push_int(a.x);
     ref_push_string(_STR("y")); push_int(a.y);
     ref_push_string(_STR("width")); push_int(a.width);
-    ref_push_string(_STR("height")); push_int(a.height):
+    ref_push_string(_STR("height")); push_int(a.height);
     f_aggregate_mapping(8);
   }
 }
+*/
 
 mapping(string:int) allocation()
 //! Returns ([ "x": xoffset, "y":yoffset, "width":xsize, "height":ysize ])
