@@ -233,6 +233,18 @@ mapping size_allocate()
   }
 }
 
+mapping(string:int) allocation()
+//! Returns ([ "x": xoffset, "y":yoffset, "width":xsize, "height":ysize ])
+{
+  pgtk_verify_inited();
+  ref_push_string(_STR("x")); push_int(GTK_WIDGET(THIS->obj)->allocation.x);
+  ref_push_string(_STR("y")); push_int(GTK_WIDGET(THIS->obj)->allocation.y);
+  ref_push_string(_STR("width")); push_int(GTK_WIDGET(THIS->obj)->allocation.width);
+  ref_push_string(_STR("height")); push_int(GTK_WIDGET(THIS->obj)->allocation.height);
+  f_aggregate_mapping(8);
+}
+
+  
 void add_accelerator(string accel_signal, GTK2.AccelGroup accel_group,
                 int accel_key, int accel_mods, int accel_flags);
 //! Installs an accelerator in accel_group that causes accel_signal to be
