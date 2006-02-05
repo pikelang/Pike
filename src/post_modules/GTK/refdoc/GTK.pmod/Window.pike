@@ -1,6 +1,6 @@
 //! The basic window. Nothing much to say about it. It can only contain
 //! one child widget. Show the main window last to avoid annoying
-//! flashes when the subwidet (and it's subwidgets) are added to it,
+//! flashes when the subwidget (and it's subwidgets) are added to it,
 //! this is done automatically by calling 'window->show_all' when you
 //! are done with your widget packing.
 //!
