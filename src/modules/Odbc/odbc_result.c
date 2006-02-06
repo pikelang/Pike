@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.46 2006/02/06 16:02:53 grubba Exp $
+|| $Id: odbc_result.c,v 1.47 2006/02/06 16:12:49 grubba Exp $
 */
 
 /*
@@ -143,11 +143,11 @@ static void odbc_fix_fields(void)
    */
   for (i=0; i < PIKE_ODBC_RES->num_fields; i++) {
     int nbits;
-    SWORD name_len;
+    SWORD name_len = 0;
     SWORD sql_type;
     SQLULEN precision;
     SWORD scale;
-    SWORD nullable;
+    SWORD nullable = 0;
 
     while (1) {
       odbc_check_error("odbc_fix_fields", "Failed to fetch field info",
@@ -199,8 +199,14 @@ static void odbc_fix_fields(void)
 #endif
     push_text("type");
 #ifdef SQL_WCHAR
+#ifdef ODBC_DEBUG
+    fprintf(stderr, "SQL_C_WCHAR\n");
+#endif /* ODBC_DEBUG */
     odbc_field_types[i] = SQL_C_WCHAR;
 #else
+#ifdef ODBC_DEBUG
+    fprintf(stderr, "SQL_C_CHAR\n");
+#endif /* ODBC_DEBUG */
     odbc_field_types[i] = SQL_C_CHAR;
 #endif
     switch(sql_type) {
@@ -242,14 +248,23 @@ static void odbc_fix_fields(void)
       break;
     case SQL_BINARY:
       push_text("binary");
+#ifdef ODBC_DEBUG
+      fprintf(stderr, "SQL_C_BINARY\n");
+#endif /* ODBC_DEBUG */
       odbc_field_types[i] = SQL_C_BINARY;
       break;
     case SQL_VARBINARY:
       push_text("blob");
+#ifdef ODBC_DEBUG
+      fprintf(stderr, "SQL_C_BINARY\n");
+#endif /* ODBC_DEBUG */
       odbc_field_types[i] = SQL_C_BINARY;
       break;
     case SQL_LONGVARBINARY:
       push_text("long blob");
+#ifdef ODBC_DEBUG
+      fprintf(stderr, "SQL_C_BINARY\n");
+#endif /* ODBC_DEBUG */
       odbc_field_types[i] = SQL_C_BINARY;
       break;
     case SQL_BIGINT:
