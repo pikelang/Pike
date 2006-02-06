@@ -1,3 +1,6 @@
+/* -*- C -*- */
+class GTK2.TreeDragDest;
+mixin_for G.Object;
 
 int drag_data_received(GTK2.TreePath path, GTK2.SelectionData sel)
 //! Asks to insert a row before the path dest, deriving the contents of the

@@ -1,8 +1,10 @@
 /* -*- C -*- */
 class GTK2.ListStore;
+inherit G.Object;
 inherit GTK2.TreeModel;
 inherit GTK2.TreeSortable;
 inherit GTK2.TreeDragSource;
+inherit GTK2.TreeDragDest;
 
 //! A list-like data structure that can be used with W(TreeView).
 
@@ -298,5 +300,3 @@ void move_after(GTK2.TreeIter iter, ?GTK2.TreeIter position)
   RETURN_THIS();
 }
 endrequire;
-
-#include "gtktreedragdest.inc"
