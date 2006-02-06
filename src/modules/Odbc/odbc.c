@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.43 2006/02/06 15:33:49 grubba Exp $
+|| $Id: odbc.c,v 1.44 2006/02/06 17:13:06 grubba Exp $
 */
 
 /*
@@ -58,6 +58,7 @@ SQLHENV odbc_henv = SQL_NULL_HENV;
  * Helper functions
  */
 
+#ifdef SQL_WCHAR
 struct pike_string *make_shared_binary_sqlwchar(SQLWCHAR *str,
 						size_t len)
 {
@@ -70,6 +71,7 @@ void push_sqlwchar(SQLWCHAR *str, size_t len)
 {
   push_string(make_shared_binary_sqlwchar(str, len));
 }
+#endif /* SQL_WCHAR */
 
 void odbc_error(const char *fun, const char *msg,
 		struct precompiled_odbc *odbc, SQLHSTMT hstmt,
