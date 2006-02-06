@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.47 2006/02/06 16:12:49 grubba Exp $
+|| $Id: odbc_result.c,v 1.48 2006/02/06 16:56:30 grubba Exp $
 */
 
 /*
@@ -492,6 +492,18 @@ static void f_fetch_row(INT32 args)
 	SQLLEN len = 0;
 
 	while(1) {
+#ifdef ODBC_DEBUG
+	  fprintf(stderr, "ODBC:fetch_row(): field_info[%d].type: ", i);
+	  if (PIKE_ODBC_RES->field_info[i].type == SQL_C_CHAR) {
+	    fprintf(stderr, "SQL_C_CHAR\n");
+#ifdef SQL_WCHAR
+	  } else if (PIKE_ODBC_RES->field_info[i].type == SQL_C_WCHAR) {
+	    fprintf(stderr, "SQL_C_WCHAR\n");
+#endif /* SQL_WCHAR */
+	  } else {
+	    fprintf(stderr, "%d\n", PIKE_ODBC_RES->field_info[i].type);
+	  }
+#endif /* ODBC_DEBUG */
 	  code = SQLGetData(PIKE_ODBC_RES->hstmt, (SQLUSMALLINT)(i+1),
 			    PIKE_ODBC_RES->field_info[i].type,
 			    blob_buf, BLOB_BUFSIZ
