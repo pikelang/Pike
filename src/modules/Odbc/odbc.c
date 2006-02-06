@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.37 2006/02/03 17:46:41 grubba Exp $
+|| $Id: odbc.c,v 1.38 2006/02/06 17:14:13 grubba Exp $
 */
 
 /*
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.37 2006/02/03 17:46:41 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.38 2006/02/06 17:14:13 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -60,6 +60,7 @@ HENV odbc_henv = SQL_NULL_HENV;
  * Helper functions
  */
 
+#ifdef SQL_WCHAR
 void push_sqlwchar(SQLWCHAR *str, size_t num_bytes)
 {
   int shift = 1;
@@ -73,6 +74,7 @@ void push_sqlwchar(SQLWCHAR *str, size_t num_bytes)
 #endif /* PIKE_DEBUG */
   push_string(make_shared_binary_pcharp(MKPCHARP(str, shift), num_bytes>>shift));
 }
+#endif /* SQL_WCHAR */
 
 void odbc_error(const char *fun, const char *msg,
 		struct precompiled_odbc *odbc, HSTMT hstmt,
