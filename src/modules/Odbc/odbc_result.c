@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.45 2006/02/06 15:33:49 grubba Exp $
+|| $Id: odbc_result.c,v 1.46 2006/02/06 16:02:53 grubba Exp $
 */
 
 /*
@@ -162,11 +162,6 @@ static void odbc_fix_fields(void)
 			&name_len,
 			&sql_type, &precision, &scale, &nullable),
 		       NULL, NULL);
-#ifdef SQL_WCHAR
-      /* NOTE: For some stupid reason name_len is in bytes. */
-      name_len /= sizeof(SQLWCHAR);
-#endif
-
       if (name_len < (ptrdiff_t)buf_size) {
 	break;
       }
