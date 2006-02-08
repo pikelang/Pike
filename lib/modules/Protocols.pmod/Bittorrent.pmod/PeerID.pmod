@@ -107,6 +107,14 @@ string identify_peer(string peerid)
 
       return "Generic";
    }
+
+   if( has_prefix(peerid, "BLZ") )
+   {
+     int version;
+     sscanf(peerid, "BLZ%3d", version);
+     return "Blizzard " + version;
+   }
+
 #ifdef TORRENT_DEBUG
    werror("unknown client: %O\n",peerid);   
 #endif
