@@ -1,5 +1,5 @@
 /*
- * $Id: tds.pike,v 1.5 2006/02/10 13:08:43 grubba Exp $
+ * $Id: tds.pike,v 1.6 2006/02/10 14:45:56 grubba Exp $
  *
  * A Pike implementation of the TDS protocol.
  *
@@ -217,99 +217,115 @@ static {
 #define FMT_INT		"%-4c"
 #define FMT_INT8	"%-4c"
 
-    int inpos = 0;
-    string inbuf = "";
-    static void fill_buf()
+    class InPacket
     {
-      if (!busy) {
-	TDS_WERROR("Filling buffer on idle connection!\n");
+      int inpos = 0;
+      string inbuf = "";
+      int done;
+
+      static void fill_buf()
+      {
+	if (done) {
+	  TDS_WERROR("Filling buffer on finished packet!\n"
+		     "%s\n", hex_dump(inbuf));
+	}
+
+	string header = socket->read(8);
+	if (!header || sizeof(header) < 8) {
+	  busy = !(done = 1);
+	  tds_error("Failed to read packet header: %O, %s.\n",
+		    header, strerror(socket->errno()));
+	}
+	TDS_WERROR("Read header:\n%s\n", hex_dump(header));
+	int packet_type;
+	int last_packet;
+	int len;
+	// NOTE: Network byteorder!!
+	sscanf(header, "%-1c%-1c%2c", packet_type, last_packet, len);
+	len -= 8;
+
+	busy = !(done = last_packet);
+
+	string data = socket->read(len);
+	if (!data || sizeof(data) < len) {
+	  tds_error("Failed to read packet data (%d bytes), got %O (%d bytes), %s\n",
+		    len, data, sizeof(data||""), strerror(socket->errno()));
+	}
+	TDS_WERROR("Read packet with %d bytes.\n%s\n",
+		   sizeof(data), hex_dump(data));
+	inbuf = inbuf[inpos..] + data;
+	inpos = 0;
       }
 
-      string header = socket->read(8);
-      if (!header || sizeof(header) < 8) {
-	tds_error("Failed to read packet header: %O, %s.\n",
-		  header, strerror(socket->errno()));
+      string get_raw(int bytes)
+      {
+	while (inpos + bytes > sizeof(inbuf)) {
+	  fill_buf();
+	}
+	string raw = inbuf[inpos..inpos + bytes - 1];
+	inpos += bytes;
+	return raw;
       }
-      TDS_WERROR("Read header:\n%s\n", hex_dump(header));
-      int packet_type;
-      int last_packet;
-      int len;
-      // NOTE: Network byteorder!!
-      sscanf(header, "%-1c%-1c%2c", packet_type, last_packet, len);
-      len -= 8;
 
-      busy = !last_packet;
-
-      string data = socket->read(len);
-      if (!data || sizeof(data) < len) {
-	tds_error("Failed to read packet data (%d bytes), got %O (%d bytes), %s\n",
-		  len, data, sizeof(data||""), strerror(socket->errno()));
+      string peek_raw(int bytes)
+      {
+	while (inpos + bytes > sizeof(inbuf)) {
+	  fill_buf();
+	}
+	string raw = inbuf[inpos..inpos + bytes - 1];
+	return raw;
       }
-      TDS_WERROR("Read packet with %d bytes.\n%s\n",
-		 sizeof(data), hex_dump(data));
-      inbuf = inbuf[inpos..] + data;
-      inpos = 0;
-    }
 
-    string get_raw(int bytes)
-    {
-      while (inpos + bytes > sizeof(inbuf)) {
-	fill_buf();
+      int get_int8()
+      {
+	return array_sscanf(get_raw(8), "%-8c")[0];
       }
-      string raw = inbuf[inpos..inpos + bytes - 1];
-      inpos += bytes;
-      return raw;
-    }
-
-    string peek_raw(int bytes)
-    {
-      while (inpos + bytes > sizeof(inbuf)) {
-	fill_buf();
+      int get_int()
+      {
+	return array_sscanf(get_raw(4), "%-4c")[0];
       }
-      string raw = inbuf[inpos..inpos + bytes - 1];
-      return raw;
-    }
+      int get_int_be()
+      {
+	return array_sscanf(get_raw(4), "%4c")[0];
+      }
+      int get_smallint()
+      {
+	return array_sscanf(get_raw(2), "%-2c")[0];
+      }
+      int get_byte()
+      {
+	return array_sscanf(get_raw(1), "%-1c")[0];
+      }
+      int peek_byte()
+      {
+	return array_sscanf(peek_raw(1), "%-1c")[0];
+      }
 
-    int get_int8()
-    {
-      return array_sscanf(get_raw(8), "%-8c")[0];
-    }
-    int get_int()
-    {
-      return array_sscanf(get_raw(4), "%-4c")[0];
-    }
-    int get_int_be()
-    {
-      return array_sscanf(get_raw(4), "%4c")[0];
-    }
-    int get_smallint()
-    {
-      return array_sscanf(get_raw(2), "%-2c")[0];
-    }
-    int get_byte()
-    {
-      return array_sscanf(get_raw(1), "%-1c")[0];
-    }
-    int peek_byte()
-    {
-      return array_sscanf(peek_raw(1), "%-1c")[0];
-    }
+      string get_string(int len)
+      {
+	if (!len) return "";
+	TDS_WERROR("get_string(%d)...\n", len);
+	return utf16_to_string(get_raw(len*2));
+      }
 
-    string get_string(int len)
-    {
-      if (!len) return "";
-      TDS_WERROR("get_string(%d)...\n", len);
-      return utf16_to_string(get_raw(len*2));
-    }
+      void expect(string s)
+      {
+	string r = get_raw(sizeof(s));
+	if (r != s) {
+	  tds_error("Expectation failed: Got %O, expected %O\n",
+		    r, s);
+	}
+      }
 
-    void expect(string s)
-    {
-      string r = get_raw(sizeof(s));
-      if (r != s) {
-	tds_error("Expectation failed: Got %O, expected %O\n",
-		  r, s);
+      static void create()
+      {
+	if (!busy) {
+	  TDS_WERROR("Creating input packet on idle connection!\n");
+	}
       }
     }
+
+    //static InPacket login_answer;
 
     class Packet
     {
@@ -427,14 +443,6 @@ static {
       if (busy) {
 	TDS_WERROR("Sending packet on busy connection!\n");
       }
-      if (sizeof(inbuf) > inpos) {
-	TDS_WERROR("inbuf: %O\n"
-		   "%s\n",
-		   inbuf[inpos..],
-		   hex_dump(inbuf[inpos..]));
-      }
-      inbuf = "";
-      inpos = 0;
       busy = last;
 
       // FIXME: Split large packets!
@@ -451,7 +459,7 @@ static {
 	tds_error("Failed to send packet.\n"
 		  "raw: %O\n", raw);
       }
-      Stdio.write_file("packet.bin", raw);
+      //Stdio.write_file("packet.bin", raw);
     }
 
     static string crypt_pass(string password)
@@ -464,7 +472,7 @@ static {
 			 });
     }
 
-    static void send_login()
+    static InPacket send_login()
     {
       password = password[..127];
 
@@ -508,6 +516,7 @@ static {
       
       TDS_WERROR("Sending login packet.\n");
       send_packet(p, 0x10, 1);
+      return InPacket();
     }
 
     string ecb_encrypt(string data, string key)
@@ -571,29 +580,29 @@ static {
       send_packet(p, 0x11);
     }
 
-    static void process_auth()
+    static void process_auth(InPacket inp)
     {
-      int pdu_size = get_smallint();
+      int pdu_size = inp->get_smallint();
       if (pdu_size < 32) tds_error("Bad pdu size: %d\n", pdu_size);
-      expect("NTLMSSP\0");
-      get_int();	/* sequence -> 2 */
-      get_int();	/* domain len * 2 */
-      get_int();	/* domain offset */
-      get_int();	/* flags */
-      string nonce = get_raw(8);
+      inp->expect("NTLMSSP\0");
+      inp->get_int();	/* sequence -> 2 */
+      inp->get_int();	/* domain len * 2 */
+      inp->get_int();	/* domain offset */
+      inp->get_int();	/* flags */
+      string nonce = inp->get_raw(8);
       /* Discard context, target and data info */
-      get_raw(pdu_size - 32);
+      inp->get_raw(pdu_size - 32);
       TDS_WERROR("Got nonce: %O\n", nonce);
       send_auth(nonce);
     }
 
-    static void process_msg(int token_type)
+    static void process_msg(InPacket inp, int token_type)
     {
       TDS_WERROR("TDS_ERROR_TOKEN | TDS_INFO_TOKEN | TDS_EED_TOKEN\n");
-      int len = get_smallint();
-      int no = get_int();
-      int state = get_byte();
-      int level = get_byte();
+      int len = inp->get_smallint();
+      int no = inp->get_int();
+      int state = inp->get_byte();
+      int level = inp->get_byte();
       int is_error = 0;
       int has_eed = 0;
       switch(token_type) {
@@ -601,11 +610,11 @@ static {
 	TDS_WERROR("TDS_EED_TOKEN\n");
 	if (level > 10) is_error = 1;
 
-	int state_len = get_byte();
-	string state = get_raw(state_len);
-	has_eed = get_byte();
+	int state_len = inp->get_byte();
+	string state = inp->get_raw(state_len);
+	has_eed = inp->get_byte();
 	/* Ignore status and transaction state */
-	get_smallint();
+	inp->get_smallint();
 	break;
       case TDS_INFO_TOKEN:
 	TDS_WERROR("TDS_INFO_TOKEN\n");
@@ -615,17 +624,17 @@ static {
 	is_error = 1;
 	break;
       }
-      string message = get_string(get_smallint());
-      string server = get_string(get_byte());
-      string proc_name = get_string(get_byte());
-      int line = get_smallint();
+      string message = inp->get_string(inp->get_smallint());
+      string server = inp->get_string(inp->get_byte());
+      string proc_name = inp->get_string(inp->get_byte());
+      int line = inp->get_smallint();
       if (has_eed) {
 	while (1) {
-	  switch(peek_byte()) {
+	  switch(inp->peek_byte()) {
 	  case TDS5_PARAMFMT_TOKEN:
 	  case TDS5_PARAMFMT2_TOKEN:
 	  case TDS5_PARAMS_TOKEN:
-	    process_default_tokens(get_byte());
+	    process_default_tokens(inp, inp->get_byte());
 	    continue;
 	  }
 	  break;
@@ -640,13 +649,13 @@ static {
       }
     }
 
-    static void process_env_chg()
+    static void process_env_chg(InPacket inp)
     {
-      int size = get_smallint();
-      int env_type = get_byte();
+      int size = inp->get_smallint();
+      int env_type = inp->get_byte();
       if (env_type == TDS_ENV_SQLCOLLATION) {
-	size = get_byte();
-	string block = get_raw(size);
+	size = inp->get_byte();
+	string block = inp->get_raw(size);
 	if (size >= 5) {
 	  string collation = block[..4];
 	  int lcid;
@@ -654,11 +663,11 @@ static {
 	  /* FIXME: Should we care? */
 	}
 	/* Discard old collation. */
-	get_raw(get_byte());
+	inp->get_raw(inp->get_byte());
 	return;
       }
-      string new_val = get_string(get_byte());
-      string old_val = get_string(get_byte());
+      string new_val = inp->get_string(inp->get_byte());
+      string old_val = inp->get_string(inp->get_byte());
       switch(env_type) {
       case TDS_ENV_PACKSIZE:
 	int new_block_size = (int)new_val;
@@ -798,12 +807,12 @@ static {
       return (col_type == SYBNUMERIC) || (col_type == SYBDECIMAL);
     }
 
-    mapping(string:mixed) tds7_get_data_info()
+    mapping(string:mixed) tds7_get_data_info(InPacket inp)
     {
       mapping(string:mixed) res = ([
-	"usertype":get_smallint(),
-	"flags":get_smallint(),
-	"column_type":get_byte(),
+	"usertype":inp->get_smallint(),
+	"flags":inp->get_smallint(),
+	"column_type":inp->get_byte(),
       ]);
       res->nullable == res->flags & 0x01;
       res->writeable == !!(res->flags & 0x08);
@@ -817,13 +826,13 @@ static {
 	res->column_size = get_size_by_type(res->column_type);
 	break;
       case 4:
-	res->column_size = get_int();
+	res->column_size = inp->get_int();
 	break;
       case 2:
-	res->column_size = get_smallint();
+	res->column_size = inp->get_smallint();
 	break;
       case 1:
-	res->column_size = get_byte();
+	res->column_size = inp->get_byte();
 	break;
       }
       TDS_WERROR("Column size: %d bytes\n", res->column_size);
@@ -833,27 +842,27 @@ static {
 
       if (is_numeric_type(res->cardinal_type)) {
 	TDS_WERROR("is_numeric\n");
-	res->column_prec = get_byte();
-	res->column_scale = get_byte();
+	res->column_prec = inp->get_byte();
+	res->column_scale = inp->get_byte();
       }
       if (is_collate_type(res->column_type)) {
 	TDS_WERROR("is_collate\n");
-	get_raw(4);	// Collation
-	get_byte();	// charset
+	inp->get_raw(4);	// Collation
+	inp->get_byte();	// charset
       }
       if (is_blob_type(res->cardinal_type)) {
 	TDS_WERROR("is_blob\n");
-	res->table = get_string(get_smallint());
+	res->table = inp->get_string(inp->get_smallint());
 	TDS_WERROR("Table name: %O\n", res->table);
       }
-      res->name = get_string(get_byte());
+      res->name = inp->get_string(inp->get_byte());
       TDS_WERROR("Column info: %O\n", res);
       return res;
     }
 
-    static void tds7_process_result()
+    static void tds7_process_result(InPacket inp)
     {
-      int num_cols = get_smallint();
+      int num_cols = inp->get_smallint();
       if (num_cols == 0xffff) {
 	TDS_WERROR("No meta data.\n");
 	column_info = 0;
@@ -864,7 +873,7 @@ static {
       //busy = 1;
       int offset = 0;
       foreach(column_info; int col; ) {
-	column_info[col] = tds7_get_data_info();
+	column_info[col] = tds7_get_data_info(inp);
 	column_info[col]->column_offset = offset;
 	TDS_WERROR("Offset: 0x%04x\n", offset);
 	if (is_numeric_type(column_info[col]->cardinal_type)) {
@@ -880,7 +889,7 @@ static {
       
     }
 
-    static void process_default_tokens(int token_type)
+    static void process_default_tokens(InPacket inp, int token_type)
     {
       if (token_type == TDS_DONE_TOKEN) return;
       switch(token_type) {
@@ -889,13 +898,13 @@ static {
       case TDS_ERROR_TOKEN:
       case TDS_INFO_TOKEN:
       case TDS_EED_TOKEN:
-	process_msg(token_type);
+	process_msg(inp, token_type);
 	return;
       case TDS_ENVCHANGE_TOKEN:
-	process_env_chg();
+	process_env_chg(inp);
 	return;
       case TDS7_RESULT_TOKEN:
-	tds7_process_result();
+	tds7_process_result(inp);
 	break;
       case TDS5_DYNAMIC_TOKEN:
       case TDS_LOGINACK_TOKEN:
@@ -903,7 +912,7 @@ static {
       case TDS_CONTROL_TOKEN:
       case TDS_TABNAME_TOKEN:
 	TDS_WERROR("Skipping token: %d\n", token_type);
-	get_raw(get_smallint());
+	inp->get_raw(inp->get_smallint());
 	break;
       default:
 	TDS_WERROR("FIXME: Got unknown token in process_default_tokens: %d\n",
@@ -912,25 +921,25 @@ static {
       }
     }
 
-    int process_result_tokens()
+    int process_result_tokens(InPacket inp)
     {
       if (!busy) {
 	//return TDS_NO_MORE_RESULTS;
       }
       while (1) {
-	int token_type = peek_byte();
+	int token_type = inp->peek_byte();
 	TDS_WERROR("Got result token %d\n", token_type);
 	switch(token_type) {
 	case TDS7_RESULT_TOKEN:
 	  TDS_WERROR("TDS7_RESULT_TOKEN\n");
-	  get_byte();
-	  tds7_process_result();
-	  if (peek_byte() == TDS_TABNAME_TOKEN) {
+	  inp->get_byte();
+	  tds7_process_result(inp);
+	  if (inp->peek_byte() == TDS_TABNAME_TOKEN) {
 	    TDS_WERROR("TDS_TABNAME_TOKEN\n");
-	    process_default_tokens(get_byte());
-	    if (peek_byte() == TDS_COLINFO_TOKEN) {
+	    process_default_tokens(inp, inp->get_byte());
+	    if (inp->peek_byte() == TDS_COLINFO_TOKEN) {
 	      TDS_WERROR("TDS_COLINFO_TOKEN\n");
-	      get_byte();
+	      inp->get_byte();
 	      //process_colinfo();	// FIXME!
 	    }
 	  }
@@ -941,16 +950,19 @@ static {
 	  TDS_WERROR("==> TDS_ROW_RESULT\n");
 	  return TDS_ROW_RESULT;
 	default:
-	  get_byte();
 	  TDS_WERROR("==> FIXME: process_result_tokens\n");
-	  process_default_tokens(token_type);
+	  // FALL_THROUGH
+	case TDS_ORDERBY_TOKEN:
+	  inp->get_byte();
+	  process_default_tokens(inp, token_type);
 	  return 0;		/***** FIXME:::::: *****/
 	  break;
 	}
       }
     }
 
-    static string|int get_data(mapping(string:mixed) info, int col)
+    static string|int get_data(InPacket inp,
+			       mapping(string:mixed) info, int col)
     {
       TDS_WERROR("get_data for column %d info:%O\n", col, info);
       mapping blobinfo;
@@ -961,25 +973,25 @@ static {
       case 4:
 	switch(info->cardinal_type) {
 	case SYBVARIANT:
-	  int sz = get_int();
+	  int sz = inp->get_int();
 	  if (!sz) return 0;	// NULL;
-	  return get_raw(sz);
+	  return inp->get_raw(sz);
 	case SYBLONGBINARY:
-	  colsize = get_int();
+	  colsize = inp->get_int();
 	  break outer;
 	}
-	int len = get_byte();
+	int len = inp->get_byte();
 	if (len == 16) {
 	  blobinfo = ([
-	    "textptr":get_raw(16),
-	    "timestamp":get_raw(8),
+	    "textptr":inp->get_raw(16),
+	    "timestamp":inp->get_raw(8),
 	  ]);
-	  colsize = get_int();
+	  colsize = inp->get_int();
 	  TDS_WERROR("BLOB: size:%d info:%O\n", colsize, blobinfo);
 	}
 	break;
       case 2:
-	colsize = get_smallint();
+	colsize = inp->get_smallint();
 	if (!colsize) {
 	  // Empty string.
 	  return "";
@@ -987,7 +999,7 @@ static {
 	if (colsize == 0xffff) colsize = 0;
 	break;
       case 1:
-	colsize = get_byte();
+	colsize = inp->get_byte();
 	break;
       case 0:
 	colsize = get_size_by_type(info->cardinal_type);
@@ -997,19 +1009,19 @@ static {
       if (!colsize) return 0;	// NULL.
       if (is_numeric_type(info->cardinal_type)) {
 	// NUMERIC
-	string arr = get_raw(colsize);
+	string arr = inp->get_raw(colsize);
 	TDS_WERROR("NUMERIC: %O\n", arr);
 	return arr;	// FIXME
       } else if (is_blob_type(info->cardinal_type)) {
 	// BLOB
-	string raw = get_raw(colsize);
+	string raw = inp->get_raw(colsize);
 	TDS_WERROR("BLOB. colsize:%d, raw: %O\n", colsize, raw);
 	if (is_char_type(info->cardinal_type)) {
 	  return utf16_to_string(raw);
 	}
 	return raw;
       } else {
-	string raw = get_raw(colsize);
+	string raw = inp->get_raw(colsize);
 	TDS_WERROR("Got raw data: %O\ncolumn_size:%d colsize:%d\n%s\n",
 		   raw, info->column_size, colsize, hex_dump(raw));
 	if (is_unicode_type(info->column_type)) {
@@ -1150,21 +1162,22 @@ static {
       return raw;
     }
 
-    static array(string|int) process_row()
+    static array(string|int) process_row(InPacket inp)
     {
       if (!column_info) return 0;
       array(string|int) res = allocate(sizeof(column_info));
       foreach(column_info; int i; mapping(string:mixed) info) {
-	res[i] = convert(get_data(info, i), info);
+	res[i] = convert(get_data(inp, info, i), info);
       }
       return res;
     }
 
-    array(string|int) process_row_tokens(int|void leave_end_token)
+    array(string|int) process_row_tokens(InPacket inp,
+					 int|void leave_end_token)
     {
       //if (!busy) return 0;	// No more rows.
       while (1) {
-	int token_type = peek_byte();
+	int token_type = inp->peek_byte();
 	TDS_WERROR("Process row tokens: Token type: %d\n", token_type);
 	switch(token_type) {
 	case TDS_RESULT_TOKEN:
@@ -1174,29 +1187,29 @@ static {
 	  //busy = 0;
 	  return 0;
 	case TDS_ROW_TOKEN:
-	  get_byte();
-	  return process_row();
+	  inp->get_byte();
+	  return process_row(inp);
 	  break;
 	case TDS_DONE_TOKEN:
 	case TDS_DONEPROC_TOKEN:
 	case TDS_DONEINPROC_TOKEN:
-	  if (!leave_end_token) get_byte();
+	  if (!leave_end_token) inp->get_byte();
 	  //busy = 0;
 	  return 0;
 	default:
-	  get_byte();
-	  process_default_tokens(token_type);
+	  inp->get_byte();
+	  process_default_tokens(inp, token_type);
 	  break;
 	}
       }
     }
 
-    static void process_login_tokens()
+    static void process_login_tokens(InPacket inp)
     {
       int ok = 0;
       int token_type;
       do {
-	token_type = get_byte();
+	token_type = inp->get_byte();
 	TDS_WERROR("Got token: %d\n", token_type);
 	switch(token_type) {
 	case TDS_DONE_TOKEN:
@@ -1204,18 +1217,18 @@ static {
 	  break;
 	case TDS_AUTH_TOKEN:
 	  TDS_WERROR("TDS_AUTH_TOKEN\n");
-	  process_auth();
+	  process_auth(inp);
 	  break;
 	case TDS_LOGINACK_TOKEN:
 	  TDS_WERROR("TDS_LOGINACK_TOKEN\n");
-	  int len = get_smallint();
-	  int ack = get_byte();
-	  int major = get_byte();
-	  int minor = get_byte();
-	  get_smallint();	/* Ignored. */
-	  get_byte();		/* Product name len */
-	  server_product_name = get_string((len-10)/2);
-	  int product_version = get_int_be();
+	  int len = inp->get_smallint();
+	  int ack = inp->get_byte();
+	  int major = inp->get_byte();
+	  int minor = inp->get_byte();
+	  inp->get_smallint();	/* Ignored. */
+	  inp->get_byte();		/* Product name len */
+	  server_product_name = inp->get_string((len-10)/2);
+	  int product_version = inp->get_int_be();
 	  if ((major == 4) && (minor == 2) &&
 	      ((product_version & 0xff0000ff) == 0x5f0000ff)) {
 	    // Workaround for bugs in MSSQL 6.5 & 7.0 for TDS 4.2.
@@ -1236,7 +1249,7 @@ static {
 				major, minor);
 	  break;
 	default:
-	  process_default_tokens(token_type);
+	  process_default_tokens(inp, token_type);
 	  break;
 	}
       } while (token_type != TDS_DONE_TOKEN);
@@ -1245,13 +1258,14 @@ static {
       TDS_WERROR("Login ok!\n");
     }
 
-    void submit_query(compile_query query, void|array(mixed) params)
+    InPacket submit_query(compile_query query, void|array(mixed) params)
     {
       Packet p = Packet();
       if (!query->n_param || !params || !sizeof(params)) {
 	string raw = query->splitted_query*"?";
 	p->put_raw(raw, sizeof(raw));
 	send_packet(p, 0x01, 1);
+	return InPacket();
       } else {
 	tds_error("parametrized queries not supported yet.\n");
       }
@@ -1289,8 +1303,7 @@ static {
 	socket = 0;
 	tds_error("Failed to connect to %s:%d\n", server, port);
       }
-      send_login();
-      process_login_tokens();
+      process_login_tokens(send_login());
     }
   }
 
@@ -1313,21 +1326,22 @@ static {
     con = Connection(server, port, database, uid, password);
   }
 
-  void Execute(compile_query query)
+  Connection.InPacket Execute(compile_query query)
   {
     query->parse_prepared_query();
     if (busy) {
       tds_error("Connection not idle.\n");
     }
+    Connection.InPacket res;
     if (!query->params) {
-      con->submit_query(query);
+      res = con->submit_query(query);
     } else {
-      con->submit_execdirect(query, query->params);
+      res = con->submit_execdirect(query, query->params);
     }
     int done = 0;
     int res_type;
     while (!done) {
-      res_type = con->process_result_tokens();
+      res_type = con->process_result_tokens(res);
       switch(res_type) {
       case TDS_COMPUTE_RESULT:
       case TDS_ROW_RESULT:
@@ -1342,6 +1356,7 @@ static {
     switch(res_type) {
       //case TDS_NO_MORE_RESULTS:
     }
+    return res;
   }
 #if (__REAL_MAJOR__ > 7) || ((__REAL_MAJOR__ == 7) && (__REAL_MINOR__ >= 6))
 };
@@ -1428,11 +1443,13 @@ class big_query
   static int row_no;
   static int eot;
 
+  static Connection.InPacket result_packet;
+
   int|array(string|int) fetch_row()
   {
     if (eot) return 0;
     TDS_WERROR("fetch_row()::::::::::::::::::::::::::::::::::::::::::\n");
-    int|array(string|int) res = con->process_row_tokens();
+    int|array(string|int) res = con->process_row_tokens(result_packet);
     eot = !res;
     row_no++;
     return res;
@@ -1441,7 +1458,7 @@ class big_query
   array(mapping(string:mixed)) fetch_fields()
   {
     TDS_WERROR("fetch_fields()::::::::::::::::::::::::::::::::::::::::::\n");
-    return copy_value(column_info);
+    return copy_value(column_info || ({}));
   }
 
   static void create(string|compile_query query)
@@ -1449,7 +1466,7 @@ class big_query
     if (stringp(query)) {
       query = compile_query(query);
     }
-    Execute(query);
+    result_packet = Execute(query);
   }
 }
 
