@@ -1,5 +1,5 @@
 /*
- * $Id: tds.pike,v 1.4 2006/02/10 10:31:44 grubba Exp $
+ * $Id: tds.pike,v 1.5 2006/02/10 13:08:43 grubba Exp $
  *
  * A Pike implementation of the TDS protocol.
  *
@@ -180,7 +180,7 @@ static {
   void tds_error(string msg, mixed ... args)
   {
     if (sizeof(args)) msg = sprintf(msg, @args);
-    error(last_error = msg);
+    predef::error(last_error = msg);
   }
 
   static object utf16enc = Locale.Charset.encoder("UTF16LE");
@@ -221,6 +221,10 @@ static {
     string inbuf = "";
     static void fill_buf()
     {
+      if (!busy) {
+	TDS_WERROR("Filling buffer on idle connection!\n");
+      }
+
       string header = socket->read(8);
       if (!header || sizeof(header) < 8) {
 	tds_error("Failed to read packet header: %O, %s.\n",
@@ -233,6 +237,9 @@ static {
       // NOTE: Network byteorder!!
       sscanf(header, "%-1c%-1c%2c", packet_type, last_packet, len);
       len -= 8;
+
+      busy = !last_packet;
+
       string data = socket->read(len);
       if (!data || sizeof(data) < len) {
 	tds_error("Failed to read packet data (%d bytes), got %O (%d bytes), %s\n",
@@ -416,6 +423,21 @@ static {
     static void send_packet(Packet p, int flag, int|void last)
     {
       string raw = (string) p;
+
+      if (busy) {
+	TDS_WERROR("Sending packet on busy connection!\n");
+      }
+      if (sizeof(inbuf) > inpos) {
+	TDS_WERROR("inbuf: %O\n"
+		   "%s\n",
+		   inbuf[inpos..],
+		   hex_dump(inbuf[inpos..]));
+      }
+      inbuf = "";
+      inpos = 0;
+      busy = last;
+
+      // FIXME: Split large packets!
 
       // NOTE: Network byteorder!!
       raw =
@@ -839,7 +861,7 @@ static {
       }
       TDS_WERROR("%d columns in result.\n", num_cols);
       column_info = allocate(num_cols);
-      busy = 1;
+      //busy = 1;
       int offset = 0;
       foreach(column_info; int col; ) {
 	column_info[col] = tds7_get_data_info();
@@ -914,6 +936,7 @@ static {
 	  }
 	  TDS_WERROR("==> TDS_ROWFMT_RESULT\n");
 	  return TDS_ROWFMT_RESULT;
+	case TDS_DONE_TOKEN:
 	case TDS_ROW_TOKEN:
 	  TDS_WERROR("==> TDS_ROW_RESULT\n");
 	  return TDS_ROW_RESULT;
@@ -989,6 +1012,9 @@ static {
 	string raw = get_raw(colsize);
 	TDS_WERROR("Got raw data: %O\ncolumn_size:%d colsize:%d\n%s\n",
 		   raw, info->column_size, colsize, hex_dump(raw));
+	if (is_unicode_type(info->column_type)) {
+	  raw = utf16_to_string(raw);
+	}
 	if (colsize < info->column_size) {
 	  // Handle padding.
 	  switch(info->cardinal_type) {
@@ -1069,17 +1095,21 @@ static {
       case SYBBITN:
 	return raw[0]?"1":"0";
       case SYBINT1:
-	// FIXME: SIGN!
-	return sprintf("%d", array_sscanf(raw, "%-1c")[0]);
       case SYBINT2:
-	// FIXME: SIGN!
-	return sprintf("%d", array_sscanf(raw, "%-2c")[0]);
       case SYBINT4:
-	// FIXME: SIGN!
-	return sprintf("%d", array_sscanf(raw, "%-4c")[0]);
       case SYBINT8:
-	// FIXME: SIGN!
-	return sprintf("%d", array_sscanf(raw, "%-8c")[0]);
+      case SYBINTN:
+	{
+	  int val;
+	  if (raw[-1]& 0x80) {
+	    // Negative.
+	    val = ~array_sscanf((~raw) + ("\x00"*8), "%-8c")[0];
+	  } else {
+	    val = array_sscanf(raw + ("\x00"*8), "%-8c")[0];
+	  }
+	  TDS_WERROR("Converted %O ==> %d\n", raw, val);
+	  return sprintf("%d", val);
+	}
       case SYBDATETIMN:
 	if (sizeof(raw) == 8) cardinal_type = SYBDATETIME;
 	// FALL_THROUGH
@@ -1132,7 +1162,7 @@ static {
 
     array(string|int) process_row_tokens(int|void leave_end_token)
     {
-      if (!busy) return 0;	// No more rows.
+      //if (!busy) return 0;	// No more rows.
       while (1) {
 	int token_type = peek_byte();
 	TDS_WERROR("Process row tokens: Token type: %d\n", token_type);
@@ -1141,7 +1171,7 @@ static {
 	case TDS_ROWFMT2_TOKEN:
 	case TDS7_RESULT_TOKEN:
 	  // Some other result starts here.
-	  busy = 0;
+	  //busy = 0;
 	  return 0;
 	case TDS_ROW_TOKEN:
 	  get_byte();
@@ -1151,7 +1181,7 @@ static {
 	case TDS_DONEPROC_TOKEN:
 	case TDS_DONEINPROC_TOKEN:
 	  if (!leave_end_token) get_byte();
-	  busy = 0;
+	  //busy = 0;
 	  return 0;
 	default:
 	  get_byte();
@@ -1387,6 +1417,7 @@ class compile_query
 
   static void create(string query)
   {
+    TDS_WERROR("Compiling query: %O\n", query);
     splitted_query = split_query_on_placeholders(query);
     n_param = sizeof(splitted_query)-1;
   }
@@ -1425,6 +1456,11 @@ class big_query
 string server_info()
 {
   return server_data;
+}
+
+string error()
+{
+  return last_error;
 }
 
 static void create(string|void server, string|void database,
