@@ -1,5 +1,5 @@
 /*
- * $Id: tds.pike,v 1.3 2006/02/10 10:27:43 grubba Exp $
+ * $Id: tds.pike,v 1.4 2006/02/10 10:31:44 grubba Exp $
  *
  * A Pike implementation of the TDS protocol.
  *
@@ -1016,7 +1016,8 @@ static {
     static string|int convert(string|int raw, mapping(string:mixed) info)
     {
       if (!raw) return raw; /* NULL */
-      switch(info->cardinal_type) {
+      int cardinal_type;
+      switch(cardinal_type = info->cardinal_type) {
       case SYBCHAR:
       case SYBVARCHAR:
       case SYBTEXT:
@@ -1079,11 +1080,14 @@ static {
       case SYBINT8:
 	// FIXME: SIGN!
 	return sprintf("%d", array_sscanf(raw, "%-8c")[0]);
+      case SYBDATETIMN:
+	if (sizeof(raw) == 8) cardinal_type = SYBDATETIME;
+	// FALL_THROUGH
       case SYBDATETIME:
       case SYBDATETIME4:
 	{
 	  int day, min, sec, sec_300;
-	  if (info->cardinal_type == SYBDATETIME) {
+	  if (cardinal_type == SYBDATETIME) {
 	    sscanf(raw, "%-4c%-4c", day, sec_300);
 	    sec = sec_300/300;
 	    sec_300 %= 300;
@@ -1112,11 +1116,6 @@ static {
 	  return sprintf("%04d-%02d-%02dT%02d:%02d:%02d",
 			 year, mon, mday, hour, min, sec);
 	}
-#if 0
-      case SYBDATETIMN:
-	
-	break;
-#endif /* 0 */
       }
       return raw;
     }
