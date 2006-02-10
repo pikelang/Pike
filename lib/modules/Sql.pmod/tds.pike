@@ -1,5 +1,5 @@
 /*
- * $Id: tds.pike,v 1.2 2006/02/10 09:54:33 grubba Exp $
+ * $Id: tds.pike,v 1.3 2006/02/10 10:27:43 grubba Exp $
  *
  * A Pike implementation of the TDS protocol.
  *
@@ -875,6 +875,18 @@ static {
       case TDS7_RESULT_TOKEN:
 	tds7_process_result();
 	break;
+      case TDS5_DYNAMIC_TOKEN:
+      case TDS_LOGINACK_TOKEN:
+      case TDS_ORDERBY_TOKEN:
+      case TDS_CONTROL_TOKEN:
+      case TDS_TABNAME_TOKEN:
+	TDS_WERROR("Skipping token: %d\n", token_type);
+	get_raw(get_smallint());
+	break;
+      default:
+	TDS_WERROR("FIXME: Got unknown token in process_default_tokens: %d\n",
+		   token_type);
+	break;
       }
     }
 
@@ -951,6 +963,9 @@ static {
 	}
 	if (colsize == 0xffff) colsize = 0;
 	break;
+      case 1:
+	colsize = get_byte();
+	break;
       case 0:
 	colsize = get_size_by_type(info->cardinal_type);
 	break;
@@ -1000,6 +1015,7 @@ static {
 
     static string|int convert(string|int raw, mapping(string:mixed) info)
     {
+      if (!raw) return raw; /* NULL */
       switch(info->cardinal_type) {
       case SYBCHAR:
       case SYBVARCHAR:
@@ -1096,7 +1112,13 @@ static {
 	  return sprintf("%04d-%02d-%02dT%02d:%02d:%02d",
 			 year, mon, mday, hour, min, sec);
 	}
+#if 0
+      case SYBDATETIMN:
+	
+	break;
+#endif /* 0 */
       }
+      return raw;
     }
 
     static array(string|int) process_row()
