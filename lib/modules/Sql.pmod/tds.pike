@@ -1,5 +1,5 @@
 /*
- * $Id: tds.pike,v 1.6 2006/02/10 14:45:56 grubba Exp $
+ * $Id: tds.pike,v 1.7 2006/02/10 16:03:52 grubba Exp $
  *
  * A Pike implementation of the TDS protocol.
  *
@@ -175,7 +175,6 @@ static {
 
   string server_data;
   string last_error;
-  array(mapping(string:mixed)) column_info;
 
   void tds_error(string msg, mixed ... args)
   {
@@ -228,6 +227,7 @@ static {
 	if (done) {
 	  TDS_WERROR("Filling buffer on finished packet!\n"
 		     "%s\n", hex_dump(inbuf));
+	  tds_error("Filling buffer on finished packet!\n");
 	}
 
 	string header = socket->read(8);
@@ -255,6 +255,16 @@ static {
 		   sizeof(data), hex_dump(data));
 	inbuf = inbuf[inpos..] + data;
 	inpos = 0;
+      }
+
+      static void destroy()
+      {
+	// Return the connection to the idle state.
+	while (!done) {
+	  inbuf = "";
+	  inpos = 0;
+	  fill_buf();
+	}
       }
 
       string get_raw(int bytes)
@@ -319,9 +329,10 @@ static {
 
       static void create()
       {
-	if (!busy) {
-	  TDS_WERROR("Creating input packet on idle connection!\n");
+	if (busy) {
+	  tds_error("Creating InPacket on busy connection!\n");
 	}
+	busy = 1;
       }
     }
 
@@ -436,30 +447,31 @@ static {
       }
     }
 
-    static void send_packet(Packet p, int flag, int|void last)
+    InPacket send_packet(Packet p, int flag, int|void last)
     {
-      string raw = (string) p;
-
       if (busy) {
-	TDS_WERROR("Sending packet on busy connection!\n");
+	tds_error("Sending packet on busy connection!\n");
       }
-      busy = last;
 
-      // FIXME: Split large packets!
-
-      // NOTE: Network byteorder!!
-      raw =
-	sprintf("%-1c%-1c%2c\0\0%-1c\0%s",
-		flag, last,
-		sizeof(raw) + 8,
-		1,		/* TDS 7 or 8. */
-		(string)raw);
-      TDS_WERROR("Wrapped packet: %O\n%s\n", raw, hex_dump(raw));
-      if (socket->write(raw) != sizeof(raw)) {
-	tds_error("Failed to send packet.\n"
-		  "raw: %O\n", raw);
+      string packet = (string) p;
+      foreach(packet/512.0, string raw) {
+	// NOTE: Network byteorder!!
+	raw = sprintf("%1c%1c%2c\0\0%1c\0%s",
+		      flag, last,
+		      sizeof(raw) + 8,
+		      1,		/* TDS 7 or 8. */
+		      raw);
+	TDS_WERROR("Wrapped packet: %O\n%s\n", raw, hex_dump(raw));
+	if (socket->write(raw) != sizeof(raw)) {
+	  socket->close();
+	  socket = 0;
+	  tds_error("Failed to send packet.\n"
+		    "raw: %O\n", raw);
+	}
       }
       //Stdio.write_file("packet.bin", raw);
+      if (last) return InPacket();
+      return 0;
     }
 
     static string crypt_pass(string password)
@@ -515,8 +527,7 @@ static {
       p->put_string("");
       
       TDS_WERROR("Sending login packet.\n");
-      send_packet(p, 0x10, 1);
-      return InPacket();
+      return send_packet(p, 0x10, 1);
     }
 
     string ecb_encrypt(string data, string key)
@@ -860,33 +871,19 @@ static {
       return res;
     }
 
-    static void tds7_process_result(InPacket inp)
+    static array(mapping(string:mixed)) tds7_process_result(InPacket inp)
     {
       int num_cols = inp->get_smallint();
       if (num_cols == 0xffff) {
 	TDS_WERROR("No meta data.\n");
-	column_info = 0;
-	return;
+	return 0;
       }
       TDS_WERROR("%d columns in result.\n", num_cols);
-      column_info = allocate(num_cols);
-      //busy = 1;
-      int offset = 0;
+      array(mapping(string:mixed)) column_info = allocate(num_cols);
       foreach(column_info; int col; ) {
 	column_info[col] = tds7_get_data_info(inp);
-	column_info[col]->column_offset = offset;
-	TDS_WERROR("Offset: 0x%04x\n", offset);
-	if (is_numeric_type(column_info[col]->cardinal_type)) {
-	  offset += 35;		// sizeof(TDS_NUMERIC)
-	} else if (is_blob_type(column_info[col]->cardinal_type)) {
-	  offset += 32;		// sizeof(TDSBLOB)
-	} else {
-	  offset += column_info[col]->column_size;
-	}
-	offset += (~(offset - 1) & 0x3);	// Align.
-	TDS_WERROR("Next offset: 0x%04x\n", offset);
       }
-      
+      return column_info;
     }
 
     static void process_default_tokens(InPacket inp, int token_type)
@@ -904,7 +901,8 @@ static {
 	process_env_chg(inp);
 	return;
       case TDS7_RESULT_TOKEN:
-	tds7_process_result(inp);
+	tds_error("TDS7_RESULT_TOKEN in default handler!\n");
+	//tds7_process_result(inp);
 	break;
       case TDS5_DYNAMIC_TOKEN:
       case TDS_LOGINACK_TOKEN:
@@ -921,11 +919,9 @@ static {
       }
     }
 
-    int process_result_tokens(InPacket inp)
+    array(mapping(string:mixed)) process_result_tokens(InPacket inp)
     {
-      if (!busy) {
-	//return TDS_NO_MORE_RESULTS;
-      }
+      array(mapping(string:mixed)) column_info;
       while (1) {
 	int token_type = inp->peek_byte();
 	TDS_WERROR("Got result token %d\n", token_type);
@@ -933,7 +929,7 @@ static {
 	case TDS7_RESULT_TOKEN:
 	  TDS_WERROR("TDS7_RESULT_TOKEN\n");
 	  inp->get_byte();
-	  tds7_process_result(inp);
+	  column_info = tds7_process_result(inp);
 	  if (inp->peek_byte() == TDS_TABNAME_TOKEN) {
 	    TDS_WERROR("TDS_TABNAME_TOKEN\n");
 	    process_default_tokens(inp, inp->get_byte());
@@ -943,19 +939,20 @@ static {
 	      //process_colinfo();	// FIXME!
 	    }
 	  }
-	  TDS_WERROR("==> TDS_ROWFMT_RESULT\n");
-	  return TDS_ROWFMT_RESULT;
+	  break;
 	case TDS_DONE_TOKEN:
+	  TDS_WERROR("  TDS_DONE_TOKEN pending\n");
+	  return column_info;
 	case TDS_ROW_TOKEN:
-	  TDS_WERROR("==> TDS_ROW_RESULT\n");
-	  return TDS_ROW_RESULT;
+	  TDS_WERROR("  TDS_ROW_TOKEN pending\n");
+	  return column_info;
 	default:
 	  TDS_WERROR("==> FIXME: process_result_tokens\n");
 	  // FALL_THROUGH
 	case TDS_ORDERBY_TOKEN:
+	  /* Ignore. */
 	  inp->get_byte();
 	  process_default_tokens(inp, token_type);
-	  return 0;		/***** FIXME:::::: *****/
 	  break;
 	}
       }
@@ -1162,17 +1159,19 @@ static {
       return raw;
     }
 
-    static array(string|int) process_row(InPacket inp)
+    static array(string|int) process_row(InPacket inp,
+					 array(mapping(string:mixed)) col_info)
     {
-      if (!column_info) return 0;
-      array(string|int) res = allocate(sizeof(column_info));
-      foreach(column_info; int i; mapping(string:mixed) info) {
+      if (!col_info) return 0;
+      array(string|int) res = allocate(sizeof(col_info));
+      foreach(col_info; int i; mapping(string:mixed) info) {
 	res[i] = convert(get_data(inp, info, i), info);
       }
       return res;
     }
 
     array(string|int) process_row_tokens(InPacket inp,
+					 array(mapping(string:mixed)) col_info,
 					 int|void leave_end_token)
     {
       //if (!busy) return 0;	// No more rows.
@@ -1188,7 +1187,7 @@ static {
 	  return 0;
 	case TDS_ROW_TOKEN:
 	  inp->get_byte();
-	  return process_row(inp);
+	  return process_row(inp, col_info);
 	  break;
 	case TDS_DONE_TOKEN:
 	case TDS_DONEPROC_TOKEN:
@@ -1264,8 +1263,7 @@ static {
       if (!query->n_param || !params || !sizeof(params)) {
 	string raw = query->splitted_query*"?";
 	p->put_raw(raw, sizeof(raw));
-	send_packet(p, 0x01, 1);
-	return InPacket();
+	return send_packet(p, 0x01, 1);
       } else {
 	tds_error("parametrized queries not supported yet.\n");
       }
@@ -1326,38 +1324,6 @@ static {
     con = Connection(server, port, database, uid, password);
   }
 
-  Connection.InPacket Execute(compile_query query)
-  {
-    query->parse_prepared_query();
-    if (busy) {
-      tds_error("Connection not idle.\n");
-    }
-    Connection.InPacket res;
-    if (!query->params) {
-      res = con->submit_query(query);
-    } else {
-      res = con->submit_execdirect(query, query->params);
-    }
-    int done = 0;
-    int res_type;
-    while (!done) {
-      res_type = con->process_result_tokens(res);
-      switch(res_type) {
-      case TDS_COMPUTE_RESULT:
-      case TDS_ROW_RESULT:
-	done = 1;
-	break;
-      default:
-	TDS_WERROR("res_type: %d\n", res_type);
-	break;
-      }
-    }
-    // populate_ird
-    switch(res_type) {
-      //case TDS_NO_MORE_RESULTS:
-    }
-    return res;
-  }
 #if (__REAL_MAJOR__ > 7) || ((__REAL_MAJOR__ == 7) && (__REAL_MINOR__ >= 6))
 };
 #endif /* Pike 7.6 or later */
@@ -1444,12 +1410,14 @@ class big_query
   static int eot;
 
   static Connection.InPacket result_packet;
+  static array(mapping(string:mixed)) column_info;
 
   int|array(string|int) fetch_row()
   {
     if (eot) return 0;
     TDS_WERROR("fetch_row()::::::::::::::::::::::::::::::::::::::::::\n");
-    int|array(string|int) res = con->process_row_tokens(result_packet);
+    int|array(string|int) res = con->process_row_tokens(result_packet,
+							column_info);
     eot = !res;
     row_no++;
     return res;
@@ -1458,7 +1426,7 @@ class big_query
   array(mapping(string:mixed)) fetch_fields()
   {
     TDS_WERROR("fetch_fields()::::::::::::::::::::::::::::::::::::::::::\n");
-    return copy_value(column_info || ({}));
+    return copy_value(column_info);
   }
 
   static void create(string|compile_query query)
@@ -1466,7 +1434,18 @@ class big_query
     if (stringp(query)) {
       query = compile_query(query);
     }
-    result_packet = Execute(query);
+
+    query->parse_prepared_query();
+    if (busy) {
+      tds_error("Connection not idle.\n");
+    }
+    if (!query->params) {
+      result_packet = con->submit_query(query);
+    } else {
+      result_packet = con->submit_execdirect(query, query->params);
+    }
+    column_info = con->process_result_tokens(result_packet);
+    if (!column_info) destruct();
   }
 }
 
