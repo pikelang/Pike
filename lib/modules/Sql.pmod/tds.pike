@@ -1,5 +1,5 @@
 /*
- * $Id: tds.pike,v 1.1 2006/02/09 17:18:30 grubba Exp $
+ * $Id: tds.pike,v 1.2 2006/02/10 09:54:33 grubba Exp $
  *
  * A Pike implementation of the TDS protocol.
  *
@@ -33,7 +33,11 @@ static string hex_dump(string data) {
   return lines * "";
 }
 
+#if (__REAL_MAJOR__ > 7) || ((__REAL_MAJOR__ == 7) && (__REAL_MINOR__ >= 6))
+// Static blocks affect nested classes in Pike 7.4.
+// We don't want that...
 static {
+#endif /* Pike 7.6 or later */
   constant DEF_MAJOR = 8;
   constant DEF_MINOR = 0;
   constant DEF_PORT = 1433;
@@ -486,8 +490,13 @@ static {
 
     string ecb_encrypt(string data, string key)
     {
+#if constant(Crypto.DES)
       Crypto.DES des = Crypto.DES();
       des->set_encrypt_key(des->fix_parity(key));
+#else
+      Crypto.des des = Crypto.des();
+      des->set_encrypt_key(Crypto.des_parity(key));
+#endif
       return des->crypt(data);
     }
 
@@ -513,7 +522,11 @@ static {
     string answer_nt_challenge(string passwd, string nonce)
     {
       string nt_passwd = string_to_utf16(passwd);
+#if constant(Crypto.MD4)
       Crypto.MD4 md4 = Crypto.MD4();
+#else
+      Crypto.md4 md4 = Crypto.md4();
+#endif
       md4->update(nt_passwd);
       return encrypt_answer(md4->digest() + "\0"*16, nonce);
     }
@@ -895,6 +908,7 @@ static {
 	default:
 	  get_byte();
 	  TDS_WERROR("==> FIXME: process_result_tokens\n");
+	  process_default_tokens(token_type);
 	  return 0;		/***** FIXME:::::: *****/
 	  break;
 	}
@@ -1278,7 +1292,9 @@ static {
       //case TDS_NO_MORE_RESULTS:
     }
   }
+#if (__REAL_MAJOR__ > 7) || ((__REAL_MAJOR__ == 7) && (__REAL_MINOR__ >= 6))
 };
+#endif /* Pike 7.6 or later */
 
 class compile_query
 {
