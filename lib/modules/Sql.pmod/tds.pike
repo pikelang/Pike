@@ -1,5 +1,5 @@
 /*
- * $Id: tds.pike,v 1.7 2006/02/10 16:03:52 grubba Exp $
+ * $Id: tds.pike,v 1.8 2006/02/10 16:28:31 grubba Exp $
  *
  * A Pike implementation of the TDS protocol.
  *
@@ -453,11 +453,11 @@ static {
 	tds_error("Sending packet on busy connection!\n");
       }
 
-      string packet = (string) p;
-      foreach(packet/512.0, string raw) {
+      array(string) packets = ((string) p)/512.0;
+      foreach(packets; int i; string raw) {
 	// NOTE: Network byteorder!!
 	raw = sprintf("%1c%1c%2c\0\0%1c\0%s",
-		      flag, last,
+		      flag, (i == (sizeof(packets)-1)) && last,
 		      sizeof(raw) + 8,
 		      1,		/* TDS 7 or 8. */
 		      raw);
