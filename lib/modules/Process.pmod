@@ -139,6 +139,98 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
   return Process(runpike + argv, options);
 }
 
+//! Easy and lazy way of using @[Process.Process] that runs a process 
+//! and returns a mapping with the output and exit code without
+//! having to make sure you read nonblocking yourself.
+//!
+//! @param args
+//!   Either a command line array, as the command_args
+//!   argument to @[create_process()], or a string that
+//!   will be splitted into a command line array by
+//!   calling @[split_quoted_string()] in an operating
+//!   system dependant mode.
+//! @param modifiers
+//!   It takes all the modifiers @[Process.Process] accepts, with 
+//!   the exception of stdout and stderr. Since the point of this 
+//!   function is to handle those you can not supply your own.
+//!
+//! @seealso
+//!   @[Process.Process] @[create_process]
+//!
+//! @returns
+//!   @mapping
+//!     @member string "stdout"
+//!       Everything the process wrote on stdout.
+//!     @member string "stderr"
+//!       Everything the process wrote on stderr.
+//!     @member int "exitcode"
+//!       The process' exitcode.
+//!   @endmapping
+//!
+//! @note 
+//!   As the entire output of stderr and stdout is stored in the 
+//!   returned mapping it could potentially grow until memory runs out. 
+//!   It is therefor adviceable to set up rlimits if the output has a
+//!   potientially be very large.
+//!
+//! @example
+//!   Process.run( ({ "ls", "-l" }) );
+//!   Process.run( ({ "ls -l" }) );
+//!   Process.run( ({ "ls", "-l" }), ([ "cwd":"/etc" ]) );
+
+mapping run(string|array(string) cmd, void|mapping modifiers)
+{
+  string gotstdout="", gotstderr="";
+  int exitcode;
+
+  if(!modifiers)
+    modifiers = ([]);
+
+  if(modifiers->stdout || modifiers->stderr)
+    throw( ({ "Can not redirect stdout or stderr in run_process, "
+              "please use Process.Process instead.", backtrace() }) );
+
+  Stdio.File mystdout = Stdio.File(); 
+  Stdio.File mystderr = Stdio.File();
+
+  object p = Process(cmd, modifiers + ([ 
+                       "stdout":mystdout->pipe(),
+                       "stderr":mystderr->pipe(),
+                     ]));
+
+#if constant(Thread.Thread)
+  array readthreads = ({
+      thread_create( lambda() { gotstdout = mystdout->read(); } ),
+      thread_create( lambda() { gotstderr = mystderr->read(); } )
+    });
+  
+  exitcode = p->wait();
+  readthreads->wait();
+#else //No threads, use callbacks
+  mystdout->set_read_callback( lambda( mixed i, string data) { 
+                                 gotstdout += data; 
+                               } );
+  mystderr->set_read_callback( lambda( mixed i, string data) {
+                                 gotstderr += data;
+                               } );
+
+  while( !p->status() ) // FIXME: What about "1" as in stopped?
+    Pike.DefaultBackend( 1.0 );
+
+  mystdout->set_read_callback(0);
+  mystderr->set_read_callback(0);
+  
+  gotstdout += mystdout->read();
+  gotstderr += mystderr->read();
+
+  exitcode = p->wait();
+#endif
+
+  return ([ "stdout"  : gotstdout,
+            "stderr"  : gotstderr,
+            "exitcode": exitcode   ]);
+}
+
 #if constant(exece)
 //!
 int exec(string file,string ... foo)
