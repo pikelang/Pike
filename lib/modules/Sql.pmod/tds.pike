@@ -1,5 +1,5 @@
 /*
- * $Id: tds.pike,v 1.9 2006/02/10 16:33:48 grubba Exp $
+ * $Id: tds.pike,v 1.10 2006/02/13 14:04:17 grubba Exp $
  *
  * A Pike implementation of the TDS protocol.
  *
@@ -7,11 +7,17 @@
  */
 
 #define TDS_DEBUG
+#define TDS_CONVERT_DEBUG
 
 #ifdef TDS_DEBUG
 #define TDS_WERROR(X...)	werror("TDS:" + X)
 #else
 #define TDS_WERROR(X...)
+#endif
+#ifdef TDS_CONVERT_DEBUG
+#define TDS_CONV_WERROR(X...)	werror("TDS: Convert: " + X)
+#else
+#define TDS_CONV_WERROR(X...)
 #endif
 
 static int filter_noprint(int char)
@@ -831,7 +837,6 @@ static {
 
       res->cardinal_type = get_cardinal_type(res->column_type);
       res->varint_size = get_varint_size(res->column_type);
-      TDS_WERROR("Intermediate info: %O\n", res);
       switch(res->varint_size) {
       case 0:
 	res->column_size = get_size_by_type(res->column_type);
@@ -846,7 +851,6 @@ static {
 	res->column_size = inp->get_byte();
 	break;
       }
-      TDS_WERROR("Column size: %d bytes\n", res->column_size);
 
       res->timestamp = (res->cardinal_type == SYBBINARY) ||
 	(res->cardinal_type == TDS_UT_TIMESTAMP);
@@ -864,7 +868,6 @@ static {
       if (is_blob_type(res->cardinal_type)) {
 	TDS_WERROR("is_blob\n");
 	res->table = inp->get_string(inp->get_smallint());
-	TDS_WERROR("Table name: %O\n", res->table);
       }
       res->name = inp->get_string(inp->get_byte());
       TDS_WERROR("Column info: %O\n", res);
@@ -1050,7 +1053,10 @@ static {
 
     static string|int convert(string|int raw, mapping(string:mixed) info)
     {
-      if (!raw) return raw; /* NULL */
+      if (!raw) {
+	TDS_CONV_WERROR("%O ==> NULL\n", raw);
+	return raw; /* NULL */
+      }
       int cardinal_type;
       switch(cardinal_type = info->cardinal_type) {
       case SYBCHAR:
@@ -1066,42 +1072,65 @@ static {
       case SYBIMAGE:
       case XSYBBINARY:
       case XSYBVARBINARY:
+	TDS_CONV_WERROR("%O ==> %O\n", raw, raw);
 	return raw;
+      case SYBMONEYN:
       case SYBMONEY4:
-	{
-	  int val;
-	  sscanf(raw, "%-4c", val);
-	  if (val < 0) {
-	    int cents = -(val/50 - 1)/2;
-	    return sprintf("-%d.%02d", cents/100, cents%100);
-	  } else {
-	    int cents = (val/50 + 1)/2;
-	    return sprintf("%d.%02d", cents/100, cents%100);
-	  }
-	}
       case SYBMONEY:
 	{
 	  int val;
 	  string sgn = "";
-	  sscanf(raw, "%-8c", val);
+	  if (sizeof(raw) == 8) {
+	    sscanf(raw, "%-8c", val);
+	  } else {
+	    sscanf(raw, "%-4c", val);
+	  }
 	  if (val < 0) {
 	    sgn = "-";
 	    val = -val;
 	  }
 	  int cents = (val + 50)/100;
-	  return sprintf("%s%d.%02d", sgn, cents/100, cents%100);
+	  string res = sprintf("%s%d.%02d", sgn, cents/100, cents%100);
+	  TDS_CONV_WERROR("%O ==> %O\n", raw, res);
+	  return res;
 	}
       case SYBNUMERIC:
+	{
+	  string res =
+	    sprintf("%d", array_sscanf(raw[1..],
+				       "%-" + (sizeof(raw)-1) + "c")[0]);
+
+	  // Move decimal point @[scale] positions.
+	  int scale = info->column_scale;
+	  if (sizeof(res) < scale) {
+	    res = "0." + ("0" * (scale - sizeof(res))) + res;
+	  } else if (sizeof(res) == scale) {
+	    res = "0." + res;
+	  } else if (scale) {
+	    res = res[..sizeof(res)-(scale+1)] + "." +
+	      res[sizeof(res)-scale..];
+	  }
+
+	  // Fix the sign.
+	  if (!res[0]) {
+	    res = "-" + res;
+	  }
+	  TDS_CONV_WERROR("%O (scale: %d) ==> %O\n",
+			  raw, scale, res);
+	  return res;
+	}
       case SYBDECIMAL:
       case SYBREAL:
       case SYBFLT8:
       case SYBUNIQUE:
       default:
 	// FIXME:
-	TDS_WERROR("Not yet supported: %d\n", info->cardinal_type);
+	TDS_CONV_WERROR("Not yet supported: %d (%O)\n",
+			info->cardinal_type, raw);
 	return raw;
       case SYBBIT:
       case SYBBITN:
+	TDS_CONV_WERROR("%O ==> \"%d\"", raw, !!raw[0]);
 	return raw[0]?"1":"0";
       case SYBINT1:
       case SYBINT2:
@@ -1116,17 +1145,15 @@ static {
 	  } else {
 	    val = array_sscanf(raw + ("\x00"*8), "%-8c")[0];
 	  }
-	  TDS_WERROR("Converted %O ==> %d\n", raw, val);
+	  TDS_WERROR("%O ==> \"%d\"\n", raw, val);
 	  return sprintf("%d", val);
 	}
       case SYBDATETIMN:
-	if (sizeof(raw) == 8) cardinal_type = SYBDATETIME;
-	// FALL_THROUGH
       case SYBDATETIME:
       case SYBDATETIME4:
 	{
 	  int day, min, sec, sec_300;
-	  if (cardinal_type == SYBDATETIME) {
+	  if (sizeof(raw) == 8) {
 	    sscanf(raw, "%-4c%-4c", day, sec_300);
 	    sec = sec_300/300;
 	    sec_300 %= 300;
@@ -1152,11 +1179,12 @@ static {
 	  year += (century + 15)*100 + l;
 	  if (!l && !(year & 3) && ((year % 100) || !(year % 400)))
 	    yday++;
-	  return sprintf("%04d-%02d-%02dT%02d:%02d:%02d",
-			 year, mon, mday, hour, min, sec);
+	  string res = sprintf("%04d-%02d-%02dT%02d:%02d:%02d",
+			       year, mon, mday, hour, min, sec);
+	  TDS_CONV_WERROR("%O ==> %O\n", raw, res);
+	  return res;
 	}
       }
-      return raw;
     }
 
     static array(string|int) process_row(InPacket inp,
@@ -1183,7 +1211,6 @@ static {
 	case TDS_ROWFMT2_TOKEN:
 	case TDS7_RESULT_TOKEN:
 	  // Some other result starts here.
-	  //busy = 0;
 	  return 0;
 	case TDS_ROW_TOKEN:
 	  inp->get_byte();
@@ -1193,7 +1220,6 @@ static {
 	case TDS_DONEPROC_TOKEN:
 	case TDS_DONEINPROC_TOKEN:
 	  if (!leave_end_token) inp->get_byte();
-	  //busy = 0;
 	  return 0;
 	default:
 	  inp->get_byte();
@@ -1293,7 +1319,7 @@ static {
       this_program::password = auth;
       this_program::domain = domain;
 
-      TDS_WERROR("Connecting to %s:%d version %d.%d\n",
+      TDS_WERROR("Connecting to %s:%d with TDS version %d.%d\n",
 		 server, port, major_version, minor_version);
 
       socket = Stdio.File();
@@ -1447,6 +1473,23 @@ class big_query
     column_info = con->process_result_tokens(result_packet);
     if (!column_info) destruct();
   }
+}
+
+static compile_query compiled_insert_id =
+  compile_query("SELECT @@identity AS insert_id");
+
+int insert_id()
+{
+  object res = big_query(compiled_insert_id);
+  array(mapping(string:mixed)) field_info =
+    res->fetch_fields();
+  if (!field_info) return 0;
+  array(string|int) row = res->fetch_row();
+  if (!row) return 0;
+  foreach(field_info->name; int i; string name) {
+    if (name == "insert_id") return (int)row[i];
+  }
+  return 0;
 }
 
 string server_info()
