@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.163 2006/01/14 18:21:04 nilsson Exp $
+// $Id: install.pike,v 1.164 2006/02/13 16:35:42 grubba Exp $
 
 #define USE_GTK
 
@@ -1808,8 +1808,10 @@ int pre_install(array(string) argv)
     case "--traditional":
       exec_prefix=vars->exec_prefix||(prefix+"/bin/");
       lib_prefix=vars->lib_prefix||(prefix+"/lib/pike/");
-      include_prefix=combine_path(prefix,"include","pike");
-      doc_prefix=combine_path(prefix, "doc", "pike");
+      include_prefix =
+	vars->include_prefix || combine_path(prefix,"include","pike");
+      doc_prefix =
+	vars->doc_prefix || combine_path(prefix, "doc", "pike");
       man_prefix=vars->man_prefix||(prefix+"/man/");
       break;
 
