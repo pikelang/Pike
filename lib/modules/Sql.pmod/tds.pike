@@ -1,5 +1,5 @@
 /*
- * $Id: tds.pike,v 1.11 2006/02/14 10:20:34 grubba Exp $
+ * $Id: tds.pike,v 1.12 2006/02/14 16:19:34 grubba Exp $
  *
  * A Pike implementation of the TDS protocol.
  *
@@ -19,6 +19,17 @@
 #else
 #define TDS_CONV_WERROR(X...)
 #endif
+
+//!
+//! The TDS SQL-protocol.
+//!
+//! This protocol is used by Sybase and Microsoft's SQL-servers.
+//!
+//! @example
+//!   @tt{Sql.Sql con = Sql.Sql("tds://user:pass@@host/database");@}
+//!
+//! @seealso
+//!   @[Sql.Sql()]
 
 static int filter_noprint(int char)
 {
@@ -47,17 +58,13 @@ static {
   constant DEF_MAJOR = 8;
   constant DEF_MINOR = 0;
   constant DEF_PORT = 1433;
-  constant DEF_DOMAIN = "";
-  constant DEFAULT_CAPABILITIES =
-    "\x01\x09\x00\x00\x06\x6d\x7f\xff"
-    "\xff\xff\xfe\x02\x09\x00\x00\x00"
-    "\x00\x0a\x68\x00\x00\x00";
   constant TDS8VERSION = "\x01\x00\x00\x71";
   constant CLIENTVERSION = "\x06\x83\xf2\xf8";
   constant CONNECTIONID = "\0\0\0\0";
   constant TIMEZONE = "\x88\xff\xff\xff";
   constant COLLATION = "\x36\x04\x00\x00";
 
+  //! Tokens that may occur in the answers from the server.
   enum Token {
     TDS_ERROR			= 3,
     TDS_DONT_RETURN		= 42,
@@ -107,6 +114,9 @@ static {
     TDS_CURDECLARE_TOKEN	= 134,	/* 0x86    TDS 5.0 only              */
   };
 
+  //! Environment types.
+  //!
+  //! Used by @[TDS_ENV_CHANGE_TOKEN]
   enum EnvType {
     /* environment type field */
     TDS_ENV_DATABASE		= 1,
@@ -117,7 +127,8 @@ static {
     TDS_ENV_SQLCOLLATION	= 7,
   };
 
-  enum ColType {
+  //! Field types.
+  enum FieldType {
     SYBBINARY		= 45,	/* 0x2d */
     SYBBIT		= 50,	/* 0x32 */
     SYBBITN		= 104,	/* 0x68 */
@@ -162,26 +173,10 @@ static {
     TDS_UT_TIMESTAMP	= 80,	/* User type. */
   };
 
-  enum ResultTypes {
-    TDS_ROW_RESULT		= 4040,
-    TDS_PARAM_RESULT		= 4042,
-    TDS_STATUS_RESULT		= 4043,
-    TDS_MSG_RESULT		= 4044,
-    TDS_COMPUTE_RESULT		= 4045,
-    TDS_CMD_DONE		= 4046,
-    TDS_CMD_SUCCEED		= 4047,
-    TDS_CMD_FAIL		= 4048,
-    TDS_ROWFMT_RESULT		= 4049,
-    TDS_COMPUTEFMT_RESULT	= 4050,
-    TDS_DESCRIBE_RESULT		= 4051,
-    TDS_DONE_RESULT		= 4052,
-    TDS_DONEPROC_RESULT		= 4053,
-    TDS_DONEINPROC_RESULT	= 4054,
-  };
-
   string server_data;
   string last_error;
 
+  //! Format and report an error.
   void tds_error(string msg, mixed ... args)
   {
     if (sizeof(args)) msg = sprintf(msg, @args);
@@ -199,6 +194,7 @@ static {
     return utf16dec->feed(s)->drain();
   }
 
+  //! A connection to a TDS server.
   class Connection {
     int major_version = DEF_MAJOR;
     int minor_version = DEF_MINOR;
@@ -214,14 +210,15 @@ static {
     string library_name = "TDS-Library";
     string database = "";
     string domain;
-    string capabilities = DEFAULT_CAPABILITIES;
 
+    //! The actual TCP connection.
     Stdio.File socket;
 
 #define FMT_SMALLINT	"%-2c"
 #define FMT_INT		"%-4c"
 #define FMT_INT8	"%-4c"
 
+    //! An incoming packet from the TDS server.
     class InPacket
     {
       int inpos = 0;
@@ -344,6 +341,7 @@ static {
 
     //static InPacket login_answer;
 
+    //! An outgoing packet to the TDS server.
     class Packet
     {
       array(string|int) segments = ({});
@@ -453,6 +451,14 @@ static {
       }
     }
 
+    //! Send a packet to the TDS server.
+    //!
+    //! @note
+    //!   May only be called when the connection is idle.
+    //!
+    //! @returns
+    //!   If @[last] is true an @[InPacket] with the result
+    //!   will be returned.
     InPacket send_packet(Packet p, int flag, int|void last)
     {
       if (busy) {
@@ -1363,6 +1369,8 @@ static {
 };
 #endif /* Pike 7.6 or later */
 
+
+//! A compiled query.
 class compile_query
 {
   int n_param;
@@ -1431,6 +1439,10 @@ class compile_query
     return map(res, string_to_utf16);
   }
 
+  //! Compile a query.
+  //!
+  //! @seealso
+  //!   @[big_query()]
   static void create(string query)
   {
     TDS_WERROR("Compiling query: %O\n", query);
@@ -1439,6 +1451,7 @@ class compile_query
   }
 }
 
+//! A query result set.
 class big_query
 {
   static int row_no;
@@ -1447,6 +1460,15 @@ class big_query
   static Connection.InPacket result_packet;
   static array(mapping(string:mixed)) column_info;
 
+  //! Fetch the next row from the result set.
+  //!
+  //! @returns
+  //!   Returns @expr{0@} (zero) if all rows have been returned.
+  //!
+  //!   Otherwise returns an @expr{array(string|int)@} with one
+  //!   entry for each field. If the field is @tt{NULL@} the
+  //!   entry will be @expr{0@} (zero), otherwise the entry
+  //!   will contain a string representing the value.
   int|array(string|int) fetch_row()
   {
     if (eot) return 0;
@@ -1458,12 +1480,61 @@ class big_query
     return res;
   }
 
+  //! Fetch a description of the fields in the result.
+  //!
+  //! @returns
+  //!   Returns an array with a mapping for each of the fields in
+  //!   the result.
+  //!
+  //!   The mappings contain the following information:
+  //!   @ul
+  //!     @item
+  //!       Standard fields:
+  //!       @mapping
+  //!         @member string "name"
+  //!           The name of the field.
+  //!         @member string|void "table"
+  //!           The name of the table (if available).
+  //!       @endmapping
+  //!     @item
+  //!       TDS-specific fields:
+  //!       @mapping
+  //!         @member int(0..1) "nullable"
+  //!           @expr{1@} if the field may contain @tt{NULL@}.
+  //!         @member int(0..1) "writeable"
+  //!           @expr{1@} if the field may be changed.
+  //!         @member int(0..1) "identity"
+  //!           @expr{1@} if the field is the identity for the row.
+  //!         @member int "column_size"
+  //!           Width of the field.
+  //!         @member int(0..1) "timestamp"
+  //!           Time stamp information for last change is available.
+  //!         @member int|void "column_prec"
+  //!           Precision of the field.
+  //!         @member int|void "column_scale"
+  //!           Scale exponent of the field.
+  //!         @member int "usertype"
+  //!         @member int "flags"
+  //!         @member int "column_type"
+  //!         @member int "cardinal_type"
+  //!         @member int "varint_size"
+  //!           Internal use only.
+  //!       @endmapping
+  //!   @endul
   array(mapping(string:mixed)) fetch_fields()
   {
     TDS_WERROR("fetch_fields()::::::::::::::::::::::::::::::::::::::::::\n");
     return copy_value(column_info);
   }
 
+  //! Execute a query against the database.
+  //!
+  //! @param query
+  //!   The query to execute. This can either be a string, or
+  //!   a compiled query.
+  //!
+  //! @seealso
+  //!   @[compile_query()]
   static void create(string|compile_query query)
   {
     if (stringp(query)) {
@@ -1487,6 +1558,13 @@ class big_query
 static compile_query compiled_insert_id =
   compile_query("SELECT @@identity AS insert_id");
 
+//! Fetch the identity of the last insert (if available).
+//!
+//! This performs the query @expr{"SELECT @@@@identity AS insert_id"@}.
+//!
+//! @returns
+//!   Returns the identity of the last insert as an integer if available.
+//!   Otherwise returns @expr{0@} (zero).
 int insert_id()
 {
   object res = big_query(compiled_insert_id);
@@ -1501,18 +1579,42 @@ int insert_id()
   return 0;
 }
 
+//! Return a string describing the server.
 string server_info()
 {
   return server_data;
 }
 
+//! Return the last error (or possibly the last warning or
+//! informational message).
 string error()
 {
   return last_error;
 }
 
+//! Connect to a remote SQL server via the TDS protocol.
+//!
+//! @param server
+//!   Server to connect to.
+//!
+//! @param database
+//!   Database to connect to.
+//!
+//! @param user
+//!   User to access as.
+//!
+//!   An explicit domain may be specified by preceeding the user name
+//!   with the domain name and a @expr{'\\'@}.
+//!
+//! @param password
+//!   Password to access with.
+//!
+//! Usually accessed via @[Sql.Sql()].
+//!
+//! @seealso
+//!   @[Sql.Sql()]
 static void create(string|void server, string|void database,
-		   string|void user, string|void pwd)
+		   string|void user, string|void password)
 {
   if (con) {
     Disconnect();
@@ -1528,5 +1630,5 @@ static void create(string|void server, string|void database,
     server = "127.0.0.1";
   }
   Connect(server, port, database || "default",
-	  user || "", pwd || "");
+	  user || "", password || "");
 }
