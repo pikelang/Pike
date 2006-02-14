@@ -1,13 +1,13 @@
 /*
- * $Id: tds.pike,v 1.10 2006/02/13 14:04:17 grubba Exp $
+ * $Id: tds.pike,v 1.11 2006/02/14 10:20:34 grubba Exp $
  *
  * A Pike implementation of the TDS protocol.
  *
  * Henrik Grubbström 2006-02-08.
  */
 
-#define TDS_DEBUG
-#define TDS_CONVERT_DEBUG
+/* #define TDS_DEBUG */
+/* #define TDS_CONVERT_DEBUG */
 
 #ifdef TDS_DEBUG
 #define TDS_WERROR(X...)	werror("TDS:" + X)
@@ -661,6 +661,8 @@ static {
 	tds_error("%d: %s:%s:%d %s\n",
 		  level, proc_name, server, line, message);
       } else {
+	last_error = sprintf("%d: %s:%s:%d %s\n",
+			     level, proc_name, server, line, message);
 	TDS_WERROR("%d: %s:%s:%d %s\n",
 		   level, proc_name, server, line, message);
       }
@@ -730,6 +732,7 @@ static {
 
     int get_cardinal_type(int col_type)
     {
+      // FIXME: This function could be done away with.
       switch (col_type) {
       case XSYBVARBINARY:
 	return SYBVARBINARY;
@@ -916,8 +919,8 @@ static {
 	inp->get_raw(inp->get_smallint());
 	break;
       default:
-	TDS_WERROR("FIXME: Got unknown token in process_default_tokens: %d\n",
-		   token_type);
+	werror("TDS: WARNING: Got unknown token in process_default_tokens: %d\n",
+	       token_type);
 	break;
       }
     }
@@ -950,7 +953,8 @@ static {
 	  TDS_WERROR("  TDS_ROW_TOKEN pending\n");
 	  return column_info;
 	default:
-	  TDS_WERROR("==> FIXME: process_result_tokens\n");
+	  werror("TDS: WARNING: Unhandled token in process_result_tokens: %d\n",
+		 token_type);
 	  // FALL_THROUGH
 	case TDS_ORDERBY_TOKEN:
 	  /* Ignore. */
@@ -1017,6 +1021,7 @@ static {
 	string raw = inp->get_raw(colsize);
 	TDS_WERROR("BLOB. colsize:%d, raw: %O\n", colsize, raw);
 	if (is_char_type(info->cardinal_type)) {
+	  // FIXME: Move this to convert()?
 	  return utf16_to_string(raw);
 	}
 	return raw;
@@ -1025,6 +1030,7 @@ static {
 	TDS_WERROR("Got raw data: %O\ncolumn_size:%d colsize:%d\n%s\n",
 		   raw, info->column_size, colsize, hex_dump(raw));
 	if (is_unicode_type(info->column_type)) {
+	  // FIXME: Move this to convert()?
 	  raw = utf16_to_string(raw);
 	}
 	if (colsize < info->column_size) {
@@ -1072,6 +1078,7 @@ static {
       case SYBIMAGE:
       case XSYBBINARY:
       case XSYBVARBINARY:
+	// Strings have already been converted.
 	TDS_CONV_WERROR("%O ==> %O\n", raw, raw);
 	return raw;
       case SYBMONEYN:
@@ -1127,6 +1134,8 @@ static {
 	// FIXME:
 	TDS_CONV_WERROR("Not yet supported: %d (%O)\n",
 			info->cardinal_type, raw);
+	werror("TDS: WARNING: Datatype %d not yet supported. raw: %O\n",
+	       info->cardinal_type, raw);
 	return raw;
       case SYBBIT:
       case SYBBITN:
@@ -1145,7 +1154,7 @@ static {
 	  } else {
 	    val = array_sscanf(raw + ("\x00"*8), "%-8c")[0];
 	  }
-	  TDS_WERROR("%O ==> \"%d\"\n", raw, val);
+	  TDS_CONV_WERROR("%O ==> \"%d\"\n", raw, val);
 	  return sprintf("%d", val);
 	}
       case SYBDATETIMN:
