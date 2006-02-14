@@ -211,8 +211,52 @@ void set_from_file(string filename);
 #define GTK_GDKPIXBUF(X) GDK_PIXBUF(X)
 %}
 
+void set_from_icon_set(GTK2.IconSet icon_set, int size)
+//! Set this image from an icon set.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1;
+    INT_TYPE size;
+    GtkIconSet *is;
+
+    get_all_args("set_from_icon_set",args,"%o%i",&o1,&size);
+    is=(GtkIconSet *)get_gobject(o1);
+    if (!is)
+      SIMPLE_ARG_ERROR("set_from_icon_set",args,"Invalid GTK2.IconSet");
+    gtk_image_set_from_icon_set(GTK_IMAGE(THIS->obj),is,size);
+  }
+  RETURN_THIS();
+}
+
+void set_from_image(GDK2.Image gdk_image, ?GDK2.Bitmap mask)
+//! Set this image from a GDK2.Image plus optional mask.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2=NULL;
+    get_all_args("set_from_image",args,"%o.%o",&o1,&o2);
+    gtk_image_set_from_image(GTK_IMAGE(THIS->obj),(GdkImage *)get_gobject(o1),
+		o2?(GdkBitmap *)get_gobject(o2):NULL);
+  }
+  RETURN_THIS();
+}
+
 void set_from_pixbuf(GDK2.Pixbuf pixbuf);
 //! Set image from a pixbuf
+
+void set_from_pixmap(GDK2.Pixmap pixmap, ?GDK2.Bitmap mask)
+//! Set this image from a GDK2.Pixmap plus optional mask.
+{
+  pgtk_verify_inited();
+  {
+    struct object *o1,*o2=NULL;
+    get_all_args("set_from_pixmap",args,"%o.%o",&o1,&o2);
+    gtk_image_set_from_pixmap(GTK_IMAGE(THIS->obj),(GdkPixmap *)get_gobject(o1),
+		o2?(GdkBitmap *)get_gobject(o2):NULL);
+  }
+  RETURN_THIS();
+}
 
 void set_from_stock(string stock_id, int size);
 //! Sets from a stock icon.  Sample icon names are GTK2.STOCK_OPEN,
