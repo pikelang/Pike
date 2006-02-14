@@ -72,7 +72,7 @@ void set_shadow_type(int shadow_type);
 string get_label();
 //! Return the text in the label widget.
 
-mapping(string:float) get_label_align()
+array get_label_align()
 //! Retrieves the x and y alignment of the label.
 {
   pgtk_verify_inited();
@@ -80,9 +80,9 @@ mapping(string:float) get_label_align()
   {
     gfloat x,y;
     gtk_frame_get_label_align(GTK_FRAME(THIS->obj),&x,&y);
-    ref_push_string(_STR("x")); push_float(x);
-    ref_push_string(_STR("y")); push_float(y);
-    f_aggregate_mapping(4);
+    push_float(x);
+    push_float(y);
+    f_aggregate(2);
   }
 }
 
