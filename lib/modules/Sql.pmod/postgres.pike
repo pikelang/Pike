@@ -1,7 +1,7 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.24 2004/04/16 12:12:46 grubba Exp $
+ * $Id: postgres.pike,v 1.25 2006/02/15 15:36:15 nilsson Exp $
  *
  */
 
@@ -323,7 +323,7 @@ array(mapping(string:mixed)) list_fields (string table, void|string wild)
 
   if (has_relexpires == "unknown")
   {
-    if (catch (big_query("SELECT c.relexpires FROM pg_class WHERE 1 == 0")))
+    if (catch (big_query("SELECT relexpires FROM pg_class WHERE 1 = 0")))
       has_relexpires = "no";
     else
       has_relexpires = "yes";
