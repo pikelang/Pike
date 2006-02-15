@@ -1,5 +1,5 @@
 /*
- * $Id: tds.pike,v 1.13 2006/02/15 13:15:44 grubba Exp $
+ * $Id: tds.pike,v 1.14 2006/02/15 13:46:40 grubba Exp $
  *
  * A Pike implementation of the TDS protocol.
  *
@@ -180,6 +180,7 @@ static {
   void tds_error(string msg, mixed ... args)
   {
     if (sizeof(args)) msg = sprintf(msg, @args);
+    TDS_WERROR("ERROR: %s", msg);
     predef::error(last_error = msg);
   }
 
@@ -238,8 +239,8 @@ static {
 	  busy = !(done = 1);
 	  int errno = socket->errno();
 	  Disconnect();
-	  tds_error("Failed to read packet header: %O, %s.\n",
-		    header, strerror(errno));
+	  predef::error("Failed to read packet header: %O, %s.\n",
+			header, strerror(errno));
 	}
 	TDS_WERROR("Read header:\n%s\n", hex_dump(header));
 	int packet_type;
@@ -467,7 +468,7 @@ static {
 	tds_error("Sending packet on busy connection!\n");
       }
 
-      array(string) packets = ((string) p)/32768.0;
+      array(string) packets = ((string) p)/(float)(block_size-8);
       foreach(packets; int i; string raw) {
 	// NOTE: Network byteorder!!
 	raw = sprintf("%1c%1c%2c\0\0%1c\0%s",
@@ -478,8 +479,8 @@ static {
 	TDS_WERROR("Wrapped packet: %O\n%s\n", raw, hex_dump(raw));
 	if (socket->write(raw) != sizeof(raw)) {
 	  Disconnect();
-	  tds_error("Failed to send packet.\n"
-		    "raw: %O\n", raw);
+	  predef::error("Failed to send packet.\n"
+			"raw: %O\n", raw);
 	}
       }
       //Stdio.write_file("packet.bin", raw);
@@ -668,8 +669,10 @@ static {
 	tds_error("%d: %s:%s:%d %s\n",
 		  level, proc_name, server, line, message);
       } else {
+#if 0
 	last_error = sprintf("%d: %s:%s:%d %s\n",
 			     level, proc_name, server, line, message);
+#endif
 	TDS_WERROR("%d: %s:%s:%d %s\n",
 		   level, proc_name, server, line, message);
       }
@@ -1311,7 +1314,7 @@ static {
       }
     }
 
-    static void disconnect()
+    void disconnect()
     {
       socket->close();
       destruct();
