@@ -1,5 +1,5 @@
 /*
- * $Id: tds.pike,v 1.12 2006/02/14 16:19:34 grubba Exp $
+ * $Id: tds.pike,v 1.13 2006/02/15 13:15:44 grubba Exp $
  *
  * A Pike implementation of the TDS protocol.
  *
@@ -236,8 +236,10 @@ static {
 	string header = socket->read(8);
 	if (!header || sizeof(header) < 8) {
 	  busy = !(done = 1);
+	  int errno = socket->errno();
+	  Disconnect();
 	  tds_error("Failed to read packet header: %O, %s.\n",
-		    header, strerror(socket->errno()));
+		    header, strerror(errno));
 	}
 	TDS_WERROR("Read header:\n%s\n", hex_dump(header));
 	int packet_type;
@@ -475,8 +477,7 @@ static {
 		      raw);
 	TDS_WERROR("Wrapped packet: %O\n%s\n", raw, hex_dump(raw));
 	if (socket->write(raw) != sizeof(raw)) {
-	  socket->close();
-	  socket = 0;
+	  Disconnect();
 	  tds_error("Failed to send packet.\n"
 		    "raw: %O\n", raw);
 	}
@@ -1353,10 +1354,13 @@ static {
 
   int busy;
 
-  void Disconnect()
+  void Disconnect(int|void keep_alive)
   {
     con->disconnect();
     con = 0;
+    if (!keep_alive) {
+      destruct();
+    }
   }
 
   void Connect(string server, int port, string database,
@@ -1617,7 +1621,7 @@ static void create(string|void server, string|void database,
 		   string|void user, string|void password)
 {
   if (con) {
-    Disconnect();
+    Disconnect(1);
   }
   int port = DEF_PORT;
   if (server) {
