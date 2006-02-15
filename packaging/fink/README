@@ -1,26 +1,126 @@
-Fink package for Darwin/MacOS X
--------------------------------
+$Id: README,v 1.2 2006/02/15 15:44:03 nilsson Exp $
 
-Just copy .info files into your /sw/fink/dists/local/main/finkinfo directory,
-after that, do a "fink index" and then a "fink install pike7.5" if you'd like
-to compile and install pike.
 
-It will install the needed dependency like gmp, freetype1, freetype2 etc...
+Pike and Nettle Fink package for MacOS X
 
-If you'd like to build only the package (for example deploying pike in
-thousands of mac), just do a "fink build pike7.5".
 
-NOTE: This fink source file is tested on panther only (OS X 10.3)
 
-As always, any comments and suggestions are welcome.
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+What is it?
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-- Xavier Beaudouin <kiwi@caudium.net>
+Fink (http://fink.sf.net/) is a Debian-like packaging system for darwin/MacOS X
 
-Greats go to :
 
- - Bertrand Lupart <bertrand@caudium.net>
- - Bill Welliver <hww3@riverweb.com>
 
-That gave me some good ideas and start points to make this :)
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Last version
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-$Id: README,v 1.1 2004/01/14 15:19:18 kiwi Exp $
+The last version of this package will be in Pike 7.6 CVS.
+Informations about this package can be found online:
+http://bertrand.gotpike.org/
+
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+How to use that?
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+First, you need to have Fink installed and running. See http://fink.sf.net/
+
+Basically, you'll have to build the package yourself, and keep in mind that 
+Pike packages require Nettle package for being built: even if you don't plan
+to install pike7.6-nettle later, you need to build Nettle first.
+If that's a problem, see the "Hacking" section.
+
+While Nettle packages have been asked (and reviewed) to be included in the
+official Fink distribution, it hasn't been included for now, so you'll need 
+the nettle.info file.
+The Pike 7.6 packages hasn't been asked for review by the Fink team, yet.
+
+Place all the required files (nettle.info pike7.6.info pike7.6.patch) in your 
+local repository: /sw/fink/dists/local/main/finkinfo/
+
+Then use the following command for building Pike:
+
+sudo fink -b build pike7.6
+
+This command will build Nettle and Pike packages. The -b flag will try to use
+the binary distribution as much as possible, so that you won't have to compile
+all the dependencies, only Pike and Nettle.
+Once build, you'll have to install the compiled packages. For limiting the need
+to external packages, the Pike7.6 is splitted into subpackages. You can list 
+them using the command:
+
+sudo fink list pike7.6
+
+Thus, if you want to deal with MySQL with your Pike, just install using the 
+following:
+
+sudo fink -b install pike7.6 pike7.6-mysql
+
+If you ant to be able to deal with JPEG later, just use:
+
+sudo fink -b install pike7.6-jpeg
+
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Compatibility
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+The pike7.6 Fink packages has been made so that it won't conflict with pike7.2
+or pike7.4 Fink packages.
+However, i'm not sure wether pike7.2 nor pike7.4 won't mess up the pike7.6
+package.
+
+These packages have been tested on MacOS X 10.4.4 (darwin 8.4.0) using
+Fink 0.24.10 (0.8.0.rsync) and gcc 4.0.0 20041026
+
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Hacking
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+If you want to cook your Pike package yourself, just edit the info and patch 
+files.
+Once your custom changes are made, increment the Revision field and rebuild the
+package.
+
+You can use the -k and -K flags for fink, so that you can easily track down any
+problem at configure/compile time.
+
+If you add something usefull in the Pike package, please share.
+
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Keep in touch
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+Comments, suggestions, questions, help request, rants are always welcome to
+bertrand@caudium.net.
+
+These can be directly asked on the Pike mailing list (pike@roxen.com), so that
+anyone could benefit from the answer to your question (and even improve the 
+answer), live reading the mailing list, or later searching the mailing list
+archives.
+
+Please tag your mail subject with [Fink], so that i won't miss it.
+
+I'd be particularly interrested in people just telling me it's working on their
+setup :)
+
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Greetings
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+Thanx to Bill Welliver <hww3@riverweb.com> for the good advices and Xavier
+Beaudouin <kiwi@caudium.net> for working on pike7.2 and pike7.4 packages.
+
+Thanx to all the Pike team for building a such wonderfull programming language 
+and the Fink team for making open source software on the Macintosh easy.

@@ -1,5 +1,5 @@
 Package: nettle
-Version: 1.13
+Version: 1.14
 Revision: 1
 
 Description: Crypto library
@@ -10,29 +10,30 @@ DescDetail: <<
   or even in kernel space.
 <<
 
-CustomMirror: <<
-	Primary: http://www.lysator.liu.se/~nisse/archive/
-<<
-
-Source: mirror:custom:nettle-%v.tar.gz
-Source-MD5: 2e22612a0d7ac01064bf948a7d57f19a
+Source: http://www.lysator.liu.se/~nisse/archive/nettle-%v.tar.gz
+Source-MD5: 12915b53e751456689e2ec9ec15c74da
 
 BuildDepends: gmp
-Depends: gmp-shlibs
+BuildDependsOnly: true
 
-SourceDirectory: nettle-%v
-
-CompileScript: <<
-	./configure --prefix=%p --infodir=%p/share/info
-	make
+ConfigureParams: <<
+	--infodir=%p/share/info
 <<
 
 InstallScript: <<
 	make install DESTDIR=%d
+	ranlib -a %i/lib/libnettle.a
 <<
 
-PostInstScript: <<
-	ranlib -a %p/lib/libnettle.a
+SplitOff: <<
+  Package: %N-bin
+  Description: Binaries for the Nettle crypto library
+	Depends: gmp-shlibs
+  Files: <<
+    %p/bin/nettle-lfib-stream
+    %p/bin/sexp-conv
+  <<
+	DocFiles: AUTHORS COPYING ChangeLog README NEWS
 <<
 
 DescPackaging: <<
@@ -42,7 +43,7 @@ DescPackaging: <<
 <<
 
 DocFiles: AUTHORS COPYING ChangeLog README NEWS
-
+InfoDocs: nettle.info
 
 License: GPL/LGPL
 Homepage: http://www.lysator.liu.se/~nisse/nettle/

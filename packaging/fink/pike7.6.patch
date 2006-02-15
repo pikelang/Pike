@@ -1,0 +1,49 @@
+diff -ruN --exclude=CVS --exclude='.#*' 7.6/bin/install.pike 7.6-fink/bin/install.pike
+--- 7.6/bin/install.pike	2005-12-27 11:42:32.000000000 +0100
++++ 7.6-fink/bin/install.pike	2005-12-27 11:55:50.000000000 +0100
+@@ -1197,7 +1197,7 @@
+       exec_prefix=combine_path(prefix,"bin");
+       lib_prefix=combine_path(prefix,"lib");
+       doc_prefix=combine_path(prefix,"doc");
+-      include_prefix=combine_path(prefix,"include","pike");
++      include_prefix=vars->include_prefix||combine_path(prefix,"include","pike");
+       man_prefix=combine_path(prefix,"man");
+       if (export) {
+ 	low_install_file(combine_path(vars->TMP_BINDIR,"install.pike"),
+diff -ruN --exclude=CVS --exclude='.#*' 7.6/man/pike.1 7.6-fink/man/pike.1
+--- 7.6/man/pike.1	2005-12-29 11:55:12.000000000 +0100
++++ 7.6-fink/man/pike.1	2006-01-09 11:34:17.000000000 +0100
+@@ -298,20 +298,14 @@
+ .B \*(bd/lib/pike/pike\n(mj.\n(mn/include/*
+ pike include files
+ .TP
+-.B \*(bd/tools/pike.el
+-emacs fontlock definitions for pike-mode
+-.TP
+ .B \*(bd/include/pike/pike\n(mj.\n(mn/*
+ C-include files
+ .TP
+-.B \*(bd/man/*
++.B \*(bd/share/man/*
+ manual pages for pike
+ .\" Restore the paragraph distance
+ .PD
+ .SH SEE ALSO
+-.BR hilfe (1),
+-.BR Getopt (3P),
+-.BR environ (5)
+ .\" Force a linebreak
+ .sp 0vu
+ .I Pike Programming Tutorial
+diff -ruN --exclude=CVS --exclude='.#*' 7.6/src/Makefile.in 7.6-fink/src/Makefile.in
+--- 7.6/src/Makefile.in	2005-12-27 11:44:09.000000000 +0100
++++ 7.6-fink/src/Makefile.in	2005-12-27 12:09:10.000000000 +0100
+@@ -506,7 +506,7 @@
+ 	MANDIR_SRC="$(MANDIR_SRC)" \
+ 	man_prefix="$(man_prefix)" pike_name=$(pike_name) \
+ 	fakeroot="$(buildroot)" PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)" \
+-	$(INSTALLARGS)
++	include_prefix="$(include_prefix)" $(INSTALLARGS)
+ 
+ install_interactive: pike tools
+ 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --interactive \

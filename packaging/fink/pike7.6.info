@@ -1,6 +1,6 @@
 Package: pike7.6
-Version: 7.6.58
-Revision: 4
+Version: 7.6.66
+Revision: 3
 
 Description: Programming language with a C-like syntax
 DescDetail: <<
@@ -28,7 +28,7 @@ CustomMirror: <<
 	Primary: http://pike.ida.liu.se/pub/pike/beta/%v/Pike-v%v.tar.gz
 <<
 Source: mirror:custom:Pike-v%v.tar.gz
-Source-MD5: 3220bc3e69c88f63b206029b2815141b 
+Source-MD5: d970c7241c8d7762c6429050d57ba2c0
 SourceDirectory: Pike-v%v
 
 # WARNING: 10.3 users BuildDepends on fileutils (for building Java) because of
@@ -53,7 +53,10 @@ Depends: <<
 	pcre-shlibs
 <<
 
-Patch: %f.patch
+# %f is for extended fink file names, eg pike7.6-7.6.66-3.patch
+# %n is for short fink file names, eg pike7.6.patch
+Patch: %n.patch
+#Patch: %f.patch
 PatchScript: <<
 	# Put the good fink prefix in the man page
 	perl -pi -e 's,\@PREFIX\@,%p,g' man/pike.1
@@ -82,6 +85,8 @@ InstallScript: <<
 	mkdir -p %i/share/pike/%N/testsuites
 	# ... and copy the testsuites that contains data there
 	(cd build/`uname -s -r -m|sed "s/ /-/g"|tr "[A-Z]" "[a-z]"|tr "/()" "___"` && find . -name testsuite -not -size 0 -exec cp --parent -pr {} %i/share/pike/%N/testsuites \;)
+	# TODO: some tests in the root testsuite and in MIME fails because they read
+	# files that are not installed alongside them
 <<
 
 DocFiles: ANNOUNCE COPYING COPYRIGHT README README-CVS
@@ -191,9 +196,6 @@ SplitOff13: <<
 	<<
 <<
 
-# TODO: Nettle testsuite don't work because the path for the test program are 
-# in %i, _and_ these tests are not installed in %d (because it was not their
-# goal to be installed i guess)
 SplitOff14: <<
 	Package: %N-nettle
 	Depends: gmp-shlibs, %N (= %v-%r)
