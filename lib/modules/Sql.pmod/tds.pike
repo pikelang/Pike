@@ -1,5 +1,5 @@
 /*
- * $Id: tds.pike,v 1.15 2006/02/16 12:00:40 grubba Exp $
+ * $Id: tds.pike,v 1.16 2006/02/16 12:09:51 grubba Exp $
  *
  * A Pike implementation of the TDS protocol.
  *
@@ -962,6 +962,11 @@ static {
 	case TDS_ROW_TOKEN:
 	  TDS_WERROR("  TDS_ROW_TOKEN pending\n");
 	  return column_info;
+	case TDS_RETURNSTATUS_TOKEN:
+	  inp->get_byte();
+	  int ret_status = inp->get_int();
+	  TDS_WERROR("Return status: %d\n", ret_status);
+	  break;
 	default:
 	  werror("TDS: WARNING: Unhandled token in process_result_tokens: %d\n",
 		 token_type);
