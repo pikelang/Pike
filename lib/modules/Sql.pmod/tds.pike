@@ -1,5 +1,5 @@
 /*
- * $Id: tds.pike,v 1.14 2006/02/15 13:46:40 grubba Exp $
+ * $Id: tds.pike,v 1.15 2006/02/16 12:00:40 grubba Exp $
  *
  * A Pike implementation of the TDS protocol.
  *
@@ -968,6 +968,9 @@ static {
 	  // FALL_THROUGH
 	case TDS_ORDERBY_TOKEN:
 	  /* Ignore. */
+	case TDS_ERROR_TOKEN:
+	case TDS_INFO_TOKEN:
+	case TDS_EED_TOKEN:
 	  inp->get_byte();
 	  process_default_tokens(inp, token_type);
 	  break;
