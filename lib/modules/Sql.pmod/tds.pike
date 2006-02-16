@@ -1,13 +1,13 @@
 /*
- * $Id: tds.pike,v 1.16 2006/02/16 12:09:51 grubba Exp $
+ * $Id: tds.pike,v 1.17 2006/02/16 12:40:01 grubba Exp $
  *
  * A Pike implementation of the TDS protocol.
  *
  * Henrik Grubbström 2006-02-08.
  */
 
-/* #define TDS_DEBUG */
-/* #define TDS_CONVERT_DEBUG */
+#define TDS_DEBUG
+#define TDS_CONVERT_DEBUG
 
 #ifdef TDS_DEBUG
 #define TDS_WERROR(X...)	werror("TDS:" + X)
@@ -946,6 +946,7 @@ static {
 	  TDS_WERROR("TDS7_RESULT_TOKEN\n");
 	  inp->get_byte();
 	  column_info = tds7_process_result(inp);
+#if 0
 	  if (inp->peek_byte() == TDS_TABNAME_TOKEN) {
 	    TDS_WERROR("TDS_TABNAME_TOKEN\n");
 	    process_default_tokens(inp, inp->get_byte());
@@ -954,6 +955,40 @@ static {
 	      inp->get_byte();
 	      //process_colinfo();	// FIXME!
 	    }
+	  }
+#endif /* 0 */
+	  break;
+	case TDS_TABNAME_TOKEN:
+	  inp->get_byte();
+	  string raw = inp->get_raw(inp->get_smallint());
+	  werror("Got TAB_NAME: %O\n"
+		 "column_info: %O\n",
+		 raw, column_info);
+	  break;
+	case TDS_COLINFO_TOKEN:
+	  inp->get_byte();
+	  string colinfo = inp->get_raw(inp->get_smallint());
+	  if (column_info) {
+	    while (sizeof(colinfo) > 2) {
+	      int colno = colinfo[0];
+	      int flags = colinfo[2];
+	      colinfo = colinfo[3..];
+	      if (!colno || (colno > sizeof(column_info))) {
+		break;
+	      }
+	      column_info[colno]->writeable = !(flags & 0x4);
+	      column_info[colno]->identity = !!(flags & 0x8);
+	      column_info[colno]->hidden = !!(flags & 0x10);
+	      if ((flags & 0x20) && sizeof(colinfo)) {
+		int len = colinfo[0]<<1;
+		string raw = colinfo[1..len];
+		colinfo = colinfo[len+1..];
+		column_info[colno]->real_name = utf16_to_string(raw);
+	      }
+	    }
+	  } else {
+	    TDS_WERROR("TDS_COLINFO_TOKEN without active column info\n"
+		       "  raw: %O\n", colinfo);
 	  }
 	  break;
 	case TDS_DONE_TOKEN:
