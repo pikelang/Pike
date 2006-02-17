@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.81 2005/12/28 13:51:08 grubba Exp $
+|| $Id: xml.c,v 1.82 2006/02/17 18:48:45 nilsson Exp $
 */
 
 #include "global.h"
@@ -1252,8 +1252,8 @@ static int read_smeg_pereference(struct xmldata *data)
 	    copy_shared_string(data->input.entity, full_name);
 	  }
 	}
-	CALL_AND_UNSET_ONERROR(tmp5);
 	UNSET_ONERROR(tmp4);
+	CALL_AND_UNSET_ONERROR(tmp5);
 
 	READ(0); /* autopop empty strings */
 	pop_stack();
@@ -1262,8 +1262,8 @@ static int read_smeg_pereference(struct xmldata *data)
       }
 
     }while(0);
-    CALL_AND_UNSET_ONERROR(tmp5);
     CALL_AND_UNSET_ONERROR(tmp4);
+    CALL_AND_UNSET_ONERROR(tmp5);
     CALL_AND_UNSET_ONERROR(tmp3);
   }
   return 0;
