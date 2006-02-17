@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: C.pmod,v 1.44 2005/02/24 23:59:17 nilsson Exp $
+// $Id: C.pmod,v 1.45 2006/02/17 18:47:29 nilsson Exp $
 
 //! Splits the @[data] string into an array of tokens. An additional
 //! element with a newline will be added to the resulting array of
@@ -482,7 +482,7 @@ string reconstitute_with_line_numbers(array(string|object(Token)|array) tokens)
 	tok=tok->text + tok->trailing_whitespaces;
       }
       ret+=tok;
-      line+=sizeof(tok/"\n")-1;
+      line+=String.count(tok,"\n");
     }
 
   return ret;
