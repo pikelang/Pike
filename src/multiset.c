@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.87 2006/01/14 11:07:35 mast Exp $
+|| $Id: multiset.c,v 1.88 2006/02/18 05:08:24 mast Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include "svalue.h"
 #include "block_alloc.h"
 
-RCSID("$Id: multiset.c,v 1.87 2006/01/14 11:07:35 mast Exp $");
+RCSID("$Id: multiset.c,v 1.88 2006/02/18 05:08:24 mast Exp $");
 
 /* FIXME: Optimize finds and searches on type fields? (But not when
  * objects are involved!) Well.. Although cheap I suspect it pays off
@@ -4091,8 +4091,8 @@ void gc_mark_multiset_as_referenced (struct multiset *l)
 	     * can end up with larger memory consumption since the
 	     * shrunk data blocks won't be shared. */
 	    l->msd = resize_multiset_data (msd, ALLOC_SIZE (msd->size), 0);
+	    gc_move_marker (msd, l->msd);
 	    msd = l->msd;
-	    gc_mark (msd);
 	  }
 	}
 
@@ -4161,6 +4161,7 @@ void real_gc_cycle_check_multiset (struct multiset *l, int weak)
 	   * can end up with larger memory consumption since the
 	   * shrunk data blocks won't be shared. */
 	  l->msd = resize_multiset_data (msd, ALLOC_SIZE (msd->size), 0);
+	  gc_move_marker (msd, l->msd);
 	  msd = l->msd;
 	}
       }

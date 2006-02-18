@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.257 2005/05/18 12:36:53 mast Exp $
+|| $Id: gc.c,v 1.258 2006/02/18 05:08:24 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.257 2005/05/18 12:36:53 mast Exp $");
+RCSID("$Id: gc.c,v 1.258 2006/02/18 05:08:24 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -1975,6 +1975,23 @@ int gc_mark(void *a)
     DO_IF_DEBUG(marked++);
     return 1;
   }
+}
+
+void gc_move_marker (void *old, void *new)
+{
+  struct marker *m = get_marker (debug_malloc_pass (old));
+
+#ifdef PIKE_DEBUG
+  if (!old) Pike_fatal("Got null pointer in old.\n");
+  if (!new) Pike_fatal("Got null pointer in new.\n");
+  if (!m) Pike_fatal ("Have no marker for old block %p.\n", old);
+  if (find_marker (new))
+    Pike_fatal ("New block %p already got a marker.\n", new);
+  if (!Pike_in_gc || Pike_in_gc >= GC_PASS_FREE)
+    Pike_fatal ("gc move mark attempted in invalid pass.\n");
+#endif
+
+  move_marker (m, new);
 }
 
 PMOD_EXPORT void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int weak)
