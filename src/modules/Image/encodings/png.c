@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.77 2005/12/12 20:25:57 nilsson Exp $
+|| $Id: png.c,v 1.78 2006/02/19 18:32:23 nilsson Exp $
 */
 
 #include "global.h"
@@ -46,6 +46,7 @@ static struct pike_string *param_alpha;
 static struct pike_string *param_type;
 static struct pike_string *param_bpp;
 static struct pike_string *param_background;
+static struct pike_string *param_zlevel;
 
 /*! @module Image
  */
@@ -124,14 +125,14 @@ static void png_decompress(int style)
    free_object(o);
 }
 
-static void png_compress(int style)
+static void png_compress(int style, int zlevel)
 {
    struct object *o;
 
    if (style)
       Pike_error("Internal error: Illegal decompression style %d.\n",style);
    
-   push_int(8);
+   push_int(zlevel);
    o=clone_object(gz_deflate,1);
    apply(o,"deflate",1);
    free_object(o);
@@ -1499,6 +1500,7 @@ static void image_png_encode(INT32 args)
    struct neo_colortable *ct=NULL;
 
    int n=0,y,x,bpp;
+   int zlevel=8;
    char buf[20];
    
    if (!args)
@@ -1552,6 +1554,16 @@ static void image_png_encode(INT32 args)
 	   PIKE_ERROR("Image.PNG.encode",
 		      "Option (arg 2) \"palette\" has illegal type.\n",
 		      sp, args);
+      pop_stack();
+
+      push_svalue(sp+1-args);
+      ref_push_string(param_zlevel);
+      f_index(2);
+      if ( sp[-1].type!=T_INT || sp[-1].u.integer<0 || sp[-1].u.integer>9 )
+        PIKE_ERROR("Image.PNG.encode","Option (arg 2) \"zlevel\" has illegal value.\n",
+                   sp, args);
+      else if (sp[-1].subtype!=NUMBER_UNDEFINED)
+        zlevel = sp[-1].u.integer;
       pop_stack();
    }
    
@@ -1678,7 +1690,8 @@ static void image_png_encode(INT32 args)
       }
       push_string(end_shared_string(ps));
    }
-   png_compress(0);
+
+   png_compress(0, zlevel);
    push_png_chunk("IDAT",NULL);
    n++;
 
@@ -1781,6 +1794,7 @@ void exit_image_png(void)
    free_string(param_bpp);
    free_string(param_background);
    free_string(param_type);
+   free_string(param_zlevel);
 
    if(gz_inflate)
      free_program(gz_inflate);
@@ -1852,4 +1866,5 @@ void init_image_png(void)
    param_bpp=make_shared_string("bpp");
    param_type=make_shared_string("type");
    param_background=make_shared_string("background");
+   param_zlevel=make_shared_string("zlevel");
 }
