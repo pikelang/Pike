@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.173 2006/01/24 13:10:27 mast Exp $
+|| $Id: pike_memory.c,v 1.174 2006/02/19 18:29:48 nilsson Exp $
 */
 
 #include "global.h"
@@ -285,7 +285,7 @@ PMOD_EXPORT void *debug_xalloc(size_t size)
   ret=(void *)malloc(size);
   if(ret) return ret;
 
-  Pike_error("Out of memory.\n");
+  Pike_error(msg_out_of_mem);
   return 0;
 }
 
