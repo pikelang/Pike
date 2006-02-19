@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.184 2005/12/04 18:57:23 nilsson Exp $
+|| $Id: array.c,v 1.185 2006/02/19 18:29:25 nilsson Exp $
 */
 
 #include "global.h"
@@ -443,20 +443,28 @@ PMOD_EXPORT struct array *array_shrink(struct array *v, ptrdiff_t size)
     Pike_fatal("Illegal argument to array_shrink.\n");
 #endif
 
-  if(!size || (size*4 < v->malloced_size + 4)) /* Should we realloc it? */
+  if( !size )
+  {
+    free_array(v);
+    add_ref(&empty_array);
+    return &empty_array;
+  }
+
+  /* Free items outside the new array. */
+  free_svalues(ITEM(v) + size, v->size - size, v->type_field);
+
+  if(size*4 < v->malloced_size + 4) /* Should we realloc it? */
   {
     a = array_set_flags(allocate_array_no_init(size, 0), v->flags);
     if (a->size) {
       a->type_field = v->type_field;
     }
 
-    free_svalues(ITEM(v) + size, v->size - size, v->type_field);
     MEMCPY(ITEM(a), ITEM(v), size*sizeof(struct svalue));
     v->size=0;
     free_array(v);
     return a;
   }else{
-    free_svalues(ITEM(v) + size, v->size - size, v->type_field);
     v->size=size;
     return v;
   }
