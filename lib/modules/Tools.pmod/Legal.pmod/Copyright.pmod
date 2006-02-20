@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Copyright.pmod,v 1.7 2004/09/12 18:11:48 nilsson Exp $
+// $Id: Copyright.pmod,v 1.8 2006/02/20 11:32:41 nilsson Exp $
 
 //! Contains functions and information to store and present
 //! copyright information about Pike and it's components.
@@ -13,7 +13,7 @@ static mapping(string:array(string)) copyrights = ([
     "Copyright © 1996-1997 Informationsvävarna AB",
     "Copyright © 1997-2000 Idonex AB",
     "Copyright © 2000-2002 Roxen Internet Software AB",
-    "Copyright © 2002-2004 Department of Computer and Information Science,\n"
+    "Copyright © 2002-2006 Department of Computer and Information Science,\n"
     "                      Linköping University",
   }),
 
