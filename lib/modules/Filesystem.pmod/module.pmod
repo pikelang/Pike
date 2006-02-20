@@ -261,6 +261,7 @@ class Traversion {
   object current;
   int(0..) pos;
   int(0..1) symlink;
+  int(0..1) ignore_errors;
   constant is_traversion = 1;
 
   //! Returns the current progress of the traversion as a value
@@ -274,16 +275,24 @@ class Traversion {
     return share/sizeof(files)*(pos+1) + sub;
   }
 
-  //! @decl void create(string path, void|int(0..1) symlink)
+  //! @decl void create(string path, void|int(0..1) symlink, void|int(0..1) ignore_errors)
   //! @param path
   //! The root path from which to traverse.
   //! @param symlink
   //! Don't traverse symlink directories.
-  void create(string _path, void|int(0..1) _symlink) {
+  //! @param ignore_errors
+  //! Ignore directories that can not be accessed.
+  void create(string _path, void|int(0..1) _symlink, void|int(0..1) _ignore_errors) {
     path = _path;
     if(path[-1]!='/') path+="/";
     files = get_dir(path);
     symlink = _symlink;
+    ignore_errors = _ignore_errors;
+    if(!arrayp(files))
+      if(ignore_errors)
+        files = ({});
+      else
+        throw( ({ sprintf("Failed to access %s\n", path), backtrace() }) );
     if(sizeof(files)) set_current();
   }
 
@@ -298,7 +307,7 @@ class Traversion {
       return;
     }
 
-    current = Traversion(path + files[pos], symlink);
+    current = Traversion(path + files[pos], symlink, ignore_errors);
   }
 
   int `!() {
