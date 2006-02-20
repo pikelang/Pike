@@ -292,7 +292,7 @@ class Traversion {
       if(ignore_errors)
         files = ({});
       else
-        throw( ({ sprintf("Failed to access %s\n", path), backtrace() }) );
+        error( "Failed to access %s\n", path );
     if(sizeof(files)) set_current();
   }
 
