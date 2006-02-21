@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.178 2006/01/15 05:21:09 mast Exp $
+ * $Id: backend.cmod,v 1.179 2006/02/21 07:07:50 mast Exp $
  *
  * Backend object.
  */
@@ -921,13 +921,22 @@ PIKECLASS Backend
 
   /* This is used by threaded programs and signals to wake up the
    * master 'thread'.
+   *
+   * It's called from the signal handler so it must not lock any mutex
+   * whatsoever. E.g. dmalloc stuff is verboten here.
    */
   void backend_wake_up_backend(struct Backend_struct *me)
     {
       char foo=0;
 
       if(me && me->exec_thread)
-	fd_write(me->wakeup_pipe_send_fd, &foo ,1);
+	/* Avoid fd_write with its dmalloc stuff. */
+#ifdef HAVE_WINSOCK_H
+	debug_fd_write
+#else
+	write
+#endif
+	  (me->wakeup_pipe_send_fd, &foo ,1);
     }
 
   /*
