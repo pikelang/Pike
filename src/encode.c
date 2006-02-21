@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.215 2005/05/31 15:33:38 mast Exp $
+|| $Id: encode.c,v 1.216 2006/02/21 06:32:52 mast Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.215 2005/05/31 15:33:38 mast Exp $");
+RCSID("$Id: encode.c,v 1.216 2006/02/21 06:32:52 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -2880,7 +2880,7 @@ static void decode_value2(struct decode_data *data)
 	    INT32 bytecode_method = 0;
 	    decode_number(bytecode_method, data);
 	    if (bytecode_method != PIKE_BYTECODE_METHOD) {
-	      Pike_error("Unsupported bytecode method: %d. Expected %d\n",
+	      Pike_error("Unsupported byte-code method: %d. Expected %d\n",
 			 bytecode_method, PIKE_BYTECODE_METHOD);
 	    }
 	  }
