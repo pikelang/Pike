@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.319 2005/10/14 08:57:10 grubba Exp $
+|| $Id: language.yacc,v 1.320 2006/02/21 10:11:01 grubba Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.319 2005/10/14 08:57:10 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.320 2006/02/21 10:11:01 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3870,7 +3870,7 @@ int low_add_local_name(struct compiler_frame *frame,
   debug_malloc_touch(type);
   debug_malloc_touch(str);
   reference_shared_string(str);
-  if (frame->current_number_of_locals == MAX_LOCAL)
+  if (frame->current_number_of_locals == MAX_LOCAL-1)
   {
     yyerror("Too many local variables.");
     return -1;
