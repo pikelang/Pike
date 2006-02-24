@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.174 2006/02/19 18:29:48 nilsson Exp $
+|| $Id: pike_memory.c,v 1.175 2006/02/24 16:12:12 mast Exp $
 */
 
 #include "global.h"
@@ -2016,7 +2016,7 @@ void *debug_malloc(size_t s, LOCATION location)
     low_make_memhdr(m, s, location)->flags|=MEM_PADDED;
   } else {
     flush_blocks_to_free();
-    if (m=(char *)real_malloc(s + DEBUG_MALLOC_PAD*2)) {
+    if ((m=(char *)real_malloc(s + DEBUG_MALLOC_PAD*2))) {
       m=do_pad(m, s);
       low_make_memhdr(m, s, location)->flags|=MEM_PADDED;
     }
