@@ -70,7 +70,7 @@ EOF`
   if test x"$gdbcmd" != x; then
     echo "$gdbcmd" >> .gdbinit.$$
   fi
-  $valgrind $vgargs gdb -x .gdbinit.$$ "$BUILDDIR/pike"
+  $valgrind $vgargs ${GDB:-gdb} -x .gdbinit.$$ "$BUILDDIR/pike"
   rm .gdbinit.$$
 else
   exec $valgrind $vgargs "$BUILDDIR/pike" "-DPRECOMPILED_SEARCH_MORE" "-m$BUILDDIR/master.pike" "$@"
