@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.364 2006/01/26 21:14:01 grubba Exp $
+|| $Id: language.yacc,v 1.365 2006/02/25 11:10:04 grubba Exp $
 */
 
 %pure_parser
@@ -4201,11 +4201,12 @@ static node *lexical_islocal(struct pike_string *str)
 	  q=q->previous;
 	}
 
-	if(depth)
+	if(depth) {
 	  q->lexical_scope|=SCOPE_SCOPE_USED;
 
-	if(q->min_number_of_locals < e+1)
-	  q->min_number_of_locals = e+1;
+	  if(q->min_number_of_locals < e+1)
+	    q->min_number_of_locals = e+1;
+	}
 
 	if(f->variable[e].def) {
 	  /*fprintf(stderr, "Found prior definition of \"%s\"\n", str->str); */
