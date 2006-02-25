@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.183 2004/12/30 13:41:08 grubba Exp $
+|| $Id: docode.c,v 1.184 2006/02/25 04:05:32 mast Exp $
 */
 
 #include "global.h"
@@ -200,7 +200,7 @@ int do_jump(int token,INT32 lbl)
 
 static int lbl_cache[LBLCACHESIZE];
 
-int do_branch(INT32 lbl)
+static int do_branch(INT32 lbl)
 {
   if(lbl==-1)
   {
@@ -231,13 +231,13 @@ int do_branch(INT32 lbl)
   return lbl;
 }
 
-void low_insert_label(int lbl)
+static void low_insert_label(int lbl)
 {
   lbl_cache[ lbl % LBLCACHESIZE ] = CURRENT_INSTR;
   emit1(F_LABEL, lbl);
 }
 
-int ins_label(int lbl)
+static int ins_label(int lbl)
 {
   if(lbl==-1) lbl=alloc_label();
   low_insert_label(lbl);
@@ -258,23 +258,23 @@ void do_pop(int x)
   current_stack_depth -= x;
 }
 
-void do_pop_mark(void *ignored)
+static void do_pop_mark(void *ignored)
 {
   emit0(F_POP_MARK);
 }
 
-void do_pop_to_mark(void *ignored)
+static void do_pop_to_mark(void *ignored)
 {
   emit0(F_POP_TO_MARK);
 }
 
-void do_cleanup_synch_mark(void)
+static void do_cleanup_synch_mark(void)
 {
   if (d_flag > 2)
     emit0(F_CLEANUP_SYNCH_MARK);
 }
 
-void do_escape_catch(void)
+static void do_escape_catch(void)
 {
   emit0(F_ESCAPE_CATCH);
 }
@@ -431,7 +431,7 @@ static INLINE struct compiler_frame *find_local_frame(INT32 depth)
 /* Emit code for a function call to the identifier reference #id,
  * with the arguments specified by args.
  */
-int do_lfun_call(int id, node *args)
+static int do_lfun_call(int id, node *args)
 {
 #if 1
   struct reference *ref =
