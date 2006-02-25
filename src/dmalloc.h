@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dmalloc.h,v 1.57 2006/02/24 14:22:05 mast Exp $
+|| $Id: dmalloc.h,v 1.58 2006/02/25 07:13:59 mast Exp $
 */
 
 #ifndef DMALLOC_H
@@ -116,6 +116,7 @@ void debug_malloc_dump_references(void *x, int indent, int depth, int flags);
 #define dmalloc_touch_named(TYPE,X,NAME) ((TYPE) debug_malloc_pass_named (X, NAME))
 void debug_malloc_dump_fd(int fd);
 #define dmalloc_touch_svalue(X) do { struct svalue *_tmp = (X); if (_tmp->type <= MAX_REF_TYPE) { debug_malloc_touch(_tmp->u.refs); } } while(0)
+#define dmalloc_touch_svalue_named(X,NAME) do { struct svalue *_tmp = (X); if (_tmp->type <= MAX_REF_TYPE) { debug_malloc_touch_named(_tmp->u.refs,NAME); } } while(0)
 
 #define DMALLOC_LINE_ARGS ,char * dmalloc_location
 #define DMALLOC_POS ,DMALLOC_LOCATION()
@@ -186,15 +187,23 @@ int dmalloc_is_invalid_memory_block(void *block);
 #ifdef DMALLOC_TRACE
 #define debug_malloc_update_location(X,Y) (DMALLOC_TRACE_LOG(DMALLOC_LOCATION()),(X))
 #define dmalloc_touch_svalue(X) DMALLOC_TRACE_LOG(DMALLOC_LOCATION())
+#define dmalloc_touch_svalue_named(X,NAME) DMALLOC_TRACE_LOG(DMALLOC_NAMED_LOCATION(" " NAME))
 #define debug_malloc_touch(X) DMALLOC_TRACE_LOG(DMALLOC_LOCATION())
+#define debug_malloc_touch_named(X,NAME) DMALLOC_TRACE_LOG(DMALLOC_NAMED_LOCATION(" " NAME))
 #define debug_malloc_pass(X) (DMALLOC_TRACE_LOG(DMALLOC_LOCATION()),(X))
-#define dmalloc_touch(TYPE,X) (DMALLOC_TRACE_LOG(DMALLOC_LOCATION()),(X))
+#define debug_malloc_pass_named(X,NAME) (DMALLOC_TRACE_LOG(DMALLOC_NAMED_LOCATION(" " NAME)), (X))
+#define dmalloc_touch(TYPE,X) debug_malloc_pass (X)
+#define dmalloc_touch_named(TYPE,X,NAME) debug_malloc_pass_named (X, NAME)
 #else /* DMALLOC_TRACE */
 #define debug_malloc_update_location(X,Y) (X)
 #define dmalloc_touch_svalue(X)
+#define dmalloc_touch_svalue_named(X,NAME)
 #define debug_malloc_touch(X)
+#define debug_malloc_touch_named(X,NAME)
 #define debug_malloc_pass(X) (X)
+#define debug_malloc_pass_named(X,NAME) (X)
 #define dmalloc_touch(TYPE,X) (X)
+#define dmalloc_touch_named(TYPE,X,NAME) (X)
 #endif /* !MALLOC_TRACE */
 
 #endif /* !DEBUG_MALLOC */
