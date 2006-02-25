@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.340 2005/10/14 08:53:50 grubba Exp $
+|| $Id: language.yacc,v 1.341 2006/02/25 11:10:47 grubba Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.340 2005/10/14 08:53:50 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.341 2006/02/25 11:10:47 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -4071,11 +4071,12 @@ static node *lexical_islocal(struct pike_string *str)
 	  q=q->previous;
 	}
 
-	if(depth)
+	if(depth) {
 	  q->lexical_scope|=SCOPE_SCOPE_USED;
 
-	if(q->min_number_of_locals < e+1)
-	  q->min_number_of_locals = e+1;
+	  if(q->min_number_of_locals < e+1)
+	    q->min_number_of_locals = e+1;
+	}
 
 	if(f->variable[e].def) {
 	  /*fprintf(stderr, "Found prior definition of \"%s\"\n", str->str); */
