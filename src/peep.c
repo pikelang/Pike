@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.106 2005/05/19 22:35:30 mast Exp $
+|| $Id: peep.c,v 1.107 2006/02/27 12:12:47 mast Exp $
 */
 
 #include "global.h"
@@ -148,7 +148,7 @@ INT32 assemble(int store_linenumbers)
 {
   INT32 entry_point;
   INT32 max_label=-1,tmp;
-  INT32 *labels, *jumps, *uses;
+  INT32 *labels, *jumps, *uses, *aliases;
   ptrdiff_t e, length;
   p_instr *c;
 #ifdef PIKE_PORTABLE_BYTECODE
@@ -286,16 +286,23 @@ INT32 assemble(int store_linenumbers)
   }
 #endif /* PIKE_DEBUG */
 
-  labels=(INT32 *)xalloc(sizeof(INT32) * 3 * (max_label+2));
+#ifndef INS_ENTRY
+  /* Replace F_ENTRY with F_NOP if we have no entry prologue. */
+  for (c = (p_instr *) instrbuf.s.str, e = 0; e < length; e++, c++)
+    if (c->opcode == F_ENTRY) c->opcode = F_NOP;
+#endif
+
+  labels=(INT32 *)xalloc(sizeof(INT32) * 4 * (max_label+2));
   jumps = labels + max_label + 2;
   uses = jumps + max_label + 2;
+  aliases = uses + max_label + 2;
 
   while(relabel)
   {
     /* First do the relabel pass. */
     for(e=0;e<=max_label;e++)
     {
-      labels[e]=jumps[e]=-1;
+      labels[e]=jumps[e]= aliases[e] = -1;
       uses[e]=0;
     }
     
@@ -303,13 +310,25 @@ INT32 assemble(int store_linenumbers)
     length=instrbuf.s.len / sizeof(p_instr);
     for(e=0;e<length;e++)
       if(c[e].opcode == F_LABEL && c[e].arg>=0) {
-	labels[c[e].arg]=DO_NOT_WARN((INT32)e);
+	INT32 l = c[e].arg;
+	labels[l]=DO_NOT_WARN((INT32)e);
+	while (e+1 < length &&
+	       c[e+1].opcode == F_LABEL && c[e+1].arg >= 0) {
+	  /* aliases is used to compact several labels at the same
+	   * position to one label. That's necessary for some peep
+	   * optimizations to work well. */
+	  e++;
+	  labels[c[e].arg] = DO_NOT_WARN((INT32)e);
+	  aliases[c[e].arg] = l;
+	}
       }
     
     for(e=0;e<length;e++)
     {
       if(instrs[c[e].opcode-F_OFFSET].flags & I_POINTER)
       {
+	if (aliases[c[e].arg] >= 0) c[e].arg = aliases[c[e].arg];
+
 	while(1)
 	{
 	  int tmp;
@@ -376,7 +395,12 @@ INT32 assemble(int store_linenumbers)
       }
     }
 
-    if(!reoptimize) break;
+    if(!reoptimize) {
+#ifdef PIKE_DEBUG
+      if (a_flag > 3) fprintf (stderr, "Optimizer done after relabel.\n");
+#endif
+      break;
+    }
 
     /* Then do the optimize pass. */
 
@@ -384,7 +408,12 @@ INT32 assemble(int store_linenumbers)
 
     reoptimize = 0;
 
-    if (!relabel) break;
+    if (!relabel) {
+#ifdef PIKE_DEBUG
+      if (a_flag > 3) fprintf (stderr, "Optimizer done after asm_opt.\n");
+#endif
+      break;
+    }
 
 #if 1
 #ifdef PIKE_DEBUG
@@ -471,11 +500,19 @@ INT32 assemble(int store_linenumbers)
     case F_ENTRY:
 #ifdef INS_ENTRY
       INS_ENTRY();
-#endif /* INS_ENTRY */
+#else
+      Pike_fatal ("F_ENTRY is supposed to be gone here.\n");
+#endif
       break;
 
     case F_LABEL:
-      if(c->arg == -1) break;
+      if(c->arg == -1) {
+#ifdef PIKE_DEBUG
+	if (!(debug_options & NO_PEEP_OPTIMIZING))
+	  Pike_fatal ("Failed to optimize away an unused label.\n");
+#endif
+	break;
+      }
 #ifdef PIKE_DEBUG
       if(c->arg > max_label || c->arg < 0)
 	Pike_fatal("max_label calculation failed!\n");
