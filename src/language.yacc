@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.365 2006/02/25 11:10:04 grubba Exp $
+|| $Id: language.yacc,v 1.366 2006/02/27 12:15:55 mast Exp $
 */
 
 %pure_parser
@@ -42,7 +42,7 @@
 %token TOK_CASE
 %token TOK_CLASS
 %token TOK_COLON_COLON
-%token TOK_CONTINUE 
+%token TOK_CONTINUE
 %token TOK_DEFAULT
 %token TOK_DIV_EQ
 %token TOK_DO
@@ -123,6 +123,7 @@
 #include "interpret.h"
 #include "array.h"
 #include "object.h"
+#include "mapping.h"
 #include "stralloc.h"
 #include "las.h"
 #include "interpret.h"
