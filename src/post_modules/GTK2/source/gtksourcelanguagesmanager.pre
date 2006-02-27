@@ -15,8 +15,8 @@ void create();
 array(GTK2.SourceLanguage) get_available_languages()
 //! Gets a list of available languages.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     const GSList *gsl;
     int i=0;
@@ -39,7 +39,7 @@ GTK2.SourceLanguage get_language_from_mime_type(string type);
 GTK2.SourceLanguage get_language_from_name(string name)
 //! Gets the GTK2.SourceLanguage which has this name.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     char *name;
     const GSList *gsl;
@@ -50,7 +50,7 @@ GTK2.SourceLanguage get_language_from_name(string name)
     while (gsl) {
       if (!strcmp(gtk_source_language_get_name(
 		GTK_SOURCE_LANGUAGE(gsl->data)),name)) {
-        my_pop_n_elems(args);
+        pgtk2_pop_n_elems(args);
 	push_gobject(gsl->data);
 	g_object_ref(gsl->data);
 	sel=1;
@@ -59,7 +59,7 @@ GTK2.SourceLanguage get_language_from_name(string name)
       gsl=g_slist_next(gsl);
     }
     if (!sel) {
-      my_pop_n_elems(args);
+      pgtk2_pop_n_elems(args);
       push_int(0);
     }
   }
@@ -68,8 +68,8 @@ GTK2.SourceLanguage get_language_from_name(string name)
 array(string) get_lang_files_dirs()
 //! Gets a list of language files directories.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     const GSList *gsl,*gs2;
     int i=0;

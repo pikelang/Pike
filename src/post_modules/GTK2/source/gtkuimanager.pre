@@ -53,17 +53,17 @@ signal pre_activate;
 void create(?mapping(string:mixed) props)
 //! Creates a new ui manager object.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     INIT_WITH_PROPS(GTK_TYPE_UI_MANAGER);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkUIManager *gu;
     gu=gtk_ui_manager_new();
     THIS->obj=G_OBJECT(gu);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void set_add_tearoffs(int setting);
@@ -87,8 +87,8 @@ void remove_action_group(GTK2.ActionGroup group);
 array(GTK2.ActionGroup) get_action_groups()
 //! Returns the list of action groups.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GList *gl;
     int i=0;
@@ -116,13 +116,13 @@ GTK2.Widget get_widget(string path)
 //! Note that the widget found be following a path that ends in a &gt;menu&lt;
 //! element is the menuitem to which the menu is attached, not the menu itself.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     char *path;
     GtkWidget *w;
     get_all_args("get_widget",args,"%s",&path);
     w=gtk_ui_manager_get_widget(GTK_UI_MANAGER(THIS->obj),path);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_gobject(w);
   }
 }
@@ -131,13 +131,13 @@ array(GTK2.Widget) get_toplevels(int types)
 //! Obtains a list of all toplevel widgets of the requested types.  Bitwise or
 //! of CONST(GTK_UI_MANAGER_).
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GSList *gl,*g2;
     int i=0;
     INT_TYPE type;
     get_all_args("get_toplevels",args,"%i",&type);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     gl=g2=gtk_ui_manager_get_toplevels(GTK_UI_MANAGER(THIS->obj),type);
     while (g2) {
       push_gobject(GTK_WIDGET(g2->data));
@@ -157,14 +157,14 @@ int add_ui_from_string(string buffer)
 //! Parses a string containing a ui definition and merges it with the current
 //! contents.  An enclosing &gt;ui&lt; element is added if it is missing.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     const gchar *buff;
     int res;
     get_all_args("add_ui_from_string",args,"%s",&buff);
     res=gtk_ui_manager_add_ui_from_string(GTK_UI_MANAGER(THIS->obj),
 			buff,-1,NULL);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     PGTK_PUSH_INT(res);
   }
 }

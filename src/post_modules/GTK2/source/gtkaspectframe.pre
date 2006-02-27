@@ -26,8 +26,8 @@ void create(mapping|string label, ?float xalign, ?float yalign,
 //! lower (or rightmost). If 'obey_child' is true, the frame will use the
 //! aspect ratio of it's (one and only) child widget instead of 'ratio'.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args>0 && Pike_sp[-args].type==PIKE_T_STRING) {
     struct pike_string *label;
     FLOAT_TYPE xalign=0.5,yalign=0.5,ratio=1.0;
@@ -44,7 +44,7 @@ void create(mapping|string label, ?float xalign, ?float yalign,
   } else {
     INIT_WITH_PROPS(GTK_TYPE_ASPECT_FRAME);
   }
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 

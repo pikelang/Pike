@@ -16,17 +16,17 @@ inherit GTK2.Container;
 void create(?mapping(string:mixed) props)
 //! Create a new fixed widget
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     INIT_WITH_PROPS(GTK_TYPE_FIXED);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gf;
     gf=gtk_fixed_new();
     THIS->obj=G_OBJECT(gf);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 
@@ -46,8 +46,8 @@ void set_has_window(int has_window);
 array(mapping(string:mixed)) get_children()
 //! Get a list of the children and their x,y positions.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GList *gl=GTK_FIXED(THIS->obj)->children;
     int i=0;

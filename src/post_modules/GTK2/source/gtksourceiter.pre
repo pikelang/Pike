@@ -20,7 +20,7 @@ array backward_search(string str, int flags, ?GTK2.TextIter limit)
 //! Same as GTK2.TextIter->backward_search(), but supports case insensitive
 //! searching.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkTextIter *match_start,*match_end,*limit=NULL;
     GtkTextBuffer *sb;
@@ -43,10 +43,10 @@ array backward_search(string str, int flags, ?GTK2.TextIter limit)
 
     res=gtk_source_iter_backward_search((GtkTextIter *)THIS->obj,
 			str,flags,match_start,match_end,limit);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_int(res);
-    push_gobjectclass(match_start,pgtk_text_iter_program);
-    push_gobjectclass(match_end,pgtk_text_iter_program);
+    push_gobjectclass(match_start,pgtk2_text_iter_program);
+    push_gobjectclass(match_end,pgtk2_text_iter_program);
     f_aggregate(3);
   }
 }
@@ -55,7 +55,7 @@ array forward_search(string str, int flags, ?GTK2.TextIter limit)
 //! Same as GTK2.TextIter->backward_search(), but supports case insensitive
 //! searching.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkTextIter *match_start,*match_end,*limit=NULL;
     GtkTextBuffer *sb;
@@ -78,10 +78,10 @@ array forward_search(string str, int flags, ?GTK2.TextIter limit)
 
     res=gtk_source_iter_forward_search((GtkTextIter *)THIS->obj,
 			str,flags,match_start,match_end,limit);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_int(res);
-    push_gobjectclass(match_start,pgtk_text_iter_program);
-    push_gobjectclass(match_end,pgtk_text_iter_program);
+    push_gobjectclass(match_start,pgtk2_text_iter_program);
+    push_gobjectclass(match_end,pgtk2_text_iter_program);
     f_aggregate(3);
   }
 }
@@ -91,8 +91,8 @@ int find_matching_bracket()
 //! opening/closing counterpart, and if found moves iter to the position where
 //! it was found.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     int res;
     res=gtk_source_iter_find_matching_bracket((GtkTextIter *)THIS->obj);

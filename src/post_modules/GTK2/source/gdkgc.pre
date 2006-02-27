@@ -15,16 +15,16 @@ void create(GTK2.Widget|GDK2.Drawable context)
 {
   struct object *o;
   GdkGC *gc;
-  pgtk_verify_setup();
-  pgtk_verify_not_inited();
+  pgtk2_verify_setup();
+  pgtk2_verify_not_inited();
   get_all_args("'()",args,"%o",&o);
   if (G_TYPE_FROM_INSTANCE(get_gobject(o))==GDK_TYPE_DRAWABLE)
     gc=gdk_gc_new(GDK_WINDOW(get_gobject(o)));
   else
     gc=gdk_gc_new(GTK_WIDGET(get_gobject(o))->window);
   THIS->obj=G_OBJECT(gc);
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 void destroy()
@@ -32,7 +32,7 @@ void destroy()
 {
   g_object_unref(GDK_GC(THIS->obj));
   destruct(Pike_fp->current_object);
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(0);
 }
 
@@ -45,7 +45,7 @@ mapping(string:mixed) get_values()
   GdkGCValues v;
   struct svalue *osp;
   if (args)
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
 
   gdk_gc_get_values(GDK_GC(THIS->obj),&v);
 

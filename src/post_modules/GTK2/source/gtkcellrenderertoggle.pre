@@ -19,15 +19,15 @@ void create(?mapping(string:mixed) props)
 //! object properties.  Object properties can be set globally with
 //! set().
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     INIT_WITH_PROPS(GTK_TYPE_CELL_RENDERER_TOGGLE);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     THIS->obj=G_OBJECT(gtk_cell_renderer_toggle_new());
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 int get_radio();

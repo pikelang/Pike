@@ -6,14 +6,14 @@ class GDK2.Event;
 %{
 #define GTK_GDKEVENT(X) ((GdkEvent *)X)
 
-#define RETURN_NIL() do{ my_pop_n_elems( args );push_int( 0 );Pike_sp[-1].subtype=1;return; } while(0)
-#define RETURN_INT(X) do { my_pop_n_elems( args );push_int( X ); return; } while(0)
-#define RETURN_FLOAT(X) do { my_pop_n_elems( args );push_float( X ); return; } while(0)
-#define RETURN_STRING(X) do { my_pop_n_elems( args );push_string( X ); return; } while(0)
-#define RETURN_ATOM(X) do { my_pop_n_elems( args );push_atom( X ); return; } while(0)
+#define RETURN_NIL() do{ pgtk2_pop_n_elems( args );push_int( 0 );Pike_sp[-1].subtype=1;return; } while(0)
+#define RETURN_INT(X) do { pgtk2_pop_n_elems( args );push_int( X ); return; } while(0)
+#define RETURN_FLOAT(X) do { pgtk2_pop_n_elems( args );push_float( X ); return; } while(0)
+#define RETURN_STRING(X) do { pgtk2_pop_n_elems( args );push_string( X ); return; } while(0)
+#define RETURN_ATOM(X) do { pgtk2_pop_n_elems( args );push_atom( X ); return; } while(0)
 
 static int last_event_time;
-int pgtk_last_event_time()
+int pgtk2_last_event_time()
 {
   return last_event_time;
 }
@@ -25,7 +25,7 @@ void destroy()
   if( THIS->obj )
     g_free( THIS->obj );
   THIS->obj = 0;
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(0);
 }
 
@@ -232,7 +232,7 @@ string _sprintf(int flag)
     return;
   }
   ref_push_string( _STR("GDK2.Event(") );
-  ref_push_string( _STR("type") ); pgdk_event__index( 1 );
+  ref_push_string( _STR("type") ); pgdk2_event__index( 1 );
   ref_push_string( _STR(")") );
   f_add( 3 );
 }

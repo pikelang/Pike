@@ -831,7 +831,6 @@ testfont binary
 /src/post_modules/GTK2/dummy.c foreign_ident
 /src/post_modules/GTK2/module.pmod.in foreign_ident
 /src/post_modules/GTK2/pgtk.h foreign_ident
-/src/post_modules/GTK2/pgtk2_symbol_remap.h foreign_ident
 /src/post_modules/GTK2/source/encode_truecolor.c foreign_ident
 /src/post_modules/GTK2/source/support.c foreign_ident
 /src/post_modules/Makefile.in foreign_ident

@@ -44,8 +44,8 @@ signal leave;
 void create(string|mapping|void label_or_props)
 //! If a string is supplied, a W(Label) is created and added to the button.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     if (Pike_sp[-args].type==PIKE_T_STRING) {
       struct pike_string *t;
@@ -72,13 +72,13 @@ void create(string|mapping|void label_or_props)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_BUTTON);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gb;
     gb=gtk_button_new();
     THIS->obj=G_OBJECT(gb);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void pressed();
@@ -136,8 +136,8 @@ void set_alignment(float xalign, float yalign);
 mapping get_alignment()
 //! Gets the alignment of the child.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     gfloat xalign,yalign;
 

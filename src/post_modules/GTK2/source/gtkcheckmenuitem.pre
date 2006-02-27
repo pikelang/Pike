@@ -23,8 +23,8 @@ void create(string|mapping(string:mixed)|void label_or_props)
 //! If no label is specified, use object->add() to add some
 //! other widget (such as an pixmap or image widget)
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     if (Pike_sp[-args].type==PIKE_T_STRING) {
       struct pike_string *label;
@@ -38,13 +38,13 @@ void create(string|mapping(string:mixed)|void label_or_props)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_CHECK_MENU_ITEM);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gc;
     gc=gtk_check_menu_item_new();
     THIS->obj=G_OBJECT(gc);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void set_active(int new_state);

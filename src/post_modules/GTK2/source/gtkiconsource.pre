@@ -31,18 +31,18 @@ void create()
 //! icon source will be used as the base icon for any desired text direction,
 //! widget state, or icon size.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   THIS->obj=(void *)gtk_icon_source_new();
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 int get_state_wildcarded()
 //! Gets the value set by set_state_wildcarded().
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(gtk_icon_source_get_state_wildcarded((GtkIconSource *)THIS->obj));
 }
 
@@ -50,16 +50,16 @@ int get_state()
 //! Obtains the widget state this icon source applies to.  The return value is
 //! only useful/meaningful if the widget state is not wildcarded.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(gtk_icon_source_get_state((GtkIconSource *)THIS->obj));
 }
 
 int get_size_wildcarded()
 //! Gets the value set by set_size_wildcarded().
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(gtk_icon_source_get_size_wildcarded((GtkIconSource *)THIS->obj));
 }
 
@@ -67,8 +67,8 @@ int get_size()
 //! Obtains the icon size this source applies to.  The return value is only
 //! useful/meaningful if the icon size is not wildcarded.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(gtk_icon_source_get_size((GtkIconSource *)THIS->obj));
 }
 
@@ -76,8 +76,8 @@ require gtk24;
 string get_icon_name()
 //! Retrieves the source icon name, or empty.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     const gchar *s=gtk_icon_source_get_icon_name((GtkIconSource *)THIS->obj);
     push_text(s);
@@ -91,8 +91,8 @@ GDK2.Pixbuf get_pixbuf()
 //! filename.  This is, for example, true for the GTK2.IconSource passed to the
 //! GTK2.Style->render_icon() virtual function.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GdkPixbuf *pixbuf=gtk_icon_source_get_pixbuf((GtkIconSource *)THIS->obj);
     g_object_ref(pixbuf);
@@ -103,16 +103,16 @@ GDK2.Pixbuf get_pixbuf()
 string get_filename()
 //! Retrieves the source filename, or empty.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_GCHAR(gtk_icon_source_get_filename((GtkIconSource *)THIS->obj));
 }
 
 int get_direction_wildcarded()
 //! Gets the value set by set_direction_wildcarded().
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(gtk_icon_source_get_direction_wildcarded(
 			(GtkIconSource *)THIS->obj));
 }
@@ -121,8 +121,8 @@ int get_direction()
 //! Obtains the text direction this icon source applies to.  The return value
 //! is only useful/meaningful if the text direction is not wildcarded.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(gtk_icon_source_get_direction((GtkIconSource *)THIS->obj));
 }
 
@@ -134,7 +134,7 @@ void set_direction(int dir)
 //! set_direction_wildcarded() to un-wildcard it in addition to calling this
 //! function.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE dir;
     get_all_args("set_direction",args,"%i",&dir);
@@ -153,7 +153,7 @@ void set_direction_wildcarded(int setting)
 //! GTK2.IconSet prefers non-wildcarded sources (exact matches) over wildcarded
 //! sources, and will use an exact match when possible.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE set;
     get_all_args("set_direction_wildcarded",args,"%i",&set);
@@ -166,7 +166,7 @@ void set_filename(string filename)
 //! Sets the name of an image file to use as a base image when creating icon
 //! variants for GTK2.IconSet.  The filename must be absolute.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     char *file;
     get_all_args("set_filename",args,"%s",&file);
@@ -178,7 +178,7 @@ void set_filename(string filename)
 void set_pixbuf(GDK2.Pixbuf pixbuf)
 //! Sets a pixbuf to use as a base image.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     get_all_args("set_pixbuf",args,"%o",&o1);
@@ -193,7 +193,7 @@ void set_icon_name(string name)
 //! Sets the name of an icon to look up in the current icon theme to use as a
 //! base image.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     char *name;
     get_all_args("set_icon_name",args,"%s",&name);
@@ -206,7 +206,7 @@ endrequire;
 void set_size(int size)
 //! Sets the icon size this icon source is intended to be with.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE size;
     get_all_args("set_size",args,"%i",&size);
@@ -221,7 +221,7 @@ void set_size_wildcarded(int setting)
 //! source applies to should be set with set_size() and the icon source will
 //! only be used with that specific size.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE set;
     get_all_args("set_size_wildcarded",args,"%i",&set);
@@ -233,7 +233,7 @@ void set_size_wildcarded(int setting)
 void set_state(int state)
 //! Sets the widget state this icon source is intended to be used with.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE state;
     get_all_args("set_state",args,"%i",&state);
@@ -248,7 +248,7 @@ void set_state_wildcarded(int setting)
 //! then the state the source applies to should be set with set_state() and
 //! the icon source will only be used with that specific state.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE set;
     get_all_args("set_state_wildcarded",args,"%i",&set);

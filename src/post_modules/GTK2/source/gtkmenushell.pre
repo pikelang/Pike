@@ -62,10 +62,10 @@ array(GTK2.MenuItem) get_children()
 {
   GList *g;
   int n=0;
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   g=GTK_MENU_SHELL(THIS->obj)->children;
   while(g) {
-    push_gobjectclass(GTK_MENU_ITEM(g->data),pgtk_menu_item_program);
+    push_gobjectclass(GTK_MENU_ITEM(g->data),pgtk2_menu_item_program);
     g_object_ref(g->data);
     n++;
     g=g_list_next(g);

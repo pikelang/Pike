@@ -28,17 +28,17 @@ signal color_changed;
 void create(?mapping(string:mixed) props)
 //! Create a new color selection.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     INIT_WITH_PROPS(GTK_TYPE_COLOR_SELECTION);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gc;
     gc=gtk_color_selection_new();
     THIS->obj=G_OBJECT(gc);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void set_has_opacity_control(int setting);
@@ -66,12 +66,12 @@ mapping(string:int) get_current_color()
 //!  return value is an array of floats, See the set_color() function
 //!  for the description of this array.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GdkColor color;
     gtk_color_selection_get_current_color(GTK_COLOR_SELECTION(THIS->obj),
 		&color);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_text("pixel"); push_int(color.pixel);
     push_text("red"); push_int(color.red);
     push_text("green"); push_int(color.green);
@@ -88,7 +88,7 @@ void set_current_color(mapping(string:int) color)
 //! if opacity is enabled, see set_opacity()) All values are between
 //! 0 and 65535
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct svalue *sv;
     struct mapping *m;
@@ -123,12 +123,12 @@ void set_previous_alpha(int alpha);
 mapping(string:int) get_previous_color()
 //! Returns the original color value.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GdkColor color;
     gtk_color_selection_get_previous_color(GTK_COLOR_SELECTION(THIS->obj),
 		&color);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     ref_push_string(_STR("pixel")); push_int(color.pixel);
     ref_push_string(_STR("red")); push_int(color.red);
     ref_push_string(_STR("green")); push_int(color.green);
@@ -140,7 +140,7 @@ mapping(string:int) get_previous_color()
 void set_previous_color(mapping(string:int) colors)
 //! Sets the 'previous' color to be color.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct mapping *m;
     struct svalue *sv;

@@ -39,17 +39,17 @@ signal style_changed;
 void create(?mapping(string:mixed) props)
 //! Creates a new toolbar.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     INIT_WITH_PROPS(GTK_TYPE_TOOLBAR);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gt;
     gt=gtk_toolbar_new();
     THIS->obj=G_OBJECT(gt);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 require gtk24;

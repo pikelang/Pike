@@ -16,8 +16,8 @@ inherit GDK2.Drawable;
 void create(GDK2.Window|int parent, mapping|void attributes)
 //! Not for non-experts. I promise.
 {
-  pgtk_verify_setup();
-  pgtk_verify_not_inited();
+  pgtk2_verify_setup();
+  pgtk2_verify_not_inited();
   if (Pike_sp[-args].type==PIKE_T_INT)
   {
     GdkWindow *w;
@@ -36,7 +36,7 @@ void create(GDK2.Window|int parent, mapping|void attributes)
     MEMSET(&attrs,0,sizeof(attrs));
     get_all_args("create",args,"%o%m",&parent,&m);
 
-#define GET_ARG(x,y,z) pgtk_get_mapping_arg( m, #x, y, z, &attrs.x, &mask, sizeof(attrs.x))
+#define GET_ARG(x,y,z) pgtk2_get_mapping_arg( m, #x, y, z, &attrs.x, &mask, sizeof(attrs.x))
 
     GET_ARG(title, PIKE_T_STRING, GDK_WA_TITLE);
     GET_ARG(x, PIKE_T_INT, GDK_WA_X);
@@ -51,21 +51,21 @@ void create(GDK2.Window|int parent, mapping|void attributes)
     w=gdk_window_new(GDK_WINDOW(get_gobject(parent)),&attrs,mask);
     THIS->obj=G_OBJECT(w);
   }
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 int is_viewable()
 //! Return 1 if the window is mapped.
 {
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(gdk_window_is_viewable(GDK_WINDOW(THIS->obj)));
 }
 
 int is_visible()
 //! Return 1 if the window, or a part of the window, is visible right now.
 {
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(gdk_window_is_visible(GDK_WINDOW(THIS->obj)));
 }
 
@@ -204,7 +204,7 @@ array(GDK2.Window) children()
   GList *gl,*g2;
   int n=0;
 
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   gl=g2=gdk_window_get_children(GDK_WINDOW(THIS->obj));
 
   while (g2) {
@@ -213,7 +213,7 @@ array(GDK2.Window) children()
 
 /*
     struct object *o;
-    o=low_clone(pgdk_window_program);
+    o=low_clone(pgdk2_window_program);
     call_c_initializers(o);
 */
     /* ugly...*/
@@ -319,7 +319,7 @@ mapping(string:int) get_geometry()
 {
   gint x,y,w,h,d;
   gdk_window_get_geometry(GDK_WINDOW(THIS->obj),&x,&y,&w,&h,&d);
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   ref_push_string(_STR("x")); push_int(x);
   ref_push_string(_STR("y")); push_int(y);
   ref_push_string(_STR("width"));  push_int(w);
@@ -381,7 +381,7 @@ mapping get_property(GDK2.Atom atom, int|void offset, int|void delete_when_done)
                        &retdata))
   {
     struct object *o;
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     ref_push_string(_STR("type"));
     push_text(gdk_atom_name(actual_property_type));
     ref_push_string(_STR("width"));
@@ -405,7 +405,7 @@ mapping get_property(GDK2.Atom atom, int|void offset, int|void delete_when_done)
     f_aggregate_mapping(6);
     return;
   }
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(0);
 }
 
@@ -444,16 +444,16 @@ void set_background(GDK2.Color|GDK2.Pixmap to)
 /*   gdk_error_trap_push(); */
   if (!o)
     gdk_window_set_back_pixmap(GDK_WINDOW(THIS->obj),NULL,1);
-  if (get_pgobject(o,pgdk_pixmap_program))
+  if (get_pg2object(o,pgdk2_pixmap_program))
     gdk_window_set_back_pixmap(GDK_WINDOW(THIS->obj),
                                GDK_PIXMAP(get_gobject(o)),0);
-  else if (get_pgobject(o,pgdk_window_program))
+  else if (get_pg2object(o,pgdk2_window_program))
     gdk_window_set_back_pixmap(GDK_WINDOW(THIS->obj),
                                GDK_WINDOW(get_gobject(o)),0);
   else if (get_gdkobject(o,bitmap))
     gdk_window_set_back_pixmap(GDK_WINDOW(THIS->obj),
                                get_gdkobject(o,bitmap),0);
-  else if (get_pgobject(o,pgdk_drawable_program))
+  else if (get_pg2object(o,pgdk2_drawable_program))
     gdk_window_set_back_pixmap(GDK_WINDOW(THIS->obj),
                                GDK_DRAWABLE(get_gobject(o)),0);
   else if (get_gdkobject(o,color))

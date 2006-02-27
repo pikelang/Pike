@@ -32,7 +32,7 @@ mapping(string:int) get_size(GTK2.Widget widget, ?GDK2.Rectangle cell_area)
 //! as well as those in x_offset and y_offset are inclusive of the xpad and
 //! ypad properties.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2=NULL;
     gint x_offset,y_offset,width,height;
@@ -49,7 +49,7 @@ mapping(string:int) get_size(GTK2.Widget widget, ?GDK2.Rectangle cell_area)
 		GTK_WIDGET(get_gobject(o1)),
 		o2?(GdkRectangle *)get_gdkobject(o2,rectangle):NULL,
 		&x_offset,&y_offset,&width,&height);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     ref_push_string(_STR("x_offset")); push_int(x_offset);
     ref_push_string(_STR("y_offset")); push_int(y_offset);
     ref_push_string(_STR("width")); push_int(width);
@@ -71,7 +71,7 @@ void render(GDK2.Window window, GTK2.Widget widget,
 //! entire window.  expose_area is a clip rectangle.
 //! flags is one of CONST(GTK_CELL_RENDERER_).
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3,*o4,*o5;
     INT_TYPE flags;
@@ -93,7 +93,7 @@ int activate(GDK2.Event event, GTK2.Widget widget, string path,
 //! Some cell renderers may use events; for example, W(CellRendererToggle)
 //! toggles when it gets a mouse click.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3,*o4;
     const gchar *path;
@@ -105,7 +105,7 @@ int activate(GDK2.Event event, GTK2.Widget widget, string path,
 		GTK_WIDGET(get_gobject(o2)),
 		path,(GdkRectangle *)get_gdkobject(o3,rectangle),
 		(GdkRectangle *)get_gdkobject(o4,rectangle),flags);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -115,7 +115,7 @@ void start_editing(GDK2.Event event, GTK2.Widget widget, string path,
 		   int flags)
 //! Passes an activate event to the cell renderer for possible processing.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3,*o4;
     const gchar *path;
@@ -141,10 +141,10 @@ endrequire;
 mapping get_fixed_size()
 //! Fills in width and height with the appropriate size of the cell.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     gint width,height;
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     gtk_cell_renderer_get_fixed_size(GTK_CELL_RENDERER(THIS->obj),
 			&width,&height);
     ref_push_string(_STR("width")); push_int(width);

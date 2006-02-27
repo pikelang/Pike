@@ -14,8 +14,8 @@ void create(string|GTK2.TreeModel|mapping(string:mixed)|void model,
 	    ?int text_column)
 //! Create a new ComboBoxEntry, either empty or with a model.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     GtkWidget *gcb;
     if (Pike_sp[-args].type==PIKE_T_STRING) {
@@ -33,13 +33,13 @@ void create(string|GTK2.TreeModel|mapping(string:mixed)|void model,
     } else {
       INIT_WITH_PROPS(GTK_TYPE_COMBO_BOX_ENTRY);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gcb;
     gcb=gtk_combo_box_entry_new();
     THIS->obj=G_OBJECT(gcb);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void set_text_column(int text_column);
@@ -53,8 +53,8 @@ int get_text_column();
 GTK2.Widget entry()
 //! Returns the GTK2.Entry widget
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkEntry *w;
     w=GTK_ENTRY(GTK_BIN(THIS->obj)->child);

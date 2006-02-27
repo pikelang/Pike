@@ -51,8 +51,8 @@ void create(float|mapping(string:mixed)|void value_or_props,
 //! All values are optional, they default to 0.0.
 //! For most widgets the unit is pixels.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     GtkObject *ga;
     if (Pike_sp[-args].type==PIKE_T_FLOAT) {
@@ -65,13 +65,13 @@ void create(float|mapping(string:mixed)|void value_or_props,
     } else {
       INIT_WITH_PROPS(GTK_TYPE_ADJUSTMENT);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkObject *ga;
     ga=gtk_adjustment_new(0.0,0.0,0.0,0.0,0.0,0.0);
     THIS->obj=G_OBJECT(ga);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 float get_value();

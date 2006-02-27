@@ -8,8 +8,8 @@ inherit GTK2.Scrollbar;
 void create(GTK2.Adjustment|mapping(string:mixed)|void pos_or_props)
 //! Used to create a new vscrollbar widget.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     if (Pike_sp[-args].type==PIKE_T_OBJECT) {
       struct object *o1;
@@ -20,11 +20,11 @@ void create(GTK2.Adjustment|mapping(string:mixed)|void pos_or_props)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_VSCROLLBAR);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gv;
     gv=gtk_vscrollbar_new(NULL);
     THIS->obj=G_OBJECT(gv);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }

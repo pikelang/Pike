@@ -38,25 +38,25 @@ inherit G.Object;
 void create()
 //! Get the default GTK2.Settings object
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   THIS->obj=G_OBJECT(gtk_settings_get_default());
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 /*
 mixed get_property(string property)
 //! Get a property.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     char *prop;
     char *s;
     get_all_args("get_property",args,"%s",&prop);
     s=g_strdup(prop);
-    my_pop_n_elems(args);
-    pgtk__low_get_property(G_OBJECT(THIS->obj),s);
+    pgtk2_pop_n_elems(args);
+    pgtk2__low_get_property(G_OBJECT(THIS->obj),s);
   }
 }
 */

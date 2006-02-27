@@ -9,18 +9,18 @@ void destroy()
   if (THIS->obj)
     gtk_icon_info_free((GtkIconInfo *)THIS->obj);
   THIS->obj=NULL;
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(0);
 }
 
 GTK2.IconInfo copy()
 //! Make a copy.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkIconInfo *gi=gtk_icon_info_copy((GtkIconInfo *)THIS->obj);
-    push_gobjectclass(gi,pgtk_icon_info_program);
+    push_gobjectclass(gi,pgtk2_icon_info_program);
   }
 }
 
@@ -31,8 +31,8 @@ int get_base_size()
 //! attached to a larger icon.  These icons will be given the same base size
 //! as the larger icons to which they are attached.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(gtk_icon_info_get_base_size((GtkIconInfo *)THIS->obj));
 }
 
@@ -41,8 +41,8 @@ string get_filename()
 //! was passed to GTK2.IconTheme->lookup_icon(), there may be no filename if a
 //! builtin icon is returned; in this case, you should use get_builtin_pixbuf().
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     const char *s=gtk_icon_info_get_filename((GtkIconInfo *)THIS->obj);
     if (s)
@@ -57,8 +57,8 @@ GDK2.Pixbuf get_builtin_pixbuf()
 //! built-in icon images, you must pass the GTK2.ICON_LOOKUP_USE_BUILTIN to
 //! GTK2.IconTheme->lookup_icon().
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GdkPixbuf *pixbuf=gtk_icon_info_get_builtin_pixbuf((GtkIconInfo *)THIS->obj);
     if (pixbuf)
@@ -77,8 +77,8 @@ GDK2.Pixbuf load_icon()
 //! considers sufficiently close to the requested size or for which the source
 //! image would have to be scaled up too far. (This maintains sharpness.)
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GdkPixbuf *pixbuf=gtk_icon_info_load_icon((GtkIconInfo *)THIS->obj,NULL);
     push_gobject(pixbuf);

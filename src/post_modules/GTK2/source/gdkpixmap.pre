@@ -16,7 +16,7 @@ inherit GDK2.Drawable;
 #include <gdk/gdkx.h>
 #endif
 
-GdkImage *pgtk_pixmap_setup(struct object *o, int *free)
+GdkImage *pgtk2_pixmap_setup(struct object *o, int *free)
 {
   if (get_gdkobject(o,image))
     return get_gdkobject(o,image);
@@ -26,7 +26,7 @@ GdkImage *pgtk_pixmap_setup(struct object *o, int *free)
   }
 }
 
-void pgtk__pixmap_draw(GdkImage *i)
+void pgtk2__pixmap_draw(GdkImage *i)
 {
   GdkGC *gc;
   if (THIS->extra_data)
@@ -46,12 +46,12 @@ void create(int|object image)
   int f=0;
   struct object *o;
   GdkPixmap *gp;
-  pgtk_verify_setup();
-  pgtk_verify_not_inited();
+  pgtk2_verify_setup();
+  pgtk2_verify_not_inited();
 
   if (Pike_sp[-args].type==PIKE_T_OBJECT) {
     get_all_args("create",args,"%o",&o);
-    i=pgtk_pixmap_setup(o,&f);
+    i=pgtk2_pixmap_setup(o,&f);
 
     gp=gdk_pixmap_new(0,i->width,i->height,i->depth);
     THIS->obj=G_OBJECT(gp);
@@ -60,7 +60,7 @@ void create(int|object image)
 	g_object_unref(i);
       Pike_error("Failed to create pixmap.\n");
     }
-    pgtk__pixmap_draw(i);
+    pgtk2__pixmap_draw(i);
     if (f)
       g_object_unref(i);
   } else if (args && Pike_sp[-1].type==PIKE_T_INT) {
@@ -69,8 +69,8 @@ void create(int|object image)
     if (!THIS->obj)
       Pike_error("Failed to find remote pixmap\n");
   }
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 void set(GDK2.Image|Image.Image image)
@@ -84,7 +84,7 @@ void set(GDK2.Image|Image.Image image)
   int f=0;
   GdkImage *i;
   get_all_args("set", args, "%o", &o );
-  pgtk__pixmap_draw(i=pgtk_pixmap_setup(o,&f));
+  pgtk2__pixmap_draw(i=pgtk2_pixmap_setup(o,&f));
   if (f)
     g_object_unref(i);
 
@@ -101,7 +101,7 @@ void destroy()
   if (THIS->extra_data)
     g_object_unref(THIS->extra_data);
   THIS->extra_data=0;
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(0);
 }
 

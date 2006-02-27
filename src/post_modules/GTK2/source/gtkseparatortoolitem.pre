@@ -10,17 +10,17 @@ inherit GTK2.ToolItem;
 void create(?mapping(string:mixed) props)
 //! Create a new GTK2.SeparatorToolItem.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     INIT_WITH_PROPS(GTK_TYPE_SEPARATOR_TOOL_ITEM);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkToolItem *gs;
     gs=gtk_separator_tool_item_new();
     THIS->obj=G_OBJECT(gs);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void set_draw(int draw);

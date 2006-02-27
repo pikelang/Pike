@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgtk.h,v 1.13 2006/01/14 00:43:09 nilsson Exp $
+|| $Id: pgtk.h,v 1.14 2006/02/27 12:23:15 mast Exp $
 */
 
 /* Sort of unnessesary, and decreases code-size with 140Kb */
@@ -98,80 +98,86 @@ struct my_pixel {
   unsigned char padding;
 };
 
-#include "pgtk2_symbol_remap.h"
-
 /* Prototypes.h is generated in the build directory. */
 #include "prototypes.h"
 
-extern struct pike_string * pstr_vector[];
-extern const char __pgtk_string_data[];
-extern int pigtk_is_setup;
-struct program *pgtk_type_to_program(GObject *widget);
-void my_pop_n_elems(int n);
-void my_ref_push_object(struct object *o);
-void pgtk_return_this(int n);
-void push_atom(GdkAtom a);
+extern struct pike_string * pgtk2_pstr_vector[];
+extern const char __pgtk2_string_data[];
+struct program *pgtk2_type_to_program(GObject *widget);
+void pgtk2_pop_n_elems(int n);
+#define my_pop_n_elems pgtk2_pop_n_elems
+void pgtk2_ref_push_object(struct object *o);
+#define my_ref_push_object pgtk2_ref_push_object
+void pgtk2_return_this(int n);
+void pgtk2_push_atom(GdkAtom a);
+#define push_atom pgtk2_push_atom
 
-void pgtk_verify_setup();
-void pgtk_verify_gnome_setup();
-void pgtk_verify_obj_inited();
-void pgtk_verify_obj_not_inited();
-void pgtk_verify_mixin_inited();
-void pgtk_verify_mixin_not_inited();
+void pgtk2_verify_setup();
+void pgtk2_verify_gnome_setup();
+void pgtk2_verify_obj_inited();
+void pgtk2_verify_obj_not_inited();
+void pgtk2_verify_mixin_inited();
+void pgtk2_verify_mixin_not_inited();
 
-void push_Xpseudo32bitstring(void *f, int nelems);
+void pgtk2_push_Xpseudo32bitstring(void *f, int nelems);
+#define push_Xpseudo32bitstring pgtk2_push_Xpseudo32bitstring
 
-int get_color_from_pikecolor(struct object *o, INT_TYPE *r, INT_TYPE *g, INT_TYPE *b);
+int pgtk2_get_color_from_pikecolor(struct object *o, INT_TYPE *r, INT_TYPE *g, INT_TYPE *b);
+#define get_color_from_pikecolor pgtk2_get_color_from_pikecolor
 
-int pgtk_signal_func_wrapper(struct signal_data *d, ...);
+int pgtk2_signal_func_wrapper(struct signal_data *d, ...);
 
-void pgtk_free_signal_data(struct signal_data *s, GClosure *gcl);
-void pgtk_free_object(struct object *o);
+void pgtk2_free_signal_data(struct signal_data *s, GClosure *gcl);
+void pgtk2_free_object(struct object *o);
 
-void push_gdk_event(GdkEvent *e);
+void pgtk2_push_gdk_event(GdkEvent *e);
+#define push_gdk_event pgtk2_push_gdk_event
 
-int pgtk_buttonfuncwrapper(GObject *obj, struct signal_data *d,  void *foo);
+int pgtk2_buttonfuncwrapper(GObject *obj, struct signal_data *d,  void *foo);
 /*
 int signal_func_wrapper(GtkObject *obj, struct signal_data *d,
                         int nparams, GValue *params);
 */
 
-#define pgtk__init_this_object() pgtk__init_object(Pike_fp->current_object)
-void pgtk__init_object(struct object *o);
+#define pgtk2__init_this_object() pgtk2__init_object(Pike_fp->current_object)
+void pgtk2__init_object(struct object *o);
 
-void *get_pgdkobject(struct object *from, struct program *type);
-#define get_gdkobject(X,Y) (void *)get_pgdkobject(X,pgdk_##Y##_program)
+void *get_pgdk2object(struct object *from, struct program *type);
+#define get_gdkobject(X,Y) (void *)get_pgdk2object(X,pgdk2_##Y##_program)
 
 
-GObject *get_pgobject(struct object *from, struct program *type);
+GObject *get_pg2object(struct object *from, struct program *type);
 /*
-#define get_pgtkobject(X,Y) get_pgobject(X,Y)
+#define get_pgtkobject(X,Y) get_pg2object(X,Y)
 */
 
-#define get_gobject(from) get_pgobject(from,pg_object_program)
+#define get_gobject(from) get_pg2object(from,pg2_object_program)
 /*
-#define get_gtkobject(from) get_pgobject(from,pg_object_program)
+#define get_gtkobject(from) get_pg2object(from,pg2_object_program)
 */
 
-void push_gobjectclass(void *obj, struct program *def);
+void pgtk2_push_gobjectclass(void *obj, struct program *def);
+#define push_gobjectclass pgtk2_push_gobjectclass
 /*
-#define push_gtkobjectclass(X,Y) push_gobjectclass(X,Y)
+#define push_gtkobjectclass(X,Y) pgtk2_push_gobjectclass(X,Y)
 */
-#define push_gobject(o) push_gobjectclass(o,pgtk_type_to_program((void *)o))
+#define push_gobject(o) pgtk2_push_gobjectclass(o,pgtk2_type_to_program((void *)o))
 /*
-#define push_gtkobject(o) push_gobjectclass(o,pgtk_type_to_program((void*)o))
+#define push_gtkobject(o) pgtk2_push_gobjectclass(o,pgtk2_type_to_program((void*)o))
 */
 
-void pgtk_clear_obj_struct(struct object *o);
-void pgtk_setup_mixin(struct object *o, struct program *p);
-void pgtk_default__sprintf(int n, int a, int l);
+void pgtk2_clear_obj_struct(struct object *o);
+void pgtk2_setup_mixin(struct object *o, struct program *p);
+void pgtk2_default__sprintf(int n, int a, int l);
 
-void push_pgdkobject(void *obj, struct program *def);
-#define push_gdkobject(X,Y) push_pgdkobject(X,pgdk_##Y##_program)
+void push_pgdk2object(void *obj, struct program *def);
+#define push_gdkobject(X,Y) push_pgdk2object(X,pgdk2_##Y##_program)
 
 
-GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GdkImage *i);
-struct object *pikeimage_from_gdkimage(GdkImage *img);
+GdkImage *pgtk2_gdkimage_from_pikeimage(struct object *img, int fast, GdkImage *i);
+struct object *pgtk2_pikeimage_from_gdkimage(GdkImage *img);
+#define gdkimage_from_pikeimage pgtk2_gdkimage_from_pikeimage
+#define pikeimage_from_gdkimage pgtk2_pikeimage_from_gdkimage
 
 #ifdef THIS
 #undef THIS
@@ -195,41 +201,42 @@ struct object *pikeimage_from_gdkimage(GdkImage *img);
 
 #define MIXIN_THIS ((struct object_wrapper *)MIXIN_STORAGE)
 
-#define pgtk_verify_MIXIN_inited pgtk_verify_mixin_inited
-#define pgtk_verify_MIXIN_not_inited pgtk_verify_mixin_not_inited
-#define pgtk_verify_OBJ_inited pgtk_verify_obj_inited
-#define pgtk_verify_OBJ_not_inited pgtk_verify_obj_not_inited
+#define pgtk2_verify_MIXIN_inited pgtk2_verify_mixin_inited
+#define pgtk2_verify_MIXIN_not_inited pgtk2_verify_mixin_not_inited
+#define pgtk2_verify_OBJ_inited pgtk2_verify_obj_inited
+#define pgtk2_verify_OBJ_not_inited pgtk2_verify_obj_not_inited
 
 /* Default when CLASS_TYPE is not defined */
-#define pgtk_verify_CLASS_TYPE_inited pgtk_verify_OBJ_inited
-#define pgtk_verify_CLASS_TYPE_not_inited pgtk_verify_OBJ_not_inited
+#define pgtk2_verify_CLASS_TYPE_inited pgtk2_verify_OBJ_inited
+#define pgtk2_verify_CLASS_TYPE_not_inited pgtk2_verify_OBJ_not_inited
 
-#define pgtk_verify_inited_for(X) PIKE_CONCAT3(pgtk_verify_,X,_inited)
-#define pgtk_verify_not_inited_for(X) PIKE_CONCAT3(pgtk_verify_,X,_not_inited)
-#define pgtk_verify_inited pgtk_verify_inited_for(CLASS_TYPE)
-#define pgtk_verify_not_inited pgtk_verify_not_inited_for(CLASS_TYPE)
+#define pgtk2_verify_inited_for(X) PIKE_CONCAT3(pgtk2_verify_,X,_inited)
+#define pgtk2_verify_not_inited_for(X) PIKE_CONCAT3(pgtk2_verify_,X,_not_inited)
+#define pgtk2_verify_inited pgtk2_verify_inited_for(CLASS_TYPE)
+#define pgtk2_verify_not_inited pgtk2_verify_not_inited_for(CLASS_TYPE)
 
-#define RETURN_THIS()  pgtk_return_this(args)
+#define RETURN_THIS()  pgtk2_return_this(args)
 
-struct my_pixel pgtk_pixel_from_xpixel(unsigned int pix, GdkImage *i);
+struct my_pixel pgtk2_pixel_from_xpixel(unsigned int pix, GdkImage *i);
 typedef void *Gdk_Atom;
-GdkAtom get_gdkatom(struct object *o);
-void pgtk_get_mapping_arg(struct mapping *map,
-                          char *name, int type, int madd,
-                          void *dest, long *mask, int len);
+GdkAtom pgtk2_get_gdkatom(struct object *o);
+#define get_gdkatom pgtk2_get_gdkatom
+void pgtk2_get_mapping_arg(struct mapping *map,
+			   char *name, int type, int madd,
+			   void *dest, long *mask, int len);
 
-void pgtk_index_stack(char *with);
-void pgtk_get_image_module();
+void pgtk2_index_stack(char *with);
+void pgtk2_get_image_module();
 
-void pgtk_encode_truecolor_masks(struct image *i,
-                                 int bitspp,
-                                 int pad,
-                                 int byteorder,
-                                 unsigned int red_mask,
-                                 unsigned int green_mask,
-                                 unsigned int blue_mask,
-                                 unsigned char *buffer,
-                                 int debuglen);
+void pgtk2_encode_truecolor_masks(struct image *i,
+				  int bitspp,
+				  int pad,
+				  int byteorder,
+				  unsigned int red_mask,
+				  unsigned int green_mask,
+				  unsigned int blue_mask,
+				  unsigned char *buffer,
+				  int debuglen);
 
 
 #if defined(PGTK_DEBUG) && defined(HAVE_GETHRTIME)
@@ -244,13 +251,13 @@ void pgtk_encode_truecolor_masks(struct image *i,
 # define DEBUG_PF(X)
 #endif
 
-void pgtk_push_gchar(const gchar *s);
-gchar *pgtk_get_str(struct svalue *sv);
-void pgtk_free_str(gchar *s);
+void pgtk2_push_gchar(const gchar *s);
+gchar *pgtk2_get_str(struct svalue *sv);
+void pgtk2_free_str(gchar *s);
 # define PGTK_ISSTR(X) ((X)->type==PIKE_T_STRING)
-# define PGTK_GETSTR(X)  pgtk_get_str(X)
-# define PGTK_FREESTR(X) pgtk_free_str(X)
-# define PGTK_PUSH_GCHAR(X) pgtk_push_gchar(X)
+# define PGTK_GETSTR(X)  pgtk2_get_str(X)
+# define PGTK_FREESTR(X) pgtk2_free_str(X)
+# define PGTK_PUSH_GCHAR(X) pgtk2_push_gchar(X)
 /*
 #else
 # define PGTK_ISSTR( X ) (((X)->type==PIKE_T_STRING)&&((X)->u.string->size_shift==0))
@@ -264,40 +271,41 @@ void pgtk_free_str(gchar *s);
 #define CGSTR0(X) (const gchar*)STR0(X)
 
 /* Somewhat more complex than one could expect. Consider bignums. */
-LONGEST pgtk_get_int(struct svalue *s);
-int pgtk_is_int(struct svalue *s);
+LONGEST pgtk2_get_int(struct svalue *s);
+int pgtk2_is_int(struct svalue *s);
 
-# define PGTK_ISINT(X)    (((X)->type==PIKE_T_INT) || pgtk_is_int(X))
-# define PGTK_GETINT(X)   pgtk_get_int(X)
+# define PGTK_ISINT(X)    (((X)->type==PIKE_T_INT) || pgtk2_is_int(X))
+# define PGTK_GETINT(X)   pgtk2_get_int(X)
 # define PGTK_PUSH_INT(X) push_int64((LONGEST)(X))
 
 /* Can convert from int to float, and, if bignum is present, bignum to
  * float.
  */
-double pgtk_get_float(struct svalue *s);
-int pgtk_is_float(struct svalue *s);
-#define PGTK_ISFLT(X) pgtk_is_float(X)
-#define PGTK_GETFLT(X) pgtk_get_float(X)
-int pgtk_last_event_time();
+double pgtk2_get_float(struct svalue *s);
+int pgtk2_is_float(struct svalue *s);
+#define PGTK_ISFLT(X) pgtk2_is_float(X)
+#define PGTK_GETFLT(X) pgtk2_get_float(X)
+int pgtk2_last_event_time();
 
-#define PSTR (char*)__pgtk_string_data
+#define PSTR (char*)__pgtk2_string_data
 #define PGTK_CHECK_TYPE(ob,t) (g_type_is_a(G_TYPE_FROM_INSTANCE(ob),(t)))
 
 #define setprop(x,y) g_object_set(THIS->obj,x,y,NULL)
 #define getprop(x,y) g_object_get(THIS->obj,x,y,NULL)
 
-void pgtk_set_property(GObject *g, char *prop, struct svalue *sv);
-void pgtk__low_get_property(GObject *g, char *prop);
-void pgtk_get_property(GObject *g, char *prop);
-void pgtk_destroy_store_data(gpointer data);
-void pgtk_set_gvalue(GValue *gv, GType gt, struct svalue *sv);
-int pgtk_tree_sortable_callback(GtkTreeModel *model, GtkTreeIter *a,
-				GtkTreeIter *b, struct signal_data *d);
-GObject *pgtk_create_new_obj_with_properties(GType type, struct mapping *m);
+void pgtk2_set_property(GObject *g, char *prop, struct svalue *sv);
+void pgtk2__low_get_property(GObject *g, char *prop);
+void pgtk2_get_property(GObject *g, char *prop);
+void pgtk2_destroy_store_data(gpointer data);
+void pgtk2_set_gvalue(GValue *gv, GType gt, struct svalue *sv);
+int pgtk2_tree_sortable_callback(GtkTreeModel *model, GtkTreeIter *a,
+				 GtkTreeIter *b, struct signal_data *d);
+GObject *pgtk2_create_new_obj_with_properties(GType type, struct mapping *m);
 
 #define INIT_WITH_PROPS(X) do {	\
 	struct mapping *m;	\
 	get_all_args("create",args,"%m",&m);	\
-	THIS->obj=pgtk_create_new_obj_with_properties(X,m);	\
+	THIS->obj=pgtk2_create_new_obj_with_properties(X,m);	\
       } while(0)
-void push_gvalue_r(GValue *param, GType t);
+void pgtk2_push_gvalue_r(GValue *param, GType t);
+#define push_gvalue_r pgtk2_push_gvalue_r

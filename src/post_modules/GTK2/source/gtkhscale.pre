@@ -21,8 +21,8 @@ void create(GTK2.Adjustment|float|mapping(string:mixed) settings_or_min_props,
 //! Either pass an W(Adjustment), or three floats representing min, max, and
 //! step values.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args==1) {
     if (Pike_sp[-args].type==PIKE_T_OBJECT) {
       struct object *o1;
@@ -40,6 +40,6 @@ void create(GTK2.Adjustment|float|mapping(string:mixed) settings_or_min_props,
     gh=gtk_hscale_new_with_range(min,max,step);
     THIS->obj=G_OBJECT(gh);
   }
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }

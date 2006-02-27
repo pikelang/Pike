@@ -42,8 +42,8 @@ inherit G.Object;
 void create(int|mapping(string:mixed) mode_or_props)
 //! Create a new group.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (Pike_sp[-args].type==PIKE_T_INT) {
     INT_TYPE mode;
     GtkSizeGroup *gs;
@@ -53,8 +53,8 @@ void create(int|mapping(string:mixed) mode_or_props)
   } else {
     INIT_WITH_PROPS(GTK_TYPE_SIZE_GROUP);
   }
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 void set_mode(int mode);

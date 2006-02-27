@@ -21,8 +21,8 @@ member int position;
 void create(int position, ?int anti_alias)
 //! Create a new Gnome2.DruidPageEdge, with optional anti-aliasing.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   {
     INT_TYPE pos,aa=0;
     GtkWidget *gpe;
@@ -35,14 +35,14 @@ void create(int position, ?int anti_alias)
 
     THIS->obj=G_OBJECT(gpe);
   }
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 void set_bg_color(GDK2.Color color)
 //! This will set the background color.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GdkColor *color;
     struct object *o1;
@@ -57,7 +57,7 @@ void set_bg_color(GDK2.Color color)
 void set_textbox_color(GDK2.Color color)
 //! Sets the color of the background in the main text area of the page.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GdkColor *color;
     struct object *o1;
@@ -72,7 +72,7 @@ void set_textbox_color(GDK2.Color color)
 void set_logo_bg_color(GDK2.Color color)
 //! Sets the color behind the druid page's logo.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GdkColor *color;
     struct object *o1;
@@ -87,7 +87,7 @@ void set_logo_bg_color(GDK2.Color color)
 void set_title_color(GDK2.Color color)
 //! Sets the color of the title text.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GdkColor *color;
     struct object *o1;
@@ -102,7 +102,7 @@ void set_title_color(GDK2.Color color)
 void set_text_color(GDK2.Color color)
 //! Sets the color of the text in the body of the page.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GdkColor *color;
     struct object *o1;
@@ -124,7 +124,7 @@ void set_logo(?GDK2.Pixbuf logo)
 //! Sets a GDK2.Pixbuf as the logo in the top right corner.  If omitted, then no 
 //! logo will be displayed.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   if (args) {
     struct object *o1;
     get_all_args("set_logo",args,"%o",&o1);
@@ -140,7 +140,7 @@ void set_watermark(?GDK2.Pixbuf watermark)
 //! Sets a GDK2.Pixbuf as the watermark on the left strip on the druid.  If
 //! watermark is omitted, it is reset to the normal color.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   if (args) {
     struct object *o1;
     get_all_args("set_watermark",args,"%o",&o1);
@@ -155,7 +155,7 @@ void set_top_watermark(?GDK2.Pixbuf watermark)
 //! Sets a GDK2.Pixbuf as the watermark on top of the top strip on the druid.
 //! If watermark is omitted, it is reset to the normal color.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   if (args) {
     struct object *o1;
     get_all_args("set_top_watermark",args,"%o",&o1);

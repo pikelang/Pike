@@ -21,20 +21,20 @@ void create(int|void fast_mode, Image.Image|void image)
 //! </p><p>
 //! If the second argument is specified, it is the actual image data.</p>
 {
-  pgtk_verify_setup();
-  pgtk_verify_not_inited();
+  pgtk2_verify_setup();
+  pgtk2_verify_not_inited();
   THIS->extra_int=GDK_IMAGE_NORMAL;
   if (args && Pike_sp[-args].u.integer)
     THIS->extra_int=GDK_IMAGE_FASTEST;
   if (args==2) {
     stack_swap();
     pop_stack();
-    pgdk_image_set(1);
+    pgdk2_image_set(1);
   }
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
 /* Do not add one extra ref for the internal gdk object..*/
 /*  add_ref(Pike_fp->current_object); */
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void destroy()
@@ -44,7 +44,7 @@ void destroy()
   if (THIS->obj)
     g_object_unref(G_OBJECT(THIS->obj));
   THIS->obj=0;
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(0);
 }
 %{
@@ -63,7 +63,7 @@ string get_pnm()
   char header[100];
   int x,y,len;
 
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   sprintf(header,HEADER,i->width,i->height);
   len=strlen(header)+i->width*i->height*3;
   res=begin_shared_string(len);
@@ -74,7 +74,7 @@ string get_pnm()
   for (y=0; y<i->height; y++)
     for(x=0; x<i->width; x++) {
       unsigned int pi=gdk_image_get_pixel(i,x,y);
-      struct my_pixel pix=pgtk_pixel_from_xpixel(pi,i);
+      struct my_pixel pix=pgtk2_pixel_from_xpixel(pi,i);
       /*      fprintf(stderr, "%d,%d\n", x, y); */
       (*p++)=pix.r;
       (*p++)=pix.g;
@@ -97,8 +97,8 @@ void grab(GTK2.Widget widget, int xoffset, int yoffset, int width, int height)
 
   get_all_args("grab",args,"%o%i%i%i%i",&o,&x,&y,&w,&h);
 
-  if (get_pgobject(o,pgtk_widget_program))
-    win=GTK_WIDGET(get_pgobject(o,pgtk_widget_program))->window;
+  if (get_pg2object(o,pgtk2_widget_program))
+    win=GTK_WIDGET(get_pg2object(o,pgtk2_widget_program))->window;
 
   if (!win)
     Pike_error("This is not a window, or this widget doesn't have a window\n");
@@ -147,7 +147,7 @@ int get_pixel(int x, int y)
   get_all_args("get_pixel",args,"%i%i",&x,&y);
   if (!THIS->obj)
     Pike_error("No image.\n");
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(gdk_image_get_pixel(GDK_IMAGE(THIS->obj),x,y));
 }
 

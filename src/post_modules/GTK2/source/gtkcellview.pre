@@ -12,8 +12,8 @@ inherit GTK2.CellLayout;
 void create(string|GDK2.Pixbuf|mapping(string:mixed)|void text, ?int markup)
 //! Create a new W(CellView) widget.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args==1) {
     GtkWidget *gcv;
     if (Pike_sp[-args].type==PIKE_T_OBJECT) {
@@ -50,8 +50,8 @@ void create(string|GDK2.Pixbuf|mapping(string:mixed)|void text, ?int markup)
     gcv=gtk_cell_view_new();
     THIS->obj=G_OBJECT(gcv);
   }
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 void set_model(GTK2.TreeModel model);
@@ -64,7 +64,7 @@ void set_displayed_row(?GTK2.TreePath path)
 //! this is not normally a desired result, but may be a needed intermediate
 //! state if say, the mode becomes temporarily empty.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   if (args) {
     struct object *o1;
     get_all_args("set_displayed_row",args,"%o",&o1);
@@ -80,11 +80,11 @@ GTK2.TreePath get_displayed_row()
 //! Returns a W(TreePath) referring to the currently displayed row.  If no
 //! row is currently displayed, 0 is returned.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkTreePath *path=gtk_cell_view_get_displayed_row(GTK_CELL_VIEW(THIS->obj));
-    push_gobjectclass(path,pgtk_tree_path_program);
+    push_gobjectclass(path,pgtk2_tree_path_program);
   }
 }
 
@@ -92,14 +92,14 @@ mapping(string:int) get_size_of_row(GTK2.TreePath path)
 //! Returns width and height of the size needed to display the model row
 //! pointed to by path.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     GtkRequisition req;
     get_all_args("get_size_of_row",args,"%o",&o1);
     gtk_cell_view_get_size_of_row(GTK_CELL_VIEW(THIS->obj),
 			(GtkTreePath *)get_gobject(o1),&req);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     ref_push_string(_STR("width")); push_int(req.width);
     ref_push_string(_STR("height")); push_int(req.height);
     f_aggregate_mapping(4);
@@ -109,7 +109,7 @@ mapping(string:int) get_size_of_row(GTK2.TreePath path)
 void set_background_color(GDK2.Color color)
 //! Sets the background color.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     get_all_args("set_background_color",args,"%o",&o1);

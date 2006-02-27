@@ -50,8 +50,8 @@ signal unselect_all;
 void create(GTK2.TreeModel|mapping(string:mixed)|void model_or_props)
 //! Create a new W(TreeView), with or without a default model.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     if (Pike_sp[-args].type==PIKE_T_OBJECT) {
       struct object *o1;
@@ -68,13 +68,13 @@ void create(GTK2.TreeModel|mapping(string:mixed)|void model_or_props)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_TREE_VIEW);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gt;
     gt=gtk_tree_view_new();
     THIS->obj=G_OBJECT(gt);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 GTK2.TreeModel get_model();
@@ -147,8 +147,8 @@ GTK2.TreeViewColumn get_column(int n);
 array(GTK2.TreeViewColumn) get_columns()
 //! Returns an array of all the W(TreeViewColumn)'s current in the view.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GList *gl,*g2;
     int i=0;
@@ -205,7 +205,7 @@ void scroll_to_cell(GTK2.TreePath path, GTK2.TreeViewColumn column,
 //! the model.  If the model changes before the view is realized, the centered
 //! path will be modifed to reflect this change.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     FLOAT_TYPE row_align=0,col_align=0;
@@ -233,7 +233,7 @@ void set_cursor(GTK2.TreePath path, ?GTK2.TreeViewColumn focus_column,
   struct object *o1,*o2=NULL;
   INT_TYPE ed=0;
 
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
 
   get_all_args("set_cursor",args,"%o.%o%i",&o1,&o2,&ed);
   gtk_tree_view_set_cursor(GTK_TREE_VIEW(THIS->obj),
@@ -256,7 +256,7 @@ void set_cursor_on_cell(GTK2.TreePath path, ?GTK2.TreeViewColumn focus_column,
 //! keyboard focus to the widget.  Please note that editing can only happen
 //! when the widget is realized.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2=NULL,*o3=NULL;
     INT_TYPE ed=0;
@@ -276,13 +276,13 @@ mapping(string:object) get_cursor()
 //! "focus_column" will be 0.
 //! Returns ([ "path": GTK2.TreePath, "column": GTK2.TreeViewColumn ]);
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkTreePath *path;
     GtkTreeViewColumn *col;
     gtk_tree_view_get_cursor(GTK_TREE_VIEW(THIS->obj),&path,&col);
-    ref_push_string(_STR("path")); push_gobjectclass(path,pgtk_tree_path_program);
+    ref_push_string(_STR("path")); push_gobjectclass(path,pgtk2_tree_path_program);
     ref_push_string(_STR("column")); push_gobject(col);
     f_aggregate_mapping(4);
   }
@@ -291,7 +291,7 @@ mapping(string:object) get_cursor()
 void row_activated(GTK2.TreePath path, GTK2.TreeViewColumn column)
 //! Activates the cell determined by path and column.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     get_all_args("row_activated",args,"%o%o",&o1,&o2);
@@ -313,7 +313,7 @@ void expand_to_path(GTK2.TreePath path)
 //! Expands the row at path.  This will also expand all parent rows of path as
 //! necessary.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     get_all_args("expand_to_path",args,"%o",&o1);
@@ -327,7 +327,7 @@ endrequire;
 int expand_row(GTK2.TreePath path, int open_all)
 //! Opens the row so its children are visible.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     INT_TYPE op;
@@ -341,7 +341,7 @@ int expand_row(GTK2.TreePath path, int open_all)
 int collapse_row(GTK2.TreePath path)
 //! Collapses a row (hides its child rows, if they exist).
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     get_all_args("collapse_row",args,"%o",&o1);
@@ -354,14 +354,14 @@ int collapse_row(GTK2.TreePath path)
 int row_expanded(GTK2.TreePath path)
 //! Returns true if the node pointed to by path is expanded.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     int res;
     get_all_args("row_expanded",args,"%o",&o1);
     res=gtk_tree_view_row_expanded(GTK_TREE_VIEW(THIS->obj),
 			(GtkTreePath *)get_gobject(o1));
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     PGTK_PUSH_INT(res);
   }
 }
@@ -388,7 +388,7 @@ mapping get_path_at_pos(int x, int y)
 //! background (i.e. the background_area passed to GTK2.CellRenderer->render()).
 //! This function is only meaningful if the widget is realized.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE x,y;
     GtkTreePath *path;
@@ -396,12 +396,12 @@ mapping get_path_at_pos(int x, int y)
     gint cell_x,cell_y;
     int res;
     get_all_args("get_path_at_pos",args,"%i%i",&x,&y);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     res=gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(THIS->obj),
 			x,y,&path,&col,&cell_x,&cell_y);
     ref_push_string(_STR("path"));
     if (res)
-      push_gobjectclass(path,pgtk_tree_path_program);
+      push_gobjectclass(path,pgtk2_tree_path_program);
     else
       push_int(0);
     ref_push_string(_STR("column"));
@@ -428,7 +428,7 @@ GDK2.Rectangle get_cell_area(?GTK2.TreePath path, ?GTK2.TreeViewColumn column)
 //! GTK2.CellRenderer->render().  This function is only valid if the view is
 //! realized.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2=NULL;
     GdkRectangle *rect;
@@ -440,7 +440,7 @@ GDK2.Rectangle get_cell_area(?GTK2.TreePath path, ?GTK2.TreeViewColumn column)
 			(GtkTreePath *)get_gobject(o1),
 			GTK_TREE_VIEW_COLUMN(get_gobject(o2)),
 			rect);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_gdkobject(rect,rectangle);
   }
 }
@@ -453,7 +453,7 @@ GDK2.Rectangle get_background_area(?GTK2.TreePath path,
 //! header buttons).  Contrast with get_cell_area(), which returns only the
 //! cell itself, excluding surrounding borders and the tree expander area.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2=NULL;
     GdkRectangle *rect;
@@ -465,7 +465,7 @@ GDK2.Rectangle get_background_area(?GTK2.TreePath path,
 			(GtkTreePath *)get_gobject(o1),
 			GTK_TREE_VIEW_COLUMN(get_gobject(o2)),
 			rect);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_gdkobject(rect,rectangle);
   }
 }
@@ -476,11 +476,11 @@ GDK2.Rectangle get_visible_rect()
 //! tree_to_widget_coords().  Tree coordinates start at 0,0 for row 0 of the
 //! tree, and cover the entire scrollable area of the tree.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GdkRectangle *gr;
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     gr=g_malloc(sizeof(GdkRectangle));
     if (gr==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_visible_rect",sizeof(GdkRectangle));
@@ -494,15 +494,15 @@ array get_visible_range()
 //! Returns the first and last visible path.  Note that there may be invisible
 //! paths in between.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkTreePath *s,*e;
     int res;
     res=gtk_tree_view_get_visible_range(GTK_TREE_VIEW(THIS->obj),&s,&e);
     if (res) {
-      push_gobjectclass(s,pgtk_tree_path_program);
-      push_gobjectclass(e,pgtk_tree_path_program);
+      push_gobjectclass(s,pgtk2_tree_path_program);
+      push_gobjectclass(e,pgtk2_tree_path_program);
       f_aggregate(2);
     } else
       ref_push_array(&empty_array);
@@ -519,12 +519,12 @@ mapping widget_to_tree_coords(int wx, int wy)
 //! converts widget coordinates to coordinates for the tree window (the full
 //! scrollable area of the tree).
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     gint tx,ty;
     INT_TYPE wx,wy;
     get_all_args("widget_to_tree_coords",args,"%i%i",&wx,&wy);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     gtk_tree_view_widget_to_tree_coords(GTK_TREE_VIEW(THIS->obj),wx,wy,&tx,&ty);
     ref_push_string(_STR("x")); push_int(tx);
     ref_push_string(_STR("y")); push_int(ty);
@@ -536,12 +536,12 @@ mapping tree_to_widget_coords(int tx, int ty)
 //! Converts tree coordinates (coordinates in full scrollable area of the tree)
 //! to widget coordinates.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     gint wx,wy;
     INT_TYPE tx,ty;
     get_all_args("tree_to_widget_coords",args,"%i%i",&tx,&ty);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     gtk_tree_view_tree_to_widget_coords(GTK_TREE_VIEW(THIS->obj),tx,ty,&wx,&wy);
     ref_push_string(_STR("x")); push_int(wx);
     ref_push_string(_STR("y")); push_int(wy);
@@ -634,8 +634,8 @@ array get_selected()
 //! Shortcut to GTK2.TreeView->get_selection() and 
 //! GTK2.TreeSelection()->get_selected().
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkTreeSelection *sel;
     GtkTreeIter *iter;
@@ -645,7 +645,7 @@ array get_selected()
       SIMPLE_OUT_OF_MEMORY_ERROR("get_selected",sizeof(GtkTreeIter));
     sel=gtk_tree_view_get_selection(GTK_TREE_VIEW(THIS->obj));
     if (gtk_tree_selection_get_selected(sel,&model,iter)) {
-      push_gobjectclass(iter,pgtk_tree_iter_program);
+      push_gobjectclass(iter,pgtk2_tree_iter_program);
       push_gobject(model);
       f_aggregate(2);
     } else

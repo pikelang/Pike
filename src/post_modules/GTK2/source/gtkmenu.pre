@@ -51,17 +51,17 @@ signal move_scroll;
 void create(?mapping(string:mixed) props)
 //! Creates a new GTK2.Menu widget.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     INIT_WITH_PROPS(GTK_TYPE_MENU);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gm;
     gm=gtk_menu_new();
     THIS->obj=G_OBJECT(gm);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 /*
@@ -89,7 +89,7 @@ void popup(int|void button_pressed_to_show_menu)
   if (args)
     get_all_args("popup",args,"%i",&button);
   gtk_menu_popup(GTK_MENU(THIS->obj),NULL,NULL,NULL,NULL,
-                 button,pgtk_last_event_time());
+                 button,pgtk2_last_event_time());
   RETURN_THIS();
 }
 
@@ -151,8 +151,8 @@ require gtk26;
 array get_for_attach_widget()
 //! Returns a list of the menus which are attached to this widget.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GList *gl,*g2;
     int i=0; 

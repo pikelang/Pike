@@ -12,19 +12,19 @@ void destroy()
   if (THIS->obj)
     g_object_unref(THIS->obj);
   THIS->obj=NULL;
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(0);
 }
 
 void set_property(string property, mixed value)
 //! Set a property on a G.Object (and any derived types) to value.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     char *prop;
     struct svalue *sv;
     get_all_args("set_property",args,"%s%*",&prop,&sv);
-    pgtk_set_property(G_OBJECT(THIS->obj),prop,sv);
+    pgtk2_set_property(G_OBJECT(THIS->obj),prop,sv);
   }
   RETURN_THIS();
 }
@@ -32,13 +32,13 @@ void set_property(string property, mixed value)
 mixed get_property(string property)
 //! Get a property.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     char *prop;
     get_all_args("get_property",args,"%s",&prop);
-    pgtk_get_property(G_OBJECT(THIS->obj),prop);
+    pgtk2_get_property(G_OBJECT(THIS->obj),prop);
     stack_swap();
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   }
 }
 
@@ -78,9 +78,9 @@ int signal_connect(string signal, function callback, mixed|void callback_arg)
   }
 
   id=g_signal_connect_data(G_OBJECT(THIS->obj),a,
-			   G_CALLBACK(pgtk_signal_func_wrapper),
+			   G_CALLBACK(pgtk2_signal_func_wrapper),
 			   b,
-			   (GClosureNotify)pgtk_free_signal_data,
+			   (GClosureNotify)pgtk2_free_signal_data,
 #ifdef HAVE_G_SIGNAL_CONNECT_DATA_WITH_SIX_ARGS
 			   G_CONNECT_SWAPPED
 #else /* !HAVE_G_SIGNAL_CONNECT_DATA_WITH_SIX_ARGS
@@ -88,7 +88,7 @@ int signal_connect(string signal, function callback, mixed|void callback_arg)
 			   1 /* swapped */, 0 /* after */
 #endif /* !HAVE_G_SIGNAL_CONNECT_DATA_WITH_SIX_ARGS */
 			   );
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(id);
 }
 
@@ -139,7 +139,7 @@ void accel_groups_activate(int accel_key, int accel_mods)
 //! Finds the first accelerator in an GTK.AccelGroup attached to this object
 //! that matches accel_key and accel_mods, and activates that accelerator.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE accel_key;
     INT_TYPE accel_mods;

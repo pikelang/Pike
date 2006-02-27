@@ -21,8 +21,8 @@ void create(int|Image.Image xsize_or_image, int|void ysize, string|void bitmap)
   INT_TYPE x, y;
   struct pike_string *d;
 
-  pgtk_verify_setup();
-  pgtk_verify_not_inited();
+  pgtk2_verify_setup();
+  pgtk2_verify_not_inited();
   if (args==3) {
     get_all_args("create",args,"%i%i%n",&x,&y,&d);
     if(d->len*8 < x*y)
@@ -46,8 +46,8 @@ void create(int|Image.Image xsize_or_image, int|void ysize, string|void bitmap)
   THIS->obj=(void *)gdk_bitmap_create_from_data(0,d->str,x,y);
   if (!THIS->obj)
     Pike_error("Failed to create bitmap\n");
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 void destroy()
@@ -56,7 +56,7 @@ void destroy()
   if (THIS->obj)
 /*    gdk_bitmap_unref( (void *)THIS->obj ); */
     g_object_unref((void *)THIS->obj);
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   THIS->obj=0;
 }
 

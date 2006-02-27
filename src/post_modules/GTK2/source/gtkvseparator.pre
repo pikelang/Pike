@@ -8,15 +8,15 @@ inherit GTK2.Separator;
 void create(?mapping(string:mixed) props)
 //! Used to create a new vseparator widget.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     INIT_WITH_PROPS(GTK_TYPE_VSEPARATOR);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gv;
     gv=gtk_vseparator_new();
     THIS->obj=G_OBJECT(gv);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }

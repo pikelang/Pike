@@ -13,7 +13,7 @@ GTK2.RcStyle copy();
 void set_name(string name)
 //! Set the name.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     gchar *name;
     GtkRcStyle *style;
@@ -27,7 +27,7 @@ void set_name(string name)
 void set_bg_pixmap_name(array(string) names)
 //! Set bg_pixmap_name.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     gchar *name;
     struct array *a;
@@ -45,7 +45,7 @@ void set_bg_pixmap_name(array(string) names)
 void set_color_flags(array(int) flags)
 //! Set color_flags.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct array *a;
     int i;
@@ -79,7 +79,7 @@ void set_colors(struct array *a, GdkColor *b) {
 void set_fg(array(GDK2.Color) colors)
 //! Set fg.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct array *a;
     GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
@@ -92,7 +92,7 @@ void set_fg(array(GDK2.Color) colors)
 void set_bg(array(GDK2.Color) colors)
 //! Set bg.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct array *a;
     GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
@@ -105,7 +105,7 @@ void set_bg(array(GDK2.Color) colors)
 void set_text(array(GDK2.Color) colors)
 //! Set text.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct array *a;
     GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
@@ -118,7 +118,7 @@ void set_text(array(GDK2.Color) colors)
 void set_base(array(GDK2.Color) colors)
 //! Set base.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct array *a;
     GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
@@ -131,7 +131,7 @@ void set_base(array(GDK2.Color) colors)
 void set_xthickness(int value)
 //! Set xthickness.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
     INT_TYPE val;
@@ -144,7 +144,7 @@ void set_xthickness(int value)
 void set_ythickness(int value)
 //! Set ythickness.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkRcStyle *style=GTK_RC_STYLE(THIS->obj);
     int val;

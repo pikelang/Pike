@@ -55,6 +55,12 @@ string indent( string what, int amnt )
   return q+((what/"\n")*("\n"+q));
 }
 
+string glue_c_name (string c_name)
+{
+  sscanf (c_name, "%s_%s", string prefix, c_name);
+  return "p" + prefix + "2_" + c_name;
+}
+
 string make_c_string( string from )
 {
   string line = "\"";
@@ -86,7 +92,7 @@ string make_c_string( string from )
 
 string get_string_data()
 {
-  return "const char __pgtk_string_data[] =\n"+
+  return "const char __pgtk2_string_data[] =\n"+
          make_c_string(gbl_data)+";\n\n\n";
 }
 
@@ -188,7 +194,8 @@ class Function(Class parent,
       if(parent->name == "_global")
 	return "";
       else
-	return sprintf("    set%s_callback(p%s);\n", name, c_name());
+	return sprintf("    set%s_callback(%s);\n",
+		       name, glue_c_name(c_name()));
     }
     string type = function_type( pike_type( ) );
 #ifdef EXTERMINATE_MIXED
@@ -204,10 +211,10 @@ class Function(Class parent,
     string res="";
     void low_do_emit( string name )
     {
-      res += sprintf("    quick_add_function(%s,%d,p%s,%s,%d,\n                          "
+      res += sprintf("    quick_add_function(%s,%d,%s,%s,%d,\n                          "
                      "%s,OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);\n",
                      S(name,0,1,27), sizeof(name),
-                     c_name(), S(type,0,2,27),
+		     glue_c_name(c_name()), S(type,0,2,27),
                      sizeof(type), (is_static()?"ID_STATIC":"0"));
     };
     array names = ({ name });
@@ -253,7 +260,7 @@ class Function(Class parent,
 
   string c_prototype()
   {
-    return "void p"+c_name()+"( "+
+    return "void "+glue_c_name(c_name())+"( "+
       (return_type? "INT32 args" :
        (parent->name == "_global"? "" : "struct object *object"))+
       " );\n";
@@ -270,7 +277,7 @@ class Function(Class parent,
     {
       res += what;
     };
-    emit( "void p"+c_name()+"( INT32 args )\n" );
+    emit( "void "+glue_c_name(c_name())+"( INT32 args )\n" );
     if( body  && body != ";" )
     {
       emit( COMPOSE( body ) );
@@ -312,13 +319,13 @@ class Function(Class parent,
       if( name == "create" )
       {
         if( has_prefix( parent->name, "Gnome2" ) )
-          emit("    pgtk_verify_gnome_setup();\n" );
+	  emit("    pgtk2_verify_gnome_setup();\n" );
         else
-          emit("    pgtk_verify_setup();\n" );
-        emit("  pgtk_verify_not_inited();\n");
+	  emit("    pgtk2_verify_setup();\n" );
+	emit("  pgtk2_verify_not_inited();\n");
         emit( "  THIS->obj =  (void *)");
       } else
-        emit("  pgtk_verify_inited();\n");
+	emit("  pgtk2_verify_inited();\n");
 
       if( return_type->name != "void" )
       {
@@ -370,7 +377,7 @@ class Function(Class parent,
         a += t->c_stack_consumed( a );
       }
       if( name == "create" )
-        emit( "  pgtk__init_object( Pike_fp->current_object );\n");
+	emit( "  pgtk2__init_object( Pike_fp->current_object );\n");
       emit("}\n\n");
     }
     return res;
@@ -422,14 +429,14 @@ class Member( string name, Type type, int set,
   {
     string tp = function_type( pike_type( ) );
     if( set || classes[ type->name ] )
-      return sprintf("    quick_add_function(%s,%d,p%s,\n                       %s,%d,"
+      return sprintf("    quick_add_function(%s,%d,%s,\n                       %s,%d,"
                      "0,OPT_EXTERNAL_DEPEND);\n",
                      S(name,0,1,27), sizeof(name),
-                     c_name(), S(tp,0,2,27), sizeof(tp));
-    return sprintf("    quick_add_function(%s,%d,p%s,\n                       %s,%d,"
+		     glue_c_name(c_name()), S(tp,0,2,27), sizeof(tp));
+    return sprintf("    quick_add_function(%s,%d,%s,\n                       %s,%d,"
                    "0,OPT_EXTERNAL_DEPEND);\n",
                    S("get_"+name,0,1,27), sizeof("get_"+name),
-                   c_name(), S(tp,0,2,27), sizeof(tp));
+		   glue_c_name(c_name()), S(tp,0,2,27), sizeof(tp));
   }
 
   string pike_name()
@@ -446,14 +453,14 @@ class Member( string name, Type type, int set,
 
   string c_prototype()
   {
-    return "void p"+c_name()+"( INT32 args );\n";
+    return "void "+glue_c_name(c_name())+"( INT32 args );\n";
   }
 
   string c_definition()
   {
     if( set )
       return
-	"void p"+c_name()+"( INT32 args )\n"
+	"void "+glue_c_name(c_name())+"( INT32 args )\n"
 	"{\n"
 	+ type->c_declare( 0 )+
 	"  if( args != 1)\n"
@@ -465,7 +472,7 @@ class Member( string name, Type type, int set,
     else {
       type->pushed = 1;
       return
-	"void p"+c_name()+#"( INT32 args )\n"
+	"void "+glue_c_name(c_name())+#"( INT32 args )\n"
 	"{\n"
 	"  if( args )\n"
 	"    Pike_error("+S("Too many arguments.\n",1,1,1)+");\n"
@@ -489,7 +496,7 @@ class Property( string name, Type type, int set,
   {
     string ret;
     if( set ) {
-      ret="void p"+c_name()+"( INT32 args )\n{\n"
+      ret="void "+glue_c_name(c_name())+"( INT32 args )\n{\n"
 	+type->c_declare(0);
       ret+="  if( args != 1 )\n"
 	"    Pike_error("+S("Wrong number of arguments.\n",1,1,16)+");\n"
@@ -509,7 +516,7 @@ class Property( string name, Type type, int set,
       return ret;
     } else {
       type->pushed = 1;
-      ret="void p"+c_name()+"( INT32 args )\n{\n"
+      ret="void "+glue_c_name(c_name())+"( INT32 args )\n{\n"
 	+type->c_declare(0);
       ret=ret + "  if ( args )\n"
 	"    Pike_error("+S("Too many arguments.\n",1,1,16)+");\n"
@@ -840,7 +847,7 @@ class Type
                "  assign_svalue_no_free(&cb%[0]d->cb,  Pike_sp+%[0]d-args);\n"
                "  assign_svalue_no_free(&cb%[0]d->args,Pike_sp+%[0]d+1-args);\n");
 
-       pass  = ("(void *)pgtk_buttonfuncwrapper, cb%[0]d");
+       pass  = ("(void *)pgtk2_buttonfuncwrapper, cb%[0]d");
        break;
 
      case "int":
@@ -1117,7 +1124,7 @@ class Class( string name, string file, int line )
                              "options",
                            }),
                            SPLIT(
-                             "{\n  pgtk_default__sprintf( args, "+
+			     "{\n  pgtk2_default__sprintf( args, "+
                              data_offset( name )+","+sizeof(name)+
                              " );\n}\n",
                              file),
@@ -1130,9 +1137,9 @@ class Class( string name, string file, int line )
   {
     if( !sizeof(inherits) && name != "_global" )
       init = SPLIT((mixin_for?
-		    "{\n  pgtk_setup_mixin( object, p"+
-		    mixin_for->c_name()+"_program);\n}\n"
-		    : "{\n  pgtk_clear_obj_struct( object );\n}\n"),
+		    "{\n  pgtk2_setup_mixin( object, "+
+		    glue_c_name(mixin_for->c_name())+"_program);\n}\n"
+		    : "{\n  pgtk2_clear_obj_struct( object );\n}\n"),
 		   file) + init;
 
     if( sizeof(init) )
@@ -1195,8 +1202,8 @@ class Class( string name, string file, int line )
   if( Pike_sp[ %[0]d - args ].type != PIKE_T_OBJECT )
     a%[0]d = NULL;
   else
-    a%[0]d = "+c_cast("get_pgobject(Pike_sp[%[0]d-args].u.object, p"+
-                      n+"_program)")+";\n";
+    a%[0]d = "+c_cast("get_pg2object(Pike_sp[%[0]d-args].u.object, "+
+		      glue_c_name(n)+"_program)")+";\n";
       }
       else
       {
@@ -1282,7 +1289,7 @@ class Class( string name, string file, int line )
      case "Gnome2":
      case "Pango":
      case "ATK":
-       _push="  push_gobjectclass( %s, p"+c_name()+"_program );";
+       _push="  push_gobjectclass( %s, "+glue_c_name(c_name())+"_program );";
        break;
     }
     return sprintf( _push, vv );
@@ -1554,7 +1561,7 @@ void make_strings(array tokens)
         if( zero_type(strings[str]) )
           strings[str] = sizeof(strings);
 
-        tokens[num] = Parser.Pike.Token("(pstr_vector["+strings[str]+"])");
+	tokens[num] = Parser.Pike.Token("(pgtk2_pstr_vector["+strings[str]+"])");
         tokens[num+1] = Parser.Pike.Token("");
       }
       else

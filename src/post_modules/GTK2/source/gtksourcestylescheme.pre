@@ -10,7 +10,7 @@ class GTK2.SourceStyleScheme;
 mapping(string:mixed) get_tag_style(string name)
 //! Gets the tag associated with the given name in this style.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkSourceTagStyle *gs;
     char *name;
@@ -18,7 +18,7 @@ mapping(string:mixed) get_tag_style(string name)
     get_all_args("get_tag_style",args,"%s",&name);
     gs=gtk_source_style_scheme_get_tag_style((GtkSourceStyleScheme *)THIS->obj,
 			name);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     if (gs) {
       ref_push_string(_STR("default")); push_int(gs->is_default);
       ref_push_string(_STR("mask")); push_int(gs->mask);
@@ -45,7 +45,7 @@ mapping(string:mixed) get_tag_style(string name)
 string get_name()
 //! Gets the name of this scheme.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   push_text(gtk_source_style_scheme_get_name((GtkSourceStyleScheme *)THIS->obj));
 }

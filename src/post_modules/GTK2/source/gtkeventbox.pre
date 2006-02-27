@@ -32,17 +32,17 @@ inherit GTK2.Bin;
 void create(?mapping(string:mixed) props)
 //! Create a new event box widget
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     INIT_WITH_PROPS(GTK_TYPE_EVENT_BOX);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *ge;
     ge=gtk_event_box_new();
     THIS->obj=G_OBJECT(ge);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 require gtk24;

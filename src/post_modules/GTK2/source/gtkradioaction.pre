@@ -14,8 +14,8 @@ void create(string|mapping(string:mixed) name_or_props, ?string label,
 	    ?string tooltip, ?string stock_id, ?int value)
 //! Creates a new GTK2.ToggleAction object.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args==4) {
     char *name,*stock_id;
     struct pike_string *label, *tooltip;
@@ -40,15 +40,15 @@ void create(string|mapping(string:mixed) name_or_props, ?string label,
   } else {
     INIT_WITH_PROPS(GTK_TYPE_RADIO_ACTION);
   }
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 array(GTK2.RadioAction) get_group()
 //! Returns the list representing the radio group.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GSList *gl,*g2;
     int i=0;
@@ -66,7 +66,7 @@ array(GTK2.RadioAction) get_group()
 void set_group(GTK2.RadioAction member)
 //! Sets the radio group.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GSList *gl;
     struct object *o1;

@@ -12,11 +12,11 @@ void create(int initial_size, int position_in_pixels);
 Pango.TabArray copy()
 //! Returns a copy.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     PangoTabArray *pta=pango_tab_array_copy((PangoTabArray *)THIS->obj);
-    my_pop_n_elems(args);
-    push_gobjectclass(pta,ppango_tab_array_program);
+    pgtk2_pop_n_elems(args);
+    push_gobjectclass(pta,ppango2_tab_array_program);
   }
 }
 
@@ -26,15 +26,15 @@ void destroy()
   if (THIS->obj)
     pango_tab_array_free((PangoTabArray *)THIS->obj);
   THIS->obj=0;
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(0);
 }
 
 int get_size()
 //! Gets the number of tab stops.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   push_int(pango_tab_array_get_size((PangoTabArray *)THIS->obj));
 }
 
@@ -42,7 +42,7 @@ void resize(int new_size)
 //! Resizes the array.  You must subsequently initialize any tabs that were
 //! added as a result of growing the array.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE new_size;
     get_all_args("resize",args,"%i",&new_size);
@@ -55,7 +55,7 @@ void set_tab(int tab_index, int alignment, int location)
 //! Sets the alignment and location of a tab stop.  Alignment must always be
 //! CONST(PANGO_TAB_).
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE tab_index,alignment,location;
     get_all_args("set_tab",args,"%i%i%i",&tab_index,&alignment,&location);
@@ -68,13 +68,13 @@ void set_tab(int tab_index, int alignment, int location)
 mapping get_tab(int tab_index)
 //! Gets the alignment and position of a tab stop.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE tab_index;
     gint location;
     PangoTabAlign alignment;
     get_all_args("get_tab",args,"%i",&tab_index);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     pango_tab_array_get_tab((PangoTabArray *)THIS->obj,tab_index,&alignment,
 			&location);
     ref_push_string(_STR("alignment")); push_int(alignment);
@@ -86,8 +86,8 @@ mapping get_tab(int tab_index)
 array get_tabs()
 //! Gets alignments and locations of all tab stops.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     int i;
     PangoTabAlign *alignments;
@@ -108,8 +108,8 @@ int get_positions_in_pixels()
 //! Returns true if the tab positions are in pixels, false if they are in
 //! Pango units.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   push_int(pango_tab_array_get_positions_in_pixels((PangoTabArray *)THIS->obj));
 }
 

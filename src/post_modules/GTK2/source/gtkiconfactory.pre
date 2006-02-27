@@ -28,13 +28,13 @@ void add(string stock_id, GTK2.IconSet icon_set)
 //! this factory for stock_id, it is unreferenced and replaced with the new
 //! icon_set.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     char *stock_id;
     struct object *o1;
     get_all_args("add",args,"%s%o",&stock_id,&o1);
     gtk_icon_factory_add(GTK_ICON_FACTORY(THIS->obj),stock_id,
-			(GtkIconSet *)get_pgobject(o1,pgtk_icon_set_program));
+			(GtkIconSet *)get_pg2object(o1,pgtk2_icon_set_program));
   }
   RETURN_THIS();
 }
@@ -53,14 +53,14 @@ GTK2.IconSet lookup(string stock_id)
 //! display the icon, instead of using this function directly, so that themes
 //! are taken into account.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     char *stock_id;
     GtkIconSet *gis;
     get_all_args("lookup",args,"%s",&stock_id);
     gis=gtk_icon_factory_lookup(GTK_ICON_FACTORY(THIS->obj),stock_id);
-    my_pop_n_elems(args);
-    push_gobjectclass(gis,pgtk_icon_set_program);
+    pgtk2_pop_n_elems(args);
+    push_gobjectclass(gis,pgtk2_icon_set_program);
   }
 }
 
@@ -70,14 +70,14 @@ GTK2.IconSet lookup_default(string stock_id)
 //! the widget that will display the icon, instead of using this function
 //! directly, so that themes are taken into account.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     char *stock_id;
     GtkIconSet *gis;
     get_all_args("lookup_default",args,"%s",&stock_id);
     gis=gtk_icon_factory_lookup_default(stock_id);
-    my_pop_n_elems(args);
-    push_gobjectclass(gis,pgtk_icon_set_program);
+    pgtk2_pop_n_elems(args);
+    push_gobjectclass(gis,pgtk2_icon_set_program);
   }
 }
 

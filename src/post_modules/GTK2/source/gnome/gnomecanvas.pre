@@ -14,15 +14,15 @@ FUNCTION(create, "function(int|void:void)");
 NAME_ARGS(anti_alias);
 {
   INT_TYPE anti=0;
-  pgtk_verify_gnome_setup();
-  pgtk_verify_not_inited();
+  pgtk2_verify_gnome_setup();
+  pgtk2_verify_not_inited();
   get_all_args( "create", args, ".%i", &anti );
   pop_n_elems( args );
   if( anti )
     THIS->obj = GTK_OBJECT(gnome_canvas_new_aa());
   else
     THIS->obj = GTK_OBJECT(gnome_canvas_new());
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
   push_int( 0 );
 }
 

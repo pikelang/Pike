@@ -27,8 +27,8 @@ void create(string|GDK2.Pixbuf|GDK2.PixbufAnimation|GDK2.Image|GDK2.Pixmap|mappi
 	    GDK2.Bitmap|int|void mask_or_size)
 //! Create a new W(Image) from either a file or a GDK2.Pixbuf.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args==1) {
     if (Pike_sp[-args].type==PIKE_T_MAPPING) {
       INIT_WITH_PROPS(GTK_TYPE_IMAGE);
@@ -95,15 +95,15 @@ void create(string|GDK2.Pixbuf|GDK2.PixbufAnimation|GDK2.Image|GDK2.Pixmap|mappi
     gi=gtk_image_new();
     THIS->obj=G_OBJECT(gi);
   }
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 mapping(string:object) get_image()
 //! Returns ([ "image":GDK2.Image img, "mask":GDK2.Bitmap mask ])
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GdkImage *v;
     GdkBitmap *m;
@@ -131,8 +131,8 @@ GDK2.Pixbuf get_pixbuf();
 mapping(string:object) get_pixmap()
 //! Gets the pixmap and mask.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GdkPixmap *v;
     GdkBitmap *m;
@@ -155,8 +155,8 @@ mapping(string:object) get_pixmap()
 mapping(string:mixed) get_stock()
 //! Gets the stock icon name and size.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     gchar *stock_id;
     GtkIconSize size;
@@ -172,8 +172,8 @@ mapping(string:mixed) get_stock()
 GDK2.PixbufAnimation get_animation()
 //! Gets the GDK2.PixbufAnimation being displayed.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GdkPixbufAnimation *gpa=gtk_image_get_animation(GTK_IMAGE(THIS->obj));
     push_gobject(gpa);
@@ -184,8 +184,8 @@ require gtk26;
 mapping(string:mixed) get_icon_name()
 //! Gets the icon name and size.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     const gchar *icon_name;
     GtkIconSize size;
@@ -214,7 +214,7 @@ void set_from_file(string filename);
 void set_from_icon_set(GTK2.IconSet icon_set, int size)
 //! Set this image from an icon set.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     INT_TYPE size;
@@ -232,7 +232,7 @@ void set_from_icon_set(GTK2.IconSet icon_set, int size)
 void set_from_image(GDK2.Image gdk_image, ?GDK2.Bitmap mask)
 //! Set this image from a GDK2.Image plus optional mask.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2=NULL;
     get_all_args("set_from_image",args,"%o.%o",&o1,&o2);
@@ -248,7 +248,7 @@ void set_from_pixbuf(GDK2.Pixbuf pixbuf);
 void set_from_pixmap(GDK2.Pixmap pixmap, ?GDK2.Bitmap mask)
 //! Set this image from a GDK2.Pixmap plus optional mask.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2=NULL;
     get_all_args("set_from_pixmap",args,"%o.%o",&o1,&o2);
@@ -267,7 +267,7 @@ void set_from_stock(string stock_id, int size);
 void set_from_animation(GDK2.PixbufAnimation anim)
 //! Causes the W(Image) to display the given animation.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     get_all_args("set_from_animation",args,"%o",&o1);

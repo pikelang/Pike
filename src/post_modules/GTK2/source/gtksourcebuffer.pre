@@ -31,8 +31,8 @@ void create(GTK2.SourceTagTable|GTK2.SourceLanguage|void table_or_lang)
 //! If it is a GTK2.SourceTagTable, it will use that table, otherwise it will
 //! be a new source buffer with a new tag table.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     struct object *o1;
     GtkSourceBuffer *gs;
@@ -50,8 +50,8 @@ void create(GTK2.SourceTagTable|GTK2.SourceLanguage|void table_or_lang)
     gs=gtk_source_buffer_new(NULL);
     THIS->obj=G_OBJECT(gs);
   }
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 int get_check_brackets();
@@ -78,7 +78,7 @@ void set_bracket_match_style(mapping(string:mixed) style)
 //! ]);
 //! </code>
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkSourceTagStyle *sts;
     struct mapping *m;
@@ -157,8 +157,8 @@ void set_max_undo_levels(int setting);
 GTK2.SourceLanguage get_language()
 //! Determines the GTK2.SourceLanguage used by the buffer.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkSourceLanguage *sl;
     sl=gtk_source_buffer_get_language(GTK_SOURCE_BUFFER(THIS->obj));
@@ -240,7 +240,7 @@ GTK2.SourceMarker create_marker(string name, string type, GTK2.TextIter where)
 //! Typical uses for a marker are bookmarks, breakpoints, current executing
 //! instruction indication in a source file, etc.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     char *name=NULL,*type;
     struct object *o1;
@@ -252,16 +252,16 @@ GTK2.SourceMarker create_marker(string name, string type, GTK2.TextIter where)
       get_all_args("create_marker",args,"%s%s%o",&name,&type,&o1);
     gm=gtk_source_buffer_create_marker(GTK_SOURCE_BUFFER(THIS->obj),
 			name,type,
-			(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
-    my_pop_n_elems(args);
-    push_gobjectclass(gm,pgtk_source_marker_program);
+			(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program));
+    pgtk2_pop_n_elems(args);
+    push_gobjectclass(gm,pgtk2_source_marker_program);
   }
 }
 
 void move_marker(GTK2.SourceMarker marker, GTK2.TextIter where)
 //! Moves marker to the new location.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     get_all_args("move_marker",args,"%o%o",&o1,&o2);
@@ -276,7 +276,7 @@ void delete_marker(GTK2.SourceMarker marker)
 //! Deletes marker from the source buffer.  The same conditions as for
 //! GTK2.TextMark apply here.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     get_all_args("delete_marker",args,"%o",&o1);
@@ -289,15 +289,15 @@ void delete_marker(GTK2.SourceMarker marker)
 GTK2.SourceMarker get_marker(string name)
 //! Looks up the GTK2.SourceMarker named name, or returns 0 if it doesn't exist.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     char *name;
     GtkSourceMarker *gm;
     get_all_args("get_marker",args,"%s",&name);
     gm=gtk_source_buffer_get_marker(GTK_SOURCE_BUFFER(THIS->obj),name);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     if (gm)
-      push_gobjectclass(gm,pgtk_source_marker_program);
+      push_gobjectclass(gm,pgtk2_source_marker_program);
     else
       push_int(0);
   }
@@ -309,7 +309,7 @@ array(GTK2.SourceMarker) get_markers_in_region(GTK2.TextIter begin,
 //! the region delimited by the GTK2.TextIters begin and end.  The iters may
 //! be in any order.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GSList *gsl,*gs2;
     struct object *o1,*o2;
@@ -318,9 +318,9 @@ array(GTK2.SourceMarker) get_markers_in_region(GTK2.TextIter begin,
     gsl=gs2=gtk_source_buffer_get_markers_in_region(GTK_SOURCE_BUFFER(THIS->obj),
 			(GtkTextIter *)get_gobject(o1),
 			(GtkTextIter *)get_gobject(o2));
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     while (gs2) {
-      push_gobjectclass(gs2->data,pgtk_source_marker_program);
+      push_gobjectclass(gs2->data,pgtk2_source_marker_program);
       g_object_ref(gs2->data);
       i++;
       gs2=g_slist_next(gs2);
@@ -333,13 +333,13 @@ array(GTK2.SourceMarker) get_markers_in_region(GTK2.TextIter begin,
 GTK2.SourceMarker get_first_marker()
 //! Returns the first (nearest to the top of the buffer) marker.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkSourceMarker *gm;
     gm=gtk_source_buffer_get_first_marker(GTK_SOURCE_BUFFER(THIS->obj));
     if (gm)
-      push_gobjectclass(gm,pgtk_source_marker_program);
+      push_gobjectclass(gm,pgtk2_source_marker_program);
     else
       push_int(0);
   }
@@ -348,13 +348,13 @@ GTK2.SourceMarker get_first_marker()
 GTK2.SourceMarker get_last_marker()
 //! Returns the last (nearest to the bottom of the buffer) marker.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkSourceMarker *gm;
     gm=gtk_source_buffer_get_last_marker(GTK_SOURCE_BUFFER(THIS->obj));
     if (gm)
-      push_gobjectclass(gm,pgtk_source_marker_program);
+      push_gobjectclass(gm,pgtk2_source_marker_program);
     else
       push_int(0);
   }
@@ -363,7 +363,7 @@ GTK2.SourceMarker get_last_marker()
 GTK2.TextIter get_iter_at_marker(GTK2.SourceMarker marker)
 //! Returns a GTK2.TextIter at marker.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     GtkTextIter *gti;
@@ -373,8 +373,8 @@ GTK2.TextIter get_iter_at_marker(GTK2.SourceMarker marker)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_marker",sizeof(GtkTextIter));
     gtk_source_buffer_get_iter_at_marker(GTK_SOURCE_BUFFER(THIS->obj),
 			gti,(GtkSourceMarker *)get_gobject(o1));
-    my_pop_n_elems(args);
-    push_gobjectclass(gti,pgtk_text_iter_program);
+    pgtk2_pop_n_elems(args);
+    push_gobjectclass(gti,pgtk2_text_iter_program);
   }
 }
 
@@ -384,16 +384,16 @@ GTK2.SourceMarker get_next_marker(GTK2.TextIter iter)
 //! one (from the internal linked list), even if starting the search exactly
 //! at its location.  You can get the others using next().
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkSourceMarker *gm;
     struct object *o1;
     get_all_args("get_next_marker",args,"%o",&o1);
     gm=gtk_source_buffer_get_next_marker(GTK_SOURCE_BUFFER(THIS->obj),
 			(GtkTextIter *)get_gobject(o1));
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     if (gm)
-      push_gobjectclass(gm,pgtk_source_marker_program);
+      push_gobjectclass(gm,pgtk2_source_marker_program);
     else
       push_int(0);
   }
@@ -405,16 +405,16 @@ GTK2.SourceMarker get_prev_marker(GTK2.TextIter iter)
 //! (from the internal linked list), even if starting the search exactly at
 //! its location.  You can get the others using prev().
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkSourceMarker *gm;
     struct object *o1;
     get_all_args("get_prev_marker",args,"%o",&o1);
     gm=gtk_source_buffer_get_prev_marker(GTK_SOURCE_BUFFER(THIS->obj),
 			(GtkTextIter *)get_gobject(o1));
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     if (gm)
-      push_gobjectclass(gm,pgtk_source_marker_program);
+      push_gobjectclass(gm,pgtk2_source_marker_program);
     else
       push_int(0);
   }

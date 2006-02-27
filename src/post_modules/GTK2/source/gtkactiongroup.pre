@@ -37,8 +37,8 @@ void create(string|mapping(string:mixed) name_or_props)
 //! Creates a new GTK2.ActionGroup object.  The name of the action group is
 //! used when associating keybindings with the actions.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (Pike_sp[-args].type==PIKE_T_STRING) {
     char *name;
     GtkActionGroup *gag;
@@ -48,8 +48,8 @@ void create(string|mapping(string:mixed) name_or_props)
   } else {
     INIT_WITH_PROPS(GTK_TYPE_ACTION_GROUP);
   }
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 string get_name();
@@ -75,8 +75,8 @@ GTK2.Action get_action(string name);
 array(GTK2.Action) list_actions()
 //! Lists the actions in the action group.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GList *gl,*g2;
     int i=0;
@@ -100,7 +100,7 @@ void add_action(GTK2.Action action, ?string accelerator)
 //! <p>
 //! Accel paths are set to &lt;Actions&gt;/group-name/action-name.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     char *accel=NULL;
@@ -115,7 +115,7 @@ void remove_action(GTK2.Action action);
 //! Removes an action object.
 
 %{
-int pgtk_action_callback(GtkAction *action, struct signal_data *d) {
+int pgtk2_action_callback(GtkAction *action, struct signal_data *d) {
   int res;
   push_gobject(action);
   push_svalue(&d->args);
@@ -125,7 +125,7 @@ int pgtk_action_callback(GtkAction *action, struct signal_data *d) {
   return res;
 }
 
-int pgtk_radio_action_callback(GtkAction *action, GtkRadioAction *current,
+int pgtk2_radio_action_callback(GtkAction *action, GtkRadioAction *current,
 				struct signal_data *d) {
   int res;
   push_gobject(action);
@@ -155,7 +155,7 @@ void add_actions(array(mapping(string:mixed)) entries)
 //!    "data": mixed
 //! ]);
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct array *a;
     struct mapping *m;
@@ -196,7 +196,7 @@ void add_actions(array(mapping(string:mixed)) entries)
       }
       sv=low_mapping_string_lookup(m,_STR("callback"));
       if (sv) {
-	gta.callback=G_CALLBACK(pgtk_action_callback);
+	gta.callback=G_CALLBACK(pgtk2_action_callback);
 	sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
 	if (sd==NULL)
 	  SIMPLE_OUT_OF_MEMORY_ERROR("add_actions",sizeof(struct signal_data));
@@ -225,7 +225,7 @@ void add_toggle_actions(array(mapping(string:mixed)) entries)
 //!    "is_active": int
 //! ]);
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct array *a;
     struct mapping *m;
@@ -259,7 +259,7 @@ void add_toggle_actions(array(mapping(string:mixed)) entries)
 	gta.accelerator=(const gchar *)STR0(sv->u.string);
       sv=low_mapping_string_lookup(m,_STR("callback"));
       if (sv) {
-	gta.callback=G_CALLBACK(pgtk_action_callback);
+	gta.callback=G_CALLBACK(pgtk2_action_callback);
 	sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
 	if (sd==NULL)
 	  SIMPLE_OUT_OF_MEMORY_ERROR("add_toggle_actions",sizeof(struct signal_data));
@@ -291,7 +291,7 @@ void add_radio_actions(array(mapping(string:mixed)) entries,
 //!    "value": int
 //! ]);
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct array *a;
     struct mapping *m;
@@ -343,7 +343,7 @@ void add_radio_actions(array(mapping(string:mixed)) entries,
     assign_svalue_no_free(&sd->cb,sv2);
     assign_svalue_no_free(&sd->args,sv3);
     gtk_action_group_add_radio_actions(GTK_ACTION_GROUP(THIS->obj),
-			gta,j,0,G_CALLBACK(pgtk_radio_action_callback),
+			gta,j,0,G_CALLBACK(pgtk2_radio_action_callback),
 			sd);
     g_free(gta);
   }

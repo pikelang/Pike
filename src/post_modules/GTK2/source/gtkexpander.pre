@@ -23,8 +23,8 @@ void create(string|mapping(string:mixed) label)
 //! for a mnemonic expander, otherwise omitting it
 //! creates a regular expander.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   {
     if (Pike_sp[-args].type==PIKE_T_STRING) {
       struct pike_string *label;
@@ -38,9 +38,9 @@ void create(string|mapping(string:mixed) label)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_EXPANDER);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void set_expanded(int expanded);

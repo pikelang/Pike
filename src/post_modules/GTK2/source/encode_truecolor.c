@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode_truecolor.c,v 1.2 2005/11/03 13:49:45 ldillon Exp $
+|| $Id: encode_truecolor.c,v 1.3 2006/02/27 12:23:16 mast Exp $
 */
 
 static unsigned char swap_bits[256] = 
@@ -372,7 +372,7 @@ static INLINE void examine_mask(unsigned int x, int *bits,int *shift)
    while (x&1) x>>=1,(*bits)++;
 }
 
-void pgtk_encode_grey(struct image *i, unsigned char *dest, int bpp, int bpl )
+void pgtk2_encode_grey(struct image *i, unsigned char *dest, int bpp, int bpl )
 {
   int x, y;
   rgb_group *s = i->img;
@@ -399,15 +399,15 @@ void pgtk_encode_grey(struct image *i, unsigned char *dest, int bpp, int bpl )
   }
 }
 
-void pgtk_encode_truecolor_masks(struct image *i,
-                                 int bitspp,
-                                 int pad,
-                                 int byteorder,
-                                 unsigned int red_mask,
-                                 unsigned int green_mask,
-                                 unsigned int blue_mask,
-                                 unsigned char *buffer, 
-                                 int debug_len)
+void pgtk2_encode_truecolor_masks(struct image *i,
+				  int bitspp,
+				  int pad,
+				  int byteorder,
+				  unsigned int red_mask,
+				  unsigned int green_mask,
+				  unsigned int blue_mask,
+				  unsigned char *buffer, 
+				  int debug_len)
 {
    int rbits,rshift,gbits,gshift,bbits,bshift;
 

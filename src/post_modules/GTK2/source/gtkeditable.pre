@@ -11,11 +11,11 @@ void select_region(int start, int end);
 array get_selection_bounds()
 //! Returns the selection bounds.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     int start,end;
     gtk_editable_get_selection_bounds(GTK_EDITABLE(THIS->obj),&start,&end);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     PGTK_PUSH_INT(start);
     PGTK_PUSH_INT(end);
     f_aggregate(2);
@@ -25,7 +25,7 @@ array get_selection_bounds()
 int insert_text(string text, int length, int pos)
 //! Inserts text at a given position.  Returns the position after the new text.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct pike_string *text;
     INT_TYPE len,pos;
@@ -37,7 +37,7 @@ int insert_text(string text, int length, int pos)
     gtk_editable_insert_text(GTK_EDITABLE(THIS->obj),
 			     CGSTR0(Pike_sp[-1].u.string),len,&pos2);
     pop_stack();
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     PGTK_PUSH_INT(pos2);
   }
 }
@@ -49,12 +49,12 @@ string get_chars(int start, int end);
 //! Retrieves a sequence of characters.
 /*
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     gchar *s;
     INT_TYPE start,end;
     get_all_args("get_chars",args,"%i%i",&start,&end);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     s=gtk_editable_get_chars(GTK_EDITABLE(THIS->obj),start,end);
     PGTK_PUSH_GCHAR(s);
     g_free(s);

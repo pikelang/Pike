@@ -206,8 +206,8 @@ endrequire;
 mapping size_request()
 //! Get the size allocated to a widget.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkRequisition r;
     gtk_widget_size_request(GTK_WIDGET(THIS->obj),&r);
@@ -221,8 +221,8 @@ mapping size_request()
 mapping size_allocate()
 //! Get the size and position of a widget.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkAllocation a;
     gtk_widget_size_allocate(GTK_WIDGET(THIS->obj),&a);
@@ -239,7 +239,7 @@ mapping size_allocate()
 mapping(string:int) allocation()
 //! Returns ([ "x": xoffset, "y":yoffset, "width":xsize, "height":ysize ])
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   ref_push_string(_STR("x")); push_int(GTK_WIDGET(THIS->obj)->allocation.x);
   ref_push_string(_STR("y")); push_int(GTK_WIDGET(THIS->obj)->allocation.y);
   ref_push_string(_STR("width")); push_int(GTK_WIDGET(THIS->obj)->allocation.width);
@@ -252,8 +252,8 @@ GTK2.Allocation allocation()
 //! Returns a GDK2.Allocation object, which can be cast to a mapping or an
 //! array.
 {
-  pgtk_verify_inited();
-  push_gobjectclass((GtkAllocation *)THIS->obj,pgtk_allocation_program);
+  pgtk2_verify_inited();
+  push_gobjectclass((GtkAllocation *)THIS->obj,pgtk2_allocation_program);
 }
  
 void add_accelerator(string accel_signal, GTK2.AccelGroup accel_group,
@@ -350,8 +350,8 @@ int get_events();
 mapping get_pointer()
 //! Obtains the location of the mouse pointer in widget coordinates.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     gint x,y;
     gtk_widget_get_pointer(GTK_WIDGET(THIS->obj),&x,&y);
@@ -390,7 +390,7 @@ void shape_combine_mask(GDK2.Bitmap shape_mask, int offset_x, int offset_y)
 //! Sets a shape for a widget's GDK2.Window.  This allows for transparent
 //! window, etc.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     INT_TYPE x,y;
@@ -405,12 +405,12 @@ string path()
 //! Obtains the full path.  The path is simply the name of a widget and all
 //! its parents in the container hierarchy, separated by periods.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     guint len;
     gchar *path;
     gtk_widget_path(GTK_WIDGET(THIS->obj),&len,&path,NULL);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_text(path);
   }
 }
@@ -418,12 +418,12 @@ string path()
 string class_path()
 //! Same as path() but uses type rather than name.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     guint len;
     gchar *path;
     gtk_widget_class_path(GTK_WIDGET(THIS->obj),&len,&path,NULL);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_text(path);
   }
 }
@@ -435,7 +435,7 @@ void modify_style(GTK2.RcStyle style);
 //! Modifies style values.
 /*
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     get_all_args("modify_style",args,"%o",&o1);
@@ -450,8 +450,8 @@ GTK2.RcStyle get_modifier_style();
 //! Returns the current modifier style.
 /*
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   push_gobject(gtk_widget_get_modifier_style(GTK_WIDGET(THIS->obj)));
 }
 */
@@ -461,7 +461,7 @@ void modify_fg(int state, ?GDK2.Color color)
 //! state is one of CONST(GTK_STATE_).
 //! color can be omitted to undo the effect of a previous call.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1=NULL;
     INT_TYPE state;
@@ -476,7 +476,7 @@ void modify_bg(int state, ?GDK2.Color color)
 //! Sets the background color of the widget in a particular state.
 //! See modify_fg().
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1=NULL;
     INT_TYPE state;
@@ -491,7 +491,7 @@ void modify_text(int state, ?GDK2.Color color)
 //! Sets the text color of the widget in a particular state.
 //! See modify_fg().
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1=NULL;
     INT_TYPE state;
@@ -506,7 +506,7 @@ void modify_base(int state, ?GDK2.Color color)
 //! Sets the base color of the widget in a particular state.
 //! See modify_fg().
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1=NULL;
     INT_TYPE state;
@@ -521,12 +521,12 @@ require pango;
 void modify_font(Pango.FontDescription font)
 //! Sets the font.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     get_all_args("modify_font",args,"%o",&o1);
     gtk_widget_modify_font(GTK_WIDGET(THIS->obj),
-                (PangoFontDescription *)get_pgobject(o1,ppango_font_description_program));
+                (PangoFontDescription *)get_pg2object(o1,ppango2_font_description_program));
   }
   RETURN_THIS();
 }
@@ -536,10 +536,10 @@ Pango.Context create_pango_context();
 //! description, and base direction for drawing text for this widget.
 /*
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     PangoContext *pc=gtk_widget_create_pango_context(GTK_WIDGET(THIS->obj));
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_gobject(pc);
   }
 }
@@ -554,13 +554,13 @@ Pango.Layout create_pango_layout(string text);
 //! description, and base direction for drawing text.
 /*
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     PangoLayout *pl;
     const gchar *str;
     get_all_args("create_pango_layout",args,"%s",&str);
     pl=gtk_widget_create_pango_layout(GTK_WIDGET(THIS->obj),str);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_gobject(pl);
   }
 }
@@ -577,14 +577,14 @@ GDK2.Pixbuf render_icon(string stock_id, int size, string detail)
 //! The pixels in the returned GDK2.Pixbuf are shared with the rest of the
 //! application and should not be modified.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     const gchar *stock_id,*detail;
     INT_TYPE size;
     GdkPixbuf *gp;
     get_all_args("render_icon",args,"%s%i%s",&stock_id,&size,&detail);
     gp=gtk_widget_render_icon(GTK_WIDGET(THIS->obj),stock_id,size,detail);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_gobject(gp);
   }
 }
@@ -614,14 +614,14 @@ int mnemonic_activate(int group_cycling);
 mixed style_get_property(string name)
 //! Gets the value of the style property called name.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     char *name;
     GValue v;
     get_all_args("style_get_property",args,"%s",&name);
     gtk_widget_style_get_property(GTK_WIDGET(THIS->obj),name,&v);
-/*  pgtk_push_gvalue(&v); */
-    my_pop_n_elems(args);
+/*  pgtk2_push_gvalue(&v); */
+    pgtk2_pop_n_elems(args);
     push_gvalue_r(&v,G_VALUE_TYPE(&v));
 /*    push_int(0); */
   }
@@ -645,13 +645,13 @@ require gtk22;
 GTK2.Clipboard get_clipboard(GDK2.Atom selection)
 //! Returns the clipboard object for the given selection.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     GtkClipboard *gcl;
     get_all_args("get",args,"%o",&o1);
     gcl=gtk_widget_get_clipboard(GTK_WIDGET(THIS->obj),get_gdkatom(o1));
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_gobject(gcl);
   }
 }
@@ -680,8 +680,8 @@ mapping get_size_request()
 //! the widget will be used instead.  To get the size a widget will actually
 //! use, call size_request() instead.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     gint w,h;
     gtk_widget_get_size_request(GTK_WIDGET(THIS->obj),&w,&h);
@@ -733,8 +733,8 @@ array(GTK2.Widget) list_mnemonic_lables()
 //! Returns a list of the widgets, normally labels, for which this widget is
 //! the target of a mnemonic.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GList *gl,*g2;
     int i=0;
@@ -763,7 +763,7 @@ endrequire;
 void set_flags(int flags)
 //! Set certain flags, such as GTK2.CAN_DEFAULT.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE flags;
     get_all_args("set_flags",args,"%i",&flags);
@@ -775,7 +775,7 @@ void set_flags(int flags)
 void unset_flags(int flags)
 //! Unset flags.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE flags;
     get_all_args("unset_flags",args,"%i",&flags);
@@ -787,104 +787,104 @@ void unset_flags(int flags)
 void STATE()
 //! Get the state.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_STATE(THIS->obj));
 }
 
 void SAVED_STATE()
 //! Get the saved state.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_SAVED_STATE(THIS->obj));
 }
 
 void FLAGS()
 //! Returns flags.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_FLAGS(THIS->obj));
 }
 
 void TOPLEVEL()
 //! Returns if this is a toplevel widget.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_TOPLEVEL(THIS->obj));
 }
 
 void NO_WINDOW()
 //! Returns if this widget doesn't have its own GDK2.Window.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_NO_WINDOW(THIS->obj));
 }
 
 void REALIZED()
 //! Returns if this widget is realized.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_REALIZED(THIS->obj));
 }
 
 void MAPPED()
 //! Returns if this widget is mapped.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_MAPPED(THIS->obj));
 }
 
 void VISIBLE()
 //! Returns if this widget is visible.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_VISIBLE(THIS->obj));
 }
 
 void DRAWABLE()
 //! Returns if this widget is mapped and visible.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_DRAWABLE(THIS->obj));
 }
 
 void SENSITIVE()
 //! Returns if this widget is sensitive.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_SENSITIVE(THIS->obj));
 }
 
 void PARENT_SENSITIVE()
 //! Returns if the GTK2.PARENT_SENSITIVE flag is set.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_PARENT_SENSITIVE(THIS->obj));
 }
 
 void IS_SENSITIVE()
 //! Returns if this widget is effectively sensitive.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_IS_SENSITIVE(THIS->obj));
 }
 
 void CAN_FOCUS()
 //! Returns if this widget is able to handle focus grabs.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_CAN_FOCUS(THIS->obj));
 }
 
@@ -892,16 +892,16 @@ void HAS_FOCUS()
 //! Returns if this widget has grabbed the focus and no other widget has done
 //! so more recently.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_HAS_FOCUS(THIS->obj));
 }
 
 void CAN_DEFAULT()
 //! Returns if this widget is allowed to receive the default action.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_CAN_DEFAULT(THIS->obj));
 }
 
@@ -909,16 +909,16 @@ void RECEIVES_DEFAULT()
 //! Returns if this widget when focused will receive the default action even
 //! if there is a different widget set as default.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_RECEIVES_DEFAULT(THIS->obj));
 }
 
 void HAS_DEFAULT()
 //! Returns if this widget is currently receiving the default action.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_HAS_DEFAULT(THIS->obj));
 }
 
@@ -926,40 +926,40 @@ void HAS_GRAB()
 //! Returns if this widget is in the grab_widgets stack, and will be the
 //! preferred one for receiving events other than ones of cosmetic value.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_HAS_GRAB(THIS->obj));
 }
 
 void RC_STYLE()
 //! Returns if the widget's style has been looked up through the rc mechanism.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_RC_STYLE(THIS->obj));
 }
 
 void COMPOSITE_CHILD()
 //! Returns if this widget is a composite child of its parent.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_COMPOSITE_CHILD(THIS->obj));
 }
 
 void APP_PAINTABLE()
 //! Returns if the GTK2.APP_PAINTABLE flag has been set on this widget.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_APP_PAINTABLE(THIS->obj));
 }
 
 void DOUBLE_BUFFERED()
 //! Returns if the GTK2.DOUBLE_BUFFERED flag has been set on this widget.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(GTK_WIDGET_DOUBLE_BUFFERED(THIS->obj));
 }
 

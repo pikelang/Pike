@@ -260,7 +260,7 @@ Gnome.AppProgressKey progress_timeout(string prompt,
                                  (void *)progressfunc,
                                  (void *)progresscancelfunc,d);
   pop_n_elems( args );
-  push_pgdkobject( k, pgnome_app_progress_key_program );
+  push_pgdk2object( k, pgnome2_app_progress_key_program );
 }
 
 Gnome.AppProgressKey progress_manual(string prompt)
@@ -270,7 +270,7 @@ Gnome.AppProgressKey progress_manual(string prompt)
   get_all_args( "progress_manual", args, "%s", &message );
   k = gnome_app_progress_manual(GNOME_APP(THIS->obj), message, 0, 0 );
   pop_n_elems( args );
-  push_pgdkobject( k, pgnome_app_progress_key_program );
+  push_pgdk2object( k, pgnome2_app_progress_key_program );
 }
 
 

@@ -55,7 +55,7 @@ array(GTK2.Widget) get_children()
 {
   GList *g,*g1;
   int n=0;
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   g=g1=gtk_container_get_children(GTK_CONTAINER(THIS->obj));
   while (g1) {
     push_gobject(g->data);
@@ -88,8 +88,8 @@ void resize_children();
 void child_set_property(GTK2.Widget child, string property, mixed value)
 //! Set child property.
 {
-  pgtk_verify_inited();
-  pg_object_set_property(args-1);
+  pgtk2_verify_inited();
+  pg2_object_set_property(args-1);
 }
 */
 
@@ -102,8 +102,8 @@ void set_border_width(int width);
 array get_focus_chain()
 //! Returns the focus chain.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GList *gl;
     gtk_container_get_focus_chain(GTK_CONTAINER(THIS->obj),&gl);
@@ -133,7 +133,7 @@ void set_focus_chain(array focusable_widgets)
 //! chain that isn't always packed.  The necessary checks are done when the
 //! focus chain is actually traversed.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GList *gl;
     struct array *a;

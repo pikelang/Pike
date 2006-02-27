@@ -21,8 +21,8 @@ signal remove_tag;
 void create(GTK2.TextTagTable|mapping(string:mixed)|void table_or_props)
 //! Creates a new text buffer.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     if (Pike_sp[-args].type==PIKE_T_OBJECT) {
       struct object *o1;
@@ -33,13 +33,13 @@ void create(GTK2.TextTagTable|mapping(string:mixed)|void table_or_props)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_TEXT_BUFFER);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkTextBuffer *gt;
     gt=gtk_text_buffer_new(NULL);
     THIS->obj=G_OBJECT(gt);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 int get_line_count();
@@ -59,14 +59,14 @@ void insert(GTK2.TextIter iter, string text, int len)
 //! iter is invalidated after insertion, but the default signal handler
 //! revalidates it to point to the end of the inserted text.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     const gchar *text;
     INT_TYPE len;
     get_all_args("insert",args,"%o%s%i",&o1,&text,&len);
     gtk_text_buffer_insert(GTK_TEXT_BUFFER(THIS->obj),
-	(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),text,len);
+	(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),text,len);
   }
   RETURN_THIS();
 }
@@ -86,7 +86,7 @@ int insert_interactive(GTK2.TextIter iter, string text, int len,
 //! tag affecting editability applied to it.  Typically the result of
 //! get_editable() is appropriate here.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     const gchar *text;
@@ -94,8 +94,8 @@ int insert_interactive(GTK2.TextIter iter, string text, int len,
     int res;
     get_all_args("insert_interactive",args,"%o%s%i%i",&o1,&text,&len,&defed);
     res=gtk_text_buffer_insert_interactive(GTK_TEXT_BUFFER(THIS->obj),
-	(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),text,len,defed);
-    my_pop_n_elems(args);
+	(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),text,len,defed);
+    pgtk2_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -113,14 +113,14 @@ void insert_range(GTK2.TextIter iter, GTK2.TextIter start, GTK2.TextIter end)
 //! Implemented via emissions of the insert-text and apply-tag signals, so
 //! expect those.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     get_all_args("insert_range",args,"%o%o%o",&o1,&o2,&o3);
     gtk_text_buffer_insert_range(GTK_TEXT_BUFFER(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
-		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program),
-		(GtkTextIter *)get_pgobject(o3,pgtk_text_iter_program));
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),
+		(GtkTextIter *)get_pg2object(o2,pgtk2_text_iter_program),
+		(GtkTextIter *)get_pg2object(o3,pgtk2_text_iter_program));
   }
   RETURN_THIS();
 }
@@ -131,17 +131,17 @@ int insert_range_interactive(GTK2.TextIter iter, GTK2.TextIter start,
 //! editable.  The default_editable parameter indicates whether the text is
 //! editable at iter if no tags enclosing iter affect editability.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     INT_TYPE defed;
     int res;
     get_all_args("insert_range_interactive",args,"%o%o%o%i",&o1,&o2,&o3,&defed);
     res=gtk_text_buffer_insert_range_interactive(GTK_TEXT_BUFFER(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
-		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program),
-		(GtkTextIter *)get_pgobject(o3,pgtk_text_iter_program),defed);
-    my_pop_n_elems(args);
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),
+		(GtkTextIter *)get_pg2object(o2,pgtk2_text_iter_program),
+		(GtkTextIter *)get_pg2object(o3,pgtk2_text_iter_program),defed);
+    pgtk2_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -151,7 +151,7 @@ void insert_with_tags(GTK2.TextIter iter, string text, int len, array tags)
 //! newly-inserted text.  Equivalent to calling insert(), then apply_tag() on
 //! the insert text; insert_with_tags() is just a convenience function.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     struct array *a;
@@ -162,7 +162,7 @@ void insert_with_tags(GTK2.TextIter iter, string text, int len, array tags)
     GtkTextIter *iter,start;
     GtkTextTag *tag;
     get_all_args("insert_with_tags",args,"%o%s%i%A",&o1,&text,&len,&a);
-    iter=(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program);
+    iter=(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program);
     start_offset=gtk_text_iter_get_offset(iter);
     gtk_text_buffer_insert(GTK_TEXT_BUFFER(THIS->obj),iter,text,len);
     gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(THIS->obj),&start,start_offset);
@@ -188,7 +188,7 @@ void insert_with_tags_by_name(GTK2.TextIter iter, string text, int len,
 //! Same as insert_with_tags(), but allows you to pass in tag names instead of
 //! tag objects.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     struct array *a;
@@ -201,7 +201,7 @@ void insert_with_tags_by_name(GTK2.TextIter iter, string text, int len,
     GtkTextTag *tag;
     GtkTextTagTable *table;
     get_all_args("insert_with_tags_by_name",args,"%o%s%i%A",&o1,&text,&len,&a);
-    iter=(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program);
+    iter=(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program);
     start_offset=gtk_text_iter_get_offset(iter);
     gtk_text_buffer_insert(GTK_TEXT_BUFFER(THIS->obj),iter,text,len);
     gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(THIS->obj),&start,start_offset);
@@ -233,13 +233,13 @@ void delete(GTK2.TextIter start, GTK2.TextIter end)
 //! and end will be re-initialized to point to the location where text was
 //! deleted.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     get_all_args("delete",args,"%o%o",&o1,&o2);
     gtk_text_buffer_delete(GTK_TEXT_BUFFER(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
-		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program));
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),
+		(GtkTextIter *)get_pg2object(o2,pgtk2_text_iter_program));
   }
   RETURN_THIS();
 }
@@ -251,16 +251,16 @@ int delete_interactive(GTK2.TextIter start, GTK2.TextIter end,
 //! point to the location of the last deleted range, or left untouched if no
 //! text was deleted.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     INT_TYPE defed;
     int res;
     get_all_args("delete_interactive",args,"%o%o%i",&o1,&o2,&defed);
     res=gtk_text_buffer_delete_interactive(GTK_TEXT_BUFFER(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
-		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program),defed);
-    my_pop_n_elems(args);
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),
+		(GtkTextIter *)get_pg2object(o2,pgtk2_text_iter_program),defed);
+    pgtk2_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -278,15 +278,15 @@ int backspace(GTK2.TextIter iter, int interactive, int default_editable)
 //! after calling this function;  however, iter will be re-initialized to
 //! point to the location where text was deleted.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     INT_TYPE inter,defed;
     int res;
     get_all_args("backspace",args,"%o%i%i",&o1,&inter,&defed);
     res=gtk_text_buffer_backspace(GTK_TEXT_BUFFER(THIS->obj),
-	(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),inter,defed);
-    my_pop_n_elems(args);
+	(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),inter,defed);
+    pgtk2_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -305,16 +305,16 @@ string get_text(GTK2.TextIter start, GTK2.TextIter end,
 //! string do not correspond to byte and character indexes into the buffer.
 //! Contrast with get_slice().
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     INT_TYPE inc;
     gchar *s;
     get_all_args("get_text",args,"%o%o%i",&o1,&o2,&inc);
     s=gtk_text_buffer_get_text(GTK_TEXT_BUFFER(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
-		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program),inc);
-    my_pop_n_elems(args);
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),
+		(GtkTextIter *)get_pg2object(o2,pgtk2_text_iter_program),inc);
+    pgtk2_pop_n_elems(args);
     PGTK_PUSH_GCHAR(s);
     g_free(s);
   }
@@ -331,16 +331,16 @@ string get_slice(GTK2.TextIter start, GTK2.TextIter end,
 //! 0xFFFC can occur in normal text as well, so it is not a reliable
 //! indicator that a pixbuf or widget is in the buffer.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     INT_TYPE inc;
     gchar *s;
     get_all_args("get_slice",args,"%o%o%i",&o1,&o2,&inc);
     s=gtk_text_buffer_get_slice(GTK_TEXT_BUFFER(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
-		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program),inc);
-    my_pop_n_elems(args);
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),
+		(GtkTextIter *)get_pg2object(o2,pgtk2_text_iter_program),inc);
+    pgtk2_pop_n_elems(args);
     PGTK_PUSH_GCHAR(s);
     g_free(s);
   }
@@ -355,12 +355,12 @@ void insert_pixbuf(GTK2.TextIter iter, GDK2.Pixbuf pixbuf)
 //! for pixbufs, but the "text" variants do not.  e.g. see get_slice()
 //! and get_text().
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     get_all_args("insert_pixbuf",args,"%o%o",&o1,&o2);
     gtk_text_buffer_insert_pixbuf(GTK_TEXT_BUFFER(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),
 		GDK_PIXBUF(get_gobject(o2)));
   }
   RETURN_THIS();
@@ -377,12 +377,12 @@ void insert_child_anchor(GTK2.TextIter iter, GTK2.TextChildAnchor anchor)
 //! alternative to this function.  The buffer will add a reference to the
 //! anchor, so you can unref it after insertion.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     get_all_args("insert_child_anchor",args,"%o%o",&o1,&o2);
     gtk_text_buffer_insert_child_anchor(GTK_TEXT_BUFFER(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),
 		GTK_TEXT_CHILD_ANCHOR(get_gobject(o2)));
   }
   RETURN_THIS();
@@ -394,14 +394,14 @@ GTK2.TextChildAnchor create_child_anchor(GTK2.TextIter iter)
 //! insert_child_anchor().  The new anchor is owned by the buffer; no
 //! reference count is returned.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     GtkTextChildAnchor *gtca;
     get_all_args("create_child_anchor",args,"%o",&o1);
     gtca=gtk_text_buffer_create_child_anchor(GTK_TEXT_BUFFER(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
-    my_pop_n_elems(args);
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program));
+    pgtk2_pop_n_elems(args);
     push_gobject(gtca);
   }
 }
@@ -419,7 +419,7 @@ GTK2.TextMark create_mark(GTK2.TextIter where,
 //! Emits the "mark-set" signal as notification of the mark's initial
 //! placement.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     INT_TYPE left;
@@ -427,8 +427,8 @@ GTK2.TextMark create_mark(GTK2.TextIter where,
     GtkTextMark *gtm;
     get_all_args("create_mark",args,"%o%i.%s",&o1,&left,&mark_name);
     gtm=gtk_text_buffer_create_mark(GTK_TEXT_BUFFER(THIS->obj),
-	mark_name,(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),left);
-    my_pop_n_elems(args);
+	mark_name,(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),left);
+    pgtk2_pop_n_elems(args);
     push_gobject(gtm);
   }
 }
@@ -437,13 +437,13 @@ void move_mark(GTK2.TextMark mark, GTK2.TextIter where)
 //! Moves mark to the new location where.  Emits the "mark-set" signal as
 //! notification of the move.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     get_all_args("move_mark",args,"%o%o",&o1,&o2);
     gtk_text_buffer_move_mark(GTK_TEXT_BUFFER(THIS->obj),
 		GTK_TEXT_MARK(get_gobject(o1)),
-		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program));
+		(GtkTextIter *)get_pg2object(o2,pgtk2_text_iter_program));
   }
   RETURN_THIS();
 }
@@ -451,13 +451,13 @@ void move_mark(GTK2.TextMark mark, GTK2.TextIter where)
 void move_mark_by_name(string name, GTK2.TextIter where)
 //! Moves the mark named name (which must exist) to location where.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     const gchar *name;
     get_all_args("move_mark_by_name",args,"%s%o",&name,&o1);
     gtk_text_buffer_move_mark_by_name(GTK_TEXT_BUFFER(THIS->obj),
-		name,(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+		name,(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program));
   }
   RETURN_THIS();
 }
@@ -500,12 +500,12 @@ void place_cursor(GTK2.TextIter where)
 //! temporarily-selected region will force stuff to be recalculated.  This
 //! function moves them as a unit, which can be optimized.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     get_all_args("place_cursor",args,"%o",&o1);
     gtk_text_buffer_place_cursor(GTK_TEXT_BUFFER(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program));
   }
   RETURN_THIS();
 }
@@ -519,13 +519,13 @@ void select_range(GTK2.TextIter ins, GTK2.TextIter bound)
 //! force stuff to be recalculated.  This function moves them as a unit,
 //! which can be optimized.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     get_all_args("select_range",args,"%o%o",&o1,&o2);
     gtk_text_buffer_select_range(GTK_TEXT_BUFFER(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
-		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program));
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),
+		(GtkTextIter *)get_pg2object(o2,pgtk2_text_iter_program));
   }
   RETURN_THIS();
 }
@@ -535,14 +535,14 @@ void apply_tag(GTK2.TextTag tag, GTK2.TextIter start, GTK2.TextIter end)
 //! Emits the "apply-tag" signal.  The default handler for the signal
 //! applies tag to the given range, start and end do not have to be in order.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     get_all_args("apply_tag",args,"%o%o%o",&o1,&o2,&o3);
     gtk_text_buffer_apply_tag(GTK_TEXT_BUFFER(THIS->obj),
 		GTK_TEXT_TAG(get_gobject(o1)),
-		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program),
-		(GtkTextIter *)get_pgobject(o3,pgtk_text_iter_program));
+		(GtkTextIter *)get_pg2object(o2,pgtk2_text_iter_program),
+		(GtkTextIter *)get_pg2object(o3,pgtk2_text_iter_program));
   }
   RETURN_THIS();
 }
@@ -552,14 +552,14 @@ void remove_tag(GTK2.TextTag tag, GTK2.TextIter start, GTK2.TextIter end)
 //! all occurrences of tag from the given range.  start and end do not have to
 //! be in order.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     get_all_args("remove_tag",args,"%o%o%o",&o1,&o2,&o3);
     gtk_text_buffer_remove_tag(GTK_TEXT_BUFFER(THIS->obj),
 		GTK_TEXT_TAG(get_gobject(o1)),
-		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program),
-		(GtkTextIter *)get_pgobject(o3,pgtk_text_iter_program));
+		(GtkTextIter *)get_pg2object(o2,pgtk2_text_iter_program),
+		(GtkTextIter *)get_pg2object(o3,pgtk2_text_iter_program));
   }
   RETURN_THIS();
 }
@@ -568,14 +568,14 @@ void apply_tag_by_name(string name, GTK2.TextIter start, GTK2.TextIter end)
 //! Calls GTK2.TextTagTable->lookup() on the buffers tag table to get a
 //! GTK2.TextTag, then calls apply_tag().
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     const gchar *name;
     get_all_args("apply_tag_by_name",args,"%s%o%o",&name,&o1,&o2);
     gtk_text_buffer_apply_tag_by_name(GTK_TEXT_BUFFER(THIS->obj),
-		name,(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
-		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program));
+		name,(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),
+		(GtkTextIter *)get_pg2object(o2,pgtk2_text_iter_program));
   }
   RETURN_THIS();
 }
@@ -583,14 +583,14 @@ void apply_tag_by_name(string name, GTK2.TextIter start, GTK2.TextIter end)
 void remove_tag_by_name(string name, GTK2.TextIter start, GTK2.TextIter end)
 //! Removes a tag.  See apply_tag_by_name().
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     const gchar *name;
     get_all_args("remove_tag_by_name",args,"%s%o%o",&name,&o1,&o2);
     gtk_text_buffer_remove_tag_by_name(GTK_TEXT_BUFFER(THIS->obj),
-		name,(GtkTextIter  *)get_pgobject(o1,pgtk_text_iter_program),
-		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program));
+		name,(GtkTextIter  *)get_pg2object(o1,pgtk2_text_iter_program),
+		(GtkTextIter *)get_pg2object(o2,pgtk2_text_iter_program));
   }
   RETURN_THIS();
 }
@@ -601,13 +601,13 @@ void remove_all_tags(GTK2.TextIter start, GTK2.TextIter end)
 //! you're currently writing.  That is, using this function is probably a
 //! bad idea if you have two or more unrelated code sections that add tags.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     get_all_args("remove_all_tags",args,"%o%o",&o1,&o2);
     gtk_text_buffer_remove_all_tags(GTK_TEXT_BUFFER(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),
-		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program));
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),
+		(GtkTextIter *)get_pg2object(o2,pgtk2_text_iter_program));
   }
   RETURN_THIS();
 }
@@ -617,7 +617,7 @@ GTK2.TextTag create_tag(string tag_name, mapping props)
 //! GTK2.TextTag->create() and then adding the tag to the tag table.  The
 //! returned tag is owned by the tag table.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct mapping *m;
     char *name;
@@ -630,11 +630,11 @@ GTK2.TextTag create_tag(string tag_name, mapping props)
     NEW_MAPPING_LOOP(m->data) {
       if (k->ind.type==PIKE_T_STRING) {
 	char *s=PGTK_GETSTR(&k->ind);
-	pgtk_set_property(G_OBJECT(tag),s,&k->val);
+	pgtk2_set_property(G_OBJECT(tag),s,&k->val);
 	PGTK_FREESTR(s);
       }
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_gobject(tag);
   }
 }
@@ -646,13 +646,13 @@ GTK2.TextTag create_tag(string tag_name, string prop_name, mixed value)
 //! W(TextTag)->create() and then adding the tag to the tag table.  The
 //! returned tag is owned by the tag table.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     const gchar *tag_name,*prop_name;
     struct svalue *sv;
     GtkTextTag *gtt;
     get_all_args("create_tag",args,"%s%s%*",&tag_name,&prop_name,&sv);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     switch (sv->type) {
       case PIKE_T_INT:
 	{
@@ -674,7 +674,7 @@ GTK2.TextTag create_tag(string tag_name, string prop_name, mixed value)
       case PIKE_T_FLOAT:
 	{
 	  FLOAT_TYPE x;
-	  x=pgtk_get_float(sv);
+	  x=pgtk2_get_float(sv);
 	  gtt=gtk_text_buffer_create_tag(GTK_TEXT_BUFFER(THIS->obj),
 			tag_name,prop_name,x,NULL);
 	}
@@ -707,18 +707,18 @@ GTK2.TextIter get_iter_at_line_offset(int line_number, int char_offset)
 //! Note characters, not bytes;  UTF-8 may encode one character as multiple
 //! bytes.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE line,ch;
     GtkTextIter *gti;
     get_all_args("get_iter_at_line_offset",args,"%i%i",&line,&ch);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     gti=g_malloc(sizeof(GtkTextIter));
     if (gti==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_line_offset",sizeof(GtkTextIter));
     gtk_text_buffer_get_iter_at_line_offset(GTK_TEXT_BUFFER(THIS->obj),
 		gti,line,ch);
-    push_gobjectclass(gti,pgtk_text_iter_program);
+    push_gobjectclass(gti,pgtk2_text_iter_program);
   }
 }
 
@@ -728,36 +728,36 @@ GTK2.TextIter get_iter_at_offset(int offset)
 //! in the buffer, returns the end iterator, the iterator one past the last
 //! valid character in the buffer.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE ch;
     GtkTextIter *gti;
     get_all_args("get_iter_at_offset",args,"%i",&ch);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     gti=g_malloc(sizeof(GtkTextIter));
     if (gti==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_offset",sizeof(GtkTextIter));
     gtk_text_buffer_get_iter_at_offset(GTK_TEXT_BUFFER(THIS->obj),
 		gti,ch);
-    push_gobjectclass(gti,pgtk_text_iter_program);
+    push_gobjectclass(gti,pgtk2_text_iter_program);
   }
 }
 
 GTK2.TextIter get_iter_at_line(int line)
 //! Returns a W(TextIter) to the start of the given line.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE line;
     GtkTextIter *gti;
     get_all_args("get_iter_at_line",args,"%i",&line);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     gti=g_malloc(sizeof(GtkTextIter));
     if (gti==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_line",sizeof(GtkTextIter));
     gtk_text_buffer_get_iter_at_line(GTK_TEXT_BUFFER(THIS->obj),
 		gti,line);
-    push_gobjectclass(gti,pgtk_text_iter_program);
+    push_gobjectclass(gti,pgtk2_text_iter_program);
   }
 }
 
@@ -767,25 +767,25 @@ GTK2.TextIter get_iter_at_line_index(int line, int byte_index)
 //! of the line.  Note bytes, not characters; UTF-8 may encode one character
 //! as multiple bytes.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE line,index;
     GtkTextIter *gti;
     get_all_args("get_iter_at_line_index",args,"%i%i",&line,&index);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     gti=g_malloc(sizeof(GtkTextIter));
     if (gti==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_line_index",sizeof(GtkTextIter));
     gtk_text_buffer_get_iter_at_line_index(GTK_TEXT_BUFFER(THIS->obj),
 		gti,line,index);
-    push_gobjectclass(gti,pgtk_text_iter_program);
+    push_gobjectclass(gti,pgtk2_text_iter_program);
   }
 }
 
 GTK2.TextIter get_iter_at_mark(GTK2.TextMark mark)
 //! Returns an iterator with the current position of mark.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkTextIter *gti;
     struct object *o1;
@@ -795,15 +795,15 @@ GTK2.TextIter get_iter_at_mark(GTK2.TextMark mark)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_mark",sizeof(GtkTextIter));
     gtk_text_buffer_get_iter_at_mark(GTK_TEXT_BUFFER(THIS->obj),
 		gti,GTK_TEXT_MARK(get_gobject(o1)));
-    my_pop_n_elems(args);
-    push_gobjectclass(gti,pgtk_text_iter_program);
+    pgtk2_pop_n_elems(args);
+    push_gobjectclass(gti,pgtk2_text_iter_program);
   }
 }
 
 GTK2.TextIter get_iter_at_child_anchor(GTK2.TextChildAnchor anchor)
 //! Returns the location of anchor.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkTextIter *gti;
     struct object *o1;
@@ -813,8 +813,8 @@ GTK2.TextIter get_iter_at_child_anchor(GTK2.TextChildAnchor anchor)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_child_anchor",sizeof(GtkTextIter));
     gtk_text_buffer_get_iter_at_child_anchor(GTK_TEXT_BUFFER(THIS->obj),
 		gti,GTK_TEXT_CHILD_ANCHOR(get_gobject(o1)));
-    my_pop_n_elems(args);
-    push_gobjectclass(gti,pgtk_text_iter_program);
+    pgtk2_pop_n_elems(args);
+    push_gobjectclass(gti,pgtk2_text_iter_program);
   }
 }
 
@@ -823,15 +823,15 @@ GTK2.TextIter get_start_iter()
 //! the same as using get_iter_at_offset() to get the iter at character
 //! offset 0.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkTextIter *gti;
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     gti=g_malloc(sizeof(GtkTextIter));
     if (gti==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_start_iter",sizeof(GtkTextIter));
     gtk_text_buffer_get_start_iter(GTK_TEXT_BUFFER(THIS->obj),gti);
-    push_gobjectclass(gti,pgtk_text_iter_program);
+    push_gobjectclass(gti,pgtk2_text_iter_program);
   }
 }
 
@@ -841,15 +841,15 @@ GTK2.TextIter get_end_iter()
 //! has a character value of 0.  The entire buffer lies in the range from
 //! the first position in the buffer to the end iterator.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkTextIter *gti;
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     gti=g_malloc(sizeof(GtkTextIter));
     if (gti==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_end_iter",sizeof(GtkTextIter));
     gtk_text_buffer_get_end_iter(GTK_TEXT_BUFFER(THIS->obj),gti);
-    push_gobjectclass(gti,pgtk_text_iter_program);
+    push_gobjectclass(gti,pgtk2_text_iter_program);
   }
 }
 
@@ -857,8 +857,8 @@ array(GTK2.TextIter) get_bounds()
 //! Retrieves the first and last iterators in the buffer, i.e. the entire
 //! buffer lies within the range [start,end).
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkTextIter *gti,*gt2;
     gti=g_malloc(sizeof(GtkTextIter));
@@ -868,8 +868,8 @@ array(GTK2.TextIter) get_bounds()
     if (gt2==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_bounds",sizeof(GtkTextIter));
     gtk_text_buffer_get_bounds(GTK_TEXT_BUFFER(THIS->obj),gti,gt2);
-    push_gobjectclass(gti,pgtk_text_iter_program);
-    push_gobjectclass(gt2,pgtk_text_iter_program);
+    push_gobjectclass(gti,pgtk2_text_iter_program);
+    push_gobjectclass(gt2,pgtk2_text_iter_program);
     f_aggregate(2);
   }
 }
@@ -897,14 +897,14 @@ void paste_clipboard(GTK2.Clipboard clipboard, ?int default_editable,
 //! Pastes the contents of a clipboard at the insertion point, or at
 //! override_location.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2=NULL;
     INT_TYPE defed=0;
     get_all_args("paste_clipboard",args,"%o.%i%o",&o1,&defed,&o2);
     gtk_text_buffer_paste_clipboard(GTK_TEXT_BUFFER(THIS->obj),
 		GTK_CLIPBOARD(get_gobject(o1)),
-		(GtkTextIter *)get_pgobject(o2,pgtk_text_iter_program),
+		(GtkTextIter *)get_pg2object(o2,pgtk2_text_iter_program),
 		defed);
   }
   RETURN_THIS();
@@ -925,14 +925,14 @@ array get_selection_bounds()
 //! Returns either a start and end W(TextIter) if some text is selected, or
 //! 2 0's.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkTextIter *start,*end;
     gtk_text_buffer_get_selection_bounds(GTK_TEXT_BUFFER(THIS->obj),
 		start,end);
-    my_pop_n_elems(args);
-    push_gobjectclass(start,pgtk_text_iter_program);
-    push_gobjectclass(end,pgtk_text_iter_program);
+    pgtk2_pop_n_elems(args);
+    push_gobjectclass(start,pgtk2_text_iter_program);
+    push_gobjectclass(end,pgtk2_text_iter_program);
     f_aggregate(2);
   }
 }

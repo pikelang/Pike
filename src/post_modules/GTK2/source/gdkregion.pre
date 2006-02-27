@@ -8,8 +8,8 @@ static void return_gdkregion( int n, void *r )
 {
   struct object *o;
   if( n )
-    my_pop_n_elems( n );
-  o = low_clone( pgdk_region_program );
+    pgtk2_pop_n_elems( n );
+  o = low_clone( pgdk2_region_program );
   call_c_initializers( o );
   ((struct object_wrapper *)o->storage)->obj = r;
   push_object( o );
@@ -21,17 +21,17 @@ void create()
 //!
 //! NOIMG
 {
-  pgtk_verify_setup();
-  pgtk_verify_not_inited();
+  pgtk2_verify_setup();
+  pgtk2_verify_not_inited();
   THIS->obj = (void *)gdk_region_new();
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
 }
 
 void destroy()
 //! Destructor.
 {
   gdk_region_destroy((GdkRegion *)THIS->obj);
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(0);
 }
 
@@ -44,12 +44,12 @@ int equal(GDK2.Region victim)
   get_all_args("equal",args,"%o",&o);
   r=get_gdkobject(o,region);
   if (!r) {
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_int(0);
     return;
   } else {
     int eq=gdk_region_equal((GdkRegion *)THIS->obj,r);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_int(eq);
   }
 }
@@ -59,7 +59,7 @@ int point_in(int x, int y)
 {
   INT_TYPE x, y;
   get_all_args( "point_in", args, "%i%i", &x, &y );
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int( gdk_region_point_in( (GdkRegion *)THIS->obj, x, y ) );
 }
 
@@ -73,7 +73,7 @@ int rect_in(GDK2.Rectangle r)
     Pike_error("Bad argument 1 to GDK2.rect_in( GDK2.Rectangle r )\n");
   } else {
     int b=gdk_region_rect_in((GdkRegion *)THIS->obj,r);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_int(b);
   }
 }

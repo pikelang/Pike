@@ -26,8 +26,8 @@ void create(?GTK2.SourceBuffer buffer)
 //! Create a new W(SourceView).  If a buffer isn't specified, an empty default
 //! buffer will be created.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     struct object *o1;
     GtkWidget *gs;
@@ -40,8 +40,8 @@ void create(?GTK2.SourceBuffer buffer)
     gs=gtk_source_view_new();
     THIS->obj=G_OBJECT(gs);
   }
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 void set_show_line_numbers(int setting);
@@ -91,7 +91,7 @@ int get_margin();
 void set_marker_pixbuf(string type, GDK2.Pixbuf pixbuf)
 //! Associates a given pixbuf with a given marker type.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     char *type;
     struct object *o1;
@@ -105,13 +105,13 @@ void set_marker_pixbuf(string type, GDK2.Pixbuf pixbuf)
 GDK2.Pixbuf get_marker_pixbuf(string type)
 //! Gets the pixbuf which is associated with the given type.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     char *type;
     GdkPixbuf *gp;
     get_all_args("get_marker_pixbuf",args,"%s",&type);
     gp=gtk_source_view_get_marker_pixbuf(GTK_SOURCE_VIEW(THIS->obj),type);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     if (gp)
       push_gobject(gp);
     else
@@ -131,11 +131,11 @@ int get_smart_home_end();
 GTK2.SourceStyleScheme get_default()
 //! Gets the default style scheme.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkSourceStyleScheme *gss;
     gss=gtk_source_style_scheme_get_default();
-    push_gobjectclass(gss,pgtk_source_style_scheme_program);
+    push_gobjectclass(gss,pgtk2_source_style_scheme_program);
   }
 }

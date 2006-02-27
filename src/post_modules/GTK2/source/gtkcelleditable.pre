@@ -9,7 +9,7 @@ void start_editing(?GDK2.Event event)
 //! It may be empty, in the instance that editing was initiated through
 //! programmatic means.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   if (args) {
     struct object *o1;
     get_all_args("start_editing",args,"%o",&o1);

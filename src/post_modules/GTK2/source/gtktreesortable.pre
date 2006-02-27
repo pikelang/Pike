@@ -9,13 +9,13 @@ void sort_column_changed();
 mapping(string:int) get_sort_column_id()
 //! Returns ([ "column": int, "order": int ])
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     int col;
     GtkSortType order;
     int res=gtk_tree_sortable_get_sort_column_id(
 			GTK_TREE_SORTABLE(THIS->obj),&col,&order);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     ref_push_string(_STR("column")); PGTK_PUSH_INT(col);
     ref_push_string(_STR("order")); PGTK_PUSH_INT(order);
     f_aggregate_mapping(4);
@@ -33,7 +33,7 @@ void set_sort_func(int column, function f, mixed user_data)
 //! sort column id of this sortable is the same as column, then the model will
 //! sort using this function.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct svalue *sv1,*sv2;
     INT_TYPE col;
@@ -46,8 +46,8 @@ void set_sort_func(int column, function f, mixed user_data)
     assign_svalue_no_free(&sd->args,sv2);
     gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE(THIS->obj),col,
-			(GtkTreeIterCompareFunc)pgtk_tree_sortable_callback,sd,
-			(GtkDestroyNotify)pgtk_free_signal_data);
+			(GtkTreeIterCompareFunc)pgtk2_tree_sortable_callback,sd,
+			(GtkDestroyNotify)pgtk2_free_signal_data);
   }
   RETURN_THIS();
 }
@@ -63,7 +63,7 @@ void set_default_sort_func(function f, mixed user_data)
 //! this case, when the current sort column id of this sortable is
 //! GTK2.TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, the model will be unsorted.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct svalue *sv1,*sv2;
     struct signal_data *sd;
@@ -75,8 +75,8 @@ void set_default_sort_func(function f, mixed user_data)
     assign_svalue_no_free(&sd->args,sv2);
     gtk_tree_sortable_set_default_sort_func(
 			GTK_TREE_SORTABLE(THIS->obj),
-			(GtkTreeIterCompareFunc)pgtk_tree_sortable_callback,sd,
-			(GtkDestroyNotify)pgtk_free_signal_data);
+			(GtkTreeIterCompareFunc)pgtk2_tree_sortable_callback,sd,
+			(GtkDestroyNotify)pgtk2_free_signal_data);
   }
   RETURN_THIS();
 }

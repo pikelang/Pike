@@ -35,11 +35,11 @@ signal shutdown_cancelled;
 void create()
 //! Gets the master session management client.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   THIS->obj=G_OBJECT(gnome_master_client());
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 string get_config_prefix();

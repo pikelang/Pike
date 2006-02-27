@@ -28,17 +28,17 @@ signal match_selected;
 void create(?mapping(string:mixed) props)
 //! Creates a new widget.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     INIT_WITH_PROPS(GTK_TYPE_ENTRY_COMPLETION);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkEntryCompletion *ge;
     ge=gtk_entry_completion_new();
     THIS->obj=G_OBJECT(ge);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 +GTK2.Widget get_entry();
@@ -49,7 +49,7 @@ void set_model(?GTK2.TreeModel model)
 //! remove it before setting the new model.  If omitted it will unset the
 //! model.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   if (args) {
     struct object *o1;
     get_all_args("set_model",args,"%o",&o1);

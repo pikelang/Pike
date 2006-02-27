@@ -35,8 +35,8 @@ signal populate_popup;
 void create(string|mapping(string:mixed)|void text_or_props)
 //! Creates a new label.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     if (Pike_sp[-args].type==PIKE_T_STRING) {
       struct pike_string *t;
@@ -53,13 +53,13 @@ void create(string|mapping(string:mixed)|void text_or_props)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_LABEL);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gl;
     gl=gtk_label_new(NULL);
     THIS->obj=G_OBJECT(gl);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void set_text(string text);
@@ -123,8 +123,8 @@ mapping(string:int) get_layout_offsets()
 //! GTK2.NO_WINDOW widget.  Remember when using the Pango.Layout functions you
 //! need to convert to and from pixels using GTK2.PANGO_SCALE.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     gint x,y;
     gtk_label_get_layout_offsets(GTK_LABEL(THIS->obj),&x,&y);
@@ -214,11 +214,11 @@ mapping(string:int) get_selection_bounds()
 //! Gets the selected range of characters in the label.  If there isn't a
 //! selection, returns -1 for both start and end.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     gint start,end;
     int res=gtk_label_get_selection_bounds(GTK_LABEL(THIS->obj),&start,&end);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     ref_push_string(_STR("start"));
     push_int(res?start:-1);
     ref_push_string(_STR("end"));

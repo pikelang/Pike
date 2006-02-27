@@ -31,8 +31,8 @@ void create(?GTK2.Adjustment|mapping(string:mixed)|void hadjustment_or_props,
 	    ?GTK2.Adjustment vadjustments)
 //! The two adjustments are most commonly set to 0.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     if (Pike_sp[-args].type==PIKE_T_OBJECT) {
       struct object *o1,*o2=NULL;
@@ -45,13 +45,13 @@ void create(?GTK2.Adjustment|mapping(string:mixed)|void hadjustment_or_props,
     } else {
       INIT_WITH_PROPS(GTK_TYPE_SCROLLED_WINDOW);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gs;
     gs=gtk_scrolled_window_new(NULL,NULL);
     THIS->obj=G_OBJECT(gs);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 GTK2.Adjustment get_hadjustment();
@@ -119,8 +119,8 @@ mapping(string:int) get_policy()
 //!    "v-policy": vertical policy
 //! ]);
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkPolicyType hpol,vpol;
     gtk_scrolled_window_get_policy(GTK_SCROLLED_WINDOW(THIS->obj),

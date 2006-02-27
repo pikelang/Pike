@@ -14,8 +14,8 @@ void create(string|mapping(string:mixed)|void title,
 //! object GTK2.RadioMenuItem(title, another_radio_button) - Second to n:th button (with title)<br />
 //! object GTK2.RadioMenuItem(0,another_radio_button)->add(widget) - Second to n:th button (with widget)<br />
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     GtkWidget *gr;
     if (Pike_sp[-args].type==PIKE_T_STRING) {
@@ -49,13 +49,13 @@ void create(string|mapping(string:mixed)|void title,
     } else {
       INIT_WITH_PROPS(GTK_TYPE_RADIO_MENU_ITEM);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gr;
     gr=gtk_radio_menu_item_new(NULL);
     THIS->obj=G_OBJECT(gr);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void set_group(GTK2.RadioMenuItem groupmember)
@@ -75,8 +75,8 @@ void set_group(GTK2.RadioMenuItem groupmember)
 array(GTK2.RadioMenuItem) get_group()
 //! Returns the group to which the radio menu item belongs.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GSList *ml,*m2;
     int i=0;

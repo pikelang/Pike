@@ -10,22 +10,22 @@ void create(GTK2.TreeModel model, GTK2.TreePath path)
 {
   struct object *o1,*o2;
   struct object *no;
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   get_all_args("create",args,"%o%o",&o1,&o2);
   THIS->obj=(void *)gtk_tree_row_reference_new(
 		GTK_TREE_MODEL(get_gobject(o1)),
-		(GtkTreePath *)get_pgobject(o2,pgtk_tree_path_program));
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+		(GtkTreePath *)get_pg2object(o2,pgtk2_tree_path_program));
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 require gtk28;
 GTK2.TreeModel get_model()
 //! Returns the model which this references is monitoring.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkTreeModel *gtm;
     gtm=gtk_tree_row_reference_get_model((GtkTreeRowReference *)THIS->obj);
@@ -38,28 +38,28 @@ GTK2.TreePath get_path()
 //! Returns a path that the row reference currently points to.
 {
 /*
-  struct object *o=fast_clone_object(pgtk_tree_path_program);
+  struct object *o=fast_clone_object(pgtk2_tree_path_program);
   struct object_wrapper *ow;
-  ow=(struct object_wrapper *)get_storage(o,pgtk_tree_path_program);
+  ow=(struct object_wrapper *)get_storage(o,pgtk2_tree_path_program);
   ow->obj=(void *)gtk_tree_row_reference_get_path(
 	(GtkTreeRowReference *)(THIS->obj));
 */
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkTreePath *gp=gtk_tree_row_reference_get_path(
 		(GtkTreeRowReference *)THIS->obj);
-    push_gobjectclass(gp,pgtk_tree_path_program);
+    push_gobjectclass(gp,pgtk2_tree_path_program);
   }
 }
 
 int valid()
 //! Return TRUE if the reference referes to a current valid path.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     int res=gtk_tree_row_reference_valid((GtkTreeRowReference *)THIS->obj);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     PGTK_PUSH_INT(res);
   }
 }
@@ -70,7 +70,7 @@ void destroy()
   if (THIS->obj)
     gtk_tree_row_reference_free((GtkTreeRowReference *)THIS->obj);
   THIS->obj=0;
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(0);
 }
 
@@ -78,13 +78,13 @@ require gtk22;
 GTK2.TreeRowReference copy()
 //! Copies a GTK2.TreeRowReference.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkTreeRowReference *a1;
     a1=(GtkTreeRowReference *)gtk_tree_row_reference_copy(
       (GtkTreeRowReference *)THIS->obj);
-    my_pop_n_elems(args);
-    push_gobjectclass(a1,pgtk_tree_row_reference_program);
+    pgtk2_pop_n_elems(args);
+    push_gobjectclass(a1,pgtk2_tree_row_reference_program);
   }
 }
 endrequire;

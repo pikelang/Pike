@@ -20,14 +20,14 @@ string get_section();
 array(GTK2.SourceTag) get_tags()
 //! Returns a list of tags for this language.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GSList *gsl,*gs2;
     int i=0;
     gsl=gs2=gtk_source_language_get_tags(GTK_SOURCE_LANGUAGE(THIS->obj));
     while (gs2) {
-      push_gobjectclass(gs2->data,pgtk_source_tag_program);
+      push_gobjectclass(gs2->data,pgtk2_source_tag_program);
       i++;
       gs2=g_slist_next(gs2);
     }
@@ -42,8 +42,8 @@ int get_escape_char();
 array(string) get_mime_types()
 //! Returns a list of mime types for this language.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GSList *gsl,*gs2;
     int i=0;
@@ -63,7 +63,7 @@ void set_mime_types(?array(string) types)
 //! Sets a list of mime types for this language.  If omitted, this function
 //! will use the default mime types from the language file.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   if (args) {
     struct array *a;
     GSList *gsl=NULL;
@@ -89,12 +89,12 @@ void set_mime_types(?array(string) types)
 GTK2.SourceStyleScheme get_style_scheme()
 //! Gets the style scheme associated with this language.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkSourceStyleScheme *gss;
     gss=gtk_source_language_get_style_scheme(GTK_SOURCE_LANGUAGE(THIS->obj));
-    push_gobjectclass(gss,pgtk_source_style_scheme_program);
+    push_gobjectclass(gss,pgtk2_source_style_scheme_program);
   }
 }
 
@@ -102,14 +102,14 @@ mapping(string:mixed) get_tag_style(string id)
 //! Gets the style of the tag id.  If the style is not defined, then returns
 //! the default style.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkSourceTagStyle *gs;
     GdkColor *fg,*bg;
     char *id;
     get_all_args("get_tag_style",args,"%s",&id);
     gs=gtk_source_language_get_tag_style(GTK_SOURCE_LANGUAGE(THIS->obj),id);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     if (gs) {
       ref_push_string(_STR("default")); push_int(gs->is_default);
       ref_push_string(_STR("mask")); push_int(gs->mask);
@@ -141,7 +141,7 @@ void set_tag_style(string id, ?mapping(string:mixed) style)
   struct mapping *m=NULL;
   GtkSourceTagStyle *sts;
 
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   get_all_args("set_tag_style",args,"%s.%m",&id,&m);
 
   if (m) {
@@ -190,7 +190,7 @@ void set_tag_style(string id, ?mapping(string:mixed) style)
 mapping(string:mixed) get_tag_default_style(string id)
 //! Gets the default style of the tag id.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkSourceTagStyle *gs;
     GdkColor *fg,*bg;
@@ -198,7 +198,7 @@ mapping(string:mixed) get_tag_default_style(string id)
     get_all_args("get_tag_default_style",args,"%s",&id);
     gs=gtk_source_language_get_tag_default_style(GTK_SOURCE_LANGUAGE(THIS->obj),
 			id);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     if (gs) {
       ref_push_string(_STR("default")); push_int(gs->is_default);
       ref_push_string(_STR("mask")); push_int(gs->mask);

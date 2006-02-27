@@ -25,17 +25,17 @@ inherit GTK2.Dialog;
 void create(?mapping(string:mixed) props)
 //! Create a new GTK.AboutDialog.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     INIT_WITH_PROPS(GTK_TYPE_ABOUT_DIALOG);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *ga;
     ga=gtk_about_dialog_new();
     THIS->obj=G_OBJECT(ga);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 string get_name();
@@ -92,8 +92,8 @@ array(string) get_authors()
 //! Returns the strings which are displayed in the authors tab of the
 //! secondary credits dialog.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     const gchar * const *auth;
     int i=0;
@@ -110,7 +110,7 @@ void set_authors(array(string) auth)
 //! Sets the strings which are displayed in the authors tab of the secondary
 //! credits dialog.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     ONERROR err;
     struct array *a;
@@ -155,8 +155,8 @@ array(string) get_artists()
 //! Returns the strings which are displayed in the artists tab of the
 //! secondary credits dialog.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     const gchar * const *art;
     int i=0;
@@ -173,7 +173,7 @@ void set_artists(array(string) art)
 //! Sets the strings which are displayed in the artists tab of the secondary
 //! credits dialog.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     ONERROR err;
     struct array *a;
@@ -218,8 +218,8 @@ array(string) get_documenters()
 //! Returns the strings which are displayed in the documenters tab of the
 //! secondary credits dialog.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     const gchar * const *doc;
     int i=0;
@@ -236,7 +236,7 @@ void set_documenters(array(string) doc)
 //! Sets the strings which are displayed in the documenters tab of the
 //! secondary credits dialog.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     ONERROR err;
     struct array *a;
@@ -298,7 +298,7 @@ void set_logo_icon_name(string name);
 mixed get_property(string property)
 //! Get property.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct pike_string *prop;
     get_all_args("get_property",args,"%n",&prop);
@@ -314,8 +314,8 @@ mixed get_property(string property)
       g_strfreev(a);
     } else {
       char *s=g_strdup(prop->str);
-      my_pop_n_elems(args);
-      pgtk_get_property(G_OBJECT(THIS->obj),s);
+      pgtk2_pop_n_elems(args);
+      pgtk2_get_property(G_OBJECT(THIS->obj),s);
       g_free(s);
     }
   }

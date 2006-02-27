@@ -13,8 +13,8 @@ void create(string|mapping(string:mixed) name_or_props, ?string label,
 	    ?string tooltip, ?string stock_id)
 //! Creates a new GTK2.ToggleAction object.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args==4) {
     char *name,*label,*tooltip,*stock_id;
     GtkToggleAction *gt;
@@ -24,8 +24,8 @@ void create(string|mapping(string:mixed) name_or_props, ?string label,
   } else {
     INIT_WITH_PROPS(GTK_TYPE_TOGGLE_ACTION);
   }
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 void toggled();

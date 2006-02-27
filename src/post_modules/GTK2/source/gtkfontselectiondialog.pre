@@ -23,8 +23,8 @@ member GTK2.Button cancel_button;
 void create(string title)
 //! Create a new font selection dialog with the specified window title
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   {
     struct pike_string *title;
 
@@ -39,9 +39,9 @@ void create(string title)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_FONT_SELECTION_DIALOG);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 string get_font_name();

@@ -13,11 +13,11 @@ void create();
 array get_widgets()
 //! Gets a list of all widgets anchored at this child anchor.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GList *gl,*g2;
     int i,j=0;
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     gl=gtk_text_child_anchor_get_widgets(GTK_TEXT_CHILD_ANCHOR(THIS->obj));
     i=g_list_length(gl);
     g2=g_list_first(gl);

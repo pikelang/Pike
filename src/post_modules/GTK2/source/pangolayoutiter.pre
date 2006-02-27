@@ -11,7 +11,7 @@ void destroy()
   if (THIS->obj)
     pango_layout_iter_free((PangoLayoutIter *)THIS->obj);
   THIS->obj=0;
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(0);
 }
 
@@ -50,12 +50,12 @@ int get_baseline();
 Pango.LayoutLine get_line()
 //! Gets the current line.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     PangoLayoutLine *pll;
     pll=pango_layout_iter_get_line(PANGO_LAYOUT_ITER(THIS->obj));
-    push_gobjectclass(pll,ppango_layout_line_program);
+    push_gobjectclass(pll,ppango2_layout_line_program);
   }
 }
 
@@ -73,8 +73,8 @@ mapping(string:int) get_char_extents()
 //! Gets the extents of the current character, in layout coordinates (origin
 //! is the top left of the entire layout).
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     PangoRectangle pos;
     pango_layout_iter_get_char_extents((PangoLayoutIter *)THIS->obj,&pos);
@@ -85,8 +85,8 @@ mapping(string:int) get_char_extents()
 array(mapping(string:int)) get_cluster_extents()
 //! Gets the extents of the current cluster, in layout coordinates.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     PangoRectangle pos1,pos2;
     pango_layout_iter_get_cluster_extents((PangoLayoutIter *)THIS->obj,
@@ -100,8 +100,8 @@ array(mapping(string:int)) get_cluster_extents()
 array(mapping(string:int)) get_run_extents()
 //! Gets the extents of the current run in layout coordinates.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     PangoRectangle pos1,pos2;
     pango_layout_iter_get_run_extents((PangoLayoutIter *)THIS->obj,
@@ -119,8 +119,8 @@ array get_line_yrange()
 //! and below the line, if Pango.Layout->set_spacing() has been called to set 
 //! layout spacing.  The y positions are in layout coordinates.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     int y0,y1;
     pango_layout_iter_get_line_yrange((PangoLayoutIter *)THIS->obj,&y0,&y1);
@@ -133,8 +133,8 @@ array get_line_yrange()
 array(mapping(string:int)) get_line_extents()
 //! Obtains the extents of the current line.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     PangoRectangle pos1,pos2;
     pango_layout_iter_get_line_extents((PangoLayoutIter *)THIS->obj,
@@ -148,8 +148,8 @@ array(mapping(string:int)) get_line_extents()
 array(mapping(string:int)) get_layout_extents()
 //! Obtains the extents of the layout.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     PangoRectangle pos1,pos2;
     pango_layout_iter_get_layout_extents((PangoLayoutIter *)THIS->obj,

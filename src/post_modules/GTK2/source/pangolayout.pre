@@ -9,40 +9,40 @@ void create(Pango.Context context)
 //! Create a new layout with attributes initialized to default values for
 //! a particular Pango.Context
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   {
     struct object *o1;
     get_all_args("create",args,"%o",&o1);
     THIS->obj=(void *)pango_layout_new((PangoContext *)get_gobject(o1));
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 Pango.Layout copy(Pango.Layout src)
 //! Does a copy of the src.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     PangoLayout *pl;
     get_all_args("copy",args,"%o",&o1);
     pl=pango_layout_copy((PangoLayout *)get_gobject(o1));
-    my_pop_n_elems(args);
-    push_gobjectclass(pl,ppango_layout_program);
+    pgtk2_pop_n_elems(args);
+    push_gobjectclass(pl,ppango2_layout_program);
   }
 }
 
 Pango.Context get_context()
 //! Returns the Pango.Context.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     PangoContext *pc=pango_layout_get_context((PangoLayout *)THIS->obj);
     g_object_ref(pc);
-    push_gobjectclass(pc,ppango_context_program);
+    push_gobjectclass(pc,ppango2_context_program);
   }
 }
 
@@ -72,7 +72,7 @@ void set_markup_with_accel(string markup, int length, ?int accel_marker)
 //! marked will be returned.  Two accel_marker characters following each other
 //! produce a single literal accel_marker character.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     const char *markup;
     INT_TYPE len, accel_marker=0;
@@ -81,7 +81,7 @@ void set_markup_with_accel(string markup, int length, ?int accel_marker)
 				&accel_marker);
     pango_layout_set_markup_with_accel((PangoLayout *)THIS->obj,
 		markup,len,accel_marker,&accel_char);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_int(accel_char);
   }
 }
@@ -91,7 +91,7 @@ void set_font_description(Pango.FontDescription desc)
 //! description is set on the layout, the font descriptions from the layout's
 //! context is used.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     get_all_args("set_font_description",args,"%o",&o1);
@@ -105,14 +105,14 @@ void set_font_description(Pango.FontDescription desc)
 Pango.FontDescription get_font_description()
 //! Gets the font description for the layout, if any.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     const PangoFontDescription *pfd=pango_layout_get_font_description(
 			(PangoLayout *)THIS->obj);
     if (pfd) {
       PangoFontDescription *p2=pango_font_description_copy(pfd);
-      push_gobjectclass(p2,ppango_font_description_program);
+      push_gobjectclass(p2,ppango2_font_description_program);
     } else
       push_int(0);
   }
@@ -193,7 +193,7 @@ void set_tabs(?Pango.TabArray tabs)
 //! Sets the tabs to use, overriding the default tabs (by default, tabs are
 //! every 8 spaces).  If tabs is omitted, the default tabs are reinstated.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   if (args) {
     struct object *o1;
     get_all_args("set_tabs",args,"%o",&o1);
@@ -209,11 +209,11 @@ Pango.TabArray get_tabs()
 //! been set, then the default tabs are in use and 0 is returned.  Default
 //! tabs are every 8 spaces.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     PangoTabArray *pta=pango_layout_get_tabs((PangoLayout *)THIS->obj);
-    push_gobjectclass(pta,ppango_tab_array_program);
+    push_gobjectclass(pta,ppango2_tab_array_program);
   }
 }
 
@@ -237,12 +237,12 @@ mapping(string:int) xy_to_index(int x, int y)
 //! Returns:
 //! ([ "index": byte index, "trailing": where in grapheme user clicked ]).
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE x,y;
     int index,trailing,res;
     get_all_args("xy_to_index",args,"%i%i",&x,&y);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     res=pango_layout_xy_to_index((PangoLayout *)THIS->obj,x,y,&index,&trailing);
     if (res) {
       ref_push_string(_STR("index")); push_int(index);
@@ -265,12 +265,12 @@ mapping(string:int) index_to_pos(int index)
 //! ([ "x": x coordinate, "y": y coordinate,
 //!    "width": width of the rectangle, "height": height of the rectangle ])
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE index;
     PangoRectangle pos;
     get_all_args("index_to_pos",args,"%i",&index);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     pango_layout_index_to_pos((PangoLayout *)THIS->obj,index,&pos);
     ref_push_string(_STR("x")); push_int(pos.x);
     ref_push_string(_STR("y")); push_int(pos.y);
@@ -291,12 +291,12 @@ array(mapping(string:int)) get_cursor_pos(int index)
 //! Returns:
 //! array of mappings, each mapping is the same as index_to_pos().
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE index;
     PangoRectangle pos1,pos2;
     get_all_args("get_cursor_pos",args,"%i",&index);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     pango_layout_get_cursor_pos((PangoLayout *)THIS->obj,index,&pos1,&pos2);
     ref_push_string(_STR("x")); push_int(pos1.x);
     ref_push_string(_STR("y")); push_int(pos1.y);
@@ -328,13 +328,13 @@ mapping(string:int) move_cursor_visually(int strong, int old_index,
 //! move_cursor_visually() may move the cursor over multiple characters when
 //! multiple characters combine to form a single grapheme.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE strong,old_index,old_trailing,dir;
     int new_index,new_trailing;
     get_all_args("move_cursor_visually",args,"%i%i%i%i",&strong,&old_index,
 			&old_trailing,&dir);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     pango_layout_move_cursor_visually((PangoLayout *)THIS->obj,
 		strong,old_index,old_trailing,dir,&new_index,&new_trailing);
     ref_push_string(_STR("index")); push_int(new_index);
@@ -346,8 +346,8 @@ mapping(string:int) move_cursor_visually(int strong, int old_index,
 mapping(string:int) get_size()
 //! Determines the logical width and height in Pango units.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     int width,height;
     pango_layout_get_size((PangoLayout *)THIS->obj,&width,&height);
@@ -363,14 +363,14 @@ int get_line_count();
 Pango.LayoutLine get_line(int line)
 //! Retrieves a specific line.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE line;
     PangoLayoutLine *pll;
     get_all_args("get_line",args,"%i",&line);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     pll=pango_layout_get_line(PANGO_LAYOUT(THIS->obj),line);
-    push_gobjectclass(pll,ppango_layout_line_program);
+    push_gobjectclass(pll,ppango2_layout_line_program);
   }
 }
 

@@ -10,13 +10,13 @@ inherit G.Object;
 void create()
 //! Constructor.
 {
-  pgtk_verify_setup();
-  pgtk_verify_not_inited();
+  pgtk2_verify_setup();
+  pgtk2_verify_not_inited();
   THIS->obj=g_malloc(sizeof(GtkClipboard));
   if (THIS->obj==NULL)
     SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(GtkClipboard));
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 */
 
@@ -28,14 +28,14 @@ void destroy()
     g_free(THIS->obj);
 */
   THIS->obj=0;
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(0);
 }
 
 GTK2.Clipboard get(GDK2.Atom selection)
 //! Returns the clipboard object for the given selection.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     get_all_args("get",args,"%o",&o1);
@@ -48,7 +48,7 @@ require gtk22;
 GTK2.Clipboard get_for_display(GDK2.Display display, GDK2.Atom selection)
 //! Returns the clipboard object for the given selection.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     get_all_args("get_for_display",args,"%o",&o1,&o2);

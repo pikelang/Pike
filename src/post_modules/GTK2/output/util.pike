@@ -1,4 +1,10 @@
 
+string glue_c_name (string c_name)
+{
+  sscanf (c_name, "%s_%s", string prefix, c_name);
+  return "p" + prefix + "2_" + c_name;
+}
+
 void describe_class_tree( Class c )
 {
   mapping circular = ([]);

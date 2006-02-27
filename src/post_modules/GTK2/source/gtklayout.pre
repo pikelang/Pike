@@ -18,8 +18,8 @@ void create(GTK2.Adjustment|mapping(string:mixed)|void hadjustment_or_props,
 	    ?GTK2.Adjustment vadjustment)
 //! Creates a new GTK2.Layout.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     if (Pike_sp[-args].type==PIKE_T_OBJECT) {
       struct object *o1,*o2=NULL;
@@ -31,13 +31,13 @@ void create(GTK2.Adjustment|mapping(string:mixed)|void hadjustment_or_props,
     } else {
       INIT_WITH_PROPS(GTK_TYPE_LAYOUT);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gl;
     gl=gtk_layout_new(NULL,NULL);
     THIS->obj=G_OBJECT(gl);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void put(GTK2.Widget widget, int x, int y);

@@ -52,7 +52,7 @@ void data_add(array(float) X, array(float) Y, GDK2.Color color,
 	      int type, int dot_size)
 //! Add data to the box.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct array *a1,*a2;
     struct object *o1;
@@ -77,8 +77,8 @@ void data_add(array(float) X, array(float) Y, GDK2.Color color,
       SIMPLE_OUT_OF_MEMORY_ERROR("data_add",sizeof(gfloat)*len*2);
     }
     for (i=0; i<len; i++) {
-      dw->X[i]=pgtk_get_float(ITEM(a1)+i);
-      dw->Y[i]=pgtk_get_float(ITEM(a2)+i);
+      dw->X[i]=pgtk2_get_float(ITEM(a1)+i);
+      dw->Y[i]=pgtk2_get_float(ITEM(a2)+i);
     }
     if (THIS->extra_data) {
       if (THIS->extra_data->X)
@@ -90,7 +90,7 @@ void data_add(array(float) X, array(float) Y, GDK2.Color color,
     THIS->extra_data=dw;
     ind=gtk_databox_data_add(GTK_DATABOX(THIS->obj),len,dw->X,dw->Y,
 			 *color,type,dot_size);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_int(ind);
   }
 }
@@ -174,14 +174,14 @@ mapping(string:float) data_get_value(int x, int y)
 {
   GtkDataboxValue v;
   gtk_databox_data_get_value(GTK_DATABOX(THIS->obj),get_coord(0,args),&v);
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_value(v);
 }
 
 array(mapping(string:float)) data_get_visible_extrema()
 {
   GtkDataboxValue v1,v2;
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   gtk_databox_data_get_visible_extrema(GTK_DATABOX(THIS->obj), &v1, &v2 );
   push_value( v1 );
   push_value( v2 );
@@ -191,7 +191,7 @@ array(mapping(string:float)) data_get_visible_extrema()
 array(mapping(string:float)) data_get_extrema()
 {
   GtkDataboxValue v1,v2;
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   gtk_databox_data_get_extrema(GTK_DATABOX(THIS->obj),&v1,&v2);
   push_value(v1);
   push_value(v2);
@@ -219,7 +219,7 @@ void set_background_color(*GDK2.Color color);
 GDK2.Color data_get_color(int index)
 //! Get the color at index.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE index;
     GdkColor *col;
@@ -228,7 +228,7 @@ GDK2.Color data_get_color(int index)
     if (col==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_color",sizeof(GdkColor));
     gtk_databox_data_get_color(GTK_DATABOX(THIS->obj),index,col);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     if (col)
       push_gdkobject(col,color);
     else
@@ -242,13 +242,13 @@ int data_set_type(int index, int type, int dot_size);
 array(int) data_get_type(int index)
 //! Return type and dot size at index.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE index;
     guint dot_size;
     GtkDataboxDataType type;
     get_all_args("data_get_type",args,"%i",&index);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     gtk_databox_data_get_type(GTK_DATABOX(THIS->obj),index,&type,&dot_size);
     push_int(type);
     push_int(dot_size);
@@ -288,12 +288,12 @@ int data_set_grid_config(int index, int hlines, int vlines);
 int data_get_grid_config(int index)
 //! See data_set_grid_config().
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE index;
     unsigned int hlines,vlines;
     get_all_args("data_get_grid_config",args,"%i",&index);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     gtk_databox_data_get_grid_config(GTK_DATABOX(THIS->obj),index,
 			&hlines,&vlines);
     push_int(hlines);

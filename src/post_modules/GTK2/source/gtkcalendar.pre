@@ -26,17 +26,17 @@ signal prev_year;
 void create(?mapping(string:mixed) props)
 //! Create a new calendar widget
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     INIT_WITH_PROPS(GTK_TYPE_CALENDAR);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gc;
     gc=gtk_calendar_new();
     THIS->obj=G_OBJECT(gc);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 int select_month(int month, int year);
@@ -68,7 +68,7 @@ mapping get_date()
 {
   guint y, m, d;
   gtk_calendar_get_date(GTK_CALENDAR(THIS->obj),&y,&m,&d);
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   ref_push_string(_STR("year"));
   push_int(y);
   ref_push_string(_STR("month"));
@@ -88,7 +88,7 @@ array(int) get_marked_dates()
 //! Returns an array (with 31 elements) with 1es and 0es.
 {
   int i;
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   for(i=0; i<31; i++)
     push_int(GTK_CALENDAR(THIS->obj)->marked_date[i]);
   f_aggregate(31);

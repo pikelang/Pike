@@ -18,7 +18,7 @@ void destroy()
     gtk_object_destroy(GTK_OBJECT(THIS->obj));
     THIS->obj=NULL;
   }
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(0);
 }
 

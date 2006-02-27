@@ -17,8 +17,8 @@ inherit GTK2.Misc;
 void create(int|mapping(string:mixed) arrow_type_or_props, ?int shadow_type)
 //! First argument is one of CONST(GTK_ARROW), second one of CONST(GTK_SHADOW).
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   {
     if (Pike_sp[-args].type==PIKE_T_INT) {
       INT_TYPE arrow,shadow;
@@ -29,9 +29,9 @@ void create(int|mapping(string:mixed) arrow_type_or_props, ?int shadow_type)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_ARROW);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 

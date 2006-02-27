@@ -16,16 +16,16 @@ inherit GTK2.Paned;
 void create(?mapping(string:mixed) props)
 //! Create a new W(Hpaned) widget.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     INIT_WITH_PROPS(GTK_TYPE_HPANED);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gh;
     gh=gtk_hpaned_new();
     THIS->obj=G_OBJECT(gh);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 

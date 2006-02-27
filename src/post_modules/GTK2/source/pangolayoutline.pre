@@ -8,8 +8,8 @@ class Pango.LayoutLine;
 array(mapping(string:int)) get_extents()
 //! Computes the logical and ink extents of a layout line.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     PangoRectangle pos1,pos2;
     pango_layout_line_get_extents((PangoLayoutLine *)THIS->obj,&pos1,&pos2);
@@ -22,8 +22,8 @@ array(mapping(string:int)) get_extents()
 array(mapping(string:int)) get_pixel_extents()
 //! Computes the logical and ink extents of a layout line, in device units.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     PangoRectangle pos1,pos2;
     pango_layout_line_get_extents((PangoLayoutLine *)THIS->obj,&pos1,&pos2);
@@ -36,12 +36,12 @@ array(mapping(string:int)) get_pixel_extents()
 int index_to_x(int index, int trailing)
 //! Converts an index within a line to an x position.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE index,trailing;
     int x_pos;
     get_all_args("index_to_x",args,"%i%i",&index,&trailing);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     pango_layout_line_index_to_x((PangoLayoutLine *)THIS->obj,index,trailing,
 			&x_pos);
     push_int(x_pos);
@@ -60,12 +60,12 @@ mapping(string:int) x_to_index(int x_pos)
 //! of characters in that grapheme.  The reverse is true for a left-to-right
 //! line.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE x_pos;
     int index,trailing;
     get_all_args("x_to_index",args,"%i",&x_pos);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     pango_layout_line_x_to_index((PangoLayoutLine *)THIS->obj,x_pos,&index,
 			&trailing);
     push_text("index"); push_int(index);

@@ -15,17 +15,17 @@ signal closed;
 void create()
 //! Get the default display.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   THIS->obj=G_OBJECT(gdk_display_get_default());
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 void open(string name)
 //! Opens a display.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     const gchar *name;
     get_all_args("open",args,"%s",&name);
@@ -45,7 +45,7 @@ int get_n_screens();
 void pointer_ungrab()
 //! Release any pointer grab.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   gdk_display_pointer_ungrab(GDK_DISPLAY_OBJECT(THIS->obj),GDK_CURRENT_TIME);
   RETURN_THIS();
 }
@@ -53,7 +53,7 @@ void pointer_ungrab()
 void keyboard_ungrab()
 //! Release any keyboard grab.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   gdk_display_keyboard_ungrab(GDK_DISPLAY_OBJECT(THIS->obj),GDK_CURRENT_TIME);
   RETURN_THIS();
 }
@@ -118,12 +118,12 @@ endrequire;
 mapping get_pointer()
 //! Gets the current location of the pointer and the current modifier mask.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     gint x,y;
     GdkModifierType mask;
     gdk_display_get_pointer(GDK_DISPLAY_OBJECT(THIS->obj),NULL,&x,&y,&mask);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     ref_push_string(_STR("x")); push_int(x);
     ref_push_string(_STR("y")); push_int(y);
     ref_push_string(_STR("mask")); push_int(mask);
@@ -136,8 +136,8 @@ mapping get_window_at_pointer()
 //! Returns 0 if the window is not known to GDK (for example, belongs to
 //! another application).
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     gint x,y;
     GdkWindow *gw;
@@ -165,12 +165,12 @@ int get_default_cursor_size();
 mapping get_maximal_cursor_size()
 //! Returns the maximal size to use for cursors.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     guint width,height;
     gdk_display_get_maximal_cursor_size(GDK_DISPLAY_OBJECT(THIS->obj),
 			&width,&height);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     ref_push_string(_STR("width")); push_int(width);
     ref_push_string(_STR("height")); push_int(height);
     f_aggregate_mapping(4);
@@ -191,7 +191,7 @@ int request_selection_notification(GDK2.Atom selection)
 //! Request GdkEventOwnerChange events for ownership changes of the selection
 //! named by the given atom.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     int res;
@@ -199,7 +199,7 @@ int request_selection_notification(GDK2.Atom selection)
     res=gdk_display_request_selection_notification(
 		GDK_DISPLAY_OBJECT(THIS->obj),
 		get_gdkatom(o1));
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_int(res);
   }
 }

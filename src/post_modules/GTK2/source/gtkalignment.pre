@@ -42,8 +42,8 @@ void create(float|mapping(string:int) xalign_or_props, ?float yalign,
 //! <td>the amount that the child widget expands vertically to fill up unused space, from 0 to 1. The values are similar to xscale.</td></tr>
 //! </table>
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args==4) {
     FLOAT_TYPE xalign,yalign,xscale,yscale;
     GtkWidget *ga;
@@ -53,8 +53,8 @@ void create(float|mapping(string:int) xalign_or_props, ?float yalign,
   } else {
     INIT_WITH_PROPS(GTK_TYPE_ALIGNMENT);
   }
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 void set(float xalign, float yalign, float xscale, float yscale);

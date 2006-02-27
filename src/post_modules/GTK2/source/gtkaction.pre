@@ -27,8 +27,8 @@ void create(string|mapping(string:mixed) name_or_props, ?string label,
 	    ?string tooltip, ?string stock_id)
 //! Creates a new object.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args>0 && Pike_sp[-args].type==PIKE_T_STRING) {
     char *name, *stock_id=NULL;
     struct pike_string *label=NULL,*tooltip=NULL;
@@ -52,8 +52,8 @@ void create(string|mapping(string:mixed) name_or_props, ?string label,
   } else {
     INIT_WITH_PROPS(GTK_TYPE_ACTION);
   }
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 string get_name();
@@ -107,8 +107,8 @@ void disconnect_proxy(GTK2.Widget proxy);
 array(GTK2.Widget) get_proxies()
 //! Returns the proxy widgets.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GSList *gl;
     int i=0;

@@ -12,7 +12,7 @@ void destroy()
   if (THIS->obj)
     g_object_unref((PangoContext *)THIS->obj);
   THIS->obj=0;
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(0);
 }
 

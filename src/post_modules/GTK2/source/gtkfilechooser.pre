@@ -103,8 +103,8 @@ array(string) get_filenames()
 //! filenames, they will be ignored.  If you want those files,
 //! You may want to use get_uris() instead.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GSList *gs1=gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(THIS->obj));
     GSList *gs2=gs1;
@@ -144,8 +144,8 @@ array(string) get_uris()
 //! List all the selected files and subfolders in the current folder.
 //! The returned names are full absolute URIs.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GSList *gs1=gtk_file_chooser_get_uris(GTK_FILE_CHOOSER(THIS->obj));
     GSList *gs2=gs1;
@@ -233,8 +233,8 @@ void remove_filter(GTK2.FileFilter filter);
 array(GTK2.FileFilter) list_filters()
 //! Lists the current set of user-selectable filters.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GSList *gsl,*gs2;
     int i=0;
@@ -266,14 +266,14 @@ int add_shortcut_folder(string folder)
 //! application.  For example, you can use this to add a 
 //! "/usr/share/mydrawprogram/Clipart" folder to the volume list.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     const char *folder;
     int res;
     get_all_args("add_shortcut_folder",args,"%s",&folder);
     res=gtk_file_chooser_add_shortcut_folder(GTK_FILE_CHOOSER(THIS->obj),
 			folder,NULL);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -281,7 +281,7 @@ int add_shortcut_folder(string folder)
 void remove_shortcut_folder(string folder)
 //! Removes a folder from the list of shortcut folders.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     const char *folder;
     get_all_args("remove_shortcut_folder",args,"%s",&folder);
@@ -294,8 +294,8 @@ void remove_shortcut_folder(string folder)
 array(string) list_shortcut_folders()
 //! Queries the list of shortcut folders.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GSList *gsl,*gs2;
     int i=0;
@@ -314,14 +314,14 @@ array(string) list_shortcut_folders()
 int add_shortcut_folder_uri(string uri)
 //! Adds a folder URI to be displayed with the shortcut folders.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     const char *uri;
     int res;
     get_all_args("add_shortcut_folder_uri",args,"%s",&uri);
     res=gtk_file_chooser_add_shortcut_folder_uri(GTK_FILE_CHOOSER(THIS->obj),
 			uri,NULL);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -329,7 +329,7 @@ int add_shortcut_folder_uri(string uri)
 void remove_shortcut_folder_uri(string uri)
 //! Removes a folder URI.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     const char *uri;
     get_all_args("remove_shortcut_folder_uri",args,"%s",&uri);
@@ -342,8 +342,8 @@ void remove_shortcut_folder_uri(string uri)
 array(string) list_shortcut_folder_uris()
 //! Queries the list of shortcut folders.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GSList *gsl,*gs2;
     int i=0;

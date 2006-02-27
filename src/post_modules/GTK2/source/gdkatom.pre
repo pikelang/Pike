@@ -10,8 +10,8 @@ void create(string atom_name,int|void only_if_exists)
 {
   gchar *atom_name;
   gint only_if_exists;
-  pgtk_verify_setup();
-  pgtk_verify_not_inited();
+  pgtk2_verify_setup();
+  pgtk2_verify_not_inited();
   atom_name=PGTK_GETSTR(Pike_sp-args);
   if (!atom_name)
     Pike_error("Illegal argument 1 to _Atom");
@@ -25,7 +25,7 @@ void create(string atom_name,int|void only_if_exists)
 string get_name()
 //! Returns the name of the atom.
 {
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_text( gdk_atom_name( (GdkAtom)THIS->obj ) );
 }
 

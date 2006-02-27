@@ -16,17 +16,17 @@ signal toolbar_reconfigured;
 void create(?mapping(string:mixed) props)
 //! Creates a new GTK2.ToolItem.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     INIT_WITH_PROPS(GTK_TYPE_TOOL_ITEM);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkToolItem *gt;
     gt=gtk_tool_item_new();
     THIS->obj=G_OBJECT(gt);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void set_homogeneous(int homogeneous);

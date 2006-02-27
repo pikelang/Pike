@@ -63,8 +63,8 @@ void create(GTK2.Adjustment|float|mapping(string:mixed) range_or_min_or_props,
 //!  digits argument specifies the number of decimal places to which
 //!  the value will be displayed.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (Pike_sp[-args].type==PIKE_T_FLOAT) {
     FLOAT_TYPE min,max,step;
     GtkWidget *gs;
@@ -82,8 +82,8 @@ void create(GTK2.Adjustment|float|mapping(string:mixed) range_or_min_or_props,
   } else {
     INIT_WITH_PROPS(GTK_TYPE_SPIN_BUTTON);
   }
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 void configure(GTK2.Adjustment range, float climb_rate, int precision);
@@ -173,8 +173,8 @@ int get_digits();
 mapping(string:float) get_increments()
 //! Gets the current step and page increments.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     gdouble step,page;
     gtk_spin_button_get_increments(GTK_SPIN_BUTTON(THIS->obj),&step,&page);
@@ -190,8 +190,8 @@ int get_numeric();
 mapping(string:float) get_range()
 //! Gets the range allowed.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     gdouble min,max;
     gtk_spin_button_get_range(GTK_SPIN_BUTTON(THIS->obj),&min,&max);
@@ -217,7 +217,7 @@ int get_wrap();
 int get_entry()
 //! Returns W(Entry) of this widget.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
-  push_gobjectclass(GTK_ENTRY(THIS->obj),pgtk_entry_program);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_gobjectclass(GTK_ENTRY(THIS->obj),pgtk2_entry_program);
 }

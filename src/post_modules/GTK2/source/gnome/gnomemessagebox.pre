@@ -31,8 +31,8 @@ void create(string message, string messagebox_type, string ... buttons)
   char *message, *type;
   char **buttons;
   int i;
-  pgtk_verify_gnome_setup();
-  pgtk_verify_not_inited();
+  pgtk2_verify_gnome_setup();
+  pgtk2_verify_not_inited();
   
   if(!PGTK_ISSTR( Pike_sp - args ) )
     Pike_error( "Bad argument 1, expected string (message)\n");
@@ -60,7 +60,7 @@ void create(string message, string messagebox_type, string ... buttons)
   THIS->obj = GTK_OBJECT( gnome_message_box_newv( (const gchar *)message,
                                                   (const gchar *)type,
                                                   (const gchar **)buttons ) );
-  pgtk__init_object( Pike_fp->current_object );
+  pgtk2__init_object( Pike_fp->current_object );
   PGTK_FREESTR( message );
   PGTK_FREESTR( type );
   for( i = 0; i<args-1; i++ )

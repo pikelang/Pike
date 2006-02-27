@@ -72,7 +72,7 @@ mapping(string:int) query_child_packing(GTK2.Widget child)
   gtk_box_query_child_packing(GTK_BOX(THIS->obj),
                               GTK_WIDGET(get_gobject(o)),
                               &ex,&fi,&pa,&ty);
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   ref_push_string(_STR("expand")); push_int(ex);
   ref_push_string(_STR("fill")); push_int(fi);
   ref_push_string(_STR("padding")); push_int(pa);

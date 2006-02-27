@@ -23,8 +23,8 @@ void create(int flags, int type, int buttons, string message,
 //! emitted with response IDs from CONST(GTK2.RESPONSE_).  See
 //! GTK2.Dialog for more details.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   {
     INT_TYPE flags,type,buttons;
     struct object *o1=NULL;
@@ -41,8 +41,8 @@ void create(int flags, int type, int buttons, string message,
 			       buttons,msg2,NULL);
     THIS->obj=G_OBJECT(gmd);
   }
-  my_pop_n_elems(args+1);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args+1);
+  pgtk2__init_this_object();
 }
 
 require gtk24;
@@ -58,7 +58,7 @@ void format_secondary_text(string text)
 //! Note that setting a secondary text makes the primary text become bold,
 //! unless you have provided explicit markup.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct pike_string *t;
     const gchar *t2;
@@ -69,7 +69,7 @@ void format_secondary_text(string text)
     gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(THIS->obj),
 		t2,NULL);
   }
-  my_pop_n_elems(args+1);
+  pgtk2_pop_n_elems(args+1);
   RETURN_THIS();
 }
 
@@ -80,7 +80,7 @@ void format_secondary_markup(string text)
 //! Note tha tsetting a secondary text makes the primary text become bold,
 //! unless you have provided explicit markup.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct pike_string *t;
     const gchar *t2;
@@ -91,7 +91,7 @@ void format_secondary_markup(string text)
     gtk_message_dialog_format_secondary_markup(GTK_MESSAGE_DIALOG(THIS->obj),
 		t2,NULL);
   }
-  my_pop_n_elems(args+1);
+  pgtk2_pop_n_elems(args+1);
   RETURN_THIS();
 }
 endrequire;

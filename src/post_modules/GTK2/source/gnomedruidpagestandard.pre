@@ -24,8 +24,8 @@ inherit Gnome2.DruidPage;
 void create(?string title, ?GDK2.Pixbuf logo, ?GDK2.Pixbuf top_watermark)
 //! Construct a new Gnome2.DruidPageStandard.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     struct pike_string *title;
     struct object *o1,*o2;
@@ -38,13 +38,13 @@ void create(?string title, ?GDK2.Pixbuf logo, ?GDK2.Pixbuf top_watermark)
 			GDK_PIXBUF(get_gobject(o2)));
     pop_stack();
     THIS->obj=G_OBJECT(gps);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gps;
     gps=gnome_druid_page_standard_new();
     THIS->obj=G_OBJECT(gps);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void set_title(string title);
@@ -54,7 +54,7 @@ void set_logo(?GDK2.Pixbuf logo)
 //! Sets a GDK2.Pixbuf as the logo in the top right corner.  If omitted, then
 //! no logo will be displayed.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   if (args) {
     struct object *o1;
     get_all_args("set_logo",args,"%o",&o1);
@@ -70,7 +70,7 @@ void set_top_watermark(?GDK2.Pixbuf watermark)
 //! Sets a GDK2.Pixbuf as the watermark on top of the top strip on the druid.
 //! If watermark is omitted, it is reset to the normal color.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   if (args) {
     struct object *o1;
     get_all_args("set_top_watermark",args,"%o",&o1);
@@ -86,7 +86,7 @@ void set_top_watermark(?GDK2.Pixbuf watermark)
 void set_title_foreground(GDK2.Color color)
 //! Sets the title text to the specified color.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     GdkColor *color;
@@ -101,7 +101,7 @@ void set_title_foreground(GDK2.Color color)
 void set_background(GDK2.Color color)
 //! Sets the background color of the top section.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     GdkColor *color;
@@ -116,7 +116,7 @@ void set_background(GDK2.Color color)
 void set_logo_background(GDK2.Color color)
 //! Sets the background color of the logo.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     GdkColor *color;
@@ -131,7 +131,7 @@ void set_logo_background(GDK2.Color color)
 void set_contents_background(GDK2.Color color)
 //! Sets the color of the main contents section's background.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     GdkColor *color;

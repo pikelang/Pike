@@ -25,8 +25,8 @@ inherit GTK2.Bin;
 void create(string|mapping|void label_or_props)
 //! Create a new W(Frame) widget.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     if (Pike_sp[-args].type==PIKE_T_STRING) {
       struct pike_string *t;
@@ -43,13 +43,13 @@ void create(string|mapping|void label_or_props)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_FRAME);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gf;
     gf=gtk_frame_new(NULL);
     THIS->obj=G_OBJECT(gf);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 
@@ -75,8 +75,8 @@ string get_label();
 array get_label_align()
 //! Retrieves the x and y alignment of the label.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     gfloat x,y;
     gtk_frame_get_label_align(GTK_FRAME(THIS->obj),&x,&y);

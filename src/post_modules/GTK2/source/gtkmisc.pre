@@ -43,8 +43,8 @@ void set_padding(int xpad, int ypad);
 mapping(string:float) get_alignment()
 //! Gets the x and y alignment.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     gfloat xalign,yalign;
     gtk_misc_get_alignment(GTK_MISC(THIS->obj),&xalign,&yalign);
@@ -57,8 +57,8 @@ mapping(string:float) get_alignment()
 mapping(string:int) get_padding()
 //! Gets the x and y padding.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     gint xpad,ypad;
     gtk_misc_get_padding(GTK_MISC(THIS->obj),&xpad,&ypad);

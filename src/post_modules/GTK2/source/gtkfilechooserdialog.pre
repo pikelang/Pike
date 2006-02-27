@@ -123,7 +123,7 @@ void create(string title, int|GTK2.Window parent, int mode,
       Pike_error("Invalid number of buttons.\n");
   }
   g_ptr_array_free(gpa,1);
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
 }
 */
 
@@ -134,8 +134,8 @@ void create(string title, GTK2.Window parent, int mode,
 //! allowing the user to create a directory, delete files, and rename
 //! files will also be present by default.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   {
     struct pike_string *title;
     INT_TYPE mode;
@@ -169,9 +169,9 @@ void create(string title, GTK2.Window parent, int mode,
 	gtk_dialog_add_button(GTK_DIALOG(THIS->obj),text,response_id);
       }
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 endrequire;

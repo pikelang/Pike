@@ -10,10 +10,10 @@ class GDK2.DragContext;
 GTK2.Widget get_source_widget()
 //! Return the drag source widget.
 {
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
 /*
   push_gobjectclass(gtk_drag_get_source_widget(((GdkDragContext *)THIS->obj)),
-                      pgtk_widget_program);
+                      pgtk2_widget_program);
 */
   push_gobject(gtk_drag_get_source_widget((GdkDragContext *)THIS->obj));
 }

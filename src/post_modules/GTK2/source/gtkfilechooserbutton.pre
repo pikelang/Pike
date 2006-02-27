@@ -13,8 +13,8 @@ void create(string|mapping(string:mixed) title_or_props, ?int action)
 //! Create a new file-selecting button widget.
 //! action is one of CONST(GTK_FILE_CHOOSER_ACTION_)
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   {
     if (Pike_sp[-args].type==PIKE_T_STRING) {
       struct pike_string *title;
@@ -29,9 +29,9 @@ void create(string|mapping(string:mixed) title_or_props, ?int action)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_FILE_CHOOSER_BUTTON);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 string get_title();

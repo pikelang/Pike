@@ -22,8 +22,8 @@ void create(GTK2.Adjustment|mapping(string:mixed)|void xscroll_or_props,
 //! part of the viewport to view to the user. They are normally
 //! connected to a scrollbar or something similar.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     if (Pike_sp[-args].type==PIKE_T_OBJECT) {
       struct object *o1,*o2=NULL;
@@ -35,13 +35,13 @@ void create(GTK2.Adjustment|mapping(string:mixed)|void xscroll_or_props,
     } else {
       INIT_WITH_PROPS(GTK_TYPE_VIEWPORT);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gv;
     gv=gtk_viewport_new(NULL,NULL);
     THIS->obj=G_OBJECT(gv);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 GTK2.Adjustment get_hadjustment();

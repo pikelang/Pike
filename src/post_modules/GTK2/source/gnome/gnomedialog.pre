@@ -28,8 +28,8 @@ void create(string title, string ... buttons)
   gchar *title;
   gchar **buttons;
   int i;
-  pgtk_verify_gnome_setup();
-  pgtk_verify_not_inited();
+  pgtk2_verify_gnome_setup();
+  pgtk2_verify_not_inited();
   if(!PGTK_ISSTR(Pike_sp - args ) )
     Pike_error( "Bad argument 1, expected string (title)\n");
   title = PGTK_GETSTR( Pike_sp - args );
@@ -49,7 +49,7 @@ void create(string title, string ... buttons)
   THIS->obj = GTK_OBJECT( gnome_dialog_newv( (const gchar *)title,
                                              (const gchar **)buttons ) );
   PGTK_FREESTR( title );
-  pgtk__init_object( Pike_fp->current_object );
+  pgtk2__init_object( Pike_fp->current_object );
   for( i = 0; i<args-1; i++ )
     PGTK_FREESTR( buttons[i] );
   g_free( buttons );

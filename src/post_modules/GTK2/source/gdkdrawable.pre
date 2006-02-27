@@ -40,7 +40,7 @@ inherit G.Object;
 int xid()
 //! Return the xwindow id.
 {
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int((INT_TYPE)GDK_WINDOW_XWINDOW(GDK_DRAWABLE(THIS->obj)));
 }
 
@@ -50,7 +50,7 @@ int xsize()
   int s;
 /*  gdk_window_get_size( TWIN, &s, 0 ); */
   gdk_drawable_get_size(TWIN,&s,0);
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(s);
 }
 
@@ -60,7 +60,7 @@ int ysize()
   int s;
 /*  gdk_window_get_size( TWIN, 0, &s ); */
   gdk_drawable_get_size(TWIN,0,&s);
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(s);
 }
 
@@ -73,7 +73,7 @@ mapping(string:int) get_geometry()
   int x=0,y=0;
   int w=0,h=0,d=0;
   gdk_window_get_geometry(TWIN,&x,&y,&w,&h,&d);
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   ref_push_string(_STR("x"));  push_int(x);
   ref_push_string(_STR("y"));  push_int(y);
   ref_push_string(_STR("width"));  push_int(w);

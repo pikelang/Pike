@@ -16,8 +16,8 @@ signal color_set;
 void create(GDK2.Color|mapping(string:mixed)|int|void red_or_props, ?int green, ?int blue)
 //! Create a new W(ColorButton).
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     if (Pike_sp[-args].type==PIKE_T_INT) {
       GdkColor color;
@@ -44,19 +44,19 @@ void create(GDK2.Color|mapping(string:mixed)|int|void red_or_props, ?int green, 
     } else {
       INIT_WITH_PROPS(GTK_TYPE_COLOR_BUTTON);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gcb;
     gcb=gtk_color_button_new();
     THIS->obj=G_OBJECT(gcb);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void set_color(int red, int green, int blue)
 //! Sets the current color.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GdkColor gcolor;
     if (args<3)
@@ -72,8 +72,8 @@ void set_color(int red, int green, int blue)
 GDK2.Color get_color()
 //! Returns the current color.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GdkColor *color;
     color=(GdkColor *)g_malloc(sizeof(GdkColor));
@@ -105,7 +105,7 @@ string get_title();
 void set_property(string property, mixed value)
 //! Set property.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct pike_string *prop;
     struct svalue *sv;
@@ -118,7 +118,7 @@ void set_property(string property, mixed value)
       setprop(prop->str,color);
       RETURN_THIS();
     } else {
-      pg_object_set_property(args);
+      pg2_object_set_property(args);
     }
   }
 }
@@ -126,7 +126,7 @@ void set_property(string property, mixed value)
 mixed get_property(string property)
 //! Get property.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct pike_string *prop;
     get_all_args("get_property",args,"%n",&prop);
@@ -138,12 +138,12 @@ mixed get_property(string property)
 	SIMPLE_OUT_OF_MEMORY_ERROR("get_property",sizeof(GdkColor));
       g_object_get(G_OBJECT(THIS->obj),prop->str,&color,NULL);
 /*      color=g_value_get_boxed(G_BOXED(v),color); */
-      my_pop_n_elems(args);
+      pgtk2_pop_n_elems(args);
       push_gdkobject(color,color);
     } else {
       char *s=g_strdup(prop->str);
-      my_pop_n_elems(args);
-      pgtk_get_property(G_OBJECT(THIS->obj),s);
+      pgtk2_pop_n_elems(args);
+      pgtk2_get_property(G_OBJECT(THIS->obj),s);
       g_free(s);
     }
   }

@@ -40,8 +40,8 @@ signal toggle_overwrite;
 void create(GTK2.TextBuffer|mapping(string:mixed)|void buffer_or_props)
 //! Create a new W(TextView).  
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     if (Pike_sp[-args].type==PIKE_T_OBJECT) {
       struct object *o1;
@@ -52,13 +52,13 @@ void create(GTK2.TextBuffer|mapping(string:mixed)|void buffer_or_props)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_TEXT_VIEW);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gt;
     gt=gtk_text_view_new();
     THIS->obj=G_OBJECT(gt);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void set_buffer(GTK2.TextBuffer buffer);
@@ -80,7 +80,7 @@ void scroll_to_iter(GTK2.TextIter iter, float within_margin,
 		int use_align, float xalign, float yalign)
 //! Scrolls the view so that iter is on the screen as with scroll_to_mark().
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     FLOAT_TYPE within_margin,xalign,yalign;
@@ -88,7 +88,7 @@ void scroll_to_iter(GTK2.TextIter iter, float within_margin,
     get_all_args("scroll_to_iter",args,"%o%f%i%f%f",&o1,&within_margin,
 			&use_align,&xalign,&yalign);
     gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),within_margin,use_align,
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),within_margin,use_align,
 		xalign,yalign);
   }
   RETURN_THIS();
@@ -111,7 +111,7 @@ GDK2.Rectangle get_visible_rect()
 //! in buffer coordinates.  Convert to window coordinates with
 //! buffer_to_window_coords().
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GdkRectangle *gdr;
     gdr=g_malloc(sizeof(GdkRectangle));
@@ -119,7 +119,7 @@ GDK2.Rectangle get_visible_rect()
       SIMPLE_OUT_OF_MEMORY_ERROR("get_visible_rect",sizeof(GdkRectangle));
     gtk_text_view_get_visible_rect(GTK_TEXT_VIEW(THIS->obj),
 			gdr);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_gdkobject(gdr,rectangle);
   }
 }
@@ -130,7 +130,7 @@ GDK2.Rectangle get_iter_location(GTK2.TextIter iter)
 //! to convert these coordinates to coordinates for one of the windows in
 //! the text view.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GdkRectangle *gdr;
     struct object *o1;
@@ -139,8 +139,8 @@ GDK2.Rectangle get_iter_location(GTK2.TextIter iter)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_location",sizeof(GdkRectangle));
     get_all_args("get_iter_location",args,"%o",&o1);
     gtk_text_view_get_iter_location(GTK_TEXT_VIEW(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),gdr);
-    my_pop_n_elems(args);
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),gdr);
+    pgtk2_pop_n_elems(args);
     push_gdkobject(gdr,rectangle);
   }
 }
@@ -150,18 +150,18 @@ GTK2.TextIter get_line_at_y(int y)
 //! y.  y is in buffer coordinates, convert from window coordinates with
 //! window_to_buffer_coords().
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE y;
     GtkTextIter *gti;
     get_all_args("get_line_at_y",args,"%i",&y);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     gti=g_malloc(sizeof(GtkTextIter));
     if (gti==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_line_at_y",sizeof(GtkTextIter));
     gtk_text_view_get_line_at_y(GTK_TEXT_VIEW(THIS->obj),
 		gti,y,NULL);
-    push_gobjectclass(gti,pgtk_text_iter_program);
+    push_gobjectclass(gti,pgtk2_text_iter_program);
   }
 }
 
@@ -170,14 +170,14 @@ mapping get_line_yrange(GTK2.TextIter iter)
 //! height of the line.  The coordinate is a buffer coordinate; convert to
 //! window coordinates with buffer_to_window_coords().
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     gint y,height;
     struct object *o1;
     get_all_args("get_line_yrange",args,"%o",&o1);
     gtk_text_view_get_line_yrange(GTK_TEXT_VIEW(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),&y,&height);
-    my_pop_n_elems(args);
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),&y,&height);
+    pgtk2_pop_n_elems(args);
     ref_push_string(_STR("y")); push_int(y);
     ref_push_string(_STR("height")); push_int(height);
     f_aggregate_mapping(4);
@@ -190,18 +190,18 @@ GTK2.TextIter get_iter_at_location(int x, int y)
 //! portions.  If you have coordinates from an event, you have to convert
 //! those to buffer coordinates with window_to_buffer_coords().
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE x,y;
     GtkTextIter *iter;
     get_all_args("get_iter_at_location",args,"%i%i",&x,&y);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     iter=g_malloc(sizeof(GtkTextIter));
     if (iter==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_location",sizeof(GtkTextIter));
     gtk_text_view_get_iter_at_location(GTK_TEXT_VIEW(THIS->obj),
 		iter,x,y);
-    push_gobjectclass(iter,pgtk_text_iter_program);
+    push_gobjectclass(iter,pgtk2_text_iter_program);
   }
 }
 
@@ -210,19 +210,19 @@ GTK2.TextIter get_iter_at_position(int x, int y)
 //! Retrieves the iterator pointing to the character at buffer coordinates
 //! x and y.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkTextIter *iter;
     INT_TYPE x,y;
     gint trailing;
     get_all_args("get_iter_at_position",args,"%i%i",&x,&y);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     iter=g_malloc(sizeof(GtkTextIter));
     if (iter==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_iter_at_position",sizeof(GtkTextIter));
     gtk_text_view_get_iter_at_position(GTK_TEXT_VIEW(THIS->obj),
 		iter,&trailing,x,y);
-    push_gobjectclass(iter,pgtk_text_iter_program);
+    push_gobjectclass(iter,pgtk2_text_iter_program);
   }
 }
 endrequire;
@@ -231,13 +231,13 @@ array buffer_to_window_coords(int wintype, int buffer_x, int buffer_y)
 //! Converts coordinate (buffer_x,buffer_y) to coordinates for the window
 //! win, and returns the results.  wintype is one of CONST(GTK_TEXT_WINDOW_).
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     gint win_x,win_y;
     INT_TYPE buffer_x,buffer_y,wintype;
     get_all_args("buffer_to_window_coords",args,"%i%i%i",&wintype,
 			&buffer_x,&buffer_y);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     gtk_text_view_buffer_to_window_coords(GTK_TEXT_VIEW(THIS->obj),
 		wintype,buffer_x,buffer_y,&win_x,&win_y);
     push_int(win_x);
@@ -250,13 +250,13 @@ array window_to_buffer_coords(int wintype, int window_x, int window_y)
 //! Converts coordinates on the window identified by wintype to buffer
 //! coordinates, returning the result.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE wintype,win_x,win_y;
     gint buffer_x,buffer_y;
     get_all_args("window_to_buffer_coords",args,"%i%i%i",&wintype,
 		&win_x,&win_y);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     gtk_text_view_window_to_buffer_coords(GTK_TEXT_VIEW(THIS->obj),
 		wintype,win_x,win_y,&buffer_x,&buffer_y);
     push_int(buffer_x);
@@ -297,14 +297,14 @@ int forward_display_line(GTK2.TextIter iter)
 //! each view, since they depend on the view's width; paragraphs are the same
 //! in all view, since they depend on the contents of the W(TextBuffer).
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     int res;
     get_all_args("forward_display_line",args,"%o",&o1);
     res=gtk_text_view_forward_display_line(GTK_TEXT_VIEW(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
-    my_pop_n_elems(args);
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program));
+    pgtk2_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -312,14 +312,14 @@ int forward_display_line(GTK2.TextIter iter)
 int backward_display_line(GTK2.TextIter iter)
 //! See forward_display_line().
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     int res;
     get_all_args("backward_display_line",args,"%o",&o1);
     res=gtk_text_view_backward_display_line(GTK_TEXT_VIEW(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
-    my_pop_n_elems(args);
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program));
+    pgtk2_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -327,14 +327,14 @@ int backward_display_line(GTK2.TextIter iter)
 int forward_display_line_end(GTK2.TextIter iter)
 //! Moves the iter forward to the next display line end.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     int res;
     get_all_args("forward_display_line_end",args,"%o",&o1);
     res=gtk_text_view_forward_display_line_end(GTK_TEXT_VIEW(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
-    my_pop_n_elems(args);
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program));
+    pgtk2_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -342,14 +342,14 @@ int forward_display_line_end(GTK2.TextIter iter)
 int backward_display_line_start(GTK2.TextIter iter)
 //! Moves the iter backward to the next display line start.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     int res;
     get_all_args("backward_display_line_start",args,"%o",&o1);
     res=gtk_text_view_backward_display_line_start(GTK_TEXT_VIEW(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
-    my_pop_n_elems(args);
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program));
+    pgtk2_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -357,14 +357,14 @@ int backward_display_line_start(GTK2.TextIter iter)
 int starts_display_line(GTK2.TextIter iter)
 //! Determines whether iter is at the start of a display line.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     int res;
     get_all_args("starts_display_line",args,"%o",&o1);
     res=gtk_text_view_starts_display_line(GTK_TEXT_VIEW(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program));
-    my_pop_n_elems(args);
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program));
+    pgtk2_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -380,15 +380,15 @@ int move_visually(GTK2.TextIter iter, int count)
 //! and visual order will depend on the direction of the current run, and
 //! there may be jumps when the cursor is moved off the end of a run.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     INT_TYPE count;
     int res;
     get_all_args("move_visually",args,"%o%i",&o1,&count);
     res=gtk_text_view_move_visually(GTK_TEXT_VIEW(THIS->obj),
-		(GtkTextIter *)get_pgobject(o1,pgtk_text_iter_program),count);
-    my_pop_n_elems(args);
+		(GtkTextIter *)get_pg2object(o1,pgtk2_text_iter_program),count);
+    pgtk2_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -494,7 +494,7 @@ void set_tabs(Pango.TabArray tabs)
 //! Sets the default tab stops for paragraphs.  Tags in the buffer may
 //! override the default.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     get_all_args("set_tabs",args,"%o",&o1);
@@ -508,12 +508,12 @@ Pango.TabArray get_tabs()
 //! Gets the default tabs.  Tags in the buffer may override the defaults.
 //! The return value will be 0 if "standard" (8-space) tabs are used.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     PangoTabArray *pta;
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     pta=gtk_text_view_get_tabs(GTK_TEXT_VIEW(THIS->obj));
-    push_gobjectclass(pta,ppango_tab_array_program);
+    push_gobjectclass(pta,ppango2_tab_array_program);
   }
 }
 endrequire;
@@ -532,12 +532,12 @@ GTK2.TextAttributes get_default_attributes()
 //! Obtains a copy of the default text attributes.  These are the attributes
 //! used for text unless a tag overrides them.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkTextAttributes *gta;
     gta=gtk_text_view_get_default_attributes(GTK_TEXT_VIEW(THIS->obj));
-    my_pop_n_elems(args);
-    push_gobjectclass(gta,pgtk_text_attributes_program);
+    pgtk2_pop_n_elems(args);
+    push_gobjectclass(gta,pgtk2_text_attributes_program);
   }
 }
 

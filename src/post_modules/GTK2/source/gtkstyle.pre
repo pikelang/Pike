@@ -24,7 +24,7 @@ GTK2.Style attach(GTK2.Widget window)
 //! colormap.  The process may involve the creation of a new style if the style
 //! has already been attached to a window with a different style and colormap.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkStyle *gs;
     struct object *o1;
@@ -43,7 +43,7 @@ void set_background(GTK2.Widget window, int state)
 //! Sets the background of window to the background color or pixmap specified
 //! by style for the given state.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     INT_TYPE state;
@@ -57,14 +57,14 @@ void set_background(GTK2.Widget window, int state)
 GTK2.IconSet lookup_icon_set(string stock_id)
 //! Lookup the icon set.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     char *stock_id;
     GtkIconSet *gi;
     get_all_args("lookup_icon_set",args,"%s",&stock_id);
     gi=gtk_style_lookup_icon_set(GTK_STYLE(THIS->obj),stock_id);
-    my_pop_n_elems(args);
-    push_gobjectclass(gi,pgtk_icon_set_program);
+    pgtk2_pop_n_elems(args);
+    push_gobjectclass(gi,pgtk2_icon_set_program);
   }
 }
 
@@ -73,7 +73,7 @@ GDK2.Pixbuf render_icon(GTK2.IconSource source, int direction, int state,
 //! Renders the icon specified by source at the given size according to the
 //! given parameters and returns the result in a pixbuf.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GdkPixbuf *pixbuf;
     struct object *o1,*o2;
@@ -84,7 +84,7 @@ GDK2.Pixbuf render_icon(GTK2.IconSource source, int direction, int state,
     pixbuf=gtk_style_render_icon(GTK_STYLE(THIS->obj),
 			(GtkIconSource *)get_gobject(o1),dir,state,size,
 			GTK_WIDGET(get_gobject(o2)),detail);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_gobject(pixbuf);
   }
 }
@@ -95,7 +95,7 @@ void paint_arrow(GTK2.Widget window, int state, int shadow, GDK2.Rectangle rect,
 //! Draws an arrow in the given rectangle on window using the given parameters.
 //! arrow determines the direction of the arrow.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,arrow,fill,x,y,width,height;
@@ -116,7 +116,7 @@ void paint_box(GTK2.Widget window, int state, int shadow, GDK2.Rectangle rect,
 	       int width, int height)
 //! Draws a box on window with the given parameters.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height;
@@ -137,7 +137,7 @@ void paint_box_gap(GTK2.Widget window, int state, int shadow,
 //! Draws a box in window using the given style and state and shadow type,
 //! leaving a gap in one side.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height,gap_side,gap_x,gap_width;
@@ -158,7 +158,7 @@ void paint_check(GTK2.Widget window, int state, int shadow, GDK2.Rectangle rect,
 		 int width, int height)
 //! Draws a check button indicator in the given rectangle on window.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height;
@@ -177,7 +177,7 @@ void paint_diamond(GTK2.Widget window, int state, int shadow,
 		   int x, int y, int width, int height)
 //! Draws a diamond in the given rectangle on window.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height;
@@ -196,7 +196,7 @@ void paint_extension(GTK2.Widget window, int state, int shadow,
 		     int x, int y, int width, int height, int gap_side)
 //! Draws an extension, i.e. a notebook tab.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height,gap_side;
@@ -217,7 +217,7 @@ void paint_flat_box(GTK2.Widget window, int state, int shadow,
 		    int x, int y, int width, int height)
 //! Draws a flat box on window.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height;
@@ -236,7 +236,7 @@ void paint_focus(GTK2.Widget window, int state, GDK2.Rectangle rect,
 		 int width, int height) 
 //! Draws a focus indicator around the given rectangle.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     INT_TYPE state,x,y,width,height;
@@ -255,7 +255,7 @@ void paint_handle(GTK2.Widget window, int state, int shadow, GDK2.Rectangle rect
 		  int height, int orientation)
 //! Draws a handle as used in GTK2.HandleBox and GTK2.Paned.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height,orient;
@@ -274,7 +274,7 @@ void paint_hline(GTK2.Widget window, int state, GDK2.Rectangle rect,
 		 GTK2.Widget widget, string detail, int x1, int x2, int y)
 //! Draws a horizontal line from (x1,y) to (x2,y).
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     INT_TYPE state,x1,x2,y;
@@ -293,7 +293,7 @@ void paint_option(GTK2.Widget window, int state, int shadow, GDK2.Rectangle rect
 		  int height)
 //! Draws a radio button indicator in the given rectangle.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height;
@@ -316,7 +316,7 @@ void paint_shadow(GTK2.Widget window, int state, int shadow,
 		  int x, int y, int width, int height)
 //! Draws a shadow around the given rectangle.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height;
@@ -337,7 +337,7 @@ void paint_shadow_gap(GTK2.Widget window, int state, int shadow,
 //! Draws a shadow around the given rectangle in window, leaving a gap in one
 //! side.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height,gap_side,gap_x,gap_width;
@@ -358,7 +358,7 @@ void paint_slider(GTK2.Widget window, int state, int shadow, GDK2.Rectangle rect
 		  int height, int orientation)
 //! Paint a slider.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height,orient;
@@ -378,7 +378,7 @@ void paint_tab(GTK2.Widget window, int state, int shadow, GDK2.Rectangle rect,
 	       int height)
 //! Draws an option menu tab (i.e. the up and down pointing arrows).
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     INT_TYPE state,shadow,x,y,width,height;
@@ -396,7 +396,7 @@ void paint_vline(GTK2.Widget window, int state, GDK2.Rectangle rect,
 		 GTK2.Widget widget, string detail, int y1, int y2, int x)
 //! Draws a vertical line from (x,y1) to (x,y2).
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     INT_TYPE state,y1,y2,x;
@@ -422,7 +422,7 @@ void paint_expander(GTK2.Widget window, int state, GDK2.Rectangle rect,
 //! tall in the collapsed position and expander_size pixels wide in the
 //! expanded position.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     INT_TYPE state,x,y,style;
@@ -443,7 +443,7 @@ void paint_layout(GTK2.Widget window, int state, int use_text,
 //! Draw a pango layout.  Use widget->create_pango_layout() to get a
 //! Pango.Layout.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3,*o4;
     INT_TYPE state,use_text,x,y;
@@ -464,7 +464,7 @@ void paint_resize_grip(GTK2.Widget window, int state, GDK2.Rectangle rect,
 		       int y, int width, int height)
 //! Draws a resize grip in the given rectangle.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     INT_TYPE state,edge,x,y,width,height;

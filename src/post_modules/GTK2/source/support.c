@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.10 2006/02/04 22:06:55 ldillon Exp $
+|| $Id: support.c,v 1.11 2006/02/27 12:23:18 mast Exp $
 */
 
 #include <version.h>
@@ -14,59 +14,59 @@ extern struct program *image_color_program;
 extern struct program *image_program;
 #endif
 
-void pgtk_encode_grey(struct image *i, unsigned char *dest, int bpp, int bpl);
+void pgtk2_encode_grey(struct image *i, unsigned char *dest, int bpp, int bpl);
 
-void pgtk_verify_setup() {
-  if (!pigtk_is_setup)
+void pgtk2_verify_setup() {
+  if (!pgtk2_is_setup)
     Pike_error("You must call GTK2.setup_gtk( argv ) first\n");
 }
 
-void pgtk_verify_gnome_setup() {
-  extern int gnome_is_setup;
-  if (!gnome_is_setup)
+void pgtk2_verify_gnome_setup() {
+  extern int pgnome2_is_setup;
+  if (!pgnome2_is_setup)
     Pike_error("You must call Gnome2.init( app,version,argv ) first\n");
 }
 
-void pgtk_verify_obj_inited() {
+void pgtk2_verify_obj_inited() {
   if (!THIS->obj)
     Pike_error("Calling function in unitialized object\n");
 }
 
-void pgtk_verify_obj_not_inited() {
+void pgtk2_verify_obj_not_inited() {
   if (THIS->obj)
     Pike_error("Tried to initialize object twice\n");
 }
 
-void pgtk_verify_mixin_inited() {
+void pgtk2_verify_mixin_inited() {
   if (!MIXIN_THIS->obj)
     Pike_error("Calling function in unitialized object\n");
 }
 
-void pgtk_verify_mixin_not_inited() {
+void pgtk2_verify_mixin_not_inited() {
   if (MIXIN_THIS->obj)
     Pike_error("Tried to initialize object twice\n");
 }
 
-void my_pop_n_elems(int n) /* anti-inline */
+void pgtk2_pop_n_elems(int n) /* anti-inline */
 {
   pop_n_elems(n);
 }
 
-void my_ref_push_object(struct object *o) {
+void pgtk2_ref_push_object(struct object *o) {
   ref_push_object(o);
 }
 
-void pgtk_return_this(int n) {
+void pgtk2_return_this(int n) {
   pop_n_elems(n);
   ref_push_object(Pike_fp->current_object);
 }
 
-void pgtk_get_image_module() {
+void pgtk2_get_image_module() {
   push_constant_text("Image");
   SAFE_APPLY_MASTER("resolv_or_error",1);
 }
 
-void pgtk_index_stack(char *what) {
+void pgtk2_index_stack(char *what) {
   push_text(what);
   f_index(2);
 #ifdef PIKE_DEBUG
@@ -126,7 +126,7 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GdkImage *i) {
     int native_byteorder;
     PFTIME("Convert");
     if (vis->type==GDK_VISUAL_STATIC_GRAY)
-      pgtk_encode_grey(img_data,i->mem,i->bpp,i->bpl);
+      pgtk2_encode_grey(img_data,i->mem,i->bpp,i->bpl);
     else {
       if (i->bpl!=(i->bpp*x))
 	switch(i->bpl & 3) {
@@ -137,10 +137,10 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GdkImage *i) {
 	}
       else
 	pad=0;
-      pgtk_encode_truecolor_masks(img_data,i->bpp*8,pad*8,
-                                  (i->byte_order!=1),vis->red_mask,
-                                  vis->green_mask,vis->blue_mask,
-                                  i->mem, i->bpl*y);
+      pgtk2_encode_truecolor_masks(img_data,i->bpp*8,pad*8,
+				   (i->byte_order!=1),vis->red_mask,
+				   vis->green_mask,vis->blue_mask,
+				   i->mem, i->bpl*y);
     }
   } else {
     static int colors_allocated=0;
@@ -191,8 +191,8 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GdkImage *i) {
       }
       f_aggregate(256);
       /* now on stack: the array with colors. */
-      pgtk_get_image_module();
-      pgtk_index_stack("colortable");
+      pgtk2_get_image_module();
+      pgtk2_index_stack("colortable");
       /* on stack: array function */
       Pike_sp[0]=Pike_sp[-1];
       Pike_sp[-1]=Pike_sp[-2];
@@ -215,9 +215,9 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GdkImage *i) {
 
     { /* now we have a colormap available. Happy happy joy joy! */
       struct pike_string *s;
-      pgtk_get_image_module();
-      pgtk_index_stack("X");
-      pgtk_index_stack("encode_pseudocolor");
+      pgtk2_get_image_module();
+      pgtk2_index_stack("X");
+      pgtk2_index_stack("encode_pseudocolor");
       /* on stack: function */
       add_ref(img);
       push_object(img);
@@ -252,7 +252,7 @@ GdkImage *gdkimage_from_pikeimage(struct object *img, int fast, GdkImage *i) {
   return i;
 }
 
-int IS_OBJECT_PROGRAM(struct program *X);
+int pgtk2_is_object_program(struct program *X);
 
 
 void push_gobjectclass(void *obj, struct program *def) {
@@ -261,7 +261,7 @@ void push_gobjectclass(void *obj, struct program *def) {
     push_int(0);
     return;
   }
-  if (IS_OBJECT_PROGRAM(def))
+  if (pgtk2_is_object_program(def))
     if ((o=g_object_get_data(((void *)obj),"pike_object"))) {
       ref_push_object(o);
       return;
@@ -269,13 +269,13 @@ void push_gobjectclass(void *obj, struct program *def) {
   o=low_clone(def);
   call_c_initializers(o);
   ((struct object_wrapper *)o->storage)->obj=obj;
-  pgtk__init_object(o);
+  pgtk2__init_object(o);
   ref_push_object(o);
   return;
 }
 
 
-void push_pgdkobject(void *obj, struct program *def) {
+void push_pgdk2object(void *obj, struct program *def) {
   struct object *o;
   if (!obj) {
     push_int(0);
@@ -288,7 +288,7 @@ void push_pgdkobject(void *obj, struct program *def) {
   return;
 }
 
-GObject *get_pgobject(struct object *from, struct program *type) {
+GObject *get_pg2object(struct object *from, struct program *type) {
   struct object_wrapper * o;
   if (!from)
     return NULL;
@@ -298,7 +298,7 @@ GObject *get_pgobject(struct object *from, struct program *type) {
   return o->obj;
 }
 
-void *get_pgdkobject(struct object *from, struct program *type) {
+void *get_pgdk2object(struct object *from, struct program *type) {
   void *f;
   if (!from) 
     return NULL;
@@ -311,9 +311,9 @@ void *get_pgdkobject(struct object *from, struct program *type) {
   return (void *)((struct object_wrapper *)f)->obj;
 }
 
-void my_destruct(struct object *o) {
+void pgtk2_destruct(struct object *o) {
   struct object_wrapper *ow=
-           (struct object_wrapper *)get_storage(o,pg_object_program);
+	   (struct object_wrapper *)get_storage(o,pg2_object_program);
   if (ow) /* This should always be true. But let's add a check anyway. */
     ow->obj=NULL;
   if (o->refs>1)
@@ -321,16 +321,16 @@ void my_destruct(struct object *o) {
   free_object(o); /* ref added in __init_object below. */
 }
 
-void pgtk__init_object(struct object *o) {
+void pgtk2__init_object(struct object *o) {
   GObject *go=get_gobject(o);
   if (!go) /* Not a real GObject. Refhandling done elsewhere */
     return;
   o->refs++;
-/*  gtk_object_set_data_full(go,"pike_object",(void*)o, (void*)my_destruct); */
-  g_object_set_data_full(G_OBJECT(go),"pike_object",(void *)o,(void *)my_destruct);
+/*  gtk_object_set_data_full(go,"pike_object",(void*)o, (void*)pgtk2_destruct); */
+  g_object_set_data_full(G_OBJECT(go),"pike_object",(void *)o,(void *)pgtk2_destruct);
 }
 
-void pgtk_get_mapping_arg(struct mapping *map,
+void pgtk2_get_mapping_arg(struct mapping *map,
                           char *name, int type, int madd,
                           void *dest, long *mask, int len) {
   struct svalue *s;
@@ -380,7 +380,7 @@ GdkAtom get_gdkatom(struct object *o) {
 }
 
 
-struct my_pixel pgtk_pixel_from_xpixel(unsigned int pix, GdkImage *i) {
+struct my_pixel pgtk2_pixel_from_xpixel(unsigned int pix, GdkImage *i) {
   static GdkColormap *col;
   GdkColor * c;
   struct my_pixel res;
@@ -424,7 +424,7 @@ struct my_pixel pgtk_pixel_from_xpixel(unsigned int pix, GdkImage *i) {
 
 void push_atom(GdkAtom a) {
   /* this should really be inserted in the GDK.Atom mapping. */
-  push_pgdkobject((void *)a,pgdk__atom_program);
+  push_pgdk2object((void *)a,pgdk2__atom_program);
 }
 
 void push_Xpseudo32bitstring(void *f, int nelems) {
@@ -441,7 +441,7 @@ void push_Xpseudo32bitstring(void *f, int nelems) {
 }
 
 /*
-gint pgtk_buttonfuncwrapper(GObject *obj, struct signal_data *d, void *foo) {
+gint pgtk2_buttonfuncwrapper(GObject *obj, struct signal_data *d, void *foo) {
   int res;
   push_svalue(&d->args);
   apply_svalue(&d->cb, 1);
@@ -467,38 +467,38 @@ void push_gdk_event(GdkEvent *e) {
 enum { PUSHED_NOTHING, PUSHED_VALUE, NEED_RETURN, };
 
 /*
-static int pgtk_push_selection_data_param( GValue *a )
+static int pgtk2_push_selection_data_param( GValue *a )
 {
-  push_pgdkobject( GTK_VALUE_POINTER(*a), pgtk_selection_data_program);
+  push_pgdk2object( GTK_VALUE_POINTER(*a), pgtk2_selection_data_program);
   return PUSHED_VALUE;
 }
 */
 
-static int pgtk_push_accel_group_param(GValue *a) {
+static int pgtk2_push_accel_group_param(GValue *a) {
   g_object_ref(g_value_get_pointer(a));
-  push_gobjectclass(g_value_get_pointer(a),pgtk_accel_group_program);
+  push_gobjectclass(g_value_get_pointer(a),pgtk2_accel_group_program);
   return PUSHED_VALUE;
 }
 
 /*
-static int pgtk_push_ctree_node_param( GValue *a )
+static int pgtk2_push_ctree_node_param( GValue *a )
 {
-  push_pgdkobject( GTK_VALUE_POINTER(*a), pgtk_ctree_node_program);
+  push_pgdk2object( GTK_VALUE_POINTER(*a), pgtk2_ctree_node_program);
   return PUSHED_VALUE;
 }
 */
 
-static int pgtk_push_gdk_drag_context_param(GValue *a) {
+static int pgtk2_push_gdk_drag_context_param(GValue *a) {
   push_gdkobject(g_value_get_pointer(a),drag_context);
   return PUSHED_VALUE;
 }
 
-static int pgtk_push_gdk_event_param(GValue *a) {
+static int pgtk2_push_gdk_event_param(GValue *a) {
   push_gdk_event(g_value_get_boxed(a));
   return NEED_RETURN;
 }
 
-static int pgtk_push_gdk_rectangle_param(GValue *a) {
+static int pgtk2_push_gdk_rectangle_param(GValue *a) {
   GdkRectangle *r = (GdkRectangle *) g_value_get_boxed(a);
   push_text("x"); push_int(r->x);
   push_text("y"); push_int(r->y);
@@ -508,7 +508,7 @@ static int pgtk_push_gdk_rectangle_param(GValue *a) {
   return PUSHED_VALUE;
 }
 
-static int pgtk_push_int_param(GValue *a) {
+static int pgtk2_push_int_param(GValue *a) {
   LONGEST retval;
   switch (G_VALUE_TYPE(a)) {
     case G_TYPE_INT:
@@ -537,7 +537,7 @@ static int pgtk_push_int_param(GValue *a) {
   return PUSHED_VALUE;
 }
 
-static int pgtk_push_float_param(GValue *a) {
+static int pgtk2_push_float_param(GValue *a) {
   FLOAT_TYPE retval;
   if (G_VALUE_TYPE(a)==G_TYPE_FLOAT)
     retval=(FLOAT_TYPE)g_value_get_float(a);
@@ -547,7 +547,7 @@ static int pgtk_push_float_param(GValue *a) {
   return PUSHED_VALUE;
 }
 
-static int pgtk_push_string_param(GValue *a) {
+static int pgtk2_push_string_param(GValue *a) {
   const gchar *t=g_value_get_string(a);
   if (t)
     PGTK_PUSH_GCHAR(t);
@@ -556,21 +556,21 @@ static int pgtk_push_string_param(GValue *a) {
   return PUSHED_VALUE;
 }
 
-static int pgtk_push_object_param(GValue *a) {
+static int pgtk2_push_object_param(GValue *a) {
   GObject *obj=g_value_get_object(a);
   if (obj)
     push_gobject(((void *)g_value_get_object(a)));
   return PUSHED_VALUE;
 }
 
-static int pgtk_push_pike_object_param(GValue *a) {
+static int pgtk2_push_pike_object_param(GValue *a) {
   struct object *o=g_value_get_pointer(a);
   if (o)
     ref_push_object(o);
   return PUSHED_VALUE;
 }
 
-static int pgtk_push_gparamspec_param(GValue *a) {
+static int pgtk2_push_gparamspec_param(GValue *a) {
 }
 
 static struct push_callback {
@@ -593,46 +593,46 @@ static void insert_push_callback(GType i, int (*cb)(GValue *)) {
 
 static void build_push_callbacks() {
 #define CB(X,Y)  insert_push_callback(X,Y);
-  CB(G_TYPE_OBJECT,		 pgtk_push_object_param);
-  CB(PANGO_TYPE_TAB_ARRAY,	pgtk_push_object_param);
-  CB(GTK_TYPE_TEXT_ATTRIBUTES,	pgtk_push_object_param);
-  CB(GTK_TYPE_TREE_ITER,	pgtk_push_object_param);
-  CB(GTK_TYPE_TREE_MODEL,	pgtk_push_object_param);
-  CB(PANGO_TYPE_ATTR_LIST,	pgtk_push_object_param);
-  CB(GTK_TYPE_TREE_PATH,	pgtk_push_object_param);
-  CB(PANGO_TYPE_FONT_DESCRIPTION,	pgtk_push_object_param);
-  CB(PANGO_TYPE_CONTEXT,	pgtk_push_object_param);
-  CB(PANGO_TYPE_LAYOUT,		pgtk_push_object_param);
+  CB(G_TYPE_OBJECT,		 pgtk2_push_object_param);
+  CB(PANGO_TYPE_TAB_ARRAY,	pgtk2_push_object_param);
+  CB(GTK_TYPE_TEXT_ATTRIBUTES,	pgtk2_push_object_param);
+  CB(GTK_TYPE_TREE_ITER,	pgtk2_push_object_param);
+  CB(GTK_TYPE_TREE_MODEL,	pgtk2_push_object_param);
+  CB(PANGO_TYPE_ATTR_LIST,	pgtk2_push_object_param);
+  CB(GTK_TYPE_TREE_PATH,	pgtk2_push_object_param);
+  CB(PANGO_TYPE_FONT_DESCRIPTION,	pgtk2_push_object_param);
+  CB(PANGO_TYPE_CONTEXT,	pgtk2_push_object_param);
+  CB(PANGO_TYPE_LAYOUT,		pgtk2_push_object_param);
 
-  CB( GTK_TYPE_ACCEL_GROUP,      pgtk_push_accel_group_param );
+  CB( GTK_TYPE_ACCEL_GROUP,      pgtk2_push_accel_group_param );
   /*#ifndef HAS_GTK_20*/
-  CB( GDK_TYPE_DRAG_CONTEXT, pgtk_push_gdk_drag_context_param );
+  CB( GDK_TYPE_DRAG_CONTEXT, pgtk2_push_gdk_drag_context_param );
   /*#endif*/
-  CB( GDK_TYPE_EVENT,        pgtk_push_gdk_event_param );
-  CB( GDK_TYPE_RECTANGLE, pgtk_push_gdk_rectangle_param );
+  CB( GDK_TYPE_EVENT,        pgtk2_push_gdk_event_param );
+  CB( GDK_TYPE_RECTANGLE, pgtk2_push_gdk_rectangle_param );
 
-  CB( GTK_TYPE_ACCEL_FLAGS,      pgtk_push_int_param );
-  CB( GDK_TYPE_MODIFIER_TYPE,pgtk_push_int_param );
+  CB( GTK_TYPE_ACCEL_FLAGS,      pgtk2_push_int_param );
+  CB( GDK_TYPE_MODIFIER_TYPE,pgtk2_push_int_param );
 
-  CB( G_TYPE_FLOAT,            pgtk_push_float_param );
-  CB( G_TYPE_DOUBLE,           pgtk_push_float_param );
+  CB( G_TYPE_FLOAT,            pgtk2_push_float_param );
+  CB( G_TYPE_DOUBLE,           pgtk2_push_float_param );
 
-  CB( G_TYPE_STRING,           pgtk_push_string_param );
+  CB( G_TYPE_STRING,           pgtk2_push_string_param );
 
-  CB( G_TYPE_INT,              pgtk_push_int_param );
-  CB( G_TYPE_ENUM,             pgtk_push_int_param );
-  CB( G_TYPE_FLAGS,            pgtk_push_int_param );
-  CB( G_TYPE_BOOLEAN,          pgtk_push_int_param );
-  CB( G_TYPE_UINT,             pgtk_push_int_param );
-  CB( G_TYPE_LONG,             pgtk_push_int_param );
-  CB( G_TYPE_ULONG,            pgtk_push_int_param );
-  CB( G_TYPE_CHAR,             pgtk_push_int_param );
+  CB( G_TYPE_INT,              pgtk2_push_int_param );
+  CB( G_TYPE_ENUM,             pgtk2_push_int_param );
+  CB( G_TYPE_FLAGS,            pgtk2_push_int_param );
+  CB( G_TYPE_BOOLEAN,          pgtk2_push_int_param );
+  CB( G_TYPE_UINT,             pgtk2_push_int_param );
+  CB( G_TYPE_LONG,             pgtk2_push_int_param );
+  CB( G_TYPE_ULONG,            pgtk2_push_int_param );
+  CB( G_TYPE_CHAR,             pgtk2_push_int_param );
 
   CB( G_TYPE_NONE,    NULL ); 
   
-  CB( G_TYPE_POINTER,  pgtk_push_pike_object_param );
+  CB( G_TYPE_POINTER,  pgtk2_push_pike_object_param );
 
-  CB( G_TYPE_PARAM, pgtk_push_gparamspec_param );
+  CB( G_TYPE_PARAM, pgtk2_push_gparamspec_param );
 /*
    CB( GTK_TYPE_SIGNAL,   NULL );
    CB( GTK_TYPE_INVALID,  NULL );
@@ -681,7 +681,7 @@ void push_gvalue_r(GValue *param, GType t) {
  * params[nparams] should be set to the return value. It does seem to work,
  * though.
  */
-int pgtk_signal_func_wrapper(struct signal_data *d, ...) {
+int pgtk2_signal_func_wrapper(struct signal_data *d, ...) {
   int i,return_value=0,j;
   struct svalue *osp=Pike_sp;
   GSignalQuery _opts;
@@ -725,19 +725,19 @@ int pgtk_signal_func_wrapper(struct signal_data *d, ...) {
 }
 
 
-void pgtk_free_signal_data(struct signal_data *s, GClosure *gcl) {
+void pgtk2_free_signal_data(struct signal_data *s, GClosure *gcl) {
   free_svalue(&s->cb);
   free_svalue(&s->args);
   g_free(s);
 }
 
-void pgtk_push_gchar(const gchar *s) {
+void pgtk2_push_gchar(const gchar *s) {
   push_text(s); 
   push_int(1);
   f_utf8_to_string(2);
 }
 
-gchar *pgtk_get_str(struct svalue *sv) {
+gchar *pgtk2_get_str(struct svalue *sv) {
   gchar *res;
 
   push_svalue(sv);
@@ -755,27 +755,27 @@ gchar *pgtk_get_str(struct svalue *sv) {
   return res;
 }
 
-void pgtk_free_str(gchar *s) {
+void pgtk2_free_str(gchar *s) {
   g_free(s);
 }
 
-void pgtk_default__sprintf(int args, int offset, int len) {
+void pgtk2_default__sprintf(int args, int offset, int len) {
   int mode = 0;
   if (args>0 && Pike_sp[-args].type==PIKE_T_INT)
     mode=Pike_sp[-args].u.integer;
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   if (mode!='O') {
     push_undefined();
     return;
   }
-  push_string(make_shared_binary_string(__pgtk_string_data+offset,len));
+  push_string(make_shared_binary_string(__pgtk2_string_data+offset,len));
 }
 
-void pgtk_clear_obj_struct(struct object *o) {
+void pgtk2_clear_obj_struct(struct object *o) {
   MEMSET(Pike_fp->current_storage,0,sizeof(struct object_wrapper));
 }
 
-void pgtk_setup_mixin(struct object *o, struct program *p) {
+void pgtk2_setup_mixin(struct object *o, struct program *p) {
   ptrdiff_t offset;
   offset = low_get_storage(o->prog, p);
   if(offset == -1)
@@ -783,7 +783,7 @@ void pgtk_setup_mixin(struct object *o, struct program *p) {
   ((struct mixin_wrapper *)Pike_fp->current_storage)->offset = offset;
 }
 
-LONGEST pgtk_get_int(struct svalue *s) {
+LONGEST pgtk2_get_int(struct svalue *s) {
   if (s->type==PIKE_T_INT)
     return s->u.integer;
 #ifdef AUTO_BIGNUM
@@ -798,7 +798,7 @@ LONGEST pgtk_get_int(struct svalue *s) {
   return 0;
 }
 
-int pgtk_is_int(struct svalue *s) {
+int pgtk2_is_int(struct svalue *s) {
   return ((s->type==PIKE_T_INT) ||
           (s->type==PIKE_T_FLOAT)
 #ifdef AUTO_BIGNUM
@@ -808,7 +808,7 @@ int pgtk_is_int(struct svalue *s) {
 }
 
 /* double should be enough */
-double pgtk_get_float(struct svalue *s) {
+double pgtk2_get_float(struct svalue *s) {
   if (s->type==PIKE_T_FLOAT)
     return s->u.float_number;
   if (s->type==PIKE_T_INT)
@@ -826,11 +826,11 @@ double pgtk_get_float(struct svalue *s) {
   return 0.0;
 }
 
-void pgtk_free_object(struct object *o) {
+void pgtk2_free_object(struct object *o) {
   free_object(o);
 }
 
-int pgtk_is_float(struct svalue *s) {
+int pgtk2_is_float(struct svalue *s) {
   return ((s->type==PIKE_T_FLOAT) ||
           (s->type==PIKE_T_INT)
 #ifdef AUTO_BIGNUM
@@ -839,7 +839,7 @@ int pgtk_is_float(struct svalue *s) {
          );
 }
 
-void pgtk_set_property(GObject *g, char *prop, struct svalue *sv) {
+void pgtk2_set_property(GObject *g, char *prop, struct svalue *sv) {
   GParamSpec *gps;
   GType v;
   gps=g_object_class_find_property(G_OBJECT_GET_CLASS(g),prop);
@@ -898,13 +898,13 @@ void pgtk_set_property(GObject *g, char *prop, struct svalue *sv) {
       break;
     case G_TYPE_FLOAT:
       {
-	gfloat f=pgtk_get_float(sv);
+	gfloat f=pgtk2_get_float(sv);
 	g_object_set(g,prop,f,NULL);
       }
       break;
     case G_TYPE_DOUBLE:
       {
-	gdouble f=pgtk_get_float(sv);
+	gdouble f=pgtk2_get_float(sv);
 	g_object_set(g,prop,f,NULL);
       }
       break;
@@ -929,16 +929,16 @@ void pgtk_set_property(GObject *g, char *prop, struct svalue *sv) {
   }
 }
 
-void pgtk_get_property(GObject *g, char *prop) {
+void pgtk2_get_property(GObject *g, char *prop) {
   GParamSpec *gps=g_object_class_find_property(G_OBJECT_GET_CLASS(g),prop);
   if (!gps)
     Pike_error("This object does not have a property called %s.\n",prop);
   if (!(gps->flags & G_PARAM_READABLE))
     Pike_error("This property is not readable.\n");
-  pgtk__low_get_property(g,prop);
+  pgtk2__low_get_property(g,prop);
 }
 
-void pgtk__low_get_property(GObject *g, char *prop) {
+void pgtk2__low_get_property(GObject *g, char *prop) {
   GParamSpec *gps=g_object_class_find_property(G_OBJECT_GET_CLASS(g),prop);
 #define get_type(type) do { \
 	type i;	\
@@ -1063,13 +1063,13 @@ void pgtk__low_get_property(GObject *g, char *prop) {
   }
 }
 
-void pgtk_destroy_store_data(gpointer data) {
+void pgtk2_destroy_store_data(gpointer data) {
   struct store_data *sd=(struct store_data *)data;
   g_free(sd->types);
   g_free(sd);
 }
 
-void pgtk_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
+void pgtk2_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
   g_value_init(gv,gt);
   if (G_TYPE_IS_ENUM(gt)) {
     g_value_set_enum(gv,(gint)PGTK_GETINT(sv));
@@ -1136,10 +1136,10 @@ void pgtk_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
       g_value_set_boolean(gv,(gboolean)PGTK_GETINT(sv));
       break;
     case G_TYPE_FLOAT:
-      g_value_set_float(gv,(gfloat)pgtk_get_float(sv));
+      g_value_set_float(gv,(gfloat)pgtk2_get_float(sv));
       break;
     case G_TYPE_DOUBLE:
-      g_value_set_double(gv,(gdouble)pgtk_get_float(sv));
+      g_value_set_double(gv,(gdouble)pgtk2_get_float(sv));
       break;
     case G_TYPE_STRING:
       if (sv->type==PIKE_T_STRING)
@@ -1169,13 +1169,13 @@ void pgtk_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
   }
 }
 
-int pgtk_tree_sortable_callback(GtkTreeModel *model, GtkTreeIter *a,
-				GtkTreeIter *b, struct signal_data *d) {
+int pgtk2_tree_sortable_callback(GtkTreeModel *model, GtkTreeIter *a,
+				 GtkTreeIter *b, struct signal_data *d) {
   int res;
-/*  push_gobjectclass(model,pgtk_tree_model_program); */
+/*  push_gobjectclass(model,pgtk2_tree_model_program); */
   push_gobject(model);
-  push_gobjectclass(a,pgtk_tree_iter_program);
-  push_gobjectclass(b,pgtk_tree_iter_program);
+  push_gobjectclass(a,pgtk2_tree_iter_program);
+  push_gobjectclass(b,pgtk2_tree_iter_program);
   push_svalue(&d->args);
   apply_svalue(&d->cb,4);
   res=Pike_sp[-1].u.integer;
@@ -1183,7 +1183,7 @@ int pgtk_tree_sortable_callback(GtkTreeModel *model, GtkTreeIter *a,
   return res;
 }
 
-GObject *pgtk_create_new_obj_with_properties(GType type, struct mapping *m) {
+GObject *pgtk2_create_new_obj_with_properties(GType type, struct mapping *m) {
   GParamSpec *pspec;
   GObject *obj;
   GObjectClass *class;
@@ -1205,7 +1205,7 @@ GObject *pgtk_create_new_obj_with_properties(GType type, struct mapping *m) {
 	continue;
       }
 /*      g_value_init(&params[i].value,G_PARAM_SPEC_VALUE_TYPE(pspec)); */
-      pgtk_set_gvalue(&params[i].value,G_PARAM_SPEC_VALUE_TYPE(pspec),&k->val);
+      pgtk2_set_gvalue(&params[i].value,G_PARAM_SPEC_VALUE_TYPE(pspec),&k->val);
       params[i++].name=s;
     }
   }

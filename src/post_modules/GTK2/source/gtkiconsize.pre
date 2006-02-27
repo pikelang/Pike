@@ -10,7 +10,7 @@ string get_name(int size)
   const gchar *res;
   get_all_args("get_name",args,"%i",&size);
   res=gtk_icon_size_get_name(size);
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_GCHAR(res);
 }
 
@@ -21,7 +21,7 @@ int from_name(string name)
   int res;
   get_all_args("from_name",args,"%s",&name);
   res=gtk_icon_size_from_name(name);
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(res);
 }
 
@@ -45,6 +45,6 @@ int register(string name, int width, int height)
   int res;
   get_all_args("register",args,"%s%i%i",&name,&width,&height);
   res=gtk_icon_size_register(name,width,height);
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_INT(res);
 }

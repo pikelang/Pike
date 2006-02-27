@@ -27,8 +27,8 @@ void create(GTK2.TreeModel|mapping(string:mixed)|string|void model_or_props)
 //! If you do so, you should only manipulate it with the following functions:
 //! append_text(), insert_text(), prepend_text(), and remove_text().
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     GtkWidget *gcb;
     if (Pike_sp[-args].type==PIKE_T_STRING) {
@@ -44,13 +44,13 @@ void create(GTK2.TreeModel|mapping(string:mixed)|string|void model_or_props)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_COMBO_BOX);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gcb;
     gcb=gtk_combo_box_new();
     THIS->obj=G_OBJECT(gcb);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 require gtk26;
@@ -96,8 +96,8 @@ void set_active(int index_);
 GTK2.TreeIter get_active_iter()
 //! Get the current active item.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkTreeIter *iter=NULL;
     int res;
@@ -108,7 +108,7 @@ GTK2.TreeIter get_active_iter()
     res=gtk_combo_box_get_active_iter(GTK_COMBO_BOX(THIS->obj),
 		iter);
     if (res)
-      push_gobjectclass(iter,pgtk_tree_iter_program);
+      push_gobjectclass(iter,pgtk2_tree_iter_program);
     else
       push_int(0);
   }
@@ -118,13 +118,13 @@ void set_active_iter(GTK2.TreeIter iter)
 //! Sets the current active item to be the one referenced by iter.
 //! iter must correspond to a path of depth one.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     get_all_args("set_active_iter",args,"%o",&o1);
     gtk_combo_box_set_active_iter(GTK_COMBO_BOX(THIS->obj),
 		(GtkTreeIter *)get_gobject(o1));
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   }
   RETURN_THIS();
 }
@@ -132,11 +132,11 @@ void set_active_iter(GTK2.TreeIter iter)
 GTK2.TreeModel get_model()
 //! Get the GTK2.TreeModel which is acting as a data source.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkTreeModel *gtm;
     gtm=gtk_combo_box_get_model(GTK_COMBO_BOX(THIS->obj));
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_gobject(gtm);
   }
 }
@@ -172,8 +172,8 @@ string get_active_text()
 //! Note that you can only use this function with combo boxes
 //! constructed with GTK2.ComboBox("a string").
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     const gchar *a1;
     a1=gtk_combo_box_get_active_text(GTK_COMBO_BOX(THIS->obj));

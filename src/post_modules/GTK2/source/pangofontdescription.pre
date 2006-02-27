@@ -17,8 +17,8 @@ void create(?string desc)
 //! style options will be set to the default values.  If SIZE is missing, the
 //! size in the resulting font description will be set to 0.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     char *str;
     get_all_args("create",args,"%s",&str);
@@ -26,28 +26,28 @@ void create(?string desc)
       THIS->obj=(void *)pango_font_description_from_string(str);
     else
       THIS->obj=(void *)pango_font_description_new();
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else
     THIS->obj=(void *)pango_font_description_new();
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 Pango.FontDescription copy()
 //! Copy a font description.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     PangoFontDescription *pfd=pango_font_description_copy(
 		(PangoFontDescription *)THIS->obj);
-    my_pop_n_elems(args);
-    push_gobjectclass(pfd,ppango_font_description_program);
+    pgtk2_pop_n_elems(args);
+    push_gobjectclass(pfd,ppango2_font_description_program);
   }
 }
 
 int equal(Pango.FontDescription desc)
 //! Compares two font descriptions for equality.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     int res;
@@ -55,7 +55,7 @@ int equal(Pango.FontDescription desc)
     get_all_args("equal",args,"%o",&o1);
     res=pango_font_description_equal((PangoFontDescription *)THIS->obj,
 		(PangoFontDescription *)get_gobject(o1));
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     PGTK_PUSH_INT(res);
   }
 }
@@ -66,7 +66,7 @@ void destroy()
   if (THIS->obj)
     pango_font_description_free((PangoFontDescription *)THIS->obj);
   THIS->obj=0;
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(0);
 }
 
@@ -74,7 +74,7 @@ void set_family(string family)
 //! Sets the family name.  The family name represents a family of related
 //! fonts styles, and will resolve to a particular PangoFontFamily.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     char *str;
     get_all_args("set_family",args,"%s",&str);
@@ -87,8 +87,8 @@ void set_family(string family)
 string get_family()
 //! Gets the family name.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   PGTK_PUSH_GCHAR(
 	pango_font_description_get_family((PangoFontDescription *)THIS->obj));
 }
@@ -100,7 +100,7 @@ void set_style(int style)
 //! matching in Pango will match italic specifications with oblique fonts and
 //! vice-versa if an exact match is not found.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE style;
     get_all_args("set_style",args,"%i",&style);
@@ -112,15 +112,15 @@ void set_style(int style)
 int get_style()
 //! Gets the style.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   push_int(pango_font_description_get_style((PangoFontDescription *)THIS->obj));
 }
 
 void set_variant(int variant)
 //! Sets the variant.  One of CONST(PANGO_VARIANT_).
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE var;
     get_all_args("set_variant",args,"%i",&var);
@@ -132,8 +132,8 @@ void set_variant(int variant)
 int get_variant()
 //! Gets the variant.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   push_int(pango_font_description_get_variant(
 		(PangoFontDescription *)THIS->obj));
 }
@@ -143,7 +143,7 @@ void set_weight(int weight)
 //! be.  In addition to the values of CONST(PANGO_WEIGHT_), other intermediate
 //! numeric values are possible.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE we;
     get_all_args("set_weight",args,"%i",&we);
@@ -155,8 +155,8 @@ void set_weight(int weight)
 int get_weight()
 //! Gets the weight.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   push_int(pango_font_description_get_weight(
 		(PangoFontDescription *)THIS->obj));
 }
@@ -165,7 +165,7 @@ void set_stretch(int stretch)
 //! Sets the stretch.  This specifies how narrow or wide the font should be.
 //! One of CONST(PANGO_STRETCH_).
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE st;
     get_all_args("set_stretch",args,"%i",&st);
@@ -177,8 +177,8 @@ void set_stretch(int stretch)
 int get_stretch()
 //! Get the stretch.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   push_int(pango_font_description_get_stretch(
 		(PangoFontDescription *)THIS->obj));
 }
@@ -192,7 +192,7 @@ void set_size(int size)
 //! to a 1o*(96.72) = 13.3 pixel font.  Use set_absolute_size() if you need
 //! a particular size in device units.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE size;
     get_all_args("set_size",args,"%i",&size);
@@ -204,8 +204,8 @@ void set_size(int size)
 int get_size()
 //! Gets the size.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   push_int(pango_font_description_get_size(
 		(PangoFontDescription *)THIS->obj));
 }
@@ -216,7 +216,7 @@ void set_absolute_size(float size)
 //! one device unit.  For an output backend where a device unit is a pixel,
 //! a size value of 10*GTK2.PANGO_SCALE gives a 10 pixel font.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     FLOAT_TYPE size;
     get_all_args("set_absolute_size",args,"%f",&size);
@@ -229,8 +229,8 @@ void set_absolute_size(float size)
 int get_size_is_absolute()
 //! Determines whether the size of the font is in points or device units.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   push_int(pango_font_description_get_size_is_absolute(
 		(PangoFontDescription *)THIS->obj));
 }
@@ -242,7 +242,7 @@ void merge(Pango.FontDescription desc, int replace)
 //! set are affected.  If true, then fields that are already set will be 
 //! replaced as well.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE rep;
     struct object *o1;
@@ -258,7 +258,7 @@ int better_match(Pango.FontDescription new, ?Pango.FontDescription old)
 //! if old is omitted, determines if new is a match at all.  Approximate
 //! matching is done for weight and style; other attributes must match exactly.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2=NULL;
     int res;
@@ -266,7 +266,7 @@ int better_match(Pango.FontDescription new, ?Pango.FontDescription old)
     res=pango_font_description_better_match((PangoFontDescription *)THIS->obj,
 		(PangoFontDescription *)get_gobject(o2),
 		(PangoFontDescription *)get_gobject(o1));
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -276,8 +276,8 @@ string to_string()
 //! will only have a terminating comm if the last word of the list is a valid
 //! style option.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     char *str=pango_font_description_to_string(
 		(PangoFontDescription *)THIS->obj);
@@ -290,8 +290,8 @@ string to_filename()
 //! result from calling to_string(), but with underscores instead of characters
 //! that are untypical in filenames, and in lower case only.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     char *str=pango_font_description_to_filename(
 		(PangoFontDescription *)THIS->obj);

@@ -8,8 +8,8 @@ inherit GTK2.MenuItem;
 void create(string|mapping(string:mixed)|void label)
 //! Create a new ImageMenuItem.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
 
   if (args) {
     if (Pike_sp[-args].type==PIKE_T_STRING) {
@@ -33,13 +33,13 @@ void create(string|mapping(string:mixed)|void label)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_IMAGE_MENU_ITEM);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gi;
     gi=gtk_image_menu_item_new();
     THIS->obj=G_OBJECT(gi);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 GTK2.Widget get_image();

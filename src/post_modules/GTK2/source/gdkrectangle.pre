@@ -10,8 +10,8 @@ void create(int x, int y, int width, int height)
 {
   GdkRectangle *r;
   INT_TYPE x,y,w,h;
-  pgtk_verify_setup();
-  pgtk_verify_not_inited();
+  pgtk2_verify_setup();
+  pgtk2_verify_not_inited();
   THIS->obj=(void *)(r=(GdkRectangle *)g_malloc(sizeof(GdkRectangle)));
   if (r==NULL)
     SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(GdkRectangle));
@@ -20,7 +20,7 @@ void create(int x, int y, int width, int height)
   r->y=y;
   r->width=w;
   r->height=h;
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
 }
 
 void set(int x, int y, int width, int height )
@@ -44,7 +44,7 @@ mixed cast(string type)
   get_all_args("cast",args,"%t",&type);
 
   if (is_same_string(type,_STR("mapping"))) {
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     ref_push_string(_STR("x"));
     push_int(r->x);
     ref_push_string(_STR("y"));
@@ -55,7 +55,7 @@ mixed cast(string type)
     push_int(r->height);
     f_aggregate_mapping(8);
   } else if(is_same_string(type, _STR("array"))) {
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     push_int(r->x);
     push_int(r->y);
     push_int(r->width);
@@ -70,7 +70,7 @@ void destroy()
 //! Destroy rectangle.
 {
   g_free(THIS->obj);
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(0);
 }
 

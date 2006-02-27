@@ -68,17 +68,17 @@ void create(?mapping(string:mixed) props)
 //! renderer to a string value in the model, thus rendering a different string
 //! in each row of the W(TreeView).
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     INIT_WITH_PROPS(GTK_TYPE_CELL_RENDERER_TEXT);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkCellRenderer *gcr;
     gcr=gtk_cell_renderer_text_new();
     THIS->obj=G_OBJECT(gcr);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void set_fixed_height_from_font(int number_of_rows);

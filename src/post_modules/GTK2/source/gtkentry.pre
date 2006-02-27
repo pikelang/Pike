@@ -35,8 +35,8 @@ signal toggle_overwrite;
 void create(int|mapping(string:mixed)|void maxlen_or_props)
 //! Create a new W(Entry) widget.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     if (Pike_sp[-args].type==PIKE_T_INT) {
       INT_TYPE max;
@@ -48,13 +48,13 @@ void create(int|mapping(string:mixed)|void maxlen_or_props)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_ENTRY);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *ge;
     ge=gtk_entry_new();
     THIS->obj=G_OBJECT(ge);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void set_text(string text);
@@ -143,8 +143,8 @@ mapping get_layout_offsets()
 //! to convert byte indices in the layout to byte indices in the entry
 //! contents.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     gint x,y;
 

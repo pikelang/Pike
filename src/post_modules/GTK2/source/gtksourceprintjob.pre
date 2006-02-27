@@ -33,8 +33,8 @@ signal finished;
 void create(?GTK2.SourceBuffer buffer)
 //! Creates a new print job object.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     struct object *o1;
     GtkSourcePrintJob *gs;
@@ -42,13 +42,13 @@ void create(?GTK2.SourceBuffer buffer)
     gs=gtk_source_print_job_new_with_buffer(NULL,
 			GTK_SOURCE_BUFFER(get_gobject(o1)));
     THIS->obj=G_OBJECT(gs);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkSourcePrintJob *gs;
     gs=gtk_source_print_job_new(NULL);
     THIS->obj=G_OBJECT(gs);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void set_buffer(GTK2.SourceBuffer buffer);
@@ -97,7 +97,7 @@ void set_font_desc(Pango.FontDescription desc);
 //! Sets the default font for the printed text.
 /*
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     get_all_args("set_font_desc",args,"%o",&o1);
@@ -145,8 +145,8 @@ mapping(string:float) get_text_margins()
 //! Determines the user set margins for the job.  The default for all four
 //! margins is 0.0.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     gdouble t,b,l,r;
     gtk_source_print_job_get_text_margins(GTK_SOURCE_PRINT_JOB(THIS->obj),
@@ -166,7 +166,7 @@ void print_range(GTK2.TextIter start, GTK2.TextIter end)
 //! Similar to print(), except you can specify a range of text to print.
 //! start and end can be in any order.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     void *res;
@@ -192,7 +192,7 @@ void print_range_async(GTK2.TextIter start, GTK2.TextIter end)
 //! To get notification when the job has finished, you must connect to the
 //! "finished" signal.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     int res;

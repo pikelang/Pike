@@ -15,8 +15,8 @@ void create(object|int color_or_r,int|void g,int|void b)
   INT_TYPE r,g,b;
   GdkColormap *col=gdk_colormap_get_system();
   GdkColor *c;
-  pgtk_verify_setup();
-  pgtk_verify_not_inited();
+  pgtk2_verify_setup();
+  pgtk2_verify_not_inited();
   if (args==1) {
     struct object *o;
     get_all_args("GdkColor",args,"%o",&o);
@@ -43,13 +43,13 @@ void create(object|int color_or_r,int|void g,int|void b)
     THIS->obj=0;
     Pike_error("Failed to allocate color.\n");
   }
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
 }
 
 array(int) rgb()
 //! Returns the red green and blue color components as an array.
 {
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(((GdkColor *)THIS->obj)->red/257);
   push_int(((GdkColor *)THIS->obj)->green/257);
   push_int(((GdkColor *)THIS->obj)->blue/257);
@@ -59,28 +59,28 @@ array(int) rgb()
 int red()
 //! Returns the red color component.
 {
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(((GdkColor *)THIS->obj)->red/257);
 }
 
 int green()
 //! Returns the green color component.
 {
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(((GdkColor *)THIS->obj)->green/257);
 }
 
 int blue()
 //! Returns the blue color component.
 {
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(((GdkColor *)THIS->obj)->blue/257);
 }
 
 int pixel()
 //! Returns the pixel value of the color. See <a href="gdk.image.xml#set_pixel">GDK2.Image->set_pixel</a>.
 {
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(((GdkColor *)THIS->obj)->pixel);
 }
 
@@ -94,10 +94,10 @@ Image.Color.Color image_color_object()
           ((GdkColor *)THIS->obj)->green,
           ((GdkColor *)THIS->obj)->blue);
 
-  my_pop_n_elems(args);
-  pgtk_get_image_module();
-  pgtk_index_stack("Color");
-  pgtk_index_stack((char *)colorname);
+  pgtk2_pop_n_elems(args);
+  pgtk2_get_image_module();
+  pgtk2_index_stack("Color");
+  pgtk2_index_stack((char *)colorname);
 }
 
 void destroy()
@@ -109,7 +109,7 @@ void destroy()
     g_free(THIS->obj);
     THIS->obj=0;
   }
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(0);
 }
 

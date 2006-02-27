@@ -17,8 +17,8 @@ void create(GTK2.Widget|string|mapping(string:mixed) icon, ?string label)
 //! If icon is a GTK2.Widget, it will be used as the icon, and label
 //! will be the label.  The label must exist if that is the case.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   {
     GtkToolItem *gm;
     if (Pike_sp[-args].type==PIKE_T_STRING) {
@@ -41,9 +41,9 @@ void create(GTK2.Widget|string|mapping(string:mixed) icon, ?string label)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_MENU_TOOL_BUTTON);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void set_menu(GTK2.Widget menu);
@@ -57,7 +57,7 @@ void set_arrow_tooltip(GTK2.Tooltips tooltips, string tip_text, string tip_priva
 //! which pops up the menu.
 /*
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     char *t1,*t2;

@@ -13,17 +13,17 @@ void create(?GDK2.Pixbuf pixbuf)
 //! GTK2.IconSet directly.  The one case where you'd use GTK2.IconSet is to
 //! create application-specific icon sets to place in a GTK2.IconFactory.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     struct object *o1;
     get_all_args("create",args,"%o",&o1);
     THIS->obj=(void *)gtk_icon_set_new_from_pixbuf(
 			GDK_PIXBUF(get_gobject(o1)));
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else
     THIS->obj=(void *)gtk_icon_set_new();
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void destroy()
@@ -32,18 +32,18 @@ void destroy()
   if (THIS->obj)
     gtk_icon_set_unref((GtkIconSet *)THIS->obj);
   THIS->obj=NULL;
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   push_int(0);
 }
 
 GTK2.IconSet copy()
 //! Create a copy.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkIconSet *gis=gtk_icon_set_copy((GtkIconSet *)THIS->obj);
-    push_gobjectclass(gis,pgtk_icon_set_program);
+    push_gobjectclass(gis,pgtk2_icon_set_program);
   }
 }
 
@@ -54,7 +54,7 @@ GDK2.Pixbuf render_icon(GTK2.Style style, int direction, int state, int size,
 //! GTK2.Widget->render_icon() is better, since it automatically provides most
 //! of the arguments from the current widget settings.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE dir,state,size;
     struct object *o1,*o2;
@@ -63,7 +63,7 @@ GDK2.Pixbuf render_icon(GTK2.Style style, int direction, int state, int size,
     pixbuf=gtk_icon_set_render_icon((GtkIconSet *)THIS->obj,
 			GTK_STYLE(get_gobject(o1)),dir,state,size,
 			GTK_WIDGET(get_gobject(o2)));
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     g_object_ref(pixbuf);
     push_gobject(pixbuf);
   }
@@ -73,8 +73,8 @@ GDK2.Pixbuf render_icon(GTK2.Style style, int direction, int state, int size,
 array(int) get_sizes()
 //! Obtains a list of icon sizes this icon set can render.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkIconSize *sizes;
     int n_sizes,i;
@@ -108,12 +108,12 @@ void add_source(GTK2.IconSource source)
 //! generic icon sources.  The order in which you add the sources to the icon
 //! set does not matter.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     get_all_args("add_source",args,"%o",&o1);
     gtk_icon_set_add_source((GtkIconSet *)THIS->obj,
-			(GtkIconSource *)get_pgobject(o1,pgtk_icon_source_program));
+			(GtkIconSource *)get_pg2object(o1,pgtk2_icon_source_program));
   }
   RETURN_THIS();
 }

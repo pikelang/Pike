@@ -29,8 +29,8 @@ void create(string|mapping(string:mixed) title_or_props,
 	    ?GTK2.CellRenderer renderer, ?string property, ?int col)
 //! Creates a new W(TreeViewColumn).
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   {
     if (args==1) {
       INIT_WITH_PROPS(GTK_TYPE_TREE_VIEW_COLUMN);
@@ -46,9 +46,9 @@ void create(string|mapping(string:mixed) title_or_props,
 			prop,col,NULL);
       THIS->obj=G_OBJECT(gt);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void pack_start(GTK2.CellRenderer cell, int expand);
@@ -66,11 +66,11 @@ array get_cell_renderers()
 //! Returns an array of all the cell renderers in the column, in no partciular
 //! order.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GList *gl,*g2;
     int i=0;
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     gl=g2=gtk_tree_view_column_get_cell_renderers(GTK_TREE_VIEW_COLUMN(THIS->obj));
     while (g2) {
       push_gobject(GTK_CELL_RENDERER(g2->data));
@@ -244,7 +244,7 @@ void cell_set_cell_data(GTK2.TreeModel model, GTK2.TreeIter iter,
 //! on the iter, and use that value to set the attribute on the cell renderer.
 //! This is used primarily by the W(TreeView).
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     INT_TYPE expander,expanded;
@@ -260,7 +260,7 @@ void cell_set_cell_data(GTK2.TreeModel model, GTK2.TreeIter iter,
 mapping(string:int) cell_get_size(GDK2.Rectangle cell_area)
 //! Obtains the width and height needed to render the column.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     gint x_offset,y_offset,width,height;
@@ -268,7 +268,7 @@ mapping(string:int) cell_get_size(GDK2.Rectangle cell_area)
     gtk_tree_view_column_cell_get_size(GTK_TREE_VIEW_COLUMN(THIS->obj),
 			(GdkRectangle *)get_gdkobject(o1,rectangle),
 			&x_offset,&y_offset,&width,&height);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     ref_push_string(_STR("x_offset")); push_int(x_offset);
     ref_push_string(_STR("y_offset")); push_int(y_offset);
     ref_push_string(_STR("width")); push_int(width);
@@ -282,7 +282,7 @@ mapping cell_get_position(GTK2.CellRenderer cell_renderer)
 //! Obtains the horizontal position and size of a cell in a column.  If the
 //! cell is not found in the column, returns -1 for start_pos and width.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     gint start_pos,width;
     struct object *o1;
@@ -290,7 +290,7 @@ mapping cell_get_position(GTK2.CellRenderer cell_renderer)
     get_all_args("cell_get_position",args,"%o",&o1);
     res=gtk_tree_view_column_cell_get_position(GTK_TREE_VIEW_COLUMN(THIS->obj),
 		GTK_CELL_RENDERER(get_gobject(o1)),&start_pos,&width);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     ref_push_string(_STR("start_pos")); push_int(start_pos);
     ref_push_string(_STR("width")); push_int(width);
     f_aggregate_mapping(4);

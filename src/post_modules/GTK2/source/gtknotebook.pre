@@ -50,17 +50,17 @@ signal switch_page;
 void create(?mapping(string:mixed) props)
 //! Create a W(Notebook) widget with no pages.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     INIT_WITH_PROPS(GTK_TYPE_NOTEBOOK);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gn;
     gn=gtk_notebook_new();
     THIS->obj=G_OBJECT(gn);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void append_page(GTK2.Widget contents, ?GTK2.Widget label);
@@ -201,7 +201,7 @@ mapping(string:int) query_tab_label_packing(GTK2.Widget page)
                                        &expand,
                                        &fill,
                                        &pack_type);
-  my_pop_n_elems(args);
+  pgtk2_pop_n_elems(args);
   ref_push_string(_STR("expand")); push_int(expand);
   ref_push_string(_STR("fill")); push_int(fill);
   ref_push_string(_STR("pack_type")); push_int(pack_type);

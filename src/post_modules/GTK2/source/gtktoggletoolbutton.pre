@@ -10,8 +10,8 @@ void create(string|mapping(string:mixed)|void stock_id)
 //! Creates a new toggle tool button, with or without
 //! a stock id.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     if (Pike_sp[-args].type==PIKE_T_STRING) {
       char *s;
@@ -20,10 +20,10 @@ void create(string|mapping(string:mixed)|void stock_id)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_TOGGLE_TOOL_BUTTON);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else
     THIS->obj=G_OBJECT(gtk_toggle_tool_button_new());
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void set_active(int is_active);

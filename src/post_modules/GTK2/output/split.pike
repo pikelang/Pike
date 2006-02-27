@@ -52,7 +52,7 @@ string protos = "";
 static void build_protos( Class cls, int lvl )
 {
   if( cls->name != "global" )
-    protos+=("  "*lvl)+"EXTPRG struct program *p"+cls->c_name()+"_program;\n";
+    protos+=("  "*lvl)+"EXTPRG struct program *"+glue_c_name(cls->c_name())+"_program;\n";
   foreach( sort( indices( cls->functions ) ), string f )
     protos += ("  "*lvl)+ " extern "+cls->functions[ f ]->c_prototype();
   foreach( sort( indices( cls->members ) ), string f )
@@ -77,12 +77,12 @@ static void build_pike_fadds( Class cls, int lvl )
 
     if( cls->name != "_global" )
     {
-      exitfun += "  free_program( p"+cls->c_name()+"_program );\n";
+      exitfun += "  free_program( "+glue_c_name(cls->c_name())+"_program );\n";
       if( !cls->mixin_for )
 	type_switch =
 	            "#ifdef "+cls->c_type_define()+"\n"
 	            "  if(PGTK_CHECK_TYPE(widget, "+cls->c_type_define()+"))\n"
-	            "     return p"+cls->c_name()+"_program;\n"
+		    "     return "+glue_c_name(cls->c_name())+"_program;\n"
                     "#endif\n"+type_switch;
     }
     res = "static void _"+init_n+"()\n{\n";
@@ -93,7 +93,7 @@ static void build_pike_fadds( Class cls, int lvl )
           "   start_new_program(); /* "+cls->name+" */\n";
       if( sizeof(cls->inherits) )
 	foreach( cls->inherits, Class c )
-	  res += "  low_inherit( p"+c->c_name()+
+	  res += "  low_inherit( "+glue_c_name(c->c_name())+
                  "_program,0,0,0,0,0);\n";
       else
       {
@@ -109,10 +109,10 @@ static void build_pike_fadds( Class cls, int lvl )
       output_thing( cls->members[ f ] );
     if( cls->name != "_global" )
     {
-      res += ("  p"+cls->c_name()+"_program = end_program();\n"
-	      "  p"+cls->c_name()+"_program->id = "+cls->class_id()+";\n");
+      res += ("  "+glue_c_name(cls->c_name())+"_program = end_program();\n"
+	      "  "+glue_c_name(cls->c_name())+"_program->id = "+cls->class_id()+";\n");
       res += ("  add_program_constant("+S(cls->pike_name(),1,0,26)+",\n"
-              "                       p"+cls->c_name()+"_program, 0);\n");
+	      "                       "+glue_c_name(cls->c_name())+"_program, 0);\n");
 //      predef::write("pike_name==%s\n",cls->pike_name());
 /*
       string str=S(cls->pike_name(),1,0,26);
@@ -129,9 +129,9 @@ static void build_pike_fadds( Class cls, int lvl )
     if( cls->name == "_global" )
     {
       if(sizeof(cls->init))
-	initfun += "  pgtk__init();\n";
+	initfun += "  pgtk2__init();\n";
       if(sizeof(cls->exit))
-	exitfun += "  pgtk__exit();\n";
+	exitfun += "  pgtk2__exit();\n";
     }
   } )
     werror(cls->file+":"+cls->line+": Error: "+
@@ -209,18 +209,18 @@ array(string) output( mapping(string:Class) classes,
 
   if(sizeof(strings))
   {
-    pre += "struct pike_string * pstr_vector["+sizeof(strings)+"];\n\n";
+    pre += "struct pike_string * pgtk2_pstr_vector["+sizeof(strings)+"];\n\n";
     foreach( strings; string str; int idx )
     {
       initfun += sprintf("\n  /* %O */\n", str);
-      initfun += "  pstr_vector[" + idx + "] = make_shared_binary_string(" +
+      initfun += "  pgtk2_pstr_vector[" + idx + "] = make_shared_binary_string(" +
         S(str,0,2) + "," + sizeof(str) + ");\n";
     }
     exitfun += #"
   {
     int i;
-    for( i=0; i<NELEM(pstr_vector); i++ )
-      free_string( pstr_vector[i] );
+    for( i=0; i<NELEM(pgtk2_pstr_vector); i++ )
+      free_string( pgtk2_pstr_vector[i] );
   }
 ";
   }
@@ -232,10 +232,10 @@ array(string) output( mapping(string:Class) classes,
               pre + toplevel +
               "PIKE_MODULE_INIT {\n"+make_initfun()+initfun+"}\n\n"
               "PIKE_MODULE_EXIT {\n"+exitfun+"}\n\n"
-              "struct program *pgtk_type_to_program(GObject *widget)\n"
+	      "struct program *pgtk2_type_to_program(GObject *widget)\n"
               "{\n"
               +type_switch+
-              "  return pg_object_program;\n}\n\n" );
+	      "  return pg2_object_program;\n}\n\n" );
 
   return files;
 }

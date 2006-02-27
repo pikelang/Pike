@@ -14,8 +14,8 @@ void create(string id, string name, array(string) keywords,
 	    string end_regex)
 //! Creates a new keyword list tag object with the provided arguments.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   {
     GtkTextTag *gtt;
     char *id,*name,*begin,*end;
@@ -40,7 +40,7 @@ void create(string id, string name, array(string) keywords,
 			begin,end);
     THIS->obj=G_OBJECT(gtt);
   }
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 

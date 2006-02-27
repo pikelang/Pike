@@ -83,8 +83,8 @@ signal event;
 void create(string|mapping(string:mixed) name_or_props)
 //! Creates a new text tag.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   {
     if (Pike_sp[-args].type==PIKE_T_STRING) {
       char *name;
@@ -95,9 +95,9 @@ void create(string|mapping(string:mixed) name_or_props)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_TEXT_TAG);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 int get_priority();
@@ -110,7 +110,7 @@ void set_priority(int priority);
 int event(G.Object event_object, GDK2.Event event, GTK2.TextIter iter)
 //! Emits the 'event' signal.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2,*o3;
     int res;
@@ -118,8 +118,8 @@ int event(G.Object event_object, GDK2.Event event, GTK2.TextIter iter)
     res=gtk_text_tag_event(GTK_TEXT_TAG(THIS->obj),
 			G_OBJECT(get_gobject(o1)),
 			(GdkEvent *)get_gobject(o2),
-			(GtkTextIter *)get_pgobject(o3,pgtk_text_iter_program));
-   my_pop_n_elems(args);
+			(GtkTextIter *)get_pg2object(o3,pgtk2_text_iter_program));
+   pgtk2_pop_n_elems(args);
    push_int(res);
   }
 }

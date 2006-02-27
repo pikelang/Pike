@@ -23,8 +23,8 @@ void create(string|mapping|void label_or_props, ?int mnemonic)
 //! If you supply a string, a label will be created and inserted in the button.
 //! Otherwise, use -&gt;add(widget) to create the contents of the button.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     struct pike_string *t;
     GtkWidget *gt;
@@ -46,13 +46,13 @@ void create(string|mapping|void label_or_props, ?int mnemonic)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_TOGGLE_BUTTON);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkWidget *gt;
     gt=gtk_toggle_button_new();
     THIS->obj=G_OBJECT(gt);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void set_mode(int mode);

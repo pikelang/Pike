@@ -8,7 +8,7 @@ int drag_data_received(GTK2.TreePath path, GTK2.SelectionData sel)
 //! before it is impossible, false will be returned.  Also, false may be
 //! returned if the new row is not created for some model-specific reason.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     int res;
@@ -17,7 +17,7 @@ int drag_data_received(GTK2.TreePath path, GTK2.SelectionData sel)
 			GTK_TREE_DRAG_DEST(THIS->obj),
 			(GtkTreePath *)get_gobject(o1),
 			(GtkSelectionData *)get_gobject(o2));
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     PGTK_PUSH_INT(res);
   }
 }
@@ -28,7 +28,7 @@ int row_drop_possible(GTK2.TreePath path, GTK2.SelectionData sel)
 //! have to exist; the return value will almost certainly be false if the
 //! parent of path doesn't exist, though.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     int res;
@@ -37,7 +37,7 @@ int row_drop_possible(GTK2.TreePath path, GTK2.SelectionData sel)
 			GTK_TREE_DRAG_DEST(THIS->obj),
 			(GtkTreePath *)get_gobject(o1),
 			(GtkSelectionData *)get_gobject(o2));
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     PGTK_PUSH_INT(res);
   }
 }

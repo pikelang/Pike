@@ -60,8 +60,8 @@ void create(string|mapping(string:mixed) title_or_props)
 //! allowing the user to create a directory, delete files, and rename
 //! files will also be present by default.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   {
     struct pike_string *title;
 
@@ -76,9 +76,9 @@ void create(string|mapping(string:mixed) title_or_props)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_FILE_SELECTION);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 void set_filename(string fname);
@@ -109,8 +109,8 @@ void complete(string pattern);
 array(string) get_selection()
 //! Retrieves the list of selections the user has made.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     gchar **names=gtk_file_selection_get_selections(
 		GTK_FILE_SELECTION(THIS->obj));

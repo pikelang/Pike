@@ -16,8 +16,8 @@ inherit GTK2.TextTag;
 mapping(string:mixed) get_style()
 //! Gets the style associated with this tag.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkSourceTagStyle *gs;
     GdkColor *fg,*bg;
@@ -49,7 +49,7 @@ void set_style(mapping(string:mixed) style)
 //! Associates a style with this tag.
 //! See GTK2.SourceBuffer->set_bracket_match_style() for format.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkSourceTagStyle *sts;
     struct mapping *m;

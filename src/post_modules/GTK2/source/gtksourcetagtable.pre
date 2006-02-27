@@ -22,7 +22,7 @@ void add_tags(array(GTK2.TextTag) tags)
 //! If a tag is already present in the table or has the same name as an already
 //! added tag, then it is not added to the table.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GSList *gsl=NULL;
     struct array *a;

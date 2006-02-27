@@ -17,8 +17,8 @@ int get_mode();
 object get_user_data()
 //! Returns the user data for the selection function.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   push_object(gtk_tree_selection_get_user_data(GTK_TREE_SELECTION(THIS->obj)));
 }
 
@@ -31,7 +31,7 @@ array get_selected()
 //! W(TreeModel) as a convenience.  This function will not work if you this
 //! selection is set to GTK2.SELECTION_MULTIPLE.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GtkTreeModel *model;
     GtkTreeIter *iter;
@@ -39,11 +39,11 @@ array get_selected()
     iter=g_malloc(sizeof(GtkTreeIter));
     if (iter==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_selected",sizeof(GtkTreeIter));
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     res=gtk_tree_selection_get_selected(GTK_TREE_SELECTION(THIS->obj),
 		&model,iter);
     if (res)
-      push_gobjectclass(iter,pgtk_tree_iter_program);
+      push_gobjectclass(iter,pgtk2_tree_iter_program);
     else
       PGTK_PUSH_INT(0);
     push_gobject(model);
@@ -58,7 +58,7 @@ array get_selected_rows(GTK2.TreeModel model)
 //! may want to convert the returned list into a list of W(TreeRowReference)s.
 //! To do this, you can use GTK2.TreeRowReference->create().
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     GList *gl,*g2;
     struct object *o1;
@@ -68,9 +68,9 @@ array get_selected_rows(GTK2.TreeModel model)
     model=(GtkTreeModel *)get_gobject(o1);
     gl=g2=gtk_tree_selection_get_selected_rows(GTK_TREE_SELECTION(THIS->obj),
 			&model);
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
     while (g2) {
-      push_gobjectclass((GtkTreePath *)g2->data,pgtk_tree_path_program);
+      push_gobjectclass((GtkTreePath *)g2->data,pgtk2_tree_path_program);
       i++;
       g2=g_list_next(g2);
     }
@@ -89,12 +89,12 @@ endrequire;
 void select_path(GTK2.TreePath path)
 //! Select the row at path.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     get_all_args("select_path",args,"%o",&o1);
     gtk_tree_selection_select_path(GTK_TREE_SELECTION(THIS->obj),
-			(GtkTreePath *)get_pgobject(o1,pgtk_tree_path_program));
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
   }
   RETURN_THIS();
 }
@@ -102,12 +102,12 @@ void select_path(GTK2.TreePath path)
 void unselect_path(GTK2.TreePath path)
 //! Unselects the row at path.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     get_all_args("unselect_path",args,"%o",&o1);
     gtk_tree_selection_unselect_path(GTK_TREE_SELECTION(THIS->obj),
-			(GtkTreePath *)get_pgobject(o1,pgtk_tree_path_program));
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
   }
   RETURN_THIS();
 }
@@ -116,14 +116,14 @@ int path_is_selected(GTK2.TreePath path)
 //! Returns true if the row pointed to by path is currently selected.  If path
 //! does not point to a valid location, false is returned.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     int res;
     get_all_args("path_is_selected",args,"%o",&o1);
     res=gtk_tree_selection_path_is_selected(GTK_TREE_SELECTION(THIS->obj),
-			(GtkTreePath *)get_pgobject(o1,pgtk_tree_path_program));
-    my_pop_n_elems(args);
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
+    pgtk2_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -131,12 +131,12 @@ int path_is_selected(GTK2.TreePath path)
 void select_iter(GTK2.TreeIter iter)
 //! Selects the specified iterator.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     get_all_args("select_iter",args,"%o",&o1);
     gtk_tree_selection_select_iter(GTK_TREE_SELECTION(THIS->obj),
-			(GtkTreeIter *)get_pgobject(o1,pgtk_tree_iter_program));
+			(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
   }
   RETURN_THIS();
 }
@@ -144,12 +144,12 @@ void select_iter(GTK2.TreeIter iter)
 void unselect_iter(GTK2.TreeIter iter)
 //! Unselects the specified iterator.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     get_all_args("unselect_iter",args,"%o",&o1);
     gtk_tree_selection_unselect_iter(GTK_TREE_SELECTION(THIS->obj),
-			(GtkTreeIter *)get_pgobject(o1,pgtk_tree_iter_program));
+			(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
   }
   RETURN_THIS();
 }
@@ -157,14 +157,14 @@ void unselect_iter(GTK2.TreeIter iter)
 int iter_is_selected(GTK2.TreeIter iter)
 //! Returns true if the row at iter is currently selected.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1;
     int res;
     get_all_args("iter_is_selected",args,"%o",&o1);
     res=gtk_tree_selection_iter_is_selected(GTK_TREE_SELECTION(THIS->obj),
-			(GtkTreeIter *)get_pgobject(o1,pgtk_tree_iter_program));
-    my_pop_n_elems(args);
+			(GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
+    pgtk2_pop_n_elems(args);
     push_int(res);
   }
 }
@@ -180,13 +180,13 @@ void select_range(GTK2.TreePath start, GTK2.TreePath end)
 //! Selects a range of nodes, determined by start and end inclusive.
 //! This selection must be set to GTK2.SELECTION_MULTIPLE mode.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     get_all_args("select_range",args,"%o%o",&o1,&o2);
     gtk_tree_selection_select_range(GTK_TREE_SELECTION(THIS->obj),
-			(GtkTreePath *)get_pgobject(o1,pgtk_tree_path_program),
-			(GtkTreePath *)get_pgobject(o2,pgtk_tree_path_program));
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),
+			(GtkTreePath *)get_pg2object(o2,pgtk2_tree_path_program));
   }
   RETURN_THIS();
 }
@@ -195,13 +195,13 @@ require gtk22;
 void unselect_range(GTK2.TreePath start, GTK2.TreePath end)
 //! Unselects a range of nodes, determined by start and end inclusive.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     struct object *o1,*o2;
     get_all_args("unselect_range",args,"%o%o",&o1,&o2);
     gtk_tree_selection_unselect_range(GTK_TREE_SELECTION(THIS->obj),
-			(GtkTreePath *)get_pgobject(o1,pgtk_tree_path_program),
-			(GtkTreePath *)get_pgobject(o2,pgtk_tree_path_program));
+			(GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program),
+			(GtkTreePath *)get_pg2object(o2,pgtk2_tree_path_program));
   }
   RETURN_THIS();
 }

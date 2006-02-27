@@ -13,20 +13,20 @@ signal accel_changed;
 void create()
 //! Create a new accelerator group
 {
-  pgtk_verify_setup();
-  pgtk_verify_not_inited();
+  pgtk2_verify_setup();
+  pgtk2_verify_not_inited();
   {
     GtkAccelGroup *ga;
     ga=gtk_accel_group_new();
     THIS->obj=G_OBJECT(ga);
   }
 /* add_ref(fp->current_object);   one extra ref... No, not really */
-  my_pop_n_elems(args);
-  pgtk__init_this_object();
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
 }
 
 %{
-int pgtk_accel_group_activate_key_callback(GtkAccelGroup *accel_group,
+int pgtk2_accel_group_activate_key_callback(GtkAccelGroup *accel_group,
 		      GObject *acceleratable,
 		      guint accel_key,
 		      GdkModifierType accel_mods,
@@ -50,7 +50,7 @@ void connect(int accel_key, int accel_mods, int accel_flags,
 	     function cb, mixed user_data)
 //! Installs an accelerator in this group.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     gint accel_key;
     GdkModifierType accel_mods;
@@ -67,8 +67,8 @@ void connect(int accel_key, int accel_mods, int accel_flags,
       SIMPLE_OUT_OF_MEMORY_ERROR("connect",sizeof(struct signal_data));
     assign_svalue_no_free(&sd->cb,Pike_sp+3-args);
     assign_svalue_no_free(&sd->args,Pike_sp+4-args);
-    closure=g_cclosure_new(G_CALLBACK(pgtk_signal_func_wrapper),
-		sd,(GClosureNotify)pgtk_free_signal_data);
+    closure=g_cclosure_new(G_CALLBACK(pgtk2_signal_func_wrapper),
+		sd,(GClosureNotify)pgtk2_free_signal_data);
     gtk_accel_group_connect(GTK_ACCEL_GROUP(THIS->obj),accel_key,
 		accel_mods,accel_flags,closure);
   }
@@ -79,7 +79,7 @@ void connect_by_path(string accel_path, function cb, mixed user_data)
 //! Installs an accelerator in this group, using an accelerator path to look
 //! up the appropriate key and modifiers.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     const gchar *accel_path;
     struct signal_data *sd;
@@ -92,8 +92,8 @@ void connect_by_path(string accel_path, function cb, mixed user_data)
       SIMPLE_OUT_OF_MEMORY_ERROR("connect_by_path",sizeof(struct signal_data));
     assign_svalue_no_free(&sd->cb,Pike_sp+1-args);
     assign_svalue_no_free(&sd->args,Pike_sp+2-args);
-    closure=g_cclosure_new(G_CALLBACK(pgtk_signal_func_wrapper),
-		sd,(GClosureNotify)pgtk_free_signal_data);
+    closure=g_cclosure_new(G_CALLBACK(pgtk2_signal_func_wrapper),
+		sd,(GClosureNotify)pgtk2_free_signal_data);
     gtk_accel_group_connect_by_path(GTK_ACCEL_GROUP(THIS->obj),accel_path,
 		closure);
   }
@@ -103,7 +103,7 @@ void connect_by_path(string accel_path, function cb, mixed user_data)
 void disconnect(int accel_key, int accel_mods)
 //! Removes an accelerator previously installed.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   {
     INT_TYPE accel_key;
     INT_TYPE accel_mods;

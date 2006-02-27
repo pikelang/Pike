@@ -49,7 +49,7 @@ NAME_ARGS(variable_name,variable_value);
   switch( Pike_sp[-1].type )
   {
    case PIKE_T_OBJECT:
-     p = get_pgtkobject(Pike_sp[-1].u.object,pgtk_object_program);
+     p = get_pgtk2object(Pike_sp[-1].u.object,pgtk2_object_program);
      gnome_canvas_item_set( tci, Pike_sp[-2].u.string->str, p );
      break;
    case PIKE_T_STRING:

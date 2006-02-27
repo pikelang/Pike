@@ -13,8 +13,8 @@ void create(GTK2.RadioToolButton|mapping(string:mixed)|void groupmember)
 //! Use with another GTK2.RadioToolButton to add another
 //!   button to the same group as a previous button.
 {
-  pgtk_verify_not_inited();
-  pgtk_verify_setup();
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
   if (args) {
     if (Pike_sp[-args].type==PIKE_T_OBJECT) {
       GSList *mylist=NULL;
@@ -33,20 +33,20 @@ void create(GTK2.RadioToolButton|mapping(string:mixed)|void groupmember)
     } else {
       INIT_WITH_PROPS(GTK_TYPE_RADIO_TOOL_BUTTON);
     }
-    my_pop_n_elems(args);
+    pgtk2_pop_n_elems(args);
   } else {
     GtkToolItem *gr;
     gr=gtk_radio_tool_button_new(NULL);
     THIS->obj=G_OBJECT(gr);
   }
-  pgtk__init_this_object();
+  pgtk2__init_this_object();
 }
 
 array get_group()
 //! Get the group this button belongs to.
 {
-  pgtk_verify_inited();
-  my_pop_n_elems(args);
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GSList *gl,*g2;
     int num;
@@ -68,7 +68,7 @@ void set_group(GTK2.RadioToolButton group_member)
 //! Adds this button to the same group as group_member, and removes from the
 //! old group.
 {
-  pgtk_verify_inited();
+  pgtk2_verify_inited();
   
 */
 endrequire;
