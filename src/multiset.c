@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.98 2006/02/18 05:08:25 mast Exp $
+|| $Id: multiset.c,v 1.99 2006/02/27 12:27:21 mast Exp $
 */
 
 #include "global.h"
@@ -4185,7 +4185,12 @@ void real_gc_cycle_check_multiset (struct multiset *l, int weak)
 	  /* Only shrink the multiset if it isn't shared, or else we
 	   * can end up with larger memory consumption since the
 	   * shrunk data blocks won't be shared. */
+#ifdef PIKE_DEBUG
+	  l->msd = resize_multiset_data_2 (msd, ALLOC_SIZE (msd->size), 0,
+					   1);
+#else
 	  l->msd = resize_multiset_data (msd, ALLOC_SIZE (msd->size), 0);
+#endif
 	  gc_move_marker (msd, l->msd);
 	  msd = l->msd;
 	}
