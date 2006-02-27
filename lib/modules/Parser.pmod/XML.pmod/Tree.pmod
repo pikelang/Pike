@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.38 2004/12/21 16:08:21 grubba Exp $
+ * $Id: Tree.pmod,v 1.39 2006/02/27 06:26:34 mast Exp $
  *
  */
 
@@ -317,7 +317,11 @@ class AbstractSimpleNode {
   void zap_tree()
   {
     if (mChildren)
-      mChildren->zap_tree();
+      // Avoid mChildren->zap_tree() since applying an array causes
+      // pike to recurse more heavily on the C stack than a normal
+      // function call.
+      foreach (mChildren, AbstractSimpleNode child)
+	child->zap_tree();
     destruct (this);
   }
 
