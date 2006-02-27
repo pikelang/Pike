@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.414 2006/01/05 01:05:06 marcus Exp $
+# $Id: Makefile.in,v 1.415 2006/02/27 12:33:55 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -114,7 +114,7 @@ LD=@LD@
 LDFLAGS=@LDFLAGS@ @LINKFORSHARED@ $(EXTRALDFLAGS)
 LDSHARED=@LDSHARED@
 
-DEFAULT_RUNPIKE=$(TMP_BUILDDIR)/pike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
+DEFAULT_RUNPIKE=$(TMP_BUILDDIR)/tpike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
 USE_PIKE=pike $(PIKEOPTS)
 RUNPIKE=$(@RUNPIKE@)
 PIKE_MODULE_RELOC=@PIKE_MODULE_RELOC@
@@ -127,7 +127,7 @@ MAKE_FLAGS=
 
 # Add alloca.o if you don't have alloca() on your machine.
 #
-OBJ= \
+CORE_OBJ= \
  language.o \
  security.o \
  bignum.o \
@@ -179,7 +179,8 @@ OBJ= \
  las.o \
  builtin_functions.o \
  peep.o \
- module.o @DLOPEN_O@ @EXTRA_OBJS@
+ @DLOPEN_O@ @EXTRA_OBJS@
+OBJ=$(CORE_OBJ) module.o
 
 MODULE_REQUIREMENTS= \
   machine.h \
@@ -206,12 +207,8 @@ SRC_TARGETS= \
 #
 
 # Update the dumped modules, but only if dump_modules has been used earlier.
-#
-# Since post_modules might be static, we must remake pike after them
-# to make sure they are linked in.
-all: module_objects tools
+all: post_module_objects tools
 	if [ -f dumpversion ]; then $(MAKE) $(MAKE_FLAGS) dump_modules; else :; fi
-	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) post_module_objects
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike
 	@if [ "`find . -name '*.fail' -print`" = "" ]; then :; else \
 	  echo; \
@@ -231,7 +228,7 @@ documentation: onepage.xml traditional.xml modref.xml
 # Backward compat.
 post_modules: post_module_objects
 
-post_module_objects: pike
+post_module_objects: tpike
 	@( cd post_modules ; rm remake >/dev/null 2>&1 || : ; \
 	   $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
 	     ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) || exit $$?
@@ -284,6 +281,13 @@ libpike.a: $(OBJ) modules/linker_options post_modules/linker_options
 	-rm -f libpike.a
 	$(AR) cq libpike.a $(OBJ)
 	-@RANLIB@ libpike.a
+
+# tpike is a pike with no post modules compiled in. It's used during
+# building of the post modules.
+tpike: main.o $(CORE_OBJ) tmodule.o master-stamp pike.syms modules/linker_options
+	$(LD) $(LDFLAGS) main.o $(CORE_OBJ) tmodule.o \
+	  `cat modules/linker_options` \
+	  $(LIBS) -o tpike
 
 #pike: main.o @DLOPEN_O@ $(PIKE_LIB) master-stamp pike.syms
 pike: main.o $(OBJ) master-stamp pike.syms modules/linker_options post_modules/linker_options
@@ -556,7 +560,7 @@ clean_here: tidy doc_clean
 	-( cd tlib; find . -name testsuite | xargs rm )
 	-( cd extra_tests; find . -name testsuite | xargs rm )
 	-rm -f confdefs.h conftest.*
-	-rm -rf test-install test-pike
+	-rm -rf test-install test-pike tpike
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out pike.tmp
 	-rm -f hilfe rsif master.pike compiler-warnings dumpmodule.log
 	-rm -f interpreter_debug.h lexer?.h
@@ -1019,6 +1023,8 @@ modules/modlist_headers.h: modules-stamp
 modules/linker_options: modules-stamp
 
 module.o:  modules/modlist_headers.h modules/modlist.h
+
+tmodule.o:  modules/modlist_headers.h modules/modlist.h
 
 $(SRCDIR)/interpret_protos.h_src: $(SRCDIR)/interpret_functions.h $(SRCDIR)/strip_opcodes
 	$(CPP) $(PREFLAGS) -DGEN_PROTOS $(SRCDIR)/interpret_functions.h | $(SRCDIR)/strip_opcodes >$(SRCDIR)/interpret_protos.h_src || { rm $(SRCDIR)/interpret_protos.h_src; exit 1; }

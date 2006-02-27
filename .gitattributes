@@ -917,6 +917,7 @@ testfont binary
 /src/threads.c foreign_ident
 /src/threads.h foreign_ident
 /src/time_stuff.h foreign_ident
+/src/tmodule.c foreign_ident
 /src/treeopt.in foreign_ident
 /src/uncompressor.c foreign_ident
 /src/version.c foreign_ident
