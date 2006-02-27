@@ -1,3 +1,24 @@
+Changes since Pike 7.6.66
+----------------------------------------------------------------------
+
+Changes in Pike:
+
+o Fixed Cache.cache to work without threads again.
+o Fixed a typo in Array.diff3 that in some rare cases caused it to
+  merge a difference into a three-way equality.
+
+Other:
+
+o Fixed bug causing local variables to never be reused, which in turn
+  leads to huge stack frames.
+o Fix to avoid the cleanup thread becoming garbage when the cache
+  object is destructed.
+o Various UCS-2/SQLWCHAR related fixes in Odbc. Potentially fixes
+  problems where wchar_t is 4 bytes (eg MacOS X).
+o More thorough fix for the problem when multiset data blocks are
+  resized during the gc mark and cycle check passes.
+
+
 Changes since Pike 7.6.50
 ----------------------------------------------------------------------
 
