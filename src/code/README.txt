@@ -111,7 +111,8 @@ void INS_ENTRY(void)
 	Useful to add startup code.
 
 int ENTRY_PROLOGUE_SIZE
-	Size (in opcodes) of the prologue to be skipped if tail-recursing.
+	Size (in opcodes) of the prologue inserted by INS_ENTRY, which
+	should be skipped e.g. when tail recursing.
 
 void RELOCATE_program(struct program *p, PIKE_OPCODE_T *new);
 	Relocate the copy of 'p'->program at 'new' to be able
