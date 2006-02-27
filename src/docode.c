@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.184 2006/02/25 04:05:32 mast Exp $
+|| $Id: docode.c,v 1.185 2006/02/27 12:07:09 mast Exp $
 */
 
 #include "global.h"
@@ -170,7 +170,6 @@ struct switch_data
 };
 
 static struct switch_data current_switch = {0, 0, 0, 0, 0, NULL, NULL};
-static int in_catch=0;
 
 void upd_int(int offset, INT32 tmp)
 {
@@ -2021,10 +2020,27 @@ static int do_docode2(node *n, int flags)
     return 0;
   }
 
-  case F_RETURN:
+  case F_RETURN: {
+    struct statement_label *p;
+    int in_catch = 0;
     do_docode(CAR(n),0);
+
+    /* Insert the appropriate number of F_ESCAPE_CATCH. The rest of
+     * the cleanup is handled wholesale in low_return et al.
+     * Alternatively we could handle this too in low_return and
+     * then allow tail recursion of these kind of returns too. */
+    for (p = current_label; p; p = p->prev) {
+      struct cleanup_frame *q;
+      for (q = p->cleanups; q; q = q->prev)
+	if (q->cleanup == (cleanup_func) do_escape_catch) {
+	  in_catch = 1;
+	  do_escape_catch();
+	}
+    }
+
     emit0(in_catch ? F_VOLATILE_RETURN : F_RETURN);
     return 0;
+  }
 
   case F_SSCANF:
     tmp1=do_docode(CAR(n),DO_NOT_COPY);
@@ -2038,7 +2054,7 @@ static int do_docode2(node *n, int flags)
     tmp1=do_jump(F_CATCH,-1);
     PUSH_CLEANUP_FRAME(do_escape_catch, 0);
 
-    /* Entry point called by eval_instruction() via o_catch(). */
+    /* Entry point called via catching_eval_instruction(). */
     emit0(F_ENTRY);
 
     PUSH_STATEMENT_LABEL;
@@ -2047,18 +2063,21 @@ static int do_docode2(node *n, int flags)
     if (TEST_COMPAT(7,0))
       current_label->continue_label = current_label->break_label;
 
-    in_catch++;
     DO_CODE_BLOCK(CAR(n));
-    in_catch--;
 
     ins_label(current_label->break_label);
     emit0(F_EXIT_CATCH);
     POP_STATEMENT_LABEL;
     current_switch.jumptable = prev_switch_jumptable;
+    tmp2 = do_branch (-1);
 
     ins_label(DO_NOT_WARN((INT32)tmp1));
     current_stack_depth++;
+    /* Entry point called via catching_eval_instruction() after
+     * catching an error. */
+    emit0(F_ENTRY);
 
+    ins_label(DO_NOT_WARN((INT32)tmp2));
     POP_AND_DONT_CLEANUP;
     return 1;
   }

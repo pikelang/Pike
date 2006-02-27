@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.143 2004/12/22 18:46:15 grubba Exp $
+|| $Id: error.c,v 1.144 2006/02/27 12:07:10 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -63,7 +63,9 @@ PMOD_EXPORT void check_recovery_context(void)
 {
   char foo;
 #define TESTILITEST ((((char *)Pike_interpreter.recoveries)-((char *)&foo))*STACK_DIRECTION)
-  if(Pike_interpreter.recoveries && TESTILITEST > 0) {
+  if(Pike_interpreter.recoveries &&
+     Pike_interpreter.recoveries->on_stack &&
+     TESTILITEST > 0) {
     fprintf(stderr, "Recoveries is out biking (Pike_interpreter.recoveries=%p, Pike_sp=%p, %ld)!\n",
 	    Pike_interpreter.recoveries, &foo,
 	    DO_NOT_WARN((long)TESTILITEST));
@@ -83,12 +85,13 @@ PMOD_EXPORT void pike_gdb_breakpoint(INT32 args)
   pop_n_elems(args);
 }
 
-PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r, size_t stack_pop_levels DEBUG_LINE_ARGS)
+PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r, size_t stack_pop_levels DEBUG_INIT_REC_ARGS)
 {
   check_recovery_context();
 #ifdef PIKE_DEBUG
   r->file=location;
   OED_FPRINTF((stderr, "init_recovery(%p) %s\n", r, location));
+  r->on_stack = on_stack;
 #endif
   r->frame_pointer=Pike_fp;
   r->stack_pointer=Pike_sp - stack_pop_levels - Pike_interpreter.evaluator_stack;
@@ -114,7 +117,14 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
       (*Pike_interpreter.recoveries->onerror->func)(Pike_interpreter.recoveries->onerror->arg);
       Pike_interpreter.recoveries->onerror=Pike_interpreter.recoveries->onerror->previous;
     }
-    
+
+    if (Pike_interpreter.catch_ctx &&
+	&Pike_interpreter.catch_ctx->recovery == Pike_interpreter.recoveries) {
+      struct catch_context *cc = Pike_interpreter.catch_ctx;
+      Pike_interpreter.catch_ctx = cc->prev;
+      really_free_catch_context (cc);
+    }
+
     Pike_interpreter.recoveries=Pike_interpreter.recoveries->previous;
   }
 
@@ -158,7 +168,18 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
   accept_unfinished_type_fields--;
 #endif
 
-  LOW_LONGJMP(Pike_interpreter.recoveries->recovery,1);
+  if (Pike_interpreter.catch_ctx &&
+      &Pike_interpreter.catch_ctx->recovery == Pike_interpreter.recoveries) {
+    /* This is a phony recovery made in F_CATCH that hasn't been passed
+     * to LOW_SETJMP. The real jmpbuf is in catching_eval_instruction. */
+#ifdef PIKE_DEBUG
+    if (!Pike_interpreter.catching_eval_jmpbuf)
+      Pike_fatal ("Got phony F_CATCH recovery but no catching_eval_jmpbuf.\n");
+#endif
+    LOW_LONGJMP (*Pike_interpreter.catching_eval_jmpbuf, 1);
+  }
+  else
+    LOW_LONGJMP(Pike_interpreter.recoveries->recovery,1);
 }
 
 PMOD_EXPORT void push_error(const char *description)

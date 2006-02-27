@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.164 2005/12/31 03:37:14 nilsson Exp $
+|| $Id: interpret.h,v 1.165 2006/02/27 12:07:10 mast Exp $
 */
 
 #ifndef INTERPRET_H
@@ -14,6 +14,18 @@
 #include "object.h"
 #include "pike_rusage.h"
 
+struct catch_context
+{
+  struct catch_context *prev;
+  JMP_BUF recovery;
+  struct svalue *save_expendible;
+  PIKE_OPCODE_T *next_addr;
+  ptrdiff_t continue_reladdr;
+#ifdef PIKE_DEBUG
+  struct pike_frame *frame;
+#endif
+};
+
 struct Pike_interpreter {
   /* Swapped variables */
   struct svalue *stack_pointer;
@@ -21,8 +33,6 @@ struct Pike_interpreter {
   struct svalue **mark_stack_pointer;
   struct svalue **mark_stack;
   struct pike_frame *frame_pointer;
-  int evaluator_stack_malloced;
-  int mark_stack_malloced;
   JMP_BUF *recoveries;
 #ifdef PIKE_THREADS
   struct thread_state *thread_state;
@@ -30,8 +40,14 @@ struct Pike_interpreter {
   char *stack_top;
   DO_IF_SECURITY(struct object *current_creds;)
 
+  struct catch_context *catch_ctx;
+  LOW_JMP_BUF *catching_eval_jmpbuf;
+
   int svalue_stack_margin;
   int c_stack_margin;
+
+  INT16 evaluator_stack_malloced;
+  INT16 mark_stack_malloced;
 
 #ifdef PROFILING
   cpu_time_t accounted_time;	/** Time spent and accounted for so far. */
@@ -684,6 +700,7 @@ void print_return_value(void);
 void reset_evaluator(void);
 struct backlog;
 void dump_backlog(void);
+BLOCK_ALLOC (catch_context, 0);
 BLOCK_ALLOC(pike_frame,128);
 
 #ifdef PIKE_USE_MACHINE_CODE

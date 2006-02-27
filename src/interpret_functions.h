@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.186 2005/06/20 12:58:23 grubba Exp $
+|| $Id: interpret_functions.h,v 1.187 2006/02/27 12:07:10 mast Exp $
 */
 
 /*
@@ -85,10 +85,6 @@
 #define PROG_COUNTER pc
 #endif
 */
-
-#ifndef INTER_ESCAPE_CATCH
-#define INTER_ESCAPE_CATCH return -2
-#endif
 
 #ifndef INTER_RETURN
 #define INTER_RETURN return -1
@@ -1267,37 +1263,105 @@ OPCODE0_BRANCH(F_EQ_AND, "==&&", I_UPDATE_SP, {
   }
 });
 
-/* This instruction can't currently be a branch, since
- * it has more than two continuation paths.
- */
+/* Ideally this ought to be an OPCODE0_PTRRETURN but I don't fancy
+ * adding that variety to this macro hell. At the end of the day there
+ * wouldn't be any difference anyway afaics. /mast */
 OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL, {
-  PIKE_OPCODE_T *next_addr;
-  JUMP_SET_TO_PC_AT_NEXT (next_addr);
-  check_c_stack(8192);
-  switch (o_catch((PIKE_OPCODE_T *)(((INT32 *)next_addr)+1)))
+  PIKE_OPCODE_T *addr;
+
   {
-  case 1:
-    /* There was a return inside the evaluated code */
-    DO_DUMB_RETURN;
-  case 2:
-    /* Escape catch, continue after the escape instruction. */
-    DO_JUMP_TO(Pike_fp->return_addr);
-    break;
-  default:
-    DOJUMP();
+    struct catch_context *new_catch_ctx = alloc_catch_context();
+    DO_IF_REAL_DEBUG (
+      new_catch_ctx->frame = Pike_fp;
+      init_recovery (&new_catch_ctx->recovery, 0, 0, PERR_LOCATION());
+    );
+    DO_IF_NOT_REAL_DEBUG (
+      init_recovery (&new_catch_ctx->recovery, 0);
+    );
+    new_catch_ctx->save_expendible = Pike_fp->expendible;
+    new_catch_ctx->continue_reladdr = GET_JUMP();
+    JUMP_SET_TO_PC_AT_NEXT (addr);
+    new_catch_ctx->next_addr = addr;
+    new_catch_ctx->prev = Pike_interpreter.catch_ctx;
+    Pike_interpreter.catch_ctx = new_catch_ctx;
   }
-  /* NOT_REACHED in byte-code and computed goto cases. */
+
+  Pike_fp->expendible = Pike_fp->locals + Pike_fp->num_locals;
+
+  if (Pike_interpreter.catching_eval_jmpbuf) {
+    /* There's already a catching_eval_instruction around our
+     * eval_instruction, so we can just continue. */
+    debug_malloc_touch_named (Pike_interpreter.catch_ctx, "(1)");
+    SKIPJUMP();
+  }
+
+  else {
+    debug_malloc_touch_named (Pike_interpreter.catch_ctx, "(2)");
+    check_c_stack(8192);
+
+    /* Need to adjust next_addr by sizeof(INT32) to skip past the jump
+     * address to the continue position after the catch block. */
+    addr = (PIKE_OPCODE_T *) ((INT32 *) addr + 1);
+
+    while (1) {
+      /* Loop here every time an exception is caught. Once we've
+       * gotten here and set things up to run eval_instruction from
+       * inside catching_eval_instruction, we keep doing it until it's
+       * time to return. */
+
+      int res = catching_eval_instruction (addr);
+
+      if (res != -3) {
+	/* There was an inter return inside the evaluated code. Just
+	 * propagate it. */
+	DO_IF_DEBUG (
+	  if (res != -1) Pike_fatal ("Unexpected return value from "
+				     "catching_eval_instruction: %d\n", res);
+	);
+	break;
+      }
+
+      else {
+	/* Caught an exception. */
+	struct catch_context *cc = Pike_interpreter.catch_ctx;
+
+	DO_IF_DEBUG (
+	  if (!cc) Pike_fatal ("Catch context dropoff.\n");
+	  if (cc->frame != Pike_fp)
+	    Pike_fatal ("Catch context doesn't belong to this frame.\n");
+	);
+
+	debug_malloc_touch_named (cc, "(3)");
+	UNSETJMP (cc->recovery);
+	Pike_fp->expendible = cc->save_expendible;
+	move_svalue (Pike_sp++, &throw_value);
+	throw_value.type=T_INT;
+	low_destruct_objects_to_destruct();
+
+	if (cc->continue_reladdr < 0)
+	  fast_check_threads_etc(6);
+	addr = cc->next_addr + cc->continue_reladdr;
+
+	DO_IF_DEBUG (
+	  if (!addr) Pike_fatal ("Unexpected null continue addr.\n");
+	);
+
+	Pike_interpreter.catch_ctx = cc->prev;
+	really_free_catch_context (cc);
+      }
+    }
+
+    INTER_RETURN;
+  }
 });
 
-OPCODE0_RETURN(F_ESCAPE_CATCH, "escape catch", 0, {
-  JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
-  INTER_ESCAPE_CATCH;
+OPCODE0(F_ESCAPE_CATCH, "escape catch", 0, {
+  POP_CATCH_CONTEXT;
 });
 
-OPCODE0_RETURN(F_EXIT_CATCH, "exit catch", I_UPDATE_SP, {
+OPCODE0(F_EXIT_CATCH, "exit catch", I_UPDATE_SP, {
   push_undefined();
-  JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
-  INTER_ESCAPE_CATCH;
+  POP_CATCH_CONTEXT;
 });
 
 OPCODE1_JUMP(F_SWITCH, "switch", I_UPDATE_ALL, {

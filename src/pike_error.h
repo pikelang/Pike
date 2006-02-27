@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.36 2004/11/14 17:44:05 mast Exp $
+|| $Id: pike_error.h,v 1.37 2006/02/27 12:07:10 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -115,6 +115,7 @@ typedef struct JMP_BUF
 #ifdef PIKE_DEBUG
   int line;
   char *file;
+  int on_stack;
 #endif
 } JMP_BUF;
 
@@ -144,17 +145,17 @@ PMOD_EXPORT extern const char msg_unsetjmp_nosync_2[];
 #define PERR_LOCATION() ( __FILE__ ":" DEFINETOSTR(__LINE__) )
 #endif
 
-#define DEBUG_LINE_ARGS ,char *location
-#define SETJMP(X) LOW_SETJMP((init_recovery(&X, 0, PERR_LOCATION())->recovery))
+#define DEBUG_INIT_REC_ARGS , int on_stack, char *location
+#define SETJMP(X) LOW_SETJMP((init_recovery(&X, 0, 1, PERR_LOCATION())->recovery))
 #define SETJMP_SP(jmp, stack_pop_levels)				\
-  LOW_SETJMP((init_recovery(&jmp, stack_pop_levels, PERR_LOCATION())->recovery))
-#else
-#define DEBUG_LINE_ARGS 
+  LOW_SETJMP((init_recovery(&jmp, stack_pop_levels, 1, PERR_LOCATION())->recovery))
+#else  /* !PIKE_DEBUG */
+#define DEBUG_INIT_REC_ARGS
 #define SETJMP(X) LOW_SETJMP((init_recovery(&X, 0)->recovery))
 #define SETJMP_SP(jmp, stack_pop_levels)				\
   LOW_SETJMP((init_recovery(&jmp, stack_pop_levels)->recovery))
 #define UNSETJMP(X) Pike_interpreter.recoveries=X.previous
-#endif
+#endif	/* !PIKE_DEBUG */
 
 
 #ifdef PIKE_DEBUG
@@ -235,7 +236,7 @@ PMOD_EXPORT extern const char msg_assert_onerr[];
 /* Prototypes begin here */
 PMOD_EXPORT void check_recovery_context(void);
 PMOD_EXPORT void pike_gdb_breakpoint(INT32 args);
-PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r, size_t stack_pop_levels DEBUG_LINE_ARGS);
+PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r, size_t stack_pop_levels DEBUG_INIT_REC_ARGS);
 PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn));
 PMOD_EXPORT void push_error(const char *description);
 PMOD_EXPORT DECLSPEC(noreturn) void low_error(const char *buf) ATTRIBUTE((noreturn));

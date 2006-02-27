@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.367 2006/01/24 12:03:19 mast Exp $
+|| $Id: interpret.c,v 1.368 2006/02/27 12:07:10 mast Exp $
 */
 
 #include "global.h"
@@ -179,7 +179,9 @@ static void gc_check_stack_callback(struct callback *foo, void *bar, void *gazon
  *
  * Returns -1 if the code terminated due to a RETURN.
  *
- * Returns -2 if the code terminated due to EXIT_CATCH or ESCAPE_CATCH.
+ * Note: All callers except catching_eval_instruction need to save
+ * Pike_interpreter.catching_eval_jmpbuf, zero it, and restore it
+ * afterwards.
  */
 static int eval_instruction(PIKE_OPCODE_T *pc);
 
@@ -266,6 +268,8 @@ use_malloc:
   interpreter->stack_pointer = interpreter->evaluator_stack;
   interpreter->mark_stack_pointer = interpreter->mark_stack;
   interpreter->frame_pointer = 0;
+  interpreter->catch_ctx = NULL;
+  interpreter->catching_eval_jmpbuf = NULL;
 
   interpreter->svalue_stack_margin = SVALUE_STACK_MARGIN;
   interpreter->c_stack_margin = C_STACK_MARGIN;
@@ -825,6 +829,13 @@ void reset_evaluator(void)
 {
   Pike_fp=0;
   pop_n_elems(Pike_sp - Pike_interpreter.evaluator_stack);
+
+#ifdef PIKE_DEBUG
+  if (Pike_interpreter.catch_ctx)
+    Pike_fatal ("Catch context spillover.\n");
+  if (Pike_interpreter.catching_eval_jmpbuf)
+    Pike_fatal ("Got an active catching_eval_jmpbuf.\n");
+#endif
 }
 
 #ifdef PIKE_DEBUG
@@ -1059,24 +1070,37 @@ void dump_backlog(void)
 
 #endif	/* !PIKE_DEBUG */
 
-static int o_catch(PIKE_OPCODE_T *pc);
+#undef BLOCK_ALLOC_NEXT
+#define BLOCK_ALLOC_NEXT prev
 
+BLOCK_ALLOC_FILL_PAGES (catch_context, 1)
 
-#ifdef PIKE_DEBUG
-#define EVAL_INSTR_RET_CHECK(x)						\
-  if (x == -2)								\
-    Pike_fatal("Return value -2 from eval_instruction is not handled here.\n"\
-	  "Probable cause: F_ESCAPE_CATCH outside catch block.\n")
-#else
-#define EVAL_INSTR_RET_CHECK(x)
-#endif
+#define POP_CATCH_CONTEXT do {						\
+    struct catch_context *cc = Pike_interpreter.catch_ctx;		\
+    DO_IF_DEBUG (							\
+      if (!Pike_interpreter.catching_eval_jmpbuf)			\
+	Pike_fatal ("Not in catching eval.\n");				\
+      if (!cc)								\
+	Pike_fatal ("Catch context dropoff.\n");			\
+      if (cc->frame != Pike_fp)						\
+	Pike_fatal ("Catch context doesn't belong to this frame.\n");	\
+      if (Pike_mark_sp != cc->recovery.mark_sp + Pike_interpreter.mark_stack) \
+	Pike_fatal ("Mark sp diff in catch context pop.\n");		\
+    );									\
+    debug_malloc_touch (cc);						\
+    UNSETJMP (cc->recovery);						\
+    Pike_fp->expendible = cc->save_expendible;				\
+    Pike_interpreter.catch_ctx = cc->prev;				\
+    really_free_catch_context (cc);					\
+  } while (0)
+
+static int catching_eval_instruction (PIKE_OPCODE_T *pc);
 
 
 #ifdef PIKE_USE_MACHINE_CODE
 /* Labels to jump to to cause eval_instruction to return */
 /* FIXME: Replace these with assembler lables */
 void *do_inter_return_label = NULL;
-void *do_escape_catch_label;
 void *dummy_label = NULL;
 
 #ifndef CALL_MACHINE_CODE
@@ -1145,6 +1169,16 @@ void simple_debug_instr_prologue_2 (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2)
 #endif	/* !PIKE_DEBUG */
 
 #endif /* PIKE_USE_MACHINE_CODE */
+
+/* These don't change when eval_instruction_without_debug is compiled. */
+#ifdef PIKE_DEBUG
+#define REAL_PIKE_DEBUG
+#define DO_IF_REAL_DEBUG(X) X
+#define DO_IF_NOT_REAL_DEBUG(X)
+#else
+#define DO_IF_REAL_DEBUG(X)
+#define DO_IF_NOT_REAL_DEBUG(X) X
+#endif
 
 #ifdef PIKE_SMALL_EVAL_INSTRUCTION
 #undef PROG_COUNTER
@@ -1309,12 +1343,10 @@ GLOBAL_DEF_PROG_COUNTER;
 #undef DONE
 #undef FETCH
 #undef INTER_RETURN
-#undef INTER_ESCAPE_CATCH
 
 #define DONE return
 #define FETCH
 #define INTER_RETURN {SET_PROG_COUNTER(do_inter_return_label);JUMP_DONE;}
-#define INTER_ESCAPE_CATCH {SET_PROG_COUNTER(do_escape_catch_label);JUMP_DONE;}
 
 #if defined(PIKE_USE_MACHINE_CODE) && defined(_M_IX86)
 /* Disable frame pointer optimization */
@@ -1380,20 +1412,18 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
 
 #ifdef __GNUC__
     do_inter_return_label = && inter_return_label;
-    do_escape_catch_label = && inter_escape_catch_label;
 #elif defined (_M_IX86)
     /* MSVC. */
     _asm
     {
       lea eax,inter_return_label
       mov do_inter_return_label,eax
-      lea eax,inter_escape_catch_label
-      mov do_escape_catch_label,eax
     }
 #else
 #error Machine code not supported with this compiler.
 #endif
 
+#if 0
     /* Paranoia.
      *
      * This can happen on systems with delay slots if the labels aren't
@@ -1403,6 +1433,7 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
       Pike_fatal("Inter return and escape catch labels are equal: %p\n",
 		 do_inter_return_label);
     }
+#endif
 
     /* Trick optimizer */
     if(!dummy_label)
@@ -1423,11 +1454,13 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
   goto *dummy_label;
 #endif
 
+#if 0
   if (dummy_label) {
   inter_escape_catch_label:
     EXIT_MACHINE_CODE();
     return -2;
   }
+#endif
 
  inter_return_label:
   EXIT_MACHINE_CODE();
@@ -1489,6 +1522,11 @@ static INLINE int eval_instruction(unsigned char *pc)
 
 
 #endif /* PIKE_USE_MACHINE_CODE */
+
+#undef REAL_PIKE_DEBUG
+#undef DO_IF_REAL_DEBUG
+#undef DO_IF_NOT_REAL_DEBUG
+
 
 static void do_trace_call(INT32 args, dynamic_buffer *old_buf)
 {
@@ -1619,6 +1657,9 @@ static void do_trace_return (int got_retval, dynamic_buffer *old_buf)
   free(s);
 }
 
+
+#undef BLOCK_ALLOC_NEXT
+#define BLOCK_ALLOC_NEXT next
 
 #undef INIT_BLOCK
 #define INIT_BLOCK(X) do {			\
@@ -2100,6 +2141,10 @@ void unlink_previous_frame(void)
 #endif /* 0 */
 }
 
+static void restore_catching_eval_jmpbuf (LOW_JMP_BUF *p)
+{
+  Pike_interpreter.catching_eval_jmpbuf = p;
+}
 
 void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
@@ -2111,62 +2156,45 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
   if(low_mega_apply(type, args, arg1, arg2))
   {
+    /* Save and clear Pike_interpreter.catching_eval_jmpbuf so that the
+     * following eval_instruction will install a LOW_JMP_BUF of its
+     * own to handle catches. */
+    LOW_JMP_BUF *saved_jmpbuf = Pike_interpreter.catching_eval_jmpbuf;
+    ONERROR uwp;
+    Pike_interpreter.catching_eval_jmpbuf = NULL;
+    SET_ONERROR (uwp, restore_catching_eval_jmpbuf, saved_jmpbuf);
+
     eval_instruction(Pike_fp->pc
 #ifdef ENTRY_PROLOGUE_SIZE
 		     - ENTRY_PROLOGUE_SIZE
 #endif /* ENTRY_PROLOGUE_SIZE */
 		     );
     low_return();
+
+    Pike_interpreter.catching_eval_jmpbuf = saved_jmpbuf;
+    UNSET_ONERROR (uwp);
   }
 }
 
-
-/* Put catch outside of eval_instruction, so
- * the setjmp won't affect the optimization of
- * eval_instruction
- *
- * Returns 0 on throw.
- *
- * Returns 1 if the code performed a RETURN.
- *
- * Returns 2 if the code performed EXIT_CATCH or ESCAPE_CATCH.
+/* Put catch outside of eval_instruction, so the setjmp won't affect
+ * the optimization of eval_instruction.
  */
-static int o_catch(PIKE_OPCODE_T *pc)
+static int catching_eval_instruction (PIKE_OPCODE_T *pc)
 {
-  JMP_BUF tmp;
-  struct svalue *expendible=Pike_fp->expendible;
-  int flags=Pike_fp->flags;
-
-  debug_malloc_touch(Pike_fp);
-  if(SETJMP(tmp))
-  {
-    *Pike_sp=throw_value;
-    throw_value.type=T_INT;
-    Pike_sp++;
-    dmalloc_touch_svalue(Pike_sp-1);
-    UNSETJMP(tmp);
-    Pike_fp->expendible=expendible;
-    Pike_fp->flags=flags;
-    low_destruct_objects_to_destruct();
-    return 0;
-  }else{
-    struct svalue **save_mark_sp=Pike_mark_sp;
-    int x;
-    Pike_fp->expendible=Pike_fp->locals + Pike_fp->num_locals;
-
-    Pike_fp->flags&=~PIKE_FRAME_RETURN_INTERNAL;
-
-    x=eval_instruction(pc);
+  LOW_JMP_BUF jmpbuf;
 #ifdef PIKE_DEBUG
-    if(Pike_mark_sp < save_mark_sp)
-      Pike_fatal("mark Pike_sp underflow in catch.\n");
+  if (Pike_interpreter.catching_eval_jmpbuf)
+    Pike_fatal ("catching_eval_jmpbuf already active.\n");
 #endif
-    Pike_mark_sp=save_mark_sp;
-    Pike_fp->expendible=expendible;
-    Pike_fp->flags=flags;
-    if(x>=0) mega_apply(APPLY_STACK, x, 0,0); /* Should never happen */
-    UNSETJMP(tmp);
-    return x == -2 ? 2 : 1;
+  Pike_interpreter.catching_eval_jmpbuf = &jmpbuf;
+  if (LOW_SETJMP (jmpbuf))
+  {
+    Pike_interpreter.catching_eval_jmpbuf = NULL;
+    return -3;
+  }else{
+    int x = eval_instruction(pc);
+    Pike_interpreter.catching_eval_jmpbuf = NULL;
+    return x;
   }
 }
 
@@ -2265,6 +2293,7 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   int ret;
   int use_dummy_reference = !o->prog->num_identifier_references;
   int p_flags = o->prog->flags;
+  LOW_JMP_BUF *saved_jmpbuf;
 
   /* This is needed for opcodes that use INHERIT_FROM_*
    * (eg F_EXTERN) to work.
@@ -2304,6 +2333,9 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   add_ref(new_frame->current_object);
   add_ref(new_frame->context.prog);
 
+  saved_jmpbuf = Pike_interpreter.catching_eval_jmpbuf;
+  Pike_interpreter.catching_eval_jmpbuf = NULL;
+
   if(SETJMP(tmp))
   {
     ret=1;
@@ -2311,16 +2343,19 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     int tmp;
     new_frame->mark_sp_base=new_frame->save_mark_sp=Pike_mark_sp;
     tmp=eval_instruction(o->prog->program + offset);
-    EVAL_INSTR_RET_CHECK(tmp);
     Pike_mark_sp=new_frame->save_mark_sp;
     
 #ifdef PIKE_DEBUG
+    if (tmp != -1)
+      Pike_fatal ("Unexpected return value from eval_instruction: %d\n", tmp);
     if(Pike_sp<Pike_interpreter.evaluator_stack)
       Pike_fatal("Stack error (simple).\n");
 #endif
     ret=0;
   }
   UNSETJMP(tmp);
+
+  Pike_interpreter.catching_eval_jmpbuf = saved_jmpbuf;
 
   if (use_dummy_reference) {
     Pike_compiler->new_program->num_identifier_references--;
@@ -2947,5 +2982,6 @@ void really_clean_up_interpret(void)
 #endif
   free_callback_list (&evaluator_callbacks);
   free_all_pike_frame_blocks();
+  free_all_catch_context_blocks();
 #endif
 }
