@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.225 2006/02/28 13:51:53 mast Exp $
+|| $Id: svalue.c,v 1.226 2006/02/28 13:56:14 mast Exp $
 */
 
 #include "global.h"
@@ -1749,6 +1749,7 @@ PMOD_EXPORT void safe_describe_svalue (const struct svalue *s, int i,
 {
   no_pike_calls = 1;
   describe_svalue (s, i, p);
+  no_pike_calls = 0;
 }
 
 PMOD_EXPORT void print_svalue (FILE *out, const struct svalue *s)
