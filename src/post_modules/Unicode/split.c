@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: split.c,v 1.5 2004/10/07 22:19:12 nilsson Exp $
+|| $Id: split.c,v 1.6 2006/02/28 22:42:23 marcus Exp $
 */
 
 #include "global.h"
@@ -58,13 +58,13 @@ void uc_words_free( struct words *w )
 
 static inline int _unicode_is_wordchar( int c )
 {
-  /* Ideographs */
   unsigned int i;
-  if( c>=0x5000 && c<= 0x9fff ) /* CJK */
-    return 2;
   for( i = 0; i<sizeof(ranges)/sizeof(ranges[0]); i++ )
     if( c <= ranges[i].end )
-      return c>=ranges[i].start;
+      return (c>=ranges[i].start?
+	      ( (c >= 0x3400 && c <= 0x9fff) ||
+		(c >= 0x20000 && c <= 0x2ffff) ? /* CJK */ 2 : 1 )
+	      : 0);
   return 0;
 }
 

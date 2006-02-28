@@ -19,7 +19,7 @@ int parse_type( string s )
 void main()
 {
   multiset is_wordchar = (<>);
-  int last_was,c;
+  int last_was,c,last_c;
 
   write( "static const struct {\n"
 	 "  int start; int end;\n"
@@ -33,7 +33,12 @@ void main()
     if( sizeof( data ) != 15 )
       continue;
 
-    if( sscanf( data[0], "%x", c ) && data[1][0] != '<' )
+    if( sscanf( data[0], "%x", c ) ) {
+      if( c != last_c+1 && last_was && !has_suffix(data[1], "Last>") )
+      {
+	write( "  {0x%06x,0x%06x},\n", last_was, last_c );
+	last_was=0;	
+      }
       if( parse_type( data[2] ) )
       {
 	if( !sizeof(data[5]) && !last_was )
@@ -41,13 +46,15 @@ void main()
       }
       else if( last_was )
       {
-	write( "  {0x%06x,0x%06x},\n", last_was, c-1 );
+	write( "  {0x%06x,0x%06x},\n", last_was, last_c );
 	last_was=0;
       }
+      last_c = c;
+    }
   }
   if( last_was )
   {
-    write( "  {0x%06x,0x%06x}\n", last_was, c );
+    write( "  {0x%06x,0x%06x}\n", last_was, last_c );
     last_was=0;
   }
   write( "};\n");
