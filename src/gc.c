@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.273 2006/02/25 03:59:41 mast Exp $
+|| $Id: gc.c,v 1.274 2006/02/28 13:47:57 mast Exp $
 */
 
 #include "global.h"
@@ -777,7 +777,7 @@ void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
 
 #ifdef PIKE_DEBUG
   if (a) {
-    /* Temporarily jumping out of gc to avoid being catched in debug
+    /* Temporarily jumping out of gc to avoid being caught in debug
      * checks in describe(). */
     Pike_in_gc = 0;
     describe(a);
