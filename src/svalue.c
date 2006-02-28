@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.224 2005/11/08 11:34:23 grubba Exp $
+|| $Id: svalue.c,v 1.225 2006/02/28 13:51:53 mast Exp $
 */
 
 #include "global.h"
@@ -1249,6 +1249,7 @@ static void dsv_add_string_to_buf (struct pike_string *str)
   }
 }
 
+static int no_pike_calls = 0;	/* More ugly global state. */
 
 /* FIXME: Ought to be rewritten to use string_builder.
  * FIXME: Ought not to have global state.
@@ -1422,7 +1423,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 
 	  if(name && (prog->flags & PROGRAM_FINISHED) &&
 	     Pike_interpreter.evaluator_stack && !Pike_in_gc &&
-	     master_object) {
+	     master_object && !no_pike_calls) {
 	    DECLARE_CYCLIC();
 	    debug_malloc_touch(obj);
 	    if (!BEGIN_CYCLIC(obj, 0)) {
@@ -1508,7 +1509,8 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	prog = prog->inherits[s->subtype].prog;
 
 	if ((prog->flags & PROGRAM_FINISHED) &&
-	    Pike_interpreter.evaluator_stack && !Pike_in_gc) {
+	    Pike_interpreter.evaluator_stack && !Pike_in_gc &&
+	    !no_pike_calls) {
 	  DECLARE_CYCLIC();
 	  int fun=FIND_LFUN(prog, LFUN__SPRINTF);
 	  debug_malloc_touch(prog);
@@ -1633,7 +1635,8 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       struct program *prog = s->u.program;
 
       if((prog->flags & PROGRAM_FINISHED) &&
-	 Pike_interpreter.evaluator_stack && !Pike_in_gc && master_object) {
+	 Pike_interpreter.evaluator_stack && !Pike_in_gc &&
+	 master_object && !no_pike_calls) {
 	DECLARE_CYCLIC();
 	debug_malloc_touch(prog);
 	if (!BEGIN_CYCLIC(prog, 0)) {
@@ -1737,6 +1740,15 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       sprintf(buf,"<Unknown %d>",s->type);
       my_strcat(buf);
   }
+}
+
+/* Variant of describe_svalue that never calls pike code nor releases
+ * the interpreter lock. */
+PMOD_EXPORT void safe_describe_svalue (const struct svalue *s, int i,
+				       struct processing *p)
+{
+  no_pike_calls = 1;
+  describe_svalue (s, i, p);
 }
 
 PMOD_EXPORT void print_svalue (FILE *out, const struct svalue *s)

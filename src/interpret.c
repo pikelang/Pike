@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.370 2006/02/28 13:10:13 mast Exp $
+|| $Id: interpret.c,v 1.371 2006/02/28 13:51:53 mast Exp $
 */
 
 #include "global.h"
@@ -802,7 +802,7 @@ void print_return_value(void)
     dynamic_buffer save_buf;
 
     init_buf(&save_buf);
-    describe_svalue(Pike_sp-1,0,0);
+    safe_describe_svalue(Pike_sp-1,0,0);
     s=simple_free_buf(&save_buf);
     if((size_t)strlen(s) > (size_t)TRACE_LEN)
     {
@@ -1543,7 +1543,7 @@ static void do_trace_call(INT32 args, dynamic_buffer *old_buf)
   for(e=0;e<args;e++)
   {
     if(e) my_strcat(",");
-    describe_svalue(Pike_sp-args+e,0,0);
+    safe_describe_svalue(Pike_sp-args+e,0,0);
   }
   my_strcat(")");
 
@@ -1617,7 +1617,7 @@ static void do_trace_return (int got_retval, dynamic_buffer *old_buf)
 
   if (got_retval) {
     my_strcat ("returns: ");
-    describe_svalue(Pike_sp-1,0,0);
+    safe_describe_svalue(Pike_sp-1,0,0);
   }
   else
     my_strcat ("returns with no value");
@@ -1861,7 +1861,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       {
 	dynamic_buffer save_buf;
 	init_buf(&save_buf);
-	describe_svalue(s,0,0);
+	safe_describe_svalue(s,0,0);
 	do_trace_call(args, &save_buf);
       }
       apply_array(s->u.array,args);
@@ -1872,7 +1872,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       {
 	dynamic_buffer save_buf;
 	init_buf(&save_buf);
-	describe_svalue(s,0,0);
+	safe_describe_svalue(s,0,0);
 	do_trace_call(args, &save_buf);
       }
       push_object(clone_object(s->u.program,args));
@@ -2259,7 +2259,7 @@ PMOD_EXPORT void call_handle_error(void)
       char *s;
       fprintf (stderr, "There's no master to handle the error. Dumping it raw:\n");
       init_buf(&save_buf);
-      describe_svalue (Pike_sp - 1, 0, 0);
+      safe_describe_svalue (Pike_sp - 1, 0, 0);
       s=simple_free_buf(&save_buf);
       fprintf(stderr,"%s\n",s);
       free(s);
@@ -2269,7 +2269,7 @@ PMOD_EXPORT void call_handle_error(void)
 	  fprintf(stderr, "Attempting to extract the backtrace.\n");
 	  safe_apply_low2(Pike_sp[-1].u.object, fun, 0, 0);
 	  init_buf(&save_buf);
-	  describe_svalue(Pike_sp - 1, 0, 0);
+	  safe_describe_svalue(Pike_sp - 1, 0, 0);
 	  pop_stack();
 	  s=simple_free_buf(&save_buf);
 	  fprintf(stderr,"%s\n",s);
