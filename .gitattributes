@@ -231,6 +231,7 @@ testfont binary
 /lib/modules/Standards.pmod/EXIF.pmod foreign_ident
 /lib/modules/Standards.pmod/FIPS10_4.pmod foreign_ident
 /lib/modules/Standards.pmod/ID3.pmod foreign_ident
+/lib/modules/Standards.pmod/IIM.pmod foreign_ident
 /lib/modules/Standards.pmod/PKCS.pmod/CSR.pmod foreign_ident
 /lib/modules/Standards.pmod/PKCS.pmod/Certificate.pmod foreign_ident
 /lib/modules/Standards.pmod/PKCS.pmod/DSA.pmod foreign_ident
