@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.760 2006/01/27 20:43:12 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.761 2006/03/01 18:11:26 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -225,6 +225,38 @@ test_compile_any([[
   }
 ]])
 
+define(test_locals,[[
+  test_any([[
+    string line = sprintf("#line %d %O\n", __LINE__, __FILE__);
+    string s = (map(indices(allocate($1)), lambda(int no) {
+		      no++;
+		      return sprintf("  int var_%d;\n"
+				     "  if (var_%d)\n"
+				     "    error(\"Variable var_%d not \"\n"
+				     "          \"initialized to zero: \"\n"
+				     "          \"%%O\\n\",\n"
+				     "          var_%d);\n"
+				     "  var_%d = %d;\n",
+				     no, no, no, no, no, no);
+	            }) +
+	        map(indices(allocate($1)), lambda(int no) {
+		      no++;
+		      return sprintf("  if (var_%d != %d)\n"
+				     "    error(\"Variable var_%d was \"\n"
+				     "          \"clobbered with %%O.\\n\",\n"
+				     "          var_%d);\n",
+				     no, no, no, no);
+		    })) * "";
+    program p = compile_string("int a() {\n" + line +
+			       s +
+			       "  return 0;\n"
+			       "}\n");
+    return p()->a();
+  ]], 0)
+]])
+
+test_locals(255)
+test_locals(256)
 
 dnl FIXME: Add test that local and local:: in combination
 dnl        with recursion works correctly.
