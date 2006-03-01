@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.415 2006/02/27 12:33:55 mast Exp $
+# $Id: Makefile.in,v 1.416 2006/03/01 00:13:55 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -228,7 +228,7 @@ documentation: onepage.xml traditional.xml modref.xml
 # Backward compat.
 post_modules: post_module_objects
 
-post_module_objects: tpike
+post_module_objects: $(MODULE_REQUIREMENTS) tpike
 	@( cd post_modules ; rm remake >/dev/null 2>&1 || : ; \
 	   $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
 	     ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) || exit $$?
