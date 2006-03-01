@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.761 2006/03/01 18:11:26 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.762 2006/03/01 20:00:00 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -225,38 +225,53 @@ test_compile_any([[
   }
 ]])
 
-define(test_locals,[[
+dnl number of variables/scope, number of scopes, expect_compiler_error
+define(test_scopes,[[
   test_any([[
+    werror("Testing scoped variables $1:$2%s...\n",
+	   $3?" expecting a compilation error":"");
     string line = sprintf("#line %d %O\n", __LINE__, __FILE__);
-    string s = (map(indices(allocate($1)), lambda(int no) {
-		      no++;
-		      return sprintf("  int var_%d;\n"
-				     "  if (var_%d)\n"
-				     "    error(\"Variable var_%d not \"\n"
-				     "          \"initialized to zero: \"\n"
-				     "          \"%%O\\n\",\n"
-				     "          var_%d);\n"
-				     "  var_%d = %d;\n",
-				     no, no, no, no, no, no);
-	            }) +
-	        map(indices(allocate($1)), lambda(int no) {
-		      no++;
-		      return sprintf("  if (var_%d != %d)\n"
-				     "    error(\"Variable var_%d was \"\n"
-				     "          \"clobbered with %%O.\\n\",\n"
-				     "          var_%d);\n",
-				     no, no, no, no);
-		    })) * "";
-    program p = compile_string("int a() {\n" + line +
-			       s +
-			       "  return 0;\n"
-			       "}\n");
+    string s = "{\n" +
+      (map(indices(allocate($1)), lambda(int no) {
+		     no++;
+		     return sprintf("    int var_%d;\n"
+				    "    if (var_%d)\n"
+				    "      error(\"Variable var_%d not \"\n"
+				    "            \"initialized to zero: \"\n"
+				    "            \"%%O\\n\",\n"
+				    "            var_%d);\n"
+				    "    var_%d = %d;\n",
+				    no, no, no, no, no, no);
+	           }) +
+       map(indices(allocate($1)), lambda(int no) {
+		     no++;
+		     return sprintf("    if (var_%d != %d)\n"
+				    "      error(\"Variable var_%d was \"\n"
+				    "            \"clobbered with %%O.\\n\",\n"
+				    "            var_%d);\n",
+				    no, no, no, no);
+		   })) * "" +
+       "}\n";
+    program p;
+    mixed err = catch {
+      p = compile_string("int a() {\n" + line + (s * $2) +
+			 "  return 0;\n"
+			 "}\n");
+    };
+    if ($3) {
+      if (err) return 0;
+      error("Expected a compilation error for $1 variables in $2 scope%s.\n",
+            ($2>1)?"s":"");
+    }
+    if (err) throw(err);
     return p()->a();
   ]], 0)
 ]])
 
-test_locals(255)
-test_locals(256)
+test_scopes(255, 1, 0)
+test_scopes(256, 1, 1)
+test_scopes(16, 17, 0)
+test_scopes(17, 16, 0)
 
 dnl FIXME: Add test that local and local:: in combination
 dnl        with recursion works correctly.
