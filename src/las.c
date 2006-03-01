@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.373 2006/01/21 14:32:36 grubba Exp $
+|| $Id: las.c,v 1.374 2006/03/01 20:01:21 grubba Exp $
 */
 
 #include "global.h"
@@ -3711,7 +3711,7 @@ void fix_type_field(node *n)
       }
 
       if (!pike_types_le(f, function_type_string)) {
-	yytype_error("Calling non function value.", f, s, 0);
+	yytype_error("Calling non function value.", s, f, 0);
 	copy_pike_type(n->type, mixed_type_string);
 
 	/* print_tree(n); */
