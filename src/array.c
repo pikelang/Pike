@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.186 2006/02/20 12:31:32 grubba Exp $
+|| $Id: array.c,v 1.187 2006/03/01 11:53:07 nilsson Exp $
 */
 
 #include "global.h"
@@ -2280,39 +2280,43 @@ PMOD_EXPORT struct array *copy_array_recursively(struct array *a,
  */
 PMOD_EXPORT void apply_array(struct array *a, INT32 args)
 {
-  INT32 e;
+  INT32 e, hash = 0;
   struct svalue *argp = Pike_sp-args;
-  TYPE_FIELD new_types = 0;
+  struct array *aa;
   struct array *cycl;
+  TYPE_FIELD new_types = 0;
   DECLARE_CYCLIC();
 
+  check_stack(args);
   check_array_for_destruct(a);
-  check_stack(120 + args + 1);
+  for (e=0; e<args; e++)
+    hash = hash * 33 + (INT32)Pike_sp[-e-1].u.ptr;
 
-  /* FIXME: Ought to use a better key on the arguments below. */
-  if (!(cycl = (struct array *)BEGIN_CYCLIC(a, (ptrdiff_t) args))) {
-    BEGIN_AGGREGATE_ARRAY(a->size) {
-      SET_CYCLIC_RET(Pike_sp[-1].u.array);
-      for (e=0;e<a->size;e++) {
+  if (!(cycl = (struct array *)BEGIN_CYCLIC(a, (ptrdiff_t)hash))) {
+    aa = allocate_array(a->size);
+    for (e=0; e<a->size; e++)
+    {
 	assign_svalues_no_free(Pike_sp, argp, args, BIT_MIXED);
 	Pike_sp+=args;
 	/* FIXME: Don't throw apply errors from apply_svalue here. */
 	apply_svalue(ITEM(a)+e,args);
 	new_types |= 1 << Pike_sp[-1].type;
-	DO_AGGREGATE_ARRAY(120);
-      }
+        assign_svalue_no_free(ITEM(aa)+e, &Pike_sp[-1]);
+        pop_stack();
     }
-    END_AGGREGATE_ARRAY;
-
-    Pike_sp[-1].u.array->type_field = new_types;
+    aa->type_field = new_types;
 #ifdef PIKE_DEBUG
-    array_check_type_field(Pike_sp[-1].u.array);
+    array_check_type_field(aa);
 #endif
-  } else {
+    pop_n_elems(args);
+    push_array(aa);
+  }
+  else {
+    pop_n_elems(args);
     ref_push_array(cycl);
   }
+
   END_CYCLIC();
-  stack_pop_n_elems_keep_top(args);
 }
 
 /** Reverse the elements in an array. If the array has more than one
