@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.239 2006/02/25 11:11:40 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.240 2006/03/02 10:38:51 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3432,7 +3432,7 @@ lvalue: expr4
   | type6 TOK_IDENTIFIER
   {
     add_local_name($2->u.sval.u.string,compiler_pop_type(),0);
-    $$=mklocalnode(islocal($2->u.sval.u.string),0);
+    $$=mklocalnode(islocal($2->u.sval.u.string),-1);
     free_node($2);
   }
   | bad_expr_ident

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.107 2003/09/19 14:00:23 grubba Exp $");
+RCSID("$Id: docode.c,v 1.108 2006/03/02 10:38:51 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -735,6 +735,11 @@ static int do_docode2(node *n, INT16 flags)
 
 	if(CDR(n)->u.integer.b) goto normal_assign;
 
+	if (CDR(n)->node_info & OPT_ASSIGNMENT) {
+	  /* Initialize. */
+	  emit0(F_CONST0);
+	  emit1(F_ASSIGN_LOCAL_AND_POP, CDR(n)->u.integer.a);
+	}
 	code_expression(CAR(n), 0, "RHS");
 	emit1(flags & DO_POP ? F_ASSIGN_LOCAL_AND_POP:F_ASSIGN_LOCAL,
 	     CDR(n)->u.integer.a );
@@ -1668,10 +1673,21 @@ static int do_docode2(node *n, INT16 flags)
     }else{
       if(flags & WANT_LVALUE)
       {
+	if (n->node_info & OPT_ASSIGNMENT) {
+	  /* Initialize the variable. */
+	  emit0(F_CONST0);
+	  emit1(F_ASSIGN_LOCAL_AND_POP, n->u.integer.a);
+	}
 	emit1(F_LOCAL_LVALUE,n->u.id.number);
 	return 2;
       }else{
-	emit1(F_LOCAL,n->u.id.number);
+	if (n->node_info & OPT_ASSIGNMENT) {
+	  /* Initialize the variable. */
+	  emit0(F_CONST0);
+	  emit1(F_ASSIGN_LOCAL, n->u.integer.a);
+	} else {
+	  emit1(F_LOCAL, n->u.integer.a);
+	}
 	return 1;
       }
     }
