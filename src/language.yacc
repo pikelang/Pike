@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.321 2006/02/25 11:11:14 grubba Exp $
+|| $Id: language.yacc,v 1.322 2006/03/02 10:39:25 grubba Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.321 2006/02/25 11:11:14 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.322 2006/03/02 10:39:25 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3638,7 +3638,7 @@ lvalue: expr4
   {
     int id = add_local_name($2->u.sval.u.string,compiler_pop_type(),0);
     if (id >= 0)
-      $$=mklocalnode(id,0);
+      $$=mklocalnode(id,-1);
     else
       $$ = 0;
     free_node($2);

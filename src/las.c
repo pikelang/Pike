@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.329 2006/01/09 13:18:55 grubba Exp $
+|| $Id: las.c,v 1.330 2006/03/02 10:39:25 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.329 2006/01/09 13:18:55 grubba Exp $");
+RCSID("$Id: las.c,v 1.330 2006/03/02 10:39:25 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1294,7 +1294,12 @@ node *debug_mklocalnode(int var, int depth)
   _CDR(res) = 0;
 #endif
   res->u.integer.a = var;
-  res->u.integer.b = depth;
+  if (depth < 0) {
+    res->node_info |= OPT_ASSIGNMENT;
+    res->u.integer.b = 0;
+  } else {
+    res->u.integer.b = depth;
+  }
 
 #ifdef SHARED_NODES
   /* FIXME: Not common-subexpression optimized.
