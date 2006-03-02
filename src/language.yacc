@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.367 2006/03/01 19:40:06 grubba Exp $
+|| $Id: language.yacc,v 1.368 2006/03/02 10:25:40 grubba Exp $
 */
 
 %pure_parser
@@ -1652,9 +1652,10 @@ new_local_name: optional_stars TOK_IDENTIFIER
     }
     while($1--) push_type(T_ARRAY);
     id = add_local_name($2->u.sval.u.string, compiler_pop_type(),0);
-    if (id >= 0)
+    if (id >= 0) {
+      /* FIXME: Consider using mklocalnode(id, -1). */
       $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(id,0));
-    else
+    } else
       $$ = 0;
     free_node($2);
   }
@@ -1699,9 +1700,10 @@ new_local_name2: TOK_IDENTIFIER
     int id;
     add_ref($<n>0->u.sval.u.type);
     id = add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.type, 0);
-    if (id >= 0)
+    if (id >= 0) {
+      /* FIXME: Consider using mklocalnode(id, -1). */
       $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(id,0));
-    else
+    } else
       $$ = 0;
     free_node($1);
   }
@@ -3886,7 +3888,7 @@ lvalue: expr4
   {
     int id = add_local_name($2->u.sval.u.string,compiler_pop_type(),0);
     if (id >= 0)
-      $$=mklocalnode(id,0);
+      $$=mklocalnode(id,-1);
     else
       $$ = 0;
     free_node($2);

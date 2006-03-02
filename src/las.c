@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.374 2006/03/01 20:01:21 grubba Exp $
+|| $Id: las.c,v 1.375 2006/03/02 10:25:07 grubba Exp $
 */
 
 #include "global.h"
@@ -1332,7 +1332,15 @@ node *debug_mklocalnode(int var, int depth)
   _CDR(res) = 0;
 #endif
   res->u.integer.a = var;
-  res->u.integer.b = depth;
+  if (depth < 0) {
+    /* First appearance of this variable.
+     * Add initialization code.
+     */
+    res->node_info |= OPT_ASSIGNMENT;
+    res->u.integer.b = 0;
+  } else {
+    res->u.integer.b = depth;
+  }
 
 #ifdef SHARED_NODES
   /* FIXME: Not common-subexpression optimized.
