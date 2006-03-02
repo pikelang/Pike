@@ -3,7 +3,7 @@
 // 
 // http://www.iptc.org/IIM/
 //
-// $Id: IIM.pmod,v 1.1 2006/03/01 16:37:27 grubba Exp $
+// $Id: IIM.pmod,v 1.2 2006/03/02 18:35:42 grubba Exp $
 //
 // Anders Johansson & Henrik Grubbström
 
@@ -83,6 +83,10 @@ mapping(int:mapping(int:string)) fields =
       200: "objectdata preview file format",
       201: "objectdata preview file format version",
       202: "objectdata preview data",
+
+      // This one seems to contain a charset name...
+      //   eg "CP_1252" or "CP_2"
+      183: "charset",
     ]),
     3: ([ ]), // DIGITAL NEWSPHOTO PARAMETER
     4: ([ ]), // Not Allocated,
@@ -102,23 +106,28 @@ mapping(int:mapping(int:string)) fields =
     ])
   ]);
 
-// Most application record fields seem to be encoded
-// with the macintosh charset.
-//
-// This has been verified for the fields:
-//   "by-line"
-//   "caption/abstract"
-//   "city"
-//   "copyright notice"
-//   "headline"
-//   "keywords"
-//   "object name"
-//   "source"
-//   "special instructions"
-//   "supplemental category"
-//   "writer/editor"
-// and is assumed for the remainder.
-mapping(int:string) encodings = ([
+mapping(int:multiset(int)) binary_fields = ([
+  1: (<20, 22>),
+  2: (<0>),
+]);
+
+static int short_value(string str)
+{
+  return (str[0]<<8)|str[1];
+  //return (str[1]<<8)|str[0];
+}
+
+
+mapping get_information(Stdio.File fd)
+{
+  mapping res = ([]);
+
+  string jpeg_marker = fd->read(2);
+  if (jpeg_marker != "\xff\xd8") {
+    //werror("unknown JPEG marker: %O\n", jpeg_marker);
+    return res;
+  }
+
   // IIMV 4.1 Chapter 3 Section 1.6 (a):
   //   Record 1:xx shall use coded character set ISO 646 International
   //   Reference Version or ISO 4873 Default Version.
@@ -137,27 +146,27 @@ mapping(int:string) encodings = ([
   // that macintosh encoding is used in place of ISO 4873 DV.
   //
   // 1: "iso646irv" or "iso4873dv",
-  2: "macintosh",
-]);
-
-
-
-static int short_value(string str)
-{
-  return (str[0]<<8)|str[1];
-  //return (str[1]<<8)|str[0];
-}
-
-
-mapping get_information(Stdio.File fd)
-{
-  mapping res = ([]);
-
-  string jpeg_marker = fd->read(2);
-  if (jpeg_marker != "\xff\xd8") {
-    //werror("unknown JPEG marker: %O\n", jpeg_marker);
-    return res;
-  }
+  //
+  // Most application record fields seem to be encoded
+  // with the macintosh charset.
+  //
+  // This has been verified for the fields:
+  //   "by-line"
+  //   "caption/abstract"
+  //   "city"
+  //   "copyright notice"
+  //   "headline"
+  //   "keywords"
+  //   "object name"
+  //   "source"
+  //   "special instructions"
+  //   "supplemental category"
+  //   "writer/editor"
+  // and is assumed for the remainder.
+  //
+  // Some do however (eg Nyhedstjeneste in Denmark) use ISO-8859-1.
+  //
+  // We attempt some DWIM further down.
 
   do {
     string app = fd->read(2);
@@ -213,36 +222,48 @@ mapping get_information(Stdio.File fd)
 	  info = info[size+5..];
 
 	  if (segment_marker != '\x1c') {
-	    werror("Unknown segment marker: %O\n", segment_marker);
-	    continue;
-	    //break;
+	    if (segment_marker == '\x6f') {
+	      // I have not found any documentation for this segment,
+	      // but I use it to detect Nyhedstjeneste.
+	      if ((record_set == 110) && (!id)) {
+		res->charset = ({ "iso-8859-1" });
+		continue;
+	      }
+	    }
+#if 1
+	    werror("Unknown segment marker: 0x%02x\n"
+		   "record_set: %d\n"
+		   "id: %d\n"
+		   "data: %O\n", segment_marker, record_set, id, data);
+#endif /* 1 */
+	    break;
 	  }
 
 	  if (!has_value(indices(fields), record_set)) {
 	    werror("Unknown record set marker: %O\n", record_set);
-	    continue;
-	    //break;
+	    break;
 	  }
 
 	  //werror("%3d: ", id);
-	  //werror("%s\n", data);
+	  //werror("%O\n", data);
 	  //werror("info: %O\n", String.string2hex(info));
 	  string label =
 	    fields[record_set][id] ||
 	    (string)record_set + ":" + (string)id;
 
-	  if ((record_set == 2) && !id) {
-	    // The record version is binary encoded.
+	  if (label == "coded character set") {
+	    if (data == "\e%5") {
+	      res->charset = (res->charset || ({})) + ({ "iso-8859-1" });
+	    }
+	  }
+
+	  if ((binary_fields[record_set] && binary_fields[record_set][id]) ||
+	      (<3, 7>)[record_set]) {
+	    // Decode binary fields.
 	    data = (string)Gmp.mpz(data, 256);
 	  }
 
-	  string encoding;
-	  if (encoding = encodings[record_set]) {
-	    object decoder = Locale.Charset.decoder(encoding);
-	    catch {
-	      data = decoder->feed(data)->drain();
-	    };
-	  }
+	  // werror("RAW: %O:%O\n", label, data);
 
 	  if (res[label])
 	    res[label] += ({ data });
@@ -255,6 +276,30 @@ mapping get_information(Stdio.File fd)
 
     fd->read(length-2);
   } while (1);
+
+  if (sizeof(res)) {
+    string charset;
+    if (!res->charset) {
+      charset = "macintosh";
+    } else {
+      charset = lower_case(res->charset[0]);
+
+      // Remap to standard names:
+      charset = ([
+	"cp_1252":"windows1252",
+	"cp_2":"macintosh",
+      ])[charset] || charset;
+    }
+    //werror("Charset: %O\n", charset);
+    res->charset = ({ charset });
+    object decoder = Locale.Charset.decoder(charset);
+    foreach(res; string key; array(string) vals) {
+      res[key] = map(vals,
+		     lambda(string val, object decoder) {
+		       return decoder->feed(val)->drain();
+		     }, decoder);
+    }
+  }
 
   return res;
 }  
