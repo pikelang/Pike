@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.763 2006/03/02 10:53:14 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.764 2006/03/04 15:02:49 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -281,6 +281,17 @@ test_any([[
   sscanf("", "%d", int zero);
   return zero;
 ]], 0);
+
+test_any([[
+  // LysLysKOM 14189033
+  int i;
+  for (i = 0; i < 4; i++) {
+    sscanf("", "%d", int test);
+    if (test) return test;
+    test = i+1;
+  }
+  return 0;
+]], 0)
 
 dnl FIXME: Add test that local and local:: in combination
 dnl        with recursion works correctly.
