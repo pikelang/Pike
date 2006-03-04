@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.187 2006/03/01 11:53:07 nilsson Exp $
+|| $Id: array.c,v 1.188 2006/03/04 19:38:23 nilsson Exp $
 */
 
 #include "global.h"
@@ -1840,7 +1840,7 @@ PMOD_EXPORT struct array *merge_array_without_order(struct array *a,
 #endif
 }
 
-/** subtract an array from another 
+/** Subtract an array from another.
 */
 PMOD_EXPORT struct array *subtract_arrays(struct array *a, struct array *b)
 {
@@ -1866,26 +1866,21 @@ PMOD_EXPORT struct array *subtract_arrays(struct array *a, struct array *b)
   }
 }
 
-/**
- *  and two arrays 
+/** And two arrays together.
  */
 PMOD_EXPORT struct array *and_arrays(struct array *a, struct array *b)
 {
 #ifdef PIKE_DEBUG
   if(d_flag > 1)
-  {
     array_check_type_field(b);
-  }
 #endif
   check_array_for_destruct(a);
 
   if((a->type_field & b->type_field) ||
      ((a->type_field | b->type_field) & BIT_OBJECT))
-  {
     return merge_array_with_order(a, b, PIKE_ARRAY_OP_AND_LEFT);
-  }else{
+  else
     return allocate_array_no_init(0,0);
-  }
 }
 
 int array_is_constant(struct array *a,
@@ -1969,9 +1964,8 @@ node *make_node_from_array(struct array *a)
   }
 }
 
-/**
-*  push elements of an array onto the stack.
-*/
+/** Push elements of an array onto the stack. The array will be freed.
+ */
 PMOD_EXPORT void push_array_items(struct array *a)
 {
   check_stack(a->size);
@@ -2083,7 +2077,7 @@ PMOD_EXPORT struct array *aggregate_array(INT32 args)
   return a;
 }
 
-/** add an element to the end of an array by resizing the array.
+/** Add an element to the end of an array by resizing the array.
  *
  * @param a the array to be appended
  * @param s the value to be added to the new element in the array
@@ -2097,7 +2091,7 @@ PMOD_EXPORT struct array *append_array(struct array *a, struct svalue *s)
 
 typedef char *(* explode_searchfunc)(void *,void *,size_t);
 
-/**  explode a string by a delimiter
+/** Explode a string into an array by a delimiter.
  * 
  * @param str the string to be split
  * @param del the string to split str by
@@ -2190,20 +2184,21 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
   return ret;
 }
 
-/** implode an array by creating a string with all of the array's elements
- *  separated by a delimiter
+/** Implode an array by creating a string with all of the array's
+ *  elements separated by a delimiter.
  *
- * @param a the array containing elements to be imploded
- * @param del the delimiter used to separate the array's elements in the resulting string
- * @returns the imploded string
+ * @param a The array containing elements to be imploded
+ * @param del The delimiter used to separate the array's elements in the resulting string
+ * @return The imploded string
  * 
  */
-PMOD_EXPORT struct pike_string *implode(struct array *a,struct pike_string *del)
+PMOD_EXPORT struct pike_string *implode(struct array *a,
+                                        struct pike_string *del)
 {
-  INT32 len,e, inited;
+  INT32 len, e, inited;
   PCHARP r;
-  struct pike_string *ret,*tmp;
-  int max_shift=0;
+  struct pike_string *ret, *tmp;
+  int max_shift = del->size_shift;
 
   len=0;
 
@@ -2216,7 +2211,6 @@ PMOD_EXPORT struct pike_string *implode(struct array *a,struct pike_string *del)
 	max_shift=ITEM(a)[e].u.string->size_shift;
     }
   }
-  if(del->size_shift > max_shift) max_shift=del->size_shift;
   if(len) len-=del->len;
   
   ret=begin_wide_shared_string(len,max_shift);
@@ -2241,7 +2235,7 @@ PMOD_EXPORT struct pike_string *implode(struct array *a,struct pike_string *del)
   return low_end_shared_string(ret);
 }
 
-/** deeply copy an array
+/** Deeply copy an array. The mapping is used for temporary storage.
  */
 PMOD_EXPORT struct array *copy_array_recursively(struct array *a,
 						 struct mapping *m)
@@ -2276,7 +2270,9 @@ PMOD_EXPORT struct array *copy_array_recursively(struct array *a,
   return ret;
 }
 
-/** apply the elements of an array
+/** Apply the elements of an array. Arguments the array should be
+ *  applied with should be on the stack before the call and the
+ *  resulting array will be on the stack after the call.
  */
 PMOD_EXPORT void apply_array(struct array *a, INT32 args)
 {
@@ -2355,6 +2351,10 @@ PMOD_EXPORT struct array *reverse_array(struct array *a)
   return ret;
 }
 
+/** Replaces all from elements in array a with to elements. Called
+ *  from replaces when first argument is an array. The replace is applied
+ *  desctructivly.
+ */
 void array_replace(struct array *a,
 		   struct svalue *from,
 		   struct svalue *to)
@@ -2637,6 +2637,10 @@ void debug_dump_array(struct array *a)
 #endif
 
 
+/** Returns (by argument) the number of arrays and the total amount of
+ *  memory allocated for arrays (array structs + svalues). Called from
+ *  _memory_usage, which is exposed through Debug.memory_usage().
+ */
 void count_memory_in_arrays(INT32 *num_, INT32 *size_)
 {
   INT32 num=0, size=0;
@@ -2651,6 +2655,12 @@ void count_memory_in_arrays(INT32 *num_, INT32 *size_)
   *size_=size;
 }
 
+/** Segments an array into several elements in an array based on the
+ *  sequence in the second array argument. This function is called
+ *  when an array is divided by another array. Pike level example, ({
+ *  "hello", " ", "world", "!" }) / ({ " " }) -> ({ ({ "hello" }), ({
+ *  "world", "!" }) })
+ */
 PMOD_EXPORT struct array *explode_array(struct array *a, struct array *b)
 {
   INT32 e,d,start;
@@ -2700,6 +2710,11 @@ PMOD_EXPORT struct array *explode_array(struct array *a, struct array *b)
   return tmp;
 }
 
+/** Joins array elements of an array into a new array with the
+ *  elements of the second array as joiners. Performs the opposite
+ *  action from explode_array and is called when an array is
+ *  multiplied by another array.
+ */
 PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b)
 {
   INT32 e, size;
