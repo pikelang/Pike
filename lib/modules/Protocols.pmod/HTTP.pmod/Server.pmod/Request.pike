@@ -360,6 +360,7 @@ static void parse_post()
        has_prefix(request_headers["content-type"], "multipart/form-data") )
   {
     MIME.Message messg = MIME.Message(body_raw, request_headers);
+    if(!messg->body_parts) return;
 
     foreach(messg->body_parts, object part) {
       if(part->disp_params->filename) {
