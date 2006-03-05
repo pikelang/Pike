@@ -7,5 +7,5 @@ int n=300;
 
 string tagremove(string line)
 {
-   return column(array_sscanf(data,"%{%s<%*s>%}")[0],0)*"";
+  return column(array_sscanf(data,"%{%s<%*s>%}%{%s%}")*({}),0)*"";
 }
