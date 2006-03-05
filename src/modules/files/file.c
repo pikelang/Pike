@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.355 2006/01/14 02:32:41 mast Exp $
+|| $Id: file.c,v 1.356 2006/03/05 22:22:23 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -3601,17 +3601,17 @@ static void file_create(INT32 args)
 struct new_thread_data
 {
   INT32 from, to;
+  char buffer[READ_BUFFER];
 };
 
 static TH_RETURN_TYPE proxy_thread(void * data)
 {
-  char buffer[READ_BUFFER];
   struct new_thread_data *p=(struct new_thread_data *)data;
 
   while(1)
   {
     ptrdiff_t len, w;
-    len = fd_read(p->from, buffer, READ_BUFFER);
+    len = fd_read(p->from, p->buffer, READ_BUFFER);
     if(len==0) break;
     if(len<0)
     {
@@ -3623,7 +3623,7 @@ static TH_RETURN_TYPE proxy_thread(void * data)
     w=0;
     while(w<len)
     {
-      ptrdiff_t wl = fd_write(p->to, buffer+w, len-w);
+      ptrdiff_t wl = fd_write(p->to, p->buffer+w, len-w);
       if(wl<0)
       {
 	if(errno==EINTR) continue;
