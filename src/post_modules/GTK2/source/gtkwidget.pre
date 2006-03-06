@@ -217,25 +217,6 @@ mapping size_request()
   }
 }
 
-/*
-mapping size_allocate()
-//! Get the size and position of a widget.
-{
-  pgtk2_verify_inited();
-  pgtk2_pop_n_elems(args);
-  {
-    GtkAllocation a;
-    gtk_widget_size_allocate(GTK_WIDGET(THIS->obj),&a);
-    ref_push_string(_STR("x")); push_int(a.x);
-    ref_push_string(_STR("y")); push_int(a.y);
-    ref_push_string(_STR("width")); push_int(a.width);
-    ref_push_string(_STR("height")); push_int(a.height);
-    f_aggregate_mapping(8);
-  }
-}
-*/
-
-/*
 mapping(string:int) allocation()
 //! Returns ([ "x": xoffset, "y":yoffset, "width":xsize, "height":ysize ])
 {
@@ -246,16 +227,7 @@ mapping(string:int) allocation()
   ref_push_string(_STR("height")); push_int(GTK_WIDGET(THIS->obj)->allocation.height);
   f_aggregate_mapping(8);
 }
-*/
 
-GTK2.Allocation allocation()
-//! Returns a GDK2.Allocation object, which can be cast to a mapping or an
-//! array.
-{
-  pgtk2_verify_inited();
-  push_gobjectclass((GtkAllocation *)THIS->obj,pgtk2_allocation_program);
-}
- 
 void add_accelerator(string accel_signal, GTK2.AccelGroup accel_group,
                 int accel_key, int accel_mods, int accel_flags);
 //! Installs an accelerator in accel_group that causes accel_signal to be
