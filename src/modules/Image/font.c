@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: font.c,v 1.89 2005/11/13 12:14:28 nilsson Exp $
+|| $Id: font.c,v 1.90 2006/03/06 08:47:36 peter Exp $
 */
 
 #include "global.h"
@@ -344,7 +344,7 @@ void font_load(INT32 args)
 	else
 	{
 #endif
-	  fh = (struct file_head *)malloc(size);
+	  fh = (struct file_head *)xalloc(size);
 #ifdef FONT_DEBUG
 	  fprintf(stderr,"FONT Malloced %p (%d)\n", fh, size);
 #endif
