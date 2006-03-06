@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stardate.c,v 1.18 2003/12/12 17:46:19 nilsson Exp $
+|| $Id: stardate.c,v 1.19 2006/03/06 08:46:17 peter Exp $
 */
 
 #include "global.h"
@@ -20,7 +20,7 @@
 #include "builtin_functions.h"
 #include "pike_error.h"
 
-RCSID("$Id: stardate.c,v 1.18 2003/12/12 17:46:19 nilsson Exp $");
+RCSID("$Id: stardate.c,v 1.19 2006/03/06 08:46:17 peter Exp $");
 
 #ifdef HAVE_SYS_TIME_H 
 #include <sys/time.h>
@@ -130,6 +130,8 @@ void f_stardate (INT32 args)
   if (precis < 1) precis = 1;
   if (precis > MAXPRECISION) precis = MAXPRECISION;
   tm = gmtime (&t);
+  if(!tm)
+    Pike_error("gmtime failed\n");
   jd = DO_NOT_WARN((int)julian_day(tm->tm_mon + 1, tm->tm_mday,
 				   tm->tm_year + 1900));
 
