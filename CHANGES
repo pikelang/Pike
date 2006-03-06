@@ -6,6 +6,7 @@ Changes in Pike:
 o Fixed Cache.cache to work without threads again.
 o Fixed a typo in Array.diff3 that in some rare cases caused it to
   merge a difference into a three-way equality.
+o Fixed a bug where reused local variables weren't cleared properly.
 
 Other:
 
