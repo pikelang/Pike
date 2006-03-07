@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: polyfill.c,v 1.45 2004/03/05 23:04:03 nilsson Exp $
+|| $Id: polyfill.c,v 1.46 2006/03/07 09:06:37 peter Exp $
 */
 
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.45 2004/03/05 23:04:03 nilsson Exp $");
+RCSID("$Id: polyfill.c,v 1.46 2006/03/07 09:06:37 peter Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -824,7 +824,10 @@ void image_polyfill(INT32 args)
       pop_stack();
    }
 
-   if (!v) return; /* no vertices */
+   if (!v) {
+     free(buf);
+     return; /* no vertices */
+   }
 
    polyfill_some(THIS,v,buf);
    
