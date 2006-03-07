@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.46 2005/06/27 18:00:12 grubba Exp $
+|| $Id: sparc.c,v 1.47 2006/03/07 20:13:22 grubba Exp $
 */
 
 /*
@@ -560,44 +560,6 @@ void sparc_local_lvalue(unsigned int no)
   sparc_codegen_state |= SPARC_CODEGEN_SP_NEEDS_STORE;
 }
 
-void sparc_escape_catch(void)
-{
-  LOAD_PIKE_FP();
-  SPARC_FLUSH_UNSTORED();
-#ifdef PIKE_BYTECODE_SPARC64
-  /* The asr registers are implementation specific in Sparc V7 and V8. */
-  /* rd %pc, %i0 */
-  SPARC_RD(SPARC_REG_I0, SPARC_RD_REG_PC);
-  /* add %i0, 20, %i0 */
-  SPARC_ADD(SPARC_REG_I0, SPARC_REG_I0, 5*4, 1);
-#else /* !0 */
-  /* call .+8 */
-  SPARC_CALL(8);
-  /* The new %o7 is available in the delay slot. */
-  /* add %o7, 24, %i0 */
-  SPARC_ADD(SPARC_REG_I0, SPARC_REG_O7, 6*4, 1);
-#endif /* 0 */
-  /* stw %i0, [ %pike_fp, %offset(pike_frame, return_addr) ] */
-  PIKE_STPTR(SPARC_REG_I0, SPARC_REG_PIKE_FP,
-	     OFFSETOF(pike_frame, return_addr), 1);
-#ifdef PIKE_BYTECODE_SPARC64
-  /* The following code is Sparc V9 only code. */
-  /* return %i7 + 8 */
-  SPARC_RETURN(SPARC_REG_I7, 8, 1);
-  /* or %g0, -2, %o0 */
-  SPARC_OR(SPARC_REG_O0, SPARC_REG_G0, -2, 1);
-#else /* ! 0 */
-  /* Sparc V7 & V8 code. */
-  /* or %g0, -2, %i0 */
-  SPARC_OR(SPARC_REG_I0, SPARC_REG_G0, -2, 1);
-  /* ret */
-  SPARC_RET();
-  /* restore */
-  SPARC_RESTORE(SPARC_REG_G0, SPARC_REG_G0, SPARC_REG_G0, 0);
-#endif /* 0 */
-  SPARC_UNLOAD_CACHED();
-}
-
 /*
  *
  */
@@ -774,10 +736,8 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
 
   case F_EXIT_CATCH - F_OFFSET:
     sparc_push_int(0, 1);
-    /* FALL_THROUGH */
-  case F_ESCAPE_CATCH - F_OFFSET:
-    sparc_escape_catch();
-    return;
+    addr = instrs[b = F_ESCAPE_CATCH-F_OFFSET].address;
+    break;
 
   case F_MAKE_ITERATOR - F_OFFSET:
     {

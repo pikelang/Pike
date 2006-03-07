@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.c,v 1.38 2005/08/27 20:30:12 jonasw Exp $
+|| $Id: ppc32.c,v 1.39 2006/03/07 20:14:09 grubba Exp $
 */
 
 /*
@@ -453,9 +453,13 @@ void ins_f_byte(unsigned int b)
 
   case F_EXIT_CATCH - F_OFFSET:
     ppc32_push_int(0, 1);
+    addr = instrs[b = F_ESCAPE_CATCH-F_OFFSET].address;
+    break;
+#if 0
   case F_ESCAPE_CATCH - F_OFFSET:
     ppc32_escape_catch();
     return;
+#endif /* 0 */
   }
 
   FLUSH_CODE_GENERATOR_STATE();
