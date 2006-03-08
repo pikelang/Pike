@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: layers.c,v 1.98 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: layers.c,v 1.99 2006/03/08 01:22:01 peter Exp $
 */
 
 /*
@@ -1101,7 +1101,7 @@ static void image_layer_mode(INT32 args)
 	 return;
       }
 
-   Pike_fatal("illegal mode: %p\n", (void *)layer_mode[i].func);
+   Pike_fatal("illegal mode: %p\n", (void *)layer_mode[i-1].func);
 }
 
 static void image_layer_available_modes(INT32 args)
