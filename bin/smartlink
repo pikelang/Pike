@@ -95,7 +95,7 @@ while test "$#" != 0; do
 done
 
 if test "x$COMPILING" = "xyes"; then
-  LDOPTS="$DEBUG_FLAGS $LDOPTS"
+  LDOPTS="$LDOPTS $DEBUG_FLAGS"
 fi
 
 LDOPTS="$SET_N32 $LDOPTS"
