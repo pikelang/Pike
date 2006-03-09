@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.606 2006/03/09 15:55:07 grubba Exp $
+|| $Id: builtin_functions.c,v 1.607 2006/03/09 20:31:26 grubba Exp $
 */
 
 #include "global.h"
@@ -3277,6 +3277,15 @@ struct tupel
 };
 
 /* Magic, magic and more magic */
+/* Returns the index in v for the string that is the longest prefix of
+ * str (if any).
+ *
+ * v is the sorted (according to generic_quick_binary_strcmp()) vector
+ * of replacement strings. It also has the prefix forest identified.
+ *
+ * a is the lower bound.
+ * b is the upper bound + 1.
+ */
 static int find_longest_prefix(char *str,
 			       ptrdiff_t len,
 			       int size_shift,
@@ -3284,7 +3293,7 @@ static int find_longest_prefix(char *str,
 			       INT32 a,
 			       INT32 b)
 {
-  INT32 c,match=-1;
+  INT32 c,match=-1, match_len=0, d;
   ptrdiff_t tmp;
 
   check_c_stack(2048);
@@ -3292,7 +3301,7 @@ static int find_longest_prefix(char *str,
   while(a<b)
   {
     c=(a+b)/2;
-    
+
     tmp=generic_quick_binary_strcmp(v[c].ind->str,
 				    v[c].ind->len,
 				    v[c].ind->size_shift,
@@ -3301,47 +3310,52 @@ static int find_longest_prefix(char *str,
 				    size_shift);
     if(tmp<0)
     {
-      INT32 match2=find_longest_prefix(str,
-				       len,
-				       size_shift,
-				       v,
-				       c+1,
-				       b);
-      if(match2!=-1) return match2;
-
-      while(1)
-      {
-	if(v[c].prefix==-2)
-	{
-	  v[c].prefix=find_longest_prefix(v[c].ind->str,
-					  v[c].ind->len,
-					  v[c].ind->size_shift,
-					  v,
-					  0 /* can this be optimized? */,
-					  c);
+      int d;
+      /* Check if we have a partial prefix.
+       */
+      /* FIXME: We could note at what point v[c].ind and str differ during
+       *        the comparison above, and then skip through the prefixes
+       *        until we get to one that is shorter.
+       *        See also similar FIXME in replace_many() below.
+       *	/grubba 2006-03-09
+       */
+      if ((v[c].ind->len > match_len) &&
+	  (index_shared_string(v[c].ind, match_len) ==
+	   INDEX_CHARP(str, match_len, size_shift))) {
+	/* We need to look closer to see if we might have a partial prefix. */
+	int d = c;
+	while ((d = v[d].prefix) >= a) {
+	  if (!generic_quick_binary_strcmp(v[d].ind->str,
+					   v[d].ind->len,
+					   v[d].ind->size_shift,
+					   str,
+					   MINIMUM(len, v[d].ind->len),
+					   size_shift)) {
+	    /* Found a valid prefix. */
+	    match = d;
+	    match_len = v[d].ind->len;
+	    break;
+	  }
 	}
-	c=v[c].prefix;
-	if(c<a || c<match) return match;
-
-	if(!generic_quick_binary_strcmp(v[c].ind->str,
-					v[c].ind->len,
-					v[c].ind->size_shift,
-					str,
-					MINIMUM(len,v[c].ind->len),
-					size_shift))
-	   return c;
       }
+      a = c+1;
     }
     else if(tmp>0)
     {
+      fprintf(stderr, "v[%d] == \"%s\"  >  \"%s\"\n",
+	      c, v[c].ind->str, str);
       b=c;
     }
     else
     {
+      fprintf(stderr, "v[%d] == \"%s\"  is prefix to  \"%s\"\n",
+	      c, v[c].ind->str, str);
       a=c+1; /* There might still be a better match... */
       match=c;
+      match_len = v[c].ind->len;
     }
   }
+  fprintf(stderr, "Result: %d\n", match);
   return match;
 }
 			       
@@ -3367,7 +3381,7 @@ static struct pike_string *replace_many(struct pike_string *str,
 					struct array *from,
 					struct array *to)
 {
-  INT32 e,num;
+  INT32 e, num;
   ptrdiff_t s, length;
   struct replace_many_context ctx;
   ONERROR uwp;
@@ -3433,6 +3447,26 @@ static struct pike_string *replace_many(struct pike_string *str,
     x=index_shared_string(ctx.v[e].ind,0);
     if((x<(INT32)NELEM(set_end)) && (x >= 0))
       set_end[x]=e+1;
+    x = e-1;
+    while (x >= 0) {
+      if (ctx.v[e].ind->len >= ctx.v[x].ind->len) {
+	/* FIXME: We could speed up the loop by noting at what point
+	 *        ctx.v[x] and ctx.v[e] differ, and then skip
+	 *        though the prefixes until we get to one that is shorter.
+	 */
+	if (!generic_quick_binary_strcmp(ctx.v[e].ind->str,
+					 ctx.v[x].ind->len,
+					 ctx.v[e].ind->size_shift,
+					 ctx.v[x].ind->str,
+					 ctx.v[x].ind->len,
+					 ctx.v[x].ind->size_shift)) {
+	  /* ctx.v[x] is a valid prefix to ctx.v[e]. */
+	  break;
+	}
+      }
+      x = ctx.v[x].prefix;
+    }
+    ctx.v[e].prefix = x;
   }
 
   length=str->len;
