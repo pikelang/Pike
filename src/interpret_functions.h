@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.188 2006/03/07 20:12:00 grubba Exp $
+|| $Id: interpret_functions.h,v 1.189 2006/03/09 14:06:23 grubba Exp $
 */
 
 /*
@@ -1263,6 +1263,10 @@ OPCODE0_BRANCH(F_EQ_AND, "==&&", I_UPDATE_SP, {
   }
 });
 
+#ifndef ENTRY_PROLOGUE_SIZE
+#define ENTRY_PROLOGUE_SIZE 0
+#endif
+
 /* Ideally this ought to be an OPCODE0_PTRRETURN but I don't fancy
  * adding that variety to this macro hell. At the end of the day there
  * wouldn't be any difference anyway afaics. /mast */
@@ -1296,10 +1300,8 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL, {
     /* There's already a catching_eval_instruction around our
      * eval_instruction, so we can just continue. */
     debug_malloc_touch_named (Pike_interpreter.catch_ctx, "(1)");
-#ifdef ENTRY_PROLOGUE_SIZE
     /* We also need to skip past the entry prologue... */
     addr += ENTRY_PROLOGUE_SIZE;
-#endif
     SET_PROG_COUNTER(addr);
     FETCH;
     JUMP_DONE;
