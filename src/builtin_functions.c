@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.605 2006/01/27 20:29:28 grubba Exp $
+|| $Id: builtin_functions.c,v 1.606 2006/03/09 15:55:07 grubba Exp $
 */
 
 #include "global.h"
@@ -3392,6 +3392,11 @@ static struct pike_string *replace_many(struct pike_string *str,
       (array_fix_type_field(to) & ~BIT_STRING) )
     Pike_error("replace: to array not array(string).\n");
 
+  if (from->size == 1) {
+    /* Just a single string... */
+    return string_replace(str, from->item[0].u.string, to->item[0].u.string);
+  }
+
   /* NOTE: The following test is needed, since sizeof(struct tupel)
    *       is somewhat greater than sizeof(struct svalue).
    */
@@ -3478,6 +3483,7 @@ static struct pike_string *replace_many(struct pike_string *str,
 
 /*! @decl string replace(string s, string from, string to)
  *! @decl string replace(string s, array(string) from, array(string) to)
+ *! @decl string replace(string s, array(string) from, string to)
  *! @decl string replace(string s, mapping(string:string) replacements)
  *! @decl array replace(array a, mixed from, mixed to)
  *! @decl mapping replace(mapping a, mixed from, mixed to)
@@ -3530,6 +3536,9 @@ PMOD_EXPORT void f_replace(INT32 args)
      }
      else
 	SIMPLE_TOO_FEW_ARGS_ERROR("replace", 3);
+  } else if (args > 3) {
+    pop_n_elems(args-3);
+    args = 3;
   }
 
   switch(Pike_sp[-args].type)
@@ -3566,8 +3575,12 @@ PMOD_EXPORT void f_replace(INT32 args)
       break;
       
     case T_ARRAY:
-      if(Pike_sp[2-args].type != T_ARRAY)
-	SIMPLE_BAD_ARG_ERROR("replace", 3, "array");
+      if (Pike_sp[2-args].type == T_STRING) {
+	push_int(Pike_sp[1-args].u.array->size);
+	stack_swap();
+	f_allocate(2);
+      } else if(Pike_sp[2-args].type != T_ARRAY)
+	SIMPLE_BAD_ARG_ERROR("replace", 3, "array|string");
 
       s=replace_many(Pike_sp[-args].u.string,
 		     Pike_sp[1-args].u.array,
@@ -8639,7 +8652,7 @@ void init_builtin_efuns(void)
   
   ADD_EFUN2("replace", f_replace,
 	    tOr5(tFunc(tStr tStr tStr,tStr),
-		 tFunc(tStr tArr(tStr) tArr(tStr),tStr),
+		 tFunc(tStr tArr(tStr) tOr(tArr(tStr), tStr), tStr),
 		 tFunc(tStr tMap(tStr,tStr),tStr),
 		 tFunc(tSetvar(0,tArray) tMix tMix,tVar(0)),
 		 tFunc(tSetvar(1,tMapping) tMix tMix,tVar(1))),
