@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.99 2006/02/27 12:27:21 mast Exp $
+|| $Id: multiset.c,v 1.100 2006/03/10 06:58:03 mast Exp $
 */
 
 #include "global.h"
@@ -504,16 +504,8 @@ static struct multiset_data *copy_multiset_data (struct multiset_data *old)
  * The resize does not change the refs in referenced svalues, so the
  * old block is always freed. The refs and noval_refs are transferred
  * to the new block. */
-#ifdef PIKE_DEBUG
-#define resize_multiset_data(OLD, NEWSIZE, VERBATIM) \
-  resize_multiset_data_2 (OLD, NEWSIZE, VERBATIM, 0)
-static struct multiset_data *resize_multiset_data_2 (struct multiset_data *old,
-						     int newsize, int verbatim,
-						     int allow_alloc_in_gc)
-#else
 static struct multiset_data *resize_multiset_data (struct multiset_data *old,
 						   int newsize, int verbatim)
-#endif
 {
   struct multiset_data *new;
 
@@ -537,7 +529,8 @@ static struct multiset_data *resize_multiset_data (struct multiset_data *old,
    * multiset_set_flags. */
 
 #ifdef PIKE_DEBUG
-  new = low_alloc_multiset_data_2 (newsize, old->flags, allow_alloc_in_gc);
+  /* We can realloc a block even inside the gc. */
+  new = low_alloc_multiset_data_2 (newsize, old->flags, 1);
 #else
   new = low_alloc_multiset_data (newsize, old->flags);
 #endif
@@ -620,9 +613,7 @@ static struct multiset_data *resize_multiset_data (struct multiset_data *old,
   new->refs = old->refs;
   new->noval_refs = old->noval_refs;
 
-  /* All references have moved to the new block, so this one has thus
-   * become a simple block from the gc's perspective. */
-  GC_FREE_SIMPLE_BLOCK (old);
+  GC_REALLOC_BLOCK (old, new);
   xfree (old);
 
   return new;
@@ -4110,13 +4101,9 @@ void gc_mark_multiset_as_referenced (struct multiset *l)
 	    /* Only shrink the multiset if it isn't shared, or else we
 	     * can end up with larger memory consumption since the
 	     * shrunk data blocks won't be shared. */
-#ifdef PIKE_DEBUG
-	    l->msd = resize_multiset_data_2 (msd, ALLOC_SIZE (msd->size), 0,
-					     1);
-#else
+	    debug_malloc_touch (msd);
 	    l->msd = resize_multiset_data (msd, ALLOC_SIZE (msd->size), 0);
-#endif
-	    gc_move_marker (msd, l->msd);
+	    debug_malloc_touch (l->msd);
 	    msd = l->msd;
 	  }
 	}
@@ -4185,13 +4172,9 @@ void real_gc_cycle_check_multiset (struct multiset *l, int weak)
 	  /* Only shrink the multiset if it isn't shared, or else we
 	   * can end up with larger memory consumption since the
 	   * shrunk data blocks won't be shared. */
-#ifdef PIKE_DEBUG
-	  l->msd = resize_multiset_data_2 (msd, ALLOC_SIZE (msd->size), 0,
-					   1);
-#else
+	  debug_malloc_touch (msd);
 	  l->msd = resize_multiset_data (msd, ALLOC_SIZE (msd->size), 0);
-#endif
-	  gc_move_marker (msd, l->msd);
+	  debug_malloc_touch (l->msd);
 	  msd = l->msd;
 	}
       }
