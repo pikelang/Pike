@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.607 2006/03/09 20:31:26 grubba Exp $
+|| $Id: builtin_functions.c,v 1.608 2006/03/10 09:08:41 grubba Exp $
 */
 
 #include "global.h"
@@ -3342,20 +3342,15 @@ static int find_longest_prefix(char *str,
     }
     else if(tmp>0)
     {
-      fprintf(stderr, "v[%d] == \"%s\"  >  \"%s\"\n",
-	      c, v[c].ind->str, str);
       b=c;
     }
     else
     {
-      fprintf(stderr, "v[%d] == \"%s\"  is prefix to  \"%s\"\n",
-	      c, v[c].ind->str, str);
       a=c+1; /* There might still be a better match... */
       match=c;
       match_len = v[c].ind->len;
     }
   }
-  fprintf(stderr, "Result: %d\n", match);
   return match;
 }
 			       
