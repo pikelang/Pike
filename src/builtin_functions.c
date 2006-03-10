@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.608 2006/03/10 09:08:41 grubba Exp $
+|| $Id: builtin_functions.c,v 1.609 2006/03/10 11:59:20 grubba Exp $
 */
 
 #include "global.h"
@@ -3466,6 +3466,7 @@ static struct pike_string *replace_many(struct pike_string *str,
 
   length=str->len;
 
+  /* FIXME: We really ought to build a trie! */
   for(s=0;length > 0;)
   {
     INT32 a,b;
