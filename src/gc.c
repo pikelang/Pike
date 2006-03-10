@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.259 2006/02/25 03:59:41 mast Exp $
+|| $Id: gc.c,v 1.260 2006/03/10 06:58:03 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.259 2006/02/25 03:59:41 mast Exp $");
+RCSID("$Id: gc.c,v 1.260 2006/03/10 06:58:03 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -677,7 +677,7 @@ void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
 
 #ifdef PIKE_DEBUG
   if (a) {
-    /* Temporarily jumping out of gc to avoid being catched in debug
+    /* Temporarily jumping out of gc to avoid being caught in debug
      * checks in describe(). */
     Pike_in_gc = 0;
     describe(a);
@@ -1925,7 +1925,15 @@ void gc_delayed_free(void *a, int type)
 
 int gc_mark(void *a)
 {
-  struct marker *m = get_marker(debug_malloc_pass(a));
+  struct marker *m;
+
+#ifdef PIKE_DEBUG
+  if (Pike_in_gc == GC_PASS_ZAP_WEAK && !find_marker (a))
+    gc_fatal (a, 0, "gc_mark() called for for thing without marker "
+	      "in zap weak pass.\n");
+#endif
+
+  m = get_marker (a);
 
 #ifdef PIKE_DEBUG
   if (gc_is_watching && m && m->flags & GC_WATCHED) {
@@ -1951,15 +1959,19 @@ int gc_mark(void *a)
       gc_fatal(a, 0, "gc_mark() called for thing in zap weak pass "
 	       "that wasn't marked before.\n");
 #endif
-    if (m->flags & GC_FREE_VISITED)
+    if (m->flags & GC_FREE_VISITED) {
+      debug_malloc_touch (a);
       return 0;
+    }
     else {
+      debug_malloc_touch (a);
       m->flags |= GC_FREE_VISITED;
       return 1;
     }
   }
 
   else if (m->flags & GC_MARKED) {
+    debug_malloc_touch (a);
 #ifdef PIKE_DEBUG
     if (m->weak_refs != 0)
       gc_fatal(a, 0, "weak_refs changed in marker already visited by gc_mark().\n");
@@ -1967,6 +1979,7 @@ int gc_mark(void *a)
     return 0;
   }
   else {
+    debug_malloc_touch (a);
     if (m->weak_refs) {
       gc_ext_weak_refs -= m->weak_refs;
       m->weak_refs = 0;
@@ -1979,16 +1992,16 @@ int gc_mark(void *a)
 
 void gc_move_marker (void *old, void *new)
 {
-  struct marker *m = get_marker (old);
+  struct marker *m = find_marker (old);
 
 #ifdef PIKE_DEBUG
-  if (!old) Pike_fatal("Got null pointer in old.\n");
-  if (!new) Pike_fatal("Got null pointer in new.\n");
+  if (!Pike_in_gc || Pike_in_gc >= GC_PASS_FREE)
+    Pike_fatal ("gc move mark attempted in invalid pass.\n");
+  if (!old) Pike_fatal ("Got null pointer in old.\n");
+  if (!new) Pike_fatal ("Got null pointer in new.\n");
   if (!m) Pike_fatal ("Have no marker for old block %p.\n", old);
   if (find_marker (new))
     Pike_fatal ("New block %p already got a marker.\n", new);
-  if (!Pike_in_gc || Pike_in_gc >= GC_PASS_FREE)
-    Pike_fatal ("gc move mark attempted in invalid pass.\n");
 #endif
 
   move_marker (m, debug_malloc_pass (new));

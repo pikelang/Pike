@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.114 2006/02/18 05:08:24 mast Exp $
+|| $Id: gc.h,v 1.115 2006/03/10 06:58:03 mast Exp $
 */
 
 #ifndef GC_H
@@ -116,6 +116,15 @@ extern int gc_keep_markers;
 
 #ifdef PIKE_DEBUG
 
+/* Use this when reallocating a block that you've used any gc_check or
+ * gc_mark function on. The new block must take over all references
+ * that pointed to the old block. */
+#define GC_REALLOC_BLOCK(OLDPTR, NEWPTR) do {				\
+  extern int d_flag;							\
+  if (d_flag) CHECK_INTERPRETER_LOCK();					\
+  if (Pike_in_gc) gc_move_marker ((OLDPTR), (NEWPTR));			\
+} while (0)
+
 /* Use this when freeing blocks that you've used any gc_check or
  * gc_mark function on and that can't contain references. */
 #define GC_FREE_SIMPLE_BLOCK(PTR) do {					\
@@ -137,6 +146,9 @@ extern int gc_keep_markers;
 } while (0)
 
 #else
+#define GC_REALLOC_BLOCK(OLDPTR, NEWPTR) do {				\
+    if (Pike_in_gc) gc_move_marker ((OLDPTR), (NEWPTR));		\
+  } while (0)
 #define GC_FREE_SIMPLE_BLOCK(PTR) do {} while (0)
 #define GC_FREE_BLOCK(PTR) do {} while (0)
 #endif
