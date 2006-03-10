@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.80 2006/01/25 08:38:26 mast Exp $
+|| $Id: block_alloc.h,v 1.81 2006/03/10 05:42:53 mast Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -494,7 +494,7 @@ struct DATA *PIKE_CONCAT(find_,DATA)(void *ptr)				     \
   struct DATA *p;                                                            \
   PIKE_HASH_T hval = (PIKE_HASH_T)PTR_TO_INT(ptr);			     \
   DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));                    \
-  if(!PIKE_CONCAT(DATA,_hash_table_size)) {                                  \
+  if(!PIKE_CONCAT(DATA,_hash_table)) {                                       \
     DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));                \
     return 0;                                                                \
   }                                                                          \
@@ -526,7 +526,7 @@ static struct DATA *PIKE_CONCAT(just_find_,DATA)(void *ptr)		     \
   struct DATA *p;                                                            \
   PIKE_HASH_T hval = (PIKE_HASH_T)PTR_TO_INT(ptr);			     \
   DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));                    \
-  if(!PIKE_CONCAT(DATA,_hash_table_size)) {                                  \
+  if(!PIKE_CONCAT(DATA,_hash_table)) {                                       \
     DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));                \
     return 0;                                                                \
   }                                                                          \
