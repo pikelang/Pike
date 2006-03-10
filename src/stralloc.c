@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.203 2006/01/12 10:52:16 grubba Exp $
+|| $Id: stralloc.c,v 1.204 2006/03/10 18:53:24 grubba Exp $
 */
 
 #include "global.h"
@@ -1418,10 +1418,58 @@ PMOD_EXPORT ptrdiff_t generic_quick_binary_strcmp(const char *a,
     {
       INT32 ac=generic_extract(a,asize,pos);
       INT32 bc=generic_extract(b,bsize,pos);
-      if(ac-bc) return ac-bc;
+      if(ac != bc) {
+	if (ac < bc) return -1;
+	return 1;
+      }
     }
     return alen-blen;
   }
+}
+
+/* Does not take locale into account
+ *
+ * Similar to (and could be used in place of) generic_quick_binary_strcmp(),
+ * but returns +/- (offset + 1) to the first difference beween the strings.
+ *
+ * This can be used by eg replace_many() to speed up the comparisons.
+ */
+PMOD_EXPORT ptrdiff_t generic_find_binary_prefix(const char *a,
+						 ptrdiff_t alen, int asize,
+						 const char *b,
+						 ptrdiff_t blen, int bsize)
+{
+  ptrdiff_t pos;
+  ptrdiff_t len = MINIMUM(alen, blen);
+  switch(TWO_SIZES(asize, bsize)) {
+#define CASE(AZ, BZ)				\
+    case TWO_SIZES(AZ, BZ): {			\
+      PIKE_CONCAT(p_wchar, AZ) *a_arr =		\
+	(PIKE_CONCAT(p_wchar, AZ) *)a;		\
+      PIKE_CONCAT(p_wchar, AZ) *b_arr =		\
+	(PIKE_CONCAT(p_wchar, AZ) *)b;		\
+      for (pos=0; pos<len; pos++) {		\
+	if (a_arr[pos] == b_arr[pos])		\
+	  continue;				\
+	if (a_arr[pos] < b_arr[pos])		\
+	  return ~pos;				\
+	return pos+1;				\
+      }						\
+    } break
+    CASE(0,0);
+    CASE(0,1);
+    CASE(0,2);
+    CASE(1,0);
+    CASE(1,1);
+    CASE(1,2);
+    CASE(2,0);
+    CASE(2,1);
+    CASE(2,2);
+#undef CASE
+  }
+  if (alen == blen) return 0;
+  if (alen < blen) return ~alen;
+  return blen+1;
 }
 
 PMOD_EXPORT int c_compare_string(struct pike_string *s, char *foo, int len)

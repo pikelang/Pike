@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.95 2005/11/12 20:20:51 nilsson Exp $
+|| $Id: stralloc.h,v 1.96 2006/03/10 18:53:48 grubba Exp $
 */
 
 #ifndef STRALLOC_H
@@ -291,6 +291,10 @@ PMOD_EXPORT ptrdiff_t generic_quick_binary_strcmp(const char *a,
 						  ptrdiff_t alen, int asize,
 						  const char *b,
 						  ptrdiff_t blen, int bsize);
+PMOD_EXPORT ptrdiff_t generic_find_binary_prefix(const char *a,
+						 ptrdiff_t alen, int asize,
+						 const char *b,
+						 ptrdiff_t blen, int bsize);
 PMOD_EXPORT int c_compare_string(struct pike_string *s, char *foo, int len);
 PMOD_EXPORT ptrdiff_t my_quick_strcmp(struct pike_string *a,
 				      struct pike_string *b);
