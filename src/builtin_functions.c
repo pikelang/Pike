@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.610 2006/03/10 18:54:34 grubba Exp $
+|| $Id: builtin_functions.c,v 1.611 2006/03/10 19:59:22 grubba Exp $
 */
 
 #include "global.h"
@@ -3308,6 +3308,7 @@ static int find_longest_prefix(char *str,
 				   str,
 				   MINIMUM(len,v[c].ind->len),
 				   size_shift);
+
     if(tmp<0)
     {
       int d;
@@ -3424,40 +3425,40 @@ static struct pike_string *replace_many(struct pike_string *str,
   for(e=0;e<num;e++)
   {
     INT32 x;
+
     x=index_shared_string(ctx.v[num-1-e].ind,0);
     if((x<(INT32)NELEM(set_start)) && (x >= 0))
       set_start[x]=num-e-1;
+
     x=index_shared_string(ctx.v[e].ind,0);
     if((x<(INT32)NELEM(set_end)) && (x >= 0))
       set_end[x]=e+1;
+
     x = e-1;
     if (x >= 0) {
       ptrdiff_t tmp = generic_find_binary_prefix(ctx.v[e].ind->str,
-						 ctx.v[x].ind->len,
+						 ctx.v[e].ind->len,
 						 ctx.v[e].ind->size_shift,
 						 ctx.v[x].ind->str,
 						 ctx.v[x].ind->len,
 						 ctx.v[x].ind->size_shift);
-
-      /* ctx.v[x] is a valid prefix to ctx.v[e]. */
-      if (!tmp) break;
-
-#ifdef PIKE_DEBUG
-      if (tmp < 0) Pike_fatal("Sorting with replace_sortfunc failed.\n");
-#endif
-
-      if (tmp == 1) {
+      if (!tmp) {
+	/* ctx.v[x] is a valid prefix to ctx.v[e]. */
+      } if (tmp == 1) {
 	/* Optimization. */
 	x = -1;
-	break;
-      }
+      } else {
+#ifdef PIKE_DEBUG
+	if (tmp < 0) Pike_fatal("Sorting with replace_sortfunc failed.\n");
+#endif
 
-      /* Find the first prefix that is shorter than the point at which
-       * the initial strings differed.
-       */
-      while (x >= 0) {
-	if (ctx.v[x].ind->len < tmp) break;
-	x = ctx.v[x].prefix;
+	/* Find the first prefix that is shorter than the point at which
+	 * the initial strings differed.
+	 */
+	while (x >= 0) {
+	  if (ctx.v[x].ind->len < tmp) break;
+	  x = ctx.v[x].prefix;
+	}
       }
     }
     ctx.v[e].prefix = x;
@@ -3466,7 +3467,8 @@ static struct pike_string *replace_many(struct pike_string *str,
   length=str->len;
 
   /* FIXME: We really ought to build a trie! */
-  for(s=0;length > 0;)
+
+  for(e = s = 0;length > 0;)
   {
     INT32 a,b;
     ptrdiff_t ch;
@@ -3491,18 +3493,43 @@ static struct pike_string *replace_many(struct pike_string *str,
 
       if(a!=-1)
       {
+	if (s != e) {
+	  switch(str->size_shift) {
+	  case 0:
+	    string_builder_binary_strcat0(&ctx.ret, STR0(str)+e, s-e);
+	    break;
+	  case 1:
+	    string_builder_binary_strcat1(&ctx.ret, STR1(str)+e, s-e);
+	    break;
+	  case 2:
+	    string_builder_binary_strcat2(&ctx.ret, STR2(str)+e, s-e);
+	    break;
+	  }
+	}
 	ch = ctx.v[a].ind->len;
 	if(!ch) ch=1;
 	s+=ch;
 	length-=ch;
 	string_builder_shared_strcat(&ctx.ret,ctx.v[a].val);
+	e = s;
 	continue;
       }
     }
-    string_builder_putchar(&ctx.ret,
-			   DO_NOT_WARN((INT32)ch));
     s++;
     length--;
+  }
+  if (e < s) {
+    switch(str->size_shift) {
+    case 0:
+      string_builder_binary_strcat0(&ctx.ret, STR0(str)+e, s-e);
+      break;
+    case 1:
+      string_builder_binary_strcat1(&ctx.ret, STR1(str)+e, s-e);
+      break;
+    case 2:
+      string_builder_binary_strcat2(&ctx.ret, STR2(str)+e, s-e);
+      break;
+    }
   }
 
   UNSET_ONERROR (uwp);
