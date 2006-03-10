@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.416 2006/03/01 00:13:55 nilsson Exp $
+# $Id: Makefile.in,v 1.417 2006/03/10 07:56:46 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -207,7 +207,7 @@ SRC_TARGETS= \
 #
 
 # Update the dumped modules, but only if dump_modules has been used earlier.
-all: post_module_objects tools
+all: module_objects post_module_objects tools
 	if [ -f dumpversion ]; then $(MAKE) $(MAKE_FLAGS) dump_modules; else :; fi
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike
 	@if [ "`find . -name '*.fail' -print`" = "" ]; then :; else \
