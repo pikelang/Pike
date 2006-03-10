@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.609 2006/03/10 11:59:20 grubba Exp $
+|| $Id: builtin_functions.c,v 1.610 2006/03/10 18:54:34 grubba Exp $
 */
 
 #include "global.h"
@@ -3302,35 +3302,23 @@ static int find_longest_prefix(char *str,
   {
     c=(a+b)/2;
 
-    tmp=generic_quick_binary_strcmp(v[c].ind->str,
-				    v[c].ind->len,
-				    v[c].ind->size_shift,
-				    str,
-				    MINIMUM(len,v[c].ind->len),
-				    size_shift);
+    tmp=generic_find_binary_prefix(v[c].ind->str,
+				   v[c].ind->len,
+				   v[c].ind->size_shift,
+				   str,
+				   MINIMUM(len,v[c].ind->len),
+				   size_shift);
     if(tmp<0)
     {
       int d;
-      /* Check if we have a partial prefix.
-       */
-      /* FIXME: We could note at what point v[c].ind and str differ during
-       *        the comparison above, and then skip through the prefixes
-       *        until we get to one that is shorter.
-       *        See also similar FIXME in replace_many() below.
-       *	/grubba 2006-03-09
-       */
-      if ((v[c].ind->len > match_len) &&
-	  (index_shared_string(v[c].ind, match_len) ==
-	   INDEX_CHARP(str, match_len, size_shift))) {
+      /* Check if we might have a valid prefix that is better than
+       * the current match. */
+      if (~tmp > match_len) {
 	/* We need to look closer to see if we might have a partial prefix. */
 	int d = c;
-	while ((d = v[d].prefix) >= a) {
-	  if (!generic_quick_binary_strcmp(v[d].ind->str,
-					   v[d].ind->len,
-					   v[d].ind->size_shift,
-					   str,
-					   MINIMUM(len, v[d].ind->len),
-					   size_shift)) {
+	tmp = -tmp;
+	while (((d = v[d].prefix) >= a) && (v[d].ind->len > match_len)) {
+	  if (v[d].ind->len < tmp) {
 	    /* Found a valid prefix. */
 	    match = d;
 	    match_len = v[d].ind->len;
@@ -3443,23 +3431,34 @@ static struct pike_string *replace_many(struct pike_string *str,
     if((x<(INT32)NELEM(set_end)) && (x >= 0))
       set_end[x]=e+1;
     x = e-1;
-    while (x >= 0) {
-      if (ctx.v[e].ind->len >= ctx.v[x].ind->len) {
-	/* FIXME: We could speed up the loop by noting at what point
-	 *        ctx.v[x] and ctx.v[e] differ, and then skip
-	 *        though the prefixes until we get to one that is shorter.
-	 */
-	if (!generic_quick_binary_strcmp(ctx.v[e].ind->str,
-					 ctx.v[x].ind->len,
-					 ctx.v[e].ind->size_shift,
-					 ctx.v[x].ind->str,
-					 ctx.v[x].ind->len,
-					 ctx.v[x].ind->size_shift)) {
-	  /* ctx.v[x] is a valid prefix to ctx.v[e]. */
-	  break;
-	}
+    if (x >= 0) {
+      ptrdiff_t tmp = generic_find_binary_prefix(ctx.v[e].ind->str,
+						 ctx.v[x].ind->len,
+						 ctx.v[e].ind->size_shift,
+						 ctx.v[x].ind->str,
+						 ctx.v[x].ind->len,
+						 ctx.v[x].ind->size_shift);
+
+      /* ctx.v[x] is a valid prefix to ctx.v[e]. */
+      if (!tmp) break;
+
+#ifdef PIKE_DEBUG
+      if (tmp < 0) Pike_fatal("Sorting with replace_sortfunc failed.\n");
+#endif
+
+      if (tmp == 1) {
+	/* Optimization. */
+	x = -1;
+	break;
       }
-      x = ctx.v[x].prefix;
+
+      /* Find the first prefix that is shorter than the point at which
+       * the initial strings differed.
+       */
+      while (x >= 0) {
+	if (ctx.v[x].ind->len < tmp) break;
+	x = ctx.v[x].prefix;
+      }
     }
     ctx.v[e].prefix = x;
   }
