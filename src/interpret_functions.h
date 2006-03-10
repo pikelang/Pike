@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.189 2006/03/09 14:06:23 grubba Exp $
+|| $Id: interpret_functions.h,v 1.190 2006/03/10 17:24:50 grubba Exp $
 */
 
 /*
@@ -1288,6 +1288,9 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL, {
     new_catch_ctx->next_addr = addr;
     new_catch_ctx->prev = Pike_interpreter.catch_ctx;
     Pike_interpreter.catch_ctx = new_catch_ctx;
+    DO_IF_DEBUG({
+	TRACE((3,"-   Pushed catch context %p\n", new_catch_ctx));
+      });
   }
 
   Pike_fp->expendible = Pike_fp->locals + Pike_fp->num_locals;
@@ -1304,6 +1307,9 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL, {
     addr += ENTRY_PROLOGUE_SIZE;
     SET_PROG_COUNTER(addr);
     FETCH;
+    DO_IF_DEBUG({
+	TRACE((3,"-   In active catch; continuing at %p\n", addr));
+      });
     JUMP_DONE;
   }
 
@@ -1317,15 +1323,21 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL, {
        * inside catching_eval_instruction, we keep doing it until it's
        * time to return. */
 
+      DO_IF_DEBUG({
+	  TRACE((3,"-   Activating catch; calling %p in context %p\n",
+		 addr, Pike_interpreter.catch_ctx));
+	});
+
       int res = catching_eval_instruction (addr);
 
       if (res != -3) {
 	/* There was an inter return inside the evaluated code. Just
 	 * propagate it. */
-	DO_IF_DEBUG (
-	  if (res != -1) Pike_fatal ("Unexpected return value from "
-				     "catching_eval_instruction: %d\n", res);
-	);
+	DO_IF_DEBUG ({
+	    TRACE((3,"-   Returning from catch.\n"));
+	    if (res != -1) Pike_fatal ("Unexpected return value from "
+				       "catching_eval_instruction: %d\n", res);
+	  });
 	break;
       }
 
@@ -1333,11 +1345,12 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL, {
 	/* Caught an exception. */
 	struct catch_context *cc = Pike_interpreter.catch_ctx;
 
-	DO_IF_DEBUG (
-	  if (!cc) Pike_fatal ("Catch context dropoff.\n");
-	  if (cc->frame != Pike_fp)
-	    Pike_fatal ("Catch context doesn't belong to this frame.\n");
-	);
+	DO_IF_DEBUG ({
+	    TRACE((3,"-   Caught exception. catch context: %p\n", cc));
+	    if (!cc) Pike_fatal ("Catch context dropoff.\n");
+	    if (cc->frame != Pike_fp)
+	      Pike_fatal ("Catch context doesn't belong to this frame.\n");
+	  });
 
 	debug_malloc_touch_named (cc, "(3)");
 	UNSETJMP (cc->recovery);
@@ -1350,9 +1363,11 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL, {
 	  fast_check_threads_etc(6);
 	addr = cc->next_addr + cc->continue_reladdr;
 
-	DO_IF_DEBUG (
-	  if (!addr) Pike_fatal ("Unexpected null continue addr.\n");
-	);
+	DO_IF_DEBUG({
+	    TRACE((3,"-   Popping catch context %p ==> %p\n",
+		   cc, cc->prev));
+	    if (!addr) Pike_fatal ("Unexpected null continue addr.\n");
+	  });
 
 	Pike_interpreter.catch_ctx = cc->prev;
 	really_free_catch_context (cc);
