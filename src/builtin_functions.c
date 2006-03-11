@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.614 2006/03/11 17:19:46 grubba Exp $
+|| $Id: builtin_functions.c,v 1.615 2006/03/11 17:45:37 grubba Exp $
 */
 
 #include "global.h"
@@ -3761,6 +3761,7 @@ node *optimize_replace(node *n)
      */
     node **arg1 = my_get_arg(&_CDR(n), 1);
     node **arg2 = my_get_arg(&_CDR(n), 2);
+    struct program *replace_compiler = NULL;
 
     if (arg1 && ((pike_types_le((*arg1)->type, array_type_string) &&
 		  arg2 &&
@@ -3773,56 +3774,62 @@ node *optimize_replace(node *n)
        *   replace(string, array, string)
        *   replace(string, mapping(string:string))
        */
-      if (!is_const(*arg0) && is_const(*arg1) && (!arg2 || is_const(*arg2))) {
-	/* The second and third arguments are constants. */
-	struct svalue *save_sp = Pike_sp;
-	JMP_BUF tmp;
-	if (SETJMP(tmp)) {
-	  struct svalue thrown = throw_value;
-	  struct pike_string *s;
-	  throw_value.type = T_INT;
-	  pop_n_elems(Pike_sp - save_sp);
-	  yywarning("Optimizer failure in replace().");
-	  s = format_exception_for_error_msg (&thrown);
-	  if (s) {
-	    yywarning ("%S", s);
-	    free_string (s);
-	  }
-	  free_svalue(&thrown);
-	} else {
-	  extern struct program *multi_string_replace_program;
-	  INT16 lfun;
-	  struct object *replace_obj;
-	  node *ret = NULL;
-	  INT32 args;
-	  args = eval_low(*arg1, 1);
-	  if (arg2) {
-	    args += eval_low(*arg2,1);
-	  }
-
-	  replace_obj = clone_object(multi_string_replace_program, args);
-
-	  push_object(replace_obj);
-	  if (replace_obj->prog &&
-	      ((lfun = FIND_LFUN(replace_obj->prog, LFUN_CALL)) != -1)) {
-	    Pike_sp[-1].subtype = lfun;
-	    Pike_sp[-1].type = PIKE_T_FUNCTION;
-	    ADD_NODE_REF2(*arg0,
-	      ret = mkapplynode(mkconstantsvaluenode(Pike_sp-1),
-				 *arg0);
-	    );
-
-	    UNSETJMP(tmp);
-	    pop_n_elems(Pike_sp - save_sp);
-
-	    free_type(array_zero);
-	    free_type(mapping_zero);
-	    return ret;
-	  }
-	}
-	UNSETJMP(tmp);
+      extern struct program *multi_string_replace_program;
+      replace_compiler = multi_string_replace_program;
+    } else if (arg1 && pike_types_le((*arg1)->type, string_type_string) &&
+	       arg2 && pike_types_le((*arg2)->type, string_type_string)) {
+      extern struct program *single_string_replace_program;
+      replace_compiler = single_string_replace_program;
+    }
+    if (replace_compiler && !is_const(*arg0) && is_const(*arg1) &&
+	(!arg2 || is_const(*arg2))) {
+      /* The second and third (if any) arguments are constants. */
+      struct svalue *save_sp = Pike_sp;
+      JMP_BUF tmp;
+      if (SETJMP(tmp)) {
+	struct svalue thrown = throw_value;
+	struct pike_string *s;
+	throw_value.type = T_INT;
 	pop_n_elems(Pike_sp - save_sp);
+	yywarning("Optimizer failure in replace().");
+	s = format_exception_for_error_msg (&thrown);
+	if (s) {
+	  yywarning ("%S", s);
+	  free_string (s);
+	}
+	free_svalue(&thrown);
+      } else {
+	INT16 lfun;
+	struct object *replace_obj;
+	node *ret = NULL;
+	INT32 args;
+	args = eval_low(*arg1, 1);
+	if (arg2) {
+	  args += eval_low(*arg2,1);
+	}
+
+	replace_obj = clone_object(replace_compiler, args);
+
+	push_object(replace_obj);
+	if (replace_obj->prog &&
+	    ((lfun = FIND_LFUN(replace_obj->prog, LFUN_CALL)) != -1)) {
+	  Pike_sp[-1].subtype = lfun;
+	  Pike_sp[-1].type = PIKE_T_FUNCTION;
+	  ADD_NODE_REF2(*arg0,
+			ret = mkapplynode(mkconstantsvaluenode(Pike_sp-1),
+					  *arg0);
+			);
+
+	  UNSETJMP(tmp);
+	  pop_n_elems(Pike_sp - save_sp);
+
+	  free_type(array_zero);
+	  free_type(mapping_zero);
+	  return ret;
+	}
       }
+      UNSETJMP(tmp);
+      pop_n_elems(Pike_sp - save_sp);
     }
   }
 
