@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.611 2006/03/10 19:59:22 grubba Exp $
+|| $Id: builtin_functions.c,v 1.612 2006/03/11 12:31:35 grubba Exp $
 */
 
 #include "global.h"
@@ -3272,6 +3272,7 @@ PMOD_EXPORT void f_reverse(INT32 args)
 struct tupel
 {
   int prefix;
+  int is_prefix;
   struct pike_string *ind;
   struct pike_string *val;
 };
@@ -3293,7 +3294,7 @@ static int find_longest_prefix(char *str,
 			       INT32 a,
 			       INT32 b)
 {
-  INT32 c,match=-1, match_len=0, d;
+  INT32 c, match=-1, match_len=-1, d;
   ptrdiff_t tmp;
 
   check_c_stack(2048);
@@ -3301,6 +3302,14 @@ static int find_longest_prefix(char *str,
   while(a<b)
   {
     c=(a+b)/2;
+
+#if 1
+    if (v[c].ind->len <= match_len) {
+      /* Can't be a suffix of (or is equal to) the current match. */
+      b = c;
+      continue;
+    }
+#endif
 
     tmp=generic_find_binary_prefix(v[c].ind->str,
 				   v[c].ind->len,
@@ -3312,6 +3321,7 @@ static int find_longest_prefix(char *str,
     if(tmp<0)
     {
       int d;
+
       /* Check if we might have a valid prefix that is better than
        * the current match. */
       if (~tmp > match_len) {
@@ -3335,6 +3345,9 @@ static int find_longest_prefix(char *str,
     }
     else
     {
+      if (!v[c].is_prefix) {
+	return c;
+      }
       a=c+1; /* There might still be a better match... */
       match=c;
       match_len = v[c].ind->len;
@@ -3369,9 +3382,11 @@ static struct pike_string *replace_many(struct pike_string *str,
   ptrdiff_t s, length;
   struct replace_many_context ctx;
   ONERROR uwp;
+  struct pike_string *empty_repl = NULL;
 
   int set_start[256];
   int set_end[256];
+  int other_start;
 
   if(from->size != to->size)
     Pike_error("Replace must have equal-sized from and to arrays.\n");
@@ -3411,9 +3426,17 @@ static struct pike_string *replace_many(struct pike_string *str,
     if(ITEM(from)[e].u.string->size_shift > str->size_shift)
       continue;
 
+    if (!ITEM(from)[e].u.string->len) {
+      if (ITEM(to)[e].u.string->len) {
+	empty_repl = ITEM(to)[e].u.string;
+      }
+      continue;
+    }
+
     ctx.v[num].ind=ITEM(from)[e].u.string;
     ctx.v[num].val=ITEM(to)[e].u.string;
     ctx.v[num].prefix=-2; /* Uninitialized */
+    ctx.v[num].is_prefix=0;
     num++;
   }
 
@@ -3421,47 +3444,61 @@ static struct pike_string *replace_many(struct pike_string *str,
 
   MEMSET(set_start, 0, sizeof(set_start));
   MEMSET(set_end, 0, sizeof(set_end));
+  other_start = num;
 
   for(e=0;e<num;e++)
   {
-    INT32 x;
+    {
+      p_wchar2 x;
 
-    x=index_shared_string(ctx.v[num-1-e].ind,0);
-    if((x<(INT32)NELEM(set_start)) && (x >= 0))
-      set_start[x]=num-e-1;
+      if (ctx.v[num-1-e].ind->len) {
+	x=index_shared_string(ctx.v[num-1-e].ind,0);
+	if (x<NELEM(set_start))
+	  set_start[x]=num-e-1;
+	else
+	  other_start = num-e-1;
+      }
 
-    x=index_shared_string(ctx.v[e].ind,0);
-    if((x<(INT32)NELEM(set_end)) && (x >= 0))
-      set_end[x]=e+1;
-
-    x = e-1;
-    if (x >= 0) {
-      ptrdiff_t tmp = generic_find_binary_prefix(ctx.v[e].ind->str,
-						 ctx.v[e].ind->len,
-						 ctx.v[e].ind->size_shift,
-						 ctx.v[x].ind->str,
-						 ctx.v[x].ind->len,
-						 ctx.v[x].ind->size_shift);
-      if (!tmp) {
-	/* ctx.v[x] is a valid prefix to ctx.v[e]. */
-      } if (tmp == 1) {
-	/* Optimization. */
-	x = -1;
-      } else {
-#ifdef PIKE_DEBUG
-	if (tmp < 0) Pike_fatal("Sorting with replace_sortfunc failed.\n");
-#endif
-
-	/* Find the first prefix that is shorter than the point at which
-	 * the initial strings differed.
-	 */
-	while (x >= 0) {
-	  if (ctx.v[x].ind->len < tmp) break;
-	  x = ctx.v[x].prefix;
-	}
+      if (ctx.v[e].ind->len) {
+	x=index_shared_string(ctx.v[e].ind,0);
+	if (x<NELEM(set_end))
+	  set_end[x]=e+1;
       }
     }
-    ctx.v[e].prefix = x;
+    {
+      INT32 prefix = e-1;
+      if (prefix >= 0) {
+	ptrdiff_t tmp =
+	  generic_find_binary_prefix(ctx.v[e].ind->str,
+				     ctx.v[e].ind->len,
+				     ctx.v[e].ind->size_shift,
+				     ctx.v[prefix].ind->str,
+				     ctx.v[prefix].ind->len,
+				     ctx.v[prefix].ind->size_shift);
+	if (!tmp) {
+	  /* ctx.v[prefix] is a valid prefix to ctx.v[e]. */
+	} if (tmp == 1) {
+	  /* Optimization. */
+	  prefix = -1;
+	} else {
+#ifdef PIKE_DEBUG
+	  if (tmp < 0) Pike_fatal("Sorting with replace_sortfunc failed.\n");
+#endif
+
+	  /* Find the first prefix that is shorter than the point at which
+	   * the initial strings differed.
+	   */
+	  while (prefix >= 0) {
+	    if (ctx.v[prefix].ind->len < tmp) break;
+	    prefix = ctx.v[prefix].prefix;
+	  }
+	}
+	if (prefix >= 0) {
+	  ctx.v[prefix].is_prefix = 1;
+	}
+      }
+      ctx.v[e].prefix = prefix;
+    }
   }
 
   length=str->len;
@@ -3471,21 +3508,20 @@ static struct pike_string *replace_many(struct pike_string *str,
   for(e = s = 0;length > 0;)
   {
     INT32 a,b;
-    ptrdiff_t ch;
+    p_wchar2 ch;
 
     ch=index_shared_string(str,s);
-    if((ch<(ptrdiff_t)NELEM(set_end)) && (ch >= 0))
+    if(ch<NELEM(set_end)) {
       b=set_end[ch];
-    else
+      if (!b) goto next_char;
+      a=set_start[ch];
+    } else {
       b=num;
+      a=other_start;
+    }
+    if (a >= b) goto next_char;
 
-    if(b)
     {
-      if((ch<(ptrdiff_t)NELEM(set_start)) && (ch >= 0))
-	a=set_start[ch];
-      else
-	a=0;
-
       a=find_longest_prefix(str->str+(s << str->size_shift),
 			    length,
 			    str->size_shift,
@@ -3507,16 +3543,28 @@ static struct pike_string *replace_many(struct pike_string *str,
 	  }
 	}
 	ch = ctx.v[a].ind->len;
-	if(!ch) ch=1;
 	s+=ch;
 	length-=ch;
-	string_builder_shared_strcat(&ctx.ret,ctx.v[a].val);
 	e = s;
+	string_builder_shared_strcat(&ctx.ret,ctx.v[a].val);
+	if (empty_repl && length) {
+	  /* Append the replacement for the empty string too. */
+	  string_builder_shared_strcat(&ctx.ret, empty_repl);
+	}
 	continue;
       }
     }
+  next_char:
     s++;
     length--;
+    if (empty_repl && length) {
+      /* We have a replace with the empty string,
+       * and we're not on the last character in the source string.
+       */
+      string_builder_putchar(&ctx.ret, ch);
+      string_builder_shared_strcat(&ctx.ret, empty_repl);
+      e = s;
+    }
   }
   if (e < s) {
     switch(str->size_shift) {
