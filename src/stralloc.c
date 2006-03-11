@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.204 2006/03/10 18:53:24 grubba Exp $
+|| $Id: stralloc.c,v 1.205 2006/03/11 12:30:40 grubba Exp $
 */
 
 #include "global.h"
@@ -1400,6 +1400,10 @@ PMOD_EXPORT ptrdiff_t generic_quick_binary_strcmp(const char *a,
   if(!asize && !bsize)
   {
     int tmp;
+    /* FIXME: Does MEMCMP() guarantee that the characters
+     *        are compared as unsigned?
+     *	/grubba 2006-03-11
+     */
     if(alen > blen)
     {
       tmp=MEMCMP(a, b, blen);
@@ -1413,11 +1417,11 @@ PMOD_EXPORT ptrdiff_t generic_quick_binary_strcmp(const char *a,
       return MEMCMP(a, b, alen);
     }
   }else{
-    INT32 pos;
+    ptrdiff_t pos;
     for(pos=0;pos< MINIMUM(alen,blen) ;pos++)
     {
-      INT32 ac=generic_extract(a,asize,pos);
-      INT32 bc=generic_extract(b,bsize,pos);
+      p_wchar2 ac=generic_extract(a,asize,pos);
+      p_wchar2 bc=generic_extract(b,bsize,pos);
       if(ac != bc) {
 	if (ac < bc) return -1;
 	return 1;
@@ -1446,8 +1450,8 @@ PMOD_EXPORT ptrdiff_t generic_find_binary_prefix(const char *a,
     case TWO_SIZES(AZ, BZ): {			\
       PIKE_CONCAT(p_wchar, AZ) *a_arr =		\
 	(PIKE_CONCAT(p_wchar, AZ) *)a;		\
-      PIKE_CONCAT(p_wchar, AZ) *b_arr =		\
-	(PIKE_CONCAT(p_wchar, AZ) *)b;		\
+      PIKE_CONCAT(p_wchar, BZ) *b_arr =		\
+	(PIKE_CONCAT(p_wchar, BZ) *)b;		\
       for (pos=0; pos<len; pos++) {		\
 	if (a_arr[pos] == b_arr[pos])		\
 	  continue;				\
