@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.612 2006/03/11 12:31:35 grubba Exp $
+|| $Id: builtin_functions.c,v 1.613 2006/03/11 13:23:44 grubba Exp $
 */
 
 #include "global.h"
@@ -3505,79 +3505,83 @@ static struct pike_string *replace_many(struct pike_string *str,
 
   /* FIXME: We really ought to build a trie! */
 
-  for(e = s = 0;length > 0;)
-  {
-    INT32 a,b;
-    p_wchar2 ch;
-
-    ch=index_shared_string(str,s);
-    if(ch<NELEM(set_end)) {
-      b=set_end[ch];
-      if (!b) goto next_char;
-      a=set_start[ch];
-    } else {
-      b=num;
-      a=other_start;
-    }
-    if (a >= b) goto next_char;
-
-    {
-      a=find_longest_prefix(str->str+(s << str->size_shift),
-			    length,
-			    str->size_shift,
-			    ctx.v, a, b);
-
-      if(a!=-1)
-      {
-	if (s != e) {
-	  switch(str->size_shift) {
-	  case 0:
-	    string_builder_binary_strcat0(&ctx.ret, STR0(str)+e, s-e);
-	    break;
-	  case 1:
-	    string_builder_binary_strcat1(&ctx.ret, STR1(str)+e, s-e);
-	    break;
-	  case 2:
-	    string_builder_binary_strcat2(&ctx.ret, STR2(str)+e, s-e);
-	    break;
-	  }
-	}
-	ch = ctx.v[a].ind->len;
-	s+=ch;
-	length-=ch;
-	e = s;
-	string_builder_shared_strcat(&ctx.ret,ctx.v[a].val);
-	if (empty_repl && length) {
-	  /* Append the replacement for the empty string too. */
-	  string_builder_shared_strcat(&ctx.ret, empty_repl);
-	}
-	continue;
-      }
-    }
-  next_char:
-    s++;
-    length--;
-    if (empty_repl && length) {
-      /* We have a replace with the empty string,
-       * and we're not on the last character in the source string.
-       */
-      string_builder_putchar(&ctx.ret, ch);
-      string_builder_shared_strcat(&ctx.ret, empty_repl);
-      e = s;
-    }
-  }
-  if (e < s) {
-    switch(str->size_shift) {
-    case 0:
-      string_builder_binary_strcat0(&ctx.ret, STR0(str)+e, s-e);
-      break;
-    case 1:
-      string_builder_binary_strcat1(&ctx.ret, STR1(str)+e, s-e);
-      break;
-    case 2:
-      string_builder_binary_strcat2(&ctx.ret, STR2(str)+e, s-e);
-      break;
-    }
+  switch (str->size_shift) {
+#define CASE(SZ)					\
+    case (SZ):						\
+      {							\
+	PIKE_CONCAT(p_wchar, SZ) *ss =			\
+	  PIKE_CONCAT(STR, SZ)(str);			\
+	for(e = s = 0;length > 0;)			\
+	{						\
+	  INT32 a, b;					\
+	  p_wchar2 ch;					\
+							\
+	  ch = ss[s];					\
+	  if(OPT_IS_CHAR(ch)) {				\
+	    b=set_end[ch];				\
+	    if (!b)					\
+	      goto PIKE_CONCAT(next_char, SZ);		\
+	    a=set_start[ch];				\
+	  } else {					\
+	    b=num;					\
+	    a=other_start;				\
+	  }						\
+	  if (a >= b)					\
+	    goto PIKE_CONCAT(next_char, SZ);		\
+							\
+	  a = find_longest_prefix((char *)(ss + s),	\
+				  length,		\
+				  SZ,			\
+				  ctx.v, a, b);		\
+							\
+	  if(a >= 0)					\
+	  {						\
+	    if (s != e) {				\
+	      PIKE_CONCAT(string_builder_binary_strcat,	\
+			  SZ)(&ctx.ret, ss+e, s-e);	\
+	    }						\
+	    ch = ctx.v[a].ind->len;			\
+	    s += ch;					\
+	    length -= ch;				\
+	    e = s;					\
+	    string_builder_shared_strcat(&ctx.ret,	\
+					 ctx.v[a].val);	\
+	    if (empty_repl && length) {			\
+	      /* Append the replacement for		\
+	       * the empty string too. */		\
+	      string_builder_shared_strcat(&ctx.ret,	\
+					   empty_repl);	\
+	    }						\
+	    continue;					\
+	  }						\
+							\
+	PIKE_CONCAT(next_char, SZ):			\
+	  s++;						\
+	  length--;					\
+	  if (empty_repl && length) {			\
+	    /* We have a replace with the empty string,	\
+	     * and we're not on the last character	\
+	     * in the source string.			\
+	     */						\
+	    string_builder_putchar(&ctx.ret, ch);	\
+	    string_builder_shared_strcat(&ctx.ret,	\
+					 empty_repl);	\
+	    e = s;					\
+	  }						\
+	}						\
+	if (e < s) {					\
+	  PIKE_CONCAT(string_builder_binary_strcat, SZ)	\
+	    (&ctx.ret, ss+e, s-e);			\
+	}						\
+      }							\
+    break
+#define OPT_IS_CHAR(X)	1
+    CASE(0);
+#undef OPT_IS_CHAR
+#define OPT_IS_CHAR(X)	((X) < NELEM(set_end))
+    CASE(1);
+    CASE(2);
+#undef OPT_IS_CHAR
   }
 
   UNSET_ONERROR (uwp);
