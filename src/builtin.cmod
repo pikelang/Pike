@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.179 2005/11/14 19:57:54 nilsson Exp $
+|| $Id: builtin.cmod,v 1.180 2006/03/11 17:20:47 grubba Exp $
 */
 
 #include "global.h"
@@ -1938,246 +1938,111 @@ PIKECLASS Buffer
  */
 PIKECLASS multi_string_replace
 {
-  CVAR struct tupel
-  {
-    int prefix;
-    struct pike_string *ind;
-    struct pike_string *val;
-  } *v;
-  CVAR size_t v_sz;
-  CVAR size_t sz;
-  CVAR INT32 set_start[256];
-  CVAR INT32 set_end[256];
+  CVAR struct replace_many_context ctx;
+  CVAR struct array *from;
+  CVAR struct array *to;
 
-  static int replace_sortfun(struct tupel *a,struct tupel *b)
-  {
-    return DO_NOT_WARN((int)my_quick_strcmp(a->ind, b->ind));
-  }
-
-  /*! @decl void create(array(string)|void from, array(string)|void to)
+  /*! @decl void create(array(string)|mapping(string:string)|void from, @
+   *!                   array(string)|string|void to)
    */
-  PIKEFUN void create(array(string)|void from, array(string)|void to)
+  PIKEFUN void create(array(string)|mapping(string:string)|void from_arg,
+		      array(string)|string|void to_arg)
   {
     int i;
+
+    if (THIS->from) free_array(THIS->from);
+    if (THIS->to) free_array(THIS->to);
+    if (THIS->ctx.v) free_replace_many_context(&THIS->ctx);
+
     if (!args) {
       push_int(0);
       return;
     }
-    /* FIXME: Why are from and to declared |void, when they aren't allowed
-     *        to be void?
-     *        /grubba 2004-09-02
-     */
-    if (!from || !to) {
-      Pike_error("Bad number of arguments to create().\n");
-    }
-    if (from->size != to->size) {
-      Pike_error("Replace must have equal-sized from and to arrays.\n");
+    if (from_arg && from_arg->type == T_MAPPING) {
+      if (to_arg) {
+	Pike_error("Bad number of arguments to create().\n");
+      }
+      THIS->from = mapping_indices(from_arg->u.mapping);
+      THIS->to = mapping_values(from_arg->u.mapping);
+      pop_n_elems(args);
+      args = 0;
+    } else {
+      /* FIXME: Why is from declared |void, when it isn't allowed
+       *        to be void?
+       *        /grubba 2004-09-02
+       */
+      if (!from_arg || !to_arg) {
+	Pike_error("Bad number of arguments to create().\n");
+      }
+      pop_n_elems(args-2);
+      args = 2;
+      if (from_arg->type != T_ARRAY) {
+	SIMPLE_BAD_ARG_ERROR("Replace", 1,
+			     "array(string)|mapping(string:string)");
+      }
+      if (to_arg->type == T_STRING) {
+	push_int(from_arg->u.array->size);
+	stack_swap();
+	f_allocate(2);
+      }
+      if (to_arg->type != T_ARRAY) {
+	SIMPLE_BAD_ARG_ERROR("Replace", 2, "array(string)|string");
+      }
+      if (from_arg->u.array->size != to_arg->u.array->size) {
+	Pike_error("Replace must have equal-sized from and to arrays.\n");
+      }
+      add_ref(THIS->from = from_arg->u.array);
+      add_ref(THIS->to = to_arg->u.array);
     }
 
-    if (!from->size) {
+    if (!THIS->from->size) {
       /* Enter no-op mode. */
-      THIS->sz = 0;
       pop_n_elems(args);
       push_int(0);
       return;
     }
 
-    if( (from->type_field & ~BIT_STRING) &&
-	(array_fix_type_field(from) & ~BIT_STRING) )
-      SIMPLE_BAD_ARG_ERROR("Replace", 1, "array(string)");
+    if( (THIS->from->type_field & ~BIT_STRING) &&
+	(array_fix_type_field(THIS->from) & ~BIT_STRING) )
+      SIMPLE_BAD_ARG_ERROR("Replace", 1,
+			   "array(string)|mapping(string:string)");
 
-    if( (to->type_field & ~BIT_STRING) &&
-	(array_fix_type_field(to) & ~BIT_STRING) )
-      SIMPLE_BAD_ARG_ERROR("Replace", 2, "array(string)");
+    if( (THIS->to->type_field & ~BIT_STRING) &&
+	(array_fix_type_field(THIS->to) & ~BIT_STRING) )
+      SIMPLE_BAD_ARG_ERROR("Replace", 2, "array(string)|string");
 
-    if (THIS->v) {
-      for (i = 0; i < (int)THIS->v_sz; i++) {
-	if (!THIS->v[i].ind) break;
-	free_string(THIS->v[i].ind);
-	THIS->v[i].ind = NULL;
-	free_string(THIS->v[i].val);
-	THIS->v[i].val = NULL;	
-      }
-    }
-    if (THIS->v && (THIS->v_sz < (size_t)from->size)) {      
-      free(THIS->v);
-      THIS->v = NULL;
-      THIS->v_sz = 0;
-    }
-    if (!THIS->v) {
-      THIS->v = (struct tupel *)xalloc(sizeof(struct tupel) * from->size);
-      THIS->v_sz = from->size;
-    }
-    for (i = 0; i < (int)from->size; i++) {
-      copy_shared_string(THIS->v[i].ind, from->item[i].u.string);
-      copy_shared_string(THIS->v[i].val, to->item[i].u.string);
-      THIS->v[i].prefix = -2;	/* Uninitialized */
-    }
-    THIS->sz = from->size;
-    fsort((char *)THIS->v, from->size, sizeof(struct tupel),
-	  (fsortfun)replace_sortfun);
+    compile_replace_many(&THIS->ctx, THIS->from, THIS->to, 1);
 
-    MEMSET(THIS->set_start, 0, sizeof(INT32)*256);
-    MEMSET(THIS->set_end, 0, sizeof(INT32)*256);
-
-    for (i = 0; i < (int)from->size; i++) {
-      INT32 x = index_shared_string(THIS->v[from->size-1-i].ind, 0);
-      if ((x >= 0) && (x < 256))
-	THIS->set_start[x] = from->size-1-i;
-      x = index_shared_string(THIS->v[i].ind, 0);
-      if ((x >= 0) && (x < 256))
-	THIS->set_end[x] = i+1;
-    }
     pop_n_elems(args);
     push_int(0);
-  }
-
-  static int find_longest_prefix(char *str,
-				 ptrdiff_t len,
-				 int size_shift,
-				 struct tupel *v,
-				 INT32 a,
-				 INT32 b)
-  {
-    INT32 c,match=-1;
-    ptrdiff_t tmp;
-
-    check_c_stack(2048);
-
-    while(a<b)
-    {
-      c=(a+b)/2;
-      
-      tmp=generic_quick_binary_strcmp(v[c].ind->str,
-				      v[c].ind->len,
-				      v[c].ind->size_shift,
-				      str,
-				      MINIMUM(len,v[c].ind->len),
-				      size_shift);
-      if(tmp<0)
-      {
-	INT32 match2=find_longest_prefix(str,
-					 len,
-					 size_shift,
-					 v,
-					 c+1,
-					 b);
-	if(match2!=-1) return match2;
-
-	while(1)
-	{
-	  if(v[c].prefix==-2)
-	  {
-	    v[c].prefix=find_longest_prefix(v[c].ind->str,
-					    v[c].ind->len,
-					    v[c].ind->size_shift,
-					    v,
-					    0 /* can this be optimized? */,
-					    c);
-	  }
-	  c=v[c].prefix;
-	  if(c<a || c<match) return match;
-
-	  if(!generic_quick_binary_strcmp(v[c].ind->str,
-					  v[c].ind->len,
-					  v[c].ind->size_shift,
-					  str,
-					  MINIMUM(len,v[c].ind->len),
-					  size_shift))
-	    return c;
-	}
-      }
-      else if(tmp>0)
-      {
-	b=c;
-      }
-      else
-      {
-	a=c+1; /* There might still be a better match... */
-	match=c;
-      }
-    }
-    return match;
   }
 
   /*! @decl string `()(string str)
    */
   PIKEFUN string `()(string str)
   {
-    struct string_builder ret;
-    ptrdiff_t length = str->len;
-    ptrdiff_t s;
-    int *set_start = THIS->set_start;
-    int *set_end = THIS->set_end;
-    struct tupel *v = THIS->v;
-    int num = THIS->sz;
-    ONERROR uwp;
-
-    if (!num) {
+    if (!THIS->ctx.v) {
       add_ref(str);
       RETURN str;
     }
 
-    init_string_builder(&ret,str->size_shift);
-    SET_ONERROR(uwp, free_string_builder, &ret);
-
-    for(s=0;length > 0;)
-    {
-      INT32 a,b;
-      ptrdiff_t ch;
-
-      ch = index_shared_string(str, s);
-      if((ch >= 0) && (ch < 256))
-	b = set_end[ch];
-      else
-	b = num;
-
-      if(b)
-      {
-	if((ch >= 0) && (ch < 256))
-	  a = set_start[ch];
-	else
-	  a = 0;
-
-	a = find_longest_prefix(str->str+(s << str->size_shift),
-				length,
-				str->size_shift,
-				v, a, b);
-
-	if(a!=-1)
-	{
-	  ch = v[a].ind->len;
-	  if(!ch) ch=1;
-	  s += ch;
-	  length -= ch;
-	  string_builder_shared_strcat(&ret, v[a].val);
-	  continue;
-	}
-      }
-      string_builder_putchar(&ret,
-			     DO_NOT_WARN((INT32)ch));
-      s++;
-      length--;
-    }
-
-    UNSET_ONERROR(uwp);
-
-    RETURN finish_string_builder(&ret);
+    RETURN execute_replace_many(&THIS->ctx, str);
   }
 
-  /*! @decl array(string) _encode()
+  /*! @decl array(array(string)) _encode()
    */
-  PIKEFUN array(string) _encode()
+  PIKEFUN array(array(string)) _encode()
   {
-    size_t i;
-    for (i=0; i < THIS->sz; i++) {
-      ref_push_string(THIS->v[i].ind);
+    if (THIS->from) {
+      ref_push_array(THIS->from);
+    } else {
+      push_undefined();
     }
-    f_aggregate(DO_NOT_WARN((INT32)THIS->sz));
-    for (i=0; i < THIS->sz; i++) {
-      ref_push_string(THIS->v[i].val);
+    if (THIS->to) {
+      ref_push_array(THIS->to);
+    } else {
+      push_undefined();
     }
-    f_aggregate(DO_NOT_WARN((INT32)THIS->sz));
     f_aggregate(2);
   }
 
@@ -2186,7 +2051,6 @@ PIKECLASS multi_string_replace
   PIKEFUN void _decode(array(array(string)) encoded)
   {
     INT32 i;
-
     for (i=0; i < encoded->size; i++) {
       push_svalue(encoded->item + i);
       stack_swap();
@@ -2198,27 +2062,16 @@ PIKECLASS multi_string_replace
 
   INIT
   {
-    THIS->v = NULL;
-    THIS->v_sz = 0;
-    THIS->sz = 0;
+    MEMSET(&THIS->ctx, 0, sizeof(struct replace_many_context));
+    THIS->from = NULL;
+    THIS->to = NULL;
   }
 
   EXIT
   {
-    if (THIS->v) {
-      int i;
-      for (i = 0; i < (int)THIS->v_sz; i++) {
-	if (!THIS->v[i].ind) break;
-	free_string(THIS->v[i].ind);
-	THIS->v[i].ind = NULL;
-	free_string(THIS->v[i].val);
-	THIS->v[i].val = NULL;	
-      }
-      free(THIS->v);
-    }
-    THIS->v = NULL;
-    THIS->v_sz = 0;
-    THIS->sz = 0;
+    if (THIS->from) free_array(THIS->from);
+    if (THIS->to) free_array(THIS->to);
+    free_replace_many_context(&THIS->ctx);
   }
 }
 
