@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.613 2006/03/11 13:23:44 grubba Exp $
+|| $Id: builtin_functions.c,v 1.614 2006/03/11 17:19:46 grubba Exp $
 */
 
 #include "global.h"
@@ -3269,14 +3269,6 @@ PMOD_EXPORT void f_reverse(INT32 args)
   }
 }
 
-struct tupel
-{
-  int prefix;
-  int is_prefix;
-  struct pike_string *ind;
-  struct pike_string *val;
-};
-
 /* Magic, magic and more magic */
 /* Returns the index in v for the string that is the longest prefix of
  * str (if any).
@@ -3287,12 +3279,12 @@ struct tupel
  * a is the lower bound.
  * b is the upper bound + 1.
  */
-static int find_longest_prefix(char *str,
-			       ptrdiff_t len,
-			       int size_shift,
-			       struct tupel *v,
-			       INT32 a,
-			       INT32 b)
+int find_longest_prefix(char *str,
+			ptrdiff_t len,
+			int size_shift,
+			struct replace_many_tupel *v,
+			INT32 a,
+			INT32 b)
 {
   INT32 c, match=-1, match_len=-1, d;
   ptrdiff_t tmp;
@@ -3357,36 +3349,244 @@ static int find_longest_prefix(char *str,
 }
 			       
 
-static int replace_sortfun(struct tupel *a,struct tupel *b)
+static int replace_sortfun(struct replace_many_tupel *a,
+			   struct replace_many_tupel *b)
 {
   return DO_NOT_WARN((int)my_quick_strcmp(a->ind, b->ind));
 }
 
-struct replace_many_context
+void free_replace_many_context(struct replace_many_context *ctx)
+{
+  if (ctx->v) {
+    if (ctx->flags) {
+      /* Used for the precompiled case. */
+      int e = ctx->num;
+      while (e--) {
+	free_string(ctx->v[e].ind);
+	free_string(ctx->v[e].val);
+      }
+      if (ctx->empty_repl) {
+	free_string(ctx->empty_repl);
+      }
+    }
+    free ((char *) ctx->v);
+    ctx->v = NULL;
+  }
+}
+
+void compile_replace_many(struct replace_many_context *ctx,
+			  struct array *from,
+			  struct array *to,
+			  int reference_strings)
+{
+  INT32 e, num;
+
+  ctx->v = NULL;
+  ctx->empty_repl = NULL;
+
+  /* NOTE: The following test is needed, since sizeof(struct tupel)
+   *       is somewhat greater than sizeof(struct svalue).
+   */
+  if (from->size > (ptrdiff_t)(LONG_MAX/sizeof(struct replace_many_tupel)))
+    Pike_error("Array too large (size %" PRINTPTRDIFFT "d "
+	       "exceeds %" PRINTSIZET "u).\n",
+	       from->size,
+	       (size_t)(LONG_MAX/sizeof(struct replace_many_tupel)));
+  ctx->v = (struct replace_many_tupel *)
+    xalloc(sizeof(struct replace_many_tupel) * from->size);
+
+  for(num=e=0;e<from->size;e++)
+  {
+    if (!ITEM(from)[e].u.string->len) {
+      if (ITEM(to)[e].u.string->len) {
+	ctx->empty_repl = ITEM(to)[e].u.string;
+      }
+      continue;
+    }
+
+    ctx->v[num].ind=ITEM(from)[e].u.string;
+    ctx->v[num].val=ITEM(to)[e].u.string;
+    ctx->v[num].prefix=-2; /* Uninitialized */
+    ctx->v[num].is_prefix=0;
+    num++;
+  }
+
+  ctx->flags = reference_strings;
+  if (reference_strings) {
+    /* Used for the precompiled compiled case. */
+    if (ctx->empty_repl) add_ref(ctx->empty_repl);
+    for (e = 0; e < num; e++) {
+      add_ref(ctx->v[e].ind);
+      add_ref(ctx->v[e].val);
+    }
+  }
+
+  fsort((char *)ctx->v, num, sizeof(struct replace_many_tupel),
+	(fsortfun)replace_sortfun);
+
+  MEMSET(ctx->set_start, 0, sizeof(ctx->set_start));
+  MEMSET(ctx->set_end, 0, sizeof(ctx->set_end));
+  ctx->other_start = num;
+
+  for(e=0;e<num;e++)
+  {
+    {
+      p_wchar2 x;
+
+      if (ctx->v[num-1-e].ind->len) {
+	x=index_shared_string(ctx->v[num-1-e].ind,0);
+	if (x<NELEM(ctx->set_start))
+	  ctx->set_start[x]=num-e-1;
+	else
+	  ctx->other_start = num-e-1;
+      }
+
+      if (ctx->v[e].ind->len) {
+	x=index_shared_string(ctx->v[e].ind,0);
+	if (x<NELEM(ctx->set_end))
+	  ctx->set_end[x]=e+1;
+      }
+    }
+    {
+      INT32 prefix = e-1;
+      if (prefix >= 0) {
+	ptrdiff_t tmp =
+	  generic_find_binary_prefix(ctx->v[e].ind->str,
+				     ctx->v[e].ind->len,
+				     ctx->v[e].ind->size_shift,
+				     ctx->v[prefix].ind->str,
+				     ctx->v[prefix].ind->len,
+				     ctx->v[prefix].ind->size_shift);
+	if (!tmp) {
+	  /* ctx->v[prefix] is a valid prefix to ctx->v[e]. */
+	} if (tmp == 1) {
+	  /* Optimization. */
+	  prefix = -1;
+	} else {
+#ifdef PIKE_DEBUG
+	  if (tmp < 0) Pike_fatal("Sorting with replace_sortfunc failed.\n");
+#endif
+
+	  /* Find the first prefix that is shorter than the point at which
+	   * the initial strings differed.
+	   */
+	  while (prefix >= 0) {
+	    if (ctx->v[prefix].ind->len < tmp) break;
+	    prefix = ctx->v[prefix].prefix;
+	  }
+	}
+	if (prefix >= 0) {
+	  ctx->v[prefix].is_prefix = 1;
+	}
+      }
+      ctx->v[e].prefix = prefix;
+    }
+  }
+  ctx->num = num;
+}
+
+struct pike_string *execute_replace_many(struct replace_many_context *ctx,
+					 struct pike_string *str)
 {
   struct string_builder ret;
-  struct tupel *v;
-};
+  ONERROR uwp;
 
-static void free_replace_many_context (struct replace_many_context *ctx)
-{
-  free_string_builder (&ctx->ret);
-  free ((char *) ctx->v);
+  init_string_builder(&ret, str->size_shift);
+  SET_ONERROR(uwp, free_string_builder, &ret);
+
+  /* FIXME: We really ought to build a trie! */
+
+  switch (str->size_shift) {
+#define CASE(SZ)					\
+    case (SZ):						\
+      {							\
+	PIKE_CONCAT(p_wchar, SZ) *ss =			\
+	  PIKE_CONCAT(STR, SZ)(str);			\
+	ptrdiff_t e, s, length = str->len;		\
+	for(e = s = 0;length > 0;)			\
+	{						\
+	  INT32 a, b;					\
+	  p_wchar2 ch;					\
+							\
+	  ch = ss[s];					\
+	  if(OPT_IS_CHAR(ch)) {				\
+	    b = ctx->set_end[ch];			\
+	    if (!b)					\
+	      goto PIKE_CONCAT(next_char, SZ);		\
+	    a = ctx->set_start[ch];			\
+	  } else {					\
+	    b = ctx->num;				\
+	    a = ctx->other_start;			\
+	  }						\
+	  if (a >= b)					\
+	    goto PIKE_CONCAT(next_char, SZ);		\
+							\
+	  a = find_longest_prefix((char *)(ss + s),	\
+				  length,		\
+				  SZ,			\
+				  ctx->v, a, b);	\
+							\
+	  if(a >= 0)					\
+	  {						\
+	    if (s != e) {				\
+	      PIKE_CONCAT(string_builder_binary_strcat,	\
+			  SZ)(&ret, ss+e, s-e);		\
+	    }						\
+	    ch = ctx->v[a].ind->len;			\
+	    s += ch;					\
+	    length -= ch;				\
+	    e = s;					\
+	    string_builder_shared_strcat(&ret,		\
+					 ctx->v[a].val);	\
+	    if (ctx->empty_repl && length) {		\
+	      /* Append the replacement for		\
+	       * the empty string too. */		\
+	      string_builder_shared_strcat(&ret,	\
+					   ctx->empty_repl);	\
+	    }						\
+	    continue;					\
+	  }						\
+							\
+	PIKE_CONCAT(next_char, SZ):			\
+	  s++;						\
+	  length--;					\
+	  if (ctx->empty_repl && length) {		\
+	    /* We have a replace with the empty string,	\
+	     * and we're not on the last character	\
+	     * in the source string.			\
+	     */						\
+	    string_builder_putchar(&ret, ch);		\
+	    string_builder_shared_strcat(&ret,		\
+					 ctx->empty_repl);	\
+	    e = s;					\
+	  }						\
+	}						\
+	if (e < s) {					\
+	  PIKE_CONCAT(string_builder_binary_strcat, SZ)	\
+	    (&ret, ss+e, s-e);				\
+	}						\
+      }							\
+    break
+#define OPT_IS_CHAR(X)	1
+    CASE(0);
+#undef OPT_IS_CHAR
+#define OPT_IS_CHAR(X)	((X) < NELEM(ctx->set_end))
+    CASE(1);
+    CASE(2);
+#undef OPT_IS_CHAR
+  }
+
+  UNSET_ONERROR(uwp);
+  return finish_string_builder(&ret);
 }
 
 static struct pike_string *replace_many(struct pike_string *str,
 					struct array *from,
 					struct array *to)
 {
-  INT32 e, num;
-  ptrdiff_t s, length;
   struct replace_many_context ctx;
   ONERROR uwp;
-  struct pike_string *empty_repl = NULL;
-
-  int set_start[256];
-  int set_end[256];
-  int other_start;
+  struct pike_string *ret;
 
   if(from->size != to->size)
     Pike_error("Replace must have equal-sized from and to arrays.\n");
@@ -3410,183 +3610,14 @@ static struct pike_string *replace_many(struct pike_string *str,
     return string_replace(str, from->item[0].u.string, to->item[0].u.string);
   }
 
-  /* NOTE: The following test is needed, since sizeof(struct tupel)
-   *       is somewhat greater than sizeof(struct svalue).
-   */
-  if (from->size > (ptrdiff_t)(LONG_MAX/sizeof(struct tupel)))
-    Pike_error("Array too large (size %" PRINTPTRDIFFT "d "
-	       "exceeds %" PRINTSIZET "u).\n",
-	       from->size, (size_t)(LONG_MAX/sizeof(struct tupel)));
-  ctx.v=(struct tupel *)xalloc(sizeof(struct tupel)*from->size);
-  init_string_builder(&ctx.ret,str->size_shift);
-  SET_ONERROR (uwp, free_replace_many_context, &ctx);
+  compile_replace_many(&ctx, from, to, 0);
+  SET_ONERROR(uwp, free_replace_many_context, &ctx);
 
-  for(num=e=0;e<from->size;e++)
-  {
-    if(ITEM(from)[e].u.string->size_shift > str->size_shift)
-      continue;
+  ret = execute_replace_many(&ctx, str);
 
-    if (!ITEM(from)[e].u.string->len) {
-      if (ITEM(to)[e].u.string->len) {
-	empty_repl = ITEM(to)[e].u.string;
-      }
-      continue;
-    }
+  CALL_AND_UNSET_ONERROR(uwp);
 
-    ctx.v[num].ind=ITEM(from)[e].u.string;
-    ctx.v[num].val=ITEM(to)[e].u.string;
-    ctx.v[num].prefix=-2; /* Uninitialized */
-    ctx.v[num].is_prefix=0;
-    num++;
-  }
-
-  fsort((char *)ctx.v,num,sizeof(struct tupel),(fsortfun)replace_sortfun);
-
-  MEMSET(set_start, 0, sizeof(set_start));
-  MEMSET(set_end, 0, sizeof(set_end));
-  other_start = num;
-
-  for(e=0;e<num;e++)
-  {
-    {
-      p_wchar2 x;
-
-      if (ctx.v[num-1-e].ind->len) {
-	x=index_shared_string(ctx.v[num-1-e].ind,0);
-	if (x<NELEM(set_start))
-	  set_start[x]=num-e-1;
-	else
-	  other_start = num-e-1;
-      }
-
-      if (ctx.v[e].ind->len) {
-	x=index_shared_string(ctx.v[e].ind,0);
-	if (x<NELEM(set_end))
-	  set_end[x]=e+1;
-      }
-    }
-    {
-      INT32 prefix = e-1;
-      if (prefix >= 0) {
-	ptrdiff_t tmp =
-	  generic_find_binary_prefix(ctx.v[e].ind->str,
-				     ctx.v[e].ind->len,
-				     ctx.v[e].ind->size_shift,
-				     ctx.v[prefix].ind->str,
-				     ctx.v[prefix].ind->len,
-				     ctx.v[prefix].ind->size_shift);
-	if (!tmp) {
-	  /* ctx.v[prefix] is a valid prefix to ctx.v[e]. */
-	} if (tmp == 1) {
-	  /* Optimization. */
-	  prefix = -1;
-	} else {
-#ifdef PIKE_DEBUG
-	  if (tmp < 0) Pike_fatal("Sorting with replace_sortfunc failed.\n");
-#endif
-
-	  /* Find the first prefix that is shorter than the point at which
-	   * the initial strings differed.
-	   */
-	  while (prefix >= 0) {
-	    if (ctx.v[prefix].ind->len < tmp) break;
-	    prefix = ctx.v[prefix].prefix;
-	  }
-	}
-	if (prefix >= 0) {
-	  ctx.v[prefix].is_prefix = 1;
-	}
-      }
-      ctx.v[e].prefix = prefix;
-    }
-  }
-
-  length=str->len;
-
-  /* FIXME: We really ought to build a trie! */
-
-  switch (str->size_shift) {
-#define CASE(SZ)					\
-    case (SZ):						\
-      {							\
-	PIKE_CONCAT(p_wchar, SZ) *ss =			\
-	  PIKE_CONCAT(STR, SZ)(str);			\
-	for(e = s = 0;length > 0;)			\
-	{						\
-	  INT32 a, b;					\
-	  p_wchar2 ch;					\
-							\
-	  ch = ss[s];					\
-	  if(OPT_IS_CHAR(ch)) {				\
-	    b=set_end[ch];				\
-	    if (!b)					\
-	      goto PIKE_CONCAT(next_char, SZ);		\
-	    a=set_start[ch];				\
-	  } else {					\
-	    b=num;					\
-	    a=other_start;				\
-	  }						\
-	  if (a >= b)					\
-	    goto PIKE_CONCAT(next_char, SZ);		\
-							\
-	  a = find_longest_prefix((char *)(ss + s),	\
-				  length,		\
-				  SZ,			\
-				  ctx.v, a, b);		\
-							\
-	  if(a >= 0)					\
-	  {						\
-	    if (s != e) {				\
-	      PIKE_CONCAT(string_builder_binary_strcat,	\
-			  SZ)(&ctx.ret, ss+e, s-e);	\
-	    }						\
-	    ch = ctx.v[a].ind->len;			\
-	    s += ch;					\
-	    length -= ch;				\
-	    e = s;					\
-	    string_builder_shared_strcat(&ctx.ret,	\
-					 ctx.v[a].val);	\
-	    if (empty_repl && length) {			\
-	      /* Append the replacement for		\
-	       * the empty string too. */		\
-	      string_builder_shared_strcat(&ctx.ret,	\
-					   empty_repl);	\
-	    }						\
-	    continue;					\
-	  }						\
-							\
-	PIKE_CONCAT(next_char, SZ):			\
-	  s++;						\
-	  length--;					\
-	  if (empty_repl && length) {			\
-	    /* We have a replace with the empty string,	\
-	     * and we're not on the last character	\
-	     * in the source string.			\
-	     */						\
-	    string_builder_putchar(&ctx.ret, ch);	\
-	    string_builder_shared_strcat(&ctx.ret,	\
-					 empty_repl);	\
-	    e = s;					\
-	  }						\
-	}						\
-	if (e < s) {					\
-	  PIKE_CONCAT(string_builder_binary_strcat, SZ)	\
-	    (&ctx.ret, ss+e, s-e);			\
-	}						\
-      }							\
-    break
-#define OPT_IS_CHAR(X)	1
-    CASE(0);
-#undef OPT_IS_CHAR
-#define OPT_IS_CHAR(X)	((X) < NELEM(set_end))
-    CASE(1);
-    CASE(2);
-#undef OPT_IS_CHAR
-  }
-
-  UNSET_ONERROR (uwp);
-  free((char *)ctx.v);
-  return finish_string_builder(&ctx.ret);
+  return ret;
 }
 
 /*! @decl string replace(string s, string from, string to)
@@ -3731,10 +3762,18 @@ node *optimize_replace(node *n)
     node **arg1 = my_get_arg(&_CDR(n), 1);
     node **arg2 = my_get_arg(&_CDR(n), 2);
 
-    if (arg1 && pike_types_le((*arg1)->type, array_type_string) &&
-	arg2 && pike_types_le((*arg2)->type, array_type_string)) {
-      /* The second and third arguments are arrays. */
-      if (!is_const(*arg0) && is_const(*arg1) && is_const(*arg2)) {
+    if (arg1 && ((pike_types_le((*arg1)->type, array_type_string) &&
+		  arg2 &&
+		  (pike_types_le((*arg2)->type, array_type_string) ||
+		   pike_types_le((*arg2)->type, string_type_string))) ||
+		 (pike_types_le((*arg1)->type, mapping_type_string)))) {
+      /* Handle the cases:
+       *
+       *   replace(string, array, array)
+       *   replace(string, array, string)
+       *   replace(string, mapping(string:string))
+       */
+      if (!is_const(*arg0) && is_const(*arg1) && (!arg2 || is_const(*arg2))) {
 	/* The second and third arguments are constants. */
 	struct svalue *save_sp = Pike_sp;
 	JMP_BUF tmp;
@@ -3755,8 +3794,11 @@ node *optimize_replace(node *n)
 	  INT16 lfun;
 	  struct object *replace_obj;
 	  node *ret = NULL;
-	  INT32 args = eval_low(*arg1,1);	/* NOTE: Addition splitted to ensure */
-	  args += eval_low(*arg2,1);		/*       correct evaluation order.   */
+	  INT32 args;
+	  args = eval_low(*arg1, 1);
+	  if (arg2) {
+	    args += eval_low(*arg2,1);
+	  }
 
 	  replace_obj = clone_object(multi_string_replace_program, args);
 
@@ -3775,7 +3817,6 @@ node *optimize_replace(node *n)
 
 	    free_type(array_zero);
 	    free_type(mapping_zero);
-
 	    return ret;
 	  }
 	}
