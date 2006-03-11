@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.371 2006/02/28 13:51:53 mast Exp $
+|| $Id: interpret.c,v 1.372 2006/03/11 08:20:26 mast Exp $
 */
 
 #include "global.h"
@@ -1078,6 +1078,8 @@ BLOCK_ALLOC_FILL_PAGES (catch_context, 1)
 #define POP_CATCH_CONTEXT do {						\
     struct catch_context *cc = Pike_interpreter.catch_ctx;		\
     DO_IF_DEBUG (							\
+      TRACE((3,"-   Popping catch context %p ==> %p\n",			\
+	     cc, cc->prev));						\
       if (!Pike_interpreter.catching_eval_jmpbuf)			\
 	Pike_fatal ("Not in catching eval.\n");				\
       if (!cc)								\
