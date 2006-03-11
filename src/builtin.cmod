@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.180 2006/03/11 17:20:47 grubba Exp $
+|| $Id: builtin.cmod,v 1.181 2006/03/11 17:46:21 grubba Exp $
 */
 
 #include "global.h"
@@ -1939,6 +1939,7 @@ PIKECLASS Buffer
 PIKECLASS multi_string_replace
 {
   CVAR struct replace_many_context ctx;
+  /* NOTE: from and to are only kept for _encode()'s use. */
   CVAR struct array *from;
   CVAR struct array *to;
 
@@ -2022,8 +2023,8 @@ PIKECLASS multi_string_replace
   PIKEFUN string `()(string str)
   {
     if (!THIS->ctx.v) {
-      add_ref(str);
-      RETURN str;
+      /* The result is already on the stack in the correct place... */
+      return;
     }
 
     RETURN execute_replace_many(&THIS->ctx, str);
