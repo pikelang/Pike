@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.170 2005/11/18 01:14:22 nilsson Exp $
+|| $Id: stralloc.c,v 1.171 2006/03/14 17:39:03 grubba Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.170 2005/11/18 01:14:22 nilsson Exp $");
+RCSID("$Id: stralloc.c,v 1.171 2006/03/14 17:39:03 grubba Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -1306,9 +1306,12 @@ PMOD_EXPORT ptrdiff_t generic_quick_binary_strcmp(const char *a,
     INT32 pos;
     for(pos=0;pos< MINIMUM(alen,blen) ;pos++)
     {
-      INT32 ac=generic_extract(a,asize,pos);
-      INT32 bc=generic_extract(b,bsize,pos);
-      if(ac-bc) return ac-bc;
+      p_wchar2 ac=generic_extract(a,asize,pos);
+      p_wchar2 bc=generic_extract(b,bsize,pos);
+      if(ac != bc) {
+	if (ac < bc) return -1;
+	return 1;
+      }
     }
     return alen-blen;
   }
