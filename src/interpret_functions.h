@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.190 2006/03/10 17:24:50 grubba Exp $
+|| $Id: interpret_functions.h,v 1.191 2006/03/15 12:29:15 grubba Exp $
 */
 
 /*
@@ -1284,7 +1284,10 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL, {
     );
     new_catch_ctx->save_expendible = Pike_fp->expendible;
     JUMP_SET_TO_PC_AT_NEXT (addr);
-    new_catch_ctx->continue_reladdr = GET_JUMP();
+    new_catch_ctx->continue_reladdr = GET_JUMP()
+      /* We need to run the entry prologue... */
+      - ENTRY_PROLOGUE_SIZE;
+
     new_catch_ctx->next_addr = addr;
     new_catch_ctx->prev = Pike_interpreter.catch_ctx;
     Pike_interpreter.catch_ctx = new_catch_ctx;
@@ -1303,7 +1306,7 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL, {
     /* There's already a catching_eval_instruction around our
      * eval_instruction, so we can just continue. */
     debug_malloc_touch_named (Pike_interpreter.catch_ctx, "(1)");
-    /* We also need to skip past the entry prologue... */
+    /* Skip past the entry prologue... */
     addr += ENTRY_PROLOGUE_SIZE;
     SET_PROG_COUNTER(addr);
     FETCH;
@@ -1329,6 +1332,11 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL, {
 	});
 
       int res = catching_eval_instruction (addr);
+
+      DO_IF_DEBUG({
+	  TRACE((3,"-   catching_eval_instruction(%p) returned %d\n",
+		 addr, res));
+	});
 
       if (res != -3) {
 	/* There was an inter return inside the evaluated code. Just

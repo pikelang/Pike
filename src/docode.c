@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.186 2006/03/02 10:24:47 grubba Exp $
+|| $Id: docode.c,v 1.187 2006/03/15 12:29:02 grubba Exp $
 */
 
 #include "global.h"
@@ -2074,15 +2074,20 @@ static int do_docode2(node *n, int flags)
     emit0(F_EXIT_CATCH);
     POP_STATEMENT_LABEL;
     current_switch.jumptable = prev_switch_jumptable;
-    tmp2 = do_branch (-1);
+    do_branch (tmp1);
 
-    ins_label(DO_NOT_WARN((INT32)tmp1));
     current_stack_depth++;
     /* Entry point called via catching_eval_instruction() after
-     * catching an error. */
+     * catching an error.
+     *
+     * NB: This is reached by subtracting ENTRY_PROLOGUE_SIZE
+     *     from the label below.
+     * NB: The label must be after the entry, since it may expand to code
+     *     that requires the entry code to have run.
+     */
     emit0(F_ENTRY);
+    ins_label(DO_NOT_WARN((INT32)tmp1));
 
-    ins_label(DO_NOT_WARN((INT32)tmp2));
     POP_AND_DONT_CLEANUP;
     return 1;
   }
