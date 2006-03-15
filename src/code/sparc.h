@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.h,v 1.29 2005/11/21 10:38:22 grubba Exp $
+|| $Id: sparc.h,v 1.30 2006/03/15 12:29:50 grubba Exp $
 */
 
 #define PIKE_OPCODE_ALIGN	4
@@ -91,3 +91,17 @@ void sparc_decode_program(struct program *p);
 
 void sparc_disassemble_code(void *addr, size_t bytes);
 #define DISASSEMBLE_CODE(ADDR, BYTES)	sparc_disassemble_code(ADDR, BYTES)
+
+#ifdef PIKE_DEBUG
+#define CALL_MACHINE_CODE(pc)					\
+  do {								\
+    /* The test is needed to get the labels to work... */	\
+    if (pc) {							\
+      if ((((PIKE_OPCODE_T *)pc)[0] & 0x81e02000) !=		\
+	  0x81e02000)						\
+	Pike_fatal("Machine code at %p lacking F_ENTRY!\n",	\
+		   pc);						\
+      return ((int (*)(void))(pc))();				\
+    }								\
+  } while(0)
+#endif /* !PIKE_DEBUG */
