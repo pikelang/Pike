@@ -1,7 +1,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: peep.in,v 1.79 2005/06/28 08:45:44 grubba Exp $
+// $Id: peep.in,v 1.80 2006/03/15 12:27:25 grubba Exp $
 
 NOP :
 POP_N_ELEMS (0) : 
@@ -68,6 +68,20 @@ CLEAR_LOCAL CLEAR_LOCAL($1a) : CLEAR_LOCAL($1a)
 CLEAR_LOCAL CLEAR_LOCAL($1a+1) : CLEAR_2_LOCAL($1a)
 CLEAR_2_LOCAL CLEAR_2_LOCAL($1a+2) : CLEAR_4_LOCAL($1a)
 
+// Attempt to make the above trigger more often.
+CLEAR_LOCAL CLEAR_2_LOCAL($1a+1) : CLEAR_2_LOCAL($1a) CLEAR_LOCAL($2a+1)
+CLEAR_LOCAL CLEAR_4_LOCAL($1a+1) : CLEAR_4_LOCAL($1a) CLEAR_LOCAL($2a+3)
+CLEAR_2_LOCAL CLEAR_4_LOCAL($1a+2) : CLEAR_4_LOCAL($1a) CLEAR_2_LOCAL($2a+2)
+
+// Attempt to de-interleave clearing of locals.
+CONST0 CLEAR_LOCAL : CLEAR_LOCAL($2a) CONST0
+CONST1 CLEAR_LOCAL : CLEAR_LOCAL($2a) CONST1
+CONST_1 CLEAR_LOCAL : CLEAR_LOCAL($2a) CONST_1
+NUMBER CLEAR_LOCAL : CLEAR_LOCAL($2a) NUMBER($1a)
+NEG_NUMBER CLEAR_LOCAL : CLEAR_LOCAL($2a) NEG_NUMBER($1a)
+CONSTANT CLEAR_LOCAL : CLEAR_LOCAL($2a) CONSTANT($1a)
+
+
 // CONST_1 MULTIPLY : NEGATE
 // CONST0 MULTIPLY : POP_VALUE CONST0
 // CONST1 MULTIPLY : 
@@ -99,7 +113,7 @@ POP_N_ELEMS RETURN_1: RETURN_1
 // F_SYNCH_MARK and F_POP_SYNCH_MARK is output only with -d3 and
 // higher. We keep them solely for balancing the asm debug output.
 #define DeadCodeEndCond(op) \
-  [op != F_LABEL && op != F_SYNCH_MARK && op != F_POP_SYNCH_MARK]
+  [op != F_LABEL && op != F_SYNCH_MARK && op != F_POP_SYNCH_MARK && op != F_ENTRY]
 BRANCH ? DeadCodeEndCond($2o) : BRANCH($1a)
 RETURN ? DeadCodeEndCond($2o) : RETURN
 VOLATILE_RETURN ? DeadCodeEndCond($2o) : VOLATILE_RETURN
@@ -357,6 +371,7 @@ OPT_INCDEC(DEC)
 
 ASSIGN_LOCAL_AND_POP LOCAL($1a) : ASSIGN_LOCAL($1a)
 ASSIGN_GLOBAL_AND_POP GLOBAL($1a) : ASSIGN_GLOBAL($1a)
+CLEAR_LOCAL LOCAL($1a) : CLEAR_LOCAL($1a) CONST0
 #ifdef EAT_STACK
 APPLY_ASSIGN_LOCAL_AND_POP LOCAL ($1b) : APPLY_ASSIGN_LOCAL($1a,$1b)
 #endif
