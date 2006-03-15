@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.62 2006/02/27 06:26:34 mast Exp $
+ * $Id: Tree.pmod,v 1.63 2006/03/15 10:32:56 mast Exp $
  *
  */
 
@@ -297,8 +297,8 @@ class AbstractSimpleNode {
     return (mChildren[pos]);
   }
 
-  //! Adds a child node to this node. The child node is
-  //! added last in the child list.
+  //! Adds the given node to the list of children of this node. The
+  //! new node is added last in the list.
   //!
   //! @note
   //!   The return value differs from the one returned
@@ -314,8 +314,46 @@ class AbstractSimpleNode {
     return this;
   }
 
-  //! Removes all occurrences of the provided node from the called nodes
-  //! list of children.
+  //! Adds the node @[c] to the list of children of this node. The
+  //! node is added before the node @[old], which is assumed to be an
+  //! existing child of this node. The node is added last if @[old] is
+  //! zero.
+  //!
+  //! @returns
+  //!   The current node.
+  AbstractSimpleNode add_child_before (AbstractSimpleNode c,
+				       AbstractSimpleNode old)
+  {
+    if (old) {
+      int index = search (mChildren, old);
+      mChildren = mChildren[..index - 1] + ({c}) + mChildren[index..];
+    }
+    else
+      mChildren += ({c});
+    return this;
+  }
+
+  //! Adds the node @[c] to the list of children of this node. The
+  //! node is added before the node @[old], which is assumed to be an
+  //! existing child of this node. The node is added first if @[old]
+  //! is zero.
+  //!
+  //! @returns
+  //!   The current node.
+  AbstractSimpleNode add_child_after (AbstractSimpleNode c,
+				      AbstractSimpleNode old)
+  {
+    if (old) {
+      int index = search (mChildren, old);
+      mChildren = mChildren[..index] + ({c}) + mChildren[index + 1..];
+    }
+    else
+      mChildren = ({c}) + mChildren;
+    return this;
+  }
+
+  //! Removes all occurrences of the provided node from the list of
+  //! children of this node.
   void remove_child(AbstractSimpleNode c)
   {
     mChildren -= ({ c });
@@ -508,15 +546,16 @@ class AbstractNode {
     return (parent);
   }
 
-  //! Adds a child node to this node. The child node is
-  //! added last in the child list and its parent reference
-  //! is updated.
+  //! Adds the node @[c] to the list of children of this node. The
+  //! node is added before the node @[old], which is assumed to be an
+  //! existing child of this node. The node is added first if @[old]
+  //! is zero.
   //!
   //! @note
-  //!   Returns the child node, NOT the current node.
+  //!   Returns the new child node, NOT the current node.
   //!
   //! @returns
-  //! The updated child node is returned.
+  //! The new child node is returned.
   AbstractNode add_child(AbstractNode c)
   {
     c->mParent = ::add_child(c);
@@ -525,20 +564,46 @@ class AbstractNode {
     return (c);
   }
 
-  //! Variant of @[add_child] that doesn't set the parent pointer in
-  //! the child.
+  //! Adds the node @[c] to the list of children of this node. The
+  //! node is added before the node @[old], which is assumed to be an
+  //! existing child of this node. The node is added last if @[old] is
+  //! zero.
+  //!
+  //! @returns
+  //!   The current node.
+  AbstractSimpleNode add_child_before (AbstractSimpleNode c,
+				       AbstractSimpleNode old)
+  {
+    return c->parent = ::add_child_before (c, old);
+  }
+
+  //! Adds the node @[c] to the list of children of this node. The
+  //! node is added before the node @[old], which is assumed to be an
+  //! existing child of this node. The node is added first if @[old]
+  //! is zero.
+  //!
+  //! @returns
+  //!   The current node.
+  AbstractSimpleNode add_child_after (AbstractSimpleNode c,
+				      AbstractSimpleNode old)
+  {
+    return c->parent = ::add_child_after (c, old);
+  }
+
+  //! Variants of @[add_child], @[add_child_before] and
+  //! @[add_child_after] that doesn't set the parent pointer in the
+  //! newly added children.
   //!
   //! This is useful while building a node tree, to get efficient
   //! refcount garbage collection if the build stops abruptly.
   //! @[fix_tree] has to be called on the root node when the building
   //! is done.
   AbstractNode tmp_add_child(AbstractNode c)
-  // Doesn't fix the parent pointers to allow efficient refcount
-  // garbing when b. Use fix_tree afterwards.
-  {
-    mChildren += ({c});
-    return c;
-  }
+    {::add_child (c); return c;}
+  AbstractNode tmp_add_child_before (AbstractNode c, AbstractNode old)
+    {return ::add_child_before (c, old);}
+  AbstractNode tmp_add_child_after (AbstractNode c, AbstractNode old)
+    {return ::add_child_after (c, old);}
 
   //! Fix all parent pointers recursively in a tree that has been
   //! built with @[tmp_add_child].
