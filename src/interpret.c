@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.373 2006/03/11 08:22:40 mast Exp $
+|| $Id: interpret.c,v 1.374 2006/03/15 09:03:38 grubba Exp $
 */
 
 #include "global.h"
@@ -1380,6 +1380,7 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc);
 static int eval_instruction(PIKE_OPCODE_T *pc)
 #ifdef PIKE_DEBUG
 {
+  int x;
   if (Pike_interpreter.trace_level > 5 && pc) {
     int i;
     fprintf(stderr, "Calling code at %p:\n", pc);
@@ -1401,7 +1402,9 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
     }
 #endif /* DISASSEMBLE_CODE */
   }
-  return eval_instruction_low(pc);
+  x = eval_instruction_low(pc);
+  pike_trace(3, "-    eval_instruction(%p) ==> %d\n", pc, x);
+  return x;
 }
 
 static int eval_instruction_low(PIKE_OPCODE_T *pc)
@@ -1471,6 +1474,9 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
 
  inter_return_label:
   EXIT_MACHINE_CODE();
+#ifdef PIKE_DEBUG
+  pike_trace(3, "-    Inter return\n");
+#endif
   return -1;
 }
 
@@ -2197,10 +2203,17 @@ static int catching_eval_instruction (PIKE_OPCODE_T *pc)
   if (LOW_SETJMP (jmpbuf))
   {
     Pike_interpreter.catching_eval_jmpbuf = NULL;
+#ifdef PIKE_DEBUG
+    pike_trace(3, "-    catching_eval_instruction(%p) caught error ==> -3\n",
+	       pc);
+#endif
     return -3;
   }else{
     int x = eval_instruction(pc);
     Pike_interpreter.catching_eval_jmpbuf = NULL;
+#ifdef PIKE_DEBUG
+    pike_trace(3, "-    catching_eval_instruction(%p) ==> %d\n", pc, x);
+#endif
     return x;
   }
 }
