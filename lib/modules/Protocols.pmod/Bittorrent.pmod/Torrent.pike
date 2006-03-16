@@ -62,7 +62,7 @@
 
 import .Bencoding;
 
-constant cvsid="$Id: Torrent.pike,v 1.34 2005/08/30 11:38:34 grubba Exp $";
+constant cvsid="$Id: Torrent.pike,v 1.35 2006/03/16 14:14:03 agehall Exp $";
 
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 
@@ -218,6 +218,28 @@ class Target(string base,int length,int offset,void|array path)
 	 created=0;
       }
    }
+
+  // Use Crypto module interface for Stdio.File objects to
+  // hash our files.
+  string phash(int(0..) off, int(0..) bytes) {
+    if (off>offset+length)
+      return "";
+    int end = off+bytes;
+
+    if (end <= offset)
+      return "";
+
+    if (off<offset)
+      bytes-=(offset-off),off=offset;
+    if (end>offset+length)
+      bytes=offset+length-off;
+
+    if (bytes<0) return "";
+
+
+    fd->seek(off-offset);
+    return Crypto.SHA1.hash(fd, bytes);
+  }
 
    void pwrite(int off,string data)
    {
@@ -397,15 +419,17 @@ void verify_targets(void|function(int,int:void) progress_callback)
    array(string) want_sha1s=info->pieces/20;
    int n=0;
    file_got=({});
-   foreach (want_sha1s;;string want_sha1)
+   foreach (want_sha1s; n; string want_sha1)
    {
-      if (progress_callback) progress_callback(n,sizeof(want_sha1s));
+      if (progress_callback)
+	progress_callback(n,sizeof(want_sha1s));
 
-      string sha1=Crypto.SHA1.hash(targets->pread(n*info["piece length"],
-						  info["piece length"])*"");
+      string sha1 = targets->phash(n*info["piece length"],
+				   info["piece length"])*"";
+
       file_got+=({want_sha1==sha1});
-      n++;
    }
+
    if (progress_callback) progress_callback(n,sizeof(want_sha1s));
 
    file_want=(multiset)filter(indices(file_got),
