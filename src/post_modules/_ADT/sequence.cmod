@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sequence.cmod,v 1.14 2004/11/12 13:44:44 grubba Exp $
+|| $Id: sequence.cmod,v 1.15 2006/03/16 16:41:07 grubba Exp $
 */
 
 #include "global.h"
@@ -45,8 +45,9 @@ PIKECLASS Sequence
   {
     if (THIS->a->refs > 1)
     {
+      struct array b = copy_array(THIS->a);
       free_array(THIS->a);
-      THIS->a = copy_array(THIS->a);
+      THIS->a = b;
     }
   }    
 
@@ -494,11 +495,14 @@ PIKECLASS Sequence
   {
     if (arg->type == T_INT)
     {
-      THIS->a =allocate_array_no_init(arg->u.integer, 0);
+      struct array *b = allocate_array_no_init(arg->u.integer, 0);
+      free_array(THIS->a);
+      THIS->a = b;
       THIS->a->type_field = BIT_INT;
     }
     else if (arg->type == T_ARRAY)
     {
+      free_array(THIS->a);
       add_ref(THIS->a=arg->u.array);
     } 
     pop_n_elems(args);
@@ -540,7 +544,7 @@ PIKECLASS Sequence
 
   INIT 
   {
-    THIS->a=0;
+    add_ref(THIS->a = empty_array);
     THIS->pos=0;
   }
 
