@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.557 2006/03/14 17:39:59 grubba Exp $
+|| $Id: builtin_functions.c,v 1.558 2006/03/16 09:44:50 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.557 2006/03/14 17:39:59 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.558 2006/03/16 09:44:50 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3034,8 +3034,8 @@ static ptrdiff_t generic_find_binary_prefix(const char *a,
     case TWO_SIZES(AZ, BZ): {			\
       PIKE_CONCAT(p_wchar, AZ) *a_arr =		\
 	(PIKE_CONCAT(p_wchar, AZ) *)a;		\
-      PIKE_CONCAT(p_wchar, AZ) *b_arr =		\
-	(PIKE_CONCAT(p_wchar, AZ) *)b;		\
+      PIKE_CONCAT(p_wchar, BZ) *b_arr =		\
+	(PIKE_CONCAT(p_wchar, BZ) *)b;		\
       for (pos=0; pos<len; pos++) {		\
 	if (a_arr[pos] == b_arr[pos])		\
 	  continue;				\
