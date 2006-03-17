@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.79 2005/12/16 00:17:23 marcus Exp $
+|| $Id: jvm.c,v 1.80 2006/03/17 14:08:39 grubba Exp $
 */
 
 /*
@@ -3805,6 +3805,7 @@ PIKE_MODULE_INIT
   set_gc_recurse_callback(natives_gc_recurse);
   natives_program = end_program();
   natives_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+  add_integer_constant("NATIVE_METHODS", 1, 0);
 #endif /* SUPPORT_NATIVE_METHODS */
 
 #ifdef _REENTRANT
