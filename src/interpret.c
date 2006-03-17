@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.374 2006/03/15 09:03:38 grubba Exp $
+|| $Id: interpret.c,v 1.375 2006/03/17 17:55:45 grubba Exp $
 */
 
 #include "global.h"
@@ -2387,7 +2387,8 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   return ret;
 }
 
-PMOD_EXPORT void safe_apply_low2(struct object *o,int fun,int args, int handle_errors)
+PMOD_EXPORT void safe_apply_low2(struct object *o, int fun, int args,
+				 char *fun_name)
 {
   JMP_BUF recovery;
 
@@ -2398,35 +2399,31 @@ PMOD_EXPORT void safe_apply_low2(struct object *o,int fun,int args, int handle_e
     if(handle_errors) call_handle_error();
     push_int(0);
   }else{
-    apply_low(o,fun,args);
+    if (fun >= 0) {
+      apply_low(o,fun,args);
+    } else if (handle_errors) {
+      Pike_error("Cannot call unknown function \"%s\".\n", handle_errors);
+    } else {
+      pop_n_elems(args);
+      push_int(0);
+    }
   }
   UNSETJMP(recovery);
 }
 
-PMOD_EXPORT void safe_apply_low(struct object *o,int fun,int args)
+PMOD_EXPORT void safe_apply_low(struct object *o, int fun, int args)
 {
-  safe_apply_low2(o, fun, args, 1);
+  safe_apply_low2(o, fun, args, "Unknown function.");
 }
 
-PMOD_EXPORT void safe_apply(struct object *o, const char *fun ,INT32 args)
+PMOD_EXPORT void safe_apply(struct object *o, const char *fun, INT32 args)
 {
   int id;
 #ifdef PIKE_DEBUG
   if(!o->prog) Pike_fatal("Apply safe on destructed object.\n");
 #endif
   id = find_identifier(fun, o->prog);
-  if (id >= 0)
-    safe_apply_low2(o, id, args, 1);
-  else {
-    char buf[4096];
-    /* FIXME: Ought to use string_buffer_vsprintf(). */
-    SNPRINTF(buf, sizeof (buf), "Cannot call unknown function \"%s\".\n", fun);
-    push_error (buf);
-    free_svalue (&throw_value);
-    move_svalue (&throw_value, --Pike_sp);
-    call_handle_error();
-    push_int (0);
-  }
+  safe_apply_low2(o, id, args, fun);
 }
 
 /* Returns nonzero if the function was called in some handler. */
@@ -2471,14 +2468,14 @@ PMOD_EXPORT void low_safe_apply_handler(const char *fun,
 #endif /* 0 */
   if (handler && handler->prog &&
       (i = find_identifier(fun, handler->prog)) != -1) {
-    safe_apply_low2(handler, i, args, 1);
+    safe_apply_low2(handler, i, args, fun);
   } else if (compat && compat->prog &&
 	     (i = find_identifier(fun, compat->prog)) != -1) {
-    safe_apply_low2(compat, i, args, 1);
+    safe_apply_low2(compat, i, args, fun);
   } else {
     struct object *master_obj = master();
     if ((i = find_identifier(fun, master_obj->prog)) != -1)
-      safe_apply_low2(master_obj, i, args, 1);
+      safe_apply_low2(master_obj, i, args, fun);
     else {
       pop_n_elems(args);
       push_undefined();

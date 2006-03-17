@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.165 2006/02/27 12:07:10 mast Exp $
+|| $Id: interpret.h,v 1.166 2006/03/17 17:55:45 grubba Exp $
 */
 
 #ifndef INTERPRET_H
@@ -624,7 +624,11 @@ do{ \
     fun_=find_identifier(FUN,master_ob->prog); \
     master_cnt = master_ob->prog->id; \
   } \
-  apply_low(master_ob, fun_, ARGS); \
+  if (fun_ >= 0) { \
+    apply_low(master_ob, fun_, ARGS); \
+  } else { \
+    Pike_error("Cannot call undefined function \"%s\" in master.\n", FUN); \
+  } \
 }while(0)
 
 #define SAFE_APPLY_MASTER(FUN,ARGS) \
@@ -636,7 +640,7 @@ do{ \
     fun_=find_identifier(FUN,master_ob->prog); \
     master_cnt = master_ob->prog->id; \
   } \
-  safe_apply_low2(master_ob, fun_, ARGS, 1); \
+  safe_apply_low2(master_ob, fun_, ARGS, FUN); \
 }while(0)
 
 #define SAFE_APPLY_HANDLER(FUN, HANDLER, COMPAT, ARGS) do {	\
@@ -727,7 +731,8 @@ PMOD_EXPORT void f_call_function(INT32 args);
 PMOD_EXPORT void call_handle_error(void);
 PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset);
 PMOD_EXPORT void safe_apply_low(struct object *o,int fun,int args);
-PMOD_EXPORT void safe_apply_low2(struct object *o,int fun,int args, int handle_errors);
+PMOD_EXPORT void safe_apply_low2(struct object *o,int fun,int args,
+				 char *fun_name);
 PMOD_EXPORT void safe_apply(struct object *o, const char *fun ,INT32 args);
 PMOD_EXPORT int low_unsafe_apply_handler(const char *fun,
 					 struct object *handler,
