@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program_id.h,v 1.24 2005/11/06 21:38:24 grubba Exp $
+|| $Id: program_id.h,v 1.25 2006/03/17 17:10:54 grubba Exp $
 */
 
 #ifndef PROGRAM_ID_H
@@ -93,7 +93,7 @@
 #define   tObjIs_GMP_MPZ                      "\003\001\000\000\000\040"
 
 /* Classes in builtin.cmod. */
-#define     PROG_SIGNLE_STRING_REPLACE_ID			    050
+#define     PROG_SINGLE_STRING_REPLACE_ID			    050
 #define     PROG_BOOTSTRING_ID					    051
 #define     PROG_TIME_ID					    052
 /* Kludge for #define TIME time in port.h */
