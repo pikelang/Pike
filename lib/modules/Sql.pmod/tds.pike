@@ -1,5 +1,5 @@
 /*
- * $Id: tds.pike,v 1.18 2006/02/23 16:29:43 grubba Exp $
+ * $Id: tds.pike,v 1.19 2006/03/17 16:51:33 grubba Exp $
  *
  * A Pike implementation of the TDS protocol.
  *
@@ -581,7 +581,12 @@ static {
 #if constant(Crypto.MD4)
       Crypto.MD4 md4 = Crypto.MD4();
 #else
+#if constant(Crypto.md4)
       Crypto.md4 md4 = Crypto.md4();
+#else
+      error("MD4 hashes not supported in this Pike.\n");
+      mixed md4;
+#endif
 #endif
       md4->update(nt_passwd);
       return encrypt_answer(md4->digest() + "\0"*16, nonce);
