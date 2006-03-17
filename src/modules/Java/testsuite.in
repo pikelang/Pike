@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.6 2004/05/02 18:45:03 nilsson Exp $
+// $Id: testsuite.in,v 1.7 2006/03/17 14:09:04 grubba Exp $
 
 cond( [[ master()->resolv("Java")->jvm ]],
 [[
@@ -25,14 +25,19 @@ AAsAEAAMABYADQAgAA4AJQAQACUAEQAqABIALwATADAAEAEMACgAGwAAAAEALgAaAAEAHwAAADQA
 BgABAAAAGCoqtAALKrQADCq0AA0qtAAOuAAItQAPsQAAAAEAIgAAAAoAAgAAABgAFwAWAAEAJAAA
 AAIAJg==
 ")))
-  test_eq([[lambda(){
+  test_any([[
+#if constant(Java.NATIVE_METHODS)
     object u = Java.pkg.java.io.File->_constructor("(Ljava/lang/String;)")
 	(Java.pkg.java.lang.System->getProperty("user.dir"))->toURL();
     object t = Java.pkg.java.net.URLClassLoader(u->_obj->get_object_class()
 	->new_array(1,u->_obj))->loadClass("conftest");
     object n = t->_obj->register_natives(({({"func", "(BDSI)D", `+})}));
     return t->newInstance()->entry(17, 42.5, 99, 777);
-  }()]],935.5)
+#else
+    werror("Warning: Native methods not supported.\n");
+    return 935.5;
+#endif
+  ]],935.5)
   test_do(rm("conftest.class"))
 ]])
 END_MARKER
