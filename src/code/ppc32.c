@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.c,v 1.39 2006/03/07 20:14:09 grubba Exp $
+|| $Id: ppc32.c,v 1.40 2006/03/17 22:56:05 marcus Exp $
 */
 
 /*
@@ -52,7 +52,6 @@
     /* blrl */								\
     BCLRL(20, 0);							\
   } while(0)
-#define ADD_LABEL_CALL(X) ADD_CALL(&(X))
 #else
 #define ADD_CALL(X) do {				\
     INT32 func_=(INT32)(void*)(X);			\
@@ -69,7 +68,6 @@
       BLA(func_);					\
     }							\
   } while(0)
-#define ADD_LABEL_CALL(X) ADD_CALL(X)
 #endif
 
 int ppc32_codegen_state = 0, ppc32_codegen_last_pc = 0;
@@ -371,24 +369,31 @@ void ppc32_mark(void)
 
 static void ppc32_escape_catch(void)
 {
-  extern void *do_escape_catch_label;
-  void *toc_;
-  INT32 pos_;
-
   LOAD_FP_REG();
+  /* lwz r3,catch_ctx(pike_interpreter) */
+  LWZ(PPC_REG_ARG1, PPC_REG_PIKE_INTERP,
+      OFFSETOF(Pike_interpreter, catch_ctx));
+  /* lwz r4,recovery.previous(r3) */
+  LWZ(PPC_REG_ARG2, PPC_REG_ARG1,
+      OFFSETOF(catch_context, recovery.previous));
+  /* stw r4,recoveries(pike_interpreter) */
+  STW(PPC_REG_ARG2, PPC_REG_PIKE_INTERP,
+      OFFSETOF(Pike_interpreter, recoveries));
+  /* lwz r4,save_expendible(r3) */
+  LWZ(PPC_REG_ARG2, PPC_REG_ARG1,
+      OFFSETOF(catch_context, save_expendible));
+  /* stw r4,expendible(pike_fp) */
+  STW(PPC_REG_ARG2, PPC_REG_PIKE_FP,
+      OFFSETOF(pike_frame, expendible));
+  /* lwz r4,prev(r3) */
+  LWZ(PPC_REG_ARG2, PPC_REG_ARG1,
+      OFFSETOF(catch_context, prev));
+  /* stw r4,catch_ctx(pike_interpreter) */
+  STW(PPC_REG_ARG2, PPC_REG_PIKE_INTERP,
+      OFFSETOF(Pike_interpreter, catch_ctx));
+
   FLUSH_CODE_GENERATOR_STATE();
-  /* bl .+4 */
-  BL(4);
-  pos_ = PIKE_PC;
-  /* mflr pike_pc */
-  MFSPR(PPC_REG_PIKE_PC, PPC_SPREG_LR);
-  /* addi pike_pc,pike_pc,N */
-  ADDI(PPC_REG_PIKE_PC, PPC_REG_PIKE_PC, 0);
-  /* stw pike_pc,return_addr(pike_fp) */
-  STW(PPC_REG_PIKE_PC, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, return_addr));
-  ADD_LABEL_CALL(do_escape_catch_label);
-  Pike_compiler->new_program->program[pos_+1] +=
-    sizeof(PIKE_OPCODE_T) * (PIKE_PC-pos_);
+  ADD_CALL(really_free_catch_context);
 }
 
 static void maybe_update_pc(void)
@@ -453,13 +458,9 @@ void ins_f_byte(unsigned int b)
 
   case F_EXIT_CATCH - F_OFFSET:
     ppc32_push_int(0, 1);
-    addr = instrs[b = F_ESCAPE_CATCH-F_OFFSET].address;
-    break;
-#if 0
   case F_ESCAPE_CATCH - F_OFFSET:
     ppc32_escape_catch();
     return;
-#endif /* 0 */
   }
 
   FLUSH_CODE_GENERATOR_STATE();
