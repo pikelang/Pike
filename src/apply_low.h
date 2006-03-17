@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.28 2004/05/20 20:13:38 grubba Exp $
+|| $Id: apply_low.h,v 1.29 2006/03/17 17:56:04 grubba Exp $
 */
 
     {
@@ -22,7 +22,7 @@
 #else
 #ifdef PIKE_DEBUG
       if (fun < 0)
-	Pike_fatal ("Invalid function offset.\n");
+	Pike_fatal ("Invalid function offset: %d.\n", fun);
 #endif
 #endif
 
@@ -344,6 +344,7 @@
 	  + ENTRY_PROLOGUE_SIZE
 #endif /* ENTRY_PROLOGUE_SIZE */
 	  ;
+
 	return 1;
       }
 
