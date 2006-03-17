@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dumpmaster.pike,v 1.14 2004/07/04 17:23:02 srb Exp $
+|| $Id: dumpmaster.pike,v 1.15 2006/03/17 18:36:44 grubba Exp $
 */
 
 string fr;
@@ -47,6 +47,13 @@ program compile_file(string file)
 
 class Codec
 {
+  mixed encode_object(object o)
+  {
+    if (o->_encode) return o->_encode();
+    werror("Can't encode object %O without _encode function.\n", o);
+    throw(({ "No _encode().\n", backtrace() }));
+  }
+
   string nameof(mixed x)
   {
     if(mixed tmp=search(all_constants(),x))  return tmp;
