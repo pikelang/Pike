@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.166 2006/03/17 17:55:45 grubba Exp $
+|| $Id: interpret.h,v 1.167 2006/03/17 18:01:07 grubba Exp $
 */
 
 #ifndef INTERPRET_H
@@ -732,7 +732,7 @@ PMOD_EXPORT void call_handle_error(void);
 PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset);
 PMOD_EXPORT void safe_apply_low(struct object *o,int fun,int args);
 PMOD_EXPORT void safe_apply_low2(struct object *o,int fun,int args,
-				 char *fun_name);
+				 const char *fun_name);
 PMOD_EXPORT void safe_apply(struct object *o, const char *fun ,INT32 args);
 PMOD_EXPORT int low_unsafe_apply_handler(const char *fun,
 					 struct object *handler,

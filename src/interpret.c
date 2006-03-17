@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.375 2006/03/17 17:55:45 grubba Exp $
+|| $Id: interpret.c,v 1.376 2006/03/17 18:01:07 grubba Exp $
 */
 
 #include "global.h"
@@ -2388,7 +2388,7 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
 }
 
 PMOD_EXPORT void safe_apply_low2(struct object *o, int fun, int args,
-				 char *fun_name)
+				 const char *fun_name)
 {
   JMP_BUF recovery;
 
@@ -2396,7 +2396,7 @@ PMOD_EXPORT void safe_apply_low2(struct object *o, int fun, int args,
   throw_value.type=T_INT;
   if(SETJMP_SP(recovery, args))
   {
-    if(handle_errors) call_handle_error();
+    if(fun_name) call_handle_error();
     push_int(0);
   }else{
     if (fun >= 0) {
