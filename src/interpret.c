@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.376 2006/03/17 18:01:07 grubba Exp $
+|| $Id: interpret.c,v 1.377 2006/03/17 18:01:48 grubba Exp $
 */
 
 #include "global.h"
@@ -2401,8 +2401,8 @@ PMOD_EXPORT void safe_apply_low2(struct object *o, int fun, int args,
   }else{
     if (fun >= 0) {
       apply_low(o,fun,args);
-    } else if (handle_errors) {
-      Pike_error("Cannot call unknown function \"%s\".\n", handle_errors);
+    } else if (fun_name) {
+      Pike_error("Cannot call unknown function \"%s\".\n", fun_name);
     } else {
       pop_n_elems(args);
       push_int(0);
