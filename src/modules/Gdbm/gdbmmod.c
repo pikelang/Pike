@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gdbmmod.c,v 1.30 2005/11/16 16:20:44 grubba Exp $
+|| $Id: gdbmmod.c,v 1.31 2006/03/18 18:53:23 grubba Exp $
 */
 
 #include "global.h"
@@ -53,35 +53,48 @@ static void do_free(void)
 
 static int fixmods(char *mods)
 {
-  int mode;
-  mode=0;
+  int mode = 0;
+  int flags = GDBM_NOLOCK;
   while(1)
   {
     switch(*(mods++))
     {
     case 0:
-      switch(mode & 15)
-      {
-      default: Pike_error("No mode given for gdbm->open()\n"); 
-      case 1|16:
-      case 1: mode=GDBM_READER; break;
-      case 3: mode=GDBM_WRITER; break;
-      case 3|16: mode=GDBM_WRITER | GDBM_FAST; break;
-      case 7: mode=GDBM_WRCREAT; break;
-      case 7|16: mode=GDBM_WRCREAT | GDBM_FAST; break;
-      case 15: mode=GDBM_NEWDB; break;
-      case 15|16: mode=GDBM_NEWDB | GDBM_FAST; break;
+      switch(mode) {
+      default:
+      case 0x0:
+	Pike_error("No mode given for gdbm->open()\n"); 
+      case 0x1:	/* r */
+	return GDBM_READER;
+      case 0x3:	/* rw */
+	return GDBM_WRITER | flags;
+      case 0x7:	/* rwc */
+	return GDBM_WRCREAT | flags;
+      case 0xf: /* rwct */
+	return GDBM_NEWDB | flags;
       }
-      return mode;
 
-    case 'r': case 'R': mode|=1;  break;
-    case 'w': case 'W': mode|=3;  break;
-    case 'c': case 'C': mode|=7;  break;
-    case 't': case 'T': mode|=15; break;
-    case 'f': case 'F': mode|=16; break;
+    case 'r': case 'R': mode = 0x1; break;
+    case 'w': case 'W': mode = 0x3; break;
+    case 'c': case 'C': mode = 0x7; break;
+    case 't': case 'T': mode = 0xf; break;
+
+      /* Flags from this point on. */
+    case 'f': case 'F': flags |= GDBM_FAST; break;
+      /* NOTE: The following are new in Pike 7.7. */
+#ifndef GDBM_SYNC
+#define GDBM_SYNC 0
+#endif
+#ifndef GDBM_NOLOCK
+#define GDBM_NOLOCK 0
+#endif
+    case 's': case 'S': flags |= GDBM_SYNC; break;
+
+      /* NOTE: This flag is inverted! */
+    case 'l': case 'L': flags &= ~GDBM_NOLOCK; break;
 
     default:
-      Pike_error("Bad mode flag in gdbm->open.\n");
+      Pike_error("Bad mode flag '%c' in gdbm->open.\n", mods[-1]);
     }
   }
 }
@@ -116,6 +129,10 @@ void gdbmmod_fatal(char *err)
  *!     Overwrite existing database
  *!   @value f
  *!     Fast mode
+ *!   @value s
+ *!     Synchronous mode
+ *!   @value l
+ *!     Locking mode
  *! @endstring
  *!
  *! The fast mode prevents the database from syncronizing each change
@@ -140,7 +157,7 @@ static void gdbmmod_create(INT32 args)
   {
     GDBM_FILE tmp;
     struct pike_string *tmp2;
-    int rwmode = GDBM_WRCREAT;
+    int rwmode = GDBM_WRCREAT|GDBM_NOLOCK;
 
     if(sp[-args].type != T_STRING)
       Pike_error("Bad argument 1 to gdbm->create()\n");
@@ -151,6 +168,10 @@ static void gdbmmod_create(INT32 args)
 	Pike_error("Bad argument 2 to gdbm->create()\n");
 
       rwmode=fixmods(sp[1-args].u.string->str);
+    }
+
+    if (this->dbf) {
+      do_free();
     }
 
     tmp2=sp[-args].u.string;
@@ -170,7 +191,8 @@ static void gdbmmod_create(INT32 args)
 
     pop_n_elems(args);
     if(!this->dbf)
-      Pike_error("Failed to open GDBM database.\n");
+      Pike_error("Failed to open GDBM database: %d: %s.\n",
+		 gdbm_errno, gdbm_strerror(gdbm_errno));
   }
 }
 
