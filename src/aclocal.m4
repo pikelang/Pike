@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.115 2006/03/18 12:25:25 grubba Exp $
+dnl $Id: aclocal.m4,v 1.116 2006/03/18 16:53:26 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -378,7 +378,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.115 2006/03/18 12:25:25 grubba Exp $
+  # $Id: aclocal.m4,v 1.116 2006/03/18 16:53:26 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -960,7 +960,7 @@ int main(int argc, char **argv)
 EOF
     pike_cv_default_compiler_abi="unknown"
     if (eval $ac_compile) 2>&AC_FD_CC; then
-      filetype=`file "conftest.$ac_cv_objext" 2>/dev/null | sed -e 's/.*://'`
+      filetype=`file "conftest.${ac_cv_objext-o}" 2>/dev/null | sed -e 's/.*://'`
       case "$filetype" in
         *64-bit*)
           pike_cv_default_compiler_abi=64
@@ -983,7 +983,7 @@ EOF
         *)
           # Unknown. Probably cross-compiling.
           PIKE_MSG_WARN([Unrecognized object file format: $filetype])
-	  if dd if="conftest.$ac_cv_objext" count=2 bs=1 2>/dev/null | \
+	  if dd if="conftest.${ac_cv_objext-o}" count=2 bs=1 2>/dev/null | \
 	     grep 'L' >/dev/null; then
 	    # A common case is rntcl...
 	    # If the file begins with 0x4c 0x01 it's a 80386 COFF executable.
@@ -992,7 +992,7 @@ EOF
           ;;
       esac
     fi
-    rm -f conftest.$ac_cv_objext conftest.$ac_ext
+    rm -f conftest.${ac_cv_objext-o} conftest.$ac_ext
   ])
   AC_MSG_RESULT($pike_cv_default_compiler_abi)
 ])
