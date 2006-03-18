@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gdbmmod.c,v 1.31 2006/03/18 18:53:23 grubba Exp $
+|| $Id: gdbmmod.c,v 1.32 2006/03/18 22:34:27 grubba Exp $
 */
 
 #include "global.h"
@@ -51,6 +51,14 @@ static void do_free(void)
   }
 }
 
+/* Compat with old gdbm. */
+#ifndef GDBM_SYNC
+#define GDBM_SYNC 0
+#endif
+#ifndef GDBM_NOLOCK
+#define GDBM_NOLOCK 0
+#endif
+
 static int fixmods(char *mods)
 {
   int mode = 0;
@@ -79,17 +87,16 @@ static int fixmods(char *mods)
     case 'c': case 'C': mode = 0x7; break;
     case 't': case 'T': mode = 0xf; break;
 
-      /* Flags from this point on. */
+      /*
+       * Flags from this point on.
+       */
     case 'f': case 'F': flags |= GDBM_FAST; break;
-      /* NOTE: The following are new in Pike 7.7. */
-#ifndef GDBM_SYNC
-#define GDBM_SYNC 0
-#endif
-#ifndef GDBM_NOLOCK
-#define GDBM_NOLOCK 0
-#endif
-    case 's': case 'S': flags |= GDBM_SYNC; break;
 
+      /*
+       * NOTE: The following are new in Pike 7.7.
+       */
+
+    case 's': case 'S': flags |= GDBM_SYNC; break;
       /* NOTE: This flag is inverted! */
     case 'l': case 'L': flags &= ~GDBM_NOLOCK; break;
 
