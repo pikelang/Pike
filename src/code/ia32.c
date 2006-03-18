@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.41 2004/05/25 07:58:34 grubba Exp $
+|| $Id: ia32.c,v 1.42 2006/03/18 12:52:29 grubba Exp $
 */
 
 /*
@@ -322,6 +322,11 @@ static void update_arg2(INT32 value)
 {
   MOV_VAL_TO_RELSTACK (value, 4);
 }
+
+#define PIKE_CPU_VENDOR_UNKNOWN	0
+#define PIKE_CPU_VENDOR_INTEL	1
+#define PIKE_CPU_VENDOR_AMD	2
+static int cpu_vendor = PIKE_CPU_VENDOR_UNKNOWN;
 
 static enum ia32_reg next_reg;
 static enum ia32_reg sp_reg, fp_reg, mark_sp_reg;
@@ -643,10 +648,11 @@ static void maybe_update_pc(void)
   if(
 #ifdef PIKE_DEBUG
     /* Update the pc more often for the sake of the opcode level trace. */
-    d_flag ||
+     d_flag ||
 #endif
-    last_prog_id != Pike_compiler->new_program->id ||
-    last_num_linenumbers != Pike_compiler->new_program->num_linenumbers
+     (ia32_prev_stored_pc == -1) ||
+     last_prog_id != Pike_compiler->new_program->id ||
+     last_num_linenumbers != Pike_compiler->new_program->num_linenumbers
   ) {
     last_prog_id=Pike_compiler->new_program->id;
     last_num_linenumbers = Pike_compiler->new_program->num_linenumbers;
@@ -658,6 +664,8 @@ static void maybe_update_pc(void)
 static void ins_debug_instr_prologue (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2)
 {
   int flags = instrs[instr].flags;
+
+  maybe_update_pc();
 
   if (flags & I_HASARG2)
     MOV_VAL_TO_RELSTACK (arg2, 8);
@@ -922,11 +930,11 @@ static INT32 do_ins_jump (unsigned int op, int backward_jump)
       PUSH_INT (0);		/* 4 bytes */
     }
     else {
-#if 0
-      /* Slows down Intel PIII by 7%, speeds up Athlon XP by 22%. :P */
-      if (op == F_LOOP || op == F_FOREACH)
+      if ((cpu_vendor == PIKE_CPU_VENDOR_AMD) &&
+	  (op == F_LOOP || op == F_FOREACH)) {
+	/* Slows down Intel PIII by 7%, speeds up Athlon XP by 22%. :P */
 	add_to_program (0x3e);	/* Branch taken hint. */
-#endif
+      }
       add_to_program (0x0f);	/* jnz rel32 */
       add_to_program (0x85);
       ret = DO_NOT_WARN ((INT32) PIKE_PC);
@@ -1010,5 +1018,132 @@ void ia32_decode_program(struct program *p)
   size_t rel = p->num_relocations;
   while (rel--) {
     *(INT32*)(prog + p->relocations[rel]) -= delta;
+  }
+}
+
+static size_t ia32_clflush_size = 0;
+
+void ia32_flush_instruction_cache(void *addr, size_t len)
+{
+  if (ia32_clflush_size) {
+    char *ptr;
+    char *end_ptr;
+    /* We assume even multiple of 2. */
+    len += ((size_t)addr) & (ia32_clflush_size-1);
+    ptr = (char *)(((size_t)addr) & ~(ia32_clflush_size-1));
+    end_ptr = ptr + len;
+    while (ptr < end_ptr) {
+#ifdef USE_CL_IA32_ASM_STYLE
+      __asm {
+	__asm clflush ptr
+      };
+#elif defined(USE_GCC_IA32_ASM_STYLE)
+      __asm__ __volatile__("clflush %0" :: "m" (*ptr));
+#endif
+      ptr += ia32_clflush_size;
+    }
+  }
+}
+
+static void ia32_get_cpuid(int oper, int *cpuid)
+{
+  static int cpuid_supported = 0;
+  if (!cpuid_supported) {
+    int fbits;
+#ifdef USE_CL_IA32_ASM_STYLE
+    __asm {
+      __asm pushf
+      __asm pop  eax
+      __asm mov  ecx, eax
+      __asm xor  eax, 00200000h
+      __asm push eax
+      __asm popf
+      __asm pushf
+      __asm pop  eax
+      __asm xor  ecx, eax
+      __asm mov  fbits, ecx
+    };
+#elif defined(USE_GCC_IA32_ASM_STYLE)
+    /* Note: gcc swaps the argument order... */
+    __asm__("pushf\n\t"
+	    "pop  %%eax\n\t"
+	    "movl %%eax, %%ecx\n\t"
+	    "xorl $0x00200000, %%eax\n\t"
+	    "push %%eax\n\t"
+	    "popf\n\t"
+	    "pushf\n\t"
+	    "pop  %%eax\n\t"
+	    "xorl %%eax, %%ecx\n\t"
+	    "movl %%ecx, %0"
+	    : "=m" (fbits)
+	    :
+	    : "cc", "eax", "ecx");
+#endif
+    if (fbits & 0x00200000) {
+      cpuid_supported = 1;
+    } else {
+      cpuid_supported = -1;
+    }
+  }
+
+  if (cpuid_supported > 0) {
+#ifdef USE_CL_IA32_ASM_STYLE
+    __asm {
+      __asm mov eax, oper
+      __asm cpuid
+      __asm mov [cpuid], eax
+      __asm mov [cpuid+1], ebx
+      __asm mov [cpuid+2], edx
+      __asm mov [cpuid+3], ecx
+    };
+#elif defined(USE_GCC_IA32_ASM_STYLE)
+    __asm__ __volatile__("cpuid"
+			 : "=a" (cpuid[0]),
+			   "=b" (cpuid[1]),
+			   "=d" (cpuid[2]),
+			   "=c" (cpuid[3])
+			 : "0" (oper));
+#endif
+  } else {
+    cpuid[0] = cpuid[1] = cpuid[2] = cpuid[3] = 0;
+  }
+}
+
+void ia32_init_interpreter_state(void)
+{
+  /* Note: One extra zero for nul-termination. */
+  int cpuid[5] = { 0, 0, 0, 0, 0 };
+
+  /* fprintf(stderr, "Calling ia32_get_cpuid()...\n"); */
+
+  ia32_get_cpuid(0, cpuid);
+
+  /* fprintf(stderr, "CPUID: %d, \"%.12s\"\n", cpuid[0], (char *)(cpuid+1)); */
+
+  if (!memcmp(cpuid+1, "AuthenticAMD", 12) &&
+      (cpuid[0] > 0)) {
+    cpu_vendor = PIKE_CPU_VENDOR_AMD;
+    struct amd_info {
+      int signature;
+      unsigned char brand_id;
+      unsigned char clflush_size;
+      unsigned char reserved0;
+      unsigned char apid_id;
+      int standard_features;
+      int reserved1;
+    } amd_info;
+    ia32_get_cpuid(1, &amd_info.signature);
+#if 0
+    fprintf(stderr,
+	    "features: 0x%08x\n"
+	    "CLFLUSH size: %d\n",
+	    amd_info.standard_features,
+	    amd_info.clflush_size);
+#endif /* 0 */
+    if (amd_info.standard_features & 0x00080000) {
+      /* CLFLUSH present. */
+      ia32_clflush_size = amd_info.clflush_size;
+    }
+  } else {
   }
 }
