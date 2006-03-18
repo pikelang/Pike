@@ -2255,14 +2255,14 @@ array(PC.Token) convert_comments(array(PC.Token) tokens)
   return new;
 }
 
-array(PC.Token) allocate_strings(array(PC.Token) tokens)
+array(PC.Token) allocate_strings(array(PC.Token|array(PC.Token)) tokens)
 {
   int i = -1;
 
   while ((i = search(tokens, PC.Token("MK_STRING"), i+1)) != -1) {
     // werror("MK_STRING found: %O\n", tokens[i..i+10]);
     if (arrayp(tokens[i+1]) && (sizeof(tokens[i+1]) == 3)) {
-      tokens[i] = PC.Token(allocate_string((string)tokens[i+1][1]));
+      tokens[i] = PC.Token(allocate_string((string)tokens[i+1]->text[1]));
       tokens = tokens[..i] + tokens[i+2..];
     }
   }
