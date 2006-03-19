@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.14 2005/08/23 17:10:38 grubba Exp $
+// $Id: testsuite.in,v 1.15 2006/03/19 03:26:07 nilsson Exp $
 
 // Tools.Hilfe
 define(test_hilfe_setup_low,[[test_do([[
@@ -70,7 +70,7 @@ test_hilfe("({)",[[ "Hilfe Error: \")\" end parenthesis does not match "
 test_hilfe( ({ "int c // =3;", "=4;" }), "")
 test_hilfe("c;", "4")
 test_hilfe( ({ "string a=#\"hej", "san\";" }), "")
-test_hilfe("a;", "\"hej\\n\"\n\"san\"")
+test_hilfe("a;", "\"hej\\nsan\"")
 test_hilfe("class A{}", "")
 test_hilfe("A();", "HilfeInput()->A()")
 test_hilfe("A a=A();", "")
