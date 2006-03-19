@@ -245,6 +245,10 @@ test_eq(sprintf("%[1]s %s %[2]s %s","b","a","r"),"a b r a")
 
 test_do(catch(sprintf("%d-" *101, @allocate(101))))
 
+test_eq(sprintf("%O", "a\nb"),"\"a\\nb\"")
+test_eq(sprintf("%O", "a\0b"),"\"a\\0b\"")
+test_eq(sprintf("%O", "a\0""0"),"\"a\\u00000\"")
+
 dnl . : and ; hasn't been tested
 dnl ^, @ and _ hasn't been tested yet
 test_eval_error(return sprintf("%d");)
