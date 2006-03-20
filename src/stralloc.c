@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.206 2006/03/20 18:25:03 grubba Exp $
+|| $Id: stralloc.c,v 1.207 2006/03/20 18:31:26 grubba Exp $
 */
 
 #include "global.h"
@@ -2466,7 +2466,7 @@ PMOD_EXPORT void string_builder_quote_string(struct string_builder *buf,
       if (ch == '\177') {
 	/* DEL */
 	string_builder_binary_strcat(buf, "\\177", 4);
-	continue;
+	goto next;
       } else if ((ch == '"') || (ch == '\\')) {
 	string_builder_putchar(buf, '\\');
       }
@@ -2477,11 +2477,11 @@ PMOD_EXPORT void string_builder_quote_string(struct string_builder *buf,
       string_builder_putchar(buf, '\\');
       if ((ch > 6) && (ch < 14)) {
 	string_builder_putchar(buf, "0123456abtnvfr"[ch]);
-	continue;
+	goto next;
       }
       if (ch == 27) {
 	string_builder_putchar(buf, 'e');
-	continue;
+	goto next;
       }
       /* Check if we can use an octal escape. */
       if ((i+1 < str->len) &&
@@ -2495,10 +2495,11 @@ PMOD_EXPORT void string_builder_quote_string(struct string_builder *buf,
 	  string_builder_append_integer(buf, ch, 8, 0, 1, 1);
 	  string_builder_binary_strcat(buf, "\"\"", 2);
 	}
-	continue;
+	goto next;
       }
       string_builder_append_integer(buf, ch, 8, 0, 1, 1);
     }
+  next:
     if (buf->s->len > max_len) {
       buf->s->len = old_len;
       break;
