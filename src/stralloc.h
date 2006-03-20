@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.97 2006/03/20 18:25:04 grubba Exp $
+|| $Id: stralloc.h,v 1.98 2006/03/20 18:57:00 grubba Exp $
 */
 
 #ifndef STRALLOC_H
@@ -71,6 +71,7 @@ struct string_builder
 
 /* Flags used by string_builder_quote_string() */
 #define QUOTE_NO_STRING_CONCAT	1	/* Don't use string concat in output */
+#define QUOTE_BREAK_AT_LF	2	/* Break after linefeed */
 
 #ifdef PIKE_DEBUG
 PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo);
@@ -355,9 +356,11 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
 				     ptrdiff_t offset);
 PMOD_EXPORT void string_builder_strcat(struct string_builder *s, char *str);
 PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s, struct pike_string *str);
-PMOD_EXPORT void string_builder_quote_string(struct string_builder *buf,
-					     struct pike_string *str,
-					     int flags, ptrdiff_t max_len);
+PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
+						  struct pike_string *str,
+						  ptrdiff_t start,
+						  ptrdiff_t max_len,
+						  int flags);
 PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 					       LONGEST val,
 					       unsigned int base,

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.208 2006/03/20 18:39:16 grubba Exp $
+|| $Id: stralloc.c,v 1.209 2006/03/20 18:57:00 grubba Exp $
 */
 
 #include "global.h"
@@ -2444,14 +2444,15 @@ PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s, struct p
   s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
-PMOD_EXPORT void string_builder_quote_string(struct string_builder *buf,
-					     struct pike_string *str,
-					     int flags, ptrdiff_t max_len)
+PMOD_EXPORT ptrdiff_t string_builder_quote_string(struct string_builder *buf,
+						  struct pike_string *str,
+						  ptrdiff_t i,
+						  ptrdiff_t max_len,
+						  int flags)
 {
   ptrdiff_t old_len = buf->s->len;
-  ptrdiff_t i;
 
-  for (i = 0; i < str->len; i++) {
+  for (; i < str->len; i++) {
     p_wchar2 ch = index_shared_string(str, i);
     if (ch > 0xffff) {
       /* Huge character. */
@@ -2477,6 +2478,14 @@ PMOD_EXPORT void string_builder_quote_string(struct string_builder *buf,
       string_builder_putchar(buf, '\\');
       if ((ch > 6) && (ch < 14)) {
 	string_builder_putchar(buf, "0123456abtnvfr"[ch]);
+	if ((ch == 10) && (flags & QUOTE_BREAK_AT_LF)) {
+	  if (buf->s->len > max_len) {
+	    /* Too bad; no place for the lf. */
+	    buf->s->len = old_len;
+	    return i;
+	  }
+	  return i+1;
+	}
 	goto next;
       }
       if (ch == 27) {
@@ -2502,10 +2511,11 @@ PMOD_EXPORT void string_builder_quote_string(struct string_builder *buf,
   next:
     if (buf->s->len > max_len) {
       buf->s->len = old_len;
-      break;
+      return i;
     }
     old_len = buf->s->len;
   }
+  return i;
 }
 
 PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
