@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.205 2006/03/11 12:30:40 grubba Exp $
+|| $Id: stralloc.c,v 1.206 2006/03/20 18:25:03 grubba Exp $
 */
 
 #include "global.h"
@@ -2442,6 +2442,69 @@ PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s, struct p
   s->s->len+=str->len;
   /* Ensure NUL-termination */
   s->s->str[s->s->len << s->s->size_shift] = 0;
+}
+
+PMOD_EXPORT void string_builder_quote_string(struct string_builder *buf,
+					     struct pike_string *str,
+					     int flags, ptrdiff_t max_len)
+{
+  ptrdiff_t old_len = buf->s->len;
+  ptrdiff_t i;
+
+  for (i = 0; i < str->len; i++) {
+    p_wchar2 ch = index_shared_string(str, i);
+    if (ch > 0xffff) {
+      /* Huge character. */
+      string_builder_binary_strcat(buf, "\\U", 2);
+      string_builder_append_integer(buf, ch, 16, APPEND_ZERO_PAD, 8, 8);
+    } else if (ch > 0xff) {
+      /* Unicode character. */
+      string_builder_binary_strcat(buf, "\\u", 2);
+      string_builder_append_integer(buf, ch, 16, APPEND_ZERO_PAD, 4, 4);
+    } else if (ch & 0x60) {
+      /* Printable character or DEL. */
+      if (ch == '\177') {
+	/* DEL */
+	string_builder_binary_strcat(buf, "\\177", 4);
+	continue;
+      } else if ((ch == '"') || (ch == '\\')) {
+	string_builder_putchar(buf, '\\');
+      }
+      string_builder_putchar(buf, ch);
+    } else {
+      p_wchar2 next_ch;
+      /* Control character. */
+      string_builder_putchar(buf, '\\');
+      if ((ch > 6) && (ch < 14)) {
+	string_builder_putchar(buf, "0123456abtnvfr"[ch]);
+	continue;
+      }
+      if (ch == 27) {
+	string_builder_putchar(buf, 'e');
+	continue;
+      }
+      /* Check if we can use an octal escape. */
+      if ((i+1 < str->len) &&
+	  ((next_ch = index_shared_string(str, i+1)) >= '0') &&
+	  (next_ch <= '7')) {
+	/* No. */
+	if (flags & QUOTE_NO_STRING_CONCAT) {
+	  string_builder_putchar(buf, 'u');
+	  string_builder_append_integer(buf, 16, ch, APPEND_ZERO_PAD, 4, 4);
+	} else {
+	  string_builder_append_integer(buf, ch, 8, 0, 1, 1);
+	  string_builder_binary_strcat(buf, "\"\"", 2);
+	}
+	continue;
+      }
+      string_builder_append_integer(buf, ch, 8, 0, 1, 1);
+    }
+    if (buf->s->len > max_len) {
+      buf->s->len = old_len;
+      break;
+    }
+    old_len = buf->s->len;
+  }
 }
 
 PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
