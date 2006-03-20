@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.207 2006/03/20 18:31:26 grubba Exp $
+|| $Id: stralloc.c,v 1.208 2006/03/20 18:39:16 grubba Exp $
 */
 
 #include "global.h"
@@ -2490,7 +2490,7 @@ PMOD_EXPORT void string_builder_quote_string(struct string_builder *buf,
 	/* No. */
 	if (flags & QUOTE_NO_STRING_CONCAT) {
 	  string_builder_putchar(buf, 'u');
-	  string_builder_append_integer(buf, 16, ch, APPEND_ZERO_PAD, 4, 4);
+	  string_builder_append_integer(buf, ch, 16, APPEND_ZERO_PAD, 4, 4);
 	} else {
 	  string_builder_append_integer(buf, ch, 8, 0, 1, 1);
 	  string_builder_binary_strcat(buf, "\"\"", 2);
