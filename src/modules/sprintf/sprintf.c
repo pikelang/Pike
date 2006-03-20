@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.132 2005/11/19 01:21:29 nilsson Exp $
+|| $Id: sprintf.c,v 1.133 2006/03/20 18:26:16 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -152,6 +152,9 @@
  *!       single precision, @tt{%8F@} gives double precision.)
  *!     @value 's'
  *!       String.
+ *!     @value 'q'
+ *!       Quoted string. Escapes all control and non-8-bit characters,
+ *!       as well as the quote characters @tt{'\\'@} and @tt{'\"'@}.
  *!     @value 'O'
  *!       Any value, debug style. Do not rely on the exact formatting;
  *!       how the result looks can vary depending on locale, phase of
@@ -187,6 +190,9 @@
  *! @note
  *!   sprintf style formatting is applied by many formatting functions, such
  *!   @[write()] and @[werror].
+ *!
+ *! @note
+ *!   The 'q' operator was added in Pike 7.7.
  *!
  *! @example
  *! > write(#"Formatting examples:
@@ -1544,6 +1550,32 @@ static void low_pike_sprintf(struct format_stack *fs,
 	fs->fsp->len=s->len;
 	if(fs->fsp->precision != SPRINTF_UNDECIDED && fs->fsp->precision < fs->fsp->len)
 	  fs->fsp->len = (fs->fsp->precision < 0 ? 0 : fs->fsp->precision);
+	break;
+      }
+
+      case 'q':
+      {
+	struct string_builder buf;
+	struct pike_string *s;
+	ptrdiff_t prev, pos;
+
+	DO_OP();
+	CHECK_OBJECT_SPRINTF()
+	GET_STRING(s);
+
+	init_string_builder_alloc(&buf, s->len+2, 0);
+	string_builder_putchar(&buf, '"');
+	string_builder_quote_string(&buf, s, QUOTE_NO_STRING_CONCAT,
+				    (fs->fsp->precision == SPRINTF_UNDECIDED)?
+				    0x7fffffff:fs->fsp->precision-1);
+	string_builder_putchar(&buf, '"');
+
+	fs->fsp->b = MKPCHARP_STR(buf.s);
+	fs->fsp->len = buf.s->len;
+	/* NOTE: We need to do this since we're not
+	 *       using free_string_builder(). */
+	buf.s->len = buf.malloced;
+	fs->fsp->fi_free_string = buf.s;
 	break;
       }
       }
