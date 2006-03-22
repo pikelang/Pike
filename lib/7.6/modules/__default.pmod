@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.1 2005/01/08 20:13:09 grubba Exp $
+// $Id: __default.pmod,v 1.2 2006/03/22 17:55:22 grubba Exp $
 
 #pike 7.7
 
@@ -24,5 +24,6 @@ mapping(string:mixed) all_constants()
   mapping(string:mixed) ret = predef::all_constants()+([]);
 
   ret->_describe_program = _describe_program;
+  ret->sprintf = sprintf_76;
   return ret;
 }
