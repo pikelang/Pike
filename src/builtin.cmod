@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.182 2006/03/22 19:08:39 grubba Exp $
+|| $Id: builtin.cmod,v 1.183 2006/03/22 20:00:10 grubba Exp $
 */
 
 #include "global.h"
@@ -1523,10 +1523,10 @@ void low_backtrace(struct Pike_interpreter *i)
     res->item[size].subtype = 0;
 
     bf = OBJ2_BACKTRACE_FRAME(o);
-    bf->pc = NULL;
 
     if ((bf->prog = f->context.prog)) {
       add_ref(bf->prog);
+      bf->pc = f->pc;
     }
 
     if ((bf->fun.u.object = f->current_object) &&
@@ -1535,11 +1535,6 @@ void low_backtrace(struct Pike_interpreter *i)
       bf->fun.subtype = f->fun;
       bf->fun.type = PIKE_T_FUNCTION;
       function = ID_FROM_INT(f->current_object->prog, f->fun);
-
-      if (IDENTIFIER_IS_PIKE_FUNCTION(function->identifier_flags)) {
-	/* We don't trust pc if we aren't in a Pike function... */
-	bf->pc = f->pc;
-      }
     } else {
       bf->fun.u.integer = 0;
       bf->fun.subtype = NUMBER_DESTRUCTED;
