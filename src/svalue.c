@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.227 2006/03/19 03:25:34 nilsson Exp $
+|| $Id: svalue.c,v 1.228 2006/03/22 18:23:34 grubba Exp $
 */
 
 #include "global.h"
@@ -1287,8 +1287,18 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	  switch(j = index_shared_string(s->u.string,i))
           {
 	  case '\n':
-	    my_putchar('\\');
-	    my_putchar('n');
+	    if (i == s->u.string->len-1) {
+	      /* String ends with a new-line. */
+	      my_strcat("\\n");
+	    } else {
+	      int e;
+	      /* Add line breaks to make the output easier to read. */
+	      my_strcat("\\n\"\n");
+	      for (e = 2; e < indent; e++) {
+		my_putchar(' ');
+	      }
+	      my_putchar('\"');
+	    }
 	    break;
 
 	  case '\t':
@@ -1333,21 +1343,25 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		  my_putchar(j);
 
 		else {
-		  /* If possible, use octal escapes for eight bit
-		   * chars since they're more compact than unicode
-		   * escapes. */
+		  /* Use octal escapes for eight bit chars since
+		   * they're more compact than unicode escapes. */
 		  int char_after = index_shared_string(s->u.string,i+1);
-		  if (char_after >= '0' && char_after <= '9')
-                    sprintf (buf, "\\u%04x", j);
-                  else
-                    sprintf(buf,"\\%o",j);
+		  sprintf(buf,"\\%o",j);
 		  my_strcat(buf);
+		  if (char_after >= '0' && char_after <= '9') {
+		    /* Strictly speaking we don't need to do this if
+		     * char_after is '8' or '9', but I guess it
+		     * improves the readability a bit. */
+		    my_putchar('"');
+		    my_putchar('"');
+		  }
 		}
 	      }
 
 	      else {
-		/* Use unicode escapes for wide chars as hex is easier
-		 * to read than octal. */
+		/* Use unicode escapes for wide chars to avoid the
+		 * double quote trickery. Also, hex is easier to read
+		 * than octal. */
 		if (j > 0xffff)
 		  sprintf (buf, "\\U%08x", j);
 		else
