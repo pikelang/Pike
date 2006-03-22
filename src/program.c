@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.599 2005/12/31 15:03:57 nilsson Exp $
+|| $Id: program.c,v 1.600 2006/03/22 19:59:41 grubba Exp $
 */
 
 #include "global.h"
@@ -6065,7 +6065,9 @@ PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
     struct reference *idref = o->prog->identifier_references + fun;
     struct program *p = PROG_FROM_PTR (o->prog, idref);
     struct identifier *id = p->identifiers + idref->identifier_offset;
-    return low_get_line (p->program + id->func.offset, p, linep);
+    if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags))
+      return low_get_line (p->program + id->func.offset, p, linep);
+    return low_get_program_line(o->prog, linep);
   }
   *linep = 0;
   return NULL;
