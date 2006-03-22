@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.134 2006/03/20 18:57:00 grubba Exp $
+|| $Id: sprintf.c,v 1.135 2006/03/22 17:53:58 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -882,7 +882,7 @@ INLINE static int do_one(struct format_stack *fs,
        array_index_no_free(Pike_sp,_v,tmp);				\
        Pike_sp++;							\
        low_pike_sprintf(fs, &_b,begin,SUBTRACT_PCHARP(a,begin)+1,	\
-			Pike_sp-1,1,nosnurkel+1);			\
+			Pike_sp-1,1,nosnurkel+1, compat_mode);		\
        if(save_sp < Pike_sp) pop_stack();				\
      }									\
      fs->fsp->b=MKPCHARP_STR(_b.s);					\
@@ -974,7 +974,8 @@ static void low_pike_sprintf(struct format_stack *fs,
 			     ptrdiff_t format_len,
 			     struct svalue *argp,
 			     ptrdiff_t num_arg,
-			     int nosnurkel)
+			     int nosnurkel,
+			     int compat_mode)
 {
   int argument=0;
   int tmp,setwhat,d,e;
@@ -1204,7 +1205,8 @@ static void low_pike_sprintf(struct format_stack *fs,
 	      array_index_no_free(Pike_sp,w,tmp);
 	      Pike_sp++;
 	    }
-	    low_pike_sprintf(fs, &b,ADD_PCHARP(a,1),e-2,s,Pike_sp-s,0);
+	    low_pike_sprintf(fs, &b,ADD_PCHARP(a,1),e-2,s,Pike_sp-s,0,
+			     compat_mode);
 	    pop_n_elems(Pike_sp-s);
 	  }
 #ifdef PIKE_DEBUG
@@ -1503,20 +1505,43 @@ static void low_pike_sprintf(struct format_stack *fs,
 
       case 'O':
       {
-	dynamic_buffer save_buf;
-	dynbuf_string s;
 	struct svalue *t;
 	DO_OP();
 	/* No need to do CHECK_OBJECT_SPRINTF() here,
 	   it is checked in describe_svalue. */
 	GET_SVALUE(t);
-	init_buf(&save_buf);
-	describe_svalue(t,0,0);
-	s=complex_free_buf(&save_buf);
-	fs->fsp->b=MKPCHARP(s.str,0);
-	fs->fsp->len=s.len;
-	fs->fsp->fi_free_string=s.str;
-	break;
+	if (compat_mode && (compat_mode <= 76)) {
+	  /* We don't care about the nested case, since it
+	   * contains line feeds and comments and stuff anyway.
+	   */
+	  if (t->type == T_STRING) {
+	    struct string_builder buf;
+	    init_string_builder_alloc(&buf, t->u.string->len+2, 0);
+	    string_builder_putchar(&buf, '"');
+	    string_builder_quote_string(&buf, t->u.string, 0, 0x7fffffff, 0);
+	    string_builder_putchar(&buf, '"');
+	    
+	    fs->fsp->b = MKPCHARP_STR(buf.s);
+	    fs->fsp->len = buf.s->len;
+	    /* NOTE: We need to do this since we're not
+	     *       using free_string_builder(). */
+	    buf.s->len = buf.malloced;
+	    fs->fsp->to_free_string = buf.s;
+	    break;
+	  }
+	}
+	{
+	  dynamic_buffer save_buf;
+	  dynbuf_string s;
+
+	  init_buf(&save_buf);
+	  describe_svalue(t,0,0);
+	  s=complex_free_buf(&save_buf);
+	  fs->fsp->b=MKPCHARP(s.str,0);
+	  fs->fsp->len=s.len;
+	  fs->fsp->fi_free_string=s.str;
+	  break;
+	}
       }
 
 #if 0
@@ -1557,7 +1582,6 @@ static void low_pike_sprintf(struct format_stack *fs,
       {
 	struct string_builder buf;
 	struct pike_string *s;
-	ptrdiff_t prev, pos;
 
 	DO_OP();
 	CHECK_OBJECT_SPRINTF()
@@ -1576,7 +1600,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	/* NOTE: We need to do this since we're not
 	 *       using free_string_builder(). */
 	buf.s->len = buf.malloced;
-	fs->fsp->fi_free_string = buf.s;
+	fs->fsp->to_free_string = buf.s;
 	break;
       }
       }
@@ -1678,7 +1702,7 @@ static void free_f_sprintf_data (struct f_sprintf_data *d)
 }
 
 /* The efun */
-void f_sprintf(INT32 args)
+void low_f_sprintf(INT32 args, int compat_mode)
 {
   ONERROR uwp;
   struct pike_string *ret;
@@ -1716,13 +1740,35 @@ void f_sprintf(INT32 args)
 		   argp->u.string->len,
 		   argp+1,
 		   args-1,
-		   0);
+		   0, compat_mode);
   UNSET_ONERROR(uwp);
   ret=finish_string_builder(&d.r);
   free (d.fs);
 
   pop_n_elems(args);
   push_string(ret);
+}
+
+void f_sprintf(INT32 args)
+{
+  low_f_sprintf(args, 0);
+}
+
+/* Compatibility notes regarding %O:
+ *
+ * In Pike 0.5 and earlier only the characters '\\' and '"' were quoted
+ * by %O.
+ *
+ * Quoting of '\n', '\t', '\b' and '\r' was added in Pike 0.6.
+ *
+ * Quoting of '\f', '\a' and '\v' was added in Pike 7.5.
+ *
+ * Quoting of '\e' was added in Pike 7.7.
+ */
+
+void f_sprintf_76(INT32 args)
+{
+  low_f_sprintf(args, 76);
 }
 
 static node *optimize_sprintf(node *n)
@@ -1792,6 +1838,13 @@ PIKE_MODULE_INIT
   /* function(string|object, mixed ... : string) */
   ADD_EFUN2("sprintf", 
 	    f_sprintf,
+	    tFuncV(tOr(tStr, tObj), tMix, tStr),
+	    OPT_TRY_OPTIMIZE,
+	    optimize_sprintf,
+	    0);
+
+  ADD_EFUN2("sprintf_76", 
+	    f_sprintf_76,
 	    tFuncV(tOr(tStr, tObj), tMix, tStr),
 	    OPT_TRY_OPTIMIZE,
 	    optimize_sprintf,
