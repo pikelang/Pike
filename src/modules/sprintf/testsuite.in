@@ -248,9 +248,11 @@ test_do(catch(sprintf("%d-" *101, @allocate(101))))
 test_eq(sprintf("%O", "a\nb"),"\"a\\n\"\n\"b\"")
 test_eq(sprintf("%O", "a\0b"),"\"a\\0b\"")
 test_eq(sprintf("%O", "a\0""0"),"\"a\\0\"\"0\"")
+
 test_eq(sprintf_76("%O", "a\nb"),"\"a\\nb\"")
 test_eq(sprintf_76("%O", "a\0b"),"\"a\\0b\"")
 test_eq(sprintf_76("%O", "a\0""0"),"\"a\\0\"\"0\"")
+
 test_eq(sprintf("%q", "a\nb"),"\"a\\nb\"")
 test_eq(sprintf("%q", "a\0b"),"\"a\\0b\"")
 test_eq(sprintf("%q", "a\0""0"),"\"a\\u00000\"")
