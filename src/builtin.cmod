@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.183 2006/03/22 20:00:10 grubba Exp $
+|| $Id: builtin.cmod,v 1.184 2006/03/25 20:40:52 grubba Exp $
 */
 
 #include "global.h"
@@ -1491,6 +1491,69 @@ PIKECLASS backtrace_frame
 
 /*! @endclass
  */
+
+/*! @decl mapping(string:int|string) get_runtime_info()
+ *!
+ *! Get information about the Pike runtime.
+ *!
+ *! @returns
+ *!   Returns a mapping with the following content:
+ *!   @mapping
+ *!     @member string "bytecode_method"
+ *!       A string describing the bytecode method used by
+ *!       the Pike interpreter.
+ *!     @member int "abi"
+ *!       The number of bits in the ABI. Usually @expr{32@} or @expr{64@}.
+ *!     @member int "native_byteorder"
+ *!       The byte order used by the native cpu.
+ *!       Usually @expr{1234@} (aka little endian) or @{4321@} (aka bigendian).
+ *!     @member int "int_size"
+ *!       The number of bits in the native integer type.
+ *!       Usually @expr{32@} or @expr{64@}.
+ *!     @member int "float_size"
+ *!       The number of bits in the native floating point type.
+ *!       Usually @expr{32@} or @expr{64@}.
+ *!     @member int(0..1) "auto_bignum"
+ *!       Present if integers larger than the native size are automatically
+ *!       converted into bignums.
+ *!   @endmapping
+ */
+PIKEFUN mapping(string:int|string) get_runtime_info()
+  optflags OPT_TRY_OPTIMIZE;
+{
+  pop_n_elems(args);
+  push_constant_text("bytecode_method");
+  push_constant_text(
+#if PIKE_BYTECODE_METHOD == PIKE_BYTECODE_IA32
+		     "ia32"
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_SPARC
+		     "sparc"
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_PPC32
+		     "ppc32"
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_GOTO
+		     "computed_goto"
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_DEFAULT
+		     "default"
+#else
+		     "unknown"
+#endif
+		     );
+  push_constant_text("abi");
+  push_int(sizeof(void *) * 8);
+  push_constant_text("native_byteorder");
+  push_int(PIKE_BYTEORDER);
+  push_constant_text("int_size");
+  push_int(sizeof(INT_TYPE) * 8);
+  push_constant_text("float_size");
+  push_int(sizeof(FLOAT_TYPE) * 8);
+#ifdef AUTO_BIGNUM
+  push_constant_text("auto_bignum");
+  push_int(1);
+  f_aggregate_mapping(6*2);
+#else
+  f_aggregate_mapping(5*2);
+#endif
+}
 
 /*! @endmodule
  */
