@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.38 2006/02/03 17:52:51 grubba Exp $
+|| $Id: odbc.c,v 1.39 2006/03/25 11:34:30 grubba Exp $
 */
 
 /*
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.38 2006/02/03 17:52:51 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.39 2006/03/25 11:34:30 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -60,20 +60,20 @@ SQLHENV odbc_henv = SQL_NULL_HENV;
  * Helper functions
  */
 
-void push_sqlwchar(SQLWCHAR *str, size_t num_bytes)
+#ifdef SQL_WCHAR
+struct pike_string *make_shared_binary_sqlwchar(SQLWCHAR *str,
+						size_t len)
 {
   int shift = 1;
-  struct pike_string *res;
   if (sizeof(SQLWCHAR) == 4) shift = 2;
-#ifdef PIKE_DEBUG
-  if (num_bytes & ((1<<shift)-1)) {
-    Pike_fatal("Odd number of bytes to push_wstring(): "
-	       "%zd (shift:%d) (sz:%d)\n", num_bytes, shift, sizeof(SQLWCHAR));
-  }
-#endif /* PIKE_DEBUG */
-  push_string(make_shared_binary_pcharp(MKPCHARP(str, shift),
-					num_bytes>>shift));
+  return make_shared_binary_pcharp(MKPCHARP(str, shift), len);
 }
+
+void push_sqlwchar(SQLWCHAR *str, size_t len)
+{
+  push_string(make_shared_binary_sqlwchar(str, len));
+}
+#endif /* SQL_WCHAR */
 
 void odbc_error(const char *fun, const char *msg,
 		struct precompiled_odbc *odbc, SQLHSTMT hstmt,
@@ -118,11 +118,7 @@ void odbc_error(const char *fun, const char *msg,
       free_string(odbc->last_error);
     }
 #ifdef SQL_WCHAR
-    if (sizeof(SQLWCHAR) == 2) {
-      odbc->last_error = make_shared_binary_string1(errmsg, errmsg_len);
-    } else {
-      odbc->last_error = make_shared_binary_string2(errmsg, errmsg_len);
-    }
+    odbc->last_error = make_shared_binary_sqlwchar(errmsg, errmsg_len);
 #else
     odbc->last_error = make_shared_binary_string((char *)errmsg, errmsg_len);
 #endif
@@ -136,7 +132,7 @@ void odbc_error(const char *fun, const char *msg,
   case SQL_SUCCESS_WITH_INFO:
 #ifdef SQL_WCHAR
     Pike_error("%s(): %s:\n"
-	  "%d:%ws:%ws\n",
+	  "%d:%ls:%ls\n",
 	  fun, msg, code, errcode, errmsg);
 #else
     Pike_error("%s(): %s:\n"
@@ -483,8 +479,8 @@ static void f_list_dbs(INT32 args)
     SQLDataSources
 #endif
     (odbc_henv, SQL_FETCH_FIRST,
-     buf, sizeof(buf), &buf_len,
-     descr, sizeof(descr), &descr_len);
+     buf, SQL_MAX_DSN_LENGTH, &buf_len,
+     descr, 255, &descr_len);
   while ((ret == SQL_SUCCESS) || (ret == SQL_SUCCESS_WITH_INFO)) {
 #ifdef SQL_WCHAR
     push_sqlwchar(buf, buf_len);
@@ -499,8 +495,8 @@ static void f_list_dbs(INT32 args)
       SQLDataSources
 #endif
       (odbc_henv, SQL_FETCH_NEXT,
-       buf, sizeof(buf), &buf_len,
-       descr, sizeof(descr), &descr_len);
+       buf, SQL_MAX_DSN_LENGTH, &buf_len,
+       descr, 255, &descr_len);
   }
   f_aggregate(cnt);
 }
