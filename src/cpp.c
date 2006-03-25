@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.159 2006/01/27 20:29:28 grubba Exp $
+|| $Id: cpp.c,v 1.160 2006/03/25 12:40:39 grubba Exp $
 */
 
 #include "global.h"
@@ -284,16 +284,20 @@ static void cpp_warning(struct cpp *this, const char *cpp_warn_fmt, ...)
  *!   Objects used by the compiler to handle references to global symbols,
  *!   modules, external files, etc.
  *!
- *!   There can be up to three active compilation handlers active at the
- *!   same time during a compilation. They are in order of precedence:
+ *!   There can be up to three compilation handlers active at the same
+ *!   time during a compilation. They are in order of precedence:
  *!
  *!   @ol
- *!     @item The error handler
+ *!     @item
+ *!       The error handler
+ *!
  *!       This is the object passed to @[compile()] as
  *!       the second argument (if any). This object is returned by
  *!       @[get_active_error_handler()] during a compilation.
  *!
- *!     @item The compatibility handler
+ *!     @item
+ *!       The compatibility handler
+ *!
  *!       This is the object returned by
  *!       @[master()->get_compilation_handler()] (if any), which
  *!       the compiler calls when it sees @tt{#pike@}-directives,
@@ -301,7 +305,9 @@ static void cpp_warning(struct cpp *this, const char *cpp_warn_fmt, ...)
  *!       (eg @expr{7.4::rusage@}). This object is returned by
  *!       @[get_active_compilation_handler()] during a compilation.
  *!
- *!     @item The master object.
+ *!     @item
+ *!       The master object.
+ *!
  *!       This is returned by @[master()] at any time.
  *!   @endol
  *!
