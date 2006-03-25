@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.185 2006/03/25 22:08:47 grubba Exp $
+|| $Id: builtin.cmod,v 1.186 2006/03/25 22:09:04 grubba Exp $
 */
 
 #include "global.h"
@@ -1525,17 +1525,17 @@ PIKEFUN mapping(string:int|string) get_runtime_info()
   push_constant_text("bytecode_method");
   
 #if PIKE_BYTECODE_METHOD == PIKE_BYTECODE_IA32
-	push_constant_text("ia32");
+  push_constant_text("ia32");
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_SPARC
-	push_constant_text("sparc");
+  push_constant_text("sparc");
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_PPC32
-	push_constant_text("ppc32");
+  push_constant_text("ppc32");
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_GOTO
-	push_constant_text("computed_goto");
+  push_constant_text("computed_goto");
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_DEFAULT
-	push_constant_text("default");
+  push_constant_text("default");
 #else
-	push_constant_text("unknown");
+  push_constant_text("unknown");
 #endif
 
   push_constant_text("abi");
