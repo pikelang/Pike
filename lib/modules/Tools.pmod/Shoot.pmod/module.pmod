@@ -150,14 +150,28 @@ void _shoot(string id)
      string s;
      if ((s=Stdio.read_bytes("/proc/"+getpid()+"/statm")))
        write("%d\n",((int)s)*4096);
-     else if ( (s=Stdio.read_bytes("/proc/"+getpid()+"/status", 0, 64)) &&
-	       (sizeof(s) == 64) &&
-	       (sscanf(s, "%48*s%4c%4c%4*s%4c",
-		       int pr_brkbase, int pr_brksize,
-		       /* int pr_stkbase, */ int pr_stksize) == 5))
-       write("%d\n",pr_brkbase + pr_brksize + pr_stksize);
-     else 
-       write("-1\n");
+     else {
+       int offset = 44;
+       int bytes = 4;
+       if (Pike.get_runtime_info()->abi == 64) {
+	 // Adjust for pr_addr being 8 bytes.
+	 offset += 4;
+	 // pr_size is also 8 bytes.
+	 bytes *= 2;
+       }
+       // We're only interested in pr_size.
+       if ( (s=Stdio.read_bytes("/proc/"+getpid()+"/psinfo", offset, bytes)) &&
+	    (sizeof(s) == bytes)) {
+	 sscanf(s, (Pike.get_runtime_info()->abi == 64)?
+		(Pike.get_runtime_info()->native_byteorder == 4321)?
+		"%8c":"%-8c":
+		(Pike.get_runtime_info()->native_byteorder == 4321)?
+		"%4c":"%-4c",
+		int pr_size);
+	 write("%d\n", pr_size * 1024);
+       } else 
+	 write("-1\n");
+     }
    } else
      write("-1\n");
 
