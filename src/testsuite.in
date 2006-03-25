@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.764 2006/03/04 15:02:49 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.765 2006/03/25 12:48:15 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9947,6 +9947,10 @@ test_any_equal([[
   a += ({search (m, "bar", a[-1])});
   return sort (a);
 ]], sort(({0, "foo", "gnu"})))
+
+test_equal([[
+  sort(({"\Uffffffff","\0", "", "\177", "\377", "\U7fffffff"}));
+]], ({ "", "\0", "\177", "\377", "\U7fffffff", "\Uffffffff" }))
 
 // test large searches (find string, size, pattern)
 define(test_search,[[
