@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.616 2006/03/13 11:55:05 grubba Exp $
+|| $Id: builtin_functions.c,v 1.617 2006/03/25 12:43:27 grubba Exp $
 */
 
 #include "global.h"
@@ -3295,13 +3295,11 @@ int find_longest_prefix(char *str,
   {
     c=(a+b)/2;
 
-#if 1
     if (v[c].ind->len <= match_len) {
       /* Can't be a suffix of (or is equal to) the current match. */
       b = c;
       continue;
     }
-#endif
 
     tmp=generic_find_binary_prefix(v[c].ind->str,
 				   v[c].ind->len,
