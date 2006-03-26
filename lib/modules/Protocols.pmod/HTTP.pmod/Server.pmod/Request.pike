@@ -332,14 +332,19 @@ static int parse_variables()
 
   flatten_headers();
 
-  if( request_headers["transfer-encoding"] && 
+  if ( request_headers->expect ) {
+    if ( lower_case(request_headers->expect) == "100-continue" )
+      my_fd->write("HTTP/1.1 100 Continue\r\n\r\n");
+  }
+
+  if( request_headers["transfer-encoding"] &&
       has_value(lower_case(request_headers["transfer-encoding"]),"chunked"))
   {
     my_fd->set_read_callback(read_cb_chunked);
     read_cb_chunked(0,"");
     return 0;
   }
-   
+
   int l = (int)request_headers["content-length"];
   if (l<=sizeof(buf))
   {
