@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.93 2005/05/26 12:07:02 mast Exp $
+/* $Id: sslfile.pike,v 1.94 2006/03/26 23:21:05 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -128,7 +128,7 @@ static int local_errno;
 
 static int cb_errno;
 // Stores the errno from failed I/O in a callback so that the next
-// visible I/O operations can report it properly.
+// visible I/O operation can report it properly.
 
 static int got_extra_read_call_out;
 // 1 when we have a call out to ssl_read_callback. We get this when we
@@ -1239,7 +1239,7 @@ static void update_internal_state()
     if (install_read_cbs) {
       stream->set_read_callback (ssl_read_callback);
       stream->set_close_callback (ssl_close_callback);
-      if (got_extra_read_call_out < 0) {
+      if (got_extra_read_call_out < 0 || sizeof (read_buffer)) {
 	real_backend->call_out (ssl_read_callback, 0, 1, 0);
 	got_extra_read_call_out = 1;
       }
@@ -1260,8 +1260,10 @@ static void update_internal_state()
 }
 
 static int queue_write()
-// Return 0 if the connection is still alive,
-// 1 if it was closed politely, and -1 if it died unexpectedly
+// Return 0 if the connection is still alive, 1 if it was closed
+// politely, and -1 if it died unexpectedly (specifically, our side
+// has sent a fatal alert packet (not close notify) for some reason
+// and therefore nullified the connection).
 {
   int|string res = conn->to_write();
 
