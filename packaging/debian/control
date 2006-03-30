@@ -23,9 +23,9 @@ Description: Powerful interpreted programming language
 
 Package: pike7.6
 Architecture: all
-Depends: pike7.6-core (>> ${Source-Version}), pike7.6-image (>> ${Source-Version}), pike7.6-gdbm (>> ${Source-Version})
-Recommends: pike7.6-doc (>> ${Source-Version})
-Suggests: pike7.6-mysql (>> ${Source-Version}), pike7.6-pg (>> ${Source-Version}), pike7.6-dev (>> ${Source-Version})
+Depends: pike7.6-core (>= ${Source-Version}), pike7.6-image (>= ${Source-Version}), pike7.6-gdbm (>= ${Source-Version})
+Recommends: pike7.6-doc (>= ${Source-Version})
+Suggests: pike7.6-mysql (>= ${Source-Version}), pike7.6-pg (>= ${Source-Version}), pike7.6-dev (>= ${Source-Version})
 Description: Recommended meta package for Pike 7.6
  This is a meta package which depends upon several other Pike
  packages that together make up the recommended Pike installation.
@@ -132,7 +132,7 @@ Description: Bzip2 module for Pike
 
 Package: pike7.6-dev
 Architecture: all
-Depends: ${shlibs:Depends}, pike7.6-core (>> ${Source-Version})
+Depends: ${shlibs:Depends}, pike7.6-core (>= ${Source-Version})
 Description: Development files for Pike 7.6
  This package contains files you will need to develop  C extension modules 
  for Pike. The package depends on  the recommended set of packages for the 
@@ -174,7 +174,7 @@ Description: Pike 7.6 reference
 Package: pike7.6-doc
 Architecture: all
 Section: doc
-Depends: pike7.6-manual (>> ${Source-Version}), pike7.6-reference (>> ${Source-Version})
+Depends: pike7.6-manual (>= ${Source-Version}), pike7.6-reference (>= ${Source-Version})
 Description: Pike 7.6 documentation meta package
  This package depends upon all the Pike 7.6 documentation  packages. Note 
  that the download and installation sizes  might be very large.
@@ -188,7 +188,7 @@ Description: Pike 7.6 documentation meta package
 
 Package: pike7.6-meta
 Architecture: all
-Depends: pike7.6 (>> ${Source-Version}), pike7.6-mysql (>> ${Source-Version}), pike7.6-pg (>> ${Source-Version}), pike7.6-odbc (>> ${Source-Version}), pike7.6-image (>> ${Source-Version}), pike7.6-sdl (>> ${Source-Version}), pike7.6-gdbm (>> ${Source-Version}), pike7.6-gtk (>> ${Source-Version}), pike7.6-gl (>> ${Source-Version}), pike7.6-sane (>> ${Source-Version}), pike7.6-doc (>> ${Source-Version}), pike7.6-dev (>> ${Source-Version}), pike7.6-perl (>> ${Source-Version}), pike7.6-svg (>> ${Source-Version}), pike7.6-pcre (>> ${Source-Version}), pike7.6-bzip2 (>> ${Source-Version})
+Depends: pike7.6 (>= ${Source-Version}), pike7.6-mysql (>= ${Source-Version}), pike7.6-pg (>= ${Source-Version}), pike7.6-odbc (>= ${Source-Version}), pike7.6-image (>= ${Source-Version}), pike7.6-sdl (>= ${Source-Version}), pike7.6-gdbm (>= ${Source-Version}), pike7.6-gtk (>= ${Source-Version}), pike7.6-gl (>= ${Source-Version}), pike7.6-sane (>= ${Source-Version}), pike7.6-doc (>= ${Source-Version}), pike7.6-dev (>= ${Source-Version}), pike7.6-perl (>= ${Source-Version}), pike7.6-svg (>= ${Source-Version}), pike7.6-pcre (>= ${Source-Version}), pike7.6-bzip2 (>= ${Source-Version})
 Description: Meta package for Pike 7.6
  This package depends on all the components that make up the Pike
  language distribution. It will pull in a LOT of packages the
