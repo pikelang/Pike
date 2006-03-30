@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.187 2006/03/29 16:20:35 grubba Exp $
+|| $Id: builtin.cmod,v 1.188 2006/03/30 13:11:23 grubba Exp $
 */
 
 #include "global.h"
@@ -32,6 +32,7 @@
 #include "port.h"
 #include "gc.h"
 #include "block_alloc.h"
+#include "pikecode.h"
 #include <assert.h>
 
 /*! @decl array(array(int|string|type)) describe_program(program p)
