@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.857 2006/01/13 16:28:27 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.858 2006/03/31 16:53:16 peter Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -7413,6 +7413,11 @@ $bundle_info])
 	      fi
 	      extra_configure_args="${extra_configure_args} --build=${cpu}-unknown-winnt`uname -r|sed -e 's/-/_/g'` --disable-assembler"
 	    fi
+
+            # Nettle doesn't support assembler on Darwin x86 yet.
+            if [ "`uname -m`" = "i386" -a "`uname -s`" = "Darwin" ]; then
+	      extra_configure_args="${extra_configure_args} --disable-assembler"
+            fi
 
 	    echo "${CONFIG_SHELL-/bin/sh} \"$bundle_source_dir/configure\"" \
 	      "--prefix=\"$pike_bundle_prefix\"" ${extra_configure_args} \
