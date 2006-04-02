@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.368 2006/03/02 10:25:40 grubba Exp $
+|| $Id: language.yacc,v 1.369 2006/04/02 16:40:03 grubba Exp $
 */
 
 %pure_parser
@@ -4101,7 +4101,9 @@ static int low_islocal(struct compiler_frame *f,
 }
 
 
-
+/* Add a local variable to the current function in frame.
+ * NOTE: Steals the references to type and def, but not to str.
+ */
 int low_add_local_name(struct compiler_frame *frame,
 		       struct pike_string *str,
 		       struct pike_type *type,
@@ -4125,16 +4127,19 @@ int low_add_local_name(struct compiler_frame *frame,
 
   debug_malloc_touch(def);
   debug_malloc_touch(type);
-  debug_malloc_touch(str);
-  reference_shared_string(str);
   /* NOTE: The number of locals can be 0..255 (not 256), due to
    *       the use of READ_INCR_BYTE() in apply_low.h.
    */
   if (frame->current_number_of_locals == MAX_LOCAL-1)
   {
-    yyerror("Too many local variables.");
+    my_yyerror("Too many local variables: no space for local variable %S.",
+	       str);
+    free_type(type);
+    if (def) free_node(def);
     return -1;
-  }else {
+  } else {
+    debug_malloc_touch(str);
+    reference_shared_string(str);
 #ifdef PIKE_DEBUG
     check_type_string(type);
 #endif /* PIKE_DEBUG */
@@ -4179,8 +4184,6 @@ int add_local_name(struct pike_string *str,
 			    type,
 			    def);
 }
-
-
 
 int islocal(struct pike_string *str)
 {
