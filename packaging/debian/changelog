@@ -1,3 +1,9 @@
+pike7.6 (7.6.72-1) unstable; urgency=low
+
+  * Release number bumped by export.pike.
+
+ -- Marek Habersack <grendel@debian.org>  Sun, 2 Apr 2006 12:50:37 +0200
+
 pike7.6 (7.6.71-1) unstable; urgency=low
 
   * Release number bumped by export.pike.
