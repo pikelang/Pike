@@ -179,7 +179,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.111 2006/04/02 16:47:33 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.112 2006/04/02 16:49:12 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -2068,6 +2068,7 @@ void add_local_name(struct pike_string *str,
   if (compiler_frame->current_number_of_locals == MAX_LOCAL)
   {
     yyerror("Too many local variables.");
+    free_string(type);
   }else {
     reference_shared_string(str);
     compiler_frame->variable[compiler_frame->current_number_of_locals].type = type;
