@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.188 2006/03/04 19:38:23 nilsson Exp $
+|| $Id: array.c,v 1.189 2006/04/02 17:07:45 grubba Exp $
 */
 
 #include "global.h"
@@ -2289,7 +2289,9 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args)
     hash = hash * 33 + (INT32)Pike_sp[-e-1].u.ptr;
 
   if (!(cycl = (struct array *)BEGIN_CYCLIC(a, (ptrdiff_t)hash))) {
+    ONERROR err;
     aa = allocate_array(a->size);
+    SET_ONERROR(err, do_free_array, aa);
     for (e=0; e<a->size; e++)
     {
 	assign_svalues_no_free(Pike_sp, argp, args, BIT_MIXED);
@@ -2305,6 +2307,7 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args)
     array_check_type_field(aa);
 #endif
     pop_n_elems(args);
+    UNSET_ONERROR(err);
     push_array(aa);
   }
   else {
