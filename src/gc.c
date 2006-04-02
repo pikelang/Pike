@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.260 2006/03/10 06:58:03 mast Exp $
+|| $Id: gc.c,v 1.261 2006/04/02 07:24:47 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.260 2006/03/10 06:58:03 mast Exp $");
+RCSID("$Id: gc.c,v 1.261 2006/04/02 07:24:47 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -1337,7 +1337,11 @@ void debug_gc_touch(void *a)
   switch (Pike_in_gc) {
     case GC_PASS_PRETOUCH:
       m = find_marker(a);
-      if (m && !(m->flags & (GC_PRETOUCHED
+      if (
+#ifdef DO_PIKE_CLEANUP
+	  !gc_keep_markers &&
+#endif
+	  m && !(m->flags & (GC_PRETOUCHED
 #ifdef PIKE_DEBUG
 			     |GC_WATCHED
 #endif
