@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.189 2006/04/02 17:07:45 grubba Exp $
+|| $Id: array.c,v 1.190 2006/04/02 17:19:17 grubba Exp $
 */
 
 #include "global.h"
@@ -2289,26 +2289,23 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args)
     hash = hash * 33 + (INT32)Pike_sp[-e-1].u.ptr;
 
   if (!(cycl = (struct array *)BEGIN_CYCLIC(a, (ptrdiff_t)hash))) {
-    ONERROR err;
-    aa = allocate_array(a->size);
-    SET_ONERROR(err, do_free_array, aa);
-    for (e=0; e<a->size; e++)
+    push_array(aa = allocate_array_no_init(0, a->size));
+    for (e=0; (e<a->size) && (e < aa->malloced_size); e++)
     {
-	assign_svalues_no_free(Pike_sp, argp, args, BIT_MIXED);
-	Pike_sp+=args;
-	/* FIXME: Don't throw apply errors from apply_svalue here. */
-	apply_svalue(ITEM(a)+e,args);
-	new_types |= 1 << Pike_sp[-1].type;
-        assign_svalue_no_free(ITEM(aa)+e, &Pike_sp[-1]);
-        pop_stack();
+      assign_svalues_no_free(Pike_sp, argp, args, BIT_MIXED);
+      Pike_sp+=args;
+      /* FIXME: Don't throw apply errors from apply_svalue here. */
+      apply_svalue(ITEM(a)+e,args);
+      new_types |= 1 << Pike_sp[-1].type;
+      assign_svalue_no_free(ITEM(aa)+e, &Pike_sp[-1]);
+      aa->size = e;
+      pop_stack();
     }
     aa->type_field = new_types;
 #ifdef PIKE_DEBUG
     array_check_type_field(aa);
 #endif
-    pop_n_elems(args);
-    UNSET_ONERROR(err);
-    push_array(aa);
+    stack_pop_n_elems_keep_top(args);
   }
   else {
     pop_n_elems(args);
