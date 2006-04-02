@@ -188,7 +188,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.187 2006/03/02 10:37:58 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.188 2006/04/02 16:46:21 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -2817,12 +2817,14 @@ int low_add_local_name(struct compiler_frame *frame,
   debug_malloc_touch(def);
   debug_malloc_touch(type);
   debug_malloc_touch(str);
-  reference_shared_string(str);
   if (frame->current_number_of_locals == MAX_LOCAL)
   {
     yyerror("Too many local variables.");
+    free_type(type);
+    if (def) free_node(def);
     return 0;
   }else {
+    reference_shared_string(str);
 #ifdef PIKE_DEBUG
     check_type_string(type);
 #endif /* PIKE_DEBUG */
