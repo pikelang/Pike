@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.190 2006/04/02 17:19:17 grubba Exp $
+|| $Id: array.c,v 1.191 2006/04/03 17:12:44 grubba Exp $
 */
 
 #include "global.h"
@@ -2298,7 +2298,7 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args)
       apply_svalue(ITEM(a)+e,args);
       new_types |= 1 << Pike_sp[-1].type;
       assign_svalue_no_free(ITEM(aa)+e, &Pike_sp[-1]);
-      aa->size = e;
+      aa->size = e+1;
       pop_stack();
     }
     aa->type_field = new_types;
