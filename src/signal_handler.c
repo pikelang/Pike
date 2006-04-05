@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.315 2005/12/02 20:43:04 grubba Exp $
+|| $Id: signal_handler.c,v 1.316 2006/04/05 17:36:20 grubba Exp $
 */
 
 #include "global.h"
@@ -3433,6 +3433,7 @@ void f_create_process(INT32 args)
 		 errnum);
     } else if(pid) {
       int olderrno;
+      int cnt = 0;
 
       PROC_FPRINTF((stderr, "[%d] Parent\n", getpid()));
 
@@ -3521,8 +3522,16 @@ void f_create_process(INT32 args)
 
       PROC_FPRINTF((stderr, "[%d] Parent: Wait for child...\n", getpid()));
       /* Wait for exec or error */
+#if defined(EBADF) && defined(EPIPE)
+      /* Attempt to workaround spurious errors from read(2) on FreeBSD. */
+      while (((e = read(control_pipe[0], buf, 3)) < 0) &&
+	     (errno != EBADF) && (errno != EPIPE) && (cnt++ < 16))
+	;
+#else /* !EBADF || !EPIPE */
+      /* This code *should* work... */
       while (((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR))
 	;
+#endif /* EBADF && EPIPE */
       /* Paranoia in case close() sets errno. */
       olderrno = errno;
 
