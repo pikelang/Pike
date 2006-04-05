@@ -3,8 +3,11 @@ pike7.6 (7.6.75-1) unstable; urgency=low
   * The latest cvs snapshot
   * Removed the ssl fix patch since the upstream contains a better one
     now.
+  * pike7.6-mysql: Uinstallable; dependency on libmysqlclient15 
+    (Closes: #360325)
+    Recompiled to correct the binary dependencies.
 
- -- Marek Habersack <grendel@debian.org>  Sun, 2 Apr 2006 20:10:28 +0200
+ -- Marek Habersack <grendel@debian.org>  Wed,  5 Apr 2006 12:59:11 +0200
 
 pike7.6 (7.6.74-1) unstable; urgency=low
 
