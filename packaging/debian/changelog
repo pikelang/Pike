@@ -1,6 +1,8 @@
 pike7.6 (7.6.75-1) unstable; urgency=low
 
   * The latest cvs snapshot
+  * Removed the ssl fix patch since the upstream contains a better one
+    now.
 
  -- Marek Habersack <grendel@debian.org>  Sun, 2 Apr 2006 20:10:28 +0200
 
