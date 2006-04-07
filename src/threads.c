@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.239 2005/11/15 10:31:56 grubba Exp $
+|| $Id: threads.c,v 1.240 2006/04/07 05:46:01 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.239 2005/11/15 10:31:56 grubba Exp $");
+RCSID("$Id: threads.c,v 1.240 2006/04/07 05:46:01 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1637,6 +1637,15 @@ void f_thread_backtrace(INT32 args)
 }
 
 /*! @decl int status()
+ *!
+ *! Returns the status of the thread.
+ *!
+ *! @returns
+ *!   @int
+ *!     @value @[Thread.THREAD_NOT_STARTED]
+ *!     @value @[Thread.THREAD_RUNNING]
+ *!     @value @[Thread.THREAD_EXITED]
+ *!   @endint
  */
 void f_thread_id_status(INT32 args)
 {

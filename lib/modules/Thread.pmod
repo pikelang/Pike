@@ -32,6 +32,9 @@ optional constant this_thread = predef::this_thread;
 
 optional constant all_threads = predef::all_threads;
 
+constant THREAD_NOT_STARTED = __builtin.THREAD_NOT_STARTED;
+constant THREAD_RUNNING = __builtin.THREAD_RUNNING;
+constant THREAD_EXITED = __builtin.THREAD_EXITED;
 
 
 //! @[Fifo] implements a fixed length first-in, first-out queue.
