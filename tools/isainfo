@@ -1,0 +1,135 @@
+#!/bin/sh
+
+# $Id: isainfo,v 1.1 2006/04/08 17:33:50 grubba Exp $
+
+. $NTTOOLS
+
+V=
+B=
+N=
+K=
+X=
+
+for a in "$@"
+do
+  case "$a" in
+    --version)
+      ver=`echo "$Revision: 1.1 $" |sed -e 's/.* \(.*\) .*/\1/'`
+      echo "Fake NT isainfo version $ver by Fredrik Hubinette and others"
+      exit 0
+    ;;
+
+    --help)
+      echo "Usage: isainfo [ [-v] [-b | -n | -k] | [-x] ]"
+      exit 0
+    ;;
+
+    --*)
+      echo "Unknown option $a"
+      exit 1
+    ;;
+
+    -*)
+      case "$a" in
+        *v*) V=yes ;;
+      esac
+
+      case "$a" in
+        *b*) B=yes ;;
+      esac
+
+      case "$a" in
+        *n*) N=yes ;;
+      esac
+
+      case "$a" in
+        *k*) K=yes ;;
+      esac
+
+      case "$a" in
+        *x*) X=yes ;;
+      esac
+    ;;
+      
+  esac
+done
+
+if [ X"$V$B$N$K$X" = X ]; then
+  :
+elif [ X"$V$B$N$K:$X" = "X:yes" ]; then
+  :
+elif [ X":$X" = "X:yes" ]; then
+  echo "usage: isainfo [ [-v] [-b | -n | -k] | [-x] ]" >&2
+  exit 1
+elif [ X"$B$N$K" = "Xyes" ]; then
+  :
+else
+  echo "usage: isainfo [ [-v] [-b | -n | -k] | [-x] ]" >&2
+  exit 1
+fi
+
+NT_CPU=`uname -p`
+
+BITS=32
+FALLBACK_CPU=
+
+case "$NT_CPU" in
+  i?86)
+    ;;
+  amd64)
+    BITS=64
+    FALLBACK_CPU="i386"
+    ;;
+  ia64)
+    BITS=64
+    FALLBACK_CPU="i386"
+    ;;
+esac
+
+case "$V:$B" in
+  yes:yes)
+    echo "$BITS-bit $NT_CPU applications"
+    # FIXME: List extensions
+    exit 0
+    ;;
+  :yes)
+    echo "$BITS"
+    exit 0
+    ;;
+esac
+
+case "$V:$N" in
+  yes:yes)
+    echo "$BITS-bit $NT_CPU applications"
+    # FIXME: List extensions
+    exit 0
+    ;;
+  :yes)
+    echo "$NT_CPU"
+    exit 0
+    ;;
+esac
+
+case "$V:$K" in
+  yes:yes)
+    echo "$BITS-bit $NT_CPU kernel modules"
+    exit 0
+    ;;
+  :yes)
+    echo "$NT_CPU"
+    exit 0
+    ;;
+esac
+
+if [ "X$X" = "Xyes" ]; then
+  echo "$NT_CPU:"
+  if [ "X$FALLBACK_CPU" = "X" ]; then :; else
+    echo "$FALLBACK_CPU:"
+  fi
+else
+  if [ "X$FALLBACK_CPU" = "X" ]; then
+    echo "$NT_CPU"
+  else
+    echo "$NT_CPU $FALLBACK_CPU:"
+  fi
+fi

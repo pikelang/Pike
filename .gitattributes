@@ -21,5 +21,6 @@ lib -text -crlf
 /src/modules/math/configure.in foreign_ident
 /src/modules/math/math.c foreign_ident
 /tools/install-sh foreign_ident
+/tools/isainfo foreign_ident
 /tools/pntld foreign_ident
 /tools/uname foreign_ident
