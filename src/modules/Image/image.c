@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.228 2006/04/08 13:32:30 grubba Exp $
+|| $Id: image.c,v 1.229 2006/04/08 21:27:01 grubba Exp $
 */
 
 /*
@@ -2338,7 +2338,7 @@ void image_color(INT32 args)
 
 void image_invert(INT32 args)
 {
-   size_t x;
+   size_t sz;
    char *s,*d;
    struct object *o;
    struct image *img;
@@ -2349,29 +2349,29 @@ void image_invert(INT32 args)
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   x = THIS->xsize * THIS->ysize;
-   if (!(img->img=malloc(sizeof(rgb_group)*x + 1)))
+   sz = sizeof(rgb_group)*THIS->xsize * THIS->ysize;
+   if (!(img->img=malloc(sz + 1)))
    {
       free_object(o);
-      SIMPLE_OUT_OF_MEMORY_ERROR("invert", sizeof(rgb_group)*x + 1);
+      SIMPLE_OUT_OF_MEMORY_ERROR("invert", sz + 1);
    }
 
    d = (char *)img->img;
    s = (char *)THIS->img;
 
    THREADS_ALLOW();
-   if (x >= sizeof(INT_TYPE))
+   if (sz >= sizeof(INT_TYPE))
    {
      INT_TYPE *dd = (INT_TYPE *)d;
      INT_TYPE *ss = (INT_TYPE *)s;
      do {
        *(dd++) = ~*(ss++);
-       x -= sizeof(INT_TYPE);
-     } while (x >= sizeof(INT_TYPE));
+       sz -= sizeof(INT_TYPE);
+     } while (sz >= sizeof(INT_TYPE));
      d = (char *)dd;
      s = (char *)ss;
    }
-   while (x--)
+   while (sz--)
    {
      *(d++) = ~*(s++);
    }
