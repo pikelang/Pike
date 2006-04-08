@@ -1,0 +1,80 @@
+@SET_MAKE@
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+top_srcdir = @top_srcdir@
+
+include ../config.make
+
+PRE_CPPFLAGS = -I.. -I$(top_srcdir)
+PRE_LDFLAGS = -L..
+
+OPENSSL_LIBFLAGS = @OPENSSL_LIBFLAGS@
+#TARGETS = nettle-benchmark$(EXEEXT) @RSA_EXAMPLES@
+TARGETS =
+SOURCES = nettle-benchmark.c nettle-openssl.c \
+	io.c getopt.c getopt1.c \
+	rsa-encrypt.c rsa-decrypt.c rsa-keygen.c rsa-sign.c rsa-verify.c
+
+TS_ALL = rsa-sign-test rsa-verify-test rsa-encrypt-test
+
+DISTFILES= $(SOURCES) Makefile.in $(TS_ALL) run-tests setup-env teardown-env \
+	io.h rsa-session.h getopt.h
+
+all: $(TARGETS)
+
+.c.$(OBJEXT):
+	$(COMPILE) -c $< && $(DEP_PROCESS)
+
+# For Solaris and BSD make, we have to use an explicit rule for each executable
+rsa-keygen$(EXEEXT): rsa-keygen.$(OBJEXT)
+	$(LINK) rsa-keygen.$(OBJEXT) io.$(OBJEXT) \
+	-lnettle $(LIBS) -o rsa-keygen$(EXEEXT)
+
+rsa-sign$(EXEEXT): rsa-sign.$(OBJEXT)
+	$(LINK) rsa-sign.$(OBJEXT) io.$(OBJEXT) \
+	-lnettle $(LIBS) -o rsa-sign$(EXEEXT)
+
+rsa-verify$(EXEEXT): rsa-verify.$(OBJEXT)
+	$(LINK) rsa-verify.$(OBJEXT) io.$(OBJEXT) \
+	-lnettle $(LIBS) -o rsa-verify$(EXEEXT)
+
+rsa-encrypt$(EXEEXT): rsa-encrypt.$(OBJEXT)
+	$(LINK) rsa-encrypt.$(OBJEXT) io.$(OBJEXT) \
+	-lnettle $(LIBS) -o rsa-encrypt$(EXEEXT)
+
+rsa-decrypt$(EXEEXT): rsa-decrypt.$(OBJEXT)
+	$(LINK) rsa-decrypt.$(OBJEXT) io.$(OBJEXT) \
+	-lnettle $(LIBS) -o rsa-decrypt$(EXEEXT)
+
+# .$(OBJEXT)$(EXEEXT):
+# 	$(LINK) $< io.$(OBJEXT) -lnettle $(LIBS) -o $@
+
+nettle-benchmark$(EXEEXT): nettle-benchmark.$(OBJEXT) nettle-openssl.$(OBJEXT)
+	$(LINK) nettle-benchmark.$(OBJEXT) nettle-openssl.$(OBJEXT) io.$(OBJEXT) \
+	-lnettle $(LIBS) $(OPENSSL_LIBFLAGS) -o $@
+
+$(TARGETS) : io.$(OBJEXT) ../libnettle.a
+
+
+check: $(TS_ALL)
+	LD_LIBRARY_PATH=../.lib srcdir="$(srcdir)" \
+	  "$(srcdir)"/run-tests $(TS_ALL)
+
+Makefile: $(srcdir)/Makefile.in ../config.status
+	cd .. && $(SHELL) ./config.status examples/$@
+
+install uninstall:
+	true
+
+distdir: $(DISTFILES)
+	cp $? $(distdir)
+
+clean:
+	-rm -f $(TARGETS) *.$(OBJEXT)
+
+distclean: clean
+	-rm -f Makefile *.d
+
+@DEP_INCLUDE@ $(SOURCES:.c=.$(OBJEXT).d)
