@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.227 2006/01/04 20:09:37 grendel Exp $
+|| $Id: image.c,v 1.228 2006/04/08 13:32:30 grubba Exp $
 */
 
 /*
@@ -2338,35 +2338,42 @@ void image_color(INT32 args)
 
 void image_invert(INT32 args)
 {
-   INT32 x;
-   rgb_group *s,*d;
+   size_t x;
+   char *s,*d;
    struct object *o;
    struct image *img;
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
    *img=*THIS;
-   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   x = THIS->xsize * THIS->ysize;
+   if (!(img->img=malloc(sizeof(rgb_group)*x + 1)))
    {
       free_object(o);
-      SIMPLE_OUT_OF_MEMORY_ERROR("invert",
-				 sizeof(rgb_group)*THIS->xsize*THIS->ysize+1);
+      SIMPLE_OUT_OF_MEMORY_ERROR("invert", sizeof(rgb_group)*x + 1);
    }
 
-   d=img->img;
-   s=THIS->img;
+   d = (char *)img->img;
+   s = (char *)THIS->img;
 
-   x=THIS->xsize*THIS->ysize;
    THREADS_ALLOW();
+   if (x >= sizeof(INT_TYPE))
+   {
+     INT_TYPE *dd = (INT_TYPE *)d;
+     INT_TYPE *ss = (INT_TYPE *)s;
+     do {
+       *(dd++) = ~*(ss++);
+       x -= sizeof(INT_TYPE);
+     } while (x >= sizeof(INT_TYPE));
+     d = (char *)dd;
+     s = (char *)ss;
+   }
    while (x--)
    {
-      d->r=( 255-s->r );
-      d->g=( 255-s->g );
-      d->b=( 255-s->b );
-      d++;
-      s++;
+     *(d++) = ~*(s++);
    }
    THREADS_DISALLOW();
 
