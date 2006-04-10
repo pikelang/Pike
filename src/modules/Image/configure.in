@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.30 2004/10/21 15:57:09 grubba Exp $
+# $Id: configure.in,v 1.31 2006/04/10 16:58:52 jonasw Exp $
 AC_INIT(image.c)
 AC_CONFIG_HEADER(image_machine.h)
 
@@ -23,7 +23,11 @@ if test "x$with_machine_code" = "xno" ; then
   AC_MSG_RESULT(no)
 else
   if nasm -f elf -g -o assembly.o $srcdir/assembly.s ; then
-    if test "`uname -m`" = "ia64"; then
+    if test "`uname -s`" = "Darwin"; then
+      # Darwin x86 can output ELF even though we can't use it
+      # FIXME: Investigate using nasm -f macho for Mach-O output
+      AC_MSG_RESULT([no, Mach-O not yet supported])
+    elif test "`uname -m`" = "ia64"; then
       # nasm/ia64 can compile ia32 code...
       AC_MSG_RESULT([yes, but we are on an IA64 machine])
     elif test "`uname -m`" = "x86_64"; then
