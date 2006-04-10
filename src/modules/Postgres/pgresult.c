@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgresult.c,v 1.29 2003/12/22 14:01:29 grubba Exp $
+|| $Id: pgresult.c,v 1.30 2006/04/10 15:55:55 grubba Exp $
 */
 
 /*
@@ -84,7 +84,7 @@
 #include <catalog/pg_type.h>
 #endif
 
-RCSID("$Id: pgresult.c,v 1.29 2003/12/22 14:01:29 grubba Exp $");
+RCSID("$Id: pgresult.c,v 1.30 2006/04/10 15:55:55 grubba Exp $");
 
 #ifdef _REENTRANT
 # ifdef PQ_THREADSAFE
@@ -369,7 +369,11 @@ badresult:
 		  break;
 #endif
 		}
-		push_string(make_shared_binary_string(value,k));
+                if (PQgetisnull(THIS->result, THIS->cursor, j)) {
+                  push_int(0);
+                } else {
+		  push_string(make_shared_binary_string(value,k));
+		}
 		if(binbuf)
 		  free(binbuf);
 	}
