@@ -30,7 +30,13 @@
 //   v
 // finalize
 
-constant MAXIMUM_REQUEST_SIZE=1000000;
+
+int max_request_size = 0;
+
+void set_max_request_size(int size)
+{
+  max_request_size = size;
+}
 
 static class Port {
   Stdio.Port port;
@@ -400,7 +406,7 @@ static void finalize()
 }
 
 // Adds incoming data to raw and buf. Once content-length or
-// MAXIMUM_REQUEST_SIZE data has been received, finalize is called.
+// max_request_size data has been received, finalize is called.
 static void read_cb_post(mixed dummy,string s)
 {
   raw += s;
@@ -408,7 +414,8 @@ static void read_cb_post(mixed dummy,string s)
   remove_call_out(connection_timeout);
 
   int l = (int)request_headers["content-length"];
-  if (sizeof(buf)>=l || sizeof(buf)>MAXIMUM_REQUEST_SIZE)
+  if (sizeof(buf)>=l ||
+      ( max_request_size && sizeof(buf)>max_request_size ))
   {
     body_raw=buf[..l-1];
     buf = buf[l..];
