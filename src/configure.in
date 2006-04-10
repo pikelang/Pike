@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.692 2005/12/18 16:41:56 jonasw Exp $")
+AC_REVISION("$Id: configure.in,v 1.693 2006/04/10 20:47:08 jonasw Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1560,11 +1560,29 @@ if test "$cflags_is_set" = "no"; then
     
     # -flat_namespace only needed for linking with libMallocDebug
     # AC_SYS_COMPILER_FLAG(-flat_namespace, flat_namespace, LDFLAGS)
+    
+    # Tune based on processor family
+    case "`machine`" in
+      i486)
+        # Darwin x86 runs on Intel Core Solo/Duo (based on Pentium M) and newer
+        AC_SYS_COMPILER_FLAG(-march=pentium-m, arch_pentium_m, OPTIMIZE)
+        AC_SYS_COMPILER_FLAG(-msse3, opt_sse3, OPTIMIZE)
 
-    # OS X only runs on G3 or newer. Tuning for recent G4s should help them
-    # while being ok for older machines as well.
-    AC_SYS_COMPILER_FLAG(-mcpu=750,cpu750,OPTIMIZE)
-    AC_SYS_COMPILER_FLAG(-mtune=7450,tune7450,OPTIMIZE)
+        # Take care of warning when linking with GMP libraries
+        AC_SYS_COMPILER_FLAG(-read_only_relocs warning, ro_relocs_warn, LDFLAGS)
+
+        # Machine code not yet working
+        with_machine_code="no";
+      ;;
+      *)
+        # G3 is the baseline on PPC since Mac OS X doesn't support anything
+        # older. Special flags could be used for ppc970, ppc7450 and ppc7400
+        # but that might also exclude older machines from running the
+        # resulting Pike binary.
+        AC_SYS_COMPILER_FLAG(-mcpu=750, cpu750, OPTIMIZE)
+        AC_SYS_COMPILER_FLAG(-mtune=750, tune750, OPTIMIZE)
+      ;;
+    esac
   ])
 
   DO_IF_OS(Linux,
