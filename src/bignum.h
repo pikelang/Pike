@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.h,v 1.27 2005/04/08 16:54:01 grubba Exp $
+|| $Id: bignum.h,v 1.28 2006/04/10 16:26:24 grubba Exp $
 */
 
 #include "global.h"
@@ -25,13 +25,11 @@
 
 #define INT_TYPE_NEG_OVERFLOW(x)     ((x) && (x) == -(x))
 
-#define INT_TYPE_ADD_OVERFLOW(a, b)                                        \
-        (INT_TYPE_SIGN(a) == INT_TYPE_SIGN(b) &&                           \
-	 INT_TYPE_SIGN(a) != INT_TYPE_SIGN((a)+(b)))
+#define INT_TYPE_ADD_OVERFLOW(a, b)		\
+  ((((a)^(b)) >= 0) && (((a)^((a)+(b))) < 0))
 
 #define INT_TYPE_SUB_OVERFLOW(a, b)                                        \
-        (INT_TYPE_SIGN(a) != INT_TYPE_SIGN(b) &&                           \
-	 INT_TYPE_SIGN(a) != INT_TYPE_SIGN((a)-(b)))
+  ((((a)^(b)) < 0) && (((a)^((a)-(b))) < 0))
 
 #define INT_TYPE_LSH_OVERFLOW(a, b)                                        \
         ((((INT_TYPE)sizeof(INT_TYPE))*CHAR_BIT <= (b) && (a)) ||          \
