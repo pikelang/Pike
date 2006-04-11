@@ -841,6 +841,9 @@ string parse_type(Node n, void|string debug) {
   case "protected": // Not in XSLT
     ret += "protected ";
     break;
+  case "public": // Not in XSLT
+    // Ignored.
+    break;
 
   default:
     error( "Illegal element " + n->get_any_name() + " in mode type.\n" );
