@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.417 2006/03/10 07:56:46 mast Exp $
+# $Id: Makefile.in,v 1.418 2006/04/16 13:48:14 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -102,6 +102,7 @@ SMARTLINK=@SMARTLINK@
 REALCC=@REALCC@
 CC=@CC@
 CPP=@CPP@
+GDB=gdb
 
 CANDLE=@CANDLE@ -nologo
 LIGHT=@LIGHT@ -nologo
@@ -604,6 +605,7 @@ TAGS:
 
 # verify / debug
 testsuites:
+	$(MAKE) $(MAKE_FLAGS) testsuite
 	( cd modules && $(MAKE) $(MAKE_FLAGS) testsuites )
 	( cd post_modules && $(MAKE) $(MAKE_FLAGS) testsuites )
 	( cd $(TMP_BUILDDIR) && $(TMP_BINDIR)/mklibtests.sh \
@@ -614,12 +616,12 @@ testsuites:
 	   --srcdir="$(BASEDIR)/extra_tests" \
 	   --destdir=extra_tests --bindir=$(TMP_BINDIR) ) ; fi;
 
-just_verify: testsuites testsuite master-stamp
+just_verify: testsuites master-stamp
 	if test "x$(TESTARGS)" = x ; then args="-F -a -v" ; \
 	else args="$(TESTARGS)" ; fi; \
 	$(RUNPIKE) -x test_pike $$args
 
-valgrind_just_verify: testsuites testsuite master-stamp
+valgrind_just_verify: testsuites master-stamp
 	if test "x$(TESTARGS)" = x ; then args="-F -a -v" ; \
 	else args="$(TESTARGS)" ; fi; \
 	$(VALGRIND) $(VALGRINDARGS) $(RUNPIKE) -x test_pike $$args
@@ -659,7 +661,7 @@ just-tinstall: master-stamp
 	prefix="./test-install" $(INSTALLARGS)
 
 
-verify: testsuites testsuite tinstall
+verify: testsuites tinstall
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
 	if test "$(TESTARGS)" = "" ; then args="-F -a -v" ; else \
 	  args="$(TESTARGS)" ; fi; \
@@ -673,7 +675,7 @@ verify: testsuites testsuite tinstall
 	  fi \
 	fi
 
-valgrind_verify: testsuites testsuite tinstall
+valgrind_verify: testsuites tinstall
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
 	if test "$(TESTARGS)" = "" ; then args="-F -a -v" ; else \
 	  args="$(TESTARGS)" ; fi; \
@@ -694,7 +696,7 @@ bench: tinstall
           fi \
 	fi
 
-verify_installed: testsuites testsuite master-stamp
+verify_installed: testsuites master-stamp
 	if test "$(TESTARGS)" = "" ; then args="-F -a -v" ; else \
 	  args="$(TESTARGS)" ; fi; \
 	$(exec_prefix)/pike $(PIKEOPTS) -x test_pike $$args
@@ -704,12 +706,12 @@ check: verify
 sure: verify
 
 # verify / debug verbose
-verbose_verify: testsuites testsuite master-stamp
+verbose_verify: testsuites master-stamp
 	if test "$(TESTARGS)" = "" ; then args="-F -a" ; else args="$(TESTARGS)" ; fi; \
 	$(RUNPIKE) -x test_pike -v -v $$args
 
 # verify & debug VERBOSE
-gdb_verify: testsuites testsuite master-stamp
+gdb_verify: testsuites master-stamp
 	@echo >.gdbinit handle SIGFPE nostop noprint pass
 	@echo >>.gdbinit handle SIGUSR1 nostop noprint pass
 	@echo >>.gdbinit handle SIGUSR2 nostop noprint pass
@@ -724,7 +726,7 @@ gdb_verify: testsuites testsuite master-stamp
 	echo >>.gdbinit set args \
 	  -m`echo "$(TMP_BUILDDIR)/master.pike" | ./posix_to_native.sh` \
 	  $(PIKEOPTS) -x test_pike --no-watchdog $$args
-	gdb $(TMP_BUILDDIR)/pike
+	$(GDB) $(TMP_BUILDDIR)/pike
 	@rm .gdbinit
 
 gdb_hilfe: master.pike
@@ -738,7 +740,7 @@ gdb_hilfe: master.pike
 	@echo >>.gdbinit break debug_fatal
 	@echo >>.gdbinit break pike_gdb_breakpoint
 	@echo >>.gdbinit set args -m$(TMP_BUILDDIR)/master.pike $$ARGS
-	gdb $(TMP_BUILDDIR)/pike
+	$(GDB) $(TMP_BUILDDIR)/pike
 	@rm .gdbinit
 
 # fast test
