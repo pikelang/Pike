@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.78 2006/02/19 18:32:23 nilsson Exp $
+|| $Id: png.c,v 1.79 2006/04/16 13:46:37 grubba Exp $
 */
 
 #include "global.h"
@@ -34,7 +34,7 @@ static struct program *gz_deflate=NULL;
 #ifdef DYNAMIC_MODULE
 typedef unsigned INT32 (_crc32)(unsigned INT32, unsigned char*,
 				unsigned INT32);
-_crc32 *crc32;
+static _crc32 *crc32;
 #else
 extern unsigned INT32 crc32(unsigned INT32, unsigned char*, unsigned INT32);
 #endif
