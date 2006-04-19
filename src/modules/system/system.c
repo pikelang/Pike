@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.178 2005/07/14 09:07:29 grubba Exp $
+|| $Id: system.c,v 1.179 2006/04/19 14:29:54 nilsson Exp $
 */
 
 /*
@@ -2557,6 +2557,21 @@ static void f_setrlimit(INT32 args)
 }
 #endif
 
+#ifdef HAVE_SETPROCTITLE
+/*! @decl void setproctitle(string title, mixed ... extra)
+ *! Sets the processes title.
+ */
+void f_setproctitle(INT32 args)
+{
+  char *title;
+
+  if (args > 1) f_sprintf(args);
+  get_all_args("setproctitle", args, "%s", &title);
+  setproctitle("%s", title);
+  pop_stack();
+}
+#endif
+
 /*! @decl constant ITIMER_REAL
  *!  Identifier for a timer that decrements in real time.
  *! @seealso
@@ -3169,7 +3184,10 @@ PIKE_MODULE_INIT
   ADD_FUNCTION2("setrlimit", f_setrlimit, tFunc(tString tInt tInt, tInt01), 
 		0, OPT_SIDE_EFFECT);
 #endif
-
+#ifdef HAVE_SETPROCTITLE
+  ADD_FUNCTION2("setproctitle", f_setproctitle, tFuncV(tString, tMix, tVoid),
+                0, OPT_SIDE_EFFECT);
+#endif
 #ifdef HAVE_CHROOT 
   
 /* function(string|object:int) */
