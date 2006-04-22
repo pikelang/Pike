@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.418 2006/04/16 13:48:14 grubba Exp $
+# $Id: Makefile.in,v 1.419 2006/04/22 10:56:16 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -184,6 +184,7 @@ CORE_OBJ= \
 OBJ=$(CORE_OBJ) module.o
 
 MODULE_REQUIREMENTS= \
+  headerfiles \
   machine.h \
   global.h \
   precompile.sh-stamp \
@@ -225,6 +226,34 @@ doc: documentation
 documentation: onepage.xml traditional.xml modref.xml
 	cd $(DOCDIR) && $(MAKE) $(MAKE_FLAGS) PIKE="$(RUNPIKE)" \
 	  BUILDDIR="$(TMP_BUILDDIR)" $(DOCTARGET)
+
+# Creation of bundles/include/pike/.
+
+headerfiles: bundles/include/pike machine.h global.h $(SRC_TARGETS) force
+	@$(MAKE) $(MAKE_FLAGS) headerfiles_low HEADERS="machine.h" HEADERSOURCE="`pwd`"
+	@$(MAKE) $(MAKE_FLAGS) headerfiles_low HEADERS="`cd $(SRCDIR) && echo *.h`" HEADERSOURCE="$(SRCDIR)"
+
+headerfiles_low: force
+	@for f in $(HEADERS); do \
+	  if [ -h "bundles/include/pike/$$f" ]; then continue; fi; \
+	  if cmp "$(HEADERSOURCE)/$$f" "bundles/include/pike/$$f" >/dev/null 2>&1 ; then continue; fi; \
+	  rm -f bundles/include/pike/$$f 2>/dev/null; \
+	  echo "Creating bundles/include/pike/$$f"; \
+	  if ln -s "$(HEADERSOURCE)/$$f" "bundles/include/pike/$$f" && \
+	     ls -L "bundles/include/pike/$$f" >/dev/null 2>&1; then :; else \
+	    echo "Symlink failed."; \
+	    cp "$(HEADERSOURCE)/$$f" "bundles/include/pike/$$f" || exit 1; \
+	  fi; \
+	done
+
+bundles/include/pike: bundles/include
+	test -d bundles/include/pike/. || mkdir bundles/include/pike
+
+bundles/include: bundles
+	test -d bundles/include/. || mkdir bundles/include
+
+bundles:
+	test -d bundles/. || mkdir bundles
 
 # Backward compat.
 post_modules: post_module_objects
