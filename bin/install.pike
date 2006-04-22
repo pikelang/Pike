@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.167 2006/04/22 14:56:36 grubba Exp $
+// $Id: install.pike,v 1.168 2006/04/22 14:57:27 grubba Exp $
 
 #define USE_GTK
 
@@ -2305,7 +2305,7 @@ void finalize_pike()
   }
 
   if(export) {
-    low_install_file(pike_bin_file, pike, 0, "BIN_PIKE");
+    low_install_file(pike_bin_file, pike, 0755, "BIN_PIKE");
 #ifdef SUPPORT_WIX
     if (export == 2) {
       low_install_regkey("bin", "HKLM",
