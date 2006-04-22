@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.164 2006/02/13 16:35:42 grubba Exp $
+// $Id: install.pike,v 1.165 2006/04/22 12:54:18 grubba Exp $
 
 #define USE_GTK
 
@@ -2472,29 +2472,24 @@ void do_install()
       // install the core extracted autodocs
       try_install_file(combine_path(vars->TMP_BUILDDIR, "autodoc.xml"),
 		       combine_path(doc_prefix, "src", "core_autodoc.xml"));
-
-      // create a directory for extracted module documentation
-      if(!export)
-	mkdirhier(combine_path(doc_prefix, "src", "extracted"));
-
       try_install_dir(combine_path(vars->TMP_BUILDDIR, "doc_build", "images"),
 		  combine_path(doc_prefix, "src", "images"), 0);
-      try_install_dir(combine_path(vars->DOCDIR_SRC, "presentation"),
-		  combine_path(doc_prefix, "src", "presentation"), 0);
-      try_install_dir(combine_path(vars->DOCDIR_SRC, "src_images"),
-		  combine_path(doc_prefix, "src", "src_images"), 0);
-      try_install_dir(combine_path(vars->DOCDIR_SRC, "structure"),
-		  combine_path(doc_prefix, "src", "structure"), 0);
       try_install_file(combine_path(vars->DOCDIR_SRC,"Makefile"),
 		   combine_path(doc_prefix, "src", "Makefile"));
     }
     else if(!export) {
-      mkdirhier(combine_path(doc_prefix, "src", "extracted"));
       mkdirhier(combine_path(doc_prefix, "src", "images"));
-      mkdirhier(combine_path(doc_prefix, "src", "presentation"));
-      mkdirhier(combine_path(doc_prefix, "src", "src_images"));
-      mkdirhier(combine_path(doc_prefix, "src", "structure"));
     }
+    // create a directory for extracted module documentation
+    if(!export)
+      mkdirhier(combine_path(doc_prefix, "src", "extracted"));
+
+    try_install_dir(combine_path(vars->DOCDIR_SRC, "presentation"),
+		    combine_path(doc_prefix, "src", "presentation"), 0);
+    try_install_dir(combine_path(vars->DOCDIR_SRC, "src_images"),
+		    combine_path(doc_prefix, "src", "src_images"), 0);
+    try_install_dir(combine_path(vars->DOCDIR_SRC, "structure"),
+		    combine_path(doc_prefix, "src", "structure"), 0);
 
     foreach(({"install_module", "precompile.pike", "smartlink",
 	      "fixdepends.sh", "mktestsuite", "test_pike.pike"}), string f)
