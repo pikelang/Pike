@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.166 2006/04/22 14:49:22 grubba Exp $
+// $Id: install.pike,v 1.167 2006/04/22 14:56:36 grubba Exp $
 
 #define USE_GTK
 
@@ -853,7 +853,7 @@ int low_install_file(string from,
     return 0;
   }
   mkdirhier(dirname(to));
-  if( query_num_arg()==2 ) {
+  if(!mode) {
     int src_mode = file_stat(from)->mode;
     if (src_mode & 0111) {
       // Executable.
@@ -2347,14 +2347,14 @@ void finalize_pike()
       f->write(combine_path(lib_prefix,"master.pike"));
       f->close();
       status("Finalizing",pike_bin_file,"done");
-      if(install_file(pike_bin_file,pike)) {
+      if(install_file(pike_bin_file,pike,0755)) {
 	redump_all=1;
       }
       rm(pike_bin_file);
     }
     else {
       werror("Warning! Failed to finalize master location!\n");
-      if(install_file(pike_bin_file,pike)) {
+      if(install_file(pike_bin_file,pike,0755)) {
 	redump_all=1;
       }
     }
