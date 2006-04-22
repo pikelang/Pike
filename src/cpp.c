@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.160 2006/03/25 12:40:39 grubba Exp $
+|| $Id: cpp.c,v 1.161 2006/04/22 21:32:46 grubba Exp $
 */
 
 #include "global.h"
@@ -1861,6 +1861,9 @@ void f_cpp(INT32 args)
 #endif
 #ifdef __amigaos__
     simple_add_define(&this, "__amigaos__", " 1 ");
+#endif
+#ifdef __APPLE__
+    simple_add_define(&this, "__APPLE__", " 1 ");
 #endif
     simple_add_define(&this, "SIZEOF_INT",
 		      " " DEFINETOSTR(SIZEOF_INT) " ");
