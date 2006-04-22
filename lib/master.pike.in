@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.385 2006/01/25 21:07:58 grubba Exp $
+// $Id: master.pike.in,v 1.386 2006/04/22 13:48:08 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1133,7 +1133,11 @@ constant master_efuns = ({
 
 enum bool { false=0, true=1 };
 
+//! Prefix for Pike-related C header files.
 string include_prefix;
+
+//! Prefix for autodoc files.
+string doc_prefix;
 
 
 //! @decl int strlen(string|multiset|array|mapping|object thing)
@@ -1191,6 +1195,9 @@ static void create()
 
 #if "¤include_prefix¤"[0]!='¤'
   include_prefix = "¤include_prefix¤";
+#endif
+#if "¤doc_prefix¤"[0]!='¤'
+  doc_prefix = "¤doc_prefix¤";
 #endif
   system_module_path=pike_module_path;
   if (master() && master() != this_object()) {
