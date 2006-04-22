@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.419 2006/04/22 10:56:16 grubba Exp $
+# $Id: Makefile.in,v 1.420 2006/04/22 14:41:04 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -670,24 +670,26 @@ dynloadtest: dynloadtest.o @EXTRA_OBJS@ fdlib.o port.o
 
 tinstall: master-stamp
 	-rm -rf test-install
-	$(RUNPIKE) $(TMP_BINDIR)/install.pike --no-autodoc \
-	lib_prefix="$(lib_prefix)" \
-	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
-	SRCDIR="$(SRCDIR)" DOCDIR_SRC="$(DOCDIR_SRC)" \
-	MANDIR_SRC="$(MANDIR_SRC)" \
-	man_prefix="$(man_prefix)" fakeroot="$(buildroot)" \
-	PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)" pike_name="test-pike" \
-	prefix="./test-install" $(INSTALLARGS)
+	$(RUNPIKE) $(TMP_BINDIR)/install.pike \
+	  `test -f autodoc.xml || echo --no-autodoc` \
+	  lib_prefix="$(lib_prefix)" \
+	  TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
+	  SRCDIR="$(SRCDIR)" DOCDIR_SRC="$(DOCDIR_SRC)" \
+	  MANDIR_SRC="$(MANDIR_SRC)" \
+	  man_prefix="$(man_prefix)" fakeroot="$(buildroot)" \
+	  PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)" pike_name="test-pike" \
+	  prefix="./test-install" $(INSTALLARGS)
 
 just-tinstall: master-stamp
-	$(RUNPIKE) $(TMP_BINDIR)/install.pike --no-autodoc \
-	lib_prefix="$(lib_prefix)" \
-	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
-	SRCDIR="$(SRCDIR)" DOCDIR_SRC="$(DOCDIR_SRC)" \
-	MANDIR_SRC="$(MANDIR_SRC)" \
-	man_prefix="$(man_prefix)" fakeroot="$(buildroot)" \
-	PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)" pike_name="test-pike" \
-	prefix="./test-install" $(INSTALLARGS)
+	$(RUNPIKE) $(TMP_BINDIR)/install.pike \
+	  `test -f autodoc.xml || echo --no-autodoc` \
+	  lib_prefix="$(lib_prefix)" \
+	  TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
+	  SRCDIR="$(SRCDIR)" DOCDIR_SRC="$(DOCDIR_SRC)" \
+	  MANDIR_SRC="$(MANDIR_SRC)" \
+	  man_prefix="$(man_prefix)" fakeroot="$(buildroot)" \
+	  PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)" pike_name="test-pike" \
+	  prefix="./test-install" $(INSTALLARGS)
 
 
 verify: testsuites tinstall
@@ -812,7 +814,7 @@ master.pike: $(LIBDIR_SRC)/master.pike.in Makefile
 	if test "x$(PIKE_MODULE_RELOC)" = "x"; then u=s,x,x,; else u='s/^#undef PIKE_MODULE_RELOC/#define PIKE_MODULE_RELOC 1/'; fi; \
 	sed -e 's!¤lib_prefix¤!'"`echo "$(TMP_LIBDIR)" | ./posix_to_native.sh`"'!' <$(LIBDIR_SRC)/master.pike.in \
 	  | sed -e 's!¤share_prefix¤!'"`echo "$(LIBDIR_SRC)" | ./posix_to_native.sh`"'!' \
-	  | sed -e 's!¤include_prefix¤!'"`echo "$(TMP_BUILDDIR)" | ./posix_to_native.sh`"'!' \
+	  | sed -e 's!¤include_prefix¤!'"`echo "$(TMP_BUILDDIR)/bundles/include/pike" | ./posix_to_native.sh`"'!' \
 	  | sed -e "$$u" >master.pike
 
 # Want master.pike up-to-date, but yet there's no dependency on the
