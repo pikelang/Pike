@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.24 2004/04/21 14:51:42 nilsson Exp $
+// $Id: module.pike,v 1.25 2006/04/22 13:59:30 grubba Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.24 $"/" ")[1];
+constant version = ("$Revision: 1.25 $"/" ")[1];
 constant description = "Pike module installer.";
 
 // Source directory
@@ -30,7 +30,7 @@ string local_module_path="$$HOME/lib/pike/modules";
 string system_module_path=master()->system_module_path[-1];
 
 // where do we install the documentation?
-string system_doc_path;
+string system_doc_path = master()->doc_prefix;
 
 string run_pike;
 
@@ -46,7 +46,7 @@ mapping(string:int) run=
   "configure":AUTO,
   "depend":AUTO,
   "make":AUTO,
-  ]);
+]);
 
 mapping(string:string) specs = ([]);
 
@@ -56,6 +56,24 @@ void load_specs(string fn)
   foreach(Stdio.read_file(fn)/"\n", string line)
     if(2==sscanf(line, "%s=%s", name, val) && !specs[name])
       specs[name] = val;
+
+  // We should try to find the core autodoc file
+  if (!system_doc_path) {
+    if(file_stat(combine_path(system_module_path,
+			      "../../doc/src/core_autodoc.xml")))
+      system_doc_path=combine_path(system_module_path, "../../doc");
+    else if(file_stat(combine_path(system_module_path,
+				   "../../../doc/pike/src/core_autodoc.xml")))
+      system_doc_path=combine_path(system_module_path, "../../../doc/pike");
+    else if(file_stat(combine_path(system_module_path, "../../doc")))
+      system_doc_path=combine_path(system_module_path, "../../doc");
+    else if(file_stat(combine_path(system_module_path, "../../../doc/pike")))
+      system_doc_path=combine_path(system_module_path, "../../../doc/pike");
+    else {
+      // No autodoc file or directory, but we set this path as doc path anyway.
+      system_doc_path = combine_path(system_module_path, "../../doc");
+    }
+  }
 }
 
 array(string) do_split_quoted_string(string s)
@@ -138,17 +156,6 @@ void do_make(array(string) cmd)
   
   if(srcdir !=".") full_srcdir=srcdir + "/";
   else full_srcdir=getcwd() + "/";
-
-  // we should try to find the core autodoc file
-  if(file_stat(combine_path(system_module_path,
-			    "../../doc/src/core_autodoc.xml")))
-    system_doc_path=combine_path(system_module_path, "../../doc");
-  else if(file_stat(combine_path(system_module_path,
-				 "../../../doc/pike/src/core_autodoc.xml")))
-    system_doc_path=combine_path(system_module_path, "../../../doc/pike");
-  else
-    system_doc_path = combine_path(system_module_path, "../../doc");
-    // No autodoc file, but we set this path as doc path anyway.
 
   array(string) makecmd=(
     ({make})+
