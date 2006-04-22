@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.165 2006/04/22 12:54:18 grubba Exp $
+// $Id: install.pike,v 1.166 2006/04/22 14:49:22 grubba Exp $
 
 #define USE_GTK
 
@@ -853,8 +853,15 @@ int low_install_file(string from,
     return 0;
   }
   mkdirhier(dirname(to));
-  if( query_num_arg()==2 )
-      mode=0755;
+  if( query_num_arg()==2 ) {
+    int src_mode = file_stat(from)->mode;
+    if (src_mode & 0111) {
+      // Executable.
+      mode = 0755;
+    } else {
+      mode = 0644;
+    }
+  }
 
   string tmpfile=to+"-"+getpid()+"-"+time();
   if(!Stdio.cp(from,tmpfile))
@@ -2130,11 +2137,16 @@ void make_master(string dest, string master, string lib_prefix,
   if (!master_data) {
     error("Failed to read master template file %O\n", master);
   }
-  master_data=replace(master_data,
-		      ({"¤lib_prefix¤","¤include_prefix¤","¤share_prefix¤"}),
-		      ({replace(lib_prefix,"\\","\\\\"),
+  master_data=replace(master_data, ({
+			"¤lib_prefix¤",
+			"¤include_prefix¤",
+			"¤share_prefix¤",
+			"¤doc_prefix¤",
+		      }), ({
+			replace(lib_prefix,"\\","\\\\"),
 			replace(include_prefix,"\\","\\\\"),
 			replace(share_prefix||"¤share_prefix¤", "\\", "\\\\"),
+			replace(doc_prefix||"¤doc_prefix¤", "\\", "\\\\"),
 		      }));
   if((vars->PIKE_MODULE_RELOC||"") != "")
     master_data = replace(master_data, "#undef PIKE_MODULE_RELOC",
@@ -2271,7 +2283,7 @@ void dump_modules()
   }
 
   if(progress_bar)
-    // The last files copied does not really count (should
+    // The last files copied do not really count (should
     // really be a third phase)...
     progress_bar->set_phase(1.0, 0.0);
 
