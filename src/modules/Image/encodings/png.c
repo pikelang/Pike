@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.79 2006/04/16 13:46:37 grubba Exp $
+|| $Id: png.c,v 1.80 2006/04/24 13:15:25 nilsson Exp $
 */
 
 #include "global.h"
@@ -699,42 +699,39 @@ static int _png_write_rgb(rgb_group *w1,
 		  while (n)
 		  {
 		    if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>7)&1,mz)].color;
-		     if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>6)&1,mz)].color;
-		     if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>5)&1,mz)].color;
-		     if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&1,mz)].color;
-		     if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>3)&1,mz)].color;
-		     if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>2)&1,mz)].color;
-		     if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>1)&1,mz)].color;
-		     if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&1,mz)].color;
-		     s++;
-		     if (!x) x=width;
+                    if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>6)&1,mz)].color;
+                    if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>5)&1,mz)].color;
+                    if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&1,mz)].color;
+                    if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>3)&1,mz)].color;
+                    if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>2)&1,mz)].color;
+                    if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>1)&1,mz)].color;
+                    if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&1,mz)].color;
+                    s++;
+                    if (!x) x=width;
 		  }
 	       else
-		  while (n)
+		  while (n>0)
 		  {
 		     int i;
-		     for (i=8; i;)
+		     for (i=8; i; i--)
 		     {
-			i--;
-			if (x) 
-			{
-			   int m=((*s)>>i)&1;
-			   x--;
-			   *(d1++)=ct->u.flat.entries[CUTPLTE(m,mz)].color;
-			   if (m>=trns->len)
-			      *(da1++)=white;
-			   else
-			   {
-			      da1->r=trns->str[m];
-			      da1->g=trns->str[m];
-			      da1->b=trns->str[m];
-			      da1++;
-			   }
-			}
+                       int m=((*s)>>(i-1))&1;
+                       if(!x) break;
+                       x--;
+                       *(d1++)=ct->u.flat.entries[CUTPLTE(m,mz)].color;
+                       if (m>=trns->len)
+                         *(da1++)=white;
+                       else
+                       {
+                         da1->r=trns->str[m];
+                         da1->g=trns->str[m];
+                         da1->b=trns->str[m];
+                         da1++;
+                       }
 		     }
 		     s++;
-		     if (n<8) break;
-		     n-=8;
+		     if (n<8 && n<width) break;
+		     n -= (8-i);
 		     if (!x) x=width;
 		  }
 	       break;
