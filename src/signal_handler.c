@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.316 2006/04/05 17:36:20 grubba Exp $
+|| $Id: signal_handler.c,v 1.317 2006/04/24 17:55:53 grubba Exp $
 */
 
 #include "global.h"
@@ -2391,6 +2391,26 @@ static void internal_add_limit( struct perishables *storage,
 /*! @class create_process
  */
 
+#ifdef HAVE_FDWALK
+struct fd_cleanup_info
+{
+  int num_fds;
+  int control_pipe;
+};
+int fd_cleanup_cb(void *data, int fd)
+{
+  struct fd_cleanup_info *info = data;
+  if ((fd < 2) || (fd < info->num_fds)) return 0;
+#ifdef HAVE_BROKEN_F_SETFD
+  if (fd == info->control_pipe) return 0;
+  while ((close(fd) == -1) && (errno == EINTR))
+    ;
+#else
+  set_close_on_exec(fd, 1);
+#endif
+}
+#endif /* HAVE_FDWALK */
+
 /*! @decl constant limit_value = int|array(int|string)|mapping(string:int|string)|string
  *!  Each @i{limit_value@} may be either of:
  *!
@@ -3864,6 +3884,14 @@ void f_create_process(INT32 args)
 
 	/* Close unknown fds which have been created elsewhere (e.g. in
 	   the Java environment) */
+#ifdef HAVE_FDWALK
+	{
+	  struct fd_cleanup_info info = {
+	    num_fds, control_pipe[1],
+	  };
+	  fdwalk(fd_cleanup_cb, &info);
+	}
+#else /* !HAVE_FDWALK */
 	{
 	  int num_fail = 0;
 #ifdef _SC_OPEN_MAX
@@ -3876,6 +3904,15 @@ void f_create_process(INT32 args)
 	       1;
 #endif
 	       fd++) {
+#ifdef HAVE_CLOSEFROM
+	    if (fd > control_pipe[1]) {
+	      do {
+		errno = 0;
+		closefrom(fd);
+	      } while (errno);
+	      break;
+	    }
+#endif
 #ifdef HAVE_BROKEN_F_SETFD
 	    int code = 0;
 	    if (fd != control_pipe[1]) {
@@ -3896,6 +3933,7 @@ void f_create_process(INT32 args)
 	    }
 	  }
 	}
+#endif /* HAVE_FDWALK */
 	/* FIXME: Map the fds as not close on exec? */
       }
 
