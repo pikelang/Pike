@@ -177,7 +177,6 @@ Process spawn_pike(array(string) argv, void|mapping(string:mixed) options)
 //!   Process.run( ({ "ls", "-l" }) );
 //!   Process.run( ({ "ls -l" }) );
 //!   Process.run( ({ "ls", "-l" }), ([ "cwd":"/etc" ]) );
-
 mapping run(string|array(string) cmd, void|mapping modifiers)
 {
   string gotstdout="", gotstderr="";
