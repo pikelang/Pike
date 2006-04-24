@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.208 2006/04/24 11:59:35 grubba Exp $
+|| $Id: operators.c,v 1.209 2006/04/24 12:00:15 grubba Exp $
 */
 
 #include "global.h"
@@ -269,7 +269,7 @@ void o_cast_to_int(void)
 	isnan(sp[-1].u.float_number) ||
 #endif	
 	0) {
-      Pike_error("Can't cast inifinites or NaN to int.\n");
+      Pike_error("Can't cast infinites or NaN to int.\n");
     } else {
       int i=DO_NOT_WARN((int)(sp[-1].u.float_number));
 #ifdef AUTO_BIGNUM
