@@ -1,5 +1,9 @@
 #pike __REAL_VERSION__
 
+//! This class implements a (min-)heap. The value of a child node will
+//! always be greater than or equal to the value of its parent node.
+//! Thus, the top node of the heap will always hold the smallest value.
+
 #define SWAP(X,Y) do{ mixed tmp=values[X]; values[X]=values[Y]; values[Y]=tmp; }while(0)
 
 static private array values=allocate(10);
@@ -66,8 +70,8 @@ static int adjust_up(int elem)
   return 0;
 }
 
-//! @fixme
-//!   Document this function
+//! Push an element onto the heap. The heap will automatically sort itself
+//! so that the smallest value will be at the top.
 void push(mixed value)
 {
   if(num_values >= sizeof(values))
@@ -78,8 +82,8 @@ void push(mixed value)
   verify_heap();
 }
 
-//! @fixme
-//!   Document this function
+//! Takes a value in the heap and sorts it through the heap to maintain
+//! its sort criteria (increasing order).
 void adjust(mixed value)
 {
   int pos=search(values, value);
@@ -116,5 +120,20 @@ mixed pop()
 int _sizeof() { return num_values; }
 
 // compat
+//! Removes and returns the item on top of the heap,
+//! which also is the smallest value in the heap.
 mixed top() { return pop(); }
+
+// compat
+//! Returns the number of elements in the heap.
 int size() { return _sizeof(); }
+
+//! Returns the item on top of the heap (which is also the smallest value
+//! in the heap) without removing it.
+mixed peek()
+{
+  if (!num_values)
+    return UNDEFINED;
+
+  return values[0];
+}
