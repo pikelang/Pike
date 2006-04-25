@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.209 2006/04/24 12:00:15 grubba Exp $
+|| $Id: operators.c,v 1.210 2006/04/25 18:29:49 neotron Exp $
 */
 
 #include "global.h"
@@ -4358,6 +4358,7 @@ static const char *range_func_name (int bound_types)
       Pike_fatal ("Unexpected bound_types.\n");
 #endif
   }
+  return "Unexpected bound_types"; /* Make compiler quiet */
 }
 
 PMOD_EXPORT void o_range2 (int bound_types)
@@ -4440,7 +4441,7 @@ PMOD_EXPORT void o_range2 (int bound_types)
 
     case T_STRING:
     case T_ARRAY: {
-      INT_TYPE l, h;
+      INT_TYPE l=0, h=0;
       if (!(bound_types & RANGE_LOW_OPEN)) {
 	if (low->type != T_INT)
 	  bad_arg_error (range_func_name (bound_types),
@@ -4648,7 +4649,7 @@ PMOD_EXPORT void f_range(INT32 args)
 
     case T_STRING:
     case T_ARRAY: {
-      INT_TYPE l, h;
+      INT_TYPE l=0, h=0;
       int bound_types;
       CALC_BOUND_TYPES (bound_types);
 

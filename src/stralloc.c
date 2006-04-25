@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.209 2006/03/20 18:57:00 grubba Exp $
+|| $Id: stralloc.c,v 1.210 2006/04/25 18:29:50 neotron Exp $
 */
 
 #include "global.h"
@@ -756,7 +756,7 @@ PMOD_EXPORT void hash_string(struct pike_string *s)
 PMOD_EXPORT struct pike_string *low_end_shared_string(struct pike_string *s)
 {
   ptrdiff_t len;
-  size_t h;
+  size_t h=0;
   struct pike_string *s2;
 
   len = s->len;
