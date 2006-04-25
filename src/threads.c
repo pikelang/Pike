@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.249 2006/04/07 05:46:01 mast Exp $
+|| $Id: threads.c,v 1.250 2006/04/25 18:22:53 neotron Exp $
 */
 
 #ifndef CONFIGURE_TEST
@@ -1642,7 +1642,7 @@ void exit_cond_obj(struct object *o)
    *	/grubba 2006-01-29
    */
   while (THIS_COND->wait_count) {
-    co_broadcast(THIS_COND);
+    co_broadcast(&(THIS_COND->cond));
 
     THREADS_ALLOW();
 #ifdef HAVE_NO_YIELD
