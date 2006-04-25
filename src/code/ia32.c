@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.42 2006/03/18 12:52:29 grubba Exp $
+|| $Id: ia32.c,v 1.43 2006/04/25 18:29:20 neotron Exp $
 */
 
 /*
@@ -1049,7 +1049,7 @@ static void ia32_get_cpuid(int oper, int *cpuid)
 {
   static int cpuid_supported = 0;
   if (!cpuid_supported) {
-    int fbits;
+    int fbits=0;
 #ifdef USE_CL_IA32_ASM_STYLE
     __asm {
       __asm pushf
@@ -1122,7 +1122,6 @@ void ia32_init_interpreter_state(void)
 
   if (!memcmp(cpuid+1, "AuthenticAMD", 12) &&
       (cpuid[0] > 0)) {
-    cpu_vendor = PIKE_CPU_VENDOR_AMD;
     struct amd_info {
       int signature;
       unsigned char brand_id;
@@ -1132,6 +1131,7 @@ void ia32_init_interpreter_state(void)
       int standard_features;
       int reserved1;
     } amd_info;
+    cpu_vendor = PIKE_CPU_VENDOR_AMD;
     ia32_get_cpuid(1, &amd_info.signature);
 #if 0
     fprintf(stderr,
