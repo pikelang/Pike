@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.64 2005/05/09 11:23:17 nilsson Exp $
+|| $Id: png.c,v 1.65 2006/04/25 14:36:02 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.64 2005/05/09 11:23:17 nilsson Exp $");
+RCSID("$Id: png.c,v 1.65 2006/04/25 14:36:02 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -729,28 +729,25 @@ static int _png_write_rgb(rgb_group *w1,
 		  while (n)
 		  {
 		     int i;
-		     for (i=8; i;)
+		     for (i=8; i; i--)
 		     {
-			i--;
-			if (x) 
-			{
-			   int m=((*s)>>i)&1;
-			   x--;
-			   *(d1++)=ct->u.flat.entries[CUTPLTE(m,mz)].color;
-			   if (m>=trns->len)
-			      *(da1++)=white;
-			   else
-			   {
-			      da1->r=trns->str[m];
-			      da1->g=trns->str[m];
-			      da1->b=trns->str[m];
-			      da1++;
-			   }
-			}
+                       int m=((*s)>>(i-1))&1;
+                       if (!x) break;
+                       x--;
+                       *(d1++)=ct->u.flat.entries[CUTPLTE(m,mz)].color;
+                       if (m>=trns->len)
+                         *(da1++)=white;
+                       else
+                       {
+                         da1->r=trns->str[m];
+                         da1->g=trns->str[m];
+                         da1->b=trns->str[m];
+                         da1++;
+                       }
 		     }
 		     s++;
-		     if (n<8) break;
-		     n-=8;
+		     if (n<8 && n<width) break;
+		     n -= (8-i);
 		     if (!x) x=width;
 		  }
 	       break;
