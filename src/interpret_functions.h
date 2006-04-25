@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.191 2006/03/15 12:29:15 grubba Exp $
+|| $Id: interpret_functions.h,v 1.192 2006/04/25 18:10:17 neotron Exp $
 */
 
 /*
@@ -1326,12 +1326,14 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL, {
        * inside catching_eval_instruction, we keep doing it until it's
        * time to return. */
 
+      int res;
+
       DO_IF_DEBUG({
 	  TRACE((3,"-   Activating catch; calling %p in context %p\n",
 		 addr, Pike_interpreter.catch_ctx));
 	});
 
-      int res = catching_eval_instruction (addr);
+      res = catching_eval_instruction (addr);
 
       DO_IF_DEBUG({
 	  TRACE((3,"-   catching_eval_instruction(%p) returned %d\n",
