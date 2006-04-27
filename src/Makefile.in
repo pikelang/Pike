@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.420 2006/04/22 14:41:04 grubba Exp $
+# $Id: Makefile.in,v 1.421 2006/04/27 11:25:30 tor Exp $
 #
 
 # This line is needed on some machines.
@@ -1278,6 +1278,7 @@ module.o: post_modules/modlist.h post_modules/modlist_headers.h
 
 $(SRCDIR)/pikecode.h: \
   $(SRCDIR)/code/ia32.h \
+  $(SRCDIR)/code/amd64.h \
   $(SRCDIR)/code/sparc.h \
   $(SRCDIR)/code/ppc32.h \
   $(SRCDIR)/code/computedgoto.h \
@@ -1286,6 +1287,7 @@ $(SRCDIR)/pikecode.h: \
 
 $(SRCDIR)/pikecode.c: \
   $(SRCDIR)/code/ia32.c \
+  $(SRCDIR)/code/amd64.c \
   $(SRCDIR)/code/sparc.c \
   $(SRCDIR)/code/ppc32.c \
   $(SRCDIR)/code/computedgoto.c \
