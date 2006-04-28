@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.27 2004/02/27 16:20:43 bill Exp $
+ * $Id: Tar.pmod,v 1.28 2006/04/28 18:16:39 bill Exp $
  */
 
 #pike __REAL_VERSION__
@@ -273,7 +273,7 @@ class _TarFS
   }
 
   void destroy() {
-    if(tar && tar->fd) tar->fd->close();
+    if(tar && tar->fd && !tar->fd->is_fake_file) tar->fd->close();
   }
 
   string _sprintf(int t)
