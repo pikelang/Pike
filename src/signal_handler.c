@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.318 2006/05/02 17:52:58 grubba Exp $
+|| $Id: signal_handler.c,v 1.319 2006/05/02 18:06:22 grubba Exp $
 */
 
 #include "global.h"
@@ -3909,6 +3909,7 @@ void f_create_process(INT32 args)
 	      do {
 		errno = 0;
 		closefrom(fd);
+		/* OpenBSD sets errno to EBADF if fd is > than any open fd. */
 	      } while (errno && (errno != EBADF));
 	      break;
 	    }
