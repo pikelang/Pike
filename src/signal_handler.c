@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.319 2006/05/02 18:06:22 grubba Exp $
+|| $Id: signal_handler.c,v 1.320 2006/05/02 18:10:25 grubba Exp $
 */
 
 #include "global.h"
@@ -3906,10 +3906,18 @@ void f_create_process(INT32 args)
 	       fd++) {
 #ifdef HAVE_CLOSEFROM
 	    if (fd > control_pipe[1]) {
+	      /* NOTE: We need to loop on all errno's since we don't know
+	       *       if any of them failed with EINTR and got overwritten.
+	       * NOTE: EBADF shouldn't occur as an overwritten errno, since
+	       *       if would mean that close(2) was called for an invalid
+	       *       fd, which closefrom shouldn't do.
+	       */
 	      do {
 		errno = 0;
 		closefrom(fd);
-		/* OpenBSD sets errno to EBADF if fd is > than any open fd. */
+		/* NOTE: OpenBSD sets errno to EBADF if fd is > than
+		 *       any open fd.
+		 */
 	      } while (errno && (errno != EBADF));
 	      break;
 	    }
