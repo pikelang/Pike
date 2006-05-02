@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.82 2006/02/17 18:48:45 nilsson Exp $
+|| $Id: xml.c,v 1.83 2006/05/02 13:59:25 grubba Exp $
 */
 
 #include "global.h"
@@ -80,6 +80,7 @@ static struct svalue location_string_svalue;
 
 /* FIXME: Make all these functions available inside pike
  */
+/* FIXME: Ought to be generated from UnicodeData.txt. */
 static int isBaseChar(INT32 c)
 {
   switch(c>>8)
@@ -2982,6 +2983,35 @@ static void parse_dtd(INT32 args)
   *sp++=tmp;
 }
 
+static void init_xml_struct(struct object *o)
+{
+  push_constant_text("lt");    push_constant_text("&#60;");
+  push_constant_text("gt");    push_constant_text(">");
+  push_constant_text("amp");   push_constant_text("&#38;");
+  push_constant_text("apos");  push_constant_text("'");
+  push_constant_text("quot");  push_constant_text("\"");
+  
+  f_aggregate_mapping(10);
+  THIS->entities=sp[-1].u.mapping;
+  sp--;
+  dmalloc_touch_svalue(sp);
+
+  f_aggregate_mapping(0);
+  THIS->attributes=sp[-1].u.mapping;
+  sp--;
+  dmalloc_touch_svalue(sp);
+
+  f_aggregate_mapping(0);
+  THIS->is_cdata=sp[-1].u.mapping;
+  sp--;
+  dmalloc_touch_svalue(sp);
+
+  THIS->flags = 0;
+}
+
+/*! @endclass
+ */
+
 /*! @decl string autoconvert(string xml)
  */
 static void autoconvert(INT32 args)
@@ -3192,35 +3222,6 @@ static void autoconvert(INT32 args)
   f_utf8_to_string(1);
 }
 
-static void init_xml_struct(struct object *o)
-{
-  push_constant_text("lt");    push_constant_text("&#60;");
-  push_constant_text("gt");    push_constant_text(">");
-  push_constant_text("amp");   push_constant_text("&#38;");
-  push_constant_text("apos");  push_constant_text("'");
-  push_constant_text("quot");  push_constant_text("\"");
-  
-  f_aggregate_mapping(10);
-  THIS->entities=sp[-1].u.mapping;
-  sp--;
-  dmalloc_touch_svalue(sp);
-
-  f_aggregate_mapping(0);
-  THIS->attributes=sp[-1].u.mapping;
-  sp--;
-  dmalloc_touch_svalue(sp);
-
-  f_aggregate_mapping(0);
-  THIS->is_cdata=sp[-1].u.mapping;
-  sp--;
-  dmalloc_touch_svalue(sp);
-
-  THIS->flags = 0;
-}
-
-/*! @endclass
- */
-
 /*! @endmodule
  */
 
@@ -3256,21 +3257,26 @@ void init_parser_xml(void)
    */
 
 #define CALLBACKTYPE \
- "function(string,string,mapping,array|string,mapping(string:mixed),mixed...:0=mixed)"
+  tFuncV(tStr tStr tMapping tOr(tArray,tStr) tMap(tStr,tMix), tMix, tSetvar(0, tMix))
+  /*"function(string,string,mapping,array|string,mapping(string:mixed),mixed...:0=mixed)"*/
 
 #define PARSETYPE \
- "function(string," CALLBACKTYPE ",mixed...:array(0))"
+  tFuncV(tStr tOr(CALLBACKTYPE, tVoid), tMix, tArr(tVar(0)))
+  /* "function(string," CALLBACKTYPE ",mixed...:array(0))" */
 
   /* function(string:string) */
   ADD_FUNCTION("autoconvert",autoconvert,tFunc(tStr,tStr),0);
-  add_function("parse",parse_xml,PARSETYPE,0);
-  add_function("parse_dtd",parse_dtd,PARSETYPE,0);
+  ADD_FUNCTION("parse",parse_xml,PARSETYPE,0);
+  ADD_FUNCTION("parse_dtd",parse_dtd,PARSETYPE,0);
   ADD_FUNCTION("define_entity_raw",define_entity_raw,tFunc(tStr tStr,tVoid),0);
   ADD_FUNCTION("define_entity",define_entity,tFuncV(tStr tStr tMix,tMix,tVoid),0);
   ADD_FUNCTION("allow_rxml_entities", allow_rxml_entities,
 	       tFunc(tInt, tVoid), 0);
   ADD_FUNCTION("compat_allow_errors", compat_allow_errors, tFunc(tStr, tVoid), 0);
   end_class("Simple",0);
+
+  /* function(string:string) */
+  ADD_FUNCTION("autoconvert",autoconvert,tFunc(tStr,tStr),0);
 
   ADD_FUNCTION("isbasechar",f_isBaseChar,tFunc(tInt,tInt),0);
   ADD_FUNCTION("isidographic",f_isIdeographic,tFunc(tInt,tInt),0);
