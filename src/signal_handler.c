@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.317 2006/04/24 17:55:53 grubba Exp $
+|| $Id: signal_handler.c,v 1.318 2006/05/02 17:52:58 grubba Exp $
 */
 
 #include "global.h"
@@ -3909,7 +3909,7 @@ void f_create_process(INT32 args)
 	      do {
 		errno = 0;
 		closefrom(fd);
-	      } while (errno);
+	      } while (errno && (errno != EBADF));
 	      break;
 	    }
 #endif
