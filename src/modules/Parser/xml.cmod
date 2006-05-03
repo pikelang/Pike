@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.84 2006/05/02 18:19:10 grubba Exp $
+|| $Id: xml.cmod,v 1.85 2006/05/03 13:36:22 grubba Exp $
 */
 
 #include "global.h"
@@ -3014,20 +3014,15 @@ static void init_xml_struct(struct object *o)
 
 /*! @decl string autoconvert(string xml)
  */
-static void autoconvert(INT32 args)
+PIKEFUN string autoconvert(string s)
+  optflags OPT_TRY_OPTIMIZE;
 {
   INT32 e;
   struct string_builder b;
   struct pike_string *s;
 
-  if(!args)
-    Pike_error("Too few arguments to XML->autoconvert.\n");
-
   pop_n_elems(args-1);
-  if(sp[-1].type != T_STRING)
-    Pike_error("Bad argument 1 to XML->autoconvert.\n");
 
-  s=sp[-1].u.string;
   if(!s->size_shift)
   {
     int pos = 0;
@@ -3235,6 +3230,9 @@ void init_parser_xml(void)
   push_text("location");
   location_string_svalue=sp[-1];
   sp--;
+
+  INIT;
+
   start_new_program();
   off = ADD_STORAGE(struct xmlobj);
   map_variable("__entities", "mapping", ID_STATIC|ID_PRIVATE,
@@ -3264,8 +3262,10 @@ void init_parser_xml(void)
   tFuncV(tStr tOr(CALLBACKTYPE, tVoid), tMix, tArr(tVar(0)))
   /* "function(string," CALLBACKTYPE ",mixed...:array(0))" */
 
+  /* Compat */
   /* function(string:string) */
-  ADD_FUNCTION("autoconvert",autoconvert,tFunc(tStr,tStr),0);
+  ADD_FUNCTION("autoconvert", f_autoconvert, tFunc(tStr,tStr), 0);
+
   ADD_FUNCTION("parse",parse_xml,PARSETYPE,0);
   ADD_FUNCTION("parse_dtd",parse_dtd,PARSETYPE,0);
   ADD_FUNCTION("define_entity_raw",define_entity_raw,tFunc(tStr tStr,tVoid),0);
@@ -3274,9 +3274,6 @@ void init_parser_xml(void)
 	       tFunc(tInt, tVoid), 0);
   ADD_FUNCTION("compat_allow_errors", compat_allow_errors, tFunc(tStr, tVoid), 0);
   end_class("Simple",0);
-
-  /* function(string:string) */
-  ADD_FUNCTION("autoconvert",autoconvert,tFunc(tStr,tStr),0);
 
   ADD_FUNCTION("isbasechar",f_isBaseChar,tFunc(tInt,tInt),0);
   ADD_FUNCTION("isidographic",f_isIdeographic,tFunc(tInt,tInt),0);
@@ -3293,6 +3290,8 @@ void init_parser_xml(void)
 
 void exit_parser_xml(void)
 {
+  EXIT;
+
   free_all_xmlinput_blocks();
   free_svalue(&location_string_svalue);
 }
