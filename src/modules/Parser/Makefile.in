@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.12 2006/05/03 14:17:04 grubba Exp $
+# $Id: Makefile.in,v 1.13 2006/05/03 16:20:25 grubba Exp $
 @make_variables@
 VPATH=@srcdir@
 OBJS=parser.o html.o rcs.o c.o pike.o xml.o
@@ -6,7 +6,8 @@ MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
+@dynamic_module_makefile@
+
 xml.o : $(SRCDIR)/xml.c
 
-@dynamic_module_makefile@
 @dependencies@
