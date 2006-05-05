@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.cmod,v 1.88 2006/05/05 17:24:19 grubba Exp $
+|| $Id: xml.cmod,v 1.89 2006/05/05 17:29:43 grubba Exp $
 */
 
 #include "global.h"
@@ -834,31 +834,33 @@ static int gobble(struct xmldata *data, char *s)
         FOUND_PERIOD = 0;                               \
 	if(isFirstNameChar(PEEK(0)))                    \
 	{						\
-	  POKE(X, PEEK(0));				\
-	  READ(1);					\
-	}else{						\
+	  int e = 1;					\
+	  while ((e < data->input->len) &&		\
+		 isNameChar(PEEK(e))) {			\
+	    if (PEEK(e) == '.') FOUND_PERIOD = 1;	\
+	    e++;					\
+	  }						\
+	  string_builder_append(&X, data->input->datap,	\
+				e);			\
+	  READ(e);					\
+	} else {					\
 	  XMLERROR("Name expected");			\
-	}						\
-	while(!XMLEOF() && isNameChar(PEEK(0)))		\
-	{						\
-          if (PEEK(0) == '.') FOUND_PERIOD = 1;         \
-	  POKE(X, PEEK(0));				\
-	  if(READ(1)) break; 				\
 	}						\
       }while(0)
 
 #define READNMTOKEN(X) do {				\
 	if(isNameChar(PEEK(0)))				\
 	{						\
-	  POKE(X, PEEK(0));				\
-	  READ(1);					\
+	  int e = 1;					\
+	  while ((e < data->input->len) &&		\
+		 isNameChar(PEEK(e))) {			\
+	    e++;					\
+	  }						\
+	  string_builder_append(&X, data->input->datap,	\
+				e);			\
+	  READ(e);					\
 	}else{						\
 	  XMLERROR("Nametoken expected");		\
-	}						\
-	while(isNameChar(PEEK(0)))			\
-	{						\
-	  POKE(X, PEEK(0));				\
-	  READ(1);					\
 	}						\
       }while(0)
 
