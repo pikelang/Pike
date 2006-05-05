@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.cmod,v 1.86 2006/05/03 14:17:33 grubba Exp $
+|| $Id: xml.cmod,v 1.87 2006/05/05 16:46:03 grubba Exp $
 */
 
 #include "global.h"
@@ -35,39 +35,16 @@
 
 /* #define VERBOSE_XMLDEBUG */
 
-struct xmlinput
-{
-  struct xmlinput *next;
-  PCHARP datap;
-  ptrdiff_t len;
-  ptrdiff_t pos;
-  struct mapping *callbackinfo;
-  struct pike_string *to_free;
-  struct pike_string *entity;
-};
-
-#undef INIT_BLOCK
-#define INIT_BLOCK(X) do {			\
-    (X)->next = NULL;				\
-    (X)->to_free = NULL;			\
-    (X)->entity = NULL;				\
-  } while(0)
-
-BLOCK_ALLOC(xmlinput, 64)
-
-struct xmldata
-{
-  struct xmlinput *input;
-
-  struct svalue *func;
-  struct svalue *extra_args;
-  INT32 num_extra_args;
-  TYPE_FIELD extra_arg_types;
-  int allow_pesmeg_everywhere;
-};
-
 
 static struct svalue location_string_svalue;
+
+/*! @module Parser
+ */
+
+/*! @module XML
+ */
+
+DECLARATIONS
 
 /* FIXME: Make all these functions available inside pike
  */
@@ -659,14 +636,6 @@ ISWRAP(isHexChar)
 #endif
 
 
-/*! @module Parser
- */
-
-/*! @module XML
- */
-
-DECLARATIONS
-
 /*! @class Simple
  */
 PIKECLASS Simple
@@ -677,6 +646,49 @@ PIKECLASS Simple
   CVAR int flags;
 
   DECLARE_STORAGE;
+
+  struct xmlinput
+  {
+    struct xmlinput *next;
+    PCHARP datap;
+    ptrdiff_t len;
+    ptrdiff_t pos;
+    struct mapping *callbackinfo;
+    struct pike_string *to_free;
+    struct pike_string *entity;
+  };
+
+#undef INIT_BLOCK
+#define INIT_BLOCK(X) do {			\
+    (X)->next = NULL;				\
+    (X)->callbackinfo = NULL;			\
+    (X)->to_free = NULL;			\
+    (X)->entity = NULL;				\
+  } while(0)
+
+  BLOCK_ALLOC(xmlinput, 64)
+
+  struct xmlinput *new_string_xmlinput(struct pike_string *s)
+  {
+    struct xmlinput *i = alloc_xmlinput();
+    copy_shared_string(i->to_free, s);
+    i->datap = MKPCHARP_STR(s);
+    i->len = s->len;
+    i->pos = 0;
+    return i;
+  }
+
+  struct xmldata
+  {
+    struct xmlinput *input;
+
+    struct svalue *func;
+    struct svalue *extra_args;
+    INT32 num_extra_args;
+    TYPE_FIELD extra_arg_types;
+    int allow_pesmeg_everywhere;
+  };
+
 
 /* Flag bits. */
 #define ALLOW_RXML_ENTITIES 0x01
@@ -978,17 +990,11 @@ static int gobble(struct xmldata *data, char *s)
 	  struct pike_string *s=sp[-1].u.string;			 \
 	  struct xmldata my_tmp=*data;					 \
 	  ONERROR tmp2;							 \
-	  my_tmp.input = alloc_xmlinput();				 \
-	  debug_malloc_touch(s);					 \
-	  sp--;								 \
-	  IF_XMLDEBUG(fprintf(stderr,"Entity expands to: %s\n",s->str)); \
-	  check_stack(10);						 \
+	  my_tmp.input = new_string_xmlinput(s);			 \
 	  SET_ONERROR(tmp2, free_xmldata, &my_tmp);			 \
-	  my_tmp.input->to_free = s;					 \
-	  my_tmp.input->datap = MKPCHARP_STR(s);			 \
-	  my_tmp.input->len = s->len;					 \
-	  my_tmp.input->pos = 0;					 \
-	  my_tmp.input->next = NULL;					 \
+	  pop_stack();							 \
+	  check_stack(10);						 \
+	  IF_XMLDEBUG(fprintf(stderr,"Entity expands to: %s\n",s->str)); \
 	  CHECK_INPUT(my_tmp.input);					 \
 	  add_ref(my_tmp.input->callbackinfo = callbackinfo);		 \
 	  PARSE_RECURSIVELY;						 \
@@ -1254,19 +1260,13 @@ static int read_smeg_pereference(struct xmldata *data)
 
 	/* PUSH(s) */
 	{
-	  struct xmlinput *i = alloc_xmlinput();
+	  struct xmlinput *i = new_string_xmlinput(s);
 	  i->next = data->input;
 	  data->input = i;
-	  data->input->pos=0;
-	  data->input->datap = MKPCHARP_STR(s);
-	  data->input->len = (s)->len;
 	  CHECK_INPUT(data->input);
 	  free_mapping(data->input->callbackinfo);
 	  data->input->callbackinfo = callbackinfo;
-	  copy_shared_string(data->input->to_free, s);
-	  if (external_entity_value || !full_name) {
-	    data->input->entity = 0;
-	  } else {
+	  if (!external_entity_value && full_name) {
 	    copy_shared_string(data->input->entity, full_name);
 	  }
 	}
@@ -2803,14 +2803,8 @@ static int low_parse_xml(struct xmldata *data,
     ONERROR e;
     int doc_seq_pos = DOC_BEGINNING;
 
-    data.input = alloc_xmlinput();
-    data.input->datap = MKPCHARP_STR(s);
-    data.input->len = s->len;
-    data.input->pos = 0;
-    data.input->to_free = NULL;
-    data.input->entity = 0;
+    data.input = new_string_xmlinput(s);
     data.input->callbackinfo = allocate_mapping(0);
-    data.input->next = NULL;
     CHECK_INPUT(data.input);
     data.func=sp+1-args;
     data.extra_args=sp+2-args;
@@ -2864,13 +2858,7 @@ static int low_parse_xml(struct xmldata *data,
     struct xmldata data;
     ONERROR e;
 
-    data.input = alloc_xmlinput();
-    data.input->datap = MKPCHARP_STR(s);
-    data.input->next = NULL;
-    data.input->len = s->len;
-    data.input->pos = 0;
-    data.input->to_free = NULL;
-    data.input->entity=0;
+    data.input = new_string_xmlinput(s);
     data.input->callbackinfo = allocate_mapping(0);
     CHECK_INPUT(data.input);
     data.func=sp+2-args;
@@ -2949,13 +2937,7 @@ static int low_parse_xml(struct xmldata *data,
     struct xmldata data;
     ONERROR e;
   
-    data.input = alloc_xmlinput();
-    data.input->datap=MKPCHARP_STR(s);
-    data.input->next=0;
-    data.input->len=s->len;
-    data.input->pos=0;
-    data.input->to_free=0;
-    data.input->entity=0;
+    data.input = new_string_xmlinput(s);
     data.input->callbackinfo=allocate_mapping(0);
     CHECK_INPUT(data.input);
     data.func=sp+1-args;
