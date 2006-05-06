@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.cmod,v 1.89 2006/05/05 17:29:43 grubba Exp $
+|| $Id: xml.cmod,v 1.90 2006/05/06 13:54:18 grubba Exp $
 */
 
 #include "global.h"
@@ -695,12 +695,12 @@ PIKECLASS Simple
 #define COMPAT_ALLOW_7_2_ERRORS 0x02
 #define COMPAT_ALLOW_7_6_ERRORS 0x04
 
-#define PEEK(X) \
-( IF_PIKEDEBUG(((X) > data->input->len)? \
-    (Pike_fatal("PEEK out of bounds (%ld/%ld)\n", \
-           PTRDIFF_T_TO_LONG(X), \
-           PTRDIFF_T_TO_LONG(data->input->len)), 0):) \
-  INDEX_PCHARP(data->input->datap,X) )
+#define PEEK(X)								\
+  ( IF_PIKEDEBUG(((X) > data->input->len)?				\
+		 (Pike_fatal("PEEK out of bounds (%ld/%ld)\n",		\
+			     PTRDIFF_T_TO_LONG(X),			\
+			     PTRDIFF_T_TO_LONG(data->input->len)), 0):) \
+    INDEX_PCHARP(data->input->datap, X) )
 
 #define SAFE_PEEK(X) ((X)>=data->input->len ? 0 : PEEK(X))
 
@@ -723,9 +723,12 @@ PIKECLASS Simple
     if(data->input->callbackinfo) free_mapping(data->input->callbackinfo); \
     really_free_xmlinput(data->input);					\
     data->input=i;							\
-    IF_XMLDEBUG(fprintf(stderr,"ptr=%p len=%d pos=%d to_free=%p\n",	\
-			data->input->datap.ptr, data->input->len,	\
-			data->input->pos, data->input->to_free));	\
+    IF_XMLDEBUG(if (i) fprintf(stderr,					\
+			       "ptr=%p len=%d pos=%d to_free=%p\n",	\
+			       data->input->datap.ptr,			\
+			       data->input->len,			\
+			       data->input->pos,			\
+			       data->input->to_free));			\
   } while(0)
 
 #ifdef PIKE_DEBUG
@@ -1315,13 +1318,7 @@ static void read_attvalue(struct xmldata *data,
 	break;
 	
       case 0x0d:
-	if(keepspace)
-	{
-	  POKE(*X, ' ');
-	  READ(1);
-	  break;
-	}
-	if(PEEK(1)==0x0a) READ(1);
+	if (!keepspace && PEEK(1)==0x0a) READ(1);	/* cr/lf */
       case 0x20:
       case 0x0a:
       case 0x09:
