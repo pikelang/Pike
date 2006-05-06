@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396 and RFC 3986.
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.22 2006/05/04 13:40:40 grubba Exp $
+// $Id: URI.pike,v 1.23 2006/05/06 14:53:06 grubba Exp $
 
 #pragma strict_types
 
@@ -244,7 +244,7 @@ void reparse_uri(this_program|string|void base_uri)
   DEBUG("Found query %O", query);
 
   // Parse path:
-  if ((uri == "") && (this_program::base_uri)) {
+  if ((uri == "") && !scheme && !authority && (this_program::base_uri)) {
     // Empty path.
     path = this_program::base_uri->path;
   } else {
