@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.14 2006/01/10 17:26:28 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.15 2006/05/06 14:54:09 grubba Exp $"]]);
 
 // - Standards.ISO639_2
 test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
@@ -25,7 +25,7 @@ test_equal((string)Standards.URI("./g",           "http://a/b/c/d;p?q"), "http:/
 test_equal((string)Standards.URI("g/",            "http://a/b/c/d;p?q"), "http://a/b/c/g/")
 test_equal((string)Standards.URI("/g",            "http://a/b/c/d;p?q"), "http://a/g")
 test_equal((string)Standards.URI("//g",           "http://a/b/c/d;p?q"), "http://g")
-test_equal((string)Standards.URI("?y",            "http://a/b/c/d;p?q"), "http://a/b/c/?y")
+test_equal((string)Standards.URI("?y",            "http://a/b/c/d;p?q"), "http://a/b/c/d;p?y")
 test_equal((string)Standards.URI("g?y",           "http://a/b/c/d;p?q"), "http://a/b/c/g?y")
 test_equal((string)Standards.URI("#s",            "http://a/b/c/d;p?q"), "http://a/b/c/d;p?q#s")
 test_equal((string)Standards.URI("g#s",           "http://a/b/c/d;p?q"), "http://a/b/c/g#s")
