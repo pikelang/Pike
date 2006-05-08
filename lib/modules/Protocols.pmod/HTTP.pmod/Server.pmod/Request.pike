@@ -338,19 +338,14 @@ static int parse_variables()
 
   flatten_headers();
 
-  if ( request_headers->expect ) {
-    if ( lower_case(request_headers->expect) == "100-continue" )
-      my_fd->write("HTTP/1.1 100 Continue\r\n\r\n");
-  }
-
-  if( request_headers["transfer-encoding"] &&
+  if( request_headers["transfer-encoding"] && 
       has_value(lower_case(request_headers["transfer-encoding"]),"chunked"))
   {
     my_fd->set_read_callback(read_cb_chunked);
     read_cb_chunked(0,"");
     return 0;
   }
-
+   
   int l = (int)request_headers["content-length"];
   if (l<=sizeof(buf))
   {
@@ -529,14 +524,17 @@ string make_response_header(mapping m)
       }
    }
 
-   if (protocol=="HTTP/1.1" && m->size>=0)
-      if (lower_case(request_headers["connection"]||"")!="keep-alive")
-	 res+=({"Connection: Close"});
-      else
-      {
-	 res+=({"Connection: Keep-Alive"});
-	 keep_alive=1;
-      }
+   string cc = lower_case(arrayp(request_headers["connection"])?
+			  request_headers["connection"][0]:
+			  request_headers["connection"]||"");
+
+   if( (protocol=="HTTP/1.1" && cc != "close") || cc=="keep-alive" )
+   {
+       res+=({"Connection: Keep-Alive"});
+       keep_alive=1;
+   }
+   else
+       res+=({"Connection: Close"});
 
    return res*"\r\n"+"\r\n\r\n";
 }
