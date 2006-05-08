@@ -132,6 +132,7 @@ constant singular_headers = ({
     "transfer-encoding",
     "if-modified-since",
     "date",
+    "pragma",
     "range",
 });
 
@@ -338,6 +339,12 @@ static int parse_variables()
 
   flatten_headers();
 
+  if ( request_headers->expect ) 
+  {
+    if ( lower_case(request_headers->expect) == "100-continue" )
+	my_fd->write("HTTP/1.1 100 Continue\r\n\r\n");
+  }
+
   if( request_headers["transfer-encoding"] && 
       has_value(lower_case(request_headers["transfer-encoding"]),"chunked"))
   {
@@ -524,9 +531,7 @@ string make_response_header(mapping m)
       }
    }
 
-   string cc = lower_case(arrayp(request_headers["connection"])?
-			  request_headers["connection"][0]:
-			  request_headers["connection"]||"");
+   string cc = lower_case(request_headers["connection"]||"");
 
    if( (protocol=="HTTP/1.1" && cc != "close") || cc=="keep-alive" )
    {
