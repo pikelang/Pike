@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.97 2005/04/25 19:48:43 mast Exp $
+// $Id: client.pike,v 1.98 2006/05/10 12:17:37 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -560,7 +560,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|mapping(string:mixed)|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.97 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.98 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -1978,8 +1978,15 @@ static mapping(string:mixed) parse_schema_terms (
 {
   string orig_str = str, oid;
 
-  // Doin a slightly lax check of the oid syntax here.
-  if (!sscanf (str, "(%*[ ]%[0-9.]%*[ ]%s", oid, str))
+  // RFC 2252 mandates a dotted decimal oid here, but some servers
+  // (e.g. iPlanet) might use symbolic strings so we have to do a lax
+  // syntax check.
+  //
+  // Note: Maybe it would be convenient to lowercase the noncompliant
+  // oids in such cases, to make later lookups easier. However there
+  // are no docs saying that it's ok to do so, and I prefer to play
+  // safe. /mast
+  if (!sscanf (str, "(%*[ ]%[-;a-zA-Z0-9.]%*[ ]%s", oid, str))
     ERROR ("%sExpected '(' at beginning: %O\n",
 	   errmsg_prefix, orig_str);
   if (!sizeof (oid))
@@ -2184,8 +2191,13 @@ mapping(string:mixed) get_attr_type_descr (string attr, void|int standard_attrs)
 //!
 //!   @mapping
 //!   @member string "oid"
-//!     The object identifier on string form (i.e. a dotted decimal
-//!     string).
+//!     The object identifier on string form. According to the RFC,
+//!     this should always be a dotted decimal string. However some
+//!     LDAP servers, e.g. iPlanet, allows registering attributes
+//!     without an assigned OID. In such cases this can be some other
+//!     string. In the case of iPlanet, it uses the attribute name
+//!     with "-oid" appended (c.f.
+//!     http://docs.sun.com/source/816-5606-10/scmacfg.htm).
 //!   @member string "NAME"
 //!     Array with one or more names used for the attribute.
 //!   @member string "DESC"
