@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.145 2006/03/25 12:42:09 grubba Exp $
+|| $Id: error.c,v 1.146 2006/05/10 19:43:54 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -51,6 +51,8 @@ PMOD_EXPORT const char msg_bad_arg_2[] =
   "Bad argument %d to %s(). %s\n";
 PMOD_EXPORT const char msg_out_of_mem[] =
   "Out of memory.\n";
+PMOD_EXPORT const char msg_out_of_mem_2[] =
+  "Out of memory - failed to allocate %"PRINTSIZET"d bytes.\n";
 PMOD_EXPORT const char msg_div_by_zero[] =
   "Division by zero.\n";
 

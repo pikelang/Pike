@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.191 2006/04/03 17:12:44 grubba Exp $
+|| $Id: array.c,v 1.192 2006/05/10 19:43:54 mast Exp $
 */
 
 #include "global.h"
@@ -101,7 +101,8 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
   v=(struct array *)malloc(sizeof(struct array)+
 			   (size+extra_space-1)*sizeof(struct svalue));
   if(!v)
-    Pike_error(msg_out_of_mem);
+    Pike_error(msg_out_of_mem_2, sizeof(struct array)+
+	       (size+extra_space-1)*sizeof(struct svalue));
 
   GC_ALLOC(v);
 
