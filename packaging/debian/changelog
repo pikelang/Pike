@@ -1,3 +1,9 @@
+pike7.8 (7.7.25-1) experimental; urgency=low
+
+  * Updated a few dependencies
+
+ -- Marek Habersack <grendel@debian.org>  Wed, 10 May 2006 13:47:23 +0200
+
 pike7.8 (7.7.24-1) experimental; urgency=low
 
   * Release number bumped by export.pike.
