@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.124 2005/08/29 10:45:46 jonasw Exp $
+|| $Id: error.c,v 1.125 2006/05/10 19:43:53 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.124 2005/08/29 10:45:46 jonasw Exp $");
+RCSID("$Id: error.c,v 1.125 2006/05/10 19:43:53 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -51,6 +51,8 @@ PMOD_EXPORT const char msg_bad_arg_2[] =
   "Bad argument %d to %s(). %s\n";
 PMOD_EXPORT const char msg_out_of_mem[] =
   "Out of memory.\n";
+PMOD_EXPORT const char msg_out_of_mem_2[] =
+  "Out of memory - failed to allocate %"PRINTSIZET"d bytes.\n";
 PMOD_EXPORT const char msg_div_by_zero[] =
   "Division by zero.\n";
 
