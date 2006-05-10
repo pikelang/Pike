@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.143 2005/06/22 16:01:19 grubba Exp $
+|| $Id: pike_memory.c,v 1.144 2006/05/10 19:43:53 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 
 #include <errno.h>
 
-RCSID("$Id: pike_memory.c,v 1.143 2005/06/22 16:01:19 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.144 2006/05/10 19:43:53 mast Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -586,7 +586,8 @@ PMOD_EXPORT void *debug_xalloc(size_t size)
   ret=(void *)malloc(size);
   if(ret) return ret;
 
-  Pike_error("Out of memory.\n");
+  Pike_error("Out of memory - failed to allocate %"PRINTSIZET"d bytes.\n",
+	     size);
   return 0;
 }
 
@@ -645,7 +646,8 @@ char *debug_qalloc(size_t size)
   }
 #endif
 
-  Pike_fatal("Completely out of memory!\n");
+  Pike_fatal("Completely out of memory - "
+	     "failed to allocate %"PRINTSIZET"d bytes!\n", size);
   /* NOT_REACHED */
   return NULL;	/* Keep the compiler happy. */
 }

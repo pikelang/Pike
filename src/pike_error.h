@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.26 2005/08/29 10:45:08 jonasw Exp $
+|| $Id: pike_error.h,v 1.27 2006/05/10 19:43:53 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -293,8 +293,23 @@ PMOD_EXPORT extern const char msg_too_few_args[];
                  msg_too_few_args,FUNC)
 
 PMOD_EXPORT extern const char msg_out_of_mem[];
+PMOD_EXPORT extern const char msg_out_of_mem_2[];
+
+static INLINE void DECLSPEC(noreturn) out_of_memory_error (
+  const char *func,
+  struct svalue *base_sp,  int args,
+  size_t amount) ATTRIBUTE((noreturn));
+static INLINE void DECLSPEC(noreturn) out_of_memory_error (
+  const char *func,
+  struct svalue *base_sp,  int args,
+  size_t amount)
+{
+  resource_error (func, base_sp, args, "memory", amount,
+		  msg_out_of_mem_2, amount);
+}
+
 #define SIMPLE_OUT_OF_MEMORY_ERROR(FUNC, AMOUNT) \
-   resource_error(FUNC, Pike_sp-args, args, "memory", AMOUNT, msg_out_of_mem)
+   out_of_memory_error(FUNC, Pike_sp-args, args, AMOUNT)
 
 PMOD_EXPORT extern const char msg_div_by_zero[];
 #define SIMPLE_DIVISION_BY_ZERO_ERROR(FUNC) \
