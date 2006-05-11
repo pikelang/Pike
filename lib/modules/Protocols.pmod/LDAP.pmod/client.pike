@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.98 2006/05/10 12:17:37 mast Exp $
+// $Id: client.pike,v 1.99 2006/05/11 12:36:25 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -560,7 +560,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|mapping(string:mixed)|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.98 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.99 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -1969,7 +1969,7 @@ static mapping(string:array(string)) query_subschema (string dn,
 
 static mapping(string:mixed) parse_schema_terms (
   string str,
-  mapping(string:string|multiset(string)) known_terms,
+  mapping(string:string|multiset|mapping) known_terms,
   string errmsg_prefix)
 // Parses a string containing a parenthesized list of terms as used in
 // several schema related attributes. The known_terms mapping
@@ -2128,15 +2128,18 @@ static mapping(string:mixed) parse_schema_terms (
 	break;
 
       default:
-	if (multisetp (term_syntax)) { // One of a set.
+	if (multisetp (term_syntax) || mappingp (term_syntax)) {
+	  // One of a set.
 	  sscanf (str, "%[-;a-zA-Z0-9.]%*[ ]%s", string choice, str);
 	  if (!sizeof (choice))
 	    ERROR ("%sExpected keyword after term %O at pos %d: %O\n",
 		   errmsg_prefix, term_id, sizeof (orig_str) - pos, orig_str);
-	  if (!term_syntax[choice])
+	  if (term_syntax[1]) choice = lower_case (choice);
+	  string|int lookup = term_syntax[choice];
+	  if (!lookup)
 	    ERROR ("%sUnknown keyword after term %O at pos %d: %O\n",
 		   errmsg_prefix, term_id, sizeof (orig_str) - pos, orig_str);
-	  res[term_id] = choice;
+	  res[term_id] = stringp (lookup) ? lookup : choice;
 	  break;
 	}
 
@@ -2150,6 +2153,31 @@ static mapping(string:mixed) parse_schema_terms (
 
   return res;
 }
+
+static constant attr_type_term_syntax = ([
+  "NAME":			"qdescrs",
+  "DESC":			"qdstring",
+  "OBSOLETE":			"flag",
+  "SUP":			"oid",
+  "EQUALITY":			"oid",
+  "ORDERING":			"oid",
+  "SUBSTR":			"oid",
+  "SYNTAX":			"oidlen",
+  "SINGLE-VALUE":		"flag",
+  "COLLECTIVE":			"flag",
+  "NO-USER-MODIFICATION":	"flag",
+  "USAGE": ([
+    1: 1,		      // This flags case insensitive matching.
+    // The alternatives here are not case insensitive according to RFC
+    // 2252, but of course the iPlanet LDAP server manages to return
+    // "dsaOperation" instead of "dSAOperation". :P
+    "userapplications": "userApplications",
+    "directoryoperation": "directoryOperation",
+    "distributedoperation": "distributedOperation",
+    "dsaoperation": "dSAOperation"
+  ]),
+  "":				"qdstrings"
+]);
 
 static mapping(string:mapping(string:mixed)) attr_type_descrs;
 
@@ -2275,20 +2303,7 @@ mapping(string:mixed) get_attr_type_descr (string attr, void|int standard_attrs)
 	foreach (attr_types, string attr_type) {
 	  mapping(string:mixed) descr = parse_schema_terms (
 	    utf8_to_string (attr_type),
-	    (["NAME":			"qdescrs",
-	      "DESC":			"qdstring",
-	      "OBSOLETE":		"flag",
-	      "SUP":			"oid",
-	      "EQUALITY":		"oid",
-	      "ORDERING":		"oid",
-	      "SUBSTR":			"oid",
-	      "SYNTAX":			"oidlen",
-	      "SINGLE-VALUE":		"flag",
-	      "COLLECTIVE":		"flag",
-	      "NO-USER-MODIFICATION":	"flag",
-	      "USAGE": (<"userApplications", "directoryOperation",
-			 "distributedOperation", "dSAOperation">),
-	      "":			"qdstrings"]),
+	    attr_type_term_syntax,
 	    "Error in attributeTypes when querying schema: ");
 	  if (descr->SUP) incomplete += ({descr});
 	  attr_type_descrs[descr->oid] = descr;
@@ -2354,22 +2369,7 @@ int main (int argc, array(string) argv)
 	mapping descr;
 	if (mixed err =
 	    catch (descr = parse_schema_terms (
-		     expr,
-		     (["NAME":			"qdescrs",
-		       "DESC":			"qdstring",
-		       "OBSOLETE":		"flag",
-		       "SUP":			"oid",
-		       "EQUALITY":		"oid",
-		       "ORDERING":		"oid",
-		       "SUBSTR":		"oid",
-		       "SYNTAX":		"oidlen",
-		       "SINGLE-VALUE":		"flag",
-		       "COLLECTIVE":		"flag",
-		       "NO-USER-MODIFICATION":	"flag",
-		       "USAGE": (<"userApplications", "directoryOperation",
-				  "distributedOperation", "dSAOperation">),
-		       "":			"qdstrings"]),
-		     "")))
+		     expr, attr_type_term_syntax, "")))
 	  werror (describe_error (err));
 
 	write ("constant ATD_%s = ([ // %s, %s\n",
