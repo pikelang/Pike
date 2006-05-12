@@ -1,8 +1,11 @@
 
 int DEBUG=1;
 
-constant version = ("$Revision: 1.1 $"/" ")[1];
+constant version = ("$Revision: 1.2 $"/" ")[1];
 constant description = "Pike packaged module (PMAR) installer.";
+
+int forcing;
+int ilocal;
 
 int c;
 int cc;
@@ -33,8 +36,45 @@ int cc;
 //!                preinstall.pike
 //!                postinstall.pike
 
+void print_help(array argv)
+{
+    werror("Usage: %s [--local] [--force] [--help] pmarfile\n", argv[0]);
+}
+
 int main(int argc, array(string) argv)
 {
+
+  array opts = Getopt.find_all_options(argv,aggregate(
+    ({"local",Getopt.NO_ARG,({"--local"}) }),
+    ({"force",Getopt.NO_ARG,({"--force"}) }),
+    ({"help",Getopt.NO_ARG,({"--help"}) }),
+    ));
+    
+  argv=Getopt.get_args(argv);
+  
+  if(sizeof(argv) < 2) 
+  {
+    print_help(argv);
+    return 1;
+  }
+  
+  foreach(opts,array opt)
+  {
+    switch(opt[0])
+    {
+      case "help":
+        print_help(argv);
+        return 0;
+        break;
+      case "local":
+        ilocal = 1;
+        break;
+      case "force":
+        forcing = 1;
+        break;
+    }
+  }
+
   string s = Stdio.read_file(argv[1]);
 
   // we assume that the first entry in the package file is the directory
@@ -53,11 +93,25 @@ int main(int argc, array(string) argv)
 
   moduletool->load_specs(moduletool->include_path+"/specs");
 
-  system_module_path = moduletool["system_module_path"];
+ 
+  // we assume the local module install path is $HOME/lib/pike/modules.
+  if(!ilocal)
+    system_module_path = moduletool["system_module_path"];
+  else 
+  {
+    system_module_path = getenv("HOME") + "/lib/pike/modules";
+  }
+
+  if(!file_stat(system_module_path))
+  {
+    werror("Error: module installation directory %s does not exist.\n", system_module_path);
+    return 2;
+  }
+
 //  system_include_path = moduletool["system_include_path"];
 //  system_doc_path = moduletool["system_doc_path"];
 
-  if(!verify_suitable_package(metadata, sysinfo))
+  if(!forcing && !verify_suitable_package(metadata, sysinfo))
   {
     werror("Package is not suitable for this system.\n");
     return 1;
@@ -166,7 +220,7 @@ int untar(string source, string path, void|string cwd) {
       cc++;
       if (DEBUG)
         write(sprintf("%O [dir]\n", dir));
-      //mkdir(dir);
+      mkdir(dir);
       c += untar(source, dir, Stdio.append_path(cwd, fname));
     }
     else if (stat->isreg()) {
@@ -175,10 +229,10 @@ int untar(string source, string path, void|string cwd) {
       if (mixed err = catch{
         if (DEBUG)
           write("%O [file %d bytes]\n", file, stat->size);
-        //Stdio.write_file(file, t->cd(cwd)->open(fname, "r")->read());
+          Stdio.write_file(file, t->cd(cwd)->open(fname, "r")->read());
       }) {
-        werror("%O [error in tarfile!]\n\n", file);
-        throw(err);
+        werror("%O [error writing file]\n\n", file);
+//        throw(err);
       }
       c++;
       cc++;
