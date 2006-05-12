@@ -397,29 +397,33 @@ int main(int argc, array(string) argv)
   }else{
     int first_line=1;
     int forced_error=0;
-    string trailer = "";
+    array(string) trailer = ({"", "", ""});
     // cl.exe and ecl.exe echo the file name of the file we are compiling
     // first, we need to get rid of that to make configure behave.
     // CL: We also convert warning D4002 into an error.
     // ECL: We also convert warning 147 into an error, and command line
     //      remark "option not supported" into an error.
-    ret=silent_do_cmd(cmd, lambda(string line) 
+    ret=silent_do_cmd(cmd, lambda(string line, void|int channel)
 		      {
-			trailer += line;
-			array(string) lines = trailer/"\n";
+			trailer[channel] += line;
+			array(string) lines = trailer[channel]/"\n";
 			if (sizeof(lines) < 2) return;
-			if(first_line)
+			if(first_line && channel != 1)
 			{
 			  // Strip first line.
 			  if (verbose && (target != "-")) {
-			    write(lines[0]+"\n");
+			    if (channel == 2) werror (lines[0] + "\n");
+			    else write(lines[0]+"\n");
 			  }
 			  lines = lines[1..];
 			  first_line = 0;
 			}
-			trailer = lines[-1];
+			trailer[channel] = lines[-1];
 			lines = lines[..sizeof(lines)-2];
 			for(int i; i < sizeof(lines); i++) {
+			  // FIXME: The following checks should
+			  // probably only check the stderr (2) or
+			  // unknown (0) channels.
 #ifdef ECL
 			  // Warning 147 is prototype mismatch.
 			  // for some reason this isn't an error.
@@ -449,13 +453,16 @@ int main(int argc, array(string) argv)
 #endif /* ECL */
 			}
 			if (sizeof(lines)) {
-			  write(lines*"\n" + "\n");
+			  if (channel == 2) werror (lines * "\n" + "\n");
+			  else write(lines*"\n" + "\n");
 			}
 		      },1);
-    if (sizeof(trailer)) {
+    if (sizeof(trailer[0])) {
       // Shouldn't happen, but...
-      write(trailer);
+      write(trailer[0]);
     }
+    if (sizeof(trailer[1])) write(trailer[1]);
+    if (sizeof(trailer[2])) werror(trailer[2]);
     ret = ret || forced_error;
   }
 

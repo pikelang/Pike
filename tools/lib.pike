@@ -453,6 +453,7 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent)
 			f->close("w");
 		      },f);
 
+      string sout = "", serr = "";
       while(1)
       {
 	string s = f->read(4);
@@ -474,9 +475,22 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent)
 	    default: /* reserved for future use */
 	  }
 	}
-	if(filter) ret+=s;
+	if(filter)
+	  switch (channel) {
+	    case 0: ret += s; break;
+	    case 1: sout += s; break;
+	    case 2: serr += s; break;
+	  }
       }
-      if(filter) filter(ret);
+      if(filter) {
+	if (ret != "" && sout != "") {
+	  werror ("Strange sprshd is sending on both channel 0 and 1.\n");
+	  exit (1);
+	}
+	if (ret != "") filter(ret);
+	if (sout != "") filter(sout, 1);
+	if (serr != "") filter(serr, 2);
+      }
       sscanf(f->read(4),"%4c",int code);
       f->close("r");
 //      f->close("w");
