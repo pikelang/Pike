@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# $Id: uname,v 1.19 2004/10/26 14:07:01 grubba Exp $
+# $Id: uname,v 1.20 2006/05/12 14:34:46 mast Exp $
 
 . $NTTOOLS
 
@@ -15,7 +15,7 @@ for a in "$@"
 do
   case "$a" in
     --version)
-      ver=`echo "$Revision: 1.19 $" |sed -e 's/.* \(.*\) .*/\1/'`
+      ver=`echo "$Revision: 1.20 $" |sed -e 's/.* \(.*\) .*/\1/'`
       echo "Fake NT uname version $ver by Fredrik Hubinette and others"
       exit 0
     ;;
@@ -122,7 +122,7 @@ if [ "$M$P" = "" ]; then :; else
 
   if [ "$PROCESSOR_ARCHITECTURE" = "x86" ]; then
     PL=`getntenv PROCESSOR_LEVEL`
-    if [ "$PL" > 6 ]; then 
+    if [ "$PL" -gt 6 ]; then
       PL=6
     fi
     PROCESSOR_ARCHITECTURE="i${PL}86"
