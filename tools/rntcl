@@ -507,7 +507,7 @@ int main(int argc, array(string) argv)
 		     "int main(int argc, array(string) argv) {\n"
 		     "  if (lower_case(getenv(\"CROSSCOMPILING\")||\"no\") != \"no\")\n"
 		     "    exit(1);\n"
-		     "  argv[0]=getenv(\"NTDRIVE\")+fixpath(follow_symlinks(combine_path(getcwd(),argv[0]))+\".exe\");\n"
+		     "  argv[0]=fixpath(combine_path(getcwd(),argv[0])+\".exe\");\n"
 		     "  exit(silent_do_cmd(argv));\n"
 		     "}\n");
     chmod(output,0755);

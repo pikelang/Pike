@@ -92,11 +92,17 @@ string follow_symlinks(string s)
   return s;
 }
 
+// Allow several mappings of unix paths to NT drives using
+// NTMOUNT/NTDRIVE, NTMOUNT2/NTDRIVE2, etc. The replace code is naive,
+// so you better have the longest NTMOUNTn prefix first.
+
 string fixpath(string s)
 {
-  string mnt=getenv("NTMOUNT");
   s=follow_symlinks(s);
-  if(mnt && strlen(mnt)) s=replace(s,mnt,"");
+  string mnt=getenv("NTMOUNT");
+  if(mnt && strlen(mnt)) s=replace(s,mnt,getenv("NTDRIVE"));
+  for (int i = 2; (mnt = getenv("NTMOUNT" + i)); i++)
+    if(strlen(mnt)) s=replace(s,mnt,getenv("NTDRIVE" + i));
   return replace(s,"/","\\");
 }
 
@@ -208,13 +214,23 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent)
 	  }
       }
 
-      string mnt=getenv("NTMOUNT");
 #if 1
       /* Experimental */
-      if(mnt && strlen(mnt)>1)
       {
-	for(int e=1;e<sizeof(cmd);e++)
-	  cmd[e]=replace(cmd[e],mnt,getenv("NTDRIVE"));
+	string mnt=getenv("NTMOUNT");
+	if(mnt && strlen(mnt))
+	{
+	  for(int e=1;e<sizeof(cmd);e++)
+	    cmd[e]=replace(cmd[e],mnt,getenv("NTDRIVE"));
+	}
+
+	for (int i = 2; (mnt = getenv("NTMOUNT" + i)); i++) {
+	  if(strlen(mnt))
+	  {
+	    for(int e=1;e<sizeof(cmd);e++)
+	      cmd[e]=replace(cmd[e],mnt,getenv("NTDRIVE" + i));
+	  }
+	}
       }
 #endif
       
@@ -265,7 +281,14 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent)
 	tmp=replace(tmp,mnt,getenv("NTDRIVE"));
       else
 	tmp=getenv("NTDRIVE")+tmp;
-      
+
+      {
+	string mnt2;
+	for (int i = 2; (mnt2 = getenv ("NTMOUNT" + i)); i++)
+	  if(strlen(mnt2))
+	    tmp=replace(tmp,mnt2,getenv("NTDRIVE" + i));
+      }
+
       tmp=replace(tmp,"/","\\");
 
       cmd=({ tmp })+cmd;
@@ -276,6 +299,14 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent)
       {
 	for(int e=1;e<sizeof(cmd);e++)
 	  cmd[e]=replace(cmd[e],mnt,getenv("NTDRIVE"));
+      }
+
+      {
+	string mnt2;
+	for (int i = 2; (mnt2 = getenv ("NTMOUNT" + i)); i++)
+	  if(strlen(mnt2))
+	    for(int e=1;e<sizeof(cmd);e++)
+	      cmd[e]=replace(cmd[e],mnt2,getenv("NTDRIVE" + i));
       }
 #endif
 
