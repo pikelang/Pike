@@ -360,7 +360,7 @@ int main(int argc, array(string) argv)
 #ifdef WINE
   werror("Running in WINE mode.\n");
 #endif
-  if(argc != 3)
+  if(argc < 3)
   {
     werror("Usage: sprshd <port> <hosts to accept connections from>\n");
     sleep(10); //Make sure the terminal isn't closed at once.
