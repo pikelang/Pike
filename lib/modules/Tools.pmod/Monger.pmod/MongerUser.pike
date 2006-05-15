@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: MongerUser.pike,v 1.1 2005/10/19 03:28:11 bill Exp $
+// $Id: MongerUser.pike,v 1.2 2006/05/15 21:13:06 bill Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.1 $"/" ")[1];
+constant version = ("$Revision: 1.2 $"/" ")[1];
 constant description = "Monger: the Pike module manger.";
 
 string repository = "http://modules.gotpike.org:8000/xmlrpc/index.pike";
@@ -334,6 +334,15 @@ void do_install(string name, string|void version)
 
   foreach(jobs, string j)
   {
+    if(j == "install")
+    {
+      uninstall(name, 0);
+    }
+    else if(j=="local_install")
+    {
+      uninstall(name, 1);
+    }
+
     write("\nRunning %O in %O\n\n", run_pike+" "+pike_args*" "+" -x module "+j,
 	  getcwd());
     builder = Process.create_process(
@@ -404,6 +413,53 @@ void do_list(string|void name)
   }
 }
 
+int uninstall(string name, int|void _local)
+{
+  string dir;
+  string local_ver;
+  array components;
+
+  catch
+  {
+    local_ver = master()->resolv(name)["__version"];
+
+    if(local_ver) write("Version %s of this module is currently installed.\n",
+                        local_ver);
+
+    components = master()->resolv(name)["__components"];
+  };
+
+  if(!local_ver) return 0;
+  if(!components)
+  {
+    werror("no components element found for this module. Unable to reliably uninstall.\n");
+    return 0;
+  }
+
+  if(_local)
+  {
+    dir = combine_path(getenv("HOME"), "lib/pike/modules");
+  }
+  else
+  {
+    dir = master()->system_module_path[-1];
+  }
+
+  foreach(reverse(Array.sort_array(components, Array.oid_sort_func));; string comp)
+  {
+    object s = file_stat(Stdio.append_path(dir, comp));
+    if(!s)
+    {
+      werror("warning: %s does not exist.\n", comp);
+      continue;
+    }
+
+    werror("deleting " + comp + " [%s]\n", (s->isdir?"dir":"file"));
+    rm(Stdio.append_path(dir, comp));
+  }
+
+  return 1;
+}
 
 class xmlrpc_handler
 {
