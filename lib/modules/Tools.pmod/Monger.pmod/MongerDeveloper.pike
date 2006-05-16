@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: MongerDeveloper.pike,v 1.1 2005/10/19 03:28:11 bill Exp $
+// $Id: MongerDeveloper.pike,v 1.2 2006/05/16 15:40:21 bill Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.1 $"/" ")[1];
+constant version = ("$Revision: 1.2 $"/" ")[1];
 constant description = "MongerDeveloper: the Pike module manger.";
 
 private string default_repository = "http://modules.gotpike.org:8000/xmlrpc/index.pike";
@@ -440,6 +440,35 @@ private void do_list(string|void name)
   }
 }
 
+string generate_components(string root_directory)
+{
+  object s;
+
+  s = file_stat(root_directory);
+
+  if(!s ||!s->isdir)
+  {
+    throw(Error.Generic(root_directory + " is not a directory.\n"));
+  }
+
+  array components = ({});
+  string pdir;
+
+  foreach(Filesystem.Traversion(root_directory); string dir; string file)
+  {
+    // we skip all CVS directories.
+    if(dir[sizeof(dir)-4..] == "CVS/") continue;
+    if(dir != pdir)
+    {
+      pdir = dir;
+      components += ({ "  \"" + dir + "\"" });
+    }
+
+    components += ({ "  \"" + dir + file + "\"" });
+  }
+
+  return "({ \n" + ( components * ",\n") + "\n })";
+}
 
 class xmlrpc_handler
 {
