@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.12 2005/08/26 11:49:13 jonasw Exp $
+// $Id: module.pmod,v 1.13 2006/05/16 21:11:47 adam Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -1056,7 +1056,8 @@ class Message {
 
     return map( indices(headers),
 		lambda(string hname){
-		  return map(headers[hname]/"\0",
+		  return map(arrayp(headers[hname]) ? headers[hname] :
+			     headers[hname]/"\0",
 			     lambda(string header,string hname) {
 			       return hname+": "+header;
 			     },
