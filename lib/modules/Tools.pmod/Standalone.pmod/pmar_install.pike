@@ -1,11 +1,14 @@
 
 int DEBUG=1;
 
-constant version = ("$Revision: 1.2 $"/" ")[1];
+constant version = ("$Revision: 1.3 $"/" ")[1];
 constant description = "Pike packaged module (PMAR) installer.";
 
 int forcing;
 int ilocal;
+
+string s; // the pmar file contents
+string fsroot; // the first directory in the pmar archive.
 
 int c;
 int cc;
@@ -32,9 +35,14 @@ int cc;
 //!                documentation suitable for inclusion in the modref
 //!         INCLUDE/ ???
 //!                any pike language include files to be installed
-//!         SCRIPTS/
-//!                preinstall.pike
-//!                postinstall.pike
+//!         SCRIPTS/ 
+//!                standalone (no bundled dependencies) scripts used to perform custom actions
+//!                they receive the installer object (this) and the System.Filesystem object of the 
+//!                package archive as arguments to the constructor. The method "run()" should
+//!                perform the actual action. The run() method should return true or false
+//!                to indicate success or failure.
+//!                  preinstall.pike
+//!                  postinstall.pike
 
 void print_help(array argv)
 {
@@ -75,11 +83,11 @@ int main(int argc, array(string) argv)
     }
   }
 
-  string s = Stdio.read_file(argv[1]);
+  s = Stdio.read_file(argv[1]);
 
   // we assume that the first entry in the package file is the directory
   // that contains the module to be installed.
-  string fsroot = Filesystem.Tar(argv[1], 0, Stdio.FakeFile(s))->get_dir()[0];
+  fsroot = Filesystem.Tar(argv[1], 0, Stdio.FakeFile(s))->get_dir()[0];
 
   mapping sysinfo, metadata;
   object moduletool;
@@ -117,6 +125,26 @@ int main(int argc, array(string) argv)
     return 1;
   }
 
+
+  //
+  // first, we should uninstall any modules included with this new package.
+  //
+
+  foreach(metadata->MODULE/",";;string mod)
+  {
+    mod = String.trim_all_whites(mod);
+    werror("Uninstalling any previous version of %s...\n", mod);
+
+    object d = Tools.Monger.MongerUser();
+    d->uninstall(mod, ilocal);
+  }
+
+  if(!preinstall(this, getfs(s, "/")))
+  {
+    werror("Preinstall failed.\n");
+    return 1;
+  }
+
   if(has_dir(s, fsroot + "/MODULE"))
     untar(s, system_module_path, fsroot + "/MODULE");
 //  if(has_dir(s, fsroot + "/INCLUDE"))
@@ -124,7 +152,51 @@ int main(int argc, array(string) argv)
 //  if(has_dir(s, fsroot + "/MODREF"))
 //    untar(s, system_doc_path, fsroot + "/MODREF");
 
+  if(!postinstall(this, getfs(s, "/")))
+  {
+    werror("Postinstall failed.\n");
+    return 1;
+  }
+
   return 0;
+}
+
+int runscript(string sn, object installer, object pmar)
+{
+  object stat;
+
+  // it's okay if we don't have any scripts.
+  if(!has_dir(s, fsroot+"/SCRIPTS"))
+    return 1;
+
+  pmar = pmar->cd(fsroot+ "/SCRIPTS");
+
+  if(!(stat = pmar->stat(sn + ".pike")))
+    return 1;
+
+  else if(!stat->isreg)
+  {
+    werror(sn + " script is not a regular file!\n");
+    return 0;
+  }
+
+  string script = pmar->open(sn + ".pike", "r")->read();
+
+  program p = compile_string(script, sn + ".pike");
+
+  object r = p(installer, pmar->cd(fsroot));
+
+  return r->run();
+}
+
+int preinstall(object installer, object pmar)
+{
+  return runscript("preinstall", installer, pmar);
+}
+
+int postinstall(object installer, object pmar)
+{
+  return runscript("postinstall", installer, pmar);
 }
 
 int has_dir(string s, string fsroot)
