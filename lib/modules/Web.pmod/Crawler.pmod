@@ -33,7 +33,7 @@
 //! @enddl
 
 // Author:  Johan Schön.
-// $Id: Crawler.pmod,v 1.23 2006/05/16 21:44:36 adam Exp $
+// $Id: Crawler.pmod,v 1.24 2006/05/19 19:15:30 adam Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -688,9 +688,9 @@ class RobotExcluder
     array(string) collect_rejected=({});
     int rejected=0,
       parsed_disallow=0; 
+    robottxt = replace(robottxt, ({ "\r\n", "\r" }), "\n");
     foreach( robottxt/"\n"-({""}), string line )
     {
-      line -= "\r";
       string field, value;
       if(sscanf(line, "%s:%*[ \t]%[^ \t#]", field, value)==3)
       {
