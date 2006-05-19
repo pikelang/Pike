@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# $Id: uname,v 1.20 2006/05/12 14:34:46 mast Exp $
+# $Id: uname,v 1.21 2006/05/19 17:33:02 mast Exp $
 
 . $NTTOOLS
 
@@ -15,7 +15,7 @@ for a in "$@"
 do
   case "$a" in
     --version)
-      ver=`echo "$Revision: 1.20 $" |sed -e 's/.* \(.*\) .*/\1/'`
+      ver=`echo "$Revision: 1.21 $" |sed -e 's/.* \(.*\) .*/\1/'`
       echo "Fake NT uname version $ver by Fredrik Hubinette and others"
       exit 0
     ;;
@@ -111,24 +111,30 @@ if [ X$R = Xyes -o X$V = Xyes ]; then
 fi
 
 if [ "$M$P" = "" ]; then :; else
-  # Workaround for XP64 DWIMing PROCESSOR_ARCHITECTURE...
-  PROCESSOR_ARCHITECTURE="`getntenv PROCESSOR_IDENTIFIER|cut '-d ' -f1`"
+  # Query the processor architecture from PIKE_BUILD_ARCH first. It
+  # can be set in the cmd box running sprshd to select something
+  # specific and avoid the dwim on the physical cpu.
+  PROCESSOR_ARCHITECTURE="`getntenv PIKE_BUILD_ARCH`"
 
-  # PROCESSOR_IDENTIFIER is typically something like:
-  #   "ia64 Family 7 Model 1 Stepping 5, GenuineIntel"
-  # or
-  #   "x86 Family 6 Model 7 Stepping 3, GenuineIntel"
-  # PROCESSOR_LEVEL jumps to 15 with P4/Xeon
+  if [ "$PROCESSOR_ARCHITECTURE" = "" ]; then
+    # Workaround for XP64 DWIMing PROCESSOR_ARCHITECTURE...
+    PROCESSOR_ARCHITECTURE="`getntenv PROCESSOR_IDENTIFIER|cut '-d ' -f1`"
 
-  if [ "$PROCESSOR_ARCHITECTURE" = "x86" ]; then
-    PL=`getntenv PROCESSOR_LEVEL`
-    if [ "$PL" -gt 6 ]; then
-      PL=6
-    fi
-    PROCESSOR_ARCHITECTURE="i${PL}86"
-    if [ "$PROCESSOR_ARCHITECTURE" = "i86" ]; then
-      # Probably not reached, but...
-      PROCESSOR_ARCHITECTURE="i386"
+    # PROCESSOR_IDENTIFIER is typically something like:
+    #   "ia64 Family 7 Model 1 Stepping 5, GenuineIntel"
+    # or
+    #   "x86 Family 6 Model 7 Stepping 3, GenuineIntel"
+    # PROCESSOR_LEVEL jumps to 15 with P4/Xeon
+
+    if [ "$PROCESSOR_ARCHITECTURE" = "x86" ]; then
+      PL=`getntenv PROCESSOR_LEVEL`
+      if [ "$PL" -gt 6 ]; then
+	PL=6
+      fi
+      PROCESSOR_ARCHITECTURE="i${PL}86"
+      if [ "$PROCESSOR_ARCHITECTURE" = "i86" ]; then
+	PROCESSOR_ARCHITECTURE="i386"
+      fi
     fi
   fi
 
