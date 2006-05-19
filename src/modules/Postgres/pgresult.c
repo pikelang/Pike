@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgresult.c,v 1.32 2006/01/20 01:32:01 nilsson Exp $
+|| $Id: pgresult.c,v 1.33 2006/05/19 10:58:33 grubba Exp $
 */
 
 /*
@@ -73,12 +73,16 @@
 /* <server/postgres_fe.h> doesn't suffice to be able to include
  * <server/catalog/pg_type.h>.
  */
-#ifdef HAVE_SERVER_POSTGRES_H
+#ifdef HAVE_POSTGRESQL_SERVER_POSTGRES_H
+#include <postgresql/server/postgres.h>
+#elif defined(HAVE_SERVER_POSTGRES_H)
 #include <server/postgres.h>
 #elif defined(HAVE_POSTGRES_H)
 #include <postgres.h>
 #endif
-#ifdef HAVE_SERVER_CATALOG_PG_TYPE_H
+#ifdef HAVE_POSTGRESQL_SERVER_CATALOG_PG_TYPE_H
+#include <postgresql/server/catalog/pg_type.h>
+#elif defined(HAVE_SERVER_CATALOG_PG_TYPE_H)
 #include <server/catalog/pg_type.h>
 #elif defined(HAVE_CATALOG_PG_TYPE_H)
 #include <catalog/pg_type.h>

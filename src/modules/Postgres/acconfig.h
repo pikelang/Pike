@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.7 2003/12/21 17:29:40 grubba Exp $
+|| $Id: acconfig.h,v 1.8 2006/05/19 10:58:33 grubba Exp $
 */
 
 #undef STDC_HEADERS
@@ -27,6 +27,8 @@
      defined(HAVE_POSTGRES_FE_H) || \
      defined(HAVE_SERVER_POSTGRES_H) || \
      defined(HAVE_SERVER_POSTGRES_FE_H) || \
+     defined(HAVE_POSTGRESQL_SERVER_POSTGRES_H) || \
+     defined(HAVE_POSTGRESQL_SERVER_POSTGRES_FE_H) || \
      defined(HAVE_PG72)) && \
     defined(HAVE_LIBPQ_FE_H)
 #define HAVE_POSTGRES
@@ -39,10 +41,14 @@
 /* postgres_fe.h should be used in preference to postgres.h in
  * client code.
  */
-#ifdef HAVE_SERVER_POSTGRES_FE_H
+#ifdef HAVE_POSTGRESQL_SERVER_POSTGRES_FE_H
+#include <server/postgres_fe.h>
+#elif defined(HAVE_SERVER_POSTGRES_FE_H)
 #include <server/postgres_fe.h>
 #elif defined(HAVE_POSTGRES_FE_H)
 #include <postgres_fe.h>
+#elif defined(HAVE_POSTGRESQL_SERVER_POSTGRES_H)
+#include <server/postgres.h>
 #elif defined(HAVE_SERVER_POSTGRES_H)
 #include <server/postgres.h>
 #elif defined(HAVE_POSTGRES_H)

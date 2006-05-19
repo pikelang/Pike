@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.25 2004/10/28 17:21:11 mast Exp $
+dnl $Id: configure.in,v 1.26 2006/05/19 10:58:33 grubba Exp $
 
 AC_INIT(postgres.c)
 AC_CONFIG_HEADER(pgres_config.h)
@@ -96,15 +96,20 @@ dnl check it not to be a stale entry
 dnl final ckeck, just to be sure we did not mess up
   AC_CHECK_HEADERS(postgres.h postgres_fe.h \
 		   server/postgres.h server/postgres_fe.h \
+		   postgresql/server/postgres.h \
+		   postgresql/server/postgres_fe.h \
 		   server/catalog/pg_type.h catalog/pg_type.h \
-		   server/pg_config.h pg_config.h libpq-fe.h)
+		   postgresql/server/catalog/pg_type.h \
+		   server/pg_config.h postgresql/server/pg_config.h \
+		   pg_config.h libpq-fe.h)
   
 dnl check whether we have Postgres 7.2 or newer.
 dnl FIXME: This test ought to use EGREP_CPP.
   HAVE_PG72=no
   AC_EGREP_CPP([\"7\.[2-9].*], [
-#ifdef HAVE_PG_SERVER_CONFIG_H
-#include <server/pg_config.h>
+#ifdef HAVE_POSTGRESQL_SERVER_PG_CONFIG_H
+#include <postgresql/server/pg_config.h>
+#elif defined(HAVE_SERVER_PG_CONFIG_H)
 #elif defined(HAVE_PG_CONFIG_H)
 #include <pg_config.h>
 #endif
@@ -114,8 +119,9 @@ PG_VERSION
     AC_DEFINE(HAVE_PG72)
   ], [
     AC_EGREP_CPP([\"[8-9]\..*], [
-#ifdef HAVE_PG_SERVER_CONFIG_H
-#include <server/pg_config.h>
+#ifdef HAVE_POSTGRESQL_SERVER_PG_CONFIG_H
+#include <postgresql/server/pg_config.h>
+#elif defined(HAVE_SERVER_PG_CONFIG_H)
 #elif defined(HAVE_PG_CONFIG_H)
 #include <pg_config.h>
 #endif
