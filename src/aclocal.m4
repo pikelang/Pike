@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.117 2006/03/18 17:05:19 grubba Exp $
+dnl $Id: aclocal.m4,v 1.118 2006/05/20 14:05:35 marcus Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -19,10 +19,10 @@ define([require_autoconf_2_50],[AC_PREREQ(2.50)])
 
 define([if_autoconf],
 [ifelse(ifelse(index(AC_ACVERSION,.),-1,0,[m4_eval(
-  substr(AC_ACVERSION, 0, index(AC_ACVERSION,.))-0 >= $1 &&
+  translit(substr(AC_ACVERSION, 0, index(AC_ACVERSION,.)),[A-Za-z])-0 >= $1 &&
   (
-   substr(AC_ACVERSION, 0, index(AC_ACVERSION,.))-0 > $1 ||
-   substr(AC_ACVERSION, index(+AC_ACVERSION,.))-0 >= $2
+   translit(substr(AC_ACVERSION, 0, index(AC_ACVERSION,.)),[A-Za-z])-0 > $1 ||
+   translit(substr(AC_ACVERSION, index(+AC_ACVERSION,.)),[A-Za-z])-0 >= $2
   )
 )]),1,$3,$4)])
 
@@ -378,7 +378,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.117 2006/03/18 17:05:19 grubba Exp $
+  # $Id: aclocal.m4,v 1.118 2006/05/20 14:05:35 marcus Exp $
 
   MY_AC_PROG_CC
 

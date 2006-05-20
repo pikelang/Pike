@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.43 2004/05/05 13:16:29 vida Exp $
+# $Id: run_autoconfig,v 1.44 2006/05/20 14:05:35 marcus Exp $
 #
 # Bootstrap script
 
@@ -69,22 +69,22 @@ autom4te_polluted="no"
 
 autoconf_version="`\"$autoconf\" --version $ac_args|head -n 1|awk '{ print $NF }'`"
 
-if [ "`echo \"$autoconf_version\"|awk -F. '{ print $1 }'`" -ne "2" -o \
-     "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'`" -le "10" -o \
-     "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'`" -ge "50" ]; then
-  if [ "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'`" -le "51" ]; then
+if [ "`echo \"$autoconf_version\"|awk -F. '{ print $1 }'|sed -e 's/[A-Za-z]//g'`" -ne "2" -o \
+     "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'|sed -e 's/[A-Za-z]//g'`" -le "10" -o \
+     "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'|sed -e 's/[A-Za-z]//g'`" -ge "50" ]; then
+  if [ "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'|sed -e 's/[A-Za-z]//g'`" -le "51" ]; then
     # Autoconf 2.50 and 2.51 are seriously broken.
     echo "Autoconf version $autoconf_version is not supported." >&2
     echo >&2
     echo "Get and install autoconf 2.52 or later." >&2
     # Abort
     exit 1
-  elif [ "`echo \"$autoconf_version\"|awk -F. '{ print $1 }'`" = "2" -a \
-         "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'`" -ge "53" ]; then
+  elif [ "`echo \"$autoconf_version\"|awk -F. '{ print $1 }'|sed -e 's/[A-Za-z]//g'`" = "2" -a \
+         "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'|sed -e 's/[A-Za-z]//g'`" -ge "53" ]; then
     # NB: autoheader 2.53 is stupid, and has broken handling of warnings.
     #     1) The warning flags are not passed along to autoconf.
     #     2) The option --warnings is misspelled by missing the last 's'.
-    if [ "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'`" -le "53" ]; then
+    if [ "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'|sed -e 's/[A-Za-z]//g'`" -le "53" ]; then
       # autoconf 2.53 doesn't have --prepend-include.
       ac_args="-Wno-obsolete --include=$localdir"
       ah_args="--include=$localdir"
