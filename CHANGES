@@ -19,6 +19,7 @@ o Fixed "file not open" error when performing multiple operations on a
   Filesystem.Tar file.
 o Fixed a rare PNG decoding issue.
 o Proper handling of NULL elements in Postgres.
+o Fix for potential SQL injection vulnerability in Postgres.
 
 Other:
 
