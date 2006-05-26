@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.73 2005/11/18 14:13:11 grubba Exp $
+|| $Id: fdlib.c,v 1.74 2006/05/26 15:29:21 mast Exp $
 */
 
 #include "global.h"
@@ -196,6 +196,12 @@ static INLINE time_t convert_filetime_to_time_t(FILETIME *tmp)
  * The following implementation tries to do the correct thing based in
  * the filesystem type.
  */
+
+#ifdef HAVE___LOCTOTIME32_T
+/* This internal function in Microsoft CRT has changed name somewhere
+ * between VC98 and Visual Studio 8. */
+#define __loctotime_t __loctotime32_t
+#endif
 
 static int fat_filetime_to_time_t (FILETIME *in, time_t *out)
 {
