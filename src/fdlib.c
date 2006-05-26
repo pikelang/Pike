@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.65 2003/09/16 16:45:36 mast Exp $
+|| $Id: fdlib.c,v 1.66 2006/05/26 15:29:21 mast Exp $
 */
 
 #include "global.h"
@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.65 2003/09/16 16:45:36 mast Exp $");
+RCSID("$Id: fdlib.c,v 1.66 2006/05/26 15:29:21 mast Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -181,6 +181,12 @@ static int IsUncRoot(char *path)
   
   return 0 ;
 }
+
+#ifdef HAVE___LOCTOTIME32_T
+/* This internal function in Microsoft CRT has changed name somewhere
+ * between VC98 and Visual Studio 8. */
+#define __loctotime_t __loctotime32_t
+#endif
 
 static int low_stat (const char *file, PIKE_STAT_T *buf)
 {
