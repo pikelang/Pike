@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.693 2006/04/10 20:47:08 jonasw Exp $")
+AC_REVISION("$Id: configure.in,v 1.694 2006/05/26 15:29:20 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3369,6 +3369,7 @@ AC_CHECK_FUNCS( \
  thr_yield \
  prctl \
  MakeDataExecutable \
+ __loctotime32_t \
 )
 
 AC_MSG_CHECKING(for the type of the last argument to accept)
