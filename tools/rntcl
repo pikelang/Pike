@@ -39,6 +39,7 @@ constant default_cflags = ({
   "-D_WIN32",
 #endif /* WIN64 */
   "-D__NT__",
+  "-D_CRT_SECURE_NO_DEPRECATE",	// Avoid warnings about insecure functions in Visual Studio 8.
 //    "-D__STDC__",  
   "-nologo",	// Supress banner
 });
