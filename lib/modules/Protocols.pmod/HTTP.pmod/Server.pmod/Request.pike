@@ -539,7 +539,7 @@ string make_response_header(mapping m)
 
    string cc = lower_case(request_headers["connection"]||"");
 
-   if( (protocol=="HTTP/1.1" && cc != "close") || cc=="keep-alive" )
+   if( (protocol=="HTTP/1.1" && !has_value(cc,"close")) || cc=="keep-alive" )
    {
        res+=({"Connection: Keep-Alive"});
        keep_alive=1;
