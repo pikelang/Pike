@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.27 2006/05/24 17:42:51 adam Exp $
+dnl $Id: configure.in,v 1.28 2006/05/29 18:44:22 adam Exp $
 
 AC_INIT(postgres.c)
 AC_CONFIG_HEADER(pgres_config.h)
@@ -179,10 +179,10 @@ dnl last check, just to be sure
   fi
   AC_CHECK_FUNCS(PQsetdbLogin PQsetnonblocking PQunescapeBytea PQescapeStringConn PQescapeString)
   if test x$ac_cv_func_PQsetdbLogin = xno; then
-    AC_MSG_WARN(No Login-related functions, username and password will be silently ignored)
+    AC_MSG_WARN([No Login-related functions, username and password will be silently ignored])
   fi
   if test x$ac_cv_func_PQescapeStringConn = xno; then
-    AC_MSG_WARN(Your postgresql version is outdated, falling back on potentially unsafe string escaping function)
+    AC_MSG_WARN([Outdated postgresql version, using potentially unsafe string escaping function])
   fi
 fi
 
