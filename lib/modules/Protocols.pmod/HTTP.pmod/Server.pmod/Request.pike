@@ -161,9 +161,15 @@ static void flatten_headers()
 // read callback.
 static void read_cb(mixed dummy,string s)
 {
+    if( !strlen( raw ) )
+    {
+	while( strlen(s) && (<' ','\t','\n','\r'>)[s[0]] )
+	    s = s[1..];
+	if( !strlen( s ) )
+	    return;
+    }
    raw+=s;
    remove_call_out(connection_timeout);
-
    array v=headerparser->feed(s);
    if (v)
    {
