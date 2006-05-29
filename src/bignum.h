@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.h,v 1.28 2006/04/10 16:26:24 grubba Exp $
+|| $Id: bignum.h,v 1.29 2006/05/29 18:11:38 mast Exp $
 */
 
 #include "global.h"
@@ -42,18 +42,18 @@
 #ifdef AUTO_BIGNUM
 
 /* Prototypes begin here */
-struct program *get_auto_bignum_program(void);
-struct program *get_auto_bignum_program_or_zero(void);
+PMOD_EXPORT struct program *get_auto_bignum_program(void);
+PMOD_EXPORT struct program *get_auto_bignum_program_or_zero(void);
 void init_auto_bignum(void);
 void exit_auto_bignum(void);
-void convert_stack_top_to_bignum(void);
-void convert_stack_top_with_base_to_bignum(void);
+PMOD_EXPORT void convert_stack_top_to_bignum(void);
+PMOD_EXPORT void convert_stack_top_with_base_to_bignum(void);
 int is_bignum_object(struct object *o);
-int is_bignum_object_in_svalue(struct svalue *sv);
-struct object *make_bignum_object(void);
-struct object *bignum_from_svalue(struct svalue *s);
-struct pike_string *string_from_bignum(struct object *o, int base);
-void convert_svalue_to_bignum(struct svalue *s);
+PMOD_EXPORT int is_bignum_object_in_svalue(struct svalue *sv);
+PMOD_EXPORT struct object *make_bignum_object(void);
+PMOD_EXPORT struct object *bignum_from_svalue(struct svalue *s);
+PMOD_EXPORT struct pike_string *string_from_bignum(struct object *o, int base);
+PMOD_EXPORT void convert_svalue_to_bignum(struct svalue *s);
 
 #ifdef INT64
 PMOD_EXPORT extern void (*push_int64)(INT64 i);
