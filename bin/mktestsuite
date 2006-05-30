@@ -9,10 +9,10 @@ IFS="${IFS= 	}"; save_ifs="$IFS"; IFS="${IFS}:"
 HAVEGNU=no
 HAVEWORKS=no
 
-# GNU m4 is named gm4 on FreeBSD
+# GNU m4 is named gm4 on FreeBSD and Solaris 10.
 for m4 in gm4 m4
 do
-  for d in $PATH; do
+  for d in $PATH:/usr/sfw/bin:/opt/sfw/bin:/opt/csw/bin:/opt/gnu/bin:/usr/gnu/bin; do
     test -z "$d" && ac_dir=.
 
     if test -f $d/$m4; then
@@ -27,6 +27,8 @@ do
       else
         works=no
       fi
+
+      # FIXME: Ought to check for "pushed back more than 4096 chars".
 
       case `echo __gnu__ | $d/$m4` in
         __gnu__) isgnu=no ;;
