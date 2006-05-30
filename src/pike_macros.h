@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_macros.h,v 1.37 2003/06/30 17:06:09 mast Exp $
+|| $Id: pike_macros.h,v 1.38 2006/05/30 12:04:44 nilsson Exp $
 */
 
 #ifndef MACROS_H
@@ -22,8 +22,19 @@
   PTR_TO_INT(& (((struct str_type *)NULL)->field))
 #define BASEOF(ptr, str_type, field)  \
   ((struct str_type *)((char*)ptr - OFFSETOF(str_type, field)))
-#define ALIGNOF(X) OFFSETOF({ char ignored_; X fooo_;}, fooo_)
-/* #define ALIGNOF(X) PTR_TO_INT(&(((struct { char ignored_ ; X fooo_; } *)NULL)->fooo_)) */
+
+#ifdef __cplusplus
+extern "C++" {
+  template<typename T> static inline int low_alignof_(T *ignored)
+  {
+    struct { char x; T y;} *bar = NULL;
+    return PTR_TO_INT(&bar->y);
+  }
+};
+# define ALIGNOF(X) low_alignof_((X*)NULL)
+#else
+# define ALIGNOF(X) OFFSETOF({ char ignored_; X fooo_;}, fooo_)
+#endif
 
 #define NELEM(a) (sizeof (a) / sizeof ((a)[0]))
 #define ALLOC_STRUCT(X) ( (struct X *)xalloc(sizeof(struct X)) )
