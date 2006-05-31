@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.356 2006/03/05 22:22:23 marcus Exp $
+|| $Id: file.c,v 1.357 2006/05/31 18:34:37 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -779,6 +779,10 @@ static void file_read(INT32 args)
  *!
  *! Check if there is data available to read,
  *! or wait some time for available data to read.
+ *!
+ *! More specifically, a later call to @[read()] will return
+ *! immediately, either due to data being present, or due to
+ *! some error (eg if a socket has been closed).
  *!
  *! Returns @expr{1@} if there is data available to read,
  *! @expr{0@} (zero) if there is no data available, and
@@ -3254,10 +3258,20 @@ static void file_open_socket(INT32 args)
       return;
     }
   } else {
+    int o;
     fd=fd_socket((family<0? AF_INET:family), SOCK_STREAM, 0);
     if(fd < 0)
     {
       ERRNO=errno;
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
+    o=1;
+    if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0) {
+      ERRNO=errno;
+      while (fd_close(fd) && errno == EINTR) {}
+      errno = ERRNO;
       pop_n_elems(args);
       push_int(0);
       return;

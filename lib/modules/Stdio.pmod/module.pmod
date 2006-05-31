@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.221 2006/01/13 23:07:26 nilsson Exp $
+// $Id: module.pmod,v 1.222 2006/05/31 18:34:06 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -851,8 +851,7 @@ class File
 
     if (!___close_callback) return 0;
 
-#ifndef __NT__
-    if (!errno() && peek (0)) {
+    if (!errno()) {
       // There's data to read...
       //
       // FIXME: This doesn't work well since the close callback might
@@ -864,7 +863,6 @@ class File
       //___close_callback = 0;
     }
     else
-#endif /* !__NT__ */
     {
 #ifdef BACKEND_DEBUG
       if (errno())
