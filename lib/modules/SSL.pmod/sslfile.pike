@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.94 2006/03/26 23:21:05 mast Exp $
+/* $Id: sslfile.pike,v 1.95 2006/05/31 17:50:01 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -142,6 +142,16 @@ static int alert_cb_called;
 // Need to know if the alert callback has been called in
 // ssl_read_callback since it can't continue in that case. This is
 // only set temporarily while ssl_read_callback runs.
+
+static constant epipe_errnos = (<
+  System.EPIPE,
+  System.ECONNRESET,
+  // The following is WSAECONNRESET returned by winsock on windows.
+  // Pike ought to map it to System.ECONNRESET.
+  10054,
+>);
+// Multiset containing the errno codes that can occur if the remote
+// end has closed the connection.
 
 // This macro is used in all user called functions that can report I/O
 // errors, both at the beginning and after
@@ -1160,7 +1170,7 @@ int is_open()
       if (!conn->closing)
 	RUN_MAYBE_BLOCKING (
 	  action && !conn->closing, 1, 1,
-	  RETURN (!(<System.EPIPE, System.ECONNRESET>)[local_errno]));
+	  RETURN (!epipe_errnos[local_errno]));
       RETURN (conn && !conn->closing);
     }
   } LEAVE;
@@ -1621,7 +1631,7 @@ static int ssl_write_callback (int called_from_real_backend)
 	  ret = -1;
 
 	  if (close_packet_send_state == CLOSE_PACKET_QUEUED_OR_DONE &&
-	      (<System.EPIPE, System.ECONNRESET>)[cb_errno]) {
+	      epipe_errnos[cb_errno]) {
 	    // See if it's an error from writing a close packet that
 	    // should be ignored.
 	    write_buffer = ({}); // No use trying to write the close again.
