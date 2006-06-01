@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.96 2006/06/01 11:03:33 mast Exp $
+/* $Id: sslfile.pike,v 1.97 2006/06/01 13:22:03 grubba Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -146,9 +146,11 @@ static int alert_cb_called;
 static constant epipe_errnos = (<
   System.EPIPE,
   System.ECONNRESET,
-  // The following is WSAECONNRESET returned by winsock on windows.
+#if constant(System.WSAECONNRESET)
+  // The following is returned by winsock on windows.
   // Pike ought to map it to System.ECONNRESET.
-  10054,
+  System.WSAECONNRESET,
+#endif
 >);
 // Multiset containing the errno codes that can occur if the remote
 // end has closed the connection.
