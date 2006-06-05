@@ -730,8 +730,13 @@ static class package {
       object gap =
 	get_static_method(cls, "getPackages",
 			  "()[Ljava/lang/Package;", i);
+      object|array pkgs = gap();
+      if(i->jvm->exception_occurred()) {
+	i->jvm->exception_clear();
+	pkgs = ({});
+      }
       i->packages =
-	Array.map(values(gap()), lambda(object o, object nm) {
+	Array.map(values(pkgs), lambda(object o, object nm) {
 				   return (string)nm(o);
 				 },
 		  get_method(cls, "getName","()Ljava/lang/String;", i));

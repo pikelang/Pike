@@ -319,6 +319,24 @@ if test "x$with_java" = xyes; then
         AC_MSG_RESULT(yes)
       else
         AC_MSG_RESULT(no)
+        AC_MSG_CHECKING([for JNI_CreateJavaVM in -lgcj])
+        AC_CACHE_VAL(ac_cv_lib_gcj_JNI_CreateJavaVM, [
+          ac_save_LIBS="$LIBS"
+          LIBS="-lgcj $LIBS"
+          AC_TRY_LINK([#include <jni.h>], dnl
+	    [JNI_CreateJavaVM((JavaVM**)0,(void**)0,(void*)0);], dnl
+	    [ac_cv_lib_gcj_JNI_CreateJavaVM=yes], dnl
+	    [ac_cv_lib_gcj_JNI_CreateJavaVM=no])
+          LIBS="$ac_save_LIBS"
+        ])
+        if test x"$ac_cv_lib_gcj_JNI_CreateJavaVM" = xyes; then
+          LIBS="-lgcj $LIBS"
+          JAVA_LIBS="-lgcj ${JAVA_LIBS}"
+          pike_cv_java=yes;
+          AC_MSG_RESULT(yes)
+        else
+          AC_MSG_RESULT(no)
+        fi
       fi
 
     fi
