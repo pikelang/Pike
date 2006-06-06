@@ -1,7 +1,7 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.25 2006/02/15 15:35:01 nilsson Exp $
+ * $Id: postgres.pike,v 1.26 2006/06/06 03:26:00 adam Exp $
  *
  */
 
@@ -156,6 +156,7 @@ void create(void|string host, void|string database, void|string user,
 		void|string pass) {
 	string real_host=host, real_db=database;
 	int port=0;
+	quote = this->_quote ? this->_quote : simple_quote;
 	if (stringp(host)&&(search(host,":")>=0))
 		if (sscanf(host,"%s:%d",real_host,port)!=2)
 			ERROR("Error in parsing the hostname argument.\n");
@@ -221,7 +222,8 @@ void set_notify_callback(int|function f, int|float|void poll_delay) {
 		poll(poll_delay);
 }
 
-string quote(string s)
+function quote;
+string simple_quote(string s)
 {
   return replace(s, ({ "\\", "'", "\0" }), ({ "\\\\", "''", "\\0" }) );
 }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.48 2006/05/28 16:41:54 grubba Exp $
+|| $Id: postgres.c,v 1.49 2006/06/06 03:26:00 adam Exp $
 */
 
 /*
@@ -744,7 +744,7 @@ static void f_affected_rows (INT32 args)
   push_int(THIS->last_rows);
 }
 
-/*! @decl string quote(string s)
+/*! @decl string _quote(string s)
  *!
  *! Escape a string to prevent SQL injection, using the current connection's
  *! character encoding settings.
@@ -758,7 +758,7 @@ static void f_quote(INT32 args)
 	struct pike_string *s;
 	char *err_msg;
 
-	get_all_args("Postgres->quote", args, "%S", &s);
+	get_all_args("Postgres->_quote", args, "%S", &s);
 
 	ret = begin_shared_string(s->len * 2 + 1);
 #ifdef HAVE_PQESCAPESTRINGCONN
@@ -816,7 +816,7 @@ PIKE_MODULE_INIT
 
   /* function(string:string) */
 #if defined(HAVE_PQESCAPESTRINGCONN) || defined(HAVE_PQESCAPESTRING)
-  ADD_FUNCTION("quote", f_quote, tFunc(tStr,tStr), 0);
+  ADD_FUNCTION("_quote", f_quote, tFunc(tStr,tStr), 0);
 #endif
 
 
