@@ -1,5 +1,5 @@
 /*
- * $Id: com.c,v 1.5 2005/11/18 16:00:42 grubba Exp $
+ * $Id: com.c,v 1.6 2006/06/07 12:43:08 grubba Exp $
  *
  * Pike interface to Common Object Model (COM)
  *
@@ -138,7 +138,7 @@ static void com_throw_error(HRESULT hr)
   SET_ONERROR(tmp, LocalFree, lpMsgBuf);
   Pike_error("Com Error: %s\n", lpMsgBuf);
   /* NOT_REACHED */
-  ACC_AND_UNSET_ONERROR(tmp);
+  CALL_AND_UNSET_ONERROR(tmp);
 }
 
 static void com_throw_error2(HRESULT hr, EXCEPINFO excep)
