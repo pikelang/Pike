@@ -434,6 +434,18 @@ if test "x$with_java" = xyes; then
 	    fprintf(stderr, "ibmFindDLL: \"%s\"\n", ibmFindDLL());
 	  }
 #endif
+	  if (!env) {
+	    /* NOT_REACHED */
+	    /* Check that the headerfiles are reasonable... */
+	    /* Some versions of GCJ jni.h
+	     * lack the name parameter to DefineClass()
+	     * FIXME: Check if GCJ has some non-sun compat method.
+	     */
+	    jbyte code[] = { 0 };
+	    jobject jobj;
+	    jclass c =
+	      (*env)->DefineClass(env, "foo", jobj, code, sizeof(code));
+          }
 	  return 0;
         };
       ], [pike_cv_java_working=yes], [pike_cv_java_working=no])
