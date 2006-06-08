@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.386 2006/04/22 13:48:08 grubba Exp $
+// $Id: master.pike.in,v 1.387 2006/06/08 11:37:01 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -2227,7 +2227,7 @@ class CompatResolver
 			void|object current_handler)
   {
     mixed res = resolv(identifier, current_file, current_handler);
-    if(zero_type(res)) error("Could not resolv %s.\n", identifier);
+    if(zero_type(res)) error("Could not resolve %s.\n", identifier);
     return res;
   }
 
@@ -2368,7 +2368,7 @@ mapping(string:string) initial_predefines = ([]);
 static mixed main_resolv(string sym, CompatResolver|void resolver) {
   mixed v = (resolver||this)->resolv(sym);
   if(!v)
-    error("Could not resolv %s. "
+    error("Could not resolve %s. "
 	  "(Perhaps the installed pike tree has been moved.)\n", sym);
   return v;
 };
