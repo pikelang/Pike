@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.15 2006/05/06 14:54:09 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.16 2006/06/09 14:14:39 nilsson Exp $"]]);
 
 // - Standards.ISO639_2
 test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
@@ -7,7 +7,7 @@ test_equal(Standards.ISO639_2.get_language("xxx"),0)
 test_true(sizeof(Standards.ISO639_2.list_languages())>400)
 test_equal(Standards.ISO639_2.map_639_1("sv"),"swe")
 test_equal(Standards.ISO639_2.map_639_1("xx"),0)
-test_equal(sizeof(Standards.ISO639_2.list_639_1()),164)
+test_true(sizeof(Standards.ISO639_2.list_639_1())>150)
 test_do(
 class A {
   inherit Standards.ISO639_2;
@@ -123,11 +123,14 @@ test_eq([[Standards.IDNA.Punycode.decode("b1abfaaepdrnnbgefbaDotcwatmq2g4l")]],
           "\x43D\x435\x433\x43E\x432\x43E\x440\x44F\x442\x43F\x43E"
           "\x440\x443\x441\x441\x43A\x438"]]) // I
 
-// UUID
-
+// - UUID
 test_eq(Standards.UUID.make_dns("www.widgets.com")->str(),
         "e902893a-9d22-3c7e-a7b8-d6e313b71d9f")
 test_eq(Standards.UUID.make_null()->str(),
-        "00000000-0000-0000-0000-000000000000");
+        "00000000-0000-0000-0000-000000000000")
+
+// - TLD
+test_equal(Standards.TLD.cc.se, "Sweden")
+test_true(Standards.TLD.generic.com)
 
 END_MARKER
