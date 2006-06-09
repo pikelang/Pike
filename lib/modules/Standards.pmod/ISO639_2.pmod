@@ -1,6 +1,6 @@
 // By Martin Nilsson
 
-// Updated 2006-01-04 from http://lcweb.loc.gov/standards/iso639-2/
+// Updated 2006-06-09 from http://lcweb.loc.gov/standards/iso639-2/
 
 #pike __REAL_VERSION__
 
@@ -322,6 +322,7 @@ static constant languages = ([
   "nor":"Norwegian",
   "nso":"Northern Sotho",
   "nub":"Nubian languages",
+  "nqo":"N'Ko",
   "nwc":"Classical Newari",
   "nya":"Chichewa",
   "nym":"Nyamwezi",
@@ -480,7 +481,8 @@ static constant languages = ([
   "zho":"Chinese",
   "znd":"Zande",
   "zul":"Zulu",
-  "zun":"Zuni"
+  "zun":"Zuni",
+  "zxx":"No linguistic content",
 ]);
 
 // Mapping from ISO 639-2/B to ISO 639-2/T
@@ -597,6 +599,7 @@ static constant conversion = ([
   "cy":"cym",
   "da":"dan",
   "de":"deu",
+  "dv":"div",
   "dz":"dzo",
   "el":"ell",
   "en":"eng",
