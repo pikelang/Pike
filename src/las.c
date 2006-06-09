@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.375 2006/03/02 10:25:07 grubba Exp $
+|| $Id: las.c,v 1.376 2006/06/09 18:21:52 mast Exp $
 */
 
 #include "global.h"
@@ -2030,12 +2030,27 @@ node *low_mkconstantsvaluenode(struct svalue *s)
 {
   node *res = mkemptynode();
   res->token = F_CONSTANT;
-  assign_svalue_no_free(& res->u.sval, s);
 #ifdef SHARED_NODES
-  if (s->type != T_INT && s->type != T_FUNCTION && s->type != T_OBJECT)
-    /* The subtype is part of the hash, so make sure it gets a defined
-     * value here. */
-    res->u.sval.subtype = 0;
+  /* We need to ensure that all bytes in the svalue struct have well
+   * defined values, including any padding between the subtype and the
+   * union. */
+  switch (res->u.sval.type = s->type) {
+    case T_INT:
+      res->u.sval.u.integer = s->u.integer;
+      res->u.sval.subtype = s->subtype;
+      break;
+    case T_FLOAT:
+      res->u.sval.u.float_number = s->u.float_number;
+      break;
+    case T_FUNCTION:
+      res->u.sval.subtype = s->subtype;
+      /* FALL THROUGH */
+    default:
+      res->u.sval.u.ptr = s->u.ptr;
+  }
+  add_ref_svalue (&res->u.sval);
+#else
+  assign_svalue_no_free(& res->u.sval, s);
 #endif
   if(s->type == T_OBJECT ||
      (s->type==T_FUNCTION && s->subtype!=FUNCTION_BUILTIN))
