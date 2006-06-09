@@ -10,9 +10,10 @@ HAVEGNU=no
 HAVEWORKS=no
 
 # GNU m4 is named gm4 on FreeBSD and Solaris 10.
+PATHS=$PATH:/usr/sfw/bin:/opt/sfw/bin:/opt/csw/bin:/opt/gnu/bin:/usr/gnu/bin
 for m4 in gm4 m4
 do
-  for d in $PATH:/usr/sfw/bin:/opt/sfw/bin:/opt/csw/bin:/opt/gnu/bin:/usr/gnu/bin; do
+  for d in $PATHS; do
     test -z "$d" && ac_dir=.
 
     if test -f $d/$m4; then
