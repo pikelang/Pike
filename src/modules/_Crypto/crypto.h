@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: crypto.h,v 1.10 2002/10/11 01:39:51 nilsson Exp $
+|| $Id: crypto.h,v 1.11 2006/06/09 09:28:45 mast Exp $
 */
 
 /*
@@ -13,6 +13,7 @@
 extern void assert_is_crypto_module(struct object *);
 
 extern void pike_nt_init(void);
+extern void pike_nt_exit(void);
 extern void pike_md2_init(void);
 extern void pike_md2_exit(void);
 extern void pike_md4_init(void);

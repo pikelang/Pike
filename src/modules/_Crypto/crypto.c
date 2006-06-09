@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: crypto.c,v 1.52 2002/10/21 17:06:24 marcus Exp $
+|| $Id: crypto.c,v 1.53 2006/06/09 09:28:45 mast Exp $
 */
 
 /*
@@ -676,6 +676,7 @@ PIKE_MODULE_EXIT
   pike_cbc_exit();
   pike_pipe_exit();
   pike_invert_exit();
+  pike_nt_exit();
 
   /* BEGIN NATIONAL SECURITY */
 
