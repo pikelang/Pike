@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.171 2004/09/01 17:21:50 mast Exp $
+// $Id: module.pmod,v 1.172 2006/06/13 15:03:58 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1851,19 +1851,15 @@ int is_link(string path)
 //! Returns true if the given path exists (is a directory or file),
 //! otherwise false.
 //!
-//! @seealso
-//! @[is_dir()], @[is_file()], @[is_link()], @[file_stat()]
+//! @note
+//!   May fail with eg @[errno()] @tt{EFBIG@} if the file exists,
+//!   but the filesystem doesn't support the file size.
 //!
+//! @seealso
+//!   @[is_dir()], @[is_file()], @[is_link()], @[file_stat()]
 int exist(string path)
 {
-  // NOTE: file_stat() may fail with eg EFBIG if the file exists,
-  //       but the filesystem, doesn't support the file size.
-  return !!file_stat(path) || !(<
-#if constant(System.WSAENOTSUPP)
-    System.WSAENOTSUPP,
-#endif /* constant(System.WSAENOTSUPP) */
-    System.ENOENT,
-  >)[errno()];
+  return !!file_stat(path);
 }
 
 mixed `[](string index)
