@@ -1,15 +1,25 @@
-#!/usr/local/bin/pike
+#!/bin/sh
 
-inherit "lib.pike";
+eval "last=\${$#}"
 
-int main(int argc, array(string) argv)
-{
-  if(sscanf(argv[-1],"%*[a-zA-Z]:%*s")==2)
-  {
-    argv[0]="copy";
-    exit(do_cmd( Array.map(argv,fixpath)));
-  }else{
-    exece(find_next_in_path(argv[0],"cp"),argv[1..]);
-    exit(69);
-  }
-}
+p=`expr "$last" : '[a-zA-Z][a-zA-Z]*:\(.*\)'`
+if [ "$p" != "" ]; then
+  exec cp.pike "$@"
+
+else
+  OLDIFS="$IFS"
+  IFS=:
+  for path in $PATH; do
+    if [ -x "$path/cp" ]; then
+      if [ "$first" = "" ]; then
+	first="$path"
+      elif [ "$path" != "$first" ]; then
+	next="$path/cp"
+	break
+      fi
+    fi
+  done
+  IFS="$OLDIFS"
+
+  exec "$next" "$@"
+fi
