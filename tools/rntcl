@@ -1,4 +1,4 @@
-#!/usr/local/bin/pike
+#!/usr/bin/env pike
 // -*- Pike -*-
 
 // RNTCL, a front-end to MS VC++ and Intel ICL/ECL with options similar to GCC
@@ -41,7 +41,7 @@ constant default_cflags = ({
   "-D__NT__",
   "-D_CRT_SECURE_NO_DEPRECATE",	// Avoid warnings about insecure functions in Visual Studio 8.
 //    "-D__STDC__",  
-  "-nologo",	// Supress banner
+  "-nologo",	// Suppress banner
 });
 
 // Verbose is default for now, this can be turned off one this
@@ -93,6 +93,29 @@ array|object paranoia_stat(string f)
     sleep(0.1);
   }
   return file_stat(f);
+}
+
+void safe_hardlink (string from, string to)
+{
+  if(!paranoia_stat(from))
+  {
+    werror("RNTCL: output file not generated (%s).\n", from);
+    exit(1);
+  }
+  rm(to);
+  if (catch {
+      hardlink(from, to);
+    }) {
+    string s = Stdio.read_bytes(from);
+    if (!s) {
+      werror("RNTCL: Failed to read output file (%s).\n", from);
+      exit(1);
+    }
+    if (Stdio.write_file(to, s) != sizeof(s)) {
+      werror("RNTCL: Failed to write all of output file (%s).\n", to);
+      exit(1);
+    }
+  }
 }
 
 int main(int argc, array(string) argv)
@@ -245,7 +268,7 @@ int main(int argc, array(string) argv)
 	  // -lm and -lc are automatically handled ?
 	  if(option[1]=="m" || option[1]=="c") break;
 
-	  // We optimiza a little, no need to bring in the same
+	  // We optimize a little, no need to bring in the same
 	  // library many times in a row.
 //	  if(cflags[-1]!=option[1]+".lib")
 //	  if(search(cflags,option[1]+".lib")!=-1)
@@ -294,6 +317,14 @@ int main(int argc, array(string) argv)
 
   // Scan through the remaining arguments
   argv=Getopt.get_args(argv);
+
+  string compile_source;
+  foreach (argv, string arg)
+    if (has_suffix (arg, ".c")) {
+      compile_source = (arg / "/")[-1];
+      break;
+    }
+
   cflags+=Array.map(Array.map(argv[1..],fixpath), o_to_obj);
 
   foreach(argv[1..], string tmp)
@@ -390,6 +421,8 @@ int main(int argc, array(string) argv)
   if(sizeof(ldopts))
     cmd += ({"-link" }) + ldopts;
 
+  //werror ("%O\n", cmd);
+
   int ret;
   if(verbose && target!="-")
   { 
@@ -409,14 +442,15 @@ int main(int argc, array(string) argv)
 			trailer[channel] += line;
 			array(string) lines = trailer[channel]/"\n";
 			if (sizeof(lines) < 2) return;
-			if(first_line && channel != 1)
+			if(first_line && channel != 2)
 			{
-			  // Strip first line.
-			  if (verbose && (target != "-")) {
-			    if (channel == 2) werror (lines[0] + "\n");
-			    else write(lines[0]+"\n");
+			  // Strip the first line if it is the name of the
+			  // file being compiled.
+			  if (lines[0] == compile_source) {
+			    if (verbose && (target != "-"))
+			      write(lines[0]+"\n");
+			    lines = lines[1..];
 			  }
-			  lines = lines[1..];
 			  first_line = 0;
 			}
 			trailer[channel] = lines[-1];
@@ -475,31 +509,9 @@ int main(int argc, array(string) argv)
 
   if(wantfile)
   {
-    if (target == "obj") {
-      if(!paranoia_stat(wantfile+"bj"))
-      {
-	werror("RNTCL: output file not generated (%s).\n",
-	       wantfile+"bj");
-	exit(1);
-      }
-      rm(wantfile);
-      if (catch {
-	hardlink(wantfile+"bj", wantfile);
-      }) {
-	string s = Stdio.read_bytes(wantfile+"bj");
-	if (!s) {
-	  werror("RNTCL: Failed to read output file (%s).\n",
-		 wantfile+"bj");
-	  exit(1);
-	}
-	if (Stdio.write_file(wantfile, s) != sizeof(s)) {
-	  werror("RNTCL: Failed to write all of output file (%s).\n",
-		 wantfile);
-	  exit(1);
-	}
-      }
-    }
-    if(!paranoia_stat(wantfile))
+    if (target == "obj")
+      safe_hardlink (wantfile + "bj", wantfile);
+    else if(!paranoia_stat(wantfile))
     {
       werror("RNTCL: output file not generated (%s).\n",wantfile);
       exit(1);
