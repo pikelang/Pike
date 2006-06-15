@@ -98,8 +98,20 @@ esac
 case /$0 in
   */init_nt)
     # We were executed we can find the path!
-    base=`echo $0 | sed -e 's@/init_nt@@'`
-    base=`(test "x$base" != "x" && cd $base ; /bin/pwd)`
+    this=$0
+    old_cwd=`pwd`
+    while :; do
+      base=`dirname "$this"`
+      this=`basename "$this"`
+      test "x$base" != "x" && cd "$base"
+      base=`pwd`
+      if [ -h "$this" ]; then
+	this=`find $this -printf %l`
+      else
+	break
+      fi
+    done
+    cd "$old_cwd"
   ;;
 
   *)
@@ -133,7 +145,6 @@ export NT_TOOL_PATH
 
 if [ ! -d "$NT_TOOL_PATH" ]; then
   echo Unable to find NT tools!
-  return
   exit
 fi
 
