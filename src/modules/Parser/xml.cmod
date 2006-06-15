@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.cmod,v 1.90 2006/05/06 13:54:18 grubba Exp $
+|| $Id: xml.cmod,v 1.91 2006/06/15 14:02:29 grubba Exp $
 */
 
 #include "global.h"
@@ -647,6 +647,9 @@ PIKECLASS Simple
 
   DECLARE_STORAGE;
 
+  /* Forward decl. */
+  static ptrdiff_t Simple_Context_program_fun_num;
+
   struct xmlinput
   {
     struct xmlinput *next;
@@ -678,58 +681,352 @@ PIKECLASS Simple
     return i;
   }
 
-  struct xmldata
-  {
-    struct xmlinput *input;
-
-    struct svalue *func;
-    struct svalue *extra_args;
-    INT32 num_extra_args;
-    TYPE_FIELD extra_arg_types;
-    int allow_pesmeg_everywhere;
-  };
-
-
 /* Flag bits. */
-#define ALLOW_RXML_ENTITIES 0x01
-#define COMPAT_ALLOW_7_2_ERRORS 0x02
-#define COMPAT_ALLOW_7_6_ERRORS 0x04
+#define ALLOW_RXML_ENTITIES	0x01
+#define COMPAT_ALLOW_7_2_ERRORS	0x02
+#define COMPAT_ALLOW_7_6_ERRORS	0x04
+#define ALLOW_PESMEG_EVERYWHERE	0x08
+
+#define PARSETYPE \
+  tFuncV(tStr tOr(CALLBACKTYPE, tVoid), tMix, tArr(tVar(0)))
+  /* "function(string," CALLBACKTYPE ",mixed...:array(0))" */
+
+  /*! @decl array parse(string xml, function cb, mixed ... extra_args)
+   */
+  PIKEFUN array parse(string s, function cb, mixed ... extra_args)
+    rawtype PARSETYPE;
+  {
+    int d;
+
+    /* Move cb and extras one step to make place for flags. */
+    for (d = 1; d < args; d++) {
+      sp[1-d] = sp[-d];
+    }
+    sp[1-args].type = T_INT;
+    sp[1-args].subtype = NUMBER_NUMBER;
+    sp[1-args].u.integer = THIS->flags;
+    args++;
+    sp++;
+
+    apply_current(Simple_Context_program_fun_num, args);
+
+    if ((Pike_sp[-1].type != T_OBJECT) || (!Pike_sp[-1].u.object->prog)) {
+      Pike_error("Unexpected return value from Parser.XML.Low.Context().\n");
+    }
+    apply(Pike_sp[-1].u.object, "parse_xml", 0);
+    stack_swap();
+    pop_stack();
+  }
+
+  /*! @decl mixed parse_dtd(string dtd, function cb, mixed ... extras)
+   */
+  PIKEFUN mixed parse_dtd(string s, function cb, mixed ... extras)
+    rawtype PARSETYPE;
+  {
+    int d;
+
+    /* Move cb and extras one step to make place for flags. */
+    for (d = 1; d < args; d++) {
+      sp[1-d] = sp[-d];
+    }
+    sp[1-args].type = T_INT;
+    sp[1-args].subtype = NUMBER_NUMBER;
+    sp[1-args].u.integer = THIS->flags | ALLOW_PESMEG_EVERYWHERE;
+    args++;
+    sp++;
+
+    apply_current(Simple_Context_program_fun_num, args);
+
+    if ((Pike_sp[-1].type != T_OBJECT) || (!Pike_sp[-1].u.object->prog)) {
+      Pike_error("Unexpected return value from Parser.XML.Low.Context().\n");
+    }
+    apply(Pike_sp[-1].u.object, "parse_dtd", 0);
+    stack_swap();
+    pop_stack();
+  }
+
+  PIKEFUN void set_attribute_cdata(string tag, string attr)
+  {
+    push_int(1); args++;
+    assign_svalue(mapping_mapping_lookup(THIS->is_cdata,
+					 sp-args, sp+1-args, 1), sp+2-args);
+    pop_n_elems(args);
+    push_undefined();
+  }
+
+  PIKEFUN mapping(string:int(0..1)) get_tag_attribute_cdata(string tag)
+  {
+    struct svalue *s = low_mapping_lookup(THIS->is_cdata, sp-1);
+    if (s && s->type == T_MAPPING) {
+      struct mapping *m = copy_mapping(s->u.mapping);
+      pop_stack();
+      push_mapping(m);
+    } else {
+      pop_stack();
+      push_undefined();
+    }
+  }
+
+  PIKEFUN void set_default_attribute(string tag, string attr, string val)
+  {
+    assign_svalue(mapping_mapping_lookup(THIS->attributes,
+					 sp-args, sp+1-args, 1), sp+2-args);
+    pop_n_elems(args);
+    push_undefined();
+  }
+
+  PIKEFUN mapping(string:string) get_default_attributes(string tag)
+  {
+    struct svalue *s = low_mapping_string_lookup(THIS->attributes, tag);
+    if (s && s->type == T_MAPPING) {
+      struct mapping *m = copy_mapping(s->u.mapping);
+      pop_n_elems(args);
+      push_mapping(m);
+    } else {
+      pop_n_elems(args);
+      push_mapping(allocate_mapping(10));
+    }
+  }
+
+  /*! @decl string lookup_entity(string entity)
+   *!
+   *! @note
+   *!   Added in Pike 7.7.
+   */
+  PIKEFUN string lookup_entity(string entity)
+  {
+    struct svalue *s = NULL;
+    if (THIS->entities) {
+      s = low_mapping_lookup(THIS->entities, sp-args);
+    }
+    pop_n_elems(args);
+    if (s) {
+      push_svalue(s);
+    } else {
+      push_undefined();
+    }
+  }
+
+  /*! @decl void define_entity_raw(string entity, string raw)
+   */
+  PIKEFUN void define_entity_raw(string entity, string raw)
+  {
+    if(!THIS->entities)
+    {
+      f_aggregate_mapping(2);
+      THIS->entities=sp[-1].u.mapping;
+      sp--;
+    }else{
+      mapping_insert(THIS->entities, sp-2, sp-1);
+      pop_n_elems(args);
+    }
+    push_undefined();
+  }
+
+  /*! @decl void define_entity(string entity, string raw, @
+   *!                          function cb, mixed ... extras)
+   */
+  PIKEFUN void define_entity(string entity, string s,
+			     function cb, mixed ... extras)
+  {
+    int d;
+
+    /* Move cb and extras one step to make place for flags. */
+    for (d = 2; d < args; d++) {
+      sp[2-d] = sp[-d];
+    }
+    sp[2-args].type = T_INT;
+    sp[2-args].subtype = NUMBER_NUMBER;
+    sp[2-args].u.integer = THIS->flags;
+    args++;
+    sp++;
+
+    apply_current(Simple_Context_program_fun_num, args-1);
+    args = 2;
+
+    if ((Pike_sp[-1].type != T_OBJECT) || (!Pike_sp[-1].u.object->prog)) {
+      Pike_error("Unexpected return value from Parser.XML.Low.Context().\n");
+    }
+    apply(Pike_sp[-1].u.object, "parse_entity", 0);
+    stack_swap();
+    pop_stack();
+
+    f_Simple_define_entity_raw(2);
+  }
+
+  /*! @decl void allow_rxml_entities(int(0..1) yes_no)
+   */
+  PIKEFUN void allow_rxml_entities(int(0..1) yes_no)
+  {
+    if (!yes_no)
+      THIS->flags &= ~ALLOW_RXML_ENTITIES;
+    else
+      THIS->flags |= ALLOW_RXML_ENTITIES;
+    pop_n_elems(args);
+    push_int(0);
+  }
+
+  /*! @decl void compat_allow_errors(string version)
+   *!
+   *! Set whether the parser should allow certain errors for
+   *! compatibility with earlier versions. @[version] can be:
+   *!
+   *! @string
+   *!   @value "7.2"
+   *!     Allow more data after the root element.
+   *!   @value "7.6"
+   *!     Allow multiple and invalidly placed "<?xml ... ?>" and
+   *!     "<!DOCTYPE ... >" declarations (invalid "<?xml ... ?>"
+   *!     declarations are otherwise treated as normal PI:s). Allow
+   *!     "<![CDATA[ ... ]]>" outside the root element. Allow the root
+   *!     element to be absent.
+   *! @endstring
+   *!
+   *! @[version] can also be zero to enable all error checks.
+   */
+  PIKEFUN void compat_allow_errors(string|void version)
+  {
+    if (args < 1)
+      SIMPLE_TOO_FEW_ARGS_ERROR ("XML->compat_allow_errors", 1);
+
+    if (!version) {
+      THIS->flags &= ~(COMPAT_ALLOW_7_2_ERRORS|COMPAT_ALLOW_7_6_ERRORS);
+    } else if (version == MK_STRING("7.2")) {
+      THIS->flags |= COMPAT_ALLOW_7_2_ERRORS|COMPAT_ALLOW_7_6_ERRORS;
+    } else if (version == MK_STRING("7.6")) {
+      THIS->flags &= ~COMPAT_ALLOW_7_2_ERRORS;
+      THIS->flags |= COMPAT_ALLOW_7_6_ERRORS;
+    } else {
+      Pike_error ("Got unknown version string.\n");
+    }
+
+    pop_n_elems(args);
+    push_int(0);
+  }
+
+
+  INIT
+  {
+    push_constant_text("lt");    push_constant_text("&#60;");
+    push_constant_text("gt");    push_constant_text(">");
+    push_constant_text("amp");   push_constant_text("&#38;");
+    push_constant_text("apos");  push_constant_text("'");
+    push_constant_text("quot");  push_constant_text("\"");
+  
+    f_aggregate_mapping(10);
+    THIS->entities=sp[-1].u.mapping;
+    sp--;
+    dmalloc_touch_svalue(sp);
+
+    f_aggregate_mapping(0);
+    THIS->attributes=sp[-1].u.mapping;
+    sp--;
+    dmalloc_touch_svalue(sp);
+
+    f_aggregate_mapping(0);
+    THIS->is_cdata=sp[-1].u.mapping;
+    sp--;
+    dmalloc_touch_svalue(sp);
+
+    THIS->flags = 0;
+  }
+
+  EXTRA
+  {
+    /* Compat */
+    /* function(string:string) */
+    ADD_FUNCTION("autoconvert", f_autoconvert, tFunc(tStr,tStr), 0);
+  }
+
+  /*! @class Context
+   */
+  PIKECLASS Context
+    flags ID_STATIC;
+    program_flags PROGRAM_USES_PARENT;
+  {
+    CVAR struct xmlinput *input;
+
+    /* callback:
+     *   string type
+     *   string name
+     *   mapping args
+     *   array|string data
+     *   mixed ... xtra
+     */
+#define CALLBACKTYPE							\
+    tFuncV(tStr tStr tMapping tOr(tArray,tStr) tMap(tStr,tMix), tMix, tSetvar(0, tMix))
+    /*"function(string,string,mapping,array|string,mapping(string:mixed),mixed...:0=mixed)"*/
+
+    CVAR struct svalue func;
+    CVAR struct array *extra_args;
+    CVAR int flags;
+    CVAR int doc_seq_pos;
+
+    DECLARE_STORAGE;
+
+#define POP() do {							\
+      struct xmlinput *i = THIS->input;					\
+      IF_XMLDEBUG(fprintf(stderr,"POP\n"));				\
+      if (i->entity)							\
+	free_string(i->entity);						\
+      if(i->to_free)							\
+	free_string(i->to_free);					\
+      if(i->callbackinfo)						\
+	free_mapping(i->callbackinfo);					\
+      THIS->input = i->next;						\
+      really_free_xmlinput(i);						\
+      IF_XMLDEBUG(if (THIS->input)					\
+		    fprintf(stderr,					\
+			    "ptr=%p len=%d pos=%d to_free=%p\n",	\
+			    THIS->input->datap.ptr,			\
+			    THIS->input->len,				\
+			    THIS->input->pos,				\
+			    THIS->input->to_free));			\
+    } while(0)
+
+    INIT
+    {
+      THIS->input = NULL;
+      THIS->func.type = PIKE_T_INT;
+      THIS->func.subtype = NUMBER_UNDEFINED;
+      THIS->func.u.integer = 0;
+      THIS->extra_args = NULL;
+      THIS->flags = 0;
+      THIS->doc_seq_pos = 0;
+    }
+
+    EXIT
+    {
+      while (THIS->input)
+	POP();
+      if (THIS->extra_args) {
+	free_array(THIS->extra_args);
+	THIS->extra_args = NULL;
+      }
+      free_svalue(&THIS->func);
+    }
+
+    EXTRA
+    {
+#define XML_ADD_INTEGER_CONSTANT(X)	add_integer_constant(#X, X, 0)
+      XML_ADD_INTEGER_CONSTANT(ALLOW_RXML_ENTITIES);
+      XML_ADD_INTEGER_CONSTANT(COMPAT_ALLOW_7_2_ERRORS);
+      XML_ADD_INTEGER_CONSTANT(COMPAT_ALLOW_7_6_ERRORS);
+      XML_ADD_INTEGER_CONSTANT(ALLOW_PESMEG_EVERYWHERE);
+    }
 
 #define PEEK(X)								\
-  ( IF_PIKEDEBUG(((X) > data->input->len)?				\
-		 (Pike_fatal("PEEK out of bounds (%ld/%ld)\n",		\
-			     PTRDIFF_T_TO_LONG(X),			\
-			     PTRDIFF_T_TO_LONG(data->input->len)), 0):) \
-    INDEX_PCHARP(data->input->datap, X) )
+    ( IF_PIKEDEBUG(((X) > THIS->input->len)?				\
+		   (Pike_fatal("PEEK out of bounds (%ld/%ld)\n",	\
+			       PTRDIFF_T_TO_LONG(X),			\
+			       PTRDIFF_T_TO_LONG(THIS->input->len)), 0):) \
+      INDEX_PCHARP(THIS->input->datap, X) )
 
-#define SAFE_PEEK(X) ((X)>=data->input->len ? 0 : PEEK(X))
+#define SAFE_PEEK(X) ((X)>=THIS->input->len ? 0 : PEEK(X))
 
 #define POKE(X,Y) string_builder_putchar(&X,Y)
 
-#define XMLEOF() (data->input->len <= 0)
-
-#define POP() do {							\
-    struct xmlinput *i = data->input->next;				\
-    IF_XMLDEBUG(fprintf(stderr,"SMEG POP\n"));				\
-    if (data->input->entity) {						\
-      if (data->input->to_free) {					\
-	mapping_string_insert_string(THIS->entities,			\
-				     data->input->entity,		\
-				     data->input->to_free);		\
-      }									\
-      free_string(data->input->entity);					\
-    }									\
-    if(data->input->to_free) free_string(data->input->to_free);		\
-    if(data->input->callbackinfo) free_mapping(data->input->callbackinfo); \
-    really_free_xmlinput(data->input);					\
-    data->input=i;							\
-    IF_XMLDEBUG(if (i) fprintf(stderr,					\
-			       "ptr=%p len=%d pos=%d to_free=%p\n",	\
-			       data->input->datap.ptr,			\
-			       data->input->len,			\
-			       data->input->pos,			\
-			       data->input->to_free));			\
-  } while(0)
+#define XMLEOF() (THIS->input->len <= 0)
 
 #ifdef PIKE_DEBUG
 #define CHECK_INPUT(INPUT) do {					\
@@ -741,49 +1038,46 @@ PIKECLASS Simple
 #define CHECK_INPUT(INPUT)
 #endif /* PIKE_DEBUG */
 
-static inline int xmlread(int z,struct xmldata *data, int line)
+static inline int xmlread(int z, int line)
 {
   int popped=0;
-  data->input->pos += z;
+  THIS->input->pos += z;
   IF_XMLDEBUG(fprintf(stderr,"Step(%d) (at %d) to %d/%d '%c%c%c%c'\n",
 		      z,
 		      line,
-		      data->input->pos,
-		      data->input->len,
+		      THIS->input->pos,
+		      THIS->input->len,
 		      SAFE_PEEK(0),
 		      SAFE_PEEK(1),
 		      SAFE_PEEK(2),
 		      SAFE_PEEK(3)));
-  data->input->len-=z;
-  INC_PCHARP(data->input->datap, z);
-  while(data->input->next && XMLEOF()) { POP(); popped++; }
+  THIS->input->len-=z;
+  INC_PCHARP(THIS->input->datap, z);
+  while(THIS->input->next && XMLEOF()) { POP(); popped++; }
   return popped;
 }  
 
-#define READ(X) xmlread((X),data,__LINE__)
+#define READ(X) xmlread((X),__LINE__)
 
-#define SIMPLE_READ_ATTVALUE(X) simple_read_system_attvalue(data,X)
-#define SIMPLE_READ_SYSTEMLITERAL() simple_read_system_literal(data)
-#define SIMPLE_READ_PUBIDLITERAL() simple_read_pubid_literal(data)
-#define SIMPLE_READNAME() simple_readname(data)
-#define SIMPLE_READNAME_PERIOD() simple_readname_period(data)
-#define SIMPLE_READNMTOKEN() simple_readnmtoken(data)
+#define SIMPLE_READ_ATTVALUE(X) simple_read_system_attvalue(X)
+#define SIMPLE_READ_SYSTEMLITERAL() simple_read_system_literal()
+#define SIMPLE_READ_PUBIDLITERAL() simple_read_pubid_literal()
+#define SIMPLE_READNAME() simple_readname()
+#define SIMPLE_READNAME_PERIOD() simple_readname_period()
+#define SIMPLE_READNMTOKEN() simple_readnmtoken()
 
-static void sys(struct xmldata *data);
-static int low_parse_dtd(struct xmldata *data);
-static void free_xmldata(struct xmldata *data);
-static void simple_readname(struct xmldata *);
-static int simple_readname_period(struct xmldata *);
-static void simple_read_system_literal(struct xmldata *);
-static void simple_read_pubid_literal(struct xmldata *);
-static int low_parse_xml(struct xmldata *data,
-			 struct pike_string *end,
-			 int *doc_seq_pos);
-static void xmlerror(char *desc, struct xmldata *data,
-		     struct pike_string *tag_name);
+static void sys();
+static int low_parse_dtd();
+static void free_xmldata();
+static void simple_readname();
+static int simple_readname_period();
+static void simple_read_system_literal();
+static void simple_read_pubid_literal();
+static int low_parse_xml(struct pike_string *end);
+static void xmlerror(char *desc, struct pike_string *tag_name);
 
-#define XMLERROR(desc) do {xmlerror(desc,data,NULL); READ (1);} while (0)
-#define XMLERROR_STAY(desc) xmlerror(desc,data,NULL)
+#define XMLERROR(desc) do {xmlerror(desc,NULL); READ (1);} while (0)
+#define XMLERROR_STAY(desc) xmlerror(desc,NULL)
 
 #define VOIDIFY(X) do { struct svalue *save_sp=sp; 	\
        X;						\
@@ -799,7 +1093,7 @@ static void xmlerror(char *desc, struct xmldata *data,
 #define SKIPTO(X) \
   do { while( (!XMLEOF()) && (PEEK(0) != (X))) READ(1); }while(0)
 
-static int gobble(struct xmldata *data, char *s)
+static int gobble(char *s)
 {
   int e;
   for(e=0;s[e];e++)
@@ -812,18 +1106,18 @@ static int gobble(struct xmldata *data, char *s)
   return 1;
 }
 
-#define GOBBLE(X) gobble(data,X)
+#define GOBBLE(X) gobble(X)
 
 
 #define READNAME(X) do {				\
 	if(isFirstNameChar(PEEK(0)))			\
 	{						\
 	  int e = 1;					\
-	  while ((e < data->input->len) &&		\
+	  while ((e < THIS->input->len) &&		\
 		 isNameChar(PEEK(e))) {			\
 	    e++;					\
 	  }						\
-	  string_builder_append(&X, data->input->datap,	\
+	  string_builder_append(&X, THIS->input->datap,	\
 				e);			\
 	  READ(e);					\
 	} else {					\
@@ -838,12 +1132,12 @@ static int gobble(struct xmldata *data, char *s)
 	if(isFirstNameChar(PEEK(0)))                    \
 	{						\
 	  int e = 1;					\
-	  while ((e < data->input->len) &&		\
+	  while ((e < THIS->input->len) &&		\
 		 isNameChar(PEEK(e))) {			\
 	    if (PEEK(e) == '.') FOUND_PERIOD = 1;	\
 	    e++;					\
 	  }						\
-	  string_builder_append(&X, data->input->datap,	\
+	  string_builder_append(&X, THIS->input->datap,	\
 				e);			\
 	  READ(e);					\
 	} else {					\
@@ -855,11 +1149,11 @@ static int gobble(struct xmldata *data, char *s)
 	if(isNameChar(PEEK(0)))				\
 	{						\
 	  int e = 1;					\
-	  while ((e < data->input->len) &&		\
+	  while ((e < THIS->input->len) &&		\
 		 isNameChar(PEEK(e))) {			\
 	    e++;					\
 	  }						\
-	  string_builder_append(&X, data->input->datap,	\
+	  string_builder_append(&X, THIS->input->datap,	\
 				e);			\
 	  READ(e);					\
 	}else{						\
@@ -935,24 +1229,33 @@ static int gobble(struct xmldata *data, char *s)
 
 #define PARSE_REF(ATTR,PARSE_RECURSIVELY) do {				 \
     /* Entity reference */						 \
+    struct xmlinput *i;							 \
+    /* Ensure that we aren't already parsing this ref. */		 \
+    for (i = THIS->input; i; i = i->next) {				 \
+      if (i->entity == sp[-1].u.string) {				 \
+	XMLERROR("Recursive entity reference definition.");		 \
+	break;								 \
+      }									 \
+    }									 \
+    if (i) continue;							 \
+									 \
     /* lookup entry in mapping and parse it recursively */		 \
     /* Generate error if entity is not defined */			 \
-    if(THIS->entities)							 \
     {									 \
       struct pike_string *name=0;					 \
       struct mapping *callbackinfo;                                      \
       ONERROR tmp3,tmp4;						 \
 									 \
-      map_delete_no_free(THIS->entities, sp-1, sp);			 \
-      name=dmalloc_touch(struct pike_string *, sp[-1].u.string);	 \
-      sp[-1]=*sp;							 \
+      copy_shared_string(name, sp[-1].u.string);			 \
       SET_ONERROR(tmp3, do_free_string, name);				 \
 									 \
-      UPDATE_LOCATION(data->input->pos, data->input->callbackinfo);        \
-      callbackinfo=copy_mapping(data->input->callbackinfo);               \
+      apply_external(1, f_Simple_lookup_entity_fun_num, 1);		 \
+									 \
+      UPDATE_LOCATION(THIS->input->pos, THIS->input->callbackinfo);	 \
+      callbackinfo=copy_mapping(THIS->input->callbackinfo);		 \
       SET_ONERROR(tmp4, do_free_mapping, callbackinfo);                  \
       push_constant_text("previous");                                    \
-      ref_push_mapping(data->input->callbackinfo);                        \
+      ref_push_mapping(THIS->input->callbackinfo);                       \
       mapping_insert(callbackinfo, sp-2, sp-1);                          \
       pop_n_elems(2);                                                    \
 									 \
@@ -975,38 +1278,37 @@ static int gobble(struct xmldata *data, char *s)
 	  push_int(ATTR);						 \
 	  f_aggregate_mapping(2); /* attributes */			 \
 	  push_int(0); /* no data */					 \
-	  very_low_sys(data,callbackinfo);				 \
+	  very_low_sys(callbackinfo);					 \
 	  if(sp[-1].type != T_STRING)				 	 \
 	  {								 \
 	    pop_stack();						 \
 	    XMLERROR("No such entity.");				 \
 	    break;							 \
 	  }								 \
+	  ref_push_string(name);					 \
+	  ref_push_string(sp[-2].u.string);				 \
+	  apply_external(1, f_Simple_define_entity_raw_fun_num, 2);	 \
 	}								 \
 	else								 \
 	{								 \
 	  if(sp[-1].type!=T_STRING)					 \
 	  {								 \
-	    XMLERROR("XML->__entities value is not a string!");		 \
+	    XMLERROR("lookup_entity() returned non-string!");		 \
 	    break;                                        		 \
 	  }								 \
 	}								 \
 									 \
 	{								 \
-	  struct pike_string *s=sp[-1].u.string;			 \
-	  struct xmldata my_tmp=*data;					 \
-	  ONERROR tmp2;							 \
-	  my_tmp.input = new_string_xmlinput(s);			 \
-	  SET_ONERROR(tmp2, free_xmldata, &my_tmp);			 \
+	  struct pike_string *s = sp[-1].u.string;			 \
+	  struct xmlinput *i = new_string_xmlinput(s);			 \
+	  i->next = THIS->input;					 \
+	  THIS->input = i;						 \
 	  pop_stack();							 \
 	  check_stack(10);						 \
 	  IF_XMLDEBUG(fprintf(stderr,"Entity expands to: %s\n",s->str)); \
-	  CHECK_INPUT(my_tmp.input);					 \
-	  add_ref(my_tmp.input->callbackinfo = callbackinfo);		 \
-	  PARSE_RECURSIVELY;						 \
-	  if(THIS->entities)						 \
-	    mapping_string_insert_string(THIS->entities, name, s);	 \
-	  CALL_AND_UNSET_ONERROR(tmp2);					 \
+	  CHECK_INPUT(i);						 \
+	  add_ref(i->callbackinfo = callbackinfo);			 \
+	  copy_shared_string(i->entity, name);				 \
 	}								 \
       }while(0);							 \
       CALL_AND_UNSET_ONERROR(tmp4);					 \
@@ -1061,7 +1363,8 @@ static int gobble(struct xmldata *data, char *s)
 
 
 #define SMEG() \
-(data->allow_pesmeg_everywhere && PEEK(0)=='%' && read_smeg_pereference(data))
+  ((THIS->flags & ALLOW_PESMEG_EVERYWHERE) && \
+   (PEEK(0)=='%') && read_smeg_pereference())
   
     
     
@@ -1072,11 +1375,11 @@ static int gobble(struct xmldata *data, char *s)
         {						\
           case '\'':					\
             READ(1);					\
-            read_attvalue(data,&X,'\'',0);		\
+            read_attvalue(&X,'\'',0);			\
             break;					\
           case '\"':					\
             READ(1);					\
-            read_attvalue(data,&X,'\"',0);		\
+            read_attvalue(&X,'\"',0);			\
             break;					\
           case '%':					\
             XMLERROR("PEReference outside quotes!.");	\
@@ -1100,11 +1403,11 @@ static int gobble(struct xmldata *data, char *s)
         {					\
           case '\'':				\
             READ(1);				\
-            read_entityvalue(data,&X,'\'');	\
+            read_entityvalue(&X,'\'');		\
             break;				\
           case '\"':				\
             READ(1);				\
-            read_entityvalue(data,&X,'\"');	\
+            read_entityvalue(&X,'\"');		\
             break;				\
           case '%':					\
             IF_XMLDEBUG(READ(0));                       \
@@ -1144,43 +1447,40 @@ static int gobble(struct xmldata *data, char *s)
     }  } while (0)
 
 #define UPDATE_LOCATION(P,m) do{		\
-  push_int64((P));				\
-  mapping_insert((m),				\
-		 &location_string_svalue,	\
-		 sp-1);				\
-  pop_stack();					\
-}while(0)
+    push_int64((P));				\
+    mapping_insert((m),				\
+		   &location_string_svalue,	\
+		   sp-1);			\
+    pop_stack();				\
+  }while(0)
 
-static inline void very_low_sys(struct xmldata *data,
-				struct mapping *callbackinfo)
+static inline void very_low_sys(struct mapping *callbackinfo)
 {
-  struct xmlinput *i = data->input;
-  check_stack(1 + data->num_extra_args);
+  struct xmlinput *i = THIS->input;
+  check_stack(1 + THIS->extra_args->size);
   ref_push_mapping(i->callbackinfo);
-  assign_svalues_no_free(sp, data->extra_args,
-			 data->num_extra_args,
-			 data->extra_arg_types);
-  sp += data->num_extra_args;
-  apply_svalue(data->func, 5+data->num_extra_args);
+  assign_svalues_no_free(sp, THIS->extra_args->item,
+			 THIS->extra_args->size, THIS->extra_args->type_field);
+  sp += THIS->extra_args->size;
+  apply_svalue(&THIS->func, 5+THIS->extra_args->size);
 }
 
-static inline void low_sys(struct xmldata *data)
+static inline void low_sys()
 {
-  struct xmlinput *i = data->input;
+  struct xmlinput *i = THIS->input;
   UPDATE_LOCATION(i->pos, i->callbackinfo);
-  very_low_sys(data, i->callbackinfo);
+  very_low_sys(i->callbackinfo);
 }
 
-static void sys(struct xmldata *data)
+static void sys()
 {
-  low_sys(data);
+  low_sys();
   if(SAFE_IS_ZERO(sp-1)) pop_stack();
 }
 
-#define SYS() sys(data)
+#define SYS() sys()
 
-static void xmlerror(char *desc, struct xmldata *data,
-		     struct pike_string *tag_name)
+static void xmlerror(char *desc, struct pike_string *tag_name)
 {
   push_constant_text("error");
   if (tag_name) {
@@ -1190,91 +1490,82 @@ static void xmlerror(char *desc, struct xmldata *data,
   }
   push_int(0); /* no attributes */
   push_text(desc);
-  low_sys(data);
+  low_sys();
   pop_stack();
 }
 
-static int read_smeg_pereference(struct xmldata *data)
-{
-  READ(1); /* this is '%' */
-  IF_XMLDEBUG( fprintf(stderr, "SMEG reference found.\n") );
-  if(!THIS->entities)
-  {
-    XMLERROR("XML->__entities is not a mapping");
-  }else{
-    struct mapping *callbackinfo;
-    struct pike_string *name=0;
-    struct pike_string *full_name=0;
-    int external_entity_value=0;
-    ONERROR tmp3,tmp4,tmp5;
+    static int read_smeg_pereference()
+    {
+      struct mapping *callbackinfo;
+      struct pike_string *name=0;
+      struct pike_string *full_name=0;
+      struct xmlinput *i;
+      ONERROR tmp3,tmp4,tmp5;
+      READ(1); /* this is '%' */
+      IF_XMLDEBUG( fprintf(stderr, "SMEG reference found.\n") );
 
-    push_constant_text("%");
-    SIMPLE_READNAME();
+      push_constant_text("%");
+      SIMPLE_READNAME();
 
-    add_ref(name=sp[-1].u.string);
-    SET_ONERROR(tmp3, do_free_string, name);
+      add_ref(name=sp[-1].u.string);
+      SET_ONERROR(tmp3, do_free_string, name);
 
-    f_add(2);
-    add_ref(full_name=sp[-1].u.string);
-    SET_ONERROR(tmp5, do_free_string, full_name);
+      f_add(2);
+      add_ref(full_name=sp[-1].u.string);
+      SET_ONERROR(tmp5, do_free_string, full_name);
 
-    if(PEEK(0)!=';')
-      XMLERROR("Missing ';' after parsed entity reference.");
-    READ(1);
-    /* lookup entry in mapping and parse it recursively */
-    /* Generate error if entity is not defined */
+      if(PEEK(0)!=';')
+	XMLERROR("Missing ';' after parsed entity reference.");
+      READ(1);
+      /* lookup entry in mapping and parse it recursively */
+      /* Generate error if entity is not defined */
 
-    map_delete_no_free(THIS->entities, sp-1, sp);
-    free_svalue(sp-1);
-    sp[-1]=*sp;
+      /* Ensure that we aren't already parsing this peref. */
+      for (i = THIS->input; i; i = i->next) {
+	if (i->entity == full_name) {
+	  XMLERROR("Recursive parsed entity reference definition.");
+	  CALL_AND_UNSET_ONERROR(tmp5);
+	  CALL_AND_UNSET_ONERROR(tmp3);
+	  /* FIXME: Adjust stack? */
+	  return 1;
+	}
+      }
 
-    UPDATE_LOCATION(data->input->pos, data->input->callbackinfo);
-    callbackinfo=copy_mapping(data->input->callbackinfo);
-    SET_ONERROR(tmp4, do_free_mapping, callbackinfo);
-    push_constant_text("previous");
-    ref_push_mapping(data->input->callbackinfo);
-    mapping_insert(callbackinfo, sp-2, sp-1);
-    pop_n_elems(2);
+      apply_external(1, f_Simple_lookup_entity_fun_num, 1);
+
+      UPDATE_LOCATION(THIS->input->pos, THIS->input->callbackinfo);
+      callbackinfo = copy_mapping(THIS->input->callbackinfo);
+      SET_ONERROR(tmp4, do_free_mapping, callbackinfo);
+      push_constant_text("previous");
+      ref_push_mapping(THIS->input->callbackinfo);
+      mapping_insert(callbackinfo, sp-2, sp-1);
+      pop_n_elems(2);
     
-    do {
       if(UNSAFE_IS_ZERO(sp-1))
       {
-	external_entity_value = 1;
 	pop_stack();
 	push_constant_text("%");
 	ref_push_string(name);
 	f_aggregate_mapping(0);
 	push_int(0); /* no data */
-	very_low_sys(data, callbackinfo);
-	if(sp[-1].type != T_STRING)
-	{
-	  pop_stack();
-	  XMLERROR("No such entity in pereference.");
-	  
-	  break;				
-	}					
+	very_low_sys(callbackinfo);
       }
 
-      if(sp[-1].type!=T_STRING)
+      if(sp[-1].type == T_STRING)
       {
-	XMLERROR("XML->__entities value is not a string!");
-      }else{
 	struct pike_string *s=sp[-1].u.string;
 	IF_XMLDEBUG(fprintf(stderr, "ptr=%p len=%d pos=%d to_free=%p\n",
-			    data->input->datap.ptr, data->input->len,
-			    data->input->pos, data->input->to_free));
+			    THIS->input->datap.ptr, THIS->input->len,
+			    THIS->input->pos, THIS->input->to_free));
 
 	/* PUSH(s) */
 	{
-	  struct xmlinput *i = new_string_xmlinput(s);
-	  i->next = data->input;
-	  data->input = i;
-	  CHECK_INPUT(data->input);
-	  free_mapping(data->input->callbackinfo);
-	  data->input->callbackinfo = callbackinfo;
-	  if (!external_entity_value && full_name) {
-	    copy_shared_string(data->input->entity, full_name);
-	  }
+	  i = new_string_xmlinput(s);
+	  i->next = THIS->input;
+	  THIS->input = i;
+	  CHECK_INPUT(THIS->input);
+	  THIS->input->callbackinfo = callbackinfo;
+	  copy_shared_string(THIS->input->entity, full_name);
 	}
 	UNSET_ONERROR(tmp4);
 	CALL_AND_UNSET_ONERROR(tmp5);
@@ -1284,37 +1575,36 @@ static int read_smeg_pereference(struct xmldata *data)
 	CALL_AND_UNSET_ONERROR(tmp3);
 	return 1;
       }
+      pop_stack();
 
-    }while(0);
-    CALL_AND_UNSET_ONERROR(tmp4);
-    CALL_AND_UNSET_ONERROR(tmp5);
-    CALL_AND_UNSET_ONERROR(tmp3);
-  }
-  return 0;
-}
+      XMLERROR("No such entity in pereference.");
 
-static void read_attvalue(struct xmldata *data,
-			  struct string_builder *X,
+      CALL_AND_UNSET_ONERROR(tmp4);
+      CALL_AND_UNSET_ONERROR(tmp5);
+      CALL_AND_UNSET_ONERROR(tmp3);
+      return 0;
+    }
+
+static void read_attvalue(struct string_builder *X,
 			  p_wchar2 Y,
 			  int keepspace)
 {
-  while(1)
+  struct smlinput *input = THIS->input;
+  while(THIS->input)
   {
-    if(XMLEOF())
-    {
-      if(Y)
-	XMLERROR("End of file while looking for end of attribute value.");
-      break;
+    if(XMLEOF()) {
+      POP();
+      continue;
     }
-    if(PEEK(0)==Y)
+    if((THIS->input == input) && (PEEK(0) == Y))
     {
       READ(1);
-      break;
+      return;
     }
     switch(PEEK(0))
     {
       case '&':
-	READ_REFERENCE(1,(*X), read_attvalue(&my_tmp, X, 0,1));
+	READ_REFERENCE(1,(*X), read_attvalue(X, 0,1));
 	break;
 	
       case 0x0d:
@@ -1331,10 +1621,10 @@ static void read_attvalue(struct xmldata *data,
 	READ(1);
     }
   }
+  XMLERROR("End of file while looking for end of attribute value.");
 }
 
-static void read_pubid(struct xmldata *data,
-			  struct string_builder *X,
+static void read_pubid(struct string_builder *X,
 			  p_wchar2 Y)
 {
   while(1)
@@ -1367,9 +1657,8 @@ static void read_pubid(struct xmldata *data,
   }
 }
 
-static void read_entityvalue(struct xmldata *data,
-			   struct string_builder *X,
-			   p_wchar2 Y)
+static void read_entityvalue(struct string_builder *X,
+			     p_wchar2 Y)
 {
   while(1)
   {
@@ -1389,7 +1678,7 @@ static void read_entityvalue(struct xmldata *data,
 	
 
       case '%':
-	READ_PEREFERENCE(1,(*X), read_entityvalue(&my_tmp, X, 0));
+	READ_PEREFERENCE(1,(*X), read_entityvalue(X, 0));
 	break;
 
       case 0x0d: if(PEEK(1)==0x0a) READ(1);
@@ -1404,7 +1693,7 @@ static void read_entityvalue(struct xmldata *data,
 	
 #if 0
       case '&':
-	READ_REFERENCE(1,(*X), read_entityvalue(&my_tmp, X, 0));
+	READ_REFERENCE(1,(*X), read_entityvalue(X, 0));
 	break;
 #else
       case '&':
@@ -1423,7 +1712,7 @@ static void read_entityvalue(struct xmldata *data,
   }
 }
 
-static void simple_read_system_literal(struct xmldata *data)
+static void simple_read_system_literal()
 {
   BEGIN_STRING(name);
   SKIPSPACE();
@@ -1431,7 +1720,7 @@ static void simple_read_system_literal(struct xmldata *data)
   END_STRING(name);
 }
 
-static void simple_read_pubid_literal(struct xmldata *data)
+static void simple_read_pubid_literal()
 {
   BEGIN_STRING(name);
   SKIPSPACE();
@@ -1439,11 +1728,11 @@ static void simple_read_pubid_literal(struct xmldata *data)
   {
     case '\'':
       READ(1);
-      read_pubid(data,&name,'\'');
+      read_pubid(&name,'\'');
       break;
     case '\"':
       READ(1);
-      read_pubid(data,&name,'\"');
+      read_pubid(&name,'\"');
       break;
     case '%':
       XMLERROR("PEReference outside quotes!.");
@@ -1459,18 +1748,18 @@ static void simple_read_pubid_literal(struct xmldata *data)
   END_STRING(name);
 }
 
-static void simple_read_system_attvalue(struct xmldata *data, int is_cdata)
+static void simple_read_system_attvalue(int is_cdata)
 {
-  BEGIN_STRING(name);
+  BEGIN_STRING(attvalue);
   SKIPSPACE();
   IF_XMLDEBUG(READ(0));
-  READ_ATTVALUE(name,is_cdata);
-  END_STRING(name);
+  READ_ATTVALUE(attvalue,is_cdata);
+  END_STRING(attvalue);
   if(!is_cdata)  STRIP_SPACES();
 }
 
 
-static void simple_readname(struct xmldata *data)
+static void simple_readname()
 {
   check_stack(1);
   BEGIN_STRING(name);
@@ -1479,7 +1768,7 @@ static void simple_readname(struct xmldata *data)
   END_STRING(name);
 }
 
-static int simple_readname_period(struct xmldata *data)
+static int simple_readname_period()
 {
   /* Returns whether '.' is included somewhere in the name. */
   int  found_period = 0;
@@ -1491,22 +1780,21 @@ static int simple_readname_period(struct xmldata *data)
   return found_period;
 }
 
-static void simple_readnmtoken(struct xmldata *data)
+static void simple_readnmtoken()
 {
   BEGIN_STRING(name);
   READNMTOKEN(name);
   END_STRING(name);
 }
 
-#define SIMPLE_READ_ATTRIBUTES(CD) simple_read_attributes(data,CD);
+#define SIMPLE_READ_ATTRIBUTES(CD) simple_read_attributes(CD);
 
-static void simple_read_attributes(struct xmldata *data,
-				   struct mapping *is_cdata)
+static void simple_read_attributes(struct mapping *is_cdata)
 {
   SKIPSPACE();
   
   /* Read unordered attributes */
-  while(data->input->len>0 && isFirstNameChar(PEEK(0)))
+  while(THIS->input->len>0 && isFirstNameChar(PEEK(0)))
   {
     int iscd;
     SIMPLE_READNAME();
@@ -1536,14 +1824,14 @@ static void simple_read_attributes(struct xmldata *data,
   }
 }
 
-static void parse_optional_xmldecl(struct xmldata *data)
+static void parse_optional_xmldecl()
 {
   if(GOBBLE("<?xml"))
   {
     struct mapping *m;
 
 #if 0
-    if(data->input->pos != 5)
+    if(THIS->input->pos != 5)
       XMLERROR( "XML header must be at the first byte in the document." );
 #endif
 
@@ -1571,7 +1859,7 @@ static void parse_optional_xmldecl(struct xmldata *data)
 }
 
 
-void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
+void read_choice_seq_or_name(int maybe_pcdata)
 {
 #ifdef PIKE_DEBUG
   struct svalue * save_sp2=sp;
@@ -1618,7 +1906,7 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
       num++;
       while(1)
       {
-	read_choice_seq_or_name(data,0);
+	read_choice_seq_or_name(0);
 	num++;
 	SKIPSPACE();
 	
@@ -1714,7 +2002,7 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
 #endif
 }
 
-static int really_low_parse_dtd(struct xmldata *data)
+static int really_low_parse_dtd()
 {
   int done=0;
 #ifdef PIKE_DEBUG
@@ -1745,7 +2033,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 	break;
 
       case '%': /* PEReference */
-	READ_PEREFERENCE(0,guggel, really_low_parse_dtd(&my_tmp));
+	READ_PEREFERENCE(0,guggel, really_low_parse_dtd());
 	break;
 
       case '<':
@@ -1801,21 +2089,12 @@ static int really_low_parse_dtd(struct xmldata *data)
 		      BEGIN_STRING(value);
 		      READ_ENTITYVALUE(value);
 		      END_STRING(value);
-		      if(THIS->entities)
-		      {
-			debug_malloc_touch(THIS->entities);
-			if(low_mapping_string_lookup(THIS->entities,
-						     sp[-3].u.string))
-			{
-			  /* Duplicate entry, we should issue a warning */
-			}else{
-			  mapping_string_insert(THIS->entities,
-						sp[-3].u.string,
-						sp-1);
-			}
-		      }else{
-			XMLERROR("XML->__entities is not a mapping.");
-		      }
+
+		      ref_push_string(sp[-3].u.string);
+		      ref_push_string(sp[-2].u.string);
+		      apply_external(1, f_Simple_define_entity_raw_fun_num, 2);
+		      pop_stack();
+
 		      SYS();
 		      break;
 
@@ -1920,7 +2199,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 		      break;
 
 		    case '(': /* Mixed or children */
-		      read_choice_seq_or_name(data,1);
+		      read_choice_seq_or_name(1);
 		      break;
 
 		    default:
@@ -1951,7 +2230,6 @@ static int really_low_parse_dtd(struct xmldata *data)
 		  while(1)
 		  {
 		    int is_cdata=0;
-		    int already_seen =0;
 		    struct svalue *save;
 		    if(XMLEOF())
 		    {
@@ -1967,16 +2245,6 @@ static int really_low_parse_dtd(struct xmldata *data)
 
 		    SIMPLE_READNAME();
 		    SKIPSPACE();
-
-		    debug_malloc_touch(THIS->is_cdata);
-		    if(mapping_mapping_lookup(THIS->is_cdata,
-					      sp-3,
-					      sp-1,
-					       0))
-		    {
-		      already_seen=1;
-		    }
-			  
 
 		    save=sp;
 		    switch(PEEK(0))
@@ -2107,71 +2375,52 @@ static int really_low_parse_dtd(struct xmldata *data)
 				is_cdata);
 #endif
 			SIMPLE_READ_ATTVALUE(is_cdata);
-			if(THIS->attributes && !already_seen)
-			{
-			  /* Stack is:
-			   * -6 tagname 
-			   * -5 attmapping
-			   * -4 attname
-			   * -3 type
-			   * -2 "#FIXED" or ""
-			   * -1 attvalue
-			   */
+
+			/* Stack is:
+			 * -6 tagname 
+			 * -5 attmapping
+			 * -4 attname
+			 * -3 type
+			 * -2 "#FIXED" or ""
+			 * -1 attvalue
+			 */
 #ifdef VERBOSE_XMLDEBUG			    
 
-			  fprintf(stderr,
-				  "Inserting default for %s %s = '%s'\n",
-				  sp[-6].u.string->str,
-				  sp[-4].u.string->str,
-				  sp[-1].u.string->str);
+			fprintf(stderr,
+				"Inserting default for %s %s = '%s'\n",
+				sp[-6].u.string->str,
+				sp[-4].u.string->str,
+				sp[-1].u.string->str);
 #endif
-			  debug_malloc_touch(THIS->attributes);
-			  assign_svalue(
-			    mapping_mapping_lookup(THIS->attributes,
-						   sp-6,
-						   sp-4,
-						   1),
-			    sp-1);
-			}
-#ifdef VERBOSE_XMLDEBUG
-			else{
-			  fprintf(stderr,"THIS->attributes is zero!\n");
-			}
-#endif
+			push_svalue(Pike_sp-6);
+			push_svalue(Pike_sp-5);
+			push_svalue(Pike_sp-3);
+			apply_external(1,
+				       f_Simple_set_default_attribute_fun_num,
+				       3);
+			pop_stack();
 			break;
 		    }
 
 		    /* Update is_cdata */
-		    if(!already_seen)
-		    {
-		      struct svalue sval;
-		      sval.type=T_INT;
-		      sval.subtype=NUMBER_NUMBER;
-		      sval.u.integer=is_cdata;
-		      
-		      if(THIS->is_cdata)
-		      {
-			debug_malloc_touch(THIS->is_cdata);
-			/* Stack is a bit unknown...
-			 * x-6 tagname 
-			 * x-5 attmapping
-			 * x-4 attname
-
-			 */
+		    if (is_cdata) {
+		      /* Stack is a bit unknown...
+		       * x-6 tagname 
+		       * x-5 attmapping
+		       * x-4 attname
+		       */
 #ifdef VERBOSE_XMLDEBUG			    
-			fprintf(stderr,
-				"Inserting CDATA for %s %s = %ld\n",
-				save[-4].u.string->str,
-				save[-2].u.string->str,
-				(long)sval.u.integer);
+		      fprintf(stderr,
+			      "Inserting CDATA for %s %s = %ld\n",
+			      save[-4].u.string->str,
+			      save[-2].u.string->str,
+			      (long)is_cdata);
 #endif
-			assign_svalue(
-			  mapping_mapping_lookup(THIS->is_cdata,
-						 save-4,
-						 save-2,
-						 1),
-			  &sval);
-		      }
+		      push_svalue(save-4);
+		      push_svalue(save-2);
+		      apply_external(1,
+				     f_Simple_set_attribute_cdata_fun_num, 2);
+		      pop_stack();
 		    }
 #ifdef PIKE_DEBUG
 		    if(sp<save)
@@ -2276,7 +2525,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 		    XMLERROR("Missing '[' in <![INCLUDE.");
 		  READ(1);
 		  
-		  low_parse_dtd(data);
+		  low_parse_dtd();
 
 		  if(PEEK(0) != ']' || PEEK(1)!= ']' || PEEK(2)!='>')
 		    XMLERROR("Missing ]]> in INCLUDE tag.");
@@ -2347,12 +2596,12 @@ static int really_low_parse_dtd(struct xmldata *data)
   return done;
 }
 
-static int low_parse_dtd(struct xmldata *data)
+static int low_parse_dtd()
 {
   int done;
   struct svalue *save_sp=sp;
 
-  done=really_low_parse_dtd(data);
+  done=really_low_parse_dtd();
 #ifdef PIKE_DEBUG
   if(sp<save_sp)
     Pike_fatal("Stack underflow.\n");
@@ -2373,16 +2622,14 @@ static int low_parse_dtd(struct xmldata *data)
 #define DOC_IN_ROOT_ELEM 2
 #define DOC_AFTER_ROOT_ELEM 3
 
-static struct pike_string *very_low_parse_xml(struct xmldata *data,
-					      struct pike_string *end,
+static struct pike_string *very_low_parse_xml(struct pike_string *end,
 					      struct string_builder *text,
-					      int keepspaces,
-					      int *doc_seq_pos)
+					      int keepspaces)
 {
-  int done=0, toplevel = *doc_seq_pos != DOC_IN_ROOT_ELEM;
+  int done=0, toplevel = THIS->doc_seq_pos != DOC_IN_ROOT_ELEM;
 
 #define CHECK_TOPLEVEL_EPILOG(ERRMSG) do {				\
-    if (*doc_seq_pos == DOC_AFTER_ROOT_ELEM &&				\
+    if (THIS->doc_seq_pos == DOC_AFTER_ROOT_ELEM &&			\
 	!(THIS->flags & COMPAT_ALLOW_7_2_ERRORS)) {			\
       XMLERROR_STAY (ERRMSG);						\
     }									\
@@ -2402,7 +2649,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	}
 	POKE(*text, PEEK(0));
 	READ(1);
-	continue;
+	break;
 
 	/* Strangely enough, \r and \r\n should be reported as \n,
 	 * but \n\r should be reported as \n\n
@@ -2422,11 +2669,11 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	POKE(*text,'\n');
 	READ(1);
 	if(PEEK(0) == '\n') READ(1);
-	continue;
+	break;
 
       case '&':
-	READ_REFERENCE(0,*text,very_low_parse_xml(&my_tmp, NULL, text, 1, doc_seq_pos));
-	continue;
+	READ_REFERENCE(0,*text,very_low_parse_xml(NULL, text, 1));
+	break;
 
       case '<':
 	INTERMISSION(*text);
@@ -2438,7 +2685,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		PEEK(3)=='m' &&
 		PEEK(4)=='l' &&
 		isSpace(PEEK(5))) {
-                parse_optional_xmldecl(data);
+                parse_optional_xmldecl();
                 break;
 	    }else{
 	      READ(2);
@@ -2552,7 +2799,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		  READ(9);
 
 		  if (!(THIS->flags & COMPAT_ALLOW_7_6_ERRORS)) {
-		    switch (*doc_seq_pos) {
+		    switch (THIS->doc_seq_pos) {
 		      case DOC_GOT_DOCTYPE:
 			XMLERROR_STAY (
 			  "Multiple DOCTYPE declarations are not allowed.");
@@ -2575,7 +2822,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		  switch(SAFE_PEEK(0))
 		  {
 		    case 'P':
-		      if((data->input->len > 5) &&
+		      if((THIS->input->len > 5) &&
 			 PEEK(1)=='U' &&
 			 PEEK(2)=='B' &&
 			 PEEK(3)=='L' &&
@@ -2595,7 +2842,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		      break;
 
 		    case 'S':
-		      if((data->input->len > 5) &&
+		      if((THIS->input->len > 5) &&
 			 PEEK(1)=='Y' &&
 			 PEEK(2)=='S' &&
 			 PEEK(3)=='T' &&
@@ -2619,7 +2866,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		  if(SAFE_PEEK(0)=='[')
 		  {
 		    READ(1);
-		    low_parse_dtd(data);
+		    low_parse_dtd();
 #ifdef VERBOSE_XMLDEBUG
 		    fprintf(stderr,"FOO: %c%c%c%c\n",SAFE_PEEK(0),
 			    SAFE_PEEK(1),SAFE_PEEK(2),SAFE_PEEK(3));
@@ -2636,8 +2883,8 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		  READ(1);
 
 		  SYS();
-		  if (*doc_seq_pos < DOC_GOT_DOCTYPE)
-		    *doc_seq_pos = DOC_GOT_DOCTYPE;
+		  if (THIS->doc_seq_pos < DOC_GOT_DOCTYPE)
+		    THIS->doc_seq_pos = DOC_GOT_DOCTYPE;
 		}
 		break;
 	    }
@@ -2648,12 +2895,12 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	    SIMPLE_READNAME();
 	    SKIPSPACE();
 	    if(PEEK(0)!='>')
-	      xmlerror("Missing > in end tag.", data, sp[-1].u.string);
+	      xmlerror("Missing > in end tag.", sp[-1].u.string);
 	    else
 	      READ(1);
 	    if(end!=sp[-1].u.string)
 	    {
-	      xmlerror("Unmatched end tag.", data, sp[-1].u.string);
+	      xmlerror("Unmatched end tag.", sp[-1].u.string);
 	    }else{
 	      end=0;
 	    }
@@ -2666,36 +2913,32 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	    CHECK_TOPLEVEL_EPILOG (
 	      "There can not be more than one element on the top level.");
 
+	    STACK_LEVEL_START(0);
 	    push_constant_text(">"); 
 
 	    READ(1);
 	    SIMPLE_READNAME();
-	    if(THIS->attributes)
-	    {
-	      struct svalue *s;
-	      debug_malloc_touch(THIS->attributes);
-	      s=low_mapping_string_lookup(THIS->attributes,
-					      sp[-1].u.string);
-	      if(s && s->type==T_MAPPING)
-	      {
-		ref_push_mapping(s->u.mapping);
-		f_copy_value(1);
-	      }else{
-		push_mapping(allocate_mapping(10)); /* Attributes */
-	      }
-	    }else{
-	      push_mapping(allocate_mapping(10)); /* Attributes */
-	    }
+	    STACK_LEVEL_CHECK(2);
+
+	    /* FIXME: Consider adding flags to indicate if the following
+	     *        two apply_externals are needed.
+	     */
+	    stack_dup();
+	    stack_dup();
+	    apply_external(1, f_Simple_get_tag_attribute_cdata_fun_num, 1);
+	    STACK_LEVEL_CHECK(4);
+	    stack_swap();
+	    apply_external(1, f_Simple_get_default_attributes_fun_num, 1);
+	    STACK_LEVEL_CHECK(4);
 
 	    {
-	      struct mapping *m=0;
-	      if(THIS->is_cdata)
-	      {
-		struct svalue *s=low_mapping_lookup(THIS->is_cdata,sp-2);
-		if(s && s->type==T_MAPPING)
-		  m=s->u.mapping;
-	      }
+	      struct mapping *m = NULL;
+	      if (sp[-2].type == T_MAPPING)
+		m = sp[-2].u.mapping;
 	      SIMPLE_READ_ATTRIBUTES(m);
+	      /* Get rid of the cdata mapping. */
+	      stack_swap();
+	      pop_stack();
 	    }
 
 	    /* At this point the stack contains the following:
@@ -2704,11 +2947,12 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	     * sp[-2]: tag_name.
 	     * sp[-1]: attributes.
 	     */
+	    STACK_LEVEL_DONE(3);
 
 	    switch(PEEK(0))
 	    {
 	      default:
-		xmlerror("Failed to find end of tag.", data, sp[-2].u.string);
+		xmlerror("Failed to find end of tag.", sp[-2].u.string);
 		pop_n_elems(3);
 		break;
 
@@ -2727,20 +2971,19 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		  pop_n_elems(sp-save_sp);
 		}
 
-		if (toplevel) *doc_seq_pos = DOC_IN_ROOT_ELEM;
-		if(low_parse_xml(data, sp[-2].u.string, doc_seq_pos)) {
+		if (toplevel) THIS->doc_seq_pos = DOC_IN_ROOT_ELEM;
+		if(low_parse_xml(sp[-2].u.string)) {
 		  /* NOTE: low_parse_xml() pushes an element on the stack. */
-		  xmlerror("Unmatched tag.", data, sp[-3].u.string);
+		  xmlerror("Unmatched tag.", sp[-3].u.string);
 		}
 		SYS();
-		if (toplevel) *doc_seq_pos = DOC_AFTER_ROOT_ELEM;
+		if (toplevel) THIS->doc_seq_pos = DOC_AFTER_ROOT_ELEM;
 		break;
 
 	      case '/':
 		READ(1);
 		if(PEEK(0)!='>')
-		  xmlerror("Missing '>' in empty tag.", data,
-			   sp[-2].u.string);
+		  xmlerror("Missing '>' in empty tag.", sp[-2].u.string);
 		else
 		  READ(1);
 		/* Self-contained tag */
@@ -2748,7 +2991,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		sp[-3].u.string=make_shared_string("<>");
 		push_int(0); /* No data */
 		SYS();
-		if (toplevel) *doc_seq_pos = DOC_AFTER_ROOT_ELEM;
+		if (toplevel) THIS->doc_seq_pos = DOC_AFTER_ROOT_ELEM;
 		break;
 		
 	    }
@@ -2758,13 +3001,11 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
   return end;
 }
 
-static int low_parse_xml(struct xmldata *data,
-			 struct pike_string *end,
-			 int *doc_seq_pos)
+static int low_parse_xml(struct pike_string *end)
 {
   struct svalue *save_sp=sp;
   BEGIN_STRING(text);
-  end=very_low_parse_xml(data,end,&text, 0, doc_seq_pos);
+  end=very_low_parse_xml(end,&text, 0);
   INTERMISSION(text);
   END_STRING(text);
   pop_stack();
@@ -2777,216 +3018,91 @@ static int low_parse_xml(struct xmldata *data,
   return !!end;
 }
 
-  /* callback:
-   *   string type
-   *   string name
-   *   mapping args
-   *   array|string data
-   *   mixed ... xtra
-   */
-#define CALLBACKTYPE \
-  tFuncV(tStr tStr tMapping tOr(tArray,tStr) tMap(tStr,tMix), tMix, tSetvar(0, tMix))
-  /*"function(string,string,mapping,array|string,mapping(string:mixed),mixed...:0=mixed)"*/
-
-#define PARSETYPE \
-  tFuncV(tStr tOr(CALLBACKTYPE, tVoid), tMix, tArr(tVar(0)))
-  /* "function(string," CALLBACKTYPE ",mixed...:array(0))" */
-
-  /*! @decl array parse(string xml, function cb, mixed ... extra_args)
-   */
-  PIKEFUN array parse(string s, function cb, mixed ... extra_args)
-    rawtype PARSETYPE;
-  {
-    int d;
-    struct svalue tmp;
-    struct xmldata data;
-    ONERROR e;
-    int doc_seq_pos = DOC_BEGINNING;
-
-    data.input = new_string_xmlinput(s);
-    data.input->callbackinfo = allocate_mapping(0);
-    CHECK_INPUT(data.input);
-    data.func=sp+1-args;
-    data.extra_args=sp+2-args;
-    data.num_extra_args=args-2;
-    data.extra_arg_types=0;
-
-    for(d=0;d<data.num_extra_args;d++)
-      data.extra_arg_types |= 1 << data.extra_args[d].type;
-
-    data.allow_pesmeg_everywhere=0;
-
-    SET_ONERROR(e,free_xmldata, &data);
-    low_parse_xml(&data,0, &doc_seq_pos);
-    if (doc_seq_pos != DOC_AFTER_ROOT_ELEM &&
-	!(THIS->flags & COMPAT_ALLOW_7_6_ERRORS))
-      xmlerror ("Root element missing.", &data, NULL);
-    CALL_AND_UNSET_ONERROR(e);
-    tmp=*--sp;
-    pop_n_elems(args);
-    *sp++=tmp;
-  }
-
-  static void free_xmldata(struct xmldata *data)
-  {
-    while(data->input)
-      POP();
-  }
-
-  /*! @decl void define_entity_raw(string entity, string raw)
-   */
-  PIKEFUN void define_entity_raw(string entity, string raw)
-  {
-    if(!THIS->entities)
+    /*! @decl mixed parse_xml()
+     */
+    PIKEFUN mixed parse_xml()
     {
-      f_aggregate_mapping(2);
-      THIS->entities=sp[-1].u.mapping;
-      sp--;
-    }else{
-      /* FIXME: This looks broken. Shouldn't the stack be adjusted? */
-      mapping_insert(THIS->entities, sp-2, sp-1);
-    }
-  }
-
-  /*! @decl void define_entity(string entity, string raw, @
-   *!                          function cb, mixed ... extras)
-   */
-  PIKEFUN void define_entity(string entity, string s,
-			     function cb, mixed ... extras)
-  {
-    int d;
-    struct xmldata data;
-    ONERROR e;
-
-    data.input = new_string_xmlinput(s);
-    data.input->callbackinfo = allocate_mapping(0);
-    CHECK_INPUT(data.input);
-    data.func=sp+2-args;
-    data.extra_args=sp+3-args;
-    data.num_extra_args=args-3;
-    for(d=0;d<data.num_extra_args;d++)
-      data.extra_arg_types |= 1 << data.extra_args[d].type;
-
-    data.allow_pesmeg_everywhere=0;
-    
-    SET_ONERROR(e,free_xmldata, &data);
-    parse_optional_xmldecl(&data);
-    CALL_AND_UNSET_ONERROR(e);
-    s=make_shared_binary_pcharp(data.input->datap, data.input->len);
-    pop_n_elems(args - 1);
-    push_string(s);
-    f_Simple_define_entity_raw(2);
-  }
-
-  /*! @decl void allow_rxml_entities(int(0..1) yes_no)
-   */
-  PIKEFUN void allow_rxml_entities(int(0..1) yes_no)
-  {
-    if (!yes_no)
-      THIS->flags &= ~ALLOW_RXML_ENTITIES;
-    else
-      THIS->flags |= ALLOW_RXML_ENTITIES;
-    pop_n_elems(args);
-    push_int(0);
-  }
-
-  /*! @decl void compat_allow_errors(string version)
-   *!
-   *! Set whether the parser should allow certain errors for
-   *! compatibility with earlier versions. @[version] can be:
-   *!
-   *! @string
-   *!   @value "7.2"
-   *!     Allow more data after the root element.
-   *!   @value "7.6"
-   *!     Allow multiple and invalidly placed "<?xml ... ?>" and
-   *!     "<!DOCTYPE ... >" declarations (invalid "<?xml ... ?>"
-   *!     declarations are otherwise treated as normal PI:s). Allow
-   *!     "<![CDATA[ ... ]]>" outside the root element. Allow the root
-   *!     element to be absent.
-   *! @endstring
-   *!
-   *! @[version] can also be zero to enable all error checks.
-   */
-  PIKEFUN void compat_allow_errors(string|void version)
-  {
-    if (args < 1)
-      SIMPLE_TOO_FEW_ARGS_ERROR ("XML->compat_allow_errors", 1);
-
-    if (!version) {
-      THIS->flags &= ~(COMPAT_ALLOW_7_2_ERRORS|COMPAT_ALLOW_7_6_ERRORS);
-    } else if (version == MK_STRING("7.2")) {
-      THIS->flags |= COMPAT_ALLOW_7_2_ERRORS|COMPAT_ALLOW_7_6_ERRORS;
-    } else if (version == MK_STRING("7.6")) {
-      THIS->flags &= ~COMPAT_ALLOW_7_2_ERRORS;
-      THIS->flags |= COMPAT_ALLOW_7_6_ERRORS;
-    } else {
-      Pike_error ("Got unknown version string.\n");
+      if (!THIS->input) {
+	push_undefined();
+	return;
+      }
+      THIS->doc_seq_pos = DOC_BEGINNING;
+      low_parse_xml(NULL);
+      if (THIS->doc_seq_pos != DOC_AFTER_ROOT_ELEM &&
+	  !(THIS->flags & COMPAT_ALLOW_7_6_ERRORS))
+	xmlerror ("Root element missing.", NULL);
     }
 
-    pop_n_elems(args);
-    push_int(0);
-  }
+    /*! @decl mixed parse_dtd()
+     */
+    PIKEFUN mixed parse_dtd()
+    {
+      if (!THIS->input) {
+	push_undefined();
+	return;
+      }
+      parse_optional_xmldecl();
+      low_parse_dtd(THIS);
+    }
 
-  /*! @decl mixed parse_dtd(string dtd, function cb, mixed ... extras)
+    /*! @decl string parse_entity()
+     */
+    PIKEFUN string parse_entity()
+    {
+      if (!THIS->input) {
+	push_undefined();
+	return;
+      }
+      parse_optional_xmldecl();
+      push_string(make_shared_binary_pcharp(THIS->input->datap,
+					    THIS->input->len));
+    }
+
+    /*! @decl void push_string(string s)
+     */
+    PIKEFUN void push_string(string s)
+    {
+      struct xmlinput *i = new_string_xmlinput(s);
+
+      i->next = THIS->input;
+      THIS->input = i;
+
+      if (i->next) {
+	UPDATE_LOCATION(i->next->pos, i->next->callbackinfo);
+	i->callbackinfo = copy_mapping(i->next->callbackinfo);
+	push_constant_text("previous");
+	ref_push_mapping(i->next->callbackinfo);
+	mapping_insert(i->callbackinfo, sp-2, sp-1);
+	pop_n_elems(2);
+      } else {
+	THIS->input->callbackinfo = allocate_mapping(0);
+      }
+      CHECK_INPUT(THIS->input);
+
+      pop_n_elems(args);
+      push_undefined();
+    }
+
+    PIKEFUN void create(string s, int flags, function cb, mixed ... extra_args)
+    {
+      THIS->flags = flags;
+
+      assign_svalue(&THIS->func, cb);
+
+      f_aggregate(args-3);
+      args = 4;
+      if (THIS->extra_args) {
+	free_array(THIS->extra_args);
+      }
+      add_ref(THIS->extra_args = sp[-1].u.array);
+
+      pop_n_elems(args-1);
+
+      apply_current(f_Simple_Context_push_string_fun_num, 1);
+    }
+  }
+  /* !@endclass
    */
-  PIKEFUN mixed parse_dtd(string s, function cb, mixed ... extras)
-    rawtype PARSETYPE;
-  {
-    struct svalue tmp;
-    struct xmldata data;
-    ONERROR e;
-  
-    data.input = new_string_xmlinput(s);
-    data.input->callbackinfo=allocate_mapping(0);
-    CHECK_INPUT(data.input);
-    data.func=sp+1-args;
-    data.extra_args=sp+2-args;
-    data.num_extra_args=args-2;
-    data.extra_arg_types = 0xffff; /* FIXME */
-    data.allow_pesmeg_everywhere=1;
-    
-    SET_ONERROR(e,free_xmldata, &data);
-    parse_optional_xmldecl(&data);
-    low_parse_dtd(&data);
-    CALL_AND_UNSET_ONERROR(e);
-    tmp=*--sp;
-    pop_n_elems(args);
-    *sp++=tmp;
-  }
-
-  INIT
-  {
-    push_constant_text("lt");    push_constant_text("&#60;");
-    push_constant_text("gt");    push_constant_text(">");
-    push_constant_text("amp");   push_constant_text("&#38;");
-    push_constant_text("apos");  push_constant_text("'");
-    push_constant_text("quot");  push_constant_text("\"");
-  
-    f_aggregate_mapping(10);
-    THIS->entities=sp[-1].u.mapping;
-    sp--;
-    dmalloc_touch_svalue(sp);
-
-    f_aggregate_mapping(0);
-    THIS->attributes=sp[-1].u.mapping;
-    sp--;
-    dmalloc_touch_svalue(sp);
-
-    f_aggregate_mapping(0);
-    THIS->is_cdata=sp[-1].u.mapping;
-    sp--;
-    dmalloc_touch_svalue(sp);
-
-    THIS->flags = 0;
-  }
-
-  EXTRA
-  {
-    /* Compat */
-    /* function(string:string) */
-    ADD_FUNCTION("autoconvert", f_autoconvert, tFunc(tStr,tStr), 0);
-  }
 }
 /*! @endclass
  */
