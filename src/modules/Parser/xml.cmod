@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.cmod,v 1.91 2006/06/15 14:02:29 grubba Exp $
+|| $Id: xml.cmod,v 1.92 2006/06/15 15:26:35 grubba Exp $
 */
 
 #include "global.h"
@@ -648,7 +648,7 @@ PIKECLASS Simple
   DECLARE_STORAGE;
 
   /* Forward decl. */
-  static ptrdiff_t Simple_Context_program_fun_num;
+  static int Simple_Context_program_fun_num;
 
   struct xmlinput
   {
