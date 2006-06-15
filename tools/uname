@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# $Id: uname,v 1.21 2006/05/19 17:33:02 mast Exp $
+# $Id: uname,v 1.22 2006/06/15 22:15:09 mast Exp $
 
 . $NTTOOLS
 
@@ -15,7 +15,7 @@ for a in "$@"
 do
   case "$a" in
     --version)
-      ver=`echo "$Revision: 1.21 $" |sed -e 's/.* \(.*\) .*/\1/'`
+      ver=`echo "$Revision: 1.22 $" |sed -e 's/.* \(.*\) .*/\1/'`
       echo "Fake NT uname version $ver by Fredrik Hubinette and others"
       exit 0
     ;;
@@ -77,20 +77,22 @@ fi
 OUTPUT=
 
 if [ "$S$R$V" = "" ]; then :; else
-  # Note: The resulting string starts with a line feed,
-  #       and then something like:
-  # Windows NT Version 4.0
-  #       or
-  # Microsoft Windows 2000 [Version 5.00.2195]
-  #       or
-  # Microsoft Windows XP [Version 5.1.2600]
-  RAW_VERSION="`sprsh cmd /c ver`"
+  if [ "$NT_RAW_VERSION" = "" ]; then
+    # Note: The resulting string starts with a line feed,
+    #       and then something like:
+    # Windows NT Version 4.0
+    #       or
+    # Microsoft Windows 2000 [Version 5.00.2195]
+    #       or
+    # Microsoft Windows XP [Version 5.1.2600]
+    NT_RAW_VERSION="`sprsh cmd /c ver`"
+  fi
 fi
 
 if [ X$S = Xyes ]; then
   # System name.
   # Note that the first '.' either matches ' ' or '['.
-  SYSNAME="`echo $RAW_VERSION|sed -e 's/.Version.*//;s/^Microsoft//'`"
+  SYSNAME="`echo $NT_RAW_VERSION|sed -e 's/.Version.*//;s/^Microsoft//'`"
   # Perform whitespace adjustmant.
   OUTPUT="$OUTPUT `echo $SYSNAME|tr ' ' '_'`"
 fi
@@ -102,52 +104,59 @@ fi
 
 if [ X$R = Xyes -o X$V = Xyes ]; then
   # Release number or Version number.
-  OUTPUT="$OUTPUT `echo $RAW_VERSION|sed -e 's/.*Version//'|sed -e's/[^0-9.]*//g'`"
+  OUTPUT="$OUTPUT `echo $NT_RAW_VERSION|sed -e 's/.*Version//'|sed -e's/[^0-9.]*//g'`"
   # If there are more than one processor, apply "-smp"
-  NUMPROCS="`getntenv NUMBER_OF_PROCESSORS`"
-  if [ "x$NUMPROCS" != "x" ] && [ "$NUMPROCS" -gt 1 ]; then
+  if [ "$NT_NUMBER_OF_PROCESSORS" = "" ]; then
+    NT_NUMBER_OF_PROCESSORS="`getntenv NUMBER_OF_PROCESSORS`"
+  fi
+  if [ "x$NT_NUMBER_OF_PROCESSORS" != "x" ] && [ "$NT_NUMBER_OF_PROCESSORS" -gt 1 ]; then
     OUTPUT="$OUTPUT-smp"
   fi
 fi
 
 if [ "$M$P" = "" ]; then :; else
-  # Query the processor architecture from PIKE_BUILD_ARCH first. It
-  # can be set in the cmd box running sprshd to select something
-  # specific and avoid the dwim on the physical cpu.
-  PROCESSOR_ARCHITECTURE="`getntenv PIKE_BUILD_ARCH`"
+  if [ "$NT_PROCESSOR_ARCHITECTURE" = "" ]; then
+    # Query the processor architecture from PIKE_BUILD_ARCH first. It
+    # can be set in the cmd box running sprshd to select something
+    # specific and avoid the dwim on the physical cpu.
+    NT_PROCESSOR_ARCHITECTURE="`getntenv PIKE_BUILD_ARCH`"
 
-  if [ "$PROCESSOR_ARCHITECTURE" = "" ]; then
-    # Workaround for XP64 DWIMing PROCESSOR_ARCHITECTURE...
-    PROCESSOR_ARCHITECTURE="`getntenv PROCESSOR_IDENTIFIER|cut '-d ' -f1`"
+    if [ "$NT_PROCESSOR_ARCHITECTURE" = "" ]; then
+      # Workaround for XP64 DWIMing NT_PROCESSOR_ARCHITECTURE...
+      NT_PROCESSOR_ARCHITECTURE="`getntenv PROCESSOR_IDENTIFIER|cut '-d ' -f1`"
 
-    # PROCESSOR_IDENTIFIER is typically something like:
-    #   "ia64 Family 7 Model 1 Stepping 5, GenuineIntel"
-    # or
-    #   "x86 Family 6 Model 7 Stepping 3, GenuineIntel"
-    # PROCESSOR_LEVEL jumps to 15 with P4/Xeon
+      # PROCESSOR_IDENTIFIER is typically something like:
+      #   "ia64 Family 7 Model 1 Stepping 5, GenuineIntel"
+      # or
+      #   "x86 Family 6 Model 7 Stepping 3, GenuineIntel"
+      # PROCESSOR_LEVEL jumps to 15 with P4/Xeon
 
-    if [ "$PROCESSOR_ARCHITECTURE" = "x86" ]; then
-      PL=`getntenv PROCESSOR_LEVEL`
-      if [ "$PL" -gt 6 ]; then
-	PL=6
-      fi
-      PROCESSOR_ARCHITECTURE="i${PL}86"
-      if [ "$PROCESSOR_ARCHITECTURE" = "i86" ]; then
-	PROCESSOR_ARCHITECTURE="i386"
+      if [ "$NT_PROCESSOR_ARCHITECTURE" = "x86" ]; then
+	PL=`getntenv PROCESSOR_LEVEL`
+	if [ "$PL" -gt 6 ]; then
+	  PL=6
+	fi
+	NT_PROCESSOR_ARCHITECTURE="i${PL}86"
+	if [ "$NT_PROCESSOR_ARCHITECTURE" = "i86" ]; then
+	  NT_PROCESSOR_ARCHITECTURE="i386"
+	fi
       fi
     fi
   fi
 
   if [ "$M" = yes ]; then
-    OUTPUT="$OUTPUT $PROCESSOR_ARCHITECTURE"
+    OUTPUT="$OUTPUT $NT_PROCESSOR_ARCHITECTURE"
   fi
   
   if [ "$P" = yes ]; then
-    OUTPUT="$OUTPUT $PROCESSOR_ARCHITECTURE"
+    OUTPUT="$OUTPUT $NT_PROCESSOR_ARCHITECTURE"
   fi
 fi
 
+# Export these to allow caching.
+export NT_RAW_VERSION
+export NT_NUMBER_OF_PROCESSORS
+export NT_PROCESSOR_ARCHITECTURE
+
 # Note: No quotes, so that we get rid of extra white space.
 echo $OUTPUT
-
-exit 0

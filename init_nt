@@ -171,6 +171,9 @@ export NTHOST NTDRIVE NTCC CC CXX PATH NTTOOLS MNTREPLACE MNTREPLACE
 export NTPORT USE_SPRSH NTMOUNT IFS REMOTE_METHOD watcom INCLUDE
 export NT_TOOL_PATH NTCOMPILER PIKE_PATH_TRANSLATE NTLD_LIBRARY_PATH
 
+# Cache data from uname to avoid remote calls.
+. uname --all
+
 if [ "$#" = "0" ]; then
   case /$SHELL-$TERM in
      */bash-xterm)
