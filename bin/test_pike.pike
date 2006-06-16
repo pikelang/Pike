@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.108 2005/04/09 03:11:28 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.109 2006/06/16 16:26:41 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -89,11 +89,14 @@ array(string) read_tests( string fn ) {
   return tests[0..sizeof(tests)-2];
 }
 
+mapping(string:int) pushed_warnings = ([]);
+
 class WarningFlag {
   int(0..1) warning;
   array(string) warnings = ({});
 
   void compile_warning(string file, int line, string text) {
+    if (pushed_warnings[text]) return;
     warnings += ({ line+": "+text });
     warning = 1;
   }
@@ -898,6 +901,32 @@ int main(int argc, array(string) argv)
 	    }
 	    else {
 	      successes++;
+	    }
+	    break;
+
+	  case "PUSH_WARNING":
+	    if (!stringp(a)) {
+	      werror(pad_on_error + fname + " failed.\n");
+	      print_code(test);
+	      werror(sprintf("o->a(): %O\n", a));
+	    } else {
+	      pushed_warnings[a]++;
+	    }
+	    break;
+		
+	  case "POP_WARNING":
+	    if (!stringp(a)) {
+	      werror(pad_on_error + fname + " failed.\n");
+	      print_code(test);
+	      werror(sprintf("o->a(): %O\n", a));
+	    } else if (pushed_warnings[a]) {
+	      if (!--pushed_warnings[a]) {
+		m_delete(pushed_warnings, a);
+	      }
+	    } else {
+	      werror(pad_on_error + fname + " failed.\n");
+	      print_code(test);
+	      werror(sprintf("o->a(): %O not pushed!\n", a));
 	    }
 	    break;
 		
