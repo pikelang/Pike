@@ -111,6 +111,19 @@ divert(-1)]])
 define(END_MARKER,[[divert(0)END
 divert(-1)]])
 
+define(ignore_warning, dnl
+checkarg([[ignore_warning]],1)dnl
+checkarg([[ignore_warning]],2)dnl
+[[DOTEST(PUSH_WARNING,dnl
+mixed a() { return [[\$1]]; })
+\$2
+DOTEST(POP_WARNING,dnl
+mixed a() { return [[\$1]]; })
+]])
+
+define(pop_warning, [[DOTEST(POP_WARNING,dnl
+mixed a() { return [[\$1]]; })]])
+
 define(test_any, [[DOTEST(EQ,dnl
 mixed a() { [[\$1]]; }
 mixed b() { return [[\$2]]; })]])
