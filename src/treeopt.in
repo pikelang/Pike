@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.82 2006/06/15 15:21:56 grubba Exp $
+// $Id: treeopt.in,v 1.83 2006/06/16 09:48:04 grubba Exp $
 //
 // The tree optimizer
 //
@@ -399,17 +399,23 @@ F_RANGE(*, ':'(*, F_RANGE_FROM_BEG (F_CONSTANT[$$->u.sval.type == T_FLOAT]
 
 F_RANGE(0, ':'(F_RANGE_OPEN, F_RANGE_OPEN)):
 {
-  yywarning("Redundant range operator.");
-  $$ = $0;
+  /* Objects may want to use the range for obscure purposes. */
+  if (!match_types(object_type_string, $0->type)) {
+    yywarning("Redundant range operator.");
+    $$ = $0;
+  }
 };
 
 F_RANGE(0, ':'(F_RANGE_FROM_BEG(1 = F_CONSTANT[$$->u.sval.type == T_INT], *),
 	       F_RANGE_FROM_BEG(F_CONSTANT[$$->u.sval.type == T_INT]
 				[$$->u.sval.u.integer < $1->u.sval.u.integer], *))):
 {
-  yywarning("Range is always empty.");
-  if (pike_types_le($0->type, string_type_string)) {
-    $$ = mkstrnode(empty_pike_string);
+  /* Objects may want to use the range for obscure purposes. */
+  if (!match_types(object_type_string, $0->type)) {
+    yywarning("Range is always empty.");
+    if (pike_types_le($0->type, string_type_string)) {
+      $$ = mkstrnode(empty_pike_string);
+    }
   }
 }
 ;			              
