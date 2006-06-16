@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.765 2006/03/25 12:48:15 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.766 2006/06/16 16:32:24 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7057,7 +7057,9 @@ test_eq("foobargazonk"[3..5],"bar")
 test_eq("foo"[1..10],"oo")
 test_eq("foo"[-100..0],"f")
 test_eq("foo"[-100..100],"foo")
-test_eq("foo"[1..0],"")
+ignore_warning("Range is always empty.", [[
+  test_any(return "foo"[1..0];,"")
+]])
 test_any(int u=-100; return "foo"[0..u];,"") dnl Use variable to avoid warning.
 test_eq("foobargazonk"[0..],"foobargazonk")
 test_eq("foobargazonk"[1..],"oobargazonk")
@@ -7082,7 +7084,9 @@ test_equal(({1,2,3})[1..2],({2,3}))
 test_equal(({1,2,3})[2..10],({3}))
 test_equal(({1,2,3})[-100..0],({1}))
 test_equal(({1,2,3})[-100..100],({1,2,3}))
-test_equal(({1,2,3})[1..0],({}))
+ignore_warning("Range is always empty.", [[
+  test_any_equal(return ({1,2,3})[1..0];,({}))
+]])
 test_any_equal(int u=-100; return ({1,2,3})[0..u];,({})) dnl Use variable to avoid warning.
 
 test_eq("abcdef"[1..3],   "bcd")
@@ -7096,7 +7100,9 @@ test_eq("abcdef"[<3..<3], "c")
 test_eq("abcdef"[<3..],   "cdef")
 test_eq("abcdef"[..3],    "abcd")
 test_eq("abcdef"[..<3],   "abc")
-test_eq("abcdef"[..],     "abcdef")
+ignore_warning("Redundant range operator.", [[
+  test_eq("abcdef"[..],     "abcdef")
+]])
 
 test_equal(`[..] ("abcdef"/"", 1, Pike.INDEX_FROM_BEG, 3, Pike.INDEX_FROM_BEG), "bcd"/"");
 test_equal(`[..] ("abcdef"/"", 1, Pike.INDEX_FROM_BEG, 3, Pike.INDEX_FROM_END), "bc"/"");
