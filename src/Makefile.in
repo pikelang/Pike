@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.421 2006/04/27 11:25:30 tor Exp $
+# $Id: Makefile.in,v 1.422 2006/06/17 20:53:26 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -1104,7 +1104,7 @@ $(SRCDIR)/configure $(SRCDIR)/stamp-h.in: $(SRCDIR)/configure.in $(SRCDIR)/acloc
 	cd $(SRCDIR) && ./run_autoconfig --no-recursion .
 	echo foo > $(SRCDIR)/stamp-h.in
 
-config.status: $(SRCDIR)/configure
+config.status: $(SRCDIR)/configure $(SRCDIR)/make_variables.in
 	./config.status --recheck
 
 modules/common_module_makefile: $(SRCDIR)/modules/common_module_makefile.in config.status
