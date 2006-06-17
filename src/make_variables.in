@@ -1,6 +1,6 @@
 # -*- Makefile -*-
 #
-# $Id: make_variables.in,v 1.20 2006/06/17 20:26:04 mast Exp $
+# $Id: make_variables.in,v 1.21 2006/06/17 20:55:52 mast Exp $
 #
 # Note: This template is actually used only for make_variables in the
 # subdirectories; the one created in the build base dir is just an
@@ -22,22 +22,24 @@
 # top directory).
 @propagated_variables@
 #propagated_variables: CC CPP LDSHARED AR INSTALL
-#propagated_variables: BASE_CFLAGS BASE_CPPFLAGS BASE_LDFLAGS OPTIMIZE WARN
+#propagated_variables: BASE_CFLAGS BASE_CPPFLAGS BASE_LDFLAGS
+#propagated_variables: OPTIMIZE WARN PROFIL
 #propagated_variables: TMP_BUILDDIR TMP_BINDIR PIKE_SRC_DIR BUILD_BASE
 
 @SET_MAKE@
 prefix=@prefix@
 exec_prefix=$(prefix)/bin
-DEFINES=@CPPFLAGS@ @DEFS@
 TMP_LIBDIR=$(TMP_BUILDDIR)/lib
+SRCDIR=@srcdir@
 
 DEFAULT_RUNPIKE=$(TMP_BUILDDIR)/tpike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
 USE_PIKE=pike $(PIKEOPTS)
 RUNPIKE=$(@RUNPIKE@)
 
+DEFINES=@CPPFLAGS@ @DEFS@
 OTHERFLAGS=@CFLAGS@ $(OSFLAGS) $(OPTIMIZE) $(WARN) $(PROFIL)
-NOOPTFLAGS=@CFLAGS@ @CPPFLAGS@ $(OSFLAGS) $(WARN) $(PROFIL)
-SRCDIR=@srcdir@
+NOOPTFLAGS=@CFLAGS@ $(OSFLAGS) $(WARN) $(PROFIL)
+
 PMOD_TARGETS=@PMOD_TARGETS@
 make_variables_in=@make_variables_in@
 MODULE_PMOD_IN=@MODULE_PMOD_IN@
