@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.155 2005/12/30 16:32:42 nilsson Exp $
+# $Id: Makefile,v 1.156 2006/06/17 19:34:27 mast Exp $
 #
 # Meta Makefile
 #
@@ -44,10 +44,10 @@ force:
 	-@$(BIN_TRUE)
 
 src/configure:
-	cd src && ./run_autoconfig . 2>&1 | grep -v warning
+	cd src && ./run_autoconfig .
 
 force_autoconfig:
-	cd src && ./run_autoconfig . 2>&1 | grep -v warning
+	cd src && ./run_autoconfig .
 
 force_configure:
 	-builddir="$(BUILDDIR)"; rm -f "$$builddir/Makefile"
