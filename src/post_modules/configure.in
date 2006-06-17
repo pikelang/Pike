@@ -1,5 +1,7 @@
-# $Id: configure.in,v 1.4 2005/06/17 21:27:20 grubba Exp $
+# $Id: configure.in,v 1.5 2006/06/17 19:31:17 mast Exp $
 AC_INIT(Makefile.in)
+
+PIKE_RETAIN_VARIABLES()
 
 AC_SET_MAKE
 

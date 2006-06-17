@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.118 2006/05/20 14:05:35 marcus Exp $
+dnl $Id: aclocal.m4,v 1.119 2006/06/17 19:31:17 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -376,9 +376,19 @@ define(PIKE_FEATURE_OK,[
 ])
 
 
+define([PIKE_RETAIN_VARIABLES],
+[
+  if test -f propagated_variables; then
+    # Retain values for propagated variables; see make_variables.in.
+    sed -e 's/}/\\}/g' -e 's/\$/\\$/g' -e 's/^\([[^=]]*\)=\(.*\)$/\1=${\1=\2}/' < propagated_variables > propvars.sh
+    . ./propvars.sh && rm propvars.sh
+  fi
+])
+
+
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.118 2006/05/20 14:05:35 marcus Exp $
+  # $Id: aclocal.m4,v 1.119 2006/06/17 19:31:17 mast Exp $
 
   MY_AC_PROG_CC
 
@@ -439,6 +449,8 @@ define([AC_LOW_MODULE_INIT],
 dnl module_name
 define([AC_MODULE_INIT],
 [
+  PIKE_RETAIN_VARIABLES()
+
   # Initialize the MODULE_{NAME,PATH,DIR} variables
   #
   # MODULE_NAME	Name of module as available from Pike.
@@ -559,6 +571,47 @@ pushdef([AC_OUTPUT],
   fi
 
   AC_SUBST(make_variables_in)
+
+  rm propagated_variables.new 2>/dev/null
+  prop_var_changes=""
+  for var in `sed -n -e 's/^#propagated_variables:\(.*\)$/\1/p' < $make_variables_in`; do
+    eval export $var
+    eval echo "${var}=\$$var" >> propagated_variables.new
+  done
+
+  propvar_diff=yes
+  if test -f propagated_variables.old; then
+    dnl Compare to propagated_variables.old if there is any. This is
+    dnl necessary to discover variable changes when our
+    dnl propagated_variables has been updated by a parent configure
+    dnl script.
+    cmp -s propagated_variables.new propagated_variables.old && propvar_diff=no
+    rm propagated_variables.old
+  elif test -f propagated_variables; then
+    cmp -s propagated_variables propagated_variables.new && propvar_diff=no
+  fi
+
+  if test $propvar_diff = no; then
+    rm propagated_variables.new
+  else
+    mv propagated_variables.new propagated_variables
+    dnl The propagated variables have changed so we need to propagate
+    dnl them again. This is initially done via direct recursion in
+    dnl AC_OUTPUT, but recursion is disabled when rechecking so we
+    dnl need to explicitly propagate them in that case.
+    if test "x$subdirs" != x; then
+      for subdir in $subdirs; do
+	if test -f "$subdir/config.status"; then
+	  echo "$as_me: creating $subdir/propagated_variables (propagated variables have changed)" >&6
+	  test -f "$subdir/propagated_variables" && mv "$subdir/propagated_variables" "$subdir/propagated_variables.old"
+	  cp propagated_variables "$subdir"
+	fi
+      done
+    fi
+  fi
+
+  AC_SUBST_FILE(propagated_variables)
+  propagated_variables=propagated_variables
 
   AC_SUBST_FILE(make_variables)
   make_variables=make_variables

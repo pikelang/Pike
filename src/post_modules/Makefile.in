@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.16 2005/06/17 21:27:20 grubba Exp $
+# $Id: Makefile.in,v 1.17 2006/06/17 19:31:17 mast Exp $
 
 @make_variables@
 
@@ -48,10 +48,12 @@ linker_options: $(MODULE_LINKOPTS)
 	  done \
 	) >linker_options
 
-make_variables: $(make_variables_in) config.status
+propagated_variables:
+
+make_variables: $(make_variables_in) config.status propagated_variables
 	CONFIG_FILES="make_variables:$(make_variables_in)" CONFIG_HEADERS="" ./config.status
 
-Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies ./config.status
+Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies ./config.status make_variables
 	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
 	touch remake
 	@echo "Run make again" >&2
@@ -60,8 +62,8 @@ Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies ./config.status
 $(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
 	cd $(SRCDIR) && $(PIKE_SRC_DIR)/run_autoconfig --no-recursion .
 
-config.status: $(SRCDIR)/configure
-	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" PIKE_SRC_DIR="$(PIKE_SRC_DIR)" BUILD_BASE="$(BUILD_BASE)" ./config.status --recheck
+config.status: $(SRCDIR)/configure propagated_variables
+	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" ./config.status --recheck
 
 depend: Makefile
 	@for a in $(MODULES) no ; do \
@@ -92,7 +94,7 @@ clean: clean_here
 	done
 
 spotless: clean_here
-	-rm -f config.cache config.log config.status Makefile make_variables conftest.*
+	-rm -f config.cache config.log config.status Makefile propagated_variables make_variables conftest.*
 	-rm -f common_module_makefile dynamic_module_makefile static_module_makefile
 	@for a in $(MODULES) no ; do \
 	  if [ "$$a" = "no" ]; then :; else \

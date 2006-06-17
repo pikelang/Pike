@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.33 2006/04/11 18:43:33 bill Exp $
+# $Id: common_module_makefile.in,v 1.34 2006/06/17 19:31:17 mast Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -82,8 +82,9 @@ $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 	    -DPMOD_PROTO=PMOD_PROTO -DPIKE_PRECOMPILER=1 "$<" || \
 	  { rm "$@"; exit 1; }
 
+propagated_variables:
 
-make_variables: $(make_variables_in) config.status
+make_variables: $(make_variables_in) config.status propagated_variables
 	CONFIG_FILES="make_variables:$(make_variables_in)" CONFIG_HEADERS="" ./config.status
 
 # $(CONFIG_HEADERS) should exist but they need not be more fresh than
@@ -101,8 +102,10 @@ $(CONFIG_HEADERS) dummy_config_header: config.status
 $(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
 	cd $(SRCDIR) && $(PIKE_SRC_DIR)/run_autoconfig .
 
-config.status: $(SRCDIR)/configure
-	AR="$(AR)" CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" LDSHARED="$(REAL_LDSHARED)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" PIKE_SRC_DIR="$(PIKE_SRC_DIR)" BUILD_BASE="$(BUILD_BASE)" ./config.status --recheck
+propagated_variables:
+
+config.status: $(SRCDIR)/configure propagated_variables
+	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" LDSHARED="$(REAL_LDSHARED)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" ./config.status --recheck
 
 module.pmod: Makefile $(MODULE_PMOD_IN)
 	@if [ "x$(MODULE_PMOD_IN)" != "x" ]; then \
@@ -137,7 +140,7 @@ clean: clean_here
 	done
 
 spotless: clean_here
-	-rm -f config.cache config.log config.status Makefile make_variables dependencies pike_*.feature
+	-rm -f config.cache config.log config.status Makefile propagated_variables make_variables dependencies pike_*.feature
 	-rm -f core core.* .pure conftest.* $(MODULE_SPOTLESS_EXTRA)
 	@for a in '' $(MODULE_SUBDIRS) ; do \
 	  if test "x$$a" = "x"; then :; \
