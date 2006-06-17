@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.15 2006/06/17 09:47:23 grubba Exp $
+# $Id: Makefile.in,v 1.16 2006/06/17 19:27:11 mast Exp $
 @make_variables@
 VPATH=@srcdir@
 OBJS=top.o @AUTO_OBJS@
@@ -8,7 +8,7 @@ MODULE_CFLAGS=@X_CFLAGS@
 
 override:
 	@echo "Original CFLAGS:$(CFLAGS)"
-	@echo "Modified CFLAGS:`echo $(CFLAGS) | sed -eh -e 's/.*\(-gcc-version[^ ]*\).*/\1/p' -eg -e 's/-g[^ ]*//g' -e 's/-W[^ ]*//g' -e 's/-O[^ ]*//g'` -O`"
+	@echo "Modified CFLAGS:`echo $(CFLAGS) | sed -eh -e 's/.*\(-gcc-version[^ ]*\).*/\1/p' -eg -e 's/-g[^ ]*//g' -e 's/-W[^ ]*//g' -e 's/-O[^ ]*//g'` -O"
 	@$(MAKE) \
 	  CFLAGS="`echo $(CFLAGS) | sed -eh -e 's/.*\(-gcc-version[^ ]*\).*/\1/p' -eg -e 's/-g[^ ]*//g' -e 's/-W[^ ]*//g' -e 's/-O[^ ]*//g'` -O" \
 	  all
