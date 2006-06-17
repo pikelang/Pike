@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.36 2006/06/17 20:26:04 mast Exp $
+# $Id: common_module_makefile.in,v 1.37 2006/06/17 21:47:27 mast Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -9,8 +9,8 @@
 #
 
 PREFLAGS=-I. -I$(SRCDIR) -I$(BUILD_BASE) -I$(PIKE_SRC_DIR) $(LINKAGE_CPPFLAGS) $(MODULE_CPPFLAGS) $(DEFINES)
-CFLAGS=$(MODULE_CFLAGS) $(PREFLAGS) $(OTHERFLAGS) $(LINKAGE_CFLAGS)
-NOOPT_CFLAGS=$(MODULE_CFLAGS) $(PREFLAGS) $(NOOPTFLAGS) $(LINKAGE_CFLAGS)
+CFLAGS=$(MODULE_CFLAGS) $(OTHERFLAGS) $(LINKAGE_CFLAGS)
+NOOPT_CFLAGS=$(MODULE_CFLAGS) $(NOOPTFLAGS) $(LINKAGE_CFLAGS)
 
 MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC) $(LINKAGE_CFLAGS)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "AR=$(AR)" "NOOPTFLAGS=$(NOOPTFLAGS)" $(MODULE_MAKE_FLAGS)
 
