@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.53 2006/06/17 19:58:50 mast Exp $
+# $Id: Makefile.in,v 1.54 2006/06/17 20:01:27 mast Exp $
 
 @make_variables@
 
@@ -53,7 +53,7 @@ $(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
 	cd $(SRCDIR) && $(PIKE_SRC_DIR)/run_autoconfig --no-recursion .
 
 config.status: $(SRCDIR)/configure propagated_variables
-	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" LDSHARED="$(REAL_LDSHARED)" ./config.status --recheck
+	./config.status --recheck
 
 depend: Makefile
 	@for a in $(MODULES) ; do \
