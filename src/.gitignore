@@ -30,6 +30,7 @@
 /isort_template.h
 /iterators.c
 /language.c
+/language.c_src
 /language.h
 /language.h.nolines
 /language.h_src
