@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.120 2006/06/17 19:58:50 mast Exp $
+dnl $Id: aclocal.m4,v 1.121 2006/06/17 20:26:04 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -383,12 +383,19 @@ define([PIKE_RETAIN_VARIABLES],
     sed -e 's/}/\\}/g' -e 's/\$/\\$/g' -e 's/^\([[^=]]*\)=\(.*\)$/\1=${\1=\2}/' < propagated_variables > propvars.sh
     . ./propvars.sh && rm propvars.sh
   fi
+
+  dnl This allows module configure scripts to extend these variables, as
+  dnl they often do (they should perhaps use the MODULE_* varieties
+  dnl instead).
+  CFLAGS=$BASE_CFLAGS
+  CPPFLAGS=$BASE_CPPFLAGS
+  LDFLAGS=$BASE_LDFLAGS
 ])
 
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.120 2006/06/17 19:58:50 mast Exp $
+  # $Id: aclocal.m4,v 1.121 2006/06/17 20:26:04 mast Exp $
 
   MY_AC_PROG_CC
 
@@ -504,18 +511,12 @@ pushdef([AC_OUTPUT],
 
   AC_SUBST(prefix)
   export prefix
-  AC_SUBST(exec_prefix)
-  export exec_prefix
-  AC_SUBST(BINDIR)
-  export BINDIR
   AC_SUBST(CFLAGS)
   export CFLAGS
   AC_SUBST(CPPFLAGS)
   export CPPFLAGS
-  AC_SUBST(OPTIMIZE)
-  export OPTIMIZE
-  AC_SUBST(WARN)
-  export WARN
+  AC_SUBST(LDFLAGS)
+  export LDFLAGS
   AC_SUBST(CCSHARED)
   export CCSHARED
 
