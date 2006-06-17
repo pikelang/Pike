@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.91 2002/11/05 19:21:00 grubba Exp $
+# $Id: static_module_makefile.in,v 1.92 2006/06/17 11:11:47 mast Exp $
 #
 
 
@@ -108,10 +108,7 @@ Makefile: $(MODULE_BASE)/static_module_makefile $(SRCDIR)/Makefile.in $(SRCDIR)/
 	@exit 1
 
 $(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
-	cd $(SRCDIR) && autoconf --localdir=$(PIKE_SRC_DIR)
-	if [ -f $(SRCDIR)/acconfig.h ]; then \
-	  cd $(SRCDIR) && autoheader; \
-	else :; fi
+	cd $(SRCDIR) && $(PIKE_SRC_DIR)/run_autoconfig .
 
 config.status: $(SRCDIR)/configure
 	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" LDSHARED="$(REAL_LDSHARED)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" PIKE_SRC_DIR="$(PIKE_SRC_DIR)" BUILD_BASE="$(BUILD_BASE)" ./config.status --recheck
