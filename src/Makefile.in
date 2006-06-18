@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.422 2006/06/17 20:53:26 mast Exp $
+# $Id: Makefile.in,v 1.423 2006/06/18 09:25:33 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -184,7 +184,7 @@ CORE_OBJ= \
 OBJ=$(CORE_OBJ) module.o
 
 MODULE_REQUIREMENTS= \
-  headerfiles \
+  headerfiles-stamp \
   machine.h \
   global.h \
   precompile.sh-stamp \
@@ -229,9 +229,10 @@ documentation: onepage.xml traditional.xml modref.xml
 
 # Creation of bundles/include/pike/.
 
-headerfiles: bundles/include/pike machine.h global.h $(SRC_TARGETS) force
+headerfiles-stamp: bundles/include/pike machine.h global.h $(SRC_TARGETS) force
 	@$(MAKE) $(MAKE_FLAGS) headerfiles_low HEADERS="machine.h" HEADERSOURCE="`pwd`"
 	@$(MAKE) $(MAKE_FLAGS) headerfiles_low HEADERS="`cd $(SRCDIR) && echo *.h`" HEADERSOURCE="$(SRCDIR)"
+	@test -f headerfiles-stamp || echo foo > headerfiles-stamp
 
 headerfiles_low: force
 	@for f in $(HEADERS); do \
@@ -244,6 +245,7 @@ headerfiles_low: force
 	    echo "Symlink failed."; \
 	    cp "$(HEADERSOURCE)/$$f" "bundles/include/pike/$$f" || exit 1; \
 	  fi; \
+	  echo foo > headerfiles-stamp; \
 	done
 
 bundles/include/pike: bundles/include
@@ -594,7 +596,7 @@ clean_here: tidy doc_clean
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out pike.tmp
 	-rm -f hilfe rsif master.pike compiler-warnings dumpmodule.log
 	-rm -f interpreter_debug.h lexer?.h
-	-rm -f import-stamp modules-stamp master-stamp
+	-rm -f import-stamp master-stamp headerfiles-stamp
 	-rm -rf lib/modules/*
 #	-rm -f lib/master.pike
 
