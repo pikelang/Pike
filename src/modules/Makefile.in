@@ -1,42 +1,39 @@
-# $Id: Makefile.in,v 1.54 2006/06/17 20:01:27 mast Exp $
+# $Id: Makefile.in,v 1.55 2006/06/18 12:59:48 mast Exp $
 
 @make_variables@
 
 MODULES=@module_names@
 MODULE_SEGMENTS=@MODULE_SEGMENTS@
 MODULE_LINKOPTS=@MODULE_LINKOPTS@
+MY_DIR=modules
 
-all: linker_options modlist.h modlist_headers.h
+all: modlist.h modlist_headers.h linker_options
 
 $(MODULE_SEGMENTS) $(MODULE_LINKOPTS): modules
 
 force:
 	@:
 
-$(MODULES): Makefile force
-	  @echo Making modules/$@; \
+$(MODULES) no : Makefile force
+	@if [ "$@" = "no" ]; then :; else \
 	  ( cd $@ && \
-	    (  rm remake >/dev/null 2>&1 || : ) && \
+	    ( rm remake >/dev/null 2>&1 || : ) && \
 	    ( $(MAKE) $(MAKE_FLAGS) || \
 	      ( test -f remake && $(MAKE) $(MAKE_FLAGS) ) ) \
-	  ) || exit $$?;
+	  ) || exit $$?; \
+	fi
 
 modules: Makefile $(MODULES)
 
 modlist.h: $(MODULE_SEGMENTS)
-	( for a in $(MODULES) ; do cat $$a/modlist_segment ; done ; ) >modlist.h
+	( for a in $(MODULES) no ; do test $$a = no || cat $$a/modlist_segment; done ) >modlist.h
 
 modlist_headers.h: $(MODULE_SEGMENTS)
-	( for a in $(MODULES) ; do \
-	    cat $$a/modlist_segment; \
-	  done \
-	) | sed -e 's/^.*{.*,\(.*\),\(.*\).*}.*$$/void \1(void),\2(void);/' >modlist_headers.h
+	( for a in $(MODULES) no ; do test $$a = no || cat $$a/modlist_segment; done ) | \
+	sed -e 's/^.*{.*,\(.*\),\(.*\)}.*$$/void \1(void),\2(void);/' >modlist_headers.h
 
 linker_options: $(MODULE_LINKOPTS)
-	( for a in $(MODULES) ; do \
-	    cat $$a/linker_options; \
-	  done \
-	) >linker_options
+	( for a in $(MODULES) no ; do test $$a = no || cat $$a/linker_options; done ) >linker_options
 
 propagated_variables:
 
@@ -56,8 +53,9 @@ config.status: $(SRCDIR)/configure propagated_variables
 	./config.status --recheck
 
 depend: Makefile
-	@for a in $(MODULES) ; do \
+	@for a in $(MODULES) no ; do test $$a = no || \
 	  ( cd $$a && { \
+	    echo "Fixing depends in $(MY_DIR)/$$a"; \
 	    rm -f remake; \
 	    ${MAKE} $(MAKE_FLAGS) depend || \
 	      if test -f remake; then ${MAKE} $(MAKE_FLAGS) depend; else exit $$?; fi; \
@@ -65,54 +63,58 @@ depend: Makefile
 	done
 
 install:
-	@for a in $(MODULES) ; do \
-	  ( cd $$a && ${MAKE} $(MAKE_FLAGS) install ) ; \
+	@for a in $(MODULES) no ; do test $$a = no || \
+	  ( echo "Installing $(MY_DIR)/$$a"; \
+	    cd $$a && ${MAKE} $(MAKE_FLAGS) install ) ; \
 	done
 
 clean_here:
 	-rm -f linker_options modlist.h modlist_headers.h
 
 clean: clean_here
-	@for a in $(MODULES) ; do \
-	  ( cd $$a && ${MAKE} $(MAKE_FLAGS) clean ) ; \
+	@for a in $(MODULES) no ; do test $$a = no || \
+	  ( echo "Cleaning $(MY_DIR)/$$a"; \
+	    cd $$a && ${MAKE} $(MAKE_FLAGS) clean ) ; \
 	done
 
 spotless: clean_here
 	-rm -f config.cache config.log config.status Makefile propagated_variables make_variables conftest.*
 	-rm -f common_module_makefile dynamic_module_makefile static_module_makefile
-	@for a in $(MODULES) ; do \
-	  ( cd $$a && ${MAKE} $(MAKE_FLAGS) spotless ) ; \
+	@for a in $(MODULES) no ; do test $$a = no || \
+	  ( echo "Cleaning $(MY_DIR)/$$a": \
+	    cd $$a && ${MAKE} $(MAKE_FLAGS) spotless ) ; \
 	done
 
 verify:
-	@for a in $(MODULES) ; do \
-	  ( cd $$a && \
-	    echo Verifying $$a && \
-	    ${MAKE} $(MAKE_FLAGS) verify \
+	@for a in $(MODULES) no ; do test $$a = no || \
+	  ( echo "Verifying $(MY_DIR)/$$a"; \
+	    cd $$a && ${MAKE} $(MAKE_FLAGS) verify \
 	  ) || exit $$? ; \
 	done
 
 verbose_verify:
-	@for a in $(MODULES) ; do \
-	  ( cd $$a && \
-	    ${MAKE} $(MAKE_FLAGS) verbose_verify \
+	@for a in $(MODULES) no ; do test $$a = no || \
+	  ( echo "Verifying $(MY_DIR)/$$a"; \
+	    cd $$a && ${MAKE} $(MAKE_FLAGS) verbose_verify \
 	  ) || exit $$? ; \
 	done
 
 fdtestsuites:
-	@for a in $(MODULES) ; do \
-	  echo Making testsuite in $$a ; \
-	  $(TMP_BINDIR)/mktestsuite $(SRCDIR)/$$a/testsuite.in >$$a/testsuite -DSRCDIR="`echo $(SRCDIR)/$$a|$(BUILD_BASE)/posix_to_native.sh`" || exit $$? ; \
+	@for a in $(MODULES) no ; do test $$a = no || \
+	  ( echo "Making testsuite in $(MY_DIR)/$$a"; \
+	    $(TMP_BINDIR)/mktestsuite $(SRCDIR)/$$a/testsuite.in >$$a/testsuite -DSRCDIR="`echo $(SRCDIR)/$$a|$(BUILD_BASE)/posix_to_native.sh`" ) || exit $$? ; \
 	done	
 
 testsuites:
-	@for a in $(MODULES) ; do \
-	  (cd $$a && $(MAKE) testsuite) ; \
+	@for a in $(MODULES) no ; do test $$a = no || \
+	  ( echo "Making testsuite in $(MY_DIR)/$$a"; \
+	    cd $$a && $(MAKE) testsuite ) ; \
 	done
 
 extra_tests:
-	@for a in $(MODULES) ; do \
-	  ( cd $$a && \
+	@for a in $(MODULES) no ; do test $$a = no || \
+	  ( echo "Making extra_tests in $(MY_DIR)/$$a"; \
+	    cd $$a && \
 	    ${MAKE} $(MAKE_FLAGS) extra_tests \
 	  ) || exit $$? ; \
 	done
