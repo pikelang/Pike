@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.426 2006/06/18 18:44:05 mast Exp $
+# $Id: Makefile.in,v 1.427 2006/06/18 18:51:53 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -304,17 +304,12 @@ tpike-real: main.o $(CORE_OBJ) tmodule.o master-stamp pike.syms modules/linker_o
 	  `cat modules/linker_options` \
 	  $(LIBS) -o tpike
 
-# Only want tpike to exist when using $(RUNTPIKE); we don't want to
-# require it actually being up-to-date.
-#
-# If RUNPIKE has been overridden we don't bother to build tpike. The
-# precompile.sh script will then fall back to use RUNPIKE when it
-# doesn't find tpike, and we assume that RUNPIKE doesn't point to a
-# pike from the stone age.
+# Only want tpike to exist for use with $(RUNPIKE) in the post modules
+# (and some auxiliary targets in all modules, such as verify and
+# extract_autodoc). We don't want to require it actually being
+# up-to-date.
 tpike: precompile.sh-stamp
-	@if test "x$(RUNPIKE)" = "x$(DEFAULT_RUNPIKE)"; then \
-	  $(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) tpike-real; \
-	else :; fi
+	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) tpike-real
 
 #pike: main.o @DLOPEN_O@ $(PIKE_LIB) master-stamp pike.syms
 pike: main.o $(OBJ) master-stamp pike.syms modules/linker_options post_modules/linker_options
