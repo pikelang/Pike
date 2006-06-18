@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.98 2004/04/17 16:00:41 marcus Exp $
+# $Id: static_module_makefile.in,v 1.99 2006/06/18 14:23:54 mast Exp $
 #
 
 
@@ -27,9 +27,6 @@ linker_options: Makefile $(MODULE_ARCHIVES)
             esac >>linker_options; \
 	  fi; \
 	done
-
-modlist_headers: Makefile
-	@echo >modlist_headers "void pike_module_$(UNIQUE_MODNAME)_init(void), pike_module_$(UNIQUE_MODNAME)_exit(void);"
 
 modlist_segment: Makefile
 	@echo >modlist_segment " ,{ \"$(MODULE_PROGRAM)\", pike_module_$(UNIQUE_MODNAME)_init, pike_module_$(UNIQUE_MODNAME)_exit } "

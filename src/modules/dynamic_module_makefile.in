@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.115 2004/04/17 15:18:52 marcus Exp $
+# $Id: dynamic_module_makefile.in,v 1.116 2006/06/18 14:23:54 mast Exp $
 #
 
 LIBGCC=@LIBGCC@
@@ -19,9 +19,6 @@ linker_options: Makefile
 	  echo "LINKER_OPTIONS+=$(LINKER_OPTIONS)" ; \
 	else : ; fi ; \
 	echo "$(LINKER_OPTIONS)" >linker_options
-
-modlist_headers: Makefile
-	@echo "" >modlist_headers
 
 modlist_segment: Makefile
 	@echo "" >modlist_segment

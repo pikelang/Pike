@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.37 2006/06/17 21:47:27 mast Exp $
+# $Id: common_module_makefile.in,v 1.38 2006/06/18 14:23:54 mast Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -23,7 +23,7 @@ all: dummy
 force:
 	@:;
 
-dummy:	Makefile $(DUMMY) linker_options modlist_headers modlist_segment $(MODULE_TARGET) module.pmod
+dummy:	Makefile $(DUMMY) linker_options modlist_segment $(MODULE_TARGET) module.pmod
 	@if [ x"$(PIKE_EXTERNAL_MODULE)" = x -a x"$(MODULE_PMOD_IN)" != x ]; then \
 	  $(TMP_BINDIR)/install_module module.pmod $(TMP_MODULE_BASE)/$(MODDIR)$(MODNAME).pmod ; \
 	fi
@@ -119,7 +119,7 @@ module.pmod: Makefile $(MODULE_PMOD_IN)
 
 
 clean_here:
-	-rm -f *.o *.fail *.obj *.a *.so stamp-h linker_options modlist_headers modlist_segment testsuite $(MODULE_CLEAN_EXTRA) doc
+	-rm -f *.o *.fail *.obj *.a *.so stamp-h linker_options modlist_segment testsuite $(MODULE_CLEAN_EXTRA) doc
 	-rm -rf plib refdoc module.pmod doc
 
 clean: clean_here
