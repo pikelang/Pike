@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.128 2006/06/18 17:24:04 mast Exp $
+dnl $Id: aclocal.m4,v 1.129 2006/06/18 17:31:18 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -395,7 +395,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.128 2006/06/18 17:24:04 mast Exp $
+  # $Id: aclocal.m4,v 1.129 2006/06/18 17:31:18 mast Exp $
 
   MY_AC_PROG_CC
 
@@ -669,6 +669,9 @@ define(MY_AC_CHECK_PROGS,[
 ])
 define(MY_AC_PATH_PROG,[
   if test "x$enable_binary" = "xno"; then
+    # The following test (and probably many more) will leak a bogus
+    # value in IFS if the last argument is empty. Observed with
+    # autoconf 2.59.
     AC_PATH_PROG($1,nobinary_dummy,$3,$BINDIR)
   else
     AC_PATH_PROG($1,$2,$3,$4)
