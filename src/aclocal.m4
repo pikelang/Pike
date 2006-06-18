@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.131 2006/06/18 18:05:25 mast Exp $
+dnl $Id: aclocal.m4,v 1.132 2006/06/18 18:10:11 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -399,7 +399,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.131 2006/06/18 18:05:25 mast Exp $
+  # $Id: aclocal.m4,v 1.132 2006/06/18 18:10:11 mast Exp $
 
   MY_AC_PROG_CC
 
@@ -559,10 +559,6 @@ pushdef([AC_OUTPUT],
 
   AC_SUBST(make_variables_in)
 
-  if test "x$IFS" = "x:"; then
-    # Attempt to restore IFS...
-    IFS="$as_save_ifs$ac_save_ifs"
-  fi
   rm propagated_variables.new 2>/dev/null
   prop_var_changes=""
   for var in `sed -n -e 's/^#propagated_variables:\(.*\)$/\1/p' < $make_variables_in`; do
