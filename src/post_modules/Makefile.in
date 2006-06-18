@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.20 2006/06/18 12:59:48 mast Exp $
+# $Id: Makefile.in,v 1.21 2006/06/18 14:52:32 mast Exp $
 
 @make_variables@
 
@@ -14,14 +14,31 @@ $(MODULE_SEGMENTS) $(MODULE_LINKOPTS): modules
 force:
 	@:
 
+# If the current build type (static or dynamic) matches the build type
+# of the module then we have to start the submake without any target
+# since there are many module makefiles that depend on being able to
+# override the default target. Otherwise we specify the build type as
+# target to avoid running the default target twice.
 $(MODULES) no : Makefile force
-	@if [ "$@" = "no" ]; then :; else \
-	  ( cd $@ && \
-	    ( rm remake >/dev/null 2>&1 || : ) && \
-	    ( $(MAKE) $(MAKE_FLAGS) || \
-	      ( test -f remake && $(MAKE) $(MAKE_FLAGS) ) ) \
-	  ) || exit $$?; \
-	fi
+	@test $@ = "no" || \
+	( echo "Making $${MODULE_BUILD_TYPE}: $(MY_DIR)/$@"; \
+	  cd $@ && \
+	  { test -f build_type || \
+	    { rm remake >/dev/null 2>&1; \
+	      $(MAKE) $(MAKE_FLAGS) build_type || \
+	      test -f remake && \
+	      $(MAKE) $(MAKE_FLAGS) build_type; }; } && \
+	  if [ "x$$MODULE_BUILD_TYPE" = "x`cat build_type`" ]; then \
+	    { rm remake >/dev/null 2>&1; \
+	      $(MAKE) $(MAKE_FLAGS) || \
+	      test -f remake && \
+	      $(MAKE) $(MAKE_FLAGS); }; \
+	  else \
+	    { rm remake >/dev/null 2>&1; \
+	      $(MAKE) $(MAKE_FLAGS) $$MODULE_BUILD_TYPE || \
+	      test -f remake && \
+	      $(MAKE) $(MAKE_FLAGS) $$MODULE_BUILD_TYPE; }; \
+	  fi ) || exit $$?
 
 modules: Makefile $(MODULES)
 

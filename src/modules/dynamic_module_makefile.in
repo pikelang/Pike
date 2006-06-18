@@ -1,22 +1,45 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.116 2006/06/18 14:23:54 mast Exp $
+# $Id: dynamic_module_makefile.in,v 1.117 2006/06/18 14:52:32 mast Exp $
 #
 
 LIBGCC=@LIBGCC@
 LC_REQ=@LC_REQ@
 
 LINKAGE_CPPFLAGS=
-LINKAGE_CFLAGS=@CCSHARED@
+DYNAMIC_LINKAGE_CFLAGS=@CCSHARED@
+STATIC_LINKAGE_CFLAGS=
+LINKAGE_CFLAGS=$(DYNAMIC_LINKAGE_CFLAGS)
 
 MODULE_PROGRAM=.$(MODULE_WRAPPER_PREFIX)$(MODNAME)
 MODULE_TARGET=$(TMP_MODULE_BASE)/$(MODDIR)$(MODULE_WRAPPER_PREFIX)$(MODNAME).so
 
+# The reason for this is that we can't use targets directly to specify
+# the build type; many module makefiles depend on being able to
+# override the default target.
+all:
+	@case "x$$MODULE_BUILD_TYPE" in \
+	  xstatic) $(MAKE) $(MAKE_FLAGS) static;; \
+	  xdynamic) $(MAKE) $(MAKE_FLAGS) dynamic;; \
+	  x) $(MAKE) $(MAKE_FLAGS) static dynamic;; \
+	  *) \
+	    echo "Invalid MODULE_BUILD_TYPE: $$MODULE_BUILD_TYPE" >&2; \
+	    exit 1;; \
+	esac
 
 @common_module_makefile@
 
+build_type:
+	@echo dynamic > build_type
+
+static: module-preamble
+	@:
+
+dynamic: module-main
+	@:
+
 linker_options: Makefile
 	@if test "x$(LINKER_OPTIONS)" != x ; then \
-	  echo "LINKER_OPTIONS+=$(LINKER_OPTIONS)" ; \
+	  echo "echo $(LINKER_OPTIONS) > linker_options" ; \
 	else : ; fi ; \
 	echo "$(LINKER_OPTIONS)" >linker_options
 

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.423 2006/06/18 09:25:33 mast Exp $
+# $Id: Makefile.in,v 1.424 2006/06/18 14:52:32 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -256,23 +256,6 @@ bundles/include: bundles
 
 bundles:
 	test -d bundles/. || mkdir bundles
-
-# Backward compat.
-post_modules: post_module_objects
-
-post_module_objects: $(MODULE_REQUIREMENTS) tpike
-	@( cd post_modules ; rm remake >/dev/null 2>&1 || : ; \
-	   $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
-	     ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) || exit $$?
-
-post_modules/modlist_headers.h:
-	@test -f post_modules/modlist_headers.h || touch post_modules/modlist_headers.h
-
-post_modules/modlist.h:
-	@test -f post_modules/modlist.h || touch post_modules/modlist.h
-
-post_modules/linker_options:
-	@test -f post_modules/linker_options || touch post_modules/linker_options
 
 compiler-warnings : clean
 	@echo Summarizing compiler warnings.
@@ -596,7 +579,7 @@ clean_here: tidy doc_clean
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out pike.tmp
 	-rm -f hilfe rsif master.pike compiler-warnings dumpmodule.log
 	-rm -f interpreter_debug.h lexer?.h
-	-rm -f import-stamp master-stamp headerfiles-stamp
+	-rm -f import-stamp modules-stamp post-modules-stamp master-stamp headerfiles-stamp
 	-rm -rf lib/modules/*
 #	-rm -f lib/master.pike
 
@@ -1039,17 +1022,37 @@ post_modules_depend:
 
 # touch modules-stamp here to avoid doing this work again if that
 # target is checked later.
-module_objects: $(MODULE_REQUIREMENTS)
-	@( cd modules ; rm remake >/dev/null 2>&1 || : ; \
-	   $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
-	     ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) || exit $$?
+static_module_objects: $(MODULE_REQUIREMENTS)
+	@MODULE_BUILD_TYPE=static; \
+	export MODULE_BUILD_TYPE; \
+	( cd modules && ( rm remake >/dev/null 2>&1 || : ) && \
+	  ( $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
+	    ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) \
+	) || exit $$?
 	@touch modules-stamp
 
 modules-stamp: $(MODULE_REQUIREMENTS)
-	@( cd modules ; rm remake >/dev/null 2>&1 || : ; \
-	   $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
-	     ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) || exit $$?
+	@MODULE_BUILD_TYPE=static; \
+	export MODULE_BUILD_TYPE; \
+	( cd modules && ( rm remake >/dev/null 2>&1 || : ) && \
+	  ( $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
+	    ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) \
+	) || exit $$?
 	@touch modules-stamp
+
+dynamic_module_objects: $(MODULE_REQUIREMENTS) pike
+	@MODULE_BUILD_TYPE=dynamic; \
+	export MODULE_BUILD_TYPE; \
+	( cd modules && ( rm remake >/dev/null 2>&1 || : ) && \
+	  ( $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
+	    ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) \
+	) || exit $$?
+
+# Use submakes here to ensure both correct sequencing and that all
+# modules are properly rechecked.
+module_objects:
+	@$(MAKE) $(MAKE_FLAGS) static_module_objects
+	@$(MAKE) $(MAKE_FLAGS) dynamic_module_objects
 
 modules/modlist.h: modules-stamp
 
@@ -1060,6 +1063,49 @@ modules/linker_options: modules-stamp
 module.o:  modules/modlist_headers.h modules/modlist.h
 
 tmodule.o:  modules/modlist_headers.h modules/modlist.h
+
+# Backward compat.
+post_modules: post_module_objects
+
+# touch post-modules-stamp here to avoid doing this work again if that
+# target is checked later.
+post_static_module_objects: $(MODULE_REQUIREMENTS) tpike
+	@MODULE_BUILD_TYPE=static; \
+	export MODULE_BUILD_TYPE; \
+	( cd post_modules && ( rm remake >/dev/null 2>&1 || : ) && \
+	  ( $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
+	    ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) \
+	) || exit $$?
+	@touch post-modules-stamp
+
+post-modules-stamp: $(MODULE_REQUIREMENTS) tpike
+	@MODULE_BUILD_TYPE=static; \
+	export MODULE_BUILD_TYPE; \
+	( cd post_modules && ( rm remake >/dev/null 2>&1 || : ) && \
+	  ( $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
+	    ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) \
+	) || exit $$?
+	@touch post-modules-stamp
+
+post_dynamic_module_objects: $(MODULE_REQUIREMENTS) tpike
+	@MODULE_BUILD_TYPE=dynamic; \
+	export MODULE_BUILD_TYPE; \
+	( cd post_modules && ( rm remake >/dev/null 2>&1 || : ) && \
+	  ( $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
+	    ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) \
+	) || exit $$?
+
+# Use submakes here to ensure both correct sequencing and that all
+# modules are properly rechecked.
+post_module_objects:
+	@$(MAKE) $(MAKE_FLAGS) post_static_module_objects
+	@$(MAKE) $(MAKE_FLAGS) post_dynamic_module_objects
+
+post_modules/modlist_headers.h: post-modules-stamp
+
+post_modules/modlist.h: post-modules-stamp
+
+post_modules/linker_options: post-modules-stamp
 
 $(SRCDIR)/interpret_protos.h_src: $(SRCDIR)/interpret_functions.h $(SRCDIR)/strip_opcodes
 	$(CPP) $(PREFLAGS) -DGEN_PROTOS $(SRCDIR)/interpret_functions.h | $(SRCDIR)/strip_opcodes >$(SRCDIR)/interpret_protos.h_src || { rm $(SRCDIR)/interpret_protos.h_src; exit 1; }

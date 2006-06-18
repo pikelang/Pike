@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.99 2006/06/18 14:23:54 mast Exp $
+# $Id: static_module_makefile.in,v 1.100 2006/06/18 14:52:32 mast Exp $
 #
 
 
@@ -11,22 +11,46 @@ LINKAGE_CFLAGS=
 MODULE_PROGRAM=$(MODPATH)$(MODULE_WRAPPER_PREFIX)$(MODNAME)
 MODULE_TARGET=module.a
 
+# The reason for this is that we can't use targets directly to specify
+# the build type; many module makefiles depend on being able to
+# override the default target.
+all:
+	@case "x$$MODULE_BUILD_TYPE" in \
+	  xstatic) $(MAKE) $(MAKE_FLAGS) static;; \
+	  xdynamic) ;; \
+	  x) $(MAKE) $(MAKE_FLAGS) static;; \
+	  *) \
+	    echo "Invalid MODULE_BUILD_TYPE: $$MODULE_BUILD_TYPE" >&2; \
+	    exit 1;; \
+	esac
+
 @common_module_makefile@
 
+build_type:
+	@echo static > build_type
+
+static: module-preamble module-main
+	@:
+
+dynamic:
+	@:
+
 linker_options: Makefile $(MODULE_ARCHIVES)
-	echo >linker_options `pwd`/module.a $(MODULE_LDFLAGS)
-	@for a in '' $(MODULE_ARCHIVES) ; do \
+	@linkopts="`pwd`/module.a $(MODULE_LDFLAGS)"; \
+	for a in '' $(MODULE_ARCHIVES) ; do \
 	  if test "x$$a" = "x"; then :; else \
 	    case "$$a" in \
 	      /*) \
-		echo $$a \
+		linkopts="$$linkopts $$a" \
 	      ;; \
 	      *) \
-		echo `pwd`/$$a \
+		linkopts="$$linkopts `pwd`/$$a" \
 	      ;; \
-            esac >>linker_options; \
+	    esac; \
 	  fi; \
-	done
+	done; \
+	echo "echo $$linkopts > linker_options"; \
+	echo $$linkopts > linker_options
 
 modlist_segment: Makefile
 	@echo >modlist_segment " ,{ \"$(MODULE_PROGRAM)\", pike_module_$(UNIQUE_MODNAME)_init, pike_module_$(UNIQUE_MODNAME)_exit } "

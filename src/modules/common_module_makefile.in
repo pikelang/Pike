@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.38 2006/06/18 14:23:54 mast Exp $
+# $Id: common_module_makefile.in,v 1.39 2006/06/18 14:52:32 mast Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -12,18 +12,19 @@ PREFLAGS=-I. -I$(SRCDIR) -I$(BUILD_BASE) -I$(PIKE_SRC_DIR) $(LINKAGE_CPPFLAGS) $
 CFLAGS=$(MODULE_CFLAGS) $(OTHERFLAGS) $(LINKAGE_CFLAGS)
 NOOPT_CFLAGS=$(MODULE_CFLAGS) $(NOOPTFLAGS) $(LINKAGE_CFLAGS)
 
-MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC) $(LINKAGE_CFLAGS)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "AR=$(AR)" "NOOPTFLAGS=$(NOOPTFLAGS)" $(MODULE_MAKE_FLAGS)
+# MAKE_FLAGS_BASE must not contain LINKAGE_*.
+MAKE_FLAGS_BASE = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "AR=$(AR)" "NOOPTFLAGS=$(NOOPTFLAGS)" $(MODULE_MAKE_FLAGS)
+MAKE_FLAGS = $(MAKE_FLAGS_BASE) "LINKAGE_CFLAGS=$(LINKAGE_CFLAGS)"
 
 MODULE_BASE=$(BUILD_BASE)/modules
 TMP_MODULE_BASE=$(TMP_LIBDIR)/modules
 
-
-all: dummy
-
 force:
-	@:;
+	@:
 
-dummy:	Makefile $(DUMMY) linker_options modlist_segment $(MODULE_TARGET) module.pmod
+module-preamble: Makefile $(DUMMY) linker_options modlist_segment
+
+module-main: Makefile $(MODULE_TARGET) module.pmod
 	@if [ x"$(PIKE_EXTERNAL_MODULE)" = x -a x"$(MODULE_PMOD_IN)" != x ]; then \
 	  $(TMP_BINDIR)/install_module module.pmod $(TMP_MODULE_BASE)/$(MODDIR)$(MODNAME).pmod ; \
 	fi
@@ -138,7 +139,6 @@ spotless: clean_here
 
 
 depend: $(SRC_TARGETS) $(PMOD_TARGETS) Makefile
-	-@echo Fixing dependencies for $(SRCDIR)/\*.c
 	@gcc -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh "$(SRCDIR)" "$(PIKE_SRC_DIR)" "$(BUILD_BASE)"
 	@CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
 	@for a in '' $(MODULE_SUBDIRS) ; do \
