@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.122 2006/06/17 21:36:20 mast Exp $
+dnl $Id: aclocal.m4,v 1.123 2006/06/18 09:19:05 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -395,7 +395,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.122 2006/06/17 21:36:20 mast Exp $
+  # $Id: aclocal.m4,v 1.123 2006/06/18 09:19:05 mast Exp $
 
   MY_AC_PROG_CC
 
@@ -585,7 +585,7 @@ pushdef([AC_OUTPUT],
     if test "x$subdirs" != x; then
       for subdir in $subdirs; do
 	if test -f "$subdir/config.status"; then
-	  echo "$as_me: creating $subdir/propagated_variables (propagated variables have changed)" >&6
+	  echo "$as_me: creating $subdir/propagated_variables (propagated variables have changed)" >&AC_FD_MSG
 	  test -f "$subdir/propagated_variables" && mv "$subdir/propagated_variables" "$subdir/propagated_variables.old"
 	  cp propagated_variables "$subdir"
 	fi
@@ -638,7 +638,7 @@ $3;
 return 0;
 }
 ], pike_cv_func_$1=yes, pike_cv_func_$1=no, [
-      echo $ac_n "crosscompiling... $ac_c" 1>&6
+      echo $ac_n "crosscompiling... $ac_c" 1>&AC_FD_MSG
       AC_TRY_LINK([$2], [$3], pike_cv_func_$1=yes, pike_cv_func_$1=no)
     ])
   ])
