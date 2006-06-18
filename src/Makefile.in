@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.427 2006/06/18 18:51:53 mast Exp $
+# $Id: Makefile.in,v 1.428 2006/06/18 18:54:43 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -308,7 +308,7 @@ tpike-real: main.o $(CORE_OBJ) tmodule.o master-stamp pike.syms modules/linker_o
 # (and some auxiliary targets in all modules, such as verify and
 # extract_autodoc). We don't want to require it actually being
 # up-to-date.
-tpike: precompile.sh-stamp
+tpike:
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) tpike-real
 
 #pike: main.o @DLOPEN_O@ $(PIKE_LIB) master-stamp pike.syms
