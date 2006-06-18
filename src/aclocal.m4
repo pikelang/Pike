@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.124 2006/06/18 14:25:18 mast Exp $
+dnl $Id: aclocal.m4,v 1.125 2006/06/18 15:29:48 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -395,7 +395,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.124 2006/06/18 14:25:18 mast Exp $
+  # $Id: aclocal.m4,v 1.125 2006/06/18 15:29:48 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -1247,17 +1247,30 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
       for f in "$d"/* no; do
         if test -f "$f"; then
           filetype=`file "$f" 2>/dev/null | sed -e 's/.*://'`
-          if echo "$filetype" | grep "32-bit" >/dev/null; then
-  	    abi_32=yes
-	    if test "$abi_64" = "unknown"; then :; else
+	  case "$filetype" in
+            *32-bit*)
+  	      abi_32=yes
+	      ;;
+  	    *64-bit*)
+  	      abi_64=yes
+	      ;;
+	    *32*)
+  	      abi_32=yes
+	      ;;
+	    *64*)
+  	      abi_64=yes
+	      ;;
+	    *386*)
+  	      abi_32=yes
+	      ;;
+	  esac
+	  case "$abi_32$abi_64" in
+	    *unknown*)
+	      ;;
+	    *)
 	      break
-	    fi
-  	  elif echo "$filetype" | grep "64-bit" >/dev/null; then
-  	    abi_64=yes
-	    if test "$abi_32" = "unknown"; then :; else
-	      break
-	    fi
-  	  fi
+	      ;;
+	  esac
         fi
       done
       if test "$abi_32" = "yes"; then
