@@ -1,6 +1,6 @@
 Package: pike7.6
-Version: 7.6.66
-Revision: 3
+Version: 7.6.86
+Revision: 4
 
 Description: Programming language with a C-like syntax
 DescDetail: <<
@@ -25,10 +25,10 @@ DescDetail: <<
 <<
 
 CustomMirror: <<
-	Primary: http://pike.ida.liu.se/pub/pike/beta/%v/Pike-v%v.tar.gz
+	Primary: http://pike.ida.liu.se/pub/pike/all/%v/Pike-v%v.tar.gz
 <<
 Source: mirror:custom:Pike-v%v.tar.gz
-Source-MD5: d970c7241c8d7762c6429050d57ba2c0
+Source-MD5: bdd3f6cafed8d299b22f79b10b14ab78
 SourceDirectory: Pike-v%v
 
 # WARNING: 10.3 users BuildDepends on fileutils (for building Java) because of
@@ -38,11 +38,14 @@ BuildDepends: <<
 	nettle,
 	gmp,
 	libjpeg,
-	freetype,
 	gdbm,
 	pdflib,
 	fftw,
-	mysql12-dev
+	mysql15-dev,
+	librsvg2,
+	postgresql81-dev,
+	ffmpeg-dev,
+	libavcodec1-dev
 <<
 
 # bzip2-shlibs is a core package, but requiring it anyway won't hurt
@@ -53,22 +56,29 @@ Depends: <<
 	pcre-shlibs
 <<
 
-# %f is for extended fink file names, eg pike7.6-7.6.66-3.patch
-# %n is for short fink file names, eg pike7.6.patch
-Patch: %n.patch
+# %f: long filename (developpement)
+# %n: short filename ()
 #Patch: %f.patch
+Patch: %n.patch
+
 PatchScript: <<
 	# Put the good fink prefix in the man page
 	perl -pi -e 's,\@PREFIX\@,%p,g' man/pike.1
 <<
 
 # TODO: remove --without-GL
+# TODO: --without-machine-code for i386 should be fixed in Pike
 CompileScript: <<
-	make CONFIGUREARGS="%c --without-GL --with-mysql=%p --with-double-precision --disable-rpath --with-max-fd=60000 --with-relocatable-dumped-module"
+	#!/bin/bash -ev
+	if [ "%m" == "i386" ]; then
+		make CONFIGUREARGS="%c --without-GL --with-site-prefixes=%p --with-postgres-include-dir=%p/include/postgresql --with-double-precision --disable-rpath --with-max-fd=60000 --with-relocatable-dumped-module --without-machine-code"
+	else
+		make CONFIGUREARGS="%c --without-GL --with-site-prefixes=%p --with-postgres-include-dir=%p/include/postgresql --with-double-precision --disable-rpath --with-max-fd=60000 --with-relocatable-dumped-module"
+	fi
 <<
 
 InstallScript: <<
-	make testsuites
+	# make testsuites
 	make install_nodoc DESTDIR=%d prefix=%p buildroot=%d exec_prefix=%p/bin/ share_prefix=%p/share/pike/%n/ include_prefix="%p/include/pike/%n/" lib_prefix=%p/lib/pike/%n/ man_prefix=%p/share/man/ INSTALLARGS=--traditional
 
 	# Rename some files so that they don't conflict with other pike versions
@@ -80,13 +90,6 @@ InstallScript: <<
 	# Doing this here since make doc_prefix seems not to work
 	mkdir -p %i/share/doc/%N
 	mv %i/doc %i/share/doc/%N
-
-	# Create a place for putting the testsuites...
-	mkdir -p %i/share/pike/%N/testsuites
-	# ... and copy the testsuites that contains data there
-	(cd build/`uname -s -r -m|sed "s/ /-/g"|tr "[A-Z]" "[a-z]"|tr "/()" "___"` && find . -name testsuite -not -size 0 -exec cp --parent -pr {} %i/share/pike/%N/testsuites \;)
-	# TODO: some tests in the root testsuite and in MIME fails because they read
-	# files that are not installed alongside them
 <<
 
 DocFiles: ANNOUNCE COPYING COPYRIGHT README README-CVS
@@ -107,15 +110,20 @@ PreRmScript: <<
 SplitOff2: <<
 	Package: %N-mysql
 	Description: MySQL module for the Pike language
-	Depends: mysql12-shlibs, %N (= %v-%r)
+	Depends: mysql15-shlibs, %N (= %v-%r)
 	Files: <<
 		%p/lib/pike/%N/7.4/include/mysql.h
 		%p/lib/pike/%N/modules/Cache.pmod/Storage.pmod/MySQL.pike
+		%p/lib/pike/%N/modules/Cache.pmod/Storage.pmod/MySQL.pike.o
 		%p/lib/pike/%N/modules/Mysql.so
 		%p/lib/pike/%N/modules/Sql.pmod/mysql.pike
+		%p/lib/pike/%N/modules/Sql.pmod/mysql.pike.o
 		%p/lib/pike/%N/modules/Sql.pmod/mysql_result.pike
+		%p/lib/pike/%N/modules/Sql.pmod/mysql_result.pike.o
 		%p/lib/pike/%N/modules/Sql.pmod/mysqls.pike
+		%p/lib/pike/%N/modules/Sql.pmod/mysqls.pike.o
 		%p/lib/pike/%N/modules/Sql.pmod/mysqls_result.pike
+		%p/lib/pike/%N/modules/Sql.pmod/mysqls_result.pike.o
 	<<
 <<
 
@@ -141,8 +149,8 @@ SplitOff6: <<
 	Depends: gdbm-shlibs, %N (= %v-%r)
 	Files: <<
 		%p/lib/pike/%N/modules/Cache.pmod/Storage.pmod/Gdbm.pike
+		%p/lib/pike/%N/modules/Cache.pmod/Storage.pmod/Gdbm.pike.o
 		%p/lib/pike/%N/modules/Gdbm.so
-		%p/share/pike/%N/testsuites/modules/Gdbm/testsuite
 	<<
 <<
 
@@ -165,8 +173,8 @@ SplitOff10: <<
 	Description: Math module for the Pike language
 	Depends: fftw-shlibs, %N (= %v-%r)
 	Files: <<
+		%p/lib/pike/%N/modules/Math.pmod
 		%p/lib/pike/%N/modules/___Math.so
-		%p/share/pike/%N/testsuites/modules/_math/testsuite
 	<<
 <<
 
@@ -177,13 +185,13 @@ SplitOff11: <<
 	Files: %p/lib/pike/%N/modules/_Image_TTF.so
 <<
 
-# Since gmp-shlibs is resuired for Pike, there is no need for this SplitOff
+# Since gmp-shlibs is required for Pike, there is no need for this SplitOff
 # anymore
 #SplitOff12: <<
 #	Package: %N-xface
 #	Description: X-Face module for the Pike language
 #	Depends: gmp-shlibs, %N (= %v-%r)
-#	Files: %p/lib/pike/pike7.6/modules/_Image_XFace.so
+#	Files: %p/lib/pike/%N/modules/_Image_XFace.so
 #<<
 
 SplitOff13: <<
@@ -191,8 +199,8 @@ SplitOff13: <<
 	Description: Gettext module for the Pike language
 	Depends: gettext, %N (= %v-%r)
 	Files: <<
+		%p/lib/pike/%N/modules/Locale.pmod/Gettext.pmod
 		%p/lib/pike/%N/modules/Gettext.so
-		%p/share/pike/%N/testsuites/modules/Gettext/testsuite
 	<<
 <<
 
@@ -201,8 +209,7 @@ SplitOff14: <<
 	Depends: gmp-shlibs, %N (= %v-%r)
 	Description: Nettle (crypto) module for the Pike language
 	Files: <<
-		%p/lib/pike/pike7.6/modules/Nettle.so
-		%p/share/pike/%N/testsuites/post_modules/Nettle/testsuite
+		%p/lib/pike/%N/modules/Nettle.so
 	<<
 <<
 
@@ -210,7 +217,37 @@ SplitOff15: <<
 	Package: %N-sdl
 	Description: SDL module for the Pike language
 	Depends: sdl-shlibs, %N (= %v-%r)
-	Files: %p/lib/pike/pike7.6/modules/SDL.so
+	Files: <<
+		%p/lib/pike/%N/modules/GLUE.pmod/Driver.pmod/SDL.pike
+		%p/lib/pike/%N/modules/SDL.so
+	<<
+<<
+
+SplitOff16: <<
+	Package: %N-svg
+	Description: SVG module for the Pike language
+	Depends: librsvg2-shlibs, %N (= %v-%r)
+	Files: %p/lib/pike/%N/modules/_Image_SVG.so
+<<
+
+SplitOff17: <<
+	Package: %N-postgres
+	Description: PostgreSQL module for the Pike language
+	Depends: postgresql81-shlibs, %N (= %v-%r)
+	Files: <<
+		%p/lib/pike/%N/modules/Sql.pmod/postgres.pike
+		%p/lib/pike/%N/modules/Sql.pmod/postgres_result.pike
+		%p/lib/pike/%N/modules/Postgres.so
+	<<
+<<
+
+SplitOff18: <<
+	Package: %N-ffmpeg
+	Description: FFmpeg module for the Pike language
+	Depends: libavcodec1-shlibs, lame-shlibs, %N (= %v-%r)
+	Files: <<
+		%p/lib/pike/%N/modules/_Ffmpeg.so
+	<<
 <<
 
 License: OSI-Approved

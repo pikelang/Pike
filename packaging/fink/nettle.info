@@ -1,6 +1,6 @@
 Package: nettle
 Version: 1.14
-Revision: 1
+Revision: 4
 
 Description: Crypto library
 DescDetail: <<
@@ -16,8 +16,9 @@ Source-MD5: 12915b53e751456689e2ec9ec15c74da
 BuildDepends: gmp
 BuildDependsOnly: true
 
+# TODO: disabling machine code on i386. Should be fixed in Nettle.
 ConfigureParams: <<
-	--infodir=%p/share/info
+		(%m = i386) --disable-assembler --infodir=%p/share/info
 <<
 
 InstallScript: <<
@@ -30,8 +31,7 @@ SplitOff: <<
   Description: Binaries for the Nettle crypto library
 	Depends: gmp-shlibs
   Files: <<
-    %p/bin/nettle-lfib-stream
-    %p/bin/sexp-conv
+		%p/bin/*
   <<
 	DocFiles: AUTHORS COPYING ChangeLog README NEWS
 <<
