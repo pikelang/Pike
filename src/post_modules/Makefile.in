@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.23 2006/06/18 18:59:53 mast Exp $
+# $Id: Makefile.in,v 1.24 2006/06/19 00:39:47 mast Exp $
 
 @make_variables@
 
@@ -24,17 +24,17 @@ $(MODULES) no : Makefile force
 	( echo "Making $${MODULE_BUILD_TYPE}: $(MY_DIR)/$@"; \
 	  cd $@ && \
 	  { test -f build_type || \
-	    { rm remake >/dev/null 2>&1; \
+	    { rm remake >/dev/null 2>&1 || :; \
 	      $(MAKE) $(MAKE_FLAGS) build_type || \
 	      ( test -f remake && $(MAKE) $(MAKE_FLAGS) build_type ); }; } && \
 	  if [ "x$$MODULE_BUILD_TYPE" = "x`cat build_type`" ]; then \
-	    { rm remake >/dev/null 2>&1; \
-	      $(MAKE) $(MAKE_FLAGS) || \
-	      ( test -f remake && $(MAKE) $(MAKE_FLAGS) ); }; \
+	    rm remake >/dev/null 2>&1 || :; \
+	    $(MAKE) $(MAKE_FLAGS) || \
+	    ( test -f remake && $(MAKE) $(MAKE_FLAGS) ); \
 	  else \
-	    { rm remake >/dev/null 2>&1; \
-	      $(MAKE) $(MAKE_FLAGS) $$MODULE_BUILD_TYPE || \
-	      ( test -f remake && $(MAKE) $(MAKE_FLAGS) $$MODULE_BUILD_TYPE ); }; \
+	    rm remake >/dev/null 2>&1 || :; \
+	    $(MAKE) $(MAKE_FLAGS) $$MODULE_BUILD_TYPE || \
+	    ( test -f remake && $(MAKE) $(MAKE_FLAGS) $$MODULE_BUILD_TYPE ); \
 	  fi ) || exit $$?
 
 modules: Makefile $(MODULES)
