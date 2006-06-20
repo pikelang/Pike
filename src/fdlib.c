@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.74 2006/05/26 15:29:21 mast Exp $
+|| $Id: fdlib.c,v 1.75 2006/06/20 17:52:35 mast Exp $
 */
 
 #include "global.h"
@@ -12,6 +12,8 @@
 #include <ctype.h>
 
 #if defined(HAVE_WINSOCK_H)
+
+#include <time.h>
 
 /* Old versions of the headerfiles don't have this constant... */
 #ifndef INVALID_SET_FILE_POINTER
@@ -139,16 +141,16 @@ void fd_exit()
 
 static INLINE time_t convert_filetime_to_time_t(FILETIME *tmp)
 {
-#ifdef INT64
-  return (((INT64) tmp->dwHighDateTime << 32)
-	  + tmp->dwLowDateTime
-	  - 116444736000000000) / 10000000;
-#else
-  double t;
   /* FILETIME is in 100ns since Jan 01, 1601 00:00 UTC.
    *
    * Offset to Jan 01, 1970 is thus 0x019db1ded53e8000 * 100ns.
    */
+#ifdef INT64
+  return (((INT64) tmp->dwHighDateTime << 32)
+	  + tmp->dwLowDateTime
+	  - 0x019db1ded53e8000) / 10000000;
+#else
+  double t;
   if (tmp->dwLowDateTime < 0xd53e8000UL) {
     tmp->dwHighDateTime -= 0x019db1dfUL;	/* Note: Carry! */
     tmp->dwLowDateTime += 0x2ac18000UL;	/* Note: 2-compl */
@@ -181,7 +183,7 @@ static INLINE time_t convert_filetime_to_time_t(FILETIME *tmp)
  *   convert this value back to local time - which suffers from the
  *   same DST bug. Then the undocumented function __loctotime_t is
  *   used to convert this local time to a time_t, and this function
- *   correctly accounts for DST at that time.
+ *   correctly accounts for DST at that time(*).
  *
  *   On FAT volumes, the conversion error while retrieving the
  *   FILETIME, and the conversion error of FileTimeToLocalFileTime
@@ -195,28 +197,81 @@ static INLINE time_t convert_filetime_to_time_t(FILETIME *tmp)
  *
  * The following implementation tries to do the correct thing based in
  * the filesystem type.
+ *
+ * Note also that the UTC timestamps are cached by the OS. In the case
+ * of FAT volumes that means that the current DST setting might be
+ * different when FileTimeToLocalFileTime runs than it was when the
+ * FILETIME was calculated, so the calculation errors might not cancel
+ * each other out shortly after DST changes. A reboot is necessary
+ * after a DST change to ensure that no cached timestamps remain.
+ * There is nothing we can do to correct this error. :(
+ *
+ * See also http://msdn.microsoft.com/library/en-us/sysinfo/base/file_times.asp
+ *
+ * *) Actually it doesn't in all cases: The overlapping hour(s) when
+ * going from DST to normal time are ambiguous and since there's no
+ * DST flag it has to make an arbitrary choice.
  */
 
-#ifdef HAVE___LOCTOTIME32_T
-/* This internal function in Microsoft CRT has changed name somewhere
- * between VC98 and Visual Studio 8. */
-#define __loctotime_t __loctotime32_t
-#endif
+static time_t local_time_to_utc (time_t t)
+/* Converts a time_t containing local time to a real time_t (i.e. UTC).
+ *
+ * Note that there's an ambiguity in the autumn transition from DST to
+ * normal time: The returned timestamp can be one hour off in the hour
+ * where the clock is "turned back". This function always consider
+ * that hour to be in normal time.
+ *
+ * Might return -1 if the time is outside the valid range.
+ */
+{
+  int tz_secs, dl_secs;
 
-static int fat_filetime_to_time_t (FILETIME *in, time_t *out)
+  /* First adjust for the time zone. */
+#ifdef HAVE__GET_TIMEZONE
+  _get_timezone (&tz_secs);
+#else
+  tz_secs = _timezone;
+#endif
+  t += tz_secs;
+
+  /* Then DST. */
+#ifdef HAVE__GET_DAYLIGHT
+  _get_daylight (&dl_secs);
+#else
+  dl_secs = _daylight;
+#endif
+  if (dl_secs) {
+    /* See if localtime thinks this is in DST. */
+    int isdst;
+#ifdef HAVE__LOCALTIME_S
+    struct tm ts;
+    if (_localtime_s (&ts, &t)) return -1;
+    isdst = ts.tm_isdst;
+#else
+    struct tm *ts;
+    /* FIXME: A mutex is necessary to avoid a race here, but we
+     * can't protect all calls to localtime anyway. */
+    if (!(ts = localtime (&t))) return -1;
+    isdst = ts->tm_isdst;
+#endif
+    if (isdst) t += dl_secs;
+  }
+
+  return t;
+}
+
+static time_t fat_filetime_to_time_t (FILETIME *in)
 {
   FILETIME local_ft;
-  SYSTEMTIME local_st;
-  if (!FileTimeToLocalFileTime (in, &local_ft) ||
-      !FileTimeToSystemTime (&local_ft, &local_st)) {
+  if (!FileTimeToLocalFileTime (in, &local_ft)) {
     _dosmaperr (GetLastError());
-    return 0;
+    return -1;
   }
   else {
-    *out = __loctotime_t (local_st.wYear, local_st.wMonth, local_st.wDay,
-			  local_st.wHour, local_st.wMinute, local_st.wSecond,
-			  -1);
-    return 1;
+    time_t t = convert_filetime_to_time_t (&local_ft);
+    /* Now we have a strange creature, namely a time_t that contains
+     * local time. */
+    return local_time_to_utc (t);
   }
 }
 
@@ -225,20 +280,25 @@ static int fat_filetimes_to_stattimes (FILETIME *creation,
 				       FILETIME *last_write,
 				       PIKE_STAT_T *stat)
 {
-  if (!fat_filetime_to_time_t (last_write, &stat->st_mtime))
+  time_t t;
+
+  if ((t = fat_filetime_to_time_t (last_write)) < 0)
     return -1;
+  stat->st_mtime = t;
 
   if (last_access->dwLowDateTime || last_access->dwHighDateTime) {
-    if (!fat_filetime_to_time_t (last_access, &stat->st_atime))
+    if ((t = fat_filetime_to_time_t (last_access)) < 0)
       return -1;
+    stat->st_atime = t;
   }
   else
     stat->st_atime = stat->st_mtime;
 
   /* Putting the creation time in the last status change field.. :\ */
   if (creation->dwLowDateTime || creation->dwHighDateTime) {
-    if (!fat_filetime_to_time_t (creation, &stat->st_ctime))
+    if ((t = fat_filetime_to_time_t (creation)) < 0)
       return -1;
+    stat->st_ctime = t;
   }
   else
     stat->st_ctime = stat->st_mtime;
@@ -306,8 +366,14 @@ static int IsUncRoot(char *path)
   return 0 ;
 }
 
-/* Note 1: s->st_mtime is the creation time for directories.
- * Note 2: s->st_ctime is set to the file creation time. It should
+/* Note 1: s->st_mtime is the creation time for non-root directories.
+ *
+ * Note 2: Root directories (e.g. C:\) and network share roots (e.g.
+ * \\server\foo\) have no time information at all. All timestamps are
+ * set to approximately one year past the start of the epoch for
+ * these.
+ *
+ * Note 3: s->st_ctime is set to the file creation time. It should
  * probably be the last access time to be closer to the unix
  * counterpart, but the creation time is admittedly more useful. */
 int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
@@ -370,15 +436,28 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
       return( -1 );
     }
     
-    /* Root directories ( C:\ and \\server\share\) are faked */
+    /* Root directories (e.g. C:\ and \\server\share\) are faked */
     findbuf.dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
     findbuf.nFileSizeHigh = 0;
     findbuf.nFileSizeLow = 0;
     findbuf.cFileName[0] = '\0';
-    
-    buf->st_mtime = __loctotime_t(1980,1,1,0,0,0, -1);
-    buf->st_atime = buf->st_mtime;
-    buf->st_ctime = buf->st_mtime;
+
+    /* Don't have any timestamp info, so set it to some date. The
+     * following is ridiculously complex, but it's compatible with the
+     * stat function in MS CRT. */
+    {
+      struct tm t;
+      t.tm_year = 1980 - 1900;
+      t.tm_mon  = 0;
+      t.tm_mday = 1;
+      t.tm_hour = 0;
+      t.tm_min  = 0;
+      t.tm_sec  = 0;
+      t.tm_isdst = -1;
+      buf->st_mtime = mktime (&t);
+      buf->st_atime = buf->st_mtime;
+      buf->st_ctime = buf->st_mtime;
+    }
   }
 
   else {
@@ -419,8 +498,37 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
 
     FindClose(hFind);
   }
-  
-  buf->st_mode = __dtoxmode(findbuf.dwFileAttributes, file);
+
+  if (findbuf.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+    /* Always label a directory as executable. Note that this also
+     * catches special locations like root dirs and network share
+     * roots. */
+    buf->st_mode = S_IFDIR | 0111;
+  else {
+    const char *p;
+    buf->st_mode = S_IFREG;
+
+    /* Look at the extension to see if a file appears to be executable. */
+    if ((p = strrchr (file, '.')) && strlen (p) == 4) {
+      char ext[4];
+      ext[0] = tolower (p[1]);
+      ext[1] = tolower (p[2]);
+      ext[2] = tolower (p[3]);
+      ext[3] = 0;
+      if (!strcmp (ext, "exe") ||
+	  !strcmp (ext, "cmd") ||
+	  !strcmp (ext, "bat") ||
+	  !strcmp (ext, "com"))
+	buf->st_mode |= 0111;	/* Execute perm for all. */
+    }
+  }
+
+  /* The file is read/write unless the read only flag is set. */
+  if (findbuf.dwFileAttributes & FILE_ATTRIBUTE_READONLY)
+    buf->st_mode |= 0444;	/* Read perm for all. */
+  else
+    buf->st_mode |= 0666;	/* Read and write perm for all. */
+
   buf->st_nlink = 1;
 #ifdef INT64
   buf->st_size = ((INT64) findbuf.nFileSizeHigh << 32) + findbuf.nFileSizeLow;
@@ -1125,21 +1233,6 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 
 	  /* FIXME: Determine the filesystem type to use
 	   * fat_filetimes_to_stattimes when necessary. */
-
-	  /* FIXME: Even if we use fat_filetimes_to_stattimes, the
-	   * time conversion will still get incorrect in the time
-	   * frame between a DST change and the next reboot. From msdn
-	   * (http://msdn.microsoft.com/library/en-us/sysinfo/base/file_times.asp):
-	   *
-	   *   FAT records times on disk in local time. GetFileTime
-	   *   retrieves cached UTC times from FAT. When it becomes
-	   *   daylight saving time, the time retrieved by GetFileTime
-	   *   will be off an hour, because the cache has not been
-	   *   updated. When you restart the machine, the cached time
-	   *   retrieved by GetFileTime will be correct.
-	   *
-	   * We'd have to look at the uptime to correct for that.
-	   * *puke* */
 
 	  nonfat_filetimes_to_stattimes (&c, &a, &m, s);
 	  break;
