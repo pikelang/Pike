@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.76 2006/06/20 19:23:50 mast Exp $
+|| $Id: fdlib.c,v 1.77 2006/06/20 19:49:46 mast Exp $
 */
 
 #include "global.h"
@@ -410,15 +410,7 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
   
   /* get disk from file */
   if (file[1] == ':')
-  {
-    if ( *file && !file[2] )
-    {
-      /* return an error if file is just drive letter and colon */
-      errno = ENOENT;           
-      return( -1 );
-    }
     drive = toupper(*file) - 'A';
-  }
   else
     drive = -1;
   
@@ -428,16 +420,30 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
   if ( hFind == INVALID_HANDLE_VALUE )
   {
     char abspath[ _MAX_PATH ];
-    if ( !(strpbrk(file, "./\\") &&
-	   _fullpath( abspath, file, _MAX_PATH ) &&
-           /* root dir. ('C:\') or UNC root dir. ('\\server\share\') */
-	   ((strlen( abspath ) == 3) || IsUncRoot(abspath)) &&
-	   (GetDriveType( abspath ) > 1) ) )
-    {
+    UINT drive_type;
+
+    if (!strpbrk(file, "./\\") ||
+	!_fullpath( abspath, file, _MAX_PATH ) ||
+	/* root dir. ('C:\') or UNC root dir. ('\\server\share\') */
+	(strlen (abspath) > 3 && !IsUncRoot (abspath))) {
       errno = ENOENT;
-      return( -1 );
+      return -1;
     }
-    
+
+    l = strlen (abspath);
+    if (!ISSEPARATOR (abspath[l - 1])) {
+      /* Ensure there's a slash at the end or else GetDriveType
+       * won't like it. */
+      abspath[l] = '\\';
+      abspath[l + 1] = 0;
+    }
+
+    drive_type = GetDriveType (abspath);
+    if (drive_type == DRIVE_UNKNOWN || drive_type == DRIVE_NO_ROOT_DIR) {
+      errno = ENOENT;
+      return -1;
+    }
+
     /* Root directories (e.g. C:\ and \\server\share\) are faked */
     findbuf.dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
     findbuf.nFileSizeHigh = 0;
