@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.860 2006/05/26 15:29:21 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.861 2006/06/20 17:50:10 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3806,7 +3806,6 @@ AC_CHECK_FUNCS( \
  thr_yield \
  prctl \
  MakeDataExecutable \
- __loctotime32_t \
 )
 
 # SunOS 4 realloc() returns NULL when reallocing NULL.
