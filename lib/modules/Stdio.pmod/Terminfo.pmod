@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.14 2003/12/10 14:34:18 grubba Exp $
+// $Id: Terminfo.pmod,v 1.15 2006/06/20 17:13:46 grubba Exp $
 #pike __REAL_VERSION__
 
 
@@ -379,6 +379,7 @@ class Terminfo {
       array(string) strarr = Array.map(array_sscanf(stroffs, "%2c"*nstr),
 				       lambda(int offs, string buf) {
 					 return offs<0xfffe &&
+					   offs<sizeof(buf) &&
 					   buf[offs..
 					      search(buf, "\0", offs)-1];
 				       }, strbuf+"\0");
