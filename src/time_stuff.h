@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: time_stuff.h,v 1.14 2003/04/30 10:36:47 grubba Exp $
+|| $Id: time_stuff.h,v 1.15 2006/06/20 17:53:04 mast Exp $
 */
 
 #ifndef TIME_STUFF_H
@@ -61,6 +61,12 @@
       _a->tv_usec-=1000000;			\
     }						\
   } while(0)
+
+/* Note: fdlib.c contains a function local_time_to_utc that converts a
+ * time_t containing local time to a real one (i.e. UTC). It might be
+ * generally useful but is so far slightly MS specific, which is why
+ * it still resides in fdlib.c. (It just needs some more of the usual
+ * HAVE_XYZ configure test hoopla.) */
 
 #ifndef STRUCT_TIMEVAL_DECLARED
 #define STRUCT_TIMEVAL_DECLARED
