@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.77 2006/06/20 19:49:46 mast Exp $
+|| $Id: fdlib.c,v 1.78 2006/06/20 19:50:30 mast Exp $
 */
 
 #include "global.h"
@@ -372,8 +372,7 @@ static int IsUncRoot(char *path)
  *
  * Note 2: Root directories (e.g. C:\) and network share roots (e.g.
  * \\server\foo\) have no time information at all. All timestamps are
- * set to approximately one year past the start of the epoch for
- * these.
+ * set to one year past the start of the epoch for these.
  *
  * Note 3: s->st_ctime is set to the file creation time. It should
  * probably be the last access time to be closer to the unix
