@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.61 2006/05/26 15:29:21 mast Exp $
+|| $Id: fdlib.c,v 1.62 2006/06/20 17:50:39 mast Exp $
 */
 
 #include "global.h"
@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.61 2006/05/26 15:29:21 mast Exp $");
+RCSID("$Id: fdlib.c,v 1.62 2006/06/20 17:50:39 mast Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -182,11 +182,7 @@ static int IsUncRoot(char *path)
   return 0 ;
 }
 
-#ifdef HAVE___LOCTOTIME32_T
-/* This internal function in Microsoft CRT has changed name somewhere
- * between VC98 and Visual Studio 8. */
-#define __loctotime_t __loctotime32_t
-#endif
+static long convert_filetime_to_time_t(FILETIME tmp);
 
 static int low_stat (const char *file, PIKE_STAT_T *buf)
 {
@@ -237,84 +233,75 @@ static int low_stat (const char *file, PIKE_STAT_T *buf)
     findbuf.nFileSizeHigh = 0;
     findbuf.nFileSizeLow = 0;
     findbuf.cFileName[0] = '\0';
-    
-    buf->st_mtime = __loctotime_t(1980,1,1,0,0,0, -1);
-    buf->st_atime = buf->st_mtime;
-    buf->st_ctime = buf->st_mtime;
+
+    /* Don't have any timestamp info, so just set them to some date.
+     * The following is ridiculously complex, but it's compatible with
+     * the stat function in MS CRT. */
+    {
+      struct tm t;
+      t.tm_year = 1980 - 1900;
+      t.tm_mon  = 0;
+      t.tm_mday = 1;
+      t.tm_hour = 0;
+      t.tm_min  = 0;
+      t.tm_sec  = 0;
+      t.tm_isdst = -1;
+      buf->st_mtime = mktime (&t);
+      buf->st_atime = buf->st_mtime;
+      buf->st_ctime = buf->st_mtime;
+    }
   }
   else
   {
-    SYSTEMTIME SystemTime;
-    SYSTEMTIME UtcSTime;
-    
-    if ( !FileTimeToSystemTime( &findbuf.ftLastWriteTime,
-                                &UtcSTime )                    ||
-         !SystemTimeToTzSpecificLocalTime(NULL, &UtcSTime,
-                                          &SystemTime) )
-    {
-      _dosmaperr( GetLastError() );
-      FindClose( hFind );
-      return( -1 );
-    }
+    buf->st_mtime = convert_filetime_to_time_t (findbuf.ftLastWriteTime);
 
-    buf->st_mtime = __loctotime_t( SystemTime.wYear,
-                                   SystemTime.wMonth,
-                                   SystemTime.wDay,
-                                   SystemTime.wHour,
-                                   SystemTime.wMinute,
-                                   SystemTime.wSecond,
-                                   -1 );
-    
     if ( findbuf.ftLastAccessTime.dwLowDateTime ||
          findbuf.ftLastAccessTime.dwHighDateTime )
     {
-      if ( !FileTimeToSystemTime( &findbuf.ftLastAccessTime,
-                                  &UtcSTime )                    ||
-           !SystemTimeToTzSpecificLocalTime(NULL, &UtcSTime,
-                                            &SystemTime) )
-      {
-        _dosmaperr( GetLastError() );
-        FindClose( hFind );
-        return( -1 );
-      }
-      
-      buf->st_atime = __loctotime_t( SystemTime.wYear,
-                                     SystemTime.wMonth,
-                                     SystemTime.wDay,
-                                     SystemTime.wHour,
-                                     SystemTime.wMinute,
-                                     SystemTime.wSecond,
-                                     -1 );
+      buf->st_atime = convert_filetime_to_time_t (findbuf.ftLastAccessTime);
     } else
       buf->st_atime = buf->st_mtime ;
     
     if ( findbuf.ftCreationTime.dwLowDateTime ||
          findbuf.ftCreationTime.dwHighDateTime )
     {
-      if ( !FileTimeToSystemTime( &findbuf.ftCreationTime,
-                                  &UtcSTime )                    ||
-           !SystemTimeToTzSpecificLocalTime(NULL, &UtcSTime,
-                                            &SystemTime) )
-      {
-        _dosmaperr( GetLastError() );
-        FindClose( hFind );
-        return( -1 );
-      }
-      
-      buf->st_ctime = __loctotime_t( SystemTime.wYear,
-                                     SystemTime.wMonth,
-                                     SystemTime.wDay,
-                                     SystemTime.wHour,
-                                     SystemTime.wMinute,
-                                     SystemTime.wSecond,
-                                     -1 );
+      buf->st_atime = convert_filetime_to_time_t (findbuf.ftCreationTime);
     } else
       buf->st_ctime = buf->st_mtime ;
     
     FindClose(hFind);
   }
-  
-  buf->st_mode = __dtoxmode(findbuf.dwFileAttributes, file);
+
+  if (findbuf.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+    /* Always label a directory as executable. Note that this also
+     * catches special locations like root dirs and network share
+     * roots. */
+    buf->st_mode = S_IFDIR | 0111;
+  else {
+    const char *p;
+    buf->st_mode = S_IFREG;
+
+    /* Look at the extension to see if a file appears to be executable. */
+    if ((p = strrchr (file, '.')) && strlen (p) == 4) {
+      char ext[4];
+      ext[0] = tolower (p[1]);
+      ext[1] = tolower (p[2]);
+      ext[2] = tolower (p[3]);
+      ext[3] = 0;
+      if (!strcmp (ext, "exe") ||
+	  !strcmp (ext, "cmd") ||
+	  !strcmp (ext, "bat") ||
+	  !strcmp (ext, "com"))
+	buf->st_mode |= 0111;	/* Execute perm for all. */
+    }
+  }
+
+  /* The file is read/write unless the read only flag is set. */
+  if (findbuf.dwFileAttributes & FILE_ATTRIBUTE_READONLY)
+    buf->st_mode |= 0444;	/* Read perm for all. */
+  else
+    buf->st_mode |= 0666;	/* Read and write perm for all. */
+
   buf->st_nlink = 1;
 #ifdef INT64
   buf->st_size = ((INT64) findbuf.nFileSizeHigh << 32) + findbuf.nFileSizeLow;
