@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.78 2006/06/20 19:50:30 mast Exp $
+|| $Id: fdlib.c,v 1.79 2006/06/20 19:54:54 mast Exp $
 */
 
 #include "global.h"
@@ -418,7 +418,7 @@ int debug_fd_stat(const char *file, PIKE_STAT_T *buf)
 
   if ( hFind == INVALID_HANDLE_VALUE )
   {
-    char abspath[ _MAX_PATH ];
+    char abspath[_MAX_PATH + 1];
     UINT drive_type;
 
     if (!strpbrk(file, "./\\") ||
