@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.75 2006/06/20 17:52:35 mast Exp $
+|| $Id: fdlib.c,v 1.76 2006/06/20 19:23:50 mast Exp $
 */
 
 #include "global.h"
@@ -302,6 +302,8 @@ static int fat_filetimes_to_stattimes (FILETIME *creation,
   }
   else
     stat->st_ctime = stat->st_mtime;
+
+  return 0;
 }
 
 static void nonfat_filetimes_to_stattimes (FILETIME *creation,
