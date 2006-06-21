@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.39 2006/06/18 14:52:32 mast Exp $
+# $Id: common_module_makefile.in,v 1.40 2006/06/21 13:42:33 mast Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -120,7 +120,7 @@ module.pmod: Makefile $(MODULE_PMOD_IN)
 
 
 clean_here:
-	-rm -f *.o *.fail *.obj *.a *.so stamp-h linker_options modlist_segment testsuite $(MODULE_CLEAN_EXTRA) doc
+	-rm -f *.o *.fail *.obj *.a *.so stamp-h linker_options modlist_segment testsuite $(MODULE_CLEAN_EXTRA) doc build_type
 	-rm -rf plib refdoc module.pmod doc
 
 clean: clean_here
