@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.16 2006/06/17 19:27:11 mast Exp $
+# $Id: Makefile.in,v 1.17 2006/06/21 16:02:43 grubba Exp $
 @make_variables@
 VPATH=@srcdir@
 OBJS=top.o @AUTO_OBJS@
@@ -8,9 +8,9 @@ MODULE_CFLAGS=@X_CFLAGS@
 
 override:
 	@echo "Original CFLAGS:$(CFLAGS)"
-	@echo "Modified CFLAGS:`echo $(CFLAGS) | sed -eh -e 's/.*\(-gcc-version[^ ]*\).*/\1/p' -eg -e 's/-g[^ ]*//g' -e 's/-W[^ ]*//g' -e 's/-O[^ ]*//g'` -O"
+	@echo "Modified CFLAGS: `echo ' $(CFLAGS) ' | sed -e 's/ -g[^ ]*//g' -e 's/ -W[^ ]*//g' -e 's/ -O[^ ]*//g'` -O `echo ' $(CFLAGS) ' | sed -e 's/.*\( -gcc-version[^ ]*\).*/\1/'`"
 	@$(MAKE) \
-	  CFLAGS="`echo $(CFLAGS) | sed -eh -e 's/.*\(-gcc-version[^ ]*\).*/\1/p' -eg -e 's/-g[^ ]*//g' -e 's/-W[^ ]*//g' -e 's/-O[^ ]*//g'` -O" \
+	  CFLAGS="`echo ' $(CFLAGS) ' | sed -e 's/ -g[^ ]*//g' -e 's/ -W[^ ]*//g' -e 's/ -O[^ ]*//g'` -O `echo ' $(CFLAGS) ' | sed -e 's/.*\( -gcc-version[^ ]*\).*/\1/'`" \
 	  all
 
 @dynamic_module_makefile@
