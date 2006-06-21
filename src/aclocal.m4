@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.135 2006/06/21 16:29:59 mast Exp $
+dnl $Id: aclocal.m4,v 1.136 2006/06/21 16:30:56 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -397,7 +397,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.135 2006/06/21 16:29:59 mast Exp $
+  # $Id: aclocal.m4,v 1.136 2006/06/21 16:30:56 mast Exp $
 
   MY_AC_PROG_CC
 
@@ -510,15 +510,6 @@ define([AC_MODULE_INIT],
 pushdef([AC_OUTPUT],
 [
   AC_SET_MAKE
-
-  #AC_SUBST(prefix) # autoconf substitutes this already.
-  #export prefix
-  AC_SUBST(CFLAGS)
-  export CFLAGS
-  AC_SUBST(CPPFLAGS)
-  export CPPFLAGS
-  AC_SUBST(LDFLAGS)
-  export LDFLAGS
 
   PMOD_TARGETS=`echo $srcdir/*.cmod | sed -e "s/\.cmod/\.c/g" | sed -e "s|$srcdir/|\\$(SRCDIR)/|g"`
   test "$PMOD_TARGETS" = '$(SRCDIR)/*.c' && PMOD_TARGETS=
