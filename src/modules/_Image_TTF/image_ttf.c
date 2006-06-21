@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_ttf.c,v 1.51 2004/04/14 12:12:50 grubba Exp $
+|| $Id: image_ttf.c,v 1.52 2006/06/21 17:13:27 mast Exp $
 */
 
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.51 2004/04/14 12:12:50 grubba Exp $");
+RCSID("$Id: image_ttf.c,v 1.52 2006/06/21 17:13:27 mast Exp $");
 #include "module.h"
 
 #ifdef HAVE_LIBTTF
@@ -1050,8 +1050,6 @@ static void image_ttf_faceinstance_write(INT32 args)
 			     base);
 	 break;
        case 2:
-         free( sstr );
-         free( slen );
 	 Pike_error("Too wide string for truetype\n");
 	 break;
       }
