@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.186 2006/01/19 18:54:59 grubba Exp $
+|| $Id: mapping.c,v 1.187 2006/06/21 11:33:01 mast Exp $
 */
 
 #include "global.h"
@@ -1891,7 +1891,7 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
     }
   }
 
-  if (Pike_in_gc) {
+  if (Pike_in_gc && Pike_in_gc < GC_PASS_FREE) {
     /* Have to do without any temporary allocations. */
     struct keypair *k;
     int notfirst = 0;
