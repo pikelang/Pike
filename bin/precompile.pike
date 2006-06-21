@@ -2281,7 +2281,7 @@ int main(int argc, array(string) argv)
   mixed x;
 
   string file = argv[1];
-  x=Stdio.read_file(file);
+  x=Stdio.read_file(file)-"\r";
   x=PC.split(x);
   x=PC.tokenize(x,file);
   x = convert_comments(x);
