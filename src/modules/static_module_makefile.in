@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.100 2006/06/18 14:52:32 mast Exp $
+# $Id: static_module_makefile.in,v 1.101 2006/06/21 15:40:23 mast Exp $
 #
 
 
@@ -36,7 +36,7 @@ dynamic:
 	@:
 
 linker_options: Makefile $(MODULE_ARCHIVES)
-	@linkopts="`pwd`/module.a $(MODULE_LDFLAGS)"; \
+	@linkopts="`pwd`/module.a `echo '$(MODULE_LDFLAGS)' | sed -e 's@$(BASE_LDFLAGS)@@' -e 's@$(BASE_LIBS)@@'`"; \
 	for a in '' $(MODULE_ARCHIVES) ; do \
 	  if test "x$$a" = "x"; then :; else \
 	    case "$$a" in \
