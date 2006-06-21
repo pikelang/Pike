@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_ttf.c,v 1.52 2004/10/07 22:49:58 nilsson Exp $
+|| $Id: image_ttf.c,v 1.53 2006/06/21 17:13:27 mast Exp $
 */
 
 #include "config.h"
@@ -1049,8 +1049,6 @@ static void image_ttf_faceinstance_write(INT32 args)
 			     base);
 	 break;
        case 2:
-         free( sstr );
-         free( slen );
 	 Pike_error("Too wide string for truetype\n");
 	 break;
       }
