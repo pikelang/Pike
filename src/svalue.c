@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.197 2005/09/09 15:09:09 mast Exp $
+|| $Id: svalue.c,v 1.198 2006/06/21 11:33:01 mast Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: svalue.c,v 1.197 2005/09/09 15:09:09 mast Exp $");
+RCSID("$Id: svalue.c,v 1.198 2006/06/21 11:33:01 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1276,7 +1276,8 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	  if (id) name = id->name;
 
 	  if(name && (prog->flags & PROGRAM_FINISHED) &&
-	     Pike_interpreter.evaluator_stack && !Pike_in_gc &&
+	     Pike_interpreter.evaluator_stack &&
+	     (!Pike_in_gc || Pike_in_gc >= GC_PASS_FREE) &&
 	     master_object) {
 	    DECLARE_CYCLIC();
 	    debug_malloc_touch(obj);
@@ -1361,7 +1362,9 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	my_strcat("0");
       else {
 	if ((prog->flags & PROGRAM_FINISHED) &&
-	    Pike_interpreter.evaluator_stack && !Pike_in_gc && master_object) {
+	    Pike_interpreter.evaluator_stack &&
+	    (!Pike_in_gc || Pike_in_gc >= GC_PASS_FREE) &&
+	    master_object) {
 	  DECLARE_CYCLIC();
 	  int fun=FIND_LFUN(prog, LFUN__SPRINTF);
 	  debug_malloc_touch(prog);
@@ -1486,7 +1489,9 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       struct program *prog = s->u.program;
 
       if((prog->flags & PROGRAM_FINISHED) &&
-	 Pike_interpreter.evaluator_stack && !Pike_in_gc && master_object) {
+	 Pike_interpreter.evaluator_stack &&
+	 (!Pike_in_gc || Pike_in_gc >= GC_PASS_FREE) &&
+	 master_object) {
 	DECLARE_CYCLIC();
 	debug_malloc_touch(prog);
 	if (!BEGIN_CYCLIC(prog, 0)) {
