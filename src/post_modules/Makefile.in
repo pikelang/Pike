@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.25 2006/06/19 00:42:56 mast Exp $
+# $Id: Makefile.in,v 1.26 2006/06/21 17:24:42 mast Exp $
 
 @make_variables@
 
@@ -21,7 +21,7 @@ force:
 # target to avoid running the default target twice.
 $(MODULES) no : Makefile force
 	@test $@ = "no" || \
-	( echo "Making $${MODULE_BUILD_TYPE}: $(MY_DIR)/$@"; \
+	( echo "#### Making $${MODULE_BUILD_TYPE}: $(MY_DIR)/$@"; \
 	  cd $@ && \
 	  { test -f build_type || \
 	    { rm remake >/dev/null 2>&1 || :; \
