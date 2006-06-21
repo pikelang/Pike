@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.428 2006/06/18 18:54:43 mast Exp $
+# $Id: Makefile.in,v 1.429 2006/06/21 17:20:58 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -436,7 +436,7 @@ undump_modules: delete_dumped_modules
 # This kluge should work around that...
 # Extra kludge added: interpret.o gets special flags (deoptimization)
 .c.o:
-	@echo "Compiling $<" ;\
+	@echo "Compiling `echo '$<' | sed -e 's|^$(PIKE_SRC_DIR)/||'`" ; \
 	rm -f $@.fail >/dev/null 2>&1; \
 	if test "x$@" = "xinterpret.o"; then EXTRAFLAGS="$(INTERPRET_DEOPTIMIZE)"; else EXTRAFLAGS=; fi; \
 	if $(CC) $(CFLAGS) $$EXTRAFLAGS -c $< -o $@ ; then : ; else \
