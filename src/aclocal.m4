@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.134 2006/06/21 15:37:39 mast Exp $
+dnl $Id: aclocal.m4,v 1.135 2006/06/21 16:29:59 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -384,13 +384,12 @@ define([PIKE_RETAIN_VARIABLES],
     . ./propvars.sh && rm propvars.sh
   fi
 
-  dnl This allows module configure scripts to extend these variables.
+  # This allows module configure scripts to extend these variables.
   CFLAGS=$BASE_CFLAGS
   CPPFLAGS=$BASE_CPPFLAGS
   LDFLAGS=$BASE_LDFLAGS
-  LIBS=$BASE_LIBS
 
-  dnl Make these known under their old configure script names.
+  # Make these known under their old configure script names.
   BUILDDIR=$TMP_BUILDDIR
   BINDIR=$TMP_BINDIR
 ])
@@ -398,7 +397,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.134 2006/06/21 15:37:39 mast Exp $
+  # $Id: aclocal.m4,v 1.135 2006/06/21 16:29:59 mast Exp $
 
   MY_AC_PROG_CC
 
