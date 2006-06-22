@@ -1,21 +1,28 @@
 /* sqlite.cmod -*- c -*-
  *
- * $Id: sqlite.cmod,v 1.14 2004/11/12 13:44:18 grubba Exp $
+ * $Id: sqlite.cmod,v 1.15 2006/06/22 10:16:51 agehall Exp $
  */
 
 #include "global.h"
 #include "interpret.h"
+#include "backend.h"
 #include "module_support.h"
 #include "config.h"
 #include "object.h"
 #include "builtin_functions.h"
 #include "mapping.h"
+#include "threads.h"
 
 #ifdef HAVE_SQLITE3_H
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
+
 #include <sqlite3.h>
 #include <time.h>
 
@@ -28,26 +35,109 @@
 
 DECLARATIONS
 
+#define ERR(X, db)				\
+if((X)!=SQLITE_OK) {				\
+  SQLite_handle_error((db));			\
+}
+
+static void SQLite_handle_error(sqlite3 *db) {
+  if (db) {
+    Pike_error("Sql.SQLite: %s\n", sqlite3_errmsg(db));
+  } else {
+    Pike_error("Sql.SQLite: Internal module error\n");
+  }
+}
+
 static int step(sqlite3_stmt *stmt) {
   int ret;
-  while( (ret=sqlite3_step(stmt))==SQLITE_BUSY )
+  while( (ret=sqlite3_step(stmt))==SQLITE_BUSY ) {
+    THREADS_ALLOW();
     SLEEP();
+    THREADS_DISALLOW();
+  }
   return ret;
 }
+
+static void bind_arguments(sqlite3 *db,
+			   sqlite3_stmt *stmt,
+			   struct mapping *bindings) {
+  struct mapping_data *md = bindings->data;
+  INT32 e;
+  struct keypair *k;
+  NEW_MAPPING_LOOP(md) {
+    int idx;
+    switch(k->ind.type) {
+    case T_INT:
+      idx = k->ind.u.integer;
+      break;
+    case T_STRING:
+      ref_push_string(k->ind.u.string);
+      f_string_to_utf8(1);
+      idx = sqlite3_bind_parameter_index(stmt, Pike_sp[-1].u.string->str);
+      pop_stack();
+      if(!idx)
+	Pike_error("Unknown bind index \"%S\".\n", k->ind.u.string);
+      break;
+    default:
+      Pike_error("Bind index is not int|string.\n");
+    }
+    switch(k->val.type) {
+    case T_INT:
+      ERR( sqlite3_bind_int64(stmt, idx, k->val.u.integer),
+	   db );
+      break;
+    case T_STRING:
+      {
+	struct pike_string *s = k->val.u.string;
+	switch(s->size_shift) {
+	case 0:
+	  ERR( sqlite3_bind_blob(stmt, idx, s->str, s->len,
+				 SQLITE_STATIC),
+	       db);
+	  break;
+	case 1:
+	case 2:
+	  ref_push_string(s);
+	  f_string_to_utf8(1);
+	  s = Pike_sp[-1].u.string;
+	  ERR( sqlite3_bind_text(stmt, idx, s->str, s->len,
+				 SQLITE_TRANSIENT),
+	       db);
+	  pop_stack();
+	  break;
+#ifdef PIKE_DEBUG
+	default:
+	  Pike_error("Unknown size_shift.\n");
+#endif
+	}
+      }
+      break;
+    case T_FLOAT:
+      ERR( sqlite3_bind_double(stmt, idx, (double)k->val.u.float_number),
+	   db);
+      break;
+    default:
+      Pike_error("Can only bind string|int|float.\n");
+    }
+  }
+}
+
+PIKECLASS SQLite
+{
+  CVAR sqlite3 *db;
 
 PIKECLASS ResObj
   flags ID_PRIVATE | ID_STATIC;
 {
   CVAR struct object *dbobj;
   CVAR struct mapping *bindings;
-  CVAR sqlite3 *db;
   CVAR sqlite3_stmt *stmt;
   CVAR int eof;
   CVAR int columns;
 
   static void ResObj_handle_error(void) {
-    /* FIXME: We could use dbobj and remove the db variable. */
-    Pike_error("Sql.SQLite: %s\n", sqlite3_errmsg(THIS->db));
+    Pike_error("Sql.SQLite: %s\n",
+	       sqlite3_errmsg(OBJ2_SQLITE(THIS->dbobj)->db));
   }
 
   PIKEFUN void create()
@@ -137,15 +227,6 @@ PIKECLASS ResObj
   }
 }
 
-PIKECLASS SQLite
-{
-  CVAR sqlite3 *db;
-
-  static void SQLite_handle_error(void) {
-    Pike_error("Sql.SQLite: %s\n", sqlite3_errmsg(THIS->db));
-  }
-#define ERR(X) if(X!=SQLITE_OK) SQLite_handle_error()
-
   /* @decl void create(string path)
    */
   PIKEFUN void create(string path, mixed|void a, mixed|void b, mixed|void c)
@@ -153,8 +234,81 @@ PIKECLASS SQLite
   {
     pop_n_elems(args-1);
     f_string_to_utf8(1);
-    ERR( sqlite3_open(path->str, &THIS->db) );
+    ERR( sqlite3_open(path->str, &THIS->db), THIS->db );
     pop_stack();
+  }
+
+  PIKEFUN array|int query(string query,
+			  mapping(string|int:mixed)|void bindings) {
+
+    struct object *res;
+    sqlite3_stmt *stmt;
+    const char *tail;
+    struct pike_string *q;
+    uint32_t res_count = 0;
+    uint32_t columns = 0;
+    uint32_t i;
+
+    if(args==2) stack_swap();
+    f_string_to_utf8(1);
+    q = Pike_sp[-1].u.string;
+
+    ERR( sqlite3_prepare(THIS->db, q->str, q->len, &stmt, &tail),
+	 THIS->db);
+    if( tail[0] )
+      Pike_error("Sql.SQLite->big_query: Trailing query data (\"%s\")\n",
+		 tail);
+    pop_stack();
+
+
+    /* Add a reference to the database to prevent it from being
+       destroyed before the query object. */
+
+    if(bindings) {
+      bind_arguments(THIS->db, stmt, bindings);
+    }
+
+    check_stack(128);
+
+    BEGIN_AGGREGATE_ARRAY(100) {
+      while(stmt) {
+
+	int sr=step(stmt);
+
+	switch(sr) {
+	case SQLITE_OK:		/* Fallthrough */
+	case SQLITE_DONE:
+	  sqlite3_finalize(stmt);
+	  stmt = 0;
+	  break;
+
+	case SQLITE_ROW:
+	  if (columns == 0)
+	    columns = sqlite3_column_count(stmt);
+	  for(i=0; i<columns; i++) {
+	    push_string( make_shared_binary_string
+			 ( sqlite3_column_blob(stmt, i),
+			   sqlite3_column_bytes(stmt, i) ) );
+	    if( sqlite3_column_type(stmt, i)==SQLITE_TEXT )
+	      f_utf8_to_string(1);
+	  }
+	  f_aggregate(columns);
+	  DO_AGGREGATE_ARRAY(100);
+	  break;
+
+	case SQLITE_MISUSE:
+	  Pike_error("Sql.SQLite: Library misuse.");
+
+	default:
+	  Pike_error("Sql.SQLite: (%d) %s\n", sr, sqlite3_errmsg(THIS->db));
+	}
+      }
+    } END_AGGREGATE_ARRAY;
+
+    if (Pike_sp[0].u.array->size == 0) {
+      pop_stack();
+      push_int(0);
+    }
   }
 
   PIKEFUN object big_query(string query,
@@ -163,22 +317,22 @@ PIKECLASS SQLite
     struct object *res;
     sqlite3_stmt *stmt;
     const char *tail;
-    struct ResObj_struct *store;
+    struct SQLite_ResObj_struct *store;
     struct pike_string *q;
 
     if(args==2) stack_swap();
     f_string_to_utf8(1);
     q = Pike_sp[-1].u.string;
 
-    ERR( sqlite3_prepare(THIS->db, q->str, q->len, &stmt, &tail) );
+    ERR( sqlite3_prepare(THIS->db, q->str, q->len, &stmt, &tail),
+	 THIS->db);
     if( tail[0] )
       Pike_error("Sql.SQLite->big_query: Trailing query data (\"%s\")\n",
 		 tail);
     pop_stack();
 
-    res=fast_clone_object(ResObj_program);
-    store = OBJ2_RESOBJ(res);
-    store->db = THIS->db;
+    res=fast_clone_object(SQLite_ResObj_program);
+    store = OBJ2_SQLITE_RESOBJ(res);
     store->stmt = stmt;
 
     /* Add a reference to the database to prevent it from being
@@ -186,61 +340,7 @@ PIKECLASS SQLite
     store->dbobj = this_object();
 
     if(bindings) {
-      struct mapping_data *md = bindings->data;
-      INT32 e;
-      struct keypair *k;
-      NEW_MAPPING_LOOP(md) {
-	int idx;
-	switch(k->ind.type) {
-	case T_INT:
-	  idx = k->ind.u.integer;
-	  break;
-	case T_STRING:
-	  ref_push_string(k->ind.u.string);
-	  f_string_to_utf8(1);
-	  idx = sqlite3_bind_parameter_index(stmt, Pike_sp[-1].u.string->str);
-	  pop_stack();
-	  if(!idx)
-	    Pike_error("Unknown bind index \"%S\".\n", k->ind.u.string);
-	  break;
-	default:
-	  Pike_error("Bind index is not int|string.\n");
-	}
-	switch(k->val.type) {
-	case T_INT:
-	  ERR( sqlite3_bind_int64(stmt, idx, k->val.u.integer) );
-	  break;
-	case T_STRING:
-	  {
-	    struct pike_string *s = k->val.u.string;
-	    switch(s->size_shift) {
-	    case 0:
-	      ERR( sqlite3_bind_blob(stmt, idx, s->str, s->len,
-				     SQLITE_STATIC) );
-	      break;
-	    case 1:
-	    case 2:
-	      ref_push_string(s);
-	      f_string_to_utf8(1);
-	      s = Pike_sp[-1].u.string;
-	      ERR( sqlite3_bind_text(stmt, idx, s->str, s->len,
-				     SQLITE_TRANSIENT) );
-	      pop_stack();
-	      break;
-#ifdef PIKE_DEBUG
-	    default:
-	      Pike_error("Unknown size_shift.\n");
-#endif
-	    }
-	  }
-	  break;
-	case T_FLOAT:
-	  ERR( sqlite3_bind_double(stmt, idx, (double)k->val.u.float_number) );
-	  break;
-	default:
-	  Pike_error("Can only bind string|int|float.\n");
-	}
-      }
+      bind_arguments(THIS->db, stmt, bindings);
 
       /* Add a reference so that the bound strings are kept, which in
 	 turn allows us to use SQLITE_STATIC. */
@@ -248,7 +348,7 @@ PIKECLASS SQLite
       store->bindings = bindings;
     }
 
-    apply_low(res, f_ResObj_create_fun_num, 0);
+    apply_low(res, f_SQLite_ResObj_create_fun_num, 0);
     push_object(res);
   }
 
@@ -312,7 +412,8 @@ PIKECLASS SQLite
     sqlite3_stmt *stmt;
     ERR( sqlite3_prepare(THIS->db,
 			 "SELECT name FROM sqlite_master WHERE type='table'",
-			 -1, &stmt, NULL) );
+			 -1, &stmt, NULL),
+	 THIS->db);
     tbls=0;
     while( (err=step(stmt))==SQLITE_ROW ) {
       push_text( sqlite3_column_text(stmt, 0) );
@@ -320,7 +421,7 @@ PIKECLASS SQLite
       tbls++;
     }
     sqlite3_finalize(stmt);
-    if(err!=SQLITE_DONE) SQLite_handle_error();
+    if(err!=SQLITE_DONE) SQLite_handle_error(THIS->db);
     f_aggregate(tbls);
   }
 
@@ -337,7 +438,8 @@ PIKECLASS SQLite
     if(tbl->len > 2047) Pike_error("Table name too long.\n");
     snprintf(q, 2048, "SELECT * FROM %s LIMIT 1", tbl->str);
 
-    ERR( sqlite3_prepare(THIS->db, q, -1, &stmt, NULL) );
+    ERR( sqlite3_prepare(THIS->db, q, -1, &stmt, NULL),
+	 THIS->db);
     pop_n_elems(args);
 
     fields = sqlite3_column_count(stmt);
@@ -364,10 +466,11 @@ PIKECLASS SQLite
       int i;
       /* FIXME: sqlite3_close can fail. What do we do then? */
       for(i=0; i<5; i++) {
-	if( sqlite3_close(THIS->db)!=SQLITE_OK )
+	if( sqlite3_close(THIS->db)!=SQLITE_OK ) {
+	  THREADS_ALLOW();
 	  SLEEP();
-	else
-	  break;
+	  THREADS_DISALLOW();
+	} else break;
       }
     }
   }
