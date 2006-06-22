@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.100 2006/05/29 12:58:55 mast Exp $
+// $Id: client.pike,v 1.101 2006/06/22 15:39:23 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -181,7 +181,8 @@ static function(string:string) get_attr_encoder (string attr)
 	  foreach (rawres, string rawent) {				\
 	    object derent = .ldap_privates.ldap_der_decode (rawent)->elements[1]; \
 	    if (array(object) derattribs = ASN1_GET_ATTR_ARRAY (derent)) { \
-	      string dn = (SET_DN);					\
+	      string dn;						\
+	      {SET_DN;}							\
 	      mapping(string:string|array) attrs = (["dn": dn]);	\
 	      foreach (derattribs, object derattr) {			\
 		string attr;						\
@@ -217,7 +218,8 @@ static function(string:string) get_attr_encoder (string attr)
 	  foreach (rawres, string rawent) {				\
 	    object derent = .ldap_privates.ldap_der_decode (rawent)->elements[1]; \
 	    if (array(object) derattribs = ASN1_GET_ATTR_ARRAY (derent)) { \
-	      string dn = (SET_DN);					\
+	      string dn;						\
+	      {SET_DN;}							\
 	      mapping(string:array) attrs = (["dn": ({dn})]);		\
 	      foreach (derattribs, object derattr) {			\
 		string attr;						\
@@ -248,12 +250,12 @@ static function(string:string) get_attr_encoder (string attr)
       if (ldap_version < 3) {
 	// Use the values raw.
 	if (flags & SEARCH_LOWER_ATTRS)
-	  DECODE_ENTRIES (ASN1_GET_DN (derent), {
+	  DECODE_ENTRIES (dn = ASN1_GET_DN (derent), {
 	      attrs[attr = lower_case (ASN1_GET_ATTR_NAME (derattr))] =
 		ASN1_GET_ATTR_VALUES (derattr);
 	    });
 	else
-	  DECODE_ENTRIES (ASN1_GET_DN (derent), {
+	  DECODE_ENTRIES (dn = ASN1_GET_DN (derent), {
 	      attrs[attr = ASN1_GET_ATTR_NAME (derattr)] =
 		ASN1_GET_ATTR_VALUES (derattr);
 	    });
@@ -265,7 +267,15 @@ static function(string:string) get_attr_encoder (string attr)
 	// won't be matched by get_attr_type_descr and are therefore
 	// left untouched.
 	if (flags & SEARCH_LOWER_ATTRS)
-	  DECODE_ENTRIES (utf8_to_string (ASN1_GET_DN (derent)), {
+	  DECODE_ENTRIES ({
+	      string enc_dn = ASN1_GET_DN (derent);
+	      if (mixed err = catch (dn = utf8_to_string (enc_dn))) {
+		catch {
+		  err[0] += sprintf ("Value to decode was: %O\n", enc_dn);
+		};
+		throw (err);
+	      }
+	    }, {
 	      attr = lower_case (ASN1_GET_ATTR_NAME (derattr));
 	      if (function(string:string) decoder =
 		  // Microsoft AD has several attributes in its root DSE
@@ -281,7 +291,15 @@ static function(string:string) get_attr_encoder (string attr)
 		attrs[attr] = ASN1_GET_ATTR_VALUES (derattr);
 	    });
 	else
-	  DECODE_ENTRIES (utf8_to_string (ASN1_GET_DN (derent)), {
+	  DECODE_ENTRIES ({
+	      string enc_dn = ASN1_GET_DN (derent);
+	      if (mixed err = catch (dn = utf8_to_string (enc_dn))) {
+		catch {
+		  err[0] += sprintf ("Value to decode was: %O\n", enc_dn);
+		};
+		throw (err);
+	      }
+	    }, {
 	      attr = ASN1_GET_ATTR_NAME (derattr);
 	      if (function(string:string) decoder =
 		  get_attr_decoder (attr, DO_IF_DEBUG (dn == "")))
@@ -580,7 +598,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|mapping(string:mixed)|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.100 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.101 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
