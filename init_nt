@@ -155,20 +155,24 @@ esac
 
 NTTOOLS=$NT_TOOL_PATH/lib
 
-
-if [ "x$NTMOUNT" = x ]; then
-  MNTREPLACE=""
-  PIKE_PATH_TRANSLATE=""
-else
-  MNTREPLACE="s@$NTMOUNT@@g
+num=
+MNTREPLACE=""
+PIKE_PATH_TRANSLATE=""
+while [ x`eval echo \\$NTMOUNT$num` != x ]; do
+  mount=`eval echo \\$NTMOUNT$num`
+  drive=`eval echo \\$NTDRIVE$num`
+  eval export NTMOUNT$num
+  eval export NTDRIVE$num
+  MNTREPLACE="${MNTREPLACE}s@$mount@@g
 "
-  PIKE_PATH_TRANSLATE="s!^$NTMOUNT!$NTDRIVE!"
-fi
-IFS=' 	
+  PIKE_PATH_TRANSLATE="$PIKE_PATH_TRANSLATE s!^$mount!$drive!"
+  if [ x$num = x ]; then num=2; else num=`expr $num + 1`; fi
+done
+IFS='
 '
 
-export NTHOST NTDRIVE NTCC CC CXX PATH NTTOOLS MNTREPLACE MNTREPLACE 
-export NTPORT USE_SPRSH NTMOUNT IFS REMOTE_METHOD watcom INCLUDE
+export NTHOST NTCC CC CXX PATH NTTOOLS MNTREPLACE
+export NTPORT USE_SPRSH IFS REMOTE_METHOD watcom INCLUDE
 export NT_TOOL_PATH NTCOMPILER PIKE_PATH_TRANSLATE NTLD_LIBRARY_PATH
 
 # Cache data from uname to avoid remote calls.
