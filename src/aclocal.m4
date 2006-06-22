@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.136 2006/06/21 16:30:56 mast Exp $
+dnl $Id: aclocal.m4,v 1.137 2006/06/22 20:26:46 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -389,6 +389,9 @@ define([PIKE_RETAIN_VARIABLES],
   CPPFLAGS=$BASE_CPPFLAGS
   LDFLAGS=$BASE_LDFLAGS
 
+  # Since BASE_LDFLAGS contains the libs too, we start with an empty LIBS.
+  LIBS=
+
   # Make these known under their old configure script names.
   BUILDDIR=$TMP_BUILDDIR
   BINDIR=$TMP_BINDIR
@@ -397,7 +400,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.136 2006/06/21 16:30:56 mast Exp $
+  # $Id: aclocal.m4,v 1.137 2006/06/22 20:26:46 mast Exp $
 
   MY_AC_PROG_CC
 
