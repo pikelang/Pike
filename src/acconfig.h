@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.148 2005/10/13 14:54:26 mast Exp $
+|| $Id: acconfig.h,v 1.149 2006/06/28 21:23:35 mast Exp $
 */
 
 #ifndef MACHINE_H
@@ -424,7 +424,7 @@
 /* Define if you have struct sockaddr_in6 */
 #undef HAVE_STRUCT_SOCKADDR_IN6
 
-/* Define this to the max value of an unsigned short unles <limits.h> does.. */
+/* Define this to the max value of an unsigned short unless <limits.h> does.. */
 #undef USHRT_MAX
 
 /* Define these if you are going to use threads */
@@ -444,6 +444,9 @@
 
 /* Define this if you have Windows NT threads */
 #undef NT_THREADS
+
+/* Use DDLs for dynamically linked modules on NT. */
+#undef USE_DLL
 
 /* Define this if your THREAD_T type is a pointer type. */
 #undef PIKE_THREAD_T_IS_POINTER
