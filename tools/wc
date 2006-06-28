@@ -17,7 +17,7 @@ done
 IFS="$OLDIFS"
 
 if [ -f "${last}.exe" ]; then
-  echo "$next" "$@".exe
+  exec "$next" "$@".exe
 else
-  echo "$next" "$@"
+  exec "$next" "$@"
 fi
