@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.861 2006/06/20 17:50:10 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.862 2006/06/28 00:16:48 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2141,7 +2141,7 @@ fi
 
 #############################################################################
 
-if test x$"pike_cv_sys_os" != xWindows_NT ; then
+if test x$pike_cv_sys_os != xWindows_NT ; then
 
 echo Searching for include-file directories...
 
