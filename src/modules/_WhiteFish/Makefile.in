@@ -1,6 +1,5 @@
-# $Id: Makefile.in,v 1.7 2004/08/07 15:26:56 js Exp $
+# $Id: Makefile.in,v 1.8 2006/06/30 14:17:57 mast Exp $
 @make_variables@
-OPTIMIZE=-O3
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=whitefish.o resultset.o blob.o buffer.o blobs.o linkfarm.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
