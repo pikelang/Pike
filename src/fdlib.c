@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.79 2006/06/20 19:54:54 mast Exp $
+|| $Id: fdlib.c,v 1.80 2006/07/01 23:58:03 mast Exp $
 */
 
 #include "global.h"
@@ -243,9 +243,9 @@ static time_t local_time_to_utc (time_t t)
   if (dl_secs) {
     /* See if localtime thinks this is in DST. */
     int isdst;
-#ifdef HAVE__LOCALTIME_S
+#ifdef HAVE_LOCALTIME_S
     struct tm ts;
-    if (_localtime_s (&ts, &t)) return -1;
+    if (localtime_s (&ts, &t)) return -1;
     isdst = ts.tm_isdst;
 #else
     struct tm *ts;
