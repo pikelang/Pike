@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.138 2006/06/28 21:20:37 mast Exp $
+dnl $Id: aclocal.m4,v 1.139 2006/07/01 23:42:30 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -147,6 +147,26 @@ define([MY_AC_PROG_CC],
   fi
 ])
 
+dnl Use before the first AC_CHECK_HEADER/AC_CHECK_FUNC call if the
+dnl proper declarations are required to test function presence in
+dnl AC_CHECK_FUNC. Necessary on Windows since various attributes cause
+dnl name mangling there (e.g. __stdcall and __declspec(dllimport)).
+dnl
+dnl This test method is more correct (it e.g. detects functions that
+dnl are implemented as macros) than the standard AC_CHECK_FUNC
+dnl implementation and could perhaps be used all the time. It's
+dnl however more fragile since AC_CHECK_HEADER must check all
+dnl candidate headers before AC_CHECK_FUNC is used, and there might be
+dnl conflicts between headers that can't be used simultaneously. It
+dnl can also be quite a bit slower than the standard autoconf method.
+AC_DEFUN([PIKE_FUNCS_NEED_DECLS],
+[
+  test "x$1" != x && pike_cv_funcs_need_decls=$1
+  if test "x$pike_cv_funcs_need_decls" = xyes; then
+    echo > hdrlist.h
+  fi
+])
+
 pushdef([AC_CONFIG_HEADER],
 [
   CONFIG_HEADERS="$1"
@@ -154,28 +174,96 @@ pushdef([AC_CONFIG_HEADER],
   AC_CONFIG_HEADER($1)
 ])
 
+define([ORIG_AC_CHECK_HEADER], defn([AC_CHECK_HEADER]))
+AC_DEFUN([AC_CHECK_HEADER],
+[
+  AC_REQUIRE([PIKE_FUNCS_NEED_DECLS])
+  ORIG_AC_CHECK_HEADER([$1], [
+    if test x$pike_cv_funcs_need_decls = xyes; then
+      def=HAVE_`echo "$1" | tr 'a-z---./' 'A-Z___'`
+      cat >> hdrlist.h <<EOF
+#ifdef $def
+#include <$1>
+#endif
+EOF
+    fi
+    $2
+  ], [$3], [$4])
+])
+
 AC_DEFUN([PIKE_CHECK_GNU_STUBS_H],[
   AC_CHECK_HEADERS([gnu/stubs.h])
 ])
 
+# Note: Check headers with AC_CHECK_HEADERS before using this one; see
+# blurb at PIKE_FUNCS_NEED_DECLS.
 define([ORIG_AC_CHECK_FUNC], defn([AC_CHECK_FUNC]))
 AC_DEFUN([AC_CHECK_FUNC],
 [AC_REQUIRE([PIKE_CHECK_GNU_STUBS_H])dnl
+AC_REQUIRE([PIKE_FUNCS_NEED_DECLS])
 AC_MSG_CHECKING([for $1])
 AC_CACHE_VAL(ac_cv_func_$1,
-[AC_TRY_LINK([
+[
+  if test x$pike_cv_funcs_need_decls = xyes; then
+    AC_TRY_LINK([
+#include "hdrlist.h"
+#ifndef $1
+void *f = (void *) $1;
+#endif
+], [
+#ifdef $1
+/* If there's a macro with this name we assume it takes the place of the function. */
+return 0;
+#else
+return f != $1;
+#endif
+], eval "ac_cv_func_$1=yes", eval "ac_cv_func_$1=no")
+  else
+    AC_TRY_LINK([
 #ifdef HAVE_GNU_STUBS_H
 /* This file contains __stub_ defines for broken functions. */
 #include <gnu/stubs.h>
-#endif
-char $1();
-], [
-#if defined (__stub_$1) || defined (__stub___$1)
-#error stupidity are us...
 #else
-$1();
+/* Define $1 to an innocuous variant, in case <limits.h> declares $1.
+   For example, HP-UX 11i <limits.h> declares gettimeofday.  */
+#define $1 innocuous_$1
+
+/* System header to define __stub macros and hopefully few prototypes,
+    which can conflict with char $1 (); below.
+    Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
+    <limits.h> exists even on freestanding compilers.  */
+
+#ifdef __STDC__
+# include <limits.h>
+#else
+# include <assert.h>
 #endif
-], eval "ac_cv_func_$1=yes", eval "ac_cv_func_$1=no")])
+
+#undef $1
+#endif
+
+/* Override any gcc2 internal prototype to avoid an error.  */
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+/* We use char because int might match the return type of a gcc2
+   builtin and then its argument prototype would still apply.  */
+char $1 ();
+/* The GNU C library defines this for functions which it implements
+    to always fail with ENOSYS.  Some functions are actually named
+    something starting with __ and the normal name is an alias.  */
+#if defined (__stub_$1) || defined (__stub___$1)
+choke me
+#else
+char (*f) () = $1;
+#endif
+#ifdef __cplusplus
+}
+#endif
+    ], [return f != $1;], eval "ac_cv_func_$1=yes", eval "ac_cv_func_$1=no")
+  fi
+])
 if eval "test \"`echo '$ac_cv_func_'$1`\" = yes"; then
   AC_MSG_RESULT(yes)
   ifelse([$2], , :, [$2])
@@ -400,7 +488,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.138 2006/06/28 21:20:37 mast Exp $
+  # $Id: aclocal.m4,v 1.139 2006/07/01 23:42:30 mast Exp $
 
   MY_AC_PROG_CC
 
