@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.48 2006/01/04 19:34:02 grubba Exp $
+# $Id: configure.in,v 1.49 2006/07/01 23:53:19 mast Exp $
 #
 # Configure script for the mysql-module
 #
@@ -101,7 +101,7 @@ else
 
   # Header file
 
-  AC_CHECK_HEADERS(winsock.h winsock2.h mysql.h mysql/mysql.h errmsg.h mysql/errmsg.h)
+  AC_CHECK_HEADERS(winsock2.h winsock.h mysql.h mysql/mysql.h errmsg.h mysql/errmsg.h)
 
   if test x$ac_cv_header_mysql_h$ac_cv_header_mysql_mysql_h = xnono; then
     # Required headerfile missing.
@@ -427,6 +427,10 @@ $ret_type * STDCALL mysql_fetch_lengths(MYSQL_RES *mysql)
     if test x"$pike_cv_sys_os" = xWindows_NT ; then
       MYSQL_LIBS="-lshell32 -lkernel32 -lws2_32 -ladvapi32 -luser32 ${MYSQL_LIBS}"
     fi
+
+    # Header checks necessary for PIKE_FUNCS_NEED_DECLS.
+    AC_CHECK_HEADERS(stdio.h io.h)
+
     AC_CHECK_FUNCS(ldiv open sopen close read fileno puts fgets)
 
   fi

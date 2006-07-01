@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.13 2003/11/15 23:42:15 mast Exp $
+# $Id: configure.in,v 1.14 2006/07/01 23:53:19 mast Exp $
 AC_INIT(math.c)
 
 AC_CONFIG_HEADER(config.h)
@@ -11,7 +11,7 @@ if test "${ac_cv_lib_m}" = "no" -a "${pike_cv_sys_os}" = "Linux"; then
   LIBS="${LIBS} -lc -lm"
 fi
 
-AC_CHECK_HEADERS(ieeefp.h fp_class.h floatingpoint.h)
+AC_CHECK_HEADERS(math.h ieeefp.h fp_class.h floatingpoint.h)
 
 AC_CHECK_FUNCS(fpsetmask fpsetround fpsetfastmode expf expl floorf floorl)
 
