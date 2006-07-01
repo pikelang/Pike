@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.429 2006/06/21 17:20:58 mast Exp $
+# $Id: Makefile.in,v 1.430 2006/07/01 23:43:21 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -603,7 +603,7 @@ spotless: clean_here
 	-( cd post_modules; $(MAKE) $(MAKE_FLAGS) spotless )
 	-(cd $(SRCDIR); find . -type f -name '*.h.in' -print) | \
 	  sed -e 's/\.in$$//' | xargs rm -f
-	-rm -f Makefile config.* make_variables specs pike.syms
+	-rm -f Makefile config.* make_variables specs pike.syms hdrlist.h
 	-rm -f core core.* .pure stamp-h
 	-rm -f lexical.c mon.out *.ln
 	-rm -f pike pike.old l.outa* num_files_to_install
