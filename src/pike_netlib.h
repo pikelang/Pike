@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_netlib.h,v 1.4 2003/04/30 10:25:42 grubba Exp $
+|| $Id: pike_netlib.h,v 1.5 2006/07/01 01:26:17 mast Exp $
 */
 
 #ifndef PIKE_NETLIB_H
@@ -22,10 +22,10 @@
 #endif /* HAVE_NETINET_IN_H */
 
 #ifdef HAVE_WINSOCK2_H
-#include <WinSock2.h>
+#include <winsock2.h>
 #ifdef HAVE_WS2TCPIP_H
 /* Needed for IPv6 support. */
-#include <WS2tcpip.h>
+#include <ws2tcpip.h>
 #endif
 #elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
