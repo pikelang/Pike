@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.h,v 1.61 2005/03/28 19:41:18 nilsson Exp $
+|| $Id: port.h,v 1.62 2006/07/02 21:11:46 nilsson Exp $
 */
 
 #ifndef PORT_H
@@ -406,6 +406,10 @@ double FREXP(double x, int *exp);
 #define LDEXP ldexp
 #else
 double LDEXP(double x, int exp);
+#endif
+
+#ifdef __MINGW32__
+void _dosmaperr(int x);
 #endif
 
 #endif
