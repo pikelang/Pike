@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.80 2006/07/01 23:58:03 mast Exp $
+|| $Id: fdlib.c,v 1.81 2006/07/02 21:09:23 nilsson Exp $
 */
 
 #include "global.h"
@@ -12,6 +12,10 @@
 #include <ctype.h>
 
 #if defined(HAVE_WINSOCK_H)
+
+#ifdef HAVE_DIRECT_H
+#include <direct.h>
+#endif
 
 #include <time.h>
 
