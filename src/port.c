@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.84 2006/07/02 21:11:31 nilsson Exp $
+|| $Id: port.c,v 1.85 2006/07/02 21:42:18 nilsson Exp $
 */
 
 /*
@@ -16,6 +16,7 @@
 #include "global.h"
 #include "time_stuff.h"
 #include "pike_error.h"
+#include "pike_macros.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -1028,6 +1029,103 @@ double FREXP(double x, int *exp)
 #endif
 
 #ifdef __MINGW32__
-void _dosmaperr(int x) {
+struct errmapping {
+        const int winerr;
+        const int doserr;
+};
+
+/* Auto generated from winerror.h and errno.h using the windows
+   internal function _dosmaperr. */
+
+static const struct errmapping errmap[] = {
+        { ERROR_FILE_NOT_FOUND, ENOENT },
+        { ERROR_PATH_NOT_FOUND, ENOENT },
+        { ERROR_TOO_MANY_OPEN_FILES, EMFILE },
+        { ERROR_ACCESS_DENIED, EACCES },
+        { ERROR_INVALID_HANDLE, EBADF },
+        { ERROR_ARENA_TRASHED, ENOMEM },
+        { ERROR_NOT_ENOUGH_MEMORY, ENOMEM },
+        { ERROR_INVALID_BLOCK, ENOMEM },
+        { ERROR_BAD_ENVIRONMENT, E2BIG },
+        { ERROR_BAD_FORMAT, ENOEXEC },
+        { ERROR_INVALID_DRIVE, ENOENT },
+        { ERROR_CURRENT_DIRECTORY, EACCES },
+        { ERROR_NOT_SAME_DEVICE, EXDEV },
+        { ERROR_NO_MORE_FILES, ENOENT },
+        { ERROR_WRITE_PROTECT, EACCES },
+        { ERROR_BAD_UNIT, EACCES },
+        { ERROR_NOT_READY, EACCES },
+        { ERROR_BAD_COMMAND, EACCES },
+        { ERROR_CRC, EACCES },
+        { ERROR_BAD_LENGTH, EACCES },
+        { ERROR_SEEK, EACCES },
+        { ERROR_NOT_DOS_DISK, EACCES },
+        { ERROR_SECTOR_NOT_FOUND, EACCES },
+        { ERROR_OUT_OF_PAPER, EACCES },
+        { ERROR_WRITE_FAULT, EACCES },
+        { ERROR_READ_FAULT, EACCES },
+        { ERROR_GEN_FAILURE, EACCES },
+        { ERROR_SHARING_VIOLATION, EACCES },
+        { ERROR_LOCK_VIOLATION, EACCES },
+        { ERROR_WRONG_DISK, EACCES },
+        { ERROR_SHARING_BUFFER_EXCEEDED, EACCES },
+        { ERROR_BAD_NETPATH, ENOENT },
+        { ERROR_NETWORK_ACCESS_DENIED, EACCES },
+        { ERROR_BAD_NET_NAME, ENOENT },
+        { ERROR_FILE_EXISTS, EEXIST },
+        { ERROR_CANNOT_MAKE, EACCES },
+        { ERROR_FAIL_I24, EACCES },
+        { ERROR_NO_PROC_SLOTS, EAGAIN },
+        { ERROR_DRIVE_LOCKED, EACCES },
+        { ERROR_BROKEN_PIPE, EPIPE },
+        { ERROR_DISK_FULL, ENOSPC },
+        { ERROR_INVALID_TARGET_HANDLE, EBADF },
+        { ERROR_WAIT_NO_CHILDREN, ECHILD },
+        { ERROR_CHILD_NOT_COMPLETE, ECHILD },
+        { ERROR_DIRECT_ACCESS_HANDLE, EBADF },
+        { ERROR_SEEK_ON_DEVICE, EACCES },
+        { ERROR_DIR_NOT_EMPTY, ENOTEMPTY },
+        { ERROR_NOT_LOCKED, EACCES },
+        { ERROR_BAD_PATHNAME, ENOENT },
+        { ERROR_MAX_THRDS_REACHED, EAGAIN },
+        { ERROR_LOCK_FAILED, EACCES },
+        { ERROR_ALREADY_EXISTS, EEXIST },
+        { ERROR_INVALID_STARTING_CODESEG, ENOEXEC },
+        { ERROR_INVALID_STACKSEG, ENOEXEC },
+        { ERROR_INVALID_MODULETYPE, ENOEXEC },
+        { ERROR_INVALID_EXE_SIGNATURE, ENOEXEC },
+        { ERROR_EXE_MARKED_INVALID, ENOEXEC },
+        { ERROR_BAD_EXE_FORMAT, ENOEXEC },
+        { ERROR_ITERATED_DATA_EXCEEDS_64k, ENOEXEC },
+        { ERROR_INVALID_MINALLOCSIZE, ENOEXEC },
+        { ERROR_DYNLINK_FROM_INVALID_RING, ENOEXEC },
+        { ERROR_IOPL_NOT_ENABLED, ENOEXEC },
+        { ERROR_INVALID_SEGDPL, ENOEXEC },
+        { ERROR_AUTODATASEG_EXCEEDS_64k, ENOEXEC },
+        { ERROR_RING2SEG_MUST_BE_MOVABLE, ENOEXEC },
+        { ERROR_RELOC_CHAIN_XEEDS_SEGLIM, ENOEXEC },
+        { ERROR_INFLOOP_IN_RELOC_CHAIN, ENOEXEC },
+        { ERROR_FILENAME_EXCED_RANGE, ENOENT },
+        { ERROR_NESTING_NOT_ALLOWED, EAGAIN },
+        { ERROR_NOT_ENOUGH_QUOTA, ENOMEM }
+};
+
+void _dosmaperr(int err) {
+  unsigned int i;
+
+  if( err == 0 )
+  {
+    errno = 0;
+    return;
+  }
+
+  for(i=0; i<NELEM(errmap); i++)
+    if( errmap[i].winerr == err)
+    {
+      errno = errmap[i].doserr;
+      return;
+    }
+
+  /* FIXME: Set generic error? */
 }
 #endif
