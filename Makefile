@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.156 2006/06/17 19:34:27 mast Exp $
+# $Id: Makefile,v 1.157 2006/07/02 00:56:46 mast Exp $
 #
 # Meta Makefile
 #
@@ -11,15 +11,18 @@
 # pass on the command line. (Using the magic MAKEFLAGS variable
 # directly here might not work all the time due to the $(DO_MAKE)
 # recursion.)
-#MAKE_FLAGS=-j2 --no-print-directory
+#MAKE_FLAGS=-j2
 
 # Set to a flag for parallelizing make, e.g. -j2. It's given to make
 # at the level where it's most effective. (Don't use when the make
 # program has smart job control, e.g. GNU make.)
 #MAKE_PARALLEL=
 
-VPATH=.
+# Tip: Remove "-r" from the line below if you don't want to rebuild
+# from scratch every time you upgrade the kernel.
 OS=`uname -s -r -m|sed \"s/ /-/g\"|tr \"[A-Z]\" \"[a-z]\"|tr \"/()\" \"___\"`
+
+VPATH=.
 BUILDDIR=build/$(OS)
 METATARGET=
 
@@ -31,7 +34,9 @@ MAKE_CMD=`if [ "x$(MAKE)" = "x" ]; then echo "$${MAKE-make}"; else echo "$(MAKE)
 # Used internally in this file to start a submake to expand
 # $(BUILDDIR), $(MAKE_CMD) etc.
 DO_MAKE=MAKE="$(MAKE_CMD)" export MAKE && \
-  "$${MAKE}" $(MAKE_FLAGS) "MAKE=$${MAKE}" \
+  "$${MAKE}" \
+  `$$MAKE force --no-print-directory >/dev/null 2>&1 && echo --no-print-directory || :` \
+  $(MAKE_FLAGS) "MAKE=$${MAKE}" \
   "CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)"
 
 # Used to avoid make compatibility problems.
