@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.139 2006/07/01 23:42:30 mast Exp $
+dnl $Id: aclocal.m4,v 1.140 2006/07/02 01:21:50 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -180,7 +180,7 @@ AC_DEFUN([AC_CHECK_HEADER],
   AC_REQUIRE([PIKE_FUNCS_NEED_DECLS])
   ORIG_AC_CHECK_HEADER([$1], [
     if test x$pike_cv_funcs_need_decls = xyes; then
-      def=HAVE_`echo "$1" | tr 'a-z---./' 'A-Z___'`
+      def=HAVE_`echo "$1" | tr '[[a-z]]' '[[A-Z]]' | sed -e 's,[[-./]],_,g'`
       cat >> hdrlist.h <<EOF
 #ifdef $def
 #include <$1>
@@ -488,7 +488,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.139 2006/07/01 23:42:30 mast Exp $
+  # $Id: aclocal.m4,v 1.140 2006/07/02 01:21:50 mast Exp $
 
   MY_AC_PROG_CC
 
