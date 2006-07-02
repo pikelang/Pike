@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.h,v 1.51 2005/05/25 16:59:39 grubba Exp $
+|| $Id: pike_memory.h,v 1.52 2006/07/02 00:05:45 mast Exp $
 */
 
 #ifndef MEMORY_H
@@ -13,13 +13,23 @@
 
 #ifdef USE_VALGRIND
 
+#define HAVE_VALGRIND_MACROS
+/* Assume that any of the following header files have the macros we
+ * need. Haven't checked if it's true or not. */
+
 #ifdef HAVE_MEMCHECK_H
 #include <memcheck.h>
 #elif defined(HAVE_VALGRIND_MEMCHECK_H)
 #include <valgrind/memcheck.h>
 #elif defined(HAVE_VALGRIND_H)
 #include <valgrind.h>
+#else
+#undef HAVE_VALGRIND_MACROS
 #endif
+
+#endif	/* USE_VALGRIND */
+
+#ifdef HAVE_VALGRIND_MACROS
 
 /* No Access */
 #define PIKE_MEM_NA(lvalue) do {					\
@@ -56,7 +66,7 @@
 /* Return true if a memchecker is in use. */
 #define PIKE_MEM_CHECKER() RUNNING_ON_VALGRIND
 
-#else
+#else  /* !HAVE_VALGRIND_MACROS */
 
 #define PIKE_MEM_NA(lvalue)		do {} while (0)
 #define PIKE_MEM_NA_RANGE(addr, bytes)	do {} while (0)
@@ -68,7 +78,7 @@
 #define PIKE_MEM_RO_RANGE(addr, bytes)	do {} while (0)
 #define PIKE_MEM_CHECKER()		0
 
-#endif /* USE_VALGRIND */
+#endif	/* !HAVE_VALGRIND_MACROS */
 
 
 #define MEMSEARCH_LINKS 512
