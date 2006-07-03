@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.81 2006/07/02 20:10:30 nilsson Exp $
+|| $Id: png.c,v 1.82 2006/07/03 17:31:32 grubba Exp $
 */
 
 #include "global.h"
@@ -31,9 +31,13 @@ extern struct program *image_program;
 static struct program *gz_inflate=NULL;
 static struct program *gz_deflate=NULL;
 
+#ifdef DYNAMIC_MODULE
 typedef unsigned INT32 (_crc32)(unsigned INT32, unsigned char*,
 				unsigned INT32);
 static _crc32 *crc32;
+#else
+extern unsigned INT32 crc32(unsigned INT32, unsigned char*, unsigned INT32);
+#endif
 
 static struct pike_string *param_palette;
 static struct pike_string *param_spalette;
@@ -1798,11 +1802,13 @@ void exit_image_png(void)
 
 void init_image_png(void)
 {
+#ifdef DYNAMIC_MODULE
    crc32 = PIKE_MODULE_IMPORT(Gz, crc32);
    if(!crc32) {
      yyerror("Could not load Image module.");
      return;
    }
+#endif
 
    push_text("Gz");
    SAFE_APPLY_MASTER("resolv",1);
