@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.149 2006/06/28 21:23:35 mast Exp $
+|| $Id: acconfig.h,v 1.150 2006/07/03 03:22:28 nilsson Exp $
 */
 
 #ifndef MACHINE_H
@@ -61,6 +61,9 @@
 
 /* Define this to enable the internal Pike security system */
 #undef PIKE_SECURITY
+
+/* Define this to enable experimental facets support */
+#undef WITH_FACETS
 
 /* Define this to enable the internal bignum conversion */
 #undef AUTO_BIGNUM
