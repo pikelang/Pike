@@ -1,6 +1,6 @@
 /* sqlite.cmod -*- c -*-
  *
- * $Id: sqlite.cmod,v 1.15 2006/06/22 10:16:51 agehall Exp $
+ * $Id: sqlite.cmod,v 1.16 2006/07/04 23:37:05 mast Exp $
  */
 
 #include "global.h"
@@ -226,6 +226,9 @@ PIKECLASS ResObj
       free_mapping(THIS->bindings);
   }
 }
+
+#undef THIS
+#define THIS THIS_SQLITE
 
   /* @decl void create(string path)
    */
