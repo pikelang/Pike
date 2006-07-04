@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.39 2006/02/03 17:40:24 grubba Exp $
+|| $Id: odbc_result.c,v 1.40 2006/07/04 11:04:50 grubba Exp $
 */
 
 /*
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.39 2006/02/03 17:40:24 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.40 2006/07/04 11:04:50 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -195,7 +195,7 @@ static void odbc_fix_fields(void)
     /* Create the mapping */
     push_text("name");
 #ifdef SQL_WCHAR
-    push_sqlwchar(buf, name_len);
+    push_sqlwchar(buf, name_len * sizeof(SQLWCHAR));
 #else
     push_string(make_shared_binary_string((char *)buf, name_len));
 #endif
