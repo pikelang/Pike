@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.157 2006/05/10 19:43:54 mast Exp $
+|| $Id: pike_memory.c,v 1.158 2006/07/04 14:38:17 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 
 #include <errno.h>
 
-RCSID("$Id: pike_memory.c,v 1.157 2006/05/10 19:43:54 mast Exp $");
+RCSID("$Id: pike_memory.c,v 1.158 2006/07/04 14:38:17 mast Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -515,6 +515,11 @@ void mexec_free(void *ptr)
 	       ptr, mblk->magic, hdr);
   }
 #endif /* MEXEC_MAGIC */
+
+#ifdef VALGRIND_DISCARD_TRANSLATIONS
+  VALGRIND_DISCARD_TRANSLATIONS (mblk, mblk->size);
+#endif
+
   blk = (struct mexec_free_block *)mblk;
 
   next = hdr->free;
