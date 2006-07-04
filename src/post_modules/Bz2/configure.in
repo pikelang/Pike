@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.7 2003/01/26 10:10:57 mirar Exp $
+# $Id: configure.in,v 1.8 2006/07/04 20:45:27 mast Exp $
 AC_INIT(libbzip2mod.cmod)
 AC_CONFIG_HEADER(libbzip2mod_config.h)
 AC_ARG_WITH(bz2,     [  --without-bz2       Disable Bz2],[],[with_bz2=yes])
@@ -19,11 +19,13 @@ if test x$with_bz2 = xyes ; then
   if test "x$ac_cv_lib_bz2_BZ2_bzCompressInit" = xyes \
        -o "x$ac_cv_lib_bz2_bzCompressInit" = xyes; then
 
+    # Must be before AC_CHECK_FUNCS for PIKE_FUNCS_NEED_DECLS to work.
+    AC_CHECK_HEADERS(bzlib.h string.h strings.h)
+
     # if BZ2_bzCompressInit exists,
     # it should be used instead of bzCompressInit.
     AC_CHECK_FUNCS(BZ2_bzCompressInit)
 
-    AC_CHECK_HEADERS(bzlib.h string.h strings.h)
     if test $ac_cv_header_bzlib_h = yes ; then
       PIKE_FEATURE(Bz2,[yes (using libbz2)])
       AC_DEFINE(HAVE_BZ2LIB)

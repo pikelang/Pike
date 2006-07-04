@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.49 2006/07/01 23:53:19 mast Exp $
+# $Id: configure.in,v 1.50 2006/07/04 20:45:27 mast Exp $
 #
 # Configure script for the mysql-module
 #
@@ -197,6 +197,9 @@ AC_MSG_RESULT(no)
       MYSQL_LIBS="-lm ${MYSQL_LIBS}"
     ], [])
   fi
+
+  # Header check necessary for PIKE_FUNCS_NEED_DECLS.
+  AC_CHECK_HEADERS(pthread.h)
 
   # Pthreads is still needed in 3.20.0.
   AC_CHECK_FUNC(pthread_self, [], [

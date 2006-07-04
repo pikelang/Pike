@@ -270,15 +270,16 @@ AC_MODULE_INIT()
 AC_ARG_WITH(GTK, [  --without-GTK           no support for GTK],[],[with_GTK=yes])
 AC_ARG_WITH(GTK, [  --with-GTK2             Use GTK 2.0 if found],[],[with_GTK2=no])
 
-AC_CHECK_FUNCS( gethrtime signal sigaction )
-
 # Force prototypes from X's headerfiles.
 AC_DEFINE(FUNCPROTO)
 
 AC_HEADER_STDC
+
+# Must be before AC_CHECK_FUNCS for PIKE_FUNCS_NEED_DECLS to work.
 AC_CHECK_HEADERS( signal.h netinet/in.h arpa/inet.h sys/types.h sys/stat.h \
 	fcntl.h)
 
+AC_CHECK_FUNCS( gethrtime signal sigaction )
 
 if test "x$with_GTK" = "xyes" ; then
   

@@ -1,10 +1,10 @@
-# $Id: configure.in,v 1.6 2006/04/19 14:27:11 nilsson Exp $
+# $Id: configure.in,v 1.7 2006/07/04 20:45:27 mast Exp $
 AC_INIT(gettext.c)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
 
-AC_HAVE_HEADERS(locale.h libintl.h)
+AC_HAVE_HEADERS(locale.h libintl.h iconv.h)
 
 ########################################################################
 #   gettext checking (localization)

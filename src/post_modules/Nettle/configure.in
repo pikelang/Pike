@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.17 2004/10/05 10:34:40 mast Exp $
+# $Id: configure.in,v 1.18 2006/07/04 20:45:27 mast Exp $
 AC_INIT(nettle.cmod)
 AC_CONFIG_HEADER(nettle_config.h)
 
@@ -22,6 +22,7 @@ else
     PIKE_FEATURE_OK(Nettle)
 
     # md4 is available in later versions of nettle
+    AC_CHECK_HEADERS(nettle/md4.h)
     AC_CHECK_FUNCS(nettle_md4_init)
 
     AC_MSG_CHECKING([for idea.c])
