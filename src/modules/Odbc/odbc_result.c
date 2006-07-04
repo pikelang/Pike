@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.48 2006/02/06 16:56:30 grubba Exp $
+|| $Id: odbc_result.c,v 1.49 2006/07/04 11:10:55 grubba Exp $
 */
 
 /*
@@ -162,12 +162,20 @@ static void odbc_fix_fields(void)
 			&name_len,
 			&sql_type, &precision, &scale, &nullable),
 		       NULL, NULL);
-      if (name_len < (ptrdiff_t)buf_size) {
+      if (name_len
+#ifdef SQL_WCHAR
+	  * sizeof(SQLWCHAR)
+#endif
+	  < (ptrdiff_t)buf_size) {
 	break;
       }
       do {
 	buf_size *= 2;
-      } while (name_len >= (ptrdiff_t)buf_size);
+      } while (name_len
+#ifdef SQL_WCHAR
+	       * sizeof(SQLWCHAR)
+#endif
+	       >= (ptrdiff_t)buf_size);
       if (!(buf = alloca(
 			 buf_size
 #ifdef SQL_WCHAR
@@ -193,7 +201,7 @@ static void odbc_fix_fields(void)
     /* Create the mapping */
     push_text("name");
 #ifdef SQL_WCHAR
-    push_sqlwchar(buf, name_len);
+    push_sqlwchar(buf, name_len * sizeof(SQLWCHAR));
 #else
     push_string(make_shared_binary_string((char *)buf, name_len));
 #endif
