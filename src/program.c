@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.600 2006/03/22 19:59:41 grubba Exp $
+|| $Id: program.c,v 1.601 2006/07/04 14:38:17 mast Exp $
 */
 
 #include "global.h"
@@ -2516,12 +2516,6 @@ static void exit_program_struct(struct program *p)
   }
 #endif
 
-#if defined(PIKE_USE_MACHINE_CODE) && defined(VALGRIND_DISCARD_TRANSLATIONS)
-  if(p->program) {
-    VALGRIND_DISCARD_TRANSLATIONS(p->program,
-				  p->num_program*sizeof(p->program[0]));
-  }
-#endif /* PIKE_USE_MACHINE_CODE && VALGRIND_DISCARD_TRANSLATIONS */
   if(p->flags & PROGRAM_OPTIMIZED)
   {
 #ifdef PIKE_USE_MACHINE_CODE

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.176 2006/05/10 19:43:54 mast Exp $
+|| $Id: pike_memory.c,v 1.177 2006/07/04 14:38:17 mast Exp $
 */
 
 #include "global.h"
@@ -567,6 +567,11 @@ void mexec_free(void *ptr)
   }
 #endif /* MEXEC_MAGIC */
   verify_mexec_hdr(hdr);
+
+#ifdef VALGRIND_DISCARD_TRANSLATIONS
+  VALGRIND_DISCARD_TRANSLATIONS (mblk, mblk->size);
+#endif
+
   blk = (struct mexec_free_block *)mblk;
 
   next = hdr->free;
