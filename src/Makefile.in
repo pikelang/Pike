@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.431 2006/07/04 23:09:40 mast Exp $
+# $Id: Makefile.in,v 1.432 2006/07/04 23:16:47 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -1187,10 +1187,7 @@ $(SRCDIR)/configure $(SRCDIR)/stamp-h.in: $(SRCDIR)/configure.in $(SRCDIR)/acloc
 	cd $(SRCDIR) && ./run_autoconfig --no-recursion .
 	echo foo > $(SRCDIR)/stamp-h.in
 
-config.status: $(SRCDIR)/configure $(SRCDIR)/make_variables.in
-	./config.status --recheck
-
-propagated_variables: $(SRCDIR)/configure $(SRCDIR)/make_variables.in
+config.status propagated_variables: $(SRCDIR)/configure $(SRCDIR)/make_variables.in
 	./config.status --recheck
 	@test -f propagated_variables && touch propagated_variables
 
