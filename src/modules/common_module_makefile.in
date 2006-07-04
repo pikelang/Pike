@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.42 2006/07/01 23:43:22 mast Exp $
+# $Id: common_module_makefile.in,v 1.43 2006/07/04 23:44:04 mast Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -121,6 +121,7 @@ module.pmod: Makefile $(MODULE_PMOD_IN)
 
 clean_here:
 	-rm -f *.o *.fail *.obj *.a *.so stamp-h linker_options modlist_segment testsuite $(MODULE_CLEAN_EXTRA) doc build_type
+	-rm -f confdefs.h conftest.* hdrlist.h *.manifest *.pdb *.lib *.exp
 	-rm -rf plib refdoc module.pmod doc
 
 clean: clean_here
@@ -130,8 +131,8 @@ clean: clean_here
 	done
 
 spotless: clean_here
-	-rm -f config.cache config.log config.status Makefile propagated_variables make_variables dependencies pike_*.feature hdrlist.h
-	-rm -f core core.* .pure conftest.* $(MODULE_SPOTLESS_EXTRA)
+	-rm -f config.cache config.log config.status Makefile propagated_variables make_variables dependencies pike_*.feature
+	-rm -f core core.* .pure $(MODULE_SPOTLESS_EXTRA)
 	@for a in '' $(MODULE_SUBDIRS) ; do \
 	  if test "x$$a" = "x"; then :; \
 	  else ( cd $$a ; $(MAKE) $(MAKE_FLAGS) spotless ) ; fi ; \
