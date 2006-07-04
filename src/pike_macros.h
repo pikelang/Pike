@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_macros.h,v 1.39 2005/03/15 09:58:35 grubba Exp $
+|| $Id: pike_macros.h,v 1.40 2006/07/04 21:31:30 mast Exp $
 */
 
 #ifndef MACROS_H
@@ -127,6 +127,9 @@ PMOD_EXPORT extern const char Pike_is8bitalnum_vector[];
 
 /* Useful to get a literal comma in an argument to a macro. */
 #define COMMA ,
+
+/* Necessary to pass an empty argument to a macro for some preprocessors. */
+#define NOTHING
 
 /* Needed for fsort_template.h */
 PMOD_EXPORT int my_log2(size_t x);

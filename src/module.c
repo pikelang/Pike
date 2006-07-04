@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.39 2006/02/27 12:33:55 mast Exp $
+|| $Id: module.c,v 1.40 2006/07/04 21:31:30 mast Exp $
 */
 
 #include "global.h"
@@ -143,7 +143,7 @@ static void exit_builtin_modules(void)
     gc_keep_markers = 1;
     do_gc (NULL, 1);
 
-#define STATIC_ARRAYS {&empty_array, &weak_empty_array}
+#define STATIC_ARRAYS &empty_array, &weak_empty_array,
 
 #define REPORT_LINKED_LIST_LEAKS(TYPE, START, STATICS, T_TYPE, NAME) do { \
       struct TYPE *x;							\
@@ -157,9 +157,9 @@ static void exit_builtin_modules(void)
 	}								\
 	else {								\
 	  int is_static = 0;						\
-	  static const struct TYPE *statics[] = STATICS;		\
+	  static const struct TYPE *statics[] = {STATICS NULL};		\
 	  ptrdiff_t i; /* Use signed type to avoid warnings from gcc. */ \
-	  for (i = 0; i < (ptrdiff_t) NELEM (statics); i++)		\
+	  for (i = 0; i < (ptrdiff_t) (NELEM (statics) - 1); i++)	\
 	    if (x == statics[i])					\
 	      is_static = 1;						\
 	  if (x->refs != m->refs + is_static) {				\
@@ -178,10 +178,10 @@ static void exit_builtin_modules(void)
     } while (0)
 
     REPORT_LINKED_LIST_LEAKS (array, first_array, STATIC_ARRAYS, T_ARRAY, "Array");
-    REPORT_LINKED_LIST_LEAKS (multiset, first_multiset, {}, T_MULTISET, "Multiset");
-    REPORT_LINKED_LIST_LEAKS (mapping, first_mapping, {}, T_MAPPING, "Mapping");
-    REPORT_LINKED_LIST_LEAKS (program, first_program, {}, T_PROGRAM, "Program");
-    REPORT_LINKED_LIST_LEAKS (object, first_object, {}, T_OBJECT, "Object");
+    REPORT_LINKED_LIST_LEAKS (multiset, first_multiset, NOTHING, T_MULTISET, "Multiset");
+    REPORT_LINKED_LIST_LEAKS (mapping, first_mapping, NOTHING, T_MAPPING, "Mapping");
+    REPORT_LINKED_LIST_LEAKS (program, first_program, NOTHING, T_PROGRAM, "Program");
+    REPORT_LINKED_LIST_LEAKS (object, first_object, NOTHING, T_OBJECT, "Object");
 
 #undef REPORT_LINKED_LIST_LEAKS
 
@@ -202,10 +202,10 @@ static void exit_builtin_modules(void)
 	next = x->next;							\
 	if (m) {							\
 	  int is_static = 0;						\
-	  static const struct TYPE *statics[] = STATICS;		\
+	  static const struct TYPE *statics[] = {STATICS NULL};		\
 	  ptrdiff_t i; /* Use signed type to avoid warnings from gcc. */ \
 	  INT32 refs;							\
-	  for (i = 0; i < (ptrdiff_t) NELEM (statics); i++)		\
+	  for (i = 0; i < (ptrdiff_t) (NELEM (statics) - 1); i++)	\
 	    if (x == statics[i])					\
 	      is_static = 1;						\
 	  refs = x->refs;						\
@@ -219,10 +219,10 @@ static void exit_builtin_modules(void)
     } while (0)
 
     ZAP_LINKED_LIST_LEAKS (array, first_array, STATIC_ARRAYS);
-    ZAP_LINKED_LIST_LEAKS (multiset, first_multiset, {});
-    ZAP_LINKED_LIST_LEAKS (mapping, first_mapping, {});
-    ZAP_LINKED_LIST_LEAKS (program, first_program, {});
-    ZAP_LINKED_LIST_LEAKS (object, first_object, {});
+    ZAP_LINKED_LIST_LEAKS (multiset, first_multiset, NOTHING);
+    ZAP_LINKED_LIST_LEAKS (mapping, first_mapping, NOTHING);
+    ZAP_LINKED_LIST_LEAKS (program, first_program, NOTHING);
+    ZAP_LINKED_LIST_LEAKS (object, first_object, NOTHING);
 
 #undef ZAP_LINKED_LIST_LEAKS
 
