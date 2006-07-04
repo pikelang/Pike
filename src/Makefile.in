@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.430 2006/07/01 23:43:21 mast Exp $
+# $Id: Makefile.in,v 1.431 2006/07/04 23:09:40 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -190,6 +190,7 @@ MODULE_REQUIREMENTS= \
   precompile.sh-stamp \
   modules/static_module_makefile \
   modules/dynamic_module_makefile \
+  propagated_variables \
   $(SRCDIR)/language.h \
   $(SRCDIR)/interpret_protos.h \
   lib @EXTRA_MODULE_REQUIREMENTS@
@@ -1188,6 +1189,10 @@ $(SRCDIR)/configure $(SRCDIR)/stamp-h.in: $(SRCDIR)/configure.in $(SRCDIR)/acloc
 
 config.status: $(SRCDIR)/configure $(SRCDIR)/make_variables.in
 	./config.status --recheck
+
+propagated_variables: $(SRCDIR)/configure $(SRCDIR)/make_variables.in
+	./config.status --recheck
+	@test -f propagated_variables && touch propagated_variables
 
 modules/common_module_makefile: $(SRCDIR)/modules/common_module_makefile.in config.status
 	-@(while :; do \
