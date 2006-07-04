@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.102 2006/06/21 16:30:00 mast Exp $
+# $Id: static_module_makefile.in,v 1.103 2006/07/04 23:11:01 mast Exp $
 #
 
 
@@ -70,7 +70,7 @@ module.a: $(OBJS)
 	-@RANLIB@ module.a
 	if test -f linker_options ; then touch linker_options ; else :; fi
 
-$(OBJS) : $(MODULE_BASE)/dynamic_module_makefile
+$(OBJS): propagated_variables
 
 install: $(MODULE_INSTALL)
 

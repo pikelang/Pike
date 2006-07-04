@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.118 2006/06/28 21:23:35 mast Exp $
+# $Id: dynamic_module_makefile.in,v 1.119 2006/07/04 23:11:01 mast Exp $
 #
 
 LIBGCC=@LIBGCC@
@@ -77,7 +77,7 @@ module.so: $(MODULE_ARCHIVES) $(OBJS) $(LDSHARED_MODULE_REQS)
 	  exit 1; \
 	fi
 
-$(OBJS) : $(MODULE_BASE)/dynamic_module_makefile
+$(OBJS): propagated_variables
 
 #
 # install a standard module with optional c component in the system module path
