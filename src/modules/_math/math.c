@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.83 2005/03/21 07:11:30 nilsson Exp $
+|| $Id: math.c,v 1.84 2006/07/04 21:49:38 mast Exp $
 */
 
 #include "global.h"
@@ -586,7 +586,7 @@ void f_ceil(INT32 args)
 void f_round(INT32 args)
 {
   ARG_CHECK("round");
-  sp[-1].u.float_number = FL1(RINT,sp[-1].u.float_number);
+  sp[-1].u.float_number = FL1(rint,sp[-1].u.float_number);
 }
 
 
