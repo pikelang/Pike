@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.192 2006/05/10 19:43:54 mast Exp $
+|| $Id: array.c,v 1.193 2006/07/05 20:49:17 mast Exp $
 */
 
 #include "global.h"
@@ -1296,7 +1296,7 @@ PMOD_EXPORT TYPE_FIELD array_fix_type_field(struct array *v)
 
 #ifdef PIKE_DEBUG
 /* Maybe I should have a 'clean' flag for this computation */
-void array_check_type_field(struct array *v)
+PMOD_EXPORT void array_check_type_field(struct array *v)
 {
   int e;
   TYPE_FIELD t;
