@@ -2,8 +2,10 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.75 2004/12/30 13:24:37 grubba Exp $
+|| $Id: dlopen.c,v 1.76 2006/07/05 19:06:46 mast Exp $
 */
+
+/* Note: This is not used if --enable-dll is. */
 
 #include <global.h>
 #include "fdlib.h"
