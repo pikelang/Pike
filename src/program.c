@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.601 2006/07/04 14:38:17 mast Exp $
+|| $Id: program.c,v 1.602 2006/07/05 02:21:51 mast Exp $
 */
 
 #include "global.h"
@@ -1187,6 +1187,12 @@ static struct mapping *resolve_cache=0;
 #endif
 
 int get_small_number(char **q);
+
+PMOD_EXPORT void do_free_program (struct program *p)
+{
+  if (p)
+    free_program(p);
+}
 
 /* So what if we don't have templates? / Hubbe */
 
@@ -3451,7 +3457,7 @@ PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *))
   ((oldhandlertype *)Pike_compiler->new_program->program)[PROG_EVENT_GC_CHECK]=m;
 }
 
-void pike_set_prog_event_callback(void (*cb)(int))
+PMOD_EXPORT void pike_set_prog_event_callback(void (*cb)(int))
 {
 #ifdef PIKE_DEBUG
   if(Pike_compiler->new_program->event_handler)
@@ -3460,7 +3466,7 @@ void pike_set_prog_event_callback(void (*cb)(int))
   Pike_compiler->new_program->event_handler=cb;
 }
 
-void pike_set_prog_optimize_callback(node *(*opt)(node *))
+PMOD_EXPORT void pike_set_prog_optimize_callback(node *(*opt)(node *))
 {
 #ifdef PIKE_DEBUG
   if(Pike_compiler->new_program->optimize)
@@ -5242,7 +5248,7 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
   return id;
 }
 
-int low_find_lfun(struct program *p, ptrdiff_t lfun)
+PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun)
 {
   struct pike_string *lfun_name = lfun_strings[lfun];
   unsigned int flags = 0;
