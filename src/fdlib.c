@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.62 2006/06/20 17:50:39 mast Exp $
+|| $Id: fdlib.c,v 1.63 2006/07/05 01:06:50 mast Exp $
 */
 
 #include "global.h"
@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.62 2006/06/20 17:50:39 mast Exp $");
+RCSID("$Id: fdlib.c,v 1.63 2006/07/05 01:06:50 mast Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -821,10 +821,10 @@ PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
   mt_unlock(&fd_mutex);
 
 #ifdef INT64
-  if (pos >= ((INT64) 1 << 32)) {
+  if (pos >= (1LL << 32)) {
     LONG high = DO_NOT_WARN ((LONG) (pos >> 32));
     DWORD err;
-    pos &= (1 << 32) - 1;
+    pos &= (1LL << 32) - 1;
     ret = SetFilePointer (h, DO_NOT_WARN ((LONG) pos), &high, where);
     if (ret == INVALID_SET_FILE_POINTER &&
 	(err = GetLastError()) != NO_ERROR) {
@@ -875,7 +875,7 @@ PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len)
 
 #ifdef INT64
   len_hi = DO_NOT_WARN ((LONG) (len >> 32));
-  len &= (1 << 32) - 1;
+  len &= (1LL << 32) - 1;
 #else
   len_hi = 0;
 #endif
