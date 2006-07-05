@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.h,v 1.37 2004/11/09 17:07:34 nilsson Exp $
+|| $Id: file.h,v 1.38 2006/07/05 02:14:11 mast Exp $
 */
 
 #ifndef FILE_H
@@ -116,16 +116,16 @@ CBFUNCS(read_oob_callback)
 CBFUNCS(write_oob_callback)
 
 static void file_write(INT32 args);
-struct object *file_make_object_from_fd(int fd, int mode, int guess);
+PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess);
 int my_socketpair(int family, int type, int protocol, int sv[2]);
 int socketpair_ultra(int family, int type, int protocol, int sv[2]);
 struct new_thread_data;
 void file_proxy(INT32 args);
-void create_proxy_pipe(struct object *o, int for_reading);
+PMOD_EXPORT void create_proxy_pipe(struct object *o, int for_reading);
 struct file_lock_key_storage;
 void mark_ids(struct callback *foo, void *bar, void *gazonk);
-int pike_make_pipe(int *fds);
-int fd_from_object(struct object *o);
+PMOD_EXPORT int pike_make_pipe(int *fds);
+PMOD_EXPORT int fd_from_object(struct object *o);
 void f_strerror(INT32 args);
 void push_stat(PIKE_STAT_T *s);
 /* Prototypes end here */
