@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.h,v 1.58 2006/07/05 19:11:09 mast Exp $
+|| $Id: fdlib.h,v 1.59 2006/07/05 20:13:56 mast Exp $
 */
 
 #ifndef FDLIB_H
@@ -296,6 +296,7 @@ PMOD_EXPORT void closedir(DIR *dir);
 typedef int FD;
 typedef struct stat PIKE_STAT_T;
 typedef off_t PIKE_OFF_T;
+#define PRINTPIKEOFFT PRINTOFFT
 
 #define fd_info(X) ""
 #define fd_init()
