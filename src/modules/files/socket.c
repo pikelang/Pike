@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.95 2005/05/31 16:34:24 bill Exp $
+|| $Id: socket.c,v 1.96 2006/07/05 02:14:52 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -626,7 +626,7 @@ static void exit_port_struct(struct object *o)
 /*! @endmodule
  */
 
-struct program *port_program = NULL;
+PMOD_EXPORT struct program *port_program = NULL;
 
 void port_exit_program(void)
 {
