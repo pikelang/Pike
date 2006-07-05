@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stat.c,v 1.31 2005/04/30 18:40:59 per Exp $
+|| $Id: stat.c,v 1.32 2006/07/05 02:13:05 mast Exp $
 */
 
 #include "global.h"
@@ -230,11 +230,11 @@ static int stat_compat_set (INT_TYPE pos, INT64 val)
 {
   if (pos < 0) pos += 7;
   switch (pos) {
-    case 0: DO_NOT_WARN(THIS_STAT->s.st_mode = val); break;
+    case 0: DO_NOT_WARN(THIS_STAT->s.st_mode = (int) val); break;
     case 1:
       if (val >= 0) {
 	THIS_STAT->s.st_mode = (THIS_STAT->s.st_mode & ~S_IFMT) | S_IFREG;
-	DO_NOT_WARN(THIS_STAT->s.st_size = val);
+	THIS_STAT->s.st_size = DO_NOT_WARN ((off_t) val);
       }
       else {
 	THIS_STAT->s.st_size = 0;
@@ -246,11 +246,11 @@ static int stat_compat_set (INT_TYPE pos, INT64 val)
 	  THIS_STAT->s.st_mode = THIS_STAT->s.st_mode & ~S_IFMT;
       }
       break;
-    case 2: DO_NOT_WARN(THIS_STAT->s.st_atime = val); break;
-    case 3: DO_NOT_WARN(THIS_STAT->s.st_mtime = val); break;
-    case 4: DO_NOT_WARN(THIS_STAT->s.st_ctime = val); break;
-    case 5: DO_NOT_WARN(THIS_STAT->s.st_uid = val); break;
-    case 6: DO_NOT_WARN(THIS_STAT->s.st_gid = val); break;
+    case 2: THIS_STAT->s.st_atime = DO_NOT_WARN ((time_t) val); break;
+    case 3: THIS_STAT->s.st_mtime = DO_NOT_WARN ((time_t) val); break;
+    case 4: THIS_STAT->s.st_ctime = DO_NOT_WARN ((time_t) val); break;
+    case 5: DO_NOT_WARN(THIS_STAT->s.st_uid = (int) val); break;
+    case 6: DO_NOT_WARN(THIS_STAT->s.st_gid = (int) val); break;
     default: return 0;
   }
   return 1;
@@ -803,21 +803,21 @@ static void stat_index_set (INT32 args)
 	  SIMPLE_BAD_ARG_ERROR ("Stat `[]=", 2, "integer");
 
 	switch (code) {
-	  case STAT_DEV: DO_NOT_WARN(THIS_STAT->s.st_dev = int_val); break;
-	  case STAT_INO: DO_NOT_WARN(THIS_STAT->s.st_ino = int_val); break;
-	  case STAT_MODE: DO_NOT_WARN(THIS_STAT->s.st_mode = int_val); break;
-	  case STAT_NLINK: DO_NOT_WARN(THIS_STAT->s.st_nlink = int_val); break;
-	  case STAT_UID: DO_NOT_WARN(THIS_STAT->s.st_uid = int_val); break;
-	  case STAT_GID: DO_NOT_WARN(THIS_STAT->s.st_gid = int_val); break;
-	  case STAT_RDEV: DO_NOT_WARN(THIS_STAT->s.st_rdev = int_val); break;
-	  case STAT_SIZE: DO_NOT_WARN(THIS_STAT->s.st_size = int_val); break;
+	  case STAT_DEV: DO_NOT_WARN(THIS_STAT->s.st_dev = (int) int_val); break;
+	  case STAT_INO: DO_NOT_WARN(THIS_STAT->s.st_ino = (int) int_val); break;
+	  case STAT_MODE: DO_NOT_WARN(THIS_STAT->s.st_mode = (int) int_val); break;
+	  case STAT_NLINK: DO_NOT_WARN(THIS_STAT->s.st_nlink = (int) int_val); break;
+	  case STAT_UID: DO_NOT_WARN(THIS_STAT->s.st_uid = (int) int_val); break;
+	  case STAT_GID: DO_NOT_WARN(THIS_STAT->s.st_gid = (int) int_val); break;
+	  case STAT_RDEV: DO_NOT_WARN(THIS_STAT->s.st_rdev = (int) int_val); break;
+	  case STAT_SIZE: THIS_STAT->s.st_size = DO_NOT_WARN ((off_t) int_val); break;
 #ifdef HAVE_STRUCT_STAT_BLOCKS
 	  case STAT_BLKSIZE: DO_NOT_WARN(THIS_STAT->s.st_blksize = int_val); break;
 	  case STAT_BLOCKS: DO_NOT_WARN(THIS_STAT->s.st_blocks = int_val); break;
 #endif
-	  case STAT_ATIME: DO_NOT_WARN(THIS_STAT->s.st_atime = int_val); break;
-	  case STAT_MTIME: DO_NOT_WARN(THIS_STAT->s.st_mtime = int_val); break;
-	  case STAT_CTIME: DO_NOT_WARN(THIS_STAT->s.st_ctime = int_val); break;
+	  case STAT_ATIME: THIS_STAT->s.st_atime = DO_NOT_WARN ((time_t) int_val); break;
+	  case STAT_MTIME: THIS_STAT->s.st_mtime = DO_NOT_WARN ((time_t) int_val); break;
+	  case STAT_CTIME: THIS_STAT->s.st_ctime = DO_NOT_WARN ((time_t) int_val); break;
 
 	  default:
 	    Pike_fatal ("stat_index_set is not kept up-to-date with stat_map.\n");

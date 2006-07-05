@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.357 2006/05/31 18:34:37 grubba Exp $
+|| $Id: file.c,v 1.358 2006/07/05 02:13:47 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -2600,7 +2600,7 @@ static void file_take_fd(INT32 args)
   pop_n_elems(args);
 }
 
-struct object *file_make_object_from_fd(int fd, int mode, int guess)
+PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess)
 {
   struct object *o=low_clone(file_program);
   struct my_file *f = (struct my_file *) o->storage;
@@ -3711,7 +3711,7 @@ void file_proxy(INT32 args)
   push_int(0);
 }
 
-void create_proxy_pipe(struct object *o, int for_reading)
+PMOD_EXPORT void create_proxy_pipe(struct object *o, int for_reading)
 {
   struct object *n,*n2;
   push_object(n=clone_object(file_program,0));
@@ -4229,7 +4229,7 @@ static void fd__sprintf(INT32 args)
 #define INTERFACES 256
 
 static void f_gethostip(INT32 args) {
-  int fd, i, j, up = 0;
+  int up = 0;
   struct mapping *m;
 
   pop_n_elems(args);
@@ -4238,6 +4238,7 @@ static void f_gethostip(INT32 args) {
 
 #if defined(HAVE_LINUX_IF_H) && defined(HAVE_SYS_IOCTL_H)
   {
+    int fd, i;
     struct ifconf ifc;
     struct sockaddr_in addr;
     char buffer[ INTERFACES * sizeof( struct ifreq ) ];
@@ -4474,12 +4475,12 @@ PIKE_MODULE_INIT
  */
 
 /* Used from backend */
-int pike_make_pipe(int *fds)
+PMOD_EXPORT int pike_make_pipe(int *fds)
 {
   return socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
 }
 
-int fd_from_object(struct object *o)
+PMOD_EXPORT int fd_from_object(struct object *o)
 {
   extern int fd_from_portobject( struct object *o );
   struct my_file *f=get_file_storage(o);

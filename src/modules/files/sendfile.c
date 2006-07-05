@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.73 2005/10/19 15:24:23 grubba Exp $
+|| $Id: sendfile.c,v 1.74 2006/07/05 02:13:05 mast Exp $
 */
 
 /*
@@ -591,10 +591,12 @@ void low_do_sendfile(struct pike_sendfile *this)
     fd_lseek(this->from_fd, this->offset, SEEK_SET);
     {
       ptrdiff_t buflen;
-      ptrdiff_t len = this->len;
-      if ((len > this->buf_size) || (len < 0)) {
+      ptrdiff_t len;
+      if ((this->len > this->buf_size) || (this->len < 0)) {
 	len = this->buf_size;
       }
+      else
+	len = DO_NOT_WARN ((ptrdiff_t) this->len);
       while ((buflen = fd_read(this->from_fd, this->buffer, len)) > 0) {
 	char *buf = this->buffer;
 	this->len -= buflen;
@@ -610,10 +612,11 @@ void low_do_sendfile(struct pike_sendfile *this)
 	  buflen -= wrlen;
 	  this->sent += wrlen;
 	}
-	len = this->len;
-	if ((len > this->buf_size) || (len < 0)) {
+	if ((this->len > this->buf_size) || (this->len < 0)) {
 	  len = this->buf_size;
 	}
+	else
+	  len = DO_NOT_WARN ((ptrdiff_t) this->len);
       }
     }
   send_trailers:

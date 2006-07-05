@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.179 2006/07/05 01:06:50 mast Exp $
+|| $Id: efuns.c,v 1.180 2006/07/05 02:13:05 mast Exp $
 */
 
 #include "global.h"
@@ -86,6 +86,7 @@
 #ifdef __NT__
 
 #include <winbase.h>
+#include <io.h>
 
 /* Old versions of the headerfiles don't have this constant... */
 #ifndef INVALID_SET_FILE_POINTER
@@ -133,9 +134,9 @@ struct array *encode_stat(PIKE_STAT_T *s)
     ITEM(a)[1].u.integer=-4;
     break;
   }
-  ITEM(a)[2].u.integer=s->st_atime;
-  ITEM(a)[3].u.integer=s->st_mtime;
-  ITEM(a)[4].u.integer=s->st_ctime;
+  ITEM(a)[2].u.integer = DO_NOT_WARN ((INT_TYPE) s->st_atime);
+  ITEM(a)[3].u.integer = DO_NOT_WARN ((INT_TYPE) s->st_mtime);
+  ITEM(a)[4].u.integer = DO_NOT_WARN ((INT_TYPE) s->st_ctime);
   ITEM(a)[5].u.integer=s->st_uid;
   ITEM(a)[6].u.integer=s->st_gid;
   return a;
@@ -520,7 +521,7 @@ void f_file_truncate(INT32 args)
       LONG high;
       DWORD err;
 #ifdef INT64
-      high = len >> 32;
+      high = DO_NOT_WARN ((LONG) (len >> 32));
       len &= (1LL << 32) - 1;
 #else
       high = 0;
@@ -924,7 +925,6 @@ void f_rm(INT32 args)
 void f_mkdir(INT32 args)
 {
   struct pike_string *str;
-  char *s, *s_dup;
   int mode;
   int i;
 
@@ -957,23 +957,25 @@ void f_mkdir(INT32 args)
   }
 
 #if MKDIR_ARGS == 2
-  /* Remove trailing / which is not accepted by all mkdir()
-     implementations (e.g. Mac OS X) */
-  s = str->str;
-  s_dup = 0;
-  if (str->len && s[str->len - 1] == '/') {
-    if ((s_dup = strdup(s))) {
-      s = s_dup;
-      s[str->len - 1] = '\0';
+  {
+    /* Remove trailing / which is not accepted by all mkdir()
+       implementations (e.g. Mac OS X) */
+    char *s = str->str;
+    char *s_dup = NULL;
+    if (str->len && s[str->len - 1] == '/') {
+      if ((s_dup = strdup(s))) {
+	s = s_dup;
+	s[str->len - 1] = '\0';
+      }
     }
+  
+    THREADS_ALLOW_UID();
+    i = mkdir(s, mode) != -1;
+    THREADS_DISALLOW_UID();
+  
+    if (s_dup)
+      free(s_dup);
   }
-  
-  THREADS_ALLOW_UID();
-  i = mkdir(s, mode) != -1;
-  THREADS_DISALLOW_UID();
-  
-  if (s_dup)
-    free(s_dup);
 #else
 
 #ifdef HAVE_LSTAT
