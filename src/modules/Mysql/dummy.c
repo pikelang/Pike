@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dummy.c,v 1.16 2004/10/23 11:50:27 nilsson Exp $
+|| $Id: dummy.c,v 1.17 2006/07/05 02:24:22 mast Exp $
 */
 
 /*
@@ -24,6 +24,10 @@
 #endif
 
 #include <stdio.h>
+
+#ifdef HAVE_IO_H
+#include <io.h>
+#endif
 
 typedef INT64 _ll_t;
 typedef unsigned INT64 _ull_t;
