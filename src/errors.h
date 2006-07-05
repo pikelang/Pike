@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: errors.h,v 1.33 2006/07/05 19:24:18 mast Exp $
+|| $Id: errors.h,v 1.34 2006/07/05 20:24:53 mast Exp $
 */
 
 #ifdef ERR_DECLARE
@@ -48,7 +48,7 @@ struct PIKE_CONCAT(NAME,_error_struct) { \
 	       current_offset + (((char *)&(foo.NAME2))-((char *)&foo)), RUNTYPE);
 
 /* Reference foo just to avoid warning. */
-#define EMPTY &foo;
+#define EMPTY (void) &foo;
 
 #define ERR_INHERIT(NAME) \
   low_inherit(PIKE_CONCAT(NAME,_error_program),0,0,0,0,0);
