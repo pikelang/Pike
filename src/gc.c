@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.275 2006/03/10 06:58:03 mast Exp $
+|| $Id: gc.c,v 1.276 2006/07/05 02:17:09 mast Exp $
 */
 
 #include "global.h"
@@ -350,7 +350,7 @@ const char *gc_found_place = NULL;
 #ifdef DO_PIKE_CLEANUP
 /* To keep the markers after the gc. Only used for the leak report at exit. */
 int gc_keep_markers = 0;
-int gc_external_refs_zapped = 0;
+PMOD_EXPORT int gc_external_refs_zapped = 0;
 #endif
 
 #ifdef PIKE_DEBUG
@@ -1706,7 +1706,7 @@ void exit_gc(void)
 }
 
 #ifdef PIKE_DEBUG
-void gc_check_zapped (void *a, TYPE_T type, const char *file, int line)
+PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, int line)
 {
   struct marker *m = find_marker (a);
   if (m && (m->flags & GC_CLEANUP_FREED))

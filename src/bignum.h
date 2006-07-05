@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.h,v 1.29 2006/05/29 18:11:38 mast Exp $
+|| $Id: bignum.h,v 1.30 2006/07/05 02:17:09 mast Exp $
 */
 
 #include "global.h"
@@ -42,6 +42,7 @@
 #ifdef AUTO_BIGNUM
 
 /* Prototypes begin here */
+PMOD_EXPORT extern struct svalue auto_bignum_program;
 PMOD_EXPORT struct program *get_auto_bignum_program(void);
 PMOD_EXPORT struct program *get_auto_bignum_program_or_zero(void);
 void init_auto_bignum(void);

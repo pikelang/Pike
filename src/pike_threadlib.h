@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.58 2004/12/30 13:41:08 grubba Exp $
+|| $Id: pike_threadlib.h,v 1.59 2006/07/05 02:17:09 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -31,7 +31,7 @@
 #include <sys/types.h>
 #endif /* HAVE_SYS_TYPES_H */
 
-extern int threads_disabled;
+PMOD_EXPORT extern int threads_disabled;
 PMOD_EXPORT extern ptrdiff_t thread_storage_offset;
 PMOD_EXPORT extern struct program *thread_id_prog;
 
@@ -105,7 +105,7 @@ PMOD_EXPORT extern struct program *thread_id_prog;
 #endif /* FRAMEPOINTER_WAS_DEFINED */
 
 
-extern int num_threads;
+PMOD_EXPORT extern int num_threads;
 PMOD_EXPORT extern int live_threads, disallow_live_threads;
 struct object;
 PMOD_EXPORT extern size_t thread_stack_size;
@@ -662,7 +662,7 @@ PMOD_EXPORT extern const char msg_thr_swapped_over[];
      THREADS_FPRINTF(1, (stderr, "SWAP_OUT_CURRENT_THREAD() %s:%d t:%08x\n", \
 			 __FILE__, __LINE__, (unsigned int)_tmp->id))
 
-extern void debug_list_all_threads(void);
+PMOD_EXPORT extern void debug_list_all_threads(void);
 extern void dumpmem(const char *desc, void *x, int size);
 
 PMOD_EXPORT extern const char msg_saved_thread_id[];
@@ -761,7 +761,7 @@ PMOD_EXPORT extern const char msg_thr_states_mixed[];
 PMOD_EXPORT extern const char msg_thr_allow_in_gc[];
 PMOD_EXPORT extern const char msg_thr_allow_in_disabled[];
 PMOD_EXPORT extern const char msg_global_dynbuf_in_use[];
-extern dynamic_buffer pike_global_buffer;
+PMOD_EXPORT extern dynamic_buffer pike_global_buffer;
 #if defined(__ia64) && defined(__xlc__)
 /* Workaround for a code generation bug in xlc 5.5.0.0/ia64 . */
 #define DO_IF_NOT_XLC_IA64(X)

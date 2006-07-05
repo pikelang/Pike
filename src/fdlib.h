@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.h,v 1.55 2005/01/06 16:14:56 grubba Exp $
+|| $Id: fdlib.h,v 1.56 2006/07/05 02:17:09 mast Exp $
 */
 
 #ifndef FDLIB_H
@@ -428,9 +428,10 @@ typedef struct my_fd_set_s my_fd_set;
 #endif /* S_IFREG */
 #endif /* !S_ISREG */
 
-PMOD_PROTO extern int pike_make_pipe(int *fds);
-PMOD_PROTO extern int fd_from_object(struct object *o);
-PMOD_PROTO extern void create_proxy_pipe(struct object *o, int for_reading);
-PMOD_PROTO struct object *file_make_object_from_fd(int fd, int mode, int guess);
+PMOD_EXPORT int pike_make_pipe(int *fds);
+PMOD_EXPORT int fd_from_object(struct object *o);
+PMOD_EXPORT void create_proxy_pipe(struct object *o, int for_reading);
+PMOD_EXPORT struct object *file_make_object_from_fd(int fd, int mode, int guess);
+PMOD_EXPORT extern struct program *port_program;
 
 #endif /* FDLIB_H */

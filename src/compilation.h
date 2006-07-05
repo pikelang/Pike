@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: compilation.h,v 1.31 2004/03/13 14:45:05 grubba Exp $
+|| $Id: compilation.h,v 1.32 2006/07/05 02:17:09 mast Exp $
 */
 
 /*
@@ -50,7 +50,7 @@
 #define IMEMBER2(X,Y,Z,Q)
 #define ZMEMBER(X,Y,Z)
 #define ZMEMBER2(X,Y,Z,Q)
-#define SNAME(X,Y) extern struct X * Y;
+#define SNAME(X,Y) PMOD_EXPORT extern struct X * Y;
 #define SEND
 #endif
 

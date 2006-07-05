@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.h,v 1.91 2005/04/08 16:55:53 grubba Exp $
+|| $Id: object.h,v 1.92 2006/07/05 02:17:09 mast Exp $
 */
 
 #ifndef OBJECT_H
@@ -39,8 +39,8 @@ extern struct program *magic_set_index_program;
 extern struct program *magic_indices_program;
 extern struct program *magic_values_program;
 #ifdef DO_PIKE_CLEANUP
-extern int gc_external_refs_zapped;
-void gc_check_zapped (void *a, TYPE_T type, const char *file, int line);
+PMOD_EXPORT extern int gc_external_refs_zapped;
+PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, int line);
 #endif
 
 #define free_object(O) do{						\
