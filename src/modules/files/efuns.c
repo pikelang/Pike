@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.148 2005/10/24 16:30:10 grubba Exp $
+|| $Id: efuns.c,v 1.149 2006/07/05 01:06:50 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.148 2005/10/24 16:30:10 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.149 2006/07/05 01:06:50 mast Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -272,7 +272,7 @@ void f_file_truncate(INT32 args)
       DWORD err;
 #ifdef INT64
       high = len >> 32;
-      len &= (1 << 32) - 1;
+      len &= (1LL << 32) - 1;
 #else
       high = 0;
 #endif
