@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search.c,v 1.26 2005/01/20 14:29:05 nilsson Exp $
+|| $Id: pike_search.c,v 1.27 2006/07/05 19:15:35 mast Exp $
 */
 
 /* New memory searcher functions */
@@ -83,7 +83,7 @@ static void free_mem_searcher(void *m)
  ( ((PTR)[3] << 24) + ( (PTR)[2] << 16 ) +( (PTR)[1] << 8 ) +  (PTR)[0] )
 #endif /* PIKE_BYTEORDER == 4321 */
 
-#define HUBBE_ALIGN0(q) q=(char *)(PTR_TO_INT(q) & -sizeof(INT32))
+#define HUBBE_ALIGN0(q) q=(char *)(PTR_TO_INT(q) & ~(sizeof(INT32) - 1))
 #define GET_4_ALIGNED_CHARS0(PTR)  (*(INT32 *)(PTR))
 #define GET_4_UNALIGNED_CHARS0(PTR)  EXTRACT_INT(PTR)
 

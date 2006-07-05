@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_macros.h,v 1.40 2006/07/04 21:31:30 mast Exp $
+|| $Id: pike_macros.h,v 1.41 2006/07/05 19:15:35 mast Exp $
 */
 
 #ifndef MACROS_H
@@ -54,7 +54,7 @@ PMOD_EXPORT extern const char Pike_is8bitalnum_vector[];
 
 
 
-#define DO_ALIGN(X,Y) (((size_t)(X)+((Y)-1)) & -(Y))
+#define DO_ALIGN(X,Y) (((size_t)(X)+((Y)-1)) & ~((Y)-1))
 #define CONSTANT_STRLEN(X) (sizeof(X) - sizeof(""))
 
 #define SET_NEXT_AND_FREE(p,free_item) do{	\

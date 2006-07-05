@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search_engine.c,v 1.12 2004/09/18 20:19:41 per Exp $
+|| $Id: pike_search_engine.c,v 1.13 2006/07/05 19:15:35 mast Exp $
 */
 
 /*
@@ -107,7 +107,7 @@ int NameN(init_hubbe_search)(struct hubbe_searcher *s,
   hsize--;
   
   if(max > (ptrdiff_t)needlelen) max=needlelen;
-  max=(max-sizeof(INT32)+1) & -sizeof(INT32);
+  max=(max-sizeof(INT32)+1) & ~(sizeof(INT32) - 1);
   if(max > MEMSEARCH_LINKS) max=MEMSEARCH_LINKS;
   
   /* This assumes 512 buckets - Hubbe */
