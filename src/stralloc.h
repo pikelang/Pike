@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.98 2006/03/20 18:57:00 grubba Exp $
+|| $Id: stralloc.h,v 1.99 2006/07/05 02:22:43 mast Exp $
 */
 
 #ifndef STRALLOC_H
@@ -102,7 +102,10 @@ PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo);
   ((SHIFT)==0?((p_wchar0 *)(PTR))[(IND)]:(SHIFT)==1?((p_wchar1 *)(PTR))[(IND)]:((p_wchar2 *)(PTR))[(IND)])
 
 #define SET_INDEX_CHARP(PTR,IND,SHIFT,VAL) \
-  ((SHIFT)==0?(((p_wchar0 *)(PTR))[(IND)]=(VAL)):(SHIFT)==1?(((p_wchar1 *)(PTR))[(IND)]=(VAL)):(((p_wchar2 *)(PTR))[(IND)]=(VAL)))
+  ((SHIFT)==0?								\
+   (((p_wchar0 *)(PTR))[(IND)] = DO_NOT_WARN ((p_wchar0) (VAL))):	\
+   (SHIFT)==1?(((p_wchar1 *)(PTR))[(IND)] = DO_NOT_WARN ((p_wchar1) (VAL))): \
+   (((p_wchar2 *)(PTR))[(IND)] = DO_NOT_WARN ((p_wchar2) (VAL))))
 
 
 #define EXTRACT_CHARP(PTR,SHIFT) INDEX_CHARP((PTR),0,(SHIFT))
@@ -151,7 +154,7 @@ struct shared_string_location
   struct shared_string_location *next;
 };
 
-extern struct shared_string_location *all_shared_string_locations;
+PMOD_EXPORT extern struct shared_string_location *all_shared_string_locations;
 
 #define MAKE_CONST_STRING(var, text) do {		\
   static struct shared_string_location str_;		\
