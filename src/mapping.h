@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.h,v 1.62 2005/09/11 00:40:10 grendel Exp $
+|| $Id: mapping.h,v 1.63 2006/07/05 02:19:15 mast Exp $
 */
 
 #ifndef MAPPING_H
@@ -87,6 +87,12 @@ extern struct mapping *gc_internal_mapping;
 
 #endif /* PIKE_MAPPING_KEYPAIR_LOOP */
 
+#if defined(USE_DLL) && defined(DYNAMIC_MODULE)
+/* Use the function in modules so we don't have to export the block
+ * alloc stuff. */
+#define free_mapping(M) do_free_mapping (M)
+#else
+
 /** Free a previously allocated mapping. The preferred method of freeing
   * a mapping is by calling the @ref do_free_mapping function.
   *
@@ -104,6 +110,8 @@ extern struct mapping *gc_internal_mapping;
     if(!sub_ref(m_))							\
       really_free_mapping(m_);						\
   }while(0)
+
+#endif	/* !DYNAMIC_MODULE */
 
 /** Free only the mapping data leaving the mapping structure itself intact.
   *
