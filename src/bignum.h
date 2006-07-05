@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.h,v 1.30 2006/07/05 02:17:09 mast Exp $
+|| $Id: bignum.h,v 1.31 2006/07/05 21:01:04 mast Exp $
 */
 
 #include "global.h"
@@ -14,8 +14,10 @@
 
 #define INT_TYPE_SIGN(x)             ((x) < 0)
 
+#define UNSIGNED_INT_TYPE_MUL_OVERFLOW(a, b) ((b) && ((a)*(b))/(b) != (a))
+
 #ifdef HAVE_NICE_FPU_DIVISION
-#define INT_TYPE_MUL_OVERFLOW(a, b)  ((b) && ((a)*(b))/(b) != (a))
+#define INT_TYPE_MUL_OVERFLOW(a, b) UNSIGNED_INT_TYPE_MUL_OVERFLOW(a, b)
 #else
 #define INT_TYPE_MUL_OVERFLOW(a, b)                                        \
         ((b) && (INT_TYPE_DIV_OVERFLOW(a, b) || ((a)*(b))/(b) != (a)))
