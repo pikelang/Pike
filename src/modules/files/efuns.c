@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.180 2006/07/05 02:13:05 mast Exp $
+|| $Id: efuns.c,v 1.181 2006/07/05 18:07:23 mast Exp $
 */
 
 #include "global.h"
@@ -522,7 +522,7 @@ void f_file_truncate(INT32 args)
       DWORD err;
 #ifdef INT64
       high = DO_NOT_WARN ((LONG) (len >> 32));
-      len &= (1LL << 32) - 1;
+      len &= ((INT64) 1 << 32) - 1;
 #else
       high = 0;
 #endif
