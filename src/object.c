@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.269 2006/01/24 13:10:27 mast Exp $
+|| $Id: object.c,v 1.270 2006/07/05 19:24:19 mast Exp $
 */
 
 #include "global.h"
@@ -462,7 +462,7 @@ struct object *decode_value_clone_object(struct svalue *prog)
 static struct pike_string *low_read_file(const char *file)
 {
   struct pike_string *s;
-  ptrdiff_t len;
+  PIKE_OFF_T len;
   FD f;
 
   while((f = fd_open(file,fd_RDONLY,0666)) <0 && errno==EINTR)
@@ -473,11 +473,16 @@ static struct pike_string *low_read_file(const char *file)
 
     len = fd_lseek(f, 0, SEEK_END);
     fd_lseek(f, 0, SEEK_SET);
-    s = begin_shared_string(len);
+
+    if (len > MAX_INT32)
+      Pike_fatal ("low_read_file(%s): File too large: %"PRINTPIKEOFFT"d b.\n",
+		  file, len);
+
+    s = begin_shared_string (DO_NOT_WARN ((ptrdiff_t) len));
 
     while(pos<len)
     {
-      tmp = fd_read(f,s->str+pos,len-pos);
+      tmp = fd_read(f,s->str+pos, DO_NOT_WARN ((ptrdiff_t) len) - pos);
       if(tmp<=0)
       {
 	if (tmp < 0) {
@@ -488,7 +493,7 @@ static struct pike_string *low_read_file(const char *file)
 	  Pike_fatal("low_read_file(%s) failed, errno=%d\n",file,errno);
 	}
 	Pike_fatal("low_read_file(%s) failed, short read: "
-		   "%"PRINTPTRDIFFT"d < %"PRINTPTRDIFFT"d\n",
+		   "%"PRINTPIKEOFFT"d < %"PRINTPIKEOFFT"d\n",
 		   file, pos, len);
       }
       pos+=tmp;
@@ -549,8 +554,8 @@ PMOD_EXPORT struct object *get_master(void)
 
     s = NULL;
     if (!fd_stat(tmp, &stat_buf)) {
-      long ts1 = stat_buf.st_mtime;
-      long ts2 = 0;		/* FIXME: Should really be MIN_INT, but... */
+      time_t ts1 = stat_buf.st_mtime;
+      time_t ts2 = 0;
 
       if (!fd_stat(master_file, &stat_buf)) {
 	ts2 = stat_buf.st_mtime;

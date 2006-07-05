@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.190 2006/07/05 19:21:29 mast Exp $
+|| $Id: builtin.cmod,v 1.191 2006/07/05 19:24:18 mast Exp $
 */
 
 #include "global.h"
@@ -549,10 +549,10 @@ PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
 	  set->u.float_number < 0.0 || set->u.float_number > 1.0)	\
 	SIMPLE_BAD_ARG_ERROR ("Pike.gc_parameters", 1,			\
 			      "float between 0.0 and 1.0 for " NAME);	\
-      VAR = set->u.float_number;					\
+      VAR = DO_NOT_WARN ((double) set->u.float_number);			\
     }, {								\
       get.type = T_FLOAT;						\
-      get.u.float_number = VAR;						\
+      get.u.float_number = DO_NOT_WARN ((FLOAT_TYPE) VAR);		\
     });
 
   HANDLE_PARAM ("enabled", {
@@ -2034,8 +2034,6 @@ PIKECLASS multi_string_replace
   PIKEFUN void create(array(string)|mapping(string:string)|void from_arg,
 		      array(string)|string|void to_arg)
   {
-    int i;
-
     if (THIS->from) free_array(THIS->from);
     if (THIS->to) free_array(THIS->to);
     if (THIS->ctx.v) free_replace_many_context(&THIS->ctx);
@@ -2463,7 +2461,7 @@ PIKECLASS bootstring
 	    INT_TYPE p = output.s->len;
 	    while (--p>i)
 	      s[p] = s[p-1];
-	    s[p] = n;
+	    s[p] = DO_NOT_WARN ((p_wchar0) n);
 	  }
 	  break;
 	case 1:
@@ -2472,7 +2470,7 @@ PIKECLASS bootstring
 	    INT_TYPE p = output.s->len;
 	    while (--p>i)
 	      s[p] = s[p-1];
-	    s[p] = n;
+	    s[p] = DO_NOT_WARN ((p_wchar1) n);
 	  }
 	  break;
 	case 2:
@@ -2481,7 +2479,7 @@ PIKECLASS bootstring
 	    INT_TYPE p = output.s->len;
 	    while (--p>i)
 	      s[p] = s[p-1];
-	    s[p] = n;
+	    s[p] = DO_NOT_WARN ((p_wchar2) n);
 	  }
 	  break;
 	default:

@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.179 2006/02/21 07:07:50 mast Exp $
+ * $Id: backend.cmod,v 1.180 2006/07/05 19:24:16 mast Exp $
  *
  * Backend object.
  */
@@ -2903,7 +2903,7 @@ PIKECLASS Backend
 	    /* FIXME: This could be too late - the error might be
 	     * clobbered by the callbacks we might have called
 	     * above. */
-	    if (!getsockopt (fd, SOL_SOCKET, SO_ERROR, &err, &len)) {
+	    if (!getsockopt (fd, SOL_SOCKET, SO_ERROR, (void *) &err, &len)) {
 	      IF_PD (fprintf (stderr,
 			      "[%d]BACKEND[%d]: POLLERR on %d, error=%d\n",
 			      THR_NO, me->id, fd, err));
@@ -3133,7 +3133,9 @@ PIKECLASS Backend
     if (timeout.tv_sec < 0)
       push_int (0);
     else
-      push_float ((float) timeout.tv_sec + (float) timeout.tv_usec / 1e6);
+      push_float (DO_NOT_WARN ((FLOAT_TYPE)
+			       (DO_NOT_WARN ((double) timeout.tv_sec) +
+				DO_NOT_WARN ((double) timeout.tv_usec) / 1e6)));
   }
 
 #ifndef tObjImpl_THREAD

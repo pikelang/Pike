@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.320 2006/05/02 18:10:25 grubba Exp $
+|| $Id: signal_handler.c,v 1.321 2006/07/05 19:24:19 mast Exp $
 */
 
 #include "global.h"
@@ -1423,7 +1423,6 @@ static TH_RETURN_TYPE wait_thread(void *data)
  */
 static void f_pid_status_wait(INT32 args)
 {
-  int wait_for_stopped;
   if(THIS->pid == -1)
     Pike_error("This process object has no process associated with it.\n");
 
@@ -1456,7 +1455,8 @@ static void f_pid_status_wait(INT32 args)
     push_int(xcode);
   }
 #else
-
+  {
+    int wait_for_stopped;
   if (THIS->pid == getpid())
     Pike_error("Waiting for self.\n");
 
@@ -1584,6 +1584,7 @@ static void f_pid_status_wait(INT32 args)
     push_int(-2);
   } else {
     push_int(THIS->result);
+  }
   }
 #endif /* __NT__ */
 }

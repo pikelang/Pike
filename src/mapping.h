@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.h,v 1.63 2006/07/05 02:19:15 mast Exp $
+|| $Id: mapping.h,v 1.64 2006/07/05 19:24:19 mast Exp $
 */
 
 #ifndef MAPPING_H
@@ -111,7 +111,7 @@ extern struct mapping *gc_internal_mapping;
       really_free_mapping(m_);						\
   }while(0)
 
-#endif	/* !DYNAMIC_MODULE */
+#endif	/* !(USE_DLL && DYNAMIC_MODULE) */
 
 /** Free only the mapping data leaving the mapping structure itself intact.
   *

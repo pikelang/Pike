@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.81 2006/03/10 05:42:53 mast Exp $
+|| $Id: block_alloc.h,v 1.82 2006/07/05 19:24:18 mast Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -508,7 +508,7 @@ static INLINE struct DATA *						     \
  PIKE_CONCAT3(just_find_,DATA,_unlocked)(void *ptr,			     \
 					 PIKE_HASH_T hval)		     \
 {									     \
-  struct DATA *p,**pp;							     \
+  struct DATA *p;							     \
   p=PIKE_CONCAT(DATA,_hash_table)[hval];                                     \
   if(!p || p->PTR_HASH_ALLOC_DATA == ptr)				     \
   {                                                                          \

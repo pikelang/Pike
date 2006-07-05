@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.187 2006/06/21 11:33:01 mast Exp $
+|| $Id: mapping.c,v 1.188 2006/07/05 19:24:18 mast Exp $
 */
 
 #include "global.h"
@@ -117,7 +117,7 @@ BLOCK_ALLOC_FILL_PAGES(mapping, 2)
 static void check_mapping_type_fields(struct mapping *m)
 {
   INT32 e;
-  struct keypair *k=0,**prev;
+  struct keypair *k=0;
   struct mapping_data *md;
   TYPE_FIELD ind_types, val_types;
 

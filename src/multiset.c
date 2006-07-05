@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.100 2006/03/10 06:58:03 mast Exp $
+|| $Id: multiset.c,v 1.101 2006/07/05 19:24:19 mast Exp $
 */
 
 #include "global.h"
@@ -4234,6 +4234,7 @@ void init_multiset()
 #ifdef PIKE_DEBUG
   /* This test is buggy in GCC 4.0.1, hence the volatile. */
   volatile union msnode test;
+#define msnode_check(X) ((volatile union msnode *) (X))
   HDR (&test)->flags = 0;
   test.i.ind.type = (1 << 8) - 1;
   test.i.ind.subtype = (1 << 16) - 1;
@@ -4258,6 +4259,7 @@ void init_multiset()
 	       HDR(&test)->flags, MULTISET_FLAG_MASK,
 	       RB_FLAG_MASK, MULTISET_FLAG_MARKER,
 	       test.i.ind.type);
+#undef msnode_check
 #endif
 #ifndef HAVE_UNION_INIT
   svalue_int_one.u.integer = 1;

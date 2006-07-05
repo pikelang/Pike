@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.c,v 1.7 2006/02/27 12:07:10 mast Exp $
+ * $Id: pike_embed.c,v 1.8 2006/07/05 19:24:19 mast Exp $
  *
  * Pike embedding API.
  *
@@ -327,7 +327,7 @@ void init_pike_runtime(void (*exit_cb)(int))
   }
 #else /* !HAVE_GETRLIMIT || !RLIMIT_STACK */
   /* 128 MB seems a bit extreme, most OS's seem to have their limit at ~8MB */
-  Pike_interpreter.stack_top += STACK_DIRECTION * (1024*1024 * 8 - 8192 * sizeof(char *));
+  Pike_interpreter.stack_top += STACK_DIRECTION * (1024*1024 * 8 - 8192 * (ptrdiff_t) sizeof(char *));
 #ifdef STACK_DEBUG
   fprintf(stderr, "2: C-stack: 0x%08p - 0x%08p, direction:%d\n",
 	  &exit_cb, Pike_interpreter.stack_top, STACK_DIRECTION);
