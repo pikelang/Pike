@@ -1,5 +1,5 @@
 /*
- * $Id: com.c,v 1.5 2005/11/18 16:00:42 grubba Exp $
+ * $Id: com.c,v 1.6 2006/07/05 15:08:10 mast Exp $
  *
  * Pike interface to Common Object Model (COM)
  *
@@ -866,8 +866,8 @@ static void f_cval__sprintf(INT32 args)
   {
     case 'O':
       init_string_builder(&s, 0);
-      string_builder_vsprintf(&s, "Com.cval(\"%s\" %d %x)",
-			      cval->method, cval->dispid, cval->pIDispatch);
+      string_builder_sprintf(&s, "Com.cval(\"%s\" %d %x)",
+			     cval->method, cval->dispid, cval->pIDispatch);
       push_string(finish_string_builder(&s));
       stack_pop_n_elems_keep_top(args);
       return;
