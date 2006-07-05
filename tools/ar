@@ -33,7 +33,7 @@ case "`echo $CC`" in
       *d*) exit 1 ;;
       *x*) exit 1 ;;
       *q*|*r*)
-        do_cmd lib "-OUT:`fixpath $OUTPUT`" `fixpath $@`
+	do_cmd lib "-nologo -OUT:`fixpath $OUTPUT`" `fixpath $@`
         winname="`echo $OUTPUT | sed -e 's/^lib\(.*\)\.a/\1.lib/'`"
         if [ "$winname" != "$OUTPUT" ]; then
 	  # Perform the copy on the WIN32 side to make sure
