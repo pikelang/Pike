@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.189 2006/04/22 15:27:39 grubba Exp $
+|| $Id: builtin.cmod,v 1.190 2006/07/05 19:21:29 mast Exp $
 */
 
 #include "global.h"
@@ -68,6 +68,7 @@
  *!   an array of objects instead, and more information about the
  *!   symbols might be added.
  */
+PMOD_EXPORT
 PIKEFUN array(array(int|string)) _describe_program(mixed x)
      efun;
 {
@@ -110,6 +111,7 @@ PIKEFUN array(array(int|string)) _describe_program(mixed x)
  *! @seealso
  *! @[sprintf()]
  */
+PMOD_EXPORT
 PIKEFUN string basetype(mixed x)
   efun;
   optflags OPT_TRY_OPTIMIZE;
@@ -173,6 +175,7 @@ PIKEFUN string basetype(mixed x)
  *! @seealso
  *! @[sprintf()]
  */
+PMOD_EXPORT
 PIKEFUN string int2char(int|object x)
   efun;
   optflags OPT_TRY_OPTIMIZE;
@@ -225,6 +228,7 @@ PIKEFUN string int2char(int|object x)
  *! @seealso
  *! @[sprintf()]
  */
+PMOD_EXPORT
 PIKEFUN string int2hex(int|object x)
   efun;
   optflags OPT_TRY_OPTIMIZE;
@@ -303,6 +307,7 @@ static INLINE int hexchar( int v )
  *! @seealso
  *!   @[hex2string()]
  */
+PMOD_EXPORT
 PIKEFUN string string2hex(string s)
   errname String.string2hex;
   optflags OPT_TRY_OPTIMIZE;
@@ -332,6 +337,7 @@ PIKEFUN string string2hex(string s)
  *! @seealso
  *!   @[string2hex()]
  */
+PMOD_EXPORT
 PIKEFUN string hex2string(string hex)
   errname String.hex2string;
   optflags OPT_TRY_OPTIMIZE;
@@ -368,6 +374,7 @@ PIKEFUN string hex2string(string hex)
  *! @seealso
  *! @[rows()]
  */
+PMOD_EXPORT
 PIKEFUN array column(array data, mixed index)
   efun;
   optflags OPT_TRY_OPTIMIZE;
@@ -383,6 +390,7 @@ PIKEFUN array column(array data, mixed index)
  *! @[aggregate_multiset()]
  *!
  */
+PMOD_EXPORT
 PIKEFUN multiset(1) mkmultiset(array(1=mixed) a)
   efun;
   optflags OPT_TRY_OPTIMIZE|OPT_EXTERNAL_DEPEND;
@@ -435,6 +443,7 @@ PIKEFUN multiset(1) mkmultiset(array(1=mixed) a)
  *! @returns
  *!   The old trace level in the current thread is returned.
  */
+PMOD_EXPORT
 PIKEFUN int trace(int level, void|string facility, void|int all_threads)
   efun;
   optflags OPT_SIDE_EFFECT;
@@ -509,6 +518,7 @@ PIKEFUN int trace(int level, void|string facility, void|int all_threads)
  *! @seealso
  *!   @[gc], @[Debug.gc_status]
  */
+PMOD_EXPORT
 PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
   errname Pike.gc_parameters;
   optflags OPT_SIDE_EFFECT;
@@ -586,6 +596,7 @@ PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
  *! @seealso
  *! @[time()], @[localtime()], @[mktime()], @[gmtime()]
  */
+PMOD_EXPORT
 PIKEFUN string ctime(int timestamp)
   efun;
   optflags OPT_TRY_OPTIMIZE;
@@ -610,6 +621,7 @@ PIKEFUN string ctime(int timestamp)
  *! @seealso
  *! @[indices()], @[values()]
  */
+PMOD_EXPORT
 PIKEFUN mapping(1:2) mkmapping(array(1=mixed) ind, array(2=mixed) val)
   efun;
   optflags OPT_TRY_OPTIMIZE|OPT_EXTERNAL_DEPEND;
@@ -634,6 +646,7 @@ PIKEFUN mapping(1:2) mkmapping(array(1=mixed) ind, array(2=mixed) val)
  *! @seealso
  *! @[search()], @[`/()]
  */
+PMOD_EXPORT
 PIKEFUN int string_count(string haystack, string needle)
   errname String.count;
   optflags OPT_TRY_OPTIMIZE;
@@ -672,6 +685,7 @@ PIKEFUN int string_count(string haystack, string needle)
  *!
  *! Trim leading and trailing spaces and tabs from the string @[s].
  */
+PMOD_EXPORT
 PIKEFUN string string_trim_whites (string s)
   errname String.trim_whites;
   optflags OPT_TRY_OPTIMIZE;
@@ -704,6 +718,7 @@ PIKEFUN string string_trim_whites (string s)
  *! Trim leading and trailing white spaces characters (space, tab,
  *! newline and carriage return) from the string @[s].
  */
+PMOD_EXPORT
 PIKEFUN string string_trim_all_whites (string s)
   errname String.trim_all_whites;
   optflags OPT_TRY_OPTIMIZE;
@@ -737,6 +752,7 @@ PIKEFUN string string_trim_all_whites (string s)
  *!
  *! Returns 1 if @[prog] implements @[api].
  */
+PMOD_EXPORT
 PIKEFUN int program_implements(program prog, program api)
   errname Program.implements;
   optflags OPT_TRY_OPTIMIZE;
@@ -749,6 +765,7 @@ PIKEFUN int program_implements(program prog, program api)
  *!
  *! Returns 1 if @[child] has inherited @[parent].
  */
+PMOD_EXPORT
 PIKEFUN int program_inherits(program parent, program child)
   errname Program.inherits;
   optflags OPT_TRY_OPTIMIZE;
@@ -767,6 +784,7 @@ PIKEFUN int program_inherits(program parent, program child)
  *! If it cannot be determined where the program was defined, @expr{0@}
  *! (zero) will be returned.
  */
+PMOD_EXPORT
 PIKEFUN string program_defined(program p)
   errname Program.defined;
   optflags OPT_TRY_OPTIMIZE;
@@ -804,6 +822,7 @@ PIKEFUN string program_defined(program p)
  *!     The string @[s] contains characters >= 65536.
  *! @endint
  */
+PMOD_EXPORT
 PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
   errname String.width;
   optflags OPT_TRY_OPTIMIZE;
@@ -830,6 +849,7 @@ PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
  *! @seealso
  *!   @[mappingp()]
  */
+PMOD_EXPORT
 PIKEFUN mixed m_delete(object|mapping map, mixed index)
   efun;
   optflags OPT_SIDE_EFFECT;
@@ -866,6 +886,7 @@ PIKEFUN mixed m_delete(object|mapping map, mixed index)
  *! Returns the weak flag settings for @[m]. It's a combination of
  *! @[Pike.WEAK_INDICES] and @[Pike.WEAK_VALUES].
  */
+PMOD_EXPORT
 PIKEFUN int get_weak_flag(array m)
   efun;
   optflags OPT_EXTERNAL_DEPEND;
@@ -873,11 +894,13 @@ PIKEFUN int get_weak_flag(array m)
   RETURN (m->flags & ARRAY_WEAK_FLAG) ? PIKE_WEAK_VALUES : 0;
 }
 
+PMOD_EXPORT
 PIKEFUN int get_weak_flag(mapping m)
 {
   RETURN  mapping_get_flags(m) & MAPPING_WEAK;
 }
 
+PMOD_EXPORT
 PIKEFUN int get_weak_flag(multiset m)
 {
   RETURN multiset_get_flags(m) & MULTISET_WEAK;
@@ -908,6 +931,7 @@ PIKEFUN program __empty_program(int|void line, string|void file)
  *! @seealso
  *! @[function_object()]
  */
+PMOD_EXPORT
 PIKEFUN string function_name(program|function func)
   efun;
   optflags OPT_TRY_OPTIMIZE;
@@ -991,6 +1015,7 @@ PIKEFUN string function_name(program|function func)
  *! @seealso
  *!   @[function_name()], @[function_program()]
  */
+PMOD_EXPORT
 PIKEFUN object function_object(function|program func)
   efun;
   optflags OPT_TRY_OPTIMIZE;
@@ -1034,6 +1059,7 @@ PIKEFUN object function_object(function|program func)
  *! @seealso
  *!   @[function_name()], @[function_object()]
  */
+PMOD_EXPORT
 PIKEFUN program function_program(program|function func)
   efun;
   optflags OPT_TRY_OPTIMIZE;
@@ -1093,6 +1119,7 @@ PIKEFUN program function_program(program|function func)
  *!   @[predef::random()]
  */
 
+PMOD_EXPORT
 PIKEFUN mixed random(object o)
   efun;
   optflags OPT_TRY_OPTIMIZE|OPT_EXTERNAL_DEPEND;
@@ -1111,12 +1138,14 @@ PIKEFUN mixed random(object o)
  *!   @[random_seed()]
  */
 
+PMOD_EXPORT
 PIKEFUN int random(int i)
 {
   if(i <= 0) RETURN 0;
   RETURN  my_rand() % i;
 }      
 
+PMOD_EXPORT
 PIKEFUN float random(float f)
 {
   if(f<=0.0) RETURN 0.0;
@@ -1130,6 +1159,7 @@ PIKEFUN float random(float f)
  *!   Returns a random element from @[x].
  */
 
+PMOD_EXPORT
 PIKEFUN mixed random(array a)
      rawtype tFunc(tArr(tSetvar(0,tMix)),tVar(0));
 {
@@ -1140,6 +1170,7 @@ PIKEFUN mixed random(array a)
   pop_stack();
 }
 
+PMOD_EXPORT
 PIKEFUN mixed random(multiset m)
      rawtype tFunc(tSet(tSetvar(1,tMix)),tVar(1));
 {
@@ -1165,6 +1196,7 @@ PIKEFUN mixed random(multiset m)
  *!   Returns a random index-value pair from the mapping.
  */
 
+PMOD_EXPORT
 PIKEFUN array random(mapping m)
 {
   struct mapping_data *md=m->data;
