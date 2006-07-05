@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.210 2006/04/25 18:29:50 neotron Exp $
+|| $Id: stralloc.c,v 1.211 2006/07/05 02:22:21 mast Exp $
 */
 
 #include "global.h"
@@ -2011,7 +2011,7 @@ void init_shared_string_table(void)
 }
 
 #ifdef DO_PIKE_CLEANUP
-struct shared_string_location *all_shared_string_locations;
+PMOD_EXPORT struct shared_string_location *all_shared_string_locations;
 #endif
 
 

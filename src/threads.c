@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.250 2006/04/25 18:22:53 neotron Exp $
+|| $Id: threads.c,v 1.251 2006/07/05 02:22:56 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
@@ -667,7 +667,7 @@ PMOD_EXPORT void f_all_threads(INT32 args)
 }
 
 #ifdef PIKE_DEBUG
-void debug_list_all_threads(void)
+PMOD_EXPORT void debug_list_all_threads(void)
 {
   INT32 x;
   struct thread_state *s;
