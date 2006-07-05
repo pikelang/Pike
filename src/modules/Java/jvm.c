@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.51 2005/05/26 12:50:26 grubba Exp $
+|| $Id: jvm.c,v 1.52 2006/07/05 00:19:55 mast Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.51 2005/05/26 12:50:26 grubba Exp $");
+RCSID("$Id: jvm.c,v 1.52 2006/07/05 00:19:55 mast Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -781,9 +781,8 @@ static void free_jargs(jvalue *jargs, INT32 args, char *dorelease, char *sig,
 static void f_call_static(INT32 args)
 {
   struct method_storage *m=THIS_METHOD;
-  jvalue *jargs = (m->nargs>0?(jvalue *)xalloc(m->nargs*sizeof(jvalue)):NULL);
-  char *dorelease = (m->nargs>0?(char *)xalloc(m->nargs*sizeof(char)):NULL);
-
+  jvalue *jargs;
+  char *dorelease;
   JNIEnv *env;
   struct jobj_storage *co = THAT_JOBJ(m->class);
   jclass class = co->jobj;
@@ -798,6 +797,8 @@ static void f_call_static(INT32 args)
     return;
   }
 
+  jargs = (m->nargs>0?(jvalue *)xalloc(m->nargs*sizeof(jvalue)):NULL);
+  dorelease = (m->nargs>0?(char *)xalloc(m->nargs*sizeof(char)):NULL);
   make_jargs(jargs, args, dorelease, m->sig->str, co->jvm, env);
 
   switch(m->rettype) {
@@ -886,9 +887,8 @@ static void f_call_static(INT32 args)
 static void f_call_virtual(INT32 args)
 {
   struct method_storage *m=THIS_METHOD;
-  jvalue *jargs = (m->nargs>0?(jvalue *)xalloc(m->nargs*sizeof(jvalue)):NULL);
-  char *dorelease = (m->nargs>0?(char *)xalloc(m->nargs*sizeof(char)):NULL);
-
+  jvalue *jargs;
+  char *dorelease;
   JNIEnv *env;
   struct jobj_storage *co = THAT_JOBJ(m->class);
   jclass class = co->jobj;
@@ -909,6 +909,8 @@ static void f_call_virtual(INT32 args)
     return;
   }
 
+  jargs = (m->nargs>0?(jvalue *)xalloc(m->nargs*sizeof(jvalue)):NULL);
+  dorelease = (m->nargs>0?(char *)xalloc(m->nargs*sizeof(char)):NULL);
   make_jargs(jargs, args-1, dorelease, m->sig->str, co->jvm, env);
 
   switch(m->rettype) {
@@ -997,9 +999,8 @@ static void f_call_virtual(INT32 args)
 static void f_call_nonvirtual(INT32 args)
 {
   struct method_storage *m=THIS_METHOD;
-  jvalue *jargs = (m->nargs>0?(jvalue *)xalloc(m->nargs*sizeof(jvalue)):NULL);
-  char *dorelease = (m->nargs>0?(char *)xalloc(m->nargs*sizeof(char)):NULL);
-
+  jvalue *jargs;
+  char *dorelease;
   JNIEnv *env;
   struct jobj_storage *co = THAT_JOBJ(m->class);
   jclass class = co->jobj;
@@ -1020,6 +1021,8 @@ static void f_call_nonvirtual(INT32 args)
     return;
   }
 
+  jargs = (m->nargs>0?(jvalue *)xalloc(m->nargs*sizeof(jvalue)):NULL);
+  dorelease = (m->nargs>0?(char *)xalloc(m->nargs*sizeof(char)):NULL);
   make_jargs(jargs, args-1, dorelease, m->sig->str, co->jvm, env);
 
   switch(m->rettype) {
