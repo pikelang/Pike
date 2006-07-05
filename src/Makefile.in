@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.434 2006/07/04 23:46:26 mast Exp $
+# $Id: Makefile.in,v 1.435 2006/07/05 00:05:44 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -299,7 +299,7 @@ libpike.a: $(OBJ) modules/linker_options post_modules/linker_options
 
 # tpike is a pike with no post modules compiled in. It's used during
 # building of the post modules.
-tpike-real: main.o $(CORE_OBJ) tmodule.o master-stamp pike.syms modules/linker_options
+tpike-real tpike.lib: main.o $(CORE_OBJ) tmodule.o master-stamp pike.syms modules/linker_options
 	-@rm -f tpike || :
 	$(LD) $(LDFLAGS) main.o $(CORE_OBJ) tmodule.o \
 	  `cat modules/linker_options` \
@@ -1052,7 +1052,7 @@ static-modules-stamp: $(MODULE_REQUIREMENTS)
 	) || exit $$?
 	@touch static-modules-stamp
 
-dynamic_module_objects: $(MODULE_REQUIREMENTS) tpike
+dynamic_module_objects: $(MODULE_REQUIREMENTS) @LDSHARED_BASE_REQS@
 	@MODULE_BUILD_TYPE=dynamic; \
 	export MODULE_BUILD_TYPE; \
 	( cd modules && ( rm remake >/dev/null 2>&1 || : ) && \
@@ -1061,7 +1061,7 @@ dynamic_module_objects: $(MODULE_REQUIREMENTS) tpike
 	) || exit $$?
 	@touch dynamic-modules-stamp
 
-dynamic-modules-stamp: $(MODULE_REQUIREMENTS) tpike
+dynamic-modules-stamp: $(MODULE_REQUIREMENTS) @LDSHARED_BASE_REQS@
 	@MODULE_BUILD_TYPE=dynamic; \
 	export MODULE_BUILD_TYPE; \
 	( cd modules && ( rm remake >/dev/null 2>&1 || : ) && \
@@ -1110,7 +1110,7 @@ post-static-modules-stamp: $(MODULE_REQUIREMENTS) tpike-complete-stamp
 	) || exit $$?
 	@touch post-static-modules-stamp
 
-post_dynamic_module_objects: $(MODULE_REQUIREMENTS) tpike-complete-stamp
+post_dynamic_module_objects: $(MODULE_REQUIREMENTS) tpike-complete-stamp @LDSHARED_BASE_REQS@
 	@MODULE_BUILD_TYPE=dynamic; \
 	export MODULE_BUILD_TYPE; \
 	( cd post_modules && ( rm remake >/dev/null 2>&1 || : ) && \
@@ -1119,7 +1119,7 @@ post_dynamic_module_objects: $(MODULE_REQUIREMENTS) tpike-complete-stamp
 	) || exit $$?
 	@touch post-dynamic-modules-stamp
 
-post-dynamic-modules-stamp: $(MODULE_REQUIREMENTS) tpike-complete-stamp
+post-dynamic-modules-stamp: $(MODULE_REQUIREMENTS) tpike-complete-stamp @LDSHARED_BASE_REQS@
 	@MODULE_BUILD_TYPE=dynamic; \
 	export MODULE_BUILD_TYPE; \
 	( cd post_modules && ( rm remake >/dev/null 2>&1 || : ) && \
