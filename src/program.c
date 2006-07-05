@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.603 2006/07/05 19:28:11 mast Exp $
+|| $Id: program.c,v 1.604 2006/07/05 20:47:53 mast Exp $
 */
 
 #include "global.h"
@@ -3804,12 +3804,12 @@ void check_for_facet_inherit(struct program *p)
 /*
  * make this program inherit another program
  */
-void low_inherit(struct program *p,
-		 struct object *parent,
-		 int parent_identifier,
-		 int parent_offset,
-		 INT32 flags,
-		 struct pike_string *name)
+PMOD_EXPORT void low_inherit(struct program *p,
+			     struct object *parent,
+			     int parent_identifier,
+			     int parent_offset,
+			     INT32 flags,
+			     struct pike_string *name)
 {
   int e;
   ptrdiff_t inherit_offset, storage_offset;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.224 2006/07/05 19:28:11 mast Exp $
+|| $Id: program.h,v 1.225 2006/07/05 20:47:53 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -708,12 +708,12 @@ int find_inherit(struct program *p, struct pike_string *name);
 node *reference_inherited_identifier(struct pike_string *super_name,
 				     struct pike_string *function_name);
 void rename_last_inherit(struct pike_string *n);
-void low_inherit(struct program *p,
-		 struct object *parent,
-		 int parent_identifier,
-		 int parent_offset,
-		 INT32 flags,
-		 struct pike_string *name);
+PMOD_EXPORT void low_inherit(struct program *p,
+			     struct object *parent,
+			     int parent_identifier,
+			     int parent_offset,
+			     INT32 flags,
+			     struct pike_string *name);
 PMOD_EXPORT void do_inherit(struct svalue *s,
 		INT32 flags,
 		struct pike_string *name);
