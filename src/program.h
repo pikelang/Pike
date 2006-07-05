@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.222 2006/04/27 09:37:33 tor Exp $
+|| $Id: program.h,v 1.223 2006/07/05 02:21:21 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -20,7 +20,7 @@
 #include "block_alloc_h.h"
 
 /* Needed to support dynamic loading on NT */
-PMOD_PROTO extern struct program_state * Pike_compiler;
+PMOD_EXPORT extern struct program_state * Pike_compiler;
 
 /* Compilation flags */
 #define COMPILATION_CHECK_FINAL         0x01
@@ -586,10 +586,15 @@ static INLINE int CHECK_IDREF_RANGE (int x, const struct program *p)
 #define QUICK_FIND_LFUN(P,N) (dmalloc_touch(struct program *,(P))->lfuns[N])
 
 #ifdef DO_PIKE_CLEANUP
-extern int gc_external_refs_zapped;
-void gc_check_zapped (void *a, TYPE_T type, const char *file, int line);
+PMOD_EXPORT extern int gc_external_refs_zapped;
+PMOD_EXPORT void gc_check_zapped (void *a, TYPE_T type, const char *file, int line);
 #endif
 
+#if defined (USE_DLL) && defined (DYNAMIC_MODULE)
+/* Use the function in modules so we don't have to export the block
+ * alloc stuff. */
+#define free_program(p) do_free_program(p)
+#else
 #define free_program(p) do{						\
     struct program *_=(p);						\
     debug_malloc_touch(_);						\
@@ -600,6 +605,7 @@ void gc_check_zapped (void *a, TYPE_T type, const char *file, int line);
     if(!sub_ref(_))							\
       really_free_program(_);						\
   }while(0)
+#endif
 
 BLOCK_ALLOC_FILL_PAGES(program, n/a);
 
@@ -648,6 +654,7 @@ struct Supporter
 
 
 /* Prototypes begin here */
+PMOD_EXPORT void do_free_program (struct program *p);
 void ins_int(INT32 i, void (*func)(char tmp));
 void ins_short(int i, void (*func)(char tmp));
 void add_relocated_int_to_program(INT32 i);
@@ -688,8 +695,8 @@ PMOD_EXPORT void set_init_callback(void (*init_callback)(struct object *));
 PMOD_EXPORT void set_exit_callback(void (*exit_callback)(struct object *));
 PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *));
 PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *));
-void pike_set_prog_event_callback(void (*cb)(int));
-void pike_set_prog_optimize_callback(node *(*opt)(node *));
+PMOD_EXPORT void pike_set_prog_event_callback(void (*cb)(int));
+PMOD_EXPORT void pike_set_prog_optimize_callback(node *(*opt)(node *));
 int really_low_reference_inherited_identifier(struct program_state *q,
 					      int e,
 					      int i);
@@ -779,7 +786,7 @@ INT32 define_function(struct pike_string *name,
 int really_low_find_shared_string_identifier(struct pike_string *name,
 					     struct program *prog,
 					     int flags);
-int low_find_lfun(struct program *p, ptrdiff_t lfun);
+PMOD_EXPORT int low_find_lfun(struct program *p, ptrdiff_t lfun);
 int lfun_lookup_id(struct pike_string *lfun_name);
 int low_find_shared_string_identifier(struct pike_string *name,
 				      struct program *prog);
@@ -877,7 +884,6 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor);
 void make_program_executable(struct program *p);
 /* Prototypes end here */
 
-void really_free_program(struct program *);
 void count_memory_in_programs(INT32*,INT32*);
 
 #ifndef PIKE_USE_MACHINE_CODE
