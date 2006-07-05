@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.106 2005/02/03 15:42:45 grubba Exp $
+|| $Id: global.h,v 1.107 2006/07/05 00:12:44 mast Exp $
 */
 
 #ifndef GLOBAL_H
@@ -401,29 +401,22 @@ typedef struct p_wchar_p
 #endif
 #endif
 
-/* PMOD_EXPORT exports a function / variable / whatever.
- * Putting PMOD_PROTO in front of a prototype does nothing.
- */
+/* PMOD_EXPORT exports a function / variable vfsh. */
 #ifndef PMOD_EXPORT
-#ifdef __NT__
-#ifdef DYNAMIC_MODULE
-#ifdef _M_IA64
-/* Make sure we use long calls to functions in the main binary. */
-#define PMOD_EXPORT	__declspec(dllimport)
-#endif /* _M_IA64 */
-#else /* !DYNAMIC_MODULE */
-/* #define PMOD_EXPORT	__declspec(dllexport) */
-#endif /* DYNAMIC_MODULE */
-#endif /* __NT__ */
-#ifndef PMOD_EXPORT
-#define PMOD_EXPORT
-#endif /* !PMOD_EXPORT */
-#endif /* !PMOD_EXPORT */
+# if defined (__NT__) && defined (USE_DLL)
+#  ifdef DYNAMIC_MODULE
+#   define PMOD_EXPORT __declspec(dllimport)
+#  else
+/* A pmod export becomes an import in the dynamic module. This means
+ * that modules can't use PMOD_EXPORT for identifiers they export
+ * themselves, unless they are compiled statically. */
+#   define PMOD_EXPORT __declspec(dllexport)
+#  endif
+# else
+#  define PMOD_EXPORT
+# endif
+#endif
 
-
-/* PMOD_PROTO is essentially the same as PMOD_EXPORT, but
- * it exports the identifier even if it only a prototype.
- */
 #ifndef PMOD_PROTO
 #define PMOD_PROTO
 #endif
