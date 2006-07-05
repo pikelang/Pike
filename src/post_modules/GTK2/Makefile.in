@@ -51,9 +51,9 @@ compile1:
 	  done; \
 	else :; fi
 	@echo "Original CFLAGS:$(CFLAGS)"
-	@echo "Modified CFLAGS:`echo ' $(CFLAGS) ' | sed -e 's/ -g[^ ]*//g' -e 's/ -W[^ ]*//g'` `echo ' $(CFLAGS) ' | sed -e 's/.*\( -gcc-version[^ ]*\).*/\1/'`"
+	@echo "Modified CFLAGS:`echo ' $(CFLAGS) ' | sed -e 's/ -g[^ ]*//g' -e 's/ -W[^ ]*//g'` `echo ' $(CFLAGS) ' | sed -ne 's/.*\( -gcc-version[^ ]*\).*/\1/p'`"
 	@$(MAKE) OBJS="`cat files_to_compile`" \
-	         CFLAGS="`echo ' $(CFLAGS) ' | sed -e 's/ -g[^ ]*/ /g' -e 's/ -W[^ ]*/ /g'` `echo ' $(CFLAGS) ' | sed -e 's/.*\( -gcc-version[^ ]*\).*/\1/'`" \
+		 CFLAGS="`echo ' $(CFLAGS) ' | sed -e 's/ -g[^ ]*/ /g' -e 's/ -W[^ ]*/ /g'` `echo ' $(CFLAGS) ' | sed -ne 's/.*\( -gcc-version[^ ]*\).*/\1/p'`" \
 	         all
 
 compile2: compile1
