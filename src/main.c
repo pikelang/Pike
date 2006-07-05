@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.224 2005/05/20 10:39:04 mast Exp $
+|| $Id: main.c,v 1.225 2006/07/05 00:37:18 mast Exp $
 */
 
 #include "global.h"
@@ -171,8 +171,6 @@ static void (*init_pike_runtime)(void (*exit_cb)(int));
 static void find_lib_dir(int argc, char **argv)
 {
   int e;
-  char *p;
-  char *dir;
 
   TRACE((stderr, "find_lib_dir...\n"));
   
@@ -216,25 +214,30 @@ static void find_lib_dir(int argc, char **argv)
       break;
     }
   }
+
 #ifdef LIBPIKE
-  memcpy(libpike_file, master_location + CONSTANT_STRLEN(MASTER_COOKIE),
-	 sizeof(master_location) - CONSTANT_STRLEN(MASTER_COOKIE));
-  for (p = dir = libpike_file; *p; p++) {
-    if ((*p == '/')
+  {
+    char *p;
+    char *dir;
+    memcpy(libpike_file, master_location + CONSTANT_STRLEN(MASTER_COOKIE),
+	   sizeof(master_location) - CONSTANT_STRLEN(MASTER_COOKIE));
+    for (p = dir = libpike_file; *p; p++) {
+      if ((*p == '/')
 #ifdef __NT__
-	|| (*p == '\\')
+	  || (*p == '\\')
 #endif /* __NT__ */
-	)
-      dir = p+1;
+	 )
+	dir = p+1;
+    }
+    if ((p + CONSTANT_STRLEN("pike.so")) >= libpike_file + 2*MAXPATHLEN) {
+      /* Not likely to happen as long as MASTER_COOKIE is longer than "pike.so".
+       */
+      fprintf(stderr, "Too long path to pike.so.\n");
+      exit(1);
+    }
+    /* Don't forget the NUL! */
+    memcpy(p, "pike.so", CONSTANT_STRLEN("pike.so") + 1);
   }
-  if ((p + CONSTANT_STRLEN("pike.so")) >= libpike_file + 2*MAXPATHLEN) {
-    /* Not likely to happen as long as MASTER_COOKIE is longer than "pike.so".
-     */
-    fprintf(stderr, "Too long path to pike.so.\n");
-    exit(1);
-  }
-  /* Don't forget the NUL! */
-  memcpy(p, "pike.so", CONSTANT_STRLEN("pike.so") + 1);
 #endif /* LIBPIKE */
 }
 
@@ -243,7 +246,6 @@ int main(int argc, char **argv)
   JMP_BUF back;
   int e, num;
   char *p;
-  struct array *a;
 
   TRACE((stderr, "Init master...\n"));
   
