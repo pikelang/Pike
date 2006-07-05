@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fsort.c,v 1.24 2004/12/30 13:41:08 grubba Exp $
+|| $Id: fsort.c,v 1.25 2006/07/05 19:28:09 mast Exp $
 */
 
 /* fsort- a smarter quicksort /Hubbe */
@@ -81,10 +81,10 @@
 #undef EXTRA_ARGS
 #undef XARGS
 
-void fsort(void *base,
-	   long elms,
-	   long elmSize,
-	   fsortfun cmpfunc)
+PMOD_EXPORT void fsort(void *base,
+		       long elms,
+		       long elmSize,
+		       fsortfun cmpfunc)
 {
 
   if(elms<=0) return;

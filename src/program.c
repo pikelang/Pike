@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.602 2006/07/05 02:21:51 mast Exp $
+|| $Id: program.c,v 1.603 2006/07/05 19:28:11 mast Exp $
 */
 
 #include "global.h"
@@ -6073,7 +6073,7 @@ PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
   return NULL;
 }
 
-void va_yyerror(const char *fmt, va_list args)
+PMOD_EXPORT void va_yyerror(const char *fmt, va_list args)
 {
   struct string_builder s;
   struct pike_string *tmp;
@@ -6084,7 +6084,7 @@ void va_yyerror(const char *fmt, va_list args)
   free_string(tmp);
 }
 
-void my_yyerror(const char *fmt,...)
+PMOD_EXPORT void my_yyerror(const char *fmt,...)
 {
   va_list args;
   va_start(args,fmt);

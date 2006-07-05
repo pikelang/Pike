@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.369 2006/04/02 16:40:03 grubba Exp $
+|| $Id: language.yacc,v 1.370 2006/07/05 19:28:10 mast Exp $
 */
 
 %pure_parser
@@ -4076,7 +4076,7 @@ void low_yyerror(struct pike_string *str)
   STACK_LEVEL_DONE(0);
 }
 
-void yyerror(char *str)
+PMOD_EXPORT void yyerror(char *str)
 {
   push_text(str);
   low_yyerror(Pike_sp[-1].u.string);

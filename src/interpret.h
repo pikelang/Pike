@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.168 2006/03/25 16:31:59 grubba Exp $
+|| $Id: interpret.h,v 1.169 2006/07/05 19:28:10 mast Exp $
 */
 
 #ifndef INTERPRET_H
@@ -729,7 +729,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
 void low_return(void);
 void low_return_pop(void);
 void unlink_previous_frame(void);
-void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
+PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
 PMOD_EXPORT void f_call_function(INT32 args);
 PMOD_EXPORT void call_handle_error(void);
 PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset);

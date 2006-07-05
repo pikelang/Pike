@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.178 2006/07/04 16:14:25 mast Exp $
+|| $Id: pike_memory.c,v 1.179 2006/07/05 19:28:10 mast Exp $
 */
 
 #include "global.h"
@@ -545,7 +545,7 @@ static struct mexec_block *low_mexec_alloc(struct mexec_hdr *hdr, size_t sz)
   return res;
 }
 
-void mexec_free(void *ptr)
+PMOD_EXPORT void mexec_free(void *ptr)
 {
   struct mexec_free_block *prev_prev = NULL;
   struct mexec_free_block *prev = NULL;
@@ -620,7 +620,7 @@ void mexec_free(void *ptr)
   verify_mexec_hdr(hdr);
 }
 
-void *mexec_alloc(size_t sz)
+PMOD_EXPORT void *mexec_alloc(size_t sz)
 {
   struct mexec_hdr *hdr;
   struct mexec_block *res;
@@ -663,7 +663,7 @@ void *mexec_alloc(size_t sz)
   return res + 1;
 }
 
-void *mexec_realloc(void *ptr, size_t sz)
+PMOD_EXPORT void *mexec_realloc(void *ptr, size_t sz)
 {
   struct mexec_hdr *hdr;
   struct mexec_hdr *old_hdr = NULL;
@@ -779,7 +779,7 @@ void *mexec_realloc(void *ptr, size_t sz)
 
 #elif defined (VALGRIND_DISCARD_TRANSLATIONS)
 
-void *mexec_alloc (size_t sz)
+PMOD_EXPORT void *mexec_alloc (size_t sz)
 {
   size_t *blk = malloc (sz + sizeof (size_t));
   if (!blk) return NULL;
@@ -787,7 +787,7 @@ void *mexec_alloc (size_t sz)
   return blk + 1;
 }
 
-void *mexec_realloc (void *ptr, size_t sz)
+PMOD_EXPORT void *mexec_realloc (void *ptr, size_t sz)
 {
   if (ptr) {
     size_t *oldblk = ptr;
@@ -804,7 +804,7 @@ void *mexec_realloc (void *ptr, size_t sz)
   return mexec_malloc (sz);
 }
 
-void mexec_free (void *ptr)
+PMOD_EXPORT void mexec_free (void *ptr)
 {
   size_t *blk = ptr;
   VALGRIND_DISCARD_TRANSLATIONS (blk, blk[-1]);
@@ -813,16 +813,16 @@ void mexec_free (void *ptr)
 
 #else  /* !(HAVE_MMAP && MEXEC_USES_MMAP) && !VALGRIND_DISCARD_TRANSLATIONS */
 
-void *mexec_alloc(size_t sz)
+PMOD_EXPORT void *mexec_alloc(size_t sz)
 {
   return malloc(sz);
 }
-void *mexec_realloc(void *ptr, size_t sz)
+PMOD_EXPORT void *mexec_realloc(void *ptr, size_t sz)
 {
   if (ptr) return realloc(ptr, sz);
   return malloc(sz);
 }
-void mexec_free(void *ptr)
+PMOD_EXPORT void mexec_free(void *ptr)
 {
   free(ptr);
 }

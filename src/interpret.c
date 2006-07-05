@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.377 2006/03/17 18:01:48 grubba Exp $
+|| $Id: interpret.c,v 1.378 2006/07/05 19:28:10 mast Exp $
 */
 
 #include "global.h"
@@ -2159,7 +2159,7 @@ static void restore_catching_eval_jmpbuf (LOW_JMP_BUF *p)
   Pike_interpreter.catching_eval_jmpbuf = p;
 }
 
-void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
+PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
   /* The C stack margin is normally 8 kb, but if we get here during a
    * lowered margin then don't fail just because of that, unless it's

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fsort.h,v 1.6 2002/10/11 01:39:31 nilsson Exp $
+|| $Id: fsort.h,v 1.7 2006/07/05 19:28:09 mast Exp $
 */
 
 #ifndef FSORT_H
@@ -11,10 +11,10 @@
 typedef int (*fsortfun)(const void *,const void *);
 
 /* Prototypes begin here */
-void fsort(void *base,
-	   long elms,
-	   long elmSize,
-	   fsortfun cmpfunc);
+PMOD_EXPORT void fsort(void *base,
+		       long elms,
+		       long elmSize,
+		       fsortfun cmpfunc);
 /* Prototypes end here */
 
 

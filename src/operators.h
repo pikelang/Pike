@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.h,v 1.18 2005/09/15 11:57:42 grubba Exp $
+|| $Id: operators.h,v 1.19 2006/07/05 19:28:10 mast Exp $
 */
 
 #ifndef OPERATORS_H
@@ -37,7 +37,7 @@ struct string_assignment_storage
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind);
 void o_index(void);
 void o_cast_to_int(void);
-void o_cast_to_string(void);
+PMOD_EXPORT void o_cast_to_string(void);
 void o_cast(struct pike_type *type, INT32 run_time_type);
 PMOD_EXPORT void f_cast(void);
 

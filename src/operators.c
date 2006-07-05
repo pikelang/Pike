@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.210 2006/04/25 18:29:49 neotron Exp $
+|| $Id: operators.c,v 1.211 2006/07/05 19:28:10 mast Exp $
 */
 
 #include "global.h"
@@ -336,7 +336,7 @@ void o_cast_to_int(void)
 }
 
 /* Special case for casting to string. */
-void o_cast_to_string(void)
+PMOD_EXPORT void o_cast_to_string(void)
 {
   char buf[200];
   switch(sp[-1].type)

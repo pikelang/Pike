@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.254 2006/07/05 19:26:26 mast Exp $
+|| $Id: pike_types.c,v 1.255 2006/07/05 19:28:10 mast Exp $
 */
 
 #include "global.h"
@@ -143,7 +143,7 @@ struct pike_type *debug_compiler_pop_type(void)
   }
 }
 
-char *get_name_of_type(TYPE_T t)
+PMOD_EXPORT char *get_name_of_type(TYPE_T t)
 {
   switch(t)
   {
