@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.h,v 1.57 2006/07/05 19:08:34 mast Exp $
+|| $Id: fdlib.h,v 1.58 2006/07/05 19:11:09 mast Exp $
 */
 
 #ifndef FDLIB_H
@@ -278,7 +278,10 @@ PMOD_EXPORT void closedir(DIR *dir);
 #define HAVE_POSIX_READDIR_R
 
 /* Do not use these... */
+#if 0
+/* Why not? Want to use this one for _getdrive. /mast */
 #undef HAVE_DIRECT_H
+#endif
 #undef HAVE_NDIR_H
 #undef HAVE_SYS_NDIR_H
 #undef HAVE_DIRENT_H

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.83 2006/07/05 18:07:23 mast Exp $
+|| $Id: fdlib.c,v 1.84 2006/07/05 19:11:09 mast Exp $
 */
 
 #include "global.h"
@@ -11,11 +11,11 @@
 #include <math.h>
 #include <ctype.h>
 
-#if defined(HAVE_WINSOCK_H)
-
 #ifdef HAVE_DIRECT_H
 #include <direct.h>
 #endif
+
+#if defined(HAVE_WINSOCK_H)
 
 #include <time.h>
 
@@ -25,6 +25,11 @@
 #endif
 
 #include "threads.h"
+
+#ifdef _MSC_VER
+/* _dosmaperr is internal but still exported in the dll interface. */
+__declspec(dllimport) void __cdecl _dosmaperr(unsigned long);
+#endif
 
 static MUTEX_T fd_mutex;
 
