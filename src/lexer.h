@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.57 2006/01/21 14:33:20 grubba Exp $
+|| $Id: lexer.h,v 1.58 2006/07/05 19:19:27 mast Exp $
 */
 
 /*
@@ -166,7 +166,7 @@ static double lex_strtod(char *buf, char **end)
  *   \[0-7]*		octal escape
  *   \a			alert (BEL)
  *   \b			backspace (BS)
- *   \d[0-9]		decimal escape
+ *   \d[0-9]*		decimal escape
  *   \e			escape (ESC)
  *   \f			form-feed (FF)
  *   \n			newline (LF)
@@ -194,7 +194,7 @@ int parse_esc_seq (WCHAR *buf, int *chr, ptrdiff_t *len)
  * 8: Not 8 digits in \U escape. *len is up to the last found digit. */
 {
   ptrdiff_t l = 1;
-  unsigned INT32 c;
+  int c;
 
   switch ((c = *buf))
   {
