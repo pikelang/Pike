@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.237 2005/12/07 09:38:24 grubba Exp $
+|| $Id: pike_types.c,v 1.238 2006/07/06 16:07:17 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.237 2005/12/07 09:38:24 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.238 2006/07/06 16:07:17 marcus Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1104,7 +1104,7 @@ static void internal_parse_typeA(const char **_s)
 	    is = 1;
 	    ++*s;
 	  } else {
-	    if (strncmp(*s, "mplements ", 10)) {
+	    if (strncmp((const char *)*s, "mplements ", 10)) {
 	      goto bad_type;
 	    }
 	    *s += 10;
@@ -1113,11 +1113,11 @@ static void internal_parse_typeA(const char **_s)
 	no_is_implements:
 	  if( !**s )
 	    goto bad_type;
-	  if (!strncmp(*s, "this_program", 12)) {
+	  if (!strncmp((const char *)*s, "this_program", 12)) {
 	    id = Pike_compiler->new_program->id;
 	    *s += 12;
 	  } else {
-	    id = atoi( *s );	
+	    id = atoi( (const char *)*s );	
 	    while( **s >= '0' && **s <= '9' )
 	      ++*s;
 	  }
@@ -4650,12 +4650,12 @@ static struct pike_type *debug_low_make_pike_type(unsigned char *type_string,
   case T_INT:
     *cont = type_string + 9;	/* 2*sizeof(INT32) + 1 */
     return mk_type(T_INT,
-		   (void *)(ptrdiff_t)extract_type_int(type_string+1),
-		   (void *)(ptrdiff_t)extract_type_int(type_string+5), 0);
+		   (void *)(ptrdiff_t)extract_type_int((char *)type_string+1),
+		   (void *)(ptrdiff_t)extract_type_int((char *)type_string+5), 0);
   case T_OBJECT:
     *cont = type_string + 6;	/* 1 + sizeof(INT32) + 1 */
     return mk_type(T_OBJECT, (void *)(ptrdiff_t)(type_string[1]),
-		   (void *)(ptrdiff_t)extract_type_int(type_string+2), 0);
+		   (void *)(ptrdiff_t)extract_type_int((char *)type_string+2), 0);
   case PIKE_T_NAME:
     {
       int size_shift = type_string[1] & 0x3;
@@ -4669,7 +4669,7 @@ static struct pike_type *debug_low_make_pike_type(unsigned char *type_string,
        */
       switch(type_string[1]) {
       case 0: case 4:
-	bytes = strlen(type_string+2);
+	bytes = strlen((char *)type_string+2);
 	break;
       case 1:
 	for(bytes=0; ; bytes+=2)
