@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.229 2006/06/21 11:33:02 mast Exp $
+|| $Id: svalue.c,v 1.230 2006/07/06 16:46:13 grubba Exp $
 */
 
 #include "global.h"
@@ -482,7 +482,7 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
 	STACK_LEVEL_START(0);
 	safe_apply_low2(s->u.object,
 			fun + p->inherits[s->subtype].identifier_level,
-			0, 1);
+			0, "__hash");
 	STACK_LEVEL_CHECK(1);
 	if(sp[-1].type == T_INT)
 	{
@@ -625,7 +625,8 @@ PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s)
       if((fun = FIND_LFUN(p->inherits[s->subtype].prog, LFUN_NOT)) != -1)
       {
 	safe_apply_low2(s->u.object,
-			fun + p->inherits[s->subtype].identifier_level, 0, 1);
+			fun + p->inherits[s->subtype].identifier_level, 0,
+			"`!");
 	if(sp[-1].type == T_INT && sp[-1].u.integer == 0)
 	{
 	  pop_stack();
@@ -1536,7 +1537,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      push_constant_text("indent");
 	      push_int(indent);
 	      f_aggregate_mapping(2);					      
-	      safe_apply_low2(obj, fun ,2, !!master_object);
+	      safe_apply_low2(obj, fun ,2, master_object?"_sprintf":NULL);
 
 	      debug_malloc_touch(obj);
 

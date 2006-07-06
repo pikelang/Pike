@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.370 2006/07/05 19:28:10 mast Exp $
+|| $Id: language.yacc,v 1.371 2006/07/06 16:46:13 grubba Exp $
 */
 
 %pure_parser
@@ -451,7 +451,7 @@ facet: TOK_FACET TOK_IDENTIFIER ':' idents ';'
 	  ref_push_string($2->u.sval.u.string);
 	  push_int(Pike_compiler->new_program->id);
 	  push_int(Pike_compiler->new_program->facet_class);
-	  safe_apply_low2(o, find_identifier("add_facet_class",o->prog), 3, 0);
+	  safe_apply(o, "add_facet_class", 3);
 	  if (Pike_sp[-1].type == T_INT &&
 	      Pike_sp[-1].u.integer >= 0) {
 	    Pike_compiler->new_program->facet_class = PROGRAM_IS_FACET_CLASS;
@@ -511,11 +511,8 @@ inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
 	  if (Pike_sp[-1].type == T_INT &&
 	      Pike_sp[-1].u.integer == 0) {
 	    pop_stack();
-	    safe_apply_low2(Pike_compiler->new_program->facet_group,
-			    find_identifier
-			    ("check_product_classes",
-			     Pike_compiler->new_program->facet_group->prog),
-			    0, 0);
+	    safe_apply(Pike_compiler->new_program->facet_group,
+		       "check_product_classes", 0);
 	  }
 	  pop_stack();
 	}
@@ -4127,6 +4124,7 @@ int low_add_local_name(struct compiler_frame *frame,
 
   debug_malloc_touch(def);
   debug_malloc_touch(type);
+  debug_malloc_touch(str);
   /* NOTE: The number of locals can be 0..255 (not 256), due to
    *       the use of READ_INCR_BYTE() in apply_low.h.
    */
@@ -4138,7 +4136,6 @@ int low_add_local_name(struct compiler_frame *frame,
     if (def) free_node(def);
     return -1;
   } else {
-    debug_malloc_touch(str);
     reference_shared_string(str);
 #ifdef PIKE_DEBUG
     check_type_string(type);
