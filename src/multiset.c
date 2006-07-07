@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.102 2006/07/07 18:09:17 mast Exp $
+|| $Id: multiset.c,v 1.103 2006/07/07 18:12:28 mast Exp $
 */
 
 #include "global.h"
@@ -2897,7 +2897,9 @@ static struct multiset *merge_special (struct multiset *a,
     SET_ONERROR (uwp, free_indirect_multiset_data, &oldmsd);		\
     add_ref ((TO)->msd = (FROM)->msd);					\
     multiset_set_flags ((TO), oldmsd->flags);				\
-    multiset_set_cmp_less ((TO), &oldmsd->cmp_less);			\
+    multiset_set_cmp_less ((TO),					\
+			   oldmsd->cmp_less.type != T_INT ?		\
+			   &oldmsd->cmp_less : NULL);			\
     UNSET_ONERROR (uwp);						\
     if (!sub_ref (oldmsd)) free_multiset_data (oldmsd);			\
   } while (0)
@@ -2913,7 +2915,9 @@ static struct multiset *merge_special (struct multiset *a,
     (RES) = copy_multiset (FROM);					\
     SET_ONERROR (uwp, do_free_multiset, (RES));				\
     multiset_set_flags ((RES), (FLAGSRC)->msd->flags);			\
-    multiset_set_cmp_less ((RES), &(FLAGSRC)->msd->cmp_less);		\
+    multiset_set_cmp_less ((RES),					\
+			   (FLAGSRC)->msd->cmp_less.type != T_INT ?	\
+			   &(FLAGSRC)->msd->cmp_less : NULL);		\
     UNSET_ONERROR (uwp);						\
   } while (0)
 
@@ -3109,7 +3113,9 @@ PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
   }
   if (!SAME_CMP_LESS (a->msd, b->msd)) {
     if (!m.tmp) m.b = m.tmp = copy_multiset (b);
-    multiset_set_cmp_less (m.b, &a->msd->cmp_less);
+    multiset_set_cmp_less (m.b,
+			   a->msd->cmp_less.type != T_INT ?
+			   &a->msd->cmp_less : NULL);
   }
   if ((a->msd->flags & MULTISET_INDVAL) != (b->msd->flags & MULTISET_INDVAL)) {
     if (!m.tmp) m.b = m.tmp = copy_multiset (b);
