@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.766 2006/06/16 16:32:24 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.767 2006/07/07 18:10:45 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -4654,6 +4654,19 @@ test_do([[
   foreach (a; mixed i;)
     if (!a[i]) error ("Can't find multiset member in itself: %O\n", i);
 ]])
+
+test_any_equal([[
+  multiset m=(<"Stone","2","%70">);
+  foreach(m;string k;)
+  {
+      if(k=="%70")
+      {   
+	  m[k]=0;
+	  break;
+      }
+  }
+  return sort ((array) (m - (<>)));
+]], ({"2", "Stone"}))
 
 // mapping tests
 
