@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.101 2006/07/05 19:24:19 mast Exp $
+|| $Id: multiset.c,v 1.102 2006/07/07 18:09:17 mast Exp $
 */
 
 #include "global.h"
@@ -1093,7 +1093,6 @@ again:
     new.list = low_multiset_first (new.msd);
     new.node = NULL;
     new.msd->root = NULL;
-    new.msd->size = 0;
 
     free_svalue (&new.msd->cmp_less);
     if (cmp_less) assign_svalue_no_free (&new.msd->cmp_less, cmp_less);
@@ -1123,13 +1122,13 @@ again:
 	    goto node_added;
 	  case FIND_DESTRUCTED:
 	    midflight_remove_node_faster (new.msd, rbstack);
+	    new.msd->size--;
 	    break;
 	  default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
 	}
       }
 
     node_added:
-      new.msd->size++;
       if (l->msd != old) {
 	/* l changed. Have to start over to guarantee no loss of data. */
 	CALL_AND_UNSET_ONERROR (uwp);
