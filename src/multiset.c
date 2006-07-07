@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.103 2006/07/07 18:12:28 mast Exp $
+|| $Id: multiset.c,v 1.104 2006/07/07 18:14:32 mast Exp $
 */
 
 #include "global.h"
@@ -23,6 +23,13 @@
 #include "rbtree_low.h"
 #include "pike_security.h"
 #include "svalue.h"
+
+#ifdef TEST_MULTISET
+#include "builtin_functions.h"
+#include "constants.h"
+#include "mapping.h"
+#endif
+
 #include "block_alloc.h"
 
 /* FIXME: Optimize finds and searches on type fields? (But not when
@@ -4312,8 +4319,13 @@ union msnode *debug_check_msnode (struct multiset *l, ptrdiff_t nodepos,
 	     file, line, nodepos);
 #ifdef PIKE_DEBUG
     default:
-      if (!(node->i.ind.type & MULTISET_FLAG_MARKER))
+      if (!(node->i.ind.type & MULTISET_FLAG_MARKER)) {
+#ifdef DEBUG_MALLOC
+	fprintf (stderr, "%s:%d: %s", file, line, msg_no_multiset_flag_marker);
+	locate_references (l);
+#endif
 	Pike_fatal ("%s:%d: %s", file, line, msg_no_multiset_flag_marker);
+      }
 #endif
   }
 
@@ -4666,6 +4678,7 @@ void debug_dump_multiset (struct multiset *l)
 	if (node != msd->free_list) fputc (',', stderr);
 	fprintf (stderr, " %p [%"PRINTPTRDIFFT"d]", node, MSNODE2OFF (msd, node));
       } while ((node = NEXT_FREE (node)) && node->i.ind.type == T_DELETED);
+      fputc ('\n', stderr);
     }
   }
 }
@@ -4688,7 +4701,8 @@ static void debug_multiset_fatal (struct multiset *l, const char *fmt, ...)
     if (node < 0)							\
       multiset_fatal (l, #fn " failed to find %d (%d).\n", exp, i);	\
     if (access_msnode (l, node)->i.ind.u.integer != exp)		\
-      multiset_fatal (l, #fn " failed to find %d - got %d instead (%d).\n", \
+      multiset_fatal (l, #fn " failed to find %d - "			\
+		      "got %"PRINTPIKEINT"d instead (%d).\n",		\
 		      exp, access_msnode (l, node)->i.ind.u.integer, i); \
     sub_msnode_ref (l);							\
   } while (0)
@@ -4696,7 +4710,8 @@ static void debug_multiset_fatal (struct multiset *l, const char *fmt, ...)
 #define TEST_NOT_FIND(fn) do {						\
     node = PIKE_CONCAT (multiset_, fn) (l, sp - 1);			\
     if (node >= 0)							\
-      multiset_fatal (l, #fn " failed to not find %d - got %d (%d).\n",	\
+      multiset_fatal (l, #fn " failed to not find %"PRINTPIKEINT"d - "	\
+		      "got %"PRINTPIKEINT"d (%d).\n",			\
 		      sp[-1].u.integer,					\
 		      access_msnode (l, node)->i.ind.u.integer, i);	\
   } while (0)
@@ -4706,10 +4721,12 @@ static void debug_multiset_fatal (struct multiset *l, const char *fmt, ...)
     node = PIKE_CONCAT (multiset_, dir) (l, node);			\
     if (node < 0)							\
       multiset_fatal (l, "Failed to step " #dir " to %d after " #fn	\
-		      " of %d (%d).\n", exp, sp[-1].u.integer, i);	\
+		      " of %"PRINTPIKEINT"d (%d).\n",			\
+		      exp, sp[-1].u.integer, i);			\
     if (access_msnode (l, node)->i.ind.u.integer != exp)		\
       multiset_fatal (l, "Failed to step " #dir " to %d after " #fn	\
-		      " of %d - got %d instead (%d).\n",		\
+		      " of %"PRINTPIKEINT"d - "				\
+		      "got %"PRINTPIKEINT"d instead (%d).\n",		\
 		      exp, sp[-1].u.integer,				\
 		      access_msnode (l, node)->i.ind.u.integer, i);	\
     sub_msnode_ref (l);							\
@@ -4720,7 +4737,8 @@ static void debug_multiset_fatal (struct multiset *l, const char *fmt, ...)
     node = PIKE_CONCAT (multiset_, dir) (l, node);			\
     if (node >= 0)							\
       multiset_fatal (l, "Failed to step " #dir " to end after " #fn	\
-		      " of %d - got %d (%d).\n",			\
+		      " of %"PRINTPIKEINT"d - "				\
+		      "got %"PRINTPIKEINT"d (%d).\n",			\
 		      sp[-1].u.integer,					\
 		      access_msnode (l, node)->i.ind.u.integer, i);	\
     sub_msnode_ref (l);							\
@@ -4763,10 +4781,6 @@ static void debug_merge_fatal (struct multiset *a, struct multiset *b,
   debug_dump_multiset (got);
   debug_fatal ("\r");
 }
-
-#include "builtin_functions.h"
-#include "constants.h"
-#include "mapping.h"
 
 #ifdef TEST_MULTISET_VERBOSE
 #define TM_VERBOSE(X)	fprintf X
@@ -4888,7 +4902,7 @@ void test_multiset (void)
 	TM_VERBOSE((stderr, "arr[%d]=%d ", j, arr->item[j].u.integer));
 	v += !!multiset_delete_2 (l2, &arr->item[j], NULL);
 	if (multiset_find_eq (l2, &arr->item[j]) >= 0)
-	  multiset_fatal (l2, "Entry %d not deleted (%d).\n",
+	  multiset_fatal (l2, "Entry %"PRINTPIKEINT"d not deleted (%d).\n",
 			  arr->item[j].u.integer, i);
 	check_multiset (l2, 0);
       }
@@ -4939,10 +4953,15 @@ void test_multiset (void)
 	  if (node_ref) sub_msnode_ref (l);
 	  if (nodes[j] < 0) {
 	    if (node < 0)
-	      multiset_fatal (l, "Failed to add %d:%d first: %d\n",
+	      multiset_fatal (l, "Failed to add "
+			      "%"PRINTPIKEINT"d:%"PRINTPIKEINT"d first: "
+			      "%"PRINTPTRDIFFT"d\n",
 			      sp[-1].u.integer, arr->item[j].u.integer, nodes[j]);
 	    else
-	      multiset_fatal (l, "Failed to add %d:%d after %d:%d: %d\n",
+	      multiset_fatal (l, "Failed to add "
+			      "%"PRINTPIKEINT"d:%"PRINTPIKEINT"d after "
+			      "%"PRINTPIKEINT"d:%"PRINTPIKEINT"d: "
+			      "%"PRINTPTRDIFFT"d\n",
 			      sp[-1].u.integer, arr->item[j].u.integer,
 			      use_multiset_index (l, node, tmp)->u.integer,
 			      get_multiset_value (l, node)->u.integer,
@@ -5058,22 +5077,26 @@ void test_multiset (void)
       for (j = 0; j < 8; j++) {
 	multiset_insert_2 (l2, &arr->item[j], sp - 1, 0);
 	if (multiset_sizeof (l2) != multiset_sizeof (l))
-	  multiset_fatal (l2, "Duplicate entry %d inserted (%d).\n",
+	  multiset_fatal (l2, "Duplicate entry "
+			  "%"PRINTPIKEINT"d inserted (%d).\n",
 			  arr->item[j].u.integer, i);
 	if (get_multiset_value (
 	      l2, multiset_find_eq (l2, &arr->item[j]))->u.integer == -1)
-	  multiset_fatal (l2, "Insert replaced last entry %d (%d).\n",
+	  multiset_fatal (l2, "Insert replaced last entry "
+			  "%"PRINTPIKEINT"d (%d).\n",
 			  arr->item[j].u.integer, i);
 	sub_msnode_ref (l2);
       }
       for (j = 0; j < 8; j++) {
 	multiset_insert_2 (l2, &arr->item[j], sp - 1, 1);
 	if (multiset_sizeof (l2) != multiset_sizeof (l))
-	  multiset_fatal (l2, "Duplicate entry %d inserted (%d).\n",
+	  multiset_fatal (l2, "Duplicate entry "
+			  "%"PRINTPIKEINT"d inserted (%d).\n",
 			  arr->item[j].u.integer, i);
 	if (get_multiset_value (
 	      l2, multiset_find_eq (l2, &arr->item[j]))->u.integer != -1)
-	  multiset_fatal (l2, "Insert didn't replace last entry %d (%d).\n",
+	  multiset_fatal (l2, "Insert didn't replace last entry "
+			  "%"PRINTPIKEINT"d (%d).\n",
 			  arr->item[j].u.integer, i);
 	sub_msnode_ref (l2);
       }
@@ -5090,11 +5113,11 @@ void test_multiset (void)
 
       for (j = 0, v = 0; j < 8; j++) {
 	if (!multiset_delete_2 (l, &arr->item[j], &tmp))
-	  multiset_fatal (l, "Entry %d not deleted (%d).\n",
+	  multiset_fatal (l, "Entry %"PRINTPIKEINT"d not deleted (%d).\n",
 			  arr->item[j].u.integer, i);
 	if ((node = multiset_find_eq (l, &arr->item[j])) >= 0) {
 	  if (get_multiset_value (l, node)->u.integer >= tmp.u.integer)
-	    multiset_fatal (l, "Last entry %d not deleted (%d).\n",
+	    multiset_fatal (l, "Last entry %"PRINTPIKEINT"d not deleted (%d).\n",
 			    arr->item[j].u.integer, i);
 	  sub_msnode_ref (l);
 	}
@@ -5293,7 +5316,9 @@ void test_multiset (void)
 	  multiset_add (a, sp - 2, sp - 1);
 	  node = multiset_find_lt (add, sp - 2);
 	  if ((nr = multiset_add_after (add, node, sp - 2, sp - 1)) < 0)
-	    multiset_fatal (add, "Failed to add %d:1 after %d: %d.\n",
+	    multiset_fatal (add, "Failed to add "
+			    "%"PRINTPIKEINT"d:1 after "
+			    "%"PRINTPTRDIFFT"d: %d.\n",
 			    sp[-2].u.integer, node, nr);
 	  if (node >= 0) sub_msnode_ref (add);
 	  pop_stack();
