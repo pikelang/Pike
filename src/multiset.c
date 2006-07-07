@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.70 2006/01/14 11:16:32 mast Exp $
+|| $Id: multiset.c,v 1.71 2006/07/07 18:20:58 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.70 2006/01/14 11:16:32 mast Exp $");
+RCSID("$Id: multiset.c,v 1.71 2006/07/07 18:20:58 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -1068,7 +1068,6 @@ again:
     new.list = low_multiset_first (new.msd);
     new.node = NULL;
     new.msd->root = NULL;
-    new.msd->size = 0;
 
     free_svalue (&new.msd->cmp_less);
     if (cmp_less) assign_svalue_no_free (&new.msd->cmp_less, cmp_less);
@@ -1098,13 +1097,13 @@ again:
 	    goto node_added;
 	  case FIND_DESTRUCTED:
 	    midflight_remove_node_faster (new.msd, rbstack);
+	    new.msd->size--;
 	    break;
 	  default: DO_IF_DEBUG (Pike_fatal ("Invalid find_type.\n"));
 	}
       }
 
     node_added:
-      new.msd->size++;
       if (l->msd != old) {
 	/* l changed. Have to start over to guarantee no loss of data. */
 	CALL_AND_UNSET_ONERROR (uwp);
@@ -2864,7 +2863,9 @@ static struct multiset *merge_special (struct multiset *a,
     SET_ONERROR (uwp, free_indirect_multiset_data, &oldmsd);		\
     add_ref ((TO)->msd = (FROM)->msd);					\
     multiset_set_flags ((TO), oldmsd->flags);				\
-    multiset_set_cmp_less ((TO), &oldmsd->cmp_less);			\
+    multiset_set_cmp_less ((TO),					\
+			   oldmsd->cmp_less.type != T_INT ?		\
+			   &oldmsd->cmp_less : NULL);			\
     UNSET_ONERROR (uwp);						\
     if (!sub_ref (oldmsd)) free_multiset_data (oldmsd);			\
   } while (0)
@@ -2880,7 +2881,9 @@ static struct multiset *merge_special (struct multiset *a,
     (RES) = copy_multiset (FROM);					\
     SET_ONERROR (uwp, do_free_multiset, (RES));				\
     multiset_set_flags ((RES), (FLAGSRC)->msd->flags);			\
-    multiset_set_cmp_less ((RES), &(FLAGSRC)->msd->cmp_less);		\
+    multiset_set_cmp_less ((RES),					\
+			   (FLAGSRC)->msd->cmp_less.type != T_INT ?	\
+			   &(FLAGSRC)->msd->cmp_less : NULL);		\
     UNSET_ONERROR (uwp);						\
   } while (0)
 
@@ -3076,7 +3079,9 @@ PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
   }
   if (!SAME_CMP_LESS (a->msd, b->msd)) {
     if (!m.tmp) m.b = m.tmp = copy_multiset (b);
-    multiset_set_cmp_less (m.b, &a->msd->cmp_less);
+    multiset_set_cmp_less (m.b,
+			   a->msd->cmp_less.type != T_INT ?
+			   &a->msd->cmp_less : NULL);
   }
   if ((a->msd->flags & MULTISET_INDVAL) != (b->msd->flags & MULTISET_INDVAL)) {
     if (!m.tmp) m.b = m.tmp = copy_multiset (b);
@@ -4588,6 +4593,7 @@ void debug_dump_multiset (struct multiset *l)
 	if (node != msd->free_list) fputc (',', stderr);
 	fprintf (stderr, " %p [%"PRINTPTRDIFFT"d]", node, MSNODE2OFF (msd, node));
       } while ((node = NEXT_FREE (node)) && node->i.ind.type == T_DELETED);
+      fputc ('\n', stderr);
     }
   }
 }
@@ -5297,7 +5303,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.70 2006/01/14 11:16:32 mast Exp $");
+RCSID("$Id: multiset.c,v 1.71 2006/07/07 18:20:58 mast Exp $");
 
 struct multiset *first_multiset;
 
