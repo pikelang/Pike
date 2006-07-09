@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.82 2006/07/03 17:31:32 grubba Exp $
+|| $Id: png.c,v 1.83 2006/07/09 22:10:36 nilsson Exp $
 */
 
 #include "global.h"
@@ -22,6 +22,10 @@
 #include "image.h"
 #include "colortable.h"
 
+#ifdef __MINGW32__
+/* encodings.a will never contain a crc32 symbol. */
+#define DYNAMIC_MODULE
+#endif
 
 #define sp Pike_sp
 
