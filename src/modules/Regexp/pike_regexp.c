@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_regexp.c,v 1.25 2003/12/06 15:09:08 nilsson Exp $
+|| $Id: pike_regexp.c,v 1.26 2006/07/09 22:09:45 nilsson Exp $
 */
 
 /*
@@ -73,6 +73,7 @@
 #include "pike_memory.h"
 #include "pike_error.h"
 
+#undef NOTHING
 
 /*
  * The "internal use only" fields in regexp.h are present to pass info from
