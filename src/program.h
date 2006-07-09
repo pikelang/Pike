@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.225 2006/07/05 20:47:53 mast Exp $
+|| $Id: program.h,v 1.226 2006/07/09 15:02:32 marcus Exp $
 */
 
 #ifndef PROGRAM_H
@@ -120,6 +120,12 @@ typedef struct node_s node;
 #define STRUCT_OBJECT_DECLARED
 struct object;
 #endif
+
+#undef EXTERN
+#undef STRUCT
+#undef PUSH
+#undef POP
+#undef DECLARE
 
 #define STRUCT
 #include "compilation.h"
