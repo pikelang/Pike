@@ -1,6 +1,6 @@
 /* sqlite.cmod -*- c -*-
  *
- * $Id: sqlite.cmod,v 1.16 2006/07/04 23:37:05 mast Exp $
+ * $Id: sqlite.cmod,v 1.17 2006/07/09 22:59:17 nilsson Exp $
  */
 
 #include "global.h"
@@ -248,9 +248,9 @@ PIKECLASS ResObj
     sqlite3_stmt *stmt;
     const char *tail;
     struct pike_string *q;
-    uint32_t res_count = 0;
-    uint32_t columns = 0;
-    uint32_t i;
+    INT32 res_count = 0;
+    INT32 columns = 0;
+    INT32 i;
 
     if(args==2) stack_swap();
     f_string_to_utf8(1);
