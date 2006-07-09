@@ -165,7 +165,7 @@ if test "x$with_com" = xyes -a "x$enable_binary" != xno; then
     fi
   fi
 
-  AC_CHECK_HEADERS(objbase.h winbase.h setjmp.h)
+  AC_CHECK_HEADERS(objbase.h winbase.h setjmp.h ole2.h)
 
   pike_cv_com=no
 

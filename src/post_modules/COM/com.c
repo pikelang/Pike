@@ -1,5 +1,5 @@
 /*
- * $Id: com.c,v 1.7 2006/07/05 15:08:10 mast Exp $
+ * $Id: com.c,v 1.8 2006/07/09 22:44:38 nilsson Exp $
  *
  * Pike interface to Common Object Model (COM)
  *
@@ -36,6 +36,10 @@
 #ifdef HAVE_OBJBASE_H
 #include <objbase.h>
 #endif /* HAVE_OBJBASE_H */
+
+#ifdef HAVE_OLE2_H
+#include <ole2.h>
+#endif
 
 #ifdef HAVE_WINBASE_H
 #include <winbase.h>
