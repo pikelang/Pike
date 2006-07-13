@@ -13,7 +13,7 @@ static private multiset(string) __ids_used = (<>);
 static private multiset(string) __idrefs_used = (<>);
 static private multiset(string) __notations_used = (<>);
 
-static int isname(string s)
+int isname(string s)
 {
   return sizeof(s) && .isfirstnamechar(s[0]) &&
     sizeof(filter(s[1..], .isnamechar)) == sizeof(s)-1;
@@ -84,19 +84,24 @@ static private class Element {
       return 0;
   }
 
-  string check_attributes(mapping(string:string) c_attrs)
+  void check_attributes(mapping(string:string) c_attrs,
+			function(string, mixed ...:mixed) xmlerror)
   {
     foreach(indices(c_attrs), string name) {
       array spec = attributes[name];
       if(spec) {
-	if(!islegalattribute(c_attrs[name], spec))
-	  return name;
-	if(spec[1][0]=="#FIXED" && c_attrs[name]!=spec[1][1])
-	  return name;
+	if(!islegalattribute(c_attrs[name], spec)) {
+	  xmlerror("Invalid value for attribute %s: %O.", name, c_attrs[name]);
+	}
+	if(spec[1][0]=="#FIXED" && c_attrs[name]!=spec[1][1]) {
+	  xmlerror("Attribute %s must have the value %s.", name, spec[1][1]);
+	}
 	switch(spec[0][0]) {
 	 case "ID":
-	   if(__ids_used[c_attrs[name]])
-	     return name;
+	   if(__ids_used[c_attrs[name]]) {
+	     xmlerror("Id %O (sttribute %s) has already been used.",
+		      c_attrs[name], name);
+	   }
 	   __ids_used[c_attrs[name]] = 1;
 	   break;
 	 case "IDREF":
@@ -109,31 +114,35 @@ static private class Element {
 					   ({" ", " ", " "}) )/" "-({""})));
 	   break;
 	 case "ENTITY":
-	   if(!__entity_ndata[c_attrs[name]])
-	     return name;
+	   if(!__entity_ndata[c_attrs[name]]) {
+	     xmlerror("Invalid value for attribute %s: %O.",
+		      name, c_attrs[name]);
+	   }
 	   break;
 	 case "ENTITIES":
 	   if(search(rows(__entity_ndata, replace(c_attrs[name],
 						  ({"\t", "\r", "\n"}),
 						  ({" ", " ", " "}) )/" "-
-			  ({""})), 0)>=0)
-	     return name;
+			  ({""})), 0)>=0) {
+	     xmlerror("Invalid value for attribute %s: %O.",
+		      name, c_attrs[name]);
+	   }
 	   break;
 	 case "NOTATION":
 	   __notations_used[c_attrs[name]] = 1;
 	   break;
 	}
-      } else
-	if(name[..3]!="xml:")
-	  return name;
+      } else if(name[..3]!="xml:") {
+	xmlerror("Undeclared attribute: %s.", name);
+      }
     }
-    array(string) missing_req = filter(indices(attributes)-indices(c_attrs),
-				       lambda(string a) {
-					 return attributes[a][1][0] ==
-					   "#REQUIRED";
-				       });
-    if(sizeof(missing_req))
-      return missing_req[0];
+    foreach (filter(indices(attributes)-indices(c_attrs),
+		    lambda(string a) {
+		      return attributes[a][1][0] ==
+			"#REQUIRED";
+		    }), string attr) {
+      xmlerror("Missing required attribute: %s.", name);
+    };
   }
 
   void create(string _name)
@@ -197,6 +206,11 @@ static private mixed validate(string kind, string name, mapping attributes,
 				       mixed ...:mixed) callback,
 			      array(mixed) extra)
 {
+  // Helper...
+  function(string, mixed ...:mixed) xmlerror =
+    lambda(string msg, mixed ... args) {
+      return callback("error", 0, 0, sprintf(msg, @args), info, @extra);
+    };
   switch(kind) {
    case "<!DOCTYPE":
      __root_element_name = name;
@@ -206,23 +220,22 @@ static private mixed validate(string kind, string name, mapping attributes,
        if(dtd)
 	 parse_dtd(dtd, callback, @extra);
        else
-	 return callback("error", 0, 0, "External subset of DTD not found.",
-			 info, @extra);
+	 return xmlerror("External subset of DTD %O not found.",
+			 attributes->SYSTEM);
      }
      break;
    case "<!ELEMENT":
      if(__element_content[name])
-       return callback("error", 0, 0, "Element type declared more than once.",
-		       info, @extra);       
+       return xmlerror("Element type %O declared more than once.", name);
      if(contents == "EMPTY")
        __element_content[name] = ({accept_terminate});
      else if(contents == "ANY")
        __element_content[name] = ({accept_any});
      else if(contents[0] == "#PCDATA") {
        if(sizeof(Array.uniq(contents)) != sizeof(contents))
-	 return callback("error", 0, 0, "The same name must not appear more "
-			 "than once in a mixed-content declaration.",
-			 info, @extra);
+	 return xmlerror("The same name must not appear more "
+			 "than once in a mixed-content declaration (%s).",
+			 name);
        __element_content[name] =
 	 compile_language(({"*",({"|",""})+contents[1..]}),
 			  ({accept_terminate}));
@@ -232,9 +245,8 @@ static private mixed validate(string kind, string name, mapping attributes,
      break;
    case "<!NOTATION":
      if(__notation_sysid[name] || __notation_pubid[name])
-       return callback("error", 0, 0,
-		       "More than one notation declaration for name.",
-		       info, @extra);
+       return xmlerror("More than one notation declaration for name %O.",
+		       name);
      if(attributes->SYSTEM)
        __notation_sysid[name] = attributes->SYSTEM;
      if(attributes->PUBLIC)
@@ -261,20 +273,17 @@ static private mixed validate(string kind, string name, mapping attributes,
 	 if(attributes[attr][0][0] == "ID") {
 	   if(search(column(column(values(__element_attrs[name]), 0), 0),
 		     "ID")>=0)
-	     return callback("error", 0, 0,
-			     "Element has more than one ID attribute.",
-			     info, @extra);
+	     xmlerror("Element %O has more than one ID attribute.", name);
 	   if(attributes[attr][1][0] != "#IMPLIED" &&
-	      attributes[attr][1][0] != "#REQUIRED")
-	     return callback("error", 0, 0,
-			     "ID attribute must be #IMPLIED or #REQUIRED.",
-			     info, @extra);
+	      attributes[attr][1][0] != "#REQUIRED") {
+	     xmlerror("ID attribute must be #IMPLIED or #REQUIRED.");
+	     attributes[attr][1][0] = "#REQUIRED";
+	   }
 	 }
 	 if(sizeof(attributes[attr][1]) == 2 &&
 	    !islegalattribute(attributes[attr][1][1], attributes[attr]))
-	   return callback("error", 0, 0,
-			   "Illegal default attribute value.",
-			   info, @extra);
+	   xmlerror("Illegal default attribute value for %s:%s: %O.",
+		    name, attr, attributes[attr][1][1]);
 	 if(attributes[attr][0][0] == "NOTATION")
 	   __notations_used |= mkmultiset(attributes[attr][0][1..]);
 	 __element_attrs[name][attr] = attributes[attr];
@@ -282,68 +291,71 @@ static private mixed validate(string kind, string name, mapping attributes,
      break;
    case "<":
    case "<>":
-     if(!__element_content[name])
-       return callback("error", 0, 0, sprintf("Element %O not declared.",
-                                              name),
-		       info, @extra);
-     if(!sizeof(__element_stack))
+     if(!__element_content[name]) {
+       xmlerror("Undeclared element: %O.", name);
+     }
+     if(!sizeof(__element_stack)) {
        if(name != __root_element_name)
-	 return callback("error", 0, 0, "Root element type mismatch.",
-			 info, @extra);
-       else;
-     else
+	 xmlerror("Root element type mismatch: %s (expected %s).",
+		  name, __root_element_name);
+     } else {
        if(!__element_stack[-1]->accept_element(name))
-	 return callback("error", 0, 0, "Invalid content for element.",
-			 info, @extra);
+	 xmlerror("Invalid content for element %s: %s.",
+		  __element_stack[-1]->name, name);
+     }
+
      Element e = Element(name);
-     if(string aname = e->check_attributes(attributes))
-       return callback("error", 0, 0, "Invalid attribute "+aname+
-		       " for element.", info, @extra);
+
+     e->check_attributes(attributes, xmlerror);
+
      if(kind == "<") {
        callback(kind, name, attributes, contents, info, @extra);
        __element_stack += ({ e });
        return 0;
      } else
-       if(!e->accept_element(0))
-	 return callback("error", 0, 0, "Invalid content for element.",
-			 info, @extra);
+       if(!e->accept_element(0)) {
+	 xmlerror("Element %s may not be empty.", name);
+       }
      break;
    case ">":
-     if(!sizeof(__element_stack) || __element_stack[-1]->name != name)
-       return callback("error", 0, 0, "Unmatched end tag.",
-		       info, @extra);
+     if (!sizeof(__element_stack)) {
+       return xmlerror("Unmatched end tag at the top level: </%s>.", name);
+     } else if (__element_stack[-1]->name != name) {
+       return xmlerror("Unmatched end tag: </%s> (expected </%s>).",
+		       name, __element_stack[-1]->name);
+     }
      if(!__element_stack[-1]->accept_element(0))
-       return callback("error", 0, 0, "Invalid content for element.",
-		       info, @extra);
+       xmlerror("Invalid content for element %s.", name);
      __element_stack = __element_stack[..sizeof(__element_stack)-2];
      break;
    case "":
    case "<![CDATA[":
      if(!sizeof(__element_stack))
-       return callback("error", 0, 0, "All data must be inside tags",
-		       info, @extra);
-     if(!__element_stack[-1]->accept_element(""))
-       if(kind == "" && contents-" "-"\t"-"\r"-"\n" == "")
-	 return 0;
-       else
-	 return callback("error", 0, 0, "Invalid content for element.",
-			 info, @extra);
+       return xmlerror("All data must be inside tags");
+     if(!__element_stack[-1]->accept_element("")) {
+       if ((kind != "") || (contents-" "-"\t"-"\r"-"\n" != ""))
+	 xmlerror("Invalid content for element %s.", name);
+       return 0;
+     }
      break;
    case "%":
      name = "%"+name;
    case "&":
      if(!__entity_sysid[name])
        return 0;
-     if(__entity_ndata[name])
-       return callback("error", 0, 0, "Reference to unparsed entity.",
-		       info, @extra);
+     if(__entity_ndata[name]) {
+       if (kind == "%") {
+	 xmlerror("Reference to unparsed entity: %s;.", name);
+       } else {
+	 xmlerror("Reference to unparsed entity: %s%s;.", kind, name);
+       }
+     }
      if(attributes->in_attribute && kind!="%")
-       return callback("error", 0, 0,
-		       "Reference to External entity in attribute.",
-		       info, @extra);       
+       return xmlerror("Reference to External entity %s%s; in attribute.",
+		       kind, name);
      return get_external_entity(__entity_sysid[name], __entity_pubid[name],
 				0, @extra) ||
-       callback("error", 0, 0, "External entity not found.", info, @extra);
+       xmlerror("External entity %s not found.", name);
   }
   return callback(kind, name, attributes, contents, info, @extra);
 }
