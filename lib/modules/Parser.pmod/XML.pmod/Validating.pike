@@ -76,12 +76,14 @@ static private class Element {
 
   int accept_element(string name)
   {
-    array(function) step = (content_matcher(name)-({0}))*({});
-    if(sizeof(step)) {
+    if (content_matcher) {
+      array(function) step = (content_matcher(name)-({0}))*({});
+      if (!sizeof(step)) {
+	return 0;
+      }
       content_matcher = step;
-      return 1;
-    } else
-      return 0;
+    }
+    return 1;
   }
 
   void check_attributes(mapping(string:string) c_attrs,
