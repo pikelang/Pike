@@ -141,7 +141,7 @@ static private class Element {
 		      return attributes[a][1][0] ==
 			"#REQUIRED";
 		    }), string attr) {
-      xmlerror("Missing required attribute: %s.", name);
+      xmlerror("Node %s is missing required attribute: %s.", name, attr);
     };
   }
 
