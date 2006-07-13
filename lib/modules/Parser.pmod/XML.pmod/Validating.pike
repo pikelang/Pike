@@ -76,13 +76,11 @@ static private class Element {
 
   int accept_element(string name)
   {
-    if (content_matcher) {
-      array(function) step = (content_matcher(name)-({0}))*({});
-      if (!sizeof(step)) {
-	return 0;
-      }
-      content_matcher = step;
+    array(function) step = (content_matcher(name)-({0}))*({});
+    if (!sizeof(step)) {
+      return 0;
     }
+    content_matcher = step;
     return 1;
   }
 
@@ -295,6 +293,7 @@ static private mixed validate(string kind, string name, mapping attributes,
    case "<>":
      if(!__element_content[name]) {
        xmlerror("Undeclared element: %O.", name);
+       __element_content[name] = ({accept_any});
      }
      if(!sizeof(__element_stack)) {
        if(name != __root_element_name)
