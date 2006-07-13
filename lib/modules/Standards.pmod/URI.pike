@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396 and RFC 3986.
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.23 2006/05/06 14:53:06 grubba Exp $
+// $Id: URI.pike,v 1.24 2006/07/13 15:35:46 nilsson Exp $
 
 #pragma strict_types
 
@@ -351,9 +351,9 @@ mixed `[]=(string property, mixed value)
     case "user":
     case "password":
     case "host":
-    case "port":
       if(!stringp(value) && value!=0)
 	error("%s value not string.\n", property);
+    case "port":
       ::`[]=(property, value);
       authority = (user ? user + (password ? ":" + password : "") + "@" : "") +
 	(host?(has_value(host, ":")?("["+host+"]"):host):"") +
