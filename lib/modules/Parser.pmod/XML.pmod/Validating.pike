@@ -1,5 +1,16 @@
+//!
+//! Validating XML parser.
+//!
+//! Validates an XML file according to a DTD.
+//!
+//! cf http://wwww.w3.org/TR/REC-xml/
+//!
+//! $Id: Validating.pike,v 1.11 2006/07/14 08:36:55 grubba Exp $
+//!
+
 #pike __REAL_VERSION__
 
+//! Extends the Simple XML parser.
 inherit .Simple;
 
 static private mapping(string:array(function)) __element_content = ([]);
@@ -13,19 +24,22 @@ static private multiset(string) __ids_used = (<>);
 static private multiset(string) __idrefs_used = (<>);
 static private multiset(string) __notations_used = (<>);
 
+//! Check if @[s] is a valid @tt{Name@}.
 int isname(string s)
 {
   return sizeof(s) && .isfirstnamechar(s[0]) &&
     sizeof(filter(s[1..], .isnamechar)) == sizeof(s)-1;
 }
 
-static int isnmtoken(string s)
+//! Check if @[s] is a valid @tt{Nmtoken@}.
+int isnmtoken(string s)
 {
   return sizeof(s) &&
     sizeof(filter(s, .isnamechar)) == sizeof(s);
 }
 
-static int isnames(string s)
+//! Check if @[s] is a valid list of @tt{Name@}s.
+int isnames(string s)
 {
   array(string) names = replace(s, ({"\t", "\r", "\n"}),
 				({" ", " ", " "}))/" ";
@@ -33,7 +47,8 @@ static int isnames(string s)
     search(map(names-({""}), isname), 0) < 0;
 }
 
-static int isnmtokens(string s)
+//! Check if @[s] is a valid list of @tt{Nmtoken@}s.
+int isnmtokens(string s)
 {
   array(string) nmtokens = replace(s, ({"\t", "\r", "\n"}),
 				   ({" ", " ", " "}))/" ";
@@ -63,7 +78,8 @@ static private int islegalattribute(string val, array spec)
   }
 }
 
-static private class Element {
+//! XML Element node.
+static class Element {
 
   string name;
   array(function) content_matcher;
@@ -155,6 +171,36 @@ static private class Element {
 static private array(object) __element_stack = ({});
 static private string __root_element_name;
 
+//! Get an external entity.
+//!
+//! Called when a @tt{<!DOCTYPE>@} with a @tt{SYSTEM@} identifier
+//! is encountered, or when an entity reference needs expanding.
+//!
+//! @param sysid
+//!   The @tt{SYSTEM@} identifier.
+//!
+//! @param pubid
+//!   The @tt{PUBLIC@} identifier (if any).
+//!
+//! @param unparsed
+//!   Always @expr{0@} (zero).
+//!
+//! @param extra
+//!   The @tt{extra@} arguments as passed to @[parse()] or @[parse_dtd()].
+//!
+//! @returns
+//!   Returns a string with a DTD fragment on success.
+//!   Returns @expr{0@} (zero) on failure.
+//!
+//! @note
+//!   Returning zero will cause the validator to report an error.
+//!
+//! @note
+//!   The default implementation always returns @expr{0@} (zero).
+//!   Override this function to provide other behaviour.
+//!
+//! @seealso
+//!   @[parse()], @[parse_dtd()]
 string get_external_entity(string sysid, string|void pubid, int|void unparsed,
 			   mixed ... extra)
 {
@@ -198,6 +244,10 @@ static private array(function) compile_language(string|array l,
   }
 }
 
+//! The validation callback function.
+//!
+//! @seealso
+//!   @[::parse()]
 static private mixed validate(string kind, string name, mapping attributes,
 			      array|string contents,
 			      mapping(string:mixed) info,
@@ -352,8 +402,8 @@ static private mixed validate(string kind, string name, mapping attributes,
        }
      }
      if(attributes->in_attribute && kind!="%")
-       return xmlerror("Reference to External entity %s%s; in attribute.",
-		       kind, name);
+       xmlerror("Reference to External entity %s%s; in attribute.",
+		kind, name);
      return get_external_entity(__entity_sysid[name], __entity_pubid[name],
 				0, @extra) ||
        xmlerror("External entity %s not found.", name);
