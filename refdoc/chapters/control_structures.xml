@@ -1,20 +1,22 @@
 <chapter title="Control Structures">
 
-<p>In this chapter all the control structures in Pike will be explained. As
-mentioned earlier, control structures are used to control the flow of the
+<p>In this chapter all the control structures in Pike will be
+explained. Control structures are used to control the flow of the
 program execution. Note that functions that make the program pause and
 simple function calls are not qualified as control structures.</p>
 
 <section title="Conditions">
 
-<p>Pike only has two major condition control structures. We have already seen
-examples of both of them in Chapter two. But for completeness they will be
-described again in this chapter.</p>
+<p>Conditions are control structures that, given a test condition
+selects what code to be executed. These range from the binary "execute
+or not" to a large table of code where the selection of which code to
+run is based on an input parameter.</p>
 
 <subsection title="if">
 
-<p>The simplest one is called the <b>if statement</b>. It can be written anywhere
-where a statement is expected and it looks like this:</p>
+<p>The simplest one is called the <b>if statement</b>. It can be
+written anywhere where a statement is expected and it looks like
+this:</p>
 
 <example>
 if( expression )
@@ -46,14 +48,15 @@ if( expression )
   statement1;
 </example>
 
-<p>If on the other hand you are not interested in evaluating something if the
-expression is <b>false</b> you should use the <b>not</b> operator to negate
-the true/false value of the expression. See chapter 5 for more information
-about the <b>not</b> operator. It would look like this:</p>
+<p>If on the other hand you are not interested in evaluating something
+if the expression is <b>false</b> you should use the <b>not</b>
+operator to negate the true/false value of the expression. See
+<fixme>chapter</fixme> for more information about the <b>not</b>
+operator. It would look like this:</p>
 
 <example>
 if( ! expression )
-  statement2 ;
+  statement2;
 </example>
 
 <p>Any of the statements here and in the rest of this chapter can
@@ -70,6 +73,26 @@ if ( ! expression )
   statement;
 }
 </example>
+
+<p>It is also possible to place several if statements in sequence, so
+that if the first expression is false it continues with the next one
+and the next one until the first true expression is found.</p>
+
+<example>
+if ( expression1 )
+  statement1;
+else if ( expression2 )
+  statement2;
+else if ( expression3 )
+  statement3;
+else
+  statement4;
+</example>
+
+<p>A special case of the above example is when in every expression you
+compare one variable with different values. For those applications the
+switch statement described below can be used instead to increas
+performance and simplify the code.</p>
 
 </subsection>
 
