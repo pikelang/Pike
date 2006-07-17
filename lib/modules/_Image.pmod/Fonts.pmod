@@ -18,7 +18,7 @@ constant NO_FAKE  = 256;
 //! should be attempted.
 
 #if constant(Image.FreeType.Face)
-static class FTFont
+class FTFont
 {
   constant driver = "FreeType 2";
 
