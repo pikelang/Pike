@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.78 2005/12/20 17:37:54 grubba Exp $
+// $Id: Query.pike,v 1.79 2006/07/17 11:02:54 nilsson Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -439,7 +439,11 @@ static void clean_async_dns()
     return;
   }
   async_id = 0;
+
+  if(async_dns)
+    async_dns->close();
   async_dns = 0;
+
   last_async_dns = 0;
 }
 
@@ -1051,6 +1055,9 @@ static void destroy()
      remove_call_out(async_id);
    }
    async_id = 0;
+
+   if(async_dns)
+     async_dns->close();
    async_dns = 0;
 
    catch (con->set_blocking()); // Only to remove callbacks to avoid cycles.
