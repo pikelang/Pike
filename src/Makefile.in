@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.435 2006/07/05 00:05:44 mast Exp $
+# $Id: Makefile.in,v 1.436 2006/07/18 08:03:41 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -808,7 +808,11 @@ lib: Makefile
 
 
 master.pike: $(LIBDIR_SRC)/master.pike.in Makefile
-	if test "x$(PIKE_MODULE_RELOC)" = "x"; then u=s,x,x,; else u='s/^#undef PIKE_MODULE_RELOC/#define PIKE_MODULE_RELOC 1/'; fi; \
+	if test "x$(PIKE_MODULE_RELOC)" = "x"; \
+          then u=s,x,x,; \
+          else u='s/^#undef PIKE_MODULE_RELOC/#define PIKE_MODULE_RELOC 1/'; \
+        fi; \
+	LC_CTYPE=C; LC_LANG=C; export LC_CTYPE LC_LANG; \
 	sed -e 's!¤lib_prefix¤!'"`echo "$(TMP_LIBDIR)" | ./posix_to_native.sh`"'!' <$(LIBDIR_SRC)/master.pike.in \
 	  | sed -e 's!¤share_prefix¤!'"`echo "$(LIBDIR_SRC)" | ./posix_to_native.sh`"'!' \
 	  | sed -e 's!¤include_prefix¤!'"`echo "$(TMP_BUILDDIR)/bundles/include/pike" | ./posix_to_native.sh`"'!' \
