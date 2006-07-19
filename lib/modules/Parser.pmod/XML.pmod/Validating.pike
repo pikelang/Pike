@@ -4,8 +4,9 @@
 //! Validates an XML file according to a DTD.
 //!
 //! cf http://wwww.w3.org/TR/REC-xml/
+//! cf RFC3023
 //!
-//! $Id: Validating.pike,v 1.4 2006/07/14 08:40:28 grubba Exp $
+//! $Id: Validating.pike,v 1.5 2006/07/19 12:34:57 grubba Exp $
 //!
 
 #pike __REAL_VERSION__
@@ -241,7 +242,10 @@ static private mixed validate(string kind, string name, mapping attributes,
        __element_content[name] = ({accept_terminate});
      else if(contents == "ANY")
        __element_content[name] = ({accept_any});
-     else if(contents[0] == "#PCDATA") {
+     else if (!contents) {
+       __element_content[name] = ({accept_any});
+       xmlerror("Invalid element declatation for %O.", name);
+     } else if(contents[0] == "#PCDATA") {
        if(sizeof(Array.uniq(contents)) != sizeof(contents))
 	 return xmlerror("The same name must not appear more "
 			 "than once in a mixed-content declaration (%s).",
