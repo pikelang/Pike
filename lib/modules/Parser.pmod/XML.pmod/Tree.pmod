@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.63 2006/03/15 10:32:56 mast Exp $
+ * $Id: Tree.pmod,v 1.64 2006/07/20 14:59:44 grubba Exp $
  *
  */
 
@@ -50,6 +50,18 @@ constant XML_DOCTYPE  = 0x0040;
 constant XML_ATTR     = 0x0080;    //  Attribute nodes are created on demand
 
 //!
+constant DTD_ENTITY   = 0x0100;
+
+//!
+constant DTD_ELEMENT  = 0x0200;
+
+//!
+constant DTD_ATTLIST  = 0x0400;
+
+//!
+constant DTD_NOTATION = 0x0800;
+
+//!
 constant XML_NODE     = (XML_ROOT | XML_ELEMENT | XML_TEXT |
                        XML_PI | XML_COMMENT | XML_ATTR);
 #define STOP_WALK  -1
@@ -61,6 +73,10 @@ constant XML_NODE     = (XML_ROOT | XML_ELEMENT | XML_TEXT |
 #define  XML_COMMENT  0x0020
 #define  XML_DOCTYPE  0x0040
 #define  XML_ATTR     0x0080     //  Attribute nodes are created on demand
+#define  DTD_ENTITY   0x0100
+#define  DTD_ELEMENT  0x0200
+#define  DTD_ATTLIST  0x0400
+#define  DTD_NOTATION 0x0800
 #define  XML_NODE     (XML_ROOT | XML_ELEMENT | XML_TEXT |    \
 					   XML_PI | XML_COMMENT | XML_ATTR)
 
@@ -73,6 +89,10 @@ constant type_names = ([
     XML_COMMENT : "COMMENT",
     XML_DOCTYPE : "DOCTYPE",
     XML_ATTR : "ATTR",
+    DTD_ENTITY: "!ENTITY",
+    DTD_ELEMENT: "!ELEMENT",
+    DTD_ATTLIST:  "!ATTLIST",
+    DTD_NOTATION: "!NOTATION",
 ]);
 
 string get_type_name(int type)
@@ -970,6 +990,7 @@ static class VirtualNode {
   }
 
   // It doesn't produce html, and not of the node only.
+  // Note: Returns wide data!
   string html_of_node(void|int(0..1) preserve_roxen_entities)
   {
     String.Buffer data = String.Buffer();
@@ -1047,12 +1068,27 @@ static class VirtualNode {
       data->add("<!--", n->get_text(), "-->");
       break;
 
-  case XML_DOCTYPE:
+    case XML_DOCTYPE:
       data->add("<!DOCTYPE ", n->get_short_name());
-      foreach(n->get_attributes(); string index; string value)
-          data->add(" ", index, " \"", value, "\"");
-      data->add(">");
-    }
+      mapping attrs = n->get_attributes();
+      if (attrs->PUBLIC) {
+	data->add(" PUBLIC %O %O", attrs->PUBLIC, attrs->SYSTEM || "");
+      } else if (attrs->SYSTEM) {
+	data->add(" SYSTEM %O", attrs->SYSTEM);
+      }
+      if (n->count_children()) {
+	data->add(" [ ");
+      } else {
+	data->add(">");
+      }
+      break;
+
+    case DTD_ELEMENT:
+      data->add("<!ELEMENT ", n->get_short_name(), " ");
+      n->render_expression(data);
+      data->add(" >");
+      break;
+    } 
 
     array(Node) children = n->get_children();
     foreach(children, Node n) {
@@ -1063,6 +1099,8 @@ static class VirtualNode {
       if (n->count_children())
 	if (sizeof(tagname))
 	  data->add("</", tagname, ">");
+    } else if ((n->get_node_type() == XML_DOCTYPE) && (n->count_children())) {
+      data->add(" ]>");
     }
   }
 
@@ -1236,201 +1274,11 @@ static class VirtualNode {
   }
 }
 
-class XMLParser
-{
-  this_program add_child(this_program);
-  void create(int, string, mapping, string);
-
-  void parse(string data,
-             void|mapping predefined_entities,
-             ParseFlags|void flags)
-  {
-    .Simple xp = .Simple();
-
-    if (!(flags & PARSE_DISALLOW_RXML_ENTITIES))
-      xp->allow_rxml_entities(1);
-
-    if (flags & PARSE_COMPAT_ALLOW_ERRORS_7_2)
-      xp->compat_allow_errors ("7.2");
-    else if (flags & PARSE_COMPAT_ALLOW_ERRORS_7_6)
-      xp->compat_allow_errors ("7.6");
-  
-    //  Init parser with predefined entities
-    if (predefined_entities)
-      foreach(indices(predefined_entities), string entity)
-        xp->define_entity_raw(entity, predefined_entities[entity]);
-  
-    // Construct tree from string
-    mixed err = catch
-    {
-      mapping(string:mixed) extras = ([]);
-      if (flags & PARSE_FORCE_LOWERCASE) {
-        extras->force_lc = 1;
-      }
-      if (flags & PARSE_ENABLE_NAMESPACES) {
-        extras->xmlns = XMLNSParser();
-      }
-      catch( data=xp->autoconvert(data) );
-      foreach(xp->parse(data, parse_xml_callback,
-                        sizeof(extras) && extras),
-              this_program child)
-        add_child(child);
-    };
-
-    if(err)
-    {
-      //  If string msg is found we propagate the error. If error message
-      //  contains " [Offset: 4711]" we add the input data to the string.
-      if (stringp(err) && (flags & PARSE_WANT_ERROR_CONTEXT))
-      {
-        if (sscanf(err, "%s [Offset: %d]", err, int ofs) == 2)
-          err += report_error_context(data, ofs);
-      }
-      throw(err);
-    }
-  }
-
-  static this_program|int(0..0)
-    parse_xml_callback(string type, string name,
-                       mapping attr, string|array contents,
-                       mixed location, mixed ...extra)
-  {
-    this_program node;
-
-    switch (type) {
-    case "":
-    case "<![CDATA[":
-      //  Create text node
-      return this_program(XML_TEXT, "", 0, contents);
-
-    case "<!--":
-      //  Create comment node
-      return this_program(XML_COMMENT, "", 0, contents);
-
-    case "<?xml":
-      //  XML header tag
-      return this_program(XML_HEADER, "", attr, "");
-
-    case "<!DOCTYPE":
-      return this_program(XML_DOCTYPE, name, attr, "");
-
-    case "<?":
-      //  XML processing instruction
-      return this_program(XML_PI, name, attr, contents);
-
-    case "<>":
-      //  Create new tag node.
-      if (arrayp(extra) && sizeof(extra) &&
-          mappingp(extra[0])) {
-        //  Convert tag and attribute names to lowercase
-        //  if requested.
-        if (extra[0]->force_lc) {
-          name = lower_case(name);
-          attr = mkmapping(map(indices(attr), lower_case),
-                           values(attr));
-        }
-        //  Parse namespace information of available.
-        if (extra[0]->xmlns) {
-          XMLNSParser xmlns = extra[0]->xmlns;
-          attr = xmlns->Enter(attr);
-          name = xmlns->Decode(name);
-          xmlns->Leave();
-        }
-      }
-      return this_program(XML_ELEMENT, name, attr, "");
-
-    case ">":
-      //  Create tree node for this container
-      if (arrayp(extra) && sizeof(extra) && mappingp(extra[0])) {
-        //  Convert tag and attribute names to lowercase
-        //  if requested.
-        if (extra[0]->force_lc) {
-          name = lower_case(name);
-          attr = mkmapping(map(indices(attr), lower_case), values(attr));
-        }
-        //  Parse namespace information of available.
-        if (extra[0]->xmlns) {
-          XMLNSParser xmlns = extra[0]->xmlns;
-          name = xmlns->Decode(name);
-          xmlns->Leave();
-        }
-      }
-      node = this_program(XML_ELEMENT, name, attr, "");
-	
-      //  Add children to our tree node. We need to merge consecutive text
-      //  children since two text elements can't be neighbors according to
-      //  the W3 spec. This is necessary since CDATA sections are
-      //  converted to text nodes which might need to be concatenated
-      //  with neighboring text nodes.
-      Node text_node;
-      int(0..1) modified;
-
-      foreach(contents; int i; Node child) {
-        if (child->get_node_type() == XML_TEXT) {
-          if (text_node) {
-            //  Add this text string to the previous text node.
-            text_node->_add_to_text (child->get_text());
-            contents[i]=0;
-            modified=1;
-          }
-          else
-            text_node = child;
-        } else
-          text_node = 0;
-      }
-
-      if( modified )
-        contents -= ({ 0 });
-      node->replace_children( contents );
-      return (node);
-
-    case "error":
-      //  Error message present in contents. If "location" is present in the
-      //  "extra" mapping we encode that value in the message string so the
-      //  handler for this throw() can display the proper error context.
-      if (name) {
-        // We append the name of the tag that caused the error to be triggered.
-        contents += sprintf(" [Tag: %O]", name);
-      }
-      if (location && mappingp(location))
-        throw_error(contents + " [Offset: " + location->location + "]\n");
-      else
-        throw_error(contents + "\n");
-
-    case "<":
-      if (arrayp(extra) && sizeof(extra) && mappingp(extra[0]) &&
-          extra[0]->xmlns) {
-        XMLNSParser xmlns = extra[0]->xmlns;
-        attr = xmlns->Enter(attr);
-      }
-      return 0;
-
-    default:
-      return 0;
-    }
-  }
-}
-
 //! XML node without parent pointers and attribute nodes.
 class SimpleNode
 {
   inherit AbstractSimpleNode;
   inherit VirtualNode;
-  inherit XMLParser;
-
-  // void create(string data, void|mapping predefined, void|ParseFlags flags)
-  // void create(int type, string name, mapping attr, string text)
-  void create(string|int type, void|mapping|string name,
-              void|ParseFlags|mapping attr, void|string text)
-  {
-      if(stringp(type)) {
-        ::create(XML_ROOT, "", 0, "");
-        parse(type, name, attr);
-      }
-      else {
-        ::create(type, name, attr, text);
-      }
-  }
 
   // Needed for cross-overloading
   SimpleNode low_clone()
@@ -1445,21 +1293,6 @@ class Node
 {
   inherit AbstractNode;
   inherit VirtualNode;
-  inherit XMLParser;
-
-  // void create(string data, void|mapping predefined, void|ParseFlags flags)
-  // void create(int type, string name, mapping attr, string text)
-  void create(string|int type, void|mapping|string name,
-              void|ParseFlags|mapping attr, void|string text)
-  {
-      if(stringp(type)) {
-        ::create(XML_ROOT, "", 0, "");
-        parse(type, name, attr);
-      }
-      else {
-        ::create(type, name, attr, text);
-      }
-  }
 
   // Needed for cross-overloading
   Node low_clone()
@@ -1543,23 +1376,213 @@ string report_error_context(string data, int ofs)
   return "\nContext: " + pre + post + "\n";
 }
 
+//! Mixin for parsing XML.
+class XMLParser
+{
+  this_program add_child(this_program);
+  void create(int, string, mapping, string);
+
+  this_program doctype_node;
+
+  void parse(string data,
+             void|mapping predefined_entities,
+             ParseFlags|void flags)
+  {
+    .Simple xp = .Simple();
+
+    if (!(flags & PARSE_DISALLOW_RXML_ENTITIES))
+      xp->allow_rxml_entities(1);
+
+    if (flags & PARSE_COMPAT_ALLOW_ERRORS_7_2)
+      xp->compat_allow_errors ("7.2");
+    else if (flags & PARSE_COMPAT_ALLOW_ERRORS_7_6)
+      xp->compat_allow_errors ("7.6");
+  
+    //  Init parser with predefined entities
+    if (predefined_entities)
+      foreach(indices(predefined_entities), string entity)
+        xp->define_entity_raw(entity, predefined_entities[entity]);
+  
+    // Construct tree from string
+    mixed err = catch
+    {
+      mapping(string:mixed) extras = ([]);
+      if (flags & PARSE_FORCE_LOWERCASE) {
+        extras->force_lc = 1;
+      }
+      if (flags & PARSE_ENABLE_NAMESPACES) {
+        extras->xmlns = XMLNSParser();
+      }
+      catch( data=xp->autoconvert(data) );
+      foreach(xp->parse(data, parse_xml_callback,
+                        sizeof(extras) && extras),
+              this_program child)
+        add_child(child);
+    };
+
+    if(err)
+    {
+      //  If string msg is found we propagate the error. If error message
+      //  contains " [Offset: 4711]" we add the input data to the string.
+      if (stringp(err) && (flags & PARSE_WANT_ERROR_CONTEXT))
+      {
+        if (sscanf(err, "%s [Offset: %d]", err, int ofs) == 2)
+          err += report_error_context(data, ofs);
+      }
+      throw(err);
+    }
+  }
+
+  static this_program node_factory(int type, string name,
+				   mapping attr, string text);
+
+  static this_program|int(0..0)
+    parse_xml_callback(string type, string name,
+                       mapping attr, string|array contents,
+                       mixed location, mixed ...extra)
+  {
+    this_program node;
+
+    switch (type) {
+    case "":
+    case "<![CDATA[":
+      //  Create text node
+      return node_factory(XML_TEXT, "", 0, contents);
+
+    case "<!--":
+      //  Create comment node
+      return node_factory(XML_COMMENT, "", 0, contents);
+
+    case "<?xml":
+      //  XML header tag
+      return node_factory(XML_HEADER, "", attr, "");
+
+    case "<!ENTITY":
+      return node_factory(DTD_ENTITY, name, attr, contents);
+    case "<!ELEMENT":
+      return node_factory(DTD_ELEMENT, name, 0, contents);
+    case "<!ATTLIST":
+      return node_factory(DTD_ATTLIST, name, attr, contents);
+    case "<!NOTATION":
+      return node_factory(DTD_NOTATION, name, attr, contents);
+    case "<!DOCTYPE":
+      return node_factory(XML_DOCTYPE, name, attr, contents);
+
+    case "<?":
+      //  XML processing instruction
+      return node_factory(XML_PI, name, attr, contents);
+
+    case "<>":
+      //  Create new tag node.
+      if (arrayp(extra) && sizeof(extra) &&
+          mappingp(extra[0])) {
+        //  Convert tag and attribute names to lowercase
+        //  if requested.
+        if (extra[0]->force_lc) {
+          name = lower_case(name);
+          attr = mkmapping(map(indices(attr), lower_case),
+                           values(attr));
+        }
+        //  Parse namespace information of available.
+        if (extra[0]->xmlns) {
+          XMLNSParser xmlns = extra[0]->xmlns;
+          attr = xmlns->Enter(attr);
+          name = xmlns->Decode(name);
+          xmlns->Leave();
+        }
+      }
+      return node_factory(XML_ELEMENT, name, attr, "");
+
+    case ">":
+      //  Create tree node for this container
+      if (arrayp(extra) && sizeof(extra) && mappingp(extra[0])) {
+        //  Convert tag and attribute names to lowercase
+        //  if requested.
+        if (extra[0]->force_lc) {
+          name = lower_case(name);
+          attr = mkmapping(map(indices(attr), lower_case), values(attr));
+        }
+        //  Parse namespace information of available.
+        if (extra[0]->xmlns) {
+          XMLNSParser xmlns = extra[0]->xmlns;
+          name = xmlns->Decode(name);
+          xmlns->Leave();
+        }
+      }
+      node = node_factory(XML_ELEMENT, name, attr, "");
+	
+      //  Add children to our tree node. We need to merge consecutive text
+      //  children since two text elements can't be neighbors according to
+      //  the W3 spec. This is necessary since CDATA sections are
+      //  converted to text nodes which might need to be concatenated
+      //  with neighboring text nodes.
+      Node text_node;
+      int(0..1) modified;
+
+      foreach(contents; int i; Node child) {
+        if (child->get_node_type() == XML_TEXT) {
+          if (text_node) {
+            //  Add this text string to the previous text node.
+            text_node->_add_to_text (child->get_text());
+            contents[i]=0;
+            modified=1;
+          }
+          else
+            text_node = child;
+        } else
+          text_node = 0;
+      }
+
+      if( modified )
+        contents -= ({ 0 });
+      node->replace_children( contents );
+      return (node);
+
+    case "error":
+      //  Error message present in contents. If "location" is present in the
+      //  "extra" mapping we encode that value in the message string so the
+      //  handler for this throw() can display the proper error context.
+      if (name) {
+        // We append the name of the tag that caused the error to be triggered.
+        contents += sprintf(" [Tag: %O]", name);
+      }
+      if (location && mappingp(location))
+        throw_error(contents + " [Offset: " + location->location + "]\n");
+      else
+        throw_error(contents + "\n");
+
+    case "<":
+      if (arrayp(extra) && sizeof(extra) && mappingp(extra[0]) &&
+          extra[0]->xmlns) {
+        XMLNSParser xmlns = extra[0]->xmlns;
+        attr = xmlns->Enter(attr);
+      }
+      return 0;
+
+    default:
+      // werror("Unknown XML type: %O\n", type);
+      return 0;
+    }
+  }
+}
+
 //
 // --- Compatibility below this point
 //
 
 //! Takes an XML string and produces a @[SimpleNode] tree.
-SimpleNode simple_parse_input(string data,
-			      void|mapping predefined_entities,
-			      ParseFlags|void flags)
+SimpleRootNode simple_parse_input(string data,
+				  void|mapping predefined_entities,
+				  ParseFlags|void flags)
 {
-  return SimpleNode(data, predefined_entities, flags);
+  return SimpleRootNode(data, predefined_entities, flags);
 }
 
 //! Loads the XML file @[path], creates a @[SimpleNode] tree representation and
 //! returns the root node.
-SimpleNode simple_parse_file(string path,
-			     void|mapping predefined_entities,
-			     ParseFlags|void flags)
+SimpleRootNode simple_parse_file(string path,
+				 void|mapping predefined_entities,
+				 ParseFlags|void flags)
 {
   Stdio.File  file = Stdio.File(path, "r");
   string      data;
@@ -1580,11 +1603,11 @@ SimpleNode simple_parse_file(string path,
 //! @[flags] is not used for @[PARSE_WANT_ERROR_CONTEXT],
 //! @[PARSE_FORCE_LOWERCASE] or @[PARSE_ENABLE_NAMESPACES] since they
 //! are covered by the separate flag arguments.
-Node parse_input(string data, void|int(0..1) no_fallback,
-		 void|int(0..1) force_lowercase,
-		 void|mapping(string:string) predefined_entities,
-		 void|int(0..1) parse_namespaces,
-		 ParseFlags|void flags)
+RootNode parse_input(string data, void|int(0..1) no_fallback,
+		     void|int(0..1) force_lowercase,
+		     void|mapping(string:string) predefined_entities,
+		     void|int(0..1) parse_namespaces,
+		     ParseFlags|void flags)
 {
     if(no_fallback)
         flags |= PARSE_WANT_ERROR_CONTEXT;
@@ -1595,7 +1618,7 @@ Node parse_input(string data, void|int(0..1) no_fallback,
     if(parse_namespaces)
         flags |= PARSE_ENABLE_NAMESPACES;
 
-    return Node(data, predefined_entities, flags);
+    return RootNode(data, predefined_entities, flags);
 }
   
 //! Loads the XML file @[path], creates a node tree representation and
@@ -1615,18 +1638,88 @@ Node parse_file(string path, int(0..1)|void parse_namespaces)
     return parse_input(data, 0, 0, 0, parse_namespaces);
 }
 
+static class DTDElementHelper
+{
+  array expression;
+  array get_expression()
+  {
+    return expression;
+  }
+
+  void low_render_expression(String.Buffer data, array|string expr)
+  {
+    if (stringp(expr)) {
+      data->add(expr);
+    } else if ((<"?", "*", "+">)[expr[0]]) {
+      // Postfix operator.
+      low_render_expression(data, expr[1]);
+      data->add(expr[0]);
+    } else if (expr[0] == "#PCDATA") {
+      // Special case...
+      if (sizeof(expr) == 1) {
+	data->add("(#PCDATA)");
+      } else {
+	data->add("(#PCDATA");
+	foreach(expr[1..], string e) {
+	  data->add(" | ", e);
+	}
+	data->add(")*");
+      }
+    } else {
+      // Infix operator.
+      data->add("(");
+      foreach(expr[1..]; int ind; array|string e) {
+	if (ind) data->add(" ", expr[0], " ");
+	low_render_expression(data, e);
+      }
+      data->add(")");
+    }
+  }
+
+  void render_expression(String.Buffer data)
+  {
+    low_render_expression(data, expression);
+  }
+}
+
 // Convenience stuff for creation of @[SimpleNode]s.
 
 class SimpleRootNode
 {
   inherit SimpleNode;
+  inherit XMLParser;
+
   static SimpleNode low_clone()
   {
     return SimpleRootNode();
   }
-  static void create()
+
+  static SimpleNode node_factory(int type, string name,
+				 mapping attr, string|array text)
+  {
+    switch(type) {
+    case XML_TEXT: return SimpleTextNode(text);
+    case XML_COMMENT: return SimpleCommentNode(text);
+    case XML_HEADER: return SimpleHeaderNode(attr);
+    case XML_PI: return SimplePINode(name, attr, text);
+    case XML_ELEMENT: return SimpleElementNode(name, attr);
+    case XML_DOCTYPE: return SimpleDoctypeNode(name, attr, text);
+    case DTD_ENTITY: return SimpleDTDEntityNode(name, attr, text);
+    case DTD_ELEMENT: return SimpleDTDElementNode(name, text);
+    case DTD_ATTLIST: return SimpleDTDAttlistNode(name, attr, text);
+    case DTD_NOTATION: return SimpleDTDNotationNode(name, attr, text);
+    default: return SimpleNode(type, name, attr, text);
+    }
+  }
+
+  static void create(string|void data,
+		     mapping|void predefined_entities,
+		     ParseFlags|void flags)
   {
     ::create(XML_ROOT, "", 0, "");
+    if (data) {
+      parse(data, predefined_entities, flags);
+    }
   }
 }
 
@@ -1683,6 +1776,81 @@ class SimplePINode
   }
 }
 
+class SimpleDoctypeNode
+{
+  inherit SimpleNode;
+  static SimpleNode low_clone()
+  {
+    return SimpleDoctypeNode(get_full_name(), get_attributes(), 0);
+  }
+  static void create(string name, mapping(string:string) attrs,
+		     array contents)
+  {
+    ::create(XML_DOCTYPE, name, attrs, "");
+    if (contents) {
+      replace_children(contents);
+    }
+  }
+}
+
+class SimpleDTDEntityNode
+{
+  inherit SimpleNode;
+  static SimpleNode low_clone()
+  {
+    return SimpleDTDEntityNode(get_full_name(), get_attributes(), get_text());
+  }
+  static void create(string name, mapping(string:string) attrs,
+		     string contents)
+  {
+    ::create(DTD_ENTITY, name, attrs, contents);
+  }
+}
+
+class SimpleDTDElementNode
+{
+  inherit SimpleNode;
+  inherit DTDElementHelper;
+
+  static SimpleNode low_clone()
+  {
+    return SimpleDTDElementNode(get_full_name(), get_expression());
+  }
+  static void create(string name, array expression)
+  {
+    this_program::expression = expression;
+    ::create(DTD_ELEMENT, name, 0, "");
+  }
+}
+
+class SimpleDTDAttlistNode
+{
+  inherit SimpleNode;
+  static SimpleNode low_clone()
+  {
+    return SimpleDTDAttlistNode(get_full_name(), get_attributes(), get_text());
+  }
+  static void create(string name, mapping(string:string) attrs,
+		     string contents)
+  {
+    ::create(DTD_ATTLIST, name, attrs, contents);
+  }
+}
+
+class SimpleDTDNotationNode
+{
+  inherit SimpleNode;
+  static SimpleNode low_clone()
+  {
+    return SimpleDTDNotationNode(get_full_name(), get_attributes(), get_text());
+  }
+  static void create(string name, mapping(string:string) attrs,
+		     string contents)
+  {
+    ::create(DTD_NOTATION, name, attrs, contents);
+  }
+}
+
 class SimpleElementNode
 {
   inherit SimpleNode;
@@ -1701,13 +1869,39 @@ class SimpleElementNode
 class RootNode
 {
   inherit Node;
+  inherit XMLParser;
+
   static Node low_clone()
   {
     return RootNode();
   }
-  static void create()
+
+  static Node node_factory(int type, string name,
+			   mapping attr, string|array text)
+  {
+    switch(type) {
+    case XML_TEXT: return TextNode(text);
+    case XML_COMMENT: return CommentNode(text);
+    case XML_HEADER: return HeaderNode(attr);
+    case XML_PI: return PINode(name, attr, text);
+    case XML_ELEMENT: return ElementNode(name, attr);
+    case XML_DOCTYPE: return DoctypeNode(name, attr, text);
+    case DTD_ENTITY: return DTDEntityNode(name, attr, text);
+    case DTD_ELEMENT: return DTDElementNode(name, text);
+    case DTD_ATTLIST: return DTDAttlistNode(name, attr, text);
+    case DTD_NOTATION: return DTDNotationNode(name, attr, text);
+    default: return Node(type, name, attr, text);
+    }
+  }
+
+  static void create(string|void data,
+		     mapping|void predefined_entities,
+		     ParseFlags|void flags)
   {
     ::create(XML_ROOT, "", 0, "");
+    if (data) {
+      parse(data, predefined_entities, flags);
+    }
   }
 }
 
@@ -1761,6 +1955,81 @@ class PINode
 		     string contents)
   {
     ::create(XML_PI, name, attrs, contents);
+  }
+}
+
+class DoctypeNode
+{
+  inherit Node;
+  static Node low_clone()
+  {
+    return DoctypeNode(get_full_name(), get_attributes(), 0);
+  }
+  static void create(string name, mapping(string:string) attrs,
+		     array contents)
+  {
+    ::create(XML_DOCTYPE, name, attrs, "");
+    if (contents) {
+      replace_children(contents);
+    }
+  }
+}
+
+class DTDEntityNode
+{
+  inherit Node;
+  static Node low_clone()
+  {
+    return DTDEntityNode(get_full_name(), get_attributes(), get_text());
+  }
+  static void create(string name, mapping(string:string) attrs,
+		     string contents)
+  {
+    ::create(DTD_ENTITY, name, attrs, contents);
+  }
+}
+
+class DTDElementNode
+{
+  inherit Node;
+  inherit DTDElementHelper;
+
+  static Node low_clone()
+  {
+    return DTDElementNode(get_full_name(), get_expression());
+  }
+  static void create(string name, array expression)
+  {
+    this_program::expression = expression;
+    ::create(DTD_ELEMENT, name, 0, "");
+  }
+}
+
+class DTDAttlistNode
+{
+  inherit Node;
+  static Node low_clone()
+  {
+    return DTDAttlistNode(get_full_name(), get_attributes(), get_text());
+  }
+  static void create(string name, mapping(string:string) attrs,
+		     string contents)
+  {
+    ::create(DTD_ATTLIST, name, attrs, contents);
+  }
+}
+
+class DTDNotationNode
+{
+  inherit Node;
+  static Node low_clone()
+  {
+    return DTDNotationNode(get_full_name(), get_attributes(), get_text());
+  }
+  static void create(string name, mapping(string:string) attrs,
+		     string contents)
+  {
+    ::create(DTD_NOTATION, name, attrs, contents);
   }
 }
 
