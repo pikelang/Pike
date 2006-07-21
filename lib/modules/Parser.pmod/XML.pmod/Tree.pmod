@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.64 2006/07/20 14:59:44 grubba Exp $
+ * $Id: Tree.pmod,v 1.65 2006/07/21 10:31:15 grubba Exp $
  *
  */
 
@@ -1072,9 +1072,10 @@ static class VirtualNode {
       data->add("<!DOCTYPE ", n->get_short_name());
       mapping attrs = n->get_attributes();
       if (attrs->PUBLIC) {
-	data->add(" PUBLIC %O %O", attrs->PUBLIC, attrs->SYSTEM || "");
+	data->add(sprintf(" PUBLIC %O %O",
+			  attrs->PUBLIC, attrs->SYSTEM || ""));
       } else if (attrs->SYSTEM) {
-	data->add(" SYSTEM %O", attrs->SYSTEM);
+	data->add(sprintf(" SYSTEM %O", attrs->SYSTEM));
       }
       if (n->count_children()) {
 	data->add(" [ ");
