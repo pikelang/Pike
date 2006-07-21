@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.10 2006/07/21 10:31:46 grubba Exp $
+// $Id: testsuite.in,v 1.11 2006/07/21 11:38:08 grubba Exp $
 
 // DOM
 
@@ -30,16 +30,16 @@ test_tree_eq([[ ("<?xml version=\"1.0\"?><!DOCTYPE greeting SYSTEM \"hello.dtd\"
 
 // Check that any xml and/or doctype header survives the parsing.
 // Check also that the headers are rendered properly.
-test_tree_eq([[ Parser.XML.Tree.parse_input("<?xml version='1.0' encoding='iso-8859-1'?><!DOCTYPE foo [ <!ELEMENT foo (foo)*> ]><foo><foo/><foo/></foo>")->render_xml() ]],
+test_tree_eq([[ ("<?xml version='1.0' encoding='iso-8859-1'?><!DOCTYPE foo [ <!ELEMENT foo (foo)*> ]><foo><foo/><foo/></foo>")->render_xml() ]],
   [[ "<?xml version='1.0' encoding='iso-8859-1'?><!DOCTYPE foo [ <!ELEMENT foo (foo)* > ]><foo><foo/><foo/></foo>" ]])
-test_tree_eq([[ Parser.XML.Tree.parse_input("<?xml version='1.0' encoding='utf-8'?><!DOCTYPE foo PUBLIC \"-//EN\" \"foo.dtd\" ><foo><foo/><foo/></foo>")->render_xml() ]],
+test_tree_eq([[ ("<?xml version='1.0' encoding='utf-8'?><!DOCTYPE foo PUBLIC \"-//EN\" \"foo.dtd\" ><foo><foo/><foo/></foo>")->render_xml() ]],
   [[ "<?xml version='1.0' encoding='utf-8'?><!DOCTYPE foo PUBLIC \"-//EN\" \"foo.dtd\"><foo><foo/><foo/></foo>" ]])
 
 test_any([[
 
 class A {
   inherit Parser.XML.Tree.RootNode;
-  public array(this_program) mChildren = ({});
+  public array(Parser.XML.Tree.AbstractSimpleNode) mChildren = ({});
 };
 
 return sizeof(A("<!-- --><!-- --><x/>")->mChildren);
