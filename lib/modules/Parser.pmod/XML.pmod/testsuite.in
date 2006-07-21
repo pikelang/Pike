@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.11 2006/07/21 11:38:08 grubba Exp $
+// $Id: testsuite.in,v 1.12 2006/07/21 17:53:21 grubba Exp $
 
 // DOM
 
@@ -31,7 +31,7 @@ test_tree_eq([[ ("<?xml version=\"1.0\"?><!DOCTYPE greeting SYSTEM \"hello.dtd\"
 // Check that any xml and/or doctype header survives the parsing.
 // Check also that the headers are rendered properly.
 test_tree_eq([[ ("<?xml version='1.0' encoding='iso-8859-1'?><!DOCTYPE foo [ <!ELEMENT foo (foo)*> ]><foo><foo/><foo/></foo>")->render_xml() ]],
-  [[ "<?xml version='1.0' encoding='iso-8859-1'?><!DOCTYPE foo [ <!ELEMENT foo (foo)* > ]><foo><foo/><foo/></foo>" ]])
+  [[ "<?xml version='1.0' encoding='iso-8859-1'?><!DOCTYPE foo [ <!ELEMENT foo (foo)*> ]><foo><foo/><foo/></foo>" ]])
 test_tree_eq([[ ("<?xml version='1.0' encoding='utf-8'?><!DOCTYPE foo PUBLIC \"-//EN\" \"foo.dtd\" ><foo><foo/><foo/></foo>")->render_xml() ]],
   [[ "<?xml version='1.0' encoding='utf-8'?><!DOCTYPE foo PUBLIC \"-//EN\" \"foo.dtd\"><foo><foo/><foo/></foo>" ]])
 
