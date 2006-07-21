@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.65 2006/07/21 10:31:15 grubba Exp $
+ * $Id: Tree.pmod,v 1.66 2006/07/21 16:23:05 grubba Exp $
  *
  */
 
@@ -1010,6 +1010,7 @@ static class VirtualNode {
     error( "Can not case Node to "+to+".\n" );
   }
 
+  // FIXME: Consider moving this to the corresponding base node classes?
   static void low_render_xml(String.Buffer data, Node n,
 			     function(string:string) textq,
 			     function(string:string) attrq,
@@ -1078,18 +1079,41 @@ static class VirtualNode {
 	data->add(sprintf(" SYSTEM %O", attrs->SYSTEM));
       }
       if (n->count_children()) {
-	data->add(" [ ");
+	// Use the raw internal subset if available.
+	if (attrs->internal_subset) {
+	  data->add(" [", attrs->internal_subset, "]>");
+	  return;
+	} else {
+	  // We need to render the DTD by hand.
+	  // NOTE: Any formatting (including PEReferences) of the
+	  //       originating DTD will be lost.
+	  data->add(" [\n");
+	}
       } else {
 	data->add(">");
       }
       break;
 
+    case DTD_ENTITY:
+      tagname = n->get_short_name();
+      if (tagname[0] == '%') {
+	data->add("  <!ENTITY % ", tagname[1..], " ");
+      } else {
+	data->add("  <!ENTITY ", tagname, " ");
+      }
+      data->add("\"", attribute_quote(n->get_text()), "\" >\n");
+      break;
+
     case DTD_ELEMENT:
-      data->add("<!ELEMENT ", n->get_short_name(), " ");
+      data->add("  <!ELEMENT ", n->get_short_name(), " ");
       n->render_expression(data);
-      data->add(" >");
+      data->add(" >\n");
       break;
     } 
+
+    // FIXME: The following code is probably only relevant to
+    //        XML_ELEMENT and XML_DOCTYPE nodes. Consider moving
+    //        it to the corresponding cases above.
 
     array(Node) children = n->get_children();
     foreach(children, Node n) {
@@ -1377,6 +1401,29 @@ string report_error_context(string data, int ofs)
   return "\nContext: " + pre + post + "\n";
 }
 
+// Used for debugging...
+class WrappedSimple
+{
+  inherit .Simple;
+
+#if (__REAL_VERSION__ > 7.65)
+  // CMOD-based xml parser ==> we can overload internal functions.
+
+  string lookup_entity(string entity)
+  {
+    string ret = ::lookup_entity(entity);
+    werror("lookup_entity(%O) ==> %O\n", entity, ret);
+    return ret;
+  }
+
+  void define_entity_raw(string entity, string raw)
+  {
+    werror("define_entity_raw(%O, %O)\n", entity, raw);
+    ::define_entity_raw(entity, raw);
+  }
+#endif
+}
+
 //! Mixin for parsing XML.
 class XMLParser
 {
@@ -1389,6 +1436,7 @@ class XMLParser
              void|mapping predefined_entities,
              ParseFlags|void flags)
   {
+    //.Simple xp = WrappedSimple();
     .Simple xp = .Simple();
 
     if (!(flags & PARSE_DISALLOW_RXML_ENTITIES))
@@ -1561,7 +1609,7 @@ class XMLParser
       return 0;
 
     default:
-      // werror("Unknown XML type: %O\n", type);
+      // werror("Unknown XML type: %O: %O, %O\n", type, attr, contents);
       return 0;
     }
   }
