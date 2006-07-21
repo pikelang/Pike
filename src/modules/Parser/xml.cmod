@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.cmod,v 1.92 2006/06/15 15:26:35 grubba Exp $
+|| $Id: xml.cmod,v 1.93 2006/07/21 16:19:02 grubba Exp $
 */
 
 #include "global.h"
@@ -2600,8 +2600,12 @@ static int low_parse_dtd()
 {
   int done;
   struct svalue *save_sp=sp;
+  int old_flags = THIS->flags;
 
+  THIS->flags |= ALLOW_PESMEG_EVERYWHERE;
   done=really_low_parse_dtd();
+  THIS->flags = old_flags;
+
 #ifdef PIKE_DEBUG
   if(sp<save_sp)
     Pike_fatal("Stack underflow.\n");
@@ -2865,12 +2869,35 @@ static struct pike_string *very_low_parse_xml(struct pike_string *end,
 
 		  if(SAFE_PEEK(0)=='[')
 		  {
+		    PCHARP startp;
+		    PCHARP endp;
+		    int pos;
+		    struct mapping *attrs = Pike_sp[-1].u.mapping;
+
 		    READ(1);
+		    startp = endp = THIS->input->datap;
+		    pos = -THIS->input->pos;
 		    low_parse_dtd();
 #ifdef VERBOSE_XMLDEBUG
 		    fprintf(stderr,"FOO: %c%c%c%c\n",SAFE_PEEK(0),
 			    SAFE_PEEK(1),SAFE_PEEK(2),SAFE_PEEK(3));
 #endif
+
+		    pos += THIS->input->pos;
+		    INC_PCHARP(endp, pos);
+		    if (LOW_COMPARE_PCHARP(endp, ==, THIS->input->datap)) {
+		      /* Still in the same string.
+		       *
+		       * Add the verbatim string to the attributes
+		       * so that the user can reconstruct the tag.
+		       */
+		      push_string(make_shared_binary_pcharp(startp, pos));
+		      mapping_string_insert(attrs,
+					    MK_STRING("internal_subset"),
+					    Pike_sp-1);
+		      pop_stack();
+		    }
+
 		    if(SAFE_PEEK(0) != ']')
 		      XMLERROR("Missing ] in DOCTYPE tag.");
 		    READ(1);
