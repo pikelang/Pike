@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.223 2006/06/13 15:04:33 grubba Exp $
+// $Id: module.pmod,v 1.224 2006/07/23 20:18:16 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -2130,7 +2130,8 @@ int file_size(string filename)
   Stat stat;
   stat = file_stat(filename);
   if(!stat) return -1;
-  return [int]stat->size;
+  // Please note that stat->size is not always the same thing as stat[1]. /mast
+  return [int]stat[1];
 }
 
 //! Append @[relative] paths to an @[absolute] path and remove any
