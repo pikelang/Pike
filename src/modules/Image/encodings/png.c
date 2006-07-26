@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.83 2006/07/09 22:10:36 nilsson Exp $
+|| $Id: png.c,v 1.84 2006/07/26 18:02:00 nilsson Exp $
 */
 
 #include "global.h"
@@ -51,6 +51,7 @@ static struct pike_string *param_type;
 static struct pike_string *param_bpp;
 static struct pike_string *param_background;
 static struct pike_string *param_zlevel;
+static struct pike_string *param_zstrategy;
 
 /*! @module Image
  */
@@ -129,7 +130,7 @@ static void png_decompress(int style)
    free_object(o);
 }
 
-static void png_compress(int style, int zlevel)
+static void png_compress(int style, int zlevel, int zstrategy)
 {
    struct object *o;
 
@@ -137,7 +138,8 @@ static void png_compress(int style, int zlevel)
       Pike_error("Internal error: Illegal decompression style %d.\n",style);
    
    push_int(zlevel);
-   o=clone_object(gz_deflate,1);
+   push_int(zstrategy);
+   o=clone_object(gz_deflate,2);
    apply(o,"deflate",1);
    free_object(o);
 }
@@ -1485,6 +1487,12 @@ header_stuff:
  *!       Use this as palette for pseudocolor encoding
  *!       (Note: encoding with alpha channel and pseudocolor
  *!       at the same time are not supported)
+ *!     @member int(0..9) "zlevel"
+ *!       The level of z-compression to be applied. Default is 8.
+ *!     @member int "zstrategy"
+ *!       The type of LZ77 strategy to be used. Possible values are
+ *!       @[Gz.DEFAULT_STRATEGY], @[Gz.FILTERED], @[Gz.HUFFMAN_ONLY],
+ *!       @[Gz.RLE], @[Gz.FIXED]. Default is @[Gz.DEFAULT_STRATEGY].
  *!   @endmapping
  *!
  *! @seealso
@@ -1502,6 +1510,7 @@ static void image_png_encode(INT32 args)
 
    int n=0,y,x,bpp;
    int zlevel=8;
+   int zstrategy=0;
    char buf[20];
    
    if (!args)
@@ -1560,11 +1569,23 @@ static void image_png_encode(INT32 args)
       push_svalue(sp+1-args);
       ref_push_string(param_zlevel);
       f_index(2);
-      if ( sp[-1].type!=T_INT || sp[-1].u.integer<0 || sp[-1].u.integer>9 )
-        PIKE_ERROR("Image.PNG.encode","Option (arg 2) \"zlevel\" has illegal value.\n",
+      if ( sp[-1].type!=T_INT )
+        PIKE_ERROR("Image.PNG.encode",
+                   "Option (arg 2) \"zlevel\" has illegal value.\n",
                    sp, args);
       else if (sp[-1].subtype!=NUMBER_UNDEFINED)
         zlevel = sp[-1].u.integer;
+      pop_stack();
+
+      push_svalue(sp+1-args);
+      ref_push_string(param_zstrategy);
+      f_index(2);
+      if ( sp[-1].type!=T_INT )
+        PIKE_ERROR("Image.PNG.encode",
+                   "Option (arg 2) \"zstrategy\" has illegal value.\n",
+                   sp, args);
+      else if (sp[-1].subtype!=NUMBER_UNDEFINED)
+        zstrategy = sp[-1].u.integer;
       pop_stack();
    }
    
@@ -1692,7 +1713,7 @@ static void image_png_encode(INT32 args)
       push_string(end_shared_string(ps));
    }
 
-   png_compress(0, zlevel);
+   png_compress(0, zlevel, zstrategy);
    push_png_chunk("IDAT",NULL);
    n++;
 
@@ -1796,6 +1817,7 @@ void exit_image_png(void)
    free_string(param_background);
    free_string(param_type);
    free_string(param_zlevel);
+   free_string(param_zstrategy);
 
    if(gz_inflate)
      free_program(gz_inflate);
@@ -1868,4 +1890,5 @@ void init_image_png(void)
    param_type=make_shared_string("type");
    param_background=make_shared_string("background");
    param_zlevel=make_shared_string("zlevel");
+   param_zstrategy=make_shared_string("zstrategy");
 }
