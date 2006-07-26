@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colortable.c,v 1.126 2005/10/17 12:53:53 nilsson Exp $
+|| $Id: colortable.c,v 1.127 2006/07/26 19:23:46 nilsson Exp $
 */
 
 #include "global.h"
@@ -308,9 +308,8 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
    rgbd_group newpos1,newpos2;
 
 #ifdef COLORTABLE_REDUCE_DEBUG
-   fprintf(stderr, "COLORTABLE%*s reduce_recurse %lx,%lx, %ld,%ld\n",
-	   level, "", (unsigned long)src, (unsigned long)dest,
-	   (long)src_size, (long)target_size);
+   fprintf(stderr, "COLORTABLE%*s reduce_recurse %p,%p, %ld,%ld\n",
+	   level, "", src, dest, (long)src_size, (long)target_size);
 #if 0
    stderr_print_entries(src,src_size);
 #endif
@@ -336,6 +335,10 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 	    n++;
 	 }
 
+#ifdef COLORTABLE_REDUCE_DEBUG
+      fprintf(stderr, "COLORTABLE%*s reduce_recurse %ld>=%ld -> %ld\n",
+              level, "", (long)n, (long)target_size, (long)n);
+#endif
       if (n>=target_size) return n;
 
       switch (type)
@@ -638,6 +641,11 @@ static struct nct_flat _img_reduce_number_of_colors(struct nct_flat flat,
 
    i = reduce_recurse(flat.entries,newe, flat.numentries, maxcols, 0, sf,
 		      pos, space, NCT_REDUCE_WEIGHT);
+   if( i==0 )
+   {
+     free(newe);
+     return flat;
+   }
 
    free(flat.entries);
 
@@ -4486,6 +4494,41 @@ void image_colortable_corners(INT32 args)
       free(flat.entries);
 }
 
+/*
+**! method int(0..1) greyp()
+**!	Returns true if this colortable only contains greyscale.
+**/
+
+static void image_colortable_greyp( INT32 args )
+{
+   struct nct_flat flat;
+   int i, bw=1;
+   
+   if (THIS->type==NCT_NONE)
+      return;
+
+   if (THIS->type==NCT_CUBE)
+      flat=_img_nct_cube_to_flat(THIS->u.cube);
+   else
+      flat=THIS->u.flat;
+
+   for (i=0; i<flat.numentries; i++)
+   {
+      if( flat.entries[i].color.r != flat.entries[i].color.g ||
+          flat.entries[i].color.r != flat.entries[i].color.b )
+      {
+        bw=0;
+        break;
+      }
+   }
+
+   if (THIS->type==NCT_CUBE)
+      free(flat.entries);
+
+   pop_n_elems(args);
+   push_int(bw);
+}
+
 static void image_colortable__sprintf( INT32 args )
 {
   int x;
@@ -4572,6 +4615,7 @@ void init_image_colortable(void)
 
    /* info */
    ADD_FUNCTION("_sizeof",image_colortable__sizeof,tFunc(tNone,tInt),0);
+   ADD_FUNCTION("greyp",image_colortable_greyp,tFunc(tNone,tInt01),0);
 
    /* lookup modes */
    ADD_FUNCTION("cubicles",image_colortable_cubicles,tOr(tFunc(tNone,tObj),tFunc(tInt tInt tInt tOr(tVoid,tInt),tObj)),0);
