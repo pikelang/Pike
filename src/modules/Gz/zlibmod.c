@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.71 2006/07/26 17:57:46 nilsson Exp $
+|| $Id: zlibmod.c,v 1.72 2006/07/26 18:02:30 nilsson Exp $
 */
 
 #include "global.h"
@@ -647,6 +647,12 @@ PIKE_MODULE_INIT
   add_integer_constant("DEFAULT_STRATEGY", Z_DEFAULT_STRATEGY,0);
   add_integer_constant("FILTERED", Z_FILTERED,0);
   add_integer_constant("HUFFMAN_ONLY", Z_HUFFMAN_ONLY,0);
+#ifdef Z_RLE
+  add_integer_constant("RLE", Z_RLE,0);
+#endif
+#ifdef Z_FIXED
+  add_integer_constant("FIXED", Z_FIXED,0);
+#endif
 
   set_init_callback(init_gz_deflate);
   set_exit_callback(exit_gz_deflate);
@@ -667,12 +673,6 @@ PIKE_MODULE_INIT
   add_integer_constant("PARTIAL_FLUSH",Z_PARTIAL_FLUSH,0);
   add_integer_constant("SYNC_FLUSH",Z_SYNC_FLUSH,0);
   add_integer_constant("FINISH",Z_FINISH,0);
-#ifdef Z_RLE
-  add_integer_constant("RLE", Z_RLE,0);
-#endif
-#ifdef Z_FIXED
-  add_integer_constant("FIXED", Z_FIXED,0);
-#endif
 
   set_init_callback(init_gz_inflate);
   set_exit_callback(exit_gz_inflate);
