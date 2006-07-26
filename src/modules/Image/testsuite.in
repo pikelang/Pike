@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.21 2005/08/14 02:22:09 nilsson Exp $
+dnl $Id: testsuite.in,v 1.22 2006/07/26 19:24:00 nilsson Exp $
 
 test_eq([[ Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n"
   "1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0") ]],
@@ -624,6 +624,10 @@ test_eq( Image.Font()->write("hej"),
 test_eq( Image.Font()->write("h","o"),
   Image.PNM.decode(MIME.decode_base64("UDQKNyAyMwr+vr6ulra2trb+/v7+/s62tra2zv7+/g==")) )
 
+
+dnl #### Colortable
+
+
 define(test_blackwhite,[[
   test_equal_any($1,[[ (< Image.Color.white, Image.Color.black >) ]])
 ]])
@@ -688,6 +692,11 @@ test_coltab([[
   test_do( add_constant("c") )
 ]])
 
+test_true( Image.Colortable(Image.Image(10,10)->randomgrey())->greyp() )
+test_false( Image.Colortable(Image.Image(10,10,255,0,0))->greyp() )
+
+
+dnl #### Encodings
 
 define(test_encoding,[[
   cond( (master()->resolv("Image.$1")||([]))->encode,[[
