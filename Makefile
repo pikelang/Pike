@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.157 2006/07/02 00:56:46 mast Exp $
+# $Id: Makefile,v 1.158 2006/07/26 19:14:10 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -273,6 +273,9 @@ undump_modules:
 
 run_hilfe:
 	@$(DO_MAKE) "METATARGET=run_hilfe" _make_in_builddir
+
+gdb_hilfe:
+	@$(DO_MAKE) "METATARGET=gdb_hilfe" _make_in_builddir
 
 source:
 	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
