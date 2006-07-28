@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colortable.c,v 1.127 2006/07/26 19:23:46 nilsson Exp $
+|| $Id: colortable.c,v 1.128 2006/07/28 14:43:52 grubba Exp $
 */
 
 #include "global.h"
@@ -546,7 +546,7 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
    fprintf(stderr, "COLORTABLE%*s left=%d right=%d\n", level, "", left, right);
 #endif
 
-   if (left==0) left++;
+   if (!left) left++;
    while (left &&
 	  src[left].color.r==src[left-1].color.r &&
 	  src[left].color.g==src[left-1].color.g &&
@@ -639,9 +639,9 @@ static struct nct_flat _img_reduce_number_of_colors(struct nct_flat flat,
    newe=malloc(sizeof(struct nct_flat_entry)*flat.numentries);
    if (!newe) { return flat; }
 
-   i = reduce_recurse(flat.entries,newe, flat.numentries, maxcols, 0, sf,
+   i = reduce_recurse(flat.entries, newe, flat.numentries, maxcols, 0, sf,
 		      pos, space, NCT_REDUCE_WEIGHT);
-   if( i==0 )
+   if (!i)
    {
      free(newe);
      return flat;
@@ -1736,7 +1736,7 @@ static void dither_floyd_steinberg_newline(struct nct_dither *dith,
    fprintf(stderr,"\n");
 #endif
 
-   if (dith->u.floyd_steinberg.dir==0)
+   if (!dith->u.floyd_steinberg.dir)
    {
       dith->u.floyd_steinberg.currentdir=*cd=-*cd;
       switch (*cd)
@@ -2724,19 +2724,19 @@ void image_colortable_cast(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("Image.Colortable->cast",1);
    if (sp[-args].type==T_STRING||sp[-args].u.string->size_shift)
    {
-      if (strncmp(sp[-args].u.string->str,"array",5)==0)
+      if (!strncmp(sp[-args].u.string->str,"array",5))
       {
 	 pop_n_elems(args);
 	 image_colortable_cast_to_array(THIS);
 	 return;
       }
-      if (strncmp(sp[-args].u.string->str,"string",6)==0)
+      if (!strncmp(sp[-args].u.string->str,"string",6))
       {
 	 pop_n_elems(args);
 	 image_colortable_cast_to_string(THIS);
 	 return;
       }
-      if (strncmp(sp[-args].u.string->str,"mapping",7)==0)
+      if (!strncmp(sp[-args].u.string->str,"mapping",7))
       {
 	 pop_n_elems(args);
 	 image_colortable_cast_to_mapping(THIS);
@@ -3314,7 +3314,7 @@ void build_rigid(struct neo_colortable *nct)
 	 for (gi=0; gi<g; gi++)
 	 {
 	    hdi=hhdi+(gc-gi*COLORMAX/g)*(gc-gi*COLORMAX/g);
-	    if (i==0)
+	    if (!i)
 	       for (ri=0; ri<r; ri++)
 	       {
 		  *(ddist++)=di=hdi+(rc-ri*COLORMAX/r)*(rc-ri*COLORMAX/r);
@@ -4504,8 +4504,12 @@ static void image_colortable_greyp( INT32 args )
    struct nct_flat flat;
    int i, bw=1;
    
-   if (THIS->type==NCT_NONE)
+   if (THIS->type==NCT_NONE) {
+      pop_n_elems(args);
+      /* An empty table does not contain colors that are not grey. */
+      push_int(1);
       return;
+   }
 
    if (THIS->type==NCT_CUBE)
       flat=_img_nct_cube_to_flat(THIS->u.cube);
