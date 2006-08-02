@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.440 2006/08/02 21:02:25 mast Exp $
+# $Id: Makefile.in,v 1.441 2006/08/02 21:19:03 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -338,6 +338,7 @@ pike pike.lib: main.o $(OBJ) master-stamp pike.syms modules/linker_options @STAT
 	$(LD) $(LDFLAGS) main.o $(OBJ) \
 	  `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` \
 	  $(LIBS) -o pike
+	@MT_FIX_PIKE_EXE@
 # The dumped modules are removed whenever Pike is relinked since some
 # of the bytecode methods (e.g. ia32) stores absolute addresses to
 # global structs. That should probably be fixed in them so that dumped

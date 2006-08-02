@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.122 2006/08/02 20:59:47 mast Exp $
+# $Id: dynamic_module_makefile.in,v 1.123 2006/08/02 21:19:03 mast Exp $
 #
 
 LIBGCC=@LIBGCC@
@@ -82,6 +82,7 @@ module.so: $(MODULE_ARCHIVES) $(OBJS) $(LDSHARED_MODULE_REQS)
 	  echo $(TMP_BINDIR)/smartlink $(MOD_LDSHARED) $(LDFLAGS) -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) $(LIBGCC) $(LC_REQ) $(LIBGCC) >&2 ;\
 	  exit 1; \
 	fi
+	$(MT_FIX_MODULE_SO)
 
 $(OBJS): propagated_variables
 
