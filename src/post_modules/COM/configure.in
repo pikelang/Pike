@@ -10,7 +10,6 @@ OLD_LIBPATH=$LIBPATH
 COM_LIBS=""
 COM_LIBPATH=""
 COM_AVAILABLE=0
-LINKER_OPTIONS=""
 
 AC_ARG_WITH(com,  [  --without-com       no support for COM],[],[with_com=yes])
 AC_ARG_WITH(com-include-dir, 
@@ -123,7 +122,6 @@ if test "x$with_com" = xyes -a "x$enable_binary" != xno; then
     echo Adding $pike_cv_com_lib_dir to the library search path.
     for i in $pike_cv_com_lib_dir; do
       LDFLAGS="-L$i -R$i ${LDFLAGS}"
-      LINKER_OPTIONS="-L$i -R$i ${LINKER_OPTIONS}"
       COM_LIBPATH="${COM_LIBPATH}${COM_LIBPATH:+:}$i"
 #     LIBPATH="${LIBPATH}${LIBPATH:+:}$i"
     done
@@ -199,7 +197,6 @@ if test "x$with_com" = xyes -a "x$enable_binary" != xno; then
     CPPFLAGS="$OLD_CPPFLAGS"
     LDFLAGS="$OLD_LDFLAGS"
     COM_LIBS=""
-    LINKER_OPTIONS=""
   else
     AC_DEFINE(HAVE_COM)
     COM_AVAILABLE=1

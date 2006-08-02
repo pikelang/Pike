@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.4 2005/10/12 17:24:46 grubba Exp $
+# $Id: Makefile.in,v 1.5 2006/08/02 20:18:12 mast Exp $
 #
 
 @make_variables@
@@ -7,7 +7,6 @@ VPATH=@srcdir@:@srcdir@/../..:../..
 MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
 OBJS=com.o
 MODULE_LDFLAGS=@LDFLAGS@ @COM_LIBS@
-LINKER_OPTIONS=@LINKER_OPTIONS@
 
 # DUMMY=module.pmod.in
 
