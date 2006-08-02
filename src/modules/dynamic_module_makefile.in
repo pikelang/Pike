@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.120 2006/08/02 20:16:38 mast Exp $
+# $Id: dynamic_module_makefile.in,v 1.121 2006/08/02 20:29:18 mast Exp $
 #
 
 LIBGCC=@LIBGCC@
@@ -61,7 +61,10 @@ $(MODULE_TARGET): module.so
 	  exit 0; \
 	fi; \
 	if test "x$(PIKE_EXTERNAL_MODULE)" = "x" ; then \
-	  $(TMP_BINDIR)/install_module module.so $(MODULE_TARGET) ; \
+	  $(TMP_BINDIR)/install_module module.so $(MODULE_TARGET) && \
+	  if [ -f $(MODNAME).pdb ]; then \
+	    cp $(MODNAME).pdb `echo "$(MODULE_TARGET)" | sed -e 's,[^/]*$$,,'`; \
+	  else :; fi; \
 	fi
 
 module.so: $(MODULE_ARCHIVES) $(OBJS) $(LDSHARED_MODULE_REQS)
@@ -69,6 +72,7 @@ module.so: $(MODULE_ARCHIVES) $(OBJS) $(LDSHARED_MODULE_REQS)
 	  exit 0; \
 	fi; \
 	echo "Linking $(MODNAME)" ;\
+	modname="$(MODNAME)"; \
 	if $(TMP_BINDIR)/smartlink $(MOD_LDSHARED) $(LDFLAGS) -o module.@SO@ \
 	  $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) \
 	  $(LIBGCC) $(LC_REQ) $(LIBGCC) ; then \
@@ -86,7 +90,10 @@ $(OBJS): propagated_variables
 #
 install: $(MODULE_INSTALL)
 	@if test "x$(OBJS)" != "x" ; then \
-	  $(TMP_BINDIR)/install_module module.so $(SYSTEM_MODULE_PATH)/$(MODDIR)$(MODULE_WRAPPER_PREFIX)$(MODNAME).so ;\
+	  $(TMP_BINDIR)/install_module module.so $(SYSTEM_MODULE_PATH)/$(MODDIR)$(MODULE_WRAPPER_PREFIX)$(MODNAME).so && \
+	  if [ -f $(MODNAME).pdb ]; then \
+	    cp $(MODNAME).pdb $(SYSTEM_MODULE_PATH)/$(MODDIR)$(MODULE_WRAPPER_PREFIX); \
+	  else :; fi; \
 	fi; \
 	if test "x$(MODULE_PMOD_IN)" != "x"; then \
 	  $(TMP_BINDIR)/install_module module.pmod $(SYSTEM_MODULE_PATH)/$(MODDIR)$(MODNAME).pmod ;\
@@ -99,7 +106,10 @@ local_install: $(MODULE_INSTALL)
 	if test ! -d "$(LOCAL_MODULE_PATH)" ; then \
 	  mkdir -p $(LOCAL_MODULE_PATH) ; \
 	fi; if test "x$(OBJS)" != "x" ; then \
-	  $(TMP_BINDIR)/install_module module.so $(LOCAL_MODULE_PATH)/$(MODDIR)$(MODULE_WRAPPER_PREFIX)$(MODNAME).so ;\
+	  $(TMP_BINDIR)/install_module module.so $(LOCAL_MODULE_PATH)/$(MODDIR)$(MODULE_WRAPPER_PREFIX)$(MODNAME).so && \
+	  if [ -f $(MODNAME).pdb ]; then \
+	    cp $(MODNAME).pdb $(SYSTEM_MODULE_PATH)/$(MODDIR)$(MODULE_WRAPPER_PREFIX); \
+	  else :; fi; \
 	fi; \
 	if test "x$(MODULE_PMOD_IN)" != "x"; then \
 	  $(TMP_BINDIR)/install_module module.pmod $(LOCAL_MODULE_PATH)/$(MODDIR)$(MODNAME).pmod ;\
