@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.438 2006/08/02 20:16:37 mast Exp $
+# $Id: Makefile.in,v 1.439 2006/08/02 20:21:34 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -595,8 +595,8 @@ install_interactive: pike-complete-stamp tools
 
 # tidy up a bit
 tidy:
-	-rm -f *.fail *.pp *.protos core y.output y.tab.c y.tab.h
-	-rm -f $(TMP_BINDIR)/core *.o *.obj *.i *.i~ dynloadtest*
+	-rm -f a.out a.out.* *.fail *.pp *.protos core y.output y.tab.c y.tab.h
+	-rm -f core core.* *.o *.obj *.i *.i~ dynloadtest*
 	-rm -f conftest.* hdrlist.h a.out.exe
 	-rm testsuite testsuite.tmp testsuite_test.pike testsuite_test_dir.pmod
 	-find lib -type f -name \*.o -o -name \*.obj | xargs rm -f
@@ -606,7 +606,7 @@ clean_here: tidy doc_clean
 	-( cd tlib; find . -name testsuite | xargs rm )
 	-( cd extra_tests; find . -name testsuite | xargs rm )
 	-rm -f confdefs.h
-	-rm -rf test-install test-pike tpike *.manifest *.pdb
+	-rm -rf test-install test-pike tpike tpike.* *.pdb
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out pike.tmp
 	-rm -f hilfe rsif master.pike compiler-warnings dumpmodule.log
 	-rm -f interpreter_debug.h lexer?.h
@@ -620,16 +620,22 @@ clean: clean_here
 	-( cd modules; $(MAKE) $(MAKE_FLAGS) clean )
 	-( cd post_modules; $(MAKE) $(MAKE_FLAGS) clean )
 
+clean_pike:
+	-rm -f pike pike.lib pike.exe pike.exe.manifest pike.exp
+
+# Clean up everything that needs to go if the configure args change.
+config_change_clean: clean clean_pike
+
 # make _really_ clean
-spotless: clean_here
+spotless: clean_here clean_pike
 	-( cd modules; $(MAKE) $(MAKE_FLAGS) spotless )
 	-( cd post_modules; $(MAKE) $(MAKE_FLAGS) spotless )
 	-(cd $(SRCDIR); find . -type f -name '*.h.in' -print) | \
 	  sed -e 's/\.in$$//' | xargs rm -f
 	-rm -f Makefile config.* make_variables specs pike.syms
-	-rm -f core core.* .pure stamp-h
+	-rm -f .pure stamp-h
 	-rm -f lexical.c mon.out *.ln
-	-rm -f pike pike.old l.outa* num_files_to_install *.exe
+	-rm -f pike.old l.outa* num_files_to_install
 	-rm -f precompile.sh precompile.sh-stamp smartlink
 	-rm -rf tlib extra_tests lib precompile
 
