@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.72 2006/07/26 18:02:30 nilsson Exp $
+|| $Id: zlibmod.c,v 1.73 2006/08/02 16:19:08 nilsson Exp $
 */
 
 #include "global.h"
@@ -174,6 +174,7 @@ static void gz_deflate_create(INT32 args)
   }
 }
 
+
 static int do_deflate(dynamic_buffer *buf,
 		      struct zipper *this,
 		      int flush)
@@ -209,6 +210,99 @@ static int do_deflate(dynamic_buffer *buf,
 
    mt_unlock(& this->lock);
    return ret;
+}
+
+static void free_pack(struct zipper *z)
+{
+  deflateEnd(&z->gz);
+  mt_destroy(&z->lock);
+  toss_buffer((dynamic_buffer *)z->gz.opaque);
+}
+
+static void pack(struct pike_string *data, dynamic_buffer *buf,
+                 int level, int strategy, int wbits)
+{
+  struct zipper z;
+  ONERROR err;
+  int ret;
+
+  if(level < Z_NO_COMPRESSION ||
+     level > Z_BEST_COMPRESSION)
+    Pike_error("Compression level out of range for pack. %d %d %d\n",
+               Z_DEFAULT_COMPRESSION, Z_NO_COMPRESSION, Z_BEST_COMPRESSION);
+
+  if(strategy != Z_DEFAULT_STRATEGY &&
+     strategy != Z_FILTERED &&
+#ifdef Z_RLE
+     strategy != Z_RLE &&
+#endif
+#ifdef Z_FIXED
+     strategy != Z_FIXED &&
+#endif
+     strategy != Z_HUFFMAN_ONLY)
+    Pike_error("Invalid compression strategy %d for pack.\n", strategy);
+
+  if( wbits!=15 && wbits!=-15 )
+    Pike_error("Invalid wbits value %d for pack.\n", wbits);
+
+  MEMSET(&z, 0, sizeof(z));
+  z.gz.zalloc = Z_NULL;
+  z.gz.zfree = Z_NULL;
+  ret = deflateInit2(&z.gz, level, Z_DEFLATED, wbits, 9, strategy);
+
+  switch(ret)
+  {
+  case Z_OK:
+    break;
+
+  case Z_VERSION_ERROR:
+    Pike_error("libz not compatible with zlib.h!!!\n");
+    break;
+
+  default:
+    if(THIS->gz.msg)
+      Pike_error("Failed to initialize gz: %s\n",THIS->gz.msg);
+    else
+      Pike_error("Failed to initialize gz\n");
+  }
+
+  z.gz.next_in = (Bytef *)data->str;
+  z.gz.avail_in = (unsigned INT32)(data->len);
+
+  initialize_buf(buf);
+  z.gz.opaque = buf;
+  mt_init(&z.lock);
+
+  SET_ONERROR(err,free_pack,&z);
+  ret = do_deflate(buf, &z, Z_FINISH);
+  UNSET_ONERROR(err);
+
+  deflateEnd(&z.gz);
+  mt_destroy(&z.lock);
+}
+
+/* @decl string pack(string data, void|int(0..1) raw, void|int level,@
+ *  void|int strategy)
+ */
+static void gz_pack(INT32 args)
+{
+  struct pike_string *data;
+  dynamic_buffer buf;
+
+  int wbits = 15;
+  int raw = 0;
+  int level = 8;
+  int strategy = Z_DEFAULT_STRATEGY;
+
+  get_all_args("pack", args, "%n.%d%d%d", &data, &raw, &level, &strategy);
+
+  if( raw )
+    wbits = -wbits;
+
+  pack(data, &buf, level, strategy, wbits);
+
+  pop_n_elems(args);
+  push_string(low_free_buf(&buf));
 }
 
 /*! @decl string deflate(string data, int|void flush)
@@ -694,10 +788,13 @@ PIKE_MODULE_INIT
 #endif
 
   /* function(string,void|int:int) */
-  ADD_FUNCTION("crc32",gz_crc32,tFunc(tStr tOr(tVoid,tInt),tInt),
-	       OPT_TRY_OPTIMIZE);
+  ADD_FUNCTION("crc32",gz_crc32,tFunc(tStr tOr(tVoid,tInt),tInt),0);
+
+  /* function(string,void|int(0..1),void|int,void|int:string) */
+  ADD_FUNCTION("pack",gz_pack,tFunc(tStr tOr(tVoid,tInt01) tOr(tVoid,tInt) tOr(tVoid,tInt),tStr),0);
 
   PIKE_MODULE_EXPORT(Gz, crc32);
+  PIKE_MODULE_EXPORT(Gz, pack);
 #else
   if(!TEST_COMPAT(7,6))
     HIDE_MODULE();
