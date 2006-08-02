@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.84 2006/07/26 18:02:00 nilsson Exp $
+|| $Id: png.c,v 1.85 2006/08/02 16:23:28 nilsson Exp $
 */
 
 #include "global.h"
@@ -33,14 +33,16 @@ extern struct program *image_colortable_program;
 extern struct program *image_program;
 
 static struct program *gz_inflate=NULL;
-static struct program *gz_deflate=NULL;
 
 #ifdef DYNAMIC_MODULE
 typedef unsigned INT32 (_crc32)(unsigned INT32, unsigned char*,
 				unsigned INT32);
+typedef void (_pack)(struct pike_string*, dynamic_buffer*, int, int, int);
 static _crc32 *crc32;
+static _pack *pack;
 #else
 extern unsigned INT32 crc32(unsigned INT32, unsigned char*, unsigned INT32);
+extern void pack(struct pike_string*, dynamic_buffer*, int, int, int);
 #endif
 
 static struct pike_string *param_palette;
@@ -132,16 +134,15 @@ static void png_decompress(int style)
 
 static void png_compress(int style, int zlevel, int zstrategy)
 {
-   struct object *o;
+  dynamic_buffer buf;
 
-   if (style)
-      Pike_error("Internal error: Illegal decompression style %d.\n",style);
-   
-   push_int(zlevel);
-   push_int(zstrategy);
-   o=clone_object(gz_deflate,2);
-   apply(o,"deflate",1);
-   free_object(o);
+  if (style)
+    Pike_error("Internal error: Illegal decompression style %d.\n",style);
+
+  pack(Pike_sp[-1].u.string, &buf, zlevel, zstrategy, 15);
+
+  pop_stack();
+  push_string(low_free_buf(&buf));
 }
 
 /*! @decl string _chunk(string type, string data)
@@ -1821,16 +1822,14 @@ void exit_image_png(void)
 
    if(gz_inflate)
      free_program(gz_inflate);
-
-   if(gz_deflate)
-     free_program(gz_deflate);
 }
 
 void init_image_png(void)
 {
 #ifdef DYNAMIC_MODULE
    crc32 = PIKE_MODULE_IMPORT(Gz, crc32);
-   if(!crc32) {
+   pack = PIKE_MODULE_IMPORT(Gz, pack);
+   if(!crc32 || !pack) {
      yyerror("Could not load Image module.");
      return;
    }
@@ -1847,18 +1846,10 @@ void init_image_png(void)
      if(gz_inflate) 
        add_ref(gz_inflate);
      pop_stack();
-
-     stack_dup();
-     push_text("deflate");
-     f_index(2);
-     gz_deflate=program_from_svalue(sp-1);
-     if(gz_deflate) 
-       add_ref(gz_deflate);
-     pop_stack();
    }
    pop_stack();
 
-   if (gz_deflate && gz_inflate)
+   if (gz_inflate)
    {
      ADD_FUNCTION2("_chunk",image_png__chunk,tFunc(tStr tStr,tStr),0,
 		  OPT_TRY_OPTIMIZE);
