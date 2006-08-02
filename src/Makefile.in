@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.439 2006/08/02 20:21:34 mast Exp $
+# $Id: Makefile.in,v 1.440 2006/08/02 21:02:25 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -299,25 +299,19 @@ libpike.a: $(OBJ) modules/linker_options @STATIC_POST_MODULES_LINKOPTS@
 	$(AR) cq libpike.a $(OBJ)
 	-@RANLIB@ libpike.a
 
-# tpike is a pike with no post modules compiled in. It's used during
-# building of the post modules.
+# tpike is only used when dynamic modules aren't. It's a pike with no
+# post modules linked in which is used during building of the post
+# modules.
 tpike-real: main.o $(CORE_OBJ) tmodule.o master-stamp pike.syms modules/linker_options
-	-@rm -f tpike || :
+	-@rm -f tpike tpike.exe
 	$(LD) $(LDFLAGS) main.o $(CORE_OBJ) tmodule.o \
 	  `cat modules/linker_options` \
 	  $(LIBS) -o tpike
 
-# Only want tpike to exist for use with $(RUNTPIKE) in the post
-# modules. We don't want to require it actually being up-to-date.
-#
-# If RUNPIKE has been overridden we don't bother to build tpike. The
-# precompile.sh script will then fall back to use RUNPIKE when it
-# doesn't find tpike, and we assume that RUNPIKE doesn't point to a
-# pike from the stone age.
+# Only want tpike to exist for use with $(RUNPIKE) in the modules. We
+# don't want to require it actually being up-to-date.
 tpike:
-	@if test "x$(RUNPIKE)" = "x$(DEFAULT_RUNPIKE)"; then \
-	  $(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) tpike-real; \
-	else :; fi
+	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) tpike-real
 
 # If we build without dynamic modules then tpike is built first with
 # all modules under modules/ linked into it, then tpike is used for
