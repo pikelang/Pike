@@ -40,7 +40,8 @@ array(string) features()
              "Mird", "Msql", "Mysql", "Odbc", "Oracle", "PDF", "Perl",
              "Postgres", "SANE", "SDL", "Ssleay", "Yp", "sybase", "_WhiteFish",
 	     "X", "Bz2", "COM", "Fuse", "GTK2", "Gettext", "HTTPAccept",
-	     "Kerberos", "SQLite", "_Image_SVG"}),
+	     "Kerberos", "SQLite", "_Image_SVG", "_Regexp_PCRE",
+	     "Protocols.DNS_SD"}),
 	  string modname)
   {
     catch
