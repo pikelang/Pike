@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_macros.h,v 1.41 2006/07/05 19:15:35 mast Exp $
+|| $Id: pike_macros.h,v 1.42 2006/08/02 15:03:14 mast Exp $
 */
 
 #ifndef MACROS_H
 #define MACROS_H
 
-#include <global.h>
+#include "global.h"
 
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
@@ -119,7 +119,6 @@ PMOD_EXPORT extern const char Pike_is8bitalnum_vector[];
 						\
   if(o->next) o->next->prev=o->prev;		\
 }while(0)
-
 
 #define PIKE_XCONCAT(X,Y)	PIKE_CONCAT(X,Y)
 #define PIKE_XCONCAT3(X,Y,Z)	PIKE_CONCAT(X,Y,Z)
