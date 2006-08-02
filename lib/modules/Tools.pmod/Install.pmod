@@ -8,8 +8,9 @@
 array(string) features()
 {
   array a = ({}), m = ({});
-  
-  if(!_static_modules["Regexp"])
+
+  // FIXME: This method is ugly and fragile.
+  if(!_static_modules["___Regexp"])
     a += ({ "dynamic_modules" });
 
 #if efun(thread_create)
