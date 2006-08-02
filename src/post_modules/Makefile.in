@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.26 2006/06/21 17:24:42 mast Exp $
+# $Id: Makefile.in,v 1.27 2006/08/02 20:07:17 mast Exp $
 
 @make_variables@
 
@@ -7,9 +7,9 @@ MODULE_SEGMENTS=@MODULE_SEGMENTS@
 MODULE_LINKOPTS=@MODULE_LINKOPTS@
 MY_DIR=post_modules
 
-all: modlist.h modlist_headers.h linker_options
+all: modules_target modlist.h modlist_headers.h linker_options
 
-$(MODULE_SEGMENTS) $(MODULE_LINKOPTS): modules
+$(MODULE_SEGMENTS) $(MODULE_LINKOPTS) modules_target: modules
 
 force:
 	@:
@@ -40,14 +40,14 @@ $(MODULES) no : Makefile force
 modules: Makefile $(MODULES)
 
 modlist.h: $(MODULE_SEGMENTS)
-	( for a in $(MODULES) no ; do test $$a = no || cat $$a/modlist_segment; done ) >modlist.h
+	cat $(MODULE_SEGMENTS) </dev/null >modlist.h
 
 modlist_headers.h: $(MODULE_SEGMENTS)
-	( for a in $(MODULES) no ; do test $$a = no || cat $$a/modlist_segment; done ) | \
+	cat $(MODULE_SEGMENTS) </dev/null | \
 	sed -e 's/^.*{.*,\(.*\),\(.*\)}.*$$/void \1(void),\2(void);/' >modlist_headers.h
 
 linker_options: $(MODULE_LINKOPTS)
-	( for a in $(MODULES) no ; do test $$a = no || cat $$a/linker_options; done ) >linker_options
+	cat $(MODULE_LINKOPTS) </dev/null >linker_options
 
 propagated_variables:
 
