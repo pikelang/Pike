@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.44 2006/08/02 20:16:38 mast Exp $
+# $Id: common_module_makefile.in,v 1.45 2006/08/02 20:59:47 mast Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -197,10 +197,10 @@ testsuite: $(SRCDIR)/testsuite.in $(REAL_TESTSUITE) $(TMP_BINDIR)/mktestsuite
 extra_tests: $(MODULE_TESTS)
 
 verify: testsuite $(MODULE_TESTS) $(PIKE_EXTERNAL_MODULE)
-	$(RUNPIKE) -Mplib/modules $(TMP_BINDIR)/test_pike.pike testsuite
+	$(FINAL_PIKE) -Mplib/modules $(TMP_BINDIR)/test_pike.pike testsuite
 
 verbose_verify: testsuite $(MODULE_TESTS) $(PIKE_EXTERNAL_MODULE)
-	@$(RUNPIKE) -Mplib/modules $(TMP_BINDIR)/test_pike.pike testsuite --verbose
+	@$(FINAL_PIKE) -Mplib/modules $(TMP_BINDIR)/test_pike.pike testsuite --verbose
 
 gdb_verify: testsuite $(PIKE_EXTERNAL_MODULE)
 	@echo >.gdbinit handle SIGUSR1 nostop noprint pass

@@ -1,6 +1,6 @@
 # -*- Makefile -*-
 #
-# $Id: make_variables.in,v 1.26 2006/08/02 20:16:38 mast Exp $
+# $Id: make_variables.in,v 1.27 2006/08/02 20:59:47 mast Exp $
 #
 # Note: This template is actually used only for make_variables in the
 # subdirectories; the one created in the build base dir is just an
@@ -35,6 +35,7 @@ TMP_LIBDIR=$(TMP_BUILDDIR)/lib
 SRCDIR=@srcdir@
 
 DEFAULT_RUNPIKE=$(TMP_BUILDDIR)/$(BUILD_PIKE) -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
+FINAL_PIKE=$(TMP_BUILDDIR)/pike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
 USE_PIKE=pike $(PIKEOPTS)
 RUNPIKE=$(@RUNPIKE@)
 
