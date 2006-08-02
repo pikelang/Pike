@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.436 2006/07/18 08:03:41 grubba Exp $
+# $Id: Makefile.in,v 1.437 2006/08/02 14:21:52 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -115,9 +115,11 @@ LD=@LD@
 LDFLAGS=@LDFLAGS@ @LINKFORSHARED@ $(EXTRALDFLAGS)
 LDSHARED=@LDSHARED@
 
-DEFAULT_RUNPIKE=$(TMP_BUILDDIR)/tpike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
+DEFAULT_RUNPIKE=$(TMP_BUILDDIR)/pike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
+USE_TPIKE=$(TMP_BUILDDIR)/precompile.sh
 USE_PIKE=pike $(PIKEOPTS)
 RUNPIKE=$(@RUNPIKE@)
+RUNTPIKE=$(@RUNTPIKE@)
 PIKE_MODULE_RELOC=@PIKE_MODULE_RELOC@
 
 # Set to an appropriate invocation of valgrind (or similar)
@@ -305,12 +307,17 @@ tpike-real tpike.lib: main.o $(CORE_OBJ) tmodule.o master-stamp pike.syms module
 	  `cat modules/linker_options` \
 	  $(LIBS) -o tpike
 
-# Only want tpike to exist for use with $(RUNPIKE) in the post modules
-# (and some auxiliary targets in all modules, such as verify and
-# extract_autodoc). We don't want to require it actually being
-# up-to-date.
+# Only want tpike to exist for use with $(RUNTPIKE) in the post
+# modules. We don't want to require it actually being up-to-date.
+#
+# If RUNPIKE has been overridden we don't bother to build tpike. The
+# precompile.sh script will then fall back to use RUNPIKE when it
+# doesn't find tpike, and we assume that RUNPIKE doesn't point to a
+# pike from the stone age.
 tpike:
-	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) tpike-real
+	@if test "x$(RUNPIKE)" = "x$(DEFAULT_RUNPIKE)"; then \
+	  $(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) tpike-real; \
+	else :; fi
 
 #pike: main.o @DLOPEN_O@ $(PIKE_LIB) master-stamp pike.syms
 pike: main.o $(OBJ) master-stamp pike.syms modules/linker_options post_modules/linker_options
@@ -956,8 +963,8 @@ bin_export:
 	esac
 
 #new_peep_engine:
-#	$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
-#	$(RUNPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h
+#	$(RUNTPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
+#	$(RUNTPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h
 
 $(SRCDIR)/peep_engine.c: $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike
 	./precompile.sh $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c || ( rm $(SRCDIR)/peep_engine.c ; exit 1 )
