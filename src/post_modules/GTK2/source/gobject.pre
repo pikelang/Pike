@@ -42,7 +42,9 @@ mixed get_property(string property)
   }
 }
 
+
 int signal_connect(string signal, function callback, mixed|void callback_arg)
+//! int signal_connect(string signal, function callback, mixed ... args)
 //! Connect a signal to a pike function.  The function will be called with
 //! the last argument to this function as it's first argument (defaults to 0),
 //! the second argument is always the widget, and any other arguments are the
@@ -56,6 +58,7 @@ int signal_connect(string signal, function callback, mixed|void callback_arg)
   int id;
   struct signal_data *b;
   struct svalue *tmp1,*tmp2;
+  GClosure *gc;
 
   if (args==2) {
     push_int(0);
@@ -72,22 +75,15 @@ int signal_connect(string signal, function callback, mixed|void callback_arg)
 
   b->signal_id=g_signal_lookup(a,G_TYPE_FROM_INSTANCE(THIS->obj));
   if (!b->signal_id) {
-    xfree(b);
+    g_free(b);
     Pike_error("Signal \"%s\" is not defined in the '%s' class ancestry.\n",
 		a,g_type_name(G_TYPE_FROM_INSTANCE(THIS->obj)));
   }
-
-  id=g_signal_connect_data(G_OBJECT(THIS->obj),a,
-			   G_CALLBACK(pgtk2_signal_func_wrapper),
-			   b,
-			   (GClosureNotify)pgtk2_free_signal_data,
-#ifdef HAVE_G_SIGNAL_CONNECT_DATA_WITH_SIX_ARGS
-			   G_CONNECT_SWAPPED
-#else /* !HAVE_G_SIGNAL_CONNECT_DATA_WITH_SIX_ARGS
-			   /* Old-style. */
-			   1 /* swapped */, 0 /* after */
-#endif /* !HAVE_G_SIGNAL_CONNECT_DATA_WITH_SIX_ARGS */
-			   );
+  gc=g_cclosure_new_swap(G_CALLBACK(pgtk2_signal_func_wrapper),
+		    b,(GClosureNotify)pgtk2_free_signal_data);
+  g_closure_set_marshal(gc,pgtk2_marshaller);
+  id=g_signal_connect_closure(G_OBJECT(THIS->obj),a,
+			      gc,1);
   pgtk2_pop_n_elems(args);
   push_int(id);
 }
@@ -126,10 +122,126 @@ void signal_unblock(int signal_id)
 void signal_emit(string signal_name)
 //! Send the current named signal.
 {
-  char *s;
-  get_all_args("signal_emit",args,"%s",&s);
-  g_signal_emit_by_name(G_OBJECT(THIS->obj),s,NULL);
-  RETURN_THIS();
+  pgtk2_verify_inited();
+  {
+    char *s;
+    GQuark gq;
+    GSignalQuery _opts;
+    GSignalQuery *opts=&_opts;
+    guint signal_id;
+
+    get_all_args("signal_emit",args,"%s",&s);
+    gq=g_quark_from_string(s);
+    signal_id=g_signal_lookup(s,G_TYPE_FROM_INSTANCE(THIS->obj));
+    g_signal_query(signal_id,opts);
+    if (opts->n_params!=args-1) {
+      pgtk2_pop_n_elems(args);
+/*      Pike_error("Signal %s expects %d args, got %d.\n",s,opts->n_params,args-1); */
+      Pike_error("signal_emit:  signature mismatch for signal \"%s\" in the '%s' class ancestry.\n"
+		 "              expected %d args, got %d.\n",s,
+		 g_type_name(G_OBJECT_TYPE(THIS->obj)),opts->n_params,args-1);
+    }
+    {
+      int i;
+      GValue params[opts->n_params+1];
+      GValue rvalue={0, };
+
+      memset(params,0,sizeof(GValue)*(opts->n_params+1)); 
+      g_value_init(params+0,G_TYPE_FROM_INSTANCE(THIS->obj));
+      g_value_set_object(params+0,G_OBJECT(THIS->obj));
+      for (i=0; i<opts->n_params; i++) {
+	pgtk2_set_gvalue(params+i+1,opts->param_types[i],&Pike_sp[-args+(i+1)]);
+      }
+      if (opts->return_type!=G_TYPE_NONE)
+	g_value_init(&rvalue,opts->return_type);
+      g_signal_emitv(params,signal_id,0,&rvalue);
+      pgtk2_pop_n_elems(args);
+      if (opts->return_type!=G_TYPE_NONE) {
+	pgtk2_push_gvalue_rt(&rvalue);
+      } else {
+	push_int(0);
+      }
+      g_value_unset(params);
+      for (i=1; i<opts->n_params; i++)
+	g_value_unset(params+i);
+    }
+  }
+}
+
+int new_signal(string name, array types, string return_type)
+//! Create a new signal.
+{
+  pgtk2_verify_inited();
+  {
+    struct pike_string *t;
+    char *ret_type_name;
+    struct array *a;
+    GObject *go;
+    gchar *name;
+    guint id;
+    GType *param_types;
+    guint n_params;
+    GType return_type;
+    struct signal_data *b;
+    int i;
+
+    get_all_args("new_signal",args,"%T%A%s",&t,&a,&ret_type_name);
+    if (a->size) {
+      ref_push_string(t);
+      f_string_to_utf8(1);
+      name=g_strdup(CGSTR0(Pike_sp[-1].u.string));
+      if (name==NULL) {
+	pop_stack();
+	SIMPLE_OUT_OF_MEMORY_ERROR("new_signal",strlen(ret_type_name)*2);
+      }
+      if (!strcmp(ret_type_name,"void")) {
+	return_type=G_TYPE_NONE;
+      } else if (!strcmp(ret_type_name,"int")) {
+	return_type=G_TYPE_INT;
+      } else if (!strcmp(ret_type_name,"float")) {
+	return_type=G_TYPE_DOUBLE;
+      } else if (!strcmp(ret_type_name,"string")) {
+	return_type=G_TYPE_STRING;
+      } else if (!strcmp(ret_type_name,"object")) {
+	return_type=G_TYPE_OBJECT;
+      } else {
+	return_type=G_TYPE_POINTER;
+      }
+      param_types=xmalloc(sizeof(GType)*a->size);
+      if (param_types==NULL) {
+	g_free(name);
+	SIMPLE_OUT_OF_MEMORY_ERROR("new_signal",sizeof(GType)*a->size);
+      }
+      for (i=n_params=0; i<a->size; i++) {
+	if (ITEM(a)[i].type!=PIKE_T_STRING)
+	  continue;
+	if (!strcmp(CGSTR0(ITEM(a)[i].u.string),"int")) {
+	  param_types[n_params]=G_TYPE_INT;
+	  n_params++;
+	} else if (!strcmp(CGSTR0(ITEM(a)[i].u.string),"float")) {
+	  param_types[n_params]=G_TYPE_DOUBLE;
+	  n_params++;
+	} else if (!strcmp(CGSTR0(ITEM(a)[i].u.string),"string")) {
+	  param_types[n_params]=G_TYPE_STRING;
+	  n_params++;
+	} else if (!strcmp(CGSTR0(ITEM(a)[i].u.string),"object")) {
+	  param_types[n_params]=G_TYPE_OBJECT;
+	  n_params++;
+	} else {
+	  param_types[n_params]=G_TYPE_POINTER;
+	  n_params++;
+	}
+
+      }
+      pgtk2_pop_n_elems(args);
+      id=g_signal_newv(name,G_TYPE_FROM_INSTANCE(THIS->obj),G_SIGNAL_RUN_LAST,
+		       NULL,NULL,NULL,pgtk2_marshaller,return_type,
+		       n_params,param_types);
+      push_int(id);
+      xfree(param_types);
+      g_free(name);
+    }
+  }
 }
 
 void notify(string property);
@@ -149,4 +261,13 @@ void accel_groups_activate(int accel_key, int accel_mods)
   RETURN_THIS();
 }
 
+require gtk210;
+/*
+object ref_sink();
+//! Increase the reference count of this object, and possibly remove the
+//! floating reference, if this object has a floating reference.
+*/
 
+int is_floating();
+//! Checks whether this object has a floating reference.
+endrequire;

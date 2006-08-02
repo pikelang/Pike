@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.11 2006/02/27 12:23:18 mast Exp $
+|| $Id: support.c,v 1.12 2006/08/02 13:42:31 ldillon Exp $
 */
 
 #include <version.h>
@@ -474,31 +474,31 @@ static int pgtk2_push_selection_data_param( GValue *a )
 }
 */
 
-static int pgtk2_push_accel_group_param(GValue *a) {
+static int pgtk2_push_accel_group_param(const GValue *a) {
   g_object_ref(g_value_get_pointer(a));
   push_gobjectclass(g_value_get_pointer(a),pgtk2_accel_group_program);
   return PUSHED_VALUE;
 }
 
 /*
-static int pgtk2_push_ctree_node_param( GValue *a )
+static int pgtk2_push_ctree_node_param(const GValue *a )
 {
   push_pgdk2object( GTK_VALUE_POINTER(*a), pgtk2_ctree_node_program);
   return PUSHED_VALUE;
 }
 */
 
-static int pgtk2_push_gdk_drag_context_param(GValue *a) {
+static int pgtk2_push_gdk_drag_context_param(const GValue *a) {
   push_gdkobject(g_value_get_pointer(a),drag_context);
   return PUSHED_VALUE;
 }
 
-static int pgtk2_push_gdk_event_param(GValue *a) {
+static int pgtk2_push_gdk_event_param(const GValue *a) {
   push_gdk_event(g_value_get_boxed(a));
   return NEED_RETURN;
 }
 
-static int pgtk2_push_gdk_rectangle_param(GValue *a) {
+static int pgtk2_push_gdk_rectangle_param(const GValue *a) {
   GdkRectangle *r = (GdkRectangle *) g_value_get_boxed(a);
   push_text("x"); push_int(r->x);
   push_text("y"); push_int(r->y);
@@ -508,7 +508,7 @@ static int pgtk2_push_gdk_rectangle_param(GValue *a) {
   return PUSHED_VALUE;
 }
 
-static int pgtk2_push_int_param(GValue *a) {
+static int pgtk2_push_int_param(const GValue *a) {
   LONGEST retval;
   switch (G_VALUE_TYPE(a)) {
     case G_TYPE_INT:
@@ -537,7 +537,7 @@ static int pgtk2_push_int_param(GValue *a) {
   return PUSHED_VALUE;
 }
 
-static int pgtk2_push_float_param(GValue *a) {
+static int pgtk2_push_float_param(const GValue *a) {
   FLOAT_TYPE retval;
   if (G_VALUE_TYPE(a)==G_TYPE_FLOAT)
     retval=(FLOAT_TYPE)g_value_get_float(a);
@@ -547,7 +547,7 @@ static int pgtk2_push_float_param(GValue *a) {
   return PUSHED_VALUE;
 }
 
-static int pgtk2_push_string_param(GValue *a) {
+static int pgtk2_push_string_param(const GValue *a) {
   const gchar *t=g_value_get_string(a);
   if (t)
     PGTK_PUSH_GCHAR(t);
@@ -556,32 +556,33 @@ static int pgtk2_push_string_param(GValue *a) {
   return PUSHED_VALUE;
 }
 
-static int pgtk2_push_object_param(GValue *a) {
+static int pgtk2_push_object_param(const GValue *a) {
   GObject *obj=g_value_get_object(a);
   if (obj)
-    push_gobject(((void *)g_value_get_object(a)));
+/*    push_gobject(((void *)g_value_get_object(a))); */
+    push_gobject(obj);
   return PUSHED_VALUE;
 }
 
-static int pgtk2_push_pike_object_param(GValue *a) {
+static int pgtk2_push_pike_object_param(const GValue *a) {
   struct object *o=g_value_get_pointer(a);
   if (o)
     ref_push_object(o);
   return PUSHED_VALUE;
 }
 
-static int pgtk2_push_gparamspec_param(GValue *a) {
+static int pgtk2_push_gparamspec_param(const GValue *a) {
 }
 
 static struct push_callback {
-  int (*callback)(GValue *);
+  int (*callback)(const GValue *);
   GType id;
   struct push_callback *next;
 } push_callbacks[100], *push_cbtable[63];
 
 static int last_used_callback = 0;
 
-static void insert_push_callback(GType i, int (*cb)(GValue *)) {
+static void insert_push_callback(GType i, int (*cb)(const GValue *)) {
   struct push_callback *new=push_callbacks+last_used_callback++;
   struct push_callback *old=push_cbtable[i%63];
   new->id=i;
@@ -639,7 +640,7 @@ static void build_push_callbacks() {
  *   This might not be exactly what we want */
 }
 
-void push_gvalue_r(GValue *param, GType t) {
+void push_gvalue_r(const GValue *param, GType t) {
   int i;
   struct push_callback *cb=push_cbtable[t%63];
 
@@ -681,49 +682,32 @@ void push_gvalue_r(GValue *param, GType t) {
  * params[nparams] should be set to the return value. It does seem to work,
  * though.
  */
-int pgtk2_signal_func_wrapper(struct signal_data *d, ...) {
-  int i,return_value=0,j;
-  struct svalue *osp=Pike_sp;
-  GSignalQuery _opts;
-  GSignalQuery *opts=&_opts;
-  va_list ptr;
+/* This function is implement by the functions in the gobject api */
+void pgtk2_signal_func_wrapper(struct signal_data *d,
+			       gpointer go,
+			       guint n_params,
+			       const GValue *param_values,
+			       GValue *return_value) {
+  int i;
 
   if (!last_used_callback)
     build_push_callbacks();
-  g_signal_query(d->signal_id,opts);
-  va_start(ptr,d);
-  for (i=j=0; i<opts->n_params; i++) {
-    GValue v= {0, };
-    gchar *error=NULL;
-    g_value_init(&v,opts->param_types[i]);
-    G_VALUE_COLLECT(&v,ptr,G_VALUE_NOCOPY_CONTENTS,&error);
-    if (error) {
-      g_free(error);
-      continue;
-    }
-    push_gvalue_r(&v,opts->param_types[i]);
-    j++;
+  push_gobject(G_OBJECT(go));
+  for (i=0; i<n_params; i++) {
+    pgtk2_push_gvalue_rt(&(param_values[i]));
   }
-  if (j /*opts->n_params*/)
-    f_aggregate(j /*opts->n_params*/);
-  {
-    GObject *obj=va_arg(ptr,GObject *);
-    push_gobject(obj);
-  }
-  va_end(ptr);
-
-  if (j /*opts->n_params*/)
-    stack_swap();
+  if (n_params)
+    f_aggregate(n_params);
   push_svalue(&d->args);
-  if (j /*opts->n_params*/)
+  if (n_params)
     apply_svalue(&d->cb,3);
   else
     apply_svalue(&d->cb,2);
-  return_value=Pike_sp[-1].u.integer;
-  pop_stack();
-  return return_value;
+  if (return_value) {
+    pgtk2_set_value(return_value,&Pike_sp[-1]);
+    pop_stack();
+  }
 }
-
 
 void pgtk2_free_signal_data(struct signal_data *s, GClosure *gcl) {
   free_svalue(&s->cb);
@@ -1069,8 +1053,11 @@ void pgtk2_destroy_store_data(gpointer data) {
   g_free(sd);
 }
 
+
+
 void pgtk2_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
-  g_value_init(gv,gt);
+  if (!G_IS_VALUE(gv))
+    g_value_init(gv,gt);
   if (G_TYPE_IS_ENUM(gt)) {
     g_value_set_enum(gv,(gint)PGTK_GETINT(sv));
     return;
@@ -1142,9 +1129,10 @@ void pgtk2_set_gvalue(GValue *gv, GType gt, struct svalue *sv) {
       g_value_set_double(gv,(gdouble)pgtk2_get_float(sv));
       break;
     case G_TYPE_STRING:
-      if (sv->type==PIKE_T_STRING)
-	g_value_set_string(gv,GSTR0(sv->u.string));
-      else
+      if (sv->type==PIKE_T_STRING) {
+	g_value_set_string(gv,CGSTR0(sv->u.string));
+	add_ref(sv->u.string); 
+      } else
 	g_value_set_string(gv,"");
       break;
     case G_TYPE_OBJECT:
@@ -1217,4 +1205,31 @@ GObject *pgtk2_create_new_obj_with_properties(GType type, struct mapping *m) {
   g_free(params);
   g_type_class_unref(class);
   return obj;
+}
+
+void pgtk2_marshaller(GClosure *closure,
+		      GValue *return_value,
+		      guint n_params,
+		      const GValue *param_values,
+		      gpointer invocation_hint,
+		      gpointer marshal_data) {
+  typedef void (*pgtk2_marshal_func)(gpointer data1,
+				     gpointer data2,
+				     guint n_params, 
+				     const GValue *param_values,
+				     GValue *return_value);
+  register pgtk2_marshal_func callback;
+  register GCClosure *cc=(GCClosure *)closure;
+  register gpointer data1,data2;
+
+
+  if (G_CCLOSURE_SWAP_DATA(closure)) {
+    data1=closure->data;
+    data2=g_value_peek_pointer(param_values+0);
+  } else {
+    data1=g_value_peek_pointer(param_values+0);
+    data2=closure->data;
+  }
+  callback=(pgtk2_marshal_func)(marshal_data?marshal_data:cc->callback);
+  callback(data1,data2,n_params-1,param_values+1,return_value);
 }

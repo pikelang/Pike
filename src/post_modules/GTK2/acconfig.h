@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.7 2005/11/07 17:25:11 grubba Exp $
+|| $Id: acconfig.h,v 1.8 2006/08/02 13:42:31 ldillon Exp $
 */
 
 #undef FUNCPROTO
@@ -13,6 +13,7 @@
 #undef HAVE_GTK24
 #undef HAVE_GTK26
 #undef HAVE_GTK28
+#undef HAVE_GTK210
 #undef HAVE_ATK
 #undef HAVE_ATK18
 #undef HAVE_PANGO
