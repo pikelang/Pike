@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.73 2006/08/02 16:19:08 nilsson Exp $
+|| $Id: zlibmod.c,v 1.74 2006/08/02 20:53:55 mast Exp $
 */
 
 #include "global.h"
@@ -219,8 +219,8 @@ static void free_pack(struct zipper *z)
   toss_buffer((dynamic_buffer *)z->gz.opaque);
 }
 
-static void pack(struct pike_string *data, dynamic_buffer *buf,
-                 int level, int strategy, int wbits)
+void pack(struct pike_string *data, dynamic_buffer *buf,
+	  int level, int strategy, int wbits)
 {
   struct zipper z;
   ONERROR err;
