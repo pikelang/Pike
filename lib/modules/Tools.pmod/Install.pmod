@@ -7,7 +7,7 @@
 //!
 array(string) features()
 {
-  array a = ({});
+  array a = ({}), m = ({});
   
   if(!_static_modules["Regexp"])
     a += ({ "dynamic_modules" });
@@ -38,7 +38,8 @@ array(string) features()
              "_Image_TIFF", "_Image_TTF", "_Image_XFace", "Image.PNG", "Java",
              "Mird", "Msql", "Mysql", "Odbc", "Oracle", "PDF", "Perl",
              "Postgres", "SANE", "SDL", "Ssleay", "Yp", "sybase", "_WhiteFish",
-             "X" }),
+	     "X", "Bz2", "COM", "Fuse", "GTK2", "Gettext", "HTTPAccept",
+	     "Kerberos", "SQLite", "_Image_SVG"}),
 	  string modname)
   {
     catch
@@ -49,12 +50,12 @@ array(string) features()
       {
 	if(modname[0] == '_')
 	  modname = replace(modname[1..], "_", ".");
-	a += ({ modname });
+	m += ({ modname });
       }
     };
   }
 
-  return a;
+  return a + sort (m);
 }
 
 //!
