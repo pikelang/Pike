@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgtk.h,v 1.15 2006/08/02 13:42:31 ldillon Exp $
+|| $Id: pgtk.h,v 1.16 2006/08/02 13:49:37 ldillon Exp $
 */
 
 /* Sort of unnessesary, and decreases code-size with 140Kb */
