@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.74 2006/08/02 20:53:55 mast Exp $
+|| $Id: zlibmod.c,v 1.75 2006/08/02 21:40:48 mast Exp $
 */
 
 #include "global.h"
@@ -219,8 +219,8 @@ static void free_pack(struct zipper *z)
   toss_buffer((dynamic_buffer *)z->gz.opaque);
 }
 
-void pack(struct pike_string *data, dynamic_buffer *buf,
-	  int level, int strategy, int wbits)
+void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
+		  int level, int strategy, int wbits)
 {
   struct zipper z;
   ONERROR err;
@@ -299,7 +299,7 @@ static void gz_pack(INT32 args)
   if( raw )
     wbits = -wbits;
 
-  pack(data, &buf, level, strategy, wbits);
+  zlibmod_pack(data, &buf, level, strategy, wbits);
 
   pop_n_elems(args);
   push_string(low_free_buf(&buf));
@@ -794,7 +794,7 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("pack",gz_pack,tFunc(tStr tOr(tVoid,tInt01) tOr(tVoid,tInt) tOr(tVoid,tInt),tStr),0);
 
   PIKE_MODULE_EXPORT(Gz, crc32);
-  PIKE_MODULE_EXPORT(Gz, pack);
+  PIKE_MODULE_EXPORT(Gz, zlibmod_pack);
 #else
   if(!TEST_COMPAT(7,6))
     HIDE_MODULE();

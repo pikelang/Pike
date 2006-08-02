@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.85 2006/08/02 16:23:28 nilsson Exp $
+|| $Id: png.c,v 1.86 2006/08/02 21:40:48 mast Exp $
 */
 
 #include "global.h"
@@ -39,10 +39,10 @@ typedef unsigned INT32 (_crc32)(unsigned INT32, unsigned char*,
 				unsigned INT32);
 typedef void (_pack)(struct pike_string*, dynamic_buffer*, int, int, int);
 static _crc32 *crc32;
-static _pack *pack;
+static _pack *zlibmod_pack;
 #else
 extern unsigned INT32 crc32(unsigned INT32, unsigned char*, unsigned INT32);
-extern void pack(struct pike_string*, dynamic_buffer*, int, int, int);
+extern void zlibmod_pack(struct pike_string*, dynamic_buffer*, int, int, int);
 #endif
 
 static struct pike_string *param_palette;
@@ -139,7 +139,7 @@ static void png_compress(int style, int zlevel, int zstrategy)
   if (style)
     Pike_error("Internal error: Illegal decompression style %d.\n",style);
 
-  pack(Pike_sp[-1].u.string, &buf, zlevel, zstrategy, 15);
+  zlibmod_pack(Pike_sp[-1].u.string, &buf, zlevel, zstrategy, 15);
 
   pop_stack();
   push_string(low_free_buf(&buf));
@@ -1828,8 +1828,8 @@ void init_image_png(void)
 {
 #ifdef DYNAMIC_MODULE
    crc32 = PIKE_MODULE_IMPORT(Gz, crc32);
-   pack = PIKE_MODULE_IMPORT(Gz, pack);
-   if(!crc32 || !pack) {
+   zlibmod_pack = PIKE_MODULE_IMPORT(Gz, zlibmod_pack);
+   if(!crc32 || !zlibmod_pack) {
      yyerror("Could not load Image module.");
      return;
    }
