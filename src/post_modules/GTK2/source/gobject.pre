@@ -174,7 +174,7 @@ int new_signal(string name, array types, string return_type)
   pgtk2_verify_inited();
   {
     struct pike_string *t;
-    char *ret_type_name;
+    struct pike_string *ret_type_name;
     struct array *a;
     GObject *go;
     gchar *name;
@@ -185,24 +185,24 @@ int new_signal(string name, array types, string return_type)
     struct signal_data *b;
     int i;
 
-    get_all_args("new_signal",args,"%T%A%s",&t,&a,&ret_type_name);
+    get_all_args("new_signal",args,"%t%A%t",&t,&a,&ret_type_name);
     if (a->size) {
       ref_push_string(t);
       f_string_to_utf8(1);
       name=g_strdup(CGSTR0(Pike_sp[-1].u.string));
       if (name==NULL) {
 	pop_stack();
-	SIMPLE_OUT_OF_MEMORY_ERROR("new_signal",strlen(ret_type_name)*2);
+	SIMPLE_OUT_OF_MEMORY_ERROR("new_signal",ret_type_name->len*2);
       }
-      if (!strcmp(ret_type_name,"void")) {
+      if (is_same_string(ret_type_name,_STR("void"))) {
 	return_type=G_TYPE_NONE;
-      } else if (!strcmp(ret_type_name,"int")) {
+      } else if (is_same_string(ret_type_name,_STR("int"))) {
 	return_type=G_TYPE_INT;
-      } else if (!strcmp(ret_type_name,"float")) {
+      } else if (is_same_string(ret_type_name,_STR("float"))) {
 	return_type=G_TYPE_DOUBLE;
-      } else if (!strcmp(ret_type_name,"string")) {
+      } else if (is_same_string(ret_type_name,_STR("string"))) {
 	return_type=G_TYPE_STRING;
-      } else if (!strcmp(ret_type_name,"object")) {
+      } else if (is_same_string(ret_type_name,_STR("object"))) {
 	return_type=G_TYPE_OBJECT;
       } else {
 	return_type=G_TYPE_POINTER;
@@ -215,16 +215,18 @@ int new_signal(string name, array types, string return_type)
       for (i=n_params=0; i<a->size; i++) {
 	if (ITEM(a)[i].type!=PIKE_T_STRING)
 	  continue;
-	if (!strcmp(CGSTR0(ITEM(a)[i].u.string),"int")) {
+	if (is_same_string(ITEM(a)[i].u.string,_STR("int"))) {
 	  param_types[n_params]=G_TYPE_INT;
 	  n_params++;
-	} else if (!strcmp(CGSTR0(ITEM(a)[i].u.string),"float")) {
+	} else if (is_same_string(ITEM(a)[i].u.string,_STR("float"))) {
 	  param_types[n_params]=G_TYPE_DOUBLE;
 	  n_params++;
-	} else if (!strcmp(CGSTR0(ITEM(a)[i].u.string),"string")) {
+	} else if (is_same_string(ITEM(a)[i].u.string,_STR("string")))
+        {
 	  param_types[n_params]=G_TYPE_STRING;
 	  n_params++;
-	} else if (!strcmp(CGSTR0(ITEM(a)[i].u.string),"object")) {
+	} else if (is_same_string(ITEM(a)[i].u.string,_STR("object")))
+        {
 	  param_types[n_params]=G_TYPE_OBJECT;
 	  n_params++;
 	} else {

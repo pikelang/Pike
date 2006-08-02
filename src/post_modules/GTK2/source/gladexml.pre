@@ -90,15 +90,16 @@ void create(string filename_or_buffer, ?int size, ?string root, ?string domain)
   pgtk2_verify_setup();
   {
     GladeXML *gl;
-    char *fname,*root=NULL,*dom=NULL;
+    struct pike_string *fname;
+    char *root=NULL,*dom=NULL;
     INT_TYPE size=0;
-    get_all_args("create",args,"%s.%i%s%s",&fname,&size,&root,&dom);
+    get_all_args("create",args,"%t.%i%s%s",&fname,&size,&root,&dom);
     if (size==0)
-      gl=glade_xml_new(fname,root,dom);
+      gl=glade_xml_new(fname->str,root,dom);
     else if (size==-1)
-      gl=glade_xml_new_from_buffer(fname,strlen(fname),root,dom);
+      gl=glade_xml_new_from_buffer(fname->str,fname->len,root,dom);
     else
-      gl=glade_xml_new_from_buffer(fname,size,root,dom);
+      gl=glade_xml_new_from_buffer(fname->str,size,root,dom);
     THIS->obj=G_OBJECT(gl);
   }
   pgtk2_pop_n_elems(args);
