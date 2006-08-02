@@ -1,5 +1,5 @@
 /*
- * $Id: com.c,v 1.8 2006/07/09 22:44:38 nilsson Exp $
+ * $Id: com.c,v 1.9 2006/08/02 20:19:40 mast Exp $
  *
  * Pike interface to Common Object Model (COM)
  *
@@ -1476,10 +1476,10 @@ static void f_get_object(INT32 args)
   int        type = 0;
   IDispatch *pDispatch;
 
-  if (args < 1 || args > 2 || (args == 1 && IS_ZERO(&Pike_sp[-args])))
+  if (args < 1 || args > 2 || (args == 1 && UNSAFE_IS_ZERO(&Pike_sp[-args])))
     Pike_error("Incorrect number of arguments to GetObject.\n");
 
-  if (args >= 1 && !IS_ZERO(&Pike_sp[-args]))
+  if (args >= 1 && !UNSAFE_IS_ZERO(&Pike_sp[-args]))
   {
     PCHARP     tmp;
     type += 0x1;
@@ -1495,7 +1495,7 @@ static void f_get_object(INT32 args)
     SET_INDEX_PCHARP(tmp, filename->len, 0);
   }
 
-  if (args >= 2 && !IS_ZERO(&Pike_sp[1-args]))
+  if (args >= 2 && !UNSAFE_IS_ZERO(&Pike_sp[1-args]))
   {
     type += 0x2;
 
