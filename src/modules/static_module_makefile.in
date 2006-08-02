@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.103 2006/07/04 23:11:01 mast Exp $
+# $Id: static_module_makefile.in,v 1.104 2006/08/02 20:16:38 mast Exp $
 #
 
 
@@ -29,7 +29,7 @@ all:
 build_type:
 	@echo static > build_type
 
-static: module-preamble module-main
+static: Makefile $(DUMMY) module-preamble module-main
 	@:
 
 dynamic:

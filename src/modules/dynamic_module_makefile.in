@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.119 2006/07/04 23:11:01 mast Exp $
+# $Id: dynamic_module_makefile.in,v 1.120 2006/08/02 20:16:38 mast Exp $
 #
 
 LIBGCC=@LIBGCC@
@@ -31,10 +31,12 @@ all:
 build_type:
 	@echo dynamic > build_type
 
-static: module-preamble
+static: Makefile $(DUMMY) module-preamble
 	@:
 
-dynamic: module-main
+# Depend on $(DUMMY) here too for the sake of post modules, where the
+# static target never gets called.
+dynamic: $(DUMMY) module-main
 	@:
 
 linker_options: Makefile

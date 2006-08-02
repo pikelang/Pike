@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.6 2006/06/18 14:23:54 mast Exp $
+# $Id: configure.in,v 1.7 2006/08/02 20:16:38 mast Exp $
 AC_INIT(Makefile.in)
 
 PIKE_RETAIN_VARIABLES()
@@ -16,9 +16,11 @@ do
     if test -d "$srcdir/$a" ; then
       if test -f "$srcdir/$a/configure.in"; then
         yesno=`eval echo \\$with_$a`
-        if test "x${yesno-}" != xno ; then
-          MODULE_LINKOPTS="$MODULE_LINKOPTS $a/linker_options"
-	  MODULE_SEGMENTS="$MODULE_SEGMENTS $a/modlist_segment"
+	if test "x${yesno-}" != xno ; then
+	  if test x$POST_MODULE_BUILD_TYPE = xstatic; then
+	    MODULE_LINKOPTS="$MODULE_LINKOPTS $a/linker_options"
+	    MODULE_SEGMENTS="$MODULE_SEGMENTS $a/modlist_segment"
+	  fi
           module_names="$module_names $a"
 	  if test "x$RECONFIGURE_BUNDLES" = "xyes"; then
 	    if test x`find "$a" -name '*.bundle' -print -exec rm \{\} \;` = x; then

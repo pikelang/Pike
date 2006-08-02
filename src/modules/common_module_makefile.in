@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.43 2006/07/04 23:44:04 mast Exp $
+# $Id: common_module_makefile.in,v 1.44 2006/08/02 20:16:38 mast Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -22,7 +22,9 @@ TMP_MODULE_BASE=$(TMP_LIBDIR)/modules
 force:
 	@:
 
-module-preamble: Makefile $(DUMMY) linker_options modlist_segment
+# Note that module-preamble isn't executed at all for post modules
+# when dynamic modules are enabled.
+module-preamble: linker_options modlist_segment
 
 module-main: Makefile $(MODULE_TARGET) module.pmod
 	@if [ x"$(PIKE_EXTERNAL_MODULE)" = x -a x"$(MODULE_PMOD_IN)" != x ]; then \

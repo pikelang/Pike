@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.437 2006/08/02 14:21:52 mast Exp $
+# $Id: Makefile.in,v 1.438 2006/08/02 20:16:37 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -183,7 +183,7 @@ CORE_OBJ= \
  builtin_functions.o \
  peep.o \
  @DLOPEN_O@ @EXTRA_OBJS@
-OBJ=$(CORE_OBJ) module.o
+OBJ=$(CORE_OBJ) @MODULE_O@
 
 MODULE_REQUIREMENTS= \
   headerfiles-stamp \
@@ -277,31 +277,31 @@ compiler-warnings : clean
 	@echo 'End of summary'
 	@echo '--------------'
 
-libpike.so: $(OBJ) modules/linker_options post_modules/linker_options
+libpike.so: $(OBJ) modules/linker_options @STATIC_POST_MODULES_LINKOPTS@
 	@echo "Linking libpike.so";\
 	if $(TMP_BINDIR)/smartlink "$(LDSHARED)" $(LDFLAGS) -o libpike.@SO@ \
-	  $(OBJ) `cat modules/linker_options post_modules/linker_options` \
+	  $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` \
 	  $(LIBS); then \
 	  if test "@SO@" != so ; then mv "module.@SO@" module.so ; \
 	  else :; fi ;\
 	else \
 	  echo "Linking failed:" >&2; \
 	  echo $(TMP_BINDIR)/smartlink "$(LDSHARED)" $(LDFLAGS) -o libpike.@SO@ \
-	    $(OBJ) `cat modules/linker_options post_modules/linker_options` \
+	    $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` \
 	    $(LIBS) >&2 ;\
 	  exit 1; \
 	fi
 
 # FIXME: Static linked version; this doesn't work yet!
 #        Since we need to split linker_options into archives and options.
-libpike.a: $(OBJ) modules/linker_options post_modules/linker_options
+libpike.a: $(OBJ) modules/linker_options @STATIC_POST_MODULES_LINKOPTS@
 	-rm -f libpike.a
 	$(AR) cq libpike.a $(OBJ)
 	-@RANLIB@ libpike.a
 
 # tpike is a pike with no post modules compiled in. It's used during
 # building of the post modules.
-tpike-real tpike.lib: main.o $(CORE_OBJ) tmodule.o master-stamp pike.syms modules/linker_options
+tpike-real: main.o $(CORE_OBJ) tmodule.o master-stamp pike.syms modules/linker_options
 	-@rm -f tpike || :
 	$(LD) $(LDFLAGS) main.o $(CORE_OBJ) tmodule.o \
 	  `cat modules/linker_options` \
@@ -319,15 +319,30 @@ tpike:
 	  $(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) tpike-real; \
 	else :; fi
 
-#pike: main.o @DLOPEN_O@ $(PIKE_LIB) master-stamp pike.syms
-pike: main.o $(OBJ) master-stamp pike.syms modules/linker_options post_modules/linker_options
+# If we build without dynamic modules then tpike is built first with
+# all modules under modules/ linked into it, then tpike is used for
+# post_modules source targets, and then pike is linked with both
+# modules/ and post_modules/.
+#
+# If we build with dynamic modules then pike is built first with the
+# few always-static modules under modules/, then the dynamic modules
+# under modules/ are built, then pike is used for post_modules source
+# targets, and then all modules under post_modules/ are built
+# dynamically.
+#
+# This means that a post_module can't be always-static and can't add
+# stuff to the pike linkage using LINKER_OPTIONS.
+#
+# @LDSHARED_BASE_REQS@ expands to pike.lib if --enable-dll is used on
+# NT. This only happens if dynamic modules are enabled.
+pike pike.lib: main.o $(OBJ) master-stamp pike.syms modules/linker_options @STATIC_POST_MODULES_LINKOPTS@
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
 	-@if [ -f pike.exe ] ; then mv pike.exe pike.old.exe || : ; else : ; fi
 	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
 #	$(LD) $(LDFLAGS) main.o @DLOPEN_O@ -o pike
 	$(LD) $(LDFLAGS) main.o $(OBJ) \
-	  `cat modules/linker_options post_modules/linker_options` \
+	  `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` \
 	  $(LIBS) -o pike
 # The dumped modules are removed whenever Pike is relinked since some
 # of the bytecode methods (e.g. ia32) stores absolute addresses to
@@ -364,17 +379,17 @@ gcov:
 # purify
 pure: $(OBJ) master-stamp module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options  post_modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` $(LIBS) -o pike
 
 # purecov
 cover: $(OBJ) master-stamp module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) purecov purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options  post_modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) purecov purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` $(LIBS) -o pike
 
 # quantify
 quant: $(OBJ) master-stamp module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options  post_modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` $(LIBS) -o pike
 
 splint:
 	splint $(PREFLAGS) -warnposix +charintliteral -realcompare -boolops -predboolint $(FILE)
@@ -596,9 +611,8 @@ clean_here: tidy doc_clean
 	-rm -f hilfe rsif master.pike compiler-warnings dumpmodule.log
 	-rm -f interpreter_debug.h lexer?.h
 	-rm -f import-stamp master-stamp headerfiles-stamp
-	-rm -f static-modules-stamp dynamic-modules-stamp
-	-rm -f post-static-modules-stamp post-dynamic-modules-stamp
-	-rm -f tpike-complete-stamp pike-complete-stamp
+	-rm -f static-modules-stamp dynamic-modules-stamp post-modules-stamp
+	-rm -f post-module-pike-complete-stamp pike-complete-stamp
 	-rm -rf lib/modules/*
 #	-rm -f lib/master.pike
 
@@ -1093,65 +1107,41 @@ modules/modlist_headers.h: static-modules-stamp
 
 modules/linker_options: static-modules-stamp
 
-tpike-complete-stamp: tpike dynamic-modules-stamp
-	@touch tpike-complete-stamp
+post-module-pike-complete-stamp: @BUILD_PIKE@ dynamic-modules-stamp
+	@touch post-module-pike-complete-stamp
 
-module.o:  modules/modlist_headers.h modules/modlist.h
+module.o:  modules/modlist_headers.h modules/modlist.h @STATIC_POST_MODULES_MODLIST@
 
 tmodule.o:  modules/modlist_headers.h modules/modlist.h
 
 # Backward compat.
 post_modules: post_module_objects
 
-post_static_module_objects: $(MODULE_REQUIREMENTS) tpike-complete-stamp
-	@MODULE_BUILD_TYPE=static; \
+post_module_objects: $(MODULE_REQUIREMENTS) post-module-pike-complete-stamp
+	@MODULE_BUILD_TYPE=@POST_MODULE_BUILD_TYPE@; \
 	export MODULE_BUILD_TYPE; \
 	( cd post_modules && ( rm remake >/dev/null 2>&1 || : ) && \
 	  ( $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
 	    ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) \
 	) || exit $$?
-	@touch post-static-modules-stamp
+	@touch post-modules-stamp
 
-post-static-modules-stamp: $(MODULE_REQUIREMENTS) tpike-complete-stamp
-	@MODULE_BUILD_TYPE=static; \
+post-modules-stamp: $(MODULE_REQUIREMENTS) post-module-pike-complete-stamp
+	@MODULE_BUILD_TYPE=@POST_MODULE_BUILD_TYPE@; \
 	export MODULE_BUILD_TYPE; \
 	( cd post_modules && ( rm remake >/dev/null 2>&1 || : ) && \
 	  ( $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
 	    ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) \
 	) || exit $$?
-	@touch post-static-modules-stamp
+	@touch post-modules-stamp
 
-post_dynamic_module_objects: $(MODULE_REQUIREMENTS) tpike-complete-stamp @LDSHARED_BASE_REQS@
-	@MODULE_BUILD_TYPE=dynamic; \
-	export MODULE_BUILD_TYPE; \
-	( cd post_modules && ( rm remake >/dev/null 2>&1 || : ) && \
-	  ( $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
-	    ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) \
-	) || exit $$?
-	@touch post-dynamic-modules-stamp
+post_modules/modlist_headers.h: post-modules-stamp
 
-post-dynamic-modules-stamp: $(MODULE_REQUIREMENTS) tpike-complete-stamp @LDSHARED_BASE_REQS@
-	@MODULE_BUILD_TYPE=dynamic; \
-	export MODULE_BUILD_TYPE; \
-	( cd post_modules && ( rm remake >/dev/null 2>&1 || : ) && \
-	  ( $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
-	    ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) \
-	) || exit $$?
-	@touch post-dynamic-modules-stamp
+post_modules/modlist.h: post-modules-stamp
 
-# Use submakes here to ensure both correct sequencing and that all
-# modules are properly rechecked.
-post_module_objects:
-	@$(MAKE) $(MAKE_FLAGS) post_static_module_objects
-	@$(MAKE) $(MAKE_FLAGS) post_dynamic_module_objects
+post_modules/linker_options: post-modules-stamp
 
-post_modules/modlist_headers.h: post-static-modules-stamp
-
-post_modules/modlist.h: post-static-modules-stamp
-
-post_modules/linker_options: post-static-modules-stamp
-
-pike-complete-stamp: pike post-dynamic-modules-stamp
+pike-complete-stamp: pike post-modules-stamp
 	@touch pike-complete-stamp
 
 $(SRCDIR)/interpret_protos.h_src: $(SRCDIR)/interpret_functions.h $(SRCDIR)/strip_opcodes
@@ -1365,8 +1355,6 @@ import_functions.h: import-stamp
 
 export_functions.c: import_functions.h
 	touch export_functions.c
-
-module.o: post_modules/modlist.h post_modules/modlist_headers.h 
 
 # Must have manual depends on all the bytecode methods in the code
 # dir, since make depend will only include the one that was chosen,
