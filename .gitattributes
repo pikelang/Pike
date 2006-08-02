@@ -739,7 +739,6 @@ testfont binary
 /src/modules/math/configure.in foreign_ident
 /src/modules/math/math.c foreign_ident
 /src/modules/module_configure.in foreign_ident
-/src/modules/module_makefile foreign_ident
 /src/modules/spider/Makefile.in foreign_ident
 /src/modules/spider/acconfig.h foreign_ident
 /src/modules/spider/configure.in foreign_ident
