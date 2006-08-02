@@ -2,15 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: time_stuff.h,v 1.15 2006/06/20 17:53:04 mast Exp $
+|| $Id: time_stuff.h,v 1.16 2006/08/02 15:02:40 mast Exp $
 */
 
 #ifndef TIME_STUFF_H
 #define TIME_STUFF_H
 
-#ifndef CONFIGURE_TEST
-#include "machine.h"
-#endif
+#include "global.h"
 
 #if TIME_WITH_SYS_TIME
 # include <sys/time.h>
@@ -79,6 +77,5 @@ struct timeval
   long tv_usec;
 };
 #endif
-
 
 #endif

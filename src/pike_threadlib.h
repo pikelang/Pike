@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.59 2006/07/05 02:17:09 mast Exp $
+|| $Id: pike_threadlib.h,v 1.60 2006/08/02 15:02:40 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -16,7 +16,7 @@
 
 
 #ifndef CONFIGURE_TEST
-#include "machine.h"
+#include "global.h"
 #include "pike_embed.h"
 #include "pike_rusage.h"
 #endif

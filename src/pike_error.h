@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.38 2006/05/10 19:43:54 mast Exp $
+|| $Id: pike_error.h,v 1.39 2006/08/02 15:02:40 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -26,7 +26,7 @@ static inline void Pike_fatal (const char *fmt, ...)
 
 #else  /* !CONFIGURE_TEST */
 
-#include "machine.h"
+#include "global.h"
 
 #ifdef HAVE_SETJMP_H
 #include <setjmp.h>

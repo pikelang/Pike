@@ -2,13 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.h,v 1.130 2004/12/30 13:50:35 grubba Exp $
+|| $Id: threads.h,v 1.131 2006/08/02 15:02:40 mast Exp $
 */
 
 #ifndef THREADS_H
 #define THREADS_H
 
-#include "machine.h"
 #include "object.h"
 #include "pike_error.h"
 #include "interpret.h"
