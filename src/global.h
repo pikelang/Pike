@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.107 2006/07/05 00:12:44 mast Exp $
+|| $Id: global.h,v 1.108 2006/08/02 15:00:28 mast Exp $
 */
 
 #ifndef GLOBAL_H
@@ -97,6 +97,63 @@ struct timeval;
  * program. In that case these defines will already be included. */
 #include "machine.h"
 #endif
+
+/* Some identifiers used as flags in the machine.h defines. */
+#define PIKE_YES	1
+#define PIKE_NO		2
+#define PIKE_UNKNOWN	3
+
+/* We want to use errno later */
+#ifdef _SGI_SPROC_THREADS
+/* Magic define of _SGI_MP_SOURCE above might redefine errno below */
+#include <errno.h>
+#if defined(HAVE_OSERROR) && !defined(errno)
+#define errno (oserror())
+#endif /* HAVE_OSERROR && !errno */
+#endif /* _SGI_SPROC_THREADS */
+
+/* This macro is only provided for compatibility with
+ * Windows PreRelease. Use ALIGNOF() instead!
+ * (Needed for va_arg().)
+ */
+#ifndef __alignof
+#define __alignof(X) ((size_t)&(((struct { char ignored_ ; X fooo_; } *)0)->fooo_))
+#endif /* __alignof */
+
+#ifdef HAVE_FUNCTION_ATTRIBUTES
+#define ATTRIBUTE(X) __attribute__ (X)
+#else
+#define ATTRIBUTE(X)
+#endif
+
+#ifdef HAVE_DECLSPEC
+#define DECLSPEC(X) __declspec(X)
+#else /* !HAVE_DECLSPEC */
+#define DECLSPEC(X)
+#endif /* HAVE_DECLSPEC */
+
+#ifndef HAVE_WORKING_REALLOC_NULL
+#define realloc(PTR, SZ)	pike_realloc(PTR,SZ)
+#endif
+
+/* NOTE:
+ *    PIKE_CONCAT doesn't get defined if there isn't any way to
+ *    concatenate symbols
+ */
+#ifdef HAVE_ANSI_CONCAT
+#define PIKE_CONCAT(X,Y)	X##Y
+#define PIKE_CONCAT3(X,Y,Z)	X##Y##Z
+#define PIKE_CONCAT4(X,Y,Z,Q)	X##Y##Z##Q
+#else
+#ifdef HAVE_KR_CONCAT
+#define PIKE_CONCAT(X,Y)	X/**/Y
+#define PIKE_CONCAT3(X,Y,Z)	X/**/Y/**/Z
+#define PIKE_CONCAT4(X,Y,Z,Q)	X/**/Y/**/Z/**/Q
+#endif /* HAVE_KR_CONCAT */
+#endif /* HAVE_ANSI_CONCAT */
+
+#define TOSTR(X)	#X
+#define DEFINETOSTR(X)	TOSTR(X)
 
 /*
  * Max number of local variables in a function.
@@ -519,7 +576,5 @@ char *crypt(const char *, const char *);
 #else /* !PROFILING_DEBUG */
 #define DO_IF_PROFILING_DEBUG(X)
 #endif /* PROFILING_DEBUG */
-
-
 
 #endif
