@@ -9,9 +9,9 @@ array(string) features()
 {
   array a = ({}), m = ({});
 
-  // FIXME: This method is ugly and fragile.
-  if(!_static_modules["___Regexp"])
-    a += ({ "dynamic_modules" });
+#if constant(load_module)
+  a += ({ "dynamic_modules" });
+#endif
 
 #if efun(thread_create)
   a += ({ "threads" });
