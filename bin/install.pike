@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.168 2006/04/22 14:57:27 grubba Exp $
+// $Id: install.pike,v 1.169 2006/08/03 15:25:29 mast Exp $
 
 #define USE_GTK
 
@@ -40,12 +40,13 @@ string pike;
 array(string) files_to_delete=({});
 array(string) files_to_not_delete=({});
 array(string) to_dump=({});
-array(string) to_export=({});
+array(array(string)) to_export=({});
 
 
 int export;
 int no_gui;
 int no_autodoc;
+string include_crt;
 
 Tools.Install.ProgressBar progress_bar;
 
@@ -113,6 +114,15 @@ string some_strerror(int err)
   return ret;
 }
 
+void error_msg (string msg, mixed... args)
+{
+  if (last_len) {
+    write ("\n");
+    last_len = 0;
+  }
+  werror (msg, @args);
+}
+
 void fail(string fmt, mixed ... args)
 {
   int err=errno();
@@ -130,8 +140,7 @@ void fail(string fmt, mixed ... args)
   }
 #endif
 
-  if(last_len) write("\n");
-  werror("%s: %s\n",sprintf(fmt,@args),some_strerror(err));
+  error_msg("%s: %s\n",sprintf(fmt,@args),some_strerror(err));
   werror("Current directory = %s\n",getcwd());
   werror("**Installation failed..\n");
   exit(1);
@@ -727,6 +736,20 @@ class UI
 
 #endif /* GENERATE_WIX_UI */
 
+array(string) get_subdirs (string dir)
+// Returns a listing of all directories in the tree below dir.
+{
+  array(string) dirs = ({dir});
+  for (int pos = 0; pos < sizeof (dirs); pos++) {
+    foreach (get_dir (dirs[pos]), string entry) {
+      entry = combine_path (dirs[pos], entry);
+      if (Stdio.is_dir (entry))
+	dirs += ({entry});
+    }
+  }
+  return sort (dirs[1..]);
+}
+
 mapping already_created=([]);
 int mkdirhier(string orig_dir)
 {
@@ -753,7 +776,7 @@ int mkdirhier(string orig_dir)
       tomove=1;
     }else{
       // FIXME: ask user if he wants to override
-      werror("Warning: Directory '%s' already exists as a file.\n",dir);
+      error_msg ("Warning: Directory '%s' already exists as a file.\n",dir);
       if(!mv(dir,dir+".old"))
 	fail("mv(%s,%s)",dir,dir+".old");
     }
@@ -818,6 +841,29 @@ int low_uninstall_file(string path)
 
 #endif /* SUPPORT_WIX */
 
+void export_file (string from, string tmp, string to, void|string id)
+// from: File source. tmp: Name in the build/unpack tree. Same as from
+// for files already in the build tree. to: Final destination (only
+// used in WiX mode).
+{
+  if (!export) error ("Not in export mode.\n");
+
+  if (export == 2) {
+#ifdef SUPPORT_WIX
+    mapping translator = ([
+      "":"",
+      prefix:"",
+      getcwd():"",
+    ]);
+    root->install_file(translate(to, translator), from, id);
+#else /* !SUPPORT_WIX */
+    error("Wix mode not supported.\n");
+#endif /* SUPPORT_WIX */
+  } else {
+    to_export += ({({from, tmp})});
+  }
+}
+
 int low_install_file(string from,
 		     string to,
 		     void|int mode,
@@ -826,20 +872,7 @@ int low_install_file(string from,
   installed_files++;
   if(export)
   {
-    if (export == 2) {
-#ifdef SUPPORT_WIX
-      mapping translator = ([
-	"":"",
-	prefix:"",
-	getcwd():"",
-      ]);
-      root->install_file(translate(to, translator), from, id);
-#else /* !SUPPORT_WIX */
-      error("Wix mode not supported.\n");
-#endif /* SUPPORT_WIX */
-    } else {
-      to_export+=({ from });
-    }
+    export_file (from, from, to, id);
     return 1;
   }
 
@@ -1394,8 +1427,9 @@ void do_export()
     "":tmpdir+"/build",
   ]);
 
-
-  array(string) translated_names = Array.map(to_export, translate, translator);
+  [array(string) to_export_from, array(string) to_export_tmp] =
+    Array.transpose (to_export);
+  array(string) translated_names = Array.map(to_export_tmp, translate, translator);
   array(string) dirs=Array.uniq(Array.map(translated_names, dirname));
   while(1)
   {
@@ -1407,7 +1441,7 @@ void do_export()
   sort(dirs);
 
   foreach(dirs, string dir) p->write("d%4c%s",sizeof(dir),dir);
-  foreach(Array.transpose(  ({ to_export, translated_names }) ),
+  foreach(Array.transpose(  ({ to_export_from, translated_names }) ),
 	  [ string file, string file_name ])
     {
       status("Adding",file);
@@ -1416,9 +1450,9 @@ void do_export()
 	p->write(f);
       } else {
 	//  Huh? File could not be found.
-	werror("-------------------\n"
-	       "Warning: Could not add file: %s. File not found!\n"
-	       "-------------------\n", file);
+	error_msg ("-------------------\n"
+		   "Warning: Could not add file: %s. File not found!\n"
+		   "-------------------\n", file);
       }
     }
 
@@ -1551,7 +1585,7 @@ done
 			"exec ./%s.x \"$0\" \"$@\"\n", tmpname, tmpname, tmpname);
   if(sizeof(script) >= 100)
   {
-    werror("Script too long!!\n");
+    error_msg ("Script too long!!\n");
     exit(1);
   }
 
@@ -1559,15 +1593,26 @@ done
   mkdirhier( parts[..sizeof(parts)-2]*"/");
   Stdio.write_file(script,"");
 
-  to_export = map(to_export,
-		  lambda(string s) {
-		    return combine_path(export_base_name+".dir", s);
-		  } );
+  [array(string) to_export_from, array(string) to_export_tmp] =
+    Array.transpose (to_export);
+
+  // Link in files outside the build tree during the tar.
+  for (int i = 0; i < sizeof (to_export_from); i++) {
+    string tmpname = to_export_tmp[i];
+    to_export_tmp[i] =
+      combine_path (export_base_name+".dir", to_export_tmp[i]);
+    if (to_export_from[i] != tmpname) {
+      rm (to_export_tmp[i]);
+      mklink (to_export_from[i], to_export_tmp[i]);
+    }
+    else
+      to_export_from[i] = 0;
+  }
 
   string tmpmsg=".";
 
   string tararg="cf";
-  foreach(to_export/25.0, array files_to_tar)
+  foreach(to_export_tmp/25.0, array files_to_tar)
     {
       status("Creating", tmpname+".tar", tmpmsg);
       tmpmsg+=".";
@@ -1576,6 +1621,11 @@ done
       tararg="rf";
     }
 
+  // Clean up symlinks again.
+  for (int i = 0; i < sizeof (to_export_from); i++)
+    if (to_export_from[i])
+      rm (to_export_tmp[i]);
+
   status("Filtering to root/root ownership", tmpname+".tar");
   tarfilter(tmpname+".tar");
 
@@ -1583,11 +1633,10 @@ done
 
   Process.create_process(({"gzip","-9",tmpname+".tar"}))->wait();
 
-  to_export = ({ script, tmpname+".x", tmpname+".tar.gz" });
-
   status("Creating", export_base_name);
 
-  Process.create_process( ({ "tar","cf", export_base_name }) + to_export )
+  Process.create_process( ({ "tar","cf", export_base_name,
+			     script, tmpname+".x", tmpname+".tar.gz" }))
     ->wait();
 
   status("Filtering to root/root ownership", export_base_name);
@@ -1641,7 +1690,7 @@ object vbox3;
 void do_abort()
 {
   // FIXME
-  werror("Installation aborted.\n");
+  error_msg ("Installation aborted.\n");
   exit(1);
 }
 
@@ -1678,7 +1727,7 @@ void do_exit()
 
 void cancel()
 {
-  werror("See you another time!\n");
+  error_msg ("See you another time!\n");
   exit(0);
 }
 
@@ -2017,6 +2066,52 @@ int pre_install(array(string) argv)
 }
 
 #ifdef SUPPORT_WIX
+
+string add_msm (Directory root, string msm_glob, string descr)
+{
+  if (string pike_build_root = getenv ("PIKE_BUILD_ROOT")) {
+    string msm_dir = combine_path (pike_build_root, "msm");
+    string msm_file;
+
+    if (Stdio.is_dir (msm_dir)) {
+      array(string) all_files = get_dir (msm_dir);
+      array(string) files = ({});
+      foreach (all_files, string file)
+	if (glob (msm_glob, lower_case (file)))
+	  files += ({file});
+      switch (sizeof (files)) {
+	case 1: msm_file = files[0]; break;
+	case 2..: error_msg ("Warning: More than one msm for %s found:\n"
+			     "%{  %s\n%}",
+			     descr, map (files,
+					 lambda (string file) {
+					   return combine_path (msm_dir, file);
+					 }));
+      }
+    }
+
+    if (!msm_file) {
+      error_msg ("Warning: No file found matching %s - "
+		 "the msm for %s won't be included.\n",
+		 combine_path (pike_build_root, msm_glob), descr);
+      return 0;
+    }
+
+    string id =
+      has_suffix (lower_case (msm_file), ".msm") ?
+      msm_file[..sizeof (msm_file) - 5] : msm_file;
+    root->merge_module (".", combine_path (msm_dir, msm_file),
+			id, "TARGETDIR");
+    return id;
+  }
+
+  else {
+    error_msg ("Warning: PIKE_BUILD_ROOT not set - can't find msm for %s.\n",
+	       descr);
+    return 0;
+  }
+}
+
 // Create a versioned root wix file that installs Pike_module.msm.
 void make_wix()
 {
@@ -2062,6 +2157,34 @@ void make_wix()
     add_child(line_feed)->
     add_child(WixNode("MergeRef", ([ "Id":"Pike" ])))->
     add_child(line_feed);
+
+#ifndef PRIVATE_CRT
+  if (include_crt) {
+    // Always include the nondebug CRT since some lib dlls might be
+    // using it.
+    if (string id =
+	add_msm (root, "microsoft_*_crt_*.msm", "MS CRT"))
+      feature_node->add_child (WixNode ("MergeRef", (["Id": id])))
+		  ->add_child (line_feed);
+    if (string id =
+	add_msm (root, "policy_*_microsoft_*_crt_*.msm", "MS CRT policy"))
+      feature_node->add_child (WixNode ("MergeRef", (["Id": id])))
+		  ->add_child (line_feed);
+    if (include_crt == "debug") {
+      if (string id =
+	  add_msm (root, "microsoft_*_debugcrt_*.msm", "MS debug CRT"))
+	feature_node->add_child (WixNode ("MergeRef", (["Id": id])))
+		    ->add_child (line_feed);
+      if (string id =
+	  add_msm (root, "policy_*_microsoft_*_debugcrt_*.msm",
+		   "MS debug CRT policy"))
+	feature_node->add_child (WixNode ("MergeRef", (["Id": id])))
+		    ->add_child (line_feed);
+      error_msg ("Warning: MS debug CRT is included - "
+		 "it is not redistributable.\n");
+    }
+  }
+#endif
 
   // Generate the XML.
   Parser.XML.Tree.SimpleRootNode root_node =
@@ -2121,11 +2244,13 @@ void make_wix()
 			add_child(WixNode("FragmentRef", ([
 					    "Id":"PikeUI",
 					  ])))->
-			add_child(line_feed)))->
+			add_child(line_feed))->
+	      add_child (line_feed))->
     add_child(line_feed);
 
   create_file("Pike.wxs", root_node->render_xml());
 }
+
 #endif /* SUPPORT_WIX */
 
 // Create a master.pike with the correct lib_prefix
@@ -2207,16 +2332,16 @@ void dump_modules()
 	retcode=p->wait();
       }
       else
-	werror("Pike binary %O could not be found.\n"
-	       "Dumping of master.pike failed (not fatal).\n",
-	       fakeroot(pike));
+	error_msg ("Pike binary %O could not be found.\n"
+		   "Dumping of master.pike failed (not fatal).\n",
+		   fakeroot(pike));
     };
     if(error)
-      werror("Dumping of master.pike failed (not fatal)\n%s\n",
-	     describe_backtrace(error));
+      error_msg ("Dumping of master.pike failed (not fatal)\n%s\n",
+		 describe_backtrace(error));
     if(retcode)
-      werror("Dumping of master.pike failed (not fatal) (0x%08x)\n",
-	     retcode);
+      error_msg ("Dumping of master.pike failed (not fatal) (0x%08x)\n",
+		 retcode);
   }
 
   if(!sizeof(to_dump)) return;
@@ -2271,12 +2396,12 @@ void dump_modules()
 			       delta_dump, options);
       int retcode=p->wait();
       if (retcode)
-	werror("Dumping of some modules failed (not fatal) (0x%08x)\n",
-	       retcode);
+	error_msg ("Dumping of some modules failed (not fatal) (0x%08x)\n",
+		   retcode);
     };
     if (err) {
-      werror("Failed to spawn module dumper (not fatal):\n"
-	       "%s\n", describe_backtrace(err));
+      error_msg ("Failed to spawn module dumper (not fatal):\n"
+		 "%s\n", describe_backtrace(err));
     }
 
     offset += sizeof(delta_dump);
@@ -2325,12 +2450,12 @@ void finalize_pike()
 
       status("Finalizing",pike_bin_file,"FAILED");
       if (!istty()) {
-	werror("Finalizing of %O failed!\n", pike_bin_file);
-	werror("Not found in %s.\n"
-	       "%O\n", getcwd(), get_dir("."));
-	werror("BUILDDIR: %O\n"
-	       "exe-stat: %O\n",
-	       vars->TMP_BUILDDIR, file_stat(pike_bin_file+".exe"));
+	error_msg ("Finalizing of %O failed!\n", pike_bin_file);
+	error_msg ("Not found in %s.\n"
+		   "%O\n", getcwd(), get_dir("."));
+	error_msg ("BUILDDIR: %O\n"
+		   "exe-stat: %O\n",
+		   vars->TMP_BUILDDIR, file_stat(pike_bin_file+".exe"));
       }
       exit(1);
     }
@@ -2353,7 +2478,7 @@ void finalize_pike()
       rm(pike_bin_file);
     }
     else {
-      werror("Warning! Failed to finalize master location!\n");
+      error_msg ("Warning! Failed to finalize master location!\n");
       if(install_file(pike_bin_file,pike,0755)) {
 	redump_all=1;
       }
@@ -2382,10 +2507,123 @@ void do_install()
       finalize_pike();
 
 #ifdef __NT__
-    // Copy needed DLL files (like libmySQL.dll if available).
+    if (export) {
+      if (string pike_build_root = getenv ("PIKE_BUILD_ROOT")) {
+	// Copy dlls by first looking in ../dll relative to every path
+	// in $LIB that is under $PIKE_BUILD_ROOT. If there's no
+	// ../dll then look in ../bin.
+	string pike_build_root =
+	  lower_case (combine_path (pike_build_root)) + "/";
+	foreach (getenv ("LIB") / ";", string lib_dir) {
+	  string dir;
+	  if ((has_prefix (lower_case (dir = combine_path (lib_dir, "../dll")),
+			   pike_build_root) &&
+	       Stdio.is_dir (dir)) ||
+	      // It's intentional that we don't search ../bin if a
+	      // ../dll has been found.
+	      (has_prefix (lower_case (dir = combine_path (lib_dir, "../bin")),
+			   pike_build_root) &&
+	       Stdio.is_dir (dir)))
+	    foreach (glob ("*.dll", get_dir (dir)), string dll_name)
+	      export_file (combine_path (dir, dll_name),
+			   combine_path (vars->TMP_BUILDDIR, dll_name),
+			   combine_path (exec_prefix, dll_name));
+	}
+      }
+    }
+
+#ifndef PRIVATE_CRT
+    if (export == 1 && include_crt &&
+	Stdio.is_file (combine_path (vars->TMP_BUILDDIR,
+				     "pike.exe.manifest"))) {
+      error_msg (#"\
+Warning: Using the old exe installer with VC8 doesn't work well. Your
+package probably won't work unless the user already has the MS CRTs
+installed. You might want to try to enable private CRT packaging; see
+the PRIVATE_CRT stuff in install.pike.\n");
+    }
+
+#else  // PRIVATE_CRT
+    // This way of packaging the CRT dlls is currently disabled in
+    // favor of the msm files. If you enable this you probably need to
+    // disable the embedded MT_FIX_* stuff in configure.in.
+    if (export) {
+      if (include_crt) {
+	// Find and copy dynamic CRT dlls (and manifest files as
+	// required by MSVC 8.0) to the build dir.
+	//
+	// Note that this currently is adapted for MSVC 8.0 but it
+	// could be adapted to find the runtime libraries for other
+	// MSVC versions and other compilers.
+
+	if (!Stdio.is_file (combine_path (vars->TMP_BUILDDIR,
+					  "pike.exe.manifest")))
+	  error_msg ("Warning: Got request to include CRT libraries "
+		     "but this doesn't look like a build made by VC8 "
+		     "(or something compatible).\n");
+
+	else {
+	  string msvc_arch = getenv ("MSVC_ARCH");
+	  if (!msvc_arch)
+	    // MSVC_ARCH should be set in the build environment. It's
+	    // the same arch identifier that you give to MSVC's
+	    // vcvarsall.bat to set up the build environment
+	    // (vcvarsall.bat doesn't set it - you have to).
+	    error_msg ("Warning: MSVC_ARCH not set - "
+		       "cannot find CRT dlls to include.\n");
+
+	  else
+	    find_crt: {
+	      // The path should contain .../Microsoft Visual Studio
+	      // XXX/VC/bin, so we search relative to it for the redist
+	      // dir.
+	      foreach (getenv ("PATH") / ";", string bin_dir) {
+		string redist_dir = combine_path (bin_dir, "../redist");
+		if (Stdio.is_dir (redist_dir)) {
+		  array(string) subdirs =
+		    map (get_subdirs (redist_dir), lower_case);
+		  subdirs = glob ("*/" + msvc_arch + "/*." +
+				  (include_crt == "debug" ? "debug" : "") +
+				  "crt", subdirs);
+
+		  switch (sizeof (subdirs)) {
+		    case 1:
+		      foreach (get_dir (subdirs[0]), string file)
+			export_file (combine_path (subdirs[0], file),
+				     combine_path (vars->TMP_BUILDDIR, file),
+				     combine_path (exec_prefix, file));
+		      break find_crt;
+
+		    case 2..:
+		      error_msg ("Warning: More than one CRT directory found:\n"
+				 "%{  %s\n%}", subdirs);
+		      break find_crt;
+		  }
+		}
+	      }
+
+	      error_msg ("Warning: Couldn't find any CRT directory "
+			 "by searching PATH:\n"
+			 "%{  %s\n%}", getenv ("PATH") / ";");
+	    }
+	}
+      }
+    }
+
+    else {
+      // Copy the manifests at install time.
+      foreach (glob ("*.manifest", get_dir (vars->TMP_BUILDDIR)), string file)
+	install_file (combine_path (vars->TMP_BUILDDIR, file),
+		      combine_path (exec_prefix, file));
+    }
+#endif	// PRIVATE_CRT
+
+    // Export and install needed dll files (like libmySQL.dll if
+    // available) that have been copied to the build dir.
     foreach(glob("*.dll", get_dir(vars->TMP_BUILDDIR)), string dll_name)
       install_file(combine_path(vars->TMP_BUILDDIR, dll_name),
 		   combine_path(exec_prefix, dll_name));
+
     // Copy the Program Database (debuginfo)
     if(file_stat(combine_path(vars->TMP_BUILDDIR, "pike.pdb")))
       install_file(combine_path(vars->TMP_BUILDDIR, "pike.pdb"),
@@ -2451,7 +2689,7 @@ void do_install()
       void basefile(string x) {
 	string from = combine_path(vars->BASEDIR,x);
 	if(!Stdio.cp(from, x))
-	  werror("Could not copy %s to %s.\n", from ,x);
+	  error_msg ("Could not copy %s to %s.\n", from ,x);
 	low_install_file(x, combine_path(prefix, x));
       };
 
@@ -2559,7 +2797,7 @@ void do_install()
       {
 	if(!mv(fakeroot(lnk),fakeroot(lnk+".old")))
 	{
-	  werror("Failed to move %s\n",lnk);
+	  error_msg ("Failed to move %s\n",lnk);
 	  exit(1);
 	}
       }
@@ -2596,6 +2834,8 @@ int main(int argc, array(string) argv)
     ({"--wix", Getopt.NO_ARG, ({ "--wix" })}),
     ({"--wix-module", Getopt.NO_ARG, ({ "--wix-module" })}),
     ({"--traditional",Getopt.NO_ARG,({"--traditional"})}),
+    ({"--release-crt",Getopt.NO_ARG,({"--release-crt"})}),
+    ({"--debug-crt",Getopt.NO_ARG,({"--debug-crt"})}),
     }) ),array opt)
     {
       switch(opt[0])
@@ -2614,6 +2854,15 @@ int main(int argc, array(string) argv)
 
 	case "notty":
 	  istty_cache=-1;
+	  break;
+
+	  // The following two are used to install the right dlls for
+	  // Microsoft CRT when a dynamic crt is used.
+	case "--release-crt":
+	  include_crt = "release";
+	  break;
+	case "--debug-crt":
+	  include_crt = "debug";
 	  break;
 
 	default:
