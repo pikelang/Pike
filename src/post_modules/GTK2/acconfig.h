@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.8 2006/08/02 13:42:31 ldillon Exp $
+|| $Id: acconfig.h,v 1.9 2006/08/03 16:50:25 ldillon Exp $
 */
 
 #undef FUNCPROTO
@@ -30,3 +30,4 @@
 #undef HAVE_PANGO_BETA
 #undef HAVE_GLADE
 #undef HAVE_GNOMEUI
+#undef HAVE_CAIRO

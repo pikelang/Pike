@@ -31,6 +31,8 @@ AC_PATH_PROG(PKG_CONFIG,${ac_tool_prefix}pkg-config,no)
 AC_SUBST(have_x11)
 AC_SUBST(pgtk_has_gtk_beta)
 pgtk_has_gtk_beta=nogtk_beta
+AC_SUBST(pgtk_has_gtk210)
+pgtk_has_gtk210=nogtk210
 AC_SUBST(pgtk_has_gtk28)
 pgtk_has_gtk28=nogtk28
 AC_SUBST(pgtk_has_gtk26)
@@ -39,6 +41,8 @@ AC_SUBST(pgtk_has_gtk24)
 pgtk_has_gtk24=nogtk24
 AC_SUBST(pgtk_has_gtk22)
 pgtk_has_gtk22=nogtk22
+AC_SUBST(pgtk_has_cairo)
+pgtk_has_cairo=nocairo
 AC_SUBST(pgtk_has_gnome)
 pgtk_has_gnome=nognome
 AC_SUBST(pgtk_has_pango_beta)
@@ -146,6 +150,10 @@ else
         pgtk_has_gtk28=gtk28
         AC_DEFINE(HAVE_GTK28)
       fi
+      if test $gtkminorvers -ge 10 ; then
+	pgtk_has_gtk210=gtk210
+	AC_DEFINE(HAVE_GTK210)
+      fi
     fi
   ],,GTK2)
   if test "x$WITH_GTK" = "x1"; then
@@ -212,6 +220,10 @@ else
     AC_CHECK_PKG(libgnome-2.0, gnome_program_init, [
       AC_DEFINE(HAVE_GNOME)
       pgtk_has_gnome=gnome
+    ])
+    AC_CHECK_PKG(cairo, cairo_create, [
+      AC_DEFINE(HAVE_CAIRO)
+      pgtk_has_cairo=cairo
     ])
     AC_CHECK_PKG(libglade-2.0, glade_init, [
       AC_DEFINE(HAVE_GLADE)
@@ -290,6 +302,7 @@ LIBS="$OLD_LIBS"
 CFLAGS="$OLD_CFLAGS"
 
 AC_SUBST(pgtk_has_libglade)
+AC_SUBST(pgtk_has_gtk210)
 AC_SUBST(pgtk_has_gtk28)
 AC_SUBST(pgtk_has_gtk26)
 AC_SUBST(pgtk_has_gtk24)
@@ -303,6 +316,7 @@ AC_SUBST(pgtk_has_pango12)
 AC_SUBST(pgtk_has_atk)
 AC_SUBST(pgtk_has_atk18)
 AC_SUBST(pgtk_has_gnomeui)
+AC_SUBST(pgtk_has_cairo)
 AC_SUBST(PGTK_CFLAGS)
 AC_SUBST(PGTK_LIBS)
 AC_SUBST(GTK_CFLAGS)
