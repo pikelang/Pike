@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.180 2006/08/03 12:11:23 mast Exp $
+|| $Id: system.c,v 1.181 2006/08/03 12:58:46 mast Exp $
 */
 
 /*
@@ -22,6 +22,10 @@
 
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
+#endif
+
+#ifdef HAVE_IO_H
+#include <io.h>
 #endif
 
 #include "module_support.h"
