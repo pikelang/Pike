@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.444 2006/08/03 15:28:47 mast Exp $
+# $Id: Makefile.in,v 1.445 2006/08/03 19:08:03 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -537,10 +537,11 @@ PikeWin32Installer.vbs: $(PACKAGINGDIR)/windows/installer.vbs
 
 Pike_module.msm: PikeWin32Installer.vbs
 
-Pike_module.wxs: $(TMP_BINDIR)/install.pike Makefile
+Pike_module.wxs: pike-complete-stamp $(TMP_BINDIR)/install.pike Makefile
 	@no_autodoc="--no-autodoc"; \
 	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike --wix-module $$no_autodoc \
+	@INSTALL_EXPORT_ARGS@ \
 	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
@@ -560,7 +561,7 @@ Pike.wxs: $(TMP_BINDIR)/install.pike Makefile
 	BASEDIR="$(BASEDIR)" man_prefix="$(man_prefix)" \
 	pike_name=$(pike_name) PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
 
-Pike.msi: pike-complete-stamp Pike.wixobj Pike_ui.wixobj Pike_module.msm Pike_banner.bmp
+Pike.msi: Pike.wixobj Pike_ui.wixobj Pike_module.msm Pike_banner.bmp
 	@test -d cab_cache || mkdir cab_cache
 	@if test -f Pike.msi; then rm Pike.msi; else :; fi # Paranoia
 	$(LIGHT) Pike.wixobj Pike_ui.wixobj -o Pike.msi -cc cab_cache
