@@ -132,7 +132,7 @@ int main(int argc, array(string) argv)
   array(string) libs=({});
 
   string target="exe";
-  int debug,optimize,share,dynamic;
+  int debug,share,dynamic;
   string output, wantfile, crt_lib;
 
   array opts=Getopt.find_all_options(argv, aggregate(
@@ -140,22 +140,33 @@ int main(int argc, array(string) argv)
     ({"oper_asm",Getopt.NO_ARG, ({"-S"}) }),
     ({"oper_comp",Getopt.NO_ARG, ({"-c"}) }),	
     ({"verbose",Getopt.NO_ARG, ({"-v"}) }),	
-    ({"debug",Getopt.MAY_HAVE_ARG, ({"-g"}) }),
+    ({"debug",
+#ifdef OLD_VC
+      Getopt.MAY_HAVE_ARG,
+#else
+      Getopt.NO_ARG,
+#endif
+      ({"-g"}) }),
     ({"optimize",Getopt.MAY_HAVE_ARG, ({"-O"}) }),
     ({"inline",Getopt.MAY_HAVE_ARG, ({"-Q"}) }),
     ({"include",Getopt.HAS_ARG, ({"-I"}) }),
     ({"link",Getopt.HAS_ARG, ({"-l"}) }),
-    ({"share",Getopt.MAY_HAVE_ARG, ({"-s"}) }),
+    ({"s",Getopt.MAY_HAVE_ARG, ({"-s"}) }),
+#ifdef OLD_VC
     ({"ignore",Getopt.MAY_HAVE_ARG, ({"-t"}) }),
+#endif
     ({"dynamic",Getopt.HAS_ARG, ({"-r"}) }),
     ({"ldpath",Getopt.HAS_ARG, ({"-L"}) }),
+#ifdef OLD_VC
     ({"ignore",Getopt.HAS_ARG, ({"-R"}) }),
+#endif
     ({"warn",Getopt.MAY_HAVE_ARG, ({"-W"}) }),
     ({"define",Getopt.HAS_ARG, ({"-D"}) }),
     ({"undefine",Getopt.HAS_ARG, ({"-U"})}),
     ({"output",Getopt.HAS_ARG, ({"-o"}) }),
     ({"export",Getopt.HAS_ARG, ({"--export"}) }),
-    ({"crt", Getopt.HAS_ARG, ({"-M"})}),
+    ({"M", Getopt.HAS_ARG, ({"-M"})}),
+    ({"p", Getopt.HAS_ARG, ({"-p"})}),
     ));
   foreach(opts, array option)
     {
@@ -179,7 +190,7 @@ int main(int argc, array(string) argv)
 //	  ldopts+=({"export",option[1]+"_"});
 	  break;
 
-	case "share":
+	case "s":
 	  switch(option[1])
 	  {
 	    case "hare":
@@ -189,8 +200,11 @@ int main(int argc, array(string) argv)
 	      break;
 
 	    case "tatic":
-	      /* Not yet implemented */
+	      // Ignore this for compat with the uncompressor.c rules.
 	      break;
+
+	    default:
+	      error ("Unknown option -s%s.\n", option[1]);
 	  }
 	  break;
 	  
@@ -222,20 +236,12 @@ int main(int argc, array(string) argv)
 	  break;
 	  
 	case "optimize":
-	  if(!option[1]) option[1]=1;
-	  switch(optimize=(int)option[1])
-	  {
-	    case 0: optimize=0; break;
-	    case 1: cflags+=({"-O1"}); break;
-	    case 2:
-#ifdef ECL
-	      cflags+=({"-O2"});
-#else /* !ECL */
+#ifdef OLD_VC
+	  if (option[1] == "2") {
 #ifdef WIN64
 	      cflags += ({
 		"-O"	// Optimization flags:
-		"b"	//   Control inline expansion
-		"2"	//   Create fast code
+		"b2"	//   Inline any functions as the compiler sees fit
 		// Disabled due to optimizer bugs in XP Platform SDK Beta 2.
 		//"g"	//   Enable global optimizer
 		"i"	//   Use intrinsic functions
@@ -244,23 +250,21 @@ int main(int argc, array(string) argv)
 #else /* !WIN64 */
 	      cflags += ({
 		"-O"	// Optimization flags:
-		"b"	//   Control inline expansion
-		"2"	//   Create fast code
-#ifdef OLD_VC
+		"b2"	//   Inline any functions as the compiler sees fit
 		"g"	//   Enable global optimizer (deprecated in VC8)
-#endif
 		"i"	//   Use intrinsic functions
 		"t"	//   Favour fast code
 		"y",	//   Omit frame pointer
-#ifdef OLD_VC
 		"-GB",	// Optimize for Pentium (doesn't exist in VC8)
-#endif
 	      });
-#endif /* WIN64 */
-#endif /* ECL */
-	      break;
-	    case 3..:
-	      break;
+#endif /* !WIN64 */
+	  } else
+#endif	// OLD_VC
+	  {
+	    // In VC8, -O2 apparently enables more compact stack
+	    // frames than the mantra of individual optimization flags
+	    // above.
+	    cflags += ({"-O" + option[1]});
 	  }
 	  break;
 
@@ -326,14 +330,22 @@ int main(int argc, array(string) argv)
 	  output=option[1];
 	  break;
 
-	case "crt":
+	case "M":
 	  cflags += ({"-M" + option[1]});
 	  switch (option[1]) {
 	    case "T": crt_lib = "libcmt.lib"; break;
 	    case "D": crt_lib = "msvcrt.lib"; break;
 	    case "Td": crt_lib = "libcmtd.lib"; break;
 	    case "Dd": crt_lib = "msvcrtd.lib"; break;
+	    default: error ("Unknown option -M%s\n", option[1]); break;
 	  }
+	  break;
+
+	case "p":
+	  if (has_prefix (option[1], "db:"))
+	    ldopts += ({"-p" + option[1]});
+	  else
+	    error ("Unknown option -p%s\n", option[1]);
 	  break;
       }
     }
@@ -422,6 +434,9 @@ int main(int argc, array(string) argv)
       // and compiled within one second, in which case the timestamps
       // might remain the same if the filesystem is mounted from a
       // Samba server.
+      //
+      // Besides, in VC8 I can't get incremental linking to work
+      // anyway for pike.exe, where it'd be really useful. /mast
       ldopts += ({"-incremental:no"});
 
       if(debug)
