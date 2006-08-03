@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.446 2006/08/03 23:32:35 mast Exp $
+# $Id: Makefile.in,v 1.447 2006/08/03 23:38:56 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -602,6 +602,7 @@ tidy:
 	-rm -f core core.* *.o *.obj *.i *.i~ dynloadtest*
 	-rm -f conftest.* hdrlist.h a.out.exe
 	-rm testsuite testsuite.tmp testsuite_test.pike testsuite_test_dir.pmod
+	-rm -f *.wixobj *.wxs Pike_banner.bmp UpFldrBtn.ibd NewFldrBtn.ibd PikeWin32Installer.vbs
 	-find lib -type f -name \*.o -o -name \*.obj | xargs rm -f
 
 # make clean
@@ -638,7 +639,8 @@ spotless: clean_here clean_pike
 	-rm -f Makefile config.* make_variables specs pike.syms
 	-rm -f .pure stamp-h
 	-rm -f lexical.c mon.out *.ln
-	-rm -f pike.old l.outa* num_files_to_install
+	-rm -f pike pike.exe pike.old pike.old.exe l.outa* num_files_to_install
+	-rm -f *.msm *.msi
 	-rm -f precompile.sh precompile.sh-stamp smartlink
 	-rm -rf tlib extra_tests lib precompile
 
