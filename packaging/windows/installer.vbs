@@ -1,5 +1,5 @@
 '
-' $Id: installer.vbs,v 1.1 2004/12/04 16:29:34 grubba Exp $
+' $Id: installer.vbs,v 1.2 2006/08/03 23:30:05 mast Exp $
 '
 ' Companion file to bin/install.pike for custom actions.
 '
@@ -26,7 +26,7 @@ Function FinalizePike()
   Set re = New RegExp
   re.Global = True
 
-  re.Pattern = "\"
+  re.Pattern = "\\"
   targetdir_unix = re.Replace(targetdir, "/")
 
   re.Pattern = "¤lib_prefix¤"
