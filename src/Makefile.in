@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.441 2006/08/02 21:19:03 mast Exp $
+# $Id: Makefile.in,v 1.442 2006/08/03 11:56:27 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -1291,10 +1291,10 @@ testsuite: $(SRCDIR)/testsuite.in $(TMP_BINDIR)/mktestsuite
 	fi
 
 header_uncompress: $(SRCDIR)/uncompressor.c
-	$(CC) -O2 -static  $(SRCDIR)/uncompressor.c -o header_uncompress -lz
+	$(CC) -O2 -static  $(SRCDIR)/uncompressor.c -o header_uncompress @UNCOMPRESS_LIBZ@
 
 uncompress_header: $(SRCDIR)/uncompressor.c header_uncompress
-	$(CC) -O2 -static  $(SRCDIR)/uncompressor.c -o uncompress_header -lz -DSEEK_TO=`wc -c header_uncompress|sed 's/[^0-9]//g'`
+	$(CC) -O2 -static  $(SRCDIR)/uncompressor.c -o uncompress_header @UNCOMPRESS_LIBZ@ -DSEEK_TO=`wc -c header_uncompress|sed 's/[^0-9]//g'`
 	test "`wc -c header_uncompress|sed 's/[^0-9]//g'`" = "`wc -c uncompress_header|sed 's/[^0-9]//g'`"
 
 HFILES=						\
