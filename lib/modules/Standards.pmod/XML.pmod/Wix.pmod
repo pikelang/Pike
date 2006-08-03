@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Wix.pmod,v 1.22 2006/08/03 15:02:46 mast Exp $
+// $Id: Wix.pmod,v 1.23 2006/08/03 16:13:49 mast Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -170,16 +170,16 @@ class Directory
       int cnt;
       for (cnt = 0; cnt < 1000; cnt++) {
 	if (cnt < 10) {
-	  if (!short_names[base = sprintf("%.6s~%.1d", base, cnt)]) {
+	  if (!short_names[base = sprintf("%.6s_%.1d", base, cnt)]) {
 	    short_names[base] = 1;
 	    break;
 	  }
 	} else if (cnt < 100) {
-	  if (!short_names[base = sprintf("%.5s~%.2d", base, cnt)]) {
+	  if (!short_names[base = sprintf("%.5s_%.2d", base, cnt)]) {
 	    short_names[base] = 1;
 	    break;
 	  }
-	} else if (!short_names[base = sprintf("%.4s~%.3d", base, cnt)]) {
+	} else if (!short_names[base = sprintf("%.4s_%.3d", base, cnt)]) {
 	  short_names[base] = 1;
 	  break;
 	}
