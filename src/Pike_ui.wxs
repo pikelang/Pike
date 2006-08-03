@@ -531,35 +531,36 @@ Click "Close" to exit.</Text>
           <Condition Action="hide"><![CDATA[REMOVE<>""]]></Condition>
         </Control>
       </Dialog>
-      <Dialog Id="ErrorDialog" Width="330" Height="101" Title="[ProductName]" ErrorDialog="yes">
-        <Control Id="ErrorText" Type="Text" X="6" Y="9" Width="318" Height="48" Disabled="yes" TabSkip="no">
+      <Dialog Id="ErrorDialog" Width="330" Height="151" Title="[ProductName]" ErrorDialog="yes">
+	<Control Id="ErrorText" Type="Text" X="54" Y="9" Width="264" Height="98" Disabled="yes" TabSkip="no">
           <Text>{\VSI_MS_Sans_Serif13.0_0_0}</Text>
         </Control>
-        <Control Id="N" Type="PushButton" X="120" Y="72" Width="81" Height="21" TabSkip="yes">
+	<Control Id="N" Type="PushButton" X="120" Y="122" Width="81" Height="21" TabSkip="yes">
           <Text>{\VSI_MS_Sans_Serif13.0_0_0}&amp;No</Text>
           <Publish Event="EndDialog" Value="ErrorNo"><![CDATA[]]></Publish>
         </Control>
-        <Control Id="Y" Type="PushButton" X="240" Y="72" Width="81" Height="21" TabSkip="yes">
+	<Control Id="Y" Type="PushButton" X="240" Y="122" Width="81" Height="21" TabSkip="yes">
           <Text>{\VSI_MS_Sans_Serif13.0_0_0}&amp;Yes</Text>
           <Publish Event="EndDialog" Value="ErrorYes"><![CDATA[]]></Publish>
         </Control>
-        <Control Id="A" Type="PushButton" X="0" Y="72" Width="81" Height="21" TabSkip="yes">
+	<Control Id="A" Type="PushButton" X="0" Y="122" Width="81" Height="21" TabSkip="yes">
           <Text>{\VSI_MS_Sans_Serif13.0_0_0}E&amp;xit Installation</Text>
           <Publish Event="EndDialog" Value="ErrorAbort"><![CDATA[]]></Publish>
         </Control>
-        <Control Id="C" Type="PushButton" X="42" Y="72" Width="81" Height="21" TabSkip="yes">
+	<Control Id="C" Type="PushButton" X="42" Y="122" Width="81" Height="21" TabSkip="yes">
           <Text>{\VSI_MS_Sans_Serif13.0_0_0}Cancel</Text>
           <Publish Event="EndDialog" Value="ErrorCancel"><![CDATA[]]></Publish>
-        </Control>
-        <Control Id="I" Type="PushButton" X="81" Y="72" Width="81" Height="21" TabSkip="yes">
+	</Control>
+	<Control Id="ErrorIcon" Type="Icon" X="15" Y="15" Width="24" Height="24" ToolTip="Information icon" FixedSize="yes" IconSize="32" Text="[InfoIcon]" />
+	<Control Id="I" Type="PushButton" X="81" Y="122" Width="81" Height="21" TabSkip="yes">
           <Text>{\VSI_MS_Sans_Serif13.0_0_0}C&amp;ontinue</Text>
           <Publish Event="EndDialog" Value="ErrorIgnore"><![CDATA[]]></Publish>
         </Control>
-        <Control Id="O" Type="PushButton" X="159" Y="72" Width="81" Height="21" TabSkip="yes">
+	<Control Id="O" Type="PushButton" X="159" Y="122" Width="81" Height="21" TabSkip="yes">
           <Text>{\VSI_MS_Sans_Serif13.0_0_0}OK</Text>
           <Publish Event="EndDialog" Value="ErrorOk"><![CDATA[]]></Publish>
         </Control>
-        <Control Id="R" Type="PushButton" X="198" Y="72" Width="81" Height="21" TabSkip="yes">
+	<Control Id="R" Type="PushButton" X="198" Y="122" Width="81" Height="21" TabSkip="yes">
           <Text>{\VSI_MS_Sans_Serif13.0_0_0}&amp;Try Again</Text>
           <Publish Event="EndDialog" Value="ErrorRetry"><![CDATA[]]></Publish>
         </Control>
@@ -916,6 +917,9 @@ Click "Next" to start the installation.</Text>
       <UIText Id="VolumeCostRequired">Required</UIText>
       <UIText Id="VolumeCostSize">Disk Size</UIText>
       <UIText Id="VolumeCostVolume">Volume</UIText>
+      <Error Id="1720">There is a problem with this Windows Installer package. A script required  for this install to complete could not be run. Contact your support personnel or package vendor.
+
+Custom action [2] script error [3], [4]: [5] Line [6], Column [7], [8]</Error>
       <AdminUISequence>
         <Show Dialog="AdminFatalErrorForm" OnExit="error" />
         <Show Dialog="AdminUserExitForm" OnExit="cancel" />
