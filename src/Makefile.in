@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.443 2006/08/03 15:11:08 mast Exp $
+# $Id: Makefile.in,v 1.444 2006/08/03 15:28:47 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -552,6 +552,7 @@ Pike.wxs: $(TMP_BINDIR)/install.pike Makefile
 	@no_autodoc="--no-autodoc"; \
 	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike --wix $$no_autodoc \
+	@INSTALL_EXPORT_ARGS@ \
 	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
@@ -961,6 +962,7 @@ bin_export:
 	@no_autodoc="--no-autodoc"; \
 	if [ -f autodoc.xml ]; then no_autodoc=""; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike --export $$no_autodoc \
+	@INSTALL_EXPORT_ARGS@ \
 	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" DOCDIR_SRC="$(DOCDIR_SRC)" \
