@@ -1,0 +1,94 @@
+require gtk210;
+/* -*-C -*- */
+class GTK2.PrintContext;
+inherit G.Object;
+
+%{
+#ifdef HAVE_CAIRO
+#include <cairo.h>
+
+struct program *cairo_program;
+#endif
+%}
+
+require cairo;
+object get_cairo_context()
+//! Obtains the cairo context that is associated with this PrintContext.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  if (!cairo_program) {
+    push_text("Cairo.Context");
+    APPLY_MASTER("resolv",1);
+    cairo_program=program_from_svalue(Pike_sp-1);
+    Pike_sp--; /* Do not free cairo_program */
+
+    if (!cairo_program)
+      Pike_error("Unable to find cairo module.\n");
+  }
+  {
+    cairo_t *ctx;
+    struct object *o;
+
+    ctx=gtk_print_context_get_cairo_context(GTK_PRINT_CONTEXT(THIS->obj));
+    o=low_clone(cairo_program);
+    call_c_initializers(o);
+    ((struct cairo_mod_context *)o->storage)->ctx=ctx;
+    ref_push_object(o);
+  }
+}
+
+/*
+void set_cairo_context(Cairo.Context cr, float dpi_x, float dpi_y)
+//! Sets a new Cairo.Context on this PrintContext.
+{
+  pgtk2_verify_inited();
+  if (!cairo_program) {
+    push_text("Cairo.Context");
+    APPLY_MASTER("resolv",1);
+    cairo_program=program_from_svalue(Pike_sp-1);
+    Pike_sp--; /* Do not free cairo_program */
+
+    if (!cairo_program)
+      Pike_error("Unable to find cairo module.\n");
+  }
+  {
+    struct object *o1;
+    FLOAT_TYPE x,y;
+    struct cairo_mod_context *cc;
+
+    get_all_args("set_cairo_context",args,"%o%f%f",&o,&x,&y);
+    if (!(cc = (struct cairo_mod_context *)get_storage(o1, cairo_program)))
+      Pike_error("Object is not derived from Cairo.Context");
+    gtk_print_context_set_cairo_context(GTK_PRINT_CONTEXT(THIS->obj),
+			cc->ctx,x,y);
+  }
+  RETURN_THIS();
+}
+*/
+endrequire;
+
++GTK2.PageSetup get_page_setup();
+//! Obtains the GTK2.PageSetup that determines the page dimensions.
+
+float get_width();
+//! Obtains the width, in pixels.
+
+float get_height();
+//! Obtains the height, in pixels.
+
+float get_dpi_x();
+//! Obtains the horizontal resolution, in dots per inch.
+
+float get_dpi_y();
+//! Obtains the vertical resolution, in dots per inch.
+
+require pango;
++Pango.Context create_pango_context();
+//! Creates a new Pango.Context that can be used with this PrintContext.
+
++Pango.Layout create_pango_layout();
+//! Creates a new Pango.Layout that is suitable for use with this PrintContext.
+endrequire;
+
+endrequire;

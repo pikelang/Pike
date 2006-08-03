@@ -82,3 +82,25 @@ void add_widget(GTK2.Widget widget);
 
 void remove_widget(GTK2.Widget widget);
 //! Removes a widget.
+
+require gtk210;
+array(GTK2.Widget) get_widgets()
+//! Returns the list of widgets associated with this size group.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GSList *gl,*g2;
+    int i=0;
+
+    gl=g2=gtk_size_group_get_widgets();
+    while (g2) {
+      push_gobject(g2->data);
+      g_object_ref(GTK_WIDGET(g2->data));
+      i++;
+      g2=g_slist_next(g2);
+    }
+    f_aggregate(i);
+  }
+}
+endrequire;

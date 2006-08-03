@@ -1,0 +1,115 @@
+require gtk210;
+/* -*- C -*- */
+class GTK2.PageSetup;
+inherit G.Object;
+
+//! A GtkPageSetup object stores the page size, orientation and margins.
+//! The idea is that you can get one of these from the page setup dialog
+//! and then pass it to the GTK2.PrintOperation when printing. The benefit
+//! of splitting this out of the GTK2.PrintSettings is that these affect
+//! the actual layout of the page, and thus need to be set long before user
+//! prints.
+
+void create(?mapping(string:mixed) props)
+//! Create a new GTK2.PageSetup.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_PAGE_SETUP);
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkPageSetup *ga;
+    ga=gtk_page_setup_new();
+    THIS->obj=G_OBJECT(ga);
+  }
+  pgtk2__init_this_object();
+}
+
++GTK2.PageSetup copy();
+//! Returns a copy of this GTK2.PageSetup.
+
+int get_orientation();
+//! Gets the page orientation.
+
+void set_orientation(int orientation);
+//! Sets the page orientation.
+
++GTK2.PaperSize get_paper_size()
+//! Gets the paper size.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GtkPaperSize *gps;
+
+    gps=gtk_page_setup_get_paper_size(GTK_PAGE_SETUP(THIS->obj));
+    push_gobjectclass(gps,pgtk2_paper_size_program);
+  }
+}
+
+void set_paper_size(GTK2.PaperSize size)
+//! Sets the paper size without changing the margins.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+
+    get_all_args("set_paper_size",args,"%o",&o1);
+    gtk_page_setup_set_paper_size(GTK_PAGE_SETUP(THIS->obj),
+		(GtkPaperSize *)get_pg2object(o1,pgtk2_paper_size_program));
+  }
+  RETURN_THIS();
+}
+
+float get_top_margin(int unit);
+//! Gets the top margin in units of unit.
+
+void set_top_margin(float margin, int unit);
+//! Sets the top margin.
+
+float get_bottom_margin(int unit);
+//! Gets the bottom margin in units of unit.
+
+void set_bottom_margin(float margin, int unit);
+//! Sets the bottom margin.
+
+float get_left_margin(int unit);
+//! Gets the left margin in units of unit.
+
+void set_left_margin(float margin, int unit);
+//! Sets the left margin.
+
+float get_right_margin(int unit);
+//! Gets the right margin in units of unit.
+
+void set_right_margin(float margin, int unit);
+//! Sets the right margin.
+
+void set_paper_size_and_default_margins(GTK2.PaperSize size)
+//! Sets the paper size and modifies the margins.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+
+    get_all_args("set_paper_size_and_default_margins",args,"%o",&o1);
+    gtk_page_setup_set_paper_size_and_default_margins(
+		GTK_PAGE_SETUP(THIS->obj),
+		(GtkPaperSize *)get_pg2object(o1,pgtk2_paper_size_program));
+  }
+  RETURN_THIS();
+}
+
+float get_paper_width(int unit);
+//! Returns the paper width in units of unit.
+
+float get_paper_height(int unit);
+//! Returns the paper height in units of unit.
+
+float get_page_width(int unit);
+//! Returns the page width in units of unit.
+
+float get_page_height(int unit);
+//! Returns the page height in units of unit.
+endrequire;

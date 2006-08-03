@@ -85,14 +85,14 @@ endrequire;
 void activate();
 //! Emits the "activate" signal, if it isn't insensitive.
 
-GTK2.Widget create_icon(int icon_size);
++GTK2.Widget create_icon(int icon_size);
 //! This function is intended for use by action implementations to create
 //! icons displayed in the proxy widgets.  One of CONST(GTK_ICON_SIZE_).
 
-GTK2.Widget create_menu_item();
++GTK2.Widget create_menu_item();
 //! Creates a menu item widget that proxies for the action.
 
-GTK2.Widget create_tool_item();
++GTK2.Widget create_tool_item();
 //! Creates a toolbar item widget that proxies for the action.
 
 void connect_proxy(GTK2.Widget proxy);

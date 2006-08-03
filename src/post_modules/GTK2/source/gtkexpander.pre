@@ -85,6 +85,6 @@ void set_label_widget(GTK2.Widget label);
 //! Set the label widget for the expander.  This is the widget
 //! that will appear embedded alongside the expander arrow.
 
-GTK2.Widget get_label_widget();
++GTK2.Widget get_label_widget();
 //! Retrieves the label widget for the frame.
 endrequire;

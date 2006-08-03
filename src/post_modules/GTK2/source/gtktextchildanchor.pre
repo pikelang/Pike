@@ -23,6 +23,7 @@ array get_widgets()
     g2=g_list_first(gl);
     while (j<i) {
       push_gobject(g2->data);
+      g_object_ref(g2->data);
       j++;
       g2=g_list_next(g2);
     }

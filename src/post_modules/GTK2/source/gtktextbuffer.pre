@@ -3,7 +3,14 @@ class GTK2.TextBuffer;
 inherit G.Object;
 
 //! Properties:
+require gtk210;
+//! int cursor-position
+//! int has-selection
+endrequire;
 //! GTK2.TextTagTable tag_table
+require gtk28;
+//! string text
+endrequire;
 
 signal apply_tag;
 signal begin_user_action;
@@ -213,8 +220,7 @@ void insert_with_tags_by_name(GTK2.TextIter iter, string text, int len,
 	tag_name=(char *)STR0((ITEM(a)+i)->u.string);
 	tag=gtk_text_tag_table_lookup(table,tag_name);
 	if (tag==NULL) {
-	  fprintf(stderr,"tag %s doesn't exist!\n",tag_name);
-	  continue;
+	  Pike_error("tag %s doesn't exist!\n",tag_name);
 	}
 	gtk_text_buffer_apply_tag(GTK_TEXT_BUFFER(THIS->obj),
 				tag,&start,iter);
@@ -388,7 +394,7 @@ void insert_child_anchor(GTK2.TextIter iter, GTK2.TextChildAnchor anchor)
   RETURN_THIS();
 }
 
-GTK2.TextChildAnchor create_child_anchor(GTK2.TextIter iter)
++GTK2.TextChildAnchor create_child_anchor(GTK2.TextIter iter)
 //! This is a convenience function which simply creates a child anchor with
 //! GTK2.TextChildAnchor->create() and inserts it into the buffer with
 //! insert_child_anchor().  The new anchor is owned by the buffer; no
@@ -406,7 +412,7 @@ GTK2.TextChildAnchor create_child_anchor(GTK2.TextIter iter)
   }
 }
 
-GTK2.TextMark create_mark(GTK2.TextIter where,
++GTK2.TextMark create_mark(GTK2.TextIter where,
 		int left_gravity, ?string mark_name)
 //! Creates a mark at position where.  If mark_name is omitted, the mark is
 //! anonymous; otherwise, the mark can be retrieve by name using get_mark().
@@ -472,15 +478,15 @@ void delete_mark(GTK2.TextMark mark);
 void delete_mark_by_name(string name);
 //! Deletes the mark named name; the mark must exist.
 
-GTK2.TextMark get_mark(string name);
++GTK2.TextMark get_mark(string name);
 //! Returns the mark named name.
 
-GTK2.TextMark get_insert();
++GTK2.TextMark get_insert();
 //! Returns the mark that represents the cursor (insertion point).
 //! Equivalent to calling get_mark() to get the mark named "insert", but very
 //! slightly more efficient, and involves less typing.
 
-GTK2.TextMark get_selection_bound();
++GTK2.TextMark get_selection_bound();
 //! Returns the mark that represents the selection bound.  Equivalent to
 //! calling get_mark() to get the mark named "selection_bound", but very
 //! slightly more efficient, and involves less typing.
@@ -491,6 +497,11 @@ GTK2.TextMark get_selection_bound();
 //! get_selection_bounds() is another convenient function for handling the
 //! selection, if you just want to know whether there's a selection and
 //! what its bounds are.
+
+require gtk210;
+int get_has_selection();
+//! Indicates whether some text is currently selected.
+endrequire;
 
 void place_cursor(GTK2.TextIter where)
 //! This function moves the "insert" and "selection_bound" marks
@@ -612,7 +623,7 @@ void remove_all_tags(GTK2.TextIter start, GTK2.TextIter end)
   RETURN_THIS();
 }
 
-GTK2.TextTag create_tag(string tag_name, mapping props)
++GTK2.TextTag create_tag(string tag_name, mapping props)
 //! Creates a tag and adds it to the tag table.  Equivalent to calling
 //! GTK2.TextTag->create() and then adding the tag to the tag table.  The
 //! returned tag is owned by the tag table.
@@ -639,69 +650,7 @@ GTK2.TextTag create_tag(string tag_name, mapping props)
   }
 }
 
-    
-/*
-GTK2.TextTag create_tag(string tag_name, string prop_name, mixed value)
-//! Createa a tag and adds it to the tag table.  Equivalent to calling
-//! W(TextTag)->create() and then adding the tag to the tag table.  The
-//! returned tag is owned by the tag table.
-{
-  pgtk2_verify_inited();
-  {
-    const gchar *tag_name,*prop_name;
-    struct svalue *sv;
-    GtkTextTag *gtt;
-    get_all_args("create_tag",args,"%s%s%*",&tag_name,&prop_name,&sv);
-    pgtk2_pop_n_elems(args);
-    switch (sv->type) {
-      case PIKE_T_INT:
-	{
-	  INT_TYPE x;
-	  x=PGTK_GETINT(sv);
-	  gtt=gtk_text_buffer_create_tag(GTK_TEXT_BUFFER(THIS->obj),
-			tag_name,prop_name,x,NULL);
-	}
-	break;
-      case PIKE_T_STRING:
-	{
-	  gchar *g1;
-	  g1=PGTK_GETSTR(sv);
-	  gtt=gtk_text_buffer_create_tag(GTK_TEXT_BUFFER(THIS->obj),
-			tag_name,prop_name,g1,NULL);
-	  PGTK_FREESTR(g1);
-	}
-	break;
-      case PIKE_T_FLOAT:
-	{
-	  FLOAT_TYPE x;
-	  x=pgtk2_get_float(sv);
-	  gtt=gtk_text_buffer_create_tag(GTK_TEXT_BUFFER(THIS->obj),
-			tag_name,prop_name,x,NULL);
-	}
-	break;
-      case PIKE_T_OBJECT:
-	if (PGTK_ISINT(sv)) {
-	  INT_TYPE x;
-	  x=PGTK_GETINT(sv);
-	  gtt=gtk_text_buffer_create_tag(GTK_TEXT_BUFFER(THIS->obj),
-			tag_name,prop_name,x,NULL);
-	} else {
-	  if (G_IS_OBJECT(get_gobject(sv->u.object))) {
-	    gtt=gtk_text_buffer_create_tag(GTK_TEXT_BUFFER(THIS->obj),
-			tag_name,prop_name,G_OBJECT(get_gobject(sv->u.object)));
-	  }
-	}
-	break;
-      default:
-	Pike_error("Unable to handle this type for argument 2\n");
-	break;
-    }
-    push_gobject(gtt);
-  }
-}
-*/
-
-GTK2.TextIter get_iter_at_line_offset(int line_number, int char_offset)
++GTK2.TextIter get_iter_at_line_offset(int line_number, int char_offset)
 //! Obtains an iterator pointing to char_offset within the given line.  The
 //! char_offset must exist, offsets off the end of the line are not allowed.
 //! Note characters, not bytes;  UTF-8 may encode one character as multiple
@@ -722,7 +671,7 @@ GTK2.TextIter get_iter_at_line_offset(int line_number, int char_offset)
   }
 }
 
-GTK2.TextIter get_iter_at_offset(int offset)
++GTK2.TextIter get_iter_at_offset(int offset)
 //! Returns an iterator at position offset chars from the start of the
 //! entire buffer.  If offset is -1 or greater than the number of characters
 //! in the buffer, returns the end iterator, the iterator one past the last
@@ -743,7 +692,7 @@ GTK2.TextIter get_iter_at_offset(int offset)
   }
 }
 
-GTK2.TextIter get_iter_at_line(int line)
++GTK2.TextIter get_iter_at_line(int line)
 //! Returns a W(TextIter) to the start of the given line.
 {
   pgtk2_verify_inited();
@@ -761,7 +710,7 @@ GTK2.TextIter get_iter_at_line(int line)
   }
 }
 
-GTK2.TextIter get_iter_at_line_index(int line, int byte_index)
++GTK2.TextIter get_iter_at_line_index(int line, int byte_index)
 //! Obtains an iterator point to byte_index with the given line.  byte_index
 //! must be the start of a UTF-8 character, and must not be beyond the end
 //! of the line.  Note bytes, not characters; UTF-8 may encode one character
@@ -782,7 +731,7 @@ GTK2.TextIter get_iter_at_line_index(int line, int byte_index)
   }
 }
 
-GTK2.TextIter get_iter_at_mark(GTK2.TextMark mark)
++GTK2.TextIter get_iter_at_mark(GTK2.TextMark mark)
 //! Returns an iterator with the current position of mark.
 {
   pgtk2_verify_inited();
@@ -800,7 +749,7 @@ GTK2.TextIter get_iter_at_mark(GTK2.TextMark mark)
   }
 }
 
-GTK2.TextIter get_iter_at_child_anchor(GTK2.TextChildAnchor anchor)
++GTK2.TextIter get_iter_at_child_anchor(GTK2.TextChildAnchor anchor)
 //! Returns the location of anchor.
 {
   pgtk2_verify_inited();
@@ -818,7 +767,7 @@ GTK2.TextIter get_iter_at_child_anchor(GTK2.TextChildAnchor anchor)
   }
 }
 
-GTK2.TextIter get_start_iter()
++GTK2.TextIter get_start_iter()
 //! Returns an iterator with the first position in the text buffer.  This is
 //! the same as using get_iter_at_offset() to get the iter at character
 //! offset 0.
@@ -835,7 +784,7 @@ GTK2.TextIter get_start_iter()
   }
 }
 
-GTK2.TextIter get_end_iter()
++GTK2.TextIter get_end_iter()
 //! Returns the "end iterator", one past the last valid character in the
 //! buffer.  If dereferenced with W(TextIter)->get_char(), the end iterator
 //! has a character value of 0.  The entire buffer lies in the range from

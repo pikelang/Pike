@@ -152,7 +152,7 @@ void remove(GTK2.TreeIter iter)
   RETURN_THIS();
 }
 
-GTK2.TreeIter insert(int position)
++GTK2.TreeIter insert(int position)
 //! Insert a row at position.  If parent is valid, will create as child,
 //! otherwise at top level.  If position is larger than then number
 //! of rows at that level, it will be added to the end of the list.
@@ -173,7 +173,7 @@ GTK2.TreeIter insert(int position)
   }
 }
 
-GTK2.TreeIter insert_before(?GTK2.TreeIter sibling)
++GTK2.TreeIter insert_before(?GTK2.TreeIter sibling)
 //! Insert a row before sibling.  If sibling is 0, then the
 //! row will be appended to parent's children.  If parent and
 //! sibling are 0, then the row will be appended to the toplevel.
@@ -193,7 +193,7 @@ GTK2.TreeIter insert_before(?GTK2.TreeIter sibling)
   }
 }
 
-GTK2.TreeIter insert_after(?GTK2.TreeIter sibling)
++GTK2.TreeIter insert_after(?GTK2.TreeIter sibling)
 //! Insert a new row after sibling.  If sibling is 0, then the row
 //! will be prepended to parent's children.  If parent and sibling
 //! are both 0, then the row will be prepended to the toplevel.
@@ -213,7 +213,7 @@ GTK2.TreeIter insert_after(?GTK2.TreeIter sibling)
   }
 }
 
-GTK2.TreeIter prepend()
++GTK2.TreeIter prepend()
 //! Prepend a new row. 
 {
   pgtk2_verify_inited();
@@ -227,7 +227,7 @@ GTK2.TreeIter prepend()
   }
 }
 
-GTK2.TreeIter append()
++GTK2.TreeIter append()
 //! Append a new row.
 {
   pgtk2_verify_inited();

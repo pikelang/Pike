@@ -51,13 +51,13 @@ void set_size(int xsize, int ysize);
 //! Sets the size of the scrollable area of the layout.
 
 
-GTK2.Adjustment get_hadjustment();
++GTK2.Adjustment get_hadjustment();
 //! Gets the GTK2.Adjustment used for communicaiton between
 //! the horizontal scrollbar and this layout.  This should
 //! only be called after the layout has been placed in a
 //! GTK2.ScrolledWindow or otherwise configured for scrolling.
 
-GTK2.Adjustment get_vadjustment();
++GTK2.Adjustment get_vadjustment();
 //! Gets the vertical GTK2.Adjustment.
 
 void set_hadjustment(GTK2.Adjustment adj);

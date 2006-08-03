@@ -5,6 +5,7 @@ mixin_for G.Object;
 signal sort_column_changed;
 
 void sort_column_changed();
+//! Emits a "sort-column-changed" signal
 
 mapping(string:int) get_sort_column_id()
 //! Returns ([ "column": int, "order": int ])
@@ -38,6 +39,7 @@ void set_sort_func(int column, function f, mixed user_data)
     struct svalue *sv1,*sv2;
     INT_TYPE col;
     struct signal_data *sd;
+
     get_all_args("set_sort_func",args,"%i%*%*",&col,&sv1,&sv2);
     sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
     if (sd==NULL)
@@ -48,6 +50,11 @@ void set_sort_func(int column, function f, mixed user_data)
 			GTK_TREE_SORTABLE(THIS->obj),col,
 			(GtkTreeIterCompareFunc)pgtk2_tree_sortable_callback,sd,
 			(GtkDestroyNotify)pgtk2_free_signal_data);
+/*
+    gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(THIS->obj),col,
+			(GtkTreeIterCompareFunc)pgtk2_signal_func_wrapper,sd,
+			(GtkDestroyNotify)pgtk2_free_signal_data);
+*/
   }
   RETURN_THIS();
 }

@@ -1,4 +1,5 @@
 /* -*- C -*- */
+not gtk210;
 require gnomeui;
 
 class Gnome2.DruidPageEdge;
@@ -167,3 +168,5 @@ void set_top_watermark(?GDK2.Pixbuf watermark)
   RETURN_THIS();
 }
 
+endrequire;
+endnot;

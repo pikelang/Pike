@@ -76,7 +76,7 @@ void set_displayed_row(?GTK2.TreePath path)
   RETURN_THIS();
 }
 
-GTK2.TreePath get_displayed_row()
++GTK2.TreePath get_displayed_row()
 //! Returns a W(TreePath) referring to the currently displayed row.  If no
 //! row is currently displayed, 0 is returned.
 {
@@ -119,4 +119,25 @@ void set_background_color(GDK2.Color color)
   RETURN_THIS();
 }
 
+array(GTK2.CellRenderer) get_cell_renderers()
+//! Returns the cell renderers which have been added to this view.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GList *gl,*g2;
+    int i;
+
+    gl=g2=gtk_cell_view_get_cell_renderers(GTK_CELL_VIEW(THIS->obj));
+    i=0;
+    while (g2) {
+      push_gobject(g2->data);
+      g_object_ref(g2->data);
+      i++;
+      g2=g_list_next(g2);
+    }
+    f_aggregate(i);
+    g_list_free(gl);
+  }
+}
 endrequire;

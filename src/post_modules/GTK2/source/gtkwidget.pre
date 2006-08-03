@@ -50,11 +50,18 @@ inherit GTK2.Object;
 //! Style properties:
 //! float cursor-aspect-ratio
 //! GDK2.Color cursor-color
+//! int draw-border
 //! string focus-line-pattern
 //! int focus-line-width
 //! int focus-padding
 //! int interior-focus
-//! GDK2.Color secondary-cursor-color
+//! GDK2.Color link-color
+//! int scroll-arrow-hlength
+//! int scroll-arrow-vlength
+//! int separator-height
+//! int separator-width
+//! GDK2.Color visited-link-color
+//! int wide-separators
 
 signal accel_closures_changed;
 signal button_press_event;
@@ -65,6 +72,7 @@ signal can_activate_accel;
 signal child_notify;
 signal client_event;
 //! An event sent by another client application
+signal composited_changed;
 signal configure_event;
 //! The size, position or stacking order of the widget has changed
 signal delete_event;
@@ -288,7 +296,7 @@ void set_parent(GTK2.Widget parent);
 void set_parent_window(GDK2.Window parent);
 //! Sets a non default parent window for this widget.
 
-GDK2.Window get_parent_window();
++GDK2.Window get_parent_window();
 //! Get the parent window.
 
 void set_events(int events);
@@ -342,7 +350,7 @@ int hide_on_delete();
 void set_style(GTK2.Style style);
 //! Sets the style.
 
-GTK2.Style get_style();
++GTK2.Style get_style();
 //! Returns the style.
 
 void set_direction(int dir);
@@ -372,6 +380,22 @@ void shape_combine_mask(GDK2.Bitmap shape_mask, int offset_x, int offset_y)
   }
   RETURN_THIS();
 }
+
+require gtk210;
+void input_shape_combine_mask(GD2.Bitmap shape_mask, int offset_x, int offset_y)
+//! Sets an input shape for this widget's GDK2.Window.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+    INT_TYPE x,y;
+    get_all_args("shape_combine_mask",args,"%o%i%i",&o1,&x,&y);
+    gtk_widget_input_shape_combine_mask(GTK_WIDGET(THIS->obj), 
+                (GdkBitmap *)get_gdkobject(o1,bitmap),x,y);
+  } 
+  RETURN_THIS();
+}
+endrequire;
 
 string path()
 //! Obtains the full path.  The path is simply the name of a widget and all
@@ -418,7 +442,7 @@ void modify_style(GTK2.RcStyle style);
 }
 */
 
-GTK2.RcStyle get_modifier_style();
++GTK2.RcStyle get_modifier_style();
 //! Returns the current modifier style.
 /*
 {
@@ -503,7 +527,7 @@ void modify_font(Pango.FontDescription font)
   RETURN_THIS();
 }
 
-Pango.Context create_pango_context();
++Pango.Context create_pango_context();
 //! Creates a new Pango.Context with the appropriate colormap, font
 //! description, and base direction for drawing text for this widget.
 /*
@@ -517,11 +541,11 @@ Pango.Context create_pango_context();
 }
 */
 
-Pango.Context get_pango_context();
++Pango.Context get_pango_context();
 //! Gets a Pango.Context with the appropriate colormap, font description, and
 //! base direction for this widget.
 
-Pango.Layout create_pango_layout(string text);
++Pango.Layout create_pango_layout(string text);
 //! Creates a new Pango.Layout with the appropriate colormap, font
 //! description, and base direction for drawing text.
 /*
@@ -539,7 +563,7 @@ Pango.Layout create_pango_layout(string text);
 */
 endrequire;
 
-GDK2.Pixbuf render_icon(string stock_id, int size, string detail)
++GDK2.Pixbuf render_icon(string stock_id, int size, string detail)
 //! A convenience function that uses the theme engine and rc file settings
 //! to look up stock_id and render it to a pixbuf.  stock_id should be a
 //! stock icon ID such as GTK2.STOCK_OPEN or GTK2.STOCK_OK.  size should be a
@@ -606,15 +630,15 @@ void freeze_child_notify();
 //! Stops emission of "child-notify" signals.  The signals are queued until
 //! thaw_child_notify() is called on the widget.
 
-GTK2.Widget get_parent();
++GTK2.Widget get_parent();
 //! Returns the parent container.
 
-GTK2.Settings get_settings();
++GTK2.Settings get_settings();
 //! Gets the settings object holding the settings (global property settings,
 //! RC file information, etc) used for this widget.
 
 require gtk22;
-GTK2.Clipboard get_clipboard(GDK2.Atom selection)
++GTK2.Clipboard get_clipboard(GDK2.Atom selection)
 //! Returns the clipboard object for the given selection.
 {
   pgtk2_verify_inited();
@@ -628,12 +652,12 @@ GTK2.Clipboard get_clipboard(GDK2.Atom selection)
   }
 }
 
-GDK2.Display get_display();
++GDK2.Display get_display();
 //! Get the GDK2.Display for the toplevel window associated with this widget.
 //! This function can only be called after the widget has been added to a
 //! widget hierarchy with a GTK2.Window at the top.
 
-GDK2.Window get_root_window();
++GDK2.Window get_root_window();
 //! Get the root window.
 
 /*
@@ -730,6 +754,14 @@ void add_mnemonic_label(GTK2.Widget label);
 
 void remove_mnemonic_label(GTK2.Widget label);
 //! Removes a widget from the list of mnemonic labels for this widget.
+endrequire;
+
+require gtk210;
++GTK2.Action get_action();
+//! Returns the GTK2.Action that this widget is a proxy for.
+
+int is_composited();
+//! Whether this widget can rely on having its alpha channel drawn correctly.
 endrequire;
 
 void set_flags(int flags)

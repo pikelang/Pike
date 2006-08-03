@@ -1,6 +1,12 @@
 /* -*- C -*- */
 class GTK2.Object;
+require gtk210;
+inherit G.InitiallyUnowned;
+endrequire;
+
+not gtk210;
 inherit G.Object;
+endnot;
 
 //! The basic GTK class.
 //! All other GTK classes inherit this class.

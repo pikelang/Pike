@@ -1,4 +1,5 @@
 /* -*- C -*- */
+not gtk210;
 require gnomeui;
 
 class Gnome2.DruidPage;
@@ -34,3 +35,6 @@ int cancel();
 
 void finish();
 //! This emits the "finish" signal for the page.
+
+endrequire;
+endnot;

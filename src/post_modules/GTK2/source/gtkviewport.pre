@@ -44,10 +44,10 @@ void create(GTK2.Adjustment|mapping(string:mixed)|void xscroll_or_props,
   pgtk2__init_this_object();
 }
 
-GTK2.Adjustment get_hadjustment();
++GTK2.Adjustment get_hadjustment();
 //! Return the current horizontal adjustment object
 
-GTK2.Adjustment get_vadjustment();
++GTK2.Adjustment get_vadjustment();
 //! Return the current vertical adjustment object
 
 int get_shadow_type();

@@ -1,0 +1,22 @@
+require gtk210;
+/* -*- C -*- */
+class GTK2.CellRendererSpin;
+inherit GTK2.CellRenderer;
+
+void create(?mapping(string:mixed) props)
+//! Create a new GTK2.CellRendererSpin.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_CELL_RENDERER_SPIN);
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *ga;
+    ga=gtk_cell_renderer_spin_new();
+    THIS->obj=G_OBJECT(ga);
+  }
+  pgtk2__init_this_object();
+}
+
+endrequire;

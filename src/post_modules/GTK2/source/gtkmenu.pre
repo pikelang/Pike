@@ -96,7 +96,7 @@ void popup(int|void button_pressed_to_show_menu)
 void set_accel_group(GTK2.AccelGroup accelerators);
 //! Set the W(AccelGroup) which holds global accelerators for the menu.
 
-GTK2.AccelGroup get_accel_group();
++GTK2.AccelGroup get_accel_group();
 //! Gets the W(AccelGroup) which holds global accelerators for the menu.
 
 void set_accel_path(string accel_path);
@@ -118,7 +118,7 @@ void popdown();
 void reposition();
 //! Repositions the menu according to its position function.
 
-GTK2.Widget get_active();
++GTK2.Widget get_active();
 //! Returns the selected menu item from the menu.  This is used by
 //! the W(OptionMenu).
 
@@ -144,7 +144,7 @@ void attach_to_widget(GTK2.Widget widget, function detacher);
 void detach();
 //! Detaches the menu from the widget to which it had been attached.
 
-GTK2.Widget get_attach_widget();
++GTK2.Widget get_attach_widget();
 //! Returns the W(Widget) that the menu is attached to.
 
 require gtk26;

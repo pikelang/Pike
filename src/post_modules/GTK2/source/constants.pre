@@ -1753,4 +1753,127 @@ constant string GNOME_STOCK_MENU_JUMP_TO;
 */
 endrequire;
 
+require gtk210;
+constant int GTK_PRINT_CAPABILITY_PAGE_SET;
+constant int GTK_PRINT_CAPABILITY_COPIES;
+constant int GTK_PRINT_CAPABILITY_COLLATE;
+constant int GTK_PRINT_CAPABILITY_REVERSE;
+constant int GTK_PRINT_CAPABILITY_SCALE;
+constant int GTK_PRINT_CAPABILITY_GENERATE_PDF;
+constant int GTK_PRINT_CAPABILITY_GENERATE_PS;
+constant int GTK_PRINT_CAPABILITY_PREVIEW;
 
+/* GtkAssistant */
+constant int GTK_ASSISTANT_PAGE_CONTENT;
+constant int GTK_ASSISTANT_PAGE_INTRO;
+constant int GTK_ASSISTANT_PAGE_CONFIRM;
+constant int GTK_ASSISTANT_PAGE_SUMMARY;
+constant int GTK_ASSISTANT_PAGE_PROGRESS;
+endrequire;
+endrequire;
+
+require gtk210;
+/* GtkTreeView: GtkTreeViewGridLines */
+constant int GTK_TREE_VIEW_GRID_LINES_NONE;
+constant int GTK_TREE_VIEW_GRID_LINES_HORIZONTAL;
+constant int GTK_TREE_VIEW_GRID_LINES_VERTICAL;
+constant int GTK_TREE_VIEW_GRID_LINES_BOTH;
+
+/* GtkRange: GtkSensitivityType */
+constant int GTK_SENSITIVITY_AUTO;
+constant int GTK_SENSITIVITY_ON;
+constant int GTK_SENSITIVITY_OFF;
+
+/* GtkCellRendererAccel: GtkCellRendererAccelMode */
+constant int GTK_CELL_RENDERER_ACCEL_MODE_GTK;
+constant int GTK_CELL_RENDERER_ACCEL_MODE_OTHER;
+
+/* GtkPrintSettings: GtkPageOrientation */
+constant int GTK_PAGE_ORIENTATION_PORTRAIT;
+constant int GTK_PAGE_ORIENTATION_LANDSCAPE;
+constant int GTK_PAGE_ORIENTATION_REVERSE_PORTRAIT;
+constant int GTK_PAGE_ORIENTATION_REVERSE_LANDSCAPE;
+
+/* GtkPaperSize: GtkUnit */
+constant int GTK_UNIT_PIXEL;
+constant int GTK_UNIT_POINTS;
+constant int GTK_UNIT_INCH;
+constant int GTK_UNIT_MM;
+
+/* GtkHighlevelPrinting: GtkPrintStatus */
+constant int GTK_PRINT_STATUS_INITIAL;
+constant int GTK_PRINT_STATUS_PREPARING;
+constant int GTK_PRINT_STATUS_GENERATING_DATA;
+constant int GTK_PRINT_STATUS_SENDING_DATA;
+constant int GTK_PRINT_STATUS_PENDING;
+constant int GTK_PRINT_STATUS_PENDING_ISSUE;
+constant int GTK_PRINT_STATUS_PRINTING;
+constant int GTK_PRINT_STATUS_FINISHED;
+constant int GTK_PRINT_STATUS_FINISHED_ABORTED;
+
+/* GtkHighlevelPrinting: GtkPrintOperationAction */
+constant int GTK_PRINT_OPERATION_ACTION_PRINT_DIALOG;
+constant int GTK_PRINT_OPERATION_ACTION_PRINT;
+constant int GTK_PRINT_OPERATION_ACTION_PREVIEW;
+constant int GTK_PRINT_OPERATION_ACTION_EXPORT;
+
+/* GtkHighlevelPrinting: GtkPrintOperationResult */
+constant int GTK_PRINT_OPERATION_RESULT_ERROR;
+constant int GTK_PRINT_OPERATION_RESULT_APPLY;
+constant int GTK_PRINT_OPERATION_RESULT_CANCEL;
+constant int GTK_PRINT_OPERATION_RESULT_IN_PROGRESS;
+
+/* GtkHighlevelPrinting: GtkPrintError */
+constant int GTK_PRINT_ERROR_GENERAL;
+constant int GTK_PRINT_ERROR_INTERNAL_ERROR;
+constant int GTK_PRINT_ERROR_NOMEM;
+
+/* GtkPrintSettings: GtkPrintDuplex */
+constant int GTK_PRINT_DUPLEX_SIMPLEX;
+constant int GTK_PRINT_DUPLEX_HORIZONTAL;
+constant int GTK_PRINT_DUPLEX_VERTICAL;
+
+/* GtkPrintSettings: GtkPrintQuality */
+constant int GTK_PRINT_QUALITY_LOW;
+constant int GTK_PRINT_QUALITY_NORMAL;
+constant int GTK_PRINT_QUALITY_HIGH;
+constant int GTK_PRINT_QUALITY_DRAFT;
+
+/* GtkPrintSettings: GtkPrintPages */
+constant int GTK_PRINT_PAGES_ALL;
+constant int GTK_PRINT_PAGES_CURRENT;
+constant int GTK_PRINT_PAGES_RANGES;
+constant int GTK_PRINT_PAGES_ALL;
+
+/* GtkPrintSettings: GtkPageSet */
+constant int GTK_PAGE_SET_ALL;
+constant int GTK_PAGE_SET_EVEN;
+constant int GTK_PAGE_SET_ODD;
+
+/* GtkRecentManager: GtkRecentManagerError */
+constant int GTK_RECENT_MANAGER_ERROR_NOT_FOUND;
+constant int GTK_RECENT_MANAGER_ERROR_INVALID_URI;
+constant int GTK_RECENT_MANAGER_ERROR_INVALID_ENCODING;
+constant int GTK_RECENT_MANAGER_ERROR_NOT_REGISTERED;
+constant int GTK_RECENT_MANAGER_ERROR_READ;
+constant int GTK_RECENT_MANAGER_ERROR_WRITE;
+constant int GTK_RECENT_MANAGER_ERROR_UNKNOWN;
+
+/* GtkRecentChooser: GtkRecentChooserError */
+constant int GTK_RECENT_CHOOSER_ERROR_NOT_FOUND;
+constant int GTK_RECENT_CHOOSER_ERROR_INVALID_URI;
+
+/* GtkRecentChooser: GtkRecentSortType */
+constant int GTK_RECENT_SORT_NONE;
+constant int GTK_RECENT_SORT_MRU;
+constant int GTK_RECENT_SORT_LRU;
+constant int GTK_RECENT_SORT_CUSTOM;
+
+/* GtkRecentFilter: GtkRecentFilterFlags */
+constant int GTK_RECENT_FILTER_URI;
+constant int GTK_RECENT_FILTER_DISPLAY_NAME;
+constant int GTK_RECENT_FILTER_MIME_TYPE;
+constant int GTK_RECENT_FILTER_APPLICATION;
+constant int GTK_RECENT_FILTER_GROUP;
+constant int GTK_RECENT_FILTER_AGE;
+endrequire;

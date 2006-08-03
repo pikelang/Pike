@@ -47,7 +47,7 @@ void create(string|mapping(string:mixed)|void label_or_props)
 void set_submenu(GTK2.Widget menu);
 //! Set the submenu for this menu button.
 
-GTK2.Widget get_submenu();
++GTK2.Widget get_submenu();
 //! Gets the submenu underneath this menu item.
 
 void set_accel_path(string path);
@@ -90,5 +90,5 @@ int get_right_justified();
 //! Gets whether the menu item appears justified at the right side of the menu
 //! bar.
 
-GTK2.Widget get_submenu();
++GTK2.Widget get_submenu();
 //! Gets the submenu underneath this menu item.

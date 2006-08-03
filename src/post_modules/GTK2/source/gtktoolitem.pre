@@ -104,11 +104,11 @@ int get_relief_style();
 //! Returns the relief style of this item.
 //! One of CONST(GTK_RELIEF)
 
-GTK2.Widget retrieve_proxy_menu_item();
++GTK2.Widget retrieve_proxy_menu_item();
 //! Returns the GTK2.MenuItem that was last set by
 //! set_proxy_menu_item().
 
-GTK2.Widget get_proxy_menu_item(string menu_item_id);
++GTK2.Widget get_proxy_menu_item(string menu_item_id);
 //! If menu_item_id matches the string passed to
 //! set_proxy_menu_item(), then return the corresponding
 //! GTK2.MenuItem.

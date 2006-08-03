@@ -42,7 +42,7 @@ int get_value_pos();
 
 require pango;
 require gtk24;
-Pango.Layout get_layout();
++Pango.Layout get_layout();
 //! Gets the Pango.Layout used to display the scale.
 
 mapping(string:int) get_layout_offsets()

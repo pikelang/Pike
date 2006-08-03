@@ -18,7 +18,7 @@ void add(GTK2.TextTag tag);
 void remove(GTK2.TextTag tag);
 //! Remove a tag from the table.
 
-GTK2.TextTag lookup(string name);
++GTK2.TextTag lookup(string name);
 //! Look up a named tag.
 
 int get_size();

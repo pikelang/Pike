@@ -103,10 +103,10 @@ array(GTK2.ActionGroup) get_action_groups()
   }
 }
 
-GTK2.AccelGroup get_accel_group();
++GTK2.AccelGroup get_accel_group();
 //! Returns the GTK2.AccelGroup associated with this.
 
-GTK2.Widget get_widget(string path)
++GTK2.Widget get_widget(string path)
 //! Looks up a widget by following a path.  The path consists of the names
 //! specified in the xml description of the ui, separated by '/'.  Elements
 //! which don't have a name or action attribute in the xml (e.g. &gt;popup&lt;)
@@ -150,7 +150,7 @@ array(GTK2.Widget) get_toplevels(int types)
   }
 }
 
-GTK2.Action get_action(string path);
++GTK2.Action get_action(string path);
 //! Looks up an action by following a path.
 
 int add_ui_from_string(string buffer)

@@ -26,6 +26,7 @@ static void pgtk2__signal_connect(const gchar *handler_name,
   struct svalue *cb;
   struct pike_string *funname;
   guint signal_id;
+  GClosure *gc;
 #ifdef GLADE_CONNECT_DEBUG
   fprintf(stderr,"Connecting handler %s, signal %s,\n data %s, "
 		 "after: %d\n",
@@ -61,10 +62,16 @@ static void pgtk2__signal_connect(const gchar *handler_name,
 	    "class ancestry.\n",
 	    signal_name,g_type_name(G_TYPE_FROM_INSTANCE(object)));
   }
+/*
   id=g_signal_connect_data(G_OBJECT(object),signal_name,
 			   G_CALLBACK(pgtk2_signal_func_wrapper),b,
 			   (GClosureNotify)pgtk2_free_signal_data,
 			   G_CONNECT_SWAPPED);
+*/
+  gc=g_cclosure_new_swap(G_CALLBACK(pgtk2_signal_func_wrapper),b,
+			 (GClosureNotify)pgtk2_free_signal_data);
+  g_closure_set_marshal(gc,pgtk2_marshaller);
+  id=g_signal_connect_closure(G_OBJECT(object),signal_name,gc,1);
 }
 %}
 
@@ -106,7 +113,7 @@ void create(string filename_or_buffer, ?int size, ?string root, ?string domain)
   pgtk2__init_this_object();
 }
 
-GTK2.Widget get_widget(string name)
++GTK2.Widget get_widget(string name)
 //! This function is used to get the widget corresponding to name in the
 //! interface description.  You would use this if you have to do anything to
 //! the widget after loading.

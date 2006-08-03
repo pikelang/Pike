@@ -22,7 +22,7 @@ object get_user_data()
   push_object(gtk_tree_selection_get_user_data(GTK_TREE_SELECTION(THIS->obj)));
 }
 
-GTK2.TreeView get_tree_view();
++GTK2.TreeView get_tree_view();
 //! Returns the tree view associated with this selection.
 
 array get_selected()

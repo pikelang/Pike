@@ -49,7 +49,7 @@ void create(GTK2.Widget|string|mapping(string:mixed) icon, ?string label)
 void set_menu(GTK2.Widget menu);
 //! Sets the GTK2.Menu that is popped up when the user clicks on the arrow.
 
-GTK2.Widget get_menu();
++GTK2.Widget get_menu();
 //! Returns the GTK2.Menu.
 
 void set_arrow_tooltip(GTK2.Tooltips tooltips, string tip_text, string tip_private);

@@ -14,6 +14,9 @@ inherit GTK2.CellEditable;
 //! int has-frame
 //! GTK2.TreeModel model
 //! int row-span-column
+require gtk210;
+//! string tearoff-title
+endrequire;
 //! int wrap-width
 //! <p>
 //! Style properties:
@@ -93,7 +96,7 @@ int get_active();
 void set_active(int index_);
 //! Sets the active item.
 
-GTK2.TreeIter get_active_iter()
++GTK2.TreeIter get_active_iter()
 //! Get the current active item.
 {
   pgtk2_verify_inited();
@@ -129,7 +132,7 @@ void set_active_iter(GTK2.TreeIter iter)
   RETURN_THIS();
 }
 
-GTK2.TreeModel get_model()
++GTK2.TreeModel get_model()
 //! Get the GTK2.TreeModel which is acting as a data source.
 {
   pgtk2_verify_inited();
@@ -191,17 +194,45 @@ void popup();
 void popdown();
 //! Hides the menu or dropdown list.
 
-require gtk26;
-/*
-ATK.Object get_popup_accessible();
-//! Gets the accessible object corresponding to this popup.
-*/
+void set_row_separator_func(function f, mixed user_data )
+//! Sets the row separator function, which is used to determine whether a
+//! row should be drawn as a separator.  If the row separator function is 0
+//! no separators are drawn.  This is the default value.
 
+{
+  pgtk2_verify_inited();
+  { 
+    struct svalue *sv1,*sv2;
+    struct signal_data *sd;
+
+    get_all_args("set_row_separator_func",args,"%*%*",&sv1,&sv2);
+    sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
+    if (sd==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("set_row_separator_func",sizeof(struct signal_data)
+);
+    assign_svalue_no_free(&sd->cb,sv1);
+    assign_svalue_no_free(&sd->args,sv2);
+    gtk_combo_box_set_row_separator_func(GTK_COMBO_BOX(THIS->obj),
+                        (GtkTreeViewRowSeparatorFunc)pgtk2_tree_view_row_separator_func,
+                        sd,(GtkDestroyNotify)pgtk2_free_signal_data);
+  } 
+  RETURN_THIS();
+}
+
+require gtk26;
 void set_add_tearoffs(int setting);
 //! Sets whether the popup menu should have a tearoff menu item.
 
 int get_add_tearoffs();
 //! Gets whether the popup menu has tearoff items.
+
+require gtk210;
+void set_title(string title);
+//! Sets the menu's title in tearoff mode.
+
+string get_title();
+//! Gets the current title of the menu in tearoff mode.
+endrequire;
 
 void set_focus_on_click(int setting);
 //! Sets whether the combo box will grab focus when it is

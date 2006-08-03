@@ -96,6 +96,30 @@ GDK2.Pixbuf wait_for_image();
 //! to a GDK2.Pixbuf.
 endrequire;
 
+require gtk210;
+string wait_for_rich_text(GTK2.TextBuffer buffer)
+//! Requests the contents of the clipboard as rich text.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+    GtkTextBuffer *gtb;
+    GdkAtom a;
+    gsize len;
+    guint8 *res;
+
+    get_all_args("wait_for_rich_text",args,"%o",&o1);
+    res=gtk_clipboard_wait_for_rich_text(GTK_CLIPBOARD(THIS->obj),
+			GTK_TEXT_BUFFER(get_gobject(o1)),&a,&len);
+    pgtk2_pop_n_elems(args);
+    if (res)
+      push_string(make_shared_binary_string(res,len));
+    else
+      push_string(empty_pike_string);
+  }
+}
+endrequire;
+
 int wait_is_text_available();
 //! Test to see if there is text available to be pasted.  This is done by
 //! requesting the TARGETS atom and checking if it contains any of the
@@ -104,6 +128,11 @@ int wait_is_text_available();
 require gtk26;
 int wait_is_image_available();
 //! Test to see if tehre is an image available to be pasted.
+endrequire;
+
+require gtk210;
+int wait_is_rich_text_available(GTK2.TextBuffer buffer);
+//! Test to see if there is rich text available to be pasted.
 endrequire;
 
 endrequire;

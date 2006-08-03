@@ -19,7 +19,7 @@ int drag_data_delete(GTK2.TreePath path)
   }
 }
 
-GTK2.SelectionData drag_data_get(GTK2.TreePath path)
++GTK2.SelectionData drag_data_get(GTK2.TreePath path)
 //! Asks to return a representation of the row at path.
 {
   pgtk2_verify_inited();

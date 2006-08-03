@@ -2,6 +2,25 @@ require gtk24;
 class GTK2.CellLayout;
 mixin_for G.Object;
 
+%{
+int pgtk2_cell_layout_data_callback(GtkCellLayout *cell_layout,
+				    GtkCellRenderer *cell,
+				    GtkTreeModel *tree_model,
+				    GtkTreeIter *iter,
+				    struct signal_data *d) {
+  int res;
+  push_gobject(cell_layout);
+  push_gobject(cell);
+  push_gobject(tree_model);
+  push_gobjectclass(iter,pgtk2_tree_iter_program);
+  push_svalue(&d->args);
+  apply_svalue(&d->cb,5);
+  res=Pike_sp[-1].u.integer;
+  pop_stack();
+  return res;
+}
+%}
+
 void pack_start(GTK2.CellRenderer cell, int expand);
 //! Packs the cell into the beginning.  If expand is false, then the cell is
 //! allocated no more space than it needs.  Any unused space is divied evenly
@@ -18,6 +37,32 @@ void clear();
 
 void add_attribute(GTK2.CellRenderer cell, string attribute, int column);
 //! Adds an attribute mapping.
+
+void set_cell_data_func(GTK2.CellRenderer cell, function f, mixed user_data)
+//! Sets the callback to use for this cell layout.  This function is used
+//! instead of the standard attributes mapping for setting the column
+//! value, and should set the value of the cell layout's cell renderer(s)
+//! as appropriate.  f may be 0 to remove an older one.
+{
+  pgtk2_verify_inited();
+  {
+    struct svalue *sv1,*sv2;
+    struct object *o1;
+    struct signal_data *sd;
+
+    get_all_args("set_cell_data_func",args,"%o%*%*",&o1,&sv1,&sv2);
+    sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
+    if (sd==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("set_cell_data_func",sizeof(struct signal_data));
+    assign_svalue_no_free(&sd->cb,sv1);
+    assign_svalue_no_free(&sd->args,sv2);
+    gtk_cell_layout_set_cell_data_func(GTK_CELL_LAYOUT(THIS->obj),
+			GTK_CELL_RENDERER(get_gobject(o1)),
+			(GtkCellLayoutDataFunc)pgtk2_cell_layout_data_callback,
+			sd,(GtkDestroyNotify)pgtk2_free_signal_data);
+  }
+  RETURN_THIS();
+}
 
 void clear_attributes(GTK2.CellRenderer cell);
 //! Clears all existing attributes.

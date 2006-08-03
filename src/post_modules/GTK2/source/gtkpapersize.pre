@@ -1,0 +1,213 @@
+require gtk210;
+/* -*- C -*- */
+class GTK2.PaperSize;
+
+//! A Paper Size.
+
+void create(string|void name, string|void ppd_display_name,
+	    float|void width, float|void height, int|void unit)
+//! Create a new GTK2.PaperSize object by parsing a PWG 5101.1-2002 PWG paper
+//! name.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args<=1) {
+    GtkPaperSize *gps;
+    gchar *name=NULL;
+
+    get_all_args("create",args,".%s",&name);
+    gps=gtk_paper_size_new(name);
+    THIS->obj=(void *)gps;
+  } else if (args==4 || args==5) {
+    GtkPaperSize *gps;
+    gchar *name;
+    gchar *ppd_display_name;
+    float width,height;
+    INT_TYPE unit=-1;
+
+    get_all_args("create",args,"%s%s%f%f.%i",&name,&ppd_display_name,&width,
+		 &height,&unit);
+    if (unit==-1)
+      gps=gtk_paper_size_new_from_ppd(name,ppd_display_name,width,height);
+    else
+      gps=gtk_paper_size_new_custom(name,ppd_display_name,width,height,unit);
+    THIS->obj=(void *)gps;
+  } 
+  pgtk2_pop_n_elems();
+  pgtk2__init_this_object();
+}
+
+void destroy()
+//! Destructor.
+{
+  if (This->obj)
+    gtk_paper_size_free((GtkPaperSize *)(THIS->obj));
+  THIS->obj=0;
+  pgtk2_pop_n_elems(args);
+  push_int(0);
+}
+
++GTK2.PaperSize copy()
+//! Copy this GTK2.PaperSize.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GtkPaperSize *gps;
+
+    gps=gtk_paper_size_copy((GtkPaperSize *)(THIS->obj));
+    push_gobjectclass(gps,pgtk2_paper_size_program);
+  }
+}
+
+void free()
+//! Free a paper size.
+{
+  pgtk2_paper_size_destroy(args);
+}
+
+int is_equal(GTK2.PaperSize size1)
+//! Comparison.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+    int res;
+
+    get_all_args("is_equal",args,"%o",&o1);
+    res=gtk_paper_size_is_equal((GtkPaperSize *)(THIS->obj),
+			(GtkPaperSize *)get_pg2object(o1,pgtk2_paper_size_program));
+    pgtk2_pop_n_elems(args);
+    push_int(res);
+  }
+}
+
+string get_name()
+//! Get the name.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    const gchar *name;
+
+    name=gtk_paper_size_get_name((GtkPaperSize *)(THIS->obj));
+    PGTK_PUSH_GCHAR(name);
+  }
+}
+
+string get_display_name()
+//! Get the human-readable name.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    const gchar *name;
+
+    name=gtk_paper_size_get_display_name((GtkPaperSize *)(THIS->obj));
+    PGTK_PUSH_GCHAR(name);
+  }
+}
+
+string get_ppd_name()
+//! Get the ppd name.  May return an empty string.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    const gchar *name;
+
+    name=gtk_paper_size_get_ppd_name((GtkPaperSize *)(THIS->obj));
+    if (name)
+      PGTK_PUSH_GCHAR(name);
+    else
+      push_string(empty_pike_string);
+  }
+}
+
+float get_width(int unit)
+//! Gets the paper width in units of unit.
+{
+  pgtk2_verify_inited();
+  {
+    INT_TYPE unit;
+
+    get_all_args("get_width",args,"%i",&unit);
+    pgtk2_pop_n_elems(args);
+    push_float(gtk_paper_size_get_width((GtkPaperSize *)(THIS->obj),unit));
+  }
+}
+
+float get_height(int unit)
+//! Gets the paper height in units of unit.
+{
+  pgtk2_verify_inited();
+  {
+    INT_TYPE unit;
+
+    get_all_args("get_height",args,"%i",&unit);
+    pgtk2_pop_n_elems(args);
+    push_float(gtk_paper_size_get_height((GtkPaperSize *)(THIS->obj),unit));
+  }
+}
+
+int is_custom()
+//! Returns 1 if this paper size is not a standard paper size.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(gtk_paper_size_is_custom((GtkPaperSize *)(THIS->obj)));
+}
+
+void set_size(float width, float height, int unit)
+//! Changes the dimensions to width x height.
+{
+  pgtk2_verify_inited();
+  {
+    FLOAT_TYPE width,height;
+    INT_TYPE unit;
+
+    get_all_args("set_size",args,"%f%f%i",&width,&height,&unit);
+    pgtk2_pop_n_elems(args);
+    gtk_paper_size_set_size((GtkPaperSize *)(THIS->obj),width,height,unit);
+  }
+}
+
+float get_default_top_margin()
+//! Gets the default top margin.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_float(gtk_paper_size_get_default_top_margin((GtkPaperSize *)(THIS->obj)));
+}
+
+float get_default_bottom_margin()
+//! Gets the default bottom margin.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_float(gtk_paper_size_get_default_bottom_margin((GtkPaperSize *)(THIS->obj)));
+}
+
+float get_default_left_margin()
+//! Gets the default left margin.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_float(gtk_paper_size_get_default_left_margin((GtkPaperSize *)(THIS->obj)));
+}
+
+float get_default_right_margin()
+//! Gets the default right margin.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_float(gtk_paper_size_get_default_right_margin((GtkPaperSize *)(THIS->obj)));
+}
+
+string get_default()
+//! Returns the name of the default paper size.
+{
+  PGTK_PUSH_GCHAR(gtk_paper_size_get_default());
+}
+
+endrequire;

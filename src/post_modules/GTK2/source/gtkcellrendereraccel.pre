@@ -1,0 +1,31 @@
+require gtk210;
+/* -*- C -*- */
+class GTK2.CellRendererAccel;
+inherit GTK2.CellRendererText;
+
+//! Properties:
+//! int accel-key
+//! int accel-mode
+//! int accel-mods
+//! int keycode
+
+signal accel_cleared;
+signal accel_edited;
+
+void create(?mapping(string:mixed) props)
+//! Create a new GTK2.CellRendererAccel.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_CELL_RENDERER_ACCEL);
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *ga;
+    ga=gtk_cell_renderer_accel_new();
+    THIS->obj=G_OBJECT(ga);
+  }
+  pgtk2__init_this_object();
+}
+
+endrequire;

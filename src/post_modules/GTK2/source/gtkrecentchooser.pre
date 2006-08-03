@@ -1,0 +1,194 @@
+require gtk210;
+/* -*- C -*- */
+class GTK2.RecentChooser;
+mixin_for G.Object;
+
+void set_show_private(int show_private);
+//! Whether to show recently used resources marked registered as private.
+
+int get_show_private();
+//! Returns whether chooser should display recently used resources registered
+//! as private.
+
+void set_show_not_found(int show_not_found);
+//! Sets whether chooser should display the recently used resources that
+//! it didn't find. This only applies to local resources.
+
+int get_show_not_found();
+//! Retrieves whether chooser should show the recently used resources that
+//! were not found.
+
+void set_show_icons(int show_icons);
+//! Sets whether chooser should show an icon near the resource when
+//! displaying it.
+
+int get_show_icons();
+//! Retrieves whether chooser should show an icon near the resource.
+
+void set_select_multiple(int select_multiple);
+//! Sets whether chooser can select multiple items.
+
+int get_select_multiple();
+//! Gets whether chooser can select multiple items.
+
+void set_local_only(int local_only);
+//! Sets whether only local resources, that is resources using the
+//! file:// URI scheme, should be shown in the recently used resources
+//! selector. If local_only is TRUE (the default) then the shown resources
+//! are guaranteed to be accessible through the operating system native
+//! file system.
+
+int get_local_only();
+//! Gets whether only local resources should be shown in the recently used
+//! resources selector.
+
+void set_limit(int limit);
+//! Sets the number of items that should be returned by get_items() and
+//! get_uris().
+
+int get_limit();
+//! Gets the number of items returned by get_items() and get_uris().
+
+void set_show_tips(int show_tips);
+//! Sets whether to show a tooltips on the widget.
+
+int get_show_tips();
+//! Gets whether chooser should display tooltips.
+
+void set_show_numbers(int show_numbers);
+//! Whether to show recently used resources prepended by a unique number.
+
+int get_show_numbers();
+//! Returns whether chooser should display recently used resources prepended
+//! by a unique number.
+
+void set_sort_type(int sort_type);
+//! Changes the sorting order of the recently used resources list displayed
+//! by chooser.
+
+int get_sort_type();
+//! Gets the sorting order.
+
+int set_current_uri(string uri, null);
+//! Sets uri as the current URI.
+
+string get_current_uri();
+//! Gets the URI currently selected.
+
++GTK2.RecentInfo get_current_item()
+//! Gets the GTK2.RecentInfo currently selected.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GtkRecentInfo *gri;
+
+    gri=gtk_recent_chooser_get_current_item(GTK_RECENT_CHOOSER(THIS->obj));
+    push_gobjectclass(gri,pgtk2_recent_info_program);
+  }
+}
+
+int select_uri(string uri, null);
+//! Selects uri.
+
+void unselect_uri(string uri);
+//! Unselects uri.
+
+void select_all();
+//! Selects all the items inside chooser, if the chooser supports
+//! multiple selection.
+
+void unselect_all();
+//! Unselects all the items.
+
+array get_items()
+//! Gets the list of recently used resources in form of GTK2.RecentInfo
+//! objects.
+//! <p>
+//! The return value of this function is affected by the "sort-type" and
+//! "limit" properties of chooser
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GList *gl,*g1;
+    int i=0;
+
+    gl=g1=gtk_recent_chooser_get_items(GTK_RECENT_CHOOSER(THIS->obj));
+    while (g1) {
+      push_gobjectclass(g1->data,pgtk2_recent_info_program);
+      i++;
+      g1=g_list_next(g1);
+    }
+    if (gl) {
+      f_aggregate(i);
+      g_list_free(fl);
+    } else
+      push_int(0);
+  }
+}
+
+array get_uris()
+//! Gets the URI of the recently used resources.
+//! <p>
+//! The return value of this function is affected by the "sort-type"
+//! and "limit" properties.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    gchar **a;
+    int len,i;
+
+    a=gtk_recent_chooser_get_uris(GTK_RECENT_CHOOSER(THIS->obj),&len);
+    if (len) {
+      gchar **b;
+
+      b=a;
+      while (b) {
+        push_string(make_shared_binary_string(*b,strlen(*b)));
+        i++;
+	b++;
+      }
+      f_aggregate(i);
+      g_strfreev(a);
+    }
+  }
+}
+
+void add_filter(GTK2.RecentFilter filter);
+//! Adds filter to the list of GTK2.RecentFilter objects held by chooser.
+
+void remove_filter(GTK2.RecentFilter filter);
+//! Removes filter.
+
+array list_filters()
+//! Gets a list of filters.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GSList *gl,*g1;
+    int i=0;
+
+    gl=g1=gtk_recent_chooser_list_filters(GTK_RECENT_CHOOSER(THIS->obj));
+    while (g1) {
+      push_gobject(g1->data);
+      i++;
+      g1=g_slist_next(g1);
+    }
+    if (gl) {
+      f_aggregate(i);
+      g_slist_free(gl);
+    } else
+      push_int(0);
+  }
+}
+
+void set_filter(GTK2.RecentFilter filter);
+//! Sets filter as the current GTK2.RecentFilter object to affect the
+//! displayed recently used resources.
+
++GTK2.RecentFilter get_filter();
+//! Gets the filter currently used.
+endrequire;

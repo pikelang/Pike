@@ -25,13 +25,13 @@ endrequire;
 
 signal clicked;
 
-void create(string|mapping(string:mixed) title_or_props,
+void create(string|mapping(string:mixed)|void title_or_props,
 	    ?GTK2.CellRenderer renderer, ?string property, ?int col)
 //! Creates a new W(TreeViewColumn).
 {
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
-  {
+  if (args) {
     if (args==1) {
       INIT_WITH_PROPS(GTK_TYPE_TREE_VIEW_COLUMN);
     } else {
@@ -47,6 +47,10 @@ void create(string|mapping(string:mixed) title_or_props,
       THIS->obj=G_OBJECT(gt);
     }
     pgtk2_pop_n_elems(args);
+  } else {
+    GtkTreeViewColumn *gt;
+    gt=gtk_tree_view_column_new();
+    THIS->obj=G_OBJECT(gt);
   }
   pgtk2__init_this_object();
 }
@@ -185,7 +189,7 @@ void set_widget(?GTK2.Widget widget);
 //! Sets the widget in the header to be widget.  If widget is omitted, then
 //! the header button is set with a W(Label) set to the title.
 
-GTK2.Widget get_widget();
++GTK2.Widget get_widget();
 //! Returns the W(Widget) in the button on the column header.  If a custom
 //! widget has not been set then 0 is returned.
 

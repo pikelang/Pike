@@ -64,7 +64,7 @@ void create(GTK2.TextBuffer|mapping(string:mixed)|void buffer_or_props)
 void set_buffer(GTK2.TextBuffer buffer);
 //! Sets buffer as the buffer being displayed.  
 
-GTK2.TextBuffer get_buffer();
++GTK2.TextBuffer get_buffer();
 //! Returns the buffer displayed by this view.
 
 void scroll_to_mark(GTK2.TextMark mark, float within_margin,
@@ -106,7 +106,7 @@ int place_cursor_onscreen();
 //! Moves the cursor to the currently visible region of the buffer, if it
 //! isn't there already.
 
-GDK2.Rectangle get_visible_rect()
++GDK2.Rectangle get_visible_rect()
 //! Returns a rectangle with the currently-visible region of the buffer,
 //! in buffer coordinates.  Convert to window coordinates with
 //! buffer_to_window_coords().
@@ -124,7 +124,7 @@ GDK2.Rectangle get_visible_rect()
   }
 }
 
-GDK2.Rectangle get_iter_location(GTK2.TextIter iter)
++GDK2.Rectangle get_iter_location(GTK2.TextIter iter)
 //! Gets a rectangle which roughly contains the character at iter.  The
 //! rectangle position is in buffer coordinates; use buffer_to_window_coords()
 //! to convert these coordinates to coordinates for one of the windows in
@@ -145,7 +145,7 @@ GDK2.Rectangle get_iter_location(GTK2.TextIter iter)
   }
 }
 
-GTK2.TextIter get_line_at_y(int y)
++GTK2.TextIter get_line_at_y(int y)
 //! Returns a W(TextIter) for the start of the line containing the coordinate
 //! y.  y is in buffer coordinates, convert from window coordinates with
 //! window_to_buffer_coords().
@@ -184,7 +184,7 @@ mapping get_line_yrange(GTK2.TextIter iter)
   }
 }
 
-GTK2.TextIter get_iter_at_location(int x, int y)
++GTK2.TextIter get_iter_at_location(int x, int y)
 //! Retrieves the iterator at buffer coordinates x and y.  Buffer coordinates
 //! are coordinates for the entire buffer, not just the currently-displayed
 //! portions.  If you have coordinates from an event, you have to convert
@@ -206,7 +206,7 @@ GTK2.TextIter get_iter_at_location(int x, int y)
 }
 
 require gtk26;
-GTK2.TextIter get_iter_at_position(int x, int y)
++GTK2.TextIter get_iter_at_position(int x, int y)
 //! Retrieves the iterator pointing to the character at buffer coordinates
 //! x and y.
 {
@@ -265,7 +265,7 @@ array window_to_buffer_coords(int wintype, int window_x, int window_y)
   }
 }
 
-GDK2.Window get_window(int wintype);
++GDK2.Window get_window(int wintype);
 //! Retrieves the GDK2.Window corresponding to an area of the text view;
 //! possible windows include the overall widget window, child windows on the
 //! left, right, top, bottom, and the window that displays the text buffer.
@@ -504,7 +504,7 @@ void set_tabs(Pango.TabArray tabs)
   RETURN_THIS();
 }
 
-Pango.TabArray get_tabs()
++Pango.TabArray get_tabs()
 //! Gets the default tabs.  Tags in the buffer may override the defaults.
 //! The return value will be 0 if "standard" (8-space) tabs are used.
 {
@@ -528,7 +528,7 @@ int get_accepts_tab();
 //! Returns whether pressing the Tab key inserts a tab character.
 endrequire;
 
-GTK2.TextAttributes get_default_attributes()
++GTK2.TextAttributes get_default_attributes()
 //! Obtains a copy of the default text attributes.  These are the attributes
 //! used for text unless a tag overrides them.
 {

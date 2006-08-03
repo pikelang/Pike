@@ -113,7 +113,14 @@ void set_line_wrap(int wrap);
 //! text exceeds the widget's size.  False lets the text get cut off by the
 //! edge of the widget if it exceeds the widget size.
 
+
 require pango;
+require gtk210;
+void set_line_wrap_mode(int wrap_mode);
+//! If line wrapping is on, this controls how the line wrapping is done.  The
+//! Default is Pango.WRAP_WORD, which means wrap on word boundaries.
+endrequire;
+
 mapping(string:int) get_layout_offsets()
 //! Obtains the coordinates where the label will draw the Pango.Layout
 //! representing the text in the label; useful to convert mouse events into
@@ -198,7 +205,7 @@ string get_label();
 //! mnemonics and Pango markup.
 
 require pango;
-Pango.Layout get_layout();
++Pango.Layout get_layout();
 //! Gets the Pango.Layout used to display the label.  The layout is useful to
 //! e.g. convert text positions to pixel positions, in combination with
 //! get_layout_offsets().
@@ -207,7 +214,14 @@ endrequire;
 int get_line_wrap();
 //! Returns whether lines in the label are automatically wrapped.
 
-GTK2.Widget get_mnemonic_widget();
+require gtk210;
+require pango;
+int get_line_wrap_mode();
+//! Returns line wrap mode used by the label.
+endrequire;
+endrequire;
+
++GTK2.Widget get_mnemonic_widget();
 //! Retrieves the target of the mnemonic (keyboard shortcut).
 
 mapping(string:int) get_selection_bounds()

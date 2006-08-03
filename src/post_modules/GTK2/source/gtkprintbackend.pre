@@ -1,0 +1,28 @@
+require gtk210;
+/* -*-C -*- */
+class GTK2.PrintBackend;
+inherit G.Object;
+
+void add_printer(GTK2.Printer printer);
+//!
+
+
+void remove_printer(GTK2.Printer printer);
+//!
+
+void set_list_done();
+//!
+
+/*
+array get_printer_list();
+//!
+*/
+
+int printer_list_is_done();
+//!
+
+GTK2.Printer find_printer(string name);
+//!
+
+
+endrequire;

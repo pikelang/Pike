@@ -77,23 +77,23 @@ void create(GTK2.TreeModel|mapping(string:mixed)|void model_or_props)
   pgtk2__init_this_object();
 }
 
-GTK2.TreeModel get_model();
++GTK2.TreeModel get_model();
 //! Returns the model this TreeView is based on.
 
 void set_model(GTK2.TreeModel model);
 //! Sets the model.  If this TreeView already has a model set, it will remove
 //! it before setting the new model.
 
-GTK2.TreeSelection get_selection();
++GTK2.TreeSelection get_selection();
 //! Gets the W(TreeSelection) associated with this TreeView.
 
-GTK2.Adjustment get_hadjustment();
++GTK2.Adjustment get_hadjustment();
 //! Gets the W(Adjustment) currently being used for the horizontal aspect.
 
 void set_hadjustment(GTK2.Adjustment hadj);
 //! Sets the W(Adjustment) for the current horizontal aspect.
 
-GTK2.Adjustment get_vadjustment();
++GTK2.Adjustment get_vadjustment();
 //! Gets the W(Adjustment) currently being used for the vertical aspect.
 
 void set_vadjustment(GTK2.Adjustment vadj);
@@ -108,6 +108,11 @@ void set_headers_visible(int headers_visible);
 void columns_autosize();
 //! Resizes all columns to their optimal width.  Only works after the treeview
 //! has been realized.
+
+require gtk210;
+int get_headers_clickable();
+//! Returns whether all header columns are clickable.
+endrequire;
 
 void set_headers_clickable(int setting);
 //! Allow the column title buttons to be clicked.
@@ -173,7 +178,7 @@ void set_expander_column(?GTK2.TreeViewColumn column);
 //! If column is omitted, then the expander arrow is always at the first
 //! visible column.
 
-GTK2.TreeViewColumn get_expander_column();
++GTK2.TreeViewColumn get_expander_column();
 //! Returns the column that is the current expander column.  This column has
 //! the expander arrow drawn next to it.
 
@@ -417,7 +422,7 @@ mapping get_path_at_pos(int x, int y)
   }
 }
 
-GDK2.Rectangle get_cell_area(?GTK2.TreePath path, ?GTK2.TreeViewColumn column)
++GDK2.Rectangle get_cell_area(?GTK2.TreePath path, ?GTK2.TreeViewColumn column)
 //! Fills the bounding rectangle in tree window coordinates for the cell at
 //! the row specified by path and the column specified by column.  If path is
 //! omitted or 0, or points to a path not currently displayed, the y and
@@ -445,7 +450,7 @@ GDK2.Rectangle get_cell_area(?GTK2.TreePath path, ?GTK2.TreeViewColumn column)
   }
 }
 
-GDK2.Rectangle get_background_area(?GTK2.TreePath path,
++GDK2.Rectangle get_background_area(?GTK2.TreePath path,
 				?GTK2.TreeViewColumn column)
 //! Similar to get_cell_area().  The returned rectangle is equivalent to the
 //! background_area passed to GTK2.CellRenderer->render().  These background
@@ -470,7 +475,7 @@ GDK2.Rectangle get_background_area(?GTK2.TreePath path,
   }
 }
 
-GDK2.Rectangle get_visible_rect()
++GDK2.Rectangle get_visible_rect()
 //! Returns a GDK2.Rectangle with the currently-visible region of the buffer,
 //! in tree coordinates.  Conver to widget coordinates with 
 //! tree_to_widget_coords().  Tree coordinates start at 0,0 for row 0 of the
@@ -510,7 +515,7 @@ array get_visible_range()
 }
 endrequire;
 
-GDK2.Window get_bin_window();
++GDK2.Window get_bin_window();
 //! Returns the window that this view renders to.  This is used primarily to
 //! compare to event->window to confirm that the event on this view is on the
 //! right window.
@@ -574,10 +579,9 @@ mapping get_drag_dest_row();
 mapping get_dest_row_at_pos(int drag_x, int drag_y);
 //! Determines the destination row for a given position;
 
-GDK2.Pixmap create_row_drag_icon(GTK2.TreePath path);
++GDK2.Pixmap create_row_drag_icon(GTK2.TreePath path);
 //! Creates a GDK2.Pixmap representation of the row at path.  This image is
 //! used for a drag icon.
-
 */
 
 void set_enable_search(int enable_search);
@@ -604,6 +608,17 @@ void set_search_column(int column);
 //! <p>
 //! Note that column refers to a column of the model.
 
+require gtk210;
++GTK2.Entry get_search_entry();
+//! Returns the GTK2.Entry which is currently in use as interactive search
+//! entry.  In case the built-in entry is being used, 0 will be returned.
+
+void set_search_entry(?GTK2.Entry entry);
+//! Sets the entry which the interactive search code will use.  This is useful
+//! when you want to provide a search entry in your interface at all times
+//! at a fixed position.  Passing 0 will make the interactive search code
+//! use the built-in popup entry again.
+
 require gtk26;
 int get_fixed_height_mode();
 //! Returns whether fixed height mode is turned on.
@@ -629,6 +644,29 @@ void set_hover_expand(int expand);
 //! Enables or disables the hover expansion mode.  Hover expansion makes rows
 //! expand or collapse if the pointer moves over them.
 
+void set_row_separator_func(function f, mixed user_data )
+//! Sets the row separator function, which is used to determine whether a
+//! row should be drawn as a separator.  If the row separator function is 0
+//! no separators are drawn.  This is the default value.
+{
+  pgtk2_verify_inited();
+  {
+    struct svalue *sv1,*sv2;
+    struct signal_data *sd;
+
+    get_all_args("set_row_separator_func",args,"%*%*",&sv1,&sv2);
+    sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
+    if (sd==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("set_row_separator_func",sizeof(struct signal_data)
+);
+    assign_svalue_no_free(&sd->cb,sv1);
+    assign_svalue_no_free(&sd->args,sv2);
+    gtk_combo_box_set_row_separator_func(GTK_TREE_VIEW(THIS->obj),
+                        (GtkTreeViewRowSeparatorFunc)pgtk2_tree_view_row_separator_func,
+                        sd,(GtkDestroyNotify)pgtk2_free_signal_data);
+  }
+  RETURN_THIS();
+}
 
 array get_selected()
 //! Shortcut to GTK2.TreeView->get_selection() and 
@@ -652,3 +690,27 @@ array get_selected()
       push_int(0);
   }
 }
+endrequire;
+
+require gtk210;
+int get_rubber_banding();
+//! Returns whether rubber banding is turned on.  If the selection mode is
+//! GTK2.SELECTION_MULTIPLE, rubber banding will allow the user to select
+//! multiple rows by dragging the mouse.
+
+void set_rubber_banding(int enable);
+//! Enables or disables rubber banding.
+
+int get_enable_tree_lines();
+//! Returns whether or not tree lines are drawn.
+
+void set_enable_tree_lines(int enabled);
+//! Sets whether to draw lines interconnecting the expanders.  This does not
+//! have any visible effects for lists.
+
+int get_grid_lines();
+//! Returns which grid lines are enabled.
+
+void set_grid_lines(int grid_lines);
+//! Sets which grid lines to draw.
+endrequire;

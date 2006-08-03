@@ -1,0 +1,154 @@
+require gtk210;
+/* -*- C -*- */
+class GTK2.RecentManager;
+inherit G.Object;
+
+void create(mapping(string:mixed)|int|GDK2.Screen void props_or_def)
+//! Create a new GTK2.RecentManager.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    if (Pike_sp[-args].type==PIKE_T_MAPPING)
+      INIT_WITH_PROPS(GTK_TYPE_RECENT_MANAGER);
+    else {
+      INT_TYPE def;
+      GtkRecentManager *grm;
+      struct object *o1;
+
+      if (Pike_sp[-args].type==PIKE_T_INT) {
+        get_all_args("create",args,"%i",&def);
+	if (def)
+ 	  grm=gtk_recent_manager_get_default();
+	else
+	  grm=gtk_recent_manager_new();
+      } else {
+	get_all_args("create",args,"%o",&o1);
+	grm=gtk_recent_manager_get_for_screen(GDK_SCREEN(get_gobject(o1)));
+      }
+      THIS->obj=G_OBJECT(grm);
+    }
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkRecentManager *ga;
+    ga=gtk_recent_manager_new();
+    THIS->obj=G_OBJECT(ga);
+  }
+  pgtk2__init_this_object();
+}
+
+/*
+void set_screen(GDK2.Screen screen);
+//! Sets the screen for a recent manager; the screen is used to track the
+//! user's currently configured recently used documents storage.
+*/
+
+int add_item(string uri);
+//! Adds a new resource, pointed by uri, into the recently used
+//! resources list.
+
+int remove_item(string uri)
+//! Removes a resource pointed by uri from the recently used resources list
+//! handled by a recent manager.
+{
+  pgtk2_verify_inited();
+  {
+    struct pike_string *t;
+    GError *error;
+    int res;
+
+    get_all_args("remove_item",args,"%T",&t);
+    ref_push_string(t);
+    f_string_to_utf8(1);
+    res=gtk_recent_manager_remove_item(GTK_RECENT_MANAGER(THIS->obj),
+			CGSTR0(t),&error);
+    pop_stack();
+    pgtk2_pop_n_elems(args);
+    push_int(res);
+  }
+}
+
+mapping lookup_item(string uri)
+//! Searches for a URI inside the recently used resources list, and returns
+//! a structure containing information about the resource like its MIME type,
+//! or its display name.
+{
+  pgtk2_verify_inited();
+  {
+    struct pike_string *t;
+    GError *error;
+    GtkRecentInfo *gri;
+
+    get_all_args("lookup_item",args,"%T",&t);
+    ref_push_string(t);
+    f_string_to_utf8(1);
+    gri=gtk_recent_manager_lookup_item(GTK_RECENT_MANAGER(THIS->obj),
+			CGSTR0(t),&error);
+    pop_stack();
+    pgtk2_pop_n_elems(args);
+    push_gobjectclass(gri,pgtk2_recent_info_program);
+  }
+}
+    
+int has_item(string uri);
+//! Checks whether there is a recently used resource registered with uri
+//! inside the recent manager.
+
+int move_item(string uri, string new_uri)
+//! Changes the location of a recently used resource from uri to new_uri.
+{
+  pgtk2_verify_inited();
+  {
+    struct pike_string *t,*t1;
+    GError *error;
+    int res;
+
+    get_all_args("move_item",args,"%T%T",&t,&t1);
+    ref_push_string(t);
+    f_string_to_utf8(1);
+    ref_push_string(t1);
+    f_string_to_utf8(1);
+    res=gtk_recent_manager_move_item(GTK_RECENT_MANAGER(THIS->obj),
+			CGSTR0(Pike_sp[-2].u.string),
+			CGSTR0(Pike_sp[-1].u.string),&error);
+    pgtk2_pop_n_elems(2);
+    pgtk2_pop_n_elems(args);
+    push_int(res);
+  }
+}
+
+int get_limit();
+//! Gets the maximum number of items that the get_items() function
+//! should return.
+
+void set_limit(int limit);
+//! Sets the maximum number of item that the get_items() function should
+//! return. If limit is set to -1, then return all the items.
+
+array get_items()
+//! Gets the list of recently used resources.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GList *gl,*g1;
+    int i;
+
+    gl=g1=gtk_recent_manager_get_items(GTK_RECENT_MANAGER(THIS->obj));
+    i=0;
+    while (g1) {
+      push_gobjectclass(g1->data,pgtk2_recent_info_program);
+      i++;
+      g1=g_list_next(g1);
+    }
+    if (gl) {
+      f_aggregate(i);
+      g_list_free(gl);
+    } else
+      push_int(0);
+  }
+}
+
+int purge_items(null);
+//! Purges every item from the recently used resources list.
+endrequire;

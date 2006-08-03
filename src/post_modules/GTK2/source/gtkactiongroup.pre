@@ -69,7 +69,7 @@ int get_visible();
 void set_visible(int setting);
 //! Changes the visibility.
 
-GTK2.Action get_action(string name);
++GTK2.Action get_action(string name);
 //! Looks up an action in the action group by name.
 
 array(GTK2.Action) list_actions()

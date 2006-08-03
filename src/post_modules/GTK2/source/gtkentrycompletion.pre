@@ -131,7 +131,7 @@ int get_popup_set_width();
 
 void set_popup_single_match(int setting);
 //! Sets whether the completion popup window will appear even if there is only
-//! a single match.  YOu may want to set this to 0 if you are using inline
+//! a single match.  You may want to set this to 0 if you are using inline
 //! completion.
 
 int get_popup_single_match();

@@ -1,0 +1,52 @@
+require gtk210;
+/* -*- C -*- */
+class GTK2.LinkButton;
+inherit GTK2.Button;
+
+//! Properties:
+//! <p>
+//! string uri
+
+//! A GTK2.LinkButton is a GTK2.Button with a hyperlink, similar to the one
+//! used by web browsers, which triggers an action when clicked. It is useful
+//! to show quick links to resources.
+
+void create(string|mapping(string:mixed) uri_or_props, ?string label)
+//! Creates a new LinkButton.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  {
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      struct pike_string *t,*t1=NULL;
+      GtkWidget *gl;
+
+      get_all_args("create",args,"%T.$T",&t,&t1);
+      if (t) {
+	ref_push_string(t);
+	f_string_to_utf8(1);
+	if (t1) {
+	  ref_push_string(t1);
+	  f_string_to_utf8(1);
+	  gl=gtk_link_button_new_with_label(CGSTR0(Pike_sp[-1].u.string),
+			CGSTR0(Pike_sp[-2].u.string));
+	} else
+	  gl=gtk_link_button_new(CGSTR0(Pike_sp[-1].u.string));
+	pop_stack();
+      } else
+	gl=gtk_link_button_new(NULL);
+      THIS->obj=G_OBJECT(gl);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_LINK_BUTTON);
+    }
+    pgtk2_pop_n_elems(args);
+  }
+  pgtk2__init_this_object();
+}
+
+string get_uri();
+//! Retrieves the URI set using set_uri().
+
+void set_uri(string uri);
+//! Sets uri as the URI.
+endrequire;

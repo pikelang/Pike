@@ -15,6 +15,9 @@ inherit GTK2.Bin;
 //! int decorated
 //! int default-height
 //! int default-width
+require gtk210;
+//! int deletable
+endrequire;
 //! int destroy-with-parent
 //! int focus-on-map
 require gtk24;
@@ -33,8 +36,10 @@ endrequire;
 //! int skip-pager-hint
 //! int skip-taskbar-hint
 //! string title
+//! GTK2.Window transient-for
 //! int type CONST(GTK_WINDOW_)
 //! int type-hint CONST(GDK_WINDOW_TYPE_HINT_)
+//! int urgency-hint
 //! int window-position CONST(GTK_WIN_POS_)
 
 signal activate_default;
@@ -227,6 +232,16 @@ void set_destroy_with_parent(int setting);
 //! shouldn't persist beyond the lifetime of the main window they're associated
 //! with, for example.
 
+require gtk22;
+/*
+void set_screen(GDK2.Screen screen);
+//! Sets the screen where this window is displayed.
+
++GDK2.Screen get_screen();
+//! Returns the screen associated with this window.
+*/
+endrequire;
+
 require gtk24;
 int is_active();
 //! Returns whether the window is part of the current active toplevel.  (That
@@ -255,7 +270,7 @@ int mnemonic_activate(int keyval, int modifier);
 //! GDK2.BUTTON1_MASK, GDK2.BUTTON2_MASK, GDK2.BUTTON3_MASK, GDK2.BUTTON4_MASK
 //! GDK2.BUTTON5_MASK, GDK2.RELEASE_MASK, GDK2.MODIFIER_MASK
 
-GTK2.Widget get_focus();
++GTK2.Widget get_focus();
 //! Retrieves the current focused widget within the window.  Note that this is
 //! the widget that would have the focus if the toplevel window focused; if the
 //! toplevel window is not focused then has_focus() will not be true for the
@@ -281,6 +296,11 @@ void present();
 //! on the user's platform, window manager, and preferences.
 //! <p>
 //! If hidden, it calls show() as well.
+
+require gtk28;
+void present_with_time(int timestamp);
+//! Presents a window to the user with a timestamp.  See present().
+endrequire;
 
 void iconify();
 //! Asks to iconify (minimize) this window.  Note that you shouldn't
@@ -320,12 +340,37 @@ void set_keep_below(int setting);
 //! Keep window below.
 endrequire;
 
+void begin_resize_drag(int edge, int button, int root_x, int root_y,
+		       int timestamp);
+//! Starts resizing a window.  This function is used if an application has
+//! window resizing controls.  When GDK can support it, the resize will be
+//! done using the standard mechanism for the window manager or windowing
+//! system.
+
+void begin_move_drag(int button, int root_x, int root_y, int timestamp);
+//! Starts moving a window.  This function is used if an application has
+//! window movement grips.
+
 void set_decorated(int setting);
 //! Add title bar, resize controls, etc.
 //! Default is true, so you may only need to use this function if
 //! you want to remove decorations.  Depending on the system, this
 //! function may not have any effect when called on a window that is
 //! already visible, so you should call it before calling show().
+
+require gtk210;
+void set_deletable(int setting);
+//! By default, windows have a close button in the window frame.  Some
+//! window managers allow GTK+ to disable this button.  If you set the
+//! deletable property to FALSE using this function, GTK+ will do its best
+//! to convince the window manager not to show a close button.  Depending
+//! on the system, this function may not have any effect when called on a
+//! window that is already visible, so you should call it before calling
+//! show().
+//! <p>
+//! On Windows, this function always works, since there's no window manager
+//! policy involved.
+endrequire;
 
 void set_mnemonic_modifier(int modifier);
 //! Sets the mnemonic modifer for this window.
@@ -365,6 +410,11 @@ int get_decorated();
 //! Returns whether the window has been set to have decorations such as a title
 //! bar.
 
+require gtk210;
+int get_deletable();
+//! Returns whether the window has been set to have a close button.
+endrequire;
+
 mapping(string:int) get_default_size()
 //! Gets the default size of the window.  A value of -1 for the width or height
 //! indicates that a default size has not been explicitly set for that
@@ -384,8 +434,9 @@ mapping(string:int) get_default_size()
 int get_destroy_with_parent();
 //! Returns whether the window will be destroyed with its transient parent.
 
-GDK2.Pixbuf get_icon()
++GDK2.Pixbuf get_icon();
 //! Gets the value set by set_icon().
+/*
 {
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
@@ -395,6 +446,7 @@ GDK2.Pixbuf get_icon()
     push_gobject(pix);
   }
 }
+*/
 
 array(GDK2.Pixbuf) get_icon_list()
 //! Retrieves the list of icons set by set_icon_list().
@@ -486,7 +538,7 @@ mapping(string:int) get_size()
 string get_title();
 //! Retrieves the title of the window.
 
-GTK2.Window get_transient_for();
++GTK2.Window get_transient_for();
 //! Fetches the transient parent for this window.
 
 int get_type_hint();
@@ -513,6 +565,11 @@ endrequire;
 require gtk26;
 int get_focus_on_map();
 //! Gets the value set by set_focus_on_map().
+endrequire;
+
+require gtk210;
++GTK2.WindowGroup get_group();
+//! Returns the group for this widget or the default group.
 endrequire;
 
 void move(int x, int y);

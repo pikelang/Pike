@@ -1,0 +1,150 @@
+require gtk210;
+/* -*- C -*- */
+class GTK2.StatusIcon;
+inherit G.Object;
+
+//! The "system tray" or notification area is normally used for transient
+//! icons that indicate some special state. For example, a system tray icon
+//! might appear to tell the user that they have new mail, or have an
+//! incoming instant message, or something along those lines. The basic
+//! idea is that creating an icon in the notification area is less annoying
+//! than popping up a dialog.
+//! <p>
+//! A GTK2.StatusIcon object can be used to display an icon in a "system tray".
+//! The icon can have a tooltip, and the user can interact with it by
+//! activating it or popping up a context menu. Critical information should/
+//! not solely be displayed in a GTK2.StatusIcon, since it may not be visible
+//! (e.g. when the user doesn't have a notification area on his panel). This
+//! can be checked with is_embedded().
+//! <p>
+//! On X11, the implementation follows the freedesktop.org "System Tray"
+//! specification. Implementations of the "tray" side of this specification
+//! can be found e.g. in the GNOME and KDE panel applications.
+//! <p>
+//! Note that a GTK2.StatusIcon is not a widget, but just a G.Object. Making
+//! it a widget would be impractical, since the system tray on Win32 doesn't
+//! allow to embed arbitrary widgets.
+
+//! Properties:
+//! int blinking
+//! string file
+//! string icon-name
+//! GDK2.Pixbuf pixbuf
+//! int size
+//! string stock
+//! int storage-type
+//! int visible
+
+signal activate;
+signal popup_menu;
+signal size_changed;
+
+void create(mapping(string:mixed)|GDK2.Pixbuf arg)
+//! Create a new GTK2.StatusIcon.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    if (Pike_sp[-args].type==PIKE_T_MAPPING) {
+      INIT_WITH_PROPS(GTK_TYPE_STATUS_ICON);
+    } else {
+      GtkWidget *gi;
+
+      if (Pike_sp[-args].type==PIKE_T_STRING) {
+	struct pike_string *s1;
+	int t=0;
+	GtkStockItem item;
+
+	get_all_args("create",args,"%t",&str);
+	if (s1->size_shift==0) {
+	  t=gtk_stock_lookup(CGSTR0(s1),&item);
+	  if (t)
+	    gi=gtk_status_icon_new_from_stock(CGSTR0(s1));
+	  else {
+	    gi=gtk_status_icon_new_from_icon_name(CGSTR0(s1));
+	    if (gi==NULL)
+	      gi=gtk_status_icon_new_from_filename(CGSTR0(s1));
+	  }
+	} else
+	  gi=gtk_status_icon_new();
+      } else {
+	struct object *o1;
+	GObject *go;
+
+	get_all_args("create",args,"%o",&o1);
+	go=get_gobject(o1);
+	if (GDK_TYPE_PIXBUF==G_TYPE_FROM_INSTANCE(go))
+	  gi=gtk_status_icon_new_from_pixbuf(GDK_PIXBUF(go));
+	else
+	  gi=gtk_status_icon_new();
+      }
+    }
+  } else {
+    GtkWidget *gi;
+    gi=gtk_status_icon_new();
+    THIS->obj=G_OBJECT(gi);
+  }
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
+}
+
+void set_from_pixbuf(?GDK2.Pixbuf pixbuf);
+//! Set the icon from pixbuf.
+
+void set_from_file(string filename);
+//! Set the icon from a file.
+
+void set_from_stock(string stock_id);
+//! Set the icon from a stock icon.
+
+void set_from_icon_name(string icon_name);
+//! Set the icon from the icon called icon_name from the current theme.
+
+int get_storage_type();
+//! Gets the type of icon, e.g. GTK2.IMAGE_PIXMAP, GTK2.IMAGE_PIXBUF, etc.
+
++GDK2.Pixbuf get_pixbuf()
+//! Get the pixbuf.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GdkPixbuf *gp;
+
+    gp=gtk_status_icon_get_pixbuf(GTK_STATUS_ICON(THIS->obj));
+    if (gp) {
+      g_object_ref(gp);
+      push_gobject(gp);
+    } else
+      push_int(0);
+  }
+}
+
+string get_stock();
+//! Gets the id of the stock icon.
+
+string get_icon_name();
+//! Gets the name of the icon.
+
+int get_size();
+//! Gets the size in pixels.
+
+void set_tooltip(string tooltip_text);
+//! Sets the tooltip.
+
+void set_visible(int visible);
+//! Shows or hides a status icon.
+
+int get_visible();
+//! Returns whether the icon is visible or not.
+
+void set_blinking(int blinking);
+//! Makes the status icon start or stop blinking.
+
+int get_blinking();
+//! Returns whether the icon is blinking.
+
+int is_embedded();
+//! Returns whether the status icon is embedded in a notification area.
+
+endrequire;

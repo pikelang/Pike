@@ -1,0 +1,38 @@
+require gtk210;
+/* -*- C -*- */
+class GTK2.RecentChooserWidget;
+inherit GTK2.Vbox;
+inherit GTK2.RecentChooser;
+
+void create(mapping(string:mixed)|GTK2.RecentManager|void props)
+//! Create a new GTK2.RecentChooserWidget.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+
+    if (Pike_sp[-args].type==PIKE_T_MAPPING) {
+      INIT_WITH_PROPS(GTK_TYPE_RECENT_CHOOSER_WIDGET);
+    } else {
+      struct object *o1;
+      GtkRecentManager *grm;
+      GtkWidget *gw;
+
+      get_all_args("create",args,"%o",&o1);
+      grm=GTK_RECENT_MANAGER(get_gobject(o1));
+      if (grm)
+        gw=gtk_recent_chooser_widget_new_for_manager(grm);
+      else
+        gw=gtk_recent_chooser_wdget_new();
+      THIS->obj=G_OBJECT(gw);
+    }
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *gd;
+    gd=gtk_recent_chooser_widget_new();
+    THIS->obj=G_OBJECT(gd);
+  }
+  pgtk2__init_this_object();
+}
+
+endrequire;

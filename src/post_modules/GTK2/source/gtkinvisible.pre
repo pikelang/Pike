@@ -22,3 +22,13 @@ void create(?mapping(string:mixed) props)
   }
   pgtk2__init_this_object();
 }
+
+require gtk22;
+/*
+void set_screen(GD2.Screen screen);
+//! Sets the screen where this object will be displayed.
+
+GDK2.Screen get_screen();
+//! Gets the screen associated with this object.
+*/
+endrequire;

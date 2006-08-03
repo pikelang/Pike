@@ -221,7 +221,6 @@ void set_extra_widget(GTK2.Widget widget);
 //! Gets the extra widget.
 
 /* TODO: *shortcut_folder* *filter* */
-/*
 void add_filter(GTK2.FileFilter filter);
 //! Adds filter to the list of filters that the user can select between.  When
 //! a filter is selected, only files that are passed by that filter are
@@ -256,9 +255,8 @@ void set_filter(GTK2.FileFilter filter);
 //! filter when the list of filters is empty is useful if you want to restrict
 //! the displayed set of files without letting the user change it.
 
-GTK2.FileFilter get_filter();
++GTK2.FileFilter get_filter();
 //! Gets the current filter.
-*/
 
 int add_shortcut_folder(string folder)
 //! Adds a folder to be displayed with the shortcut folders in a file chooser.

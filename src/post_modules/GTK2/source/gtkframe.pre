@@ -86,7 +86,7 @@ array get_label_align()
   }
 }
 
-GTK2.Widget get_label_widget();
++GTK2.Widget get_label_widget();
 //! Retrieves the label widget.
 
 int get_shadow_type();

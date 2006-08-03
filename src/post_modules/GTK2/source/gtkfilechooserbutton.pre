@@ -6,6 +6,9 @@ inherit GTK2.Hbox;
 
 //! Properties:
 //! GTK2.FileChooserDialog dialog
+require gtk210;
+//! int focus-on-click
+endrequire;
 //! string title
 //! int width-chars
 
@@ -46,5 +49,15 @@ int get_width_chars();
 
 void set_width_chars(int n_chars);
 //! Sets the width (in characters) that the button will use.
+endrequire;
 
+require gtk210;
+int get_focus_on_click();
+//! Returns whether the button grabs focus when it is clicked.
+
+void set_focus_on_click(int focus);
+//! Sets whether the button will grab focus when it is clicked with the mouse.
+//! Making mouse clicks not grab focus is useful in places like toolbars where
+//! you don't want the keyboard focus removed from the main area of the
+//! application.
 endrequire;

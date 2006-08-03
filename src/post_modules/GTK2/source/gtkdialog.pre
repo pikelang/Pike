@@ -39,7 +39,7 @@ int run();
 void response(int response_id);
 //! Emits the "response" signal with the given response ID.
 
-GTK2.Widget add_button(string button_text, int response_id);
++GTK2.Widget add_button(string button_text, int response_id);
 //! Adds a button with the given text (or a stock button)
 //! and sets things up so that clicking the button will emit
 //! the "response" signal with the given response_id.

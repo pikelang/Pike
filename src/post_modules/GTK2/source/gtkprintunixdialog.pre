@@ -1,0 +1,70 @@
+require gtk210;
+/* -*- C -*- */
+class GTK2.PrintUnixDialog;
+inherit GTK2.Dialog;
+
+//! Properties:
+//! int current-page
+//! GTK2.PageSetup page-setup
+//! GTK2.PrintSettings print-settings
+//! GTK2.Printer selected-printer
+
+void create(string|mapping(string:mixed) title_or_props, ?GTK2.Window parent)
+//! Creates a new print unix dialog.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  {
+    if (Pike_sp[-args].type==PIKE_T_STRING) {
+      struct pike_string *t;
+      GtkWidget *gp;
+      struct object *o1=NULL;
+
+      get_all_args("create",args,"%T.%o",&t,&o1);
+      ref_push_string(t);
+      f_string_to_utf8(1);
+      gp=gtk_print_unix_dialog_new(CGSTR0(Pike_sp[-1].u.string),get_gobject
+(o1));
+      pop_stack();
+      THIS->object=G_OBJECT(gp);
+    } else {
+      INIT_WITH_PROPS(GTK_TYPE_PAGE_SETUP_UNIX_DIALOG);
+    }
+    pgtk2_pop_n_elems(args);
+  }
+  pgtk2__init_this_object();
+}
+
+void set_page_setup(GTK2.PageSetup page_setup);
+//! Sets the page setup of this dialog.
+
++GTK2.PageSetup get_page_setup();
+//! Gets the page setup that is used.
+
+void set_current_page(int page);
+//! Sets the current page number.  If page is not -1, this enables the
+//! current page choice for the range of pages to print.
+
+int get_current_page();
+//! Gets the current page of this dialog.
+
+void set_settings(?GTK2.PrintSettings print_settings);
+//! Sets the GTK2.PrintSettings from which the page setup dialog takes its
+//! values.
+
++GTK2.PrintSettings get_settings();
+//! Gets the current print settings from the dialog.
+
++GTK2.Printer get_selected_printer();
+//! Gets the currently selected printer.
+
+void add_custom_tab(GTK2.Widget child, GTK2.Widget label);
+//! Adds a custom tab to the print dialog.
+
+void set_manual_capabilities(int capabilities);
+//! This lets you specify the printing capabilities your application supports.
+//! For instance, if you can handle scaling the output then you pass
+//! GTK2.PRINT_CAPABILITY_SCALE.  If you don't pass that, then the dialog will
+//! only let you select the scale if the printing system automatically
+//! handles scaling.
+endrequire;

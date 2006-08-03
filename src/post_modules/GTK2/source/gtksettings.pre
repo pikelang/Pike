@@ -7,6 +7,9 @@ inherit G.Object;
 //! int gtk-button-images
 //! int gtk-can-change-accels
 //! string gtk-color-palette
+require gtk210;
+//! string gtk-color-scheme
+endrequire;
 //! int gtk-cursor-blink
 //! int gtk-cursor-blink-time
 //! string gtk-cursor-theme-name
@@ -14,6 +17,10 @@ inherit G.Object;
 //! int gtk-dnd-drag-threshold
 //! int gtk-double-click-distance
 //! int gtk-double-click-time
+//! int gtk-enable-animations
+require gtk210;
+//! int gtk-entry-password-hint-timeout
+endrequire;
 //! int gtk-entry-select-on-focus
 //! string gtk-font-name
 //! string gtk-icon-sizes
@@ -29,6 +36,9 @@ inherit G.Object;
 //! string gtk-theme-name
 //! int gtk-toolbar-icon-size
 //! int gtk-toolbar-style
+require gtk210;
+//! int gtk-touchscreen-mode
+endrequire;
 //! int gtk-xft-antialias
 //! int gtk-xft-dpi
 //! int gtk-xft-hinting

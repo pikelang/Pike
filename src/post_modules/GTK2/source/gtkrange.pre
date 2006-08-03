@@ -58,13 +58,17 @@ inherit GTK2.Widget;
 //! int stepper-size
 //! int stepper-spacing
 //! int trough-border
+require gtk210;
+//! int trough-side-details
+//! int trough-under-steppers
+endrequire;
 
 signal adjust_bounds;
 signal change_value;
 signal move_slider;
 signal value_changed;
 
-GTK2.Adjustment get_adjustment();
++GTK2.Adjustment get_adjustment();
 //! Gets the W(Adjustment) which is the "model" object for W(Range).
 
 
@@ -125,4 +129,20 @@ void set_value(float value);
 //! range values, it will be clamped to fit inside them.  The range emits the
 //! "value-changed" signal if the value changes.
 
+require gtk210;
+void set_lower_stepper_sensitivity(int sensitivity);
+//! Sets the sensitivity policy for the stepper that points to the 'lower' end
+//! of the GTK2.Range's adjustment.
 
+void get_lower_stepper_sensitivity();
+//! Gets the sensitivity policy for the stepper that points to the 'lower' end
+//! of the GTK2.Range's adjustment.
+
+void set_upper_stepper_sensitivity(int sensitivity);
+//! Sets the sensitivity policy for the stepper that points to the 'upper' end
+//! of the GTK2.Range's adjustment.
+
+void get_upper_stepper_sensitivity();
+//! Gets the sensitivity policy for the stepper that points to the 'upper' end
+//! of the GTK2.Range's adjustment.
+endrequire;

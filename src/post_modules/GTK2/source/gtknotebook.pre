@@ -38,6 +38,10 @@ require gtk24;
 //! int has-forward-stepper
 //! int has-secondary-backward-stepper
 //! int has-secondary-forward-stepper
+require gtk210;
+//! int tab-curvature
+//! int tab-overlap
+endrequire;
 endrequire;
 
 signal change_current_page;
@@ -102,11 +106,22 @@ int get_current_page();
 int page_num(GTK2.Widget widget);
 //! Returns the index for the specified page.
 
-GTK2.Widget get_nth_page( int index );
++GTK2.Widget get_nth_page( int index );
 //!  Returns the page for the specified index
 
 void set_current_page(int pos);
 //! Go to the specified page
+
+require gtk210;
+void set_group_id(int id);
+//! Sets an group identifier for notebook; notebooks sharing the same group
+//! identifier will be able to exchange tabs via drag and drop. A notebook
+//! with group identifier -1 will not be able to exchange tabs with any other
+//! notebook.
+
+int get_group_id();
+//! Gets the current group identifier.
+endrequire;
 
 void next_page();
 //! Go to the next page
@@ -141,7 +156,7 @@ void popup_enable();
 void popup_disable();
 //! Disable the popup menu (set with insert_page_menu).
 
-GTK2.Widget get_menu_label(GTK2.Widget page);
++GTK2.Widget get_menu_label(GTK2.Widget page);
 //! Retrieves the menu label widget of the page containing child.
 
 require gtk22;
@@ -149,7 +164,7 @@ int get_n_pages();
 //! Get the number of pages.
 endrequire;
 
-GTK2.Widget get_tab_label(GTK2.Widget page);
++GTK2.Widget get_tab_label(GTK2.Widget page);
 //! Returns the tab label widget.
 
 void set_menu_label(GTK2.Widget child, GTK2.Widget label);
@@ -171,7 +186,7 @@ void set_tab_label_text(GTK2.Widget child, string title);
 string get_menu_label_text(GTK2.Widget child);
 //! Retrieves the text of the menu label for the page containing child.
 
-GTK2.Widget get_menu_label(GTK2.Widget page);
++GTK2.Widget get_menu_label(GTK2.Widget page);
 //! Return the menu label widget.
 
 int get_scrollable();
@@ -188,6 +203,14 @@ string get_tab_label_text(GTK2.Widget child);
 
 int get_tab_pos();
 //! Gets the edge at which the tabs are located.
+
+require gtk210;
+int get_tab_reorderable(GTK2.Widget child);
+//! Gets whether the tab can be reordered via drag and drop or not.
+
+int get_tab_detachable(GTK2.Widget child);
+//! Returns whether the tab contents can be detached.
+endrequire;
 
 mapping(string:int) query_tab_label_packing(GTK2.Widget page)
 //! Returns ([ "expand":expandp, "fill":fillp, "pack_type":type ])

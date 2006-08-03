@@ -85,12 +85,12 @@ endrequire;
 void set_icon_widget(GTK2.Widget icon_widget);
 //! Sets icon_widget as the widget used as the icon on the button.
 
-GTK2.Widget get_icon_widget();
++GTK2.Widget get_icon_widget();
 //! Returns the widget used as the icon widget.
 
 void set_label_widget(GTK2.Widget label_widget);
 //! Sets label_widget as the widget used as the label.
 
-GTK2.Widget get_label_widget();
++GTK2.Widget get_label_widget();
 //! Returns the widget used as the label.
 endrequire;

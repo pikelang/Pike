@@ -28,7 +28,7 @@ void create(string|mapping(string:mixed) text_or_props)
   pgtk2__init_this_object();
 }
 
-GTK2.Widget get_accel_widget();
++GTK2.Widget get_accel_widget();
 //! Fetches the widget monitored by this accelerator label.
 
 void set_accel_widget(GTK2.Widget accel_widget);

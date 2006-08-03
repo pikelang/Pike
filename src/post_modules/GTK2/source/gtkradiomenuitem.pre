@@ -2,8 +2,15 @@
 class GTK2.RadioMenuItem;
 inherit GTK2.CheckMenuItem;
 
+
 //! Exactly like W(RadioButton), but it is an menu item.
 //! IMG: GTK2.RadioMenuItem("Menu item")
+
+require gtk28;
+//! Properties:
+//! <p>
+//! GTK2.RadioMenuItem group
+endrequire;
 
 signal group_changed;
 

@@ -54,17 +54,17 @@ void create(?GTK2.Adjustment|mapping(string:mixed)|void hadjustment_or_props,
   pgtk2__init_this_object();
 }
 
-GTK2.Adjustment get_hadjustment();
++GTK2.Adjustment get_hadjustment();
 //! Get the horizontal adjustment.
 
-GTK2.Adjustment get_vadjustment();
++GTK2.Adjustment get_vadjustment();
 //! Get the vertical adjustment.
 
 require gtk28;
-GTK2.HScrollbar get_hscrollbar();
++GTK2.HScrollbar get_hscrollbar();
 //! Returns the horizontal scrollbar.
 
-GTK2.VScrollbar get_vscrollbar();
++GTK2.VScrollbar get_vscrollbar();
 //! Returns the vertical scrollbar.
 endrequire;
 
@@ -98,6 +98,12 @@ void add(GTK2.Widget victim)
 void set_placement(int window_placement);
 //! The location of the window relative to the scrollbars.
 //! One of CONST(GTK_CORNER_)
+
+require gtk10;
+void unset_placement();
+//! Unsets the placement of the contents with respect to the scrollbars for
+//! the scrolled window.
+endrequire;
 
 void set_shadow_type(int type);
 //! Changes the type of shadow drawn around the contents.

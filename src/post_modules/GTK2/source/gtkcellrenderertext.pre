@@ -4,6 +4,9 @@ inherit GTK2.CellRenderer;
 
 //! Properties:
 require pango;
+require gtk210;
+//! int alignment
+endrequire;
 //! Pango.AttrList attributes
 endrequire;
 //! string background

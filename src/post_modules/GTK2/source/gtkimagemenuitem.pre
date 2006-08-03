@@ -42,7 +42,7 @@ void create(string|mapping(string:mixed)|void label)
   pgtk2__init_this_object();
 }
 
-GTK2.Widget get_image();
++GTK2.Widget get_image();
 //! Gets the widget that is currently set as the image.
 
 void set_image(GTK2.Widget image);

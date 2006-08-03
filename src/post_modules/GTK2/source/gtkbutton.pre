@@ -11,6 +11,9 @@ inherit GTK2.Bin;
 //! Properties:
 //! int focus-on-click
 //! GTK2.Widget image
+require gtk210;
+//! int image-position
+endrequire;
 //! string label
 //! int relief
 //! int use-stock
@@ -28,6 +31,10 @@ endrequire;
 require gtk26;
 //! int displace-focus
 endrequire;
+//! int image-spacing
+require gtk210;
+//! int inner-border
+endrequire;
 
 signal activate;
 signal pressed;
@@ -41,7 +48,7 @@ signal enter;
 signal leave;
 //! Called when the mouse leaves the button
 
-void create(string|mapping|void label_or_props)
+void create(string|mapping(string:mixed)|void label_or_props)
 //! If a string is supplied, a W(Label) is created and added to the button.
 {
   pgtk2_verify_not_inited();
@@ -154,6 +161,14 @@ void set_image(GTK2.Widget widget);
 //! Set the image of the button to the given widget.  Note that it depends on
 //! the gtk-button-images setting whether the image will be displayed or not.
 
-GTK2.Widget get_image();
++GTK2.Widget get_image();
 //! Gets the widget that is currently set as the image of the button.
+endrequire;
+
+require gtk210;
+void set_image_position(int position);
+//! Sets the position of the image relative to the text inside the button.
+
+int get_image_position();
+//! Gets the position of the image relative to the text inside the button.
 endrequire;

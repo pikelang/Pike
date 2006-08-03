@@ -17,9 +17,16 @@ inherit GTK2.Container;
 //! </p>
 
 //! Properties:
+require gtk210;
+//! int icon-size
+//! int icon-size-set
+endrequire;
 //! int orientation
 //! int show-arrow
 //! int toolbar-style
+require gtk28;
+//! int tooltips
+endrequire;
 //! <p>
 //! Child properties:
 //! int expand
@@ -64,7 +71,7 @@ int get_item_index(GTK2.ToolItem item);
 int get_n_items();
 //! Returns the number of items on the toolbar.
 
-GTK2.ToolItem get_nth_item(int n);
++GTK2.ToolItem get_nth_item(int n);
 //! Returns the n's item on the toolbar, or empty if the toolbar does not
 //! contain an n'th item.
 

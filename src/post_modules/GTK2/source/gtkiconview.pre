@@ -68,7 +68,7 @@ void create(GTK2.TreeModel|mapping(string:mixed)|void model_or_props)
 void set_model(GTK2.TreeModel model);
 //! Sets the model.
 
-GTK2.TreeModel get_model();
++GTK2.TreeModel get_model();
 //! Gets the model.
 
 void set_text_column(int column);
@@ -89,7 +89,7 @@ void set_pixbuf_column(int column);
 int get_pixbuf_column();
 //! Returns the column with pixbufs.
 
-GTK2.TreePath get_path_at_pos(int x, int y)
++GTK2.TreePath get_path_at_pos(int x, int y)
 //! Finds the path at the point(x,y) relative to widget coordinates.
 {
   pgtk2_verify_inited();

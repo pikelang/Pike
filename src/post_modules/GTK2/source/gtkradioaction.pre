@@ -5,6 +5,9 @@ class GTK2.RadioAction;
 inherit GTK2.ToggleAction;
 
 //! Properties
+require gtk210;
+//! int current-value
+endrequire;
 //! GTK2.RadioAction group
 //! int value
 
@@ -79,5 +82,11 @@ void set_group(GTK2.RadioAction member)
 
 int get_current_value();
 //! Obtains the value property of the currently active member.
+
+require gtk210;
+void set_current_value(int value);
+//! Sets the currently active group member to the member with value property
+//! value.
+endrequire;
 
 endrequire;

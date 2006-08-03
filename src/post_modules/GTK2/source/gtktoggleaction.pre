@@ -5,6 +5,9 @@ class GTK2.ToggleAction;
 inherit GTK2.Action;
 
 //! Properties
+require gtk210;
+//! int active
+endrequire;
 //! int draw-as-radio
 
 signal toggled;

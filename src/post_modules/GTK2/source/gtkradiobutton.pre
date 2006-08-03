@@ -90,12 +90,15 @@ void set_group(GTK2.RadioButton groupmember)
 //! the constructor instead, but if you for some reason want to move
 //! the button to another group, use this function.
 {
-  struct object *o=NULL;
-  GSList *mylist;
-  get_all_args("set_group", args, "%o", &o );
+  pgtk2_verify_inited();
+  {
+    struct object *o=NULL;
+    GSList *mylist;
+    get_all_args("set_group", args, "%o", &o );
 
-  mylist=gtk_radio_button_get_group(GTK_RADIO_BUTTON(get_gobject(o)));
-  gtk_radio_button_set_group(GTK_RADIO_BUTTON(THIS->obj),mylist);
+    mylist=gtk_radio_button_get_group(GTK_RADIO_BUTTON(get_gobject(o)));
+    gtk_radio_button_set_group(GTK_RADIO_BUTTON(THIS->obj),mylist);
+  }
   RETURN_THIS();
 }
 

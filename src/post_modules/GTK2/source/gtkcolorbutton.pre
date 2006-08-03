@@ -53,23 +53,33 @@ void create(GDK2.Color|mapping(string:mixed)|int|void red_or_props, ?int green, 
   pgtk2__init_this_object();
 }
 
-void set_color(int red, int green, int blue)
+void set_color(int|GDK2.Color red, ?int green, ?int blue)
 //! Sets the current color.
 {
   pgtk2_verify_inited();
   {
-    GdkColor gcolor;
-    if (args<3)
-      Pike_error("Too few arguments, %d reguired, got %d\n",3,args);
-    gcolor.red=(guint16)PGTK_GETINT(&Pike_sp[0-args]);
-    gcolor.green=(guint16)PGTK_GETINT(&Pike_sp[1-args]);
-    gcolor.blue=(guint16)PGTK_GETINT(&Pike_sp[2-args]);
-    gtk_color_button_set_color(GTK_COLOR_BUTTON(THIS->obj),&gcolor);
+    GdkColor gcolor,*gc;
+ 
+    if (args==3) {
+      INT_TYPE red,green,blue;
+ 
+      get_all_args("set_color",args,"%i%i%i",&red,&green,&blue);
+      gcolor.red=red;
+      gcolor.green=green;
+      gcolor.blue=blue;
+      gc=&gcolor;
+    } else {
+      struct object *o1;
+
+      get_all_args("set_color",args,"%o",&o1);
+      gc=(GdkColor *)get_gdkobject(o1,color);
+    }
+    gtk_color_button_set_color(GTK_COLOR_BUTTON(THIS->obj),gc);
   }
   RETURN_THIS();
 }
 
-GDK2.Color get_color()
++GDK2.Color get_color()
 //! Returns the current color.
 {
   pgtk2_verify_inited();
@@ -102,6 +112,7 @@ void set_title(string title);
 string get_title();
 //! Get the title.
 
+/*
 void set_property(string property, mixed value)
 //! Set property.
 {
@@ -137,7 +148,6 @@ mixed get_property(string property)
       if (color==NULL)
 	SIMPLE_OUT_OF_MEMORY_ERROR("get_property",sizeof(GdkColor));
       g_object_get(G_OBJECT(THIS->obj),prop->str,&color,NULL);
-/*      color=g_value_get_boxed(G_BOXED(v),color); */
       pgtk2_pop_n_elems(args);
       push_gdkobject(color,color);
     } else {
@@ -148,6 +158,6 @@ mixed get_property(string property)
     }
   }
 }
-
+*/
 endrequire;
 

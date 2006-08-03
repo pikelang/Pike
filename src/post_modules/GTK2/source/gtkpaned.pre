@@ -68,10 +68,10 @@ void pack2(GTK2.Widget widget, int resize, int shrink);
 //! Add a child to the bottom or right pane.
 
 require gtk24;
-GTK2.Widget get_child1();
++GTK2.Widget get_child1();
 //! Obtains the first child of the paned widget.
 
-GTK2.Widget get_child2();
++GTK2.Widget get_child2();
 //! Obtains the second child of the paned widget.
 endrequire;
 

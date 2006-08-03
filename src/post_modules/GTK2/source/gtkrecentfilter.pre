@@ -1,0 +1,57 @@
+require gtk210;
+/* -*- C -*- */
+class GTK2.RecentFilter;
+inherit GTK2.Object;
+
+void create(?mapping(string:mixed) props)
+//! Create a new GTK2.RecentFilter.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_RECENT_FILTER);
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *gd;
+    gd=gtk_recent_filter_new();
+    THIS->obj=G_OBJECT(gd);
+  }
+  pgtk2__init_this_object();
+}
+
+string get_name();
+//! Gets the human-readable name for the filter.
+
+void set_name(string name);
+//! Sets the human-readable name of the filter; this is the string that
+//! will be displayed in the recently used resources selector user
+//! interface if there is a selectable list of filters.
+
+void add_mime_type(string mime_type);
+//! Adds a rule that allows resources based on their registered MIME type.
+
+void add_pattern(string pattern);
+//! Adds a rule that allows resources based on a pattern matching their
+//! display name.
+
+void add_pixbuf_formats();
+//! Adds a rule allowing image files in the formats supported by GdkPixbuf.
+
+void add_application(string application);
+//! Adds a rule that allows resources based on the name of the application
+//! that has registered them.
+
+void add_group(string group);
+//! Adds a rule that allows resources based on the name of the group to
+//! which they belong.
+
+void add_age(int days);
+//! Adds a rule that allows resources based on their age - that is, the
+//! number of days elapsed since they were last modified.
+
+/*
+int get_needed();
+//! Gets the fields that need to be filled in for the structure passed to
+//! filter().
+*/
+endrequire;

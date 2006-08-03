@@ -1,0 +1,85 @@
+require gtk210;
+/* -*- C -*- */
+class GTK2.PrintJob;
+inherit G.Object;
+
+//! A GTK2.PrintJob object represents a job that is sent to a printer.
+//! You only need to deal directly with print jobs if you use the non-portable
+//! GTK2.PrintUnixDialog API.
+
+//! Properties:
+//! GTK2.PageSetup page-setup
+//! GTK2.Printer printer
+//! GTK2.PrintSettings settings
+//! string title
+//! int track-print-status
+
+signal status_changed;
+
+void create(mapping(string:mixed)|string props_or_title,
+                    ?GTK2.Printer printer,
+		    ?GTK2.PrintSettings settings,
+		    ?GTK2.PageSetup page_setup)
+//! Create a new GTK2.PrintJob.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args==1) {
+    INIT_WITH_PROPS(GTK_TYPE_PRINT_JOB);
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkPrintJob *gpj;
+    gchar *title;
+    struct object *o1,*o2,*o3;
+
+    get_all_args("create",args,"%s%o%o%o",&name,&o1,&o2,&o3);
+    gpj=gtk_printer_job_new(name,get_gobject(o1),get_gobject(o2),get_gobject(o3));
+    pgtk2_pop_n_elems(args);
+    THIS->obj=G_OBJECT(gpj);
+  }
+  pgtk2__init_this_object();
+}
+
++GTK2.PrintSettings get_settings();
+//! Gets the settings of the print job.
+
++GTK2.Printer get_printer();
+//! Gets the printer of the print job.
+
+string get_title();
+//! Gets the job's title.
+
+int get_status();
+//! Gets the status of the print job.
+
+int set_source_file(string filename)
+//! Make the GTK2.PrintJob send an existing document to the printing system.
+//! The file can be in any format understood by the platforms printing system
+//! (typically PostScript, but on many platforms PDF may work too).
+{
+  pgtk2_verify_inited();
+  {
+    GError *error=NULL;
+    gchar *filename;
+    int res;
+
+    get_all_args("set_source_file",args,"%s",&filename);
+    res=gtk_print_job_set_source_file(GTK_PRINT_JOB(THIS->obj),filename,&error);
+    pgtk2_pop_n_elems(args);
+    push_int(res);
+  }
+}
+
+void set_track_print_status(int track_status);
+//! If track_status is TRUE, the print job will try to continue report on the
+//! status of the print job in the printer queues and printer. This can allow
+//! your application to show things like "out of paper" issues, and when the
+//! print job actually reaches the printer.
+//! <p>
+//! This function is often implemented using some form of polling, so it should
+//! not be enabled unless needed.
+
+int get_track_print_status();
+//! Returns whether jobs will be tracked after printing.
+
+endrequire;

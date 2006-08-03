@@ -6,11 +6,18 @@ class GTK2.TextAttributes;
 void create()
 //! Create a W(TextAttributes) widget.
 {
-  GtkTextAttributes *gta;
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  {
+    GtkTextAttributes *gta;
+/*
   gta=g_malloc(sizeof(GtkTextAttributes));
   if (gta==NULL)
     SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(GtkTextAttributes));
-  THIS->obj=(void *)gta;
+*/
+    gta=gtk_text_attributes_new();
+    THIS->obj=(void *)gta;
+  }
   pgtk2_pop_n_elems(args);
   pgtk2__init_this_object();
 }
@@ -51,6 +58,7 @@ void destroy()
   push_int(0);
 }
 
+/*
 int get_justification()
 //! Get justification.
 {
@@ -175,4 +183,4 @@ int get_realized()
   pgtk2_pop_n_elems(args);
   push_int(((GtkTextAttributes *)THIS->obj)->realized);
 }
-
+*/

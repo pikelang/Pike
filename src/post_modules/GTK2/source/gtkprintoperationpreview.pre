@@ -1,0 +1,16 @@
+require gtk210;
+/* -*- C -*- */
+class GTK2.PrintOperationPreview;
+mixin_for G.Object;
+
+void end_preview();
+//! Ends a preview.
+
+int is_selected(int page_nr);
+//! Returns whether the given page is included in the set of pages that have
+//! been selected for printing.
+
+void render_page(int page_nr);
+//! Renders a page to the preview.
+
+endrequire;

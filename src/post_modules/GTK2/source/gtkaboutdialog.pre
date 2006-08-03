@@ -23,7 +23,7 @@ inherit GTK2.Dialog;
 //! GDK2.Color link-color
 
 void create(?mapping(string:mixed) props)
-//! Create a new GTK.AboutDialog.
+//! Create a new GTK2.AboutDialog.
 {
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
@@ -283,7 +283,7 @@ string get_translator_credits();
 void set_translator_credits(string credits);
 //! Sets the translator credits.
 
-GDK2.Pixbuf get_logo();
++GDK2.Pixbuf get_logo();
 //! Returns the pixbuf displayed as logo.
 
 void set_logo(GDK2.Pixbuf logo);

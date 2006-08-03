@@ -1,0 +1,152 @@
+/* -*- C -*- */
+require gtk24;
+class GTK2.TreeModelFilter;
+inherit G.Object;
+inherit GTK2.TreeModel;
+inherit GTK2.TreeDragSource;
+
+//! Properties:
+//! GTK2.TreeModel child-model
+//! GTK2.TreePath virtual-root
+
+void create(GTK2.TreeModel model, GTK2.TreePath root)
+//! Create a new GTK2.TreeModel, with model as the child model.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  {
+    struct object *o1,*o2;
+    GtkTreeModel *gtm;
+
+    get_all_args("create",args,"%o",&o1);
+    gtm=gtk_tree_model_filter_new(GTK_TREE_MODEL(get_gobject(o1)),
+			(GtkTreePath *)get_pg2object(o2,pgtk2_tree_path_program));
+     THIS->obj=G_OBJECT(gtm);
+  }
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
+}
+
+%{
+int pgtk2_model_filter_visible_callback(GtkTreeModel *model,
+					GtkTreeIter *iter,
+					struct signal_data *d) {
+  int res;
+  push_gobject(model);
+  push_gobjectclass(iter,pgtk2_tree_iter_program);
+  push_svalue(&d->args);
+  apply_svalue(&d->cb,3);
+  res=Pike_sp[-1].u.integer;
+  pop_stack();
+  return res;
+}
+%}
+
+void set_visible_func(function f, mixed user_data)
+//! Sets the comparison function used when sorting to be f.  If the current
+//! sort column id of this sortable is the same as column, then the model will
+//! sort using this function.
+{
+  pgtk2_verify_inited();
+  {
+    struct svalue *sv1,*sv2;
+    struct signal_data *sd;
+
+    get_all_args("set_visible_func",args,"%*%*",&sv1,&sv2);
+    sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
+    if (sd==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("set_visible_func",sizeof(struct signal_data));
+    assign_svalue_no_free(&sd->cb,sv1);
+    assign_svalue_no_free(&sd->args,sv2);
+    gtk_tree_model_filter_set_visible_func(
+		GTK_TREE_MODEL_FILTER(THIS->obj),
+		(GtkTreeModelFilterVisibleFunc)pgtk2_model_filter_visible_callback,
+		sd,(GtkDestroyNotify)pgtk2_free_signal_data);
+  }
+  RETURN_THIS();
+}
+
++GTK2.TreePath convert_child_path_to_path(GTK2.TreePath child_path)
+//! Converts child_path to a path relative to this model.  That is,
+//! child_path points to a path in the child mode.  The returned path will
+//! point to the same row in the sorted model.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+    GtkTreePath *gtp;
+
+    get_all_args("convert_child_path_to_path",args,"%o",&o1);
+    gtp=gtk_tree_model_filter_convert_child_path_to_path(
+                        GTK_TREE_MODEL_FILTER(THIS->obj),
+                        (GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
+    pgtk2_pop_n_elems(args);
+    push_gobjectclass(gtp,pgtk2_tree_path_program);
+  }
+}
+
++GTK2.TreeIter convert_child_iter_to_iter(GTK2.TreeIter child_iter)
+//! Returns an iter pointing to the row in this model that corresponds
+//! to the row pointed at by child_iter.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+    GtkTreeIter *gti,*gt2;
+
+    get_all_args("convert_child_iter_to_iter",args,"%o",&o1);
+    gt2=g_malloc(sizeof(GtkTreeIter));
+    if (gt2==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("convert_child_iter_to_iter",sizeof(GtkTreeIter
+));
+    gtk_tree_model_filter_convert_child_iter_to_iter(
+                        GTK_TREE_MODEL_FILTER(THIS->obj),gt2,
+                        (GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
+    pgtk2_pop_n_elems(args);
+    push_gobjectclass(gt2,pgtk2_tree_iter_program);
+  }
+}
+
++GTK2.TreePath convert_path_to_child_path(GTK2.TreePath sorted_path)
+//! Converts sorted_path to a path on the child model.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+    GtkTreePath *gtp;
+
+    get_all_args("convert_path_to_child_path",args,"%o",&o1);
+    gtp=gtk_tree_model_filter_convert_path_to_child_path(
+                        GTK_TREE_MODEL_FILTER(THIS->obj),
+                        (GtkTreePath *)get_pg2object(o1,pgtk2_tree_path_program));
+    pgtk2_pop_n_elems(args);
+    push_gobjectclass(gtp,pgtk2_tree_path_program);
+  }
+}
+
++GTK2.TreeIter convert_iter_to_child_iter(GTK2.TreeIter sorted_iter)
+//! Returns an iter pointing to the row in this model that corresponds
+//! to the row pointed at by sorted_iter.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+    GtkTreeIter *gti,*gt2;
+
+    get_all_args("convert_iter_to_child_iter",args,"%o",&o1);
+    gt2=g_malloc(sizeof(GtkTreeIter));
+    if (gt2==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("convert_iter_to_child_iter",sizeof(GtkTreeIter
+));
+    gtk_tree_model_filter_convert_iter_to_child_iter(
+                        GTK_TREE_MODEL_FILTER(THIS->obj),gt2,
+                        (GtkTreeIter *)get_pg2object(o1,pgtk2_tree_iter_program));
+    pgtk2_pop_n_elems(args);
+    push_gobjectclass(gt2,pgtk2_tree_iter_program);
+  }
+}
+
+void refilter();
+//! Emits "row-changed" for each row in the child model, which causes the
+//! filter to re-evaluate whether a row is visible or not.
+endrequire;

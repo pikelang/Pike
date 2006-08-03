@@ -1,0 +1,46 @@
+require gtk210;
+/* -*- C -*- */
+class GTK2.RecentChooserMenu;
+inherit GTK2.Menu;
+inherit GTK2.RecentChooser;
+
+void create(mapping(string:mixed)|GTK2.RecentManager|void props)
+//! Create a new GTK2.RecentChooserMenu.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+
+    if (Pike_sp[-args].type==PIKE_T_MAPPING) {
+      INIT_WITH_PROPS(GTK_TYPE_RECENT_CHOOSER_MENU);
+    } else {
+      struct object *o1;
+      GtkRecentManager *grm;
+      GtkWidget *gw;
+
+      get_all_args("create",args,"%o",&o1);
+      grm=GTK_RECENT_MANAGER(get_gobject(o1));
+      if (grm)
+	gw=gtk_recent_chooser_menu_new_for_manager(grm);
+      else
+	gw=gtk_recent_chooser_menu_new();
+      THIS->obj=G_OBJECT(gw);
+    }
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *gd;
+    gd=gtk_recent_chooser_menu_new();
+    THIS->obj=G_OBJECT(gd);
+  }
+  pgtk2__init_this_object();
+}
+
+int get_show_numbers();
+//! Returns true if numbers should be shown.
+
+void set_show_numbers(int show_numbers);
+//! Sets whether a number should be added to the items of menu. The numbers
+//! are shown to provide a unique character for a mnemonic to be used inside
+//! the menu item's label. Only the first items get a number to avoid
+//! clashes.
+endrequire;

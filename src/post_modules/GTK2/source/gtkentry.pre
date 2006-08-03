@@ -20,6 +20,8 @@ inherit GTK2.Editable;
 //! int visibility
 //! int width-chars
 //! float xalign
+//! <p>
+//! Style properties:
 
 signal activate;
 signal backspace;
@@ -85,6 +87,25 @@ int get_activates_default();
 int get_has_frame();
 //! Gets the value set by set_has_frame().
 
+require gtk210;
+array get_inner_border()
+//! This function returns the entry's inner-border property.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GtkBorder *gb;
+
+    gb=gtk_entry_get_inner_border(GTK_ENTRY(THIS->obj));
+    push_int(gb->left);
+    push_int(gb->right);
+    push_int(gb->top);
+    push_int(gb->bottom);
+    f_aggregate(4);
+  }
+}
+endrequire;
+
 int get_width_chars();
 //! Gets the value set by set_width_chars().
 
@@ -96,6 +117,35 @@ void set_activates_default(int setting);
 
 void set_has_frame(int setting);
 //! Sets whether the entry has a beveled frame around it.
+
+require gtk210;
+void set_inner_border(array border)
+//! Sets the inner-border property to border, or clears it if 0 is passed.
+//! The inner-border is the area around the entry's text, but inside its
+//! frame.
+//! <p>
+//! If set, this property overrides the inner-border style property.
+//! Overriding the style-provided border is useful when you want to do
+//! in-place editing of some text in a canvas or list widget, where
+//! pixel-exact positioning of the entry is important.
+{
+  pgtk2_verify_inited();
+  {
+    struct array *a;
+    GtkBorder gb;
+
+    get_all_args("set_inner_border",args,"%A",&a);
+    if (a==NULL || a->size!=4)
+      Pike_error("Invalid array.\n");
+    gb.left=PGTK_GETINT(ITEM(a)[0]);
+    gb.right=PGTK_GETINT(ITEM(a)[1]);
+    gb.top=PGTK_GETINT(ITEM(a)[2]);
+    gb.bottom=PGTK_GETINT(ITEM(a)[3]);
+    gtk_entry_set_inner_border(GTK_ENTRY(THIS->obj),&gb);
+  }
+  RETURN_THIS();
+}
+endrequire;
 
 void set_width_chars(int n_chars);
 //! changes the size request of the entry to be about the right size for
@@ -118,7 +168,7 @@ float get_alignment();
 endrequire;
 
 require pango;
-Pango.Layout get_layout();
++Pango.Layout get_layout();
 //! Gets the Pango.Layout used to display the entry.  The layout is useful to
 //! e.g. convert text positions to pixel positions, in combination with
 //! get_layout_offsets().
@@ -176,7 +226,7 @@ void set_completion(GTK2.EntryCompletion completion);
 //! configuration of the completion mechanism is done on completion using
 //! the GTK2.EntryCompletion API.
 
-GTK2.EntryCompletion get_completion();
++GTK2.EntryCompletion get_completion();
 //! Returns the completion object.
 endrequire;
 

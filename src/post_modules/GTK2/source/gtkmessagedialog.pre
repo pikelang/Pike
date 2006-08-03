@@ -9,14 +9,20 @@ inherit GTK2.Dialog;
 
 //! Properties:
 //! int buttons
+require gtk210;
+//! GTK2.Widget image
+endrequire;
 //! int message-type
+require gtk210;
+//! string secondary-text
+endrequire;
 //! <p>
 //! Style properties:
 //! int message-border
 //! int use-separator
 
-void create(int flags, int type, int buttons, string message,
-	    ?GTK2.Window parent)
+void create(mapping(string:mixed)|int flags, ?int type, ?int buttons,
+	    ?string message, ?GTK2.Window parent)
 //! Creates a new message dialog, which is a simple dialog with an icon
 //! indicating the dialog type (error, warning, etc) and some text the user
 //! may want to see.  When the user clicks a button a "response" signal is
@@ -25,7 +31,7 @@ void create(int flags, int type, int buttons, string message,
 {
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
-  {
+  if (args>1) {
     INT_TYPE flags,type,buttons;
     struct object *o1=NULL;
     struct pike_string *message;
@@ -40,6 +46,8 @@ void create(int flags, int type, int buttons, string message,
     gmd=gtk_message_dialog_new(GTK_WINDOW(get_gobject(o1)),flags,type,
 			       buttons,msg2,NULL);
     THIS->obj=G_OBJECT(gmd);
+  } else {
+    INIT_WITH_PROPS(GTK_TYPE_MESSAGE_DIALOG);
   }
   pgtk2_pop_n_elems(args+1);
   pgtk2__init_this_object();
@@ -49,6 +57,11 @@ require gtk24;
 void set_markup(string text);
 //! Sets the text of the message dialog to be text, which is marked up with
 //! the Pango text markup language.
+endrequire;
+
+require gtk210;
+void set_image(GTK2.Image image);
+//! Sets the dialog's image to image.
 endrequire;
 
 require gtk26;
@@ -68,8 +81,8 @@ void format_secondary_text(string text)
     t2=GSTR0(Pike_sp[-1].u.string);
     gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(THIS->obj),
 		t2,NULL);
+    pop_stack();
   }
-  pgtk2_pop_n_elems(args+1);
   RETURN_THIS();
 }
 
@@ -90,8 +103,8 @@ void format_secondary_markup(string text)
     t2=GSTR0(Pike_sp[-1].u.string);
     gtk_message_dialog_format_secondary_markup(GTK_MESSAGE_DIALOG(THIS->obj),
 		t2,NULL);
+    pop_stack();
   }
-  pgtk2_pop_n_elems(args+1);
   RETURN_THIS();
 }
 endrequire;

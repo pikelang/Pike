@@ -1,0 +1,304 @@
+require gtk210;
+/* -*- C -*- */
+class GTK2.PrintSettings;
+inherit G.Object;
+
+//! A GTK2.PrintSettings object represents the settings of a print dialog
+//! in a system-independent way. The main use for this object is that once
+//! you've printed you can get a settings object that represents the settings
+//! the user chose, and the next time you print you can pass that object in
+//! so that the user doesn't have to re-set all his settings.
+
+//! <p>
+//! Recognized keys:
+//! printer
+//! orientation
+//! paper-format
+//! paper-width
+//! paper-height
+//! use-color
+//! collate
+//! reverse
+//! duplex
+//! quality
+//! n-copies
+//! number-up
+//! resolution
+//! scale
+//! print-pages
+//! page-ranges
+//! page-set
+//! default-source
+//! media-type
+//! dither
+//! finishings
+//! output-bin
+//! output-file-format (PS, PDF)
+//! output-uri (file://)
+//! win32-driver-extra
+//! win32-driver-version
+
+void create(?mapping(string:mixed) props)
+//! Create a new GTK2.PrintSettings.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args) {
+    INIT_WITH_PROPS(GTK_TYPE_PRINT_SETTINGS);
+    pgtk2_pop_n_elems(args);
+  } else {
+    GtkWidget *ga;
+    ga=gtk_print_settings_new();
+    THIS->obj=G_OBJECT(ga);
+  }
+  pgtk2__init_this_object();
+}
+
++GTK2.PrintSettings copy();
+//! Returns a copy.
+
+int has_key(string key);
+//! Returns true, if a value is associated with key.
+
+string get(string key);
+//! Loops up the string value associated with key.
+
+void set(string key, string value);
+//! Associates value with key.
+
+void unset(string key);
+//! Removes any value associated with key.
+
+int get_bool(string key);
+//! Returns the boolean represented by the value that is associated with key.
+//! <p>
+//! The string "true" represents TRUE, any other string FALSE.
+
+void set_bool(string key, int value);
+//! Sets key to a boolean value.
+
+float get_double(string key);
+//! Returns the double value associated with key, or 0.0.
+
+float get_double_with_default(string key, float def);
+//! Returns the floating point number represented by the value that is
+//! associated with key, or def if the value does not represent a floating
+//! point number.
+
+void set_double(string key, float value);
+//! Sets key to a double value.
+
+float get_length(string key, int unit);
+//! Returns the value associated with key, interpreted as a length.  The
+//! returned value is converted to units.
+
+void set_length(string key, float value, int unit);
+//! Associates a length in units of unit with key.
+
+int get_int(string key);
+//! Returns the integer value of key, or 0.
+
+int get_int_with_default(string key, int def);
+//! Returns the value of key, interpreted as an integer, or the default value.
+
+void set_int(string key, int value);
+//! Sets key to an integer value.
+
+string get_printer();
+//! Return printer.
+
+void set_printer(string printer);
+//! Set printer.
+
+int get_orientation();
+//! Get the orientation.
+
+void set_orientation(int orientation);
+//! Set orientation.
+
++GTK2.PaperSize get_paper_size()
+//! Gets the paper size.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GtkPaperSize *gps;
+
+    gps=gtk_print_settings_get_paper_size(GTK_PRINT_SETTINGS(THIS->obj));
+    push_gobjectclass(gps,pgtk2_paper_size_program);
+  }
+}
+
+void set_paper_size(GTK2.PaperSize paper_size)
+//! Sets the paper size.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+
+    get_all_args("set_paper_size",args,"%o",&o1);
+    gtk_print_settings_set_paper_size((GtkPaperSize *)(get_pg2object(o1,pgtk2_paper_size_program)));
+  }
+  RETURN_THIS();
+}
+
+float get_paper_width(int unit);
+//! Gets the paper width, converted to unit.
+
+void set_paper_width(float width, int unit);
+//! Sets the paper width.
+
+float get_paper_height(int unit);
+//! Gets the paper height, converted to unit.
+
+void set_paper_height(float height, int unit);
+//! Sets the paper height.
+
+int get_use_color();
+//! Gets whether to use color.
+
+void set_use_color(int use_color);
+//! Sets whether to use color.
+
+int get_collate();
+//! Gets the value of collate.
+
+void set_collate(int collate);
+//! Sets the value of collate.
+
+int get_reverse();
+//! Gets whether to reverse the order of the pages.
+
+void set_reverse(int reverse);
+//! Sets whether to reverse the output.
+
+int get_duplex();
+//! Gets whether to print the output in duplex.
+
+void set_duplex();
+//! Sets the duplex value.
+
+int get_quality();
+//! Get the print quality.
+
+void set_quality(int quality);
+//! Sets the print quality.
+
+int get_n_copies();
+//! Gets the number of copies to print.
+
+void set_n_copies(int num_copies);
+//! Sets the number of copies to print.
+
+int get_number_up();
+//! Gets the number of pages per sheet.
+
+void set_number_up(int number_up);
+//! Sets the number of pages per sheet.
+
+int get_resolution();
+//! Gets the resolution in dpi.
+
+void set_resolution(int resolution);
+//! Sets the resolution in dpi.
+
+float get_scale();
+//! Gets the scale in percent.
+
+void set_scale(float scale);
+//! Sets the scale in percent.
+
+int get_print_pages();
+//! Gets which pages to print.
+
+void set_print_pages(int pages);
+//! Sets the pages to print mode.
+
+array get_page_ranges()
+//! Gets the page ranges to print.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GtkPageRange *gpr;
+    gint num_ranges;
+    int i;
+
+    gpr=gtk_print_settings_get_page_ranges(GTK_PRINT_SETTINGS(THIS->obj),
+			&num_ranges);
+    for (i=0; i<num_ranges; i++) {
+      push_int(gpr[i].start);
+      push_int(gpr[i].end);
+      f_aggregate(2);
+    }
+    f_aggregate(num_ranges);
+  }
+}
+
+void set_page_ranges(array(array) page_ranges)
+//! Sets the page ranges to print.
+{
+  pgtk2_verify_inited();
+  {
+    ONERROR err;
+    struct array *a;
+    int num_ranges,i;
+    GtkPageRange *gpr;
+
+    get_all_args("set_page_ranges",args,"%A",&a);
+    if (a==NULL)
+      Pike_error("Invalid array.\n");
+
+    gpr=xalloc(sizeof(GtkPageRange)*a->size+1);
+    SET_ONERROR(err,xfree,gpr);
+    for (i=num_ranges=0; i<a->size; i++) {
+      if (ITEM(a)[i].type!=PIKE_T_ARRAY)
+	continue;
+      if (ITEM(a)[i].u.array.size!=2)
+	continue;
+      gpr[num_range].start=PGTK_GETINT(ITEM(ITEM(a)[i].u.array)[0]);
+      gpr[num_range++].end=PGTK_GETINT(ITEM(ITEM(a)[i].u.array)[1]);
+    }
+    gtk_print_settings_set_page_ranges(GTK_PRINT_SETTINGS(THIS->obj),
+			gpr,num_ranges);
+    CALL_AND_UNSET_ONERROR(err);
+  }
+  RETURN_THIS();
+}
+
+int get_page_set();
+//! Gets the set of pages to print.
+
+void set_page_set(int page_set);
+//! Sets the set of pages to print.
+
+string get_default_source();
+//! Gets the default source.
+
+void set_default_source(string def);
+//! Sets the default source.
+
+string get_media_type();
+//! Gets the media type.
+
+void set_media_type(string media_type);
+//! Sets the media type.
+
+string get_dither();
+//! Gets the type of dithering that is used.
+
+void set_dither(string dither);
+//! Sets the type of dithering that is used.
+
+string get_finishings();
+//! Gets the finishings.
+
+void set_finishings(string finishings);
+//! Sets the finishings.
+
+string get_output_bin();
+//! Gets the output bin.
+
+void set_output_bin();
+//! Sets the output bin.
+endrequire;

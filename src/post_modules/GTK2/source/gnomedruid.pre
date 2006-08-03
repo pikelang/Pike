@@ -1,4 +1,5 @@
 /* -*- C -*- */
+not gtk210;
 require gnomeui;
 
 class Gnome2.Druid;
@@ -82,4 +83,5 @@ void insert_page(?Gnome2.DruidPage back_page, Gnome2.DruidPage page);
 void set_page(Gnome2.DruidPage page);
 //! This will make page the currently showing page in the druid. page
 //! must already be in the druid.
-
+endrequire;
+endnot;

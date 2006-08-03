@@ -4,5 +4,5 @@ inherit GTK2.Container;
 
 //! A container that can only contain one child.
 
-GTK2.Widget get_child();
++GTK2.Widget get_child();
 //! Return the child.
