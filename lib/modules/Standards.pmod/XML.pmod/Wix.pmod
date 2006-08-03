@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Wix.pmod,v 1.21 2005/12/20 18:31:52 jonasw Exp $
+// $Id: Wix.pmod,v 1.22 2006/08/03 15:02:46 mast Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -216,10 +216,10 @@ class Directory
       ]);
       if (source) {
 	attrs->src = replace(source, "/", "\\");
-      }
-      if (has_suffix(lower_case(source), ".ttf")) {
-	// Orca doesn't like us otherwise...
-	attrs->DefaultLanguage="1033";
+	if (has_suffix(lower_case(source), ".ttf")) {
+	  // Orca doesn't like us otherwise...
+	  attrs->DefaultLanguage="1033";
+	}
       }
       return WixNode("File", attrs);
     }
