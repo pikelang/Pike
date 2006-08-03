@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.76 2006/07/01 23:53:19 mast Exp $
+# $Id: configure.in,v 1.77 2006/08/03 12:11:23 mast Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -94,7 +94,7 @@ AC_HAVE_FUNCS(syslog link symlink readlink resolvepath realpath chown \
 	chroot fchroot uname sysinfo gethostname gethostbyname getservbyname \
         getgrnam_r getgrent_r getgrgid_r \
         getpwnam_r getpwent_r getpwuid_r \
-        getspnam_r innetgr utime sleep usleep nanosleep \
+	getspnam_r innetgr utime _utime sleep usleep nanosleep \
         getrlimit setrlimit setproctitle \
         setitimer getitimer mmap munmap \
 	gettimeofday settimeofday prctl inet_ntoa inet_ntop getaddrinfo)

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.179 2006/04/19 14:29:54 nilsson Exp $
+|| $Id: system.c,v 1.180 2006/08/03 12:11:23 mast Exp $
 */
 
 /*
@@ -522,7 +522,7 @@ void f_chown(INT32 args)
 }
 #endif
 
-#ifdef HAVE_UTIME
+#if defined (HAVE_UTIME) || defined (HAVE__UTIME)
 /*! @decl void utime(string path, int atime, int mtime)
  *!
  *! Set the last access time and last modification time for the
@@ -555,7 +555,11 @@ void f_utime(INT32 args)
   b.modtime=mtime;
   do {
     THREADS_ALLOW_UID();
+#ifdef HAVE__UTIME
+    err = _utime (path, &b);
+#else
     err = utime(path, &b);
+#endif
     THREADS_DISALLOW_UID();
     if (err >= 0 || errno != EINTR) break;
     check_threads_etc();
