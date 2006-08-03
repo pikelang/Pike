@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.159 2006/08/02 20:22:04 mast Exp $
+# $Id: Makefile,v 1.160 2006/08/03 14:52:45 mast Exp $
 #
 # Meta Makefile
 #
@@ -334,6 +334,9 @@ xenofarm_export:
 
 bin_export:
 	@$(DO_MAKE) "METATARGET=bin_export" _make_in_builddir
+
+wix:
+	@$(DO_MAKE) "METATARGET=wix" _make_in_builddir
 
 feature_list:
 	@$(DO_MAKE) "METATARGET=feature_list" _make_in_builddir
