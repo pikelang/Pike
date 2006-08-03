@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.12 2006/08/02 13:42:31 ldillon Exp $
+|| $Id: support.c,v 1.13 2006/08/03 16:49:49 ldillon Exp $
 */
 
 #include <version.h>
@@ -511,6 +511,15 @@ static int pgtk2_push_gdk_rectangle_param(const GValue *a) {
 static int pgtk2_push_int_param(const GValue *a) {
   LONGEST retval;
   switch (G_VALUE_TYPE(a)) {
+    case G_TYPE_UINT:
+      retval=(LONGEST)g_value_get_uint(a);
+      break;
+    case G_TYPE_INT64:
+      retval=(LONGEST)g_value_get_int64(a);
+      break;
+    case G_TYPE_UINT64:
+      retval=(LONGEST)g_value_get_uint64(a);
+      break;
     case G_TYPE_INT:
       retval=(LONGEST)g_value_get_int(a); 
       break;
@@ -621,6 +630,8 @@ static void build_push_callbacks() {
   CB( G_TYPE_STRING,           pgtk2_push_string_param );
 
   CB( G_TYPE_INT,              pgtk2_push_int_param );
+  CB( G_TYPE_INT64,              pgtk2_push_int_param );
+  CB( G_TYPE_UINT64,              pgtk2_push_int_param );
   CB( G_TYPE_ENUM,             pgtk2_push_int_param );
   CB( G_TYPE_FLAGS,            pgtk2_push_int_param );
   CB( G_TYPE_BOOLEAN,          pgtk2_push_int_param );
@@ -905,7 +916,14 @@ void pgtk2_set_property(GObject *g, char *prop, struct svalue *sv) {
     case G_TYPE_POINTER:
     case G_TYPE_BOXED:
     case G_TYPE_PARAM:
-      Pike_error("Unable to handle type %s.\n",g_type_name(gps->value_type));
+      {
+	if (gps->value_type==g_type_from_name("GdkColor")) {
+	  GdkColor *gc;
+	  gc=(GdkColor *)get_gdkobject(sv->u.object,color);
+	  g_object_set(g,prop,gc,NULL);
+	} else
+	Pike_error("Unable to handle type %s.\n",g_type_name(gps->value_type));
+      }
       break;
     default:
       g_object_set(g,prop,PGTK_GETINT(sv),NULL);
@@ -934,7 +952,8 @@ void pgtk2__low_get_property(GObject *g, char *prop) {
     push_gobject(o);
     return;
   }
-  if (gps->value_type==GTK_TYPE_TREE_MODEL) {
+/*  if (gps->value_type==GTK_TYPE_TREE_MODEL) { */
+  if (G_TYPE_IS_INTERFACE(gps->value_type)) {
     GObject *o;
     g_object_get(g,prop,&o,NULL);
     push_gobject(o);
@@ -1042,7 +1061,18 @@ void pgtk2__low_get_property(GObject *g, char *prop) {
     case G_TYPE_POINTER:
     case G_TYPE_PARAM:
     default:
-      Pike_error("Unable to handle type %s.\n",g_type_name(gps->value_type));
+      {
+	if (gps->value_type==g_type_from_name("GdkColor")) {
+	  GdkColor *gc;
+	  gc=g_malloc(sizeof(GdkColor));
+	  if (gc==NULL)
+	    Pike_error("Out of memory allocating %d bytes\n",sizeof(GdkColor));
+	  g_object_get(g,prop,gc,NULL);
+	  push_gdkobject(gc,color);
+	} else {
+	  Pike_error("Unable to handle type %s.\n",g_type_name(gps->value_type));
+	}
+      }
       break;
   }
 }
@@ -1233,3 +1263,17 @@ void pgtk2_marshaller(GClosure *closure,
   callback=(pgtk2_marshal_func)(marshal_data?marshal_data:cc->callback);
   callback(data1,data2,n_params-1,param_values+1,return_value);
 }
+
+int pgtk2_tree_view_row_separator_func(GtkTreeModel *model,
+				       GtkTreeIter *iter,
+				       struct signal_data *d) {
+  int res;
+  push_gobject(model);
+  push_gobjectclass(iter,pgtk2_tree_iter_program);
+  push_svalue(&d->args);
+  apply_svalue(&d->cb,3);
+  res=Pike_sp[-1].u.integer;
+  pop_stack();
+  return res;
+}
+

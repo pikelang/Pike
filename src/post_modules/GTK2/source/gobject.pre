@@ -221,12 +221,10 @@ int new_signal(string name, array types, string return_type)
 	} else if (is_same_string(ITEM(a)[i].u.string,_STR("float"))) {
 	  param_types[n_params]=G_TYPE_DOUBLE;
 	  n_params++;
-	} else if (is_same_string(ITEM(a)[i].u.string,_STR("string")))
-        {
+	} else if (is_same_string(ITEM(a)[i].u.string,_STR("string"))) {
 	  param_types[n_params]=G_TYPE_STRING;
 	  n_params++;
-	} else if (is_same_string(ITEM(a)[i].u.string,_STR("object")))
-        {
+	} else if (is_same_string(ITEM(a)[i].u.string,_STR("object"))) {
 	  param_types[n_params]=G_TYPE_OBJECT;
 	  n_params++;
 	} else {
