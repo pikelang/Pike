@@ -3,6 +3,7 @@
 *.db binary
 *.gif binary
 *.gz binary
+*.ibd binary
 *.ico binary
 *.pbm binary
 *.png binary
