@@ -849,18 +849,18 @@ Click "Next" to start the installation.</Text>
           <Condition Action="hide"><![CDATA[REMOVE<>""]]></Condition>
         </Control>
       </Dialog>
-      <RadioGroup Property="MaintenanceForm_Action">
-        <RadioButton Text="{\VSI_MS_Sans_Serif13.0_0_0}&amp;Repair [ProductName]" X="0" Y="0" Width="348" Height="17">Repair</RadioButton>
-        <RadioButton Text="{\VSI_MS_Sans_Serif13.0_0_0}Re&amp;move [ProductName]" X="0" Y="18" Width="348" Height="17">Remove</RadioButton>
-      </RadioGroup>
-      <RadioGroup Property="AdminMaintenanceForm_Action">
-        <RadioButton Text="{\VSI_MS_Sans_Serif13.0_0_0}&amp;Repair [ProductName]" X="0" Y="0" Width="348" Height="17">Repair</RadioButton>
-        <RadioButton Text="{\VSI_MS_Sans_Serif13.0_0_0}Re&amp;move [ProductName]" X="0" Y="18" Width="348" Height="17">Remove</RadioButton>
-      </RadioGroup>
-      <RadioGroup Property="FolderForm_AllUsers">
-        <RadioButton Text="{\VSI_MS_Sans_Serif13.0_0_0}&amp;Everyone" X="0" Y="0" Width="342" Height="17">ALL</RadioButton>
-        <RadioButton Text="{\VSI_MS_Sans_Serif13.0_0_0}Just &amp;me" X="0" Y="18" Width="342" Height="17">ME</RadioButton>
-      </RadioGroup>
+      <RadioButtonGroup Property="MaintenanceForm_Action">
+        <RadioButton Text="{\VSI_MS_Sans_Serif13.0_0_0}&amp;Repair [ProductName]" X="0" Y="0" Width="348" Height="17" Value="Repair"/>
+        <RadioButton Text="{\VSI_MS_Sans_Serif13.0_0_0}Re&amp;move [ProductName]" X="0" Y="18" Width="348" Height="17" Value="Remove"/>
+      </RadioButtonGroup>
+      <RadioButtonGroup Property="AdminMaintenanceForm_Action">
+        <RadioButton Text="{\VSI_MS_Sans_Serif13.0_0_0}&amp;Repair [ProductName]" X="0" Y="0" Width="348" Height="17" Value="Repair"/>
+        <RadioButton Text="{\VSI_MS_Sans_Serif13.0_0_0}Re&amp;move [ProductName]" X="0" Y="18" Width="348" Height="17" Value="Remove"/>
+      </RadioButtonGroup>
+      <RadioButtonGroup Property="FolderForm_AllUsers">
+        <RadioButton Text="{\VSI_MS_Sans_Serif13.0_0_0}&amp;Everyone" X="0" Y="0" Width="342" Height="17" Value="ALL"/>
+        <RadioButton Text="{\VSI_MS_Sans_Serif13.0_0_0}Just &amp;me" X="0" Y="18" Width="342" Height="17" Value="ME"/>
+      </RadioButtonGroup>
       <TextStyle Id="VSI_MS_Sans_Serif13.0_0_0" FaceName="MS Sans Serif" Size="9" Red="0" Green="0" Blue="0" />
       <TextStyle Id="VSI_MS_Sans_Serif16.0_1_0" FaceName="MS Sans Serif" Size="12" Red="0" Green="0" Blue="0" Bold="yes" />
       <TextStyle Id="VSI_MS_Shell_Dlg13.0_0_0" FaceName="MS Shell Dlg" Size="9" Red="0" Green="0" Blue="0" />
