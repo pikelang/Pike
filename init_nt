@@ -175,7 +175,11 @@ export NTPORT USE_SPRSH IFS REMOTE_METHOD watcom INCLUDE
 export NT_TOOL_PATH NTCOMPILER PIKE_PATH_TRANSLATE NTLD_LIBRARY_PATH
 
 # Cache data from uname to avoid remote calls.
-. uname --all
+# Use env var since "." doesn't pass arguments in standard sh.
+INIT_UNAME=yes
+export INIT_UNAME
+. $NT_TOOL_PATH/uname
+unset INIT_UNAME
 
 if [ "$#" = "0" ]; then
   case /$SHELL-$TERM in

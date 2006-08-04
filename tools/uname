@@ -1,21 +1,21 @@
 #!/bin/sh
 
-# $Id: uname,v 1.23 2006/08/04 17:01:15 mast Exp $
+# $Id: uname,v 1.24 2006/08/04 19:05:10 mast Exp $
 
 . $NTTOOLS
 
-S=
-R=
-M=
-N=
-V=
-P=
+S=$INIT_UNAME
+R=$INIT_UNAME
+M=$INIT_UNAME
+N=$INIT_UNAME
+V=$INIT_UNAME
+P=$INIT_UNAME
 
 for a in "$@"
 do
   case "$a" in
     --version)
-      ver=`echo "$Revision: 1.23 $" |sed -e 's/.* \(.*\) .*/\1/'`
+      ver=`echo "$Revision: 1.24 $" |sed -e 's/.* \(.*\) .*/\1/'`
       echo "Fake NT uname version $ver by Fredrik Hubinette and others"
       exit 0
     ;;
