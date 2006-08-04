@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.454 2006/08/04 22:32:17 mast Exp $
+# $Id: Makefile.in,v 1.455 2006/08/04 22:44:32 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -631,7 +631,7 @@ clean_here: tidy doc_clean
 	-rm -f interpreter_debug.h lexer?.h
 	-rm -f import-stamp master-stamp headerfiles-stamp
 	-rm -f static-modules-stamp dynamic-modules-stamp post-modules-stamp
-	-rm -f post-module-pike-complete-stamp pike-complete-stamp
+	-rm -f post-module-pike-stamp pike-complete-stamp
 	-rm -rf lib/modules/*
 #	-rm -f lib/master.pike
 
@@ -1136,8 +1136,8 @@ modules/modlist_headers.h: static-modules-stamp
 
 modules/linker_options: static-modules-stamp
 
-post-module-pike-complete-stamp: @BUILD_PIKE@ dynamic-modules-stamp
-	@touch post-module-pike-complete-stamp
+post-module-pike-stamp: @BUILD_PIKE@ dynamic-modules-stamp
+	@touch post-module-pike-stamp
 
 module.o:  modules/modlist_headers.h modules/modlist.h post_modules/modlist_headers.h post_modules/modlist.h
 
@@ -1146,7 +1146,7 @@ tmodule.o:  modules/modlist_headers.h modules/modlist.h
 # Backward compat.
 post_modules: post_module_objects
 
-post_module_objects: $(MODULE_REQUIREMENTS) post-module-pike-complete-stamp @LDSHARED_BASE_REQS@
+post_module_objects: $(MODULE_REQUIREMENTS) post-module-pike-stamp @LDSHARED_BASE_REQS@
 	@MODULE_BUILD_TYPE=@POST_MODULE_BUILD_TYPE@; \
 	export MODULE_BUILD_TYPE; \
 	( cd post_modules && ( rm remake >/dev/null 2>&1 || : ) && \
@@ -1155,7 +1155,7 @@ post_module_objects: $(MODULE_REQUIREMENTS) post-module-pike-complete-stamp @LDS
 	) || exit $$?
 	@touch post-modules-stamp
 
-post-modules-stamp: $(MODULE_REQUIREMENTS) post-module-pike-complete-stamp @LDSHARED_BASE_REQS@
+post-modules-stamp: $(MODULE_REQUIREMENTS) post-module-pike-stamp @LDSHARED_BASE_REQS@
 	@MODULE_BUILD_TYPE=@POST_MODULE_BUILD_TYPE@; \
 	export MODULE_BUILD_TYPE; \
 	( cd post_modules && ( rm remake >/dev/null 2>&1 || : ) && \
