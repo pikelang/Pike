@@ -47,7 +47,7 @@ void set_cairo_context(Cairo.Context cr, float dpi_x, float dpi_y)
     push_text("Cairo.Context");
     APPLY_MASTER("resolv",1);
     cairo_program=program_from_svalue(Pike_sp-1);
-    Pike_sp--; /* Do not free cairo_program */
+    Pike_sp--; // Do not free cairo_program
 
     if (!cairo_program)
       Pike_error("Unable to find cairo module.\n");
