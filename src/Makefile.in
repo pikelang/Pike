@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.452 2006/08/04 15:22:18 mast Exp $
+# $Id: Makefile.in,v 1.453 2006/08/04 18:28:49 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -306,7 +306,7 @@ libpike.a: $(OBJ) modules/linker_options @STATIC_POST_MODULES_LINKOPTS@
 # tpike is only used when dynamic modules aren't. It's a pike with no
 # post modules linked in which is used during building of the post
 # modules.
-tpike-real: main.o $(CORE_OBJ) tmodule.o master-stamp pike.syms modules/linker_options
+tpike-real: main.o $(CORE_OBJ) tmodule.o modules/linker_options
 	-@rm -f tpike tpike.exe
 	$(LD) $(LDFLAGS) main.o $(CORE_OBJ) tmodule.o \
 	  `cat modules/linker_options` \
@@ -314,7 +314,7 @@ tpike-real: main.o $(CORE_OBJ) tmodule.o master-stamp pike.syms modules/linker_o
 
 # Only want tpike to exist for use with $(RUNPIKE) in the modules. We
 # don't want to require it actually being up-to-date.
-tpike:
+tpike: master-stamp
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) tpike-real
 
 # If we build without dynamic modules then tpike is built first with
