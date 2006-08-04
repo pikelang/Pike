@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.449 2006/08/04 01:54:58 mast Exp $
+# $Id: Makefile.in,v 1.450 2006/08/04 14:11:38 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -1137,7 +1137,7 @@ modules/linker_options: static-modules-stamp
 post-module-pike-complete-stamp: @BUILD_PIKE@ dynamic-modules-stamp
 	@touch post-module-pike-complete-stamp
 
-module.o:  modules/modlist_headers.h modules/modlist.h @STATIC_POST_MODULES_MODLIST@
+module.o:  modules/modlist_headers.h modules/modlist.h post_modules/modlist_headers.h post_modules/modlist.h
 
 tmodule.o:  modules/modlist_headers.h modules/modlist.h
 
