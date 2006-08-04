@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.172 2006/08/04 12:20:56 mast Exp $
+// $Id: install.pike,v 1.173 2006/08/04 14:34:19 mast Exp $
 
 #define USE_GTK
 
@@ -45,6 +45,7 @@ array(array(string)) to_export=({});
 
 int export;
 int no_gui;
+int verbose;
 int no_autodoc;
 string include_crt;
 
@@ -2393,7 +2394,7 @@ void dump_modules()
 #ifdef USE_GTK
 	  label1?"--distquiet":
 #endif
-	  "--quiet"});
+	  (verbose ? "--verbose" : "--quiet")});
 
   // Dump 25 modules at a time as to not confuse systems with
   // very short memory for application arguments.
@@ -2850,6 +2851,7 @@ int main(int argc, array(string) argv)
     ({"--wix", Getopt.NO_ARG, ({ "--wix" })}),
     ({"--wix-module", Getopt.NO_ARG, ({ "--wix-module" })}),
     ({"--traditional",Getopt.NO_ARG,({"--traditional"})}),
+    ({"--verbose",Getopt.NO_ARG,({"--verbose"})}),
     ({"--release-crt",Getopt.NO_ARG,({"--release-crt"})}),
     ({"--debug-crt",Getopt.NO_ARG,({"--debug-crt"})}),
     }) ),array opt)
@@ -2870,6 +2872,10 @@ int main(int argc, array(string) argv)
 
 	case "notty":
 	  istty_cache=-1;
+	  break;
+
+	case "--verbose":
+	  verbose=1;
 	  break;
 
 	  // The following two are used to install the right dlls for
