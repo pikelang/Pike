@@ -730,9 +730,12 @@ To create an image in this folder, click "Next". To use a different folder, ente
         <Control Id="BannerText" Type="Text" X="9" Y="9" Width="306" Height="33" Transparent="yes">
           <Text><![CDATA[{\VSI_MS_Sans_Serif16.0_1_0}Welcome to the [ProductName] Network Setup Wizard]]></Text>
         </Control>
+
+	<!-- Local edit: Much nicer copyright text. -->
         <Control Id="CopyrightWarningText" Type="Text" X="9" Y="186" Width="354" Height="66">
-          <Text><![CDATA[{\VSI_MS_Sans_Serif13.0_0_0}WARNING: This computer program is protected by copyright law and international treaties. Unauthorized duplication or distribution of this program, or any portion of it, may result in severe civil or criminal penalties, and will be prosecuted to the maximum extent possible under the law.]]></Text>
+          <Text><![CDATA[{\VSI_MS_Sans_Serif13.0_0_0}Pike is free software, and is released under the GNU General Public License (GPL), GNU Lesser General Public License (LGPL), and Mozilla Public License (MPL). As such, you can modify, extend, use and distribute the source code in mostly any way you like.]]></Text>
         </Control>
+
         <Control Id="WelcomeText" Type="Text" X="9" Y="63" Width="354" Height="114">
           <Text><![CDATA[{\VSI_MS_Sans_Serif13.0_0_0}The installer will guide you through the steps required to install [ProductName] on your computer.]]></Text>
           <Condition Action="show"><![CDATA[Installed="" AND NOT RESUME]]></Condition>
@@ -864,9 +867,12 @@ To install in this folder, click "Next". To install to a different folder, enter
         <Control Id="BannerText" Type="Text" X="9" Y="9" Width="306" Height="33" Transparent="yes">
           <Text><![CDATA[{\VSI_MS_Sans_Serif16.0_1_0}Welcome to the [ProductName] Setup Wizard]]></Text>
         </Control>
+
+	<!-- Local edit: Much nicer copyright text. -->
         <Control Id="CopyrightWarningText" Type="Text" X="9" Y="186" Width="354" Height="66">
-          <Text><![CDATA[{\VSI_MS_Sans_Serif13.0_0_0}WARNING: This computer program is protected by copyright law and international treaties. Unauthorized duplication or distribution of this program, or any portion of it, may result in severe civil or criminal penalties, and will be prosecuted to the maximum extent possible under the law.]]></Text>
+          <Text><![CDATA[{\VSI_MS_Sans_Serif13.0_0_0}Pike is free software, and is released under the GNU General Public License (GPL), GNU Lesser General Public License (LGPL), and Mozilla Public License (MPL). As such, you can modify, extend, use and distribute the source code in mostly any way you like.]]></Text>
         </Control>
+
         <Control Id="WelcomeText" Type="Text" X="9" Y="63" Width="354" Height="114">
           <Text><![CDATA[{\VSI_MS_Sans_Serif13.0_0_0}The installer will guide you through the steps required to install [ProductName] on your computer.]]></Text>
         </Control>
