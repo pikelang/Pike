@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.171 2006/08/04 02:41:42 mast Exp $
+// $Id: install.pike,v 1.172 2006/08/04 12:20:56 mast Exp $
 
 #define USE_GTK
 
@@ -1144,6 +1144,11 @@ void do_export()
     // Clean up dumped files and modules on uninstall.
     recurse_uninstall_file(root->sub_dirs["lib"], "*.o");
 
+    // Note: TARGETDIR is the root install dir for the msi,
+    // PIKE_TARGETDIR might be a different dir if Pike_module.wxs is
+    // included in an installer that wants to install pike somewhere
+    // else.
+
     // We need to have a unique name for the TARGETDIR
     // due to light not rewriting [TARGETDIR] in the
     // property custom action below.
@@ -2067,7 +2072,8 @@ int pre_install(array(string) argv)
 
 #ifdef SUPPORT_WIX
 
-string add_msm (Directory root, string msm_glob, string descr)
+string add_msm (Directory root, string msm_glob, string descr,
+		void|string targetdir)
 {
   if (string pike_build_root = getenv ("PIKE_BUILD_ROOT")) {
     string msm_dir = combine_path (pike_build_root, "msm");
@@ -2101,7 +2107,7 @@ string add_msm (Directory root, string msm_glob, string descr)
       has_suffix (lower_case (msm_file), ".msm") ?
       msm_file[..sizeof (msm_file) - 5] : msm_file;
     root->merge_module (".", combine_path (msm_dir, msm_file),
-			id, "TARGETDIR");
+			id, targetdir || "TARGETDIR");
     return id;
   }
 
@@ -2122,6 +2128,8 @@ void make_wix()
 			     "TARGETDIR");
   /* Workaround for bug in light. */
   root->extra_ids["PIKE_TARGETDIR"] = 1;
+
+  // Note: TARGETDIR and PIKE_TARGETDIR are always the same dir here.
 
   root->merge_module(".", "Pike_module.msm", "Pike", "TARGETDIR");
 
@@ -2187,6 +2195,9 @@ void make_wix()
 		    ->add_child (line_feed);
       error_msg ("Warning: MS debug CRT is included - "
 		 "it is not redistributable.\n");
+      error_msg (#"\
+Warning: Some libs might be linked to the release CRT so you might get
+an extra CRT instance.\n");
     }
   }
 #endif
