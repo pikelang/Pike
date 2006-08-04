@@ -430,7 +430,7 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent)
 			  {
 			    if(last_killed == time()) return;
 			    last_killed=time();
-			    werror("\r\n** Interupted\r\n");
+			    werror("\r\n** Interrupted\r\n");
 			    if(!killed || killed+5 > time())
 			    {
 			      f->write_oob("x");

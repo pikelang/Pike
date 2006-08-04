@@ -368,7 +368,7 @@ int main(int argc, array(string) argv)
   }
   if(!connection->bind((int)argv[1]))
   {
-    werror("Failed to bind port.\n");
+    werror("Failed to bind port: %s\n", strerror (connection->errno()));
     sleep(10);
     exit(1);
   }
