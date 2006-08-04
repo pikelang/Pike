@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.448 2006/08/04 00:48:07 mast Exp $
+# $Id: Makefile.in,v 1.449 2006/08/04 01:54:58 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -214,7 +214,10 @@ SRC_TARGETS= \
 
 # Update the dumped modules, but only if dump_modules has been used earlier.
 all: module_objects post_module_objects pike-complete-stamp tools
-	if [ -f dumpversion ]; then $(MAKE) $(MAKE_FLAGS) dump_modules; else :; fi
+	@if [ -f dumpversion ]; then \
+	  echo "$(MAKE) $(MAKE_FLAGS) dump_modules"; \
+	  $(MAKE) $(MAKE_FLAGS) dump_modules; \
+	else :; fi
 	@if [ "`find . -name '*.fail' -print`" = "" ]; then :; else \
 	  echo; \
 	  echo "Pike compiled and linked ok, but the following file(s) "; \
@@ -344,7 +347,10 @@ pike pike.lib: main.o $(OBJ) master-stamp pike.syms modules/linker_options @STAT
 # of the bytecode methods (e.g. ia32) stores absolute addresses to
 # global structs. That should probably be fixed in them so that dumped
 # modules aren't link order dependent.
-	if [ -f dumpversion ]; then $(MAKE) $(MAKE_FLAGS) delete_dumped_modules; else :; fi
+	@if [ -f dumpversion ]; then \
+	  echo "$(MAKE) $(MAKE_FLAGS) delete_dumped_modules"; \
+	  $(MAKE) $(MAKE_FLAGS) delete_dumped_modules; \
+	else :; fi
 
 # gcov
 gcov: 
@@ -579,13 +585,11 @@ force :
 	@:
 
 pike.ico: $(PACKAGINGDIR)/windows/pike.ico
-	cp "$<" "$@"
+	cp "$<" $@
 
-pike_icon.rc: Makefile
+pike_icon.res: pike.ico
 	echo 'pike ICON pike.ico' > pike_icon.rc
-
-pike_icon.res: pike_icon.rc pike.ico
-	$(RCEXE) pike_icon.rc
+	$(RCEXE) /fo $@ pike_icon.rc
 
 # install
 install: pike-complete-stamp tools
@@ -613,6 +617,7 @@ tidy:
 	-rm -f conftest.* hdrlist.h a.out.exe
 	-rm testsuite testsuite.tmp testsuite_test.pike testsuite_test_dir.pmod
 	-rm -f *.wixobj *.wxs Pike_banner.bmp UpFldrBtn.ibd NewFldrBtn.ibd PikeWin32Installer.vbs
+	-rm -f pike.ico pike_icon.rc pike_icon.res
 	-find lib -type f -name \*.o -o -name \*.obj | xargs rm -f
 
 # make clean
