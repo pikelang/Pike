@@ -54,6 +54,13 @@ constant default_cflags = ({
   "-nologo",	// Suppress banner
 });
 
+// Globs for flags that have to be removed for different VC versions
+// to work. Use an environment variable RNTCL_VC={6,7,8} to control
+// the compat level.
+constant removeflags_vc6 = ({"-we*", "-wd*"});
+constant removeflags_vc7 = ({}); // FIXME: Not verified.
+constant removeflags_vc8 = ({"-GB"});
+
 int verbose=0;
 
 // Temporary variable
@@ -480,6 +487,20 @@ int main(int argc, array(string) argv)
     cmd += ({"-link" }) + ldopts;
 
   //werror ("%O\n", cmd);
+
+  array(string) removeflags = ({});
+  switch (getenv ("RNTCL_VC")) {
+    case "6": removeflags = removeflags_vc6; break;
+    case "7": removeflags = removeflags_vc7; break;
+    case "8": removeflags = removeflags_vc8; break;
+    case 0: break;
+    default:
+      werror ("Warning: Unknown RNTCL_VC compat level %O.\n",
+	      getenv ("RNTCL_VC"));
+      break;
+  }
+  foreach (removeflags, string flag_glob)
+    cmd -= glob (flag_glob, cmd);
 
   int ret;
   if(verbose && target!="-")
