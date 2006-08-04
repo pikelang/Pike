@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.451 2006/08/04 14:26:00 mast Exp $
+# $Id: Makefile.in,v 1.452 2006/08/04 15:22:18 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -855,15 +855,17 @@ lib: Makefile
 
 
 master.pike: $(LIBDIR_SRC)/master.pike.in Makefile
-	if test "x$(PIKE_MODULE_RELOC)" = "x"; \
+	@if test "x$(PIKE_MODULE_RELOC)" = "x"; \
           then u=s,x,x,; \
           else u='s/^#undef PIKE_MODULE_RELOC/#define PIKE_MODULE_RELOC 1/'; \
         fi; \
 	LC_CTYPE=C; LC_LANG=C; export LC_CTYPE LC_LANG; \
-	sed -e 's!¤lib_prefix¤!'"`echo "$(TMP_LIBDIR)" | ./posix_to_native.sh`"'!' <$(LIBDIR_SRC)/master.pike.in \
-	  | sed -e 's!¤share_prefix¤!'"`echo "$(LIBDIR_SRC)" | ./posix_to_native.sh`"'!' \
-	  | sed -e 's!¤include_prefix¤!'"`echo "$(TMP_BUILDDIR)/bundles/include/pike" | ./posix_to_native.sh`"'!' \
-	  | sed -e "$$u" >master.pike
+	cmd="sed -e 's!¤lib_prefix¤!`echo '$(TMP_LIBDIR)' | ./posix_to_native.sh`!' \
+	  -e 's!¤share_prefix¤!`echo '$(LIBDIR_SRC)' | ./posix_to_native.sh`!' \
+	  -e 's!¤include_prefix¤!`echo '$(TMP_BUILDDIR)/bundles/include/pike' | ./posix_to_native.sh`!' \
+	  -e '$$u'"; \
+	echo "$$cmd <$(LIBDIR_SRC)/master.pike.in >master.pike"; \
+	eval $$cmd <$(LIBDIR_SRC)/master.pike.in >master.pike
 
 # Want master.pike up-to-date, but yet there's no dependency on the
 # that file. Works like the .h_src.h target.
