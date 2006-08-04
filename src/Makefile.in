@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.447 2006/08/03 23:38:56 mast Exp $
+# $Id: Makefile.in,v 1.448 2006/08/04 00:48:07 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -106,6 +106,7 @@ GDB=gdb
 
 CANDLE=@CANDLE@ -nologo
 LIGHT=@LIGHT@ -nologo
+RCEXE=@RCEXE@
 
 FALLBACK_CC=@FALLBACK_CC@
 
@@ -329,7 +330,7 @@ tpike:
 #
 # @LDSHARED_BASE_REQS@ expands to pike.lib if --enable-dll is used on
 # NT. This only happens if dynamic modules are enabled.
-pike pike.lib: main.o $(OBJ) master-stamp pike.syms modules/linker_options @STATIC_POST_MODULES_LINKOPTS@
+pike pike.lib: main.o $(OBJ) master-stamp pike.syms modules/linker_options @STATIC_POST_MODULES_LINKOPTS@ @PIKE_ICON_RES@
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
 	-@if [ -f pike.exe ] ; then mv pike.exe pike.old.exe || : ; else : ; fi
@@ -337,7 +338,7 @@ pike pike.lib: main.o $(OBJ) master-stamp pike.syms modules/linker_options @STAT
 #	$(LD) $(LDFLAGS) main.o @DLOPEN_O@ -o pike
 	$(LD) $(LDFLAGS) main.o $(OBJ) \
 	  `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` \
-	  $(LIBS) -o pike
+	  $(LIBS) @PIKE_ICON_RES@ -o pike
 	@MT_FIX_PIKE_EXE@
 # The dumped modules are removed whenever Pike is relinked since some
 # of the bytecode methods (e.g. ia32) stores absolute addresses to
@@ -576,6 +577,15 @@ wix: Pike.msi
 
 force :
 	@:
+
+pike.ico: $(PACKAGINGDIR)/windows/pike.ico
+	cp "$<" "$@"
+
+pike_icon.rc: Makefile
+	echo 'pike ICON pike.ico' > pike_icon.rc
+
+pike_icon.res: pike_icon.rc pike.ico
+	$(RCEXE) pike_icon.rc
 
 # install
 install: pike-complete-stamp tools
