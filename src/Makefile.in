@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.450 2006/08/04 14:11:38 mast Exp $
+# $Id: Makefile.in,v 1.451 2006/08/04 14:26:00 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -1144,7 +1144,7 @@ tmodule.o:  modules/modlist_headers.h modules/modlist.h
 # Backward compat.
 post_modules: post_module_objects
 
-post_module_objects: $(MODULE_REQUIREMENTS) post-module-pike-complete-stamp
+post_module_objects: $(MODULE_REQUIREMENTS) post-module-pike-complete-stamp @LDSHARED_BASE_REQS@
 	@MODULE_BUILD_TYPE=@POST_MODULE_BUILD_TYPE@; \
 	export MODULE_BUILD_TYPE; \
 	( cd post_modules && ( rm remake >/dev/null 2>&1 || : ) && \
@@ -1153,7 +1153,7 @@ post_module_objects: $(MODULE_REQUIREMENTS) post-module-pike-complete-stamp
 	) || exit $$?
 	@touch post-modules-stamp
 
-post-modules-stamp: $(MODULE_REQUIREMENTS) post-module-pike-complete-stamp
+post-modules-stamp: $(MODULE_REQUIREMENTS) post-module-pike-complete-stamp @LDSHARED_BASE_REQS@
 	@MODULE_BUILD_TYPE=@POST_MODULE_BUILD_TYPE@; \
 	export MODULE_BUILD_TYPE; \
 	( cd post_modules && ( rm remake >/dev/null 2>&1 || : ) && \
