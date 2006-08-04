@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.169 2006/08/03 15:25:29 mast Exp $
+// $Id: install.pike,v 1.170 2006/08/04 00:46:24 mast Exp $
 
 #define USE_GTK
 
@@ -2154,6 +2154,9 @@ void make_wix()
 	      "Level":"1",
 	      "Id":"F_Pike",
 	    ]))->
+    add_child(line_feed)->
+    add_child(WixNode ("ComponentRef",
+		       (["Id": root->get_component_id("bin")])))->
     add_child(line_feed)->
     add_child(WixNode("MergeRef", ([ "Id":"Pike" ])))->
     add_child(line_feed);
