@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.453 2006/08/04 18:28:49 mast Exp $
+# $Id: Makefile.in,v 1.454 2006/08/04 22:32:17 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -331,8 +331,8 @@ tpike: master-stamp
 # This means that a post_module can't be always-static and can't add
 # stuff to the pike linkage using LINKER_OPTIONS.
 #
-# @LDSHARED_BASE_REQS@ expands to pike.lib if --enable-dll is used on
-# NT. This only happens if dynamic modules are enabled.
+# @LDSHARED_BASE_REQS@ expands to pike.lib if dynamic DLL modules are
+# used on NT.
 pike pike.lib: main.o $(OBJ) master-stamp pike.syms modules/linker_options @STATIC_POST_MODULES_LINKOPTS@ @PIKE_ICON_RES@
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
@@ -613,7 +613,7 @@ install_interactive: pike-complete-stamp tools
 # tidy up a bit
 tidy:
 	-rm -f a.out a.out.* *.fail *.pp *.protos core y.output y.tab.c y.tab.h
-	-rm -f core core.* *.o *.obj *.i *.i~ dynloadtest*
+	-rm -f core core.* *.o *.obj *.i *.i~ dynloadtest* cfl.*
 	-rm -f conftest.* hdrlist.h a.out.exe
 	-rm testsuite testsuite.tmp testsuite_test.pike testsuite_test_dir.pmod
 	-rm -f *.wixobj *.wxs Pike_banner.bmp UpFldrBtn.ibd NewFldrBtn.ibd PikeWin32Installer.vbs
