@@ -9,6 +9,14 @@ array(string) features()
 {
   array a = ({}), m = ({});
 
+  mapping runtime_info = Pike.get_runtime_info();
+
+  if (runtime_info->auto_bignum)
+    a += ({"auto_bignum"});
+
+  if (!(<"default", "computed_goto">)[runtime_info->bytecode_method])
+    a += ({"machine_code"});
+
 #if constant(load_module)
   a += ({ "dynamic_modules" });
 #endif
