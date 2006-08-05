@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Copyright.pmod,v 1.8 2006/01/14 18:23:46 nilsson Exp $
+// $Id: Copyright.pmod,v 1.9 2006/08/05 22:00:22 mast Exp $
 
 //! Contains functions and information to store and present
 //! copyright information about Pike and it's components.
@@ -40,6 +40,9 @@ static mapping(string:array(string)) copyrights = ([
 
   "JPEG transform code":
   ({ "Copyright © 1991-1998, Thomas G. Lane, Independent JPEG Group" }),
+
+  "Doug Lea's Malloc":
+  ({ "Copyright © 1987-2005 Doug Lea" }),
 ]);
 
 //! Adds a copyright message for the copyright @[holders] for the
