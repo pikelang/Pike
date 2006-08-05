@@ -65,7 +65,11 @@ static void backend_callback(struct callback *_cb,
     if (my_timercmp (&timeout, <, &next_timeout))
       next_timeout = timeout;
   } else
+#ifdef HAVE_GTK22
+    while(g_main_context_iteration(NULL,0));
+#else
     while(g_main_iteration( 0 ) );
+#endif
 }
 
 static struct callback *backend_cb;
