@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.179 2006/07/05 19:28:10 mast Exp $
+|| $Id: pike_memory.c,v 1.180 2006/08/05 21:00:40 mast Exp $
 */
 
 #include "global.h"
@@ -307,6 +307,17 @@ PMOD_EXPORT void *debug_xrealloc(void *m, size_t s)
 PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s)
 {
   return calloc(n,s);
+}
+
+PMOD_EXPORT char *debug_xstrdup(const char *src)
+{
+  char *dst = NULL;
+  if (src) {
+    int len = strlen (src) + 1;
+    dst = malloc (len);
+    MEMCPY (dst, src, len);
+  }
+  return dst;
 }
 
 char *debug_qalloc(size_t size)
@@ -893,6 +904,17 @@ static MUTEX_T debug_malloc_mutex;
 #undef strdup
 #undef main
 
+#ifdef USE_DL_MALLOC
+#undef ENCAPSULATE_MALLOC
+#define calloc    dlcalloc
+#define free	  dlfree
+#define malloc	  dlmalloc
+#define memalign  dlmemalign
+#define realloc	  dlrealloc
+#define valloc	  dlvalloc
+#define pvalloc	  dlpvalloc
+#endif
+
 #ifdef HAVE_DLOPEN
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
@@ -1177,6 +1199,8 @@ void *fake_calloc(size_t x, size_t y)
 #endif
 
 
+/* Don't understand what this is supposed to do, but it won't work
+ * with USE_DL_MALLOC. /mast */
 #ifdef WRAP
 #define malloc __real_malloc
 #define free __real_free

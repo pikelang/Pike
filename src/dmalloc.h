@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dmalloc.h,v 1.59 2006/07/05 02:17:09 mast Exp $
+|| $Id: dmalloc.h,v 1.60 2006/08/05 21:00:40 mast Exp $
 */
 
 #ifndef DMALLOC_H
@@ -67,7 +67,7 @@ extern void *debug_calloc(size_t, size_t, LOCATION);
 extern void *debug_realloc(void *, size_t, LOCATION);
 extern void debug_free(void *, LOCATION, int);
 extern char *debug_strdup(const char *, LOCATION);
-extern void reset_debug_malloc(void);
+void reset_debug_malloc(void);
 int dmalloc_check_allocated (void *p, int must_be_freed);
 #if 0
 void dmalloc_check_block_free(void *, LOCATION, char *, describe_block_fn *);
@@ -146,6 +146,27 @@ int dmalloc_is_invalid_memory_block(void *block);
 
 #else /* DEBUG_MALLOC */
 
+#ifdef USE_DL_MALLOC
+PMOD_EXPORT void* dlmalloc(size_t);
+PMOD_EXPORT void  dlfree(void*);
+PMOD_EXPORT void* dlcalloc(size_t, size_t);
+PMOD_EXPORT void* dlrealloc(void*, size_t);
+PMOD_EXPORT void* dlmemalign(size_t, size_t);
+PMOD_EXPORT void* dlvalloc(size_t);
+PMOD_EXPORT void* dlpvalloc(size_t);
+#define malloc	  dlmalloc
+#define free	  dlfree
+#define calloc    dlcalloc
+#define realloc	  dlrealloc
+#define memalign  dlmemalign
+#define valloc	  dlvalloc
+#define pvalloc	  dlpvalloc
+#ifdef strdup
+#undef strdup
+#endif
+#define strdup    debug_xstrdup
+#endif
+
 #define dmalloc_touch_fd(X) (X)
 #define dmalloc_register_fd(X) (X)
 #define dmalloc_accept_leak_fd(X)
@@ -159,17 +180,19 @@ int dmalloc_is_invalid_memory_block(void *block);
 #define debug_malloc_dump_fd(fd)
 #define xalloc debug_xalloc
 
-#if defined(DYNAMIC_MODULE) && defined(__NT__)
+#if defined(DYNAMIC_MODULE) && defined(__NT__) && !defined(USE_DLL)
 #define xmalloc debug_xmalloc
 #define xcalloc debug_xcalloc
 #define xrealloc debug_xrealloc
 #define xfree debug_xfree
-#else /* defined(DYNAMIC_MODULE) && defined(__NT__) */
+#define xstrdup debug_xstrdup
+#else
 #define xmalloc malloc
 #define xcalloc calloc
 #define xrealloc realloc
 #define xfree free
-#endif /* !(defined(DYNAMIC_MODULE) && defined(__NT__)) */
+#define xstrdup strdup
+#endif
 
 #define dbm_main main
 #define DO_IF_DMALLOC(X)
