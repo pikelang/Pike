@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.573 2006/07/04 14:38:16 mast Exp $
+|| $Id: program.c,v 1.574 2006/08/05 20:35:41 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.573 2006/07/04 14:38:16 mast Exp $");
+RCSID("$Id: program.c,v 1.574 2006/08/05 20:35:41 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -8069,8 +8069,10 @@ void make_program_executable(struct program *p)
 {
 #ifdef _WIN32
   DWORD old_prot;
-  VirtualProtect((void *)p->program, p->num_program*sizeof(p->program[0]),
-                 PAGE_EXECUTE_READWRITE, &old_prot);
+  if (!VirtualProtect (p->program,
+		       p->num_program * sizeof (p->program[0]),
+		       PAGE_EXECUTE_READWRITE, &old_prot))
+    Pike_fatal ("VirtualProtect failed, code %d.\n", GetLastError());
 
 #else  /* _WIN32 */
 
