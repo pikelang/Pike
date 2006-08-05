@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.180 2006/08/05 21:00:40 mast Exp $
+|| $Id: pike_memory.c,v 1.181 2006/08/05 22:30:15 mast Exp $
 */
 
 #include "global.h"
@@ -1926,7 +1926,7 @@ static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location)
   return mh;
 }
 
-void dmalloc_trace(void *p)
+PMOD_EXPORT void dmalloc_trace(void *p)
 {
   struct memhdr *mh = my_find_memhdr(p, 0);
   if (mh) {
@@ -1934,14 +1934,14 @@ void dmalloc_trace(void *p)
   }
 }
 
-void dmalloc_register(void *p, int s, LOCATION location)
+PMOD_EXPORT void dmalloc_register(void *p, int s, LOCATION location)
 {
   mt_lock(&debug_malloc_mutex);
   low_make_memhdr(p, s, location);
   mt_unlock(&debug_malloc_mutex);
 }
 
-void dmalloc_accept_leak(void *p)
+PMOD_EXPORT void dmalloc_accept_leak(void *p)
 {
   if(p)
   {
@@ -1998,7 +1998,7 @@ static int low_dmalloc_unregister(void *p, int already_gone)
   return 0;
 }
 
-int dmalloc_unregister(void *p, int already_gone)
+PMOD_EXPORT int dmalloc_unregister(void *p, int already_gone)
 {
   int ret;
   mt_lock(&debug_malloc_mutex);
@@ -2026,7 +2026,7 @@ static int low_dmalloc_mark_as_free(void *p, int already_gone)
   return 0;
 }
 
-int dmalloc_mark_as_free(void *p, int already_gone)
+PMOD_EXPORT int dmalloc_mark_as_free(void *p, int already_gone)
 {
   int ret;
   mt_lock(&debug_malloc_mutex);
@@ -2065,7 +2065,7 @@ static void flush_blocks_to_free(void)
   }
 }
 
-void *debug_malloc(size_t s, LOCATION location)
+PMOD_EXPORT void *debug_malloc(size_t s, LOCATION location)
 {
   char *m;
 
@@ -2098,7 +2098,7 @@ void *debug_malloc(size_t s, LOCATION location)
   return m;
 }
 
-void *debug_calloc(size_t a, size_t b, LOCATION location)
+PMOD_EXPORT void *debug_calloc(size_t a, size_t b, LOCATION location)
 {
   void *m=debug_malloc(a*b,location);
   if(m)
@@ -2113,7 +2113,7 @@ void *debug_calloc(size_t a, size_t b, LOCATION location)
   return m;
 }
 
-void *debug_realloc(void *p, size_t s, LOCATION location)
+PMOD_EXPORT void *debug_realloc(void *p, size_t s, LOCATION location)
 {
   char *m,*base;
   struct memhdr *mh = 0;
@@ -2146,7 +2146,7 @@ void *debug_realloc(void *p, size_t s, LOCATION location)
   return m;
 }
 
-void debug_free(void *p, LOCATION location, int mustfind)
+PMOD_EXPORT void debug_free(void *p, LOCATION location, int mustfind)
 {
   struct memhdr *mh;
   if(!p) return;
@@ -2218,7 +2218,7 @@ void debug_free(void *p, LOCATION location, int mustfind)
 /* Return true if a block is allocated. If must_be_freed is set,
  * return true if the block is allocated and leaking it is not
  * accepted. */
-int dmalloc_check_allocated (void *p, int must_be_freed)
+PMOD_EXPORT int dmalloc_check_allocated (void *p, int must_be_freed)
 {
   int res;
   struct memhdr *mh;
@@ -2257,12 +2257,12 @@ void dmalloc_check_block_free(void *p, LOCATION location,
 }
 #endif
 
-void dmalloc_free(void *p)
+PMOD_EXPORT void dmalloc_free(void *p)
 {
   debug_free(p, DMALLOC_LOCATION(), 0);
 }
 
-char *debug_strdup(const char *s, LOCATION location)
+PMOD_EXPORT char *debug_strdup(const char *s, LOCATION location)
 {
   char *m;
   long length;
@@ -2534,7 +2534,7 @@ void *dmalloc_find_memblock_base(void *ptr)
 }
 
 /* FIXME: lock the mutex */
-void debug_malloc_dump_references(void *x, int indent, int depth, int flags)
+PMOD_EXPORT void debug_malloc_dump_references(void *x, int indent, int depth, int flags)
 {
   struct memhdr *mh=my_find_memhdr(x,0);
   if(!mh) return;
@@ -2870,7 +2870,7 @@ void initialize_dmalloc(void)
   }
 }
 
-void * debug_malloc_update_location(void *p,LOCATION location)
+PMOD_EXPORT void * debug_malloc_update_location(void *p,LOCATION location)
 {
   if(p)
   {
@@ -2887,9 +2887,9 @@ void * debug_malloc_update_location(void *p,LOCATION location)
   return p;
 }
 
-void * debug_malloc_update_location_ptr(void *p,
-					ptrdiff_t offset,
-					LOCATION location)
+PMOD_EXPORT void * debug_malloc_update_location_ptr(void *p,
+						    ptrdiff_t offset,
+						    LOCATION location)
 {
   if(p)
     debug_malloc_update_location(*(void **)(((char *)p)+offset), location);
@@ -2951,7 +2951,7 @@ LOCATION dynamic_location(const char *file, int line)
 }
 
 
-void * debug_malloc_name(void *p,const char *file, int line)
+PMOD_EXPORT void * debug_malloc_name(void *p,const char *file, int line)
 {
   if(p)
   {
@@ -2973,7 +2973,7 @@ void * debug_malloc_name(void *p,const char *file, int line)
  * one pointer to another. Used by clone() to copy
  * the name(s) of the program.
  */
-int debug_malloc_copy_names(void *p, void *p2)
+PMOD_EXPORT int debug_malloc_copy_names(void *p, void *p2)
 {
   int names=0;
   if(p)
@@ -3025,14 +3025,14 @@ char *dmalloc_find_name(void *p)
   return name;
 }
 
-int debug_malloc_touch_fd(int fd, LOCATION location)
+PMOD_EXPORT int debug_malloc_touch_fd(int fd, LOCATION location)
 {
   if(fd==-1) return fd;
   debug_malloc_update_location( FD2PTR(fd), location);
   return fd;
 }
 
-int debug_malloc_register_fd(int fd, LOCATION location)
+PMOD_EXPORT int debug_malloc_register_fd(int fd, LOCATION location)
 {
   if(fd==-1) return fd;
   dmalloc_unregister( FD2PTR(fd), 1);
@@ -3040,12 +3040,12 @@ int debug_malloc_register_fd(int fd, LOCATION location)
   return fd;
 }
 
-void debug_malloc_accept_leak_fd(int fd)
+PMOD_EXPORT void debug_malloc_accept_leak_fd(int fd)
 {
   dmalloc_accept_leak(FD2PTR(fd));
 }
 
-int debug_malloc_close_fd(int fd, LOCATION location)
+PMOD_EXPORT int debug_malloc_close_fd(int fd, LOCATION location)
 {
   if(fd==-1) return fd;
 #ifdef DMALLOC_TRACK_FREE

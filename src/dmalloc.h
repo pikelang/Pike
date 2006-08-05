@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dmalloc.h,v 1.60 2006/08/05 21:00:40 mast Exp $
+|| $Id: dmalloc.h,v 1.61 2006/08/05 22:30:15 mast Exp $
 */
 
 #ifndef DMALLOC_H
@@ -59,35 +59,35 @@ void really_free_memhdr(struct memhdr *mh);
 void add_marks_to_memhdr(struct memhdr *to,void *ptr);
 
 extern int verbose_debug_malloc;
-extern void dmalloc_trace(void *);
-extern void dmalloc_register(void *, int, LOCATION);
-extern int dmalloc_unregister(void *, int);
-extern void *debug_malloc(size_t, LOCATION);
-extern void *debug_calloc(size_t, size_t, LOCATION);
-extern void *debug_realloc(void *, size_t, LOCATION);
-extern void debug_free(void *, LOCATION, int);
-extern char *debug_strdup(const char *, LOCATION);
+PMOD_EXPORT void dmalloc_trace(void *);
+PMOD_EXPORT void dmalloc_register(void *, int, LOCATION);
+PMOD_EXPORT int dmalloc_unregister(void *, int);
+PMOD_EXPORT void *debug_malloc(size_t, LOCATION);
+PMOD_EXPORT void *debug_calloc(size_t, size_t, LOCATION);
+PMOD_EXPORT void *debug_realloc(void *, size_t, LOCATION);
+PMOD_EXPORT void debug_free(void *, LOCATION, int);
+PMOD_EXPORT char *debug_strdup(const char *, LOCATION);
 void reset_debug_malloc(void);
-int dmalloc_check_allocated (void *p, int must_be_freed);
+PMOD_EXPORT int dmalloc_check_allocated (void *p, int must_be_freed);
 #if 0
 void dmalloc_check_block_free(void *, LOCATION, char *, describe_block_fn *);
 #endif
-extern void dmalloc_free(void *p);
-extern int debug_malloc_touch_fd(int, LOCATION);
-extern int debug_malloc_register_fd(int, LOCATION);
-extern void debug_malloc_accept_leak_fd(int);
-extern int debug_malloc_close_fd(int, LOCATION);
-extern int dmalloc_mark_as_free(void*,int);
+PMOD_EXPORT void dmalloc_free(void *p);
+PMOD_EXPORT int debug_malloc_touch_fd(int, LOCATION);
+PMOD_EXPORT int debug_malloc_register_fd(int, LOCATION);
+PMOD_EXPORT void debug_malloc_accept_leak_fd(int);
+PMOD_EXPORT int debug_malloc_close_fd(int, LOCATION);
+PMOD_EXPORT int dmalloc_mark_as_free(void*,int);
 
-void *debug_malloc_update_location(void *, LOCATION);
-void *debug_malloc_update_location_ptr(void *, ptrdiff_t, LOCATION);
+PMOD_EXPORT void *debug_malloc_update_location(void *, LOCATION);
+PMOD_EXPORT void *debug_malloc_update_location_ptr(void *, ptrdiff_t, LOCATION);
 void search_all_memheaders_for_references(void);
 void cleanup_memhdrs(void);
 void cleanup_debug_malloc(void);
 
 /* Beware! names of named memory regions are never ever freed!! /Hubbe */
-void *debug_malloc_name(void *p, const char *fn, int line);
-int debug_malloc_copy_names(void *p, void *p2);
+PMOD_EXPORT void *debug_malloc_name(void *p, const char *fn, int line);
+PMOD_EXPORT int debug_malloc_copy_names(void *p, void *p2);
 char *dmalloc_find_name(void *p);
 
 /* glibc 2.1 defines this as a macro. */
@@ -111,7 +111,7 @@ char *dmalloc_find_name(void *p);
 
 #define xalloc(X) ((void *)debug_malloc_update_location((void *)debug_xalloc(X), DMALLOC_NAMED_LOCATION(" xalloc")))
 #define xfree(X) debug_xfree(debug_malloc_update_location((X), DMALLOC_NAMED_LOCATION(" free")))
-void debug_malloc_dump_references(void *x, int indent, int depth, int flags);
+PMOD_EXPORT void debug_malloc_dump_references(void *x, int indent, int depth, int flags);
 #define dmalloc_touch(TYPE,X) ((TYPE) debug_malloc_pass (X))
 #define dmalloc_touch_named(TYPE,X,NAME) ((TYPE) debug_malloc_pass_named (X, NAME))
 void debug_malloc_dump_fd(int fd);
@@ -121,7 +121,7 @@ void debug_malloc_dump_fd(int fd);
 #define DMALLOC_LINE_ARGS ,char * dmalloc_location
 #define DMALLOC_POS ,DMALLOC_LOCATION()
 #define DMALLOC_PROXY_ARGS ,dmalloc_location
-void dmalloc_accept_leak(void *);
+PMOD_EXPORT void dmalloc_accept_leak(void *);
 #define dmalloc_touch_fd(X) debug_malloc_touch_fd((X),DMALLOC_LOCATION())
 #define dmalloc_register_fd(X) debug_malloc_register_fd((X),DMALLOC_LOCATION())
 #define dmalloc_accept_leak_fd(X) debug_malloc_accept_leak_fd(X)

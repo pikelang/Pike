@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.276 2006/07/05 02:17:09 mast Exp $
+|| $Id: gc.c,v 1.277 2006/08/05 22:30:14 mast Exp $
 */
 
 #include "global.h"
@@ -332,14 +332,27 @@ static void gc_cycle_pop(void *a);
   (X)->frame = 0;
 #endif
 
-#ifdef PIKE_DEBUG
 #undef get_marker
 #define get_marker debug_get_marker
 #undef find_marker
 #define find_marker debug_find_marker
-#endif
 
 PTR_HASH_ALLOC_FIXED_FILL_PAGES(marker,2)
+
+#undef get_marker
+#define get_marker(X) ((struct marker *) debug_malloc_pass(debug_get_marker(X)))
+#undef find_marker
+#define find_marker(X) ((struct marker *) debug_malloc_pass(debug_find_marker(X)))
+
+PMOD_EXPORT struct marker *pmod_get_marker (void *p)
+{
+  return debug_get_marker (p);
+}
+
+PMOD_EXPORT struct marker *pmod_find_marker (void *p)
+{
+  return debug_find_marker (p);
+}
 
 #if defined (PIKE_DEBUG) || defined (GC_MARK_DEBUG)
 void *gc_found_in = NULL;
@@ -354,11 +367,6 @@ PMOD_EXPORT int gc_external_refs_zapped = 0;
 #endif
 
 #ifdef PIKE_DEBUG
-
-#undef get_marker
-#define get_marker(X) ((struct marker *) debug_malloc_pass(debug_get_marker(X)))
-#undef find_marker
-#define find_marker(X) ((struct marker *) debug_malloc_pass(debug_find_marker(X)))
 
 int gc_in_cycle_check = 0;
 static unsigned delayed_freed, weak_freed, checked, marked, cycle_checked, live_ref;
