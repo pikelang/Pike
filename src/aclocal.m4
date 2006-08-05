@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.143 2006/08/04 00:43:47 mast Exp $
+dnl $Id: aclocal.m4,v 1.144 2006/08/05 14:50:43 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -496,7 +496,7 @@ define([PIKE_RETAIN_VARIABLES],
 [
   if test -f propagated_variables; then
     # Retain values for propagated variables; see make_variables.in.
-    sed -e "s/\\([['"'"}$\]]\)/\\\1/g' -e 's/^\([[^=]]*\)=\(.*\)$/\1=${\1=\2}/' < propagated_variables > propvars.sh
+    sed -e 's/'"'"'/'"'"'"'"'"'"'"'"'/g' -e 's/^\([[^=]]*\)=\(.*\)$/\1=${\1='"'"'\2'"'"'}/' < propagated_variables > propvars.sh
     . ./propvars.sh && rm propvars.sh
   fi
 
@@ -516,7 +516,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.143 2006/08/04 00:43:47 mast Exp $
+  # $Id: aclocal.m4,v 1.144 2006/08/05 14:50:43 mast Exp $
 
   MY_AC_PROG_CC
 
