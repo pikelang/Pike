@@ -39,7 +39,7 @@ doc1:
 doc2: doc1
 
 compile0:
-	@echo "Pike-GTK disabled."
+	@echo "Pike-GTK2 disabled."
 	$(MAKE) all
 
 compile1:
