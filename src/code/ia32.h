@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.h,v 1.28 2006/02/28 13:55:06 mast Exp $
+|| $Id: ia32.h,v 1.29 2006/08/05 20:11:31 mast Exp $
 */
 
 /* #define ALIGN_PIKE_JUMPS 8 */
@@ -11,12 +11,20 @@
 #define OPCODE_RETURN_JUMPADDR
 
 #if defined(_M_IX86) && !defined(__GNUC__)
+#define USE_CL_IA32_ASM_STYLE
+#elif defined(__GNUC__)
+#define USE_GCC_IA32_ASM_STYLE
+#else
+#error Dont know how to inline assembler with this compiler
+#endif
+
+#ifdef USE_CL_IA32_ASM_STYLE
 
 #define DEF_PROG_COUNTER void *ia32_pc; \
                          _asm { _asm mov ia32_pc,ebp }
 #define PROG_COUNTER  (((unsigned char **)ia32_pc)[1])
 
-#else  /* _M_IX86 && !__GNUC__ */
+#else  /* USE_GCC_IA32_ASM_STYLE */
 
 #ifdef OPCODE_RETURN_JUMPADDR
 /* Don't need an lvalue in this case. */
@@ -25,7 +33,7 @@
 #define PROG_COUNTER (((unsigned char **)__builtin_frame_address(0))[1])
 #endif
 
-#endif
+#endif	/* USE_GCC_IA32_ASM_STYLE */
 
 #ifdef OPCODE_RETURN_JUMPADDR
 /* Adjust for the machine code inserted after the call for I_JUMP opcodes. */
@@ -110,11 +118,19 @@ INT32 ia32_read_f_jump(INT32 offset);
 #define UPDATE_F_JUMP ia32_update_f_jump
 #define READ_F_JUMP ia32_read_f_jump
 
+#if 0
+/* This is apparently not necessary. */
+void ia32_flush_instruction_cache(void *start, size_t len);
+#define FLUSH_INSTRUCTION_CACHE ia32_flush_instruction_cache
+void ia32_init_interpreter_state(void);
+#define INIT_INTERPRETER_STATE ia32_init_interpreter_state
+#endif
+
 void ia32_flush_code_generator(void);
 #define FLUSH_CODE_GENERATOR_STATE ia32_flush_code_generator
 
 
-#if defined(_M_IX86) && !defined(__GNUC__)
+#ifdef USE_CL_IA32_ASM_STYLE
 
 #define CALL_MACHINE_CODE(pc)                                   \
   __asm {                                                       \
@@ -126,7 +142,7 @@ void ia32_flush_code_generator(void);
 #define EXIT_MACHINE_CODE()                                     \
   __asm { __asm add esp,12 }
 
-#else  /* _M_IX86 && !__GNUC__ */
+#else  /* USE_GCC_IA32_ASM_STYLE */
 
 #define CALL_MACHINE_CODE(pc)						\
   /* This code does not clobber %eax, %ebx, %ecx & %edx, but		\
@@ -141,4 +157,4 @@ void ia32_flush_code_generator(void);
 #define EXIT_MACHINE_CODE()						\
   __asm__ __volatile__( "add $12,%%esp\n" : : )
 
-#endif /* _M_IX86 && !__GNUC__ */
+#endif /* USE_GCC_IA32_ASM_STYLE */

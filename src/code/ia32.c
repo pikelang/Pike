@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.43 2006/04/25 18:29:20 neotron Exp $
+|| $Id: ia32.c,v 1.44 2006/08/05 20:11:31 mast Exp $
 */
 
 /*
@@ -827,7 +827,7 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 
     case F_NEG_NUMBER:
       ins_debug_instr_prologue (a - F_OFFSET, b, 0);
-      ia32_push_int(-b);
+      ia32_push_int(-(INT32) b);
       return;
 
     case F_CONSTANT:
@@ -1023,47 +1023,49 @@ void ia32_decode_program(struct program *p)
 
 static size_t ia32_clflush_size = 0;
 
-void ia32_flush_instruction_cache(void *addr, size_t len)
+void ia32_flush_instruction_cache(void *start, size_t len)
 {
   if (ia32_clflush_size) {
-    char *ptr;
-    char *end_ptr;
+    char *addr;
+    char *end_addr;
+    /* fprintf (stderr, "flush %p+%"PRINTSIZET"d\n", start, len); */
     /* We assume even multiple of 2. */
-    len += ((size_t)addr) & (ia32_clflush_size-1);
-    ptr = (char *)(((size_t)addr) & ~(ia32_clflush_size-1));
-    end_ptr = ptr + len;
-    while (ptr < end_ptr) {
+    len += ((size_t)start) & (ia32_clflush_size-1);
+    addr = (char *)(((size_t)start) & ~(ia32_clflush_size-1));
+    end_addr = addr + len;
+    while (addr < end_addr) {
 #ifdef USE_CL_IA32_ASM_STYLE
       __asm {
-	__asm clflush ptr
-      };
-#elif defined(USE_GCC_IA32_ASM_STYLE)
-      __asm__ __volatile__("clflush %0" :: "m" (*ptr));
+	mov eax, addr;
+	clflush [eax];
+      }
+#else  /* USE_GCC_IA32_ASM_STYLE */
+      __asm__ __volatile__("clflush %0" :: "m" (*addr));
 #endif
-      ptr += ia32_clflush_size;
+      addr += ia32_clflush_size;
     }
   }
 }
 
-static void ia32_get_cpuid(int oper, int *cpuid)
+static void ia32_get_cpuid(int oper, INT32 *cpuid_ptr)
 {
   static int cpuid_supported = 0;
   if (!cpuid_supported) {
     int fbits=0;
 #ifdef USE_CL_IA32_ASM_STYLE
     __asm {
-      __asm pushf
-      __asm pop  eax
-      __asm mov  ecx, eax
-      __asm xor  eax, 00200000h
-      __asm push eax
-      __asm popf
-      __asm pushf
-      __asm pop  eax
-      __asm xor  ecx, eax
-      __asm mov  fbits, ecx
+      pushf
+      pop  eax
+      mov  ecx, eax
+      xor  eax, 00200000h
+      push eax
+      popf
+      pushf
+      pop  eax
+      xor  ecx, eax
+      mov  fbits, ecx
     };
-#elif defined(USE_GCC_IA32_ASM_STYLE)
+#else  /* USE_GCC_IA32_ASM_STYLE */
     /* Note: gcc swaps the argument order... */
     __asm__("pushf\n\t"
 	    "pop  %%eax\n\t"
@@ -1089,30 +1091,31 @@ static void ia32_get_cpuid(int oper, int *cpuid)
   if (cpuid_supported > 0) {
 #ifdef USE_CL_IA32_ASM_STYLE
     __asm {
-      __asm mov eax, oper
-      __asm cpuid
-      __asm mov [cpuid], eax
-      __asm mov [cpuid+1], ebx
-      __asm mov [cpuid+2], edx
-      __asm mov [cpuid+3], ecx
+      mov eax, oper;
+      mov edi, cpuid_ptr;
+      cpuid;
+      mov [edi], eax;
+      mov [edi+4], ebx;
+      mov [edi+8], edx;
+      mov [edi+12], ecx;
     };
-#elif defined(USE_GCC_IA32_ASM_STYLE)
+#else  /* USE_GCC_IA32_ASM_STYLE */
     __asm__ __volatile__("cpuid"
-			 : "=a" (cpuid[0]),
-			   "=b" (cpuid[1]),
-			   "=d" (cpuid[2]),
-			   "=c" (cpuid[3])
+			 : "=a" (cpuid_ptr[0]),
+			   "=b" (cpuid_ptr[1]),
+			   "=d" (cpuid_ptr[2]),
+			   "=c" (cpuid_ptr[3])
 			 : "0" (oper));
 #endif
   } else {
-    cpuid[0] = cpuid[1] = cpuid[2] = cpuid[3] = 0;
+    cpuid_ptr[0] = cpuid_ptr[1] = cpuid_ptr[2] = cpuid_ptr[3] = 0;
   }
 }
 
 void ia32_init_interpreter_state(void)
 {
   /* Note: One extra zero for nul-termination. */
-  int cpuid[5] = { 0, 0, 0, 0, 0 };
+  INT32 cpuid[5] = { 0, 0, 0, 0, 0 };
 
   /* fprintf(stderr, "Calling ia32_get_cpuid()...\n"); */
 
@@ -1120,30 +1123,35 @@ void ia32_init_interpreter_state(void)
 
   /* fprintf(stderr, "CPUID: %d, \"%.12s\"\n", cpuid[0], (char *)(cpuid+1)); */
 
-  if (!memcmp(cpuid+1, "AuthenticAMD", 12) &&
-      (cpuid[0] > 0)) {
-    struct amd_info {
+  if (!memcmp (cpuid + 1, "AuthenticAMD", 12))
+    cpu_vendor = PIKE_CPU_VENDOR_AMD;
+  else if (!memcmp (cpuid + 1, "GenuineIntel", 12))
+    cpu_vendor = PIKE_CPU_VENDOR_INTEL;
+
+  if (cpuid[0] > 0) {
+    /* http://www.sandpile.org/ia32/cpuid.htm */
+    struct cpu_info {
       int signature;
       unsigned char brand_id;
       unsigned char clflush_size;
-      unsigned char reserved0;
-      unsigned char apid_id;
-      int standard_features;
-      int reserved1;
-    } amd_info;
-    cpu_vendor = PIKE_CPU_VENDOR_AMD;
-    ia32_get_cpuid(1, &amd_info.signature);
+      unsigned char cpu_count;
+      unsigned char apic_id;
+      int feature_flags_edx;
+      int feature_flags_ecx;
+    } cpu_info;
+    ia32_get_cpuid(1, (INT32 *) &cpu_info);
 #if 0
     fprintf(stderr,
 	    "features: 0x%08x\n"
 	    "CLFLUSH size: %d\n",
-	    amd_info.standard_features,
-	    amd_info.clflush_size);
+	    cpu_info.feature_flags_edx,
+	    cpu_info.clflush_size);
 #endif /* 0 */
-    if (amd_info.standard_features & 0x00080000) {
+
+    if (cpu_info.feature_flags_edx & 0x00080000) {
       /* CLFLUSH present. */
-      ia32_clflush_size = amd_info.clflush_size;
+      /* fprintf (stderr, "Enabling clflush, size %d\n", cpu_info.clflush_size); */
+      ia32_clflush_size = cpu_info.clflush_size;
     }
-  } else {
   }
 }
