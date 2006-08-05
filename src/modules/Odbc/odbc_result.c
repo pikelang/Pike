@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.49 2006/07/04 11:10:55 grubba Exp $
+|| $Id: odbc_result.c,v 1.50 2006/08/05 22:20:41 mast Exp $
 */
 
 /*
@@ -577,12 +577,13 @@ static void f_fetch_row(INT32 args)
 #endif
 	    } else {
 	      /* Truncated, but no support for chained SQLGetData calls. */
-	      char *buf = xalloc((len+2)
-#ifdef SQL_WCHAR
-				 * sizeof(SQLWCHAR)
-#endif
-				 );
+	      char *buf;
 	      SQLLEN newlen = 0;
+#ifdef SQL_WCHAR
+	      buf = xalloc((len+2) * sizeof(SQLWCHAR));
+#else
+	      buf = xalloc(len+2);
+#endif
 	      code = SQLGetData(PIKE_ODBC_RES->hstmt, (SQLUSMALLINT)(i+1),
 				PIKE_ODBC_RES->field_info[i].type,
 				buf, (len+1)
