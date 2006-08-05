@@ -21,7 +21,7 @@ else
   done
   IFS="$OLDIFS"
 
-  if [ -e "${1}.exe" ]; then
+  if [ -f "${1}.exe" ]; then
     if [ -d "$last" ]; then
       exec "$next" "${1}.exe" "${last}"
     else
