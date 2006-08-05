@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.63 2006/01/03 16:03:38 grendel Exp $
+# $Id: rules,v 1.64 2006/08/05 15:49:18 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -114,10 +114,10 @@ configure-stamp:
 	dh_testdir
 	install -d -m 755 $(BUILDDIR)
 
-	for f in $(CURDIR)/debian/patches/*.diff; do \
-	    patch -p1 -f --no-backup-if-mismatch -d $(CURDIR) < $$f ; \
-	done
-	touch patched-stamp
+#	for f in $(CURDIR)/debian/patches/*.diff; do \
+#	    patch -p1 -f --no-backup-if-mismatch -d $(CURDIR) < $$f ; \
+#	done
+#	touch patched-stamp
 
 	# Add here commands to configure the package.
 	(cd $(BUILDDIR); $(CURDIR)/src/configure --prefix=/usr $(CFARGS))
@@ -194,12 +194,12 @@ clean:
 	- rm -rf build/
 	- rm $(CURDIR)/debian/links
 
-	-if [ -f patched-stamp ]; then \
-	    for f in $(CURDIR)/debian/patches/*.diff; do \
-		patch -R -p1 -f --no-backup-if-mismatch -d $(CURDIR) < $$f ; \
-	    done ; \
-	    rm -f patched-stamp ; \
-	fi
+#	-if [ -f patched-stamp ]; then \
+#	    for f in $(CURDIR)/debian/patches/*.diff; do \
+#		patch -R -p1 -f --no-backup-if-mismatch -d $(CURDIR) < $$f ; \
+#	    done ; \
+#	    rm -f patched-stamp ; \
+#	fi
 
 	dh_clean
 
