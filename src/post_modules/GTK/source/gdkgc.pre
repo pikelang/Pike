@@ -6,18 +6,75 @@ class GDK.GC;
 //! function is stored in the GC.</p>
 //!
 //! NOIMG
-void create( GTK.Widget|GDK.Drawable context )
+void create( GTK.Widget|GDK.Drawable context, mapping|void attributes )
 //! The argument is a either a W(Widget) or a GDK(Drawable) in
 //! which the gc will be valid.
 {
   struct object *o;
+  GdkGCValues values;
+  int have_values = 0;
+  struct mapping *m;
   pgtk_verify_setup();
   pgtk_verify_not_inited();
   get_all_args("'()", args, "%o", &o);
-  if(get_gdkobject(o, drawable))
-    THIS->obj = (void *)gdk_gc_new( (GdkWindow*)get_gdkobject(o,drawable) );
+  memset( &values, 0, sizeof(values));
+
+  if( args > 1 )
+  {
+      struct svalue *sv;
+      have_values = 1;
+      get_all_args("'()", args, "%o%m", &o, &m);
+
+#define VALUE(X,Y)						\
+    if(sv=simple_mapping_string_lookup(m,#X))			\
+    {								\
+    values.X = sv->u.integer;					\
+    have_values |= Y;						\
+    }
+
+      VALUE(graphics_exposures,GDK_GC_EXPOSURES);
+      VALUE(subwindow_mode,GDK_GC_SUBWINDOW);
+      VALUE(join_style,GDK_GC_JOIN_STYLE);
+      VALUE(cap_style,GDK_GC_CAP_STYLE);
+      VALUE(line_style,GDK_GC_LINE_STYLE);
+      VALUE(line_width,GDK_GC_LINE_WIDTH);
+      VALUE(clip_x_origin,GDK_GC_CLIP_X_ORIGIN);
+      VALUE(clip_y_origin,GDK_GC_CLIP_Y_ORIGIN);
+      VALUE(ts_x_origin,GDK_GC_TS_X_ORIGIN);
+      VALUE(ts_y_origin,GDK_GC_TS_Y_ORIGIN);
+      VALUE(fill,GDK_GC_FILL);
+      VALUE(function,GDK_GC_FUNCTION);
+
+/*   push_text( "clip_mask" );       push_gdkobject( v.clip_mask, bitmap ); */
+/*   push_text( "stipple" );         push_gdkobject( v.stipple, bitmap ); */
+/*   push_text( "tile" );            push_gdkobject( v.tile, pixmap ); */
+/*   push_text( "font" );            push_gdkobject( v.font, font ); */
+/*   { */
+/*     GdkColor *f = g_malloc( sizeof( GdkColor ) ); */
+/*     GdkColor *b = g_malloc( sizeof( GdkColor ) ); */
+/*     *f = v.foreground; */
+/*     *b = v.background; */
+/*     push_text( "foreground" ); push_gdkobject( f, color ); */
+/*     push_text( "background" ); push_gdkobject( b, color ); */
+/*   } */
+  }
+
+  if( have_values )
+  {
+      if(get_gdkobject(o, drawable))
+	  THIS->obj = (void *)gdk_gc_new_with_values( (GdkWindow*)get_gdkobject(o,drawable), 
+						      &values,  have_values);
+      else
+	  THIS->obj = (void *)gdk_gc_new_with_values( GTK_WIDGET(get_gtkobject(o))->window,
+						      &values, have_values );
+  }
   else
-    THIS->obj = (void *)gdk_gc_new( GTK_WIDGET(get_gtkobject(o))->window );
+  {
+      if(get_gdkobject(o, drawable))
+	  THIS->obj = (void *)gdk_gc_new( (GdkWindow*)get_gdkobject(o,drawable) );
+      else
+	  THIS->obj = (void *)gdk_gc_new( GTK_WIDGET(get_gtkobject(o))->window );
+  }
 }
 void destroy()
 //! Free the gc, called automatically by pike when the object is destroyed.
@@ -84,6 +141,7 @@ void set_background(GDK.Color color)
   gdk_gc_set_background( (GdkGC*)THIS->obj, get_gdkobject(o,color));
   RETURN_THIS();
 }
+
 void set_font(GDK.Font font)
 //! Set the font to the specified GDK.Font.
 {
@@ -93,12 +151,54 @@ void set_font(GDK.Font font)
   RETURN_THIS();
 }
 
+void set_fill(int fill )
+//! Set the fill method to fill.
+{
+    int i;
+    get_all_args("set_fill", args, "%d", i );
+    gdk_gc_set_fill( (GdkGC*)THIS->obj, i );
+    RETURN_THIS();
+}
+
+
+void set_tile(GDK.Pixmap tile)
+//! Set the background type. Fill must be GDK_TILED
+{
+  struct object *o;
+  get_all_args("set_background", args, "%o", &o);
+  if(get_gdkobject(o,pixmap))
+      gdk_gc_set_tile((GdkGC *)THIS->obj, get_gdkobject(o,pixmap));
+    RETURN_THIS();
+}
+
+
+void set_stipple(GDK.Bitmap stipple)
+//! Set the background type. Fill must be GDK_STIPPLED or GDK_OPAQUE_STIPPLED
+{
+  struct object *o;
+  get_all_args("set_background", args, "%o", &o);
+  if(get_gdkobject(o,bitmap))
+      gdk_gc_set_stipple((GdkGC *)THIS->obj, get_gdkobject(o,bitmap));
+    RETURN_THIS();
+}
+
 void set_clip_origin(int x, int y)
 //! Set the clip mask origin to the specified point.
 {
   INT_TYPE x, y;
   get_all_args("set_clip_origin", args, "%i%i", &x, &y);
   gdk_gc_set_clip_origin((GdkGC*)THIS->obj, x, y );
+  RETURN_THIS();
+}
+
+void set_ts_origin(int x, int y)
+//! Set the origin when using tiles or stipples with the GC. The tile
+//! or stipple will be aligned such that the upper left corner of the
+//! tile or stipple will coincide with this point.
+{
+  INT_TYPE x, y;
+  get_all_args("set_clip_origin", args, "%i%i", &x, &y);
+  gdk_gc_set_ts_origin((GdkGC*)THIS->obj, x, y );
   RETURN_THIS();
 }
 
@@ -116,6 +216,68 @@ void set_clip_mask(GDK.Bitmap mask)
   RETURN_THIS();
 }
 
+void set_clip_rectangle(GDK.Rectangle|void rect)
+//! Sets the clip mask for a graphics context from a rectangle. The
+//! clip mask is interpreted relative to the clip origin.
+{
+  if (args == 1)
+  {
+    struct object *o;
+    get_all_args("set_clip_rectangle", args, "%o", &o);
+    gdk_gc_set_clip_rectangle( (GdkGC*)THIS->obj, get_gdkobject(o,rectangle));
+  } else
+    gdk_gc_set_clip_rectangle( (GdkGC*)THIS->obj, 0);
+
+  RETURN_THIS();
+}
+
+void set_clip_region(GDK.Region rect)
+//! Sets the clip mask for a graphics context from a region. The
+//! clip mask is interpreted relative to the clip origin.
+{
+    if (args == 1)
+    {
+	struct object *o;
+	get_all_args("set_clip_region", args, "%o", &o);
+	gdk_gc_set_clip_region( (GdkGC*)THIS->obj, get_gdkobject(o,region));
+    } else
+	gdk_gc_set_clip_region( (GdkGC*)THIS->obj, 0);
+
+    RETURN_THIS();
+}
+
+void set_dashes( int offset, array dashes )
+//! Sets the way dashed-lines are drawn. Lines will be drawn with
+//! alternating on and off segments of the lengths specified in
+//! dashes. The manner in which the on and off segments are drawn is
+//! determined by the line_style value of the GC.
+{
+    int i,o;
+    struct array *a;
+    gchar *list;
+
+    get_all_args( "set_dashes", args, "%d%a", &o, &a );
+
+    list = xalloc(a->size);
+    for( i=0; i<a->size; i++ )
+	list[i] = a->item[i].u.integer;
+    gdk_gc_set_dashes( (GdkGC*)THIS->obj, o, list, a->size );
+    free( list );
+    RETURN_THIS();
+}
+
+void set_line_attributes( int line_width, int line_style, int cap_style, int join_style )
+//! Control how lines are drawn.
+//! line_style is one of GDK.LineSolid, GDK.LineOnOffDash and GDK.LineDoubleDash.
+//! cap_style is one of GDK.CapNotLast, GDK.CapButt, GDK.CapRound and GDK.CapProjecting.
+//! join_style is one of GDK.JoinMiter, GDK.JoinRonud and GDK.JoinBevel.
+{
+    int a, b, c, d;
+    get_all_args("set_line_attributes", args, "%d%d%d%d", &a,&b,&c,&d);
+    gdk_gc_set_line_attributes( (GdkGC*)THIS->obj, a,b,c,d);
+    RETURN_THIS();
+}
+
 void set_function(int fun)
 //! Set the function to the specified one. One of GDK.Xor,
 //! GDK.Invert and GDK.Copy.
@@ -124,6 +286,15 @@ void set_function(int fun)
   get_all_args("set_function", args, "%i", &a);
   gdk_gc_set_function( (GdkGC*)THIS->obj, a);
   RETURN_THIS();
+}
+
+void copy( GDK.GC source )
+//! Copy all attributes from the source GC
+{
+    struct object *o;
+    get_all_args("set_clip_region", args, "%o", &o);
+    gdk_gc_copy( (GdkGC*)THIS->obj, get_gdkobject(o,gc) );
+    RETURN_THIS();
 }
 
 void set_subwindow(int draw_on_subwindows)
@@ -135,5 +306,5 @@ void set_subwindow(int draw_on_subwindows)
   gdk_gc_set_subwindow( (GdkGC*)THIS->obj, a );
   RETURN_THIS();
 }
-/* TODO: a lot of functions left.. */
+
 
