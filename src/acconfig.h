@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.143 2005/10/13 14:54:25 mast Exp $
+|| $Id: acconfig.h,v 1.144 2006/08/06 16:58:07 mast Exp $
 */
 
 #ifndef MACHINE_H
@@ -37,6 +37,9 @@
 
 /* Define this if you are going to use a memory access checker (like Purify) */
 #undef __CHECKER__
+
+/* Defined if Doug Leas malloc implementation is used. */
+#undef USE_DL_MALLOC
 
 /* Define this if you want malloc debugging */
 #undef DEBUG_MALLOC

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.862 2006/06/28 00:16:48 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.863 2006/08/06 16:58:07 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1298,6 +1298,17 @@ dnl AC_ARG_WITH(unsigned-long-int, MY_DESCR([--with-unsigned-long-int],
 dnl 				    [use short native type int (EXPERIMENTAL)]))
 dnl AC_ARG_WITH(unsigned-long-long-int, MY_DESCR([--with-unsigned-long-longint],
 dnl 				    [use short native type int (EXPERIMENTAL)]))
+
+AC_ARG_ENABLE(dlmalloc, MY_DESCR([--enable-dlmalloc],
+				 [use Doug Leas malloc implementation instead of system malloc]),
+	      [], [test "$pike_cv_sys_os" = Windows_NT && enable_dlmalloc=yes])
+# dlmalloc is enabled by default on windows since the OS heap manager
+# Sucketh. (Well, it's possible to enable a "low-fragmentation heap"
+# but it only works for blocks up to 16kb.)
+if test "x$enable_dlmalloc" = xyes; then
+  EXTRA_OBJS="$EXTRA_OBJS malloc.o"
+  AC_DEFINE(USE_DL_MALLOC)
+fi
 
 MY_AC_ARG_WITH(cleanup-on-exit,
 	       MY_DESCR([--with-cleanup-on-exit],

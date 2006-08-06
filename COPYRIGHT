@@ -12,6 +12,9 @@ created from the same source code. Parts of other
 copyrighted works are included in Pike, in accordance
 with their respective conditions for distribution.
 
+Doug Lea's Malloc
+Copyright © 1987-2005 Doug Lea
+
 Emacs font lock definitions
 Copyright © 2002 Martin Stjernholm
 
