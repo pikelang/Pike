@@ -4,6 +4,7 @@
 #include "global.h"
 #define USE_LOCKS 1
 #define USE_DL_PREFIX 1
+#define NO_MALLINFO 1
 /* Further pike changes below: PMOD_EXPORT */
 /* End pike preamble */
 
