@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sequence.cmod,v 1.17 2006/03/16 19:28:30 grubba Exp $
+|| $Id: sequence.cmod,v 1.18 2006/08/06 14:33:51 mast Exp $
 */
 
 #include "global.h"
@@ -286,7 +286,7 @@ PIKECLASS Sequence
 /*! @decl void _insert_element(int index, mixed value)
  *! Insert an element in the sequence at the position @[index], the value
  *! at the position @[index] and all above will have their index increased 
- *! with one.
+ *! by one.
  *! 
  *! @param index 
  *!   The index to insert the value at.

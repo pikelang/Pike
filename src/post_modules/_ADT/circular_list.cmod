@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: circular_list.cmod,v 1.16 2005/06/22 15:49:54 grubba Exp $
+|| $Id: circular_list.cmod,v 1.17 2006/08/06 14:33:51 mast Exp $
 */
 
 #include "global.h"
@@ -292,8 +292,8 @@ PIKECLASS CircularList
 
 /*! @decl void _insert_element(int index, mixed value)
  *! Insert an element in the list at the position @[index], the value
- *! at the position @[index] and all above will have thier index increased 
- *! with one.
+ *! at the position @[index] and all above will have their index increased
+ *! by one.
  *! 
  *! @param index 
  *!   The index to insert the value at.
