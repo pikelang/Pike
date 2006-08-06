@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.144 2006/08/05 14:50:43 mast Exp $
+dnl $Id: aclocal.m4,v 1.145 2006/08/06 15:58:15 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -163,6 +163,10 @@ define([MY_DESCR],
 
 define([MY_AC_PROG_CC],
 [
+  dnl Note: It's tricky to speed this up by only doing it once when
+  dnl the modules are configured with the base - different autoconfs
+  dnl set different variables that might not get propagated, e.g.
+  dnl $ac_exeext in 2.59.
   define(ac_cv_prog_CC,pike_cv_prog_CC)
   AC_PROG_CC
   undefine([ac_cv_prog_CC])
@@ -516,7 +520,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.144 2006/08/05 14:50:43 mast Exp $
+  # $Id: aclocal.m4,v 1.145 2006/08/06 15:58:15 mast Exp $
 
   MY_AC_PROG_CC
 
