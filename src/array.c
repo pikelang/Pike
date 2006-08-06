@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.193 2006/07/05 20:49:17 mast Exp $
+|| $Id: array.c,v 1.194 2006/08/06 14:28:16 mast Exp $
 */
 
 #include "global.h"
@@ -408,7 +408,7 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
   }else{
     struct array *ret;
 
-    ret = array_set_flags(allocate_array_no_init(v->size+1, (v->size >> 3) + 1),
+    ret = array_set_flags(allocate_array_no_init(v->size+1, v->size),
 			  v->flags);
     ret->type_field = v->type_field;
 
