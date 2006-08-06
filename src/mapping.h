@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.h,v 1.64 2006/07/05 19:24:19 mast Exp $
+|| $Id: mapping.h,v 1.65 2006/08/06 16:10:02 mast Exp $
 */
 
 #ifndef MAPPING_H
@@ -93,6 +93,8 @@ extern struct mapping *gc_internal_mapping;
 #define free_mapping(M) do_free_mapping (M)
 #else
 
+void really_free_mapping(struct mapping *md);
+
 /** Free a previously allocated mapping. The preferred method of freeing
   * a mapping is by calling the @ref do_free_mapping function.
   *
@@ -127,8 +129,6 @@ extern struct mapping *gc_internal_mapping;
  if(!sub_ref(md_)) really_free_mapping_data(md_); \
  /* FIXME: What about valrefs & hardlinks? */ \
 }while(0)
-
-PMOD_PROTO void really_free_mapping(struct mapping *md);
 
 /* Prototypes begin here */
 BLOCK_ALLOC_FILL_PAGES(mapping, 2);
