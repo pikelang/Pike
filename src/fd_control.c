@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fd_control.c,v 1.52 2004/12/30 13:28:22 grubba Exp $
+|| $Id: fd_control.c,v 1.53 2006/08/06 16:11:03 mast Exp $
 */
 
 #ifndef TESTING
@@ -13,7 +13,6 @@
 #else /* TESTING */
 
 #define PMOD_EXPORT
-#define PMOD_PROTO
 
 #ifndef _LARGEFILE_SOURCE
 #  define _FILE_OFFSET_BITS 64
