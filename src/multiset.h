@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.h,v 1.40 2005/04/08 16:55:53 grubba Exp $
+|| $Id: multiset.h,v 1.41 2006/08/06 16:10:41 mast Exp $
 */
 
 #ifndef MULTISET_H
@@ -221,7 +221,13 @@ PMOD_EXPORT INT32 multiset_sizeof (struct multiset *l);
  * check whether or not the multiset has no elements at all. */
 #define multiset_is_empty(L) (!(L)->msd->root)
 
-PMOD_PROTO void really_free_multiset (struct multiset *l);
+#if defined(USE_DLL) && defined(DYNAMIC_MODULE)
+/* Use the function in modules so we don't have to export the block
+ * alloc stuff. */
+#define free_multiset(M) do_free_multiset (M)
+#else
+
+void really_free_multiset (struct multiset *l);
 
 #define free_multiset(L) do {						\
     struct multiset *_ms_ = (L);					\
@@ -232,6 +238,8 @@ PMOD_PROTO void really_free_multiset (struct multiset *l);
 	  gc_check_zapped (_ms_, PIKE_T_MULTISET, __FILE__, __LINE__))); \
     if (!sub_ref (_ms_)) really_free_multiset (_ms_);			\
   } while (0)
+
+#endif	/* !(USE_DLL && DYNAMIC_MODULE) */
 
 #ifdef PIKE_DEBUG
 
