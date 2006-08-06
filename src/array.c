@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.145 2006/05/10 19:43:53 mast Exp $
+|| $Id: array.c,v 1.146 2006/08/06 14:15:32 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "multiset.h"
 #include "mapping.h"
 
-RCSID("$Id: array.c,v 1.145 2006/05/10 19:43:53 mast Exp $");
+RCSID("$Id: array.c,v 1.146 2006/08/06 14:15:32 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -331,7 +331,7 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
   }else{
     struct array *ret;
 
-    ret = array_set_flags(allocate_array_no_init(v->size+1, (v->size >> 3) + 1),
+    ret = array_set_flags(allocate_array_no_init(v->size+1, v->size),
 			  v->flags);
     ret->type_field = v->type_field;
 
