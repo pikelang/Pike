@@ -154,6 +154,7 @@ void set_source_pixbuf(object o, GDK2.Pixbuf pixbuf, float x, float y)
   RETURN_THIS();
 }
 
+require gtk210;
 void set_source_pixmap(object o, GDK2.Pixmap, float x, float y)
 //! Sets the pixmap as the source pattern for a Cairo context.
 {
@@ -168,6 +169,7 @@ void set_source_pixmap(object o, GDK2.Pixmap, float x, float y)
   }
   RETURN_THIS();
 }
+endrequire;
 
 void rectangle(object o, GDK2.Rectangle rect)
 //! Adds the given rectangle to the current path.
