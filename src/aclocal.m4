@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.146 2006/08/06 23:11:51 nilsson Exp $
+dnl $Id: aclocal.m4,v 1.147 2006/08/07 00:48:55 nilsson Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -520,7 +520,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.146 2006/08/06 23:11:51 nilsson Exp $
+  # $Id: aclocal.m4,v 1.147 2006/08/07 00:48:55 nilsson Exp $
 
   MY_AC_PROG_CC
 
@@ -641,13 +641,13 @@ pushdef([AC_OUTPUT],
   AC_MSG_CHECKING([for the Pike base directory])
   if test "x$PIKE_SRC_DIR" != "x" -a -f "${PIKE_SRC_DIR}/make_variables.in"; then
     make_variables_in="${PIKE_SRC_DIR}/make_variables.in"
-    make_variables_in_subst=$make_variables_in
+    make_variables_in_file=$make_variables_in
     AC_MSG_RESULT(${PIKE_SRC_DIR})
 
     if_autoconf(2,50,,[
       # Kludge for autoconf 2.13 and earlier prefixing all substitution
       # source files with $ac_given_source_dir/ (aka $srcdir/).
-      make_variables_in_subst="`cd $srcdir;pwd|sed -e 's@[[[^/]]]*@@g;s@/@../@g'`$make_variables_in_subst"
+      make_variables_in="`cd $srcdir;pwd|sed -e 's@[[[^/]]]*@@g;s@/@../@g'`$make_variables_in"
     ])
   else
 
@@ -667,15 +667,15 @@ pushdef([AC_OUTPUT],
     done
 
     make_variables_in=${uplevels}make_variables.in
-    make_variables_in_subst=$make_variables_in
+    make_variables_in_file=$make_variables_in
     AC_MSG_RESULT(${uplevels}.)
   fi
 
-  AC_SUBST(make_variables_in_subst)
+  AC_SUBST(make_variables_in)
 
   rm propagated_variables.new 2>/dev/null
   prop_var_changes=""
-  for var in `sed -n -e 's/^#propagated_variables:\(.*\)$/\1/p' < $make_variables_in`; do
+  for var in `sed -n -e 's/^#propagated_variables:\(.*\)$/\1/p' < $make_variables_in_file`; do
     # NB: If you get a strange error here you probably got a bogus
     # value in IFS.
     eval export $var
