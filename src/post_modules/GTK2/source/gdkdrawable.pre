@@ -82,3 +82,119 @@ mapping(string:int) get_geometry()
   f_aggregate_mapping(10);
 }
 
+require gtk28;
+require cairo;
+%{
+#ifdef HAVE_CAIRO
+#include <cairo.h>
+
+struct program *cairo_program=NULL;
+
+int verify_cairo() {
+  if (!cairo_program) {
+    push_text("Cairo.Context");
+    APPLY_MASTER("resolv",1);
+    cairo_program=program_from_svalue(Pike_sp-1);
+    Pike_sp--;
+
+    if (!cairo_program)
+      Pike_error("Unable to find cairo module.\n");
+  }
+  if (cairo_program)
+    return 1;
+  return 0;
+}
+#endif
+%}
+
+object get_cairo_context()
+//! Creates a Cairo context for this drawable.
+{
+  pgtk2_verify_inited();
+  if (verify_cairo()) {
+    cairo_t *ctx;
+    struct object *o;
+
+    ctx=gdk_cairo_create(GDK_DRAWABLE(THIS->obj));
+    o=low_clone(cairo_program);
+    call_c_initializers(o);
+    ((struct cairo_mod_context *)o->storage)->ctx=ctx;
+    ref_push_object(o);
+  } else {
+    Pike_error("Unable to find cairo module.\n");
+  }
+}
+
+void set_source_color(object o, GDK2.Color color)
+//! Sets the source color.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1,*o2;
+
+    get_all_args("set_source_color",args,"%o%o",&o1,&o2);
+    gdk_cairo_set_source_color(((struct cairo_mod_context *)o1->storage)->ctx,
+			(GdkColor *)get_gdkobject(o2,color));
+  }
+  RETURN_THIS();
+}
+
+void set_source_pixbuf(object o, GDK2.Pixbuf pixbuf, float x, float y)
+//! Sets the pixbuf as the source pattern for a Cairo context.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1,*o2;
+    FLOAT_TYPE x,y;
+
+    get_all_args("set_source_pixbuf",args,"%o%o%f%f",&o1,&o2,&x,&y);
+    gdk_cairo_set_source_pixbuf(((struct cairo_mod_context *)o1->storage)->ctx,
+			GDK_PIXBUF(get_gobject(o2)),x,y);
+  }
+  RETURN_THIS();
+}
+
+void set_source_pixmap(object o, GDK2.Pixmap, float x, float y)
+//! Sets the pixmap as the source pattern for a Cairo context.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1,*o2;
+    FLOAT_TYPE x,y;
+
+    get_all_args("set_source_pixmap",args,"%o%o%f%f",&o1,&o2,&x,&y);
+    gdk_cairo_set_source_pixmap(((struct cairo_mod_context *)o1->storage)->ctx,
+                        GDK_PIXMAP(get_gobject(o2)),x,y);
+  }
+  RETURN_THIS();
+}
+
+void rectangle(object o, GDK2.Rectangle rect)
+//! Adds the given rectangle to the current path.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1,*o2;
+
+    get_all_args("rectangle",args,"%o%o",&o1,&o2);
+    gdk_cairo_rectangle(((struct cairo_mod_context *)o1->storage)->ctx,
+			(GdkRectangle *)get_gdkobject(o2,rectangle));
+  }
+  RETURN_THIS();
+}
+
+void region(object o, GDK2.Region region)
+//! Adds the given region to the current path.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1,*o2;
+
+    get_all_args("region",args,"%o%o",&o1,&o2);
+    gdk_cairo_region(((struct cairo_mod_context *)o1->storage)->ctx,
+			(GdkRegion *)get_gdkobject(o2,region));
+  }
+  RETURN_THIS();
+}
+endrequire;
+endrequire;
