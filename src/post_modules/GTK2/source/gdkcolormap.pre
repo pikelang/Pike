@@ -1,0 +1,136 @@
+/* -*- C -*- */
+class GDK2.Colormap;
+
+void create(GDK2.Visual visual, ?int allocate, ?int system)
+//! Creates a new colormap.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  {
+    GdkColormap *gcm;
+    GdkVisual *gv;
+    struct object *o1;
+    INT_TYPE all=0,sys=0;
+
+    get_all_args("create",args,"%o.%i%i",&o1,&all,&sys);
+    gv=GDK_VISUAL(get_gdkobject(gv,visual));
+    if (sys)
+      gcm=gdk_colormap_get_system();
+    else
+      gcm=gdk_colormap_new(gv,all);
+    THIS->obj=(void *)gcm;
+  }
+}
+
+int alloc_colors(array(GDK2.Color) colors, int writeable,
+		 int best_match)
+//! Allocates colors from a colormap.
+{
+  pgtk2_verify_inited();
+  {
+    struct array *a=NULL;
+    int i;
+    INT_TYPE wr,best;
+    GdkColor *gc;
+    int res,*suc;
+
+    get_all_args("alloc_colors",args,"%A%i%i",&a,&wr,&best);
+    if (a==NULL)
+      Pike_error("Invalid array.\n");
+    gc=(GdkColor *)xmalloc(sizeof(GdkColor)*a->size);
+    suc=(int *)xmalloc(sizeof(int)*a->size);
+    for (i=0; i<a->size; i++) {
+      gc[i]=*(GdkColor *)get_gdkobject(ITEM(a)[i],color);
+    }
+    res=gdk_colormap_alloc_colors(GDK_COLORMAP(THIS->obj),gc,i,
+			wr,best,suc);
+    pgtk2_pop_n_elems(args);
+    push_int(res);
+    xfree(gc);
+    xfree(suc);
+  }
+}
+
+int alloc_color(GDK2.Color color, int writeable, int best_match)
+//! Alocates a single color from a colormap.
+{
+  pgtk2_verify_inited();
+  {
+    INT_TYPE wr,best;
+    GdkColor *gc;
+    struct object *o1;
+
+    get_all_args("alloc_color",args,"%o%i%i",&o1,&wr,&best);
+    gc=(GdkColor *)get_gdkobject(o1,color);
+    pgtk2_pop_n_elems(args);
+    push_int(gdk_colormap_alloc_color(GDK_COLORMAP(THIS->obj),gc,wr,best));
+  }
+}
+
+void free_colors(array(GDK2.Color) colors)
+//! Free colors.
+{
+  pgtk2_verify_inited();
+  {
+    struct array *a=NULL;
+    int i;
+    GdkColor *gc;
+
+    get_all_args("free_colors",args,"%A",&a);
+    if (a==NULL)
+      Pike_error("Invalid array.\n");
+    gc=(GdkColor *)xmalloc(sizeof(GdkColor)*a->size);
+    for (i=0; i<a->size; i++) {
+      gc[i]=*(GdkColor *)get_gdkobject(ITEM(a)[i],color);
+    }
+    gdk_colormap_free_colors(GDK_COLORMAP(THIS->obj),gc,i);
+    xfree(gc);
+  }
+}
+
++GDK2.Color query_color(int pixel)
+//! Locates the RGB color corresponding to the given hardware pixel.  pixel
+//! must be a valid pixel in the colormap; it's a programmer error to call
+//! this function with a pixel which is not in the colormap.  Hardware pixels
+//! are normally obtained from alloc_colors(), or from a GDK2.Image.
+{
+  pgtk2_verify_inited();
+  {
+    INT_TYPE pix;
+    GdkColor *gc;
+
+    get_all_args("query_color",args,"%i",&pix);
+    pgtk2_pop_n_elems(args);
+    gc=(GdkColor *)xmalloc(sizeof(GdkColor));
+    gdk_colormap_query_color(GDK_COLORMAP(THIS->obj),pix,gc);
+    push_gdkobject(gc,color);
+  }
+}
+
++GDK2.Visual get_visual()
+//! Returns the visual.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GdkVisual *gv;
+
+    gv=gdk_colormap_get_visual(GDK_COLORMAP(THIS->obj));
+    push_gdkobject(gv,visual);
+  }
+}
+
+require gtk22;
++GDK2.Screen get_screen()
+//! Returns the screen.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GdkScreen *gs;
+
+    gs=gdk_colrmap_get_screen(GDK_COLORMAP(THIS->obj));
+    push_gobject(gs);
+  }
+}
+endrequire;

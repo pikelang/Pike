@@ -760,7 +760,7 @@ void set_default_icon_name(string name)
 endrequire;
 
 require gtk24;
-GTK2.IconTheme get_default_icon_theme()
++GTK2.IconTheme get_default_icon_theme()
 //! Gets the icon theme.
 {
   GtkIconTheme *git=gtk_icon_theme_get_default();

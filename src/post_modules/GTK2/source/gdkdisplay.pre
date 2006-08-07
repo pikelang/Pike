@@ -50,13 +50,11 @@ string get_name();
 int get_n_screens();
 //! Gets the number of screens managed by the display.
 
-/*
 GDK2.Screen get_screen(int screen_num);
 //! Returns a screen for one of the screens.
 
 GDK2.Screen get_default_screen();
 //! Get the default screen.
-*/
 
 void pointer_ungrab()
 //! Release any pointer grab.
@@ -166,7 +164,6 @@ mapping get_window_at_pointer()
   }
 }
 
-/*
 require gtk28;
 void warp_pointer(GDK2.Screen screen, int x, int y)
 //! Warps the pointer to the point x,y on the screen, unless the pointer
@@ -186,7 +183,7 @@ void warp_pointer(GDK2.Screen screen, int x, int y)
   RETURN_THIS();
 }
 endrequire;
-*/
+
 require gtk24;
 int supports_cursor_color();
 //! Returns true if multicolored cursors are supported.  Otherwise, cursors

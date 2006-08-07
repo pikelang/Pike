@@ -76,10 +76,8 @@ void destroy()
   push_int(0);
 }
 
-/*
 GDK2.Screen get_screen();
 //! Gets the screen.
-*/
 
 mapping(string:mixed) get_values()
 //! Get all (or rather most) values from the GC.

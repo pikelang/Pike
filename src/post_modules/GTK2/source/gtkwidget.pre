@@ -660,10 +660,8 @@ require gtk22;
 +GDK2.Window get_root_window();
 //! Get the root window.
 
-/*
 GDK2.Screen get_screen();
 //! Get the GDK2.Screen from the toplevel window associated with this widget.
-*/
 
 int has_screen();
 //! Checks whether there is a GDK2.Screen associated with this widget.

@@ -37,11 +37,9 @@ void create(mapping(string:mixed)|int|GDK2.Screen void props_or_def)
   pgtk2__init_this_object();
 }
 
-/*
 void set_screen(GDK2.Screen screen);
 //! Sets the screen for a recent manager; the screen is used to track the
 //! user's currently configured recently used documents storage.
-*/
 
 int add_item(string uri);
 //! Adds a new resource, pointed by uri, into the recently used

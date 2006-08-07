@@ -1,0 +1,43 @@
+/* -*- C -*- */
+class GDK2.Visual;
+inherit G.Object;
+
+void create(?int best, int|void depth, int|void type)
+//! Get visual.
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  {
+    INT_TYPE best=0,depth=0,type=-1;
+    GdkVisual *gv;
+
+    get_all_args("create",args,"%i.%i%i",&best,&depth,&type);
+    if (best==0) {
+      gv=gdk_visual_get_system();
+    } else {
+      if (depth==0 && type==-1)
+	gv=gdk_visual_get_best();
+      else if (depth==1 && type==-1)
+	gv=gdk_visual_get_best_with_depth(depth);
+      else if (depth==0  && type!=-1)
+	gv=gdk_visual_get_best_with_type(type);
+      else
+	gv=gdk_visual_get_best_with_both(depth,type);
+    }
+    THIS->obj=(void *)gv;
+  }
+  pgtk2__init_this_object();
+}
+
+void destroy()
+//! Destructor.
+{
+  if (THIS->obj)
+    g_object_unref(THIS->obj);
+  THIS->obj=NULL;
+  pgtk2_pop_n_elems(args);
+  push_int(0);
+}
+
++GDK2.Screen get_screen();
+//! Gets the screen to which this visual belongs.
