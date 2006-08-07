@@ -17,7 +17,12 @@ void create()
 {
   pgtk2_verify_not_inited();
   pgtk2_verify_setup();
-  THIS->obj=G_OBJECT(gdk_display_get_default());
+  {
+    GdkDisplay *gd;
+
+    gd=gdk_display_get_default();
+    THIS->obj=G_OBJECT(gd);
+  }
   pgtk2_pop_n_elems(args);
   pgtk2__init_this_object();
 }
@@ -28,8 +33,13 @@ void open(string name)
   pgtk2_verify_inited();
   {
     const gchar *name;
+    GdkDisplay *gd;
+
     get_all_args("open",args,"%s",&name);
-    THIS->obj=G_OBJECT(gdk_display_open(name));
+    gd=gdk_display_open(name);
+    if (THIS->obj)
+      g_object_unref(THIS->obj);
+    THIS->obj=G_OBJECT(gd);
   }
   RETURN_THIS();
 }
@@ -37,9 +47,15 @@ void open(string name)
 string get_name();
 //! Gets the name of the display.
 
-/*
 int get_n_screens();
 //! Gets the number of screens managed by the display.
+
+/*
+GDK2.Screen get_screen(int screen_num);
+//! Returns a screen for one of the screens.
+
+GDK2.Screen get_default_screen();
+//! Get the default screen.
 */
 
 void pointer_ungrab()
@@ -150,6 +166,27 @@ mapping get_window_at_pointer()
   }
 }
 
+/*
+require gtk28;
+void warp_pointer(GDK2.Screen screen, int x, int y)
+//! Warps the pointer to the point x,y on the screen, unless the pointer
+//! is confined to a window by a grab, in which case it will be moved as far
+//! as allowed by the grab.  Warping the pointer creates events as if the
+//! user had moved the mouse instantaneously to the destination.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+    INT_TYPE x,y;
+
+    get_all_args("warp_pointer",args,"%o%i%i",&o1,&x,&y);
+    gdk_display_warp_pointer(GDK_DISPLAY_OBJECT(THIS->obj),
+			GDK_SCREEN(get_gobject(o1)),x,y);
+  }
+  RETURN_THIS();
+}
+endrequire;
+*/
 require gtk24;
 int supports_cursor_color();
 //! Returns true if multicolored cursors are supported.  Otherwise, cursors
@@ -177,7 +214,7 @@ mapping get_maximal_cursor_size()
   }
 }
 
-GDK2.Window get_default_group();
++GDK2.Window get_default_group();
 //! Returns the default group leader window for all toplevel windows.  This
 //! window is implicitly create by GDK.
 endrequire;
@@ -208,4 +245,39 @@ int supports_clipboard_persistence();
 //! Returns whether the specified display supports clipboard persistence, i.e.
 //! if it's possible to store the clipboard data after an application has quit.
 //! On X11 this checks if a clipboard daemon is running.
+
+void store_clipboard(GDK2.Window clipboard_window,
+		     array(GDK2.Atom) targets)
+//! Issues a request to the clipboard manager to store the clipboard data.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+    struct array *a=NULL;
+
+    get_all_args("store_clipboard",args,"%o%A",&o1,&a);
+    if (a!=NULL) {
+      GdkAtom *targets;
+      int n;
+
+      targets=xmalloc(a->size);
+      for (n=0; j<a->size; j++)
+	target[n]=get_gdkatom(ITEM(a)[n]->u.object);
+      gdk_display_store_clipboard(GDK_DISPLAY_OBJECT(THIS->obj),
+			GDK_WINDOW(get_gobject(o1)),GDK_CURRENT_TIME,
+			targets,n);
+    }
+  } 
+  RETURN_THIS();
+}
+endrequire;
+
+require gtk210;
+int supports_shapes();
+//! Returns true if GDK2.Window->shape_combine_mask() can be used to create
+//! shaped windows.
+
+int supports_input_shapes();
+//! Returns true if GDK2.Window->input_shape_combine_mask() can be used to
+//! modify the input shape of windows.
 endrequire;
