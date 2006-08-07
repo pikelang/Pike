@@ -1,0 +1,199 @@
+/* -*- C -*- */
+require gtk22;
+class GDK2.Screen;
+inherit G.Object;
+
+//! Properties:
+//! font-options
+//! float resolution
+
+signal composite_changed;
+signal size_changed;
+
+void create()
+//! Gets the default screen.
+{
+  pgtk2_verify_not_inited();
+  pgkt2_verify_setup(); 
+  {
+    GdkScreen *gs;
+
+    gs=gdk_screen_get_default();
+    THIS->obj=G_OBJECT(gs);
+  }
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
+}
+
++GDK2.Colormap get_default_colormap()
+//! Gets the default colormap.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GdkColormap *gc;
+
+    gc=gdk_screen_get_default_colormap(GDK_SCREEN(THIS->obj));
+    push_gdkobject(gc,colormap);
+  }
+}
+
+void set_default_colormap(GDK2.Colormap colormap)
+//! Sets the default colormap.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o1;
+    gpointer *p;
+
+    get_all_args("set_default_colormap",args,"%o",&o1);
+    p=get_gdkobject(o,colormap);
+    pgtk2_pop_n_elems(args);
+    if (g_type_is_a(G_TYPE_FROM_INSTANCE(p),g_type_from_name("GdkColormap"))) {
+      gdk_screen_set_default_colormap(GDK_SCREEN(THIS->obj),GDK_COLORMAP(p));
+    }
+  }
+}
+
++GDK2.Colormap get_system_colormap()
+//! Gets the system default colormap.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GdkColormap *gc;
+
+    gc=gdk_screen_get_system_colormap(GDK_SCREEN(THIS->obj));
+    push_gdkobject(gc,colormap);
+  }
+}
+
++GDK2.Visual get_system_visual()
+//! Get the default system visual.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GdkVisual *gv;
+
+    gv=gdk_screen_get_system_visual(GDK_SCREEN(THIS->obj));
+    push_gdkobject(gv,visual);
+  }
+}
+
+require gtk210;
+int is_composited();
+//! Returns whether windows with an RGBA visual can reasonable be expected
+//! to have their alpha channel drawn correctly on the screen.
+endrequire;
+
++GDK2.Window get_root_window();
+//! Gets the root window.
+
++GDK2.Display get_display();
+//! Gets the display to which this screen belongs.
+
+int get_number();
+//! Gets the index of this screen among the screens in the display to which
+//! it belongs.
+
+int get_width();
+//! Gets the width of the screen in pixels.
+
+int get_height();
+//! Gets the height in pixels.
+
+int get_width_mm();
+//! Gets the width in millimeters.
+
+int get_height_mm();
+//! Returns the height in millimeters.
+
+array list_visuals(?int def)
+//! List the available visuals.  If def is true, return the available visuals
+//! for the default screen.
+{
+  pgtk2_verify_inited();
+  {
+    INT_TYPE def=0;
+    GList *gl,*g2;
+    int i=0;
+
+    get_all_args("list_visuals",args,"%i",&def);
+    if (def)
+      gl=gdk_list_visuals();
+    else
+      gl=gdk_screen_list_visuals(GDK_SCREEN(THIS->obj));
+    g2=gl;
+    pgtk2_pop_n_elems(args);
+    while (g2) {
+      push_gdkobject(g2->data,visual);
+      i++;
+      g2=g_list_next(g2);
+    }
+    f_aggregate(i);
+  }
+}
+
+array get_toplevel_windows()
+//! Returns a list of all toplevel windows known to GDK on the screen.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GList *gl,*g2;
+    int i;
+
+    gl=g2=gdk_screen_get_toplevel_windows(GDK_SCREEN(THIS->obj));
+    i=0;
+    while (g2) {
+      push_gobject(g2->data);
+      g_object_ref(g2->data);
+      i++;
+      g2=g_list_next(g2);
+    }
+    f_aggregate(i);
+    g_list_free(gl);
+  }
+}
+
+string make_display_name();
+//! Determines the name to pass to GDK2.Display->open() to get a GDK2.Display
+//! with this screen as the default screen.
+
+int get_n_monitors();
+//! Returns the number of monitors which this screen consists of.
+
++GDK2.Rectangle get_monitor_geometry(int num)
+//! Retrieves the GDK2.Rectangle representing the size and position of the
+//! individual monitor within the entire screen area.
+{
+  pgtk2_verify_inited();
+  {
+    INT_TYPE a;
+    GdkRectangle *gr;
+
+    get_all_args("get_monitor_geometry",args,"%i",&a);
+    gr=(GdkRectangle *)xmalloc(sizeof(GdkRectangle));
+    gdk_screen_get_monitor_geometry(GDK_SCREEN(THIS->obj),a,gr);
+    pgtk2_pop_n_elems(args);
+    push_gdkobject(gr,rectangle);
+  }
+}
+
+int get_monitor_at_point(int x, int y);
+//! Returns the monitor number in which x,y is located.
+
+int get_monitor_at_window(GDK2.Window window);
+//! Returns the number of the monitor in which the largest area of the
+//! bounding rectangle of window resides.
+
+float get_resolution();
+//! Gets the resolution for font handling.
+
+void set_resolution(float dpi);
+//! Sets the resolution for font handling.
+
++GDK2.Window get_active_window();
+//! Returns the currently active window.
+endrequire;
