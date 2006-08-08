@@ -43,10 +43,10 @@ void set_default_colormap(GDK2.Colormap colormap)
 {
   pgtk2_verify_inited();
   {
-    struct object *o1;
+    struct object *o;
     gpointer *p;
 
-    get_all_args("set_default_colormap",args,"%o",&o1);
+    get_all_args("set_default_colormap",args,"%o",&o);
     p=get_gdkobject(o,colormap);
     pgtk2_pop_n_elems(args);
     if (g_type_is_a(G_TYPE_FROM_INSTANCE(p),g_type_from_name("GdkColormap"))) {
