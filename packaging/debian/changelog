@@ -1,9 +1,11 @@
 pike7.8 (7.7.25-1) experimental; urgency=low
 
   * Updated a few dependencies
-  * Build-depends on libmysqlclient15-dev now (closes: Bug#368620)
+  * Shortened the long descriptions of several binary packages
+  * Added short description of pike, plus an url, to the description of
+    the pike modules binary packages
 
- -- Marek Habersack <grendel@debian.org>  Wed, 10 May 2006 13:47:23 +0200
+ -- Marek Habersack <grendel@debian.org>  Wed, 9 Aug 2006 01:40:11 +0200
 
 pike7.8 (7.7.24-1) experimental; urgency=low
 
