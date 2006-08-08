@@ -1,3 +1,11 @@
+pike7.6 (7.6.87-2) unstable; urgency=low
+
+  * Shortened the long descriptions of several binary packages
+  * Added short description of pike, plus an url, to the description of
+    the pike modules binary packages
+
+ -- Marek Habersack <grendel@debian.org>  Sun, 9 Aug 2006 01:28:37 +0200
+
 pike7.6 (7.6.87-1) unstable; urgency=low
 
   * The latest cvs snapshot
