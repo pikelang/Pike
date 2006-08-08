@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.c,v 1.8 2006/07/05 19:24:19 mast Exp $
+ * $Id: pike_embed.c,v 1.9 2006/08/08 22:23:09 mast Exp $
  *
  * Pike embedding API.
  *
@@ -113,7 +113,7 @@ const char *master_file = NULL;
 
 void init_pike(char **argv, const char *file)
 {
-  initialize_dmalloc();
+  init_pike_memory();
 
   init_rusage();
 

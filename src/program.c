@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.606 2006/08/05 20:07:50 mast Exp $
+|| $Id: program.c,v 1.607 2006/08/08 22:23:11 mast Exp $
 */
 
 #include "global.h"
@@ -8200,11 +8200,6 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
 #include <sys/mman.h>
 #endif
 
-#ifndef PAGESIZE
-/* A reasonable default... */
-#define PAGESIZE	8192
-#endif /* !PAGESIZE */
-
 void make_program_executable(struct program *p)
 {
   if (!p->num_program) return;
@@ -8219,16 +8214,16 @@ void make_program_executable(struct program *p)
   {
     DWORD old_prot;
     if (!VirtualProtect (p->program,
-			 p->num_program * sizeof (PIKE_OPCODE_T),
+			 p->num_program * sizeof (p->program[0]),
 			 PAGE_EXECUTE_READWRITE, &old_prot))
       Pike_fatal ("VirtualProtect failed, code %d.\n", GetLastError());
   }
 #else  /* _WIN32 */
   {
     /* Perform page alignment. */
-    void *addr = (void *)(((size_t)p->program) & ~(PAGESIZE-1));
+    void *addr = (void *)(((size_t)p->program) & ~(page_size-1));
     size_t len = (((char *)(p->program + p->num_program)) - ((char *)addr) +
-		  (PAGESIZE - 1)) & ~(PAGESIZE-1);
+		  (page_size - 1)) & ~(page_size-1);
 
 #if !defined(HAVE_MMAP) || !defined(MEXEC_USES_MMAP)
     if (mprotect(addr, len, PROT_EXEC | PROT_READ | PROT_WRITE) < 0) {

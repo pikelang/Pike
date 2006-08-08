@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.h,v 1.53 2006/07/05 19:28:10 mast Exp $
+|| $Id: pike_memory.h,v 1.54 2006/08/08 22:23:10 mast Exp $
 */
 
 #ifndef MEMORY_H
@@ -114,6 +114,8 @@ struct mem_searcher
 #include "block_alloc_h.h"
 #define MEMCHR0 MEMCHR
 
+extern int page_size;
+
 /* Note to self: Prototypes must be updated manually /Hubbe */
 PMOD_EXPORT ptrdiff_t pcharp_memcmp(PCHARP a, PCHARP b, int sz);
 PMOD_EXPORT long pcharp_strlen(PCHARP a);
@@ -141,6 +143,7 @@ PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s);
 PMOD_EXPORT void *mexec_alloc(size_t sz);
 PMOD_EXPORT void *mexec_realloc(void *ptr, size_t sz);
 PMOD_EXPORT void mexec_free(void *ptr);
+void init_pike_memory (void);
 
 #undef BLOCK_ALLOC
 
@@ -228,11 +231,5 @@ PMOD_EXPORT void mexec_free(void *ptr);
   							\
     RET = ret;						\
   } while(0)
-
-#ifdef DEBUG_MALLOC
-void initialize_dmalloc(void);
-#else
-#define initialize_dmalloc()
-#endif
 
 #endif

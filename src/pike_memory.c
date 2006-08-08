@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.181 2006/08/05 22:30:15 mast Exp $
+|| $Id: pike_memory.c,v 1.182 2006/08/08 22:23:09 mast Exp $
 */
 
 #include "global.h"
@@ -26,6 +26,8 @@
 #endif
 
 #include <errno.h>
+
+int page_size;
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -368,9 +370,6 @@ char *debug_qalloc(size_t size)
  */
 
 #if defined(HAVE_MMAP) && defined(MEXEC_USES_MMAP)
-#ifndef PAGESIZE
-#define PAGESIZE	8192
-#endif /* !PAGESIZE */
 #if 0
 #define MEXEC_MAGIC	0xdeadfeedf00dfaddLL
 #endif /* 0 */
@@ -465,7 +464,7 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
   }
 #define MAP_ANONYMOUS	0
 #endif /* !MAP_ANONYMOUS */
-  sz = (sz + sizeof(struct mexec_hdr) + (PAGESIZE-1)) & ~(PAGESIZE-1);
+  sz = (sz + sizeof(struct mexec_hdr) + (page_size-1)) & ~(page_size-1);
 
   if (base) {
     verify_mexec_hdr(base);
@@ -3262,4 +3261,28 @@ void cleanup_debug_malloc(void)
   }
 }
 
+#endif	/* DEBUG_MALLOC */
+
+void init_pike_memory (void)
+{
+#if defined (HAVE_GETPAGESIZE)
+  page_size = getpagesize();
+#elif defined (HAVE_SYSCONF) && defined (_SC_PAGESIZE)
+  page_size = (int) sysconf (_SC_PAGESIZE);
+#elif defined (HAVE_SYSCONF) && defined (_SC_PAGE_SIZE)
+  page_size = (int) sysconf (_SC_PAGE_SIZE);
+#elif defined (HAVE_GETSYSTEMINFO)
+  {
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo (&sysinfo);
+    page_size = sysinfo.dwPageSize;
+  }
+#else
+  /* A reasonable default... */
+  page_size = 8192;
 #endif
+
+#ifdef DEBUG_MALLOC
+  initialize_dmalloc();
+#endif
+}
