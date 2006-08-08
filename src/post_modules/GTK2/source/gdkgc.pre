@@ -39,8 +39,8 @@ void create(GTK2.Widget|GDK2.Drawable context, mapping|void attributes)
     VALUE(subwindow_mode,GDK_GC_SUBWINDOW);
     VALUE(join_style,GDK_GC_JOIN_STYLE);
     VALUE(cap_style,GDK_GC_CAP_STYLE);
-    VALUE(line_style,GDK_LINE_STYLE);
-    VALUE(line_width,GDK_LINE_WIDTH);
+    VALUE(line_style,GDK_GC_LINE_STYLE);
+    VALUE(line_width,GDK_GC_LINE_WIDTH);
     VALUE(clip_x_origin,GDK_GC_CLIP_X_ORIGIN);
     VALUE(clip_y_origin,GDK_GC_CLIP_Y_ORIGIN);
     VALUE(ts_x_origin,GDK_GC_TS_X_ORIGIN);
@@ -205,7 +205,7 @@ void set_function(int fun)
 //! Set the function to the specified one.  One of GDK2.Xor,
 //! GDK2.Invert and GDK2.Copy.
 {
-  pgtk2_verify_inited():
+  pgtk2_verify_inited();
   {
     INT_TYPE a;
 
