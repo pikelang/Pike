@@ -245,13 +245,13 @@ int get_monitor_at_window(GDK2.Window window);
 //! Returns the number of the monitor in which the largest area of the
 //! bounding rectangle of window resides.
 
+require gtk210;
 float get_resolution();
 //! Gets the resolution for font handling.
 
 void set_resolution(float dpi);
 //! Sets the resolution for font handling.
 
-require gtk210;
 +GDK2.Window get_active_window();
 //! Returns the currently active window.
 endrequire;
