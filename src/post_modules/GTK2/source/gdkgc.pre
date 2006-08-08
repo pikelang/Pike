@@ -30,10 +30,10 @@ void create(GTK2.Widget|GDK2.Drawable context, mapping|void attributes)
     get_all_args("'()",args,"%o%m",&o,&m);
 
 #define VALUE(X,Y)					\
-	if (sv=simple_mapping_string_lookup(m,#X) {	\
-		values.X=sv->u.integer;			\
-		have_values|=Y;				\
-	}
+    if (sv=simple_mapping_string_lookup(m,#X)) {	\
+      values.X=sv->u.integer;				\
+      have_values|=Y;					\
+    }
 
     VALUE(graphics_exposures,GDK_GC_EXPOSURES);
     VALUE(subwindow_mode,GDK_GC_SUBWINDOW);
@@ -47,11 +47,12 @@ void create(GTK2.Widget|GDK2.Drawable context, mapping|void attributes)
     VALUE(ts_y_origin,GDK_GC_TS_Y_ORIGIN);
     VALUE(fill,GDK_GC_FILL);
     VALUE(function,GDK_GC_FUNCTION);
+  }
 
   if (have_values) {
     if (G_TYPE_FROM_INSTANCE(get_gobject(o))==GDK_TYPE_DRAWABLE)
       gc=gdk_gc_new_with_values(GDK_WINDOW(get_gobject(o)),
-				&values,have_values));
+				&values,have_values);
     else
       gc=gdk_gc_new_with_values(GTK_WIDGET(get_gobject(o))->window,
 				&values,have_values);
