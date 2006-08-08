@@ -81,6 +81,63 @@ void set_default_colormap(GDK2.Colormap colormap)
   }
 }
 
++GDK2.Colormap get_rgb_colormap()
+//! Gets the preferred colormap for rendering image data.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GdkColormap *gc;
+
+    gc=gdk_screen_get_rgb_colormap(GDK_SCREEN(THIS->obj));
+    push_gdkobject(gc,colormap);
+  }
+}
+
+
++GDK2.Visual get_rgb_visual()
+//! Get a "preferred visual" chosen by GdkRGB for rendering image data.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GdkVisual *gv;
+
+    gv=gdk_screen_get_rgb_visual(GDK_SCREEN(THIS->obj));
+    push_gdkobject(gv,visual);
+  }
+}
+
+require gtk28;
++GDK2.Colormap get_rgba_colormap()
+//! Gets a colormap to use for creating windows or pixmaps with an alpha
+//! channel.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GdkColormap *gc;
+
+    gc=gdk_screen_get_rgba_colormap(GDK_SCREEN(THIS->obj));
+    push_gdkobject(gc,colormap);
+  }
+}
+
++GDK2.Visual get_rgba_visual()
+//! Gets a visual to use for creating windows or pixmaps with an alpha
+//! channel.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  {
+    GdkVisual *gv;
+
+    gv=gdk_screen_get_rgba_visual(GDK_SCREEN(THIS->obj));
+    push_gdkobject(gv,visual);
+  }
+}
+endrequire;
+
 require gtk210;
 int is_composited();
 //! Returns whether windows with an RGBA visual can reasonable be expected
