@@ -194,6 +194,7 @@ void popup();
 void popdown();
 //! Hides the menu or dropdown list.
 
+require gtk26;
 void set_row_separator_func(function f, mixed user_data )
 //! Sets the row separator function, which is used to determine whether a
 //! row should be drawn as a separator.  If the row separator function is 0
@@ -218,6 +219,7 @@ void set_row_separator_func(function f, mixed user_data )
   } 
   RETURN_THIS();
 }
+endrequire;
 
 require gtk26;
 void set_add_tearoffs(int setting);
