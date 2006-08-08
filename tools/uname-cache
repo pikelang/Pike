@@ -1,0 +1,17 @@
+#!/bin/sh
+# Fetch and cache remote info to make future uname calls quick. The
+# cache is in effect while the command supplied on the command line
+# runs.
+
+# Use flag in environment here since "." doesn't pass arguments in
+# standard sh.
+INIT_UNAME=yes
+export INIT_UNAME
+. $NT_TOOL_PATH/uname
+unset INIT_UNAME
+
+if [ $# = 0 ]; then
+  exec $SHELL
+else
+  exec "$@"
+fi
