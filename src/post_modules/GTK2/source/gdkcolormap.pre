@@ -13,7 +13,7 @@ void create(GDK2.Visual visual, ?int allocate, ?int system)
     INT_TYPE all=0,sys=0;
 
     get_all_args("create",args,"%o.%i%i",&o1,&all,&sys);
-    gv=GDK_VISUAL(get_gdkobject(gv,visual));
+    gv=GDK_VISUAL(get_gdkobject(o1,visual));
     if (sys)
       gcm=gdk_colormap_get_system();
     else
@@ -40,7 +40,10 @@ int alloc_colors(array(GDK2.Color) colors, int writeable,
     gc=(GdkColor *)xmalloc(sizeof(GdkColor)*a->size);
     suc=(int *)xmalloc(sizeof(int)*a->size);
     for (i=0; i<a->size; i++) {
-      gc[i]=*(GdkColor *)get_gdkobject(ITEM(a)[i],color);
+      struct object *o;
+      o=ITEM(a)[i].u.object;
+      gc[i]=*(GdkColor *)get_gdkobject(o,color);
+/*      gc[i]=*(GdkColor *)get_gdkobject(&((ITEM(a)[i]).u.object),color); */
     }
     res=gdk_colormap_alloc_colors(GDK_COLORMAP(THIS->obj),gc,i,
 			wr,best,suc);
@@ -81,7 +84,10 @@ void free_colors(array(GDK2.Color) colors)
       Pike_error("Invalid array.\n");
     gc=(GdkColor *)xmalloc(sizeof(GdkColor)*a->size);
     for (i=0; i<a->size; i++) {
-      gc[i]=*(GdkColor *)get_gdkobject(ITEM(a)[i],color);
+      struct object *o;
+      o=ITEM(a)[i].u.object;
+      gc[i]=*(GdkColor *)get_gdkobject(o,color);
+/*      gc[i]=*(GdkColor *)get_gdkobject(&(ITEM(a)[i].u.object),color); */
     }
     gdk_colormap_free_colors(GDK_COLORMAP(THIS->obj),gc,i);
     xfree(gc);
@@ -129,7 +135,7 @@ require gtk22;
   {
     GdkScreen *gs;
 
-    gs=gdk_colrmap_get_screen(GDK_COLORMAP(THIS->obj));
+    gs=gdk_colormap_get_screen(GDK_COLORMAP(THIS->obj));
     push_gobject(gs);
   }
 }

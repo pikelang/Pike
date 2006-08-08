@@ -24,7 +24,7 @@ void create(?mapping(string:mixed) props)
 }
 
 require gtk22;
-void set_screen(GD2.Screen screen);
+void set_screen(GDK2.Screen screen);
 //! Sets the screen where this object will be displayed.
 
 GDK2.Screen get_screen();

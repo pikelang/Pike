@@ -233,7 +233,8 @@ mixed _index(string ind)
    case GDK_SETTING:
      if( is_same_string(index,_STR("type")) ) RETURN_STRING(_STR("setting"));
      if( is_same_string(index,_STR("action")) ) RETURN_INT(e->setting.action);
-     if( is_same_string(index,_STR("name")) ) RETURN_STRING(_STR(e->setting.name));
+     if( is_same_string(index,_STR("name")) )
+         RETURN_STRING(make_shared_binary_string(e->setting.name,strlen(e->setting.name)));
      break;
 #ifdef HAVE_GTK26
    case GDK_OWNER_CHANGE:

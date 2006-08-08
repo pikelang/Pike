@@ -94,7 +94,7 @@ void set_row(GTK2.TreeIter iter, array(mixed) values)
     struct object *o1;
     struct array *a;
     struct store_data *sd;
-    GValue gv={0,};
+    GValue gv={0};
     struct svalue *sv;
     int i;
     get_all_args("set_row",args,"%o%A",&o1,&a);
@@ -126,7 +126,7 @@ void set_value(GTK2.TreeIter iter, int column, mixed value)
     INT_TYPE col;
     struct svalue *sv;
     struct store_data *sd;
-    GValue gv={0,};
+    GValue gv={0};
     get_all_args("set_value",args,"%o%i%*",&o1,&col,&sv);
     sd=g_object_get_data(G_OBJECT(THIS->obj),"store-data");
     if (!sd)

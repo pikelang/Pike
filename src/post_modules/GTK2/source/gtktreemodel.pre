@@ -116,7 +116,7 @@ array get_row(GTK2.TreeIter iter)
     pgtk2_pop_n_elems(args);
     cols=gtk_tree_model_get_n_columns(GTK_TREE_MODEL(THIS->obj));
     for (i=0; i<cols; i++) {
-      GValue v={0,};
+      GValue v={0};
       gtk_tree_model_get_value(GTK_TREE_MODEL(THIS->obj),gti,i,&v);
       pgtk2_push_gvalue_rt(&v); 
     }
@@ -129,7 +129,7 @@ mixed get_value(GTK2.TreeIter iter, int column)
 {
   pgtk2_verify_inited();
   {
-    GValue v={0,};
+    GValue v={0};
     struct object *o1;
     INT_TYPE col;
 
