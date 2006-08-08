@@ -216,6 +216,38 @@ mixed _index(string ind)
        return;
      }
      break;
+   case GDK_SCROLL:
+     if( is_same_string(index,_STR("type")) ) RETURN_STRING(_STR("scroll"));
+     if (is_same_string(index,_STR("x"))) RETURN_INT(e->scroll.x);
+     if (is_same_string(index,_STR("y"))) RETURN_INT(e->scroll.y);
+     if (is_same_string(index,_STR("direction"))) RETURN_INT(e->scroll.direction);
+     if (is_same_string(index,_STR("x_root"))) RETURN_INT(e->scroll.x_root);
+     if (is_same_string(index,_STR("y_root"))) RETURN_INT(e->scroll.y_root);
+
+     break;
+   case GDK_WINDOW_STATE:
+     if( is_same_string(index,_STR("type")) ) RETURN_STRING(_STR("window_state"));
+     if( is_same_string(index,_STR("changed")) ) RETURN_INT(e->window_state.changed_mask);
+     if( is_same_string(index,_STR("new_state")) ) RETURN_INT(e->window_state.new_window_state);
+     break;
+   case GDK_SETTING:
+     if( is_same_string(index,_STR("type")) ) RETURN_STRING(_STR("setting"));
+     if( is_same_string(index,_STR("action")) ) RETURN_INT(e->setting.action);
+     if( is_same_string(index,_STR("name")) ) RETURN_STRING(_STR(e->setting.name));
+     break;
+#ifdef HAVE_GTK26
+   case GDK_OWNER_CHANGE:
+     if( is_same_string(index,_STR("type")) ) RETURN_STRING(_STR("owner_change"));
+     if( is_same_string(index,_STR("selection")) ) RETURN_ATOM(e->owner_change.selection);
+     break;
+#endif
+#ifdef HAVE_GTK28
+   case GDK_GRAB_BROKEN:
+     if( is_same_string(index,_STR("type")) ) RETURN_STRING(_STR("setting"));
+     if( is_same_string(index,_STR("keyboard")) ) RETURN_INT(e->grab_broken.keyboard);
+     if( is_same_string(index,_STR("implicit")) ) RETURN_INT(e->grab_broken.implicit);
+     break;
+#endif
   }
   RETURN_NIL();
 }
