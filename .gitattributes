@@ -603,10 +603,6 @@ testfont binary
 /src/modules/SANE/acconfig.h foreign_ident
 /src/modules/SANE/configure.in foreign_ident
 /src/modules/SANE/sane.c foreign_ident
-/src/modules/Ssleay/Makefile.in foreign_ident
-/src/modules/Ssleay/acconfig.h foreign_ident
-/src/modules/Ssleay/configure.in foreign_ident
-/src/modules/Ssleay/ssleay.c foreign_ident
 /src/modules/Yp/Makefile.in foreign_ident
 /src/modules/Yp/acconfig.h foreign_ident
 /src/modules/Yp/configure.in foreign_ident
