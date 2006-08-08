@@ -251,6 +251,8 @@ float get_resolution();
 void set_resolution(float dpi);
 //! Sets the resolution for font handling.
 
+require gtk210;
 +GDK2.Window get_active_window();
 //! Returns the currently active window.
+endrequire;
 endrequire;
