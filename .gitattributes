@@ -587,10 +587,6 @@ testfont binary
 /src/modules/Perl/acconfig.h foreign_ident
 /src/modules/Perl/configure.in foreign_ident
 /src/modules/Perl/perlmod.c foreign_ident
-/src/modules/Pipe/Makefile.in foreign_ident
-/src/modules/Pipe/acconfig.h foreign_ident
-/src/modules/Pipe/configure.in foreign_ident
-/src/modules/Pipe/pipe.c foreign_ident
 /src/modules/Postgres/Makefile.in foreign_ident
 /src/modules/Postgres/acconfig.h foreign_ident
 /src/modules/Postgres/configure.in foreign_ident
