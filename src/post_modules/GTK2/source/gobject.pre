@@ -144,7 +144,7 @@ void signal_emit(string signal_name)
     {
       int i;
       GValue params[opts->n_params+1];
-      GValue rvalue={0, };
+      GValue rvalue={0};
 
       memset(params,0,sizeof(GValue)*(opts->n_params+1)); 
       g_value_init(params+0,G_TYPE_FROM_INSTANCE(THIS->obj));

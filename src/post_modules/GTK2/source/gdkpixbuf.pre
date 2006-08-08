@@ -87,7 +87,7 @@ void create(string|mapping options)
 	scale=PGTK_GETINT(sv);
 	if (width==-2)
 	  width=-1;
-	if (height=-2)
+	if (height==-2)
 	  height=-1;
 	gp=gdk_pixbuf_new_from_file_at_scale(file,width,height,scale,&error);
       } else
@@ -208,7 +208,7 @@ endrequire;
 #define GTK_GDKPIXBUF(X) GDK_PIXBUF(X)
 %}
 
-GDK2.Pixbuf new_subpixbuf(int src_x, int src_y, int width, int height)
++GDK2.Pixbuf new_subpixbuf(int src_x, int src_y, int width, int height)
 //! Creates a new pixbuf which represents a sub-region of src.  The new
 //! pixbuf shares its pixels with the original pixbuf, so writing to one
 //! affects both.  The new pixbuf holds a reference to this one, so
@@ -225,7 +225,7 @@ GDK2.Pixbuf new_subpixbuf(int src_x, int src_y, int width, int height)
   }
 }
 
-GDK2.Pixbuf save(string filename, string type, void|mapping options)
++GDK2.Pixbuf save(string filename, string type, void|mapping options)
 //! Save to a file in format type.  "jpeg", "png", "ico", "bmp",
 //! are the only valid writable types at this time.  Quality is only
 //! valid for jpeg images.
@@ -312,7 +312,7 @@ GDK2.Pixbuf save(string filename, string type, void|mapping options)
   RETURN_THIS();
 }
     
-GDK2.Pixbuf copy();
++GDK2.Pixbuf copy();
 //! Creates a new GDK2.Pixbuf with a copy of this one.
 
 int get_colorspace()
@@ -446,7 +446,7 @@ string get_option(string key)
   }
 }
 
-GDK2.Pixbuf scale_simple(int dest_width, int dest_height, ?int interp_type)
++GDK2.Pixbuf scale_simple(int dest_width, int dest_height, ?int interp_type)
 //! Create a new W(Pixbuf) containing a copy of this W(Pixbuf) scaled to
 //! dest_width x dest_height.  Leaves this W(Pixbuf) unaffected.
 //! intertype should be GDK2.INTERP_NEAREST if you want maximum speed
@@ -466,7 +466,7 @@ GDK2.Pixbuf scale_simple(int dest_width, int dest_height, ?int interp_type)
   }
 }
 
-GDK2.Pixbuf scale(GDK2.Pixbuf dest, int dest_x, int dest_y, int dest_width,
++GDK2.Pixbuf scale(GDK2.Pixbuf dest, int dest_x, int dest_y, int dest_width,
                 int dest_height, float offset_x, float offset_y,
                 float scale_x, float scale_y, int type)
 //! Creates a transformation of the source image by scaling by scale_x
@@ -496,14 +496,14 @@ GDK2.Pixbuf scale(GDK2.Pixbuf dest, int dest_x, int dest_y, int dest_width,
   }
 }
 
-GDK2.Pixbuf composite_color_simple(int dest_width, int dest_height,
++GDK2.Pixbuf composite_color_simple(int dest_width, int dest_height,
                 int type, int overall_alpha, int check_size, int color1,
                 int color2);
 //! Creates a new W(Pixbuf) by scalling src to dest_width x dest_height
 //! and compositing the result with a checkboard of colors color1 and
 //! color2.
 
-GDK2.Pixbuf composite(GDK2.Pixbuf dest, int dest_x, int dest_y, int dest_width,
++GDK2.Pixbuf composite(GDK2.Pixbuf dest, int dest_x, int dest_y, int dest_width,
                 int dest_height, float offset_x, float offset_y,
                 float scale_x, float scale_y, int type, int overall_alpha)
 //! Creates a transformation of the source image by scalling by scale_x
@@ -533,7 +533,7 @@ GDK2.Pixbuf composite(GDK2.Pixbuf dest, int dest_x, int dest_y, int dest_width,
   }
 }
 
-GDK2.Pixbuf composite_color(GDK2.Pixbuf dest, int dest_x, int dest_y,
++GDK2.Pixbuf composite_color(GDK2.Pixbuf dest, int dest_x, int dest_y,
 	int dest_width, int dest_height, float offset_x, float offset_y,
 	float scale_x, float scale_y, int type, int overall_alpha,
 	int check_x, int check_y, int check_size, int color1, int color2)
@@ -568,19 +568,17 @@ GDK2.Pixbuf composite_color(GDK2.Pixbuf dest, int dest_x, int dest_y,
 }
 
 require gtk26;
-
-GDK2.Pixbuf rotate_simple(int angle);
++GDK2.Pixbuf rotate_simple(int angle);
 //! Rotates a pixbuf by a multiple of 90 degrees, and returns the result
 //! in a new pixbuf.  angle is either a multiple of 90 degrees (0,90,180,270),
 //! or one of CONST(GDK_PIXBUF_ROTATE_), which are merely aliases.
 
-GDK2.Pixbuf flip(int horizontal);
++GDK2.Pixbuf flip(int horizontal);
 //! Flips a pixbuf horizontally or vertically and returns the result in
 //! a new pixbuf.
-
 endrequire;
 
-GDK2.Pixbuf add_alpha(int substitute_color, int r, int g, int b);
++GDK2.Pixbuf add_alpha(int substitute_color, int r, int g, int b);
 //! Adds an alpha channel to this pixbuf and returns a copy.  If it
 //! already has an alpha channel, the channel values are copied from the
 //! original; otherwise, the alpha channel is initialized to 255 (full
@@ -590,7 +588,7 @@ GDK2.Pixbuf add_alpha(int substitute_color, int r, int g, int b);
 //! for the substitute color, all white pixels will become fully
 //! transparent.
 
-GDK2.Pixbuf copy_area(GDK2.Pixbuf dest, int src_x, int src_y, int widt,
++GDK2.Pixbuf copy_area(GDK2.Pixbuf dest, int src_x, int src_y, int widt,
 		      int height, int dest_x, int dest_y)
 //! Copies a rectangular area from this pixbuf to dest.  Conversion of
 //! pixbuf formats is done automatically.
@@ -621,7 +619,7 @@ void saturate_and_pixelate(GDK2.Pixbuf dest, float saturation,
 //! checkerboard pattern to create a pixelated image.  This pixbuf and
 //! dest must have the same image format, size, and rowstride.
 
-GDK2.Bitmap render_threshold_alpha(int src_x, int src_y, int dest_c,
++GDK2.Bitmap render_threshold_alpha(int src_x, int src_y, int dest_c,
 				   int dest_y, int width, int height,
 				   int alpha_threshold)
 //! Takes the opacity values in a rectangular portion of a pixbuf and

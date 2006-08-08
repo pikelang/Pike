@@ -14,7 +14,7 @@ void create()
 //! Gets the default screen.
 {
   pgtk2_verify_not_inited();
-  pgkt2_verify_setup(); 
+  pgtk2_verify_setup(); 
   {
     GdkScreen *gs;
 

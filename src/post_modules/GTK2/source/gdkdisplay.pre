@@ -258,11 +258,12 @@ void store_clipboard(GDK2.Window clipboard_window,
       int n;
 
       targets=xmalloc(a->size);
-      for (n=0; j<a->size; j++)
+      for (n=0; n<a->size; n++)
 	target[n]=get_gdkatom(ITEM(a)[n]->u.object);
       gdk_display_store_clipboard(GDK_DISPLAY_OBJECT(THIS->obj),
 			GDK_WINDOW(get_gobject(o1)),GDK_CURRENT_TIME,
 			targets,n);
+      xfree(targets);
     }
   } 
   RETURN_THIS();
