@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.184 2006/08/09 14:02:10 mast Exp $
+|| $Id: pike_memory.c,v 1.185 2006/08/09 14:03:41 grubba Exp $
 */
 
 #include "global.h"
@@ -378,6 +378,7 @@ char *debug_qalloc(size_t size)
 #endif /* !MAP_ANONYMOUS && MAP_ANON */
 
 #ifdef MAP_ANONYMOUS
+/* Note: mmap ANON fails (EINVAL) on Solaris if the fd isn't -1. */
 #define dev_zero -1
 #else
 static int dev_zero = -1;
@@ -500,6 +501,17 @@ static void low_verify_mexec_hdr(struct mexec_hdr *hdr,
 #else /* !PIKE_DEBUG */
 #define verify_mexec_hdr(HDR)
 #endif /* PIKE_DEBUG */
+
+/* FIXME: Consider applying the following hints on Solaris:
+ *
+ * For 32-bit processes:
+ *   * Combine 8-Kbyte requests up to a limit of 48 Kbytes.
+ *   * Combine amounts over 48 Kbytes into 496-Kbyte chunks.
+ *   * Combine amounts over 496 Kbytes into 4080-Kbyte chunks.
+ * For 64-bit processes:
+ *   * Combine amounts < 1008 Kbytes into chunks <= 1008 Kbytes.
+ *   * Combine amounts over 1008 Kbytes into 4080-Kbyte chunks.
+ */
 
 static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
 {
