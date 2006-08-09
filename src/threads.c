@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.251 2006/07/05 02:22:56 mast Exp $
+|| $Id: threads.c,v 1.252 2006/08/09 01:20:33 nilsson Exp $
 */
 
 #ifndef CONFIGURE_TEST
@@ -1699,9 +1699,9 @@ void f_thread_backtrace(INT32 args)
  *!
  *! @returns
  *!   @int
- *!     @value @[Thread.THREAD_NOT_STARTED]
- *!     @value @[Thread.THREAD_RUNNING]
- *!     @value @[Thread.THREAD_EXITED]
+ *!     @value Thread.THREAD_NOT_STARTED
+ *!     @value Thread.THREAD_RUNNING
+ *!     @value Thread.THREAD_EXITED
  *!   @endint
  */
 void f_thread_id_status(INT32 args)
