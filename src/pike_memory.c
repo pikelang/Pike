@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.182 2006/08/08 22:23:09 mast Exp $
+|| $Id: pike_memory.c,v 1.183 2006/08/09 01:55:45 mast Exp $
 */
 
 #include "global.h"
@@ -369,11 +369,72 @@ char *debug_qalloc(size_t size)
  * Allocation of executable memory.
  */
 
-#if defined(HAVE_MMAP) && defined(MEXEC_USES_MMAP)
+#ifdef MEXEC_USES_MMAP
+
+#define MEXEC_ALLOC_CHUNK_SIZE page_size
+
+#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+#define MAP_ANONYMOUS	MAP_ANON
+#endif /* !MAP_ANONYMOUS && MAP_ANON */
+
+#ifdef MAP_ANONYMOUS
+#define dev_zero 0
+#else
+static int dev_zero = -1;
+#define INIT_DEV_ZERO
+#define MAP_ANONYMOUS	0
+#endif
+
+static INLINE void *mexec_do_alloc (void *start, size_t length)
+{
+  void *blk = mmap(start, length, PROT_EXEC|PROT_READ|PROT_WRITE,
+		   MAP_PRIVATE|MAP_ANONYMOUS, dev_zero, 0);
+  if (blk == MAP_FAILED) {
+    fprintf(stderr, "mmap of %"PRINTSIZET"u bytes failed, errno=%d.\n",
+	    length, errno);
+    return NULL;
+  }
+  return blk;
+}
+
+#elif defined (_WIN32)
+
+/* VirtualAlloc practically never succeeds to give us a new block
+ * adjacent to an earlier allocated block if we use the page size.
+ * Some testing shows that VirtualAlloc often pads alloc requests to
+ * 64kb pages (at least on Windows Server 2003), so we use that as the
+ * basic allocation unit instead of the page size. */
+#define MEXEC_ALLOC_CHUNK_SIZE (64 * 1024)
+
+static INLINE void *mexec_do_alloc (void *start, size_t length)
+{
+  void *blk = VirtualAlloc (start, length, MEM_RESERVE|MEM_COMMIT,
+			    PAGE_EXECUTE_READWRITE);
+  if (!blk) {
+    blk = VirtualAlloc (NULL, length, MEM_RESERVE|MEM_COMMIT,
+			PAGE_EXECUTE_READWRITE);
+    if (!blk) {
+      fprintf (stderr, "VirtualAlloc of %"PRINTSIZET"u bytes failed. "
+	       "Error code: %d\n", length, GetLastError());
+      return NULL;
+    }
+  }
+  return blk;
+}
+
+#endif	/* _WIN32 */
+
+#ifdef USE_MY_MEXEC_ALLOC
+
+/* #define MY_MEXEC_ALLOC_STATS */
+
+#ifdef MY_MEXEC_ALLOC_STATS
+static size_t sep_allocs = 0, grow_allocs = 0, total_size = 0;
+#endif
+
 #if 0
 #define MEXEC_MAGIC	0xdeadfeedf00dfaddLL
 #endif /* 0 */
-static int dev_zero = -1;
 struct mexec_block {
   struct mexec_hdr *hdr;
   ptrdiff_t size;
@@ -440,45 +501,29 @@ static void low_verify_mexec_hdr(struct mexec_hdr *hdr,
 #define verify_mexec_hdr(HDR)
 #endif /* PIKE_DEBUG */
 
-#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
-#define MAP_ANONYMOUS	MAP_ANON
-#endif /* !MAP_ANONYMOUS && MAP_ANON */
-
 static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
 {
   struct mexec_hdr *wanted = NULL;
   struct mexec_hdr *hdr;
   /* fprintf(stderr, "grow_mexec_hdr(%p, %p)\n", base, (void *)sz); */
   if (!sz) return NULL;
-#ifndef MAP_ANONYMOUS
-  /* Neither MAP_ANONYMOUS nor MAP_ANON.
-   * Map /dev/zero.
-   */
-  if (dev_zero < 0) {
-    if ((dev_zero = open("/dev/zero", O_RDONLY)) < 0) {
-      fprintf(stderr, "Failed to open /dev/zero.\n");
-      return NULL;
-    }
-    dmalloc_accept_leak_fd(dev_zero);
-    set_close_on_exec(dev_zero, 1);
-  }
-#define MAP_ANONYMOUS	0
-#endif /* !MAP_ANONYMOUS */
-  sz = (sz + sizeof(struct mexec_hdr) + (page_size-1)) & ~(page_size-1);
+
+  sz = (sz + sizeof(struct mexec_hdr) + (MEXEC_ALLOC_CHUNK_SIZE-1)) &
+    ~(MEXEC_ALLOC_CHUNK_SIZE-1);
 
   if (base) {
     verify_mexec_hdr(base);
     wanted = (struct mexec_hdr *)(((char *)base) + base->size);
   }
   
-  hdr = mmap(wanted, sz, PROT_EXEC|PROT_READ|PROT_WRITE,
-	     MAP_PRIVATE|MAP_ANONYMOUS, dev_zero, 0);
-  if (hdr == MAP_FAILED) {
-    fprintf(stderr, "mmap failed, errno=%d.\n", errno);
-    return NULL;
-  }
+  hdr = mexec_do_alloc (wanted, sz);
+  if (!hdr) return NULL;
   if (hdr == wanted) {
     /* We succeeded in growing. */
+#ifdef MY_MEXEC_ALLOC_STATS
+    grow_allocs++;
+    total_size += sz;
+#endif
     base->size += sz;
     verify_mexec_hdr(base);
     return base;
@@ -491,6 +536,10 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
     if (wanted->next) {
       if ((((char *)wanted->next)+wanted->next->size) == (char *)hdr) {
 	/* We succeeded in growing some other hdr. */
+#ifdef MY_MEXEC_ALLOC_STATS
+	grow_allocs++;
+	total_size += sz;
+#endif
 	wanted->next->size += sz;
 	verify_mexec_hdr(wanted->next);
 	return wanted->next;
@@ -502,6 +551,10 @@ static struct mexec_hdr *grow_mexec_hdr(struct mexec_hdr *base, size_t sz)
     hdr->next = NULL;
     mexec_hdrs = hdr;
   }
+#ifdef MY_MEXEC_ALLOC_STATS
+  sep_allocs++;
+  total_size += sz;
+#endif
   hdr->size = sz;
   hdr->free = NULL;
   hdr->bottom = (char *)(hdr+1);
@@ -619,7 +672,7 @@ PMOD_EXPORT void mexec_free(void *ptr)
 #if 0
       if (hdr->bottom == (char *)(hdr + 1)) {
 	/* The entire mmapped block is free.
-	 * FIXME: Consider unmaopping it.
+	 * FIXME: Consider unmapping it.
 	 */
       }
 #endif /* 0 */
@@ -821,7 +874,7 @@ PMOD_EXPORT void mexec_free (void *ptr)
   free (blk - 1);
 }
 
-#else  /* !(HAVE_MMAP && MEXEC_USES_MMAP) && !VALGRIND_DISCARD_TRANSLATIONS */
+#else  /* !USE_MY_MEXEC_ALLOC && !VALGRIND_DISCARD_TRANSLATIONS */
 
 PMOD_EXPORT void *mexec_alloc(size_t sz)
 {
@@ -837,7 +890,7 @@ PMOD_EXPORT void mexec_free(void *ptr)
   free(ptr);
 }
 
-#endif  /* !(HAVE_MMAP && MEXEC_USES_MMAP) && !VALGRIND_DISCARD_TRANSLATIONS */
+#endif  /* !USE_MY_MEXEC_ALLOC && !VALGRIND_DISCARD_TRANSLATIONS */
 
 /* #define DMALLOC_TRACE */
 /* #define DMALLOC_TRACELOGSIZE	256*1024 */
@@ -2677,7 +2730,7 @@ void search_all_memheaders_for_references(void)
   mt_unlock(&debug_malloc_mutex);
 }
 
-void cleanup_memhdrs(void)
+static void cleanup_memhdrs(void)
 {
   unsigned long h;
   mt_lock(&debug_malloc_mutex);
@@ -2817,7 +2870,7 @@ static void unlock_da_lock(void)
 }
 #endif
 
-void initialize_dmalloc(void)
+static void initialize_dmalloc(void)
 {
   long e;
   static int initialized=0;
@@ -3242,7 +3295,7 @@ int dmalloc_is_invalid_memory_block(void *block)
   return 0; /* block is valid */
 }
 
-void cleanup_debug_malloc(void)
+static void cleanup_debug_malloc(void)
 {
   size_t i;
 
@@ -3282,7 +3335,36 @@ void init_pike_memory (void)
   page_size = 8192;
 #endif
 
+#ifdef INIT_DEV_ZERO
+  /* Neither MAP_ANONYMOUS nor MAP_ANON.
+   * Initialize a /dev/zero fd for use with mmap.
+   */
+  if (dev_zero < 0) {
+    if ((dev_zero = open("/dev/zero", O_RDONLY)) < 0) {
+      fprintf(stderr, "Failed to open /dev/zero.\n");
+      return NULL;
+    }
+    dmalloc_accept_leak_fd(dev_zero);
+    set_close_on_exec(dev_zero, 1);
+  }
+#endif
+
 #ifdef DEBUG_MALLOC
   initialize_dmalloc();
+#endif
+}
+
+void exit_pike_memory (void)
+{
+#ifdef DEBUG_MALLOC
+  cleanup_memhdrs();
+  cleanup_debug_malloc();
+#endif
+
+#if defined (USE_MY_MEXEC_ALLOC) && defined (MY_MEXEC_ALLOC_STATS)
+  fprintf (stderr, "mexec stats: "
+	   "%"PRINTSIZET"u separate allocs, %"PRINTSIZET"u grow allocs, "
+	   "%"PRINTSIZET"u bytes, alloc chunks %d bytes.\n",
+	   sep_allocs, grow_allocs, total_size, MEXEC_ALLOC_CHUNK_SIZE);
 #endif
 }

@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.c,v 1.9 2006/08/08 22:23:09 mast Exp $
+ * $Id: pike_embed.c,v 1.10 2006/08/09 01:55:45 mast Exp $
  *
  * Pike embedding API.
  *
@@ -516,11 +516,7 @@ DECLSPEC(noreturn) void pike_do_exit(int num)
 
   exit_modules();
 
-#ifdef DEBUG_MALLOC
-  cleanup_memhdrs();
-  cleanup_debug_malloc();
-#endif
-
+  exit_pike_memory();
 
 #ifdef PROFILING
   {

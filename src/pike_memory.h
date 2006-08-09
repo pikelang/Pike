@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.h,v 1.54 2006/08/08 22:23:10 mast Exp $
+|| $Id: pike_memory.h,v 1.55 2006/08/09 01:55:45 mast Exp $
 */
 
 #ifndef MEMORY_H
@@ -144,6 +144,7 @@ PMOD_EXPORT void *mexec_alloc(size_t sz);
 PMOD_EXPORT void *mexec_realloc(void *ptr, size_t sz);
 PMOD_EXPORT void mexec_free(void *ptr);
 void init_pike_memory (void);
+void exit_pike_memory (void);
 
 #undef BLOCK_ALLOC
 
@@ -231,5 +232,11 @@ void init_pike_memory (void);
   							\
     RET = ret;						\
   } while(0)
+
+/* Determine if we should use our own heap manager for executable
+ * memory. */
+#if defined(MEXEC_USES_MMAP) || defined (_WIN32)
+#define USE_MY_MEXEC_ALLOC
+#endif
 
 #endif
