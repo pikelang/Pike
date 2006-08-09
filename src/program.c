@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.608 2006/08/09 01:55:45 mast Exp $
+|| $Id: program.c,v 1.609 2006/08/09 14:03:02 mast Exp $
 */
 
 #include "global.h"
@@ -8228,7 +8228,7 @@ void make_program_executable(struct program *p)
 #endif /* 0 */
     }
   }
-#endif /* USE_MY_MEXEC_ALLOC */
+#endif /* !USE_MY_MEXEC_ALLOC */
 
 #ifdef HAVE_SYNC_INSTRUCTION_MEMORY
   sync_instruction_memory(p->program,
