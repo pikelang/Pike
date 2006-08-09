@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.108 2006/08/02 15:00:28 mast Exp $
+|| $Id: global.h,v 1.109 2006/08/09 18:31:36 mast Exp $
 */
 
 #ifndef GLOBAL_H
@@ -217,12 +217,10 @@ void *alloca();
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#undef HAVE_STDLIB_H
 #endif
 
 #ifdef HAVE_STDDEF_H
 #include <stddef.h>
-#undef HAVE_STDDEF_H
 #endif
 
 #ifdef HAVE_MALLOC_H
@@ -230,37 +228,30 @@ void *alloca();
 /* FreeBSD and OpenBSD has <malloc.h>, but it just contains a warning... */
 #include <malloc.h>
 #endif /* !__FreeBSD__ && !__OpenBSD */
-#undef HAVE_MALLOC_H
 #endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#undef HAVE_UNISTD_H
 #endif
 
 #ifdef HAVE_STRING_H
 #include <string.h>
-#undef HAVE_STRING_H
 #endif
 
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
-#undef HAVE_LIMITS_H
 #endif
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#undef HAVE_SYS_TYPES_H
 #endif
 
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
-#undef HAVE_MEMORY_H
 #endif
 
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
-#undef HAVE_WINDOWS_H
 #endif
 
 #include <float.h>
