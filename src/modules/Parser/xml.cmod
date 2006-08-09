@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.cmod,v 1.93 2006/07/21 16:19:02 grubba Exp $
+|| $Id: xml.cmod,v 1.94 2006/08/09 00:47:49 grendel Exp $
 */
 
 #include "global.h"
@@ -3128,7 +3128,7 @@ static int low_parse_xml(struct pike_string *end)
       apply_current(f_Simple_Context_push_string_fun_num, 1);
     }
   }
-  /* !@endclass
+  /*! @endclass
    */
 }
 /*! @endclass
