@@ -64,10 +64,10 @@ result is also available in the variable <expr>_</expr>, thus
 disable them, e.g. by typing <expr>int _;</expr>. The result history
 is ten entries long by default, but it could easily be altered by
 using the <tt>set history</tt> command. Note that some Pike code only
-works when there is at most one object created from a class (e.g. the
-Perl module), which means that the result history must be turned off.
-Otherwise the previous object will remain in the history during the
-next nine results.</p>
+works when there is at most one object created from a class, which
+means that the result history must be turned off. Otherwise the
+previous object will remain in the history during the next nine
+results.</p>
 
 <p>You can put a .hilferc file in the directory set in your
 environment variable $HOME or $USERPROFILE. The contents of this file
