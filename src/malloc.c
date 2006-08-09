@@ -4,8 +4,7 @@
 #include "global.h"
 #define USE_LOCKS 1
 #define USE_DL_PREFIX 1
-#define NO_MALLINFO 1
-/* Further pike changes below: PMOD_EXPORT */
+/* Further pike changes below: PMOD_EXPORTs and lines marked "PIKE". */
 /* End pike preamble */
 
 /*
@@ -589,9 +588,15 @@ DEFAULT_MMAP_THRESHOLD       default: 256K
   malloc does support the following options.
 */
 
+#ifndef M_TRIM_THRESHOLD	/* PIKE change */
 #define M_TRIM_THRESHOLD     (-1)
+#endif				/* PIKE change */
+#ifndef M_GRANULARITY		/* PIKE change */
 #define M_GRANULARITY        (-2)
+#endif				/* PIKE change */
+#ifndef M_MMAP_THRESHOLD	/* PIKE change */
 #define M_MMAP_THRESHOLD     (-3)
+#endif				/* PIKE change */
 
 /* ------------------------ Mallinfo declarations ------------------------ */
 
@@ -622,6 +627,12 @@ DEFAULT_MMAP_THRESHOLD       default: 256K
 
 #ifdef HAVE_USR_INCLUDE_MALLOC_H
 #include "/usr/include/malloc.h"
+
+/* PIKE change start */
+#elif defined (HAVE_MALLOC_H) && defined (HAVE_STRUCT_MALLINFO)
+#include <malloc.h>
+/* PIKE change end */
+
 #else /* HAVE_USR_INCLUDE_MALLOC_H */
 
 struct mallinfo {
