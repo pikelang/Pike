@@ -1,7 +1,7 @@
-diff -U3 -Narp pike7.7-7.7.21.orig/bin/smartlink pike7.7-7.7.21/bin/smartlink
---- pike7.7-7.7.21.orig/bin/smartlink	2002-07-09 03:13:13.000000000 +0200
-+++ pike7.7-7.7.21/bin/smartlink	2005-09-03 03:05:02.497884792 +0200
-@@ -147,9 +147,8 @@ if test x$# != x0 ; then
+diff -U3 -Narp 7.7.orig/bin/smartlink 7.7/bin/smartlink
+--- 7.7.orig/bin/smartlink	2006-03-19 18:01:51.000000000 +0100
++++ 7.7/bin/smartlink	2006-08-09 02:07:32.940847999 +0200
+@@ -162,9 +162,8 @@ if test x$# != x0 ; then
       LDOPTS="$LDOPTS -R$RPATH"
     ;;
     Linux\ 2.*)
@@ -13,10 +13,10 @@ diff -U3 -Narp pike7.7-7.7.21.orig/bin/smartlink pike7.7-7.7.21/bin/smartlink
     ;;
     UnixWare\ 7.*)
       if test x$LINKING != xno -a "x$RPATH" != x ; then
-diff -U3 -Narp pike7.7-7.7.21.orig/src/smartlink.c pike7.7-7.7.21/src/smartlink.c
---- pike7.7-7.7.21.orig/src/smartlink.c	2004-05-11 16:16:08.000000000 +0200
-+++ pike7.7-7.7.21/src/smartlink.c	2005-09-03 03:05:02.498884640 +0200
-@@ -150,7 +150,7 @@ int main(int argc, char **argv)
+diff -U3 -Narp 7.7.orig/src/smartlink.c 7.7/src/smartlink.c
+--- 7.7.orig/src/smartlink.c	2006-08-09 01:30:57.000000000 +0200
++++ 7.7/src/smartlink.c	2006-08-09 02:07:32.940847999 +0200
+@@ -151,7 +151,7 @@ int main(int argc, char **argv)
    full_rpath = rpath;
  
  #ifdef USE_Wl
@@ -25,7 +25,7 @@ diff -U3 -Narp pike7.7-7.7.21.orig/src/smartlink.c pike7.7-7.7.21/src/smartlink.
  #elif defined(USE_Wl_R)
    strcat(rpath, "-Wl,-R");
  #elif defined(USE_R)
-@@ -262,7 +262,7 @@ int main(int argc, char **argv)
+@@ -293,7 +293,7 @@ int main(int argc, char **argv)
      }
      rpath_in_use |= add_path(rpath, ld_lib_path);
    }
@@ -34,7 +34,7 @@ diff -U3 -Narp pike7.7-7.7.21.orig/src/smartlink.c pike7.7-7.7.21/src/smartlink.
    if (rpath_in_use) {
      /* Delete the terminating ':' */
      rpath[strlen(rpath) - 1] = 0;
-@@ -309,6 +309,7 @@ int main(int argc, char **argv)
+@@ -340,6 +340,7 @@ int main(int argc, char **argv)
  #error Unknown method
  #endif
    }

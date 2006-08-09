@@ -1,6 +1,6 @@
---- pike7.7-7.7.21.orig/lib/master.pike.in	2005-08-17 01:03:03.000000000 +0200
-+++ pike7.7-7.7.21/lib/master.pike.in	2005-09-03 03:06:50.159517736 +0200
-@@ -581,6 +581,14 @@ string normalize_path( string path )
+--- 7.7.orig/lib/master.pike.in	2006-06-19 10:45:06.000000000 +0200
++++ 7.7/lib/master.pike.in	2006-08-09 02:06:38.393725578 +0200
+@@ -585,6 +585,14 @@ string normalize_path( string path )
  #else
    return replace(path,"\\","/");
  #endif
