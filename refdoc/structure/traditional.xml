@@ -5,7 +5,7 @@
 <!-- The description in this file will compile a reference manual -->
 <!-- similar to the old "Pike Tutorial". -->
 
-<!-- $Id: traditional.xml,v 1.24 2006/01/04 20:09:37 grendel Exp $ -->
+<!-- $Id: traditional.xml,v 1.25 2006/08/09 01:16:46 nilsson Exp $ -->
 
 <manual>
   <dir name="traditional_manual">
@@ -102,7 +102,6 @@
       <insert-move entity="Mysql"/>
       <insert-move entity="Postgres"/>
 <!--      <insert-move entity="Oracle"/> -->
-      <insert-move entity="Mird"/>
       <insert-move entity="Gdbm"/>
 <!--      <insert-move entity="Yabu"/> -->
     </chapter>
