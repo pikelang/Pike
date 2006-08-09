@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.44 2006/08/05 20:11:31 mast Exp $
+|| $Id: ia32.c,v 1.45 2006/08/09 09:58:29 grubba Exp $
 */
 
 /*
@@ -1040,7 +1040,14 @@ void ia32_flush_instruction_cache(void *start, size_t len)
 	clflush [eax];
       }
 #else  /* USE_GCC_IA32_ASM_STYLE */
+#ifdef HAVE_ASM_CLFLUSH
       __asm__ __volatile__("clflush %0" :: "m" (*addr));
+#else
+      /* clflush (%eax) */
+      __asm__ __volatile__(".byte 0x0f\n"
+			   ".byte 0xae\n"
+			   ".byte 0x38" :: "eax" (addr));
+#endif
 #endif
       addr += ia32_clflush_size;
     }
