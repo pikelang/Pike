@@ -1,4 +1,4 @@
-pike7.7 (7.7.27-1) experimental; urgency=low
+pike7.7 (7.7.25-1) experimental; urgency=low
 
   * The latest cvs snapshot
   * Updated a few dependencies
@@ -9,21 +9,6 @@ pike7.7 (7.7.27-1) experimental; urgency=low
   * Dropped the dependencies on libpng12-dev and libreadline5-dev
 
  -- Marek Habersack <grendel@debian.org>  Wed, 9 Aug 2006 1:51:29 +0200
-
-pike7.7 (7.7.26-1) experimental; urgency=low
-
-  * Release number bumped by export.pike.
-
- -- Marek Habersack <grendel@debian.org>  Wed, 9 Aug 2006 1:49:52 +0200
-
-pike7.8 (7.7.25-1) experimental; urgency=low
-
-  * Updated a few dependencies
-  * Shortened the long descriptions of several binary packages
-  * Added short description of pike, plus an url, to the description of
-    the pike modules binary packages
-
- -- Marek Habersack <grendel@debian.org>  Wed, 9 Aug 2006 01:40:11 +0200
 
 pike7.8 (7.7.24-1) experimental; urgency=low
 
