@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.21 2004/04/16 12:12:46 grubba Exp $
+ * $Id: mysql.pike,v 1.22 2006/08/09 14:59:43 grubba Exp $
  *
  * Glue for the Mysql-module
  */
@@ -12,6 +12,9 @@
 #if constant(Mysql.mysql)
 
 inherit Mysql.mysql;
+
+//! Set to 1 if the connection is in utf8-mode.
+static int unicode_mode;
 
 #if constant( Mysql.mysql.MYSQL_NO_ADD_DROP_DB )
 // Documented in the C-file.
@@ -147,9 +150,14 @@ int decode_datetime (string timestr)
 //!
 int|object big_query(string q, mapping(string|int:mixed)|void bindings)
 {
-  if (!bindings)
-    return ::big_query(q);
-  return ::big_query(.sql_util.emulate_bindings(q,bindings,this));
+  if (bindings)
+    q = .sql_util.emulate_bindings(q,bindings,this);
+  if (unicode_mode) {
+    int|object res = ::big_query(string_to_utf8(q));
+    if (!objectp(res)) return res;
+    return .sql_util.UnicodeWrapper(res);
+  }
+  return ::big_query(q);
 }
 
 
@@ -195,6 +203,21 @@ int(0..1) is_keyword( string name )
       "usage", "values", "varchar", "variables", "varying", "varbinary",
       "with", "write", "when", "where", "year", "year_month", "zerofill",      
   >)[ lower_case(name) ];
+}
+
+static void create(string|void host, string|void database,
+		   string|void user, string|void password,
+		   mapping(string:string|int)|void options)
+{
+  if (options) {
+    ::create(host||"", database||"", user||"", password||"", options);
+  } else {
+    ::create(host||"", database||"", user||"", password||"");
+  }
+  catch {
+    big_query("SET NAMES 'utf8'");
+    unicode_mode = 1;
+  };
 }
 
 #else
