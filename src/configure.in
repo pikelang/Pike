@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.863 2006/08/06 16:58:07 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.864 2006/08/10 16:12:37 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -478,6 +478,28 @@ long long foo;
     fi
   else :; fi
 fi
+
+#############################################################################
+
+# ABI selection.
+
+PIKE_CHECK_DEFAULT_ABI
+
+pike_cv_abi=$pike_cv_default_compiler_abi
+
+AC_MSG_CHECKING(for ABI lib-suffixes)
+AC_CACHE_VAL(pike_cv_abi_dirs,
+[
+  extra_abi_dirs=""
+  if type isainfo 2>/dev/null >/dev/null; then
+    # Solaris
+    # Some installations lack the symlink 64 -> amd64 or sparcv9,
+    # or the corresponding 32 link.
+    extra_abi_dirs=`isainfo -v 2>/dev/null|awk "/$pike_cv_abi"'-bit/ { print "/" [$]2 }'`
+  fi
+  pike_cv_abi_suffixes="$pike_cv_abi /$pike_cv_abi $extra_abi_dirs /."
+])
+AC_MSG_RESULT($pike_cv_abi_suffixes)
 
 #############################################################################
 
@@ -2232,7 +2254,7 @@ if test $ldflags_is_set = no ; then
   do
     if test "$dd" = "/lib"; then continue; fi
     if test "$dd" = "/usr/lib"; then continue; fi
-    for suff in '' 32 64 '/64'; do
+    for suff in $pike_cv_abi_suffixes; do
       d="$dd$suff"
       AC_MSG_CHECKING($d)
       if test -d "$d/." ; then
