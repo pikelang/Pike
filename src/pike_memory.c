@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.187 2006/08/10 09:22:49 grubba Exp $
+|| $Id: pike_memory.c,v 1.188 2006/08/10 13:46:48 mast Exp $
 */
 
 #include "global.h"
@@ -2685,6 +2685,7 @@ static void low_search_all_memheaders_for_references(void)
       }
       if( ! ((sizeof(void *)-1) & (size_t)p ))
       {
+#if 0
 	if(m->size > 0)
 	{
 #if defined(__NT__) && !defined(__GNUC__)
@@ -2734,6 +2735,7 @@ static void low_search_all_memheaders_for_references(void)
 	  }
 #endif
 	}
+#endif
       }
     }
   }
