@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.22 2006/08/09 14:59:43 grubba Exp $
+ * $Id: mysql.pike,v 1.23 2006/08/10 14:24:04 grubba Exp $
  *
  * Glue for the Mysql-module
  */
@@ -13,8 +13,67 @@
 
 inherit Mysql.mysql;
 
-//! Set to 1 if the connection is in utf8-mode.
-static int unicode_mode;
+#define UTF8_DECODE_QUERY	1
+#define UTF8_ENCODE_QUERY	2
+
+//! Set to the above if the connection is in utf8-mode.
+static int utf8_mode;
+
+//! Enter unicode encode/decode mode.
+//!
+//! After this has been enabled, query-strings may be provided
+//! as wide (Unicode) strings, and any non-binary data will be
+//! decoded automatically according to UTF8.
+//!
+//! @returns
+//!   Returns @expr{1@} on success.
+//!
+//! @note
+//!   All strings not prefixed by the keyword @tt{BINARY@}
+//!   will be encoded according to UTF8.
+//!
+//! @seealso
+//!   @[enter_unicode_decode_mode()]
+int(0..1) enter_unicode_mode()
+{
+  if (!utf8_mode) {
+    if (catch {
+	big_query("SET NAMES 'utf8'");
+      }) {
+      return 0;
+    }
+  }
+  utf8_mode = UTF8_DECODE_QUERY|UTF8_ENCODE_QUERY;
+  return 1;
+}
+
+//! Enter unicode decode mode.
+//!
+//! After this has been enabled, non-binary data from the database
+//! will be decoded according to UTF8.
+//!
+//! @returns
+//!   Returns @expr{1@} on success.
+//!
+//! @note
+//!   Any query encoding will need to be done by hand.
+//!
+//! @seealso
+//!   @[enter_unicode_mode()]
+int(0..1) enter_unicode_decode_mode()
+{
+  if (!utf8_mode) {
+    if (catch {
+	big_query("SET NAMES 'utf8'");
+      }) {
+      return 0;
+    }
+  }
+  utf8_mode = UTF8_DECODE_QUERY;
+  return 1;
+}
+
+// FIXME: Add a latin1 mode?
 
 #if constant( Mysql.mysql.MYSQL_NO_ADD_DROP_DB )
 // Documented in the C-file.
@@ -38,6 +97,78 @@ string quote(string s)
   return replace(s,
 		 ({ "\\", "\"", "\0", "\'", "\n", "\r" }),
 		 ({ "\\\\", "\\\"", "\\0", "\\\'", "\\n", "\\r" }));
+}
+
+//! Encode the apropriate sections of the query according to UTF8.
+//! ie Those sections that are not strings prefixed by BINARY.
+string utf8_encode_query(string q)
+{
+  string uq = upper_case(q);
+  if (!has_value(uq, "BINARY")) return string_to_utf8(q);
+  if ((q & ("\x7f" * sizeof(q))) == q) return q;
+
+  // We need to find the segments that shouldn't be encoded.
+  string e = "";
+  while(has_value(uq, "BINARY")) {
+    string prefix = "";
+    string suffix;
+    sscanf(q, "%[^\'\"]%s", prefix, suffix);
+    e += string_to_utf8(prefix);
+    if (!suffix || !sizeof(suffix)) {
+      q = uq = "";
+      break;
+    }
+
+    string quote = suffix[..0];
+    int start = 1;
+    int end;
+    while ((end = search(suffix, quote, start)) >= 0) {
+      if (suffix[end-1] == '\\') {
+	// Count the number of preceeding back-slashes.
+	// if odd, continue searching after the quote.
+	int i;
+	for (i = 2; i < end; i++) {
+	  if (suffix[end - i] != '\\') break;
+	}
+	if (!(i & 1)) {
+	  start = end+1;
+	  continue;
+	}
+      }
+      if (sizeof(suffix) == end+1) break;
+      if (suffix[end+1] == quote[0]) {
+	// Quote quoted by doubling.
+	start = end+2;
+	continue;
+      }
+      break;
+    }
+
+    string uprefix = uq[..sizeof(prefix)-1];
+    int is_binary;
+    // Common cases.
+    if (has_suffix(uprefix, "BINARY") || has_suffix(uprefix, "BINARY ")) {
+      // Binary string.
+      is_binary = 1;
+    } else {
+      // Find the white-space suffix of the prefix.
+      int i = sizeof(uprefix);
+      while (i--) {
+	if (!(< ' ', '\n', '\r', '\t' >)[uprefix[i]]) break;
+      }
+      is_binary = has_suffix(uprefix, "BINARY" + uprefix[i+1..]);
+    }
+    if (is_binary) {
+      e += suffix[..end];
+    } else {
+      e += string_to_utf8(suffix[..end]);
+    }
+    q = suffix[end+1..];
+    uq = uq[sizeof(uq)-sizeof(q)..];
+  }
+  // Encode the trailer.
+  e += string_to_utf8(q);
+  return e;
 }
 
 // The following time conversion functions assumes the SQL server
@@ -152,9 +283,16 @@ int|object big_query(string q, mapping(string|int:mixed)|void bindings)
 {
   if (bindings)
     q = .sql_util.emulate_bindings(q,bindings,this);
-  if (unicode_mode) {
-    int|object res = ::big_query(string_to_utf8(q));
-    if (!objectp(res)) return res;
+  if (utf8_mode & UTF8_ENCODE_QUERY) {
+    // Mysql's line protocol is stupid; we need to detect
+    // the binary strings in the query.
+    q = utf8_encode_query(q);
+  }
+
+  int|object res = ::big_query(q);
+  if (!objectp(res)) return res;
+
+  if (utf8_mode & UTF8_DECODE_QUERY) {
     return .sql_util.UnicodeWrapper(res);
   }
   return ::big_query(q);
@@ -214,10 +352,7 @@ static void create(string|void host, string|void database,
   } else {
     ::create(host||"", database||"", user||"", password||"");
   }
-  catch {
-    big_query("SET NAMES 'utf8'");
-    unicode_mode = 1;
-  };
+  enter_unicode_mode();
 }
 
 #else
