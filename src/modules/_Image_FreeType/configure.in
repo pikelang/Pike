@@ -18,7 +18,30 @@ if test "x$with_freetype" = "xyes" ; then
     OLDCPPFLAGS="$CPPFLAGS"
     OLDLIBS="$LIBS"
     CPPFLAGS="`$FT_CONFIG --cflags` $CPPFLAGS"
-    LIBS="`$FT_CONFIG --libs` $LIBS"
+
+    # NOTE: freetype-config is usually not ABI-aware.
+    FTLIBS=""
+    for flag in `$FT_CONFIG --libs`; do
+      f=`echo "x$flag" | sed -e 's/^x-\(.\).*/\1/p' -ed`
+      if test "x$f" = "xL" -o "x$f" = "xR"; then
+        dd=`echo "x$flag" | sed -e 's/^x-.//'`
+	if test -d "$dd"; then :; else
+	  # Not a directory. Keep as is.
+	  FTLIBS="$FTLIBS $flag"
+	  continue;
+	fi
+	for suff in $pike_cv_abi_suffices; do
+	  d="$dd$suff"
+	  PIKE_CHECK_ABI_DIR($d, [
+	    FTLIBS="$FTLIBS -$f$d"
+	  ])
+	done
+      else
+        # Not a search path directive. Keep as is.
+        FTLIBS="$FTLIBS $flag"
+      fi
+    done
+    LIBS="$FTLIBS $LIBS"
     AC_MSG_CHECKING(if freetype actually works)
     
     # The below test works only for freetype2 < 2.1.6
