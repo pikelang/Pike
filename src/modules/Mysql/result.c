@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.35 2005/04/12 00:38:04 nilsson Exp $
+|| $Id: result.c,v 1.36 2006/08/10 16:28:25 grubba Exp $
 */
 
 /*
@@ -87,6 +87,14 @@
 /* Define this to get field_seek() and fetch_field() */
 /* #define SUPPORT_FIELD_SEEK */
 
+/* These aren't present in old mysqlclients. */
+#ifndef ZEROFILL_FLAG
+#define ZEROFILL_FLAG	64
+#endif
+#ifndef BINARY_FLAG
+#define BINARY_FLAG	128
+#endif
+
 /*
  * Globals
  */
@@ -159,14 +167,35 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
     case FIELD_TYPE_NULL:
       push_text("null");
       break;
-    case FIELD_TYPE_TIME:
-      push_text("time");
+    case FIELD_TYPE_TIMESTAMP:
+      push_text("timestamp");
       break;
     case FIELD_TYPE_LONGLONG:
       push_text("longlong");
       break;
     case FIELD_TYPE_INT24:
       push_text("int24");
+      break;
+    case FIELD_TYPE_DATE:
+      push_text("date");
+      break;
+    case FIELD_TYPE_TIME:
+      push_text("time");
+      break;
+    case FIELD_TYPE_DATETIME:
+      push_text("datetime");
+      break;
+    case FIELD_TYPE_YEAR:
+      push_text("year");
+      break;
+    case FIELD_TYPE_NEWDATE:
+      push_text("newdate");
+      break;
+    case FIELD_TYPE_ENUM:
+      push_text("enum");
+      break;
+    case FIELD_TYPE_SET:
+      push_text("set");
       break;
     case FIELD_TYPE_TINY_BLOB:
       push_text("tiny blob");
@@ -186,27 +215,11 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
     case FIELD_TYPE_STRING:
       push_text("string");
       break;
-    case FIELD_TYPE_DATE:
-      push_text("date");
+#ifdef HAVE_FIELD_TYPE_GEOMETRY
+    case FIELD_TYPE_GEOMETRY:
+      push_text("geometry");
       break;
-    case FIELD_TYPE_DATETIME:
-      push_text("datetime");
-      break;
-    case FIELD_TYPE_TIMESTAMP:
-      push_text("timestamp");
-      break;
-    case FIELD_TYPE_YEAR:
-      push_text("year");
-      break;
-    case FIELD_TYPE_NEWDATE:
-      push_text("newdate");
-      break;
-    case FIELD_TYPE_ENUM:
-      push_text("enum");
-      break;
-    case FIELD_TYPE_SET:
-      push_text("set");
-      break;
+#endif
     default:
       push_text("unknown");
       break;
@@ -226,6 +239,14 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
     if (IS_BLOB(field->flags)) {
       nbits++;
       push_text("blob");
+    }
+    if (field->flags & ZEROFILL_FLAG) {
+      nbits++;
+      push_text("zerofill");
+    }
+    if (field->flags & BINARY_FLAG) {
+      nbits++;
+      push_text("binary");
     }
     f_aggregate_multiset(nbits);
 
