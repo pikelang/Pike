@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.186 2006/08/09 16:59:52 grubba Exp $
+|| $Id: pike_memory.c,v 1.187 2006/08/10 09:22:49 grubba Exp $
 */
 
 #include "global.h"
@@ -2691,7 +2691,9 @@ static void low_search_all_memheaders_for_references(void)
 	  __try {
 #endif
 #ifdef PIKE_EXTRA_DEBUG
-	    fprintf("Scanning memory block at %p, %ld bytes, generation %d, flags: 0x%08x\n",
+	    fprintf(stderr, "PIKE_EXTRA_DEBUG:\n"
+		    "  Scanning memory block at %p, %ld bytes, "
+		    "generation %d, flags: 0x%08x\n",
 		    m->data, m->size, m->gc_generation, m->flags);
 #endif /* PIKE_EXTRA_DEBUG */
 	    for(e=0;e<m->size/sizeof(void *);e++) {
