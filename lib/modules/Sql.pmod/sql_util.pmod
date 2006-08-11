@@ -1,5 +1,5 @@
 /*
- * $Id: sql_util.pmod,v 1.14 2006/08/09 13:04:38 grubba Exp $
+ * $Id: sql_util.pmod,v 1.15 2006/08/11 11:08:44 grubba Exp $
  *
  * Some SQL utility functions.
  * They are kept here to avoid circular references.
@@ -133,8 +133,10 @@ class UnicodeWrapper (
   {
     int|array(string) row = master_result->fetch_row();
     if (!arrayp(row)) return row;
+    array(int|mapping(string:mixed)) field_info = fetch_fields();
     foreach(row; int i; string|int val) {
-      if (stringp(val)) {
+      if (stringp(val) && field_info[i]->flags &&
+	  !field_info[i]->flags->binary) {
 	row[i] = utf8_to_string(val);
       }
     }
