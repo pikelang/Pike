@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: precompiled_mysql.h,v 1.17 2005/04/12 00:36:13 nilsson Exp $
+|| $Id: precompiled_mysql.h,v 1.18 2006/08/12 02:57:55 mast Exp $
 */
 
 /*
@@ -59,6 +59,13 @@ struct precompiled_mysql {
   MYSQL		*mysql, *socket;
   struct pike_string	*host, *database, *user, *password;	/* Reconnect */
   struct mapping   *options;
+#ifndef HAVE_MYSQL_SET_CHARACTER_SET
+  /* Old libs (< 4.1.13) doesn't support changing the connection
+   * charset. We emulate it by storing the charset ourselves. Note
+   * that this doesn't work with mysql_real_escape_string, but that
+   * function isn't used. */
+  struct pike_string *conn_charset;
+#endif
 };
 
 struct precompiled_mysql_result {

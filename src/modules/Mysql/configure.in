@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.50 2006/07/04 20:45:27 mast Exp $
+# $Id: configure.in,v 1.51 2006/08/12 02:57:55 mast Exp $
 #
 # Configure script for the mysql-module
 #
@@ -371,6 +371,7 @@ fi
     PIKE_CHECK_MYSQL_FUNC(mysql_real_query)
     PIKE_CHECK_MYSQL_FUNC(mysql_fetch_lengths)
     PIKE_CHECK_MYSQL_FUNC(mysql_options)
+    PIKE_CHECK_MYSQL_FUNC(mysql_set_character_set)
 
     AC_CHECK_LIB(mysqlclient, mysql_ssl_set, [
       AC_DEFINE(HAVE_MYSQL_SSL)

@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.24 2006/08/10 19:35:26 mast Exp $
+ * $Id: mysql.pike,v 1.25 2006/08/12 02:57:55 mast Exp $
  *
  * Glue for the Mysql-module
  */
@@ -13,161 +13,277 @@
 
 inherit Mysql.mysql;
 
-#define UTF8_DECODE_QUERY	1
-#define UTF8_ENCODE_QUERY	2
+#define UNICODE_DECODE_MODE	1 // Unicode decode mode
+#define LATIN1_UNICODE_ENCODE_MODE 2 // Unicode encode mode with latin1 charset
+#define UTF8_UNICODE_ENCODE_MODE 4 // Unicode encode mode with utf8 charset
 
-//! Set to the above if the connection is in utf8-mode.
+// Set to the above if the connection is in utf8-mode. Enable latin1
+// unicode encode mode by default; it should be compatible with
+// earlier pike versions.
 static int utf8_mode;
 
-//! The charset passed with the @expr{mysql_charset_name@} option.
-static string initial_charset;
+// The charset, either "latin1" or "utf8", currently assigned to
+// character_set_client when unicode encode mode is enabled. Zero when
+// the connection charset has been set to something else than "latin1"
+// or "unicode".
+static string send_charset;
 
-//! Enter unicode encode/decode mode.
-//!
-//! After this has been enabled, query-strings may be provided
-//! as wide (Unicode) strings, and any non-binary data will be
-//! decoded automatically according to UTF8.
-//!
-//! The statement "@expr{SET NAMES 'utf8'@}" is sent to enable UTF8
-//! mode for the connection.
-//!
-//! @param force
-//!   If this optional flag is nonzero then the statement to enable
-//!   UTF8 mode is sent even if this mode already is enabled according
-//!   to the internal flags.
-//!
-//! @returns
-//!   Returns @expr{1@} on success or @expr{0@} if the server doesn't
-//!   support unicode (i.e. if the statement to enable UTF8 mode
-//!   fails).
-//!
-//! @note
-//!   Literal strings prefixed by the keyword @tt{BINARY@} will not be
-//!   encoded using UTF8.
-//!
-//! @note
-//!   Unicode support was added in MySQL 4.1.
-//!
-//! @seealso
-//!   @[enter_unicode_decode_mode()], @[leave_unicode_mode()]
-int(0..1) enter_unicode_mode (void|int force)
+static void update_unicode_encode_mode_from_charset (string charset)
 {
-  if (force || utf8_mode != UTF8_DECODE_QUERY|UTF8_ENCODE_QUERY) {
-    if (catch {
-	big_query("SET NAMES 'utf8'");
-      }) {
-      return 0;
-    }
-    utf8_mode = UTF8_DECODE_QUERY|UTF8_ENCODE_QUERY;
+  switch (charset) {		// Lowercase assumed.
+    case "latin1":
+      utf8_mode |= LATIN1_UNICODE_ENCODE_MODE;
+      utf8_mode &= ~UTF8_UNICODE_ENCODE_MODE;
+      send_charset = "latin1";
+      break;
+    case "unicode":
+      utf8_mode |= UTF8_UNICODE_ENCODE_MODE;
+      utf8_mode &= ~LATIN1_UNICODE_ENCODE_MODE;
+      send_charset = "utf8";
+      break;
+    default:
+      // Wrong charset - the mode can't be used.
+      utf8_mode |= LATIN1_UNICODE_ENCODE_MODE|UTF8_UNICODE_ENCODE_MODE;
+      send_charset = 0;
+      break;
   }
-  return 1;
+  werror ("utf8_mode %x, send_charset %O\n", utf8_mode, send_charset);
 }
 
-//! Enter unicode decode mode.
+int(0..1) set_unicode_encode_mode (int enable)
+//! Enables or disables unicode encode mode.
 //!
-//! After this has been enabled, non-binary data from the database
-//! will be decoded according to UTF8.
+//! In this mode, if the server supports UTF-8 and the connection
+//! charset is @expr{latin1@} (the default) or @expr{unicode@} then
+//! @[big_query] handles wide unicode queries. Enabled by default.
+//!
+//! Unicode encode mode works as follows: Eight bit strings are sent
+//! as @expr{latin1@} and wide strings are sent using @expr{utf8@}.
+//! @[big_query] sends @expr{SET character_set_client@} statements as
+//! necessary to update the charset on the server side. If the server
+//! doesn't support that then it fails, but the wide string query
+//! would fail anyway.
+//!
+//! To make this transparent, string literals with introducers (e.g.
+//! @expr{_binary 'foo'@}) are excluded from the UTF-8 encoding. This
+//! means that @[big_query] needs to do some superficial parsing of
+//! the query when it is a wide string.
+//!
+//! @returns
+//!   @int
+//!     @value 1
+//!       Unicode encode mode is enabled.
+//!     @value 0
+//!       Unicode encode mode couldn't be enabled because an
+//!       incompatible connection charset is set. You need to do
+//!       @expr{@[set_charset]("latin1")@} or
+//!       @expr{@[set_charset]("unicode")@} to enable it.
+//!   @endint
+//!
+//! @note
+//!   Note that this mode doesn't affect the MySQL system variable
+//!   @expr{character_set_connection@}, i.e. it will still be set to
+//!   @expr{latin1@} by default which means server functions like
+//!   @expr{UPPER()@} won't handle non-@expr{latin1@} characters
+//!   correctly in all cases.
+//!
+//!   To fix that, do @expr{@[set_charset]("unicode")@}. That will
+//!   allow unicode encode mode to work while @expr{utf8@} is fully
+//!   enabled at the server side.
+//!
+//!   Tip: If you enable @expr{utf8@} on the server side, you need to
+//!   send raw binary strings as @expr{_binary'...'@}. Otherwise they
+//!   will get UTF-8 encoded by the server.
+//!
+//! @note
+//!   When unicode encode mode is enabled and the connection charset
+//!   is @expr{latin1@}, the charset accepted by @[big_query] is not
+//!   quite Unicode since @expr{latin1@} is based on @expr{cp1252@}.
+//!   The differences are in the range @expr{0x80..0x9f@} where
+//!   Unicode have control chars.
+//!
+//!   This small discrepancy is not present when the connection
+//!   charset is @expr{unicode@}.
+//!
+//! @seealso
+//!   @[set_unicode_decode_mode], @[set_charset]
+{
+  if (enable)
+    update_unicode_encode_mode_from_charset (lower_case (get_charset()));
+  else {
+    utf8_mode &= ~(LATIN1_UNICODE_ENCODE_MODE|UTF8_UNICODE_ENCODE_MODE);
+    send_charset = 0;
+  }
+  return !!send_charset;
+}
+
+int get_unicode_encode_mode()
+//! Returns nonzero if unicode encode mode is enabled, zero otherwise.
+//!
+//! @seealso
+//!   @[set_unicode_encode_mode]
+{
+  return !!send_charset;
+}
+
+void set_unicode_decode_mode (int enable)
+//! Enable or disable unicode decode mode.
+//!
+//! In this mode, if the server supports UTF-8 then non-binary text
+//! strings in results are are automatically decoded to (possibly
+//! wide) unicode strings. Not enabled by default.
 //!
 //! The statement "@expr{SET character_set_results = utf8@}" is sent
-//! to enable UTF8 mode for the returned results.
+//! to the server to enable the mode. When the mode is disabled,
+//! "@expr{SET character_set_results = xxx@}" is sent, where
+//! @expr{xxx@} is the connection charset that @[get_charset] returns.
 //!
-//! @param force
-//!   If this optional flag is nonzero then the statement to enable
-//!   UTF8 encoding of results is sent even though this mode already
-//!   is enabled according to the internal flags.
+//! @param enable
+//!   Nonzero enables this feature, zero disables it.
 //!
-//! @returns
-//!   Returns @expr{1@} on success or @expr{0@} if the server doesn't
-//!   support unicode (i.e. if the statement to enable UTF8 mode
-//!   fails).
-//!
-//! @note
-//!   Any query encoding will need to be done by hand.
+//! @throws
+//!   Throws an exception if the server doesn't support this, i.e. if
+//!   the statement above fails. The MySQL system variable
+//!   @expr{character_set_results@} was added in MySQL 4.1.1.
 //!
 //! @note
-//!   If the connection previously was in full unicode mode as set by
-//!   @[enter_unicode_mode] then the server will still expect queries
-//!   to be UTF8 encoded. I.e. the server system variable
-//!   @expr{character_set_client@} retains the value @expr{'utf8'@}.
-//!
-//! @note
-//!   The server system variable @expr{character_set_results@} was
-//!   added in MySQL 4.1.1.
+//!   This mode is not compatible with earlier pike versions. You need
+//!   to run in compatibility mode <= 7.6 to have it disabled by
+//!   default.
 //!
 //! @seealso
-//!   @[enter_unicode_mode()], @[leave_unicode_mode()]
-int(0..1) enter_unicode_decode_mode (void|int force)
+//!   @[set_unicode_encode_mode]
 {
-  if (force || utf8_mode != UTF8_DECODE_QUERY) {
-    if (catch {
-	big_query("SET character_set_results = utf8");
-      }) {
-      return 0;
-    }
-    utf8_mode = UTF8_DECODE_QUERY;
+  if (enable) {
+    ::big_query ("SET character_set_results = utf8");
+    utf8_mode |= UNICODE_DECODE_MODE;
   }
-  return 1;
+  else {
+    ::big_query ("SET character_set_results = " + get_charset());
+    utf8_mode &= ~UNICODE_DECODE_MODE;
+  }
 }
 
-//! Leave unicode mode.
-//!
-//! After this no automatic UTF8 conversion is done of queries and
-//! results.
-//!
-//! The statement "@expr{SET NAMES 'xxx'@}" is sent to the server,
-//! where @expr{xxx@} is the charset that was passed with the
-//! @expr{mysql_charset_name@} option when the connection was opened.
-//! If that option wasn't specified then the charset @expr{latin1@} is
-//! used, which is the default connection charset in MySQL.
-//!
-//! @param force
-//!   If this optional flag is nonzero then the statement to reset the
-//!   connection charset is sent even though unicode mode already is
-//!   disabled according to the internal flags.
-//!
-//! @returns
-//!   Returns @expr{1@} on success or @expr{0@} if the server doesn't
-//!   support unicode (i.e. if the statement to reset the connection
-//!   charset fails).
-//!
-//! @note
-//!   Unicode support was added in MySQL 4.1.
+int get_unicode_decode_mode()
+//! Returns nonzero if unicode decode mode is enabled, zero otherwise.
 //!
 //! @seealso
-//!   @[enter_unicode_mode()], @[enter_unicode_decode_mode()]
-int(0..1) leave_unicode_mode (void|int force)
+//!   @[set_unicode_decode_mode]
 {
-  if (force || utf8_mode) {
-    if (catch {
-	big_query("SET NAMES '" + (initial_charset || "latin1") + "'");
-      }) {
-      return 0;
-    }
-    utf8_mode = 0;
-  }
-  return 1;
+  return utf8_mode & UNICODE_DECODE_MODE;
 }
 
-string query_unicode_mode()
-//! Returns the current unicode mode status.
+void set_charset (string charset)
+//! Changes the connection charset. Works similar to sending the query
+//! @expr{SET NAMES @[charset]@} but also records the charset on the
+//! client side so that various client functions work correctly.
 //!
-//! @returns
-//!   @string
-//!     @value "full"
-//!       Full unicode mode as set by @[enter_unicode_mode] is
-//!       enabled.
-//!     @value "decode"
-//!       Decode unicode mode as set by @[enter_unicode_decode_mode]
-//!       is enabled.
-//!     @value 0
-//!       Unicode mode is not enabled. C.f. @[leave_unicode_mode].
-//!   @endstring
+//! @[charset] is a MySQL charset name or the special value
+//! @expr{"unicode"@} (see below). You can use @expr{SHOW CHARACTER
+//! SET@} to get a list of valid charsets.
+//!
+//! Specifying @expr{"unicode"@} as charset is the same as
+//! @expr{"utf8"@} except that unicode encode and decode modes are
+//! enabled too. Briefly, this means that you can send queries as
+//! unencoded unicode strings and will get back non-binary text
+//! results as unencoded unicode strings. See
+//! @[set_unicode_encode_mode] and @[set_unicode_decode_mode] for
+//! further details.
+//!
+//! @throws
+//!   Throws an exception if the server doesn't support this, i.e. if
+//!   the statement @expr{SET NAMES@} fails. Support for it was added
+//!   in MySQL 4.1.0.
+//!
+//! @note
+//!   If @[charset] is @expr{"latin1"@} and unicode encode mode is
+//!   enabled (the default) then @[big_query] can send wide unicode
+//!   queries transparently if the server supports UTF-8. See
+//!   @[set_unicode_encode_mode].
+//!
+//! @note
+//!   If unicode decode mode is already enabled (see
+//!   @[set_unicode_decode_mode]) then this function won't affect the
+//!   result charset (i.e. the MySQL system variable
+//!   @expr{character_set_results@}).
+//!
+//!   Actually, a query @expr{SET character_set_results = utf8@} will
+//!   be sent immediately after setting the charset as above if
+//!   unicode decode mode is enabled and @[charset] isn't
+//!   @expr{"utf8"@}.
+//!
+//! @note
+//!   You should always use either this function or the
+//!   @expr{"mysql_charset_name"@} option to @[create] to set the
+//!   connection charset, or more specifically the charset that the
+//!   server expects queries to have (i.e. the MySQL system variable
+//!   @expr{character_set_client@}). Otherwise @[big_query] might not
+//!   work correctly.
+//!
+//!   Afterwards you may change the system variable
+//!   @expr{character_set_connection@}, and also
+//!   @expr{character_set_results@} if unicode decode mode isn't
+//!   enabled.
+//!
+//! @note
+//!   The MySQL @expr{latin1@} charset is close to Windows
+//!   @expr{cp1252@}. The difference from ISO-8859-1 is a bunch of
+//!   printable chars in the range @expr{0x80..0x9f@} (which contains
+//!   control chars in ISO-8859-1). For instance, the euro currency
+//!   sign is @expr{0x80@}.
+//!
+//!   You can use the @expr{mysql-latin1@} encoding in the
+//!   @[Locale.Charset] module to do conversions, or just use the
+//!   special @expr{"unicode"@} charset instead.
+//!
+//! @seealso
+//!   @[get_charset], @[set_unicode_encode_mode], @[set_unicode_decode_mode]
 {
-  switch (utf8_mode) {
-    case UTF8_DECODE_QUERY|UTF8_ENCODE_QUERY: return "full";
-    case UTF8_DECODE_QUERY: return "decode";
-    default: return 0;
-  }
+  charset = lower_case (charset);
+
+  ::set_charset (charset == "unicode" ? "utf8" : charset);
+
+  if (charset == "unicode" ||
+      utf8_mode & (LATIN1_UNICODE_ENCODE_MODE|UTF8_UNICODE_ENCODE_MODE))
+    update_unicode_encode_mode_from_charset (charset);
+
+  if (charset == "unicode")
+    utf8_mode |= UNICODE_DECODE_MODE;
+  else if (utf8_mode & UNICODE_DECODE_MODE && charset != "utf8")
+    // This setting has been overridden by ::set_charset, so we need
+    // to reinstate it.
+    ::big_query ("SET character_set_results = utf8");
+}
+
+string get_charset()
+//! Returns the MySQL name for the current connection charset.
+//!
+//! Returns @expr{"unicode"@} if unicode encode mode is enabled and
+//! UTF-8 is used on the server side (i.e. in
+//! @expr{character_set_connection@}).
+//!
+//! @note
+//!   In servers with full charset support (i.e. MySQL 4.1.0 or
+//!   later), this corresponds to the MySQL system variable
+//!   @expr{character_set_client@} (with one exception - see next
+//!   note) and thus controls the charset in which queries are sent.
+//!   The charset used for text strings in results might be something
+//!   else (and typically is if unicode decode mode is enabled; see
+//!   @[set_unicode_decode_mode]).
+//!
+//! @note
+//!   If the returned charset is @expr{latin1@} or @expr{unicode@} and
+//!   unicode encode mode is enabled (the default) then
+//!   @expr{character_set_client@} in the server might be either
+//!   @expr{latin1@} or @expr{utf8@}, depending on the last sent
+//!   query. See @[set_unicode_encode_mode] for more info.
+//!
+//! @seealso
+//!   @[set_charset]
+{
+  if (utf8_mode & UTF8_UNICODE_ENCODE_MODE && send_charset)
+    return "unicode";
+  return ::get_charset();
 }
 
 #if constant( Mysql.mysql.MYSQL_NO_ADD_DROP_DB )
@@ -194,28 +310,33 @@ string quote(string s)
 		 ({ "\\\\", "\\\"", "\\0", "\\\'", "\\n", "\\r" }));
 }
 
-//! Encode the apropriate sections of the query according to UTF8.
-//! ie Those sections that are not strings prefixed by BINARY.
-string utf8_encode_query(string q)
+string latin1_to_utf8 (string s)
+//! Converts a string in MySQL @expr{latin1@} format to UTF-8.
 {
-  string uq = upper_case(q);
-  if (!has_value(uq, "BINARY")) return string_to_utf8(q);
-  // The following optimization is disabled since it causes more
-  // overhead in the case when q contains a large binary string (which
-  // is arguably the main reason for q getting really large).
-  //if ((q & ("\x7f" * sizeof(q))) == q) return q;
+  return string_to_utf8 (replace (s, ([
+    "\x80": "\u20AC", /*"\x81": "\u0081",*/ "\x82": "\u201A", "\x83": "\u0192",
+    "\x84": "\u201E", "\x85": "\u2026", "\x86": "\u2020", "\x87": "\u2021",
+    "\x88": "\u02C6", "\x89": "\u2030", "\x8a": "\u0160", "\x8b": "\u2039",
+    "\x8c": "\u0152", /*"\x8d": "\u008D",*/ "\x8e": "\u017D", /*"\x8f": "\u008F",*/
+    /*"\x90": "\u0090",*/ "\x91": "\u2018", "\x92": "\u2019", "\x93": "\u201C",
+    "\x94": "\u201D", "\x95": "\u2022", "\x96": "\u2013", "\x97": "\u2014",
+    "\x98": "\u02DC", "\x99": "\u2122", "\x9a": "\u0161", "\x9b": "\u203A",
+    "\x9c": "\u0153", /*"\x9d": "\u009D",*/ "\x9e": "\u017E", "\x9f": "\u0178",
+  ])));
+}
 
+string utf8_encode_query (string q, function(string:string) encode_fn)
+//! Encodes the appropriate sections of the query with @[encode_fn].
+//! Everything except strings prefixed by an introducer (i.e.
+//! @expr{_something@} or @expr{N@}) is encoded.
+{
   // We need to find the segments that shouldn't be encoded.
   string e = "";
-  while(has_value(uq, "BINARY")) {
-    string prefix = "";
-    string suffix;
-    sscanf(q, "%[^\'\"]%s", prefix, suffix);
-    e += string_to_utf8(prefix);
-    if (!suffix || !sizeof(suffix)) {
-      q = uq = "";
-      break;
-    }
+  while (1) {
+    sscanf(q, "%[^\'\"]%s", string prefix, string suffix);
+    e += encode_fn (prefix);
+
+    if (suffix == "") break;
 
     string quote = suffix[..0];
     int start = 1;
@@ -242,30 +363,73 @@ string utf8_encode_query(string q)
       break;
     }
 
-    string uprefix = uq[..sizeof(prefix)-1];
-    int is_binary;
-    // Common cases.
-    if (has_suffix(uprefix, "BINARY") || has_suffix(uprefix, "BINARY ")) {
-      // Binary string.
-      is_binary = 1;
-    } else {
+#define IS_IDENTIFIER_CHAR(chr) (Unicode.is_wordchar (chr) ||		\
+				 (<'_', '$'>)[chr])
+
+    int intpos = -1;
+
+    // Optimize the use of _binary.
+    if (has_suffix (prefix, "_binary"))
+      intpos = sizeof (prefix) - sizeof ("_binary");
+    else if (has_suffix (prefix, "_binary "))
+      intpos = sizeof (prefix) - sizeof ("_binary ");
+
+    else {
       // Find the white-space suffix of the prefix.
-      int i = sizeof(uprefix);
+      int i = sizeof(prefix);
       while (i--) {
-	if (!(< ' ', '\n', '\r', '\t' >)[uprefix[i]]) break;
+	if (!(< ' ', '\n', '\r', '\t' >)[prefix[i]]) break;
       }
-      is_binary = has_suffix(uprefix, "BINARY" + uprefix[i+1..]);
+
+      if (i >= 0) {
+	if ((<'n', 'N'>)[prefix[i]])
+	  // Probably got a national charset string.
+	  intpos = i;
+	else {
+	  // The following assumes all possible charset names contain
+	  // only [a-zA-Z0-9_$] and are max 32 chars (from
+	  // MY_CS_NAME_SIZE in m_ctype.h).
+	  sscanf (reverse (prefix[i - 33..i]), "%[a-zA-Z0-9_$]%s",
+		  string rev_intro, string rest);
+	  if (sizeof (rev_intro) && rev_intro[-1] == '_' && sizeof (rest))
+	    intpos = i - sizeof (rev_intro) + 1;
+	}
+      }
     }
-    if (is_binary) {
-      e += suffix[..end];
+
+    int got_introducer;
+    if (intpos == 0)
+      // The prefix begins with the introducer.
+      got_introducer = 1;
+    else if (intpos > 0) {
+      // Check that the introducer sequence we found isn't a suffix of
+      // some longer keyword or identifier.
+      int prechar = prefix[intpos - 1];
+      if (!IS_IDENTIFIER_CHAR (prechar))
+	got_introducer = 1;
+    }
+
+    if (got_introducer) {
+      string s = suffix[..end];
+      if (String.width (s) > 8) {
+	string encoding = prefix[intpos..];
+	if (has_prefix (encoding, "_"))
+	  sscanf (encoding[1..], "%[a-zA-Z0-9]", encoding);
+	else
+	  encoding = "utf8";	// Gotta be "N".
+	s = s[1..sizeof (s) - 2];
+	if (sizeof (s) > 40) s = sprintf ("%O...", s[..37]);
+	else s = sprintf ("%O", s);
+	predef::error ("A string in the query should be %s encoded "
+		       "but it is wide: %s\n", encoding, s);
+      }
+      e += s;
     } else {
-      e += string_to_utf8(suffix[..end]);
+      e += encode_fn (suffix[..end]);
     }
+
     q = suffix[end+1..];
-    uq = uq[sizeof(uq)-sizeof(q)..];
   }
-  // Encode the trailer.
-  e += string_to_utf8(q);
   return e;
 }
 
@@ -376,26 +540,121 @@ int decode_datetime (string timestr)
   }
 }
 
+#define QUERY_BODY(do_query)						\
+  if (bindings)								\
+    query = .sql_util.emulate_bindings(query,bindings,this);		\
+									\
+  string restore_charset;						\
+  if (charset) {							\
+    restore_charset = send_charset || get_charset();			\
+    if (charset != restore_charset)					\
+      ::big_query ("SET character_set_client=" + charset);		\
+    else								\
+      restore_charset = 0;						\
+  }									\
+									\
+  else if (send_charset) {						\
+    string new_send_charset;						\
+									\
+    if (utf8_mode & LATIN1_UNICODE_ENCODE_MODE) {			\
+      if (String.width (query) == 8)					\
+	new_send_charset = "latin1";					\
+      else {								\
+	query = utf8_encode_query (query, latin1_to_utf8);		\
+	new_send_charset = "utf8";					\
+      }									\
+    }									\
+									\
+    else {  /* utf8_mode & UTF8_UNICODE_ENCODE_MODE */			\
+      if (_can_send_as_latin1 (query))					\
+	new_send_charset = "latin1";					\
+      else {								\
+	query = utf8_encode_query (query, string_to_utf8);		\
+	new_send_charset = "utf8";					\
+      }									\
+    }									\
+									\
+    if (new_send_charset != send_charset) {				\
+      if (mixed err =							\
+	  ::big_query ("SET character_set_client=" + new_send_charset)) { \
+	if (new_send_charset = "utf8")					\
+	  predef::error ("The query is a wide string "			\
+			 "and the MySQL server doesn't support UTF-8: %s\n", \
+			 describe_error (err));				\
+	else								\
+	  throw err;							\
+      }									\
+      send_charset = new_send_charset;					\
+      werror ("set charset %O\n", send_charset);			\
+    }									\
+  }									\
+									\
+  int|object res = ::do_query(query);					\
+									\
+  if (restore_charset) {						\
+    if (send_charset && (<"latin1", "utf8">)[charset])			\
+      send_charset = charset;						\
+    else								\
+      ::big_query ("SET character_set_client=" + restore_charset);	\
+  }									\
+									\
+  if (!objectp(res)) return res;					\
+									\
+  if (utf8_mode & UNICODE_DECODE_MODE) {				\
+    return .sql_util.UnicodeWrapper(res);				\
+  }									\
+  return res;
+
+Mysql.mysql_result big_query (string query,
+			      mapping(string|int:mixed)|void bindings,
+			      void|string charset)
+//! Sends a query to the server.
 //!
-int|object big_query(string q, mapping(string|int:mixed)|void bindings)
+//! @param query
+//!   The SQL query.
+//!
+//! @param bindings
+//!   An optional bindings mapping. See @[Sql.query] for details about
+//!   this.
+//!
+//! @param charset
+//!   An optional charset that will be used temporarily while sending
+//!   @[query] to the server. If necessary, a query
+//!   @code
+//!     SET character_set_client=@[charset]
+//!   @endcode
+//!   is sent to the server first, then @[query] is sent as-is, and then
+//!   the connection charset is restored again (if necessary).
+//!
+//!   Primarily useful with @[charset] set to @expr{"latin1"@} if
+//!   unicode encode mode (see @[set_unicode_encode_mode]) is enabled
+//!   (the default) and you have some large queries (typically blob
+//!   inserts) where you want to avoid the query parsing overhead.
+//!
+//! @returns
+//!   A @[Mysql.mysql_result] object is returned if the query is of a
+//!   kind that returns a result. Zero is returned otherwise.
+//!
+//! @seealso
+//!   @[Sql.big_query]
 {
-  if (bindings)
-    q = .sql_util.emulate_bindings(q,bindings,this);
-  if (utf8_mode & UTF8_ENCODE_QUERY) {
-    // Mysql's line protocol is stupid; we need to detect
-    // the binary strings in the query.
-    q = utf8_encode_query(q);
-  }
-
-  int|object res = ::big_query(q);
-  if (!objectp(res)) return res;
-
-  if (utf8_mode & UTF8_DECODE_QUERY) {
-    return .sql_util.UnicodeWrapper(res);
-  }
-  return ::big_query(q);
+  QUERY_BODY (big_query);
 }
 
+Mysql.mysql_result streaming_query (string query,
+				    mapping(string|int:mixed)|void bindings,
+				    void|string charset)
+//! Makes a streaming SQL query.
+//!
+//! This function sends the SQL query @[query] to the Mysql-server.
+//! The result of the query is streamed through the returned
+//! @[Mysql.mysql_result] object. Note that the involved database
+//! tables are locked until all the results has been read.
+//!
+//! In all other respects, it behaves like @[big_query].
+{
+  QUERY_BODY (streaming_query);
+}
 
 int(0..1) is_keyword( string name )
 //! Return 1 if the argument @[name] is a mysql keyword.
@@ -447,14 +706,21 @@ static void create(string|void host, string|void database,
 		   mapping(string:string|int)|void options)
 {
   if (options) {
+    string charset = options->mysql_charset_name || "latin1";
+    if (charset == "unicode")
+      options->mysql_charset_name = "utf8";
+
     ::create(host||"", database||"", user||"", password||"", options);
-    initial_charset = options->mysql_charset_name;
-    switch (options->unicode_mode) {
-      case "full": enter_unicode_mode(); break;
-      case "decode": enter_unicode_decode_mode(); break;
-    }
+
+    update_unicode_encode_mode_from_charset (lower_case (charset));
+
+    if (options->unicode_decode_mode)
+      set_unicode_decode_mode (1);
+
   } else {
     ::create(host||"", database||"", user||"", password||"");
+
+    update_unicode_encode_mode_from_charset ("latin1");
   }
 }
 

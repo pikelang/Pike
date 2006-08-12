@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.97 2005/11/17 13:39:09 grubba Exp $
+|| $Id: mysql.c,v 1.98 2006/08/12 02:57:55 mast Exp $
 */
 
 /*
@@ -213,6 +213,12 @@ static void exit_mysql_struct(struct object *o)
     free_string(PIKE_MYSQL->host);
     PIKE_MYSQL->host = NULL;
   }
+#ifndef HAVE_MYSQL_SET_CHARACTER_SET
+  if (PIKE_MYSQL->conn_charset) {
+    free_string (PIKE_MYSQL->conn_charset);
+    PIKE_MYSQL->conn_charset = NULL;
+  }
+#endif
 
   MYSQL_ALLOW();
 
@@ -397,6 +403,12 @@ static void pike_mysql_reconnect(void)
     options = (unsigned int)val->u.integer;
   }
 
+#if !defined (HAVE_MYSQL_SET_CHARACTER_SET) && defined (HAVE_MYSQL_OPTIONS) && defined (HAVE_MYSQL_SET_CHARSET_NAME)
+  if (PIKE_MYSQL->conn_charset)
+    mysql_options (mysql, MYSQL_SET_CHARSET_NAME,
+		   PIKE_MYSQL->conn_charset->str);
+#endif
+
   MYSQL_ALLOW();
 
 #if defined(HAVE_MYSQL_PORT) || defined(HAVE_MYSQL_UNIX_PORT)
@@ -537,7 +549,17 @@ static void pike_mysql_reconnect(void)
  *!       Change charset directory.
  *!
  *!     @member string "mysql_charset_name"
- *!       Change charset name.
+ *!       Set connection charset - see @[set_charset] for details. The
+ *!       default is @expr{"latin1"@}. As opposed to @[set_charset],
+ *!       this way of specifying the connection charset doesn't
+ *!       require MySQL 4.1.0.
+ *!
+ *!     @member int "unicode_decode_mode"
+ *!       Enable unicode decode mode for the connection if nonzero. In
+ *!       this mode non-binary string results are automatically
+ *!       converted to (possibly wide) unicode strings. An error is
+ *!       thrown if the server doesn't support this. See
+ *!       @[set_unicode_decode_mode].
  *!
  *!     @member string "ssl_key"
  *!       Path to SSL-key for use in SSL-communication.
@@ -620,6 +642,20 @@ static void f_create(INT32 args)
   pike_mysql_set_ssl(PIKE_MYSQL->options);
 
   pike_mysql_reconnect();
+
+#ifndef HAVE_MYSQL_SET_CHARACTER_SET
+  {
+    const char *charset = mysql_character_set_name (PIKE_MYSQL->socket);
+    if (PIKE_MYSQL->conn_charset)
+      free_string (PIKE_MYSQL->conn_charset);
+    if (charset)
+      PIKE_MYSQL->conn_charset = make_shared_string (charset);
+    else
+      /* Just paranoia; mysql_character_set_name should always return
+       * a string. */
+      PIKE_MYSQL->conn_charset = NULL;
+  }
+#endif
 }
 
 /*! @decl string _sprintf(int type, void|mapping flags)
@@ -960,39 +996,11 @@ static void low_query(INT32 args, char *name, int flags)
   }
 }
 
-/*! @decl Mysql.mysql_result big_query(string query)
- *!
- *! Make an SQL query.
- *!
- *! This function sends the SQL query @[query] to the Mysql-server. The result
- *! of the query is returned as a @[Mysql.mysql_result] object.
- *!
- *! Returns @expr{0@} (zero) if the query didn't return any result
- *! (e.g. @tt{INSERT@} or similar).
- *!
- *! @seealso
- *!   @[Mysql.mysql_result] @[streaming_query]
- */
 static void f_big_query(INT32 args)
 {
   low_query(args, "big_query", PIKE_MYSQL_FLAG_STORE_RESULT);
 }
 
-/*! @decl Mysql.mysql_result big_query(string query)
- *!
- *! Makes a streaming SQL query.
- *!
- *! This function sends the SQL query @[query] to the Mysql-server.
- *! The result of the query is streamed through the returned
- *! @[Mysql.mysql_result] object. Note that the involved database
- *! tables are locked until all the results has been read.
- *!
- *! Returns @expr{0@} (zero) if the query didn't return any result
- *! (e.g. @tt{INSERT@} or similar).
- *!
- *! @seealso
- *!   @[Mysql.mysql_result]
- */
 static void f_streaming_query(INT32 args)
 {
   low_query(args, "streaming_query", 0);
@@ -1731,6 +1739,104 @@ static void f_binary_data(INT32 args)
 #endif /* HAVE_MYSQL_FETCH_LENGTHS */
 }
 
+static void f_set_charset (INT32 args)
+{
+  struct pike_string *charset;
+  get_all_args ("set_charset", args, "%n", &charset);
+  if (string_has_null (charset))
+    SIMPLE_ARG_ERROR ("set_charset", 0,
+		      "The charset name cannot contain a NUL character.");
+
+#ifdef HAVE_MYSQL_SET_CHARACTER_SET
+  {
+    int res;
+    MYSQL_ALLOW();
+    res = mysql_set_character_set (PIKE_MYSQL->socket, charset->str);
+    MYSQL_DISALLOW();
+    if (!res) {
+      const char *err;
+      MYSQL_ALLOW();
+      err = mysql_error(PIKE_MYSQL->socket);
+      MYSQL_DISALLOW();
+      Pike_error("Setting the charset failed: %s\n", err);
+    }
+  }
+
+#else  /* !HAVE_MYSQL_SET_CHARACTER_SET */
+  push_constant_text ("SET NAMES '");
+  ref_push_string (charset);
+  push_constant_text ("'");
+  f_add (3);
+  low_query (1, "set_charset", PIKE_MYSQL_FLAG_STORE_RESULT);
+  args++;
+  if (PIKE_MYSQL->conn_charset)
+    free_string (PIKE_MYSQL->conn_charset);
+  copy_shared_string (PIKE_MYSQL->conn_charset, charset);
+#endif
+
+  pop_n_elems (args);
+}
+
+static void f_get_charset (INT32 args)
+{
+  pop_n_elems (args);
+#ifdef HAVE_MYSQL_SET_CHARACTER_SET
+  {
+    const char *charset = mysql_character_set_name (PIKE_MYSQL->socket);
+    if (charset)
+      push_text (charset);
+    else
+      /* Just paranoia; mysql_character_set_name should always return
+       * a string. */
+      push_constant_text ("latin1");
+  }
+#else
+  if (PIKE_MYSQL->conn_charset)
+    ref_push_string (PIKE_MYSQL->conn_charset);
+  else
+    push_constant_text ("latin1");
+#endif
+}
+
+static void f__can_send_as_latin1 (INT32 args)
+/* Helper function to detect if a string can be sent in the latin1
+ * encoding. */
+{
+  struct pike_string *str;
+  ptrdiff_t i;
+  int res;
+
+  if (args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("_can_send_as_latin1", 1);
+  if (Pike_sp[-1].type != T_STRING)
+    SIMPLE_ARG_TYPE_ERROR ("_can_send_as_latin1", 0, "string");
+  str = Pike_sp[-1].u.string;
+
+  if (str->size_shift)
+    res = 0;
+
+  else {
+    /* Have to go through the string to check that it doesn't contain
+     * any of those pesky chars in the 0x80..0x9f range that MySQL has
+     * remapped in latin1. */
+    /* This check could be made tighter by ignoring chars in strings
+     * with introducers. */
+    res = 1;
+    for (i = str->len; i--;) {
+      int chr = STR0 (str)[i];
+      if (chr >= 0x80 && chr <= 0x9f &&
+	  chr != 0x81 && chr != 0x8d && chr != 0x8f &&
+	  chr != 0x90 && chr != 0x9d) {
+	res = 0;
+	break;
+      }
+    }
+  }
+
+  pop_stack();
+  push_int (res);
+}
+
 /*! @endclass
  */
 
@@ -1799,6 +1905,11 @@ PIKE_MODULE_INIT
 
   /* function(void:int) */
   ADD_FUNCTION("binary_data", f_binary_data,tFunc(tVoid,tInt), ID_PUBLIC);
+
+  ADD_FUNCTION ("set_charset", f_set_charset, tFunc(tStr,tVoid), ID_PUBLIC);
+  ADD_FUNCTION ("get_charset", f_get_charset, tFunc(tVoid,tStr), ID_PUBLIC);
+  ADD_FUNCTION ("_can_send_as_latin1", f__can_send_as_latin1,
+		tFunc(tStr,tInt01), ID_STATIC);
 
   add_integer_constant( "CLIENT_COMPRESS", CLIENT_COMPRESS, 0);
   add_integer_constant( "CLIENT_FOUND_ROWS", CLIENT_FOUND_ROWS, 0);
