@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.99 2006/08/12 03:15:38 mast Exp $
+|| $Id: mysql.c,v 1.100 2006/08/12 03:27:56 mast Exp $
 */
 
 /*
@@ -590,12 +590,20 @@ static void pike_mysql_reconnect(void)
  *!   Some options may not be implemented. Unimplemented options are
  *!   silently ignored.
  *!
- *!   To use SSL-connections, set the SSL-parameters correctly. They corespond
+ *! @note
+ *!   To use SSL-connections, set the SSL-parameters correctly. They correspond
  *!   to the parameters given to the mysql-client with the same name so make
  *!   sure that the mysql-client works with SSL and set these parameters to
  *!   the same values and everything should work. If SSL-options are loaded
  *!   from a config-file, one may set the connect_options to include
  *!   CLIENT_SSL.
+ *!
+ *! @note
+ *!   If Pike has been built with an old MySQL client lib then it
+ *!   might not be possible to specify some charsets that the server
+ *!   supports with the @expr{"mysql_charset_name"@} option. In such
+ *!   cases it's possible that @[set_charset] works better (provided
+ *!   the server is 4.1 or newer).
  */
 static void f_create(INT32 args)
 {
