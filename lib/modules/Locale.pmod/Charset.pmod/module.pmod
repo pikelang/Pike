@@ -91,7 +91,9 @@ static private inherit _Charset;
 //!   @item 1257
 //!   @item 1258
 //!     These may be prefixed with @expr{"cp"@}, @expr{"ibm"@},
-//!     @expr{"ms"@} or @expr{"windows"@}.
+//!     @expr{"ms"@} or @expr{"windows"@}
+//!   @item mysql-latin1
+//!     The default charset in MySQL, similar to @expr{cp1252@}.
 //! @endul
 //!
 //! +359 more.
