@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.160 2006/08/03 14:52:45 mast Exp $
+# $Id: Makefile,v 1.161 2006/08/12 16:48:35 mast Exp $
 #
 # Meta Makefile
 #
@@ -20,7 +20,7 @@
 
 # Tip: Remove "-r" from the line below if you don't want to rebuild
 # from scratch every time you upgrade the kernel.
-OS=`uname -s -m|sed \"s/ /-/g\"|tr \"[A-Z]\" \"[a-z]\"|tr \"/()\" \"___\"`
+OS=`uname -s -r -m|sed \"s/ /-/g\"|tr \"[A-Z]\" \"[a-z]\"|tr \"/()\" \"___\"`
 
 VPATH=.
 BUILDDIR=build/$(OS)
