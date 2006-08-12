@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.72 2006/08/12 14:46:31 mast Exp $
+|| $Id: mysql.c,v 1.73 2006/08/12 14:47:23 mast Exp $
 */
 
 /*
@@ -94,7 +94,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.72 2006/08/12 14:46:31 mast Exp $");
+RCSID("$Id: mysql.c,v 1.73 2006/08/12 14:47:23 mast Exp $");
 
 /*! @module Mysql
  *!
@@ -211,10 +211,6 @@ static void exit_mysql_struct(struct object *o)
   if (PIKE_MYSQL->host) {
     free_string(PIKE_MYSQL->host);
     PIKE_MYSQL->host = NULL;
-  }
-  if (PIKE_MYSQL->options) {
-    free_mapping (PIKE_MYSQL->options);
-    PIKE_MYSQL->options = NULL;
   }
 
   MYSQL_ALLOW();
