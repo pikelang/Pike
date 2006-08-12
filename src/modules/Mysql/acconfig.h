@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.14 2004/07/14 16:32:38 grubba Exp $
+|| $Id: acconfig.h,v 1.15 2006/08/12 10:36:57 grubba Exp $
 */
 
 /*
@@ -34,6 +34,9 @@
 
 /* Define if you have mysql_options(). */
 #undef HAVE_MYSQL_OPTIONS
+
+/* Define if you have mysql_set_character_set(). */
+#undef HAVE_MYSQL_SET_CHARACTER_SET
 
 /* Define if you have the mysql_port variable. */
 #undef HAVE_MYSQL_PORT
@@ -70,5 +73,8 @@
 
 /* Define if your mysql.h defines SHUTDOWN_DEFAULT */
 #undef HAVE_SHUTDOWN_DEFAULT
+
+/* Define if your mysql.h defines FIELD_TYPE_GEOMETRY */
+#undef HAVE_FIELD_TYPE_GEOMETRY
 
 #endif /* PIKE_MYSQL_CONFIG_H */
