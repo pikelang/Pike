@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.102 2006/08/12 14:46:32 mast Exp $
+|| $Id: mysql.c,v 1.103 2006/08/12 15:07:46 mast Exp $
 */
 
 /*
@@ -652,8 +652,6 @@ static void f_create(INT32 args)
     }
   }
 
-  pop_n_elems(args);
-
   pike_mysql_set_ssl(PIKE_MYSQL->options);
 
   pike_mysql_reconnect (0);
@@ -671,6 +669,8 @@ static void f_create(INT32 args)
       PIKE_MYSQL->conn_charset = NULL;
   }
 #endif
+
+  pop_n_elems(args);
 }
 
 /*! @decl string _sprintf(int type, void|mapping flags)
