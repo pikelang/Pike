@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.25 2006/08/12 02:57:55 mast Exp $
+ * $Id: mysql.pike,v 1.26 2006/08/12 03:06:06 mast Exp $
  *
  * Glue for the Mysql-module
  */
@@ -47,7 +47,6 @@ static void update_unicode_encode_mode_from_charset (string charset)
       send_charset = 0;
       break;
   }
-  werror ("utf8_mode %x, send_charset %O\n", utf8_mode, send_charset);
 }
 
 int(0..1) set_unicode_encode_mode (int enable)
@@ -585,7 +584,6 @@ int decode_datetime (string timestr)
 	  throw err;							\
       }									\
       send_charset = new_send_charset;					\
-      werror ("set charset %O\n", send_charset);			\
     }									\
   }									\
 									\
