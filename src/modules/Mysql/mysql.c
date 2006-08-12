@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.71 2006/08/12 03:15:38 mast Exp $
+|| $Id: mysql.c,v 1.72 2006/08/12 14:46:31 mast Exp $
 */
 
 /*
@@ -94,7 +94,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.71 2006/08/12 03:15:38 mast Exp $");
+RCSID("$Id: mysql.c,v 1.72 2006/08/12 14:46:31 mast Exp $");
 
 /*! @module Mysql
  *!
@@ -561,25 +561,29 @@ static void mysql__sprintf(INT32 args)
   {
     case 'O':
     {
-      struct pike_string *res;
-      MYSQL *socket;
-      const char *info;
+      MYSQL *socket = PIKE_MYSQL->socket;
 
-      if(!PIKE_MYSQL->socket)
-	pike_mysql_reconnect();
-      socket = PIKE_MYSQL->socket;
+      if (socket) {
+	const char *info;
+	MYSQL_ALLOW();
+	info = mysql_get_host_info(socket);
+	MYSQL_DISALLOW();
+	push_text("mysql(/*%s%s*/)");
+	push_text(info);
+#ifdef HAVE_MYSQL_SSL
+	if (PIKE_MYSQL->mysql->options.use_ssl) {
+	  push_text(", SSL");
+	}
+	else
+	  push_text("");
+#else
+	push_text("");
+#endif /* HAVE_MYSQL_SSL */
+	f_sprintf(3);
+      }
+      else
+	push_constant_text ("mysql()");
 
-      MYSQL_ALLOW();
-      info = mysql_get_host_info(socket);
-      MYSQL_DISALLOW();
-
-      push_text("mysql(/* %s */)");
-      push_text(info);
-      f_sprintf(2);
-
-      res = Pike_sp[-1].u.string;
-      Pike_sp--;
-      push_string(res);
       return;
     }
 
