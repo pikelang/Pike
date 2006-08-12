@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.98 2006/08/12 02:57:55 mast Exp $
+|| $Id: mysql.c,v 1.99 2006/08/12 03:15:38 mast Exp $
 */
 
 /*
@@ -212,6 +212,10 @@ static void exit_mysql_struct(struct object *o)
   if (PIKE_MYSQL->host) {
     free_string(PIKE_MYSQL->host);
     PIKE_MYSQL->host = NULL;
+  }
+  if (PIKE_MYSQL->options) {
+    free_mapping (PIKE_MYSQL->options);
+    PIKE_MYSQL->options = NULL;
   }
 #ifndef HAVE_MYSQL_SET_CHARACTER_SET
   if (PIKE_MYSQL->conn_charset) {
