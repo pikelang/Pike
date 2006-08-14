@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.73 2006/08/12 14:47:23 mast Exp $
+|| $Id: mysql.c,v 1.74 2006/08/14 14:07:22 grubba Exp $
 */
 
 /*
@@ -24,7 +24,9 @@
  * Includes
  */
 
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
 #endif
 
@@ -73,6 +75,8 @@
 #include "operators.h"
 #include "builtin_functions.h"
 #include "fd_control.h"
+#include "mapping.h"
+#include "bignum.h"
 
 /* System includes */
 #ifdef HAVE_STRING_H
@@ -81,7 +85,6 @@
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
-
 
 #define sp Pike_sp
 
@@ -94,7 +97,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.73 2006/08/12 14:47:23 mast Exp $");
+RCSID("$Id: mysql.c,v 1.74 2006/08/14 14:07:22 grubba Exp $");
 
 /*! @module Mysql
  *!
@@ -155,18 +158,19 @@ static MUTEX_T stupid_port_lock;
 #define MYSQL_DISALLOW()
 #endif /* _REENTRANT */
 
+#define string_has_null(STR)	((ptrdiff_t)strlen((STR)->str) != (STR)->len)
+
 #define CHECK_8BIT_NONBINARY_STRING(FUNC, ARG) do {			\
     if (sp[ARG-1-args].type != T_STRING ||				\
 	sp[ARG-1-args].u.string->size_shift ||				\
-	((ptrdiff_t) strlen (sp[ARG-1-args].u.string->str) !=		\
-	 sp[ARG-1-args].u.string->len))					\
+        string_has_null(sp[ARG-1-args].u.string))			\
       SIMPLE_BAD_ARG_ERROR (FUNC, ARG, "string (nonbinary 8bit)");	\
   } while (0)
 
 #define CHECK_8BIT_STRING(FUNC, ARG) do {				\
     if (sp[ARG-1-args].type != T_STRING ||				\
 	sp[ARG-1-args].u.string->size_shift)				\
-      SIMPLE_BAD_ARG_ERROR (FUNC, ARG, "string (8bit)");		\
+      SIMPLE_BAD_ARG_ERROR (FUNC, ARG, "string (8bit)");	\
   } while (0)
 
 
@@ -212,6 +216,16 @@ static void exit_mysql_struct(struct object *o)
     free_string(PIKE_MYSQL->host);
     PIKE_MYSQL->host = NULL;
   }
+  if (PIKE_MYSQL->options) {
+    free_mapping (PIKE_MYSQL->options);
+    PIKE_MYSQL->options = NULL;
+  }
+#ifndef HAVE_MYSQL_SET_CHARACTER_SET
+  if (PIKE_MYSQL->conn_charset) {
+    free_string (PIKE_MYSQL->conn_charset);
+    PIKE_MYSQL->conn_charset = NULL;
+  }
+#endif
 
   MYSQL_ALLOW();
 
@@ -232,34 +246,34 @@ static void pike_mysql_set_options(struct mapping *options)
   struct svalue *val;
 
 #ifdef HAVE_MYSQL_OPTIONS
-#ifdef MYSQL_READ_DEFAULT_FILE
+#ifdef HAVE_MYSQL_READ_DEFAULT_FILE
   if ((val = simple_mapping_string_lookup(options, "mysql_config_file")) &&
       (val->type == T_STRING) && (!val->u.string->size_shift)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_READ_DEFAULT_FILE,
 		  val->u.string->str);
   }
 #endif /* MYSQL_READ_DEFAULT_FILE */
-#ifdef MYSQL_READ_DEFAULT_GROUP
+#ifdef HAVE_MYSQL_READ_DEFAULT_GROUP
   if ((val = simple_mapping_string_lookup(options, "mysql_group")) &&
       (val->type == T_STRING) && (!val->u.string->size_shift)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_READ_DEFAULT_GROUP,
 		  val->u.string->str);
   }
 #endif /* MYSQL_READ_DEFAULT_GROUP */
-#ifdef MYSQL_INIT_COMMAND
+#ifdef HAVE_MYSQL_INIT_COMMAND
   if ((val = simple_mapping_string_lookup(options, "init_command")) &&
       (val->type == T_STRING) && (!val->u.string->size_shift)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_INIT_COMMAND,
 		  val->u.string->str);
   }
 #endif /* MYSQL_INIT_COMMAND */
-#ifdef MYSQL_OPT_NAMED_PIPE
+#ifdef HAVE_MYSQL_OPT_NAMED_PIPE
   if ((val = simple_mapping_string_lookup(options, "mysql_named_pipe")) &&
       (val->type == T_INT) && (val->u.integer)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_NAMED_PIPE, NULL);
   }
 #endif /* MYSQL_OPT_NAMED_PIPE */
-#ifdef MYSQL_OPT_CONNECT_TIMEOUT
+#ifdef HAVE_MYSQL_OPT_CONNECT_TIMEOUT
   if ((val = simple_mapping_string_lookup(options, "timeout")) &&
       (val->type == T_INT)) {
     unsigned int timeout = (unsigned int)val->u.integer;
@@ -267,13 +281,13 @@ static void pike_mysql_set_options(struct mapping *options)
 		  (char *)&timeout);
   }
 #endif /* MYSQL_OPT_CONNECT_TIMEOUT */
-#ifdef MYSQL_OPT_COMPRESS
+#ifdef HAVE_MYSQL_OPT_COMPRESS
   if ((val = simple_mapping_string_lookup(options, "compress")) &&
       (val->type == T_INT) && (val->u.integer)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_OPT_COMPRESS, NULL);
   }
 #endif /* MYSQL_OPT_COMPRESS */
-#ifdef MYSQL_OPT_LOCAL_INFILE
+#ifdef HAVE_MYSQL_OPT_LOCAL_INFILE
   if ((val = simple_mapping_string_lookup(options, "mysql_local_infile")) &&
       (val->type == T_INT)) {
     unsigned int allowed = (unsigned int)val->u.integer;
@@ -286,14 +300,14 @@ static void pike_mysql_set_options(struct mapping *options)
 		  (char *)&allowed);    
   }
 #endif /* MYSQL_OPT_LOCAL_INFILE */
-#ifdef MYSQL_SET_CHARSET_DIR
+#ifdef HAVE_MYSQL_SET_CHARSET_DIR
   if ((val = simple_mapping_string_lookup(options, "mysql_charset_dir")) &&
       (val->type == T_STRING) && (!val->u.string->size_shift)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_SET_CHARSET_DIR,
 		  val->u.string->str);
   }
 #endif /* MYSQL_SET_CHARSET_DIR */
-#ifdef MYSQL_SET_CHARSET_NAME
+#ifdef HAVE_MYSQL_SET_CHARSET_NAME
   if ((val = simple_mapping_string_lookup(options, "mysql_charset_name")) &&
       (val->type == T_STRING) && (!val->u.string->size_shift)) {
     mysql_options(PIKE_MYSQL->mysql, MYSQL_SET_CHARSET_NAME,
@@ -303,7 +317,7 @@ static void pike_mysql_set_options(struct mapping *options)
 #endif /* HAVE_MYSQL_OPTIONS */
 }
 
-static void pike_mysql_reconnect(void)
+static void pike_mysql_reconnect (int reconnect)
 {
   MYSQL *mysql = PIKE_MYSQL->mysql;
   MYSQL *socket;
@@ -316,6 +330,8 @@ static void pike_mysql_reconnect(void)
   char *saved_unix_port = NULL;
   unsigned int port = 0;
   unsigned int saved_port = 0;
+  unsigned int options = 0;
+  struct svalue *val;
 
   if (PIKE_MYSQL->host) {
     hostptr = strdup(PIKE_MYSQL->host->str);
@@ -344,6 +360,18 @@ static void pike_mysql_reconnect(void)
   socket = PIKE_MYSQL->socket;
   PIKE_MYSQL->socket = NULL;
 
+  if ((val = simple_mapping_string_lookup(PIKE_MYSQL->options,
+					  "connect_options")) &&
+      (val->type == T_INT) && (val->u.integer)) {
+    options = (unsigned int)val->u.integer;
+  }
+
+#if !defined (HAVE_MYSQL_SET_CHARACTER_SET) && defined (HAVE_MYSQL_OPTIONS) && defined (HAVE_MYSQL_SET_CHARSET_NAME)
+  if (PIKE_MYSQL->conn_charset)
+    mysql_options (mysql, MYSQL_SET_CHARSET_NAME,
+		   PIKE_MYSQL->conn_charset->str);
+#endif
+
   MYSQL_ALLOW();
 
 #if defined(HAVE_MYSQL_PORT) || defined(HAVE_MYSQL_UNIX_PORT)
@@ -370,7 +398,7 @@ static void pike_mysql_reconnect(void)
 
 #ifdef HAVE_MYSQL_REAL_CONNECT
   socket = mysql_real_connect(mysql, host, user, password,
-                              NULL, port, portptr, 0);
+                              NULL, port, portptr, options);
 #else
   socket = mysql_connect(mysql, host, user, password);
 #endif /* HAVE_MYSQL_REAL_CONNECT */
@@ -397,9 +425,12 @@ static void pike_mysql_reconnect(void)
   }
   
   if (!(PIKE_MYSQL->socket = socket)) {
-    Pike_error("Mysql.mysql(): Couldn't reconnect to SQL-server\n"
-	  "%s\n",
-	  mysql_error(PIKE_MYSQL->mysql));
+    const char *err;
+    MYSQL_ALLOW();
+    err = mysql_error (mysql);
+    MYSQL_DISALLOW();
+    Pike_error("Mysql.mysql(): Couldn't %s to SQL-server: %s\n",
+	       reconnect ? "reconnect" : "connect", err);
   }
 
   if (socket->net.fd >= 0) {
@@ -451,8 +482,8 @@ static void pike_mysql_reconnect(void)
  *! done with this function.
  *!
  *! @param host
- *!   If you give no argument, or give @tt{""@} as @[host] it will connect with
- *!   a UNIX-domain socket, which can be a big performance gain.
+ *!   If you give no argument, or give @expr{""@} as @[host] it will connect
+ *!   with a UNIX-domain socket, which can be a big performance gain.
  *!
  *! @param options
  *!   This optional mapping can contain zero or more of the following
@@ -469,7 +500,7 @@ static void pike_mysql_reconnect(void)
  *!       Enable compressed protocol.
  *!
  *!     @member string "mysql_config_file"
- *!       Change config file from @tt{"my.cnf"@}.
+ *!       Change config file from @expr{"my.cnf"@}.
  *!
  *!     @member string "mysql_group"
  *!       Specify additional group to read from config file.
@@ -484,12 +515,34 @@ static void pike_mysql_reconnect(void)
  *!       Change charset directory.
  *!
  *!     @member string "mysql_charset_name"
- *!       Change charset name.
+ *!       Set connection charset - see @[set_charset] for details. The
+ *!       default is @expr{"latin1"@}. As opposed to @[set_charset],
+ *!       this way of specifying the connection charset doesn't
+ *!       require MySQL 4.1.0.
+ *!
+ *!     @member int "unicode_decode_mode"
+ *!       Enable unicode decode mode for the connection if nonzero. In
+ *!       this mode non-binary string results are automatically
+ *!       converted to (possibly wide) unicode strings. An error is
+ *!       thrown if the server doesn't support this. See
+ *!       @[set_unicode_decode_mode].
+ *!
+ *!     @member int "connect_options"
+ *!       Options used when connecting to the server. See mysql documentation
+ *!       for more information.
+ *!
  *!   @endmapping
  *!
  *! @note
  *!   Some options may not be implemented. Unimplemented options are
  *!   silently ignored.
+ *!
+ *! @note
+ *!   If Pike has been built with an old MySQL client lib then it
+ *!   might not be possible to specify some charsets that the server
+ *!   supports with the @expr{"mysql_charset_name"@} option. In such
+ *!   cases it's possible that @[set_charset] works better (provided
+ *!   the server is 4.1 or newer).
  */
 static void f_create(INT32 args)
 {
@@ -527,6 +580,7 @@ static void f_create(INT32 args)
 	    if (sp[4-args].type != T_MAPPING) {
 	      SIMPLE_BAD_ARG_ERROR ("Mysql.mysql->create", 5, "mapping(string:mixed)");
 	    }
+	    add_ref(PIKE_MYSQL->options = sp[4-args].u.mapping);
 	    pike_mysql_set_options(sp[4-args].u.mapping);
 	  }
 	}
@@ -534,9 +588,23 @@ static void f_create(INT32 args)
     }
   }
 
-  pop_n_elems(args);
+  pike_mysql_reconnect (0);
 
-  pike_mysql_reconnect();
+#ifndef HAVE_MYSQL_SET_CHARACTER_SET
+  {
+    const char *charset = mysql_character_set_name (PIKE_MYSQL->socket);
+    if (PIKE_MYSQL->conn_charset)
+      free_string (PIKE_MYSQL->conn_charset);
+    if (charset)
+      PIKE_MYSQL->conn_charset = make_shared_string (charset);
+    else
+      /* Just paranoia; mysql_character_set_name should always return
+       * a string. */
+      PIKE_MYSQL->conn_charset = NULL;
+  }
+#endif
+
+  pop_n_elems(args);
 }
 
 /*! @decl string _sprintf(int type, void|mapping flags)
@@ -566,15 +634,7 @@ static void mysql__sprintf(INT32 args)
 	MYSQL_DISALLOW();
 	push_text("mysql(/*%s%s*/)");
 	push_text(info);
-#ifdef HAVE_MYSQL_SSL
-	if (PIKE_MYSQL->mysql->options.use_ssl) {
-	  push_text(", SSL");
-	}
-	else
-	  push_text("");
-#else
 	push_text("");
-#endif /* HAVE_MYSQL_SSL */
 	f_sprintf(3);
       }
       else
@@ -604,7 +664,7 @@ static void f_affected_rows(INT32 args)
   INT64 count;
 
   if (!PIKE_MYSQL->socket) {
-    pike_mysql_reconnect();
+    pike_mysql_reconnect (1);
   }
   pop_n_elems(args);
   socket = PIKE_MYSQL->socket;
@@ -627,7 +687,7 @@ static void f_insert_id(INT32 args)
   INT64 id;
 
   if (!PIKE_MYSQL->socket) {
-    pike_mysql_reconnect();
+    pike_mysql_reconnect (1);
   }
   pop_n_elems(args);
 
@@ -644,7 +704,7 @@ static void f_insert_id(INT32 args)
  *!
  *! Returns a string describing the last error from the Mysql-server.
  *!
- *! Returns @tt{0@} (zero) if there was no error.
+ *! Returns @expr{0@} (zero) if there was no error.
  */
 static void f_error(INT32 args)
 {
@@ -652,7 +712,7 @@ static void f_error(INT32 args)
   const char *error_msg;
 
   if (!PIKE_MYSQL->socket) {
-    pike_mysql_reconnect();
+    pike_mysql_reconnect (1);
   }
 
   socket = PIKE_MYSQL->socket;
@@ -704,7 +764,7 @@ static void f_select_db(INT32 args)
   }
   if (!socket || tmp) {
     /* The connection might have been closed. */
-    pike_mysql_reconnect();
+    pike_mysql_reconnect (1);
 
     socket = PIKE_MYSQL->socket;
 
@@ -733,19 +793,8 @@ static void f_select_db(INT32 args)
   pop_n_elems(args);
 }
 
-/*! @decl object(Mysql.mysql_result) big_query(string query)
- *!
- *! Make an SQL query.
- *!
- *! This function sends the SQL query @[query] to the Mysql-server. The result
- *! of the query is returned as a @[Mysql.mysql_result] object.
- *!
- *! Returns @tt{0@} (zero) if the query didn't return any result
- *! (e.g. @tt{INSERT@} or similar).
- *!
- *! @seealso
- *!   @[Mysql.mysql_result]
- */
+#define PIKE_MYSQL_FLAG_STORE_RESULT	1
+
 static void f_big_query(INT32 args)
 {
   MYSQL *socket = PIKE_MYSQL->socket;
@@ -755,12 +804,12 @@ static void f_big_query(INT32 args)
   int tmp = -1;
 
   if (!args) {
-    SIMPLE_TOO_FEW_ARGS_ERROR ("Mysql.mysql->big_query", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR ("big_query", 1);
   }
 #ifdef HAVE_MYSQL_REAL_QUERY
-  CHECK_8BIT_STRING ("Mysql.mysql->big_query", 1);
+  CHECK_8BIT_STRING ("big_query", 1);
 #else
-  CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->big_query", 1);
+  CHECK_8BIT_NONBINARY_STRING ("big_query", 1);
 #endif
 
   query = sp[-args].u.string->str;
@@ -795,7 +844,7 @@ static void f_big_query(INT32 args)
   }
   if (!socket) {
     /* The connection might have been closed. */
-    pike_mysql_reconnect();
+    pike_mysql_reconnect (1);
 
     socket = PIKE_MYSQL->socket;
 
@@ -822,10 +871,10 @@ static void f_big_query(INT32 args)
     MYSQL_DISALLOW();
 
     if (sp[-args].u.string->len <= 512) {
-      Pike_error("Mysql.mysql->big_query(): Query \"%s\" failed (%s)\n",
-	    sp[-args].u.string->str, err);
+      Pike_error("big_query(): Query \"%s\" failed (%s)\n",
+		 query, err);
     } else {
-      Pike_error("Mysql.mysql->big_query(): Query failed (%s)\n", err);
+      Pike_error("big_query(): Query failed (%s)\n", err);
     }
   }
 
@@ -849,8 +898,12 @@ static void f_big_query(INT32 args)
     MYSQL_DISALLOW();
 
     if (err) {
-      Pike_error("Mysql.mysql->big_query(): Couldn't create result for query (%s)\n",
-		 mysql_error(socket));
+      const char *msg;
+      MYSQL_ALLOW();
+      msg = mysql_error (socket);
+      MYSQL_DISALLOW();
+      Pike_error("big_query(): Couldn't create result for query (%s)\n",
+		 msg);
     }
     /* query was INSERT or similar - return 0 */
 
@@ -868,11 +921,13 @@ static void f_big_query(INT32 args)
     if ((!(res = (struct precompiled_mysql_result *)
 	   get_storage(o, mysql_result_program))) || res->result) {
       mysql_free_result(result);
-      Pike_error("Mysql.mysql->big_query(): Bad mysql result object!\n");
+      Pike_error("big_query(): Bad mysql result object!\n");
     }
     res->result = result;
   }
 }
+
+
 /*! @decl void create_db(string database)
  *!
  *! Create a new database
@@ -913,7 +968,7 @@ static void f_create_db(INT32 args)
   }
   if (!socket || tmp) {
     /* The connection might have been closed */
-    pike_mysql_reconnect();
+    pike_mysql_reconnect (1);
 
     socket = PIKE_MYSQL->socket;
 
@@ -971,7 +1026,7 @@ static void f_drop_db(INT32 args)
   }
   if (!socket || tmp) {
     /* The connection might have been closed */
-    pike_mysql_reconnect();
+    pike_mysql_reconnect (1);
 
     socket = PIKE_MYSQL->socket;
 
@@ -1019,7 +1074,7 @@ static void f_shutdown(INT32 args)
   }
   if (!socket || tmp) {
     /* The connection might have been closed */
-    pike_mysql_reconnect();
+    pike_mysql_reconnect (1);
 
     socket = PIKE_MYSQL->socket;
 
@@ -1065,7 +1120,7 @@ static void f_reload(INT32 args)
   }
   if (!socket || tmp) {
     /* The connection might have been closed */
-    pike_mysql_reconnect();
+    pike_mysql_reconnect (1);
 
     socket = PIKE_MYSQL->socket;
 
@@ -1098,7 +1153,7 @@ static void f_statistics(INT32 args)
   const char *stats;
 
   if (!socket) {
-    pike_mysql_reconnect();
+    pike_mysql_reconnect (1);
     socket = PIKE_MYSQL->socket;
   }
 
@@ -1126,7 +1181,7 @@ static void f_server_info(INT32 args)
   const char *info;
 
   if (!socket) {
-    pike_mysql_reconnect();
+    pike_mysql_reconnect (1);
     socket = PIKE_MYSQL->socket;
   }
 
@@ -1157,7 +1212,7 @@ static void f_host_info(INT32 args)
   const char *info;
 
   if (!PIKE_MYSQL->socket) {
-    pike_mysql_reconnect();
+    pike_mysql_reconnect (1);
   }
 
   socket = PIKE_MYSQL->socket;
@@ -1189,7 +1244,7 @@ static void f_protocol_info(INT32 args)
   int prot;
 
   if (!PIKE_MYSQL->socket) {
-    pike_mysql_reconnect();
+    pike_mysql_reconnect (1);
   }
 
   pop_n_elems(args);
@@ -1245,7 +1300,7 @@ static void f_list_dbs(INT32 args)
   }
   if (!socket || !result) {
     /* The connection might have been closed */
-    pike_mysql_reconnect();
+    pike_mysql_reconnect (1);
 
     socket = PIKE_MYSQL->socket;
 
@@ -1331,7 +1386,7 @@ static void f_list_tables(INT32 args)
   }
   if (!socket || !result) {
     /* The connection might have been closed */
-    pike_mysql_reconnect();
+    pike_mysql_reconnect (1);
 
     socket = PIKE_MYSQL->socket;
 
@@ -1406,10 +1461,12 @@ static void f_list_tables(INT32 args)
  *! @endmapping
  *!
  *! The type of the field can be any of:
- *!   @tt{"decimal"@}, @tt{"char"@}, @tt{"short"@}, @tt{"long"@},
- *!   @tt{"float"@}, @tt{"double"@}, @tt{"null"@}, @tt{"time"@},
- *!   @tt{"longlong"@}, @tt{"int24"@}, @tt{"tiny blob"@}, @tt{"medium blob"@},
- *!   @tt{"long blob"@}, @tt{"var string"@}, @tt{"string"@} or @tt{"unknown"@}.
+ *!   @expr{"decimal"@}, @expr{"char"@}, @expr{"short"@}, @expr{"long"@},
+ *!   @expr{"float"@}, @expr{"double"@}, @expr{"null"@}, @expr{"time"@},
+ *!   @expr{"longlong"@}, @expr{"int24"@}, @expr{"tiny blob"@},
+ *!   @expr{"medium blob"@},
+ *!   @expr{"long blob"@}, @expr{"var string"@}, @expr{"string"@} or
+ *!   @expr{"unknown"@}.
  *!
  *! The flags multiset can contain any of:
  *! @multiset
@@ -1480,7 +1537,7 @@ static void f_list_fields(INT32 args)
   }
   if (!socket || !result) {
     /* The connection might have been closed */
-    pike_mysql_reconnect();
+    pike_mysql_reconnect (1);
 
     socket = PIKE_MYSQL->socket;
 
@@ -1492,7 +1549,7 @@ static void f_list_fields(INT32 args)
   }
 
   if (!result) {
-    char *err;
+    const char *err;
 
     MYSQL_ALLOW();
 
@@ -1540,7 +1597,7 @@ static void f_list_processes(INT32 args)
   }
   if (!socket || !result) {
     /* The connection might have been closed */
-    pike_mysql_reconnect();
+    pike_mysql_reconnect (1);
 
     socket = PIKE_MYSQL->socket;
 
@@ -1552,7 +1609,7 @@ static void f_list_processes(INT32 args)
   }
 
   if (!result) {
-    char *err;
+    const char *err;
 
     MYSQL_ALLOW();
 
@@ -1590,7 +1647,7 @@ static void f_list_processes(INT32 args)
  *! and retreived with this version of the mysql-module.
  *!
  *! Usually, there is no problem storing binary data in mysql-tables,
- *! but data containing @tt{'\0'@} (NUL) couldn't be fetched with old
+ *! but data containing @expr{'\0'@} (NUL) couldn't be fetched with old
  *! versions (prior to 3.20.5) of the mysql-library.
  */
 static void f_binary_data(INT32 args)
@@ -1601,6 +1658,105 @@ static void f_binary_data(INT32 args)
 #else
   push_int(0);
 #endif /* HAVE_MYSQL_FETCH_LENGTHS */
+}
+
+static void f_set_charset (INT32 args)
+{
+  struct pike_string *charset;
+  get_all_args ("set_charset", args, "%n", &charset);
+  if (string_has_null (charset))
+    SIMPLE_ARG_ERROR ("set_charset", 0,
+		      "The charset name cannot contain a NUL character.");
+
+#ifdef HAVE_MYSQL_SET_CHARACTER_SET
+  {
+    int res;
+    MYSQL *socket = PIKE_MYSQL->socket;
+    MYSQL_ALLOW();
+    res = mysql_set_character_set (socket, charset->str);
+    MYSQL_DISALLOW();
+    if (!res) {
+      const char *err;
+      MYSQL_ALLOW();
+      err = mysql_error(socket);
+      MYSQL_DISALLOW();
+      Pike_error("Setting the charset failed: %s\n", err);
+    }
+  }
+
+#else  /* !HAVE_MYSQL_SET_CHARACTER_SET */
+  push_constant_text ("SET NAMES '");
+  ref_push_string (charset);
+  push_constant_text ("'");
+  f_add (3);
+  low_query (1, "set_charset", PIKE_MYSQL_FLAG_STORE_RESULT);
+  args++;
+  if (PIKE_MYSQL->conn_charset)
+    free_string (PIKE_MYSQL->conn_charset);
+  copy_shared_string (PIKE_MYSQL->conn_charset, charset);
+#endif
+
+  pop_n_elems (args);
+}
+
+static void f_get_charset (INT32 args)
+{
+  pop_n_elems (args);
+#ifdef HAVE_MYSQL_SET_CHARACTER_SET
+  {
+    const char *charset = mysql_character_set_name (PIKE_MYSQL->socket);
+    if (charset)
+      push_text (charset);
+    else
+      /* Just paranoia; mysql_character_set_name should always return
+       * a string. */
+      push_constant_text ("latin1");
+  }
+#else
+  if (PIKE_MYSQL->conn_charset)
+    ref_push_string (PIKE_MYSQL->conn_charset);
+  else
+    push_constant_text ("latin1");
+#endif
+}
+
+static void f__can_send_as_latin1 (INT32 args)
+/* Helper function to detect if a string can be sent in the latin1
+ * encoding. */
+{
+  struct pike_string *str;
+  ptrdiff_t i;
+  int res;
+
+  if (args != 1)
+    SIMPLE_WRONG_NUM_ARGS_ERROR ("_can_send_as_latin1", 1);
+  if (Pike_sp[-1].type != T_STRING)
+    SIMPLE_ARG_TYPE_ERROR ("_can_send_as_latin1", 0, "string");
+  str = Pike_sp[-1].u.string;
+
+  if (str->size_shift)
+    res = 0;
+
+  else {
+    /* Have to go through the string to check that it doesn't contain
+     * any of those pesky chars in the 0x80..0x9f range that MySQL has
+     * remapped in latin1. */
+    /* This check could be made tighter by ignoring chars in strings
+     * with introducers. */
+    res = 1;
+    for (i = str->len; i--;) {
+      int chr = STR0 (str)[i];
+      if (chr >= 0x80 && chr <= 0x9f &&
+	  chr != 0x81 && chr != 0x8d && chr != 0x8f &&
+	  chr != 0x90 && chr != 0x9d) {
+	res = 0;
+	break;
+      }
+    }
+  }
+
+  pop_stack();
+  push_int (res);
 }
 
 /*! @endclass
@@ -1635,14 +1791,14 @@ PIKE_MODULE_INIT
    * program->refs++;
    *
    */
- 
+
   start_new_program();
   ADD_STORAGE(struct precompiled_mysql);
 
   /* function(void:int|string) */
   ADD_FUNCTION("error", f_error,tFunc(tVoid,tOr(tInt,tStr)), ID_PUBLIC);
   /* function(string|void, string|void, string|void, string|void:void) */
-  ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid),tVoid), ID_PUBLIC);
+  ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tMapping, tVoid),tVoid), ID_PUBLIC);
   /* function(int, void|mapping:string) */
   ADD_FUNCTION("_sprintf",mysql__sprintf,
 	       tFunc(tInt tOr(tVoid,tMapping),tString),0);
@@ -1685,6 +1841,18 @@ PIKE_MODULE_INIT
 
   /* function(void:int) */
   ADD_FUNCTION("binary_data", f_binary_data,tFunc(tVoid,tInt), ID_PUBLIC);
+
+  ADD_FUNCTION ("set_charset", f_set_charset, tFunc(tStr,tVoid), ID_PUBLIC);
+  ADD_FUNCTION ("get_charset", f_get_charset, tFunc(tVoid,tStr), ID_PUBLIC);
+  ADD_FUNCTION ("_can_send_as_latin1", f__can_send_as_latin1,
+		tFunc(tStr,tInt01), ID_STATIC);
+
+  add_integer_constant( "CLIENT_COMPRESS", CLIENT_COMPRESS, 0);
+  add_integer_constant( "CLIENT_FOUND_ROWS", CLIENT_FOUND_ROWS, 0);
+  add_integer_constant( "CLIENT_IGNORE_SPACE", CLIENT_IGNORE_SPACE, 0);
+  add_integer_constant( "CLIENT_INTERACTIVE", CLIENT_INTERACTIVE, 0);
+  add_integer_constant( "CLIENT_NO_SCHEMA", CLIENT_NO_SCHEMA, 0);
+  add_integer_constant( "CLIENT_ODBC", CLIENT_ODBC, 0);
 
   set_init_callback(init_mysql_struct);
   set_exit_callback(exit_mysql_struct);

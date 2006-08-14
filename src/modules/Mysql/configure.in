@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.42 2005/02/16 16:53:43 grubba Exp $
+# $Id: configure.in,v 1.43 2006/08/14 14:07:23 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -95,7 +95,13 @@ else
 
   # Header file
 
-  AC_CHECK_HEADERS(winsock.h mysql.h mysql/mysql.h errmsg.h mysql/errmsg.h)
+  AC_CHECK_HEADERS(winsock.h winsock2.h mysql.h mysql/mysql.h errmsg.h mysql/errmsg.h)
+
+  if test x$ac_cv_header_mysql_h$ac_cv_header_mysql_mysql_h = xnono; then
+    # Required headerfile missing.
+    PIKE_FEATURE_NODEP(Mysql)
+    pike_cv_mysql="no"
+  fi
 
   # Defines within headerfile
 define([AC_CHECK_MYSQL_OPTIONS],
@@ -119,7 +125,18 @@ AC_DEFINE(HAVE_$1)
 AC_MSG_RESULT(no)
 ])])
 
+
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_READ_DEFAULT_FILE)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_OPT_CONNECT_TIMEOUT)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_OPT_COMPRESS)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_OPT_NAMED_PIPE)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_INIT_COMMAND)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_READ_DEFAULT_GROUP)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_SET_CHARSET_DIR)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_SET_CHARSET_NAME)
+  AC_CHECK_MYSQL_OPTIONS(MYSQL_OPT_LOCAL_INFILE)
   AC_CHECK_MYSQL_OPTIONS(SHUTDOWN_DEFAULT)
+  AC_CHECK_MYSQL_OPTIONS(FIELD_TYPE_GEOMETRY)
 
 
   # Mysql libs
@@ -217,7 +234,9 @@ AC_CACHE_VAL(ac_cv_pike_lib_$1_mysql_real_connect,
 LIBS="-l$1 $LIBS"
   AC_TRY_LINK(
 [
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
 #endif
 
@@ -249,7 +268,9 @@ else
     LIBS="-l$1 $LIBS"
     AC_TRY_LINK(
 [
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
 #endif
 
@@ -314,7 +335,9 @@ fi
       AC_MSG_CHECKING(for $1)
       AC_CACHE_VAL(AC_CV_NAME, [
         AC_TRY_LINK([
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
 #endif
 
@@ -340,6 +363,7 @@ fi
     PIKE_CHECK_MYSQL_FUNC(mysql_real_query)
     PIKE_CHECK_MYSQL_FUNC(mysql_fetch_lengths)
     PIKE_CHECK_MYSQL_FUNC(mysql_options)
+    PIKE_CHECK_MYSQL_FUNC(mysql_set_character_set)
 
     # Note: The following two are variables:
     PIKE_CHECK_MYSQL_FUNC(mysql_port)
@@ -355,7 +379,9 @@ fi
       AC_CACHE_VAL(pike_cv_mysql_fetch_lengths_ret_type, [
         for ret_type in "unsigned long long" "unsigned long" "unsigned int" "long long" "long" "int"; do
 	  AC_TRY_COMPILE([
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
 #endif
 
@@ -391,7 +417,7 @@ $ret_type * STDCALL mysql_fetch_lengths(MYSQL_RES *mysql)
     else :; fi
 
     if test x"$pike_cv_sys_os" = xWindows_NT ; then
-      MYSQL_LIBS="-lshell32 -lkernel32 -lws2_32 -ladvapi32 ${MYSQL_LIBS}"
+      MYSQL_LIBS="-lshell32 -lkernel32 -lws2_32 -ladvapi32 -luser32 ${MYSQL_LIBS}"
     fi
     AC_CHECK_FUNCS(ldiv open sopen close read fileno puts fgets)
 
