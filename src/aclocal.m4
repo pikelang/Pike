@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.147 2006/08/07 00:48:55 nilsson Exp $
+dnl $Id: aclocal.m4,v 1.148 2006/08/14 16:31:05 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -520,7 +520,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.147 2006/08/07 00:48:55 nilsson Exp $
+  # $Id: aclocal.m4,v 1.148 2006/08/14 16:31:05 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -1321,11 +1321,10 @@ AC_DEFUN(PIKE_SELECT_ABI,
 AC_DEFUN(PIKE_INIT_REAL_DIRS,
 [
   real_dirs='/ /usr'
-  real_libs='/lib /usr/lib'
   real_incs='/include /usr/include'
 ])
 
-# directory, if-true, if-false, real-variable
+# directory, if-true, if-false, real-variable(OBSOLETE)
 AC_DEFUN(PIKE_CHECK_ABI_DIR,
 [
   AC_REQUIRE([PIKE_SELECT_ABI])dnl
@@ -1333,6 +1332,7 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
 
   AC_MSG_CHECKING(whether $1 contains $pike_cv_abi-bit ABI files)
   abi_dir_ok="no"
+  abi_dir_dynamic="unknown"
   while :; do
     if test -d "$1/." ; then :; else 
       AC_MSG_RESULT(no - does not exist)
@@ -1344,13 +1344,6 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
       cached="(pwd failed) "
       real_dir="$1"
     fi
-    if echo " [$]ifelse([$4], ,real_libs,[$4]) " | \
-       grep " $real_dir " >/dev/null; then
-      AC_MSG_RESULT(already checked)
-      abi_dir_ok="skip"
-      break
-    fi
-    ifelse([$4], ,real_libs,[$4])="[$]ifelse([$4], ,real_libs,[$4]) $real_dir"
     if echo " $pike_cv_32bit_dirs " | grep " $real_dir " >/dev/null; then
       abi_32=yes
     elif echo " $pike_cv_not_32bit_dir " | grep " $real_dir " >/dev/null; then
@@ -1365,7 +1358,15 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
     else
       abi_64=unknown
     fi
-    if test "$abi_32:$abi_64" = "unknown:unknown"; then
+    if echo " $pike_cv_dynamic_dirs " | grep " $real_dir " >/dev/null; then
+      abi_dir_dynamic=yes
+    elif echo " $pike_cv_not_dynamic_dirs " | grep " $real_dir " >/dev/null; then
+      abi_dir_dynamic=no
+    else
+      abi_dir_dynamic=unknown
+    fi
+    if echo "$abi_32:$abi_64:$abi_dir_dynamic" | \
+	 grep "unknown" >/dev/null; then
       cached=""
       for f in "$d"/* no; do
         if test -f "$f"; then
@@ -1387,13 +1388,22 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
   	      abi_32=yes
 	      ;;
 	  esac
-	  case "$abi_32$abi_64" in
-	    *unknown*)
+	  case "$filetype" in
+	    *not\ a\ dynamic*)
 	      ;;
-	    *)
-	      break
+	    *not\ a\ shared*)
+	      ;;
+	    *dynamic*)
+	      abi_dir_dynamic=yes
+	      ;;
+	    *shared*)
+	      abi_dir_dynamic=yes
 	      ;;
 	  esac
+	  if echo "$abi_32:$abi_64:$abi_dir_dynamic" | \
+	       grep "unknown" >/dev/null; then :; else
+	    break
+	  fi
         fi
       done
       if test "$abi_32" = "yes"; then
@@ -1414,6 +1424,11 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
       fi
       if test "$abi_32" = "no"; then
         pike_cv_not_32bit_dirs="$pike_cv_not_32bit_dirs $real_dir"
+      fi
+      if test "$abi_dir_dynamic" = "yes"; then
+	pike_cv_dynamic_dirs="$pike_cv_dynamic_dirs $real_dir"
+      else
+	pike_cv_not_dynamic_dirs="$pike_cv_not_dynamic_dirs $real_dir"
       fi
     fi
     if test "$abi_32:$pike_cv_abi" = "no:32" \
