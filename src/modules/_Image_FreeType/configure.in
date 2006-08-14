@@ -26,8 +26,8 @@ if test "x$with_freetype" = "xyes" ; then
     #       so we need to repair it...
     FTLIBS=""
     for flag in `$FT_CONFIG --libs`; do
-      f=`echo "x$flag" | sed -e 's/^x-\(.\).*/\1/p' -ed`
-      if test "x$f" = "xL" -o "x$f" = "xR"; then
+      flg=`echo "x$flag" | sed -e 's/^x-\(.\).*/\1/p' -ed`
+      if test "x$flg" = "xL" -o "x$flg" = "xR"; then
         dd=`echo "x$flag" | sed -e 's/^x-.//'`
 	if test -d "$dd"; then :; else
 	  # Not a directory. Keep as is.
@@ -38,7 +38,7 @@ if test "x$with_freetype" = "xyes" ; then
 	  d="$dd$suff"
 	  empty_real_libs=""
 	  PIKE_CHECK_ABI_DIR($d, [
-	    FTLIBS="$FTLIBS -$f$d"
+	    FTLIBS="$FTLIBS -$flg$d"
 	  ],,empty_real_libs)
 	done
       else
