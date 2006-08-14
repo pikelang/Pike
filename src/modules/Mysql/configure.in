@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.47 2004/10/05 13:09:51 mast Exp $
+# $Id: configure.in,v 1.48 2006/08/14 13:37:10 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -136,6 +136,7 @@ AC_MSG_RESULT(no)
   AC_CHECK_MYSQL_OPTIONS(MYSQL_SET_CHARSET_NAME)
   AC_CHECK_MYSQL_OPTIONS(MYSQL_OPT_LOCAL_INFILE)
   AC_CHECK_MYSQL_OPTIONS(SHUTDOWN_DEFAULT)
+  AC_CHECK_MYSQL_OPTIONS(FIELD_TYPE_GEOMETRY)
 
 
   # Mysql libs
@@ -362,6 +363,7 @@ fi
     PIKE_CHECK_MYSQL_FUNC(mysql_real_query)
     PIKE_CHECK_MYSQL_FUNC(mysql_fetch_lengths)
     PIKE_CHECK_MYSQL_FUNC(mysql_options)
+    PIKE_CHECK_MYSQL_FUNC(mysql_set_character_set)
 
     AC_CHECK_LIB(mysqlclient, mysql_ssl_set, [
       AC_DEFINE(HAVE_MYSQL_SSL)

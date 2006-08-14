@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.32 2006/08/11 13:42:29 grubba Exp $
+|| $Id: result.c,v 1.33 2006/08/14 13:37:11 grubba Exp $
 */
 
 /*
@@ -98,7 +98,7 @@
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.32 2006/08/11 13:42:29 grubba Exp $");
+RCSID("$Id: result.c,v 1.33 2006/08/14 13:37:11 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -168,14 +168,35 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
     case FIELD_TYPE_NULL:
       push_text("null");
       break;
-    case FIELD_TYPE_TIME:
-      push_text("time");
+    case FIELD_TYPE_TIMESTAMP:
+      push_text("timestamp");
       break;
     case FIELD_TYPE_LONGLONG:
       push_text("longlong");
       break;
     case FIELD_TYPE_INT24:
       push_text("int24");
+      break;
+    case FIELD_TYPE_DATE:
+      push_text("date");
+      break;
+    case FIELD_TYPE_TIME:
+      push_text("time");
+      break;
+    case FIELD_TYPE_DATETIME:
+      push_text("datetime");
+      break;
+    case FIELD_TYPE_YEAR:
+      push_text("year");
+      break;
+    case FIELD_TYPE_NEWDATE:
+      push_text("newdate");
+      break;
+    case FIELD_TYPE_ENUM:
+      push_text("enum");
+      break;
+    case FIELD_TYPE_SET:
+      push_text("set");
       break;
     case FIELD_TYPE_TINY_BLOB:
       push_text("tiny blob");
@@ -195,6 +216,11 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
     case FIELD_TYPE_STRING:
       push_text("string");
       break;
+#ifdef HAVE_FIELD_TYPE_GEOMETRY
+    case FIELD_TYPE_GEOMETRY:
+      push_text("geometry");
+      break;
+#endif
     default:
       push_text("unknown");
       break;
@@ -371,11 +397,14 @@ static void f_field_seek(INT32 args)
 static void f_eof(INT32 args)
 {
   pop_n_elems(args);
+  push_int(PIKE_MYSQL_RES->eof);
+#if 0
   if (PIKE_MYSQL_RES->result) {
     push_int(mysql_eof(PIKE_MYSQL_RES->result));
   } else {
     push_int(0);
   }
+#endif
 }
 
 #ifdef SUPPORT_FIELD_SEEK
@@ -541,6 +570,7 @@ static void f_fetch_row(INT32 args)
 	  case FIELD_TYPE_SHORT:
 	  case FIELD_TYPE_LONG:
 	  case FIELD_TYPE_INT24:
+	  case FIELD_TYPE_DECIMAL:
 #if 0
 	    /* This one will not always fit in an INT32 */
           case FIELD_TYPE_LONGLONG:
@@ -548,7 +578,6 @@ static void f_fetch_row(INT32 args)
 	    push_int(atoi(row[i]));
 	    break;
 	    /* Floating point types */
-	  case FIELD_TYPE_DECIMAL:	/* Is this a float or an int? */
 	  case FIELD_TYPE_FLOAT:
 	  case FIELD_TYPE_DOUBLE:
 	    push_float(atof(row[i]));
@@ -580,6 +609,7 @@ static void f_fetch_row(INT32 args)
     f_aggregate(num_fields);
   } else {
     /* No rows left in result */
+    PIKE_MYSQL_RES->eof = 1;
     push_int(0);
   }
 
@@ -615,7 +645,7 @@ void init_mysql_res_programs(void)
    * program->refs++;
    *
    */
- 
+
   start_new_program();
   ADD_STORAGE(struct precompiled_mysql_result);
 
