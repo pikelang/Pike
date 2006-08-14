@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.148 2006/08/14 16:31:05 grubba Exp $
+dnl $Id: aclocal.m4,v 1.149 2006/08/14 16:51:17 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -520,7 +520,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.148 2006/08/14 16:31:05 grubba Exp $
+  # $Id: aclocal.m4,v 1.149 2006/08/14 16:51:17 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -1333,6 +1333,7 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
   AC_MSG_CHECKING(whether $1 contains $pike_cv_abi-bit ABI files)
   abi_dir_ok="no"
   abi_dir_dynamic="unknown"
+  real_dir="$1"
   while :; do
     if test -d "$1/." ; then :; else 
       AC_MSG_RESULT(no - does not exist)
@@ -1452,20 +1453,15 @@ AC_DEFUN(PIKE_CHECK_ABI_LIB_DIR,
 [
   PIKE_CHECK_ABI_DIR($1, [
     AC_MSG_CHECKING([what to add to LDFLAGS])
-    add_ldflags="-R$d -L$d"
-    case " $LDFLAGS " in
-      *\ -L$d\ *)
-        add_ldflags="-R$d"
-        case " $LDFLAGS " in
-          *\ -R$d\ *)
-            add_ldflags=""
-	  ;;
-        esac	  
-      ;;
-      *\ -R$d\ *)
-        add_ldflags="-L$d"
-      ;;
-    esac
+    add_ldflags=""
+    if echo " $LDFLAGS " | grep " -L$real_dir " >/dev/null; then :; else
+      add_ldflags="-L$real_dir"
+    fi
+    if test "x$abi_dir_dynamic" = "xyes"; then
+      if echo " $LDFLAGS " | grep " -R$real_dir " >/dev/null; then :; else
+        add_ldflags="$add_ldflags -R$real_dir"
+      fi
+    fi
     if test "x$add_ldflags" = "x"; then
       AC_MSG_RESULT([nothing - already added])
       ifelse([$4], , :, [$4])
@@ -1491,7 +1487,7 @@ int main(int argc, char **argv)
     	   ],[
     	     double (*foo)(double) = ceil;
     	     exit(0);
-    	   ],[ LDFLAGS="$OLD_LDFLAGS -R$d -L$d"
+    	   ],[ LDFLAGS="$OLD_LDFLAGS $add_ldflags"
     	       AC_MSG_RESULT($add_ldflags)
     	   ],[ LDFLAGS="$OLD_LDFLAGS"
     	       AC_MSG_RESULT(nothing - $add_ldflags causes failures)
