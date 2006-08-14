@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.86 2006/08/02 21:40:48 mast Exp $
+|| $Id: png.c,v 1.87 2006/08/14 12:49:31 nilsson Exp $
 */
 
 #include "global.h"
@@ -1648,23 +1648,27 @@ static void image_png_encode(INT32 args)
       }
       else
       {
-	 unsigned char *tmp=xalloc(img->xsize*img->ysize),*ts;
+         unsigned char *d;
+         struct pike_string *ps;
+	 unsigned char *tmp, *ts;
 
-	 image_colortable_index_8bit_image(ct,img->img,tmp,
-					   img->xsize*img->ysize,img->xsize);
+         x = img->xsize;
+         tmp=xalloc(x*y);
+
+	 image_colortable_index_8bit_image(ct,s,tmp,x*y,x);
+         ps=begin_shared_string( y * ((x*bpp+7)/8+1) );
+         d=(unsigned char*)ps->str;
 	 ts=tmp;
+
 	 while (y--)
 	 {
-	    unsigned char *d;
-	    struct pike_string *ps;
-	    ps=begin_shared_string((img->xsize*bpp+7)/8+1);
-	    d=(unsigned char*)ps->str;
 	    x=img->xsize;
 	    *(d++)=0; /* filter */
 	    if (bpp==8)
 	    {
-	       MEMCPY(d,ts,img->xsize);
-	       ts+=img->xsize;
+	       MEMCPY(d,ts,x);
+	       ts += x;
+               d += x;
 	    }
 	    else
 	    {
@@ -1678,8 +1682,9 @@ static void image_png_encode(INT32 args)
 		  ts++;
 	       }
 	    }
-	    push_string(end_shared_string(ps));
 	 }
+
+         push_string(end_shared_string(ps));
 	 free(tmp);
       }
    }
