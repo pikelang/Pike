@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.22 2006/08/15 14:39:23 grubba Exp $
+ * $Id: mysql.pike,v 1.23 2006/08/15 14:51:28 grubba Exp $
  *
  * Glue for the Mysql-module
  */
@@ -577,14 +577,13 @@ Mysql.mysql_result big_query (string query,
     }
 
     if (new_send_charset != send_charset) {
-      if (mixed err =
-	  ::big_query ("SET character_set_client=" + new_send_charset)) {
-	if (new_send_charset = "utf8")
+      mixed err;
+      if (err = ::big_query("SET character_set_client=" + new_send_charset)) {
+	if (new_send_charset == "utf8")
 	  predef::error ("The query is a wide string "
 			 "and the MySQL server doesn't support UTF-8: %s\n",
 			 describe_error (err));
-	else
-	  throw err;
+	throw(err);
       }
       send_charset = new_send_charset;
     }
