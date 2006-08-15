@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.103 2006/08/12 15:07:46 mast Exp $
+|| $Id: mysql.c,v 1.104 2006/08/15 15:50:44 grubba Exp $
 */
 
 /*
@@ -1928,7 +1928,9 @@ PIKE_MODULE_INIT
   add_integer_constant( "CLIENT_COMPRESS", CLIENT_COMPRESS, 0);
   add_integer_constant( "CLIENT_FOUND_ROWS", CLIENT_FOUND_ROWS, 0);
   add_integer_constant( "CLIENT_IGNORE_SPACE", CLIENT_IGNORE_SPACE, 0);
+#ifdef HAVE_CLIENT_INTERACTIVE
   add_integer_constant( "CLIENT_INTERACTIVE", CLIENT_INTERACTIVE, 0);
+#endif
   add_integer_constant( "CLIENT_NO_SCHEMA", CLIENT_NO_SCHEMA, 0);
   add_integer_constant( "CLIENT_ODBC", CLIENT_ODBC, 0);
 
