@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.75 2006/08/15 11:12:44 grubba Exp $
+|| $Id: mysql.c,v 1.76 2006/08/15 11:35:49 grubba Exp $
 */
 
 /*
@@ -97,7 +97,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.75 2006/08/15 11:12:44 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.76 2006/08/15 11:35:49 grubba Exp $");
 
 /*! @module Mysql
  *!
@@ -1689,7 +1689,7 @@ static void f_set_charset (INT32 args)
   ref_push_string (charset);
   push_constant_text ("'");
   f_add (3);
-  big_query(1);
+  f_big_query(1);
   args++;
   if (PIKE_MYSQL->conn_charset)
     free_string (PIKE_MYSQL->conn_charset);
