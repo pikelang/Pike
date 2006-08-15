@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.48 2006/08/14 13:37:10 grubba Exp $
+# $Id: configure.in,v 1.49 2006/08/15 15:49:57 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -137,6 +137,7 @@ AC_MSG_RESULT(no)
   AC_CHECK_MYSQL_OPTIONS(MYSQL_OPT_LOCAL_INFILE)
   AC_CHECK_MYSQL_OPTIONS(SHUTDOWN_DEFAULT)
   AC_CHECK_MYSQL_OPTIONS(FIELD_TYPE_GEOMETRY)
+  AC_CHECK_MYSQL_OPTIONS(CLIENT_INTERACTIVE)
 
 
   # Mysql libs
