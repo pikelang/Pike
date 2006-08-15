@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.211 2006/07/05 19:28:10 mast Exp $
+|| $Id: operators.c,v 1.212 2006/08/15 10:43:24 grubba Exp $
 */
 
 #include "global.h"
@@ -894,6 +894,106 @@ PMOD_EXPORT void f_cast(void)
   sp[-2]=sp[-1];
   sp--;
   dmalloc_touch_svalue(sp);
+}
+
+int low_check_soft_cast(struct pike_type *type, struct object *o, int is_type)
+{
+  int ret;
+ loop:
+  if (type->type == PIKE_T_MIXED) return 1;
+  if (!o->prog) {
+    /* In case o has been destructed during our check. */
+    if (type->type == PIKE_T_ZERO) return 1;
+    return 0;
+  }
+  switch(type->type) {
+  case PIKE_T_ZERO:
+    return 0;
+  case PIKE_T_ARRAY: case PIKE_T_MAPPING: case PIKE_T_MULTISET:
+  case PIKE_T_OBJECT: case PIKE_T_FUNCTION: case PIKE_T_PROGRAM:
+  case PIKE_T_STRING: case PIKE_T_TYPE: case PIKE_T_INT:
+  case PIKE_T_FLOAT:
+  case T_MANY:
+    push_text(get_name_of_type(type->type));
+    apply_low(o, is_type, 1);
+    ret = !UNSAFE_IS_ZERO(Pike_sp-1);
+    pop_stack();
+    return ret;
+  case PIKE_T_NAME:
+    break;
+  case T_NOT:
+    return !low_check_soft_cast(type->cdr, o, is_type);
+  case T_AND:
+    if (!low_check_soft_cast(type->car, o, is_type)) return 0;
+    break;
+  case T_OR:
+    if (low_check_soft_cast(type->car, o, is_type)) return 1;
+    break;
+  default:
+    return 0;
+  }
+  type = type->cdr;
+  goto loop;
+}
+
+void o_check_soft_cast(struct svalue *s, struct pike_type *type)
+{
+  struct pike_type *sval_type;
+  if (s->type == T_OBJECT) {
+    int is_type;
+    struct object *o;
+    struct program *p;
+
+    o = s->u.object;
+    p = o->prog;
+    if (p && ((is_type = FIND_LFUN(p, LFUN__IS_TYPE)) != -1)) {
+      int ok = low_check_soft_cast(type, o, is_type);
+      if (ok) return;
+    }
+  }
+
+  sval_type = get_type_of_svalue(s);
+  if (!pike_types_le(sval_type, type)) {
+    /* get_type_from_svalue() doesn't return a fully specified type
+     * for array, mapping and multiset, so we perform a more lenient
+     * check for them.
+     */
+    if (!pike_types_le(sval_type, weak_type_string) ||
+	!match_types(sval_type, type)) {
+      struct pike_string *t1;
+      struct pike_string *t2;
+      char *fname = "__soft-cast";
+      ONERROR tmp1;
+      ONERROR tmp2;
+
+      if (Pike_fp->current_object && Pike_fp->context.prog &&
+	  Pike_fp->current_object->prog) {
+	/* Look up the function-name */
+	struct pike_string *name =
+	  ID_FROM_INT(Pike_fp->current_object->prog, Pike_fp->fun)->name;
+	if ((!name->size_shift) && (name->len < 100))
+	  fname = name->str;
+      }
+
+      t1 = describe_type(type);
+      SET_ONERROR(tmp1, do_free_string, t1);
+	  
+      t2 = describe_type(sval_type);
+      SET_ONERROR(tmp2, do_free_string, t2);
+	  
+      free_type(sval_type);
+
+      bad_arg_error(NULL, Pike_sp-1, 1, 1, t1->str, Pike_sp-1,
+		    "%s(): Soft cast failed. Expected %s, got %s\n",
+		    fname, t1->str, t2->str);
+      /* NOT_REACHED */
+      UNSET_ONERROR(tmp2);
+      UNSET_ONERROR(tmp1);
+      free_string(t2);
+      free_string(t1);
+    }
+  }
+  free_type(sval_type);
 }
 
 #define COMPARISON(ID,NAME,FUN)			\

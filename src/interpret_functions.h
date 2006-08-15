@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.192 2006/04/25 18:10:17 neotron Exp $
+|| $Id: interpret_functions.h,v 1.193 2006/08/15 10:43:25 grubba Exp $
 */
 
 /*
@@ -1891,49 +1891,7 @@ OPCODE0(F_SOFT_CAST, "soft cast", I_UPDATE_SP, {
     }
   });
   if (runtime_options & RUNTIME_CHECK_TYPES) {
-    struct pike_type *sval_type = get_type_of_svalue(Pike_sp-1);
-    if (!pike_types_le(sval_type, Pike_sp[-2].u.type)) {
-      /* get_type_from_svalue() doesn't return a fully specified type
-       * for array, mapping and multiset, so we perform a more lenient
-       * check for them.
-       */
-      if (!pike_types_le(sval_type, weak_type_string) ||
-	  !match_types(sval_type, Pike_sp[-2].u.type)) {
-	struct pike_string *t1;
-	struct pike_string *t2;
-	char *fname = "__soft-cast";
-	ONERROR tmp1;
-	ONERROR tmp2;
-
-	if (Pike_fp->current_object && Pike_fp->context.prog &&
-	    Pike_fp->current_object->prog) {
-	  /* Look up the function-name */
-	  struct pike_string *name =
-	    ID_FROM_INT(Pike_fp->current_object->prog, Pike_fp->fun)->name;
-	  if ((!name->size_shift) && (name->len < 100))
-	    fname = name->str;
-	}
-
-	t1 = describe_type(Pike_sp[-2].u.type);
-	SET_ONERROR(tmp1, do_free_string, t1);
-	  
-	t2 = describe_type(sval_type);
-	SET_ONERROR(tmp2, do_free_string, t2);
-	  
-	free_type(sval_type);
-
-	bad_arg_error(NULL, Pike_sp-1, 1, 1, t1->str, Pike_sp-1,
-		      "%s(): Soft cast failed. Expected %s, got %s\n",
-		      fname, t1->str, t2->str);
-	/* NOT_REACHED */
-	UNSET_ONERROR(tmp2);
-	UNSET_ONERROR(tmp1);
-	free_string(t2);
-	free_string(t1);
-      }
-    }
-    free_type(sval_type);
-
+    o_check_soft_cast(Pike_sp-1, Pike_sp[-2].u.type);
     DO_IF_DEBUG({
       if (d_flag > 2) {
 	struct pike_string *t = describe_type(Pike_sp[-2].u.type);
