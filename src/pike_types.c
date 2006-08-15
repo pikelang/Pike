@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.256 2006/07/06 16:07:31 marcus Exp $
+|| $Id: pike_types.c,v 1.257 2006/08/15 10:43:57 grubba Exp $
 */
 
 #include "global.h"
@@ -149,7 +149,7 @@ PMOD_EXPORT char *get_name_of_type(TYPE_T t)
   {
     case T_ARRAY: return "array";
     case T_FLOAT: return "float";
-    case T_FUNCTION: return "function";
+    case T_MANY: case T_FUNCTION: return "function";
     case T_INT: return "int";
     case T_SVALUE_PTR: return "svalue_ptr";
     case T_OBJ_INDEX: return "obj_index";
