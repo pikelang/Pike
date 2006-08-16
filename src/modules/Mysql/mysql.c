@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.78 2006/08/15 15:50:15 grubba Exp $
+|| $Id: mysql.c,v 1.79 2006/08/16 08:34:31 grubba Exp $
 */
 
 /*
@@ -24,9 +24,7 @@
  * Includes
  */
 
-#ifdef HAVE_WINSOCK2_H
-#include <winsock2.h>
-#elif defined(HAVE_WINSOCK_H)
+#ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
 
@@ -97,7 +95,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.78 2006/08/15 15:50:15 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.79 2006/08/16 08:34:31 grubba Exp $");
 
 /*! @module Mysql
  *!
