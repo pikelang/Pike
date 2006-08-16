@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.79 2006/08/16 08:34:31 grubba Exp $
+|| $Id: mysql.c,v 1.80 2006/08/16 15:29:24 grubba Exp $
 */
 
 /*
@@ -95,7 +95,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.79 2006/08/16 08:34:31 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.80 2006/08/16 15:29:24 grubba Exp $");
 
 /*! @module Mysql
  *!
@@ -1661,7 +1661,7 @@ static void f_binary_data(INT32 args)
 static void f_set_charset (INT32 args)
 {
   struct pike_string *charset;
-  get_all_args ("set_charset", args, "%n", &charset);
+  get_all_args ("set_charset", args, "%S", &charset);
   if (string_has_null (charset))
     SIMPLE_BAD_ARG_ERROR ("set_charset", 1,
 			  "The charset name cannot contain a NUL character.");
