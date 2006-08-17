@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.97 2006/06/01 13:22:03 grubba Exp $
+/* $Id: sslfile.pike,v 1.98 2006/08/17 14:04:10 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -475,7 +475,7 @@ array get_peer_certificates()
   return conn->session->peer_certificate_chain;
 }
 
-int close (void|string how, void|int clean_close)
+int close (void|string how, void|int clean_close, void|int dont_throw)
 //! Close the connection. Both the read and write ends are always
 //! closed - the argument @[how] is only for @[Stdio.File]
 //! compatibility and must be either @expr{"rw"@} or @expr{0@}.
@@ -486,8 +486,10 @@ int close (void|string how, void|int clean_close)
 //! default is to send a close message and then close the stream
 //! without waiting for a response.
 //!
-//! Returns zero and sets the errno to @[System.EBADF] if the
-//! connection already is closed. Other I/O errors are thrown.
+//! I/O errors are normally thrown, but that can be turned off with
+//! @[dont_throw]. In that case errno is set instead and 0 is
+//! returned. 1 is always returned otherwise. It's not an error to
+//! close an already closed connection.
 //!
 //! @note
 //! In nonblocking mode the stream isn't closed right away and the
@@ -512,15 +514,18 @@ int close (void|string how, void|int clean_close)
   ENTER (0, 0) {
     if (close_state > STREAM_OPEN) {
       SSL3_DEBUG_MSG ("SSL.sslfile->close: Already closed (%d)\n", close_state);
-      local_errno = System.EBADF;
-      RETURN (0);
+      RETURN (1);
     }
     close_state = clean_close ? CLEAN_CLOSE : NORMAL_CLOSE;
 
     FIX_ERRNOS ({
-	// Get here e.g. if a close callback calls close after an error.
 	SSL3_DEBUG_MSG ("SSL.sslfile->close: Shutdown after error\n");
+	int err = errno();
 	shutdown();
+	// Get here e.g. if a close callback calls close after an
+	// error, so never throw. (I'm somewhat suspicious to this,
+	// but I guess I did it with good reason.. :P /mast)
+	local_errno = err;
 	RETURN (0);
       }, 0);
 
@@ -531,9 +536,15 @@ int close (void|string how, void|int clean_close)
 
     if (!direct_write()) {
       // Should be shut down after close(), even if an error occurred.
+      int err = errno();
       shutdown();
-      // Errors are thrown from close().
-      error ("Failed to close SSL connection: %s\n", strerror (errno()));
+      if (dont_throw) {
+	local_errno = err;
+	RETURN (0);
+      }
+      else
+	// Errors are thrown from close().
+	error ("Failed to close SSL connection: %s\n", strerror (err));
     }
 
     if (stream && (stream->query_read_callback() || stream->query_write_callback()))
@@ -647,7 +658,7 @@ static void destroy()
 	// Have to do the close in blocking mode since this object will
 	// go away as soon as we return.
 	set_blocking();
-	close();
+	close (0, 0, 1);
       }
       else
 	shutdown();
