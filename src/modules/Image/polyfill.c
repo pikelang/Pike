@@ -2,13 +2,17 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: polyfill.c,v 1.50 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: polyfill.c,v 1.51 2006/08/18 14:00:59 mast Exp $
 */
 
 #include "global.h"
 
+#if 0
 /* Prototypes are needed for these */
+/* Should really exist in math.h. This prototype might conflict with
+ * dllimport stuff on Windows. /mast */
 extern double floor(double);
+#endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
