@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.574 2006/08/05 20:35:41 mast Exp $
+|| $Id: program.c,v 1.575 2006/08/20 21:08:49 peter Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.574 2006/08/05 20:35:41 mast Exp $");
+RCSID("$Id: program.c,v 1.575 2006/08/20 21:08:49 peter Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -8067,13 +8067,17 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
 
 void make_program_executable(struct program *p)
 {
-#ifdef _WIN32
-  DWORD old_prot;
-  if (!VirtualProtect (p->program,
-		       p->num_program * sizeof (p->program[0]),
-		       PAGE_EXECUTE_READWRITE, &old_prot))
-    Pike_fatal ("VirtualProtect failed, code %d.\n", GetLastError());
+  if (!p->num_program)
+    return;
 
+#ifdef _WIN32
+  {
+    DWORD old_prot;
+    if (!VirtualProtect (p->program,
+                         p->num_program * sizeof (p->program[0]),
+                         PAGE_EXECUTE_READWRITE, &old_prot))
+      Pike_fatal ("VirtualProtect failed, code %d.\n", GetLastError());
+  }
 #else  /* _WIN32 */
 
 #if !defined(HAVE_MMAP) || !defined(MEXEC_USES_MMAP)
