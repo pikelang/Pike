@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.376 2006/06/09 18:21:52 mast Exp $
+|| $Id: las.c,v 1.377 2006/08/21 18:39:51 grubba Exp $
 */
 
 #include "global.h"
@@ -378,6 +378,31 @@ int check_tailrecursion(void)
   return 1;
 }
 
+static int check_node_type(node *n, struct pike_type *t, const char *msg)
+{
+  if (pike_types_le(n->type, t)) return 1;
+  if (!match_types(n->type, t)) {
+    yytype_error(msg, t, n->type, 0);
+    return 0;
+  }
+  if (lex.pragmas & ID_STRICT_TYPES) {
+    yytype_error(msg, t, n->type, YYTE_IS_WARNING);
+  }
+  if (runtime_options & RUNTIME_CHECK_TYPES) {
+    node *p = n->parent;
+    p->node_info |= OPT_DEFROSTED;
+    if (CAR(p) == n) {
+      (_CAR(p) = mksoftcastnode(t, n))->parent = p;
+    } else if (CDR(p) == n) {
+      (_CDR(p) = mksoftcastnode(t, n))->parent = p;
+    } else {
+      yywarning("Failed to find place to insert soft cast.");
+    }
+    fprintf(stderr, "After insert:\n");
+    print_tree(p->parent);
+  }
+  return 1;
+}
 
 #undef BLOCK_ALLOC_NEXT
 #define BLOCK_ALLOC_NEXT u.node.a
@@ -4031,28 +4056,13 @@ void fix_type_field(node *n)
       break;
     } else if(Pike_compiler->compiler_frame &&
 	      Pike_compiler->compiler_frame->current_return_type) {
-      if (!pike_types_le(CAR(n)->type,
-			 Pike_compiler->compiler_frame->current_return_type) &&
-	  !(
-	    Pike_compiler->compiler_frame->current_return_type==void_type_string &&
-	    CAR(n)->token == F_CONSTANT &&
-	    SAFE_IS_ZERO(& CAR(n)->u.sval)
-	    )
-	  ) {
-	if (!match_types(Pike_compiler->compiler_frame->current_return_type,
-			 CAR(n)->type))
-	{
-	  yyerror("Wrong return type.");
-	  yyexplain_nonmatching_types(Pike_compiler->compiler_frame->current_return_type,
-				      CAR(n)->type, 0);
-	}
-	else if (lex.pragmas & ID_STRICT_TYPES)
-	{
-	  yytype_error("Return type mismatch.",
-		       Pike_compiler->compiler_frame->current_return_type,
-		       CAR(n)->type,
-		       YYTE_IS_WARNING);
-	}
+      if ((Pike_compiler->compiler_frame->current_return_type !=
+	   void_type_string) ||
+	  (CAR(n)->token != F_CONSTANT) ||
+	  !SAFE_IS_ZERO(& CAR(n)->u.sval)) {
+	check_node_type(CAR(n),
+			Pike_compiler->compiler_frame->current_return_type,
+			"Wrong return type.");
       }
     }
     copy_pike_type(n->type, void_type_string);
@@ -4143,20 +4153,13 @@ void fix_type_field(node *n)
 	  MAKE_CONSTANT_TYPE(iterator_type,
 			     tOr5(tArray, tStr, tObj,
 				  tMapping, tMultiset));
-	  if (!pike_types_le(CAAR(n)->type, iterator_type)) {
-	    if (!match_types(CAAR(n)->type, iterator_type)) {
-	      yytype_error("Bad argument 1 to foreach()", iterator_type,
-			   CAAR(n)->type, 0);
-
-	      /* No use checking the index and value types if
-	       * the iterator type is bad.
-	       */
-	      free_type(iterator_type);
-	      goto foreach_type_check_done;
-	    } else if (lex.pragmas & ID_STRICT_TYPES) {
-	      yytype_error("Iterator type mismatch in foreach()",
-			   iterator_type, CAAR(n)->type, YYTE_IS_WARNING);
-	    }
+	  if (!check_node_type(CAAR(n), iterator_type,
+			       "Bad argument 1 to foreach()")) {
+	    /* No use checking the index and value types if
+	     * the iterator type is bad.
+	     */
+	    free_type(iterator_type);
+	    goto foreach_type_check_done;
 	  }
 	  free_type(iterator_type);
 
@@ -4247,18 +4250,16 @@ void fix_type_field(node *n)
 	    if (!CDAR(n) || pike_types_le(CDAR(n)->type, void_type_string)) {
 	      yyerror("Bad argument 2 to foreach().");
 	    } else {
-	      struct pike_type *value_type = array_value_type(CAAR(n)->type);
-	      
-	      if (!pike_types_le(value_type, CDAR(n)->type)) {
-		if (!match_types(value_type, CDAR(n)->type)) {
-		  yytype_error("Variable type mismatch in foreach().",
-			       value_type, CDAR(n)->type, 0);
-		} else if (lex.pragmas & ID_STRICT_TYPES) {
-		  yytype_error("Variable type mismatch in foreach().",
-			       value_type, CDAR(n)->type, YYTE_IS_WARNING);
-		}
-	      }
-	      free_type(value_type);
+	      struct pike_type *array_value_type;
+
+	      type_stack_mark();
+	      push_finished_type(CDAR(n)->type);
+	      push_type(T_ARRAY);
+	      array_value_type = pop_unfinished_type();
+
+	      check_node_type(CAAR(n), array_value_type,
+			      "Bad argument 1 to foreach().");
+	      free_type(array_value_type);
 	    }
 	  }
 	  free_type(array_zero);
@@ -4274,24 +4275,10 @@ void fix_type_field(node *n)
 	!CAAR(n) || !CDAR(n)) {
       yyerror("Too few arguments to sscanf().");
     } else {
-      if (!pike_types_le(CAAR(n)->type, string_type_string)) {
-	if (!match_types(CAAR(n)->type, string_type_string)) {
-	  yytype_error("Bad argument 1 to sscanf().",
-		       string_type_string, CAAR(n)->type, 0);
-	} else if (lex.pragmas & ID_STRICT_TYPES) {
-	  yytype_error("Argument 1 to sscanf() has bad type.",
-		       string_type_string, CAAR(n)->type, YYTE_IS_WARNING);
-	}
-      }
-      if (!pike_types_le(CDAR(n)->type, string_type_string)) {
-	if (!match_types(CDAR(n)->type, string_type_string)) {
-	  yytype_error("Bad argument 2 to sscanf().",
-		       string_type_string, CDAR(n)->type, 0);
-	} else if (lex.pragmas & ID_STRICT_TYPES) {
-	  yytype_error("Argument 2 to sscanf() has bad type.",
-		       string_type_string, CDAR(n)->type, YYTE_IS_WARNING);
-	}
-      }
+      check_node_type(CAAR(n), string_type_string,
+		      "Bad argument 1 to sscanf().");
+      check_node_type(CDAR(n), string_type_string,
+		      "Bad argument 2 to sscanf().");
     }
     /* FIXME: */
     MAKE_CONSTANT_TYPE(n->type, tIntPos);
