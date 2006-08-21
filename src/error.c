@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.146 2006/05/10 19:43:54 mast Exp $
+|| $Id: error.c,v 1.147 2006/08/21 18:29:09 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -772,6 +772,24 @@ static void f_error__sprintf(INT32 args)
     push_int(0);
   f_sprintf(2);
   f_add(3);
+}
+
+/*! @decl int(0..1) _is_type(string t)
+ *!
+ *! Claims that the error object is an array.
+ */
+static void f_error__is_type(INT32 args)
+{
+  struct pike_string *array_string;
+  int ret;
+  MAKE_CONST_STRING(array_string, "array");
+  if (args < 0) SIMPLE_TOO_FEW_ARGS_ERROR("_is_type", 1);
+  if (args > 1) SIMPLE_WRONG_NUM_ARGS_ERROR("_is_type", 1);
+  if (Pike_sp[-args].type != PIKE_T_STRING)
+    SIMPLE_ARG_TYPE_ERROR("_is_type", 1, "string");
+  ret = Pike_sp[-args].u.string == array_string;
+  pop_n_elems(args);
+  push_int(ret);
 }
 
 /*! @decl void create(string message)
