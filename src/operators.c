@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.214 2006/08/21 18:28:18 grubba Exp $
+|| $Id: operators.c,v 1.215 2006/08/21 18:37:44 grubba Exp $
 */
 
 #include "global.h"
@@ -989,11 +989,9 @@ int low_check_soft_cast(struct svalue *s, struct pike_type *type)
     }
     if ((lfun = FIND_LFUN(s->u.object->prog, LFUN__IS_TYPE)) != -1) {
       int ret;
-      fprintf(stderr, "_is_type(\"%s\")...", get_name_of_type(type->type));
       push_text(get_name_of_type(type->type));
       apply_low(s->u.object, lfun, 1);
       ret = !UNSAFE_IS_ZERO(Pike_sp-1);
-      fprintf(stderr, "%d\n", ret);
       pop_stack();
       return ret;
     }
