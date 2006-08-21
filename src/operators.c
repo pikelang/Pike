@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.212 2006/08/15 10:43:24 grubba Exp $
+|| $Id: operators.c,v 1.213 2006/08/21 18:14:05 grubba Exp $
 */
 
 #include "global.h"
@@ -896,104 +896,160 @@ PMOD_EXPORT void f_cast(void)
   dmalloc_touch_svalue(sp);
 }
 
-int low_check_soft_cast(struct pike_type *type, struct object *o, int is_type)
+/* Returns 1 if s is a valid in the type type. */
+int low_check_soft_cast(struct svalue *s, struct pike_type *type)
 {
-  int ret;
  loop:
-  if (type->type == PIKE_T_MIXED) return 1;
-  if (!o->prog) {
-    /* In case o has been destructed during our check. */
-    if (type->type == PIKE_T_ZERO) return 1;
-    return 0;
-  }
   switch(type->type) {
-  case PIKE_T_ZERO:
+  case T_MIXED: return 1;
+  case T_ZERO:
+    switch(s->type) {
+    case PIKE_T_INT:
+      return !s->u.integer;
+    case PIKE_T_FUNCTION:
+      if (s->subtype == FUNCTION_BUILTIN) return 0;
+      /* FALL_THROUGH */
+    case PIKE_T_OBJECT:
+      return !s->u.object->prog;
+    }
     return 0;
-  case PIKE_T_ARRAY: case PIKE_T_MAPPING: case PIKE_T_MULTISET:
-  case PIKE_T_OBJECT: case PIKE_T_FUNCTION: case PIKE_T_PROGRAM:
-  case PIKE_T_STRING: case PIKE_T_TYPE: case PIKE_T_INT:
-  case PIKE_T_FLOAT:
-  case T_MANY:
-    push_text(get_name_of_type(type->type));
-    apply_low(o, is_type, 1);
-    ret = !UNSAFE_IS_ZERO(Pike_sp-1);
-    pop_stack();
-    return ret;
+  case T_ASSIGN:
   case PIKE_T_NAME:
-    break;
-  case T_NOT:
-    return !low_check_soft_cast(type->cdr, o, is_type);
+    type = type->cdr;
+    goto loop;
   case T_AND:
-    if (!low_check_soft_cast(type->car, o, is_type)) return 0;
-    break;
+    if (!low_check_soft_cast(s, type->car)) return 0;
+    type = type->cdr;
+    goto loop;
   case T_OR:
-    if (low_check_soft_cast(type->car, o, is_type)) return 1;
-    break;
-  default:
+    if (low_check_soft_cast(s, type->car)) return 1;
+    type = type->cdr;
+    goto loop;
+  case T_NOT:
+    return !low_check_soft_cast(s, type->car);
+  }
+  if (s->type == type->type) {
+    if (type->type == PIKE_T_INT) return 1;
+    if (type->type == PIKE_T_FLOAT) return 1;
+    if (type->type == PIKE_T_STRING) return 1;
+    switch(type->type) {
+    case PIKE_T_OBJECT:
+      {
+	struct program *p;
+	/* Common cases. */
+	if (!type->cdr) return 1;
+	if (s->u.object->prog->id == CDR_TO_INT(type)) return 1;
+	p = id_to_program(CDR_TO_INT(type));
+	if (!p) return 1;
+	return implements(s->u.object->prog, p);
+      }
+    case PIKE_T_PROGRAM:
+      {
+	struct program *p;
+	/* Common cases. */
+	if (!type->car->cdr) return 1;
+	if (s->u.program->id == CDR_TO_INT(type->car)) return 1;
+	p = id_to_program(CDR_TO_INT(type->car));
+	if (!p) return 1;
+	return implements(s->u.program, p);
+      }
+    case PIKE_T_ARRAY:
+      {
+	struct array *a = s->u.array;
+	int i;
+	for (i = a->size; i--;) {
+	  if (!low_check_soft_cast(a->item + i, type->car)) return 0;
+	}
+      }
+      break;
+    case PIKE_T_MULTISET:
+      /* FIXME: Add code here. */
+      break;
+    case PIKE_T_MAPPING:
+      /* FIXME: Add code here. */
+      break;
+    case PIKE_T_FUNCTION:
+      /* FIXME: Add code here. */
+      break;
+    case PIKE_T_TYPE:
+      /* FIXME: Add code here. */
+      break;
+    }
+    return 1;
+  }
+  if (s->type == PIKE_T_OBJECT) {
+    int lfun;
+    if (!s->u.object->prog) return 0;
+    if (type->type == PIKE_T_FUNCTION) {
+      if ((lfun = FIND_LFUN(s->u.object->prog, LFUN_CALL)) != -1) {
+	/* FIXME: Add code here. */
+	return 1;
+      }
+    }
+    if ((lfun = FIND_LFUN(s->u.object->prog, LFUN__IS_TYPE)) != -1) {
+      int ret;
+      fprintf(stderr, "_is_type(\"%s\")...", get_name_of_type(type->type));
+      push_text(get_name_of_type(type->type));
+      apply_low(s->u.object, lfun, 1);
+      ret = !UNSAFE_IS_ZERO(Pike_sp-1);
+      fprintf(stderr, "%d\n", ret);
+      pop_stack();
+      return ret;
+    }
     return 0;
   }
-  type = type->cdr;
-  goto loop;
+  if ((s->type == PIKE_T_FUNCTION) && (type->type == PIKE_T_PROGRAM)) {
+    /* FIXME: Add code here. */
+    return 1;
+  }
+  if ((s->type == PIKE_T_FUNCTION) && (type->type == T_MANY)) {
+    /* FIXME: Add code here. */
+    return 1;
+  }
+    
+  return 0;
 }
 
 void o_check_soft_cast(struct svalue *s, struct pike_type *type)
 {
-  struct pike_type *sval_type;
-  if (s->type == T_OBJECT) {
-    int is_type;
-    struct object *o;
-    struct program *p;
-
-    o = s->u.object;
-    p = o->prog;
-    if (p && ((is_type = FIND_LFUN(p, LFUN__IS_TYPE)) != -1)) {
-      int ok = low_check_soft_cast(type, o, is_type);
-      if (ok) return;
-    }
-  }
-
-  sval_type = get_type_of_svalue(s);
-  if (!pike_types_le(sval_type, type)) {
-    /* get_type_from_svalue() doesn't return a fully specified type
+  if (!low_check_soft_cast(s, type)) {
+    /* Note: get_type_from_svalue() doesn't return a fully specified type
      * for array, mapping and multiset, so we perform a more lenient
      * check for them.
      */
-    if (!pike_types_le(sval_type, weak_type_string) ||
-	!match_types(sval_type, type)) {
-      struct pike_string *t1;
-      struct pike_string *t2;
-      char *fname = "__soft-cast";
-      ONERROR tmp1;
-      ONERROR tmp2;
+    struct pike_type *sval_type = get_type_of_svalue(s);
+    struct pike_string *t1;
+    struct pike_string *t2;
+    char *fname = "__soft-cast";
+    ONERROR tmp1;
+    ONERROR tmp2;
 
-      if (Pike_fp->current_object && Pike_fp->context.prog &&
-	  Pike_fp->current_object->prog) {
-	/* Look up the function-name */
-	struct pike_string *name =
-	  ID_FROM_INT(Pike_fp->current_object->prog, Pike_fp->fun)->name;
-	if ((!name->size_shift) && (name->len < 100))
-	  fname = name->str;
-      }
-
-      t1 = describe_type(type);
-      SET_ONERROR(tmp1, do_free_string, t1);
-	  
-      t2 = describe_type(sval_type);
-      SET_ONERROR(tmp2, do_free_string, t2);
-	  
-      free_type(sval_type);
-
-      bad_arg_error(NULL, Pike_sp-1, 1, 1, t1->str, Pike_sp-1,
-		    "%s(): Soft cast failed. Expected %s, got %s\n",
-		    fname, t1->str, t2->str);
-      /* NOT_REACHED */
-      UNSET_ONERROR(tmp2);
-      UNSET_ONERROR(tmp1);
-      free_string(t2);
-      free_string(t1);
+    if (Pike_fp->current_object && Pike_fp->context.prog &&
+	Pike_fp->current_object->prog) {
+      /* Look up the function-name */
+      struct pike_string *name =
+	ID_FROM_INT(Pike_fp->current_object->prog, Pike_fp->fun)->name;
+      if ((!name->size_shift) && (name->len < 100))
+	fname = name->str;
     }
+
+    t1 = describe_type(type);
+    SET_ONERROR(tmp1, do_free_string, t1);
+	  
+    t2 = describe_type(sval_type);
+    SET_ONERROR(tmp2, do_free_string, t2);
+	  
+    free_type(sval_type);
+
+    bad_arg_error(NULL, Pike_sp-1, 1, 1, t1->str, Pike_sp-1,
+		  "%s(): Soft cast failed. Expected %s, got %s\n",
+		  fname, t1->str, t2->str);
+    /* NOT_REACHED */
+    UNSET_ONERROR(tmp2);
+    UNSET_ONERROR(tmp1);
+    free_string(t2);
+    free_string(t1);
   }
-  free_type(sval_type);
 }
 
 #define COMPARISON(ID,NAME,FUN)			\
