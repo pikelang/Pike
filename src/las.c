@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.377 2006/08/21 18:39:51 grubba Exp $
+|| $Id: las.c,v 1.378 2006/08/21 18:48:25 grubba Exp $
 */
 
 #include "global.h"
@@ -398,8 +398,6 @@ static int check_node_type(node *n, struct pike_type *t, const char *msg)
     } else {
       yywarning("Failed to find place to insert soft cast.");
     }
-    fprintf(stderr, "After insert:\n");
-    print_tree(p->parent);
   }
   return 1;
 }
