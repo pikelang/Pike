@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: errors.h,v 1.34 2006/07/05 20:24:53 mast Exp $
+|| $Id: errors.h,v 1.35 2006/08/21 18:36:51 grubba Exp $
 */
 
 #ifdef ERR_DECLARE
@@ -89,6 +89,7 @@ DECLARE_ERROR(generic, Generic, EMPTY ,
   ERR_FUNC("backtrace",f_error_backtrace,tFunc(tVoid,tArr(tMixed)),0)
   ERR_FUNC("_sprintf", f_error__sprintf,
 	   tFunc(tOr(tInt,tVoid) tOr(tMapping,tVoid),tString), ID_STATIC)
+  ERR_FUNC("_is_type", f_error__is_type, tFunc(tString, tInt01), ID_STATIC)
   ERR_FUNC("create",f_error_create,tFunc(tStr tOr(tVoid,tArr(tMixed)),tVoid),ID_STATIC)
 )
 
