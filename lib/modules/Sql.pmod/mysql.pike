@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.23 2006/08/15 14:51:28 grubba Exp $
+ * $Id: mysql.pike,v 1.24 2006/08/22 11:24:16 grubba Exp $
  *
  * Glue for the Mysql-module
  */
@@ -549,9 +549,10 @@ Mysql.mysql_result big_query (string query,
   string restore_charset;
   if (charset) {
     restore_charset = send_charset || get_charset();
-    if (charset != restore_charset)
+    if (charset != restore_charset) {
       ::big_query ("SET character_set_client=" + charset);
-    else
+      ::big_query ("SET character_set_connection=" + charset);
+    } else
       restore_charset = 0;
   }
 
@@ -578,7 +579,10 @@ Mysql.mysql_result big_query (string query,
 
     if (new_send_charset != send_charset) {
       mixed err;
-      if (err = ::big_query("SET character_set_client=" + new_send_charset)) {
+      if (err = catch {
+	  ::big_query("SET character_set_client=" + new_send_charset);
+	  ::big_query("SET character_set_connection=" + new_send_charset);
+	}) {
 	if (new_send_charset == "utf8")
 	  predef::error ("The query is a wide string "
 			 "and the MySQL server doesn't support UTF-8: %s\n",
@@ -594,8 +598,10 @@ Mysql.mysql_result big_query (string query,
   if (restore_charset) {
     if (send_charset && (<"latin1", "utf8">)[charset])
       send_charset = charset;
-    else
+    else {
       ::big_query("SET character_set_client=" + restore_charset);
+      ::big_query("SET character_set_connection=" + restore_charset);
+    }
   }
 
   if (!objectp(res)) return res;
