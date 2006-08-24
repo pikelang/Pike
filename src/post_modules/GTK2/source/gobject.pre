@@ -43,7 +43,8 @@ mixed get_property(string property)
 }
 
 
-int signal_connect(string signal, function callback, mixed|void callback_arg)
+int signal_connect(string signal, function callback, mixed|void callback_arg,
+		   string|void detail)
 //! int signal_connect(string signal, function callback, mixed ... args)
 //! Connect a signal to a pike function.  The function will be called with
 //! the last argument to this function as it's first argument (defaults to 0),
@@ -59,12 +60,13 @@ int signal_connect(string signal, function callback, mixed|void callback_arg)
   struct signal_data *b;
   struct svalue *tmp1,*tmp2;
   GClosure *gc;
+  char *detail=NULL;
 
   if (args==2) {
     push_int(0);
     args++;
   }
-  get_all_args("signal_connect",args,"%s%*%*",&a,&tmp1,&tmp2);
+  get_all_args("signal_connect",args,"%s%*%*.%s",&a,&tmp1,&tmp2,&detail);
 
   b=(struct signal_data *)g_malloc0(sizeof(struct signal_data));
   if (b==NULL)
@@ -82,8 +84,19 @@ int signal_connect(string signal, function callback, mixed|void callback_arg)
   gc=g_cclosure_new_swap(G_CALLBACK(pgtk2_signal_func_wrapper),
 		    b,(GClosureNotify)pgtk2_free_signal_data);
   g_closure_set_marshal(gc,pgtk2_marshaller);
-  id=g_signal_connect_closure(G_OBJECT(THIS->obj),a,
-			      gc,1);
+  if (detail) {
+    gchar *new_sig_name;
+
+    new_sig_name=xmalloc(strlen(a)+strlen(detail)+3);
+    strcpy(new_sig_name,a);
+    strcat(new_sig_name,"::");
+    strcat(new_sig_name,detail);
+    id=g_signal_connect_closure(G_OBJECT(THIS->obj),new_sig_name,
+				gc,1);
+    xfree(new_sig_name);
+  } else
+    id=g_signal_connect_closure(G_OBJECT(THIS->obj),a,
+				gc,1);
   pgtk2_pop_n_elems(args);
   push_int(id);
 }
@@ -119,7 +132,7 @@ void signal_unblock(int signal_id)
   RETURN_THIS();
 }
 
-void signal_emit(string signal_name)
+void signal_emit(string signal_name, string|void detail)
 //! Send the current named signal.
 {
   pgtk2_verify_inited();
@@ -129,8 +142,9 @@ void signal_emit(string signal_name)
     GSignalQuery _opts;
     GSignalQuery *opts=&_opts;
     guint signal_id;
+    const gchar *detail=NULL;
 
-    get_all_args("signal_emit",args,"%s",&s);
+    get_all_args("signal_emit",args,"%s.%s",&s,&detail);
     gq=g_quark_from_string(s);
     signal_id=g_signal_lookup(s,G_TYPE_FROM_INSTANCE(THIS->obj));
     g_signal_query(signal_id,opts);
@@ -154,7 +168,13 @@ void signal_emit(string signal_name)
       }
       if (opts->return_type!=G_TYPE_NONE)
 	g_value_init(&rvalue,opts->return_type);
-      g_signal_emitv(params,signal_id,0,&rvalue);
+      if (detail) {
+	GQuark detail_id;
+
+	detail_id=g_quark_try_string(detail);
+	g_signal_emitv(params,signal_id,detail_id,&rvalue);
+      } else
+	g_signal_emitv(params,signal_id,0,&rvalue);
       pgtk2_pop_n_elems(args);
       if (opts->return_type!=G_TYPE_NONE) {
 	pgtk2_push_gvalue_rt(&rvalue);
