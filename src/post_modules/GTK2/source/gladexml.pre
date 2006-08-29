@@ -72,6 +72,7 @@ static void pgtk2__signal_connect(const gchar *handler_name,
 			 (GClosureNotify)pgtk2_free_signal_data);
   g_closure_set_marshal(gc,pgtk2_marshaller);
   id=g_signal_connect_closure(G_OBJECT(object),signal_name,gc,1);
+  g_object_set_data(G_OBJECT(object),"signal-data",b);
 }
 %}
 
@@ -168,6 +169,28 @@ string get_widget_name(GTK2.Widget widget)
     pgtk2_pop_n_elems(args);
     push_text(s);
     g_free((void *)s);
+  }
+}
+
+int get_signal_id(GTK2.Widget widget)
+//! Used to get the signal id attached to a GladeXML object.
+{
+  pgtk2_verify_inited();
+  {
+    int id;
+    struct object *o1;
+    GtkWidget *w;
+    struct signal_data *sd;
+
+    get_all_args("get_signal_id",args,"%o",&o1);
+    w=GTK_WIDGET(get_gobject(o1));
+    if (!w)
+      Pike_error("GladeXML->get_signal_id:  Invalid argument 1, wanted GTK2 object of type WIDGET.\n");
+    sd=g_object_get_data(G_OBJECT(w),"signal-data");
+    if (sd)
+      push_int(sd->signal_id);
+    else
+      push_int(-1);
   }
 }
 
