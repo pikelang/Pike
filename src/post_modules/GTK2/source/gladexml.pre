@@ -187,6 +187,7 @@ int get_signal_id(GTK2.Widget widget)
     if (!w)
       Pike_error("GladeXML->get_signal_id:  Invalid argument 1, wanted GTK2 object of type WIDGET.\n");
     sd=g_object_get_data(G_OBJECT(w),"signal-data");
+    pgtk2_pop_n_elems(args);
     if (sd)
       push_int(sd->signal_id);
     else
