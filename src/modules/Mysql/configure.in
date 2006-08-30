@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.44 2006/08/15 15:50:15 grubba Exp $
+# $Id: configure.in,v 1.45 2006/08/30 15:23:38 mast Exp $
 #
 # Configure script for the mysql-module
 #
@@ -365,6 +365,10 @@ fi
     PIKE_CHECK_MYSQL_FUNC(mysql_fetch_lengths)
     PIKE_CHECK_MYSQL_FUNC(mysql_options)
     PIKE_CHECK_MYSQL_FUNC(mysql_set_character_set)
+
+    # This function should exist even in ancient versions, but it
+    # appear to exist only in header files sometimes.
+    PIKE_CHECK_MYSQL_FUNC(mysql_character_set_name)
 
     # Note: The following two are variables:
     PIKE_CHECK_MYSQL_FUNC(mysql_port)
