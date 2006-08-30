@@ -1,3 +1,9 @@
+pike7.4 (7.4.419-1) unstable; urgency=low
+
+  * The latest cvs snapshot
+
+ -- Marek Habersack <grendel@debian.org>  Wed, 30 Aug 2006 16:54:11 +0200
+
 pike7.4 (7.4.418-1) unstable; urgency=low
 
   * Release number bumped by export.pike.
