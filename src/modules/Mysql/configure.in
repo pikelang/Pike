@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.52 2006/08/15 15:50:44 grubba Exp $
+# $Id: configure.in,v 1.53 2006/08/31 10:10:18 mast Exp $
 #
 # Configure script for the mysql-module
 #
@@ -378,6 +378,10 @@ fi
     AC_CHECK_LIB(mysqlclient, mysql_ssl_set, [
       AC_DEFINE(HAVE_MYSQL_SSL)
     ])
+
+    # This function should exist even in ancient versions, but it
+    # appear to exist only in header files sometimes.
+    PIKE_CHECK_MYSQL_FUNC(mysql_character_set_name)
 
     # Note: The following two are variables:
     PIKE_CHECK_MYSQL_FUNC(mysql_port)

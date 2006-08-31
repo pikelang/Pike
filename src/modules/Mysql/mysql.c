@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.104 2006/08/15 15:50:44 grubba Exp $
+|| $Id: mysql.c,v 1.105 2006/08/31 10:10:18 mast Exp $
 */
 
 /*
@@ -657,6 +657,7 @@ static void f_create(INT32 args)
   pike_mysql_reconnect (0);
 
 #ifndef HAVE_MYSQL_SET_CHARACTER_SET
+#ifdef HAVE_MYSQL_CHARACTER_SET_NAME
   {
     const char *charset = mysql_character_set_name (PIKE_MYSQL->socket);
     if (PIKE_MYSQL->conn_charset)
@@ -668,6 +669,11 @@ static void f_create(INT32 args)
        * a string. */
       PIKE_MYSQL->conn_charset = NULL;
   }
+#else
+  if (PIKE_MYSQL->conn_charset)
+    free_string (PIKE_MYSQL->conn_charset);
+  PIKE_MYSQL->conn_charset = NULL;
+#endif
 #endif
 
   pop_n_elems(args);
@@ -1796,6 +1802,8 @@ static void f_get_charset (INT32 args)
   pop_n_elems (args);
 #ifdef HAVE_MYSQL_SET_CHARACTER_SET
   {
+    /* mysql_character_set_name should always exist if
+     * mysql_set_character_set exists. */
     const char *charset = mysql_character_set_name (PIKE_MYSQL->socket);
     if (charset)
       push_text (charset);

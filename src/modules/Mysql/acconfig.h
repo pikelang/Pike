@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.16 2006/08/15 15:50:44 grubba Exp $
+|| $Id: acconfig.h,v 1.17 2006/08/31 10:10:18 mast Exp $
 */
 
 /*
@@ -37,6 +37,9 @@
 
 /* Define if you have mysql_set_character_set(). */
 #undef HAVE_MYSQL_SET_CHARACTER_SET
+
+/* Define if you have mysql_character_set_name(). */
+#undef HAVE_MYSQL_CHARACTER_SET_NAME
 
 /* Define if you have the mysql_port variable. */
 #undef HAVE_MYSQL_PORT
