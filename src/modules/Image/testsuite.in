@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.22 2006/07/26 19:24:00 nilsson Exp $
+dnl $Id: testsuite.in,v 1.23 2006/08/31 14:45:33 nilsson Exp $
 
 test_eq([[ Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n"
   "1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0") ]],
@@ -393,6 +393,7 @@ test_do( img()->blur(5) )
 test_do( img(100,100)->box(40,10,10,80) )
 test_do( img(100,100)->box(40,10,10,80,0,255,0) )
 test_do( img(100,100)->box(40,10,10,80,255,0,0,75) )
+test_do( img(10,10)->setcolor(255,17,48,80)->box(0,2,11,9) )
 
 test_do( (string)img() )
 test_do( (array)img() )
