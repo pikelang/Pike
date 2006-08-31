@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: blit.c,v 1.56 2004/03/05 23:04:02 nilsson Exp $
+|| $Id: blit.c,v 1.57 2006/08/31 14:04:02 nilsson Exp $
 */
 
 #include "global.h"
@@ -172,7 +172,7 @@ void img_box_nocheck(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
    {
      THREADS_ALLOW();
      do {
-       for (; foo<=end; foo+=mod) for (x=x1; x<=x2; x++,foo++) 
+       for (; foo<end; foo+=mod) for (x=x1; x<=x2; x++,foo++)
 	 set_rgb_group_alpha(*foo,rgb,this->alpha);
      } while(0);
      THREADS_DISALLOW();
