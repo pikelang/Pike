@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.767 2006/07/07 18:10:45 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.768 2006/09/04 12:11:00 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -4176,6 +4176,17 @@ test_any_equal([[
 ]])
 
 test_true(mappingp(_memory_usage()))
+test_any([[
+  int ret = 1;
+  foreach(_memory_usage(); string type; int value)
+    if(value<0)
+    {
+      werror("_memory_usage()->%s has value %d which is <0\n",
+             type, value);
+      ret = 0;
+    }
+  return ret;
+]],1)
 test_true(_refs(""));
 test_true(_refs(({})));
 test_true(_refs(([])));
