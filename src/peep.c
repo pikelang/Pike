@@ -14,7 +14,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: peep.c,v 1.28 1999/11/08 20:50:51 grubba Exp $");
+RCSID("$Id: peep.c,v 1.29 2006/09/05 12:14:34 grubba Exp $");
 
 struct p_instr_s
 {
@@ -47,7 +47,7 @@ void exit_bytecode(void)
   c=(p_instr *)instrbuf.s.str;
   length=instrbuf.s.len / sizeof(p_instr);
 
-  for(e=0;e<length;e++) free_string(c->file);
+  for(e=0;e<length;e++) free_string(c[e].file);
   
   toss_buffer(&instrbuf);
 }
