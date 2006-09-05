@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.107 2006/02/27 12:12:47 mast Exp $
+|| $Id: peep.c,v 1.108 2006/09/05 12:09:15 grubba Exp $
 */
 
 #include "global.h"
@@ -69,7 +69,13 @@ void exit_bytecode(void)
   c=(p_instr *)instrbuf.s.str;
   length=instrbuf.s.len / sizeof(p_instr);
 
-  for(e=0;e<length;e++) free_string(c->file);
+  for(e=0;e<length;e++) {
+    free_string(dmalloc_touch_named(struct pike_string *, c[e].file,
+				    "exit_bytecode"));
+#ifdef PIKE_DEBUG
+    c[e].file = (void *)(ptrdiff_t)~0;
+#endif
+  }
   
   toss_buffer(&instrbuf);
 }
@@ -97,7 +103,9 @@ ptrdiff_t insert_opcode2(unsigned int f,
 
   p->opcode=f;
   p->line=current_line;
-  copy_shared_string(p->file, current_file);
+  copy_shared_string(p->file, dmalloc_touch_named(struct pike_string *,
+						  current_file,
+						  "insert_opcode"));
   p->arg=b;
   p->arg2=c;
 
@@ -193,7 +201,8 @@ INT32 assemble(int store_linenumbers)
     /* Count the number of F_FILENAME/F_LINE pseudo-ops we need to add. */
     for (e=0; e < length; e++) {
       if (c[e].file != previous_file) {
-	previous_file = c[e].file;
+	previous_file = dmalloc_touch_named(struct pike_string *,
+					    c[e].file, "prev_file");
 	num_linedirectives++;
       }
       if (c[e].line != previous_line) {
@@ -217,10 +226,14 @@ INT32 assemble(int store_linenumbers)
     for (e = 0; e < length; e++) {
       if (c[e].file != previous_file) {
 	current_tripple[0] = F_FILENAME;
-	current_tripple[1] = store_prog_string(c[e].file);
+	current_tripple[1] =
+	  store_prog_string(dmalloc_touch_named(struct pike_string *,
+						c[e].file,
+						"store_prog_string"));
 	current_tripple[2] = 0;
 	current_tripple += 3;
-	previous_file = c[e].file;
+	previous_file = dmalloc_touch_named(struct pike_string *,
+					    c[e].file, "prev_file");
       }
       if (c[e].line != previous_line) {
 	current_tripple[0] = F_LINE;
@@ -370,9 +383,15 @@ INT32 assemble(int store_linenumbers)
 	    case TWOO(F_BRANCH, F_RETURN_0):
 	    case TWOO(F_BRANCH, F_RETURN_1):
 	    case TWOO(F_BRANCH, F_RETURN_LOCAL):
-	      if(c[e].file) free_string(c[e].file);
+	      if(c[e].file) {
+		free_string(dmalloc_touch_named(struct pike_string *,
+						c[e].file, "branch_opt 1"));
+	      }
 	      c[e]=c[tmp];
-	      if(c[e].file) add_ref(c[e].file);
+	      if(c[e].file) {
+		add_ref(dmalloc_touch_named(struct pike_string *,
+					    c[e].file, "branch_opt 2"));
+	      }
 	      goto pointer_opcode_done;
 	  }
 	  break;
@@ -472,7 +491,9 @@ INT32 assemble(int store_linenumbers)
 #endif
 
     if(store_linenumbers) {
-      store_linenumber(c->line, c->file);
+      store_linenumber(c->line, dmalloc_touch_named(struct pike_string *,
+						    c->file,
+						    "store_line"));
 #ifdef PIKE_DEBUG
       if (c->opcode < F_MAX_OPCODE)
 	ADD_COMPILED(c->opcode);
@@ -765,6 +786,7 @@ static INLINE ptrdiff_t insopt2(int f, INT32 a, INT32 b,
 
   if(fifo_len)
   {
+    debug_malloc_touch_named(p[-fifo_len].file, "insopt2");
     MEMMOVE(p-fifo_len+1,p-fifo_len,fifo_len*sizeof(p_instr));
     p-=fifo_len;
   }
@@ -776,7 +798,8 @@ static INLINE ptrdiff_t insopt2(int f, INT32 a, INT32 b,
 
   p->opcode=f;
   p->line=cl;
-  copy_shared_string(p->file, cf);
+  copy_shared_string(p->file, dmalloc_touch_named(struct pike_string *,
+						  cf, "insopt2"));
   p->arg=a;
   p->arg2=b;
 
@@ -804,8 +827,11 @@ static INLINE ptrdiff_t insopt0(int f, int cl, struct pike_string *cf)
 
 static void debug(void)
 {
-  if(fifo_len > (long)instrbuf.s.len / (long)sizeof(p_instr))
+  if(fifo_len > (long)instrbuf.s.len / (long)sizeof(p_instr)) {
+    fprintf(stderr, "DEBUG: Shrinking fifo_len from %d to %d\n",
+	    fifo_len, (long)instrbuf.s.len / (long)sizeof(p_instr));
     fifo_len=(long)instrbuf.s.len / (long)sizeof(p_instr);
+  }
 #ifdef PIKE_DEBUG
   if(eye < 0)
     Pike_fatal("Popped beyond start of code.\n");
@@ -900,59 +926,26 @@ static void pop_n_opcodes(int n)
 
     p=(p_instr *)low_make_buf_space(0, &instrbuf);
     p-=fifo_len;
-    for(e=0;e<d;e++) free_string(p[e].file);
+    for(e=0;e<d;e++) {
+      free_string(dmalloc_touch_named(struct pike_string *, p[e].file,
+				      "pop_n_opcodes"));
+    }
     fifo_len-=d;
-    if(fifo_len) MEMMOVE(p,p+d,fifo_len*sizeof(p_instr));
+    if(fifo_len) {
+#ifdef PIKE_DEBUG
+      int i = fifo_len;
+      while (i) {
+	debug_malloc_touch_named(p[d + --i].file, "pop_n_opcodes");
+      }
+#endif 
+      MEMMOVE(p,p+d,fifo_len*sizeof(p_instr));
+    }
     n-=d;
     low_make_buf_space(-((INT32)sizeof(p_instr))*d, &instrbuf);
   }
   eye+=n;
 }
 
-#define DO_OPTIMIZATION_PREQUEL(topop) do {	\
-    struct pike_string *cf; 			\
-    INT32 cl=instr(0)->line;			\
-  						\
-    DO_IF_DEBUG(				\
-      if(a_flag>5)				\
-      {						\
-  	int e;					\
-  	fprintf(stderr,"PEEP at %d:",cl);	\
-  	for(e=0;e<topop;e++)			\
-  	{					\
-  	  fprintf(stderr," ");			\
-  	  dump_instr(instr(e));			\
-  	}					\
-  	fprintf(stderr," => ");			\
-      }						\
-    )						\
-    						\
-    copy_shared_string(cf,instr(0)->file);	\
-    pop_n_opcodes(topop)
-
-#define DO_OPTIMIZATION_POSTQUEL(q)	\
-    fifo_len+=q;			\
-    free_string(cf);			\
-    debug();				\
-  					\
-    DO_IF_DEBUG(			\
-      if(a_flag>5)			\
-      {					\
-  	int e;				\
-  	for(e=0;e<q;e++)		\
-  	{				\
-  	  fprintf(stderr," ");		\
-  	  dump_instr(instr(e));		\
-  	}				\
-  	fprintf(stderr,"\n");		\
-      }					\
-    )					\
-  					\
-    /* Note: The 5 below is the longest	\
-     *       match prefix in the ruleset\
-     */					\
-    fifo_len += q + 5;			\
-  }  while(0)
 
 
 static void do_optimization(int topop, ...)
@@ -960,8 +953,27 @@ static void do_optimization(int topop, ...)
   va_list arglist;
   int q=0;
   int oplen;
+  struct pike_string *cf;
+  INT32 cl=instr(0)->line;
 
-  DO_OPTIMIZATION_PREQUEL(topop);
+#ifdef PIKE_DEBUG
+  if(a_flag>5)
+  {
+    int e;
+    fprintf(stderr,"PEEP at %d:",cl);
+    for(e=0;e<topop;e++)
+    {
+      fprintf(stderr," ");
+      dump_instr(instr(e));
+    }
+    fprintf(stderr," => ");
+  }
+#endif
+
+  copy_shared_string(cf,dmalloc_touch_named(struct pike_string *,
+					    instr(0)->file,
+					    "do_optimization"));
+  pop_n_opcodes(topop);
 
   va_start(arglist, topop);
   
@@ -1004,7 +1016,28 @@ static void do_optimization(int topop, ...)
 
   va_end(arglist);
 
-  DO_OPTIMIZATION_POSTQUEL(q);
+  /*fifo_len+=q;*/
+  free_string(dmalloc_touch_named(struct pike_string *, cf,
+				  "do_optimization"));
+  debug();
+
+#ifdef PIKE_DEBUG
+  if(a_flag>5)
+  {
+    int e;
+    for(e=0;e<q;e++)
+    {
+      fprintf(stderr," ");
+      dump_instr(instr(e));
+    }
+    fprintf(stderr,"\n");
+  }
+#endif
+
+  /* Note: The 5 below is the longest
+   *       match prefix in the ruleset
+   */
+  /*fifo_len += q + 5;*/
 }
 
 #include "peep_engine.c"
@@ -1062,7 +1095,11 @@ static int asm_opt(void)
     advance();
   }
 
-  for(eye=0;eye<len;eye++) free_string(instructions[eye].file);
+  for(eye=0;eye<len;eye++) {
+    free_string(dmalloc_touch_named(struct pike_string *,
+				    instructions[eye].file,
+				    "clearing eye"));
+  }
   free((char *)instructions);
 
 #ifdef PIKE_DEBUG
