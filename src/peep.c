@@ -13,7 +13,7 @@
 #include "dmalloc.h"
 #include "stuff.h"
 
-RCSID("$Id: peep.c,v 1.25 1998/11/22 11:03:07 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.26 2006/09/05 12:15:07 grubba Exp $");
 
 struct p_instr_s
 {
@@ -46,7 +46,7 @@ void exit_bytecode(void)
   c=(p_instr *)instrbuf.s.str;
   length=instrbuf.s.len / sizeof(p_instr);
 
-  for(e=0;e<length;e++) free_string(c->file);
+  for(e=0;e<length;e++) free_string(c[e].file);
   
   toss_buffer(&instrbuf);
 }
