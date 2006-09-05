@@ -136,11 +136,16 @@ void set_active_iter(GTK2.TreeIter iter)
 //! Get the GTK2.TreeModel which is acting as a data source.
 {
   pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
   {
     GtkTreeModel *gtm;
+
     gtm=gtk_combo_box_get_model(GTK_COMBO_BOX(THIS->obj));
-    pgtk2_pop_n_elems(args);
-    push_gobject(gtm);
+    if (GTK_IS_TREE_MODEL(gtm)) {
+      push_gobject(gtm);
+      g_object_ref(gtm);
+    } else
+      push_int(0);
   }
 }
 

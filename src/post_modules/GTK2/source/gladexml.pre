@@ -168,7 +168,8 @@ string get_widget_name(GTK2.Widget widget)
     s=glade_get_widget_name(widget);
     pgtk2_pop_n_elems(args);
     push_text(s);
-    g_free((void *)s);
+/* Per documentation, don't free this */
+/*    g_free((void *)s); */
   }
 }
 
