@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.99 2005/05/18 12:36:53 mast Exp $
+|| $Id: peep.c,v 1.100 2006/09/05 12:10:15 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.99 2005/05/18 12:36:53 mast Exp $");
+RCSID("$Id: peep.c,v 1.100 2006/09/05 12:10:15 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -72,7 +72,7 @@ void exit_bytecode(void)
   c=(p_instr *)instrbuf.s.str;
   length=instrbuf.s.len / sizeof(p_instr);
 
-  for(e=0;e<length;e++) free_string(c->file);
+  for(e=0;e<length;e++) free_string(c[e].file);
   
   toss_buffer(&instrbuf);
 }
