@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.13 2006/08/03 16:49:49 ldillon Exp $
+|| $Id: support.c,v 1.14 2006/09/05 14:18:19 ldillon Exp $
 */
 
 #include <version.h>
@@ -566,10 +566,24 @@ static int pgtk2_push_string_param(const GValue *a) {
 }
 
 static int pgtk2_push_object_param(const GValue *a) {
-  GObject *obj=g_value_get_object(a);
-  if (obj)
-/*    push_gobject(((void *)g_value_get_object(a))); */
-    push_gobject(obj);
+  GObject *obj;
+  gpointer *gp;
+  if (g_type_is_a(G_VALUE_TYPE(a),G_TYPE_BOXED)) {
+    gp=g_value_get_boxed(a);
+    if (G_VALUE_HOLDS(a,g_type_from_name("GdkColor"))) {
+      push_gdkobject(gp,color);
+    } else if (G_VALUE_HOLDS(a,g_type_from_name("GtkTreePath"))) {
+      pgtk2_push_gobjectclass(gp,pgtk2_tree_path_program);
+    } else if (G_VALUE_HOLDS(a,g_type_from_name("GdkRectangle"))) {
+      push_gdkobject(gp,rectangle);
+    } else if (G_VALUE_HOLDS(a,g_type_from_name("GdkRegion"))) {
+      push_gdkobject(gp,region);
+    }
+  } else {
+    obj=g_value_get_object(a);
+    if (obj)
+      push_gobject(obj);
+  }
   return PUSHED_VALUE;
 }
 
@@ -609,7 +623,7 @@ static void build_push_callbacks() {
   CB(GTK_TYPE_TREE_ITER,	pgtk2_push_object_param);
   CB(GTK_TYPE_TREE_MODEL,	pgtk2_push_object_param);
   CB(PANGO_TYPE_ATTR_LIST,	pgtk2_push_object_param);
-  CB(GTK_TYPE_TREE_PATH,	pgtk2_push_object_param);
+  CB(GTK_TYPE_TREE_PATH,	pgtk2_push_object_param); 
   CB(PANGO_TYPE_FONT_DESCRIPTION,	pgtk2_push_object_param);
   CB(PANGO_TYPE_CONTEXT,	pgtk2_push_object_param);
   CB(PANGO_TYPE_LAYOUT,		pgtk2_push_object_param);
@@ -645,6 +659,7 @@ static void build_push_callbacks() {
   CB( G_TYPE_POINTER,  pgtk2_push_pike_object_param );
 
   CB( G_TYPE_PARAM, pgtk2_push_gparamspec_param );
+  CB( G_TYPE_BOXED, pgtk2_push_object_param );
 /*
    CB( GTK_TYPE_SIGNAL,   NULL );
    CB( GTK_TYPE_INVALID,  NULL );
@@ -1260,8 +1275,10 @@ void pgtk2_marshaller(GClosure *closure,
     data1=g_value_peek_pointer(param_values+0);
     data2=closure->data;
   }
+/*  fprintf(stderr,"marshaller:  before:  nvals==%d\n",n_params-1); */
   callback=(pgtk2_marshal_func)(marshal_data?marshal_data:cc->callback);
   callback(data1,data2,n_params-1,param_values+1,return_value);
+/*  fprintf(stderr,"marshaller:  after:  nvals==%d\n",n_params-1); */
 }
 
 int pgtk2_tree_view_row_separator_func(GtkTreeModel *model,
