@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.79 2006/07/17 11:02:54 nilsson Exp $
+// $Id: Query.pike,v 1.80 2006/09/06 14:20:21 grubba Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -231,7 +231,9 @@ static void async_close()
   if(!https)
   {
     con->set_blocking();
-    ponder_answer();
+    if (ponder_answer() <= 0) {
+      async_failed();
+    }
   }
 }
 
