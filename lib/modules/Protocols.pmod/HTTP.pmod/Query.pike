@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.86 2006/07/17 11:09:49 nilsson Exp $
+// $Id: Query.pike,v 1.87 2006/09/06 14:18:32 grubba Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -232,7 +232,9 @@ static void connect(string server,int port,int blocking)
 static void async_close()
 {
   con->set_blocking();
-  ponder_answer();
+  if (ponder_answer() <= 0) {
+    async_failed();
+  }
 }
 
 static void async_read(mixed dummy,string s)
