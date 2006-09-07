@@ -15,7 +15,7 @@
 #include "bignum.h"
 #include "opcodes.h"
 
-RCSID("$Id: peep.c,v 1.48 2003/10/10 01:17:44 mast Exp $");
+RCSID("$Id: peep.c,v 1.49 2006/09/07 09:37:05 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -61,7 +61,7 @@ void exit_bytecode(void)
   c=(p_instr *)instrbuf.s.str;
   length=instrbuf.s.len / sizeof(p_instr);
 
-  for(e=0;e<length;e++) free_string(c->file);
+  for(e=0;e<length;e++) free_string(c[e].file);
   
   toss_buffer(&instrbuf);
 }
