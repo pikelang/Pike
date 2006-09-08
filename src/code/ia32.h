@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.h,v 1.29 2006/08/05 20:11:31 mast Exp $
+|| $Id: ia32.h,v 1.30 2006/09/08 17:20:46 grubba Exp $
 */
 
 /* #define ALIGN_PIKE_JUMPS 8 */
@@ -129,8 +129,15 @@ void ia32_init_interpreter_state(void);
 void ia32_flush_code_generator(void);
 #define FLUSH_CODE_GENERATOR_STATE ia32_flush_code_generator
 
+void ia32_flush_instruction_cache(void *addr, size_t len);
+#define FLUSH_INSTRUCTION_CACHE	ia32_flush_instruction_cache
+
+void ia32_init_interpreter_state(void);
+#define INIT_INTERPRETER_STATE	ia32_init_interpreter_state
 
 #ifdef USE_CL_IA32_ASM_STYLE
+
+#define USE_CL_IA32_ASM_STYLE
 
 #define CALL_MACHINE_CODE(pc)                                   \
   __asm {                                                       \
@@ -143,6 +150,8 @@ void ia32_flush_code_generator(void);
   __asm { __asm add esp,12 }
 
 #else  /* USE_GCC_IA32_ASM_STYLE */
+
+#define USE_GCC_IA32_ASM_STYLE
 
 #define CALL_MACHINE_CODE(pc)						\
   /* This code does not clobber %eax, %ebx, %ecx & %edx, but		\

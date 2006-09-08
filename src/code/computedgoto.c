@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: computedgoto.c,v 1.4 2003/11/19 17:19:29 grubba Exp $
+|| $Id: computedgoto.c,v 1.5 2006/09/08 17:20:46 grubba Exp $
 */
 
 /*
@@ -52,15 +52,15 @@ void ins_f_byte(unsigned int b)
   add_to_program(fcode_to_opcode[b]);
 }
 
-void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
+void ins_f_byte_with_arg(unsigned int a, INT32 b)
 {
   ins_f_byte(a);
   add_to_program((PIKE_OPCODE_T)b);
 }
 
 void ins_f_byte_with_2_args(unsigned int a,
-			    unsigned INT32 c,
-			    unsigned INT32 b)
+			    INT32 c,
+			    INT32 b)
 {
   ins_f_byte_with_arg(a,c);
   add_to_program((PIKE_OPCODE_T)b);

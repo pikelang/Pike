@@ -154,13 +154,13 @@ void ins_f_byte(unsigned int b) {
 	amd64_call_c_function(addr);
 }
 
-void ins_f_byte_with_arg(unsigned int a, unsigned INT32 b) {
+void ins_f_byte_with_arg(unsigned int a, INT32 b) {
 	maybe_update_pc();
 	update_arg1(b);
 	ins_f_byte(a);
 }
 
-void ins_f_byte_with_2_args(unsigned int a, unsigned INT32 b, unsigned INT32 c) {
+void ins_f_byte_with_2_args(unsigned int a, INT32 b, INT32 c) {
 	maybe_update_pc();
 	update_arg1(b);
 	update_arg2(c);

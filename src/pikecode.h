@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pikecode.h,v 1.13 2006/04/27 09:37:34 tor Exp $
+|| $Id: pikecode.h,v 1.14 2006/09/08 17:20:46 grubba Exp $
 */
 
 /*
@@ -26,10 +26,8 @@ void ins_data(INT32 val);
 void ins_align(INT32 align);
 
 void ins_f_byte(unsigned int b);
-void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b);
-void ins_f_byte_with_2_args(unsigned int a,
-			    unsigned INT32 c,
-			    unsigned INT32 b);
+void ins_f_byte_with_arg(unsigned int a, INT32 b);
+void ins_f_byte_with_2_args(unsigned int a, INT32 c, INT32 b);
 
 #if PIKE_BYTECODE_METHOD == PIKE_BYTECODE_AMD64
 #warning using amd64

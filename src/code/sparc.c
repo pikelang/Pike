@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.47 2006/03/07 20:13:22 grubba Exp $
+|| $Id: sparc.c,v 1.48 2006/09/08 17:20:46 grubba Exp $
 */
 
 /*
@@ -109,6 +109,7 @@
     add_to_program(0xc0000000|((D)<<25)|((OP3)<<19)|((S1)<<14)|((I)<<13)| \
 		   ((S2)&0x1fff))
 
+#define SPARC_ANDcc(D,S1,S2,I)	SPARC_ALU_OP(SPARC_OP3_ANDcc, D, S1, S2, I)
 #define SPARC_OR(D,S1,S2,I)	SPARC_ALU_OP(SPARC_OP3_OR, D, S1, S2, I)
 #define SPARC_XOR(D,S1,S2,I)	SPARC_ALU_OP(SPARC_OP3_XOR, D, S1, S2, I)
 
@@ -136,6 +137,10 @@
 
 #define SPARC_SETHI(D, VAL) \
     add_to_program(0x01000000|((D)<<25)|(((VAL)>>10)&0x3fffff))
+#define SPARC_NOOP() SPARC_SETHI(SPARC_REG_G0, 0)
+
+#define SPARC_BA(DISP22, A) \
+    add_to_program(0x10800000|((A)<<29)|(((DISP22)>>2)&0x1fffff))
 
 #define SPARC_BE(DISP22, A) \
     add_to_program(0x02800000|((A)<<29)|(((DISP22)>>2)&0x1fffff))
@@ -752,7 +757,6 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
     delay_ok = 1;
     addr = (void *)f_add;
     break;
-
     /* F_ZERO_TYPE? */
   }
 
@@ -765,7 +769,7 @@ void ins_f_byte(unsigned int opcode)
   low_ins_f_byte(opcode, 0);
 }
 
-void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
+void ins_f_byte_with_arg(unsigned int a, INT32 b)
 {
   ins_sparc_debug();
 
@@ -793,7 +797,6 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
     sparc_push_int(-(ptrdiff_t)b, 0);
     low_ins_f_byte(F_INDEX, 1);
     return;
-
   }
   SET_REG(SPARC_REG_O0, b);
   low_ins_f_byte(a, 1);
@@ -801,8 +804,8 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 }
 
 void ins_f_byte_with_2_args(unsigned int a,
-			    unsigned INT32 c,
-			    unsigned INT32 b)
+			    INT32 c,
+			    INT32 b)
 {
   ins_sparc_debug();
 

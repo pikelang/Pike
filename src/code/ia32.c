@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.45 2006/08/09 09:58:29 grubba Exp $
+|| $Id: ia32.c,v 1.46 2006/09/08 17:20:46 grubba Exp $
 */
 
 /*
@@ -767,7 +767,7 @@ void ins_f_byte(unsigned int b)
 #endif
 }
 
-void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
+void ins_f_byte_with_arg(unsigned int a, INT32 b)
 {
   maybe_update_pc();
 
@@ -877,8 +877,8 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 }
 
 void ins_f_byte_with_2_args(unsigned int a,
-			    unsigned INT32 b,
-			    unsigned INT32 c)
+			    INT32 b,
+			    INT32 c)
 {
   maybe_update_pc();
 
