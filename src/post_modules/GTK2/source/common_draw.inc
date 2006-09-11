@@ -144,7 +144,7 @@ void draw_pixmap(GDK2.GC gc, GDK2.Pixmap pixmap, int xsrc, int ysrc,
   get_all_args("draw_pixmap",args,"%o%o%+%+%+%+%i%i",
 	       &g,&p,&xs,&ys,&xd,&yd,&w,&h);
   if (w>0 && h>0)
-    gdk_draw_pixmap(TWIN,GC(g),GDK_DRAWABLE(p),xs,ys,xd,yd,w,h);
+    gdk_draw_pixmap(TWIN,GC(g),GDK_DRAWABLE(get_pg2object(p)),xs,ys,xd,yd,w,h);
   RETURN_THIS();
 }
 
