@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.43 2006/09/11 12:19:49 grubba Exp $
+// $Id: module.pmod,v 1.44 2006/09/11 12:47:16 grubba Exp $
 
 static constant fmts = ([
   "image/x-pnm" : "PNM",
@@ -75,8 +75,7 @@ mapping _decode( string data )
 #if constant(Image.TIFF)
       if (tiff_start && tiff_len) {
 	catch {
-	  [i,a] =
-	    Image.TIFF.decode(data[tiff_start..tiff_start + tiff_len -1]);
+	  i = Image.TIFF.decode(data[tiff_start..tiff_start + tiff_len -1]);
 	  format = "TIFF";
 	};
 	if (i) break;
