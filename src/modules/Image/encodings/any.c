@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: any.c,v 1.26 2002/10/21 17:06:14 marcus Exp $
+|| $Id: any.c,v 1.27 2006/09/11 12:25:25 grubba Exp $
 */
 
 /*
@@ -26,7 +26,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: any.c,v 1.26 2002/10/21 17:06:14 marcus Exp $");
+RCSID("$Id: any.c,v 1.27 2006/09/11 12:25:25 grubba Exp $");
 #include "pike_macros.h"
 #include "operators.h"
 #include "builtin_functions.h"
@@ -166,6 +166,14 @@ void image_any__decode(INT32 args)
 	 img_ilbm_decode(1);
 	 push_text("image/x-ilbm");
 	 goto simple_image;
+
+      case CHAR2('M','M'):
+	/* TIFF */
+	push_text("Image.TIFF._decode");:
+	SAFE_APPLY_MASTER("resolv_or_error",1);
+	stack_swap();
+	f_call_function(2);
+	return;
 
       case CHAR2('B','M'):
 	 /* BMP */
