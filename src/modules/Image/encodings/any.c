@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: any.c,v 1.31 2005/01/23 13:30:04 nilsson Exp $
+|| $Id: any.c,v 1.32 2006/09/11 12:18:58 grubba Exp $
 */
 
 /*
@@ -147,6 +147,14 @@ void image_any__decode(INT32 args)
 	 push_text("image/x-ilbm");
 	 goto simple_image;
 
+      case CHAR2('M','M'):
+	/* TIFF */
+	push_text("Image.TIFF._decode");:
+	SAFE_APPLY_MASTER("resolv_or_error",1);
+	stack_swap();
+	f_call_function(2);
+	return;
+
       case CHAR2('B','M'):
 	 /* BMP */
 	 img_bmp__decode(1);
@@ -168,6 +176,11 @@ void image_any__decode(INT32 args)
          /* TIM */
 	 image_tim_f__decode(1);
 	 return;
+
+      case CHAR2(0xc5, 0xd0):
+	/* FIXME: DOS EPS Binary File Header. */
+	goto unknown_format;
+	break;
 
       case CHAR2(0,0):
 	 switch (CHAR2(sp[-args].u.string->str[2],sp[-args].u.string->str[3]))
