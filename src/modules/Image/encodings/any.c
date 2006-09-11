@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: any.c,v 1.30 2006/09/11 12:25:40 grubba Exp $
+|| $Id: any.c,v 1.31 2006/09/11 12:50:10 grubba Exp $
 */
 
 /*
@@ -25,7 +25,7 @@
 #include <math.h>
 #include <ctype.h>
 
-RCSID("$Id: any.c,v 1.30 2006/09/11 12:25:40 grubba Exp $");
+RCSID("$Id: any.c,v 1.31 2006/09/11 12:50:10 grubba Exp $");
 #include "operators.h"
 #include "builtin_functions.h"
 #include "interpret.h"
@@ -150,7 +150,7 @@ void image_any__decode(INT32 args)
 
       case CHAR2('M','M'):
 	/* TIFF */
-	push_text("Image.TIFF._decode");:
+	push_text("Image.TIFF._decode");
 	SAFE_APPLY_MASTER("resolv_or_error",1);
 	stack_swap();
 	f_call_function(2);
