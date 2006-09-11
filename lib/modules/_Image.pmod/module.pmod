@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.42 2005/11/14 21:29:19 nilsson Exp $
+// $Id: module.pmod,v 1.43 2006/09/11 12:19:49 grubba Exp $
 
 static constant fmts = ([
   "image/x-pnm" : "PNM",
@@ -50,20 +50,65 @@ mapping _decode( string data )
      }
   }
 
+  switch(data[..3]) {
+  case "AC10":
+    catch {
+      i = Image.DWG.decode(data);
+      format = "DWG";
+    };
+    break;
+  case "%!PS":
+    catch {
+      i = Image.PS.decode(data);
+      format = "PS";
+    };
+    break;
+  case "\xc5\xd0\xd3\xc6":	// DOS EPS Binary File Header.
+    {
+      int ps_start, ps_len, meta_start, meta_len, tiff_start, tiff_len, csum;
+      sscanf(data, "%*4c%-4c%-4c%-4c%-4c%-4c%-4c%-2c",
+	     ps_start, ps_len, meta_start, meta_len, tiff_start, tiff_len,
+	     csum);
+      if (csum != 65535) {
+	// FIXME: Verify checksum.
+      }
+#if constant(Image.TIFF)
+      if (tiff_start && tiff_len) {
+	catch {
+	  [i,a] =
+	    Image.TIFF.decode(data[tiff_start..tiff_start + tiff_len -1]);
+	  format = "TIFF";
+	};
+	if (i) break;
+      }
+#endif
+      if (ps_start && ps_len) {
+	catch {
+	  i = Image.PS.decode(data[ps_start..ps_start + ps_len - 1]);
+	  format = "EPS";
+	};
+      }
+    }
+    break;
+  }
+
+
   // Use the low-level decode function to get the alpha channel.
 #if constant(Image.GIF)
-  catch
-  {
-    array chunks = Image.GIF->_decode( data );
+  if (!i) {
+    catch
+    {
+      array chunks = Image.GIF->_decode( data );
 
-    // If there is more than one render chunk, the image is probably
-    // an animation. Handling animations is left as an exercise for
-    // the reader. :-)
-    foreach(chunks, mixed chunk)
-      if(arrayp(chunk) && chunk[0] == Image.GIF.RENDER )
-        [i,a] = chunk[3..4];
-    format = "GIF";
-  };
+      // If there is more than one render chunk, the image is probably
+      // an animation. Handling animations is left as an exercise for
+      // the reader. :-)
+      foreach(chunks, mixed chunk)
+	if(arrayp(chunk) && chunk[0] == Image.GIF.RENDER )
+	  [i,a] = chunk[3..4];
+      format = "GIF";
+    };
+  }
 #endif
 
   if(!i) {
@@ -74,20 +119,6 @@ mapping _decode( string data )
       i = res->image;
       a = res->alpha;
       format = fmts[res->format];
-    };
-  }
-
-  if(!i && data[0..3]=="AC10") {
-    catch {
-      i = Image.DWG.decode(data);
-      format = "DWG";
-    };
-  }
-
-  if(!i && data[0..3]=="%!PS") {
-    catch {
-      i = Image.PS.decode(data);
-      format = "PS";
     };
   }
 
