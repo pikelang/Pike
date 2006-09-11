@@ -3,7 +3,7 @@
 // 
 // http://www.iptc.org/IIM/
 //
-// $Id: IIM.pmod,v 1.4 2006/09/11 16:19:54 grubba Exp $
+// $Id: IIM.pmod,v 1.5 2006/09/11 16:53:35 grubba Exp $
 //
 // Anders Johansson & Henrik Grubbström
 
@@ -217,6 +217,17 @@ mapping get_information(Stdio.File fd)
   string marker = fd->read(2);
   string photoshop_data = "";
 
+  if (marker == "\xc5\xd0") {
+    // Probably a DOS EPS Binary Header.
+    string tmp = fd->read(28);
+    if (!has_prefix(tmp, "\xd3\xc6")) return ([]);
+    int offset;
+    sscanf(tmp, "%*2c%-4c", offset);
+    offset -= 30;
+    if (offset < 0) return ([]);
+    if (offset > 0) fd->read(offset);
+    marker = fd->read(2);	// Should be a PS header.
+  }
   if (marker == "%!") {
     int bytes = -1;
     // Note: We use the split iterator by hand to make sure '\r' is
@@ -225,17 +236,23 @@ mapping get_information(Stdio.File fd)
 				 fd->read_function(8192));
 	    int lineno; string line) {
       if (line[0] != '%') continue;
-      if (bytes < 0) sscanf(line, "%%BeginPhotoshop: %d", bytes);
-      else if (has_prefix(line, "% ")) {
+      if (bytes < 0) sscanf(line, "%%BeginPhotoshop:%*[ ]%d", bytes);
+      else if (has_prefix(line, "%EndPhotoshop")) {
+	break;
+      } else if (has_prefix(line, "% ")) {
 #if constant(String.hex2string)
 	photoshop_data += String.hex2string(line[2..]);
 #else
 	photoshop_data += Crypto.hex_to_string(line[2..]);
 #endif
 	if (sizeof(photoshop_data) >= bytes) break;
-      }
-      else if (has_prefix(line, "%EndPhotoshop")) {
-	break;
+      } else {
+#if constant(String.hex2string)
+	photoshop_data += String.hex2string(line[1..]);
+#else
+	photoshop_data += Crypto.hex_to_string(line[1..]);
+#endif
+	if (sizeof(photoshop_data) >= bytes) break;
       }
     }
   } else if (marker == "\xff\xd8") {
