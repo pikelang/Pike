@@ -3,7 +3,7 @@
 // 
 // http://www.iptc.org/IIM/
 //
-// $Id: IIM.pmod,v 1.2 2006/09/11 16:19:35 grubba Exp $
+// $Id: IIM.pmod,v 1.3 2006/09/11 16:56:15 grubba Exp $
 //
 // Anders Johansson & Henrik Grubbström
 
@@ -226,16 +226,22 @@ mapping get_information(Stdio.File fd)
 	    int lineno; string line) {
       if (line[0] != '%') continue;
       if (bytes < 0) sscanf(line, "%%BeginPhotoshop: %d", bytes);
-      else if (has_prefix(line, "% ")) {
+      else if (has_prefix(line, "%EndPhotoshop")) {
+	break;
+      } else if (has_prefix(line, "% ")) {
 #if constant(String.hex2string)
 	photoshop_data += String.hex2string(line[2..]);
 #else
 	photoshop_data += Crypto.hex_to_string(line[2..]);
 #endif
 	if (sizeof(photoshop_data) >= bytes) break;
-      }
-      else if (has_prefix(line, "%EndPhotoshop")) {
-	break;
+      } else {
+#if constant(String.hex2string)
+	photoshop_data += String.hex2string(line[1..]);
+#else
+	photoshop_data += Crypto.hex_to_string(line[1..]);
+#endif
+	if (sizeof(photoshop_data) >= bytes) break;
       }
     }
   } else if (marker == "\xff\xd8") {
