@@ -60,6 +60,7 @@ int signal_connect(string signal, function callback, mixed|void callback_arg,
   struct signal_data *b;
   struct svalue *tmp1,*tmp2;
   GClosure *gc;
+  GQuark det;
   char *detail=NULL;
 
   if (args==2) {
@@ -84,18 +85,11 @@ int signal_connect(string signal, function callback, mixed|void callback_arg,
   gc=g_cclosure_new_swap(G_CALLBACK(pgtk2_signal_func_wrapper),
 		    b,(GClosureNotify)pgtk2_free_signal_data);
   g_closure_set_marshal(gc,pgtk2_marshaller);
-  if (detail) {
-    gchar *new_sig_name;
-
-    new_sig_name=xmalloc(strlen(a)+strlen(detail)+3);
-    strcpy(new_sig_name,a);
-    strcat(new_sig_name,"::");
-    strcat(new_sig_name,detail);
-    id=g_signal_connect_closure(G_OBJECT(THIS->obj),new_sig_name,
-				gc,1);
-    xfree(new_sig_name);
-  } else
-    id=g_signal_connect_closure(G_OBJECT(THIS->obj),a,
+  if (detail)
+    det=g_quark_try_string(detail);
+  else
+    det=0;
+  id=g_signal_connect_closure_by_id(G_OBJECT(THIS->obj),b->signal_id,det,
 				gc,1);
   pgtk2_pop_n_elems(args);
   push_int(id);
