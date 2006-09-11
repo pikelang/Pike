@@ -3,7 +3,7 @@
 // 
 // http://www.iptc.org/IIM/
 //
-// $Id: IIM.pmod,v 1.2 2006/03/02 18:35:42 grubba Exp $
+// $Id: IIM.pmod,v 1.3 2006/09/11 14:43:51 grubba Exp $
 //
 // Anders Johansson & Henrik Grubbström
 
@@ -117,167 +117,192 @@ static int short_value(string str)
   //return (str[1]<<8)|str[0];
 }
 
+static mapping(string:string|array(string)) decode_photoshop_data(string data)
+{
+  mapping(string:string|array(string)) res = ([]);
+
+  // 0x0404 is IPTC IIM
+  array blocks = (data / "8BIM\4\4")[1..];
+  if (!sizeof(blocks)) {
+    werror("No 8BIM/IPTC IIM markers found in data\n");
+    return res;
+  }
+  //werror("blocks: %O\n", blocks);
+  foreach(blocks, string block) {
+    //werror("block: %O\n", String.string2hex(block));
+    if (sizeof(block) < 6) {
+      werror("Malformed 8BIM block\n");
+      continue;
+    }
+
+    string block_type_2 = block[..3];
+    //werror("block_type_2: %O\n", block_type_2);
+    int block_length = short_value(block[4..5]);
+
+    string info = block[6..5 + block_length];
+
+#if 0
+    werror("block_length: %O\n"
+	   "actual length: %O\n"
+	   "info: %O\n", block_length, sizeof(info), info);
+#endif /* 0 */
+
+    while (sizeof(info)) {
+      if (sizeof(info) < 6) {
+	//werror("Short info %O\n", info);
+	break;
+      }
+      int segment_marker = info[0];
+      int record_set = info[1];
+      int id = info[2];
+      int size = short_value(info[3..4]);
+      string data = info[5..size+5-1];
+      info = info[size+5..];
+
+      if (segment_marker != '\x1c') {
+	if (segment_marker == '\x6f') {
+	  // I have not found any documentation for this segment,
+	  // but I use it to detect Nyhedstjeneste.
+	  if ((record_set == 110) && (!id)) {
+	    res->charset = ({ "iso-8859-1" });
+	    continue;
+	  }
+	}
+#if 1
+	werror("Unknown segment marker: 0x%02x\n"
+	       "record_set: %d\n"
+	       "id: %d\n"
+	       "data: %O\n", segment_marker, record_set, id, data);
+#endif /* 1 */
+	break;
+      }
+
+      if (!has_value(indices(fields), record_set)) {
+	werror("Unknown record set marker: %O\n", record_set);
+	break;
+      }
+
+      //werror("%3d: ", id);
+      //werror("%O\n", data);
+      //werror("info: %O\n", String.string2hex(info));
+      string label =
+	fields[record_set][id] ||
+	(string)record_set + ":" + (string)id;
+
+      if (label == "coded character set") {
+	if (data == "\e%5") {
+	  res->charset = (res->charset || ({})) + ({ "iso-8859-1" });
+	}
+      }
+
+      if ((binary_fields[record_set] && binary_fields[record_set][id]) ||
+	  (<3, 7>)[record_set]) {
+	// Decode binary fields.
+	data = (string)Gmp.mpz(data, 256);
+      }
+
+      // werror("RAW: %O:%O\n", label, data);
+
+      if (res[label])
+	res[label] += ({ data });
+      else
+	res[label] = ({ data });
+    }
+  }
+  return res;
+}
 
 mapping get_information(Stdio.File fd)
 {
-  mapping res = ([]);
+  string marker = fd->read(2);
+  string photoshop_data = "";
 
-  string jpeg_marker = fd->read(2);
-  if (jpeg_marker != "\xff\xd8") {
-    //werror("unknown JPEG marker: %O\n", jpeg_marker);
-    return res;
-  }
-
-  // IIMV 4.1 Chapter 3 Section 1.6 (a):
-  //   Record 1:xx shall use coded character set ISO 646 International
-  //   Reference Version or ISO 4873 Default Version.
-  //
-  // IIMV 4.1 Chapter 5 1:90:
-  //   The control functions apply to character oriented DataSets in
-  //   records 2-6. They also apply to record 8, unless the objectdata
-  //   explicitly, or the File Format implicitly, defines character sets
-  //   otherwise.
-  //   [...]
-  //   If 1:90 is omitted, the default for records 2-6 and 8 is ISO 646
-  //   IRV (7 bits) or ISO 4873 DV (8 bits). Record 1 shall always use
-  //   ISO 646 IRV or ISO 4873 DV respectively.
-  //
-  // In practice the above of course isn't true, and it seems
-  // that macintosh encoding is used in place of ISO 4873 DV.
-  //
-  // 1: "iso646irv" or "iso4873dv",
-  //
-  // Most application record fields seem to be encoded
-  // with the macintosh charset.
-  //
-  // This has been verified for the fields:
-  //   "by-line"
-  //   "caption/abstract"
-  //   "city"
-  //   "copyright notice"
-  //   "headline"
-  //   "keywords"
-  //   "object name"
-  //   "source"
-  //   "special instructions"
-  //   "supplemental category"
-  //   "writer/editor"
-  // and is assumed for the remainder.
-  //
-  // Some do however (eg Nyhedstjeneste in Denmark) use ISO-8859-1.
-  //
-  // We attempt some DWIM further down.
-
-  do {
-    string app = fd->read(2);
-    if (sizeof(app) != 2)
-      break;
-    string length_s = fd->read(2);
-    int length;
-    if (sizeof(length_s) == 2)
-      length = short_value(length_s);
-    //werror ("length: %O\n", short_value(length_s));
-
-    if (app == "\xff\xed") // APP14 Photoshop
-    {
-      string data = fd->read(length-2);
-      //werror("data: %O\n", data);
-
-      // 0x0404 is IPTC IIM
-      array blocks = (data / "8BIM\4\4")[1..];
-      if (!sizeof(blocks)) {
-	werror("No 8BIM/IPTC IIM markers found in data\n");
+  if (marker == "%!") {
+    int bytes = -1;
+    // Note: We use the split iterator by hand to make sure '\r' is
+    //       valid as a line terminator.
+    foreach(String.SplitIterator(marker, (<'\r','\n'>), 1,
+				 fd->read_function(8192));
+	    int lineno; string line) {
+      if (line[0] != '%') continue;
+      if (bytes < 0) sscanf(line, "%%BeginPhotoshop: %d", bytes);
+      else if (has_prefix(line, "% ")) {
+	photoshop_data += String.hex2string(line[2..]);
+	if (sizeof(photoshop_data) >= bytes) break;
+      }
+      else if (has_prefix(line, "%EndPhotoshop")) {
 	break;
       }
-      //werror("blocks: %O\n", blocks);
-      foreach(blocks, string block) {
-	//werror("block: %O\n", String.string2hex(block));
-	if (sizeof(block) < 6) {
-	  werror("Malformed 8BIM block\n");
-	  continue;
-	}
-
-	string block_type_2 = block[..3];
-	//werror("block_type_2: %O\n", block_type_2);
-	int block_length = short_value(block[4..5]);
-
-	string info = block[6..5 + block_length];
-
-#if 0
-	werror("block_length: %O\n"
-	       "actual length: %O\n"
-	       "info: %O\n", block_length, sizeof(info), info);
-#endif /* 0 */
-
-	while (sizeof(info)) {
-	  if (sizeof(info) < 6) {
-	    //werror("Short info %O\n", info);
-	    break;
-	  }
-	  int segment_marker = info[0];
-	  int record_set = info[1];
-	  int id = info[2];
-	  int size = short_value(info[3..4]);
-	  string data = info[5..size+5-1];
-	  info = info[size+5..];
-
-	  if (segment_marker != '\x1c') {
-	    if (segment_marker == '\x6f') {
-	      // I have not found any documentation for this segment,
-	      // but I use it to detect Nyhedstjeneste.
-	      if ((record_set == 110) && (!id)) {
-		res->charset = ({ "iso-8859-1" });
-		continue;
-	      }
-	    }
-#if 1
-	    werror("Unknown segment marker: 0x%02x\n"
-		   "record_set: %d\n"
-		   "id: %d\n"
-		   "data: %O\n", segment_marker, record_set, id, data);
-#endif /* 1 */
-	    break;
-	  }
-
-	  if (!has_value(indices(fields), record_set)) {
-	    werror("Unknown record set marker: %O\n", record_set);
-	    break;
-	  }
-
-	  //werror("%3d: ", id);
-	  //werror("%O\n", data);
-	  //werror("info: %O\n", String.string2hex(info));
-	  string label =
-	    fields[record_set][id] ||
-	    (string)record_set + ":" + (string)id;
-
-	  if (label == "coded character set") {
-	    if (data == "\e%5") {
-	      res->charset = (res->charset || ({})) + ({ "iso-8859-1" });
-	    }
-	  }
-
-	  if ((binary_fields[record_set] && binary_fields[record_set][id]) ||
-	      (<3, 7>)[record_set]) {
-	    // Decode binary fields.
-	    data = (string)Gmp.mpz(data, 256);
-	  }
-
-	  // werror("RAW: %O:%O\n", label, data);
-
-	  if (res[label])
-	    res[label] += ({ data });
-	  else
-	    res[label] = ({ data });
-	}
-      }
-      break;
     }
+  } else if (marker == "\xff\xd8") {
+    do {
+      string app = fd->read(2);
+      if (sizeof(app) != 2)
+      break;
+      string length_s = fd->read(2);
+      int length;
+      if (sizeof(length_s) == 2)
+	length = short_value(length_s);
+      //werror ("length: %O\n", short_value(length_s));
 
-    fd->read(length-2);
-  } while (1);
+      string data = fd->read(length-2);
+      if (app == "\xff\xed") // APP14 Photoshop
+      {
+	//werror("data: %O\n", data);
+	photoshop_data = data;
+	break;
+      }
+    } while (1);
+  } else {
+    //werror("unknown marker: %O neither JPEG nor Postscript\n", marker);
+    return ([]);
+  }
+
+  if (!sizeof(photoshop_data)) return ([]);
+
+  mapping res = decode_photoshop_data(photoshop_data);
 
   if (sizeof(res)) {
+    // IIMV 4.1 Chapter 3 Section 1.6 (a):
+    //   Record 1:xx shall use coded character set ISO 646 International
+    //   Reference Version or ISO 4873 Default Version.
+    //
+    // IIMV 4.1 Chapter 5 1:90:
+    //   The control functions apply to character oriented DataSets in
+    //   records 2-6. They also apply to record 8, unless the objectdata
+    //   explicitly, or the File Format implicitly, defines character sets
+    //   otherwise.
+    //   [...]
+    //   If 1:90 is omitted, the default for records 2-6 and 8 is ISO 646
+    //   IRV (7 bits) or ISO 4873 DV (8 bits). Record 1 shall always use
+    //   ISO 646 IRV or ISO 4873 DV respectively.
+    //
+    // In practice the above of course isn't true, and it seems
+    // that macintosh encoding is used in place of ISO 4873 DV.
+    //
+    // 1: "iso646irv" or "iso4873dv",
+    //
+    // Most application record fields seem to be encoded
+    // with the macintosh charset.
+    //
+    // This has been verified for the fields:
+    //   "by-line"
+    //   "caption/abstract"
+    //   "city"
+    //   "copyright notice"
+    //   "headline"
+    //   "keywords"
+    //   "object name"
+    //   "source"
+    //   "special instructions"
+    //   "supplemental category"
+    //   "writer/editor"
+    // and is assumed for the remainder.
+    //
+    // Some do however (eg Nyhedstjeneste in Denmark) use ISO-8859-1.
+    //
+    // We attempt some DWIM...
+
     string charset;
     if (!res->charset) {
       charset = "macintosh";
