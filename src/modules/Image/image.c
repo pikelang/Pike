@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.211 2006/09/11 11:56:26 nilsson Exp $
+|| $Id: image.c,v 1.212 2006/09/12 16:42:50 grubba Exp $
 */
 
 /*
@@ -101,7 +101,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.211 2006/09/11 11:56:26 nilsson Exp $");
+RCSID("$Id: image.c,v 1.212 2006/09/12 16:42:50 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"
@@ -703,9 +703,13 @@ void img_read_cmyk(INT32 args)
 
    while (n--)
    {
-      d->r=COLORMAX-*s1-*s4;
-      d->g=COLORMAX-*s2-*s4;
-      d->b=COLORMAX-*s3-*s4;
+      /* NOTE: The black channel may cause overflows. */
+      int tmp = COLORMAX-*s1-*s4;
+      d->r = (tmp>0)?tmp:0;
+      tmp = COLORMAX-*s2-*s4;
+      d->g = (tmp>0)?tmp:0;
+      tmp = COLORMAX-*s3-*s4;
+      d->b = (tmp>0)?tmp:0;
       s1+=m1;
       s2+=m2;
       s3+=m3;
