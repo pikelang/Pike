@@ -1,9 +1,9 @@
 #pike __REAL_VERSION__
 
-//   $Id: Dims.pmod,v 1.8 2005/10/05 10:19:21 nilsson Exp $
+//   $Id: Dims.pmod,v 1.9 2006/09/13 16:05:43 tor Exp $
 //
 //   Imagedimensionreadermodule for Pike.
-//   Created by Johan Schön, <js@roxen.com>.
+//   Created by Johan Schï¿½n, <js@roxen.com>.
 //
 //   This software is based in part on the work of the Independent JPEG Group.
 
@@ -179,7 +179,111 @@ array(int) get_PNG(Stdio.File f)
   return array_sscanf(f->read(8), "%4c%4c");
 }
 
-//! Read dimensions from a JPEG, GIF or PNG file and return an array
+//! Reads the dimensions from a TIFF file and returns an array with
+//! width and height, or if the file isn't a valid image, 0.
+array(int) get_TIFF(Stdio.File f)
+{
+ int|string buf;
+ int entries;
+ int val = 0;
+ string bo2b;
+ string bo4b;
+ 
+ buf = f->read(2);
+ if(buf == "II") 
+ {
+   /* Byte order for Little endian */
+   bo2b = "%2-c";
+   bo4b = "%4-c";
+ }
+ else if(buf == "MM")
+ {
+   /* Byte order for Big endian */
+   bo2b = "%2c";
+   bo4b = "%4c";
+ }
+ else 
+ {
+   /* Not a TIFF */
+   return 0;
+ }
+ 
+ sscanf(f->read(2), bo2b, buf);
+ if(buf != 42)
+ {
+   /* Wrong magic number */
+   return 0;
+ }
+ 
+ /* offset to first IFD */
+ sscanf(f->read(4), bo4b, buf);
+ f->seek(buf);
+ 
+ /* number of entries */
+ sscanf(f->read(2), bo2b, entries);
+ 
+ for(int i = 0; i < entries; i++) 
+ {
+   sscanf(f->read(2), bo2b, int tag);
+   if(tag == 256 || tag == 257) 
+   {
+     sscanf(f->read(2), bo2b, buf);
+     /* Count value must be one(1) */
+     sscanf(f->read(4), bo4b, int count);
+     if(count == 1) 
+     {
+       if(buf == 3) 
+       {
+	 /* Type short */
+	 sscanf(f->read(2), bo2b, buf);
+	 /* Skip to the end of the entry */
+	 f->seek(f->tell() + 2);
+       }
+       else if(buf == 4)
+       {
+	 /* Type long */
+	 sscanf(f->read(4), bo4b, buf);
+       }
+       else
+       {
+	 /* Wrong type */
+	 return 0;
+       }  
+     
+       if(tag == 256)
+       {
+	 /* ImageWidth */
+	 if(val == 0)
+	   val = buf;
+	 else
+	   return ({buf, val});
+       }
+       else
+       {
+	 /* ImageLength */
+	 if(val == 0)
+	   val = buf;
+	 else
+	   return ({val, buf});
+       }
+     }
+     else
+     {
+       /* Wrong count value */
+       return 0;
+     }
+   }
+   else 
+   {
+     /* Skip to next entry */
+     f->seek(f->tell() + 10);
+   }
+ }
+ /* ImageWidth and ImageLength not found */
+ return 0;
+}
+
+//! Read dimensions from a JPEG, GIF, PNG or TIFF file and return an array
 //! with width and height, or if the file isn't a valid image,
 //! @expr{0@}. The argument @[file] should be file object or the data
 //! from a file. The offset pointer will be assumed to be at the start
@@ -195,7 +299,7 @@ array(int) get_PNG(Stdio.File f)
 //!     @elem int 1
 //!       Image height.
 //!     @elem string 2
-//!       Image type. Any of @expr{"gif"@}, @expr{"png"@} and
+//!       Image type. Any of @expr{"gif"@}, @expr{"png"@}, @expr{"tiff"@} and
 //!       @expr{"jpeg@}.
 //!   @endarray
 array(int) get(string|Stdio.File file) {
@@ -216,12 +320,25 @@ array(int) get(string|Stdio.File file) {
     return array_sscanf(file->read(8), "%4c%4c") + ({ "png" });
 
   default:
-    // JPEG
-    file->seek(file->tell()-6);
-    array ret = get_JPEG(file);
-    if(ret) return ret+({ "jpeg" });
+     string buf;
+     array ret;
+     file->seek(file->tell()-6);
+     buf = file->read(2);
+     file->seek(file->tell()-2);
+     if(buf == "II" || buf== "MM")
+     {
+       ret = get_TIFF(file);
+       if(ret) return ret+({ "tiff" });
+       
+     }
+     else
+     {
+      ret = get_JPEG(file);
+      if(ret) return ret+({ "jpeg" });
+     }
+     
     if(!fn) return 0;
     file = Stdio.File(fn);
-    if(file) return get(file);
+    if(file) return get(file);   
   }
 }
