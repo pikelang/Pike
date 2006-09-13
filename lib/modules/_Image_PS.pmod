@@ -32,6 +32,48 @@ object decode( string data, mapping|void options )
   if(data[0..3] != "%!PS")
     error("This is not a postscript file!\n");
 
+  if (has_prefix(data, "%!PS-Adobe-3.0 EPSF-3.0")) {
+    int width, height, bits, ncols;
+    int nbws, width2, unknown;
+    string init_tag;
+    if ((sscanf(data,
+		"%*s%%ImageData:%*[ ]%d%*[ ]%d%*[ ]%d%*[ ]%d%"
+		"*[ ]%d%*[ ]%d%*[ ]%d%*[ ]\"%s\"",
+		width, height, bits, ncols, 
+		nbws, width2, unknown, init_tag) > 7) &&
+	(width == width2) && (width > 0) && (height > 0) && (bits == 8)) {
+      // Image data present.
+      int len;
+      string term;
+      string raw;
+      if ((sscanf(data, "%*s%%%%BeginBinary:%*[ ]%d%[\r\n]%s",
+		  len, term, raw) == 5) &&
+	  (len>0) && has_prefix(raw, init_tag + term)) {
+	raw = raw[sizeof(init_tag+term)..len-1];
+	if (sizeof(raw) == width*height*(ncols+nbws)) {
+	  array(string) rows = raw/width;
+	  if (ncols) {
+	    array(string) channels = allocate(ncols, "");
+	    int c;
+	    for (c = 0; c < ncols; c++) {
+	      int i;
+	      for (i = c; i < sizeof(rows); i += ncols+nbws) {
+		channels[c] += rows[i];
+	      }
+	    }
+	    return Image.Image(width, height, "cmyk", @channels);
+	  }
+	  string grey = "";
+	  int i;
+	  for(i = ncols; i < sizeof(rows); i += ncols+nbws) {
+	    grey += rows[i];
+	  }
+	  return Image.Image(width, height, "rgb", grey, grey, grey);
+	}
+      }
+    }
+  }
+
   if(!options) options = ([]);
   int llx, lly;
   int urx, ury;
