@@ -29,19 +29,32 @@ static string find_in_path( string file )
 //!   @endmapping
 object decode( string data, mapping|void options )
 {
+  if(has_prefix(data, "\xc5\xd0\xd3\xc6")) {
+    // DOS EPS Binary Header.
+    int ps_start, ps_len, meta_start, meta_len, tiff_start, tiff_len, sum;
+    sscanf(data, "%*4c%-4c%-4c%-4c%-4c%-4c%-4c%-2c",
+	   ps_start, ps_len, meta_start, meta_len, tiff_start, tiff_len, sum);
+#if constant(Image.TIFF.decode)
+    if (tiff_start && tiff_len) {
+      return Image.TIFF.decode(data[tiff_start..tiff_start + tiff_len-1]);
+    }
+#endif
+    data = data[ps_start..ps_start+ps_len-1];
+  }
   if(data[0..3] != "%!PS")
     error("This is not a postscript file!\n");
 
   if (has_prefix(data, "%!PS-Adobe-3.0 EPSF-3.0")) {
     int width, height, bits, ncols;
-    int nbws, width2, unknown;
+    int nbws, width2, encoding;
     string init_tag;
     if ((sscanf(data,
 		"%*s%%ImageData:%*[ ]%d%*[ ]%d%*[ ]%d%*[ ]%d%"
 		"*[ ]%d%*[ ]%d%*[ ]%d%*[ ]\"%s\"",
 		width, height, bits, ncols, 
-		nbws, width2, unknown, init_tag) > 7) &&
-	(width == width2) && (width > 0) && (height > 0) && (bits == 8)) {
+		nbws, width2, encoding, init_tag) > 7) &&
+	(width == width2) && (width > 0) && (height > 0) && (bits == 8) &&
+	(< 1, 2 >)[encoding]) {
       // Image data present.
       int len;
       string term;
@@ -50,9 +63,20 @@ object decode( string data, mapping|void options )
 		  len, term, raw) == 5) &&
 	  (len>0) && has_prefix(raw, init_tag + term)) {
 	raw = raw[sizeof(init_tag+term)..len-1];
+	if (encoding == 2) {
+	  // Decode the hex data.
+#if constant(String.hex2string)
+	  raw = String.hex2string(raw - term);
+#else
+	  raw += Crypto.hex_to_string(raw - term);
+#endif
+	  werror("raw: %d bytes. Expected: %d bytes.\n",
+		 sizeof(raw), width*height*(ncols+nbws));
+	}
 	if (sizeof(raw) == width*height*(ncols+nbws)) {
 	  array(string) rows = raw/width;
-	  if (ncols) {
+	  if ((<3,4>)[ncols]) {
+	    // RGB or CMYK image.
 	    array(string) channels = allocate(ncols, "");
 	    int c;
 	    for (c = 0; c < ncols; c++) {
@@ -60,6 +84,9 @@ object decode( string data, mapping|void options )
 	      for (i = c; i < sizeof(rows); i += ncols+nbws) {
 		channels[c] += rows[i];
 	      }
+	    }
+	    if (ncols == 3) {
+	      return Image.Image(width, height, "rgb", @channels);
 	    }
 	    return Image.Image(width, height, "cmyk", @channels);
 	  }
