@@ -1,5 +1,5 @@
 /*
- * $Id: sql_util.pmod,v 1.13 2006/08/15 14:39:23 grubba Exp $
+ * $Id: sql_util.pmod,v 1.14 2006/09/14 12:44:46 nilsson Exp $
  *
  * Some SQL utility functions.
  * They are kept here to avoid circular references.
@@ -65,7 +65,7 @@ string emulate_bindings(string query, mapping(string|int:mixed)|void bindings,
 //! Useful for eg Mysql connections which have been set to utf8-mode
 //! using eg @expr{"SET NAMES 'utf8'"@}.
 class UnicodeWrapper (
-		      //! The wrapped result object.
+		      // The wrapped result object.
 		      static object master_result
 		      )
 {
