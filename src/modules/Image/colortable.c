@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colortable.c,v 1.119 2004/03/05 23:04:02 nilsson Exp $
+|| $Id: colortable.c,v 1.120 2006/09/14 12:36:04 nilsson Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 /* #define COLORTABLE_REDUCE_DEBUG */
 /* #define CUBICLE_DEBUG */
 
-RCSID("$Id: colortable.c,v 1.119 2004/03/05 23:04:02 nilsson Exp $");
+RCSID("$Id: colortable.c,v 1.120 2006/09/14 12:36:04 nilsson Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -640,6 +640,12 @@ static struct nct_flat _img_reduce_number_of_colors(struct nct_flat flat,
 
    i = reduce_recurse(flat.entries,newe, flat.numentries, maxcols, 0, sf,
 		      pos, space, NCT_REDUCE_WEIGHT);
+   if( i==0 )
+   {
+     free(newe);
+     return flat;
+   }
+
 
    free(flat.entries);
 
