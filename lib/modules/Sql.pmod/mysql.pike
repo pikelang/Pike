@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.20 2006/09/15 13:13:26 mast Exp $
+ * $Id: mysql.pike,v 1.21 2006/09/15 14:28:02 mast Exp $
  *
  * Glue for the Mysql-module
  */
@@ -611,7 +611,7 @@ Mysql.mysql_result big_query (string query,
 			 "and the MySQL server doesn't support UTF-8: %s\n",
 			 describe_error (err));
 	else
-	  throw err;
+	  throw (err);
       }
       send_charset = new_send_charset;
     }
