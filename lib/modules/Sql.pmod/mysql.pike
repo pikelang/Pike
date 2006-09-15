@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.24 2006/08/22 11:24:16 grubba Exp $
+ * $Id: mysql.pike,v 1.25 2006/09/15 13:11:24 mast Exp $
  *
  * Glue for the Mysql-module
  */
@@ -17,9 +17,15 @@ inherit Mysql.mysql;
 #define LATIN1_UNICODE_ENCODE_MODE 2 // Unicode encode mode with latin1 charset
 #define UTF8_UNICODE_ENCODE_MODE 4 // Unicode encode mode with utf8 charset
 
-// Set to the above if the connection is in utf8-mode. Enable latin1
-// unicode encode mode by default; it should be compatible with
-// earlier pike versions.
+#ifdef MYSQL_CHARSET_DEBUG
+#define CH_DEBUG(X...)	werror("Sql.mysql: " + X)
+#else
+#define CH_DEBUG(X...)
+#endif
+
+// Set to the above if the connection is requested to be in one of the
+// unicode modes. latin1 unicode encode mode is enabled by default; it
+// should be compatible with earlier pike versions.
 static int utf8_mode;
 
 // The charset, either "latin1" or "utf8", currently assigned to
@@ -35,16 +41,20 @@ static void update_unicode_encode_mode_from_charset (string charset)
       utf8_mode |= LATIN1_UNICODE_ENCODE_MODE;
       utf8_mode &= ~UTF8_UNICODE_ENCODE_MODE;
       send_charset = "latin1";
+      CH_DEBUG ("Entering latin1 encode mode.\n");
       break;
     case "unicode":
       utf8_mode |= UTF8_UNICODE_ENCODE_MODE;
       utf8_mode &= ~LATIN1_UNICODE_ENCODE_MODE;
       send_charset = "utf8";
+      CH_DEBUG ("Entering unicode encode mode.\n");
       break;
     default:
       // Wrong charset - the mode can't be used.
       utf8_mode |= LATIN1_UNICODE_ENCODE_MODE|UTF8_UNICODE_ENCODE_MODE;
       send_charset = 0;
+      CH_DEBUG ("Not entering latin1/unicode encode mode "
+		"due to incompatible charset %O.\n", charset);
       break;
   }
 }
@@ -112,6 +122,7 @@ int(0..1) set_unicode_encode_mode (int enable)
   else {
     utf8_mode &= ~(LATIN1_UNICODE_ENCODE_MODE|UTF8_UNICODE_ENCODE_MODE);
     send_charset = 0;
+    CH_DEBUG("Disabling unicode encode mode.\n");
   }
   return !!send_charset;
 }
@@ -154,10 +165,12 @@ void set_unicode_decode_mode (int enable)
 //!   @[set_unicode_encode_mode]
 {
   if (enable) {
+    CH_DEBUG("Enabling unicode decode mode.\n");
     ::big_query ("SET character_set_results = utf8");
     utf8_mode |= UNICODE_DECODE_MODE;
   }
   else {
+    CH_DEBUG("Disabling unicode decode mode.\n");
     ::big_query ("SET character_set_results = " + get_charset());
     utf8_mode &= ~UNICODE_DECODE_MODE;
   }
@@ -239,6 +252,8 @@ void set_charset (string charset)
 //!   @[get_charset], @[set_unicode_encode_mode], @[set_unicode_decode_mode]
 {
   charset = lower_case (charset);
+
+  CH_DEBUG("Setting charset to %O.\n", charset);
 
   ::set_charset (charset == "unicode" ? "utf8" : charset);
 
@@ -550,8 +565,11 @@ Mysql.mysql_result big_query (string query,
   if (charset) {
     restore_charset = send_charset || get_charset();
     if (charset != restore_charset) {
+      CH_DEBUG ("Switching charset from %O to %O (due to charset arg).\n",
+		restore_charset, charset);
       ::big_query ("SET character_set_client=" + charset);
-      ::big_query ("SET character_set_connection=" + charset);
+      /* Can't be changed automatically - has side effects. /mast */
+      /* ::big_query("SET character_set_connection=" + charset); */
     } else
       restore_charset = 0;
   }
@@ -563,6 +581,7 @@ Mysql.mysql_result big_query (string query,
       if (String.width (query) == 8)
 	new_send_charset = "latin1";
       else {
+	CH_DEBUG ("Converting (mysql-)latin1 query to utf8.\n");
 	query = utf8_encode_query (query, latin1_to_utf8);
 	new_send_charset = "utf8";
       }
@@ -572,26 +591,34 @@ Mysql.mysql_result big_query (string query,
       if (_can_send_as_latin1 (query))
 	new_send_charset = "latin1";
       else {
+	CH_DEBUG ("Converting query to utf8.\n");
 	query = utf8_encode_query (query, string_to_utf8);
 	new_send_charset = "utf8";
       }
     }
 
     if (new_send_charset != send_charset) {
-      mixed err;
-      if (err = catch {
-	  ::big_query("SET character_set_client=" + new_send_charset);
-	  ::big_query("SET character_set_connection=" + new_send_charset);
-	}) {
+      CH_DEBUG ("Switching charset from %O to %O.\n",
+		send_charset, new_send_charset);
+      if (mixed err = catch {
+	  ::big_query ("SET character_set_client=" + new_send_charset);
+	  /* Can't be changed automatically - has side effects. /mast */
+	  /* ::big_query("SET character_set_connection=" +
+	     new_send_charset); */
+	  }) {
 	if (new_send_charset == "utf8")
 	  predef::error ("The query is a wide string "
 			 "and the MySQL server doesn't support UTF-8: %s\n",
 			 describe_error (err));
-	throw(err);
+	else
+	  throw err;
       }
       send_charset = new_send_charset;
     }
   }
+
+  CH_DEBUG ("Sending query with charset %O: %O.\n",
+	    charset || send_charset, query);
 
   int|object res = ::big_query(query);
 
@@ -599,14 +626,17 @@ Mysql.mysql_result big_query (string query,
     if (send_charset && (<"latin1", "utf8">)[charset])
       send_charset = charset;
     else {
-      ::big_query("SET character_set_client=" + restore_charset);
-      ::big_query("SET character_set_connection=" + restore_charset);
+      CH_DEBUG ("Restoring charset %O.\n", restore_charset);
+      ::big_query ("SET character_set_client=" + restore_charset);
+      /* Can't be changed automatically - has side effects. /mast */
+      /* ::big_query("SET character_set_connection=" + restore_charset); */
     }
   }
 
   if (!objectp(res)) return res;
 
   if (utf8_mode & UNICODE_DECODE_MODE) {
+    CH_DEBUG ("Using UnicodeWrapper for result.\n");
     return .sql_util.UnicodeWrapper(res);
   }
   return res;
