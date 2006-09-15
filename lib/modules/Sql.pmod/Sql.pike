@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.78 2005/10/05 07:55:08 nilsson Exp $
+ * $Id: Sql.pike,v 1.79 2006/09/15 12:27:11 mast Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -284,6 +284,48 @@ void create(string|object host, void|string|mapping(string:int|string) db,
   decode_datetime = master_sql->decode_datetime || .sql_util.fallback;
 }
 
+void set_charset (string charset)
+//! Changes the charset that the connection uses for queries and
+//! returned text strings.
+//!
+//! @param charset
+//!   The charset to use. The valid values and their meanings depends
+//!   on the database brand. However, the special value
+//!   @expr{"unicode"@} (if supported) selects a mode where the query
+//!   and result strings are unencoded (and possibly wide) unicode
+//!   strings.
+//!
+//! @throws
+//!   An error is thrown if the connection doesn't support the
+//!   specified charset, or doesn't support charsets being set this
+//!   way at all.
+//!
+//! @note
+//!   See the @expr{set_charset@} functions for each database
+//!   connection type for further details about the effects on the
+//!   connection.
+//!
+//! @seealso
+//!   @[get_charset], @[Sql.mysql.set_charset]
+{
+  if (!master_sql->set_charset)
+    predef::error ("This database connection does not "
+		   "support charset switching.\n");
+  master_sql->set_charset (charset);
+}
+
+string get_charset()
+//! Returns the (database dependent) name of the charset used for (at
+//! least) query strings. Returns zero if the connection doesn't
+//! support charsets this way (typically means that a call to
+//! @[set_charset] will throw an error).
+//!
+//! @seealso
+//!   @[set_charset], @[Sql.mysql.get_charset]
+{
+  return master_sql->get_charset && master_sql->get_charset();
+}
+
 static string _sprintf(int type, mapping|void flags)
 {
   if(type=='O' && master_sql && master_sql->_sprintf)
@@ -387,12 +429,8 @@ private array(string|mapping(string|int:mixed))
 //!     the variable is used.
 //!
 //! @code
-//! mixed err = catch {
-//!   query("SELECT foo FROM bar WHERE gazonk=:baz",
-//!     ([":baz":"value"]));
-//! };
-//! if(!intp(err)) 
-//!   werror("An error occured.");
+//! res = query("SELECT foo FROM bar WHERE gazonk=:baz",
+//!             ([":baz":"value"]));
 //! @endcode
 //!
 //!     Binary values (BLOBs) may need to be placed in multisets.
@@ -402,7 +440,7 @@ private array(string|mapping(string|int:mixed))
 //!     quoted.
 //!
 //! @code
-//! query("select foo from bar where gazonk=%s","value") )
+//! res = query("select foo from bar where gazonk=%s","value");
 //! @endcode
 //!   @endol
 //!
