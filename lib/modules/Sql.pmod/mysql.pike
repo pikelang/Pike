@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.31 2006/09/15 13:08:50 mast Exp $
+ * $Id: mysql.pike,v 1.32 2006/09/15 14:28:03 mast Exp $
  *
  * Glue for the Mysql-module
  */
@@ -608,7 +608,7 @@ int decode_datetime (string timestr)
 			 "and the MySQL server doesn't support UTF-8: %s\n", \
 			 describe_error (err));				\
 	else								\
-	  throw err;							\
+	  throw (err);							\
       }									\
       send_charset = new_send_charset;					\
     }									\
