@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.30 2006/08/22 11:27:08 grubba Exp $
+ * $Id: mysql.pike,v 1.31 2006/09/15 13:08:50 mast Exp $
  *
  * Glue for the Mysql-module
  */
@@ -16,7 +16,6 @@ inherit Mysql.mysql;
 #define UNICODE_DECODE_MODE	1 // Unicode decode mode
 #define LATIN1_UNICODE_ENCODE_MODE 2 // Unicode encode mode with latin1 charset
 #define UTF8_UNICODE_ENCODE_MODE 4 // Unicode encode mode with utf8 charset
-#define BINARY_LATIN1_MODE 8 // Don't special-case latin1 control chars
 
 #ifdef MYSQL_CHARSET_DEBUG
 #define CH_DEBUG(X...)	werror("Sql.mysql: " + X)
@@ -24,15 +23,15 @@ inherit Mysql.mysql;
 #define CH_DEBUG(X...)
 #endif
 
-// Set to the above if the connection is in utf8-mode. Enable latin1
-// unicode encode mode by default; it should be compatible with
-// earlier pike versions.
+// Set to the above if the connection is requested to be in one of the
+// unicode modes. latin1 unicode encode mode is enabled by default; it
+// should be compatible with earlier pike versions.
 static int utf8_mode;
 
 // The charset, either "latin1" or "utf8", currently assigned to
-// character_set_client and character_set_connection when unicode
-// encode mode is enabled. Zero when the connection charset has been
-// set to something else than "latin1" or "unicode".
+// character_set_client when unicode encode mode is enabled. Zero when
+// the connection charset has been set to something else than "latin1"
+// or "unicode".
 static string send_charset;
 
 static void update_unicode_encode_mode_from_charset (string charset)
@@ -42,19 +41,20 @@ static void update_unicode_encode_mode_from_charset (string charset)
       utf8_mode |= LATIN1_UNICODE_ENCODE_MODE;
       utf8_mode &= ~UTF8_UNICODE_ENCODE_MODE;
       send_charset = "latin1";
-      CH_DEBUG("Entering latin1 mode.\n");
+      CH_DEBUG ("Entering latin1 encode mode.\n");
       break;
     case "unicode":
       utf8_mode |= UTF8_UNICODE_ENCODE_MODE;
       utf8_mode &= ~LATIN1_UNICODE_ENCODE_MODE;
       send_charset = "utf8";
-      CH_DEBUG("Entering utf8 mode.\n");
+      CH_DEBUG ("Entering unicode encode mode.\n");
       break;
     default:
       // Wrong charset - the mode can't be used.
       utf8_mode |= LATIN1_UNICODE_ENCODE_MODE|UTF8_UNICODE_ENCODE_MODE;
       send_charset = 0;
-      CH_DEBUG("Entering other mode.\n");
+      CH_DEBUG ("Not entering latin1/unicode encode mode "
+		"due to incompatible charset %O.\n", charset);
       break;
   }
 }
@@ -68,10 +68,10 @@ int(0..1) set_unicode_encode_mode (int enable)
 //!
 //! Unicode encode mode works as follows: Eight bit strings are sent
 //! as @expr{latin1@} and wide strings are sent using @expr{utf8@}.
-//! @[big_query] sends @expr{SET character_set_client@} and @expr{SET
-//! character_set_connection@} statements as necessary to update the
-//! charset on the server side. If the server doesn't support that
-//! then it fails, but the wide string query would fail anyway.
+//! @[big_query] sends @expr{SET character_set_client@} statements as
+//! necessary to update the charset on the server side. If the server
+//! doesn't support that then it fails, but the wide string query
+//! would fail anyway.
 //!
 //! To make this transparent, string literals with introducers (e.g.
 //! @expr{_binary 'foo'@}) are excluded from the UTF-8 encoding. This
@@ -105,12 +105,6 @@ int(0..1) set_unicode_encode_mode (int enable)
 //!   will get UTF-8 encoded by the server.
 //!
 //! @note
-//!   When unicode encode mode is enabled, the connection charset
-//!   will mirror the client charset. This is necessary for unicode
-//!   characters to survive for wide queries, and for binary data
-//!   to survive for narrow queries in a transparent manner.
-//!
-//! @note
 //!   When unicode encode mode is enabled and the connection charset
 //!   is @expr{latin1@}, the charset accepted by @[big_query] is not
 //!   quite Unicode since @expr{latin1@} is based on @expr{cp1252@}.
@@ -123,10 +117,9 @@ int(0..1) set_unicode_encode_mode (int enable)
 //! @seealso
 //!   @[set_unicode_decode_mode], @[set_charset]
 {
-  if (enable) {
-    CH_DEBUG("Enabling unicode encode mode.\n");
+  if (enable)
     update_unicode_encode_mode_from_charset (lower_case (get_charset()));
-  } else {
+  else {
     utf8_mode &= ~(LATIN1_UNICODE_ENCODE_MODE|UTF8_UNICODE_ENCODE_MODE);
     send_charset = 0;
     CH_DEBUG("Disabling unicode encode mode.\n");
@@ -334,7 +327,6 @@ string quote(string s)
 string latin1_to_utf8 (string s)
 //! Converts a string in MySQL @expr{latin1@} format to UTF-8.
 {
-  CH_DEBUG("Converting latin1 query to utf8.\n");
   return string_to_utf8 (replace (s, ([
     "\x80": "\u20AC", /*"\x81": "\u0081",*/ "\x82": "\u201A", "\x83": "\u0192",
     "\x84": "\u201E", "\x85": "\u2026", "\x86": "\u2020", "\x87": "\u2021",
@@ -569,10 +561,12 @@ int decode_datetime (string timestr)
   string restore_charset;						\
   if (charset) {							\
     restore_charset = send_charset || get_charset();			\
-    CH_DEBUG("Restore charset is %O.\n", restore_charset);		\
     if (charset != restore_charset) {					\
-      ::big_query("SET character_set_client=" + charset);		\
-      ::big_query("SET character_set_connection=" + charset);		\
+      CH_DEBUG ("Switching charset from %O to %O (due to charset arg).\n", \
+		restore_charset, charset);				\
+      ::big_query ("SET character_set_client=" + charset);		\
+      /* Can't be changed automatically - has side effects. /mast */	\
+      /* ::big_query("SET character_set_connection=" + charset); */	\
     } else								\
       restore_charset = 0;						\
   }									\
@@ -584,6 +578,7 @@ int decode_datetime (string timestr)
       if (String.width (query) == 8)					\
 	new_send_charset = "latin1";					\
       else {								\
+	CH_DEBUG ("Converting (mysql-)latin1 query to utf8.\n");	\
 	query = utf8_encode_query (query, latin1_to_utf8);		\
 	new_send_charset = "utf8";					\
       }									\
@@ -593,31 +588,34 @@ int decode_datetime (string timestr)
       if (_can_send_as_latin1 (query))					\
 	new_send_charset = "latin1";					\
       else {								\
+	CH_DEBUG ("Converting query to utf8.\n");			\
 	query = utf8_encode_query (query, string_to_utf8);		\
 	new_send_charset = "utf8";					\
       }									\
     }									\
-    CH_DEBUG("New send charset is %O.\n", new_send_charset);		\
 									\
     if (new_send_charset != send_charset) {				\
-      CH_DEBUG("Send charset was %O.\n", send_charset);			\
+      CH_DEBUG ("Switching charset from %O to %O.\n",			\
+		send_charset, new_send_charset);			\
       if (mixed err = catch {						\
-	  ::big_query("SET character_set_client=" + new_send_charset);	\
-	  ::big_query("SET character_set_connection=" +			\
-		      new_send_charset);				\
+	  ::big_query ("SET character_set_client=" + new_send_charset);	\
+	  /* Can't be changed automatically - has side effects. /mast */ \
+	  /* ::big_query("SET character_set_connection=" +		\
+	     new_send_charset); */					\
 	  }) {								\
 	if (new_send_charset == "utf8")					\
 	  predef::error ("The query is a wide string "			\
 			 "and the MySQL server doesn't support UTF-8: %s\n", \
-			 describe_error(err));				\
+			 describe_error (err));				\
 	else								\
-	  throw(err);							\
+	  throw err;							\
       }									\
       send_charset = new_send_charset;					\
     }									\
   }									\
 									\
-  CH_DEBUG("Sending query %O.\n", query);				\
+  CH_DEBUG ("Sending query with charset %O: %O.\n",			\
+	    charset || send_charset, query);				\
 									\
   int|object res = ::do_query(query);					\
 									\
@@ -625,16 +623,17 @@ int decode_datetime (string timestr)
     if (send_charset && (<"latin1", "utf8">)[charset])			\
       send_charset = charset;						\
     else {								\
-      CH_DEBUG("Restoring charset to %O.\n", restore_charset);		\
-      ::big_query("SET character_set_client=" + restore_charset);	\
-      ::big_query("SET character_set_connection=" + restore_charset);	\
+      CH_DEBUG ("Restoring charset %O.\n", restore_charset);		\
+      ::big_query ("SET character_set_client=" + restore_charset);	\
+      /* Can't be changed automatically - has side effects. /mast */	\
+      /* ::big_query("SET character_set_connection=" + restore_charset); */ \
     }									\
   }									\
 									\
   if (!objectp(res)) return res;					\
 									\
   if (utf8_mode & UNICODE_DECODE_MODE) {				\
-    CH_DEBUG("Adding UnicodeWrapper.\n");				\
+    CH_DEBUG ("Using UnicodeWrapper for result.\n");			\
     return .sql_util.UnicodeWrapper(res);				\
   }									\
   return res;
