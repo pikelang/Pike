@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.85 2005/11/26 03:14:06 nilsson Exp $
+ * $Id: Sql.pike,v 1.86 2006/09/15 12:19:30 mast Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -399,12 +399,8 @@ static array(string|mapping(string|int:mixed))
 //!     the variable is used.
 //!
 //! @code
-//! mixed err = catch {
-//!   query("SELECT foo FROM bar WHERE gazonk=:baz",
-//!     ([":baz":"value"]));
-//! };
-//! if(err)
-//!   werror("An error occured.");
+//! res = query("SELECT foo FROM bar WHERE gazonk=:baz",
+//!             ([":baz":"value"]));
 //! @endcode
 //!
 //!     Binary values (BLOBs) may need to be placed in multisets.
@@ -414,7 +410,7 @@ static array(string|mapping(string|int:mixed))
 //!     quoted.
 //!
 //! @code
-//! query("select foo from bar where gazonk=%s","value") )
+//! res = query("select foo from bar where gazonk=%s","value");
 //! @endcode
 //!   @endol
 //!
