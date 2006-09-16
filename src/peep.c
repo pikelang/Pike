@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.109 2006/09/16 15:55:47 grubba Exp $
+|| $Id: peep.c,v 1.110 2006/09/16 16:50:08 grubba Exp $
 */
 
 #include "global.h"
@@ -71,8 +71,6 @@ void init_bytecode(void)
 {
   initialize_buf(&instrbuf);
   num_instrs = 0;
-  initialize_buf(&instrstack);
-  stack_depth = 0;
 }
 
 void exit_bytecode(void)
@@ -92,13 +90,6 @@ void exit_bytecode(void)
   }
   
   toss_buffer(&instrbuf);
-#ifdef PIKE_DEBUG
-  if (instrstack.s.len) {
-    Pike_fatal("PEEP: %d left over instructions on stack.\n",
-	       instrstack.s.len / sizeof(p_instr));
-  }
-#endif
-  toss_buffer(&instrstack);
 }
 
 /* insert_opcode{,0,1,2}() append an opcode to the instrbuf. */
@@ -343,6 +334,9 @@ INT32 assemble(int store_linenumbers)
   uses = jumps + max_label + 2;
   aliases = uses + max_label + 2;
 
+  initialize_buf(&instrstack);
+  stack_depth = 0;
+
   while(relabel)
   {
     /* First do the relabel pass. */
@@ -476,6 +470,15 @@ INT32 assemble(int store_linenumbers)
     relabel = 0;
 #endif /* 1 */
   }
+
+#ifdef PIKE_DEBUG
+  if (instrstack.s.len) {
+    Pike_fatal("PEEP: %d left over instructions on stack.\n",
+	       instrstack.s.len / sizeof(p_instr));
+  }
+#endif
+  toss_buffer(&instrstack);
+  stack_depth = 0;
 
   /* Time to create the actual bytecode. */
 
