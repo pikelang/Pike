@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-// $Id: mkpeep.pike,v 1.41 2004/08/25 11:52:17 grubba Exp $
+// $Id: mkpeep.pike,v 1.42 2006/09/16 15:55:47 grubba Exp $
 
 #define SKIPWHITE(X) sscanf(X, "%*[ \t\n]%s", X)
 
@@ -174,26 +174,38 @@ class Rule {
     int div = search(tokens, ":");
     if(div==-1) err("Syntax error. No source/target delimiter.\n");
     from = tokens[..div-1];
-    to = tokens[div+1..];
-
-    // Count opcodes
-    foreach(from, string ops)
-      if( (<'F', '?'>)[ops[0]] )
-	opcodes++;
 
     post_process();
+
+    // Note: Can't reverse scan until we have counted the opcodes. */
+    reverse_scan(to = tokens[div+1..]);
+  }
+
+  void reverse_scan(array(string) tokens)
+  {
+    /* Adjust to reverse scan. */
+    foreach(tokens; int i; string t) {
+      array(string) tmp = t/"$";
+      if (sizeof(tmp) == 1) continue;
+      foreach(tmp; int j; string expr) {
+	if (!j) continue;
+	sscanf(expr, "%d%s", int num, string rest);
+	tmp[j] = sprintf("%d%s", opcodes - num, rest);
+      }
+      tokens[i] = tmp * "$";
+    }
   }
 
   void post_process() {
     array(string) nt = ({});
 
-    int i;
+    opcodes = 0;
     foreach(from, string t)
       switch(t[0]) {
       case '(':
 	array(string) exprs = explode_comma_expr(t[1..sizeof(t)-2]);
 	foreach(exprs; int x; string expr) {
-	  string arg = sprintf("$%d%c", i, 'a'+x);
+	  string arg = sprintf("$%d%c", opcodes, 'a'+x);
 	  if(arg != expr && sizeof(expr))
 	    nt += ({ sprintf("(%s)==%s", expr, arg) });
 	}
@@ -204,18 +216,20 @@ class Rule {
 	break;
 
       case 'F':
-	i++;
-	nt += ({ t+"==$"+i+"o" });
+	opcodes++;
+	nt += ({ t+"==$"+opcodes+"o" });
 	break;
 
       case '?':
-	i++;
-	nt += ({ "$"+i+"o != -1" });
+	opcodes++;
+	nt += ({ "$"+opcodes+"o != -1" });
 	break;
 
       default:
 	nt += ({ t });
       }
+
+    reverse_scan(nt);
 
     for(int e; e<sizeof(nt); e++)
       if(nt[e]=="!") {
@@ -243,7 +257,6 @@ string treat(string expr)
     if(sscanf(tmp[e], "%d%c%s", num, type, rest)!=3)
       err("Syntax error (3).\n");
 
-    num--;
     switch(type)
     {
     case 'a': tmp[e]="argument("+num+")"+rest; break;
@@ -427,6 +440,8 @@ array(Switch|Breakable) make_switches(array(Rule) data)
       ind += 2;
       array(string) opargs = ({ d->opcodes+", " });
 
+      array(array(string)) ops = ({});
+
       for(int i=0; i<sizeof(d->to); i++)
       {
 	array args=({});
@@ -437,9 +452,10 @@ array(Switch|Breakable) make_switches(array(Rule) data)
 	  args=explode_comma_expr(tmp[1..sizeof(tmp)-2]);
 	  i++;
 	}
-	opargs += ({ sizeof(args)+1+", ", fcode+", " });
-	opargs += map(args,treat)[*]+", ";
+	ops += ({ ({ sizeof(args)+1+", ", fcode+", ",
+		     @map(args,treat)[*]+", " }) });
       }
+      opargs += reverse(ops) * ({});
       buf->add_line(" "*ind+"do_optimization(", opargs, "0);");
 
       buf->add_line( sprintf("%*nreturn 1;", ind) );
@@ -474,13 +490,19 @@ int main(int argc, array(string) argv)
 	argv[1], Calendar.ISO.now()->format_time());
 
   array(Switch) a = [array(Switch)]make_switches(data);
-  if(sizeof(a)!=1 || !a[0]->is_switch) error("Expected one top switch.\n");
+#if 0
+  if(sizeof(a)!=1 || !a[0]->is_switch) {
+    error("Expected one top switch Num: %d.\n", sizeof(a));
+  }
 
   a[0]->make_child_fun();
+#endif
+  a->make_child_fun();
+
   write( functions );
 
   write("INLINE static int low_asm_opt(void) {\n");
-  write( a[0]->get_string(2) );
+  map(a->get_string(2), write);
 
   write("  return 0;\n"
 	"}\n");
