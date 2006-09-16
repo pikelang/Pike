@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.105 2006/08/31 10:10:18 mast Exp $
+|| $Id: mysql.c,v 1.106 2006/09/16 18:19:21 mast Exp $
 */
 
 /*
@@ -1773,7 +1773,7 @@ static void f_set_charset (INT32 args)
     MYSQL_ALLOW();
     res = mysql_set_character_set (socket, charset->str);
     MYSQL_DISALLOW();
-    if (!res) {
+    if (res) {
       const char *err;
       MYSQL_ALLOW();
       err = mysql_error(socket);
