@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-// $Id: mkpeep.pike,v 1.42 2006/09/16 15:55:47 grubba Exp $
+// $Id: mkpeep.pike,v 1.43 2006/09/16 16:39:52 grubba Exp $
 
 #define SKIPWHITE(X) sscanf(X, "%*[ \t\n]%s", X)
 
@@ -490,13 +490,7 @@ int main(int argc, array(string) argv)
 	argv[1], Calendar.ISO.now()->format_time());
 
   array(Switch) a = [array(Switch)]make_switches(data);
-#if 0
-  if(sizeof(a)!=1 || !a[0]->is_switch) {
-    error("Expected one top switch Num: %d.\n", sizeof(a));
-  }
 
-  a[0]->make_child_fun();
-#endif
   a->make_child_fun();
 
   write( functions );
