@@ -489,8 +489,9 @@ string gen()
       prot[f]+")\", OPT_SIDE_EFFECT);\n";
   foreach(sort(indices(constants)), string co) {
     int val = constants[co];
-    if (val >= 1 << 31 || val < -(1 << 31))
-      error("Constant %s = %O out of range 32 bit.", co, val);
+    if ((val & ~0x7fffffff) && ((val & ~0x7fffffff) != ~0x7fffffff))
+      error("Constant %s = %O out of range 32 bit (masked: %O).",
+	    co, val, val & ~0x7fffffff);
     else
       res += "  add_integer_constant(\""+co+"\", "+
 	(string)val+", 0);\n";
