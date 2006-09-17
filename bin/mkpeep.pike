@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-// $Id: mkpeep.pike,v 1.43 2006/09/16 16:39:52 grubba Exp $
+// $Id: mkpeep.pike,v 1.44 2006/09/17 15:53:31 grubba Exp $
 
 #define SKIPWHITE(X) sscanf(X, "%*[ \t\n]%s", X)
 
@@ -455,7 +455,7 @@ array(Switch|Breakable) make_switches(array(Rule) data)
 	ops += ({ ({ sizeof(args)+1+", ", fcode+", ",
 		     @map(args,treat)[*]+", " }) });
       }
-      opargs += reverse(ops) * ({});
+      opargs += ({ sizeof(ops) + ", " }) + reverse(ops) * ({});
       buf->add_line(" "*ind+"do_optimization(", opargs, "0);");
 
       buf->add_line( sprintf("%*nreturn 1;", ind) );

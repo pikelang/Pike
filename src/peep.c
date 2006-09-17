@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.110 2006/09/16 16:50:08 grubba Exp $
+|| $Id: peep.c,v 1.111 2006/09/17 15:53:31 grubba Exp $
 */
 
 #include "global.h"
@@ -56,15 +56,6 @@ static int asm_opt(void);
 /* Output buffer. The optimization eye is at the end of the buffer. */
 dynamic_buffer instrbuf;
 long num_instrs = 0;
-
-/* Stack holding pending instructions.
- * Note that instructions must be pushed in reverse order.
- *
- * FIXME: Consider making the stack fixed size.
- *	/grubba 2006-09-16
- */
-dynamic_buffer instrstack;
-long stack_depth = 0;
 
 
 void init_bytecode(void)
@@ -334,9 +325,6 @@ INT32 assemble(int store_linenumbers)
   uses = jumps + max_label + 2;
   aliases = uses + max_label + 2;
 
-  initialize_buf(&instrstack);
-  stack_depth = 0;
-
   while(relabel)
   {
     /* First do the relabel pass. */
@@ -470,15 +458,6 @@ INT32 assemble(int store_linenumbers)
     relabel = 0;
 #endif /* 1 */
   }
-
-#ifdef PIKE_DEBUG
-  if (instrstack.s.len) {
-    Pike_fatal("PEEP: %d left over instructions on stack.\n",
-	       instrstack.s.len / sizeof(p_instr));
-  }
-#endif
-  toss_buffer(&instrstack);
-  stack_depth = 0;
 
   /* Time to create the actual bytecode. */
 
@@ -803,12 +782,22 @@ INT32 assemble(int store_linenumbers)
 
 /**** Peephole optimizer ****/
 
-static void do_optimization(int topop, ...);
+static void do_optimization(int topop, int topush, ...);
 static INLINE int opcode(int offset);
 static INLINE int argument(int offset);
 static INLINE int argument2(int offset);
 
 #include "peep_engine.c"
+
+#ifndef PEEP_STACK_SIZE
+#define PEEP_STACK_SIZE 256
+#endif
+
+/* Stack holding pending instructions.
+ * Note that instructions must be pushed in reverse order.
+ */
+static long stack_depth = 0;
+static p_instr instrstack[PEEP_STACK_SIZE];
 
 int remove_clear_locals=0x7fffffff;
 static ptrdiff_t eye, len;
@@ -826,11 +815,11 @@ static INLINE p_instr *insopt2(int f, INT32 a, INT32 b,
     Pike_fatal("hasarg2(%d /*%s */) is wrong!\n",f,get_f_name(f));
 #endif
 
-  p=(p_instr *)low_make_buf_space(sizeof(p_instr), &instrstack);
+  p = instrstack + stack_depth++;
 
 #ifdef PIKE_DEBUG
-  if(!instrstack.s.len)
-    Pike_fatal("Low make buf space failed!!!!!!\n");
+  if(stack_depth > PEEP_STACK_SIZE)
+    Pike_fatal("Instructions stacked too high!!!!!!\n");
 #endif
 
   p->opcode=f;
@@ -839,8 +828,6 @@ static INLINE p_instr *insopt2(int f, INT32 a, INT32 b,
 						  cf, "insopt2"));
   p->arg=a;
   p->arg2=b;
-
-  stack_depth++;
 
   return p;
 }
@@ -867,10 +854,6 @@ static INLINE p_instr *insopt0(int f, int cl, struct pike_string *cf)
 #ifdef PIKE_DEBUG
 static void debug(void)
 {
-  if(stack_depth != (long)instrstack.s.len / (long)sizeof(p_instr)) {
-    Pike_fatal("PEEP: instrstack out of whack (%d != %d)\n",
-	       stack_depth, (long)instrstack.s.len / (long)sizeof(p_instr));
-  }
   if (num_instrs != (long)instrbuf.s.len / (long)sizeof(p_instr)) {
     Pike_fatal("PEEP: instrbuf lost count (%d != %d)\n",
 	       num_instrs, (long)instrbuf.s.len / (long)sizeof(p_instr));
@@ -924,16 +907,14 @@ static int advance(void)
   p_instr *p;
   if(stack_depth)
   {
-    p = ((p_instr *)low_make_buf_space(0, &instrstack)) - 1;
-    stack_depth--;
-    instrstack.s.len -= sizeof(p_instr);
+    p = instrstack + --stack_depth;
   }else{
     if (eye >= len) return 0;
     p = instructions + eye;
     eye++;
   }
   insert_opcode(p);
-  dmalloc_touch_named(struct pike_string *, p->file, "advance");
+  debug_malloc_touch_named(p->file, "advance");
   debug();
   return 1;
 }
@@ -958,7 +939,7 @@ static void pop_n_opcodes(int n)
 
 
 /* NOTE: Called with opcodes in reverse order! */
-static void do_optimization(int topop, ...)
+static void do_optimization(int topop, int topush, ...)
 {
   va_list arglist;
   int q=0;
@@ -980,12 +961,22 @@ static void do_optimization(int topop, ...)
   }
 #endif
 
+  if (stack_depth + topush > PEEP_STACK_SIZE) {
+    /* No place left on stack. Ignore the optimization. */
+#ifdef PIKE_DEBUG
+    if (a_flag) {
+      fprintf(stderr, "PEEP stack full.\n");
+    }
+#endif
+    return;
+  }
+
   copy_shared_string(cf,dmalloc_touch_named(struct pike_string *,
 					    instr(0)->file,
 					    "do_optimization"));
   pop_n_opcodes(topop);
 
-  va_start(arglist, topop);
+  va_start(arglist, topush);
   
   while((oplen = va_arg(arglist, int)))
   {
@@ -1034,7 +1025,7 @@ static void do_optimization(int topop, ...)
 #ifdef PIKE_DEBUG
   if(a_flag>5)
   {
-    p_instr *p = (p_instr *)low_make_buf_space(0, &instrstack);
+    p_instr *p = instrstack + stack_depth;
     int e;
     for(e=0;e<q;e++)
     {
@@ -1042,6 +1033,10 @@ static void do_optimization(int topop, ...)
       dump_instr(p-(e+1));
     }
     fprintf(stderr,"\n");
+  }
+  if (q != topush) {
+    Pike_fatal("PEEP: Lost track of instructions to push (%d != %d)\n",
+	       q, topush);
   }
 #endif
 
