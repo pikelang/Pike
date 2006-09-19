@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.cmod,v 1.94 2006/08/09 00:47:49 grendel Exp $
+|| $Id: xml.cmod,v 1.95 2006/09/19 13:35:01 nilsson Exp $
 */
 
 #include "global.h"
@@ -1038,6 +1038,7 @@ PIKECLASS Simple
 #define CHECK_INPUT(INPUT)
 #endif /* PIKE_DEBUG */
 
+
 static inline int xmlread(int z, int line)
 {
   int popped=0;
@@ -1589,7 +1590,7 @@ static void read_attvalue(struct string_builder *X,
 			  p_wchar2 Y,
 			  int keepspace)
 {
-  struct smlinput *input = THIS->input;
+  struct xmlinput *input = THIS->input;
   while(THIS->input)
   {
     if(XMLEOF()) {
