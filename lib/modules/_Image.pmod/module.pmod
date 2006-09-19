@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.34 2006/09/11 12:46:49 grubba Exp $
+// $Id: module.pmod,v 1.35 2006/09/19 12:37:25 grubba Exp $
 
 static constant fmts = ([
   "image/x-pnm" : "PNM",
@@ -71,7 +71,7 @@ mapping _decode( string data )
       if (csum != 65535) {
 	// FIXME: Verify checksum.
       }
-#if constant(Image.TIFF)
+#if constant(Image.TIFF.decode)
       if (tiff_start && tiff_len) {
 	catch {
 	  i = Image.TIFF.decode(data[tiff_start..tiff_start + tiff_len -1]);
