@@ -45,7 +45,7 @@
 // --- Enable run-time error ---
 //#define THROW(X)
 #define THROW(X)        throw(X)
-#define ERROR(X...)     THROW (({sprintf (X), backtrace()}))
+#define ERROR(X...)     predef::error (X)
 // --- Enable profiling ---
 //#define DWRITE_PROF(X,Y)        werror(sprintf("Protocols.LDAP:Profile: "+X,Y))
 #define DWRITE_PROF(X,Y)
