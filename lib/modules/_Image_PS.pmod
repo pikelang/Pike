@@ -88,7 +88,7 @@ object decode( string data, mapping|void options )
 	    if (ncols == 3) {
 	      return Image.Image(width, height, "rgb", @channels);
 	    }
-	    return Image.Image(width, height, "cmyk", @channels);
+	    return Image.Image(width, height, "adjusted_cmyk", @channels);
 	  }
 	  string grey = "";
 	  int i;
