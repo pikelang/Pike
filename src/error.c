@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.147 2006/08/21 18:29:09 grubba Exp $
+|| $Id: error.c,v 1.148 2006/09/20 16:15:55 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -628,6 +628,24 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
  *! Class for exception objects for errors of unspecified type.
  */
 
+/*! @decl string error_message
+ *!
+ *! The error message. It always ends with a newline (@expr{'\n'@})
+ *! character and it might be more than one line.
+ *!
+ *! Code that catches and rethrows errors may extend this with more
+ *! error information.
+ */
+
+/*! @decl array(backtrace_frame|array(mixed)) error_backtrace
+ *!
+ *! The backtrace as returned by @[backtrace] where the error
+ *! occurred.
+ *!
+ *! Code that catches and rethrows errors should ensure that this
+ *! remains the same in the rethrown error.
+ */
+
 #define ERR_DECLARE
 #include "errors.h"
 
@@ -637,7 +655,8 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
  *!
  *! @note
  *!   The only supported type to cast to is @expr{"array"@}, which
- *!   generates and old-style error.
+ *!   generates an old-style error @expr{({@[message](),
+ *!   @[backtrace]()})@}.
  */
 static void f_error_cast(INT32 args)
 {
@@ -646,14 +665,8 @@ static void f_error_cast(INT32 args)
   if(!strncmp(s,"array",5))
   {
     pop_n_elems(args);
-    if(GENERIC_ERROR_THIS->error_message)
-      ref_push_string(GENERIC_ERROR_THIS->error_message);
-    else
-      push_int(0);
-    if(GENERIC_ERROR_THIS->error_backtrace)
-      ref_push_array(GENERIC_ERROR_THIS->error_backtrace);
-    else
-      push_int(0);
+    apply_current (generic_err_message_fun, 0);
+    apply_current (generic_err_backtrace_fun, 0);
     f_aggregate(2);
   }else{
     SIMPLE_BAD_ARG_ERROR("error->cast", 1, "the value \"array\"");
@@ -667,10 +680,9 @@ static void f_error_cast(INT32 args)
  *! Simulates an array
  *! @array
  *!   @elem string msg
- *!     Error message.
+ *!     Error message as returned by @[message].
  *!   @elem array backtrace
- *!     Backtrace as returned by @[backtrace()] from where
- *!     the error occurred.
+ *!     Backtrace as returned by @[backtrace].
  *! @endarray
  *!
  *! @note
@@ -688,17 +700,11 @@ static void f_error_index(INT32 args)
   {
     case 0:
       pop_n_elems(args);
-      if(GENERIC_ERROR_THIS->error_message)
-	ref_push_string(GENERIC_ERROR_THIS->error_message);
-      else
-	push_int(0);
+      apply_current (generic_err_message_fun, 0);
       break;
     case 1:
       pop_n_elems(args);
-      if(GENERIC_ERROR_THIS->error_backtrace)
-	ref_push_array(GENERIC_ERROR_THIS->error_backtrace);
-      else
-	push_int(0);
+      apply_current (generic_err_backtrace_fun, 0);
       break;
     default:
       index_error("error->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
@@ -720,7 +726,13 @@ static void f_error_describe(INT32 args)
 
 /*! @decl string message()
  *!
- *! Return a readable message describing the error.
+ *! Return a readable message describing the error. Normally simply
+ *! returns @[error_message].
+ *!
+ *! If you override this function then you should ensure that
+ *! @[error_message] is included in the returned message, since there
+ *! might be code that catches your error objects, extends
+ *! @[error_message] with more info, and rethrows the error.
  */
 static void f_error_message(INT32 args)
 {
@@ -733,7 +745,8 @@ static void f_error_message(INT32 args)
 
 /*! @decl array backtrace()
  *!
- *! Return the backtrace where the error occurred.
+ *! Return the backtrace where the error occurred. Normally simply
+ *! returns @[error_backtrace].
  *!
  *! @seealso
  *!   @[predef::backtrace()]
@@ -776,7 +789,8 @@ static void f_error__sprintf(INT32 args)
 
 /*! @decl int(0..1) _is_type(string t)
  *!
- *! Claims that the error object is an array.
+ *! Claims that the error object is an array, for compatibility with
+ *! old style error handling code.
  */
 static void f_error__is_type(INT32 args)
 {
@@ -792,7 +806,8 @@ static void f_error__is_type(INT32 args)
   push_int(ret);
 }
 
-/*! @decl void create(string message)
+/*! @decl void create(string message, @
+ *!                   void|array(backtrace_frame|array(mixed)) backtrace)
  */
 static void f_error_create(INT32 args)
 {
