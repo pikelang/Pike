@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.202 2006/09/13 16:36:29 grubba Exp $
+|| $Id: image.c,v 1.203 2006/09/20 13:28:11 grubba Exp $
 */
 
 /*
@@ -101,7 +101,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.202 2006/09/13 16:36:29 grubba Exp $");
+RCSID("$Id: image.c,v 1.203 2006/09/20 13:28:11 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -715,6 +715,78 @@ void img_read_cmyk(INT32 args)
    }
 }
 
+/* Ink colors for C, M, Y & K. */
+#define CMYK_CR	0x00
+#define CMYK_CG	0x9e
+#define CMYK_CB	0xe0
+#define CMYK_MR	0xe2
+#define CMYK_MG	0x00
+#define CMYK_MB	0x7a
+#define CMYK_YR	0xff
+#define CMYK_YG	0xec
+#define CMYK_YB	0x00
+#define CMYK_KR	0x1a
+#define CMYK_KG	0x17
+#define CMYK_KB	0x1b
+void img_read_adjusted_cmyk(INT32 args)
+{
+   int m1,m2,m3,m4;
+   unsigned char *s1,*s2,*s3,*s4;
+   int n=THIS->xsize*THIS->ysize;
+   rgb_group *d,rgb;
+   COLORTYPE k;
+   img_read_get_channel(1,"cyan",args,&m1,&s1,&(rgb.r));
+   img_read_get_channel(2,"magenta",args,&m2,&s2,&(rgb.g));
+   img_read_get_channel(3,"yellow",args,&m3,&s3,&(rgb.b));
+   img_read_get_channel(4,"black",args,&m4,&s4,&k);
+   d=THIS->img=(rgb_group*)xalloc(sizeof(rgb_group)*n+1);
+
+   while (n--)
+   {
+      unsigned char c = *s1;
+      unsigned char m = *s2;
+      unsigned char y = *s3;
+      unsigned char k = *s4;
+      unsigned long tmp;
+      /* Mix the channels multiplicatively. */
+      tmp = 255*255;
+      tmp *= 255*255-(255-CMYK_CR)*c;
+      tmp /= 255*255;
+      tmp *= 255*255-(255-CMYK_MR)*m;
+      tmp /= 255*255;
+      tmp *= 255*255-(255-CMYK_YR)*y;
+      tmp /= 255*255;
+      tmp *= 255*255-(255-CMYK_KR)*k;
+      tmp /= 255*255*255;
+      d->r = tmp;
+      tmp = 255*255;
+      tmp *= 255*255-(255-CMYK_CG)*c;
+      tmp /= 255*255;
+      tmp *= 255*255-(255-CMYK_MG)*m;
+      tmp /= 255*255;
+      tmp *= 255*255-(255-CMYK_YG)*y;
+      tmp /= 255*255;
+      tmp *= 255*255-(255-CMYK_KG)*k;
+      tmp /= 255*255*255;
+      d->g = tmp;
+      tmp = 255*255;
+      tmp *= 255*255-(255-CMYK_CB)*c;
+      tmp /= 255*255;
+      tmp *= 255*255-(255-CMYK_MB)*m;
+      tmp /= 255*255;
+      tmp *= 255*255-(255-CMYK_YB)*y;
+      tmp /= 255*255;
+      tmp *= 255*255-(255-CMYK_KB)*k;
+      tmp /= 255*255*255;
+      d->b = tmp;
+      s1+=m1;
+      s2+=m2;
+      s3+=m3;
+      s4+=m4;
+      d++;
+   }
+}
+
 void img_read_cmy(INT32 args)
 {
    int m1,m2,m3;
@@ -744,7 +816,7 @@ static void image_test(INT32 args);
 
 void image_create_method(INT32 args)
 {
-   static struct pike_string *s_grey,*s_rgb,*s_cmyk,*s_cmy;
+   static struct pike_string *s_grey,*s_rgb,*s_cmyk,*s_adjusted_cmyk,*s_cmy;
    static struct pike_string *s_test,*s_gradients,*s_noise,*s_turbulence,
       *s_random,*s_randomgrey,*s_tuned_box;
    struct image *img;
@@ -758,6 +830,7 @@ void image_create_method(INT32 args)
    MAKE_CONSTANT_SHARED_STRING(s_grey,"grey");
    MAKE_CONSTANT_SHARED_STRING(s_rgb,"rgb");
    MAKE_CONSTANT_SHARED_STRING(s_cmyk,"cmyk");
+   MAKE_CONSTANT_SHARED_STRING(s_adjusted_cmyk,"adjusted_cmyk");
    MAKE_CONSTANT_SHARED_STRING(s_cmy,"cmy");
    MAKE_CONSTANT_SHARED_STRING(s_test,"test");
    MAKE_CONSTANT_SHARED_STRING(s_gradients,"gradients");
@@ -791,9 +864,16 @@ void image_create_method(INT32 args)
       ref_push_object(THISOBJ);
       return;
    }
+   if (sp[-args].u.string==s_adjusted_cmyk)
+   {
+      img_read_adjusted_cmyk(args-1);
+      pop_n_elems(2);
+      ref_push_object(THISOBJ);
+      return;
+   }
    if (sp[-args].u.string==s_cmy)
    {
-      img_read_cmyk(args-1);
+      img_read_cmy(args-1);
       pop_n_elems(2);
       ref_push_object(THISOBJ);
       return;
