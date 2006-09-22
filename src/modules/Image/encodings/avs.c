@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: avs.c,v 1.19 2005/01/23 13:30:04 nilsson Exp $
+|| $Id: avs.c,v 1.20 2006/09/22 10:47:42 grubba Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ void image_avs_f__decode(INT32 args)
   if( w <= 0 || h <= 0)
     Pike_error("This is not an AVS file (w=%d; h=%d)\n", w, h);
 
-  if((size_t)w*h*4+8 > (size_t)s->len)
+  if((size_t)w*h*4+8 != (size_t)s->len)
     Pike_error("This is not an AVS file (w=%d; h=%d; s=%ld)\n",
 	  w, h,
 	  DO_NOT_WARN((long)s->len));
