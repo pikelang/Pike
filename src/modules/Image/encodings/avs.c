@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: avs.c,v 1.17 2004/03/06 00:06:59 nilsson Exp $
+|| $Id: avs.c,v 1.18 2006/09/22 12:30:37 grubba Exp $
 */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 #endif
 
 #include "stralloc.h"
-RCSID("$Id: avs.c,v 1.17 2004/03/06 00:06:59 nilsson Exp $");
+RCSID("$Id: avs.c,v 1.18 2006/09/22 12:30:37 grubba Exp $");
 #include "object.h"
 #include "interpret.h"
 #include "pike_error.h"
@@ -56,7 +56,7 @@ void image_avs_f__decode(INT32 args)
   struct object *io, *ao;
   struct pike_string *s;
   unsigned int c;
-  unsigned int w, h;
+  int w, h;
   unsigned char *q;
   get_all_args( "decode", args, "%S", &s);
   
@@ -64,10 +64,10 @@ void image_avs_f__decode(INT32 args)
   w = q[0]<<24 | q[1]<<16 | q[2]<<8 | q[3];
   h = q[4]<<24 | q[5]<<16 | q[6]<<8 | q[7];
 
-  if( w <= 0 || h <= 0)
+  if( w <= 0 || h <= 0 || (w>>16)*(h>>16))
     Pike_error("This is not an AVS file (w=%d; h=%d)\n", w, h);
 
-  if((size_t)w*h*4+8 > (size_t)s->len)
+  if((size_t)w*h*4+8 != (size_t)s->len)
     Pike_error("This is not an AVS file (w=%d; h=%d; s=%ld)\n",
 	  w, h,
 	  DO_NOT_WARN((long)s->len));
