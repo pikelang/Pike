@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.233 2006/09/20 11:42:26 grubba Exp $
+|| $Id: image.c,v 1.234 2006/09/22 12:27:57 grubba Exp $
 */
 
 /*
@@ -945,9 +945,10 @@ void image_create(INT32 args)
 	
    THIS->xsize=sp[-args].u.integer;
    THIS->ysize=sp[1-args].u.integer;
+#if 0
    if (THIS->xsize<0) THIS->xsize=0;
    if (THIS->ysize<0) THIS->ysize=0;
-
+#endif
    if (image_too_big(THIS->xsize,THIS->ysize)) 
       Pike_error("Image.Image->create(): image too large (>2Gpixels)\n");
 
