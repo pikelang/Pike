@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: avs.c,v 1.20 2006/09/22 10:47:42 grubba Exp $
+|| $Id: avs.c,v 1.21 2006/09/22 12:15:02 grubba Exp $
 */
 
 #include "global.h"
@@ -55,7 +55,7 @@ void image_avs_f__decode(INT32 args)
   struct object *io, *ao;
   struct pike_string *s;
   unsigned int c;
-  unsigned int w, h;
+  int w, h;
   unsigned char *q;
   get_all_args( "decode", args, "%S", &s);
   
@@ -63,7 +63,8 @@ void image_avs_f__decode(INT32 args)
   w = q[0]<<24 | q[1]<<16 | q[2]<<8 | q[3];
   h = q[4]<<24 | q[5]<<16 | q[6]<<8 | q[7];
 
-  if( w <= 0 || h <= 0)
+  /* Check for under and overflow. */
+  if ((w <= 0) || (h <= 0) || (w>>16)*(h>>16))
     Pike_error("This is not an AVS file (w=%d; h=%d)\n", w, h);
 
   if((size_t)w*h*4+8 != (size_t)s->len)
