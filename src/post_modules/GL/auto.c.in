@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.53 2006/01/04 20:09:37 grendel Exp $
+|| $Id: auto.c.in,v 1.54 2006/09/27 19:03:12 marcus Exp $
 */
 
 #include "global.h"
@@ -216,6 +216,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
       if( v->type == T_OBJECT &&
 	  (stor_mem = (void *)get_storage( v->u.object, shm_program ) ) )
       {
+	INT_TYPE x=0, y=0, row=0;
 	if( (v=simple_mapping_string_lookup(a->u.mapping, "mem_w" )) )
 	  img->width = v->u.integer;
 	else
@@ -235,8 +236,20 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
 	img->pixels = stor_mem->p;
 	if( (v=simple_mapping_string_lookup(a->u.mapping, "mem_offset" )) )
 	  img->pixels = (char *)img->pixels + v->u.integer;
+	if( (v=simple_mapping_string_lookup(a->u.mapping, "mem_x" )) )
+	  x = v->u.integer;
+	if( (v=simple_mapping_string_lookup(a->u.mapping, "mem_y" )) )
+	  y = v->u.integer;
+	if( (v=simple_mapping_string_lookup(a->u.mapping, "mem_row" )) )
+	  row = v->u.integer;
 	if(!img_inited)
 	  img_init();
+	if(x != 0 || y != 0 || row != 0) {
+	  glPixelStorei(GL_UNPACK_ROW_LENGTH, row);
+	  glPixelStorei(GL_UNPACK_SKIP_ROWS, y);
+	  glPixelStorei(GL_UNPACK_SKIP_PIXELS, x);
+	  img_inited = 0; /* Need to reset these later... */
+	}
 	return;
       }
     }
