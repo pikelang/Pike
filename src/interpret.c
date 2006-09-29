@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.300 2004/09/30 15:38:48 mast Exp $
+|| $Id: interpret.c,v 1.301 2006/09/29 14:49:19 stewa Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.300 2004/09/30 15:38:48 mast Exp $");
+RCSID("$Id: interpret.c,v 1.301 2006/09/29 14:49:19 stewa Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1012,6 +1012,10 @@ void *dummy_label = NULL;
   } while(0)
 #endif /* !CALL_MACHINE_CODE */
 
+#ifndef EXIT_MACHINE_CODE
+#define EXIT_MACHINE_CODE()
+#endif
+
 #if defined(OPCODE_INLINE_BRANCH) || defined(INS_F_JUMP) || \
     defined(INS_F_JUMP_WITH_ARG) || defined(INS_F_JUMP_WITH_TWO_ARGS)
 /* Intended to be called from machine code on backward branch jumps,
@@ -1218,8 +1222,12 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
    * should not matter to these return statements. -Hubbe
    */
 
- inter_escape_catch_label: return -2;
- inter_return_label: return -1;
+ inter_escape_catch_label: 
+  EXIT_MACHINE_CODE();
+  return -2;
+ inter_return_label: 
+  EXIT_MACHINE_CODE();
+  return -1;
 }
 
 #endif /* __GNUC__ */
