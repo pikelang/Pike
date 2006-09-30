@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.34 2004/12/16 16:05:56 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.35 2006/09/30 14:33:47 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -21,6 +21,7 @@
 #include "stralloc.h"
 #include "sscanf.h"
 #include "module.h"
+#include "version.h"
 
 DECLARATIONS
 
@@ -562,7 +563,7 @@ PIKECLASS compiler
     MAKE_SCANNER(1)
     MAKE_SCANNER(2)
 
-    /*! @decl int(0..1) scan()
+    /*! @decl int(0..1) next()
      *!
      *!   Called to advance one token in the stream.
      *!
@@ -632,8 +633,8 @@ PIKECLASS compiler
 
       THIS->scanner = NULL;
 
+      pop_n_elems(args);
       apply_current(f_compiler_basic_tokenizer_next_fun_num, 0);
-      pop_stack();
     }
 
     /*! @decl int(0..1) `!()
@@ -974,10 +975,6 @@ PIKECLASS TokenizingCompiler
      *!   @[get_context()], @[set_context()]
      */
 
-    PIKEVAR object(Token) current_token;
-
-    PIKEVAR mapping(string:program(Token)) token_lookup;
-
     PIKEFUN void yyerror(string msg, mixed ... extras)
       flags ID_STATIC;
     {
@@ -993,6 +990,18 @@ PIKECLASS TokenizingCompiler
       Pike_sp++;
 
       apply_current(tc_pt_inh_report, 4);
+    }
+
+    PIKEVAR object(Token) current_token;
+
+    PIKEVAR mapping(string:program(Token)) token_lookup;
+
+    PIKEFUN void set_token_lookup(mapping(string:program(Token)) token_lookup)
+    {
+      if (THIS->token_lookup) free_mapping(THIS->token_lookup);
+      if ((THIS->token_lookup = token_lookup)) {
+	add_ref(THIS->token_lookup);
+      }
     }
 
     PIKEFUN void handle_pragma(string pragma, string rest)
@@ -1942,6 +1951,163 @@ PIKECLASS GroupingCompiler
 /*! @endclass
  */
 
+/*! @class PikeCompiler
+ */
+PIKECLASS PikeCompiler
+{
+  INHERIT GroupingCompiler;
+
+  /* Meta programs here */
+
+  /*! @class Modifier
+   */
+  PIKECLASS Modifier
+  {
+    INHERIT IdentifierToken;
+
+    /*! @decl void parse_modifier(Iterator tokens_left)
+     *!
+     *! Called at
+     *!   modifier ·
+     */
+    PIKEFUN void parse_modifier(object(Iterator) tokens_left)
+    {
+    }
+  }
+  /*! @endclass
+   */
+
+  PIKECLASS Break
+  {
+    INHERIT IdentifierToken;
+    PIKEVAR object(Token) label;
+
+#define tObjImpl_SCOPE	tObj
+#define tObjImpl_MODIFIERS	tObj
+
+    /*! @decl parse_meta_program(Scope scope, Iterator tokens_left, @
+     *!                          Modifiers current_modifiers)
+     *! Called at
+     *!   break · ';'
+     *!   break · label ';'
+     */
+    PIKEFUN void parse_meta_program(Scope scope, Iterator tokens_left,
+				    Modifiers|void current_modifiers)
+    {
+      if (THIS->label) {
+	free_object(THIS->label);
+	THIS->label = NULL;
+      }
+
+      f_this_object(0);
+      apply_shared(scope, MK_STRING("add_meta_object"), 1);
+      pop_stack();
+
+      if (!svalue_is_true(Pike_sp + 1 - args)) goto eot;
+
+      apply_shared(tokens_left, MK_STRING("value"), 0);
+      if (Pike_sp[-1].type != T_OBJECT) {
+	// FIXME: SYNTAX ERROR: Bad value from scanner!
+	fprintf(stderr, "BREAK: Bad value from scanner\n");
+
+	pop_n_elems(args + 1);
+	return;
+      }
+
+      object_index_no_free(Pike_sp, Pike_sp[-1].u.object,
+			   MK_STRING_SVALUE("token"));
+      Pike_sp++;
+      if (Pike_sp[-1].type == T_STRING &&
+	  Pike_sp[-1].u.string == MK_STRING("identifier")) {
+
+	add_ref(THIS->label = Pike_sp[-2].u.object);
+	apply_shared(tokens_left, MK_STRING("next"), 0);
+	pop_n_elems(3);
+
+	if (!svalue_is_true(Pike_sp + 1 - args)) goto eot;
+
+	apply_shared(tokens_left, MK_STRING("value"), 0);
+	if (Pike_sp[-1].type != T_OBJECT) {
+	  // FIXME: INTERNAL ERROR: Bad value from scanner!
+	  fprintf(stderr, "BREAK: Bad value from scanner (2)\n");
+
+	  pop_n_elems(args + 1);
+	  return;
+	}
+      } else {
+	pop_stack();
+      }
+      object_index_no_free(Pike_sp, Pike_sp[-1].u.object,
+			   MK_STRING_SVALUE("symbol"));
+      Pike_sp++;
+      if (Pike_sp[-1].type == T_STRING &&
+	  Pike_sp[-1].u.string == MK_STRING(";")) {
+	apply_shared(tokens_left, MK_STRING("next"), 0);
+	pop_n_elems(args + 3);
+	return;
+      }
+      pop_n_elems(2);
+    eot:
+      // FIXME: SYNTAX ERROR: Expected semicolon after break.
+      fprintf(stderr, "BREAK: Expected semicolon after break.\n");
+
+      pop_n_elems(args);
+    }
+  }
+
+  PIKECLASS pike_tokenizer
+    program_flags PROGRAM_USES_PARENT;	/* Shouldn't this be automatic? */
+  {
+    static int pc_pt_inh_create = -1;
+
+    EXTRA {
+      /* @decl inherit GroupingCompiler::pike_tokenizer
+       */
+      /* Note: TokenizingCompiler is the first inherit in GroupingCompiler,
+       *       and thus inherit #2 in our parent.
+       */
+      low_inherit(TokenizingCompiler_pike_tokenizer_program,
+		  0,
+		  TokenizingCompiler_pike_tokenizer_program_fun_num +
+		  Pike_compiler->previous->new_program->inherits[2].identifier_level,
+		  1 + 42,	/* One parent level up. */
+		  0,
+		  NULL);
+      /* Note: basic_tokenizer is the first inherit in the pike_tokenizer
+       *       inherited above, and is thus inherit #2 in us.
+       */
+      pc_pt_inh_create =
+	really_low_reference_inherited_identifier(NULL, 2,
+						  f_compiler_basic_tokenizer_create_fun_num);
+    }
+
+    PIKEFUN mapping(string:program(Token))
+      get_lookup_for_pike_version(int major, int minor)
+      prototype;
+    {}
+
+    PIKEFUN void handle_pike_compat(int major, int minor)
+    {
+      apply_current(f_PikeCompiler_pike_tokenizer_get_lookup_for_pike_version_fun_num, 2);
+      apply_current(f_TokenizingCompiler_pike_tokenizer_set_token_lookup_fun_num +
+		    PikeCompiler_pike_tokenizer_program->inherits[2].identifier_level,
+		    1);
+    }
+
+    PIKEFUN void create(string data)
+    {
+      push_int(PIKE_MAJOR_VERSION);
+      push_int(PIKE_MINOR_VERSION);
+      apply_current(f_PikeCompiler_pike_tokenizer_handle_pike_compat_fun_num,
+		    2);
+      pop_stack();
+      apply_current(pc_pt_inh_create, args);
+    }
+  }
+}
+/*! @endclass
+ */
+
 #if 0
 PIKEFUN object Compile(object tokenizer, object|void handler)
 {
@@ -2018,6 +2184,12 @@ PIKE_MODULE_INIT
   }
 
 #if 0
+  fprintf(stderr, "\nGroupingCompiler:\n");
+  dump_program_tables(GroupingCompiler_program, 2);
+  fprintf(stderr, "\nTokenizingCompiler::pike_tokenizer:\n");
+  dump_program_tables(TokenizingCompiler_pike_tokenizer_program, 2);
+  fprintf(stderr, "\n");
+
   init_tokenizer_yyparse();
 #endif /* 0 */
 

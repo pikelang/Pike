@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.35 2004/12/16 16:22:02 grubba Exp $
+// $Id: module.pmod.in,v 1.36 2006/09/30 14:33:47 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -7,7 +7,7 @@
 //
 
 //! @ignore
-inherit @module@;
+inherit @module@ : Tokenizer;
 //! @endignore
 
 // typedef function(string, mapping(string:int|string), CompilerContext: Token) TokenHandler;
@@ -15,189 +15,14 @@ inherit @module@;
 //! List of Tokens and Groups
 class TokenList
 {
-#if 0
-  array(Token|Group) tokens = ({});
-
-  TokenList `+=(mixed x)
-  {
-    tokens += ({ x });
-    return this;
-  }
-
-  static int _sizeof()
-  {
-    return sizeof(tokens);
-  }
-
-  //! Get an iterator.
-  static class _get_iterator()
-  {
-    static int pos = 0;
-
-    static int(0..1) `!()
-    {
-      werror("Pos:%d, size:%d token:%O\n", pos, sizeof(tokens),
-	     (sizeof(tokens)>pos)&& tokens[pos]);
-      return pos >= sizeof(tokens);
-    }
-
-    this_program `+=(int i)
-    {
-      pos += i;
-      if (pos < 0) pos = 0;
-      else if (pos > sizeof(tokens)) pos = sizeof(tokens);
-      return this;
-    }
-
-    Token|Group value()
-    {
-      return (pos < sizeof(tokens))?tokens[pos]:UNDEFINED;
-    }
-
-    int(0..) index()
-    {
-      return pos;
-    }
-
-    //! Insert a new token or group immediately before the current
-    //! position.
-    //!
-    //! @note
-    //!   The current token will change.
-    //!
-    //! @seealso
-    //!   @[append()]
-    void insert(Token|Group val)
-    {
-      tokens = tokens[..pos-1] + ({ val }) + tokens[pos..];
-    }
-
-    //! Insert a new token or group immediately after the current
-    //! position.
-    //!
-    //! @seealso
-    //!   @[insert()]
-    void append(Token|Group val)
-    {
-      tokens = tokens[..pos] + ({ val }) + tokens[pos+1..];
-    }
-
-    string _sprintf()
-    {
-      return sprintf("%{%s %}·%{ %s%}",
-		     tokens[..pos-1], tokens[pos..]);
-    }
-  }
-
-  static string _sprintf(int c)
-  {
-    if (c == 's') {
-      return sprintf("%{%s %}", tokens);
-    } else {
-      return sprintf("%{%O, %}", tokens);
-    }
-  }
-#else /* ! 0 */
   inherit ADT.List;
-#endif /* 0 */
 }
 
-#if 0
-class Group
-{
-  TokenList contents = TokenList();
-  Token group_start;
-  Token group_end;
-  string group_terminator;
-
-  static void create(Token|void token)
-  {
-    if (token) {
-      string sym = token->symbol;
-      if (!(group_terminator =
-	    ([ "(":")", "{":"}", "[":"]" ])[sym])) {
-	error("Unsupported grouping symbol: %O\n", sym);
-      }
-      group_start = token;
-    }
-  }
-
-  static string _sprintf(int c)
-  {
-    if (c == 's') {
-      if (!group_start) {
-	return sprintf("%s", contents);
-      } else {
-	return sprintf("%s %s %s", group_start, contents, group_end);
-      }
-    } else {
-      if (!group_start) {
-	return sprintf("%O", contents);
-      } else {
-	return sprintf("%O %O %O", group_start, contents, group_end);
-      }
-    }
-  }
-}
-#endif /* 0 */
-
-#if 0
-class GroupingCompiler
-{
-  inherit TokenizingCompiler;
-
-  TokenList group(pike_tokenizer tokenizer)
-  {
-    ADT.Stack group_stack = ADT.Stack();
-
-    array(Token|array(mixed)) tokens = ({});
-
-    Group g = Group();
-
-    foreach(tokenizer; ; Token token) {
-      string sym = token->symbol;
-      if (sym == g->group_terminator) {
-	// Note that the pop is safe, since we don't have a group_terminator
-	// on the top level.
-	g->group_end = token;
-	Group old_g = g;
-	g = group_stack->pop();
-	g->contents->append(old_g);
-      } else if ((< "(", "{" , "[" >)[sym]) {
-	group_stack->push(g);
-	g = Group(token);
-      } else if ((< "]", "}", ")" >)[sym]) {
-	if (g->group_terminator) {
-	  report(ERROR, token->pos, "grouping",
-		 sprintf("Unexpected %O (expected %O).\n",
-			 sym, g->group_terminator));
-	} else {
-	  report(ERROR, token->pos, "grouping",
-		 sprintf("Unexpected %O.\n", sym));
-	}
-	return 0;
-      } else {
-	g->contents->append(token);
-      }
-    }
-    if (g->terminator) {
-      while (g->group_terminator) {
-	report(ERROR, 0, "grouping",
-	       sprintf("Missing %O at end of file.\n",
-		       g->group_terminator));
-	g = group_stack->pop();
-      }
-      return 0;
-    }
-    return g->contents;
-  }
-}
-#endif /* 0 */
 
 //!
 class PikeCompiler
 {
-  inherit GroupingCompiler;
+  inherit Tokenizer::PikeCompiler;
 
 #define SYNTAX_ERROR(MSG)						\
     report(ERROR, token && token->context, "parser",			\
@@ -227,6 +52,7 @@ class PikeCompiler
     }
   }
 
+#if 0
   class Modifier
   {
     inherit IdentifierToken;
@@ -235,6 +61,7 @@ class PikeCompiler
     //   modifier ·
     void parse_modifier(Iterator tokens_left) {}
   }
+#endif
 
   //!
   class VariableDecl(Token name, Expression type, Modifiers modifiers)
@@ -1580,6 +1407,7 @@ class PikeCompiler
     }
   }
 
+#if 0
   class Break
   {
     inherit IdentifierToken;
@@ -1609,6 +1437,7 @@ class PikeCompiler
       tokens_left->next();
     }
   }
+#endif /* 0 */
 
   // Compat for 7.0 and earlier.
   class BreakNoLabel
@@ -1878,7 +1707,7 @@ class PikeCompiler
 
   class pike_tokenizer
   {
-    inherit GroupingCompiler::pike_tokenizer;
+    inherit PikeCompiler::pike_tokenizer;
 
     // Note: Pike prior to 0.6 used a K&R-style cpp.
 
@@ -1897,7 +1726,6 @@ class PikeCompiler
 	"-":Token,
 	".":Dot,
 	"/":Token,
-	":":Token,
 	":":Token,
 	"::":ColonColon,
 	";":Token,
@@ -2003,25 +1831,22 @@ class PikeCompiler
 	({ 0, 0, Pike_0_1_Tokens, }),
       });
 
-      void handle_pike_compat(int major, int minor)
+      mapping(string:program(Token)) get_lookup_for_pike_version(int major, int minor)
       {
 	if (major < 0) major = 0;
 	if (minor < 0) minor = 0;
 	foreach(compat_lookup,
 		[int maj, int min, mapping(string:program(Token)) tokens]) {
 	  if ((maj < major) || (maj == major && (min <= minor))) {
-	    token_lookup = tokens;
-	    return;
+	    return tokens;
 	  }
 	}
 	// NOT REACHED.
+	return 0;
       }
 
       void create(string data/*, mapping(string:string|int)|void context */)
       {
-	// Default token_lookup.
-	token_lookup = compat_lookup[0][2];
-
 	::create(data/*, context*/);
       }
     }
