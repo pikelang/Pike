@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_macros.h,v 1.38 2006/05/30 12:04:44 nilsson Exp $
+|| $Id: pike_macros.h,v 1.39 2006/10/03 16:47:32 peter Exp $
 */
 
 #ifndef MACROS_H
 #define MACROS_H
 
-#include <global.h>
+#include "global.h"
 
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
