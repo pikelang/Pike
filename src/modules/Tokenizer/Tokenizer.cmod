@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.35 2006/09/30 14:33:47 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.36 2006/10/03 16:29:59 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -71,6 +71,7 @@ PIKECLASS compiler
    *!     @value "preprocessor"
    *!     @value "scanner"
    *!     @value "grouping"
+   *!     @value "parser"
    *!   @endstring
    *!
    *! @param msg
@@ -1957,11 +1958,90 @@ PIKECLASS PikeCompiler
 {
   INHERIT GroupingCompiler;
 
+  /* Helper functions
+   *
+   * NOTE: These are to be called from child classes to PikeCompiler!
+   */
+
+  static void report(int severity, struct pike_string *msg)
+  {
+    push_int(severity);
+    push_svalue(Pike_sp-2);
+    ref_push_string(MK_STRING("parser"));
+    ref_push_string(msg);
+    /* compiler is three inherits away in our parent program. */
+    apply_external(1,
+		   f_compiler_report_fun_num +
+		   PikeCompiler_program->inherits[3].identifier_level,
+		   4);
+    pop_stack();
+  }
+
+  /* Pushes a quadruple < Token, token, symbol, context >. */
+  static int push_current_token(struct object *tokens_left)
+  {
+    if (tokens_left && tokens_left->prog) {
+      apply_lfun(tokens_left, LFUN_NOT, 0);
+      if ((Pike_sp[-1].type == T_INT) && !Pike_sp[-1].u.integer) {
+	pop_stack();
+	apply_shared(tokens_left, MK_STRING("value"), 0);
+	if (Pike_sp[-1].type == T_OBJECT) {
+	  object_index_no_free(Pike_sp, Pike_sp[-1].u.object,
+			       MK_STRING_SVALUE("token"));
+	  Pike_sp++;
+	  if (Pike_sp[-1].type != T_STRING) {
+	    pop_stack();
+	    push_undefined();
+	  }
+	  object_index_no_free(Pike_sp, Pike_sp[-2].u.object,
+			       MK_STRING_SVALUE("symbol"));
+	  Pike_sp++;
+	  if (Pike_sp[-1].type != T_STRING) {
+	    pop_stack();
+	    push_undefined();
+	  }
+	  object_index_no_free(Pike_sp, Pike_sp[-3].u.object,
+			       MK_STRING_SVALUE("context"));
+	  Pike_sp++;
+	  if (Pike_sp[-1].type != T_MAPPING) {
+	    pop_stack();
+	    push_undefined();
+	  }
+	  return 1;
+	}
+	report(SL_WARNING, MK_STRING("Bad value returned from scanner."));
+      }
+      /* Note: Either pops a 1, or a bad value. */
+      pop_stack();
+    }
+    push_undefined();
+    push_undefined();
+    push_undefined();
+    push_undefined();
+    return 0;
+  }
+
+  static void pop_current_token()
+  {
+    pop_n_elems(4);
+  }
+
+  static void advance(struct object *tokens_left)
+  {
+    apply_shared(tokens_left, MK_STRING("next"), 0);
+    pop_stack();
+  }
+
+#define GET_TOKEN()	(Pike_sp[-4].u.object)
+#define IS_SYMBOL(SYM)	(Pike_sp[-2].u.string == (SYM))
+#define IS_TOKEN(TOK)	(Pike_sp[-3].u.string == (TOK))
+
   /* Meta programs here */
 
   /*! @class Modifier
    */
   PIKECLASS Modifier
+    program_flags PROGRAM_USES_PARENT;
   {
     INHERIT IdentifierToken;
 
@@ -1978,6 +2058,7 @@ PIKECLASS PikeCompiler
    */
 
   PIKECLASS Break
+    program_flags PROGRAM_USES_PARENT;
   {
     INHERIT IdentifierToken;
     PIKEVAR object(Token) label;
@@ -2003,53 +2084,29 @@ PIKECLASS PikeCompiler
       apply_shared(scope, MK_STRING("add_meta_object"), 1);
       pop_stack();
 
-      if (!svalue_is_true(Pike_sp + 1 - args)) goto eot;
+      push_current_token(tokens_left);
 
-      apply_shared(tokens_left, MK_STRING("value"), 0);
-      if (Pike_sp[-1].type != T_OBJECT) {
-	// FIXME: SYNTAX ERROR: Bad value from scanner!
-	fprintf(stderr, "BREAK: Bad value from scanner\n");
+      if (IS_TOKEN(MK_STRING("identifier"))) {
 
-	pop_n_elems(args + 1);
+	report(SL_NOTICE, MK_STRING("Got break with label."));
+
+	add_ref(THIS->label = GET_TOKEN());
+	pop_current_token();
+
+	advance(tokens_left);
+	push_current_token(tokens_left);
+      }
+      if (IS_SYMBOL(MK_STRING(";"))) {
+	report(SL_NOTICE, MK_STRING("Got semicolon after break."));
+
+	pop_current_token();
+	advance(tokens_left);
+	pop_n_elems(args);
 	return;
       }
-
-      object_index_no_free(Pike_sp, Pike_sp[-1].u.object,
-			   MK_STRING_SVALUE("token"));
-      Pike_sp++;
-      if (Pike_sp[-1].type == T_STRING &&
-	  Pike_sp[-1].u.string == MK_STRING("identifier")) {
-
-	add_ref(THIS->label = Pike_sp[-2].u.object);
-	apply_shared(tokens_left, MK_STRING("next"), 0);
-	pop_n_elems(3);
-
-	if (!svalue_is_true(Pike_sp + 1 - args)) goto eot;
-
-	apply_shared(tokens_left, MK_STRING("value"), 0);
-	if (Pike_sp[-1].type != T_OBJECT) {
-	  // FIXME: INTERNAL ERROR: Bad value from scanner!
-	  fprintf(stderr, "BREAK: Bad value from scanner (2)\n");
-
-	  pop_n_elems(args + 1);
-	  return;
-	}
-      } else {
-	pop_stack();
-      }
-      object_index_no_free(Pike_sp, Pike_sp[-1].u.object,
-			   MK_STRING_SVALUE("symbol"));
-      Pike_sp++;
-      if (Pike_sp[-1].type == T_STRING &&
-	  Pike_sp[-1].u.string == MK_STRING(";")) {
-	apply_shared(tokens_left, MK_STRING("next"), 0);
-	pop_n_elems(args + 3);
-	return;
-      }
-      pop_n_elems(2);
+      pop_current_token();
     eot:
-      // FIXME: SYNTAX ERROR: Expected semicolon after break.
-      fprintf(stderr, "BREAK: Expected semicolon after break.\n");
+      report(SL_ERROR, MK_STRING("Expected semicolon after break."));
 
       pop_n_elems(args);
     }
