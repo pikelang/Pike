@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.36 2006/09/30 14:33:47 grubba Exp $
+// $Id: module.pmod.in,v 1.37 2006/10/03 16:47:34 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -1437,7 +1437,6 @@ class PikeCompiler
       tokens_left->next();
     }
   }
-#endif /* 0 */
 
   // Compat for 7.0 and earlier.
   class BreakNoLabel
@@ -1459,6 +1458,7 @@ class PikeCompiler
       tokens_left->next();
     }
   }
+#endif /* 0 */
 
   class Case
   {

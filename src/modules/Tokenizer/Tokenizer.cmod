@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.36 2006/10/03 16:29:59 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.37 2006/10/03 16:47:34 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -2104,10 +2104,48 @@ PIKECLASS PikeCompiler
 	pop_n_elems(args);
 	return;
       }
-      pop_current_token();
-    eot:
-      report(SL_ERROR, MK_STRING("Expected semicolon after break."));
 
+      report(SL_ERROR, MK_STRING("Expected semicolon after break."));
+      pop_current_token();
+      pop_n_elems(args);
+    }
+  }
+
+  PIKECLASS BreakNoLabel
+    program_flags PROGRAM_USES_PARENT;
+  {
+    INHERIT PikeCompiler_Break;
+
+    /*! @decl parse_meta_program(Scope scope, Iterator tokens_left, @
+     *!                          Modifiers current_modifiers)
+     *! Called at
+     *!   break · ';'
+     */
+    PIKEFUN void parse_meta_program(Scope scope, Iterator tokens_left,
+				    Modifiers|void current_modifiers)
+    {
+      if (THIS->label) {
+	free_object(THIS->label);
+	THIS->label = NULL;
+      }
+
+      f_this_object(0);
+      apply_shared(scope, MK_STRING("add_meta_object"), 1);
+      pop_stack();
+
+      push_current_token(tokens_left);
+
+      if (IS_SYMBOL(MK_STRING(";"))) {
+	report(SL_NOTICE, MK_STRING("Got semicolon after break."));
+
+	pop_current_token();
+	advance(tokens_left);
+	pop_n_elems(args);
+	return;
+      }
+
+      report(SL_ERROR, MK_STRING("Expected semicolon after break."));
+      pop_current_token();
       pop_n_elems(args);
     }
   }
