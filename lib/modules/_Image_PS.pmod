@@ -132,18 +132,25 @@ object decode( string data, mapping|void options )
     "-c quit 2>/dev/null" 
   });
 
-  Process.create_process( command, ([
+  Process.Process pid = Process.create_process( command, ([
     "stdin":fd,
-    "stdout":fd3,
-    "stderr":fd3,
+    "stdout":fd4,
+    "stderr":fd4,
   ]));
   destruct(fd);
-  destruct(fd3);
+  destruct(fd4);
+  // Kill the gs binary after 30 seconds in case it hangs.
+  mixed co = call_out(lambda(Process.Process pid) {
+			if (!pid->status()) {
+			  pid->kill(9);
+			}
+		      }, 30, pid);
   fd2->write( data );
   if(!has_value(data, "showpage"))
     fd2->write( "\nshowpage\n" );
   destruct(fd2);
-  object i= Image.PNM.decode( fd4->read() );
+  object i= Image.PNM.decode( fd3->read() );
+  remove_call_out(co);
   
   if(urx && ury)
     i = i->mirrory()->copy(llx,lly,urx,ury)->mirrory();
