@@ -36,6 +36,7 @@ object decode( string data, mapping|void options )
 	   ps_start, ps_len, meta_start, meta_len, tiff_start, tiff_len, sum);
 #if constant(Image.TIFF.decode)
     if (tiff_start && tiff_len) {
+      // werror("Decoding TIFF.\n");
       return Image.TIFF.decode(data[tiff_start..tiff_start + tiff_len-1]);
     }
 #endif
@@ -43,7 +44,7 @@ object decode( string data, mapping|void options )
   }
   if(data[0..3] != "%!PS")
     error("This is not a postscript file!\n");
-
+#if 1
   if (has_prefix(data, "%!PS-Adobe-3.0 EPSF-3.0")) {
     int width, height, bits, ncols;
     int nbws, width2, encoding;
@@ -70,8 +71,6 @@ object decode( string data, mapping|void options )
 #else
 	  raw += Crypto.hex_to_string(raw - term);
 #endif
-	  werror("raw: %d bytes. Expected: %d bytes.\n",
-		 sizeof(raw), width*height*(ncols+nbws));
 	}
 	if (sizeof(raw) == width*height*(ncols+nbws)) {
 	  array(string) rows = raw/width;
@@ -88,7 +87,7 @@ object decode( string data, mapping|void options )
 	    if (ncols == 3) {
 	      return Image.Image(width, height, "rgb", @channels);
 	    }
-	    return Image.Image(width, height, "cmyk", @channels);
+	    return Image.Image(width, height, "adjusted_cmyk", @channels);
 	  }
 	  string grey = "";
 	  int i;
@@ -100,6 +99,8 @@ object decode( string data, mapping|void options )
       }
     }
   }
+  // return 0;
+#endif
 
   if(!options) options = ([]);
   int llx, lly;
@@ -111,7 +112,7 @@ object decode( string data, mapping|void options )
   Stdio.File fd3 = Stdio.File();
   object fd4 = fd3->pipe();
 
-  if(sscanf(data, "%*s\n%%%%BoundingBox: %s\n", string bbox) == 2)
+  if(sscanf(data, "%*s%%%%BoundingBox: %s%*[\r\n]", string bbox) == 3)
   {
     int x0,x1,y0,y1;
     sscanf(bbox, "%d %d %d %d", x0,y0,x1,y1 );
@@ -125,6 +126,7 @@ object decode( string data, mapping|void options )
     options->binary||find_in_path("gs")||("/bin/sh -c gs "),
     "-quiet",
     "-sDEVICE="+(options->device||"ppmraw"),
+    //    "-sPAPERSIZE=a8",
     "-r"+(options->dpi||100),
     "-dNOPAUSE",
     "-sOutputFile=-",
@@ -132,21 +134,30 @@ object decode( string data, mapping|void options )
     "-c quit 2>/dev/null" 
   });
 
-  Process.create_process( command, ([
+  Process.Process pid = Process.create_process( command, ([
     "stdin":fd,
-    "stdout":fd3,
-    "stderr":fd3,
+    "stdout":fd4,
+    "stderr":fd4,
   ]));
   destruct(fd);
-  destruct(fd3);
+  destruct(fd4);
+  // Kill the gs binary after 30 seconds in case it hangs.
+  mixed co = call_out(lambda(Process.Process pid) {
+			if (!pid->status()) {
+			  pid->kill(9);
+			}
+		      }, 30, pid);
   fd2->write( data );
   if(!has_value(data, "showpage"))
     fd2->write( "\nshowpage\n" );
   destruct(fd2);
-  object i= Image.PNM.decode( fd4->read() );
-  
+  object i= Image.PNM.decode( fd3->read() );
+  remove_call_out(co);
+
+#if 1
   if(urx && ury)
     i = i->mirrory()->copy(llx,lly,urx,ury)->mirrory();
+#endif
   return i;
 }
 
