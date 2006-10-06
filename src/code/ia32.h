@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.h,v 1.30 2006/09/08 17:20:46 grubba Exp $
+|| $Id: ia32.h,v 1.31 2006/10/06 08:00:35 stewa Exp $
 */
 
 /* #define ALIGN_PIKE_JUMPS 8 */
@@ -157,13 +157,13 @@ void ia32_init_interpreter_state(void);
   /* This code does not clobber %eax, %ebx, %ecx & %edx, but		\
    * the code jumped to does.						\
    */									\
-  __asm__ __volatile__( "	sub $12,%%esp\n"			\
+  __asm__ __volatile__( "	sub $16,%%esp\n"			\
 			"	jmp *%0"				\
 			: "=m" (pc)					\
 			:						\
 			: "cc", "memory", "eax", "ebx", "ecx", "edx" )
 
 #define EXIT_MACHINE_CODE()						\
-  __asm__ __volatile__( "add $12,%%esp\n" : : )
+  __asm__ __volatile__( "add $16,%%esp\n" : : )
 
 #endif /* USE_GCC_IA32_ASM_STYLE */
