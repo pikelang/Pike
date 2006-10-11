@@ -1,0 +1,11 @@
+Package: pike7.6-gtk
+Architecture: any
+Depends: ${shlibs:Depends}, pike7.6-core (=${Source-Version})
+Description: GTK module for Pike
+ This Pike module provides access to the GTK+ library.
+ .
+ Pike is an interpreted programming language, for more information 
+ see the description of the pike7.6-core package or visit the URL
+ below.
+ .
+ http://pike.ida.liu.se/

@@ -1,8 +1,16 @@
 pike7.6 (7.6.93-1) unstable; urgency=low
 
   * The latest cvs snapshot
+  * Please don't ship pike7.6-gtk (Closes: #387503)
+    gtk1 modules removed because of debian dropping support for gtk1.
+    At the same time, the pike7.6-gtk module is disabled, since gtk2
+    stuff in it doesn't seem to compile without gtk1 devel packages
+    around.
+  * pike epoll not included. (Closes: #264206)
+    This can only be fixed by making sure that the debian autobuilders
+    all support epoll, which is beyond the pike maintainer's powers :)
 
- -- Marek Habersack <grendel@debian.org>  Mon, 2 Oct 2006 15:22:05 +0200
+ -- Marek Habersack <grendel@debian.org>  Wed,  4 Oct 2006 13:11:55 +0200
 
 pike7.6 (7.6.92-1) unstable; urgency=low
 

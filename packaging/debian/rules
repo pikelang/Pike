@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.64 2006/08/05 15:49:18 grendel Exp $
+# $Id: rules,v 1.65 2006/10/11 17:32:22 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -100,7 +100,9 @@ CFARGS=$(CFARGSEXTRA) \
        --with-perl \
        --without-ffmpeg \
        --without-libpdf \
-       --without-libpanda $(MACHINE_OPTS) $(EXTRA_ARGS)
+       --without-libpanda $(MACHINE_OPTS) $(EXTRA_ARGS) \
+       --without-GTK \
+       --without-GTK2
 
 RUNPIKE=$(CURDIR)/$(BUILDDIR)/pike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(CURDIR)/$(BUILDDIR)/master.pike
 RUNPIKE2=$(CURDIR)/debian/$(PIKE)-core/usr/bin/pike -m$(CURDIR)/$(BUILDDIR)/lib/master.pike
@@ -225,6 +227,12 @@ install: build
 	    rm $(CURDIR)/debian/$(PIKE)-core/$$f &> /dev/null || echo "  FAILED"; \
 	done
 
+	# GTK isn't here for now
+	-rm -r $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/lib/modules/GDK*
+	-rm -r $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/lib/modules/GTK*
+	-rm -r $(CURDIR)/debian/$(PIKE)-core/usr/share/pike/$(VERSION)/lib/modules/GDK*
+	-rm -r $(CURDIR)/debian/$(PIKE)-core/usr/share/pike/$(VERSION)/lib/modules/GTK*
+	
 	# an eye-candy
 	install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-core/usr/share/pixmaps/pike
 	install -m 644 -o root -g root $(CURDIR)/debian/pike.xpm $(CURDIR)/debian/$(PIKE)-core/usr/share/pixmaps/pike/$(PIKE).xpm 

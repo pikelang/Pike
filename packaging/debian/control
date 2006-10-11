@@ -3,7 +3,7 @@ Section: interpreters
 Priority: optional
 Maintainer: Marek Habersack <grendel@debian.org>
 Standards-Version: 3.6.2.1
-Build-Depends: debhelper (>> 4.0.0), libgdbm-dev, libgmp3-dev, libz-dev | zlib1g-dev, libjpeg-dev, libttf-dev, libmysqlclient15-dev, libreadline5-dev, perl, bison, debhelper, freeglut3-dev (>= 2.2.0-6.1) [alpha hppa], freeglut3-dev [!alpha !hppa], x11proto-gl-dev, libxpm-dev, libglib1.2-dev, libglade0-dev, libxml2-dev, libgtkxmhtml-dev, libfreetype6-dev, autoconf, libiodbc2-dev, libsane-dev, postgresql-dev, libsdl-mixer1.2-dev, libsdl1.2-dev, librsvg2-dev (>= 2.7), libperl-dev, sharutils, libpng12-dev, gtkglarea5-dev, libtiff4-dev, bc, libpcre3-dev, libbz2-dev, libnettle-dev (>= 1.14-1)
+Build-Depends: debhelper (>> 4.0.0), libgdbm-dev, libgmp3-dev, libz-dev | zlib1g-dev, libjpeg-dev, libttf-dev, libmysqlclient15-dev, libreadline5-dev, perl, bison, debhelper, freeglut3-dev (>= 2.2.0-6.1) [alpha hppa], freeglut3-dev [!alpha !hppa], x11proto-gl-dev, libxpm-dev, libglade2-dev, libxml2-dev, libfreetype6-dev, autoconf, libiodbc2-dev, libsane-dev, postgresql-dev, libsdl-mixer1.2-dev, libsdl1.2-dev, librsvg2-dev (>= 2.7), libperl-dev, sharutils, libpng12-dev, libtiff4-dev, bc, libpcre3-dev, libbz2-dev, libnettle-dev (>= 1.14-1), fftw-dev
 Build-Conflicts: libutahglx-dev
 
 Package: pike7.6-core
@@ -132,18 +132,6 @@ Description: Gdbm module for Pike
  .
  http://pike.ida.liu.se/
 
-Package: pike7.6-gtk
-Architecture: any
-Depends: ${shlibs:Depends}, pike7.6-core (=${Source-Version})
-Description: GTK module for Pike
- This Pike module provides access to the GTK+ library.
- .
- Pike is an interpreted programming language, for more information 
- see the description of the pike7.6-core package or visit the URL
- below.
- .
- http://pike.ida.liu.se/
-
 Package: pike7.6-gl
 Architecture: any
 Depends: ${shlibs:Depends}, pike7.6-core (=${Source-Version})
@@ -261,7 +249,7 @@ Description: Pike 7.6 documentation meta package
 
 Package: pike7.6-meta
 Architecture: all
-Depends: pike7.6 (>= ${Source-Version}), pike7.6-mysql (>= ${Source-Version}), pike7.6-pg (>= ${Source-Version}), pike7.6-odbc (>= ${Source-Version}), pike7.6-image (>= ${Source-Version}), pike7.6-sdl (>= ${Source-Version}), pike7.6-gdbm (>= ${Source-Version}), pike7.6-gtk (>= ${Source-Version}), pike7.6-gl (>= ${Source-Version}), pike7.6-sane (>= ${Source-Version}), pike7.6-doc (>= ${Source-Version}), pike7.6-dev (>= ${Source-Version}), pike7.6-perl (>= ${Source-Version}), pike7.6-svg (>= ${Source-Version}), pike7.6-pcre (>= ${Source-Version}), pike7.6-bzip2 (>= ${Source-Version})
+Depends: pike7.6 (>= ${Source-Version}), pike7.6-mysql (>= ${Source-Version}), pike7.6-pg (>= ${Source-Version}), pike7.6-odbc (>= ${Source-Version}), pike7.6-image (>= ${Source-Version}), pike7.6-sdl (>= ${Source-Version}), pike7.6-gdbm (>= ${Source-Version}), pike7.6-gl (>= ${Source-Version}), pike7.6-sane (>= ${Source-Version}), pike7.6-doc (>= ${Source-Version}), pike7.6-dev (>= ${Source-Version}), pike7.6-perl (>= ${Source-Version}), pike7.6-svg (>= ${Source-Version}), pike7.6-pcre (>= ${Source-Version}), pike7.6-bzip2 (>= ${Source-Version})
 Description: Meta package for Pike 7.6
  This package depends on all the components that make up the Pike
  language distribution. It will pull in a LOT of packages the
