@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.121 2010/03/16 11:35:57 grubba Exp $
+|| $Id$
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.121 2010/03/16 11:35:57 grubba Exp $");
+RCSID("$Id$");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -342,6 +342,11 @@ static void mpzmod_get_int(INT32 args)
 #ifdef AUTO_BIGNUM
   add_ref(fp->current_object);
   mpzmod_reduce(fp->current_object);
+  if( Pike_sp[-1].type == T_OBJECT &&
+      Pike_sp[-1].u.object->prog != bignum_program )
+  {
+    push_object(clone_object(bignum_program, 1));
+  }
 #else
   push_int(mpz_get_si(THIS));
 #endif /* AUTO_BIGNUM */
