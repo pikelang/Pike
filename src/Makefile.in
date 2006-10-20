@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.391 2005/12/16 18:55:44 marcus Exp $
+# $Id: Makefile.in,v 1.392 2006/10/20 13:40:28 stewa Exp $
 #
 
 # This line is needed on some machines.
@@ -69,7 +69,7 @@ PROFIL=@PROFIL@
 #
 # OS dependant flags
 #
-OSFLAGS=
+OSFLAGS=@OSFLAGS@
 
 #
 #Enable warnings from the compiler, if wanted.
