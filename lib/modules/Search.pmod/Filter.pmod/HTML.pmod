@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.39 2006/01/05 13:07:06 jonasw Exp $
+// $Id: HTML.pmod,v 1.40 2006/10/24 09:55:28 stewa Exp $
 
 // Filter for text/html
 
@@ -136,12 +136,12 @@ static string clean(string data) {
 
   // FIXME: Push the a contents to the description field of the
   // document referenced to by this tag.
-  array parse_a(Parser.HTML p, mapping m)  {
+  array parse_a(Parser.HTML p, mapping m, mapping e)  {
     // FIXME: We should try to decode the source with the
     // charset indicated in m->charset.
     // FIXME: We should set the document language to the
     // language indicated in m->hreflang.
-    if(m->href) ladd( m->href );
+    if(m->href && !e->nofollow) ladd( m->href );
 
     // FIXME: Push the value of m->title to the title field of
     // the referenced document.
@@ -152,8 +152,8 @@ static string clean(string data) {
 
   // FIXME: The longdesc information should be pushed to the
   // description field of the frame src URL when it is indexed.
-  array parse_frame(Parser.HTML p, mapping m)  {
-    if(m->src) ladd( m->src );
+  array parse_frame(Parser.HTML p, mapping m, mapping e)  {
+    if(m->src && !e->nofollow) ladd( m->src );
     return ({});
   };
 
@@ -172,12 +172,12 @@ static string clean(string data) {
   array parse_applet(Parser.HTML p, mapping m, mapping e) {
     // FIXME: The alt information should be pushed to the body field
     // of all the resources linked from this tag.
-    if( m->src ) ladd( m->src );
-    if( m->archive )
+    if( m->src && !e->nofollow ) ladd( m->src );
+    if( m->archive && !e->nofollow )
       ladd( m->archive); // URL to a GNU-ZIP file with classes needed
 			 // by the applet.
-    if( m->code ) ladd( m->code ); // URL to the applets code/class.
-    if( m->codebase ) ladd( m->codebase );
+    if( m->code && !e->nofollow ) ladd( m->code ); // URL to the applets code/class.
+    if( m->codebase && !e->nofollow ) ladd( m->codebase );
     if( m->alt && sizeof(m->alt) )
       if( !e->noindex )
 	dadd(" ", clean(m->alt));
@@ -188,39 +188,39 @@ static string clean(string data) {
   array parse_src_alt(Parser.HTML p, mapping m, mapping e) {
     // FIXME: The alt information should be pushed to the body field
     // of all the resources linked from this tag.
-    if( m->src ) ladd( m->src );
+    if( m->src && !e->nofollow ) ladd( m->src );
     if( m->alt && sizeof(m->alt) )
       if( !e->noindex )
 	dadd(" ", clean(m->alt));
     return ({});
   };
 
-  array parse_background(Parser.HTML p, mapping m) {
-    if( m->background ) ladd( m->background );
+  array parse_background(Parser.HTML p, mapping m, mapping e) {
+    if( m->background && !e->nofollow ) ladd( m->background );
     return ({});
   };
 
-  array parse_embed(Parser.HTML p, mapping m) {
-    if( m->pluginspage )
+  array parse_embed(Parser.HTML p, mapping m, mapping e) {
+    if( m->pluginspage && !e->nofollow )
       ladd( m->pluginspage ); // Where the required plugin can be downloaded.
-    if( m->pluginurl )
+    if( m->pluginurl && !e->nofollow )
       ladd( m->pluginurl ); // Similar to pluginspage, but for java archives.
-    if( m->src ) ladd( m->src );
+    if( m->src && !e->nofollow ) ladd( m->src );
     return ({});
   };
 
-  array parse_layer(Parser.HTML p, mapping m) {
-    if( m->background ) ladd( m->background );
-    if( m->src ) ladd( m->src );
+  array parse_layer(Parser.HTML p, mapping m, mapping e) {
+    if( m->background && !e->nofollow ) ladd( m->background );
+    if( m->src && !e->nofollow ) ladd( m->src );
     return ({});
   };
 
   array parse_object(Parser.HTML p, mapping m, mapping e) {
-    if( m->archive ) ladd( m->archive );
-    if( m->classid ) ladd( m->classid );
-    if( m->code ) ladd( m->code );
-    if( m->codebase ) ladd( m->codebase );
-    if( m->data ) ladd( m->data );
+    if( m->archive && !e->nofollow ) ladd( m->archive );
+    if( m->classid && !e->nofollow ) ladd( m->classid );
+    if( m->code && !e->nofollow ) ladd( m->code );
+    if( m->codebase && !e->nofollow ) ladd( m->codebase );
+    if( m->data && !e->nofollow ) ladd( m->data );
     if( m->standby && sizeof(m->standby) )
       if ( !e->noindex )
 	dadd(" ", clean(m->standby) );
@@ -234,14 +234,14 @@ static string clean(string data) {
     return ({});
   };
 
-  array parse_q(Parser.HTML p, mapping m) {
-    if( m->cite ) ladd( m->cite );
+  array parse_q(Parser.HTML p, mapping m, mapping e) {
+    if( m->cite && !e->nofollow ) ladd( m->cite );
     return ({});
   };
 
-  array parse_xml(Parser.HTML p, mapping m) {
-    if( m->ns ) ladd( m->ns );
-    if( m->src ) ladd( m->src );
+  array parse_xml(Parser.HTML p, mapping m, mapping e) {
+    if( m->ns && !e->nofollow ) ladd( m->ns );
+    if( m->src && !e->nofollow ) ladd( m->src );
     return ({});
   };
 
@@ -279,6 +279,12 @@ static string clean(string data) {
       extra->noindex--;
     else if(has_value(c, "robots:noindex"))
       extra->noindex++;
+
+    if(has_value(c, "/robots:nofollow"))
+      extra->nofollow--;
+    else if(has_value(c, "robots:nofollow"))
+      extra->nofollow++;
+
     return ({""});
   };
 
