@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.122 2006/01/26 21:13:17 grubba Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.123 2006/10/25 14:42:10 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -907,7 +907,19 @@ private class Expression {
 
   // Returns the expression verbatim.
   string code() {
-    return tokens*"";
+    string ret = tokens*"";
+
+    switch( `[](0) )
+    {
+    case "if":
+      ret += " else ___Hilfe->last_else=1;";
+      break;
+    case "else":
+      ret = "if(___Hilfe->last_else);" + ret;
+      break;
+    }
+
+    return ret;
   }
 
   // Returns at which position the type declaration that
@@ -953,7 +965,7 @@ private class Expression {
     // Any sequence beginning with any of these can't be
     // a type declaration.
     if( (< "break", "continue", "class", "!", "-",
-           "(", "~", "[", "`" >)[ t ] )
+           "(", "~", "[", "`", "else" >)[ t ] )
       return -1;
     if( notype[ t ] )
       return -1;
@@ -1648,8 +1660,8 @@ class Evaluator {
 			multiset(string) next_symbols, int p,
 			void|string safe_word, void|int(0..1) top) {
     int op = p;
-    //    werror("%O %O %d\n", (symbols?indices(symbols||(<>))*", ":0),
-    //    	   (next_symbols?indices(next_symbols||(<>))*", ":0), top );
+    werror("%O %O %d\n", (symbols?indices(symbols||(<>))*", ":0),
+           (next_symbols?indices(next_symbols||(<>))*", ":0), top );
     p = _relocate(expr, symbols, next_symbols, p, safe_word, top);
     werror(" relocate %O %O\n", op, expr[op..p]);
     return p;
@@ -1813,6 +1825,7 @@ class Evaluator {
     switch(expr[0])
     {
       case "if":
+      case "else":
       case "for":
       case "do":
       case "while":
@@ -1950,6 +1963,9 @@ class Evaluator {
   //! Only available if Pike is compiled with RTL debug.
   int debug_level;
 #endif
+
+  //! Should an else expression be carried out?
+  int(0..1) last_else;
 
   //! The standard @[reswrite] function.
   void std_reswrite(function w, string sres, int num, mixed res) {
@@ -2150,6 +2166,7 @@ class Evaluator {
 #endif
     a = "mixed ___HilfeWrapper() { " + a + " ; }";
 
+    last_else = 0;
     object o;
     if( o=hilfe_compile(a) )
     {
