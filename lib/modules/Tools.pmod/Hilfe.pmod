@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.123 2006/10/25 14:42:10 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.124 2006/10/25 15:21:03 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -1581,6 +1581,7 @@ class Evaluator {
     while( p<sizeof(expr)) {
       if( expr->is_block(p) ) {
 	string type = expr[p++];
+        if(type=="class") top=0;
 	multiset(string) new_scope = symbols+(<>);
 
 	// No () for catch, gauge, do and possibly class.
