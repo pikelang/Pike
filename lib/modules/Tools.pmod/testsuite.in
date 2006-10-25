@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.17 2006/05/17 14:06:19 grubba Exp $
+// $Id: testsuite.in,v 1.18 2006/10/25 14:42:25 nilsson Exp $
 
 // Tools.Hilfe
 define(test_hilfe_setup_low,[[test_do([[
@@ -166,6 +166,13 @@ test_hilfe("__[1]+__[2]+__[-1];", "7")
 test_hilfe([[ "filter(indices(Calendar.Language),"
 	   "lambda(string s){ return sizeof(s) < 0; });" ]],
            "({ })")
+
+test_hilfe("new", "")
+test_hilfe("int a;", "")
+test_hilfe("if(a) a=0;", "Ok.\n")
+test_hilfe("else a=1;", "Ok.\n");
+test_hilfe("a;", "1")
+
 test_do( add_constant("testhilfe") )
 
 test_true([[ Tools.Hilfe.StdinHilfe ]])
