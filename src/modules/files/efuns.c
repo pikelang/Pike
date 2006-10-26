@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.128 2006/07/05 18:07:23 mast Exp $
+|| $Id: efuns.c,v 1.129 2006/10/26 12:16:40 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.128 2006/07/05 18:07:23 mast Exp $");
+RCSID("$Id: efuns.c,v 1.129 2006/10/26 12:16:40 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -998,6 +998,7 @@ void f_get_dir(INT32 args)
       if ((!d) && err) {
 	Pike_error("get_dir(): readdir_r(\"%s\") failed: %d\n", str->str, err);
       }
+      check_stack(num_files + 5);
       for(e=0;e<num_files;e++)
       {
 	push_string(make_shared_binary_string(ptrs[e],lens[e]));
@@ -1017,6 +1018,8 @@ void f_get_dir(INT32 args)
   dir = opendir(str->str);
   if(dir)
   {
+    int i = 100;
+    check_stack(105);
     for(d=readdir(dir); d; d=readdir(dir))
     {
       if(d->d_name[0]=='.')
@@ -1025,6 +1028,10 @@ void f_get_dir(INT32 args)
 	if(d->d_name[1]=='.' && !d->d_name[2]) continue;
       }
       push_string(make_shared_binary_string(d->d_name, NAMLEN(d)));
+      if (!(i--)) {
+	check_stack(105);
+	i = 100;
+      }
     }
     closedir(dir);
     a=aggregate_array(sp-save_sp);
