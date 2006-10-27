@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.609 2006/08/09 14:03:02 mast Exp $
+|| $Id: program.c,v 1.610 2006/10/27 18:45:00 grubba Exp $
 */
 
 #include "global.h"
@@ -209,6 +209,10 @@ static const char *const raw_lfun_types[] = {
   /* NOTE: After this point there are only fake lfuns. */
   tFuncV(tZero tOr(tZero, tVoid), tVoid, tMix), /* "_search", */
 };
+
+/* These two are not true LFUNs! */
+static struct pike_type *lfun_getter_type_string = NULL;
+static struct pike_type *lfun_setter_type_string = NULL;
 
 /*! @namespace lfun::
  *!
@@ -1097,6 +1101,42 @@ static const char *const raw_lfun_types[] = {
  *!
  *! @seealso
  *!   @[predef::search()]
+ */
+
+/*! @decl mixed lfun::`->symbol()
+ *!
+ *!   Variable retrieval callback (aka "getter").
+ *!
+ *! @note
+ *!   Note that the @expr{symbol@} in the name can be any symbol.
+ *!
+ *! @note
+ *!   This is not a true LFUN, since it is even more low level!
+ *!
+ *! @note
+ *!   This function WILL be called even by inheriting programs
+ *!   when they attempt to access the variable named @expr{symbol@}.
+ *!
+ *! @seealso
+ *!   @[lfun::`->symbol=()], @[lfun::`->()]
+ */
+
+/*! @decl void lfun::`->symbol=(zero value)
+ *!
+ *!   Variable assignment callback (aka "setter").
+ *!
+ *! @note
+ *!   Note that the @expr{symbol@} in the name can be any symbol.
+ *!
+ *! @note
+ *!   This is not a true LFUN, since it is even more low level!
+ *!
+ *! @note
+ *!   This function WILL be called even by inheriting programs
+ *!   when they attempt to set the variable named @expr{symbol@}.
+ *!
+ *! @seealso
+ *!   @[lfun::`->symbol()], @[lfun::`->=()]
  */
 
 /*! @endnamespace
@@ -2418,7 +2458,8 @@ void low_start_new_program(struct program *p,
 
 PMOD_EXPORT void debug_start_new_program(int line, const char *file)
 {
-  struct pike_string *save_file = lex.current_file;
+  struct pike_string *save_file =
+    dmalloc_touch(struct pike_string *, lex.current_file);
   int save_line = lex.current_line;
 
   { /* Trim off the leading path of the compilation environment. */
@@ -2440,7 +2481,7 @@ PMOD_EXPORT void debug_start_new_program(int line, const char *file)
   debug_malloc_name(Pike_compiler->new_program, file, line);
 
   free_string(lex.current_file);
-  lex.current_file = save_file;
+  lex.current_file = dmalloc_touch(struct pike_string *, save_file);
   lex.current_line = save_line;
 }
 
@@ -2969,7 +3010,8 @@ void check_program(struct program *p)
     if(p->identifiers[e].identifier_flags & ~IDENTIFIER_MASK)
       Pike_fatal("Unknown flags in identifier flag field.\n");
 
-    if(p->identifiers[e].run_time_type!=T_MIXED)
+    if((p->identifiers[e].run_time_type!=T_MIXED) &&
+       (p->identifiers[e].run_time_type!=PIKE_T_GET_SET))
       check_type(p->identifiers[e].run_time_type);
 
     if(IDENTIFIER_IS_VARIABLE(p->identifiers[e].identifier_flags))
@@ -3012,6 +3054,22 @@ void check_program(struct program *p)
       size_t q, size;
       /* Variable */
       ptrdiff_t offset = INHERIT_FROM_INT(p, e)->storage_offset+i->func.offset;
+      if (i->run_time_type == PIKE_T_GET_SET) {
+	struct reference *ref = PTR_FROM_INT(p, e);
+	if (!(ref->id_flags & ID_INHERITED)) {
+	  INT32 *gs_info = (INT32 *)(p->program + i->func.offset);
+	  if ((gs_info + 2) > (INT32 *)(p->program + p->num_program)) {
+	    Pike_fatal("Getter/setter variable outside program!\n");
+	  }
+	  if (gs_info[0] >= p->num_identifier_references) {
+	    Pike_fatal("Getter outside references.\n");
+	  }
+	  if (gs_info[1] >= p->num_identifier_references) {
+	    Pike_fatal("Setter outside references.\n");
+	  }
+	}
+	continue;
+      }
       size=sizeof_variable(i->run_time_type);
 
       if((offset+size > (size_t)p->storage_needed) || offset<0)
@@ -4872,6 +4930,7 @@ INT32 define_function(struct pike_string *name,
   struct reference ref;
   struct svalue *lfun_type;
   INT32 i;
+  INT32 getter_setter_offset = -1;
 
 #ifdef PROGRAM_BUILD_DEBUG
   {
@@ -4907,6 +4966,83 @@ INT32 define_function(struct pike_string *name,
 	yytype_error(NULL, lfun_type->u.type, type,
 		     YYTE_IS_WARNING);
       }
+    }
+  } else if ((name->len > 3) &&
+	     (index_shared_string(name, 0) == '`') &&
+	     (index_shared_string(name, 1) == '-') &&
+	     (index_shared_string(name, 2) == '>')) {
+    struct pike_string *symbol = NULL;
+    struct pike_type *symbol_type = NULL;
+    struct pike_type *gs_type = NULL;
+    /* Getter setter. */
+    if (index_shared_string(name, name->len-1) != '=') {
+      /* fprintf(stderr, "Got getter: %s\n", name->str); */
+      gs_type = lfun_getter_type_string;
+      getter_setter_offset = 0;
+      symbol = string_slice(name, 3, name->len-3);
+      symbol_type = get_argument_type(type, -1);
+    } else if (name->len > 4) {
+      /* fprintf(stderr, "Got setter: %s\n", name->str); */
+      gs_type = lfun_setter_type_string;
+      getter_setter_offset =
+	((PIKE_OPCODE_T *)(((INT32 *)0) + 1)) - ((PIKE_OPCODE_T *)0);
+      symbol = string_slice(name, 3, name->len-4);
+      symbol_type = get_argument_type(type, 0);
+    }
+
+    if (symbol) {
+      /* We got a getter or a setter. */
+      struct reference *ref;
+      if (!pike_types_le(type, gs_type)) {
+	if (!match_types(type, gs_type)) {
+	  my_yyerror("Type mismatch for callback function %S:", name);
+	  yytype_error(NULL, gs_type, type, 0);
+	} else if (lex.pragmas & ID_STRICT_TYPES) {
+	  yywarning("Type mismatch for callback function %S:", name);
+	  yytype_error(NULL, gs_type, type, YYTE_IS_WARNING);
+	}
+      }
+      i = isidentifier(symbol);
+      if ((i >= 0) && 
+	  !((ref = Pike_compiler->new_program->identifier_references + i)->
+	    id_flags & ID_INHERITED)) {
+	/* Not an inherited symbol. */
+	struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, i);
+	if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags)) {
+	  my_yyerror("Illegal to redefine function %S with variable.", symbol);
+	  getter_setter_offset = -1;
+	} else if (id->run_time_type != PIKE_T_GET_SET) {
+	  my_yyerror("Illegal to redefine a current variable with a getter/setter: %S.", symbol);
+	  getter_setter_offset = -1;
+	} else {
+	  if (ref->id_flags != flags) {
+	    if (Pike_compiler->compiler_pass == 1) {
+	      yywarning("Modifier mismatch for variable %S.", symbol);
+	    }
+	    ref->id_flags &= flags;
+	  }
+	  getter_setter_offset += id->func.offset;
+	}
+      } else {
+	INT32 offset = Pike_compiler->new_program->num_program;
+	getter_setter_offset += offset;
+	/* Get/set information.
+	 *   reference number to getter.
+	 *   reference number to setter.
+	 * NOTE: Only place-holders for now.
+	 *       The proper entry gets set when we have added the function.
+	 */
+	ins_pointer(-1);
+	ins_pointer(-1);
+	low_define_variable(symbol, symbol_type, flags,
+			    offset, PIKE_T_GET_SET);
+      }
+      /* FIXME: Really ought to be ID_HIDDEN too,
+       *        but that complicates matters below...
+       */
+      flags = ID_STATIC|ID_PRIVATE|ID_INLINE;
+      free_type(symbol_type);
+      free_string(symbol);
     }
   }
 
@@ -4948,6 +5084,10 @@ INT32 define_function(struct pike_string *name,
 	     ( (!func || func->offset == -1) || (funp->func.offset == -1))))
       {
 	my_yyerror("Identifier %S defined twice.", name);
+
+	if (getter_setter_offset >= 0) {
+	  upd_pointer(getter_setter_offset, i);
+	}
 	return i;
       }
 
@@ -5033,6 +5173,14 @@ INT32 define_function(struct pike_string *name,
       if(MEMCMP(Pike_compiler->new_program->identifier_references+i, &ref,sizeof(ref)))
 	Pike_fatal("New function overloading algorithm failed!\n");
 #endif
+
+      if (getter_setter_offset >= 0) {
+	INT32 old_i = (INT32)read_pointer(getter_setter_offset);
+	if ((old_i >= 0) && (old_i != overridden)) {
+	  my_yyerror("Multiple definitions for %S.", name);
+	}
+	upd_pointer(getter_setter_offset, overridden);
+      }
       return overridden;
     }
     /* NOTE: At this point we already have the identifier in the
@@ -5090,6 +5238,14 @@ INT32 define_function(struct pike_string *name,
   fprintf(stderr, "%.*sadded new definition #%d\n",
 	  compilation_depth, "                ", i);
 #endif
+
+  if (getter_setter_offset >= 0) {
+    INT32 old_i = (INT32)read_pointer(getter_setter_offset);
+    if (old_i >= 0) {
+      my_yyerror("Multiple definitions for %S.", name);
+    }
+    upd_pointer(getter_setter_offset, i);
+  }
 
   return i;
 }
@@ -7163,6 +7319,9 @@ void init_program(void)
     free_type(val.u.type);
   }
 
+  lfun_getter_type_string = make_pike_type(tFuncV(tNone, tVoid, tMix));
+  lfun_setter_type_string = make_pike_type(tFuncV(tZero, tVoid, tVoid));
+
   start_new_program();
   debug_malloc_touch(Pike_compiler->fake_object);
   debug_malloc_touch(Pike_compiler->fake_object->storage);
@@ -7225,6 +7384,8 @@ void cleanup_program(void)
 {
   size_t e;
 
+  free_type(lfun_setter_type_string);
+  free_type(lfun_getter_type_string);
   free_mapping(lfun_types);
   free_mapping(lfun_ids);
   for (e=0; e < NELEM(lfun_names); e++) {
