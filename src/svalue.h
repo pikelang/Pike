@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.138 2006/02/28 13:51:53 mast Exp $
+|| $Id: svalue.h,v 1.139 2006/10/27 18:17:35 grubba Exp $
 */
 
 #ifndef SVALUE_H
@@ -119,6 +119,9 @@ struct svalue
 #define T_MANY       17
 
 #define PIKE_T_INT_UNTYPED  18 /* Optimization of int type size */
+
+#define PIKE_T_GET_SET 32	/* Getter setter.
+				 * Only valid in struct identifier */
 
 #define PIKE_T_RING 240
 #define PIKE_T_NAME 241		/**< Named type. */
