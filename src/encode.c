@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.237 2006/02/21 06:31:59 mast Exp $
+|| $Id: encode.c,v 1.238 2006/10/27 18:43:15 grubba Exp $
 */
 
 #include "global.h"
@@ -1326,6 +1326,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      /* Skip identifiers that haven't been overloaded. */
 	      if (ref->id_flags & ID_INHERITED) continue;
 
+	      /* Skip getter/setter variables; they get pulled in
+	       * by their respective functions.
+	       */
+	      if (IDENTIFIER_IS_VARIABLE(id->identifier_flags) &&
+		  (id->run_time_type == PIKE_T_GET_SET))
+		continue;
+
 	      EDB(3,
 		  fprintf(stderr,
 			  "%*sencoding identifier ref %d: %4x \"%s\"\n",
@@ -1374,6 +1381,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		}
 		code_number(ref_no, data);
 	      } else {
+		int gs_flags = -1;
+
 		if (id_dumped[ref->identifier_offset]) {
 		  EDB(3,
 		      fprintf(stderr, "%*sencode: already encoded reference\n",
@@ -1382,6 +1391,29 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		}
 		id_dumped[ref->identifier_offset] = 1;
 
+		if (id->name && (id->name->len>3) &&
+		    (index_shared_string(id->name, 0) == '`') &&
+		    (index_shared_string(id->name, 1) == '-') &&
+		    (index_shared_string(id->name, 2) == '>')) {
+		  struct pike_string *symbol = NULL;
+		  if (index_shared_string(id->name, id->name->len-1) != '=') {
+		    /* Getter callback. */
+		    symbol = string_slice(id->name, 3, id->name->len - 3);
+		  } else if (id->name->len > 4) {
+		    /* Setter callback. */
+		    symbol = string_slice(id->name, 3, id->name->len - 4);
+		  }
+		  if (symbol) {
+		    int i = really_low_find_shared_string_identifier(symbol, p,
+						  SEE_STATIC|SEE_PRIVATE);
+		    if (i >= 0) {
+		      /* Found the symbol. */
+		      gs_flags = PTR_FROM_INT(p, i)->id_flags;
+		    }
+		    free_string(symbol);
+		  }
+		}
+
 		switch (id->identifier_flags & IDENTIFIER_TYPE_MASK) {
 		case IDENTIFIER_CONSTANT:
 		  EDB(3,
@@ -1389,7 +1421,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 			      data->depth, ""));
 
 		  code_number(ID_ENTRY_CONSTANT, data);
-		  code_number(ref->id_flags, data);
+		  if (gs_flags >= 0) {
+		    code_number(gs_flags, data);
+		  } else {
+		    code_number(ref->id_flags, data);
+		  }
 
 		  /* name */
 		  str_sval.u.string = id->name;
@@ -1413,7 +1449,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 			      data->depth, ""));
 
 		  code_number(ID_ENTRY_FUNCTION, data);
-		  code_number(ref->id_flags, data);
+		  if (gs_flags >= 0) {
+		    code_number(gs_flags, data);
+		  } else {
+		    code_number(ref->id_flags, data);
+		  }
 
 		  /* name */
 		  str_sval.u.string = id->name;
@@ -1460,7 +1500,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 			      data->depth, ""));
 
 		  code_number(ID_ENTRY_VARIABLE, data);
-		  code_number(ref->id_flags, data);
+		  if (gs_flags >= 0) {
+		    code_number(gs_flags, data);
+		  } else {
+		    code_number(ref->id_flags, data);
+		  }
 
 		  /* name */
 		  str_sval.u.string = id->name;
