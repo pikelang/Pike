@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.270 2006/07/05 19:24:19 mast Exp $
+|| $Id: object.c,v 1.271 2006/10/27 18:18:14 grubba Exp $
 */
 
 #include "global.h"
@@ -270,7 +270,7 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
 	  s->type=T_INT;
 	  s->u.integer=0;
 	  s->subtype=0;
-	}else{
+	} else if (prog->identifiers[d].run_time_type != PIKE_T_GET_SET) {
 	  union anything *u;
 	  u=(union anything *)(storage + prog->identifiers[d].func.offset);
 	  switch(prog->identifiers[d].run_time_type)
@@ -1144,7 +1144,17 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
     }
 
   case IDENTIFIER_VARIABLE:
-    if (!PIKE_OBJ_STORAGE(o)) {
+    if (i->run_time_type == PIKE_T_GET_SET) {
+      struct reference *ref = p->identifier_references + f;
+      struct program *pp = p->inherits[ref->inherit_offset].prog;
+      int fun = ((INT32 *)(pp->program + i->func.offset))[0];
+      if (fun >= 0) {
+	apply_low(o, fun, 0);
+	*to = *(--Pike_sp);
+      } else {
+	Pike_error("No getter for variable %S.\n", i->name);
+      }
+    } else if (!PIKE_OBJ_STORAGE(o)) {
       /* Variable storage not allocated. */
 #ifdef PIKE_DEBUG
       if (p->flags & PROGRAM_FINISHED) {
@@ -1375,6 +1385,20 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
       (void) debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" self_global"));
       dmalloc_touch_svalue (to);
 #endif /* DEBUG_MALLOC */
+    }
+  }
+  else if (rtt == PIKE_T_GET_SET)
+  {
+    /* Getter/setter type variable. */
+    struct reference *ref = p->identifier_references + f;
+    struct program *pp = p->inherits[ref->inherit_offset].prog;
+    int fun = ((INT32 *)(pp->program + i->func.offset))[1];
+    if (fun >= 0) {
+      push_svalue(from);
+      apply_low(o, fun, 1);
+      pop_stack();
+    } else {
+      Pike_error("No setter for variable %S.\n", i->name);
     }
   }
   else
@@ -1775,7 +1799,9 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	    int id_flags = id->identifier_flags;
 	    int rtt = id->run_time_type;
 
-	    if (IDENTIFIER_IS_ALIAS(id_flags)) continue;
+	    if (IDENTIFIER_IS_ALIAS(id_flags) ||
+		(rtt == PIKE_T_GET_SET))
+	      continue;
 	
 	    if(rtt == T_MIXED)
 	    {
@@ -1839,7 +1865,9 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 	  int id_flags = id->identifier_flags;
 	  int rtt = id->run_time_type;
 	
-	  if (IDENTIFIER_IS_ALIAS(id_flags)) continue;
+	  if (IDENTIFIER_IS_ALIAS(id_flags) ||
+	      (rtt == PIKE_T_GET_SET))
+	    continue;
 	
 	  if(rtt == T_MIXED)
 	  {
@@ -1911,7 +1939,9 @@ static INLINE void gc_check_object(struct object *o)
 	  int id_flags = id->identifier_flags;
 	  int rtt = id->run_time_type;
 	
-	  if (IDENTIFIER_IS_ALIAS(id_flags)) continue;
+	  if (IDENTIFIER_IS_ALIAS(id_flags) ||
+	      (rtt == PIKE_T_GET_SET))
+	    continue;
 	
 	  if(rtt == T_MIXED)
 	  {
