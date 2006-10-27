@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.257 2006/08/15 10:43:57 grubba Exp $
+|| $Id: pike_types.c,v 1.258 2006/10/27 18:19:42 grubba Exp $
 */
 
 #include "global.h"
@@ -167,6 +167,7 @@ PMOD_EXPORT char *get_name_of_type(TYPE_T t)
     case T_PIKE_FRAME: return "pike_frame";
     case T_MULTISET_DATA: return "multiset_data";
     case T_STRUCT_CALLABLE: return "callable";
+    case PIKE_T_GET_SET: return "getter/setter";
     default: return "unknown";
   }
 }
@@ -4277,6 +4278,53 @@ struct pike_type *check_call(struct pike_type *args,
   }else{
     pop_stack_mark();
     return 0;
+  }
+}
+
+/* Get the type for the specified argument in a function type.
+ * Argument number -1 is the return type.
+ * True arguments are counted from zero.
+ */
+struct pike_type *get_argument_type(struct pike_type *fun, int arg_no)
+{
+ loop:
+  switch(fun->type) {
+  case T_OR:
+    return or_pike_types(get_argument_type(fun->car, arg_no),
+			 get_argument_type(fun->cdr, arg_no),
+			 1);
+  case T_FUNCTION:
+    if (arg_no > 0) {
+      arg_no--;
+      fun = fun->cdr;
+      goto loop;
+    }
+    /* FALL_THROUGH */
+  case T_MANY:
+    if (arg_no < 0) {
+      add_ref(fun->cdr);
+      return fun->cdr;
+    }
+    add_ref(fun->car);
+    return fun->car;
+
+  case T_MIXED:
+    add_ref(fun);
+    return fun;
+
+  case T_ARRAY:
+    if (arg_no < 0) {
+      type_stack_mark();
+      push_finished_type(fun = get_argument_type(fun->car, arg_no));
+      push_type(T_ARRAY);
+      free_type(fun);
+      return pop_unfinished_type();
+    }
+    return get_argument_type(fun->car, arg_no);
+
+  default:
+    add_ref(zero_type_string);
+    return zero_type_string;
   }
 }
 
