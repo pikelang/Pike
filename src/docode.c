@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.187 2006/03/15 12:29:02 grubba Exp $
+|| $Id: docode.c,v 1.188 2006/10/28 18:16:31 grubba Exp $
 */
 
 #include "global.h"
@@ -665,6 +665,7 @@ static int do_docode2(node *n, int flags)
       case F_ARG_LIST:
       case F_COMMA_EXPR:
       case F_EXTERNAL:
+      case F_GET_SET:
       case F_AUTO_MAP_MARKER:
 	  break;
       }
@@ -709,6 +710,7 @@ static int do_docode2(node *n, int flags)
     return 1;
       
   case F_EXTERNAL:
+  case F_GET_SET:
     {
       int level = 0;
       struct program_state *state = Pike_compiler;
@@ -719,49 +721,66 @@ static int do_docode2(node *n, int flags)
       if (!state) {
 	my_yyerror("Program parent %d lost during compiling.", n->u.integer.a);
 	emit1(F_NUMBER,0);
-	return 1;
-      }
-      if(level)
-      {
-	if(flags & WANT_LVALUE)
-	{
-	  if (n->u.integer.b == IDREF_MAGIC_THIS)
-	    yyerror ("Cannot assign to this.");
-	  emit2(F_EXTERNAL_LVALUE, n->u.integer.b, level);
-	  return 2;
-	}else{
-	  emit2(F_EXTERNAL, n->u.integer.b, level);
-	  return 1;
+      } else if (flags & WANT_LVALUE) {
+	if (n->u.integer.b == IDREF_MAGIC_THIS) {
+	  my_yyerror("this is not an lvalue.");
 	}
-      }else{
-	if(flags & WANT_LVALUE)
-	{
-	  if (n->u.integer.b == IDREF_MAGIC_THIS) {
-	    my_yyerror("this is not an lvalue.");
-	  }
+	if (level) {
+	  emit2(F_EXTERNAL_LVALUE, n->u.integer.b, level);
+	} else {
 	  emit1(F_GLOBAL_LVALUE, n->u.integer.b);
-	  return 2;
-	}else{
-	  if (n->u.integer.b == IDREF_MAGIC_THIS)
-	    emit1(F_THIS_OBJECT, 0);
-	  else {
-	    struct identifier *id = ID_FROM_INT(state->new_program,n->u.integer.b);
-	    if(IDENTIFIER_IS_FUNCTION(id->identifier_flags) &&
-	       id->identifier_flags & IDENTIFIER_HAS_BODY)
-	    {
-	      /* Only use this opcode when it's certain that the result
-	       * can't zero, i.e. when we know the function isn't just a
-	       * prototype. */
-	      emit1(F_LFUN, n->u.integer.b);
-	    }else{
-	      emit1(F_GLOBAL, n->u.integer.b);
-	    }
+	}
+	return 2;
+      } else {
+	struct reference *ref =
+	  PTR_FROM_INT(state->new_program, n->u.integer.b);
+	struct identifier *id =
+	  ID_FROM_PTR(state->new_program, ref);
+	if (n->token == F_GET_SET) {
+	  struct inherit *inh =
+	    INHERIT_FROM_PTR(state->new_program, ref);
+	  int f;
+#ifdef PIKE_DEBUG
+	  if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags) ||
+	      (id->run_time_type != PIKE_T_GET_SET)) {
+	    Pike_fatal("Not a getter/setter in a F_GET_SET node!\n"
+		       "  identifier_flags: 0x%08x\n"
+		       "  run_time_type; %s (%d)\n",
+		     id->identifier_flags,
+		       get_name_of_type(id->run_time_type),
+		       id->run_time_type);
 	  }
-	  return 1;
+#endif /* PIKE_DEBUG */
+	  f = ((INT32 *)(inh->prog->program + id->func.offset))[0];
+	  if (f == -1) {
+	    yywarning("Variable %S lacks a getter.", id->name);
+	  } else if (!level) {
+	    return do_lfun_call(f + inh->identifier_level, NULL);
+	  } else {
+	    /* FIXME: Support inlining for the parent case.
+	     *
+	     * do_call_external(n->u.integer.a, f + inh->identifier_level,
+	     *                  NULL);
+	     */
+	    emit2(F_EXTERNAL, n->u.integer.b, level);
+	  }
+	} else if (level) {
+	  emit2(F_EXTERNAL, n->u.integer.b, level);
+	} else if (n->u.integer.b == IDREF_MAGIC_THIS) {
+	  emit1(F_THIS_OBJECT, 0);
+	} else if(IDENTIFIER_IS_FUNCTION(id->identifier_flags) &&
+		  id->identifier_flags & IDENTIFIER_HAS_BODY)
+	{
+	  /* Only use this opcode when it's certain that the result
+	   * can't zero, i.e. when we know the function isn't just a
+	   * prototype. */
+	  emit1(F_LFUN, n->u.integer.b);
+	}else{
+	  emit1(F_GLOBAL, n->u.integer.b);
 	}
       }
     }
-    break;
+    return 1;
 
   case F_THIS:
     {
@@ -1066,10 +1085,61 @@ static int do_docode2(node *n, int flags)
 	}else{
 	  code_expression(CAR(n), 0, "RHS");
 	  emit1(flags & DO_POP ? F_ASSIGN_GLOBAL_AND_POP:F_ASSIGN_GLOBAL,
-	       CDR(n)->u.id.number);
+		CDR(n)->u.id.number);
 	}
 	break;
 
+        case F_GET_SET:
+	  {
+	    /* Check for the setter function. */
+	    struct program_state *state = Pike_compiler;
+	    int program_id = CDR(n)->u.integer.a;
+	    int level = 0;
+	    while (state && (state->new_program->id != program_id)) {
+	      state = state->previous;
+	      level++;
+	    }
+	    if (!state) {
+	      yyerror("Lost parent.");
+	    } else {
+	      struct reference *ref =
+		PTR_FROM_INT(state->new_program, CDR(n)->u.integer.b);
+	      struct identifier *id =
+		ID_FROM_PTR(state->new_program, ref);
+	      struct inherit *inh =
+		INHERIT_FROM_PTR(state->new_program, ref);
+	      int f;
+#ifdef PIKE_DEBUG
+	      if (!IDENTIFIER_IS_VARIABLE(id->identifier_flags) ||
+		  (id->run_time_type != PIKE_T_GET_SET)) {
+		Pike_fatal("Not a getter/setter in a F_GET_SET node!\n"
+			   "  identifier_flags: 0x%08x\n"
+			   "  run_time_type; %s (%d)\n",
+			   id->identifier_flags,
+			   get_name_of_type(id->run_time_type),
+			   id->run_time_type);
+	      }
+#endif /* PIKE_DEBUG */
+	      f = ((INT32 *)(inh->prog->program + id->func.offset))[1];
+	      if (f == -1) {
+		yywarning("Variable %S lacks a setter.", id->name);
+	      } else if (!level) {
+		f += inh->identifier_level;
+		if (flags & DO_POP) {
+		  emit0(F_MARK);
+		  code_expression(CAR(n), 0, "RHS");
+		} else {
+		  code_expression(CAR(n), 0, "RHS");
+		  emit0(F_MARK);
+		  emit0(F_DUP);
+		}
+		emit1(F_CALL_LFUN, f);
+		emit0(F_POP_VALUE);
+		return !(flags & DO_POP);
+	      }
+	    }
+	  }
+	  /* FALL_THROUGH */
 	case F_EXTERNAL:
 	  /* Check that it is in this context */
 	  if(Pike_compiler ->new_program->id == CDR(n)->u.integer.a)
@@ -1609,6 +1679,12 @@ static int do_docode2(node *n, int flags)
       return do_lfun_call(CAR(n)->u.id.number, CDR(n));
     }
     else if(CAR(n)->token == F_EXTERNAL &&
+	    CAR(n)->u.integer.a == Pike_compiler->new_program->id &&
+	    CAR(n)->u.integer.b != IDREF_MAGIC_THIS)
+    {
+      return do_lfun_call(CAR(n)->u.integer.b, CDR(n));
+    }
+    else if(CAR(n)->token == F_GET_SET &&
 	    CAR(n)->u.integer.a == Pike_compiler->new_program->id &&
 	    CAR(n)->u.integer.b != IDREF_MAGIC_THIS)
     {
