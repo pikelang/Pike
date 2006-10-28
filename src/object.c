@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.272 2006/10/28 15:06:43 grubba Exp $
+|| $Id: object.c,v 1.273 2006/10/28 19:02:15 grubba Exp $
 */
 
 #include "global.h"
@@ -868,7 +868,7 @@ PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason 
 	  dmalloc_touch_svalue(s);
 #endif /* DEBUG_MALLOC */
 	}
-      }else{
+      }else if(rtt != PIKE_T_GET_SET){
 	union anything *u;
 	u=(union anything *)(storage + id->func.offset);
 #ifdef DEBUG_MALLOC
