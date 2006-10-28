@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.378 2006/08/21 18:48:25 grubba Exp $
+|| $Id: las.c,v 1.379 2006/10/28 18:17:56 grubba Exp $
 */
 
 #include "global.h"
@@ -52,6 +52,7 @@ int car_is_node(node *n)
   switch(n->token)
   {
   case F_EXTERNAL:
+  case F_GET_SET:
   case F_IDENTIFIER:
   case F_TRAMPOLINE:
   case F_CONSTANT:
@@ -70,6 +71,7 @@ int cdr_is_node(node *n)
   switch(n->token)
   {
   case F_EXTERNAL:
+  case F_GET_SET:
   case F_IDENTIFIER:
   case F_TRAMPOLINE:
   case F_CONSTANT:
@@ -88,6 +90,7 @@ int node_is_leaf(node *n)
   switch(n->token)
   {
   case F_EXTERNAL:
+  case F_GET_SET:
   case F_IDENTIFIER:
   case F_TRAMPOLINE:
   case F_CONSTANT:
@@ -120,6 +123,7 @@ void check_tree(node *n, int depth)
     switch(n->token)
     {
     case F_EXTERNAL:
+    case F_GET_SET:
       if(n->type)
       {
 	int parent_id = n->u.integer.a;
@@ -561,7 +565,8 @@ static node *freeze_node(node *orig)
 	if (n->current_file) {
 	  free_string(n->current_file);
 	}
-	n->current_file = orig->current_file;
+	n->current_file = dmalloc_touch(struct pike_string *,
+					orig->current_file);
 	orig->current_file = NULL;
       }
       free_node(dmalloc_touch(node *, orig));
@@ -960,6 +965,8 @@ node *debug_mknode(int token, node *a, node *b)
       Pike_fatal("Attempt to create an F_TRAMPOLINE-node with mknode()!\n");
     case F_EXTERNAL:
       Pike_fatal("Attempt to create an F_EXTERNAL-node with mknode()!\n");
+    case F_GET_SET:
+      Pike_fatal("Attempt to create an F_GET_SET-node with mknode()!\n");
 #endif /* PIKE_DEBUG */
   }
 
@@ -1028,6 +1035,7 @@ node *debug_mknode(int token, node *a, node *b)
 	  }
 	  break;
 	case F_EXTERNAL:
+	case F_GET_SET:
 	  if (a->u.integer.b != IDREF_MAGIC_THIS) {
 	    struct program_state *state = Pike_compiler;
 	    int program_id = a->u.integer.a;
@@ -1486,6 +1494,11 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
       res->node_info = OPT_EXTERNAL_DEPEND;
     }else{
       res->node_info = OPT_NOT_CONST;
+      if (IDENTIFIER_IS_VARIABLE(id->identifier_flags) &&
+	  (id->run_time_type == PIKE_T_GET_SET)) {
+	/* Special case of F_EXTERNAL for ease of detection. */
+	res->token = F_GET_SET;
+      }
     }
   }
   res->tree_info = res->node_info;
@@ -1677,6 +1690,7 @@ void resolv_constant(node *n)
       return;
 
     case F_EXTERNAL:
+    case F_GET_SET:
       if (n->u.integer.b == IDREF_MAGIC_THIS) {
 	yyerror ("Expected constant, got reference to this");
 	push_int (0);
@@ -2016,6 +2030,7 @@ int node_is_eq(node *a,node *b)
       a->u.trampoline.frame == b->u.trampoline.frame;
       
   case F_EXTERNAL:
+  case F_GET_SET:
   case F_LOCAL:
     return a->u.integer.a == b->u.integer.a &&
       a->u.integer.b == b->u.integer.b;
@@ -2524,6 +2539,7 @@ static void low_print_tree(node *foo,int needlval)
     break;
 
   case F_EXTERNAL:
+  case F_GET_SET:
     if(needlval) fputc('&', stderr);
     {
       struct program_state *state = Pike_compiler;
@@ -2924,6 +2940,7 @@ static int find_used_variables(node *n,
     goto set_pointer;
 
   case F_EXTERNAL:
+  case F_GET_SET:
     q = find_q(&(p->externals), n->u.integer.b, n->u.integer.a);
 #ifdef PIKE_DEBUG
     if (l_flag > 2) {
@@ -3063,6 +3080,7 @@ static void find_written_vars(node *n,
     break;
 
   case F_EXTERNAL:
+  case F_GET_SET:
     if(lvalue) {
 #ifdef PIKE_DEBUG
       if (l_flag > 2) {
@@ -3814,6 +3832,7 @@ void fix_type_field(node *n)
 	break;
 
       case F_EXTERNAL:
+      case F_GET_SET:
 	{
 	  int id_no = CAR(n)->u.integer.b;
 
@@ -5114,7 +5133,8 @@ static node *localopt(node *n)
 static void optimize(node *n)
 {
   node *tmp1, *tmp2, *tmp3;
-  struct pike_string *save_file = lex.current_file;
+  struct pike_string *save_file =
+    dmalloc_touch(struct pike_string *, lex.current_file);
   INT32 save_line = lex.current_line;
 
   do
@@ -5158,7 +5178,7 @@ static void optimize(node *n)
 #endif /* SHARED_NODES */
 
     lex.current_line = n->line_number;
-    lex.current_file = n->current_file;
+    lex.current_file = dmalloc_touch(struct pike_string *, n->current_file);
 
 #ifdef SHARED_NODES
     if (n->tree_info & OPT_NOT_SHARED) {
@@ -5324,7 +5344,7 @@ static void optimize(node *n)
   }while(n);
 
   lex.current_line = save_line;
-  lex.current_file = save_file;
+  lex.current_file = dmalloc_touch(struct pike_string *, save_file);
 }
 
 void optimize_node(node *n)
