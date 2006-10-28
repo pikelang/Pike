@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.h,v 1.42 2006/01/21 14:31:34 grubba Exp $
+|| $Id: opcodes.h,v 1.43 2006/10/28 18:15:30 grubba Exp $
 */
 
 #ifndef OPCODES_H
@@ -246,9 +246,12 @@ enum Pike_opcodes
 
   F_MAX_INSTR,
 
-  /* These are only used for dumping. */
+  /* These two are only used for dumping. */
   F_FILENAME,
   F_LINE,
+
+  /* Alias for F_EXTERNAL when the identifier is a getter/setter. */
+  F_GET_SET,
 };
 
 #undef OPCODE0
