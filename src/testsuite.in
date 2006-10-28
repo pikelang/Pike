@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.768 2006/09/04 12:11:00 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.769 2006/10/28 19:18:08 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -3455,6 +3455,48 @@ test_any([[
   object zz = Z();
   return zz->x + zz->y + zz->z;
 ]], 7)
+
+// Testing getter/setters
+test_any([[
+  // Trivial case.
+  class X {
+    int `->x() { return 5; }
+  };
+  return X()->x;
+]], 5)
+
+test_any([[
+  // Strange behaviour getter & setter.
+  class X {
+    int y = 2;
+    int `->x() { return y*3; }
+    void `->x=(int z) { y += z*5; }
+  };
+  X x = X();
+  x->x = 2;
+  return x->x;
+]], 36)
+
+test_any([[
+  // Multiple inheritance.
+  class X {
+    int y = 0;
+    int `->x() { return y; }
+    void `->x=(int z) { y = z; }
+  };
+  class Y {
+    inherit X:x1;
+    inherit X:x2;
+    int `->x1() { return x1::x; }
+    void `->x1=(int z) { x1::x = z; }
+    int `->x2() { return x2::x; }
+    void `->x2=(int z) { x2::x = z; }
+  };
+  Y y = Y();
+  y->x1 = 1;
+  y->x2 = 2;
+  return (y->x1 + y->x2) * y->x;
+]], 6)
 
 test_do([[
   // bug 3006
