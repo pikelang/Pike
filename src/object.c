@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.271 2006/10/27 18:18:14 grubba Exp $
+|| $Id: object.c,v 1.272 2006/10/28 15:06:43 grubba Exp $
 */
 
 #include "global.h"
@@ -1149,7 +1149,16 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
       struct program *pp = p->inherits[ref->inherit_offset].prog;
       int fun = ((INT32 *)(pp->program + i->func.offset))[0];
       if (fun >= 0) {
-	apply_low(o, fun, 0);
+	DECLARE_CYCLIC();
+	fun += p->inherits[ref->inherit_offset].identifier_level;
+	if (!BEGIN_CYCLIC(o, fun)) {
+	  SET_CYCLIC_RET(1);
+	  apply_low(o, fun, 0);
+	} else {
+	  END_CYCLIC();
+	  Pike_error("Cyclic loop on getter for symbol %S.\n", i->name);
+	}
+	END_CYCLIC();
 	*to = *(--Pike_sp);
       } else {
 	Pike_error("No getter for variable %S.\n", i->name);
@@ -1394,9 +1403,18 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
     struct program *pp = p->inherits[ref->inherit_offset].prog;
     int fun = ((INT32 *)(pp->program + i->func.offset))[1];
     if (fun >= 0) {
-      push_svalue(from);
-      apply_low(o, fun, 1);
-      pop_stack();
+      DECLARE_CYCLIC();
+      fun += p->inherits[ref->inherit_offset].identifier_level;
+      if (!BEGIN_CYCLIC(o, fun)) {
+	SET_CYCLIC_RET(1);
+	push_svalue(from);
+	apply_low(o, fun, 1);
+	pop_stack();
+      } else {
+	END_CYCLIC();
+	Pike_error("Cyclic loop on setter for symbol %S.\n", i->name);
+      }
+      END_CYCLIC();
     } else {
       Pike_error("No setter for variable %S.\n", i->name);
     }
