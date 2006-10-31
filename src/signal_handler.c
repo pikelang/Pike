@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.321 2006/07/05 19:24:19 mast Exp $
+|| $Id: signal_handler.c,v 1.322 2006/10/31 00:26:21 nilsson Exp $
 */
 
 #include "global.h"
@@ -4345,6 +4345,14 @@ static void f_kill(INT32 args)
  */
 
 /*! @decl int kill(int signal)
+ *!
+ *! @returns
+ *!   @int
+ *!     @value 1
+ *!       Success
+ *!     @value 0
+ *!       Failure. errno is set to EINVAL, EPERM or ESRCH.
+ *!   @endint
  *!
  *! @note
  *!   This function is only available on platforms that
