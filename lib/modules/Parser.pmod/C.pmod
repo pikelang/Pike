@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: C.pmod,v 1.45 2006/02/17 18:47:29 nilsson Exp $
+// $Id: C.pmod,v 1.46 2006/10/31 00:14:50 nilsson Exp $
 
 //! Splits the @[data] string into an array of tokens. An additional
 //! element with a newline will be added to the resulting array of
@@ -330,16 +330,16 @@ array(Token) tokenize(array(string) s, void|string file)
 {
   array(Token) ret=allocate(sizeof(s));
   int line=1;
-  for(int e=0;e<sizeof(s);e++)
+  foreach(s; int e; string str)
   {
-    ret[e]=Token(s[e],line,file);
-    if(s[e][0]=='#')
+    ret[e]=Token(str,line,file);
+    if(str[0]=='#')
     {
-      if( (sscanf(s[e],"#%*[ \t\14]%d%*[ \t\14]\"%s\"", line,file) == 4) ||
-          (sscanf(s[e],"#%*[ \t\14]line%*[ \t\14]%d%*[ \t\14]\"%s\"",line,file)==5))
+      if( (sscanf(str,"#%*[ \t\14]%d%*[ \t\14]\"%s\"", line,file) == 4) ||
+          (sscanf(str,"#%*[ \t\14]line%*[ \t\14]%d%*[ \t\14]\"%s\"",line,file)==5))
         line--;
     }
-    line+=sizeof(s[e]/"\n")-1;
+    line+=sizeof(str/"\n")-1;
   }
   return ret;
 }
