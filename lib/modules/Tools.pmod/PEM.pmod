@@ -248,11 +248,11 @@ class Msg
 //! indexed by message name, such as "CERTIFICATE".
   mapping(string:EncapsulatedMsg) parts;
 
-//! Creates a decoded PEM message
-//!
-//! @param s
-//!   a string containing a PEM encoded message to be decoded.
-  void create(string s)
+  //! Creates a decoded PEM message
+  //!
+  //! @param s
+  //!   a string containing a PEM encoded message to be decoded.
+  static void create(string s)
    {
 #ifdef PEM_DEBUG
       werror("Msg->create(%O)\n", s);
@@ -296,6 +296,11 @@ class Msg
 	parts[name] = msg->encapsulated[i];
       }
    }
+
+  static string _sprintf(int t)
+  {
+    return t=='O' && sprintf("%O(%O)", this_program, parts);
+  }
 }
 
 // Doesn't use general rfc934 headers and boundaries
