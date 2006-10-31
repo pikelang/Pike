@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.124 2006/10/25 15:21:03 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.125 2006/10/31 00:31:05 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -840,15 +840,22 @@ private class Expression {
   private multiset(int) sscanf_depths;
 
   void create(array(string) t) {
-    tokens = t;
-
     positions = ([]);
-    int pos;
-
-    int depth;
     depths = allocate(sizeof(t));
-
     sscanf_depths = (<>);
+
+    generate_offsets(t);
+    tokens = t;
+  }
+
+  void prepend(array t)
+  {
+  }
+
+  static void generate_offsets(array t)
+  {
+    int pos = tokens && sizeof(tokens);
+    int depth;
 
     foreach(t; int i; string t) {
       if(!whitespace[t[0]])
@@ -907,19 +914,7 @@ private class Expression {
 
   // Returns the expression verbatim.
   string code() {
-    string ret = tokens*"";
-
-    switch( `[](0) )
-    {
-    case "if":
-      ret += " else ___Hilfe->last_else=1;";
-      break;
-    case "else":
-      ret = "if(___Hilfe->last_else);" + ret;
-      break;
-    }
-
-    return ret;
+    return tokens*"";
   }
 
   // Returns at which position the type declaration that
@@ -1030,7 +1025,17 @@ private class Expression {
     return 0;
   }
 
-  string _sprintf(int t) {
+  static mixed cast(string to)
+  {
+    switch(to)
+    {
+    case "array": return tokens;
+    case "string": return code();
+    }
+    error("Can not cast to %O\n", to);
+  }
+
+  static string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O)", this_program, tokens);
   }
 }
@@ -1059,31 +1064,34 @@ private class ParserState {
       pipeline += ({ token });
 
       // If we start a block at the uppermost level, what kind of block is it?
-      if(token=="{" && !pstack->ptr) {
-	if(!block)
-	  block = last;
-	else if(block=="class" && last=="class")
-	  block = "class stop";
-	pstack->push(token);
-	continue;
-      }
-      if(token=="lambda" && !pstack->ptr) {
-	block = token;
-	last = token;
-	continue;
-      }
-      if(token=="class" && !pstack->ptr) {
-	if(sizeof(pipeline)>1) {
-	  // Kludge to get "object foo=class{}();" past the kludge below.
-	  block = "class stop";
-	}
-	else {
-	  // Kludge to get "class A {}" to work without semicolon.
-	  block = token;
-	}
-	last = token;
-	continue;
-      }
+      if(!pstack->ptr)
+        switch(token)
+        {
+        case "{":
+          if(!block)
+            block = last;
+          else if(block=="class" && last=="class")
+            block = "class stop";
+          pstack->push(token);
+          continue;
+
+        case "lambda":
+          block = token;
+          last = token;
+          continue;
+
+        case "class":
+          if(sizeof(pipeline)>1) {
+            // Kludge to get "object foo=class{}();" past the kludge below.
+            block = "class stop";
+          }
+          else {
+            // Kludge to get "class A {}" to work without semicolon.
+            block = token;
+          }
+          last = token;
+          continue;
+        }
 
       // Do we begin any kind of parenthesis level?
       if(token=="(" || token=="{" || token=="[" ||
@@ -1143,9 +1151,23 @@ private class ParserState {
   array(Expression) read() {
     array(Expression) ret = ({});
 
-    foreach(ready, Expression expr)
-      if(expr[0]!=";")
-	ret += ({ expr });
+    for(int pos; pos<sizeof(ready); pos++)
+    {
+      Expression expr = ready[pos];
+      if(expr[0]==";") continue;
+      if( expr[0]=="if" )
+      {
+        if( pos<sizeof(ready)-1 && ready[pos+1][0]=="else" )
+          while( pos<sizeof(ready)-1 && ready[pos+1][0]=="else" )
+            expr = Expression( (array)expr + (array)ready[++pos] );
+        else
+          expr = Expression( (array)expr+({ " else ___Hilfe->last_else=1;" }));
+      }
+      else if( expr[0]=="else" )
+        expr = Expression( ({ "if", "(___Hilfe->last_else);" }) + (array)expr );
+
+      ret += ({ expr });
+    }
 
     ready = ({});
     return ret;
