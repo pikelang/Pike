@@ -246,12 +246,12 @@ class Readline
     array(string) path = make_absolute_path(text[..pos-1], cwd)/"/";
     array(string) files =
       glob(path[-1]+"*",
-	   get_dir(sizeof(path)>1? path[..sizeof(path)-2]*"/"+"/":".")||({}));
+	   get_dir(sizeof(path)>1? path[..<1]*"/"+"/":".")||({}));
 
     if(match_directories_only)
       files = Array.filter(files, lambda(string f, string p)
 				  { return Stdio.is_dir(p + f); },
-			   path[..sizeof(path)-2]*"/"+"/");
+			   path[..<1]*"/"+"/");
 
     switch(sizeof(files))
     {
@@ -260,7 +260,7 @@ class Readline
       break;
     case 1:
       insert(files[0][sizeof(path[-1])..], pos);
-      if( Stdio.is_dir( (path[..sizeof(path)-2]+files) * "/" ) )
+      if( Stdio.is_dir( (path[..<1]+files) * "/" ) )
 	insert("/", getcursorpos());
       break;
     default:

@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.125 2006/10/31 00:31:05 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.126 2006/10/31 00:37:36 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -281,7 +281,7 @@ private class CommandSet {
 	else {
 	  // FIXME: We should do a real string compilation.
 	  f = replace(f, ([ "\\n":"\n", "\\\"":"\"" ]) );
-	  e->reswrite = Reswriter(f[1..sizeof(f)-2]);
+	  e->reswrite = Reswriter(f[1..<1]);
 	}
 	return;
       }
@@ -726,7 +726,7 @@ private class SubSysPhish {
       return 0;
     }
 
-    array c = cmd[..sizeof(cmd)-2]/" ";
+    array c = cmd[..<1]/" ";
     if(e->commands[c[0]] || cmd==".\n")
       return 0;
 
@@ -1859,17 +1859,17 @@ class Evaluator {
 
       case "inherit":
       {
-	inherits += ({ expr[1..sizeof(expr)-2] });
+	inherits += ({ expr[1..<1] });
 	if(!hilfe_compile(""))
-	  inherits = inherits[..sizeof(inherits)-2];
+	  inherits = inherits[..<1];
 	return 0;
       }
 
       case "import":
       {
-	imports += ({ expr[1..sizeof(expr)-2] });
+	imports += ({ expr[1..<1] });
 	if(!hilfe_compile(""))
-	  imports = imports[..sizeof(imports)-2];
+	  imports = imports[..<1];
 	return 0;
       }
 
