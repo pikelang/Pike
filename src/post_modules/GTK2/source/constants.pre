@@ -1,5 +1,4 @@
 /* -*- C -*- */
-/* -*- c -*- */
 constant int FALSE;
 constant int TRUE;
 

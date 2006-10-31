@@ -1,5 +1,5 @@
-require gtk210;
 /* -*- C -*- */
+require gtk210;
 class GTK2.RecentChooserMenu;
 inherit GTK2.Menu;
 inherit GTK2.RecentChooser;

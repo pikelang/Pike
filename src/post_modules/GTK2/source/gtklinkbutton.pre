@@ -1,5 +1,5 @@
-require gtk210;
 /* -*- C -*- */
+require gtk210;
 class GTK2.LinkButton;
 inherit GTK2.Button;
 

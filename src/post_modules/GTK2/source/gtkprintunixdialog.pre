@@ -1,5 +1,5 @@
-require gtk210;
 /* -*- C -*- */
+require gtk210;
 class GTK2.PrintUnixDialog;
 inherit GTK2.Dialog;
 

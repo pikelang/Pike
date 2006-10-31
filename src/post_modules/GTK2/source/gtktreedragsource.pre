@@ -1,3 +1,4 @@
+/* -*- C -*- */
 class GTK2.TreeDragSource;
 mixin_for G.Object;
 
