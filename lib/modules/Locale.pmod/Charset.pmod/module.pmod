@@ -171,7 +171,7 @@ private class UTF16dec {
     string s = ::drain();
     if(sizeof(s)&1) {
       feed(s[sizeof(s)-1..]);
-      s = s[..sizeof(s)-2];
+      s = s[..<1];
     }
     if(check_bom && sizeof(s))
       switch(s[..1]) {
@@ -206,7 +206,7 @@ private string normalize(string in) {
   }
 
   if( (out=="isoir91" || out=="isoir92") && in[-2]!='9')
-    return sprintf("%s-%c", out[..sizeof(out)-2], out[-1]);
+    return sprintf("%s-%c", out[..<1], out[-1]);
 
   sscanf(out, "cs%s", out);
 

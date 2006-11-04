@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 inherit Parser._RCS;
 
-// $Id: RCS.pike,v 1.34 2004/11/08 15:12:21 per Exp $
+// $Id: RCS.pike,v 1.35 2006/11/04 19:06:48 nilsson Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -148,7 +148,7 @@ loop:
 		  else if(symbol_is_branch(revision))
 		  {
 		      array(string) nums = revision / "."; // "a.b.c.d.0.e"
-		      revision = nums[..sizeof(nums)-3] * "." + "." + nums[-1]; // "a.b.c.d.e"
+		      revision = nums[..<2] * "." + "." + nums[-1]; // "a.b.c.d.e"
 		      branches[revision] = name;
 		  }
 		  else

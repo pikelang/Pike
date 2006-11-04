@@ -1,4 +1,4 @@
-/* $Id: MirarDocParser.pike,v 1.25 2003/11/07 05:39:39 nilsson Exp $ */
+/* $Id: MirarDocParser.pike,v 1.26 2006/11/04 19:06:50 nilsson Exp $ */
 
 #pike __REAL_VERSION__
 
@@ -216,13 +216,13 @@ string htmlify(string s)
 string make_nice_reference(string what,string prefix,string stuff)
 {
    string q;
-   if (what==prefix[sizeof(prefix)-sizeof(what)-2..sizeof(prefix)-3])
+   if (what==prefix[sizeof(prefix)-sizeof(what)-2..<2])
    {
-      q=prefix[0..sizeof(prefix)-3];
+      q=prefix[..<2];
    }
-   else if (what==prefix[sizeof(prefix)-sizeof(what)-1..sizeof(prefix)-2])
+   else if (what==prefix[sizeof(prefix)-sizeof(what)-1..<1])
    {
-      q=prefix[0..sizeof(prefix)-2];
+      q=prefix[..<1];
    }
    else if (search(what,".")==-1 &&
 	    search(what,"->")==-1 &&
@@ -300,7 +300,7 @@ string doctype(string type,void|string indent)
    string combine_or(string a,string b)
    {
      b = String.trim_all_whites(b);
-     if (b[..3]=="<or>") b=b[4..sizeof(b)-6];
+     if (b[..3]=="<or>") b=b[4..<5];
      return "<or>"+a+b+"</or>";
    };
    array(string) paramlist(string in,string indent)
@@ -382,7 +382,7 @@ string doctype(string type,void|string indent)
 	 return
 	    nindent+
 	    "<function>"+
-	    map(z[..sizeof(z)-2],
+	    map(z[..<1],
 		lambda(string s)
 		{
 		   return nindent+"  <argtype>"+s+"</argtype>";
@@ -448,24 +448,24 @@ void docdecl(string enttype,
 	   if(in[i]=='(') br++;
 	   if(in[i]==')') br--;
 	   if(in[i]==' ' && !br) {
-	     t = doctype(t[..sizeof(t)-2]);
+	     t = doctype(t[..<1]);
 	     break;
 	   }
 	   if(br==-1 || (in[i]==',' && !br)) {
 	     if(String.trim_all_whites(t)==")")
 	       return res;
-	     if(String.trim_all_whites(t[..sizeof(t)-2])=="void" && res=="")
+	     if(String.trim_all_whites(t[..<1])=="void" && res=="")
 		return "<argument/>\n";
 
 	     if(t[-1]==')')
-	       return res += "<argument><value>" + t[..sizeof(t)-2] + "</value></argument>";
+	       return res += "<argument><value>" + t[..<1] + "</value></argument>";
 	     if(t[-1]==',')
 	       break;
 	   }
 	 }
 
 	 if(t[-1]==',') {
-	   res += "<argument><value>" + t[..sizeof(t)-2] + "</value></argument>";
+	   res += "<argument><value>" + t[..<1] + "</value></argument>";
 	   i++;
 	   continue;
 	 }
@@ -793,7 +793,7 @@ string make_doc_files(string builddir, string imgdest, string|void namespace)
 
    namespace = namespace || "predef::";
    if (has_suffix(namespace, "::")) {
-      namespace = namespace[..sizeof(namespace)-3];
+      namespace = namespace[..<2];
    }
 
    object f = class {
@@ -1119,7 +1119,7 @@ void create(string IMAGE_DIR, int|void quiet)
   string end_tag() {
     if(!sizeof(tag_stack)) throw( ({ \"Tag stack underflow.\\n\", backtrace() }) );
     string name = tag_stack[-1];
-    tag_stack = tag_stack[..sizeof(tag_stack)-2];
+    tag_stack = tag_stack[..<1];
     return \"</\" + name + \">\";
   }
 

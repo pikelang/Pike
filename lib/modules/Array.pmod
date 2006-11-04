@@ -783,7 +783,7 @@ array pop(array list) {
     return ({ list[0], ({}) });
   else if (sizeof(list) > 1) {
     mixed elem = list[sizeof(list)-1];
-    list = list[0..sizeof(list)-2];
+    list = list[..<1];
     return ({ elem, list });
   }
 }

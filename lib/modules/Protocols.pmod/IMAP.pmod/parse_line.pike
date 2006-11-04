@@ -102,7 +102,7 @@ string|object get_string()
   {
     if (buffer[sizeof(buffer)-1..] != "}")
       return 0;
-    string n = buffer[1..sizeof(buffer)-2];
+    string n = buffer[1..<1];
 
     buffer = "";
     if ( (sizeof(values(n) - values("0123456789")))
@@ -352,7 +352,7 @@ mapping get_atom_options(int max_depth)
 
   res->options = options;
   res->raw = atom +
-    option_start[..sizeof(option_start) - sizeof(buffer) - 1];
+    option_start[..<sizeof(buffer)];
 
       
   if (!sizeof(buffer) || (buffer[0] != '<'))

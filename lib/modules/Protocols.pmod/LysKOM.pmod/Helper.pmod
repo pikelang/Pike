@@ -42,7 +42,7 @@ class LysKOMError
       desc=_desc;
       status=_status;
       __backtrace=backtrace();
-      __backtrace=__backtrace[..sizeof(__backtrace)-3];
+      __backtrace=__backtrace[..<2];
    }
 
    LysKOMError clone(int status)

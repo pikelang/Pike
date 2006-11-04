@@ -270,7 +270,7 @@ array(object) PopupMenuFactory( MenuDef ... definition )
     string path="";
     object parent = bar;
     array p = d->menu_path/"/";
-    foreach(p[..sizeof(p)-2], string segment)
+    foreach(p[..<1], string segment)
     {
       path += segment+"/";
       if(!submenues[path])
@@ -361,7 +361,7 @@ array(object) MenuFactory( MenuDef ... definition )
     string path="";
     object parent = bar;
     array p = d->menu_path/"/";
-    foreach(p[..sizeof(p)-2], string segment)
+    foreach(p[..<1], string segment)
     {
       path += segment+"/";
       if(!submenues[path])

@@ -1,5 +1,5 @@
 //
-// $Id: PGP.pmod,v 1.12 2004/04/29 01:03:32 nilsson Exp $
+// $Id: PGP.pmod,v 1.13 2006/11/04 19:06:48 nilsson Exp $
 
 //! PGP stuff. See RFC 2440.
 
@@ -346,7 +346,7 @@ mapping(string:mixed) decode_radix64(string data) {
 
   if(lines[-1][0]=='=') {
     ret->checksum = (int)Gmp.mpz(MIME.decode_base64(lines[-1][1..]),256);
-    lines = lines[..sizeof(lines)-2];
+    lines = lines[..<1];
   }
 
   ret->data = MIME.decode_base64(lines*"\n");

@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.66 2006/07/21 16:23:05 grubba Exp $
+ * $Id: Tree.pmod,v 1.67 2006/11/04 19:06:49 nilsson Exp $
  *
  */
 
@@ -893,7 +893,7 @@ static class VirtualNode {
       if (has_value(name, ":") && sscanf (name, "%*[^/:]%*c") == 2) {
 	sscanf(reverse(name), "%[^/:]", mTagName);
 	mTagName=reverse(mTagName);
-	mNamespace=name[..sizeof(name)-(1+sizeof(mTagName))];
+	mNamespace=name[..<sizeof(mTagName)];
       }
       else {
 	mTagName = name;

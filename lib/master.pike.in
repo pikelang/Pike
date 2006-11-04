@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.387 2006/06/08 11:37:01 mast Exp $
+// $Id: master.pike.in,v 1.388 2006/11/04 19:08:24 nilsson Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -734,10 +734,10 @@ static string base_from_filename(string fname)
   if (has_prefix(low_name, ".#")) return 0;
   if (has_suffix(low_name, ".pike") ||
       has_suffix(low_name, ".pmod")) {
-    return fname[..sizeof(fname)-6];
+    return fname[..<5];
   }
   if (has_suffix(low_name, ".so")) {
-    return fname[..sizeof(fname)-4];
+    return fname[..<3];
   }
   return 0;
 }

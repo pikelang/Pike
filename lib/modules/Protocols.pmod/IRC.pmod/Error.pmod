@@ -15,7 +15,7 @@ class StdErr
       while (!__backtrace[-1][0]||
 	     __backtrace[-1][0][sizeof(__backtrace[-1][0])-11..]
 	     == "/Error.pmod")
-	 __backtrace=__backtrace[0..sizeof(__backtrace)-2];
+	 __backtrace=__backtrace[..<1];
    }
 
    mixed `[](mixed z)

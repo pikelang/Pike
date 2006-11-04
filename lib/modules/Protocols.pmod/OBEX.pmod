@@ -113,7 +113,7 @@ Headers decode_headers(string h)
       } else h=v="";
       if(hi < 0x40) {
 	if(has_suffix(v, "\0\0"))
-	  v = v[..sizeof(v)-3];
+	  v = v[..<2];
 	v = d->clear()->feed(v)->drain();
       }
       break;
@@ -280,7 +280,7 @@ class Client
       array(string) hh_split = split_headers(hh, max_pkt_length-3-
 					     sizeof(extra_req));
       hh = hh_split[-1];
-      foreach(hh_split[..sizeof(hh_split)-2], string h0) {
+      foreach(hh_split[..<1], string h0) {
 	[int rc0, string rdata0] = low_do_request(r&~REQ_FINAL, extra_req+h0);
 	if(rc0 != 100)
 	  return ({ rc0, (rc0==501? ([]): decode_headers(rdata0)) });

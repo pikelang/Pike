@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.25 2004/04/25 14:17:54 agehall Exp $
+// $Id: TELNET.pmod,v 1.26 2006/11/04 19:06:49 nilsson Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -618,7 +618,7 @@ class protocol
 	    case EC:	// Erase Character
 	      for (j=i; j--;) {
 		if (sizeof(a[j])) {
-		  a[j] = a[j][..sizeof(a[j])-2];
+		  a[j] = a[j][..<1];
 		  break;
 		}
 	      }

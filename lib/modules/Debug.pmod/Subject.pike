@@ -1,4 +1,4 @@
-// $Id: Subject.pike,v 1.7 2002/11/24 19:47:42 nilsson Exp $
+// $Id: Subject.pike,v 1.8 2006/11/04 19:06:48 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -32,7 +32,7 @@
 #define ENTER(X)                       \
   string t = sprintf("%{%O, %}", args); \
   werror("%s%s(%s)\n", id, #X,           \
-	 has_suffix(t, ", ") ? t[..sizeof(t)-3] : t)
+	 has_suffix(t, ", ") ? t[..<2] : t)
 
 #define PROXY(X,Y) X(mixed ... args) { ENTER(X); return Y; }
 
@@ -99,7 +99,7 @@ array PROXY(_values, ::_values());
 object _get_iterator(mixed ... args)
 {
   ENTER(_get_iterator);
-  string iid = id==""?"":id[1..sizeof(id)-3];
+  string iid = id==""?"":id[1..<2];
   return this_program("("+iid+" iterator) ");
 }
 
@@ -118,11 +118,11 @@ string _sprintf(int|void t, mapping|void opt, mixed ... x)
   }
   string tmp = sprintf("%{%O, %}", x);
   if(has_suffix(tmp, ", "))
-    tmp = tmp[..sizeof(tmp)-3];
+    tmp = tmp[..<2];
   if(sizeof(tmp))
     args += ", " + tmp;
   werror("%s_sprintf(%s)\n", id, args);
-  return "Debug.Subject" + id[..sizeof(id)-2];
+  return "Debug.Subject" + id[..<1];
 }
 
 mixed PROXY(_random, 0);

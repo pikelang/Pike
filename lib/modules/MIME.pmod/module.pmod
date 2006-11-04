@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.13 2006/05/16 21:11:47 adam Exp $
+// $Id: module.pmod,v 1.14 2006/11/04 19:06:48 nilsson Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -457,7 +457,7 @@ string encode_words_text_remapped(string text, string encoding,
 	/* Two encoded words joined by whitespace - not possible */
 	word = lastword+ws+word;
 	ww = reremap(word, charset, replacement, repcb);
-	out = out[..sizeof(out)-2];
+	out = out[..<1];
       }
     lastword = word;
     out += ({ ww });
@@ -1214,10 +1214,10 @@ class Message {
       encoded_data = 0;
       decoded_data = parts[0][1..];
       if(sizeof(decoded_data) && decoded_data[-1]=='\r')
-	decoded_data = decoded_data[..sizeof(decoded_data)-2];
-      body_parts = map(parts[1..sizeof(parts)-2], lambda(string part){
+	decoded_data = decoded_data[..<1];
+      body_parts = map(parts[1..<1], lambda(string part){
 	if(sizeof(part) && part[-1]=='\r')
-	  part = part[..sizeof(part)-2];
+	  part = part[..<1];
 	sscanf(part, "%*[ \t]%s", part);
 	if(has_prefix(part, "\r\n"))
 	  part = part[2..];

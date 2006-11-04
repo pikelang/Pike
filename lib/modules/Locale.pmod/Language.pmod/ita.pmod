@@ -3,7 +3,7 @@
 
 //! Italian language locale by Francesco Chemolli
 
-// $Id: ita.pmod,v 1.1 2002/10/01 10:57:57 nilsson Exp $
+// $Id: ita.pmod,v 1.2 2006/11/04 19:06:48 nilsson Exp $
 
 inherit "abstract";
 
@@ -66,7 +66,7 @@ string number (int num)
     case 28: case 38: case 48: case 58: case 68: case 78: case 88: case 98:
     case 21: case 31: case 41: case 51: case 61: case 71: case 81: case 91:
       tmp=number(num-(num%10));
-      tmp=tmp[..sizeof(tmp)-2]; //need to cut the last char
+      tmp=tmp[..<1]; //need to cut the last char
       return tmp+number(num%10);
     case 22..27: case 29: case 32..37: case 39: case 42..47: case 49: 
     case 52..57: case 59: case 62..67: case 69: case 72..77: case 79: 

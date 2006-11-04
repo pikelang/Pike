@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.87 2005/03/01 17:20:44 nilsson Exp $
+// $Id: DNS.pmod,v 1.88 2006/11/04 19:06:49 nilsson Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -798,7 +798,7 @@ class client
       domains -= ({ "" });
       domains = Array.map(domains, lambda(string d) {
 				     if (d[-1] == '.') {
-				       return d[..sizeof(d)-2];
+				       return d[..<1];
 				     }
 				     return d;
 				   });

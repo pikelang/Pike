@@ -251,7 +251,7 @@ void create(string|void host, string|void db, string|void user, string|void pw)
 
   arr = host/"@";
   if(sizeof(arr)>1) {
-    user = arr[..sizeof(arr)-2]*"@";
+    user = arr[..<1]*"@";
     host = arr[-1];
     arr = user/":";
     if(sizeof(arr)>1) {

@@ -5,7 +5,7 @@
 //!
 //! cf http://wwww.w3.org/TR/REC-xml/
 //!
-//! $Id: Validating.pike,v 1.12 2006/07/19 12:34:44 grubba Exp $
+//! $Id: Validating.pike,v 1.13 2006/11/04 19:06:49 nilsson Exp $
 //!
 
 #pike __REAL_VERSION__
@@ -380,7 +380,7 @@ static private mixed validate(string kind, string name, mapping attributes,
      }
      if(!__element_stack[-1]->accept_element(0))
        xmlerror("Invalid content for element %s.", name);
-     __element_stack = __element_stack[..sizeof(__element_stack)-2];
+     __element_stack = __element_stack[..<1];
      break;
    case "":
    case "<![CDATA[":

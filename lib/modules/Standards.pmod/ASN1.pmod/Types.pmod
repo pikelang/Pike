@@ -1,5 +1,5 @@
 //
-// $Id: Types.pmod,v 1.37 2005/01/21 17:22:45 mast Exp $
+// $Id: Types.pmod,v 1.38 2006/11/04 19:06:49 nilsson Exp $
 //
 
 //! Encodes various asn.1 objects according to the Distinguished
@@ -389,7 +389,7 @@ class BitString
     {
       value = value[..(len + 7)/8];
       unused = (- len) % 8;
-      value = sprintf("%s%c", value[..sizeof(value)-2], value[-1]
+      value = sprintf("%s%c", value[..<1], value[-1]
 		      & ({ 0xff, 0xfe, 0xfc, 0xf8,
 			   0xf0, 0xe0, 0xc0, 0x80 })[unused]);
     } else {

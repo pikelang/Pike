@@ -766,7 +766,7 @@ class Runtime_timezone_compiler
 		  lastoffset=s->offset;
 	       }
 	       tr[-3]=replace(tr[-3],",  ","});");
-	       sr=tr[..sizeof(tr)-2]+sr;
+	       sr=tr[..<1]+sr;
 	    }
 	 res+=sr+
 	 ({"      }\n"
@@ -1005,7 +1005,7 @@ class Runtime_timezone_compiler
 		    lambda(string s) { return sprintf("%O",s); })*",",
 		"});\n",
 		"array(int) shifts=({"});
-	 foreach (rules[..sizeof(rules)-2],array a)
+	 foreach (rules[..<1],array a)
 	    res+=({a[5]+","});
 	 res+=({"});\n",
 		sprintf(

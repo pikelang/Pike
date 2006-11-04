@@ -5,7 +5,7 @@
 //!   int main(int ac,array am)
 //!   {
 //!      Generator g=Generator();
-//!      foreach (am[1..sizeof(am)-2];;string f)
+//!      foreach (am[1..<1];;string f)
 //!         g->add(f);
 //!   
 //!      string dest=am[-1];

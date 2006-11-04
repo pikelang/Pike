@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.58 2004/11/02 20:43:46 mast Exp $
+// $Id: Readline.pike,v 1.59 2006/11/04 19:06:50 nilsson Exp $
 #pike __REAL_VERSION__
 
 //!
@@ -1205,7 +1205,7 @@ class History
     historykeep = ([]);
     historylist[-1] = text;
     if(sizeof(historylist)>1 && historylist[-2]==historylist[-1])
-      historylist = historylist[..sizeof(historylist)-2];
+      historylist = historylist[..<1];
   }
 
   //!
@@ -1550,7 +1550,7 @@ void write(string msg,void|int word_wrap)
     output_controller->clear(1);
   }
   array(string) tmp=msg/"\n";
-  foreach(tmp[..sizeof(tmp)-2],string l)
+  foreach(tmp[..<1],string l)
   {
     output_controller->write(l,word_wrap);
     output_controller->newline();

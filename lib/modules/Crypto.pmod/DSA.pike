@@ -178,7 +178,7 @@ array(Gmp.mpz) nist_primes(int l)
 
     string h = nist_hash(s) ^ nist_hash( [object(Gmp.mpz)](s + 1) );
 
-    h = sprintf("%c%s%c", h[0] | 0x80, h[1..sizeof(h) - 2], h[-1] | 1);
+    h = sprintf("%c%s%c", h[0] | 0x80, h[1..<1], h[-1] | 1);
 
     Gmp.mpz q = Gmp.mpz(h, 256);
 

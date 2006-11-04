@@ -765,7 +765,7 @@ class Context {
 
   array encode_error(string e)
   {
-    if (e[-1] == '\n') e = e[..sizeof(e)-2];
+    if (e[-1] == '\n') e = e[..<1];
     return ({ CTX_ERROR, gethostname()+":"+replace(e, "\n", "\n"+gethostname()+":") });
   }
 

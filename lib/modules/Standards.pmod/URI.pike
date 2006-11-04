@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396 and RFC 3986.
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.24 2006/07/13 15:35:46 nilsson Exp $
+// $Id: URI.pike,v 1.25 2006/11/04 19:06:49 nilsson Exp $
 
 #pragma strict_types
 
@@ -102,7 +102,7 @@ string combine_uri_path(string base, string rel)
   //    last (right-most) slash character, if any, are excluded.
   array segments=base/"/";
   if(has_value(base, "/"))
-    buf=segments[..sizeof(segments)-2]*"/"+"/";
+    buf=segments[..<1]*"/"+"/";
   else
     buf=base;
 
@@ -121,7 +121,7 @@ string combine_uri_path(string base, string rel)
   // d) If the buffer string ends with "." as a complete path segment,
   //    that "." is removed.
   if(segments[-1]==".")
-    segments=segments[..sizeof(segments)-2]+({""});
+    segments=segments[..<1]+({""});
 
   // e) All occurrences of "<segment>/../", where <segment> is a
   //    complete path segment not equal to "..", are removed from the
@@ -151,7 +151,7 @@ string combine_uri_path(string base, string rel)
   //    "<segment>/.." is removed.
   if(sizeof(segments)>=2)
     if(segments[-2]!=".." && segments[-1]=="..")
-      segments=segments[..sizeof(segments)-3]+({""});
+      segments=segments[..<2]+({""});
 
   // g) If the resulting buffer string still begins with one or more
   //    complete path segments of "..", then the reference is

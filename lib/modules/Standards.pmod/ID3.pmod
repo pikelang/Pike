@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.20 2004/04/06 21:44:57 nilsson Exp $
+//  $Id: ID3.pmod,v 1.21 2006/11/04 19:06:49 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -775,7 +775,7 @@ class Frame_TMED {
     // Some client adds paranthesis here...
     foreach(texts; int pos; string t)
       if(sizeof(t) && t[0]=='(' && t[-1]==')')
-	texts[pos] = t[1..sizeof(t)-2];
+	texts[pos] = t[1..<1];
   }
 }
 

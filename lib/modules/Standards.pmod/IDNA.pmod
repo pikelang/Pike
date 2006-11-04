@@ -434,7 +434,7 @@ string zone_to_ascii(string s, int(0..1)|void allow_unassigned,
 {
   if(has_suffix(s, ".") && !has_suffix(s, ".."))
     return sizeof(s)>1?
-      zone_to_ascii(s[..sizeof(s)-2], allow_unassigned,
+      zone_to_ascii(s[..<1], allow_unassigned,
 		    use_std3_ascii_rules)+"."
       : s;
   else

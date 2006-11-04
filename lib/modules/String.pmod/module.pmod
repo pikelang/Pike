@@ -34,7 +34,7 @@ string implode_nicely(array(string|int|float) foo, string|void separator)
   {
   case 0: return "";
   case 1: return ([array(string)]foo)[0];
-  default: return foo[0..sizeof(foo)-2]*", "+" "+separator+" "+foo[-1];
+  default: return foo[..<1]*", "+" "+separator+" "+foo[-1];
   }
 }
 
@@ -46,7 +46,7 @@ string implode_nicely(array(string|int|float) foo, string|void separator)
 //!
 string capitalize(string str)
 {
-  return upper_case(str[0..0])+str[1..sizeof(str)];
+  return upper_case(str[0..0])+str[1..];
 }
 
 //! Convert the first character in each word (separated by spaces) in

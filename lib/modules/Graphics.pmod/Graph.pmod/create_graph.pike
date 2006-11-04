@@ -944,7 +944,7 @@ mapping(string:mixed) create_graph(mapping diagram_data)
   for(int i=0; i<sizeof(diagram_data->data); i++)
     if (sizeof(diagram_data->data[i])%2)
       diagram_data->data[i]
-	= diagram_data->data[i][..sizeof(diagram_data->data[i])-2];
+	= diagram_data->data[i][..<1];
 
   //Fix defaultcolors!
   setinitcolors(diagram_data);

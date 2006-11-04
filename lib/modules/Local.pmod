@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Local.pmod,v 1.7 2003/04/27 02:25:33 nilsson Exp $
+// $Id: Local.pmod,v 1.8 2006/11/04 19:06:48 nilsson Exp $
 
 //! @[Local] gives a local module namespace used for locally
 //! installed pike modules. Modules are searched for in
@@ -57,8 +57,8 @@ array(string) _indices() {
   foreach(local_path,string lp)
     tmp+=get_dir(lp);
   return Array.uniq(map(glob("*.pike",tmp)+glob("*.pmod",tmp)+glob("*.so",tmp),
-             lambda(string in){ if(glob("*.so",in)) return in[..sizeof(in)-4];
-             return in[..sizeof(in)-6]; }));
+             lambda(string in){ if(glob("*.so",in)) return in[..<3];
+             return in[..<5]; }));
 }
 
 // _values intentionally not overloaded

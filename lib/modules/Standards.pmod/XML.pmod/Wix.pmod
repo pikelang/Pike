@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Wix.pmod,v 1.24 2006/08/03 19:33:12 mast Exp $
+// $Id: Wix.pmod,v 1.25 2006/11/04 19:06:49 nilsson Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -155,7 +155,7 @@ class Directory
     if (sizeof(segs) > 1) {
       extension = segs[-1];
       if (sizeof(segs) > 2) {
-	base = segs[..sizeof(segs)-2] * "_";
+	base = segs[..<1] * "_";
 	truncated = 1;
       } else {
 	base = segs[0];
@@ -361,7 +361,7 @@ class Directory
   void install_file(string dest, string src, string|void id)
   {
     array(string) path = dest/"/";
-    Directory d = low_add_path(path[..sizeof(path)-2]);
+    Directory d = low_add_path(path[..<1]);
     d->low_install_file(path[-1], src, id);
   }
 
@@ -385,7 +385,7 @@ class Directory
   void uninstall_file(string pattern)
   {
     array(string) path = pattern/"/";
-    Directory d = low_add_path(path[..sizeof(path)-2]);
+    Directory d = low_add_path(path[..<1]);
     d->low_uninstall_file(path[-1]);
   }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.87 2006/09/15 12:21:53 mast Exp $
+ * $Id: Sql.pike,v 1.88 2006/11/04 19:06:49 nilsson Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -221,7 +221,7 @@ void create(string|object host, void|string|mapping(string:int|string) db,
       if (sizeof(arr) > 1) {
 	// User and/or password specified
 	host = arr[-1];
-	arr = (arr[0..sizeof(arr)-2]*"@")/":";
+	arr = (arr[..<1]*"@")/":";
 	if (!user && sizeof(arr[0])) {
 	  user = arr[0];
 	}
@@ -234,7 +234,7 @@ void create(string|object host, void|string|mapping(string:int|string) db,
       }
       arr = host/"/";
       if (sizeof(arr) > 1) {
-	host = arr[..sizeof(arr)-2]*"/";
+	host = arr[..<1]*"/";
 	if (!db) {
 	  db = arr[-1];
 	}

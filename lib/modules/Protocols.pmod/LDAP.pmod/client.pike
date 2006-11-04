@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.101 2006/06/22 15:39:23 mast Exp $
+// $Id: client.pike,v 1.102 2006/11/04 19:06:49 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -598,7 +598,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|mapping(string:mixed)|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.101 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.102 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -1491,7 +1491,7 @@ object get_default_filter()
 	    }
 	    if (cookie) {
 	      // Remove the extra end marker.
-	      rawarr = rawarr[..sizeof(rawarr)-2];
+	      rawarr = rawarr[..<1];
 	    }
 	  }
 	    

@@ -17,7 +17,7 @@ class DOMException(int code) {
   constant is_generic_error = 1;
   constant is_dom_exception = 1;
 
-  static array backtrace = predef::backtrace()[..sizeof(predef::backtrace())-3];
+  static array backtrace = predef::backtrace()[..<2];
 
   static constant symbolic = ([
     INDEX_SIZE_ERR: "INDEX_SIZE_ERR",
@@ -984,7 +984,7 @@ class ParseException
 
   constant is_generic_error = 1;
 
-  static array backtrace = predef::backtrace()[..sizeof(predef::backtrace())-3];
+  static array backtrace = predef::backtrace()[..<2];
 
   int get_location() { return loc; }
   string get_public_id() { return pubid; }
@@ -1110,7 +1110,7 @@ class AbstractDOMParser
 	 break;
      case ">":
        current_node = node_stack[-1];
-       node_stack = node_stack[..sizeof(node_stack)-2];
+       node_stack = node_stack[..<1];
        break;
      case "":
        current_node->append_child(document->create_text_node(contents));

@@ -940,7 +940,7 @@ class YMD
 		  if (uq>=step) uq%=step;
 		  z= z[..i-1]+
 		  ({z[i]->set_size(uq,sec)})+
-		     map(z[i..sizeof(z)-2],"add",uq,sec);
+		     map(z[i..<1],"add",uq,sec);
 		  i++;
 	       }
 	       uo=z[i]->utc_offset();
@@ -2588,7 +2588,7 @@ static TimeRange dwim_zone(TimeRange origin,string zonename,
    if(sizeof(zonename)==4 && zonename[2]=='S')
      zonename = zonename[0..1] + zonename[3..3];
    else if(sizeof(zonename)>4 && has_suffix(zonename, "DST"))
-     zonename = zonename[..sizeof(zonename)-1-3];
+     zonename = zonename[..<3];
 
    if (origin->rules->abbr2zone[zonename])
       zonename=origin->rules->abbr2zone[zonename];

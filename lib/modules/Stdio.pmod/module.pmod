@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.224 2006/07/23 20:18:16 mast Exp $
+// $Id: module.pmod,v 1.225 2006/11/04 19:06:50 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1608,7 +1608,7 @@ class FILE
     if (!n) 
     {
        res=read()/"\n";
-       if (res[-1]=="") return res[..sizeof(res)-2];
+       if (res[-1]=="") return res[..<1];
        return res;
     }
     if (n < 0) return ({});
@@ -1620,7 +1620,7 @@ class FILE
 	bpos += `+(@sizeof(delta[*]), sizeof(delta));
 	return res + delta;
       }
-      delta = cached_lines[lp..sizeof(cached_lines)-2];
+      delta = cached_lines[lp..<1];
       bpos += `+(@sizeof(delta[*]), sizeof(delta));
       res += delta;
       // NB: lp and cached_lines are reset by get_lines().
@@ -1866,7 +1866,7 @@ static void register_open_file (string file, int id, array backtrace)
     // Avoid the recursion which might occur when the backtrace is formatted.
     registering_files[file] = 1;
     open_files[id] =
-      ({file, describe_backtrace (backtrace[..sizeof (backtrace) - 2])});
+      ({file, describe_backtrace (backtrace[..<1])});
     m_delete (registering_files, file);
   }
   else
@@ -1905,7 +1905,7 @@ void report_file_open_places (string file)
 	    map (places,
 		 lambda (string place) {
 		   return " * " +
-		     replace (place[..sizeof (place) - 2], "\n", "\n   ");
+		     replace (place[..<1], "\n", "\n   ");
 		 }) * "\n\n" + "\n");
   else
     werror ("File " + file + " is currently not opened from any known place.\n");

@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.28 2004/11/20 17:04:43 nilsson Exp $
+ * $Id: Tar.pmod,v 1.29 2006/11/04 19:06:48 nilsson Exp $
  */
 
 #pike __REAL_VERSION__
@@ -234,8 +234,8 @@ class _Tar  // filesystem
     foreach(entries, Record r)
     {
       array path = r->fullpath/"/";
-      if(path[..sizeof(path)-2]==last) continue; // same dir
-      last = path[..sizeof(path)-2];
+      if(path[..<1]==last) continue; // same dir
+      last = path[..<1];
 
       for(int i = 0; i<sizeof(last); i++)
 	if(!filename_to_entry[last[..i]*"/"])

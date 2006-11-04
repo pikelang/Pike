@@ -120,7 +120,7 @@ static object makeWrapper(array(string) modules, object|void child)
       string namespace = "predef";	// Default namespace.
       if (sizeof(modules) && has_suffix(modules[0], "::")) {
 	// The parent module list starts with a namespace.
-	namespace = modules[0][..sizeof(modules[0])-3];
+	namespace = modules[0][..<2];
 	modules = modules[1..];
       }
       foreach(reverse(modules), string n) {
@@ -190,7 +190,7 @@ string extractXML(string filename, int|void pikeMode, string|void type,
   if (styleC && has_value(contents, "/*!")) {
     string namespace = ((parentModules||({})) + ({"predef::"}))[0];
     if (has_suffix(namespace, "::")) {
-      namespace = namespace[..sizeof(namespace)-3];
+      namespace = namespace[..<2];
     }
     object m = .CExtractor.extract(contents, filename, namespace);
     return m->xml();
@@ -504,7 +504,7 @@ static void recurseAppears(string namespace,
       a = ({ namespace }) + a;
     }
     // Strip the :: from the namespace name.
-    a[0] = a[0][..sizeof(a[0])-3];
+    a[0] = a[0][..<2];
     t->belongsRef = a;
     tasks += ({ t });
   }
@@ -584,7 +584,7 @@ static array(string) splitRef(string ref) {
   if ((sizeof(ref)>1) && (ref[0] == '"')) {
     // Explictly named program.
     // Try to DWIM it...
-    ref = ref[1..sizeof(ref)-2];
+    ref = ref[1..<1];
     ref = replace(ref, ({ ".pike", ".pmod" }), ({ "", "" }));
     // FIXME: What about module.pike/module.pmod?
     return ref/"/";
@@ -695,9 +695,9 @@ static class ScopeStack {
 	// Leaving namespace...
 	scopes[namespace] = namespaceStack[-1][1];
 	namespace = namespaceStack[-1][0];
-	namespaceStack = namespaceStack[..sizeof(namespaceStack)-2];
+	namespaceStack = namespaceStack[..<1];
       } else {
-	scopes[namespace] = scopes[namespace][..sizeof(scopes[namespace])-2];
+	scopes[namespace] = scopes[namespace][..<1];
       }
     }
   }
@@ -1168,7 +1168,7 @@ class NScopeStack
     }
     if (sizeof(stack)) {
       top = stack[-1];
-      stack = stack[..sizeof(stack)-2];
+      stack = stack[..<1];
     } else {
       top = 0;
     }

@@ -54,7 +54,7 @@ void con_read(mixed dummy,string what)
    buf+=what;
    array lines=(buf-"\r")/"\n";
    buf=lines[-1];
-   foreach (lines[0..sizeof(lines)-2],string row)
+   foreach (lines[..<1],string row)
    {
       mixed err=catch 
       {

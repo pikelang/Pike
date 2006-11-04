@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 // #pragma strict_types
 
-// $Id: state.pike,v 1.28 2004/07/05 17:01:24 grubba Exp $
+// $Id: state.pike,v 1.29 2006/11/04 19:06:49 nilsson Exp $
 
 //! A connection switches from one set of state objects to another, one or
 //! more times during its lifetime. Each state object handles a one-way
@@ -56,7 +56,7 @@ string tls_unpad(string data) {
     }
 #endif
 
-  return data[..sizeof(data)-plen-2];
+  return data[..<plen+1];
 }
 
 //! Destructively decrypts a packet (including inflating and MAC-verification,

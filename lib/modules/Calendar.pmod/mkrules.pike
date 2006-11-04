@@ -10,7 +10,7 @@
 // and zic(8) is the usual compiler.
 
 // pike mkrules.pike ../data/{africa,antarctica,asia,australasia,backward,etcetera,europe,northamerica,pacificnew,southamerica,systemv}
-// $Id: mkrules.pike,v 1.10 2004/01/11 00:51:23 nilsson Exp $
+// $Id: mkrules.pike,v 1.11 2006/11/04 19:06:48 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -397,7 +397,7 @@ class MyRule
 	    array resa=res/"\n";
 	    resa[-2]=replace(resa[-2],",  ","});");
 	 
-	    t+=resa[..sizeof(resa)-2]*"\n"+"\n";
+	    t+=resa[..<1]*"\n"+"\n";
 	    s=t+s;
 	 }
       res+=(s+

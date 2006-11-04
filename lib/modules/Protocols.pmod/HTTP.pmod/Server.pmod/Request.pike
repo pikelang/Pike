@@ -221,7 +221,7 @@ static void parse_request()
               if(sscanf(protocol, "HTTP/%d.%d", maj, min)==2)
                 protocol = sprintf("HTTP/%d.%d", maj, min);
             }
-	    full_query=v[1..sizeof(v)-2]*" ";
+	    full_query=v[1..<1]*" ";
 	    break;
 	 }
          // Fallthrough
@@ -363,7 +363,7 @@ static int parse_variables()
   if (l<=sizeof(buf))
   {
     int zap = strlen(buf) - l;
-    raw = raw[..sizeof(raw)-zap];
+    raw = raw[..<zap-1];
     body_raw = buf[..l-1];
     buf = buf[l..];
     return 1;
