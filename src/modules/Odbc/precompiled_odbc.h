@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: precompiled_odbc.h,v 1.22 2006/02/06 17:12:53 grubba Exp $
+|| $Id: precompiled_odbc.h,v 1.23 2006/11/06 13:16:57 grubba Exp $
 */
 
 /*
@@ -26,15 +26,17 @@
 #ifdef HAVE_ISQL_H
 #include <isql.h>
 #else /* !HAVE_ISQL_H */
-#ifdef HAVE_WINDOWS_H
-#include <windows.h>
-#else /* !HAVE_WINDOWS_H */
 #ifdef HAVE_QEODBC_H
 #include <qeodbc.h>
 #else
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#else /* !HAVE_WINDOWS_H */
+#ifndef HAVE_SQL_H
 #undef HAVE_ODBC
-#endif /* HAVE_QEODBC_H */
+#endif /* !HAVE_SQL_H */
 #endif /* HAVE_WINDOWS_H */
+#endif /* HAVE_QEODBC_H */
 #endif /* HAVE_ISQL_H */
 #endif /* HAVE_ODBC */
 
@@ -45,6 +47,7 @@
 #include <sql.h>
 #endif /* HAVE_SQL_H */
 #endif /* !HAVE_ISQL_H */
+
 #ifdef HAVE_ISQLEXT_H
 #include <isqlext.h>
 #else /* !HAVE_ISQLEXT_H */
