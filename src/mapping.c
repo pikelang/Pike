@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.188 2006/07/05 19:24:18 mast Exp $
+|| $Id: mapping.c,v 1.189 2006/11/07 20:53:10 mast Exp $
 */
 
 #include "global.h"
@@ -1204,7 +1204,7 @@ PMOD_EXPORT void mapping_index_no_free(struct svalue *dest,
 {
   struct svalue *p;
 
-  if((p=low_mapping_lookup(m,key)))
+  if(!IS_DESTRUCTED (key) && (p=low_mapping_lookup(m,key)))
   {
     if(p->type==T_INT)
       p->subtype=NUMBER_NUMBER;
