@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.769 2006/10/28 19:18:08 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.770 2006/11/07 20:54:37 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7470,6 +7470,26 @@ test_any([[
   foreach (iter; int idx;)
     if (idx != iter->index()) return 1;
   return 0;
+]], 0)
+
+test_any([[
+  mapping(object:int) x = ([]);
+  object o = class {}();
+  x[o] = 1;
+  destruct (o);
+  int i;
+  foreach (x; object p;) i++;
+  return i;
+]], 0)
+
+test_any([[
+  multiset(object) x = (<>);
+  object o = class {}();
+  x[o] = 1;
+  destruct (o);
+  int i;
+  foreach (x; object p;) i++;
+  return i;
 ]], 0)
 
 // do-while
