@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.58 2005/10/17 10:34:29 nilsson Exp $
+|| $Id: iterators.cmod,v 1.59 2006/11/07 20:53:55 mast Exp $
 */
 
 #include "global.h"
@@ -306,13 +306,17 @@ PIKECLASS mapping_iterator
   static int step_bucket(struct mapping_iterator_struct *i)
     {
       if (i->md) {
-	while(! i->current)
-	{
-	  i->bucket++;
-	  if(i->bucket >= i->md->hashsize)
-	    return 0;
-	  i->current=i->md->hash[i->bucket];
-	}
+	do {
+	  while(!i->current)
+	  {
+	    i->bucket++;
+	    if(i->bucket >= i->md->hashsize)
+	      return 0;
+	    i->current=i->md->hash[i->bucket];
+	  }
+	  if (!IS_DESTRUCTED (&i->current->ind)) break;
+	  i->current = i->current->next;
+	} while (1);
       }
       return 1;
     }
@@ -2042,7 +2046,7 @@ int foreach_iterate(struct object *o, int do_step)
 
 #if 0
   /* NOTE: This code has not been updated since the introduction of
-   *       support for step().
+   *       support for next().
    *		/grubba 2004-11-26
    */
 
