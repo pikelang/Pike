@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.75 2005/11/16 16:10:32 grubba Exp $
+|| $Id: udp.c,v 1.76 2006/11/10 09:17:19 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -649,7 +649,7 @@ void udp_read(INT32 args)
 /*! @decl int send(string to, int|string port, string message)
  *! @decl int send(string to, int|string port, string message, int flags)
  *!
- *! Send data to a UDP socket. The recepient address will be @[to]
+ *! Send data to a UDP socket. The recipient address will be @[to]
  *! and port will be @[port].
  *!
  *! Flag @[flag] is a bitfield, 1 for out of band data and
