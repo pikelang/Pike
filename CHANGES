@@ -1,3 +1,71 @@
+Changes since Pike 7.6.86
+----------------------------------------------------------------------
+
+Changes in Pike:
+
+o Added conversion from Gmp.mpz objects to Gmp.bignum when cast to int.
+o Added timeout to Image.PS. Now kills the ghostscript process if it
+  hasn't returned after 30s.
+o Added GL 1.2 and 1.3 constants.
+o Added possibility to set offset and stride when creating textures from 
+  memory objects in GL.
+o Fixed CMYK calculation in Image.Image.
+o Added adjusted_cmyk to Image.Image and use it when decoding with
+  Image.PS.
+o Now handles more eps images internally in Image.PS without spawning 
+  ghostscript.
+o Added Standards.IIM that handles IPTC IPTC Information Interchange
+  Model data in JPEG or Postscript images created with PhotoShop.
+o Added support for little endian TIFFs.
+o Added support for TIFF to Image.Dims.
+o Changed HTTP.Query to close connections explicitly.
+o Improved Parser.XML.Validating.
+o More paranoid checks of image headers when using Image.AVS.
+o Fixes to make describe_value work as usual in the free pass of the
+  gc, so that e.g. sprintf("%O",...) behave well when called from
+  destroy().
+o Fixed truncated field names in ODBC.
+o Fixed masking of file positions larger than 2 GiB on 64-bit.
+o Fixed low-level parsing of HTTP headers to not reorder the headers.
+o Fixed an inverted error test in Mysql.set_charset.
+o Added set_charset and get_charset proxy functions to Sql.Sql.
+o Changed Protocols.HTTP.Query async_close() to care about the value
+  returned by ponder_answer(). Fixes requests to broken servers that 
+  don't send proper results.
+o Fixed bad free_string() in exit_bytecode().
+o Fixed an off-by-one crash when drawing alpha boxes all the way to
+  the bottom of the image.
+o FIXME_SPECIFY: "mast: Backported multiset fixes."
+
+Other:
+
+o Improved Valgrind support.
+o Now checks the return code from win32 VirtualProtect. This breaks
+  assembler optimized builds on Windows. It never worked in the first
+  place, but used to fail silently, so this is better. This has been
+  fixed in 7.7 by using another heap manager, but it has not been 
+  decided if it should be be backported.
+o Adjusted array growth policy in array_insert to double the size
+  instead of growing with approximately one eighth of the size. This to
+  ensure O(1) time complexity and lessen fragmentation. (This affects
+  ADT.Sequence._insert_element and ADT.CircularList._insert_element.)
+o Fixed support for UnixODBC.
+o Made IA32 machine code compatible with Darwin IA32 ABI. Enabled
+  machine code for Darwin.
+
+Build fixes:
+
+o Support GNU Java (GCJ)
+o Did away with the use of the undocumented internal MS win32 CRT
+  functions __loctotime_t and __dtoxmode.
+o Fixed typo that caused the configure script to search for lots of
+  nonapplicable include dirs on windows.
+o Backported new INT_TYPE_{ADD,NEG}_OVERFLOW implementation from 7.7.
+  The old one does not work with GCC 4.1.
+o Fixed problem where mysql_character_set_name exists in mysql.h but
+  not in the lib for some old mysql clients.
+
+
 Changes since Pike 7.6.66
 ----------------------------------------------------------------------
 
@@ -34,6 +102,7 @@ o More multiset gc fixes.
 o Fixed support for running dmalloc Pike with -d.
 
 Build fixes:
+
 o Fixed VC8 compilation.
 o Fixed support for C++ modules.
 o Improved support for Darwin x86.
@@ -286,7 +355,7 @@ o --help
     take.
 
 o INT64
-    On 64 bit architechtures Pike will now use full 64 bits integer
+    On 64 bit architectures Pike will now use full 64 bits integer
     before resorting to Gmp.mpz objects for large numbers.
 
 o IPv6
