@@ -2,7 +2,7 @@
 
 //! @appears Image.PS
 //! Codec for the Adobe page description language PostScript.
-//! Uses Ghostscript for decoding.
+//! Uses Ghostscript for decoding or built-in support.
 
 static string find_in_path( string file )
 {
@@ -26,6 +26,15 @@ static string find_in_path( string file )
 //!       Path to the Ghostscript binary to be used. If missing
 //!       the environment paths will be searched for a file "gs"
 //!       to be used instead.
+//!     @member int(0..1) "force_gs"
+//!	   Forces use of Ghostscript for EPS files instead
+//!	   of Pikes native support.
+//!	@member int(0..1) "eps_crop"
+//!	   Use -dEPSCrop option to Ghostscript to crop the
+//!	   BoundingBox for a EPS file.
+//!	@member int(0..1) "cie_color"
+//!	   Use -dUseCIEColor option to Ghostscript for
+//!	   mapping color values through a CIE color space. 
 //!   @endmapping
 object decode( string data, mapping|void options )
 {
@@ -44,65 +53,69 @@ object decode( string data, mapping|void options )
   }
   if(data[0..3] != "%!PS")
     error("This is not a postscript file!\n");
+  
+  if(!options) options = ([]);
+  if(!options->force_gs)
+  {
 #if 1
-  if (has_prefix(data, "%!PS-Adobe-3.0 EPSF-3.0")) {
-    int width, height, bits, ncols;
-    int nbws, width2, encoding;
-    string init_tag;
-    if ((sscanf(data,
-		"%*s%%ImageData:%*[ ]%d%*[ ]%d%*[ ]%d%*[ ]%d%"
-		"*[ ]%d%*[ ]%d%*[ ]%d%*[ ]\"%s\"",
-		width, height, bits, ncols, 
-		nbws, width2, encoding, init_tag) > 7) &&
-	(width == width2) && (width > 0) && (height > 0) && (bits == 8) &&
-	(< 1, 2 >)[encoding]) {
-      // Image data present.
-      int len;
-      string term;
-      string raw;
-      if ((sscanf(data, "%*s%%%%BeginBinary:%*[ ]%d%[\r\n]%s",
-		  len, term, raw) == 5) &&
+    if (has_prefix(data, "%!PS-Adobe-3.0 EPSF-3.0")) {
+      int width, height, bits, ncols;
+      int nbws, width2, encoding;
+      string init_tag;
+      if ((sscanf(data,
+	"%*s%%ImageData:%*[ ]%d%*[ ]%d%*[ ]%d%*[ ]%d%"
+      "*[ ]%d%*[ ]%d%*[ ]%d%*[ ]\"%s\"",
+      width, height, bits, ncols, 
+      nbws, width2, encoding, init_tag) > 7) &&
+      (width == width2) && (width > 0) && (height > 0) && (bits == 8) &&
+      (< 1, 2 >)[encoding]) {
+	// Image data present.
+	int len;
+	string term;
+	string raw;
+	if ((sscanf(data, "%*s%%%%BeginBinary:%*[ ]%d%[\r\n]%s",
+	  len, term, raw) == 5) &&
 	  (len>0) && has_prefix(raw, init_tag + term)) {
-	raw = raw[sizeof(init_tag+term)..len-1];
-	if (encoding == 2) {
-	  // Decode the hex data.
+	    raw = raw[sizeof(init_tag+term)..len-1];
+	    if (encoding == 2) {
+	      // Decode the hex data.
 #if constant(String.hex2string)
-	  raw = String.hex2string(raw - term);
+	      raw = String.hex2string(raw - term);
 #else
-	  raw += Crypto.hex_to_string(raw - term);
+	      raw += Crypto.hex_to_string(raw - term);
 #endif
-	}
-	if (sizeof(raw) == width*height*(ncols+nbws)) {
-	  array(string) rows = raw/width;
-	  if ((<3,4>)[ncols]) {
-	    // RGB or CMYK image.
-	    array(string) channels = allocate(ncols, "");
-	    int c;
-	    for (c = 0; c < ncols; c++) {
-	      int i;
-	      for (i = c; i < sizeof(rows); i += ncols+nbws) {
-		channels[c] += rows[i];
+	    }
+	    if (sizeof(raw) == width*height*(ncols+nbws)) {
+	      array(string) rows = raw/width;
+	      if ((<3,4>)[ncols]) {
+		// RGB or CMYK image.
+		array(string) channels = allocate(ncols, "");
+		int c;
+		for (c = 0; c < ncols; c++) {
+		  int i;
+		  for (i = c; i < sizeof(rows); i += ncols+nbws) {
+		    channels[c] += rows[i];
+		  }
+		}
+		if (ncols == 3) {
+		  return Image.Image(width, height, "rgb", @channels);
+		}
+		return Image.Image(width, height, "adjusted_cmyk", @channels);
 	      }
+	      string grey = "";
+	      int i;
+	      for(i = ncols; i < sizeof(rows); i += ncols+nbws) {
+		grey += rows[i];
+	      }
+	      return Image.Image(width, height, "rgb", grey, grey, grey);
 	    }
-	    if (ncols == 3) {
-	      return Image.Image(width, height, "rgb", @channels);
-	    }
-	    return Image.Image(width, height, "adjusted_cmyk", @channels);
 	  }
-	  string grey = "";
-	  int i;
-	  for(i = ncols; i < sizeof(rows); i += ncols+nbws) {
-	    grey += rows[i];
-	  }
-	  return Image.Image(width, height, "rgb", grey, grey, grey);
-	}
       }
     }
-  }
-  // return 0;
+    // return 0;
 #endif
+  }
 
-  if(!options) options = ([]);
   int llx, lly;
   int urx, ury;
 
@@ -112,7 +125,7 @@ object decode( string data, mapping|void options )
   Stdio.File fd3 = Stdio.File();
   object fd4 = fd3->pipe();
 
-  if(sscanf(data, "%*s%%%%BoundingBox: %s%*[\r\n]", string bbox) == 3)
+  if(sscanf(data, "%*s%%%%BoundingBox: %s%*[\r\n]", string bbox) == 3 && !options->eps_crop)
   {
     int x0,x1,y0,y1;
     sscanf(bbox, "%d %d %d %d", x0,y0,x1,y1 );
@@ -128,13 +141,20 @@ object decode( string data, mapping|void options )
     "-sDEVICE="+(options->device||"ppmraw"),
     //    "-sPAPERSIZE=a8",
     "-r"+(options->dpi||100),
-    "-dNOPAUSE",
-    "-sOutputFile=-",
-    "-",
-    "-c quit 2>/dev/null" 
-  });
-
-  Process.Process pid = Process.create_process( command, ([
+    "-dNOPAUSE"});
+    
+  if(options->eps_crop)
+    command += ({"-dEPSCrop"});
+  
+  if(options->cie_color)
+    command += ({"-dUseCIEColor"});
+    
+   command += ({
+     "-sOutputFile=-",
+     "-",
+     "-c quit 2>/dev/null"});
+  
+   Process.Process pid = Process.create_process( command, ([
     "stdin":fd,
     "stdout":fd4,
     "stderr":fd4,
