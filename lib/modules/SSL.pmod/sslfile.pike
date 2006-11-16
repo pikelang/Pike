@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.98 2006/08/17 14:04:10 mast Exp $
+/* $Id: sslfile.pike,v 1.99 2006/11/16 12:49:40 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -30,6 +30,11 @@
 //! @item
 //!   @[is_open], connection init (@[create]) and close (@[close]) can
 //!   do both reading and writing.
+//! @item
+//!   @[destroy] attempts to close the stream properly by sending the
+//!   close packet, but since it can't do blocking I/O it's not
+//!   certain that will succeed. The stream should therefore always be
+//!   closed with an explicit @[close] call.
 //! @item
 //!   Abrupt remote close without the proper handshake gets the errno
 //!   @[System.EPIPE].
@@ -209,11 +214,15 @@ static constant epipe_errnos = (<
 static void thread_error (string msg, THREAD_T other_thread)
 {
   error ("%s"
+	 "%s\n"
 	 "User callbacks: a=%O r=%O w=%O c=%O\n"
 	 "Internal callbacks: r=%O w=%O c=%O\n"
 	 "Backend: %O  This thread: %O  Other thread: %O\n"
 	 "Other thread backtrace:\n%s----------\n",
 	 msg,
+	 !stream ? "Got no stream" :
+	 stream->is_open() ? "Stream is open" :
+	 "Stream is closed",
 	 accept_callback, read_callback, write_callback, close_callback,
 	 stream && stream->query_read_callback(),
 	 stream && stream->query_write_callback(),
@@ -231,10 +240,14 @@ static void thread_error (string msg, THREAD_T other_thread)
 static void thread_error (string msg, THREAD_T other_thread)
 {
   error ("%s"
+	 "%s\n"
 	 "User callbacks: a=%O r=%O w=%O c=%O\n"
 	 "Internal callbacks: r=%O w=%O c=%O\n"
 	 "Backend: %O\n",
 	 msg,
+	 !stream ? "Got no stream" :
+	 stream->is_open() ? "Stream is open" :
+	 "Stream is closed",
 	 accept_callback, read_callback, write_callback, close_callback,
 	 stream && stream->query_read_callback(),
 	 stream && stream->query_write_callback(),
@@ -639,25 +652,23 @@ Stdio.File shutdown()
 }
 
 static void destroy()
-// Try to close down the connection properly in blocking mode since
-// it's customary to close files just by dropping them.
+//! Try to close down the connection properly since it's customary to
+//! close files just by dropping them. No guarantee can be made that
+//! the close packet gets sent successfully though, because we can't
+//! risk blocking I/O here. You should call @[close] explicitly.
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->destroy()\n");
 
-  // Note that we don't know which thread this will be called in
-  // (could be anyone if the gc got here), so there might be a race
-  // problem with a backend in another thread. That would only
-  // happen if somebody has destructed this object explicitly
-  // though, and in that case he can have all that's coming.
+  // We don't know which thread this will be called in if the refcount
+  // garb or the gc got here. That's not a race problem since it won't
+  // be registered in a backend in that case.
   ENTER (0, 0) {
     if (stream) {
       if (close_state <= STREAM_OPEN &&
 	  // Don't bother with closing nicely if there's an error from
 	  // an earlier operation. close() will throw an error for it.
 	  !cb_errno) {
-	// Have to do the close in blocking mode since this object will
-	// go away as soon as we return.
-	set_blocking();
+	set_nonblocking_keep_callbacks();
 	close (0, 0, 1);
       }
       else
@@ -1352,10 +1363,6 @@ static int direct_write()
 
   SSL3_DEBUG_MORE_MSG ("direct_write: Ok\n");
   return 1;
-}
-
-private int call_close_callback()
-{
 }
 
 static int ssl_read_callback (int called_from_real_backend, string input)
