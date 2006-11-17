@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.33 2006/11/04 19:06:49 nilsson Exp $
+ * $Id: mysql.pike,v 1.34 2006/11/17 18:43:17 mast Exp $
  *
  * Glue for the Mysql-module
  */
@@ -136,12 +136,13 @@ int get_unicode_encode_mode()
   return !!send_charset;
 }
 
+#if constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
 void set_unicode_decode_mode (int enable)
 //! Enable or disable unicode decode mode.
 //!
 //! In this mode, if the server supports UTF-8 then non-binary text
-//! strings in results are are automatically decoded to (possibly
-//! wide) unicode strings. Not enabled by default.
+//! strings in results are automatically decoded to (possibly wide)
+//! unicode strings. Not enabled by default.
 //!
 //! The statement "@expr{SET character_set_results = utf8@}" is sent
 //! to the server to enable the mode. When the mode is disabled,
@@ -157,9 +158,8 @@ void set_unicode_decode_mode (int enable)
 //!   @expr{character_set_results@} was added in MySQL 4.1.1.
 //!
 //! @note
-//!   This mode is not compatible with earlier pike versions. You need
-//!   to run in compatibility mode <= 7.6 to have it disabled by
-//!   default.
+//!   This function is only available if Pike has been compiled with
+//!   MySQL client library 4.1.0 or later.
 //!
 //! @seealso
 //!   @[set_unicode_encode_mode]
@@ -175,6 +175,7 @@ void set_unicode_decode_mode (int enable)
     utf8_mode &= ~UNICODE_DECODE_MODE;
   }
 }
+#endif
 
 int get_unicode_decode_mode()
 //! Returns nonzero if unicode decode mode is enabled, zero otherwise.
@@ -261,12 +262,20 @@ void set_charset (string charset)
       utf8_mode & (LATIN1_UNICODE_ENCODE_MODE|UTF8_UNICODE_ENCODE_MODE))
     update_unicode_encode_mode_from_charset (charset);
 
-  if (charset == "unicode")
+  if (charset == "unicode") {
+#if constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
     utf8_mode |= UNICODE_DECODE_MODE;
+#else
+    predef::error ("Unicode decode mode not supported - "
+		   "compiled with MySQL client library < 4.1.0.\n");
+#endif
+  }
+#if constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
   else if (utf8_mode & UNICODE_DECODE_MODE && charset != "utf8")
     // This setting has been overridden by ::set_charset, so we need
     // to reinstate it.
     ::big_query ("SET character_set_results = utf8");
+#endif
 }
 
 string get_charset()
@@ -554,6 +563,12 @@ int decode_datetime (string timestr)
   }
 }
 
+#if constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
+#define HAVE_MYSQL_FIELD_CHARSETNR_DO(X...) X
+#else
+#define HAVE_MYSQL_FIELD_CHARSETNR_DO(X...)
+#endif
+
 #define QUERY_BODY(do_query)						\
   if (bindings)								\
     query = .sql_util.emulate_bindings(query,bindings,this);		\
@@ -632,10 +647,12 @@ int decode_datetime (string timestr)
 									\
   if (!objectp(res)) return res;					\
 									\
-  if (utf8_mode & UNICODE_DECODE_MODE) {				\
-    CH_DEBUG ("Using UnicodeWrapper for result.\n");			\
-    return .sql_util.UnicodeWrapper(res);				\
-  }									\
+  HAVE_MYSQL_FIELD_CHARSETNR_DO (					\
+    if (utf8_mode & UNICODE_DECODE_MODE) {				\
+      CH_DEBUG ("Using UnicodeWrapper for result.\n");			\
+      return .sql_util.UnicodeWrapper(res);				\
+    }									\
+  );									\
   return res;
 
 Mysql.mysql_result big_query (string query,
@@ -747,10 +764,16 @@ static void create(string|void host, string|void database,
 
     update_unicode_encode_mode_from_charset (lower_case (charset));
 
+#if constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
     if (charset == "unicode")
       utf8_mode |= UNICODE_DECODE_MODE;
     else if (options->unicode_decode_mode)
       set_unicode_decode_mode (1);
+#else
+    if (charset == "unicode" || options->unicode_decode_mode)
+      predef::error ("Unicode decode mode not supported - "
+		     "compiled with MySQL client library < 4.1.0.\n");
+#endif
 
   } else {
     ::create(host||"", database||"", user||"", password||"");

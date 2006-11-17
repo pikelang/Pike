@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.53 2006/08/31 10:10:18 mast Exp $
+# $Id: configure.in,v 1.54 2006/11/17 18:43:17 mast Exp $
 #
 # Configure script for the mysql-module
 #
@@ -442,6 +442,34 @@ $ret_type * STDCALL mysql_fetch_lengths(MYSQL_RES *mysql)
     AC_CHECK_HEADERS(stdio.h io.h)
 
     AC_CHECK_FUNCS(ldiv open sopen close read fileno puts fgets)
+
+    AC_MSG_CHECKING(for the charsetnr member in MYSQL_FIELD)
+    AC_CACHE_VAL(pike_cv_have_mysql_field_charsetnr, [
+      AC_TRY_LINK([
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
+#include <winsock.h>
+#endif
+
+#ifdef HAVE_MYSQL_H
+#include <mysql.h>
+#else
+#ifdef HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#else
+#error Need mysql.h headerfile!
+#endif
+#endif
+      ], [
+	void *foo__ = &(((MYSQL_FIELD *) 0)->charsetnr);
+      ], [pike_cv_have_mysql_field_charsetnr="yes"],
+	 [pike_cv_have_mysql_field_charsetnr="no"])
+    ])
+    if test "$pike_cv_have_mysql_field_charsetnr" = yes; then
+      AC_DEFINE(HAVE_MYSQL_FIELD_CHARSETNR)
+    fi
+    AC_MSG_RESULT($pike_cv_have_mysql_field_charsetnr)
 
   fi
 fi

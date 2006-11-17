@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.17 2006/08/31 10:10:18 mast Exp $
+|| $Id: acconfig.h,v 1.18 2006/11/17 18:43:17 mast Exp $
 */
 
 /*
@@ -82,5 +82,8 @@
 
 /* Define if your mysql.h defines CLIENT_INTERACTIVE */
 #undef HAVE_CLIENT_INTERACTIVE
+
+/* Define if MYSQL_FIELD has a charsetnr member */
+#undef HAVE_MYSQL_FIELD_CHARSETNR
 
 #endif /* PIKE_MYSQL_CONFIG_H */

@@ -1,5 +1,5 @@
 /*
- * $Id: sql_util.pmod,v 1.15 2006/08/11 11:08:44 grubba Exp $
+ * $Id: sql_util.pmod,v 1.16 2006/11/17 18:43:17 mast Exp $
  *
  * Some SQL utility functions.
  * They are kept here to avoid circular references.
@@ -61,9 +61,6 @@ string emulate_bindings(string query, mapping(string|int:mixed)|void bindings,
 }
 
 //! Result object wrapper performing utf8 decoding of all fields.
-//!
-//! Useful for eg Mysql connections which have been set to utf8-mode
-//! using eg @expr{"SET NAMES 'utf8'"@}.
 class UnicodeWrapper (
 		      //! The wrapped result object.
 		      static object master_result
@@ -135,11 +132,37 @@ class UnicodeWrapper (
     if (!arrayp(row)) return row;
     array(int|mapping(string:mixed)) field_info = fetch_fields();
     foreach(row; int i; string|int val) {
-      if (stringp(val) && field_info[i]->flags &&
-	  !field_info[i]->flags->binary) {
+      if (stringp(val)) {
 	row[i] = utf8_to_string(val);
       }
     }
     return row;
   }
 }
+
+#if constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
+class MySQLUnicodeWrapper
+//! Result wrapper for MySQL that performs UTF-8 decoding of all
+//! nonbinary fields. Useful if the result charset of the connection
+//! has been set to UTF-8.
+//!
+//! @note
+//! There's normally no need to use this class directly. It's used
+//! automatically when @[Mysql.set_unicode_decode_mode] is activated.
+{
+  inherit UnicodeWrapper;
+
+  int|array(string) fetch_row()
+  {
+    int|array(string) row = master_result->fetch_row();
+    if (!arrayp(row)) return row;
+    array(int|mapping(string:mixed)) field_info = fetch_fields();
+    foreach(row; int i; string|int val) {
+      if (stringp(val) && field_info[i]->charsetnr != 63) {
+	row[i] = utf8_to_string(val);
+      }
+    }
+    return row;
+  }
+}
+#endif
