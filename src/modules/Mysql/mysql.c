@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.91 2006/09/16 18:26:33 mast Exp $
+|| $Id: mysql.c,v 1.92 2006/11/17 18:43:17 mast Exp $
 */
 
 /*
@@ -77,6 +77,7 @@
 #include "fd_control.h"
 #include "mapping.h"
 #include "bignum.h"
+#include "module_support.h"
 
 /* System includes */
 #ifdef HAVE_STRING_H
@@ -97,7 +98,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.91 2006/09/16 18:26:33 mast Exp $");
+RCSID("$Id: mysql.c,v 1.92 2006/11/17 18:43:17 mast Exp $");
 
 /*! @module Mysql
  *!
@@ -1943,6 +1944,10 @@ PIKE_MODULE_INIT
 
 #ifdef HAVE_MYSQL_SSL
   add_integer_constant( "CLIENT_SSL", CLIENT_SSL, 0);
+#endif
+
+#ifdef HAVE_MYSQL_FIELD_CHARSETNR
+  add_integer_constant ("HAVE_MYSQL_FIELD_CHARSETNR", 1, 0);
 #endif
 
   set_init_callback(init_mysql_struct);
