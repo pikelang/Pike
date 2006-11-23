@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.45 2006/08/02 20:59:47 mast Exp $
+# $Id: common_module_makefile.in,v 1.46 2006/11/23 04:37:16 bill Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -41,9 +41,12 @@ $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 	) || exit $$?
 
 .SUFFIXES:
-.SUFFIXES: .c .o .cmod .protos
+.SUFFIXES: .c .o .cmod .protos .m .mmod
 
 .cmod.c: $(BUILD_BASE)/precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
+	$(BUILD_BASE)/precompile.sh --cache precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
+
+.mmod.m: $(BUILD_BASE)/precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
 	$(BUILD_BASE)/precompile.sh --cache precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
 
 
@@ -71,6 +74,32 @@ $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 	fi
 
 .c.protos: $(BUILD_BASE)/precompile.sh-stamp
+	./precompile.sh --cache fake_dynamic_load.pike >"$@" --cpp --protos \
+	  $(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
+	    -DPMOD_PROTO=PMOD_PROTO -DPIKE_PRECOMPILER=1 "$<" || \
+	  { rm "$@"; exit 1; }
+.m.o:
+	@echo "Compiling `echo '$<' | sed -e 's|^$(PIKE_SRC_DIR)/||'`" ; \
+	rm -f $@.fail >/dev/null 2>&1; \
+	if $(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@ ; then : ; else \
+	  status=$$?; \
+	  if test x"@noopt_retry@" = xyes ; then \
+	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
+	    echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >$@.fail ;\
+	    if NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ; then : ; else \
+	      status=$$?; \
+	      echo "Compilation command was:" >&2;\
+	      echo "$(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2 ;\
+	      exit $$status; \
+	    fi; \
+	  else \
+	    echo "Compilation command was:" >&2;\
+	    echo "$(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@" >&2 ;\
+	    exit $$status; \
+	  fi; \
+	fi
+
+.m.protos: $(BUILD_BASE)/precompile.sh-stamp
 	./precompile.sh --cache fake_dynamic_load.pike >"$@" --cpp --protos \
 	  $(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
 	    -DPMOD_PROTO=PMOD_PROTO -DPIKE_PRECOMPILER=1 "$<" || \
