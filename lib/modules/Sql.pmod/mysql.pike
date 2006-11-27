@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.28 2006/11/17 18:43:13 mast Exp $
+ * $Id: mysql.pike,v 1.29 2006/11/27 16:28:39 mast Exp $
  *
  * Glue for the Mysql-module
  */
@@ -138,6 +138,9 @@ int get_unicode_encode_mode()
 
 #if constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
 void set_unicode_decode_mode (int enable)
+#else
+static void broken_set_unicode_decode_mode (int enable)
+#endif
 //! Enable or disable unicode decode mode.
 //!
 //! In this mode, if the server supports UTF-8 then non-binary text
@@ -175,6 +178,15 @@ void set_unicode_decode_mode (int enable)
     utf8_mode &= ~UNICODE_DECODE_MODE;
   }
 }
+
+#if !constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
+// See blurb at MySQLBrokenUnicodeWrapper in sql_util.pmod. The
+// PIKE_BROKEN_MYSQL_UNICODE_MODE thingy ought to be a define, but
+// it's an environment variable instead to avoid problems with
+// overcaching in dumped files.
+function(int:void) set_unicode_decode_mode =
+  getenv ("PIKE_BROKEN_MYSQL_UNICODE_MODE") &&
+  broken_set_unicode_decode_mode;
 #endif
 
 int get_unicode_decode_mode()
@@ -266,16 +278,17 @@ void set_charset (string charset)
 #if constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
     utf8_mode |= UNICODE_DECODE_MODE;
 #else
-    predef::error ("Unicode decode mode not supported - "
-		   "compiled with MySQL client library < 4.1.0.\n");
+    if (set_unicode_decode_mode)
+      utf8_mode |= UNICODE_DECODE_MODE;
+    else
+      predef::error ("Unicode decode mode not supported - "
+		     "compiled with MySQL client library < 4.1.0.\n");
 #endif
   }
-#if constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
   else if (utf8_mode & UNICODE_DECODE_MODE && charset != "utf8")
     // This setting has been overridden by ::set_charset, so we need
     // to reinstate it.
     ::big_query ("SET character_set_results = utf8");
-#endif
 }
 
 string get_charset()
@@ -644,12 +657,14 @@ Mysql.mysql_result big_query (string query,
 
   if (!objectp(res)) return res;
 
-#if constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
   if (utf8_mode & UNICODE_DECODE_MODE) {
     CH_DEBUG ("Using MySQLUnicodeWrapper for result.\n");
+#if constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
     return .sql_util.MySQLUnicodeWrapper(res);
-  }
+#else
+    return .sql_util.MySQLBrokenUnicodeWrapper (res);
 #endif
+  }
   return res;
 }
 
@@ -711,15 +726,19 @@ static void create(string|void host, string|void database,
 
     update_unicode_encode_mode_from_charset (lower_case (charset));
 
-#if constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
-    if (charset == "unicode")
-      utf8_mode |= UNICODE_DECODE_MODE;
-    else if (options->unicode_decode_mode)
-      set_unicode_decode_mode (1);
-#else
-    if (charset == "unicode" || options->unicode_decode_mode)
-      predef::error ("Unicode decode mode not supported - "
-		     "compiled with MySQL client library < 4.1.0.\n");
+#if !constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
+    if (set_unicode_encode_mode) {
+#endif
+      if (charset == "unicode")
+	utf8_mode |= UNICODE_DECODE_MODE;
+      else if (options->unicode_decode_mode)
+	set_unicode_decode_mode (1);
+#if !constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
+    }
+    else
+      if (charset == "unicode" || options->unicode_decode_mode)
+	predef::error ("Unicode decode mode not supported - "
+		       "compiled with MySQL client library < 4.1.0.\n");
 #endif
 
   } else {
