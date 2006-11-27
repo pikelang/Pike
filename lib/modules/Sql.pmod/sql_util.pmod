@@ -1,5 +1,5 @@
 /*
- * $Id: sql_util.pmod,v 1.16 2006/11/17 18:43:17 mast Exp $
+ * $Id: sql_util.pmod,v 1.17 2006/11/27 16:32:43 mast Exp $
  *
  * Some SQL utility functions.
  * They are kept here to avoid circular references.
@@ -141,6 +141,7 @@ class UnicodeWrapper (
 }
 
 #if constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
+
 class MySQLUnicodeWrapper
 //! Result wrapper for MySQL that performs UTF-8 decoding of all
 //! nonbinary fields. Useful if the result charset of the connection
@@ -165,4 +166,38 @@ class MySQLUnicodeWrapper
     return row;
   }
 }
+
+#else
+
+class MySQLBrokenUnicodeWrapper
+// This one is used to get bug compatibility when compiled with an old
+// MySQL client lib that doesn't have the charsetnr property in the
+// field info. It looks at the binary flag instead, which is set for
+// binary fields but might also be set for text fields (e.g. with a
+// definition like "VARCHAR(255) BINARY").
+//
+// I.e. the effect of using this one is that text fields with the
+// binary flag won't be correctly decoded in unicode decode mode. This
+// has to be enabled by defining the environment variable
+// PIKE_BROKEN_MYSQL_UNICODE_MODE. With it the unicode decode mode
+// will exist even when the client lib is too old to implement it
+// correctly.
+{
+  inherit UnicodeWrapper;
+
+  int|array(string) fetch_row()
+  {
+    int|array(string) row = master_result->fetch_row();
+    if (!arrayp(row)) return row;
+    array(int|mapping(string:mixed)) field_info = fetch_fields();
+    foreach(row; int i; string|int val) {
+      if (stringp(val) && field_info[i]->flags &&
+	  !field_info[i]->flags->binary) {
+	row[i] = utf8_to_string(val);
+      }
+    }
+    return row;
+  }
+}
+
 #endif
