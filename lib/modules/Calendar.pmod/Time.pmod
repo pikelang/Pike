@@ -245,12 +245,12 @@ class TimeofDay
       }
    }
    
-   cSecond beginning()
+   TimeRange beginning()
    {
       return Second("timeofday_sd",rules,ux,0,ls,utco)->autopromote();
    }
 
-   cSecond end()
+   TimeRange end()
    {
       return Second("timeofday",rules,ux+len,0)->autopromote();
    }
@@ -914,7 +914,7 @@ class TimeofDay
    {
       if (ls==CALUNKNOWN) make_local();
       int u=utc_offset();
-      return sprintf("%s, %s %s %s %d:%02d:%02d %+03d%02d",
+      return sprintf("%s, %s %s %s %02d:%02d:%02d %+03d%02d",
 		     base->week_day_shortname(),
 		     base->month_day_name(),
 		     base->month_shortname(),
