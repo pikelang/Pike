@@ -883,7 +883,7 @@ class TimeofDay
    {
       if (ls==CALUNKNOWN) make_local();
       int u=utc_offset();
-      return sprintf("%s, %s %s %s %d:%02d:%02d %+03d%02d",
+      return sprintf("%s, %s %s %s %02d:%02d:%02d %+03d%02d",
 		     base->week_day_shortname(),
 		     base->month_day_name(),
 		     base->month_shortname(),
