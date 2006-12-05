@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.35 2006/11/27 16:32:41 mast Exp $
+ * $Id: mysql.pike,v 1.36 2006/12/05 11:48:29 grubba Exp $
  *
  * Glue for the Mysql-module
  */
@@ -136,11 +136,7 @@ int get_unicode_encode_mode()
   return !!send_charset;
 }
 
-#if constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
 void set_unicode_decode_mode (int enable)
-#else
-static void broken_set_unicode_decode_mode (int enable)
-#endif
 //! Enable or disable unicode decode mode.
 //!
 //! In this mode, if the server supports UTF-8 then non-binary text
@@ -162,11 +158,17 @@ static void broken_set_unicode_decode_mode (int enable)
 //!
 //! @note
 //!   This function is only available if Pike has been compiled with
-//!   MySQL client library 4.1.0 or later.
+//!   MySQL client library 4.1.0 or later, or if the environment
+//!   variable @tt{PIKE_BROKEN_MYSQL_UNICODE_MODE@} is set.
 //!
 //! @seealso
 //!   @[set_unicode_encode_mode]
 {
+#if !constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
+  if (!getenv("PIKE_BROKEN_MYSQL_UNICODE_MODE")) {
+    predef::error("set_unicode_decode_mode not available.\n");
+  }
+#endif
   if (enable) {
     CH_DEBUG("Enabling unicode decode mode.\n");
     ::big_query ("SET character_set_results = utf8");
@@ -179,15 +181,6 @@ static void broken_set_unicode_decode_mode (int enable)
   }
 }
 
-#if !constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
-// See blurb at MySQLBrokenUnicodeWrapper in sql_util.pmod. The
-// PIKE_BROKEN_MYSQL_UNICODE_MODE thingy ought to be a define, but
-// it's an environment variable instead to avoid problems with
-// overcaching in dumped files.
-function(int:void) set_unicode_decode_mode =
-  getenv ("PIKE_BROKEN_MYSQL_UNICODE_MODE") &&
-  broken_set_unicode_decode_mode;
-#endif
 
 int get_unicode_decode_mode()
 //! Returns nonzero if unicode decode mode is enabled, zero otherwise.
