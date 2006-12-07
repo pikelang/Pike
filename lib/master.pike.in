@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.388 2006/11/04 19:08:24 nilsson Exp $
+// $Id: master.pike.in,v 1.389 2006/12/07 09:41:14 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -3009,6 +3009,7 @@ class Describer
     while (sizeof (identify_stack)) {
       stuff = identify_stack[-1];
       identify_stack = identify_stack[..<1];
+      if (!intp(ident[stuff])) continue;	// Already identified.
       if (objectp (stuff) || functionp (stuff) || programp (stuff))
 	ident[stuff]++;
       else if (arrayp (stuff)) {
