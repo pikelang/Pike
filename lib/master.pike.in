@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.260 2005/09/09 17:47:39 mast Exp $
+// $Id: master.pike.in,v 1.261 2006/12/07 09:42:27 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -614,6 +614,8 @@ static program low_findprog(string pname,
   Stat s;
   string fname=pname+ext;
 
+  // werror("low_findprog(%O, %O, X, %d) ==>\n", pname, ext, mkobj);
+
 #ifdef THREADED
   object key;
   // FIXME: The catch is needed, since we might be called in
@@ -674,6 +676,7 @@ static program low_findprog(string pname,
     case "":
     case ".pike":
       foreach(query_precompiled_names(fname), string oname) {
+	// werror("low_findprog %O: Testing oname %O\n", fname, oname);
 	if(Stat s2=master_file_stat(fakeroot(oname)))
 	{
 	  if(s2->isreg && s2->mtime >= s->mtime)
@@ -803,19 +806,24 @@ static program findprog(string pname,
 			object|void handler,
 			void|int mkobj)
 {
+  mixed res;
+  // werror("findprog(%O, %O, ...) ==>\n", pname, ext);
   switch(ext)
   {
   case ".pike":
   case ".so":
-    return low_findprog(pname,ext,handler, mkobj);
+    res = low_findprog(pname,ext,handler, mkobj);
+    break;
 
   default:
     pname+=ext;
-    return
+    res =
       low_findprog(pname,"", handler, mkobj) ||
       low_findprog(pname,".pike", handler, mkobj) ||
       low_findprog(pname,".so", handler, mkobj);
   }
+  // werror("findprog(%O, %O, ...) ==> %O\n", pname, ext, res);
+  return res;
 }
 
 program low_cast_to_program(string pname,
@@ -1470,6 +1478,7 @@ program|object findmodule(string fullname, object|void handler)
     return UNDEFINED;
   }
 
+  resolv_debug("findmodule: Stating %O...\n", fakeroot(fullname+".pmod"));
   if(Stat stat=master_file_stat(fakeroot(fullname+".pmod")))
   {
     if(stat->isdir)
@@ -1481,6 +1490,7 @@ program|object findmodule(string fullname, object|void handler)
 
   INC_RESOLV_MSG_DEPTH();
 
+  resolv_debug("findmodule: Trying (object)%O...\n", fakeroot(fullname+".pmod"));
   if(objectp (o = low_cast_to_object(fullname+".pmod", "/.", handler))) {
     DEC_RESOLV_MSG_DEPTH();
     resolv_debug ("findmodule(%O) => got object %O\n", fullname, o);
@@ -1488,6 +1498,7 @@ program|object findmodule(string fullname, object|void handler)
   }
     
 #if constant(load_module)
+  resolv_debug("findmodule: Trying %O...\n", fakeroot(fullname+".so"));
   if(objectp (o = low_cast_to_object(fullname+".so", "/.", handler))) {
     DEC_RESOLV_MSG_DEPTH();
     resolv_debug ("findmodule(%O) => got .so object %O\n", fullname, o);
@@ -1495,6 +1506,7 @@ program|object findmodule(string fullname, object|void handler)
   }
 #endif
 
+  resolv_debug("findmodule: Trying (program)%O...\n", fullname);
   if (programp (o = cast_to_program(fullname, "/.", handler))) {
     DEC_RESOLV_MSG_DEPTH();
     resolv_debug ("findmodule(%O) => got .pike program %O\n", fullname, o);
@@ -2536,6 +2548,7 @@ class Describer
     while (sizeof (identify_stack)) {
       stuff = identify_stack[-1];
       identify_stack = identify_stack[..sizeof (identify_stack) - 2];
+      if (!intp(ident[stuff])) continue;	// Already identified.
       if (objectp (stuff) || functionp (stuff) || programp (stuff))
 	ident[stuff]++;
       else if (arrayp (stuff)) {
