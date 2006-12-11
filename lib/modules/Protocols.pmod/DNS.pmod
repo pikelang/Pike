@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.73 2005/01/03 11:07:46 grubba Exp $
+// $Id: DNS.pmod,v 1.74 2006/12/11 16:03:15 bill Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -346,7 +346,6 @@ class protocol
           m->name=x[2..]*".";
         }
 
-        m->ttl=decode_int(s,next);
         break;
       case T_A:
       case T_AAAA:
