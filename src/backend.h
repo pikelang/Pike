@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.h,v 1.34 2005/09/10 00:44:53 grendel Exp $
+|| $Id: backend.h,v 1.35 2006/12/12 18:47:04 grubba Exp $
 */
 
 #ifndef BACKEND_H
@@ -29,7 +29,7 @@
  */
 #define BACKEND_USES_POLL_DEVICE
 #define BACKEND_USES_DEVPOLL
-#elif defined(HAVE_SYS_EPOLL_H) && defined(PIKE_POLL_DEVICE)
+#elif defined(HAVE_SYS_EPOLL_H)
 /*
  * Backend using /dev/epoll-style poll device.
  *
