@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.151 2006/02/21 07:07:50 mast Exp $
+|| $Id: backend.cmod,v 1.152 2006/12/12 18:47:37 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.151 2006/02/21 07:07:50 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.152 2006/12/12 18:47:37 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -372,7 +372,7 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
   return e;
 }
 	
-#elif defined(HAVE_SYS_EPOLL_H) && defined(PIKE_POLL_DEVICE)
+#elif defined(HAVE_SYS_EPOLL_H)
 /*
  * Backend using /dev/epoll-style poll device.
  *
@@ -383,6 +383,10 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
  *   we include the appropriate wrappers below.
  */
 #include <sys/epoll.h>
+
+#ifndef PIKE_POLL_DEVICE
+#define PIKE_POLL_DEVICE	"epoll"
+#endif
 
 /* The following three are defined by <gnu/stubs.h> which is included
  * from <features.h> which is included from just about everywhere, so
@@ -2927,10 +2931,10 @@ PIKECLASS Backend
     }
     else
       timeout.tv_sec = -1;
-    pop_n_elems (args);
 
     low_backend_once(THIS, &timeout);
 
+    pop_n_elems (args);
     if (timeout.tv_sec < 0)
       push_int (0);
     else
