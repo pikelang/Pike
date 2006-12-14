@@ -43,7 +43,9 @@ void destroy() { close(); }
 
 static void new_connection()
 {
-   Stdio.File fd=port->accept();
-   .Request r=request_program();
-   r->attach_fd(fd,this,callback);
+    while( Stdio.File fd=port->accept() )
+    {
+	.Request r=request_program();
+	r->attach_fd(fd,this,callback);
+    }
 }
