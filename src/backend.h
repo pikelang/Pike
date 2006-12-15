@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.h,v 1.35 2006/12/12 18:47:04 grubba Exp $
+|| $Id: backend.h,v 1.36 2006/12/15 15:26:49 grubba Exp $
 */
 
 #ifndef BACKEND_H
@@ -29,15 +29,12 @@
  */
 #define BACKEND_USES_POLL_DEVICE
 #define BACKEND_USES_DEVPOLL
-#elif defined(HAVE_SYS_EPOLL_H)
+#elif defined(HAVE_SYS_EPOLL_H) && defined(WITH_EPOLL)
 /*
  * Backend using /dev/epoll-style poll device.
  *
  * Used on:
  *   Linux 2.6 and above.
- * Note:
- *   Some libc's are missing wrappers for the system calls, so
- *   we include the appropriate wrappers below.
  */
 #define BACKEND_USES_POLL_DEVICE
 #define BACKEND_USES_DEVEPOLL
