@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.152 2006/12/12 18:47:37 grubba Exp $
+|| $Id: backend.cmod,v 1.153 2006/12/15 15:29:30 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.152 2006/12/12 18:47:37 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.153 2006/12/15 15:29:30 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -372,7 +372,7 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
   return e;
 }
 	
-#elif defined(HAVE_SYS_EPOLL_H)
+#elif defined(HAVE_SYS_EPOLL_H) && defined(WITH_EPOLL)
 /*
  * Backend using /dev/epoll-style poll device.
  *
