@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.141 2006/02/20 11:43:57 nilsson Exp $
+// $Id: install.pike,v 1.142 2006/12/27 19:26:18 peter Exp $
 
 #define USE_GTK
 
@@ -917,7 +917,7 @@ int next()
 {
   vars->prefix = entry1->get_text();
   vars->pike_name = entry2->get_text();
-  install_type="--new_style";
+  install_type="--new-style";
 
   destruct(table1);
 
