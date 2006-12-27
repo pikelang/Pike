@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.322 2006/10/31 00:26:21 nilsson Exp $
+|| $Id: signal_handler.c,v 1.323 2006/12/27 16:28:34 grubba Exp $
 */
 
 #include "global.h"
@@ -1129,6 +1129,7 @@ struct pid_status
   int flags;
   int state;
   int result;
+  struct svalue callback;
 #endif
 };
 
@@ -1144,6 +1145,8 @@ static void init_pid_status(struct object *o)
   THIS->flags=0;
   THIS->state=PROCESS_UNKNOWN;
   THIS->result=-1;
+  THIS->callback.type = T_INT;
+  THIS->callback.u.integer = 0;
 #endif
 }
 
@@ -1165,6 +1168,21 @@ static void exit_pid_status(struct object *o)
 }
 
 #ifdef USE_PID_MAPPING
+static void call_pid_status_callback(struct callback *cb, void *pid, void *arg)
+{
+  struct object *o = pid;
+  struct pid_status *p;
+  remove_callback(cb);
+  if (!o) return;
+  if(!(p=(struct pid_status *)get_storage(o, pid_status_program))) {
+    free_object(o);
+    return;
+  }
+  /* Steal the reference from o. */
+  push_object(o);
+  safe_apply_svalue(&p->callback, 1, 1);
+  pop_stack();
+}
 static void report_child(int pid,
 			 WAITSTATUSTYPE status,
 			 const char *from)
@@ -1184,12 +1202,20 @@ static void report_child(int pid,
     key.u.integer=pid;
     if((s=low_mapping_lookup(pid_mapping, &key)))
     {
+      struct pid_status *p = NULL;
+      int call_callback = 0;
       if(s->type == T_OBJECT)
       {
-	struct pid_status *p;
-	if((p=(struct pid_status *)get_storage(s->u.object,
+	struct object *o;
+	if((p=(struct pid_status *)get_storage((o = s->u.object),
 					       pid_status_program)))
 	{
+	  if (!SAFE_IS_ZERO(&p->callback)) {
+	    /* Call the callback from a proper pike thread... */
+	    add_ref(o);
+	    add_to_callback(&evaluator_callbacks, call_pid_status_callback,
+			    o, NULL);
+	  }
 	  if(WIFSTOPPED(status)) {
 	    p->sig = WSTOPSIG(status);
 	    p->state = PROCESS_STOPPED;
@@ -1228,6 +1254,10 @@ static void report_child(int pid,
        * when we want to keep the entry. This is currently
        * achieved with the return above.
        *	/grubba 2003-02-28
+       *
+       * Note that this also invalidates s (and p unless we have added
+       * extra references to the object).
+       *	/grubba 2006-12-27
        */
       map_delete(pid_mapping, &key);
     }else{
@@ -2409,6 +2439,7 @@ int fd_cleanup_cb(void *data, int fd)
 #else
   set_close_on_exec(fd, 1);
 #endif
+  return 0;
 }
 #endif /* HAVE_FDWALK */
 
@@ -2440,6 +2471,9 @@ int fd_cleanup_cb(void *data, int fd)
  *! following parameters:
  *!
  *! @mapping
+ *!
+ *! @member function(Process.Process:void) "callback"
+ *!  Function called when the created process changes state.
  *!
  *! @member string "cwd"
  *!  Execute the command in another directory than the current
@@ -2581,9 +2615,14 @@ int fd_cleanup_cb(void *data, int fd)
  *!   noticeably slower using a string instead of an integer; if maximum
  *!   performance is an issue, please use integers.
  *!
- *!   The modifiers @expr{"fds"@}, @expr{"uid"@}, @expr{"gid"@},
+ *! @note
+ *!   The modifiers @expr{"callback"@}, @expr{"fds"@},
+ *!   @expr{"uid"@}, @expr{"gid"@},
  *!   @expr{"nice"@}, @expr{"noinitgroups"@}, @expr{"setgroups"@},
  *!   @expr{"keep_signals"@} and @expr{"rlimit"@} only exist on unix.
+ *!
+ *! @note
+ *!   Support for @expr{"callback"@} was added in Pike 7.7.
  */
 
 /*! @endclass */
@@ -2995,6 +3034,9 @@ void f_create_process(INT32 args)
 
     if(optional)
     {
+      if ((tmp = simple_mapping_string_lookup(optional, "callback"))) {
+	assign_svalue(&(THIS->callback), tmp);
+      }
       if((tmp = simple_mapping_string_lookup(optional, "priority")) &&
          tmp->type == T_STRING)
         priority = tmp->u.string->str;
@@ -4775,8 +4817,13 @@ void init_signals(void)
   }
 #endif
 
-  start_new_program();
+  START_NEW_PROGRAM_ID(PROCESS);
   ADD_STORAGE(struct pid_status);
+#ifndef __NT__
+  PIKE_MAP_VARIABLE("__callback", OFFSETOF(pid_status, callback),
+		    tFunc(tObjIs_PROCESS,tVoid), T_MIXED,
+		    ID_STATIC|ID_PRIVATE);
+#endif /* !__NT__ */
   set_init_callback(init_pid_status);
   set_exit_callback(exit_pid_status);
   /* function(string:int) */
