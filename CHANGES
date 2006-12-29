@@ -50,7 +50,7 @@ o Added support to Mysql for the charsetnr column attribute and proper
 
   Unfortunately this means that unicode decode mode is disabled if
   Pike is compiled with a client lib without support for the charsetnr
-  attribute. Ie libmysql prior to v4.1.0. If you want to enable it
+  attribute, i.e. libmysql prior to v4.1.0. If you want to enable it
   for compatibility reasons, set the environment variable
   PIKE_BROKEN_MYSQL_UNICODE_MODE when starting pike.
 
