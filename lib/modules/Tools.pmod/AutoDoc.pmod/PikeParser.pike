@@ -196,6 +196,15 @@ string eatIdentifier(void|int allowScopePrefix) {
   if (!isIdent(s))
     parseError("expected identifier, got %O", s);
   readToken();
+
+  // Special hax for `->symbol and `->symbol=
+  if( s=="`->" && peekToken()=="symbol" )
+  {
+    s += readToken();
+    if( peekToken()=="=" )
+      s += readToken();
+  }
+
   return scope + colons + s;
 }
 
