@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.7 2003/12/24 17:13:13 mirar Exp $
+|| $Id: acconfig.h,v 1.8 2006/12/29 15:24:31 grubba Exp $
 */
 
 /*
@@ -37,5 +37,8 @@
 
 /* Define if libavcodec.h or so defines uint8_t */
 #undef HAVE_UINT8_T
+
+/* Define if AVCodecContext contains the field frame_rate. */
+#undef HAVE_AVCODECCONTEXT_FRAME_RATE
 
 #endif
