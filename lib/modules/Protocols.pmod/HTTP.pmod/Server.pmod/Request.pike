@@ -723,15 +723,14 @@ void send_write()
 	 }
       }
    }
-   else if (send_pos==sizeof(send_buf) && !send_fd)
-   {
-      finish(sent==send_stop);
-      return;
-   }
 
    int n=my_fd->write(send_buf[send_pos..]);
+
    sent += n;
    send_pos+=n;
+
+   if (send_pos==sizeof(send_buf) && !send_fd)
+      finish(sent==send_stop);
 }
 
 void send_timeout()
