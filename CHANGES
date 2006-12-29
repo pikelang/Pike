@@ -19,6 +19,9 @@ o Added Standards.IIM that handles IPTC IPTC Information Interchange
 o Added support for little endian TIFFs.
 o Added support for TIFF to Image.Dims.
 o Changed HTTP.Query to close connections explicitly.
+o Changed sslfile to avoid blocking IO in destroy() as that could lock
+  up the gc. You should explicitly close() SSL connections since the close
+  packet might block.
 o Improved Parser.XML.Validating.
 o More paranoid checks of image headers when using Image.AVS.
 o Fixes to make describe_value work as usual in the free pass of the
@@ -27,7 +30,6 @@ o Fixes to make describe_value work as usual in the free pass of the
 o Fixed truncated field names in ODBC.
 o Fixed masking of file positions larger than 2 GiB on 64-bit.
 o Fixed low-level parsing of HTTP headers to not reorder the headers.
-o Fixed an inverted error test in Mysql.set_charset.
 o Added set_charset and get_charset proxy functions to Sql.Sql.
 o Changed Protocols.HTTP.Query async_close() to care about the value
   returned by ponder_answer(). Fixes requests to broken servers that 
@@ -35,7 +37,22 @@ o Changed Protocols.HTTP.Query async_close() to care about the value
 o Fixed bad free_string() in exit_bytecode().
 o Fixed an off-by-one crash when drawing alpha boxes all the way to
   the bottom of the image.
-o FIXME_SPECIFY: "mast: Backported multiset fixes."
+o Fixed a multiset bug that could cause incorrect multiset sizes.
+o Fixed a multiset bug that caused ints to be called as sorting
+  function when no sorting function was set.
+o Fixed hour formatting in Calendar.Time.format_smtp().
+o Fixed TTL parsing of SRV records in Protocols.DNS.
+o Fixed an inverted error test in Mysql.set_charset.
+o Added support to Mysql for the charsetnr column attribute and proper
+  recognition of binary fields in unicode decode mode by using charsetnr
+  instead of the binary flag (which might be set for nonbinary columns
+  too, e.g. "VARCHAR(17) BINARY").
+
+  Unfortunately this means that unicode decode mode is disabled if
+  Pike is compiled with a client lib without support for the charsetnr
+  attribute. That means libs before 4.1.0. If you want to enable it
+  for compatibility reasons, set the environment variable
+  PIKE_BROKEN_MYSQL_UNICODE_MODE when starting pike.
 
 Other:
 
@@ -64,6 +81,11 @@ o Backported new INT_TYPE_{ADD,NEG}_OVERFLOW implementation from 7.7.
   The old one does not work with GCC 4.1.
 o Fixed problem where mysql_character_set_name exists in mysql.h but
   not in the lib for some old mysql clients.
+o Fixed epoll support to not require /dev/epoll on Linux. That means
+  epoll will be enabled all mainstream Linux distributions running on a
+  2.6 kernel. If for some reason you want to disable it use
+  --without-epoll.
+o Added Objective C support to the module build system.
 
 
 Changes since Pike 7.6.66
