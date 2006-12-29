@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ffmpeg.c,v 1.15 2004/04/23 19:18:54 mast Exp $
+|| $Id: ffmpeg.c,v 1.16 2006/12/29 15:27:20 grubba Exp $
 */
 
 /*
@@ -308,7 +308,15 @@ static void f_get_codec_status(INT32 args) {
 
   if(THIS->codec->type == CODEC_TYPE_VIDEO) {
     /* video only */
-    push_text("frame_rate");	push_int( THIS->c->frame_rate );
+    push_text("frame_rate");
+#ifdef HAVE_AVCODECCONTEXT_FRAME_RATE
+    /* avcodec.h 1.392 (LIBAVCODEC_BUILD 4753) and earlier. */
+    push_int(THIS->codec_context.frame_rate);
+#else /* !HAVE_AVCODECCONTEXT_FRAME_RATE */
+    /* avcodec.h 1.393 (LIBAVCODEC_BUILD 4754) and later. */
+    push_int(THIS->codec_context.time_base.den/
+	     THIS->codec_context.time_base.num);
+#endif /* HAVE_AVCODECCONTEXT_FRAME_RATE */
     push_text("width");		push_int( THIS->c->width );
     cnt += 2;
   }
