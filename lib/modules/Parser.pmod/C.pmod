@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: C.pmod,v 1.47 2006/11/04 19:06:48 nilsson Exp $
+// $Id: C.pmod,v 1.48 2006/12/29 16:57:20 nilsson Exp $
 
 //! Splits the @[data] string into an array of tokens. An additional
 //! element with a newline will be added to the resulting array of
@@ -382,7 +382,7 @@ array(Token|array) group(array(string|Token) tokens,
 	    (groupings[(string)ret[0]] != (string)token)) {
 	  // Mismatch
 	  werror ("%s:%d: Expected %O, got %O\n",
-		  token->file, token->line,
+		  token->file||"-", token->line,
 		  groupings[(string)ret[0]], (string) token);
 	  return ret;
 	}
