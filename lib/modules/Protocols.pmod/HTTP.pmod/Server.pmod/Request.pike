@@ -539,7 +539,7 @@ string make_response_header(mapping m)
 
    string cc = lower_case(request_headers["connection"]||"");
 
-   if( (protocol=="HTTP/1.1" && cc != "close") || cc=="keep-alive" )
+   if( (protocol=="HTTP/1.1" && !has_value(cc,"close")) || cc=="keep-alive" )
    {
        res+=({"Connection: Keep-Alive"});
        keep_alive=1;
@@ -723,15 +723,14 @@ void send_write()
 	 }
       }
    }
-   else if (send_pos==sizeof(send_buf) && !send_fd)
-   {
-      finish(sent==send_stop);
-      return;
-   }
 
    int n=my_fd->write(send_buf[send_pos..]);
+
    sent += n;
    send_pos+=n;
+
+   if (send_pos==sizeof(send_buf) && !send_fd)
+      finish(sent==send_stop);
 }
 
 void send_timeout()
