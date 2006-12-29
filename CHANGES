@@ -64,3 +64,145 @@ o Destruct reason passed to lfun::destroy.
   lfun::destroy now receives an integer flag that tells why the object
   is being destructed, e.g. if it was an explicit call to destroy(),
   running out of references, or reaped by the garbage collector.
+
+  These integers are defined in the new Object module as
+  DESCTRUCT_EXPLICIT, DESTRUCT_NO_REFS, DESTRUCT_GC and
+  DESTRUCT_CLEANUP.
+
+o Unicode
+  Case information and the Unicode module are updated to Unicode
+  5.0.0.
+
+
+Extensions and New Functions
+
+o Calendar.Badi
+  Support for the Badi calendar used in the Baha'i religion.
+
+New Modules
+
+o ADT.Set
+  ADT.Set implements a datatype for sets. These sets behave much
+  like multisets, except that they are restricted to containing only
+  one instance of each member value.
+
+  From a performance viewpoint, it is probably more efficient for a
+  Pike program to use mappings to serve as sets, rather than using an
+  ADT.Set,so ADT.Set is mainly provided for the sake of completeness
+  and code readability.
+
+o Protocols.DNS_SD
+  This module provides an interface to DNS Service Discovery. The
+  functionality of DNS-SD is described at <http://www.dns-sd.org/>.
+
+  Using the Proctocols.DNS_SD.Service class a Pike program can
+  announce services, for example a web site or a database server, to
+  computers on the local network.
+
+  When registering a service you need to provide the service name.
+  service type, domain and port number. You can also optionally
+  specify a TXT record. The contents of the TXT record varies between
+  different services; for example, a web server can announce a path
+  to a web page, and a printer spooler is able to list printer
+  features such as color support or two-sided printing.
+
+  The service is registered on the network for as long as the instance
+  of the Service class is valid.
+
+o Bittorrent.Tracker
+  Bittorrent tracker with support for scraping and UDP extension.
+
+o Protocols.HTTP.Server.Proxy
+  A simple HTTP proxy.
+
+o Standards.TLD
+  Country domains and other TLDs according to IANA. Useful when
+  parsing log information or providing live information about clients
+  connecting to your server.
+
+o Tools.Shoot
+  Several new tests have been added to benchmark and improve on
+  various aspects of Pike. ReplaceParallel and ReplaceSerial compares
+  the time it takes to replace multiple substrings of a string in a
+  single call to replace and with subsequent calls.
+
+  TagRemoveArraySscanf, TagRemoveDivide, TagRemoveLoop,
+  TagRemoveParserHTML, TagRemovePCRE, TagRemoveSearch and
+  TagRemoveSscanf compares different methods of completing the same
+  task, to remove XML tags from a string.
+
+o Web.CGI
+  Provides a CGI interface on the callee side. Retrieves information
+  from environment variables and populates the variables in the
+  Request object.
+
+New lib:
+Protocols.LDAP module.pmod
+Sql.Sql dsn
+        sqlite
+        sql_array_result
+        sql_object_result
+        tds
+-x test_pike
+
+New src:
+embed/libpike
+tmodule
+code/amd64
+Fuse
+Protocols.DNS_SD
+Charset gb18030
+        gbk
+Parser c.c / pike.c
+GTK2
+SQLite
+
+Incompatible changes
+
+  These incompatible changes can be solved by adding #pike 7.6 to your
+  source file or starting Pike with -V7.6.
+
+o Array.transpose_old
+  This function is removed.
+
+o _Charset
+  This internal module has had most of its content removed.
+
+o Debug.describe_program
+  The API for this debug function has changed.
+
+o Image.Image
+  The functions select_colors(), map_closest(), map_fast() and
+  map_fs() has been removed. Use Image.Colortable operations instead.
+
+o Parser.XML
+  The XML parsers are now stricter in verifying the correctness
+  of the XML. The function compat_allow_errors can be called in the
+  create method of the Parser.XML.Simple and Parser.XML.Validating
+  (with "7.6" as argument for 7.6 compatibility). Parser.XML.Tree can
+  be created with PARSE_COMPAT_ALLOW_ERRORS_7_6 as flag.
+
+o Protocols.LDAP.client
+  The "dn" field wasn't properly utf-8 decoded in 7.6 and earlier. If
+  your application does it yourself, you need to use the compatibility
+  version of this class.
+
+o spider.XML
+  The spider module no longer contains the XML parser. The functions
+  isbasechar(), iscombiningchar(), isdigit(), isextender(),
+  isfirstnamechar(), ishexchar(), isidiographic(), isletter(),
+  isnamechar() and isspace() has also been moved to the Parser module.
+
+o Sql.Sql
+  Pike will no longer create a .column entry in SQL query responses if
+  there is no table name.
+
+o Standards.UUID
+  Functions new() and new_string() has been removed. Use
+  make_version1(-1)->encode() and make_version1(-1)->str() instead.
+
+o Stdio
+  The functions read_file(), read_bytes(), write_file() and
+  append_file() now always throw errors upon errors, to allow easier
+  use as errno doesn't have to be checked. read_file() and
+  read_bytes() still returns 0 if the file does not exists.
