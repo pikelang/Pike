@@ -1,5 +1,5 @@
 /* nettle.cmod -*- c -*- */
-/* $Id: nettle.cmod,v 1.41 2006/01/07 02:04:53 nilsson Exp $ */
+/* $Id: nettle.cmod,v 1.42 2006/12/29 16:58:39 nilsson Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -581,7 +581,7 @@ PIKECLASS Proxy {
   }
 
   /*! @decl string name()
-   *! Returns the string @expr{"CBC(x)"@} where x is the
+   *! Returns the string @expr{"Proxy(x)"@} where x is the
    *! encapsulated algorithm.
    */
   PIKEFUN string name()
