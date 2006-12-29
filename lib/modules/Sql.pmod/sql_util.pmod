@@ -1,5 +1,5 @@
 /*
- * $Id: sql_util.pmod,v 1.17 2006/11/27 16:32:43 mast Exp $
+ * $Id: sql_util.pmod,v 1.18 2006/12/29 23:22:43 nilsson Exp $
  *
  * Some SQL utility functions.
  * They are kept here to avoid circular references.
@@ -62,7 +62,7 @@ string emulate_bindings(string query, mapping(string|int:mixed)|void bindings,
 
 //! Result object wrapper performing utf8 decoding of all fields.
 class UnicodeWrapper (
-		      //! The wrapped result object.
+		      // The wrapped result object.
 		      static object master_result
 		      )
 {
