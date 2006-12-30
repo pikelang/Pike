@@ -1,3 +1,15 @@
+Changes since Pike 7.6.98
+----------------------------------------------------------------------
+
+Other:
+
+o Upgraded bundled GMP from 4.2 to 4.2.1
+
+Build Fixes:
+
+o Fixed libnettle bundle compilation on win32.
+
+
 Changes since Pike 7.6.86
 ----------------------------------------------------------------------
 
