@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.226 2006/07/09 15:02:32 marcus Exp $
+|| $Id: program.h,v 1.227 2007/01/01 04:51:03 nilsson Exp $
 */
 
 #ifndef PROGRAM_H
@@ -316,7 +316,7 @@ struct reference
   unsigned INT16 identifier_offset;
 
   /* ID_* flags - static, private etc.. */
-  INT16 id_flags;
+  unsigned INT16 id_flags;
 };
 
 /* Magic value used as identifier reference integer to refer to this. */
