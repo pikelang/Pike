@@ -1,9 +1,11 @@
+#pike __REAL_VERSION__
+
 // Extracts IPTC Information Interchange Model data (aka "IPTC
 // headers") from JPEG files created with PhotoShop.
 // 
 // http://www.iptc.org/IIM/
 //
-// $Id: IIM.pmod,v 1.3 2006/09/11 16:56:05 grubba Exp $
+// $Id: IIM.pmod,v 1.4 2007/01/01 00:30:55 nilsson Exp $
 //
 // Anders Johansson & Henrik Grubbström
 
