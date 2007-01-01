@@ -85,7 +85,13 @@ int test_charset_table(string t) {
       names += ({ name });
   }
 
-  string code = Stdio.read_file("src/modules/_Charset/module.pmod.in");
+  constant path = "lib/modules/Locale.pmod/Charset.pmod/module.pmod";
+  string code = Stdio.read_file(path);
+  if(!code)
+  {
+    write("Can't load %O\n", path);
+    return 0;
+  }
   sscanf(code, "%*sstring normalize(%s return out;\n}", code);
   code = "string normalize("+code+" return out;\n}\n";
   function normalize = compile_string(code)()->normalize;
