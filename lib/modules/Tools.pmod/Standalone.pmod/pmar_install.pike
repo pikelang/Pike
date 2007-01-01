@@ -1,7 +1,9 @@
 
+#pike __REAL_VERSION__
+
 int DEBUG=1;
 
-constant version = ("$Revision: 1.3 $"/" ")[1];
+constant version = ("$Revision: 1.4 $"/" ")[1];
 constant description = "Pike packaged module (PMAR) installer.";
 
 int forcing;

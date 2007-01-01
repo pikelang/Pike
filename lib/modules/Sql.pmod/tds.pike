@@ -1,10 +1,12 @@
 /*
- * $Id: tds.pike,v 1.21 2006/11/04 19:06:49 nilsson Exp $
+ * $Id: tds.pike,v 1.22 2007/01/01 04:51:39 nilsson Exp $
  *
  * A Pike implementation of the TDS protocol.
  *
  * Henrik Grubbström 2006-02-08.
  */
+
+#pike __REAL_VERSION__
 
 #define TDS_DEBUG
 #define TDS_CONVERT_DEBUG

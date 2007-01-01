@@ -3,9 +3,11 @@
 // 
 // http://www.iptc.org/IIM/
 //
-// $Id: IIM.pmod,v 1.5 2006/09/11 16:53:35 grubba Exp $
+// $Id: IIM.pmod,v 1.6 2007/01/01 04:52:43 nilsson Exp $
 //
 // Anders Johansson & Henrik Grubbström
+
+#pike __REAL_VERSION__
 
 mapping(int:mapping(int:string)) fields =
   ([
