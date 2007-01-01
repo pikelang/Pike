@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.161 2006/08/12 16:48:35 mast Exp $
+# $Id: Makefile,v 1.162 2007/01/01 04:48:18 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -190,6 +190,9 @@ legal: bin/pike
 	  Tools.Legal.Copyright.get_text());'
 	bin/pike -e 'Stdio.write_file("COPYING", \
 	  Tools.Legal.License.get_text());'
+
+release_checks: bin/pike
+	bin/pike tools/release_checks.pike
 
 # Don't make bin/pike if we're recursing with a $(METATARGET) since we
 # don't want the backquote expression which usually is part of
