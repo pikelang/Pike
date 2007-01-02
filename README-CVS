@@ -1,4 +1,4 @@
-$Id: README-CVS,v 1.24 2004/05/17 21:38:45 mast Exp $
+$Id: README-CVS,v 1.25 2007/01/02 00:35:22 peter Exp $
 
 
 HOW TO BUILD PIKE FROM CVS
@@ -30,9 +30,9 @@ There are a few simple steps to get Pike from cvs:
 
 3. Check out the source:
 
-         cvs -z3 -d :pserver:anon@cvs.roxen.com:/cvs co Pike/7.3
+         cvs -z3 -d :pserver:anon@cvs.roxen.com:/cvs co Pike/7.7
 
-   substitute 7.3 for whatever version you want to get.
+   substitute 7.7 for whatever version you want to get.
 
 Building Pike from cvs, in addition to the requirements of a normal
 build, requires a working Pike.  You will also need autoconf, gnu m4,
