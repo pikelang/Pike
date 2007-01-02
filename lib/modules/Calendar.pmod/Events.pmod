@@ -67,9 +67,10 @@ Event.Event make_event(string source)
 
       case "WDRel":
    // WDRel May Fri 1st
+	 days=1;
 	 if (sscanf(rule,
 		    "WDRel%*[ \t]%s%*[ \t]%s%*[ \t]%d%*[a-z]%*[ \t]%d days",
-		    mn,wd,n,days)>=5 &&
+		    mn,wd,n,days)>=7 &&
 	     month2n[mn] && wd2n[wd] && n>0)
 	 {
 	    Event.Event e=
@@ -79,9 +80,10 @@ Event.Event make_event(string source)
 	    return e;
 	 }
    // WDRel May Fri last
+	 days=1;
 	 if (sscanf(rule,
 		    "WDRel%*[ \t]%s%*[ \t]%s%*[ \t]%s%*[ \t]%d days",
-		    mn,wd,a,days)>=5 && a=="last" &&
+		    mn,wd,a,days)>=6 && a=="last" &&
 	     (m=month2n[mn]) && wd2n[wd])
 	 {
 	    m=(m%12)+1;
@@ -92,11 +94,12 @@ Event.Event make_event(string source)
 	    return e;
 	 }
    // WDRel May 17 Fri +17 excl
-	 days=a=0;
+	 a=0;
+	 days=1;
 	 if (sscanf(rule,
 		    "WDRel%*[ \t]%[A-z]%*[ \t]%d%*[ \t]%s%*[ \t]"
 		    "%d%*[ \t]%[a-z]%*[ \t]%d days",
-		    mn,md,wd,n,a,days)>=9 && a && a!="" &&
+		    mn,md,wd,n,a,days)>=10 && a && a!="" &&
 	     (m=month2n[mn]) && wd2n[wd])
 	 {
 	    if (!(<"incl","excl">)[a])
@@ -111,10 +114,11 @@ Event.Event make_event(string source)
 	    return e;
 	 }
    // WDRel May 17 Fri +17
+	 days=1;
 	 if (sscanf(rule,
 		    "WDRel%*[ \t]%[A-z]%*[ \t]%d%*[ \t]%[^ \t]%*[ \t]"
 		    "%d%*[ \t]%d days",
-		    mn,md,wd,n,days)>=7 && 
+		    mn,md,wd,n,days)>=8 && 
 	     (m=month2n[mn]) && wd2n[wd])
 	 {
 	    m=(m%12)+1;
