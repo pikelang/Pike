@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.12 2004/05/02 18:27:19 nilsson Exp $
+dnl $Id: testsuite.in,v 1.13 2007/01/02 17:30:06 nilsson Exp $
 
 dnl NOTE:
 dnl   *every* time the Calendar tests have failed, it's not the 
@@ -119,4 +119,10 @@ test_eq([[ Calendar.ISO.Week(2004, 1)->format_ymd() ]], "2003-12-29")
 test_eq([[ Calendar.ISO.Week(2005, 1)->format_ymd() ]], "2005-01-03")
 
 test_eq([[Calendar.Language["swe"]->week_day_name_from_number(1)]], "måndag")
+
+test_any([[
+  object k=Calendar.Events.se["midsummers eve"]->next(Calendar.Year());
+  return k->second(1)!=k->second(2);
+]], 1)
+
 END_MARKER
