@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.618 2006/07/02 00:00:06 mast Exp $
+|| $Id: builtin_functions.c,v 1.619 2007/01/03 23:10:45 peter Exp $
 */
 
 #include "global.h"
@@ -4981,19 +4981,21 @@ static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn
   for (loop_cnt = 0; loop_cnt < 20; loop_cnt++, old_diff_ts = diff_ts) {
     diff_ts = my_tm_diff(target_tm, current_tm = timefn(&current_ts));
 
-#ifdef DEBUG_MY_TIME_INVERSE
-    fprintf (stderr, "curr: y %d m %d d %d h %d m %d isdst %d\n",
-	     current_tm->tm_year, current_tm->tm_mon, current_tm->tm_mday,
-	     current_tm->tm_hour, current_tm->tm_min, current_tm->tm_isdst);
-    fprintf (stderr, "diff: %ld\n", (long) diff_ts);
-#endif
-
     if (!current_tm) {
 #ifdef DEBUG_MY_TIME_INVERSE
       fprintf (stderr, "outside range for timefn().\n");
 #endif
       return 0;
     }
+#ifdef DEBUG_MY_TIME_INVERSE
+    else
+    {
+      fprintf (stderr, "curr: y %d m %d d %d h %d m %d isdst %d\n",
+               current_tm->tm_year, current_tm->tm_mon, current_tm->tm_mday,
+               current_tm->tm_hour, current_tm->tm_min, current_tm->tm_isdst);
+      fprintf (stderr, "diff: %ld\n", (long) diff_ts);
+    }
+#endif
 
     if (!diff_ts) {
       /* Got a satisfactory time, but if target_tm has an opinion on
