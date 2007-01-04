@@ -69,6 +69,7 @@ if test "x$with_java" = xyes; then
       pike_cv_java_arch="`uname -m`"
     fi
     pike_cv_java_arch="`echo $pike_cv_java_arch|sed -e 's/^i[[4-9]]86/i386/'`"
+    pike_cv_java_arch="`echo $pike_cv_java_arch|sed -e 's/athlon/i386/'`"
   ])
   AC_MSG_RESULT($pike_cv_java_arch)
 
