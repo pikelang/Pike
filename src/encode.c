@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.216 2006/02/21 06:32:52 mast Exp $
+|| $Id: encode.c,v 1.217 2007/01/05 15:51:08 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.216 2006/02/21 06:32:52 mast Exp $");
+RCSID("$Id: encode.c,v 1.217 2007/01/05 15:51:08 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -967,6 +967,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       }
       if (data->canonic)
 	Pike_error("Canonical encoding of programs not supported.\n");
+      if (!(val->u.program->flags & PROGRAM_FIXED))
+	Pike_error("Encoding of unfixated programs not supported.\n");
       check_stack(1);
       push_svalue(val);
       apply(data->codec,"nameof", 1);
