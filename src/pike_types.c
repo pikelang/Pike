@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.258 2006/10/27 18:19:42 grubba Exp $
+|| $Id: pike_types.c,v 1.259 2007/01/05 14:52:19 grubba Exp $
 */
 
 #include "global.h"
@@ -4997,8 +4997,8 @@ int pike_type_allow_premature_toss(struct pike_type *type)
     case T_VOID:
       return 1;
   default:
-    Pike_fatal("pike_type_allow_premature_toss: Unknown type code (%d)\n",
-	  ((unsigned char *)type)[-1]);
+    Pike_fatal("pike_type_allow_premature_toss: Unknown type (code: %d)\n",
+	       type->type);
     /* NOT_REACHED */
     return 0;
   }
