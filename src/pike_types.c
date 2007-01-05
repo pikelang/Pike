@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.238 2006/07/06 16:07:17 marcus Exp $
+|| $Id: pike_types.c,v 1.239 2007/01/05 14:52:27 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.238 2006/07/06 16:07:17 marcus Exp $");
+RCSID("$Id: pike_types.c,v 1.239 2007/01/05 14:52:27 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -4801,8 +4801,8 @@ int pike_type_allow_premature_toss(struct pike_type *type)
     case T_VOID:
       return 1;
   default:
-    Pike_fatal("pike_type_allow_premature_toss: Unknown type code (%d)\n",
-	  ((unsigned char *)type)[-1]);
+    Pike_fatal("pike_type_allow_premature_toss: Unknown type (code: %d)\n",
+	       type->type);
     /* NOT_REACHED */
     return 0;
   }
