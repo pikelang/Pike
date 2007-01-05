@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.238 2006/10/27 18:43:15 grubba Exp $
+|| $Id: encode.c,v 1.239 2007/01/05 15:49:47 grubba Exp $
 */
 
 #include "global.h"
@@ -975,6 +975,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
       }
       if (data->canonic)
 	Pike_error("Canonical encoding of programs not supported.\n");
+      if (!(val->u.program->flags & PROGRAM_FIXED))
+	Pike_error("Encoding of unfixated programs not supported.\n");
       check_stack(1);
       push_svalue(val);
       apply(data->codec,"nameof", 1);
@@ -1518,7 +1520,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 		default:;
 #ifdef PIKE_DEBUG
-		  Pike_fatal ("Unknown identifier type.\n");
+		  Pike_fatal ("Unknown identifier type: 0x%04x for symbol \"%s\".\n",
+			      id->identifier_flags & IDENTIFIER_TYPE_MASK,
+			      id->name->str);
 #endif
 		}
 	      }
