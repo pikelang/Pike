@@ -2,7 +2,7 @@
  * A generic cache front-end
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: cache.pike,v 1.12 2006/01/26 22:40:12 mast Exp $
+ * $Id: cache.pike,v 1.13 2007/01/06 05:30:56 nilsson Exp $
  *
  */
 
@@ -181,6 +181,7 @@ void async_cleanup_cache() {
     throw (err);
 }
 
+#if constant(thread_create)
 //!
 void threaded_cleanup_cycle() {
   while (1) {
@@ -195,6 +196,7 @@ void threaded_cleanup_cycle() {
     do_cleanup(policy->expire,storage);
   }
 }
+#endif
 
 //! Creates a new cache object. Required are a storage manager, and an
 //! expiration policy object.
