@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.10 2004/04/25 15:16:37 nilsson Exp $
+// $Id: testsuite.in,v 1.11 2007/01/06 05:31:36 nilsson Exp $
 
 // Tools.Hilfe
 define(test_hilfe_setup_low,[[test_do([[
@@ -93,7 +93,7 @@ test_hilfe("b=2.0;", "Compiler Error: 1:Bad type in assignment.\n"
        "Compiler Error: 1:Expected: int\n"
        "Compiler Error: 1:Got     : float\n")
 test_hilfe("Image.Image i=Image.Image();", "")
-test_hilfe("i;", "Image.Image( 0 x 0 /""* 0.0Kb *""/)")
+test_hilfe("i;",[["Image.Image( 0 x 0 /""* 0.0Kb *""/)"]])
 test_hilfe([["constant z=`+(1,2),y=2;"]], "")
 test_hilfe("z;", "3")
 test_hilfe("y;", "2")
