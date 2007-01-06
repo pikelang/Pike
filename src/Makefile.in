@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.456 2006/09/29 12:43:59 grubba Exp $
+# $Id: Makefile.in,v 1.457 2007/01/06 23:37:18 bill Exp $
 #
 
 # This line is needed on some machines.
@@ -281,6 +281,12 @@ compiler-warnings : clean
 	@echo 'End of summary'
 	@echo '--------------'
 
+framework: OCPikeInterpreter.o $(OBJ) modules/linker_options @STATIC_POST_MODULES_LINKOPTS@
+	@echo "Linking Pike.framework";\
+	gcc -o Pike OCPikeInterpreter.o $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` -framework Cocoa -Wl,-single_module \
+	  -undefined dynamic_lookup -compatibility_version 1 -current_version 1 -dynamiclib -mmacosx-version-min=10.4 \
+	  -isysroot /Developer/SDKs/MacOSX10.4u.sdk 
+
 libpike.so: $(OBJ) modules/linker_options @STATIC_POST_MODULES_LINKOPTS@
 	@echo "Linking libpike.so";\
 	if $(TMP_BINDIR)/smartlink "$(LDSHARED)" $(LDFLAGS) -o libpike.@SO@ \
@@ -438,7 +444,7 @@ undump_modules: delete_dumped_modules
 	-rm dumpversion 2>/dev/null
 
 .SUFFIXES:
-.SUFFIXES: .c .h .o .cmod .symlist .pp .pph .protos .h_src .wxs .wixobj .msi .msm
+.SUFFIXES: .c .h .o .m .mmod .cmod .symlist .pp .pph .protos .h_src .wxs .wixobj .msi .msm
 
 .c.pp:
 	$(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
@@ -478,6 +484,28 @@ undump_modules: delete_dumped_modules
 	  else \
 	    echo "Compilation command was:" >&2;\
 	    echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -c $< -o $@" >&2 ;\
+	    exit $$status; \
+	  fi; \
+	fi
+
+.m.o:
+	@echo "Compiling `echo '$<' | sed -e 's|^$(PIKE_SRC_DIR)/||'`" ; \
+	rm -f $@.fail >/dev/null 2>&1; \
+	if test "x$@" = "xinterpret.o"; then EXTRAFLAGS="$(INTERPRET_DEOPTIMIZE)"; else EXTRAFLAGS=; fi; \
+	if $(CC) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -c $< -o $@ ; then : ; else \
+	  status=$$?; \
+	  if test x"@noopt_retry@" = xyes ; then \
+	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
+	    echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -c $< -o $@" >$@.fail ;\
+	    if NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) $$EXTRAFLAGS -c $< -o $@ ; then : ; else \
+	      status=$$?; \
+	      echo "Compilation command was:" >&2;\
+	      echo "$(CC) $(PREFLAGS) $(NOOPTFLAGS) $$EXTRAFLAGS -fobjc-exceptions -c $< -o $@" >&2 ;\
+	      exit $$status; \
+	    fi; \
+	  else \
+	    echo "Compilation command was:" >&2;\
+	    echo "$(CC) $(PREFLAGS) $(CFLAGS) $$EXTRAFLAGS -fobjc-exceptions -c $< -o $@" >&2 ;\
 	    exit $$status; \
 	  fi; \
 	fi
