@@ -42,6 +42,9 @@ o Fixed a multiset bug that caused ints to be called as sorting
   function when no sorting function was set.
 o Fixed hour formatting in Calendar.Time.format_smtp().
 o Fixed TTL parsing of SRV records in Protocols.DNS.
+o Don't attempt to encode programs that haven't been fixated. Fixes fatal 
+  "Unknown identifier type.".
+o Fixed some events in Calendar.Events.
 o Fixed an inverted error test in Mysql.set_charset.
 o Added support to Mysql for the charsetnr column attribute and proper
   recognition of binary fields in unicode decode mode by using charsetnr
