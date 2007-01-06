@@ -231,7 +231,7 @@ int get_n_monitors();
     GdkRectangle *gr;
 
     get_all_args("get_monitor_geometry",args,"%i",&a);
-    gr=(GdkRectangle *)xmalloc(sizeof(GdkRectangle));
+    gr=(GdkRectangle *)xalloc(sizeof(GdkRectangle));
     gdk_screen_get_monitor_geometry(GDK_SCREEN(THIS->obj),a,gr);
     pgtk2_pop_n_elems(args);
     push_gdkobject(gr,rectangle);

@@ -221,11 +221,13 @@ int new_signal(string name, array types, string return_type)
       } else {
 	return_type=G_TYPE_POINTER;
       }
-      param_types=xmalloc(sizeof(GType)*a->size);
+
+      param_types=malloc(sizeof(GType)*a->size);
       if (param_types==NULL) {
 	g_free(name);
 	SIMPLE_OUT_OF_MEMORY_ERROR("new_signal",sizeof(GType)*a->size);
       }
+
       for (i=n_params=0; i<a->size; i++) {
 	if (ITEM(a)[i].type!=PIKE_T_STRING)
 	  continue;

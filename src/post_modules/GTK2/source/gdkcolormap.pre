@@ -37,8 +37,17 @@ int alloc_colors(array(GDK2.Color) colors, int writeable,
     get_all_args("alloc_colors",args,"%A%i%i",&a,&wr,&best);
     if (a==NULL)
       Pike_error("Invalid array.\n");
-    gc=(GdkColor *)xmalloc(sizeof(GdkColor)*a->size);
-    suc=(int *)xmalloc(sizeof(int)*a->size);
+
+    gc=(GdkColor *)malloc(sizeof(GdkColor)*a->size);
+    suc=(int *)malloc(sizeof(int)*a->size);
+    if(!gc || !suc)
+    {
+      if(gc) free(gc);
+      SIMPLE_OUT_OF_MEMORY_ERROR("alloc_colors",
+                                 sizeof(GdkColor)*a->size +
+                                 sizeof(int)*a->size);
+    }
+
     for (i=0; i<a->size; i++) {
       struct object *o;
       o=ITEM(a)[i].u.object;
@@ -82,7 +91,7 @@ void free_colors(array(GDK2.Color) colors)
     get_all_args("free_colors",args,"%A",&a);
     if (a==NULL)
       Pike_error("Invalid array.\n");
-    gc=(GdkColor *)xmalloc(sizeof(GdkColor)*a->size);
+    gc=(GdkColor *)xalloc(sizeof(GdkColor)*a->size);
     for (i=0; i<a->size; i++) {
       struct object *o;
       o=ITEM(a)[i].u.object;
@@ -106,9 +115,9 @@ void free_colors(array(GDK2.Color) colors)
     GdkColor *gc;
 
     get_all_args("query_color",args,"%i",&pix);
-    pgtk2_pop_n_elems(args);
-    gc=(GdkColor *)xmalloc(sizeof(GdkColor));
+    gc=(GdkColor *)xalloc(sizeof(GdkColor));
     gdk_colormap_query_color(GDK_COLORMAP(THIS->obj),pix,gc);
+    pgtk2_pop_n_elems(args);
     push_gdkobject(gc,color);
   }
 }

@@ -257,7 +257,7 @@ void store_clipboard(GDK2.Window clipboard_window,
       GdkAtom *targets;
       int n;
 
-      targets=xmalloc(a->size);
+      targets=xalloc(a->size);
       for (n=0; n<a->size; n++)
 	targets[n]=get_gdkatom(ITEM(a)[n].u.object);
       gdk_display_store_clipboard(GDK_DISPLAY_OBJECT(THIS->obj),
