@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.259 2007/01/05 14:52:19 grubba Exp $
+|| $Id: pike_types.c,v 1.260 2007/01/08 09:24:21 grubba Exp $
 */
 
 #include "global.h"
@@ -4994,6 +4994,7 @@ int pike_type_allow_premature_toss(struct pike_type *type)
     case T_INT:
     case T_FLOAT:
     case T_STRING:
+    case PIKE_T_ZERO:
     case T_VOID:
       return 1;
   default:
