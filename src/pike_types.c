@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.260 2007/01/08 09:24:21 grubba Exp $
+|| $Id: pike_types.c,v 1.261 2007/01/10 19:09:14 grubba Exp $
 */
 
 #include "global.h"
@@ -1048,7 +1048,7 @@ static void internal_parse_typeA(const char **_s)
 
   for(len=0;isidchar(EXTRACT_UCHAR(s[0]+len));len++)
   {
-    if(len>=sizeof(buf)) {
+    if(len>=sizeof(buf)-1) {
       my_yyerror("Buffer overflow in parse_type(\"%s\") (limit %"PRINTSIZET"d).",
 		 *s, sizeof(buf));
       push_type(T_MIXED);
