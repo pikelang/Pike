@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.59 2006/11/07 20:53:55 mast Exp $
+|| $Id: iterators.cmod,v 1.60 2007/01/10 18:40:47 grubba Exp $
 */
 
 #include "global.h"
@@ -1545,12 +1545,12 @@ PIKECLASS string_split_iterator
       }
       add_ref(THIS->buffer = buffer);
       if (args > 2) {
-	if (flags->type == T_INT) {
+	if (flags && (flags->type == T_INT)) {
 	  THIS->flags = flags->u.integer;
 	} else {
 	  THIS->flags = 0;
 	}
-	if (args > 3) {
+	if (feed) {
 	  assign_svalue(&THIS->feed, feed);
 	} else {
 	  /* NB: THIS->feed has already been set to 0 by the init code. */
