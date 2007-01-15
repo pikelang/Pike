@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.621 2007/01/15 15:50:38 grubba Exp $
+|| $Id: builtin_functions.c,v 1.622 2007/01/15 15:51:39 grubba Exp $
 */
 
 #include "global.h"
@@ -2492,7 +2492,7 @@ PMOD_EXPORT void f_exit(INT32 args)
     if (s) {
       apply_svalue(s, args-1);
       pop_stack();
-    } else if (args > 1) {
+    } else {
       fprintf(stderr, "No efun::werror() at exit.\n");
       pop_n_elems(args-1);
     }
