@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.623 2007/01/15 16:30:07 grubba Exp $
+|| $Id: builtin_functions.c,v 1.624 2007/01/15 16:47:10 grubba Exp $
 */
 
 #include "global.h"
@@ -6527,6 +6527,24 @@ PMOD_EXPORT void f_diff(INT32 args)
    int uniq;
 
    get_all_args("diff", args, "%a%a", &a, &b);
+
+   if ((a == b) || !a->size || !b->size) {
+     if (!a->size && !b->size) {
+       /* Both arrays are empty. */
+       ref_push_array(a);
+       ref_push_array(b);
+       f_aggregate(2);
+     } else {
+       /* The arrays are equal or one of them is empty. */
+       ref_push_array(a);
+       f_aggregate(1);
+       ref_push_array(b);
+       f_aggregate(1);
+       f_aggregate(2);
+     }
+     stack_pop_n_elems_keep_top(args);
+     return;
+   }
 
    cmptbl = diff_compare_table(a, b, &uniq);
 
