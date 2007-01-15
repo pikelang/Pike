@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.622 2007/01/15 15:51:39 grubba Exp $
+|| $Id: builtin_functions.c,v 1.623 2007/01/15 16:30:07 grubba Exp $
 */
 
 #include "global.h"
@@ -5769,22 +5769,23 @@ static struct array *longest_ordered_sequence(struct array *a)
 static void f_longest_ordered_sequence(INT32 args)
 {
   struct array *a = NULL;
+  struct array *aa = NULL;
 
   get_all_args("Array.longest_ordered_sequence", args, "%a", &a);
 
   /* THREADS_ALLOW(); */
 
-  a = longest_ordered_sequence(a);
+  aa = longest_ordered_sequence(a);
 
   /* THREADS_DISALLOW(); */
 
-  if (!a) {
+  if (!aa) {
     SIMPLE_OUT_OF_MEMORY_ERROR("Array.longest_ordered_sequence",
 			       (int)sizeof(int *)*a->size*2);
   }
 
   pop_n_elems(args);
-  push_array(a);
+  push_array(aa);
 }
 
 /**** diff ************************************************************/
