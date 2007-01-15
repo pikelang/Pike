@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.619 2007/01/03 23:10:45 peter Exp $
+|| $Id: builtin_functions.c,v 1.620 2007/01/15 15:44:00 grubba Exp $
 */
 
 #include "global.h"
@@ -168,6 +168,7 @@ static node *optimize_f_aggregate(node *n)
   }
 
   for(; args; args = args->parent) {
+    if (!CDR(args)) continue;
     if (CDR(args)->token == F_PUSH_ARRAY) {
       if (count) {
 	add_args = mknode(F_ARG_LIST, add_args,
@@ -814,6 +815,10 @@ void f_query_num_arg(INT32 args)
  *!   If @[start] is supplied to an iterator object without an
  *!   @[lfun::_search()], @[haystack] will need to implement
  *!   @[Iterator()->set_index()].
+ *!
+ *! @note
+ *!   For mappings and object @[UNDEFINED] will be returned when not found.
+ *!   In all other cases @expr{-1@} will be returned when not found.
  *!
  *! @seealso
  *!   @[indices()], @[values()], @[zero_type()]
