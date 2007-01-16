@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.611 2007/01/16 18:22:41 grubba Exp $
+|| $Id: program.c,v 1.612 2007/01/16 18:31:18 grubba Exp $
 */
 
 #include "global.h"
@@ -2288,12 +2288,17 @@ void low_start_new_program(struct program *p,
   Pike_compiler->fake_object=alloc_object();
 
 #ifdef PIKE_DEBUG
-  Pike_compiler->fake_object->storage=(char *)xalloc(256 * sizeof(struct svalue));
-  /* Stipple to find illegal accesses */
-  MEMSET(Pike_compiler->fake_object->storage,0x55,256*sizeof(struct svalue));
+  Pike_compiler->fake_object->storage=(char *)malloc(256 * sizeof(struct svalue));
+  if (Pike_compiler->fake_object->storage) {
+    /* Stipple to find illegal accesses */
+    MEMSET(Pike_compiler->fake_object->storage,0x55,256*sizeof(struct svalue));
+  }
 #else
   Pike_compiler->fake_object->storage=(char *)malloc(sizeof(struct parent_info));
 #endif
+  if (!Pike_compiler->fake_object->storage) {
+    yyerror("Out of memory when allocating object storage.");
+  }
   /* Can't use GC_ALLOC on fake objects, but still it's good to know
    * that they never take over a stale gc marker. */
   if (Pike_in_gc) remove_marker(Pike_compiler->fake_object);
@@ -2316,15 +2321,17 @@ void low_start_new_program(struct program *p,
   debug_malloc_touch(Pike_compiler->fake_object);
   debug_malloc_touch(Pike_compiler->fake_object->storage);
 
-  if(name)
-  {
-    /* Fake objects have parents regardless of PROGRAM_USE_PARENT  */
-    if((((struct parent_info *)Pike_compiler->fake_object->storage)->parent=Pike_compiler->previous->fake_object))
-      add_ref(Pike_compiler->previous->fake_object);
+  if (Pike_compiler->fake_object->storage) {
+    if(name)
+    {
+      /* Fake objects have parents regardless of PROGRAM_USE_PARENT  */
+      if((((struct parent_info *)Pike_compiler->fake_object->storage)->parent=Pike_compiler->previous->fake_object))
+	add_ref(Pike_compiler->previous->fake_object);
       ((struct parent_info *)Pike_compiler->fake_object->storage)->parent_identifier=id;
-  }else{
-    ((struct parent_info *)Pike_compiler->fake_object->storage)->parent=0;
-    ((struct parent_info *)Pike_compiler->fake_object->storage)->parent_identifier=0;
+    }else{
+      ((struct parent_info *)Pike_compiler->fake_object->storage)->parent=0;
+      ((struct parent_info *)Pike_compiler->fake_object->storage)->parent_identifier=0;
+    }
   }
 
   Pike_compiler->new_program=p;
