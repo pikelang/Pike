@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.610 2006/10/27 18:45:00 grubba Exp $
+|| $Id: program.c,v 1.611 2007/01/16 18:22:41 grubba Exp $
 */
 
 #include "global.h"
@@ -2279,10 +2279,9 @@ void low_start_new_program(struct program *p,
 
   Pike_compiler->num_used_modules=0;
 
-  if(p && (p->flags & PROGRAM_FINISHED))
+  if(p->flags & PROGRAM_FINISHED)
   {
     yyerror("Pass2: Program already done");
-    p=0;
   }
 
   Pike_compiler->malloc_size_program = ALLOC_STRUCT(program);
@@ -5004,7 +5003,7 @@ INT32 define_function(struct pike_string *name,
       }
       i = isidentifier(symbol);
       if ((i >= 0) && 
-	  !((ref = Pike_compiler->new_program->identifier_references + i)->
+	  !((ref = PTR_FROM_INT(Pike_compiler->new_program, i))->
 	    id_flags & ID_INHERITED)) {
 	/* Not an inherited symbol. */
 	struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, i);
@@ -5023,6 +5022,7 @@ INT32 define_function(struct pike_string *name,
 	  }
 	  getter_setter_offset += id->func.offset;
 	}
+	/* FIXME: Update id->type here. */
       } else {
 	INT32 offset = Pike_compiler->new_program->num_program;
 	getter_setter_offset += offset;
@@ -5037,10 +5037,13 @@ INT32 define_function(struct pike_string *name,
 	low_define_variable(symbol, symbol_type, flags,
 			    offset, PIKE_T_GET_SET);
       }
-      /* FIXME: Really ought to be ID_HIDDEN too,
-       *        but that complicates matters below...
+      /* NOTE: The function needs to have the same PRIVATE/INLINE
+       *       behaviour as the variable for overloading to behave
+       *       as expected.
+       *
+       * FIXME: Force PRIVATE?
        */
-      flags = ID_STATIC|ID_PRIVATE|ID_INLINE;
+      flags |= ID_STATIC;
       free_type(symbol_type);
       free_string(symbol);
     }
