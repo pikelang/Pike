@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: orient.c,v 1.25 2004/03/05 23:04:03 nilsson Exp $
+|| $Id: orient.c,v 1.26 2007/01/17 17:22:27 grubba Exp $
 */
 
 /*
@@ -100,8 +100,8 @@ static INLINE int sq(int a) { return a*a; }
 static INLINE int my_abs(int a) { return (a<0)?-a:a; }
 
 static void _image_orient(struct image *source,
-			  struct object *o[4],
-			  struct image *img[4])
+			  struct object *o[5],
+			  struct image *img[5])
 {
    int i;
    struct { int x,y; } or[4]={ {1,0}, {1,1}, {0,1}, {-1,1} };
