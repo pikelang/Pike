@@ -1,9 +1,9 @@
 #! /usr/bin/env pike
-// -*- pike -*- $Id: rsif.pike,v 1.5 2007/01/22 04:13:34 jhs Exp $
+// -*- pike -*- $Id: rsif.pike,v 1.6 2007/01/22 04:59:55 jhs Exp $
 #pike __REAL_VERSION__
 
-inherit .process_files;
-string version = ("$Revision: 1.5 $"/" ")[1];
+inherit Tools.Standalone.process_files;
+string version = ("$Revision: 1.6 $"/" ")[1];
 string description = "Replaces strings in files.";
 string usage = #"[options] <from> <to> <files>
 
