@@ -1,10 +1,10 @@
 #! /usr/bin/pike
-// -*- pike -*- $Id: process_files.pike,v 1.1 2007/01/22 04:10:55 jhs Exp $
+// -*- pike -*- $Id: process_files.pike,v 1.2 2007/01/22 04:23:55 jhs Exp $
 #pike __REAL_VERSION__
 
 #ifdef SUGGESTED_MODE_OF_USAGE
 inherit .process_files;
-string version = ("$Revision: 1.1 $"/" ")[1];
+string version = ("$Revision: 1.2 $"/" ")[1];
 string description = "One-liner tool description for plain \"pike -x\" here.";
 string usage = #"Long usage description here; see rsif.pike for inspiration";
 int want_args = 2; // rsif takes 2; how many do you want? This one wants two:
@@ -33,14 +33,13 @@ string version;
 //! suggest you set the contents of this variable to something that that will
 //! automatically expand to a number for every new revision, for instance
 //! @example
-//!   string version = ("$Revision: 1.1 $"/" ")[1];
+//!   string version = ("$Revision: 1.2 $"/" ")[1];
 
 string description = "Boilerplate for making rsif-like tools.";
-//! Your hack's version number. If you version control your file with cvs, we
-//! suggest you set the contents of this variable to something that that will
-//! automatically expand to a number for every new revision, for instance
-//! @example
-//!   string version = ("$Revision: 1.1 $"/" ")[1];
+//! One-liner that gets shown for this tool when running @tt{pike -x} without
+//! additional options. (Assuming your tool resides in @tt{Standalone.pmod}.)
+//! Does not include the name of the tool itself; just provide a nice, terse
+//! description, ending with a period for conformity.
 
 string usage;
 //! Long description of the purpose and usage of your tool, for --help and the
