@@ -1,10 +1,10 @@
 #! /usr/bin/pike
-// -*- pike -*- $Id: process_files.pike,v 1.2 2007/01/22 04:23:55 jhs Exp $
+// -*- pike -*- $Id: process_files.pike,v 1.3 2007/01/22 04:59:55 jhs Exp $
 #pike __REAL_VERSION__
 
 #ifdef SUGGESTED_MODE_OF_USAGE
-inherit .process_files;
-string version = ("$Revision: 1.2 $"/" ")[1];
+inherit Toole.Standalone.process_files;
+string version = ("$Revision: 1.3 $"/" ")[1];
 string description = "One-liner tool description for plain \"pike -x\" here.";
 string usage = #"Long usage description here; see rsif.pike for inspiration";
 int want_args = 2; // rsif takes 2; how many do you want? This one wants two:
@@ -33,7 +33,7 @@ string version;
 //! suggest you set the contents of this variable to something that that will
 //! automatically expand to a number for every new revision, for instance
 //! @example
-//!   string version = ("$Revision: 1.2 $"/" ")[1];
+//!   string version = ("$Revision: 1.3 $"/" ")[1];
 
 string description = "Boilerplate for making rsif-like tools.";
 //! One-liner that gets shown for this tool when running @tt{pike -x} without
@@ -171,12 +171,12 @@ int(0..) main( int argc, array(string) argv ) {
   if( want_args )
      args = argv[1..want_args];
   if( argc == min_args && argv[-1] == "-" ) {
-    string file = Stdio.stdin.read();
-    if( file ) {
+    string input = Stdio.stdin.read();
+    if( input ) {
       if( verbosity > 1 )
 	werror( "Processing stdin.\n" );
-      string output = process( file, @args );
-      write( "%s", output || file );
+      string output = process( input, @args );
+      write( "%s", output || input );
     }
     return 0;
   }
