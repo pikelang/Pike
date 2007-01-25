@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.182 2007/01/25 17:04:50 grubba Exp $
+|| $Id: efuns.c,v 1.183 2007/01/25 17:09:09 grubba Exp $
 */
 
 #include "global.h"
@@ -201,9 +201,9 @@ static void f_listxattr(INT32 args)
   }
 
   pop_n_elems( args );
-  if( res < 0 )
+  if (res < 0)
   {
-    if( do_free && ptr )
+    if (do_free)
       free(ptr);
     push_int(0);
     return;
@@ -217,8 +217,8 @@ static void f_listxattr(INT32 args)
   f_aggregate(1);
   o_subtract();
 
-  if( do_free && ptr ) 
-    free( ptr );
+  if (do_free) 
+    free(ptr);
 }
 
 #ifdef HAVE_DARWIN_XATTR
