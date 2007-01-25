@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.83 2006/06/16 09:48:04 grubba Exp $
+// $Id: treeopt.in,v 1.84 2007/01/25 18:32:04 grubba Exp $
 //
 // The tree optimizer
 //
@@ -99,6 +99,78 @@ F_APPLY(0 = F_CONSTANT
 			   3 = +[pike_types_le($$->type, int_type_string)]))):
   F_APPLY($1, F_ARG_LIST(F_APPLY($0, $2), $3));
 			   
+// search(indices(map), key) < 0)  =>  zero_type(map[key]) if typeof(map) <= mapping
+F_LT(F_APPLY(F_CONSTANT
+	     [$$->u.sval.type == T_FUNCTION]
+	     [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	     [$$->u.sval.u.efun->function == f_search],
+	     F_ARG_LIST(F_APPLY(F_CONSTANT
+				[$$->u.sval.type == T_FUNCTION]
+				[$$->u.sval.subtype == FUNCTION_BUILTIN]
+				[$$->u.sval.u.efun->function == f_indices],
+				0 = +[pike_types_le($$->type, mapping_type_string)]),
+			1)),
+     F_CONSTANT
+     [$$->u.sval.type == T_INT]
+     [!$$->u.sval.u.integer]):
+{
+  $$ = mkefuncallnode("zero_type",mknode(F_ARG_LIST, $0, $1));
+};
+			   
+// search(indices(map), key) == -1)  =>  zero_type(map[key]) if typeof(map) <= mapping
+F_EQ(F_APPLY(F_CONSTANT
+	     [$$->u.sval.type == T_FUNCTION]
+	     [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	     [$$->u.sval.u.efun->function == f_search],
+	     F_ARG_LIST(F_APPLY(F_CONSTANT
+				[$$->u.sval.type == T_FUNCTION]
+				[$$->u.sval.subtype == FUNCTION_BUILTIN]
+				[$$->u.sval.u.efun->function == f_indices],
+				0 = +[pike_types_le($$->type, mapping_type_string)]),
+			1)),
+     F_CONSTANT
+     [$$->u.sval.type == T_INT]
+     [$$->u.sval.u.integer == -1]):
+{
+  $$ = mkefuncallnode("zero_type",mknode(F_ARG_LIST, $0, $1));
+};
+			   
+// search(indices(map), key) >= 0)  =>  !zero_type(map[key]) if typeof(map) <= mapping
+F_GE(F_APPLY(F_CONSTANT
+	     [$$->u.sval.type == T_FUNCTION]
+	     [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	     [$$->u.sval.u.efun->function == f_search],
+	     F_ARG_LIST(F_APPLY(F_CONSTANT
+				[$$->u.sval.type == T_FUNCTION]
+				[$$->u.sval.subtype == FUNCTION_BUILTIN]
+				[$$->u.sval.u.efun->function == f_indices],
+				0 = +[pike_types_le($$->type, mapping_type_string)]),
+			1)),
+     F_CONSTANT
+     [$$->u.sval.type == T_INT]
+     [!$$->u.sval.u.integer]):
+{
+  $$ = mknode(F_NOT,mkefuncallnode("zero_type",mknode(F_ARG_LIST, $0, $1)),0);
+};
+
+// search(indices(map), key) > -1)  =>  !zero_type(map[key]) if typeof(map) <= mapping
+F_GE(F_APPLY(F_CONSTANT
+	     [$$->u.sval.type == T_FUNCTION]
+	     [$$->u.sval.subtype == FUNCTION_BUILTIN]
+	     [$$->u.sval.u.efun->function == f_search],
+	     F_ARG_LIST(F_APPLY(F_CONSTANT
+				[$$->u.sval.type == T_FUNCTION]
+				[$$->u.sval.subtype == FUNCTION_BUILTIN]
+				[$$->u.sval.u.efun->function == f_indices],
+				0 = +[pike_types_le($$->type, mapping_type_string)]),
+			1)),
+     F_CONSTANT
+     [$$->u.sval.type == T_INT]
+     [$$->u.sval.u.integer == -1]):
+{
+  $$ = mknode(F_NOT,mkefuncallnode("zero_type",mknode(F_ARG_LIST, $0, $1)),0);
+};
+
 // sscanf(s[A..], "xxxx", ...)
 //
 //   =>
@@ -268,6 +340,10 @@ F_POP_VALUE(F_GLOBAL, *):
 
 // Popping of variables.
 F_POP_VALUE(F_EXTERNAL, *):
+  -;
+
+// Popping of variables.
+F_POP_VALUE(F_GET_SET, *):
   -;
 
 // Popping of zero elements.
@@ -694,7 +770,10 @@ F_LOR(F_COMMA_EXPR(0, 1), 2):
 F_LOR(0 = F_ASSIGN(*, +[node_is_true($$)]), *):
   $0;
 
-F_LOR(0, F_CONSTANT[node_is_false($$)]):
+// Note: Objects are special...
+F_LOR(0, F_CONSTANT
+         [$$->u.sval.type == T_INT]
+         [!$$->u.sval.u.integer]):
   $0;
 
 F_LOR(+[node_is_false($$)], 0):
