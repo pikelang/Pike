@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: c_source_stream.c,v 1.12 2007/01/25 09:42:05 grubba Exp $
+|| $Id: c_source_stream.c,v 1.13 2007/01/25 09:43:37 grubba Exp $
 */
 
 #include "global.h"
@@ -170,6 +170,7 @@ struct source *source_stream_make( struct svalue *s,
     return 0;
 
   res = malloc( sizeof( struct fd_source ) );
+  if (!res) return NULL;
   MEMSET( res, 0, sizeof( struct fd_source ) );
 
   apply( s->u.object, "query_fd", 0 );
