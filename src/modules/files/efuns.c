@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.181 2006/07/05 18:07:23 mast Exp $
+|| $Id: efuns.c,v 1.182 2007/01/25 17:04:50 grubba Exp $
 */
 
 #include "global.h"
@@ -1461,7 +1461,7 @@ void f_getcwd(INT32 args)
 
   pop_n_elems(args);
   push_text(e);
-  free(e);
+  free(tmp);
 }
 
 #ifdef HAVE_EXECVE
