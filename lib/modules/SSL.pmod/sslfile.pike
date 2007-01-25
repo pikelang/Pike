@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.99 2006/11/16 12:49:40 mast Exp $
+/* $Id: sslfile.pike,v 1.100 2007/01/25 17:45:42 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -390,7 +390,7 @@ static THREAD_T op_thread;
 	    SSL3_DEBUG_MSG ("Local backend ended with error\n");	\
 	    if (stream) {						\
 	      stream->set_id (1);					\
-	      update_internal_state();					\
+	      update_internal_state (1);				\
 	      /* Switch backend after updating the installed callbacks. */ \
 	      stream->set_backend (real_backend);			\
 	    }								\
@@ -415,7 +415,7 @@ static THREAD_T op_thread;
       }									\
 									\
       stream->set_id (1);						\
-      update_internal_state();						\
+      update_internal_state (1);					\
       /* Switch backend after updating the installed callbacks. */	\
       stream->set_backend (real_backend);				\
     }									\
@@ -471,8 +471,10 @@ static void create (Stdio.File stream, SSL.context ctx,
       set_blocking();
       if (is_client) direct_write();
     }
-    else
+    else {
       set_nonblocking();
+      if (is_client) queue_write();
+    }
   } LEAVE;
 }
 
@@ -1235,12 +1237,16 @@ string _sprintf(int t) {
 }
 
 
-static void update_internal_state()
-// Update the internal callbacks according to the current state.
+static void update_internal_state (void|int assume_real_backend)
+// Update the internal callbacks according to the current state. Does
+// nothing if the local backend is active, unless assume_real_backend
+// is set, in which case we're installing callbacks for the real
+// backend anyway (necessary to avoid races when we're about to switch
+// from the local to the real backend).
 {
   // When the local backend is used, callbacks are set explicitly
   // before it's started.
-  if (stream->query_backend() != local_backend) {
+  if (assume_real_backend || stream->query_backend() != local_backend) {
     mixed install_read_cbs, install_write_cb;
 
     if (nonblocking_mode && close_state >= NORMAL_CLOSE) {
@@ -1261,7 +1267,7 @@ static void update_internal_state()
       install_write_cb = (write_callback || SSL_INTERNAL_WRITING);
 
       SSL3_DEBUG_MORE_MSG ("update_internal_state: "
-			   "After handshake, callback mode [r:%O w:%O]\n",
+			   "Callback mode [r:%O w:%O]\n",
 			   !!install_read_cbs, !!install_write_cb);
     }
 
@@ -1293,6 +1299,10 @@ static void update_internal_state()
 
     stream->set_write_callback (install_write_cb && ssl_write_callback);
   }
+
+  else
+    SSL3_DEBUG_MORE_MSG ("update_internal_state: "
+			 "In local backend - nothing done\n");
 }
 
 static int queue_write()
