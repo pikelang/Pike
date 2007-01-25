@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.390 2007/01/01 04:50:15 nilsson Exp $
+// $Id: master.pike.in,v 1.391 2007/01/25 00:11:38 bill Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1199,6 +1199,14 @@ static void create()
 #if "¤doc_prefix¤"[0]!='¤'
   doc_prefix = "¤doc_prefix¤";
 #endif
+
+#if constant(__embedded_resource_directory)
+  // for use with embedded interpreters
+  // add path for architecture-dependant files
+  add_include_path(__embedded_resource_directory + "/lib/include");
+  add_module_path(__embedded_resource_directory + "/lib/modules");
+#endif
+
   system_module_path=pike_module_path;
   if (master() && master() != this_object()) {
     // getenv() and putenv() will get confused if we don't do this.
