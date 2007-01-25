@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.457 2007/01/06 23:37:18 bill Exp $
+# $Id: Makefile.in,v 1.458 2007/01/25 00:13:08 bill Exp $
 #
 
 # This line is needed on some machines.
@@ -283,9 +283,28 @@ compiler-warnings : clean
 
 framework: OCPikeInterpreter.o $(OBJ) modules/linker_options @STATIC_POST_MODULES_LINKOPTS@
 	@echo "Linking Pike.framework";\
-	gcc -o Pike OCPikeInterpreter.o $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` -framework Cocoa -Wl,-single_module \
-	  -undefined dynamic_lookup -compatibility_version 1 -current_version 1 -dynamiclib -mmacosx-version-min=10.4 \
+	gcc -o Pike OCPikeInterpreter.o $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` -framework Cocoa -dynamiclib -Wl,-single_module \
+	  -undefined dynamic_lookup -mmacosx-version-min=10.4 -current_version 7.7 -install_name /System/Library/Frameworks/Pike.framework/Versions/A/Pike \
 	  -isysroot /Developer/SDKs/MacOSX10.4u.sdk 
+	ls -l Pike
+	if test -x Pike.framework ; then rm -rf Pike.framework; fi
+	mkdir Pike.framework
+	mkdir Pike.framework/Versions
+	mkdir Pike.framework/Versions/A
+	mkdir Pike.framework/Versions/A/Headers
+	mkdir Pike.framework/Versions/A/Resources	
+	mv Pike Pike.framework/Versions/A
+	cd Pike.framework/Versions && ln -s A Current
+	cd Pike.framework && ln -s Versions/Current/Resources Resources && ln -s Versions/Current/Headers Headers && \
+		ln -s Versions/Current/Pike Pike
+	cp $(SRCDIR)/*.h Pike.framework/Versions/A/Headers
+	cp *.h Pike.framework/Versions/A/Headers
+	cp $(PACKAGINGDIR)/macosx/framework_Info.plist Pike.framework/Versions/A/Resources/Info.plist
+	cp -rf lib Pike.framework/Versions/A/Resources
+	cp master.pike Pike.framework/Versions/A/Resources/lib
+	cp -rf $(SRCDIR)/../lib/* Pike.framework/Versions/A/Resources/lib
+	cd Pike.framework && find . -type f -name '*.in' -exec rm -f {} \;
+	cd Pike.framework && find . -type d -name CVS -prune -exec rm -rf {} \;
 
 libpike.so: $(OBJ) modules/linker_options @STATIC_POST_MODULES_LINKOPTS@
 	@echo "Linking libpike.so";\
