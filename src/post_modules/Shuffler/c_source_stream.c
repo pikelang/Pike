@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: c_source_stream.c,v 1.11 2004/10/16 07:27:29 agehall Exp $
+|| $Id: c_source_stream.c,v 1.12 2007/01/25 09:42:05 grubba Exp $
 */
 
 #include "global.h"
@@ -66,6 +66,7 @@ static struct data get_data( struct source *_s, off_t len )
   struct data res;
   res.off = res.do_free = 0;
   res.len = s->available;
+  res.data = NULL;
 
   if( s->available ) /* There is data in the buffer. Return it. */
   {
