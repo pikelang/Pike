@@ -34,6 +34,8 @@ o Added set_charset and get_charset proxy functions to Sql.Sql.
 o Changed Protocols.HTTP.Query async_close() to care about the value
   returned by ponder_answer(). Fixes requests to broken servers that 
   don't send proper results.
+o Fixed a bug in SSL module that could stop communication while
+  keeping the connection open indefinitely.
 o Fixed bad free_string() in exit_bytecode().
 o Fixed an off-by-one crash when drawing alpha boxes all the way to
   the bottom of the image.
@@ -46,6 +48,8 @@ o Fixed fatal "Unknown identifier type" that was caused by attempts
   to encode programs that had not been fixated.
 o Fixed some events in Calendar.Events.
 o Fixed an inverted error test in Mysql.set_charset.
+o Fixed a compilation crash of the Cache module on Pikes wihtout
+  threads.
 o Added support to Mysql for the charsetnr column attribute and proper
   recognition of binary fields in unicode decode mode by using charsetnr
   instead of the binary flag (which might be set for nonbinary columns
@@ -91,6 +95,7 @@ o Fixed epoll support to not require /dev/epoll on Linux. That means
   --without-epoll.
 o Added Objective C support to the module build system.
 o Fixed libnettle bundle compilation on win32.
+o Fixed compilation of ffmpeg.
 
 
 Changes since Pike 7.6.66
