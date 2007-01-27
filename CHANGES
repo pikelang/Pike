@@ -14,7 +14,7 @@ o Added adjusted_cmyk to Image.Image and use it when decoding with
   Image.PS.
 o Now handles more eps images internally in Image.PS without spawning 
   ghostscript.
-o Added Standards.IIM that handles IPTC IPTC Information Interchange
+o Added Standards.IIM that handles IPTC Information Interchange
   Model data in JPEG or Postscript images created with PhotoShop.
 o Added support for little endian TIFFs.
 o Added support for TIFF to Image.Dims.
