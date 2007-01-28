@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.29 2007/01/28 03:02:08 peter Exp $
+dnl $Id: configure.in,v 1.30 2007/01/28 03:59:26 peter Exp $
 
 AC_INIT(postgres.c)
 AC_CONFIG_HEADER(pgres_config.h)
@@ -215,6 +215,8 @@ if test x$ac_cv_lib_pq_PQclear != xyes -o x$ac_pike_postgres_works != xyes;then
 else
   echo "Postgres found, module configured."
   POSTGRES_SUPPORTED="yes"
+  HAVE_WORKING_POSTGRES="yes"
+  AC_DEFINE(HAVE_WORKING_POSTGRES)
   PIKE_FEATURE_OK(Postgres)
 fi
 

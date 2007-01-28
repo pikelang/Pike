@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.8 2006/05/19 10:58:33 grubba Exp $
+|| $Id: acconfig.h,v 1.9 2007/01/28 03:59:26 peter Exp $
 */
 
 #undef STDC_HEADERS
@@ -30,7 +30,8 @@
      defined(HAVE_POSTGRESQL_SERVER_POSTGRES_H) || \
      defined(HAVE_POSTGRESQL_SERVER_POSTGRES_FE_H) || \
      defined(HAVE_PG72)) && \
-    defined(HAVE_LIBPQ_FE_H)
+    defined(HAVE_LIBPQ_FE_H) && \
+     defined(HAVE_WORKING_POSTGRES)
 #define HAVE_POSTGRES
 
 /* This is needed to avoid broken <openssl/kssl.h> headerfiles. */
