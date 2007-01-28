@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.51 2006/11/17 18:43:17 mast Exp $
+# $Id: configure.in,v 1.52 2007/01/28 02:51:02 peter Exp $
 #
 # Configure script for the mysql-module
 #
@@ -38,8 +38,8 @@ else
 
   AC_MSG_CHECKING(for Mysql lib-directory)
 
-  libdirs="$with_root/usr/local/lib/mysql $with_root/usr/local/mysql/lib/mysql $with_root/opt/lib/mysql $with_root/opt/mysql/lib/mysql $with_root/usr/gnu/lib/mysql $with_root/usr/lib/mysql $with_root/lib/mysql $with_root/usr/pkg/lib/mysql $with_root/usr/local/mysql/lib $with_root/usr/local/mysql/mach-lib-thread"
-  incdirs="$with_root/usr/local/include/mysql $with_root/usr/local/mysql/include/mysql $with_root/opt/include/mysql $with_root/opt/mysql/include/mysql $with_root/usr/gnu/include/mysql $with_root/usr/include/mysql $with_root/include/mysql $with_root/usr/pkg/include/mysql $with_root/usr/local/mysql/include no"
+  libdirs="$with_root/usr/local/lib/mysql $with_root/usr/local/mysql/lib/mysql $with_root/opt/lib/mysql $with_root/opt/mysql/lib/mysql $with_root/usr/gnu/lib/mysql $with_root/usr/lib/mysql $with_root/lib/mysql $with_root/usr/pkg/lib/mysql $with_root/usr/local/mysql/lib $with_root/usr/local/mysql/mach-lib-thread $with_root/opt/csw/mysql5/lib/mysql $with_root/opt/csw/mysql4/lib/mysql"
+  incdirs="$with_root/usr/local/include/mysql $with_root/usr/local/mysql/include/mysql $with_root/opt/include/mysql $with_root/opt/mysql/include/mysql $with_root/usr/gnu/include/mysql $with_root/usr/include/mysql $with_root/include/mysql $with_root/usr/pkg/include/mysql $with_root/usr/local/mysql/include $with_root/opt/csw/mysql5/include/mysql $with_root/opt/csw/mysql4/include/mysql"
 
   if test x$with_mysql = xyes; then :; else
     # Mysql installation directory specified.
