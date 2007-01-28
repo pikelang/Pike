@@ -96,6 +96,8 @@ o Fixed epoll support to not require /dev/epoll on Linux. That means
 o Added Objective C support to the module build system.
 o Fixed libnettle bundle compilation on win32.
 o Fixed compilation of ffmpeg.
+o Fixed compilation problem on OpenSolaris by checking for broken
+  Postgres environment.
 
 
 Changes since Pike 7.6.66
