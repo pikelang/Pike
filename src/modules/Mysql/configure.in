@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.55 2007/01/28 03:00:33 peter Exp $
+# $Id: configure.in,v 1.56 2007/01/28 03:01:15 peter Exp $
 #
 # Configure script for the mysql-module
 #
@@ -46,7 +46,7 @@ else
       $with_root/usr/gnu $with_root/opt/gnu $with_root/sw/gnu \
       $with_root/usr/freeware $with_root/usr/pkg \
       $with_root/usr/sfw $with_root/opt/sfw \
-      $with_root/opt/csw /opt/csw/mysql5/ /opt/csw/mysql4/ \
+      $with_root/opt/csw /opt/csw/mysql5 /opt/csw/mysql4 \
       $with_root/usr $with_root
     do
       if test -d "$dir_prefix/."; then :; else continue; fi
