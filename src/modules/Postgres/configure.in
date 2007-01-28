@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.28 2006/05/29 18:44:22 adam Exp $
+dnl $Id: configure.in,v 1.29 2007/01/28 03:02:08 peter Exp $
 
 AC_INIT(postgres.c)
 AC_CONFIG_HEADER(pgres_config.h)
@@ -20,6 +20,7 @@ AC_ARG_WITH(libpq-dir,
 	[pike_postgres_user_lib_directory=$withval])
 
 ac_pike_postgres_skip=no
+ac_pike_postgres_works=yes
 
 dnl set up search paths
 
@@ -131,6 +132,26 @@ PG_VERSION
       AC_DEFINE(HAVE_PG72)
     ])
   ])
+
+  if test "x$ac_cv_header_libpq_fe_h = xyes"; then
+      # Rational: OpenSolaris as of 20070128 includes a libpq-fe.h that
+      # includes openssl/ssl.h if server/pg_config.h is included before
+      # that, but does not include openssl/ssl.h in the dist.
+      AC_MSG_CHECKING(if libpq-fe.h works)
+      AC_TRY_COMPILE([
+#ifdef HAVE_PG_SERVER_CONFIG_H
+#include <server/pg_config.h>
+#elif defined(HAVE_PG_CONFIG_H)
+#include <pg_config.h>
+#endif
+#include <libpq-fe.h>
+      ], [], [
+          AC_MSG_RESULT(yes)
+      ], [
+          AC_MSG_RESULT(no)
+          ac_pike_postgres_works=no
+      ])
+  fi
   
   echo "Have Postgres 7.2? $HAVE_PG72"
   if test "x$ac_cv_header_libpq_fe_h" = xno -o \
@@ -186,13 +207,13 @@ dnl last check, just to be sure
   fi
 fi
 
-if test  x$ac_cv_lib_pq_PQclear != xyes; then
+if test x$ac_cv_lib_pq_PQclear != xyes -o x$ac_pike_postgres_works != xyes;then
   CPPFLAGS=$OLD_CPPFLAGS
   LDFLAGS=$OLD_LDFLAGS
   LIBS=$OLD_LIBS
-  echo "Postgres not found. We won't support it."
+  echo "No working Postgres installation found."
 else
-  echo "Postgres found, module configured. Thank you for your cooperation."
+  echo "Postgres found, module configured."
   POSTGRES_SUPPORTED="yes"
   PIKE_FEATURE_OK(Postgres)
 fi
