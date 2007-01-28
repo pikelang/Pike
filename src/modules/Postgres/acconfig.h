@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.9 2007/01/28 03:59:26 peter Exp $
+|| $Id: acconfig.h,v 1.10 2007/01/28 21:36:55 peter Exp $
 */
 
 #undef STDC_HEADERS
@@ -12,6 +12,9 @@
 
 /* Define if we are running PostgreSQL 7.2 or newer */
 #undef HAVE_PG72
+
+/* Define if postgres passed sanity tests. */
+#undef HAVE_WORKING_POSTGRES
 
 /* If the PQsetnonblocking function is available, it means we're using
  * PostgreSQL 7.x or newer. This, in turn, means that the interface is
