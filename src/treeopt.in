@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.73 2003/02/08 03:49:23 mast Exp $
+// $Id: treeopt.in,v 1.74 2007/01/29 23:16:34 peter Exp $
 //
 // The tree optimizer
 //
@@ -633,7 +633,10 @@ F_LOR(F_COMMA_EXPR(0, 1), 2):
 F_LOR(0 = F_ASSIGN(*, +[node_is_true($$)]), *):
   $0;
 
-F_LOR(0, F_CONSTANT[node_is_false($$)]):
+// Note: Objects are special...
+F_LOR(0, F_CONSTANT
+         [$$->u.sval.type == T_INT]
+         [!$$->u.sval.u.integer]):
   $0;
 
 F_LOR(+[node_is_false($$)], 0):

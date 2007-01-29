@@ -50,6 +50,7 @@ o Fixed some events in Calendar.Events.
 o Fixed an inverted error test in Mysql.set_charset.
 o Fixed a compilation crash of the Cache module on Pikes wihtout
   threads.
+o Fixed optimization bug for objects with a value of false.
 o Added support to Mysql for the charsetnr column attribute and proper
   recognition of binary fields in unicode decode mode by using charsetnr
   instead of the binary flag (which might be set for nonbinary columns
