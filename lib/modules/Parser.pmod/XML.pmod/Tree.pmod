@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.67 2006/11/04 19:06:49 nilsson Exp $
+ * $Id: Tree.pmod,v 1.68 2007/01/31 10:42:04 grubba Exp $
  *
  */
 
@@ -295,7 +295,7 @@ class AbstractSimpleNode {
     return n;
   }
 
-  //! Returns the last childe node or zero.
+  //! Returns the last child node or zero.
   AbstractSimpleNode get_last_child()
   {
     if (!sizeof(mChildren))
@@ -1434,7 +1434,8 @@ class XMLParser
 
   void parse(string data,
              void|mapping predefined_entities,
-             ParseFlags|void flags)
+             ParseFlags|void flags,
+	     string|void default_namespace)
   {
     //.Simple xp = WrappedSimple();
     .Simple xp = .Simple();
@@ -1461,6 +1462,10 @@ class XMLParser
       }
       if (flags & PARSE_ENABLE_NAMESPACES) {
         extras->xmlns = XMLNSParser();
+	if (default_namespace) {
+	  // Set the default namespace.
+	  extras->xmlns->namespace_stack->top()[0] = default_namespace;
+	}
       }
       catch( data=xp->autoconvert(data) );
       foreach(xp->parse(data, parse_xml_callback,
@@ -1622,16 +1627,19 @@ class XMLParser
 //! Takes an XML string and produces a @[SimpleNode] tree.
 SimpleRootNode simple_parse_input(string data,
 				  void|mapping predefined_entities,
-				  ParseFlags|void flags)
+				  ParseFlags|void flags,
+				  string|void default_namespace)
 {
-  return SimpleRootNode(data, predefined_entities, flags);
+  return SimpleRootNode(data, predefined_entities, flags,
+			default_namespace);
 }
 
 //! Loads the XML file @[path], creates a @[SimpleNode] tree representation and
 //! returns the root node.
 SimpleRootNode simple_parse_file(string path,
 				 void|mapping predefined_entities,
-				 ParseFlags|void flags)
+				 ParseFlags|void flags,
+				 string|void default_namespace)
 {
   Stdio.File  file = Stdio.File(path, "r");
   string      data;
@@ -1643,7 +1651,8 @@ SimpleRootNode simple_parse_file(string path,
   })
     throw_error("Could not read XML file %O.\n", path);
   else
-    return simple_parse_input(data, predefined_entities, flags);
+    return simple_parse_input(data, predefined_entities, flags,
+			      default_namespace);
 }
 
 //! Takes an XML string and produces a node tree.
@@ -1763,11 +1772,12 @@ class SimpleRootNode
 
   static void create(string|void data,
 		     mapping|void predefined_entities,
-		     ParseFlags|void flags)
+		     ParseFlags|void flags,
+		     string|void default_namespace)
   {
     ::create(XML_ROOT, "", 0, "");
     if (data) {
-      parse(data, predefined_entities, flags);
+      parse(data, predefined_entities, flags, default_namespace);
     }
   }
 }
