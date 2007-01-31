@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.55 2006/02/27 06:26:34 mast Exp $
+ * $Id: Tree.pmod,v 1.56 2007/01/31 10:45:37 grubba Exp $
  *
  */
 
@@ -1654,7 +1654,8 @@ enum ParseFlags {
 //! Takes an XML string and produces a @[SimpleNode] tree.
 SimpleNode simple_parse_input(string data,
 			      void|mapping predefined_entities,
-			      ParseFlags|void flags)
+			      ParseFlags|void flags,
+			      string|void default_namespace)
 {
   Parser.XML.Simple xp = Parser.XML.Simple();
   SimpleNode mRoot;
@@ -1681,6 +1682,10 @@ SimpleNode simple_parse_input(string data,
     }
     if (flags & PARSE_ENABLE_NAMESPACES) {
       extras->xmlns = XMLNSParser();
+      if (default_namespace) {
+	// Set the default namespace.
+	extras->xmlns->namespace_stack->top()[0] = default_namespace;
+      }
     }
     mRoot = SimpleRootNode();
     catch( data=xp->autoconvert(data) );
@@ -1709,7 +1714,8 @@ SimpleNode simple_parse_input(string data,
 //! returns the root node.
 SimpleNode simple_parse_file(string path,
 			     void|mapping predefined_entities,
-			     ParseFlags|void flags)
+			     ParseFlags|void flags,
+			     string|void default_namespace)
 {
   Stdio.File  file = Stdio.File(path, "r");
   string      data;
@@ -1721,7 +1727,8 @@ SimpleNode simple_parse_file(string path,
   })
     throw_error("Could not read XML file %O.\n", path);
   else
-    return simple_parse_input(data, predefined_entities, flags);
+    return simple_parse_input(data, predefined_entities, flags,
+			      default_namespace);
 }
 
 //! Takes an XML string and produces a node tree.
