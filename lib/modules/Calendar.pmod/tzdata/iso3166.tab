@@ -1,12 +1,12 @@
 # ISO 3166 alpha-2 country codes
 #
-# @(#)iso3166.tab	1.9
+# @(#)iso3166.tab	8.4
 #
-# From Paul Eggert <eggert@twinsun.com> (2003-02-04):
+# From Paul Eggert (2006-09-27):
 #
 # This file contains a table with the following columns:
 # 1.  ISO 3166-1 alpha-2 country code, current as of
-#     ISO 3166-1 Newsletter No. V-7 (2003-01-14).  See:
+#     ISO 3166-1 Newsletter No. V-12 (2006-09-26).  See:
 #     <a href="http://www.iso.org/iso/en/prods-services/iso3166ma/index.html">
 #     ISO 3166 Maintenance agency (ISO 3166/MA)
 #     </a>.
@@ -36,6 +36,7 @@ AS	Samoa (American)
 AT	Austria
 AU	Australia
 AW	Aruba
+AX	Aaland Islands
 AZ	Azerbaijan
 BA	Bosnia & Herzegovina
 BB	Barbados
@@ -91,13 +92,14 @@ FI	Finland
 FJ	Fiji
 FK	Falkland Islands
 FM	Micronesia
-FO	Faeroe Islands
+FO	Faroe Islands
 FR	France
 GA	Gabon
 GB	Britain (UK)
 GD	Grenada
 GE	Georgia
 GF	French Guiana
+GG	Guernsey
 GH	Ghana
 GI	Gibraltar
 GL	Greenland
@@ -120,12 +122,14 @@ HU	Hungary
 ID	Indonesia
 IE	Ireland
 IL	Israel
+IM	Isle of Man
 IN	India
 IO	British Indian Ocean Territory
 IQ	Iraq
 IR	Iran
 IS	Iceland
 IT	Italy
+JE	Jersey
 JM	Jamaica
 JO	Jordan
 JP	Japan
@@ -154,6 +158,7 @@ LY	Libya
 MA	Morocco
 MC	Monaco
 MD	Moldova
+ME	Montenegro
 MG	Madagascar
 MH	Marshall Islands
 MK	Macedonia
@@ -202,6 +207,7 @@ PY	Paraguay
 QA	Qatar
 RE	Reunion
 RO	Romania
+RS	Serbia
 RU	Russia
 RW	Rwanda
 SA	Saudi Arabia
@@ -253,10 +259,9 @@ VI	Virgin Islands (US)
 VN	Vietnam
 VU	Vanuatu
 WF	Wallis & Futuna
-WS	Samoa (Western)
+WS	Samoa (western)
 YE	Yemen
 YT	Mayotte
-YU	Serbia and Montenegro
 ZA	South Africa
 ZM	Zambia
 ZW	Zimbabwe
