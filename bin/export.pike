@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.71 2005/12/02 11:44:44 peter Exp $ */
+/* $Id: export.pike,v 1.72 2007/02/02 02:19:05 peter Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -131,37 +131,24 @@ void bump_version(int|void is_release)
 			     )->wait();
 
   }
-#if 0
+
   s = Stdio.read_file(pike_base_name+"/packaging/windows/pike.iss");
   if (s) {
     werror("Bumping Win32 setup script.\n");
     array(int) version = getversion();
     array(string) lines = replace(s, "\r\n", "\n")/"\n";
-    int i;
-    for (i=0; i < sizeof(lines); i++) {
-      if (lines[i] == "[Setup]") {
-	int j;
-	for (j = i+1; (j < sizeof(lines)) && !has_prefix(lines[j], "["); j++) {
-	  if (has_prefix(lines[j], "AppName=")) {
-	    lines[j] = sprintf("AppName=Pike %d.%d%s",
-			       version[0], version[1],
-			       is_release?"":" *BETA*");
-	  } else if (has_prefix(lines[j], "AppVerName=")) {
-	    // FIXME: Should this stuff be here?
-	    lines[j] = sprintf("AppVerName=Pike %d.%d.%d"
-			       ", SDL, OpenGL, MySQL, Freetype, Gz and GTK+",
-			       version[0], version[1], version[2]);
-	  } else if (has_prefix(lines[j], "AppVersion=")) {
-	    lines[j]=sprintf("AppVersion=%d.%d.%d",
-			     version[0], version[1], version[2]);
-	  } else if (has_prefix(lines[j], "VersionInfoVersion=")) {
-	    lines[j]=sprintf("VersionInfoVersion=%d.%d.%d.0",
-			     version[0], version[1], version[2]);
-	  }
-	}
+
+    for (int i=0; i < sizeof(lines); i++) {
+      if (has_prefix(lines[i], "#define MAJOR ")) {
+	lines[i] = sprintf("#define MAJOR \"%d\"", version[0]);
+      } else if (has_prefix(lines[i], "#define MINOR ")) {
+	lines[i] = sprintf("#define MINOR \"%d\"", version[1]);
+      } else if (has_prefix(lines[i], "#define BUILD ")) {
+	lines[i] = sprintf("#define BUILD \"%d\"", version[2]);
 	break;
       }
     }
+
     Stdio.write_file(pike_base_name+"/packaging/windows/pike.iss",
 		     lines*"\r\n");
     Process.create_process( ({ "cvs", "commit", "-m",
@@ -170,7 +157,6 @@ void bump_version(int|void is_release)
 			     ([ "cwd":pike_base_name+"/packaging/windows" ])
 			     )->wait();
   }
-#endif
 }
 
 array(string) build_file_list(string vpath, string list_file)
