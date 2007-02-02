@@ -3,15 +3,15 @@
 
 #define MAJOR "7"
 #define MINOR "6"
-#define BUILD "50"
-#define INST  "6"
+#define BUILD "102"
+#define INST  "1"
 
 [Setup]
 InternalCompressLevel=ultra
 SolidCompression=true
 Compression=lzma/ultra
 SetupIconFile=pikeinstall.ico
-#emit 'OutputBaseFilename=Pike-v'+MAJOR+'.'+MINOR+'.'+BUILD+'.'+inst+'-win32'
+#emit 'OutputBaseFilename=Pike-v'+MAJOR+'.'+MINOR+'.'+BUILD+'.'+INST+'-win32'
 
 LicenseFile=Copying.txt
 AllowNoIcons=true
@@ -66,7 +66,7 @@ Source: dlls\SDL_mixer.dll; DestDir: {app}; Flags: restartreplace ignoreversion 
 
 
 [Components]
-Name: base; Description: Pike base files; Flags: fixed; Types: custom compact full; ExtraDiskSpaceRequired: 7000000
+Name: base; Description: Pike base files; Flags: fixed; Types: custom compact full; ExtraDiskSpaceRequired: 3500000
 Name: debug; Description: Debug symbols; Types: full
 Name: gtk; Description: GTK+; Types: full
 Name: sdl; Description: SDL; Types: custom full
@@ -87,7 +87,7 @@ Root: HKCR; Subkey: .pmod; ValueType: string; ValueName: ContentType; ValueData:
 Root: HKCR; Subkey: pike_file; ValueType: string; ValueData: Pike program file; Tasks: associate
 ;Root: HKCR; Subkey: pike_file\DefaultIcon; ValueType: string; ValueData: {app}\pike.ico,0; Tasks: associate
 Root: HKCR; Subkey: pike_file\DefaultIcon; ValueType: string; ValueData: {app}\icons\pike_black.ico,0; Tasks: associate
-Root: HKCR; Subkey: pike_file\Shell\Open\Command; ValueType: string; ValueData: """{app}\pike.exe"" ""%1"" %2 %3 %4 %5 %6 %7 %8 %9"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCR; Subkey: pike_file\Shell\Open\Command; ValueType: string; ValueData: """{app}\pike.exe"" %*"; Flags: uninsdeletevalue; Tasks: associate
 Root: HKCR; Subkey: pike_file\Shell\Edit\Command; ValueType: string; ValueData: """notepad.exe"" ""%1"""; Flags: createvalueifdoesntexist; Tasks: associate
 Root: HKCR; Subkey: pike_module; ValueType: string; ValueData: Pike module file; Tasks: associate
 ;Root: HKCR; Subkey: pike_module\DefaultIcon; ValueType: string; ValueData: {app}\pike.ico,0; Tasks: associate
