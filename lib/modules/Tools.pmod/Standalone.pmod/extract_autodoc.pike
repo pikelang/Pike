@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.44 2004/04/23 13:41:10 per Exp $
+ * $Id: extract_autodoc.pike,v 1.45 2007/02/12 20:29:30 bill Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -133,7 +133,8 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
       if(!has_suffix(fn, ".pike") && !has_suffix(fn, ".pike.in") &&
 	 !has_suffix(fn, ".pmod") && !has_suffix(fn, ".pmod.in") &&
 	 //       !has_suffix(fn, ".cmod") && !has_suffix(fn, ".cmod.in") &&
-	 !has_suffix(fn, ".c")) continue;
+	 !has_suffix(fn, ".c") && !has_suffix(fn, ".cc") &&
+         !has_suffix(fn, ".m")) continue;
 
       Stdio.Stat dstat = file_stat(builddir+fn+".xml");
 
