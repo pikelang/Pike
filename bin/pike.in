@@ -58,9 +58,7 @@ if test "x$gdb" != "x"; then
   args="-DPRECOMPILED_SEARCH_MORE '-m$BUILDDIR/master.pike'"
   for arg
   do
-    arg=`sed -e s/\'/\'\"\'\"\'/g <<EOF
-$arg
-EOF`
+    arg=`echo "$arg" | sed -e s/\'/\'\"\'\"\'/g`
     args="$args '$arg'"
   done
   echo "set args $args" >> .gdbinit.$$
