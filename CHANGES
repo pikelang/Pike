@@ -76,10 +76,148 @@ o Unicode
 
 Extensions and New Functions
 
+o ADT.BitBuffer
+  read() added. Bugfixes.
+
+o ADT.Priotity_queue
+  Fixed pop bug.
+
+o ADT.Queue
+  Added _sizeof, _values
+
+o ADT.Struct
+  Signed integers.
+  Structs can be Items in other Structs.
+  _sizeof in every Item.
+
+o ADT.Relation.Binary
+  iterator API fix.
+  Fixed creating relation with initial relation.
+  Added cast to mapping.
+
+o Array
+  Added combinations()
+  Bugfixed Array.diff3
+  Added push(), pop(), shift() and unshift() for Perl weirdos.
+
+o Cache
+  Data.recursive_low_size() now supports floats.
+  thread fixes
+
+o Calendar
+  Fixed bugs in discordian. year off by 1166 and now 5 month per year.
+  Islamic days start at sunset
+  New national day
+  fixed hour formatting for format_smtp()
+  Time: * and / now handle floats. split implemented.
+  how_many() now returns the correct value. was off by one.
+
+o Crypto.Random
+  Now thread safe.
+
+o Debug
+  count_objects() added.
+
+o Filesystem
+  ignore_error added to traverse
+
+o Float
+  Added isnan()
+
+o Geography.Position
+  Now possible to encode.
+
+o GLUE
+  mipmap to flags
+  supports clamped textures in BaseTexture and BaseDWIM
+
+o Image.Dims
+  supports TIFF
+
+o _Image ?
+  Added support for DOS EPS
+
+o Int
+  inf + operations
+
+o Locale.Charset
+  Added GB18030/GBK
+  UTF-EBCDIC
+  unicode prefix, e.g. unicode-1-1-utf-7
+  CP949
+  GBK (cp936)
+
+o MIME
+  Fix for casting MIME.Message objects to strings
+  Added remapping variants of the encode words functions.
+
+o Parser.Pike
+  Now uses parser written in C.
+  Fixed parsing of #string
+
+o Parser.RCS
+  Handle broken RCS files better.
+
+o Parser.XML.Tree
+  Added rendering of DTD ENTITY nodes.
+  The renderer now knows about the internal_subset attribute for the
+    DOCTYPE tag.
+  Added rendering of DTD ELEMENT nodes.
+  Added functions to inser new childe node.
+  Moved parser code into the nodes allowing for extendability.
+  set_tag_name()
+  simple-stuff
+  AbstractSimpleNode, VirtualNode, SimpleNode.
+  Node.zap_tree
+
+o Pike
+  get_runtime_info()
+  Encoder, Decoder, Codec
+
+o Process
+  run()
+  spawn_pike()
+  Extended system() to pass args to spawn()
+  New popen implementation.
+
+o Protocols.DNS
+  Fix for TTL parsing in SRV records.
+  gethostbyname() now returns IPv6 addresses too, if available.
+  Improved support for T_TXT.
+
+o Protocols.Bittorrent
+  Support for gzipped and compact tracker responses.
+  30% faster hashing of files.
+
+o Protocols.HTTP.Query
+
+  Many async bug fixes.
+  Added timed_async_fetch()
+ 
+  Don't silently downgrade to http from https if there is no crypto 
+  support.
+
+  Addedunicode_data()
+
+  Keep alive fixes.
+
+o Protocols.HTTP.Session
+  Now possible to manually set content type.
+
+o Protocols.HTTP
+  http_encode_string() now know how to encode UCS-2 characters.
+  
+PROTOCOLS NOT DONE
+
+o ADT.Table
+  Fixed sorting of columns typed num.
+
 o Calendar.Badi
   Support for the Badi calendar used in the Baha'i religion.
 
 New Modules
+
+o ADT.List
 
 o ADT.Set
   ADT.Set implements a datatype for sets. These sets behave much
@@ -206,3 +344,5 @@ o Stdio
   append_file() now always throw errors upon errors, to allow easier
   use as errno doesn't have to be checked. read_file() and
   read_bytes() still returns 0 if the file does not exists.
+
+o The modules Mird, Perl, Pipe and Ssleay have been removed.
