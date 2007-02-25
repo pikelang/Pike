@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.55 2006/09/06 14:20:30 grubba Exp $
+// $Id: Query.pike,v 1.56 2007/02/25 14:20:50 grubba Exp $
 
 //!	Open and execute an HTTP query.
 
@@ -249,12 +249,17 @@ static void async_connected()
    con->write("");
 }
 
-static void async_failed()
+static void low_async_failed(int e)
 {
-   if (con) errno=con->errno(); else errno=113; // EHOSTUNREACH
+   errno = e;
    ok=0;
    if (request_fail) request_fail(this_object(),@extra_args);
    remove_call_out(async_timeout);
+}
+
+static void async_failed()
+{
+  low_async_failed(con?con->errno():113);	// EHOSTUNREACH
 }
 
 static void async_timeout()
@@ -262,7 +267,6 @@ static void async_timeout()
 #ifdef HTTP_QUERY_DEBUG
    werror("** TIMEOUT\n");
 #endif
-   errno=110; // timeout
    if (con)
    {
       catch (con->set_blocking()); // Only to remove callbacks to avoid cycles.
@@ -270,7 +274,7 @@ static void async_timeout()
       //destruct(con);
    }
    con=0;
-   async_failed();
+   low_async_failed(110);		// ETIMEDOUT
 }
 
 void async_got_host(string server,int port)
