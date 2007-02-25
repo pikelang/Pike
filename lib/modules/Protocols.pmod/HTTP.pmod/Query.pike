@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.81 2007/02/25 14:18:36 grubba Exp $
+// $Id: Query.pike,v 1.82 2007/02/25 14:20:41 grubba Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -275,12 +275,12 @@ static void async_connected()
    con->write("");
 }
 
-static void low_async_failed()
+static void low_async_failed(int e)
 {
 #ifdef HTTP_QUERY_DEBUG
    werror("** calling failed cb %O", request_fail);
 #endif
-   if (con) errno=con->errno(); else errno=113; // EHOSTUNREACH
+   errno = e;
    ok=0;
    if (request_fail) request_fail(this,@extra_args);
    remove_call_out(async_timeout);
