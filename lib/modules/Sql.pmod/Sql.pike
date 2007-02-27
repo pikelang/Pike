@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.88 2006/11/04 19:06:49 nilsson Exp $
+ * $Id: Sql.pike,v 1.89 2007/02/27 17:45:58 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -472,8 +472,8 @@ static array(string|mapping(string|int:mixed))
 //!
 //! @seealso
 //!   @[big_query]
-array(mapping(string:mixed)) query(object|string q,
-                                   mixed ... extraargs)
+array(mapping(string:string)) query(object|string q,
+				    mixed ... extraargs)
 {
   if (sizeof(extraargs)) {
     mapping(string|int:mixed) bindings;
