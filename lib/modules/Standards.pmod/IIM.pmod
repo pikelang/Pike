@@ -3,7 +3,7 @@
 // 
 // http://www.iptc.org/IIM/
 //
-// $Id: IIM.pmod,v 1.6 2007/01/01 04:52:43 nilsson Exp $
+// $Id: IIM.pmod,v 1.7 2007/03/01 14:49:53 grubba Exp $
 //
 // Anders Johansson & Henrik Grubbström
 
@@ -137,11 +137,26 @@ static mapping(string:string|array(string)) decode_photoshop_data(string data)
       continue;
     }
 
-    string block_type_2 = block[..3];
-    //werror("block_type_2: %O\n", block_type_2);
-    int block_length = short_value(block[4..5]);
-
-    string info = block[6..5 + block_length];
+    string block_type_2;
+    int block_length;
+    string info;
+    
+    if (block[0]) {
+      // Photoshop 6.0 format with header description text of variable length.
+      // The two bytes after the description text is zero padding, then comes
+      // the two bytes of data length.
+      int dsclen = block[0];
+      //werror("dsclen: %d\n", dsclen);
+      block_type_2 = block[1..dsclen];
+      block_length = short_value(block[dsclen+3..dsclen+4]);
+      info = block[5+dsclen..4+dsclen+block_length];
+    }
+    else {
+      block_type_2 = block[..3];
+      //werror("block_type_2: %O\n", block_type_2);
+      block_length = short_value(block[4..5]);
+      info = block[6..5 + block_length];
+    }
 
 #if 0
     werror("block_length: %O\n"
@@ -196,6 +211,9 @@ static mapping(string:string|array(string)) decode_photoshop_data(string data)
 	  res->charset = (res->charset || ({})) + ({ "iso-8859-1" });
 	}
       }
+
+      if (label == "special instructions" && lower_case(data) == "nyhedstjeneste")
+	res->charset = (res->charset || ({})) + ({ "iso-8859-1" });
 
       if ((binary_fields[record_set] && binary_fields[record_set][id]) ||
 	  (<3, 7>)[record_set]) {
