@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.372 2006/08/02 15:02:40 mast Exp $
+|| $Id: language.yacc,v 1.373 2007/03/03 16:46:13 grubba Exp $
 */
 
 %pure_parser
@@ -1294,7 +1294,7 @@ basic_type:
     TOK_FLOAT_ID                      { push_type(T_FLOAT); }
   | TOK_VOID_ID                       { push_type(T_VOID); }
   | TOK_MIXED_ID                      { push_type(T_MIXED); }
-  | TOK_STRING_ID                     { push_type(T_STRING); }
+  | TOK_STRING_ID   opt_string_width  {}
   | TOK_INT_ID      opt_int_range     {}
   | TOK_MAPPING_ID  opt_mapping_type  {}
   | TOK_FUNCTION_ID opt_function_type {}
@@ -1460,6 +1460,34 @@ opt_int_range: /* Empty */
 
     free_node($2);
     free_node($4);
+  }
+  ;
+
+opt_string_width: /* Empty */
+  {
+    push_string_type(32);
+  }
+  | '(' ')'
+  {
+    push_string_type(32);
+  }
+  | '(' TOK_NUMBER ')'
+  {
+    INT_TYPE width = 32;
+
+    if($2->token == F_CONSTANT) {
+      if ($2->u.sval.type == T_INT) {
+	width = $2->u.sval.u.integer;
+      }
+    }
+
+    push_string_type(width);
+
+    free_node($2);
+  }
+  | '(' error ')'
+  {
+    yyerror("Expected string width value (0..32).");
   }
   ;
 

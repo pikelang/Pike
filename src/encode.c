@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.239 2007/01/05 15:49:47 grubba Exp $
+|| $Id: encode.c,v 1.240 2007/03/03 16:46:12 grubba Exp $
 */
 
 #include "global.h"
@@ -272,7 +272,8 @@ static void do_enable_threads(void)
 #endif
 
 /* NOTE: Take care to encode it exactly as the corresponing
- *       type string would have been encoded (cf TFUNCTION, T_MANY).
+ *       type string would have been encoded (cf T_FUNCTION, T_MANY,
+ *       T_STRING, PIKE_T_NSTRING).
  */
 static void encode_type(struct pike_type *t, struct encode_data *data)
 {
@@ -280,6 +281,15 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
   if (t->type == T_MANY) {
     addchar(T_FUNCTION);
     addchar(T_MANY);
+  } else if (t->type == T_STRING) {
+    if (CAR_TO_INT(t) == 32) {
+      addchar(T_STRING);
+    } else {
+      /* Narrow string */
+      addchar(PIKE_T_NSTRING);
+      addchar(CAR_TO_INT(t));
+    }
+    return;
   } else {
     addchar(t->type);
   }
@@ -2144,6 +2154,18 @@ static void low_decode_type(struct decode_data *data)
       }
       break;
 
+    case T_STRING:
+      /* Common case and compat */
+      push_string_type(32);
+      break;
+
+    case PIKE_T_NSTRING:
+      {
+	INT32 width = GETC();
+	push_string_type(width);
+      }
+      break;
+
     case '0':
     case '1':
     case '2':
@@ -2155,7 +2177,6 @@ static void low_decode_type(struct decode_data *data)
     case '8':
     case '9':
     case T_FLOAT:
-    case T_STRING:
     case T_MIXED:
     case T_ZERO:
     case T_VOID:
