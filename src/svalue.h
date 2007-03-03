@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.139 2006/10/27 18:17:35 grubba Exp $
+|| $Id: svalue.h,v 1.140 2007/03/03 15:24:51 grubba Exp $
 */
 
 #ifndef SVALUE_H
@@ -123,6 +123,7 @@ struct svalue
 #define PIKE_T_GET_SET 32	/* Getter setter.
 				 * Only valid in struct identifier */
 
+#define PIKE_T_NSTRING 239	/* Narrow string. Only for serialization. */
 #define PIKE_T_RING 240
 #define PIKE_T_NAME 241		/**< Named type. */
 #define PIKE_T_SCOPE 243	/**< Not supported yet */
@@ -178,6 +179,10 @@ struct svalue
 #define tProgram(X) "\005" X
 #define tStr "\006"
 #define tString "\006"
+#define tStr7 "\357\007"
+#define tStr8 "\357\010"
+#define tStr16 "\357\020"
+#define tStr32 "\006"
 #define tType(T) "\007" T
 #define tInt "\022"
 #define tInt0 "\010\000\000\000\000\000\000\000\000"
