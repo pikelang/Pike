@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.96 2006/10/27 18:19:42 grubba Exp $
+|| $Id: pike_types.h,v 1.97 2007/03/03 15:25:35 grubba Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -158,6 +158,7 @@ void type_stack_pop_to_mark(void);
 void type_stack_reverse(void);
 struct pike_type *debug_peek_type_stack(void);
 void debug_push_int_type(INT_TYPE min, INT_TYPE max);
+void debug_push_string_type(INT32 bitwidth);
 void debug_push_object_type(int flag, INT32 id);
 void debug_push_object_type_backwards(int flag, INT32 id);
 void debug_push_type_name(struct pike_string *name);
@@ -283,6 +284,7 @@ void describe_all_types(void);
  ((struct pike_type *)debug_malloc_pass(debug_make_pike_type(X)))
 #define pop_type_stack(E) do { debug_malloc_pass(debug_peek_type_stack()); debug_pop_type_stack(E); } while(0)
 #define push_int_type(MIN,MAX) do { debug_push_int_type(MIN,MAX);debug_malloc_pass(debug_peek_type_stack()); } while(0)
+#define push_string_type(WIDTH) do { debug_push_string_type(WIDTH);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_object_type(FLAG,ID) do { debug_push_object_type(FLAG,ID);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_object_type_backwards(FLAG,ID) do { debug_push_object_type_backwards(FLAG,ID);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_scope_type(LEVEL) do { debug_push_scope_type(LEVEL);debug_malloc_pass(debug_peek_type_stack()); } while(0)
@@ -299,6 +301,7 @@ void describe_all_types(void);
 #define pop_unfinished_type debug_pop_unfinished_type
 #define pop_type_stack debug_pop_type_stack
 #define push_int_type debug_push_int_type
+#define push_string_type debug_push_string_type
 #define push_object_type debug_push_object_type
 #define push_object_type_backwards debug_push_object_type_backwards
 #define push_scope_type debug_push_scope_type
