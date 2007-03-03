@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.625 2007/03/03 18:13:06 grubba Exp $
+|| $Id: builtin_functions.c,v 1.626 2007/03/03 18:15:34 grubba Exp $
 */
 
 #include "global.h"
@@ -2206,7 +2206,7 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
   push_string(out);
 }
 
-/*! @decl string __parse_pike_type(string t)
+/*! @decl string(8) __parse_pike_type(string(8) t)
  */
 static void f_parse_pike_type( INT32 args )
 {
@@ -8976,9 +8976,9 @@ void init_builtin_efuns(void)
 
   /* Some Wide-string stuff */
   
-/* function(string:string) */
+/* function(string:string(8)) */
   ADD_EFUN("string_to_unicode", f_string_to_unicode,
-	   tFunc(tStr,tStr), OPT_TRY_OPTIMIZE);
+	   tFunc(tStr,tStr8), OPT_TRY_OPTIMIZE);
   
 /* function(string(8):string) */
   ADD_EFUN("unicode_to_string", f_unicode_to_string,
@@ -8994,7 +8994,7 @@ void init_builtin_efuns(void)
 
 
   ADD_EFUN("__parse_pike_type", f_parse_pike_type,
-	   tFunc(tStr,tStr),OPT_TRY_OPTIMIZE);
+	   tFunc(tStr8,tStr8),OPT_TRY_OPTIMIZE);
 
 #ifdef HAVE_LOCALTIME
   
