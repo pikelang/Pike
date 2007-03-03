@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.626 2007/03/03 18:15:34 grubba Exp $
+|| $Id: builtin_functions.c,v 1.627 2007/03/03 21:45:14 nilsson Exp $
 */
 
 #include "global.h"
@@ -1471,7 +1471,7 @@ static int generate_zero_type(node *n)
  * Some wide-strings related functions
  */
 
-/*! @decl string8 string_to_unicode(string s)
+/*! @decl string(8) string_to_unicode(string s)
  *!
  *!   Converts a string into an UTF16 compliant byte-stream.
  *!
@@ -1768,8 +1768,8 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
   push_string(out);
 }
 
-/*! @decl string8 string_to_utf8(string s)
- *! @decl string8 string_to_utf8(string s, int extended)
+/*! @decl string(8) string_to_utf8(string s)
+ *! @decl string(8) string_to_utf8(string s, int extended)
  *!
  *!   Converts a string into an UTF-8 compliant byte-stream.
  *!
@@ -1902,8 +1902,8 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
   push_string(out);
 }
 
-/*! @decl string utf8_to_string(string8 s)
- *! @decl string utf8_to_string(string8 s, int extended)
+/*! @decl string utf8_to_string(string(8) s)
+ *! @decl string utf8_to_string(string(8) s, int extended)
  *!
  *!   Converts an UTF-8 byte-stream into a string.
  *!
