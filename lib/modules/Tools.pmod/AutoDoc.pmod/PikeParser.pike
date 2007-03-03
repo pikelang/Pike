@@ -317,6 +317,17 @@ IntType parseInt() {
   return i;
 }
 
+StringType parseString() {
+  eat("string");
+  StringType s = StringType();
+  if (peekToken() == "(") {
+    readToken();
+    eatLiteral();
+    eat(")");
+  }
+  return s;
+}
+
 // also parses stuff preceded by "scope::" or "::"
 string|void parseIdents() {
   string result = "";
@@ -406,8 +417,7 @@ Type parseType() {
       eat("mixed");
       return MixedType();
     case "string":
-      eat("string");
-      return StringType();
+      return parseString();
     case "void":
       eat("void");
       return VoidType();
