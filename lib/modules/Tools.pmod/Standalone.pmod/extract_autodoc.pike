@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.45 2007/02/12 20:29:30 bill Exp $
+ * $Id: extract_autodoc.pike,v 1.46 2007/03/03 21:46:38 nilsson Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -187,7 +187,7 @@ string extract(string filename, string imgdest,
   if(!has_value(name_sans_suffix, "."))
     error("No suffix in file %O.\n", name_sans_suffix);
   suffix = ((name_sans_suffix/"/")[-1]/".")[-1];
-  if( !(< "c", "cpp",/* "cmod", */ "pike", "pmod", >)[suffix] )
+  if( !(< "c", "cpp", "m", /* "cmod", */ "pike", "pmod", >)[suffix] )
     error("Unknown filetype %O.\n", suffix);
   name_sans_suffix =
     name_sans_suffix[..sizeof(name_sans_suffix)-(sizeof(suffix)+2)];
