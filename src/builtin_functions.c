@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.624 2007/01/15 16:47:10 grubba Exp $
+|| $Id: builtin_functions.c,v 1.625 2007/03/03 18:13:06 grubba Exp $
 */
 
 #include "global.h"
@@ -1471,7 +1471,7 @@ static int generate_zero_type(node *n)
  * Some wide-strings related functions
  */
 
-/*! @decl string string_to_unicode(string s)
+/*! @decl string8 string_to_unicode(string s)
  *!
  *!   Converts a string into an UTF16 compliant byte-stream.
  *!
@@ -1609,7 +1609,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
   push_string(out);
 }
 
-/*! @decl string unicode_to_string(string s)
+/*! @decl string unicode_to_string(string(8) s)
  *!
  *!   Converts an UTF16 byte-stream into a string.
  *!
@@ -1768,8 +1768,8 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
   push_string(out);
 }
 
-/*! @decl string string_to_utf8(string s)
- *! @decl string string_to_utf8(string s, int extended)
+/*! @decl string8 string_to_utf8(string s)
+ *! @decl string8 string_to_utf8(string s, int extended)
  *!
  *!   Converts a string into an UTF-8 compliant byte-stream.
  *!
@@ -1902,8 +1902,8 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
   push_string(out);
 }
 
-/*! @decl string utf8_to_string(string s)
- *! @decl string utf8_to_string(string s, int extended)
+/*! @decl string utf8_to_string(string8 s)
+ *! @decl string utf8_to_string(string8 s, int extended)
  *!
  *!   Converts an UTF-8 byte-stream into a string.
  *!
@@ -8980,17 +8980,17 @@ void init_builtin_efuns(void)
   ADD_EFUN("string_to_unicode", f_string_to_unicode,
 	   tFunc(tStr,tStr), OPT_TRY_OPTIMIZE);
   
-/* function(string:string) */
+/* function(string(8):string) */
   ADD_EFUN("unicode_to_string", f_unicode_to_string,
-	   tFunc(tStr,tStr), OPT_TRY_OPTIMIZE);
+	   tFunc(tStr8,tStr), OPT_TRY_OPTIMIZE);
   
-/* function(string,int|void:string) */
+/* function(string,int|void:string(8)) */
   ADD_EFUN("string_to_utf8", f_string_to_utf8,
-	   tFunc(tStr tOr(tInt,tVoid),tStr), OPT_TRY_OPTIMIZE);
+	   tFunc(tStr tOr(tInt,tVoid),tStr8), OPT_TRY_OPTIMIZE);
   
-/* function(string,int|void:string) */
+/* function(string(8),int|void:string) */
   ADD_EFUN("utf8_to_string", f_utf8_to_string,
-	   tFunc(tStr tOr(tInt,tVoid),tStr), OPT_TRY_OPTIMIZE);
+	   tFunc(tStr8 tOr(tInt,tVoid),tStr), OPT_TRY_OPTIMIZE);
 
 
   ADD_EFUN("__parse_pike_type", f_parse_pike_type,
