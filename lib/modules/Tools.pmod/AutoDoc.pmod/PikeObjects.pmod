@@ -77,7 +77,19 @@ class IntType {
 
 class StringType {
   inherit Type;
+  string width;
   void create() { ::create("string"); }
+  string print() {
+    if (width)
+      return "string("+width+")";
+    else
+      return "string";
+  }
+  string xml() {
+    if (width)
+      return xmltag("string", xmltag("width",width));
+    return xmltag("string");
+  }
 }
 
 class MixedType {

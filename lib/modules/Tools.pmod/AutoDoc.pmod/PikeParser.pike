@@ -322,7 +322,7 @@ StringType parseString() {
   StringType s = StringType();
   if (peekToken() == "(") {
     readToken();
-    eatLiteral();
+    s->width = eatLiteral();
     eat(")");
   }
   return s;

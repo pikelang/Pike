@@ -288,7 +288,6 @@ the form <foo/>:
   <float/>
   <mixed/>
   <program/>
-  <string/>
   <void/>
 
 The same goes for mapping, array, function, object, multiset, &c that have 
@@ -323,6 +322,13 @@ int
      int(0..MAX)
    
      <int><min>0</min><max>MAX</max></int>
+
+string
+   A string type can have a numerical width value.
+
+     string(8)
+
+     <string><width>8</width></string>
 
 mapping
    The types of the indices and values are given:
