@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.183 2007/01/25 17:09:09 grubba Exp $
+|| $Id: efuns.c,v 1.184 2007/03/04 17:27:44 nilsson Exp $
 */
 
 #include "global.h"
@@ -344,11 +344,11 @@ static void f_removexattr( INT32 args )
  *!
  *! The flags parameter can be used to refine the semantics of the operation.  
  *!
- *! @[XATTR_CREATE] specifies a pure create, which
+ *! @[Stdio.XATTR_CREATE] specifies a pure create, which
  *! fails if the named attribute exists already.  
  *!
- *! @[XATTR_REPLACE] specifies a pure replace operation, which fails if the named
- *! attribute does not already exist. 
+ *! @[Stdio.XATTR_REPLACE] specifies a pure replace operation, which
+ *! fails if the named attribute does not already exist.
  *!
  *! By default (no flags), the extended attribute will be created if need be, 
  *! or will simply replace the value if the attribute exists.
