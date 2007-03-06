@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.41 2006/10/31 00:16:17 nilsson Exp $
+|| $Id: Shuffler.cmod,v 1.42 2007/03/06 23:50:44 bill Exp $
 */
 
 #include "global.h"
@@ -258,6 +258,8 @@ PIKECLASS Shuffle
     {
       debug_malloc_touch(THIS->leftovers.data);
       free( THIS->leftovers.data );
+      THIS->leftovers.data = NULL;
+      THIS->leftovers.do_free;
     }
   }
   
@@ -385,6 +387,8 @@ PIKECLASS Shuffle
     {
       debug_malloc_touch( t->leftovers.data );
       free( t->leftovers.data );
+      t->leftovers.data = NULL;
+      t->leftovers.do_free;
     }
 
     t->leftovers.data = 0;
@@ -520,7 +524,11 @@ PIKECLASS Shuffle
       {
 	t->leftovers.len = 0;
 	if( t->leftovers.do_free )
+        {
 	  free( t->leftovers.data );
+         t->leftovers.data = NULL;
+         t->leftovers.do_free;
+        }
       }
       else
       {
