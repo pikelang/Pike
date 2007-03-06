@@ -6,7 +6,7 @@
 
 #pike __REAL_VERSION__
 
-constant cvs_id = "$Id: module.pmod,v 1.28 2004/01/11 00:39:08 nilsson Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.29 2007/03/06 13:05:45 mast Exp $";
 
 #define ERR(msg) error( "(Yabu) "+msg+"\n" )
 #define IO_ERR(msg) error( "(Yabu) %s, %s (%d)\n",msg,strerror(errno()),errno() )
@@ -162,7 +162,7 @@ static private class FileIO {
     while(sizeof(s)) {
       int n = file::write(s);
       if(n < 0 && !(<11,12,16,24,28,49>)[file::errno()])
-	ERR(strerror(file::errno()));
+	ERR(strerror(file::errno())+sprintf(" [%d]", file::errno()));
       if(n == sizeof(s))
 	break;
       s = s[n..];
