@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.32 2005/03/22 16:56:28 grubba Exp $
+|| $Id: Shuffler.cmod,v 1.33 2007/03/06 23:48:31 bill Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.32 2005/03/22 16:56:28 grubba Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.33 2007/03/06 23:48:31 bill Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"
@@ -255,6 +255,8 @@ PIKECLASS Shuffle
     {
       debug_malloc_touch(THIS->leftovers.data);
       free( THIS->leftovers.data );
+          THIS->leftovers.do_free = 0;
+          THIS->leftovers.data = 0;
     }
   }
   
@@ -382,6 +384,8 @@ PIKECLASS Shuffle
     {
       debug_malloc_touch( t->leftovers.data );
       free( t->leftovers.data );
+          t->leftovers.do_free = 0;
+          t->leftovers.data = 0;
     }
 
     t->leftovers.data = 0;
@@ -517,7 +521,11 @@ PIKECLASS Shuffle
       {
 	t->leftovers.len = 0;
 	if( t->leftovers.do_free )
+        {
 	  free( t->leftovers.data );
+          t->leftovers.do_free = 0;
+          t->leftovers.data = 0;
+        }
       }
       else
       {
