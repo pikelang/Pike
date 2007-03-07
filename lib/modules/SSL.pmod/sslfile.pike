@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.101 2007/03/07 13:29:23 mast Exp $
+/* $Id: sslfile.pike,v 1.102 2007/03/07 16:38:39 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -218,7 +218,7 @@ static void thread_error (string msg, THREAD_T other_thread)
 	 "User callbacks: a=%O r=%O w=%O c=%O\n"
 	 "Internal callbacks: r=%O w=%O c=%O\n"
 	 "Backend: %O  This thread: %O  Other thread: %O\n"
-	 "Other thread backtrace:\n%s----------\n",
+	 "%s",
 	 msg,
 	 !stream ? "Got no stream" :
 	 stream->is_open() ? "Stream is open" :
@@ -229,7 +229,9 @@ static void thread_error (string msg, THREAD_T other_thread)
 	 stream && stream->query_close_callback(),
 	 stream && stream->query_backend(),
 	 this_thread(), other_thread,
-	 describe_backtrace (other_thread->backtrace()));
+	 other_thread ? ("Other thread backtrace:\n" +
+			 describe_backtrace (other_thread->backtrace()) +
+			 "----------\n") : "");
 }
 
 #else  // !constant (Thread.thread_create)
@@ -259,6 +261,20 @@ static void thread_error (string msg, THREAD_T other_thread)
 
 static THREAD_T op_thread;
 
+#define CHECK_CB_MODE(CUR_THREAD) do {					\
+    if (Pike.Backend backend = stream && stream->query_backend()) {	\
+      THREAD_T backend_thread = backend->executing_thread();		\
+      if (backend_thread != CUR_THREAD &&				\
+	  (stream->query_read_callback() ||				\
+	   stream->query_write_callback() ||				\
+	   stream->query_close_callback()))				\
+	/* NB: The other thread backtrace might not be relevant at	\
+	 * all here. */							\
+	thread_error ("Already in callback mode in a different backend.\n", \
+		      backend_thread);					\
+    }									\
+  } while (0)
+
 #define LOW_CHECK(OP_THREAD, CUR_THREAD,				\
 		  IN_CALLBACK, CALLED_FROM_REAL_BACKEND) do {		\
     if (IN_CALLBACK) {							\
@@ -276,15 +292,7 @@ static THREAD_T op_thread;
       thread_error ("Already doing operation in another thread.\n",	\
 		    OP_THREAD);						\
 									\
-    if (Pike.Backend backend = local_backend || real_backend)		\
-      if (THREAD_T backend_thread = backend->executing_thread())	\
-	if (backend_thread != CUR_THREAD &&				\
-	    stream && (stream->query_read_callback() ||			\
-		       stream->query_write_callback() ||		\
-		       stream->query_close_callback()))			\
-	  thread_error ("Already in callback mode "			\
-			"in a backend in another thread.\n",		\
-			backend_thread);				\
+    CHECK_CB_MODE (CUR_THREAD);						\
   } while (0)
 
 #define CHECK(IN_CALLBACK, CALLED_FROM_REAL_BACKEND) do {		\
@@ -315,6 +323,7 @@ static THREAD_T op_thread;
 
 #else  // !DEBUG
 
+#define CHECK_CB_MODE(CUR_THREAD) do {} while (0)
 #define CHECK(IN_CALLBACK, CALLED_FROM_REAL_BACKEND) do {} while (0)
 #define ENTER(IN_CALLBACK, CALLED_FROM_REAL_BACKEND) do
 #define RESTORE do {} while (0)
@@ -328,6 +337,7 @@ static THREAD_T op_thread;
 #define RUN_MAYBE_BLOCKING(REPEAT_COND, NONWAITING_MODE,		\
 			   ENABLE_READS, ERROR_CODE) do {		\
   run_local_backend: {							\
+      CHECK_CB_MODE (THIS_THREAD());					\
       if (!local_backend) local_backend = Pike.Backend();		\
       stream->set_backend (local_backend);				\
       stream->set_id (0);						\
@@ -1258,8 +1268,10 @@ static void update_internal_state (void|int assume_real_backend)
       install_read_cbs = SSL_INTERNAL_READING;
       install_write_cb = SSL_INTERNAL_WRITING;
 
-      SSL3_DEBUG_MORE_MSG ("update_internal_state: After close [r:%O w:%O]\n",
-			   !!install_read_cbs, !!install_write_cb);
+      SSL3_DEBUG_MORE_MSG ("update_internal_state: "
+			   "After close [r:%O w:%O rcb:%O]\n",
+			   !!install_read_cbs, !!install_write_cb,
+			   got_extra_read_call_out);
     }
 
     // CALLBACK_MODE but slightly optimized below.
@@ -1269,15 +1281,18 @@ static void update_internal_state (void|int assume_real_backend)
       install_write_cb = (write_callback || SSL_INTERNAL_WRITING);
 
       SSL3_DEBUG_MORE_MSG ("update_internal_state: "
-			   "Callback mode [r:%O w:%O]\n",
-			   !!install_read_cbs, !!install_write_cb);
+			   "Callback mode [r:%O w:%O rcb:%O]\n",
+			   !!install_read_cbs, !!install_write_cb,
+			   got_extra_read_call_out);
     }
 
     else {
       // Not in callback mode. Can't install callbacks even though we'd
       // "need" to - have to cope with the local backend in each
       // operation instead.
-      SSL3_DEBUG_MORE_MSG ("update_internal_state: Not in callback mode\n");
+      SSL3_DEBUG_MORE_MSG ("update_internal_state: "
+			   "Not in callback mode [rcb:%O]\n",
+			   got_extra_read_call_out);
     }
 
     if (install_read_cbs) {
@@ -1304,7 +1319,8 @@ static void update_internal_state (void|int assume_real_backend)
 
   else
     SSL3_DEBUG_MORE_MSG ("update_internal_state: "
-			 "In local backend - nothing done\n");
+			 "In local backend - nothing done [rcb:%O]\n",
+			 got_extra_read_call_out);
 }
 
 static int queue_write()
