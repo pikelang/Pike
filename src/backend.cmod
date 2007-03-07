@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.153 2006/12/15 15:29:30 grubba Exp $
+|| $Id: backend.cmod,v 1.154 2007/03/07 16:33:32 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.153 2006/12/15 15:29:30 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.154 2007/03/07 16:33:32 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -823,6 +823,7 @@ PIKECLASS Backend
    */
   CVAR int wakeup_pipe_send_fd;
   CVAR struct fd_callback_box wakeup_cb_box;
+  CVAR int may_need_wakeup;
 
   /*
    * FD callback data
@@ -907,7 +908,7 @@ PIKECLASS Backend
     {
       char foo=0;
 
-      if(me && me->exec_thread)
+      if(me && me->may_need_wakeup)
 	/* Avoid fd_write with its dmalloc stuff. */
 #ifdef HAVE_WINSOCK_H
 	debug_fd_write
@@ -2292,6 +2293,7 @@ PIKECLASS Backend
   void low_backend_once(struct Backend_struct *me,
 			struct timeval *timeout)
     {
+      ONERROR uwp;
       int i, done_something = 0;
       struct timeval start_time;
 #ifdef DECLARE_POLL_EXTRAS
@@ -2303,6 +2305,27 @@ PIKECLASS Backend
 #ifdef PIKE_DEBUG
       if(d_flag > 1) do_debug();
 #endif
+
+      if(me->exec_thread) {
+#ifdef PIKE_THREADS
+	if (me->exec_thread != Pike_interpreter.thread_state)
+	  Pike_error ("Backend already in use by another thread.\n");
+	else
+#endif
+	  /* It's actually not a problem to make this function
+	   * reentrant, but that'd introduce a risk of races in the
+	   * callbacks (i.e. between when a read callback is called
+	   * and when it reads the data), and besides I can't think
+	   * of any sane way to use it. Also, this error can help
+	   * discover otherwise tricky bugs. /mast */
+	  Pike_error ("Backend already running - cannot reenter.\n");
+      }
+#ifdef PIKE_THREADS
+      me->exec_thread = Pike_interpreter.thread_state;
+#else
+      me->exec_thread = 1;
+#endif
+      SET_ONERROR (uwp, low_backend_cleanup, me);
       
 #ifndef OWN_GETHRTIME
       GETTIMEOFDAY(&current_time);
@@ -2315,7 +2338,6 @@ PIKECLASS Backend
       start_time.tv_usec = current_time.tv_usec;
 
       {
-	ONERROR uwp;
 #ifdef TIMEOUT_IS_MILLISECONDS
 	int poll_timeout;
 #elif defined(TIMEOUT_IS_TIMEVAL)
@@ -2329,27 +2351,6 @@ PIKECLASS Backend
 	struct timeval max_timeout;
 #endif
 
-	if(me->exec_thread) {
-#ifdef PIKE_THREADS
-	  if (me->exec_thread != Pike_interpreter.thread_state)
-	    Pike_error ("Backend already in use by another thread.\n");
-	  else
-#endif
-	    /* It's actually not a problem to make this function
-	     * reentrant, but that'd introduce a risk of races in the
-	     * callbacks (i.e. between when a read callback is called
-	     * and when it reads the data), and besides I can't think
-	     * of any sane way to use it. Also, this error can help
-	     * discover otherwise tricky bugs. /mast */
-	    Pike_error ("Backend already running - cannot reenter.\n");
-	}
-#ifdef PIKE_THREADS
-	me->exec_thread = Pike_interpreter.thread_state;
-#else
-	me->exec_thread = 1;
-#endif
-	SET_ONERROR (uwp, low_backend_cleanup, me);
-
 	if (timeout->tv_sec < 0) {
 	  next_timeout.tv_sec = -1;
 	}
@@ -2358,6 +2359,8 @@ PIKECLASS Backend
 	  next_timeout.tv_usec = timeout->tv_usec;
 	  my_add_timeval(&next_timeout, &current_time);
 	}
+
+	me->may_need_wakeup = 1;
 
 	/* Call outs */
 	if(me->num_pending_calls)
@@ -2446,10 +2449,7 @@ PIKECLASS Backend
 	IF_PD(fprintf(stderr, " => %d\n", i));
 
 	THREADS_DISALLOW();
-
-	me->exec_thread = 0;
-	UNSET_ONERROR (uwp);
-
+	me->may_need_wakeup = 0;
 	GETTIMEOFDAY(&current_time);
       }
 
@@ -2906,6 +2906,9 @@ PIKECLASS Backend
 	timeout->tv_usec = current_time.tv_usec;
 	my_subtract_timeval (timeout, &start_time);
       }
+
+      me->exec_thread = 0;
+      UNSET_ONERROR (uwp);
     }
 
   /*! @decl float|int(0..0) `()(void|float|int(0..0) sleep_time)
@@ -3136,6 +3139,7 @@ PIKECLASS Backend
 	set_close_on_exec(pipe[0], 1);
 	set_close_on_exec(pipe[1], 1);
       }
+      me->may_need_wakeup = 0;
 
       register_backend(me);
 
