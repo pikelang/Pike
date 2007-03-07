@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.100 2007/01/25 17:45:42 mast Exp $
+/* $Id: sslfile.pike,v 1.101 2007/03/07 13:29:23 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -544,23 +544,25 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
 	RETURN (0);
       }, 0);
 
-    if (close_packet_send_state == CLOSE_PACKET_NOT_SCHEDULED) {
+    if (close_packet_send_state == CLOSE_PACKET_NOT_SCHEDULED)
       close_packet_send_state = CLOSE_PACKET_SCHEDULED;
-      update_internal_state();
-    }
 
-    if (!direct_write()) {
-      // Should be shut down after close(), even if an error occurred.
-      int err = errno();
-      shutdown();
-      if (dont_throw) {
-	local_errno = err;
-	RETURN (0);
+    if (nonblocking_mode)
+      update_internal_state();
+
+    else
+      if (!direct_write()) {
+	// Should be shut down after close(), even if an error occurred.
+	int err = errno();
+	shutdown();
+	if (dont_throw) {
+	  local_errno = err;
+	  RETURN (0);
+	}
+	else
+	  // Errors are thrown from close().
+	  error ("Failed to close SSL connection: %s\n", strerror (err));
       }
-      else
-	// Errors are thrown from close().
-	error ("Failed to close SSL connection: %s\n", strerror (err));
-    }
 
     if (stream && (stream->query_read_callback() || stream->query_write_callback()))
       SSL3_DEBUG_MSG ("SSL.sslfile->close: Close underway\n");
