@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.277 2006/08/05 22:30:14 mast Exp $
+|| $Id: gc.c,v 1.278 2007/03/07 18:41:31 mast Exp $
 */
 
 #include "global.h"
@@ -1489,6 +1489,9 @@ void debug_gc_touch(void *a)
       break;
     }
 
+#if 0
+      /* Disabled since we can't assume any correlation between the
+       * marks and the actual blocks in or after GC_PASS_FREE. */
     case GC_PASS_POSTTOUCH:
       m = find_marker(a);
       if (!*(INT32 *) a)
@@ -1531,6 +1534,7 @@ void debug_gc_touch(void *a)
 #endif
       }
       break;
+#endif
 
     default:
       Pike_fatal("debug_gc_touch() used in invalid gc pass.\n");
@@ -3218,6 +3222,9 @@ size_t do_gc(void *ignored, int explicit_call)
   GC_VERBOSE_DO(fprintf(stderr, "| destruct: %d things really freed\n",
 			obj_count - num_objects));
 
+#if 0
+  /* Disabled since we can't assume any correlation between the
+   * marks and the actual blocks in or after GC_PASS_FREE. */
   if (gc_debug) {
     unsigned n;
     Pike_in_gc=GC_PASS_POSTTOUCH;
@@ -3231,6 +3238,8 @@ size_t do_gc(void *ignored, int explicit_call)
       Pike_fatal("Object count wrong after gc; expected %d, got %d.\n", num_objects, n);
     GC_VERBOSE_DO(fprintf(stderr, "| posttouch: %u things\n", n));
   }
+#endif
+
 #ifdef PIKE_DEBUG
   if (gc_extra_refs) {
     size_t e;
