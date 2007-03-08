@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.91 2007/03/07 18:46:49 mast Exp $
+/* $Id: sslfile.pike,v 1.92 2007/03/08 17:20:39 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -133,7 +133,7 @@ static int local_errno;
 
 static int cb_errno;
 // Stores the errno from failed I/O in a callback so that the next
-// visible I/O operations can report it properly.
+// visible I/O operation can report it properly.
 
 static int got_extra_read_call_out;
 // 1 when we have a call out to ssl_read_callback. We get this when we
@@ -397,6 +397,7 @@ static THREAD_T op_thread;
 	    close_packet_send_state == CLOSE_PACKET_MAYBE_IGNORED_WRITE_ERROR) { \
 	  SSL3_DEBUG_MSG ("Did not get a remote close - "		\
 			  "signalling delayed error from writing close message\n"); \
+	  cleanup_on_error();						\
 	  close_packet_send_state = CLOSE_PACKET_WRITE_ERROR;		\
 	  cb_errno = System.EPIPE;					\
 	}								\
@@ -594,6 +595,18 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
   return 1;
 }
 
+static void cleanup_on_error()
+// Called when any error occurs on the stream. (Doesn't handle errno
+// reporting since it might involve either local_errno and/or
+// cb_errno.)
+{
+  // The session should be purged when an error has occurred.
+  if (conn->session)
+    // Check conn->session since it doesn't exist before the
+    // handshake.
+    conn->context->purge_session (conn->session);
+}
+
 Stdio.File shutdown()
 //! Shut down the SSL connection without sending any more packets. The
 //! underlying stream is returned if the connection isn't shut down
@@ -630,9 +643,6 @@ Stdio.File shutdown()
       close_state = STREAM_OPEN;
     }
 
-    if (conn->session && !sizeof(conn->session->identity))
-      // conn->session doesn't exist before the handshake.
-      conn->context->purge_session (conn->session);
     destruct (conn);		// Necessary to avoid garbage.
 
     write_buffer = ({});
@@ -882,6 +892,7 @@ int renegotiate()
     if (!stream) {
       SSL3_DEBUG_MSG ("SSL.sslfile->renegotiate: "
 		      "Connection closed - simulating System.EPIPE\n");
+      cleanup_on_error();
       local_errno = System.EPIPE;
       RETURN (0);
     }
@@ -1396,6 +1407,7 @@ static int direct_write()
     // If it was closed explicitly locally then close_state would be
     // set and we'd never get here, so we can report it as a remote
     // close.
+    cleanup_on_error();
     local_errno = System.EPIPE;
     return 0;
   }
@@ -1404,6 +1416,7 @@ static int direct_write()
     if (queue_write() < 0) {
       SSL3_DEBUG_MSG ("direct_write: "
 		      "Connection closed abruptly - simulating System.EPIPE\n");
+      cleanup_on_error();
       local_errno = System.EPIPE;
       return 0;
     }
@@ -1486,6 +1499,7 @@ static int ssl_read_callback (int called_from_real_backend, string input)
 	else if (data < 0 || write_res < 0) {
 	  SSL3_DEBUG_MSG ("ssl_read_callback: "
 			  "Got abrupt remote close - simulating System.EPIPE\n");
+	  cleanup_on_error();
 	  cb_errno = System.EPIPE;
 	}
 
@@ -1689,6 +1703,7 @@ static int ssl_write_callback (int called_from_real_backend)
 	  else
 #endif
 	    cb_errno = stream->errno();
+	  cleanup_on_error();
 	  SSL3_DEBUG_MSG ("ssl_write_callback: Write failed: %s\n",
 			  strerror (cb_errno));
 
@@ -1802,6 +1817,7 @@ static int ssl_write_callback (int called_from_real_backend)
 	  SSL3_DEBUG_MSG ("ssl_write_callback: "
 			  "Connection closed abruptly remotely - "
 			  "simulating System.EPIPE\n");
+	  cleanup_on_error();
 	  cb_errno = System.EPIPE;
 	  ret = -1;
 	  break write_to_stream;
@@ -1878,6 +1894,7 @@ static int ssl_close_callback (int called_from_real_backend)
     // older errno from an earlier callback.
     if (int new_errno = stream->errno()) {
       SSL3_DEBUG_MSG ("ssl_close_callback: Got error %s\n", strerror (new_errno));
+      cleanup_on_error();
       cb_errno = new_errno;
     }
 #ifdef SSL3_DEBUG
@@ -1901,6 +1918,7 @@ static int ssl_close_callback (int called_from_real_backend)
 	else
 	  SSL3_DEBUG_MSG ("ssl_close_callback: Abrupt close - "
 			  "simulating System.EPIPE\n");
+	cleanup_on_error();
 	cb_errno = System.EPIPE;
       }
     }
