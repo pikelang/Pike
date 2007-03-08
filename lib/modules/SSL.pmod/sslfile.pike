@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.104 2007/03/08 17:20:40 mast Exp $
+/* $Id: sslfile.pike,v 1.105 2007/03/08 18:30:51 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -218,7 +218,7 @@ static constant epipe_errnos = (<
 static void thread_error (string msg, THREAD_T other_thread)
 {
 #if 0 && constant (_locate_references)
-  werror ("%s\n%O got %d refs", msg, _refs (this));
+  werror ("%s\n%O got %d refs", msg, this, _refs (this));
   _locate_references (this);
 #endif
   error ("%s"
