@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.93 2007/03/08 18:30:51 mast Exp $
+/* $Id: sslfile.pike,v 1.94 2007/03/09 18:19:04 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -33,8 +33,8 @@
 //! @item
 //!   @[destroy] attempts to close the stream properly by sending the
 //!   close packet, but since it can't do blocking I/O it's not
-//!   certain that will succeed. The stream should therefore always be
-//!   closed with an explicit @[close] call.
+//!   certain that it will succeed. The stream should therefore always
+//!   be closed with an explicit @[close] call.
 //! @item
 //!   Abrupt remote close without the proper handshake gets the errno
 //!   @[System.EPIPE].
@@ -215,6 +215,10 @@ static constant epipe_errnos = (<
 
 static void thread_error (string msg, THREAD_T other_thread)
 {
+#if 0 && constant (_locate_references)
+  werror ("%s\n%O got %d refs", msg, this, _refs (this));
+  _locate_references (this);
+#endif
   error ("%s"
 	 "%s\n"
 	 "User callbacks: a=%O r=%O w=%O c=%O\n"
@@ -243,10 +247,6 @@ static void thread_error (string msg, THREAD_T other_thread)
 
 static void thread_error (string msg, THREAD_T other_thread)
 {
-#if 0 && constant (_locate_references)
-  werror ("%s\n%O got %d refs", msg, this, _refs (this));
-  _locate_references (this);
-#endif
   error ("%s"
 	 "%s\n"
 	 "User callbacks: a=%O r=%O w=%O c=%O\n"
@@ -580,7 +580,7 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
 	  RETURN (0);
 	}
 	else
-	  // Errors are thrown from close().
+	  // Errors are normally thrown from close().
 	  error ("Failed to close SSL connection: %s\n", strerror (err));
       }
 
@@ -1363,8 +1363,10 @@ static void update_internal_state (void|int assume_real_backend)
 }
 
 static int queue_write()
-// Return 0 if the connection is still alive,
-// 1 if it was closed politely, and -1 if it died unexpectedly
+// Return 0 if the connection is still alive, 1 if it was closed
+// politely, and -1 if it died unexpectedly (specifically, our side
+// has sent a fatal alert packet (not close notify) for some reason
+// and therefore nullified the connection).
 {
   int|string res = conn->to_write();
 
