@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.198 2006/06/21 11:33:01 mast Exp $
+|| $Id: svalue.c,v 1.199 2007/03/09 12:01:56 mast Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: svalue.c,v 1.198 2006/06/21 11:33:01 mast Exp $");
+RCSID("$Id: svalue.c,v 1.199 2007/03/09 12:01:56 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1277,7 +1277,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 
 	  if(name && (prog->flags & PROGRAM_FINISHED) &&
 	     Pike_interpreter.evaluator_stack &&
-	     (!Pike_in_gc || Pike_in_gc >= GC_PASS_FREE) &&
+	     (Pike_in_gc <= GC_PASS_PREPARE || Pike_in_gc >= GC_PASS_FREE) &&
 	     master_object) {
 	    DECLARE_CYCLIC();
 	    debug_malloc_touch(obj);
@@ -1363,7 +1363,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       else {
 	if ((prog->flags & PROGRAM_FINISHED) &&
 	    Pike_interpreter.evaluator_stack &&
-	    (!Pike_in_gc || Pike_in_gc >= GC_PASS_FREE) &&
+	    (Pike_in_gc <= GC_PASS_PREPARE || Pike_in_gc >= GC_PASS_FREE) &&
 	    master_object) {
 	  DECLARE_CYCLIC();
 	  int fun=FIND_LFUN(prog, LFUN__SPRINTF);
@@ -1490,7 +1490,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 
       if((prog->flags & PROGRAM_FINISHED) &&
 	 Pike_interpreter.evaluator_stack &&
-	 (!Pike_in_gc || Pike_in_gc >= GC_PASS_FREE) &&
+	 (Pike_in_gc <= GC_PASS_PREPARE || Pike_in_gc >= GC_PASS_FREE) &&
 	 master_object) {
 	DECLARE_CYCLIC();
 	debug_malloc_touch(prog);
@@ -2204,7 +2204,7 @@ int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type)
 
 void real_gc_free_svalue(struct svalue *s)
 {
-  if (Pike_in_gc && Pike_in_gc < GC_PASS_FREE) {
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE) {
 #ifdef PIKE_DEBUG
     if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE &&
 	Pike_in_gc != GC_PASS_ZAP_WEAK)
@@ -2218,7 +2218,7 @@ void real_gc_free_svalue(struct svalue *s)
 
 void real_gc_free_short_svalue(union anything *u, TYPE_T type)
 {
-  if (Pike_in_gc && Pike_in_gc < GC_PASS_FREE) {
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE) {
 #ifdef PIKE_DEBUG
     if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE &&
 	Pike_in_gc != GC_PASS_ZAP_WEAK)
