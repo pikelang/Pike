@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.107 2007/03/09 20:42:23 mast Exp $
+/* $Id: sslfile.pike,v 1.108 2007/03/09 20:46:44 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -527,9 +527,10 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
 //! close an already closed connection.
 //!
 //! @note
-//! In nonblocking mode the stream isn't closed right away and the
-//! backend will be used for a while afterwards. If there's an I/O
-//! problem it won't be signalled immediately.
+//! In nonblocking mode the stream might not be closed right away and
+//! the backend might be used for a while afterwards. This means that
+//! if there's an I/O problem it might not be signalled immediately by
+//! @[close].
 //!
 //! @note
 //! I/O errors from both reading and writing might occur in blocking
@@ -541,7 +542,8 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
 //! has no way to undo that. That data can be retrieved with @[read]
 //! afterwards.
 {
-  SSL3_DEBUG_MSG ("SSL.sslfile->close (%O, %O)\n", how, clean_close);
+  SSL3_DEBUG_MSG ("SSL.sslfile->close (%O, %O, %O)\n",
+		  how, clean_close, dont_throw);
 
   if (how && how != "rw")
     error ("Can only close the connection in both directions simultaneously.\n");
@@ -567,34 +569,38 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
     if (close_packet_send_state == CLOSE_PACKET_NOT_SCHEDULED)
       close_packet_send_state = CLOSE_PACKET_SCHEDULED;
 
-    if (nonblocking_mode) {
-      SSL3_DEBUG_MSG ("SSL.sslfile->close: Nonblocking close started\n");
+    // Even in nonblocking mode we call direct_write here to try to
+    // put the close packet in the send buffer before we return. That
+    // way it has a fair chance to get sent even when we're called
+    // from destroy() (in which case it won't work to just install the
+    // write callback as usual and wait for the backend to call it).
+
+    if (!direct_write()) {
+      // Should be shut down after close(), even if an error occurred.
+      int err = errno();
+      shutdown();
+      if (dont_throw) {
+	local_errno = err;
+	RETURN (0);
+      }
+      else
+	// Errors are normally thrown from close().
+	error ("Failed to close SSL connection: %s\n", strerror (err));
+    }
+
+    if (stream && (stream->query_read_callback() || stream->query_write_callback())) {
+      SSL3_DEBUG_MSG ("SSL.sslfile->close: Close underway\n");
       RESTORE;
       update_internal_state();
       return 1;
     }
-
     else {
-      if (!direct_write()) {
-	// Should be shut down after close(), even if an error occurred.
-	int err = errno();
-	shutdown();
-	if (dont_throw) {
-	  local_errno = err;
-	  RETURN (0);
-	}
-	else
-	  // Errors are normally thrown from close().
-	  error ("Failed to close SSL connection: %s\n", strerror (err));
-      }
-
       // The local backend run by direct_write has typically already
       // done this, but it might happen that it doesn't do anything in
       // case close packets already have been exchanged.
       shutdown();
       SSL3_DEBUG_MSG ("SSL.sslfile->close: Close done\n");
     }
-
   } LEAVE;
   return 1;
 }
