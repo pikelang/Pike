@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.106 2007/03/09 18:19:04 mast Exp $
+/* $Id: sslfile.pike,v 1.107 2007/03/09 20:42:23 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -1052,6 +1052,10 @@ void set_alert_callback (function(object,int|object,string:void) alert)
 //! received. It doesn't affect the callback mode - it's called both
 //! from backends and from within normal function calls like @[read]
 //! and @[write].
+//!
+//! @note
+//! This object is part of a cyclic reference whenever this is set,
+//! just like setting any other callback.
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_alert_callback (%O)\n", alert);
   CHECK (0, 0);
@@ -1060,6 +1064,7 @@ void set_alert_callback (function(object,int|object,string:void) alert)
     error ("Doesn't have any connection.\n");
 #endif
   conn->set_alert_callback (
+    alert &&
     lambda (object packet, int|object seq_num, string alert_context) {
       SSL3_DEBUG_MSG ("Calling alert callback %O\n", alert);
       alert (packet, seq_num, alert_context);
