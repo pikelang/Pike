@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.105 2007/03/08 18:30:51 mast Exp $
+/* $Id: sslfile.pike,v 1.106 2007/03/09 18:19:04 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -33,8 +33,8 @@
 //! @item
 //!   @[destroy] attempts to close the stream properly by sending the
 //!   close packet, but since it can't do blocking I/O it's not
-//!   certain that will succeed. The stream should therefore always be
-//!   closed with an explicit @[close] call.
+//!   certain that it will succeed. The stream should therefore always
+//!   be closed with an explicit @[close] call.
 //! @item
 //!   Abrupt remote close without the proper handshake gets the errno
 //!   @[System.EPIPE].
@@ -584,7 +584,7 @@ int close (void|string how, void|int clean_close, void|int dont_throw)
 	  RETURN (0);
 	}
 	else
-	  // Errors are thrown from close().
+	  // Errors are normally thrown from close().
 	  error ("Failed to close SSL connection: %s\n", strerror (err));
       }
 
@@ -1606,6 +1606,11 @@ static int ssl_read_callback (int called_from_real_backend, string input)
     }
 
     else if (do_close_stuff) {
+#ifdef DEBUG
+      if (got_extra_read_call_out)
+	error ("Shouldn't have more to do after close stuff.\n");
+#endif
+
       if (conn->closing & 2 &&
 	  close_packet_send_state == CLOSE_PACKET_NOT_SCHEDULED) {
 	close_packet_send_state = CLOSE_PACKET_SCHEDULED;
