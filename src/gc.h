@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.123 2007/03/07 18:36:29 mast Exp $
+|| $Id: gc.h,v 1.124 2007/03/09 12:01:57 mast Exp $
 */
 
 #ifndef GC_H
@@ -122,7 +122,7 @@ extern int gc_keep_markers;
 #define GC_REALLOC_BLOCK(OLDPTR, NEWPTR) do {				\
   extern int d_flag;							\
   if (d_flag) CHECK_INTERPRETER_LOCK();					\
-  if (Pike_in_gc && Pike_in_gc < GC_PASS_FREE)				\
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)	\
     gc_move_marker ((OLDPTR), (NEWPTR));				\
 } while (0)
 
@@ -148,7 +148,7 @@ extern int gc_keep_markers;
 
 #else
 #define GC_REALLOC_BLOCK(OLDPTR, NEWPTR) do {				\
-    if (Pike_in_gc && Pike_in_gc < GC_PASS_FREE)			\
+    if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)	\
       gc_move_marker ((OLDPTR), (NEWPTR));				\
   } while (0)
 #define GC_FREE_SIMPLE_BLOCK(PTR) do {} while (0)

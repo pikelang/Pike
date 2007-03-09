@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.230 2006/07/06 16:46:13 grubba Exp $
+|| $Id: svalue.c,v 1.231 2007/03/09 12:01:57 mast Exp $
 */
 
 #include "global.h"
@@ -1424,7 +1424,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 
 	  if(name && (prog->flags & PROGRAM_FINISHED) &&
 	     Pike_interpreter.evaluator_stack &&
-	     (!Pike_in_gc || Pike_in_gc >= GC_PASS_FREE) &&
+	     (Pike_in_gc <= GC_PASS_PREPARE || Pike_in_gc >= GC_PASS_FREE) &&
 	     master_object &&
 	     !no_pike_calls) {
 	    DECLARE_CYCLIC();
@@ -1513,7 +1513,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 
 	if ((prog->flags & PROGRAM_FINISHED) &&
 	    Pike_interpreter.evaluator_stack &&
-	    (!Pike_in_gc || Pike_in_gc >= GC_PASS_FREE) &&
+	    (Pike_in_gc <= GC_PASS_PREPARE || Pike_in_gc >= GC_PASS_FREE) &&
 	    master_object &&
 	    !no_pike_calls) {
 	  DECLARE_CYCLIC();
@@ -1641,7 +1641,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 
       if((prog->flags & PROGRAM_FINISHED) &&
 	 Pike_interpreter.evaluator_stack &&
-	 (!Pike_in_gc || Pike_in_gc >= GC_PASS_FREE) &&
+	 (Pike_in_gc <= GC_PASS_PREPARE || Pike_in_gc >= GC_PASS_FREE) &&
 	 master_object &&
 	 !no_pike_calls) {
 	DECLARE_CYCLIC();
@@ -2389,7 +2389,7 @@ int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type)
 
 void real_gc_free_svalue(struct svalue *s)
 {
-  if (Pike_in_gc && Pike_in_gc < GC_PASS_FREE) {
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE) {
 #ifdef PIKE_DEBUG
     if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE &&
 	Pike_in_gc != GC_PASS_ZAP_WEAK)
@@ -2403,7 +2403,7 @@ void real_gc_free_svalue(struct svalue *s)
 
 void real_gc_free_short_svalue(union anything *u, TYPE_T type)
 {
-  if (Pike_in_gc && Pike_in_gc < GC_PASS_FREE) {
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE) {
 #ifdef PIKE_DEBUG
     if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE &&
 	Pike_in_gc != GC_PASS_ZAP_WEAK)
