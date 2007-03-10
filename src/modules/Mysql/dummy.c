@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dummy.c,v 1.15 2004/04/12 16:24:24 grubba Exp $
+|| $Id: dummy.c,v 1.16 2007/03/10 16:07:59 marcus Exp $
 */
 
 /*
@@ -53,6 +53,15 @@ _ll_t mysql_dummy_dum_dum(_ull_t a, _ull_t b, _ll_t c, _ll_t d) {
 #endif
 #ifdef HAVE_FGETS
   fgets(0, 0, 0);
+#endif
+#ifdef HAVE__FINDFIRST
+  _findfirst(0,0);
+#endif
+#ifdef HAVE__FINDNEXT
+  _findnext(0,0);
+#endif
+#ifdef HAVE__FINDCLOSE
+  _findclose(0);
 #endif
 
   return(a%b+(c%d)+(c/d)+(a/b));
