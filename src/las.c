@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.181 2006/03/02 10:37:58 grubba Exp $");
+RCSID("$Id: las.c,v 1.182 2007/03/11 16:25:46 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2239,7 +2239,7 @@ void fix_type_field(node *n)
       copy_shared_string(n->type, void_type_string);
       break;
     } else if (!CDR(n)) {
-      copy_pike_type(n->type, CAR(n)->type);
+      copy_shared_string(n->type, CAR(n)->type);
       break;
     } else if(CAR(n) && CDR(n)) {
       /* Ensure that the type-fields are up to date. */
