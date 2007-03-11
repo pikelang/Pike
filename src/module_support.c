@@ -7,7 +7,7 @@
 #include "error.h"
 #include "opcodes.h"
 
-RCSID("$Id: module_support.c,v 1.34 2001/02/20 13:32:21 grubba Exp $");
+RCSID("$Id: module_support.c,v 1.35 2007/03/11 16:01:10 grubba Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -299,7 +299,7 @@ int get_args(struct svalue *s,
   va_start(ptr, fmt);
   ret=va_get_args(s, num_args, fmt, ptr);
 #ifndef __TenDRA__
-  va_end(fmt);
+  va_end(ptr);
 #endif /* !__TenDRA */
   return ret;
 }
