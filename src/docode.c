@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.70 2006/03/02 10:37:58 grubba Exp $");
+RCSID("$Id: docode.c,v 1.71 2007/03/11 16:23:00 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -439,8 +439,8 @@ static int do_docode2(node *n,int flags)
 
 	if (CDR(n)->node_info & OPT_ASSIGNMENT) {
 	  /* Initialize. */
-	  emit0(F_CONST0);
-	  emit1(F_ASSIGN_LOCAL_AND_POP, CDR(n)->u.integer.a);
+	  emit2(F_CONST0);
+	  emit(F_ASSIGN_LOCAL_AND_POP, CDR(n)->u.integer.a);
 	}
 	code_expression(CAR(n), 0, "RHS");
 	emit(flags & DO_POP ? F_ASSIGN_LOCAL_AND_POP:F_ASSIGN_LOCAL,
@@ -1275,18 +1275,18 @@ static int do_docode2(node *n,int flags)
       {
 	if (n->node_info & OPT_ASSIGNMENT) {
 	  /* Initialize the variable. */
-	  emit0(F_CONST0);
-	  emit1(F_ASSIGN_LOCAL_AND_POP, n->u.integer.a);
+	  emit2(F_CONST0);
+	  emit(F_ASSIGN_LOCAL_AND_POP, n->u.integer.a);
 	}
 	emit(F_LOCAL_LVALUE,n->u.id.number);
 	return 2;
       }else{
 	if (n->node_info & OPT_ASSIGNMENT) {
 	  /* Initialize the variable. */
-	  emit0(F_CONST0);
-	  emit1(F_ASSIGN_LOCAL, n->u.integer.a);
+	  emit2(F_CONST0);
+	  emit(F_ASSIGN_LOCAL, n->u.integer.a);
 	} else {
-	  emit1(F_LOCAL, n->u.integer.a);
+	  emit(F_LOCAL, n->u.integer.a);
 	}
 	return 1;
       }
