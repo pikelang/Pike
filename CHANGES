@@ -88,7 +88,7 @@ Build fixes:
 o Support GNU Java (GCJ)
 o Did away with the use of the undocumented internal MS win32 CRT
   functions __loctotime_t and __dtoxmode.
-o Fixed compileation of Nettle and Mysql on win32.
+o Fixed compilation of Nettle and Mysql on win32.
 o Fixed typo that caused the configure script to search for lots of
   nonapplicable include dirs on windows.
 o Backported new INT_TYPE_{ADD,NEG}_OVERFLOW implementation from 7.7.
