@@ -1,28 +1,38 @@
-$Id: README-CVS,v 1.25 2007/01/02 00:35:22 peter Exp $
+$Id: README-CVS,v 1.26 2007/03/12 04:54:24 jhs Exp $
 
 
 HOW TO BUILD PIKE FROM CVS
 
-If you like to live at the bleeding edge you can download Pike from CVS
-with all the latest additions from the developers.  There are two
+If you like to live at the bleeding edge you can download Pike from
+CVS with all the latest additions from the developers.  There are two
 major branches in the archive, the latest stable branch and latest
-development branch.  Stable versions have an even minor version number,
-i.e. 7.0.x, 7.2.x, 7.4.x, whereas the development branches have an odd
-minor version.
+development branch.  Stable versions have an even minor version
+number, i.e. 7.0.x, 7.2.x, 7.4.x, whereas the development branches
+have an odd minor version.
 
-Keep in mind that the cvs versions are under heavy development and
+Keep in mind that the CVS versions are under heavy development and
 have not been tested nearly as well as the offcial releases.  You use
-the code at YOUR OWN RISK.
+the code AT YOUR OWN RISK.
 
-NOTE: If you plan on building Pike from CVS, you must have a compatible 
-version of Autoconf installed. Autoconf version 2.13 and 2.52 are known to 
-work. Versions 2.53 through at least 2.57 are known to not work.
 
-There are a few simple steps to get Pike from cvs:
+DEPENDENCIES
+
+Building from CVS requires the same tools as building from a source
+distribution (gnu m4, bison and a C compiler, suggested also GNU make
+and libz), and then some.  In addition to thosee requirements, you
+need a working Pike, autoconf and gcc (to generate the dependency
+files; another compiler can be used to do the actual compilation).
+
+Not all autoconf versions meet Pike's requirements.  Autoconf version
+2.13 and 2.52 are known to work.  Versions 2.53 through at least 2.57
+are known to not work.
+
+
+CHECKING OUT PIKE FROM CVS
 
 1. Get a recent version of cvs.
 
-2. Login to the cvs-server:
+2. Login to the CVS server:
 
          cvs -d :pserver:anon@cvs.roxen.com:/cvs login
 
@@ -33,11 +43,6 @@ There are a few simple steps to get Pike from cvs:
          cvs -z3 -d :pserver:anon@cvs.roxen.com:/cvs co Pike/7.7
 
    substitute 7.7 for whatever version you want to get.
-
-Building Pike from cvs, in addition to the requirements of a normal
-build, requires a working Pike.  You will also need autoconf, gnu m4,
-bison and gcc (to generate the dependency files; another compiler can
-be used to do the actual compilation).
 
 The top-level makefile (in this directory, not the src directory) has
 all the magic you need to build Pike directly from CVS.  Just type
@@ -69,11 +74,12 @@ source              Prepare the source tree for compilation without
 force_autoconfig    Force a build of the configure scripts.  This is
                     useful e.g. if a new module directory is added in
                     the CVS.
-force_configure     Force configure to be run (recursively).
-reconfigure         Remove the cached results from previous configure
-                    runs and rerun configure recursively. If you've
-                    installed a new library and want Pike to detect it
-                    then the simplest way is to use this target.
+force_configure     Force configure to be run (recursively).  If
+                    you've installed a new library and want Pike to
+                    detect it, then the simplest way is to remove
+                    config.cache in the build directory (or perhaps
+                    just delete the relevant variables in it) and then
+                    use this target.
 dump_modules        Dump the Pike modules directly in the build tree.
                     That makes Pike load faster if it's run directly
                     from there, e.g. through the bin/pike script (see
@@ -94,6 +100,9 @@ cvsclean            Remove all files that are generated automatically,
                     i.e. bring the tree back to the state as if it
                     was checked out from the CVS.
 
+
+CONFIGURE OPTIONS AND BUILD VARIABLES
+
 If you want to pass arguments to the configure script (see below), the
 simplest way is to use the CONFIGUREARGS variable, like this:
 
@@ -113,8 +122,6 @@ you want to use Pike this way (which is mainly useful if you update
 from CVS often), you should consider doing 'make dump_modules' to make
 it start faster.
 
-
-CONFIGURE OPTIONS AND BUILD VARIABLES
 
 Some options for the configure script are:
 
@@ -142,6 +149,7 @@ Some options for the configure script are:
 --with-dmalloc            compile with memory tracking, makes Pike
                           very slow, use for debugging only.
 --with-security           enable internal object security system
+
 
 You might also want to set the following environment variables:
 
