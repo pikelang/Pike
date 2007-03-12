@@ -1,4 +1,4 @@
-$Id: README-CVS,v 1.26 2007/03/12 04:54:24 jhs Exp $
+$Id: README-CVS,v 1.27 2007/03/12 05:07:48 jhs Exp $
 
 
 HOW TO BUILD PIKE FROM CVS
@@ -74,12 +74,11 @@ source              Prepare the source tree for compilation without
 force_autoconfig    Force a build of the configure scripts.  This is
                     useful e.g. if a new module directory is added in
                     the CVS.
-force_configure     Force configure to be run (recursively).  If
-                    you've installed a new library and want Pike to
-                    detect it, then the simplest way is to remove
-                    config.cache in the build directory (or perhaps
-                    just delete the relevant variables in it) and then
-                    use this target.
+force_configure     Force configure to be run (recursively).
+reconfigure         Remove the cached results from previous configure
+                    runs and rerun configure recursively. If you have
+                    installed a new library and want Pike to detect it
+                    then the simplest way is to use this target.
 dump_modules        Dump the Pike modules directly in the build tree.
                     That makes Pike load faster if it's run directly
                     from there, e.g. through the bin/pike script (see
