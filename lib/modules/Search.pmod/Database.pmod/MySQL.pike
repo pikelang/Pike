@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.78 2004/12/20 12:04:49 anders Exp $
+// $Id: MySQL.pike,v 1.79 2007/03/14 18:03:01 anders Exp $
 
 inherit .Base;
 
@@ -227,10 +227,10 @@ array(string) expand_word_glob(string g, void|int max_hits)
 {
   g = replace( string_to_utf8(g), ({ "*", "?" }), ({ "%", "_" }) );
   if(max_hits)
-    return db->query("select distinct word from word_hit where word like %s limit %d",
-		     g, max_hits)->word;
+    return map(db->query("select distinct word from word_hit where word like %s limit %d",
+			 g, max_hits)->word,utf8_to_string);
   else
-    return db->query("select distinct word from word_hit where word like %s",g)->word;
+    return map(db->query("select distinct word from word_hit where word like %s",g)->word,utf8_to_string);
 }
 
 void remove_metadata(Standards.URI|string uri, void|string language)
@@ -417,8 +417,7 @@ mapping times = ([ ]);
 
 string get_blob(string word, int num, void|mapping(string:mapping(int:string)) blobcache)
 {
-  if(String.width(word) > 8)
-    word = string_to_utf8(word);
+  word = string_to_utf8(word);
   if(blobcache[word] && blobcache[word][num])
     return blobcache[word][num];
 
