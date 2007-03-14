@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.108 2007/03/09 20:46:44 mast Exp $
+/* $Id: sslfile.pike,v 1.109 2007/03/14 15:42:39 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -352,7 +352,7 @@ static THREAD_T op_thread;
       while (1) {							\
 	float|int(0..0) action;						\
 									\
-	if (got_extra_read_call_out && ENABLE_READS) {			\
+	if (got_extra_read_call_out) {					\
 	  /* Do whatever ssl_read_callback needs to do before we	\
 	   * continue. Since the first arg is zero here it won't call	\
 	   * any user callbacks, so they are superseded as they should	\
