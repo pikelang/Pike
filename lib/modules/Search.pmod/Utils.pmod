@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.44 2004/09/20 13:40:56 mast Exp $
+// $Id: Utils.pmod,v 1.45 2007/03/15 13:28:45 jonasw Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -787,7 +787,7 @@ class Logger {
     44 : "Sitebuilder commit triggered indexing of %s.",
 
     50 : "Crawler did not get any connection from the process.",
-    51 : "Crawler-to-filter bufferdid not get any connection from the process.",
+    51 : "Crawler-to-filter buffer did not get any connection from the process.",
     52 : "Filter did not get any connection from the process.",
     53 : "Filter-to-indexer buffer did not get any connection from the process.",
     54 : "Indexer did not get any connection from the process.",
@@ -833,7 +833,7 @@ class Logger {
     1000: "Disallowed by robots.txt. (%s)",
     1001: "Can't handle scheme. (%s)",
     1002: "No matching filter. (%s)",
-    1003: "Too large content file. (%s)",
+    1003: "Too large content file -- indexing metadata only. (%s)",
     1100: "Failed to connect to %s.",
   ]);
     
