@@ -195,6 +195,43 @@ class localtime
       return tz_ux((jd-2440588)*86400);
    }
 
+   // Workaround for predef::localtime() on WIN32 and others
+   // throwing errors for times before 1970. This interferes
+   // with the timezone expert system.
+   static mapping(string:int) paranoia_localtime(int ux)
+   {
+      if (ux<-0x80000000 || ux>0x7fffffff)
+	 error("Time is out of range for Timezone.localtime()\n");
+      mixed err = catch { return predef::localtime(ux); };
+      if ((ux < 0) && (ux > -86400*2)) {
+	// Try post-adjustment...
+	// The code below actually handles up to 30 days, but...
+	mapping(string:int) res = predef::localtime(0);
+	if ((res->sec += ux) < 0) {
+	  int delta = res->sec/60;
+	  res->sec -= delta*60;
+	  if ((res->min += delta) < 0) {
+	    delta = res->min/60;
+	    res->min -= delta*60;
+	    if ((res->hour += delta) < 0) {
+	      delta = res->hour/24;
+	      res->hour -= delta*24;
+	      if ((res->mday += delta) < 1) {
+		// FIXME: Assertions?
+		res->yday = 364 + res->mday;
+		res->wday = (3 + res->mday) % 7;
+		res->mday += 31;
+		res->mon = 11;
+		res->year -= 1;
+	      }
+	    }
+	  }
+	}
+	return res;
+      }
+      throw(err);
+   }
+
 // is this unixtime (utc) dst?
    array tz_ux(int ux)
    {
@@ -202,7 +239,7 @@ class localtime
 	 error("Time is out of range for Timezone.localtime()\n");
 
       int z0=ux%86400;
-      mapping ll=predef::localtime(ux);
+      mapping ll = paranoia_localtime(ux);
       int zl=ll->hour*3600+ll->min*60+ll->sec;
       int tz=z0-zl;
       if (tz>86400/2) tz-=86400;
