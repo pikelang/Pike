@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.41 2006/11/17 10:41:41 stewa Exp $
+// $Id: HTML.pmod,v 1.42 2007/03/16 14:45:38 jonasw Exp $
 
 // Filter for text/html
 
@@ -102,8 +102,10 @@ static string clean(string data) {
   };
 #endif
   
-  array parse_meta(Parser.HTML p, mapping m )
+  array parse_meta(Parser.HTML p, mapping m, mapping e)
   {
+    if (e->noindex)
+      return ({ });
     string n = m->name||m["http-equiv"];
     switch(lower_case(n || ""))
     {
@@ -134,7 +136,9 @@ static string clean(string data) {
     low_ladd(Parser.parse_html_entities(html_href, 1));
   };
 
-  array(string) parse_title(Parser.HTML p, mapping m, string c) {
+  array(string) parse_title(Parser.HTML p, mapping m, string c, mapping e) {
+    if (e->noindex)
+      return ({ });
     res->fields->title = clean(c);
     return ({c});
   };
@@ -250,8 +254,10 @@ static string clean(string data) {
     return ({});
   };
 
-  array parse_headline(Parser.HTML p, mapping m, string c)
+  array parse_headline(Parser.HTML p, mapping m, string c, mapping e)
   {
+    if (e->noindex)
+      return ({ });
     if(!res->fields->headline)
       res->fields->headline = "";
     res->fields->headline += " " + clean(c);
