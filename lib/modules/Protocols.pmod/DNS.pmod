@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.89 2006/12/11 15:52:57 bill Exp $
+// $Id: DNS.pmod,v 1.90 2007/03/19 10:52:48 grubba Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -94,6 +94,9 @@ enum EntryType
   //! Type - Service location record (RFC 2782)
   T_SRV=33,
 
+  //! Type - NAPTR (RFC 3403)
+  T_NAPTR=35,
+
   //! Type - IPv6 address record (RFC 2874, incomplete support)
   T_A6=38,
 };
@@ -182,6 +185,15 @@ class protocol
        return mname + mkname(entry->rname, pos+sizeof(mname), c) +
 	 sprintf("%4c%4c%4c%4c%4c", entry->serial, entry->refresh,
 		 entry->retry, entry->expire, entry->minimum);
+     case T_NAPTR:
+       string rnaptr = sprintf("%2c%2c", entry->order, entry->preference);
+       rnaptr += sprintf("%1c%s%1c%s%1c%s%s",
+			 sizeof(entry->flags || ""), entry->flags || "",
+			 sizeof(entry->service || ""), entry->service || "",
+			 sizeof(entry->regexp || ""), entry->regexp || "",
+			 mkname(entry->replacement, pos, c));
+       return rnaptr;
+
      case T_TXT:
        return Array.map(stringp(entry->txt)? ({entry->txt}):(entry->txt||({})),
 			lambda(string t) {
@@ -418,6 +430,14 @@ class protocol
 	m->expire=decode_int(s,next);
 	m->minimum=decode_int(s,next);
 	break;
+      case T_NAPTR:
+	m->order = decode_short (s, next);
+        m->preference = decode_short (s, next);
+        m->flags = decode_string (s, next);
+        m->service = decode_string (s, next);
+        m->regexp = decode_string (s, next);
+        m->replacement = decode_domain (s, next);
+        break;
       case T_TXT:
 	m->txt = decode_string(s, next);
 	break;
