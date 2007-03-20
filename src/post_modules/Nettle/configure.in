@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.18 2006/07/04 20:45:27 mast Exp $
+# $Id: configure.in,v 1.19 2007/03/20 16:35:41 grubba Exp $
 AC_INIT(nettle.cmod)
 AC_CONFIG_HEADER(nettle_config.h)
 
@@ -12,6 +12,25 @@ else
   AC_CHECK_LIB(gmp, mpz_init)
   AC_CHECK_LIB(gmp, __mpz_init)
   AC_CHECK_LIB(gmp, __gmpz_init)
+  AC_MSG_CHECKING(CryptAcquireContext in -ladvapi32)
+  AC_CACHE_VAL(pike_cv_nettle_advapi32_CryptAcquireContext,
+  [
+    OLDLIBS="$LIBS"
+    LIBS="-ladvapi32 $LIBS"
+    AC_TRY_LINK([#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0400
+#endif
+#include <windows.h>
+#include <wincrypt.h>
+    ],[CryptAcquireContext(0,0,0,0,0);],
+      [pike_cv_nettle_advapi32_CryptAcquireContext=yes],
+      [pike_cv_nettle_advapi32_CryptAcquireContext=no])
+    LIBS="$OLDLIBS"
+  ])
+  AC_MSG_RESULT($pike_cv_nettle_advapi32_CryptAcquireContext)
+  if test x"$pike_cv_nettle_advapi32_CryptAcquireContext" = xyes; then
+    LIBS="-ladvapi32 $LIBS"
+  fi
   AC_CHECK_LIB(nettle, nettle_md5_init)
   AC_CHECK_LIB(nettle, md5_init)
 
