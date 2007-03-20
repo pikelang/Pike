@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.97 2007/03/03 15:25:35 grubba Exp $
+|| $Id: pike_types.h,v 1.98 2007/03/20 17:30:21 grubba Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -67,6 +67,7 @@ extern struct pike_type **pike_type_mark_stack[PIKE_TYPE_STACK_SIZE/4];
 
 
 extern int max_correct_args;
+PMOD_EXPORT extern struct pike_type *string0_type_string;
 PMOD_EXPORT extern struct pike_type *string_type_string;
 PMOD_EXPORT extern struct pike_type *int_type_string;
 PMOD_EXPORT extern struct pike_type *float_type_string;
