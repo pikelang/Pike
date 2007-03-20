@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.56 2007/01/28 03:01:15 peter Exp $
+# $Id: configure.in,v 1.57 2007/03/20 16:40:24 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -102,7 +102,13 @@ else
 
   # Header file
 
-  AC_CHECK_HEADERS(winsock2.h winsock.h mysql.h mysql/mysql.h errmsg.h mysql/errmsg.h)
+  AC_CHECK_HEADERS(winsock2.h winsock.h mysql.h mysql/mysql.h errmsg.h mysql/errmsg.h,,,[
+#if HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
+  ])
 
   if test x$ac_cv_header_mysql_h$ac_cv_header_mysql_mysql_h = xnono; then
     # Required headerfile missing.
@@ -115,6 +121,11 @@ define([AC_CHECK_MYSQL_OPTIONS],
 [
 AC_MSG_CHECKING(for $1)
 AC_TRY_COMPILE([
+#if HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
 #ifdef HAVE_MYSQL_H
 #include <mysql.h>
 #else
@@ -151,6 +162,9 @@ AC_MSG_RESULT(no)
 
   pike_cv_mysql="unknown"
 
+  if test x"$pike_cv_sys_os" = xWindows_NT ; then
+    LIBS="-lshell32 -lkernel32 -lws2_32 -ladvapi32 -luser32 ${LIBS}"
+  fi
 
   AC_CHECK_LIB(mysqlclient, bchange, [
     LIBS="-lmysqlclient $LIBS"
@@ -442,7 +456,8 @@ $ret_type * STDCALL mysql_fetch_lengths(MYSQL_RES *mysql)
     # Header checks necessary for PIKE_FUNCS_NEED_DECLS.
     AC_CHECK_HEADERS(stdio.h io.h)
 
-    AC_CHECK_FUNCS(ldiv open sopen close read fileno puts fgets)
+    AC_CHECK_FUNCS(ldiv open sopen close read fileno puts fgets \
+                   _findfirst _findnext _findclose)
 
     AC_MSG_CHECKING(for the charsetnr member in MYSQL_FIELD)
     AC_CACHE_VAL(pike_cv_have_mysql_field_charsetnr, [
