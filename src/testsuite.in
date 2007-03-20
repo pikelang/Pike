@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.771 2006/12/29 16:03:21 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.772 2007/03/20 16:55:07 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -337,7 +337,7 @@ test_any([[ int a=0xffffffff; return a%17 ]],
 test_any([[ int a=0xffffffff; return a>>17 ]],
 	 [[ (0xffffffff == -1)?-1:0x7fff ]]);
 
-test_any([[return sprintf("%O", typeof(aggregate("foo")));]], "array(string)");
+test_any([[return sprintf("%O", typeof(aggregate("foo")));]], "array(string(8))");
 test_any([[int a; return sprintf("%O", typeof(aggregate(a)));]], "array(int)");
 test_any([[int|string a;
 	   string s = sprintf("%O", typeof(aggregate(a)));
@@ -3498,6 +3498,63 @@ test_any([[
   return (y->x1 + y->x2) * y->x;
 ]], 6)
 
+test_compile_error([[
+  class X {
+    int x;
+    int `->x() { return 0; }
+  };
+]])
+
+test_compile_error([[
+  class X {
+    int `->x() { return 0; }
+    int x;
+  };
+]])
+
+test_compile_error([[
+  class X {
+    int x;
+    void `->x=(int z) { }
+  };
+]])
+
+test_compile_error([[
+  class X {
+    void `->x=(int z) { }
+    int x;
+  };
+]])
+
+test_compile_error([[
+  class X {
+    void `->x(int z) { }
+  };
+]])
+
+// Disabled for now.
+cond([[ 0 ]], [[
+  test_compile_error([[
+    class X {
+      int `->x=() { }
+    };
+  ]])
+]])
+
+test_compile_warning([[
+  class X {
+    static int `->x() { return 0; }
+    private void `->x=(int x) { }
+  };
+]])
+
+test_compile_warning([[
+  class X {
+    static int `->x() { return 0; }
+    void `->x=(int x) { }
+  };
+]])
+
 test_do([[
   // bug 3006
   class X {
@@ -6368,14 +6425,14 @@ cond([[all_constants()->kill && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
 
 // typeof
 test_eq(sprintf("%O", typeof(1)),"int(1..1)")
-test_eq(sprintf("%O", typeof("")),"string")
-test_eq(sprintf("%O", typeof(""[0])),"int")
+test_eq(sprintf("%O", typeof("")),"string(0)")
+test_eq(sprintf("%O", typeof(""[0])),"int(0..0)")
 test_eq(sprintf("%O", typeof(0.0)),"float")
 test_eq(sprintf("%O", typeof(all_constants()["all_constants"])),"mixed")
 
 // _typeof
 test_eq(sprintf("%O", _typeof(1)),"int(1..1)")
-test_eq(sprintf("%O", _typeof("")),"string")
+test_eq(sprintf("%O", _typeof("")),"string(0)")
 test_eq(sprintf("%O", _typeof("x"[0])),"int(120..120)")
 test_eq(sprintf("%O", _typeof(0.0)),"float")
 test_eq([[sscanf(sprintf("%Ox", _typeof(this_object))-" ",
