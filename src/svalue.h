@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.140 2007/03/03 15:24:51 grubba Exp $
+|| $Id: svalue.h,v 1.141 2007/03/20 17:36:49 grubba Exp $
 */
 
 #ifndef SVALUE_H
@@ -179,6 +179,7 @@ struct svalue
 #define tProgram(X) "\005" X
 #define tStr "\006"
 #define tString "\006"
+#define tStr0 "\357\000"
 #define tStr7 "\357\007"
 #define tStr8 "\357\010"
 #define tStr16 "\357\020"
