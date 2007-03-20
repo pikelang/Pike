@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.215 2006/08/21 18:37:44 grubba Exp $
+|| $Id: operators.c,v 1.216 2007/03/20 17:41:54 grubba Exp $
 */
 
 #include "global.h"
@@ -1927,9 +1927,9 @@ static node *optimize_not(node *n)
       node *search_args = *more_args;
       if ((search_args->token == F_ARG_LIST) &&
 	  CAR(search_args) &&
-	  (CAR(search_args)->type == string_type_string) &&
+	  pike_types_le(CAR(search_args)->type, string_type_string) &&
 	  CDR(search_args) &&
-	  (CDR(search_args)->type == string_type_string)) {
+	  pike_types_le(CDR(search_args)->type, string_type_string)) {
 	/* !search(string a, string b)  =>  has_prefix(a, b) */
 	ADD_NODE_REF(*more_args);
 	return mkefuncallnode("has_prefix", search_args);
@@ -1957,7 +1957,9 @@ static node *may_have_side_effects(node *n)
 static node *optimize_binary(node *n)
 {
   node **first_arg, **second_arg, *ret;
-  if(count_args(CDR(n))==2)
+  int args;
+
+  if((args = count_args(CDR(n)))==2)
   {
     first_arg=my_get_arg(&_CDR(n), 0);
     second_arg=my_get_arg(&_CDR(n), 1);
@@ -2005,6 +2007,28 @@ static node *optimize_binary(node *n)
       }
     }
   }
+#if 0 /* Does not work for multiplication. */
+  /* Strengthen the string type. */
+  if (n->type && (n->type->type == T_STRING) &&
+      CAR_TO_INT(n->type) == 32 && (args > 0)) {
+    int str_width = 6;	/* Width generated in int and float conversions. */
+    while (args--) {
+      struct pike_type *t;
+      node **arg = my_get_arg(&_CDR(n), args);
+      if (!arg || !(t = (*arg)->type)) continue;
+      if (t->type == T_STRING) {
+	int w = CAR_TO_INT(t);
+	if (w > str_width) str_width = w;
+      }
+    }
+    if (str_width != 32) {
+      type_stack_mark();
+      push_string_type(str_width);
+      free_type(n->type);
+      n->type = pop_unfinished_type();
+    }
+  }
+#endif /* 0 */
   return 0;
 }
 
@@ -5178,7 +5202,7 @@ static node *optimize_sizeof(node *n)
     /* sizeof(efun(...)) */
     if ((CADR(n)->u.sval.u.efun->function == f_divide) &&
 	CDDR(n) && (CDDR(n)->token == F_ARG_LIST) &&
-	CADDR(n) && (CADDR(n)->type == string_type_string) &&
+	CADDR(n) && pike_types_le(CADDR(n)->type, string_type_string) &&
 	CDDDR(n) && (CDDDR(n)->token == F_CONSTANT) &&
 	(CDDDR(n)->u.sval.type == T_STRING) &&
 	(CDDDR(n)->u.sval.u.string->len == 1)) {
@@ -5200,7 +5224,7 @@ static node *optimize_sizeof(node *n)
 	(CAADDR(n)->u.sval.subtype == FUNCTION_BUILTIN) &&
 	(CAADDR(n)->u.sval.u.efun->function == f_divide) &&
 	CDADDR(n) && (CDADDR(n)->token == F_ARG_LIST) &&
-	CADADDR(n) && (CADADDR(n)->type == string_type_string) &&
+	CADADDR(n) && pike_types_le(CADADDR(n)->type, string_type_string) &&
 	CDDADDR(n) && (CDDADDR(n)->token == F_CONSTANT) &&
 	(CDDADDR(n)->u.sval.type == T_STRING) &&
 	(CDDADDR(n)->u.sval.u.string->len == 1) &&
@@ -5542,8 +5566,8 @@ multiset & mapping -> mapping
 		 tFunc(tArr(tStr) tStr,tStr),
 		 tFunc(tArr(tSetvar(0,tMix)) tInt,tArr(tVar(0))),
 		 tFunc(tArr(tSetvar(0,tMix)) tFlt,tArr(tVar(0))),
-		 tFunc(tStr tInt,tStr),
-		 tFunc(tStr tFlt,tStr)),
+		 tFunc(tSetvar(0, tStr) tInt,tVar(0)),
+		 tFunc(tSetvar(0, tStr) tFlt,tVar(0))),
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_multiply);
 
   /* !function(!object...:mixed)&function(mixed...:mixed)|"
