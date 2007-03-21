@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.263 2007/03/20 17:39:04 grubba Exp $
+|| $Id: pike_types.c,v 1.264 2007/03/21 13:55:55 grubba Exp $
 */
 
 #include "global.h"
@@ -5175,11 +5175,12 @@ static void low_type_to_string(struct pike_type *t)
   case T_STRING:
     {
       INT32 width = (INT32)CAR_TO_INT(t);
-      my_putchar(T_STRING);
-      my_putchar((width >> 24) & 0xff);
-      my_putchar((width >> 16) & 0xff);
-      my_putchar((width >> 8) & 0xff);
-      my_putchar(width & 0xff);
+      if (width == 32) {
+	my_putchar(T_STRING);
+      } else {
+	my_putchar(PIKE_T_NSTRING);
+	my_putchar(width & 0xff);
+      }
     }
     break;
 
