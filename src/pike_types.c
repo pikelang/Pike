@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.265 2007/03/26 11:11:42 grubba Exp $
+|| $Id: pike_types.c,v 1.266 2007/03/26 12:03:42 grubba Exp $
 */
 
 #include "global.h"
@@ -4973,10 +4973,6 @@ static struct pike_type *low_get_first_arg_type(struct pike_type *arg_type,
   if (!arg_type) return NULL;
 
  loop:
-  fprintf(stderr, "low_get_first_arg_type(");
-  simple_describe_type(arg_type);
-  fprintf(stderr, ", %d)...\n", flags);
-
   if (!(flags & FILTER_KEEP_VOID) ||
       (arg_type->flags & (PT_FLAG_MARKER|PT_FLAG_ASSIGN))) {
     /* There's markers, assigns or void's to to take care of. */
