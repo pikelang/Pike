@@ -3,7 +3,7 @@
 
 // Pike core things that don't belong anywhere else.
 //
-// $Id: module.pmod,v 1.13 2006/03/25 20:43:20 grubba Exp $
+// $Id: module.pmod,v 1.14 2007/03/26 11:36:20 grubba Exp $
 
 constant WEAK_INDICES = __builtin.PIKE_WEAK_INDICES;
 constant WEAK_VALUES = __builtin.PIKE_WEAK_VALUES;
@@ -41,6 +41,11 @@ constant DefaultBackend = __builtin.__backend;
 constant gc_parameters = __builtin.gc_parameters;
 
 constant get_runtime_info = __builtin.get_runtime_info;
+
+// Type-checking:
+constant check_call = predef::__check_call;
+constant get_return_type = predef::__get_return_type;
+constant get_first_arg_type = predef::__get_first_arg_type;
 
 program Encoder = [program] master()->Encoder;
 program Decoder = [program] master()->Decoder;
