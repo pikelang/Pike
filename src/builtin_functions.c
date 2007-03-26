@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.627 2007/03/03 21:45:14 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.628 2007/03/26 11:13:11 grubba Exp $
 */
 
 #include "global.h"
@@ -2220,6 +2220,93 @@ static void f_parse_pike_type( INT32 args )
 
   push_string(type_to_string(t));
   free_type(t);
+}
+
+/*! @decl type __check_call(type arg_type, type fun_type)
+ *!
+ *!   Check whether a function of type @[fun_type] may be called
+ *!   with a first argument of type @[arg_type].
+ *!
+ *! @returns
+ *!   Returns a continuation type on success.
+ *!
+ *!   Returns @tt{0@} (zero) on failure.
+ */
+static void f___check_call(INT32 args)
+{
+  struct pike_type *res;
+  if (args != 2) Pike_error("Bad number of arguments to __check_call().\n");
+  if (Pike_sp[-2].type != PIKE_T_TYPE) {
+    Pike_error("Bad argument 1 to __check_call() expected type.\n");
+  }
+  if (Pike_sp[-1].type != PIKE_T_TYPE) {
+    Pike_error("Bad argument 1 to __check_call() expected type.\n");
+  }
+  if (!(res = low_new_check_call(Pike_sp[-2].u.type,
+				 Pike_sp[-1].u.type, 0))) {
+    pop_n_elems(args);
+    push_undefined();
+  } else {
+    pop_n_elems(args);
+    push_type_value(res);
+  }
+}
+
+/*! @decl type __get_return_type(type fun_type)
+ *!
+ *!   Check what a function of the type @[fun_type] will
+ *!   return if called with no arguments.
+ *!
+ *! @returns
+ *!   Returns the type of the returned value on success
+ *!
+ *!   Returns @tt{0@} (zero) on failure.
+ */
+static void f___get_return_type(INT32 args)
+{
+  struct pike_type *res;
+  if (args != 1) {
+    Pike_error("Bad number of arguments to __get_return_type().\n");
+  }
+  if (Pike_sp[-1].type != PIKE_T_TYPE) {
+    Pike_error("Bad argument 1 to __get_return_type() expected type.\n");
+  }
+  if (!(res = new_get_return_type(Pike_sp[-1].u.type, 0))) {
+    pop_n_elems(args);
+    push_undefined();
+  } else {
+    pop_n_elems(args);
+    push_type_value(res);
+  }
+}
+
+/*! @decl type __get_first_arg_type(type fun_type)
+ *!
+ *!   Check if a function of the type @[fun_type] may be called
+ *!   with an argument, and return the type of that argument.
+ *!
+ *! @returns
+ *!   Returns the expected type of the first argument to the function.
+ *!
+ *!   Returns @tt{0@} (zero) if a function of the type @[fun_type]
+ *!   may not be called with any argument, or if it is not callable.
+ */
+static void f___get_first_arg_type(INT32 args)
+{
+  struct pike_type *res;
+  if (args != 1) {
+    Pike_error("Bad number of arguments to __get_first_arg_type().\n");
+  }
+  if (Pike_sp[-1].type != PIKE_T_TYPE) {
+    Pike_error("Bad argument 1 to __get_first_arg_type() expected type.\n");
+  }
+  if (!(res = get_first_arg_type(Pike_sp[-1].u.type, 0))) {
+    pop_n_elems(args);
+    push_undefined();
+  } else {
+    pop_n_elems(args);
+    push_type_value(res);
+  }
 }
 
 /*! @decl mapping (string:mixed) all_constants()
@@ -8995,6 +9082,20 @@ void init_builtin_efuns(void)
 
   ADD_EFUN("__parse_pike_type", f_parse_pike_type,
 	   tFunc(tStr8,tStr8),OPT_TRY_OPTIMIZE);
+
+  ADD_EFUN("__check_call", f___check_call,
+	   tFunc(tType(tMix) tType(tCallable), tType(tCallable)),
+	   OPT_TRY_OPTIMIZE);
+
+  /* FIXME: Could have a stricter type. */
+  ADD_EFUN("__get_return_type", f___get_return_type,
+	   tFunc(tType(tCallable), tType(tMix)),
+	   OPT_TRY_OPTIMIZE);
+
+  /* FIXME: Could have a stricter type. */
+  ADD_EFUN("__get_first_arg_type", f___get_first_arg_type,
+	   tFunc(tType(tCallable), tType(tMix)),
+	   OPT_TRY_OPTIMIZE);
 
 #ifdef HAVE_LOCALTIME
   
