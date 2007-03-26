@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.264 2007/03/21 13:55:55 grubba Exp $
+|| $Id: pike_types.c,v 1.265 2007/03/26 11:11:42 grubba Exp $
 */
 
 #include "global.h"
@@ -44,6 +44,19 @@
  * Flags used by pike_types_le()
  */
 #define LE_WEAK_OBJECTS	1	/* Perform weaker checking of objects. */
+
+/*
+ * Flags used by low_get_first_arg_type()
+ */
+#define FILTER_KEEP_VOID 1	/* Keep void during the filtering. */
+
+/*
+ * Flags used as flag_method to mk_type()
+ */
+#define PT_COPY_CAR	1
+#define PT_COPY_CDR	2
+#define PT_COPY_BOTH	3
+#define PT_IS_MARKER	4	/* The node is a marker. */
 
 /* Number of entries in the struct pike_type hash-table. */
 #define PIKE_TYPE_HASH_SIZE	32768
@@ -327,17 +340,14 @@ void debug_free_type(struct pike_type *t)
   }
 }
 
-/* Flags used as flag_method: */
-#define PT_COPY_CAR	1
-#define PT_COPY_CDR	2
-#define PT_COPY_BOTH	3
-#define PT_SET_MARKER	4
-
 static inline struct pike_type *debug_mk_type(unsigned INT32 type,
 					      struct pike_type *car,
 					      struct pike_type *cdr,
 					      int flag_method)
 {
+  /* FIXME: The hash ought to be based on the tree contents, regardless
+   *        of what the adresses of the type nodes are.
+   */
   unsigned INT32 hash = DO_NOT_WARN((unsigned INT32)
 				    ((ptrdiff_t)type*0x10204081)^
 				    (0x8003*PTR_TO_INT(car))^
@@ -505,15 +515,17 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
   pike_type_hash[index] = t;
 
   if (flag_method) {
-    if (flag_method == PT_SET_MARKER) {
-      t->flags = PT_FLAG_MARKER;
+    if (flag_method == PT_IS_MARKER) {
+      t->flags = PT_FLAG_MARKER_0 << (type-'0');
     } else {
       if (car && (flag_method & PT_COPY_CAR)) {
-	t->flags = car->flags;
+	t->flags |= car->flags;
       }
       if (cdr && (flag_method & PT_COPY_CDR)) {
 	t->flags |= cdr->flags;
       }
+      /* Clear markers that are assigned. */
+      t->flags &= ~(t->flags & (t->flags >> PT_ASSIGN_SHIFT));
     }
   }
 
@@ -538,8 +550,10 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
     debug_malloc_pass(car);
     break;
 	
-  case T_SCOPE:
   case T_ASSIGN:
+    t->flags |= PT_FLAG_ASSIGN_0 << PTR_TO_INT(car);
+    /* FALL_THROUGH */
+  case T_SCOPE:
     debug_malloc_pass(cdr);
     break;
 
@@ -558,7 +572,7 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
   case '7':
   case '8':
   case '9':
-  case T_FLOAT:
+ case T_FLOAT:
   case T_STRING:
   case T_MIXED:
   case T_VOID:
@@ -571,6 +585,10 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
   default:
     Pike_fatal("mk_type(): Unhandled type-node: %d\n", type);
     break;
+  }
+#else /* !DEBUG_MALLOC */
+  if (type == T_ASSIGN) {
+    t->flags |= PT_FLAG_ASSIGN_0 << PTR_TO_INT(car);
   }
 #endif /* DEBUG_MALLOC */
 
@@ -738,6 +756,33 @@ void debug_push_type(unsigned int type)
       free_type(*(Pike_compiler->type_stackp--));
       return;
     }
+    if (Pike_compiler->type_stackp[0]->type == type) {
+      /* The top type is the same as our type.
+       * Split it and join the parts with the other type.
+       */
+      struct pike_type *top = *(Pike_compiler->type_stackp--);
+      push_finished_type(top->cdr);
+      push_type(type);
+      push_finished_type(top->car);
+      push_type(type);
+      free_type(top);
+      return;
+    }
+    if (Pike_compiler->type_stackp[-1]->type <
+	Pike_compiler->type_stackp[0]->type) {
+      /* Make a new type of the top two types.
+       * In reverse order!
+       *
+       * This is an attempt to make the resulting types more
+       * likely to be equal.
+       */
+      --Pike_compiler->type_stackp;
+      *Pike_compiler->type_stackp = mk_type(type,
+					    *Pike_compiler->type_stackp,
+					    *(Pike_compiler->type_stackp+1),
+					    PT_COPY_BOTH);
+      return;
+    }
     /* FALL_THROUGH */
   case T_FUNCTION:
   case T_MANY:
@@ -797,7 +842,7 @@ void debug_push_type(unsigned int type)
   case '8':
   case '9':
     /* Marker. */
-    *(++Pike_compiler->type_stackp) = mk_type(type, NULL, NULL, PT_SET_MARKER);
+    *(++Pike_compiler->type_stackp) = mk_type(type, NULL, NULL, PT_IS_MARKER);
     break;
   }
 
@@ -907,58 +952,139 @@ void debug_push_reverse_type(unsigned int type)
   TYPE_STACK_DEBUG("push_reverse_type");
 }
 
-void debug_push_finished_type_with_markers(struct pike_type *type,
-					   struct pike_type **markers)
+/* The marker_set is used as follows:
+ *
+ *   PT_FLAG_MARKER_n	Indicates that marker #n may be replaced.
+ *
+ *   PT_FLAG_ASSIGN_n	Indicates that there's a prior assign to marker #n.
+ *			The marker should thus be kept.
+ */
+static void debug_push_finished_type_with_markers(struct pike_type *type,
+						  struct pike_type **markers,
+						  INT32 marker_set)
 {
  recurse:
 #if 0
   fprintf(stderr, "push_finished_type_with_markers((%d[%x]),...)...\n",
 	  type->type, type->flags);
 #endif /* 0 */
-  if (!(type->flags & PT_FLAG_MARKER)) {
-    /* No markers in this sub-tree */
+  if (!(type->flags & (marker_set | (marker_set << PT_ASSIGN_SHIFT)))) {
+    /* No unassigned markers in this sub-tree */
 #if 0
-    fprintf(stderr, "No markers in this subtree.\n");
+    fprintf(stderr, "No unassigned markers in this subtree.\n");
 #endif /* 0 */
     push_finished_type(type);
     return;
   }
   if ((type->type >= '0') && (type->type <= '9')) {
     unsigned int m = type->type - '0';
-    if (markers[m]) {
-      type = markers[m];
 #if 0
-      fprintf(stderr, "Marker %d.\n", m);
+    if (m) {
+      fprintf(stderr, "Marker %d: %p.\n", m, markers[m]);
+    }
 #endif /* 0 */
-      goto recurse;
+    if ((marker_set & (PT_FLAG_MARKER_0 << m)) && markers[m]) {
+      type = markers[m];
+      if (marker_set & (PT_FLAG_ASSIGN_0 << m)) {
+	/* There's a corresponding assignment,
+	 * so we need to keep the marker as well.
+	 */
+	markers[m] = NULL;
+	push_finished_type_with_markers(type, markers,
+					marker_set & ~(PT_FLAG_MARKER_0 << m));
+	push_type('0' + m);
+	push_type(T_OR);
+	markers[m] = type;
+      } else {
+	/* It's a marker we're cleared to replace. */
+	marker_set &= ~(PT_FLAG_MARKER_0 << m);
+	goto recurse;
+      }
+    } else if (marker_set & (PT_FLAG_ASSIGN_0 << m)) {
+      /* Keep the marker as-is. */
+      push_type(type->type);
     } else {
       push_type(T_ZERO);
     }
     TYPE_STACK_DEBUG("push_finished_type_with_markers");
     return;
-  }
-  if (type->type == T_ASSIGN) {
-    /* Strip assign */
+  } else if (type->type == T_ASSIGN) {
+    int marker = PTR_TO_INT(type->car);
 #if 0
     fprintf(stderr, "Assign to marker %"PRINTPTRDIFFT"d.\n",
-	    CAR_TO_INT(type);
+	    CAR_TO_INT(type));
 #endif /* 0 */
-    type = type->cdr;
-    goto recurse;
-  }
-  if (type->type == PIKE_T_NAME) {
+    if ((marker_set & (PT_FLAG_ASSIGN_0 << marker)) && markers[marker])
+    {
+      /* The marker has already been set. Remove it. */
+      type = type->cdr;
+      goto recurse;
+    }
+    /* Remove the corresponding marker from the set to replace. */
+    marker_set &= ~(PT_FLAG_MARKER_0 << marker);
+    push_finished_type_with_markers(type->cdr, markers, marker_set);
+    push_assign_type('0' + marker);
+    TYPE_STACK_DEBUG("push_finished_type_with_markers");
+    return;
+  } else if (type->type == PIKE_T_NAME) {
     /* Strip the name, since it won't be correct anymore. */
     type = type->cdr;
     goto recurse;
   }
   /* FIXME: T_SCOPE */
-  if (type->cdr) {
-    push_finished_type_with_markers(type->cdr, markers);
+  if ((type->type == T_OR) || (type->type == T_AND)) {
+    /* Special case handling for implicit zero. */
+    /* FIXME: Probably ought to use {or,and}_pike_types() here.
+     *        Problem is that they may mess with the markers...
+     */
+    type_stack_mark();
+    /* We want to keep markers that have assigns. */
+    push_finished_type_with_markers(type->cdr, markers,
+				    marker_set |
+				    (type->car->flags & PT_FLAG_ASSIGN));
+    if (type->type == T_OR) {
+      if (peek_type_stack() == zero_type_string) {
+	free_type(pop_unfinished_type());
+	push_finished_type_with_markers(type->car, markers, marker_set);
+      } else {
+	type_stack_mark();
+	push_finished_type_with_markers(type->car, markers, marker_set);
+	if (peek_type_stack() == zero_type_string) {
+	  free_type(pop_unfinished_type());
+	  pop_stack_mark();
+	} else {
+	  pop_stack_mark();
+	  pop_stack_mark();
+	  push_type(T_OR);
+	}
+      }
+    } else if (peek_type_stack() == zero_type_string) {
+      pop_stack_mark();
+    } else {
+      type_stack_mark();
+      push_finished_type_with_markers(type->car, markers, marker_set);
+      if (peek_type_stack() == zero_type_string) {
+	free_type(pop_unfinished_type());
+	free_type(pop_unfinished_type());
+	push_finished_type(zero_type_string);
+      } else {
+	pop_stack_mark();
+	pop_stack_mark();
+	push_type(T_AND);
+      }
+    }
+  } else {
+    if (type->cdr) {
+      /* We want to keep markers that have assigns. */
+      push_finished_type_with_markers(type->cdr, markers,
+				      marker_set |
+				      (type->car->flags & PT_FLAG_ASSIGN));
+    }
+    /* In all other cases type->car will be a valid node. */
+    push_finished_type_with_markers(type->car, markers, marker_set);
+    /* push_type has sufficient magic to recreate the type. */
+    push_type(type->type);
   }
-  /* In all other cases type->car will be a valid node. */
-  push_finished_type_with_markers(type->car, markers);
-  /* push_type has sufficient magic to recreate the type. */
-  push_type(type->type);
   TYPE_STACK_DEBUG("push_finished_type_with_markers");
 }
 
@@ -1580,8 +1706,9 @@ void simple_describe_type(struct pike_type *s)
 	fprintf(stderr, ")");	
 	break;
       case T_ASSIGN:
-	fprintf(stderr, "%"PRINTPTRDIFFT"d = ", CAR_TO_INT(s));
+	fprintf(stderr, "(%"PRINTPTRDIFFT"d = ", CAR_TO_INT(s));
 	simple_describe_type(s->cdr);
+	fprintf(stderr, ")");	
 	break;
       case T_INT:
 	{
@@ -1690,6 +1817,9 @@ void simple_describe_type(struct pike_type *s)
 	fprintf(stderr, "Unknown type node: %d, %p:%p",
 	       s->type, s->car, s->cdr);
 	break;
+    }
+    if (s->flags) {
+      fprintf(stderr, "[%06x]", s->flags);
     }
   } else {
     fprintf(stderr, "NULL");
@@ -2514,7 +2644,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 #endif /* PIKE_DEBUG */
 
 	type_stack_mark();
-	push_finished_type_with_markers(b, b_markers);
+	push_finished_type_with_markers(b, b_markers, PT_FLAG_MARKER);
 	tmp = pop_unfinished_type();
 
 	type_stack_mark();
@@ -2601,8 +2731,9 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       {
 	int m = CAR_TO_INT(b);
 	struct pike_type *tmp;
+
 	type_stack_mark();
-	push_finished_type_with_markers(a, a_markers);
+	push_finished_type_with_markers(a, a_markers, PT_FLAG_MARKER);
 	tmp=pop_unfinished_type();
 
 	type_stack_mark();
@@ -3043,8 +3174,9 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       int m = CAR_TO_INT(a);
       struct pike_type *tmp;
       int i;
+
       type_stack_mark();
-      push_finished_type_with_markers(b, b_markers);
+      push_finished_type_with_markers(b, b_markers, PT_FLAG_MARKER);
       for(i=array_cnt; i > 0; i--)
 	push_type(T_ARRAY);
       tmp=pop_unfinished_type();
@@ -3128,8 +3260,9 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       int m = CAR_TO_INT(b);
       struct pike_type *tmp;
       int i;
+
       type_stack_mark();
-      push_finished_type_with_markers(a, a_markers);
+      push_finished_type_with_markers(a, a_markers, PT_FLAG_MARKER);
       for(i = array_cnt; i < 0; i++)
 	push_type(T_ARRAY);
       tmp=pop_unfinished_type();
@@ -3585,7 +3718,7 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
       /* FALL_THROUGH */
     case T_MANY:
       a = a->cdr;
-      push_finished_type_with_markers(a, a_markers );
+      push_finished_type_with_markers(a, a_markers, PT_FLAG_MARKER);
       return 1;
 
     case T_PROGRAM:
@@ -4417,6 +4550,610 @@ struct pike_type *get_argument_type(struct pike_type *fun, int arg_no)
   }
 }
 
+/* Check whether arg_type may be used as the type of the first argument
+ * in a call to fun_type.
+ *
+ * The first argument has no OR or AND nodes.
+ *
+ * Returns NULL on failure.
+ *
+ * Returns continuation function type on success.
+ */
+static struct pike_type *lower_new_check_call(struct pike_type *arg_type,
+					      struct pike_type *fun_type,
+					      INT32 flags
+#ifdef PIKE_TYPE_DEBUG
+					      , INT32 indent
+#define CHECK_CALL_ARGS	, indent+1
+#else
+#define CHECK_CALL_ARGS
+#endif /* PIKE_TYPE_DEBUG */
+					      )
+{
+  struct pike_type *res = NULL;
+  struct pike_type *tmp;
+  struct pike_type *tmp2;
+  INT32 array_cnt = 0;
+
+#ifdef PIKE_TYPE_DEBUG
+  if (l_flag>2) {
+    fprintf(stderr, "%*slower_new_check_call(", indent*2, "");
+    simple_describe_type(arg_type);
+    fprintf(stderr, ", ");
+    simple_describe_type(fun_type);
+    fprintf(stderr, ", 0x%04x)...\n", flags);
+  }
+#endif /* PIKE_TYPE_DEBUG */
+
+ loop:
+  /* Count the number of array levels. */
+  while(fun_type->type == PIKE_T_ARRAY) {
+    array_cnt++;
+    fun_type = fun_type->car;
+  }
+
+  switch(fun_type->type) {
+  case T_SCOPE:
+  case T_ASSIGN:
+  case PIKE_T_NAME:
+    fun_type = fun_type->cdr;
+    goto loop;
+
+  case T_OR:
+    res = lower_new_check_call(arg_type, fun_type->car, flags CHECK_CALL_ARGS);
+    if (!res) {
+      res = lower_new_check_call(arg_type, fun_type->cdr, flags CHECK_CALL_ARGS);
+      break;
+    }
+    tmp = lower_new_check_call(arg_type, fun_type->cdr, flags CHECK_CALL_ARGS);
+    if (!tmp) break;
+    res = or_pike_types(tmp2 = res, tmp, 1);
+    free_type(tmp);
+    free_type(tmp2);
+    break;
+
+  case T_AND:
+    res = lower_new_check_call(arg_type, fun_type->car, flags CHECK_CALL_ARGS);
+    if (!res) break;
+    tmp = lower_new_check_call(arg_type, fun_type->cdr, flags CHECK_CALL_ARGS);
+    if (!tmp) {
+      free_type(res);
+      res = NULL;
+      break;
+    }
+    if ((res->type == T_NOT) || (tmp->type == T_NOT)) {
+      /* Special cases for NOT, since and_pike_types()
+       * doesn't seem to handle it reliably.
+       */
+      type_stack_mark();
+      if (res->type == tmp->type) {
+	push_finished_type(tmp2 = and_pike_types(res->car, tmp->car));
+	free_type(res);
+	free_type(tmp);
+	free_type(tmp2);
+	push_type(T_NOT);
+      } else {
+	push_finished_type(res);
+	free_type(res);
+	push_finished_type(tmp);
+	free_type(tmp);
+	push_type(T_AND);
+      }
+      res = pop_unfinished_type();
+    } else {
+      res = and_pike_types(tmp2 = res, tmp);
+      free_type(tmp);
+      free_type(tmp2);
+    }
+    break;
+
+  case T_NOT:
+    if (arg_type->type == T_NOT) {
+      /* Both sides are inverted. Pop both. */
+      arg_type = arg_type->car;
+      fun_type = fun_type->car;
+      goto loop;
+    } else {
+      /* Move the inversion to the argument type. */
+      type_stack_mark();
+      push_finished_type(arg_type);
+      push_type(T_NOT);
+      arg_type = pop_unfinished_type();
+      res = lower_new_check_call(arg_type, fun_type->car, flags CHECK_CALL_ARGS);
+      free_type(arg_type);
+      if (res) {
+	/* Move the inversion back to the function type. */
+	if (res->type == T_NOT) {
+	  tmp = res->car;
+	  free_type(res);
+	  res = tmp;
+	} else {
+	  type_stack_mark();
+	  if ((res == fun_type->car) &&
+		   (res->type == T_MANY) &&
+		   (res->car->type == T_NOT)) {
+	    /* Exist criteria is fulfilled.
+	     * FIXME: Probably ought to move the inner inversion
+	     *        to the result type, but that is incompatible
+	     *        with current types.
+	     */
+	    push_finished_type(res->cdr);
+	    push_finished_type(res->car->car);
+	    push_type(T_MANY);
+	    free_type(res);
+	  } else {
+	    push_finished_type(res);
+	    free_type(res);
+	    push_type(T_NOT);
+	  }
+	  res = pop_unfinished_type();
+	}
+      } else if (fun_type->car->type == T_MANY) {
+	/* The next argument might match. */
+	add_ref(fun_type);
+	res = fun_type;
+      }
+    }
+    break;
+
+  case PIKE_T_PROGRAM:
+    tmp = low_object_lfun_type(fun_type->car, LFUN_CREATE);
+    if (!tmp) {
+      /* No create(). */
+      type_stack_mark();
+      push_finished_type(fun_type->car);
+      push_type(T_VOID);
+      push_type(T_MANY);
+      fun_type = pop_type();
+    } else {
+      fun_type = zzap_function_return(tmp, CDR_TO_INT(fun_type->car));
+      free_type(tmp);
+    }
+    res = lower_new_check_call(arg_type, fun_type, flags CHECK_CALL_ARGS);
+    free_type(fun_type);
+    break;
+
+  case PIKE_T_OBJECT:
+    fun_type = low_object_lfun_type(fun_type, LFUN_CALL);
+    if (fun_type) goto loop;
+    
+    /* FIXME: Multiple cases:
+     *          Untyped object.
+     *          Failed to lookup program id.
+     *          Program does not have the lfun `()().
+     */
+
+    /* FALL_THROUGH */
+  case PIKE_T_MIXED:
+    add_ref(mixed_type_string);
+    res = mixed_type_string;
+    break;
+
+  case PIKE_T_FUNCTION:
+  case T_MANY:
+    /* Note: Use the low variants of pike_types_le and match_types,
+     *       so that markers get set and kept. */
+    if (!low_pike_types_le(arg_type, fun_type->car, 0, 0) &&
+	!low_match_types(arg_type, fun_type->car, 0)) {
+      /* Neither strict nor not so strict match. */
+      res = NULL;
+      break;
+    }
+    /* Match. */
+    type_stack_mark();
+    if (fun_type->type == PIKE_T_FUNCTION) {
+      fun_type = fun_type->cdr;
+    }
+    type_stack_mark();
+    push_finished_type_with_markers(fun_type, b_markers, PT_FLAG_MARKER);
+    res = pop_unfinished_type();
+    break;
+  default:
+    /* Not a callable. */
+    break;
+  }
+  if (!array_cnt || !res) {
+#ifdef PIKE_TYPE_DEBUG
+    if (l_flag>2) {
+      if (res) {
+	fprintf(stderr, "%*s==> ", indent*2, "");
+	simple_describe_type(res);
+      } else {
+	fprintf(stderr, "%*s==> NULL", indent*2, "");
+      }
+      fprintf(stderr, "\n");
+    }
+#endif /* PIKE_TYPE_DEBUG */
+    return res;
+  }
+
+  type_stack_mark();
+  push_finished_type(res);
+  free_type(res);
+  while(array_cnt--) {
+    push_type(PIKE_T_ARRAY);
+  }
+  res = pop_type();
+
+#ifdef PIKE_TYPE_DEBUG
+  if (l_flag>2) {
+    fprintf(stderr, "%*s==> ", indent*2, "");
+    simple_describe_type(res);
+    fprintf(stderr, "\n");
+  }
+#endif /* PIKE_TYPE_DEBUG */
+
+  return res;
+}
+
+/* Check whether arg_type may be used as the type of the first argument
+ * in a call to fun_type.
+ *
+ * Returns NULL on failure.
+ *
+ * Returns continuation function type on success.
+ */
+struct pike_type *low_new_check_call(struct pike_type *arg_type,
+				     struct pike_type *fun_type,
+				     INT32 flags)
+{
+  struct pike_type *tmp;
+  struct pike_type *tmp2;
+  struct pike_type *res;
+
+ loop:
+  clear_markers();
+  /* First split the argument type into basic types. */
+  switch(arg_type->type) {
+  case PIKE_T_SCOPE:
+  case T_ASSIGN:
+  case PIKE_T_NAME:
+    arg_type = arg_type->cdr;
+    goto loop;
+
+  case T_OR:
+    if (!(tmp = low_new_check_call(arg_type->car, fun_type, flags))) {
+      arg_type = arg_type->cdr;
+      goto loop;
+    }
+    if (!(tmp2 = low_new_check_call(arg_type->cdr, fun_type, flags))) {
+      return tmp;
+    }
+    res = or_pike_types(tmp, tmp2, 1);
+    free_type(tmp);
+    free_type(tmp2);
+    return res;
+
+  case T_AND:
+    if (!(tmp = low_new_check_call(arg_type->car, fun_type, flags))) {
+      return NULL;
+    }
+    if (!(tmp2 = low_new_check_call(arg_type->cdr, fun_type, flags))) {
+      free_type(tmp);
+      return NULL;
+    }
+    res = and_pike_types(tmp, tmp2);
+    free_type(tmp);
+    free_type(tmp2);
+    return res;
+  }
+
+  if (!(tmp = lower_new_check_call(arg_type, fun_type, flags, 0))) {
+    return NULL;
+  }
+  return tmp;
+}
+
+/* Return the return type for the function type fun_type, if
+ * no further arguments are passed.
+ *
+ * Returns NULL if more arguments are required.
+ *
+ * Returns a the type of the return value otherwise.
+ */
+struct pike_type *new_get_return_type(struct pike_type *fun_type,
+				      INT32 flags)
+{
+  struct pike_type *res = NULL;
+  struct pike_type *tmp;
+  struct pike_type *tmp2;
+  INT32 array_cnt = 0;
+
+ loop:
+  /* Count the number of array levels. */
+  while(fun_type->type == PIKE_T_ARRAY) {
+    array_cnt++;
+    fun_type = fun_type->car;
+  }
+
+  switch(fun_type->type) {
+  case PIKE_T_SCOPE:
+  case T_ASSIGN:
+  case PIKE_T_NAME:
+    fun_type = fun_type->cdr;
+    goto loop;
+
+  case PIKE_T_RING:
+    fun_type = fun_type->car;
+    goto loop;
+
+  case T_OR:
+    if (!(res = new_get_return_type(fun_type->car, flags))) {
+      fun_type = fun_type->cdr;
+      goto loop;
+    }
+    if (!(tmp = new_get_return_type(fun_type->cdr, flags))) {
+      break;
+    }
+    res = or_pike_types(res, tmp, 1);
+    break;
+  case T_AND:
+    if (!(res = new_get_return_type(fun_type->car, flags))) {
+      break;
+    }
+    if (!(tmp = new_get_return_type(fun_type->cdr, flags))) {
+      free_type(res);
+      res = NULL;
+      break;
+    }
+    res = and_pike_types(tmp2 = res, tmp);
+    free_type(tmp);
+    free_type(tmp2);
+    break;
+  case T_NOT:
+    /* Doesn't match. */
+    break;
+  case PIKE_T_PROGRAM:
+    tmp = low_object_lfun_type(fun_type->car, LFUN_CREATE);
+    if (!tmp) {
+      /* No create(). */
+      add_ref(fun_type->car);
+      res = fun_type->car;
+      break;
+    } else {
+      fun_type = zzap_function_return(tmp, CDR_TO_INT(fun_type->car));
+      free_type(tmp);
+    }
+    res = new_get_return_type(fun_type, flags);
+    free_type(fun_type);
+    break;
+  case PIKE_T_OBJECT:
+    fun_type = low_object_lfun_type(fun_type, LFUN_CALL);
+    if (fun_type) goto loop;
+    /* FIXME: Multiple cases:
+     *          Untyped object.
+     *          Failed to lookup program id.
+     *          Program does not have the lfun `()().
+     */
+
+    /* FALL_THROUGH */
+  case PIKE_T_MIXED:
+    add_ref(mixed_type_string);
+    res = mixed_type_string;
+    break;
+
+  case PIKE_T_FUNCTION:
+    /* Too few arguments. */
+    break;
+  case T_MANY:
+    add_ref(fun_type->cdr);
+    res = fun_type->cdr;
+    break;
+
+  default:
+    /* Not a callable. */
+    break;
+  }
+
+  if (!res) return NULL;
+
+  type_stack_mark();
+
+  /* Get rid of any remaining markers. */
+  clear_markers();
+  push_finished_type_with_markers(res, a_markers, PT_FLAG_MARKER);
+
+  free_type(res);
+
+  while(array_cnt--) {
+    push_type(PIKE_T_ARRAY);
+  }
+  return pop_unfinished_type();
+}
+
+/* Adjust the argument type.
+ *
+ * Get rid of void and setvar.
+ */
+static struct pike_type *low_get_first_arg_type(struct pike_type *arg_type,
+						INT32 flags)
+{
+  struct pike_type *tmp;
+
+  if (!arg_type) return NULL;
+
+ loop:
+  fprintf(stderr, "low_get_first_arg_type(");
+  simple_describe_type(arg_type);
+  fprintf(stderr, ", %d)...\n", flags);
+
+  if (!(flags & FILTER_KEEP_VOID) ||
+      (arg_type->flags & (PT_FLAG_MARKER|PT_FLAG_ASSIGN))) {
+    /* There's markers, assigns or void's to to take care of. */
+    switch(arg_type->type) {
+    case T_OR:
+      if ((tmp = low_get_first_arg_type(arg_type->cdr, flags))) {
+	type_stack_mark();
+	push_finished_type(tmp);
+	free_type(tmp);
+	if ((tmp = low_get_first_arg_type(arg_type->car, flags))) {
+	  push_finished_type(tmp);
+	  free_type(tmp);
+	  push_type(T_OR);
+	  return pop_unfinished_type();
+	}
+	return pop_unfinished_type();
+      }
+      arg_type = arg_type->car;
+      goto loop;
+
+    case T_ASSIGN:
+      arg_type = arg_type->cdr;
+      goto loop;
+
+    case T_NOT:
+    case T_ARRAY:
+    case T_MULTISET:
+      /* Keep void! */
+      tmp = low_get_first_arg_type(arg_type->car, flags|FILTER_KEEP_VOID);
+      type_stack_mark();
+      push_finished_type(tmp);
+      free_type(tmp);
+      push_type(arg_type->type);
+      return pop_unfinished_type();
+
+    case T_MAPPING:
+    case T_TUPLE:
+      /* Keep void! */
+      type_stack_mark();
+      tmp = low_get_first_arg_type(arg_type->cdr, flags|FILTER_KEEP_VOID);
+      push_finished_type(tmp);
+      free_type(tmp);
+      tmp = low_get_first_arg_type(arg_type->car, flags|FILTER_KEEP_VOID);
+      push_finished_type(tmp);
+      free_type(tmp);
+      push_type(arg_type->type);
+      return pop_unfinished_type();
+
+    case T_VOID:
+      if (!(flags & FILTER_KEEP_VOID)) {
+	return NULL;
+      }
+      /* FALL_THROUGH */
+    default:
+      break;
+    }
+  }
+  add_ref(arg_type);
+  return arg_type;
+}
+
+/* Return the type of the first argument to a function of the type fun_type
+ *
+ * Returns NULL on failure. Eg not callable or no more args accepted.
+ *
+ * Returns the argument type on success.
+ */
+struct pike_type *get_first_arg_type(struct pike_type *fun_type,
+				     INT32 flags)
+{
+  struct pike_type *res = NULL;
+  struct pike_type *tmp;
+  struct pike_type *tmp2;
+ loop:
+  /* Get rid of the array levels. */
+  while(fun_type->type == PIKE_T_ARRAY) {
+    fun_type = fun_type->car;
+  }
+
+  switch(fun_type->type) {
+  case PIKE_T_SCOPE:
+  case T_ASSIGN:
+  case PIKE_T_NAME:
+  case PIKE_T_RING:
+    fun_type = fun_type->cdr;
+    goto loop;
+
+  case T_OR:
+    if (!(res = get_first_arg_type(fun_type->car, flags))) {
+      fun_type = fun_type->cdr;
+      goto loop;
+    }
+    if (!(tmp = get_first_arg_type(fun_type->cdr, flags))) {
+      break;
+    }
+    res = or_pike_types(tmp2 = res, tmp, 1);
+    free_type(tmp);
+    free_type(tmp2);
+    break;
+  case T_AND:
+    if (!(res = get_first_arg_type(fun_type->car, flags))) {
+      break;
+    }
+    if (!(tmp = get_first_arg_type(fun_type->cdr, flags))) {
+      free_type(res);
+      res = NULL;
+      break;
+    }
+    /* NOTE: OR and not AND!
+     *
+     *   !function(!string:mixed)&function(string|int:string)
+     *     ==>
+     *   string | string|int
+     */
+    res = or_pike_types(tmp2 = res, tmp, 1);
+    free_type(tmp);
+    free_type(tmp2);
+    break;
+  case T_NOT:
+    if (!(res = get_first_arg_type(fun_type->car, flags))) {
+      break;
+    }
+    if (res->type == T_NOT) {
+      add_ref(res->car);
+      tmp = res->car;
+      free_type(res);
+      res = tmp;
+    } else {
+      type_stack_mark();
+      push_finished_type(res);
+      free_type(res);
+      push_type(T_NOT);
+      res = pop_unfinished_type();
+    }
+    break;
+  case PIKE_T_PROGRAM:
+    if ((fun_type = low_object_lfun_type(fun_type->car, LFUN_CREATE))) {
+      /* No need to adjust the return type, since we're only
+       * looking at the arguments.
+       */
+      goto loop;
+    }
+    /* No create() ==> no arguments. */
+    res = NULL;
+    break;
+  case PIKE_T_OBJECT:
+    fun_type = low_object_lfun_type(fun_type, LFUN_CALL);
+    if (fun_type) goto loop;
+    /* FIXME: Multiple cases:
+     *          Untyped object.
+     *          Failed to lookup program id.
+     *          Program does not have the lfun `()().
+     */
+
+    /* FALL_THROUGH */
+  case PIKE_T_MIXED:
+    add_ref(mixed_type_string);
+    res = mixed_type_string;
+    break;
+
+  case PIKE_T_FUNCTION:
+  case T_MANY:
+    if ((res = fun_type->car)->type == T_VOID) {
+      res = NULL;
+      break;
+    }
+    res = low_get_first_arg_type(res, 0);
+    break;
+
+  default:
+    /* Not a callable. */
+    break;
+  }
+
+  return res;
+}
+
 /* NOTE: type loses a reference. */
 struct pike_type *new_check_call(node *fun, int *argno,
 				 struct pike_type *type, node *args)
@@ -4923,7 +5660,7 @@ static struct pike_type *debug_low_make_pike_type(unsigned char *type_string,
   case '9':
     /* Marker type */
     *cont = type_string+1;
-    return mk_type(type, NULL, NULL, PT_SET_MARKER);
+    return mk_type(type, NULL, NULL, PT_IS_MARKER);
 
   case T_FLOAT:
   case T_MIXED:
