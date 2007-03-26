@@ -103,12 +103,12 @@ test_call_0(ualarm)
 dnl --- Type checking
 
 // typeof(`+((["":14]))) == typeof((["":14]))
-test_any(__get_return_type(__check_call(typeof((["":14])), typeof(`+))),
+test_any(return __get_return_type(__check_call(typeof((["":14])), typeof(`+))),
 	 typeof((["":14])))
 // `+((["":14]), "") is invalid ==> 0.
 test_false(__get_return_type(__check_call(typeof(""), __check_call(typeof((["":14])), typeof(`+)))))
 // typeof(`+((["":14]), "", master())) == mixed.
-test_any(__get_return_type(__check_call(typeof(master()), __check_call(typeof(""), __check_call(typeof((["":14])), typeof(`+))))),
+test_any(return __get_return_type(__check_call(typeof(master()), __check_call(typeof(""), __check_call(typeof((["":14])), typeof(`+))))),
 	 __get_first_arg_type(typeof(predef::intp)))
 
 END_MARKER
