@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.98 2007/03/20 17:30:21 grubba Exp $
+|| $Id: pike_types.h,v 1.99 2007/03/26 11:04:49 grubba Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -26,7 +26,7 @@ struct pike_type
   INT32 refs;
   unsigned INT32 hash;
   struct pike_type *next;
-  unsigned INT16 flags;
+  unsigned INT32 flags;
   unsigned INT16 type;
   struct pike_type *car;
   struct pike_type *cdr;
@@ -41,8 +41,32 @@ extern size_t pike_type_hash_size;
 #include "block_alloc_h.h"
 BLOCK_ALLOC(pike_type, n/a);
 
-/* pike_type flags: */
-#define PT_FLAG_MARKER	1	/* Type contains markers. */
+/*
+ * pike_type flags:
+ */
+#define PT_FLAG_MARKER_0	0x000001	/* The subtree holds a '0'. */
+#define PT_FLAG_MARKER_1	0x000002	/* The subtree holds a '1'. */
+#define PT_FLAG_MARKER_2	0x000004	/* The subtree holds a '2'. */
+#define PT_FLAG_MARKER_3	0x000008	/* The subtree holds a '3'. */
+#define PT_FLAG_MARKER_4	0x000010	/* The subtree holds a '4'. */
+#define PT_FLAG_MARKER_5	0x000020	/* The subtree holds a '5'. */
+#define PT_FLAG_MARKER_6	0x000040	/* The subtree holds a '6'. */
+#define PT_FLAG_MARKER_7	0x000080	/* The subtree holds a '7'. */
+#define PT_FLAG_MARKER_8	0x000100	/* The subtree holds a '8'. */
+#define PT_FLAG_MARKER_9	0x000200	/* The subtree holds a '9'. */
+#define PT_FLAG_MARKER		0x0003ff	/* The subtree holds markers. */
+#define PT_ASSIGN_SHIFT		12		/* Number of bits to shift. */
+#define PT_FLAG_ASSIGN_0	0x001000	/* The subtree assigns '0'. */
+#define PT_FLAG_ASSIGN_1	0x002000	/* The subtree assigns '1'. */
+#define PT_FLAG_ASSIGN_2	0x004000	/* The subtree assigns '2'. */
+#define PT_FLAG_ASSIGN_3	0x008000	/* The subtree assigns '3'. */
+#define PT_FLAG_ASSIGN_4	0x010000	/* The subtree assigns '4'. */
+#define PT_FLAG_ASSIGN_5	0x020000	/* The subtree assigns '5'. */
+#define PT_FLAG_ASSIGN_6	0x040000	/* The subtree assigns '6'. */
+#define PT_FLAG_ASSIGN_7	0x080000	/* The subtree assigns '7'. */
+#define PT_FLAG_ASSIGN_8	0x100000	/* The subtree assigns '8'. */
+#define PT_FLAG_ASSIGN_9	0x200000	/* The subtree assigns '9'. */
+#define PT_FLAG_ASSIGN		0x3ff000	/* The subtree holds assigns. */
 
 void debug_free_type(struct pike_type *t);
 #ifdef DEBUG_MALLOC
@@ -203,6 +227,13 @@ struct pike_type *check_call(struct pike_type *args,
 			     struct pike_type *type,
 			     int strict);
 struct pike_type *get_argument_type(struct pike_type *fun, int arg_no);
+struct pike_type *low_new_check_call(struct pike_type *arg_type,
+				     struct pike_type *fun_type,
+				     INT32 flags);
+struct pike_type *new_get_return_type(struct pike_type *fun_type,
+				      INT32 flags);
+struct pike_type *get_first_arg_type(struct pike_type *fun_type,
+				     INT32 flags);
 struct pike_type *zzap_function_return(struct pike_type *t, INT32 id);
 struct pike_type *get_type_of_svalue(struct svalue *s);
 struct pike_type *object_type_to_program_type(struct pike_type *obj_t);
@@ -283,6 +314,7 @@ void describe_all_types(void);
  ((struct pike_type *)debug_malloc_pass(debug_pop_unfinished_type()))
 #define make_pike_type(X) \
  ((struct pike_type *)debug_malloc_pass(debug_make_pike_type(X)))
+#define peek_type_stack() ((struct pike_type *)debug_malloc_pass(debug_peek_type_stack()))
 #define pop_type_stack(E) do { debug_malloc_pass(debug_peek_type_stack()); debug_pop_type_stack(E); } while(0)
 #define push_int_type(MIN,MAX) do { debug_push_int_type(MIN,MAX);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_string_type(WIDTH) do { debug_push_string_type(WIDTH);debug_malloc_pass(debug_peek_type_stack()); } while(0)
@@ -293,13 +325,14 @@ void describe_all_types(void);
 #define push_unfinished_type(S) ERROR
 #define push_assign_type(MARKER) do { debug_push_assign_type(MARKER);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_finished_type(T) do { debug_push_finished_type((struct pike_type *)debug_malloc_pass(T));debug_malloc_pass(debug_peek_type_stack()); } while(0)
-#define push_finished_type_with_markers(T,M) do { debug_push_finished_type_with_markers((struct pike_type *)debug_malloc_pass(T),M);debug_malloc_pass(debug_peek_type_stack()); } while(0)
+#define push_finished_type_with_markers(T,M,MS) do { debug_push_finished_type_with_markers((struct pike_type *)debug_malloc_pass(T),M,MS);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_finished_type_backwards(T) ERROR
 #else
 #define make_pike_type debug_make_pike_type
 #define pop_type debug_pop_type
 #define compiler_pop_type debug_compiler_pop_type
 #define pop_unfinished_type debug_pop_unfinished_type
+#define peek_type_stack debug_peek_type_stack
 #define pop_type_stack debug_pop_type_stack
 #define push_int_type debug_push_int_type
 #define push_string_type debug_push_string_type
