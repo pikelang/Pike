@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.266 2007/03/26 12:03:42 grubba Exp $
+|| $Id: pike_types.c,v 1.267 2007/03/27 15:54:17 grubba Exp $
 */
 
 #include "global.h"
@@ -4838,7 +4838,11 @@ struct pike_type *low_new_check_call(struct pike_type *arg_type,
     return res;
   }
 
-  if (!(tmp = lower_new_check_call(arg_type, fun_type, flags, 0))) {
+  if (!(tmp = lower_new_check_call(arg_type, fun_type, flags
+#ifdef PIKE_TYPE_DEBUG
+				   , 0
+#endif
+				   ))) {
     return NULL;
   }
   return tmp;
