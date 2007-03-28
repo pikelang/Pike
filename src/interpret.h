@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.152 2004/05/21 16:26:29 grubba Exp $
+|| $Id: interpret.h,v 1.153 2007/03/28 21:54:37 marcus Exp $
 */
 
 #ifndef INTERPRET_H
@@ -263,6 +263,13 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     _sp_->u.integer=0;							\
     _sp_->type=PIKE_T_INT;						\
     _sp_->subtype=NUMBER_UNDEFINED;					\
+  }while(0)
+
+#define push_obj_index(I) do{						\
+    int _=(I);								\
+    struct svalue *_sp_ = Pike_sp++;					\
+    _sp_->u.identifier=_;						\
+    _sp_->type=T_OBJ_INDEX;						\
   }while(0)
 
 #define push_mapping(M) do{						\
