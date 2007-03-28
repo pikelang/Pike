@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.152 2006/11/23 04:38:44 bill Exp $
+dnl $Id: aclocal.m4,v 1.153 2007/03/28 15:10:03 marcus Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -520,7 +520,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.152 2006/11/23 04:38:44 bill Exp $
+  # $Id: aclocal.m4,v 1.153 2007/03/28 15:10:03 marcus Exp $
 
   MY_AC_PROG_CC
 
@@ -735,6 +735,8 @@ pushdef([AC_OUTPUT],
     unset ac_cv_env_CFLAGS_value
     unset ac_cv_env_LDFLAGS_set
     unset ac_cv_env_LDFLAGS_value
+    unset ac_cv_env_LIBS_set
+    unset ac_cv_env_LIBS_value
     unset ac_cv_env_CPPFLAGS_set
     unset ac_cv_env_CPPFLAGS_value
     unset ac_cv_env_CPP_set
