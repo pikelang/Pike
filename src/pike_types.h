@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.99 2007/03/26 11:04:49 grubba Exp $
+|| $Id: pike_types.h,v 1.100 2007/03/28 15:23:39 grubba Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -67,6 +67,12 @@ BLOCK_ALLOC(pike_type, n/a);
 #define PT_FLAG_ASSIGN_8	0x100000	/* The subtree assigns '8'. */
 #define PT_FLAG_ASSIGN_9	0x200000	/* The subtree assigns '9'. */
 #define PT_FLAG_ASSIGN		0x3ff000	/* The subtree holds assigns. */
+
+/*
+ * new_check_call() flags
+ */
+#define CALL_STRICT	0x0001	/* Strict checking. */
+#define CALL_LAST_ARG	0x0002	/* This is the last argument. */
 
 void debug_free_type(struct pike_type *t);
 #ifdef DEBUG_MALLOC
