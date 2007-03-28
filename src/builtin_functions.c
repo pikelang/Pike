@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.628 2007/03/26 11:13:11 grubba Exp $
+|| $Id: builtin_functions.c,v 1.629 2007/03/28 15:29:47 grubba Exp $
 */
 
 #include "global.h"
@@ -2223,9 +2223,22 @@ static void f_parse_pike_type( INT32 args )
 }
 
 /*! @decl type __check_call(type arg_type, type fun_type)
+ *! @decl type __check_call(type arg_type, type fun_type, int flags)
  *!
  *!   Check whether a function of type @[fun_type] may be called
  *!   with a first argument of type @[arg_type].
+ *!
+ *! @param flags
+ *!   The following flags are currently defined:
+ *!   @int
+ *!     @value 1
+ *!       Strict types. Fail if not all possible values in @[arg_type]
+ *!       are valid as the first argument to @[fun_type].
+ *!     @value 2
+ *!       Last argument. @[arg_type] is the last argument to @[fun_type].
+ *!     @value 3
+ *!       Both strict types and last argument as above.
+ *!   @endint
  *!
  *! @returns
  *!   Returns a continuation type on success.
@@ -2235,15 +2248,22 @@ static void f_parse_pike_type( INT32 args )
 static void f___check_call(INT32 args)
 {
   struct pike_type *res;
-  if (args != 2) Pike_error("Bad number of arguments to __check_call().\n");
-  if (Pike_sp[-2].type != PIKE_T_TYPE) {
+  INT32 flags = 0;
+  if (args < 2) Pike_error("Bad number of arguments to __check_call().\n");
+  if (Pike_sp[-args].type != PIKE_T_TYPE) {
     Pike_error("Bad argument 1 to __check_call() expected type.\n");
   }
-  if (Pike_sp[-1].type != PIKE_T_TYPE) {
-    Pike_error("Bad argument 1 to __check_call() expected type.\n");
+  if (Pike_sp[1-args].type != PIKE_T_TYPE) {
+    Pike_error("Bad argument 2 to __check_call() expected type.\n");
   }
-  if (!(res = low_new_check_call(Pike_sp[-2].u.type,
-				 Pike_sp[-1].u.type, 0))) {
+  if (args > 2) {
+    if (Pike_sp[2-args].type != PIKE_T_INT) {
+      Pike_error("Bad argument 3 to __check_call() expected int.\n");
+    }
+    flags = Pike_sp[2-args].u.integer;
+  }
+  if (!(res = low_new_check_call(Pike_sp[-args].u.type,
+				 Pike_sp[1-args].u.type, flags))) {
     pop_n_elems(args);
     push_undefined();
   } else {
@@ -9084,7 +9104,8 @@ void init_builtin_efuns(void)
 	   tFunc(tStr8,tStr8),OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("__check_call", f___check_call,
-	   tFunc(tType(tMix) tType(tCallable), tType(tCallable)),
+	   tFunc(tType(tMix) tType(tCallable) tOr(tInt,tVoid),
+		 tType(tCallable)),
 	   OPT_TRY_OPTIMIZE);
 
   /* FIXME: Could have a stricter type. */
