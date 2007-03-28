@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.267 2007/03/27 15:54:17 grubba Exp $
+|| $Id: pike_types.c,v 1.268 2007/03/28 15:34:15 grubba Exp $
 */
 
 #include "global.h"
@@ -4670,25 +4670,29 @@ static struct pike_type *lower_new_check_call(struct pike_type *arg_type,
 	} else {
 	  type_stack_mark();
 	  if ((res == fun_type->car) &&
-		   (res->type == T_MANY) &&
-		   (res->car->type == T_NOT)) {
+	      (res->type == T_MANY) &&
+	      (res->car->type == T_NOT)) {
 	    /* Exist criteria is fulfilled.
+	     * Reduce !function(!type...:type) to function(mixed...:type).
 	     * FIXME: Probably ought to move the inner inversion
 	     *        to the result type, but that is incompatible
 	     *        with current types.
+	     * FIXME: What about the limited number of args case?
 	     */
 	    push_finished_type(res->cdr);
-	    push_finished_type(res->car->car);
+	    push_finished_type(mixed_type_string);
 	    push_type(T_MANY);
 	    free_type(res);
 	  } else {
+	    /* More arguments to check. */
 	    push_finished_type(res);
 	    free_type(res);
 	    push_type(T_NOT);
 	  }
 	  res = pop_unfinished_type();
 	}
-      } else if (fun_type->car->type == T_MANY) {
+      } else if (!(flags & CALL_LAST_ARG) &&
+		 (fun_type->car->type == T_MANY)) {
 	/* The next argument might match. */
 	add_ref(fun_type);
 	res = fun_type;
@@ -4699,12 +4703,14 @@ static struct pike_type *lower_new_check_call(struct pike_type *arg_type,
   case PIKE_T_PROGRAM:
     tmp = low_object_lfun_type(fun_type->car, LFUN_CREATE);
     if (!tmp) {
-      /* No create(). */
-      type_stack_mark();
-      push_finished_type(fun_type->car);
-      push_type(T_VOID);
-      push_type(T_MANY);
-      fun_type = pop_type();
+      /* FIXME: Multiple cases:
+       *          Untyped object.		function(mixed|void...:obj)
+       *          Failed to lookup program id.	function(mixed|void...:obj)
+       *          Program does not have a create().	function(:obj)
+       */
+
+      /* No create() -- No arguments. */
+      return NULL;
     } else {
       fun_type = zzap_function_return(tmp, CDR_TO_INT(fun_type->car));
       free_type(tmp);
@@ -4718,9 +4724,9 @@ static struct pike_type *lower_new_check_call(struct pike_type *arg_type,
     if (fun_type) goto loop;
     
     /* FIXME: Multiple cases:
-     *          Untyped object.
-     *          Failed to lookup program id.
-     *          Program does not have the lfun `()().
+     *          Untyped object.				mixed
+     *          Failed to lookup program id.		mixed
+     *          Program does not have the lfun `()().	NULL
      */
 
     /* FALL_THROUGH */
@@ -4731,22 +4737,78 @@ static struct pike_type *lower_new_check_call(struct pike_type *arg_type,
 
   case PIKE_T_FUNCTION:
   case T_MANY:
+    /* Special case to detect workarounds for the old
+     * function call checker.
+     */
+    tmp = NULL;
+    if ((fun_type->car->type == T_NOT) &&
+	(fun_type->car->car->type == T_OR) &&
+	((fun_type->car->car->car->type == T_MIXED) ||
+	 (fun_type->car->car->cdr->type == T_MIXED))) {
+      /* Rebuild the function type without the negated mixed
+       * in the first argument.
+       */
+      type_stack_mark();
+      push_finished_type(fun_type->cdr);
+      if (fun_type->car->car->car->type == T_MIXED) {
+	push_finished_type(fun_type->car->car->cdr);
+      } else {
+	push_finished_type(fun_type->car->car->car);
+      }
+      push_type(T_NOT);
+      push_type(fun_type->type);
+      tmp = fun_type = pop_unfinished_type();
+    }
     /* Note: Use the low variants of pike_types_le and match_types,
      *       so that markers get set and kept. */
+#ifdef PIKE_TYPE_DEBUG
+    if (l_flag>2) {
+      fprintf(stderr, "%*sChecking argument type ", indent*2+2, "");
+      simple_describe_type(arg_type);
+      fprintf(stderr, " against function type ");
+      simple_describe_type(fun_type);
+      fprintf(stderr, ".\n");
+    }
+#endif /* PIKE_TYPE_DEBUG */
     if (!low_pike_types_le(arg_type, fun_type->car, 0, 0) &&
-	!low_match_types(arg_type, fun_type->car, 0)) {
-      /* Neither strict nor not so strict match. */
+	((flags & CALL_STRICT) ||
+	 !low_match_types(arg_type, fun_type->car, 0))) {
+      /* No match. */
+#ifdef PIKE_TYPE_DEBUG
+      if (l_flag>2) {
+	fprintf(stderr, "%*sNo match.\n", indent*2+2, "");
+      }
+#endif /* PIKE_TYPE_DEBUG */
       res = NULL;
+      if (tmp) free_type(tmp);
       break;
     }
     /* Match. */
-    type_stack_mark();
     if (fun_type->type == PIKE_T_FUNCTION) {
+      /* Advance to the next argument. */
       fun_type = fun_type->cdr;
+      if ((flags & CALL_LAST_ARG) &&
+	  (fun_type->type == PIKE_T_FUNCTION)) {
+	/* There are more required arguments. */
+#ifdef PIKE_TYPE_DEBUG
+	if (l_flag>2) {
+	  fprintf(stderr, "%*sMore arguments required.\n", indent*2+2, "");
+	}
+#endif /* PIKE_TYPE_DEBUG */
+	res = NULL;
+	if (tmp) free_type(tmp);
+	break;
+      }
     }
+#ifdef PIKE_TYPE_DEBUG
+    if (l_flag>2) {
+      fprintf(stderr, "%*sSuccess.\n", indent*2+2, "");
+    }
+#endif /* PIKE_TYPE_DEBUG */
     type_stack_mark();
     push_finished_type_with_markers(fun_type, b_markers, PT_FLAG_MARKER);
     res = pop_unfinished_type();
+    if (tmp) free_type(tmp);
     break;
   default:
     /* Not a callable. */
@@ -4800,6 +4862,25 @@ struct pike_type *low_new_check_call(struct pike_type *arg_type,
   struct pike_type *tmp;
   struct pike_type *tmp2;
   struct pike_type *res;
+
+  /* FIXME: In strict mode we need to differentiate between
+   *        two different kinds of OR:
+   *          * Complex types, eg
+   *              function(int:int)|function(float:float)
+   *            or
+   *              mapping(string:int)|mapping(int:string)
+   *            where a value can have both types at the
+   *            same time.
+   *          * Alternate types, eg
+   *              int|string
+   *            where a value only can have one of the
+   *            types at a time.
+   *        In strict mode the former should be split here,
+   *        and the latter kept.
+   *        In non-strict mode both should be split here.
+   * Suggestion:
+   *   Introduce a new operator (UNION?) for the former case.
+   */
 
  loop:
   clear_markers();
@@ -5002,6 +5083,31 @@ static struct pike_type *low_get_first_arg_type(struct pike_type *arg_type,
       goto loop;
 
     case T_NOT:
+      /* Recognize some common workarounds for the old function
+       * call checker.
+       */
+      if ((arg_type->car->type == T_OR) &&
+	  ((arg_type->car->car->type == T_MIXED) ||
+	   (arg_type->car->cdr->type == T_MIXED))) {
+	/* Workaround used for some operators; typically
+	 *
+	 * function(mixed...:mixed) & !function(!(object|mixed):mixed)
+	 *
+	 * In this case we only want the object, and not the mixed.
+	 */
+	if (arg_type->car->car->type == T_MIXED) {
+	  tmp = low_get_first_arg_type(arg_type->car->cdr,
+				       flags|FILTER_KEEP_VOID);
+	} else {
+	  tmp = low_get_first_arg_type(arg_type->car->car,
+				       flags|FILTER_KEEP_VOID);
+	}
+	type_stack_mark();
+	push_finished_type(tmp);
+	free_type(tmp);
+	push_type(arg_type->type);
+	return pop_unfinished_type();
+      }
     case T_ARRAY:
     case T_MULTISET:
       /* Keep void! */
@@ -5119,8 +5225,13 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
        */
       goto loop;
     }
+    /* FIXME: Multiple cases:
+     *          Untyped object.			function(mixed...:object)
+     *          Failed to lookup program id.	function(mixed...:object)
+     *          Program does not have create().	function(:object)
+     */
     /* No create() ==> no arguments. */
-    res = NULL;
+    copy_pike_type(res, mixed_type_string);
     break;
   case PIKE_T_OBJECT:
     fun_type = low_object_lfun_type(fun_type, LFUN_CALL);
