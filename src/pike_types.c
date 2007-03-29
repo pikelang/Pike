@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.268 2007/03/28 15:34:15 grubba Exp $
+|| $Id: pike_types.c,v 1.269 2007/03/29 15:53:55 grubba Exp $
 */
 
 #include "global.h"
@@ -4559,8 +4559,8 @@ struct pike_type *get_argument_type(struct pike_type *fun, int arg_no)
  *
  * Returns continuation function type on success.
  */
-static struct pike_type *lower_new_check_call(struct pike_type *arg_type,
-					      struct pike_type *fun_type,
+static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
+					      struct pike_type *arg_type,
 					      INT32 flags
 #ifdef PIKE_TYPE_DEBUG
 					      , INT32 indent
@@ -4578,9 +4578,9 @@ static struct pike_type *lower_new_check_call(struct pike_type *arg_type,
 #ifdef PIKE_TYPE_DEBUG
   if (l_flag>2) {
     fprintf(stderr, "%*slower_new_check_call(", indent*2, "");
-    simple_describe_type(arg_type);
-    fprintf(stderr, ", ");
     simple_describe_type(fun_type);
+    fprintf(stderr, ", ");
+    simple_describe_type(arg_type);
     fprintf(stderr, ", 0x%04x)...\n", flags);
   }
 #endif /* PIKE_TYPE_DEBUG */
@@ -4600,12 +4600,12 @@ static struct pike_type *lower_new_check_call(struct pike_type *arg_type,
     goto loop;
 
   case T_OR:
-    res = lower_new_check_call(arg_type, fun_type->car, flags CHECK_CALL_ARGS);
+    res = lower_new_check_call(fun_type->car, arg_type, flags CHECK_CALL_ARGS);
     if (!res) {
-      res = lower_new_check_call(arg_type, fun_type->cdr, flags CHECK_CALL_ARGS);
+      res = lower_new_check_call(fun_type->cdr, arg_type, flags CHECK_CALL_ARGS);
       break;
     }
-    tmp = lower_new_check_call(arg_type, fun_type->cdr, flags CHECK_CALL_ARGS);
+    tmp = lower_new_check_call(fun_type->cdr, arg_type, flags CHECK_CALL_ARGS);
     if (!tmp) break;
     res = or_pike_types(tmp2 = res, tmp, 1);
     free_type(tmp);
@@ -4613,9 +4613,9 @@ static struct pike_type *lower_new_check_call(struct pike_type *arg_type,
     break;
 
   case T_AND:
-    res = lower_new_check_call(arg_type, fun_type->car, flags CHECK_CALL_ARGS);
+    res = lower_new_check_call(fun_type->car, arg_type, flags CHECK_CALL_ARGS);
     if (!res) break;
-    tmp = lower_new_check_call(arg_type, fun_type->cdr, flags CHECK_CALL_ARGS);
+    tmp = lower_new_check_call(fun_type->cdr, arg_type, flags CHECK_CALL_ARGS);
     if (!tmp) {
       free_type(res);
       res = NULL;
@@ -4659,7 +4659,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *arg_type,
       push_finished_type(arg_type);
       push_type(T_NOT);
       arg_type = pop_unfinished_type();
-      res = lower_new_check_call(arg_type, fun_type->car, flags CHECK_CALL_ARGS);
+      res = lower_new_check_call(fun_type->car, arg_type, flags CHECK_CALL_ARGS);
       free_type(arg_type);
       if (res) {
 	/* Move the inversion back to the function type. */
@@ -4715,7 +4715,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *arg_type,
       fun_type = zzap_function_return(tmp, CDR_TO_INT(fun_type->car));
       free_type(tmp);
     }
-    res = lower_new_check_call(arg_type, fun_type, flags CHECK_CALL_ARGS);
+    res = lower_new_check_call(fun_type, arg_type, flags CHECK_CALL_ARGS);
     free_type(fun_type);
     break;
 
@@ -4855,8 +4855,8 @@ static struct pike_type *lower_new_check_call(struct pike_type *arg_type,
  *
  * Returns continuation function type on success.
  */
-struct pike_type *low_new_check_call(struct pike_type *arg_type,
-				     struct pike_type *fun_type,
+struct pike_type *low_new_check_call(struct pike_type *fun_type,
+				     struct pike_type *arg_type,
 				     INT32 flags)
 {
   struct pike_type *tmp;
@@ -4893,11 +4893,11 @@ struct pike_type *low_new_check_call(struct pike_type *arg_type,
     goto loop;
 
   case T_OR:
-    if (!(tmp = low_new_check_call(arg_type->car, fun_type, flags))) {
+    if (!(tmp = low_new_check_call(fun_type, arg_type->car, flags))) {
       arg_type = arg_type->cdr;
       goto loop;
     }
-    if (!(tmp2 = low_new_check_call(arg_type->cdr, fun_type, flags))) {
+    if (!(tmp2 = low_new_check_call(fun_type, arg_type->cdr, flags))) {
       return tmp;
     }
     res = or_pike_types(tmp, tmp2, 1);
@@ -4906,10 +4906,10 @@ struct pike_type *low_new_check_call(struct pike_type *arg_type,
     return res;
 
   case T_AND:
-    if (!(tmp = low_new_check_call(arg_type->car, fun_type, flags))) {
+    if (!(tmp = low_new_check_call(fun_type, arg_type->car, flags))) {
       return NULL;
     }
-    if (!(tmp2 = low_new_check_call(arg_type->cdr, fun_type, flags))) {
+    if (!(tmp2 = low_new_check_call(fun_type, arg_type->cdr, flags))) {
       free_type(tmp);
       return NULL;
     }
@@ -4919,7 +4919,7 @@ struct pike_type *low_new_check_call(struct pike_type *arg_type,
     return res;
   }
 
-  if (!(tmp = lower_new_check_call(arg_type, fun_type, flags
+  if (!(tmp = lower_new_check_call(fun_type, arg_type, flags
 #ifdef PIKE_TYPE_DEBUG
 				   , 0
 #endif
