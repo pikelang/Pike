@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.631 2007/03/29 15:59:21 grubba Exp $
+|| $Id: builtin_functions.c,v 1.632 2007/03/29 16:39:42 grubba Exp $
 */
 
 #include "global.h"
@@ -9184,7 +9184,7 @@ void init_builtin_efuns(void)
 	   tFunc(tStr8,tStr8),OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("__low_check_call", f___low_check_call,
-	   tFunc(tType(tMix) tType(tCallable) tOr(tInt,tVoid),
+	   tFunc(tType(tCallable) tType(tMix) tOr(tInt,tVoid),
 		 tType(tCallable)),
 	   OPT_TRY_OPTIMIZE);
 
