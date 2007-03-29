@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.726 2005/04/02 14:25:14 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.727 2007/03/29 15:36:55 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -650,19 +650,6 @@ test_compile_error( [[
   // This triggs a compiler bug on old Pike 7.5.
   return lambda(object (([mixed]a)->syntax_error) { return 0; }(0);
 ]])
-
-test_any( [[
-// bug [2861] ------------------------------------------------------------
-// http://community/crunch/show_bug.cgi?id=2861
-return mktime(0,0,0,1,0,70,0,0);
-]], 0)
-
-test_any( [[
-// bug [3270] ------------------------------------------------------------
-// http://community/crunch/show_bug.cgi?id=3270
-// Tue, 15 Oct 2002 09:38:32 GMT
-return mktime(32, 38, 9, 15, 9, 102, 0, 0);
-]], 1034674712)
 
 cond( [[ master()->resolv("Pike")->Security ]],[[
   test_any( [[
@@ -9209,6 +9196,24 @@ cond([[all_constants()->mktime]],
 		       1861916900,1988147300,2114377700
 		      }),int t) if(mktime(gmtime(t))!=t) return t; return 0;]], 0)
 
+  test_eq(mktime (0, 0, 0, -200, -6, 101, 0, 0), 945043200);
+  test_eq(mktime (0, 0, 0, -1, 2, 107, 0, 0), 1172534400);
+  test_eq(mktime (0, 0, 0, 200, 1, 107, 0, 0), 1187481600);
+  test_eq(mktime (200, 200, 200, 200, 1, 107, 0, 0), 1188213800);
+  test_eq(mktime (-200, -200, -200, 200, 1, 107, 0, 0), 1186749400);
+
+  test_any( [[
+  // bug [2861] ------------------------------------------------------------
+  // http://community/crunch/show_bug.cgi?id=2861
+  return mktime(0,0,0,1,0,70,0,0);
+  ]], 0)
+
+  test_any( [[
+  // bug [3270] ------------------------------------------------------------
+  // http://community/crunch/show_bug.cgi?id=3270
+  // Tue, 15 Oct 2002 09:38:32 GMT
+  return mktime(32, 38, 9, 15, 9, 102, 0, 0);
+  ]], 1034674712)
 ]])
 
 // - multisetp
