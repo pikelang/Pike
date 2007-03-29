@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.602 2005/02/01 19:10:04 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.603 2007/03/29 15:38:20 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -579,6 +579,12 @@ test_any( [[
 // Tue, 15 Oct 2002 09:38:32 GMT
 return mktime(32, 38, 9, 15, 9, 102, 0, 0);
 ]], 1034674712)
+
+test_eq(mktime (0, 0, 0, -200, -6, 101, 0, 0), 945043200);
+test_eq(mktime (0, 0, 0, -1, 2, 107, 0, 0), 1172534400);
+test_eq(mktime (0, 0, 0, 200, 1, 107, 0, 0), 1187481600);
+test_eq(mktime (200, 200, 200, 200, 1, 107, 0, 0), 1188213800);
+test_eq(mktime (-200, -200, -200, 200, 1, 107, 0, 0), 1186749400);
 
 test_any( [[
 // bug [2830] ------------------------------------------------------------

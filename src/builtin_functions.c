@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.479 2006/02/02 10:23:37 jonasw Exp $
+|| $Id: builtin_functions.c,v 1.480 2007/03/29 15:38:20 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.479 2006/02/02 10:23:37 jonasw Exp $");
+RCSID("$Id: builtin_functions.c,v 1.480 2007/03/29 15:38:20 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4258,31 +4258,86 @@ PMOD_EXPORT void f_localtime(INT32 args)
 #endif
 
 #if defined (HAVE_GMTIME) || defined (HAVE_LOCALTIME)
+
+#define isleap(y) ((((y) % 4) == 0 && ((y) % 100) != 0) || ((y) % 400) == 0)
+
+static const int mon_lengths[2][12] = {
+  {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
+  {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
+};
+
+static void normalize_date (struct tm *t)
+/* Normalizes t->tm_mday and t->tm_mon. */
+{
+  int q, year, mon, mday, leap;
+
+  q = t->tm_mon / 12;
+  if (t->tm_mon < 0) q--;
+  t->tm_mon -= q * 12;
+  t->tm_year += q;
+
+  year = t->tm_year + 1900;
+  leap = isleap (year);
+  mon = t->tm_mon;
+  mday = t->tm_mday;
+
+  if (mday > 0) {
+    int mon_len = mon_lengths[leap][mon];
+    if (mday <= mon_len) return;
+    do {
+      mday -= mon_len;
+      if (++mon == 12) mon = 0, year++, leap = isleap (year);
+    } while (mday > (mon_len = mon_lengths[leap][mon]));
+  }
+
+  else
+    do {
+      if (mon == 0) mon = 11, year--, leap = isleap (year);
+      else mon--;
+      mday += mon_lengths[leap][mon];
+    } while (mday < 1);
+
+  t->tm_year = year - 1900;
+  t->tm_mon = mon;
+  t->tm_mday = mday;
+}
+
+#define CHECKED_DIFF_MULT(RES, A, B, MULT, OVERFLOW) do {		\
+    RES = (A - B) * (MULT);						\
+    if ((A > B) != (RES > 0)) {OVERFLOW;}				\
+  } while (0)
+
+#define CHECKED_ADD(ACC, DIFF, OVERFLOW) do {				\
+    time_t res_ = ACC + DIFF;						\
+    if ((ACC > 0) == (DIFF > 0) && (ACC > 0) != (res_ > 0))		\
+      {OVERFLOW;}							\
+    ACC = res_;								\
+  } while (0)
+
 /* Returns the approximate difference in seconds between the
  * two struct tm's.
  */
 static time_t my_tm_diff(const struct tm *t1, const struct tm *t2)
 {
-  time_t base;
+  time_t base, diff;
 
   /* Win32 localtime() returns NULL for all dates before Jan 01, 1970. */
   if (!t2) return -1;
 
-  base = (t1->tm_year - t2->tm_year) * 32140800;
+  CHECKED_DIFF_MULT (base, t1->tm_year, t2->tm_year, 60*60*24*31*12,
+		     return base < 0 ? 0x7fffffff : -0x7fffffff);
 
-  /* Overflow detection. (Should possibly be done on the other fields
-   * too to cope with very large invalid dates.) */
-  if ((t1->tm_year > t2->tm_year) && (base < 0))
-    return 0x7fffffff;
-  if ((t1->tm_year < t2->tm_year) && (base > 0))
-    return -0x7fffffff;
-
-  base +=
-    (t1->tm_mon - t2->tm_mon) * 2678400 +
-    (t1->tm_mday - t2->tm_mday) * 86400 +
-    (t1->tm_hour - t2->tm_hour) * 3600 +
+  /* Overflow detection not necessary on these fields since we can
+   * assume they're all in the valid ranges here. */
+  diff =
+    (t1->tm_mon - t2->tm_mon) * (60*60*24*31) +
+    (t1->tm_mday - t2->tm_mday) * (60*60*24) +
+    (t1->tm_hour - t2->tm_hour) * (60*60) +
     (t1->tm_min - t2->tm_min) * 60 +
     (t1->tm_sec - t2->tm_sec);
+
+  CHECKED_ADD (base, diff,
+	       return diff < 0 ? -0x7fffffff : 0x7fffffff);
 
   return base;
 }
@@ -4294,22 +4349,73 @@ typedef struct tm *time_fn (const time_t *);
  */
 static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn)
 {
+  struct tm norm_tm = *target_tm;
   time_t current_ts = 0;
+  time_t displacement;
   time_t diff_ts, old_diff_ts = 0;
-  struct tm *current_tm;
   int loop_cnt, tried_dst_displacement = 0;
+
+#ifdef DEBUG_MY_TIME_INVERSE
+  fprintf (stderr, "target: y %d m %d d %d h %d m %d isdst %d\n",
+	   target_tm->tm_year, target_tm->tm_mon, target_tm->tm_mday,
+	   target_tm->tm_hour, target_tm->tm_min, target_tm->tm_isdst);
+#endif
+
+  /* An hour, minute or second value outside the valid range is
+   * treated as a displacement rather than an absolute time spec. We
+   * therefore zero them in the target time spec and add the
+   * displacement seconds back to the time_t afterwards. This way we
+   * don't need to worry about them in the date normalization. */
+
+  /* It's quicker to always move the seconds to the displacement. It
+   * works just as well and we don't need to consider leap seconds. */
+  displacement = norm_tm.tm_sec;
+  norm_tm.tm_sec = 0;
+
+  /* Bug: The following conversions to seconds ought to compensate for
+   * leap seconds. That should only happen if timefn takes leap
+   * seconds into account however, which it might not do. */
+  if (norm_tm.tm_min < 0 || norm_tm.tm_min >= 60) {
+    time_t d;
+    CHECKED_DIFF_MULT (d, norm_tm.tm_min, 0, 60, return 0);
+    CHECKED_ADD (displacement, d, return 0);
+    norm_tm.tm_min = 0;
+  }
+  if (norm_tm.tm_hour < 0 || norm_tm.tm_hour >= 60) {
+    time_t d;
+    CHECKED_DIFF_MULT (d, norm_tm.tm_hour, 0, 60*60, return 0);
+    CHECKED_ADD (displacement, d, return 0);
+    norm_tm.tm_hour = 0;
+  }
+
+  /* Normalize the date. This is necessary since the simplistic diff
+   * calculation in my_tm_diff doesn't work on invalid dates like
+   * November 100th or March -10th. (Can't use the displacement
+   * variable for an invalid tm_mday since the number of seconds per
+   * day isn't constant.) */
+  normalize_date (&norm_tm);
+#ifdef DEBUG_MY_TIME_INVERSE
+  fprintf (stderr, "normalized: y %d m %d d %d h %d m %d isdst %d\n"
+	   "displacement: %ld\n",
+	   norm_tm.tm_year, norm_tm.tm_mon, norm_tm.tm_mday,
+	   norm_tm.tm_hour, norm_tm.tm_min, norm_tm.tm_isdst,
+	   (long) displacement);
+#endif
 
   /* This loop seems stable, and usually converges in two passes.
    * The loop counter is for paranoia reasons.
    */
   for (loop_cnt = 0; loop_cnt < 20; loop_cnt++, old_diff_ts = diff_ts) {
-    diff_ts = my_tm_diff(target_tm, current_tm = timefn(&current_ts));
-
+    struct tm *current_tm = timefn(&current_ts);
 #ifdef DEBUG_MY_TIME_INVERSE
     fprintf (stderr, "curr: y %d m %d d %d h %d m %d isdst %d\n",
 	     current_tm->tm_year, current_tm->tm_mon, current_tm->tm_mday,
 	     current_tm->tm_hour, current_tm->tm_min, current_tm->tm_isdst);
-    fprintf (stderr, "diff: %d\n", diff_ts);
+#endif
+
+    diff_ts = my_tm_diff (&norm_tm, current_tm);
+#ifdef DEBUG_MY_TIME_INVERSE
+    fprintf (stderr, "diff: %ld\n", (long) diff_ts);
 #endif
 
     if (!current_tm) {
@@ -4320,17 +4426,17 @@ static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn
     }
 
     if (!diff_ts) {
-      /* Got a satisfactory time, but if target_tm has an opinion on
+      /* Got a satisfactory time, but if norm_tm has an opinion on
        * DST we should check if we can return an alternative in the
        * same DST zone, to cope with the overlapping DST adjustment at
        * fall. */
-      if (target_tm->tm_isdst >= 0 &&
-	  target_tm->tm_isdst != current_tm->tm_isdst &&
+      if (norm_tm.tm_isdst >= 0 &&
+	  norm_tm.tm_isdst != current_tm->tm_isdst &&
 	  !tried_dst_displacement) {
 	/* Offset the time a day and iterate some more (only once
 	 * more, really), so that we approach the target time from the
 	 * right direction. */
-	if (target_tm->tm_isdst)
+	if (norm_tm.tm_isdst)
 	  current_ts -= 24 * 3600;
 	else
 	  current_ts += 24 * 3600;
@@ -4344,49 +4450,20 @@ static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn
     }
 
     if (diff_ts == -old_diff_ts) {
-      /* We're oscillating, which means the time in target_tm is
-       * invalid. mktime(3) maps to the closest "convenient" valid
-       * time in that case, so let's do that too. */
-      if (diff_ts > -24 * 3600 && diff_ts < 24 * 3600) {
-	/* The oscillation is not whole days, so it must be due to the
-	 * DST gap in the spring. Prefer the same DST zone as the
-	 * target tm, if it has one set. */
-	if (target_tm->tm_isdst >= 0) {
-	  if (target_tm->tm_isdst != current_tm->tm_isdst)
-	    current_ts += diff_ts;
+      /* We're oscillating. Shouldn't happen since norm_tm ought to be
+       * valid. */
 #ifdef DEBUG_MY_TIME_INVERSE
-	  fprintf (stderr, "spring dst gap\n");
-#endif
-	  break;
-	}
-      }
-      /* The oscillation is due to the gap between the 31 day months
-       * used in my_tm_diff and the actual month lengths. In that case
-       * it's correct to always go forward so that e.g. April 31st
-       * maps to May 1st. */
-      if (diff_ts > 0)
-	current_ts += diff_ts;
-#ifdef DEBUG_MY_TIME_INVERSE
-      fprintf (stderr, "end of month gap\n");
-#endif
-      break;
-    }
-
-    if (INT_TYPE_ADD_OVERFLOW (current_ts, diff_ts)) {
-#ifdef DEBUG_MY_TIME_INVERSE
-      fprintf (stderr, "got overflow adding %ld and %ld\n",
-	       (long) current_ts, (long) diff_ts);
+      fprintf (stderr, "oscillation detected: %ld <-> %ld\n",
+	       (long) old_diff_ts, (long) diff_ts);
 #endif
       return 0;
     }
-    current_ts += diff_ts;
+
+    CHECKED_ADD (current_ts, diff_ts, return 0);
   }
 
-#ifdef DEBUG_MY_TIME_INVERSE
-  fprintf (stderr, "res: y %d m %d d %d h %d m %d isdst %d\n",
-	   current_tm->tm_year, current_tm->tm_mon, current_tm->tm_mday,
-	   current_tm->tm_hour, current_tm->tm_min, current_tm->tm_isdst);
-#endif
+  CHECKED_ADD (current_ts, displacement, return 0);
+
   *result = current_ts;
   return 1;
 }
