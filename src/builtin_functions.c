@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.630 2007/03/29 15:36:54 mast Exp $
+|| $Id: builtin_functions.c,v 1.631 2007/03/29 15:59:21 grubba Exp $
 */
 
 #include "global.h"
@@ -2222,8 +2222,8 @@ static void f_parse_pike_type( INT32 args )
   free_type(t);
 }
 
-/*! @decl type __check_call(type arg_type, type fun_type)
- *! @decl type __check_call(type arg_type, type fun_type, int flags)
+/*! @decl type __low_check_call(type fun_type, type arg_type)
+ *! @decl type __low_check_call(type fun_type, type arg_type, int flags)
  *!
  *!   Check whether a function of type @[fun_type] may be called
  *!   with a first argument of type @[arg_type].
@@ -2245,20 +2245,20 @@ static void f_parse_pike_type( INT32 args )
  *!
  *!   Returns @tt{0@} (zero) on failure.
  */
-static void f___check_call(INT32 args)
+static void f___low_check_call(INT32 args)
 {
   struct pike_type *res;
   INT32 flags = 0;
-  if (args < 2) Pike_error("Bad number of arguments to __check_call().\n");
+  if (args < 2) Pike_error("Bad number of arguments to __low_check_call().\n");
   if (Pike_sp[-args].type != PIKE_T_TYPE) {
-    Pike_error("Bad argument 1 to __check_call() expected type.\n");
+    Pike_error("Bad argument 1 to __low_check_call() expected type.\n");
   }
   if (Pike_sp[1-args].type != PIKE_T_TYPE) {
-    Pike_error("Bad argument 2 to __check_call() expected type.\n");
+    Pike_error("Bad argument 2 to __low_check_call() expected type.\n");
   }
   if (args > 2) {
     if (Pike_sp[2-args].type != PIKE_T_INT) {
-      Pike_error("Bad argument 3 to __check_call() expected int.\n");
+      Pike_error("Bad argument 3 to __low_check_call() expected int.\n");
     }
     flags = Pike_sp[2-args].u.integer;
   }
@@ -9183,7 +9183,7 @@ void init_builtin_efuns(void)
   ADD_EFUN("__parse_pike_type", f_parse_pike_type,
 	   tFunc(tStr8,tStr8),OPT_TRY_OPTIMIZE);
 
-  ADD_EFUN("__check_call", f___check_call,
+  ADD_EFUN("__low_check_call", f___low_check_call,
 	   tFunc(tType(tMix) tType(tCallable) tOr(tInt,tVoid),
 		 tType(tCallable)),
 	   OPT_TRY_OPTIMIZE);
