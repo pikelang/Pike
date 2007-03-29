@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.211 2006/07/05 02:22:21 mast Exp $
+|| $Id: stralloc.c,v 1.212 2007/03/29 13:38:38 marcus Exp $
 */
 
 #include "global.h"
@@ -1044,7 +1044,7 @@ PMOD_EXPORT void really_free_string(struct pike_string *s)
 #endif
     Pike_fatal("Freeing string with %d references.\n", s->refs);
   }
-  if(d_flag > 2)
+  if(d_flag > 2 && !(s->flags & STRING_NOT_SHARED))
   {
     if(s->next == (struct pike_string *)(ptrdiff_t)-1)
       Pike_fatal("Freeing shared string again!\n");
