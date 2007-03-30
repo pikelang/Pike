@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.270 2007/03/30 12:47:25 grubba Exp $
+|| $Id: pike_types.c,v 1.271 2007/03/30 15:26:35 grubba Exp $
 */
 
 #include "global.h"
@@ -4681,8 +4681,8 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	  res = tmp;
 	} else {
 	  type_stack_mark();
-	  if ((res == fun_type->car) &&
-	      (res->type == T_MANY) &&
+	  if ((res->type == T_MANY) &&
+	      (fun_type->car->type == T_MANY) &&
 	      (res->car->type == T_NOT)) {
 	    /* Exist criteria is fulfilled.
 	     * Reduce !function(!type...:type) to function(mixed...:type).
