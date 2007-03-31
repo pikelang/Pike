@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.271 2007/03/30 15:26:35 grubba Exp $
+|| $Id: pike_types.c,v 1.272 2007/03/31 15:08:42 grubba Exp $
 */
 
 #include "global.h"
@@ -984,7 +984,7 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
     }
 #endif /* 0 */
     if ((marker_set & (PT_FLAG_MARKER_0 << m)) && markers[m]) {
-      type = markers[m];
+      type = dmalloc_touch(struct pike_type *, markers[m]);
       if (marker_set & (PT_FLAG_ASSIGN_0 << m)) {
 	/* There's a corresponding assignment,
 	 * so we need to keep the marker as well.
@@ -994,7 +994,7 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
 					marker_set & ~(PT_FLAG_MARKER_0 << m));
 	push_type('0' + m);
 	push_type(T_OR);
-	markers[m] = type;
+	markers[m] = dmalloc_touch(struct pike_type *, type);
       } else {
 	/* It's a marker we're cleared to replace. */
 	marker_set &= ~(PT_FLAG_MARKER_0 << m);
@@ -1681,6 +1681,7 @@ void stupid_describe_type_string(char *a, ptrdiff_t len)
 void simple_describe_type(struct pike_type *s)
 {
   if (s) {
+    /* fprintf(stderr, "[[[%p]]]", s); */
     switch(s->type) {
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
@@ -1816,6 +1817,9 @@ void simple_describe_type(struct pike_type *s)
       default:
 	fprintf(stderr, "Unknown type node: %d, %p:%p",
 	       s->type, s->car, s->cdr);
+#ifdef DEBUG_MALLOC
+	debug_malloc_dump_references(s, 0, 2, 0);
+#endif
 	break;
     }
     if (s->flags) {
@@ -3283,7 +3287,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       low_or_pike_types(b_markers[m], tmp, 0);
       if(b_markers[m]) free_type(b_markers[m]);
       free_type(tmp);
-      b_markers[m]=pop_unfinished_type();
+      b_markers[m] = pop_unfinished_type();
 #ifdef PIKE_TYPE_DEBUG
       if (l_flag>2) {
 	dynamic_buffer save_buf;
@@ -4587,7 +4591,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
   struct pike_type *tmp2;
   INT32 array_cnt = 0;
 
-#ifdef PIKE_TYPE_DEBUG
+#ifdef PIKE_DEBUG
   if (l_flag>2) {
     fprintf(stderr, "%*slower_new_check_call(", indent*2, "");
     simple_describe_type(fun_type);
@@ -4595,7 +4599,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     simple_describe_type(arg_type);
     fprintf(stderr, ", 0x%04x)...\n", flags);
   }
-#endif /* PIKE_TYPE_DEBUG */
+#endif /* PIKE_DEBUG */
 
  loop:
   /* Count the number of array levels. */
@@ -4661,7 +4665,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 
   case T_NOT:
     if (arg_type->type == T_NOT) {
-      /* Both sides are inverted. Pop both. */
+      /* Both sides are inverted. Pop both inversions. */
       arg_type = arg_type->car;
       fun_type = fun_type->car;
       goto loop;
@@ -4691,9 +4695,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	     *        with current types.
 	     * FIXME: What about the limited number of args case?
 	     */
-	    push_finished_type(res->cdr);
 	    push_finished_type(mixed_type_string);
-	    push_type(T_MANY);
 	    free_type(res);
 	  } else {
 	    /* More arguments to check. */
@@ -4722,10 +4724,11 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
        */
 
       /* No create() -- No arguments. */
-      return NULL;
+      /* return NULL; */
+      copy_pike_type(res, mixed_type_string);
+      break;
     } else {
       fun_type = zzap_function_return(tmp, CDR_TO_INT(fun_type->car));
-      free_type(tmp);
     }
     res = lower_new_check_call(fun_type, arg_type, flags CHECK_CALL_ARGS);
     free_type(fun_type);
@@ -4743,8 +4746,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 
     /* FALL_THROUGH */
   case PIKE_T_MIXED:
-    add_ref(mixed_type_string);
-    res = mixed_type_string;
+    copy_pike_type(res, mixed_type_string);
     break;
 
   case PIKE_T_FUNCTION:
@@ -4773,7 +4775,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     }
     /* Note: Use the low variants of pike_types_le and match_types,
      *       so that markers get set and kept. */
-#ifdef PIKE_TYPE_DEBUG
+#ifdef PIKE_DEBUG
     if (l_flag>2) {
       fprintf(stderr, "%*sChecking argument type ", indent*2+2, "");
       simple_describe_type(arg_type);
@@ -4781,16 +4783,16 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       simple_describe_type(fun_type);
       fprintf(stderr, ".\n");
     }
-#endif /* PIKE_TYPE_DEBUG */
+#endif /* PIKE_DEBUG */
     if (!low_pike_types_le(arg_type, fun_type->car, 0, 0) &&
 	((flags & CALL_STRICT) ||
-	 !low_match_types(arg_type, fun_type->car, 0))) {
+	 !low_match_types(arg_type, fun_type->car, NO_SHORTCUTS))) {
       /* No match. */
-#ifdef PIKE_TYPE_DEBUG
+#ifdef PIKE_DEBUG
       if (l_flag>2) {
 	fprintf(stderr, "%*sNo match.\n", indent*2+2, "");
       }
-#endif /* PIKE_TYPE_DEBUG */
+#endif /* PIKE_DEBUG */
       res = NULL;
       if (tmp) free_type(tmp);
       break;
@@ -4802,21 +4804,21 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       if ((flags & CALL_LAST_ARG) &&
 	  (fun_type->type == PIKE_T_FUNCTION)) {
 	/* There are more required arguments. */
-#ifdef PIKE_TYPE_DEBUG
+#ifdef PIKE_DEBUG
 	if (l_flag>2) {
 	  fprintf(stderr, "%*sMore arguments required.\n", indent*2+2, "");
 	}
-#endif /* PIKE_TYPE_DEBUG */
+#endif /* PIKE_DEBUG */
 	res = NULL;
 	if (tmp) free_type(tmp);
 	break;
       }
     }
-#ifdef PIKE_TYPE_DEBUG
+#ifdef PIKE_DEBUG
     if (l_flag>2) {
       fprintf(stderr, "%*sSuccess.\n", indent*2+2, "");
     }
-#endif /* PIKE_TYPE_DEBUG */
+#endif /* PIKE_DEBUG */
     type_stack_mark();
     push_finished_type_with_markers(fun_type, b_markers, PT_FLAG_MARKER);
     res = pop_unfinished_type();
@@ -4827,7 +4829,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     break;
   }
   if (!array_cnt || !res) {
-#ifdef PIKE_TYPE_DEBUG
+#ifdef PIKE_DEBUG
     if (l_flag>2) {
       if (res) {
 	fprintf(stderr, "%*s==> ", indent*2, "");
@@ -4837,7 +4839,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       }
       fprintf(stderr, "\n");
     }
-#endif /* PIKE_TYPE_DEBUG */
+#endif /* PIKE_DEBUG */
     return res;
   }
 
@@ -4849,13 +4851,13 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
   }
   res = pop_type();
 
-#ifdef PIKE_TYPE_DEBUG
+#ifdef PIKE_DEBUG
   if (l_flag>2) {
     fprintf(stderr, "%*s==> ", indent*2, "");
     simple_describe_type(res);
     fprintf(stderr, "\n");
   }
-#endif /* PIKE_TYPE_DEBUG */
+#endif /* PIKE_DEBUG */
 
   return res;
 }
@@ -4956,6 +4958,14 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
   struct pike_type *tmp2;
   INT32 array_cnt = 0;
 
+#ifdef PIKE_DEBUG
+  if (l_flag>2) {
+    fprintf(stderr, "  Getting return type for ");
+    simple_describe_type(fun_type);
+    fprintf(stderr, "... ");
+  }
+#endif /* PIKE_DEBUG */
+
  loop:
   /* Count the number of array levels. */
   while(fun_type->type == PIKE_T_ARRAY) {
@@ -4982,7 +4992,9 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     if (!(tmp = new_get_return_type(fun_type->cdr, flags))) {
       break;
     }
-    res = or_pike_types(res, tmp, 1);
+    res = or_pike_types(tmp2 = res, tmp, 1);
+    free_type(tmp2);
+    free_type(tmp);
     break;
   case T_AND:
     if (!(res = new_get_return_type(fun_type->car, flags))) {
@@ -5009,7 +5021,6 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
       break;
     } else {
       fun_type = zzap_function_return(tmp, CDR_TO_INT(fun_type->car));
-      free_type(tmp);
     }
     res = new_get_return_type(fun_type, flags);
     free_type(fun_type);
@@ -5025,16 +5036,23 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
 
     /* FALL_THROUGH */
   case PIKE_T_MIXED:
-    add_ref(mixed_type_string);
-    res = mixed_type_string;
+    copy_pike_type(res, mixed_type_string);
     break;
 
   case PIKE_T_FUNCTION:
-    /* Too few arguments. */
-    break;
+    do {
+      if (!match_types(fun_type->car, void_type_string)) {
+	/* Too few arguments. */
+	break;
+      }
+      fun_type = fun_type->cdr;
+    } while(fun_type->type == PIKE_T_FUNCTION);
+    if (fun_type->type != T_MANY) {
+      /* Still too few arguments. */
+      break;
+    }
   case T_MANY:
-    add_ref(fun_type->cdr);
-    res = fun_type->cdr;
+    copy_pike_type(res, fun_type->cdr);
     break;
 
   default:
@@ -5042,7 +5060,20 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     break;
   }
 
-  if (!res) return NULL;
+  if (!res) {
+#ifdef PIKE_DEBUG
+    if (l_flag>2) {
+      fprintf(stderr, "Failed.\n");
+    }
+#endif /* PIKE_DEBUG */
+    return NULL;
+  }
+
+#ifdef PIKE_DEBUG
+  if (l_flag>2) {
+    fprintf(stderr, "Ok, cleaning up markers... ");
+  }
+#endif /* PIKE_DEBUG */
 
   type_stack_mark();
 
@@ -5055,6 +5086,13 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
   while(array_cnt--) {
     push_type(PIKE_T_ARRAY);
   }
+
+#ifdef PIKE_DEBUG
+  if (l_flag>2) {
+    fprintf(stderr, "Done.\n");
+  }
+#endif /* PIKE_DEBUG */
+
   return pop_unfinished_type();
 }
 
@@ -5218,8 +5256,7 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
       break;
     }
     if (res->type == T_NOT) {
-      add_ref(res->car);
-      tmp = res->car;
+      copy_pike_type(tmp, res->car);
       free_type(res);
       res = tmp;
     } else {
@@ -5247,7 +5284,9 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
     break;
   case PIKE_T_OBJECT:
     fun_type = low_object_lfun_type(fun_type, LFUN_CALL);
-    if (fun_type) goto loop;
+    if (fun_type) {
+      goto loop;
+    }
     /* FIXME: Multiple cases:
      *          Untyped object.
      *          Failed to lookup program id.
@@ -5256,8 +5295,7 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
 
     /* FALL_THROUGH */
   case PIKE_T_MIXED:
-    add_ref(mixed_type_string);
-    res = mixed_type_string;
+    copy_pike_type(res, mixed_type_string);
     break;
 
   case PIKE_T_FUNCTION:
@@ -5277,51 +5315,90 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
   return res;
 }
 
-/* NOTE: type loses a reference. */
-struct pike_type *new_check_call(node *fun, int *argno,
-				 struct pike_type *type, node *args)
+/* NOTE: fun_type loses a reference. */
+struct pike_type *new_check_call(struct pike_string *fun_name,
+				 struct pike_type *fun_type,
+				 node *args, INT32 *argno)
 {
-  struct pike_type *tmp_type = NULL;
+  struct pike_type *tmp = NULL;
 
-  while (args && (args->token == F_ARG_LIST)) {
-    type = new_check_call(fun, argno, type, CAR(args));
+  debug_malloc_touch(fun_type);
+
+  while (args && (args->token == F_ARG_LIST) && fun_type) {
+    fun_type = new_check_call(fun_name, fun_type, CAR(args), argno);
+    debug_malloc_touch(fun_type);
     args = CDR(args);
   }
-  if (!args) {
-    return type;
+
+  if (!args || !fun_type) {
+    debug_malloc_touch(fun_type);
+    return fun_type;
   }
 
-  switch(type->type) {
-  case T_NOT:
-    break;
+  (*argno)++;
 
-  case T_FUNCTION:
-    if (!pike_types_le(args->type, type->car)) {
-      if (!match_types(args->type, type->car)) {
-	/* Bad arg */
-      } else {
-	/* Not strict arg */
-      }
-    }
-    copy_pike_type(tmp_type, type->cdr);
-    free_type(type);
-    type = tmp_type;
-    (*argno)++;
-    break;
+#ifdef PIKE_DEBUG
+  if (l_flag>2) {
+    fprintf(stderr, "  Checking argument #%d... ", *argno);
+    simple_describe_type(args->type);
+    fprintf(stderr, " fun_type: ");
+    simple_describe_type(fun_type);
+  }
+#endif /* PIK_DEBUG */
 
-  case T_MANY:
-    if (!pike_types_le(args->type, type->car)) {
-      if (!match_types(args->type, type->car)) {
-	/* Bad arg */
-      } else {
-	/* Not strict arg */
+  if (args->token == F_PUSH_ARRAY) {
+    struct pike_type *prev = NULL;
+    int cnt = 256;
+    /* This token can expand to anything between zero and MAX_ARGS args. */
+
+    /* Loop until we get a stable fun_type, or it's an invalid argument. */
+    while ((tmp = low_new_check_call(fun_type, args->type, 0)) &&
+	   (tmp != prev) && --cnt) {
+      if (prev) {
+	free_type(prev);
       }
+      prev = tmp;
+      tmp = or_pike_types(fun_type, prev, 1);
+      free_type(fun_type);
+      fun_type = tmp;
     }
-    (*argno)++;
-    break;
+    if (cnt == 256) {
+      yywarning("The slice operator argument must be an empty array.");
+    }
+    return fun_type;
+  } else if ((tmp = low_new_check_call(fun_type, args->type, 0))) {
+    /* OK. */
+#ifdef PIKE_DEBUG
+    if (l_flag>2) {
+      fprintf(stderr, " OK.\n");
+    }
+#endif /* PIKE_DEBUG */
+    free_type(fun_type);
+    return tmp;
   }
 
-  return type;
+  if ((tmp = get_first_arg_type(fun_type, 0))) {
+#ifdef PIKE_DEBUG
+    if (l_flag>2) {
+      fprintf(stderr, " Bad argument.\n");
+    }
+#endif /* PIKE_DEBUG */
+    my_yyerror("Bad argument %d to %S.",
+	       *argno, fun_name);
+    yytype_error(NULL, tmp, args->type, 0);
+    free_type(tmp);
+  } else {
+#ifdef PIKE_DEBUG
+    if (l_flag>2) {
+      fprintf(stderr, " Too many arguments.\n");
+    }
+#endif /* PIKE_DEBUG */
+    my_yyerror("Too many arguments to %S (expected %d arguments).",
+	       fun_name, *argno - 1);
+    yytype_error(NULL, NULL, args->type, 0);
+  }
+  free_type(fun_type);
+  return NULL;
 }
 
 struct pike_type *zzap_function_return(struct pike_type *a, INT32 id)
