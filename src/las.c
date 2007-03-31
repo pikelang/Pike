@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.380 2007/03/05 18:10:40 grubba Exp $
+|| $Id: las.c,v 1.381 2007/03/31 21:44:41 grubba Exp $
 */
 
 #include "global.h"
@@ -35,6 +35,8 @@
  * effects to to indexing.
  */
 /* #define PARANOID_INDEXING */
+
+/* #define NEW_ARG_CHECK */
 
 static node *eval(node *);
 static void optimize(node *n);
@@ -3503,8 +3505,137 @@ void yytype_error(char *msg, struct pike_type *expected_t,
       yyerror(msg);
   }
 
-  yyexplain_nonmatching_types(expected_t, got_t, flags);
+  if (expected_t && got_t) {
+    yyexplain_nonmatching_types(expected_t, got_t, flags);
+  } else if (expected_t) {
+    struct pike_string *s = describe_type(expected_t);
+    if (flags & YYTE_IS_WARNING) {
+      yywarning("Expected: %s", s->str);
+    } else {
+      my_yyerror("Expected: %S", s);
+    }
+  } else if (got_t) {
+    struct pike_string *s = describe_type(got_t);
+    if (flags & YYTE_IS_WARNING) {
+      yywarning("Got     : %s", s->str);
+    } else {
+      my_yyerror("Got     : %S", s);
+    }
+  }
 }
+
+static struct pike_string *get_name_of_function(node *n)
+{
+  struct pike_string *name = NULL;
+  if (!n) {
+    MAKE_CONST_STRING(name, "NULL");
+    return name;
+  }
+  switch(n->token)
+  {
+#if 0 /* FIXME */
+  case F_TRAMPOLINE:
+#endif
+  case F_IDENTIFIER:
+    name = ID_FROM_INT(Pike_compiler->new_program, n->u.id.number)->name;
+    break;
+
+  case F_ARROW:
+  case F_INDEX:
+    if(CDR(n)->token == F_CONSTANT &&
+       CDR(n)->u.sval.type == T_STRING)
+    {
+      name = CDR(n)->u.sval.u.string;
+    }else{
+      MAKE_CONST_STRING(name, "dynamically resolved function");
+    }
+    break;
+
+  case F_CONSTANT:
+    switch(n->u.sval.type)
+    {
+    case T_FUNCTION:
+      if(n->u.sval.subtype == FUNCTION_BUILTIN)
+      {
+	name = n->u.sval.u.efun->name;
+      }else{
+	name = ID_FROM_INT(n->u.sval.u.object->prog, n->u.sval.subtype)->name;
+      }
+      break;
+
+    case T_ARRAY:
+      MAKE_CONST_STRING(name, "array call");
+      break;
+
+    case T_PROGRAM:
+      MAKE_CONST_STRING(name, "clone call");
+      break;
+
+    default:
+      MAKE_CONST_STRING(name, "`() (function call)");
+      break;
+    }
+    break;
+
+  case F_EXTERNAL:
+  case F_GET_SET:
+    {
+      int id_no = n->u.integer.b;
+
+      if (id_no == IDREF_MAGIC_THIS) {
+	MAKE_CONST_STRING(name, "this");	/* Should perhaps qualify it. */
+      } else {
+	int program_id = n->u.integer.a;
+	struct program_state *state = Pike_compiler;
+
+	while (state && (state->new_program->id != program_id)) {
+	  state = state->previous;
+	}
+
+	if (state) {
+	  struct identifier *id = ID_FROM_INT(state->new_program, id_no);
+	  if (id && id->name) {
+	    name = id->name;
+#if 0
+#ifdef PIKE_DEBUG
+	    /* FIXME: This test crashes on valid code because the type of the
+	     * identifier can change in pass 2 -Hubbe
+	     */
+	    if(id->type != f)
+	    {
+	      printf("Type of external node is not matching it's identifier.\nid->type: ");
+	      simple_describe_type(id->type);
+	      printf("\nf       : ");
+	      simple_describe_type(f);
+	      printf("\n");
+	      
+	      Pike_fatal("Type of external node is not matching it's identifier.\n");
+	    }
+#endif
+#endif
+	  }
+	}
+	if (!name) {
+	  MAKE_CONST_STRING(name, "external symbol");
+	}
+      }
+    }
+    break;
+	  
+  default:
+    MAKE_CONST_STRING(name, "unknown function");
+  }
+#ifdef PIKE_DEBUG
+  if (!name) {
+    Pike_fatal("Failed to get name of function.\n");
+  }
+#endif
+  return name;
+}
+
+struct pike_type *new_check_call(struct pike_string *fun_name,
+				 struct pike_type *fun_type,
+				 node *args, int *argno);
 
 void fix_type_field(node *n)
 {
@@ -3714,19 +3845,43 @@ void fix_type_field(node *n)
       struct pike_type *f;	/* Expected type. */
       struct pike_type *s;	/* Actual type */
       struct pike_string *name = NULL;
+#ifndef NEW_ARG_CHECK
       char *alternate_name = NULL;
+#endif
+      int old_refs;
       INT32 max_args,args;
+
+      if (!match_types(CAR(n)->type, function_type_string) &&
+	  !match_types(CAR(n)->type, array_type_string)) {
+	yytype_error("Calling non function value.",
+		     function_type_string, CAR(n)->type, 0);
+	copy_pike_type(n->type, mixed_type_string);
+
+	/* print_tree(n); */
+	break;
+      }
 
 #ifdef NEW_ARG_CHECK
 
       args = 0;
 
+      name = get_name_of_function(CAR(n));
+
+      /* NOTE: new_check_call() steals a reference from f! */
       copy_pike_type(f, CAR(n)->type);
+      f = debug_malloc_pass(new_check_call(name, f, CDR(n), &args));
 
-      f = new_check_call(CAR(n), &args, f, CDR(n));
+      if (!f) {
+	/* Errors have been generated. */
+	copy_pike_type(n->type, mixed_type_string);
+	break;
+      }
 
-      if (f && (n->type = get_ret_type(f))) {
+      if ((n->type = new_get_return_type(dmalloc_touch(struct pike_type *, f),
+					 0))) {
 	/* Type/argument-check OK. */
+	debug_malloc_pass(n->type);
+
 	free_type(f);
 	if(n->token == F_AUTO_MAP)
 	{
@@ -3738,6 +3893,19 @@ void fix_type_field(node *n)
 	break;
       }
 
+      /* Too few arguments or similar. */
+      copy_pike_type(n->type, mixed_type_string);
+
+      if ((s = get_first_arg_type(dmalloc_touch(struct pike_type *, f), 0))) {
+	my_yyerror("Too few arguments to %S (got %d).", name, args);
+	yytype_error(NULL, s, NULL, 0);
+	free_type(s);
+      } else {
+	my_yyerror("Type checking error for function call to %S.", name);
+	yytype_error(NULL, f, NULL, 0);
+      }
+      free_type(f);
+      break;
 #else /* !NEW_ARG_CHECK */
 
       push_type(T_MIXED); /* match any return type */
@@ -3770,16 +3938,6 @@ void fix_type_field(node *n)
 	  n->type = pop_type();
 	}
 
-	break;
-      }
-
-      if (!pike_types_le(f, function_type_string)) {
-	yytype_error("Calling non function value.", s, f, 0);
-	copy_pike_type(n->type, mixed_type_string);
-
-	/* print_tree(n); */
-
-	free_type(s);	
 	break;
       }
 
