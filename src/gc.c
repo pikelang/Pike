@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.278 2007/03/07 18:41:31 mast Exp $
+|| $Id: gc.c,v 1.279 2007/03/31 21:41:34 grubba Exp $
 */
 
 #include "global.h"
@@ -1177,6 +1177,14 @@ again:
 	  fprintf(stderr,"%*s** \"%s\"\n",indent,"",s->str);
 	}
       }
+      break;
+    }
+
+    case PIKE_T_TYPE:
+    {
+      fprintf(stderr, "%*s**type: ", indent, "");
+      simple_describe_type((struct pike_type *)a);
+      fprintf(stderr, "\n");
       break;
     }
 
@@ -2931,6 +2939,9 @@ size_t do_gc(void *ignored, int explicit_call)
     n += gc_touch_all_programs();
     n += gc_touch_all_objects();
 #ifdef PIKE_DEBUG
+#if 0
+    gc_touch_all_types();
+#endif
     gc_touch_all_strings();
 #endif
     if (n != (unsigned) num_objects)
@@ -2989,6 +3000,11 @@ size_t do_gc(void *ignored, int explicit_call)
       gc_mark_run_queue();
       gc_mark_all_objects();
       gc_mark_run_queue();
+#if 0
+#ifdef DEBUG_MALLOC
+      gc_mark_all_types();
+#endif /* DEBUG_MALLOC */
+#endif
 #ifdef PIKE_DEBUG
       if(gc_debug) gc_mark_all_strings();
 #endif /* PIKE_DEBUG */
@@ -3020,6 +3036,11 @@ size_t do_gc(void *ignored, int explicit_call)
     gc_cycle_check_all_multisets();
     gc_cycle_check_all_mappings();
     gc_cycle_check_all_programs();
+#if 0
+#ifdef DEBUG_MALLOC
+    gc_cycle_check_all_types();
+#endif
+#endif
 
 #ifdef PIKE_DEBUG
     if (stack_top != POP2STACK (&sentinel_frame))
@@ -3078,6 +3099,9 @@ size_t do_gc(void *ignored, int explicit_call)
     n += gc_touch_all_programs();
     n += gc_touch_all_objects();
 #ifdef PIKE_DEBUG
+#if 0
+    gc_touch_all_types();
+#endif
     gc_touch_all_strings();
 #endif
     if (n != (unsigned) num_objects)
@@ -3130,6 +3154,12 @@ size_t do_gc(void *ignored, int explicit_call)
    * necessary to free the objects before the programs. */
   if (gc_internal_program)
     unreferenced += gc_free_all_unreferenced_programs();
+
+#if 0
+#ifdef DEBUG_MALLOC
+  unreferenced += gc_free_all_unreferenced_types();
+#endif
+#endif
 
   /* We might occasionally get things to gc_delayed_free that the free
    * calls above won't find. They're tracked in this list. */
@@ -3233,6 +3263,7 @@ size_t do_gc(void *ignored, int explicit_call)
     n += gc_touch_all_mappings();
     n += gc_touch_all_programs();
     n += gc_touch_all_objects();
+    /* gc_touch_all_types(); */
     /* gc_touch_all_strings(); */
     if (n != (unsigned) num_objects)
       Pike_fatal("Object count wrong after gc; expected %d, got %d.\n", num_objects, n);
