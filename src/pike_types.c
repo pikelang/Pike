@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.272 2007/03/31 15:08:42 grubba Exp $
+|| $Id: pike_types.c,v 1.273 2007/03/31 21:39:45 grubba Exp $
 */
 
 #include "global.h"
@@ -26,6 +26,7 @@
 #include "main.h"
 #include "opcodes.h"
 #include "cyclic.h"
+#include "gc.h"
 #include "block_alloc.h"
 
 #ifdef PIKE_DEBUG
@@ -5341,30 +5342,71 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
   if (l_flag>2) {
     fprintf(stderr, "  Checking argument #%d... ", *argno);
     simple_describe_type(args->type);
-    fprintf(stderr, " fun_type: ");
+    fprintf(stderr, "\n  fun_type: ");
     simple_describe_type(fun_type);
   }
-#endif /* PIK_DEBUG */
+#endif /* PIKE_DEBUG */
 
   if (args->token == F_PUSH_ARRAY) {
     struct pike_type *prev = NULL;
     int cnt = 256;
     /* This token can expand to anything between zero and MAX_ARGS args. */
 
+#ifdef PIKE_DEBUG
+    if (l_flag>2) {
+      fprintf(stderr, "\n  The argument is a splice operator.");
+    }
+#endif /* PIKE_DEBUG */
+
     /* Loop until we get a stable fun_type, or it's an invalid argument. */
-    while ((tmp = low_new_check_call(fun_type, args->type, 0)) &&
+    while ((tmp = low_new_check_call(debug_malloc_pass(fun_type),
+				     debug_malloc_pass(args->type), 0)) &&
 	   (tmp != prev) && --cnt) {
+
+#ifdef PIKE_DEBUG
+      if (l_flag>4) {
+	fprintf(stderr, "\n    sub_result_type: ");
+	simple_describe_type(tmp);
+      }
+#endif /* PIKE_DEBUG */
+
       if (prev) {
 	free_type(prev);
       }
       prev = tmp;
-      tmp = or_pike_types(fun_type, prev, 1);
+      tmp = dmalloc_touch(struct pike_type *,
+			  or_pike_types(debug_malloc_pass(fun_type),
+					debug_malloc_pass(prev), 1));
+#ifdef PIKE_DEBUG
+      if (l_flag>4) {
+	fprintf(stderr, "\n    joined_type: ");
+	simple_describe_type(tmp);
+      }
+#endif /* PIKE_DEBUG */
+
       free_type(fun_type);
       fun_type = tmp;
     }
-    if (cnt == 256) {
-      yywarning("The slice operator argument must be an empty array.");
+    if (prev) {
+      free_type(prev);
     }
+    if (tmp) {
+      free_type(tmp);
+    } else if (cnt == 256) {
+      yywarning("The splice operator argument must be an empty array.");
+    } else {
+      yywarning("The splice operator argument has a max length of %d.",
+		256-cnt);
+    }
+
+#ifdef PIKE_DEBUG
+    if (l_flag>2) {
+      fprintf(stderr, "\n  result: ");
+      simple_describe_type(fun_type);
+      fprintf(stderr, " OK.\n");
+    }
+#endif /* PIKE_DEBUG */
+
     return fun_type;
   } else if ((tmp = low_new_check_call(fun_type, args->type, 0))) {
     /* OK. */
@@ -6171,6 +6213,50 @@ struct pike_string *type_to_string(struct pike_type *t)
   return free_buf(&save_buf);
 }
 
+#if 0
+#ifdef DEBUG_MALLOC
+static void gc_mark_external_types(struct callback *cb, void *a, void *b)
+{
+  GC_ENTER(pike_type_hash, PIKE_T_TYPE) {
+    if (string0_type_string)
+      gc_mark_external(string0_type_string, " as string0_type_string");
+    if (string_type_string)
+      gc_mark_external(string_type_string, " as string_type_string");
+    if (int_type_string)
+      gc_mark_external(int_type_string, " as int_type_string");
+    if (object_type_string)
+      gc_mark_external(object_type_string, " as object_type_string");
+    if (program_type_string)
+      gc_mark_external(program_type_string, " as program_type_string");
+    if (float_type_string)
+      gc_mark_external(float_type_string, " as float_type_string");
+    if (mixed_type_string)
+      gc_mark_external(mixed_type_string, " as mixed_type_string");
+    if (array_type_string)
+      gc_mark_external(array_type_string, " as array_type_string");
+    if (multiset_type_string)
+      gc_mark_external(multiset_type_string, " as multiset_type_string");
+    if (mapping_type_string)
+      gc_mark_external(mapping_type_string, " as mapping_type_string");
+    if (function_type_string)
+      gc_mark_external(function_type_string, " as function_type_string");
+    if (type_type_string)
+      gc_mark_external(type_type_string, " as type_type_string");
+    if (void_type_string)
+      gc_mark_external(void_type_string, " as void_type_string");
+    if (zero_type_string)
+      gc_mark_external(zero_type_string, " as zero_type_string");
+    if (any_type_string)
+      gc_mark_external(any_type_string, " as any_type_string");
+    if (weak_type_string)
+      gc_mark_external(weak_type_string, " as weak_type_string");
+  } GC_LEAVE;
+}
+
+static struct callback *dmalloc_gc_callback = NULL;
+#endif /* DEBUG_MALLOC */
+#endif /* 0 */
+
 void init_types(void)
 {
   /* Initialize hashtable here. */
@@ -6197,6 +6283,13 @@ void init_types(void)
   any_type_string = CONSTTYPE(tOr(tVoid,tMix));
   weak_type_string = CONSTTYPE(tOr4(tArray,tMultiset,tMapping,
 				    tFuncV(tNone,tZero,tOr(tMix,tVoid))));
+  //add_ref(weak_type_string);	/* LEAK */
+
+#if 0
+#ifdef DEBUG_MALLOC
+  dmalloc_gc_callback = add_gc_callback(gc_mark_external_types, NULL, NULL);
+#endif /* DEBUG_MALLOC */
+#endif /* 0 */
 }
 
 void cleanup_pike_types(void)
@@ -6211,21 +6304,43 @@ void cleanup_pike_types(void)
 #endif /* DEBUG_MALLOC */
 
   free_type(string0_type_string);
+  string0_type_string = NULL;
   free_type(string_type_string);
+  string_type_string = NULL;
   free_type(int_type_string);
+  int_type_string = NULL;
   free_type(float_type_string);
+  float_type_string = NULL;
   free_type(function_type_string);
+  function_type_string = NULL;
   free_type(object_type_string);
+  object_type_string = NULL;
   free_type(program_type_string);
+  program_type_string = NULL;
   free_type(array_type_string);
+  array_type_string = NULL;
   free_type(multiset_type_string);
+  multiset_type_string = NULL;
   free_type(mapping_type_string);
+  mapping_type_string = NULL;
   free_type(type_type_string);
+  type_type_string = NULL;
   free_type(mixed_type_string);
+  mixed_type_string = NULL;
   free_type(void_type_string);
+  void_type_string = NULL;
   free_type(zero_type_string);
+  zero_type_string = NULL;
   free_type(any_type_string);
+  any_type_string = NULL;
   free_type(weak_type_string);
+  weak_type_string = NULL;
+
+#if 0
+#ifdef DEBUG_MALLOC
+  remove_callback(dmalloc_gc_callback);
+#endif /* DEBUG_MALLOC */
+#endif /* 0 */
 }
 
 void cleanup_pike_type_table(void)
@@ -6244,7 +6359,154 @@ void cleanup_pike_type_table(void)
    * It's needed for dmalloc to survive.
    */
   pike_type_hash_size = 0;
+#if 0
 #ifdef DO_PIKE_CLEANUP
   free_all_pike_type_blocks();
 #endif /* DO_PIKE_CLEANUP */
+#endif /* 0 */
 }
+
+#if 0
+#ifdef PIKE_DEBUG
+
+void gc_mark_type_as_referenced(struct pike_type *t)
+{
+  if (gc_mark(t)) {
+    GC_ENTER(t, PIKE_T_TYPE) {
+      switch(t->type) {
+      case PIKE_T_SCOPE:
+      case T_ASSIGN:
+      case PIKE_T_NAME:
+	if (t->cdr) gc_mark_type_as_referenced(t->cdr);
+	break;
+      case PIKE_T_FUNCTION:
+      case T_MANY:
+      case PIKE_T_RING:
+      case PIKE_T_TUPLE:
+      case PIKE_T_MAPPING:
+      case T_OR:
+      case T_AND:
+	if (t->cdr) gc_mark_type_as_referenced(t->cdr);
+      /* FALL_THOUGH */
+      case PIKE_T_ARRAY:
+      case PIKE_T_MULTISET:
+      case T_NOT:
+      case PIKE_T_TYPE:
+      case PIKE_T_PROGRAM:
+	if (t->car) gc_mark_type_as_referenced(t->car);
+	break;
+      }      
+    } GC_LEAVE;
+  }
+}
+
+unsigned gc_touch_all_types(void)
+{
+  size_t e;
+  unsigned n = 0;
+  if (!pike_type_hash) return 0;
+  for(e=0;e<pike_type_hash_size;e++)
+  {
+    struct pike_type *t;
+    for(t = pike_type_hash[e]; t; t=t->next) debug_gc_touch(t), n++;
+  }
+  return n;
+}
+
+void gc_mark_all_types(void)
+{
+  size_t e;
+  if(!pike_type_hash) return;
+  for(e=0;e<pike_type_hash_size;e++)
+  {
+    struct pike_type *t;
+    for(t=pike_type_hash[e]; t; t=t->next) {
+      if (gc_is_referenced(t)) {
+	gc_mark_type_as_referenced(t);
+      }
+    }
+  }
+}
+
+size_t gc_free_all_unreferenced_types(void)
+{
+  size_t unreferenced = 0;
+  size_t e;
+  for (e = 0; e < pike_type_hash_size; e++) {
+    struct pike_type *t;
+  loop:
+    for (t = pike_type_hash[e]; t; t = t->next) {
+      struct marker *m = find_marker(t);
+      if (!m) continue;
+      if ((m->flags & GC_GOT_EXTRA_REF) == GC_GOT_EXTRA_REF) {
+	if (gc_do_free(t)) {
+	  free_type(t);
+	  unreferenced++;
+	  /* The hash table may have been modified! */
+	  goto loop;
+	}
+      }
+    }
+  }
+  for (e = 0; e < pike_type_hash_size; e++) {
+    struct pike_type *t;
+    for (t = pike_type_hash[e]; t; t = t->next) {
+      struct marker *m = find_marker(t);
+      if (!m) continue;
+      if ((m->flags & GC_GOT_EXTRA_REF) == GC_GOT_EXTRA_REF) {
+	fprintf(stderr, "There's still an extra ref to ");
+	simple_describe_type(t);
+	fprintf(stderr, "\n");
+      }
+    }
+  }
+  return unreferenced;
+}
+
+void real_gc_cycle_check_type(struct pike_type *t, int weak)
+{
+  GC_CYCLE_ENTER(t, PIKE_T_TYPE, weak) {
+    switch(t->type) {
+      case PIKE_T_SCOPE:
+      case T_ASSIGN:
+      case PIKE_T_NAME:
+	if (t->cdr) gc_cycle_check_type(t->cdr, 0);
+	break;
+      case PIKE_T_FUNCTION:
+      case T_MANY:
+      case PIKE_T_RING:
+      case PIKE_T_TUPLE:
+      case PIKE_T_MAPPING:
+      case T_OR:
+      case T_AND:
+	if (t->cdr) gc_cycle_check_type(t->cdr, 0);
+      /* FALL_THOUGH */
+      case PIKE_T_ARRAY:
+      case PIKE_T_MULTISET:
+      case T_NOT:
+      case PIKE_T_TYPE:
+      case PIKE_T_PROGRAM:
+	if (t->car) gc_cycle_check_type(t->car, 0);
+	break;
+    }
+  } GC_CYCLE_LEAVE;
+}
+
+void gc_cycle_check_all_types(void)
+{
+#if 0
+  size_t e;
+  if(!pike_type_hash) return;
+  for(e=0;e<pike_type_hash_size;e++)
+  {
+    struct pike_type *t;
+    for(t=pike_type_hash[e]; t; t=t->next) {
+      real_gc_cycle_check_type(t, 0);
+      gc_cycle_run_queue();
+    }
+  }
+#endif
+}
+
+#endif /* PIKE_DEBUG */
+#endif /* 0 */
