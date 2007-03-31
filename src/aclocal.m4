@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.153 2007/03/28 15:10:03 marcus Exp $
+dnl $Id: aclocal.m4,v 1.154 2007/03/31 23:07:01 marcus Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -520,7 +520,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.153 2007/03/28 15:10:03 marcus Exp $
+  # $Id: aclocal.m4,v 1.154 2007/03/31 23:07:01 marcus Exp $
 
   MY_AC_PROG_CC
 
@@ -1191,6 +1191,9 @@ AC_DEFUN(PIKE_WITH_ABI,
 	    pike_cv_wanted_abi="64"
           ;;
           xalpha)
+	    pike_cv_wanted_abi="64"
+          ;;
+	  xppc64)
 	    pike_cv_wanted_abi="64"
           ;;
         esac
