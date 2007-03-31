@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.216 2007/03/20 17:41:54 grubba Exp $
+|| $Id: operators.c,v 1.217 2007/03/31 12:58:02 grubba Exp $
 */
 
 #include "global.h"
@@ -5494,7 +5494,7 @@ multiset & mapping -> mapping
 
 #define F_AND_TYPE(Z)						\
 	    tOr(tFunc(tSetvar(0,Z),tVar(0)),			\
-		tIfnot(tFunc(Z,tMix),				\
+		tIfnot(tFuncV(tNone, tNot(Z), tMix),		\
 		       tFuncV(tSetvar(1,Z),tSetvar(2,Z),	\
 			      tOr(tVar(1),tVar(2)))))		
 			     
