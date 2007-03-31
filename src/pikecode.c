@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pikecode.c,v 1.10 2006/04/27 09:37:34 tor Exp $
+|| $Id: pikecode.c,v 1.11 2007/03/31 22:59:53 marcus Exp $
 */
 
 /*
@@ -29,6 +29,8 @@
 #include "code/sparc.c"
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_PPC32
 #include "code/ppc32.c"
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_PPC64
+#include "code/ppc64.c"
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_GOTO
 #include "code/computedgoto.c"
 #else

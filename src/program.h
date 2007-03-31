@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.227 2007/01/01 04:51:03 nilsson Exp $
+|| $Id: program.h,v 1.228 2007/03/31 22:59:53 marcus Exp $
 */
 
 #ifndef PROGRAM_H
@@ -141,6 +141,7 @@ struct object;
 #define PIKE_BYTECODE_IA32	3
 #define PIKE_BYTECODE_PPC32    4
 #define PIKE_BYTECODE_AMD64    5
+#define PIKE_BYTECODE_PPC64    6
 
 #ifndef PIKE_BYTECODE_METHOD
 #error PIKE_BYTECODE_METHOD not set.
@@ -153,6 +154,8 @@ struct object;
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_SPARC
 #define PIKE_OPCODE_T unsigned INT32
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_PPC32
+#define PIKE_OPCODE_T unsigned INT32
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_PPC64
 #define PIKE_OPCODE_T unsigned INT32
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_GOTO
 #define PIKE_OPCODE_T void *

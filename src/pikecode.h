@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pikecode.h,v 1.14 2006/09/08 17:20:46 grubba Exp $
+|| $Id: pikecode.h,v 1.15 2007/03/31 22:59:53 marcus Exp $
 */
 
 /*
@@ -45,6 +45,9 @@ void ins_f_byte_with_2_args(unsigned int a, INT32 c, INT32 b);
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_PPC32
 #include "code/ppc32.h"
 #define PIKE_BYTECODE_METHOD_NAME	"ppc32"
+#elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_PPC64
+#include "code/ppc64.h"
+#define PIKE_BYTECODE_METHOD_NAME	"ppc64"
 #elif PIKE_BYTECODE_METHOD == PIKE_BYTECODE_GOTO
 #include "code/computedgoto.h"
 #define PIKE_BYTECODE_METHOD_NAME	"computed_goto"
