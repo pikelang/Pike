@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.101 2007/03/29 15:54:58 grubba Exp $
+|| $Id: pike_types.h,v 1.102 2007/03/31 21:37:51 grubba Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -86,8 +86,8 @@ extern struct pike_type *type_stack[PIKE_TYPE_STACK_SIZE];
 extern struct pike_type **pike_type_mark_stack[PIKE_TYPE_STACK_SIZE/4];
 
 #ifdef DEBUG_MALLOC
-#define free_type(T)	debug_free_type((struct pike_type *)debug_malloc_pass(T))
-#define check_type_string(T) debug_check_type_string((struct pike_type *)debug_malloc_pass(T))
+#define free_type(T)	debug_free_type((struct pike_type *)debug_malloc_pass_named(T, "free_type"))
+#define check_type_string(T) debug_check_type_string((struct pike_type *)debug_malloc_pass_named(T, "check_type_string"))
 #else /* !DEBUG_MALLOC */
 #define free_type debug_free_type
 #ifdef PIKE_DEBUG
@@ -253,6 +253,7 @@ void yyexplain_nonmatching_types(struct pike_type *type_a,
 struct pike_type *debug_make_pike_type(const char *t);
 struct pike_string *type_to_string(struct pike_type *t);
 int pike_type_allow_premature_toss(struct pike_type *type);
+void real_gc_cycle_check_type(struct pike_type *t, int weak);
 /* Prototypes end here */
 
 #if 0 /* FIXME: Not supported under USE_PIKE_TYPE yet. */
@@ -352,6 +353,13 @@ void describe_all_types(void);
 #define push_finished_type_with_markers debug_push_finished_type_with_markers
 #define push_finished_type_backwards debug_push_finished_type_backwards
 #endif
+
+#if 0
+#define gc_cycle_check_type(T, WEAK) \
+  gc_cycle_enqueue((gc_cycle_check_cb *)real_gc_cycle_check_type, (T), (WEAK))
+#else
+#define gc_cycle_check_type(T, WEAK)
+#endif /* 0 */
 
 #ifndef PIKE_DEBUG
 #define check_type_string(X)
