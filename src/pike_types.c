@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.274 2007/03/31 22:12:14 grubba Exp $
+|| $Id: pike_types.c,v 1.275 2007/04/01 18:23:55 grubba Exp $
 */
 
 #include "global.h"
@@ -991,9 +991,9 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
 	 * so we need to keep the marker as well.
 	 */
 	markers[m] = NULL;
+	push_type('0' + m);
 	push_finished_type_with_markers(type, markers,
 					marker_set & ~(PT_FLAG_MARKER_0 << m));
-	push_type('0' + m);
 	push_type(T_OR);
 	markers[m] = dmalloc_touch(struct pike_type *, type);
       } else {
@@ -1038,27 +1038,22 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
     /* FIXME: Probably ought to use {or,and}_pike_types() here.
      *        Problem is that they may mess with the markers...
      */
+
     type_stack_mark();
     /* We want to keep markers that have assigns. */
     push_finished_type_with_markers(type->cdr, markers,
 				    marker_set |
 				    (type->car->flags & PT_FLAG_ASSIGN));
     if (type->type == T_OR) {
-      if (peek_type_stack() == zero_type_string) {
-	free_type(pop_unfinished_type());
-	push_finished_type_with_markers(type->car, markers, marker_set);
-      } else {
-	type_stack_mark();
-	push_finished_type_with_markers(type->car, markers, marker_set);
-	if (peek_type_stack() == zero_type_string) {
-	  free_type(pop_unfinished_type());
-	  pop_stack_mark();
-	} else {
-	  pop_stack_mark();
-	  pop_stack_mark();
-	  push_type(T_OR);
-	}
-      }
+      struct pike_type *first = pop_type();
+      struct pike_type *second;
+      struct pike_type *res;
+      push_finished_type_with_markers(type->car, markers, marker_set);
+      second = pop_unfinished_type();
+      push_finished_type(res = or_pike_types(first, second, 1));
+      free_type(second);
+      free_type(first);
+      free_type(res);
     } else if (peek_type_stack() == zero_type_string) {
       pop_stack_mark();
     } else {
@@ -2229,6 +2224,14 @@ static void low_or_pike_types(struct pike_type *t1,
   else if (t1->type == T_ZERO && zero_implied)
   {
     push_finished_type(t2);
+  }
+  else if (t1 == t2) {
+    push_finished_type(t1);
+  }
+  else if (t1->type == T_VOID || t2->type == T_VOID) {
+    push_finished_type(t1);
+    push_finished_type(t2);
+    push_type(T_OR);
   }
   else if(t1->type == T_MIXED || t2->type == T_MIXED)
   {
@@ -5105,6 +5108,8 @@ static struct pike_type *low_get_first_arg_type(struct pike_type *arg_type,
 						INT32 flags)
 {
   struct pike_type *tmp;
+  struct pike_type *tmp2;
+  struct pike_type *res;
 
   if (!arg_type) return NULL;
 
@@ -5115,16 +5120,13 @@ static struct pike_type *low_get_first_arg_type(struct pike_type *arg_type,
     switch(arg_type->type) {
     case T_OR:
       if ((tmp = low_get_first_arg_type(arg_type->cdr, flags))) {
-	type_stack_mark();
-	push_finished_type(tmp);
+	res =
+	  or_pike_types(tmp,
+			tmp2 = low_get_first_arg_type(arg_type->car, flags),
+			1);
+	if (tmp2) free_type(tmp);
 	free_type(tmp);
-	if ((tmp = low_get_first_arg_type(arg_type->car, flags))) {
-	  push_finished_type(tmp);
-	  free_type(tmp);
-	  push_type(T_OR);
-	  return pop_unfinished_type();
-	}
-	return pop_unfinished_type();
+	return res;
       }
       arg_type = arg_type->car;
       goto loop;
@@ -5348,7 +5350,8 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 #endif /* PIKE_DEBUG */
 
   if (args->token == F_PUSH_ARRAY) {
-    struct pike_type *prev = NULL;
+    struct pike_type *res = NULL;
+    struct pike_type *prev = fun_type;
     int cnt = 256;
     /* This token can expand to anything between zero and MAX_ARGS args. */
 
@@ -5358,45 +5361,51 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
     }
 #endif /* PIKE_DEBUG */
 
+    copy_pike_type(res, fun_type);
+
     /* Loop until we get a stable fun_type, or it's an invalid argument. */
-    while ((tmp = low_new_check_call(debug_malloc_pass(fun_type),
-				     debug_malloc_pass(args->type), 0)) &&
-	   (tmp != prev) && --cnt) {
+    while ((fun_type = low_new_check_call(debug_malloc_pass(prev),
+					  debug_malloc_pass(args->type), 0)) &&
+	   (fun_type != prev) && --cnt) {
 
 #ifdef PIKE_DEBUG
       if (l_flag>4) {
 	fprintf(stderr, "\n    sub_result_type: ");
-	simple_describe_type(tmp);
+	simple_describe_type(fun_type);
       }
 #endif /* PIKE_DEBUG */
 
-      if (prev) {
-	free_type(prev);
-      }
-      prev = tmp;
-      tmp = dmalloc_touch(struct pike_type *,
-			  or_pike_types(debug_malloc_pass(fun_type),
-					debug_malloc_pass(prev), 1));
+      res = dmalloc_touch(struct pike_type *,
+			  or_pike_types(debug_malloc_pass(tmp = res),
+					debug_malloc_pass(fun_type), 1));
 #ifdef PIKE_DEBUG
       if (l_flag>4) {
 	fprintf(stderr, "\n    joined_type: ");
-	simple_describe_type(tmp);
+	simple_describe_type(res);
       }
 #endif /* PIKE_DEBUG */
 
-      free_type(fun_type);
-      fun_type = tmp;
-    }
-    if (prev) {
-      free_type(prev);
-    }
-    if (tmp) {
+      if ((res == tmp) || (res == fun_type)) {
+	free_type(tmp);
+	break;
+      }
       free_type(tmp);
-    } else if (cnt == 256) {
-      yywarning("The splice operator argument must be an empty array.");
+
+      free_type(prev);
+      prev = fun_type;
+    }
+    free_type(prev);
+    if (fun_type) {
+      /* Max args reached or stable type. */
+      free_type(fun_type);
     } else {
-      yywarning("The splice operator argument has a max length of %d.",
-		256-cnt);
+      /* The splice values are invalid for later arguments. */
+      if (cnt == 256) {
+	yywarning("The splice operator argument must be an empty array.");
+      } else {
+	yywarning("The splice operator argument has a max length of %d.",
+		  256-cnt);
+      }
     }
 
 #ifdef PIKE_DEBUG
@@ -5407,7 +5416,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
     }
 #endif /* PIKE_DEBUG */
 
-    return fun_type;
+    return res;
   } else if ((tmp = low_new_check_call(fun_type, args->type, 0))) {
     /* OK. */
 #ifdef PIKE_DEBUG
@@ -5420,6 +5429,8 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
   }
 
   if ((tmp = get_first_arg_type(fun_type, 0))) {
+    struct pike_type *tmp2;
+
 #ifdef PIKE_DEBUG
     if (l_flag>2) {
       fprintf(stderr, " Bad argument.\n");
@@ -5428,6 +5439,28 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
     my_yyerror("Bad argument %d to %S.",
 	       *argno, fun_name);
     yytype_error(NULL, tmp, args->type, 0);
+
+    /* Try advancing with the suggested type, so that we can check
+     * the rest of the arguments.
+     */
+    if ((tmp2 = low_new_check_call(fun_type, tmp, 0))) {
+      /* Succeeded. */
+      free_type(fun_type);
+      free_type(tmp);
+#ifdef PIKE_DEBUG
+      if (l_flag>2) {
+	fprintf(stderr, "  Created continuation type: ");
+	simple_describe_type(tmp2);
+	fprintf(stderr, " OK.\n");
+      }
+#endif /* PIKE_DEBUG */
+      return tmp2;
+    }
+#ifdef PIKE_DEBUG
+    if (l_flag>2) {
+      fprintf(stderr, "\n  Failed to create continuation type.\n");
+    }
+#endif /* PIKE_DEBUG */
     free_type(tmp);
   } else {
 #ifdef PIKE_DEBUG
