@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.381 2007/03/31 21:44:41 grubba Exp $
+|| $Id: las.c,v 1.382 2007/04/01 18:26:34 grubba Exp $
 */
 
 #include "global.h"
@@ -3514,6 +3514,7 @@ void yytype_error(char *msg, struct pike_type *expected_t,
     } else {
       my_yyerror("Expected: %S", s);
     }
+    free_string(s);
   } else if (got_t) {
     struct pike_string *s = describe_type(got_t);
     if (flags & YYTE_IS_WARNING) {
@@ -3521,6 +3522,7 @@ void yytype_error(char *msg, struct pike_type *expected_t,
     } else {
       my_yyerror("Got     : %S", s);
     }
+    free_string(s);
   }
 }
 
@@ -3820,7 +3822,7 @@ void fix_type_field(node *n)
      *
      * It probably ought to be something similar to MANY(..., VOID).
      */
-    copy_pike_type(n->type, mixed_type_string);
+    n->type = index_type(CAR(n)->type, int_type_string, n);
     break;
 
   case F_AUTO_MAP_MARKER:
