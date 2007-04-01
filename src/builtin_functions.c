@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.632 2007/03/29 16:39:42 grubba Exp $
+|| $Id: builtin_functions.c,v 1.633 2007/04/01 18:28:39 grubba Exp $
 */
 
 #include "global.h"
@@ -9073,11 +9073,7 @@ void init_builtin_efuns(void)
 		      tInt),
 		tFunc(tMap(tSetvar(1,tMix),tSetvar(2,tMix)) tVar(2) tOr(tVoid,tVar(1)),
 		      tVar(1)),
-
-		tIfnot(tOr(tFunc(tNot(tArray) tMix tOr(tVoid,tInt), tMix),
-			   tFunc(tNot(tMapping) tMix tOr(tVoid,tInt), tMix)),
-		       tFunc(tOr(tMapping, tArray) tMix tOr(tVoid,tInt),
-			     tZero))),
+		tFunc(tObj tMix tOr(tVoid, tSetvar(3, tMix)), tVar(3))),
 	   0);
   
   ADD_EFUN2("has_prefix", f_has_prefix, tFunc(tStr tStr,tInt01),
