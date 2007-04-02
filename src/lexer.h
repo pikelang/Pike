@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.60 2006/10/28 19:18:45 grubba Exp $
+|| $Id: lexer.h,v 1.61 2007/04/02 17:05:15 grubba Exp $
 */
 
 /*
@@ -794,7 +794,13 @@ static int low_yylex(YYSTYPE *yylval)
 	if(GOBBLE('.')) return TOK_DOT_DOT_DOT;
 	return TOK_DOT_DOT;
       }
-      return c;
+      if (((c = INDEX_CHARP(lex.pos, 0, SHIFT)) <= '9') &&
+	  (c >= '0')) {
+	/* FIXME: Only in Pike 7.7 and later mode? */
+	lex.pos -= (1<<SHIFT);
+	goto read_float;
+      }
+      return '.';
   
     case '0':
     {
@@ -842,6 +848,7 @@ static int low_yylex(YYSTYPE *yylval)
 	    my_yyerror("Illegal octal digit '%c'.",
 		       INDEX_CHARP(lex.pos, l, SHIFT));
 
+    read_float:
       f=lex_strtod(lex.pos, &p1);
 
       sval.type = PIKE_T_INT;
