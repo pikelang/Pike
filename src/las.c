@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.382 2007/04/01 18:26:34 grubba Exp $
+|| $Id: las.c,v 1.383 2007/04/02 12:58:39 grubba Exp $
 */
 
 #include "global.h"
@@ -5509,7 +5509,6 @@ static void optimize(node *n)
 void optimize_node(node *n)
 {
   if(n &&
-     !Pike_compiler->num_parse_error &&
      Pike_compiler->compiler_pass==2 &&
      (n->node_info & OPT_TRY_OPTIMIZE))
   {
