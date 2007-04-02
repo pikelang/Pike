@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.161 2006/04/22 21:32:46 grubba Exp $
+|| $Id: cpp.c,v 1.162 2007/04/02 13:51:53 grubba Exp $
 */
 
 #include "global.h"
@@ -1952,6 +1952,7 @@ void init_cpp()
   ADD_EFUN("cpp", f_cpp, tFunc(tStr tOr(tStr,tVoid)
 			       tOr(tInt,tOr(tStr,tVoid))
 			       tOr(tObj,tVoid)
+			       tOr(tInt,tVoid)
 			       tOr(tInt,tVoid)
 			       tOr(tInt,tVoid)
 			       , tStr),
