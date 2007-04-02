@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.153 2006/08/05 21:00:40 mast Exp $
+|| $Id: acconfig.h,v 1.154 2007/04/02 16:19:39 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -76,6 +76,9 @@
 
 /* Define this if you want to enable the shared nodes mode of the optimizer. */
 #undef SHARED_NODES
+
+/* Define this if you want to enable the new type checker code. */
+#undef NEW_ARG_CHECK
 
 /* Define this to use the new keypair loop. */
 #undef PIKE_MAPPING_KEYPAIR_LOOP
