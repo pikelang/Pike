@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.82 2006/07/05 19:24:18 mast Exp $
+|| $Id: block_alloc.h,v 1.83 2007/04/02 17:03:47 grubba Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -280,9 +280,11 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
 	  blk = blk->next;						\
       }									\
       if (blk) {							\
-	if (!dmalloc_check_allocated (d, 0))				\
+	if (!dmalloc_check_allocated (d, 0)) {				\
+	  debug_malloc_dump_references(d, 0, 2, 0);			\
 	  Pike_fatal ("really_free_" TOSTR(DATA) " called with "	\
 		      "unknown pointer %p (probably already freed)\n", d); \
+	}								\
 	blk->used--;							\
 	dmalloc_mark_as_free(d, 1);					\
 	PIKE_MEM_NA(*d);						\
@@ -342,8 +344,26 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
   );									\
 									\
   DO_PRE_INIT_BLOCK(d);							\
-  d->BLOCK_ALLOC_NEXT = (void *)blk->PIKE_CONCAT3(free_,DATA,s);	\
-  blk->PIKE_CONCAT3(free_,DATA,s)=d;					\
+  DO_IF_DMALLOC({							\
+      struct DATA *d2 = (void *)blk->PIKE_CONCAT3(free_,DATA,s);	\
+      d->BLOCK_ALLOC_NEXT = NULL;					\
+      if (d2) {								\
+	while (d2->BLOCK_ALLOC_NEXT) {					\
+	  if (PTR_TO_INT(d2->BLOCK_ALLOC_NEXT) == 0x55555555) {		\
+	    debug_malloc_dump_references(d2, 0, 2, 0);			\
+	    Pike_fatal("Bad next pointer in free list.\n");		\
+	  }								\
+	  d2 = (void *)d2->BLOCK_ALLOC_NEXT;				\
+	}								\
+	d2->BLOCK_ALLOC_NEXT = (void *)d;				\
+      } else {								\
+	blk->PIKE_CONCAT3(free_,DATA,s)=d;				\
+      }									\
+    });									\
+  DO_IF_NOT_DMALLOC({							\
+      d->BLOCK_ALLOC_NEXT = (void *)blk->PIKE_CONCAT3(free_,DATA,s);	\
+      blk->PIKE_CONCAT3(free_,DATA,s)=d;				\
+    });									\
   /* Mark block as unavailable. */					\
   PIKE_MEM_NA(*d);							\
 									\
