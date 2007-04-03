@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.217 2007/03/31 12:58:02 grubba Exp $
+|| $Id: operators.c,v 1.218 2007/04/03 17:05:30 grubba Exp $
 */
 
 #include "global.h"
@@ -5444,7 +5444,8 @@ void init_operators(void)
   add_efun2("`>=",f_ge,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
 
   ADD_EFUN2("`+",f_add,
-	    tOr7(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),tFunction),
+	    tOr7(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),
+			tFuncV(tNone,tMix,tMix),
 		 tFuncV(tInt,tInt,tInt),
 		 tIfnot(tFuncV(tNone, tNot(tFlt), tMix),
 			tFuncV(tOr(tInt,tFlt),tOr(tInt,tFlt),tFlt)),
@@ -5460,7 +5461,8 @@ void init_operators(void)
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_sum);
   
   ADD_EFUN2("`-",f_minus,
-	    tOr7(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),tFunction),
+	    tOr7(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),
+			tFuncV(tNone,tMix,tMix)),
 		 tFuncV(tInt,tInt,tInt),
 		 tIfnot(tFuncV(tNone,tNot(tFlt),tMix),
 			tFuncV(tOr(tInt,tFlt),tOr(tInt,tFlt),tFlt)),
