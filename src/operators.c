@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.218 2007/04/03 17:05:30 grubba Exp $
+|| $Id: operators.c,v 1.219 2007/04/03 17:06:03 grubba Exp $
 */
 
 #include "global.h"
@@ -5445,7 +5445,7 @@ void init_operators(void)
 
   ADD_EFUN2("`+",f_add,
 	    tOr7(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),
-			tFuncV(tNone,tMix,tMix),
+			tFuncV(tNone,tMix,tMix)),
 		 tFuncV(tInt,tInt,tInt),
 		 tIfnot(tFuncV(tNone, tNot(tFlt), tMix),
 			tFuncV(tOr(tInt,tFlt),tOr(tInt,tFlt),tFlt)),
