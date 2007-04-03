@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.275 2007/04/01 18:23:55 grubba Exp $
+|| $Id: pike_types.c,v 1.276 2007/04/03 16:48:13 grubba Exp $
 */
 
 #include "global.h"
@@ -4789,8 +4789,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     }
 #endif /* PIKE_DEBUG */
     if (!low_pike_types_le(arg_type, fun_type->car, 0, 0) &&
-	((flags & CALL_STRICT) ||
-	 !low_match_types(arg_type, fun_type->car, NO_SHORTCUTS))) {
+	!low_match_types(arg_type, fun_type->car, NO_SHORTCUTS)) {
       /* No match. */
 #ifdef PIKE_DEBUG
       if (l_flag>2) {
@@ -4912,10 +4911,16 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
 
   case T_OR:
     if (!(tmp = low_new_check_call(fun_type, arg_type->car, flags))) {
+      if (flags & CALL_STRICT) {
+	return NULL;
+      }
       arg_type = arg_type->cdr;
       goto loop;
     }
     if (!(tmp2 = low_new_check_call(fun_type, arg_type->cdr, flags))) {
+      if (flags & CALL_STRICT) {
+	return NULL;
+      }
       return tmp;
     }
     res = or_pike_types(tmp, tmp2, 1);
@@ -4935,6 +4940,11 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
     free_type(tmp);
     free_type(tmp2);
     return res;
+
+  case T_VOID:
+    /* Promote void arguments to zero. */
+    arg_type = zero_type_string;
+    break;
   }
 
   if (!(tmp = lower_new_check_call(fun_type, arg_type, flags
@@ -5324,6 +5334,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 				 node *args, INT32 *argno)
 {
   struct pike_type *tmp = NULL;
+  struct pike_type *res = NULL;
 
   debug_malloc_touch(fun_type);
 
@@ -5350,7 +5361,6 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 #endif /* PIKE_DEBUG */
 
   if (args->token == F_PUSH_ARRAY) {
-    struct pike_type *res = NULL;
     struct pike_type *prev = fun_type;
     int cnt = 256;
     /* This token can expand to anything between zero and MAX_ARGS args. */
@@ -5401,31 +5411,46 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
     } else {
       /* The splice values are invalid for later arguments. */
       if (cnt == 256) {
-	yywarning("The splice operator argument must be an empty array.");
-      } else {
-	yywarning("The splice operator argument has a max length of %d.",
-		  256-cnt);
+	yywarning("In argument %d to %S: The @-operator argument must be an empty array.",
+		  *argno, fun_name);
+      } else if (lex.pragmas & ID_STRICT_TYPES) {
+	yywarning("In argument %d to %S: The @-operator argument has a max length of %d.",
+		  *argno, fun_name, 256-cnt);
       }
     }
 
 #ifdef PIKE_DEBUG
     if (l_flag>2) {
       fprintf(stderr, "\n  result: ");
-      simple_describe_type(fun_type);
+      simple_describe_type(res);
       fprintf(stderr, " OK.\n");
     }
 #endif /* PIKE_DEBUG */
 
     return res;
-  } else if ((tmp = low_new_check_call(fun_type, args->type, 0))) {
+  } else if ((res = low_new_check_call(fun_type, args->type, 0))) {
     /* OK. */
 #ifdef PIKE_DEBUG
     if (l_flag>2) {
       fprintf(stderr, " OK.\n");
     }
 #endif /* PIKE_DEBUG */
+    if (lex.pragmas & ID_STRICT_TYPES) {
+      if (!(tmp = low_new_check_call(fun_type, args->type, CALL_STRICT))) {
+	yywarning("Type mismatch in argument %d to %S.",
+		  *argno, fun_name);
+	if ((tmp = get_first_arg_type(fun_type, 0))) {
+	  yytype_error(NULL, tmp, args->type, YYTE_IS_WARNING);
+	  free_type(tmp);
+	} else {
+	  yytype_error(NULL, NULL, args->type, YYTE_IS_WARNING);
+	}
+      } else {
+	free_type(tmp);
+      }
+    }
     free_type(fun_type);
-    return tmp;
+    return res;
   }
 
   if ((tmp = get_first_arg_type(fun_type, 0))) {
