@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.773 2007/03/29 15:36:54 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.774 2007/04/03 16:54:46 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -341,7 +341,7 @@ test_any([[return sprintf("%O", typeof(aggregate("foo")));]], "array(string(8))"
 test_any([[int a; return sprintf("%O", typeof(aggregate(a)));]], "array(int)");
 test_any([[int|string a;
 	   string s = sprintf("%O", typeof(aggregate(a)));
-	   return (< "array(string | int)", "array(int | string)" >)[s];]], 1);
+	   return (< "array(string) | array(int)", "array(string | int)", "array(int | string)" >)[s];]], 1);
 test_any([[return sprintf("%O", typeof(aggregate()));]], "array(zero)");
 test_any([[int i; return (< "int", "int | zero", "zero | int" >)
                           [sprintf("%O", typeof(max(i,0)))];]], 1)
