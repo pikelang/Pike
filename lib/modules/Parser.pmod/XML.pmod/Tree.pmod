@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.68 2007/01/31 10:42:04 grubba Exp $
+ * $Id: Tree.pmod,v 1.69 2007/04/04 17:24:15 grubba Exp $
  *
  */
 
@@ -1023,7 +1023,7 @@ static class VirtualNode {
       break;
 
     case XML_ELEMENT:
-      if (!sizeof(tagname = n->get_short_name(namespace_lookup)))
+      if (!sizeof(tagname = n->get_short_name()))
 	break;
       
       data->add("<", tagname);
@@ -1117,7 +1117,7 @@ static class VirtualNode {
 
     array(Node) children = n->get_children();
     foreach(children, Node n) {
-      low_render_xml(data, n, textq, attrq);
+      low_render_xml(data, n, textq, attrq, namespace_lookup);
     }
 
     if (n->get_node_type() == XML_ELEMENT) {
@@ -1255,16 +1255,19 @@ static class VirtualNode {
   //!
   //! @param namespace_lookup
   //!   Mapping from namespace prefix to namespace symbol prefix.
-  string render_xml(void|int(0..1) preserve_roxen_entities)
+  string render_xml(void|int(0..1) preserve_roxen_entities,
+		    void|mapping(string:string) namespace_lookup)
   {
     String.Buffer data = String.Buffer();
     string encoding = get_encoding();
     set_short_namespaces();
     if(preserve_roxen_entities)
       low_render_xml(data, this, roxen_text_quote,
-		     roxen_attribute_quote);
+		     roxen_attribute_quote,
+		     namespace_lookup);
     else
-      low_render_xml(data, this, text_quote, attribute_quote);
+      low_render_xml(data, this, text_quote, attribute_quote,
+		     namespace_lookup);
     return Locale.Charset.encoder(encoding)->feed((string)data)->drain();
   }
 
