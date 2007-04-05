@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.277 2007/04/05 11:36:47 grubba Exp $
+|| $Id: pike_types.c,v 1.278 2007/04/05 12:37:43 grubba Exp $
 */
 
 #include "global.h"
@@ -2804,7 +2804,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 	  Pike_fatal("Cyclic type!\n");
 #endif
 	b_markers[m] = NULL;
-	res = low_match_types(a, b_markers[m], flags);
+	res = low_match_types(a, t, flags);
 	b_markers[m] = t;
 	return res;
       }
