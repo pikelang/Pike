@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.12 2005/04/10 18:06:27 nilsson Exp $
+ * $Id: module.pmod,v 1.13 2007/04/05 08:35:18 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -449,7 +449,7 @@ class Parser
       items = symbol_items[symbol];
       if (items) {
 	array(int) item_ids = [array(int)]map(sort(indices(items)->item_id),
-					      `+, 1);
+					      [function(int,int...:int)]`+, 1);
 	string kernel_hash = sprintf("%@4c", item_ids);
 
 	Kernel new_state = known_states[kernel_hash];
