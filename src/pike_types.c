@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.278 2007/04/05 12:37:43 grubba Exp $
+|| $Id: pike_types.c,v 1.279 2007/04/05 12:52:19 grubba Exp $
 */
 
 #include "global.h"
@@ -5157,7 +5157,7 @@ static struct pike_type *low_get_first_arg_type(struct pike_type *arg_type,
 	  or_pike_types(tmp,
 			tmp2 = low_get_first_arg_type(arg_type->car, flags),
 			1);
-	if (tmp2) free_type(tmp);
+	if (tmp2) free_type(tmp2);
 	free_type(tmp);
 	return res;
       }
