@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.112 2006/06/16 16:26:48 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.113 2007/04/05 11:39:35 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -98,7 +98,7 @@ class WarningFlag {
 
   void compile_warning(string file, int line, string text) {
     if (pushed_warnings[text]) return;
-    warnings += ({ line+": "+text });
+    warnings += ({ sprintf("%s:%d: %s", file, line, text) });
     warning = 1;
   }
 
