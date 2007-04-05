@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.276 2007/04/03 16:48:13 grubba Exp $
+|| $Id: pike_types.c,v 1.277 2007/04/05 11:36:47 grubba Exp $
 */
 
 #include "global.h"
@@ -1673,6 +1673,7 @@ void stupid_describe_type_string(char *a, ptrdiff_t len)
   }
   fprintf(stderr, "\n");
 }
+#endif
 
 void simple_describe_type(struct pike_type *s)
 {
@@ -1843,7 +1844,6 @@ void describe_all_types(void)
   }
 }
 #endif /* DEBUG_MALLOC */
-#endif
 
 static void low_describe_type(struct pike_type *t)
 {
@@ -2621,6 +2621,8 @@ static struct pike_type *low_match_types2(struct pike_type *a,
   struct pike_type *ret;
   if(a == b) return a;
 
+  fatal_check_c_stack(1024);
+
   switch(a->type)
   {
   case T_AND:
@@ -2702,6 +2704,8 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       int m = a->type - '0';
       if(a_markers[m])
       {
+	struct pike_type *t = a_markers[m];
+	struct pike_type *res;
 #ifdef PIKE_DEBUG
 	if(a_markers[m]->type == a->type)
 	  Pike_fatal("Cyclic type!\n");
@@ -2709,7 +2713,10 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 	   a_markers[m]->car->type == a->type)
 	  Pike_fatal("Cyclic type!\n");
 #endif
-	return low_match_types(a_markers[m], b, flags);
+	a_markers[m] = NULL;
+	res = low_match_types(t, b, flags);
+	a_markers[m] = t;
+	return res;
       }
       else
 	return low_match_types(mixed_type_string, b, flags);
@@ -2790,11 +2797,16 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       int m = b->type - '0';
       if(b_markers[m])
       {
+	struct pike_type *t = b_markers[m];
+	struct pike_type *res;
 #ifdef PIKE_DEBUG
 	if(b_markers[m]->type == b->type)
 	  Pike_fatal("Cyclic type!\n");
 #endif
-	return low_match_types(a, b_markers[m], flags);
+	b_markers[m] = NULL;
+	res = low_match_types(a, b_markers[m], flags);
+	b_markers[m] = t;
+	return res;
       }
       else
 	return low_match_types(a, mixed_type_string, flags);
@@ -4999,11 +5011,22 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     goto loop;
 
   case T_OR:
-    if (!(res = new_get_return_type(fun_type->car, flags))) {
+    if (!(res = new_get_return_type(fun_type->car, flags)) ||
+	(res == void_type_string)) {
+      /* Promote void to zero in return value in case there are others. */
+      if (res) {
+	free_type(res);
+	res = NULL;
+      }
       fun_type = fun_type->cdr;
       goto loop;
     }
-    if (!(tmp = new_get_return_type(fun_type->cdr, flags))) {
+    if (!(tmp = new_get_return_type(fun_type->cdr, flags)) ||
+	(tmp == void_type_string)) {
+      /* Promote void to zero in return value. */
+      if (tmp) {
+	free_type(tmp);
+      }
       break;
     }
     res = or_pike_types(tmp2 = res, tmp, 1);
