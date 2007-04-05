@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.154 2007/03/31 23:07:01 marcus Exp $
+dnl $Id: aclocal.m4,v 1.155 2007/04/05 15:28:56 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -492,7 +492,10 @@ define(PIKE_FEATURE_NODEP,[
 ])
 
 define(PIKE_FEATURE_OK,[
-  PIKE_FEATURE([$1],[yes])
+  PIKE_FEATURE([$1],ifelse([$2], ,[yes],[$2]))
+  if test x"$MODULE_NAME" = "x[$2]"; then
+    MODULE_OK=yes
+  fi
 ])
 
 
@@ -520,7 +523,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.154 2007/03/31 23:07:01 marcus Exp $
+  # $Id: aclocal.m4,v 1.155 2007/04/05 15:28:56 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -589,6 +592,8 @@ define([AC_MODULE_INIT],
   # MODULE_PATH	Module indexing path including the last '.'.
   # MODULE_DIR	Directory where the module should be installed
   #		including the last '/'.
+  # MODULE_OK	Initialized to 'no'. Set to 'yes' by FEATURE_OK.
+  #		Checked against with at OUTPUT.
   ifelse([$1], , [
     MODULE_NAME="`pwd|sed -e 's@.*/@@g'`"
     MODULE_PATH=""
@@ -598,6 +603,8 @@ define([AC_MODULE_INIT],
     MODULE_PATH="regexp([$1], [\(.*\.\)*], [\&])"
     MODULE_DIR="patsubst(regexp([$1], [\(.*\.\)*], [\&]), [\.], [\.pmod/])"
   ])
+  MODULE_OK=no
+
   AC_SUBST(MODULE_NAME)dnl
   AC_SUBST(MODULE_PATH)dnl
   AC_SUBST(MODULE_DIR)dnl
@@ -742,6 +749,10 @@ pushdef([AC_OUTPUT],
     unset ac_cv_env_CPP_set
     unset ac_cv_env_CPP_value
   ])
+
+  if test x"$MODULE_OK:$REQUIRE_MODULE_OK" = "xno:yes"; then
+    AC_ERROR([Required module failed to configure.])
+  fi
 
   popdef([AC_OUTPUT])
   AC_OUTPUT([make_variables:$make_variables_in $1],[$2],[$3])
@@ -1371,11 +1382,14 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
     else
       abi_dir_dynamic=unknown
     fi
+    empty=no
     if echo "$abi_32:$abi_64:$abi_dir_dynamic" | \
 	 grep "unknown" >/dev/null; then
       cached=""
+      empty=yes
       for f in "$d"/* no; do
         if test -f "$f"; then
+	  empty=no
           filetype=`file "$f" 2>/dev/null | sed -e 's/.*://'`
 	  case "$filetype" in
             *32-bit*)
@@ -1438,7 +1452,8 @@ AC_DEFUN(PIKE_CHECK_ABI_DIR,
       fi
     fi
     if test "$abi_32:$pike_cv_abi" = "no:32" \
-         -o "$abi_64:$pike_cv_abi" = "no:64"; then
+         -o "$abi_64:$pike_cv_abi" = "no:64" \
+	 -o "x$empty" = "xyes"; then
       AC_MSG_RESULT([${cached}no, does not contain any $pike_cv_abi-bit ABI files])
     else
       abi_dir_ok="yes"
