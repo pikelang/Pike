@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.279 2007/04/05 12:52:19 grubba Exp $
+|| $Id: pike_types.c,v 1.280 2007/04/05 16:00:59 grubba Exp $
 */
 
 #include "global.h"
@@ -5011,21 +5011,23 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
     goto loop;
 
   case T_OR:
-    if (!(res = new_get_return_type(fun_type->car, flags)) ||
-	(res == void_type_string)) {
-      /* Promote void to zero in return value in case there are others. */
-      if (res) {
-	free_type(res);
-	res = NULL;
-      }
+    if (!(res = new_get_return_type(fun_type->car, flags))) {
       fun_type = fun_type->cdr;
       goto loop;
     }
-    if (!(tmp = new_get_return_type(fun_type->cdr, flags)) ||
-	(tmp == void_type_string)) {
-      /* Promote void to zero in return value. */
-      if (tmp) {
+    if (!(tmp = new_get_return_type(fun_type->cdr, flags))) {
+      break;
+    }
+    if ((res == void_type_string) || (tmp == void_type_string)) {
+      /* Note: Promote void to zero in the return value
+       *       when there's another non-void result.
+       */
+      if (tmp == void_type_string) {
+	/* Keep res as is. */
 	free_type(tmp);
+      } else {
+	free_type(res);
+	res = tmp;
       }
       break;
     }
@@ -5389,7 +5391,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
     /* This token can expand to anything between zero and MAX_ARGS args. */
 
 #ifdef PIKE_DEBUG
-    if (l_flag>2) {
+    if (1 || l_flag>2) {
       fprintf(stderr, "\n  The argument is a splice operator.\n");
     }
 #endif /* PIKE_DEBUG */
@@ -5402,7 +5404,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 	   (fun_type != prev) && --cnt) {
 
 #ifdef PIKE_DEBUG
-      if (l_flag>4) {
+      if (1 || l_flag>4) {
 	fprintf(stderr, "\n    sub_result_type: ");
 	simple_describe_type(fun_type);
       }
@@ -5412,7 +5414,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 			  or_pike_types(debug_malloc_pass(tmp = res),
 					debug_malloc_pass(fun_type), 1));
 #ifdef PIKE_DEBUG
-      if (l_flag>4) {
+      if (1 || l_flag>4) {
 	fprintf(stderr, "\n    joined_type: ");
 	simple_describe_type(res);
       }
@@ -5443,7 +5445,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
     }
 
 #ifdef PIKE_DEBUG
-    if (l_flag>2) {
+    if (1 || l_flag>2) {
       fprintf(stderr, "\n  result: ");
       simple_describe_type(res);
       fprintf(stderr, " OK.\n");
