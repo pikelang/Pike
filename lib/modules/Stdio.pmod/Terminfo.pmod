@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.22 2006/01/07 17:05:41 nilsson Exp $
+// $Id: Terminfo.pmod,v 1.23 2007/04/06 14:49:12 grubba Exp $
 #pike __REAL_VERSION__
 
 
@@ -70,7 +70,7 @@ static private class TermMachine {
 	  res+=sprintf("%"+tmp+fmt[0][..0]+"%s",POP,fmt[0][1..]);
 	  break;
 	case 'c': res+=sprintf("%c%s",POP,fmt[0][1..]); break;
-	case 's': res+=sprintf("%s%s",POP,fmt[0][1..]); break;
+	case 's': res+=sprintf("%s%s",[string](mixed)POP,fmt[0][1..]); break;
 	  
 	case '\'': 
 	  sscanf(fmt[0],"'%s'%s",tmp,fmt[0]);
@@ -573,7 +573,7 @@ class TermcapDB {
     return [array(Termcap)]
       predef::map(res,
                   lambda(int|Termcap x, mapping(int:Termcap) y) {
-                    return objectp(x)? x : y[x];
+                    return objectp(x)? [object(Termcap)]x : y[x];
                   },
                   mkmapping(indices(extra),
                             predef::map(values(extra),
