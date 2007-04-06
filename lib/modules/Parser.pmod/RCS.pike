@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 inherit Parser._RCS;
 
-// $Id: RCS.pike,v 1.35 2006/11/04 19:06:48 nilsson Exp $
+// $Id: RCS.pike,v 1.36 2007/04/06 10:56:22 grubba Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -509,12 +509,9 @@ class DeltatextIterator
 //!   @[parse_deltatext_sections], @[create]
 this_program parse(array raw, void|function(string:void) progress_callback)
 {
-    parse_deltatext_sections
-	(parse_delta_sections
-	 (parse_admin_section( raw,progress_callback ),
-	  progress_callback),
-	 progress_callback);
-    return this;
+  parse_deltatext_sections(parse_delta_sections(parse_admin_section(raw)),
+			   progress_callback);
+  return this;
 }
 
 
