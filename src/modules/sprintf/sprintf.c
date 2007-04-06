@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.135 2006/03/22 17:53:58 grubba Exp $
+|| $Id: sprintf.c,v 1.136 2007/04/06 14:59:19 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -968,6 +968,20 @@ INLINE static int do_one(struct format_stack *fs,
  * the buffer in save_objectII.c
  */
 
+#undef check_c_stack
+#define check_c_stack(X) do {                                           \
+    ptrdiff_t x_= (((char *)&x_) - Pike_interpreter.stack_top) +	\
+      STACK_DIRECTION * (Pike_interpreter.c_stack_margin + (X));	\
+  x_*=STACK_DIRECTION;                                                  \
+  if(x_>0) {                                                            \
+    /*low_error(Pike_check_c_stack_errmsg);*/                           \
+    Pike_fatal("C stack overflow (%d): x_:%p &x_:%p top: %p margin: %p\n",	\
+               (X), x_, &x_, Pike_interpreter.stack_top,		\
+               Pike_interpreter.c_stack_margin);                        \
+  }                                                                     \
+  }while(0)
+
+
 static void low_pike_sprintf(struct format_stack *fs,
 			     struct string_builder *r,
 			     PCHARP format,
@@ -988,7 +1002,7 @@ static void low_pike_sprintf(struct format_stack *fs,
   PCHARP a,begin;
   PCHARP format_end=ADD_PCHARP(format,format_len);
 
-  check_c_stack (250);
+  check_c_stack(500);
 
   start=fs->fsp;
   for(a=format;COMPARE_PCHARP(a,<,format_end);INC_PCHARP(a,1))
@@ -1771,6 +1785,254 @@ void f_sprintf_76(INT32 args)
   low_f_sprintf(args, 76);
 }
 
+static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
+				       int num_arg)
+{
+  int tmp,setwhat,d,e;
+  struct svalue *arg=0;	/* pushback argument */
+  struct svalue *lastarg=0;
+
+  PCHARP a,begin;
+  PCHARP format_end=ADD_PCHARP(format,format_len);
+
+  check_c_stack(500);
+
+  if (num_arg < 0) num_arg = MAX_INT32;
+
+  for(a=format;COMPARE_PCHARP(a,<,format_end);INC_PCHARP(a,1))
+  {
+    int num_snurkel;
+
+    if(EXTRACT_PCHARP(a)!='%')
+    {
+      for(e=0;INDEX_PCHARP(a,e)!='%' &&
+	    COMPARE_PCHARP(ADD_PCHARP(a,e),<,format_end);e++);
+      INC_PCHARP(a,e-1);
+      continue;
+    }
+    num_snurkel=0;
+    arg=NULL;
+    setwhat=0;
+    begin=a;
+
+    for(INC_PCHARP(a,1);;INC_PCHARP(a,1))
+    {
+      switch(EXTRACT_PCHARP(a))
+      {
+      default:
+	if(EXTRACT_PCHARP(a) < 256 && isprint(EXTRACT_PCHARP(a)))
+	{
+	  my_yyerror("Error in format string, %c is not a format.\n",
+		     EXTRACT_PCHARP(a));
+	}else{
+	  my_yyerror("Error in format string, U%08x is not a format.\n",
+		     EXTRACT_PCHARP(a));
+	}
+	num_snurkel = 0;
+	break;
+
+      /* First the modifiers */
+      case '0':
+	if (setwhat<2) continue;
+      case '1': case '2': case '3':
+      case '4': case '5': case '6':
+      case '7': case '8': case '9':
+	tmp=STRTOL_PCHARP(a,&a,10);
+	INC_PCHARP(a,-1);
+	goto got_arg;
+
+      case '*':
+	tmp = 0;
+	if (setwhat < 2) {
+	  push_int_type(0, MAX_INT32);
+	} else {
+	  push_int_type(MIN_INT32, MAX_INT32);
+	}
+
+      got_arg:
+	switch(setwhat)
+	{
+	case 0: case 1:
+	  if(tmp < 0) my_yyerror("Illegal width %d.\n", tmp);
+	case 2: case 3: case 4: break;
+	}
+	continue;
+
+      case ';': setwhat=3; continue;
+      case '.': setwhat=2; continue;
+      case ':': setwhat=1; continue;
+      case '-':
+	if(setwhat==2) setwhat=4;
+	continue;
+
+      case '=': case '/': case '#': case '$': case '|': case ' ': case '+':
+      case '!': case '^': case '>': case '_':
+	continue;
+
+      case '@':
+	++num_snurkel;
+	continue;
+
+      case '\'':
+	tmp=0;
+	for(INC_PCHARP(a,1);INDEX_PCHARP(a,tmp)!='\'';tmp++)
+	{
+	  if(COMPARE_PCHARP(a,>=,format_end))
+	    my_yyerror("Unfinished pad string in format string.\n");
+	}
+	INC_PCHARP(a,tmp);
+	continue;
+
+      case '~':
+      {
+	push_string_type(32);
+	continue;
+      }
+
+      case '<':
+	/* FIXME: !!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+	return 0;	/* FAILURE! */
+	if(!lastarg)
+	  my_yyerror("No last argument.\n");
+	arg=lastarg;
+	continue;
+
+      case '[':
+	/* FIXME: !!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+	return 0;	/* FAILURE! */
+	INC_PCHARP(a,1);
+	if(EXTRACT_PCHARP(a)=='*') {
+	  push_int_type(0, num_arg);
+	  INC_PCHARP(a,1);
+	  tmp = 0;
+	} else
+	  tmp=STRTOL_PCHARP(a,&a,10);
+	if(EXTRACT_PCHARP(a)!=']') 
+	  my_yyerror("Expected ] in format string, not %c.\n",
+		     EXTRACT_PCHARP(a));
+	if(tmp >= num_arg)
+	  my_yyerror("Not enough arguments to [%d].\n", tmp);
+	/* arg = argp+tmp; */
+	continue;
+	
+        /* now the real operators */
+
+      case '{':
+      {
+	ptrdiff_t cnt;
+	for(e=1,tmp=1;tmp;e++)
+	{
+	  if (!INDEX_PCHARP(a,e) &&
+	      !COMPARE_PCHARP(ADD_PCHARP(a,e),<,format_end)) {
+	    yyerror("Missing %} in format string.\n");
+	    break;
+	  } else if(INDEX_PCHARP(a,e)=='%') {
+	    switch(INDEX_PCHARP(a,e+1))
+	    {
+	    case '%': e++; break;
+	    case '}': tmp--; break;
+	    case '{': tmp++; break;
+	    }
+	  }
+	}
+            
+	type_stack_mark();
+	/* Note: No need to check the return value, since we
+	 *       simply or all the types together. Thus the
+	 *       argument order isn't significant.
+	 */
+	push_sprintf_argument_types(ADD_PCHARP(a,1), e-2, MAX_INT32);
+	/* Join the argument types for our array. */
+	push_type(PIKE_T_ZERO);
+	for (cnt = pop_stack_mark(); cnt > 1; cnt--) {
+	  push_type(T_OR);
+	}
+	push_finished_type(peek_type_stack());	/* dup() */
+	push_type(PIKE_T_ARRAY);
+	push_type(T_OR);
+
+	push_type(PIKE_T_ARRAY);
+	
+	INC_PCHARP(a,e);
+	break;
+      }
+
+      case '%':
+	num_snurkel = 0;
+	break;
+
+      case 'n':
+      case 't':
+      {
+	push_type(T_MIXED);
+	break;
+      }
+
+      case 'c':
+      case 'b':
+      case 'o':
+      case 'd':
+      case 'u':
+      case 'x':
+      case 'X':
+      {
+	push_object_type(0, 0);
+	push_int_type(MIN_INT32, MAX_INT32);
+	push_type(T_OR);
+	break;
+      }
+
+      case 'e':
+      case 'f':
+      case 'g':
+      case 'E':
+      case 'G':
+      {
+	push_object_type(0, 0);
+	push_type(PIKE_T_FLOAT);
+	push_type(T_OR);
+	break;
+      }
+
+      case 'F':
+      {
+	push_type(PIKE_T_FLOAT);
+	/* FIXME: Check field width. */
+	break;
+      }
+
+      case 'O':
+      {
+	push_type(T_MIXED);
+	break;
+      }
+
+#if 0
+      /* This can be useful when doing low level debugging. */
+      case 'p':
+      {
+	push_type(T_MIXED);
+	break;
+      }
+#endif
+
+      case 'q':
+      case 's':
+      {
+	push_object_type(0, 0);
+	push_string_type(32);
+	push_type(T_OR);
+	break;
+      }
+
+      }
+      break;
+    }
+    while (num_snurkel--) push_type(T_ARRAY);
+  }
+  return 1;	/* OK */
+}
+
 static node *optimize_sprintf(node *n)
 {
   node **arg0 = my_get_arg(&_CDR(n), 0);
@@ -1783,6 +2045,8 @@ static node *optimize_sprintf(node *n)
   {
     /* First argument is a constant string. */
     struct pike_string *fmt = (*arg0)->u.sval.u.string;
+    int fmt_count;
+    struct pike_type *new_type;
 
     if(arg1 && num_args == 2 && 
        fmt->size_shift == 0 && fmt->len == 2 && STR0(fmt)[0]=='%')
@@ -1823,11 +2087,37 @@ static node *optimize_sprintf(node *n)
 
       default: break;
       }
-    } else if(num_args == 1) {
-      /* Constant folding will take care of this case. */
-      return 0;
     }
-    /* FIXME: Add argument check. */
+
+    type_stack_mark();
+    type_stack_mark();
+    push_string_type(32);	/* fmt */
+    if (push_sprintf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
+				    fmt->len, num_args)) {
+      push_type(T_VOID);	/* No more args */
+      push_string_type(32);	/* return type */
+      push_reverse_type(T_MANY);
+      fmt_count = pop_stack_mark();
+      while (fmt_count > 1) {
+	push_reverse_type(T_FUNCTION);
+	fmt_count--;
+      }
+      new_type = pop_unfinished_type();
+
+      /* Modify the type for the sprintf node */
+      if (CAR(n)->type) {
+	free_type(CAR(n)->type);
+      }
+      CAR(n)->type = new_type;
+
+      /* Force the node to be type checked once more. */
+      n->node_info |= OPT_TYPE_NOT_FIXED;
+      fix_type_field(n);
+    } else {
+      /* There was a position argument. */
+      pop_stack_mark();
+      type_stack_pop_to_mark();
+    }
   }
   /* FIXME: Convert into compile_sprintf(args[0])->format(@args[1..])? */
   return ret;
