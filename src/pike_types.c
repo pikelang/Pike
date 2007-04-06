@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.281 2007/04/05 16:01:35 grubba Exp $
+|| $Id: pike_types.c,v 1.282 2007/04/06 11:16:33 grubba Exp $
 */
 
 #include "global.h"
@@ -4954,8 +4954,10 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
     return res;
 
   case T_VOID:
-    /* Promote void arguments to zero. */
-    arg_type = zero_type_string;
+    if (!(flags & CALL_7_6)) {
+      /* Promote void arguments to zero. */
+      arg_type = zero_type_string;
+    }
     break;
   }
 
@@ -5360,6 +5362,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 {
   struct pike_type *tmp = NULL;
   struct pike_type *res = NULL;
+  int flags = 0;
 
   debug_malloc_touch(fun_type);
 
@@ -5385,6 +5388,11 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
   }
 #endif /* PIKE_DEBUG */
 
+  if (TEST_COMPAT(7, 6)) {
+    /* Attempt to reduce strictness to Pike 7.6 levels. */
+    flags |= CALL_7_6;
+  }
+
   if (args->token == F_PUSH_ARRAY) {
     struct pike_type *prev = fun_type;
     int cnt = 256;
@@ -5400,7 +5408,8 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 
     /* Loop until we get a stable fun_type, or it's an invalid argument. */
     while ((fun_type = low_new_check_call(debug_malloc_pass(prev),
-					  debug_malloc_pass(args->type), 0)) &&
+					  debug_malloc_pass(args->type),
+					  flags)) &&
 	   (fun_type != prev) && --cnt) {
 
 #ifdef PIKE_DEBUG
@@ -5453,7 +5462,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 #endif /* PIKE_DEBUG */
 
     return res;
-  } else if ((res = low_new_check_call(fun_type, args->type, 0))) {
+  } else if ((res = low_new_check_call(fun_type, args->type, flags))) {
     /* OK. */
 #ifdef PIKE_DEBUG
     if (l_flag>2) {
@@ -5461,7 +5470,8 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
     }
 #endif /* PIKE_DEBUG */
     if (lex.pragmas & ID_STRICT_TYPES) {
-      if (!(tmp = low_new_check_call(fun_type, args->type, CALL_STRICT))) {
+      if (!(tmp = low_new_check_call(fun_type, args->type,
+				     flags|CALL_STRICT))) {
 	yywarning("Type mismatch in argument %d to %S.",
 		  *argno, fun_name);
 	if ((tmp = get_first_arg_type(fun_type, 0))) {
@@ -5478,7 +5488,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
     return res;
   }
 
-  if ((tmp = get_first_arg_type(fun_type, 0))) {
+  if ((tmp = get_first_arg_type(fun_type, flags))) {
     struct pike_type *tmp2;
 
 #ifdef PIKE_DEBUG
@@ -5493,7 +5503,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
     /* Try advancing with the suggested type, so that we can check
      * the rest of the arguments.
      */
-    if ((tmp2 = low_new_check_call(fun_type, tmp, 0))) {
+    if ((tmp2 = low_new_check_call(fun_type, tmp, flags))) {
       /* Succeeded. */
       free_type(fun_type);
       free_type(tmp);
