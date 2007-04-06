@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.283 2007/04/06 15:56:23 grubba Exp $
+|| $Id: pike_types.c,v 1.284 2007/04/06 16:08:14 grubba Exp $
 */
 
 #include "global.h"
@@ -5634,30 +5634,33 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
        
   case T_ARRAY:
     {
-      struct pike_type *arg_type;
       struct array *a = s->u.array;
-#if 0
-      int i;
 
-      /* FIXME: Circular structures? */
-      copy_pike_type(arg_type, zero_type_string);
-      for (i = 0; i < a->size; i++) {
-	struct pike_type *tmp1 = get_type_of_svalue(a->item+i);
-	struct pike_type *tmp2 = or_pike_types(arg_type, tmp1, 1);
+      type_stack_mark();
+#if 0
+      {
+	struct pike_type *arg_type;
+	int i;
+
+	/* FIXME: Circular structures? */
+	copy_pike_type(arg_type, zero_type_string);
+	for (i = 0; i < a->size; i++) {
+	  struct pike_type *tmp1 = get_type_of_svalue(a->item+i);
+	  struct pike_type *tmp2 = or_pike_types(arg_type, tmp1, 1);
+	  free_type(arg_type);
+	  free_type(tmp1);
+	  arg_type = tmp2;
+	}
+	push_finished_type(arg_type);
 	free_type(arg_type);
-	free_type(tmp1);
-	arg_type = tmp2;
       }
 #else /* !0 */
-      if (a->size)
-	copy_pike_type(arg_type, mixed_type_string);
-      else
-	copy_pike_type(arg_type, zero_type_string);
+      if (a->size) {
+	push_type_field(a->type_field);
+      }else
+	push_finished_type(zero_type_string);
 #endif /* 0 */
-      type_stack_mark();
-      push_finished_type(arg_type);
-      free_type(arg_type);
-      push_type(s->type);
+      push_type(T_ARRAY);
       return pop_unfinished_type();
     }
 
