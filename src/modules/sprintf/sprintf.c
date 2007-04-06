@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.136 2007/04/06 14:59:19 grubba Exp $
+|| $Id: sprintf.c,v 1.137 2007/04/06 15:13:46 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -2091,7 +2091,7 @@ static node *optimize_sprintf(node *n)
 
     type_stack_mark();
     type_stack_mark();
-    push_string_type(32);	/* fmt */
+    push_string_type(8 << fmt->size_shift);	/* fmt */
     if (push_sprintf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
 				    fmt->len, num_args)) {
       push_type(T_VOID);	/* No more args */
