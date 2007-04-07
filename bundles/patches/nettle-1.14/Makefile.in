@@ -190,10 +190,10 @@ des.$(OBJEXT): des.c des.h $(des_headers)
 	  && test -s $@T && mv -f $@T $@
 
 .texinfo.dvi:
-	cd $(srcdir) && texi2dvi `basename "$<"`
+	cd $(srcdir) && (test -f `basename "$<"`.dvi || texi2dvi `basename "$<"`)
 
 .dvi.ps:
-	cd $(srcdir) && dvips -Ppdf -G0 -o `basename $< .dvi`.ps `basename $<`
+	cd $(srcdir) && (test -f `basename "$<"`.ps || dvips -Ppdf -G0 -o `basename $< .dvi`.ps `basename $<`)
 
 # Avoid rebuilding .dvi and .ps files when the .texinfo source is unchanged.
 PS2PDFFLAGS=-dCompatibilityLevel=1.3 -dMAxSubsetPct=100 -dSubsetFonts=true -dEmbedAllFonts=true
