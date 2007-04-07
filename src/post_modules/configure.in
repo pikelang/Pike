@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.7 2006/08/02 20:16:38 mast Exp $
+# $Id: configure.in,v 1.8 2007/04/07 16:05:15 grubba Exp $
 AC_INIT(Makefile.in)
 
 PIKE_RETAIN_VARIABLES()
@@ -42,5 +42,5 @@ AC_SUBST_FILE(dependencies)
 dependencies=$srcdir/dependencies
 AC_CONFIG_SUBDIRS($dirs)
 
-AC_OUTPUT(Makefile,[],dirs="$module_names")
+AC_OUTPUT(Makefile,[:],dirs="$module_names")
 
