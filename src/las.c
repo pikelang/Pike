@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.384 2007/04/02 17:02:20 grubba Exp $
+|| $Id: las.c,v 1.385 2007/04/07 19:21:59 grubba Exp $
 */
 
 #include "global.h"
@@ -3904,7 +3904,7 @@ void fix_type_field(node *n)
 	free_type(s);
       } else {
 	my_yyerror("Type checking error for function call to %S.", name);
-	yytype_error(NULL, f, NULL, 0);
+	yytype_error(NULL, NULL, f, 0);
       }
       free_type(f);
       break;
