@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.2 2002/12/04 14:00:12 grubba Exp $
+ * $Id: parser.pike,v 1.3 2007/04/07 13:37:56 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -1483,7 +1483,7 @@ mixed parse(object|function(void:string|array(string|mixed)) scanner,
 			       a->action));
 		error |= ERROR_MISSING_ACTION;
 	      } else {
-		werror(sprintf("Bad type (%s) for action \"%s\" in object\n",
+		werror(sprintf("Bad type (%O) for action \"%s\" in object\n",
 			       typeof(func), a->action));
 		error |= ERROR_BAD_ACTION_TYPE;
 		func = 0;
