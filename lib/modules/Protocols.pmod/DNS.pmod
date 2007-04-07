@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.90 2007/03/19 10:52:48 grubba Exp $
+// $Id: DNS.pmod,v 1.91 2007/04/07 13:30:13 grubba Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -139,8 +139,8 @@ class protocol
       sscanf(addr6, ":%s", addr6);
     }
     if(has_value(addr6, "."))
-      return sprintf("%2c%2c%2c%2c%2c%2c%c%c%c%c",
-		     array_sscanf(addr6, "%x:%x:%x:%x:%x:%x:%x.%x.%x.%x"));
+      return sprintf("%2c%2c%2c%2c%2c%2c%1c%1c%1c%1c",
+		     @array_sscanf(addr6, "%x:%x:%x:%x:%x:%x:%x.%x.%x.%x"));
     else
       return sprintf("%@2c",
 		     array_sscanf(addr6, "%x:%x:%x:%x:%x:%x:%x:%x"));
