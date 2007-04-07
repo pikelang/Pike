@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.175 2007/01/01 04:49:11 nilsson Exp $
+// $Id: install.pike,v 1.176 2007/04/07 10:52:37 grubba Exp $
 
 #define USE_GTK
 
@@ -1588,7 +1588,8 @@ done
   chmod(tmpname+".x",0755);
   string script=sprintf("#!/bin/sh\n"
 			"tar xf \"$0\" %s.x\n"
-			"exec ./%s.x \"$0\" \"$@\"\n", tmpname, tmpname, tmpname);
+			"exec ./%s.x \"$0\" \"$@\"\n",
+			tmpname, tmpname);
   if(sizeof(script) >= 100)
   {
     error_msg ("Script too long!!\n");
