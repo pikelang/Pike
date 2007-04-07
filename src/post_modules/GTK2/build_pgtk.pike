@@ -1860,11 +1860,9 @@ string fix_port(string p)
   return a * ":";
 }
 
-void sigpipe_handler()
+void show_fds()
 {
-  signal(signum("PIPE"), 0);
-  write("Caught SIGPIPE!\n\n"
-	"Active fds:\n"
+  write("Active fds:\n"
 	"%{  %s\n%}",
 	map(Stdio.get_all_active_fd(),
 	    lambda(int fd) {
@@ -1923,6 +1921,13 @@ void sigpipe_handler()
                            stat->mode_string,
                            details);
 	    }));
+}
+
+void sigpipe_handler()
+{
+  signal(signum("PIPE"), 0);
+  write("Caught SIGPIPE!\n\n");
+  show_fds();
   exit(signum("PIPE"));
 }
 
@@ -1965,6 +1970,11 @@ void main(int argc, array argv)
     // It seems the combination Solaris + ABI64 + Xenofarm
     // gets a SIGPIPE on writing to stderr.
     signal(signum("PIPE"), sigpipe_handler);
+  }
+
+  if ((uname()->sysname == "SunOS") && (Pike.get_runtime_info()->abi == 64)) {
+    // There seems to be some sort of problem with SIGPIPE on Solaris/ABI64.
+    show_fds();
   }
 
   if(!output)
