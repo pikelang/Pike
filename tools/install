@@ -16,6 +16,8 @@ int main(int argc, array(string) argv)
     if(getenv("NT_DEBUG"))
       werror("%O\n",argv);
     Process.exec(@argv);
+    werror("exec() of %{%O %}failed with errno: %d\n",
+	   argv, errno());
     exit(69);
   }
 }
