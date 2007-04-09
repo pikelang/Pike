@@ -10,7 +10,8 @@
 //
 mapping low_decode_image(string data, mixed|void tocolor)
 {
-  return Image._decode( data, tocolor );
+  // NOTE: tocolor is ignored!
+  return Image._decode( data );
 }
 
 
@@ -18,7 +19,8 @@ mapping low_decode_image(string data, mixed|void tocolor)
 // Returns Image.image objects
 mapping low_load_image( string filename, mapping|array|void bgcol )
 {
-  return Image._load( filename, bgcol );
+  // NOTE: bgcol is ignored!
+  return Image._load( filename );
 }
 
 //! Loads and decodes an image as a @[GDK.Pixmap].
