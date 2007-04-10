@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.156 2007/04/10 11:01:43 grubba Exp $
+dnl $Id: aclocal.m4,v 1.157 2007/04/10 12:13:04 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -116,11 +116,11 @@ pushdef([AC_PROG_CC],
     AC_MSG_CHECKING([if it is ICC 9.0 or later])
     icc_version="`$CC -V 2>&1 | sed -e '/^Version /s/Version \([0-9]*\)\..*/\1/p' -ed`"
     if test "0$icc_version" -ge 9; then
-      if echo "$CC $LDFLAGS $LIBS" | grep " -i-" >/dev/null; then :; else
+      if echo "$CC $LDFLAGS $LIBS" | grep " -i-" >/dev/null; then
+        AC_MSG_RESULT(yes - $icc_version)
+      else
         AC_MSG_RESULT(yes - $icc_version - Adding -i-static)
         LDFLAGS="-i-static $LDFLAGS"
-      else
-        AC_MSG_RESULT(yes - $icc_version)
       fi
     else
       if test "x$icc_version" = x; then
@@ -557,7 +557,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.156 2007/04/10 11:01:43 grubba Exp $
+  # $Id: aclocal.m4,v 1.157 2007/04/10 12:13:04 grubba Exp $
 
   MY_AC_PROG_CC
 
