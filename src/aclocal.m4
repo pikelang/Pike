@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.155 2007/04/05 15:28:56 grubba Exp $
+dnl $Id: aclocal.m4,v 1.156 2007/04/10 11:01:43 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -98,6 +98,40 @@ pushdef([AC_PROG_CC],
   else
     AC_MSG_RESULT(no)
     TCC=no
+  fi
+
+  AC_MSG_CHECKING([if we are using ICC (Intel C Compiler)])
+  AC_CACHE_VAL(pike_cv_prog_icc, [
+    if $CC -V 2>&1 | grep -i Intel >/dev/null; then
+      pike_cv_prog_icc="yes"
+    else
+      pike_cv_prog_icc="no"
+    fi
+  ])
+  if test "x$pike_cv_prog_icc" = "xyes"; then
+    AC_MSG_RESULT(yes)
+    ICC="yes"
+    # Make sure libimf et al are linked statically.
+    # NB: icc 6, 7 and 8 only have static versions.
+    AC_MSG_CHECKING([if it is ICC 9.0 or later])
+    icc_version="`$CC -V 2>&1 | sed -e '/^Version /s/Version \([0-9]*\)\..*/\1/p' -ed`"
+    if test "0$icc_version" -ge 9; then
+      if echo "$CC $LDFLAGS $LIBS" | grep " -i-" >/dev/null; then :; else
+        AC_MSG_RESULT(yes - $icc_version - Adding -i-static)
+        LDFLAGS="-i-static $LDFLAGS"
+      else
+        AC_MSG_RESULT(yes - $icc_version)
+      fi
+    else
+      if test "x$icc_version" = x; then
+	AC_MSG_RESULT(no - no version information)
+      else
+	AC_MSG_RESULT(no - $icc_version)
+      fi
+    fi
+  else
+    AC_MSG_RESULT(no)
+    ICC=no
   fi
 ])
 
@@ -523,7 +557,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.155 2007/04/05 15:28:56 grubba Exp $
+  # $Id: aclocal.m4,v 1.156 2007/04/10 11:01:43 grubba Exp $
 
   MY_AC_PROG_CC
 
