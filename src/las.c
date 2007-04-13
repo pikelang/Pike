@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.385 2007/04/07 19:21:59 grubba Exp $
+|| $Id: las.c,v 1.386 2007/04/13 17:42:22 grubba Exp $
 */
 
 #include "global.h"
@@ -1620,6 +1620,7 @@ node *debug_mkcastnode(struct pike_type *type, node *n)
 node *debug_mksoftcastnode(struct pike_type *type, node *n)
 {
   node *res;
+  struct pike_type *result_type = NULL;
 
   if(!n) return 0;
 
@@ -1643,6 +1644,16 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n)
     }
 
     if (n->type) {
+#ifdef NEW_ARG_CHECK
+      if (!(result_type = soft_cast(type, n->type, 0))) {
+	struct pike_string *t1 = describe_type(type);
+	struct pike_string *t2 = describe_type(n->type);
+	my_yyerror("Soft cast of %S to %S isn't a valid cast.",
+		   t2, t1);
+	free_string(t2);
+	free_string(t1);
+      }
+#else /* !NEW_ARG_CHECK */
       if (!check_soft_cast(type, n->type)) {
 	struct pike_string *t1 = describe_type(type);
 	struct pike_string *t2 = describe_type(n->type);
@@ -1655,12 +1666,17 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n)
        * The resulting type should probably be the and between the old
        * and the new type.
        */
+#endif
     }
   }
 
   res = mkemptynode();
   res->token = F_SOFT_CAST;
-  copy_pike_type(res->type, type);
+  if (result_type) {
+    res->type = result_type;
+  } else {
+    copy_pike_type(res->type, type);
+  }
 
   res->tree_info |= n->tree_info;
 
@@ -2061,7 +2077,10 @@ node *debug_mktypenode(struct pike_type *t)
   copy_pike_type(res->u.sval.u.type, t);
   res->u.sval.type = T_TYPE;
   /* FIXME: Should be type(val) */
-  copy_pike_type(res->type, type_type_string);
+  type_stack_mark();
+  push_finished_type(t);
+  push_type(T_TYPE);
+  res->type = pop_unfinished_type();
   return freeze_node(res);
 }
 
@@ -2606,8 +2625,10 @@ static void low_print_tree(node *foo,int needlval)
     init_buf(&save_buf);
     my_describe_type(foo->type);
     s=simple_free_buf(&save_buf);
-    fprintf(stderr, "[%s]{",s);
+    fprintf(stderr, "[%s(", s);
     free(s);
+    low_print_tree(_CDR(foo), 0);
+    fprintf(stderr, ")]{");
     low_print_tree(_CAR(foo),0);
     fputc('}', stderr);
     break;
@@ -3623,6 +3644,11 @@ static struct pike_string *get_name_of_function(node *n)
       }
     }
     break;
+
+  case F_CAST:
+  case F_SOFT_CAST:
+    name = get_name_of_function(CAR(n));
+    break;
 	  
   default:
     MAKE_CONST_STRING(name, "unknown function");
@@ -3655,6 +3681,28 @@ void fix_type_field(node *n)
   {
   case F_SOFT_CAST:
     if (CAR(n) && CAR(n)->type) {
+#ifdef NEW_ARG_CHECK
+      struct pike_type *soft_type = NULL;
+      if (CDR(n) && (CDR(n)->token == F_CONSTANT) &&
+	  (CDR(n)->u.sval.type == T_TYPE)) {
+	soft_type = CDR(n)->u.sval.u.type;
+	if ((n->type = soft_cast(soft_type, CAR(n)->type, 0))) {
+	  /* Success. */
+	  break;
+	}
+	struct pike_string *t1 = describe_type(CAR(n)->type);
+	struct pike_string *t2 = describe_type(soft_type);
+	my_yyerror("Soft cast of %S to %S isn't a valid cast.",
+		   t2, t1);
+	free_string(t2);
+	free_string(t1);
+      } else {
+	yytype_error("Soft cast with non-type.",
+		     type_type_string,
+		     CDR(n)->type, 0);
+      }
+      /* Failure: Fall through to the old code. */
+#else /* !NEW_ARG_CHECK */
       if (!check_soft_cast(old_type, CAR(n)->type)) {
 	struct pike_string *t1 = describe_type(old_type);
 	struct pike_string *t2 = describe_type(CAR(n)->type);
@@ -3667,6 +3715,7 @@ void fix_type_field(node *n)
        * The resulting type should probably be the AND between the old
        * and the new type.
        */
+#endif /* NEW_ARG_CHECK */
     }
     /* FALL_THROUGH */
   case F_CAST:
