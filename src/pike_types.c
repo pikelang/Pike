@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.284 2007/04/06 16:08:14 grubba Exp $
+|| $Id: pike_types.c,v 1.285 2007/04/13 17:38:17 grubba Exp $
 */
 
 #include "global.h"
@@ -4596,6 +4596,332 @@ struct pike_type *get_argument_type(struct pike_type *fun, int arg_no)
   }
 }
 
+/* Get the resulting type from a soft cast.
+ *
+ * Flags:
+ *   1 SOFT_WEAKER	Weaker type.
+ */
+struct pike_type *soft_cast(struct pike_type *soft_type,
+			    struct pike_type *orig_type,
+			    int flags)
+{
+  struct pike_type *res = NULL;
+  struct pike_type *tmp = NULL;
+  struct pike_type *tmp2 = NULL;
+  struct pike_type *tmp3 = NULL;
+
+  if (soft_type == orig_type) {
+    copy_pike_type(res, soft_type);
+    return res;
+  }
+
+ loop:
+  switch(soft_type->type) {
+  case T_OR:
+    res = or_pike_types(tmp = soft_cast(soft_type->car, orig_type, flags),
+			tmp2 = soft_cast(soft_type->cdr, orig_type, flags), 1);
+    break;
+  case T_AND:
+    res = and_pike_types(tmp = soft_cast(soft_type->car, orig_type, flags),
+			 tmp2 = soft_cast(soft_type->cdr, orig_type, flags));
+    break;
+  case T_SCOPE:
+  case T_ASSIGN:
+  case PIKE_T_NAME:
+    soft_type = soft_type->cdr;
+    goto loop;
+    /* FIXME: TUPLE, RING */
+  case T_MIXED:
+    if (flags & SOFT_WEAKER) {
+      copy_pike_type(res, soft_type);
+    } else if (orig_type->type == T_VOID) {
+      copy_pike_type(res, zero_type_string);
+    } else {
+      copy_pike_type(res, orig_type);
+    }
+    break;
+  case T_ZERO:
+    if (!(flags & SOFT_WEAKER) || (orig_type->type == T_VOID)) {
+      copy_pike_type(res, soft_type);
+    } else {
+      copy_pike_type(res, orig_type);
+    }
+    break;
+  }
+  if (!res) {
+  loop2:
+    switch(orig_type->type) {
+    case T_OR:
+      res = or_pike_types(tmp = soft_cast(soft_type, orig_type->car, flags),
+			  tmp2 = soft_cast(soft_type, orig_type->cdr, flags),
+			  1);
+      break;
+    case T_AND:
+      res = and_pike_types(tmp = soft_cast(soft_type, orig_type->car, flags),
+			   tmp2 = soft_cast(soft_type, orig_type->cdr, flags));
+      break;
+    case T_SCOPE:
+    case T_ASSIGN:
+    case PIKE_T_NAME:
+      orig_type = orig_type->cdr;
+      goto loop2;
+    case T_MIXED:
+      if (flags & SOFT_WEAKER) {
+	copy_pike_type(res, orig_type);
+      } else {
+	copy_pike_type(res, soft_type);
+      }
+      break;
+    case T_VOID:
+    case T_ZERO:
+      if (flags & SOFT_WEAKER) {
+	copy_pike_type(res, soft_type);
+      } else {
+	copy_pike_type(res, zero_type_string);
+      }
+      break;
+    }
+  }
+  if (!res) {
+    switch(soft_type->type) {
+    case T_VOID:
+      if (orig_type->type == T_VOID) {
+	copy_pike_type(res, soft_type);
+      } else {
+	return NULL;
+      }
+      break;
+    case T_PROGRAM:
+      /* Convert to a function returning an object. */
+      copy_pike_type(tmp3, soft_type->car);	/* Return type */
+      if ((tmp2 = low_object_lfun_type(tmp3, LFUN_CREATE))) {
+	soft_type = tmp2;
+	tmp2 = NULL;
+      } else {
+      /* FIXME: Multiple cases. */
+	soft_type = function_type_string;
+      }
+      /* FALL_THROUGH */
+    case T_FUNCTION:
+    case T_MANY:
+      {
+	int array_cnt = 0;
+	int loop_cnt = 0;
+	while(orig_type->type == T_ARRAY) {
+	  array_cnt++;
+	  orig_type = orig_type->car;
+	}
+	if (orig_type->type == T_PROGRAM) {
+	  copy_pike_type(tmp, orig_type->car);	/* Return type */
+	  if ((tmp2 = low_object_lfun_type(tmp, LFUN_CREATE))) {
+	    orig_type = tmp2;
+	    tmp2 = NULL;
+	  } else {
+	    /* FIXME: Multiple cases. */
+	    tmp2 = soft_type;
+	    while(tmp2->type == T_FUNCTION) tmp2 = tmp2->cdr;
+	    if (tmp2->type == T_MANY) {
+	      if ((tmp2 = soft_cast(tmp2->car, tmp, flags ^ SOFT_WEAKER))) {
+		/* FIXME: Adjust the return type to tmp2! */
+		copy_pike_type(res, soft_type);
+	      }
+	    } else {
+	      tmp2 = NULL;
+	      copy_pike_type(res, soft_type);
+	    }
+	    break;
+	  }
+	} else if (orig_type->type == T_OBJECT) {
+	  if ((tmp == low_object_lfun_type(orig_type, LFUN_CALL))) {
+	    orig_type = tmp;
+	    tmp = NULL;
+	  } else {
+	    /* FIXME: Multiple cases. */
+	    copy_pike_type(res, orig_type);
+	    break;
+	  }
+	}
+	/* FIXME: Loop above until function? */
+	if ((orig_type->type != T_FUNCTION) &&
+	    (orig_type->type != T_MANY)) {
+	  /* Failure. */
+	  break;
+	}
+	type_stack_mark();
+	while((soft_type->type == T_FUNCTION) ||
+	      (orig_type->type == T_FUNCTION)) {
+	  if (!(tmp2 = soft_cast(soft_type->car, orig_type->car,
+				 flags ^ SOFT_WEAKER))) {
+	    goto function_cast_fail;
+	  }
+	  push_finished_type(tmp2);
+	  free_type(tmp2);
+	  tmp2 = NULL;
+	  if (soft_type->type == T_FUNCTION) soft_type = soft_type->cdr;
+	  if (orig_type->type == T_FUNCTION) orig_type = orig_type->cdr;
+	  loop_cnt++;
+	}
+#ifdef PIKE_DEBUG
+	if ((soft_type->type != T_MANY) || (orig_type->type != T_MANY)) {
+	  fprintf(stderr,
+		  "Strange function type (expected MANY node).\n"
+		  "Orig type: ");
+	  simple_describe_type(orig_type);
+	  fprintf(stderr, "\n"
+		  "Soft type: ");
+	  simple_describe_type(soft_type);
+	  fprintf(stderr, "\n");
+	  Pike_fatal("Strange function type in soft cast.\n");
+	}
+#endif /* PIKE_DEBUG */
+	if (!(tmp2 = soft_cast(soft_type->car, orig_type->car,
+			       flags ^ SOFT_WEAKER))) {
+	  goto function_cast_fail;
+	}
+	push_finished_type(tmp2);
+	free_type(tmp2);
+	tmp2 = NULL;
+	/* Note: Special case for the return type in case of create(). */
+	if (tmp) {
+	  orig_type = tmp;
+	} else {
+	  orig_type = orig_type->cdr;
+	}
+	if (tmp3) {
+	  soft_type = tmp3;
+	} else {
+	  soft_type = soft_type->cdr;
+	}
+	if (!(tmp2 = soft_cast(soft_type, orig_type, flags))) {
+	  goto function_cast_fail;
+	}
+	push_finished_type(tmp2);
+	free_type(tmp2);
+	tmp2 = NULL;
+	while(array_cnt--) push_type(T_ARRAY);
+	push_reverse_type(T_MANY);
+	while(loop_cnt--) push_reverse_type(T_FUNCTION);
+	res = pop_unfinished_type();
+	break;
+      }
+    function_cast_fail:
+      type_stack_pop_to_mark();
+      break;
+    default:
+      if (soft_type->type != orig_type->type) break;
+      switch(soft_type->type) {
+      case T_MAPPING:
+	type_stack_mark();
+	if ((tmp = soft_cast(soft_type->car, orig_type->car,
+			     flags ^ SOFT_WEAKER))) {
+	  push_finished_type(tmp);
+	} else {
+	  push_finished_type(zero_type_string);
+	}
+	if ((tmp2 = soft_cast(soft_type->car, orig_type->car, flags))) {
+	  push_finished_type(tmp);
+	} else {
+	  push_finished_type(zero_type_string);
+	}
+	push_type(T_MAPPING);
+	res = pop_unfinished_type();
+	break;
+      case T_ARRAY:
+      case T_MULTISET:
+      case T_TYPE:
+	type_stack_mark();
+	if ((tmp = soft_cast(soft_type->car, orig_type->car, flags))) {
+	  push_finished_type(tmp);
+	} else if (flags & SOFT_WEAKER) {
+	  push_finished_type(mixed_type_string);
+	} else {
+	  push_finished_type(zero_type_string);
+	}
+	push_type(soft_type->type);
+	res = pop_unfinished_type();
+	break;
+      case T_FLOAT:
+	copy_pike_type(res, soft_type);
+	break;
+      case T_STRING:
+	if ((CAR_TO_INT(soft_type) <= CAR_TO_INT(orig_type)) ==
+	    !(flags & SOFT_WEAKER)) {
+	  copy_pike_type(res, soft_type);
+	} else {
+	  copy_pike_type(res, orig_type);
+	}
+	break;
+      case T_INT:
+	{
+	  INT32 min, max;
+	  if (flags & SOFT_WEAKER) {
+	    if ((min = CAR_TO_INT(soft_type)) > CAR_TO_INT(orig_type)) {
+	      min = CAR_TO_INT(orig_type);
+	    }
+	    if ((max = CDR_TO_INT(soft_type)) < CDR_TO_INT(orig_type)) {
+	      max = CDR_TO_INT(orig_type);
+	    }
+	  } else {
+	    if ((min = CAR_TO_INT(soft_type)) < CAR_TO_INT(orig_type)) {
+	      min = CAR_TO_INT(orig_type);
+	    }
+	    if ((max = CDR_TO_INT(soft_type)) > CDR_TO_INT(orig_type)) {
+	      max = CDR_TO_INT(orig_type);
+	    }
+	    if (min > max) break;
+	  }
+	  type_stack_mark();
+	  push_int_type(min, max);
+	  res = pop_unfinished_type();
+	  break;
+	}
+      case T_OBJECT:
+	if (flags & SOFT_WEAKER) {
+	  if (!CDR_TO_INT(orig_type)) {
+	    copy_pike_type(res, orig_type);
+	  } else if (!CDR_TO_INT(soft_type)) {
+	    copy_pike_type(res, soft_type);
+	  } else if (CDR_TO_INT(soft_type) == CDR_TO_INT(orig_type)) {
+	    if (!CAR_TO_INT(orig_type)) {
+	      copy_pike_type(res, orig_type);
+	    } else {
+	      copy_pike_type(res, soft_type);
+	    }
+	  } else if (pike_types_le(soft_type, orig_type)) {
+	    copy_pike_type(res, orig_type);
+	  } else if (pike_types_le(orig_type, soft_type)) {
+	    copy_pike_type(res, soft_type);
+	  } else {
+	    copy_pike_type(res, object_type_string);
+	  }
+	} else {
+	  if (!CDR_TO_INT(orig_type)) {
+	    copy_pike_type(res, soft_type);
+	  } else if (!CDR_TO_INT(soft_type)) {
+	    copy_pike_type(res, orig_type);
+	  } else if (CDR_TO_INT(soft_type) == CDR_TO_INT(orig_type)) {
+	    if (CAR_TO_INT(orig_type)) {
+	      copy_pike_type(res, orig_type);
+	    } else {
+	      copy_pike_type(res, soft_type);
+	    }
+	  } else if (pike_types_le(soft_type, orig_type)) {
+	    copy_pike_type(res, soft_type);
+	  } else if (pike_types_le(orig_type, soft_type)) {
+	    copy_pike_type(res, orig_type);
+	  }
+	}
+	break;
+      }
+      break;
+    }
+  }
+  if (tmp) free_type(tmp);
+  if (tmp2) free_type(tmp2);
+  if (tmp3) free_type(tmp3);
+  return res;
+}
+
 /* Check whether arg_type may be used as the type of the first argument
  * in a call to fun_type.
  *
@@ -4815,7 +5141,8 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     }
 #endif /* PIKE_DEBUG */
     if (!low_pike_types_le(arg_type, fun_type->car, 0, 0) &&
-	!low_match_types(arg_type, fun_type->car, NO_SHORTCUTS)) {
+	((flags & CALL_STRICT) ||
+ 	 !low_match_types(arg_type, fun_type->car, NO_SHORTCUTS))) {
       /* No match. */
 #ifdef PIKE_DEBUG
       if (l_flag>2) {
