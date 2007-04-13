@@ -1,5 +1,5 @@
 /*
- * $Id: tds.pike,v 1.22 2007/01/01 04:51:39 nilsson Exp $
+ * $Id: tds.pike,v 1.23 2007/04/13 11:48:17 grubba Exp $
  *
  * A Pike implementation of the TDS protocol.
  *
@@ -8,8 +8,8 @@
 
 #pike __REAL_VERSION__
 
-#define TDS_DEBUG
-#define TDS_CONVERT_DEBUG
+/* #define TDS_DEBUG */
+/* #define TDS_CONVERT_DEBUG */
 
 #ifdef TDS_DEBUG
 #define TDS_WERROR(X...)	werror("TDS:" + X)
@@ -968,7 +968,7 @@ static {
 	case TDS_TABNAME_TOKEN:
 	  inp->get_byte();
 	  string raw = inp->get_raw(inp->get_smallint());
-	  werror("Got TAB_NAME: %O\n"
+	  werror("Got TDS_TABNAME_TOKEN: %O\n"
 		 "column_info: %O\n",
 		 raw, column_info);
 	  break;
@@ -998,6 +998,27 @@ static {
 		       "  raw: %O\n", colinfo);
 	  }
 	  break;
+	case TDS_DONEINPROC_TOKEN:
+	  inp->get_byte();
+	  int flags = inp->get_smallint();
+	  int state = inp->get_smallint();
+	  TDS_WERROR("TDS_DONEINPROC_TOKEN: flags: 0x%04x, state: 0x%04x\n",
+		     flags, state);
+	  if (flags & 0x10) {
+	    // Count field is valid.
+	    int rows_affected = inp->get_int();
+	    TDS_WERROR("  rows_affected: %d\n", rows_affected);
+	  } else {
+	    inp->get_int();	// Invalid.
+	  }
+	  if (flags & 1) {
+	    // More results pending.
+	    continue;
+	  }
+	  return column_info;
+	case TDS_DONEPROC_TOKEN:
+	  TDS_WERROR("  TDS_DONEINPROC_TOKEN pending\n");
+	  return column_info;
 	case TDS_DONE_TOKEN:
 	  TDS_WERROR("  TDS_DONE_TOKEN pending\n");
 	  return column_info;
@@ -1174,7 +1195,7 @@ static {
 	  } else if (sizeof(res) == scale) {
 	    res = "0." + res;
 	  } else if (scale) {
-	    res = res[..<scale] + "." +
+	    res = res[..sizeof(res)-2] + "." +
 	      res[sizeof(res)-scale..];
 	  }
 
@@ -1287,7 +1308,6 @@ static {
 	  break;
 	case TDS_DONE_TOKEN:
 	case TDS_DONEPROC_TOKEN:
-	case TDS_DONEINPROC_TOKEN:
 	  if (!leave_end_token) inp->get_byte();
 	  return 0;
 	default:
@@ -1355,13 +1375,45 @@ static {
     InPacket submit_query(compile_query query, void|array(mixed) params)
     {
       Packet p = Packet();
-      if (!query->n_param || !params || !sizeof(params)) {
-	string raw = query->splitted_query*"?";
-	p->put_raw(raw, sizeof(raw));
-	return send_packet(p, 0x01, 1);
-      } else {
-	tds_error("parametrized queries not supported yet.\n");
+      string raw = query->splitted_query*"?";
+      p->put_raw(query->query_string, sizeof(query->query_string));
+      return send_packet(p, 0x01, 1);
+    }
+
+    InPacket submit_execdirect(compile_query query, void|array(mixed) params)
+    {
+      Packet p = Packet();
+      p->put_smallint(-1);
+      p->put_smallint(10);	// TDS_SP_EXECUTESQL
+      p->put_smallint(0);
+
+      p->put_smallint(0);
+      p->put_byte(SYBNTEXT);
+      p->put_int(sizeof(query->query_string));
+      p->put_raw(COLLATION, sizeof(COLLATION));
+      p->put_int(sizeof(query->query_string));      
+      p->put_raw(query->query_string, sizeof(query->query_string));
+
+      int i;
+      string param_definitions =
+	string_to_utf16(map(params,
+			    lambda(mixed val) {
+			      return sprintf("@P%d ntext", ++i);
+			    })*",");
+
+      p->put_smallint(0);
+      p->put_byte(SYBNTEXT);
+      p->put_int(sizeof(param_definitions));
+      p->put_raw(COLLATION, sizeof(COLLATION));
+      p->put_int(sizeof(param_definitions)||-1);
+      p->put_raw(param_definitions, sizeof(param_definitions));
+
+      foreach(params; int i; mixed param) {
+	p->put_data_info(param, 0);
+	p->put_data(param, /* current_row, */ i);
       }
+
+      return send_packet(p, 0x03, 1);
     }
 
     void disconnect()
@@ -1431,6 +1483,7 @@ static {
 class compile_query
 {
   int n_param;
+  string query_string;
   array(string) splitted_query;
 
   array(mixed) params;
@@ -1505,6 +1558,17 @@ class compile_query
     TDS_WERROR("Compiling query: %O\n", query);
     splitted_query = split_query_on_placeholders(query);
     n_param = sizeof(splitted_query)-1;
+    if (n_param) {
+      // Insert placeholders.
+      int i;
+      query_string = map((splitted_query/1)*({0}),
+			 lambda(string segment) {
+			   if (segment) return segment;
+			   return string_to_utf16(sprintf("@P%d", ++i));
+			 })*"";
+    } else {
+      query_string = splitted_query[0];
+    }
   }
 }
 
@@ -1602,7 +1666,7 @@ class big_query
     if (busy) {
       tds_error("Connection not idle.\n");
     }
-    if (!query->params) {
+    if (!query->n_param) {
       result_packet = con->submit_query(query);
     } else {
       result_packet = con->submit_execdirect(query, query->params);
@@ -1681,7 +1745,7 @@ static void create(string|void server, string|void database,
     array(string) tmp = server/":";
     if (sizeof(tmp) > 1) {
       port = (int)tmp[-1];
-      server = tmp[..<1]*":";
+      server = tmp[..sizeof(tmp)-2]*":";
     }
   } else {
     server = "127.0.0.1";
