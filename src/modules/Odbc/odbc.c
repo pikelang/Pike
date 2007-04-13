@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.38 2006/02/06 17:14:13 grubba Exp $
+|| $Id: odbc.c,v 1.39 2007/04/13 11:47:49 grubba Exp $
 */
 
 /*
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.38 2006/02/06 17:14:13 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.39 2007/04/13 11:47:49 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -137,7 +137,7 @@ void odbc_error(const char *fun, const char *msg,
   case SQL_SUCCESS_WITH_INFO:
 #ifdef SQL_WCHAR
     Pike_error("%s(): %s:\n"
-	  "%d:%ws:%ws\n",
+	  "%d:%ls:%ls\n",
 	  fun, msg, code, errcode, errmsg);
 #else
     Pike_error("%s(): %s:\n"
