@@ -87,7 +87,7 @@ Root: HKCR; Subkey: .pmod; ValueType: string; ValueName: ContentType; ValueData:
 Root: HKCR; Subkey: pike_file; ValueType: string; ValueData: Pike program file; Tasks: associate
 ;Root: HKCR; Subkey: pike_file\DefaultIcon; ValueType: string; ValueData: {app}\pike.ico,0; Tasks: associate
 Root: HKCR; Subkey: pike_file\DefaultIcon; ValueType: string; ValueData: {app}\icons\pike_black.ico,0; Tasks: associate
-Root: HKCR; Subkey: pike_file\Shell\Open\Command; ValueType: string; ValueData: """{app}\pike.exe"" %*"; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCR; Subkey: pike_file\Shell\Open\Command; ValueType: string; ValueData: """{app}\pike.exe"" ""%1"" %2 %3 %4 %5 %6 %7 %8 %9"; Flags: uninsdeletevalue; Tasks: associate
 Root: HKCR; Subkey: pike_file\Shell\Edit\Command; ValueType: string; ValueData: """notepad.exe"" ""%1"""; Flags: createvalueifdoesntexist; Tasks: associate
 Root: HKCR; Subkey: pike_module; ValueType: string; ValueData: Pike module file; Tasks: associate
 ;Root: HKCR; Subkey: pike_module\DefaultIcon; ValueType: string; ValueData: {app}\pike.ico,0; Tasks: associate
