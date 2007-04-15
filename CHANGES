@@ -4,13 +4,15 @@ Changes since Pike 7.6.86
 Changes in Pike:
 
 o Updated timezone data files. This includes the recent US DST change.
+o Fixed mktime to work better with out of bounds time fields. [bug 4326]
+o Fixed support for big endian 64-bit.
 o Added conversion from Gmp.mpz objects to Gmp.bignum when cast to int.
 o Added support for variable length records to Standards.IIM.
 o Added timeout to Image.PS. Now kills the ghostscript process if it
   hasn't returned after 30s.
 o Added GL 1.2 and 1.3 constants.
 o Added possibility to set offset and stride when creating textures from 
-  memory objects in GL.
+  memory objects in GL. (Not currently usable on win32.)
 o Fixed CMYK calculation in Image.Image.
 o Added adjusted_cmyk to Image.Image and use it when decoding with
   Image.PS.
@@ -55,6 +57,7 @@ o Fixed an inverted error test in Mysql.set_charset.
 o Fixed a compilation crash of the Cache module on Pikes wihtout
   threads.
 o Fixed optimization bug for objects with a value of false.
+o Fixed -t (tracing) on win32.
 o Added support to Mysql for the charsetnr column attribute and proper
   recognition of binary fields in unicode decode mode by using charsetnr
   instead of the binary flag (which might be set for nonbinary columns
