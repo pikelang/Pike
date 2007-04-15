@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.73 2007/04/15 12:20:17 peter Exp $ */
+/* $Id: export.pike,v 1.74 2007/04/15 16:50:47 peter Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -141,16 +141,12 @@ void bump_version(int|void is_release)
     for (int i=0; i < sizeof(lines); i++) {
       if (has_prefix(lines[i], "#define MAJOR ")) {
 	lines[i] = sprintf("#define MAJOR \"%d\"", version[0]);
-        break;
       } else if (has_prefix(lines[i], "#define MINOR ")) {
 	lines[i] = sprintf("#define MINOR \"%d\"", version[1]);
-        break;
       } else if (has_prefix(lines[i], "#define BUILD ")) {
 	lines[i] = sprintf("#define BUILD \"%d\"", version[2]);
-	break;
       } else if (has_prefix(lines[i], "#define INST ")) {
 	lines[i] = "#define INST \"1\"";
-	break;
       }
     }
 
