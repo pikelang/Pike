@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.353 2004/09/30 15:28:08 mast Exp $
+|| $Id: interpret.c,v 1.354 2007/04/15 12:18:21 peter Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.353 2004/09/30 15:28:08 mast Exp $");
+RCSID("$Id: interpret.c,v 1.354 2007/04/15 12:18:21 peter Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1422,7 +1422,7 @@ static void do_trace_call(INT32 args, dynamic_buffer *old_buf)
       file = "...";
     else {
       file = filep->str;
-      while((f=STRCHR(file,'/')))
+      while((f=STRCHR(file,'/')) || (f=STRCHR(file,'\\')))
 	file=f+1;
     }
   }else{
@@ -1431,7 +1431,7 @@ static void do_trace_call(INT32 args, dynamic_buffer *old_buf)
   }
 
   {
-    char buf[40];
+    char buf[100];
     if (linep)
       SNPRINTF(buf, sizeof (buf), "%s:%ld:", file, (long)linep);
     else
