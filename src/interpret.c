@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.379 2006/07/05 20:50:07 mast Exp $
+|| $Id: interpret.c,v 1.380 2007/04/16 08:45:18 grubba Exp $
 */
 
 #include "global.h"
@@ -1546,6 +1546,7 @@ static void do_trace_call(INT32 args, dynamic_buffer *old_buf)
   struct pike_string *filep = NULL;
   char *file, *s;
   INT32 linep,e;
+  ptrdiff_t len = 0;
 
   my_strcat("(");
   for(e=0;e<args;e++)
@@ -1572,21 +1573,31 @@ static void do_trace_call(INT32 args, dynamic_buffer *old_buf)
       file = "...";
     else {
       file = filep->str;
-      while((f=STRCHR(file,'/')))
+      while((f = STRCHR(file, '/'))
+#ifdef __NT__
+	    || (f = STRCHR(file, '\\'))
+#endif /* __NT__ */
+	    )
 	file=f+1;
+      len = filep->len - (file - filep->str);
     }
   }else{
     linep=0;
     file="-";
   }
 
+  if (len < 30)
   {
     char buf[40];
     if (linep)
       SNPRINTF(buf, sizeof (buf), "%s:%ld:", file, (long)linep);
     else
       SNPRINTF(buf, sizeof (buf), "%s:", file);
-    fprintf(stderr,"- %-20s %s\n",buf,s);
+    fprintf(stderr, "- %-20s %s\n",buf,s);
+  } else if (linep) {
+    fprintf(stderr, "- %s:%ld: %s\n", file, (long)linep, s);
+  } else {
+    fprintf(stderr, "- %s: %s\n", file, s);
   }
 
   if (filep) {
