@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.286 2007/04/13 17:46:51 grubba Exp $
+|| $Id: pike_types.c,v 1.287 2007/04/16 12:07:06 grubba Exp $
 */
 
 #include "global.h"
@@ -4819,12 +4819,12 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
 	} else {
 	  push_finished_type(zero_type_string);
 	}
-	if ((tmp2 = soft_cast(soft_type->car, orig_type->car, flags))) {
-	  push_finished_type(tmp);
+	if ((tmp2 = soft_cast(soft_type->cdr, orig_type->cdr, flags))) {
+	  push_finished_type(tmp2);
 	} else {
 	  push_finished_type(zero_type_string);
 	}
-	push_type(T_MAPPING);
+	push_reverse_type(T_MAPPING);
 	res = pop_unfinished_type();
 	break;
       case T_ARRAY:
