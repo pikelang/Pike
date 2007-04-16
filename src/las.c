@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.386 2007/04/13 17:42:22 grubba Exp $
+|| $Id: las.c,v 1.387 2007/04/16 12:10:31 grubba Exp $
 */
 
 #include "global.h"
@@ -1649,6 +1649,13 @@ node *debug_mksoftcastnode(struct pike_type *type, node *n)
 	struct pike_string *t1 = describe_type(type);
 	struct pike_string *t2 = describe_type(n->type);
 	my_yyerror("Soft cast of %S to %S isn't a valid cast.",
+		   t2, t1);
+	free_string(t2);
+	free_string(t1);
+      } else if (result_type == n->type) {
+	struct pike_string *t1 = describe_type(type);
+	struct pike_string *t2 = describe_type(n->type);
+	yywarning("Soft cast of %S to %S is a noop."
 		   t2, t1);
 	free_string(t2);
 	free_string(t1);
