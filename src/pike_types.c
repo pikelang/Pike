@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.287 2007/04/16 12:07:06 grubba Exp $
+|| $Id: pike_types.c,v 1.288 2007/04/16 18:51:44 grubba Exp $
 */
 
 #include "global.h"
@@ -501,6 +501,12 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
       return t;
     }
   }
+
+#ifdef PIKE_DEBUG
+  if ((type == T_OR) && (car->type == T_OR)) {
+    Pike_fatal("Invalid CAR to OR node.\n");
+  }
+#endif
       
   debug_malloc_pass(t = alloc_pike_type());
 
@@ -745,6 +751,69 @@ void debug_push_finished_type(struct pike_type *t)
   TYPE_STACK_DEBUG("push_finished_type");
 }
 
+/* Only to be used from {or,and}_pike_types() et al! */
+static void push_joiner_type(unsigned int type)
+{
+  /* fprintf(stderr, "push_joiner_type(%d)\n", type); */
+
+  switch(type) {
+  case T_OR:
+  case T_AND:
+    /* Special case: Check if the two top elements are equal. */
+    if (Pike_compiler->type_stackp[-1] == Pike_compiler->type_stackp[0]) {
+      free_type(*(Pike_compiler->type_stackp--));
+      return;
+    }
+    /* Make a new type of the top two types. */
+    --Pike_compiler->type_stackp;
+#ifdef PIKE_DEBUG
+    if ((*Pike_compiler->type_stackp+1)->type == type) {
+      Pike_fatal("Invalid CAR to push_joiner_type().\n");
+    }
+#endif /* PIKE_DEBUG */
+    *Pike_compiler->type_stackp = mk_type(type,
+					  *(Pike_compiler->type_stackp+1),
+					  *Pike_compiler->type_stackp,
+					  PT_COPY_BOTH);
+    break;
+  default:
+    Pike_fatal("Illegal joiner type: %d\n", type);
+  }
+}
+
+static void push_reverse_joiner_type(unsigned int type)
+{
+  /* fprintf(stderr, "push_reverse_joiner_type(%d)\n", type); */
+
+  switch(type) {
+  case T_OR:
+  case T_AND:
+    /* Special case: Check if the two top elements are equal. */
+    if (Pike_compiler->type_stackp[-1] == Pike_compiler->type_stackp[0]) {
+      free_type(*(Pike_compiler->type_stackp--));
+      return;
+    }
+    /* Make a new type of the top two types. */
+    --Pike_compiler->type_stackp;
+#ifdef PIKE_DEBUG
+    if ((*Pike_compiler->type_stackp)->type == type) {
+      Pike_fatal("Invalid CAR to push_reverse_joiner_type().\n");
+    }
+#endif /* PIKE_DEBUG */
+    *Pike_compiler->type_stackp = mk_type(type,
+					  *Pike_compiler->type_stackp,
+					  *(Pike_compiler->type_stackp+1),
+					  PT_COPY_BOTH);
+    break;
+  default:
+    Pike_fatal("Illegal reverse joiner type: %d\n", type);
+  }
+}
+
+static void low_or_pike_types(struct pike_type *t1,
+			      struct pike_type *t2,
+			      int zero_implied);
+
 void debug_push_type(unsigned int type)
 {
   /* fprintf(stderr, "push_type(%d)\n", type); */
@@ -769,19 +838,12 @@ void debug_push_type(unsigned int type)
       free_type(top);
       return;
     }
-    if (Pike_compiler->type_stackp[-1]->type <
-	Pike_compiler->type_stackp[0]->type) {
-      /* Make a new type of the top two types.
-       * In reverse order!
-       *
-       * This is an attempt to make the resulting types more
-       * likely to be equal.
-       */
-      --Pike_compiler->type_stackp;
-      *Pike_compiler->type_stackp = mk_type(type,
-					    *Pike_compiler->type_stackp,
-					    *(Pike_compiler->type_stackp+1),
-					    PT_COPY_BOTH);
+    if (type == T_OR) {
+      struct pike_type *t1 = *(Pike_compiler->type_stackp--);
+      struct pike_type *t2 = *(Pike_compiler->type_stackp--);
+      low_or_pike_types(t1, t2, 0);
+      free_type(t2);
+      free_type(t1);
       return;
     }
     /* FALL_THROUGH */
@@ -2205,8 +2267,136 @@ static void very_low_or_pike_types(struct pike_type *to_push,
 
 static void low_or_pike_types(struct pike_type *t1,
 			      struct pike_type *t2,
+			      int zero_implied);
+
+/* Push either t1, t2 or the OR of t1 and t2.
+ * Returns -1 if t1 was pushed.
+ *          0 if the OR was pushed. (Successful join)
+ *          1 if t2 was pushed.
+ */
+static int lower_or_pike_types(struct pike_type *t1,
+			       struct pike_type *t2,
+			       int zero_implied)
+{
+#if 0
+  fprintf(stderr, "    lower_or_pike_types(");
+  simple_describe_type(t1);
+  fprintf(stderr, ", ");
+  simple_describe_type(t2);
+  fprintf(stderr, ")\n");
+#endif
+  if (t1 == t2) {
+    push_finished_type(t1);
+    return 0;
+  } else if (zero_implied && (t1->type == T_MIXED || t2->type == T_MIXED)) {
+    push_type(T_MIXED);
+    return 0;
+  } else if (t1->type < t2->type) {
+    push_finished_type(t1);
+    return -1;
+  } else if (t1->type > t2->type) {
+    push_finished_type(t2);
+    return 1;
+  } else {
+#ifdef PIKE_DEBUG
+    if (t1->type != t2->type) {
+      Pike_fatal("Lost track of types t1->type: %d, t2->type: %d\n",
+		 t1->type, t2->type);
+    }
+#endif /* PIKE_DEBUG */
+    switch(t1->type) {
+    case T_INT:
+      {
+	INT32 min1 = CAR_TO_INT(t1);
+	INT32 max1 = CDR_TO_INT(t1);
+	INT32 min2 = CAR_TO_INT(t2);
+	INT32 max2 = CDR_TO_INT(t2);
+
+	if (zero_implied) {
+	  if (min1 == 1) min1 = 0;
+	  if (min2 == 1) min2 = 0;
+	  if (max1 == -1) max1 = 0;
+	  if (max2 == -1) max2 = 0;
+	}
+    
+	if ((max1 < min2) && (max1 + 1 < min2)) {
+	  /* No overlap. */
+	  push_finished_type(t1);
+	  return -1;
+	} else if ((min1 > max2) && (min1 > max2 + 1)) {
+	  /* No overlap. */
+	  push_finished_type(t2);
+	  return 1;
+	} else {
+	  /* Overlap */
+	  min1 = MINIMUM(min1, min2);
+	  max1 = MAXIMUM(max1, max2);
+
+	  push_int_type(min1, max1);
+	  return 0;
+	}
+      }
+      break;
+    case T_STRING:
+      {
+	INT32 w1 = CAR_TO_INT(t1);
+	INT32 w2 = CAR_TO_INT(t2);
+	if (w1 >= w2) {
+	  push_finished_type(t1);
+	} else {
+	  push_finished_type(t2);
+	}
+      }
+      return 0;
+    case T_ARRAY:
+    case T_MULTISET:
+      {
+	low_or_pike_types(t1->car, t2->car, zero_implied);
+	push_type(t1->type);
+	return 0;
+      }
+    case T_SCOPE:
+      low_or_pike_types(t1->cdr, t2->cdr, zero_implied);
+      if (CAR_TO_INT(t1) > CAR_TO_INT(t2))
+	push_scope_type(CAR_TO_INT(t1));
+      else
+	push_scope_type(CAR_TO_INT(t2));
+      return 0;
+    case T_MAPPING:
+      if (t1->car == t2->car) {
+	push_finished_type(t1->car);
+	low_or_pike_types(t1->cdr, t2->cdr, zero_implied);
+	push_reverse_type(T_MAPPING);
+	return 0;
+      } else if (t1->cdr == t2->cdr) {
+	push_finished_type(t1->cdr);
+	low_or_pike_types(t1->car, t2->car, zero_implied);
+	push_type(T_MAPPING);
+	return 0;
+      }
+      /* FALL_THROUGH */
+    default:
+      push_finished_type(t1);
+      return -1;
+    }
+  }
+}
+
+static void low_or_pike_types(struct pike_type *t1,
+			      struct pike_type *t2,
 			      int zero_implied)
 {
+#ifdef PIKE_DEBUG
+  struct pike_type *arg1 = t1;
+  struct pike_type *arg2 = t2;
+#endif
+#if 0
+  fprintf(stderr, "  low_or_pike_types(");
+  simple_describe_type(t1);
+  fprintf(stderr, ", ");
+  simple_describe_type(t2);
+  fprintf(stderr, ")\n");
+#endif
   if(!t1)
   {
     if(!t2)
@@ -2228,67 +2418,76 @@ static void low_or_pike_types(struct pike_type *t1,
   else if (t1 == t2) {
     push_finished_type(t1);
   }
-  else if (t1->type == T_VOID || t2->type == T_VOID) {
-    push_finished_type(t1);
-    push_finished_type(t2);
-    push_type(T_OR);
+  else if (t1->type == T_OR) {
+    int type_cnt = 0;
+    while (t1 || t2) {
+      if (!t1) {
+	if (t2->type == T_OR) {
+	  push_finished_type(t2->car);
+	  t2 = t2->cdr;
+	} else {
+	  push_finished_type(t2);
+	  t2 = NULL;
+	}
+      } else if (!t2) {
+	if (t1->type == T_OR) {
+	  push_finished_type(t1->car);
+	  t1 = t1->cdr;
+	} else {
+	  push_finished_type(t1);
+	  t1 = NULL;
+	}
+      } else {
+	struct pike_type *a = t1;
+	struct pike_type *b = t2;
+	struct pike_type *n1 = NULL;
+	struct pike_type *n2 = NULL;
+	int val;
+	if (t1->type == T_OR) {
+	  a = t1->car;
+	  n1 = t1->cdr;
+	}
+	if (t2->type == T_OR) {
+	  b = t2->car;
+	  n2 = t2->cdr;
+	}
+#ifdef PIKE_DEBUG
+	if ((a->type == T_OR) || (b->type == T_OR)) {
+	  fprintf(stderr, "  low_or_pike_types(");
+	  simple_describe_type(arg1);
+	  fprintf(stderr, ", ");
+	  simple_describe_type(arg2);
+	  fprintf(stderr, ")\n  a:");
+	  simple_describe_type(a);
+	  fprintf(stderr, "\n  b:");
+	  simple_describe_type(b);
+	  fprintf(stderr, ")\n");
+	  Pike_fatal("Invalid type to lower_or_pike_types!\n");
+	}
+#endif
+	val = lower_or_pike_types(a, b, zero_implied);
+	if (val <= 0) t1 = n1;
+	if (val >= 0) t2 = n2;
+      }
+      type_cnt++;
+    }
+    while (type_cnt > 1) {
+      push_reverse_joiner_type(T_OR);
+      type_cnt--;
+    }
   }
-  else if(t1->type == T_MIXED || t2->type == T_MIXED)
-  {
-    push_type(T_MIXED);
+  else if (t2->type == T_OR) {
+    low_or_pike_types(t2, t1, zero_implied);
   }
-  else if(t1->type == T_INT && t2->type == T_INT)
-  {
-    INT32 min1 = CAR_TO_INT(t1);
-    INT32 max1 = CDR_TO_INT(t1);
-    INT32 min2 = CAR_TO_INT(t2);
-    INT32 max2 = CDR_TO_INT(t2);
-
-    if ((max1 + 1 < min2) || (max2 + 1 < min1)) {
-      /* No overlap. */
-      push_finished_type(t1);
+  else {
+    int val = lower_or_pike_types(t1, t2, zero_implied);
+    if (val < 0) {
       push_finished_type(t2);
-      push_type(T_OR);
-    } else {
-      /* Overlap */
-      min1 = MINIMUM(min1, min2);
-      max1 = MAXIMUM(max1, max2);
-
-      push_int_type(min1, max1);
-    }
-  }
-  else if (t1->type == T_STRING && t2->type == T_STRING) {
-    INT32 w1 = CAR_TO_INT(t1);
-    INT32 w2 = CAR_TO_INT(t2);
-    if (w1 >= w2) {
+      push_reverse_joiner_type(T_OR);
+    } else if (val > 0) {
       push_finished_type(t1);
-    } else {
-      push_finished_type(t2);
+      push_reverse_joiner_type(T_OR);
     }
-  }
-  else if (t1->type == T_SCOPE)
-  {
-    if (t2->type == T_SCOPE) {
-      low_or_pike_types(t1->cdr, t2->cdr, zero_implied);
-      if (t1->car > t2->car)
-	push_scope_type(CAR_TO_INT(t1));
-      else
-	push_scope_type(CAR_TO_INT(t2));
-    } else {
-      low_or_pike_types(t1->cdr, t2, zero_implied);
-      push_scope_type(CAR_TO_INT(t1));
-    }
-  }
-  else if (t2->type == T_SCOPE)
-  {
-    low_or_pike_types(t1, t2->cdr, zero_implied);
-    push_scope_type(CAR_TO_INT(t2));
-    push_type(T_SCOPE);
-  }
-  else
-  {
-    push_finished_type(t1);
-    very_low_or_pike_types(t2,t1);
   }
 }
 
@@ -2296,9 +2495,16 @@ struct pike_type *or_pike_types(struct pike_type *a,
 				struct pike_type *b,
 				int zero_implied)
 {
+  struct pike_type *res;
   type_stack_mark();
   low_or_pike_types(a,b,1 /*zero_implied*/);
-  return pop_unfinished_type();
+  res = pop_unfinished_type();
+#if 0
+  fprintf(stderr, "  ==> ");
+  simple_describe_type(res);
+  fprintf(stderr, "\n");
+#endif
+  return res;
 }
 
 static void very_low_and_pike_types(struct pike_type *to_push,
@@ -6262,72 +6468,64 @@ void yyexplain_nonmatching_types(struct pike_type *type_a,
 
 /******/
 
-#ifdef DEBUG_MALLOC
-#define low_make_pike_type(T,C) ((struct pike_type *)debug_malloc_pass(debug_low_make_pike_type(T,C)))
-#define low_make_function_type(T,C) ((struct pike_type *)debug_malloc_pass(debug_low_make_function_type(T,C)))
-#else /* !DEBUG_MALLOC */
-#define low_make_pike_type debug_low_make_pike_type
-#define low_make_function_type debug_low_make_function_type
-#endif /* DEBUG_MALLOC */
-  
-static struct pike_type *debug_low_make_pike_type(unsigned char *type_string,
-						  unsigned char **cont);
+static void low_make_pike_type(unsigned char *type_string,
+			       unsigned char **cont);
 
-static struct pike_type *debug_low_make_function_type(unsigned char *type_string,
-						      unsigned char **cont)
+static void low_make_function_type(unsigned char *type_string,
+				   unsigned char **cont)
 {
-  struct pike_type *tmp;
-
   if (*type_string == T_MANY) {
-    tmp = low_make_pike_type(type_string+1, cont);
-    return mk_type(T_MANY, tmp,
-		   low_make_pike_type(*cont, cont), PT_COPY_BOTH);
+    low_make_pike_type(type_string+1, cont);
+    low_make_pike_type(*cont, cont);
+    push_reverse_type(T_MANY);
+    return;
   }
-  tmp = low_make_pike_type(type_string, cont);
-  return mk_type(T_FUNCTION, tmp,
-		 low_make_function_type(*cont, cont), PT_COPY_BOTH);
+  low_make_pike_type(type_string, cont);
+  low_make_function_type(*cont, cont);
+  push_reverse_type(T_FUNCTION);
 }
 
-static struct pike_type *debug_low_make_pike_type(unsigned char *type_string,
-						  unsigned char **cont)
+static void low_make_pike_type(unsigned char *type_string,
+			       unsigned char **cont)
 {
   unsigned INT32 type;
   struct pike_type *tmp;
 
   switch(type = *type_string) {
   case T_SCOPE:
+    Pike_fatal("Not supported yet.\n");
   case T_ASSIGN:
     if ((type_string[1] < '0') || (type_string[1] > '9')) {
       Pike_fatal("low_make_pike_type(): Bad marker: %d\n", type_string[1]);
     }
-    return mk_type(type, (void *)(ptrdiff_t)(type_string[1] - '0'),
-		   low_make_pike_type(type_string+2, cont), PT_COPY_CDR);
-  case T_FUNCTION:
-    /* Multiple ordered values. */
-    /* FIXME: */
-    return low_make_function_type(type_string+1, cont);
+    low_make_pike_type(type_string+2, cont);
+    push_assign_type(type_string[1]);
+    break;
+  case T_OR:
+  case T_AND:
+    /* Order independant */
+    /* FALL_THROUGH */
+    
+  case T_MANY:
   case T_TUPLE:
   case T_MAPPING:
   case PIKE_T_RING:
     /* Order dependant */
-    tmp = low_make_pike_type(type_string+1, cont);
-    return mk_type(type, tmp,
-		   low_make_pike_type(*cont, cont), PT_COPY_BOTH);
-  case T_OR:
-  case T_AND:
-    /* Order independant */
-    /* FIXME: */
-    tmp = low_make_pike_type(type_string+1, cont);
-    return mk_type(type, tmp,
-		   low_make_pike_type(*cont, cont), PT_COPY_BOTH);
+    low_make_pike_type(type_string+1, cont);
+    low_make_pike_type(*cont, cont);
+    push_reverse_type(type);
+    break;
+  case T_FUNCTION:
+    low_make_function_type(type_string+1, cont);
+    break;
   case T_ARRAY:
   case T_MULTISET:
   case T_TYPE:
   case T_NOT:
   case T_PROGRAM:
-    /* Single type */
-    return mk_type(type, low_make_pike_type(type_string+1, cont), NULL,
-		   PT_COPY_CAR);
+    low_make_pike_type(type_string+1, cont);
+    push_reverse_type(type);
+    break;
   case '0':
   case '1':
   case '2':
@@ -6339,9 +6537,7 @@ static struct pike_type *debug_low_make_pike_type(unsigned char *type_string,
   case '8':
   case '9':
     /* Marker type */
-    *cont = type_string+1;
-    return mk_type(type, NULL, NULL, PT_IS_MARKER);
-
+    /* FALL_THROUGH */
   case T_FLOAT:
   case T_MIXED:
   case T_VOID:
@@ -6349,34 +6545,40 @@ static struct pike_type *debug_low_make_pike_type(unsigned char *type_string,
   case PIKE_T_UNKNOWN:
     /* Leaf type */
     *cont = type_string+1;
-    return mk_type(type, NULL, NULL, 0);
+    push_type(type);
+    break;
 
   case T_STRING:
     *cont = type_string + 1;
-    return mk_type(T_STRING, (void *)(ptrdiff_t)32, NULL, 0);
+    push_string_type(32);
+    break;
 
   case PIKE_T_NSTRING:
     *cont = type_string + 2;	/* 1 + 1 */
     /* FIXME: Add check for valid bitwidth (0..32). */
-    return mk_type(T_STRING, (void *)(ptrdiff_t)type_string[1], NULL, 0);
+    push_string_type(type_string[1]);
+    break;
 
   case T_INT:
-    *cont = type_string + 9;	/* 2*sizeof(INT32) + 1 */
-    return mk_type(T_INT,
-		   (void *)(ptrdiff_t)extract_type_int((char *)type_string+1),
-		   (void *)(ptrdiff_t)extract_type_int((char *)type_string+5),
-		   0);
+    {
+      int min = extract_type_int((char *)type_string+1);
+      int max = extract_type_int((char *)type_string+5);
+      
+      *cont = type_string + 9;	/* 2*sizeof(INT32) + 1 */
+      push_int_type(min, max);
+      break;
+    }
 
   case PIKE_T_INT_UNTYPED:
     *cont = type_string + 1;
-    return mk_type(T_INT,
-		   (void *)(ptrdiff_t)0x80000000,
-		   (void *)(ptrdiff_t)0x7fffffff, 0);
+    push_int_type(0x80000000, 0x7fffffff);
+    break;
 
   case T_OBJECT:
     *cont = type_string + 6;	/* 1 + sizeof(INT32) + 1 */
-    return mk_type(T_OBJECT, (void *)(ptrdiff_t)(type_string[1]),
-		   (void *)(ptrdiff_t)extract_type_int((char *)type_string+2), 0);
+    push_object_type(type_string[1], extract_type_int((char *)type_string+2));
+    break;
+
   case PIKE_T_NAME:
     {
       int size_shift = type_string[1] & 0x3;
@@ -6449,25 +6651,25 @@ static struct pike_type *debug_low_make_pike_type(unsigned char *type_string,
 	  }
 	}
       }
-      return mk_type(PIKE_T_NAME, (void *)end_shared_string(str),
-		     low_make_pike_type(type_string + 2 + bytes +
-					(1<<size_shift), cont),
-		     PT_COPY_CDR);
+      low_make_pike_type(type_string + 2 + bytes + (1<<size_shift), cont);
+      push_type_name(str = end_shared_string(str));
+      free_string(str);
+      break;
     }
   default:
     Pike_fatal("compile_type_string(): Error in type string %d.\n", type);
     /* NOT_REACHED */
     break;
   }
-  /* NOT_REACHED */
-  return NULL;
 }
 
 /* Make a pike-type from a serialized (old-style) type. */
 struct pike_type *debug_make_pike_type(const char *serialized_type)
 {
   unsigned char *dummy;
-  return low_make_pike_type((unsigned char *)serialized_type, &dummy);
+  type_stack_mark();
+  low_make_pike_type((unsigned char *)serialized_type, &dummy);
+  return pop_unfinished_type();
 }
 
 int pike_type_allow_premature_toss(struct pike_type *type)
