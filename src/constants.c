@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: constants.c,v 1.56 2006/01/14 18:18:45 nilsson Exp $
+|| $Id: constants.c,v 1.57 2007/04/17 12:20:46 grubba Exp $
 */
 
 #include "global.h"
@@ -68,7 +68,7 @@ PMOD_EXPORT void add_global_program(const char *name, struct program *p)
   s.type=T_PROGRAM;
   s.subtype=0;
   s.u.program=p;
-  low_add_constant(name, &s);
+  low_add_constant(name, p?&s:NULL);
 }
 
 #undef INIT_BLOCK
