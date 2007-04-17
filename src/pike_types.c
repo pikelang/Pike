@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.289 2007/04/17 10:47:14 grubba Exp $
+|| $Id: pike_types.c,v 1.290 2007/04/17 13:07:26 grubba Exp $
 */
 
 #include "global.h"
@@ -650,6 +650,7 @@ void debug_push_int_type(INT_TYPE min, INT_TYPE max)
 #if SIZEOF_INT_TYPE > 4
 /* a bit kludgy: should maybe really allow 64 bit INT_TYPE */
 /* see also extract_type_int */
+
   if (min<MIN_INT32) min=MIN_INT32;
   else if (min>MAX_INT32) min=MAX_INT32;
   if (max<MIN_INT32) max=MIN_INT32;
@@ -670,7 +671,7 @@ void debug_push_int_type(INT_TYPE min, INT_TYPE max)
 	       " min:%"PRINTPIKEINT"d, max:%"PRINTPIKEINT"d.\n",
 	       min, max);
 #endif /* PIKE_DEBUG */
-  
+
   *(++Pike_compiler->type_stackp) = mk_type(T_INT,
 					    (void *)(ptrdiff_t)min,
 					    (void *)(ptrdiff_t)max, 0);
@@ -6660,8 +6661,8 @@ static void low_make_pike_type(unsigned char *type_string,
 
   case T_INT:
     {
-      int min = extract_type_int((char *)type_string+1);
-      int max = extract_type_int((char *)type_string+5);
+      INT32 min = extract_type_int((char *)type_string+1);
+      INT32 max = extract_type_int((char *)type_string+5);
       
       *cont = type_string + 9;	/* 2*sizeof(INT32) + 1 */
       push_int_type(min, max);
@@ -6670,7 +6671,7 @@ static void low_make_pike_type(unsigned char *type_string,
 
   case PIKE_T_INT_UNTYPED:
     *cont = type_string + 1;
-    push_int_type(0x80000000, 0x7fffffff);
+    push_int_type((INT32)-0x80000000, 0x7fffffff);
     break;
 
   case T_OBJECT:
