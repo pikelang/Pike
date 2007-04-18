@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.146 2007/01/01 00:27:23 nilsson Exp $
+# $Id: Makefile,v 1.147 2007/04/18 16:56:48 mast Exp $
 #
 # Meta Makefile
 #
@@ -108,7 +108,7 @@ configure: src/configure builddir
 	      CONFIG_SHELL="/bin/bash -norc" ; \
 	    fi ;\
 	    runconfigure () { \
-	      CONFIG_SITE=x $${CONFIG_SHELL-/bin/sh} \
+	      eval CONFIG_SITE=x $${CONFIG_SHELL-/bin/sh} \
 		"$$srcdir"/configure "$$@" || exit $$?; \
 	    }; \
 	    eval runconfigure $$configureargs; \
