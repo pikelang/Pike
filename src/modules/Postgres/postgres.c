@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.42 2006/06/06 03:26:00 adam Exp $
+|| $Id: postgres.c,v 1.43 2007/04/18 13:25:32 grubba Exp $
 */
 
 /*
@@ -72,7 +72,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.42 2006/06/06 03:26:00 adam Exp $");
+RCSID("$Id: postgres.c,v 1.43 2007/04/18 13:25:32 grubba Exp $");
 
 static void set_error (char * newerror)
 {
@@ -685,7 +685,8 @@ static void f_trace (INT32 args)
 
 static void f_callback(INT32 args)
 {
-	check_all_args("postgres->_set_notify_callback()",BIT_INT|BIT_FUNCTION,0);
+	check_all_args("postgres->_set_notify_callback()",
+		       args, BIT_INT|BIT_FUNCTION, 0);
 
 	if (Pike_sp[-args].type==PIKE_T_INT) {
 		if (THIS->notify_callback->type!=PIKE_T_INT) {
