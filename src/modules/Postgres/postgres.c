@@ -64,7 +64,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.17 2001/06/25 20:54:26 david%hedbor.org Exp $");
+RCSID("$Id: postgres.c,v 1.18 2007/04/18 13:24:55 grubba Exp $");
 
 #define THIS ((struct pgres_object_data *) fp->current_storage)
 
@@ -419,7 +419,8 @@ static void f_trace (INT32 args)
 
 static void f_callback(INT32 args)
 {
-	check_all_args("postgres->_set_notify_callback()",BIT_INT|BIT_FUNCTION,0);
+	check_all_args("postgres->_set_notify_callback()",
+		       args, BIT_INT|BIT_FUNCTION, 0);
 
 	if (sp[-args].type==T_INT) {
 		if (THIS->notify_callback->type!=T_INT) {
