@@ -3,8 +3,8 @@
 
 #define MAJOR "7"
 #define MINOR "6"
-#define BUILD "105"
-#define INST  "1"
+#define BUILD "110"
+#define INST "1"
 
 [Setup]
 InternalCompressLevel=ultra
