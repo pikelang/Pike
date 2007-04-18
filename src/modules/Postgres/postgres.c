@@ -75,7 +75,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.23 2001/11/14 14:49:44 grubba Exp $");
+RCSID("$Id: postgres.c,v 1.24 2007/04/18 13:25:16 grubba Exp $");
 
 static void set_error (char * newerror)
 {
@@ -621,7 +621,8 @@ static void f_trace (INT32 args)
 
 static void f_callback(INT32 args)
 {
-	check_all_args("postgres->_set_notify_callback()",BIT_INT|BIT_FUNCTION,0);
+	check_all_args("postgres->_set_notify_callback()",
+		       args, BIT_INT|BIT_FUNCTION, 0);
 
 	if (Pike_sp[-args].type==PIKE_T_INT) {
 		if (THIS->notify_callback->type!=PIKE_T_INT) {
