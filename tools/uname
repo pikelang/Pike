@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# $Id: uname,v 1.25 2007/04/18 16:18:07 mast Exp $
+# $Id: uname,v 1.26 2007/04/19 11:23:05 mast Exp $
 
 . $NTTOOLS
 
@@ -15,7 +15,7 @@ for a in "$@"
 do
   case "$a" in
     --version)
-      ver=`echo "$Revision: 1.25 $" |sed -e 's/.* \(.*\) .*/\1/'`
+      ver=`echo "$Revision: 1.26 $" |sed -e 's/.* \(.*\) .*/\1/'`
       echo "Fake NT uname version $ver by Fredrik Hubinette and others"
       exit 0
     ;;
@@ -94,7 +94,7 @@ if [ X$S = Xyes ]; then
   # Note that the first '.' either matches ' ' or '['.
   SYSNAME="`echo $NT_RAW_VERSION|sed -e 's/.Version.*//;s/^Microsoft//'`"
   # Perform whitespace adjustment.
-  OUTPUT="$OUTPUT `eval echo $SYSNAME|tr ' ' '_'`"
+  OUTPUT="$OUTPUT `echo $SYSNAME|tr ' ' '_'`"
 fi
 
 if [ X$N = Xyes ]; then
@@ -158,5 +158,5 @@ export NT_RAW_VERSION
 export NT_NUMBER_OF_PROCESSORS
 export NT_PROCESSOR_ARCHITECTURE
 
-# Note: Use eval and no quotes to get rid of extra white space.
-eval echo $OUTPUT
+# Note: No quotes, so that we get rid of extra white space.
+echo $OUTPUT
