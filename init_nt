@@ -168,7 +168,7 @@ while [ x`eval echo \\$NTMOUNT$num` != x ]; do
   if [ x$num = x ]; then num=2; else num=`expr $num + 1`; fi
 done
 IFS='
-'
+	 '
 
 export NTHOST NTCC CC CXX PATH NTTOOLS MNTREPLACE
 export NTPORT USE_SPRSH IFS REMOTE_METHOD watcom INCLUDE
