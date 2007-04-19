@@ -57,7 +57,7 @@ class struct {
   //!    Unsigned integer to append.
   //!  @param len
   //!    Length of integer in bytes.
-  void put_uint(int i, int len)
+  void put_uint(int i, int(0..) len)
   {
     if (i<0)
       error("Negative argument.\n");
@@ -67,7 +67,7 @@ class struct {
   //! Appends a variable string @[s] preceded with an unsigned integer
   //! of the size @[len_width] declaring the length of the string. The
   //! string @[s] should be 8 bits wide.
-  void put_var_string(string s, int len_width)
+  void put_var_string(string s, int(0..) len_width)
   {
     if ( (len_width <= 3) &&
 	 (sizeof(s) >= ({ -1, 0x100, 0x10000, 0x1000000 })[len_width] ))
@@ -80,7 +80,7 @@ class struct {
   //! Appends a bignum @[i] as a variable string preceded with an
   //! unsigned integer of the size @[len_width] declaring the length
   //! of the string. @[len_width] defaults to 2.
-  void put_bignum(Gmp.mpz i, int|void len_width)
+  void put_bignum(Gmp.mpz i, int(0..)|void len_width)
   {
     if (i<0)
       error("Negative argument.\n");
@@ -96,7 +96,7 @@ class struct {
 
   //! Appends an array of unsigned integers of width @[item_size]
   //! to the buffer.
-  void put_fix_uint_array(array(int) data, int item_size)
+  void put_fix_uint_array(array(int) data, int(0..) item_size)
   {
     foreach(data, int i)
       put_uint(i, item_size);
@@ -105,7 +105,7 @@ class struct {
   //! Appends an array of unsigned integers of width @[item_size]
   //! to the buffer, preceded with an unsigned integer @[len] declaring
   //! the size of the array.
-  void put_var_uint_array(array(int) data, int item_size, int len)
+  void put_var_uint_array(array(int) data, int(0..) item_size, int(0..) len)
   {
     put_uint(sizeof(data), len);
     put_fix_uint_array(data, item_size);
