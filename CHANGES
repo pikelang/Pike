@@ -38,6 +38,7 @@ o Fixed truncated field names in ODBC.
 o Fixed masking of file positions larger than 2 GiB on 64-bit.
 o Fixed low-level parsing of HTTP headers to not reorder the headers.
 o Added set_charset and get_charset proxy functions to Sql.Sql.
+o Fixed crash that occured when trying to use Postgres callbacks.
 o Changed Protocols.HTTP.Query async_close() to care about the value
   returned by ponder_answer(). Fixes requests to broken servers that 
   don't send proper results.
