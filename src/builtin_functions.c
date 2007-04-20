@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.634 2007/04/09 15:57:40 grubba Exp $
+|| $Id: builtin_functions.c,v 1.635 2007/04/20 14:39:20 grubba Exp $
 */
 
 #include "global.h"
@@ -2220,6 +2220,30 @@ static void f_parse_pike_type( INT32 args )
 
   push_string(type_to_string(t));
   free_type(t);
+}
+
+/*! @decl type __soft_cast(type to, type from)
+ *!
+ *!   Return the resulting type from a soft cast of @[from] to @[to].
+ */
+static void f___soft_cast(INT32 args)
+{
+  struct pike_type *res;
+  if (args < 2) Pike_error("Bad number of arguments to __low_check_call().\n");
+  if (Pike_sp[-args].type != PIKE_T_TYPE) {
+    Pike_error("Bad argument 1 to __low_check_call() expected type.\n");
+  }
+  if (Pike_sp[1-args].type != PIKE_T_TYPE) {
+    Pike_error("Bad argument 2 to __low_check_call() expected type.\n");
+  }
+  if (!(res = soft_cast(Pike_sp[-args].u.type,
+			Pike_sp[1-args].u.type, 0))) {
+    pop_n_elems(args);
+    push_undefined();
+  } else {
+    pop_n_elems(args);
+    push_type_value(res);
+  }
 }
 
 /*! @decl type __low_check_call(type fun_type, type arg_type)
@@ -9179,6 +9203,11 @@ void init_builtin_efuns(void)
   ADD_EFUN("__parse_pike_type", f_parse_pike_type,
 	   tFunc(tStr8,tStr8),OPT_TRY_OPTIMIZE);
 
+  ADD_EFUN("__soft_cast", f___soft_cast,
+	   tFunc(tSetvar(0, tType(tMix)) tSetvar(1, tType(tMix)),
+		 tAnd(tVar(0), tVar(1))),
+	   OPT_TRY_OPTIMIZE);
+
   ADD_EFUN("__low_check_call", f___low_check_call,
 	   tFunc(tType(tCallable) tType(tMix) tOr(tInt,tVoid),
 		 tType(tCallable)),
@@ -9303,11 +9332,8 @@ void init_builtin_efuns(void)
 		tFunc(tArray,tArr(tInt)), 0, OPT_TRY_OPTIMIZE);
 
 #define tMapStuff(IN,SUB,OUTFUN,OUTSET,OUTPROG,OUTMIX,OUTARR,OUTMAP) \
-  tOr7( tFuncV(IN tFuncV(SUB,tSetvar(0,tZero),tSetvar(2,tAny)),tVar(0),	\
+  tOr6( tFuncV(IN tFuncV(SUB,tSetvar(0,tMix),tSetvar(2,tAny)),tVar(0),	\
 	       OUTFUN),							\
-        tIfnot(tFuncV(tNot(IN) tFunction, tNot(tZero),tMix),		\
-	       tOr(tFuncV(IN tPrg(tObj), tMix, OUTPROG), \
-		   tFuncV(IN tObj, tMix, OUTMIX))), \
 	tFuncV(IN tSet(tMix),tMix,OUTSET), \
 	tFuncV(IN tMap(tMix, tSetvar(2,tMix)), tMix, OUTMAP), \
         tFuncV(IN tArray, tMix, OUTARR), \
