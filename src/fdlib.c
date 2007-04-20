@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.84 2006/07/05 19:11:09 mast Exp $
+|| $Id: fdlib.c,v 1.85 2007/04/20 15:16:43 mast Exp $
 */
 
 #include "global.h"
@@ -105,9 +105,12 @@ PMOD_EXPORT int debug_fd_query_properties(int fd, int guess)
   {
     case FD_SOCKET:
       return fd_BUFFERED | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN;
+
     case FD_FILE:
-    case FD_CONSOLE:
       return fd_INTERPROCESSABLE;
+
+    case FD_CONSOLE:
+      return fd_CAN_NONBLOCK | fd_INTERPROCESSABLE;
 
     case FD_PIPE:
       return fd_INTERPROCESSABLE | fd_BUFFERED;
