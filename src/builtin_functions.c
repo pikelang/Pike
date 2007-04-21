@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.635 2007/04/20 14:39:20 grubba Exp $
+|| $Id: builtin_functions.c,v 1.636 2007/04/21 12:36:03 grubba Exp $
 */
 
 #include "global.h"
@@ -9332,7 +9332,7 @@ void init_builtin_efuns(void)
 		tFunc(tArray,tArr(tInt)), 0, OPT_TRY_OPTIMIZE);
 
 #define tMapStuff(IN,SUB,OUTFUN,OUTSET,OUTPROG,OUTMIX,OUTARR,OUTMAP) \
-  tOr6( tFuncV(IN tFuncV(SUB,tSetvar(0,tMix),tSetvar(2,tAny)),tVar(0),	\
+  tOr6( tFuncV(IN tFuncV(SUB,tSetvar(0,tAnd(tMix,tZero)),tSetvar(2,tAny)),tVar(0), \
 	       OUTFUN),							\
 	tFuncV(IN tSet(tMix),tMix,OUTSET), \
 	tFuncV(IN tMap(tMix, tSetvar(2,tMix)), tMix, OUTMAP), \
