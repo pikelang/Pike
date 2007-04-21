@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.636 2007/04/21 12:36:03 grubba Exp $
+|| $Id: builtin_functions.c,v 1.637 2007/04/21 20:08:25 grubba Exp $
 */
 
 #include "global.h"
@@ -2273,6 +2273,7 @@ static void f___low_check_call(INT32 args)
 {
   struct pike_type *res;
   INT32 flags = 0;
+  struct svalue *sval = NULL;
   if (args < 2) Pike_error("Bad number of arguments to __low_check_call().\n");
   if (Pike_sp[-args].type != PIKE_T_TYPE) {
     Pike_error("Bad argument 1 to __low_check_call() expected type.\n");
@@ -2286,8 +2287,9 @@ static void f___low_check_call(INT32 args)
     }
     flags = Pike_sp[2-args].u.integer;
   }
+  if (args > 3) sval = Pike_sp + 3 - args;
   if (!(res = low_new_check_call(Pike_sp[-args].u.type,
-				 Pike_sp[1-args].u.type, flags))) {
+				 Pike_sp[1-args].u.type, flags, sval))) {
     pop_n_elems(args);
     push_undefined();
   } else {
@@ -9209,7 +9211,7 @@ void init_builtin_efuns(void)
 	   OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("__low_check_call", f___low_check_call,
-	   tFunc(tType(tCallable) tType(tMix) tOr(tInt,tVoid),
+	   tFunc(tType(tCallable) tType(tMix) tOr(tInt,tVoid) tOr(tMix,tVoid),
 		 tType(tCallable)),
 	   OPT_TRY_OPTIMIZE);
 

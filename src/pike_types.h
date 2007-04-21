@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.104 2007/04/13 17:34:17 grubba Exp $
+|| $Id: pike_types.h,v 1.105 2007/04/21 20:08:26 grubba Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -198,6 +198,7 @@ void debug_push_int_type(INT_TYPE min, INT_TYPE max);
 void debug_push_string_type(INT32 bitwidth);
 void debug_push_object_type(int flag, INT32 id);
 void debug_push_object_type_backwards(int flag, INT32 id);
+void debug_push_type_attribute(struct pike_string *attr);
 void debug_push_type_name(struct pike_string *name);
 INT32 extract_type_int(char *p);
 void debug_push_unfinished_type(char *s);
@@ -244,11 +245,15 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
 			    int flags);
 struct pike_type *low_new_check_call(struct pike_type *fun_type,
 				     struct pike_type *arg_type,
-				     INT32 flags);
+				     INT32 flags,
+				     struct svalue *sval);
 struct pike_type *new_get_return_type(struct pike_type *fun_type,
 				      INT32 flags);
 struct pike_type *get_first_arg_type(struct pike_type *fun_type,
 				     INT32 flags);
+struct pike_type *new_check_call(struct pike_string *fun_name,
+				 struct pike_type *fun_type,
+				 node *args, INT32 *argno);
 struct pike_type *zzap_function_return(struct pike_type *t, INT32 id);
 struct pike_type *get_type_of_svalue(struct svalue *s);
 struct pike_type *object_type_to_program_type(struct pike_type *obj_t);
@@ -263,6 +268,8 @@ struct pike_type *debug_make_pike_type(const char *t);
 struct pike_string *type_to_string(struct pike_type *t);
 int pike_type_allow_premature_toss(struct pike_type *type);
 void real_gc_cycle_check_type(struct pike_type *t, int weak);
+void register_attribute_handler(struct pike_string *attr,
+				struct svalue *handler);
 /* Prototypes end here */
 
 #if 0 /* FIXME: Not supported under USE_PIKE_TYPE yet. */
@@ -337,6 +344,7 @@ void describe_all_types(void);
 #define push_object_type(FLAG,ID) do { debug_push_object_type(FLAG,ID);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_object_type_backwards(FLAG,ID) do { debug_push_object_type_backwards(FLAG,ID);debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_scope_type(LEVEL) do { debug_push_scope_type(LEVEL);debug_malloc_pass(debug_peek_type_stack()); } while(0)
+#define push_type_attribute(ATTR) do { debug_push_type_attribute((struct pike_string *)debug_malloc_pass(ATTR));debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_type_name(NAME) do { debug_push_type_name((struct pike_string *)debug_malloc_pass(NAME));debug_malloc_pass(debug_peek_type_stack()); } while(0)
 #define push_unfinished_type(S) ERROR
 #define push_assign_type(MARKER) do { debug_push_assign_type(MARKER);debug_malloc_pass(debug_peek_type_stack()); } while(0)
@@ -355,6 +363,7 @@ void describe_all_types(void);
 #define push_object_type debug_push_object_type
 #define push_object_type_backwards debug_push_object_type_backwards
 #define push_scope_type debug_push_scope_type
+#define push_type_attribute debug_push_type_attribute
 #define push_type_name debug_push_type_name
 #define push_unfinished_type debug_push_unfinished_type
 #define push_assign_type debug_push_assign_type

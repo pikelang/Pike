@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.292 2007/04/21 12:42:20 grubba Exp $
+|| $Id: pike_types.c,v 1.293 2007/04/21 20:08:26 grubba Exp $
 */
 
 #include "global.h"
@@ -211,6 +211,7 @@ static void internal_parse_type(const char **s);
  * SCOPE	num vars (int)	type
  * ASSIGN	variable (int)	type
  * NAME		name (string)	type
+ * ATTRIBUTE	name (string)	type
  * FUNCTION	type		FUNCTION|MANY
  * MANY		many type	return type
  * RING		type		type
@@ -310,6 +311,7 @@ void debug_free_type(struct pike_type *t)
       t = (struct pike_type *)debug_malloc_pass(cdr);
       goto loop;
 
+    case PIKE_T_ATTRIBUTE:
     case PIKE_T_NAME:
       free_string((struct pike_string *)car);
       t = (struct pike_type *)debug_malloc_pass(cdr);
@@ -469,6 +471,7 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
 	free_type((struct pike_type *)debug_malloc_pass(cdr));
 	break;
 
+      case PIKE_T_ATTRIBUTE:
       case PIKE_T_NAME:
 	free_string((struct pike_string *)debug_malloc_pass(car));
 	free_type((struct pike_type *)debug_malloc_pass(cdr));
@@ -567,6 +570,7 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
     debug_malloc_pass(cdr);
     break;
 
+  case PIKE_T_ATTRIBUTE:
   case PIKE_T_NAME:
     debug_malloc_pass(car);
     debug_malloc_pass(cdr);
@@ -737,6 +741,17 @@ void debug_push_assign_type(int marker)
   TYPE_STACK_DEBUG("push_assign_type");
 }
 
+void debug_push_type_attribute(struct pike_string *attr)
+{
+  /* fprintf(stderr, "push_type_attribute(\"%s\")\n", attr->str); */
+  add_ref(attr);
+  *Pike_compiler->type_stackp = mk_type(PIKE_T_ATTRIBUTE,
+					(void *)attr,
+					*Pike_compiler->type_stackp,
+					PT_COPY_CDR);
+  TYPE_STACK_DEBUG("push_type_name");
+}
+
 void debug_push_type_name(struct pike_string *name)
 {
   /* fprintf(stderr, "push_type_name(\"%s\")\n", name->str); */
@@ -879,6 +894,7 @@ void debug_push_type(unsigned int type)
   case T_ASSIGN:
   case T_INT:
   case T_OBJECT:
+  case PIKE_T_ATTRIBUTE:
   case PIKE_T_NAME:
   default:
     /* Should not occur. */
@@ -929,7 +945,9 @@ void debug_pop_type_stack(unsigned int expected)
 
   Pike_compiler->type_stackp--;
 #ifdef PIKE_DEBUG
-  if ((top->type != expected) && (top->type != PIKE_T_NAME)) {
+  if ((top->type != expected) &&
+      (top->type != PIKE_T_NAME) &&
+      (top->type != PIKE_T_ATTRIBUTE)) {
     Pike_fatal("Unexpected type on stack: %d (expected %d)\n", top->type, expected);
   }
 #endif /* PIKE_DEBUG */
@@ -981,6 +999,7 @@ void debug_pop_type_stack(unsigned int expected)
   case '9':
     /* Leaf */
     break;
+  case PIKE_T_ATTRIBUTE:
   case PIKE_T_NAME:
     /* Pop the name and recurse. */
     push_finished_type(top->cdr);
@@ -1135,6 +1154,10 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
 	push_type(T_AND);
       }
     }
+  } else if (type->type == PIKE_T_ATTRIBUTE) {
+    /* Keep the attribute. */
+    push_finished_type_with_markers(type->cdr, markers, marker_set);
+    push_type_attribute((struct pike_string *)type->car);
   } else {
     if (type->cdr) {
       /* We want to keep markers that have assigns. */
@@ -1757,6 +1780,13 @@ void simple_describe_type(struct pike_type *s)
 	fprintf(stderr, " }");
 	break;
 
+      case PIKE_T_ATTRIBUTE:
+	fprintf(stderr, "attribute(%s, ",
+		((struct pike_string *)s->car)->str);
+	simple_describe_type(s->cdr);
+	fprintf(stderr, ")");
+	break;
+
       case T_SCOPE:
 	fprintf(stderr, "scope(%"PRINTPTRDIFFT"d, ", CAR_TO_INT(s));
 	simple_describe_type(s->cdr);
@@ -2030,6 +2060,19 @@ static void low_describe_type(struct pike_type *t)
       }
       break;
       
+    case PIKE_T_ATTRIBUTE:
+      if (!((struct pike_string *)t->car)->size_shift) {
+	my_strcat("attribute(");
+	my_binary_strcat(((struct pike_string *)t->car)->str,
+			 ((struct pike_string *)t->car)->len);
+	my_strcat(", ");
+	my_describe_type(t->cdr);
+	my_strcat(")");
+      } else {
+	my_describe_type(t->cdr);
+      }
+      break;
+      
     case T_FUNCTION:
     case T_MANY:
     {
@@ -2215,6 +2258,7 @@ TYPE_T compile_type_to_runtime_type(struct pike_type *t)
 
   case T_SCOPE:
   case PIKE_T_NAME:
+  case PIKE_T_ATTRIBUTE:
     return compile_type_to_runtime_type(t->cdr);
 
   case T_MANY:
@@ -2955,6 +2999,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     return low_match_types(a->car, b, flags);
 
   case PIKE_T_NAME:
+  case PIKE_T_ATTRIBUTE:
     return low_match_types(a->cdr, b, flags);
 
   case T_NOT:
@@ -3062,6 +3107,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
     return low_match_types(a, b->car, flags);
 
   case PIKE_T_NAME:
+  case PIKE_T_ATTRIBUTE:
     return low_match_types(a, b->cdr, flags);
 
   case T_NOT:
@@ -3487,6 +3533,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     goto recurse;
 
   case PIKE_T_NAME:
+  case PIKE_T_ATTRIBUTE:
     a = a->cdr;
     goto recurse;
 
@@ -3607,6 +3654,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     goto recurse;
 
   case PIKE_T_NAME:
+  case PIKE_T_ATTRIBUTE:
     b = b->cdr;
     goto recurse;
 
@@ -4086,6 +4134,13 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
   case PIKE_T_NAME:
     return low_get_return_type(a->cdr, b);
 
+  case PIKE_T_ATTRIBUTE:
+    if (low_get_return_type(a->cdr, b)) {
+      push_type_attribute((struct pike_string *)a->car);
+      return 1;
+    }
+    return 0;
+
   case T_ARRAY:
     tmp = low_get_return_type(a->car, b);
     if(!tmp) return 0;
@@ -4167,10 +4222,12 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
       return zero_type_string;
   }
 
-  while(t->type == PIKE_T_NAME) {
+  while((t->type == PIKE_T_NAME) ||
+	(t->type == PIKE_T_ATTRIBUTE)) {
     t = t->cdr;
   }
-  while(index_type->type == PIKE_T_NAME) {
+  while((index_type->type == PIKE_T_NAME) ||
+        (index_type->type == PIKE_T_ATTRIBUTE)) {
     index_type = index_type->cdr;
   }
 
@@ -4353,15 +4410,18 @@ static struct pike_type *debug_low_range_type(struct pike_type *t,
   struct pike_type *tmp;
   struct program *p;
 
-  while(t->type == PIKE_T_NAME) {
+  while((t->type == PIKE_T_NAME) ||
+	(t->type == PIKE_T_ATTRIBUTE)) {
     t = t->cdr;
   }
   if (index1_type)
-    while(index1_type->type == PIKE_T_NAME) {
+    while((index1_type->type == PIKE_T_NAME) ||
+	  (index1_type->type == PIKE_T_ATTRIBUTE)) {
       index1_type = index1_type->cdr;
     }
   if (index2_type)
-    while(index2_type->type == PIKE_T_NAME) {
+    while((index2_type->type == PIKE_T_NAME) ||
+	  (index2_type->type == PIKE_T_ATTRIBUTE)) {
       index2_type = index2_type->cdr;
     }
 
@@ -4650,6 +4710,7 @@ static struct pike_type *debug_low_key_type(struct pike_type *t, node *n)
     return low_key_type(t->cdr, n);
 
   case PIKE_T_NAME:
+  case PIKE_T_ATTRIBUTE:
     return low_key_type(t->cdr, n);
 
   case T_ARRAY:
@@ -4695,6 +4756,7 @@ static int low_check_indexing(struct pike_type *type,
     return low_check_indexing(type->car, index_type, n) != 1;
 
   case PIKE_T_NAME:
+  case PIKE_T_ATTRIBUTE:
     return low_check_indexing(type->cdr, index_type, n);
 
   case T_ARRAY:
@@ -4776,6 +4838,7 @@ static int low_count_arguments(struct pike_type *q)
       return num<num2?num:num2;
 
     case PIKE_T_NAME:
+    case PIKE_T_ATTRIBUTE:
       return low_count_arguments(q->cdr);
 
     default: return 0x7fffffff;
@@ -4820,6 +4883,7 @@ static int low_minimum_arguments(struct pike_type *q)
     default: return 0;
 
     case PIKE_T_NAME:
+    case PIKE_T_ATTRIBUTE:
       return low_minimum_arguments(q->cdr);
 
     case T_FUNCTION:
@@ -4979,6 +5043,15 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
     soft_type = soft_type->cdr;
     goto loop;
     /* FIXME: TUPLE, RING */
+  case PIKE_T_ATTRIBUTE:
+    if ((res = soft_cast(soft_type->cdr, orig_type, flags))) {
+      type_stack_mark();
+      push_finished_type(res);
+      push_type_attribute((struct pike_string *)soft_type->car);
+      free_type(res);
+      res = pop_unfinished_type();
+    }
+    return res;
   case T_MIXED:
     if (flags & SOFT_WEAKER) {
       copy_pike_type(res, soft_type);
@@ -5013,6 +5086,15 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
     case PIKE_T_NAME:
       orig_type = orig_type->cdr;
       goto loop2;
+    case PIKE_T_ATTRIBUTE:
+      if ((res = soft_cast(soft_type, orig_type->cdr, flags))) {
+	type_stack_mark();
+	push_finished_type(res);
+	push_type_attribute((struct pike_string *)orig_type->car);
+	free_type(res);
+	res = pop_unfinished_type();
+      }
+      return res;
     case T_MIXED:
       if (flags & SOFT_WEAKER) {
 	copy_pike_type(res, orig_type);
@@ -5271,6 +5353,36 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
   return res;
 }
 
+/*! @class CompilationHandler
+ */
+
+/*! @decl type handle_attribute_constant(string attr, mixed value, @
+ *!                                      type arg_type, type cont_type)
+ *!
+ *!   Handle constant arguments to attributed parameter types.
+ *!
+ *!   This function is called when a function parameter with the
+ *!   attribute @[attr] is called with the constant value @[value].
+ *!
+ *!   This function is typically used to perform specialized
+ *!   argument checking.
+ *!
+ *! @param arg_type
+ *!   The declared type of the parameter.
+ *!
+ *! @param cont_type
+ *!   The type for the continued function.
+ *!
+ *! @returns
+ *!   Returns a new continuation type if it succeeded in strengthening
+ *!   the type.
+ *!
+ *!   Returns @expr{UNDEFINED@} otherwise (this is not an error indication).
+ */
+
+/*! @endclass
+ */
+
 /* Check whether arg_type may be used as the type of the first argument
  * in a call to fun_type.
  *
@@ -5282,7 +5394,8 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
  */
 static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 					      struct pike_type *arg_type,
-					      INT32 flags
+					      INT32 flags,
+					      struct svalue *sval
 #ifdef PIKE_TYPE_DEBUG
 					      , INT32 indent
 #define CHECK_CALL_ARGS	, indent+1
@@ -5302,7 +5415,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     simple_describe_type(fun_type);
     fprintf(stderr, ", ");
     simple_describe_type(arg_type);
-    fprintf(stderr, ", 0x%04x)...\n", flags);
+    fprintf(stderr, ", 0x%04x, %p)...\n", flags, sval);
   }
 #endif /* PIKE_DEBUG */
 
@@ -5317,16 +5430,18 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
   case T_SCOPE:
   case T_ASSIGN:
   case PIKE_T_NAME:
+  case PIKE_T_ATTRIBUTE:
     fun_type = fun_type->cdr;
     goto loop;
 
+
   case T_OR:
-    res = lower_new_check_call(fun_type->car, arg_type, flags CHECK_CALL_ARGS);
+    res = lower_new_check_call(fun_type->car, arg_type, flags, sval CHECK_CALL_ARGS);
     if (!res) {
-      res = lower_new_check_call(fun_type->cdr, arg_type, flags CHECK_CALL_ARGS);
+      res = lower_new_check_call(fun_type->cdr, arg_type, flags, sval CHECK_CALL_ARGS);
       break;
     }
-    tmp = lower_new_check_call(fun_type->cdr, arg_type, flags CHECK_CALL_ARGS);
+    tmp = lower_new_check_call(fun_type->cdr, arg_type, flags, sval CHECK_CALL_ARGS);
     if (!tmp) break;
     res = or_pike_types(tmp2 = res, tmp, 1);
     free_type(tmp);
@@ -5334,9 +5449,9 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     break;
 
   case T_AND:
-    res = lower_new_check_call(fun_type->car, arg_type, flags CHECK_CALL_ARGS);
+    res = lower_new_check_call(fun_type->car, arg_type, flags, sval CHECK_CALL_ARGS);
     if (!res) break;
-    tmp = lower_new_check_call(fun_type->cdr, arg_type, flags CHECK_CALL_ARGS);
+    tmp = lower_new_check_call(fun_type->cdr, arg_type, flags, sval CHECK_CALL_ARGS);
     if (!tmp) {
       free_type(res);
       res = NULL;
@@ -5380,7 +5495,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       push_finished_type(arg_type);
       push_type(T_NOT);
       arg_type = pop_unfinished_type();
-      res = lower_new_check_call(fun_type->car, arg_type, flags CHECK_CALL_ARGS);
+      res = lower_new_check_call(fun_type->car, arg_type, flags, sval CHECK_CALL_ARGS);
       free_type(arg_type);
       if (res) {
 	/* Move the inversion back to the function type. */
@@ -5435,7 +5550,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     } else {
       fun_type = zzap_function_return(tmp, CDR_TO_INT(fun_type->car));
     }
-    res = lower_new_check_call(fun_type, arg_type, flags CHECK_CALL_ARGS);
+    res = lower_new_check_call(fun_type, arg_type, flags, sval CHECK_CALL_ARGS);
     free_type(fun_type);
     break;
 
@@ -5489,9 +5604,9 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       fprintf(stderr, ".\n");
     }
 #endif /* PIKE_DEBUG */
-    if (!low_pike_types_le(arg_type, fun_type->car, 0, 0) &&
+    if (!low_pike_types_le(arg_type, tmp2 = fun_type->car, 0, 0) &&
 	((flags & CALL_STRICT) ||
- 	 !low_match_types(arg_type, fun_type->car, NO_SHORTCUTS))) {
+ 	 !low_match_types(arg_type, tmp2, NO_SHORTCUTS))) {
       /* No match. */
 #ifdef PIKE_DEBUG
       if (l_flag>2) {
@@ -5519,15 +5634,38 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 	break;
       }
     }
+    type_stack_mark();
+    push_finished_type_with_markers(fun_type, b_markers, PT_FLAG_MARKER);
+    res = pop_unfinished_type();
+    if (tmp) free_type(tmp);
+
+    if ((tmp2->type == PIKE_T_ATTRIBUTE) &&
+	(Pike_compiler->compiler_pass == 2) &&
+	sval) {
+      /* Perform extra argument checking based on the attribute. */
+      /* FIXME: Support multiple attributes. */
+      ref_push_string((struct pike_string *)tmp2->car);
+      push_svalue(sval);
+      ref_push_type_value(tmp2->cdr);
+      ref_push_type_value(res);
+      if (safe_apply_handler("handle_attribute_constant", error_handler,
+			     compat_handler, 4, 0)) {
+	if ((Pike_sp[-1].type == PIKE_T_TYPE)) {
+	  type_stack_mark();
+	  push_finished_type(Pike_sp[-1].u.type);
+	  push_finished_type(res);
+	  push_type(T_AND);
+	  free_type(res);
+	  res = pop_unfinished_type();
+	}
+	pop_stack();
+      }
+    }
 #ifdef PIKE_DEBUG
     if (l_flag>2) {
       fprintf(stderr, "%*sSuccess.\n", indent*2+2, "");
     }
 #endif /* PIKE_DEBUG */
-    type_stack_mark();
-    push_finished_type_with_markers(fun_type, b_markers, PT_FLAG_MARKER);
-    res = pop_unfinished_type();
-    if (tmp) free_type(tmp);
     break;
   default:
     /* Not a callable. */
@@ -5570,13 +5708,16 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 /* Check whether arg_type may be used as the type of the first argument
  * in a call to fun_type.
  *
+ * If the argument is a constant, sval will contain a pointer to it.
+ *
  * Returns NULL on failure.
  *
  * Returns continuation function type on success.
  */
 struct pike_type *low_new_check_call(struct pike_type *fun_type,
 				     struct pike_type *arg_type,
-				     INT32 flags)
+				     INT32 flags,
+				     struct svalue *sval)
 {
   struct pike_type *tmp;
   struct pike_type *tmp2;
@@ -5612,14 +5753,14 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
     goto loop;
 
   case T_OR:
-    if (!(tmp = low_new_check_call(fun_type, arg_type->car, flags))) {
+    if (!(tmp = low_new_check_call(fun_type, arg_type->car, flags, sval))) {
       if (flags & CALL_STRICT) {
 	return NULL;
       }
       arg_type = arg_type->cdr;
       goto loop;
     }
-    if (!(tmp2 = low_new_check_call(fun_type, arg_type->cdr, flags))) {
+    if (!(tmp2 = low_new_check_call(fun_type, arg_type->cdr, flags, sval))) {
       if (flags & CALL_STRICT) {
 	return NULL;
       }
@@ -5631,10 +5772,10 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
     return res;
 
   case T_AND:
-    if (!(tmp = low_new_check_call(fun_type, arg_type->car, flags))) {
+    if (!(tmp = low_new_check_call(fun_type, arg_type->car, flags, sval))) {
       return NULL;
     }
-    if (!(tmp2 = low_new_check_call(fun_type, arg_type->cdr, flags))) {
+    if (!(tmp2 = low_new_check_call(fun_type, arg_type->cdr, flags, sval))) {
       free_type(tmp);
       return NULL;
     }
@@ -5651,7 +5792,7 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
     break;
   }
 
-  if (!(tmp = lower_new_check_call(fun_type, arg_type, flags
+  if (!(tmp = lower_new_check_call(fun_type, arg_type, flags, sval
 #ifdef PIKE_TYPE_DEBUG
 				   , 0
 #endif
@@ -5695,6 +5836,7 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
   case PIKE_T_SCOPE:
   case T_ASSIGN:
   case PIKE_T_NAME:
+  case PIKE_T_ATTRIBUTE:
     fun_type = fun_type->cdr;
     goto loop;
 
@@ -5946,6 +6088,7 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
   case PIKE_T_SCOPE:
   case T_ASSIGN:
   case PIKE_T_NAME:
+  case PIKE_T_ATTRIBUTE:
   case PIKE_T_RING:
     fun_type = fun_type->cdr;
     goto loop;
@@ -5971,13 +6114,24 @@ struct pike_type *get_first_arg_type(struct pike_type *fun_type,
       res = NULL;
       break;
     }
-    /* NOTE: OR and not AND!
+    /* NOTE: OR and not AND in some cases!
      *
      *   !function(!string:mixed)&function(string|int:string)
      *     ==>
      *   string | string|int
+     *
+     * This is however not true in the case where neither is inverted:
+     *
+     *   function(attribute(sprintf_args, mixed)...:string) &
+     *   function(object|string:string)
+     *     ==>
+     *   attribute(sprintf_args, mixed) & object|string
      */
-    res = or_pike_types(tmp2 = res, tmp, 1);
+    if ((fun_type->car->type == T_NOT) == (fun_type->cdr->type == T_NOT)) {
+      res = and_pike_types(tmp2 = res, tmp);
+    } else {
+      res = or_pike_types(tmp2 = res, tmp, 1);
+    }
     free_type(tmp);
     free_type(tmp2);
     break;
@@ -6052,6 +6206,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 {
   struct pike_type *tmp = NULL;
   struct pike_type *res = NULL;
+  struct svalue *sval = NULL;
   int flags = 0;
 
   debug_malloc_touch(fun_type);
@@ -6069,10 +6224,17 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 
   (*argno)++;
 
+  if (args->token == F_CONSTANT) {
+    sval = &args->u.sval;
+  }
+
 #ifdef PIKE_DEBUG
   if (l_flag>2) {
     fprintf(stderr, "  Checking argument #%d... ", *argno);
     simple_describe_type(args->type);
+    if (sval) {
+      fprintf(stderr, "\n  Constant of type %s", get_name_of_type(sval->type));
+    }
     fprintf(stderr, "\n  fun_type: ");
     simple_describe_type(fun_type);
   }
@@ -6099,7 +6261,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
     /* Loop until we get a stable fun_type, or it's an invalid argument. */
     while ((fun_type = low_new_check_call(debug_malloc_pass(prev),
 					  debug_malloc_pass(args->type),
-					  flags)) &&
+					  flags, sval)) &&
 	   (fun_type != prev) && --cnt) {
 
 #ifdef PIKE_DEBUG
@@ -6152,7 +6314,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 #endif /* PIKE_DEBUG */
 
     return res;
-  } else if ((res = low_new_check_call(fun_type, args->type, flags))) {
+  } else if ((res = low_new_check_call(fun_type, args->type, flags, sval))) {
     /* OK. */
 #ifdef PIKE_DEBUG
     if (l_flag>2) {
@@ -6161,7 +6323,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 #endif /* PIKE_DEBUG */
     if (lex.pragmas & ID_STRICT_TYPES) {
       if (!(tmp = low_new_check_call(fun_type, args->type,
-				     flags|CALL_STRICT))) {
+				     flags|CALL_STRICT, sval))) {
 	yywarning("Type mismatch in argument %d to %S.",
 		  *argno, fun_name);
 	if ((tmp = get_first_arg_type(fun_type, 0))) {
@@ -6193,7 +6355,7 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
     /* Try advancing with the suggested type, so that we can check
      * the rest of the arguments.
      */
-    if ((tmp2 = low_new_check_call(fun_type, tmp, flags))) {
+    if ((tmp2 = low_new_check_call(fun_type, tmp, flags, NULL))) {
       /* Succeeded. */
       free_type(fun_type);
       free_type(tmp);
@@ -6267,6 +6429,19 @@ struct pike_type *zzap_function_return(struct pike_type *a, INT32 id)
 
     case PIKE_T_NAME:
       return zzap_function_return(a->cdr, id);
+
+    case PIKE_T_ATTRIBUTE:
+      {
+	struct pike_type *res;
+	if ((res = zzap_function_return(a->cdr, id))) {
+	  type_stack_mark();
+	  push_finished_type(res);
+	  push_type_attribute((struct pike_string *)a->car);
+	  free_type(res);
+	  res = pop_unfinished_type();
+	}
+	return res;
+      }
 
     case T_MIXED:
       /* I wonder when this occurrs, but apparently it does... */
@@ -6528,6 +6703,7 @@ int type_may_overload(struct pike_type *type, int lfun)
       return 0;
 
     case PIKE_T_NAME:
+    case PIKE_T_ATTRIBUTE:
       return type_may_overload(type->cdr, lfun);
 
     case PIKE_T_RING:
@@ -6722,6 +6898,7 @@ static void low_make_pike_type(unsigned char *type_string,
     break;
 
   case PIKE_T_NAME:
+  case PIKE_T_ATTRIBUTE:
     {
       int size_shift = type_string[1] & 0x3;
       struct pike_string *str;
@@ -6794,7 +6971,11 @@ static void low_make_pike_type(unsigned char *type_string,
 	}
       }
       low_make_pike_type(type_string + 2 + bytes + (1<<size_shift), cont);
-      push_type_name(str = end_shared_string(str));
+      if (type_string[0] == PIKE_T_NAME) {
+	push_type_name(str = end_shared_string(str));
+      } else {
+	push_type_attribute(str = end_shared_string(str));
+      }
       free_string(str);
       break;
     }
@@ -6833,6 +7014,7 @@ int pike_type_allow_premature_toss(struct pike_type *type)
       return 0;
 
     case PIKE_T_NAME:
+    case PIKE_T_ATTRIBUTE:
     case T_SCOPE:
     case T_ASSIGN:
       type = type->cdr;
@@ -6886,6 +7068,7 @@ static void low_type_to_string(struct pike_type *t)
     my_putchar(t->type);
     /* FALL_THROUGH */
   case PIKE_T_NAME:
+  case PIKE_T_ATTRIBUTE:
     t = t->car;
     goto recurse;
 
@@ -7039,6 +7222,47 @@ static struct callback *dmalloc_gc_callback = NULL;
 #endif /* DEBUG_MALLOC */
 #endif /* 0 */
 
+static struct mapping *builtin_attributes = NULL;
+
+void register_attribute_handler(struct pike_string *attr,
+				struct svalue *handler)
+{
+  mapping_string_insert(builtin_attributes, attr, handler);
+}
+
+static void f___register_attribute_handler(INT32 args)
+{
+  if (args < 2) SIMPLE_TOO_FEW_ARGS_ERROR("__register_attribute_handler", 2);
+  if (args > 2) {
+    pop_n_elems(args-2);
+    args = 2;
+  }
+  if (Pike_sp[-2].type != PIKE_T_STRING) {
+    SIMPLE_BAD_ARG_ERROR("__register_attribute_handler", 1, "string");
+  }
+  mapping_insert(builtin_attributes, Pike_sp-2, Pike_sp-1);
+  pop_n_elems(args);
+}
+
+static void f___handle_attribute_constant(INT32 args)
+{
+  struct svalue *sval;
+  if (args < 4) SIMPLE_TOO_FEW_ARGS_ERROR("__handle_attribute_constant", 4);
+  if (args > 4) {
+    pop_n_elems(args-4);
+    args = 4;
+  }
+  if (Pike_sp[-4].type != PIKE_T_STRING) {
+    SIMPLE_BAD_ARG_ERROR("__handle_attribute_constant", 1, "string");
+  }
+  if ((sval = low_mapping_lookup(builtin_attributes, Pike_sp-4))) {
+    apply_svalue(sval, 4);
+  } else {
+    pop_n_elems(args);
+    push_undefined();
+  }
+}
+
 void init_types(void)
 {
   /* Initialize hashtable here. */
@@ -7067,6 +7291,16 @@ void init_types(void)
 				    tFuncV(tNone,tZero,tOr(tMix,tVoid))));
   //add_ref(weak_type_string);	/* LEAK */
 
+  builtin_attributes = allocate_mapping(20);
+
+  ADD_EFUN("__register_attribute_handler", f___register_attribute_handler,
+	   tFunc(tSetvar(0, tStr)
+		 tFunc(tVar(0) tMix tType(tMix) tType(tMix), tType(tMix)),
+		 tVoid), 0);
+
+  ADD_EFUN("__handle_attribute_constant", f___handle_attribute_constant,
+	   tFunc(tStr tMix tType(tMix) tType(tMix), tType(tMix)), 0);
+
 #if 0
 #ifdef DEBUG_MALLOC
   dmalloc_gc_callback = add_gc_callback(gc_mark_external_types, NULL, NULL);
@@ -7084,6 +7318,11 @@ void cleanup_pike_types(void)
     t = t->next;
   }
 #endif /* DEBUG_MALLOC */
+
+  if (builtin_attributes) {
+    free_mapping(builtin_attributes);
+    builtin_attributes = NULL;
+  }
 
   clear_markers();
 
@@ -7160,6 +7399,7 @@ void gc_mark_type_as_referenced(struct pike_type *t)
       case PIKE_T_SCOPE:
       case T_ASSIGN:
       case PIKE_T_NAME:
+      case PIKE_T_ATTRIBUTE:
 	if (t->cdr) gc_mark_type_as_referenced(t->cdr);
 	break;
       case PIKE_T_FUNCTION:
@@ -7253,6 +7493,7 @@ void real_gc_cycle_check_type(struct pike_type *t, int weak)
       case PIKE_T_SCOPE:
       case T_ASSIGN:
       case PIKE_T_NAME:
+      case PIKE_T_ATTRIBUTE:
 	if (t->cdr) gc_cycle_check_type(t->cdr, 0);
 	break;
       case PIKE_T_FUNCTION:
