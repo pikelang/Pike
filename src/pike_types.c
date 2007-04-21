@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.291 2007/04/18 11:58:59 grubba Exp $
+|| $Id: pike_types.c,v 1.292 2007/04/21 12:42:20 grubba Exp $
 */
 
 #include "global.h"
@@ -45,6 +45,9 @@
  * Flags used by pike_types_le()
  */
 #define LE_WEAK_OBJECTS	1	/* Perform weaker checking of objects. */
+#define LE_A_B_SWAPPED	2	/* Argument A and B have been swapped.
+				 * Relevant for markers.
+				 */
 
 /*
  * Flags used by low_get_first_arg_type()
@@ -1032,7 +1035,7 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
   fprintf(stderr, "push_finished_type_with_markers((%d[%x]),...)...\n",
 	  type->type, type->flags);
 #endif /* 0 */
-  if (!(type->flags & (marker_set | (marker_set << PT_ASSIGN_SHIFT)))) {
+  if (!(type->flags & (marker_set /*| (marker_set << PT_ASSIGN_SHIFT)*/))) {
     /* No unassigned markers in this sub-tree */
 #if 0
     fprintf(stderr, "No unassigned markers in this subtree.\n");
@@ -3416,26 +3419,12 @@ static int low_pike_types_le(struct pike_type *a, struct pike_type *b,
   char buf[50];
 
   if (l_flag>2) {
-    dynamic_buffer save_buf;
-    init_buf(&save_buf);
-    for(e=0;e<indent;e++) my_strcat("  ");
-    my_strcat("low_pike_types_le(");
-    my_describe_type(a);
-    my_strcat(",\n");
-    for(e=0;e<indent;e++) my_strcat("  ");
-    my_strcat("                ");
-    my_describe_type(b);
-    my_strcat(",\n");
-    for(e=0;e<indent;e++) my_strcat("  ");
-    my_strcat("                ");
-    sprintf(buf, "%d", array_cnt);
-    my_strcat(buf);
-    my_strcat(", ");
-    sprintf(buf, "0x%08x", flags);
-    my_strcat(buf);
-    my_strcat(");\n");
-    fprintf(stderr,"%s",(s=simple_free_buf(&save_buf)));
-    free(s);
+    fprintf(stderr, "%*slow_pike_types_le(", indent*2, "");
+    simple_describe_type(a);
+    fprintf(stderr, ",\n%*s", indent*2 + 18, "");
+    simple_describe_type(b);
+    fprintf(stderr, ",\n%*s%d, 0x%08x);\n",
+	    indent*2 + 18, "", array_cnt, flags);
     indent++;
   }
 
@@ -3444,8 +3433,7 @@ static int low_pike_types_le(struct pike_type *a, struct pike_type *b,
   if (l_flag>2) {
     indent--;
 
-    for(e=0;e<indent;e++) fprintf(stderr, "  ");
-    fprintf(stderr, "= %d\n", res);
+    fprintf(stderr, "%*s= %d\n", indent*2, "", res);
   }
   return res;
 }
@@ -3508,17 +3496,27 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       a = b->car;
       b = tmp;
       array_cnt = -array_cnt;
+      flags ^= LE_A_B_SWAPPED;
       goto recurse;
     }
-    if (a->car->type == T_NOT) {
+    /* Some common cases. */
+    switch(a->car->type) {
+    case T_NOT:
       a = a->car->car;
+      goto recurse;
+    case T_MIXED:
+      a = zero_type_string;
+      goto recurse;
+    case T_ZERO:
+    case T_VOID:
+      a = mixed_type_string;
       goto recurse;
     }
     if (low_pike_types_le(a->car, b, array_cnt, flags)) {
       return 0;
     }
     /* FIXME: This is wrong... */
-    return !low_pike_types_le(b, a->car, -array_cnt, flags);
+    return !low_pike_types_le(b, a->car, -array_cnt, flags ^ LE_A_B_SWAPPED);
 
   case T_ASSIGN:
     ret = low_pike_types_le(a->cdr, b, array_cnt, flags);
@@ -3529,30 +3527,39 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       int i;
 
       type_stack_mark();
-      push_finished_type_with_markers(b, b_markers, PT_FLAG_MARKER);
+      if (flags & LE_A_B_SWAPPED) {
+	push_finished_type_with_markers(b, a_markers, PT_FLAG_MARKER);
+      } else {
+	push_finished_type_with_markers(b, b_markers, PT_FLAG_MARKER);
+      }
       for(i=array_cnt; i > 0; i--)
 	push_type(T_ARRAY);
       tmp=pop_unfinished_type();
       
       type_stack_mark();
-      low_or_pike_types(a_markers[m], tmp, 0);
-      if(a_markers[m]) free_type(a_markers[m]);
-      free_type(tmp);
-      a_markers[m] = pop_unfinished_type();
+      if (flags & LE_A_B_SWAPPED) {
+	low_or_pike_types(b_markers[m], tmp, 0);
+	if(b_markers[m]) free_type(b_markers[m]);
+	free_type(tmp);
+	b_markers[m] = pop_unfinished_type();
+      } else {
+	low_or_pike_types(a_markers[m], tmp, 0);
+	if(a_markers[m]) free_type(a_markers[m]);
+	free_type(tmp);
+	a_markers[m] = pop_unfinished_type();
+      }
 #ifdef PIKE_TYPE_DEBUG
       if (l_flag>2) {
-	dynamic_buffer save_buf;
-	char *s;
-	int e;
-	init_buf(&save_buf);
-	for(e=0;e<indent;e++) my_strcat("  ");
-	my_strcat("a_markers[");
-	my_putchar((char)(m+'0'));
-	my_strcat("]=");
-	my_describe_type(a_markers[m]);
-	my_strcat("\n");
-	fprintf(stderr,"%s",(s=simple_free_buf(&save_buf)));
-	free(s);
+	if (flags & LE_A_B_SWAPPED) {
+	  fprintf(stderr, "%*sb_markers[%c]=",
+		  indent * 2, "", (char)(m+'0'));
+	  simple_describe_type(b_markers[m]);
+	} else {
+	  fprintf(stderr, "%*sa_markers[%c]=",
+		  indent * 2, "", (char)(m+'0'));
+	  simple_describe_type(a_markers[m]);
+	}
+	fprintf(stderr, "\n");
       }
 #endif
     }
@@ -3562,10 +3569,18 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     case '5': case '6': case '7': case '8': case '9':
     {
       int m = a->type - '0';
-      if(a_markers[m]) {
-	a = a_markers[m];
+      if (flags & LE_A_B_SWAPPED) {
+	if(b_markers[m]) {
+	  a = b_markers[m];
+	} else {
+	  a = mixed_type_string;
+	}
       } else {
-	a = mixed_type_string;
+	if(a_markers[m]) {
+	  a = a_markers[m];
+	} else {
+	  a = mixed_type_string;
+	}
       }
       goto recurse;
     }
@@ -3596,15 +3611,24 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     goto recurse;
 
   case T_NOT:
-    if (b->car->type == T_NOT) {
+    /* Some common cases. */
+    switch(b->car->type) {
+    case T_NOT:
       b = b->car->car;
+      goto recurse;
+    case T_MIXED:
+      b = zero_type_string;
+      goto recurse;
+    case T_ZERO:
+    case T_VOID:
+      b = mixed_type_string;
       goto recurse;
     }
     if (low_pike_types_le(a, b->car, array_cnt, flags)) {
       return 0;
     }
     /* FIXME: This is wrong... */
-    return !low_pike_types_le(b->car, a, -array_cnt, flags);
+    return !low_pike_types_le(b->car, a, -array_cnt, flags ^ LE_A_B_SWAPPED);
 
   case T_ASSIGN:
     ret = low_pike_types_le(a, b->cdr, array_cnt, flags);
@@ -3615,30 +3639,39 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       int i;
 
       type_stack_mark();
-      push_finished_type_with_markers(a, a_markers, PT_FLAG_MARKER);
+      if (flags & LE_A_B_SWAPPED) {
+	push_finished_type_with_markers(a, b_markers, PT_FLAG_MARKER);
+      } else {
+	push_finished_type_with_markers(a, a_markers, PT_FLAG_MARKER);
+      }
       for(i = array_cnt; i < 0; i++)
 	push_type(T_ARRAY);
       tmp=pop_unfinished_type();
       
       type_stack_mark();
-      low_or_pike_types(b_markers[m], tmp, 0);
-      if(b_markers[m]) free_type(b_markers[m]);
-      free_type(tmp);
-      b_markers[m] = pop_unfinished_type();
+      if (flags & LE_A_B_SWAPPED) {
+	low_or_pike_types(a_markers[m], tmp, 0);
+	if(a_markers[m]) free_type(a_markers[m]);
+	free_type(tmp);
+	a_markers[m] = pop_unfinished_type();
+      } else {
+	low_or_pike_types(b_markers[m], tmp, 0);
+	if(b_markers[m]) free_type(b_markers[m]);
+	free_type(tmp);
+	b_markers[m] = pop_unfinished_type();
+      }
 #ifdef PIKE_TYPE_DEBUG
       if (l_flag>2) {
-	dynamic_buffer save_buf;
-	char *s;
-	int e;
-	init_buf(&save_buf);
-	for(e=0;e<indent;e++) my_strcat("  ");
-	my_strcat("b_markers[");
-	my_putchar((char)(m+'0'));
-	my_strcat("]=");
-	my_describe_type(b_markers[m]);
-	my_strcat("\n");
-	fprintf(stderr,"%s",(s=simple_free_buf(&save_buf)));
-	free(s);
+	if (flags & LE_A_B_SWAPPED) {
+	  fprintf(stderr, "%*sa_markers[%c]=",
+		  indent * 2, "", (char)(m+'0'));
+	  simple_describe_type(a_markers[m]);
+	} else {
+	  fprintf(stderr, "%*sb_markers[%c]=",
+		  indent * 2, "", (char)(m+'0'));
+	  simple_describe_type(b_markers[m]);
+	}
+	fprintf(stderr, "\n");
       }
 #endif
     }
@@ -3647,11 +3680,19 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
   case '0': case '1': case '2': case '3': case '4':
   case '5': case '6': case '7': case '8': case '9':
     {
-      int m =  b->type - '0';
-      if(b_markers[m]) {
-	b = b_markers[m];
+      int m = b->type - '0';
+      if (flags & LE_A_B_SWAPPED) {
+	if(a_markers[m]) {
+	  b = a_markers[m];
+	} else {
+	  b = mixed_type_string;
+	}
       } else {
-	b = mixed_type_string;
+	if(b_markers[m]) {
+	  b = b_markers[m];
+	} else {
+	  b = mixed_type_string;
+	}
       }
       goto recurse;
     }
@@ -3801,7 +3842,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       }
 
       if (a_tmp->type != T_VOID) {
-	if (!low_pike_types_le(b_tmp, a_tmp, 0, flags)) {
+	if (!low_pike_types_le(b_tmp, a_tmp, 0, flags ^ LE_A_B_SWAPPED)) {
 	  return 0;
 	}
       }
@@ -3810,7 +3851,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
   case TWOT(T_MANY, T_MANY):
     /* check the 'many' type */
     if ((a->car->type != T_VOID) && (b->car->type != T_VOID)) {
-      if (!low_pike_types_le(b->car, a->car, 0, flags)) {
+      if (!low_pike_types_le(b->car, a->car, 0, flags ^ LE_A_B_SWAPPED)) {
 	return 0;
       }
     }
@@ -7043,6 +7084,8 @@ void cleanup_pike_types(void)
     t = t->next;
   }
 #endif /* DEBUG_MALLOC */
+
+  clear_markers();
 
   free_type(string0_type_string);
   string0_type_string = NULL;
