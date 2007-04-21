@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.141 2007/03/20 17:36:49 grubba Exp $
+|| $Id: svalue.h,v 1.142 2007/04/21 12:53:08 grubba Exp $
 */
 
 #ifndef SVALUE_H
@@ -107,6 +107,10 @@ struct svalue
 #define PIKE_T_INT 8
 #define PIKE_T_FLOAT 9
 
+/* The types above are valid types in svalues.
+ * The following are only used by the internal systems.
+ */
+
 #define PIKE_T_ZERO  14	/**< Can return 0, but nothing else */
 
 
@@ -123,6 +127,7 @@ struct svalue
 #define PIKE_T_GET_SET 32	/* Getter setter.
 				 * Only valid in struct identifier */
 
+#define PIKE_T_ATTRIBUTE 238	/* Attribute node. */
 #define PIKE_T_NSTRING 239	/* Narrow string. Only for serialization. */
 #define PIKE_T_RING 240
 #define PIKE_T_NAME 241		/**< Named type. */
