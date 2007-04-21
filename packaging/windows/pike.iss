@@ -85,24 +85,22 @@ Root: HKCR; Subkey: .pike; ValueType: string; ValueName: ContentType; ValueData:
 Root: HKCR; Subkey: .pmod; ValueType: string; ValueData: pike_module; Tasks: associate
 Root: HKCR; Subkey: .pmod; ValueType: string; ValueName: ContentType; ValueData: text/x-pike-code; Tasks: associate
 Root: HKCR; Subkey: pike_file; ValueType: string; ValueData: Pike program file; Tasks: associate
-;Root: HKCR; Subkey: pike_file\DefaultIcon; ValueType: string; ValueData: {app}\pike.ico,0; Tasks: associate
 Root: HKCR; Subkey: pike_file\DefaultIcon; ValueType: string; ValueData: {app}\icons\pike_black.ico,0; Tasks: associate
 Root: HKCR; Subkey: pike_file\Shell\Open\Command; ValueType: string; ValueData: """{app}\pike.exe"" ""%1"" %2 %3 %4 %5 %6 %7 %8 %9"; Flags: uninsdeletevalue; Tasks: associate
 Root: HKCR; Subkey: pike_file\Shell\Edit\Command; ValueType: string; ValueData: """notepad.exe"" ""%1"""; Flags: createvalueifdoesntexist; Tasks: associate
 Root: HKCR; Subkey: pike_module; ValueType: string; ValueData: Pike module file; Tasks: associate
-;Root: HKCR; Subkey: pike_module\DefaultIcon; ValueType: string; ValueData: {app}\pike.ico,0; Tasks: associate
 Root: HKCR; Subkey: pike_module\DefaultIcon; ValueType: string; ValueData: {app}\icons\pike_blue.ico,0; Tasks: associate
 Root: HKCR; Subkey: pike_module\Shell\Edit\Command; ValueType: string; ValueData: """notepad.exe"" ""%1"""; Flags: createvalueifdoesntexist; Tasks: associate
 #emit 'Root: HKLM; Subkey: SOFTWARE\Pike\'+MAJOR+'.'+MINOR+'.'+BUILD+'; ValueType: string; ValueName: PIKE_MASTER; ValueData: {app}\lib\master.pike'
 
 [Icons]
-Name: {group}\Pike; Filename: {app}\pike.exe; IconFilename: {app}\icons\icon_magenta.ico
+Name: {group}\Pike; Filename: {app}\pike.exe
 
 [UninstallDelete]
 Type: filesandordirs; Name: {app}\lib
 Type: filesandordirs; Name: {app}\dumpmodule.log
 
 [Messages]
-LicenseLabel=Please read the following unimportant information before continuing.
+LicenseLabel=Please read the following information before continuing.
 
 ; End
