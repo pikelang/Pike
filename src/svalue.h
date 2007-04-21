@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.142 2007/04/21 12:53:08 grubba Exp $
+|| $Id: svalue.h,v 1.143 2007/04/21 20:00:01 grubba Exp $
 */
 
 #ifndef SVALUE_H
@@ -231,13 +231,18 @@ struct svalue
 #define tRef tOr(tString,tComplex)
 #define tIfnot(X,Y) tAnd(tNot(X),Y)
 #define tAny tOr(tVoid,tMix)
+#define tAttr(X,Y) "\356\0"X"\0"Y
 #define tName(X,Y) "\361\0"X"\0"Y
 #if PIKE_BYTEORDER == 1234
 /* Little endian */
+#define tAttr1(X,Y) "\356\5"X"\0\0"Y
+#define tAttr2(X,Y) "\356\6"X"\0\0\0\0"Y
 #define tName1(X,Y) "\361\5"X"\0\0"Y
 #define tName2(X,Y) "\361\6"X"\0\0\0\0"Y
 #else /* PIKE_BYTEORDER != 1234 */
 /* Big endian */
+#define tAttr1(X,Y) "\356\1"X"\0\0"Y
+#define tAttr2(X,Y) "\356\2"X"\0\0\0\0"Y
 #define tName1(X,Y) "\361\1"X"\0\0"Y
 #define tName2(X,Y) "\361\2"X"\0\0\0\0"Y
 #endif /* PIKE_BYTEORDER == 1234 */
