@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.138 2007/04/07 13:21:01 grubba Exp $
+|| $Id: sprintf.c,v 1.139 2007/04/23 14:18:44 per Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -160,6 +160,10 @@
  *!       how the result looks can vary depending on locale, phase of
  *!       the moon or anything else the _sprintf method implementor
  *!       wanted for debugging.
+ *!     @value 'H'
+ *!       Binary hollerith string. Equivalent to sprintf("%c%s",
+ *!       strlen(str), str). Arguments (such as width etc) adjust the
+ *!       length-part of the format.
  *!     @value 'n'
  *!       No argument. Same as '%s' with an empty string as argument.
  *!       Note: Does take an argument array (but ignores its content)
@@ -1312,6 +1316,73 @@ static void low_pike_sprintf(struct format_stack *fs,
 	break;
       }
 
+      case 'H':
+      {
+	struct string_builder buf;
+	struct pike_string *s;
+        INT_TYPE tmp;
+	ptrdiff_t l,n;
+	char *x;
+
+	DO_OP();
+	CHECK_OBJECT_SPRINTF()
+	GET_STRING(s);
+
+	tmp = s->len;
+
+	if(fs->fsp->width == SPRINTF_UNDECIDED)
+	{
+	  x=(char *)alloca(4);
+	  if(tmp<256) fs->fsp->b=MKPCHARP(x,0);
+	  else if(tmp<65536) fs->fsp->b=MKPCHARP(x,1);
+	  else  fs->fsp->b=MKPCHARP(x,2);
+	  SET_INDEX_PCHARP(fs->fsp->b,0,tmp);
+	  fs->fsp->len=1;
+	}
+	else if ( (fs->fsp->flags&FIELD_LEFT) )
+	{
+	  l=1;
+	  if(fs->fsp->width > 0) l=fs->fsp->width;
+	  if( tmp >= (1<<(l*8)) )
+	      Pike_error("sprintf(): Length of string to %%%dH too large.\n", l);
+	  x=(char *)alloca(l);
+	  fs->fsp->b=MKPCHARP(x,0);
+	  fs->fsp->len=l;
+	  n=0;
+	  while(n<l)
+	  {
+	    x[n++]=tmp & 0xff;
+	    tmp>>=8;
+	  }
+	}
+	else 
+	{
+	  l=1;
+	  if(fs->fsp->width > 0) l=fs->fsp->width;
+	  if( tmp >= (1<<(l*8)) )
+	      Pike_error("sprintf(): Length of string to %%%dH too large.\n", l);
+	  x=(char *)alloca(l);
+	  fs->fsp->b=MKPCHARP(x,0);
+	  fs->fsp->len=l;
+	  while(--l>=0)
+	  {
+	    x[l]=tmp & 0xff;
+	    tmp>>=8;
+	  }
+	}
+
+	init_string_builder_alloc(&buf, s->len+fs->fsp->len, 0);
+	string_builder_append(&buf,fs->fsp->b,fs->fsp->len);
+	string_builder_shared_strcat(&buf,s);
+	
+	fs->fsp->b = MKPCHARP_STR(buf.s);
+	fs->fsp->len = buf.s->len;
+	buf.s->len = buf.malloced;
+	fs->fsp->to_free_string = buf.s;
+	break;
+      }
+
+
       /*
 	WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
 	WARNING                                                 WARNING
@@ -2025,6 +2096,7 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 #endif
 
       case 'q':
+      case 'H':
       case 's':
       {
 	push_object_type(0, 0);
