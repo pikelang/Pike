@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.296 2007/04/25 21:58:33 mast Exp $
+|| $Id: pike_types.c,v 1.297 2007/04/25 22:10:05 mast Exp $
 */
 
 #include "global.h"
@@ -89,9 +89,9 @@ PMOD_EXPORT struct pike_type *zero_type_string;
 PMOD_EXPORT struct pike_type *any_type_string;
 PMOD_EXPORT struct pike_type *weak_type_string;	/* array|mapping|multiset|function */
 
-#ifdef DEBUG_MALLOC
+#ifdef DO_PIKE_CLEANUP
 struct pike_type_location *all_pike_type_locations = NULL;
-#endif /* DEBUG_MALLOC */
+#endif /* DO_PIKE_CLEANUP */
 
 static struct pike_type *a_markers[10], *b_markers[10];
 
@@ -7403,14 +7403,14 @@ void init_types(void)
 
 void cleanup_pike_types(void)
 {
-#ifdef DEBUG_MALLOC
+#ifdef DO_PIKE_CLEANUP
   struct pike_type_location *t = all_pike_type_locations;
 
   while(t) {
     free_type(t->t);
     t = t->next;
   }
-#endif /* DEBUG_MALLOC */
+#endif /* DO_PIKE_CLEANUP */
 
   if (builtin_attributes) {
     free_mapping(builtin_attributes);

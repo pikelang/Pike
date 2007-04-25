@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.106 2007/04/25 21:58:33 mast Exp $
+|| $Id: pike_types.h,v 1.107 2007/04/25 22:10:05 mast Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -121,7 +121,8 @@ PMOD_EXPORT extern struct pike_type *any_type_string;
 PMOD_EXPORT extern struct pike_type *weak_type_string;
 
 #define CONSTTYPE(X) make_pike_type(X)
-#ifdef DEBUG_MALLOC
+
+#ifdef DO_PIKE_CLEANUP
 struct pike_type_location
 {
   struct pike_type *t;
@@ -139,7 +140,7 @@ extern struct pike_type_location *all_pike_type_locations;
     }						\
     copy_pike_type((T), type_.t);		\
   } while(0)
-#else /* !DEBUG_MALLOC */
+#else /* !DO_PIKE_CLEANUP */
 #define MAKE_CONSTANT_TYPE(T, X) do {	\
     static struct pike_type *type_;	\
     if (!type_) {			\
@@ -147,7 +148,7 @@ extern struct pike_type_location *all_pike_type_locations;
     }					\
     copy_pike_type((T), type_);		\
   } while(0)
-#endif /* DEBUG_MALLOC */
+#endif /* DO_PIKE_CLEANUP */
 
 #ifdef PIKE_DEBUG
 #define init_type_stack() type_stack_mark()
