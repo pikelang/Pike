@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.140 2007/04/23 14:41:42 per Exp $
+|| $Id: sprintf.c,v 1.141 2007/04/25 15:50:46 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -2167,11 +2167,13 @@ static node *optimize_sprintf(node *n)
       }
     }
 
+    /* The old argument checker doesn't support attributed parameters. */
+#ifndef NEW_ARG_CHECK
     type_stack_mark();
     type_stack_mark();
     push_string_type(8 << fmt->size_shift);	/* fmt */
     if (push_sprintf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
-				    fmt->len, num_args)) {
+				    fmt->len, -1)) {
       push_type(T_VOID);	/* No more args */
       push_string_type(32);	/* return type */
       push_reverse_type(T_MANY);
@@ -2196,17 +2198,170 @@ static node *optimize_sprintf(node *n)
       pop_stack_mark();
       type_stack_pop_to_mark();
     }
+#endif /* !NEW_ARG_CHECK */
   }
   /* FIXME: Convert into compile_sprintf(args[0])->format(@args[1..])? */
   return ret;
 }
 
+static void f___handle_sprintf_format(INT32 args)
+{  
+  struct pike_type *res;
+  struct pike_type *tmp;
+  struct pike_string *attr;
+  struct pike_string *fmt;
+  int found = 0;
+  int fmt_count;
+#if 0
+  fprintf(stderr, "__handle_sprintf_format()\n");
+#endif /* 0 */
+  if (args != 4)
+    SIMPLE_WRONG_NUM_ARGS_ERROR("__handle_sprintf_format", 4);
+  if (Pike_sp[-4].type != PIKE_T_STRING)
+    SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 1, "string");
+  if (Pike_sp[-3].type != PIKE_T_STRING)
+    SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 2, "string");
+  if (Pike_sp[-2].type != PIKE_T_TYPE)
+    SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 3, "type");
+  if (Pike_sp[-1].type != PIKE_T_TYPE)
+    SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 4, "type");
+
+  tmp = Pike_sp[-1].u.type;
+  if ((tmp->type != PIKE_T_FUNCTION) && (tmp->type != T_MANY)) {
+    SIMPLE_ARG_TYPE_ERROR("__handle_sprintf_format", 4, "type(function)");
+  }
+
+  fmt = Pike_sp[-3].u.string;
+  MAKE_CONST_STRING(attr, "sprintf_args");  
+
+  type_stack_mark();
+  type_stack_mark();
+  for (; tmp; tmp = tmp->cdr) {
+    struct pike_type *arg = tmp->car;
+    int array_cnt = 0;
+    while(arg) {
+      switch(arg->type) {
+      case PIKE_T_ATTRIBUTE:
+	if (arg->car == (struct pike_type *)attr)
+	  break;
+	/* FALL_THROUGH */
+      case PIKE_T_NAME:
+	arg = arg->cdr;
+	continue;
+      case PIKE_T_ARRAY:
+	array_cnt++;
+	arg = arg->car;
+	continue;
+      default:
+	arg = NULL;
+	break;
+      }
+      break;
+    }
+    if (arg) {
+      type_stack_mark();
+      if (push_sprintf_argument_types(MKPCHARP(fmt->str, fmt->size_shift),
+				      fmt->len, -1)) {
+	if (!array_cnt) {
+	  pop_stack_mark();
+	  push_type(T_VOID);	/* No more args */
+	  while (tmp->type == PIKE_T_FUNCTION) {
+	    tmp = tmp->cdr;
+	  }
+	  push_finished_type(tmp->cdr);	/* return type */
+	  push_reverse_type(T_MANY);
+	  fmt_count = pop_stack_mark();
+	  while (fmt_count > 1) {
+	    push_reverse_type(T_FUNCTION);
+	    fmt_count--;
+	  }
+	  res = pop_unfinished_type();
+	  pop_n_elems(args);
+	  push_type_value(res);
+	  return;
+	} else {
+	  /* Join the argument types into the array. */
+	  push_type(PIKE_T_ZERO);
+	  for (fmt_count = pop_stack_mark(); fmt_count > 1; fmt_count--) {
+	    push_type(T_OR);
+	  }
+	  while (array_cnt--) {
+	    push_type(PIKE_T_ARRAY);
+	  }
+	  found = 1;
+	}
+      } else {
+	/* There was a position argument. */
+	pop_stack_mark();
+	pop_stack_mark();
+	type_stack_pop_to_mark();
+	pop_n_elems(args);
+	push_undefined();
+	return;
+      }
+    } else {
+      push_finished_type(tmp->car);
+    }
+    if (tmp->type == T_MANY) {
+      tmp = tmp->cdr;
+      break;
+    }
+  }
+  if (found) {
+    /* Found, but inside an array, so we need to build the function
+     * type here.
+     */
+    push_finished_type(tmp);	/* Return type. */
+    push_reverse_type(T_MANY);
+    fmt_count = pop_stack_mark();
+    while (fmt_count > 1) {
+      push_reverse_type(T_FUNCTION);
+      fmt_count--;
+    }
+    res = pop_unfinished_type();
+    pop_n_elems(args);
+    push_type_value(res);
+  } else {
+    /* No marker found. */
+#if 0
+    simple_describe_type(Pike_sp[-1].u.type);
+    fprintf(stderr, " ==> No marker found.\n");
+#endif /* 0 */
+    pop_stack_mark();
+    type_stack_pop_to_mark();
+    pop_n_elems(args);
+    push_undefined();
+  }
+}
+
 PIKE_MODULE_INIT
 {
+  struct pike_string *attr;
+  struct svalue s;
+  s.type = T_FUNCTION;
+  s.subtype = FUNCTION_BUILTIN;
+  s.u.efun = ADD_EFUN("__handle_sprintf_format", f___handle_sprintf_format,
+		      tFunc(tStr tStr tType(tMix) tType(tMix), tType(tMix)),
+		      0);
+  MAKE_CONST_STRING(attr, "sprintf_format");
+  register_attribute_handler(attr, &s);
+
+  s.type = T_TYPE;
+  s.subtype = 0;
+  s.u.type = make_pike_type(tAttr("sprintf_format", tOr(tStr, tObj)));
+  low_add_efun(attr, &s);
+  free_type(s.u.type);
+
+  MAKE_CONST_STRING(attr, "sprintf_args");
+  s.u.type = make_pike_type(tAttr("sprintf_args", tMix));
+  low_add_efun(attr, &s);
+  free_type(s.u.type);
+
   /* function(string|object, mixed ... : string) */
   ADD_EFUN2("sprintf", 
 	    f_sprintf,
-	    tFuncV(tOr(tStr, tObj), tMix, tStr),
+	    tFuncV(tAttr("sprintf_format", tOr(tStr, tObj)),
+		   tAttr("sprintf_args", tMix), tStr),
 	    OPT_TRY_OPTIMIZE,
 	    optimize_sprintf,
 	    0);
