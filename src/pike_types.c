@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.294 2007/04/25 15:43:07 grubba Exp $
+|| $Id: pike_types.c,v 1.295 2007/04/25 16:01:22 grubba Exp $
 */
 
 #include "global.h"
@@ -7284,7 +7284,7 @@ void init_types(void)
   any_type_string = CONSTTYPE(tOr(tVoid,tMix));
   weak_type_string = CONSTTYPE(tOr4(tArray,tMultiset,tMapping,
 				    tFuncV(tNone,tZero,tOr(tMix,tVoid))));
-  /* add_ref(weak_type_string);	/* LEAK */
+  /* add_ref(weak_type_string);	*//* LEAK */
 
   builtin_attributes = allocate_mapping(20);
 
