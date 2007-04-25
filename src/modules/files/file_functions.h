@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.37 2007/04/02 15:36:15 grubba Exp $
+|| $Id: file_functions.h,v 1.38 2007/04/25 16:07:16 grubba Exp $
 */
 
 #define CB_FUNC tFunc(tNone,tOr(tVoid,tMixed))
@@ -18,11 +18,19 @@ FILE_FUNC("read",file_read, tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid),tStr))
 FILE_FUNC("peek",file_peek, tFunc(tOr3(tFlt,tInt,tVoid),tInt))
 #endif
 /* function(string|array(string),mixed...:int) */
-FILE_FUNC("write",file_write, tFuncV(tOr(tStr,tArr(tStr)),tMixed,tInt))
+FILE_FUNC("write",file_write,
+	  tOr3(tFunc(tStr8, tInt),
+	       tFuncV(tArr(tStr8), tMixed, tInt),
+	       tFuncV(tAttr("sprintf_format", tStr8),
+		      tAttr("sprintf_args", tMixed),tInt)))
 /* function(int|void,int|void:string) */
 FILE_FUNC("read_oob",file_read_oob, tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid),tStr))
 /* function(string,mixed...:int) */
-FILE_FUNC("write_oob",file_write_oob, tFuncV(tStr,tMixed,tInt))
+FILE_FUNC("write_oob",file_write_oob,
+	  tOr3(tFunc(tStr8, tInt),
+	       tFuncV(tArr(tStr8), tMixed, tInt),
+	       tFuncV(tAttr("sprintf_format", tStr8),
+		      tAttr("sprintf_args", tMixed),tInt)))
 
 #ifdef HAVE_FSYNC
 /*  function(:int) */
@@ -90,7 +98,7 @@ FILE_FUNC("pipe",file_pipe, tFunc(tOr(tVoid,tInt),tObjImpl_STDIO_FD))
 
 /* function(int,string|void:void) */
 FILE_FUNC("set_buffer",file_set_buffer, tFunc(tInt tOr(tStr,tVoid),tVoid))
-/* function(int|string|void,string|void:int) */
+/* function(int|string|void,string|void,int|void:int) */
 FILE_FUNC("open_socket",file_open_socket,
 	  tFunc(tOr3(tInt,tStr,tVoid) tOr(tStr,tVoid) tOr(tInt,tVoid),tInt))
 /* function(string,int|string:int)|function(string,int|string,string,int|string:int) */
