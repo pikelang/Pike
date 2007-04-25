@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.612 2007/01/16 18:31:18 grubba Exp $
+|| $Id: program.c,v 1.613 2007/04/25 22:02:07 mast Exp $
 */
 
 #include "global.h"
@@ -7529,10 +7529,7 @@ void real_gc_cycle_check_program(struct program *p, int weak)
 static void gc_check_program(struct program *p)
 {
   int e;
-#ifdef PIKE_DEBUG
-  extern void * check_for;
-#endif
-  
+
   debug_malloc_touch(p);
 
   if (p->flags & PROGRAM_AVOID_CHECK) {
@@ -7560,7 +7557,7 @@ static void gc_check_program(struct program *p)
       }
 
 #ifdef PIKE_DEBUG
-      if(d_flag && p->inherits[e].name && check_for != (void *)(ptrdiff_t)1)
+      if (Pike_in_gc == GC_PASS_LOCATE && p->inherits[e].name)
 	debug_gc_check (p->inherits[e].name, " as inherit name");
 #endif
 
@@ -7568,17 +7565,19 @@ static void gc_check_program(struct program *p)
 	debug_gc_check (p->inherits[e].prog, " as inherited program of a program");
     }
 
-#ifdef PIKE_DEBUG
-    if(d_flag && check_for != (void *)(ptrdiff_t)1)
+#if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
+    if (gc_keep_markers || Pike_in_gc == GC_PASS_LOCATE)
     {
       int e;
       for(e=0;e<(int)p->num_strings;e++)
-	debug_gc_check (p->strings[e], " as program string");
+	debug_gc_check (p->strings[e], " in the string storage of a program");
 
       for(e=0;e<(int)p->num_identifiers;e++)
       {
-	debug_gc_check (p->identifiers[e].name, " as program identifier name");
-	debug_gc_check (p->identifiers[e].type, " as program identifier type");
+	debug_gc_check (p->identifiers[e].name,
+			" as identifier name in a program");
+	debug_gc_check (p->identifiers[e].type,
+			" as identifier type in a program");
       }
     }
 #endif
