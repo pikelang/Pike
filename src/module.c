@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.40 2006/07/04 21:31:30 mast Exp $
+|| $Id: module.c,v 1.41 2007/04/25 21:58:33 mast Exp $
 */
 
 #include "global.h"
@@ -171,7 +171,7 @@ static void exit_builtin_modules(void)
 		     x->refs - (m->refs + is_static));			\
 	    print_short_svalue (stderr, (union anything *) &x, T_TYPE);	\
 	    fputc ('\n', stderr);					\
-	    DO_IF_DMALLOC (debug_malloc_dump_references (x, 0, 1, 0));	\
+	    DO_IF_DMALLOC (debug_malloc_dump_references (x, 2, 1, 0));	\
 	  }								\
 	}								\
       }									\
@@ -182,6 +182,7 @@ static void exit_builtin_modules(void)
     REPORT_LINKED_LIST_LEAKS (mapping, first_mapping, NOTHING, T_MAPPING, "Mapping");
     REPORT_LINKED_LIST_LEAKS (program, first_program, NOTHING, T_PROGRAM, "Program");
     REPORT_LINKED_LIST_LEAKS (object, first_object, NOTHING, T_OBJECT, "Object");
+    report_all_type_leaks();
 
 #undef REPORT_LINKED_LIST_LEAKS
 
@@ -223,6 +224,7 @@ static void exit_builtin_modules(void)
     ZAP_LINKED_LIST_LEAKS (mapping, first_mapping, NOTHING);
     ZAP_LINKED_LIST_LEAKS (program, first_program, NOTHING);
     ZAP_LINKED_LIST_LEAKS (object, first_object, NOTHING);
+    free_all_leaked_types();
 
 #undef ZAP_LINKED_LIST_LEAKS
 
@@ -238,16 +240,6 @@ static void exit_builtin_modules(void)
 
     gc_keep_markers = 0;
     exit_gc();
-
-#ifdef DEBUG_MALLOC
-    {
-      INT32 num, size;
-      count_memory_in_pike_types(&num, &size);
-      if (num)
-	fprintf(stderr, "Types left: %d (%d bytes)\n", num, size);
-      describe_all_types();
-    }
-#endif
   }
 
   destruct_objects_to_destruct_cb();

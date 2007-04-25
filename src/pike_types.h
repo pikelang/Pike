@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.105 2007/04/21 20:08:26 grubba Exp $
+|| $Id: pike_types.h,v 1.106 2007/04/25 21:58:33 mast Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -213,6 +213,9 @@ void stupid_describe_type(char *a, ptrdiff_t len);
 void simple_describe_type(struct pike_type *s);
 void my_describe_type(struct pike_type *type);
 struct pike_string *describe_type(struct pike_type *type);
+void debug_gc_check_all_types (void);
+void report_all_type_leaks (void);
+void free_all_leaked_types (void);
 TYPE_T compile_type_to_runtime_type(struct pike_type *s);
 struct pike_type *or_pike_types(struct pike_type *a,
 				struct pike_type *b,
@@ -330,7 +333,6 @@ void register_attribute_handler(struct pike_string *attr,
 #endif /* 0 */
 
 #ifdef DEBUG_MALLOC
-void describe_all_types(void);
 #define pop_type() ((struct pike_type *)debug_malloc_pass(debug_pop_type()))
 #define compiler_pop_type() ((struct pike_type *)debug_malloc_pass(debug_compiler_pop_type()))
 #define pop_unfinished_type() \

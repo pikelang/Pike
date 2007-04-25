@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.279 2007/03/31 21:41:34 grubba Exp $
+|| $Id: gc.c,v 1.280 2007/04/25 21:58:33 mast Exp $
 */
 
 #include "global.h"
@@ -1778,6 +1778,9 @@ void locate_references(void *a)
     gc_check_all_mappings();
     gc_check_all_programs();
     gc_check_all_objects();
+#if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
+    debug_gc_check_all_types();
+#endif
   } GC_LEAVE;
 
 #ifdef DEBUG_MALLOC
@@ -2939,9 +2942,6 @@ size_t do_gc(void *ignored, int explicit_call)
     n += gc_touch_all_programs();
     n += gc_touch_all_objects();
 #ifdef PIKE_DEBUG
-#if 0
-    gc_touch_all_types();
-#endif
     gc_touch_all_strings();
 #endif
     if (n != (unsigned) num_objects)
@@ -2964,6 +2964,9 @@ size_t do_gc(void *ignored, int explicit_call)
     gc_check_all_mappings();
     gc_check_all_programs();
     gc_check_all_objects();
+#if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
+    debug_gc_check_all_types();
+#endif
   } END_ACCEPT_UNFINISHED_TYPE_FIELDS;
 
   GC_VERBOSE_DO(fprintf(stderr, "| check: %u references in %d things, "
