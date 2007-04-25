@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gdbmmod.c,v 1.32 2006/03/18 22:34:27 grubba Exp $
+|| $Id: gdbmmod.c,v 1.33 2007/04/25 15:33:22 grubba Exp $
 */
 
 #include "global.h"
@@ -349,8 +349,7 @@ static void gdbmmod_nextkey(INT32 args)
   }
 }
 
-/*! @decl int store(string key, string data)
- *! @decl int `[]= (string key, string data)
+/*! @decl string `[]= (string key, string data)
  *!
  *! Associate the contents of 'data' with the key 'key'. If the key 'key'
  *! already exists in the database the data for that key will be replaced.
@@ -359,6 +358,32 @@ static void gdbmmod_nextkey(INT32 args)
  *!
  *! @example
  *!   gdbm[key] = data;
+ *!
+ *! @returns
+ *!   Returns @[data] on success.
+ *!
+ *! @seealso
+ *!   @[store()]
+ */
+
+/*! @decl int store(string key, string data)
+ *!
+ *! Associate the contents of 'data' with the key 'key'. If the key 'key'
+ *! already exists in the database the data for that key will be replaced.
+ *! If it does not exist it will be added. An error will be generated if
+ *! the database was not open for writing.
+ *!
+ *! @example
+ *!   gdbm->store(key, data);
+ *!
+ *! @returns
+ *!   Returns @expr{1@} on success.
+ *!
+ *! @note
+ *!   Note that the returned value differs from that of @[`[]=()].
+ *!
+ *! @seealso
+ *!   @[`[]=()]
  */
 
 static void gdbmmod_store(INT32 args)
@@ -402,8 +427,16 @@ static void gdbmmod_store(INT32 args)
   } else if (ret == 1) {
     Pike_error("Duplicate key.\n");
   }
-  pop_n_elems(args);
-  push_int(ret == 0);
+  ref_push_string(sp[1-args].u.string);
+  stack_pop_n_elems_keep_top(args);
+}
+
+/* Compat */
+static void gdbmmod_store_compat(INT32 args)
+{
+  gdbmmod_store(args);
+  pop_stack();
+  push_int(1);
 }
 
 /*! @decl int reorganize()
@@ -498,11 +531,11 @@ PIKE_MODULE_INIT
   /* function(:void) */
   ADD_FUNCTION("close",gdbmmod_close,tFunc(tNone,tVoid),0);
   /* function(string, string, int(0..1)|void: int) */
-  ADD_FUNCTION("store", gdbmmod_store,
+  ADD_FUNCTION("store", gdbmmod_store_compat,
 	       tFunc(tStr tStr tOr(tInt01, tVoid), tInt), 0);
-  /* function(string, string, int(0..1)|void: int) */
+  /* function(string, string, int(0..1)|void: string) */
   ADD_FUNCTION("`[]=", gdbmmod_store,
-	       tFunc(tStr tStr tOr(tInt01, tVoid), tInt), 0);
+	       tFunc(tStr tSetvar(0, tStr) tOr(tInt01, tVoid), tVar(0)), 0);
   /* function(string:string) */
   ADD_FUNCTION("fetch",gdbmmod_fetch,tFunc(tStr,tStr),0);
   /* function(string:string) */
