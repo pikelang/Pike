@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.293 2007/04/21 20:08:26 grubba Exp $
+|| $Id: pike_types.c,v 1.294 2007/04/25 15:43:07 grubba Exp $
 */
 
 #include "global.h"
@@ -5457,30 +5457,21 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       res = NULL;
       break;
     }
-    if ((res->type == T_NOT) || (tmp->type == T_NOT)) {
-      /* Special cases for NOT, since and_pike_types()
-       * doesn't seem to handle it reliably.
-       */
-      type_stack_mark();
-      if (res->type == tmp->type) {
-	push_finished_type(tmp2 = and_pike_types(res->car, tmp->car));
-	free_type(res);
-	free_type(tmp);
-	free_type(tmp2);
-	push_type(T_NOT);
-      } else {
-	push_finished_type(res);
-	free_type(res);
-	push_finished_type(tmp);
-	free_type(tmp);
-	push_type(T_AND);
-      }
-      res = pop_unfinished_type();
-    } else {
-      res = and_pike_types(tmp2 = res, tmp);
+    if (res == tmp) {
+      /* Common case. */
       free_type(tmp);
-      free_type(tmp2);
+      break;
     }
+    /* and_pike_types() doesn't handle and of functions
+     * in the way we want here.
+     */
+    type_stack_mark();
+    push_finished_type(tmp);
+    push_finished_type(res);
+    push_type(T_AND);
+    free_type(tmp);
+    free_type(res);
+    res = pop_unfinished_type();
     break;
 
   case T_NOT:
@@ -5639,26 +5630,30 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     res = pop_unfinished_type();
     if (tmp) free_type(tmp);
 
-    if ((tmp2->type == PIKE_T_ATTRIBUTE) &&
-	(Pike_compiler->compiler_pass == 2) &&
-	sval) {
-      /* Perform extra argument checking based on the attribute. */
-      /* FIXME: Support multiple attributes. */
-      ref_push_string((struct pike_string *)tmp2->car);
-      push_svalue(sval);
-      ref_push_type_value(tmp2->cdr);
-      ref_push_type_value(res);
-      if (safe_apply_handler("handle_attribute_constant", error_handler,
-			     compat_handler, 4, 0)) {
-	if ((Pike_sp[-1].type == PIKE_T_TYPE)) {
-	  type_stack_mark();
-	  push_finished_type(Pike_sp[-1].u.type);
-	  push_finished_type(res);
-	  push_type(T_AND);
-	  free_type(res);
-	  res = pop_unfinished_type();
+    if ((Pike_compiler->compiler_pass == 2) && sval) {
+      while (tmp2->type == PIKE_T_NAME) {
+	tmp2 = tmp2->cdr;
+      }
+
+      if (tmp2->type == PIKE_T_ATTRIBUTE) {
+	/* Perform extra argument checking based on the attribute. */
+	/* FIXME: Support multiple attributes. */
+	ref_push_string((struct pike_string *)tmp2->car);
+	push_svalue(sval);
+	ref_push_type_value(tmp2->cdr);
+	ref_push_type_value(res);
+	if (safe_apply_handler("handle_attribute_constant", error_handler,
+			       compat_handler, 4, 0)) {
+	  if ((Pike_sp[-1].type == PIKE_T_TYPE)) {
+	    type_stack_mark();
+	    push_finished_type(Pike_sp[-1].u.type);
+	    push_finished_type(res);
+	    push_type(T_AND);
+	    free_type(res);
+	    res = pop_unfinished_type();
+	  }
+	  pop_stack();
 	}
-	pop_stack();
       }
     }
 #ifdef PIKE_DEBUG
@@ -7289,7 +7284,7 @@ void init_types(void)
   any_type_string = CONSTTYPE(tOr(tVoid,tMix));
   weak_type_string = CONSTTYPE(tOr4(tArray,tMultiset,tMapping,
 				    tFuncV(tNone,tZero,tOr(tMix,tVoid))));
-  //add_ref(weak_type_string);	/* LEAK */
+  /* add_ref(weak_type_string);	/* LEAK */
 
   builtin_attributes = allocate_mapping(20);
 
