@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.297 2007/04/25 22:10:05 mast Exp $
+|| $Id: pike_types.c,v 1.298 2007/04/26 09:49:37 grubba Exp $
 */
 
 #include "global.h"
@@ -2311,10 +2311,17 @@ void free_all_leaked_types (void)
       struct marker *m = find_marker (t);
       INT32 m_refs = m ? m->refs : 0;
       INT32 refs = t->refs;
-      while (refs > m_refs) {
-	if (m) m->flags |= GC_CLEANUP_FREED;
-	free_type (t);
-	refs--;
+      if (refs > m_refs) {
+	do {
+	  if (m) m->flags |= GC_CLEANUP_FREED;
+	  free_type (t);
+	  refs--;
+	} while (refs > m_refs);
+	/* t is invalid here, as is its next pointer.
+	 * Start over from the top of this hash entry.
+	 */
+	index--;
+	break;
       }
     }
   }
