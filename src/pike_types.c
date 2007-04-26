@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.299 2007/04/26 11:14:53 grubba Exp $
+|| $Id: pike_types.c,v 1.300 2007/04/26 15:09:58 grubba Exp $
 */
 
 #include "global.h"
@@ -531,14 +531,15 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
     if (flag_method == PT_IS_MARKER) {
       t->flags = PT_FLAG_MARKER_0 << (type-'0');
     } else {
+      /* Clear markers that are assigned in the respective subtrees,
+       * but copy the rest.
+       */
       if (car && (flag_method & PT_COPY_CAR)) {
-	t->flags |= car->flags;
+	t->flags |= car->flags & ~(car->flags >> PT_ASSIGN_SHIFT);
       }
       if (cdr && (flag_method & PT_COPY_CDR)) {
-	t->flags |= cdr->flags;
+	t->flags |= cdr->flags & ~(cdr->flags >> PT_ASSIGN_SHIFT);
       }
-      /* Clear markers that are assigned. */
-      t->flags &= ~(t->flags & (t->flags >> PT_ASSIGN_SHIFT));
     }
   }
 
@@ -1050,31 +1051,43 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
 						  INT32 marker_set)
 {
  recurse:
-#if 0
-  fprintf(stderr, "push_finished_type_with_markers((%d[%x]),...)...\n",
-	  type->type, type->flags);
-#endif /* 0 */
+#ifdef PIKE_TYPE_DEBUG
+  if (l_flag > 2) {
+    fprintf(stderr,
+	    "push_finished_type_with_markers((%d[%x]),..., 0x%08x)...\n",
+	    type->type, type->flags, marker_set);
+  }
+#endif /* PIKE_TYPE_DEBUG */
   if (!(type->flags & (marker_set /*| (marker_set << PT_ASSIGN_SHIFT)*/))) {
     /* No unassigned markers in this sub-tree */
-#if 0
-    fprintf(stderr, "No unassigned markers in this subtree.\n");
-#endif /* 0 */
+#ifdef PIKE_TYPE_DEBUG
+    if (l_flag > 2) {
+      fprintf(stderr, "No unassigned markers in this subtree.\n");
+      simple_describe_type(type);
+      fprintf(stderr, "\n");
+    }
+#endif /* PIKE_TYPE_DEBUG */
     push_finished_type(type);
     return;
   }
   if ((type->type >= '0') && (type->type <= '9')) {
     unsigned int m = type->type - '0';
-#if 0
-    if (m) {
+#ifdef PIKE_TYPE_DEBUG
+    if ((l_flag > 2) && m) {
       fprintf(stderr, "Marker %d: %p.\n", m, markers[m]);
     }
-#endif /* 0 */
+#endif /* PIKE_TYPE_DEBUG */
     if ((marker_set & (PT_FLAG_MARKER_0 << m)) && markers[m]) {
       type = dmalloc_touch(struct pike_type *, markers[m]);
       if (marker_set & (PT_FLAG_ASSIGN_0 << m)) {
 	/* There's a corresponding assignment,
 	 * so we need to keep the marker as well.
 	 */
+#ifdef PIKE_TYPE_DEBUG
+	if (l_flag > 2) {
+	  fprintf(stderr, "Keep marker or with marker value.\n");
+	}
+#endif
 	markers[m] = NULL;
 	push_type('0' + m);
 	push_finished_type_with_markers(type, markers,
@@ -1083,23 +1096,40 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
 	markers[m] = dmalloc_touch(struct pike_type *, type);
       } else {
 	/* It's a marker we're cleared to replace. */
+#ifdef PIKE_TYPE_DEBUG
+	if (l_flag > 2) {
+	  fprintf(stderr, "Killed marker.\n");
+	}
+#endif
 	marker_set &= ~(PT_FLAG_MARKER_0 << m);
 	goto recurse;
       }
     } else if (marker_set & (PT_FLAG_ASSIGN_0 << m)) {
       /* Keep the marker as-is. */
+#ifdef PIKE_TYPE_DEBUG
+      if (l_flag > 2) {
+	fprintf(stderr, "Keep marker and no marker value.\n");
+      }
+#endif
       push_type(type->type);
     } else {
+#ifdef PIKE_TYPE_DEBUG
+      if (l_flag > 2) {
+	fprintf(stderr, "Killed marker and no marker value.\n");
+      }
+#endif
       push_type(T_ZERO);
     }
     TYPE_STACK_DEBUG("push_finished_type_with_markers");
     return;
   } else if (type->type == T_ASSIGN) {
     int marker = PTR_TO_INT(type->car);
-#if 0
-    fprintf(stderr, "Assign to marker %"PRINTPTRDIFFT"d.\n",
-	    CAR_TO_INT(type));
-#endif /* 0 */
+#ifdef PIKE_TYPE_DEBUG
+    if (l_flag > 2) {
+      fprintf(stderr, "Assign to marker %"PRINTPTRDIFFT"d.\n",
+	      CAR_TO_INT(type));
+    }
+#endif /* PIKE_TYPE_DEBUG */
     if ((marker_set & (PT_FLAG_ASSIGN_0 << marker)) && markers[marker])
     {
       /* The marker has already been set. Remove it. */
