@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.300 2007/04/26 15:09:58 grubba Exp $
+|| $Id: pike_types.c,v 1.301 2007/04/26 17:24:48 grubba Exp $
 */
 
 #include "global.h"
@@ -5297,7 +5297,7 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
 	    break;
 	  }
 	} else if (orig_type->type == T_OBJECT) {
-	  if ((tmp == low_object_lfun_type(orig_type, LFUN_CALL))) {
+	  if ((tmp = low_object_lfun_type(orig_type, LFUN_CALL))) {
 	    orig_type = tmp;
 	    tmp = NULL;
 	  } else {
