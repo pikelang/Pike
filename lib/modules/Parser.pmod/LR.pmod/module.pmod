@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.13 2007/04/05 08:35:18 grubba Exp $
+ * $Id: module.pmod,v 1.14 2007/04/26 11:06:48 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -189,7 +189,7 @@ class ErrorHandler
 	      mixed ... args)
   {
     if (level > -verbose) {
-      werror("%s: %s: "+msg+"\n",
+      werror([string(8)]("%s: %s: "+msg+"\n"),
 	     severity_kind[level], subsystem, @args);
     }
   }
