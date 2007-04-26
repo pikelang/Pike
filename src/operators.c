@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.219 2007/04/03 17:06:03 grubba Exp $
+|| $Id: operators.c,v 1.220 2007/04/26 17:45:44 grubba Exp $
 */
 
 #include "global.h"
@@ -930,9 +930,22 @@ int low_check_soft_cast(struct svalue *s, struct pike_type *type)
   }
   if ((s->type == PIKE_T_INT) && !s->u.integer) return 1;
   if (s->type == type->type) {
-    if (type->type == PIKE_T_INT) return 1;	/* FIXME: Check range. */
+    if (type->type == PIKE_T_INT) {
+      if (((((INT32)CAR_TO_INT(type)) != MIN_INT32) &&
+	   (s->u.integer < (INT32)CAR_TO_INT(type))) ||
+	  ((((INT32)CDR_TO_INT(type)) != MAX_INT32) &&
+	   (s->u.integer > (INT32)CDR_TO_INT(type)))) {
+	return 0;
+      }
+      return 1;
+    }
     if (type->type == PIKE_T_FLOAT) return 1;
-    if (type->type == PIKE_T_STRING) return 1;
+    if (type->type == PIKE_T_STRING) {
+      if ((8<<s->u.string->size_shift) > CAR_TO_INT(type)) {
+	return 0;
+      }
+      return 1;
+    }
     switch(type->type) {
     case PIKE_T_OBJECT:
       {
@@ -5578,7 +5591,8 @@ multiset & mapping -> mapping
 	    "function(array(0=mixed),array|int|float...:array(array(0)))|"
 	    "function(string,string|int|float...:array(string)) */
   ADD_EFUN2("`/", f_divide,
-	    tOr5(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),tFunction),
+	    tOr5(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),
+			tFuncV(tNone,tMix,tMix)),
 		 tFuncV(tInt, tInt, tInt),
 		 tIfnot(tFuncV(tNone, tNot(tFlt), tMix),
 			tFuncV(tOr(tFlt,tInt),tOr(tFlt,tInt),tFlt)),
