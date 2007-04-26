@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.298 2007/04/26 09:49:37 grubba Exp $
+|| $Id: pike_types.c,v 1.299 2007/04/26 11:14:53 grubba Exp $
 */
 
 #include "global.h"
@@ -2312,8 +2312,8 @@ void free_all_leaked_types (void)
       INT32 m_refs = m ? m->refs : 0;
       INT32 refs = t->refs;
       if (refs > m_refs) {
+	if (m) m->flags |= GC_CLEANUP_FREED;
 	do {
-	  if (m) m->flags |= GC_CLEANUP_FREED;
 	  free_type (t);
 	  refs--;
 	} while (refs > m_refs);
