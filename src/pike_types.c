@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.301 2007/04/26 17:24:48 grubba Exp $
+|| $Id: pike_types.c,v 1.302 2007/04/27 13:55:15 grubba Exp $
 */
 
 #include "global.h"
@@ -1041,28 +1041,33 @@ void debug_push_reverse_type(unsigned int type)
 
 /* The marker_set is used as follows:
  *
- *   PT_FLAG_MARKER_n	Indicates that marker #n may be replaced.
+ *   PT_FLAG_MARKER_n	Indicates that marker #n should be kept after
+ *			expansion.
  *
- *   PT_FLAG_ASSIGN_n	Indicates that there's a prior assign to marker #n.
- *			The marker should thus be kept.
+ *   PT_FLAG_ASSIGN_n	Indicates that the assign to marker #n should
+ *			NOT be removed.
  */
 static void debug_push_finished_type_with_markers(struct pike_type *type,
 						  struct pike_type **markers,
 						  INT32 marker_set)
 {
+  INT32 car_set, cdr_set;
  recurse:
 #ifdef PIKE_TYPE_DEBUG
   if (l_flag > 2) {
-    fprintf(stderr,
-	    "push_finished_type_with_markers((%d[%x]),..., 0x%08x)...\n",
-	    type->type, type->flags, marker_set);
+    fprintf(stderr, "push_finished_type_with_markers((");
+    simple_describe_type(type);
+    fprintf(stderr, "),..., 0x%08x)...\n", marker_set);
   }
 #endif /* PIKE_TYPE_DEBUG */
-  if (!(type->flags & (marker_set /*| (marker_set << PT_ASSIGN_SHIFT)*/))) {
-    /* No unassigned markers in this sub-tree */
+  /* We need to replace if there are any markers, or if there's a
+   * non-masked assign.
+   */
+  if (!(type->flags & (~marker_set | PT_FLAG_MARKER) & PT_FLAG_MARK_ASSIGN)) {
+    /* Nothing to replace in this subtree. */
 #ifdef PIKE_TYPE_DEBUG
     if (l_flag > 2) {
-      fprintf(stderr, "No unassigned markers in this subtree.\n");
+      fprintf(stderr, "Nothing to replace in this subtree.\n");
       simple_describe_type(type);
       fprintf(stderr, "\n");
     }
@@ -1071,58 +1076,50 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
     return;
   }
   if ((type->type >= '0') && (type->type <= '9')) {
+    /* Marker. */
     unsigned int m = type->type - '0';
 #ifdef PIKE_TYPE_DEBUG
     if ((l_flag > 2) && m) {
       fprintf(stderr, "Marker %d: %p.\n", m, markers[m]);
     }
 #endif /* PIKE_TYPE_DEBUG */
-    if ((marker_set & (PT_FLAG_MARKER_0 << m)) && markers[m]) {
-      type = dmalloc_touch(struct pike_type *, markers[m]);
-      if (marker_set & (PT_FLAG_ASSIGN_0 << m)) {
-	/* There's a corresponding assignment,
-	 * so we need to keep the marker as well.
-	 */
-#ifdef PIKE_TYPE_DEBUG
-	if (l_flag > 2) {
-	  fprintf(stderr, "Keep marker or with marker value.\n");
-	}
-#endif
-	markers[m] = NULL;
-	push_type('0' + m);
-	push_finished_type_with_markers(type, markers,
-					marker_set & ~(PT_FLAG_MARKER_0 << m));
-	push_type(T_OR);
-	markers[m] = dmalloc_touch(struct pike_type *, type);
-      } else {
-	/* It's a marker we're cleared to replace. */
-#ifdef PIKE_TYPE_DEBUG
-	if (l_flag > 2) {
-	  fprintf(stderr, "Killed marker.\n");
-	}
-#endif
-	marker_set &= ~(PT_FLAG_MARKER_0 << m);
-	goto recurse;
-      }
-    } else if (marker_set & (PT_FLAG_ASSIGN_0 << m)) {
-      /* Keep the marker as-is. */
+    if (markers[m]) {
+      /* The marker has a value. */
+      struct pike_type *type = dmalloc_touch(struct pike_type *, markers[m]);
 #ifdef PIKE_TYPE_DEBUG
       if (l_flag > 2) {
-	fprintf(stderr, "Keep marker and no marker value.\n");
+	fprintf(stderr, "Marker value.\n");
+      }
+#endif
+      /* FIXME: We probably ought to switch to the other marker set here. */
+      markers[m] = NULL;
+      push_finished_type_with_markers(type, markers, 0);
+      if (markers[m]) free_type(markers[m]);
+      markers[m] = dmalloc_touch(struct pike_type *, type);
+    } else {
+	/* The marker has not been set. */
+#ifdef PIKE_TYPE_DEBUG
+      if (l_flag > 2) {
+	fprintf(stderr, "No marker value.\n");
+      }
+#endif
+    }
+    if (marker_set & (PT_FLAG_MARKER_0 << m)) {
+      /* The marker should be kept. */
+#ifdef PIKE_TYPE_DEBUG
+      if (l_flag > 2) {
+	fprintf(stderr, "Keep marker.\n");
       }
 #endif
       push_type(type->type);
-    } else {
-#ifdef PIKE_TYPE_DEBUG
-      if (l_flag > 2) {
-	fprintf(stderr, "Killed marker and no marker value.\n");
-      }
-#endif
+      if (markers[m]) push_type(T_OR);
+    } else if (!markers[m]) {
       push_type(T_ZERO);
     }
     TYPE_STACK_DEBUG("push_finished_type_with_markers");
     return;
   } else if (type->type == T_ASSIGN) {
+    /* Assign. */
     int marker = PTR_TO_INT(type->car);
 #ifdef PIKE_TYPE_DEBUG
     if (l_flag > 2) {
@@ -1130,24 +1127,55 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
 	      CAR_TO_INT(type));
     }
 #endif /* PIKE_TYPE_DEBUG */
-    if ((marker_set & (PT_FLAG_ASSIGN_0 << marker)) && markers[marker])
-    {
-      /* The marker has already been set. Remove it. */
+    if (marker_set & (PT_FLAG_ASSIGN_0 << marker)) {
+      /* The assignment should be kept as-is. */
+#ifdef PIKE_TYPE_DEBUG
+      if (l_flag > 2) {
+	fprintf(stderr, "Keep assignment.\n");
+      }
+#endif /* PIKE_TYPE_DEBUG */
+      /* Clear the flag. */
+      push_finished_type_with_markers(type->cdr, markers,
+				      marker_set &
+				      ~(PT_FLAG_ASSIGN_0 << marker));
+      push_assign_type('0' + marker);
+      TYPE_STACK_DEBUG("push_finished_type_with_markers");
+      return;
+    } else {
+#ifdef PIKE_TYPE_DEBUG
+      if (l_flag > 2) {
+	fprintf(stderr, "Strip assignment.\n");
+      }
+#endif /* PIKE_TYPE_DEBUG */
       type = type->cdr;
       goto recurse;
     }
-    /* Remove the corresponding marker from the set to replace. */
-    marker_set &= ~(PT_FLAG_MARKER_0 << marker);
-    push_finished_type_with_markers(type->cdr, markers, marker_set);
-    push_assign_type('0' + marker);
-    TYPE_STACK_DEBUG("push_finished_type_with_markers");
-    return;
   } else if (type->type == PIKE_T_NAME) {
     /* Strip the name, since it won't be correct anymore. */
     type = type->cdr;
     goto recurse;
+  } else if (type->type == PIKE_T_ATTRIBUTE) {
+    /* Keep the attribute. */
+    push_finished_type_with_markers(type->cdr, markers, marker_set);
+    push_type_attribute((struct pike_string *)type->car);
   }
   /* FIXME: T_SCOPE */
+
+  if (type->car) {
+    /* Keep markers for assigns in the car. */
+    cdr_set = marker_set |
+      ((type->car->flags & PT_FLAG_ASSIGN)>>PT_ASSIGN_SHIFT);
+  } else {
+    cdr_set = marker_set;
+  }
+  if (type->cdr) {
+    /* Keep assigns for markers in the cdr. */
+    car_set = marker_set |
+      ((type->cdr->flags & PT_FLAG_MARKER)<<PT_ASSIGN_SHIFT);
+  } else {
+    car_set = marker_set;
+  }
+
   if ((type->type == T_OR) || (type->type == T_AND)) {
     /* Special case handling for implicit zero. */
     /* FIXME: Probably ought to use {or,and}_pike_types() here.
@@ -1155,15 +1183,13 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
      */
 
     type_stack_mark();
-    /* We want to keep markers that have assigns. */
-    push_finished_type_with_markers(type->cdr, markers,
-				    marker_set |
-				    (type->car->flags & PT_FLAG_ASSIGN));
+    /* We want to keep markers that have assigns in the car. */
+    push_finished_type_with_markers(type->cdr, markers, cdr_set);
     if (type->type == T_OR) {
       struct pike_type *first = pop_type();
       struct pike_type *second;
       struct pike_type *res;
-      push_finished_type_with_markers(type->car, markers, marker_set);
+      push_finished_type_with_markers(type->car, markers, car_set);
       second = pop_unfinished_type();
       push_finished_type(res = or_pike_types(first, second, 1));
       free_type(second);
@@ -1173,7 +1199,7 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
       pop_stack_mark();
     } else {
       type_stack_mark();
-      push_finished_type_with_markers(type->car, markers, marker_set);
+      push_finished_type_with_markers(type->car, markers, car_set);
       if (peek_type_stack() == zero_type_string) {
 	free_type(pop_unfinished_type());
 	free_type(pop_unfinished_type());
@@ -1184,19 +1210,13 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
 	push_type(T_AND);
       }
     }
-  } else if (type->type == PIKE_T_ATTRIBUTE) {
-    /* Keep the attribute. */
-    push_finished_type_with_markers(type->cdr, markers, marker_set);
-    push_type_attribute((struct pike_string *)type->car);
   } else {
     if (type->cdr) {
-      /* We want to keep markers that have assigns. */
-      push_finished_type_with_markers(type->cdr, markers,
-				      marker_set |
-				      (type->car->flags & PT_FLAG_ASSIGN));
+      /* In all other cases type->cdr will be a valid node if is not NULL. */
+      push_finished_type_with_markers(type->cdr, markers, cdr_set);
     }
     /* In all other cases type->car will be a valid node. */
-    push_finished_type_with_markers(type->car, markers, marker_set);
+    push_finished_type_with_markers(type->car, markers, car_set);
     /* push_type has sufficient magic to recreate the type. */
     push_type(type->type);
   }
@@ -3156,7 +3176,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 #endif /* PIKE_DEBUG */
 
 	type_stack_mark();
-	push_finished_type_with_markers(b, b_markers, PT_FLAG_MARKER);
+	push_finished_type_with_markers(b, b_markers, 0);
 	tmp = pop_unfinished_type();
 
 	type_stack_mark();
@@ -3258,7 +3278,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
 	struct pike_type *tmp;
 
 	type_stack_mark();
-	push_finished_type_with_markers(a, a_markers, PT_FLAG_MARKER);
+	push_finished_type_with_markers(a, a_markers, 0);
 	tmp=pop_unfinished_type();
 
 	type_stack_mark();
@@ -3710,9 +3730,9 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 
       type_stack_mark();
       if (flags & LE_A_B_SWAPPED) {
-	push_finished_type_with_markers(b, a_markers, PT_FLAG_MARKER);
+	push_finished_type_with_markers(b, a_markers, 0);
       } else {
-	push_finished_type_with_markers(b, b_markers, PT_FLAG_MARKER);
+	push_finished_type_with_markers(b, b_markers, 0);
       }
       for(i=array_cnt; i > 0; i--)
 	push_type(T_ARRAY);
@@ -3823,9 +3843,9 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 
       type_stack_mark();
       if (flags & LE_A_B_SWAPPED) {
-	push_finished_type_with_markers(a, b_markers, PT_FLAG_MARKER);
+	push_finished_type_with_markers(a, b_markers, 0);
       } else {
-	push_finished_type_with_markers(a, a_markers, PT_FLAG_MARKER);
+	push_finished_type_with_markers(a, a_markers, 0);
       }
       for(i = array_cnt; i < 0; i++)
 	push_type(T_ARRAY);
@@ -4302,7 +4322,7 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
       /* FALL_THROUGH */
     case T_MANY:
       a = a->cdr;
-      push_finished_type_with_markers(a, a_markers, PT_FLAG_MARKER);
+      push_finished_type_with_markers(a, a_markers, 0);
       return 1;
 
     case T_PROGRAM:
@@ -5761,7 +5781,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
       }
     }
     type_stack_mark();
-    push_finished_type_with_markers(fun_type, b_markers, PT_FLAG_MARKER);
+    push_finished_type_with_markers(fun_type, b_markers, 0);
     res = pop_unfinished_type();
     if (tmp) free_type(tmp);
 
@@ -6082,7 +6102,7 @@ struct pike_type *new_get_return_type(struct pike_type *fun_type,
 
   /* Get rid of any remaining markers. */
   clear_markers();
-  push_finished_type_with_markers(res, a_markers, PT_FLAG_MARKER);
+  push_finished_type_with_markers(res, a_markers, 0);
 
   free_type(res);
 
