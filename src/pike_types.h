@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.107 2007/04/25 22:10:05 mast Exp $
+|| $Id: pike_types.h,v 1.108 2007/04/27 13:53:45 grubba Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -67,6 +67,8 @@ BLOCK_ALLOC(pike_type, n/a);
 #define PT_FLAG_ASSIGN_8	0x100000	/* The subtree assigns '8'. */
 #define PT_FLAG_ASSIGN_9	0x200000	/* The subtree assigns '9'. */
 #define PT_FLAG_ASSIGN		0x3ff000	/* The subtree holds assigns. */
+
+#define PT_FLAG_MARK_ASSIGN	0x3ff3ff	/* Assigns AND Markers. */
 
 /*
  * new_check_call() flags
