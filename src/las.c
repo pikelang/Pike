@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.389 2007/04/27 09:28:10 grubba Exp $
+|| $Id: las.c,v 1.390 2007/04/27 14:39:53 grubba Exp $
 */
 
 #include "global.h"
@@ -3793,14 +3793,20 @@ void fix_type_field(node *n)
       /* Ensure that the type-fields are up to date. */
       fix_type_field(CAR(n));
       fix_type_field(CDR(n));
-#if 1
+#if 0
+      /* This test isn't sufficient, see below. */
       check_node_type(CAR(n), CDR(n)->type, "Bad type in assignment.");
-#else /* !1 */
+#else /* !0 */
       if (!pike_types_le(CAR(n)->type, CDR(n)->type)) {
 	/* a["b"]=c and a->b=c can be valid when a is an array.
-	 *
+	 *   
 	 * FIXME: Exactly what case is the problem?
 	 *	/grubba 2005-02-15
+	 *
+	 * Example:
+	 *   array tmp = ({([]),([])});
+	 *   tmp->foo = 7;		// Multi-assign.
+	 *	/grubba 2007-04-27
 	 */
 	if (((CDR(n)->token != F_INDEX && CDR(n)->token != F_ARROW) ||
 	     !((TEST_COMPAT (7, 6) && /* Bug compatibility. */
@@ -3809,22 +3815,28 @@ void fix_type_field(node *n)
 	    !match_types(CDR(n)->type,CAR(n)->type)) {
 	  yytype_error("Bad type in assignment.",
 		       CDR(n)->type, CAR(n)->type, 0);
-	} else if (lex.pragmas & ID_STRICT_TYPES) {
-	  struct pike_string *t1 = describe_type(CAR(n)->type);
-	  struct pike_string *t2 = describe_type(CDR(n)->type);
+	} else {
+	  if (lex.pragmas & ID_STRICT_TYPES) {
+	    struct pike_string *t1 = describe_type(CAR(n)->type);
+	    struct pike_string *t2 = describe_type(CDR(n)->type);
 #ifdef PIKE_DEBUG
-	  if (l_flag > 0) {
-	    fputs("Warning: Invalid assignment: ", stderr);
-	    print_tree(n);
-	  }
+	    if (l_flag > 0) {
+	      fputs("Warning: Invalid assignment: ", stderr);
+	      print_tree(n);
+	    }
 #endif /* PIKE_DEBUG */
-	  yywarning("An expression of type %S cannot be assigned to "
-		    "a variable of type %S.", t1, t2);
-	  free_string(t2);
-	  free_string(t1);
+	    yywarning("An expression of type %S cannot be assigned to "
+		      "a variable of type %S.", t1, t2);
+	    free_string(t2);
+	    free_string(t1);
+	  }
+	  if (runtime_options & RUNTIME_CHECK_TYPES) {
+	    n->node_info |= OPT_DEFROSTED;
+	    _CAR(n) = mksoftcastnode(CDR(n)->type, CAR(n));
+	  }
 	}
       }
-#endif /* 1 */
+#endif /* 0 */
       n->type = and_pike_types(CAR(n)->type, CDR(n)->type);
     }
     break;
