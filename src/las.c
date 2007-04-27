@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.388 2007/04/16 12:35:13 grubba Exp $
+|| $Id: las.c,v 1.389 2007/04/27 09:28:10 grubba Exp $
 */
 
 #include "global.h"
@@ -27,9 +27,10 @@
 #include "peep.h"
 #include "builtin_functions.h"
 #include "cyclic.h"
-#include "block_alloc.h"
 #include "opcodes.h"
 #include "pikecode.h"
+#include "gc.h"
+#include "block_alloc.h"
 
 /* Define this if you want the optimizer to be paranoid about aliasing
  * effects to to indexing.
@@ -3528,7 +3529,7 @@ void yytype_error(char *msg, struct pike_type *expected_t,
   if (msg)
   {
     if (flags & YYTE_IS_WARNING)
-      yywarning("%S", msg);
+      yywarning("%s", msg);
     else
       yyerror(msg);
   }
@@ -3656,8 +3657,40 @@ static struct pike_string *get_name_of_function(node *n)
   case F_SOFT_CAST:
     name = get_name_of_function(CAR(n));
     break;
+
+  case F_TRAMPOLINE:
+    MAKE_CONST_STRING(name, "trampoline function");
+    break;
+
+  case F_LOCAL:
+    MAKE_CONST_STRING(name, "local variable");
+    break;
+
+  case F_APPLY:
+    if ((CAR(n)->token == F_CONSTANT) &&
+	(CAR(n)->u.sval.type == T_FUNCTION) &&
+	(CAR(n)->u.sval.subtype == FUNCTION_BUILTIN) &&
+	(CAR(n)->u.sval.u.efun->function == debug_f_aggregate)) {
+      if (CDR(n)) {
+	n = CDR(n);
+	while (n && (n->token == F_ARG_LIST)) n = CAR(n);
+	if (n) {
+	  /* FIXME: Should really join the names of all the args. */
+	  name = get_name_of_function(n);
+	} else {
+	  MAKE_CONST_STRING(name, "dynamic array");
+	}
+      } else {
+	MAKE_CONST_STRING(name, "empty array");
+      }
+    } else {
+      MAKE_CONST_STRING(name, "returned value");
+    }
+    break;
 	  
   default:
+    /* fprintf(stderr, "Node token: %s(%d)\n",
+       get_f_name(n->token), n->token); */
     MAKE_CONST_STRING(name, "unknown function");
   }
 #ifdef PIKE_DEBUG
@@ -3760,6 +3793,9 @@ void fix_type_field(node *n)
       /* Ensure that the type-fields are up to date. */
       fix_type_field(CAR(n));
       fix_type_field(CDR(n));
+#if 1
+      check_node_type(CAR(n), CDR(n)->type, "Bad type in assignment.");
+#else /* !1 */
       if (!pike_types_le(CAR(n)->type, CDR(n)->type)) {
 	/* a["b"]=c and a->b=c can be valid when a is an array.
 	 *
@@ -3782,12 +3818,13 @@ void fix_type_field(node *n)
 	    print_tree(n);
 	  }
 #endif /* PIKE_DEBUG */
-	  yywarning("An expression type %S cannot be assigned to "
+	  yywarning("An expression of type %S cannot be assigned to "
 		    "a variable of type %S.", t1, t2);
 	  free_string(t2);
 	  free_string(t1);
 	}
       }
+#endif /* 1 */
       n->type = and_pike_types(CAR(n)->type, CDR(n)->type);
     }
     break;
