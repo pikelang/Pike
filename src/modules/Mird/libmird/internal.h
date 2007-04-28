@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: internal.h,v 1.6 2002/10/11 01:39:46 nilsson Exp $
+|| $Id: internal.h,v 1.7 2007/04/28 18:19:36 grubba Exp $
 */
 
 /*
@@ -34,9 +34,9 @@
 /* what method to sync? */
 
 #ifdef HAVE_FDATASYNC
-#define FDATASYNC fdatasync
+#define MIRD_FDATASYNC fdatasync
 #else
-#define FDATASYNC fsync
+#define MIRD_FDATASYNC fsync
 #endif
 
 /* what lseek? */

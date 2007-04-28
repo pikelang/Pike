@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: transaction.c,v 1.4 2002/10/11 01:39:47 nilsson Exp $
+|| $Id: transaction.c,v 1.5 2007/04/28 18:19:36 grubba Exp $
 */
 
 /*
@@ -33,7 +33,7 @@
 
 
 static const char RCSID[]=
-   "$Id: transaction.c,v 1.4 2002/10/11 01:39:47 nilsson Exp $";
+   "$Id: transaction.c,v 1.5 2007/04/28 18:19:36 grubba Exp $";
 
 /*
  * start a new transaction
@@ -381,10 +381,10 @@ clean:
    if ( (mtr->db->flags & MIRD_SYNC_END) )
    {
       MIRD_SYSCALL_COUNT(mtr->db,0);
-      if ( FDATASYNC(mtr->db->db_fd)==-1 )
+      if ( MIRD_FDATASYNC(mtr->db->db_fd)==-1 )
 	 return mird_generate_error(MIRDE_DB_SYNC,0,errno,0);
       MIRD_SYSCALL_COUNT(mtr->db,0);
-      if ( FDATASYNC(mtr->db->jo_fd)==-1 )
+      if ( MIRD_FDATASYNC(mtr->db->jo_fd)==-1 )
 	 return mird_generate_error(MIRDE_JO_SYNC,0,errno,0);
       if ( ( mtr->db->flags & MIRD_CALL_SYNC ) )
       {

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: database.c,v 1.6 2002/10/11 01:39:46 nilsson Exp $
+|| $Id: database.c,v 1.7 2007/04/28 18:19:36 grubba Exp $
 */
 
 /*
@@ -31,7 +31,7 @@
 #endif
 
 static const char RCSID[]=
-   "$Id: database.c,v 1.6 2002/10/11 01:39:46 nilsson Exp $";
+   "$Id: database.c,v 1.7 2007/04/28 18:19:36 grubba Exp $";
 
 /* forward declarations */
 
@@ -270,11 +270,11 @@ static MIRD_RES mird_clean(struct mird *db)
    if ( (res=mird_save_state(db,0)) ) return res; /* still dirty */
 
    MIRD_SYSCALL_COUNT(db,0);
-   if ( FDATASYNC(db->jo_fd)==-1 )
+   if ( MIRD_FDATASYNC(db->jo_fd)==-1 )
       return mird_generate_error(MIRDE_JO_SYNC,0,errno,0);
 
    MIRD_SYSCALL_COUNT(db,0);
-   if ( FDATASYNC(db->db_fd)==-1 )
+   if ( MIRD_FDATASYNC(db->db_fd)==-1 )
       return mird_generate_error(MIRDE_DB_SYNC,0,errno,0);
 
    if ( ( db->flags & MIRD_CALL_SYNC ) )
@@ -286,7 +286,7 @@ static MIRD_RES mird_clean(struct mird *db)
    if ( (res=mird_save_state(db,1)) ) return res; /* clean now */
 
    MIRD_SYSCALL_COUNT(db,0);
-   if ( FDATASYNC(db->db_fd)==-1 )
+   if ( MIRD_FDATASYNC(db->db_fd)==-1 )
       return mird_generate_error(MIRDE_DB_SYNC,0,errno,0);
 
    if ( ( db->flags & MIRD_CALL_SYNC ) )
