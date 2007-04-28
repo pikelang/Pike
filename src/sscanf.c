@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.165 2005/09/01 12:59:20 mast Exp $
+|| $Id: sscanf.c,v 1.166 2007/04/28 20:02:13 per Exp $
 */
 
 #include "global.h"
@@ -251,6 +251,7 @@ static void *pcharp_to_svalue_percent_o(struct svalue *res,
    *
   operators:
   %d
+  %H
   %s
   %f
   %c
@@ -834,6 +835,59 @@ CHAROPT2(								 \
 	  }								 \
 	  break;							 \
         }								 \
+ 								         \
+      case 'H':								\
+	{								\
+          int e,len=0;							\
+          if(field_length == -1)					\
+	    field_length=1;						\
+          if(eye+field_length > input_len)				\
+	  {								\
+	    chars_matched[0]=eye;					\
+	    return matches;						\
+	  }								\
+          for(e=0;e<field_length;e++)					\
+          {								\
+	    if(input[eye+e]>255)					\
+	    {								\
+	      chars_matched[0]=eye;					\
+	      return matches;						\
+	    }								\
+          }								\
+	  if (minus_flag)						\
+	  {								\
+	    int x, pos=0;						\
+	    pos = (eye += field_length);				\
+            while(--field_length >= 0)					\
+	    {								\
+	      len<<=8;							\
+	      len |= input[--pos];					\
+	    }								\
+	  } else {							\
+	    while(--field_length >= 0)					\
+	    {								\
+	      len<<=8;							\
+	      len |= input[eye];					\
+	      eye++;							\
+	    }								\
+	  }								\
+	  if(eye+len > input_len)					\
+	  {								\
+	    chars_matched[0]=eye-field_length;				\
+	    return matches;						\
+	  }								\
+	  if (no_assign) {						\
+	    no_assign = 2;						\
+	  } else {							\
+	    sval.type=T_STRING;						\
+	    DO_IF_CHECKER(sval.subtype=0);				\
+	    sval.u.string=PIKE_CONCAT(make_shared_binary_string,	\
+				      INPUT_SHIFT)(input+eye,		\
+						   len);		\
+	  }								\
+	  eye+=len;							\
+	  break;							\
+        }								\
 									 \
         case 'b':							 \
         case 'o':							 \
