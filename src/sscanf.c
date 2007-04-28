@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.166 2007/04/28 20:02:13 per Exp $
+|| $Id: sscanf.c,v 1.167 2007/04/28 23:23:58 nilsson Exp $
 */
 
 #include "global.h"
@@ -1451,6 +1451,12 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
  *!     characters. If followed by a %[], %s will only read characters not
  *!     present in the set. If followed by normal text, %s will match all
  *!     characters up to but not including the first occurrence of that text.
+ *!   @value "%H"
+ *!     Reads a hollorith-encoded string, i.e. first reads the length
+ *!     of the string and then that number of characters. The size and
+ *!     byte order of the length descriptor can be modified in the
+ *!     same way as @tt{%c@}. As an example @expr{"%2H"@} first reads
+ *!     @expr{"%2c"@} and then the resulting number of characters.
  *!   @value "%[set]"
  *!     Matches a string containing a given set of characters (those given
  *!     inside the brackets). %[^set] means any character except those inside
