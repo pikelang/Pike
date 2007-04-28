@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.141 2007/04/25 15:50:46 grubba Exp $
+|| $Id: sprintf.c,v 1.142 2007/04/28 23:24:24 nilsson Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -167,7 +167,7 @@
  *!     @value 'n'
  *!       No argument. Same as '%s' with an empty string as argument.
  *!       Note: Does take an argument array (but ignores its content)
- *!       if the modifier '@' is active.
+ *!       if the modifier '@@' is active.
  *!     @value 't'
  *!       Type of the argument.
  *!     @value '{'
