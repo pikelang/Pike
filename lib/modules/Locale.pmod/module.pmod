@@ -44,11 +44,6 @@ static mapping(string:string) projects = ([]);
 static mapping(string:mapping(string:object)) locales = ([]);
 static string default_project;
 
-static void create()
-{
-  call_out(clean_cache, CLEAN_CYCLE);
-}
-
 void register_project(string name, string path, void|string path_base)
   //! Make a connection between a project name and where its
   //! localization files can be found. The mapping from project
@@ -61,8 +56,8 @@ void register_project(string name, string path, void|string path_base)
   }
   if(projects[name] && projects[name]!=path) {
     // Same name, but new path. Remove all depreciated objects
-    foreach(indices(locales), string lang)
-      m_delete(locales[lang], name);
+    foreach(locales;; mapping(string:object) lang)
+      m_delete(lang, name);
 #ifdef LOCALE_DEBUG
     werror("\nChanging project %s from %s to %s\n",
 	   name, projects[name], path);
@@ -99,9 +94,12 @@ array(string) list_languages(string project)
   if(!projects[project])
     return ({});
 
-  if(!locales[0])
+  if(!locales[0]) {
+    if(!sizeof(locales))
+      call_out(clean_cache, CLEAN_CYCLE);
     // language==0 not allowed, so this is good for internal data
     locales[0] = ([]);
+  }
   else if(locales[0][project] &&
 	  // Only cache list for three minutes
 	  ((3*60 + locales[0][project]->timestamp) > time(1) )) {
@@ -189,11 +187,11 @@ class LocaleObject
   int estimate_size()
   {
     int size=2*64+8; //Two mappings and a timestamp
-    foreach(indices(bindings), string|int id) {
+    foreach(bindings; string|int id; string str) {
       size+=8;
       if(stringp(id)) size+=sizeof(id);
       else size+=4;
-      size+=sizeof(bindings[id]);
+      size+=sizeof(str);
     }
     size+=32*sizeof(functions); // The actual functions are not included though...
     size+=sizeof( indices(functions)*"" );
@@ -225,6 +223,8 @@ object get_object(string project, string lang) {
   // Is there already a locale object?
   LocaleObject locale_object;
   if(!locales[lang]) {
+    if(!sizeof(locales))
+      call_out(clean_cache, CLEAN_CYCLE);
     locales[lang] = ([]);
   }
   else if(locale_object=locales[lang][project]) {
@@ -331,15 +331,16 @@ object get_object(string project, string lang) {
     // Replace encoded entities
     c = replace(c, ({"&lt;","&gt;","&amp;"}),
 		({ "<",   ">",    "&"  }));
-    object gazonk;
-    if(catch( gazonk=compile_string("class gazonk {"+
-				    c+"}")->gazonk() )) {
+    object wrapper;
+    if(catch( wrapper=compile_string("class gazonk {"+
+                                     c+"}")->gazonk() )) {
       werror("\n* Warning: could not compile code in "
 	     "<pike> in %O\n", filename);
       return 0;
     }
-    foreach(indices(gazonk), string name)
-      functions[name]=gazonk[name];
+    foreach(wrapper; string name; function f)
+      if(functionp(f))
+        functions[name]=f;
     return 0;
   };
 
@@ -368,7 +369,7 @@ mapping(string:object) get_objects(string lang)
 {
   if(!lang)
     return 0;
-  foreach(indices(projects), string project)
+  foreach(projects; string project;)
     get_object(project, lang);
   return locales[lang];
 }
@@ -413,14 +414,14 @@ function call(string project, string lang, string name,
 void clean_cache() {
   remove_call_out(clean_cache);
   int t = time(1)-CLEAN_CYCLE;
-  foreach(indices(locales), string lang) {
-    foreach(indices(locales[lang]), string proj) {
-      if(objectp(locales[lang][proj]) &&
-	 locales[lang][proj]->timestamp < t) {
+  foreach(locales; string lang_str; mapping lang) {
+    foreach(lang; string proj_str; object proj) {
+      if(objectp(proj) && proj->timestamp < t) {
 #ifdef LOCALE_DEBUG	
-	werror("\nLocale.clean_cache: Removing project %O in %O\n",proj,lang);
+	werror("\nLocale.clean_cache: Removing project %O in %O\n",
+               proj_str, lang_str);
 #endif
-	m_delete(locales[lang], proj);
+	m_delete(lang, proj);
       }
     }
   }
@@ -436,10 +437,10 @@ void flush_cache() {
   // but then things would probably stop working.
 }
 
-mapping cache_status() {
+mapping(string:int) cache_status() {
   int size=0, lp=0;
-  foreach(values(locales), mapping l)
-    foreach(values(l), object o) {
+  foreach(locales;; mapping l)
+    foreach(l;; object o) {
       if(!o->is_locale) continue;
       lp++;
       size+=o->estimate_size();
