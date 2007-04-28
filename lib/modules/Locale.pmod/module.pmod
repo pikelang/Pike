@@ -44,11 +44,6 @@ static mapping(string:string) projects = ([]);
 static mapping(string:mapping(string:object)) locales = ([]);
 static string default_project;
 
-static void create()
-{
-  call_out(clean_cache, CLEAN_CYCLE);
-}
-
 void register_project(string name, string path, void|string path_base)
   //! Make a connection between a project name and where its
   //! localization files can be found. The mapping from project
@@ -99,9 +94,12 @@ array(string) list_languages(string project)
   if(!projects[project])
     return ({});
 
-  if(!locales[0])
+  if(!locales[0]) {
+    if(!sizeof(locales))
+      call_out(clean_cache, CLEAN_CYCLE);
     // language==0 not allowed, so this is good for internal data
     locales[0] = ([]);
+  }
   else if(locales[0][project] &&
 	  // Only cache list for three minutes
 	  ((3*60 + locales[0][project]->timestamp) > time(1) )) {
@@ -225,6 +223,8 @@ object get_object(string project, string lang) {
   // Is there already a locale object?
   LocaleObject locale_object;
   if(!locales[lang]) {
+    if(!sizeof(locales))
+      call_out(clean_cache, CLEAN_CYCLE);
     locales[lang] = ([]);
   }
   else if(locale_object=locales[lang][project]) {
