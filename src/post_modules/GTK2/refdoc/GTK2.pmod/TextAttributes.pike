@@ -17,7 +17,3 @@ static GTK2.TextAttributes create( );
 //!
 //!
 
-GTK2.TextAttributes destroy( );
-//! Destructor.
-//!
-//!

@@ -1,3 +1,5 @@
+//! A filter for selecting a file subset.
+//!
 //!
 
 inherit GTK2.Data;

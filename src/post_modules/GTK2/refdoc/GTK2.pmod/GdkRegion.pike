@@ -9,10 +9,6 @@ static GDK2.Region create( );
 //!
 //!
 
-GDK2.Region destroy( );
-//! Destructor.
-//!
-//!
 
 int equal( GTK2.GdkRegion victim );
 //! Return true if the region used as an argument is equal to the

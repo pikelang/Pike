@@ -1,3 +1,12 @@
+//! Interface for text-editing widgets.
+//!
+//!
+//!  Signals:
+//! @b{changed@}
+//!
+//! @b{delete_text@}
+//!
+//! @b{insert_text@}
 //!
 
 GTK2.Editable copy_clipboard( );

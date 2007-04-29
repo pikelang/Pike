@@ -1,3 +1,10 @@
+//! A colormap is an object that contains the mapping between the
+//! color values stored in memory and the RGB values that are used to
+//! display color values. In general, colormaps only contain
+//! significant information for pseudo-color visuals, but even for
+//! other visual types, a colormap object is required in some
+//! circumstances.
+//!
 //!
 
 int alloc_color( GTK2.GdkColor color, int writeable, int best_match );

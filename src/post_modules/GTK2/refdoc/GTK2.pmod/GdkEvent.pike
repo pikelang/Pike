@@ -13,7 +13,3 @@ mixed cast( string to );
 //!
 //!
 
-GDK2.Event destroy( );
-//! Destructor.
-//!
-//!

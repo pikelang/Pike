@@ -12,10 +12,6 @@ G.Object accel_groups_activate( int accel_key, int accel_mods );
 //!
 //!
 
-G.Object destroy( );
-//! Destructor.
-//!
-//!
 
 mixed get_property( string property );
 //! Get a property.

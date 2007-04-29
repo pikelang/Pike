@@ -11,7 +11,3 @@
 
 inherit G.Object;
 
-GTK2.Object destroy( );
-//! Destructor.
-//!
-//!

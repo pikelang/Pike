@@ -9,10 +9,6 @@ GTK2.Clipboard clear( );
 //!
 //!
 
-GTK2.Clipboard destroy( );
-//! Destructor.
-//!
-//!
 
 GTK2.Clipboard get( GDK2.Atom selection );
 //! Returns the clipboard object for the given selection.

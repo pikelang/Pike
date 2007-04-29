@@ -1,3 +1,5 @@
+//! An interface for packing cells.
+//!
 //!
 
 GTK2.CellLayout add_attribute( GTK2.CellRenderer cell, string attribute, int column );

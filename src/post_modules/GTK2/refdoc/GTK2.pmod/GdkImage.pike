@@ -23,11 +23,6 @@ static GDK2.Image create( int|void fast_mode, Image.Image|void image );
 //!
 //!
 
-GDK2.Image destroy( );
-//! Destructor. Destroys the image. Automatically called by pike when
-//! the object is destructed.
-//!
-//!
 
 int get_pixel( int x, int y );
 //! Get the pixel value of a pixel as a X-pixel value.

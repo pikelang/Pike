@@ -28,10 +28,6 @@ static Pango.FontDescription create( string|void desc );
 //!
 //!
 
-Pango.FontDescription destroy( );
-//! Destructor.
-//!
-//!
 
 int equal( GTK2.Pango.FontDescription desc );
 //! Compares two font descriptions for equality.

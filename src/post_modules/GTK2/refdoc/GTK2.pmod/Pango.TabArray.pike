@@ -14,10 +14,6 @@ static Pango.TabArray create( int initial_size, int position_in_pixels );
 //!
 //!
 
-Pango.TabArray destroy( );
-//! Destructor.
-//!
-//!
 
 int get_positions_in_pixels( );
 //! Returns true if the tab positions are in pixels, false if they are in

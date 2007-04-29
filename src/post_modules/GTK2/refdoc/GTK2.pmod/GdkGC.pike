@@ -20,10 +20,6 @@ static GDK2.GC create( GTK2.Widget context, mapping|void attributes );
 //!
 //!
 
-GDK2.GC destroy( );
-//! Free the gc, called automatically by pike when the object is destroyed.
-//!
-//!
 
 GTK2.GdkScreen get_screen( );
 //! Gets the screen.

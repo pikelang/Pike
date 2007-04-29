@@ -44,10 +44,6 @@ static GTK2.IconSet create( GTK2.GdkPixbuf pixbuf );
 //!
 //!
 
-GTK2.IconSet destroy( );
-//! Destructor.
-//!
-//!
 
 array get_sizes( );
 //! Obtains a list of icon sizes this icon set can render.

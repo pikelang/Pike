@@ -1,3 +1,8 @@
+//! The interface for sortable models used by TreeView.
+//!
+//!
+//!  Signals:
+//! @b{sort_column_changed@}
 //!
 
 mapping get_sort_column_id( );

@@ -142,10 +142,6 @@ int compare( GTK2.TextIter rhs );
 //!
 //!
 
-GTK2.TextIter destroy( );
-//! Destructor.
-//!
-//!
 
 int editable( int default_setting );
 //! Returns whether the character at this location is within an editable

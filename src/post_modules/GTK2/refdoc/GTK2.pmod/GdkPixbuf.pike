@@ -69,7 +69,7 @@ static GDK2.Pixbuf create( string|mapping options );
 //! Create a GDK2.Pixbuf object.  options is either a filename or a mapping
 //! of options.  options can be:
 //! @xml{<matrix>@}
-//! @xml{<r>@}@xml{<c>@}filename@xml{</c>@}@xml{<c>@}name of file to load@xml{</c>@}@xml{<r>@}
+//! @xml{<r>@}@xml{<c>@}filename@xml{</c>@}@xml{<c>@}name of file to load@xml{</c>@}@xml{</r>@}
 //! @xml{<r>@}@xml{<c>@}bits@xml{</c>@}@xml{<c>@}number of bits per sample@xml{</c>@}@xml{</r>@}
 //! @xml{<r>@}@xml{<c>@}width@xml{</c>@}@xml{<c>@}width of image@xml{</c>@}@xml{</r>@}
 //! @xml{<r>@}@xml{<c>@}height@xml{</c>@}@xml{<c>@}height of image@xml{</c>@}@xml{</r>@}
@@ -79,12 +79,12 @@ static GDK2.Pixbuf create( string|mapping options );
 //! @xml{<r>@}@xml{<c>@}xpm@xml{</c>@}@xml{<c>@}if this key exists, then value is xpm data to create from@xml{</c>@}@xml{</r>@}
 //! @xml{<r>@}@xml{<c>@}data@xml{</c>@}@xml{<c>@}if this key exists, then value is pixel data
 //! The following is a list of valid keys if key data exists:
-//! <table>
-//! <tr>@xml{<c>@}colorspace@xml{</c>@}@xml{<c>@}colorspace, default GDK2.COLORSPACE_RGB, currently ignored@xml{</c>@}@xml{</r>@}
-//! <tr>@xml{<c>@}rowstride@xml{</c>@}@xml{<c>@}distance in bytes between row starts@xml{</c>@}@xml{</r>@}
+//! @xml{<matrix>@}
+//! @xml{<r>@}@xml{<c>@}colorspace@xml{</c>@}@xml{<c>@}colorspace, default GDK2.COLORSPACE_RGB, currently ignored@xml{</c>@}@xml{</r>@}
+//! @xml{<r>@}@xml{<c>@}rowstride@xml{</c>@}@xml{<c>@}distance in bytes between row starts@xml{</c>@}@xml{</r>@}
 //! @xml{</matrix>@}
 //! @xml{</c>@}@xml{</r>@}
-//!       
+//! @xml{</matrix>@}
 //!
 //!
 

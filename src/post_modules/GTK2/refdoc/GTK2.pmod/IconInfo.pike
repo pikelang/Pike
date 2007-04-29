@@ -1,3 +1,5 @@
+//! Contains information found when looking up an icon in an icon theme.
+//!
 //!
 
 GTK2.IconInfo copy( );
@@ -5,10 +7,6 @@ GTK2.IconInfo copy( );
 //!
 //!
 
-GTK2.IconInfo destroy( );
-//! Destructor.
-//!
-//!
 
 int get_base_size( );
 //! Gets the base size for the icon.  The base size is a size for the icon that

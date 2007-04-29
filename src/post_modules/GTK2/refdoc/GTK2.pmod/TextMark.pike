@@ -4,10 +4,6 @@
 
 inherit G.Object;
 
-GTK2.TextMark destroy( );
-//! Destructor.
-//!
-//!
 
 GTK2.TextBuffer get_buffer( );
 //! Gets the buffer this mark is located inside, or empty if the mark

@@ -16,10 +16,6 @@ static GDK2.Pixmap create( int|object image );
 //!
 //!
 
-GDK2.Pixmap destroy( );
-//! Destructor. Destroys the pixmap.
-//!
-//!
 
 GDK2.Pixmap ref( );
 //! Ref this object.

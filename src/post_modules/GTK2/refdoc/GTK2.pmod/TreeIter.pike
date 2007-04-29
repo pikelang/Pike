@@ -7,7 +7,3 @@ GTK2.TreeIter copy( );
 //!
 //!
 
-GTK2.TreeIter destroy( );
-//! Destructor.
-//!
-//!

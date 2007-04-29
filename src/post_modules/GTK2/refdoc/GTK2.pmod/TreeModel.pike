@@ -1,3 +1,16 @@
+//! The tree interface used by TreeView.
+//!
+//!
+//!  Signals:
+//! @b{row_changed@}
+//!
+//! @b{row_deleted@}
+//!
+//! @b{row_has_child_toggled@}
+//!
+//! @b{row_inserted@}
+//!
+//! @b{rows_reordered@}
 //!
 
 int get_column_type( int index );

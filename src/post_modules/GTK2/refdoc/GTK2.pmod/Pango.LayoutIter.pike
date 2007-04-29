@@ -7,10 +7,6 @@ int at_last_line( );
 //!
 //!
 
-Pango.LayoutIter destroy( );
-//! Destructor.
-//!
-//!
 
 int get_baseline( );
 //! Gets the y position of the current line's baseline, in layout coordinates

@@ -25,10 +25,6 @@ static GTK2.TreePath create( string|void path );
 //!
 //!
 
-GTK2.TreePath destroy( );
-//! Destructor.
-//!
-//!
 
 GTK2.TreePath down( );
 //! Moves path to point to the first child of the current path.

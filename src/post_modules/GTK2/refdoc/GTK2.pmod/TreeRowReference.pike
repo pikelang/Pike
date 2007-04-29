@@ -14,10 +14,6 @@ static GTK2.TreeRowReference create( GTK2.TreeModel model, GTK2.TreePath path );
 //!
 //!
 
-GTK2.TreeRowReference destroy( );
-//! Destructor.
-//!
-//!
 
 GTK2.TreeModel get_model( );
 //! Returns the model which this references is monitoring.

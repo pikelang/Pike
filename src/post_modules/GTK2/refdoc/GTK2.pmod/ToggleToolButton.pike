@@ -1,3 +1,8 @@
+//! A ToolItem containing a toggle button.
+//!
+//!
+//!  Signals:
+//! @b{toggled@}
 //!
 
 inherit GTK2.ToolButton;

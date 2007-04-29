@@ -1,3 +1,8 @@
+//! Looking up icons by name.
+//!
+//!
+//!  Signals:
+//! @b{changed@}
 //!
 
 inherit G.Object;
