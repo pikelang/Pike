@@ -21,7 +21,7 @@
 inherit GTK2.Dialog;
 
 static GTK2.AboutDialog create( mapping|void props );
-//! Create a new GTK.AboutDialog.
+//! Create a new GTK2.AboutDialog.
 //!
 //!
 

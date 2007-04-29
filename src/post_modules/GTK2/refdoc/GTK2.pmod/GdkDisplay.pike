@@ -45,6 +45,11 @@ GTK2.GdkWindow get_default_group( );
 //!
 //!
 
+GTK2.GdkScreen get_default_screen( );
+//! Get the default screen.
+//!
+//!
+
 GTK2.GdkEvent get_event( );
 //! Gets the next GDK2.Event to be processed, fetching events from the
 //! windowing system if necessary.
@@ -56,6 +61,11 @@ mapping get_maximal_cursor_size( );
 //!
 //!
 
+int get_n_screens( );
+//! Gets the number of screens managed by the display.
+//!
+//!
+
 string get_name( );
 //! Gets the name of the display.
 //!
@@ -63,6 +73,11 @@ string get_name( );
 
 mapping get_pointer( );
 //! Gets the current location of the pointer and the current modifier mask.
+//!
+//!
+
+GTK2.GdkScreen get_screen( int screen_num );
+//! Returns a screen for one of the screens.
 //!
 //!
 
@@ -126,6 +141,11 @@ GDK2.Display set_double_click_time( int msec );
 //!
 //!
 
+GDK2.Display store_clipboard( GTK2.GdkWindow clipboard_window, array targets );
+//! Issues a request to the clipboard manager to store the clipboard data.
+//!
+//!
+
 int supports_clipboard_persistence( );
 //! Returns whether the specified display supports clipboard persistence, i.e.
 //! if it's possible to store the clipboard data after an application has quit.
@@ -161,5 +181,13 @@ GDK2.Display sync( );
 //! 
 //! This is most useful for X11.  On windowing systems where requests are
 //! handled synchronously, this function will do nothing.
+//!
+//!
+
+GDK2.Display warp_pointer( GTK2.GdkScreen screen, int x, int y );
+//! Warps the pointer to the point x,y on the screen, unless the pointer
+//! is confined to a window by a grab, in which case it will be moved as far
+//! as allowed by the grab.  Warping the pointer creates events as if the
+//! user had moved the mouse instantaneously to the destination.
 //!
 //!

@@ -37,7 +37,7 @@ string get_label( );
 //!
 //!
 
-mapping get_label_align( );
+array get_label_align( );
 //! Retrieves the x and y alignment of the label.
 //!
 //!

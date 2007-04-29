@@ -20,6 +20,7 @@
 //! int orientation
 //! int show-arrow
 //! int toolbar-style
+//! int tooltips
 //! 
 //! Child properties:
 //! int expand

@@ -1,5 +1,6 @@
 //! Properties:
 //! GTK2.TextTagTable tag_table
+//! string text
 //!
 //!
 //!  Signals:

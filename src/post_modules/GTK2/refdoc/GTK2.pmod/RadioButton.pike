@@ -18,7 +18,7 @@
 
 inherit GTK2.CheckButton;
 
-static GTK2.RadioButton create( string|mapping title, GTK2.RadioButton groupmember );
+static GTK2.RadioButton create( string|mapping title, GTK2.RadioButton groupmember, int|void mnemonic );
 //!  Normal creation:
 //! object GTK2.RadioButton(string title) - First button (with label)
 //! object GTK2.RadioButton()->add(widget) - First button (with widget)

@@ -390,6 +390,11 @@ int get_chars_in_line( );
 //!
 //!
 
+GTK2.TextChildAnchor get_child_anchor( );
+//! If this location contains a child anchor, the anchor is returned.
+//!
+//!
+
 int get_line( );
 //! Returns the line number containing this iterator.
 //!
@@ -453,7 +458,7 @@ string get_text( GTK2.TextIter end );
 //!
 //!
 
-array get_toggle_tags( int toggled_on );
+array get_toggled_tags( int toggled_on );
 //! Returns a list of W(TextTag) that are toggled on or off at this point.
 //! (If toggled_on is true, the list contains tags that are toggled on).
 //! If a tag is toggled on at this iterator, then some non-empty range
@@ -568,6 +573,13 @@ GTK2.TextIter set_line_offset( int offset );
 GTK2.TextIter set_offset( int char_offset );
 //! Sets to point to char_offset.  char_offset counts from the start of the
 //! entire text buffer, starting with 0.
+//!
+//!
+
+GTK2.TextIter set_visible_line_index( int index );
+//! Same as set_line_index(), but works with visible byte index.  The given
+//! byte index must be at the start of a character, it can't be in the
+//! middle of a UTF-8 encoded character.
 //!
 //!
 

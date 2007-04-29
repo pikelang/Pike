@@ -25,6 +25,7 @@
 //! GTK2.Border default-border
 //! GTK2.Border default-outside-border
 //! int displace-focus
+//! int image-spacing
 //!
 //!
 //!  Signals:
@@ -65,6 +66,11 @@ static GTK2.Button create( string|mapping label_or_props );
 
 GTK2.Button enter( );
 //! Emulate a 'enter' event.
+//!
+//!
+
+mapping get_alignment( );
+//! Gets the alignment of the child.
 //!
 //!
 

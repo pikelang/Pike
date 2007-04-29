@@ -22,6 +22,11 @@ static GTK2.GladeXML create( string filename_or_buffer, int|void size, string|vo
 //!
 //!
 
+int get_signal_id( GTK2.Widget widget );
+//! Used to get the signal id attached to a GladeXML object.
+//!
+//!
+
 GTK2.Widget get_widget( string name );
 //! This function is used to get the widget corresponding to name in the
 //! interface description.  You would use this if you have to do anything to

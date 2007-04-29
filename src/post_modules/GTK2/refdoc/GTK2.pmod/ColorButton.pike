@@ -28,11 +28,6 @@ GTK2.GdkColor get_color( );
 //!
 //!
 
-mixed get_property( string property );
-//! Get property.
-//!
-//!
-
 string get_title( );
 //! Get the title.
 //!
@@ -48,13 +43,8 @@ GTK2.ColorButton set_alpha( int alpha );
 //!
 //!
 
-GTK2.ColorButton set_color( int red, int green, int blue );
+GTK2.ColorButton set_color( int|GdkColor red, int|void green, int|void blue );
 //! Sets the current color.
-//!
-//!
-
-GTK2.ColorButton set_property( string property, mixed value );
-//! Set property.
 //!
 //!
 

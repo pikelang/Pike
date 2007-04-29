@@ -2,6 +2,9 @@
 //!@expr{ GTK2.RadioMenuItem("Menu item")@}
 //!@xml{<image>../images/gtk2_radiomenuitem.png</image>@}
 //!
+//! Properties:
+//! 
+//! GTK2.RadioMenuItem group
 //!
 //!
 //!  Signals:

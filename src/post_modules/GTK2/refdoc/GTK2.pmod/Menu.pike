@@ -132,6 +132,11 @@ GTK2.Menu set_active( int activep );
 //!
 //!
 
+GTK2.Menu set_screen( GTK2.GdkScreen screen );
+//! Sets the screen on which the menu is displayed.
+//!
+//!
+
 GTK2.Menu set_tearoff_state( int torn_off );
 //! Changes the tearoff state of the menu.  A menu is normally displayed
 //! as a drop down menu which persists as long as the menu is active.  It

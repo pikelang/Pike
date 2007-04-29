@@ -22,6 +22,11 @@ mixed get_property( string property );
 //!
 //!
 
+int new_signal( string name, array types, string return_type );
+//! Create a new signal.
+//!
+//!
+
 G.Object notify( string property );
 //! Emits a "notify" signal for the named property on the object.
 //!
@@ -39,7 +44,8 @@ G.Object signal_block( int signal_id );
 //!
 //!
 
-int signal_connect( string signal, function callback, mixed|void callback_arg );
+int signal_connect( string signal, function callback, mixed|void callback_arg, string|void detail );
+//! int signal_connect(string signal, function callback, mixed ... args)
 //! Connect a signal to a pike function.  The function will be called with
 //! the last argument to this function as it's first argument (defaults to 0),
 //! the second argument is always the widget, and any other arguments are the
@@ -57,7 +63,7 @@ G.Object signal_disconnect( int signal_id );
 //!
 //!
 
-G.Object signal_emit( string signal_name );
+G.Object signal_emit( string signal_name, string|void detail );
 //! Send the current named signal.
 //!
 //!

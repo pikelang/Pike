@@ -15,6 +15,8 @@
 //! int visibility
 //! int width-chars
 //! float xalign
+//! 
+//! Style properties:
 //!
 //!
 //!  Signals:
@@ -22,21 +24,13 @@
 //!
 //! @b{backspace@}
 //!
-//! @b{changed@}
-//!
 //! @b{copy_clipboard@}
 //!
 //! @b{cut_clipboard@}
 //!
 //! @b{delete_from_cursor@}
 //!
-//! @b{delete_text@}
-//!
-//! @b{editing_done@}
-//!
 //! @b{insert_at_cursor@}
-//!
-//! @b{insert_text@}
 //!
 //! @b{move_cursor@}
 //!
@@ -44,43 +38,17 @@
 //!
 //! @b{populate_popup@}
 //!
-//! @b{remove_widget@}
-//!
 //! @b{toggle_overwrite@}
 //!
 
 inherit GTK2.Widget;
 
-GTK2.Entry copy_clipboard( );
-//! Causes the characters in the current selection to be copied to the
-//! clipboard.
-//!
-//!
+inherit GTK2.CellEditable;
+
+inherit GTK2.Editable;
 
 static GTK2.Entry create( int|mapping maxlen_or_props );
 //! Create a new W(Entry) widget.
-//!
-//!
-
-GTK2.Entry cut_clipboard( );
-//! Causes the characters in the current selection to be copied to the
-//! clipboard and then deleted.
-//!
-//!
-
-GTK2.Entry delete_selection( );
-//! Deletes the current contents of the selection.
-//!
-//!
-
-GTK2.Entry delete_text( int start, int end );
-//! Deletes a sequence of characters.
-//!
-//!
-
-GTK2.Entry editing_done( );
-//! Emits the "editing-done" signal.  This signal is a sign for the cell
-//! renderer to update its value from the cell.
 //!
 //!
 
@@ -94,18 +62,8 @@ float get_alignment( );
 //!
 //!
 
-string get_chars( int start, int end );
-//! Retrieves a sequence of characters.
-//!
-//!
-
 GTK2.EntryCompletion get_completion( );
 //! Returns the completion object.
-//!
-//!
-
-int get_editable( );
-//! Retrieves whether this widget is editable.
 //!
 //!
 
@@ -132,18 +90,25 @@ GTK2.Pango.Layout get_layout( );
 //!
 //!
 
+mapping get_layout_offsets( );
+//! Obtains the position of the Pango.Layout used to render text in the
+//! entry, in widget coordinates.  Useful if you want to line up the text
+//! in an entry with some other text, e.g. when using the entry to implement
+//! editable cells in a sheet widget.
+//! 
+//! Also useful to convert mouse events into coordinates inside the
+//! Pango.Layout, e.g. to take some action if some part of the entry text
+//! is clicked.
+//! 
+//! Keep in mind that the layout text may contain a preedit string, so 
+//! layout_index_to_text_index() and text_index_to_layout_index() are needed
+//! to convert byte indices in the layout to byte indices in the entry
+//! contents.
+//!
+//!
+
 int get_max_length( );
 //! Retrieves the maximum allowed length of the text.
-//!
-//!
-
-int get_position( );
-//! Retrieves the current cursor position.
-//!
-//!
-
-array get_selection_bounds( );
-//! Returns the selection bounds.
 //!
 //!
 
@@ -162,32 +127,10 @@ int get_width_chars( );
 //!
 //!
 
-int insert_text( string text, int length, int pos );
-//! Inserts text at a given position.  Returns the position after the new text.
-//!
-//!
-
 int layout_index_to_text_index( int layout_index );
 //! Converts from a position in the entry contents (returned by get_text())
 //! to a position in the entry's Pango.Layout (returned by get_layout()),
 //! with text retrieved via Pango.Layout->get_text().
-//!
-//!
-
-GTK2.Entry paste_clipboard( );
-//! Causes the contents of the clipboard to be pasted into the given widget at
-//! the current cursor position.
-//!
-//!
-
-GTK2.Entry remove_widget( );
-//! Emits the "remove-widget" signal.  This signal is meant to indicate that
-//! the cell is finished editing, and the widget may now be destroyed.
-//!
-//!
-
-GTK2.Entry select_region( int start, int end );
-//! Selects a region of text.
 //!
 //!
 
@@ -213,11 +156,6 @@ GTK2.Entry set_completion( GTK2.EntryCompletion completion );
 //!
 //!
 
-GTK2.Entry set_editable( int setting );
-//! Determines if the user can edit the text or not.
-//!
-//!
-
 GTK2.Entry set_has_frame( int setting );
 //! Sets whether the entry has a beveled frame around it.
 //!
@@ -240,11 +178,6 @@ GTK2.Entry set_max_length( int maxlen );
 //!
 //!
 
-GTK2.Entry set_position( int pos );
-//! Sets the cursor position.
-//!
-//!
-
 GTK2.Entry set_text( string text );
 //! Set the text to the specified string, replacing the current contents.
 //!
@@ -260,13 +193,6 @@ GTK2.Entry set_width_chars( int n_chars );
 //! n_chars characters.  Note that it changes the size request, the size can
 //! still be affected by how you pack the widget into containers.  If n_chars
 //! is -1, the size reverts to the default entry size.
-//!
-//!
-
-GTK2.Entry start_editing( GTK2.GdkEvent event );
-//! Begins editing.  event is the GDK2.Event that began the editing process.
-//! It may be empty, in the instance that editing was initiated through
-//! programmatic means.
 //!
 //!
 

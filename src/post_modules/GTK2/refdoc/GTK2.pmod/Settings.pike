@@ -10,6 +10,7 @@
 //! int gtk-dnd-drag-threshold
 //! int gtk-double-click-distance
 //! int gtk-double-click-time
+//! int gtk-enable-animations
 //! int gtk-entry-select-on-focus
 //! string gtk-font-name
 //! string gtk-icon-sizes

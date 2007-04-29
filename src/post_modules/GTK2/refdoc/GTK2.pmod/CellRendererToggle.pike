@@ -5,6 +5,7 @@
 //!   The toggle state of the button.
 //! int inconsistent
 //!   The inconsistent state of the button.
+//! int indicator-size
 //! int radio
 //!   Draw the toggle butotn as a radio button.
 //!

@@ -14,7 +14,7 @@
 
 inherit GTK2.ToggleButton;
 
-static GTK2.CheckButton create( string|mapping label_or_props );
+static GTK2.CheckButton create( string|mapping label_or_props, int|void mnemonic );
 //! The argument, if specified, is the label of the item.
 //! If no label is specified, use object->add() to add some
 //! other widget (such as an pixmap or image widget)

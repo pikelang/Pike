@@ -1,19 +1,4 @@
-//! Class used for the TreeModel funtions.
 //!
-//!
-//!  Signals:
-//! @b{row_changed@}
-//!
-//! @b{row_deleted@}
-//!
-//! @b{row_has_child_toggled@}
-//!
-//! @b{row_inserted@}
-//!
-//! @b{rows_reordered@}
-//!
-
-inherit G.Object;
 
 int get_column_type( int index );
 //! Returns the type of the column.

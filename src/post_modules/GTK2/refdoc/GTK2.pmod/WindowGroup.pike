@@ -10,8 +10,8 @@ GTK2.WindowGroup add_window( GTK2.Window window );
 //!
 
 static GTK2.WindowGroup create( );
-//! Creates a new GTK2.WindowGroup object.  Grabs added with GTK2.grab_add() only
-//! affect windows with the same GTk.WindowGroup.
+//! Creates a new GTK2.WindowGroup object.  Grabs added with GTK2.grab_add() 
+//! only affect windows with the same GTK2.WindowGroup.
 //!
 //!
 

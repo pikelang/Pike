@@ -33,11 +33,18 @@
 //! Style properties:
 //! float cursor-aspect-ratio
 //! GDK2.Color cursor-color
+//! int draw-border
 //! string focus-line-pattern
 //! int focus-line-width
 //! int focus-padding
 //! int interior-focus
-//! GDK2.Color secondary-cursor-color
+//! GDK2.Color link-color
+//! int scroll-arrow-hlength
+//! int scroll-arrow-vlength
+//! int separator-height
+//! int separator-width
+//! GDK2.Color visited-link-color
+//! int wide-separators
 //!
 //!
 //!  Signals:
@@ -58,6 +65,8 @@
 //! @b{client_event@}
 //! An event sent by another client application
 //!
+//!
+//! @b{composited_changed@}
 //!
 //! @b{configure_event@}
 //! The size, position or stacking order of the widget has changed
@@ -388,6 +397,11 @@ GTK2.Widget add_mnemonic_label( GTK2.Widget label );
 //!
 //!
 
+mapping allocation( );
+//! Returns ([ "x": xoffset, "y":yoffset, "width":xsize, "height":ysize ])
+//!
+//!
+
 int can_activate_accel( int signal_id );
 //! Determines whether an accelerator that activates the signal signal_id can
 //! currently be activated.
@@ -469,6 +483,12 @@ int get_no_show_all( );
 //!
 //!
 
+GTK2.Pango.Context get_pango_context( );
+//! Gets a Pango.Context with the appropriate colormap, font description, and
+//! base direction for this widget.
+//!
+//!
+
 GTK2.Widget get_parent( );
 //! Returns the parent container.
 //!
@@ -479,8 +499,33 @@ GTK2.GdkWindow get_parent_window( );
 //!
 //!
 
+mapping get_pointer( );
+//! Obtains the location of the mouse pointer in widget coordinates.
+//!
+//!
+
 GTK2.GdkWindow get_root_window( );
 //! Get the root window.
+//!
+//!
+
+GTK2.GdkScreen get_screen( );
+//! Get the GDK2.Screen from the toplevel window associated with this widget.
+//!
+//!
+
+GTK2.Settings get_settings( );
+//! Gets the settings object holding the settings (global property settings,
+//! RC file information, etc) used for this widget.
+//!
+//!
+
+mapping get_size_request( );
+//! Gets the size request that was explicityly set for the widget using
+//! set_size_request().  A value of -1 for width or height indices that that
+//! dimension has not been set explicityly and the natural requisition of
+//! the widget will be used instead.  To get the size a widget will actually
+//! use, call size_request() instead.
 //!
 //!
 
@@ -505,6 +550,11 @@ GTK2.Widget grab_focus( );
 //! Causes this widget to have the keyboard focus.  This widget must be a
 //! focusable widget, such as a GTK2.Entry; something like GTK2.Frame won't
 //! work.
+//!
+//!
+
+int has_screen( );
+//! Checks whether there is a GDK2.Screen associated with this widget.
 //!
 //!
 
@@ -793,6 +843,11 @@ GTK2.Widget show_now( );
 //! GTK2.Window that has not yet been shown), enter the main loop and wait for
 //! the window to actually be mapped.  Be careful; because the main loop is
 //! running, anything can happen during this function.
+//!
+//!
+
+mapping size_request( );
+//! Get the size allocated to a widget.
 //!
 //!
 

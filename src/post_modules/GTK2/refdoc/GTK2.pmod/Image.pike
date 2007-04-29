@@ -92,8 +92,23 @@ GTK2.Image set_from_icon_name( string icon_name, int size );
 //!
 //!
 
+GTK2.Image set_from_icon_set( GTK2.IconSet icon_set, int size );
+//! Set this image from an icon set.
+//!
+//!
+
+GTK2.Image set_from_image( GTK2.GdkImage gdk_image, GTK2.GdkBitmap mask );
+//! Set this image from a GDK2.Image plus optional mask.
+//!
+//!
+
 GTK2.Image set_from_pixbuf( GTK2.GdkPixbuf pixbuf );
 //! Set image from a pixbuf
+//!
+//!
+
+GTK2.Image set_from_pixmap( GTK2.GdkPixmap pixmap, GTK2.GdkBitmap mask );
+//! Set this image from a GDK2.Pixmap plus optional mask.
 //!
 //!
 

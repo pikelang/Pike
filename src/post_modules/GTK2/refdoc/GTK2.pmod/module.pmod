@@ -3814,15 +3814,27 @@ GTK2.GdkWindow root_window( );
 //!
 //!
 
-void set_default_icon( GTK2.GdkPixbuf icon );
-//! Sets an icon to be used as fallback for windows that haven't had set_icon()
-//! called on them from a pixbuf.
+void set_auto_startup_notification( int setting );
+//! By default, after showing the first GTK2.Window for each GDK2.Screen,
+//! GTK+ calls GDK2.Screen->notify_startup_complete().  Call this function to
+//! disable the automatic startup notification.  You might do this if your
+//! first window is a splash screen, and you want to delay notification until
+//! after your real main window has been shown, for example.
+//! 
+//! In that example, you would disable startup notification temporarily,
+//! show your splash screen, then re-enable it so that showing the main
+//! window would automatically result in notification.
+//!
+//!
+
+void set_default_icon( GTK2.GdkPixbuf pix );
+//! Sets an icon to be used as fallback for windows that haven't had
+//! set_icon() called on them.
 //!
 //!
 
 void set_default_icon_from_file( string filename );
-//! Sets an icon to be used as fallback for windows that haven't had
-//! set_icon_list() called on them from a file on disk.
+//! Sets an icon to be used as fallback from a file on disk.
 //!
 //!
 
@@ -3834,8 +3846,8 @@ void set_default_icon_list( array list );
 //!
 
 void set_default_icon_name( string name );
-//! Sets an icon to be as fallback for windows that haven't had set_icon_list()
-//! called on them from a themed icon.
+//! Sets an icon to be used as fallback for windows that haven't had
+//! set_icon_list() called on them from a named themed icon.
 //!
 //!
 

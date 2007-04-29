@@ -21,6 +21,13 @@
 //! @b{update_preview@}
 //!
 
+GTK2.FileChooser add_filter( GTK2.FileFilter filter );
+//! Adds filter to the list of filters that the user can select between.  When
+//! a filter is selected, only files that are passed by that filter are
+//! displayed.
+//!
+//!
+
 int add_shortcut_folder( string folder );
 //! Adds a folder to be displayed with the shortcut folders in a file chooser.
 //! Note that shortcut folders do not get saved, as they are provided by the
@@ -71,6 +78,11 @@ array get_filenames( );
 //! If files in the current folder cannot be represented as local
 //! filenames, they will be ignored.  If you want those files,
 //! You may want to use get_uris() instead.
+//!
+//!
+
+GTK2.FileFilter get_filter( );
+//! Gets the current filter.
 //!
 //!
 
@@ -127,6 +139,11 @@ int get_use_preview_label( );
 //!
 //!
 
+array list_filters( );
+//! Lists the current set of user-selectable filters.
+//!
+//!
+
 array list_shortcut_folder_uris( );
 //! Queries the list of shortcut folders.
 //!
@@ -134,6 +151,11 @@ array list_shortcut_folder_uris( );
 
 array list_shortcut_folders( );
 //! Queries the list of shortcut folders.
+//!
+//!
+
+GTK2.FileChooser remove_filter( GTK2.FileFilter filter );
+//! Removes filter from the list of filters that the user can select between.
 //!
 //!
 
@@ -212,6 +234,15 @@ GTK2.FileChooser set_extra_widget( GTK2.Widget widget );
 int set_filename( string filename );
 //! Sets filename as the current filename.
 //! Same as unselect_all() followed by select_filename();
+//!
+//!
+
+GTK2.FileChooser set_filter( GTK2.FileFilter filter );
+//! Sets the current filter; only the files that pass the filter will be
+//! displayed.  If the user-selectable list of filters is non-empty, then the
+//! filter should be one of the filters in that list.  Setting the current
+//! filter when the list of filters is empty is useful if you want to restrict
+//! the displayed set of files without letting the user change it.
 //!
 //!
 

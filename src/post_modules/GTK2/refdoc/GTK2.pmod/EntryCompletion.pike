@@ -3,6 +3,7 @@
 //! int minimum-key-length
 //! GTK2.TreeModel model
 //! int popup-completion
+//! int popup-single-match
 //! int text-column
 //!
 //!
@@ -37,6 +38,12 @@ GTK2.EntryCompletion delete_action( int index );
 
 GTK2.Widget get_entry( );
 //! Gets the entry this widget has been attached to.
+//!
+//!
+
+int get_inline_completion( );
+//! Returns whether the common prefix of the possible completions should be
+//! automatically inserted in the entry.
 //!
 //!
 
@@ -124,7 +131,7 @@ GTK2.EntryCompletion set_popup_set_width( int setting );
 
 GTK2.EntryCompletion set_popup_single_match( int setting );
 //! Sets whether the completion popup window will appear even if there is only
-//! a single match.  YOu may want to set this to 0 if you are using inline
+//! a single match.  You may want to set this to 0 if you are using inline
 //! completion.
 //!
 //!

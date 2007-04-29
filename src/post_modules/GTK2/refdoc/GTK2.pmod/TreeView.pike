@@ -162,11 +162,6 @@ GTK2.TreeViewColumn get_expander_column( );
 //!
 //!
 
-int get_fixed_height_mode( );
-//! Returns whether fixed height mode is turned on.
-//!
-//!
-
 GTK2.Adjustment get_hadjustment( );
 //! Gets the W(Adjustment) currently being used for the horizontal aspect.
 //!
@@ -174,16 +169,6 @@ GTK2.Adjustment get_hadjustment( );
 
 int get_headers_visible( );
 //! Returns true if the headers are visible.
-//!
-//!
-
-int get_hover_expand( );
-//! Returns whether hover expansion mode is turned on.
-//!
-//!
-
-int get_hover_selection( );
-//! Returns whether hover selection mode is turned on.
 //!
 //!
 
@@ -215,12 +200,6 @@ int get_rules_hint( );
 
 int get_search_column( );
 //! Gets the column searched on by the interactive search code.
-//!
-//!
-
-array get_selected( );
-//! Shortcut to GTK2.TreeView->get_selection() and 
-//! GTK2.TreeSelection()->get_selected().
 //!
 //!
 
@@ -350,14 +329,6 @@ GTK2.TreeView set_expander_column( GTK2.TreeViewColumn column );
 //!
 //!
 
-GTK2.TreeView set_fixed_height_mode( int enable );
-//! Enables or disables the fixed height mode.  Fixed height mode speeds up
-//! W(TreeView) by assuming that all rows have the same height.  Only enable
-//! this option if all rows are the same height and all columns are of type
-//! GTK2.TREE_VIEW_COLUMN_FIXED.
-//!
-//!
-
 GTK2.TreeView set_hadjustment( GTK2.Adjustment hadj );
 //! Sets the W(Adjustment) for the current horizontal aspect.
 //!
@@ -370,19 +341,6 @@ GTK2.TreeView set_headers_clickable( int setting );
 
 GTK2.TreeView set_headers_visible( int headers_visible );
 //! Sets the visibility state of the headers.
-//!
-//!
-
-GTK2.TreeView set_hover_expand( int expand );
-//! Enables or disables the hover expansion mode.  Hover expansion makes rows
-//! expand or collapse if the pointer moves over them.
-//!
-//!
-
-GTK2.TreeView set_hover_selection( int hover );
-//! Enables or disables the hover selection mode.  Hover selection makes the
-//! selected row follow the pointer.  Currently, this works only for the
-//! selection modes GTK2.SELECTION_SINGLE and GTK2.SELECTION_BROWSE.
 //!
 //!
 

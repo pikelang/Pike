@@ -24,8 +24,10 @@
 //! int skip-pager-hint
 //! int skip-taskbar-hint
 //! string title
+//! GTK2.Window transient-for
 //! int type @[WINDOW_POPUP] and @[WINDOW_TOPLEVEL]
 //! int type-hint @[GDK_WINDOW_TYPE_HINT_DESKTOP], @[GDK_WINDOW_TYPE_HINT_DIALOG], @[GDK_WINDOW_TYPE_HINT_DOCK], @[GDK_WINDOW_TYPE_HINT_MENU], @[GDK_WINDOW_TYPE_HINT_NORMAL], @[GDK_WINDOW_TYPE_HINT_SPLASHSCREEN], @[GDK_WINDOW_TYPE_HINT_TOOLBAR] and @[GDK_WINDOW_TYPE_HINT_UTILITY]
+//! int urgency-hint
 //! int window-position @[WIN_POS_CENTER], @[WIN_POS_CENTER_ALWAYS], @[WIN_POS_CENTER_ON_PARENT], @[WIN_POS_MOUSE] and @[WIN_POS_NONE]
 //!
 //!
@@ -66,6 +68,20 @@ GTK2.Window add_accel_group( GTK2.AccelGroup group );
 
 GTK2.Window add_mnemonic( int keyval, GTK2.Widget target );
 //! Adds a mnemonic to this window.
+//!
+//!
+
+GTK2.Window begin_move_drag( int button, int root_x, int root_y, int timestamp );
+//! Starts moving a window.  This function is used if an application has
+//! window movement grips.
+//!
+//!
+
+GTK2.Window begin_resize_drag( int edge, int button, int root_x, int root_y, int timestamp );
+//! Starts resizing a window.  This function is used if an application has
+//! window resizing controls.  When GDK can support it, the resize will be
+//! done using the standard mechanism for the window manager or windowing
+//! system.
 //!
 //!
 
@@ -308,6 +324,11 @@ GTK2.Window present( );
 //!
 //!
 
+GTK2.Window present_with_time( int timestamp );
+//! Presents a window to the user with a timestamp.  See present().
+//!
+//!
+
 GTK2.Window raise( );
 //! Raise this window if the window manager allows that.
 //!
@@ -477,6 +498,23 @@ GTK2.Window set_icon( GTK2.GdkPixbuf icon );
 
 int set_icon_from_file( string filename );
 //! Sets the icon from a file.
+//!
+//!
+
+GTK2.Window set_icon_list( array list );
+//! Set up the icons for minimizing.
+//! 
+//! set_icon_list() allows you to pass in the same icon in several hand-drawn
+//! sizes.  The list should contain the natural sizes your icon is avilable in;
+//! that is, don't scale the image before passing it.  Scaling is postponed
+//! until the last minute, when the desired final size is known, to allow best
+//! quality.
+//! 
+//! By passing several sizes, you may improve the final image quality of the
+//! icon, by reducing or eliminating automatic image scaling.
+//! 
+//! Recommended sizes to provide: 16x16, 32x32, 48x48 at minimum, and larger
+//! images (64x64, 128x128) if you have them.
 //!
 //!
 

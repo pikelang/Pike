@@ -23,7 +23,7 @@
 
 inherit GTK2.Button;
 
-static GTK2.ToggleButton create( string|mapping label_or_props );
+static GTK2.ToggleButton create( string|mapping label_or_props, int|void mnemonic );
 //! If you supply a string, a label will be created and inserted in the button.
 //! Otherwise, use -&gt;add(widget) to create the contents of the button.
 //!

@@ -57,6 +57,10 @@
 
 inherit GTK2.Entry;
 
+inherit GTK2.CellEditable;
+
+inherit GTK2.Editable;
+
 GTK2.SpinButton configure( GTK2.Adjustment range, float climb_rate, int precision );
 //! Adjustment (with the lower/upper/increse values), climb_rate and digits
 //!
@@ -67,6 +71,11 @@ static GTK2.SpinButton create( GTK2.Adjustment range_or_min_or_props, float clim
 //!  indicates the amount of acceleration that the Spin Button has. The
 //!  digits argument specifies the number of decimal places to which
 //!  the value will be displayed.
+//!
+//!
+
+GTK2.Adjustment get_adjustment( );
+//! Get the adjustment associated with this spinbutton.
 //!
 //!
 

@@ -32,17 +32,7 @@ static GTK2.Databox create( );
 //!
 //!
 
-int data_add_x( int nelems, array x, int shared_Y_index, GTK2.GdkColor color, int type, int dot_size );
-//! Type is one of @[DATABOX_BARS], @[DATABOX_CROSS_SIMPLE], @[DATABOX_GRID], @[DATABOX_LINES], @[DATABOX_NOT_DISPLAYED] and @[DATABOX_POINTS]
-//!
-//!
-
-int data_add_x_y( int nelems, array x, array y, GTK2.GdkColor color, int type, int dot_size );
-//! Type is one of @[DATABOX_BARS], @[DATABOX_CROSS_SIMPLE], @[DATABOX_GRID], @[DATABOX_LINES], @[DATABOX_NOT_DISPLAYED] and @[DATABOX_POINTS]
-//!
-//!
-
-int data_add_y( int nelems, array y, int shared_X_index, GTK2.GdkColor color, int type, int dot_size );
+int data_add( int nelems, array x, array y, GTK2.GdkColor color, int type, int dot_size );
 //! Type is one of @[DATABOX_BARS], @[DATABOX_CROSS_SIMPLE], @[DATABOX_GRID], @[DATABOX_LINES], @[DATABOX_NOT_DISPLAYED] and @[DATABOX_POINTS]
 //!
 //!

@@ -1,4 +1,4 @@
-//! Properties that can be notified:
+//! Properties:
 //! int bits-per-sample
 //! int colorspace (GdkColorspace)
 //! int has-alpha
@@ -19,7 +19,7 @@ GTK2.GdkPixbuf add_alpha( int substitute_color, int r, int g, int b );
 //! opacity).
 //! If substitute_color is true, then the color specified by (r,g,b)
 //! will be assigned zero opacity.  That is, if you pass (255,255,255)
-//! for the substitute color, all white pixels will become full
+//! for the substitute color, all white pixels will become fully
 //! transparent.
 //!
 //!
@@ -36,12 +36,13 @@ GTK2.GdkPixbuf composite( GTK2.GdkPixbuf dest, int dest_x, int dest_y, int dest_
 //!
 
 GTK2.GdkPixbuf composite_color( GTK2.GdkPixbuf dest, int dest_x, int dest_y, int dest_width, int dest_height, float offset_x, float offset_y, float scale_x, float scale_y, int type, int overall_alpha, int check_x, int check_y, int check_size, int color1, int color2 );
-//! Creates a transformation of the source image by scaling by scale_x
-//! and scale_y, then translating by offset_x and offset_y, then
-//! composites the rectangle (dest_x,dest_y,dest_width,dest_height) of
-//! the resulting image with a checkboard of the colors color1 and color2
-//! and renders it onto the destination image.
-//! see composite_color_simple() for a simpler variant of this function
+//! Creates a transformation of the source image by scaling by scale_x and
+//! scale_y, then translating by offset_x and offset_y, then composites
+//! the rectangle (dest_x,dest_y,dest_width,dest_height) of the resulting
+//! image with a checkboard of the colors color1 and color2 and renders it
+//! onto the destinagion image.
+//! 
+//! See composite_color_simple() for a simpler variant of this function
 //! suitable for many tasks.
 //!
 //!
@@ -58,22 +59,32 @@ GTK2.GdkPixbuf copy( );
 //!
 //!
 
-GTK2.GdkPixbuf copy_area( GTK2.GdkPixbuf dest, int src_x, int src_y, int width, int height, int dest_x, int dest_y );
+GTK2.GdkPixbuf copy_area( GTK2.GdkPixbuf dest, int src_x, int src_y, int widt, int height, int dest_x, int dest_y );
 //! Copies a rectangular area from this pixbuf to dest.  Conversion of
 //! pixbuf formats is done automatically.
 //!
 //!
 
-static GDK2.Pixbuf create( string|int filename_or_alpha, int|mapping bits_or_options, int|void width, int|void height );
-//! Create a GDK2.Pixbuf object.  If all parameters are omitted, will create
-//! a blank pixbuf with an alpha channel, 8 bits per sample, 320x200.
-//!
-//!
-
-GDK2.Pixbuf fill( array|mapping|int pixel );
-//! Clears a pixbuf to the given RGBA value, converting the RGBA value
-//! into the pixbuf's pixel format.  The alpha will be ignored if the
-//! pixbuf doesn't have an alpha channel.
+static GDK2.Pixbuf create( string|mapping options );
+//! Create a GDK2.Pixbuf object.  options is either a filename or a mapping
+//! of options.  options can be:
+//! @xml{<matrix>@}
+//! @xml{<r>@}@xml{<c>@}filename@xml{</c>@}@xml{<c>@}name of file to load@xml{</c>@}@xml{<r>@}
+//! @xml{<r>@}@xml{<c>@}bits@xml{</c>@}@xml{<c>@}number of bits per sample@xml{</c>@}@xml{</r>@}
+//! @xml{<r>@}@xml{<c>@}width@xml{</c>@}@xml{<c>@}width of image@xml{</c>@}@xml{</r>@}
+//! @xml{<r>@}@xml{<c>@}height@xml{</c>@}@xml{<c>@}height of image@xml{</c>@}@xml{</r>@}
+//! @xml{<r>@}@xml{<c>@}alpha@xml{</c>@}@xml{<c>@}true if alpha channel@xml{</c>@}@xml{</r>@}
+//! @xml{<r>@}@xml{<c>@}scale@xml{</c>@}@xml{<c>@}true if use width and height as scale@xml{</c>@}@xml{</r>@}
+//! @xml{<r>@}@xml{<c>@}preserve@xml{</c>@}@xml{<c>@}true if preserve aspect ratio@xml{</c>@}@xml{</r>@}
+//! @xml{<r>@}@xml{<c>@}xpm@xml{</c>@}@xml{<c>@}if this key exists, then value is xpm data to create from@xml{</c>@}@xml{</r>@}
+//! @xml{<r>@}@xml{<c>@}data@xml{</c>@}@xml{<c>@}if this key exists, then value is pixel data
+//! The following is a list of valid keys if key data exists:
+//! <table>
+//! <tr>@xml{<c>@}colorspace@xml{</c>@}@xml{<c>@}colorspace, default GDK2.COLORSPACE_RGB, currently ignored@xml{</c>@}@xml{</r>@}
+//! <tr>@xml{<c>@}rowstride@xml{</c>@}@xml{<c>@}distance in bytes between row starts@xml{</c>@}@xml{</r>@}
+//! @xml{</matrix>@}
+//! @xml{</c>@}@xml{</r>@}
+//!       
 //!
 //!
 
@@ -143,7 +154,7 @@ int put_pixel( int x, int y, int r, int g, int b );
 //!
 //!
 
-GTK2.GdkBitmap render_threshold_alpha( int src_x, int src_y, int dest_x, int dest_y, int width, int height, int alpha_threshold );
+GTK2.GdkBitmap render_threshold_alpha( int src_x, int src_y, int dest_c, int dest_y, int width, int height, int alpha_threshold );
 //! Takes the opacity values in a rectangular portion of a pixbuf and
 //! thresholds them to produce a bi-level alpha mask that can be used as a
 //! clipping mask for a drawable.
@@ -151,14 +162,14 @@ GTK2.GdkBitmap render_threshold_alpha( int src_x, int src_y, int dest_x, int des
 //!
 
 GTK2.GdkPixbuf rotate_simple( int angle );
-//! Rotates a pixbuf by a multiple of 90 degress, and returns the result
-//! in a new pixbuf.  angle is either a multiple of 90 degress (0,90,180,270),
+//! Rotates a pixbuf by a multiple of 90 degrees, and returns the result
+//! in a new pixbuf.  angle is either a multiple of 90 degrees (0,90,180,270),
 //! or one of @[GDK_PIXBUF_ROTATE_CLOCKWISE], @[GDK_PIXBUF_ROTATE_COUNTERCLOCKWISE], @[GDK_PIXBUF_ROTATE_NONE] and @[GDK_PIXBUF_ROTATE_UPSIDEDOWN], which are merely aliases.
 //!
 //!
 
 GDK2.Pixbuf saturate_and_pixelate( GTK2.GdkPixbuf dest, float saturation, int pixelate );
-//! Modifies saturation and optionally pixelates this pixbuf, placing
+//! Modifes saturation and optionally pixelates this pixbuf, placing
 //! the result in dest.  The source and dest may be the same pixbuf
 //! with no ill effects.  If saturation is 1.0 then saturation is not
 //! changed.  If it's less than 1.0, saturation is reduced (the image
@@ -169,10 +180,10 @@ GDK2.Pixbuf saturate_and_pixelate( GTK2.GdkPixbuf dest, float saturation, int pi
 //!
 //!
 
-int save( string filename, string type, string|void quality );
+GTK2.GdkPixbuf save( string filename, string type, mapping|void options );
 //! Save to a file in format type.  "jpeg", "png", "ico", "bmp",
-//! are the only valid writable types at this time.
-//! Quality is only valid for jpeg images.
+//! are the only valid writable types at this time.  Quality is only
+//! valid for jpeg images.
 //!
 //!
 
@@ -201,44 +212,6 @@ GTK2.GdkPixbuf scale_simple( int dest_width, int dest_height, int|void interp_ty
 
 int set_alpha( int x, int y, int setting );
 //! Set alpha value.
-//!
-//!
-
-GDK2.Pixbuf set_from_data( string data, int has_alpha, int width, int height, int rowstride );
-//! Creates a new GDK2.Pixbuf out of in-memory image data.
-//! Currently only RGB images with 8 bits per sample are supported.
-//!
-//!
-
-GDK2.Pixbuf set_from_file( string filename );
-//! Create a new pixbuf by loading an image from a file.
-//!
-//!
-
-GDK2.Pixbuf set_from_file_at_scale( string filename, int width, int height, int preserve_aspect_ratio );
-//! Create a new pixbuf by loading an image from a file.  The file
-//! format is detected automatically.  The image will be scaled to
-//! fit the requested size, optionally preserving the image's aspect
-//! ratio.
-//!
-//!
-
-GDK2.Pixbuf set_from_file_at_size( string filename, int width, int height );
-//! Create a new pixbuf by loading an image from a file.  The image
-//! will be scaled to fit in the requested size, preserving the
-//! image's aspect ratio.
-//!
-//!
-
-GDK2.Pixbuf set_from_inline( int data_length, string data );
-//! Create a GDK2.Pixbuf from a flat representation that is suitable
-//! for storing as inline data in a program.
-//! If data_length is -1 it will disable length checks.
-//!
-//!
-
-GDK2.Pixbuf set_from_xpm_data( array data );
-//! Creates a new pixbuf by parsing XPM data in memory.
 //!
 //!
 

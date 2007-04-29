@@ -14,6 +14,11 @@ static GTK2.CellView create( string|GdkPixbuf|mapping text, int|void markup );
 //!
 //!
 
+array get_cell_renderers( );
+//! Returns the cell renderers which have been added to this view.
+//!
+//!
+
 GTK2.TreePath get_displayed_row( );
 //! Returns a W(TreePath) referring to the currently displayed row.  If no
 //! row is currently displayed, 0 is returned.

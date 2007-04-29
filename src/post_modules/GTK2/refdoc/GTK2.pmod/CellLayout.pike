@@ -31,3 +31,11 @@ GTK2.CellLayout reorder( GTK2.CellRenderer cell, int position );
 //! Re-inserts cell at position.
 //!
 //!
+
+GTK2.CellLayout set_cell_data_func( GTK2.CellRenderer cell, function f, mixed user_data );
+//! Sets the callback to use for this cell layout.  This function is used
+//! instead of the standard attributes mapping for setting the column
+//! value, and should set the value of the cell layout's cell renderer(s)
+//! as appropriate.  f may be 0 to remove an older one.
+//!
+//!
