@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.126 2006/10/31 00:37:36 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.127 2007/04/29 01:37:32 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -833,12 +833,15 @@ private constant notype = (< "(", ")", "->", "[", "]", ":", ";",
 			     "~=", "<<", ">>", "<<=", ">>=", "<=",
 			     ">=", "^", "^=" >);
 
-private class Expression {
-  private array(string) tokens;
-  private mapping(int:int) positions;
-  private array(int) depths;
-  private multiset(int) sscanf_depths;
+//! Represents a Pike expression
+class Expression {
+  static array(string) tokens;
+  static mapping(int:int) positions;
+  static array(int) depths;
+  static multiset(int) sscanf_depths;
 
+  //! @param t
+  //!   An array of Pike tokens.
   void create(array(string) t) {
     positions = ([]);
     depths = allocate(sizeof(t));
@@ -846,10 +849,6 @@ private class Expression {
 
     generate_offsets(t);
     tokens = t;
-  }
-
-  void prepend(array t)
-  {
   }
 
   static void generate_offsets(array t)
@@ -871,11 +870,12 @@ private class Expression {
     }
   }
 
+  //! The number of non-whitespace tokens in the expression.
   int _sizeof() {
     return sizeof(positions);
   }
 
-  // Returns a token or a token range without whitespaces.
+  //! Returns a token or a token range without whitespaces.
   string `[](int f, void|int t) {
     if(f>sizeof(positions) || -f>sizeof(positions))
       return 0;
@@ -888,20 +888,26 @@ private class Expression {
     return tokens[positions[f]..positions[t]]*"";
   }
 
+  //! Replaces a token with a new token.
   string `[]= (int f, string v) {
     return tokens[positions[f]] = v;
   }
 
+  //! Return the parenthesis depth at the given position.
   int depth(int f) {
     return depths[positions[f]];
   }
 
+  //! Returns 1 if the current position is within a sscanf expression.
   int(0..1) in_sscanf(int f) {
     return sscanf_depths[depth(f)];
   }
 
-  // See if there are any forbidden modifiers used in the expression,
-  // e.g. "private int x;" is not valid inside Hilfe.
+  //! See if there are any forbidden modifiers used in the expression,
+  //! e.g. "private int x;" is not valid inside Hilfe.
+  //! @returns
+  //!   Returns an error message as a string if the expression
+  //!   contains a forbidden modifier, otherwise @expr{0@}.
   string check_modifiers() {
     foreach(sort(values(positions)), int pos)
       if(modifier[tokens[pos]])
@@ -912,15 +918,14 @@ private class Expression {
     return 0;
   }
 
-  // Returns the expression verbatim.
+  //! Returns the expression verbatim.
   string code() {
     return tokens*"";
   }
 
-  // Returns at which position the type declaration that
-  // begins at position @[position] ends. A return value of
-  // -1 means that the token or tokens from @[position]
-  // can not be a type declaration.
+  //! Returns at which position the type declaration that begins at
+  //! position @[position] ends. A return value of -1 means that the
+  //! token or tokens from @[position] can not be a type declaration.
   int(-1..) endoftype(int(-1..) position) {
     string t = `[](position);
     if( (< "int", "float", "string",
@@ -988,11 +993,10 @@ private class Expression {
     return -1;
   }
 
-  // Returns the position of the matching parenthesis of
-  // the given kind, starting from the given position. The
-  // position should be the position after the opening
-  // parenthesis, or later. Assuming balanced code. Returns
-  // -1 on failure.
+  //! Returns the position of the matching parenthesis of the given
+  //! kind, starting from the given position. The position should be
+  //! the position after the opening parenthesis, or later. Assuming
+  //! balanced code. Returns -1 on failure.
   int(-1..) find_matching(string token, int(0..)|void pos) {
     string find = ([ "(":")", "{":"}", "[":"]",
 		     "({":"})", "([":"])", "(<":">)" ])[token];
@@ -1006,7 +1010,7 @@ private class Expression {
     return -1;
   }
 
-  // Is there a block starting at @[pos]?
+  //! Is there a block starting at @[pos]?
   int(0..1) is_block(int pos) {
 
     if( (< "for", "foreach", "switch", "while", "lambda", "class",
@@ -1025,6 +1029,8 @@ private class Expression {
     return 0;
   }
 
+  //! An Expression object can be cast to an array or a string. In
+  //! both forms all tokens, including white spaces will be returned.
   static mixed cast(string to)
   {
     switch(to)
