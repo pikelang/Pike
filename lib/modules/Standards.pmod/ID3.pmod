@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.21 2006/11/04 19:06:49 nilsson Exp $
+//  $Id: ID3.pmod,v 1.22 2007/04/29 01:38:16 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -328,7 +328,7 @@ class FrameData {
   string encode();
 }
 
-//!
+//! Manages the common frame information.
 class Frame {
 
   string id;
@@ -352,6 +352,7 @@ class Frame {
 
   FrameData data;
 
+  //!
   void create(string|Buffer in, TagHeader thd) {
     header = thd;
     if(in) {
