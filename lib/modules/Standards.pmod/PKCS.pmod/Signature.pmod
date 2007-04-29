@@ -15,7 +15,7 @@
 //! @param msg
 //!   message to digest
 //! @param hash
-//!   crypto hash object such as @[Crypto.SHA] or @[Crypto.MD5]
+//!   crypto hash object such as @[Crypto.SHA1] or @[Crypto.MD5]
 string build_digestinfo(string msg, HASH hash)
 {
   if(!hash->asn1_id) error("Unknown ASN.1 id for hash.\n");
