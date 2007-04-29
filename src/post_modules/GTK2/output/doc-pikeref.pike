@@ -104,7 +104,7 @@ static string trim_xml( string what )
       else if(n->get_any_name()=="dd")
 	what += " " + n->get_children()->render_xml()*"" + "\n";
       else if(!sizeof(String.trim_all_whites(n->get_text())))
-	werror("Warning: Discarding HTML subtree: %O\n", n->render_xml);
+	werror("Warning: Discarding HTML subtree: %O\n", n->render_xml());
     }
     what += " @enddl\n" + c;
   }
@@ -185,7 +185,8 @@ static string class_name( Class cls, int|void nmn )
 
 static string make_function_doc( Function f, Class c )
 {
-  if( f->name == "_sprintf" || f->name == "destruct" )
+  if( f->name == "_sprintf" ||
+      (f->name == "destroy" && (< 0, "" >)[f->doc] ) )
     return "";
 
   string vtype;
@@ -243,7 +244,14 @@ static string make_function_doc( Function f, Class c )
     res += "//!\n";
   }
   else
-    res += make_pike_refdoc( f->doc, 0 );
+  {
+    if(has_value(f->doc, "@"))
+    {
+      res += ("//" + (f->doc/"\n")[*])*"\n" + "\n";
+    }
+    else
+      res += make_pike_refdoc( f->doc, 0 );
+  }
   //  res += "{\n  // defined in\n  // "+f->file+":"+f->line+"\n}";
   return res;
 }
@@ -254,7 +262,7 @@ static void output_class( Class cls, int lvl )
   string result = "";
   array functions = ({});
   imgfile=imgfilename(cls->name);
-  if( !cls->doc || !sizeof( cls->doc ) )
+  if( cls->name!="_global" && (!cls->doc || !sizeof( cls->doc )) )
     werror("Warning:"+cls->file+":"+cls->line+": "
 	   +cls->name+" not documented\n" );
 
