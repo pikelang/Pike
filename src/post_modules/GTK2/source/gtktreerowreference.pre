@@ -65,7 +65,6 @@ int valid()
 }
 
 void destroy()
-//! Destructor.
 {
   if (THIS->obj)
     gtk_tree_row_reference_free((GtkTreeRowReference *)THIS->obj);

@@ -112,7 +112,6 @@ array(int) get_indices()
 }
 
 void destroy()
-//! Destructor.
 {
   if (THIS->obj)
     gtk_tree_path_free((GtkTreePath *)THIS->obj);

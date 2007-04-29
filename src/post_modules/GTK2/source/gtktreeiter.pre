@@ -28,7 +28,6 @@ GTK2.TreeIter copy()
 }
 
 void destroy()
-//! Destructor.
 {
   if (THIS->obj)
     gtk_tree_iter_free((GtkTreeIter *)THIS->obj);

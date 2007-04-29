@@ -3,8 +3,9 @@ require gtk24;
 
 class GTK2.IconInfo;
 
+//! Contains information found when looking up an icon in an icon theme.
+
 void destroy()
-//! Destructor.
 {
   if (THIS->obj)
     gtk_icon_info_free((GtkIconInfo *)THIS->obj);

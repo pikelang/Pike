@@ -30,7 +30,7 @@ void create(string|mapping options)
 //! Create a GDK2.Pixbuf object.  options is either a filename or a mapping
 //! of options.  options can be:<br>
 //! <table>
-//! <tr><td>filename</td><td>name of file to load</td><tr>
+//! <tr><td>filename</td><td>name of file to load</td></tr>
 //! <tr><td>bits</td><td>number of bits per sample</td></tr>
 //! <tr><td>width</td><td>width of image</td></tr>
 //! <tr><td>height</td><td>height of image</td></tr>
@@ -45,7 +45,7 @@ void create(string|mapping options)
 //! <tr><td>rowstride</td><td>distance in bytes between row starts</td></tr>
 //! </table>
 //! </td></tr>
-//!       
+//! </table>
 {
   GdkPixbuf *gp;
   GError *error=NULL;

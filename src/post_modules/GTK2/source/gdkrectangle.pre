@@ -67,7 +67,6 @@ mixed cast(string type)
 }
 
 void destroy()
-//! Destroy rectangle.
 {
   g_free(THIS->obj);
   pgtk2_pop_n_elems(args);

@@ -2,6 +2,8 @@
 class GTK2.TreeModel;
 mixin_for G.Object;
 
+//! The tree interface used by TreeView.
+
 signal row_changed;
 signal row_deleted;
 signal row_has_child_toggled;

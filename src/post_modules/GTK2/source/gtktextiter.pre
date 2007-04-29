@@ -12,7 +12,6 @@ class GTK2.TextIter;
 }
 
 void destroy()
-//! Destructor.
 {
   if (THIS->obj)
     gtk_text_iter_free((GtkTextIter *)(THIS->obj));

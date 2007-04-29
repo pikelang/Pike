@@ -6,7 +6,6 @@ class Pango.LayoutIter;
 //! PangoLayoutIter.
 
 void destroy()
-//! Destructor.
 {
   if (THIS->obj)
     pango_layout_iter_free((PangoLayoutIter *)THIS->obj);

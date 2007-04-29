@@ -1,6 +1,13 @@
 /* -*- C -*- */
 class GDK2.Colormap;
 
+//! A colormap is an object that contains the mapping between the
+//! color values stored in memory and the RGB values that are used to
+//! display color values. In general, colormaps only contain
+//! significant information for pseudo-color visuals, but even for
+//! other visual types, a colormap object is required in some
+//! circumstances.
+
 void create(GDK2.Visual visual, ?int allocate, ?int system)
 //! Creates a new colormap.
 {

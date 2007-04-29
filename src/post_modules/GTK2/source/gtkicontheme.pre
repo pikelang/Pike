@@ -4,6 +4,8 @@ require gtk24;
 class GTK2.IconTheme;
 inherit G.Object;
 
+//! Looking up icons by name.
+
 signal changed;
 
 void create();

@@ -92,7 +92,6 @@ void set(GDK2.Image|Image.Image image)
 }
 
 void destroy()
-//! Destructor. Destroys the pixmap.
 {
   if (THIS->obj)
     g_object_unref(THIS->obj);

@@ -28,7 +28,6 @@ void create()
 }
 
 void destroy()
-//! Destructor.
 {
   gdk_region_destroy((GdkRegion *)THIS->obj);
   pgtk2_pop_n_elems(args);

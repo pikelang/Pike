@@ -2,6 +2,8 @@
 class GTK2.TreeSortable;
 mixin_for G.Object;
 
+//! The interface for sortable models used by TreeView.
+
 signal sort_column_changed;
 
 void sort_column_changed();

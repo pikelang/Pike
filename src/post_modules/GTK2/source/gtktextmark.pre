@@ -29,7 +29,6 @@ int get_left_gravity();
 //! Determines whether the mark has left gravity.
 
 void destroy()
-//! Destructor.
 {
   if (THIS->obj)
     g_object_unref(THIS->obj);

@@ -18,7 +18,6 @@ endnot;
 signal destroy;
 
 void destroy()
-//! Destructor.
 {
   if (!args && THIS->obj) {
     gtk_object_destroy(GTK_OBJECT(THIS->obj));

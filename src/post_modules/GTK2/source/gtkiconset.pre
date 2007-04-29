@@ -27,7 +27,6 @@ void create(?GDK2.Pixbuf pixbuf)
 }
 
 void destroy()
-//! Destructor.
 {
   if (THIS->obj)
     gtk_icon_set_unref((GtkIconSet *)THIS->obj);

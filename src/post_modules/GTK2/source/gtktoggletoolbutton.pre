@@ -4,6 +4,8 @@ require gtk24;
 class GTK2.ToggleToolButton;
 inherit GTK2.ToolButton;
 
+//! A ToolItem containing a toggle button.
+
 signal toggled;
 
 void create(string|mapping(string:mixed)|void stock_id)

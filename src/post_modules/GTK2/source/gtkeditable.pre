@@ -2,6 +2,8 @@
 class GTK2.Editable;
 mixin_for G.Object;
 
+//! Interface for text-editing widgets.
+
 signal changed;
 signal delete_text;
 signal insert_text;

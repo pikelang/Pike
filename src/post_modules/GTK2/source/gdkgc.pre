@@ -68,7 +68,6 @@ void create(GTK2.Widget|GDK2.Drawable context, mapping|void attributes)
 }
 
 void destroy()
-//! Free the gc, called automatically by pike when the object is destroyed.
 {
   if (THIS->obj)
     g_object_unref(GDK_GC(THIS->obj));

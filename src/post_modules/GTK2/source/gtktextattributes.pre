@@ -49,7 +49,6 @@ GTK2.TextAttributes copy_values(GTK2.TextAttributes dest)
 }
 
 void destroy()
-//! Destructor.
 {
   if (THIS->obj)
     gtk_text_attributes_unref((GtkTextAttributes *)(THIS->obj));

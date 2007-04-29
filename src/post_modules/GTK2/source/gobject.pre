@@ -7,7 +7,6 @@ class G.Object;
 signal notify;
 
 void destroy()
-//! Destructor.
 {
   if (THIS->obj)
     g_object_unref(THIS->obj);

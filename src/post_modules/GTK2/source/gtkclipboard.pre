@@ -21,7 +21,6 @@ void create()
 */
 
 void destroy()
-//! Destructor.
 {
 /*
   if (THIS->obj)

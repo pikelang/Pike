@@ -21,7 +21,6 @@ Pango.TabArray copy()
 }
 
 void destroy()
-//! Destructor.
 {
   if (THIS->obj)
     pango_tab_array_free((PangoTabArray *)THIS->obj);

@@ -20,7 +20,6 @@ int pgtk2_last_event_time()
 %}
 
 void destroy()
-//! Destructor.
 {
   if( THIS->obj )
     g_free( THIS->obj );

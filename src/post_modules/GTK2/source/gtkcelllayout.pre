@@ -3,6 +3,8 @@ require gtk24;
 class GTK2.CellLayout;
 mixin_for G.Object;
 
+//! An interface for packing cells.
+
 %{
 int pgtk2_cell_layout_data_callback(GtkCellLayout *cell_layout,
 				    GtkCellRenderer *cell,

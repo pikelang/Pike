@@ -61,7 +61,6 @@ int equal(Pango.FontDescription desc)
 }
 
 void destroy()
-//! Destructor.
 {
   if (THIS->obj)
     pango_font_description_free((PangoFontDescription *)THIS->obj);

@@ -4,6 +4,8 @@ require gtk24;
 class GTK2.FileFilter;
 inherit GTK2.Data;
 
+//! A filter for selecting a file subset.
+
 void create();
 //! Creates a new W(FileFilter) with no rules added to it.  Such a filter
 //! doesn't accept any files, so is not particularly useful until you add rules
