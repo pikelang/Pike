@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.23 2007/04/06 14:49:12 grubba Exp $
+// $Id: Terminfo.pmod,v 1.24 2007/04/30 12:55:10 grubba Exp $
 #pike __REAL_VERSION__
 
 
@@ -431,8 +431,17 @@ class TermcapDB {
 	// Termcap is in "C:/msys/1.0/etc/termcap"
 	filename = combine_path(filename, "../../etc/termcap");
       }
-      else
-	filename = "/etc/termcap";
+      else {
+	filename = "/etc/termcap";	// Default.
+	foreach(({ "/etc/termcap", "/usr/share/termcap",
+		   "/usr/share/misc/termcap", }), string fname) {
+	  .Stat s = file_stat(fname);
+	  if (s && s->type == "file") {
+	    filename = fname;
+	    break;
+	  }
+	}
+      }
     }
     if (!::open(filename, "r")) {
       error("failed to open termcap file %O\n", filename);
