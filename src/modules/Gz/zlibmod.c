@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.75 2006/08/02 21:40:48 mast Exp $
+|| $Id: zlibmod.c,v 1.76 2007/05/01 20:08:52 nilsson Exp $
 */
 
 #include "global.h"
@@ -281,10 +281,11 @@ void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
   mt_destroy(&z.lock);
 }
 
-/* @decl string pack(string data, void|int(0..1) raw, void|int level,@
- *  void|int strategy)
+/*! @decl string compress(string data, void|int(0..1) raw, @
+ *!                       void|int(0..9) level, void|int strategy)
+ *!
  */
-static void gz_pack(INT32 args)
+static void gz_compress(INT32 args)
 {
   struct pike_string *data;
   dynamic_buffer buf;
@@ -294,7 +295,7 @@ static void gz_pack(INT32 args)
   int level = 8;
   int strategy = Z_DEFAULT_STRATEGY;
 
-  get_all_args("pack", args, "%n.%d%d%d", &data, &raw, &level, &strategy);
+  get_all_args("compress", args, "%n.%d%d%d", &data, &raw, &level, &strategy);
 
   if( raw )
     wbits = -wbits;
@@ -791,7 +792,7 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("crc32",gz_crc32,tFunc(tStr tOr(tVoid,tInt),tInt),0);
 
   /* function(string,void|int(0..1),void|int,void|int:string) */
-  ADD_FUNCTION("pack",gz_pack,tFunc(tStr tOr(tVoid,tInt01) tOr(tVoid,tInt) tOr(tVoid,tInt),tStr),0);
+  ADD_FUNCTION("compress",gz_compress,tFunc(tStr tOr(tVoid,tInt01) tOr(tVoid,tInt09) tOr(tVoid,tInt),tStr),0);
 
   PIKE_MODULE_EXPORT(Gz, crc32);
   PIKE_MODULE_EXPORT(Gz, zlibmod_pack);
