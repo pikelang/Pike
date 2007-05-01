@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.142 2007/04/28 23:24:24 nilsson Exp $
+|| $Id: sprintf.c,v 1.143 2007/05/01 19:24:09 nilsson Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -1329,17 +1329,20 @@ static void low_pike_sprintf(struct format_stack *fs,
 	GET_STRING(s);
 	if( s->size_shift )
 	    Pike_error("sprintf(): %%H requires all characters in the string to be at most eight bits large\n");
+
 	tmp = s->len;
+        l=1;
+        if(fs->fsp->width > 0) l=fs->fsp->width;
+        if( tmp >= (1<<(l*8)) )
+          Pike_error("sprintf(): Length of string to %%%dH too large.\n", l);
+
+
+        x=(char *)alloca(l);
+        fs->fsp->b=MKPCHARP(x,0);
+        fs->fsp->len=l;
 
         if ( (fs->fsp->flags&FIELD_LEFT) )
 	{
-	  l=1;
-	  if(fs->fsp->width > 0) l=fs->fsp->width;
-	  if( tmp >= (1<<(l*8)) )
-	      Pike_error("sprintf(): Length of string to %%%dH too large.\n", l);
-	  x=(char *)alloca(l);
-	  fs->fsp->b=MKPCHARP(x,0);
-	  fs->fsp->len=l;
 	  n=0;
 	  while(n<l)
 	  {
@@ -1349,13 +1352,6 @@ static void low_pike_sprintf(struct format_stack *fs,
 	}
 	else 
 	{
-	  l=1;
-	  if(fs->fsp->width > 0) l=fs->fsp->width;
-	  if( tmp >= (1<<(l*8)) )
-	      Pike_error("sprintf(): Length of string to %%%dH too large.\n", l);
-	  x=(char *)alloca(l);
-	  fs->fsp->b=MKPCHARP(x,0);
-	  fs->fsp->len=l;
 	  while(--l>=0)
 	  {
 	    x[l]=tmp & 0xff;
