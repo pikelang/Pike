@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.88 2007/05/01 21:45:07 nilsson Exp $
+|| $Id: png.c,v 1.89 2007/05/01 22:08:49 nilsson Exp $
 */
 
 #include "global.h"
@@ -32,17 +32,18 @@
 extern struct program *image_colortable_program;
 extern struct program *image_program;
 
-static struct program *gz_inflate=NULL;
-
 #ifdef DYNAMIC_MODULE
 typedef unsigned INT32 (_crc32)(unsigned INT32, unsigned char*,
 				unsigned INT32);
 typedef void (_pack)(struct pike_string*, dynamic_buffer*, int, int, int);
+typedef void (_unpack)(struct pike_string*, dynamic_buffer*, int);
 static _crc32 *crc32;
 static _pack *zlibmod_pack;
+static _unpack *zlibmod_unpack;
 #else
 extern unsigned INT32 crc32(unsigned INT32, unsigned char*, unsigned INT32);
 extern void zlibmod_pack(struct pike_string*, dynamic_buffer*, int, int, int);
+extern void zlibmod_unpack(struct pike_string*, dynamic_buffer*, int);
 #endif
 
 static struct pike_string *param_palette;
@@ -122,14 +123,19 @@ static void push_png_chunk(const char *type,    /* 4 bytes */
 
 static void png_decompress(int style)
 {
-   struct object *o;
+  dynamic_buffer buf;
+  ONERROR err;
 
-   if (style)
-      Pike_error("Internal error: Illegal decompression style %d.\n",style);
-   
-   o=clone_object(gz_inflate,0);
-   apply(o,"inflate",1);
-   free_object(o);
+  if (style)
+    Pike_error("Internal error: Illegal decompression style %d.\n",style);
+
+  initialize_buf(&buf);
+  SET_ONERROR(err, toss_buffer, &buf);
+  zlibmod_unpack(Pike_sp[-1].u.string, &buf, 0);
+  UNSET_ONERROR(err);
+
+  pop_stack();
+  push_string(low_free_buf(&buf));
 }
 
 static void png_compress(int style, int zlevel, int zstrategy)
@@ -1828,37 +1834,26 @@ void exit_image_png(void)
    free_string(param_type);
    free_string(param_zlevel);
    free_string(param_zstrategy);
-
-   if(gz_inflate)
-     free_program(gz_inflate);
 }
 
 void init_image_png(void)
 {
+  int gz = 0;
 #ifdef DYNAMIC_MODULE
    crc32 = PIKE_MODULE_IMPORT(Gz, crc32);
    zlibmod_pack = PIKE_MODULE_IMPORT(Gz, zlibmod_pack);
-   if(!crc32 || !zlibmod_pack) {
-     yyerror("Could not load Image module.");
-     return;
-   }
+   zlibmod_unpack = PIKE_MODULE_IMPORT(Gz, zlibmod_unpack);
+   if(crc32 && zlibmod_pack && zlibmod_unpack)
+     gz = 1;
+#else
+   push_text("Gz.inflate");
+   SAFE_APPLY_MASTER("resolv",1);
+   if( Pike_sp[-1].type==T_PROGRAM )
+     gz = 1;
+   pop_stack();
 #endif
 
-   push_text("Gz");
-   SAFE_APPLY_MASTER("resolv",1);
-   if (sp[-1].type==T_OBJECT) 
-   {
-     stack_dup();
-     push_text("inflate");
-     f_index(2);
-     gz_inflate=program_from_svalue(sp-1);
-     if(gz_inflate) 
-       add_ref(gz_inflate);
-     pop_stack();
-   }
-   pop_stack();
-
-   if (gz_inflate)
+   if (gz)
    {
      ADD_FUNCTION2("_chunk",image_png__chunk,tFunc(tStr tStr,tStr),0,
 		  OPT_TRY_OPTIMIZE);
