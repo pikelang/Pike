@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.19 2004/05/02 18:44:45 nilsson Exp $
+// $Id: testsuite.in,v 1.20 2007/05/01 21:44:40 nilsson Exp $
 
 cond_resolv(Gz.deflate,
 [[
@@ -40,6 +40,15 @@ define(dotest,[[
 
   dotest(random_string(32768))
   dotest(random_string(524288))
-  dotest(random_string(8388500))
+
+  test_eq(Gz.uncompress(Gz.compress("hello")),"hello")
+  test_eq(Gz.uncompress(Gz.compress("")),"")
+  test_eq(Gz.uncompress(Gz.compress("hello",1),1),"hello")
+  test_eq(Gz.uncompress(Gz.compress("",1),1),"")
+  test_eval_error(Gz.uncompress("");)
+  test_eval_error(Gz.uncompress("x");)
+  test_eval_error(Gz.uncompress(Gz.compress("x",1)))
+  test_eval_error(Gz.uncompress(Gz.compress("x"),1))
+
 ]])
 END_MARKER
