@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.77 2007/05/01 21:44:17 nilsson Exp $
+|| $Id: zlibmod.c,v 1.78 2007/05/01 22:07:48 nilsson Exp $
 */
 
 #include "global.h"
@@ -868,6 +868,7 @@ PIKE_MODULE_INIT
 
   PIKE_MODULE_EXPORT(Gz, crc32);
   PIKE_MODULE_EXPORT(Gz, zlibmod_pack);
+  PIKE_MODULE_EXPORT(Gz, zlibmod_unpack);
 #else
   if(!TEST_COMPAT(7,6))
     HIDE_MODULE();
