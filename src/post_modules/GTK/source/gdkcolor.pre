@@ -81,7 +81,7 @@ Image.Color.Color image_color_object()
 //! Return a Image.Color.Color instance.<br />
 //! This gives better precision than the rgb function.
 {
-  unsigned char colorname[4+4+4+2];
+  char colorname[4+4+4+2];
   sprintf( colorname, "#%04x%04x%04x",
            ((GdkColor *)THIS->obj)->red,
            ((GdkColor *)THIS->obj)->green,

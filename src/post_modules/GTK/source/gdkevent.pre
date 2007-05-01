@@ -180,7 +180,7 @@ mixed _index(string ind)
           push_string( make_shared_binary_string( e->client.data.b, 20 ) );
           break;
         case 16:
-          push_string(make_shared_binary_string1(e->client.data.s, 10));
+          push_string(make_shared_binary_string1((const p_wchar1 *)e->client.data.s, 10));
           break;
         case 32:
           push_Xpseudo32bitstring( e->client.data.l, 5 );
@@ -415,7 +415,7 @@ mixed cast(string to)
         push_string( make_shared_binary_string( e->client.data.b, 20 ) );
         break;
       case 16:
-        push_string(make_shared_binary_string1(e->client.data.s, 10));
+        push_string(make_shared_binary_string1((const p_wchar1 *)e->client.data.s, 10));
         break;
       case 32:
         push_Xpseudo32bitstring( e->client.data.l, 5 );

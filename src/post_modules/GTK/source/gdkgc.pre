@@ -254,7 +254,7 @@ void set_dashes( int offset, array dashes )
 {
     int i,o;
     struct array *a;
-    gchar *list;
+    gint8 *list;
 
     get_all_args( "set_dashes", args, "%d%a", &o, &a );
 

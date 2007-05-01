@@ -38,7 +38,7 @@ mapping(string:int) query_child_packing(GTK.Widget child)
 //! ([ "expand":expandp, "fill":fillp, "padding":paddingp, "type":type ])
 {
   struct object *o;
-  gint  pa;
+  guint pa;
   gboolean ex, fi;
   GtkPackType ty;
   get_all_args( "query_child_packing", args, "%o", &o);

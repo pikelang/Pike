@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.39 2003/12/13 22:54:57 nilsson Exp $
+|| $Id: support.c,v 1.40 2007/05/01 20:00:33 nilsson Exp $
 */
 
 #include <version.h>
@@ -456,7 +456,7 @@ void push_Xpseudo32bitstring( void *f, int nelems )
   if( sizeof( long ) != 4 )
   {
     long *q = (long *)f;
-    int *res = (int *)xalloc( nelems * 4 ), i;
+    p_wchar2 *res = (p_wchar2 *)xalloc( nelems * 4 ), i;
     for(i=0; i<nelems; i++ )
       res[i] = q[i];
     push_string( make_shared_binary_string2( res, nelems ) );

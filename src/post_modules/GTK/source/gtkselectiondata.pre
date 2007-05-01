@@ -57,7 +57,7 @@ void set(string data )
   gtk_selection_data_set( ((GtkSelectionData *)THIS->obj),
                           ((GtkSelectionData *)THIS->obj)->target,
                           8<<s->size_shift,
-                          s->str,
+                          (const guchar *)s->str,
                           (s->len * 1<<s->size_shift) );
   RETURN_THIS();
 }
