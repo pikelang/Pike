@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.143 2007/04/21 20:00:01 grubba Exp $
+|| $Id: svalue.h,v 1.144 2007/05/01 20:08:16 nilsson Exp $
 */
 
 #ifndef SVALUE_H
@@ -200,6 +200,9 @@ struct svalue
 #define tInt04 "\010\000\000\000\000\000\000\000\004"
 #define tInt05 "\010\000\000\000\000\000\000\000\005"
 #define tInt06 "\010\000\000\000\000\000\000\000\006"
+#define tInt07 "\010\000\000\000\000\000\000\000\007"
+#define tInt08 "\010\000\000\000\000\000\000\000\010"
+#define tInt09 "\010\000\000\000\000\000\000\000\011"
 #define tIntPos "\010\000\000\000\000\177\377\377\377"
 #define tInt1Plus "\010\000\000\000\001\177\377\377\377"
 #define tInt2Plus "\010\000\000\000\002\177\377\377\377"
