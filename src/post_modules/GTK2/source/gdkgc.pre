@@ -325,12 +325,13 @@ void set_dashes(int offset, array dashes)
     int i;
     INT_TYPE o;
     struct array *a;
-    gchar *list;
+    gint8 *list;
 
     get_all_args("set_dashes",args,"%d%a",&o,&a);
     list=xalloc(a->size);
     for (i=0; i<a->size; i++)
       list[i]=a->item[i].u.integer;
+
     gdk_gc_set_dashes(GDK_GC(THIS->obj),o,list,a->size);
     free(list);
   }
