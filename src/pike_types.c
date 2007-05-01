@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.303 2007/04/27 14:43:42 grubba Exp $
+|| $Id: pike_types.c,v 1.304 2007/05/01 11:41:12 grubba Exp $
 */
 
 #include "global.h"
@@ -531,14 +531,11 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
     if (flag_method == PT_IS_MARKER) {
       t->flags = PT_FLAG_MARKER_0 << (type-'0');
     } else {
-      /* Clear markers that are assigned in the respective subtrees,
-       * but copy the rest.
-       */
       if (car && (flag_method & PT_COPY_CAR)) {
-	t->flags |= car->flags & ~(car->flags >> PT_ASSIGN_SHIFT);
+	t->flags |= car->flags;
       }
       if (cdr && (flag_method & PT_COPY_CDR)) {
-	t->flags |= cdr->flags & ~(cdr->flags >> PT_ASSIGN_SHIFT);
+	t->flags |= cdr->flags;
       }
     }
   }
