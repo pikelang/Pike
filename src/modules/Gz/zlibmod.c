@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.76 2007/05/01 20:08:52 nilsson Exp $
+|| $Id: zlibmod.c,v 1.77 2007/05/01 21:44:17 nilsson Exp $
 */
 
 #include "global.h"
@@ -212,18 +212,10 @@ static int do_deflate(dynamic_buffer *buf,
    return ret;
 }
 
-static void free_pack(struct zipper *z)
-{
-  deflateEnd(&z->gz);
-  mt_destroy(&z->lock);
-  toss_buffer((dynamic_buffer *)z->gz.opaque);
-}
-
 void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
 		  int level, int strategy, int wbits)
 {
   struct zipper z;
-  ONERROR err;
   int ret;
 
   if(level < Z_NO_COMPRESSION ||
@@ -248,6 +240,10 @@ void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
   MEMSET(&z, 0, sizeof(z));
   z.gz.zalloc = Z_NULL;
   z.gz.zfree = Z_NULL;
+
+  z.gz.next_in = (Bytef *)data->str;
+  z.gz.avail_in = (unsigned INT32)(data->len);
+
   ret = deflateInit2(&z.gz, level, Z_DEFLATED, wbits, 9, strategy);
 
   switch(ret)
@@ -260,25 +256,21 @@ void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
     break;
 
   default:
-    if(THIS->gz.msg)
-      Pike_error("Failed to initialize gz: %s\n",THIS->gz.msg);
+    if(z.gz.msg)
+      Pike_error("Failed to initialize gz: %s\n", z.gz.msg);
     else
       Pike_error("Failed to initialize gz\n");
   }
 
-  z.gz.next_in = (Bytef *)data->str;
-  z.gz.avail_in = (unsigned INT32)(data->len);
-
-  initialize_buf(buf);
-  z.gz.opaque = buf;
   mt_init(&z.lock);
 
-  SET_ONERROR(err,free_pack,&z);
   ret = do_deflate(buf, &z, Z_FINISH);
-  UNSET_ONERROR(err);
 
   deflateEnd(&z.gz);
   mt_destroy(&z.lock);
+
+  if(ret != Z_STREAM_END)
+    Pike_error("Error while deflating data (%d).\n",ret);
 }
 
 /*! @decl string compress(string data, void|int(0..1) raw, @
@@ -289,6 +281,7 @@ static void gz_compress(INT32 args)
 {
   struct pike_string *data;
   dynamic_buffer buf;
+  ONERROR err;
 
   int wbits = 15;
   int raw = 0;
@@ -300,7 +293,10 @@ static void gz_compress(INT32 args)
   if( raw )
     wbits = -wbits;
 
+  initialize_buf(&buf);
+  SET_ONERROR(err, toss_buffer, &buf);
   zlibmod_pack(data, &buf, level, strategy, wbits);
+  UNSET_ONERROR(err);
 
   pop_n_elems(args);
   push_string(low_free_buf(&buf));
@@ -567,6 +563,79 @@ static int do_inflate(dynamic_buffer *buf,
   return fail;
 }
 
+void zlibmod_unpack(struct pike_string *data, dynamic_buffer *buf, int raw)
+{
+  struct zipper z;
+  int ret;
+
+  MEMSET(&z, 0, sizeof(z));
+  z.gz.zalloc = Z_NULL;
+  z.gz.zfree = Z_NULL;
+
+  z.gz.next_in=(Bytef *)data->str;
+  z.gz.avail_in = DO_NOT_WARN((unsigned INT32)(data->len));
+
+  if( raw )
+    ret = inflateInit2(&z.gz, -15);
+  else
+    ret = inflateInit( &z.gz );
+
+  switch(ret)
+  {
+  case Z_OK:
+    break;
+
+  case Z_VERSION_ERROR:
+    Pike_error("libz not compatible with zlib.h!!!\n");
+    break;
+
+  default:
+    if(z.gz.msg)
+      Pike_error("Failed to initialize gz: %s\n", z.gz.msg);
+    else
+      Pike_error("Failed to initialize gz\n");
+  }
+
+  mt_init(&z.lock);
+  ret = do_inflate(buf, &z, Z_SYNC_FLUSH);
+  mt_destroy(&z.lock);
+
+  if(ret==Z_OK)
+    Pike_error("Compressed data is truncated.\n");
+  if(ret!=Z_STREAM_END)
+    Pike_error("Failed to inflate data (%d).\n", ret);
+}
+
+/*! @decl string uncompress(string data, void|int(0..1) raw)
+ */
+static void gz_uncompress(INT32 args)
+{
+  dynamic_buffer buf;
+  ONERROR err;
+  int raw = 0;
+
+  if(args<1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("uncompress", 1);
+  if(Pike_sp[-args].type!=PIKE_T_STRING)
+    SIMPLE_BAD_ARG_ERROR("uncompress", 1, "string");
+  if(args>1)
+  {
+    if(Pike_sp[1-args].type==PIKE_T_INT)
+      raw = Pike_sp[1-args].u.integer;
+    else
+      SIMPLE_BAD_ARG_ERROR("uncompress", 2, "int");
+  }
+
+  initialize_buf(&buf);
+  SET_ONERROR(err, toss_buffer, &buf);
+  zlibmod_unpack(Pike_sp[-args].u.string, &buf, raw);
+  UNSET_ONERROR(err);
+
+  pop_n_elems(args);
+  push_string(low_free_buf(&buf));
+
+}
+
 /*! @decl string inflate(string data)
  *!
  *! This function performs gzip style decompression. It can inflate
@@ -793,6 +862,9 @@ PIKE_MODULE_INIT
 
   /* function(string,void|int(0..1),void|int,void|int:string) */
   ADD_FUNCTION("compress",gz_compress,tFunc(tStr tOr(tVoid,tInt01) tOr(tVoid,tInt09) tOr(tVoid,tInt),tStr),0);
+
+  /* function(string,void|int(0..1):string) */
+  ADD_FUNCTION("uncompress",gz_uncompress,tFunc(tStr tOr(tVoid,tInt01),tStr),0);
 
   PIKE_MODULE_EXPORT(Gz, crc32);
   PIKE_MODULE_EXPORT(Gz, zlibmod_pack);
