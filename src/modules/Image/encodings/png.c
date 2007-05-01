@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.87 2006/08/14 12:49:31 nilsson Exp $
+|| $Id: png.c,v 1.88 2007/05/01 21:45:07 nilsson Exp $
 */
 
 #include "global.h"
@@ -135,11 +135,15 @@ static void png_decompress(int style)
 static void png_compress(int style, int zlevel, int zstrategy)
 {
   dynamic_buffer buf;
+  ONERROR err;
 
   if (style)
     Pike_error("Internal error: Illegal decompression style %d.\n",style);
 
+  initialize_buf(&buf);
+  SET_ONERROR(err, toss_buffer, &buf);
   zlibmod_pack(Pike_sp[-1].u.string, &buf, zlevel, zstrategy, 15);
+  UNSET_ONERROR(err);
 
   pop_stack();
   push_string(low_free_buf(&buf));
