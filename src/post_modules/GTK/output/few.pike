@@ -1,6 +1,6 @@
 inherit "split";
 
-#define LIMIT 150*1024
+#define LIMIT 175*1024
 
 array files = ({});
 String.Buffer current_data = String.Buffer(LIMIT + 10240);
