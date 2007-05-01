@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.24 2007/04/30 12:55:10 grubba Exp $
+// $Id: Terminfo.pmod,v 1.25 2007/05/01 10:36:25 grubba Exp $
 #pike __REAL_VERSION__
 
 
@@ -436,7 +436,7 @@ class TermcapDB {
 	foreach(({ "/etc/termcap", "/usr/share/termcap",
 		   "/usr/share/misc/termcap", }), string fname) {
 	  .Stat s = file_stat(fname);
-	  if (s && s->type == "file") {
+	  if (s && s->type == "reg") {
 	    filename = fname;
 	    break;
 	  }
