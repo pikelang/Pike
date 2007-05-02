@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.66 2005/06/03 11:49:05 grubba Exp $
+dnl $Id: aclocal.m4,v 1.67 2007/05/02 15:15:33 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer autoconf call substr m4_substr
@@ -316,7 +316,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.66 2005/06/03 11:49:05 grubba Exp $
+# $Id: aclocal.m4,v 1.67 2007/05/02 15:15:33 mast Exp $
 
 MY_AC_PROG_CC
 
@@ -485,6 +485,8 @@ pushdef([AC_OUTPUT],
     unset ac_cv_env_CFLAGS_value
     unset ac_cv_env_LDFLAGS_set
     unset ac_cv_env_LDFLAGS_value
+    unset ac_cv_env_LIBS_set
+    unset ac_cv_env_LIBS_value
     unset ac_cv_env_CPPFLAGS_set
     unset ac_cv_env_CPPFLAGS_value
     unset ac_cv_env_CPP_set
