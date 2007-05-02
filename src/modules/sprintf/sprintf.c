@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.143 2007/05/01 19:24:09 nilsson Exp $
+|| $Id: sprintf.c,v 1.144 2007/05/02 17:43:32 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -161,7 +161,7 @@
  *!       the moon or anything else the _sprintf method implementor
  *!       wanted for debugging.
  *!     @value 'H'
- *!       Binary hollerith string. Equivalent to sprintf("%c%s",
+ *!       Binary Hollerith string. Equivalent to sprintf("%c%s",
  *!       strlen(str), str). Arguments (such as width etc) adjust the
  *!       length-part of the format. Requires 8-bit strings.
  *!     @value 'n'
@@ -1946,7 +1946,8 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
 
       case '~':
       {
-	push_string_type(32);
+	push_finished_type(int_type_string);
+	push_type(T_STRING);
 	continue;
       }
 
@@ -2085,7 +2086,8 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
       case 'H':
       {
 	push_object_type(0, 0);
-	push_string_type(8);
+	push_int_type(0, 255);
+	push_type(T_STRING);
 	push_type(T_OR);
 	break;
       }
@@ -2094,7 +2096,8 @@ static int push_sprintf_argument_types(PCHARP format, ptrdiff_t format_len,
       case 's':
       {
 	push_object_type(0, 0);
-	push_string_type(32);
+	push_finished_type(int_type_string);
+	push_type(T_STRING);
 	push_type(T_OR);
 	break;
       }

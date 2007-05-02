@@ -18,7 +18,7 @@
 
 static void my_error(string err, int throw_errors) {
   if(throw_errors) error(err);
-  werror([string(8)]err);
+  werror([string(0..255)]err);
   exit(1);
 }
 
