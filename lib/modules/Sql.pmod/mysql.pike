@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.36 2006/12/05 11:48:29 grubba Exp $
+ * $Id: mysql.pike,v 1.37 2007/05/03 13:57:35 mast Exp $
  *
  * Glue for the Mysql-module
  */
@@ -21,6 +21,13 @@ inherit Mysql.mysql;
 #define CH_DEBUG(X...)	werror("Sql.mysql: " + X)
 #else
 #define CH_DEBUG(X...)
+#endif
+
+#ifndef (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
+// Recognition constant to tell that the unicode decode mode would use
+// the buggy MySQLBrokenUnicodeWrapper if it would be enabled through
+// any of the undocumented methods.
+constant unicode_decode_mode_is_broken = 1;
 #endif
 
 // Set to the above if the connection is requested to be in one of the
@@ -109,7 +116,7 @@ int(0..1) set_unicode_encode_mode (int enable)
 //!   is @expr{latin1@}, the charset accepted by @[big_query] is not
 //!   quite Unicode since @expr{latin1@} is based on @expr{cp1252@}.
 //!   The differences are in the range @expr{0x80..0x9f@} where
-//!   Unicode have control chars.
+//!   Unicode has control chars.
 //!
 //!   This small discrepancy is not present when the connection
 //!   charset is @expr{unicode@}.
@@ -156,19 +163,22 @@ void set_unicode_decode_mode (int enable)
 //!   the statement above fails. The MySQL system variable
 //!   @expr{character_set_results@} was added in MySQL 4.1.1.
 //!
-//! @note
-//!   This function is only available if Pike has been compiled with
-//!   MySQL client library 4.1.0 or later, or if the environment
-//!   variable @tt{PIKE_BROKEN_MYSQL_UNICODE_MODE@} is set.
+//!   An error is also thrown if Pike has been compiled with a MySQL
+//!   client library older than 4.1.0, which lack the necessary
+//!   support for this.
 //!
 //! @seealso
 //!   @[set_unicode_encode_mode]
 {
 #if !constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
-  if (!getenv("PIKE_BROKEN_MYSQL_UNICODE_MODE")) {
-    predef::error("set_unicode_decode_mode not available.\n");
+  // Undocumented feature for old mysql libs. See
+  // MySQLBrokenUnicodeWrapper for details.
+  if (!(<0, -1>)[enable] && !getenv("PIKE_BROKEN_MYSQL_UNICODE_MODE")) {
+    predef::error ("Unicode decode mode not supported - "
+		   "compiled with MySQL client library < 4.1.0.\n");
   }
 #endif
+
   if (enable) {
     CH_DEBUG("Enabling unicode decode mode.\n");
     ::big_query ("SET character_set_results = utf8");
@@ -261,6 +271,9 @@ void set_charset (string charset)
 
   CH_DEBUG("Setting charset to %O.\n", charset);
 
+  int broken_unicode = charset == "broken-unicode";
+  if (broken_unicode) charset = "unicode";
+
   ::set_charset (charset == "unicode" ? "utf8" : charset);
 
   if (charset == "unicode" ||
@@ -271,7 +284,9 @@ void set_charset (string charset)
 #if constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
     utf8_mode |= UNICODE_DECODE_MODE;
 #else
-    if (set_unicode_decode_mode)
+    if (broken_unicode || getenv ("PIKE_BROKEN_MYSQL_UNICODE_MODE"))
+      // Undocumented feature for old mysql libs. See
+      // MySQLBrokenUnicodeWrapper for details.
       utf8_mode |= UNICODE_DECODE_MODE;
     else
       predef::error ("Unicode decode mode not supported - "
@@ -311,6 +326,9 @@ string get_charset()
 //!   @[set_charset]
 {
   if (utf8_mode & UTF8_UNICODE_ENCODE_MODE && send_charset)
+    // We don't try to be symmetric with set_charset when the
+    // broken-unicode kludge is in use. That since this reflects the
+    // setting on the encode side only.
     return "unicode";
   return ::get_charset();
 }
@@ -763,7 +781,12 @@ static void create(string|void host, string|void database,
 		   mapping(string:string|int)|void options)
 {
   if (options) {
-    string charset = options->mysql_charset_name || "latin1";
+    string charset = options->mysql_charset_name ?
+      lower_case (options->mysql_charset_name) : "latin1";
+
+    int broken_unicode = charset == "broken-unicode";
+    if (broken_unicode) charset = "unicode";
+
     if (charset == "unicode")
       options->mysql_charset_name = "utf8";
 
@@ -772,7 +795,9 @@ static void create(string|void host, string|void database,
     update_unicode_encode_mode_from_charset (lower_case (charset));
 
 #if !constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
-    if (set_unicode_encode_mode) {
+    // Undocumented feature for old mysql libs. See
+    // MySQLBrokenUnicodeWrapper for details.
+    if (broken_unicode || getenv ("PIKE_BROKEN_MYSQL_UNICODE_MODE")) {
 #endif
       if (charset == "unicode")
 	utf8_mode |= UNICODE_DECODE_MODE;

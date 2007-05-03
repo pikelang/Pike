@@ -1,5 +1,5 @@
 /*
- * $Id: sql_util.pmod,v 1.18 2006/12/29 23:22:43 nilsson Exp $
+ * $Id: sql_util.pmod,v 1.19 2007/05/03 13:57:35 mast Exp $
  *
  * Some SQL utility functions.
  * They are kept here to avoid circular references.
@@ -170,18 +170,21 @@ class MySQLUnicodeWrapper
 #else
 
 class MySQLBrokenUnicodeWrapper
-// This one is used to get bug compatibility when compiled with an old
-// MySQL client lib that doesn't have the charsetnr property in the
-// field info. It looks at the binary flag instead, which is set for
-// binary fields but might also be set for text fields (e.g. with a
-// definition like "VARCHAR(255) BINARY").
+// This one is used to get a buggy unicode support when compiled with
+// an old MySQL client lib that doesn't have the charsetnr property in
+// the field info. It looks at the binary flag instead, which is set
+// for binary fields but might also be set for text fields (e.g. with
+// a definition like "VARCHAR(255) BINARY").
 //
 // I.e. the effect of using this one is that text fields with the
-// binary flag won't be correctly decoded in unicode decode mode. This
-// has to be enabled by defining the environment variable
-// PIKE_BROKEN_MYSQL_UNICODE_MODE. With it the unicode decode mode
-// will exist even when the client lib is too old to implement it
-// correctly.
+// binary flag won't be correctly decoded in unicode decode mode.
+//
+// This has to be enabled either by passing "broken-unicode" as
+// charset to Sql.mysql.create or Sql.mysql.set_charset, by calling
+// Sql.mysql.set_unicode_decode_mode(-1), or by defining the
+// environment variable PIKE_BROKEN_MYSQL_UNICODE_MODE. That will
+// cause this buggy variant to be used if and only if the MySQL client
+// lib doesn't support the charsetnr property.
 {
   inherit UnicodeWrapper;
 
