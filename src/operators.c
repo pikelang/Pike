@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.220 2007/04/26 17:45:44 grubba Exp $
+|| $Id: operators.c,v 1.221 2007/05/03 09:04:10 grubba Exp $
 */
 
 #include "global.h"
@@ -2036,7 +2036,8 @@ static node *optimize_binary(node *n)
     }
     if (str_width != 32) {
       type_stack_mark();
-      push_string_type(str_width);
+      push_int_type(0, (1<<str_width)-1);
+      push_type(T_STRING);
       free_type(n->type);
       n->type = pop_unfinished_type();
     }
