@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.776 2007/04/17 08:59:59 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.777 2007/05/03 09:08:05 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -337,7 +337,7 @@ test_any([[ int a=0xffffffff; return a%17 ]],
 test_any([[ int a=0xffffffff; return a>>17 ]],
 	 [[ (0xffffffff == -1)?-1:0x7fff ]]);
 
-test_any([[return sprintf("%O", typeof(aggregate("foo")));]], "array(string(8))");
+test_any([[return sprintf("%O", typeof(aggregate("foo")));]], "array(string(0..255))");
 test_any([[int a; return sprintf("%O", typeof(aggregate(a)));]], "array(int)");
 test_any([[int|string a;
 	   string s = sprintf("%O", typeof(aggregate(a)));
@@ -6412,14 +6412,14 @@ cond([[all_constants()->kill && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
 
 // typeof
 test_eq(sprintf("%O", typeof(1)),"int(1..1)")
-test_eq(sprintf("%O", typeof("")),"string(0)")
-test_eq(sprintf("%O", typeof(""[0])),"int(0..0)")
+test_eq(sprintf("%O", typeof("")),"string(zero)")
+test_eq(sprintf("%O", typeof(""[0])),"zero")
 test_eq(sprintf("%O", typeof(0.0)),"float")
 test_eq(sprintf("%O", typeof(all_constants()["all_constants"])),"mixed")
 
 // _typeof
 test_eq(sprintf("%O", _typeof(1)),"int(1..1)")
-test_eq(sprintf("%O", _typeof("")),"string(0)")
+test_eq(sprintf("%O", _typeof("")),"string(zero)")
 test_eq(sprintf("%O", _typeof("x"[0])),"int(120..120)")
 test_eq(sprintf("%O", _typeof(0.0)),"float")
 test_eq([[sscanf(sprintf("%Ox", _typeof(this_object))-" ",
