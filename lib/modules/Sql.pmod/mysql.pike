@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.37 2007/05/03 13:57:35 mast Exp $
+ * $Id: mysql.pike,v 1.38 2007/05/03 14:09:30 mast Exp $
  *
  * Glue for the Mysql-module
  */
@@ -23,7 +23,7 @@ inherit Mysql.mysql;
 #define CH_DEBUG(X...)
 #endif
 
-#ifndef (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
+#if !constant (Mysql.mysql.HAVE_MYSQL_FIELD_CHARSETNR)
 // Recognition constant to tell that the unicode decode mode would use
 // the buggy MySQLBrokenUnicodeWrapper if it would be enabled through
 // any of the undocumented methods.
