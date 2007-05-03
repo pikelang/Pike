@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.777 2007/05/03 09:08:05 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.778 2007/05/03 16:34:26 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -6413,7 +6413,14 @@ cond([[all_constants()->kill && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
 // typeof
 test_eq(sprintf("%O", typeof(1)),"int(1..1)")
 test_eq(sprintf("%O", typeof("")),"string(zero)")
-test_eq(sprintf("%O", typeof(""[0])),"zero")
+test_any([[
+  // Suppress warnings.
+  class handler {
+    void compile_warning (string file, int line, string err) {};
+  };
+  return compile_string("string s = sprintf(\"%O\", typeof(\"\"[0]));",
+			"-", handler())()->s;
+]], "zero")
 test_eq(sprintf("%O", typeof(0.0)),"float")
 test_eq(sprintf("%O", typeof(all_constants()["all_constants"])),"mixed")
 
