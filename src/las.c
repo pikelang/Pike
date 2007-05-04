@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.390 2007/04/27 14:39:53 grubba Exp $
+|| $Id: las.c,v 1.391 2007/05/04 18:35:18 grubba Exp $
 */
 
 #include "global.h"
@@ -3888,13 +3888,15 @@ void fix_type_field(node *n)
       yyerror("Indexing a void expression.");
       /* The optimizer converts this to an expression returning 0. */
       copy_pike_type(n->type, zero_type_string);
-    } else {
+    } else if (CDR(n)) {
       type_a=CAR(n)->type;
       type_b=CDR(n)->type;
       if(!check_indexing(type_a, type_b, n))
 	if(!Pike_compiler->catch_level)
 	  yyerror("Indexing on illegal type.");
       n->type=index_type(type_a, type_b,n);
+    } else {
+      copy_pike_type(n->type, mixed_type_string);
     }
     break;
 
