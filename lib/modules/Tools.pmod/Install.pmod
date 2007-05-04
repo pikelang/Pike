@@ -65,6 +65,13 @@ array(string) features()
     };
   }
 
+  foreach (({"Regexp.PCRE.Widestring"}), string symbol)
+    catch {
+      if (!zero_type(all_constants()[symbol]) ||
+	  !zero_type(master()->resolv(symbol)))
+	m += ({symbol});
+    };
+
   return a + sort (m);
 }
 
