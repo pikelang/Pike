@@ -61,6 +61,12 @@ class Regexp
 
   mixed _encode() { return regexp_string; }
   mixed _decode(string s) { create(s); }
+
+#if constant (_Regexp_PCRE._pcre)
+  // A bit ugly way to provide access to Regexp.PCRE, but it's less
+  // intrusive than the method used in 7.6 and later.
+  constant PCRE = _Regexp_PCRE;
+#endif
 }
 
 program _module_value=Regexp;
