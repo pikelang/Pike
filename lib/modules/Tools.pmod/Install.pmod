@@ -56,6 +56,10 @@ array(string) features()
     };
   }
 
+#if constant (Regexp.PCRE.Widestring)
+  a += ({ "Regexp.PCRE.Widestring"});
+#endif
+
   return a;
 }
 
