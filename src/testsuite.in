@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.778 2007/05/03 16:34:26 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.779 2007/05/04 20:59:28 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -777,6 +777,11 @@ test_compile_error( [[
 test_compile_error( [[
   // This triggs a compiler bug on old Pike 7.5.
   return lambda(object (([mixed]a)->syntax_error) { return 0; }(0);
+]])
+
+test_compile_error( [[
+  // [bug 4362] This triggs a segfault on some versions of Pike 7.7.
+  mixed x = all_constants()[undefined_identifier];
 ]])
 
 cond( [[ master()->resolv("Pike")->Security ]],[[
