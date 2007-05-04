@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: polyfill.c,v 1.51 2006/08/18 14:00:59 mast Exp $
+|| $Id: polyfill.c,v 1.52 2007/05/04 18:31:35 grubba Exp $
 */
 
 #include "global.h"
@@ -88,7 +88,7 @@ struct vertex
 {
    double x, y;
    struct vertex *next;    /* total list, sorted downwards */
-   struct line_list *below,*above; /* childs */
+   struct line_list *below,*above; /* children */
    int done;
 };
 
@@ -730,7 +730,7 @@ static INLINE struct vertex *polyfill_begin(void)
    return NULL;
 }
 
-static INLINE struct vertex *polyfill_add(struct vertex *top,
+static INLINE struct vertex *polyfill_add(struct vertex **top,
 					  struct array *a,
 					  int arg,
 					  char* what)
@@ -740,16 +740,16 @@ static INLINE struct vertex *polyfill_add(struct vertex *top,
 
    if( (a->type_field & ~(BIT_INT|BIT_FLOAT)) &&
        (array_fix_type_field(a) & ~(BIT_INT|BIT_FLOAT)) ) {
-     polyfill_free(top);
+     polyfill_free(*top);
      Pike_error("Illegal argument %d to %s. %d Expected array(float|int).\n",arg,what, a->type_field);
      return NULL;
    }
 
    if (a->size<6) 
    {
-      return top; 
+      return *top; 
 #if 0
-      polyfill_free(top);
+      polyfill_free(*top);
       Pike_error("Illegal argument %d to %s, too few vertices (min 3)\n", arg, what);
       return NULL; /* no polygon with less then tree corners */
 #endif
@@ -759,16 +759,20 @@ static INLINE struct vertex *polyfill_add(struct vertex *top,
 
    last = first = vertex_new(DO_NOT_WARN(POINT(a,0)),
 			     DO_NOT_WARN(POINT(a,1)),
-			     &top);
+			     top);
 
-   if (!last) return NULL;
+   if (!last) {
+      return NULL;
+   }
 
    for (n=2; n+1<a->size; n+=2)
    {
       cur = vertex_new(DO_NOT_WARN(POINT(a,n)),
 		       DO_NOT_WARN(POINT(a,n+1)),
-		       &top);
-      if (!cur) return NULL;
+		       top);
+      if (!cur) {
+	 return NULL;
+      }
       if (cur->y<last->y)
 	 vertex_connect(cur,last);
       else if (cur->y>last->y)
@@ -790,7 +794,7 @@ static INLINE struct vertex *polyfill_add(struct vertex *top,
    else
       vertex_connect(first,cur);
 
-   return top;
+   return *top;
 }
 
 void image_polyfill(INT32 args)
@@ -817,7 +821,8 @@ void image_polyfill(INT32 args)
 	 SIMPLE_BAD_ARG_ERROR("Image.Image->polyfill", args,
 			      "array(int|float)");
       }
-      if ((v_tmp=polyfill_add(v, sp[-1].u.array, args, "Image.Image->polyfill()"))) {
+      if ((v_tmp=polyfill_add(&v, sp[-1].u.array, args,
+			      "Image.Image->polyfill()"))) {
 	 v = v_tmp;
       } else {
 	 polyfill_free(v);
