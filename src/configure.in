@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.866 2006/12/15 15:29:49 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.867 2007/05/04 16:54:34 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -738,7 +738,7 @@ if test "$GCC" = "yes"; then :; else
       case "/$CC" in
         */smartlink\ cc)
            if test -x /usr/bin/cc; then
-             CC="`echo $CC|sed -e 's/ cc/ \/usr\/bin\/cc/`"
+	     CC="`echo $CC|sed -e 's/ cc/ \/usr\/bin\/cc/'`"
            else
              : ;
            fi
