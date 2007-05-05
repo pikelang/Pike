@@ -425,11 +425,9 @@ class YMD
       if (md==CALUNKNOWN) make_month();
 
       return
-	 sprintf("%s, %02d %s %04d 00:00:00 GMT",
-		 ("SunMonTueWedThuFriSat"/3)[compat_week_day(wd)],
-		 md,
-		 ("zzzJanFebMarAprMayJunJulAugSepOctNovDec"/3)[m],
-		 ((yd < 1)?y-1:y));
+         sprintf("%s, %02d %s %04d 00:00:00 GMT",
+                     week_day_shortname(),
+                     month_day(),month_shortname(),year_no());
    }
 
    string format_ymd()
