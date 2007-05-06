@@ -1,7 +1,5 @@
 #pike __REAL_VERSION__
 
-import ".";
-
 static string flat(string s)
 {
    return replace(lower_case(s),
@@ -11,7 +9,7 @@ static string flat(string s)
 
 static class _language_base
 {
-   inherit Rule.Language;
+   inherit .Rule.Language;
 
    static mapping events_translate=0;
 
@@ -915,7 +913,7 @@ class cROMAN
 // source: anonymous unix locale file
 
 constant cKL=cGREENLANDIC; // Greenlandic 
-constant cKAL=cGREENLANDIC; 
+constant cKAL=cGREENLANDIC;
 class cGREENLANDIC
 {
    inherit _ymd_base;
@@ -1032,7 +1030,7 @@ class cPERSIAN
 // source: anonymous unix locale file
 
 constant cAF=cAFRIKAANS; // Afrikaans (South Africa)
-constant cAFR=cAFRIKAANS; 
+constant cAFR=cAFRIKAANS;
 class cAFRIKAANS
 {
    inherit _ymd_base;
@@ -2164,10 +2162,10 @@ class cSERBIAN_UNICODE
 
 static mapping _cache=([]);
 
-Rule.Language `[](string lang)
+.Rule.Language `[](string lang)
 {
    lang=upper_case(lang);
-   Rule.Language l=_cache[lang];
+   .Rule.Language l=_cache[lang];
    if (l) return l;
    program cl=::`[]("c"+lang);
    
