@@ -148,6 +148,7 @@ A:  ->format_xxx();
     This is all the formats:
 
     format_ext_time       "Wednesday, 10 January 2001 10:49:57"
+    format_ext_time_short "Wed, 10 Jan 2001 10:49:57 CET"
     format_ext_ymd        "Wednesday, 10 January 2001"
     format_iso_time       "2001-01-10 (Jan) -W02-3 (Wed) 10:49:57 UTC+1"
     format_iso_ymd        "2001-01-10 (Jan) -W02-3 (Wed)"
