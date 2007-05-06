@@ -1199,6 +1199,7 @@ class cSuperTimeRange
 
    string format_iso_time() { return RBASE->format_iso_time(); }
    string format_ext_time() { return RBASE->format_ext_time(); }
+   string format_ext_time_short() { return RBASE->format_ext_time_short(); }
    string format_time() { return RBASE->format_time(); }
    string format_time_short() { return RBASE->format_time_short(); }
    string format_time_xshort() { return RBASE->format_time_xshort(); }
