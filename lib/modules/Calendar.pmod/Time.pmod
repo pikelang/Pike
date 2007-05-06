@@ -849,6 +849,17 @@ class TimeofDay
 		     "00:00:00",format_tod());
    }
 
+   string format_ext_time_short()
+   {
+      if (wd==CALUNKNOWN) make_week();
+      if (md==CALUNKNOWN) make_month();
+
+      return
+         sprintf("%s, %02d %s %04d %s",
+                     week_day_shortname(),
+                     month_day(),month_shortname(),year_no(),format_todz());
+   }
+
    string format_commonlog()
    {
       if (!base) make_base();
