@@ -851,13 +851,9 @@ class TimeofDay
 
    string format_ext_time_short()
    {
-      if (wd==CALUNKNOWN) make_week();
-      if (md==CALUNKNOWN) make_month();
-
-      return
-         sprintf("%s, %02d %s %04d %s",
-                     week_day_shortname(),
-                     month_day(),month_shortname(),year_no(),format_todz());
+      if (!base) make_base();
+      return replace(base->format_ext_time_short(),
+		     "00:00:00 GMT",format_todz());
    }
 
    string format_commonlog()
