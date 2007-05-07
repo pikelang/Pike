@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rbtree.h,v 1.8 2002/10/11 01:39:37 nilsson Exp $
+|| $Id: rbtree.h,v 1.9 2007/05/07 15:27:27 mast Exp $
 */
 
 /* An implementation of a threaded red/black balanced binary tree.
@@ -18,7 +18,7 @@
 #include "array.h"
 
 /* A red/black tree is a binary tree with one extra bit of info in
- * each node - the color of it. The following properties holds:
+ * each node - the color of it. The following properties hold:
  *
  * o  Every node is either red or black.
  * o  A NULL leaf is considered black.
