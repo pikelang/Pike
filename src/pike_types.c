@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.305 2007/05/02 17:43:32 grubba Exp $
+|| $Id: pike_types.c,v 1.306 2007/05/07 10:55:28 grubba Exp $
 */
 
 #include "global.h"
@@ -5422,16 +5422,17 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
 	while((soft_type->type == T_FUNCTION) ||
 	      (orig_type->type == T_FUNCTION)) {
 	  if (!(tmp2 = soft_cast(soft_type->car, orig_type->car,
-				 flags ^ SOFT_WEAKER)) ||
-	      (tmp2 == void_type_string)) {
+				 flags ^ SOFT_WEAKER))) {
 	    goto function_cast_fail;
 	  }
-	  push_finished_type(tmp2);
+	  if (tmp2 != void_type_string) {
+	    push_finished_type(tmp2);
+	    loop_cnt++;
+	  }
 	  free_type(tmp2);
 	  tmp2 = NULL;
 	  if (soft_type->type == T_FUNCTION) soft_type = soft_type->cdr;
 	  if (orig_type->type == T_FUNCTION) orig_type = orig_type->cdr;
-	  loop_cnt++;
 	}
 #ifdef PIKE_DEBUG
 	if ((soft_type->type != T_MANY) || (orig_type->type != T_MANY)) {
