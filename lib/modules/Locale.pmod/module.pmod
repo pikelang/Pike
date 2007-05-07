@@ -338,9 +338,11 @@ object get_object(string project, string lang) {
 	     "<pike> in %O\n", filename);
       return 0;
     }
-    foreach(wrapper; string name; function f)
+    foreach(indices(wrapper), string name) {
+      mixed f = wrapper[name];
       if(functionp(f))
-        functions[name]=f;
+        functions[name]=[function]f;
+    }
     return 0;
   };
 
