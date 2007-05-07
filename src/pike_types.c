@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.306 2007/05/07 10:55:28 grubba Exp $
+|| $Id: pike_types.c,v 1.307 2007/05/07 12:18:42 grubba Exp $
 */
 
 #include "global.h"
@@ -2574,6 +2574,10 @@ static int lower_or_pike_types(struct pike_type *t1,
 #endif
   if (t1 == t2) {
     t = t1;
+  } else if (zero_implied && (t1->type == T_ZERO)) {
+    t = t2;
+  } else if (zero_implied && (t2->type == T_ZERO)) {
+    t = t1;
   } else if (t1->type < t2->type) {
     t = t1;
     ret = -1;
@@ -2669,8 +2673,18 @@ static int lower_or_pike_types(struct pike_type *t1,
       break;
     }
   }
-  if (!elem_on_stack || ((top = peek_type_stack())->type != t->type)) {
+  if (!elem_on_stack) {
     push_finished_type(t);
+  } else if ((top = peek_type_stack())->type != t->type) {
+    if (zero_implied && (top->type == T_ZERO)) {
+      Pike_compiler->type_stackp--;
+      free_type(top);
+      push_finished_type(t);
+    } else if (zero_implied && (t->type == T_ZERO)) {
+      /* The zero is implied. */
+    } else {
+      push_finished_type(t);
+    }
   } else {
     switch(t->type) {
     case T_FLOAT:
