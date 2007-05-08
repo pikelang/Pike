@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: module.pmod.in,v 1.1 2007/05/04 18:47:42 mast Exp $
+// $Id: module.pmod.in,v 1.2 2007/05/08 14:22:29 mast Exp $
 // original author: mirar
 
 #pike __REAL_VERSION__
@@ -231,7 +231,10 @@ class Studied
 
    void create(string pattern,void|int options,void|object table)
    {
-      ::create(pattern,options,table);
+      if (zero_type (table))
+	::create(pattern,options);
+      else
+	::create(pattern,options,table);
       study();
    }
 
@@ -255,7 +258,12 @@ class Widestring
 
    void create(string pattern,void|int options,void|object table)
    {
-      ::create(string_to_utf8(pattern),options|OPTION.UTF8,table);
+     pattern = string_to_utf8 (pattern);
+     options |= OPTION.UTF8;
+     if (zero_type (table))
+       ::create(pattern,options);
+     else
+       ::create(pattern,options,table);
    }
    
    string _sprintf(int t,mapping fum)
@@ -324,7 +332,10 @@ class StudiedWidestring
 
    void create(string pattern,void|int options,void|object table)
    {
-      ::create(pattern,options,table);
+      if (zero_type (table))
+	::create(pattern,options);
+      else
+	::create(pattern,options,table);
       study();
    }
 
