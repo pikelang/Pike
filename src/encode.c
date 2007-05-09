@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.243 2007/05/09 16:02:21 grubba Exp $
+|| $Id: encode.c,v 1.244 2007/05/09 16:05:53 grubba Exp $
 */
 
 #include "global.h"
@@ -342,7 +342,9 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
 	ptrdiff_t val = CAR_TO_INT(t);
 	addchar(val & 0xff);
       }
-      /* FALL_THOUGH */
+      t = t->cdr;
+      goto one_more_type;
+
     case T_MAPPING:
     case T_OR:
     case T_AND:
