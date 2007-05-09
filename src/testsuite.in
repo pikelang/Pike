@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.779 2007/05/04 20:59:28 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.780 2007/05/09 19:35:41 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -6435,7 +6435,7 @@ test_eq(sprintf("%O", _typeof("")),"string(zero)")
 test_eq(sprintf("%O", _typeof("x"[0])),"int(120..120)")
 test_eq(sprintf("%O", _typeof(0.0)),"float")
 test_eq([[sscanf(sprintf("%Ox", _typeof(this_object))-" ",
-		 "function(int(0..%*[0-9])|void:object)%*c")]], 2)
+		 "function(void|int(0..%*[0-9]):object)%*c")]], 2)
 
 
 // class
