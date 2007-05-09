@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.307 2007/05/07 12:18:42 grubba Exp $
+|| $Id: pike_types.c,v 1.308 2007/05/09 15:58:03 grubba Exp $
 */
 
 #include "global.h"
@@ -530,6 +530,9 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
   if (flag_method) {
     if (flag_method == PT_IS_MARKER) {
       t->flags = PT_FLAG_MARKER_0 << (type-'0');
+    } else if (type == PIKE_T_SCOPE) {
+      /* The scope blocks propagation of markers. */
+      t->flags = cdr->flags & ~(PT_FLAG_MARKER|PT_FLAG_ASSIGN);
     } else {
       if (car && (flag_method & PT_COPY_CAR)) {
 	t->flags |= car->flags;
@@ -1073,6 +1076,9 @@ static void debug_push_finished_type_with_markers(struct pike_type *type,
       /* FIXME: We probably ought to switch to the other marker set here. */
       markers[m] = NULL;
       push_finished_type_with_markers(type, markers, 0);
+      if (type->flags & (PT_FLAG_MARKER|PT_FLAG_ASSIGN)) {
+	push_scope_type(0);
+      }
       if (markers[m]) free_type(markers[m]);
       markers[m] = dmalloc_touch(struct pike_type *, type);
     } else {
@@ -2031,11 +2037,11 @@ static void low_describe_type(struct pike_type *t)
       break;
 
     case T_SCOPE:
-      my_putchar('{');
-      my_putchar(CAR_TO_INT(t));
+      my_strcat("scope(");
+      my_putchar('0' + CAR_TO_INT(t));
       my_putchar(',');
       my_describe_type(t->cdr);
-      my_putchar('}');
+      my_putchar(')');
       break;
 
     case T_TUPLE:
@@ -2574,14 +2580,22 @@ static int lower_or_pike_types(struct pike_type *t1,
 #endif
   if (t1 == t2) {
     t = t1;
+  } else if (!t1) {
+    t = t2;
+    ret = 1;
+  } else if (!t2) {
+    t = t1;
+    ret = -1;
   } else if (zero_implied && (t1->type == T_ZERO)) {
     t = t2;
   } else if (zero_implied && (t2->type == T_ZERO)) {
     t = t1;
-  } else if (t1->type < t2->type) {
+  } else if ((t1->type ^ '0') < (t2->type ^ '0')) {
+    /* Note: Adjusted order to get markers first. */
     t = t1;
     ret = -1;
-  } else if (t1->type > t2->type) {
+  } else if ((t1->type ^ '0') > (t2->type ^ '0')) {
+    /* Note: Adjusted order to get markers first. */
     t = t2;
     ret = 1;
   } else {
@@ -2603,17 +2617,7 @@ static int lower_or_pike_types(struct pike_type *t1,
       break;
     case T_STRING:
       {
-	switch(lower_or_pike_types(t1->car, t2->car, 1, 0)) {
-	case 0: break;
-	case 1:
-	  push_finished_type(t1->car);
-	  push_type(T_OR);
-	  break;
-	case -1:
-	  push_finished_type(t2->car);
-	  push_type(T_OR);
-	  break;
-	}
+	low_or_pike_types(t1->car, t2->car, 1);
 	push_type(T_STRING);
 	return 0;
       }
@@ -2668,8 +2672,20 @@ static int lower_or_pike_types(struct pike_type *t1,
       }
       /* FALL_THOUGH */
     default:
-      t = t1;
-      ret = -1;
+#if 0
+      if (pike_types_le(t1, t2)) {
+	t = t2;
+      } else if (pike_types_le(t2, t1)) {
+	t = t1;
+      } else
+#endif /* 0 */
+	if (t1 < t2) {
+	t = t1;
+	ret = -1;
+      } else {
+	t = t2;
+	ret = 1;
+      }
       break;
     }
   }
@@ -2685,6 +2701,8 @@ static int lower_or_pike_types(struct pike_type *t1,
     } else {
       push_finished_type(t);
     }
+  } else if (t == top) {
+    /* No need to do anything. */
   } else {
     switch(t->type) {
     case T_FLOAT:
@@ -2729,17 +2747,7 @@ static int lower_or_pike_types(struct pike_type *t1,
     case T_STRING:
       {
 	Pike_compiler->type_stackp--;
-	switch(lower_or_pike_types(t->car, top->car, 1, 0)) {
-	case 0: break;
-	case 1:
-	  push_finished_type(t->car);
-	  push_type(T_OR);
-	  break;
-	case -1:
-	  push_finished_type(top->car);
-	  push_type(T_OR);
-	  break;
-	}
+	low_or_pike_types(t->car, top->car, 1);
 	push_type(T_STRING);
 	free_type(top);
       }
@@ -2754,15 +2762,6 @@ static int lower_or_pike_types(struct pike_type *t1,
       Pike_compiler->type_stackp--;
       low_or_pike_types(t->car, top->car, zero_implied);
       push_type(t->type);
-      free_type(top);
-      break;
-    case T_SCOPE:
-      Pike_compiler->type_stackp--;
-      low_or_pike_types(t->cdr, top->cdr, zero_implied);
-      if (CAR_TO_INT(t) > CAR_TO_INT(top))
-	push_scope_type(CAR_TO_INT(t));
-      else
-	push_scope_type(CAR_TO_INT(top));
       free_type(top);
       break;
     case T_MAPPING:
@@ -2783,7 +2782,14 @@ static int lower_or_pike_types(struct pike_type *t1,
       }
       /* FALL_THROUGH */
     default:
-      push_finished_type(t);
+      if (t < top) {
+	Pike_compiler->type_stackp--;
+	push_finished_type(t);
+	push_finished_type(top);
+	free_type(top);
+      } else {
+	push_finished_type(t);
+      }
       break;
     }
   }
@@ -2826,58 +2832,40 @@ static void low_or_pike_types(struct pike_type *t1,
   else if (t1 == t2) {
     push_finished_type(t1);
   }
-  else if (t1->type == T_OR) {
+  else if ((t1->type == T_OR) || (t2->type == T_OR)) {
     int on_stack = 0;
     type_stack_mark();
     while (t1 || t2) {
-      if (!t1) {
-	if (t2->type == T_OR) {
-	  push_finished_type(t2->car);
-	  t2 = t2->cdr;
-	} else {
-	  push_finished_type(t2);
-	  t2 = NULL;
-	}
-      } else if (!t2) {
-	if (t1->type == T_OR) {
-	  push_finished_type(t1->car);
-	  t1 = t1->cdr;
-	} else {
-	  push_finished_type(t1);
-	  t1 = NULL;
-	}
-      } else {
-	struct pike_type *a = t1;
-	struct pike_type *b = t2;
-	struct pike_type *n1 = NULL;
-	struct pike_type *n2 = NULL;
-	int val;
-	if (t1->type == T_OR) {
-	  a = t1->car;
-	  n1 = t1->cdr;
-	}
-	if (t2->type == T_OR) {
-	  b = t2->car;
-	  n2 = t2->cdr;
-	}
-#ifdef PIKE_DEBUG
-	if ((a->type == T_OR) || (b->type == T_OR)) {
-	  fprintf(stderr, "  low_or_pike_types(");
-	  simple_describe_type(arg1);
-	  fprintf(stderr, ", ");
-	  simple_describe_type(arg2);
-	  fprintf(stderr, ")\n  a:");
-	  simple_describe_type(a);
-	  fprintf(stderr, "\n  b:");
-	  simple_describe_type(b);
-	  fprintf(stderr, ")\n");
-	  Pike_fatal("Invalid type to lower_or_pike_types!\n");
-	}
-#endif
-	val = lower_or_pike_types(a, b, zero_implied, on_stack);
-	if (val <= 0) t1 = n1;
-	if (val >= 0) t2 = n2;
+      struct pike_type *a = t1;
+      struct pike_type *b = t2;
+      struct pike_type *n1 = NULL;
+      struct pike_type *n2 = NULL;
+      int val;
+      if (t1 && t1->type == T_OR) {
+	a = t1->car;
+	n1 = t1->cdr;
       }
+      if (t2 && t2->type == T_OR) {
+	b = t2->car;
+	n2 = t2->cdr;
+      }
+#ifdef PIKE_DEBUG
+      if (a && b && ((a->type == T_OR) || (b->type == T_OR))) {
+	fprintf(stderr, "  low_or_pike_types(");
+	simple_describe_type(arg1);
+	fprintf(stderr, ", ");
+	simple_describe_type(arg2);
+	fprintf(stderr, ")\n  a:");
+	simple_describe_type(a);
+	fprintf(stderr, "\n  b:");
+	simple_describe_type(b);
+	fprintf(stderr, ")\n");
+	Pike_fatal("Invalid type to lower_or_pike_types!\n");
+      }
+#endif
+      val = lower_or_pike_types(a, b, zero_implied, on_stack);
+      if (val <= 0) t1 = n1;
+      if (val >= 0) t2 = n2;
       on_stack = 1;
     }
     on_stack = pop_stack_mark();
@@ -2885,9 +2873,6 @@ static void low_or_pike_types(struct pike_type *t1,
       push_reverse_joiner_type(T_OR);
       on_stack--;
     }
-  }
-  else if (t2->type == T_OR) {
-    low_or_pike_types(t2, t1, zero_implied);
   }
   else {
     int val = lower_or_pike_types(t1, t2, zero_implied, 0);
@@ -3261,6 +3246,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
   case PIKE_T_RING:
     return low_match_types(a->car, b, flags);
 
+  case PIKE_T_SCOPE:
   case PIKE_T_NAME:
   case PIKE_T_ATTRIBUTE:
     return low_match_types(a->cdr, b, flags);
@@ -3369,6 +3355,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
   case PIKE_T_RING:
     return low_match_types(a, b->car, flags);
 
+  case PIKE_T_SCOPE:
   case PIKE_T_NAME:
   case PIKE_T_ATTRIBUTE:
     return low_match_types(a, b->cdr, flags);
@@ -3795,6 +3782,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     a = a->car;
     goto recurse;
 
+  case PIKE_T_SCOPE:
   case PIKE_T_NAME:
   case PIKE_T_ATTRIBUTE:
     a = a->cdr;
@@ -3916,6 +3904,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     b = b->car;
     goto recurse;
 
+  case PIKE_T_SCOPE:
   case PIKE_T_NAME:
   case PIKE_T_ATTRIBUTE:
     b = b->cdr;
@@ -4321,10 +4310,13 @@ int strict_check_call(struct pike_type *fun_type,
 		      struct pike_type *arg_type)
 {
   while ((fun_type->type == T_OR) ||
-	 (fun_type->type == T_ARRAY)) {
+	 (fun_type->type == T_ARRAY) ||
+	 (fun_type->type == PIKE_T_SCOPE)) {
     if (fun_type->type == T_OR) {
       int res = strict_check_call(fun_type->car, arg_type);
       if (res) return res;
+      fun_type = fun_type->cdr;
+    } else if (fun_type->type == PIKE_T_SCOPE) {
       fun_type = fun_type->cdr;
     } else {
       fun_type = fun_type->car;
@@ -4388,6 +4380,7 @@ static int low_get_return_type(struct pike_type *a, struct pike_type *b)
   case PIKE_T_RING:
     return low_get_return_type(a->car, b);
 
+  case PIKE_T_SCOPE:
   case PIKE_T_NAME:
     return low_get_return_type(a->cdr, b);
 
@@ -5685,6 +5678,7 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
 
   switch(fun_type->type) {
   case T_SCOPE:
+    /* FIXME: Save and restore the corresponding marker set. */
   case T_ASSIGN:
   case PIKE_T_NAME:
   case PIKE_T_ATTRIBUTE:
@@ -5998,7 +5992,6 @@ struct pike_type *low_new_check_call(struct pike_type *fun_type,
   clear_markers();
   /* First split the argument type into basic types. */
   switch(arg_type->type) {
-  case PIKE_T_SCOPE:
   case T_ASSIGN:
   case PIKE_T_NAME:
     arg_type = arg_type->cdr;
@@ -6642,11 +6635,21 @@ struct pike_type *new_check_call(struct pike_string *fun_name,
 
 struct pike_type *zzap_function_return(struct pike_type *a, INT32 id)
 {
+  struct pike_type *ret = NULL;
   switch(a->type)
   {
+    case T_SCOPE:
+      ret = zzap_function_return(a->cdr, id);
+      if (!ret) return NULL;
+      type_stack_mark();
+      push_finished_type(ret);
+      free_type(ret);
+      push_scope_type(CAR_TO_INT(a));
+      return pop_unfinished_type();
+
     case T_OR:
     {
-      struct pike_type *ar, *br, *ret=0;
+      struct pike_type *ar, *br;
       ar = zzap_function_return(a->car, id);
       br = zzap_function_return(a->cdr, id);
       if(ar && br) ret = or_pike_types(ar, br, 0);
@@ -7250,6 +7253,14 @@ struct pike_type *debug_make_pike_type(const char *serialized_type)
   unsigned char *dummy;
   type_stack_mark();
   low_make_pike_type((unsigned char *)serialized_type, &dummy);
+#if 1
+  if ((Pike_compiler->type_stackp[0]->flags &
+       (PT_FLAG_MARKER|PT_FLAG_ASSIGN)) ||
+      (Pike_compiler->type_stackp[0]->type == T_OR) ||
+      (Pike_compiler->type_stackp[0]->type == T_AND)) {
+    push_scope_type(0);
+  }
+#endif /* 1 */
   return pop_unfinished_type();
 }
 
