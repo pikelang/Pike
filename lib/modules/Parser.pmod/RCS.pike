@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 inherit Parser._RCS;
 
-// $Id: RCS.pike,v 1.36 2007/04/06 10:56:22 grubba Exp $
+// $Id: RCS.pike,v 1.37 2007/05/10 15:35:07 per Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -302,8 +302,7 @@ void parse_deltatext_sections(array raw,
 {
   DeltatextIterator iterate = DeltatextIterator(raw, progress_callback,
 						callback_args);
-  while(iterate->next())
-    ;
+  while(iterate->next());
 }
 
 //! Iterator for the deltatext sections of the RCS file. Typical usage:
@@ -315,7 +314,7 @@ void parse_deltatext_sections(array raw,
 //!     do_something(rev);
 class DeltatextIterator
 {
-  static int finished, this_no;
+  static int finished, this_no, o;
   static array raw;
   static string this_rev;
 
@@ -353,10 +352,11 @@ class DeltatextIterator
   //  this method requires that @[raw] starts with a valid deltatext entry
   //! Drops the leading whitespace before next revision's deltatext
   //! entry and sets this_rev to the revision number we're about to read.
+    int n;
   static int(0..1) read_next()
   {
-    raw = parse_deltatext_section(raw);
-    return finished = !!raw;
+    o = parse_deltatext_section(raw,o);
+    return !(finished = !o);
   }
 
   //! @returns
@@ -410,19 +410,19 @@ class DeltatextIterator
   //! data is stored destructively in the appropriate entry of the
   //! @[revisions] array.
   //! @note
-  //!   @[raw] must start with a deltatext entry for this method to work
+  //!   @[raw]+@[o] must start with a deltatext entry for this method to work
   //! @fixme
   //!   does not handle rcsfile(5) newphrase skipping
   //! @fixme
   //!   if the rcs file is truncated, this method writes a descriptive
   //!   error to stderr and then returns 0 - some nicer error handling
   //!   wouldn't hurt
-  static array parse_deltatext_section(array raw)
+  static int parse_deltatext_section(array raw, int o)
   {
-      if( !sizeof(raw) || !symbol_is_revision( raw[0] ) )
+      if( sizeof(raw)<=o || !symbol_is_revision( raw[o] ) )
 	  return 0;
 
-      this_rev = raw[0];
+      this_rev = raw[o];
 
       if(callback)
 	  if(callback_args)
@@ -432,17 +432,17 @@ class DeltatextIterator
 
       Revision current = revisions[this_rev];
 
-      if( raw[1] != "log" )  return 0;
-      if( sizeof(raw)<3 )
+      if( raw[o+1] != "log" )  return 0;
+
+      if( sizeof(raw)<o+3 )
       {
         werror("Truncated CVS-file!\n");
         return 0;
       }
 
-
-      current->log = parse_string(raw[2]);
-      if( sizeof(raw) > 4 && raw[3] == "text" )
-	current->rcs_text = parse_string(raw[4]);
+      current->log = parse_string(raw[o+2]);
+      if( sizeof(raw) > 4 && raw[o+3] == "text" )
+	current->rcs_text = parse_string(raw[o+4]);
       else
         current->rcs_text = "";
 
@@ -469,7 +469,6 @@ class DeltatextIterator
 	      added += count;
 	      row += count;
 	  }
-
 	  if(String.count(this_rev, ".") == 1)
 	  {
 	      DEBUG("current: %s %+d-%d l%d a%O n%O\n", this_rev, added, removed,
@@ -487,10 +486,10 @@ class DeltatextIterator
 	      current->added = added;
 	  }
       }
-      if( sizeof(raw) > 4 && raw[3] == "text" )
-	return raw[5..];
+      if( sizeof(raw) > o+3 && raw[o+3] == "text" )
+	  return o+5;
       else
-	return raw[3..];
+	  return o+3;
   }
 }
 
