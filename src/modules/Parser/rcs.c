@@ -19,17 +19,19 @@
 
 #include "parser.h"
 
-
-
-static struct svalue *aggregate_tokens(struct svalue *x) 
-{
-    f_aggregate( Pike_sp-x );
-    return Pike_sp;
-}
-
 static void push_token( const char * from, int start, int end )
 {
-    push_string( make_shared_binary_string(from+start, end-start+1) );
+    struct array *a = Pike_sp[-1].u.array;
+    struct pike_string *token = make_shared_binary_string(from+start, end-start+1);
+    if( a->malloced_size < a->size+1 )
+    {
+	Pike_sp[-1].u.array = a = resize_array( a, a->size+1 );
+	a->size--;
+    }
+    a->item[a->size].type = PIKE_T_STRING;
+    a->item[a->size].subtype = 0;
+    a->item[a->size].u.string = token;
+    a->size++;
 }
 
 static void tokenize( struct pike_string *s )
@@ -38,8 +40,7 @@ static void tokenize( struct pike_string *s )
     unsigned int ts=0, i, len=s->len;
     const char *data = s->str;
     struct svalue *osp = Pike_sp;
-    struct svalue *ots = Pike_sp;
-
+    push_array( allocate_array_no_init( 0, 100 ) );
     for( i=0; i<len; i++ )
     {
 	if( in_string )
@@ -69,15 +70,14 @@ static void tokenize( struct pike_string *s )
 		case ';':
 		    if( ts < i ) push_token( data, ts, i-1 );
 		    ts=i+1;
-		    ots=aggregate_tokens(ots);
+		    push_array( allocate_array_no_init( 0, 10 ) );
 		    break;
 	    }
 	}
     }
     if( ts < len ) push_token( data, ts, len-1 );
-    f_aggregate( aggregate_tokens(ots)-osp );
+    f_aggregate( Pike_sp-osp );
 }
-
 
 static void f_tokenize( INT32 args )
 {
@@ -93,6 +93,4 @@ void init_parser_rcs(void)
     ADD_FUNCTION("tokenize",f_tokenize,tFunc(tStr,tArray),0);
 }
 
-void exit_parser_rcs(void)
-{
-}
+void exit_parser_rcs(void) {}
