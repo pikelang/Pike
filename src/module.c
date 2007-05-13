@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.41 2007/04/25 21:58:33 mast Exp $
+|| $Id: module.c,v 1.42 2007/05/13 15:00:25 mast Exp $
 */
 
 #include "global.h"
@@ -360,6 +360,20 @@ void exit_modules(void)
       }
       count = new_count;
     }
+#ifdef PIKE_DEBUG
+    if (!count) {
+      struct object *o;
+      for (o = first_object; o; o = o->next)
+	if (o->prog && (FIND_LFUN (o->prog, LFUN_DESTROY) != -1 ||
+			o->prog->event_handler))
+	  gc_fatal (o, 0, "Object missed in gc_destruct_everything mode.\n");
+      for (o = objects_to_destruct; o; o = o->next)
+	if (o->prog && (FIND_LFUN (o->prog, LFUN_DESTROY) != -1 ||
+			o->prog->event_handler))
+	  gc_fatal (o, 0, "Object missed in gc_destruct_everything mode"
+		    " (is on objects_to_destruct list).\n");
+    }
+#endif
     gc_destruct_everything = 0;
     exit_cleanup_in_progress = 1; /* Warn about object creation from now on. */
   }
