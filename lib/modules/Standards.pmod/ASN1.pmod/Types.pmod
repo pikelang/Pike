@@ -1,5 +1,5 @@
 //
-// $Id: Types.pmod,v 1.38 2006/11/04 19:06:49 nilsson Exp $
+// $Id: Types.pmod,v 1.39 2007/05/13 18:59:42 mast Exp $
 //
 
 //! Encodes various asn.1 objects according to the Distinguished
@@ -550,7 +550,7 @@ class UTF8String
     return build_der(string_to_utf8(value));
   }
 
-  this_program decode_primitive(string contents) {
+  this_program decode_primitive(string(0..255) contents) {
     record_der(contents);
     if (catch {
       value = utf8_to_string(contents);
@@ -1125,7 +1125,7 @@ class BMPString
     return build_der (string_to_unicode (value));
   }
 
-  this_program decode_primitive (string contents) {
+  this_program decode_primitive (string(0..255) contents) {
     record_der (contents);
     value = unicode_to_string (contents);
     return this;
