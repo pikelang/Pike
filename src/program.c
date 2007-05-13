@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.614 2007/05/13 14:55:26 mast Exp $
+|| $Id: program.c,v 1.615 2007/05/13 15:45:32 mast Exp $
 */
 
 #include "global.h"
@@ -3436,7 +3436,9 @@ static size_t add_xstorage(size_t size,
 }
 
 typedef void (*oldhandlertype)(struct object *);
-static void compat_event_handler(int e)
+
+/* Function pointer checked by gc_object_is_live. */
+void compat_event_handler(int e)
 {
   oldhandlertype handler;
   debug_malloc_touch(Pike_fp->current_object);
@@ -3467,9 +3469,10 @@ static void add_compat_event_handler(void)
 }
 
 /*
- * set a callback used to initialize clones of this program
- * the init function is called at clone time
- * This function is obsolete, use pike_set_prog_event_callback instead.
+ * Set a callback to be called when this program is cloned.
+ *
+ * This function is almost obsolete; see pike_set_prog_event_callback
+ * for details.
  */
 PMOD_EXPORT void set_init_callback(void (*init)(struct object *))
 {
@@ -3478,9 +3481,11 @@ PMOD_EXPORT void set_init_callback(void (*init)(struct object *))
 }
 
 /*
- * set a callback used to de-initialize clones of this program
- * the exit function is called at destruct
- * This function is obsolete, use pike_set_prog_event_callback instead.
+ * Set a callback to be called when clones of this program are
+ * destructed.
+ *
+ * This function is almost obsolete; see pike_set_prog_event_callback
+ * for details.
  */
 PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *))
 {
@@ -3503,7 +3508,8 @@ PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *))
  * The callback is called after any mapped variables on the object
  * have been recursed (and possibly freed).
  *
- * This function is obsolete, use pike_set_prog_event_callback instead.
+ * This function is almost obsolete; see pike_set_prog_event_callback
+ * for details.
  */
 PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *))
 {
@@ -3522,7 +3528,8 @@ PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *))
  * to ensure this; it's zero when called the first time for its
  * argument.
  *
- * This function is obsolete, use pike_set_prog_event_callback instead.
+ * This function is almost obsolete; see pike_set_prog_event_callback
+ * for details.
  */
 PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *))
 {
@@ -3530,6 +3537,33 @@ PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *))
   ((oldhandlertype *)Pike_compiler->new_program->program)[PROG_EVENT_GC_CHECK]=m;
 }
 
+/*
+ * Set a callback to be called when any of the special program events
+ * occur. The event type is sent as an integer argument. The events
+ * include, but might not be limited to, the following:
+ *
+ * PROG_EVENT_INIT
+ *   An object is being cloned from the program. See set_init_callback
+ *   for details.
+ * PROG_EVENT_EXIT
+ *   An object is being destructed. See set_exit_callback for details.
+ * PROG_EVENT_GC_RECURSE
+ *   An object is being recursed by the gc. See
+ *   set_gc_recurse_callback for details.
+ * PROG_EVENT_GC_CHECK
+ *   An object is being checked by the gc. See set_gc_check_callback
+ *   for details.
+ *
+ * Using this instead of the set_*_callback functions saves some space
+ * in the program (four function pointers) and is a bit more
+ * efficient.
+ *
+ * Otoh, it forces the gc to handle all clones as "live" since the
+ * callback might act on PROG_EVENT_EXIT. So if there's no need to do
+ * anything for that event, using the set_*_callback functions allows
+ * the gc to handle the object more efficiently if it occurs in
+ * cycles.
+ */
 PMOD_EXPORT void pike_set_prog_event_callback(void (*cb)(int))
 {
 #ifdef PIKE_DEBUG
