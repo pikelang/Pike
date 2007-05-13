@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.42 2007/05/13 15:00:25 mast Exp $
+|| $Id: module.c,v 1.43 2007/05/13 15:43:07 mast Exp $
 */
 
 #include "global.h"
@@ -364,12 +364,10 @@ void exit_modules(void)
     if (!count) {
       struct object *o;
       for (o = first_object; o; o = o->next)
-	if (o->prog && (FIND_LFUN (o->prog, LFUN_DESTROY) != -1 ||
-			o->prog->event_handler))
+	if (gc_object_is_live (o))
 	  gc_fatal (o, 0, "Object missed in gc_destruct_everything mode.\n");
       for (o = objects_to_destruct; o; o = o->next)
-	if (o->prog && (FIND_LFUN (o->prog, LFUN_DESTROY) != -1 ||
-			o->prog->event_handler))
+	if (gc_object_is_live (o))
 	  gc_fatal (o, 0, "Object missed in gc_destruct_everything mode"
 		    " (is on objects_to_destruct list).\n");
     }
