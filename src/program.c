@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.613 2007/04/25 22:02:07 mast Exp $
+|| $Id: program.c,v 1.614 2007/05/13 14:55:26 mast Exp $
 */
 
 #include "global.h"
@@ -354,12 +354,16 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!     @value Object.DESTRUCT_GC
  *!       Destructed by the garbage collector.
  *!     @value Object.DESTRUCT_CLEANUP
- *!       Destructed as part of the cleanup when the pike program
- *!       exits. Note that Pike normally doesn't do any cleanup before
- *!       exit - it must be compiled with the configure option
- *!       @tt{--with-cleanup-on-exit@} to enable that. So this value
- *!       normally doesn't occur.
+ *!       Destructed as part of the cleanup when the pike process
+ *!       exits. Occurs only if Pike has been compiled with the
+ *!       configure option @tt{--with-cleanup-on-exit@}. See note
+ *!       below.
  *!   @endint
+ *!
+ *! @note
+ *! Objects are normally not destructed when a process exits, so
+ *! @expr{destroy@} functions aren't called then. Use @[atexit] to get
+ *! called when the process exits.
  *!
  *! @note
  *! Regarding destruction order during garbage collection:
@@ -389,9 +393,14 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   from B to A that is weaker than any reference from A to B, then
  *!   A is destructed before B.
  *! @item
- *!   Weak references (e.g. set with @[predef::set_weak_flag()]) are considered
- *!   weaker than normal references, and both are considered weaker
- *!   than strong references.
+ *!   If a cycle is resolved according to the rule above by ignoring a
+ *!   weaker reference, and there is another ambiguous cycle that
+ *!   would get resolved by ignoring the same reference, then the
+ *!   latter cycle will be resolved by ignoring that reference.
+ *! @item
+ *!   Weak references (e.g. set with @[predef::set_weak_flag()]) are
+ *!   considered weaker than normal references, and both are
+ *!   considered weaker than strong references.
  *! @item
  *!   Strong references are those from objects to the objects of their
  *!   lexically surrounding classes. There can never be a cycle

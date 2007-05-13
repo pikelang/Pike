@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.c,v 1.10 2006/08/09 01:55:45 mast Exp $
+ * $Id: pike_embed.c,v 1.11 2007/05/13 14:55:26 mast Exp $
  *
  * Pike embedding API.
  *
@@ -151,14 +151,17 @@ void init_pike(char **argv, const char *file)
   {
     extern void init_mapping_blocks(void);
     extern void init_callable_blocks(void);
-    extern void init_gc_frame_blocks(void);
+    extern void init_gc_rec_frame_blocks(void);
+    extern void init_ba_mixed_frame_blocks(void);
+    extern void init_pike_frame_blocks(void);
     extern void init_node_s_blocks(void);
     extern void init_object_blocks(void);
     extern void init_callback_blocks(void);
 
     init_mapping_blocks();
     init_callable_blocks();
-    init_gc_frame_blocks();
+    init_gc_rec_frame_blocks();
+    init_ba_mixed_frame_blocks();
     init_catch_context_blocks();
     init_pike_frame_blocks();
     init_node_s_blocks();
