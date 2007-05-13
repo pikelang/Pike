@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.282 2007/05/13 15:42:06 mast Exp $
+|| $Id: gc.c,v 1.283 2007/05/13 19:09:57 mast Exp $
 */
 
 #include "global.h"
@@ -1671,7 +1671,7 @@ void debug_gc_touch(void *a)
 #endif
       break;
 
-    case GC_PASS_MIDDLETOUCH: {
+    case GC_PASS_POSTTOUCH: {
 #ifdef PIKE_DEBUG
       int extra_ref;
 #endif
@@ -1694,53 +1694,9 @@ void debug_gc_touch(void *a)
 	if (m->weak_refs > m->saved_refs)
 	  gc_fatal(a, 0, "A thing got more weak references than references.\n");
 #endif
-      m->flags |= GC_MIDDLETOUCHED;
+      m->flags |= GC_POSTTOUCHED;
       break;
     }
-
-#if 0
-      /* Disabled since we can't assume any correlation between the
-       * marks and the actual blocks in or after GC_PASS_FREE. */
-    case GC_PASS_POSTTOUCH:
-      m = find_marker(a);
-      if (!*(INT32 *) a)
-	gc_fatal(a, 1, "Found a thing without refs.\n");
-      if (m) {
-	if (!(m->flags & (GC_PRETOUCHED|GC_MIDDLETOUCHED)))
-	  gc_fatal(a, 2, "An existing but untouched marker found "
-		   "for object in linked lists.\n");
-#ifdef PIKE_DEBUG
-	else if (m->flags & GC_MARKED)
-	  return;
-	else if (gc_destruct_everything)
-	  return;
-	else if (!(m->flags & GC_NOT_REFERENCED) || m->flags & GC_XREFERENCED)
-	  gc_fatal(a, 3, "A thing with external references "
-		   "got missed by mark pass.\n");
-	else if (!(m->flags & GC_CYCLE_CHECKED))
-	  gc_fatal(a, 2, "A thing was missed by "
-		   "both mark and cycle check pass.\n");
-	else if (!(m->flags & GC_IS_REFERENCED))
-	  gc_fatal(a, 2, "An unreferenced thing "
-		   "got missed by gc_is_referenced().\n");
-	else if (!(m->flags & GC_DO_FREE))
-	  gc_fatal(a, 2, "An unreferenced thing "
-		   "got missed by gc_do_free().\n");
-	else if (m->flags & GC_GOT_EXTRA_REF)
-	  gc_fatal(a, 2, "A thing still got an extra ref.\n");
-	else if (m->weak_refs > m->saved_refs)
-	  gc_fatal(a, 2, "A thing got more weak references than references.\n");
-	else if (!(m->flags & GC_LIVE)) {
-	  if (m->weak_refs < 0)
-	    gc_fatal(a, 3, "A thing which had only weak references is "
-		     "still around after gc.\n");
-	  else
-	    gc_fatal(a, 3, "A thing to garb is still around.\n");
-	}
-#endif
-      }
-      break;
-#endif
 
     default:
       Pike_fatal("debug_gc_touch() used in invalid gc pass.\n");
@@ -3294,11 +3250,6 @@ size_t do_gc(void *ignored, int explicit_call)
       gc_mark_run_queue();
       gc_mark_all_objects();
       gc_mark_run_queue();
-#if 0
-#ifdef DEBUG_MALLOC
-      gc_mark_all_types();
-#endif /* DEBUG_MALLOC */
-#endif
 #ifdef PIKE_DEBUG
       if(gc_debug) gc_mark_all_strings();
 #endif /* PIKE_DEBUG */
@@ -3329,11 +3280,6 @@ size_t do_gc(void *ignored, int explicit_call)
     gc_cycle_check_all_multisets();
     gc_cycle_check_all_mappings();
     gc_cycle_check_all_programs();
-#if 0
-#ifdef DEBUG_MALLOC
-    gc_cycle_check_all_types();
-#endif
-#endif
 
 #ifdef PIKE_DEBUG
     if (stack_top != &sentinel_frame)
@@ -3388,16 +3334,13 @@ size_t do_gc(void *ignored, int explicit_call)
     size_t i;
     struct marker *m;
 #endif
-    Pike_in_gc=GC_PASS_MIDDLETOUCH;
+    Pike_in_gc=GC_PASS_POSTTOUCH;
     n = gc_touch_all_arrays();
     n += gc_touch_all_multisets();
     n += gc_touch_all_mappings();
     n += gc_touch_all_programs();
     n += gc_touch_all_objects();
 #ifdef PIKE_DEBUG
-#if 0
-    gc_touch_all_types();
-#endif
     gc_touch_all_strings();
 #endif
     if (n != (unsigned) num_objects)
@@ -3406,22 +3349,22 @@ size_t do_gc(void *ignored, int explicit_call)
 #ifdef PIKE_DEBUG
 #ifdef DEBUG_MALLOC
     PTR_HASH_LOOP(marker, i, m)
-      if (!(m->flags & (GC_MIDDLETOUCHED|GC_WEAK_FREED)) &&
+      if (!(m->flags & (GC_POSTTOUCHED|GC_WEAK_FREED)) &&
 	  dmalloc_is_invalid_memory_block(m->data)) {
-	fprintf(stderr, "Found a stray marker after middletouch pass: ");
+	fprintf(stderr, "Found a stray marker after posttouch pass: ");
 	describe_marker(m);
 	fprintf(stderr, "Describing marker location(s):\n");
 	debug_malloc_dump_references(m, 2, 1, 0);
 	fprintf(stderr, "Describing thing for marker:\n");
 	Pike_in_gc = 0;
 	describe(m->data);
-	Pike_in_gc = GC_PASS_MIDDLETOUCH;
+	Pike_in_gc = GC_PASS_POSTTOUCH;
 	Pike_fatal("Fatal in garbage collector.\n");
       }
 #endif
 #endif
 #endif
-    GC_VERBOSE_DO(fprintf(stderr, "| middletouch\n"));
+    GC_VERBOSE_DO(fprintf(stderr, "| posttouch\n"));
   }
 
   /* Object alloc/free and reference changes are allowed again now. */
@@ -3452,12 +3395,6 @@ size_t do_gc(void *ignored, int explicit_call)
 
   if (free_extra_frames > tot_max_free_extra_frames)
     tot_max_free_extra_frames = free_extra_frames;
-
-#if 0
-#ifdef DEBUG_MALLOC
-  unreferenced += gc_free_all_unreferenced_types();
-#endif
-#endif
 
   /* We might occasionally get things to gc_delayed_free that the free
    * calls above won't find. They're tracked in this list. */
@@ -3571,25 +3508,6 @@ size_t do_gc(void *ignored, int explicit_call)
   GC_VERBOSE_DO(fprintf(stderr, "| destruct: %d things really freed\n",
 			obj_count - num_objects));
 
-#if 0
-  /* Disabled since we can't assume any correlation between the
-   * marks and the actual blocks in or after GC_PASS_FREE. */
-  if (gc_debug) {
-    unsigned n;
-    Pike_in_gc=GC_PASS_POSTTOUCH;
-    n = gc_touch_all_arrays();
-    n += gc_touch_all_multisets();
-    n += gc_touch_all_mappings();
-    n += gc_touch_all_programs();
-    n += gc_touch_all_objects();
-    /* gc_touch_all_types(); */
-    /* gc_touch_all_strings(); */
-    if (n != (unsigned) num_objects)
-      Pike_fatal("Object count wrong after gc; expected %d, got %d.\n", num_objects, n);
-    GC_VERBOSE_DO(fprintf(stderr, "| posttouch: %u things\n", n));
-  }
-#endif
-
 #ifdef PIKE_DEBUG
   if (gc_extra_refs) {
     size_t e;
@@ -3619,9 +3537,6 @@ size_t do_gc(void *ignored, int explicit_call)
   }
   if(fatal_after_gc) Pike_fatal("%s", fatal_after_gc);
 #endif
-
-  Pike_in_gc=0;
-  exit_gc();
 
   /* Calculate the next alloc_threshold. */
   {
@@ -3741,6 +3656,9 @@ size_t do_gc(void *ignored, int explicit_call)
     tot_max_rec_frames = max_rec_frames;
   if (max_link_frames > tot_max_link_frames)
     tot_max_link_frames = max_link_frames;
+
+  Pike_in_gc=0;
+  exit_gc();
 
 #ifdef ALWAYS_GC
   ADD_GC_CALLBACK();
