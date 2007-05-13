@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.124 2007/03/09 12:01:57 mast Exp $
+|| $Id: gc.h,v 1.125 2007/05/13 14:55:26 mast Exp $
 */
 
 #ifndef GC_H
@@ -164,12 +164,12 @@ extern int gc_keep_markers;
   num_objects-- ;							\
 }while(0)
 
-struct gc_pop_frame;
+struct gc_rec_frame;
 
 struct marker
 {
   struct marker *next;
-  struct gc_pop_frame *frame;	/* Pointer to the cycle check pop frame. */
+  struct gc_rec_frame *frame;	/* Pointer to the cycle check rec frame. */
   void *data;
   INT32 refs;
   /* Internal references (both weak and nonweak). Increased during
@@ -207,8 +207,6 @@ struct marker
  * check pass. */
 #define GC_LIVE_OBJ		0x0010
 /* The thing is a live object. Set in the cycle check pass. */
-#define GC_LIVE_RECURSE		0x0020
-/* The thing is being recursed a second time to propagate GC_LIVE. */
 #define GC_GOT_DEAD_REF		0x0040
 /* 1.  The thing has lost all references but since it can't be freed
  *     inside the gc, it's been given an extra ref to stay around
@@ -538,7 +536,9 @@ extern int gc_in_cycle_check;
   struct object *_thing_ = (X);						\
   struct marker *_m_ = get_marker(_thing_);				\
   if (!(_m_->flags & GC_MARKED)) {					\
-    if (_thing_->prog && FIND_LFUN(_thing_->prog, LFUN_DESTROY) != -1)	\
+    if (_thing_->prog &&						\
+	(FIND_LFUN(_thing_->prog, LFUN_DESTROY) != -1 ||		\
+	 (gc_destruct_everything && _thing_->prog->event_handler)))	\
       _m_->flags |= GC_LIVE|GC_LIVE_OBJ;				\
     DO_IF_DEBUG(							\
       if (gc_in_cycle_check)						\
