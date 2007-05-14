@@ -86,6 +86,12 @@ static function(:.Rule.Timezone) _locale()
       if (tz) return tz;
    }
 
+   if(s = Stdio.read_bytes("/etc/localtime"))
+   {
+      tz=tz_from_tzfile(s);
+      if (tz) return tz;
+   }
+
 // Linux RedHat
    if (Stdio.is_dir("/etc/sysconfig/.") &&
        (s = Stdio.read_bytes("/etc/sysconfig/clock")) )
@@ -109,6 +115,19 @@ static function(:.Rule.Timezone) _locale()
    // default to localtime()
    return expert(localtime()); 
 };
+
+.Rule.Timezone tz_from_tzfile(string tzfile)
+{
+   array header = array_sscanf(tzfile, "%4s%16s%4c%4c%4c%4c%4c%4c");
+   array zoneabbr = tzfile[44+header[5]*4+header[5]+header[6]*6..44+header[5]*4+header[5]+header[6]*6+header[7]-1]/"\0";
+   if(!expert_tzn)
+      expert_tzn=master()->resolv("Calendar")["TZnames"];
+
+   array validzones = `&(@values(expert_tzn->abbr2zones & mkmultiset(zoneabbr)));
+   if(sizeof(validzones) == 1)
+     return `[](validzones[0]);
+}
+
 
 // ----------------------------------------------------------------
 // expert system to pick out the correct timezone
