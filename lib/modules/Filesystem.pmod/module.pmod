@@ -262,7 +262,7 @@ class Traversion {
   int(0..) pos;
   int(0..1) symlink;
   int(0..1) ignore_errors;
-  int(0..1) sorted;
+  function(array:array) sort_fun;
   constant is_traversion = 1;
 
   //! Returns the current progress of the traversion as a value
@@ -276,22 +276,23 @@ class Traversion {
     return share/sizeof(files)*(pos+1) + sub;
   }
 
-  //! @decl void create(string path, void|int(0..1) symlink, void|int(0..1) ignore_errors, void|int(0..1) sorted)
+  //! @decl void create(string path, void|int(0..1) symlink, void|int(0..1) ignore_errors, void|function(array:array) sort_fun)
   //! @param path
   //! The root path from which to traverse.
   //! @param symlink
   //! Don't traverse symlink directories.
   //! @param ignore_errors
   //! Ignore directories that can not be accessed.
-  //! @param sorted
-  //! Sort directory entries before traversing.
-  void create(string _path, void|int(0..1) _symlink, void|int(0..1) _ignore_errors, void|int(0..1) _sorted) {
+  //! @param sort_fun
+  //! Sort function to be applied to directory entries before
+  //! traversing. Can also be a filter function.
+  void create(string _path, void|int(0..1) _symlink, void|int(0..1) _ignore_errors, void|function(array:array) _sort_fun) {
     path = _path;
     if(path[-1]!='/') path+="/";
     files = get_dir(path);
-    sorted = _sorted;
-    if(sorted)
-      files = sort(files);
+    sort_fun = _sort_fun;
+    if(sort_fun)
+      files = sort_fun(files);
     symlink = _symlink;
     ignore_errors = _ignore_errors;
     if(!arrayp(files))
@@ -313,7 +314,7 @@ class Traversion {
       return;
     }
 
-    current = Traversion(path + files[pos], symlink, ignore_errors, sorted);
+    current = Traversion(path + files[pos], symlink, ignore_errors, sort_fun);
   }
 
   int `!() {
