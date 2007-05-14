@@ -119,6 +119,7 @@ static function(:.Rule.Timezone) _locale()
 .Rule.Timezone tz_from_tzfile(string tzfile)
 {
    array header = array_sscanf(tzfile, "%4s%16s%4c%4c%4c%4c%4c%4c");
+   if( sizeof(header)<8 ) return 0;
    array zoneabbr = tzfile[44+header[5]*4+header[5]+header[6]*6..44+header[5]*4+header[5]+header[6]*6+header[7]-1]/"\0";
    if(!expert_tzn)
       expert_tzn=master()->resolv("Calendar")["TZnames"];
