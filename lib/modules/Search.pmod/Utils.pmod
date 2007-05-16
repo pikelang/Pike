@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.45 2007/03/15 13:28:45 jonasw Exp $
+// $Id: Utils.pmod,v 1.46 2007/05/16 07:10:12 noring Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -716,6 +716,17 @@ class Logger {
 		   extra?sprintf(codes[(int)code], @(extra/"\n")):codes[(int)code]));
   }
 
+  void log_purge(int days)
+  {
+    Sql.Sql db = get_db();
+    if(!db) return;
+    if(days)
+      db->query("DELETE FROM eventlog "
+		" WHERE at <= NOW() - INTERVAL "+days+" DAY");
+    else
+      db->query("DELETE FROM eventlog");
+  }
+  
     //!
   void log_event( int code, string type, void|string extra, void|int log_profile ) {
     Sql.Sql db = get_db();
