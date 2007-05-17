@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.225 2006/07/05 00:37:18 mast Exp $
+|| $Id: main.c,v 1.226 2007/05/17 12:26:50 grubba Exp $
 */
 
 #include "global.h"
@@ -246,6 +246,17 @@ int main(int argc, char **argv)
   JMP_BUF back;
   int e, num;
   char *p;
+
+#ifdef PIKE_EXTRA_DEBUG
+#ifdef HAVE_SIGNAL
+  if (sizeof(void *) == 8) {
+    /* 64-bit Solaris 10 in Xenofarm fails with SIGPIPE.
+     * Force a core dump.
+     */
+    signal(SIGPIPE, abort);
+  }
+#endif
+#endif
 
   TRACE((stderr, "Init master...\n"));
   
