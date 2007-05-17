@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.324 2007/01/13 15:49:40 grubba Exp $
+|| $Id: signal_handler.c,v 1.325 2007/05/17 11:29:45 grubba Exp $
 */
 
 #include "global.h"
@@ -4759,6 +4759,21 @@ PMOD_EXPORT void low_init_signals(void)
   /* SIGFPE */
 #ifdef IGNORE_SIGFPE
   my_signal(SIGFPE, SIG_IGN);
+#endif
+
+  /* SIGPIPE */
+#ifdef SIGPIPE
+#ifdef PIKE_EXTRA_DEBUG
+  set_pike_debug_options(DEBUG_SIGNALS, DEBUG_SIGNALS);
+#endif
+  if (set_pike_debug_options(0,0) & DEBUG_SIGNALS) {
+    if (sizeof(void *) == 8) {
+      /* 64-bit Solaris 10 in Xenofarm fails with SIGPIPE.
+       * Force a core dump.
+       */
+      my_signal(SIGPIPE, abort);
+    }
+  }
 #endif
 
   /* Restore aby custom signals if needed. */
