@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.325 2007/05/17 11:29:45 grubba Exp $
+|| $Id: signal_handler.c,v 1.326 2007/05/17 14:16:16 grubba Exp $
 */
 
 #include "global.h"
@@ -3776,6 +3776,7 @@ void f_create_process(INT32 args)
 
       if (!keep_signals) 
       {
+	int i;
 	/* Restore the signals to the defaults. */
 #ifdef HAVE_SIGNAL
 #ifdef _sys_nsig
