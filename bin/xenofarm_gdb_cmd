@@ -6,9 +6,56 @@ echo \nSource code for frame 0\n
 list
 echo \nDisassembly of frame 0\n
 disassemble
+echo \nRegisters\n
+info reg
 echo \nSource code for frame 1\n
 up
 list
 echo \nDisassembly of frame 1\n
+disassemble
+echo \nSource code for frame 2\n
+up
+list
+echo \nDisassembly of frame 2\n
+disassemble
+echo \nSource code for frame 3\n
+up
+list
+echo \nDisassembly of frame 3\n
+disassemble
+echo \nSource code for frame 4\n
+up
+list
+echo \nDisassembly of frame 4\n
+disassemble
+echo \nSource code for frame 5\n
+up
+list
+echo \nDisassembly of frame 5\n
+disassemble
+echo \nSource code for frame 6\n
+up
+list
+echo \nDisassembly of frame 6\n
+disassemble
+echo \nSource code for frame 7\n
+up
+list
+echo \nDisassembly of frame 7\n
+disassemble
+echo \nSource code for frame 8\n
+up
+list
+echo \nDisassembly of frame 8\n
+disassemble
+echo \nSource code for frame 9\n
+up
+list
+echo \nDisassembly of frame 9\n
+disassemble
+echo \nSource code for frame 10\n
+up
+list
+echo \nDisassembly of frame 10\n
 disassemble
 echo \nEnd of core inspection\n\n\n\n
