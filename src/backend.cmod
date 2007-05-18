@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.183 2007/05/18 16:45:29 grubba Exp $
+ * $Id: backend.cmod,v 1.184 2007/05/18 17:43:40 grubba Exp $
  *
  * Backend object.
  */
@@ -347,22 +347,28 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
   }
 
 #ifdef _REENTRANT
-  /* Release the poll set from the backend. */
-  while (set_busy) {
-    co_wait_interpreter(&set_change);
+  if(num_threads>1)
+  {
+    /* Release the poll set from the backend. */
+    while (set_busy) {
+      co_wait_interpreter(&set_change);
+    }
+    set_busy = 1;
+    backend_wake_up_backend(me);
+    /* The backend is now waiting in wakeup_callback(). */
   }
-  set_busy = 1;
-  backend_wake_up_backend(me);
-  /* The backend is now waiting in wakeup_callback(). */
 #endif /* _REENTRANT */
 
   while (((e = write(pfd, poll_state, sz)) < 0) && (errno == EINTR))
     ;
 
 #ifdef _REENTRANT
-  /* Release the backend from wakeup_callback(). */
-  set_busy = 0;
-  co_broadcast(&set_change);
+  if(num_threads>1)
+  {
+    /* Release the backend from wakeup_callback(). */
+    set_busy = 0;
+    co_broadcast(&set_change);
+  }
 #endif /* _REENTRANT */
 
   if (e < 0) {
