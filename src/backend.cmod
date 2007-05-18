@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.184 2007/05/18 17:43:40 grubba Exp $
+ * $Id: backend.cmod,v 1.185 2007/05/18 18:03:08 grubba Exp $
  *
  * Backend object.
  */
@@ -363,10 +363,10 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
     ;
 
 #ifdef _REENTRANT
+  set_busy = 0;
   if(num_threads>1)
   {
     /* Release the backend from wakeup_callback(). */
-    set_busy = 0;
     co_broadcast(&set_change);
   }
 #endif /* _REENTRANT */
