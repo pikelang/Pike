@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: sendfiletest.pike,v 1.8 2004/02/03 10:14:54 nilsson Exp $ */
+/* $Id: sendfiletest.pike,v 1.9 2007/05/18 16:16:54 grubba Exp $ */
 
 constant TEST_SIZE = 16384;
 
@@ -192,6 +192,9 @@ void test7()
 
 int main(int argc, array(string) argv)
 {
+#if constant(alarm)
+  alarm(5*60);	// 5 minutes should be sufficient for this test.
+#endif
   werror("\n");
   loopback->bind(0);
   loopbackport = (int)((loopback->query_address()/" ")[1]);

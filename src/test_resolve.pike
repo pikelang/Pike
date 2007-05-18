@@ -37,6 +37,7 @@ void test_dir(string dir, int|void base_size, object|void handler)
   files = reverse(files);
   foreach(files, string s)
   {
+    werror("Testing file: %O...\n", s);
     switch(s)
     {
 #if !constant(GTK.Window)
@@ -105,6 +106,9 @@ void test_dir(string dir, int|void base_size, object|void handler)
 
 int main()
 {
+#if constant(alarm)
+  alarm(5*60);	// 5 minutes should be sufficient for this test.
+#endif
   Array.map(master()->pike_module_path,test_dir);
   // FIXME: Forward compatibility?
   foreach(({"0.6","7.0","7.2","7.4"}),string ver) {
