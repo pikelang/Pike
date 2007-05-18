@@ -3,7 +3,7 @@
 inherit Tools.Shoot.TagRemoveSscanf;
 
 constant name="Tag removal u. Regexp.PCRE";
-int n=2000;
+int n=200;
 
 Regexp.PCRE pcre=Regexp.PCRE.Studied("<[^>]+>");
 
