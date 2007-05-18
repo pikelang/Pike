@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.43 2007/05/13 15:43:07 mast Exp $
+|| $Id: module.c,v 1.44 2007/05/18 14:47:21 grubba Exp $
 */
 
 #include "global.h"
@@ -39,6 +39,11 @@
 
 /* Define this to trace the initialization and cleanup of static modules. */
 /* #define TRACE_MODULE */
+
+#ifdef PIKE_EXTRA_DEBUG
+#define TRACE_MAIN
+#define TRACE_MODULE
+#endif
 
 #if defined(TRACE_MAIN) || defined(TRACE_MODULE)
 #define TRACE(X)	fprintf X
@@ -145,6 +150,13 @@ static void exit_builtin_modules(void)
 
 #define STATIC_ARRAYS &empty_array, &weak_empty_array,
 
+#define STATIC_TYPES string0_type_string, string_type_string, \
+      int_type_string, object_type_string, program_type_string, \
+      float_type_string, mixed_type_string, array_type_string,	\
+      multiset_type_string, mapping_type_string, function_type_string, \
+      type_type_string, void_type_string, zero_type_string, any_type_string, \
+      weak_type_string,
+
 #define REPORT_LINKED_LIST_LEAKS(TYPE, START, STATICS, T_TYPE, NAME) do { \
       struct TYPE *x;							\
       for (x = START; x; x = x->next) {					\
@@ -157,7 +169,7 @@ static void exit_builtin_modules(void)
 	}								\
 	else {								\
 	  int is_static = 0;						\
-	  static const struct TYPE *statics[] = {STATICS NULL};		\
+	  /*static const*/ struct TYPE *statics[] = {STATICS NULL};	\
 	  ptrdiff_t i; /* Use signed type to avoid warnings from gcc. */ \
 	  for (i = 0; i < (ptrdiff_t) (NELEM (statics) - 1); i++)	\
 	    if (x == statics[i])					\
@@ -183,6 +195,13 @@ static void exit_builtin_modules(void)
     REPORT_LINKED_LIST_LEAKS (program, first_program, NOTHING, T_PROGRAM, "Program");
     REPORT_LINKED_LIST_LEAKS (object, first_object, NOTHING, T_OBJECT, "Object");
     report_all_type_leaks();
+
+    {
+      size_t index;
+      for (index = 0; index < pike_type_hash_size; index++) {
+	REPORT_LINKED_LIST_LEAKS(pike_type, pike_type_hash[index], STATIC_TYPES, PIKE_T_TYPE, "Type");
+      }
+    }
 
 #undef REPORT_LINKED_LIST_LEAKS
 
