@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.185 2007/05/18 18:03:08 grubba Exp $
+ * $Id: backend.cmod,v 1.186 2007/05/18 21:35:44 grubba Exp $
  *
  * Backend object.
  */
@@ -333,6 +333,9 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
   int e;
   int sz = sizeof(poll_state);
 
+  IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS(%p, %d, %d, 0x%08x)\n",
+		me, pfd, fd, events));
+
   /* NOTE: POLLREMOVE must (unfortunately) be a separate request. */
   poll_state[0].fd = fd;
   poll_state[0].events = POLLREMOVE;
@@ -347,18 +350,27 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
   }
 
 #ifdef _REENTRANT
+  /* FIXME: set_busy ought to be backend-specific.
+   * FIXME: Ought to check if we're the backend.
+   */
   if(num_threads>1)
   {
     /* Release the poll set from the backend. */
+    IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS[%p] grabbing the poll set\n",
+		  me));
     while (set_busy) {
       co_wait_interpreter(&set_change);
     }
     set_busy = 1;
+    IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS[%p] wake up backend\n",
+		  me));
     backend_wake_up_backend(me);
     /* The backend is now waiting in wakeup_callback(). */
   }
 #endif /* _REENTRANT */
 
+  IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS[%p] updating the poll set\n",
+		me));
   while (((e = write(pfd, poll_state, sz)) < 0) && (errno == EINTR))
     ;
 
@@ -367,6 +379,8 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
   if(num_threads>1)
   {
     /* Release the backend from wakeup_callback(). */
+    IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS[%p] releasing the backend\n",
+		  me));
     co_broadcast(&set_change);
   }
 #endif /* _REENTRANT */
@@ -945,7 +959,7 @@ PIKECLASS Backend
     {
       char foo=0;
 
-      if(me && me->may_need_wakeup)
+      if(me && me->may_need_wakeup && (me->wakeup_pipe_send_fd >= 0))
 	/* Avoid fd_write with its dmalloc stuff. */
 #ifdef HAVE_WINSOCK_H
 	debug_fd_write
@@ -3322,6 +3336,9 @@ PIKECLASS Backend
       me->inactive_boxes = me->free_inactive_box = NULL;
       me->inactive_boxes_size = 0;
 
+      me->wakeup_pipe_send_fd = -1;
+      INIT_FD_CALLBACK_BOX(&me->wakeup_cb_box, me, NULL, -1, 0, NULL);
+
 #ifdef OPEN_POLL_DEVICE
       IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Opening poll device...\n",
 		    THR_NO, me->id));
@@ -3355,6 +3372,8 @@ PIKECLASS Backend
 
 	set_nonblocking(pipe[0],1);
 	set_nonblocking(pipe[1],1);
+	IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Initializing wakeup pipe...\n",
+		      THR_NO, me->id));
 	INIT_FD_CALLBACK_BOX (&me->wakeup_cb_box, me, NULL,
 			      pipe[0], PIKE_BIT_FD_READ, wakeup_callback);
 	me->wakeup_pipe_send_fd = pipe[1];
@@ -3383,8 +3402,10 @@ PIKECLASS Backend
 
       free_callback_list(& THIS->backend_callbacks);
 
-      fd_close(THIS->wakeup_cb_box.fd);
-      fd_close(THIS->wakeup_pipe_send_fd);
+      if (THIS->wakeup_sb_box.fd >= 0)
+	fd_close(THIS->wakeup_cb_box.fd);
+      if (me->wakeup_pipe_send_fd >= 0)
+	fd_close(THIS->wakeup_pipe_send_fd);
 
       if (me->fd_boxes) {
 	FOR_EACH_ACTIVE_FD_BOX (me, box) {
