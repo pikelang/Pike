@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.182 2007/03/07 16:33:32 mast Exp $
+ * $Id: backend.cmod,v 1.183 2007/05/18 16:45:29 grubba Exp $
  *
  * Backend object.
  */
@@ -64,6 +64,11 @@
 
 /* #define POLL_DEBUG */
 /* #define CALL_OUT_DEBUG */
+
+#ifdef PIKE_EXTRA_DEBUG
+#define POLL_DEBUG
+#define CALL_OUT_DEBUG
+#endif
 
 #ifdef POLL_DEBUG
 #define IF_PD(x)	x
@@ -3312,6 +3317,8 @@ PIKECLASS Backend
       me->inactive_boxes_size = 0;
 
 #ifdef OPEN_POLL_DEVICE
+      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Opening poll device...\n",
+		    THR_NO, me->id));
       if ((me->set = OPEN_POLL_DEVICE()) < 0) {
 	Pike_error("Failed to open poll device (errno:%d)\n", errno);
       }
@@ -3333,6 +3340,8 @@ PIKECLASS Backend
       /* me->set.num_fds=0; */
 #endif /* OPEN_POLL_DEVICE || HAVE_POLL */
 
+      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Creating wakeup pipe...\n",
+		    THR_NO, me->id));
       {
 	int pipe[2];
 	if(pike_make_pipe(pipe) < 0)
@@ -3350,6 +3359,8 @@ PIKECLASS Backend
       }
       me->may_need_wakeup = 0;
 
+      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Registering backend...\n",
+		    THR_NO, me->id));
       register_backend(me);
 
 #ifdef DO_PIKE_CLEANUP
@@ -3798,9 +3809,13 @@ void init_backend(void)
   set_busy = 0;
   co_init(&set_change);
 #endif /* OPEN_POLL_DEVICE && _REENTRANT */
+  IF_CO(fprintf(stderr, "BACKEND: Init call_out...\n"));
   init_call_out_s_blocks();
+  IF_PD(fprintf(stderr, "BACKEND: Init compat callback boxes...\n"));
   init_compat_cb_box_blocks();
+  IF_PD(fprintf(stderr, "BACKEND: INIT...\n"));
   INIT;
+  IF_PD(fprintf(stderr, "BACKEND: Creating default backend...\n"));
   {
     struct object *o=clone_object(Backend_program,0);
     default_backend=OBJ2_BACKEND(o);
