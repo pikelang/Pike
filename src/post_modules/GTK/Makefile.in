@@ -32,8 +32,8 @@ doc0:
 
 doc1:
 	$(RUNPIKE) $(SRCDIR)/new_build_pgtk.pike --source='$(SRCDIR)/source/'\
-                   --destination="$(SRCDIR)/refdoc/" \
-                   $(SRCDIR)/output/doc-pikeref.pike
+	           --destination="$(SRCDIR)/refdoc/" \
+	           $(SRCDIR)/output/doc-pikeref.pike
 
 doc2: doc1
 
@@ -42,8 +42,13 @@ compile0:
 	$(MAKE) all
 
 compile1:
-	$(RUNPIKE) $(SRCDIR)/new_build_pgtk.pike --source='$(SRCDIR)/source/'\
-                   $(SRCDIR)/output/few.pike
+	if $(RUNPIKE) $(SRCDIR)/new_build_pgtk.pike --source='$(SRCDIR)/source/' \
+	              $(SRCDIR)/output/few.pike; then :; else \
+	  (echo; echo "Failure. Rerunning with trace."; echo) >&2; \
+	  $(RUNPIKE) -t2 $(SRCDIR)/new_build_pgtk.pike --source='$(SRCDIR)/source/' \
+	                 $(SRCDIR)/output/few.pike; \
+	  exit $$?; \
+	fi
 	@if [ "x@VPATH_KLUDGE@" = "xyes" ]; then \
 	  for f in `cat files_to_compile | sed -e 's/\.o/\.c/g'`; do \
 	    test -f "$$f" || ln -s "$(srcdir)/$$f" "$$f"; \
@@ -53,7 +58,7 @@ compile1:
 	@echo "Modified CFLAGS:`echo ' $(CFLAGS) ' | sed -e 's/ -g[^ ]*//g' -e 's/ -W[^ ]*//g'` `echo ' $(CFLAGS) ' | sed -ne 's/.*\( -gcc-version[^ ]*\).*/\1/p'`"
 	@$(MAKE) OBJS="`cat files_to_compile`" \
 	       CFLAGS="`echo $(CFLAGS) | sed -e 's/ -g[^ ]*//g' -e 's/ -W[^ ]*//g'` `echo ' $(CFLAGS) ' | sed -ne 's/.*\( -gcc-version[^ ]*\).*/\1/p'`" \
-                  all
+	          all
 
 compile2: compile1
 
