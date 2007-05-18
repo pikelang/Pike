@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.c,v 1.11 2007/05/13 14:55:26 mast Exp $
+ * $Id: pike_embed.c,v 1.12 2007/05/18 14:00:48 grubba Exp $
  *
  * Pike embedding API.
  *
@@ -82,6 +82,14 @@ int try_use_mmx;
 
 /* Define this to trace the execution of main(). */
 /* #define TRACE_MAIN */
+
+/* Define this for extra C-stack debug. */
+/* #define STACK_DEBUG */
+
+#ifdef PIKE_EXTRA_DEBUG
+#define TRACE_MAIN
+#define STACK_DEBUG
+#endif
 
 #ifdef TRACE_MAIN
 #define TRACE(X)	fprintf X

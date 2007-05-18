@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.226 2007/05/17 12:26:50 grubba Exp $
+|| $Id: main.c,v 1.227 2007/05/18 14:00:48 grubba Exp $
 */
 
 #include "global.h"
@@ -68,6 +68,10 @@
 
 /* Define this to trace the execution of main(). */
 /* #define TRACE_MAIN */
+
+#ifdef PIKE_EXTRA_DEBUG
+#define TRACE_MAIN
+#endif /* PIKE_EXTRA_DEBUG */
 
 #ifdef TRACE_MAIN
 #define TRACE(X)	fprintf X
