@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.186 2007/05/18 21:35:44 grubba Exp $
+ * $Id: backend.cmod,v 1.187 2007/05/19 09:34:58 grubba Exp $
  *
  * Backend object.
  */
@@ -3402,7 +3402,7 @@ PIKECLASS Backend
 
       free_callback_list(& THIS->backend_callbacks);
 
-      if (THIS->wakeup_sb_box.fd >= 0)
+      if (THIS->wakeup_cb_box.fd >= 0)
 	fd_close(THIS->wakeup_cb_box.fd);
       if (me->wakeup_pipe_send_fd >= 0)
 	fd_close(THIS->wakeup_pipe_send_fd);
