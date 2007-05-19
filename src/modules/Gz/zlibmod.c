@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.78 2007/05/01 22:07:48 nilsson Exp $
+|| $Id: zlibmod.c,v 1.79 2007/05/19 20:30:14 per Exp $
 */
 
 #include "global.h"
@@ -256,6 +256,7 @@ void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
     break;
 
   default:
+    deflateEnd(&z.gz);
     if(z.gz.msg)
       Pike_error("Failed to initialize gz: %s\n", z.gz.msg);
     else
@@ -590,6 +591,7 @@ void zlibmod_unpack(struct pike_string *data, dynamic_buffer *buf, int raw)
     break;
 
   default:
+    inflateEnd( &z.gz );
     if(z.gz.msg)
       Pike_error("Failed to initialize gz: %s\n", z.gz.msg);
     else
@@ -599,6 +601,7 @@ void zlibmod_unpack(struct pike_string *data, dynamic_buffer *buf, int raw)
   mt_init(&z.lock);
   ret = do_inflate(buf, &z, Z_SYNC_FLUSH);
   mt_destroy(&z.lock);
+  inflateEnd( &z.gz );
 
   if(ret==Z_OK)
     Pike_error("Compressed data is truncated.\n");
