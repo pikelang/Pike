@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.193 2007/05/20 13:53:21 grubba Exp $
+ * $Id: backend.cmod,v 1.194 2007/05/20 14:39:04 grubba Exp $
  *
  * Backend object.
  */
@@ -267,7 +267,6 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
  *!   Implements callback registration functions and defines the
  *!   main backend APIs.
  */
-
 PIKECLASS Backend
 {
   /* Provide a unique count to be able to tell backends apart with _sprintf. */
@@ -2072,7 +2071,7 @@ PIKECLASS Backend
       IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Creating wakeup pipe...\n",
 		    THR_NO, me->id));
       if(pike_make_pipe(pipe) < 0)
-      Pike_error("Couldn't create backend wakeup pipe! errno=%d.\n",errno);
+	Pike_error("Couldn't create backend wakeup pipe! errno=%d.\n",errno);
 
       set_nonblocking(pipe[0],1);
       set_nonblocking(pipe[1],1);
@@ -2691,6 +2690,62 @@ static void copy_selectors(struct active_selectors *to,
 #define MY_POLLHUP	POLLHUP
 #endif
 
+#ifdef POLL_DEBUG
+static void describe_event(struct Backend_struct *me, POLL_EVENT event)
+{
+#ifdef BACKEND_USES_KQUEUE
+  fprintf(stderr, "[%d]BACKEND[%d]: fd:%d filter:%d flags:0x%08x",
+	  THR_NO, me->id,
+	  GET_FD(event),
+	  GET_EVENTS(event),
+	  event.flags);
+  if (CHECK_EVENT(event, MY_POLLIN)) {
+    fprintf(stderr, "  EVFILT_READ");
+  } else if (CHECK_EVENT(event, MY_POLLOUT)) {
+    fprintf(stderr, "  EVFILT_WRITE");
+  } else {
+    fprintf(stderr, "  UNKNOWN");
+  }
+  if (event.flags & EV_ERROR) {
+    fprintf(stderr, "[ERROR]");
+  }
+  if (event.flags & EV_EOF) {
+    fprintf(stderr, "[EOF]");
+  }
+  fprintf(stderr, "(%d)\n", event.data);
+#else /* !BACKEND_USES_KQUEUE */
+  fprintf(stderr, "[%d]BACKEND[%d]: fd:%d events:0x%04x",
+	  THR_NO, me->id,
+	  GET_FD(event),
+	  GET_EVENTS(event));
+  if (CHECK_EVENT(event, MY_POLLNVAL)) {
+    fprintf(stderr, "  POLLNVAL");
+  }
+  if (CHECK_EVENT(event, MY_POLLERR)) {
+    fprintf(stderr, "  POLLERR");
+  }
+  if (CHECK_EVENT(event, MY_POLLHUP)) {
+    fprintf(stderr, "  POLLHUP");
+  }
+  if (CHECK_EVENT(event, MY_POLLRDBAND)) {
+    fprintf(stderr, "  POLLRDBAND");
+  }
+  if (CHECK_EVENT(event, MY_POLLIN)) {
+    fprintf(stderr, "  POLLIN");
+  }
+  if (CHECK_EVENT(event, MY_POLLWRBAND)) {
+    fprintf(stderr, "  POLLWRBAND");
+  }
+  if (CHECK_EVENT(event, MY_POLLOUT)) {
+    fprintf(stderr, "  POLLOUT");
+  }
+  fprintf(stderr, "\n");
+#endif /* BACKEND_USES_KQUEUE */
+}
+#else /* !POLL_DEBUG */
+#define describe_event(ME, EVENT)
+#endif /* POLL_DEBUG */
+
 /*! @class GenericBackend
  */
 PIKECLASS GenericBackend
@@ -3261,56 +3316,7 @@ PIKECLASS GenericBackend
       {
 	int fd = GET_FD(ACTIVE_POLLSET[i]);
 
-#ifdef POLL_DEBUG
-#ifdef BACKEND_USES_KQUEUE
-	fprintf(stderr, "[%d]BACKEND[%d]: fd:%d filter:%d flags:0x%08x",
-		THR_NO, me->id,
-		GET_FD(ACTIVE_POLLSET[i]),
-		GET_EVENTS(ACTIVE_POLLSET[i]),
-		ACTIVE_POLLSET[i].flags);
-	if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN)) {
-	  fprintf(stderr, "  EVFILT_READ");
-	} else if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT)) {
-	  fprintf(stderr, "  EVFILT_WRITE");
-	} else {
-	  fprintf(stderr, "  UNKNOWN");
-	}
-	if (ACTIVE_POLLSET[i].flags & EV_ERROR) {
-	  fprintf(stderr, "[ERROR]");
-	}
-	if (ACTIVE_POLLSET[i].flags & EV_EOF) {
-	  fprintf(stderr, "[EOF]");
-	}
-	fprintf(stderr, "(%d)\n", ACTIVE_POLLSET[i].data);
-#else /* !BACKEND_USES_KQUEUE */
-	fprintf(stderr, "[%d]BACKEND[%d]: fd:%d events:0x%04x",
-		THR_NO, me->id,
-		GET_FD(ACTIVE_POLLSET[i]),
-		GET_EVENTS(ACTIVE_POLLSET[i]));
-	if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLNVAL)) {
-	  fprintf(stderr, "  POLLNVAL");
-	}
-	if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLERR)) {
-	  fprintf(stderr, "  POLLERR");
-	}
-	if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP)) {
-	  fprintf(stderr, "  POLLHUP");
-	}
-	if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLRDBAND)) {
-	  fprintf(stderr, "  POLLRDBAND");
-	}
-	if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN)) {
-	  fprintf(stderr, "  POLLIN");
-	}
-	if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLWRBAND)) {
-	  fprintf(stderr, "  POLLWRBAND");
-	}
-	if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT)) {
-	  fprintf(stderr, "  POLLOUT");
-	}
-	fprintf(stderr, "\n");
-#endif /* BACKEND_USES_KQUEUE */
-#endif /* POLL_DEBUG */
+	describe_event(me, ACTIVE_POLLSET[i]);
 
 	if (!(box = SAFE_GET_ACTIVE_BOX (me, fd))) {
 	  /* The box is no longer active. */
