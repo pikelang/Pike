@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.780 2007/05/09 19:35:41 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.781 2007/05/20 19:16:48 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -6517,23 +6517,29 @@ test_do(add_constant("test"))
 
 // sscanf
 test_any([[mixed a; return sscanf("11","%d",a)]],1)
+test_any([[mixed a; return sscanf("11","%*d",a)]],1)
+test_any([[mixed a; return sscanf("11","_%d",a)]],0)
+test_any([[mixed a,b,c; return sscanf("11","%1d%1d%1d",a,b,c)]],2)
 
+test_any([[mixed a; sscanf("11","%b",a); return a]],0b11)
 test_any([[mixed a; sscanf("11","%d",a); return a]],11)
 test_any([[mixed a; sscanf("11","%o",a); return a]],011)
 test_any([[mixed a; sscanf("11","%x",a); return a]],0x11)
 test_any([[mixed a; sscanf("11","%D",a); return a]],11)
 
-
+test_any([[mixed a; sscanf("11","%2b",a); return a]],0b11)
 test_any([[mixed a; sscanf("11","%2d",a); return a]],11)
 test_any([[mixed a; sscanf("11","%2o",a); return a]],011)
 test_any([[mixed a; sscanf("11","%2x",a); return a]],0x11)
 test_any([[mixed a; sscanf("11","%2D",a); return a]],11)
 
+test_any([[mixed a; sscanf("11","%4711b",a); return a]],0b11)
 test_any([[mixed a; sscanf("11","%4711d",a); return a]],11)
 test_any([[mixed a; sscanf("11","%4711o",a); return a]],011)
 test_any([[mixed a; sscanf("11","%4711x",a); return a]],0x11)
 test_any([[mixed a; sscanf("11","%4711D",a); return a]],11)
 
+test_any([[mixed a; sscanf("11","%1b",a); return a]],1)
 test_any([[mixed a; sscanf("11","%1d",a); return a]],1)
 test_any([[mixed a; sscanf("11","%1o",a); return a]],1)
 test_any([[mixed a; sscanf("11","%1x",a); return a]],1)
@@ -6665,6 +6671,32 @@ test_equal( array_sscanf("xfo\200000x", "%sfoo%s"), ({}) )
 test_equal( array_sscanf("xfo\200000x", "%sfo\400%s"), ({}) )
 test_equal( array_sscanf("xfo\200000x", "%sfo\200000%s"), ({ "x", "x" }) )
 
+test_any([[mixed a; sscanf("","%H",a); return a]],0)
+test_any([[mixed a; sscanf("\0","%H",a); return a]],"")
+test_any([[mixed a; sscanf("\4","%H",a); return a]],0)
+test_any([[mixed a; sscanf("\4hello","%H",a); return a]],"hell")
+test_eval_error([[mixed a; sscanf("","%0H",a); return a]])
+test_eval_error([[mixed a; sscanf("\0","%0H",a); return a]])
+test_eval_error([[mixed a; sscanf("\4","%0H",a); return a]])
+test_eval_error([[mixed a; sscanf("\4hello","%0H",a); return a]])
+test_any([[mixed a; sscanf("","%1H",a); return a]],0)
+test_any([[mixed a; sscanf("\0","%1H",a); return a]],"")
+test_any([[mixed a; sscanf("\4","%1H",a); return a]],0)
+test_any([[mixed a; sscanf("\4hello","%1H",a); return a]],"hell")
+test_any([[mixed a; sscanf("","%-1H",a); return a]],0)
+test_any([[mixed a; sscanf("\0","%-1H",a); return a]],"")
+test_any([[mixed a; sscanf("\4","%-1H",a); return a]],0)
+test_any([[mixed a; sscanf("\4hello","%-1H",a); return a]],"hell")
+test_any([[mixed a; sscanf("","%2H",a); return a]],0)
+test_any([[mixed a; sscanf("\0\0","%2H",a); return a]],"")
+test_any([[mixed a; sscanf("\0","%2H",a); return a]],0)
+test_any([[mixed a; sscanf("\0\4","%2H",a); return a]],0)
+test_any([[mixed a; sscanf("\0\4hello","%2H",a); return a]],"hell")
+test_any([[mixed a; sscanf("","%-2H",a); return a]],0)
+test_any([[mixed a; sscanf("\0\0","%-2H",a); return a]],"")
+test_any([[mixed a; sscanf("\4","%-2H",a); return a]],0)
+test_any([[mixed a; sscanf("\4\0","%-2H",a); return a]],0)
+test_any([[mixed a; sscanf("\4\0hello","%-2H",a); return a]],"hell")
 	
 test_any([[
 class Bar {

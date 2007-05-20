@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.168 2007/04/30 12:02:04 grubba Exp $
+|| $Id: sscanf.c,v 1.169 2007/05/20 19:16:48 nilsson Exp $
 */
 
 #include "global.h"
@@ -841,6 +841,8 @@ CHAROPT2(								 \
           int e,len=0;							\
           if(field_length == -1)					\
 	    field_length=1;						\
+          if(field_length == 0)                                         \
+            Pike_error("%%H size field is 0.\n");                       \
           if(eye+field_length > input_len)				\
 	  {								\
 	    chars_matched[0]=eye;					\
