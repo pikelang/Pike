@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.190 2007/05/20 13:27:36 grubba Exp $
+ * $Id: backend.cmod,v 1.191 2007/05/20 13:43:59 grubba Exp $
  *
  * Backend object.
  */
@@ -1662,6 +1662,94 @@ PIKECLASS Backend
     me->exec_thread = 0;
   }
 
+  static void low_backend_once_setup(struct Backend_struct *me,
+				     struct timeval *start_time,
+				     struct timeval *next_timeout)
+  {
+    ONERROR uwp;
+    int i, done_something = 0;
+#ifdef PIKE_DEBUG
+    struct timeval max_timeout;
+#endif
+
+    alloca(0);			/* Do garbage collect */
+#ifdef PIKE_DEBUG
+    if(d_flag > 1) do_debug();
+#endif
+
+    if(me->exec_thread) {
+#ifdef PIKE_THREADS
+      if (me->exec_thread != Pike_interpreter.thread_state)
+	Pike_error ("Backend already in use by another thread.\n");
+      else
+#endif
+	/* It's actually not a problem to make this function
+	 * reentrant, but that'd introduce a risk of races in the
+	 * callbacks (i.e. between when a read callback is called
+	 * and when it reads the data), and besides I can't think
+	 * of any sane way to use it. Also, this error can help
+	 * discover otherwise tricky bugs. /mast */
+	Pike_error ("Backend already running - cannot reenter.\n");
+    }
+#ifdef PIKE_THREADS
+    me->exec_thread = Pike_interpreter.thread_state;
+#else
+    me->exec_thread = 1;
+#endif
+      
+#ifndef OWN_GETHRTIME
+    GETTIMEOFDAY(&current_time);
+#else
+    /* good place to run the gethrtime-conversion update
+       since we have to run gettimeofday anyway /Mirar */
+    own_gethrtime_update(&current_time);
+#endif
+    start_time->tv_sec = current_time.tv_sec;
+    start_time->tv_usec = current_time.tv_usec;
+
+    if (next_timeout->tv_sec < 0) {
+      next_timeout->tv_sec = -1;
+      next_timeout->tv_usec = 0;
+    }
+    else {
+      my_add_timeval(next_timeout, &current_time);
+    }
+
+    /* Call outs */
+    if(me->num_pending_calls)
+      if(next_timeout->tv_sec < 0 ||
+	 my_timercmp(& CALL(0)->tv, < , next_timeout))
+	*next_timeout = CALL(0)->tv;
+
+#ifdef PIKE_DEBUG
+    max_timeout = *next_timeout;
+#endif
+    call_callback(& me->backend_callbacks, NULL);
+#ifdef PIKE_DEBUG
+    if (max_timeout.tv_sec >= 0 &&
+	(next_timeout->tv_sec < 0 ||
+	 my_timercmp (&max_timeout, <, next_timeout)))
+      Pike_fatal ("Timeout raised from %lu.%lu to %lu.%lu by a backend callback.\n",
+		  (unsigned long)max_timeout.tv_sec,
+		  (unsigned long)max_timeout.tv_usec,
+		  (unsigned long)next_timeout->tv_sec,
+		  (unsigned long)next_timeout->tv_usec);
+#endif
+
+    if (next_timeout->tv_sec < 0) {
+      /* Wait "forever". */
+      next_timeout->tv_sec = 100000000;
+      next_timeout->tv_usec = 0;
+    }
+    else if(my_timercmp(next_timeout, > , &current_time))
+    {
+      my_subtract_timeval(next_timeout, &current_time);
+    }else{
+      next_timeout->tv_usec = 0;
+      next_timeout->tv_sec = 0;
+    }
+  }
+
   INIT
   {
     struct Backend_struct *me = THIS;
@@ -2821,53 +2909,20 @@ PIKECLASS GenericBackend
    * timeout without calling any callbacks or call outs (except those
    * on backend_callbacks) then tv_sec will be set to -1. Otherwise it
    * will be set to the time spent. */
-  static void low_backend_once(struct GenericBackend_struct *gb,
-			       struct timeval *timeout)
+  static void gb_low_backend_once(struct GenericBackend_struct *gb,
+				  struct timeval *timeout)
     {
       ONERROR uwp;
       int i, done_something = 0;
-      struct timeval start_time;
+      struct timeval start_time = *timeout, next_timeout;
       struct Backend_struct *me = gb->backend;
 #ifdef DECLARE_POLL_EXTRAS
       /* Declare any extra variables needed by MY_POLL(). */
       DECLARE_POLL_EXTRAS;
 #endif /* DECLARE_POLL_EXTRAS */
 
-      alloca(0);			/* Do garbage collect */
-#ifdef PIKE_DEBUG
-      if(d_flag > 1) do_debug();
-#endif
-
-      if(me->exec_thread) {
-#ifdef PIKE_THREADS
-	if (me->exec_thread != Pike_interpreter.thread_state)
-	  Pike_error ("Backend already in use by another thread.\n");
-	else
-#endif
-	  /* It's actually not a problem to make this function
-	   * reentrant, but that'd introduce a risk of races in the
-	   * callbacks (i.e. between when a read callback is called
-	   * and when it reads the data), and besides I can't think
-	   * of any sane way to use it. Also, this error can help
-	   * discover otherwise tricky bugs. /mast */
-	  Pike_error ("Backend already running - cannot reenter.\n");
-      }
-#ifdef PIKE_THREADS
-      me->exec_thread = Pike_interpreter.thread_state;
-#else
-      me->exec_thread = 1;
-#endif
-      SET_ONERROR (uwp, low_backend_cleanup, me);
-      
-#ifndef OWN_GETHRTIME
-      GETTIMEOFDAY(&current_time);
-#else
-      /* good place to run the gethrtime-conversion update
-	 since we have to run gettimeofday anyway /Mirar */
-      own_gethrtime_update(&current_time);
-#endif
-      start_time.tv_sec = current_time.tv_sec;
-      start_time.tv_usec = current_time.tv_usec;
+      SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
+      low_backend_once_setup(gb->backend, &start_time, &next_timeout);
 
       {
 #ifdef TIMEOUT_IS_MILLISECONDS
@@ -2883,50 +2938,7 @@ PIKECLASS GenericBackend
 	struct timeval max_timeout;
 #endif
 
-	if (timeout->tv_sec < 0) {
-	  next_timeout.tv_sec = -1;
-	}
-	else {
-	  next_timeout.tv_sec = timeout->tv_sec;
-	  next_timeout.tv_usec = timeout->tv_usec;
-	  my_add_timeval(&next_timeout, &current_time);
-	}
-
 	me->may_need_wakeup = 1;
-
-	/* Call outs */
-	if(me->num_pending_calls)
-	  if(next_timeout.tv_sec < 0 ||
-	     my_timercmp(& CALL(0)->tv, < , &next_timeout))
-	    next_timeout = CALL(0)->tv;
-
-#ifdef PIKE_DEBUG
-	max_timeout = next_timeout;
-#endif
-	call_callback(& me->backend_callbacks, NULL);
-#ifdef PIKE_DEBUG
-	if (max_timeout.tv_sec >= 0 &&
-	    (next_timeout.tv_sec < 0 ||
-	     my_timercmp (&max_timeout, <, &next_timeout)))
-	  Pike_fatal ("Timeout raised from %lu.%lu to %lu.%lu by a backend callback.\n",
-		      (unsigned long)max_timeout.tv_sec,
-		      (unsigned long)max_timeout.tv_usec,
-		      (unsigned long)next_timeout.tv_sec,
-		      (unsigned long)next_timeout.tv_usec);
-#endif
-
-	if (next_timeout.tv_sec < 0) {
-	  /* Wait "forever". */
-	  next_timeout.tv_sec = 100000000;
-	  next_timeout.tv_usec = 0;
-	}
-	else if(my_timercmp(&next_timeout, > , &current_time))
-	{
-	  my_subtract_timeval(&next_timeout, &current_time);
-	}else{
-	  next_timeout.tv_usec = 0;
-	  next_timeout.tv_sec = 0;
-	}
 
 #ifdef TIMEOUT_IS_MILLISECONDS
 	if (next_timeout.tv_sec >= 100000000)
@@ -3571,7 +3583,7 @@ PIKECLASS GenericBackend
     else
       timeout.tv_sec = -1;
 
-    low_backend_once(THIS, &timeout);
+    gb_low_backend_once(THIS, &timeout);
 
     pop_n_elems (args);
     if (timeout.tv_sec < 0)
