@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.187 2007/05/19 09:34:58 grubba Exp $
+ * $Id: backend.cmod,v 1.188 2007/05/20 13:15:23 grubba Exp $
  *
  * Backend object.
  */
@@ -51,7 +51,7 @@
  *   Sounds very odd to me. /mast
  */
 
-
+/* For select */
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #else
@@ -61,6 +61,40 @@
 #endif
 #endif
 #include <sys/stat.h>
+
+/* For poll and /dev/poll and epoll */
+#ifdef HAVE_POLL_H
+#include <poll.h>
+#endif /* HAVE_POLL_H */
+#ifdef HAVE_SYS_POLL_H
+#include <sys/poll.h>
+#endif /* HAVE_SYS_POLL_H */
+
+/* For /dev/poll */
+#ifdef HAVE_SYS_DEVPOLL_H
+#include <sys/devpoll.h>
+#endif /* HAVE_SYS_DEVPOLL_H */
+
+/* For epoll */
+#ifdef HAVE_SYS_EPOLL_H
+#include <sys/epoll.h>
+#endif /* HAVE_SYS_EPOLL_H */
+
+/* For kqueue. */
+#ifdef HAVE_SYS_EVENT_H
+#include <sys/event.h>
+#endif /* HAVE_SYS_EVENT_H */
+
+/* The following are used on Linux'es that have an old libc. */
+#ifdef HAVE_SYSCALL_H
+#include <syscall.h>
+#elif defined(HAVE_SYS_SYSCALL_H)
+#include <sys/syscall.h>
+#endif /* HAVE_SYSCALL_H || HAVE_SYS_SYSCALL_H */
+
+/*
+ * Debugging and tracing.
+ */
 
 /* #define POLL_DEBUG */
 /* #define CALL_OUT_DEBUG */
@@ -93,8 +127,6 @@
 #include "block_alloc_h.h"
 BLOCK_ALLOC (compat_cb_box, N/A);
 static int compat_box_dispatcher (struct fd_callback_box *box, int event);
-static void update_fd_set (struct Backend_struct *me, int fd,
-			   int old_events, int new_events);
 
 /* CALL OUT STUFF */
 
@@ -111,6 +143,7 @@ struct call_out_s
   struct array *args;
 };
 
+/* MUST be after any include of "block_alloc_h.h"! */
 #include "block_alloc.h"
 
 #ifdef PIKE_DEBUG
@@ -225,633 +258,16 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
   return default_backend;
 }
 
-/*
- * POLL/SELECT selection
- */
-
-#ifndef HAVE_AND_USE_POLL
-/* Various BSDs have simulated poll(2) APIs. */
-#undef HAVE_POLL
-#endif
-
-#ifdef HAVE_POLL
-
-/*
- * Backends using poll(2) or similar.
- */
-
-#ifdef HAVE_POLL_H
-#include <poll.h>
-#endif /* HAVE_POLL_H */
-
-#ifdef HAVE_SYS_POLL_H
-#include <sys/poll.h>
-#endif /* HAVE_SYS_POLL_H */
-
-/* Some constants... */
-
-/* Notes on POLLRDNORM and POLLIN:
- *
- * According to the AIX manual, POLLIN and POLLRDNORM are both set
- * if there's a nonpriority message on the read queue. POLLIN is
- * also set if the message is of 0 length.
- */
-
-#ifndef POLLRDNORM
-#define POLLRDNORM	POLLIN
-#endif /* !POLLRDNORM */
-
-#ifndef POLLRDBAND
-#define POLLRDBAND	POLLPRI
-#endif /* !POLLRDBAND */
-
-#ifndef POLLWRNORM
-#define POLLWRNORM	POLLOUT
-#endif /* POLLWRNORM */
-
-#ifndef POLLWRBAND
-#define POLLWRBAND	POLLOUT
-#endif /* !POLLWRBAND */
-
-#define MY_POLLIN POLLRDNORM|POLLIN
-#define MY_POLLOUT POLLWRNORM|POLLOUT
-
-#define MY_POLLEXCEPT	POLLRDBAND|POLLRDNORM|POLLIN
-#define MY_POLLRDBAND	POLLRDBAND|POLLPRI
-#define MY_POLLWREXCEPT	POLLWRBAND|POLLWRNORM|POLLOUT
-#define MY_POLLWRBAND	POLLWRBAND|MY_POLLOUT
-#define MY_POLLNVAL	POLLNVAL
-
-#if (POLLRDBAND != POLLRDNORM) && (POLLRDBAND != POLLIN)
-#define RDBAND_IS_SPECIAL
-#endif
-
-#if (POLLWRBAND != POLLOUT) && (POLLWRBAND != POLLWRNORM)
-#define WRBAND_IS_SPECIAL
-#endif
-
-#define TIMEOUT_IS_MILLISECONDS
-
-#ifdef BACKEND_USES_DEVPOLL
-/*
- * Backend using /dev/poll-style poll device.
- *
- * Used on:
- *   Solaris 7 + patches and above.
- *   OSF/1 + patches and above.
- *   IRIX 5.6.15m and above.
- */
-#include <sys/devpoll.h>
-
-#define POLL_EVENT	struct pollfd
-#define OPEN_POLL_DEVICE()	open(PIKE_POLL_DEVICE, O_RDWR)
-#define CHILD_NEEDS_TO_REOPEN
-
-#define DECLARE_POLL_EXTRAS		\
-  POLL_EVENT poll_fds[POLL_SET_SIZE];	\
-  struct dvpoll poll_request = {	\
-    poll_fds,				\
-    POLL_SET_SIZE,			\
-    0,					\
-  }
-
-#define MY_POLL(PFD, TIMEOUT)					\
-  ((poll_request.dp_timeout = (TIMEOUT)),			\
-   (ioctl(PFD, DP_POLL, &poll_request, sizeof(poll_request))))
-
-#ifdef _REENTRANT
-  /* FIXME: Ought to be CVARs. */
-  static int set_busy;
-  static COND_T set_change;
-  void backend_wake_up_backend(struct Backend_struct *me);
-#endif
-
-int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
-			   int pfd, int fd, INT32 events)
-{
-  struct pollfd poll_state[2];
-  int e;
-  int sz = sizeof(poll_state);
-
-  IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS(%p, %d, %d, 0x%08x)\n",
-		me, pfd, fd, events));
-
-  /* NOTE: POLLREMOVE must (unfortunately) be a separate request. */
-  poll_state[0].fd = fd;
-  poll_state[0].events = POLLREMOVE;
-  poll_state[0].revents = 0;
-  poll_state[1].fd = fd;
-  poll_state[1].events = events;
-  poll_state[1].revents = 0;
-
-  if (!events) {
-    /* We're not interrested in the fd anymore. */
-    sz = sizeof(poll_state[0]);
-  }
-
-#ifdef _REENTRANT
-  /* FIXME: set_busy ought to be backend-specific.
-   * FIXME: Ought to check if we're the backend.
-   */
-  if(num_threads>1)
-  {
-    /* Release the poll set from the backend. */
-    IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS[%p] grabbing the poll set\n",
-		  me));
-    while (set_busy) {
-      co_wait_interpreter(&set_change);
-    }
-    set_busy = 1;
-    IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS[%p] wake up backend\n",
-		  me));
-    backend_wake_up_backend(me);
-    /* The backend is now waiting in wakeup_callback(). */
-  }
-#endif /* _REENTRANT */
-
-  IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS[%p] updating the poll set\n",
-		me));
-  while (((e = write(pfd, poll_state, sz)) < 0) && (errno == EINTR))
-    ;
-
-#ifdef _REENTRANT
-  set_busy = 0;
-  if(num_threads>1)
-  {
-    /* Release the backend from wakeup_callback(). */
-    IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS[%p] releasing the backend\n",
-		  me));
-    co_broadcast(&set_change);
-  }
-#endif /* _REENTRANT */
-
-  if (e < 0) {
-    Pike_fatal("Failed to set state for fd %d in " PIKE_POLL_DEVICE
-	       " (errno:%d).\n",
-	       fd, errno);
-  }
-
-  /* FIXME: Probably ought to support partial writes. */
-  if (e != sz) {
-    Pike_fatal("Failed to set state for fd %d in " PIKE_POLL_DEVICE
-	       " short write (%d != %d).\n",
-	       fd, e, (int)sizeof(poll_state));
-  }
-  return e;
-}
-	
-#elif defined(BACKEND_USES_DEVEPOLL)
-/*
- * Backend using /dev/epoll-style poll device.
- *
- * Used on:
- *   Linux 2.6 and above.
- * Note:
- *   Some libc's are missing wrappers for the system calls, so
- *   we include the appropriate wrappers below.
- */
-#include <sys/epoll.h>
-
-#ifndef PIKE_POLL_DEVICE
-#define PIKE_POLL_DEVICE	"epoll"
-#endif
-
-/* The following three are defined by <gnu/stubs.h> which is included
- * from <features.h> which is included from just about everywhere, so
- * it is safe to assume that they have been defined if appropriate.
- */
-#if defined(__stub_epoll_create) || defined(__stub_epoll_ctl) || \
-    defined(__stub_epoll_wait)
-/* We have a libc without the wrappers for epoll support.
- */
-#ifdef HAVE_SYSCALL_H
-#include <syscall.h>
-#elif defined(HAVE_SYS_SYSCALL_H)
-#include <sys/syscall.h>
-#endif /* HAVE_SYSCALL_H || HAVE_SYS_SYSCALL_H */
-#ifndef __NR_epoll_create
-/* Our libc doesn't even know the syscall numbers for the epoll syscalls.
- */
-#ifdef __i386__
-#define __NR_epoll_create 254
-#define __NR_epoll_ctl 255
-#define __NR_epoll_wait 256
-#elif defined(__ia64__)
-#define __NR_epoll_create 1243
-#define __NR_epoll_ctl 1244
-#define __NR_epoll_wait 1245
-#elif defined(__x86_64__)
-#define __NR_epoll_create 214
-#define __NR_epoll_ctl 233
-#define __NR_epoll_wait 232
-#else /* cpu types */
-#error Syscall numbers for epoll_create et al not known on this architecture.
-#endif /* cpu types */
-#endif /* !defined(__NR_epoll_create) */
-#if defined(_syscall1) && defined(_syscall4)
-_syscall1(int, epoll_create, int, size);                               
-_syscall4(int, epoll_ctl, int, epfd, int, op, int, fd,
-	  struct epoll_event *, event);
-_syscall4(int, epoll_wait, int, epfd, struct epoll_event *, pevents,
-	  int, maxevents, int, timeout);
-#undef __stub_epoll_create
-#undef __stub_epoll_ctl
-#undef __stub_epoll_wait
-#else /* !_syscall1 || !_syscall4 */
-#error Missing macros for generation of syscall wrappers.
-#endif /* _syscall1 && _syscall4 */
-#endif /* __stub_epoll_{create, ctl, wait} */
-
-#define POLL_EVENT	struct epoll_event
-#define GET_FD(EVENT)		EVENT.data.fd
-#define GET_EVENTS(EVENT)	EVENT.events
-
-/* FIXME: Might want another value instead on POLL_SET_SIZE. */
-#define OPEN_POLL_DEVICE()	epoll_create(POLL_SET_SIZE)
-
-#define DECLARE_POLL_EXTRAS		\
-  POLL_EVENT poll_fds[POLL_SET_SIZE]
-
-#define MY_POLL(PFD, TIMEOUT)				\
-  epoll_wait(PFD, poll_fds, POLL_SET_SIZE, TIMEOUT)
-
-int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
-			   int pfd, int fd, INT32 events)
-{
-  int e;
-
-  if (events) {
-    struct epoll_event ev;
-    ev.events = events;
-    ev.data.fd = fd;
-
-    /* The /dev/epoll interface exposes kernel implementation details...
-     */
-    IF_PD(fprintf(stderr, "epoll_ctl(%d, EPOLL_CTL_MOD, %d, { 0x%08x, %d })\n",
-		  pfd, fd, events, fd));
-    while (((e = epoll_ctl(pfd, EPOLL_CTL_MOD, fd, &ev)) < 0)  &&
-	   (errno == EINTR))
-      ;
-    if ((e < 0) && (errno == ENOENT)) {
-      IF_PD(fprintf(stderr,
-		    "epoll_ctl(%d, EPOLL_CTL_ADD, %d, { 0x%08x, %d })\n",
-		    pfd, fd, events, fd));
-      while (((e = epoll_ctl(pfd, EPOLL_CTL_ADD, fd, &ev)) < 0)  &&
-	     (errno == EINTR))
-	;
-    }
-  } else {
-    struct epoll_event dummy;
-    /* The last argument must be a proper struct pointer even
-     * though it isn't used...
-     */
-    IF_PD(fprintf(stderr, "epoll_ctl(%d, EPOLL_CTL_DEL, %d, &dummy)\n",
-		  pfd, fd));
-    while (((e = epoll_ctl(pfd, EPOLL_CTL_DEL, fd, &dummy)) < 0) &&
-	   (errno == EINTR))
-      ;
-    if ((e < 0) && (errno == ENOENT)) return 0;
-  }
-  IF_PD(if (e < 0) {
-    fprintf(stderr, "epoll_ctl() failed with errno: %d\n", errno);
-  });
-    
-  return e;
-}
-
-#elif defined(BACKEND_USES_POLL)
-
-/*
- * Backend using poll(2).
- *
- * This is used on most older SVR4- or POSIX-style systems.
- */
-
-#define MY_POLL(SET, TIMEOUT)				\
-  poll((SET).poll_fds, (SET).num_in_poll, (TIMEOUT))
-
-struct selectors
-{
-  struct pollfd *poll_fds;
-  int poll_fd_size;
-  int num_in_poll;
-};
-
-#define active_selectors selectors
-
-static void MY_FD_SET(struct selectors *me,
-		      int fd,
-		      int add)
-{
-  int i;
-  IF_PD(fprintf(stderr, "BACKEND: MY_FD_SET(%d, 0x%04x)\n", fd, add));
-  for(i=0; i<me->num_in_poll; i++)
-  {
-    if(me->poll_fds[i].fd == fd)
-    {
-      me->poll_fds[i].events |= add;
-      return;
-    }
-  }
-  me->num_in_poll++;
-  if (me->num_in_poll > me->poll_fd_size)
-  {
-    me->poll_fd_size += me->num_in_poll;	/* Usually a doubling */
-    if (me->poll_fds) {
-      me->poll_fds =
-	realloc(me->poll_fds, sizeof(struct pollfd)*me->poll_fd_size);
-    } else {
-      me->poll_fds = malloc(sizeof(struct pollfd)*me->poll_fd_size);
-    }
-    if (!me->poll_fds)
-    {
-      Pike_fatal("Out of memory in backend::MY_FD_SET()\n"
-	    "Tried to allocate %d pollfds\n", me->poll_fd_size);
-    }
-  }
-  me->poll_fds[me->num_in_poll-1].fd = fd;
-  me->poll_fds[me->num_in_poll-1].events = add;
-}
-
-static void MY_FD_CLR(struct selectors *me,
-		      int fd,
-		      int sub)
-{
-  int i;
-  IF_PD(fprintf(stderr, "BACKEND: POLL_FD_CLR(%d, 0x%04x)\n", fd, sub));
-  if(!me->poll_fds) return;
-  for(i=0; i<me->num_in_poll; i++)
-  {
-    if(me->poll_fds[i].fd == fd)
-    {
-      me->poll_fds[i].events &= ~sub;
-      if(!me->poll_fds[i].events)
-      {
-	/* Note that num_in_poll is decreased here.
-	 * This is to avoid a lot of -1's below.
-	 * /grubba
-	 */
-	me->num_in_poll--;
-	if(i != me->num_in_poll)
-	{
-	  me->poll_fds[i] = me->poll_fds[me->num_in_poll];
-	}
-	/* Might want to shrink poll_fds here, but probably not. */
-      }
-      break;
-    }
-  }
-}
-  
-
-static void copy_selectors(struct active_selectors *to,
-			   struct selectors *from)
-{
-  IF_PD(fprintf(stderr, "BACKEND: copy_poll_set() from->num_in_poll=%d\n",
-		from->num_in_poll));
-  
-  if (to->poll_fd_size < from->num_in_poll)
-  {
-    IF_PD(fprintf(stderr, "BACKEND: copy_poll_set() size %d -> %d\n",
-		  to->poll_fd_size,
-		  from->poll_fd_size));
-    to->poll_fd_size=from->poll_fd_size;
-    if (to->poll_fds) {
-      to->poll_fds =
-	realloc(to->poll_fds, sizeof(struct pollfd)*to->poll_fd_size);
-    } else {
-      to->poll_fds =
-	malloc(sizeof(struct pollfd)*to->poll_fd_size);
-    }
-    if (!to->poll_fds) {
-      Pike_fatal("Out of memory in backend::copy_poll_set()\n"
-	    "Tried to allocate %d pollfds\n", to->poll_fd_size);
-    }
-  }
-  
-  MEMCPY(to->poll_fds,
-	 from->poll_fds,
-	 sizeof(struct pollfd)*from->num_in_poll);
-  to->num_in_poll=from->num_in_poll;
-}
-
-#else /* !BACKEND_USES_POLL_DEVICE && !BACKEND_USES_POLL */
-#error "HAVE_POLL but not BACKEND_USES_POLL"
-#endif /* HAVE_SYS_DEVPOLL_H || HAVE_SYS_EPOLL_H */
-
-#ifndef GET_FD
-#define GET_FD(EVENT)		EVENT.fd
-#endif
-#ifndef GET_EVENTS
-#define GET_EVENTS(EVENT)	EVENT.revents
-#endif
-
-#ifdef BACKEND_USES_POLL_DEVICE
-
-/* NOTE: With poll devices the poll set is recalculated each time it's
- *       potentially changed, so MY_FD_{SET,CLR}() are not used.
- */
-
-#define copy_selectors(TO, FROM)
-
-#endif /* BACKEND_USES_POLL_DEVICE */
-
-#elif defined(BACKEND_USES_KQUEUE)
-/*
- * Backend using kqueue-style poll device.
- *
- * FIXME: Not fully implemented yet! Out of band data handling is missing.
- *
- * Used on
- *   FreeBSD 4.1 and above.
- *   MacOS X/Darwin 7.x and above.
- *   Various other BSDs.
- */
-
-#include <sys/event.h>
-
-#define POLL_EVENT	struct kevent
-#define OPEN_POLL_DEVICE()	kqueue()
-#define CHILD_NEEDS_TO_REOPEN
-
-#define PIKE_POLL_DEVICE	"kqueue"
-
-#define TIMEOUT_IS_TIMESPEC
-
-#define MY_POLLIN	EVFILT_READ
-#define MY_POLLOUT	EVFILT_WRITE
-
-#define MY_POLLERR	EV_ERROR
-#if 0
-#define MY_POLLHUP	EV_EOF
-#else /* !0 */
-#define MY_POLLHUP	0
-#endif /* 0 */
-
-/* FIXME: The kqueue API has no documented support for out of band data. */
-#define MY_POLLEXCEPT	EVFILT_READ
-#define MY_POLLRDBAND	EVFILT_READ
-#define MY_POLLWREXCEPT	EVFILT_WRITE
-#define MY_POLLWRBAND	EVFILT_WRITE
-
-#define DECLARE_POLL_EXTRAS		\
-  POLL_EVENT poll_fds[POLL_SET_SIZE]
-
-#define MY_POLL(SET, TIMEOUT)					\
-  kevent((SET), NULL, 0, poll_fds, POLL_SET_SIZE, &(TIMEOUT))
-
-#define GET_FD(EVENT)			EVENT.ident
-#define GET_EVENTS(EVENT)		EVENT.filter
-#define CHECK_EVENT(EVENT, MASK)	(GET_EVENTS(EVENT) == (MASK))
-
-/* NOTE: Error events are signalled in the flags field. They thus
- *       must be checked for before the ordinary events.
- */
-#define CHECK_ERROR_EVENT(EVENT, MASK)	(EVENT.flags & (MASK))
-
-int MY_FD_CLR(int *pfd, int fd, int filter)
-{
-  struct kevent ev;
-
-  IF_PD(fprintf(stderr, "BACKEND: EV_DISABLE fd:%d, filter:%d\n", fd, filter));
-  /* Note: Use EV_DISABLE in preference to EV_DELETE, since
-   *       odds are that the fd will be reenabled, and the
-   *       filter is deleted anyway when the fd is closed.
-   */
-  EV_SET(&ev, fd, filter, EV_DISABLE, 0, 0, 0);
-  
-  return kevent(*pfd, &ev, 1, NULL, 0, NULL);
-}
-
-int MY_FD_SET(int *pfd, int fd, int filter)
-{
-  struct kevent ev[2];
-
-  IF_PD(fprintf(stderr, "BACKEND: EV_ADD fd:%d, filter:%d\n", fd, filter));
-  EV_SET(ev, fd, filter, EV_ADD, 0, 0, 0);
-  /* Note: EV_ADD unfortunately doesn't reenable EV_DISABLED
-   *       filters.
-   */
-  IF_PD(fprintf(stderr, "BACKEND: EV_ENABLE fd:%d, filter:%d\n", fd, filter));
-  EV_SET(ev+1, fd, filter, EV_ENABLE, 0, 0, 0);
-  
-  return kevent(*pfd, ev, 2, NULL, 0, NULL);
-}
-
-#define copy_selectors(TO, FROM)
-
-#elif defined(BACKEND_USES_SELECT)
-/*
- * Backend using select(2)
- *
- * This is used on most older BSD-style systems, and WIN32.
- */
-
-#define TIMEOUT_IS_TIMEVAL
-
-struct selectors
-{
-  int max_fd;
-  my_fd_set read;
-  my_fd_set write;
-  /* except == incoming OOB data (or error according to POSIX)
-   * outgoing OOB data is multiplexed on write
-   */
-  my_fd_set except;
-};
-
-struct active_selectors
-{
-  fd_set rset, wset;
-  fd_set eset;
-  int max_fd;
-};
-
-#define MY_POLLIN &me->set.read
-#define MY_POLLOUT &me->set.write
-
-#define MY_POLLEXCEPT &me->set.except
-#define MY_POLLRDBAND &me->set.except
-#define MY_POLLWREXCEPT &me->set.write
-#define MY_POLLWRBAND &me->set.write
-
-#define RDBAND_IS_SPECIAL
-
-#define MY_POLL(SET, TIMEOUT)	\
-  fd_select((SET).max_fd + 1, &(SET).rset, &(SET).wset, &(SET).eset,	\
-	    (TIMEOUT).tv_sec >= 100000000 ? NULL : &(TIMEOUT))
-
-void MY_FD_CLR(struct selectors *me, int fd, my_fd_set *s)
-{
-  if(fd > me->max_fd) return;
-  my_FD_CLR(fd, s);
-  if(fd == me->max_fd)
-  {
-    while(me->max_fd >=0 &&
-	  !my_FD_ISSET(me->max_fd, &me->read) &&
-	  !my_FD_ISSET(me->max_fd, &me->write)
-	  && !my_FD_ISSET(me->max_fd, &me->except)
-      )
-      me->max_fd--;
-  }
-}
-
-void MY_FD_SET(struct selectors *me, int fd, my_fd_set *s)
-{
-  my_FD_SET(fd, s);
-  if(fd > me->max_fd) me->max_fd=fd;
-}
-
-static void copy_selectors(struct active_selectors *to,
-			   struct selectors *from)
-{
-  fd_copy_my_fd_set_to_fd_set(&to->rset, &from->read, from->max_fd+1);
-  fd_copy_my_fd_set_to_fd_set(&to->wset, &from->write, from->max_fd+1);
-  fd_copy_my_fd_set_to_fd_set(&to->eset, &from->except, from->max_fd+1);
-  to->max_fd=from->max_fd;
-}
-
-#else  /* !HAVE_POLL && !BACKEND_USES_KQUEUE && !BACKEND_USES_SELECT */
-#error "No backend method selected."
-#endif	/* HAVE_POLL || BACKEND_USES_KQUEUE */
-
-#ifndef POLL_SET_SIZE
-#define POLL_SET_SIZE		32
-#endif /* !POLL_SET_SIZE */
-
-#ifndef CHECK_EVENT
-#define CHECK_EVENT(EVENT, MASK)	(GET_EVENTS(EVENT) & (MASK))
-#endif /* CHECK_EVENT */
-
-#ifndef CHECK_ERROR_EVENT
-#define CHECK_ERROR_EVENT(EVENT, MASK)	CHECK_EVENT(EVENT, MASK)
-#endif /* CHECK_ERROR_EVENT */
-
-#ifdef RBBAND_IS_SPECIAL
-#  define MY_FD_CLR_RDBAND(SET, FD) MY_FD_CLR (SET, FD, MY_POLLRDBAND)
-#else
-#  define MY_FD_CLR_RDBAND(SET, FD)
-#endif
-
-#ifdef WRBAND_IS_SPECIAL
-#  define MY_FD_CLR_WRBAND(SET, FD) MY_FD_CLR (SET, FD, MY_POLLWRBAND)
-#else
-#  define MY_FD_CLR_WRBAND(SET, FD)
-#endif
-
-#ifndef MY_POLLERR
-#define MY_POLLERR	POLLERR
-#endif
-
-#ifndef MY_POLLHUP
-#define MY_POLLHUP	POLLHUP
-#endif
-
 /*! @module Pike
  */
 
 /*! @class Backend
+ *!   Base class for the various backend implementations.
+ *!
+ *!   Implements callback registration functions and defines the
+ *!   main backend APIs.
  */
+
 PIKECLASS Backend
 {
   /* Provide a unique count to be able to tell backends apart with _sprintf. */
@@ -891,21 +307,15 @@ PIKECLASS Backend
   CVAR struct fd_callback_box **inactive_boxes, **free_inactive_box;
   CVAR int inactive_boxes_size;
 
-  /* 
-   * POLL/SELECT fd sets
+  /*
+   * Hooks to inheriting classes.
    */
-#ifdef OPEN_POLL_DEVICE
-  CVAR int set;
-#define active_set set
-#ifdef _REENTRANT
-  /* FIXME: Ought to be CVARs. */
-  static int set_busy;
-  static COND_T set_change;
-#endif
-#else /* !BACKEND_USES_POLL_DEVICE */
-  CVAR struct selectors set;
-  CVAR struct active_selectors active_set;
-#endif /* BACKEND_USES_POLL_DEVUCE */
+#ifdef PIKE_DEBUG
+  CVAR void (*debug_handler)(struct Backend_struct *me, void *data);
+#endif /* PIKE_DEBUG */
+  CVAR void (*update_fd_set_handler)(struct Backend_struct *me, void *data,
+                                   int fd, int old_events, int new_events);
+  CVAR void *handler_data;
 
   /*
    * CALL OUT variables
@@ -930,6 +340,12 @@ PIKECLASS Backend
   /* The object we're in. This ref isn't refcounted. */
   CVAR struct object *backend_obj;
 
+#ifdef _REENTRANT
+  /* Currently only used for poll devices. */
+  CVAR int set_busy;
+  CVAR COND_T set_change;
+#endif
+
   DECLARE_STORAGE
 
   PMOD_EXPORT struct object *get_backend_obj (struct Backend_struct *b)
@@ -942,8 +358,8 @@ PIKECLASS Backend
       char buffer[1024];
       fd_read(box->fd, buffer, sizeof(buffer)); /* Clear 'flag' */
 #if defined(OPEN_POLL_DEVICE) && defined(_REENTRANT)
-      while (set_busy) {
-	co_wait_interpreter(&set_change);
+      while (box->backend->set_busy) {
+	co_wait_interpreter(&box->backend->set_change);
       }
 #endif /* OPEN_POLL_DEVICE && _REENTRANT */
       return 0;
@@ -1904,6 +1320,18 @@ PIKECLASS Backend
      }
    }
 
+   static void update_fd_set (struct Backend_struct *me, int fd,
+                            int old_events, int new_events)
+   {
+     if (fd < 0) return;
+     if (me->update_fd_set_handler) {
+       me->update_fd_set_handler(me, me->handler_data,
+                               fd, old_events, new_events);
+     } else {
+       Pike_fatal("No update_fd_set_handler set[%p, %d, 0x%04x, 0x%04x].\n");
+     }
+   }
+
   PMOD_EXPORT void hook_fd_callback_box (struct fd_callback_box *box)
   {
     struct Backend_struct *me = box->backend;
@@ -2039,12 +1467,1017 @@ PIKECLASS Backend
     }
   }
 
+  static void do_free_fd_box(struct fd_callback_box *box)
+  {
+    if (box->ref_obj) free_object(box->ref_obj);
+  }
+
+  static void do_free_fd_list(struct fd_callback_box *fd_list)
+  {
+    struct fd_callback_box *box;
+    while ((box = fd_list->next)) {
+      fd_list->next = box->next;
+      box->next = NULL;
+      if (box->ref_obj) free_object(box->ref_obj);
+    }
+  }
+
+#ifdef PIKE_DEBUG
+
+  static void backend_do_debug(struct Backend_struct *me)
+  {
+    int e;
+    PIKE_STAT_T tmp;
+
+    backend_verify_call_outs(me);
+
+    if (me->debug_handler) {
+      me->debug_handler(me, me->hander_data);
+    }
+      
+    {FOR_EACH_ACTIVE_FD_BOX (me, box) check_box (box, INT_MAX);}
+    {FOR_EACH_INACTIVE_FD_BOX (me, box) check_box (box, INT_MAX);}
+  }
+
+#endif	/* PIKE_DEBUG */
+
+  /*! @decl float|int(0..0) `()(void|float|int(0..0) sleep_time)
+   *!   Perform one pass through the backend.
+   *!
+   *!   Calls any outstanding call-outs and non-blocking I/O
+   *!   callbacks that are registred in this backend object.
+   *!
+   *! @param sleep_time
+   *!   Wait at most @[sleep_time] seconds. The default when
+   *!   unspecified or the integer @expr{0@} is no time limit.
+   *!
+   *! @returns
+   *!   If the backend did call any callbacks or call outs then the
+   *!   time spent in the backend is returned as a float. Otherwise
+   *!   the integer @expr{0@} is returned.
+   *!
+   *! @seealso
+   *!   @[Pike.DefaultBackend], @[main()]
+   */
+  PIKEFUN float|int(0..0) `()(void|float|int(0..0) sleep_time)
+    prototype;
+  {
+  }
+
+#ifndef tObjImpl_THREAD
+  /* Kludge for precompile.pike; it resolves object(Thread.Thread)
+   * to tObjImpl_THREAD, while "program_id.h" only knows about
+   * tObjImpl_THREAD_ID.
+   */
+#define tObjImpl_THREAD	tObjImpl_THREAD_ID
+#endif /* !tObjImpl_THREAD */
+
+  /*! @decl Thread.Thread executing_thread()
+   *! @decl int executing_thread()
+   *!
+   *! Return the thread currently executing in the backend. I.e. the
+   *! thread that has called @[`()] and haven't exited from that call.
+   *! Zero is returned if there's no thread in the backend.
+   *!
+   *! If Pike is compiled without thread support then @expr{1@} is
+   *! returned if we're inside the backend, @expr{0@} otherwise.
+   */
+  PIKEFUN object(Thread.Thread)|int(0..1) executing_thread()
+    /* FIXME: The type is too weak, but precompile.pike doesn't
+     * understand different function variants in cpp branches. */
+  {
+    pop_n_elems (args);
+#ifdef PIKE_THREADS
+    if (THIS->exec_thread)
+      ref_push_object (THIS->exec_thread->thread_obj);
+    else
+      push_int (0);
+#else
+    push_int (THIS->exec_thread);
+#endif
+  }
+
+  /*! @decl void add_file(Stdio.File|Stdio.FILE f)
+   *!
+   *! Register a file to be handled by this backend.
+   *! 
+   *! @param f
+   *!   File to register.
+   *!
+   *! Registers @[f] to be handled by this backend.
+   *! This simply does @expr{f->set_backend(backend)@} where
+   *! @expr{backend@} is this object.
+   *!
+   *! @seealso
+   *!   @[Pike.DefaultBackend], @[main()]
+   */
+  PIKEFUN void add_file(object f)
+  {
+    ref_push_object (Pike_fp->current_object);
+    apply (f, "set_backend", 1);
+    pop_stack();
+  }
+
+
+   /*! @decl int id()
+    *!
+    *! Return an integer that uniquely identifies this backend. For
+    *! the default backend that integer is @expr{0@}.
+    */
+   PIKEFUN int id()
+   {
+     RETURN (THIS->id);
+   }
+
+   PIKEFUN string _sprintf(int type, mapping flags)
+   {
+     if (type == 'O') {
+       push_constant_text ("Pike.Backend(%d)");
+       push_int (THIS->id);
+       f_sprintf (2);
+       stack_pop_n_elems_keep_top (args);
+     }
+     else {
+       pop_n_elems (args);
+       push_int (0);
+     }
+   }
+
+  extern int pike_make_pipe(int *);
+
+  GC_CHECK
+  {
+    struct Backend_struct *me =
+      (struct Backend_struct *) Pike_fp->current_storage;
+    int e;
+
+    for (e = 0; e < me->num_pending_calls; e++) {
+      if (CALL(e)->caller)
+	debug_gc_check (CALL(e)->caller,
+			" as caller for call out in backend object");
+      if (CALL(e)->args)
+	debug_gc_check (CALL(e)->args,
+			" as args for call out in backend object");
+    }
+
+    {FOR_EACH_ACTIVE_FD_BOX (me, box) {
+	check_box (box, INT_MAX);
+	if (box->ref_obj && box->events)
+	  debug_gc_check (box->ref_obj, " as container object "
+			  "for an active callback in backend object");
+      }}
+    {FOR_EACH_INACTIVE_FD_BOX (me, box) {
+	check_box (box, INT_MAX);
+	if (box->ref_obj && box->events)
+	  debug_gc_check (box->ref_obj, " as container object "
+			  "for an inactive callback in backend object");
+      }}
+  }
+
+  GC_RECURSE
+  {
+    struct Backend_struct *me =
+      (struct Backend_struct *) Pike_fp->current_storage;
+    int e;
+
+    for (e = 0; e < me->num_pending_calls; e++) {
+      if (CALL(e)->caller)
+	gc_recurse_object (CALL(e)->caller);
+      if (CALL(e)->args)
+	gc_recurse_array (CALL(e)->args);
+    }
+
+    {FOR_EACH_ACTIVE_FD_BOX (me, box) {
+	if (box->ref_obj && box->events)
+	  gc_recurse_short_svalue ((union anything *) &box->ref_obj, T_OBJECT);
+      }}
+    {FOR_EACH_INACTIVE_FD_BOX (me, box) {
+	if (box->ref_obj && box->events)
+	  gc_recurse_short_svalue ((union anything *) &box->ref_obj, T_OBJECT);
+      }}
+  }
+
+  static void low_backend_cleanup (struct Backend_struct *me)
+  {
+    me->exec_thread = 0;
+  }
+
+  INIT
+  {
+    struct Backend_struct *me = THIS;
+
+    me->id = unused_id++;
+
+    IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: init\n", THR_NO, me->id));
+
+#if defined(OPEN_POLL_DEVICE) && defined(_REENTRANT)
+    THIS->set_busy = 0;
+    co_init(&THIS->set_change);
+#endif /* OPEN_POLL_DEVICE && _REENTRANT */
+    me->exec_thread = 0;
+
+    me->backend_callbacks.callbacks=0;
+    me->backend_callbacks.num_calls=0;
+
+    GETTIMEOFDAY(&current_time); /* Why? /mast */
+
+    me->num_pending_calls=0;
+    me->call_buffer=0;
+    me->call_buffer_size=0;
+    me->hash_size=0;
+    me->hash_order=5;
+    me->call_hash=0;
+
+    me->backend_obj = Pike_fp->current_object; /* Note: Not refcounted. */
+
+#ifdef PIKE_DEBUG
+    me->inside_call_out=0;
+#endif
+
+    me->fd_boxes=0;
+    me->fd_boxes_start = me->fd_boxes_size = 0;
+    me->inactive_boxes = me->free_inactive_box = NULL;
+    me->inactive_boxes_size = 0;
+
+#ifdef PIKE_DEBUG
+    me->debug_handler = NULL;
+#endif
+    me->update_fd_set_handler = NULL;
+    me->handler_data = me;
+
+    /* Note that we can't hook the wakeup pipe
+     * until we are fully initialized.
+     * The actual hooking of the wakeup pipe
+     * is therefore done in create() below.
+     */
+    me->wakeup_pipe_send_fd = -1;
+    INIT_FD_CALLBACK_BOX(&me->wakeup_cb_box, me, NULL, -1, 0, NULL);
+
+    me->may_need_wakeup = 0;
+
+#ifdef DO_PIKE_CLEANUP
+    num_active_backends++;
+#endif
+  }
+  
+  EXIT
+  {
+    struct Backend_struct *me=THIS;
+    int e;
+
+    IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: exit\n", THR_NO, me->id));
+
+    free_callback_list(& THIS->backend_callbacks);
+
+    if (THIS->wakeup_cb_box.fd >= 0)
+      fd_close(THIS->wakeup_cb_box.fd);
+    if (me->wakeup_pipe_send_fd >= 0)
+      fd_close(THIS->wakeup_pipe_send_fd);
+
+    if (me->fd_boxes) {
+      FOR_EACH_ACTIVE_FD_BOX (me, box) {
+	check_box (box, INT_MAX);
+
+#ifdef PIKE_DEBUG
+	if (get_backend_for_fd (box->fd) != me)
+	  Pike_fatal ("Inconsistency in global fd map for fd %d: "
+		      "backend is %p, expected %p.\n",
+		      box->fd, get_backend_for_fd (box->fd), me);
+#endif
+
+	if (box->callback == compat_box_dispatcher) {
+#ifdef PIKE_DEBUG
+	  fprintf (stderr, "[%d]BACKEND[%d]: "
+		   "Compat callbacks left at exit for fd %d: 0x%x\n",
+		   THR_NO, me->id, box->fd, box->events);
+#endif
+	  really_free_compat_cb_box ((struct compat_cb_box *) box);
+	}
+
+	if (box->backend) {
+	  box->backend = NULL;
+	  if (box->ref_obj && box->events)
+	    free_object (box->ref_obj);
+	}
+      }
+
+      free(me->fd_boxes);
+      me->fd_boxes = NULL;
+      me->fd_boxes_start = me->fd_boxes_size = 0;
+    }
+
+    if (me->inactive_boxes) {
+      FOR_EACH_INACTIVE_FD_BOX (me, box) {
+	check_box (box, INT_MAX);
+#ifdef PIKE_DEBUG
+	if (box->callback == compat_box_dispatcher)
+	  Pike_fatal ("Got inactive callback in compat interface.\n");
+#endif
+
+	if (box->backend) {
+	  box->backend = NULL;
+	  if (box->ref_obj && box->events)
+	    free_object (box->ref_obj);
+	}
+      }
+
+      free(me->inactive_boxes);
+      me->inactive_boxes = me->free_inactive_box = NULL;
+      me->inactive_boxes_size = 0;
+    }
+
+    /* Make sure we aren't referenced any more. */
+    /* FIXME: Ought to keep better track of our fds so that we don't
+     * need to do this loop. /mast */
+    for (e = 0; e < fd_map_size; e++) {
+      if (fd_map[e] == me) fd_map[e] = NULL;
+    }
+
+    /* CALL OUT */
+    backend_verify_call_outs(me);
+    for(e=0;e<me->num_pending_calls;e++)
+    {
+      free_array(CALL(e)->args);
+      if(CALL(e)->caller) free_object(CALL(e)->caller);
+      really_free_call_out(CALL(e));
+    }
+    me->num_pending_calls=0;
+    if(me->call_buffer) free((char*)me->call_buffer);
+    me->call_buffer=NULL;
+    if(me->call_hash) free((char*)me->call_hash);
+    me->call_hash=NULL;
+
+#ifdef DO_PIKE_CLEANUP
+    if (!--num_active_backends) backend_cleanup();
+#endif
+  }
+
+  PIKEFUN void create()
+    flags ID_STATIC;
+  {
+    struct Backend_struct *me = THIS;
+
+    if (!me->update_fd_set_handler) {
+      Pike_error("Attempt to clone the base Backend class.\n");
+    }
+
+    if (me->wakeup_pipe_send_fd < 0) {
+      int pipe[2];
+      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Creating wakeup pipe...\n",
+                  THR_NO, me->id));
+      if(pike_make_pipe(pipe) < 0)
+      Pike_error("Couldn't create backend wakeup pipe! errno=%d.\n",errno);
+
+      set_nonblocking(pipe[0],1);
+      set_nonblocking(pipe[1],1);
+      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Initializing wakeup pipe...\n",
+                  THR_NO, me->id));
+      INIT_FD_CALLBACK_BOX (&me->wakeup_cb_box, me, NULL,
+                          pipe[0], PIKE_BIT_FD_READ, wakeup_callback);
+      me->wakeup_pipe_send_fd = pipe[1];
+
+      /* Don't keep these on exec! */
+      set_close_on_exec(pipe[0], 1);
+      set_close_on_exec(pipe[1], 1);
+    }
+  }
+}
+
+/*! @endclass
+ */
+
+/*
+ * POLL/SELECT selection
+ */
+
+#ifndef HAVE_AND_USE_POLL
+/* Various BSDs have simulated poll(2) APIs. */
+#undef HAVE_POLL
+#endif
+
+#ifdef HAVE_POLL
+
+/*
+ * Backends using poll(2) or similar.
+ */
+
+/* Some constants... */
+
+/* Notes on POLLRDNORM and POLLIN:
+ *
+ * According to the AIX manual, POLLIN and POLLRDNORM are both set
+ * if there's a nonpriority message on the read queue. POLLIN is
+ * also set if the message is of 0 length.
+ */
+
+#ifndef POLLRDNORM
+#define POLLRDNORM	POLLIN
+#endif /* !POLLRDNORM */
+
+#ifndef POLLRDBAND
+#define POLLRDBAND	POLLPRI
+#endif /* !POLLRDBAND */
+
+#ifndef POLLWRNORM
+#define POLLWRNORM	POLLOUT
+#endif /* POLLWRNORM */
+
+#ifndef POLLWRBAND
+#define POLLWRBAND	POLLOUT
+#endif /* !POLLWRBAND */
+
+#define MY_POLLIN POLLRDNORM|POLLIN
+#define MY_POLLOUT POLLWRNORM|POLLOUT
+
+#define MY_POLLEXCEPT	POLLRDBAND|POLLRDNORM|POLLIN
+#define MY_POLLRDBAND	POLLRDBAND|POLLPRI
+#define MY_POLLWREXCEPT	POLLWRBAND|POLLWRNORM|POLLOUT
+#define MY_POLLWRBAND	POLLWRBAND|MY_POLLOUT
+#define MY_POLLNVAL	POLLNVAL
+
+#if (POLLRDBAND != POLLRDNORM) && (POLLRDBAND != POLLIN)
+#define RDBAND_IS_SPECIAL
+#endif
+
+#if (POLLWRBAND != POLLOUT) && (POLLWRBAND != POLLWRNORM)
+#define WRBAND_IS_SPECIAL
+#endif
+
+#define TIMEOUT_IS_MILLISECONDS
+
+#ifdef BACKEND_USES_DEVPOLL
+/*
+ * Backend using /dev/poll-style poll device.
+ *
+ * Used on:
+ *   Solaris 7 + patches and above.
+ *   OSF/1 + patches and above.
+ *   IRIX 5.6.15m and above.
+ */
+
+#define POLL_EVENT	struct pollfd
+#define OPEN_POLL_DEVICE()	open(PIKE_POLL_DEVICE, O_RDWR)
+#define CHILD_NEEDS_TO_REOPEN
+
+#define DECLARE_POLL_EXTRAS		\
+  POLL_EVENT poll_fds[POLL_SET_SIZE];	\
+  struct dvpoll poll_request = {	\
+    poll_fds,				\
+    POLL_SET_SIZE,			\
+    0,					\
+  }
+
+#define MY_POLL(PFD, TIMEOUT)					\
+  ((poll_request.dp_timeout = (TIMEOUT)),			\
+   (ioctl(PFD, DP_POLL, &poll_request, sizeof(poll_request))))
+
+int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
+			   int pfd, int fd, INT32 events)
+{
+  struct pollfd poll_state[2];
+  int e;
+  int sz = sizeof(poll_state);
+
+  IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS(%p, %d, %d, 0x%08x)\n",
+		me, pfd, fd, events));
+
+  /* NOTE: POLLREMOVE must (unfortunately) be a separate request. */
+  poll_state[0].fd = fd;
+  poll_state[0].events = POLLREMOVE;
+  poll_state[0].revents = 0;
+  poll_state[1].fd = fd;
+  poll_state[1].events = events;
+  poll_state[1].revents = 0;
+
+  if (!events) {
+    /* We're not interrested in the fd anymore. */
+    sz = sizeof(poll_state[0]);
+  }
+
+#ifdef _REENTRANT
+  /* FIXME: set_busy ought to be backend-specific.
+   * FIXME: Ought to check if we're the backend.
+   */
+  if(num_threads>1)
+  {
+    /* Release the poll set from the backend. */
+    IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS[%p] grabbing the poll set\n",
+		  me));
+    while (me->set_busy) {
+      co_wait_interpreter(&me->set_change);
+    }
+    me->set_busy = 1;
+    IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS[%p] wake up backend\n",
+		  me));
+    backend_wake_up_backend(me);
+    /* The backend is now waiting in wakeup_callback(). */
+  }
+#endif /* _REENTRANT */
+
+  IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS[%p] updating the poll set\n",
+		me));
+  while (((e = write(pfd, poll_state, sz)) < 0) && (errno == EINTR))
+    ;
+
+#ifdef _REENTRANT
+  me->set_busy = 0;
+  if(num_threads>1)
+  {
+    /* Release the backend from wakeup_callback(). */
+    IF_PD(fprintf(stderr, "POLL_DEVICE_SET_EVENTS[%p] releasing the backend\n",
+		  me));
+    co_broadcast(&me->set_change);
+  }
+#endif /* _REENTRANT */
+
+  if (e < 0) {
+    Pike_fatal("Failed to set state for fd %d in " PIKE_POLL_DEVICE
+	       " (errno:%d).\n",
+	       fd, errno);
+  }
+
+  /* FIXME: Probably ought to support partial writes. */
+  if (e != sz) {
+    Pike_fatal("Failed to set state for fd %d in " PIKE_POLL_DEVICE
+	       " short write (%d != %d).\n",
+	       fd, e, (int)sizeof(poll_state));
+  }
+  return e;
+}
+	
+#elif defined(BACKEND_USES_DEVEPOLL)
+/*
+ * Backend using /dev/epoll-style poll device.
+ *
+ * Used on:
+ *   Linux 2.6 and above.
+ * Note:
+ *   Some libc's are missing wrappers for the system calls, so
+ *   we include the appropriate wrappers below.
+ */
+
+#ifndef PIKE_POLL_DEVICE
+#define PIKE_POLL_DEVICE	"epoll"
+#endif
+
+/* The following three are defined by <gnu/stubs.h> which is included
+ * from <features.h> which is included from just about everywhere, so
+ * it is safe to assume that they have been defined if appropriate.
+ */
+#if defined(__stub_epoll_create) || defined(__stub_epoll_ctl) || \
+    defined(__stub_epoll_wait)
+/* We have a libc without the wrappers for epoll support.
+ */
+#ifndef __NR_epoll_create
+/* Our libc doesn't even know the syscall numbers for the epoll syscalls.
+ */
+#ifdef __i386__
+#define __NR_epoll_create 254
+#define __NR_epoll_ctl 255
+#define __NR_epoll_wait 256
+#elif defined(__ia64__)
+#define __NR_epoll_create 1243
+#define __NR_epoll_ctl 1244
+#define __NR_epoll_wait 1245
+#elif defined(__x86_64__)
+#define __NR_epoll_create 214
+#define __NR_epoll_ctl 233
+#define __NR_epoll_wait 232
+#else /* cpu types */
+#error Syscall numbers for epoll_create et al not known on this architecture.
+#endif /* cpu types */
+#endif /* !defined(__NR_epoll_create) */
+#if defined(_syscall1) && defined(_syscall4)
+_syscall1(int, epoll_create, int, size);                               
+_syscall4(int, epoll_ctl, int, epfd, int, op, int, fd,
+	  struct epoll_event *, event);
+_syscall4(int, epoll_wait, int, epfd, struct epoll_event *, pevents,
+	  int, maxevents, int, timeout);
+#undef __stub_epoll_create
+#undef __stub_epoll_ctl
+#undef __stub_epoll_wait
+#else /* !_syscall1 || !_syscall4 */
+#error Missing macros for generation of syscall wrappers.
+#endif /* _syscall1 && _syscall4 */
+#endif /* __stub_epoll_{create, ctl, wait} */
+
+#define POLL_EVENT	struct epoll_event
+#define GET_FD(EVENT)		EVENT.data.fd
+#define GET_EVENTS(EVENT)	EVENT.events
+
+/* FIXME: Might want another value instead on POLL_SET_SIZE. */
+#define OPEN_POLL_DEVICE()	epoll_create(POLL_SET_SIZE)
+
+#define DECLARE_POLL_EXTRAS		\
+  POLL_EVENT poll_fds[POLL_SET_SIZE]
+
+#define MY_POLL(PFD, TIMEOUT)				\
+  epoll_wait(PFD, poll_fds, POLL_SET_SIZE, TIMEOUT)
+
+int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
+			   int pfd, int fd, INT32 events)
+{
+  int e;
+
+  if (events) {
+    struct epoll_event ev;
+    ev.events = events;
+    ev.data.fd = fd;
+
+    /* The /dev/epoll interface exposes kernel implementation details...
+     */
+    IF_PD(fprintf(stderr, "epoll_ctl(%d, EPOLL_CTL_MOD, %d, { 0x%08x, %d })\n",
+		  pfd, fd, events, fd));
+    while (((e = epoll_ctl(pfd, EPOLL_CTL_MOD, fd, &ev)) < 0)  &&
+	   (errno == EINTR))
+      ;
+    if ((e < 0) && (errno == ENOENT)) {
+      IF_PD(fprintf(stderr,
+		    "epoll_ctl(%d, EPOLL_CTL_ADD, %d, { 0x%08x, %d })\n",
+		    pfd, fd, events, fd));
+      while (((e = epoll_ctl(pfd, EPOLL_CTL_ADD, fd, &ev)) < 0)  &&
+	     (errno == EINTR))
+	;
+    }
+  } else {
+    struct epoll_event dummy;
+    /* The last argument must be a proper struct pointer even
+     * though it isn't used...
+     */
+    IF_PD(fprintf(stderr, "epoll_ctl(%d, EPOLL_CTL_DEL, %d, &dummy)\n",
+		  pfd, fd));
+    while (((e = epoll_ctl(pfd, EPOLL_CTL_DEL, fd, &dummy)) < 0) &&
+	   (errno == EINTR))
+      ;
+    if ((e < 0) && (errno == ENOENT)) return 0;
+  }
+  IF_PD(if (e < 0) {
+    fprintf(stderr, "epoll_ctl() failed with errno: %d\n", errno);
+  });
+    
+  return e;
+}
+
+#elif defined(BACKEND_USES_POLL)
+
+/*
+ * Backend using poll(2).
+ *
+ * This is used on most older SVR4- or POSIX-style systems.
+ */
+
+#define MY_POLL(SET, TIMEOUT)				\
+  poll((SET).poll_fds, (SET).num_in_poll, (TIMEOUT))
+
+struct selectors
+{
+  struct pollfd *poll_fds;
+  int poll_fd_size;
+  int num_in_poll;
+};
+
+#define active_selectors selectors
+
+static void MY_FD_SET(struct selectors *me,
+		      int fd,
+		      int add)
+{
+  int i;
+  IF_PD(fprintf(stderr, "BACKEND: MY_FD_SET(%d, 0x%04x)\n", fd, add));
+  for(i=0; i<me->num_in_poll; i++)
+  {
+    if(me->poll_fds[i].fd == fd)
+    {
+      me->poll_fds[i].events |= add;
+      return;
+    }
+  }
+  me->num_in_poll++;
+  if (me->num_in_poll > me->poll_fd_size)
+  {
+    me->poll_fd_size += me->num_in_poll;	/* Usually a doubling */
+    if (me->poll_fds) {
+      me->poll_fds =
+	realloc(me->poll_fds, sizeof(struct pollfd)*me->poll_fd_size);
+    } else {
+      me->poll_fds = malloc(sizeof(struct pollfd)*me->poll_fd_size);
+    }
+    if (!me->poll_fds)
+    {
+      Pike_fatal("Out of memory in backend::MY_FD_SET()\n"
+	    "Tried to allocate %d pollfds\n", me->poll_fd_size);
+    }
+  }
+  me->poll_fds[me->num_in_poll-1].fd = fd;
+  me->poll_fds[me->num_in_poll-1].events = add;
+}
+
+static void MY_FD_CLR(struct selectors *me,
+		      int fd,
+		      int sub)
+{
+  int i;
+  IF_PD(fprintf(stderr, "BACKEND: POLL_FD_CLR(%d, 0x%04x)\n", fd, sub));
+  if(!me->poll_fds) return;
+  for(i=0; i<me->num_in_poll; i++)
+  {
+    if(me->poll_fds[i].fd == fd)
+    {
+      me->poll_fds[i].events &= ~sub;
+      if(!me->poll_fds[i].events)
+      {
+	/* Note that num_in_poll is decreased here.
+	 * This is to avoid a lot of -1's below.
+	 * /grubba
+	 */
+	me->num_in_poll--;
+	if(i != me->num_in_poll)
+	{
+	  me->poll_fds[i] = me->poll_fds[me->num_in_poll];
+	}
+	/* Might want to shrink poll_fds here, but probably not. */
+      }
+      break;
+    }
+  }
+}
+  
+
+static void copy_selectors(struct active_selectors *to,
+			   struct selectors *from)
+{
+  IF_PD(fprintf(stderr, "BACKEND: copy_poll_set() from->num_in_poll=%d\n",
+		from->num_in_poll));
+  
+  if (to->poll_fd_size < from->num_in_poll)
+  {
+    IF_PD(fprintf(stderr, "BACKEND: copy_poll_set() size %d -> %d\n",
+		  to->poll_fd_size,
+		  from->poll_fd_size));
+    to->poll_fd_size=from->poll_fd_size;
+    if (to->poll_fds) {
+      to->poll_fds =
+	realloc(to->poll_fds, sizeof(struct pollfd)*to->poll_fd_size);
+    } else {
+      to->poll_fds =
+	malloc(sizeof(struct pollfd)*to->poll_fd_size);
+    }
+    if (!to->poll_fds) {
+      Pike_fatal("Out of memory in backend::copy_poll_set()\n"
+	    "Tried to allocate %d pollfds\n", to->poll_fd_size);
+    }
+  }
+  
+  MEMCPY(to->poll_fds,
+	 from->poll_fds,
+	 sizeof(struct pollfd)*from->num_in_poll);
+  to->num_in_poll=from->num_in_poll;
+}
+
+#else /* !BACKEND_USES_POLL_DEVICE && !BACKEND_USES_POLL */
+#error "HAVE_POLL but not BACKEND_USES_POLL"
+#endif /* HAVE_SYS_DEVPOLL_H || HAVE_SYS_EPOLL_H */
+
+#ifndef GET_FD
+#define GET_FD(EVENT)		EVENT.fd
+#endif
+#ifndef GET_EVENTS
+#define GET_EVENTS(EVENT)	EVENT.revents
+#endif
+
+#ifdef BACKEND_USES_POLL_DEVICE
+
+/* NOTE: With poll devices the poll set is recalculated each time it's
+ *       potentially changed, so MY_FD_{SET,CLR}() are not used.
+ */
+
+#define copy_selectors(TO, FROM)
+
+#endif /* BACKEND_USES_POLL_DEVICE */
+
+#elif defined(BACKEND_USES_KQUEUE)
+/*
+ * Backend using kqueue-style poll device.
+ *
+ * FIXME: Not fully implemented yet! Out of band data handling is missing.
+ *
+ * Used on
+ *   FreeBSD 4.1 and above.
+ *   MacOS X/Darwin 7.x and above.
+ *   Various other BSDs.
+ */
+
+#include <sys/event.h>
+
+#define POLL_EVENT	struct kevent
+#define OPEN_POLL_DEVICE()	kqueue()
+#define CHILD_NEEDS_TO_REOPEN
+
+#define PIKE_POLL_DEVICE	"kqueue"
+
+#define TIMEOUT_IS_TIMESPEC
+
+#define MY_POLLIN	EVFILT_READ
+#define MY_POLLOUT	EVFILT_WRITE
+
+#define MY_POLLERR	EV_ERROR
+#if 0
+#define MY_POLLHUP	EV_EOF
+#else /* !0 */
+#define MY_POLLHUP	0
+#endif /* 0 */
+
+/* FIXME: The kqueue API has no documented support for out of band data. */
+#define MY_POLLEXCEPT	EVFILT_READ
+#define MY_POLLRDBAND	EVFILT_READ
+#define MY_POLLWREXCEPT	EVFILT_WRITE
+#define MY_POLLWRBAND	EVFILT_WRITE
+
+#define DECLARE_POLL_EXTRAS		\
+  POLL_EVENT poll_fds[POLL_SET_SIZE]
+
+#define MY_POLL(SET, TIMEOUT)					\
+  kevent((SET), NULL, 0, poll_fds, POLL_SET_SIZE, &(TIMEOUT))
+
+#define GET_FD(EVENT)			EVENT.ident
+#define GET_EVENTS(EVENT)		EVENT.filter
+#define CHECK_EVENT(EVENT, MASK)	(GET_EVENTS(EVENT) == (MASK))
+
+/* NOTE: Error events are signalled in the flags field. They thus
+ *       must be checked for before the ordinary events.
+ */
+#define CHECK_ERROR_EVENT(EVENT, MASK)	(EVENT.flags & (MASK))
+
+int MY_FD_CLR(int *pfd, int fd, int filter)
+{
+  struct kevent ev;
+
+  IF_PD(fprintf(stderr, "BACKEND: EV_DISABLE fd:%d, filter:%d\n", fd, filter));
+  /* Note: Use EV_DISABLE in preference to EV_DELETE, since
+   *       odds are that the fd will be reenabled, and the
+   *       filter is deleted anyway when the fd is closed.
+   */
+  EV_SET(&ev, fd, filter, EV_DISABLE, 0, 0, 0);
+  
+  return kevent(*pfd, &ev, 1, NULL, 0, NULL);
+}
+
+int MY_FD_SET(int *pfd, int fd, int filter)
+{
+  struct kevent ev[2];
+
+  IF_PD(fprintf(stderr, "BACKEND: EV_ADD fd:%d, filter:%d\n", fd, filter));
+  EV_SET(ev, fd, filter, EV_ADD, 0, 0, 0);
+  /* Note: EV_ADD unfortunately doesn't reenable EV_DISABLED
+   *       filters.
+   */
+  IF_PD(fprintf(stderr, "BACKEND: EV_ENABLE fd:%d, filter:%d\n", fd, filter));
+  EV_SET(ev+1, fd, filter, EV_ENABLE, 0, 0, 0);
+  
+  return kevent(*pfd, ev, 2, NULL, 0, NULL);
+}
+
+#define copy_selectors(TO, FROM)
+
+#elif defined(BACKEND_USES_SELECT)
+/*
+ * Backend using select(2)
+ *
+ * This is used on most older BSD-style systems, and WIN32.
+ */
+
+#define TIMEOUT_IS_TIMEVAL
+
+struct selectors
+{
+  int max_fd;
+  my_fd_set read;
+  my_fd_set write;
+  /* except == incoming OOB data (or error according to POSIX)
+   * outgoing OOB data is multiplexed on write
+   */
+  my_fd_set except;
+};
+
+struct active_selectors
+{
+  fd_set rset, wset;
+  fd_set eset;
+  int max_fd;
+};
+
+#define MY_POLLIN &me->set.read
+#define MY_POLLOUT &me->set.write
+
+#define MY_POLLEXCEPT &me->set.except
+#define MY_POLLRDBAND &me->set.except
+#define MY_POLLWREXCEPT &me->set.write
+#define MY_POLLWRBAND &me->set.write
+
+#define RDBAND_IS_SPECIAL
+
+#define MY_POLL(SET, TIMEOUT)	\
+  fd_select((SET).max_fd + 1, &(SET).rset, &(SET).wset, &(SET).eset,	\
+	    (TIMEOUT).tv_sec >= 100000000 ? NULL : &(TIMEOUT))
+
+void MY_FD_CLR(struct selectors *me, int fd, my_fd_set *s)
+{
+  if(fd > me->max_fd) return;
+  my_FD_CLR(fd, s);
+  if(fd == me->max_fd)
+  {
+    while(me->max_fd >=0 &&
+	  !my_FD_ISSET(me->max_fd, &me->read) &&
+	  !my_FD_ISSET(me->max_fd, &me->write)
+	  && !my_FD_ISSET(me->max_fd, &me->except)
+      )
+      me->max_fd--;
+  }
+}
+
+void MY_FD_SET(struct selectors *me, int fd, my_fd_set *s)
+{
+  my_FD_SET(fd, s);
+  if(fd > me->max_fd) me->max_fd=fd;
+}
+
+static void copy_selectors(struct active_selectors *to,
+			   struct selectors *from)
+{
+  fd_copy_my_fd_set_to_fd_set(&to->rset, &from->read, from->max_fd+1);
+  fd_copy_my_fd_set_to_fd_set(&to->wset, &from->write, from->max_fd+1);
+  fd_copy_my_fd_set_to_fd_set(&to->eset, &from->except, from->max_fd+1);
+  to->max_fd=from->max_fd;
+}
+
+#else  /* !HAVE_POLL && !BACKEND_USES_KQUEUE && !BACKEND_USES_SELECT */
+#error "No backend method selected."
+#endif	/* HAVE_POLL || BACKEND_USES_KQUEUE */
+
+#ifndef POLL_SET_SIZE
+#define POLL_SET_SIZE		32
+#endif /* !POLL_SET_SIZE */
+
+#ifndef CHECK_EVENT
+#define CHECK_EVENT(EVENT, MASK)	(GET_EVENTS(EVENT) & (MASK))
+#endif /* CHECK_EVENT */
+
+#ifndef CHECK_ERROR_EVENT
+#define CHECK_ERROR_EVENT(EVENT, MASK)	CHECK_EVENT(EVENT, MASK)
+#endif /* CHECK_ERROR_EVENT */
+
+#ifdef RBBAND_IS_SPECIAL
+#  define MY_FD_CLR_RDBAND(SET, FD) MY_FD_CLR (SET, FD, MY_POLLRDBAND)
+#else
+#  define MY_FD_CLR_RDBAND(SET, FD)
+#endif
+
+#ifdef WRBAND_IS_SPECIAL
+#  define MY_FD_CLR_WRBAND(SET, FD) MY_FD_CLR (SET, FD, MY_POLLWRBAND)
+#else
+#  define MY_FD_CLR_WRBAND(SET, FD)
+#endif
+
+#ifndef MY_POLLERR
+#define MY_POLLERR	POLLERR
+#endif
+
+#ifndef MY_POLLHUP
+#define MY_POLLHUP	POLLHUP
+#endif
+
+/*! @class GenericBackend
+ */
+PIKECLASS GenericBackend
+{
+  /*! @inherit Backend
+   */
+  INHERIT Backend;
+
+  /* Helpers to find the above inherit. */
+  static ptrdiff_t gb_offset = 0;
+  CVAR struct Backend_struct *backend;
+
+  /* 
+   * POLL/SELECT fd sets
+   */
+#ifdef OPEN_POLL_DEVICE
+  CVAR int set;
+#define active_set set
+#else /* !BACKEND_USES_POLL_DEVICE */
+  CVAR struct selectors set;
+  CVAR struct active_selectors active_set;
+#endif /* BACKEND_USES_POLL_DEVUCE */
+
+  DECLARE_STORAGE
+
   /*
    * FD set handling
    */
 
 #ifdef BACKEND_USES_POLL_DEVICE
-  void UPDATE_BLACK_BOX(struct Backend_struct *me, int fd, int wanted_events)
+  void UPDATE_BLACK_BOX(struct GenericBackend_struct *me, int fd,
+			int wanted_events)
   {
     INT32 events = 0;
 
@@ -2063,11 +2496,12 @@ PIKECLASS Backend
 
     IF_PD(fprintf(stderr, "UPDATE_BLACK_BOX(%d, %d) ==> events: 0x%08x\n",
 		  me->set, fd, events));
-    POLL_DEVICE_SET_EVENTS(me, me->set, fd, events);
+    POLL_DEVICE_SET_EVENTS(me->backend, me->set, fd, events);
   }
 #elif defined(BACKEND_USES_KQUEUE)
   /* Note: Only used by REOPEN_POLL_DEVICE on a freshly opened kqueue. */
-  void UPDATE_BLACK_BOX(struct Backend_struct *me, int fd, int wanted_events)
+  void UPDATE_BLACK_BOX(struct GenericBackend_struct *me, int fd,
+			int wanted_events)
   {
     struct kevent ev[2];
     int nev = 0;
@@ -2090,7 +2524,7 @@ PIKECLASS Backend
   /* This is called in the child process to restore
    * poll state after fork() in case of detaching.
    */
-  void REOPEN_POLL_DEVICE(struct Backend_struct *me)
+  void REOPEN_POLL_DEVICE(struct GenericBackend_struct *me)
   {
     int fd;
     while ((close(me->set) < 0) && (errno == EINTR))
@@ -2116,21 +2550,22 @@ PIKECLASS Backend
     set_close_on_exec(me->set, 1);
 
     /* Restore the poll-state for all the fds. */
-    {FOR_EACH_ACTIVE_FD_BOX (me, box) {
+    {FOR_EACH_ACTIVE_FD_BOX (me->backend, box) {
 	UPDATE_BLACK_BOX (me, box->fd, box->events);
       }}
   }
 
-  static struct Backend_struct **backends = NULL;
+  static struct GenericBackend_struct **backends = NULL;
   static int num_backends = 0;
   static int backends_size = 0;
 
   /* Called from the init callback. */
-  static void register_backend(struct Backend_struct *me)
+  static void register_backend(struct GenericBackend_struct *me)
   {
     if (num_backends == backends_size) {
-      struct Backend_struct **new_backends =
-	realloc(backends, (backends_size+1)*sizeof(struct Backend_struct *)*2);
+      struct GenericBackend_struct **new_backends =
+	realloc(backends, (backends_size+1)*
+		sizeof(struct GenericBackend_struct *)*2);
       if (!new_backends) {
 	Pike_error("Out of memory.\n");
       }
@@ -2141,7 +2576,7 @@ PIKECLASS Backend
   }
 
   /* Called from the exit callback. */
-  static void unregister_backend(struct Backend_struct *me)
+  static void unregister_backend(struct GenericBackend_struct *me)
   {
     int i = num_backends;
     /* Search backwards since new backends are more likely to be destructed
@@ -2169,83 +2604,84 @@ PIKECLASS Backend
 #define unregister_backend(X)
 #endif /* CHILD_NEEDS_TO_REOPEN */
 
-  static void update_fd_set (struct Backend_struct *me, int fd,
-			     int old_events, int new_events)
+  static void gb_update_fd_set (struct Backend_struct *me,
+				struct GenericBackend_struct *gb, int fd,
+				int old_events, int new_events)
   {
     int changed_events = old_events ^ new_events;
 
-    IF_PD(fprintf (stderr, "[%d]BACKEND[%d]: update_fd_set(.., %d, %d, %d):\n",
-		   THR_NO, me->id, fd, old_events, new_events));
+    IF_PD(fprintf (stderr, "[%d]BACKEND[%d]: gb_update_fd_set(.., %d, %d, %d):\n",
+		   THR_NO, me->>id, fd, old_events, new_events));
     
 
     if (changed_events) {
 
 #ifdef BACKEND_USES_POLL_DEVICE
 
-      UPDATE_BLACK_BOX(me, fd, new_events);
+      UPDATE_BLACK_BOX(gb, fd, new_events);
 
 #else  /* !BACKEND_USES_POLL_DEVICE */
 
       if (changed_events & PIKE_BIT_FD_READ) {
 	if (new_events & PIKE_BIT_FD_READ) {
-	  MY_FD_SET(&me->set, fd, MY_POLLIN);
+	  MY_FD_SET(&gb->set, fd, MY_POLLIN);
 #ifndef HAVE_POLL
 	  /* Got to enable the exception set to get errors (at least
 	   * according to POSIX). */
-	  MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
+	  MY_FD_SET(&gb->set, fd, MY_POLLEXCEPT);
 #endif
 	}
 	else {
-	  MY_FD_CLR(&me->set, fd, MY_POLLIN);
+	  MY_FD_CLR(&gb->set, fd, MY_POLLIN);
 #ifdef HAVE_POLL
 	  if (new_events & PIKE_BIT_FD_READ_OOB)
 	  {
-	    MY_FD_SET(&me->set, fd, MY_POLLRDBAND);
+	    MY_FD_SET(&gb->set, fd, MY_POLLRDBAND);
 	  }
 #else
 	  if (!(new_events & PIKE_BIT_FD_READ_OOB) &&
 	      !(new_events & PIKE_BIT_FD_WRITE))
 	    /* Exceptions might cause calls to read, read_oob and write. */
-	    MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
+	    MY_FD_CLR(&gb->set, fd, MY_POLLEXCEPT);
 #endif
 	}
       }
 
       if (changed_events & PIKE_BIT_FD_READ_OOB) {
 	if (new_events & PIKE_BIT_FD_READ_OOB)
-	  MY_FD_SET(&me->set, fd, MY_POLLRDBAND);
+	  MY_FD_SET(&gb->set, fd, MY_POLLRDBAND);
 	else {
 	  if (!(new_events & PIKE_BIT_FD_READ)) {
 #ifdef HAVE_POLL
-	    MY_FD_CLR(&me->set, fd, MY_POLLRDBAND);
+	    MY_FD_CLR(&gb->set, fd, MY_POLLRDBAND);
 #else
 	    if (!(new_events & PIKE_BIT_FD_WRITE))
 	      /* Exceptions might cause calls to read, read_oob and write. */
-	      MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
+	      MY_FD_CLR(&gb->set, fd, MY_POLLEXCEPT);
 #endif
 	  } else {
-	    MY_FD_CLR_RDBAND(&me->set, fd);
+	    MY_FD_CLR_RDBAND(&gb->set, fd);
 	  }
 	}
       }
 
       if (changed_events & PIKE_BIT_FD_WRITE) {
 	if (new_events & PIKE_BIT_FD_WRITE) {
-	  MY_FD_SET(&me->set, fd, MY_POLLOUT);
+	  MY_FD_SET(&gb->set, fd, MY_POLLOUT);
 #ifndef HAVE_POLL
 	  /* Got to enable the exception set to get errors (at least
 	   * according to POSIX). */
-	  MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
+	  MY_FD_SET(&gb->set, fd, MY_POLLEXCEPT);
 #endif
 	}
 	else {
 	  if (!(new_events & PIKE_BIT_FD_WRITE_OOB)) {
-	    MY_FD_CLR(&me->set, fd, MY_POLLOUT);
+	    MY_FD_CLR(&gb->set, fd, MY_POLLOUT);
 #ifndef HAVE_POLL
 	    if (!(new_events & PIKE_BIT_FD_READ) &&
 		!(new_events & PIKE_BIT_FD_READ_OOB))
 	      /* Exceptions might cause calls to read, read_oob and write. */
-	      MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
+	      MY_FD_CLR(&gb->set, fd, MY_POLLEXCEPT);
 #endif
 	  }
 	}
@@ -2253,12 +2689,12 @@ PIKECLASS Backend
 
       if (changed_events & PIKE_BIT_FD_WRITE_OOB) {
 	if (new_events & PIKE_BIT_FD_WRITE_OOB)
-	  MY_FD_SET(&me->set, fd, MY_POLLWRBAND);
+	  MY_FD_SET(&gb->set, fd, MY_POLLWRBAND);
 	else {
 	  if (!(new_events & PIKE_BIT_FD_WRITE)) {
-	    MY_FD_CLR(&me->set, fd, MY_POLLWREXCEPT);
+	    MY_FD_CLR(&gb->set, fd, MY_POLLWREXCEPT);
 	  } else {
-	    MY_FD_CLR_WRBAND(&me->set, fd);
+	    MY_FD_CLR_WRBAND(&gb->set, fd);
 	  }
 	}
       }
@@ -2273,20 +2709,19 @@ PIKECLASS Backend
 
 #ifdef PIKE_DEBUG
 
-  static void backend_do_debug(struct Backend_struct *me)
+  static void gb_backend_do_debug(struct Backend_struct *me,
+				  struct GenericBackend_struct *gb)
     {
       int e;
       PIKE_STAT_T tmp;
 
-      backend_verify_call_outs(me);
-      
       /* FIXME: OOB? */
 #ifdef BACKEND_USES_SELECT
-      for(e=0;e<=me->set.max_fd;e++)
+      for(e=0;e<=gb->set.max_fd;e++)
       {
-	if(my_FD_ISSET(e, &me->set.read)
-	   || my_FD_ISSET(e, &me->set.write)
-	   || my_FD_ISSET(e, &me->set.except)
+	if(my_FD_ISSET(e, &gb->set.read)
+	   || my_FD_ISSET(e, &gb->set.write)
+	   || my_FD_ISSET(e, &gb->set.except)
 	  )
 	{
 	  int ret;
@@ -2315,12 +2750,12 @@ PIKECLASS Backend
       }
 #else  /* !BACKEND_USES_SELECT */
 #if defined(HAVE_POLL) && !defined(BACKEND_USES_POLL_DEVICE)
-      for(e=0;e<me->set.num_in_poll;e++)
+      for(e=0;e<gb->set.num_in_poll;e++)
       {
 	int ret;
-	int fd = me->set.poll_fds[e].fd;
+	int fd = gb->set.poll_fds[e].fd;
 
-	if (fd >= fd_map_size || fd_map[fd] != me)
+	if (fd >= fd_map_size || fd_map[fd] != gb)
 	  Pike_fatal ("Isn't referenced from fd_map for fd %d at %d in poll set.\n",
 		      fd, e);
 
@@ -2344,32 +2779,9 @@ PIKECLASS Backend
       }
 #endif /* HAVE_POLL && !HAVE_SYS_DEVPOLL_H */
 #endif	/* BACKEND_USES_SELECT */
-
-      {FOR_EACH_ACTIVE_FD_BOX (me, box) check_box (box, INT_MAX);}
-      {FOR_EACH_INACTIVE_FD_BOX (me, box) check_box (box, INT_MAX);}
     }
 
 #endif	/* PIKE_DEBUG */
-
-  static void low_backend_cleanup (struct Backend_struct *me)
-  {
-    me->exec_thread = 0;
-  }
-
-  static void do_free_fd_box(struct fd_callback_box *box)
-  {
-    if (box->ref_obj) free_object(box->ref_obj);
-  }
-
-  static void do_free_fd_list(struct fd_callback_box *fd_list)
-  {
-    struct fd_callback_box *box;
-    while ((box = fd_list->next)) {
-      fd_list->next = box->next;
-      box->next = NULL;
-      if (box->ref_obj) free_object(box->ref_obj);
-    }
-  }
 
   /* Mapping of events to flags and callbacks.
    *
@@ -2410,12 +2822,13 @@ PIKECLASS Backend
    * timeout without calling any callbacks or call outs (except those
    * on backend_callbacks) then tv_sec will be set to -1. Otherwise it
    * will be set to the time spent. */
-  void low_backend_once(struct Backend_struct *me,
-			struct timeval *timeout)
+  static void low_backend_once(struct GenericBackend_struct *gb,
+			       struct timeval *timeout)
     {
       ONERROR uwp;
       int i, done_something = 0;
       struct timeval start_time;
+      struct Backend_struct *me = gb->backend;
 #ifdef DECLARE_POLL_EXTRAS
       /* Declare any extra variables needed by MY_POLL(). */
       DECLARE_POLL_EXTRAS;
@@ -2536,7 +2949,7 @@ PIKECLASS Backend
 #error Unknown timeout method.
 #endif /* TIMEOUT_IS_* */
 
-	copy_selectors(& me->active_set, &me->set);
+	copy_selectors(& gb->active_set, &gb->set);
 
 	IF_PD(fprintf (stderr, "[%d]BACKEND[%d]: Doing poll on fds:\n",
 		       THR_NO, me->id));
@@ -2547,24 +2960,24 @@ PIKECLASS Backend
 	    fprintf (stderr,
 		     "[%d]BACKEND[%d]:   fd %4d: %-4s %-5s %-8s %-9s: 0x%04x\n",
 		     THR_NO, me->id,
-		     me->active_set.poll_fds[i].fd,
-		     me->active_set.poll_fds[i].events & (POLLRDNORM|POLLIN) ? "read" : "",
-		     me->active_set.poll_fds[i].events & POLLOUT ? "write" : "",
-		     me->active_set.poll_fds[i].events & POLLRDBAND ? "read_oob" : "",
-		     me->active_set.poll_fds[i].events & POLLWRBAND ? "write_oob" : "",
-		     me->active_set.poll_fds[i].events);
+		     gb->active_set.poll_fds[i].fd,
+		     gb->active_set.poll_fds[i].events & (POLLRDNORM|POLLIN) ? "read" : "",
+		     gb->active_set.poll_fds[i].events & POLLOUT ? "write" : "",
+		     gb->active_set.poll_fds[i].events & POLLRDBAND ? "read_oob" : "",
+		     gb->active_set.poll_fds[i].events & POLLWRBAND ? "write_oob" : "",
+		     gb->active_set.poll_fds[i].events);
 	  }
 	}
 	fprintf(stderr, "[%d]BACKEND[%d]: poll(%p, %d, %d)...", THR_NO, me->id,
-		me->active_set.poll_fds,
-		me->active_set.num_in_poll,
+		gb->active_set.poll_fds,
+		gb->active_set.num_in_poll,
 		poll_timeout);
 #endif /* HAVE_POLL && POLL_DEBUG && !BACKEND_USES_POLL_DEVICE */
 
 	THREADS_ALLOW();
 
 	/* Note: The arguments to MY_POLL may be evaluated multiple times. */
-	i = MY_POLL(me->active_set, poll_timeout);
+	i = MY_POLL(gb->active_set, poll_timeout);
 
 	IF_PD(fprintf(stderr, " => %d\n", i));
 
@@ -2591,7 +3004,7 @@ PIKECLASS Backend
 
 #ifdef BACKEND_USES_SELECT
 
-	for(i=0; i <= me->active_set.max_fd; i++)
+	for(i=0; i <= gb->active_set.max_fd; i++)
 	{
 	  box = SAFE_GET_ACTIVE_BOX(me, i);
 	  if (!box) continue;
@@ -2599,7 +3012,7 @@ PIKECLASS Backend
 
 	  box->revents = 0;
 
-	  if(fd_FD_ISSET(i, &me->active_set.eset)) {
+	  if(fd_FD_ISSET(i, &gb->active_set.eset)) {
 	    /* Check for errors. GNU libc says this isn't set on error, but
 	     * POSIX does. FIXME: What bits will be set for errors on GNU
 	     * systems, then? Should we always check for that? */
@@ -2617,13 +3030,13 @@ PIKECLASS Backend
 	    }
 	  }
 	  
-	  if(fd_FD_ISSET(i, &me->active_set.rset)) {
+	  if(fd_FD_ISSET(i, &gb->active_set.rset)) {
 	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read on %d\n",
 			  THR_NO, me->id, i));
 	    box->revents |= PIKE_BIT_FD_READ;
 	  }
 	  
-	  if(fd_FD_ISSET(i, &me->active_set.wset)) {
+	  if(fd_FD_ISSET(i, &gb->active_set.wset)) {
 	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write on %d\n",
 			  THR_NO, me->id, i));
 	    /* OOB can by BSD definition always be written, so if we can
@@ -2656,8 +3069,8 @@ PIKECLASS Backend
 	while(i--)
 #define ACTIVE_POLLSET poll_fds
 #else
-	for(i=0; i<me->active_set.num_in_poll; i++)
-#define ACTIVE_POLLSET me->active_set.poll_fds
+	for(i=0; i<gb->active_set.num_in_poll; i++)
+#define ACTIVE_POLLSET gb->active_set.poll_fds
 #endif
 	{
 	  int fd = GET_FD(ACTIVE_POLLSET[i]);
@@ -2674,7 +3087,7 @@ PIKECLASS Backend
 	i = num_active;
 	while(i--)
 #else
-	for(i=0; i<me->active_set.num_in_poll; i++)
+	for(i=0; i<gb->active_set.num_in_poll; i++)
 #endif
 	{
 	  int fd = GET_FD(ACTIVE_POLLSET[i]);
@@ -3027,11 +3440,11 @@ PIKECLASS Backend
 	    /* TODO: Fix poll version! */
 #ifdef BACKEND_USES_SELECT
 
-	    copy_selectors(& me->active_set, &me->set);
+	    copy_selectors(&gb->active_set, &gb->set);
 
 	    timeout->tv_usec=0;
 	    timeout->tv_sec=0;
-	    if(MY_POLL(me->active_set, *timeout) < 0)
+	    if(MY_POLL(gb->active_set, *timeout) < 0)
 	    {
 	      switch(errno)
 	      {
@@ -3047,21 +3460,21 @@ PIKECLASS Backend
 		case EBADF:
 		{
 		  FOR_EACH_ACTIVE_FD_BOX (me, box) {
-		    fd_FD_ZERO(& me->active_set.rset);
-		    fd_FD_ZERO(& me->active_set.wset);
-		    fd_FD_ZERO(& me->active_set.eset);
+		    fd_FD_ZERO(& gb->active_set.rset);
+		    fd_FD_ZERO(& gb->active_set.wset);
+		    fd_FD_ZERO(& gb->active_set.eset);
 		    
-		    if(my_FD_ISSET(box->fd, &me->set.read))
-		      fd_FD_SET(box->fd, & me->active_set.rset);
-		    if(my_FD_ISSET(box->fd, &me->set.write))
-		      fd_FD_SET(box->fd, & me->active_set.wset);
-		    if(my_FD_ISSET(box->fd, &me->set.except))
-		      fd_FD_SET(box->fd, & me->active_set.eset);
+		    if(my_FD_ISSET(box->fd, &gb->set.read))
+		      fd_FD_SET(box->fd, & gb->active_set.rset);
+		    if(my_FD_ISSET(box->fd, &gb->set.write))
+		      fd_FD_SET(box->fd, & gb->active_set.wset);
+		    if(my_FD_ISSET(box->fd, &gb->set.except))
+		      fd_FD_SET(box->fd, & gb->active_set.eset);
 		    
 		    timeout->tv_usec=0;
 		    timeout->tv_sec=0;
 		    
-		    if(MY_POLL(me->active_set, *timeout) < 0)
+		    if(MY_POLL(gb->active_set, *timeout) < 0)
 		    {
 		      switch(errno)
 		      {
@@ -3170,301 +3583,80 @@ PIKECLASS Backend
 				DO_NOT_WARN ((double) timeout.tv_usec) / 1e6)));
   }
 
-#ifndef tObjImpl_THREAD
-  /* Kludge for precompile.pike; it resolves object(Thread.Thread)
-   * to tObjImpl_THREAD, while "program_id.h" only knows about
-   * tObjImpl_THREAD_ID.
-   */
-#define tObjImpl_THREAD	tObjImpl_THREAD_ID
-#endif /* !tObjImpl_THREAD */
-
-  /*! @decl Thread.Thread executing_thread()
-   *! @decl int executing_thread()
-   *!
-   *! Return the thread currently executing in the backend. I.e. the
-   *! thread that has called @[`()] and haven't exited from that call.
-   *! Zero is returned if there's no thread in the backend.
-   *!
-   *! If Pike is compiled without thread support then @expr{1@} is
-   *! returned if we're inside the backend, @expr{0@} otherwise.
-   */
-  PIKEFUN object(Thread.Thread)|int(0..1) executing_thread()
-    /* FIXME: The type is too weak, but precompile.pike doesn't
-     * understand different function variants in cpp branches. */
+  EXTRA
   {
-    pop_n_elems (args);
-#ifdef PIKE_THREADS
-    if (THIS->exec_thread)
-      ref_push_object (THIS->exec_thread->thread_obj);
-    else
-      push_int (0);
-#else
-    push_int (THIS->exec_thread);
+    gb_offset = Pike_compiler->new_program->inherits[1].storage_offset -
+      Pike_compiler->new_program->inherits[0].storage_offset;
+
+#ifdef CHILD_NEEDS_TO_REOPEN
+    /* /dev/poll and kqueue fds get invalidated at fork. */
+    dmalloc_accept_leak(add_to_callback(&fork_child_callback,
+					reopen_all_backends, NULL, NULL));
 #endif
-  }
-
-  /*! @decl void add_file(Stdio.File|Stdio.FILE f)
-   *!
-   *! Register a file to be handled by this backend.
-   *! 
-   *! @param f
-   *!   File to register.
-   *!
-   *! Registers @[f] to be handled by this backend.
-   *! This simply does @expr{f->set_backend(backend)@} where
-   *! @expr{backend@} is this object.
-   *!
-   *! @seealso
-   *!   @[Pike.DefaultBackend], @[main()]
-   */
-  PIKEFUN void add_file(object f)
-  {
-    ref_push_object (Pike_fp->current_object);
-    apply (f, "set_backend", 1);
-    pop_stack();
-  }
-
-
-   /*! @decl int id()
-    *!
-    *! Return an integer that uniquely identifies this backend. For
-    *! the default backend that integer is @expr{0@}.
-    */
-   PIKEFUN int id()
-   {
-     RETURN (THIS->id);
-   }
-
-   PIKEFUN string _sprintf(int type, mapping flags)
-   {
-     if (type == 'O') {
-       push_constant_text ("Pike.Backend(%d)");
-       push_int (THIS->id);
-       f_sprintf (2);
-       stack_pop_n_elems_keep_top (args);
-     }
-     else {
-       pop_n_elems (args);
-       push_int (0);
-     }
-   }
-
-  extern int pike_make_pipe(int *);
-
-  GC_CHECK
-  {
-    struct Backend_struct *me =
-      (struct Backend_struct *) Pike_fp->current_storage;
-    int e;
-
-    for (e = 0; e < me->num_pending_calls; e++) {
-      if (CALL(e)->caller)
-	debug_gc_check (CALL(e)->caller,
-			" as caller for call out in backend object");
-      if (CALL(e)->args)
-	debug_gc_check (CALL(e)->args,
-			" as args for call out in backend object");
-    }
-
-    {FOR_EACH_ACTIVE_FD_BOX (me, box) {
-	check_box (box, INT_MAX);
-	if (box->ref_obj && box->events)
-	  debug_gc_check (box->ref_obj, " as container object "
-			  "for an active callback in backend object");
-      }}
-    {FOR_EACH_INACTIVE_FD_BOX (me, box) {
-	check_box (box, INT_MAX);
-	if (box->ref_obj && box->events)
-	  debug_gc_check (box->ref_obj, " as container object "
-			  "for an inactive callback in backend object");
-      }}
-  }
-
-  GC_RECURSE
-  {
-    struct Backend_struct *me =
-      (struct Backend_struct *) Pike_fp->current_storage;
-    int e;
-
-    for (e = 0; e < me->num_pending_calls; e++) {
-      if (CALL(e)->caller)
-	gc_recurse_object (CALL(e)->caller);
-      if (CALL(e)->args)
-	gc_recurse_array (CALL(e)->args);
-    }
-
-    {FOR_EACH_ACTIVE_FD_BOX (me, box) {
-	if (box->ref_obj && box->events)
-	  gc_recurse_short_svalue ((union anything *) &box->ref_obj, T_OBJECT);
-      }}
-    {FOR_EACH_INACTIVE_FD_BOX (me, box) {
-	if (box->ref_obj && box->events)
-	  gc_recurse_short_svalue ((union anything *) &box->ref_obj, T_OBJECT);
-      }}
+#ifndef BACKEND_USES_SELECT
+    IF_PD(fprintf(stderr,
+		  "MY_POLLIN:       0x%04x\n"
+		  "MY_POLLOUT:      0x%04x\n"
+		  "MY_POLLEXCEPT:   0x%04x\n"
+		  "MY_POLLRDBAND:   0x%04x\n"
+		  "MY_POLLWREXCEPT: 0x%04x\n"
+		  "MY_POLLWRBAND:   0x%04x\n",
+		  MY_POLLIN, MY_POLLOUT,
+		  MY_POLLEXCEPT, MY_POLLRDBAND,
+		  MY_POLLWREXCEPT, MY_POLLWRBAND));
+#endif /* !BACKEND_USES_SELECT */
   }
 
   INIT
     {
-      struct Backend_struct *me = THIS;
+      struct Backend_struct *me =
+	THIS->backend = (struct Backend_struct *)(((char *)THIS) + gb_offset);
 
-      me->id = unused_id++;
-
-      IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: init\n", THR_NO, me->id));
-
-      me->exec_thread = 0;
-
-      me->backend_callbacks.callbacks=0;
-      me->backend_callbacks.num_calls=0;
-
-      GETTIMEOFDAY(&current_time); /* Why? /mast */
-
-      me->num_pending_calls=0;
-      me->call_buffer=0;
-      me->call_buffer_size=0;
-      me->hash_size=0;
-      me->hash_order=5;
-      me->call_hash=0;
-
-      me->backend_obj = Pike_fp->current_object; /* Note: Not refcounted. */
+      IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: init generic\n",
+		      THR_NO, me->id));
 
 #ifdef PIKE_DEBUG
-      me->inside_call_out=0;
+      me->debug_handler = gb_backend_do_debug;
 #endif
+      me->update_fd_set_handler = gb_update_fd_set;
+      me->handler_data = THIS;
 
-      me->fd_boxes=0;
-      me->fd_boxes_start = me->fd_boxes_size = 0;
-      me->inactive_boxes = me->free_inactive_box = NULL;
-      me->inactive_boxes_size = 0;
-
-      me->wakeup_pipe_send_fd = -1;
-      INIT_FD_CALLBACK_BOX(&me->wakeup_cb_box, me, NULL, -1, 0, NULL);
+      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Registering backend...\n",
+		    THR_NO, me->id));
+      register_backend(THIS);
 
 #ifdef OPEN_POLL_DEVICE
       IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Opening poll device...\n",
 		    THR_NO, me->id));
-      if ((me->set = OPEN_POLL_DEVICE()) < 0) {
+      if ((THIS->set = OPEN_POLL_DEVICE()) < 0) {
 	Pike_error("Failed to open poll device (errno:%d)\n", errno);
       }
-      set_close_on_exec(me->set, 1);
+      set_close_on_exec(THIS->set, 1);
 #elif defined(HAVE_POLL)
-      me->set.poll_fds=0;
-      me->set.poll_fd_size=0;
-      me->set.num_in_poll=0;
+      THIS->set.poll_fds=0;
+      THIS->set.poll_fd_size=0;
+      THIS->set.num_in_poll=0;
 
-      me->active_set.poll_fds=0;
-      me->active_set.poll_fd_size=0;
-      me->active_set.num_in_poll=0;
+      THIS->active_set.poll_fds=0;
+      THIS->active_set.poll_fd_size=0;
+      THIS->active_set.num_in_poll=0;
 #else /* !HAVE_POLL */
-      me->set.max_fd=0;
-      my_FD_ZERO(&me->set.read);
-      my_FD_ZERO(&me->set.write);
-      my_FD_ZERO(&me->set.except);
+      THIS->set.max_fd=0;
+      my_FD_ZERO(&THIS->set.read);
+      my_FD_ZERO(&THIS->set.write);
+      my_FD_ZERO(&THIS->set.except);
       /* FIXME: Should there be something else here? */
       /* me->set.num_fds=0; */
 #endif /* OPEN_POLL_DEVICE || HAVE_POLL */
-
-      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Creating wakeup pipe...\n",
-		    THR_NO, me->id));
-      {
-	int pipe[2];
-	if(pike_make_pipe(pipe) < 0)
-	  Pike_error("Couldn't create backend wakeup pipe! errno=%d.\n",errno);
-
-	set_nonblocking(pipe[0],1);
-	set_nonblocking(pipe[1],1);
-	IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Initializing wakeup pipe...\n",
-		      THR_NO, me->id));
-	INIT_FD_CALLBACK_BOX (&me->wakeup_cb_box, me, NULL,
-			      pipe[0], PIKE_BIT_FD_READ, wakeup_callback);
-	me->wakeup_pipe_send_fd = pipe[1];
-
-	/* Don't keep these on exec! */
-	set_close_on_exec(pipe[0], 1);
-	set_close_on_exec(pipe[1], 1);
-      }
-      me->may_need_wakeup = 0;
-
-      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Registering backend...\n",
-		    THR_NO, me->id));
-      register_backend(me);
-
-#ifdef DO_PIKE_CLEANUP
-      num_active_backends++;
-#endif
     }
   
   EXIT
     {
-      struct Backend_struct *me=THIS;
+      struct Backend_struct *me = THIS->backend;
       int e;
 
-      IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: exit\n", THR_NO, me->id));
-
-      free_callback_list(& THIS->backend_callbacks);
-
-      if (THIS->wakeup_cb_box.fd >= 0)
-	fd_close(THIS->wakeup_cb_box.fd);
-      if (me->wakeup_pipe_send_fd >= 0)
-	fd_close(THIS->wakeup_pipe_send_fd);
-
-      if (me->fd_boxes) {
-	FOR_EACH_ACTIVE_FD_BOX (me, box) {
-	    check_box (box, INT_MAX);
-
-#ifdef PIKE_DEBUG
-	    if (get_backend_for_fd (box->fd) != me)
-	      Pike_fatal ("Inconsistency in global fd map for fd %d: "
-			  "backend is %p, expected %p.\n",
-			  box->fd, get_backend_for_fd (box->fd), me);
-#endif
-
-	    if (box->callback == compat_box_dispatcher) {
-#ifdef PIKE_DEBUG
-	      fprintf (stderr, "[%d]BACKEND[%d]: "
-		       "Compat callbacks left at exit for fd %d: 0x%x\n",
-		       THR_NO, me->id, box->fd, box->events);
-#endif
-	      really_free_compat_cb_box ((struct compat_cb_box *) box);
-	    }
-
-	    if (box->backend) {
-	      box->backend = NULL;
-	      if (box->ref_obj && box->events)
-		free_object (box->ref_obj);
-	    }
-	  }
-
-	free(me->fd_boxes);
-	me->fd_boxes = NULL;
-	me->fd_boxes_start = me->fd_boxes_size = 0;
-      }
-
-      if (me->inactive_boxes) {
-	FOR_EACH_INACTIVE_FD_BOX (me, box) {
-	    check_box (box, INT_MAX);
-#ifdef PIKE_DEBUG
-	    if (box->callback == compat_box_dispatcher)
-	      Pike_fatal ("Got inactive callback in compat interface.\n");
-#endif
-
-	    if (box->backend) {
-	      box->backend = NULL;
-	      if (box->ref_obj && box->events)
-		free_object (box->ref_obj);
-	    }
-	  }
-
-	free(me->inactive_boxes);
-	me->inactive_boxes = me->free_inactive_box = NULL;
-	me->inactive_boxes_size = 0;
-      }
-
-      /* Make sure we aren't referenced any more. */
-      /* FIXME: Ought to keep better track of our fds so that we don't
-       * need to do this loop. /mast */
-      for (e = 0; e < fd_map_size; e++) {
-	if (fd_map[e] == me) fd_map[e] = NULL;
-      }
+      IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: exit generic backend\n",
+		      THR_NO, me->id));
 
 #ifdef BACKEND_USES_KQUEUE
     unregister_backend(me);
@@ -3473,41 +3665,23 @@ PIKECLASS Backend
 
 #ifdef HAVE_POLL
 #ifdef BACKEND_USES_POLL_DEVICE
-      unregister_backend(me);
+      unregister_backend(THIS);
       fd_close(THIS->set);
 #else
-      if (me->set.poll_fds) {
-	free(me->set.poll_fds);
-	me->set.poll_fds = NULL;
-	me->set.poll_fd_size = 0;
-	me->set.num_in_poll = 0;
+      if (THIS->set.poll_fds) {
+	free(THIS->set.poll_fds);
+	THIS->set.poll_fds = NULL;
+	THIS->set.poll_fd_size = 0;
+	THIS->set.num_in_poll = 0;
       }
-      if (me->active_set.poll_fds) {
-	free(me->active_set.poll_fds);
-	me->active_set.poll_fds = NULL;
-	me->active_set.poll_fd_size = 0;
-	me->active_set.num_in_poll = 0;
+      if (THIS->active_set.poll_fds) {
+	free(THIS->active_set.poll_fds);
+	THIS->active_set.poll_fds = NULL;
+	THIS->active_set.poll_fd_size = 0;
+	THIS->active_set.num_in_poll = 0;
       }
 #endif
 #endif /* HAVE_POLL */
-
-     /* CALL OUT */
-      backend_verify_call_outs(me);
-      for(e=0;e<me->num_pending_calls;e++)
-      {
-	free_array(CALL(e)->args);
-	if(CALL(e)->caller) free_object(CALL(e)->caller);
-	really_free_call_out(CALL(e));
-      }
-      me->num_pending_calls=0;
-      if(me->call_buffer) free((char*)me->call_buffer);
-      me->call_buffer=NULL;
-      if(me->call_hash) free((char*)me->call_hash);
-      me->call_hash=NULL;
-
-#ifdef DO_PIKE_CLEANUP
-      if (!--num_active_backends) backend_cleanup();
-#endif
     }
 }
 
@@ -3832,10 +4006,6 @@ PMOD_EXPORT void debug_check_fd_not_in_use (int fd)
 
 void init_backend(void)
 {
-#if defined(OPEN_POLL_DEVICE) && defined(_REENTRANT)
-  set_busy = 0;
-  co_init(&set_change);
-#endif /* OPEN_POLL_DEVICE && _REENTRANT */
   IF_CO(fprintf(stderr, "BACKEND: Init call_out...\n"));
   init_call_out_s_blocks();
   IF_PD(fprintf(stderr, "BACKEND: Init compat callback boxes...\n"));
@@ -3844,27 +4014,10 @@ void init_backend(void)
   INIT;
   IF_PD(fprintf(stderr, "BACKEND: Creating default backend...\n"));
   {
-    struct object *o=clone_object(Backend_program,0);
-    default_backend=OBJ2_BACKEND(o);
+    struct object *o=clone_object(GenericBackend_program,0);
+    default_backend = (struct Backend_struct *)get_storage(o, Backend_program);
     add_object_constant("__backend",o,0);
   }
-#ifndef BACKEND_USES_SELECT
-  IF_PD(fprintf(stderr,
-		"MY_POLLIN:       0x%04x\n"
-		"MY_POLLOUT:      0x%04x\n"
-		"MY_POLLEXCEPT:   0x%04x\n"
-		"MY_POLLRDBAND:   0x%04x\n"
-		"MY_POLLWREXCEPT: 0x%04x\n"
-		"MY_POLLWRBAND:   0x%04x\n",
-		MY_POLLIN, MY_POLLOUT,
-		MY_POLLEXCEPT, MY_POLLRDBAND,
-		MY_POLLWREXCEPT, MY_POLLWRBAND));
-#endif /* !BACKEND_USES_SELECT */
-#ifdef CHILD_NEEDS_TO_REOPEN
-  /* /dev/poll and kqueue fds get invalidated at fork. */
-  dmalloc_accept_leak(add_to_callback(&fork_child_callback,
-				      reopen_all_backends, NULL, NULL));
-#endif
 }
 
 #ifdef DO_PIKE_CLEANUP

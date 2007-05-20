@@ -3,7 +3,7 @@
 
 // Pike core things that don't belong anywhere else.
 //
-// $Id: module.pmod,v 1.15 2007/03/30 14:43:32 grubba Exp $
+// $Id: module.pmod,v 1.16 2007/05/20 13:15:15 grubba Exp $
 
 constant WEAK_INDICES = __builtin.PIKE_WEAK_INDICES;
 constant WEAK_VALUES = __builtin.PIKE_WEAK_VALUES;
@@ -35,7 +35,11 @@ constant OPEN_BOUND = __builtin.OPEN_BOUND;
 
 constant BacktraceFrame = __builtin.backtrace_frame;
 
+#if constant(__builtin.GenericBackend)
+constant Backend = __builtin.GenericBackend;
+#else
 constant Backend = __builtin.Backend;
+#endif
 constant DefaultBackend = __builtin.__backend;
 
 constant gc_parameters = __builtin.gc_parameters;
