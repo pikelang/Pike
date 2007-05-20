@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.188 2007/05/20 13:15:23 grubba Exp $
+ * $Id: backend.cmod,v 1.189 2007/05/20 13:24:34 grubba Exp $
  *
  * Backend object.
  */
@@ -314,7 +314,7 @@ PIKECLASS Backend
   CVAR void (*debug_handler)(struct Backend_struct *me, void *data);
 #endif /* PIKE_DEBUG */
   CVAR void (*update_fd_set_handler)(struct Backend_struct *me, void *data,
-                                   int fd, int old_events, int new_events);
+				     int fd, int old_events, int new_events);
   CVAR void *handler_data;
 
   /*
@@ -354,16 +354,16 @@ PIKECLASS Backend
   }
 
   static int wakeup_callback(struct fd_callback_box *box, int event)
-    {
-      char buffer[1024];
-      fd_read(box->fd, buffer, sizeof(buffer)); /* Clear 'flag' */
+  {
+    char buffer[1024];
+    fd_read(box->fd, buffer, sizeof(buffer)); /* Clear 'flag' */
 #if defined(OPEN_POLL_DEVICE) && defined(_REENTRANT)
-      while (box->backend->set_busy) {
-	co_wait_interpreter(&box->backend->set_change);
-      }
-#endif /* OPEN_POLL_DEVICE && _REENTRANT */
-      return 0;
+    while (box->backend->set_busy) {
+      co_wait_interpreter(&box->backend->set_change);
     }
+#endif /* OPEN_POLL_DEVICE && _REENTRANT */
+    return 0;
+  }
 
   /* This is used by threaded programs and signals to wake up the
    * master 'thread'.
@@ -372,18 +372,18 @@ PIKECLASS Backend
    * whatsoever. E.g. dmalloc stuff is verboten here.
    */
   void backend_wake_up_backend(struct Backend_struct *me)
-    {
-      char foo=0;
+  {
+    char foo=0;
 
-      if(me && me->may_need_wakeup && (me->wakeup_pipe_send_fd >= 0))
-	/* Avoid fd_write with its dmalloc stuff. */
+    if(me && me->may_need_wakeup && (me->wakeup_pipe_send_fd >= 0))
+      /* Avoid fd_write with its dmalloc stuff. */
 #ifdef HAVE_WINSOCK_H
-	debug_fd_write
+      debug_fd_write
 #else
-	write
+      write
 #endif
-	  (me->wakeup_pipe_send_fd, &foo ,1);
-    }
+	(me->wakeup_pipe_send_fd, &foo ,1);
+  }
 
   /*
    * Backend callbacks.
@@ -1321,12 +1321,12 @@ PIKECLASS Backend
    }
 
    static void update_fd_set (struct Backend_struct *me, int fd,
-                            int old_events, int new_events)
+			      int old_events, int new_events)
    {
      if (fd < 0) return;
      if (me->update_fd_set_handler) {
        me->update_fd_set_handler(me, me->handler_data,
-                               fd, old_events, new_events);
+				 fd, old_events, new_events);
      } else {
        Pike_fatal("No update_fd_set_handler set[%p, %d, 0x%04x, 0x%04x].\n");
      }
@@ -1824,16 +1824,16 @@ PIKECLASS Backend
     if (me->wakeup_pipe_send_fd < 0) {
       int pipe[2];
       IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Creating wakeup pipe...\n",
-                  THR_NO, me->id));
+		    THR_NO, me->id));
       if(pike_make_pipe(pipe) < 0)
       Pike_error("Couldn't create backend wakeup pipe! errno=%d.\n",errno);
 
       set_nonblocking(pipe[0],1);
       set_nonblocking(pipe[1],1);
       IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Initializing wakeup pipe...\n",
-                  THR_NO, me->id));
+		    THR_NO, me->id));
       INIT_FD_CALLBACK_BOX (&me->wakeup_cb_box, me, NULL,
-                          pipe[0], PIKE_BIT_FD_READ, wakeup_callback);
+			    pipe[0], PIKE_BIT_FD_READ, wakeup_callback);
       me->wakeup_pipe_send_fd = pipe[1];
 
       /* Don't keep these on exec! */
@@ -3608,55 +3608,55 @@ PIKECLASS GenericBackend
   }
 
   INIT
-    {
-      struct Backend_struct *me =
-	THIS->backend = (struct Backend_struct *)(((char *)THIS) + gb_offset);
+  {
+    struct Backend_struct *me =
+      THIS->backend = (struct Backend_struct *)(((char *)THIS) + gb_offset);
 
-      IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: init generic\n",
-		      THR_NO, me->id));
+    IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: init generic\n",
+		    THR_NO, me->id));
 
 #ifdef PIKE_DEBUG
-      me->debug_handler = gb_backend_do_debug;
+    me->debug_handler = gb_backend_do_debug;
 #endif
-      me->update_fd_set_handler = gb_update_fd_set;
-      me->handler_data = THIS;
+    me->update_fd_set_handler = gb_update_fd_set;
+    me->handler_data = THIS;
 
-      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Registering backend...\n",
-		    THR_NO, me->id));
-      register_backend(THIS);
+    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Registering backend...\n",
+		  THR_NO, me->id));
+    register_backend(THIS);
 
 #ifdef OPEN_POLL_DEVICE
-      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Opening poll device...\n",
-		    THR_NO, me->id));
-      if ((THIS->set = OPEN_POLL_DEVICE()) < 0) {
-	Pike_error("Failed to open poll device (errno:%d)\n", errno);
-      }
-      set_close_on_exec(THIS->set, 1);
-#elif defined(HAVE_POLL)
-      THIS->set.poll_fds=0;
-      THIS->set.poll_fd_size=0;
-      THIS->set.num_in_poll=0;
-
-      THIS->active_set.poll_fds=0;
-      THIS->active_set.poll_fd_size=0;
-      THIS->active_set.num_in_poll=0;
-#else /* !HAVE_POLL */
-      THIS->set.max_fd=0;
-      my_FD_ZERO(&THIS->set.read);
-      my_FD_ZERO(&THIS->set.write);
-      my_FD_ZERO(&THIS->set.except);
-      /* FIXME: Should there be something else here? */
-      /* me->set.num_fds=0; */
-#endif /* OPEN_POLL_DEVICE || HAVE_POLL */
+    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Opening poll device...\n",
+		  THR_NO, me->id));
+    if ((THIS->set = OPEN_POLL_DEVICE()) < 0) {
+      Pike_error("Failed to open poll device (errno:%d)\n", errno);
     }
+    set_close_on_exec(THIS->set, 1);
+#elif defined(HAVE_POLL)
+    THIS->set.poll_fds=0;
+    THIS->set.poll_fd_size=0;
+    THIS->set.num_in_poll=0;
+
+    THIS->active_set.poll_fds=0;
+    THIS->active_set.poll_fd_size=0;
+    THIS->active_set.num_in_poll=0;
+#else /* !HAVE_POLL */
+    THIS->set.max_fd=0;
+    my_FD_ZERO(&THIS->set.read);
+    my_FD_ZERO(&THIS->set.write);
+    my_FD_ZERO(&THIS->set.except);
+    /* FIXME: Should there be something else here? */
+    /* me->set.num_fds=0; */
+#endif /* OPEN_POLL_DEVICE || HAVE_POLL */
+  }
   
   EXIT
-    {
-      struct Backend_struct *me = THIS->backend;
-      int e;
+  {
+    struct Backend_struct *me = THIS->backend;
+    int e;
 
-      IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: exit generic backend\n",
-		      THR_NO, me->id));
+    IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: exit generic backend\n",
+		    THR_NO, me->id));
 
 #ifdef BACKEND_USES_KQUEUE
     unregister_backend(me);
@@ -3665,24 +3665,24 @@ PIKECLASS GenericBackend
 
 #ifdef HAVE_POLL
 #ifdef BACKEND_USES_POLL_DEVICE
-      unregister_backend(THIS);
-      fd_close(THIS->set);
+    unregister_backend(THIS);
+    fd_close(THIS->set);
 #else
-      if (THIS->set.poll_fds) {
-	free(THIS->set.poll_fds);
-	THIS->set.poll_fds = NULL;
-	THIS->set.poll_fd_size = 0;
-	THIS->set.num_in_poll = 0;
-      }
-      if (THIS->active_set.poll_fds) {
-	free(THIS->active_set.poll_fds);
-	THIS->active_set.poll_fds = NULL;
-	THIS->active_set.poll_fd_size = 0;
-	THIS->active_set.num_in_poll = 0;
-      }
+    if (THIS->set.poll_fds) {
+      free(THIS->set.poll_fds);
+      THIS->set.poll_fds = NULL;
+      THIS->set.poll_fd_size = 0;
+      THIS->set.num_in_poll = 0;
+    }
+    if (THIS->active_set.poll_fds) {
+      free(THIS->active_set.poll_fds);
+      THIS->active_set.poll_fds = NULL;
+      THIS->active_set.poll_fd_size = 0;
+      THIS->active_set.num_in_poll = 0;
+    }
 #endif
 #endif /* HAVE_POLL */
-    }
+  }
 }
 
 /*! @endclass
