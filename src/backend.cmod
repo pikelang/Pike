@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.189 2007/05/20 13:24:34 grubba Exp $
+ * $Id: backend.cmod,v 1.190 2007/05/20 13:27:36 grubba Exp $
  *
  * Backend object.
  */
@@ -357,11 +357,11 @@ PIKECLASS Backend
   {
     char buffer[1024];
     fd_read(box->fd, buffer, sizeof(buffer)); /* Clear 'flag' */
-#if defined(OPEN_POLL_DEVICE) && defined(_REENTRANT)
+#ifdef _REENTRANT
     while (box->backend->set_busy) {
       co_wait_interpreter(&box->backend->set_change);
     }
-#endif /* OPEN_POLL_DEVICE && _REENTRANT */
+#endif /* _REENTRANT */
     return 0;
   }
 
@@ -1670,10 +1670,10 @@ PIKECLASS Backend
 
     IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: init\n", THR_NO, me->id));
 
-#if defined(OPEN_POLL_DEVICE) && defined(_REENTRANT)
+#ifdef _REENTRANT
     THIS->set_busy = 0;
     co_init(&THIS->set_change);
-#endif /* OPEN_POLL_DEVICE && _REENTRANT */
+#endif /* _REENTRANT */
     me->exec_thread = 0;
 
     me->backend_callbacks.callbacks=0;
@@ -1955,8 +1955,7 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
   }
 
 #ifdef _REENTRANT
-  /* FIXME: set_busy ought to be backend-specific.
-   * FIXME: Ought to check if we're the backend.
+  /* FIXME: Ought to check if we're the backend.
    */
   if(num_threads>1)
   {
