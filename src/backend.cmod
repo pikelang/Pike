@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.195 2007/05/20 14:46:38 grubba Exp $
+ * $Id: backend.cmod,v 1.196 2007/05/20 16:02:19 grubba Exp $
  *
  * Backend object.
  */
@@ -1491,7 +1491,7 @@ PIKECLASS Backend
     backend_verify_call_outs(me);
 
     if (me->debug_handler) {
-      me->debug_handler(me, me->hander_data);
+      me->debug_handler(me, me->handler_data);
     }
       
     {FOR_EACH_ACTIVE_FD_BOX (me, box) check_box (box, INT_MAX);}
@@ -2080,6 +2080,10 @@ PIKECLASS Backend
       INIT_FD_CALLBACK_BOX (&me->wakeup_cb_box, me, NULL,
 			    pipe[0], PIKE_BIT_FD_READ, wakeup_callback);
       me->wakeup_pipe_send_fd = pipe[1];
+
+      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Wakeup pipe is [%d, %d]\n",
+		    THR_NO, me->id,
+		    me->wakeup_pipe_send_fd, THIS->wakeup_cb_box.fd));
 
       /* Don't keep these on exec! */
       set_close_on_exec(pipe[0], 1);
@@ -3055,7 +3059,7 @@ PIKECLASS GenericBackend
 	int ret;
 	int fd = gb->set.poll_fds[e].fd;
 
-	if (fd >= fd_map_size || fd_map[fd] != gb)
+	if (fd >= fd_map_size || fd_map[fd] != me)
 	  Pike_fatal ("Isn't referenced from fd_map for fd %d at %d in poll set.\n",
 		      fd, e);
 
