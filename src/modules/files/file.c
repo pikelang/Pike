@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.360 2007/03/04 17:31:29 nilsson Exp $
+|| $Id: file.c,v 1.361 2007/05/20 15:54:44 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -243,13 +243,13 @@ static int got_fd_event (struct fd_callback_box *box, int event)
   return 0;
 }
 
-static void init_fd(int fd, int open_mode)
+static void init_fd(int fd, int open_mode, int flags)
 {
   size_t ev;
   FD=fd;
   ERRNO=0;
   THIS->box.backend = NULL;
-  THIS->flags=0;
+  THIS->flags=flags;
   THIS->open_mode=open_mode;
   for (ev = 0; ev < NELEM (THIS->event_cbs); ev++) {
     THIS->event_cbs[ev].type = PIKE_T_INT;
@@ -260,7 +260,10 @@ static void init_fd(int fd, int open_mode)
   THIS->key=0;
 #endif
 #ifdef PIKE_DEBUG
-  if (fd >= 0) debug_check_fd_not_in_use (fd);
+  /* Don't cause a fatal when opening fds by number
+   * if the fd belongs to a backend... */
+  if ((fd >= 0) && !(flags & FILE_NOT_OPENED))
+    debug_check_fd_not_in_use (fd);
 #endif
 }
 
@@ -1771,7 +1774,7 @@ static void file_open(INT32 args)
      }
      else
      {
-	init_fd(fd,flags | fd_query_properties(fd, FILE_CAPABILITIES));
+       init_fd(fd, flags | fd_query_properties(fd, FILE_CAPABILITIES), 0);
 	set_close_on_exec(fd,1);
      }
   }
@@ -1790,11 +1793,13 @@ static void file_open(INT32 args)
      if (fd<0)
 	Pike_error("Not a valid FD.\n");
 
-     init_fd(fd,flags | fd_query_properties(fd, FILE_CAPABILITIES));
-     /* FIXME: What are the intended semantics for this flag?
+     fprintf(stderr, "Creating a file object for fd %d...\n", fd);
+
+     /* FIXME: What are the intended semantics for the flag FILE_NOT_OPENED?
       *        (grubba 2004-09-01
       */
-     THIS->flags|=FILE_NOT_OPENED;
+     init_fd(fd, flags | fd_query_properties(fd, FILE_CAPABILITIES),
+	     FILE_NOT_OPENED);
   }
 
 
@@ -1854,7 +1859,7 @@ static void file_openpt(INT32 args)
   }
   else
   {
-    init_fd(fd,flags | fd_query_properties(fd, FILE_CAPABILITIES));
+    init_fd(fd, flags | fd_query_properties(fd, FILE_CAPABILITIES), 0);
     set_close_on_exec(fd,1);
   }
   pop_n_elems(args);
@@ -2992,8 +2997,8 @@ static void file_pipe(INT32 args)
   }
   else if (reverse) 
   {
-    init_fd(inout[1],FILE_WRITE | (type&fd_BIDIRECTIONAL?FILE_READ:0) |
-	    fd_query_properties(inout[1], type));
+    init_fd(inout[1], FILE_WRITE | (type&fd_BIDIRECTIONAL?FILE_READ:0) |
+	    fd_query_properties(inout[1], type), 0);
 
     my_set_close_on_exec(inout[1],1);
     my_set_close_on_exec(inout[0],1);
@@ -3002,8 +3007,8 @@ static void file_pipe(INT32 args)
     ERRNO=0;
     push_object(file_make_object_from_fd(inout[0], (type&fd_BIDIRECTIONAL?FILE_WRITE:0)| FILE_READ,type));
   } else {
-    init_fd(inout[0],FILE_READ | (type&fd_BIDIRECTIONAL?FILE_WRITE:0) |
-	    fd_query_properties(inout[0], type));
+    init_fd(inout[0], FILE_READ | (type&fd_BIDIRECTIONAL?FILE_WRITE:0) |
+	    fd_query_properties(inout[0], type), 0);
 
     my_set_close_on_exec(inout[0],1);
     my_set_close_on_exec(inout[1],1);
@@ -3021,7 +3026,7 @@ static void file_handle_events(int event)
   switch(event)
   {
     case PROG_EVENT_INIT:
-      init_fd (-1, 0);
+      init_fd (-1, 0, 0);
       f->box.ref_obj = o;
       break;
 
@@ -3278,7 +3283,8 @@ static void file_open_socket(INT32 args)
     }
   }
 
-  init_fd(fd, FILE_READ | FILE_WRITE | fd_query_properties(fd, SOCKET_CAPABILITIES));
+  init_fd(fd, FILE_READ | FILE_WRITE |
+	  fd_query_properties(fd, SOCKET_CAPABILITIES), 0);
   my_set_close_on_exec(fd,1);
   change_fd_for_box (&THIS->box, FD);
   ERRNO=0;
@@ -3375,7 +3381,7 @@ static void file_connect_unix( INT32 args )
   }
 
   init_fd(FD, FILE_READ | FILE_WRITE
-	  | fd_query_properties(FD, SOCKET_CAPABILITIES));
+	  | fd_query_properties(FD, SOCKET_CAPABILITIES), 0);
   my_set_close_on_exec(FD, 1);
 
   tmp=connect(FD,(void *)&name,sizeof(struct sockaddr_un));
