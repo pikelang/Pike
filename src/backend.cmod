@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.192 2007/05/20 13:48:23 grubba Exp $
+ * $Id: backend.cmod,v 1.193 2007/05/20 13:53:21 grubba Exp $
  *
  * Backend object.
  */
@@ -1750,6 +1750,164 @@ PIKECLASS Backend
     }
   }
 
+  /* Call callbacks for the active events.
+   *
+   * NOTE: The first element in the fd_list is a sentinel!
+   *
+   * returns 1 on early exit.
+   */
+  static int backend_call_active_callbacks(struct fd_callback_box *fd_list,
+					   struct Backend_struct *me)
+  {
+    struct fd_callback_box *box;
+    while((box = fd_list->next))
+    {
+      int fd = box->fd;
+      ONERROR uwp;
+
+      /* Unhook the box. */
+      fd_list->next = box->next;
+      box->next = NULL;
+      SET_ONERROR(uwp, do_free_fd_box, box);
+
+      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Examining box for fd %d"
+		    " revents:0x%04x\n",
+		    THR_NO, me->id, fd, box->revents));
+
+      if (box->fd < 0) {
+	/* The box is no longer active.
+	 * Or we have found our sentinel fd_list.
+	 *
+	 * Note that the loop will terminate, since we
+	 * have broken the cycle above when we set
+	 * box->next to NULL.
+	 */
+	CALL_AND_UNSET_ONERROR(uwp);
+	continue;
+      }
+
+      /* From the roxen-chat re: connecttest.pike/FreeBSD:
+       *
+       * kqueue is returning the correct info:
+       * {7,EVFILT_READ,EV_ADD|EV_EOF,61,0x0,0x0}.
+       * errno 61 is ECONNREFUSED
+       */
+      if (box->revents & box->events & PIKE_BIT_FD_READ_OOB) {
+	IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_oob_callback(%d, %p)\n",
+		      THR_NO, me->id, fd, box->ref_obj));
+	errno = 0;
+	if (box->callback (box, PIKE_FD_READ_OOB) == -1) {
+	  CALL_AND_UNSET_ONERROR(uwp);
+	  goto backend_round_done;
+	}
+      }
+
+      if (box->revents & box->events & PIKE_BIT_FD_READ) {
+	/* FIXME: Consider utilizing ACTIVE_POLLSET[i].data in
+	 *        the kqueue case.
+	 */
+	IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_callback(%d, %p)\n",
+		      THR_NO, me->id, fd, box->ref_obj));
+	errno = 0;
+	if (box->callback (box, PIKE_FD_READ) == -1) {
+	  CALL_AND_UNSET_ONERROR(uwp);
+	  goto backend_round_done;
+	}
+      }
+
+      if (box->revents & box->events & PIKE_BIT_FD_WRITE_OOB) {
+	IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_oob_callback(%d, %p)\n",
+		      THR_NO, me->id, fd, box->ref_obj));
+	errno = 0;
+	if (box->callback (box, PIKE_FD_WRITE_OOB) == -1) {
+	  CALL_AND_UNSET_ONERROR(uwp);
+	  goto backend_round_done;
+	}
+      }
+
+      if (box->revents & box->events & PIKE_BIT_FD_WRITE) {
+	/* FIXME: Consider utilizing ACTIVE_POLLSET[i].data in
+	 *        the kqueue case.
+	 */
+	IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_callback(%d, %p)\n",
+		      THR_NO, me->id, fd, box->ref_obj));
+	errno = 0;
+	if (box->callback (box, PIKE_FD_WRITE) == -1) {
+	  CALL_AND_UNSET_ONERROR(uwp);
+	  goto backend_round_done;
+	}
+      }
+
+      if (box->revents & PIKE_BIT_FD_ERROR) {
+	/* Error */
+	int old_events;
+	int err;
+	ACCEPT_SIZE_T len = sizeof (err);
+	errno = 0;
+	/* FIXME: This could be too late - the error might be
+	 * clobbered by the callbacks we might have called
+	 * above. */
+	if (!getsockopt (fd, SOL_SOCKET, SO_ERROR, (void *) &err, &len)) {
+	  IF_PD (fprintf (stderr,
+			  "[%d]BACKEND[%d]: POLLERR on %d, error=%d\n",
+			  THR_NO, me->id, fd, err));
+	  errno = err;
+	}
+#ifdef PIKE_DEBUG
+	else
+	  fprintf(stderr, "Got POLLERR on non-socket fd %d (getsockopt errno=%d)\n",
+		  fd, errno);
+#endif /* PIKE_DEBUG */
+
+	box->revents = 0;
+	    
+	/* We don't want to keep this fd anymore.
+	 * Note: This disables any further callbacks.
+	 */
+	old_events = box->events;
+	set_fd_callback_events (box, box->events & PIKE_BIT_FD_ERROR);
+	if (WANT_EVENT (box, ERROR)) {
+	  IF_PD(fprintf(stderr,
+			"[%d]BACKEND[%d]: error event on fd %d sent to %p\n",
+			THR_NO, me->id, fd, box->ref_obj));
+	  if (box->callback (box, PIKE_FD_ERROR) == -1) {
+	    CALL_AND_UNSET_ONERROR(uwp);
+	    goto backend_round_done;
+	  }
+	}
+	/* The following is temporary compat stuff. */
+	else if (old_events & PIKE_BIT_FD_READ) {
+	  IF_PD(fprintf(stderr,
+			"[%d]BACKEND[%d]: read_callback(%d, %p) for error %d\n",
+			THR_NO, me->id, fd, box->ref_obj, errno));
+	  if (box->callback (box, PIKE_FD_READ) == -1) {
+	    CALL_AND_UNSET_ONERROR(uwp);
+	    goto backend_round_done;
+	  }
+	} else if (old_events & PIKE_BIT_FD_WRITE) {
+	  IF_PD(fprintf(stderr,
+			"[%d]BACKEND[%d]: write_callback(%d, %p) for error %d\n",
+			THR_NO, me->id, fd, box->ref_obj, errno));
+	  if (box->callback (box, PIKE_FD_WRITE) == -1) {
+	    CALL_AND_UNSET_ONERROR(uwp);
+	    goto backend_round_done;
+	  }
+	}
+	/* Don't call any other callbacks for this fd.
+	 */
+
+	CALL_AND_UNSET_ONERROR(uwp);
+	continue;
+      }
+
+      CALL_AND_UNSET_ONERROR(uwp);
+    }
+    return 0;
+
+  backend_round_done:
+    return 1;
+  }
+
   INIT
   {
     struct Backend_struct *me = THIS;
@@ -3265,154 +3423,9 @@ PIKECLASS GenericBackend
        *
        * Call callbacks for the active events.
        */
-      while((box = fd_list.next))
-      {
-	int fd = box->fd;
-	ONERROR uwp;
-
-	/* Unhook the box. */
-	fd_list.next = box->next;
-	box->next = NULL;
-	SET_ONERROR(uwp, do_free_fd_box, box);
-
-	IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Examining box for fd %d"
-		      " revents:0x%04x\n",
-		      THR_NO, me->id, fd, box->revents));
-
-	if (box->fd < 0) {
-	  /* The box is no longer active.
-	   * Or we have found our sentinel fd_list.
-	   *
-	   * Note that the loop will terminate, since we
-	   * have broken the cycle above when we set
-	   * box->next to NULL.
-	   */
-	  CALL_AND_UNSET_ONERROR(uwp);
-	  continue;
-	}
-
-	/* From the roxen-chat re: connecttest.pike/FreeBSD:
-	 *
-	 * kqueue is returning the correct info:
-	 * {7,EVFILT_READ,EV_ADD|EV_EOF,61,0x0,0x0}.
-	 * errno 61 is ECONNREFUSED
-	 */
-	if (box->revents & box->events & PIKE_BIT_FD_READ_OOB) {
-	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_oob_callback(%d, %p)\n",
-			THR_NO, me->id, fd, box->ref_obj));
-	  errno = 0;
-	  if (box->callback (box, PIKE_FD_READ_OOB) == -1) {
-	    CALL_AND_UNSET_ONERROR(uwp);
-	    CALL_AND_UNSET_ONERROR(free_fd_list);
-	    goto backend_round_done;
-	  }
-	}
-
-	if (box->revents & box->events & PIKE_BIT_FD_READ) {
-	  /* FIXME: Consider utilizing ACTIVE_POLLSET[i].data in
-	   *        the kqueue case.
-	   */
-	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_callback(%d, %p)\n",
-			THR_NO, me->id, fd, box->ref_obj));
-	  errno = 0;
-	  if (box->callback (box, PIKE_FD_READ) == -1) {
-	    CALL_AND_UNSET_ONERROR(uwp);
-	    CALL_AND_UNSET_ONERROR(free_fd_list);
-	    goto backend_round_done;
-	  }
-	}
-
-	if (box->revents & box->events & PIKE_BIT_FD_WRITE_OOB) {
-	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_oob_callback(%d, %p)\n",
-			THR_NO, me->id, fd, box->ref_obj));
-	  errno = 0;
-	  if (box->callback (box, PIKE_FD_WRITE_OOB) == -1) {
-	    CALL_AND_UNSET_ONERROR(uwp);
-	    CALL_AND_UNSET_ONERROR(free_fd_list);
-	    goto backend_round_done;
-	  }
-	}
-
-	if (box->revents & box->events & PIKE_BIT_FD_WRITE) {
-	  /* FIXME: Consider utilizing ACTIVE_POLLSET[i].data in
-	   *        the kqueue case.
-	   */
-	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_callback(%d, %p)\n",
-			THR_NO, me->id, fd, box->ref_obj));
-	  errno = 0;
-	  if (box->callback (box, PIKE_FD_WRITE) == -1) {
-	    CALL_AND_UNSET_ONERROR(uwp);
-	    CALL_AND_UNSET_ONERROR(free_fd_list);
-	    goto backend_round_done;
-	  }
-	}
-
-	if (box->revents & PIKE_BIT_FD_ERROR) {
-	  /* Error */
-	  int old_events;
-	  int err;
-	  ACCEPT_SIZE_T len = sizeof (err);
-	  errno = 0;
-	  /* FIXME: This could be too late - the error might be
-	   * clobbered by the callbacks we might have called
-	   * above. */
-	  if (!getsockopt (fd, SOL_SOCKET, SO_ERROR, (void *) &err, &len)) {
-	    IF_PD (fprintf (stderr,
-			    "[%d]BACKEND[%d]: POLLERR on %d, error=%d\n",
-			    THR_NO, me->id, fd, err));
-	    errno = err;
-	  }
-#ifdef PIKE_DEBUG
-	  else
-	    fprintf(stderr, "Got POLLERR on non-socket fd %d (getsockopt errno=%d)\n",
-		    fd, errno);
-#endif /* PIKE_DEBUG */
-
-	  box->revents = 0;
-	    
-	  /* We don't want to keep this fd anymore.
-	   * Note: This disables any further callbacks.
-	   */
-	  old_events = box->events;
-	  set_fd_callback_events (box, box->events & PIKE_BIT_FD_ERROR);
-	  if (WANT_EVENT (box, ERROR)) {
-	    IF_PD(fprintf(stderr,
-			  "[%d]BACKEND[%d]: error event on fd %d sent to %p\n",
-			  THR_NO, me->id, i, box->ref_obj));
-	    if (box->callback (box, PIKE_FD_ERROR) == -1) {
-	      CALL_AND_UNSET_ONERROR(uwp);
-	      CALL_AND_UNSET_ONERROR(free_fd_list);
-	      goto backend_round_done;
-	    }
-	  }
-	  /* The following is temporary compat stuff. */
-	  else if (old_events & PIKE_BIT_FD_READ) {
-	    IF_PD(fprintf(stderr,
-			  "[%d]BACKEND[%d]: read_callback(%d, %p) for error %d\n",
-			  THR_NO, me->id, fd, box->ref_obj, errno));
-	    if (box->callback (box, PIKE_FD_READ) == -1) {
-	      CALL_AND_UNSET_ONERROR(uwp);
-	      CALL_AND_UNSET_ONERROR(free_fd_list);
-	      goto backend_round_done;
-	    }
-	  } else if (old_events & PIKE_BIT_FD_WRITE) {
-	    IF_PD(fprintf(stderr,
-			  "[%d]BACKEND[%d]: write_callback(%d, %p) for error %d\n",
-			  THR_NO, me->id, fd, box->ref_obj, errno));
-	    if (box->callback (box, PIKE_FD_WRITE) == -1) {
-	      CALL_AND_UNSET_ONERROR(uwp);
-	      CALL_AND_UNSET_ONERROR(free_fd_list);
-	      goto backend_round_done;
-	    }
-	  }
-	  /* Don't call any other callbacks for this fd.
-	   */
-
-	  CALL_AND_UNSET_ONERROR(uwp);
-	  continue;
-	}
-
-	CALL_AND_UNSET_ONERROR(uwp);
+      if (backend_call_active_callbacks(&fd_list, me)) {
+	CALL_AND_UNSET_ONERROR(free_fd_list);
+	goto backend_round_done;
       }
 
       CALL_AND_UNSET_ONERROR(free_fd_list);
