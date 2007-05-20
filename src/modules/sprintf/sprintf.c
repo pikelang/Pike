@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.145 2007/05/03 09:04:11 grubba Exp $
+|| $Id: sprintf.c,v 1.146 2007/05/20 18:16:05 nilsson Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -1328,13 +1328,17 @@ static void low_pike_sprintf(struct format_stack *fs,
 	CHECK_OBJECT_SPRINTF()
 	GET_STRING(s);
 	if( s->size_shift )
-	    Pike_error("sprintf(): %%H requires all characters in the string to be at most eight bits large\n");
+	    sprintf_error(fs, "%%H requires all characters in the string to be at most eight bits large\n");
 
 	tmp = s->len;
         l=1;
-        if(fs->fsp->width > 0) l=fs->fsp->width;
+        if(fs->fsp->width > 0)
+          l=fs->fsp->width;
+        else if(fs->fsp->flags&ZERO_PAD)
+          sprintf_error(fs, "Length of string to %%H is 0.\n");
+
         if( tmp >= (1<<(l*8)) )
-          Pike_error("sprintf(): Length of string to %%%dH too large.\n", l);
+          sprintf_error(fs, "Length of string to %%%dH too large.\n", l);
 
 
         x=(char *)alloca(l);

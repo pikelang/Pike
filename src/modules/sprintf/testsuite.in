@@ -272,10 +272,8 @@ test_eq(sprintf("%q", "a\0""0"),"\"a\\u00000\"")
 test_eq(sprintf("%H", ""),"\0")
 test_eq(sprintf("%H", "hello"),"\5hello")
 
-dnl We currently see no difference between no width and zero width.
-dnl These should really be errors.
-test_eq(sprintf("%0H", ""),"\0")
-test_eq(sprintf("%0H", "hello"),"\5hello")
+test_eval_error(return sprintf("%0H", ""))
+test_eval_error(return sprintf("%0H", "hello"))
 
 test_eq(sprintf("%1H", ""),"\0")
 test_eq(sprintf("%1H", "hello"),"\5hello")
