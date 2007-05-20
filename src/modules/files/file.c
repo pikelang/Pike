@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.361 2007/05/20 15:54:44 grubba Exp $
+|| $Id: file.c,v 1.362 2007/05/20 15:56:07 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -1792,8 +1792,6 @@ static void file_open(INT32 args)
      fd=Pike_sp[-args].u.integer;
      if (fd<0)
 	Pike_error("Not a valid FD.\n");
-
-     fprintf(stderr, "Creating a file object for fd %d...\n", fd);
 
      /* FIXME: What are the intended semantics for the flag FILE_NOT_OPENED?
       *        (grubba 2004-09-01
