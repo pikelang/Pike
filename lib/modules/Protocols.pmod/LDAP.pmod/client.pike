@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.106 2007/05/23 11:55:01 mast Exp $
+// $Id: client.pike,v 1.107 2007/05/23 14:54:23 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -113,6 +113,8 @@ import ".";
     mapping lauth = ([]);
     object default_filter_obj;	// Filter object parsed from lauth->filter.
     result last_rv;		// last returned value
+    // FIXME: Should remove last_rv to avoid ref cycles. The only
+    // problem is the get_referrals function.
   }
 
 //! @ignore
@@ -657,7 +659,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
   void create(string|mapping(string:mixed)|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.106 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.107 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
