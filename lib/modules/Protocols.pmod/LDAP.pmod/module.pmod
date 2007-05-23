@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.29 2007/05/23 11:55:01 mast Exp $
+// $Id: module.pmod,v 1.30 2007/05/23 14:53:50 mast Exp $
 
 #include "ldap_globals.h"
 
@@ -1620,8 +1620,42 @@ constant connection_rebind_threshold = 4;
 // Let there be a couple of differently bound connections before
 // starting to rebind the same ones.
 
+constant connection_idle_garb_interval = 60;
+// Garb idle connections once every minute.
+
 static mapping(string:array(object/*(client)*/)) idle_conns = ([]);
 static Thread.Mutex idle_conns_mutex = Thread.Mutex();
+static mixed periodic_idle_conns_garb_call_out;
+
+static void periodic_idle_conns_garb()
+{
+  Thread.MutexKey lock = idle_conns_mutex->lock();
+  DWRITE ("Periodic connection garb. Got %d urls.\n", sizeof (idle_conns));
+
+  int garb_time = time() - connection_idle_timeout;
+  foreach (idle_conns; string ldap_url; array(object/*(client)*/) conns) {
+    int garbed = 0;
+    foreach (conns; int i; object/*(client)*/ conn)
+      if (conn->get_last_io_time() <= garb_time) {
+	DWRITE ("Garbing connection to %O which has been idle for %d s.\n",
+		ldap_url, time() - conn->get_last_io_time());
+	conns[i] = 0, garbed = 1;
+      }
+    if (garbed) {
+      conns -= ({0});
+      if (sizeof (conns)) idle_conns[ldap_url] = conns;
+      else m_delete (idle_conns, ldap_url);
+    }
+  }
+
+  if (sizeof (idle_conns))
+    periodic_idle_conns_garb_call_out =
+      call_out (periodic_idle_conns_garb, connection_idle_garb_interval);
+  else {
+    DWRITE ("No connections left - disabling periodic garb.\n");
+    periodic_idle_conns_garb_call_out = 0;
+  }
+}
 
 object/*(client)*/ get_connection (string ldap_url, void|string binddn,
 				   void|string password, void|int version)
@@ -1707,9 +1741,12 @@ find_connection:
     lock = 0;
   }
 
-  if (conn)
-    conn->reset_options();
-  else {
+  if (!sizeof (idle_conns) && periodic_idle_conns_garb_call_out) {
+    DWRITE ("No connections left in pool - disabling periodic garb.\n");
+    remove_call_out (periodic_idle_conns_garb_call_out);
+  }
+
+  if (!conn) {
     DWRITE("Connecting to %O.\n", ldap_url);
     conn = Protocols.LDAP["client"] (parsed_url);
   }
@@ -1761,7 +1798,16 @@ void return_connection (object/*(client)*/ conn)
 //!   the base DN are restored to the defaults
 {
   Thread.MutexKey lock = idle_conns_mutex->lock();
+  DWRITE ("Returning connection to %O to pool.\n", conn->get_parsed_url()->url);
+
+  // Reset the connection now to remove the cyclic ref between the
+  // client object and its last result object.
+  conn->reset_options();
   idle_conns[conn->get_parsed_url()->url] += ({conn});
+
+  if (!periodic_idle_conns_garb_call_out)
+    periodic_idle_conns_garb_call_out =
+      call_out (periodic_idle_conns_garb, connection_idle_garb_interval);
 }
 
 int num_connections (string ldap_url)
