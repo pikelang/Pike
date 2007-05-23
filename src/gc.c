@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.283 2007/05/13 19:09:57 mast Exp $
+|| $Id: gc.c,v 1.284 2007/05/23 17:18:03 mast Exp $
 */
 
 #include "global.h"
@@ -44,13 +44,14 @@ double gc_garbage_ratio_high = 0.5;
  * the last ten gc rounds. (0.9 == 1 - 1/10) */
 double gc_average_slowness = 0.9;
 
-/* The gc will free all things with no external references that isn't
- * referenced by undestructed objects with destroy() lfuns (known as
- * "live" objects). Live objects without external references are then
- * destructed and garbage collected with normal refcount garbing
- * (which might leave dead garbage around for the next gc). These live
- * objects are destructed in an order that tries to be as well defined
- * as possible using several rules:
+/* The gc will free all things with no external nonweak references
+ * that isn't referenced by live objects. An object is considered
+ * "live" if it contains code that must be executed when it is
+ * destructed; see gc_object_is_live for details. Live objects without
+ * external references are then destructed and garbage collected with
+ * normal refcount garbing (which might leave dead garbage around for
+ * the next gc). These live objects are destructed in an order that
+ * tries to be as well defined as possible using several rules:
  *
  * o  If an object A references B single way, then A is destructed
  *    before B.
@@ -2833,8 +2834,8 @@ static void gc_cycle_pop()
 #ifdef PIKE_DEBUG
     if (stack_top != &sentinel_frame) CHECK_REC_STACK_FRAME (stack_top);
     CHECK_REC_STACK_FRAME (popped);
-    popped->prev = NULL;
 #endif
+    popped->prev = NULL;
 
     if (popped->cycle_id != popped) {
       /* Part of a cycle that extends further back - move to the cycle
