@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.103 2007/04/18 12:16:48 mast Exp $
+// $Id: client.pike,v 1.104 2007/05/23 10:32:38 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -598,7 +598,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|mapping(string:mixed)|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.103 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.104 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -784,7 +784,8 @@ void reset_options()
   //! by connection to the LDAP server.
   //!
   //! @param version
-  //!  Only @expr{2@} or @expr{3@} can be entered.
+  //!  The desired protocol version (current @expr{2@} or @expr{3@}).
+  //!  Defaults to @expr{3@} if zero or left out.
   //!
   //! @returns
   //!  Returns @expr{1@} on success, @expr{0@} otherwise.
