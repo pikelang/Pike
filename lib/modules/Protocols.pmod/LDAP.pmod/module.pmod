@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.30 2007/05/23 14:53:50 mast Exp $
+// $Id: module.pmod,v 1.31 2007/05/23 16:31:42 mast Exp $
 
 #include "ldap_globals.h"
 
@@ -1692,51 +1692,57 @@ object/*(client)*/ get_connection (string ldap_url, void|string binddn,
   // extension that ldap_url might contain, but it's probably not
   // worth the bother.
 
-find_connection:
   if (idle_conns[ldap_url]) {
     Thread.MutexKey lock = idle_conns_mutex->lock();
     if (array(object/*(client)*/) conns = idle_conns[ldap_url]) {
+    find_connection: {
+	int now = time();
+	object/*(client)*/ rebind_conn;
+	string md5_pass;
 
-      int now = time();
-      object/*(client)*/ rebind_conn;
-      string md5_pass;
-      for (int i = 0; i < sizeof (conns);) {
-	conn = conns[i];
-	int last_use = conn->get_last_io_time();
-	if (last_use <= now - connection_idle_timeout) {
-	  DWRITE ("Dropping old connection which has been idle for %d s.\n",
-		  now - last_use);
-	  idle_conns[ldap_url] = conns = conns[..i-1] + conns[i+1..];
-	}
-	else {
-	  if (!binddn ||
-	      (conn->get_bound_dn() == binddn &&
-	       (conn->get_bind_password_hash() ==
-		(md5_pass ||
-		 (md5_pass = Crypto.MD5()->update (pass || "")->digest()))) &&
-	       (!version || conn->get_protocol_version() == version))) {
-	    DWRITE ("Reusing connection which has been idle for %d s.\n",
+	for (int i = 0; i < sizeof (conns);) {
+	  conn = conns[i];
+	  int last_use = conn->get_last_io_time();
+	  if (last_use <= now - connection_idle_timeout) {
+	    DWRITE ("Dropping old connection which has been idle for %d s.\n",
 		    now - last_use);
-	    idle_conns[ldap_url] = conns[..i-1] + conns[i+1..];
-	    lock = 0;
-	    break find_connection;
+	    conns = conns[..i-1] + conns[i+1..];
 	  }
-	  else if (!rebind_conn && conn->get_protocol_version() >= 3) {
-	    DWRITE ("Found differently bound connection "
-		    "which has been idle for %d s.\n", now - last_use);
-	    rebind_conn = conn;
+	  else {
+	    if (!binddn ||
+		(conn->get_bound_dn() == binddn &&
+		 (conn->get_bind_password_hash() ==
+		  (md5_pass ||
+		   (md5_pass = Crypto.MD5()->update (pass || "")->digest()))) &&
+		 (!version || conn->get_protocol_version() == version))) {
+	      DWRITE ("Reusing connection which has been idle for %d s.\n",
+		      now - last_use);
+	      conns = conns[..i-1] + conns[i+1..];
+	      lock = 0;
+	      break find_connection;
+	    }
+	    else if (!rebind_conn && conn->get_protocol_version() >= 3) {
+	      DWRITE ("Found differently bound connection "
+		      "which has been idle for %d s.\n", now - last_use);
+	      rebind_conn = conn;
+	    }
+	    i++;
 	  }
-	  i++;
 	}
+
+	if (rebind_conn && sizeof (conns) >= connection_rebind_threshold) {
+	  conn = rebind_conn;
+	  conns -= ({rebind_conn});
+	  DWRITE ("Reusing differently bound connection.\n");
+	}
+	else
+	  conn = 0;
       }
 
-      if (rebind_conn && sizeof (conns) >= connection_rebind_threshold) {
-	conn = rebind_conn;
-	idle_conns[ldap_url] -= ({rebind_conn});
-	DWRITE ("Reusing differently bound connection.\n");
-      }
+      if (!sizeof (conns))
+	m_delete (idle_conns, ldap_url);
       else
-	conn = 0;
+	idle_conns[ldap_url] = conns;
     }
     lock = 0;
   }
@@ -1744,6 +1750,7 @@ find_connection:
   if (!sizeof (idle_conns) && periodic_idle_conns_garb_call_out) {
     DWRITE ("No connections left in pool - disabling periodic garb.\n");
     remove_call_out (periodic_idle_conns_garb_call_out);
+    periodic_idle_conns_garb_call_out = 0;
   }
 
   if (!conn) {
