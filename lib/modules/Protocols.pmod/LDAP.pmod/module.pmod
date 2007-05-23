@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.25 2006/11/04 19:06:49 nilsson Exp $
+// $Id: module.pmod,v 1.26 2007/05/23 10:30:46 mast Exp $
 
 #include "ldap_globals.h"
 
@@ -1616,13 +1616,19 @@ static mapping(string:array(object/*(client)*/)) idle_conns = ([]);
 static Thread.Mutex idle_conns_mutex = Thread.Mutex();
 
 object/*(client)*/ get_connection(string ldap_url, void|string binddn,
-				  void|string password)
+				  void|string password, void|int version)
 //! Returns a client connection to the specified LDAP URL. If a bind
 //! DN is specified (either through a @expr{"bindname"@} extension in
 //! @[ldap_url] or, if there isn't one, through @[binddn]) then the
 //! connection will be bound using that DN and the optional password.
-//! If no bind DN is given then any connection is be returned,
-//! regardless of the bind DN it is using.
+//! If no bind DN is given then any connection is returned, regardless
+//! of the bind DN it is using.
+//!
+//! @[version] may be used to specify the required protocol version in
+//! the bind operation. If zero or left out, a bind attempt with the
+//! default version (currently @expr{3@}) is done with a fallback to
+//! @expr{2@} if that fails. Also, a cached connection for any version
+//! might be returned if @[version] isn't specified.
 //!
 //! As opposed to creating an @[Protocols.LDAP.client] instance
 //! directly, this function can return an already established
@@ -1660,7 +1666,9 @@ find_connection:
 	  idle_conns[ldap_url] = conns = conns[..i-1] + conns[i+1..];
 	}
 	else {
-	  if (!binddn || conn->get_bound_dn() == binddn) {
+	  if (!binddn ||
+	      (conn->get_bound_dn() == binddn &&
+	       (!version || conn->get_protocol_version() == version))) {
 	    DWRITE ("Reusing connection which has been idle for %d s.\n",
 		    now - last_use);
 	    idle_conns[ldap_url] = conns[..i-1] + conns[i+1..];
@@ -1700,17 +1708,32 @@ find_connection:
   else {
     if (binddn == "")
       DWRITE ("Not binding - no bind DN set.\n");
-    else if (conn->get_bound_dn() == binddn)
-      DWRITE ("Not binding - already bound to %O.\n", binddn);
+    else if (conn->get_bound_dn() == binddn &&
+	     (!version || conn->get_protocol_version() == version))
+      DWRITE ("Not binding - already bound to %O using version %d.\n",
+	      binddn, conn->get_protocol_version());
     else {
-      conn->bind (binddn, pass);
-      if (conn->error_number() && conn->ldap_version == 3)
+      conn->bind (binddn, pass, version);
+
+      int err_num = conn->error_number();
+      if (err_num && !version && conn->get_protocol_version() >= 3) {
+	string server_err_str = conn->server_error_string();
 	conn->bind (binddn, pass, 2);
+	if (conn->error_number()) {
+	  DWRITE ("Bind attempt to %O using fallback version 2 failed: %s\n",
+		  binddn, conn->error_string());
+	  // Restore the original error which probably is more
+	  // interesting when the server doesn't like LDAPv2.
+	  conn->seterr (err_num, server_err_str);
+	}
+      }
 #ifdef DEBUG_PIKE_PROTOCOL_LDAP
       if (conn->error_number())
-	DWRITE ("Binding to %O resulted in error: %s\n", binddn, conn->error_string());
+	DWRITE ("Bind attempt to %O failed: %s\n",
+		binddn, conn->error_string());
       else
-	DWRITE ("Binding to %O successful.\n", binddn);
+	DWRITE ("Bind to %O successful using version %d.\n",
+		binddn, conn->get_protocol_version());
 #endif
     }
   }
