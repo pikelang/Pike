@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.105 2007/05/23 11:20:55 mast Exp $
+// $Id: client.pike,v 1.106 2007/05/23 11:55:01 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -158,6 +158,11 @@ static function(string:string) get_attr_encoder (string attr)
   return 0;
 }
 
+typedef string|Locale.Charset.DecodeError|
+  array(string|Locale.Charset.DecodeError) ResultAttributeValue;
+
+typedef mapping(string:ResultAttributeValue) ResultEntry;
+
   //! Contains the result of a LDAP search.
   //!
   //! @seealso
@@ -169,13 +174,17 @@ static function(string:string) get_attr_encoder (string attr)
     private int resultcode = LDAP_SUCCESS;
     private string resultstring;
     private int actnum = 0;
-    private array(mapping(string:string|array(string))) entry = ({});
+    private array(ResultEntry) entry = ({});
     private int flags;
     array(string) referrals;
 
-    static array decode_entries (array(string) rawres)
+    // All entries up to but not including this one have been decoded
+    // using decode_entry, the rest have not.
+    private int first_undecoded_entry = 0;
+
+    array(ResultEntry) decode_entries (array rawres)
     {
-      array(mapping(string:string|array(string))) res = ({});
+      array(ResultEntry) res = ({});
 
 #define DECODE_ENTRIES(SET_DN, SET_ATTR) do {				\
 	if (flags & SEARCH_MULTIVAL_ARRAYS_ONLY) {			\
@@ -184,7 +193,7 @@ static function(string:string) get_attr_encoder (string attr)
 	    if (array(object) derattribs = ASN1_GET_ATTR_ARRAY (derent)) { \
 	      string dn;						\
 	      {SET_DN;}							\
-	      mapping(string:string|array) attrs = (["dn": dn]);	\
+	      ResultEntry attrs = (["dn": dn]);				\
 	      foreach (derattribs, object derattr) {			\
 		string attr;						\
 		{SET_ATTR;}						\
@@ -221,7 +230,7 @@ static function(string:string) get_attr_encoder (string attr)
 	    if (array(object) derattribs = ASN1_GET_ATTR_ARRAY (derent)) { \
 	      string dn;						\
 	      {SET_DN;}							\
-	      mapping(string:array) attrs = (["dn": ({dn})]);		\
+	      ResultEntry attrs = (["dn": ({dn})]);			\
 	      foreach (derattribs, object derattr) {			\
 		string attr;						\
 		{SET_ATTR;}						\
@@ -232,89 +241,104 @@ static function(string:string) get_attr_encoder (string attr)
 	}								\
       } while (0)
 
-#define IMPROVE_DECODE_ERRS(DECODE, ATTR, VALUE, DECODER_FN) do {	\
-	if (mixed err = catch {DECODE;}) {				\
-	  mapping descr1, descr2;					\
-	  catch (descr1 = get_attr_type_descr (ATTR));			\
-	  catch (descr2 = get_attr_type_descr (ATTR, 1));		\
-	  catch {							\
-	    err[0] =							\
-	      sprintf ("Error decoding value %O for attribute %O "	\
-		       "using %O: %s"					\
-		       "Used attribute type %O, server reports %O\n",	\
-		       VALUE, ATTR, DECODER_FN, err[0], descr1, descr2); \
-	  };								\
-	  throw (err);							\
-	}								\
-      } while (0)
-
-      if (ldap_version < 3) {
-	// Use the values raw.
-	if (flags & SEARCH_LOWER_ATTRS)
-	  DECODE_ENTRIES (dn = ASN1_GET_DN (derent), {
-	      attrs[attr = lower_case (ASN1_GET_ATTR_NAME (derattr))] =
-		ASN1_GET_ATTR_VALUES (derattr);
-	    });
-	else
-	  DECODE_ENTRIES (dn = ASN1_GET_DN (derent), {
-	      attrs[attr = ASN1_GET_ATTR_NAME (derattr)] =
-		ASN1_GET_ATTR_VALUES (derattr);
-	    });
-      }
-
-      else {
-	// LDAPv3: Decode values as appropriate according to the
-	// schema. Note that attributes with the ";binary" option
-	// won't be matched by get_attr_type_descr and are therefore
-	// left untouched.
-	if (flags & SEARCH_LOWER_ATTRS)
-	  DECODE_ENTRIES ({
-	      string enc_dn = ASN1_GET_DN (derent);
-	      if (mixed err = catch (dn = utf8_to_string (enc_dn))) {
-		catch {
-		  err[0] += sprintf ("Value to decode was: %O\n", enc_dn);
-		};
-		throw (err);
-	      }
-	    }, {
-	      attr = lower_case (ASN1_GET_ATTR_NAME (derattr));
-	      if (function(string:string) decoder =
-		  // Microsoft AD has several attributes in its root DSE
-		  // that they have not bothered to include in their
-		  // schema. So if this is the root being fetched then
-		  // send the nowarn flag to get_attr_encoder to avoid
-		  // complaints about that.
-		  get_attr_decoder (attr, DO_IF_DEBUG (dn == "")))
-		IMPROVE_DECODE_ERRS (
-		  attrs[attr] = map (ASN1_GET_ATTR_VALUES (derattr), decoder),
-		  attr, ASN1_GET_ATTR_VALUES (derattr), decoder);
-	      else
-		attrs[attr] = ASN1_GET_ATTR_VALUES (derattr);
-	    });
-	else
-	  DECODE_ENTRIES ({
-	      string enc_dn = ASN1_GET_DN (derent);
-	      if (mixed err = catch (dn = utf8_to_string (enc_dn))) {
-		catch {
-		  err[0] += sprintf ("Value to decode was: %O\n", enc_dn);
-		};
-		throw (err);
-	      }
-	    }, {
-	      attr = ASN1_GET_ATTR_NAME (derattr);
-	      if (function(string:string) decoder =
-		  get_attr_decoder (attr, DO_IF_DEBUG (dn == "")))
-		IMPROVE_DECODE_ERRS (
-		  attrs[attr] = map (ASN1_GET_ATTR_VALUES (derattr), decoder),
-		  attr, ASN1_GET_ATTR_VALUES (derattr), decoder);
-	      else
-		attrs[attr] = ASN1_GET_ATTR_VALUES (derattr);
-	    });
-      }
+      if (flags & SEARCH_LOWER_ATTRS)
+	DECODE_ENTRIES (dn = ASN1_GET_DN (derent), {
+	    attrs[attr = lower_case (ASN1_GET_ATTR_NAME (derattr))] =
+	    ASN1_GET_ATTR_VALUES (derattr);
+	  });
+      else
+	DECODE_ENTRIES (dn = ASN1_GET_DN (derent), {
+	    attrs[attr = ASN1_GET_ATTR_NAME (derattr)] =
+	    ASN1_GET_ATTR_VALUES (derattr);
+	  });
 
 #undef DECODE_ENTRIES
 
       return res;
+    }
+
+    static void decode_entry (ResultEntry ent)
+    {
+      // Used in LDAPv3 only: Decode the dn and values as appropriate
+      // according to the schema. Note that attributes with the
+      // ";binary" option won't be matched by get_attr_type_descr and
+      // are therefore left untouched.
+
+#define DECODE_DN(DN) do {						\
+	if (mixed err = catch (DN = utf8_to_string (DN))) {		\
+	  string errmsg = describe_error (err) +			\
+	    "The string is the DN of an entry.\n";			\
+	  if (flags & SEARCH_RETURN_DECODE_ERRORS)			\
+	    DN = Locale.Charset.DecodeError (DN, -1, 0, errmsg);	\
+	  else								\
+	    throw (Locale.Charset.DecodeError (DN, -1, 0, errmsg));	\
+	}								\
+      } while (0)
+
+      ResultAttributeValue dn = m_delete (ent, "dn");
+      if (stringp (dn))
+	DECODE_DN (dn);
+      else
+	DECODE_DN (dn[0]);
+
+#ifdef LDAP_DECODE_DEBUG
+
+#define DECODE_VALUE(ATTR, VALUE, DECODER) do {				\
+	if (mixed err = catch {VALUE = DECODER (VALUE);}) {		\
+	  mapping descr1, descr2;					\
+	  catch (descr1 = get_attr_type_descr (ATTR));			\
+	  catch (descr2 = get_attr_type_descr (ATTR, 1));		\
+	  string errmsg =						\
+	    sprintf ("%s"						\
+		     "The string occurred in the value of attribute %O " \
+		     "in entry with DN %O.\n"				\
+		     "Used decoder %O for attribute type %O, "		\
+		     "server reports %O.\n",				\
+		     describe_error (err), ATTR, stringp (dn) ? dn : dn[0], \
+		     decoder, descr1, descr2);				\
+	  if (flags & SEARCH_RETURN_DECODE_ERRORS)			\
+	    VALUE = Locale.Charset.DecodeError (VALUE, -1, 0, errmsg);	\
+	  else								\
+	    throw (Locale.Charset.DecodeError (VALUE, -1, 0, errmsg));	\
+	}								\
+      } while (0)
+
+#else
+
+#define DECODE_VALUE(ATTR, VALUE, DECODER) do {				\
+	if (mixed err = catch {VALUE = DECODER (VALUE);}) {		\
+	  string errmsg =						\
+	    sprintf ("%s"						\
+		     "The string occurred in the value of attribute %O " \
+		     "in entry with DN %O.\n",				\
+		     describe_error (err), ATTR, stringp (dn) ? dn : dn[0]); \
+	  if (flags & SEARCH_RETURN_DECODE_ERRORS)			\
+	    VALUE = Locale.Charset.DecodeError (VALUE, -1, 0, errmsg);	\
+	  else								\
+	    throw (Locale.Charset.DecodeError (VALUE, -1, 0, errmsg));	\
+	}								\
+      } while (0)
+
+#endif
+
+      foreach (ent; string attr; ResultAttributeValue vals) {
+	if (function(string:string) decoder =
+	    get_attr_decoder (attr, DO_IF_DEBUG (dn == ""))) {
+	  if (stringp (vals)) {
+	    DECODE_VALUE (attr, vals, decoder);
+	    ent[attr] = vals;
+	  }
+	  else
+	    foreach (vals; int i; string|Locale.Charset.DecodeError val) {
+	      DECODE_VALUE (attr, val, decoder);
+	      vals[i] = val;
+	    }
+	}
+      }
+
+#undef DECODE_VALUE
+
+      ent->dn = dn;
     }
 
     //!
@@ -413,20 +437,18 @@ static function(string:string) get_attr_encoder (string attr)
     int num_entries() { return sizeof (entry); }
 
     //!
-    //! Returns the number of entries from current cursor
-    //! possition till end of the list.
+    //! Returns the number of entries from the current cursor position
+    //! to the end of the list.
     //!
     //! @seealso
     //!  @[LDAP.client.result.first], @[LDAP.client.result.next]
     int count_entries() { return sizeof (entry) - actnum; }
 
     //! Returns the current entry pointed to by the cursor.
-    //! a mapping with an entry for each attribute. Each value
-    //! is an array of the values for the attribute. The
     //!
     //! @param index
-    //!  Optional argument can be used for direct access
-    //!  to the entry other then currently pointed by cursor.
+    //!  This optional argument can be used for direct access to an
+    //!  entry other than the one currently pointed to by the cursor.
     //!
     //! @returns
     //!  The return value is a mapping describing the entry:
@@ -434,15 +456,32 @@ static function(string:string) get_attr_encoder (string attr)
     //!  @mapping
     //!  @member string attribute
     //!    An attribute in the entry. The value is an array containing
-    //!    the returned attribute value(s) on string form.
+    //!    the returned attribute value(s) on string form, or a single
+    //!    string if @[Protocols.LDAP.SEARCH_MULTIVAL_ARRAYS_ONLY] was
+    //!    given to @[search] and the attribute is typed as single
+    //!    valued.
+    //!
+    //!    If @[Protocols.LDAP.SEARCH_RETURN_DECODE_ERRORS] was given
+    //!    to @[search] then @[Locale.Charset.DecodeError] objects are
+    //!    returned in place of a string whenever an attribute value
+    //!    fails to be decoded.
     //!
     //!  @member string "dn"
     //!    This special entry contains the object name of the entry as
     //!    a distinguished name.
+    //!
+    //!    This might also be a @[Locale.Charset.DecodeError] if
+    //!    @[Protocols.LDAP.SEARCH_RETURN_DECODE_ERRORS] was given to
+    //!    @[search].
     //!  @endmapping
     //!
     //!  Zero is returned if the cursor is outside the valid range of
     //!  entries.
+    //!
+    //! @throws
+    //!  Unless @[Protocols.LDAP.SEARCH_RETURN_DECODE_ERRORS] was
+    //!  given to @[search], a @[Locale.Charset.DecodeError] is thrown
+    //!  if there is an error decoding the DN or any attribute value.
     //!
     //! @note
     //!  It's undefined whether or not destructive operations on the
@@ -456,15 +495,27 @@ static function(string:string) get_attr_encoder (string attr)
     //!
     //! @seealso
     //!   @[fetch_all]
-    int|mapping(string:string|array(string)) fetch(int|void idx) {
+    ResultEntry fetch(int|void idx)
+    {
 
-      if (!idx)
-	idx = actnum + 1;
-      if ((idx <= num_entries()) && (idx > 0)) {
-	actnum = idx - 1;
-        return entry[actnum];
+      if (!zero_type (idx)) actnum = idx;
+      if (actnum >= num_entries() || actnum < 0) return 0;
+
+      if (ldap_version < 3)
+	return entry[actnum];
+
+      ResultEntry ent = entry[actnum];
+
+      if (actnum == first_undecoded_entry) {
+	decode_entry (ent);
+	first_undecoded_entry++;
       }
-      return 0;
+      else if (actnum > first_undecoded_entry) {
+	ent = copy_value (ent);
+	decode_entry (ent);
+      }
+
+      return ent;
     }
 
     //!
@@ -475,7 +526,7 @@ static function(string:string) get_attr_encoder (string attr)
     //! @note
     //!  In Pike 7.6 and earlier, this field was incorrectly returned
     //!  in UTF-8 encoded form for LDAPv3 connections.
-    string get_dn()
+    string|Locale.Charset.DecodeError get_dn()
     {
       string|array(string) dn = fetch()->dn;
       return stringp (dn) ? dn : dn[0];	// To cope with SEARCH_MULTIVAL_ARRAYS_ONLY.
@@ -502,7 +553,7 @@ static function(string:string) get_attr_encoder (string attr)
       return count_entries();
     }
 
-    array(mapping(string:string|array(string))) fetch_all()
+    array(ResultEntry) fetch_all()
     //! Convenience function to fetch all entries at once. The cursor
     //! isn't affected.
     //!
@@ -510,9 +561,16 @@ static function(string:string) get_attr_encoder (string attr)
     //!   Returns an array where each element is the entry from the
     //!   result. Don't be destructive on the returned value.
     //!
+    //! @throws
+    //!  Unless @[Protocols.LDAP.SEARCH_RETURN_DECODE_ERRORS] was
+    //!  given to @[search], a @[Locale.Charset.DecodeError] is thrown
+    //!  if there is an error decoding the DN or any attribute value.
+    //!
     //! @seealso
     //!   @[fetch]
     {
+      for (; first_undecoded_entry < sizeof (entry); first_undecoded_entry++)
+	decode_entry (entry[first_undecoded_entry]);
       return entry;
     }
 
@@ -599,7 +657,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|mapping(string:mixed)|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.105 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.106 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
