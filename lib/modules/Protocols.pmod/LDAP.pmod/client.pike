@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.104 2007/05/23 10:32:38 mast Exp $
+// $Id: client.pike,v 1.105 2007/05/23 11:20:55 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -104,6 +104,7 @@ import ".";
 
   private {
     string bound_dn;		// When actually bound, set to the bind DN.
+    string md5_password;	// MD5 hash of the bind password, if any.
     string ldap_basedn;		// baseDN
     int ldap_scope;		// SCOPE_*
     int ldap_deref;		// 0: ...
@@ -598,7 +599,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|mapping(string:mixed)|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.104 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.105 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -828,10 +829,12 @@ void reset_options()
       return 0;
     }
 
-   bound_dn = 0;
+   bound_dn = md5_password = 0;
    last_rv = result(({raw}),1);
-   if (!last_rv->error_number())
+   if (!last_rv->error_number()) {
      bound_dn = dn;
+     md5_password = Crypto.MD5()->update (pass)->digest();
+   }
    DWRITE_HI(sprintf("client.BIND: %s\n", last_rv->error_string()));
    seterr (last_rv->error_number(), last_rv->error_string());
    return !!bound_dn;
@@ -867,7 +870,7 @@ void reset_options()
       THROW(({error_string()+"\n",backtrace()}));
       return -ldap_errno;
     }
-    bound_dn = 0;
+    bound_dn = md5_password = 0;
     DWRITE_HI("client.UNBIND: OK\n");
 
   } // unbind
@@ -1657,6 +1660,12 @@ string get_basedn() {return utf8_to_string (ldap_basedn);}
 //! returned if the connection is in use but no bind DN has been given
 //! explicitly to @[bind].
 string get_bound_dn() {return bound_dn;}
+
+//! Returns an MD5 hash of the password used for the bind operation,
+//! or zero if the connection isn't bound. If no password was given to
+//! @[bind] then an empty string was sent as password, and the MD5
+//! hash of that is therefore returned.
+string get_bind_password_hash() {return md5_password;}
 
   //!
   //! Sets value of scope for search operation.
