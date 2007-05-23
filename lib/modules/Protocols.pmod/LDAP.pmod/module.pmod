@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.27 2007/05/23 11:20:55 mast Exp $
+// $Id: module.pmod,v 1.28 2007/05/23 11:36:02 mast Exp $
 
 #include "ldap_globals.h"
 
@@ -1615,8 +1615,8 @@ constant connection_rebind_threshold = 4;
 static mapping(string:array(object/*(client)*/)) idle_conns = ([]);
 static Thread.Mutex idle_conns_mutex = Thread.Mutex();
 
-object/*(client)*/ get_connection(string ldap_url, void|string binddn,
-				  void|string password, void|int version)
+object/*(client)*/ get_connection (string ldap_url, void|string binddn,
+				   void|string password, void|int version)
 //! Returns a client connection to the specified LDAP URL. If a bind
 //! DN is specified (either through a @expr{"bindname"@} extension in
 //! @[ldap_url] or, if there isn't one, through @[binddn]) then the
@@ -1703,8 +1703,7 @@ find_connection:
     conn->reset_options();
   else {
     DWRITE("Connecting to %O.\n", ldap_url);
-
-    conn = Protocols.LDAP->client (parsed_url);
+    conn = Protocols.LDAP["client"] (parsed_url);
   }
 
   if (!binddn)
