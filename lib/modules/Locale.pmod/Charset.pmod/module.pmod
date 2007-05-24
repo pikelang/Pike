@@ -721,3 +721,91 @@ Encoder encoder_from_mib(int mib,  string|void replacement,
   if(!e) error("Unknown mib %d.\n", mib);
   return e;
 }
+
+static string format_err_msg (
+  string intro, string err_str, int err_pos, string charset, string reason)
+{
+  string pre_context = err_pos > 23 ?
+    sprintf ("...%O", err_str[err_pos - 20..err_pos - 1]) :
+    err_pos > 0 ?
+    sprintf ("%O", err_str[..err_pos - 1]) :
+    "";
+  string post_context = err_pos < sizeof (err_str) - 24 ?
+    sprintf ("%O...", err_str[err_pos + 1..err_pos + 20]) :
+    err_pos + 1 < sizeof (err_str) ?
+    sprintf ("%O", err_str[err_pos + 1..]) :
+    "";
+  err_str = sprintf ("%s[0x%x]%s",
+		     pre_context, err_str[err_pos], post_context);
+
+  return intro + " " + err_str + " using " + charset +
+    (reason ? ": " + reason : ".\n");
+}
+
+class DecodeError
+//! Error thrown when decode fails (and no replacement char or
+//! replacement callback has been registered).
+//!
+//! @fixme
+//! This error class is not actually used by this module yet - decode
+//! errors are still thrown as untyped error arrays. At this point it
+//! exists only for use by other modules.
+{
+  inherit Error.Generic;
+  constant error_type = "charset_decode";
+  constant is_charset_decode_error = 1;
+
+  string err_str;
+  //! The string that failed to be decoded.
+
+  int err_pos;
+  //! The failing position in @[err_str].
+
+  string charset;
+  //! The decoding charset.
+
+  static void create (string err_str, int err_pos, string charset,
+		      void|string reason, void|array bt)
+  {
+    this_program::err_str = err_str;
+    this_program::err_pos = err_pos;
+    this_program::charset = charset;
+    ::create (format_err_msg ("Error decoding",
+			      err_str, err_pos, charset, reason),
+	      bt);
+  }
+}
+
+class EncodeError
+//! Error thrown when encode fails (and no replacement char or
+//! replacement callback has been registered).
+//!
+//! @fixme
+//! This error class is not actually used by this module yet - encode
+//! errors are still thrown as untyped error arrays. At this point it
+//! exists only for use by other modules.
+{
+  inherit Error.Generic;
+  constant error_type = "charset_encode";
+  constant is_charset_encode_error = 1;
+
+  string err_str;
+  //! The string that failed to be encoded.
+
+  int err_pos;
+  //! The failing position in @[err_str].
+
+  string charset;
+  //! The encoding charset.
+
+  static void create (string err_str, int err_pos, string charset,
+		      void|string reason, void|array bt)
+  {
+    this_program::err_str = err_str;
+    this_program::err_pos = err_pos;
+    this_program::charset = charset;
+    ::create (format_err_msg ("Error encoding",
+			      err_str, err_pos, charset, reason),
+	      bt);
+  }
+}
