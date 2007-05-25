@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.196 2007/05/20 16:02:19 grubba Exp $
+ * $Id: backend.cmod,v 1.197 2007/05/25 16:43:12 grubba Exp $
  *
  * Backend object.
  */
@@ -100,8 +100,8 @@
 /* #define CALL_OUT_DEBUG */
 
 #ifdef PIKE_EXTRA_DEBUG
-#define POLL_DEBUG
-#define CALL_OUT_DEBUG
+/* #define POLL_DEBUG */
+/* #define CALL_OUT_DEBUG */
 #endif
 
 #ifdef POLL_DEBUG
