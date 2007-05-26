@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.199 2007/05/26 18:06:09 mast Exp $
+ * $Id: backend.cmod,v 1.200 2007/05/26 18:57:10 grubba Exp $
  *
  * Backend object.
  */
@@ -370,7 +370,7 @@ PIKECLASS Backend
    * It's called from the signal handler so it must not lock any mutex
    * whatsoever. E.g. dmalloc stuff is verboten here.
    */
-  void backend_wake_up_backend(struct Backend_struct *me)
+  PMOD_EXPORT void backend_wake_up_backend(struct Backend_struct *me)
   {
     char foo=0;
 
