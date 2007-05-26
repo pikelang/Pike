@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.362 2007/05/20 15:56:07 grubba Exp $
+|| $Id: file.c,v 1.363 2007/05/26 15:35:43 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -2377,16 +2377,6 @@ static void file_errno(INT32 args)
  *!     FILE_EXCLUSIVE
  *!   @value 0x0400
  *!     FILE_NONBLOCKING
- *!   @value 0x0800
- *!     FILE_SET_CLOSE_ON_EXEC
- *!   @value 0x0001
- *!     FILE_HAS_INTERNAL_REF
- *!   @value 0x0002
- *!     FILE_NO_CLOSE_ON_DESTRUCT
- *!   @value 0x0004
- *!     FILE_LOCK_FD
- *!   @value 0x0010
- *!     FILE_NOT_OPENED
  *! @endint
  *!
  *! @seealso
@@ -2395,7 +2385,9 @@ static void file_errno(INT32 args)
 static void file_mode(INT32 args)
 {
   pop_n_elems(args);
-  push_int(THIS->open_mode);
+  push_int(THIS->open_mode &
+	   (FILE_READ | FILE_WRITE | FILE_APPEND | FILE_CREATE |
+	    FILE_TRUNC | FILE_EXCLUSIVE | FILE_NONBLOCKING));
 }
 
 /*! @decl void set_backend (Pike.Backend backend)
