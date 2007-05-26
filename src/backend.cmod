@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.197 2007/05/25 16:43:12 grubba Exp $
+ * $Id: backend.cmod,v 1.198 2007/05/26 17:57:13 mast Exp $
  *
  * Backend object.
  */
@@ -1277,10 +1277,22 @@ PIKECLASS Backend
 	 if (!me->inactive_boxes)
 	   me->inactive_boxes =
 	     malloc (sizeof (me->inactive_boxes[0]) * me->inactive_boxes_size);
-	 else
+	 else {
+#ifdef PIKE_DEBUG
+	   {
+	     struct fd_callback_box **p, **boxes = me->inactive_boxes;
+	     int i, max = me->inactive_boxes_size;
+	     for (i = 0; i < max; i++)
+	       if ((p = (struct fd_callback_box **) boxes[i]) &&
+		   p >= boxes && p < boxes + max)
+		 Pike_fatal ("Still got free list pointers in inactive box "
+			     "list that is about to be enlarged.\n");
+	   }
+#endif
 	   me->inactive_boxes =
 	     realloc (me->inactive_boxes,
 		      sizeof (me->inactive_boxes[0]) * me->inactive_boxes_size);
+	 }
 	 if (!me->inactive_boxes)
 	   Pike_fatal ("Out of memory in backend::add_fd_box(): "
 		       "Tried to allocate %d inactive fd_callback_box pointers\n",
@@ -2077,8 +2089,9 @@ PIKECLASS Backend
       set_nonblocking(pipe[1],1);
       IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Initializing wakeup pipe...\n",
 		    THR_NO, me->id));
-      INIT_FD_CALLBACK_BOX (&me->wakeup_cb_box, me, NULL,
-			    pipe[0], PIKE_BIT_FD_READ, wakeup_callback);
+      me->wakeup_cb_box.callback = wakeup_callback;
+      change_fd_for_box (&me->wakeup_cb_box, pipe[0]);
+      set_fd_callback_events (&me->wakeup_cb_box, PIKE_BIT_FD_READ);
       me->wakeup_pipe_send_fd = pipe[1];
 
       IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Wakeup pipe is [%d, %d]\n",
