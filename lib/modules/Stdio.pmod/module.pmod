@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.225 2006/11/04 19:06:50 nilsson Exp $
+// $Id: module.pmod,v 1.226 2007/05/26 19:14:41 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -2538,6 +2538,7 @@ static class nb_sendfile
   static int len;
   static array(string) trailers;
   static File to;
+  statis Backend backend;
   static function(int, mixed ...:void) callback;
   static array(mixed) args;
 
@@ -2695,6 +2696,7 @@ static class nb_sendfile
     trailers = 0;
     from = 0;
     to = 0;
+    backend = 0;
     array(mixed) a = args;
     function(int, mixed ...:void) cb = callback;
     args = 0;
@@ -2790,12 +2792,13 @@ static class nb_sendfile
       do_read();
     }
     if (sizeof(to_write) && do_write()) {
-      call_out(do_blocking, 0);
+      backend->call_out(do_blocking, 0);
     } else {
       SF_WERR("Blocking I/O done.");
       // Done.
       from = 0;
       to = 0;
+      backend = 0;
       writer_done();
     }
   }
@@ -2834,7 +2837,7 @@ static class nb_sendfile
     if (!f && (!hd || !sizeof(hd - ({ "" })))) {
       // NOOP!
       SF_WERR("NOOP!");
-      call_out(cb, 0, 0, @a);
+      backend->call_out(cb, 0, 0, @a);
       return;
     }
 
@@ -2845,6 +2848,9 @@ static class nb_sendfile
     to = t;
     callback = cb;
     args = a;
+
+    backend = (to->query_backend && to->query_backend()) ||
+      Pike.DefaultBackend;
 
     blocking_to = to->is_file ||
       ((!to->set_nonblocking) ||
@@ -2881,7 +2887,7 @@ static class nb_sendfile
 	// Could have a direct call to do_blocking here,
 	// but then the callback would be called from the wrong context.
 	SF_WERR("Using fully blocking I/O.");
-	call_out(do_blocking, 0);
+	backend->call_out(do_blocking, 0);
       }
     } else {
       if (blocking_from) {
@@ -2889,7 +2895,7 @@ static class nb_sendfile
 	do_read();
 	if (!sizeof(to_write)) {
 	  SF_WERR("NOOP!");
-	  call_out(cb, 0, 0, @args);
+	  backend->call_out(cb, 0, 0, @args);
 	}
       }
       if (sizeof(to_write)) {
@@ -2927,7 +2933,7 @@ static class nb_sendfile
 //!
 //! @note
 //! The sending is performed asynchronously, and may complete
-//! before or after the function returns.
+//! both before and after the function returns.
 //!
 //! For @[callback] to be called, the backend must be active (ie
 //! @[main()] must have returned @expr{-1@}, or @[Pike.DefaultBackend]
@@ -2935,6 +2941,10 @@ static class nb_sendfile
 //!
 //! In some cases, the backend must also be active for any sending to
 //! be performed at all.
+//!
+//! In Pike 7.7 and later the backend associated with @[to] will
+//! be used rather than the default backend. Note that you usually
+//! will want @[from] to have the same backend as @[to].
 //!
 //! @bugs
 //! FIXME: Support for timeouts?
