@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.273 2006/10/28 19:02:15 grubba Exp $
+|| $Id: object.c,v 1.274 2007/05/26 19:14:58 mast Exp $
 */
 
 #include "global.h"
@@ -2072,7 +2072,7 @@ size_t gc_free_all_unreferenced_objects(void)
     {
       /* Got an extra ref from gc_cycle_pop_object(). */
 #ifdef PIKE_DEBUG
-      if (o->prog && FIND_LFUN(o->prog, LFUN_DESTROY) != -1 &&
+      if (gc_object_is_live (o) &&
 	  !find_destroy_called_mark(o))
 	gc_fatal(o,0,"Can't free a live object in gc_free_all_unreferenced_objects().\n");
 #endif

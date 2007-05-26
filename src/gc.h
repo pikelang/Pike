@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.127 2007/05/13 19:10:15 mast Exp $
+|| $Id: gc.h,v 1.128 2007/05/26 19:14:58 mast Exp $
 */
 
 #ifndef GC_H
@@ -303,7 +303,6 @@ PMOD_EXPORT void describe(void *x);
 void debug_describe_svalue(struct svalue *s);
 void gc_watch(void *a);
 void debug_gc_touch(void *a);
-int gc_object_is_live (struct object *o);
 PMOD_EXPORT int real_gc_check(void *a);
 int real_gc_check_weak(void *a);
 void exit_gc(void);
@@ -338,6 +337,16 @@ void cleanup_gc(void);
   DMALLOC_TOUCH_MARKER(VP, real_gc_check(debug_malloc_pass(VP)))
 #define gc_check_weak(VP) \
   DMALLOC_TOUCH_MARKER(VP, real_gc_check_weak(debug_malloc_pass(VP)))
+
+/* An object is considered live if its program has the flag
+ * PROGRAM_LIVE_OBJ set. That flag gets set if:
+ * o  There's a destroy LFUN,
+ * o  a program event callback is set with pike_set_prog_event_callback,
+ * o  an exit callback is set with set_exit_callback, or
+ * o  any inherited program has PROGRAM_LIVE_OBJ set.
+ * */
+#define gc_object_is_live(OBJ) \
+  ((OBJ)->prog && (OBJ)->prog->flags & PROGRAM_LIVE_OBJ)
 
 #ifdef GC_MARK_DEBUG
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.615 2007/05/13 15:45:32 mast Exp $
+|| $Id: program.c,v 1.616 2007/05/26 19:14:59 mast Exp $
 */
 
 #include "global.h"
@@ -2085,6 +2085,31 @@ void fixate_program(void)
     p->lfuns[i] = low_find_lfun(p, i);
   }
 
+  /* Set the PROGRAM_LIVE_OBJ flag by looking for destroy() and
+   * inherited PROGRAM_LIVE_OBJ flags. This is done at fixation time
+   * to allow the user to set and clear that flag while the program is
+   * being built. */
+  if (!(p->flags & PROGRAM_LIVE_OBJ)) {
+    int e, destroy = p->lfuns[LFUN_DESTROY];
+    if (destroy > -1) {
+      struct identifier *id = ID_FROM_INT (p, destroy);
+      if (!IDENTIFIER_IS_PIKE_FUNCTION (id->identifier_flags) ||
+	  id->func.offset != -1) {
+	/* Got a destroy function that isn't a prototype. */
+	p->flags |= PROGRAM_LIVE_OBJ;
+	goto program_live_obj_set;
+      }
+    }
+
+    for (e = p->num_inherits - 1; e >= 0; e--)
+      if (p->inherits[e].prog->flags & PROGRAM_LIVE_OBJ) {
+	p->flags |= PROGRAM_LIVE_OBJ;
+	break;
+      }
+
+  program_live_obj_set:;
+  }
+
   if(Pike_compiler->flags & COMPILATION_CHECK_FINAL)
   {
     for(i=0;i<(int)p->num_identifier_references;i++)
@@ -3437,8 +3462,7 @@ static size_t add_xstorage(size_t size,
 
 typedef void (*oldhandlertype)(struct object *);
 
-/* Function pointer checked by gc_object_is_live. */
-void compat_event_handler(int e)
+static void compat_event_handler(int e)
 {
   oldhandlertype handler;
   debug_malloc_touch(Pike_fp->current_object);
@@ -3471,8 +3495,8 @@ static void add_compat_event_handler(void)
 /*
  * Set a callback to be called when this program is cloned.
  *
- * This function is almost obsolete; see pike_set_prog_event_callback
- * for details.
+ * This function is obsolete; see pike_set_prog_event_callback for
+ * details.
  */
 PMOD_EXPORT void set_init_callback(void (*init)(struct object *))
 {
@@ -3484,13 +3508,24 @@ PMOD_EXPORT void set_init_callback(void (*init)(struct object *))
  * Set a callback to be called when clones of this program are
  * destructed.
  *
- * This function is almost obsolete; see pike_set_prog_event_callback
- * for details.
+ * This function is obsolete; see pike_set_prog_event_callback for
+ * details.
+ *
+ * Note: If the callback only does very trivial stuff, like freeing or
+ * clearing a few pointers in the object storage, you can do
+ *
+ *   Pike_compiler->new_program->flags &= ~PROGRAM_LIVE_OBJ;
+ *
+ * after the set_exit_callback call. That allows the gc to operate
+ * more efficiently, but the effect is that the callback might be
+ * called out of order for PROG_EVENT_EXIT events; see the docs for
+ * PROGRAM_LIVE_OBJ in program.h for further details.
  */
 PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *))
 {
   add_compat_event_handler();
   ((oldhandlertype *)Pike_compiler->new_program->program)[PROG_EVENT_EXIT]=exit;
+  Pike_compiler->new_program->flags |= PROGRAM_LIVE_OBJ;
 }
 
 /*
@@ -3508,8 +3543,8 @@ PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *))
  * The callback is called after any mapped variables on the object
  * have been recursed (and possibly freed).
  *
- * This function is almost obsolete; see pike_set_prog_event_callback
- * for details.
+ * This function is obsolete; see pike_set_prog_event_callback for
+ * details.
  */
 PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *))
 {
@@ -3528,8 +3563,8 @@ PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *))
  * to ensure this; it's zero when called the first time for its
  * argument.
  *
- * This function is almost obsolete; see pike_set_prog_event_callback
- * for details.
+ * This function is obsolete; see pike_set_prog_event_callback for
+ * details.
  */
 PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *))
 {
@@ -3554,15 +3589,18 @@ PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *))
  *   An object is being checked by the gc. See set_gc_check_callback
  *   for details.
  *
- * Using this instead of the set_*_callback functions saves some space
- * in the program (four function pointers) and is a bit more
- * efficient.
+ * Note that installing an event callback will set the
+ * PROGRAM_LIVE_OBJ flag since the callback might act on the
+ * PROG_EVENT_EXIT event. If the callback won't do anything for that
+ * event (or if it only does something very trivial for it), you
+ * should do
  *
- * Otoh, it forces the gc to handle all clones as "live" since the
- * callback might act on PROG_EVENT_EXIT. So if there's no need to do
- * anything for that event, using the set_*_callback functions allows
- * the gc to handle the object more efficiently if it occurs in
- * cycles.
+ *   Pike_compiler->new_program->flags &= ~PROGRAM_LIVE_OBJ;
+ *
+ * afterwards to clear it again. That allows the gc to operate more
+ * efficiently, but the effect is that the callback might be called
+ * out of order for PROG_EVENT_EXIT events; see the docs for
+ * PROGRAM_LIVE_OBJ in program.h for further details.
  */
 PMOD_EXPORT void pike_set_prog_event_callback(void (*cb)(int))
 {
@@ -3571,6 +3609,7 @@ PMOD_EXPORT void pike_set_prog_event_callback(void (*cb)(int))
     Pike_fatal("Program already has an event handler!\n");
 #endif
   Pike_compiler->new_program->event_handler=cb;
+  Pike_compiler->new_program->flags |= PROGRAM_LIVE_OBJ;
 }
 
 PMOD_EXPORT void pike_set_prog_optimize_callback(node *(*opt)(node *))

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.228 2007/03/31 22:59:53 marcus Exp $
+|| $Id: program.h,v 1.229 2007/05/26 19:14:59 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -486,8 +486,30 @@ struct pike_trampoline
 #define PROGRAM_VIRGIN 0x800
 
 /* Don't allow the program to be inherited or cloned if there's no
- * parent object. Only set if PROGRAM_USES_PARENT is. */
+ * parent object. Might only be set if PROGRAM_USES_PARENT is. */
 #define PROGRAM_NEEDS_PARENT 0x1000
+
+/* Program has code to be executed when it's destructed. This causes
+ * the gc to consider objects of this program to be "live" and will
+ * take care to ensure a good destruct sequence so that other
+ * referenced things are intact as far as possible when the object is
+ * destructed. See the blurb near the top of gc.c for further
+ * discussion.
+ *
+ * This flag gets set automatically when an event handler that might
+ * act on PROG_EVENT_EXIT is installed (i.e. through set_exit_callback
+ * or pike_set_prog_event_callback). However, if the handler is very
+ * simple then this flag may be cleared again to allow the gc to
+ * handle objects of this program more efficiently (by considering
+ * them "dead" and destroy them in an arbitrary order).
+ *
+ * Such a "very simple" handler should only do things like freeing
+ * pointers and clearing variables in the object storage. It can not
+ * assume that any other context is intact when it's called. It might
+ * even get called after the module exit function, which means that
+ * this optimization trick can never be used in a dynamically loaded
+ * module. */
+#define PROGRAM_LIVE_OBJ 0x2000
 
 /* Indicates that the class is a facet or product_class. */
 #define PROGRAM_IS_FACET_CLASS 0x1

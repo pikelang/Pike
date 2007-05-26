@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.285 2007/05/26 18:35:29 mast Exp $
+|| $Id: gc.c,v 1.286 2007/05/26 19:14:58 mast Exp $
 */
 
 #include "global.h"
@@ -2305,19 +2305,6 @@ void gc_move_marker (void *old, void *new)
 #endif
 
   move_marker (m, debug_malloc_pass (new));
-}
-
-int gc_object_is_live (struct object *o)
-{
-  extern void compat_event_handler(int e);
-  struct program *p = o->prog;
-  if (!p) return 0;
-  if (FIND_LFUN (p, LFUN_DESTROY) != -1) return 1;
-  if (!p->event_handler) return 0;
-  if (p->event_handler != compat_event_handler)
-    /* Unknown handler - have to assume it might act on PROG_EVENT_EXIT. */
-    return 1;
-  return !!((void (**) (struct object *)) p->program)[PROG_EVENT_EXIT];
 }
 
 PMOD_EXPORT void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int weak)
