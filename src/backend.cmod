@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.198 2007/05/26 17:57:13 mast Exp $
+ * $Id: backend.cmod,v 1.199 2007/05/26 18:06:09 mast Exp $
  *
  * Backend object.
  */
@@ -1968,7 +1968,8 @@ PIKECLASS Backend
      * is therefore done in create() below.
      */
     me->wakeup_pipe_send_fd = -1;
-    INIT_FD_CALLBACK_BOX(&me->wakeup_cb_box, me, NULL, -1, 0, NULL);
+    INIT_FD_CALLBACK_BOX(&me->wakeup_cb_box, me, NULL, -1,
+			 PIKE_BIT_FD_READ, wakeup_callback);
 
     me->may_need_wakeup = 0;
 
@@ -2089,9 +2090,7 @@ PIKECLASS Backend
       set_nonblocking(pipe[1],1);
       IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Initializing wakeup pipe...\n",
 		    THR_NO, me->id));
-      me->wakeup_cb_box.callback = wakeup_callback;
       change_fd_for_box (&me->wakeup_cb_box, pipe[0]);
-      set_fd_callback_events (&me->wakeup_cb_box, PIKE_BIT_FD_READ);
       me->wakeup_pipe_send_fd = pipe[1];
 
       IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: Wakeup pipe is [%d, %d]\n",
