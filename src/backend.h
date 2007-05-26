@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.h,v 1.36 2006/12/15 15:26:49 grubba Exp $
+|| $Id: backend.h,v 1.37 2007/05/26 18:59:16 grubba Exp $
 */
 
 #ifndef BACKEND_H
@@ -79,6 +79,7 @@ PMOD_EXPORT extern struct timeval next_timeout;
 PMOD_EXPORT extern struct Backend_struct *default_backend;
 extern struct callback_list do_debug_callbacks;
 PMOD_EXPORT extern struct program *Backend_program;
+
 
 PMOD_EXPORT void debug_check_fd_not_in_use (int fd);
 #if 1
@@ -197,7 +198,17 @@ PMOD_EXPORT void *query_read_oob_callback_data(int fd);
 PMOD_EXPORT void *query_write_oob_callback_data(int fd);
 #endif
 
+PMOD_EXPORT void backend_wake_up_backend(struct Backend_struct *be);
+PMOD_EXPORT struct object *get_backend_obj (struct Backend_struct *b);
+PMOD_EXPORT struct callback *backend_debug_add_backend_callback(
+    struct Backend_struct *be, callback_func call, void *arg,
+    callback_func free_func);
+
 #define add_backend_callback(X,Y,Z) \
   dmalloc_touch(struct callback *,debug_add_backend_callback((X),(Y),(Z)))
+
+#define backend_add_backend_callback(B,X,Y,Z) \
+  dmalloc_touch(struct callback *,\
+                backend_debug_add_backend_callback((B),(X),(Y),(Z)))
 
 #endif
