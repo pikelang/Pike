@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.74 2006/07/05 02:13:05 mast Exp $
+|| $Id: sendfile.c,v 1.75 2007/05/26 19:00:42 grubba Exp $
 */
 
 /*
@@ -693,6 +693,7 @@ void low_do_sendfile(struct pike_sendfile *this)
 static void worker(void *this_)
 {
   struct pike_sendfile *this = this_;
+  struct Backend_struct *backend;
 
   low_do_sendfile(this);
 
@@ -733,15 +734,20 @@ static void worker(void *this_)
   if (this->backend_callback)
     Pike_fatal ("Didn't expect a backend callback to be installed already.\n");
 #endif
+
+  if (!(backend = this->to->box.backend)) {
+    backend = default_backend;
+  }
+
   this->backend_callback =
-    add_backend_callback(call_callback_and_free, this, 0);
+    backend_add_backend_callback(backend, call_callback_and_free, this, 0);
 
   /* Call as soon as possible. */
   next_timeout.tv_usec = 0;
   next_timeout.tv_sec = 0;
 
   /* Wake up the backend */
-  wake_up_backend();
+  backend_wake_up_backend(backend);
 
   /* We're gone... */
   num_threads--;
@@ -759,6 +765,10 @@ static void worker(void *this_)
 /* void create(array(string) headers, object from, int offset, int len,
  *             array(string) trailers, object to, 
  *             function callback, mixed ... args)
+ *
+ * @note
+ *   In Pike 7.7 and later the @[callback] function will be called
+ *   from the backend associated with @[to].
  */
 static void sf_create(INT32 args)
 {
