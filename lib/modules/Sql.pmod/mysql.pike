@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.38 2007/05/03 14:09:30 mast Exp $
+ * $Id: mysql.pike,v 1.39 2007/05/26 13:53:26 mast Exp $
  *
  * Glue for the Mysql-module
  */
@@ -732,48 +732,75 @@ Mysql.mysql_result streaming_query (string query,
 }
 
 int(0..1) is_keyword( string name )
-//! Return 1 if the argument @[name] is a mysql keyword.
+//! Return 1 if the argument @[name] is a mysql keyword that needs to
+//! be quoted in a query. The list is currently up-to-date with MySQL
+//! 5.1.
 {
-  // FIXME: Document which version of MySQL this is up-to-date with.
-  return (<
-      "action", "add", "aggregate", "all", "alter", "after", "and", "as",
-      "asc", "avg", "avg_row_length", "auto_increment", "between", "bigint",
-      "bit", "binary", "blob", "bool", "both", "by", "cascade", "case",
-      "char", "character", "change", "check", "checksum", "column",
-      "columns", "comment", "constraint", "create", "cross", "current_date",
-      "current_time", "current_timestamp", "data", "database", "databases",
-      "date", "datetime", "day", "day_hour", "day_minute", "day_second",
-      "dayofmonth", "dayofweek", "dayofyear", "dec", "decimal", "default",
-      "delayed", "delay_key_write", "delete", "desc", "describe", "distinct",
-      "distinctrow", "double", "drop", "end", "else", "escape", "escaped",
-      "enclosed", "enum", "explain", "exists", "fields", "file", "first",
-      "float", "float4", "float8", "flush", "foreign", "from", "for", "full",
-      "function", "global", "grant", "grants", "group", "having", "heap",
-      "high_priority", "hour", "hour_minute", "hour_second", "hosts",
-      "identified", "ignore", "in", "index", "infile", "inner", "insert",
-      "insert_id", "int", "integer", "interval", "int1", "int2", "int3",
-      "int4", "int8", "into", "if", "is", "isam", "join", "key", "keys",
-      "kill", "last_insert_id", "leading", "left", "length", "like",
-      "lines", "limit", "load", "local", "lock", "logs", "long", "longblob",
-      "longtext", "low_priority", "max", "max_rows", "match", "mediumblob",
-      "mediumtext", "mediumint", "middleint", "min_rows", "minute",
-      "minute_second", "modify", "month", "monthname", "myisam", "natural",
-      "numeric", "no", "not", "null", "on", "optimize", "option",
-      "optionally", "or", "order", "outer", "outfile", "pack_keys",
-      "partial", "password", "precision", "primary", "procedure", "process",
-      "processlist", "privileges", "read", "real", "references", "reload",
-      "regexp", "rename", "replace", "restrict", "returns", "revoke",
-      "rlike", "row", "rows", "second", "select", "set", "show", "shutdown",
-      "smallint", "soname", "sql_big_tables", "sql_big_selects",
-      "sql_low_priority_updates", "sql_log_off", "sql_log_update",
-      "sql_select_limit", "sql_small_result", "sql_big_result",
-      "sql_warnings", "straight_join", "starting", "status", "string",
-      "table", "tables", "temporary", "terminated", "text", "then", "time",
-      "timestamp", "tinyblob", "tinytext", "tinyint", "trailing", "to",
-      "type", "use", "using", "unique", "unlock", "unsigned", "update",
-      "usage", "values", "varchar", "variables", "varying", "varbinary",
-      "with", "write", "when", "where", "year", "year_month", "zerofill",      
-  >)[ lower_case(name) ];
+  return ([
+    "accessible": 1, "add": 1, "all": 1, "alter": 1, "analyze": 1, "and": 1,
+    "as": 1, "asc": 1, "asensitive": 1, "before": 1, "between": 1, "bigint": 1,
+    "binary": 1, "blob": 1, "both": 1, "by": 1, "call": 1, "cascade": 1,
+    "case": 1, "change": 1, "char": 1, "character": 1, "check": 1, "collate": 1,
+    "column": 1, "condition": 1, "constraint": 1, "continue": 1, "convert": 1,
+    "create": 1, "cross": 1, "current_date": 1, "current_time": 1,
+    "current_timestamp": 1, "current_user": 1, "cursor": 1, "database": 1,
+    "databases": 1, "day_hour": 1, "day_microsecond": 1, "day_minute": 1,
+    "day_second": 1, "dec": 1, "decimal": 1, "declare": 1, "default": 1,
+    "delayed": 1, "delete": 1, "desc": 1, "describe": 1, "deterministic": 1,
+    "distinct": 1, "distinctrow": 1, "div": 1, "double": 1, "drop": 1,
+    "dual": 1, "each": 1, "else": 1, "elseif": 1, "enclosed": 1, "escaped": 1,
+    "exists": 1, "exit": 1, "explain": 1, "false": 1, "fetch": 1, "float": 1,
+    "float4": 1, "float8": 1, "for": 1, "force": 1, "foreign": 1, "from": 1,
+    "fulltext": 1, "grant": 1, "group": 1, "having": 1, "high_priority": 1,
+    "hour_microsecond": 1, "hour_minute": 1, "hour_second": 1, "if": 1,
+    "ignore": 1, "in": 1, "index": 1, "infile": 1, "inner": 1, "inout": 1,
+    "insensitive": 1, "insert": 1, "int": 1, "int1": 1, "int2": 1, "int3": 1,
+    "int4": 1, "int8": 1, "integer": 1, "interval": 1, "into": 1, "is": 1,
+    "iterate": 1, "join": 1, "key": 1, "keys": 1, "kill": 1, "leading": 1,
+    "leave": 1, "left": 1, "like": 1, "limit": 1, "linear": 1, "lines": 1,
+    "load": 1, "localtime": 1, "localtimestamp": 1, "lock": 1, "long": 1,
+    "longblob": 1, "longtext": 1, "loop": 1, "low_priority": 1,
+    "master_ssl_verify_server_cert": 1, "match": 1, "mediumblob": 1,
+    "mediumint": 1, "mediumtext": 1, "middleint": 1, "minute_microsecond": 1,
+    "minute_second": 1, "mod": 1, "modifies": 1, "natural": 1, "not": 1,
+    "no_write_to_binlog": 1, "null": 1, "numeric": 1, "on": 1, "optimize": 1,
+    "option": 1, "optionally": 1, "or": 1, "order": 1, "out": 1, "outer": 1,
+    "outfile": 1, "precision": 1, "primary": 1, "procedure": 1, "purge": 1,
+    "range": 1, "read": 1, "reads": 1, "read_only": 1, "read_write": 1,
+    "real": 1, "references": 1, "regexp": 1, "release": 1, "rename": 1,
+    "repeat": 1, "replace": 1, "require": 1, "restrict": 1, "return": 1,
+    "revoke": 1, "right": 1, "rlike": 1, "schema": 1, "schemas": 1,
+    "second_microsecond": 1, "select": 1, "sensitive": 1, "separator": 1,
+    "set": 1, "show": 1, "smallint": 1, "spatial": 1, "specific": 1, "sql": 1,
+    "sqlexception": 1, "sqlstate": 1, "sqlwarning": 1, "sql_big_result": 1,
+    "sql_calc_found_rows": 1, "sql_small_result": 1, "ssl": 1, "starting": 1,
+    "straight_join": 1, "table": 1, "terminated": 1, "then": 1, "tinyblob": 1,
+    "tinyint": 1, "tinytext": 1, "to": 1, "trailing": 1, "trigger": 1,
+    "true": 1, "undo": 1, "union": 1, "unique": 1, "unlock": 1, "unsigned": 1,
+    "update": 1, "usage": 1, "use": 1, "using": 1, "utc_date": 1, "utc_time": 1,
+    "utc_timestamp": 1, "values": 1, "varbinary": 1, "varchar": 1,
+    "varcharacter": 1, "varying": 1, "when": 1, "where": 1, "while": 1,
+    "with": 1, "write": 1, "x509": 1, "xor": 1, "year_month": 1, "zerofill": 1,
+    // The following keywords were in the old list, but according to MySQL
+    // docs they don't need to be quoted:
+    // "action", "after", "aggregate", "auto_increment", "avg",
+    // "avg_row_length", "bit", "bool", "change", "checksum", "columns",
+    // "comment", "data", "date", "datetime", "day", "dayofmonth", "dayofweek",
+    // "dayofyear", "delay_key_write", "end", "enum", "escape", "escaped",
+    // "explain", "fields", "file", "first", "flush", "for", "full", "function",
+    // "global", "grants", "heap", "hosts", "hour", "identified", "if",
+    // "insert_id", "integer", "interval", "isam", "last_insert_id", "length",
+    // "lines", "local", "logs", "max", "max_rows", "mediumtext", "min_rows",
+    // "minute", "modify", "month", "monthname", "myisam", "no", "numeric",
+    // "pack_keys", "partial", "password", "privileges", "process",
+    // "processlist", "reload", "returns", "row", "rows", "second", "shutdown",
+    // "soname", "sql_big_selects", "sql_big_tables", "sql_log_off",
+    // "sql_log_update", "sql_low_priority_updates", "sql_select_limit",
+    // "sql_small_result", "sql_warnings", "status", "straight_join", "string",
+    // "tables", "temporary", "text", "time", "timestamp", "tinytext",
+    // "trailing", "type", "use", "using", "varbinary", "variables", "with",
+    // "write", "year"
+  ])[ lower_case(name) ];
 }
 
 static void create(string|void host, string|void database,
