@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.284 2007/05/23 17:18:03 mast Exp $
+|| $Id: gc.c,v 1.285 2007/05/26 18:35:29 mast Exp $
 */
 
 #include "global.h"
@@ -398,62 +398,6 @@ static unsigned tot_max_rec_frames = 0, tot_max_link_frames = 0, tot_max_free_ex
   } while (0)
 
 BLOCK_ALLOC_FILL_PAGES (gc_rec_frame, 2)
-
-#ifdef PIKE_DEBUG
-#define LOW_CHECK_REC_FRAME(f, extra) do {				\
-    struct gc_rec_frame *f_ = (f);					\
-    if (f_->rf_flags & GC_FRAME_FREED)					\
-      gc_fatal (f_->data, 0, "Accessing freed gc_stack_frame %p.\n", f_); \
-    if (f_->cycle_id->rf_flags & GC_FRAME_FREED) {			\
-      fprintf (stderr, "Cycle id frame is freed. It is: ");		\
-      describe_rec_frame (f_->cycle_id);				\
-      fputc ('\n', stderr);						\
-      gc_fatal (f_->data, 0, "Cycle id frame is freed.\n");		\
-    }									\
-    {extra;}								\
-  } while (0)
-#define CHECK_REC_STACK_FRAME(f) LOW_CHECK_REC_FRAME (f, {		\
-      if (f_->rf_flags & (GC_ON_CYCLE_PIECE_LIST|GC_ON_KILL_LIST))	\
-	gc_fatal (f_->data, 0, "Frame is not on the rec stack.\n");	\
-      if (!f_->prev)							\
-	gc_fatal (f_->data, 0, "Prev pointer not set for rec stack frame.\n"); \
-      if (f_->prev->next != f_)						\
-	gc_fatal (f_->data, 0, "Rec stack pointers are inconsistent.\n"); \
-      if (f_->cycle_id &&						\
-	  f_->cycle_id->rf_flags & (GC_ON_CYCLE_PIECE_LIST|GC_ON_KILL_LIST)) \
-	gc_fatal (f_->data, 0, "Cycle id frame not on the rec stack.\n"); \
-      if (f_->cycle_piece &&						\
-	  (!f_->cycle_piece->u.last_cycle_piece ||			\
-	   f_->cycle_piece->u.last_cycle_piece->cycle_piece))		\
-	gc_fatal (f_->data, 0, "Bogus last_cycle_piece %p is %p in %p.\n", \
-		  f_->cycle_piece->u.last_cycle_piece,			\
-		  f_->cycle_piece->u.last_cycle_piece ?			\
-		  f_->cycle_piece->u.last_cycle_piece->cycle_piece : NULL, \
-		  f_->cycle_piece);					\
-      if ((f_->rf_flags & GC_PREV_STRONG) &&				\
-	  (f_->rf_flags & (GC_PREV_WEAK|GC_PREV_BROKEN)))		\
-	gc_fatal (f_->data, 0, "GC_PREV_STRONG set together with "	\
-		  "GC_PREV_WEAK or GC_PREV_BROKEN.\n");			\
-    })
-#define CHECK_CYCLE_PIECE_FRAME(f) LOW_CHECK_REC_FRAME (f, {		\
-      if ((f_->rf_flags & (GC_ON_CYCLE_PIECE_LIST|GC_ON_KILL_LIST)) !=	\
-	  GC_ON_CYCLE_PIECE_LIST)					\
-	gc_fatal (f_->data, 0, "Frame is not on a cycle piece list.\n"); \
-      if (f_->prev)							\
-	gc_fatal (f_->data, 0, "Prev pointer set for frame on cycle piece list.\n"); \
-    })
-#define CHECK_KILL_LIST_FRAME(f) LOW_CHECK_REC_FRAME (f, {		\
-      if ((f_->rf_flags & (GC_ON_CYCLE_PIECE_LIST|GC_ON_KILL_LIST)) !=	\
-	  GC_ON_KILL_LIST)						\
-	gc_fatal (f_->data, 0, "Frame is not on kill list.\n");		\
-      if (f_->prev)							\
-	gc_fatal (f_->data, 0, "Prev pointer set for frame on kill list.\n"); \
-    })
-#else
-#define CHECK_REC_STACK_FRAME(f) do {} while (0)
-#define CHECK_CYCLE_PIECE_FRAME(f) do {} while (0)
-#define CHECK_KILL_LIST_FRAME(f) do {} while (0)
-#endif
 
 /* Link and free_extra frames are approximately the same size, so let
  * them share block_alloc area. */
@@ -968,20 +912,16 @@ static void describe_marker(struct marker *m)
 
 #endif /* PIKE_DEBUG */
 
-void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
+static void debug_gc_fatal_va (void *a, int flags,
+			       const char *fmt, va_list args)
 {
 #ifdef PIKE_DEBUG
   struct marker *m;
 #endif
   int orig_gc_pass = Pike_in_gc;
-  va_list args;
-
-  va_start(args, fmt);
 
   fprintf(stderr, "**");
   (void) VFPRINTF(stderr, fmt, args);
-
-  va_end(args);
 
 #ifdef PIKE_DEBUG
   if (a) {
@@ -1008,6 +948,24 @@ void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
   else
 #endif
     debug_fatal("Fatal in garbage collector.\n");
+}
+
+void debug_gc_fatal (void *a, int flags, const char *fmt, ...)
+{
+  va_list args;
+  va_start (args, fmt);
+  debug_gc_fatal_va (a, flags, fmt, args);
+  va_end (args);
+}
+
+static void dloc_gc_fatal (const char *file, int line,
+			   void *a, int flags, const char *fmt, ...)
+{
+  va_list args;
+  fprintf (stderr, "%s:%d: GC fatal:\n", file, line);
+  va_start (args, fmt);
+  debug_gc_fatal_va (a, flags, fmt, args);
+  va_end (args);
 }
 
 #ifdef PIKE_DEBUG
@@ -2076,7 +2034,86 @@ int gc_mark_external (void *a, const char *place)
   return 0;
 }
 
-#endif /* PIKE_DEBUG */
+#define LOW_CHECK_REC_FRAME(f, file, line) do {				\
+    if (f->rf_flags & GC_FRAME_FREED)					\
+      dloc_gc_fatal (file, line, f->data, 0,				\
+		     "Accessing freed gc_stack_frame %p.\n", f);	\
+    if (f->cycle_id->rf_flags & GC_FRAME_FREED) {			\
+      fprintf (stderr, "Cycle id frame is freed. It is: ");		\
+      describe_rec_frame (f->cycle_id);					\
+      fputc ('\n', stderr);						\
+      dloc_gc_fatal (file, line, f->data, 0, "Cycle id frame is freed.\n"); \
+    }									\
+  } while (0)
+
+static void check_rec_stack_frame (struct gc_rec_frame *f,
+				   const char *file, int line)
+{
+  LOW_CHECK_REC_FRAME (f, file, line);
+  if (f->rf_flags & (GC_ON_CYCLE_PIECE_LIST|GC_ON_KILL_LIST))
+    dloc_gc_fatal (file, line, f->data, 0, "Frame is not on the rec stack.\n");
+  if (!f->prev)
+    dloc_gc_fatal (file, line, f->data, 0,
+		   "Prev pointer not set for rec stack frame.\n");
+  if (f->prev->next != f)
+    dloc_gc_fatal (file, line, f->data, 0,
+		   "Rec stack pointers are inconsistent.\n");
+  if (f->cycle_id &&
+      f->cycle_id->rf_flags & (GC_ON_CYCLE_PIECE_LIST|GC_ON_KILL_LIST))
+    dloc_gc_fatal (file, line, f->data, 0,
+		   "Cycle id frame not on the rec stack.\n");
+  if (f->cycle_piece &&
+      (!f->cycle_piece->u.last_cycle_piece ||
+       f->cycle_piece->u.last_cycle_piece->cycle_piece))
+    dloc_gc_fatal (file, line, f->data, 0,
+		   "Bogus last_cycle_piece %p is %p in %p.\n",
+		   f->cycle_piece->u.last_cycle_piece,
+		   f->cycle_piece->u.last_cycle_piece ?
+		   f->cycle_piece->u.last_cycle_piece->cycle_piece : NULL,
+		   f->cycle_piece);
+  if ((f->rf_flags & GC_PREV_STRONG) &&
+      (f->rf_flags & (GC_PREV_WEAK|GC_PREV_BROKEN)))
+    dloc_gc_fatal (file, line, f->data, 0,
+		   "GC_PREV_STRONG set together with "
+		   "GC_PREV_WEAK or GC_PREV_BROKEN.\n");
+}
+#define CHECK_REC_STACK_FRAME(f)					\
+  do check_rec_stack_frame ((f), __FILE__, __LINE__); while (0)
+
+static void check_cycle_piece_frame (struct gc_rec_frame *f,
+				     const char *file, int line)
+{
+  LOW_CHECK_REC_FRAME (f, file, line);
+  if ((f->rf_flags & (GC_ON_CYCLE_PIECE_LIST|GC_ON_KILL_LIST)) !=
+      GC_ON_CYCLE_PIECE_LIST)
+    dloc_gc_fatal (file, line, f->data, 0,
+		   "Frame is not on a cycle piece list.\n");
+  if (f->prev)
+    dloc_gc_fatal (file, line, f->data, 0,
+		   "Prev pointer set for frame on cycle piece list.\n");
+}
+#define CHECK_CYCLE_PIECE_FRAME(f)					\
+  do check_cycle_piece_frame ((f), __FILE__, __LINE__); while (0)
+
+static void check_kill_list_frame (struct gc_rec_frame *f,
+				   const char *file, int line)
+{
+  LOW_CHECK_REC_FRAME (f, file, line);
+  if ((f->rf_flags & (GC_ON_CYCLE_PIECE_LIST|GC_ON_KILL_LIST)) !=
+      GC_ON_KILL_LIST)
+    dloc_gc_fatal (file, line, f->data, 0, "Frame is not on kill list.\n");
+  if (f->prev)
+    dloc_gc_fatal (file, line, f->data, 0,
+		   "Prev pointer set for frame on kill list.\n");
+}
+#define CHECK_KILL_LIST_FRAME(f)					\
+  do check_kill_list_frame ((f), __FILE__, __LINE__); while (0)
+
+#else  /* !PIKE_DEBUG */
+#define CHECK_REC_STACK_FRAME(f) do {} while (0)
+#define CHECK_CYCLE_PIECE_FRAME(f) do {} while (0)
+#define CHECK_KILL_LIST_FRAME(f) do {} while (0)
+#endif	/* !PIKE_DEBUG */
 
 int gc_do_weak_free(void *a)
 {
