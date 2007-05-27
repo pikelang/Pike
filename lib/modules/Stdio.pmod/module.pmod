@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.226 2007/05/26 19:14:41 grubba Exp $
+// $Id: module.pmod,v 1.227 2007/05/27 13:09:26 per Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -695,7 +695,7 @@ class File
     BE_WERR("dup()\n");
     File to = File();
     to->is_file = is_file;
-    to->_fd = _fd;
+    to->_fd = _fd->dup();
 
     to->set_read_callback(query_read_callback());
     to->set_write_callback(query_write_callback());
@@ -2538,7 +2538,7 @@ static class nb_sendfile
   static int len;
   static array(string) trailers;
   static File to;
-  statis Backend backend;
+  static Pike.Backend backend;
   static function(int, mixed ...:void) callback;
   static array(mixed) args;
 
