@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.227 2007/05/27 13:09:26 per Exp $
+// $Id: module.pmod,v 1.228 2007/05/28 16:27:04 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -695,7 +695,7 @@ class File
     BE_WERR("dup()\n");
     File to = File();
     to->is_file = is_file;
-    to->_fd = _fd->dup();
+    to->_fd = _fd;
 
     to->set_read_callback(query_read_callback());
     to->set_write_callback(query_write_callback());
