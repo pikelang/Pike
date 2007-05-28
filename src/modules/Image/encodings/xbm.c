@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xbm.c,v 1.23 2004/03/06 00:07:00 nilsson Exp $
+|| $Id: xbm.c,v 1.24 2007/05/28 11:47:52 jonasw Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 
 #include "global.h"
-RCSID("$Id: xbm.c,v 1.23 2004/03/06 00:07:00 nilsson Exp $");
+RCSID("$Id: xbm.c,v 1.24 2007/05/28 11:47:52 jonasw Exp $");
 
 #include "image_machine.h"
 
@@ -134,7 +134,8 @@ static struct object *load_xbm( struct pike_string *data )
             dest->r = dest->g = dest->b = 255;
           dest++;
         }
-      }
+      } else
+	Pike_error("This is not a XBM image!\n");
     }
   }
   return io;
