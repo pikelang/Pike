@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xbm.c,v 1.25 2005/01/23 13:30:05 nilsson Exp $
+|| $Id: xbm.c,v 1.26 2007/05/28 11:48:17 jonasw Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -132,7 +132,8 @@ static struct object *load_xbm( struct pike_string *data )
             dest->r = dest->g = dest->b = 255;
           dest++;
         }
-      }
+      } else
+	Pike_error("This is not a XBM image!\n");
     }
   }
   return io;
