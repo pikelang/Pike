@@ -18,6 +18,11 @@ static constant magic= // magic + indices(Calendar.ISO) without YMD
    "set_language", "default_rules", "TimeofDay",
    "Second", "Fraction", "now", "Bahai" >);
 
+array _indices()
+{
+  return (array)magic;
+}
+
 #include "localization.h"
 
 #if 1
