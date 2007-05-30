@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xbm.c,v 1.13 2000/12/05 21:08:27 per Exp $");
+RCSID("$Id: xbm.c,v 1.14 2007/05/30 09:40:39 jonasw Exp $");
 
 #define NO_PIKE_SHORTHAND
 
@@ -148,7 +148,8 @@ static struct object *load_xbm( struct pike_string *data )
             dest->r = dest->g = dest->b = 255;
           dest++;
         }
-      }
+      } else
+	Pike_error("This is not a XBM image!\n");
     }
   }
   return io;
