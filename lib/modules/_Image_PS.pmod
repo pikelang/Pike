@@ -49,7 +49,7 @@ static string find_in_path( string file )
 //!
 //! @note
 //!   @tt{gs@} versions 7.x and earlier don't support rendering
-//!   of EPSes if they are specified with the @{file@} option.
+//!   of EPSes if they are specified with the @tt{file@} option.
 //!   If this is a problem, upgrade to @tt{gs@} version 8.x or
 //!   later.
 object decode( string data, mapping|void options )
