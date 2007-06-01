@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.128 2007/06/01 06:13:28 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.129 2007/06/01 19:03:14 grubba Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -18,7 +18,6 @@ constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
   method to Readline.History and calling it from StdinHilfe's
   destroy.
 - Add some better multiline edit support.
-- Tab completion of variable and module names.
 ";
 
 // The Big To Do:
@@ -851,7 +850,7 @@ private constant reference = (< ".", "->" >);
 
 private constant group = ([ "(":")", "({":"})", "([":"])", "(<":">)", "[":"]" ]);
 
-private constant notype = infix+prefix+postfix+prepostfix+seperator+reference;
+private constant notype = (infix+prefix+postfix+prepostfix+seperator+reference) - (< "." >);
 
 string typeof_token(string token)
 {
