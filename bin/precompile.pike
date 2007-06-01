@@ -2005,8 +2005,7 @@ class ParseBlock
 	      ret+=({
 		PC.Token(sprintf("if(Pike_sp[%d%s].type != PIKE_T_STRING || Pike_sp[%d%s].ustring -> width)",
 				 argnum,check_argbase,
-				 argnum,check_argbase,
-				 upper_case(arg->basetype())),arg->line())
+				 argnum,check_argbase), arg->line())
 	      });
 	    } else {
 
