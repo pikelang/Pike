@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.200 2007/05/26 18:57:10 grubba Exp $
+ * $Id: backend.cmod,v 1.201 2007/06/01 06:01:20 mbaehr Exp $
  *
  * Backend object.
  */
@@ -2763,11 +2763,10 @@ static void describe_event(struct Backend_struct *me, POLL_EVENT event)
 #endif /* POLL_DEBUG */
 
 /*! @class GenericBackend
+ *! @inherit Backend
  */
 PIKECLASS GenericBackend
 {
-  /*! @inherit Backend
-   */
   INHERIT Backend;
 
   /* Helpers to find the above inherit. */
