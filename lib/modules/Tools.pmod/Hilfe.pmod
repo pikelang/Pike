@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.127 2007/04/29 01:37:32 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.128 2007/06/01 06:13:28 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -825,13 +825,63 @@ private constant termblock = (< "catch", "do", "gauge", "lambda",
 private constant modifier = (< "extern", "final", "inline", "local", "nomask",
 			       "optional", "private", "protected", "public",
 			       "static", "variant" >);
-private constant notype = (< "(", ")", "->", "[", "]", ":", ";",
-			     "+", "++", "-", "--",
-			     "%", "*", "/", "&", "&&", "||", ",",
-			     "<", ">", "==", "=", "!=", "?",
-			     "+=", "-=", "*=", "%=", "/=", "&=", "|=",
-			     "~=", "<<", ">>", "<<=", ">>=", "<=",
-			     ">=", "^", "^=" >);
+
+// infix token may appear between two literals
+private constant infix = (< "!=", "%", "%=", "&", "&=", "*", "*=", 
+                            "+", "+=", ",", "-", "-=", 
+                            "->", "->=", "/", "/=", 
+                            "<", "<<", "<<=", "<=", "==", 
+                            ">", ">=", ">>", ">>=", 
+                            "^", "^=", "|", "|=", "~", "~=", 
+                            "&&", "||", "=", "(", "[" >);
+
+// before literal but not after 
+private constant prefix = (< "!", "@", "(", "({", "([", "(<", "[" >);
+
+// after literal but not before
+private constant postfix = (< ")", "})", "])", ">)", "]" >);
+
+// before or after literal but not between
+private constant prepostfix = (< "--", "++" >);
+
+// between two expressions
+private constant seperator = (< "?", ":", ",", ";" >);
+
+private constant reference = (< ".", "->" >);
+
+private constant group = ([ "(":")", "({":"})", "([":"])", "(<":">)", "[":"]" ]);
+
+private constant notype = infix+prefix+postfix+prepostfix+seperator+reference;
+
+string typeof_token(string token)
+{
+  string type;
+  if ( reference[token] )
+    type = "reference";
+  else if ( (token[0]==token[-1] && (< '"', '\'' >)[token[0]])
+            || token == array_sscanf(token, "%[0-9.]")[0] )
+    type = "literal";
+  else if ((token == array_sscanf(token, "%[a-zA-Z0-9_]")[0] || token[0]=='`') )
+    type = "symbol";
+    // FIXME: handle unicode chars
+  else if (token == array_sscanf(token, "%[ \t\r\n]")[0])
+    type = "whitespace";
+  else if (seperator[token])
+    type = "seperator";
+  else if (prefix[token])
+    type = "prefix";
+  else if (prepostfix[token])
+    type = "prepostfix";
+  else if (postfix[token])
+    type = "postfix";
+  else if (infix[token])
+    type = "infix";
+  else
+    type = "unknown";
+  return type;
+}
+
+
 
 //! Represents a Pike expression
 class Expression {
@@ -2305,6 +2355,8 @@ class StdinHilfe
     load_history();
     if(!readline->get_history())
       readline->enable_history(512);
+    readline->get_input_controller()->bind("\t", handle_tab);
+
     signal(signum("SIGINT"),signal_trap);
 
     for(;;) {
@@ -2319,6 +2371,273 @@ class StdinHilfe
     }
     destruct(readline);
     write("Terminal closed.\n");
+  }
+
+  void handle_tab(string key)
+  {
+    array modules, tokens;
+    string input = readline->gettext()[..readline->getcursorpos()-1];
+    array completions;
+
+    mixed error = catch
+    {
+      tokens = Parser.Pike.split(input);
+    };
+
+    if(error)
+    {
+      if (objectp(error) && error->is_unterminated_string_error)
+      {
+        error = catch
+        {
+          completions = get_file_completions((input/"\"")[-1]);
+        };
+      }
+
+      if (error)
+      {
+        if(!objectp(error))
+          error = Error.mkerror(error);
+        readline->message(sprintf("%s\nAn error occured, attempting to complete your input!\nPlease include the backtrace above and the line below in your report:\ninput: %s\n", error->describe(), input));
+        completions = ({});
+      }
+    }
+
+    if (tokens && !completions)
+    {
+      array completable = ({});
+      string tokentype;
+
+      foreach(reverse(tokens);; string token)
+      {
+        string _tokentype = typeof_token(token);
+
+        if (variables->DEBUG_COMPLETIONS)
+          readline->message(sprintf("%s = %s\n", token, _tokentype));
+        if ( (_tokentype == "reference" && (!tokentype || tokentype == "symbol"))
+              || (_tokentype == "symbol" && (!tokentype || tokentype == "reference")) )
+        {
+          completable += ({ token });
+          tokentype = _tokentype;
+        }
+        else if (_tokentype == "whitespace")
+          ;
+        else
+          break;
+      }
+
+      completable = reverse(completable);
+
+      if (completable && sizeof(completable))
+      {
+        error = catch
+        {
+          completions = get_module_completions(completable);
+        };
+        error = Error.mkerror(error);
+      }
+      else if (!tokens || !sizeof(tokens))
+        completions = sort(indices(master()->root_module)) + sort(indices(base_objects()));
+        // FIXME: base_objects should not be sorted like this
+      else
+      {
+        string token = tokens[-1];
+        if( sizeof(tokens) >= 2 && typeof_token(token) == "whitespace" )
+          token = tokens[-2];
+
+        if (variables->DEBUG_COMPLETIONS)
+          readline->message(sprintf("type: %s\n", typeof_token(token)));
+
+        completions = sort(indices(master()->root_module)) + sort(indices(base_objects()));
+        // FIXME: base_objects should not be sorted like this
+
+        switch(typeof_token(token))
+        {
+          case "symbol":
+          case "literal":
+            completions = (array)(infix+postfix+seperator);
+            break;
+          case "prefix":
+            completions += (array)prefix;
+            if (group[token])
+              completions += ({ group[token] }) ;
+            break;
+          case "infix":
+          case "postfix":
+            completions += (array)postfix;
+            break;
+          case "seperator":
+          default:
+            completions += (array)prefix;
+        }
+      }
+
+      if (error)
+      {
+        readline->message(sprintf("%s\nAn error occured, attempting to complete your input!\nPlease include the backtrace above and the lines below in your report:\ninput: %s\ntokens: %O\ncompletable: %O\n", error->describe(), input, tokens, completable, ));
+      }
+      else if (variables->DEBUG_COMPLETIONS)
+        readline->message(sprintf("input: %s\ntokens: %O\ncompletable: %O\n", input, tokens, completable, ));
+    }
+
+    if(completions && sizeof(completions))
+        readline->list_completions(completions);
+  }
+
+  array get_file_completions(string path)
+  {
+    if (!sizeof(path) || path[0] != '/')
+      path = "./"+path;
+    string dir = dirname(path);
+    string file = basename(path);
+    array files = get_dir(dir);
+
+    if (!files)
+      return ({});
+    else
+      files += ({ ".." });
+
+    array completions = Array.filter(files, has_prefix, file);
+    string prefix = String.common_prefix(completions)[sizeof(file)..];
+
+    if (sizeof(prefix))
+      readline->insert(prefix, readline->getcursorpos());
+
+    if (sizeof(completions) == 1 && file_stat(dir+"/"+completions[0])->isdir )
+    {
+      readline->insert("/", readline->getcursorpos());
+      return ({});
+    }
+    else
+      return completions;
+  }
+
+  mapping base_objects()
+  {
+    return all_constants() + constants + variables;
+  }
+
+  array get_module_completions(array completable, void|object base, void|string ref)
+  {
+      if (variables->DEBUG_COMPLETIONS)
+        readline->message(sprintf("get_module_completions(%O\n, %O)\n", completable, base));
+      mapping other;
+      array modules = ({});
+      mixed error;
+
+      if (!base && sizeof(completable) && completable[0] == ".")
+      {
+          array modules = sort(get_dir("."));
+          if (sizeof(completable) > 1)
+          {
+            modules = Array.filter(modules, has_prefix, completable[1]);
+            if (sizeof(completable) == 2)
+              return modules;
+            else
+              return ({});
+              // FIXME: handle local directory module lookups
+          }
+          else
+            return modules;
+      }
+      else if (!base)
+      {
+          other = base_objects();
+          base = master()->root_module;
+      }
+
+      error = catch
+      {
+        modules = sort(indices(base));
+      };
+      error = Error.mkerror(error);
+
+      if (other)
+        modules += indices(other);
+
+      if (sizeof(completable) == 1)
+      {
+        if ( reference[completable[0]] )
+        {
+          return modules;
+        }
+        else
+        {
+          // FIXME: handle non-string indices better
+          modules = sort((array(string))modules);
+          modules = Array.filter(modules, has_prefix, completable[0]);
+          string prefix = String.common_prefix(modules)[sizeof(completable[0])..];
+          string module;
+
+          if (sizeof(prefix))
+            readline->insert(prefix, readline->getcursorpos());
+
+          if (sizeof(modules)>1)
+            return modules;
+          else if (!sizeof(modules))
+            return ({});
+          else
+          {
+            module = modules[0];
+            modules = ({});
+            object thismodule;
+            int(0..1) pmod;
+
+            if(other && other[module])
+            {
+              thismodule = other[module];
+              ref = "->";
+            }
+            else if (base[module])
+            {
+              thismodule = base[module];
+              if (!ref)
+                ref = ".";
+            }
+
+            // TODO: handle cases like Stdio.Readline which are both module and
+            // class
+            if (objectp(thismodule) || mappingp(thismodule))
+            {
+              modules = sort(indices(thismodule));
+
+              readline->insert(ref, readline->getcursorpos());
+              return modules;
+            }
+            else if(functionp(thismodule) || programp(thismodule))
+            {
+              readline->insert("()", readline->getcursorpos());
+              readline->setcursorpos(readline->getcursorpos()-1);
+            }
+            else
+              readline->insert(" ", readline->getcursorpos());
+            return ({});
+          }
+        }
+      }
+      if (sizeof(completable))
+      {
+          if ( reference[completable[0]])
+            return get_module_completions(completable[1..], base, completable[0]);
+
+          object|mapping thismodule;
+          if(other && other[completable[0]])
+          {
+            thismodule = other[completable[0]];
+            ref = "->";
+          }
+          else if (base[completable[0]])
+          {
+            thismodule = base[completable[0]];
+          }
+
+          if (sizeof(completable) > 1 && thismodule && indices(thismodule))
+            return get_module_completions(completable[1..], thismodule, ref);
+          else
+            readline->message(sprintf("UNHANDLED CASE: completable: %O\nbase: %O\nthismodule: %O\n", completable, base, thismodule));
+      }
+      
+      return modules;
   }
 }
 

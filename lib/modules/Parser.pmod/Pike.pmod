@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.39 2005/04/10 17:53:22 nilsson Exp $
+// $Id: Pike.pmod,v 1.40 2007/06/01 06:13:28 mbaehr Exp $
 
 //! This module parses and tokenizes Pike source code.
 
@@ -18,7 +18,7 @@ array(string) low_split(string data, void|mapping state)
   string rem;
   [ret, rem] = Parser._parser._Pike.tokenize(data);
   if(sizeof(rem)) {
-    if(rem[0]=='"') error("Unterminated string.\n");
+    if(rem[0]=='"') throw(UnterminatedStringError(data));
     if(state) state->remains=rem;
   }
   return ret;
@@ -46,4 +46,21 @@ array(string) split(string data, void|mapping state) {
   else
     new += ({ "\n" });
   return new;
+}
+
+class UnterminatedStringError
+//! Error thrown when an unterminated string token is encountered.
+{
+  inherit Error.Generic;
+  constant error_type = "unterminated_string";
+  constant is_unterminated_string_error = 1;
+
+  string err_str;
+  //! The string that failed to be tokenized
+
+  static void create(string _err_str, void|array bt)
+  { 
+    err_str = _err_str;
+    ::create(sprintf("Unterminated string: %O\n", err_str), bt);
+  }
 }
