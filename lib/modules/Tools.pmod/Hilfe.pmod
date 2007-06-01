@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.129 2007/06/01 19:03:14 grubba Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.130 2007/06/01 19:08:35 grubba Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -850,7 +850,9 @@ private constant reference = (< ".", "->" >);
 
 private constant group = ([ "(":")", "({":"})", "([":"])", "(<":">)", "[":"]" ]);
 
-private constant notype = (infix+prefix+postfix+prepostfix+seperator+reference) - (< "." >);
+// Symbols not valid in type expressions.
+// All of the above except ".", "|", "&" and "~".
+private constant notype = (infix+prefix+postfix+prepostfix+seperator+reference) - (< ".", "|", "&", "~" >);
 
 string typeof_token(string token)
 {
