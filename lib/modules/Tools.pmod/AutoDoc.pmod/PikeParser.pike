@@ -323,10 +323,10 @@ StringType parseString() {
   if (peekToken() == "(") {
     readToken();
     if (peekToken() != "..")
-      s->minwidth = eatLiteral();
+      s->min = eatLiteral();
     eat("..");
     if (peekToken() != ")")
-      s->maxwidth = eatLiteral();
+      s->max = eatLiteral();
     eat(")");
   }
   return s;

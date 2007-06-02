@@ -77,21 +77,21 @@ class IntType {
 
 class StringType {
   inherit Type;
-  string minwidth;
-  string maxwidth;
+  string min;
+  string max;
   void create() { ::create("string"); }
   string print() {
-    if (minwidth||maxwidth)
-      return "string(" + (minwidth ? minwidth : "")
-        + ".." + (maxwidth ? maxwidth : "") + ")";
+    if (min||max)
+      return "string(" + (min ? min : "")
+        + ".." + (max ? max : "") + ")";
     else
       return "string";
   }
   string xml() {
-    if (minwidth||maxwidth)
+    if (min||max)
       return xmltag("string", 
-                    xmltag("minwidth", minwidth) + 
-                    xmltag("maxwidth", maxwidth));
+                    xmltag("min", min) + 
+                    xmltag("max", max));
     return xmltag("string");
   }
 }
