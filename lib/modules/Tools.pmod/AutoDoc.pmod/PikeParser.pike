@@ -731,7 +731,7 @@ array(array(string)|array(int)) tokenize(string s, int line) {
 	(sizeof(s)==2 || s[2]!='!'))
       continue;
     if(sizeof(s) >= 2 && s[0..1]=="/*") {
-      werror("Illegal comment %O in .\n", s, filename);
+      werror("Illegal comment %O in %O.\n", s, filename);
       continue;
     }
     if( sizeof(s) && (< ' ', '\t', '\r', '\n' >)[s[0]] ) {

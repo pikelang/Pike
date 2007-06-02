@@ -2,7 +2,7 @@
 //
 // By Martin Nilsson and Andreas Lange
 //
-// $Id: extract_locale.pike,v 1.18 2004/01/21 19:01:32 grubba Exp $
+// $Id: extract_locale.pike,v 1.19 2007/06/02 14:22:20 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -762,7 +762,7 @@ void update_xml_sourcefiles(array filelist) {
 	      lambda(object foo, mapping m) {
 		if(!m->project || m->project=="") {
 		  werror("\n * Error: Missing project in %s\n",
-			 m->project, filename);
+			 filename);
 		  exit(1);
 		}
 		if(args->project && m->project!=args->project)
@@ -1050,7 +1050,7 @@ int main(int argc, array(string) argv) {
 
   if( (!(xml_name && args->sync && args->xmlpath && args->baselang)) &&
       (!sizeof(files) || args->help) ) {
-    sscanf("$Revision: 1.18 $", "$"+"Revision: %s $", string v);
+    sscanf("$Revision: 1.19 $", "$"+"Revision: %s $", string v);
     werror("\n  Locale Extractor Utility "+v+"\n\n");
     werror("  Syntax: pike -x extract_locale [arguments] infile(s)\n\n");
     werror("  Arguments: --project=name  default: first found in infile\n");
