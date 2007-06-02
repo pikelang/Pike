@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.80 2007/06/02 00:30:03 nilsson Exp $
+|| $Id: zlibmod.c,v 1.81 2007/06/02 14:53:23 mbaehr Exp $
 */
 
 #include "global.h"
@@ -289,7 +289,7 @@ void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
 }
 
 /*! @decl string compress(string data, void|int(0..1) raw, @
- *!                       void|int(0..9) level, void|int strategy @
+ *!                       void|int(0..9) level, void|int strategy, @
  *!                       void|int(8..15) window_size)
  *!
  */
