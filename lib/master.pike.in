@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.391 2007/01/25 00:11:38 bill Exp $
+// $Id: master.pike.in,v 1.392 2007/06/02 10:23:15 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1095,6 +1095,16 @@ void handle_error(array|object trace)
     }
   }
   // predef::trace(0);
+}
+
+mixed handle_attribute_constant(string attr, mixed arg,
+				mixed arg_type, mixed cont_type)
+{
+#if 0
+  werror("handle_attribute_constant(%O, %O, %O, %O)\n",
+	 attr, arg, arg_type, cont_type);
+#endif /* 0 */
+  return __handle_attribute_constant(attr, arg, arg_type, cont_type);
 }
 
 /* This array contains the names of the functions
