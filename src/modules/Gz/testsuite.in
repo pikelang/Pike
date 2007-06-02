@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.20 2007/05/01 21:44:40 nilsson Exp $
+// $Id: testsuite.in,v 1.21 2007/06/02 16:56:34 nilsson Exp $
 
 cond_resolv(Gz.deflate,
 [[
@@ -45,10 +45,41 @@ define(dotest,[[
   test_eq(Gz.uncompress(Gz.compress("")),"")
   test_eq(Gz.uncompress(Gz.compress("hello",1),1),"hello")
   test_eq(Gz.uncompress(Gz.compress("",1),1),"")
+  test_eq(Gz.uncompress(Gz.compress("a test",0,0)),"a test")
+  test_eq(Gz.uncompress(Gz.compress("a test",0,9)),"a test")
+  test_eq(Gz.compress("a test",0,9,Gz.DEFAULT_STRATEGY),Gz.compress("a test",0,9))
+  test_eq(Gz.uncompress(Gz.compress("a test",0,9,Gz.FILTERED)),"a test")
+  test_eq(Gz.uncompress(Gz.compress("a test",0,9,Gz.HUFFMAN_ONLY)),"a test")
+cond_resolv(Gz.RLE,
+[[
+  test_eq(Gz.uncompress(Gz.compress("a test",0,9,Gz.RLE)),"a test")
+]])
+cond_resolv(Gz.FIXED,
+[[
+  test_eq(Gz.uncompress(Gz.compress("a test",0,9,Gz.FIXED)),"a test")
+]])
+  test_eq(Gz.uncompress(Gz.compress("a test",0,9,Gz.DEFAULT_STRATEGY,8)),"a test")
+  test_eq(Gz.uncompress(Gz.compress("a test",0,9,Gz.DEFAULT_STRATEGY,15)),"a test")
+
   test_eval_error(Gz.uncompress("");)
   test_eval_error(Gz.uncompress("x");)
   test_eval_error(Gz.uncompress(Gz.compress("x",1)))
   test_eval_error(Gz.uncompress(Gz.compress("x"),1))
+  test_eval_error(
+int x = max(Gz.FILTERED, Gz.HUFFMAN_ONLY
+#if constant(Gz.RLE)
+Gz.RLE,
+#endif
+#if constant(Gz.FIXED)
+Gz.FIXED,
+#endif
+);
+return Gz.compress("x",0,9,x);)
+  test_eval_error(return Gz.compress("x",0,-1);)
+  test_eval_error(return Gz.compress("x",0,10);)
+  test_eval_error(return Gz.compress("x",0,-1);)
+  test_eval_error(return Gz.compress("x",0,9,Gz.DEFAULT_STRATEGY,7);)
+  test_eval_error(return Gz.compress("x",0,9,Gz.DEFAULT_STRATEGY,16);)
 
 ]])
 END_MARKER
