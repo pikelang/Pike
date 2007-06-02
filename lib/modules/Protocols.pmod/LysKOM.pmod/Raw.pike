@@ -445,7 +445,7 @@ array(array(mixed)|int) try_parse(string what)
 
 	    if (stack==({}))
 	    {
-	       werror("protocol error: stack underflow\n",what);
+	       werror("protocol error: stack underflow: %O\n",what);
 	       connection_lost();
 	       return ({0,0});
 	    }
