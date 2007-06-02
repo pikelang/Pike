@@ -324,11 +324,12 @@ int
      <int><min>0</min><max>MAX</max></int>
 
 string
-   A string type can have a numerical width value.
+   A string type can have a numerical minwidth and/or maxwidth value. 
+   The values can be numbers or identifiers:
 
-     string(8)
+     string(0..255)
 
-     <string><width>8</width></string>
+     <string><minwidth>0</minwidth><maxwidth>255</maxwidth></string>
 
 mapping
    The types of the indices and values are given:
