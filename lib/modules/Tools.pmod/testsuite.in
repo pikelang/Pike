@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.21 2007/06/01 19:05:59 grubba Exp $
+// $Id: testsuite.in,v 1.22 2007/06/02 09:45:30 grubba Exp $
 
 // Tools.Hilfe
 define(test_hilfe_setup_low,[[test_do([[
@@ -65,7 +65,7 @@ test_hilfe("1;", "1")
 test_hilfe([[ ({ "(", "." }) ]], "")
 test_hilfe( ({ "int", "." }), "")
 test_hilfe("string a=\"hej",
-	   "Hilfe Error: Unterminated string: \"string a=\\\"hej\\n\".\n")
+	   "Hilfe Error: Unterminated string: \"string a=\\\"hej\\n\"\n")
 test_hilfe("({)",[[ "Hilfe Error: \")\" end parenthesis does not match "
        "closest start parenthesis \"{\".\n" ]])
 test_hilfe( ({ "int c // =3;", "=4;" }), "")
