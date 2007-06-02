@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.79 2007/05/19 20:30:14 per Exp $
+|| $Id: zlibmod.c,v 1.80 2007/06/02 00:30:03 nilsson Exp $
 */
 
 #include "global.h"
@@ -84,7 +84,8 @@ struct zipper
  *! @[Gz.inflate()]
  */
 
-/*! @decl void create(int(0..9)|void level, int|void strategy)
+/*! @decl void create(int(0..9)|void level, int|void strategy,@
+ *!                   int(8..15) window_size)
  *!
  *! If given, @[level] should be a number from 0 to 9 indicating the
  *! packing / CPU ratio. Zero means no packing, 2-3 is considered 'fast',
@@ -99,6 +100,9 @@ struct zipper
  *!
  *! @[strategy], if given, should be one of DEFAULT_STRATEGY, FILTERED or
  *! HUFFMAN_ONLY.
+ *!
+ *! @[window_size] defines the size of the LZ77 window from 256 bytes
+ *! to 32768 bytes, expressed as 2^x.
  */
 static void gz_deflate_create(INT32 args)
 {
@@ -111,6 +115,16 @@ static void gz_deflate_create(INT32 args)
 /*     mt_lock(& THIS->lock); */
     deflateEnd(&THIS->gz);
 /*     mt_unlock(& THIS->lock); */
+  }
+
+  if(args>2)
+  {
+    if(sp[2-args].type != T_INT)
+      Pike_error("Bad argument 2 to gz->create()\n");
+    wbits = sp[1-args].u.integer;
+    if( wbits == 0 ) wbits = 15;
+    if( wbits < 8 || wbits > 15 )
+      Pike_error("Invalid window size for gz_deflate->create().\n");
   }
 
   if(args)
@@ -234,8 +248,8 @@ void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
      strategy != Z_HUFFMAN_ONLY)
     Pike_error("Invalid compression strategy %d for pack.\n", strategy);
 
-  if( wbits!=15 && wbits!=-15 )
-    Pike_error("Invalid wbits value %d for pack.\n", wbits);
+  if( wbits<0 ? (wbits<-15 || wbits>-8) : (wbits<8 || wbits>15 ) )
+    Pike_error("Invalid window size value %d for pack.\n", wbits);
 
   MEMSET(&z, 0, sizeof(z));
   z.gz.zalloc = Z_NULL;
@@ -275,7 +289,8 @@ void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
 }
 
 /*! @decl string compress(string data, void|int(0..1) raw, @
- *!                       void|int(0..9) level, void|int strategy)
+ *!                       void|int(0..9) level, void|int strategy @
+ *!                       void|int(8..15) window_size)
  *!
  */
 static void gz_compress(INT32 args)
@@ -289,7 +304,11 @@ static void gz_compress(INT32 args)
   int level = 8;
   int strategy = Z_DEFAULT_STRATEGY;
 
-  get_all_args("compress", args, "%n.%d%d%d", &data, &raw, &level, &strategy);
+  get_all_args("compress", args, "%n.%d%d%d%d", &data, &raw, &level, &strategy,
+               &wbits);
+
+  if( !wbits )
+    wbits = 15;
 
   if( raw )
     wbits = -wbits;
@@ -864,7 +883,7 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("crc32",gz_crc32,tFunc(tStr tOr(tVoid,tInt),tInt),0);
 
   /* function(string,void|int(0..1),void|int,void|int:string) */
-  ADD_FUNCTION("compress",gz_compress,tFunc(tStr tOr(tVoid,tInt01) tOr(tVoid,tInt09) tOr(tVoid,tInt),tStr),0);
+  ADD_FUNCTION("compress",gz_compress,tFunc(tStr tOr(tVoid,tInt01) tOr(tVoid,tInt09) tOr(tVoid,tInt) tOr(tVoid,tInt),tStr),0);
 
   /* function(string,void|int(0..1):string) */
   ADD_FUNCTION("uncompress",gz_uncompress,tFunc(tStr tOr(tVoid,tInt01),tStr),0);
