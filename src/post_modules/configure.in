@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.8 2007/04/07 16:05:15 grubba Exp $
+# $Id: configure.in,v 1.9 2007/06/02 14:37:50 grubba Exp $
 AC_INIT(Makefile.in)
 
 PIKE_RETAIN_VARIABLES()
@@ -23,7 +23,7 @@ do
 	  fi
           module_names="$module_names $a"
 	  if test "x$RECONFIGURE_BUNDLES" = "xyes"; then
-	    if test x`find "$a" -name '*.bundle' -print -exec rm \{\} \;` = x; then
+	    if test x`find "$a" -name '*.bundle' -print -exec rm \{\} \;|head -1 2>/dev/null` = x; then
 	      continue;
 	    fi
 	  fi
