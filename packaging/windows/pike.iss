@@ -3,7 +3,7 @@
 
 #define MAJOR "7"
 #define MINOR "6"
-#define BUILD "113"
+#define BUILD "114"
 #define INST "1"
 
 [Setup]
