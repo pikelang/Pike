@@ -1,0 +1,100 @@
+Things that can go wrong when compiling with rntcl and VC6:
+
+You run init_nt but nothing seems to happend:
+
+        For reasons no one has cared to check you need to 
+        "export SHELL=bash".
+
+Linker can't find BINMODE.OBJ:
+
+        You haven't included VC98/lib in the linker path, aka "lib" in
+        your ".init_ntrc".
+
+Popups on the Windows machine saying things like "The application has
+failed to start because foo.dll was not found.":
+
+        The DLLs must be in the system path. Copy them from your pike
+        installation dir to \windows\.
+
+How do you start pike in the VC6 debugger?
+
+        msdev pike.exe [pike arguments]
+
+        Set up breakpoints in Edit -> Breakpoints (or Alt+F9) and run
+        with Build -> Start Debug -> Go (or F5).
+
+Running the SDK setup.bat results in the message "\Microsoft was
+unexpected at this time.":
+
+        You probably have your SDK in "\Program Files(x86)\..." and
+        the paratheses screw up the program flow unless quoted. For
+        MSSDK Feb 2003 Find the line 
+        'set Path=%MSSdk%\Bin\WinNT\NT4;%Path%' and put proper quotes
+        around the path.
+
+        There is also a more general fix for this suggested on
+        http://mark.santaniello.net/archives/223:
+
+        setlocal enabledelayedexpansion
+        set FIXED=
+        FOR %%I IN ("%PATH:;=" "%") do (
+            set FIXED=!FIXED!%%~fsI;
+        )
+        for %%D in (a) do (
+            endlocal
+            set PATH=%FIXED%
+        )
+
+VC Service Pack to program mapping:
+
+        VC6
+        ---------------------
+        Service Pack    cl.exe          link.exe
+        SP1? SP3?       12.00.8168      6.00.8168
+        SP5             12.00.8804
+        SP6             12.00.8804      6.00.8447
+
+
+----------------------------------------------------------------------------
+Collected banners
+http://mail.python.org/pipermail/python-dev/2004-December/050194.html
+
+* SDK Itanium compiler
+
+Microsoft (R) C/C++ Optimizing Compiler Version 13.10.2240.8 for IA-64
+Copyright (C) Microsoft Corporation 1984-2002. All rights reserved.
+
+* \Program Files\Microsoft Visual C++ Toolkit 2003\bin\cl.exe:
+
+Microsoft (R) 32-bit C/C++ Optimizing Compiler Version 13.10.3077 for 80x86
+Copyright (C) Microsoft Corporation 1984-2002. All rights reserved.
+
+* MS VS6 SP5 (International version, optimizing VC6 compiler with SP5):
+
+Microsoft (R) 32-bit C/C++ Optimizing Compiler Version 12.00.8168 for 80x86
+Copyright (C) Microsoft Corp 1984-1998. All rights reserved.
+
+* MS VC6 (German version; optimizing VC6 compiler with SP6):
+
+Optimierender Microsoft (R) 32-Bit C/C++-Compiler, Version 12.00.8804, fuer x86
+Copyright (C) Microsoft Corp 1984-1998. Alle Rechte vorbehalten.
+
+* MS VC6 (US version; optimizing VC6 compiler with SP6):
+
+Microsoft (R) 32-bit C/C++ Optimizing Compiler Version 12.00.8804 for 80x86
+Copyright (C) Microsoft Corp 1984-1998. All rights reserved.
+
+* MS .NET SDK 1.1 Compiler (German version; non-optimizing VC7.1 compiler):
+
+Microsoft (R) 32-Bit C/C++-Standardcompiler Version 13.10.3077 für 80x86
+Copyright (C) Microsoft Corporation 1984-2002. Alle Rechte vorbehalten.
+
+* MS VC7.1 (aka .NET 2003, German version; optimizing VC7.1 compiler)
+
+Microsoft (R) 32-bit C/C++ Optimizing Compiler Version 13.10.3077 for 80x86
+Copyright (C) Microsoft Corporation 1984-2002. All rights reserved.
+
+* MS Windows XP DDK (International version, optimizing VC 7.0):
+
+Microsoft (R) 32-bit C/C++ Optimizing Compiler Version 13.00.9176 for 80x86
+Copyright (C) Microsoft Corporation 1984-2001. All rights reserved.
