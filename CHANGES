@@ -1,3 +1,32 @@
+Changes since Pike 7.6.112
+----------------------------------------------------------------------
+
+Changes in Pike:
+
+o Fixed infinite loop that could occur when feeding Image.XBM with
+  malformed data.
+o Added option "file" to Image.PS.decode().
+o Image.PS.decode() now reads nonblocking from the pipes.
+o Added "Regexp.PCRE.Widestring" to the feature list.
+o Added more methods to enable the buggy unicode decode support in
+  Mysql.mysql:
+
+   * "broken-unicode" as charset to create() or set_charset().
+
+   * set_unicode_decode_mode (-1).
+
+  Note that all this only applies when compiling with a mysql client
+  lib older than 4.1.0. Otherwise these methods are aliases to
+  enabling the normal unicode decode support. This means that no code
+  using broken-unicode should rely on the BINARY flag on text fields
+  to avoid utf-8 decoding.
+
+Build fixes:
+
+o Mird: Renamed FDATASYNC() to MIRD_FDATASYNC() to avoid clash with
+  NetBSD header-files.
+
+
 Changes since Pike 7.6.86
 ----------------------------------------------------------------------
 
