@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.131 2007/06/02 01:28:20 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.132 2007/06/04 14:35:04 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -2487,16 +2487,23 @@ class StdinHilfe
 
   array get_file_completions(string path)
   {
+    array files = ({});
+    if (!sizeof(path) || (path[0] != '/' 
+         && (< ".", "./", "..", "../", "/..", "./." >)[path[<2..<0]])))
+      files += ({ ".." });
+
     if (!sizeof(path) || path[0] != '/')
       path = "./"+path;
+
     string dir = dirname(path);
     string file = basename(path);
-    array files = get_dir(dir);
+    catch
+    { 
+      files += get_dir(dir);
+    };
 
-    if (!files)
+    if (!sizeof(files))
       return ({});
-    else
-      files += ({ ".." });
 
     array completions = Array.filter(files, has_prefix, file);
     string prefix = String.common_prefix(completions)[sizeof(file)..];
@@ -2507,13 +2514,21 @@ class StdinHilfe
       return ({});
     }
 
+    mapping types = ([ "dir":"/", "lnk":"@", "reg":"" ]);
+
     if (sizeof(completions) == 1 && file_stat(dir+"/"+completions[0])->isdir )
     {
       readline->insert("/", readline->getcursorpos());
       return ({});
     }
     else
+    {
+      foreach(completions; int count; string item)
+      {
+        completions[count] += types[file_stat(dir+"/"+item)->type]||"";
+      }
       return completions;
+    }
   }
 
   mapping base_objects()
