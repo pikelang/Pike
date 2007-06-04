@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.132 2007/06/04 14:35:04 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.133 2007/06/04 16:54:58 grubba Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -2489,7 +2489,7 @@ class StdinHilfe
   {
     array files = ({});
     if (!sizeof(path) || (path[0] != '/' 
-         && (< ".", "./", "..", "../", "/..", "./." >)[path[<2..<0]])))
+         && (< ".", "./", "..", "../", "/..", "./." >)[path[<2..<0]]))
       files += ({ ".." });
 
     if (!sizeof(path) || path[0] != '/')
