@@ -2,20 +2,21 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.241 2006/05/23 11:29:07 nilsson Exp $
+|| $Id: threads.c,v 1.242 2007/06/09 18:06:45 mast Exp $
 */
 
-#ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.241 2006/05/23 11:29:07 nilsson Exp $");
+RCSID("$Id: threads.c,v 1.242 2007/06/09 18:06:45 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
-#endif	/* !CONFIGURE_TEST */
 
 /* #define PICKY_MUTEX */
 
 #ifdef _REENTRANT
+
+#include "pike_macros.h"
+#include "pike_error.h"
 
 #ifndef CONFIGURE_TEST
 
@@ -25,7 +26,6 @@ PMOD_EXPORT int threads_disabled = 0;
 #include "array.h"
 #include "mapping.h"
 #include "object.h"
-#include "pike_macros.h"
 #include "callback.h"
 #include "builtin_functions.h"
 #include "constants.h"
