@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.867 2007/05/04 16:54:34 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.868 2007/06/09 17:32:01 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3598,8 +3598,10 @@ if test "x$pike_cv_thread_t_type" = "xpointer"; then
 fi
 
 if test "x$pike_cv_sys_os" = "xWindows_NT" -o "x$pike_cv_sys_os" = "xAmigaOS"; then :; else
-  AC_MSG_CHECKING(Initial stack limit)
+  AC_MSG_CHECKING(initial stack limit)
   AC_CACHE_VAL(pike_cv_initial_stack_size,[
+    old_core_limit=`ulimit -c`
+    ulimit -Sc 0
     AC_TRY_RUN([
 #include <stdio.h>
 
@@ -3636,6 +3638,8 @@ if test "x$pike_cv_sys_os" = "xWindows_NT" -o "x$pike_cv_sys_os" = "xAmigaOS"; t
         pike_cv_initial_stack_size=$x ;
       done <confdefs.out.2
     ], [pike_cv_initial_stack_size=''])
+    ulimit -c $old_core_limit
+    unset old_core_limit
     rm confdefs.out.2 >/dev/null 2>/dev/null || :
   ])
   if test x$pike_cv_initial_stack_size = x ; then
