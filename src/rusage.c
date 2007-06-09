@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.44 2005/04/08 17:02:41 grubba Exp $
+|| $Id: rusage.c,v 1.45 2007/06/09 18:02:14 mast Exp $
 */
 
 #include "global.h"
@@ -36,8 +36,8 @@
 #ifndef CONFIGURE_TEST
 #include "time_stuff.h"
 #include "fd_control.h"
-#include "pike_error.h"
 #endif
+#include "pike_error.h"
 
 /*
  * Here comes a long blob with stuff to see how to find out about
@@ -368,7 +368,7 @@ cpu_time_t get_cpu_time (void)
 cpu_time_t get_cpu_time (void)
 {
   struct tms tms;
-#if defined (PIKE_DEBUG) && !defined (CONFIGURE_TEST)
+#if defined (PIKE_DEBUG)
   if (!pike_clk_tck) Pike_error ("Called before init_pike.\n");
 #endif
   if (times (&tms) == (clock_t) -1)

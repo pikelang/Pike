@@ -2,13 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.145 2007/05/02 17:43:32 grubba Exp $
+|| $Id: svalue.h,v 1.146 2007/06/09 18:02:14 mast Exp $
 */
 
 #ifndef SVALUE_H
 #define SVALUE_H
 
 #include "global.h"
+#include "dmalloc.h"
 
 #ifndef STRUCT_ARRAY_DECLARED
 #define STRUCT_ARRAY_DECLARED
