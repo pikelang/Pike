@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.781 2007/05/20 19:16:48 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.782 2007/06/09 22:46:09 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7374,6 +7374,17 @@ test_any([[array z=({lambda(mixed x){return x;},17});return `()(@z);]],17)
 
 // testing +=
 test_any(int a=1; a+=10; return a,11)
+test_any_equal(mapping m=([]); m->x+=([]); return m->x, ([]))
+test_any_equal(mapping m=([]); m->x+=(<>); return m->x, (<>))
+test_any_equal(mapping m=([]); m->x+=({}); return m->x, ({}))
+test_any_equal([[
+  array a = ({});
+  catch {
+    a += Array.reduce(`+,({}));
+  };
+  return a;
+]],({}))
+
 // testing -=
 test_any(int a=1; a-=10; return a,-9)
 // testing &=
