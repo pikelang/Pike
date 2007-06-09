@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.286 2007/05/26 19:14:58 mast Exp $
+|| $Id: gc.c,v 1.287 2007/06/09 15:00:56 mast Exp $
 */
 
 #include "global.h"
@@ -2039,7 +2039,7 @@ int gc_mark_external (void *a, const char *place)
       dloc_gc_fatal (file, line, f->data, 0,				\
 		     "Accessing freed gc_stack_frame %p.\n", f);	\
     if (f->cycle_id->rf_flags & GC_FRAME_FREED) {			\
-      fprintf (stderr, "Cycle id frame is freed. It is: ");		\
+      fprintf (stderr, "Cycle id frame %p is freed. It is: ", f->cycle_id); \
       describe_rec_frame (f->cycle_id);					\
       fputc ('\n', stderr);						\
       dloc_gc_fatal (file, line, f->data, 0, "Cycle id frame is freed.\n"); \
@@ -2059,9 +2059,14 @@ static void check_rec_stack_frame (struct gc_rec_frame *f,
     dloc_gc_fatal (file, line, f->data, 0,
 		   "Rec stack pointers are inconsistent.\n");
   if (f->cycle_id &&
-      f->cycle_id->rf_flags & (GC_ON_CYCLE_PIECE_LIST|GC_ON_KILL_LIST))
+      f->cycle_id->rf_flags & (GC_ON_CYCLE_PIECE_LIST|GC_ON_KILL_LIST)) {
+    fprintf (stderr, "Cycle id frame %p not on the rec stack. It is: ",
+	     f->cycle_id);
+    describe_rec_frame (f->cycle_id);
+    fputc ('\n', stderr);
     dloc_gc_fatal (file, line, f->data, 0,
 		   "Cycle id frame not on the rec stack.\n");
+  }
   if (f->cycle_piece &&
       (!f->cycle_piece->u.last_cycle_piece ||
        f->cycle_piece->u.last_cycle_piece->cycle_piece))
@@ -2412,12 +2417,45 @@ static int gc_cycle_indent = 0;
 #define CYCLE_DEBUG_MSG(REC, TXT) do {} while (0)
 #endif
 
+#ifdef DEBUG_MALLOC
+static void check_cycle_ids_on_stack (struct gc_rec_frame *beg,
+				      struct gc_rec_frame *pos,
+				      const char *where)
+{
+  struct gc_rec_frame *l, **stack_arr;
+  size_t i;
+  for (i = 0, l = &sentinel_frame; l != stack_top; i++, l = l->next) {}
+  stack_arr = alloca (i * sizeof (struct gc_rec_frame *));
+  for (i = 0, l = &sentinel_frame; l != stack_top; i++, l = l->next)
+    stack_arr[i] = l->next;
+  for (i = 0, l = &sentinel_frame; l != stack_top; i++, l = l->next) {
+    size_t j;
+    for (j = 0; j <= i; j++)
+      if (stack_arr[j] == l->next->cycle_id)
+	goto cycle_id_ok;
+    {
+      struct gc_rec_frame *err = l->next;
+      fprintf (stderr, "cycle_id for frame %p not earlier on stack (%s).\n",
+	       err, where);
+      for (l = stack_top; l != &sentinel_frame; l = l->prev) {
+	fprintf (stderr,
+		 l == beg ? " (beg):" : l == pos ? " (pos):" : ":      ");
+	describe_rec_frame (l);
+	fputc ('\n', stderr);
+      }
+      fatal ("cycle_id for frame %p not earlier on stack (%s).\n", err, where);
+    }
+  cycle_id_ok:;
+  }
+}
+#endif
+
 static struct gc_rec_frame *rotate_rec_stack (struct gc_rec_frame *beg,
 					      struct gc_rec_frame *pos)
 /* Performs a rotation of the recursion stack so the part from pos
  * down to the end gets before the part from beg down to pos. The beg
- * pos might be moved further back the list to avoid breaking strong
- * link sequences. Returns the actual beg pos. Example:
+ * position might be moved further back the list to avoid breaking
+ * strong link sequences. Returns the actual beg position. Example:
  *
  *                         strong
  * a1 <=> ... <=> a2 <=> b1 <*> b2 <=> ... <=> b3 <=> c1 <=> ... <=> c2
@@ -2452,7 +2490,7 @@ static struct gc_rec_frame *rotate_rec_stack (struct gc_rec_frame *beg,
     struct gc_rec_frame *l;
     for (l = stack_top; l != &sentinel_frame; l = l->prev) {
       fprintf (stderr, "  %p%s ", l,
-	       l == beg ? " (beg)" : l == pos ? " (pos)" : "");
+	       l == beg ? " (beg):" : l == pos ? " (pos):" : ":      ");
       describe_rec_frame (l);
       fputc ('\n', stderr);
     }
@@ -2495,7 +2533,7 @@ static struct gc_rec_frame *rotate_rec_stack (struct gc_rec_frame *beg,
     struct gc_rec_frame *l;
     for (l = stack_top; l != &sentinel_frame; l = l->prev) {
       fprintf (stderr, "  %p%s ", l,
-	       l == beg ? " (beg)" : l == pos ? " (pos)" : "");
+	       l == beg ? " (beg):" : l == pos ? " (pos):" : ":      ");
       describe_rec_frame (l);
       fputc ('\n', stderr);
     }
@@ -2689,6 +2727,9 @@ int gc_cycle_push(void *data, struct marker *m, int weak)
 	 * rotation). */
 	CYCLE_DEBUG_MSG (weakly_refd, "gc_cycle_push, weak break");
 	rotate_rec_stack (cycle_frame, weakly_refd);
+#ifdef DEBUG_MALLOC
+	check_cycle_ids_on_stack (cycle_frame, weakly_refd, "after weak break");
+#endif
       }
 
       else {
@@ -2735,11 +2776,18 @@ int gc_cycle_push(void *data, struct marker *m, int weak)
 	  struct gc_rec_frame *r, *bottom = break_pos ? break_pos : cycle_frame;
 	  CYCLE_DEBUG_MSG (cycle_id, "gc_cycle_push, cycle");
 	  for (r = stack_top;; r = r->prev) {
-	    CHECK_REC_STACK_FRAME (r);
 	    r->cycle_id = cycle_id;
+	    CHECK_REC_STACK_FRAME (r);
 	    CYCLE_DEBUG_MSG (r, "> gc_cycle_push, mark cycle 1");
 	    if (r == bottom) break;
-	  }}}}}			/* Mmm.. lisp ;) */
+	  }
+	}
+#ifdef DEBUG_MALLOC
+	check_cycle_ids_on_stack (cycle_frame, break_pos, "after nonweak break");
+#endif
+      }
+    }
+  }
 
   else
     if (!(m->flags & GC_CYCLE_CHECKED)) {
