@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.21 2007/06/02 16:56:34 nilsson Exp $
+// $Id: testsuite.in,v 1.22 2007/06/09 23:54:57 nilsson Exp $
 
 cond_resolv(Gz.deflate,
 [[
@@ -65,8 +65,8 @@ cond_resolv(Gz.FIXED,
   test_eval_error(Gz.uncompress("x");)
   test_eval_error(Gz.uncompress(Gz.compress("x",1)))
   test_eval_error(Gz.uncompress(Gz.compress("x"),1))
-  test_eval_error(
-int x = max(Gz.FILTERED, Gz.HUFFMAN_ONLY
+  test_eval_error([[
+int x = 1 + max(Gz.FILTERED, Gz.HUFFMAN_ONLY
 #if constant(Gz.RLE)
 Gz.RLE,
 #endif
@@ -74,7 +74,8 @@ Gz.RLE,
 Gz.FIXED,
 #endif
 );
-return Gz.compress("x",0,9,x);)
+return Gz.compress("x",0,9,x);
+]])
   test_eval_error(return Gz.compress("x",0,-1);)
   test_eval_error(return Gz.compress("x",0,10);)
   test_eval_error(return Gz.compress("x",0,-1);)
