@@ -42,13 +42,15 @@ compile0:
 	$(MAKE) all
 
 compile1:
-	if $(RUNPIKE) $(SRCDIR)/new_build_pgtk.pike --source='$(SRCDIR)/source/' \
-	              $(SRCDIR)/output/few.pike; then :; else \
-	  (echo; echo "Failure. Rerunning with trace."; echo) >&2; \
-	  $(RUNPIKE) -t2 $(SRCDIR)/new_build_pgtk.pike --source='$(SRCDIR)/source/' \
-	                 $(SRCDIR)/output/few.pike; \
-	  exit $$?; \
-	fi
+	$(RUNPIKE) $(SRCDIR)/new_build_pgtk.pike --source='$(SRCDIR)/source/' \
+		   $(SRCDIR)/output/few.pike
+#	if $(RUNPIKE) $(SRCDIR)/new_build_pgtk.pike --source='$(SRCDIR)/source/' \
+#	              $(SRCDIR)/output/few.pike; then :; else \
+#	  (echo; echo "Failure. Rerunning with trace."; echo) >&2; \
+#	  $(RUNPIKE) -t2 $(SRCDIR)/new_build_pgtk.pike --source='$(SRCDIR)/source/' \
+#	                 $(SRCDIR)/output/few.pike; \
+#	  exit $$?; \
+#	fi
 	@if [ "x@VPATH_KLUDGE@" = "xyes" ]; then \
 	  for f in `cat files_to_compile | sed -e 's/\.o/\.c/g'`; do \
 	    test -f "$$f" || ln -s "$(srcdir)/$$f" "$$f"; \
