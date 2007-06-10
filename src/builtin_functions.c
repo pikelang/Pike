@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.640 2007/06/10 18:11:12 mast Exp $
+|| $Id: builtin_functions.c,v 1.641 2007/06/10 19:03:11 mast Exp $
 */
 
 #include "global.h"
@@ -7265,7 +7265,7 @@ PMOD_EXPORT void f_master(INT32 args)
  *!
  *! @note
  *!   The actual accuracy on many systems is significantly less than
- *!   milliseconds or nanoseconds. See @[System.CPU_TIME_RESOLUTION].
+ *!   microseconds or nanoseconds. See @[System.CPU_TIME_RESOLUTION].
  *!
  *! @note
  *!   The garbage collector might run automatically at any time. The
@@ -7305,10 +7305,23 @@ PMOD_EXPORT void f_gethrvtime(INT32 args)
   nsec = args && !UNSAFE_IS_ZERO(Pike_sp-args);
 
   pop_n_elems(args);
-  if (nsec)
+
+  if (nsec) {
     push_int64(time);
-  else
-    push_int64(time/1000);
+#ifndef LONG_CPU_TIME
+    push_int (1000000000 / CPU_TIME_TICKS);
+    o_multiply();
+#endif
+  }
+  else {
+#if CPU_TIME_TICKS > 1000000
+    push_int64(time / (CPU_TIME_TICKS / 1000000));
+#else
+    push_int64 (time);
+    push_int (1000000 / CPU_TIME_TICKS);
+    o_multiply();
+#endif
+  }
 }
 
 /*! @decl int gethrtime (void|int nsec)
@@ -7325,45 +7338,43 @@ PMOD_EXPORT void f_gethrvtime(INT32 args)
  *!
  *! @note
  *!   The actual accuracy on many systems is significantly less than
- *!   milliseconds or nanoseconds. See @[System.REAL_TIME_RESOLUTION].
+ *!   microseconds or nanoseconds. See @[System.REAL_TIME_RESOLUTION].
  *!
  *! @seealso
  *!   @[System.REAL_TIME_IS_MONOTONIC], @[System.REAL_TIME_RESOLUTION],
  *!   @[time()], @[System.gettimeofday()], @[gethrvtime()]
  */
-#ifdef HAVE_GETHRTIME
 PMOD_EXPORT void f_gethrtime(INT32 args)
 {
   int nsec = 0;
+  cpu_time_t time = get_real_time();
+
+  if (time == (cpu_time_t) -1) {
+    pop_n_elems (args);
+    push_int (-1);
+    return;
+  }
+
   nsec = args && !UNSAFE_IS_ZERO(Pike_sp-args);
 
   pop_n_elems(args);
-  if(nsec)
-    push_int64(gethrtime()); 
-  else
-    push_int64(gethrtime()/1000);
-}
+  if (nsec) {
+    push_int64(time);
+#ifndef LONG_CPU_TIME
+    push_int (1000000000 / CPU_TIME_TICKS);
+    o_multiply();
+#endif
+  }
+  else {
+#if CPU_TIME_TICKS > 1000000
+    push_int64(time / (CPU_TIME_TICKS / 1000000));
 #else
-PMOD_EXPORT void f_gethrtime(INT32 args)
-{
-  int nsec = 0;
-  nsec = args && !UNSAFE_IS_ZERO(Pike_sp-args);
-
-  pop_n_elems(args);
-  GETTIMEOFDAY(&current_time);
-#ifdef INT64
-  if(nsec)
-    push_int64((((INT64)current_time.tv_sec * 1000000) + current_time.tv_usec)*1000);
-  else
-    push_int64(((INT64)current_time.tv_sec * 1000000) + current_time.tv_usec);
-#else /* !INT64 */
-  if(nsec)
-    push_int64(((current_time.tv_sec * 1000000) + current_time.tv_usec)*1000);
-  else
-    push_int64((current_time.tv_sec * 1000000) + current_time.tv_usec);
-#endif /* INT64 */
+    push_int64 (time);
+    push_int (1000000 / CPU_TIME_TICKS);
+    o_multiply();
+#endif
+  }
 }
-#endif /* HAVE_GETHRTIME */
 
 #ifdef PROFILING
 /*! @decl array(int|mapping(string:array(int))) @
