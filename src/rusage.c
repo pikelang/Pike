@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.46 2007/06/10 18:11:13 mast Exp $
+|| $Id: rusage.c,v 1.47 2007/06/10 23:11:17 mast Exp $
 */
 
 #include "global.h"
@@ -803,7 +803,7 @@ void init_rusage (void)
 
   {
 #ifdef MIGHT_HAVE_POSIX_REALTIME_GRT
-    /* Known to exist - no need to check with sysconf. */
+    /* Always exists according to POSIX - no need to check with sysconf. */
     get_real_time_impl = posix_realtime_grt_impl;
     real_time_is_monotonic = 0;
     get_real_time = posix_realtime_grt;
@@ -818,9 +818,9 @@ void init_rusage (void)
 
 #endif	/* GRT_RUNTIME_CHOICE */
 
-#if 0 && !defined (CONFIGURE_TEST)
+#if 0
   fprintf (stderr, "get_cpu_time %s choice: %s, "
-	   "resolution: %"PRINT_CPU_TIME", %s\n",
+	   "resolution: %"PRINT_CPU_TIME"%s\n",
 #ifdef GCT_RUNTIME_CHOICE
 	   "runtime",
 #else
@@ -828,10 +828,11 @@ void init_rusage (void)
 #endif
 	   get_cpu_time_impl,
 	   get_cpu_time_res(),
-	   cpu_time_is_thread_local ? "thread local" : "not thread local");
+	   cpu_time_is_thread_local > 0 ? ", thread local" :
+	   !cpu_time_is_thread_local ? ", not thread local" : "");
 
   fprintf (stderr, "get_real_time %s choice: %s, "
-	   "resolution: %"PRINT_CPU_TIME", %s\n",
+	   "resolution: %"PRINT_CPU_TIME"%s\n",
 #ifdef GRT_RUNTIME_CHOICE
 	   "runtime",
 #else
@@ -839,6 +840,7 @@ void init_rusage (void)
 #endif
 	   get_real_time_impl,
 	   get_real_time_res(),
-	   real_time_is_monotonic ? "monotonic" : "not monotonic");
+	   real_time_is_monotonic > 0 ? ", monotonic" :
+	   !real_time_is_monotonic ? ", not monotonic" : "");
 #endif
 }
