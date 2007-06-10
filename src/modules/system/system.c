@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.181 2006/08/03 12:58:46 mast Exp $
+|| $Id: system.c,v 1.182 2007/06/10 18:11:13 mast Exp $
 */
 
 /*
@@ -2839,12 +2839,67 @@ static void f_gettimeofday(INT32 args)
 
 #endif
 
-/*! @decl string CPU_TIME_IS_THREAD_LOCAL
+/*! @decl constant string CPU_TIME_IS_THREAD_LOCAL
  *!
- *! This string constant tells whether or not the CPU time returned by
- *! @[gethrvtime] is thread local or not. The value is "yes" if it is
- *! and "no" if it isn't. The value is also "no" if there is no thread
- *! support.
+ *! This string constant tells whether or not the CPU time, returned
+ *! by e.g. @[gethrvtime], is thread local or not. The value is "yes"
+ *! if it is and "no" if it isn't. The value is also "no" if there is
+ *! no thread support.
+ *!
+ *! @seealso
+ *!   @[gethrvtime], @[gauge]
+ */
+
+/*! @decl constant int CPU_TIME_RESOLUTION
+ *!
+ *! The resolution of the CPU time, returned by e.g. @[gethrvtime], in
+ *! nanoseconds. It is @expr{-1@} if the resolution isn't known.
+ *!
+ *! @seealso
+ *!   @[gethrvtime], @[gauge]
+ */
+
+/*! @decl constant string CPU_TIME_IMPLEMENTATION
+ *!
+ *! This string constant identifies the internal interface used to get
+ *! the CPU time. It is an implementation detail - see rusage.c for
+ *! possible values and their meanings.
+ *!
+ *! @seealso
+ *!   @[gethrvtime], @[gauge]
+ */
+
+/*! @decl constant string REAL_TIME_IS_MONOTONIC
+ *!
+ *! This string constant tells whether or not the high resolution real
+ *! time returned by @[gethrtime], is monotonic or not. The value is
+ *! "yes" if it is and "no" if it isn't.
+ *!
+ *! Monotonic time is not affected by clock adjustments that might
+ *! happen to keep the calendaric clock in synch. It's therefore more
+ *! suited to measure time intervals in programs.
+ *!
+ *! @seealso
+ *!   @[gethrtime]
+ */
+
+/*! @decl constant int REAL_TIME_RESOLUTION
+ *!
+ *! The resolution of the real time returned by @[gethrtime], in
+ *! nanoseconds. It is @expr{-1@} if the resolution isn't known.
+ *!
+ *! @seealso
+ *!   @[gethrtime]
+ */
+
+/*! @decl constant string REAL_TIME_IMPLEMENTATION
+ *!
+ *! This string constant identifies the internal interface used to get
+ *! the high resolution real time. It is an implementation detail -
+ *! see rusage.c for possible values and their meanings.
+ *!
+ *! @seealso
+ *!   @[gethrtime]
  */
 
 /*! @decl mapping(string:int) getrusage()
@@ -3301,11 +3356,15 @@ PIKE_MODULE_INIT
 	       tFunc(tNone,tArr(tInt)),0);
 #endif
 
-#if CPU_TIME_IS_THREAD_LOCAL == PIKE_YES
-  add_string_constant ("CPU_TIME_IS_THREAD_LOCAL", "yes", 0);
-#elif CPU_TIME_IS_THREAD_LOCAL == PIKE_NO
-  add_string_constant ("CPU_TIME_IS_THREAD_LOCAL", "no", 0);
-#endif
+  add_string_constant ("CPU_TIME_IS_THREAD_LOCAL",
+		       cpu_time_is_thread_local ? "yes" : "no", 0);
+  add_string_constant ("CPU_TIME_IMPLEMENTATION", get_cpu_time_impl, 0);
+  add_integer_constant ("CPU_TIME_RESOLUTION", get_cpu_time_res(), 0);
+
+  add_string_constant ("REAL_TIME_IS_MONOTONIC",
+		       real_time_is_monotonic ? "yes" : "no", 0);
+  add_string_constant ("REAL_TIME_IMPLEMENTATION", get_real_time_impl, 0);
+  add_integer_constant ("REAL_TIME_RESOLUTION", get_real_time_res(), 0);
 
 #ifdef HAVE_NETINFO_NI_H
   /* array(string) get_netinfo_property(string domain, string path,

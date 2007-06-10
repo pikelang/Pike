@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.h,v 1.131 2006/08/02 15:02:40 mast Exp $
+|| $Id: threads.h,v 1.132 2007/06/10 18:11:13 mast Exp $
 */
 
 #ifndef THREADS_H
@@ -51,7 +51,7 @@ struct thread_state {
   struct mapping *thread_local;
   struct thread_state *hashlink, **backlink;
   struct svalue result;
-#if CPU_TIME_IS_THREAD_LOCAL == PIKE_YES
+#ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
   cpu_time_t auto_gc_time;
 #endif
 #ifdef PIKE_DEBUG

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.639 2007/06/02 04:11:30 mbaehr Exp $
+|| $Id: builtin_functions.c,v 1.640 2007/06/10 18:11:12 mast Exp $
 */
 
 #include "global.h"
@@ -7256,13 +7256,16 @@ PMOD_EXPORT void f_master(INT32 args)
  *! The CPU time includes both user and system time, i.e. it's
  *! approximately the same thing you would get by adding together the
  *! "utime" and "stime" fields returned by @[System.getrusage] (but
- *! perhaps with better accuracy). It's however system dependent
- *! whether or not it's the time consumed in all threads or in the
- *! current one only; @[System.CPU_TIME_IS_THREAD_LOCAL] tells which.
+ *! perhaps with better accuracy).
+ *!
+ *! It's however system dependent whether or not it's the time
+ *! consumed in all threads or in the current one only;
+ *! @[System.CPU_TIME_IS_THREAD_LOCAL] tells which. If both types are
+ *! available then thread local time is preferred.
  *!
  *! @note
  *!   The actual accuracy on many systems is significantly less than
- *!   milliseconds or nanoseconds.
+ *!   milliseconds or nanoseconds. See @[System.CPU_TIME_RESOLUTION].
  *!
  *! @note
  *!   The garbage collector might run automatically at any time. The
@@ -7274,8 +7277,8 @@ PMOD_EXPORT void f_master(INT32 args)
  *!   The special function @[gauge] is implemented with this function.
  *!
  *! @seealso
- *!   @[System.CPU_TIME_IS_THREAD_LOCAL], @[gauge()],
- *!   @[System.getrusage()], @[gethrtime()]
+ *!   @[System.CPU_TIME_IS_THREAD_LOCAL], @[System.CPU_TIME_RESOLUTION],
+ *!   @[gauge()], @[System.getrusage()], @[gethrtime()]
  */
 PMOD_EXPORT void f_gethrvtime(INT32 args)
 {
@@ -7288,14 +7291,16 @@ PMOD_EXPORT void f_gethrvtime(INT32 args)
     return;
   }
 
-  /* Don't subtract the gc time at all if we don't know whether it's
-   * thread local or not, since if we do it wrong we might end up
-   * returning a negative number. */
-#if CPU_TIME_IS_THREAD_LOCAL == PIKE_YES
-  time -= Pike_interpreter.thread_state->auto_gc_time;
-#elif CPU_TIME_IS_THREAD_LOCAL == PIKE_NO
-  time -= auto_gc_time;
+#ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
+  if (cpu_time_is_thread_local)
+    time -= Pike_interpreter.thread_state->auto_gc_time;
+  else
 #endif
+  {
+#ifdef CPU_TIME_MIGHT_NOT_BE_THREAD_LOCAL
+    time -= auto_gc_time;
+#endif
+  }
 
   nsec = args && !UNSAFE_IS_ZERO(Pike_sp-args);
 
@@ -7308,15 +7313,22 @@ PMOD_EXPORT void f_gethrvtime(INT32 args)
 
 /*! @decl int gethrtime (void|int nsec)
  *!
- *! Return the real time since some arbitrary event in the past. The
- *! time is normally returned in microseconds, but if the optional
- *! argument @[nsec] is nonzero it's returned in nanoseconds.
+ *! Return the high resolution real time since some arbitrary event in
+ *! the past. The time is normally returned in microseconds, but if
+ *! the optional argument @[nsec] is nonzero it's returned in
+ *! nanoseconds.
+ *!
+ *! It's system dependent whether or not this time is monotonic, i.e.
+ *! if it's unaffected by adjustments of the calendaric clock in the
+ *! system. @[System.REAL_TIME_IS_MONOTONIC] tells what it is. Pike
+ *! tries to use monotonic time for this function if it's avaiable.
  *!
  *! @note
  *!   The actual accuracy on many systems is significantly less than
- *!   milliseconds or nanoseconds.
+ *!   milliseconds or nanoseconds. See @[System.REAL_TIME_RESOLUTION].
  *!
  *! @seealso
+ *!   @[System.REAL_TIME_IS_MONOTONIC], @[System.REAL_TIME_RESOLUTION],
  *!   @[time()], @[System.gettimeofday()], @[gethrvtime()]
  */
 #ifdef HAVE_GETHRTIME

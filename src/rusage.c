@@ -2,10 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.45 2007/06/09 18:02:14 mast Exp $
+|| $Id: rusage.c,v 1.46 2007/06/10 18:11:13 mast Exp $
 */
 
 #include "global.h"
+#include "pike_macros.h"
+
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -19,9 +21,6 @@
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
-#endif
-#ifdef HAVE_TIME_H
-#include <time.h>
 #endif
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -56,7 +55,7 @@ long pike_clk_tck = 0;
   (((TIME) / (TICKS)) * (BASE) + ((TIME) % (TICKS)) * (BASE) / (TICKS))
 
 #ifdef __NT__
-int pike_get_rusage(pike_rusage_t rusage_values)
+PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 {
   union {
     unsigned __int64 ft_scalar;
@@ -112,7 +111,7 @@ static int open_proc_fd()
   return 1;
 }
 
-int pike_get_rusage(pike_rusage_t rusage_values)
+PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 {
   prusage_t  pru;
 #ifdef GETRUSAGE_THROUGH_PROCFS_PRS
@@ -181,7 +180,7 @@ int pike_get_rusage(pike_rusage_t rusage_values)
 #include <sys/rusage.h>
 #endif
 
-int pike_get_rusage(pike_rusage_t rusage_values)
+PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 {
   struct rusage rus;
   long utime, stime;
@@ -224,7 +223,7 @@ int pike_get_rusage(pike_rusage_t rusage_values)
 
 #if defined(HAVE_TIMES)
 
-int pike_get_rusage(pike_rusage_t rusage_values)
+PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 {
   struct tms tms;
   clock_t ret = times (&tms);
@@ -256,7 +255,7 @@ int pike_get_rusage(pike_rusage_t rusage_values)
 #define CLOCKS_PER_SEC	1000000
 #endif /* !CLOCKS_PER_SEC */
 
-int pike_get_rusage(pike_rusage_t rusage_values)
+PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 {
   MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
   rusage_values[0]= CONVERT_TIME (clock(), CLOCKS_PER_SEC, 1000);
@@ -265,7 +264,7 @@ int pike_get_rusage(pike_rusage_t rusage_values)
 
 #else /* HAVE_CLOCK */
 
-int pike_get_rusage(pike_rusage_t rusage_values)
+PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
 {
   /* This is totally wrong, but hey, if you can't do it _right_... */
   struct timeval tm;
@@ -282,12 +281,193 @@ int pike_get_rusage(pike_rusage_t rusage_values)
 #endif /* __NT__ */
 
 /*
- * Fix a good get_cpu_time.
+ * Fix a good get_cpu_time and get_real_time.
  */
+
+#ifdef GCT_RUNTIME_CHOICE
+PMOD_EXPORT int cpu_time_is_thread_local;
+PMOD_EXPORT const char *get_cpu_time_impl;
+PMOD_EXPORT cpu_time_t (*get_cpu_time) (void);
+PMOD_EXPORT cpu_time_t (*get_cpu_time_res) (void);
+#endif
+
+#ifdef GRT_RUNTIME_CHOICE
+PMOD_EXPORT int real_time_is_monotonic;
+PMOD_EXPORT const char *get_real_time_impl;
+PMOD_EXPORT cpu_time_t (*get_real_time) (void);
+PMOD_EXPORT cpu_time_t (*get_real_time_res) (void);
+#endif
+
+/* First see if we can use the POSIX standard interface. */
+
+#if defined (_POSIX_TIMERS)
+#if _POSIX_TIMERS > 0
+
+#if defined (MIGHT_HAVE_POSIX_THREAD_GCT) &&				\
+  (defined (GCT_IS_POSIX_THREAD) || defined (GCT_RUNTIME_CHOICE))
+
+PMOD_EXPORT const char posix_thread_gct_impl[] =
+  "CLOCK_THREAD_CPUTIME_ID";
+
+PMOD_EXPORT cpu_time_t posix_thread_gct (void)
+{
+  struct timespec res;
+  if (clock_gettime (CLOCK_THREAD_CPUTIME_ID, &res))
+    return (cpu_time_t) -1;
+  return res.tv_sec * CPU_TIME_TICKS +
+    res.tv_nsec / (1000000000 / CPU_TIME_TICKS);
+}
+
+PMOD_EXPORT cpu_time_t posix_thread_gct_res (void)
+{
+  struct timespec res;
+  cpu_time_t t;
+  if (clock_getres (CLOCK_THREAD_CPUTIME_ID, &res))
+    return (cpu_time_t) -1;
+  t = res.tv_sec * CPU_TIME_TICKS +
+    res.tv_nsec / (1000000000 / CPU_TIME_TICKS);
+  return t ? t : 1;
+}
+
+#endif
+
+#if defined (MIGHT_HAVE_POSIX_PROCESS_GCT) &&				\
+  (defined (GCT_IS_POSIX_PROCESS) || defined (GCT_RUNTIME_CHOICE))
+
+PMOD_EXPORT const char posix_process_gct_impl[] =
+  "CLOCK_PROCESS_CPUTIME_ID";
+
+PMOD_EXPORT cpu_time_t posix_process_gct (void)
+{
+  struct timespec res;
+  if (clock_gettime (CLOCK_PROCESS_CPUTIME_ID, &res))
+    return (cpu_time_t) -1;
+  return res.tv_sec * CPU_TIME_TICKS +
+    res.tv_nsec / (1000000000 / CPU_TIME_TICKS);
+}
+
+PMOD_EXPORT cpu_time_t posix_process_gct_res (void)
+{
+  struct timespec res;
+  cpu_time_t t;
+  if (clock_getres (CLOCK_PROCESS_CPUTIME_ID, &res))
+    return (cpu_time_t) -1;
+  t = res.tv_sec * CPU_TIME_TICKS +
+    res.tv_nsec / (1000000000 / CPU_TIME_TICKS);
+  return t ? t : 1;
+}
+
+#endif
+
+/* From Linux man page clock_gettime(3), dated 2003-08-24:
+ *
+ * NOTE for SMP systems
+ *       The CLOCK_PROCESS_CPUTIME_ID and CLOCK_THREAD_CPUTIME_ID
+ *       clocks are realized on many platforms using timers from the
+ *       CPUs (TSC on i386, AR.ITC on Itanium). These registers may
+ *       differ between CPUs and as a consequence these clocks may
+ *       return bogus results if a process is migrated to another CPU.
+ *
+ *       If the CPUs in an SMP system have different clock sources
+ *       then there is no way to maintain a corre‐lation between the
+ *       timer registers since each CPU will run at a slightly
+ *       different frequency. If that is the case then
+ *       clock_getcpuclockid(0) will return ENOENT to signify this
+ *       condition. The two clocks will then only be useful if it can
+ *       be ensured that a process stays on a certain CPU.
+ */
+#ifdef HAVE_CLOCK_GETCPUCLOCKID
+static int posix_cputime_is_reliable (void)
+{
+  clockid_t res;
+  return clock_getcpuclockid (0, &res) != ENOENT;
+}
+#else
+#define posix_cputime_is_reliable() 1
+#endif
+
+#if defined (MIGHT_HAVE_POSIX_MONOTONIC_GRT) &&				\
+  (defined (GRT_IS_POSIX_MONOTONIC) || defined (GRT_RUNTIME_CHOICE))
+
+PMOD_EXPORT const char posix_monotonic_grt_impl[] = "CLOCK_MONOTONIC";
+
+PMOD_EXPORT cpu_time_t posix_monotonic_grt (void)
+{
+  struct timespec res;
+  if (clock_gettime (CLOCK_MONOTONIC, &res))
+    return (cpu_time_t) -1;
+  return res.tv_sec * CPU_TIME_TICKS +
+    res.tv_nsec / (1000000000 / CPU_TIME_TICKS);
+}
+
+PMOD_EXPORT cpu_time_t posix_monotonic_grt_res (void)
+{
+  struct timespec res;
+  cpu_time_t t;
+  if (clock_getres (CLOCK_MONOTONIC, &res))
+    return (cpu_time_t) -1;
+  t = res.tv_sec * CPU_TIME_TICKS +
+    res.tv_nsec / (1000000000 / CPU_TIME_TICKS);
+  return t ? t : 1;
+}
+
+#endif
+
+#if defined (MIGHT_HAVE_POSIX_REALTIME_GRT) &&				\
+  (defined (GRT_IS_POSIX_REALTIME) || defined (GRT_RUNTIME_CHOICE))
+
+PMOD_EXPORT const char posix_realtime_grt_impl[] = "CLOCK_REALTIME";
+
+PMOD_EXPORT cpu_time_t posix_realtime_grt (void)
+{
+  struct timespec res;
+  if (clock_gettime (CLOCK_REALTIME, &res)) {
+#ifdef PIKE_DEBUG
+    Pike_fatal ("CLOCK_REALTIME should always work! errno=%d\n", errno);
+#endif
+  }
+  return res.tv_sec * CPU_TIME_TICKS +
+    res.tv_nsec / (1000000000 / CPU_TIME_TICKS);
+}
+
+PMOD_EXPORT cpu_time_t posix_realtime_grt_res (void)
+{
+  struct timespec res;
+  cpu_time_t t;
+  if (clock_getres (CLOCK_REALTIME, &res)) {
+#ifdef PIKE_DEBUG
+    Pike_fatal ("CLOCK_REALTIME should always work! errno=%d\n", errno);
+#endif
+  }
+  t = res.tv_sec * CPU_TIME_TICKS +
+    res.tv_nsec / (1000000000 / CPU_TIME_TICKS);
+  return t ? t : 1;
+}
+
+#endif
+
+#endif	/* _POSIX_TIMERS > 0 */
+#endif	/* _POSIX_TIMERS */
+
+/* Now various fallback interfaces in order of preference. */
+
+#if (defined (GCT_IS_FALLBACK) || defined (GCT_RUNTIME_CHOICE))
+#define DEFINE_FALLBACK_GCT
+#endif
+
+#if (defined (GRT_IS_FALLBACK) || defined (GRT_RUNTIME_CHOICE))
+#define DEFINE_FALLBACK_GRT
+#endif
 
 #ifdef __NT__
 
-cpu_time_t get_cpu_time (void)
+/* cpu_time_t is known to be 64 bits here, i.e. with nanosecond resolution. */
+
+#ifdef DEFINE_FALLBACK_GCT
+
+PMOD_EXPORT const char fallback_gct_impl[] = "GetThreadTimes()";
+
+PMOD_EXPORT cpu_time_t fallback_gct (void)
 {
   union {
     unsigned __int64 ft_scalar;
@@ -303,7 +483,23 @@ cpu_time_t get_cpu_time (void)
     return (cpu_time_t) -1;
 }
 
-cpu_time_t get_real_time (void)
+#define HAVE_FALLBACK_GCT_RES
+PMOD_EXPORT cpu_time_t fallback_gct_res (void)
+{
+  /* Got 100 ns resolution according to docs. */
+  return MAXIMUM (CPU_TIME_TICKS / 10000000, 1);
+}
+
+#endif
+
+#ifdef DEFINE_FALLBACK_GRT
+
+PMOD_EXPORT const char fallback_grt_impl[] = "GetThreadTimes()";
+
+PMOD_EXPORT int fallback_grt_is_monotonic = -1;
+/* Don't know since the below looks totally bogus. */
+
+PMOD_EXPORT cpu_time_t fallback_grt (void)
 {
   union {
     unsigned __int64 ft_scalar;
@@ -314,31 +510,51 @@ cpu_time_t get_real_time (void)
 		     &exitTime.ft_struct,
 		     &kernelTime.ft_struct,
 		     &userTime.ft_struct))
+    /* FIXME: Isn't this completely bogus? /mast */
     return exitTime.ft_scalar * 100;
   else
     return (cpu_time_t) -1;
 }
 
+#define HAVE_FALLBACK_GRT_RES
+PMOD_EXPORT cpu_time_t fallback_grt_res (void)
+{
+  /* Got 100 ns resolution according to docs. */
+  return MAXIMUM (CPU_TIME_TICKS / 10000000, 1);
+}
+
+#endif
+
 #elif 0 && defined (HAVE_WORKING_GETHRVTIME)
 
-cpu_time_t get_cpu_time (void)
+#ifdef DEFINE_FALLBACK_GCT
+PMOD_EXPORT const char fallback_gct_impl[] = "gethrvtime()";
+PMOD_EXPORT cpu_time_t fallback_gct (void)
 {
   /* Faster than CONVERT_TIME(gethrvtime(), 1000000000, CPU_TIME_TICKS)
    * It works under the assumtion that CPU_TIME_TICKS <= 1000000000
    * and that 1000000000 % CPU_TIME_TICKS == 0. */
   return gethrvtime() / (1000000000 / CPU_TIME_TICKS);
 }
+#endif
 
-cpu_time_t get_real_time (void)
+#ifdef DEFINE_FALLBACK_GRT
+PMOD_EXPORT const char fallback_grt_impl[] = "gethrtime()";
+PMOD_EXPORT int fallback_grt_is_monotonic = 1;
+PMOD_EXPORT cpu_time_t fallback_grt (void)
 {
   return gethrtime() * (CPU_TIME_TICKS / 1000000000);
 }
+#endif
 
-#else
+#else  /* !__NT__ && !HAVE_WORKING_GETHRVTIME */
 
+#ifdef DEFINE_FALLBACK_GCT
 #if defined (GETRUSAGE_THROUGH_PROCFS)
 
-cpu_time_t get_cpu_time (void)
+PMOD_EXPORT const char fallback_gct_impl[] = "/proc/";
+
+PMOD_EXPORT cpu_time_t fallback_gct (void)
 {
   prstatus_t  prs;
 
@@ -365,7 +581,9 @@ cpu_time_t get_cpu_time (void)
  * real accurancy. (CLOCKS_PER_SEC is always defined to 1000000 which
  * means that clock() wraps much more often than necessary.) */
 
-cpu_time_t get_cpu_time (void)
+PMOD_EXPORT const char fallback_gct_impl[] = "times()";
+
+PMOD_EXPORT cpu_time_t fallback_gct (void)
 {
   struct tms tms;
 #if defined (PIKE_DEBUG)
@@ -376,9 +594,17 @@ cpu_time_t get_cpu_time (void)
   return CONVERT_TIME (tms.tms_utime + tms.tms_stime, pike_clk_tck, CPU_TIME_TICKS);
 }
 
+#define HAVE_FALLBACK_GCT_RES
+PMOD_EXPORT cpu_time_t fallback_gct_res (void)
+{
+  return MAXIMUM (CPU_TIME_TICKS / pike_clk_tck, 1);
+}
+
 #elif defined (HAVE_CLOCK) && defined (CLOCKS_PER_SEC)
 
-cpu_time_t get_cpu_time (void)
+PMOD_EXPORT const char fallback_gct_impl[] = "clock()";
+
+PMOD_EXPORT cpu_time_t fallback_gct (void)
 {
   clock_t t = clock();
   if (t == (clock_t) -1)
@@ -387,9 +613,17 @@ cpu_time_t get_cpu_time (void)
     return CONVERT_TIME (t, CLOCKS_PER_SEC, CPU_TIME_TICKS);
 }
 
+#define HAVE_FALLBACK_GCT_RES
+PMOD_EXPORT cpu_time_t fallback_gct_res (void)
+{
+  return MAXIMUM (CPU_TIME_TICKS / CLOCKS_PER_SEC, 1);
+}
+
 #elif defined (HAVE_GETRUSAGE)
 
-cpu_time_t get_cpu_time (void)
+PMOD_EXPORT const char fallback_gct_impl[] = "getrusage()";
+
+PMOD_EXPORT cpu_time_t fallback_gct (void)
 {
   struct rusage rus;
   if (getrusage(RUSAGE_SELF, &rus) < 0) return (cpu_time_t) -1;
@@ -408,16 +642,30 @@ cpu_time_t get_cpu_time (void)
   }
 }
 
+#define HAVE_FALLBACK_GCT_RES
+PMOD_EXPORT cpu_time_t fallback_gct_res (void)
+{
+  /* struct timeval holds microseconds, so assume the resolution is on
+   * that level. */
+  return MAXIMUM (CPU_TIME_TICKS / 1000000, 1);
+}
+
 #else
 
-cpu_time_t get_cpu_time (void)
+PMOD_EXPORT const char fallback_gct_impl[] = "none";
+
+PMOD_EXPORT cpu_time_t fallback_gct (void)
 {
   return (cpu_time_t) -1;
 }
 
 #endif
+#endif	/* DEFINE_FALLBACK_GCT */
 
-cpu_time_t get_real_time(void)
+#ifdef DEFINE_FALLBACK_GRT
+PMOD_EXPORT const char fallback_grt_impl[] = "gettimeofday()";
+PMOD_EXPORT int fallback_grt_is_monotonic = 0;
+PMOD_EXPORT cpu_time_t fallback_grt(void)
 {
   struct timeval tv;
 
@@ -429,6 +677,30 @@ cpu_time_t get_real_time(void)
     return tv.tv_sec * CPU_TIME_TICKS +
       tv.tv_usec / (1000000 / CPU_TIME_TICKS);
 #endif
+}
+
+#define HAVE_FALLBACK_GRT_RES
+PMOD_EXPORT cpu_time_t fallback_grt_res (void)
+{
+  /* struct timeval holds microseconds, so assume the resolution is on
+   * that level. */
+  return MAXIMUM (CPU_TIME_TICKS / 1000000, 1);
+}
+#endif
+
+#endif	/* !__NT__ && !HAVE_WORKING_GETHRVTIME */
+
+#if defined (DEFINE_FALLBACK_GCT) && !defined (HAVE_FALLBACK_GCT_RES)
+PMOD_EXPORT cpu_time_t fallback_gct_res (void)
+{
+  return (cpu_time_t) -1;
+}
+#endif
+
+#if defined (DEFINE_FALLBACK_GRT) && !defined (HAVE_FALLBACK_GRT_RES)
+PMOD_EXPORT cpu_time_t fallback_grt_res (void)
+{
+  return (cpu_time_t) -1;
 }
 #endif
 
@@ -475,3 +747,98 @@ void debug_print_rusage(FILE *out)
 	   rusage_values[27], rusage_values[28]);
 }
 #endif
+
+void init_rusage (void)
+{
+#ifdef HAVE_TIMES
+  pike_clk_tck = sysconf (_SC_CLK_TCK);
+#endif
+
+#ifdef GCT_RUNTIME_CHOICE
+
+#ifdef MIGHT_HAVE_POSIX_THREAD_GCT
+  if (sysconf (_SC_THREAD_CPUTIME) > 0 && posix_cputime_is_reliable()) {
+    cpu_time_is_thread_local = 1;
+    get_cpu_time_impl = posix_thread_gct_impl;
+    get_cpu_time = posix_thread_gct;
+    get_cpu_time_res = posix_thread_gct_res;
+  }
+  else
+#endif
+
+#ifdef MIGHT_HAVE_POSIX_THREAD_GCT
+    if (sysconf (_SC_CPUTIME) > 0 && posix_cputime_is_reliable()) {
+      cpu_time_is_thread_local = 0;
+      get_cpu_time_impl = posix_process_gct_impl;
+      get_cpu_time = posix_process_gct;
+      get_cpu_time_res = posix_process_gct_res;
+    }
+    else
+#endif
+
+    {
+#if FB_CPU_TIME_IS_THREAD_LOCAL == PIKE_YES
+      cpu_time_is_thread_local = 1;
+#else
+      cpu_time_is_thread_local = 0;
+#endif
+      get_cpu_time_impl = fallback_gct_impl;
+      get_cpu_time = fallback_gct;
+      get_cpu_time_res = fallback_gct_res;
+    }
+
+#endif  /* GCT_RUNTIME_CHOICE */
+
+#ifdef GRT_RUNTIME_CHOICE
+
+#ifdef MIGHT_HAVE_POSIX_MONOTONIC_GRT
+  if (sysconf (_SC_MONOTONIC_CLOCK) > 0) {
+    get_real_time_impl = posix_monotonic_grt_impl;
+    real_time_is_monotonic = 1;
+    get_real_time = posix_monotonic_grt;
+    get_real_time_res = posix_monotonic_grt_res;
+  }
+  else
+#endif
+
+  {
+#ifdef MIGHT_HAVE_POSIX_REALTIME_GRT
+    /* Known to exist - no need to check with sysconf. */
+    get_real_time_impl = posix_realtime_grt_impl;
+    real_time_is_monotonic = 0;
+    get_real_time = posix_realtime_grt;
+    get_real_time_res = posix_realtime_grt_res;
+#else
+    get_real_time_impl = fallback_grt_impl;
+    real_time_is_monotonic = fallback_grt_is_monotonic;
+    get_real_time = fallback_grt;
+    get_real_time_res = fallback_grt_res;
+#endif
+  }
+
+#endif	/* GRT_RUNTIME_CHOICE */
+
+#if 0 && !defined (CONFIGURE_TEST)
+  fprintf (stderr, "get_cpu_time %s choice: %s, "
+	   "resolution: %"PRINT_CPU_TIME", %s\n",
+#ifdef GCT_RUNTIME_CHOICE
+	   "runtime",
+#else
+	   "compile time",
+#endif
+	   get_cpu_time_impl,
+	   get_cpu_time_res(),
+	   cpu_time_is_thread_local ? "thread local" : "not thread local");
+
+  fprintf (stderr, "get_real_time %s choice: %s, "
+	   "resolution: %"PRINT_CPU_TIME", %s\n",
+#ifdef GRT_RUNTIME_CHOICE
+	   "runtime",
+#else
+	   "compile time",
+#endif
+	   get_real_time_impl,
+	   get_real_time_res(),
+	   real_time_is_monotonic ? "monotonic" : "not monotonic");
+#endif
+}

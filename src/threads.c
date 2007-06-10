@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.253 2007/06/09 18:02:14 mast Exp $
+|| $Id: threads.c,v 1.254 2007/06/10 18:11:13 mast Exp $
 */
 
 #include "global.h"
@@ -1872,7 +1872,7 @@ void init_thread_obj(struct object *o)
   THIS_THREAD->result.u.integer = 0;
   co_init(& THIS_THREAD->status_change);
   THIS_THREAD->thread_local=NULL;
-#if CPU_TIME_IS_THREAD_LOCAL == PIKE_YES
+#ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
   THIS_THREAD->auto_gc_time = 0;
 #endif
 }
