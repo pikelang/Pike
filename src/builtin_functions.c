@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.560 2007/03/29 15:36:55 mast Exp $
+|| $Id: builtin_functions.c,v 1.561 2007/06/10 18:39:02 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.560 2007/03/29 15:36:55 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.561 2007/06/10 18:39:02 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -6851,10 +6851,23 @@ PMOD_EXPORT void f_gethrvtime(INT32 args)
   nsec = args && !UNSAFE_IS_ZERO(Pike_sp-args);
 
   pop_n_elems(args);
-  if (nsec)
+
+  if (nsec) {
     push_int64(time);
-  else
-    push_int64(time/1000);
+#ifndef LONG_CPU_TIME
+    push_int (1000000000 / CPU_TIME_TICKS);
+    o_multiply();
+#endif
+  }
+  else {
+#if CPU_TIME_TICKS > 1000000
+    push_int64(time / (CPU_TIME_TICKS / 1000000));
+#else
+    push_int64 (time);
+    push_int (1000000 / CPU_TIME_TICKS);
+    o_multiply();
+#endif
+  }
 }
 
 /*! @decl int gethrtime (void|int nsec)
