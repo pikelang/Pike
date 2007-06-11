@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.136 2007/06/08 06:10:41 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.137 2007/06/11 14:24:57 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -303,6 +303,37 @@ private class CommandExit {
     e->safe_write("Exiting.\n");
     destruct(e);
     exit(0);
+  }
+}
+
+private class CommandDoc {
+  inherit Command;
+  string help(string what) { return "Show documentation for pike modules and classes."; }
+
+  void exec(Evaluator e, string line, array(string) words,
+	    array(string) tokens) 
+  {
+    object module = resolv(e, tokens[2..])[0];
+    object docs = master()->show_doc(module);
+    object child;
+    e->safe_write("\n");
+    if (docs && docs->documentation)
+    {
+      e->safe_write("%{%s\n%}\n", docs->objects->print());
+      e->safe_write(docs->documentation->text);
+    }
+    else if (docs && (child=docs->findObject("create")) && child->documentation)
+    {
+      e->safe_write("%{%s\n%}\n", replace(child->objects->print()[*], ([ "create":(tokens[2..]-({"\n\n"}))*"", " | ":"|" ]) ));
+      e->safe_write(child->documentation->text);
+    }
+    else if (docs && sizeof(docs->docGroups))
+      e->safe_write("%{%s\n%}", Array.flatten(docs->docGroups->objects->print()));
+    else if (objectp(module))
+      e->safe_write("%{%s\n%}", indices(module));
+    else
+      e->safe_write("Documentation not found!");
+    e->safe_write("\n");
   }
 }
 
@@ -846,13 +877,13 @@ private constant prepostfix = (< "--", "++" >);
 // between two expressions
 private constant seperator = (< "?", ":", ",", ";" >);
 
-private constant reference = (< ".", "->" >);
+private constant reference = ([ ".":"module", "->":"object" ]);
 
 private constant group = ([ "(":")", "({":"})", "([":"])", "(<":">)", "[":"]" ]);
 
 // Symbols not valid in type expressions.
 // All of the above except ".", "|", "&" and "~".
-private constant notype = (infix+prefix+postfix+prepostfix+seperator+reference) - (< ".", "|", "&", "~" >);
+private constant notype = (infix+prefix+postfix+prepostfix+seperator) - (< ".", "|", "&", "~" >);
 
 string typeof_token(string token)
 {
@@ -1471,6 +1502,7 @@ class Evaluator {
     commands->exit = CommandExit();
     commands->quit = commands->exit;
     commands->help = CommandHelp();
+    commands->doc = CommandDoc();
     commands->dump = CommandDump();
     commands->new = CommandNew();
     commands->hej = CommandHej();
@@ -2289,6 +2321,53 @@ class Evaluator {
   }
 }
 
+mapping base_objects(Evaluator e)
+{
+  return all_constants() + e->constants + e->variables;
+}
+
+array(object|array(string)) resolv(Evaluator e, array completable, void|object base, void|string type)
+{
+  //write("resolv(%O, %O, %O)\n", completable, base, type);
+  if (!sizeof(completable))
+    return ({ base, completable, type });
+  if (completable[0] == array_sscanf(completable[0], "%[ \t\r\n]")[0])
+    return ({ base, completable[1..], type });
+  if (!base && completable[0] == ".")
+  {
+    if (sizeof(completable) == 1)
+      return ({ 0, completable, "module" });
+    else
+    {
+      catch
+      {
+        // quick and dirty attempt to load a local module
+        base = compile_string(sprintf("object o=.%s;", completable[1]), 0)()->o;
+      };
+      if (!base)
+        return ({ 0, completable, type });
+      if (objectp(base))
+        return resolv(e, completable[2..], base, "module");
+      return resolv(e, completable[2..], base);
+    }
+  }
+  if (!base)
+  {
+    if (base=base_objects(e)[completable[0]])
+      return resolv(e, completable[1..], base, "object");
+    if (base=master()->root_module[completable[0]])
+      return resolv(e, completable[1..], base, "module");
+    return ({ 0, completable, type });
+  }
+  if (sizeof(completable) > 1)
+  {
+    if (reference[completable[0]])
+      return resolv(e, completable[1..], base, type);
+    if (base=base[completable[0]]) 
+      return resolv(e, completable[1..], base, type);
+  }
+  return ({ base, completable, type });
+}
 
 //
 // Different wrappers that give the Hilfe a user interface
@@ -2374,6 +2453,32 @@ class StdinHilfe
     destruct(readline);
   }
 
+  array get_resolvable(array tokens, void|int debug)
+  {
+    array completable = ({});
+    string tokentype;
+
+    foreach(reverse(tokens);; string token)
+    {
+      string _tokentype = typeof_token(token);
+
+      if (debug)
+        write(sprintf("%s = %s\n", token, _tokentype));
+      if ( (_tokentype == "reference" && (!tokentype || tokentype == "symbol"))
+            || (_tokentype == "symbol" && (!tokentype || tokentype == "reference")) )
+      {
+        completable += ({ token });
+        tokentype = _tokentype;
+      }
+      else if (_tokentype == "whitespace")
+        ;
+      else
+        break;
+    }
+
+    return reverse(completable);
+  }
+
   void handle_tab(string key)
   {
     mixed old_handler = master()->get_inhibit_compile_errors();
@@ -2382,7 +2487,7 @@ class StdinHilfe
 
     array modules, tokens;
     string input = readline->gettext()[..readline->getcursorpos()-1];
-    array completions;
+    array|string completions;
 
     mixed error = catch
     {
@@ -2410,28 +2515,7 @@ class StdinHilfe
 
     if (tokens && !completions)
     {
-      array completable = ({});
-      string tokentype;
-
-      foreach(reverse(tokens);; string token)
-      {
-        string _tokentype = typeof_token(token);
-
-        if (variables->DEBUG_COMPLETIONS)
-          readline->message(sprintf("%s = %s\n", token, _tokentype));
-        if ( (_tokentype == "reference" && (!tokentype || tokentype == "symbol"))
-              || (_tokentype == "symbol" && (!tokentype || tokentype == "reference")) )
-        {
-          completable += ({ token });
-          tokentype = _tokentype;
-        }
-        else if (_tokentype == "whitespace")
-          ;
-        else
-          break;
-      }
-
-      completable = reverse(completable);
+      array completable = get_resolvable(tokens, variables->DEBUG_COMPLETIONS);
 
       if (completable && sizeof(completable))
       {
@@ -2442,7 +2526,7 @@ class StdinHilfe
         error = Error.mkerror(error);
       }
       else if (!tokens || !sizeof(tokens))
-        completions = sort(indices(master()->root_module)) + sort(indices(base_objects()));
+        completions = sort(indices(master()->root_module)) + sort(indices(base_objects(this)));
         // FIXME: base_objects should not be sorted like this
       else
       {
@@ -2453,7 +2537,7 @@ class StdinHilfe
         if (variables->DEBUG_COMPLETIONS)
           readline->message(sprintf("type: %s\n", typeof_token(token)));
 
-        completions = sort(indices(master()->root_module)) + sort(indices(base_objects()));
+        completions = sort(indices(master()->root_module)) + sort(indices(base_objects(this)));
         // FIXME: base_objects should not be sorted like this
 
         switch(typeof_token(token))
@@ -2490,10 +2574,15 @@ class StdinHilfe
     master()->set_inhibit_compile_errors(old_handler);
 
     if(completions && sizeof(completions))
+    {
+      if(stringp(completions))
+        readline->insert(completions, readline->getcursorpos());
+      else
         readline->list_completions(completions);
+    }
   }
 
-  array get_file_completions(string path)
+  array|string get_file_completions(string path)
   {
     array files = ({});
     if ( (< "", ".", ".." >)[path-"../"] )
@@ -2517,16 +2606,14 @@ class StdinHilfe
 
     if (sizeof(prefix))
     {
-      readline->insert(prefix, readline->getcursorpos());
-      return ({});
+      return prefix;
     }
 
-    mapping types = ([ "dir":"/", "lnk":"@", "reg":"" ]);
+    mapping filetypes = ([ "dir":"/", "lnk":"@", "reg":"" ]);
 
     if (sizeof(completions) == 1 && file_stat(dir+"/"+completions[0])->isdir )
     {
-      readline->insert("/", readline->getcursorpos());
-      return ({});
+      return "/";
     }
     else
     {
@@ -2534,28 +2621,57 @@ class StdinHilfe
       {
         object stat = file_stat(dir+"/"+item);
         if (objectp(stat))
-          completions[count] += types[stat->type]||"";
+          completions[count] += filetypes[stat->type]||"";
 
         stat = file_stat(dir+"/"+item, 1);
         if (objectp(stat) && stat->type == "lnk")
-          completions[count] += types["lnk"];
+          completions[count] += filetypes["lnk"];
       }
       return completions;
     }
   }
 
-  mapping base_objects()
+  array|string get_module_completions(array completable)
   {
-    return all_constants() + constants + variables;
+    object base; 
+    array rest;
+    string type;
+    [base, rest, type] = resolv(this, completable);
+
+    if (variables->DEBUG_COMPLETIONS)
+      readline->message(sprintf("get_module_completions(%O)\n", completable));
+    return low_get_module_completions(rest, base, type);
   }
 
-  array get_module_completions(array completable, void|object base, void|string ref)
+  mapping reftypes = ([ "module":".", 
+                     "object":"->", 
+                     "mapping":"->", 
+                     "function":"(",
+                     "program":"(",
+                   ]);
+
+  array|string|object low_get_module_completions(array completable, object base, void|string type)
   {
       if (variables->DEBUG_COMPLETIONS)
-        readline->message(sprintf("get_module_completions(%O\n, %O)\n", completable, base));
+        readline->message(sprintf("low_get_module_completions(%O\n, %O, %O)\n", completable, base, type));
       mapping other;
       array modules = ({});
       mixed error;
+
+      if (base && !sizeof(completable))
+      {
+        //TODO: handle cases like Stdio.Readline which are both module and class
+        if (objectp(base))
+          return reftypes[type||"object"];
+        if (mappingp(base))
+          return reftypes->object;
+        else if(functionp(base))
+          return reftypes->function;
+        else if (programp(base))
+          return reftypes->program;
+        else
+          return " ";
+      }
 
       if (!base && sizeof(completable) && completable[0] == ".")
       {
@@ -2563,18 +2679,23 @@ class StdinHilfe
           if (sizeof(completable) > 1)
           {
             modules = Array.filter(modules, has_prefix, completable[1]);
+            if (sizeof(modules) == 1)
+              return (modules[0]/".")[0][sizeof(completable[1])..];
+            string prefix = String.common_prefix(modules)[sizeof(completable[1])..];
+            if (prefix)
+              return prefix;
+
             if (sizeof(completable) == 2)
               return modules;
             else
               return ({});
-              // FIXME: handle local directory module lookups
           }
           else
             return modules;
       }
       else if (!base)
       {
-          other = base_objects();
+          other = base_objects(this);
           base = master()->root_module;
       }
 
@@ -2589,12 +2710,8 @@ class StdinHilfe
 
       if (sizeof(completable) == 1)
       {
-        if ( reference[completable[0]] )
-        {
-          return modules;
-        }
-        else
-        {
+          if (reference[completable[0]])
+            return indices(base);
           // FIXME: handle non-string indices better
           modules = sort((array(string))modules);
           modules = Array.filter(modules, has_prefix, completable[0]);
@@ -2602,10 +2719,7 @@ class StdinHilfe
           string module;
 
           if (sizeof(prefix))
-          {
-            readline->insert(prefix, readline->getcursorpos());
-            return ({});
-          }
+            return prefix;
 
           if (sizeof(modules)>1)
             return modules;
@@ -2621,53 +2735,26 @@ class StdinHilfe
             if(other && other[module])
             {
               thismodule = other[module];
-              ref = "->";
+              type = "object";
             }
             else if (base[module])
             {
               thismodule = base[module];
-              if (!ref)
-                ref = ".";
+              if (!type)
+                type = "module";
             }
 
-            // TODO: handle cases like Stdio.Readline which are both module and
-            // class
-            if (objectp(thismodule) || mappingp(thismodule))
-            {
-              readline->insert(ref, readline->getcursorpos());
-              return ({});
-            }
-            else if(functionp(thismodule) || programp(thismodule))
-            {
-              readline->insert("()", readline->getcursorpos());
-              readline->setcursorpos(readline->getcursorpos()-1);
-            }
-            else
-              readline->insert(" ", readline->getcursorpos());
-            return ({});
+            return low_get_module_completions(({}), thismodule, type);
           }
-        }
       }
+
       if (sizeof(completable))
       {
-          if ( reference[completable[0]])
-            return get_module_completions(completable[1..], base, completable[0]);
+          if (reference[completable[0]])
+            return low_get_module_completions(completable[1..], base, reference[completable[0]]);
 
-          object|mapping thismodule;
-          if(other && other[completable[0]])
-          {
-            thismodule = other[completable[0]];
-            ref = "->";
-          }
-          else if (base[completable[0]])
-          {
-            thismodule = base[completable[0]];
-          }
-
-          if (sizeof(completable) > 1 && thismodule && indices(thismodule))
-            return get_module_completions(completable[1..], thismodule, ref);
           else
-            readline->message(sprintf("UNHANDLED CASE: completable: %O\nbase: %O\nthismodule: %O\n", completable, base, thismodule));
+            readline->message(sprintf("UNHANDLED CASE: completable: %O\nbase: %O\n", completable, base));
       }
       
       return modules;

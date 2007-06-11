@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.392 2007/06/02 10:23:15 grubba Exp $
+// $Id: master.pike.in,v 1.393 2007/06/11 14:24:57 mbaehr Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -600,6 +600,7 @@ string normalize_path( string path )
 //!   name @expr{"/master"@}, and the program containing the @[main]
 //!   function under @expr{"/main"@}.
 mapping(string:program|NoValue) programs=(["/master":this_program]);
+mapping(program:mapping|object) documentation = ([]);
 
 mapping (program:object|NoValue) objects=([
   this_program : this,
@@ -753,6 +754,56 @@ static int prio_from_filename(string fname)
   return 0;
 }
 
+//! Used to capture the source from programs being compiled to allow later
+//! extraction of documentation
+static void cache_source(mixed ret, string fname, void|string source)
+{ 
+  if (documentation && !documentation[ret])
+    documentation[ret] = ([ "fname":fname, "source":source ]);
+}
+
+//! Show documentation for the item @[obj]
+//!
+//! @param obj
+//!   The object for which the documentation should be shown
+//!
+//! @returns
+//!   an AutoDoc object
+object show_doc(program|object|function obj)
+{ 
+  object doc_extractor = main_resolv("Tools.AutoDoc.PikeExtractor.extractClass"); 
+  string child;
+  program prog;
+  if (programp(obj))
+    prog = obj;
+  if (functionp(obj))
+  {
+    prog = function_program(obj);
+    child = (describe_function(obj)/"->")[-1];
+  }
+  if (objectp(obj))
+  {
+    if (obj->is_resolv_joinnode)
+      obj = obj->joined_modules[0]; // FIXME: check for multiples
+    if (obj->is_resolv_dirnode)
+      prog = object_program(obj->module);
+  }
+
+  if (doc_extractor && documentation[prog] && !documentation[prog]->doc)
+  {
+    documentation[prog]->doc = doc_extractor(documentation[prog]->source||master_read_file(documentation[prog]->fname)||"", sprintf("%O", prog));
+    documentation[prog]->source = 0; // source not needed once anymore
+  }
+  if (documentation[prog] && documentation[prog]->doc)
+  { 
+    if (child)
+      return documentation[prog]->doc->findObject(child);
+    else
+      return documentation[prog]->doc;
+  }
+}
+
+
 static program low_findprog(string pname,
 			    string ext,
 			    object|void handler,
@@ -806,6 +857,7 @@ static program low_findprog(string pname,
     {
       if(!zero_type (ret=programs[fname]) && ret != no_value) {
 	resolv_debug ("low_findprog %s: returning cached (no autoreload)\n", fname);
+        cache_source(ret, fname);
 	return ret;
       }
     }
@@ -816,6 +868,7 @@ static program low_findprog(string pname,
     if (load_time[fname] >= s->mtime)
       if (!zero_type (ret=programs[fname]) && ret != no_value) {
 	resolv_debug ("low_findprog %s: returning cached (autoreload)\n", fname);
+        cache_source(ret, fname);
 	return ret;
       }
 #endif
@@ -845,6 +898,7 @@ static program low_findprog(string pname,
 	      }
 	      else {
 		resolv_debug("low_findprog %s: returning %O\n", fname, ret);
+                cache_source(ret, fname);
 		return programs[fname]=ret;
 	      }
 	    };
@@ -886,6 +940,7 @@ static program low_findprog(string pname,
       }
       DEC_RESOLV_MSG_DEPTH();
       resolv_debug ("low_findprog %s: compilation ok\n", fname);
+      cache_source(ret, fname, src);
       break;
 
 #if constant(load_module)
@@ -928,6 +983,7 @@ static program low_findprog(string pname,
     }
     else {
       resolv_debug("low_findprog %s: returning %O\n", fname, ret);
+      cache_source(ret, fname);
       return programs[fname]=ret;
     }
   }
@@ -1016,7 +1072,11 @@ program low_cast_to_program(string pname,
   if(IS_ABSOLUTE_PATH(pname))
   {
     program|NoValue prog = programs[pname];
-    if ((!zero_type(prog)) && (prog != no_value)) return prog;
+    if ((!zero_type(prog)) && (prog != no_value))
+    { 
+      cache_source(prog, pname);
+      return prog;
+    }
     pname=combine_path("",pname);
     return findprog(pname,ext,handler,mkobj);
   }

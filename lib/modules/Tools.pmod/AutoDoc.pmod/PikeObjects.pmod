@@ -385,6 +385,15 @@ class _Class_or_Module {
     return children[a];
   }
 
+  PikeObject findObject(string name) {
+    int a = Array.search_array(docGroups,
+                               lambda(DocGroup d, string n) {
+                                 return (search(d->objects->name, n) >= 0);
+                               }, name);
+    if (a < 0) return 0;
+    return docGroups[a];
+  }
+
   void AddGroup(DocGroup d) {
     docGroups += ({ d });
   }
