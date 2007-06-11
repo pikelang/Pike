@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.194 2007/06/11 16:13:27 grubba Exp $
+|| $Id: interpret_functions.h,v 1.195 2007/06/11 18:13:27 grubba Exp $
 */
 
 /*
@@ -789,6 +789,7 @@ OPCODE0(F_ADD_TO, "+=", I_UPDATE_SP, {
 });
 
 OPCODE0(F_ADD_TO_AND_POP, "+= and pop", I_UPDATE_SP, {
+  ONERROR uwp;
   move_svalue (Pike_sp, Pike_sp - 1);
   Pike_sp[-1].type=PIKE_T_INT;
   Pike_sp++;
@@ -842,8 +843,13 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", I_UPDATE_SP, {
       goto add_to_and_pop_done;
     }
   }
+  /* NOTE: Pike_sp-4 is the lvalue, Pike_sp-2 is the original value.
+   *       If an error gets thrown, the original value will thus be restored.
+   *       If f_add() succeeds, Pike_sp-2 will hold the result.
+   */
+  SET_ONERROR(uwp, o_assign_lvalue, Pike_sp-4);
   f_add(2);
-  assign_lvalue(Pike_sp-3,Pike_sp-1);
+  CALL_AND_UNSET_ONERROR(uwp);	/* assign_lvalue(Pike_sp-3,Pike_sp-1); */
   pop_n_elems(3);
  add_to_and_pop_done:
    ; /* make gcc happy */
