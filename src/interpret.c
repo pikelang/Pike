@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.380 2007/04/16 08:45:18 grubba Exp $
+|| $Id: interpret.c,v 1.381 2007/06/11 16:12:40 grubba Exp $
 */
 
 #include "global.h"
@@ -473,6 +473,12 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
    else
      index_error(0,0,0,lval,lval+1,"Indexing a basic type.\n");
   }
+}
+
+/* On error callback. lvalue is followed by value to assign. */
+static void o_assign_lvalue(struct svalue *lvalue)
+{
+  assign_lvalue(lvalue, lvalue+2);
 }
 
 union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
