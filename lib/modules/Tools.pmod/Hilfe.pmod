@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.139 2007/06/12 14:29:14 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.140 2007/06/12 14:33:55 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -308,7 +308,7 @@ private class CommandExit {
 
 private class CommandDoc {
   inherit Command;
-  string help(string what) { return "Show documentation for pike modules and classes."; }
+  string help(string what) { return "Show documentation for pike modules and classes.\n"; }
 
   void exec(Evaluator e, string line, array(string) words,
 	    array(string) tokens) 
