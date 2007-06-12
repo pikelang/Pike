@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.99 2004/04/23 16:38:45 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.100 2007/06/12 08:08:55 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -37,6 +37,14 @@ void print_code(string test)
   return;
 }
 
+void report_size()
+{
+#if 0
+  werror("\n");
+  Process.system(sprintf("/usr/proc/bin/pmap %d|tail -1", getpid()));
+#endif
+}
+
 array find_testsuites(string dir)
 {
   array(string) ret=({});
@@ -44,21 +52,19 @@ array find_testsuites(string dir)
   {
     if(has_value(s,"no_testsuites")) return ret;
     foreach(s, string file)
-      {
-	switch(file)
-	{
-	  case "testsuite":
-	  case "module_testsuite":
-	    ret+=({ combine_path(dir||"",file) });
-	}
+    {
+      string name=combine_path(dir||"",file);
+      if(Stdio.is_dir(name)) {
+	ret+=find_testsuites(name);
+	continue;
       }
-
-    foreach(s, string file)
+      switch(file)
       {
-	string name=combine_path(dir||"",file);
-	if(Stdio.is_dir(name))
-	  ret+=find_testsuites(name);
+      case "testsuite":
+      case "module_testsuite":
+	ret+=({ combine_path(dir||"",file) });
       }
+    }
   }
   return ret;
 }
@@ -71,15 +77,26 @@ array(string) read_tests( string fn ) {
     exit(1);
   }
 
+  if(has_prefix(tests, "START")) {
+    tests = tests[6..];
+    if(!has_suffix(tests, "END\n"))
+      werror("%s: Missing end marker.\n", fn);
+    else
+      tests = tests[..sizeof(tests)-1-4];
+  }
+
   tests = tests/"\n....\n";
   return tests[0..sizeof(tests)-2];
 }
+
+mapping(string:int) pushed_warnings = ([]);
 
 class WarningFlag {
   int(0..1) warning;
   array(string) warnings = ({});
 
   void compile_warning(string file, int line, string text) {
+    if (pushed_warnings[text]) return;
     warnings += ({ line+": "+text });
     warning = 1;
   }
@@ -380,40 +397,56 @@ int main(int argc, array(string) argv)
     //werror("forked:%O\n", forked);
   }
 
-  add_constant("_verbose", verbose);
-  if(verbose)
-    write("Begin tests at "+ctime(time()));
+  // Move stdout to a higher fd, so that close on exec works.
+  // This makes sure the original stdout gets closed even if
+  // some subprocess hangs.
+  Stdio.File stdout = Stdio.File();
+  Stdio.stdout->dup2(stdout);
+  //stdout->assign(Stdio.stdout->_fd->dup());
+  Stdio.stderr->dup2(Stdio.stdout);
+  stdout->set_close_on_exec(1);
 
 #ifdef WATCHDOG
   int watchdog_time=time();
 
   if(use_watchdog && !forked)
   {
+    object watchdog_tmp;
 #ifdef WATCHDOG_PIPE
-    object watchdog_tmp=Stdio.File();
-    watchdog_pipe=watchdog_tmp->pipe(Stdio.PROP_IPC);
+    watchdog_tmp = Stdio.File();
+    watchdog_pipe = watchdog_tmp->pipe(Stdio.PROP_IPC);
+    add_constant("__signal_watchdog",lambda(){});
+#endif
     watchdog=Process.create_process(
       backtrace()[0][3] + ({  "--watchdog="+getpid() }),
-      (["stdin":watchdog_tmp ]));
-    destruct(watchdog_tmp);
-#endif
-
-#ifdef WATCHDOG_SIGNAL
-    watchdog=Process.create_process(
-      backtrace()[0][3] + ({  "--watchdog="+getpid() }) );
-#endif
+      ([
+	"stdin" :watchdog_tmp || Stdio.stdin,
+	"stdout":Stdio.stderr,
+	"stderr":Stdio.stderr,
+      ]));
+    if (watchdog_tmp) destruct(watchdog_tmp);
   }
+#endif
+#if defined(WATCHDOG_SIGNAL) && defined(WATCHDOG)
   add_constant("__signal_watchdog",signal_watchdog);
-#else
-  add_constant("__signal_watchdog",lambda(){});
-#endif // else WATCHDOG_PIPE
+#else // WATCHDOG_PIPE or !WATCHDOG
+    add_constant("__signal_watchdog",lambda(){});
+#endif // WATCHDOG_SIGNAL && WATCHDOG
+
+  add_constant("_verbose", verbose);
+  if(verbose)
+    stdout->write("Begin tests at "+ctime(time()));
 
   testsuites += Getopt.get_args(argv, 1)[1..];
-  if(!sizeof(testsuites))
-  {
-    werror("No tests found. Use --help for more information.\n");
-    exit(1);
+  foreach(testsuites; int pos; string ts) {
+    if(Stdio.is_dir(ts))
+      testsuites[pos] = ts = combine_path(ts, "testsuite");
+    if(!file_stat(ts))
+      exit(1, "Could not find test %O.\n", ts);
   }
+
+  if(!sizeof(testsuites))
+    exit(1, "No tests found. Use --help for more information.\n");
 
 #if 1
   // Store the name of all constants so that we can see
@@ -433,6 +466,12 @@ int main(int argc, array(string) argv)
       foreach(testsuites, string testsuite) {
 	Stdio.File p = Stdio.File();
 	Stdio.File p2 = p->pipe();
+	if(!p2) {
+	  werror("Failed to create pipe.\n");
+	  if(fail) exit(1);
+	  errors++;
+	  continue;
+	}
 	object pid =
 	  Process.create_process(forked + ({ testsuite }),
 				 ([ "stdout":p2 ]));
@@ -447,8 +486,15 @@ int main(int argc, array(string) argv)
 	     (sscanf(results, "%*stotal tests:%d", total) != 2) +
 	     (sscanf(results, "%*s(%d tests skipped)", skip) != 2)) == 3) {
 	  // Failed to parse the result totally.
-	  werror("Failed to parse subresult for testsuite %O (exitcode:%d):\n"
-		 "%s", testsuite, err, raw_results);
+	  if (err == -1) {
+	    werror("Failed to parse subresult for testsuite %O "
+		   "(died of signal %d).\n"
+		   "%O", testsuite, pid->last_signal(), raw_results);
+	  } else {
+	    werror("Failed to parse subresult for testsuite %O "
+		   "(exitcode:%d):\n"
+		   "%O", testsuite, err, raw_results);
+	  }
 	  errors++;
 	} else {
 	  werror("Subresult: %d tests, %d failed, %d skipped\n",
@@ -456,6 +502,8 @@ int main(int argc, array(string) argv)
 	  errors += failed;
 	  successes += total - failed;
 	  skipped += skip;
+	  werror("Accumulated: %d tests, %d failed, %d skipped\n",
+		 successes + errors, errors, skipped);
 	}
 	if (fail && errors) {
 	  exit(1);
@@ -474,6 +522,9 @@ int main(int argc, array(string) argv)
       for(e=start;e<sizeof(tests);e++)
       {
 	signal_watchdog();
+
+	if (!((e-start) % 10))
+	  report_size();
 
 	int skip=0, prev_errors = errors;
 	object o;
@@ -855,6 +906,32 @@ int main(int argc, array(string) argv)
 	      successes++;
 	    }
 	    break;
+
+	  case "PUSH_WARNING":
+	    if (!stringp(a)) {
+	      werror(pad_on_error + fname + " failed.\n");
+	      print_code(test);
+	      werror(sprintf("o->a(): %O\n", a));
+	    } else {
+	      pushed_warnings[a]++;
+	    }
+	    break;
+		
+	  case "POP_WARNING":
+	    if (!stringp(a)) {
+	      werror(pad_on_error + fname + " failed.\n");
+	      print_code(test);
+	      werror(sprintf("o->a(): %O\n", a));
+	    } else if (pushed_warnings[a]) {
+	      if (!--pushed_warnings[a]) {
+		m_delete(pushed_warnings, a);
+	      }
+	    } else {
+	      werror(pad_on_error + fname + " failed.\n");
+	      print_code(test);
+	      werror(sprintf("o->a(): %O not pushed!\n", a));
+	    }
+	    break;
 		
 	  case "RUN":
 	    successes++;
@@ -963,6 +1040,7 @@ int main(int argc, array(string) argv)
       }
     }
     }
+    report_size();
     if(mem)
     {
       int total;
@@ -982,17 +1060,18 @@ int main(int argc, array(string) argv)
 	}
       }
       werror( "%-10s: %6s %10d\n",
-	     "Total", "", total );
+	      "Total", "", total );
     }
   }
   if(errors || verbose>1)
   {
-    write("Failed tests: "+errors+".\n");
+    stdout->write("Failed tests: "+errors+".\n");
   }
 
-  write("Total tests: %d  (%d tests skipped)\n",successes+errors,skipped);
+  stdout->write(sprintf("Total tests: %d  (%d tests skipped)\n",
+			successes+errors, skipped));
   if(verbose)
-    write("Finished tests at "+ctime(time()));
+    stdout->write("Finished tests at "+ctime(time()));
 
 #if 1
   if(verbose && sizeof(all_constants())!=sizeof(const_names)) {
@@ -1026,23 +1105,23 @@ constant doc = #"
 Usage: test_pike [args] [testfiles]
 
 --no-watchdog       Watchdog will not be used.
---watchdog=pid      Run only the watchdog and monitor the process with the given
-                    pid.
+--watchdog=pid      Run only the watchdog and monitor the process with
+                    the given pid.
 -h, --help          Prints this message.
 -v[level],
---verbose[=level]   Select the level of verbosity. Every verbose level includes
-                    the printouts from the levels below.
+--verbose[=level]   Select the level of verbosity. Every verbosity level
+                    includes the printouts from the levels below.
                     0  No extra printouts.
                     1  Some additional information printed out after every
                        finished block of tests.
-                    2  Some extra information about test that will or won't be
+                    2  Some extra information about tests that will or won't be
                        run.
                     3  Every test is printed out.
-                    4  Time spent in individual tests are printed out.
+                    4  Time spent in individual tests is printed out.
                     10 The actual Pike code compiled, including wrappers, is
                        printed.
 -p, --prompt        The user will be asked before every test is run.
--sX, --start-test=X Where in the testsuite testing should start, e.g. ignores X
+-sX, --start-test=X Where in the testsuite testing should start, i.e. ignores X
                     tests in every testsuite.
 -eX, --end-after=X  How many tests should be run.
 -f, --fail          If set, the test program exits on first failure.
@@ -1059,7 +1138,7 @@ Usage: test_pike [args] [testfiles]
                     X<0 For values below zero, _verify_internals will be run
                         before every n:th test, where n=abs(X).
 -m, --mem, --memory Print out memory allocations after the tests.
--a, --auto[=dir]    Let the test program find the testsuits self.
+-a, --auto[=dir]    Let the test program find the testsuites automatically.
 -T, --notty         Format output for non-tty.
 -d, --debug         Opens a debug port.
 ";
