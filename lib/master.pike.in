@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.393 2007/06/11 14:24:57 mbaehr Exp $
+// $Id: master.pike.in,v 1.394 2007/06/12 14:29:14 mbaehr Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -352,7 +352,7 @@ program compile_string(string source, void|string filename,
 		       void|object o,
 		       void|int _show_if_constant_errors)
 {
-  return compile(cpp(source, filename||"-", 1, handler,
+  program ret = compile(cpp(source, filename||"-", 1, handler,
 		     compat_major, compat_minor,
 		     (zero_type(_show_if_constant_errors)?
 		      show_if_constant_errors:
@@ -362,6 +362,8 @@ program compile_string(string source, void|string filename,
 		 compat_minor,
 		 p,
 		 o);
+  cache_source(ret, filename, source);
+  return ret;
 }
 
 //!
@@ -508,7 +510,7 @@ program compile_file(string filename,
 		     void|object o)
 {
   AUTORELOAD_CHECK_FILE(filename);
-  return compile(cpp(master_read_file(filename),
+  program ret = compile(cpp(master_read_file(filename),
 		     filename,
 		     1,
 		     handler,
@@ -519,6 +521,8 @@ program compile_file(string filename,
 		 compat_minor,
 		 p,
 		 o);
+  cache_source(ret, filename);
+  return ret;
 }
 
 
@@ -758,8 +762,13 @@ static int prio_from_filename(string fname)
 //! extraction of documentation
 static void cache_source(mixed ret, string fname, void|string source)
 { 
-  if (documentation && !documentation[ret])
-    documentation[ret] = ([ "fname":fname, "source":source ]);
+  if (documentation && !documentation[ret] && (fname||source))
+  {
+    if (fname)
+      documentation[ret] = ([ "fname":fname ]);
+    else
+      documentation[ret] = ([ "source":source ]);
+  }
 }
 
 //! Show documentation for the item @[obj]
@@ -779,7 +788,7 @@ object show_doc(program|object|function obj)
   if (functionp(obj))
   {
     prog = function_program(obj);
-    child = (describe_function(obj)/"->")[-1];
+    child = ((describe_function(obj)||"")/"->")[-1];
   }
   if (objectp(obj))
   {
@@ -940,7 +949,7 @@ static program low_findprog(string pname,
       }
       DEC_RESOLV_MSG_DEPTH();
       resolv_debug ("low_findprog %s: compilation ok\n", fname);
-      cache_source(ret, fname, src);
+      cache_source(ret, fname);
       break;
 
 #if constant(load_module)

@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.138 2007/06/11 15:03:22 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.139 2007/06/12 14:29:14 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -316,24 +316,22 @@ private class CommandDoc {
     object module = resolv(e, tokens[2..])[0];
     object docs = master()->show_doc(module);
     object child;
-    e->safe_write("\n");
     if (docs && docs->documentation)
     {
-      e->safe_write("%{%s\n%}\n", docs->objects->print());
-      e->safe_write(docs->documentation->text);
+      e->safe_write("\n%{%s\n%}\n", docs->objects->print());
+      e->safe_write(docs->documentation->text+"\n");
     }
     else if (docs && (child=docs->findObject("create")) && child->documentation)
     {
-      e->safe_write("%{%s\n%}\n", replace(child->objects->print()[*], ([ "create":(tokens[2..]-({"\n\n"}))*"", " | ":"|" ]) ));
-      e->safe_write(child->documentation->text);
+      e->safe_write("\n%{%s\n%}\n", replace(child->objects->print()[*], ([ "create":(tokens[2..]-({"\n\n"}))*"", " | ":"|" ]) ));
+      e->safe_write(child->documentation->text+"\n");
     }
     else if (docs && sizeof(docs->docGroups))
-      e->safe_write("%{%s\n%}", Array.flatten(docs->docGroups->objects->print()));
+      e->safe_write("\n%{%s\n%}\n", Array.flatten(docs->docGroups->objects->print()));
     else if (objectp(module))
-      e->safe_write("%{%s\n%}", indices(module));
+      e->safe_write("\n%{%s\n%}\n", indices(module));
     else
-      e->safe_write("Documentation not found!");
-    e->safe_write("\n");
+      e->safe_write("Documentation not found!\n");
   }
 }
 
@@ -2436,7 +2434,8 @@ class StdinHilfe
     if(!readline->get_history())
       readline->enable_history(512);
     readline->get_input_controller()->bind("\t", handle_tab);
-    readline->get_input_controller()->bind("^D", handle_doc);
+    readline->get_input_controller()->bind("^H", handle_doc);
+    readline->get_input_controller()->bind("\\!k1", handle_doc);
 
     signal(signum("SIGINT"),signal_trap);
 
@@ -2488,11 +2487,12 @@ class StdinHilfe
     {
       tokens = Parser.Pike.split(input);
     };
-    if (error)
+    if (error || !tokens || !sizeof(tokens))
       return;
 
     array completable = get_resolvable(tokens);
-    add_input_line("doc "+completable*"");
+    if (sizeof(completable))
+      add_input_line("doc "+completable*"");
   }
 
   void handle_tab(string key)
