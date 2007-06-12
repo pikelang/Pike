@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.140 2007/06/12 14:33:55 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.141 2007/06/12 15:22:47 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -308,7 +308,7 @@ private class CommandExit {
 
 private class CommandDoc {
   inherit Command;
-  string help(string what) { return "Show documentation for pike modules and classes.\n"; }
+  string help(string what) { return "Show documentation for pike modules and classes."; }
 
   void exec(Evaluator e, string line, array(string) words,
 	    array(string) tokens) 
@@ -365,7 +365,7 @@ Rewritten by Martin Nilsson 2002
 
     if(sizeof(words)>1 && e->commands[words[1]]) {
       string ret = e->commands[words[1]]->doc(words[1], words[2..]*"");
-      if(ret) write(ret);
+      if(ret) write(ret+"\n");
       return;
     }
 
