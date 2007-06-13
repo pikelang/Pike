@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.395 2007/06/13 13:30:51 mbaehr Exp $
+// $Id: master.pike.in,v 1.396 2007/06/13 14:25:30 mbaehr Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -362,7 +362,8 @@ program compile_string(string source, void|string filename,
 		 compat_minor,
 		 p,
 		 o);
-  cache_source(ret, source);
+  if (source_cache)
+    source_cache[ret] = source;
   return ret;
 }
 
@@ -602,7 +603,8 @@ string normalize_path( string path )
 //!   name @expr{"/master"@}, and the program containing the @[main]
 //!   function under @expr{"/main"@}.
 mapping(string:program|NoValue) programs=(["/master":this_program]);
-mapping(program:mapping|object) documentation = ([]);
+mapping(program:object) documentation = ([]);
+mapping(program:string) source_cache;
 
 mapping (program:object|NoValue) objects=([
   this_program : this,
@@ -756,14 +758,6 @@ static int prio_from_filename(string fname)
   return 0;
 }
 
-//! Used to capture the source from programs being compiled to allow later
-//! extraction of documentation
-static void cache_source(mixed ret, string source)
-{ 
-  if (documentation && !documentation[ret])
-    documentation[ret] = ([ "source":source ]);
-}
-
 //! Find the files in which @[mod] is defined, as they may be hidden away in 
 //! joinnodes and dirnodes
 //!
@@ -792,6 +786,12 @@ array(string) module_defined(object mod)
   return files;
 }
 
+//! Enable caching of sources from compile_string()
+void enable_source_cache()
+{
+  source_cache = ([]);
+}
+
 //! Show documentation for the item @[obj]
 //!
 //! @param obj
@@ -804,7 +804,6 @@ object show_doc(program|object|function obj)
   object doc_extractor = main_resolv("Tools.AutoDoc.PikeExtractor.extractClass"); 
   string child;
   program prog;
-  string fname;
 
   if (programp(obj))
     prog = obj;
@@ -821,19 +820,30 @@ object show_doc(program|object|function obj)
       prog = object_program(obj->module);
   }
 
-  fname = Builtin()->program_defined(prog);
 
-  if (doc_extractor && (!documentation[prog] || !documentation[prog]->doc))
+  if (!documentation[prog] && doc_extractor)
   {
-    documentation[prog] = ([ "doc":doc_extractor(documentation[prog]->source||master_read_file(fname)||"", sprintf("%O", prog)) ]);
+    string source;
+    if (!source_cache || !source_cache[prog])
+      source = master_read_file(Builtin()->program_defined(prog)); 
+    else
+      source = source_cache[prog];
+    if (source)
+    {
+      catch
+      {
+        documentation[prog] = doc_extractor(source, sprintf("%O", prog));
+      };
+      //FIXME: handle this error somehow
+    }
   }
 
-  if (documentation[prog] && documentation[prog]->doc)
+  if (documentation[prog])
   { 
     if (child)
-      return documentation[prog]->doc->findObject(child);
+      return documentation[prog]->findObject(child);
     else
-      return documentation[prog]->doc;
+      return documentation[prog];
   }
 }
 
