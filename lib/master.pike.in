@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.396 2007/06/13 14:25:30 mbaehr Exp $
+// $Id: master.pike.in,v 1.397 2007/06/13 15:14:27 mbaehr Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -789,7 +789,8 @@ array(string) module_defined(object mod)
 //! Enable caching of sources from compile_string()
 void enable_source_cache()
 {
-  source_cache = ([]);
+  if (!source_cache)
+    source_cache = ([]);
 }
 
 //! Show documentation for the item @[obj]
