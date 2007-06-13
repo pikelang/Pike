@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.394 2007/06/12 14:29:14 mbaehr Exp $
+// $Id: master.pike.in,v 1.395 2007/06/13 13:30:51 mbaehr Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -362,7 +362,7 @@ program compile_string(string source, void|string filename,
 		 compat_minor,
 		 p,
 		 o);
-  cache_source(ret, filename, source);
+  cache_source(ret, source);
   return ret;
 }
 
@@ -510,7 +510,7 @@ program compile_file(string filename,
 		     void|object o)
 {
   AUTORELOAD_CHECK_FILE(filename);
-  program ret = compile(cpp(master_read_file(filename),
+  return compile(cpp(master_read_file(filename),
 		     filename,
 		     1,
 		     handler,
@@ -521,8 +521,6 @@ program compile_file(string filename,
 		 compat_minor,
 		 p,
 		 o);
-  cache_source(ret, filename);
-  return ret;
 }
 
 
@@ -760,15 +758,38 @@ static int prio_from_filename(string fname)
 
 //! Used to capture the source from programs being compiled to allow later
 //! extraction of documentation
-static void cache_source(mixed ret, string fname, void|string source)
+static void cache_source(mixed ret, string source)
 { 
-  if (documentation && !documentation[ret] && (fname||source))
+  if (documentation && !documentation[ret])
+    documentation[ret] = ([ "source":source ]);
+}
+
+//! Find the files in which @[mod] is defined, as they may be hidden away in 
+//! joinnodes and dirnodes
+//!
+//! @param mod
+//!   The module we are looking for.
+//!
+//! @returns
+//!   An array of strings with filenames.
+//!   (one for each file in a joinnode, or just one otherwise)
+array(string) module_defined(object mod)
+{
+  array mods;
+  array files = ({});
+  if (mod->is_resolv_joinnode)
+    mods = mod->joined_modules; 
+  else
+    mods = ({ mod });
+
+  foreach (mods;; object mod)
   {
-    if (fname)
-      documentation[ret] = ([ "fname":fname ]);
+    if (mod->is_resolv_dirnode)
+      files += ({ Builtin()->program_defined(object_program(mod->module)) });
     else
-      documentation[ret] = ([ "source":source ]);
+      files += ({ Builtin()->program_defined(object_program(mod)) });
   }
+  return files;
 }
 
 //! Show documentation for the item @[obj]
@@ -783,6 +804,8 @@ object show_doc(program|object|function obj)
   object doc_extractor = main_resolv("Tools.AutoDoc.PikeExtractor.extractClass"); 
   string child;
   program prog;
+  string fname;
+
   if (programp(obj))
     prog = obj;
   if (functionp(obj))
@@ -798,11 +821,13 @@ object show_doc(program|object|function obj)
       prog = object_program(obj->module);
   }
 
-  if (doc_extractor && documentation[prog] && !documentation[prog]->doc)
+  fname = Builtin()->program_defined(prog);
+
+  if (doc_extractor && (!documentation[prog] || !documentation[prog]->doc))
   {
-    documentation[prog]->doc = doc_extractor(documentation[prog]->source||master_read_file(documentation[prog]->fname)||"", sprintf("%O", prog));
-    documentation[prog]->source = 0; // source not needed once anymore
+    documentation[prog] = ([ "doc":doc_extractor(documentation[prog]->source||master_read_file(fname)||"", sprintf("%O", prog)) ]);
   }
+
   if (documentation[prog] && documentation[prog]->doc)
   { 
     if (child)
@@ -866,7 +891,6 @@ static program low_findprog(string pname,
     {
       if(!zero_type (ret=programs[fname]) && ret != no_value) {
 	resolv_debug ("low_findprog %s: returning cached (no autoreload)\n", fname);
-        cache_source(ret, fname);
 	return ret;
       }
     }
@@ -877,7 +901,6 @@ static program low_findprog(string pname,
     if (load_time[fname] >= s->mtime)
       if (!zero_type (ret=programs[fname]) && ret != no_value) {
 	resolv_debug ("low_findprog %s: returning cached (autoreload)\n", fname);
-        cache_source(ret, fname);
 	return ret;
       }
 #endif
@@ -907,7 +930,6 @@ static program low_findprog(string pname,
 	      }
 	      else {
 		resolv_debug("low_findprog %s: returning %O\n", fname, ret);
-                cache_source(ret, fname);
 		return programs[fname]=ret;
 	      }
 	    };
@@ -949,7 +971,6 @@ static program low_findprog(string pname,
       }
       DEC_RESOLV_MSG_DEPTH();
       resolv_debug ("low_findprog %s: compilation ok\n", fname);
-      cache_source(ret, fname);
       break;
 
 #if constant(load_module)
@@ -992,7 +1013,6 @@ static program low_findprog(string pname,
     }
     else {
       resolv_debug("low_findprog %s: returning %O\n", fname, ret);
-      cache_source(ret, fname);
       return programs[fname]=ret;
     }
   }
@@ -1083,7 +1103,6 @@ program low_cast_to_program(string pname,
     program|NoValue prog = programs[pname];
     if ((!zero_type(prog)) && (prog != no_value))
     { 
-      cache_source(prog, pname);
       return prog;
     }
     pname=combine_path("",pname);
