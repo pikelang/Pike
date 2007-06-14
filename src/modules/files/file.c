@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.323 2006/03/05 22:22:20 marcus Exp $
+|| $Id: file.c,v 1.324 2007/06/14 17:24:31 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.323 2006/03/05 22:22:20 marcus Exp $");
+RCSID("$Id: file.c,v 1.324 2007/06/14 17:24:31 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -2838,19 +2838,28 @@ static void file_dup2(INT32 args)
     SIMPLE_BAD_ARG_ERROR("Stdio.File->dup2", 1, "Stdio.File");
 
 
-  if(fd->box.fd < 0)
-    Pike_error("File given to dup2 not open.\n");
+  if(fd->box.fd < 0) {
+    /* FIXME: Use change_fd_for_box here! */
+    fd->box.revents = 0;
+    if((fd->box.fd = fd_dup(FD)) < 0)
+    {
+      ERRNO = errno;
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
+  } else {
+    if (fd->flags & FILE_LOCK_FD) {
+      Pike_error("File has been temporarily locked from closing.\n");
+    }
 
-  if (fd->flags & FILE_LOCK_FD) {
-    Pike_error("File has been temporarily locked from closing.\n");
-  }
-
-  if(fd_dup2(FD,fd->box.fd) < 0)
-  {
-    ERRNO=errno;
-    pop_n_elems(args);
-    push_int(0);
-    return;
+    if(fd_dup2(FD,fd->box.fd) < 0)
+    {
+      ERRNO=errno;
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
   }
   ERRNO=0;
   low_dup(o, fd, THIS);
