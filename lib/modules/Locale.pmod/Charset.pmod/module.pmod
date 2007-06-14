@@ -193,6 +193,48 @@ private class UTF16LEdec {
   static void create() { le=1; }
 }
 
+private class ISO6937dec {
+  static Decoder decoder = rfc1345("iso6937");
+  static string trailer = "";
+  string drain()
+  {
+    string res = trailer + decoder->drain();
+    trailer = "";
+    if (String.width(res) <= 8) {
+      return res;
+    }
+    if ((res[-1] >= 0x0300) && (res[-1] < 0x0370)) {
+      // Ends with a combiner. Keep it for later.
+      trailer = res[sizeof(res)-1..];
+      res = res[..sizeof(res)-2];
+    }
+    // Swap any combiners with the following character.
+    array(int) chars = (array(int)) res;
+    int swapped;
+    int i;
+    foreach(res; int i; int c) {
+      if ((c < 0x0300) || (c >= 0x0370)) continue;
+      chars[i] = chars[i+1];
+      chars[i+1] = c;
+      swapped = 1;
+    }
+    if (!swapped) return res;
+    // Recombine the characters.
+    return Unicode.normalize((string)chars, "NFC");
+  }
+  this_program feed(string s)
+  {
+    decoder->feed(s);
+    return this;
+  }  
+  this_program clear()
+  {
+    decoder->clear();
+    trailer = "";
+    return this;
+  }
+}
+
 private string normalize(string in) {
   if(!in) return 0;
   string out = replace(lower_case(in),
@@ -258,6 +300,8 @@ Decoder decoder(string name)
     "utf7½": UTF7_5dec,
     "shiftjis": ShiftJisDec,
     "mskanji": ShiftJisDec,
+    "iso6937": ISO6937dec,
+    "iso69372001": ISO6937dec,
   ])[name];
 
   if(p)
@@ -376,6 +420,45 @@ private class UTF16LEenc {
   }
 }
 
+private class ISO6937enc {
+  static Encoder encoder;
+  static void create(string|void replacement,
+		     function(string:string)|void repcb)
+  {
+    encoder = rfc1345("iso6937", 1, replacement, repcb);
+  }
+  string drain()
+  {
+    return encoder->drain();
+  }
+  this_program feed(string s)
+  {
+    s = Unicode.normalize(s, "NFD");
+    if (String.width(s) > 8) {
+      // Swap any combiners with the preceeding character.
+      array(int) chars = (array(int)) s;
+      int swapped;
+      int i;
+      foreach(s; int i; int c) {
+	if ((!i) || (c < 0x0300) || (c >= 0x0370)) continue;
+	chars[i] = chars[i-1];
+	chars[i-1] = c;
+	swapped = 1;
+      }
+      if (swapped) {
+	s = (string)chars;
+      }
+    }
+    encoder->feed(s);
+    return this;
+  }  
+  this_program clear()
+  {
+    encoder->clear();
+    return this;
+  }
+}
+
 //! Returns a charset encoder object.
 //!
 //! @param name
@@ -431,6 +514,8 @@ Encoder encoder(string name, string|void replacement,
     "936": GBKenc,
     "shiftjis": ShiftJisEnc,
     "mskanji": ShiftJisEnc,
+    "iso6937": ISO6937enc,
+    "iso69372001": ISO6937enc,
   ])[name];
 
   if(p)
