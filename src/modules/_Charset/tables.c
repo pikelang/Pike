@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tables.c,v 1.28 2007/06/14 15:23:27 grubba Exp $
+|| $Id: tables.c,v 1.29 2007/06/15 12:26:36 grubba Exp $
 */
 
 #include "iso2022.h"
@@ -10755,7 +10755,7 @@ const UNICHAR * const iso2022_96[] = {
   map_ISO_8859_4_1998, map_CSA_Z243_4_1985_gr, map_ISO_8859_7_1987, map_ISO_8859_6_1999, 
   map_ISO_8859_8_1999, map_CSN_369103, map_ISO_6937_2_add, map_IEC_P27_1, 
   map_ISO_8859_5_1999, map_ISO_8859_9_1999, map_ISO_6937_2_25, map_GOST_19768_74, 
-  map_ISO_8859_supp, map_ISO_10367_box, NULL, NULL, 
+  map_ISO_8859_supp, map_ISO_10367_box, map_ISO_6937_2001, NULL, 
   NULL, NULL, map_ISO_8859_10_1998, NULL, 
   map_latin_lap, map_ISO_8859_13_1998, NULL, NULL, 
   NULL, NULL, NULL, map_ISO_8859_14_1998, 
@@ -13662,6 +13662,7 @@ const struct charset_def charset_map[] = {
   { "isoir153", map_GOST_19768_74, MODE_96 },                         /* :: iso-ir-153 */
   { "isoir154", map_ISO_8859_supp, MODE_96 },                         /* :: iso-ir-154 */
   { "isoir155", map_ISO_10367_box, MODE_96 },                         /* :: iso-ir-155 */
+  { "isoir156", map_ISO_6937_2001, MODE_96 },                         /* :: iso-ir-156 */
   { "isoir157", map_ISO_8859_10_1998, MODE_96 },                      /* :: iso-ir-157 */
   { "isoir158", map_latin_lap, MODE_96 },                             /* :: iso-ir-158 */
   { "isoir159", map_JIS_X0212_1990, MODE_9494 },                      /* :: iso-ir-159 */

@@ -300,6 +300,7 @@ Decoder decoder(string name)
     "utf7½": UTF7_5dec,
     "shiftjis": ShiftJisDec,
     "mskanji": ShiftJisDec,
+    "isoir156": ISO6937dec,
     "iso6937": ISO6937dec,
     "iso69372001": ISO6937dec,
   ])[name];
@@ -514,6 +515,7 @@ Encoder encoder(string name, string|void replacement,
     "936": GBKenc,
     "shiftjis": ShiftJisEnc,
     "mskanji": ShiftJisEnc,
+    "isoir156": ISO6937enc,
     "iso6937": ISO6937enc,
     "iso69372001": ISO6937enc,
   ])[name];
