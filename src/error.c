@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.148 2006/09/20 16:15:55 mast Exp $
+|| $Id: error.c,v 1.149 2007/06/16 23:52:52 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -526,36 +526,32 @@ PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((n
   va_end(args);
 }
 
-PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn))
+PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args) ATTRIBUTE((noreturn))
 {
-  va_list args;
   static int in_fatal = 0;
 
   /* fprintf(stderr, "Raw error: %s\n", fmt); */
 
-  va_start(args,fmt);
   /* Prevent double fatal. */
   if (in_fatal)
   {
-    (void)VFPRINTF(stderr, fmt, args);
+    if (fmt) (void)VFPRINTF(stderr, fmt, args);
     do_abort();
   }
 
   in_fatal = 1;
 #ifdef PIKE_DEBUG
   if (d_flag) {
-    (void)VFPRINTF(stderr, fmt, args);
+    if (fmt) (void)VFPRINTF(stderr, fmt, args);
     dump_backlog();
   }
 #endif
 
+  if (fmt) (void)VFPRINTF(stderr, fmt, args);
+
   if(Pike_in_gc)
-    fprintf(stderr,"Pike was in GC stage %d when this fatal occured:\n",Pike_in_gc);
+    fprintf(stderr,"Pike was in GC stage %d when this fatal occured.\n",Pike_in_gc);
   Pike_in_gc = GC_PASS_DISABLED;
-
-  (void)VFPRINTF(stderr, fmt, args);
-
-  va_end(args);
 
   d_flag=Pike_interpreter.trace_level=0;
 
@@ -585,6 +581,14 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
   }
   fflush(stderr);
   do_abort();
+}
+
+PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn))
+{
+  va_list args;
+  va_start(args,fmt);
+  debug_va_fatal (fmt, args);
+  va_end (args);
 }
 
 #if 1

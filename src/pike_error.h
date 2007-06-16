@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.39 2006/08/02 15:02:40 mast Exp $
+|| $Id: pike_error.h,v 1.40 2007/06/16 23:52:52 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -65,6 +65,7 @@ PMOD_EXPORT extern const char msg_fatal_error[];
 #define fatal Pike_fatal
 #endif
 
+PMOD_EXPORT DECLSPEC(noreturn) void debug_va_fatal(const char *fmt, va_list args) ATTRIBUTE((noreturn));
 PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn));
 
 
