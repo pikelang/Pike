@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tables.c,v 1.29 2007/06/15 12:26:36 grubba Exp $
+|| $Id: tables.c,v 1.30 2007/06/16 08:49:47 grubba Exp $
 */
 
 #include "iso2022.h"
@@ -10737,31 +10737,31 @@ const UNICHAR * const iso2022_94[] = {
   map_ISO_646_irv_1983, map_BS_4730, map_ANSI_X3_4_1968, map_NATS_SEFI, 
   map_NATS_SEFI_ADD, map_NATS_DANO, map_NATS_DANO_ADD, map_SEN_850200_B, 
   map_SEN_850200_C, map_JIS_C6220_1969_jp, map_JIS_C6220_1969_ro, map_DIN_66003, 
-  map_PT, NULL, map_ISO_5427, NULL, 
-  NULL, map_ISO_5427_1981, map_NF_Z_62_010_1973, map_ISO_5428_1980, 
+  map_PT, /*ISOIR39*/NULL, map_ISO_5427, /*ISOIR38*/NULL, 
+  /*ISOIR53*/NULL, map_ISO_5427_1981, map_NF_Z_62_010_1973, map_ISO_5428_1980, 
   map_GB_1988_80, map_Latin_greek_1, map_BS_viewdata, map_INIS, 
-  NULL, map_IT, map_ES, map_greek7_old, 
-  map_latin_greek, map_INIS_8, map_INIS_cyrillic, NULL, 
-  map_NS_4551_1, map_NS_4551_2, map_videotex_suppl, NULL, 
-  NULL, NULL, map_NF_Z_62_010, map_PT2, 
+  /*ISOIR31*/NULL, map_IT, map_ES, map_greek7_old, 
+  map_latin_greek, map_INIS_8, map_INIS_cyrillic, /*ISOIR59*/NULL, 
+  map_NS_4551_1, map_NS_4551_2, map_videotex_suppl, /*ISOIR71*/NULL, 
+  /*ISOIR72*/NULL, /*ISOIR68*/NULL, map_NF_Z_62_010, map_PT2, 
   map_ES2, map_MSZ_7795_3, map_greek7, map_ASMO_449, 
   map_iso_ir_90, map_JIS_C6229_1984_a, map_JIS_C6229_1984_b, map_JIS_C6229_1984_b_add, 
   map_JIS_C6229_1984_hand, map_JIS_C6229_1984_hand_add, map_JIS_C6229_1984_kana, map_ISO_2033_1983, 
   map_ANSI_X3_110_1983, map_T_61_7bit, map_T_61_8bit, map_CSA_Z243_4_1985_1, 
-  map_CSA_Z243_4_1985_2, NULL, map_JUS_I_B1_002, map_JUS_I_B1_003_serb, 
+  map_CSA_Z243_4_1985_2, /*ISOIR137*/NULL, map_JUS_I_B1_002, map_JUS_I_B1_003_serb, 
   map_T_101_G2, map_JUS_I_B1_003_mac, NULL };
 const UNICHAR * const iso2022_96[] = {
   map_ECMA_cyrillic, map_ISO_8859_1_1998, map_ISO_8859_2_1999, map_ISO_8859_3_1999, 
   map_ISO_8859_4_1998, map_CSA_Z243_4_1985_gr, map_ISO_8859_7_1987, map_ISO_8859_6_1999, 
   map_ISO_8859_8_1999, map_CSN_369103, map_ISO_6937_2_add, map_IEC_P27_1, 
   map_ISO_8859_5_1999, map_ISO_8859_9_1999, map_ISO_6937_2_25, map_GOST_19768_74, 
-  map_ISO_8859_supp, map_ISO_10367_box, map_ISO_6937_2001, NULL, 
-  NULL, NULL, map_ISO_8859_10_1998, NULL, 
-  map_latin_lap, map_ISO_8859_13_1998, NULL, NULL, 
-  NULL, NULL, NULL, map_ISO_8859_14_1998, 
-  NULL, NULL, map_ISO_8859_15_1999, NULL, 
-  NULL, NULL, NULL, NULL, 
-  NULL, NULL, NULL, NULL, 
+  map_ISO_8859_supp, map_ISO_10367_box, map_ISO_6937_2001, /*ISOIR164*/NULL, 
+  /*ISOIR166*/NULL, /*ISOIR167*/NULL, map_ISO_8859_10_1998, NULL, 
+  map_latin_lap, map_ISO_8859_13_1998, /*ISOIR180*/NULL, /*ISOIR181*/NULL, 
+  /*ISOIR182*/NULL, /*ISOIR197*/NULL, /*198*/NULL, map_ISO_8859_14_1998, 
+  /*ISOIR200*/NULL, /*ISOIR201*/NULL, map_ISO_8859_15_1999, /*ISOIR204*/NULL, 
+  /*ISOIR205*/NULL, /*ISOIR206*/NULL, /*ISOIR226*/NULL, /*ISOIR208*/NULL, 
+  /*ISOIR209*/NULL, /*ISOIR227*/NULL, /*ISOIR234*/NULL, NULL, 
   NULL, NULL, NULL, NULL, 
   NULL, NULL, NULL, NULL, 
   NULL, NULL, NULL, NULL, 
@@ -10769,10 +10769,10 @@ const UNICHAR * const iso2022_96[] = {
   NULL, NULL, NULL };
 const UNICHAR * const iso2022_9494[] = {
   map_JIS_C6226_1978, map_GB_2312_80, map_JIS_C6226_1983, map_KS_C_5601_1987, 
-  map_JIS_X0212_1990, NULL, NULL, NULL, 
-  NULL, NULL, NULL, NULL, 
-  NULL, NULL, NULL, NULL, 
-  NULL, NULL, NULL, NULL, 
+  map_JIS_X0212_1990, /*ISOIR165*/NULL, /*ISOIR169*/NULL, /*ISOIR171*/NULL, 
+  /*ISOIR172*/NULL, /*ISOIR183*/NULL, /*ISOIR184*/NULL, /*ISOIR185*/NULL, 
+  /*ISOIR186*/NULL, /*ISOIR187*/NULL, /*ISOIR202*/NULL, /*ISOIR228*/NULL, 
+  /*ISOIR229*/NULL, /*ISOIR233*/NULL, NULL, NULL, 
   NULL, NULL, NULL, NULL, 
   NULL, NULL, NULL, NULL, 
   NULL, NULL, NULL, NULL };
