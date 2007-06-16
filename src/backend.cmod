@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.154 2007/03/07 16:33:32 mast Exp $
+|| $Id: backend.cmod,v 1.155 2007/06/16 17:20:28 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.154 2007/03/07 16:33:32 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.155 2007/06/16 17:20:28 nilsson Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -3124,6 +3124,7 @@ PIKECLASS Backend
       /* me->set.num_fds=0; */
 #endif /* OPEN_POLL_DEVICE || HAVE_POLL */
 
+      me->may_need_wakeup = 0;
       {
 	int pipe[2];
 	if(pike_make_pipe(pipe) < 0)
@@ -3139,7 +3140,6 @@ PIKECLASS Backend
 	set_close_on_exec(pipe[0], 1);
 	set_close_on_exec(pipe[1], 1);
       }
-      me->may_need_wakeup = 0;
 
       register_backend(me);
 
