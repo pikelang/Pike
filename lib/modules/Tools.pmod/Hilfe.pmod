@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.141 2007/06/12 15:22:47 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.142 2007/06/16 15:20:46 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -313,7 +313,9 @@ private class CommandDoc {
   void exec(Evaluator e, string line, array(string) words,
 	    array(string) tokens) 
   {
-    object module = resolv(e, tokens[2..])[0];
+    object|function module = resolv(e, tokens[2..])[0];
+    if (tokens[2..] == ({ "write\n\n" }))
+      module = write;
     object docs = master()->show_doc(module);
     object child;
     if (docs && docs->documentation)
@@ -883,10 +885,17 @@ private constant group = ([ "(":")", "({":"})", "([":"])", "(<":">)", "[":"]" ])
 // All of the above except ".", "|", "&" and "~".
 private constant notype = (infix+prefix+postfix+prepostfix+seperator) - (< ".", "|", "&", "~" >);
 
-string typeof_token(string token)
+string typeof_token(string|array token)
 {
   string type;
-  if ( reference[token] )
+  if (arrayp(token))
+  {
+    if (token[0] == "(" && token[-1] == ")")
+      type = "argumentgroup";
+    else if (token[0] == "[" && token[-1] == "]")
+      type = "referencegroup";
+  }
+  else if ( reference[token] )
     type = "reference";
   else if ( (token[0]==token[-1] && (< '"', '\'' >)[token[0]])
             || token == array_sscanf(token, "%[0-9.]")[0] )
@@ -2326,10 +2335,9 @@ mapping base_objects(Evaluator e)
 
 array(object|array(string)) resolv(Evaluator e, array completable, void|object base, void|string type)
 {
-  //write("resolv(%O, %O, %O)\n", completable, base, type);
   if (!sizeof(completable))
     return ({ base, completable, type });
-  if (completable[0] == array_sscanf(completable[0], "%[ \t\r\n]")[0])
+  if (stringp(completable[0]) && completable[0] == array_sscanf(completable[0], "%[ \t\r\n]")[0])
     return ({ base, completable[1..], type });
   if (!base && completable[0] == ".")
   {
@@ -2351,6 +2359,11 @@ array(object|array(string)) resolv(Evaluator e, array completable, void|object b
   }
   if (!base)
   {
+    if (completable[0] == "master" && sizeof(completable) >=2
+        && typeof_token(completable[1]) == "argumentgroup")
+    {
+      return resolv(e, completable[2..], master(), "object");
+    }
     if (base=base_objects(e)[completable[0]])
       return resolv(e, completable[1..], base, "object");
     if (base=master()->root_module[completable[0]])
@@ -2433,7 +2446,7 @@ class StdinHilfe
     load_history();
     if(!readline->get_history())
       readline->enable_history(512);
-    readline->get_input_controller()->bind("\t", handle_tab);
+    readline->get_input_controller()->bind("\t", handle_completions);
     readline->get_input_controller()->bind("^H", handle_doc);
     readline->get_input_controller()->bind("\\!k1", handle_doc);
 
@@ -2463,9 +2476,14 @@ class StdinHilfe
       string _tokentype = typeof_token(token);
 
       if (debug)
-        write(sprintf("%s = %s\n", token, _tokentype));
-      if ( (_tokentype == "reference" && (!tokentype || tokentype == "symbol"))
-            || (_tokentype == "symbol" && (!tokentype || tokentype == "reference")) )
+        write(sprintf("%O = %s\n", token, _tokentype));
+
+      if ( ( _tokentype == "reference" && (!tokentype || tokentype == "symbol"))
+            || (_tokentype == "symbol" && (!tokentype 
+                 || (< "reference", "referencegroup", "argumentgroup" >)[tokentype])) 
+            || ( (<"argumentgroup", "referencegroup" >)[_tokentype] 
+                 && (!tokentype || tokentype == "reference"))
+         )
       {
         completable += ({ token });
         tokentype = _tokentype;
@@ -2495,7 +2513,7 @@ class StdinHilfe
       add_input_line("doc "+completable*"");
   }
 
-  void handle_tab(string key)
+  void handle_completions(string key)
   {
     mixed old_handler = master()->get_inhibit_compile_errors();
     HilfeCompileHandler handler = HilfeCompileHandler(sizeof(backtrace()));
@@ -2507,7 +2525,7 @@ class StdinHilfe
 
     mixed error = catch
     {
-      tokens = Parser.Pike.split(input);
+      tokens = Parser.Pike.group(Parser.Pike.split(input));
     };
 
     if(error)
@@ -2655,7 +2673,7 @@ class StdinHilfe
     [base, rest, type] = resolv(this, completable);
 
     if (variables->DEBUG_COMPLETIONS)
-      readline->message(sprintf("get_module_completions(%O)\n", completable));
+      readline->message(sprintf("get_module_completions(%O): %O, %O, %s\n", completable, base, rest, type));
     return low_get_module_completions(rest, base, type);
   }
 
