@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.291 2007/06/11 18:28:53 mast Exp $
+|| $Id: gc.c,v 1.292 2007/06/16 23:59:23 mast Exp $
 */
 
 #include "global.h"
@@ -92,7 +92,6 @@ double gc_average_slowness = 0.9;
 
 /* #define GC_VERBOSE */
 /* #define GC_CYCLE_DEBUG */
-
 /* #define GC_STACK_DEBUG */
 
 #if defined(GC_VERBOSE) && !defined(PIKE_DEBUG)
@@ -136,22 +135,27 @@ struct gc_rec_frame		/* See cycle checking blurb below. */
 {
   void *data;
   int rf_flags;
-  struct gc_rec_frame *prev;	/* The previous frame in the recursion
-				 * stack. NULL for frames not in the stack. */
-  struct gc_rec_frame *next;	/* The next frame in the recursion
-				 * stack or the kill list. */
-  struct gc_rec_frame *cycle_id;/* The cycle identifier frame.
-				 * Initially points to self. */
-  struct gc_rec_frame *cycle_piece;/* The start of the cycle piece list
-				 * for frames on the recursion stack,
-				 * or the next frame in the list for
-				 * frames in cycle piece lists. */
+  struct gc_rec_frame *prev;	/* The previous frame in the recursion stack.
+				 * NULL for frames not in the stack (i.e. on a
+				 * cycle piece list or in the kill list). */
+  struct gc_rec_frame *next;	/* The next frame in the recursion stack or the
+				 * kill list. Undefined for frames on cycle
+				 * piece lists. */
+  struct gc_rec_frame *cycle_id;/* For a frame in the recursion stack: The
+				 * cycle identifier frame.
+				 * For a frame on a cycle piece list: The frame
+				 * in the recursion stack whose cycle piece
+				 * list this frame is in. */
+  struct gc_rec_frame *cycle_piece;/* The start of the cycle piece list for
+				 * frames on the recursion stack, or the next
+				 * frame in the list for frames in cycle piece
+				 * lists. */
   union {
-    struct link_frame *link_top;/* The top of the link stack for
-				 * frames on the recursion stack. */
-    struct gc_rec_frame *last_cycle_piece;/* In the first frame on a
-				 * cycle piece list, this is used to
-				 * point to the last frame in the list. */
+    struct link_frame *link_top;/* The top of the link stack for frames on the
+				 * recursion stack. */
+    struct gc_rec_frame *last_cycle_piece;/* In the first frame on a cycle
+				 * piece list, this is used to point to the
+				 * last frame in the list. */
   } u;
 };
 
@@ -198,13 +202,16 @@ static struct gc_rec_frame *kill_list = &sentinel_frame;
  * rotation - see below), it's still not regarded as a cycle since
  * weak refs always are eligible to be broken to resolve cycles.
  *
- * A cycle is marked by setting gc_rec_frame.cycle_id in the rec
- * frames on the stack that are part of the cycle to the first
- * (deepest) one of those frames. That frame is called the "cycle
- * identifier frame" since all frames in the same cycle will end up
- * there if the cycle pointers are followed transitively. The cycle_id
- * pointer in the cycle identifier frame points to itself. Every frame
- * is initially treated as a cycle containing only itself.
+ * A sequence of frames on the recursion stack forms a cycle iff they
+ * have the same value in gc_rec_frame.cycle_id. A cycle is always
+ * continuous on the stack.
+ *
+ * Furthermore, the cycle_ids always point to the first (deepest)
+ * frame on the stack that is part of the cycle. That frame is called
+ * the "cycle identifier frame" since all frames in the cycle will end
+ * up there if the cycle pointers are followed transitively. The
+ * cycle_id pointer in the cycle identifier frame points to itself.
+ * Every frame is initially treated as a cycle containing only itself.
  *
  * When the recursion leaves a thing, the rec frame is popped off the
  * stack. If the frame is part of a cycle that isn't finished at that
@@ -221,15 +228,15 @@ static struct gc_rec_frame *kill_list = &sentinel_frame;
  *
  * The current tentative destruct order is described by the order on
  * the stack and the attached cycle piece lists: The thing that's
- * deepest in the stack is destructed first and the cycle piece list
- * has precedence over the next frame on the recursion stack. To
- * illustrate:
+ * deepest in the stack is destructed first and the recursion stack
+ * has precedence over the cycle piece list (the reason for that is
+ * explained later). To illustrate:
  *                                   ,- stack_top
  *                                  v
- *           t1 <=> t4 <=> ... <=> t7
- *            |      |              `-> t8 -> ... -> t9
- *            |      `-> t5 -> ... -> t6
- *            `-> t2 -> ... -> t3
+ *           t1 <=> t2 <=> ... <=> t3
+ *            |      |              `-> t4 -> ... -> t5
+ *            |      `-> t6 -> ... -> t7
+ *            `-> t8 -> ... -> t9
  *
  * Here <=> represents links on the recursion stack and -> links in
  * the cycle piece lists. The tentative destruct order for these
@@ -248,9 +255,9 @@ static struct gc_rec_frame *kill_list = &sentinel_frame;
  *                                   weak                v
  *  t1 <=> ... <=> t2 <=> ... <=> t3 <-> t4 <=> ... <=> t5
  *
- * If a non-weak backward pointer from t5 to t2 is encountered here,
- * we should prefer to break(*) the weak ref between t3 and t4. The
- * stack is therefore rotated to become:
+ * If a nonweak backward pointer from t5 to t2 is encountered here, we
+ * should prefer to break(*) the weak ref between t3 and t4. The stack
+ * is therefore rotated to become:
  *                                                        ,- stack_top
  *            broken                                     v
  *  t1 <=> ... <#> t4 <=> ... <=> t5 <=> t2 <=> ... <=> t3
@@ -273,6 +280,12 @@ static struct gc_rec_frame *kill_list = &sentinel_frame;
  *    in the example above. This is used to break later cycles in the
  *    same position when they can't be broken at a weak link.
  *
+ * If a nonweak backward pointer is found and there are no weak refs
+ * on the stack to break at, the section from the top of the stack
+ * down to the thing referenced by the backward pointer is marked up
+ * as a cycle (possibly extending the cycle which that thing already
+ * belongs to). Therefore weak refs never occur inside cycles.
+ *
  * Several separate cycles may be present on the stack simultaneously.
  * That happens when a subcycle which is referenced one way from an
  * earlier cycle is encountered. E.g.
@@ -283,12 +296,31 @@ static struct gc_rec_frame *kill_list = &sentinel_frame;
  *
  * where the visit order is t1, t2, t3 and then t4. Because of the
  * stack which causes a subcycle to always be added to the top, it can
- * be handled independently of the earlier cycles, and those can also
- * be extended later on when the subcycle has been popped off. If a
- * ref from the subcycle to an earlier cycle is found, that means that
- * both are really the same cycle, and the frames in the former
- * subcycle will instead become a cycle piece list on a frame in the
- * former preceding cycle.
+ * be handled independently of the earlier cycles, and those earlier
+ * cycles can also be extended later on when the subcycle has been
+ * popped off. If a ref from the subcycle to an earlier cycle is
+ * found, that means that both are really the same cycle, and the
+ * frames in the former subcycle will instead become a cycle piece
+ * list on a frame in the former preceding cycle.
+ *
+ * Cycles are always kept continuous on the recursion stack. Since
+ * breaking a weak ref doesn't mark up a cycle, it's necessary to
+ * rotate between whole cycles when a weak ref is broken. I.e:
+ *
+ *                                             weak
+ *  ... <=> t1a <=> t1b <=> t1c <=> ... <=> t2 <-> t3 <=> ... <=> t4
+ *
+ * Here all the t1 things are members of a cycle, with t1a being the
+ * first and t1c the last. Let's say a nonweak pointer is found from
+ * t4 to t1b, and the weak link between t2 and t3 is chosen to be
+ * broken. In this case the whole t1 cycle is rotated up:
+ *
+ *     broken
+ *  ... <#> t3 <=> ... <=> t4 <=> t1a <=> t1b <=> t1c <=> ... <=> t2
+ *
+ * This way the t1 cycle can continue to be processed independently
+ * and possibly be popped off separately from the segment between t3
+ * and t4.
  *
  * Since the link frames are kept in substacks attached to the rec
  * frames, they get rotated with the rec frames. This has the effect
@@ -299,7 +331,8 @@ static struct gc_rec_frame *kill_list = &sentinel_frame;
  *                             weak          weak
  *                   t1 <=> t2 <-> t3 <=> t4 <-> t5
  *
- * A nonweak ref is found from t5 to t2. We get this after rotation:
+ * A nonweak ref is found from t5 to t2. We get this after rotation
+ * (assuming t1 and t2 aren't part of the same cycle):
  *
  *                     broken         weak
  *                   t1 <#> t5 <=> t2 <-> t3 <=> t4
@@ -318,11 +351,7 @@ static struct gc_rec_frame *kill_list = &sentinel_frame;
  * predecessor. Therefore the order on a cycle piece list is optimal
  * (in as far as the gc destruct order policy goes). Any further
  * rotations can move the predecessor around, but it can always be
- * treated as one unit together with its cycle piece list. Remaining
- * weak refs inside the cycle piece list are no longer relevant since
- * they don't apply to the links that remain to be followed for the
- * predecessor (i.e. the root of the cycle piece list, still on the
- * rec frame stack).
+ * treated as one unit together with its cycle piece list.
  *
  * If the preceding frame already has a cycle piece list when a rec
  * frame should be added to it, the rec frame (and its attached cycle
@@ -349,7 +378,9 @@ static struct gc_rec_frame *kill_list = &sentinel_frame;
  * objects. In this mode a single dummy rec frame with the
  * GC_MARK_LIVE bit is pushed on the recursion stack, and all link
  * frames are stacked in it, regardless of the things they originate
- * from.
+ * from. Nothing else happens while this is done, i.e. no rotations
+ * and so forth, so the dummy frame always stays at the top until it's
+ * removed again.
  *
  * *)  Here "breaking" a ref doesn't mean that it actually gets
  *     zeroed out. It's only disregarded to resolve the cycle to
@@ -517,6 +548,7 @@ PMOD_EXPORT int gc_external_refs_zapped = 0;
 #endif
 
 #if defined (PIKE_DEBUG) || defined (GC_CYCLE_DEBUG)
+
 static void describe_rec_frame (struct gc_rec_frame *f)
 {
   fprintf (stderr, "data=%p rf_flags=0x%02x prev=%p next=%p "
@@ -524,6 +556,32 @@ static void describe_rec_frame (struct gc_rec_frame *f)
 	   f->data, f->rf_flags, f->prev, f->next,
 	   f->cycle_id, f->cycle_piece, f->u.link_top);
 }
+
+/* If p* isn't NULL then p*_name will be written out next to the
+ * matching frame in the stack, if any is found. */
+static void describe_rec_stack (struct gc_rec_frame *p1, const char *p1_name,
+				struct gc_rec_frame *p2, const char *p2_name,
+				struct gc_rec_frame *p3, const char *p3_name)
+{
+  struct gc_rec_frame *l;
+  size_t longest;
+  if (p1) longest = strlen (p1_name);
+  if (p2) {size_t l = strlen (p2_name); if (l > longest) longest = l;}
+  if (p3) {size_t l = strlen (p3_name); if (l > longest) longest = l;}
+  longest++;
+  for (l = stack_top; l != &sentinel_frame; l = l->prev) {
+    size_t c = 0;
+    if (!l) {fputs ("  <broken prev link in rec stack>\n", stderr); break;}
+    fprintf (stderr, "  %p", l);
+    if (l == p1) {fprintf (stderr, " %s", p1_name); c += strlen (p1_name) + 1;}
+    if (l == p2) {fprintf (stderr, " %s", p2_name); c += strlen (p2_name) + 1;}
+    if (l == p3) {fprintf (stderr, " %s", p3_name); c += strlen (p3_name) + 1;}
+    fprintf (stderr, ": %*s", c < longest ? longest - c : 0, "");
+    describe_rec_frame (l);
+    fputc ('\n', stderr);
+  }
+}
+
 #endif
 
 #ifdef PIKE_DEBUG
@@ -920,7 +978,6 @@ static void debug_gc_fatal_va (void *a, int flags,
 #endif
   int orig_gc_pass = Pike_in_gc;
 
-  fprintf(stderr, "**");
   (void) VFPRINTF(stderr, fmt, args);
 
 #ifdef PIKE_DEBUG
@@ -947,7 +1004,10 @@ static void debug_gc_fatal_va (void *a, int flags,
     fatal_after_gc = "Fatal in garbage collector.\n";
   else
 #endif
-    debug_fatal("Fatal in garbage collector.\n");
+  {
+    d_flag = 0; /* The instruction backlog is never of any use here. */
+    debug_fatal (NULL);
+  }
 }
 
 void debug_gc_fatal (void *a, int flags, const char *fmt, ...)
@@ -965,6 +1025,27 @@ static void dloc_gc_fatal (const char *file, int line,
   fprintf (stderr, "%s:%d: GC fatal:\n", file, line);
   va_start (args, fmt);
   debug_gc_fatal_va (a, flags, fmt, args);
+  va_end (args);
+}
+
+static void rec_stack_fatal (struct gc_rec_frame *err, const char *err_name,
+			     struct gc_rec_frame *p1, const char *p1n,
+			     struct gc_rec_frame *p2, const char *p2n,
+			     const char *file, int line,
+			     const char *fmt, ...)
+{
+  va_list args;
+  va_start (args, fmt);
+  fprintf (stderr, msg_fatal_error, file, line);
+  (void) VFPRINTF (stderr, fmt, args);
+  fputs ("Recursion stack:\n", stderr);
+  describe_rec_stack (err, err_name, p1, p1n, p2, p2n);
+  if (err) {
+    fprintf (stderr, "Describing frame %p: ", err);
+    describe_rec_frame (err);
+    fputc ('\n', stderr);
+  }
+  debug_fatal (NULL);
   va_end (args);
 }
 
@@ -2047,43 +2128,53 @@ int gc_mark_external (void *a, const char *place)
   } while (0)
 
 static void check_rec_stack_frame (struct gc_rec_frame *f,
+				   struct gc_rec_frame *p1, const char *p1n,
+				   struct gc_rec_frame *p2, const char *p2n,
 				   const char *file, int line)
 {
+  /* To allow this function to be used after a stack rotation but
+   * before cycle_id markup, there are no checks here for cycle_id
+   * consistency wrt other frames on the rec stack. */
   LOW_CHECK_REC_FRAME (f, file, line);
   if (f->rf_flags & (GC_ON_CYCLE_PIECE_LIST|GC_ON_KILL_LIST))
-    dloc_gc_fatal (file, line, f->data, 0, "Frame is not on the rec stack.\n");
+    rec_stack_fatal (f, "err", p1, p1n, p2, p2n, file, line,
+		     "Frame %p is not on the rec stack (according to flags).\n",
+		     f);
   if (!f->prev)
-    dloc_gc_fatal (file, line, f->data, 0,
-		   "Prev pointer not set for rec stack frame.\n");
+    rec_stack_fatal (f, "err", p1, p1n, p2, p2n, file, line,
+		     "Prev pointer not set for rec stack frame %p.\n", f);
   if (f->prev->next != f)
-    dloc_gc_fatal (file, line, f->data, 0,
-		   "Rec stack pointers are inconsistent.\n");
+    rec_stack_fatal (f, "err", p1, p1n, p2, p2n, file, line,
+		     "Rec stack pointers are inconsistent before %p.\n", f);
   if (f->cycle_id &&
-      f->cycle_id->rf_flags & (GC_ON_CYCLE_PIECE_LIST|GC_ON_KILL_LIST)) {
-    fprintf (stderr, "Cycle id frame %p not on the rec stack. It is: ",
-	     f->cycle_id);
-    describe_rec_frame (f->cycle_id);
-    fputc ('\n', stderr);
-    dloc_gc_fatal (file, line, f->data, 0,
-		   "Cycle id frame not on the rec stack.\n");
-  }
+      f->cycle_id->rf_flags & (GC_ON_CYCLE_PIECE_LIST|GC_ON_KILL_LIST))
+    /* p2 and p2n gets lost here. No bother. */
+    rec_stack_fatal (f->cycle_id, "cycle id", f, "err", p1, p1n, file, line,
+		     "Cycle id frame %p for %p not on the rec stack "
+		     "(according to flags).\n", f->cycle_id, f);
+  if ((f->rf_flags & GC_MARK_LIVE) && f != stack_top)
+    rec_stack_fatal (f, "err", p1, p1n, p2, p2n, file, line,
+		     "GC_MARK_LIVE frame %p found that "
+		     "isn't on the stack top.\n", f);
+  if ((f->rf_flags & GC_PREV_STRONG) &&
+      (f->rf_flags & (GC_PREV_WEAK|GC_PREV_BROKEN)))
+    rec_stack_fatal (f, "err", p1, p1n, p2, p2n, file, line,
+		     "GC_PREV_STRONG set together with "
+		     "GC_PREV_WEAK or GC_PREV_BROKEN in %p.\n", f);
   if (f->cycle_piece &&
       (!f->cycle_piece->u.last_cycle_piece ||
        f->cycle_piece->u.last_cycle_piece->cycle_piece))
-    dloc_gc_fatal (file, line, f->data, 0,
-		   "Bogus last_cycle_piece %p is %p in %p.\n",
-		   f->cycle_piece->u.last_cycle_piece,
-		   f->cycle_piece->u.last_cycle_piece ?
-		   f->cycle_piece->u.last_cycle_piece->cycle_piece : NULL,
-		   f->cycle_piece);
-  if ((f->rf_flags & GC_PREV_STRONG) &&
-      (f->rf_flags & (GC_PREV_WEAK|GC_PREV_BROKEN)))
-    dloc_gc_fatal (file, line, f->data, 0,
-		   "GC_PREV_STRONG set together with "
-		   "GC_PREV_WEAK or GC_PREV_BROKEN.\n");
+    rec_stack_fatal (f, "err", p1, p1n, p2, p2n, file, line,
+		     "Bogus last_cycle_piece %p is %p "
+		     "in cycle piece top %p in %p.\n",
+		     f->cycle_piece->u.last_cycle_piece,
+		     f->cycle_piece->u.last_cycle_piece ?
+		     f->cycle_piece->u.last_cycle_piece->cycle_piece : NULL,
+		     f->cycle_piece, f);
 }
 #define CHECK_REC_STACK_FRAME(f)					\
-  do check_rec_stack_frame ((f), __FILE__, __LINE__); while (0)
+  do check_rec_stack_frame ((f), NULL, NULL, NULL, NULL, __FILE__, __LINE__); \
+  while (0)
 
 static void check_cycle_piece_frame (struct gc_rec_frame *f,
 				     const char *file, int line)
@@ -2092,7 +2183,8 @@ static void check_cycle_piece_frame (struct gc_rec_frame *f,
   if ((f->rf_flags & (GC_ON_CYCLE_PIECE_LIST|GC_ON_KILL_LIST)) !=
       GC_ON_CYCLE_PIECE_LIST)
     dloc_gc_fatal (file, line, f->data, 0,
-		   "Frame is not on a cycle piece list.\n");
+		   "Frame is not on a cycle piece list "
+		   "(according to flags).\n");
   if (f->prev)
     dloc_gc_fatal (file, line, f->data, 0,
 		   "Prev pointer set for frame on cycle piece list.\n");
@@ -2106,7 +2198,8 @@ static void check_kill_list_frame (struct gc_rec_frame *f,
   LOW_CHECK_REC_FRAME (f, file, line);
   if ((f->rf_flags & (GC_ON_CYCLE_PIECE_LIST|GC_ON_KILL_LIST)) !=
       GC_ON_KILL_LIST)
-    dloc_gc_fatal (file, line, f->data, 0, "Frame is not on kill list.\n");
+    dloc_gc_fatal (file, line, f->data, 0,
+		   "Frame is not on kill list (according to flags).\n");
   if (f->prev)
     dloc_gc_fatal (file, line, f->data, 0,
 		   "Prev pointer set for frame on kill list.\n");
@@ -2114,10 +2207,37 @@ static void check_kill_list_frame (struct gc_rec_frame *f,
 #define CHECK_KILL_LIST_FRAME(f)					\
   do check_kill_list_frame ((f), __FILE__, __LINE__); while (0)
 
+static void check_rec_stack (struct gc_rec_frame *p1, const char *p1n,
+			     struct gc_rec_frame *p2, const char *p2n,
+			     const char *file, int line)
+{
+#ifndef DEBUG_MALLOC
+  if (1 || gc_debug)
+#endif
+  {
+    struct gc_rec_frame *l, *last_cycle_id;
+    for (l = &sentinel_frame; l != stack_top;) {
+      l = l->next;
+      check_rec_stack_frame (l, p1, p1n, p2, p2n, file, line);
+      if (l->cycle_id == l)
+	last_cycle_id = l;
+      else if (l->cycle_id != last_cycle_id)
+	rec_stack_fatal (l, "err", p1, p1n, p2, p2n, file, line,
+			 "Unexpected cycle id for frame %p.\n", l);
+      else if (l->rf_flags & GC_PREV_WEAK)
+	rec_stack_fatal (l, "err", p1, p1n, p2, p2n, file, line,
+			 "Unexpected weak ref before %p inside a cycle.\n", l);
+    }
+  }
+}
+#define CHECK_REC_STACK(p1, p1n, p2, p2n)				\
+  do check_rec_stack ((p1), (p1n), (p2), (p2n), __FILE__, __LINE__); while (0)
+
 #else  /* !PIKE_DEBUG */
 #define CHECK_REC_STACK_FRAME(f) do {} while (0)
 #define CHECK_CYCLE_PIECE_FRAME(f) do {} while (0)
 #define CHECK_KILL_LIST_FRAME(f) do {} while (0)
+#define CHECK_REC_STACK(p1, p1n, p2, p2n) do {} while (0)
 #endif	/* !PIKE_DEBUG */
 
 int gc_do_weak_free(void *a)
@@ -2258,7 +2378,7 @@ int gc_mark(void *a)
     /* Things are visited in the zap weak pass through the mark
      * functions to free refs to internal things that only got weak
      * external references. That happens only when a thing also have
-     * internal cyclic non-weak refs. */
+     * internal cyclic nonweak refs. */
 #ifdef PIKE_DEBUG
     if (!(m->flags & GC_MARKED))
       gc_fatal(a, 0, "gc_mark() called for thing in zap weak pass "
@@ -2417,39 +2537,6 @@ static int gc_cycle_indent = 0;
 #define CYCLE_DEBUG_MSG(REC, TXT) do {} while (0)
 #endif
 
-#ifdef DEBUG_MALLOC
-static void check_cycle_ids_on_stack (struct gc_rec_frame *beg,
-				      struct gc_rec_frame *pos,
-				      const char *where)
-{
-  struct gc_rec_frame *l, **stack_arr;
-  size_t i;
-  for (i = 0, l = &sentinel_frame; l != stack_top; i++, l = l->next) {}
-  stack_arr = alloca (i * sizeof (struct gc_rec_frame *));
-  for (i = 0, l = &sentinel_frame; l != stack_top; i++, l = l->next)
-    stack_arr[i] = l->next;
-  for (i = 0, l = &sentinel_frame; l != stack_top; i++, l = l->next) {
-    size_t j;
-    for (j = 0; j <= i; j++)
-      if (stack_arr[j] == l->next->cycle_id)
-	goto cycle_id_ok;
-    {
-      struct gc_rec_frame *err = l->next;
-      fprintf (stderr, "cycle_id for frame %p not earlier on stack (%s).\n",
-	       err, where);
-      for (l = stack_top; l != &sentinel_frame; l = l->prev) {
-	fprintf (stderr, "  %p%s ", l,
-		 l == beg ? " (beg):" : l == pos ? " (pos):" : ":      ");
-	describe_rec_frame (l);
-	fputc ('\n', stderr);
-      }
-      fatal ("cycle_id for frame %p not earlier on stack (%s).\n", err, where);
-    }
-  cycle_id_ok:;
-  }
-}
-#endif
-
 static struct gc_rec_frame *rotate_rec_stack (struct gc_rec_frame *beg,
 					      struct gc_rec_frame *pos)
 /* Performs a rotation of the recursion stack so the part from pos
@@ -2486,15 +2573,7 @@ static struct gc_rec_frame *rotate_rec_stack (struct gc_rec_frame *beg,
 
 #ifdef GC_STACK_DEBUG
   fprintf(stderr,"Stack before:\n");
-  {
-    struct gc_rec_frame *l;
-    for (l = stack_top; l != &sentinel_frame; l = l->prev) {
-      fprintf (stderr, "  %p%s ", l,
-	       l == beg ? " (beg):" : l == pos ? " (pos):" : ":      ");
-      describe_rec_frame (l);
-      fputc ('\n', stderr);
-    }
-  }
+  describe_rec_stack (beg, "beg", pos, "pos", NULL, NULL);
 #endif
 
   /* Always keep chains of strong refs continuous, or else we risk
@@ -2529,15 +2608,7 @@ static struct gc_rec_frame *rotate_rec_stack (struct gc_rec_frame *beg,
 
 #ifdef GC_STACK_DEBUG
   fprintf(stderr,"Stack after:\n");
-  {
-    struct gc_rec_frame *l;
-    for (l = stack_top; l != &sentinel_frame; l = l->prev) {
-      fprintf (stderr, "  %p%s ", l,
-	       l == beg ? " (beg):" : l == pos ? " (pos):" : ":      ");
-      describe_rec_frame (l);
-      fputc ('\n', stderr);
-    }
-  }
+  describe_rec_stack (beg, "ret", pos, "pos", NULL, NULL);
 #endif
 
   return beg;
@@ -2726,12 +2797,12 @@ int gc_cycle_push(void *data, struct marker *m, int weak)
 	 * one (to avoid having to clobber the others after the
 	 * rotation). */
 	CYCLE_DEBUG_MSG (weakly_refd, "gc_cycle_push, weak break");
-	rotate_rec_stack (cycle_frame, weakly_refd);
-	/* FIXME: Motivate why it isn't necessary to mark up new
-	 * cycle_id's here. */
-#ifdef DEBUG_MALLOC
-	check_cycle_ids_on_stack (cycle_frame, weakly_refd, "after weak break");
-#endif
+	/* If the backward link points into a cycle, we rotate the
+	 * whole cycle up the stack. See the "cycle checking" blurb
+	 * above for rationale. */
+	rotate_rec_stack (cycle_frame->cycle_id, weakly_refd);
+	CHECK_REC_STACK (cycle_frame, "cycle_frame",
+			 weakly_refd, "weakly_refd");
       }
 
       else {
@@ -2784,9 +2855,7 @@ int gc_cycle_push(void *data, struct marker *m, int weak)
 	    if (r == bottom) break;
 	  }
 	}
-#ifdef DEBUG_MALLOC
-	check_cycle_ids_on_stack (cycle_frame, break_pos, "after nonweak break");
-#endif
+	CHECK_REC_STACK (cycle_frame, "cycle_frame", break_pos, "break_pos");
       }
     }
   }
@@ -2816,6 +2885,7 @@ int gc_cycle_push(void *data, struct marker *m, int weak)
       else CYCLE_DEBUG_MSG (r, "gc_cycle_push, recurse");
       gc_cycle_indent += 2;
 #endif
+      CHECK_REC_STACK (NULL, NULL, NULL, NULL);
       return 1;
     }
 
@@ -2944,6 +3014,9 @@ static void gc_cycle_pop()
       }
       stack_top->cycle_piece = popped;
       popped->cycle_id = stack_top;
+#ifdef PIKE_DEBUG
+      popped->next = (void *) (ptrdiff_t) -1;
+#endif
 
       CHECK_CYCLE_PIECE_FRAME (popped);
       CHECK_REC_STACK_FRAME (stack_top);
