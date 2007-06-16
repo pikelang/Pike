@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.326 2007/05/17 14:16:16 grubba Exp $
+|| $Id: signal_handler.c,v 1.327 2007/06/16 23:32:03 mast Exp $
 */
 
 #include "global.h"
@@ -1227,14 +1227,18 @@ static void report_child(int pid,
 	      p->result = WEXITSTATUS(status);
 	    } else {
 	      if (WIFSIGNALED(status)) {
+#if 0
 		if (WTERMSIG(status) != 9) {
 		  fprintf(stderr, "Process %d died of signal %d.\n",
 			  pid, WTERMSIG(status));
 		}
+#endif
 		p->sig = WTERMSIG(status);
 	      } else {
+#ifdef PIKE_DEBUG
 		fprintf(stderr, "Process %d died of strange cause 0x%08lx.\n",
 			pid, (unsigned long)status);
+#endif
 	      }
 	      p->result=-1;
 	    }
