@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.114 2007/06/16 23:50:37 mast Exp $ */
+/* $Id: test_pike.pike,v 1.115 2007/06/16 23:54:18 mast Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -498,13 +498,13 @@ int main(int argc, array(string) argv)
 	  if (err == -1) {
 	    werror("Failed to parse subresult "
 		   "(subprocess died of signal %s):\n"
-		   "%O",
+		   "%O\n",
 		   signame (pid->last_signal()) || (string) pid->last_signal(),
 		   raw_results);
 	  } else {
 	    werror("Failed to parse subresult "
 		   "(subprocess exited with error code %d):\n"
-		   "%O", err, raw_results);
+		   "%O\n", err, raw_results);
 	  }
 	  errors++;
 	} else {
