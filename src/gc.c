@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.292 2007/06/16 23:59:23 mast Exp $
+|| $Id: gc.c,v 1.293 2007/06/17 00:05:13 mast Exp $
 */
 
 #include "global.h"
@@ -2212,7 +2212,7 @@ static void check_rec_stack (struct gc_rec_frame *p1, const char *p1n,
 			     const char *file, int line)
 {
 #ifndef DEBUG_MALLOC
-  if (1 || gc_debug)
+  if (gc_debug)
 #endif
   {
     struct gc_rec_frame *l, *last_cycle_id;
