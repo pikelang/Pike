@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.169 2006/07/05 19:28:10 mast Exp $
+|| $Id: interpret.h,v 1.170 2007/06/17 01:33:51 mast Exp $
 */
 
 #ifndef INTERPRET_H
@@ -521,9 +521,44 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 /* A scope is any frame which may have malloced locals */
 #define free_pike_scope(F) do{ struct pike_frame *f_=(F); if(!sub_ref(f_)) really_free_pike_scope(f_); }while(0)
 
+/* Without fancy accounting stuff. This one can't assume there is an
+ * identifier corresponding to the frame (i.e. _fp_->ident might be
+ * bogus). */
+#define LOW_POP_PIKE_FRAME(_fp_) do {					\
+    struct pike_frame *tmp_=_fp_->next;					\
+    if(!sub_ref(_fp_))							\
+    {									\
+      really_free_pike_frame(_fp_);					\
+    }else{								\
+      ptrdiff_t num_expendible = _fp_->expendible - _fp_->locals;	\
+      DO_IF_DEBUG(							\
+	if( (_fp_->locals + _fp_->num_locals > Pike_sp) ||		\
+	    (Pike_sp < _fp_->expendible) ||				\
+	    (num_expendible < 0) || (num_expendible > _fp_->num_locals)) \
+	  Pike_fatal("Stack failure in POP_PIKE_FRAME %p+%d=%p %p %p!\n", \
+		     _fp_->locals, _fp_->num_locals,			\
+		     _fp_->locals+_fp_->num_locals,			\
+		     Pike_sp,_fp_->expendible));			\
+      debug_malloc_touch(_fp_);						\
+      if(num_expendible)						\
+      {									\
+	struct svalue *s=(struct svalue *)xalloc(sizeof(struct svalue)*	\
+						 num_expendible);	\
+	_fp_->num_locals = num_expendible;				\
+	assign_svalues_no_free(s, _fp_->locals, num_expendible,		\
+			       BIT_MIXED);				\
+	_fp_->locals=s;							\
+	_fp_->flags|=PIKE_FRAME_MALLOCED_LOCALS;			\
+      }else{								\
+	_fp_->locals=0;							\
+      }									\
+      _fp_->next=0;							\
+    }									\
+    Pike_fp=tmp_;							\
+  } while (0)
+
 #define POP_PIKE_FRAME() do {						\
   struct pike_frame *_fp_ = Pike_fp;					\
-  struct pike_frame *tmp_=_fp_->next;					\
   DO_IF_PROFILING({							\
       /* Time spent in this frame + children. */			\
       cpu_time_t time_passed =						\
@@ -578,35 +613,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
       function->total_time += time_passed;				\
       function->self_time += self_time;					\
     });									\
-  if(!sub_ref(_fp_))							\
-  {									\
-    really_free_pike_frame(_fp_);					\
-  }else{								\
-    ptrdiff_t num_expendible = _fp_->expendible - _fp_->locals;		\
-    DO_IF_DEBUG(							\
-      if( (_fp_->locals + _fp_->num_locals > Pike_sp) ||		\
-	  (Pike_sp < _fp_->expendible) ||				\
-	  (num_expendible < 0) || (num_expendible > _fp_->num_locals))	\
-	Pike_fatal("Stack failure in POP_PIKE_FRAME %p+%d=%p %p %p!\n",	\
-		   _fp_->locals, _fp_->num_locals,			\
-		   _fp_->locals+_fp_->num_locals,			\
-		   Pike_sp,_fp_->expendible));				\
-    debug_malloc_touch(_fp_);						\
-    if(num_expendible)							\
-    {									\
-      struct svalue *s=(struct svalue *)xalloc(sizeof(struct svalue)*	\
-					       num_expendible);		\
-      _fp_->num_locals = num_expendible;				\
-      assign_svalues_no_free(s, _fp_->locals, num_expendible,		\
-			     BIT_MIXED);				\
-      _fp_->locals=s;							\
-      _fp_->flags|=PIKE_FRAME_MALLOCED_LOCALS;				\
-    }else{								\
-      _fp_->locals=0;							\
-    }									\
-    _fp_->next=0;							\
-  }									\
-  Pike_fp=tmp_;								\
+  LOW_POP_PIKE_FRAME (_fp_);						\
  }while(0)
 
 

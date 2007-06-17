@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.381 2007/06/11 16:12:40 grubba Exp $
+|| $Id: interpret.c,v 1.382 2007/06/17 01:33:51 mast Exp $
 */
 
 #include "global.h"
@@ -38,6 +38,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <ctype.h>
+#include <assert.h>
 
 #ifdef HAVE_MMAP
 #ifdef HAVE_SYS_TYPES_H
@@ -2399,7 +2400,8 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     o->prog->flags = p_flags;
   }
 
-  POP_PIKE_FRAME();
+  assert (new_frame == Pike_fp);
+  LOW_POP_PIKE_FRAME (new_frame);
 
   return ret;
 }
