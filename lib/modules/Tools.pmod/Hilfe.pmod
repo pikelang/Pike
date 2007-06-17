@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.142 2007/06/16 15:20:46 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.143 2007/06/17 10:26:09 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -313,10 +313,24 @@ private class CommandDoc {
   void exec(Evaluator e, string line, array(string) words,
 	    array(string) tokens) 
   {
-    object|function module = resolv(e, tokens[2..])[0];
+    output_doc(e, Parser.Pike.group(tokens[2..]));
+  }
+
+  void output_doc(Evaluator e, array(array(string)|string) tokens)
+  {
+    object|function module;
+    string type;
+    array rest;
+    object docs;
+    [module, rest, type] = resolv(e, tokens);
+
     if (tokens[2..] == ({ "write\n\n" }))
       module = write;
-    object docs = master()->show_doc(module);
+    if (type != "autodoc")
+      docs = master()->show_doc(module);
+    else
+      docs = module;
+
     object child;
     if (docs && docs->documentation)
     {
@@ -2335,10 +2349,17 @@ mapping base_objects(Evaluator e)
 
 array(object|array(string)) resolv(Evaluator e, array completable, void|object base, void|string type)
 {
+  if (e->variables->DEBUG_COMPLETIONS)
+    e->safe_write("resolv(%O, %O, %O)\n", completable, base, type);
   if (!sizeof(completable))
     return ({ base, completable, type });
+
   if (stringp(completable[0]) && completable[0] == array_sscanf(completable[0], "%[ \t\r\n]")[0])
     return ({ base, completable[1..], type });
+
+  if (typeof_token(completable[0]) == "argumentgroup" && type != "autodoc")
+    return resolv(e, completable, master()->show_doc(base), "autodoc");
+
   if (!base && completable[0] == ".")
   {
     if (sizeof(completable) == 1)
@@ -2357,6 +2378,7 @@ array(object|array(string)) resolv(Evaluator e, array completable, void|object b
       return resolv(e, completable[2..], base);
     }
   }
+
   if (!base)
   {
     if (completable[0] == "master" && sizeof(completable) >=2
@@ -2370,13 +2392,28 @@ array(object|array(string)) resolv(Evaluator e, array completable, void|object b
       return resolv(e, completable[1..], base, "module");
     return ({ 0, completable, type });
   }
-  if (sizeof(completable) > 1)
+
+  if (sizeof(completable))
   {
-    if (reference[completable[0]])
+    object newbase;
+    if (reference[completable[0]] && sizeof(completable) > 1)
       return resolv(e, completable[1..], base, type);
-    if (base=base[completable[0]]) 
-      return resolv(e, completable[1..], base, type);
+    if (type == "autodoc")
+    {
+      if (typeof_token(completable[0]) == "symbol"
+          && (newbase = base->findObject(completable[0])))
+        return resolv(e, completable[1..], newbase, type);
+      else if (sizeof(completable) > 2 
+            && typeof_token(completable[0]) == "argumentgroup"
+            && typeof_token(completable[1]) == "reference")
+        return resolv(e, completable[2..], base, type);
+      else
+        return ({ base, completable, type });
+    }
+    if (newbase=base[completable[0]]) 
+      return resolv(e, completable[1..], newbase, type);
   }
+
   return ({ base, completable, type });
 }
 
@@ -2503,14 +2540,14 @@ class StdinHilfe
     string input = readline->gettext()[..readline->getcursorpos()-1];
     mixed error = catch
     {
-      tokens = Parser.Pike.split(input);
+      tokens = Parser.Pike.group(Parser.Pike.split(input));
     };
     if (error || !tokens || !sizeof(tokens))
       return;
 
     array completable = get_resolvable(tokens);
     if (sizeof(completable))
-      add_input_line("doc "+completable*"");
+      CommandDoc()->output_doc(this, completable);
   }
 
   void handle_completions(string key)
@@ -2673,7 +2710,7 @@ class StdinHilfe
     [base, rest, type] = resolv(this, completable);
 
     if (variables->DEBUG_COMPLETIONS)
-      readline->message(sprintf("get_module_completions(%O): %O, %O, %s\n", completable, base, rest, type));
+      safe_write(sprintf("get_module_completions(%O): %O, %O, %O\n", completable, base, rest, type));
     return low_get_module_completions(rest, base, type);
   }
 
@@ -2682,19 +2719,22 @@ class StdinHilfe
                      "mapping":"->", 
                      "function":"(",
                      "program":"(",
+                     "method":"(",
+                     "class":"(",
                    ]);
 
   array|string|object low_get_module_completions(array completable, object base, void|string type)
   {
       if (variables->DEBUG_COMPLETIONS)
-        readline->message(sprintf("low_get_module_completions(%O\n, %O, %O)\n", completable, base, type));
+        safe_write(sprintf("low_get_module_completions(%O\n, %O, %O)\n", completable, base, type));
       mapping other;
       array modules = ({});
       mixed error;
 
       if (base && !sizeof(completable))
       {
-        //TODO: handle cases like Stdio.Readline which are both module and class
+        if (type == "autodoc")
+            return reftypes[base->objtype||base->objects[0]->objtype]||"";
         if (objectp(base))
           return reftypes[type||"object"];
         if (mappingp(base))
@@ -2729,23 +2769,42 @@ class StdinHilfe
       }
       else if (!base)
       {
+          if (type == "autodoc")
+          {
+            if (variables->DEBUG_COMPLETIONS)
+              safe_write("autodoc without base\n");
+            return ({});
+          }
           other = base_objects(this);
           base = master()->root_module;
       }
 
-      error = catch
+      if (type == "autodoc")
       {
-        modules = sort(indices(base));
-      };
-      error = Error.mkerror(error);
+        if (base->docGroups)
+          modules = Array.uniq(Array.flatten(base->docGroups->objects->name));
+        else
+          return ({});
+      }
+      else
+      {
+        error = catch
+        {
+          modules = sort(indices(base));
+        };
+        error = Error.mkerror(error);
+      }
 
       if (other)
         modules += indices(other);
 
       if (sizeof(completable) == 1)
       {
+          if (type == "autodoc" 
+              && typeof_token(completable[0]) == "argumentgroup")
+            return reftypes->object;
           if (reference[completable[0]])
-            return indices(base);
+            return modules;
           // FIXME: handle non-string indices better
           modules = sort((array(string))modules);
           modules = Array.filter(modules, has_prefix, completable[0]);
@@ -2784,11 +2843,10 @@ class StdinHilfe
 
       if (sizeof(completable))
       {
-          if (reference[completable[0]])
-            return low_get_module_completions(completable[1..], base, reference[completable[0]]);
-
+          if ( (< "reference", "argumentgroup" >)[typeof_token(completable[0])])
+            return low_get_module_completions(completable[1..], base, type||reference[completable[0]]);
           else
-            readline->message(sprintf("UNHANDLED CASE: completable: %O\nbase: %O\n", completable, base));
+            safe_write(sprintf("UNHANDLED CASE: completable: %O\nbase: %O\n", completable, base));
       }
       
       return modules;
