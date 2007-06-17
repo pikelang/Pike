@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.201 2007/06/01 06:01:20 mbaehr Exp $
+ * $Id: backend.cmod,v 1.202 2007/06/17 01:34:57 mast Exp $
  *
  * Backend object.
  */
@@ -2343,6 +2343,10 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
     struct epoll_event ev;
     ev.events = events;
     ev.data.fd = fd;
+
+    /* To avoid valgrind complaints when fd doesn't fill up the
+     * ev.data union. */
+    PIKE_MEM_RW (ev.data);
 
     /* The /dev/epoll interface exposes kernel implementation details...
      */
