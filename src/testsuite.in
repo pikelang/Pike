@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.783 2007/06/17 23:14:08 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.784 2007/06/17 23:34:04 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -253,12 +253,14 @@ define(test_scopes,[[
 		   })) * "" +
        "}\n";
     program p;
+    if ($3) master()->set_inhibit_compile_errors (1);
     mixed err = catch {
       p = compile_string("int a() {\n" + line + (s * $2) +
 			 "  return 0;\n"
 			 "}\n");
     };
     if ($3) {
+      master()->set_inhibit_compile_errors (0);
       if (err) return 0;
       error("Expected a compilation error for $1 variables in $2 scope%s.\n",
             ($2>1)?"s":"");
