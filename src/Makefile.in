@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.459 2007/03/31 22:59:52 marcus Exp $
+# $Id: Makefile.in,v 1.460 2007/06/17 01:59:18 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -742,7 +742,7 @@ just_verify: testsuites master-stamp
 	$(RUNPIKE) -x test_pike $$args
 
 valgrind_just_verify: testsuites master-stamp
-	if test "x$(TESTARGS)" = x ; then args="-F -a -v" ; \
+	if test "x$(TESTARGS)" = x ; then args="-a -v" ; \
 	else args="$(TESTARGS)" ; fi; \
 	$(VALGRIND) $(VALGRINDARGS) $(RUNPIKE) -x test_pike $$args
 
@@ -799,7 +799,7 @@ verify: testsuites tinstall
 
 valgrind_verify: testsuites tinstall
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
-	if test "$(TESTARGS)" = "" ; then args="-F -a -v" ; else \
+	if test "$(TESTARGS)" = "" ; then args="-a -v" ; else \
 	  args="$(TESTARGS)" ; fi; \
 	if test -f ./test-pike ; then \
 	  $(VALGRIND) $(VALGRINDARGS) ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
