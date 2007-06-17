@@ -13,7 +13,7 @@ void test_resolv(string file, int base_size, object|void handler)
 			([ "/":".", ".pmod":""]) );
   if(prg[sizeof(prg)-7..]==".module")
     prg = prg[..sizeof(prg)-8];
-  // werror("Resolving %O...\n", prg);
+  // write("Resolving %O...\n", prg);
   mixed err;
   if(err = catch( (handler||master())->resolv(prg) ) ) {
     werror("test: failed to peek at %O: %s\n",
@@ -28,7 +28,7 @@ void test_resolv(string file, int base_size, object|void handler)
 void test_dir(string dir, int|void base_size, object|void handler)
 {
   if (!Stdio.is_dir (dir)) return;
-  // werror("Testing directory %O...\n", dir);
+  // write("Testing directory %O...\n", dir);
   if(!base_size) base_size=sizeof(dir);
   array(string) files = get_dir(dir);
   // Ensure that .so files are loaded before .pike and .pmod files.
@@ -37,7 +37,7 @@ void test_dir(string dir, int|void base_size, object|void handler)
   files = reverse(files);
   foreach(files, string s)
   {
-    werror("Testing file: %O...\n", s);
+    write("Testing file: %O...\n", s);
     switch(s)
     {
 #if !constant(GTK.Window)
@@ -58,7 +58,7 @@ void test_dir(string dir, int|void base_size, object|void handler)
     else if(stat[1]>=0){
       // DEBUG
       if (lower_case(uname()->sysname||"") == "osf1") {
-        werror("Testing file %O...\n", file);
+        write("Testing file %O...\n", file);
       }
       if(has_suffix(file, ".pike") || has_suffix(file, ".pmod") ||
 	 has_suffix(file, ".so"))

@@ -5,7 +5,7 @@
 void fail()
 { 
 // can't connect to socket - this is what we expect
-   werror(PRE "everything ok\n");
+   write(PRE "everything ok\n");
    exit(0); // ok
 }
 
@@ -42,7 +42,7 @@ void ok()
    }
    else
    {
-      werror(PRE "everything ok"
+      write(PRE "everything ok"
 	     " (port %d)\n",z);
       exit (0);
    }
@@ -70,14 +70,14 @@ int main()
      exit(1);
    }
    z = (int)(p->query_address()/" ")[-1];
-//     werror("port: %d\n",z);
+//     write("port: %d\n",z);
 #ifndef TEST_NORMAL
    p->close();
    destruct(p); // this port can't be connected to now
    p = 0;
 #endif
 
-   werror(PRE "using port %d\n",z);
+   write(PRE "using port %d\n",z);
 
    sleep(0.1);
    
@@ -89,18 +89,20 @@ int main()
    if (catch { ok = f->connect("127.0.0.1",z); } &&
        catch { ok = f->connect("localhost",z); })
    {
-      werror(PRE "failed to connect "
+      write(PRE "failed to connect "
 	     "to neither \"localhost\" nor \"127.0.0.1\"\n");
-      werror(PRE "reporting ok\n");
+      write(PRE "reporting ok\n");
       return 0;
    } else if (!ok) {
+#ifdef TEST_NORMAL
      werror(PRE "connect() failed with errno %d: %s\n",
 	    f->errno(), strerror(f->errno()));
-#ifdef TEST_NORMAL
      werror(PRE "reporting failure\n");
      return 1;
 #else
-     werror(PRE "reporting ok\n");
+     write(PRE "connect() failed with errno %d: %s\n",
+	   f->errno(), strerror(f->errno()));
+     write(PRE "reporting ok\n");
      return 0;
 #endif
    }

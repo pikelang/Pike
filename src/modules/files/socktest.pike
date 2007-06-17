@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.39 2005/07/13 19:18:43 grubba Exp $ */
+/* $Id: socktest.pike,v 1.40 2007/06/17 23:14:09 mast Exp $ */
 
 // #define OOB_DEBUG
 
@@ -14,7 +14,7 @@ import String;
 #endif
 
 #ifdef SOCK_DEBUG
-#define DEBUG_WERR(X...)	werror(X)
+#define DEBUG_WERR(X...)	write(X)
 #else /* !SOCK_DEBUG */
 #define DEBUG_WERR(X...)
 #endif /* SOCK_DEBUG */
@@ -40,24 +40,24 @@ void fd_fail()
   array(int) fds = sort(Stdio.get_all_active_fd());
 
   if (sizeof(fds)) {
-    werror("%d open fds:\n", sizeof(fds));
+    write("%d open fds:\n", sizeof(fds));
     int i;
     for(i=0; i < sizeof(fds); i++) {
       if (i) {
-	werror(", %d", fds[i]);
+	write(", %d", fds[i]);
       } else {
-	werror("  %d", fds[i]);
+	write("  %d", fds[i]);
       }
       int j;
       for (j = i; j+1 < sizeof(fds); j++) {
 	if (fds[j+1] != fds[j]+1) break;
       }
       if (j != i) {
-	werror(" - %d", fds[j]);
+	write(" - %d", fds[j]);
 	i = j;
       }
     }
-    werror("\n");
+    write("\n");
   }
 #endif /* constant(Stdio.get_all_active_fd) */
   exit(1);
@@ -245,7 +245,7 @@ int oob_sent;
 void send_oob0()
 {
 #ifdef OOB_DEBUG
-  werror("S");
+  write("S");
 #endif
   got_callback();
   expected = sprintf("%c", random(256));
@@ -257,7 +257,7 @@ void send_oob0()
 void got_oob1(mixed ignored, string got)
 {
 #ifdef OOB_DEBUG
-  werror("G");
+  write("G");
 #endif
   got_callback();
   if (got != expected) {
@@ -272,7 +272,7 @@ void got_oob1(mixed ignored, string got)
 void send_oob1()
 {
 #ifdef OOB_DEBUG
-  werror("s");
+  write("s");
 #endif
   got_callback();
   oob_loopback->write_oob(expected);
@@ -283,7 +283,7 @@ void send_oob1()
 void got_oob0(mixed ignored, string got)
 {
 #ifdef OOB_DEBUG
-  werror("s");
+  write("s");
 #endif
   got_callback();
   if (got != expected) {
@@ -398,7 +398,7 @@ void finish()
   num_running--;
   if(!num_running)
   {
-    werror("\n");
+    write("\n");
 
     object sock1, sock2;
     array(object) socks;
@@ -408,13 +408,13 @@ void finish()
     switch(_tests)
     {
       case 1:
-	werror("Testing dup & assign. ");
+	write("Testing dup & assign. ");
 	sock1=stdtest()[0];
 	sock1->assign(sock1->dup());
 	break;
 	
       case 2:
-	werror("Testing accept. ");
+	write("Testing accept. ");
 	string data1 = "foobar" * 4711;
 	for(int e=0;e<10;e++)
 	{
@@ -425,7 +425,7 @@ void finish()
 	break;
 	
       case 3:
-	werror("Testing uni-directional shutdown on socket ");
+	write("Testing uni-directional shutdown on socket ");
 	socks=spair(0);
 	num_running=1;
 	socks[1]->set_nonblocking(lambda() {},lambda(){},finish);
@@ -434,7 +434,7 @@ void finish()
 	break;
 
       case 4:
-	werror("Testing uni-directional shutdown on pipe ");
+	write("Testing uni-directional shutdown on pipe ");
 	socks=spair(1);
 	num_running=1;
 	socks[1]->set_nonblocking(lambda() {},lambda(){},finish);
@@ -444,7 +444,7 @@ void finish()
 
       case 5..13:
 	tests=(_tests-2)*2;
-	werror("Testing "+(tests*2)+" sockets. ");
+	write("Testing "+(tests*2)+" sockets. ");
 	for(int e=0;e<tests;e++) stdtest();
 	stdtest();
 	break;
@@ -453,7 +453,7 @@ void finish()
 	if (max_fds > 64) {
 	  /* These tests require mare than 64 open fds. */
 	  tests=(_tests-2)*2;
-	  werror("Testing "+(tests*2)+" sockets. ");
+	  write("Testing "+(tests*2)+" sockets. ");
 	  for(int e=0;e<tests;e++) stdtest();
 	  stdtest();
 	  break;
@@ -464,7 +464,7 @@ void finish()
 
       case 27..48:
 	tests=_tests-25;
-	werror("Copying "+((tests/2)*(2<<(tests/2))*11)+" bytes of data on "+(tests&~1)+" "+(tests&1?"pipes":"sockets")+" ");
+	write("Copying "+((tests/2)*(2<<(tests/2))*11)+" bytes of data on "+(tests&~1)+" "+(tests&1?"pipes":"sockets")+" ");
 	for(int e=0;e<tests/2;e++)
 	{
 	  string data1 = "foobar" * (2<<(tests/2));
@@ -489,7 +489,7 @@ void finish()
 	break;
 
       case 49: {
-	werror ("Testing leak in write(). ");
+	write ("Testing leak in write(). ");
 	string data1="foobar" * 20;
 	string data2="fubar" * 20;
 	socks=spair(1);
@@ -514,13 +514,13 @@ void finish()
 #if constant(Stdio.__OOB__)
     case 50:
       if (Stdio.__OOB__ >= 3) {
-	werror("Testing out-of-band data. ");
+	write("Testing out-of-band data. ");
 	start();
 	socks = spair(0);
 	oob_originator = socks[0];
 	oob_loopback = socks[1];
 #ifdef OOB_DEBUG
-	werror("originator: %O\n"
+	write("originator: %O\n"
 	       "loopback: %O\n",
 	       oob_originator,
 	       oob_loopback);
@@ -537,7 +537,7 @@ void finish()
       break;
     }
   }
-//  werror("FINISHED with FINISH %d\n",_tests);
+//  write("FINISHED with FINISH %d\n",_tests);
 }
 
 void accept_callback()
@@ -559,9 +559,9 @@ int main()
       has_value(testargs/" ", "-quiet") ) )
     quiet=1;
 
-  werror("\nSocket test");
+  write("\nSocket test");
 #ifdef IPV6
-  werror(" IPv6 mode");
+  write(" IPv6 mode");
 #endif /* IPV6 */
 
 #if constant(System.getrlimit)
@@ -574,13 +574,13 @@ int main()
 	max_fds = file_limit[1];
       }
     }
-    werror("\n"
+    write("\n"
 	   "Available fds: %d\n", max_fds);
   }
 #endif /* constant(System.getrlimit) */
 
 #if constant(fork)
-  werror("\nForking...");
+  write("\nForking...");
   object pid;
   if (catch { pid = fork(); }) {
     werror(" failed.\n");
@@ -594,9 +594,9 @@ int main()
       }
       delayed_failure = 1;
     }
-    werror("\nRunning in parent...\n");
+    write("\nRunning in parent...\n");
   } else {
-    werror(" ok.\n");
+    write(" ok.\n");
   }
 #endif /* constant(fork) */
 
@@ -651,7 +651,7 @@ int main()
   return -1;
 #endif /* OOB_DEBUG */
 
-  werror("Doing simple tests. ");
+  write("Doing simple tests. ");
   stdtest();
   return -1;
 }

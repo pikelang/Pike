@@ -183,7 +183,8 @@ test_tests(
     Stdio.FILE f = Stdio.FILE();
     Stdio.File p = f->pipe();
     Process.Process( RUNPIKE_ARRAY + ({ "SRCDIR/rijndaeltest.pike",
-	             "--quick" }), ([ "stdout":p]) );
+	             "--quick" }),
+		     ([ "stdout":p, "stderr": Stdio.File ("stdout")]) );
     p->close();
     return (array(int))(f->read()/" ");
   }
@@ -196,7 +197,7 @@ test_tests(
     Stdio.FILE f = Stdio.FILE();
     Stdio.File p = f->pipe();
     Process.Process( RUNPIKE_ARRAY + ({ "SRCDIR/sha1test.pike" }),
-                     ([ "stdout":p ]) );
+                     ([ "stdout":p, "stderr": Stdio.File ("stdout")]) );
     p->close();
     return (array(int))(f->read()/" ");
   }

@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.782 2007/06/09 22:46:09 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.783 2007/06/17 23:14:08 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -228,8 +228,8 @@ test_compile_any([[
 dnl number of variables/scope, number of scopes, expect_compiler_error
 define(test_scopes,[[
   test_any([[
-    werror("Testing scoped variables $1:$2%s...\n",
-	   $3?" expecting a compilation error":"");
+    write("Testing scoped variables $1:$2%s...\n",
+	  $3?" expecting a compilation error":"");
     string line = sprintf("#line %d %O\n", __LINE__, __FILE__);
     string s = "{\n" +
       (map(indices(allocate($1)), lambda(int no) {
@@ -895,7 +895,7 @@ test_do([[
 	object x = foo && Foo(0);
 	x = 0;
 	// Cause call to destruct_objects_to_destruct.
-	for (int j = 0; j < 10; j++) werror ("");
+	for (int j = 0; j < 10; j++) write ("");
       }
     }
 
@@ -915,7 +915,7 @@ test_do([[
 	  foo = Foo(foo);
 	foo = 0;
 	// Cause call to destruct_objects_to_destruct.
-	for (int j = 0; j < 10; j++) werror ("");
+	for (int j = 0; j < 10; j++) write ("");
 
       }) return err;
     }
@@ -2096,7 +2096,7 @@ string efoo(string e)
  {
    void compile_error(string file, int line, string err)
    {
-     // werror("file: %O, line: %O, err: %O\n", file, line, err);
+     // write("file: %O, line: %O, err: %O\n", file, line, err);
    }
  };
 
@@ -2820,12 +2820,12 @@ string status_prefix="";
 class Codec {
   string nameof(mixed x)
   {
-    return ([ trace:"efun:trace", werror:"efun:werror", `+:"efun:`+" ])[x];
+    return ([ trace:"efun:trace", write:"efun:write", `+:"efun:`+" ])[x];
   }
 
   function functionof(string x)
   {
-    return ([ "efun:trace":trace, "efun:werror":werror, "efun:`+":`+ ])[x] ||
+    return ([ "efun:trace":trace, "efun:write":write, "efun:`+":`+ ])[x] ||
       0;
   }
 
@@ -2849,12 +2849,12 @@ void low_generate(int depth,
     {	
       __signal_watchdog();
       if(!quiet)
-        werror("\r%s" FMT, status_prefix,maxdepth,tests);
+        write("\r%s" FMT, status_prefix,maxdepth,tests);
     }
 
     string test=code*"\n"+"\n"
       "mixed Q() { return "+acc+"();}\n"
-      "int main() { trace(9); werror(\"%O\\n\","+acc+"()); }\n"
+      "int main() { trace(9); write(\"%O\\n\","+acc+"()); }\n"
       ;
 
     mixed tmp, x;
@@ -2884,16 +2884,16 @@ void low_generate(int depth,
 	string tmp=master()->describe_backtrace(err);
 	array s=tmp/"\n";
 	s=s[..20];
-	werror("%s\n",s*"\n");
+	write("%s\n",s*"\n");
       }
       if (res == "None") {
         // Probable decode error; try to get some debug.
 	catch {
-	  werror("Encoding...\n");
+	  write("Encoding...\n");
 	  string encoded = ((function)encode_value)(tmp, Codec(), 6);
-	  werror("Decoding...\n");
+	  write("Decoding...\n");
           tmp = ((function)decode_value)(encoded, Codec(), 6);
-	  werror("Strange... No error thrown...\n");
+	  write("Strange... No error thrown...\n");
         };
       }
       return;
@@ -2930,7 +2930,7 @@ void low_generate(int depth,
 
 array(int) a()
 {
-  werror("\nTesting vtables and scope access.\n");
+  write("\nTesting vtables and scope access.\n");
 
   quiet = !_verbose;
 
@@ -2944,14 +2944,14 @@ array(int) a()
 
     status_prefix+=sprintf(FMT,maxdepth,tests);
     if(quiet)
-      werror("%d .. ",maxdepth);
+      write("%d .. ",maxdepth);
     else
-      werror("\r%s",status_prefix);
+      write("\r%s",status_prefix);
     total_tests+=tests;
     tests=0;
   }
   
-  werror("\n");
+  write("\n");
   return ({ total_tests-errors, errors });
 }
 
@@ -4466,7 +4466,7 @@ void log (function f, string msg)
   if (f == test) msg = "[T] " + msg;
   else if (f == thread_disabler) msg = " " * 20 + "[D] " + msg;
   else if (f == mutex_locker) msg = " " * 40 + "[L] " + msg;
-  werror (msg);
+  write (msg);
 #endif
 }
 

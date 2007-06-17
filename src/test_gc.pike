@@ -6,7 +6,7 @@ array(int) a() {
 
   add_constant ("destructing", lambda (string id) {destruct_order += ({id});});
   add_constant ("my_error", lambda (string s, mixed... args) {
-			      if (!got_error) werror ("\n");
+			      if (!got_error) write ("\n");
 			      werror (s, @args);
 			      got_error++;
 			    });
@@ -28,7 +28,7 @@ array(int) a() {
       mixed get_w2()  {return 0;}
       function(object:mixed) checkfn;
       void check_live (mapping(object:int) checked) {
-	//werror (\"check_live %s\\n\", id);
+	//write (\"check_live %s\\n\", id);
 	checked[this_object()] = 1;
 	if (!get_nk1()) my_error (id + \"->nk1 got destructed too early.\\n\");
 	else if (!get_nk2()) my_error (id + \"->nk2 got destructed too early.\\n\");
@@ -46,7 +46,7 @@ array(int) a() {
 	  if (objectp (v = get_w1())  && !checked[v]) v->check_live (checked);
 	  if (objectp (v = get_w2())  && !checked[v]) v->check_live (checked);
 	}
-	//werror (\"check_live %s done\\n\", id);
+	//write (\"check_live %s done\\n\", id);
       }
     ", __FILE__));
 
@@ -54,7 +54,7 @@ array(int) a() {
       inherit B_dead;
       void destroy() {
 	destructing (id);
-	//werror (\"destroy %s\\n\", id);
+	//write (\"destroy %s\\n\", id);
 	check_live (([]));
       }
     ", __FILE__));
@@ -602,12 +602,7 @@ array(int) a() {
 
     int n = 1;
     for (int f = nlive + ndead; f > 1; f--) n *= f;
-    switch ((mixed) _verbose) {
-      case 1:
-	werror ("\rGC destruct order test %d, %d permutations    ", test, n); break;
-      case 2..:
-	werror ("GC destruct order test %d, %d permutations\n", test, n); break;
-    }
+    write ("\rGC destruct order test %d, %d permutations    ", test, n);
     tests += n;
 
     while (n--) {
@@ -708,7 +703,7 @@ array(int) a() {
 	}
 
       prog += "void setup() {\n" + obj_creates + "\n" + var_assigns + "}\n";
-      //werror ("\nTest " + alloc_order * ", " + ":\n" + prog + "\n");
+      //write ("\nTest " + alloc_order * ", " + ":\n" + prog + "\n");
 
       destruct_order = ({""}); // Using ({}) would alloc a new array in destructing().
       object o;
@@ -739,7 +734,7 @@ array(int) a() {
     }
   }
 
-  if (_verbose == 1) werror ("\r%60s\r", "");
+  write ("\r%60s\r", "");
 
   add_constant ("destructing");
   add_constant ("my_error");

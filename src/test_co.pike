@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_co.pike,v 1.7 2001/10/01 19:54:00 nilsson Exp $ */
+/* $Id: test_co.pike,v 1.8 2007/06/17 23:14:08 mast Exp $ */
 
 void verify();
 
@@ -10,7 +10,7 @@ int cnt;
 
 #define FUN(X) void X() \
 { \
-  if(!(--fc[X] && (++cnt & 15))) { verify(); werror("."); } \
+  if(!(--fc[X] && (++cnt & 15))) { verify(); write("."); } \
 }
 
 FUN(f0)
@@ -40,7 +40,7 @@ void verify()
       exit(1);
     }
   }
-  if(!sizeof(ff)) { werror("\n"); exit(0); }
+  if(!sizeof(ff)) { write("\n"); exit(0); }
   gc();
 }
 
@@ -70,16 +70,16 @@ mixed rco(mixed func)
 void do_remove()
 {
   fc[do_remove]--;
-  werror("\nRemoving call outs ");
+  write("\nRemoving call outs ");
   for(int d=0;d<50;d++)
   {
     for(int e=0;e<200;e++)
       rco(fn[random(10)]);
     
     verify();
-    werror(".");
+    write(".");
   }
-  werror("\nWaiting to exit ");
+  write("\nWaiting to exit ");
   call_out(exit,30,1);
 }
 
@@ -93,11 +93,11 @@ int main()
     {
       co(fn[random(10)],random(1000)/100.0);
     }
-    werror(".");
+    write(".");
     verify();
   }
 
-  werror("\nTesting end of heap ...");
+  write("\nTesting end of heap ...");
 
   verify();
 
@@ -115,7 +115,7 @@ int main()
     }
   }
 
-  werror("\nTesting beginning of heap ...");
+  write("\nTesting beginning of heap ...");
 
   verify();
 
@@ -134,7 +134,7 @@ int main()
 
   verify();
   
-  werror("\nWaiting ");
+  write("\nWaiting ");
 
   co(do_remove,1.0);
   
