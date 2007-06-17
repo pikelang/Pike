@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.326 2007/06/16 17:55:06 nilsson Exp $
+|| $Id: file.c,v 1.327 2007/06/17 00:31:58 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.326 2007/06/16 17:55:06 nilsson Exp $");
+RCSID("$Id: file.c,v 1.327 2007/06/17 00:31:58 mast Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -2839,15 +2839,15 @@ static void file_dup2(INT32 args)
 
 
   if(fd->box.fd < 0) {
-    /* FIXME: Use change_fd_for_box here! */
-    /* fd->box.revents = 0; */
-    if((fd->box.fd = fd_dup(FD)) < 0)
+    int new_fd;
+    if((new_fd = fd_dup(FD)) < 0)
     {
       ERRNO = errno;
       pop_n_elems(args);
       push_int(0);
       return;
     }
+    change_fd_for_box (&fd->box, new_fd);
   } else {
     if (fd->flags & FILE_LOCK_FD) {
       Pike_error("File has been temporarily locked from closing.\n");
