@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.115 2007/06/16 23:54:18 mast Exp $ */
+/* $Id: test_pike.pike,v 1.116 2007/06/17 23:07:26 mast Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -119,106 +119,213 @@ class WarningFlag {
 #define WATCHDOG_TIMEOUT 60*80
 #endif
 
-#if constant(thread_create)
-#define WATCHDOG
-#define WATCHDOG_PIPE
-object watchdog_pipe;
+#define WATCHDOG_MSG(fmt, x...) werror ("\n[WATCHDOG]: " fmt, x)
+
+#if 0
+#define WATCHDOG_DEBUG_MSG(fmt, x...) WATCHDOG_MSG (fmt, x)
 #else
-#if constant(kill)
-#define WATCHDOG
-#define WATCHDOG_SIGNAL
-#endif
+#define WATCHDOG_DEBUG_MSG(fmt, x...) 0
 #endif
 
-#ifdef WATCHDOG
-object watchdog;
 int use_watchdog=1;
 int watchdog_time;
 
-void signal_watchdog()
+void send_watchdog_command (string cmd, mixed... args)
 {
-#ifdef WATCHDOG
-  if(use_watchdog && time() - watchdog_time > 30)
-  {
-    watchdog_time=time();
-#ifdef WATCHDOG_PIPE
-    watchdog_pipe->write("x",1);
-#endif
-
-#ifdef WATCHDOG_SIGNAL
-    watchdog->kill(signum("SIGQUIT"));
-#endif
-  }
-#endif
+  watchdog_time=time();
+  write ("WD " + cmd + "\n", @args);
 }
-#endif
 
-void run_watchdog(int pid) {
-#ifdef WATCHDOG
-  int cnt=0;
-  int last_time=time();
-  int exit_quietly;
-#ifdef WATCHDOG_PIPE
-  thread_create(lambda() {
-		  object o=Stdio.File("stdin");
-		  while(sizeof(o->read(1) || ""))
-		  {
-		    last_time=time();
-		  }
-		  exit_quietly=1;
-		});
-#endif // WATCHDOG_PIPE
+void signal_watchdog (void|string current_test, mixed... args)
+{
+  if(use_watchdog && (current_test || time() - watchdog_time > 30))
+    send_watchdog_command ("cur " + (current_test || ""), @args);
+}
 
-#ifdef WATCHDOG_SIGNAL
-  werror("Setting signal (1)\n");
-  if(signum("SIGQUIT")>=0)
+void watchdog_new_pid (int pid)
+{
+  if (use_watchdog)
+    send_watchdog_command ("pid %d", pid);
+}
+
+class WatchdogFilterStream
+// Filter out watchdog commands on the form "WD <cmd>\n", passing
+// everything else through.
+{
+  static array(string) wd_cmds = ({});
+  static string cmd_buf;
+
+  string filter (string in)
   {
-    werror("Setting signal (2)\n");
-    signal( signum("SIGQUIT"),
-	    lambda() {
-	      last_time=time();
-	    });
+    string out_buf = "";
+    do {
+      if (cmd_buf) {
+	cmd_buf += in;
+	in = "";
+	if (sscanf (cmd_buf, "WD %s\n%s", string wd_cmd, in) == 2) {
+	  wd_cmds += ({wd_cmd});
+	  cmd_buf = 0;
+	}
+	else if (has_value (cmd_buf, "\n")) {
+	  in = cmd_buf;
+	  cmd_buf = 0;
+	}
+	else break;
+      }
+      if (!cmd_buf) {
+	int i = search (in, "WD ");
+	if (i > -1) cmd_buf = in[i..], in = in[..i-1];
+	else if (has_suffix (in, "WD")) cmd_buf = "WD", in = in[..<2];
+	else if (has_suffix (in, "W")) cmd_buf = "W", in = in[..<1];
+	out_buf += in;
+	in = "";
+      }
+    } while (cmd_buf);
+    return out_buf;
   }
-  else {
-    exit(1);
-  }
-#endif // WATCHDOG_SIGNAL
 
-  while(1)
+  array(string) get_cmds()
   {
-    sleep(10);
-    if(exit_quietly) _exit(0);
-#ifndef __NT__
-    if(!kill(pid, 0)) _exit(0);
-#endif
+    array(string) res = wd_cmds;
+    wd_cmds = ({});
+    return res;
+  }
+}
 
-    /* I hope 30 minutes per test is enough for everybody */
-    if(time() - last_time > WATCHDOG_TIMEOUT)
-    {
-      werror("\n[WATCHDOG] Pike testsuite timeout, sending SIGABRT.\n");
-      kill(pid, signum("SIGABRT"));
-      for(int q=0;q<60;q++) if(!kill(pid,0)) _exit(0); else sleep(1);
-      werror("\n"
-	     "[WATCHDOG] This is your friendly watchdog again...\n"
-	     "[WATCHDOG] testsuite failed to die from SIGABRT, sending SIGKILL\n");
-      kill(pid, signum("SIGKILL"));
-      for(int q=0;q<60;q++) if(!kill(pid,0)) _exit(0); else sleep(1);
-      werror("\n"
-	     "[WATCHDOG] This is your friendly watchdog AGAIN...\n"
-	     "[WATCHDOG] SIGKILL, SIGKILL, SIGKILL, DIE!\n");
-      kill(pid, signum("SIGKILL"));
-      kill(pid, signum("SIGKILL"));
-      kill(pid, signum("SIGKILL"));
-      kill(pid, signum("SIGKILL"));
-      for(int q=0;q<60;q++) if(!kill(pid,0)) _exit(0); else sleep(1);
-      werror("\n"
-	     "[WATCHDOG] Giving up, must be a device wait.. :(\n");
-      _exit(0);
+class Watchdog
+{
+  Stdio.File stdin;
+  int parent_pid, watched_pid;
+  string stdout_buf = "", current_test;
+  int verbose, timeout_phase;
+
+  static inherit WatchdogFilterStream;
+
+  void stdin_read (mixed ignored, string in)
+  {
+    WATCHDOG_DEBUG_MSG ("Reset timeout at %s", ctime (time()));
+    remove_call_out (timeout);
+    call_out (timeout, WATCHDOG_TIMEOUT);
+
+    in = filter (in);
+    foreach (get_cmds(), string wd_cmd) {
+      if (sscanf (wd_cmd, "pid %d", int new_pid)) {
+	watched_pid = new_pid;
+	timeout_phase = 0;
+	WATCHDOG_DEBUG_MSG ("Changed watched pid to %d\n", watched_pid);
+      }
+      else if (sscanf (wd_cmd, "cur %s", wd_cmd)) {
+	if (wd_cmd != "") {
+	  current_test = wd_cmd;
+	  stdout_buf = "";
+	  WATCHDOG_DEBUG_MSG ("New test: %s\n", current_test);
+	}
+      }
+      else
+	WATCHDOG_MSG ("Got unknown command: %O\n", wd_cmd);
+    }
+
+    if (in != "") {
+      if (verbose)
+	write (in);
+      else {
+	// Buffer up to 100 kb of stdout noise applying to the last
+	// test, so it can be printed out if it hangs.
+	stdout_buf += in;
+	while (sizeof (stdout_buf) > 100000 &&
+	       sscanf (stdout_buf, "%*s%[\n\r]%s",
+		       string lf, stdout_buf) == 3 &&
+	       lf != "") {}
+      }
     }
   }
-#else
-  _exit(1);
-#endif // else WATCHDOG
+
+  void stdin_close (mixed ignored)
+  {
+    if (stdin->errno()) {
+      WATCHDOG_MSG ("Error reading stdin pipe: %s\n",
+		    strerror (stdin->errno()));
+    }
+    _exit(0);
+  }
+
+  void check_parent_pid()
+  {
+    if (!kill (parent_pid, 0)) {
+      WATCHDOG_DEBUG_MSG ("Parent process %d gone - exiting\n", parent_pid);
+      _exit(0);
+    }
+    call_out (check_parent_pid, 10);
+  }
+
+  void timeout()
+  {
+    WATCHDOG_DEBUG_MSG ("Timeout, phase: %d\n", timeout_phase);
+
+    if (watched_pid != parent_pid && !kill(watched_pid, 0)) {
+      WATCHDOG_DEBUG_MSG ("Watched process %d gone\n", watched_pid);
+      // Automatically go back to watch our parent. If it doesn't
+      // respond, it goes too.
+      watched_pid = parent_pid;
+      timeout_phase = 0;
+      call_out (timeout, 10);
+    }
+
+    else switch (timeout_phase) {
+	case 0:
+	  WATCHDOG_MSG ("Pike testsuite timeout.");
+	  if (current_test) WATCHDOG_MSG ("Current test: %s", current_test);
+	  if (stdout_buf != "") {
+	    WATCHDOG_MSG ("Output from last test:\n");
+	    write (stdout_buf);
+	  }
+	  WATCHDOG_MSG ("Sending SIGABRT to %d.\n", watched_pid);
+	  kill(watched_pid, signum("SIGABRT"));
+	  stdin->close();
+	  timeout_phase = 1;
+	  call_out (timeout, 60);
+	  break;
+
+	case 1:
+	  WATCHDOG_MSG ("This is your friendly watchdog again...");
+	  WATCHDOG_MSG ("Testsuite failed to die from SIGABRT, "
+			"sending SIGKILL to %d.\n", watched_pid);
+	  kill(watched_pid, signum("SIGKILL"));
+	  timeout_phase = 2;
+	  call_out (timeout, 60);
+	  break;
+
+	case 2:
+	  WATCHDOG_MSG ("This is your friendly watchdog AGAIN...");
+	  WATCHDOG_MSG ("SIGKILL, SIGKILL, SIGKILL, DIE, %d!\n", watched_pid);
+	  kill(watched_pid, signum("SIGKILL"));
+	  sleep (0.1);
+	  kill(watched_pid, signum("SIGKILL"));
+	  sleep (0.1);
+	  kill(watched_pid, signum("SIGKILL"));
+	  sleep (0.1);
+	  kill(watched_pid, signum("SIGKILL"));
+	  timeout_phase = 3;
+	  call_out (timeout, 60);
+	  break;
+
+	case 3:
+	  WATCHDOG_MSG ("Giving up on %d, must be a device wait.. :(\n",
+			watched_pid);
+	  break;
+      }
+  }
+
+  void create (int pid, int verbose)
+  {
+    parent_pid = watched_pid = pid;
+    this_program::verbose = verbose;
+    WATCHDOG_DEBUG_MSG ("Watchdog started.\n");
+    stdin = Stdio.File ("stdin");
+    stdin->set_nonblocking (stdin_read, 0, stdin_close);
+    call_out (check_parent_pid, 10);
+    call_out (timeout, WATCHDOG_TIMEOUT);
+  }
 }
 
 //
@@ -227,6 +334,7 @@ void run_watchdog(int pid) {
 
 int main(int argc, array(string) argv)
 {
+  int watchdog_pid, subprocess;
   int e, verbose, prompt, successes, errors, t, check, asmdebug;
   int skipped;
   array(string) tests;
@@ -304,6 +412,7 @@ int main(int argc, array(string) argv)
     ({"debug",Getopt.MAY_HAVE_ARG,({"-d","--debug"})}),
 #endif
     ({"regression",Getopt.NO_ARG,({"-r","--regression"})}),
+    ({"subprocess", Getopt.NO_ARG, ({"--subprocess"})}),
     )),array opt)
     {
       switch(opt[0])
@@ -313,7 +422,7 @@ int main(int argc, array(string) argv)
 	  break;
 
 	case "watchdog":
-	  run_watchdog( (int)opt[1] );
+	  watchdog_pid = (int)opt[1];
 	  break;
 	
 	case "notty":
@@ -363,6 +472,10 @@ int main(int argc, array(string) argv)
 	  add_constant("regression", 1);
 	  break;
 
+	case "subprocess":
+	  subprocess = 1;
+	  break;
+
 #ifdef HAVE_DEBUG
 	case "debug":
 	{
@@ -388,6 +501,11 @@ int main(int argc, array(string) argv)
       }
     }
 
+  if (watchdog_pid) {
+    Watchdog (watchdog_pid, verbose);
+    return -1;
+  }
+
   if (forked) {
     if (!use_watchdog) forked += ({ "--no-watchdog" });
     if (!maybe_tty) forked += ({ "--notty" });
@@ -405,45 +523,67 @@ int main(int argc, array(string) argv)
     if (mem) forked += ({ "--memory" });
     // auto already handled.
     if (all_constants()->regression) forked += ({ "--regression" });
+    forked += ({"--subprocess"});
     // debug port not propagated.
     //werror("forked:%O\n", forked);
   }
 
-  // Move stdout to a higher fd, so that close on exec works.
-  // This makes sure the original stdout gets closed even if
-  // some subprocess hangs.
-  Stdio.File stdout = Stdio.File();
-  Stdio.stdout->dup2(stdout);
-  //stdout->assign(Stdio.stdout->_fd->dup());
-  Stdio.stderr->dup2(Stdio.stdout);
-  stdout->set_close_on_exec(1);
+  Stdio.File stdout;
 
-#ifdef WATCHDOG
-  int watchdog_time=time();
-
-  if(use_watchdog && !forked)
+  Process.create_process watchdog;
+  if(use_watchdog)
   {
-#ifdef WATCHDOG_PIPE
-    object watchdog_tmp=Stdio.File();
-    watchdog_pipe=watchdog_tmp->pipe(Stdio.PROP_IPC);
-    watchdog=Process.create_process(
-      backtrace()[0][3] + ({  "--watchdog="+getpid() }),
-      (["stdin":watchdog_tmp ]));
-    destruct(watchdog_tmp);
-#endif
-
-#ifdef WATCHDOG_SIGNAL
-    watchdog=Process.create_process(
-      backtrace()[0][3] + ({  "--watchdog="+getpid() }) );
-#endif
+    // A subprocess can assume the watchdog is already installed on stdout.
+    if (!subprocess) {
+      Stdio.File orig_stdout = Stdio.File();
+      Stdio.stdout->dup2 (orig_stdout);
+      Stdio.File pipe_1 = Stdio.File();
+      // Don't really need PROP_BIDIRECTIONAL, but it's necessary for
+      // some reason to make a pipe/socket that the watchdog process can
+      // do nonblocking on (Linux 2.6/glibc 2.5). Maybe a bug in the new
+      // epoll stuff? /mast
+      Stdio.File pipe_2 = pipe_1->pipe (Stdio.PROP_IPC|
+					Stdio.PROP_NONBLOCK|
+					Stdio.PROP_BIDIRECTIONAL);
+      if (!pipe_2) {
+	werror ("Failed to create pipe for watchdog: %s\n",
+		strerror (pipe_1->errno()));
+	exit (1);
+      }
+      pipe_1->dup2 (Stdio.stdout);
+      watchdog=Process.create_process(
+	backtrace()[0][3] + ({ "--watchdog="+getpid() }),
+	(["stdin": pipe_2, "stdout": orig_stdout]));
+      pipe_2->close();
+      orig_stdout->close();
+      WATCHDOG_DEBUG_MSG ("Forked watchdog %d.\n", watchdog->pid());
+    }
+    stdout = Stdio.stdout;
   }
-  add_constant("__signal_watchdog",signal_watchdog);
-#else
-  add_constant("__signal_watchdog",lambda(){});
-#endif // else WATCHDOG_PIPE
 
+  else {
+    // Move stdout to a higher fd, so that close on exec works.
+    // This makes sure the original stdout gets closed even if
+    // some subprocess hangs.
+    stdout = Stdio.File();
+    Stdio.stdout->dup2(stdout);
+    //stdout->assign(Stdio.stdout->_fd->dup());
+    if (verbose)
+      Stdio.stderr->dup2(Stdio.stdout);
+    else {
+#ifdef __NT__
+      Stdio.File ("NUL:", "w")->dup2 (Stdio.stdout);
+#else
+      Stdio.File ("/dev/null", "w")->dup2 (Stdio.stdout);
+#endif
+    }
+    stdout->set_close_on_exec(1);
+  }
+
+  add_constant("__signal_watchdog",signal_watchdog);
   add_constant("_verbose", verbose);
-  if(verbose)
+
+  if(verbose && !subprocess)
     stdout->write("Begin tests at "+ctime(time()));
 
   testsuites += Getopt.get_args(argv, 1)[1..];
@@ -474,57 +614,92 @@ int main(int argc, array(string) argv)
     if (forked) {
       foreach(testsuites, string testsuite) {
 	Stdio.File p = Stdio.File();
-	Stdio.File p2 = p->pipe();
+	// Shouldn't need PROP_BIDIRECTIONAL, but we won't get a
+	// pipe/socket that we can do nonblocking on otherwise.
+	Stdio.File p2 = p->pipe (Stdio.PROP_IPC|
+				 Stdio.PROP_NONBLOCK|
+				 Stdio.PROP_BIDIRECTIONAL);
 	if(!p2) {
-	  werror("Failed to create pipe.\n");
+	  werror("Failed to create pipe: %s\n", strerror (p->errno()));
 	  if(fail) exit(1);
 	  errors++;
 	  continue;
 	}
-	object pid =
+	Process.create_process pid =
 	  Process.create_process(forked + ({ testsuite }),
 				 ([ "stdout":p2 ]));
 	p2->close();
-	string raw_results;
-	string results = lower_case(raw_results = p->read());
+	watchdog_new_pid (pid->pid());
+
+	object subresult =
+	  class (Stdio.File p) {
+	    inherit WatchdogFilterStream;
+	    string buf = "";
+	    int done;
+	    int total, failed, skipped, got_subresult;
+	    void read_cb (mixed ignored, string in)
+	    {
+	      write (filter (in));
+	      foreach (get_cmds(), string wd_cmd) {
+		if (sscanf (wd_cmd, "total %d failed %d skipped %d",
+			    total, failed, skipped) == 3)
+		  got_subresult = 1;
+		else
+		  send_watchdog_command (wd_cmd);
+	      }
+	    }
+	    void close_cb (mixed ignored)
+	    {
+	      if (p->errno()) {
+		werror ("Error reading output from subprocess: %s\n",
+			strerror (p->errno()));
+		done = -1;
+	      }
+	      else
+		done = 1;
+	    }
+	    int run()
+	    {
+	      p->set_nonblocking (read_cb, 0, close_cb);
+	      while (!done) Pike.DefaultBackend();
+	      return done;
+	    }
+	  } (p);
+
+	if (subresult->run() < 0) errors++;
 	int err = pid->wait();
-	int total = 0;
-	int failed = 0;
-	int skip = 0;
-	if (((sscanf(results, "%*sfailed tests:%d", failed) != 2) +
-	     (sscanf(results, "%*stotal tests:%d", total) != 2) +
-	     (sscanf(results, "%*s(%d tests skipped)", skip) != 2)) == 3) {
+
+	if (!subresult->got_subresult) {
 	  // Failed to parse the result totally.
 	  if (err == -1) {
 	    werror("Failed to parse subresult "
-		   "(subprocess died of signal %s):\n"
-		   "%O\n",
-		   signame (pid->last_signal()) || (string) pid->last_signal(),
-		   raw_results);
+		   "(subprocess died of signal %s)\n",
+		   signame (pid->last_signal()) || (string) pid->last_signal());
 	  } else {
 	    werror("Failed to parse subresult "
-		   "(subprocess exited with error code %d):\n"
-		   "%O\n", err, raw_results);
+		   "(subprocess exited with error code %d).\n", err);
 	  }
 	  errors++;
 	} else {
-	  werror("Subresult: %d tests, %d failed, %d skipped\n",
-		 total, failed, skip);
-	  errors += failed;
-	  successes += total - failed;
-	  skipped += skip;
+	  if (verbose)
+	    werror("Subresult: %d tests, %d failed, %d skipped\n",
+		   subresult->total, subresult->failed, subresult->skipped);
+	  errors += subresult->failed;
+	  successes += subresult->total - subresult->failed;
+	  skipped += subresult->skipped;
 	  if (err == -1) {
 	    werror ("Subprocess died of signal %s.\n",
 		    signame (pid->last_signal()) || (string) pid->last_signal());
 	    errors++;
 	  }
-	  else if (err) {
+	  else if (err && !subresult->failed) {
 	    werror ("Subprocess exited with error code %d.\n", err);
 	    errors++;
 	  }
 	}
-	werror("Accumulated: %d tests, %d failed, %d skipped\n",
-	       successes + errors, errors, skipped);
+	if (verbose)
+	  werror("Accumulated: %d tests, %d failed, %d skipped\n",
+		 successes + errors, errors, skipped);
 	if (fail && errors) {
 	  exit(1);
 	}
@@ -541,8 +716,6 @@ int main(int argc, array(string) argv)
       int testno, testline;
       for(e=start;e<sizeof(tests);e++)
       {
-	signal_watchdog();
-
 	if (!((e-start) % 10))
 	  report_size();
 
@@ -609,15 +782,17 @@ int main(int argc, array(string) argv)
 	  testfile = split[..sizeof (split) - 2] * ":";
 	}
 
+	signal_watchdog ("Test %d at %s:%d", e + 1, testfile, testline);
+
 	string pad_on_error = "\n";
 	if(maybe_tty && Stdio.Terminfo.is_tty())
         {
-	  if(verbose<2) {
+	  if(verbose == 1) {
 	    werror("test %d, line %d\r", e+1, testline);
 	    pad_on_error = "                                        \r";
 	  }
 	}
-	else if(verbose){
+	else if(verbose > 1){
 	  if(skip) {
 	    if(qmade) werror(" Made %d test%s.\n", qmade, qmade==1?"":"s");
 	    qmade=0;
@@ -631,7 +806,7 @@ int main(int argc, array(string) argv)
 	    qmade++;
 	  }
 	}
-	else {
+	else if (verbose) {
 	  /* Use + instead of . so that sendmail and
 	   * cron will not cut us off... :(
 	   */
@@ -1046,16 +1221,17 @@ int main(int argc, array(string) argv)
 
       if(maybe_tty && Stdio.Terminfo.is_tty())
       {
-	werror("                                        \r");
+	if (verbose)
+	  werror("                                        \r");
       }
-      else if(verbose) {
+      else if(verbose > 1) {
 	if(!qskipp && !qmadep);
 	else if(!qskipp) werror("Made all tests\n");
 	else if(!qmadep) werror("Skipped all tests\n");
 	else if(qmade) werror(" Made %d test%s.\n", qmade, qmade==1?"":"s");
 	else if(qskipped) werror(" Skipped %d test%s.\n", qskipped, qskipped==1?"":"s");
       }
-      else {
+      else if (verbose) {
 	werror("\n");
       }
     }
@@ -1083,15 +1259,23 @@ int main(int argc, array(string) argv)
 	      "Total", "", total );
     }
   }
-  if(errors || verbose>1)
-  {
-    stdout->write("Failed tests: "+errors+".\n");
-  }
 
-  stdout->write(sprintf("Total tests: %d  (%d tests skipped)\n",
-			successes+errors, skipped));
-  if(verbose)
-    stdout->write("Finished tests at "+ctime(time()));
+  if (!subprocess) {
+    if(errors || verbose>1)
+    {
+      stdout->write("Failed tests: "+errors+".\n");
+    }
+
+    stdout->write(sprintf("Total tests: %d  (%d tests skipped)\n",
+			      successes+errors, skipped));
+    if(verbose)
+      stdout->write("Finished tests at "+ctime(time()));
+  }
+  else {
+    // Not really a watchdog command, but uses the same format.
+    stdout->write ("WD total %d failed %d skipped %d\n",
+		   successes + errors, errors, skipped);
+  }
 
 #if 1
   if(verbose && sizeof(all_constants())!=sizeof(const_names)) {
@@ -1107,16 +1291,12 @@ int main(int argc, array(string) argv)
   add_constant("__signal_watchdog");
   add_constant("RUNPIKE");
 
-#if defined(WATCHDOG_SIGNAL) || defined(WATCHDOG_PIPE)
   if(watchdog)
   {
-#ifdef WATCHDOG_PIPE
-    destruct(watchdog_pipe);
-#endif
+    Stdio.stdout->close();
     catch { watchdog->kill(signum("SIGKILL")); };
     watchdog->wait();
   }
-#endif
 
   return errors;
 }
@@ -1133,8 +1313,8 @@ Usage: test_pike [args] [testfiles]
                     includes the printouts from the levels below.
                     0  No extra printouts.
                     1  Some additional information printed out after every
-                       finished block of tests.
-                    2  Some extra information about tests that will or won't be
+		       finished block of tests.
+		    2  Some extra information about tests that will or won't be
                        run.
                     3  Every test is printed out.
                     4  Time spent in individual tests is printed out.
