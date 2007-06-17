@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.363 2007/05/26 15:35:43 mast Exp $
+|| $Id: file.c,v 1.364 2007/06/17 00:31:58 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -3121,21 +3121,21 @@ static void file_dup2(INT32 args)
     SIMPLE_BAD_ARG_ERROR("Stdio.File->dup2", 1, "Stdio.File");
 
   if(fd->box.fd < 0) {
-    /* FIXME: Use change_fd_for_box here! */
-    fd->box.revents = 0;
-    if((fd->box.fd = fd_dup(FD)) < 0)
+    int new_fd;
+    if((new_fd = fd_dup(FD)) < 0)
     {
       ERRNO = errno;
       pop_n_elems(args);
       push_int(0);
       return;
     }
+    fd->box.revents = 0;
+    change_fd_for_box (&fd->box, new_fd);
   } else {
     if (fd->flags & FILE_LOCK_FD) {
       Pike_error("File has been temporarily locked from closing.\n");
     }
 
-    THIS->box.revents = 0;
     if(fd_dup2(FD, fd->box.fd) < 0)
     {
       ERRNO = errno;
@@ -3143,6 +3143,7 @@ static void file_dup2(INT32 args)
       push_int(0);
       return;
     }
+    THIS->box.revents = 0;
   }
   ERRNO=0;
   low_dup(o, fd, THIS);
