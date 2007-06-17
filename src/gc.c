@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.293 2007/06/17 00:05:13 mast Exp $
+|| $Id: gc.c,v 1.294 2007/06/17 00:06:08 mast Exp $
 */
 
 #include "global.h"
@@ -1045,6 +1045,7 @@ static void rec_stack_fatal (struct gc_rec_frame *err, const char *err_name,
     describe_rec_frame (err);
     fputc ('\n', stderr);
   }
+  d_flag = 0; /* The instruction backlog is never of any use here. */
   debug_fatal (NULL);
   va_end (args);
 }
