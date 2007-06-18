@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.118 2007/06/18 23:22:31 mast Exp $ */
+/* $Id: test_pike.pike,v 1.119 2007/06/18 23:27:33 mast Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -220,6 +220,7 @@ class Watchdog
       else {
 	// Buffer up to 100 kb of stdout noise applying to the last
 	// test, so it can be printed out if it hangs.
+	in = replace (in, "\r", "\n");
 	string ts = "[" + format_timestamp() + "] ";
 	if (stdout_buf == "" || has_suffix (stdout_buf, "\n"))
 	  stdout_buf += ts;
