@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.c,v 1.12 2007/05/18 14:00:48 grubba Exp $
+ * $Id: pike_embed.c,v 1.13 2007/06/18 09:21:24 mast Exp $
  *
  * Pike embedding API.
  *
@@ -38,6 +38,7 @@
 #include "module_support.h"
 #include "opcodes.h"
 #include "pike_memory.h"
+#include "pike_cpulib.h"
 
 #include "pike_embed.h"
 

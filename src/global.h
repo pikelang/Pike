@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.109 2006/08/09 18:31:36 mast Exp $
+|| $Id: global.h,v 1.110 2007/06/18 09:21:24 mast Exp $
 */
 
 #ifndef GLOBAL_H
@@ -496,7 +496,10 @@ static INLINE long PTRDIFF_T_TO_LONG(ptrdiff_t x)
 
 #include "port.h"
 #include "dmalloc.h"
-#include "pike_cpulib.h"
+
+/* Either this include must go or the include of threads.h in
+ * pike_cpulib.h. Otherwise we get pesky include loops. */
+/* #include "pike_cpulib.h" */
 
 #ifdef BUFSIZ
 #define PROT_STDIO(x) PROT(x)
