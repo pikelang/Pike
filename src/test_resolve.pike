@@ -37,7 +37,6 @@ void test_dir(string dir, int|void base_size, object|void handler)
   files = reverse(files);
   foreach(files, string s)
   {
-    write("Testing file: %O...\n", s);
     switch(s)
     {
 #if !constant(GTK.Window)
@@ -50,16 +49,16 @@ void test_dir(string dir, int|void base_size, object|void handler)
     string file=combine_path(dir,s);
     mixed stat=file_stat(file);
     if(!stat) continue;
+    write ("Testing %s: %s%*s\r",
+	   stat[1] == -2 ? "dir" : "file",
+	   (dir / "/")[-1] + "/" + s,
+	   60 - sizeof ((dir / "/")[-1]) - sizeof (s), "");
     if(stat[1]==-2 && has_suffix(file, ".pmod"))
     {
       test_resolv(file, base_size, handler);
       test_dir(file, base_size, handler);
     }
     else if(stat[1]>=0){
-      // DEBUG
-      if (lower_case(uname()->sysname||"") == "osf1") {
-        write("Testing file %O...\n", file);
-      }
       if(has_suffix(file, ".pike") || has_suffix(file, ".pmod") ||
 	 has_suffix(file, ".so"))
       {
@@ -67,7 +66,7 @@ void test_dir(string dir, int|void base_size, object|void handler)
         mixed err=catch { (program)file; };
 	if (err) 
         {
-	  werror("test: failed to compile %O\n",file);
+	  werror("\ntest: failed to compile %O\n",file);
           ok=0;
 	  num_failed++;
           continue;
@@ -86,7 +85,7 @@ void test_dir(string dir, int|void base_size, object|void handler)
 	    program ret = load_module(file);
 	    master()->programs[file] = ret;
 	  }) {
-	    werror("test: failed to load %O: %s\n",
+	    werror("\ntest: failed to load %O: %s\n",
 		   file, describe_error(err));
 	    num_failed++;
 	    ok=0;
@@ -115,7 +114,7 @@ int main()
     object handler = master()->get_compilation_handler(@(array(int))(ver/"."));
     Array.map(handler->pike_module_path,test_dir,0,handler);
   }
-
+  write ("%*s\r", 75, "");
   Tools.Testsuite.report_result (num_ok, num_failed);
   return !ok;
 }
