@@ -127,6 +127,6 @@ void main() {
   Test t = Test(#string "byte-messages.sha1",
 		#string "byte-hashes.sha1");
   array res = t->test();
-  write("%d %d", res[0], res[1]);
+  Tools.Testsuite.report_result (res[0] - res[1], res[1]);
   return 0;
 }

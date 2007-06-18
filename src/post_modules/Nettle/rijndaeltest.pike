@@ -1,5 +1,5 @@
 /*
- * $Id: rijndaeltest.pike,v 1.2 2005/03/13 23:45:19 nilsson Exp $
+ * $Id: rijndaeltest.pike,v 1.3 2007/06/18 00:43:51 mast Exp $
  *
  * Test Crypto.aes against the official test-vectors.
  *
@@ -44,13 +44,13 @@ int check_ecb_e_m()
 
   fail = run_test(raw_ecb_e_m, lambda(mapping(string:string) v) {
     if (v->KEYSIZE) {
-      if (keysize) werror("\n");
+      if (keysize) write("\n");
       keysize = v->KEYSIZE;
       return;
     }
     if (!v->I) return;
 
-    werror("Rijndael ECB Encryption (%s): %s\r", keysize, v->I);
+    write("Rijndael ECB Encryption (%s): %s\r", keysize, v->I);
 
     string pt = String.hex2string(v->PT);
     string ct = String.hex2string(v->CT);
@@ -64,7 +64,7 @@ int check_ecb_e_m()
     return pt != ct;
   });
 
-  werror("\n");
+  write("\n");
   return fail;
 }
 
@@ -77,13 +77,13 @@ int check_ecb_d_m()
 
   fail = run_test(raw_ecb_e_m, lambda(mapping(string:string) v) {
     if (v->KEYSIZE) {
-      if (keysize) werror("\n");
+      if (keysize) write("\n");
       keysize = v->KEYSIZE;
       return;
     }
     if (!v->I) return;
 
-    werror("Rijndael ECB Decryption (%s): %s   \r", keysize, v->I);
+    write("Rijndael ECB Decryption (%s): %s   \r", keysize, v->I);
 
     string pt = String.hex2string(v->PT);
     string ct = String.hex2string(v->CT);
@@ -97,7 +97,7 @@ int check_ecb_d_m()
     return pt != ct;
   });
 
-  werror("\n");
+  write("\n");
   return fail;
 }
 
@@ -110,13 +110,13 @@ int check_cbc_e_m()
 
   fail = run_test(raw_cbc_e_m, lambda(mapping(string:string) v) {
     if (v->KEYSIZE) {
-      if (keysize) werror("\n");
+      if (keysize) write("\n");
       keysize = v->KEYSIZE;
       return;
     }
     if (!v->I) return;
 
-    werror("Rijndael CBC Encryption (%s): %s\r", keysize, v->I);
+    write("Rijndael CBC Encryption (%s): %s\r", keysize, v->I);
 
     string pt = String.hex2string(v->PT);
     string ct = String.hex2string(v->CT);
@@ -134,7 +134,7 @@ int check_cbc_e_m()
     return pt[16..] != ct;
   });
 
-  werror("\n");
+  write("\n");
   return fail;
 }
 
@@ -147,13 +147,13 @@ int check_cbc_d_m()
 
   fail = run_test(raw_cbc_d_m, lambda(mapping(string:string) v) {
     if (v->KEYSIZE) {
-      if (keysize) werror("\n");
+      if (keysize) write("\n");
       keysize = v->KEYSIZE;
       return;
     }
     if (!v->I) return;
 
-    werror("Rijndael CBC Decryption (%s): %s\r", keysize, v->I);
+    write("Rijndael CBC Decryption (%s): %s\r", keysize, v->I);
 
     string pt = String.hex2string(v->PT);
     string ct = String.hex2string(v->CT);
@@ -169,7 +169,7 @@ int check_cbc_d_m()
     return pt != ct;
   });
 
-  werror("\n");
+  write("\n");
   return fail;
 }
 
@@ -183,7 +183,7 @@ int check_ecb_tbl()
 
   fail = run_test(raw_ecb_tbl, lambda(mapping(string:string) v) {
     if (v->KEYSIZE) {
-      werror("Rijndael ECB encrypt/decrypt (%s)...\r", v->KEYSIZE);
+      write("Rijndael ECB encrypt/decrypt (%s)...\r", v->KEYSIZE);
       return;
     }
     if (!v->I) return;
@@ -199,28 +199,28 @@ int check_ecb_tbl()
 
     return (ct != _ct) || (pt != _pt);
   });
-  werror("\n");
+  write("\n");
   return fail;
 }
 
 int main(int argc, array(string) argv)
 {
-  werror("\n");
+  write("\n");
   array(array(string|int)) q = Getopt.find_all_options(argv, ({
     ({ "quick", Getopt.NO_ARG, ({ "-q", "--quick"}) })
   }));
   int fails = check_ecb_tbl();
   if (fails) {
-    write( tests+" "+fails );
+    Tools.Testsuite.report_result (tests - fails, fails);
     return 0;
   }
   foreach(q, array(string|int) option) {
     if (option[0] == "quick") {
-      write( tests+" "+fails );
+      Tools.Testsuite.report_result (tests - fails, fails);
       return 0;
     }
   }
   fails += check_ecb_e_m() + check_ecb_d_m() + check_cbc_e_m() + check_cbc_d_m();
-  write( tests+" "+fails );
+  Tools.Testsuite.report_result (tests - fails, fails);
   return 0;
 }
