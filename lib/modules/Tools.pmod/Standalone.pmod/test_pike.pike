@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.116 2007/06/17 23:07:26 mast Exp $ */
+/* $Id: test_pike.pike,v 1.117 2007/06/18 00:27:28 mast Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -148,50 +148,6 @@ void watchdog_new_pid (int pid)
     send_watchdog_command ("pid %d", pid);
 }
 
-class WatchdogFilterStream
-// Filter out watchdog commands on the form "WD <cmd>\n", passing
-// everything else through.
-{
-  static array(string) wd_cmds = ({});
-  static string cmd_buf;
-
-  string filter (string in)
-  {
-    string out_buf = "";
-    do {
-      if (cmd_buf) {
-	cmd_buf += in;
-	in = "";
-	if (sscanf (cmd_buf, "WD %s\n%s", string wd_cmd, in) == 2) {
-	  wd_cmds += ({wd_cmd});
-	  cmd_buf = 0;
-	}
-	else if (has_value (cmd_buf, "\n")) {
-	  in = cmd_buf;
-	  cmd_buf = 0;
-	}
-	else break;
-      }
-      if (!cmd_buf) {
-	int i = search (in, "WD ");
-	if (i > -1) cmd_buf = in[i..], in = in[..i-1];
-	else if (has_suffix (in, "WD")) cmd_buf = "WD", in = in[..<2];
-	else if (has_suffix (in, "W")) cmd_buf = "W", in = in[..<1];
-	out_buf += in;
-	in = "";
-      }
-    } while (cmd_buf);
-    return out_buf;
-  }
-
-  array(string) get_cmds()
-  {
-    array(string) res = wd_cmds;
-    wd_cmds = ({});
-    return res;
-  }
-}
-
 class Watchdog
 {
   Stdio.File stdin;
@@ -199,7 +155,7 @@ class Watchdog
   string stdout_buf = "", current_test;
   int verbose, timeout_phase;
 
-  static inherit WatchdogFilterStream;
+  static inherit Tools.Testsuite.WatchdogFilterStream;
 
   void stdin_read (mixed ignored, string in)
   {
@@ -581,6 +537,8 @@ int main(int argc, array(string) argv)
   }
 
   add_constant("__signal_watchdog",signal_watchdog);
+  add_constant("__watchdog_new_pid", watchdog_new_pid);
+  add_constant("__send_watchdog_command", send_watchdog_command);
   add_constant("_verbose", verbose);
 
   if(verbose && !subprocess)
@@ -613,89 +571,18 @@ int main(int argc, array(string) argv)
     successes=errors=0;
     if (forked) {
       foreach(testsuites, string testsuite) {
-	Stdio.File p = Stdio.File();
-	// Shouldn't need PROP_BIDIRECTIONAL, but we won't get a
-	// pipe/socket that we can do nonblocking on otherwise.
-	Stdio.File p2 = p->pipe (Stdio.PROP_IPC|
-				 Stdio.PROP_NONBLOCK|
-				 Stdio.PROP_BIDIRECTIONAL);
-	if(!p2) {
-	  werror("Failed to create pipe: %s\n", strerror (p->errno()));
-	  if(fail) exit(1);
-	  errors++;
-	  continue;
-	}
-	Process.create_process pid =
-	  Process.create_process(forked + ({ testsuite }),
-				 ([ "stdout":p2 ]));
-	p2->close();
-	watchdog_new_pid (pid->pid());
-
-	object subresult =
-	  class (Stdio.File p) {
-	    inherit WatchdogFilterStream;
-	    string buf = "";
-	    int done;
-	    int total, failed, skipped, got_subresult;
-	    void read_cb (mixed ignored, string in)
-	    {
-	      write (filter (in));
-	      foreach (get_cmds(), string wd_cmd) {
-		if (sscanf (wd_cmd, "total %d failed %d skipped %d",
-			    total, failed, skipped) == 3)
-		  got_subresult = 1;
-		else
-		  send_watchdog_command (wd_cmd);
-	      }
-	    }
-	    void close_cb (mixed ignored)
-	    {
-	      if (p->errno()) {
-		werror ("Error reading output from subprocess: %s\n",
-			strerror (p->errno()));
-		done = -1;
-	      }
-	      else
-		done = 1;
-	    }
-	    int run()
-	    {
-	      p->set_nonblocking (read_cb, 0, close_cb);
-	      while (!done) Pike.DefaultBackend();
-	      return done;
-	    }
-	  } (p);
-
-	if (subresult->run() < 0) errors++;
-	int err = pid->wait();
-
-	if (!subresult->got_subresult) {
-	  // Failed to parse the result totally.
-	  if (err == -1) {
-	    werror("Failed to parse subresult "
-		   "(subprocess died of signal %s)\n",
-		   signame (pid->last_signal()) || (string) pid->last_signal());
-	  } else {
-	    werror("Failed to parse subresult "
-		   "(subprocess exited with error code %d).\n", err);
-	  }
+	array(int) subres =
+	  Tools.Testsuite.low_run_script (forked + ({ testsuite }), ([]));
+	if (!subres) {
 	  errors++;
 	} else {
+	  [int sub_succeeded, int sub_failed, int sub_skipped] = subres;
 	  if (verbose)
 	    werror("Subresult: %d tests, %d failed, %d skipped\n",
-		   subresult->total, subresult->failed, subresult->skipped);
-	  errors += subresult->failed;
-	  successes += subresult->total - subresult->failed;
-	  skipped += subresult->skipped;
-	  if (err == -1) {
-	    werror ("Subprocess died of signal %s.\n",
-		    signame (pid->last_signal()) || (string) pid->last_signal());
-	    errors++;
-	  }
-	  else if (err && !subresult->failed) {
-	    werror ("Subprocess exited with error code %d.\n", err);
-	    errors++;
-	  }
+		   sub_succeeded + sub_failed, sub_failed, sub_skipped);
+	  successes += sub_succeeded;
+	  errors += sub_failed;
+	  skipped += sub_skipped;
 	}
 	if (verbose)
 	  werror("Accumulated: %d tests, %d failed, %d skipped\n",
@@ -1133,7 +1020,10 @@ int main(int argc, array(string) argv)
 	    break;
 
 	  case "RUNCT":
-	    if(!a || !arrayp(a) || sizeof(a)!=2 || !intp(a[0]) || !intp(a[1])) {
+	    if(!a || !arrayp(a) ||
+	       sizeof(a) < 2 || !intp(a[0]) || !intp(a[1]) ||
+	       (sizeof (a) == 3 && !intp (a[2])) ||
+	       sizeof (a) > 3) {
 	      werror(pad_on_error + fname + " failed to return proper results.\n");
 	      print_code(test);
 	      werror(sprintf("o->a(): %O\n",a));
@@ -1142,11 +1032,15 @@ int main(int argc, array(string) argv)
 	    else {
 	      successes += a[0];
 	      errors += a[1];
+	      if (sizeof (a) >= 3) skipped += a[2];
 	      if (verbose>1)
 		if(a[1])
-		  werror("%d/%d tests failed.\n", a[1], a[0]+a[1]);
+		  werror("%d/%d tests failed%s.\n",
+			 a[1], a[0]+a[1],
+			 sizeof (a) >= 3 ? " (skipped " + a[2] + ")" : "");
 		else
-		  werror("Did %d tests in %s.\n", a[0], fname);
+		  werror("Did %d tests in %s%s.\n", a[0], fname,
+			 sizeof (a) >= 3 ? " (skipped " + a[2] + ")" : "");
 	    }
 	    break;
 
@@ -1271,11 +1165,8 @@ int main(int argc, array(string) argv)
     if(verbose)
       stdout->write("Finished tests at "+ctime(time()));
   }
-  else {
-    // Not really a watchdog command, but uses the same format.
-    stdout->write ("WD total %d failed %d skipped %d\n",
-		   successes + errors, errors, skipped);
-  }
+  else
+    Tools.Testsuite.report_result (successes, errors, skipped);
 
 #if 1
   if(verbose && sizeof(all_constants())!=sizeof(const_names)) {
