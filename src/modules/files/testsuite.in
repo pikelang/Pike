@@ -326,4 +326,28 @@ test_any([[
   s->size = -0x100000000;
   return s->size == -0x100000000;
 ]], 1)
+
+test_any([[
+  Stdio.File f = Stdio.File();
+  return f->query_backend() == Pike.DefaultBackend;
+]], 1)
+
+test_any([[
+  Pike.Backend b = Pike.Backend();
+  Stdio.File f = Stdio.File();
+  f->set_backend (b);
+  return f->query_backend() == b;
+]], 1)
+
+test_any([[
+  Stdio.Port f = Stdio.Port();
+  return f->query_backend() == Pike.DefaultBackend;
+]], 1)
+
+test_any([[
+  Pike.Backend b = Pike.Backend();
+  Stdio.Port f = Stdio.Port();
+  f->set_backend (b);
+  return f->query_backend() == b;
+]], 1)
 END_MARKER
