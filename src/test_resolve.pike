@@ -116,11 +116,6 @@ int main()
     Array.map(handler->pike_module_path,test_dir,0,handler);
   }
 
-  // Make a report.
-  write("Loaded ok: %d\n", num_ok);
-  if (num_failed) {
-    write("Failed: %d\n", num_failed);
-  }
-
+  Tools.Testsuite.report_result (num_ok, num_failed);
   return !ok;
 }
