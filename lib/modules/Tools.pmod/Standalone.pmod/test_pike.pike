@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.117 2007/06/18 00:27:28 mast Exp $ */
+/* $Id: test_pike.pike,v 1.118 2007/06/18 23:22:31 mast Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -111,12 +111,14 @@ class WarningFlag {
 // Watchdog stuff
 //
 
+#ifndef WATCHDOG_TIMEOUT
 // 20 minutes should be enough..
 #if !constant(_reset_dmalloc)
 #define WATCHDOG_TIMEOUT 60*20
 #else
 // ... unless we're running dmalloc
 #define WATCHDOG_TIMEOUT 60*80
+#endif
 #endif
 
 #define WATCHDOG_MSG(fmt, x...) werror ("\n[WATCHDOG]: " fmt, x)
@@ -136,10 +138,11 @@ void send_watchdog_command (string cmd, mixed... args)
   write ("WD " + cmd + "\n", @args);
 }
 
-void signal_watchdog (void|string current_test, mixed... args)
+void signal_watchdog()
+// Signals activity to the watchdog.
 {
-  if(use_watchdog && (current_test || time() - watchdog_time > 30))
-    send_watchdog_command ("cur " + (current_test || ""), @args);
+  if(use_watchdog && time() - watchdog_time > 30)
+    send_watchdog_command ("ping");
 }
 
 void watchdog_new_pid (int pid)
@@ -148,14 +151,40 @@ void watchdog_new_pid (int pid)
     send_watchdog_command ("pid %d", pid);
 }
 
+void watchdog_start_new_test (string current_test, mixed... args)
+// Tells the watchdog that a new test is about to be run. This clears
+// the test output buffer if the watchdog is buffering stdout (i.e. is
+// not running in verbose mode) .
+{
+  if (use_watchdog)
+    send_watchdog_command ("cur " + current_test, @args);
+}
+
+void watchdog_show_last_test()
+// If the watchdog buffers stdout instead of sending it on right away
+// then this will make it send the output from the last test,
+// including timestamps at the beginning of each line. Each test is
+// only shown once.
+{
+  if (use_watchdog)
+    send_watchdog_command ("show last");
+}
+
 class Watchdog
 {
   Stdio.File stdin;
   int parent_pid, watched_pid;
   string stdout_buf = "", current_test;
   int verbose, timeout_phase;
+  int start_time = time();
 
   static inherit Tools.Testsuite.WatchdogFilterStream;
+
+  string format_timestamp()
+  {
+    int t = time() - start_time;
+    return sprintf ("%02d:%02d:%02d", t / 3600, t / 60 % 60, t %60);
+  }
 
   void stdin_read (mixed ignored, string in)
   {
@@ -165,17 +194,21 @@ class Watchdog
 
     in = filter (in);
     foreach (get_cmds(), string wd_cmd) {
-      if (sscanf (wd_cmd, "pid %d", int new_pid)) {
+      if (wd_cmd == "ping") {}
+      else if (sscanf (wd_cmd, "pid %d", int new_pid)) {
 	watched_pid = new_pid;
 	timeout_phase = 0;
 	WATCHDOG_DEBUG_MSG ("Changed watched pid to %d\n", watched_pid);
       }
       else if (sscanf (wd_cmd, "cur %s", wd_cmd)) {
-	if (wd_cmd != "") {
-	  current_test = wd_cmd;
-	  stdout_buf = "";
-	  WATCHDOG_DEBUG_MSG ("New test: %s\n", current_test);
-	}
+	current_test = wd_cmd;
+	stdout_buf = "";
+	WATCHDOG_DEBUG_MSG ("New test: %s\n", current_test);
+      }
+      else if (wd_cmd == "show last") {
+	WATCHDOG_DEBUG_MSG ("Showing output from last test\n");
+	write (stdout_buf);
+	stdout_buf = "";
       }
       else
 	WATCHDOG_MSG ("Got unknown command: %O\n", wd_cmd);
@@ -187,6 +220,11 @@ class Watchdog
       else {
 	// Buffer up to 100 kb of stdout noise applying to the last
 	// test, so it can be printed out if it hangs.
+	string ts = "[" + format_timestamp() + "] ";
+	if (stdout_buf == "" || has_suffix (stdout_buf, "\n"))
+	  stdout_buf += ts;
+	int nl = has_suffix (in, "\n");
+	in = replace (in[..<nl], "\n", "\n" + ts) + in[<nl - 1..];
 	stdout_buf += in;
 	while (sizeof (stdout_buf) > 100000 &&
 	       sscanf (stdout_buf, "%*s%[\n\r]%s",
@@ -227,15 +265,21 @@ class Watchdog
       call_out (timeout, 10);
     }
 
-    else switch (timeout_phase) {
+    else {
+      string ts = format_timestamp();
+      switch (timeout_phase) {
 	case 0:
-	  WATCHDOG_MSG ("Pike testsuite timeout.");
-	  if (current_test) WATCHDOG_MSG ("Current test: %s", current_test);
+	  WATCHDOG_MSG ("%s: Pike testsuite timeout.", ts);
+	  if (current_test) {
+	    WATCHDOG_MSG ("Current test: %s", current_test);
+	    current_test = 0;
+	  }
 	  if (stdout_buf != "") {
 	    WATCHDOG_MSG ("Output from last test:\n");
 	    write (stdout_buf);
+	    stdout_buf = "";
 	  }
-	  WATCHDOG_MSG ("Sending SIGABRT to %d.\n", watched_pid);
+	  WATCHDOG_MSG ("%s: Sending SIGABRT to %d.\n", ts, watched_pid);
 	  kill(watched_pid, signum("SIGABRT"));
 	  stdin->close();
 	  timeout_phase = 1;
@@ -243,7 +287,7 @@ class Watchdog
 	  break;
 
 	case 1:
-	  WATCHDOG_MSG ("This is your friendly watchdog again...");
+	  WATCHDOG_MSG ("%s: This is your friendly watchdog again...", ts);
 	  WATCHDOG_MSG ("Testsuite failed to die from SIGABRT, "
 			"sending SIGKILL to %d.\n", watched_pid);
 	  kill(watched_pid, signum("SIGKILL"));
@@ -252,7 +296,7 @@ class Watchdog
 	  break;
 
 	case 2:
-	  WATCHDOG_MSG ("This is your friendly watchdog AGAIN...");
+	  WATCHDOG_MSG ("%s: This is your friendly watchdog AGAIN...", ts);
 	  WATCHDOG_MSG ("SIGKILL, SIGKILL, SIGKILL, DIE, %d!\n", watched_pid);
 	  kill(watched_pid, signum("SIGKILL"));
 	  sleep (0.1);
@@ -266,10 +310,11 @@ class Watchdog
 	  break;
 
 	case 3:
-	  WATCHDOG_MSG ("Giving up on %d, must be a device wait.. :(\n",
-			watched_pid);
+	  WATCHDOG_MSG ("%s: Giving up on %d, must be a device wait.. :(\n",
+			ts, watched_pid);
 	  break;
       }
+    }
   }
 
   void create (int pid, int verbose)
@@ -484,8 +529,6 @@ int main(int argc, array(string) argv)
     //werror("forked:%O\n", forked);
   }
 
-  Stdio.File stdout;
-
   Process.create_process watchdog;
   if(use_watchdog)
   {
@@ -514,14 +557,13 @@ int main(int argc, array(string) argv)
       orig_stdout->close();
       WATCHDOG_DEBUG_MSG ("Forked watchdog %d.\n", watchdog->pid());
     }
-    stdout = Stdio.stdout;
   }
 
   else {
     // Move stdout to a higher fd, so that close on exec works.
     // This makes sure the original stdout gets closed even if
     // some subprocess hangs.
-    stdout = Stdio.File();
+    Stdio.File stdout = Stdio.File();
     Stdio.stdout->dup2(stdout);
     //stdout->assign(Stdio.stdout->_fd->dup());
     if (verbose)
@@ -538,11 +580,13 @@ int main(int argc, array(string) argv)
 
   add_constant("__signal_watchdog",signal_watchdog);
   add_constant("__watchdog_new_pid", watchdog_new_pid);
+  add_constant("__watchdog_start_new_test", watchdog_start_new_test);
+  add_constant("__watchdog_show_last_test", watchdog_show_last_test);
   add_constant("__send_watchdog_command", send_watchdog_command);
   add_constant("_verbose", verbose);
 
   if(verbose && !subprocess)
-    stdout->write("Begin tests at "+ctime(time()));
+    werror("Begin tests at "+ctime(time()));
 
   testsuites += Getopt.get_args(argv, 1)[1..];
   foreach(testsuites; int pos; string ts) {
@@ -669,7 +713,7 @@ int main(int argc, array(string) argv)
 	  testfile = split[..sizeof (split) - 2] * ":";
 	}
 
-	signal_watchdog ("Test %d at %s:%d", e + 1, testfile, testline);
+	watchdog_start_new_test ("Test %d at %s:%d", e + 1, testfile, testline);
 
 	string pad_on_error = "\n";
 	if(maybe_tty && Stdio.Terminfo.is_tty())
@@ -881,6 +925,7 @@ int main(int argc, array(string) argv)
 	      werror("Time in a(): %f\n",at);
 	  }
 	  else {
+	    watchdog_show_last_test();
 	    _dmalloc_set_name();
 	    werror(pad_on_error + fname + " failed (expected eval error).\n");
 	    werror("Got %O\n", a);
@@ -932,6 +977,7 @@ int main(int argc, array(string) argv)
 	  }) {
 	    if(t) trace(0);
 	    master()->set_inhibit_compile_errors(0);
+	    watchdog_show_last_test();
 	    werror(pad_on_error + fname + " failed.\n");
 	    print_code(test);
 	    if (arrayp(err) && sizeof(err) && stringp(err[0])) {
@@ -966,6 +1012,7 @@ int main(int argc, array(string) argv)
 	  case "FALSE":
 	    if(a)
 	    {
+	      watchdog_show_last_test();
 	      werror(pad_on_error + fname + " failed.\n");
 	      print_code(test);
 	      werror(sprintf("o->a(): %O\n",a));
@@ -979,6 +1026,7 @@ int main(int argc, array(string) argv)
 	  case "TRUE":
 	    if(!a)
 	    {
+	      watchdog_show_last_test();
 	      werror(pad_on_error + fname + " failed.\n");
 	      print_code(test);
 	      werror(sprintf("o->a(): %O\n",a));
@@ -991,6 +1039,7 @@ int main(int argc, array(string) argv)
 		
 	  case "PUSH_WARNING":
 	    if (!stringp(a)) {
+	      watchdog_show_last_test();
 	      werror(pad_on_error + fname + " failed.\n");
 	      print_code(test);
 	      werror(sprintf("o->a(): %O\n", a));
@@ -1001,6 +1050,7 @@ int main(int argc, array(string) argv)
 		
 	  case "POP_WARNING":
 	    if (!stringp(a)) {
+	      watchdog_show_last_test();
 	      werror(pad_on_error + fname + " failed.\n");
 	      print_code(test);
 	      werror(sprintf("o->a(): %O\n", a));
@@ -1009,6 +1059,7 @@ int main(int argc, array(string) argv)
 		m_delete(pushed_warnings, a);
 	      }
 	    } else {
+	      watchdog_show_last_test();
 	      werror(pad_on_error + fname + " failed.\n");
 	      print_code(test);
 	      werror(sprintf("o->a(): %O not pushed!\n", a));
@@ -1024,6 +1075,7 @@ int main(int argc, array(string) argv)
 	       sizeof(a) < 2 || !intp(a[0]) || !intp(a[1]) ||
 	       (sizeof (a) == 3 && !intp (a[2])) ||
 	       sizeof (a) > 3) {
+	      watchdog_show_last_test();
 	      werror(pad_on_error + fname + " failed to return proper results.\n");
 	      print_code(test);
 	      werror(sprintf("o->a(): %O\n",a));
@@ -1047,6 +1099,7 @@ int main(int argc, array(string) argv)
 	  case "EQ":
 	    if(a!=b)
 	    {
+	      watchdog_show_last_test();
 	      werror(pad_on_error + fname + " failed.\n");
 	      print_code(test);
 	      werror(sprintf("o->a(): %O\n",a));
@@ -1071,6 +1124,7 @@ int main(int argc, array(string) argv)
 	  case "EQUAL":
 	    if(!equal(a,b))
 	    {
+	      watchdog_show_last_test();
 	      werror(pad_on_error + fname + " failed.\n");
 	      print_code(test);
 	      werror(sprintf("o->a(): %O\n",a));
@@ -1157,13 +1211,13 @@ int main(int argc, array(string) argv)
   if (!subprocess) {
     if(errors || verbose>1)
     {
-      stdout->write("Failed tests: "+errors+".\n");
+      werror("Failed tests: "+errors+".\n");
     }
 
-    stdout->write(sprintf("Total tests: %d  (%d tests skipped)\n",
-			      successes+errors, skipped));
+    werror(sprintf("Total tests: %d (%d tests skipped)\n",
+		   successes+errors, skipped));
     if(verbose)
-      stdout->write("Finished tests at "+ctime(time()));
+      werror("Finished tests at "+ctime(time()));
   }
   else
     Tools.Testsuite.report_result (successes, errors, skipped);
