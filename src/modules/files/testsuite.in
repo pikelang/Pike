@@ -291,7 +291,9 @@ define(run_sub_test, [[
   test_any([[
     array(string) args = $1;
     Process.Process proc = Process.create_process(RUNPIKE_ARRAY + args);
+    __watchdog_new_pid (proc->pid());
     int code = proc->wait();
+    __watchdog_new_pid (getpid());
     if (!code) return 0;
     if (code == -1) {
       return sprintf("Test program %O died of signal %d.",
