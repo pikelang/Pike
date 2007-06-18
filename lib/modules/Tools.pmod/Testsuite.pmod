@@ -2,7 +2,7 @@
 
 #pike __REAL_VERSION__
 
-array(int) run_script (string pike_script)
+array(int) run_script (string|array(string) pike_script)
 //! Runs an external pike script from a testsuite. Use
 //! @[Tools.Testsuite.report_result] in the script to report how many
 //! tests succeeded, failed, and were skipped. Those numbers are
@@ -10,8 +10,11 @@ array(int) run_script (string pike_script)
 {
   if (!all_constants()->RUNPIKE_ARRAY)
     error ("Can only be used within the testsuite.\n");
-  return low_run_script (all_constants()->RUNPIKE_ARRAY + ({pike_script}),
-			 ([])) || ({0, 1, 0});
+  return
+    low_run_script (all_constants()->RUNPIKE_ARRAY +
+		    (stringp (pike_script) ? ({pike_script}) : pike_script),
+		    ([])) ||
+    ({0, 1, 0});
 }
 
 void report_result (int succeeded, int failed, void|int skipped)
