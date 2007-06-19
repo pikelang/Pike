@@ -153,5 +153,8 @@ array(int) low_run_script (array(string) command, mapping opts)
     subresult->failed++;
   }
 
+  else if (subresult->failed)
+    all_constants()->__watchdog_show_last_test();
+
   return ({subresult->succeeded, subresult->failed, subresult->skipped});
 }

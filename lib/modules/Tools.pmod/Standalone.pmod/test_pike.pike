@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.121 2007/06/19 18:40:32 mast Exp $ */
+/* $Id: test_pike.pike,v 1.122 2007/06/19 19:03:06 mast Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -201,7 +201,7 @@ class Watchdog
 	WATCHDOG_DEBUG_MSG ("Changed watched pid to %d\n", watched_pid);
       }
       else if (sscanf (wd_cmd, "cur %s", wd_cmd)) {
-	current_test = wd_cmd;
+	if (wd_cmd != "") current_test = wd_cmd;
 	stdout_buf = "";
 	WATCHDOG_DEBUG_MSG ("New test: %s\n", current_test);
       }
@@ -219,7 +219,7 @@ class Watchdog
 	write (in);
       else {
 	// Buffer up to 100 kb of stdout noise applying to the last
-	// test, so it can be printed out if it hangs.
+	// test, so it can be printed out if it hangs or fails.
 	in = replace (in, "\r", "\n");
 	string ts = "[" + format_timestamp() + "] ";
 	if (stdout_buf == "" || has_suffix (stdout_buf, "\n"))
@@ -1218,8 +1218,15 @@ int main(int argc, array(string) argv)
     if(verbose)
       werror("Finished tests at "+ctime(time()));
   }
-  else
+  else {
+    // Clear the output buffer in the watchdog so that
+    // Tools.Testsuite.low_run_script doesn't print it when errors is
+    // nonzero. That has instead been handled above for each failing
+    // test.
+    watchdog_start_new_test ("");
+
     Tools.Testsuite.report_result (successes, errors, skipped);
+  }
 
 #if 1
   if(verbose && sizeof(all_constants())!=sizeof(const_names)) {
