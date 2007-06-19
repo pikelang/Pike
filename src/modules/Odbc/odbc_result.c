@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.43 2007/06/19 11:49:31 grubba Exp $
+|| $Id: odbc_result.c,v 1.44 2007/06/19 14:41:11 grubba Exp $
 */
 
 /*
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.43 2007/06/19 11:49:31 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.44 2007/06/19 14:41:11 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -112,7 +112,7 @@ static void init_res_struct(struct object *o)
 static void exit_res_struct(struct object *o)
 {
   if (PIKE_ODBC_RES->hstmt != SQL_NULL_HSTMT) {
-    SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
+    HSTMT hstmt = PIKE_ODBC_RES->hstmt;
     PIKE_ODBC_RES->hstmt = SQL_NULL_HSTMT;
     odbc_check_error("exit_res_struct", "Freeing of HSTMT failed",
 		     SQLFreeStmt(hstmt, SQL_DROP),
@@ -331,7 +331,7 @@ static void odbc_fix_fields(void)
 /* void create(object(odbc)) */
 static void f_create(INT32 args)
 {
-  SQLHSTMT hstmt = SQL_NULL_HSTMT;
+  HSTMT hstmt = SQL_NULL_HSTMT;
 
   if (!args) {
     Pike_error("Too few arguments to odbc_result()\n");
@@ -353,7 +353,7 @@ static void f_create(INT32 args)
 static void f_execute(INT32 args)
 {
   struct pike_string *q = NULL;
-  SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
+  HSTMT hstmt = PIKE_ODBC_RES->hstmt;
 
 #ifdef SQL_WCHAR
   get_all_args("odbc_result->execute", args, "%W", &q);
@@ -410,7 +410,7 @@ static void f_execute(INT32 args)
 static void f_list_tables(INT32 args)
 {
   struct pike_string *table_name_pattern = NULL;
-  SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
+  HSTMT hstmt = PIKE_ODBC_RES->hstmt;
 
   if (!args) {
     push_constant_text("%");
