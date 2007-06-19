@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.47 2007/06/10 23:11:17 mast Exp $
+|| $Id: rusage.c,v 1.48 2007/06/19 18:22:50 mast Exp $
 */
 
 #include "global.h"
@@ -285,7 +285,9 @@ PMOD_EXPORT int pike_get_rusage(pike_rusage_t rusage_values)
  */
 
 #ifdef GCT_RUNTIME_CHOICE
+#ifndef cpu_time_is_thread_local
 PMOD_EXPORT int cpu_time_is_thread_local;
+#endif
 PMOD_EXPORT const char *get_cpu_time_impl;
 PMOD_EXPORT cpu_time_t (*get_cpu_time) (void);
 PMOD_EXPORT cpu_time_t (*get_cpu_time_res) (void);
@@ -758,7 +760,9 @@ void init_rusage (void)
 
 #ifdef MIGHT_HAVE_POSIX_THREAD_GCT
   if (sysconf (_SC_THREAD_CPUTIME) > 0 && posix_cputime_is_reliable()) {
+#ifndef cpu_time_is_thread_local
     cpu_time_is_thread_local = 1;
+#endif
     get_cpu_time_impl = posix_thread_gct_impl;
     get_cpu_time = posix_thread_gct;
     get_cpu_time_res = posix_thread_gct_res;
@@ -768,7 +772,9 @@ void init_rusage (void)
 
 #ifdef MIGHT_HAVE_POSIX_THREAD_GCT
     if (sysconf (_SC_CPUTIME) > 0 && posix_cputime_is_reliable()) {
+#ifndef cpu_time_is_thread_local
       cpu_time_is_thread_local = 0;
+#endif
       get_cpu_time_impl = posix_process_gct_impl;
       get_cpu_time = posix_process_gct;
       get_cpu_time_res = posix_process_gct_res;
@@ -777,10 +783,12 @@ void init_rusage (void)
 #endif
 
     {
+#ifndef cpu_time_is_thread_local
 #if FB_CPU_TIME_IS_THREAD_LOCAL == PIKE_YES
       cpu_time_is_thread_local = 1;
 #else
       cpu_time_is_thread_local = 0;
+#endif
 #endif
       get_cpu_time_impl = fallback_gct_impl;
       get_cpu_time = fallback_gct;
