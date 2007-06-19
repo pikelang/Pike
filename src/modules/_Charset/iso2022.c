@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.40 2005/12/09 23:40:03 marcus Exp $
+|| $Id: iso2022.c,v 1.41 2007/06/19 17:35:47 grubba Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -1216,10 +1216,62 @@ static void f_feed(INT32 args)
 static void f_drain(INT32 args)
 {
   struct iso2022_stor *s = (struct iso2022_stor *)fp->current_storage;
+  UNICHAR trailer = 0;
+
+  if (s->strbuild.s->size_shift) {
+    ptrdiff_t i, len = s->strbuild.s->len;
+    /* We need to check for private-space characters. */
+    switch(s->strbuild.s->size_shift) {
+    case 1:
+      {
+	p_wchar1 *s1 = STR1(s->strbuild.s);
+	for (i=0; i < len; i++) {
+	  if ((s1[i] & 0xff00) == 0xe300) {
+	    /* Non-spacing character ==> combiner  */
+	    trailer = s1[i++];
+	    if (i < len) {
+	      s1[i-1] = s1[i];
+	      s1[i] = trailer & 0x0fff;
+	      trailer = 0;
+	    } else {
+	      s->strbuild.s->len--;
+	      break;
+	    }
+	  }
+	}
+      }
+      break;
+    case 2:
+      {
+	p_wchar2 *s2 = STR2(s->strbuild.s);
+	for (i=0; i < len; i++) {
+	  if ((s2[i] & 0xff00) == 0xe300) {
+	    /* Non-spacing character ==> combiner */
+	    trailer = s2[i++];
+	    if (i < len) {
+	      s2[i-1] = s2[i];
+	      s2[i] = trailer & 0x0fff;
+	      trailer = 0;
+	    } else {
+	      s->strbuild.s->len--;
+	      break;
+	    }
+	  }
+	}
+      }
+      break;
+    }
+  }
 
   pop_n_elems(args);
   push_string(finish_string_builder(&s->strbuild));
   init_string_builder(&s->strbuild, 0);
+  if (trailer) {
+    /* The last character was a non-spacing character.
+     * Restore it for the next pass.
+     */
+    string_builder_putchar(&s->strbuild, trailer);
+  }
 }
 
 static void f_clear(INT32 args)
