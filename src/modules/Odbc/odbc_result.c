@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.42 2007/06/19 11:04:49 grubba Exp $
+|| $Id: odbc_result.c,v 1.43 2007/06/19 11:49:31 grubba Exp $
 */
 
 /*
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.42 2007/06/19 11:04:49 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.43 2007/06/19 11:49:31 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -544,7 +544,7 @@ static void f_fetch_row(INT32 args)
 #endif /* ODBC_DEBUG */
 	    if (!num_strings) {
 	      num_strings++;
-	      push_empty_string();
+	      push_text("");
 	    }
 	    break;
 	  }
