@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.143 2007/06/17 10:26:09 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.144 2007/06/19 09:19:18 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -313,7 +313,8 @@ private class CommandDoc {
   void exec(Evaluator e, string line, array(string) words,
 	    array(string) tokens) 
   {
-    output_doc(e, Parser.Pike.group(tokens[2..]));
+    if (sizeof(tokens) > 3)
+      output_doc(e, Parser.Pike.group(tokens[2..]));
   }
 
   void output_doc(Evaluator e, array(array(string)|string) tokens)
@@ -322,10 +323,16 @@ private class CommandDoc {
     string type;
     array rest;
     object docs;
-    [module, rest, type] = resolv(e, tokens);
 
-    if (tokens[2..] == ({ "write\n\n" }))
+    if (!sizeof(tokens))
+      return;
+    if (tokens == ({ "write", "\n\n" }))
       module = write;
+    else
+      [module, rest, type] = resolv(e, tokens);
+
+    if (!module)
+      return;
     if (type != "autodoc")
       docs = master()->show_doc(module);
     else
