@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tables.c,v 1.31 2007/06/19 16:17:49 grubba Exp $
+|| $Id: tables.c,v 1.32 2007/06/19 16:46:30 grubba Exp $
 */
 
 #include "iso2022.h"
@@ -51,15 +51,13 @@ extern UNICHAR map_videotex_suppl[];
  *   e01a	02bc	GREEK PSILI PNEUMATA
  *   e01b	03d0	GREEK SMALL LETTER MIDDLE BETA
  *   e01c	-	CIRCLE
- *
- *   e01d	e01d	FUNCTION SIGN
- *
+ *   e01d	0192	FUNCTION SIGN
  *   e01e	0292	LATIN SMALL LETTER EZH
  *   e01f	33c2	ANTE MERIDIAM SIGN
  *   e020	33d8	POST MERIDIAM SIGN
  *   e021	2121	TEL COMPATIBILITY SIGN
  *   e022	fe8e	ARABIC LETTER ALEF FINAL FORM COMPATIBILITY
- *   e023	-	DUTCH GUILDER SIGN
+ *   e023	0192	LATIN SMALL LETTER F WITH HOOK
  *   e024	-	GAMMA FUNCTION SIGN
  *   e025	20d1	RIGHTWARDS VECTOR ABOVE
  *   e026	02cb	GREEK VARIA
@@ -859,7 +857,7 @@ static const UNICHAR map_IEC_P27_1[] = {
   0x05d0, 0x25a1, 0x2225, 0x0393, 0x0394, 0x22a5, 0x2220, 0x221f,
   0x0398, 0x2329, 0x232a, 0x039b, 0x2032, 0x2033, 0x039e, 0x2213,
   0x03a0, 0x00b2, 0x03a3, 0x00d7, 0x00b3, 0x03a5, 0x03a6, 0x00b7,
-  0x03a8, 0x03a9, 0x2205, 0x20d1, 0x221a, 0xe01d, 0x221d, 0x00b1,
+  0x03a8, 0x03a9, 0x2205, 0x20d1, 0x221a, 0x0192, 0x221d, 0x00b1,
   0x00b0, 0x03b1, 0x03b2, 0x03b3, 0x03b4, 0x03b5, 0x03b6, 0x03b7,
   0x03b8, 0x03b9, 0x03ba, 0x03bb, 0x03bc, 0x03bd, 0x03be, 0x2030,
   0x03c0, 0x03c1, 0x03c3, 0x00f7, 0x03c4, 0x03c5, 0x03c6, 0x03c7,
