@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.40 2007/06/17 23:14:09 mast Exp $ */
+/* $Id: socktest.pike,v 1.41 2007/06/19 18:52:41 mast Exp $ */
 
 // #define OOB_DEBUG
 
@@ -99,19 +99,19 @@ class Socket {
     got_callback();
     if(input_buffer != expected_data)
     {
-      werror("Failed to read complete data, errno=%d.\n",err);
+      write("Failed to read complete data, errno=%d.\n",err);
       if(sizeof(input_buffer) < 100)
       {
-	werror(num+":Input buffer: "+input_buffer+"\n");
+	write(num+":Input buffer: "+input_buffer+"\n");
       }else{
-	werror(num+":Input buffer: "+sizeof(input_buffer)+" bytes.\n");
+	write(num+":Input buffer: "+sizeof(input_buffer)+" bytes.\n");
       }
 
       if(sizeof(expected_data) < 100)
       {
-	werror(num+":Expected data: "+expected_data+"\n");
+	write(num+":Expected data: "+expected_data+"\n");
       }else{
-	werror(num+":Expected data: "+sizeof(expected_data)+" bytes.\n");
+	write(num+":Expected data: "+sizeof(expected_data)+" bytes.\n");
       }
 
       exit(1);
@@ -134,7 +134,7 @@ class Socket {
       {
 	output_buffer=output_buffer[tmp..];
       } else {
-	werror("Failed to write all data.\n");
+	write("Failed to write all data.\n");
 	exit(1);
       }
     }else{
@@ -164,7 +164,7 @@ class Socket {
     }else{
       if(!open_socket(0, ANY))
       {
-	werror("Failed to open socket: "+strerror(errno())+"\n");
+	write("Failed to open socket: "+strerror(errno())+"\n");
 	fd_fail();
       }
     }
@@ -185,14 +185,14 @@ class Socket2
       int prerefs = _refs ("%s");
       int tmp=write(({"%s"}), output_buffer);
       if (_refs ("%s") != prerefs) {
-	werror ("Format string leak from %d to %d.\n", prerefs, _refs ("%s"));
+	write ("Format string leak from %d to %d.\n", prerefs, _refs ("%s"));
 	exit (1);
       }
       if(tmp >= 0)
       {
 	output_buffer=output_buffer[tmp..];
       } else {
-	werror("Failed to write all data.\n");
+	write("Failed to write all data.\n");
 	exit(1);
       }
     }else{
@@ -206,7 +206,7 @@ class Socket2
 
 void die()
 {
-  werror("No callbacks for 20 seconds!\n");
+  write("No callbacks for 20 seconds!\n");
   fd_fail();
 }
 
@@ -261,7 +261,7 @@ void got_oob1(mixed ignored, string got)
 #endif
   got_callback();
   if (got != expected) {
-    werror(sprintf("loopback: Received unexpected oob data "
+    write(sprintf("loopback: Received unexpected oob data "
 		   "(0x%02x != 0x%02x)\n",
 		   got[0], expected[0]));
     exit(1);
@@ -287,7 +287,7 @@ void got_oob0(mixed ignored, string got)
 #endif
   got_callback();
   if (got != expected) {
-    werror(sprintf("loopback: Received unexpected oob data "
+    write(sprintf("loopback: Received unexpected oob data "
 		   "(0x%02x != 0x%02x)\n",
 		   got[0], expected[0]));
     exit(1);
@@ -328,7 +328,7 @@ array(object(Socket)) stdtest()
 #if constant(System.ENETUNREACH)
     if (sock->errno() == System.ENETUNREACH) {
       /* No IPv6 support on this machine (Solaris). */
-      werror("Connect failed: Network unreachable.\n"
+      write("Connect failed: Network unreachable.\n"
 	     "IPv6 not configured?\n");
       exit(0);
     }
@@ -336,13 +336,13 @@ array(object(Socket)) stdtest()
 #if constant(System.EADDRNOTAVAIL)
     if (sock->errno() == System.EADDRNOTAVAIL) {
       /* No IPv6 support on this machine (OSF/1). */
-      werror("Connect failed: Address not available.\n"
+      write("Connect failed: Address not available.\n"
 	     "IPv6 not configured?\n");
       exit(0);
     }
 #endif /* ENETUNREACH */
 #endif /* IPV6 */
-    werror("Connect failed: (%d)\n", sock->errno());
+    write("Connect failed: (%d)\n", sock->errno());
     sleep(1);
     fd_fail();
   }
@@ -350,7 +350,7 @@ array(object(Socket)) stdtest()
   sock2=port2::accept();
   if(!sock2)
   {
-    werror("Accept returned 0, errno: %d\n", port2::errno());
+    write("Accept returned 0, errno: %d\n", port2::errno());
     sleep(1);
     fd_fail();
   }
@@ -374,7 +374,7 @@ array(object) spair(int type)
     sock2=port2::accept();
     if(!sock2)
     {
-      werror("Accept returned 0, errno: %d\n", port2::errno());
+      write("Accept returned 0, errno: %d\n", port2::errno());
       fd_fail();
     }
   }else{
@@ -383,7 +383,7 @@ array(object) spair(int type)
 		      Stdio.PROP_SHUTDOWN);
     if(!sock2)
     {
-      werror("File->pipe() failed 0, errno: %d\n", sock1->errno());
+      write("File->pipe() failed 0, errno: %d\n", sock1->errno());
       fd_fail();
     }
   }
@@ -474,7 +474,7 @@ void finish()
 	  sock2=socks[1];
 	  if(!sock2)
 	  {
-	    werror("Failed to open pipe: "+strerror(sock1->errno())+".\n");
+	    write("Failed to open pipe: "+strerror(sock1->errno())+".\n");
 	    fd_fail();
 	  }
 	  sock1=Socket(sock1);
@@ -497,7 +497,7 @@ void finish()
 	sock2=socks[1];
 	if(!sock2)
 	{
-	  werror("Failed to open pipe: "+strerror(sock1->errno())+".\n");
+	  write("Failed to open pipe: "+strerror(sock1->errno())+".\n");
 	  fd_fail();
 	}
 	sock1=Socket2(sock1);
@@ -545,7 +545,7 @@ void accept_callback()
   object o=port1::accept();
   if(!o)
   {
-    werror("Accept failed, errno: %d\n", port1::errno());
+    write("Accept failed, errno: %d\n", port1::errno());
   }
   o=Socket(o);
   o->expected_data = "foobar" * 4711;
@@ -583,14 +583,14 @@ int main()
   write("\nForking...");
   object pid;
   if (catch { pid = fork(); }) {
-    werror(" failed.\n");
+    write(" failed.\n");
   } else if (pid) {
     int res = pid->wait();
     if (res) {
       if (res == -1) {
-	werror("\nChild died of signal %d\n", pid->last_signal());
+	write("\nChild died of signal %d\n", pid->last_signal());
       } else {
-	werror("\nChild failed with errcode %d\n", res);
+	write("\nChild failed with errcode %d\n", res);
       }
       delayed_failure = 1;
     }
@@ -610,7 +610,7 @@ int main()
 #ifdef IPV6
     if (has_prefix(describe_error(err), "Invalid address")) {
       /* No IPv6 support at all. */
-      werror("\nBind failed: Invalid address.\n"
+      write("\nBind failed: Invalid address.\n"
 	     "IPv6 addresses not supported.\n");
       exit(0);
     }
@@ -624,13 +624,13 @@ int main()
 #if constant(System.EAFNOSUPPORT)
     if (port1::errno() == System.EAFNOSUPPORT) {
       /* No IPv6 support on this machine (Linux). */
-      werror("\nBind failed: Address familty not supported.\n"
+      write("\nBind failed: Address familty not supported.\n"
 	     "IPv6 not supported.\n");
       exit(0);      
     }
 #endif /* EAFNOSUPPORT */
 #endif /* IPV6 */
-    werror("Bind failed. (%d)\n",port1::errno());
+    write("Bind failed. (%d)\n",port1::errno());
     fd_fail();
   }
   DEBUG_WERR("port1: %O\n", port1::query_address());
@@ -638,7 +638,7 @@ int main()
 
   if(!port2::bind(0, 0, ANY))
   {
-    werror("Bind failed(2). (%d)\n",port2::errno());
+    write("Bind failed(2). (%d)\n",port2::errno());
     fd_fail();
   }
   DEBUG_WERR("port2: %O\n", port2::query_address());

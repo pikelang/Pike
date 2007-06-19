@@ -12,10 +12,10 @@ void fail()
 void ok()
 {
    if (f->write("hej")==-1)
-      werror(PRE "succeeded to connect to closed socket"
+      write(PRE "succeeded to connect to closed socket"
 	     " (port %d)\n",z);
    else
-      werror(PRE "socket still open (??)"
+      write(PRE "socket still open (??)"
 	     " (port %d)\n",z);
 
    exit(1);      
@@ -27,7 +27,7 @@ void ok()
 
 void fail()
 { 
-   werror(PRE "can't connect to open port; failure reported\n");
+   write(PRE "can't connect to open port; failure reported\n");
    exit(1); // fail
 }
 
@@ -36,7 +36,7 @@ void ok()
 // can connect to socket - this is what we expect
    if (f->write("hej")==-1)
    {
-      werror(PRE "connected ok, but socket closed"
+      write(PRE "connected ok, but socket closed"
 	     " (port %d)\n",z);
       exit (1);
    }
@@ -54,7 +54,7 @@ void rcb(){}
 
 void timeout()
 {
-   werror(PRE "timeout - connection neither succeded "
+   write(PRE "timeout - connection neither succeded "
 	  "nor failed\n");
    exit(1);
 }
@@ -66,7 +66,7 @@ object p=Stdio.Port();
 int main()
 {
    if (!p->bind(0)) {
-     werror(PRE "failed to bind a port: %s.\n", strerror(p->errno()));
+     write(PRE "failed to bind a port: %s.\n", strerror(p->errno()));
      exit(1);
    }
    z = (int)(p->query_address()/" ")[-1];
@@ -94,14 +94,12 @@ int main()
       write(PRE "reporting ok\n");
       return 0;
    } else if (!ok) {
-#ifdef TEST_NORMAL
-     werror(PRE "connect() failed with errno %d: %s\n",
+     write(PRE "connect() failed with errno %d: %s\n",
 	    f->errno(), strerror(f->errno()));
-     werror(PRE "reporting failure\n");
+#ifdef TEST_NORMAL
+     write(PRE "reporting failure\n");
      return 1;
 #else
-     write(PRE "connect() failed with errno %d: %s\n",
-	   f->errno(), strerror(f->errno()));
      write(PRE "reporting ok\n");
      return 0;
 #endif

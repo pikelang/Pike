@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: sendfiletest.pike,v 1.10 2007/06/17 23:14:09 mast Exp $ */
+/* $Id: sendfiletest.pike,v 1.11 2007/06/19 18:52:41 mast Exp $ */
 
 constant TEST_SIZE = 16384;
 
@@ -20,7 +20,7 @@ object(Stdio.File) From(string f)
   object(Stdio.File) from = Stdio.File();
 
   if (!from->open(f, "r")) {
-    werror("Failed to open %O for reading.\n", f);
+    write("Failed to open %O for reading.\n", f);
     exit(1);
   }
   return from;
@@ -31,7 +31,7 @@ object(Stdio.File) To(string f)
   object(Stdio.File) to = Stdio.File();
 
   if (!to->open(f, "cwt")) {
-    werror("Failed to open %O for writing.\n", f);
+    write("Failed to open %O for writing.\n", f);
     exit(1);
   }
   return to;
@@ -45,7 +45,7 @@ array(object(Stdio.File)) SocketPair()
   sock2 = loopback->accept();
   if(!sock2)
   {
-    werror("Accept returned 0\n");
+    write("Accept returned 0\n");
     exit(1);
   }
   return ({ sock1, sock2 });
@@ -57,16 +57,16 @@ void Verify()
   int i;
   for(i=0; i < sizeof(data); i++) {
     if (data[i] != testdata) {
-      werror("Segment %d corrupted!\n", i);
+      write("Segment %d corrupted!\n", i);
       int j;
       for (j=0; j < TEST_SIZE; j++) {
 	if (data[i][j] != testdata[j]) {
-	  werror("First corrupt byte at segment offset %d: 0x%02x != 0x%02x\n",
+	  write("First corrupt byte at segment offset %d: 0x%02x != 0x%02x\n",
 		 j, data[i][j], testdata[j]);
 	  exit(1);
 	}
       }
-      werror("Corrupt byte not found!\n");
+      write("Corrupt byte not found!\n");
       exit(1);
     }
   }
@@ -88,7 +88,7 @@ void next()
     test();
   }) {
     catch {
-      werror("Test %d failed!\n"
+      write("Test %d failed!\n"
 	     "%s\n",
 	     testno,
 	     describe_backtrace(err));
@@ -100,7 +100,7 @@ void next()
 void done(int sent, int expected)
 {
   if (sent != expected) {
-    werror(sprintf("Test %d failed: %d != %d\n", testno, sent, expected));
+    write(sprintf("Test %d failed: %d != %d\n", testno, sent, expected));
     exit(1);
   }
   call_out(next, 0);
@@ -116,7 +116,7 @@ void test1()
 
   if (!Stdio.sendfile(testdata/1024, 0, 0, -1, 0,
 		      To("conftest.src"), done, TEST_SIZE)) {
-    werror("Stdio,sendfile() failed!\n");
+    write("Stdio,sendfile() failed!\n");
     exit(1);
   }
 }
@@ -127,7 +127,7 @@ void test2()
 
   if (!Stdio.sendfile(0, From("conftest.src"), 0, -1, 0,
 		      To("conftest.dst"), done, TEST_SIZE)) {
-    werror("Stdio.sendfile() failed!\n");
+    write("Stdio.sendfile() failed!\n");
     exit(1);
   }
 }
@@ -140,7 +140,7 @@ void test3()
 
   if (!Stdio.sendfile(testdata/4096, From("conftest.src"), 0, -1,
 		      testdata/512, To("conftest.dst"), done, TEST_SIZE*3)) {
-    werror("Stdio.sendfile() failed!\n");
+    write("Stdio.sendfile() failed!\n");
     exit(1);
   }
 }
@@ -155,13 +155,13 @@ void test4()
 
   if (!Stdio.sendfile(testdata/4096, From("conftest.src"), 0, -1,
 		      testdata/512, pair[0], done, TEST_SIZE*3)) {
-    werror("Stdio.sendfile() failed!\n");
+    write("Stdio.sendfile() failed!\n");
     exit(1);
   }
 
   if (!Stdio.sendfile(testdata/4096, pair[1], 0, -1,
 		      testdata/512, To("conftest.dst"), done, TEST_SIZE*5)) {
-    werror("Stdio.sendfile() failed!\n");
+    write("Stdio.sendfile() failed!\n");
     exit(1);
   }
 }
