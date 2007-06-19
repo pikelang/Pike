@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.397 2007/06/13 15:14:27 mbaehr Exp $
+// $Id: master.pike.in,v 1.398 2007/06/19 13:43:18 mbaehr Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -819,16 +819,19 @@ object show_doc(program|object|function obj)
       obj = obj->joined_modules[0]; // FIXME: check for multiples
     if (obj->is_resolv_dirnode)
       prog = object_program(obj->module);
+    else
+      prog = object_program(obj);
   }
 
 
-  if (!documentation[prog] && doc_extractor)
+  if (prog && !documentation[prog] && doc_extractor)
   {
     string source;
-    if (!source_cache || !source_cache[prog])
-      source = master_read_file(Builtin()->program_defined(prog)); 
-    else
+    if (source_cache && source_cache[prog])
       source = source_cache[prog];
+    else
+      source = master_read_file(Builtin()->program_defined(prog)); 
+
     if (source)
     {
       catch

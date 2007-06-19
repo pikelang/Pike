@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.144 2007/06/19 09:19:18 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.145 2007/06/19 13:43:18 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -327,7 +327,7 @@ private class CommandDoc {
     if (!sizeof(tokens))
       return;
     if (tokens == ({ "write", "\n\n" }))
-      module = write;
+      module = Stdio.stdout->write;
     else
       [module, rest, type] = resolv(e, tokens);
 
@@ -341,7 +341,8 @@ private class CommandDoc {
     object child;
     if (docs && docs->documentation)
     {
-      e->safe_write("\n%{%s\n%}\n", docs->objects->print());
+      if (docs->objects && sizeof(docs->objects))
+        e->safe_write("\n%{%s\n%}\n", docs->objects->print());
       e->safe_write(docs->documentation->text+"\n");
     }
     else if (docs && (child=docs->findObject("create")) && child->documentation)
@@ -353,6 +354,8 @@ private class CommandDoc {
       e->safe_write("\n%{%s\n%}\n", Array.flatten(docs->docGroups->objects->print()));
     else if (objectp(module))
       e->safe_write("\n%{%s\n%}\n", indices(module));
+    else if (functionp(module))
+      e->safe_write("\n%O\n", _typeof(module));
     else
       e->safe_write("Documentation not found!\n");
   }
@@ -2395,7 +2398,9 @@ array(object|array(string)) resolv(Evaluator e, array completable, void|object b
     }
     if (base=base_objects(e)[completable[0]])
       return resolv(e, completable[1..], base, "object");
-    if (base=master()->root_module[completable[0]])
+
+    if (sizeof(completable) > 1 
+        && (base=master()->root_module[completable[0]]))
       return resolv(e, completable[1..], base, "module");
     return ({ 0, completable, type });
   }
