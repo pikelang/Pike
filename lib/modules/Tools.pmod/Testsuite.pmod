@@ -130,6 +130,7 @@ array(int) low_run_script (array(string) command, mapping opts)
 
   if (!subresult->got_subresult) {
     // The subprocess didn't use report_result, probably.
+    all_constants()->__watchdog_show_last_test();
     if (err == -1) {
       werror("No result from subprocess (died of signal %s)\n",
 	     signame (pid->last_signal()) || (string) pid->last_signal());
@@ -139,16 +140,17 @@ array(int) low_run_script (array(string) command, mapping opts)
     return 0;
   }
 
-  else {
-    if (err == -1) {
-      werror ("Subprocess died of signal %s.\n",
-	      signame (pid->last_signal()) || (string) pid->last_signal());
-      subresult->failed++;
-    }
-    else if (err && !subresult->failed) {
-      werror ("Subprocess exited with error code %d.\n", err);
-      subresult->failed++;
-    }
+  else if (err == -1) {
+    all_constants()->__watchdog_show_last_test();
+    werror ("Subprocess died of signal %s.\n",
+	    signame (pid->last_signal()) || (string) pid->last_signal());
+    subresult->failed++;
+  }
+
+  else if (err && !subresult->failed) {
+    all_constants()->__watchdog_show_last_test();
+    werror ("Subprocess exited with error code %d.\n", err);
+    subresult->failed++;
   }
 
   return ({subresult->succeeded, subresult->failed, subresult->skipped});
