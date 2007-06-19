@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.296 2007/06/19 11:52:53 grubba Exp $
+|| $Id: gc.c,v 1.297 2007/06/19 18:23:52 mast Exp $
 */
 
 #include "global.h"
@@ -3769,7 +3769,6 @@ size_t do_gc(void *ignored, int explicit_call)
       alloc_threshold = (ALLOC_COUNT_TYPE) new_threshold;
 
     if (!explicit_call && last_gc_time != (cpu_time_t) -1) {
-#ifdef PIKE_THREADS
 #ifdef CPU_TIME_MIGHT_BE_THREAD_LOCAL
       if (cpu_time_is_thread_local)
 	Pike_interpreter.thread_state->auto_gc_time += last_gc_time;
@@ -3780,9 +3779,6 @@ size_t do_gc(void *ignored, int explicit_call)
 	auto_gc_time += last_gc_time;
 #endif
       }
-#else /* !PIKE_THREADS */
-      auto_gc_time += last_gc_time;
-#endif /* PIKE_THREADS */
     }
 
     if(GC_VERBOSE_DO(1 ||) gc_trace)
