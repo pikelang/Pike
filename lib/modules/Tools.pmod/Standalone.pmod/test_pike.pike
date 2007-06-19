@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.120 2007/06/18 23:30:03 mast Exp $ */
+/* $Id: test_pike.pike,v 1.121 2007/06/19 18:40:32 mast Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -261,7 +261,7 @@ class Watchdog
       // respond, it goes too.
       watched_pid = parent_pid;
       timeout_phase = 0;
-      call_out (timeout, 10);
+      call_out (timeout, WATCHDOG_TIMEOUT);
     }
 
     else {
