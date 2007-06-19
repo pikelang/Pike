@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.41 2007/04/13 11:47:27 grubba Exp $
+|| $Id: odbc_result.c,v 1.42 2007/06/19 11:04:49 grubba Exp $
 */
 
 /*
- * Pike  interface to ODBC compliant databases
+ * Pike interface to ODBC compliant databases
  *
  * Henrik Grubbström
  */
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.41 2007/04/13 11:47:27 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.42 2007/06/19 11:04:49 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -112,7 +112,7 @@ static void init_res_struct(struct object *o)
 static void exit_res_struct(struct object *o)
 {
   if (PIKE_ODBC_RES->hstmt != SQL_NULL_HSTMT) {
-    HSTMT hstmt = PIKE_ODBC_RES->hstmt;
+    SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
     PIKE_ODBC_RES->hstmt = SQL_NULL_HSTMT;
     odbc_check_error("exit_res_struct", "Freeing of HSTMT failed",
 		     SQLFreeStmt(hstmt, SQL_DROP),
@@ -145,11 +145,11 @@ static void odbc_fix_fields(void)
    */
   for (i=0; i < PIKE_ODBC_RES->num_fields; i++) {
     int nbits;
-    SWORD name_len;
+    SWORD name_len = 0;
     SWORD sql_type;
     SQLULEN precision;
     SWORD scale;
-    SWORD nullable;
+    SWORD nullable = 0;
 
     while (1) {
       odbc_check_error("odbc_fix_fields", "Failed to fetch field info",
@@ -164,12 +164,20 @@ static void odbc_fix_fields(void)
 			&name_len,
 			&sql_type, &precision, &scale, &nullable),
 		       NULL, NULL);
-      if (name_len < (ptrdiff_t)buf_size) {
+      if (name_len
+#ifdef SQL_WCHAR
+	  * (ptrdiff_t)sizeof(SQLWCHAR)
+#endif
+	  < (ptrdiff_t)buf_size) {
 	break;
       }
       do {
 	buf_size *= 2;
-      } while (name_len >= (ptrdiff_t)buf_size);
+      } while (name_len
+#ifdef SQL_WCHAR
+	       * (ptrdiff_t)sizeof(SQLWCHAR)
+#endif
+	       >= (ptrdiff_t)buf_size);
       if (!(buf = alloca(
 			 buf_size
 #ifdef SQL_WCHAR
@@ -186,23 +194,31 @@ static void odbc_fix_fields(void)
 #else
 	    "name:%s\n"
 #endif
+	    "", buf);
+    fprintf(stderr,
 	    "sql_type:%d\n"
 	    "precision:%ld\n"
 	    "scale:%d\n"
 	    "nullable:%d\n",
-	    buf, sql_type, precision, scale, nullable);
+	    sql_type, precision, scale, nullable);
 #endif /* ODBC_DEBUG */
     /* Create the mapping */
     push_text("name");
 #ifdef SQL_WCHAR
-    push_sqlwchar(buf, name_len * sizeof(SQLWCHAR));
+    push_sqlwchar(buf, name_len);
 #else
     push_string(make_shared_binary_string((char *)buf, name_len));
 #endif
     push_text("type");
 #ifdef SQL_WCHAR
+#ifdef ODBC_DEBUG
+    fprintf(stderr, "SQL_C_WCHAR\n");
+#endif /* ODBC_DEBUG */
     odbc_field_types[i] = SQL_C_WCHAR;
 #else
+#ifdef ODBC_DEBUG
+    fprintf(stderr, "SQL_C_CHAR\n");
+#endif /* ODBC_DEBUG */
     odbc_field_types[i] = SQL_C_CHAR;
 #endif
     switch(sql_type) {
@@ -244,14 +260,23 @@ static void odbc_fix_fields(void)
       break;
     case SQL_BINARY:
       push_text("binary");
+#ifdef ODBC_DEBUG
+      fprintf(stderr, "SQL_C_BINARY\n");
+#endif /* ODBC_DEBUG */
       odbc_field_types[i] = SQL_C_BINARY;
       break;
     case SQL_VARBINARY:
       push_text("blob");
+#ifdef ODBC_DEBUG
+      fprintf(stderr, "SQL_C_BINARY\n");
+#endif /* ODBC_DEBUG */
       odbc_field_types[i] = SQL_C_BINARY;
       break;
     case SQL_LONGVARBINARY:
       push_text("long blob");
+#ifdef ODBC_DEBUG
+      fprintf(stderr, "SQL_C_BINARY\n");
+#endif /* ODBC_DEBUG */
       odbc_field_types[i] = SQL_C_BINARY;
       break;
     case SQL_BIGINT:
@@ -283,7 +308,6 @@ static void odbc_fix_fields(void)
     f_aggregate_multiset(nbits);
 
     f_aggregate_mapping(5*2);
-
   }
   f_aggregate(PIKE_ODBC_RES->num_fields);
 
@@ -307,7 +331,7 @@ static void odbc_fix_fields(void)
 /* void create(object(odbc)) */
 static void f_create(INT32 args)
 {
-  HSTMT hstmt = SQL_NULL_HSTMT;
+  SQLHSTMT hstmt = SQL_NULL_HSTMT;
 
   if (!args) {
     Pike_error("Too few arguments to odbc_result()\n");
@@ -329,7 +353,7 @@ static void f_create(INT32 args)
 static void f_execute(INT32 args)
 {
   struct pike_string *q = NULL;
-  HSTMT hstmt = PIKE_ODBC_RES->hstmt;
+  SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
 
 #ifdef SQL_WCHAR
   get_all_args("odbc_result->execute", args, "%W", &q);
@@ -345,12 +369,12 @@ static void f_execute(INT32 args)
     char *to_free = NULL;
     SQLWCHAR *p;
     if ((sizeof(SQLWCHAR) == 4) && (q->size_shift == 1)) {
-      p = require_wstring2(q, &to_free);
+      p = (SQLWCHAR *)require_wstring2(q, &to_free);
     } else {
       p = (SQLWCHAR *)q->str;
     }
     odbc_check_error("odbc_result->execute", "Query failed",
-		     SQLExecDirectW(hstmt, STR1(q),
+		     SQLExecDirectW(hstmt, p,
 				    DO_NOT_WARN((SQLINTEGER)(q->len))),
 		     to_free?(void (*)(void *))free:NULL, to_free);
   } else {
@@ -386,7 +410,7 @@ static void f_execute(INT32 args)
 static void f_list_tables(INT32 args)
 {
   struct pike_string *table_name_pattern = NULL;
-  HSTMT hstmt = PIKE_ODBC_RES->hstmt;
+  SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
 
   if (!args) {
     push_constant_text("%");
@@ -468,22 +492,59 @@ static void f_fetch_row(INT32 args)
 		     code, NULL, NULL);
  
     for (i=0; i < PIKE_ODBC_RES->num_fields; i++) {
-	/* BLOB */
-        char blob_buf[BLOB_BUFSIZ+1];
+        /* BLOB */
+        char blob_buf[(BLOB_BUFSIZ+1)
+#ifdef SQL_WCHAR
+		      * sizeof(SQLWCHAR)
+#endif
+		      ];
 	int num_strings = 0;
 	SQLLEN len = 0;
 
 	while(1) {
-	  code = SQLGetData(PIKE_ODBC_RES->hstmt, (SQLUSMALLINT)(i+1),
-			    PIKE_ODBC_RES->field_info[i].type,
-			    blob_buf, BLOB_BUFSIZ, &len);
+#ifdef ODBC_DEBUG
+	  fprintf(stderr, "ODBC:fetch_row(): field_info[%d].type: ", i);
+	  if (PIKE_ODBC_RES->field_info[i].type == SQL_C_CHAR) {
+	    fprintf(stderr, "SQL_C_CHAR\n");
+#ifdef SQL_WCHAR
+	  } else if (PIKE_ODBC_RES->field_info[i].type == SQL_C_WCHAR) {
+	    fprintf(stderr, "SQL_C_WCHAR\n");
+#endif /* SQL_WCHAR */
+	  } else {
+	    fprintf(stderr, "%d\n", PIKE_ODBC_RES->field_info[i].type);
+	  }
+#endif /* ODBC_DEBUG */
+#ifdef SQL_WCHAR
+	  while (((
+#endif
+		   code = SQLGetData(PIKE_ODBC_RES->hstmt, (SQLUSMALLINT)(i+1),
+				     PIKE_ODBC_RES->field_info[i].type,
+				     blob_buf, BLOB_BUFSIZ
+#ifdef SQL_WCHAR
+				     * sizeof(SQLWCHAR)
+#endif
+				     , &len)
+#ifdef SQL_WCHAR
+		   ) == SQL_NULL_DATA) &&
+		 (PIKE_ODBC_RES->field_info[i].type == SQL_C_WCHAR)) {
+	    /* Kludge for FreeTDS which doesn't support WCHAR.
+	     * Refetch as a normal char.
+	     */
+#ifdef ODBC_DEBUG
+	    fprintf(stderr, "ODBC:fetch_row(): WCHAR not supported.\n");
+#endif /* ODBC_DEBUG */
+	    PIKE_ODBC_RES->field_info[i].type = SQL_C_CHAR;
+	  }
+#else
+	  ;
+#endif /* SQL_WCHAR */
 	  if (code == SQL_NO_DATA_FOUND) {
 #ifdef ODBC_DEBUG
 	    fprintf(stderr, "ODBC:fetch_row(): NO DATA\n");
 #endif /* ODBC_DEBUG */
 	    if (!num_strings) {
 	      num_strings++;
-	      push_constant_text("");
+	      push_empty_string();
 	    }
 	    break;
 	  }
@@ -509,7 +570,7 @@ static void f_fetch_row(INT32 args)
 	    } else {
 	      /* SQL_C_CHAR and SQL_C_WCHAR's are NUL-terminated... */
 #ifdef SQL_WCHAR
-	      push_sqlwchar(blob_buf, BLOB_BUFSIZ - 1);
+	      push_sqlwchar((SQLWCHAR *)blob_buf, BLOB_BUFSIZ - 1);
 #else
 	      push_string(make_shared_binary_string(blob_buf, BLOB_BUFSIZ - 1));
 #endif
@@ -526,7 +587,7 @@ static void f_fetch_row(INT32 args)
                 ) {
 #ifdef SQL_WCHAR
 	      if (PIKE_ODBC_RES->field_info[i].type == SQL_C_WCHAR) {
-		push_sqlwchar(blob_buf, len);
+		push_sqlwchar((SQLWCHAR *)blob_buf, len / sizeof(SQLWCHAR));
 	      } else {
 #endif
 		push_string(make_shared_binary_string(blob_buf, len));
@@ -535,15 +596,20 @@ static void f_fetch_row(INT32 args)
 #endif
 	    } else {
 	      /* Truncated, but no support for chained SQLGetData calls. */
-	      char *buf = xalloc((len+2)
-#ifdef SQL_WCHAR
-				 * sizeof(SQLWCHAR)
-#endif
-				 );
+	      char *buf;
 	      SQLLEN newlen = 0;
+#ifdef SQL_WCHAR
+	      buf = xalloc((len+2) * sizeof(SQLWCHAR));
+#else
+	      buf = xalloc(len+2);
+#endif
 	      code = SQLGetData(PIKE_ODBC_RES->hstmt, (SQLUSMALLINT)(i+1),
 				PIKE_ODBC_RES->field_info[i].type,
-				buf, len+1, &newlen);
+				buf, (len+1)
+#ifdef SQL_WCHAR
+				* sizeof(SQLWCHAR)
+#endif
+				, &newlen);
 	      if (code != SQL_SUCCESS) {
 		Pike_error("odbc->fetch_row(): "
 			   "Unexpected code from SQLGetData(): %d\n",
@@ -556,7 +622,7 @@ static void f_fetch_row(INT32 args)
 	      }
 #ifdef SQL_WCHAR
 	      if (PIKE_ODBC_RES->field_info[i].type == SQL_C_WCHAR) {
-		push_sqlwchar(buf, len);
+		push_sqlwchar((SQLWCHAR *)buf, len / sizeof(SQLWCHAR));
 	      } else {
 #endif
 		push_string(make_shared_binary_string(buf, len));
@@ -614,7 +680,7 @@ void init_odbc_res_programs(void)
    * program->refs++;
    *
    */
- 
+
   start_new_program();
   ADD_STORAGE(struct precompiled_odbc_result);
 
