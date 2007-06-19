@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tables.c,v 1.32 2007/06/19 16:46:30 grubba Exp $
+|| $Id: tables.c,v 1.33 2007/06/19 20:42:53 grubba Exp $
 */
 
 #include "iso2022.h"
@@ -66,7 +66,7 @@ extern UNICHAR map_videotex_suppl[];
  *
  * Note that this means that the non-spacing 0xe3xx characters
  * map straight to the corresponding combiners at 0x03xx. There
- * are thus only three private characters left after reordering.
+ * are thus only two private characters left after reordering.
  */
 
 static const UNICHAR map_ISO_646_irv_1983[] = {
