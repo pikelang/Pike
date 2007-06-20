@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.39 2006/03/25 11:34:30 grubba Exp $
+|| $Id: odbc.c,v 1.40 2007/06/20 11:43:37 grubba Exp $
 */
 
 /*
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.39 2006/03/25 11:34:30 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.40 2007/06/20 11:43:37 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -93,35 +93,20 @@ void odbc_error(const char *fun, const char *msg,
 		RETCODE code, void (*clean)(void *), void *clean_arg)
 {
   RETCODE _code;
-#ifdef SQL_WCHAR
-  SQLWCHAR errcode[256];
-  SQLWCHAR errmsg[SQL_MAX_MESSAGE_LENGTH];
-#else
   unsigned char errcode[256];
   unsigned char errmsg[SQL_MAX_MESSAGE_LENGTH];
-#endif
   SWORD errmsg_len = 0;
   SDWORD native_error;
 
-  _code =
-#ifdef SQL_WCHAR
-    SQLErrorW
-#else
-    SQLError
-#endif
-    (odbc_henv, odbc->hdbc, hstmt, errcode, &native_error,
-		    errmsg, SQL_MAX_MESSAGE_LENGTH-1, &errmsg_len);
+  _code = SQLError(odbc_henv, odbc->hdbc, hstmt, errcode, &native_error,
+		   errmsg, SQL_MAX_MESSAGE_LENGTH-1, &errmsg_len);
   errmsg[errmsg_len] = '\0';
 
   if (odbc) {
     if (odbc->last_error) {
       free_string(odbc->last_error);
     }
-#ifdef SQL_WCHAR
-    odbc->last_error = make_shared_binary_sqlwchar(errmsg, errmsg_len);
-#else
     odbc->last_error = make_shared_binary_string((char *)errmsg, errmsg_len);
-#endif
   }
 
   if (clean) {
@@ -130,15 +115,9 @@ void odbc_error(const char *fun, const char *msg,
   switch(_code) {
   case SQL_SUCCESS:
   case SQL_SUCCESS_WITH_INFO:
-#ifdef SQL_WCHAR
     Pike_error("%s(): %s:\n"
-	  "%d:%ls:%ls\n",
-	  fun, msg, code, errcode, errmsg);
-#else
-    Pike_error("%s(): %s:\n"
-	  "%d:%s:%s\n",
-	  fun, msg, code, errcode, errmsg);
-#endif
+	       "%d:%s:%s\n",
+	       fun, msg, code, errcode, errmsg);
     break;
   case SQL_ERROR:
     Pike_error("%s(): %s:\n"
