@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.39 2007/04/13 11:47:49 grubba Exp $
+|| $Id: odbc.c,v 1.40 2007/06/20 11:40:31 grubba Exp $
 */
 
 /*
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.39 2007/04/13 11:47:49 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.40 2007/06/20 11:40:31 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -94,13 +94,8 @@ void odbc_error(const char *fun, const char *msg,
 		RETCODE code, void (*clean)(void *), void *clean_arg)
 {
   RETCODE _code;
-#ifdef SQL_WCHAR
-  SQLWCHAR errcode[256];
-  SQLWCHAR errmsg[SQL_MAX_MESSAGE_LENGTH];
-#else
   unsigned char errcode[256];
   unsigned char errmsg[SQL_MAX_MESSAGE_LENGTH];
-#endif
   SWORD errmsg_len = 0;
   SDWORD native_error;
 
@@ -118,15 +113,7 @@ void odbc_error(const char *fun, const char *msg,
     if (odbc->last_error) {
       free_string(odbc->last_error);
     }
-#ifdef SQL_WCHAR
-    if (sizeof(SQLWCHAR) == 2) {
-      odbc->last_error = make_shared_binary_string1(errmsg, errmsg_len);
-    } else {
-      odbc->last_error = make_shared_binary_string2(errmsg, errmsg_len);
-    }
-#else
     odbc->last_error = make_shared_binary_string((char *)errmsg, errmsg_len);
-#endif
   }
 
   if (clean) {
@@ -135,15 +122,9 @@ void odbc_error(const char *fun, const char *msg,
   switch(_code) {
   case SQL_SUCCESS:
   case SQL_SUCCESS_WITH_INFO:
-#ifdef SQL_WCHAR
-    Pike_error("%s(): %s:\n"
-	  "%d:%ls:%ls\n",
-	  fun, msg, code, errcode, errmsg);
-#else
     Pike_error("%s(): %s:\n"
 	  "%d:%s:%s\n",
 	  fun, msg, code, errcode, errmsg);
-#endif
     break;
   case SQL_ERROR:
     Pike_error("%s(): %s:\n"
