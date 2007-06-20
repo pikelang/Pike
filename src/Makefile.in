@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.460 2007/06/17 01:59:18 mast Exp $
+# $Id: Makefile.in,v 1.461 2007/06/20 00:15:48 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -744,7 +744,7 @@ just_verify: testsuites master-stamp
 valgrind_just_verify: testsuites master-stamp
 	if test "x$(TESTARGS)" = x ; then args="-a -v" ; \
 	else args="$(TESTARGS)" ; fi; \
-	$(VALGRIND) $(VALGRINDARGS) $(RUNPIKE) -x test_pike $$args
+	$(VALGRIND) $(VALGRINDARGS) $(RUNPIKE) -x test_pike --subproc-start="$(VALGRIND) $(VALGRINDARGS)" $$args
 
 # Testsuite for dynamic loading debugging
 test_dlopen: dynloadtest.sh
@@ -802,7 +802,7 @@ valgrind_verify: testsuites tinstall
 	if test "$(TESTARGS)" = "" ; then args="-a -v" ; else \
 	  args="$(TESTARGS)" ; fi; \
 	if test -f ./test-pike ; then \
-	  $(VALGRIND) $(VALGRINDARGS) ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
+	  $(VALGRIND) $(VALGRINDARGS) ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x test_pike --subproc-start="$(VALGRIND) $(VALGRINDARGS)" $$args ; \
 	else \
 	  sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x test_pike $$args ; \
 	fi
