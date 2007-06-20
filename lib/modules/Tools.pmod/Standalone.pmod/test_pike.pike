@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.122 2007/06/19 19:03:06 mast Exp $ */
+/* $Id: test_pike.pike,v 1.123 2007/06/20 00:14:06 mast Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -120,6 +120,8 @@ class WarningFlag {
 #define WATCHDOG_TIMEOUT 60*80
 #endif
 #endif
+
+// FIXME: Should make WATCHDOG_TIMEOUT even larger when running in valgrind.
 
 #define WATCHDOG_MSG(fmt, x...) werror ("\n[WATCHDOG]: " fmt, x)
 
@@ -380,18 +382,11 @@ int main(int argc, array(string) argv)
 
   array(string) args=backtrace()[0][3];
   array(string) testsuites=({});
-  // FIXME: Make this code more robust!
-  args=args[..sizeof(args)-1-argc];
-  if (sizeof(args) && args[-1] == "-x") {
-    // pike -x test_pike
-    args = args[..sizeof(args)-2];
-  }
-  add_constant("RUNPIKE_ARRAY", args);
-  add_constant("RUNPIKE", map(args, Process.sh_quote)*" ");
 
   foreach(Getopt.find_all_options(argv,aggregate(
     ({"no-watchdog",Getopt.NO_ARG,({"--no-watchdog"})}),
     ({"watchdog",Getopt.HAS_ARG,({"--watchdog"})}),
+    ({"subproc-start", Getopt.HAS_ARG, ({"--subproc-start"})}),
     ({"help",Getopt.NO_ARG,({"-h","--help"})}),
     ({"verbose",Getopt.MAY_HAVE_ARG,({"-v","--verbose"})}),
     ({"prompt",Getopt.NO_ARG,({"-p","--prompt"})}),
@@ -424,7 +419,11 @@ int main(int argc, array(string) argv)
 	case "watchdog":
 	  watchdog_pid = (int)opt[1];
 	  break;
-	
+
+	case "subproc-start":
+	  args = (opt[1] / " ") - ({""}) + args;
+	  break;
+
 	case "notty":
 	  maybe_tty = 0;
 	  break;
@@ -505,6 +504,15 @@ int main(int argc, array(string) argv)
     Watchdog (watchdog_pid, verbose);
     return -1;
   }
+
+  // FIXME: Make this code more robust!
+  args=args[..<argc];
+  if (sizeof(args) && args[-1] == "-x") {
+    // pike -x test_pike
+    args = args[..<1];
+  }
+  add_constant("RUNPIKE_ARRAY", args);
+  add_constant("RUNPIKE", map(args, Process.sh_quote)*" ");
 
   if (forked) {
     if (!use_watchdog) forked += ({ "--no-watchdog" });
@@ -614,10 +622,12 @@ int main(int argc, array(string) argv)
     successes=errors=0;
     if (forked) {
       foreach(testsuites, string testsuite) {
+	int failure;
 	array(int) subres =
 	  Tools.Testsuite.low_run_script (forked + ({ testsuite }), ([]));
 	if (!subres) {
 	  errors++;
+	  failure = 1;
 	} else {
 	  [int sub_succeeded, int sub_failed, int sub_skipped] = subres;
 	  if (verbose)
@@ -626,10 +636,12 @@ int main(int argc, array(string) argv)
 	  successes += sub_succeeded;
 	  errors += sub_failed;
 	  skipped += sub_skipped;
+	  if (sub_failed) failure = 1;
 	}
 	if (verbose)
 	  werror("Accumulated: %d tests, %d failed, %d skipped\n",
 		 successes + errors, errors, skipped);
+	if (failure) werror ("\n");
 	if (fail && errors) {
 	  exit(1);
 	}
@@ -1258,14 +1270,18 @@ Usage: test_pike [args] [testfiles]
 --no-watchdog       Watchdog will not be used.
 --watchdog=pid      Run only the watchdog and monitor the process with
                     the given pid.
+--subproc-start=X   Whenever subprocesses are spawned to run tests, they get
+                    started with X in front of the pike binary. X is split on
+                    spaces to form an argument list. A useful example for X is
+                    valgrind.
 -h, --help          Prints this message.
 -v[level],
 --verbose[=level]   Select the level of verbosity. Every verbosity level
                     includes the printouts from the levels below.
                     0  No extra printouts.
                     1  Some additional information printed out after every
-		       finished block of tests.
-		    2  Some extra information about tests that will or won't be
+                       finished block of tests.
+                    2  Some extra information about tests that will or won't be
                        run.
                     3  Every test is printed out.
                     4  Time spent in individual tests is printed out.
