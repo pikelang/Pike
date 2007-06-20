@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tables.c,v 1.33 2007/06/19 20:42:53 grubba Exp $
+|| $Id: tables.c,v 1.34 2007/06/20 18:22:45 grubba Exp $
 */
 
 #include "iso2022.h"
@@ -238,6 +238,19 @@ static const UNICHAR map_PT[] = {
   0x0069, 0x006a, 0x006b, 0x006c, 0x006d, 0x006e, 0x006f, 0x0070,
   0x0071, 0x0072, 0x0073, 0x0074, 0x0075, 0x0076, 0x0077, 0x0078,
   0x0079, 0x007a, 0x00e3, 0x00e7, 0x00f5, 0x00b0, };
+static const UNICHAR map_ISO_6438[] = {
+  0xfffd, 0x0181, 0x0187, 0x018a, 0x0189, 0xfffd, 0x0190, 0x018e,
+  0xfffd, 0x0191, 0x0193, 0x0194, 0x0126, 0xfffd, 0x0197, 0xfffd,
+  0xfffd, 0x0253, 0x0188, 0x0257, 0x0256, 0xfffd, 0x025b, 0x0259,
+  0xfffd, 0x0192, 0x0260, 0x0263, 0x0127, 0xfffd, 0x026a, 0x0198,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0x014a, 0xfffd,
+  0x019f, 0x0186, 0x01a4, 0xfffd, 0xfffd, 0xfffd, 0x01a9, 0x0199,
+  0x026c, 0x0271, 0x0273, 0x0272, 0xfffd, 0xfffd, 0x014b, 0xfffd,
+  0x0275, 0x0254, 0x01a5, 0xfffd, 0x027d, 0xfffd, 0x0283, 0x01ac,
+  0x01ae, 0xfffd, 0x01b1, 0x01b2, 0x03a7, 0x01b3, 0x01b7, 0xfffd,
+  0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0x01ad,
+  0x0288, 0xfffd, 0x028a, 0x028b, 0x03c7, 0x01b4, 0x0292, 0x0295,
+  0x0294, 0x0298, 0x01c0, 0x01c2, 0x01c3, 0x01c1, };
 static const UNICHAR map_ISO_5427[] = {
   0x0021, 0x0022, 0x0023, 0x00a4, 0x0025, 0x0026, 0x0027, 0x0028,
   0x0029, 0x002a, 0x002b, 0x002c, 0x002d, 0x002e, 0x002f, 0x0030,
@@ -10791,7 +10804,7 @@ const UNICHAR * const iso2022_94[] = {
   map_ISO_646_irv_1983, map_BS_4730, map_ANSI_X3_4_1968, map_NATS_SEFI, 
   map_NATS_SEFI_ADD, map_NATS_DANO, map_NATS_DANO_ADD, map_SEN_850200_B, 
   map_SEN_850200_C, map_JIS_C6220_1969_jp, map_JIS_C6220_1969_ro, map_DIN_66003, 
-  map_PT, /*ISOIR39*/NULL, map_ISO_5427, /*ISOIR38*/NULL, 
+  map_PT, map_ISO_6438, map_ISO_5427, /*ISOIR38*/NULL, 
   /*ISOIR53*/NULL, map_ISO_5427_1981, map_NF_Z_62_010_1973, map_ISO_5428_1980, 
   map_GB_1988_80, map_Latin_greek_1, map_BS_viewdata, map_INIS, 
   /*ISOIR31*/NULL, map_IT, map_ES, map_greek7_old, 
@@ -13605,6 +13618,8 @@ const struct charset_def charset_map[] = {
   { "iso60danishnorwegian", map_NS_4551_1, MODE_94 },
   { "iso60norwegian1", map_NS_4551_1, MODE_94 },
   { "iso61norwegian2", map_NS_4551_2, MODE_94 },
+  { "iso6438", map_ISO_6438, MODE_94 },
+  { "iso64381996", map_ISO_6438, MODE_94 },
   { "iso646ca", map_CSA_Z243_4_1985_1, MODE_94 },                     /* :: iso646-ca */
   { "iso646ca2", map_CSA_Z243_4_1985_2, MODE_94 },                    /* :: iso646-ca2 */
   { "iso646cn", map_GB_1988_80, MODE_94 },                            /* :: iso646-cn */
@@ -13729,9 +13744,11 @@ const struct charset_def charset_map[] = {
   { "isoir2", map_ISO_646_irv_1983, MODE_94 },                        /* :: iso-ir-2 */
   { "isoir203", map_ISO_8859_15_1999, MODE_96 },                      /* :: iso-ir-203 */
   { "isoir21", map_DIN_66003, MODE_94 },                              /* :: iso-ir-21 */
+  { "isoir216", map_ISO_6438, MODE_94 },
   { "isoir25", map_NF_Z_62_010_1973, MODE_94 },                       /* :: iso-ir-25 */
   { "isoir27", map_Latin_greek_1, MODE_94 },                          /* :: iso-ir-27 */
   { "isoir37", map_ISO_5427, MODE_94 },                               /* :: iso-ir-37 */
+  { "isoir39", map_ISO_6438, MODE_94 },
   { "isoir4", map_BS_4730, MODE_94 },                                 /* :: iso-ir-4 */
   { "isoir42", map_JIS_C6226_1978, MODE_9494 },                       /* :: iso-ir-42 */
   { "isoir47", map_BS_viewdata, MODE_94 },                            /* :: iso-ir-47 */
