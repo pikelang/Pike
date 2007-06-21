@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.145 2007/06/19 13:43:18 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.146 2007/06/21 11:11:07 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -2422,7 +2422,7 @@ array(object|array(string)) resolv(Evaluator e, array completable, void|object b
       else
         return ({ base, completable, type });
     }
-    if (newbase=base[completable[0]]) 
+    if (!functionp(base) && (newbase=base[completable[0]]) )
       return resolv(e, completable[1..], newbase, type);
   }
 
