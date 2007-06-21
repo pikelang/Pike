@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tables.c,v 1.34 2007/06/20 18:22:45 grubba Exp $
+|| $Id: tables.c,v 1.35 2007/06/21 16:29:52 grubba Exp $
 */
 
 #include "iso2022.h"
@@ -64,9 +64,14 @@ extern UNICHAR map_videotex_suppl[];
  *   e027	1fc0	GREEK PERISPOMENI
  *   e028	-	LATIN CAPITAL LETTER J WITH CARON
  *
+ * In addition Pike uses the following codepoints:
+ *   		e000	Remove (Used in DIN:31624 for
+ *			half nonspacing modifiers).
+ *
  * Note that this means that the non-spacing 0xe3xx characters
  * map straight to the corresponding combiners at 0x03xx. There
- * are thus only two private characters left after reordering.
+ * are thus only two private characters left after reordering
+ * and filtering.
  */
 
 static const UNICHAR map_ISO_646_irv_1983[] = {
@@ -264,6 +269,19 @@ static const UNICHAR map_ISO_5427[] = {
   0x0418, 0x0419, 0x041a, 0x041b, 0x041c, 0x041d, 0x041e, 0x041f,
   0x042f, 0x0420, 0x0421, 0x0422, 0x0423, 0x0416, 0x0412, 0x042c,
   0x042b, 0x0417, 0x0428, 0x042d, 0x0429, 0x0427, };
+static const UNICHAR map_DIN_31624[] = {
+  0x00a1, 0x201e, 0x00a3, 0x00a4, 0x2030, 0x2020, 0x0040, 0x00b0,
+  0x005b, 0x007b, 0x00ab, 0x266d, 0x00a9, 0x24c5, 0x00ae, 0x02bf,
+  0x02bf, 0x201a, 0xfffd, 0x005c, 0x007c, 0x2021, 0x00b7, 0x2192,
+  0x005d, 0x007d, 0x00bb, 0x266f, 0x2032, 0x2033, 0x00bf, 0xe309,
+  0xe300, 0xe301, 0xe302, 0xe303, 0xe304, 0xe306, 0xe307, 0xe308,
+  0xe336, 0xe30a, 0xe315, 0xe312, 0xe30b, 0xe31b, 0xe30c, 0xe327,
+  0xe328, 0xe321, 0xe328, 0xe325, 0xe32e, 0xe323, 0xe338, 0xe332,
+  0xe333, 0xe329, 0xe32d, 0xfffd, 0xe000, 0xe361, 0xe360, 0xfffd,
+  0x00c6, 0x0110, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0x0141,
+  0x00d8, 0x0152, 0xfffd, 0x00de, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+  0x00e6, 0x0111, 0x00f0, 0xfffd, 0x0131, 0xfffd, 0xfffd, 0x0142,
+  0x00f8, 0x0153, 0x01a6, 0x00fe, 0xfffd, 0xfffd, };
 static const UNICHAR map_ISO_5427_1981[] = {
   0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
   0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
@@ -10804,7 +10822,7 @@ const UNICHAR * const iso2022_94[] = {
   map_ISO_646_irv_1983, map_BS_4730, map_ANSI_X3_4_1968, map_NATS_SEFI, 
   map_NATS_SEFI_ADD, map_NATS_DANO, map_NATS_DANO_ADD, map_SEN_850200_B, 
   map_SEN_850200_C, map_JIS_C6220_1969_jp, map_JIS_C6220_1969_ro, map_DIN_66003, 
-  map_PT, map_ISO_6438, map_ISO_5427, /*ISOIR38*/NULL, 
+  map_PT, map_ISO_6438, map_ISO_5427, map_DIN_31624, 
   /*ISOIR53*/NULL, map_ISO_5427_1981, map_NF_Z_62_010_1973, map_ISO_5428_1980, 
   map_GB_1988_80, map_Latin_greek_1, map_BS_viewdata, map_INIS, 
   /*ISOIR31*/NULL, map_IT, map_ES, map_greek7_old, 
@@ -13544,6 +13562,7 @@ const struct charset_def charset_map[] = {
   { "cn", map_GB_1988_80, MODE_94 },                                  /* :: cn */
   { "cyrillic", map_ISO_8859_5_1999, MODE_96 },                       /* :: cyrillic */
   { "de", map_DIN_66003, MODE_94 },                                   /* :: de */
+  { "din31624", map_DIN_31624, MODE_94 },
   { "din66003", map_DIN_66003, MODE_94 },                             /* :: din_66003 */
   { "e13b", map_ISO_2033_1983, MODE_94 },                             /* :: e13b */
   { "ecma114", map_ISO_8859_6_1999, MODE_96 },                        /* :: ecma-114 */
@@ -13748,6 +13767,7 @@ const struct charset_def charset_map[] = {
   { "isoir25", map_NF_Z_62_010_1973, MODE_94 },                       /* :: iso-ir-25 */
   { "isoir27", map_Latin_greek_1, MODE_94 },                          /* :: iso-ir-27 */
   { "isoir37", map_ISO_5427, MODE_94 },                               /* :: iso-ir-37 */
+  { "isoir38", map_DIN_31624, MODE_94 },
   { "isoir39", map_ISO_6438, MODE_94 },
   { "isoir4", map_BS_4730, MODE_94 },                                 /* :: iso-ir-4 */
   { "isoir42", map_JIS_C6226_1978, MODE_9494 },                       /* :: iso-ir-42 */
