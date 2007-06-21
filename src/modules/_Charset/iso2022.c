@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.41 2007/06/19 17:35:47 grubba Exp $
+|| $Id: iso2022.c,v 1.42 2007/06/21 16:43:30 grubba Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -112,14 +112,16 @@ static ptrdiff_t eat_text(unsigned char *src, ptrdiff_t srclen,
       char x = (*src++)&0x7f;
       if(x==0x20 || x==0x7f)
 	EMIT((UNICHAR)x);
-      else
+      else if (g->transl[x-0x21] != 0xe000) {
 	EMIT(g->transl[x-0x21]);
     }
     return 0;
     break;
   case MODE_96:
-    while(srclen--)
-      EMIT(g->transl[((*src++)&0x7f)-0x20]);
+    while(srclen--) {
+      if (g->transl[((*src++)&0x7f)-0x20] != 0xe000)
+	EMIT(g->transl[((*src++)&0x7f)-0x20]);
+    }
     return 0;
     break;
   case MODE_9494:
@@ -127,7 +129,8 @@ static ptrdiff_t eat_text(unsigned char *src, ptrdiff_t srclen,
       char hi, lo;
       if ((hi = (*src++)&0x7f)!=0x20 && hi != 0x7f &&
 	  (lo = (*src)&0x7f)!=0x20 && lo != 0x7f) {
-	EMIT(g->transl[(hi-0x21)*94+(lo-0x21)]);
+	if (g->transl[(hi-0x21)*94+(lo-0x21)] != 0xe000)
+	  EMIT(g->transl[(hi-0x21)*94+(lo-0x21)]);
 	src++;
 	srclen -= 2;
       } else {
@@ -144,7 +147,8 @@ static ptrdiff_t eat_text(unsigned char *src, ptrdiff_t srclen,
     while(srclen>1) {
       char hi = (*src++)&0x7f;
       char lo = (*src++)&0x7f;
-      EMIT(g->transl[(hi-0x20)*96+(lo-0x20)]);
+      if (g->transl[(hi-0x20)*96+(lo-0x20)] != 0xe000)
+	EMIT(g->transl[(hi-0x20)*96+(lo-0x20)]);
       srclen -= 2;
     }
     break;

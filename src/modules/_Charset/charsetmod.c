@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.61 2007/06/19 17:35:48 grubba Exp $
+|| $Id: charsetmod.c,v 1.62 2007/06/21 16:43:20 grubba Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -1410,7 +1410,7 @@ static ptrdiff_t feed_94(const p_wchar0 *p, ptrdiff_t l, struct std_cs_stor *s)
     p_wchar0 x = *p++;
     if(x<=0x20 || x>=0x7f)
       string_builder_putchar(&s->strbuild, x);
-    else
+    else if (table[x-0x21] != 0xe000)
       string_builder_putchar(&s->strbuild, table[x-0x21]);
   }
   return 0;
@@ -1429,7 +1429,7 @@ static ptrdiff_t feed_96(const p_wchar0 *p, ptrdiff_t l, struct std_cs_stor *s)
     p_wchar0 x = *p++;
     if(x<0xa0)
       string_builder_putchar(&s->strbuild, x);
-    else
+    else if (table[x-0xa0] != 0xe000)
       string_builder_putchar(&s->strbuild, table[x-0xa0]);
   }
   return 0;
@@ -1454,7 +1454,9 @@ static ptrdiff_t feed_9494(const p_wchar0 *p, ptrdiff_t l,
     else if((y=(*p)&0x7f)>0x20 && y<0x7f) {
       --l;
       p++;
-      string_builder_putchar(&s->strbuild, table[(x-0x21)*94+(y-0x21)]);
+      if (table[(x-0x21)*94+(y-0x21)] != 0xe000) {
+	string_builder_putchar(&s->strbuild, table[(x-0x21)*94+(y-0x21)]);
+      }
     } else {
       string_builder_putchar(&s->strbuild, x);
     }
@@ -1481,7 +1483,9 @@ static ptrdiff_t feed_9696(const p_wchar0 *p, ptrdiff_t l,
     else if((y=(*p)&0x7f)>=0x20) {
       --l;
       p++;
-      string_builder_putchar(&s->strbuild, table[(x-0x20)*96+(y-0x20)]);
+      if (table[(x-0x20)*96+(y-0x20)] != 0xe000) {
+	string_builder_putchar(&s->strbuild, table[(x-0x20)*96+(y-0x20)]);
+      }
     } else {
       string_builder_putchar(&s->strbuild, x);
     }
