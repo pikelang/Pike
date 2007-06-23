@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.398 2007/06/19 13:43:18 mbaehr Exp $
+// $Id: master.pike.in,v 1.399 2007/06/23 16:31:48 mbaehr Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -769,8 +769,11 @@ static int prio_from_filename(string fname)
 //!   (one for each file in a joinnode, or just one otherwise)
 array(string) module_defined(object mod)
 {
-  array mods;
   array files = ({});
+  if (programp(mod))
+    return ({ Builtin()->program_defined([program]mod) });
+
+  array mods;
   if (mod->is_resolv_joinnode)
     mods = mod->joined_modules; 
   else
@@ -830,7 +833,16 @@ object show_doc(program|object|function obj)
     if (source_cache && source_cache[prog])
       source = source_cache[prog];
     else
-      source = master_read_file(Builtin()->program_defined(prog)); 
+    {
+      array sourceref = array_sscanf(Builtin()->program_defined(prog), 
+                                     "%s%[:]%[0-9]");
+      source = master_read_file(sourceref[0]);
+      if (sizeof(sourceref[1]) && sizeof(sourceref[2]))
+      {
+        if (programp(prog))
+          child = ((describe_program(prog)||"")/".")[-1];
+      }
+    }
 
     if (source)
     {
@@ -845,7 +857,7 @@ object show_doc(program|object|function obj)
   if (documentation[prog])
   { 
     if (child)
-      return documentation[prog]->findObject(child);
+      return documentation[prog]->findObject(child)||documentation[prog]->findChild(child);
     else
       return documentation[prog];
   }
