@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.43 2007/06/21 16:44:46 grubba Exp $
+|| $Id: iso2022.c,v 1.44 2007/06/25 16:45:41 grubba Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -119,8 +119,9 @@ static ptrdiff_t eat_text(unsigned char *src, ptrdiff_t srclen,
     break;
   case MODE_96:
     while(srclen--) {
-      if (g->transl[((*src++)&0x7f)-0x20] != 0xe000)
-	EMIT(g->transl[((*src++)&0x7f)-0x20]);
+      UNICHAR c;
+      if ((c = g->transl[((*src++)&0x7f)-0x20]) != 0xe000)
+	EMIT(c);
     }
     return 0;
     break;
