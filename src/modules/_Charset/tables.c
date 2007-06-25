@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tables.c,v 1.35 2007/06/21 16:29:52 grubba Exp $
+|| $Id: tables.c,v 1.36 2007/06/25 17:48:59 grubba Exp $
 */
 
 #include "iso2022.h"
@@ -272,7 +272,7 @@ static const UNICHAR map_ISO_5427[] = {
 static const UNICHAR map_DIN_31624[] = {
   0x00a1, 0x201e, 0x00a3, 0x00a4, 0x2030, 0x2020, 0x0040, 0x00b0,
   0x005b, 0x007b, 0x00ab, 0x266d, 0x00a9, 0x24c5, 0x00ae, 0x02bf,
-  0x02bf, 0x201a, 0xfffd, 0x005c, 0x007c, 0x2021, 0x00b7, 0x2192,
+  0x02be, 0x201a, 0xfffd, 0x005c, 0x007c, 0x2021, 0x00b7, 0x2192,
   0x005d, 0x007d, 0x00bb, 0x266f, 0x2032, 0x2033, 0x00bf, 0xe309,
   0xe300, 0xe301, 0xe302, 0xe303, 0xe304, 0xe306, 0xe307, 0xe308,
   0xe336, 0xe30a, 0xe315, 0xe312, 0xe30b, 0xe31b, 0xe30c, 0xe327,
@@ -282,6 +282,19 @@ static const UNICHAR map_DIN_31624[] = {
   0x00d8, 0x0152, 0xfffd, 0x00de, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
   0x00e6, 0x0111, 0x00f0, 0xfffd, 0x0131, 0xfffd, 0xfffd, 0x0142,
   0x00f8, 0x0153, 0x01a6, 0x00fe, 0xfffd, 0xfffd, };
+static const UNICHAR map_ISO_5426_1980[] = {
+  0x00a1, 0x201e, 0x00a3, 0x0024, 0x00a5, 0x2020, 0x00a7, 0x0027,
+  0x2018, 0x201c, 0x00ab, 0x266d, 0x00a9, 0x24c5, 0x00ae, 0x02bf,
+  0x02be, 0x201a, 0xfffd, 0xfffd, 0xfffd, 0x2021, 0x00b7, 0x0022,
+  0x2019, 0x201d, 0x00bb, 0x266f, 0x2032, 0x2033, 0x00bf, 0xe309,
+  0xe300, 0xe301, 0xe302, 0xe303, 0xe304, 0xe306, 0xe307, 0xe308,
+  0xe336, 0xe30a, 0xe315, 0xe312, 0xe30b, 0xe31b, 0xe30c, 0xe327,
+  0xe328, 0xe321, 0xe328, 0xe325, 0xe32e, 0xe323, 0xe324, 0xe332,
+  0xe333, 0xe329, 0xe32d, 0xfffd, 0xe000, 0xe361, 0xe360, 0xfffd,
+  0x00c6, 0x0110, 0xfffd, 0xfffd, 0xfffd, 0x0132, 0xfffd, 0x0141,
+  0x00d8, 0x0152, 0xfffd, 0x00de, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
+  0x00e6, 0x0111, 0x00f0, 0xfffd, 0x0131, 0x0133, 0xfffd, 0x0142,
+  0x00f8, 0x0153, 0x00df, 0x00fe, 0xfffd, 0xfffd, };
 static const UNICHAR map_ISO_5427_1981[] = {
   0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
   0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
@@ -10823,7 +10836,7 @@ const UNICHAR * const iso2022_94[] = {
   map_NATS_SEFI_ADD, map_NATS_DANO, map_NATS_DANO_ADD, map_SEN_850200_B, 
   map_SEN_850200_C, map_JIS_C6220_1969_jp, map_JIS_C6220_1969_ro, map_DIN_66003, 
   map_PT, map_ISO_6438, map_ISO_5427, map_DIN_31624, 
-  /*ISOIR53*/NULL, map_ISO_5427_1981, map_NF_Z_62_010_1973, map_ISO_5428_1980, 
+  map_ISO_5426_1980, map_ISO_5427_1981, map_NF_Z_62_010_1973, map_ISO_5428_1980, 
   map_GB_1988_80, map_Latin_greek_1, map_BS_viewdata, map_INIS, 
   /*ISOIR31*/NULL, map_IT, map_ES, map_greek7_old, 
   map_latin_greek, map_INIS_8, map_INIS_cyrillic, /*ISOIR59*/NULL, 
@@ -13626,6 +13639,8 @@ const struct charset_def charset_map[] = {
   { "iso4unitedkingdom", map_BS_4730, MODE_94 },
   { "iso50inis8", map_INIS_8, MODE_94 },
   { "iso51iniscyrillic", map_INIS_cyrillic, MODE_94 },
+  { "iso5426", map_ISO_5426_1980, MODE_94 },
+  { "iso54261980", map_ISO_5426_1980, MODE_94 },
   { "iso5427", map_ISO_5427, MODE_94 },                               /* :: iso_5427 */
   { "iso54271981", map_ISO_5427_1981, MODE_94 },                      /* :: iso_5427:1981 */
   { "iso5427cyrillic", map_ISO_5427, MODE_94 },
@@ -13775,6 +13790,7 @@ const struct charset_def charset_map[] = {
   { "isoir49", map_INIS, MODE_94 },                                   /* :: iso-ir-49 */
   { "isoir50", map_INIS_8, MODE_94 },
   { "isoir51", map_INIS_cyrillic, MODE_94 },                          /* :: iso-ir-51 */
+  { "isoir53", map_ISO_5426_1980, MODE_94 },
   { "isoir54", map_ISO_5427_1981, MODE_94 },                          /* :: iso-ir-54 */
   { "isoir55", map_ISO_5428_1980, MODE_94 },                          /* :: iso-ir-55 */
   { "isoir57", map_GB_1988_80, MODE_94 },                             /* :: iso-ir-57 */
