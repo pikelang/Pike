@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.399 2007/06/23 16:31:48 mbaehr Exp $
+// $Id: master.pike.in,v 1.400 2007/06/26 17:11:56 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -770,7 +770,7 @@ static int prio_from_filename(string fname)
 array(string) module_defined(object mod)
 {
   array files = ({});
-  if (programp(mod))
+  if (!objectp(mod) && programp(mod))
     return ({ Builtin()->program_defined([program]mod) });
 
   array mods;
@@ -1391,6 +1391,93 @@ object cast_to_object(string oname, string current_file,
 // FIXME: Won't this cause problems when inheriting "/master"?
 static class ZERO_TYPE {};
 
+#if 0
+object dirnode(string dirname, object|void compilation_handler)
+{
+  resolv_debug("Creating dirnode(%O, %O)...\n", d, h);
+
+  fc[dirname]=this;
+  if(has_suffix(FIX_CASE(dirname),".pmod")) {
+    fc[dirname[..<5]]=this;
+  }
+
+  array(string) files = sort(master_get_dir(d)||({}));
+  if (!sizeof(d)) return ZERO_TYPE();
+
+  array(string) bases = map(files, base_from_filename);
+  files = filter(files, bases);
+  bases = filter(bases, bases);
+  resolv_debug("dirnode(%O,%O) got %d files.\n",
+	       d, h, sizeof(bases));
+  if (!sizeof(files)) return ZERO_TYPE();
+
+  array(string) segments = allocate(sizeof(files) + 10, "");
+
+  mapping(string:array(int|string)) file_paths = ([]);
+
+  foreach(files; int no; string fname) {
+    fname = combine_path(dirname, fname);
+    string base = bases[no];
+    if (base == "module") {
+      segments[0] = sprintf("inherit \"%s\";\n", fname);
+      continue;
+    }
+    array(string) paths = file_paths[base];
+    if (!paths) {
+      // New entry.
+      file_paths[base] = ({ no, fname });
+      continue;
+    }
+
+    // Multiple files. Order according to prio_from_filename().
+    // Insert sort. Worst case is 3 filenames.
+    int prio = prio_from_filename(fname);
+    int index;
+    foreach(paths; index; string other_fname) {
+      if (!index) continue;
+      if (prio_from_filename(other_fname) <= prio) break;
+    }
+    file_paths[base] = paths[..index-1] + ({ fname }) + paths[index..];
+  }
+  foreach(file_paths; string base; array(int|string) paths) {
+    if (sizeof(paths) == 2) {
+      // Single file.
+      if (has_suffix(FIX_CASE(paths[1]), ".pmod")) {
+	segments[5 + paths[0]] =
+	  sprintf("static mixed __%s = 0;\n"
+		  "object `->%s()\n"
+		  "{\n"
+		  "  if (__%s || zero_type(__%s)) return __%s;\n"
+		  "  return __%s = \n"
+		  "    (low_cast_to_object(\"%s\", 0, __compilation_handler)\n"
+		  "       || UNDEFINED);\n"
+		  "}\n",
+		  base,
+		  base,
+		  base, base, base,
+		  base,
+		  paths[1]);
+      } else {
+	segments[5 + paths[0]] =
+	  sprintf("static mixed __%s = 0;\n"
+		  "program `->%s()\n"
+		  "{\n"
+		  "  if (__%s || zero_type(__%s)) return __%s;\n"
+		  "  return __%s = \n"
+		  "    (low_cast_to_program(\"%s\", 0, __compilation_handler)\n"
+		  "       || UNDEFINED);\n"
+		  "}\n",
+		  base,
+		  base,
+		  base, base, base,
+		  base,
+		  paths[1]);
+      }
+    }
+  }
+}
+
+#else /* !0 */
 //! Module node representing a single directory.
 //!
 //! @seealso
@@ -1739,6 +1826,7 @@ class dirnode
     return as=='O' && sprintf("master()->dirnode(%O)",dirname);
   }
 }
+#endif /* 0 */
 
 //! Module node holding possibly multiple directories,
 //! and optionally falling back to another level.
