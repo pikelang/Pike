@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.400 2007/06/26 17:11:56 grubba Exp $
+// $Id: master.pike.in,v 1.401 2007/06/26 17:15:21 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -767,10 +767,10 @@ static int prio_from_filename(string fname)
 //! @returns
 //!   An array of strings with filenames.
 //!   (one for each file in a joinnode, or just one otherwise)
-array(string) module_defined(object mod)
+array(string) module_defined(object|program mod)
 {
   array files = ({});
-  if (!objectp(mod) && programp(mod))
+  if (programp(mod))
     return ({ Builtin()->program_defined([program]mod) });
 
   array mods;
