@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.75 2007/05/26 19:00:42 grubba Exp $
+|| $Id: sendfile.c,v 1.76 2007/06/26 17:10:01 grubba Exp $
 */
 
 /*
@@ -694,6 +694,7 @@ static void worker(void *this_)
 {
   struct pike_sendfile *this = this_;
   struct Backend_struct *backend;
+  struct timeval tv;
 
   low_do_sendfile(this);
 
@@ -743,8 +744,9 @@ static void worker(void *this_)
     backend_add_backend_callback(backend, call_callback_and_free, this, 0);
 
   /* Call as soon as possible. */
-  next_timeout.tv_usec = 0;
-  next_timeout.tv_sec = 0;
+  tv.tv_usec = 0;
+  tv.tv_sec = 0;
+  backend_lower_timeout(backend, &tv);
 
   /* Wake up the backend */
   backend_wake_up_backend(backend);

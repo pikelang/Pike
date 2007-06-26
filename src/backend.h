@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.h,v 1.37 2007/05/26 18:59:16 grubba Exp $
+|| $Id: backend.h,v 1.38 2007/06/26 17:10:01 grubba Exp $
 */
 
 #ifndef BACKEND_H
@@ -75,7 +75,6 @@ struct Backend_struct;
 struct selectors;
 
 PMOD_EXPORT extern struct timeval current_time;
-PMOD_EXPORT extern struct timeval next_timeout;
 PMOD_EXPORT extern struct Backend_struct *default_backend;
 extern struct callback_list do_debug_callbacks;
 PMOD_EXPORT extern struct program *Backend_program;
@@ -199,6 +198,8 @@ PMOD_EXPORT void *query_write_oob_callback_data(int fd);
 #endif
 
 PMOD_EXPORT void backend_wake_up_backend(struct Backend_struct *be);
+PMOD_EXPORT void backend_lower_timeout(struct Backend_struct *me,
+				       struct timeval *tv);
 PMOD_EXPORT struct object *get_backend_obj (struct Backend_struct *b);
 PMOD_EXPORT struct callback *backend_debug_add_backend_callback(
     struct Backend_struct *be, callback_func call, void *arg,

@@ -51,9 +51,9 @@ int pgtk2_is_object_program(struct program *X)
 
 static void backend_callback(struct callback *_cb,
                              void *arg,
-                             void *post_select)
+                             void *backend)
 {
-  if( !post_select )
+  if(backend)
   {
     struct timeval timeout = current_time;
     timeout.tv_usec += 20000;
@@ -62,8 +62,7 @@ static void backend_callback(struct callback *_cb,
       timeout.tv_usec-=1000000;
       timeout.tv_sec+=1;
     }
-    if (my_timercmp (&timeout, <, &next_timeout))
-      next_timeout = timeout;
+    backend_lower_timeout(backend, &timeout);
   } else
 #ifdef HAVE_GTK22
     while(g_main_context_iteration(NULL,0));

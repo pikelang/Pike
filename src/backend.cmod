@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.202 2007/06/17 01:34:57 mast Exp $
+ * $Id: backend.cmod,v 1.203 2007/06/26 17:10:01 grubba Exp $
  *
  * Backend object.
  */
@@ -188,7 +188,6 @@ DECLARATIONS
 
 struct callback_list do_debug_callbacks;
 struct timeval current_time;
-struct timeval next_timeout;
 
 /*
  * Stuff to map fds to the proper Backend
@@ -272,6 +271,8 @@ PIKECLASS Backend
   /* Provide a unique count to be able to tell backends apart with _sprintf. */
   static int unused_id = 0;
   CVAR int id;
+
+  CVAR struct timeval next_timeout;
 
   /*
    * Backend callbacks
@@ -382,6 +383,18 @@ PIKECLASS Backend
       write
 #endif
 	(me->wakeup_pipe_send_fd, &foo ,1);
+  }
+
+  /* Lower the timeout
+   *
+   * Typically used from backend callbacks.
+   */
+  PMOD_EXPORT void backend_lower_timeout(struct Backend_struct *me,
+					 struct timeval *tv)
+  {
+    if (my_timercmp(tv, <=, &me->next_timeout)) {
+      me->next_timeout = *tv;
+    }
   }
 
   /*
@@ -1674,14 +1687,14 @@ PIKECLASS Backend
   }
 
   static void low_backend_once_setup(struct Backend_struct *me,
-				     struct timeval *start_time,
-				     struct timeval *next_timeout)
+				     struct timeval *start_time)
   {
     ONERROR uwp;
     int i, done_something = 0;
 #ifdef PIKE_DEBUG
     struct timeval max_timeout;
 #endif
+    struct timeval *next_timeout = &me->next_timeout;
 
     alloca(0);			/* Do garbage collect */
 #ifdef PIKE_DEBUG
@@ -1715,16 +1728,16 @@ PIKECLASS Backend
        since we have to run gettimeofday anyway /Mirar */
     own_gethrtime_update(&current_time);
 #endif
-    start_time->tv_sec = current_time.tv_sec;
-    start_time->tv_usec = current_time.tv_usec;
-
-    if (next_timeout->tv_sec < 0) {
+    if (start_time->tv_sec < 0) {
       next_timeout->tv_sec = -1;
       next_timeout->tv_usec = 0;
     }
     else {
+      *next_timeout = *start_time;
       my_add_timeval(next_timeout, &current_time);
     }
+
+    *start_time = current_time;
 
     /* Call outs */
     if(me->num_pending_calls)
@@ -1735,7 +1748,7 @@ PIKECLASS Backend
 #ifdef PIKE_DEBUG
     max_timeout = *next_timeout;
 #endif
-    call_callback(& me->backend_callbacks, NULL);
+    call_callback(& me->backend_callbacks, me);
 #ifdef PIKE_DEBUG
     if (max_timeout.tv_sec >= 0 &&
 	(next_timeout->tv_sec < 0 ||
@@ -3146,7 +3159,7 @@ PIKECLASS GenericBackend
   {
     ONERROR uwp;
     int i, done_something = 0;
-    struct timeval start_time = *timeout, next_timeout;
+    struct timeval start_time = *timeout;
     struct Backend_struct *me = gb->backend;
 #ifdef DECLARE_POLL_EXTRAS
     /* Declare any extra variables needed by MY_POLL(). */
@@ -3154,7 +3167,7 @@ PIKECLASS GenericBackend
 #endif /* DECLARE_POLL_EXTRAS */
 
     SET_ONERROR(uwp, low_backend_cleanup, THIS->backend);
-    low_backend_once_setup(gb->backend, &start_time, &next_timeout);
+    low_backend_once_setup(gb->backend, &start_time);
 
     {
 #ifdef TIMEOUT_IS_MILLISECONDS
@@ -3169,25 +3182,26 @@ PIKECLASS GenericBackend
 #ifdef PIKE_DEBUG
       struct timeval max_timeout;
 #endif
+      struct timeval *next_timeout = &gb->backend->next_timeout;
 
       me->may_need_wakeup = 1;
 
 #ifdef TIMEOUT_IS_MILLISECONDS
-      if (next_timeout.tv_sec >= 100000000)
+      if (next_timeout->tv_sec >= 100000000)
 	/* Take this as waiting forever. */
 	poll_timeout = -1;
-      else if(next_timeout.tv_sec < 0)
+      else if(next_timeout->tv_sec < 0)
 	poll_timeout = 0;
-      else if(next_timeout.tv_sec > (INT_MAX/1002))
+      else if(next_timeout->tv_sec > (INT_MAX/1002))
 	poll_timeout = INT_MAX;
       else
-	poll_timeout = (next_timeout.tv_sec*1000) +
-	  next_timeout.tv_usec/1000;
+	poll_timeout = (next_timeout->tv_sec*1000) +
+	  next_timeout->tv_usec/1000;
 #elif defined(TIMEOUT_IS_TIMEVAL)
-      poll_timeout = next_timeout;
+      poll_timeout = *next_timeout;
 #elif defined(TIMEOUT_IS_TIMESPEC)
-      poll_timeout.tv_sec = next_timeout.tv_sec;
-      poll_timeout.tv_nsec = next_timeout.tv_usec*1000;
+      poll_timeout.tv_sec = next_timeout->tv_sec;
+      poll_timeout.tv_nsec = next_timeout->tv_usec*1000;
 #else
 #error Unknown timeout method.
 #endif /* TIMEOUT_IS_* */
@@ -3576,7 +3590,7 @@ PIKECLASS GenericBackend
 	goto backend_round_done;
     }
 
-    call_callback(& me->backend_callbacks, (void *)(ptrdiff_t)1);
+    call_callback(&me->backend_callbacks, NULL);
 
   backend_round_done:
     if (!done_something)
