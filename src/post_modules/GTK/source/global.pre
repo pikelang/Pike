@@ -35,7 +35,7 @@ static void backend_callback(struct callback *_cb,
       timeout.tv_usec-=1000000;
       timeout.tv_sec+=1;
     }
-    backend_lower_timeout(&timeout);
+    backend_lower_timeout(backend, &timeout);
   } else
     while(g_main_iteration( 0 ) );
 }
