@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.52 2007/06/27 15:40:57 grubba Exp $
+|| $Id: odbc_result.c,v 1.53 2007/06/27 15:41:40 grubba Exp $
 */
 
 /*
@@ -41,7 +41,7 @@
 
 #ifdef HAVE_ODBC
 
-#define ODBC_DEBUG
+/* #define ODBC_DEBUG */
 
 /*
  * Constants
