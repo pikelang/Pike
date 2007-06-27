@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.44 2007/06/19 13:32:03 grubba Exp $
+|| $Id: odbc_result.c,v 1.45 2007/06/27 15:41:20 grubba Exp $
 */
 
 /*
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.44 2007/06/19 13:32:03 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.45 2007/06/27 15:41:20 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -521,7 +521,8 @@ static void f_fetch_row(INT32 args)
 				     PIKE_ODBC_RES->field_info[i].type,
 				     blob_buf, BLOB_BUFSIZ
 #ifdef SQL_WCHAR
-				     * sizeof(SQLWCHAR)
+				     * ((PIKE_ODBC_RES->field_info[i].type ==
+					 SQL_C_WCHAR)?sizeof(SQLWCHAR):1)
 #endif
 				     , &len)
 #ifdef SQL_WCHAR
@@ -570,9 +571,13 @@ static void f_fetch_row(INT32 args)
 	    } else {
 	      /* SQL_C_CHAR and SQL_C_WCHAR's are NUL-terminated... */
 #ifdef SQL_WCHAR
-	      push_sqlwchar((SQLWCHAR *)blob_buf, BLOB_BUFSIZ - 1);
-#else
-	      push_string(make_shared_binary_string(blob_buf, BLOB_BUFSIZ - 1));
+	      if (PIKE_ODBC_RES->field_info[i].type == SQL_C_WCHAR) {
+		push_sqlwchar((SQLWCHAR *)blob_buf, BLOB_BUFSIZ - 1);
+	      } else {
+#endif
+		push_string(make_shared_binary_string(blob_buf, BLOB_BUFSIZ - 1));
+#ifdef SQL_WCHAR
+	      }
 #endif
 	    }
 	  } else {
@@ -607,7 +612,8 @@ static void f_fetch_row(INT32 args)
 				PIKE_ODBC_RES->field_info[i].type,
 				buf, (len+1)
 #ifdef SQL_WCHAR
-				* sizeof(SQLWCHAR)
+				* ((PIKE_ODBC_RES->field_info[i].type ==
+				    SQL_C_WCHAR)?sizeof(SQLWCHAR):1)
 #endif
 				, &newlen);
 	      if (code != SQL_SUCCESS) {
