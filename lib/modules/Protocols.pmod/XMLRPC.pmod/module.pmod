@@ -14,6 +14,7 @@
 //! Pike @expr{float@} is translated to XML-RPC @tt{<double>@}.
 //! Pike @expr{mapping@} is translated to XML-RPC @tt{<struct>@}.
 //! Pike @expr{array@} is translated to XML-RPC @tt{<array>@}.
+//! Pike @[Calendar] object is translated to XML-RPC @tt{<dateTime.iso8601@}.
 //!
 //! Translation rules for conversions from XML-RPC datatypes to Pike
 //! datatypes:
@@ -25,14 +26,12 @@
 //! XML_RPC @tt{<double>@} is translated to Pike @expr{float@}.
 //! XML-RPC @tt{<struct>@} is translated to Pike @expr{mapping@}.
 //! XML-RPC @tt{<array>@} is translated to Pike @expr{array@}.
-//! XML-RPC @tt{<dateTime.iso8601>@} is translated to Pike Calendar object.
+//! XML-RPC @tt{<dateTime.iso8601>@} is translated to Pike @[Calendar] object.
 //!
 //! @note
-//! The XML-RPC @tt{<dateTime.iso8601>@} datatype is currently only
-//! partially implemented. It is decoded but cannot be encoded. Also,
-//! the code here does not assume any particular timezone (which is
-//! correct according to the specification). The Calendar module,
-//! however, seems to assume localtime.
+//! The XML-RPC @tt{<dateTime.iso8601>@} datatype does not assume any
+//! time zone, but local time is always used in the conversion to
+//! @[Calendar] objects.
 //!
 
 //! Represents a function call made to a XML-RPC server.
@@ -231,7 +230,7 @@ static mixed decode(string xml_input, string dtd_input)
 			     case "double":
 			       return (float)(data*"");
 			     case "string":
-			       return StringWrap(data*"");
+			       return StringWrap(data ? data*"" : "");
 			     case "name":
 			     case "methodName":
 			       return data*"";
@@ -300,6 +299,9 @@ static string encode(int|float|string|mapping|array value)
       r += encode(value[name]);
     r += "</data>\n</array>\n";
   }
+  else if (objectp (value) && value->format_iso_short)
+    r += "<dateTime.iso8601>" + value->format_iso_short() +
+      "</dateTime.iso8601>";
   else
     error("Cannot encode %O.\n", value);
   return r+"</value>\n";
@@ -345,6 +347,11 @@ class Client(string|Standards.URI url)
 	       HTTP.do_method("POST", url, 0, ([ "Content-Type":"text/xml"]),
 			      0, encode_call( call, args ));
 	     if(!c) error("Could not connect to %O\n", url);
+	     if (c->status != 200)
+	       // The xml-rpc spec says "Unless there's a lower-level
+	       // error, always return 200 OK."
+	       error ("Got invalid return code %d from %O: %O\n", c->status,
+		      url, c->status_desc);
 	     return decode_response(c->data());
 	   };
   }
@@ -388,8 +395,12 @@ class AsyncClient
   static void _data_ok()
   {
     mixed result;
-    if(request)
-      result = decode_response(request->data());
+    if(request) {
+      if (request->status == 200)
+	// The xml-rpc spec says "Unless there's a lower-level error,
+	// always return 200 OK."
+	result = decode_response(request->data());
+    }
     user_data_ok(result);
   }
 
