@@ -14,6 +14,7 @@
 //! Pike @code{float@} is translated to XML-RPC @tt{<double>@}.
 //! Pike @code{mapping@} is translated to XML-RPC @tt{<struct>@}.
 //! Pike @code{array@} is translated to XML-RPC @tt{<array>@}.
+//! Pike @[Calendar] object is translated to XML-RPC @tt{<dateTime.iso8601@}.
 //!
 //! Translation rules for conversions from XML-RPC datatypes to Pike
 //! datatypes:
@@ -25,14 +26,12 @@
 //! XML_RPC @tt{<double>@} is translated to Pike @code{float@}.
 //! XML-RPC @tt{<struct>@} is translated to Pike @code{mapping@}.
 //! XML-RPC @tt{<array>@} is translated to Pike @code{array@}.
-//! XML-RPC @tt{<dateTime.iso8601>@} is translated to Pike Calendar object.
+//! XML-RPC @tt{<dateTime.iso8601>@} is translated to Pike @[Calendar] object.
 //!
 //! @note
-//! The XML-RPC @tt{<dateTime.iso8601>@} datatype is currently only
-//! partially implemented. It is decoded but cannot be encoded. Also,
-//! the code here does not assume any particular timezone (which is
-//! correct according to the specification). The Calendar module,
-//! however, seems to assume localtime.
+//! The XML-RPC @tt{<dateTime.iso8601>@} datatype does not assume any
+//! time zone, but local time is always used in the conversion to
+//! @[Calendar] objects.
 //!
 
 //! Represents a function call made to a XML-RPC server.
@@ -229,7 +228,7 @@ static mixed decode(string xml_input, string dtd_input)
 			     case "double":
 			       return (float)(data*"");
 			     case "string":
-                               mystring->s = data*"";
+			       mystring->s = data ? data*"" : "";
                                return mystring;
 			     case "name":
 			     case "methodName":
@@ -300,6 +299,9 @@ static string encode(int|float|string|mapping|array value)
       r += encode(value[name]);
     r += "</data>\n</array>\n";
   }
+  else if (objectp (value) && value->format_iso_short)
+    r += "<dateTime.iso8601>" + value->format_iso_short() +
+      "</dateTime.iso8601>";
   else
     error("Cannot encode %O.\n", value);
   return r+"</value>\n";
@@ -347,6 +349,12 @@ class Client(string|Standards.URI url)
 					       ([ "Content-Type":"text/xml"]),
 					       0,
 					       encode_call( call, args ));
+	     if(!c) error("Could not connect to %O\n", url);
+	     if (c->status != 200)
+	       // The xml-rpc spec says "Unless there's a lower-level
+	       // error, always return 200 OK."
+	       error ("Got invalid return code %d from %O: %O\n", c->status,
+		      url, c->status_desc);
 	     return decode_response(c->data());
 	   };
   }
