@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.308 2007/05/09 15:58:03 grubba Exp $
+|| $Id: pike_types.c,v 1.309 2007/06/29 17:06:05 grubba Exp $
 */
 
 #include "global.h"
@@ -48,6 +48,11 @@
 #define LE_A_B_SWAPPED	2	/* Argument A and B have been swapped.
 				 * Relevant for markers.
 				 */
+#define LE_A_GROUPED	0/*4*/	/* Argument A has been grouped.
+				 * Perform weaker checking for OR-nodes. */
+#define LE_B_GROUPED	0/*8*/	/* Argument B has been grouped.
+				 * Perform weaker checking for OR-nodes. */
+#define LE_A_B_GROUPED	0/*12*/	/* Both the above two flags. */
 
 /*
  * Flags used by low_get_first_arg_type()
@@ -3759,15 +3764,19 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     goto recurse;
 
   case T_OR:
-    /* OK, if both of the parts are a subset */
+    /* OK, if both of the parts are a subset,
+     * unless we are grouped, in which case
+     * only one part needs to be a subset.
+     */
     if (a->car->type == T_VOID) {
       /* Special case for T_VOID */
       /* FIXME: Should probably be handled as T_ZERO. */
+      if (flags & LE_A_GROUPED) return 1;
       a = a->cdr;
       goto recurse;
     } else {
       ret = low_pike_types_le(a->car, b, array_cnt, flags);
-      if (!ret) return 0;
+      if (!ret == !(flags & LE_A_GROUPED)) return ret;
       if (a->cdr->type == T_VOID) {
 	/* Special case for T_VOID */
 	/* FIXME: Should probably be handled as T_ZERO. */
@@ -3783,6 +3792,8 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     goto recurse;
 
   case PIKE_T_SCOPE:
+    flags |= LE_A_GROUPED;
+    /* FALL_THROUGH */
   case PIKE_T_NAME:
   case PIKE_T_ATTRIBUTE:
     a = a->cdr;
@@ -3794,7 +3805,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       a = b->car;
       b = tmp;
       array_cnt = -array_cnt;
-      flags ^= LE_A_B_SWAPPED;
+      flags ^= LE_A_B_SWAPPED|LE_A_B_GROUPED;
       goto recurse;
     }
     /* Some common cases. */
@@ -3814,7 +3825,8 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       return 0;
     }
     /* FIXME: This is wrong... */
-    return !low_pike_types_le(b, a->car, -array_cnt, flags ^ LE_A_B_SWAPPED);
+    return !low_pike_types_le(b, a->car, -array_cnt,
+			      flags ^ (LE_A_B_SWAPPED|LE_A_B_GROUPED));
 
   case T_ASSIGN:
     ret = low_pike_types_le(a->cdr, b, array_cnt, flags);
@@ -3894,9 +3906,12 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     goto recurse;
 
   case T_OR:
-    /* OK if a is a subset of either of the parts. */
-    ret=low_pike_types_le(a, b->car, array_cnt, flags);
-    if (ret) return ret;
+    /* OK if a is a subset of either of the parts,
+     * unless we are grouped, in which case both
+     * parts need to be a subset.
+     */
+    ret = low_pike_types_le(a, b->car, array_cnt, flags);
+    if (!ret != !(flags & LE_B_GROUPED)) return ret;
     b = b->cdr;
     goto recurse;
 
@@ -3905,6 +3920,8 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     goto recurse;
 
   case PIKE_T_SCOPE:
+    flags |= LE_B_GROUPED;
+    /* FALL_THROUGH */
   case PIKE_T_NAME:
   case PIKE_T_ATTRIBUTE:
     b = b->cdr;
@@ -3928,7 +3945,8 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       return 0;
     }
     /* FIXME: This is wrong... */
-    return !low_pike_types_le(b->car, a, -array_cnt, flags ^ LE_A_B_SWAPPED);
+    return !low_pike_types_le(b->car, a, -array_cnt,
+			      flags ^ (LE_A_B_SWAPPED|LE_A_B_GROUPED));
 
   case T_ASSIGN:
     ret = low_pike_types_le(a, b->cdr, array_cnt, flags);
@@ -4142,7 +4160,8 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       }
 
       if (a_tmp->type != T_VOID) {
-	if (!low_pike_types_le(b_tmp, a_tmp, 0, flags ^ LE_A_B_SWAPPED)) {
+	if (!low_pike_types_le(b_tmp, a_tmp, 0,
+			       flags ^ (LE_A_B_SWAPPED|LE_A_B_GROUPED))) {
 	  return 0;
 	}
       }
@@ -4151,7 +4170,8 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
   case TWOT(T_MANY, T_MANY):
     /* check the 'many' type */
     if ((a->car->type != T_VOID) && (b->car->type != T_VOID)) {
-      if (!low_pike_types_le(b->car, a->car, 0, flags ^ LE_A_B_SWAPPED)) {
+      if (!low_pike_types_le(b->car, a->car, 0,
+			     flags ^ (LE_A_B_SWAPPED|LE_A_B_GROUPED))) {
 	return 0;
       }
     }
@@ -5278,10 +5298,18 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
  loop:
   switch(soft_type->type) {
   case T_OR:
-    res = or_pike_types(tmp = soft_cast(soft_type->car, orig_type, flags),
-			tmp2 = soft_cast(soft_type->cdr, orig_type, flags), 1);
+    tmp = soft_cast(soft_type->car, orig_type, flags);
+    if (tmp == orig_type) return tmp;
+    tmp2 = soft_cast(soft_type->cdr, orig_type, flags);
+    if (tmp2 == orig_type) {
+      res = tmp2;
+      tmp2 = NULL;
+    } else {
+      res = or_pike_types(tmp, tmp2, 1);
+    }
     break;
   case T_AND:
+    /* FIXME: Make stricter analogous to OR above. */
     res = and_pike_types(tmp = soft_cast(soft_type->car, orig_type, flags),
 			 tmp2 = soft_cast(soft_type->cdr, orig_type, flags));
     break;
@@ -5321,11 +5349,18 @@ struct pike_type *soft_cast(struct pike_type *soft_type,
   loop2:
     switch(orig_type->type) {
     case T_OR:
-      res = or_pike_types(tmp = soft_cast(soft_type, orig_type->car, flags),
-			  tmp2 = soft_cast(soft_type, orig_type->cdr, flags),
-			  1);
+      tmp = soft_cast(soft_type, orig_type->car, flags);
+      if (tmp == soft_type) return tmp;
+      tmp2 = soft_cast(soft_type, orig_type->cdr, flags);
+      if (tmp2 == soft_type) {
+	res = tmp2;
+	tmp2 = NULL;
+      } else {
+	res = or_pike_types(tmp, tmp2, 1);
+      }
       break;
     case T_AND:
+      /* FIXME: Make stricter analogous to OR above. */
       res = and_pike_types(tmp = soft_cast(soft_type, orig_type->car, flags),
 			   tmp2 = soft_cast(soft_type, orig_type->cdr, flags));
       break;
