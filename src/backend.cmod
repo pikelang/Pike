@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.203 2007/06/26 17:10:01 grubba Exp $
+ * $Id: backend.cmod,v 1.204 2007/06/29 11:17:55 grubba Exp $
  *
  * Backend object.
  */
@@ -1689,8 +1689,6 @@ PIKECLASS Backend
   static void low_backend_once_setup(struct Backend_struct *me,
 				     struct timeval *start_time)
   {
-    ONERROR uwp;
-    int i, done_something = 0;
 #ifdef PIKE_DEBUG
     struct timeval max_timeout;
 #endif
