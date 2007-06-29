@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.41 2007/06/20 11:41:03 grubba Exp $
+|| $Id: odbc.c,v 1.42 2007/06/29 14:46:01 grubba Exp $
 */
 
 /*
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.41 2007/06/20 11:41:03 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.42 2007/06/29 14:46:01 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -61,18 +61,17 @@ HENV odbc_henv = SQL_NULL_HENV;
  */
 
 #ifdef SQL_WCHAR
-void push_sqlwchar(SQLWCHAR *str, size_t num_bytes)
+struct pike_string *make_shared_binary_sqlwchar(SQLWCHAR *str,
+						size_t len)
 {
   int shift = 1;
-  struct pike_string *res;
   if (sizeof(SQLWCHAR) == 4) shift = 2;
-#ifdef PIKE_DEBUG
-  if (num_bytes & ((1<<shift)-1)) {
-    Pike_fatal("Odd number of bytes to push_wstring(): "
-	       "%zd (shift:%d) (sz:%d)\n", num_bytes, shift, sizeof(SQLWCHAR));
-  }
-#endif /* PIKE_DEBUG */
-  push_string(make_shared_binary_pcharp(MKPCHARP(str, shift), num_bytes>>shift));
+  return make_shared_binary_pcharp(MKPCHARP(str, shift), len);
+}
+
+void push_sqlwchar(SQLWCHAR *str, size_t len)
+{
+  push_string(make_shared_binary_sqlwchar(str, len));
 }
 #endif /* SQL_WCHAR */
 
