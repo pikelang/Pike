@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.382 2007/06/17 01:33:51 mast Exp $
+|| $Id: interpret.c,v 1.383 2007/07/01 12:34:41 grubba Exp $
 */
 
 #include "global.h"
@@ -1784,11 +1784,12 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
       CHECK_INTERPRETER_LOCK();
 
-      if( Pike_interpreter.thread_state &&
-	  !th_equal(Pike_interpreter.thread_state->id, self) )
-	Pike_fatal("Current thread is wrong.\n");
+      if (Pike_interpreter.thread_state) {
+	if (!th_equal(Pike_interpreter.thread_state->id, self))
+	  Pike_fatal("Current thread is wrong.\n");
 
-      DEBUG_CHECK_THREAD();
+	DEBUG_CHECK_THREAD();
+      }
     }
 #endif
 
