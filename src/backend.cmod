@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.205 2007/07/02 08:57:30 grubba Exp $
+ * $Id: backend.cmod,v 1.206 2007/07/02 16:07:30 grubba Exp $
  *
  * Backend object.
  */
@@ -2666,9 +2666,9 @@ void MY_FD_CLR(struct selectors *me, int fd, int setno)
   if(fd == me->max_fd)
   {
     while(me->max_fd >=0 &&
-	  !my_FD_ISSET(me->max_fd, &me->sets + MY_READSET) &&
-	  !my_FD_ISSET(me->max_fd, &me->sets + MY_WRITESET)
-	  && !my_FD_ISSET(me->max_fd, &me->sets + MY_EXCEPTSETS)
+	  !my_FD_ISSET(me->max_fd, me->sets + MY_READSET) &&
+	  !my_FD_ISSET(me->max_fd, me->sets + MY_WRITESET)
+	  && !my_FD_ISSET(me->max_fd, me->sets + MY_EXCEPTSET)
       )
       me->max_fd--;
   }
@@ -3056,9 +3056,9 @@ PIKECLASS GenericBackend
 #ifdef BACKEND_USES_SELECT
       for(e=0;e<=gb->set.max_fd;e++)
       {
-	if(my_FD_ISSET(e, &gb->set.read)
-	   || my_FD_ISSET(e, &gb->set.write)
-	   || my_FD_ISSET(e, &gb->set.except)
+	if(my_FD_ISSET(e, gb->set.sets + MY_READSET)
+	   || my_FD_ISSET(e, gb->set.sets + MY_WRITESET)
+	   || my_FD_ISSET(e, gb->set.sets + MY_EXCEPTSET)
 	  )
 	{
 	  int ret;
@@ -3274,7 +3274,7 @@ PIKECLASS GenericBackend
 
 	box->revents = 0;
 
-	if(fd_FD_ISSET(i, &gb->active_set.eset)) {
+	if(fd_FD_ISSET(i, gb->active_set.asets + MY_EXCEPTSET)) {
 	  /* Check for errors. GNU libc says this isn't set on error, but
 	   * POSIX does. FIXME: What bits will be set for errors on GNU
 	   * systems, then? Should we always check for that? */
@@ -3292,13 +3292,13 @@ PIKECLASS GenericBackend
 	  }
 	}
 	  
-	if(fd_FD_ISSET(i, &gb->active_set.rset)) {
+	if(fd_FD_ISSET(i, gb->active_set.asets + MY_READSET)) {
 	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read on %d\n",
 			THR_NO, me->id, i));
 	  box->revents |= PIKE_BIT_FD_READ;
 	}
 	  
-	if(fd_FD_ISSET(i, &gb->active_set.wset)) {
+	if(fd_FD_ISSET(i, gb->active_set.asets + MY_WRITESET)) {
 	  IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write on %d\n",
 			THR_NO, me->id, i));
 	  /* OOB can by BSD definition always be written, so if we can
@@ -3528,16 +3528,16 @@ PIKECLASS GenericBackend
 	  case EBADF:
 	    {
 	      FOR_EACH_ACTIVE_FD_BOX (me, box) {
-		fd_FD_ZERO(& gb->active_set.rset);
-		fd_FD_ZERO(& gb->active_set.wset);
-		fd_FD_ZERO(& gb->active_set.eset);
+		fd_FD_ZERO(gb->active_set.asets + MY_READSET);
+		fd_FD_ZERO(gb->active_set.asets + MY_WRITESET);
+		fd_FD_ZERO(gb->active_set.asets + MY_EXCEPTSET);
 		    
-		if(my_FD_ISSET(box->fd, &gb->set.read))
-		  fd_FD_SET(box->fd, & gb->active_set.rset);
-		if(my_FD_ISSET(box->fd, &gb->set.write))
-		  fd_FD_SET(box->fd, & gb->active_set.wset);
-		if(my_FD_ISSET(box->fd, &gb->set.except))
-		  fd_FD_SET(box->fd, & gb->active_set.eset);
+		if(my_FD_ISSET(box->fd, gb->set.sets + MY_READSET))
+		  fd_FD_SET(box->fd, gb->active_set.asets + MY_READSET);
+		if(my_FD_ISSET(box->fd, gb->set.sets + MY_WRITESET))
+		  fd_FD_SET(box->fd, gb->active_set.asets + MY_WRITESET);
+		if(my_FD_ISSET(box->fd, gb->set.sets + MY_EXCEPTSET))
+		  fd_FD_SET(box->fd, gb->active_set.asets + MY_EXCEPTSET);
 		    
 		timeout->tv_usec=0;
 		timeout->tv_sec=0;
@@ -3710,9 +3710,9 @@ PIKECLASS GenericBackend
     THIS->active_set.num_in_poll=0;
 #else /* !HAVE_POLL */
     THIS->set.max_fd=0;
-    my_FD_ZERO(&THIS->set.read);
-    my_FD_ZERO(&THIS->set.write);
-    my_FD_ZERO(&THIS->set.except);
+    my_FD_ZERO(THIS->set.sets + MY_READSET);
+    my_FD_ZERO(THIS->set.sets + MY_WRITESET);
+    my_FD_ZERO(THIS->set.sets + MY_EXCEPTSET);
     /* FIXME: Should there be something else here? */
     /* me->set.num_fds=0; */
 #endif /* OPEN_POLL_DEVICE || HAVE_POLL */
