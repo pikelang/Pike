@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.204 2007/06/29 11:17:55 grubba Exp $
+ * $Id: backend.cmod,v 1.205 2007/07/02 08:57:30 grubba Exp $
  *
  * Backend object.
  */
@@ -2623,65 +2623,72 @@ int MY_FD_SET(int *pfd, int fd, int filter)
 
 #define TIMEOUT_IS_TIMEVAL
 
+#define MY_READSET	0
+#define MY_WRITESET	1
+#define MY_EXCEPTSET	2
+/* except == incoming OOB data (or error according to POSIX)
+ * outgoing OOB data is multiplexed on write
+ */
+
 struct selectors
 {
   int max_fd;
-  my_fd_set read;
-  my_fd_set write;
-  /* except == incoming OOB data (or error according to POSIX)
-   * outgoing OOB data is multiplexed on write
-   */
-  my_fd_set except;
+  my_fd_set sets[3];
 };
 
 struct active_selectors
 {
-  fd_set rset, wset;
-  fd_set eset;
+  fd_set asets[3];
   int max_fd;
 };
 
-#define MY_POLLIN &me->set.read
-#define MY_POLLOUT &me->set.write
+#define MY_POLLIN MY_READSET
+#define MY_POLLOUT MY_WRITESET
 
-#define MY_POLLEXCEPT &me->set.except
-#define MY_POLLRDBAND &me->set.except
-#define MY_POLLWREXCEPT &me->set.write
-#define MY_POLLWRBAND &me->set.write
+#define MY_POLLEXCEPT MY_EXCEPTSET
+#define MY_POLLRDBAND MY_EXCEPTSET
+#define MY_POLLWREXCEPT MY_WRITESET
+#define MY_POLLWRBAND MY_WRITESET
 
 #define RDBAND_IS_SPECIAL
 
-#define MY_POLL(SET, TIMEOUT)	\
-  fd_select((SET).max_fd + 1, &(SET).rset, &(SET).wset, &(SET).eset,	\
+#define MY_POLL(SET, TIMEOUT)					\
+  fd_select((SET).max_fd + 1,					\
+	    (SET).asets + MY_READSET,				\
+	    (SET).asets + MY_WRITESET,				\
+	    (SET).asets + MY_EXCEPTSET,				\
 	    (TIMEOUT).tv_sec >= 100000000 ? NULL : &(TIMEOUT))
 
-void MY_FD_CLR(struct selectors *me, int fd, my_fd_set *s)
+void MY_FD_CLR(struct selectors *me, int fd, int setno)
 {
   if(fd > me->max_fd) return;
-  my_FD_CLR(fd, s);
+  my_FD_CLR(fd, me->sets + setno);
   if(fd == me->max_fd)
   {
     while(me->max_fd >=0 &&
-	  !my_FD_ISSET(me->max_fd, &me->read) &&
-	  !my_FD_ISSET(me->max_fd, &me->write)
-	  && !my_FD_ISSET(me->max_fd, &me->except)
+	  !my_FD_ISSET(me->max_fd, &me->sets + MY_READSET) &&
+	  !my_FD_ISSET(me->max_fd, &me->sets + MY_WRITESET)
+	  && !my_FD_ISSET(me->max_fd, &me->sets + MY_EXCEPTSETS)
       )
       me->max_fd--;
   }
 }
 
-void MY_FD_SET(struct selectors *me, int fd, my_fd_set *s)
+void MY_FD_SET(struct selectors *me, int fd, int setno)
 {
-  my_FD_SET(fd, s);
+  my_FD_SET(fd, me->sets + setno);
   if(fd > me->max_fd) me->max_fd=fd;
 }
 
 static void copy_selectors(struct active_selectors *to,
 			   struct selectors *from)
 {
-  fd_copy_my_fd_set_to_fd_set(&to->rset, &from->read, from->max_fd+1);
-  fd_copy_my_fd_set_to_fd_set(&to->wset, &from->write, from->max_fd+1);
-  fd_copy_my_fd_set_to_fd_set(&to->eset, &from->except, from->max_fd+1);
+  fd_copy_my_fd_set_to_fd_set(to->asets + MY_READSET,
+			      from->sets + MY_READSET, from->max_fd+1);
+  fd_copy_my_fd_set_to_fd_set(to->asets + MY_WRITESET,
+			      from->sets + MY_WRITESET, from->max_fd+1);
+  fd_copy_my_fd_set_to_fd_set(to->asets + MY_EXCEPTSET,
+			      from->sets + MY_EXCEPTSET, from->max_fd+1);
   to->max_fd=from->max_fd;
 }
 
