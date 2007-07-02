@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.309 2007/06/29 17:06:05 grubba Exp $
+|| $Id: pike_types.c,v 1.310 2007/07/02 10:49:10 grubba Exp $
 */
 
 #include "global.h"
@@ -48,11 +48,13 @@
 #define LE_A_B_SWAPPED	2	/* Argument A and B have been swapped.
 				 * Relevant for markers.
 				 */
+#ifdef TYPE_GROUPING
 #define LE_A_GROUPED	0/*4*/	/* Argument A has been grouped.
 				 * Perform weaker checking for OR-nodes. */
 #define LE_B_GROUPED	0/*8*/	/* Argument B has been grouped.
 				 * Perform weaker checking for OR-nodes. */
 #define LE_A_B_GROUPED	0/*12*/	/* Both the above two flags. */
+#endif
 
 /*
  * Flags used by low_get_first_arg_type()
@@ -3771,12 +3773,18 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     if (a->car->type == T_VOID) {
       /* Special case for T_VOID */
       /* FIXME: Should probably be handled as T_ZERO. */
+#ifdef TYPE_GROUPING
       if (flags & LE_A_GROUPED) return 1;
+#endif
       a = a->cdr;
       goto recurse;
     } else {
       ret = low_pike_types_le(a->car, b, array_cnt, flags);
+#ifdef TYPE_GROUPING
       if (!ret == !(flags & LE_A_GROUPED)) return ret;
+#else
+      if (!ret) return 0;
+#endif
       if (a->cdr->type == T_VOID) {
 	/* Special case for T_VOID */
 	/* FIXME: Should probably be handled as T_ZERO. */
@@ -3792,7 +3800,9 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     goto recurse;
 
   case PIKE_T_SCOPE:
+#ifdef TYPE_GROUPING
     flags |= LE_A_GROUPED;
+#endif
     /* FALL_THROUGH */
   case PIKE_T_NAME:
   case PIKE_T_ATTRIBUTE:
@@ -3805,7 +3815,11 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
       a = b->car;
       b = tmp;
       array_cnt = -array_cnt;
-      flags ^= LE_A_B_SWAPPED|LE_A_B_GROUPED;
+      flags ^= LE_A_B_SWAPPED
+#ifdef TYPE_GROUPING
+	|LE_A_B_GROUPED
+#endif
+	;
       goto recurse;
     }
     /* Some common cases. */
@@ -3826,7 +3840,11 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     }
     /* FIXME: This is wrong... */
     return !low_pike_types_le(b, a->car, -array_cnt,
-			      flags ^ (LE_A_B_SWAPPED|LE_A_B_GROUPED));
+			      flags ^ (LE_A_B_SWAPPED
+#ifdef TYPE_GROUPING
+				       |LE_A_B_GROUPED
+#endif
+				       ));
 
   case T_ASSIGN:
     ret = low_pike_types_le(a->cdr, b, array_cnt, flags);
@@ -3911,7 +3929,11 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
      * parts need to be a subset.
      */
     ret = low_pike_types_le(a, b->car, array_cnt, flags);
+#ifdef TYPE_GROUPING
     if (!ret != !(flags & LE_B_GROUPED)) return ret;
+#else
+    if (ret) return ret;
+#endif
     b = b->cdr;
     goto recurse;
 
@@ -3920,7 +3942,9 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     goto recurse;
 
   case PIKE_T_SCOPE:
+#ifdef TYPE_GROUPING
     flags |= LE_B_GROUPED;
+#endif
     /* FALL_THROUGH */
   case PIKE_T_NAME:
   case PIKE_T_ATTRIBUTE:
@@ -3946,7 +3970,11 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     }
     /* FIXME: This is wrong... */
     return !low_pike_types_le(b->car, a, -array_cnt,
-			      flags ^ (LE_A_B_SWAPPED|LE_A_B_GROUPED));
+			      flags ^ (LE_A_B_SWAPPED
+#ifdef TYPE_GROUPING
+				       |LE_A_B_GROUPED
+#endif
+				       ));
 
   case T_ASSIGN:
     ret = low_pike_types_le(a, b->cdr, array_cnt, flags);
@@ -4161,7 +4189,11 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
 
       if (a_tmp->type != T_VOID) {
 	if (!low_pike_types_le(b_tmp, a_tmp, 0,
-			       flags ^ (LE_A_B_SWAPPED|LE_A_B_GROUPED))) {
+			       flags ^ (LE_A_B_SWAPPED
+#ifdef TYPE_GROUPING
+					|LE_A_B_GROUPED
+#endif
+					))) {
 	  return 0;
 	}
       }
@@ -4171,7 +4203,11 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     /* check the 'many' type */
     if ((a->car->type != T_VOID) && (b->car->type != T_VOID)) {
       if (!low_pike_types_le(b->car, a->car, 0,
-			     flags ^ (LE_A_B_SWAPPED|LE_A_B_GROUPED))) {
+			     flags ^ (LE_A_B_SWAPPED
+#ifdef TYPE_GROUPING
+				      |LE_A_B_GROUPED
+#endif
+				      ))) {
 	return 0;
       }
     }
