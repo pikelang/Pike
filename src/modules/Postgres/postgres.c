@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.50 2007/04/18 13:25:06 grubba Exp $
+|| $Id: postgres.c,v 1.51 2007/07/03 06:32:21 mast Exp $
 */
 
 /*
@@ -44,7 +44,7 @@
 #define THIS ((struct pgres_object_data *) (Pike_fp->current_storage))
 
 /* Actual code */
-#ifdef _REENTRANT
+#ifdef PIKE_THREADS
 # ifdef PQ_THREADSAFE
 #  define PQ_FETCH() PIKE_MUTEX_T *pg_mutex = &THIS->mutex;
 #  define PQ_LOCK() mt_lock(pg_mutex)
