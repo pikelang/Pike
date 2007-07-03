@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.40 2007/06/16 23:52:52 mast Exp $
+|| $Id: pike_error.h,v 1.41 2007/07/03 08:54:37 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -339,7 +339,7 @@ static INLINE void DECLSPEC(noreturn) out_of_memory_error (
   size_t amount)
 {
   resource_error (func, base_sp, args, "memory", amount,
-		  msg_out_of_mem_2, amount);
+		  amount ? msg_out_of_mem_2 : msg_out_of_mem, amount);
 }
 
 #define SIMPLE_OUT_OF_MEMORY_ERROR(FUNC, AMOUNT) \
