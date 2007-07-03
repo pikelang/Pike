@@ -130,7 +130,7 @@ class ExecTest(string id,Test test)
 	    memusage>0 ? sprintf("%5dkb", memusage/1024) : "   ?   ",
 	    "("+nruns+")",
 	    test->present_n
-	    ?" ("+(tg
+	    ?" ("+(tg != 0.0
 		   ?test->present_n(testntot,nruns,truns,tg,memusage)
 		   :"no time?")+")"
 	    :"");
