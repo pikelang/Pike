@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.244 2007/05/09 16:05:53 grubba Exp $
+|| $Id: encode.c,v 1.245 2007/07/03 09:52:07 grubba Exp $
 */
 
 #include "global.h"
@@ -4054,6 +4054,7 @@ static void decode_value2(struct decode_data *data)
 		/* identifier_offset */
 		ref.identifier_offset =
 		  Pike_compiler->new_program->num_identifiers;
+		add_to_identifiers(id);
 
 		/* ref.inherit_offset */
 		ref.inherit_offset = 0;
@@ -4082,7 +4083,6 @@ static void decode_value2(struct decode_data *data)
 			       "(expected %d, got %d) for ", no, n);
 		}
 
-		add_to_identifiers(id);
 		dmalloc_touch_svalue(Pike_sp-1);
 		dmalloc_touch_svalue(Pike_sp-2);
 		Pike_sp -= 2;
