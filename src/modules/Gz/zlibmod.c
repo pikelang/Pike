@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.82 2007/07/03 07:01:32 mast Exp $
+|| $Id: zlibmod.c,v 1.83 2007/07/05 12:41:58 grubba Exp $
 */
 
 #include "global.h"
@@ -169,7 +169,17 @@ static void gz_deflate_create(INT32 args)
 
   pop_n_elems(args);
 /*   mt_lock(& THIS->lock); */
-  tmp=deflateInit2(&THIS->gz, THIS->level, Z_DEFLATED, wbits, 9, strategy );
+  do {
+    tmp=deflateInit2(&THIS->gz, THIS->level, Z_DEFLATED, wbits, 9, strategy );
+    if (tmp == Z_STREAM_ERROR) {
+      /* zlib 1.1.4's deflateInit2() only supports wbits 9..15 (not 8). */
+      if (wbits == -8) wbits = -9;
+      else if (wbits == 8) wbits = 9;
+      else break;
+      continue;
+    }
+    break;
+  } while(1);
 /*   mt_unlock(& THIS->lock); */
   switch(tmp)
   {
@@ -262,7 +272,17 @@ void zlibmod_pack(struct pike_string *data, dynamic_buffer *buf,
   z.gz.next_in = (Bytef *)data->str;
   z.gz.avail_in = (unsigned INT32)(data->len);
 
-  ret = deflateInit2(&z.gz, level, Z_DEFLATED, wbits, 9, strategy);
+  do {
+    ret = deflateInit2(&z.gz, level, Z_DEFLATED, wbits, 9, strategy);
+    if (ret == Z_STREAM_ERROR) {
+      /* zlib 1.1.4's deflateInit2() only supports wbits 9..15 (not 8). */
+      if (wbits == -8) wbits = -9;
+      else if (wbits == 8) wbits = 9;
+      else break;
+      continue;
+    }
+    break;
+  } while(1);
 
   switch(ret)
   {
@@ -835,6 +855,10 @@ PIKE_MODULE_EXIT {}
 PIKE_MODULE_INIT
 {
 #ifdef HAVE_ZLIB_H
+  struct z_stream_s z;	/* Used to detect support for extensions. */
+  int have_rle = 0;
+  int have_fixed = 0;
+
   start_new_program();
   ADD_STORAGE(struct zipper);
   
@@ -850,11 +874,21 @@ PIKE_MODULE_INIT
   add_integer_constant("DEFAULT_STRATEGY", Z_DEFAULT_STRATEGY,0);
   add_integer_constant("FILTERED", Z_FILTERED,0);
   add_integer_constant("HUFFMAN_ONLY", Z_HUFFMAN_ONLY,0);
+
+  MEMSET(&z, 0, sizeof(z));
 #ifdef Z_RLE
-  add_integer_constant("RLE", Z_RLE,0);
+  if (deflateInit2(&z, 8, Z_DEFLATED, 9, 9, Z_RLE) == Z_OK) {
+    have_rle = 1;
+    deflateEnd(&z);
+    add_integer_constant("RLE", Z_RLE,0);
+  }
 #endif
 #ifdef Z_FIXED
-  add_integer_constant("FIXED", Z_FIXED,0);
+  if (deflateInit2(&z, 8, Z_DEFLATED, 9, 9, Z_FIXED) == Z_OK) {
+    have_fixed = 1;
+    deflateEnd(&z);
+    add_integer_constant("FIXED", Z_FIXED,0);
+  }
 #endif
 
   set_init_callback(init_gz_deflate);
@@ -890,10 +924,14 @@ PIKE_MODULE_INIT
   add_integer_constant("FILTERED", Z_FILTERED,0);
   add_integer_constant("HUFFMAN_ONLY", Z_HUFFMAN_ONLY,0);
 #ifdef Z_RLE
-  add_integer_constant("RLE", Z_RLE,0);
+  if (have_rle) {
+    add_integer_constant("RLE", Z_RLE,0);
+  }
 #endif
 #ifdef Z_FIXED
-  add_integer_constant("FIXED", Z_FIXED,0);
+  if (have_fixed) {
+    add_integer_constant("FIXED", Z_FIXED,0);
+  }
 #endif
 
   /* function(string,void|int:int) */
