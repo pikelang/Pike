@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.157 2007/04/10 12:13:04 grubba Exp $
+dnl $Id: aclocal.m4,v 1.158 2007/07/06 15:54:49 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -557,7 +557,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.157 2007/04/10 12:13:04 grubba Exp $
+  # $Id: aclocal.m4,v 1.158 2007/07/06 15:54:49 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -1099,6 +1099,12 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
         # cc/Solaris says the following regarding -xdepend:
         #
         # cc: Warning: illegal option -xdepend
+        pike_cv_option_$2=no
+      elif grep -i 'is deprecated' <conftezt.out.2 >/dev/null; then
+        # cc/Solaris (SunStudio 12) says the following regarding
+	# -xarch=generic64:
+        #
+        # cc: Warning: -xarch=generic64 is deprecated, use -m64 to create 64-bit programs
         pike_cv_option_$2=no
       else :; fi
       if test -f conftezt.out.2; then
