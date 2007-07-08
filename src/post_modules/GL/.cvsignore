@@ -1,5 +1,6 @@
 .pure
 auto.c
+auto.c.tmp
 config.cache
 config.h
 config.h.in
