@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.10 2007/04/26 10:58:19 grubba Exp $
+// $Id: module.pmod,v 1.11 2007/07/08 12:34:56 grubba Exp $
 
 #pike __REAL_VERSION__
 #if constant(GL) && constant(GL.glOrtho)
@@ -469,7 +469,8 @@ class TextureIDGenerator
 static IDGenerator texture_ids = TextureIDGenerator();
 static IDGenerator list_ids    = ListIDGenerator();
 // glGet(GL_MAX_LIGHTS) gives a bus error on MacOS X 10.6.1/i386.
-#if defined(__NT__) || defined(__APPLE__)
+// Same on Solaris 10/sparcv9.
+#if 1 /* defined(__NT__) || defined(__APPLE__) */
 static IDGenerator light_ids   = IDGenerator(0,7);
 #else
 static IDGenerator light_ids   = IDGenerator(0,glGet( GL_MAX_LIGHTS )-1);
