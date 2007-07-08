@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.11 2007/07/08 12:34:56 grubba Exp $
+// $Id: module.pmod,v 1.12 2007/07/08 21:24:20 nilsson Exp $
 
 #pike __REAL_VERSION__
 #if constant(GL) && constant(GL.glOrtho)
@@ -23,7 +23,7 @@ static constant drivers = ({ "SDL", "GTK" });
 //! @seealso
 //! @[init]
 array(string) get_drivers() {
-  return drivers;
+  return drivers + ({});
 }
 
 
@@ -51,12 +51,13 @@ void remove_reinit_callback( function(void:void) f ) {
 }
 
 // --- GL extension related code
-static multiset extensions;
+static multiset(string) extensions;
+
+//! Checks if the GL extension @[ext] is currently supported.
 int(0..1) has_extension( string ext )
 {
   if( !extensions )
-    extensions = (multiset)(glGetString( GL_EXTENSIONS )/" ");
-  werror("%O\n", extensions );
+    extensions = (multiset)(glGetString( GL_EXTENSIONS )/" ") - (<"">);
   return extensions[ ext ];
 }
 
@@ -276,7 +277,9 @@ void mirror_screen( string how )
 //!       @[get_drivers] is used.
 //!     @member function(.Events.Event:void) "event_callback"
 //!       This callback is called with a @[Events.Event] object
-//!       whenever an event is trapped by the driver.
+//!       whenever an event is trapped by the driver. If no event
+//!       callback is given, a callback that calls @expr{exit(0)@} on
+//!       Escape and Exit events is used.
 //!     @member function(float,int(0..1):void) "resize_callback"
 //!       This callback is called with the aspect whenever the drawing
 //!       area is resized, either by an event or explicitly by the program.
@@ -314,7 +317,8 @@ void init(void|mapping(string:mixed) options) {
     event_callback = options->event_callback;
   else
     event_callback = lambda(.Events.Event evt){
-		       if(evt->name=="Exit") exit(0);
+		       if( (< "Exit", "Escape" >)[evt->name] )
+                         exit(0);
 		     };
   if(options->resize_callback)
     resize_callback = options->resize_callback;
@@ -361,6 +365,10 @@ void init(void|mapping(string:mixed) options) {
   }
 
   toggle_fullscreen(fullscreen);
+
+  texture_ids = TextureIDGenerator();
+  list_ids    = ListIDGenerator();
+  light_ids   = IDGenerator(0,glGet( GL_MAX_LIGHTS )-1);
 }
 
 static void start_driver(string|array(string)|
@@ -466,15 +474,15 @@ class TextureIDGenerator
 #define TextureIDGenerator IDGenerator
 #endif
 
-static IDGenerator texture_ids = TextureIDGenerator();
-static IDGenerator list_ids    = ListIDGenerator();
-// glGet(GL_MAX_LIGHTS) gives a bus error on MacOS X 10.6.1/i386.
-// Same on Solaris 10/sparcv9.
-#if 1 /* defined(__NT__) || defined(__APPLE__) */
-static IDGenerator light_ids   = IDGenerator(0,7);
-#else
-static IDGenerator light_ids   = IDGenerator(0,glGet( GL_MAX_LIGHTS )-1);
-#endif
+static class ErrorIDGenerator
+{
+  int get() { error("GLUE driver not initialized.\n"); }
+  void free(int id) { error("GLUE driver not initialized.\n"); }
+}
+
+static IDGenerator texture_ids = ErrorIDGenerator();
+static IDGenerator list_ids    = ErrorIDGenerator();
+static IDGenerator light_ids   = ErrorIDGenerator();
 
 //! Allocate a hardwareaccelerated lightsource from OpenGL.
 //! @returns
