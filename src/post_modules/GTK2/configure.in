@@ -31,6 +31,8 @@ AC_PATH_PROG(PKG_CONFIG,${ac_tool_prefix}pkg-config,no)
 AC_SUBST(have_x11)
 AC_SUBST(pgtk_has_gtk_beta)
 pgtk_has_gtk_beta=nogtk_beta
+AC_SUBST(pgtk_has_gtk212)
+pgtk_has_gtk212=nogtk212
 AC_SUBST(pgtk_has_gtk210)
 pgtk_has_gtk210=nogtk210
 AC_SUBST(pgtk_has_gtk28)
@@ -153,6 +155,10 @@ else
       if test $gtkminorvers -ge 10 ; then
 	pgtk_has_gtk210=gtk210
 	AC_DEFINE(HAVE_GTK210)
+      fi
+      if test $gtkminorvers -ge 12 ; then
+	pgtk_has_gtk212=gtk212
+	AC_DEFINE(HAVE_GTK212)
       fi
     fi
   ],,GTK2)
@@ -302,6 +308,7 @@ LIBS="$OLD_LIBS"
 CFLAGS="$OLD_CFLAGS"
 
 AC_SUBST(pgtk_has_libglade)
+AC_SUBST(pgtk_has_gtk212)
 AC_SUBST(pgtk_has_gtk210)
 AC_SUBST(pgtk_has_gtk28)
 AC_SUBST(pgtk_has_gtk26)

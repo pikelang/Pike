@@ -36,6 +36,7 @@ inherit GTK2.Object;
 //! int extension-events (CONST(GDK_EXTENSION_EVENTS_))
 //! int has-default
 //! int has-focus
+//! int has-tooltip
 //! int height-request
 //! int is-focus
 //! string name
@@ -44,6 +45,8 @@ inherit GTK2.Object;
 //! int receives-default
 //! int sensitive
 //! GTK2.Style style
+//! string tooltip-markup
+//! string tooltip-text
 //! int visible
 //! int width-request
 //! <p>
@@ -93,6 +96,9 @@ signal drag_drop;
 //! Called on the receiving side when the drop is initiated
 signal drag_end;
 //! Called when the drag is finished, on the sending side
+require gtk212;
+signal drag_failed;
+endrequire;
 signal drag_leave;
 //! Called when the mouse leaves the widget while the user is dragging something
 signal drag_motion;
@@ -110,7 +116,9 @@ signal focus_in_event;
 //! The keyboard focus has entered the widget
 signal focus_out_event;
 //! The keyboard focus has left the widget
+require gtk28;
 signal grab_broken_event;
+endrequire;
 signal grab_focus;
 signal grab_notify;
 signal hide;
@@ -120,6 +128,9 @@ signal key_press_event;
 //! Called when a keyboard key is pressed
 signal key_release_event;
 //! Called when a keyboard key is released
+require gtk212;
+signal keynav_failed;
+endrequire;
 signal leave_notify_event;
 //! Called when the mouse leaves the widget
 signal map;
@@ -138,6 +149,9 @@ signal property_notify_event;
 //! changed
 signal proximity_in_event;
 signal proximity_out_event;
+require gtk212;
+signal query_tooltip;
+endrequire;
 signal realize;
 //! Called when the widget is realized.  Some methods cannot be used until the
 //! widget has been realized; if you get assertion errors related to
@@ -760,6 +774,57 @@ require gtk210;
 
 int is_composited();
 //! Whether this widget can rely on having its alpha channel drawn correctly.
+endrequire;
+
+require gtk212;
+void error_bell();
+//! Notifies the user about an input-related error on this widget. If the 
+//! "gtk-error-bell" setting is TRUE, it calls gdk_window_beep(), otherwise it 
+//! does nothing
+
+int keynav_failed(int direction);
+//! This function should be called whenever keyboard navigation within a 
+//! single widget hits a boundary. The function emits the "keynav-changed" 
+//! signal on the widget and its return value should be interpreted in a way 
+//! similar to the return value of widget->child_focus():
+//! <p>
+//! When TRUE is returned, stay in the widget, the failed keyboard navigation 
+//! is Ok and/or there is nowhere we can/should move the focus to.
+//! <p>
+//! When FALSE is returned, the caller should continue with keyboard 
+//! navigation outside the widget, e.g. by calling widget->child_focus() 
+//! on the widget's toplevel.
+//! <p>
+//! The default ::keynav-failed handler returns TRUE for GTK_DIR.TAB_FORWARD 
+//! and GTK_DIR.TAB_BACKWARD. For the other values of GtkDirectionType, it 
+//! looks at the "gtk-keynav-cursor-only"" setting and returns FALSE if the 
+//! setting is TRUE. This way the entire user interface becomes 
+//! cursor-navigatable on input devices such as mobile phones which only have 
+//! cursor keys but no tab key.
+//! <p>
+//! Whenever the default handler returns TRUE, it also calls 
+//! widget->error_bell() to notify the user of the failed keyboard navigation. 
+
+string get_tooltip_markup();
+//! Gets the contents of the tooltip
+
+void set_tooltip_markup(string markup);
+//! Sets markup as the contents of the tooltip
+
+string get_tooltip_text();
+//! Gets the contents of the tooltip
+
+void set_tooltip_text(string text);
+//! Sets text as the contents of the tooltip.
+
+GTK2.Window get_tooltip_window();
+//! Returns the GtkWindow of the current tooltip
+
+void set_tooltip_window(GTK2.Window window);
+//! Replaces the default, usually yellow, window used for displaying tooltips.
+
+void trigger_tooltip_query();
+//! Triggers a tooltip query
 endrequire;
 
 void set_flags(int flags)
