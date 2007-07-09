@@ -30,13 +30,21 @@ require gtk26;
 endrequire;
 //! int is-active
 //! int modal
+require gtk212;
+//! float opacity
+endrequire;
 //! int resizable
 //! string role
 //! GDK2.Screen screen
 //! int skip-pager-hint
 //! int skip-taskbar-hint
+require gtk212;
+//! string startup-id
+endrequire;
 //! string title
+require gtk210;
 //! GTK2.Window transient-for
+endrequire;
 //! int type CONST(GTK_WINDOW_)
 //! int type-hint CONST(GDK_WINDOW_TYPE_HINT_)
 //! int urgency-hint
@@ -406,6 +414,18 @@ void set_focus_on_map(int setting);
 //! input focus when the window is mapped.
 endrequire;
 
+require gtk212;
+void set_startup_id(string id);
+//! Startup notification identifiers are used by desktop environment to 
+//! track application startup, to provide user feedback and other features. 
+//! This function changes the corresponding property on the underlying 
+//! GDK2.Window. Normally, startup identifier is managed automatically and 
+//! you should only use this function in special cases like transferring 
+//! focus from other processes. You should use this function before 
+//! calling window->present() or any equivalent function generating a 
+//! window map event.
+endrequire;
+
 int get_decorated();
 //! Returns whether the window has been set to have decorations such as a title
 //! bar.
@@ -668,6 +688,15 @@ endrequire;
 require gtk26;
 void set_icon_name(string name);
 //! Sets the icon for the window from a named themed icon.
+endrequire;
+
+require gtk212;
+float get_opacity();
+//! Fetches the requested opacity.
+
+void set_opacity(float opacity);
+//! Request the windowing system to make this window partially transparent,
+//! with opacity 0 being full transparent and 1 fully opaque.
 endrequire;
 
 void raise()

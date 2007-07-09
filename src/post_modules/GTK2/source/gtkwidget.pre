@@ -527,6 +527,11 @@ void modify_base(int state, ?GDK2.Color color)
   RETURN_THIS();
 }
 
+require gtk212;
+void modify_cursor(GDK2.Color primary, GDK2.Color secondary);
+//! Sets the cursor color to use in a widget.
+endrequire;
+
 require pango;
 void modify_font(Pango.FontDescription font)
 //! Sets the font.
