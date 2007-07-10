@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.92 2006/11/17 18:43:17 mast Exp $
+|| $Id: mysql.c,v 1.93 2007/07/10 01:24:36 bill Exp $
 */
 
 /*
@@ -98,7 +98,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.92 2006/11/17 18:43:17 mast Exp $");
+RCSID("$Id: mysql.c,v 1.93 2007/07/10 01:24:36 bill Exp $");
 
 /*! @module Mysql
  *!
@@ -242,6 +242,9 @@ static void exit_mysql_struct(struct object *o)
   DESTROY_MYSQL_LOCK();
 }
 void pike_mysql_set_ssl(struct mapping *options) {
+
+    // prevent a crash if we arrive here without options
+    if(!options) return;
 
 #ifdef HAVE_MYSQL_SSL
     char *ssl_key = NULL;
