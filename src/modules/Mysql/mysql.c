@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.107 2006/11/17 18:43:18 mast Exp $
+|| $Id: mysql.c,v 1.108 2007/07/10 01:19:59 bill Exp $
 */
 
 /*
@@ -238,6 +238,9 @@ static void exit_mysql_struct(struct object *o)
   DESTROY_MYSQL_LOCK();
 }
 void pike_mysql_set_ssl(struct mapping *options) {
+
+  // for some reason, we may get here without an options mapping.
+  if(!options) return;
 
 #ifdef HAVE_MYSQL_SSL
     char *ssl_key = NULL;
