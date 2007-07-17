@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.8 2006/07/04 20:45:27 mast Exp $
+# $Id: configure.in,v 1.9 2007/07/17 14:41:28 grubba Exp $
 AC_INIT(libbzip2mod.cmod)
 AC_CONFIG_HEADER(libbzip2mod_config.h)
 AC_ARG_WITH(bz2,     [  --without-bz2       Disable Bz2],[],[with_bz2=yes])
@@ -27,27 +27,68 @@ if test x$with_bz2 = xyes ; then
     AC_CHECK_FUNCS(BZ2_bzCompressInit)
 
     if test $ac_cv_header_bzlib_h = yes ; then
-      PIKE_FEATURE(Bz2,[yes (using libbz2)])
-      AC_DEFINE(HAVE_BZ2LIB)
-
-      AC_MSG_CHECKING([if a bz_stream has the field total_out.])
-      AC_CACHE_VAL([pike_cv_bz_stream_total_out],[
-	AC_TRY_COMPILE([
+      AC_MSG_CHECKING(if the library works)
+      AC_CACHE_VAL(pike_cv_bz_works, [
+        AC_TRY_RUN([
 /* bzlib.h needs stdio.h on some systems (for FILE) */
 #include <stdio.h>
 #include <bzlib.h>
-	],[
-	  extern bz_stream *s;
-	  s->total_out = 0;
-	],[ pike_cv_bz_stream_total_out="yes"
-	],[ pike_cv_bz_stream_total_out="no" ])
+
+#ifdef HAVE_BZ2_BZCOMPRESSINIT
+#define bzCompressInit		BZ2_bzCompressInit
+#define bzDecompressInit	BZ2_bzDecompressInit
+#endif
+
+static bz_stream s1 = { 0, };
+static bz_stream s2 = { 0, };
+
+int main(int argc, char **argv)
+{
+  int ret;
+  ret = bzCompressInit(&s1, 9, 0, 30);
+  if (ret != BZ_OK) {
+    fprintf(stderr, "bzCompressInit() failed with code: %d\n", ret);
+    return 1;
+  }
+  ret = bzDecompressInit(&s2, 0, 0);
+  if (ret != BZ_OK) {
+    fprintf(stderr, "bzDecompressInit() failed with code: %d\n", ret);
+    return 1;
+  }
+  return 0;
+}
+	], [pike_cv_bz_works=yes], [pike_cv_bz_works=no], [
+          pike_cv_bz_works=unknown
+        ])
       ])
-      AC_MSG_RESULT($pike_cv_bz_stream_total_out)
-      if test "x$pike_cv_bz_stream_total_out" = xyes; then
-	AC_DEFINE(HAVE_BZ_STREAM_TOTAL_OUT)
+      AC_MSG_RESULT($pike_cv_bz_works)
+
+      if test "$pike_cv_bz_works" = no; then
+        PIKE_FEATURE(Bz2,[no (broken libbz2)])
+      else
+        PIKE_FEATURE(Bz2,[yes (using libbz2)])
+        AC_DEFINE(HAVE_BZ2LIB)
+
+        AC_MSG_CHECKING([if a bz_stream has the field total_out.])
+        AC_CACHE_VAL([pike_cv_bz_stream_total_out],[
+	  AC_TRY_LINK([
+/* bzlib.h needs stdio.h on some systems (for FILE) */
+#include <stdio.h>
+#include <bzlib.h>
+	  ],[
+	    extern bz_stream *s;
+	    s->total_out = 0;
+	    return 0;
+	  ],[ pike_cv_bz_stream_total_out="yes"
+	  ],[ pike_cv_bz_stream_total_out="no" ])
+        ])
+        AC_MSG_RESULT($pike_cv_bz_stream_total_out)
+        if test "x$pike_cv_bz_stream_total_out" = xyes; then
+	  AC_DEFINE(HAVE_BZ_STREAM_TOTAL_OUT)
+        fi
       fi
     else
-       PIKE_FEATURE(Bz2,[no (got libbz2 but missing bzlib.h)])
+      PIKE_FEATURE(Bz2,[no (got libbz2 but missing bzlib.h)])
     fi
   fi
 fi
