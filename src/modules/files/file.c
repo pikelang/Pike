@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.364 2007/06/17 00:31:58 mast Exp $
+|| $Id: file.c,v 1.365 2007/07/26 13:40:08 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -825,8 +825,9 @@ static void file_peek(INT32 args)
   {
     ERRNO=errno;
     ret=-1;
+  } else if (fd.revents & (POLLERR | POLLHUP)) {
+    ret = 0;
   }else{
-    /* FIXME: What about POLLHUP and POLLERR? */
     ret = (ret > 0) && (fds.revents & POLLIN);
   }
 #else
