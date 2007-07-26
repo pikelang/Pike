@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.366 2007/07/26 13:47:31 grubba Exp $
+|| $Id: file.c,v 1.367 2007/07/26 15:31:30 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -779,6 +779,7 @@ static void file_read(INT32 args)
 #ifndef __NT__
 /*! @decl int(-1..1) peek()
  *! @decl int(-1..1) peek(int|float timeout)
+ *! @decl int(-1..1) peek(int|float timeout, int not_eof)
  *!
  *! Check if there is data available to read,
  *! or wait some time for available data to read.
@@ -787,9 +788,36 @@ static void file_read(INT32 args)
  *! immediately, either due to data being present, or due to
  *! some error (eg if a socket has been closed).
  *!
- *! Returns @expr{1@} if there is data available to read,
- *! @expr{0@} (zero) if there is no data available, and
- *! @expr{-1@} if something went wrong.
+ *! @param timeout
+ *!   Timeout in seconds.
+ *!
+ *! @param not_eof
+ *!   Flag for specifying handling of end of file.
+ *!   The following values are currently defined:
+ *!   @int
+ *!     @value 0
+ *!       Traditional (and default) behaviour. Return @expr{1@}
+ *!       at EOF.
+ *!
+ *!     @value 1
+ *!       Regard EOF as an error. Return @{-1@} and set @[errno] to
+ *!       @expr{EPIPE@} at EOF.
+ *!   @endint
+ *!
+ *! @returns
+ *!   @int
+ *!     @value 1
+ *!       There is data available to @[read()], or @[not_eof] is
+ *!       @expr{0@} (zero) and we're at EOF. A later call to
+ *!       @[read()] will not block.
+ *!
+ *!     @value 0
+ *!       There is no data available (ie timeout).
+ *!
+ *!     @value -1
+ *!       Error condition. The error code returned by @[errno()]
+ *!       has been updated.
+ *!   @endint
  *!
  *! @seealso
  *!   @[errno()], @[read()]
@@ -798,73 +826,80 @@ static void file_read(INT32 args)
  *!    The function may be interrupted prematurely
  *!    of the timeout (due to signals); 
  *!    check the timing manually if this is imporant.
+ *!
+ *! @note
+ *!    The @[not_eof] parameter was added in Pike 7.7.
  */
 static void file_peek(INT32 args)
 {
+  int ret;
+  int not_eof = 0;
+  FLOAT_TYPE tf = 0.0;
+
+  get_all_args("peek",args,".%F%d",&tf,&not_eof);
+
+  {
 #ifdef HAVE_AND_USE_POLL
-  struct pollfd fds;
-  int ret;
-  int timeout=1;
+    struct pollfd fds;
+    int timeout;
+    timeout = (int)(tf*1000); /* ignore overflow for now */
+    if (!timeout) timeout = 1;
 
-  fds.fd=FD;
-  fds.events=POLLIN;
-  fds.revents=0;
+    fds.fd=FD;
+    fds.events=POLLIN;
+    fds.revents=0;
 
-  if (args)
-  {
-     FLOAT_TYPE tf;
-     get_all_args("peek",args,"%F",&tf);
-     timeout=(int)(tf*1000); /* ignore overflow for now */
-  }
+    THREADS_ALLOW();
+    ret=poll(&fds, 1, timeout);
+    THREADS_DISALLOW();
 
-  THREADS_ALLOW();
-  ret=poll(&fds, 1, timeout);
-  THREADS_DISALLOW();
-
-  if(ret < 0)
-  {
-    ERRNO=errno;
-    ret=-1;
-  } else if (fd.revents & (POLLERR | POLLHUP)) {
-    int err = EPIPE;	/* Value in case of non-socket. */
-    ACCEPT_SIZE_T len = sizeof(err);
-    ret = -1;
-    getsockopt(PD, SOL_SOCKET, SO_ERROR, (void *)&err, &len);
-    ERRNO = err;
-  }else{
-    ret = (ret > 0) && (fds.revents & POLLIN);
-  }
+    if(ret < 0)
+    {
+      ERRNO=errno;
+      ret=-1;
+    } else if (fd.revents & POLLERR) {
+      int err = EPIPE;	/* Value in case of non-socket. */
+      ACCEPT_SIZE_T len = sizeof(err);
+      ret = -1;
+      getsockopt(PD, SOL_SOCKET, SO_ERROR, (void *)&err, &len);
+      ERRNO = err;
+    } else if (fd.revents & POLLNVAL) {
+      ret = -1;
+      errno = EINVAL;
+    } else if (not_eof && (fd.revents & POLLHUP)) {
+      ret = -1;
+      ERRNO = EPIPE;
+    }else{
+      ret = (ret > 0) && (fds.revents & POLLIN);
+    }
 #else
-  int ret;
-  fd_set tmp;
-  struct timeval tv;
+    fd_set tmp;
+    struct timeval tv;
 
-  tv.tv_usec=1;
-  tv.tv_sec=0;
-  fd_FD_ZERO(&tmp);
-  fd_FD_SET(FD, &tmp);
-  ret = FD;
+    tv.tv_usec=1;
+    tv.tv_sec=0;
+    fd_FD_ZERO(&tmp);
+    fd_FD_SET(FD, &tmp);
+    ret = FD;
 
-  if (args)
-  {
-     FLOAT_TYPE tf;
-     get_all_args("peek",args,"%F",&tf);
-     tv.tv_sec=(int)tf;
-     tv.tv_usec=(int)(1000000*(tf-tv.tv_sec));
-  }
+    tv.tv_sec=(int)tf;
+    tv.tv_usec=(int)(1000000*(tf-tv.tv_sec));
 
-  THREADS_ALLOW();
-  ret=select(ret+1,&tmp,0,0,&tv);
-  THREADS_DISALLOW();
+    /* FIXME: Handling of EOF and not_eof */
 
-  if(ret < 0)
-  {
-    ERRNO=errno;
-    ret=-1;
-  }else{
-    ret = (ret > 0) && fd_FD_ISSET(FD, &tmp);
-  }
+    THREADS_ALLOW();
+    ret=select(ret+1,&tmp,0,0,&tv);
+    THREADS_DISALLOW();
+
+    if(ret < 0)
+    {
+      ERRNO=errno;
+      ret=-1;
+    }else{
+      ret = (ret > 0) && fd_FD_ISSET(FD, &tmp);
+    }
 #endif
+  }
   pop_n_elems(args);
   push_int(ret);
 }
