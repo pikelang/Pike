@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.38 2007/04/25 16:07:16 grubba Exp $
+|| $Id: file_functions.h,v 1.39 2007/07/26 15:31:04 grubba Exp $
 */
 
 #define CB_FUNC tFunc(tNone,tOr(tVoid,tMixed))
@@ -15,7 +15,7 @@ FILE_FUNC("close",file_close, tFunc(tOr(tStr,tVoid),tInt))
 FILE_FUNC("read",file_read, tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid),tStr))
 #ifndef __NT__
 /* function(float|int|void:int) */
-FILE_FUNC("peek",file_peek, tFunc(tOr3(tFlt,tInt,tVoid),tInt))
+FILE_FUNC("peek",file_peek, tFunc(tOr3(tFlt,tInt,tVoid) tOr(tInt,tVoid), tInt))
 #endif
 /* function(string|array(string),mixed...:int) */
 FILE_FUNC("write",file_write,
