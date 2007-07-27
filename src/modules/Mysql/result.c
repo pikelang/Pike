@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.37 2006/11/17 18:43:18 mast Exp $
+|| $Id: result.c,v 1.38 2007/07/27 02:21:51 bill Exp $
 */
 
 /*
@@ -233,6 +233,11 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
     if (IS_PRI_KEY(field->flags)) {
       nbits++;
       push_text("primary_key");
+    }
+    if (field->flags & UNIQUE_KEY_FLAG)
+    {
+      push_text("unique");
+      nbits++;
     }
     if (IS_NOT_NULL(field->flags)) {
       nbits++;
