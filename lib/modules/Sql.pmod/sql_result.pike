@@ -1,5 +1,5 @@
 /*
- * $Id: sql_result.pike,v 1.12 2003/08/22 14:24:06 nilsson Exp $
+ * $Id: sql_result.pike,v 1.13 2007/07/28 18:27:32 jhs Exp $
  *
  * Implements the generic result module of the SQL-interface
  *
@@ -33,8 +33,10 @@ void create(object|array res)
 
 string _sprintf(int type, mapping|void flags)
 {
-  return type=='O' && sprintf("%O(/* row %d/%d, %d fields */)",
-			      this_program, index, num_rows(),
+  string rows_total = "";
+  catch( rows_total = "/" + num_rows() );
+  return type=='O' && sprintf("%O(/* row %d%s, %d fields */)",
+			      this_program, index, rows_total,
 			      num_fields());
 }
 
