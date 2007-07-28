@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: MongerUser.pike,v 1.2 2006/05/15 21:13:06 bill Exp $
+// $Id: MongerUser.pike,v 1.3 2007/07/28 18:36:43 jhs Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.2 $"/" ")[1];
+constant version = ("$Revision: 1.3 $"/" ")[1];
 constant description = "Monger: the Pike module manger.";
 
 string repository = "http://modules.gotpike.org:8000/xmlrpc/index.pike";
@@ -163,6 +163,7 @@ void do_query(string name, string|void version)
 
 
   mapping vi = get_module_action_data(name, version);
+  if( !vi ) return;
 
   write("%s: %s\n", vi->name, vi->description);
   write("Author/Owner: %s\n", vi->owner);
@@ -186,6 +187,7 @@ mapping get_module_action_data(string name, string|void version)
 {
   int module_id;
   string dv;
+  mixed err;
 
   string pike_version = 
     sprintf("%d.%d.%d", (int)__REAL_MAJOR__, 
@@ -193,13 +195,22 @@ mapping get_module_action_data(string name, string|void version)
 
   object x = xmlrpc_handler(repository);
 
-  module_id=x->get_module_id(name);
+  err = catch {
+    module_id = x->get_module_id(name);
+  };
+  if(err)
+  {
+    werror("An error occurred: %s", err[0]);
+    return 0;
+  }
 
   string v;
 
   mapping info = x->get_module_info((int)module_id);
 
-  mixed err=catch(v = x->get_recommended_module_version((int)module_id, pike_version));
+  err = catch {
+    v = x->get_recommended_module_version((int)module_id, pike_version);
+  };
 
   if(err)
     write("an error occurred while getting the recommended version.\n");
