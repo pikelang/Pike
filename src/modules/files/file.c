@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.370 2007/07/29 11:16:14 grubba Exp $
+|| $Id: file.c,v 1.371 2007/07/29 11:19:04 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -845,7 +845,7 @@ static void file_peek(INT32 args)
     struct pollfd fds;
     int timeout;
     timeout = (int)(tf*1000); /* ignore overflow for now */
-    if (!timeout) timeout = 1;/
+    if (!timeout) timeout = 1;
     fds.fd=FD;
     fds.events=POLLIN;
     fds.revents=0;
