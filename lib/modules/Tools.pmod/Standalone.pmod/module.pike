@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.25 2006/04/22 13:59:30 grubba Exp $
+// $Id: module.pike,v 1.26 2007/07/29 16:11:47 peter Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.25 $"/" ")[1];
+constant version = ("$Revision: 1.26 $"/" ")[1];
 constant description = "Pike module installer.";
 
 // Source directory
@@ -163,11 +163,7 @@ void do_make(array(string) cmd)
     ({"PIKE_INCLUDES=-I"+include_path,
       "PIKE_SRC_DIR="+src_path,
       "BUILD_BASE="+include_path,
-#ifdef NOT_INSTALLED
       "MODULE_BASE="+include_path+"/modules",
-#else
-      "MODULE_BASE="+include_path,
-#endif
       "TMP_BINDIR="+bin_path,
       "SRCDIR="+fix("$src"),
       "FULL_SRCDIR=" + full_srcdir,
