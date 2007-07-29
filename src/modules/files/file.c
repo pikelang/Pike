@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.368 2007/07/29 11:06:57 grubba Exp $
+|| $Id: file.c,v 1.369 2007/07/29 11:08:05 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -857,16 +857,16 @@ static void file_peek(INT32 args)
     {
       ERRNO=errno;
       ret=-1;
-    } else if (fd.revents & POLLERR) {
+    } else if (fds.revents & POLLERR) {
       int err = EPIPE;	/* Value in case of non-socket. */
       ACCEPT_SIZE_T len = sizeof(err);
       ret = -1;
       getsockopt(FD, SOL_SOCKET, SO_ERROR, (void *)&err, &len);
       ERRNO = err;
-    } else if (fd.revents & POLLNVAL) {
+    } else if (fds.revents & POLLNVAL) {
       ret = -1;
       errno = EINVAL;
-    } else if (not_eof && (fd.revents & POLLHUP)) {
+    } else if (not_eof && (fds.revents & POLLHUP)) {
       ret = -1;
       ERRNO = EPIPE;
     }else{
