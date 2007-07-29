@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.371 2007/07/29 11:19:04 grubba Exp $
+|| $Id: file.c,v 1.372 2007/07/29 14:56:23 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -799,7 +799,7 @@ static void file_read(INT32 args)
  *!       at EOF.
  *!
  *!     @value 1
- *!       Regard EOF as an error. Return @{-1@} and set @[errno] to
+ *!       Regard EOF as an error. Return @expr{-1@} and set @[errno] to
  *!       @expr{EPIPE@} at EOF.
  *!   @endint
  *!
