@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.369 2007/07/29 11:08:05 grubba Exp $
+|| $Id: file.c,v 1.370 2007/07/29 11:16:14 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -776,7 +776,6 @@ static void file_read(INT32 args)
 #endif
 #endif
 
-#ifndef __NT__
 /*! @decl int(-1..1) peek()
  *! @decl int(-1..1) peek(int|float timeout)
  *! @decl int(-1..1) peek(int|float timeout, int not_eof)
@@ -829,6 +828,9 @@ static void file_read(INT32 args)
  *!
  *! @note
  *!    The @[not_eof] parameter was added in Pike 7.7.
+ *!
+ *! @note
+ *!    This function was not available on NT in Pike 7.6 and earlier.
  */
 static void file_peek(INT32 args)
 {
@@ -843,8 +845,7 @@ static void file_peek(INT32 args)
     struct pollfd fds;
     int timeout;
     timeout = (int)(tf*1000); /* ignore overflow for now */
-    if (!timeout) timeout = 1;
-
+    if (!timeout) timeout = 1;/
     fds.fd=FD;
     fds.events=POLLIN;
     fds.revents=0;
@@ -888,7 +889,7 @@ static void file_peek(INT32 args)
     /* FIXME: Handling of EOF and not_eof */
 
     THREADS_ALLOW();
-    ret=select(ret+1,&tmp,0,0,&tv);
+    ret = fd_select(ret+1,&tmp,0,0,&tv);
     THREADS_DISALLOW();
 
     if(ret < 0)
@@ -911,7 +912,6 @@ static void file_peek(INT32 args)
  */
 #undef events
 
-#endif
 
 /*! @decl string read_oob()
  *! @decl string read_oob(int len)
