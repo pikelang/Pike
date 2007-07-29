@@ -143,4 +143,8 @@ Version ::= INTEGER
 
 }
 
+string _sprintf(int t) {
+  return t=='O' && sprintf("%O(%O:%d)", this_program, interface, port);
+}
+
 #endif
