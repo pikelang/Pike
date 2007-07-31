@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.401 2007/06/26 17:15:21 grubba Exp $
+// $Id: master.pike.in,v 1.402 2007/07/31 23:24:21 bill Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1329,6 +1329,8 @@ static void create()
   // add path for architecture-dependant files
   add_include_path(__embedded_resource_directory + "/lib/include");
   add_module_path(__embedded_resource_directory + "/lib/modules");
+  add_module_path(__embedded_resource_directory + "/" + replace(uname()->machine, " ", "_") + "/modules");
+
 #endif
 
   system_module_path=pike_module_path;
