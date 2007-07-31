@@ -75,7 +75,6 @@ static void set_default_master(void)
 		NSException * exception = [NSException exceptionWithName:@"Error finding bundle!" reason:@"bundleForClass: returned nil." userInfo: nil];
 		@throw exception;
 	}
-		
 	if(!master_location)
 	{
  	  ml = [[NSMutableString alloc] initWithCapacity: 200];
@@ -216,18 +215,18 @@ static void set_default_master(void)
 
 	following is a simple example of how to use OCPikeInterpreter to embed a pike interpreter into your application.
 
-      gcc -o PikeInterpreter OCPikeInterpreter.o  -framework Cocoa  -Wl,-single_module -compatibility_version 1 \
-        -current_version 1 -install_name /Users/hww3/Library/Frameworks/PikeInterpreter.framework/Versions/A/PikeInterpreter \
-        -dynamiclib -mmacosx-version-min=10.4 -isysroot /Developer/SDKs/MacOSX10.4u.sdk ../../Pike/7.7/build/libpike.dylib
-	  gcc -I /usr/local/pike/7.7.30/include/pike/ -I . -Ilibffi -Ilibffi/include -F PikeInterpreter -c test.m -o test.o
-	  gcc test.o -o test -framework PikeInterpreter -L/Users/hww3/Pike/7.7/build -framework Foundation -lpike -lobjc
+         make framework
+         cp -rf Pike.framework /Library/Frameworks
 
+         gcc -I . -c test.m -o test.o
+         gcc test.o -o test -framework Pike  -framework Foundation
 
 */
 
 /*
-#import <PikeInterpreter/OCPikeInterpreter.h>
+#import <Pike/OCPikeInterpreter.h>
 #import <Foundation/NSString.h>
+#import <Foundation/NSAutoreleasePool.h>
 
 int main()
 {
@@ -239,7 +238,6 @@ int main()
 
   // these 3 lines set up and start the interpreter.
   i = [OCPikeInterpreter sharedInterpreter];
-  [i setMaster: @"/usr/local/pike/7.7.30/lib/master.pike"];
   [i startInterpreter];
 
   // ok, now that we have things set up, let's use it.

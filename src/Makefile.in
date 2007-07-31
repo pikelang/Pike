@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.461 2007/06/20 00:15:48 mast Exp $
+# $Id: Makefile.in,v 1.462 2007/07/31 23:16:54 bill Exp $
 #
 
 # This line is needed on some machines.
@@ -284,7 +284,7 @@ compiler-warnings : clean
 framework: OCPikeInterpreter.o $(OBJ) modules/linker_options @STATIC_POST_MODULES_LINKOPTS@
 	@echo "Linking Pike.framework";\
 	gcc -o Pike OCPikeInterpreter.o $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` -framework Cocoa -dynamiclib -Wl,-single_module \
-	  -undefined dynamic_lookup -mmacosx-version-min=10.4 -current_version 7.7 -install_name /System/Library/Frameworks/Pike.framework/Versions/A/Pike \
+	  -undefined dynamic_lookup -mmacosx-version-min=10.4 -current_version 7.7 -install_name @executable_path/../Frameworks \
 	  -isysroot /Developer/SDKs/MacOSX10.4u.sdk 
 	ls -l Pike
 	if test -x Pike.framework ; then rm -rf Pike.framework; fi
