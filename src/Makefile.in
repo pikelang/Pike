@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.462 2007/07/31 23:16:54 bill Exp $
+# $Id: Makefile.in,v 1.463 2007/07/31 23:42:05 bill Exp $
 #
 
 # This line is needed on some machines.
@@ -290,19 +290,20 @@ framework: OCPikeInterpreter.o $(OBJ) modules/linker_options @STATIC_POST_MODULE
 	if test -x Pike.framework ; then rm -rf Pike.framework; fi
 	mkdir Pike.framework
 	mkdir Pike.framework/Versions
-	mkdir Pike.framework/Versions/A
-	mkdir Pike.framework/Versions/A/Headers
-	mkdir Pike.framework/Versions/A/Resources	
-	mv Pike Pike.framework/Versions/A
-	cd Pike.framework/Versions && ln -s A Current
+	mkdir Pike.framework/Versions/7.7
+	mkdir Pike.framework/Versions/7.7/Headers
+	mkdir Pike.framework/Versions/7.7/Resources	
+	mkdir Pike.framework/Versions/7.7/Resources/lib
+	mv Pike Pike.framework/Versions/7.7
+	cd Pike.framework/Versions && ln -s 7.7 Current
 	cd Pike.framework && ln -s Versions/Current/Resources Resources && ln -s Versions/Current/Headers Headers && \
 		ln -s Versions/Current/Pike Pike
-	cp $(SRCDIR)/*.h Pike.framework/Versions/A/Headers
-	cp *.h Pike.framework/Versions/A/Headers
-	cp $(PACKAGINGDIR)/macosx/framework_Info.plist Pike.framework/Versions/A/Resources/Info.plist
-	cp -rf lib Pike.framework/Versions/A/Resources
-	cp master.pike Pike.framework/Versions/A/Resources/lib
-	cp -rf $(SRCDIR)/../lib/* Pike.framework/Versions/A/Resources/lib
+	cp $(SRCDIR)/*.h Pike.framework/Versions/7.7/Headers
+	cp *.h Pike.framework/Versions/7.7/Headers
+	cp $(PACKAGINGDIR)/macosx/framework_Info.plist Pike.framework/Versions/7.7/Resources/Info.plist
+	MACHINE=`uname -m | tr " " "_"` && mkdir Pike.framework/Versions/7.7/Resources/$$MACHINE && cp -rf lib/* Pike.framework/Versions/7.7/Resources/$$MACHINE
+	cp -rf $(SRCDIR)/../lib/* Pike.framework/Versions/7.7/Resources/lib
+	cp master.pike Pike.framework/Versions/7.7/Resources/lib
 	cd Pike.framework && find . -type f -name '*.in' -exec rm -f {} \;
 	cd Pike.framework && find . -type d -name CVS -prune -exec rm -rf {} \;
 
