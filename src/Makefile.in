@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.463 2007/07/31 23:42:05 bill Exp $
+# $Id: Makefile.in,v 1.464 2007/08/01 00:06:16 bill Exp $
 #
 
 # This line is needed on some machines.
@@ -281,10 +281,15 @@ compiler-warnings : clean
 	@echo 'End of summary'
 	@echo '--------------'
 
+#
+# We assume that Pike.framework will be used as an embedded framework within an application bundle.
+# if you want to install the framework in a standard location, like /Library/Frameworks, you will
+# need to use install_name_tool to change the location. don't blame me, blame dyld.
+#
 framework: OCPikeInterpreter.o $(OBJ) modules/linker_options @STATIC_POST_MODULES_LINKOPTS@
 	@echo "Linking Pike.framework";\
 	gcc -o Pike OCPikeInterpreter.o $(OBJ) `cat modules/linker_options @STATIC_POST_MODULES_LINKOPTS@` -framework Cocoa -dynamiclib -Wl,-single_module \
-	  -undefined dynamic_lookup -mmacosx-version-min=10.4 -current_version 7.7 -install_name @executable_path/../Frameworks \
+	  -undefined dynamic_lookup -mmacosx-version-min=10.4 -current_version 7.7 -install_name @executable_path/../Frameworks/Pike.framework/Pike \
 	  -isysroot /Developer/SDKs/MacOSX10.4u.sdk 
 	ls -l Pike
 	if test -x Pike.framework ; then rm -rf Pike.framework; fi
