@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.89 2007/02/25 14:21:31 grubba Exp $
+// $Id: Query.pike,v 1.90 2007/08/03 17:20:52 grubba Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -63,6 +63,7 @@ int(0..1) https = 0;
 
 object con;
 string request;
+static string send_buffer;
 
 string buf="",headerbuf="";
 int datapos, discarded_bytes;
@@ -255,15 +256,20 @@ static void async_read(mixed dummy,string s)
 
 static void async_write()
 {
-   con->set_blocking();
 #ifdef HTTP_QUERY_DEBUG
-   werror("<- %O\n",request);
+   werror("<- %O\n", send_buffer);
 #endif
-   if (con->write(request) != sizeof (request)) {
-     errno = con->errno();
+   int bytes;
+   if ((bytes = con->write(send_buffer)) < sizeof(send_buffer)) {
+     if (bytes < 0) {
+       errno = con->errno();
 #ifdef HTTP_QUERY_DEBUG
-     werror ("-> (write error: %s)\n", strerror (errno));
+       werror ("-> (write error: %s)\n", strerror (errno));
 #endif
+     } else if (bytes) {
+       send_buffer = send_buffer[bytes..];
+       return;
+     }
    }
    con->set_nonblocking(async_read,0,async_close);
 }
@@ -724,7 +730,7 @@ this_program async_request(string server,int port,string query,
       headers=headers_encode(headers);
    }
 
-   request=query+"\r\n"+headers+"\r\n"+data;
+   send_buffer = request = query+"\r\n"+headers+"\r\n"+data;
 
    if (!con)
    {
