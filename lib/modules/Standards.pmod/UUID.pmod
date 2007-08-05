@@ -11,7 +11,7 @@
 //!                identifier components
 //!
 
-// $Id: UUID.pmod,v 1.13 2007/08/05 11:43:50 marcus Exp $
+// $Id: UUID.pmod,v 1.14 2007/08/05 11:53:33 marcus Exp $
 //
 // 2004-10-01 Henrik Grubbström
 // 2004-10-04 Martin Nilsson
@@ -377,6 +377,37 @@ UUID make_version4() {
   return u;
 }
 
+#if constant(Crypto.SHA1.hash)
+
+//! Creates a version 5 UUID with a @[name] string and a binary
+//! representation of a name space UUID.
+UUID make_version5(string name, string|UUID namespace) {
+
+  if(stringp(namespace))
+    namespace = UUID(namespace);
+  namespace = namespace->encode();
+
+  string ret = Crypto.SHA1.hash(namespace+name)[..15];
+
+  ret &=
+    "\xff\xff\xff\xff"		// time_low
+    "\xff\xff"			// time_mid
+    "\x0f\xff"			// time_hi_and_version
+    "\x3f\xff"			// clock_seq_and_variant
+    "\xff\xff\xff\xff\xff\xff";	// node
+
+  ret |=
+    "\x00\x00\x00\x00"		// time_low
+    "\x00\x00"			// time_mid
+    "\x50\x00"			// time_hi_and_version
+    "\x80\x00"			// clock_seq_and_veriant
+    "\x00\x00\x00\x00\x00\x00";	// node
+
+  return UUID(ret);
+}
+
+#endif
+
 
 // Convenience functions
 
@@ -418,6 +449,8 @@ UUID make_null() {
   return u;
 }
 
+// FIXME: Should version 5 be default if both are available?
+
 #if constant(Crypto.MD5.hash)
 
 //! Creates a DNS UUID with the given DNS name.
@@ -439,4 +472,27 @@ UUID make_oid(string name) {
 UUID make_x500(string name) {
   return make_version3(name, NameSpace_X500);
 }
+
+#elif constant(Crypto.SHA1.hash)
+
+//! Creates a DNS UUID with the given DNS name.
+UUID make_dns(string name) {
+  return make_version5(name, NameSpace_DNS);
+}
+
+//! Creates a URL UUID with the given URL.
+UUID make_url(string name) {
+  return make_version5(name, NameSpace_URL);
+}
+
+//! Creates an OID UUID with the given OID.
+UUID make_oid(string name) {
+  return make_version5(name, NameSpace_OID);
+}
+
+//! Creates an X500 UUID with the gived X500 address.
+UUID make_x500(string name) {
+  return make_version5(name, NameSpace_X500);
+}
+
 #endif
