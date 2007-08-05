@@ -6,9 +6,12 @@
 //!
 //! @seealso
 //!   RFC4122: A Universally Unique IDentifier (UUID) URN Namespace
+//!   ITU-T X.667: Generation and registration of Universally Unique
+//!                Identifiers (UUIDs) and their use as ASN.1 object
+//!                identifier components
 //!
 
-// $Id: UUID.pmod,v 1.11 2006/09/01 11:13:30 grubba Exp $
+// $Id: UUID.pmod,v 1.12 2007/08/05 11:35:54 marcus Exp $
 //
 // 2004-10-01 Henrik Grubbström
 // 2004-10-04 Martin Nilsson
@@ -17,6 +20,8 @@
 //
 // RFC 4122: A Universally Unique IDentifier (UUID) URN Namespace
 // CDE 1.1: Remote Procedure Call: Universal Unique Identifier (Open Group)
+// X.667: Generation and registration of Universally Unique Identifiers
+//        (UUIDs) and their use as ASN.1 object identifier components (ITU-T)
 
 // UUID format:
 //
@@ -59,7 +64,7 @@
 //   For systems without an IEEE 802 address, a random value
 //   with the multicast bit set may be used.
 
-// TODO: Check changes between draft-mealling-uuid-urn-03.txt and RFV 4122.
+// TODO: Check changes between draft-mealling-uuid-urn-03.txt and RFC 4122.
 
 #if 0
   constant clk_offset = Calendar.ISO.Second(1582,10,15,0,0,0)->
@@ -314,16 +319,30 @@ UUID make_version3(string name, string namespace) {
   //    execution of the reference implementation in the Internet
   //    Draft.
   //  /nilsson 2004-10-05
-
+  //    The implemenetaion in the Internet Draft is bugged.
+  //    It contains code like the following:
+  //        htonl(net_nsid.time_low);
+  //    where it is supposed to say
+  //        net_nsid.time_low = htonl(net_nsid.time_low);
+  //    Therefore it gives incorrect results on little endian
+  //    machines.  The code without reverse gives the same
+  //    result as the reference implementation _when run on a
+  //    big endian system_, and also the same as e.g. the Python
+  //    UUID module.
+  //  /marcus 2007-08-05
   // step 2
+#if 0
   namespace = reverse(namespace[0..3]) + reverse(namespace[4..5]) +
     reverse(namespace[6..7]) + namespace[8..];
+#endif
 
   // step 3
   string ret = Crypto.MD5.hash(namespace+name);
 
+#if 0
   ret = reverse(ret[0..3]) + reverse(ret[4..5]) +
     reverse(ret[6..7]) + ret[8..];
+#endif
 
   ret &=
     "\xff\xff\xff\xff"		// time_low
