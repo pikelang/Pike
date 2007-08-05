@@ -11,7 +11,7 @@
 //!                identifier components
 //!
 
-// $Id: UUID.pmod,v 1.12 2007/08/05 11:35:54 marcus Exp $
+// $Id: UUID.pmod,v 1.13 2007/08/05 11:43:50 marcus Exp $
 //
 // 2004-10-01 Henrik Grubbström
 // 2004-10-04 Martin Nilsson
@@ -310,7 +310,11 @@ UUID make_version1(int node) {
 
 //! Creates a version 3 UUID with a @[name] string and a binary
 //! representation of a name space UUID.
-UUID make_version3(string name, string namespace) {
+UUID make_version3(string name, string|UUID namespace) {
+
+  if(stringp(namespace))
+    namespace = UUID(namespace);
+  namespace = namespace->encode();
 
   // FIXME: I don't see why the following reversals are needed;
   //        the namespace should already be in network byte order.
@@ -415,25 +419,24 @@ UUID make_null() {
 }
 
 #if constant(Crypto.MD5.hash)
-#define H(X) String.hex2string((X)-"-")
 
 //! Creates a DNS UUID with the given DNS name.
 UUID make_dns(string name) {
-  return make_version3(name, H(NameSpace_DNS));
+  return make_version3(name, NameSpace_DNS);
 }
 
 //! Creates a URL UUID with the given URL.
 UUID make_url(string name) {
-  return make_version3(name, H(NameSpace_URL));
+  return make_version3(name, NameSpace_URL);
 }
 
 //! Creates an OID UUID with the given OID.
 UUID make_oid(string name) {
-  return make_version3(name, H(NameSpace_OID));
+  return make_version3(name, NameSpace_OID);
 }
 
 //! Creates an X500 UUID with the gived X500 address.
 UUID make_x500(string name) {
-  return make_version3(name, H(NameSpace_X500));
+  return make_version3(name, NameSpace_X500);
 }
 #endif
