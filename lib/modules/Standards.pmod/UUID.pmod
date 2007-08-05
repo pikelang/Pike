@@ -11,7 +11,7 @@
 //!                identifier components
 //!
 
-// $Id: UUID.pmod,v 1.14 2007/08/05 11:53:33 marcus Exp $
+// $Id: UUID.pmod,v 1.15 2007/08/05 12:04:55 marcus Exp $
 //
 // 2004-10-01 Henrik Grubbström
 // 2004-10-04 Martin Nilsson
@@ -90,12 +90,13 @@ class UUID {
   int version = 1; // 4 bits
 
   //! Returns a string representation of the version, e.g.
-  //! @expr{"Name-based"@}.
+  //! @expr{"Name-based (MD5)"@}.
   string str_version() {
     return ([ 1 : "Time-based",
 	      2 : "DCE security",
-	      3 : "Name-based",
-	      4 : "Random" ])[version] || "Unknown";
+	      3 : "Name-based (MD5)",
+	      4 : "Random",
+              5 : "Name-based (SHA)"])[version] || "Unknown";
   }
 
   //! The variant of the UUID.
