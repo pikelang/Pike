@@ -4,7 +4,7 @@
 //! Support for Universal Unique Identifiers (UUID) and
 //! Globally Unique Identifiers (GUID).
 //!
-// $Id: UUID.pmod,v 1.3 2005/07/22 20:16:46 nilsson Exp $
+// $Id: UUID.pmod,v 1.4 2007/08/05 11:55:34 marcus Exp $
 //
 // 2004-10-01 Henrik Grubbström
 // 2004-10-04 Martin Nilsson
@@ -309,16 +309,31 @@ UUID make_version3(string name, string namespace) {
   //    execution of the reference implementation in the Internet
   //    Draft.
   //  /nilsson 2004-10-05
+  //    The implemenetaion in the Internet Draft is bugged.
+  //    It contains code like the following:
+  //        htonl(net_nsid.time_low);
+  //    where it is supposed to say
+  //        net_nsid.time_low = htonl(net_nsid.time_low);
+  //    Therefore it gives incorrect results on little endian
+  //    machines.  The code without reverse gives the same
+  //    result as the reference implementation _when run on a
+  //    big endian system_, and also the same as e.g. the Python
+  //    UUID module.
+  //  /marcus 2007-08-05
 
   // step 2
+#if 0
   namespace = reverse(namespace[0..3]) + reverse(namespace[4..5]) +
     reverse(namespace[6..7]) + namespace[8..];
+#endif
 
   // step 3
   string ret = Crypto.MD5.hash(namespace+name);
 
+#if 0
   ret = reverse(ret[0..3]) + reverse(ret[4..5]) +
     reverse(ret[6..7]) + ret[8..];
+#endif
 
   ret &=
     "\xff\xff\xff\xff"		// time_low
