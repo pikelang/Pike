@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.143 2007/01/01 00:28:18 nilsson Exp $
+// $Id: install.pike,v 1.144 2007/08/05 12:43:51 marcus Exp $
 
 #define USE_GTK
 
@@ -18,8 +18,8 @@ string version_str = sprintf("%d.%d.%d",
 			     __REAL_MAJOR__,
 			     __REAL_MINOR__,
 			     __REAL_BUILD__);
-string version_guid = Standards.UUID.make_version3(pike_upgrade_guid,
-						   version_str)->str();
+string version_guid = Standards.UUID.make_version3(version_str,
+						   pike_upgrade_guid)->str();
 
 int last_len;
 int redump_all;
