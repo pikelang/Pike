@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.178 2007/07/29 19:48:27 peter Exp $
+// $Id: install.pike,v 1.179 2007/08/05 12:44:02 marcus Exp $
 
 #define USE_GTK
 
@@ -24,8 +24,8 @@ string version_str = sprintf("%d.%d.%d",
 			     __REAL_BUILD__);
 #if constant(Standards.UUID.make_version3)
 #define SUPPORT_WIX
-string version_guid = Standards.UUID.make_version3(pike_upgrade_guid,
-						   version_str)->str();
+string version_guid = Standards.UUID.make_version3(version_str,
+						   pike_upgrade_guid)->str();
 Directory root = Directory("SourceDir",
 			   Standards.UUID.UUID(version_guid)->encode(),
 			   "TARGETDIR");
