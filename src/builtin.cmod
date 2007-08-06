@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.191 2006/07/05 19:24:18 mast Exp $
+|| $Id: builtin.cmod,v 1.192 2007/08/06 08:09:36 nilsson Exp $
 */
 
 #include "global.h"
@@ -313,7 +313,7 @@ PIKEFUN string string2hex(string s)
   optflags OPT_TRY_OPTIMIZE;
 {
   struct pike_string *hex;
-  unsigned char *st = s->str;
+  unsigned char *st = (unsigned char *)s->str;
   int i;
 
   if (s->size_shift)
@@ -344,7 +344,7 @@ PIKEFUN string hex2string(string hex)
 {
   struct pike_string *s;
   int i, o=0;
-  unsigned char *q = hex->str;
+  unsigned char *q = (unsigned char *)hex->str;
   int l = hex->len>>1;
   if(hex->size_shift) Pike_error("Only hex digits allowed.\n");
   if(hex->len&1) Pike_error("Can't have odd number of digits.\n");
