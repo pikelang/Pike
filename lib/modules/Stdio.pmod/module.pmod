@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.172 2006/06/13 15:03:58 grubba Exp $
+// $Id: module.pmod,v 1.173 2007/08/06 08:57:33 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -2016,7 +2016,8 @@ int mkdirhier (string pathname, void|int mode)
     path += name;
     if (!file_stat(path)) {
       if (!mkdir(path, mode)) {
-	return 0;
+	if (errno() != System.EEXIST)
+	  return 0;
       }
     }
     path += "/";
