@@ -2003,7 +2003,7 @@ class ParseBlock
 	       * wide strings
 	       */
 	      ret+=({
-		PC.Token(sprintf("if(Pike_sp[%d%s].type != PIKE_T_STRING || Pike_sp[%d%s].ustring -> width)",
+		PC.Token(sprintf("if(Pike_sp[%d%s].type != PIKE_T_STRING || Pike_sp[%d%s].u.string->shift_size)",
 				 argnum,check_argbase,
 				 argnum,check_argbase), arg->line())
 	      });
