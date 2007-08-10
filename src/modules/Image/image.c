@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.234 2006/09/22 12:27:57 grubba Exp $
+|| $Id: image.c,v 1.235 2007/08/10 13:54:51 grubba Exp $
 */
 
 /*
@@ -3536,13 +3536,13 @@ CHRONO("apply_matrix");
    width=-1;
    for (i=0; i<height; i++)
    {
-      struct svalue s=sp[-args].u.array->item[i];
-      if (s.type!=T_ARRAY) 
+      struct svalue *s = sp[-args].u.array->item + i;
+      if (s->type != T_ARRAY) 
 	 Pike_error("Illegal contents of (root) array (Image.Image->apply_matrix)\n");
       if (width==-1)
-	 width=s.u.array->size;
+	 width = s->u.array->size;
       else
-	 if (width!=s.u.array->size)
+	 if (width != s->u.array->size)
 	    Pike_error("Arrays has different size (Image.Image->apply_matrix)\n");
    }
    if (width==-1) width=0;
@@ -3551,28 +3551,27 @@ CHRONO("apply_matrix");
 
    for (i=0; i<height; i++)
    {
-      struct svalue s=sp[-args].u.array->item[i];
+      struct svalue *s = sp[-args].u.array->item + i;
       for (j=0; j<width; j++)
       {
-	 struct svalue s2=s.u.array->item[j];
-	 if (s2.type==T_ARRAY && s2.u.array->size == 3)
+	 struct svalue *s2 = s->u.array->item + j;
+	 if (s2->type==T_ARRAY && s2->u.array->size == 3)
 	 {
-	    struct svalue s3;
-	    s3=s2.u.array->item[0];
-	    if (s3.type==T_INT) matrix[j+i*width].r = (float)s3.u.integer; 
+	    struct svalue *s3 = s2->u.array->item;
+	    if (s3->type == T_INT) matrix[j+i*width].r = (float)s3->u.integer; 
 	    else matrix[j+i*width].r=0;
 
-	    s3=s2.u.array->item[1];
-	    if (s3.type==T_INT) matrix[j+i*width].g = (float)s3.u.integer;
+	    s3++;
+	    if (s3->type == T_INT) matrix[j+i*width].g = (float)s3->u.integer;
 	    else matrix[j+i*width].g=0;
 
-	    s3=s2.u.array->item[2];
-	    if (s3.type==T_INT) matrix[j+i*width].b = (float)s3.u.integer; 
+	    s3++;
+	    if (s3->type == T_INT) matrix[j+i*width].b = (float)s3->u.integer; 
 	    else matrix[j+i*width].b=0;
 	 }
-	 else if (s2.type==T_INT)
+	 else if (s2->type == T_INT)
 	    matrix[j+i*width].r=matrix[j+i*width].g=
-	       matrix[j+i*width].b = (float)s2.u.integer;
+	       matrix[j+i*width].b = (float)s2->u.integer;
 	 else
 	    matrix[j+i*width].r=matrix[j+i*width].g=
 	       matrix[j+i*width].b = 0.0;
@@ -3677,13 +3676,13 @@ static void _image_outline(INT32 args,int mask)
       width=-1;
       for (i=0; i<height; i++)
       {
-	 struct svalue s=sp[-args].u.array->item[i];
-	 if (s.type!=T_ARRAY) 
+	 struct svalue *s = sp[-args].u.array->item + i;
+	 if (s->type!=T_ARRAY) 
 	    Pike_error("Image.Image->outline: Illegal contents of (root) array\n");
 	 if (width==-1)
-	    width=s.u.array->size;
+	    width=s->u.array->size;
 	 else
-	    if (width!=s.u.array->size)
+	    if (width!=s->u.array->size)
 	       Pike_error("Image.Image->outline: Arrays has different size\n");
       }
       if (width==-1) width=0;
@@ -3692,14 +3691,14 @@ static void _image_outline(INT32 args,int mask)
 
       for (i=0; i<height; i++)
       {
-	 struct svalue s=sp[-args].u.array->item[i];
+	 struct svalue *s=sp[-args].u.array->item + i;
 	 for (j=0; j<width; j++)
 	 {
-	    struct svalue s2=s.u.array->item[j];
-	    if (s2.type==T_INT)
-	       matrix[j+i*width]=(unsigned char)s2.u.integer;
+	    struct svalue *s2 = s->u.array->item + j;
+	    if (s2->type==T_INT)
+	       matrix[j+i*width] = (unsigned char)s2->u.integer;
 	    else
-	       matrix[j+i*width]=1;
+	       matrix[j+i*width] = 1;
 	 }
       }
       ai=1;
@@ -4821,7 +4820,8 @@ void image__decode( INT32 args )
 {
     struct array *a;
     int w, h;
-    if( Pike_sp[-1].type != PIKE_T_ARRAY ||
+    if( args != 1 ||
+	Pike_sp[-1].type != PIKE_T_ARRAY ||
 	Pike_sp[-1].u.array->size != 3 ||
 	(a=Pike_sp[-1].u.array)->item[2].type != PIKE_T_STRING ||
         a->item[0].type != PIKE_T_INT ||
