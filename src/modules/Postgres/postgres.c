@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.51 2007/07/03 06:32:21 mast Exp $
+|| $Id: postgres.c,v 1.52 2007/08/10 17:51:59 grubba Exp $
 */
 
 /*
@@ -91,7 +91,7 @@ static void pgres_create (struct object * o) {
 	THIS->dofetch=0;
 	THIS->lastcommit=0;
         THIS->last_rows=-1;
-#ifdef PQ_THREADSAFE
+#if defined(PIKE_THREADS) && defined(PQ_THREADSAFE)
 	mt_init(&THIS->mutex);
 #endif
 
@@ -119,7 +119,7 @@ static void pgres_destroy (struct object * o)
 		free_svalue(THIS->notify_callback);
 	}
 	free(THIS->notify_callback);
-#ifdef PQ_THREADSAFE
+#if defined(PIKE_THREADS) && defined(PQ_THREADSAFE)
 	mt_destroy(&THIS->mutex);
 #endif
 }
