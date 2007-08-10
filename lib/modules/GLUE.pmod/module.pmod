@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.13 2007/07/29 11:28:47 nilsson Exp $
+// $Id: module.pmod,v 1.14 2007/08/10 14:21:52 grubba Exp $
 
 #pike __REAL_VERSION__
 #if constant(GL) && constant(GL.glOrtho)
@@ -1328,11 +1328,11 @@ class BaseDWIM {
   //! argument. In that case it will be interpreted as the alpha mode.
   void create(mixed ... args) {
     mapping imgs;
-    int height, width, alpha=-1, mipmap, clamp, mode;
+    int height, width, alpha=-1, mipmap, clamp, mode, cnt;
     string debug;
 
     // Get imgs and debug
-    foreach(args, mixed arg) {
+    foreach(args; int pos; mixed arg) {
       if(mappingp(arg)) {
 	  if(arg->image) {
 	    if(imgs)
@@ -1343,16 +1343,13 @@ class BaseDWIM {
 	    height = imgs->ysize;
 	    width = imgs->xsize;
 	}
-	args -= ({ arg });
 	if(arg->height) height = m_delete(arg, "height");
 	if(arg->width) width = m_delete(arg, "width");
 	if(arg->alpha) alpha = m_delete(arg, "alpha");
 	if(arg->mipmap) mipmap = m_delete(arg, "mipmap");
 	if(arg->mode) mode = m_delete(arg, "mode");
 	if(arg->debug) debug = m_delete(arg, "debug");
-	continue;
-      }
-      if(objectp(arg)) {
+      } else if(objectp(arg)) {
 	if(imgs) {
 	  if(imgs->alpha)
 	    error("Error on arguments. "
@@ -1368,19 +1365,18 @@ class BaseDWIM {
 	  height = imgs->ysize;
 	  width = imgs->xsize;
 	}
-
-        args = args[..pos-1] + args[pos+1..];
-	continue;
-      }
-      if(stringp(arg)) {
+      } else if(stringp(arg)) {
 	debug = arg;
-	args -= ({ arg });
-      }
+      } else if(intp(arg)) {
+	// Keep the integers.
+	continue;
+      } else
+	error("Unexpected type in argument.\n");
+      args = args[..pos+cnt-1] + args[pos+cnt+1..];
+      cnt--;
     }
 
-    // Now there should only be ints left.
-    foreach(args, mixed arg)
-      if(!intp(arg)) error("Unexpected type in argument.\n");
+    // Now there are only ints left.
 
     switch(sizeof(args)) {
     case 0:
