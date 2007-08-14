@@ -332,6 +332,11 @@ Decoder decoder(string name)
   if(o)
     return o;
 
+  if ((o = Locale.Charset.Tables[name]) &&
+      (p = o->decoder)) {
+    return p();
+  }
+
   error("Unknown character encoding "+name+"\n");
 }
 
@@ -542,6 +547,11 @@ Encoder encoder(string name, string|void replacement,
 
   if(o)
     return o;
+
+  if ((o = Locale.Charset.Tables[name]) &&
+      (p = o->encoder)) {
+    return p(replacement, repcb);
+  }
 
   error("Unknown character encoding "+name+"\n");
 }
