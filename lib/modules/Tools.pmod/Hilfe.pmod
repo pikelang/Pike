@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.146 2007/06/21 11:11:07 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.147 2007/08/30 15:32:24 mbaehr Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -2496,7 +2496,6 @@ class StdinHilfe
     if(!readline->get_history())
       readline->enable_history(512);
     readline->get_input_controller()->bind("\t", handle_completions);
-    readline->get_input_controller()->bind("^H", handle_doc);
     readline->get_input_controller()->bind("\\!k1", handle_doc);
 
     signal(signum("SIGINT"),signal_trap);
