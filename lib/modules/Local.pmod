@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Local.pmod,v 1.8 2006/11/04 19:06:48 nilsson Exp $
+// $Id: Local.pmod,v 1.9 2007/08/30 13:26:29 mbaehr Exp $
 
 //! @[Local] gives a local module namespace used for locally
 //! installed pike modules. Modules are searched for in
@@ -31,7 +31,10 @@ mixed `[](string name) {
   //        resolver. // mikael
   
   foreach(local_path,string lp){
-    program r=(program)combine_path(lp,name);
+    program r;
+    catch{ 
+      r=(program)combine_path(lp,name); 
+    };
     if(r)
       return r;
     Stdio.Stat st;
