@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Local.pmod,v 1.9 2007/08/30 13:26:29 mbaehr Exp $
+// $Id: Local.pmod,v 1.10 2007/09/03 13:05:08 grubba Exp $
 
 //! @[Local] gives a local module namespace used for locally
 //! installed pike modules. Modules are searched for in
@@ -16,66 +16,23 @@
 //!   @[Local.add_path()], @[Local.remove_path()]
 //!
 
+inherit __joinnode;
+
 static array(string) local_path;
 
-mixed `[](string name) {
-  // Make sure dot syntax Local.add_path works.
-  if(name=="add_path" || name=="remove_path"){
-    if(name=="add_path")
-      return add_path;
-    return remove_path;
-  }
+static void create()
+{
+  ::create(({}));
 
-  // FIXME: Should .pike or .pmod files have priority?
-  //        currently .pike files has it here, but .pmod in the
-  //        resolver. // mikael
-  
-  foreach(local_path,string lp){
-    program r;
-    catch{ 
-      r=(program)combine_path(lp,name); 
-    };
-    if(r)
-      return r;
-    Stdio.Stat st;
-    if(st=file_stat(lp+name+".pmod")){
-      if(st->isdir)
-        return master()->dirnode(lp+name+".pmod");
-      return (object)(lp+name+".pmod");
-    }
-    catch{
-      return (object)(lp+name+".so");
-    };
-
-    // This is not a proper handling of .so-files, it does not
-    // handle when there are conflicting .so and .pmod files.
-
-  }
-
-  return UNDEFINED;
-}
-
-array(string) _indices() {
-  array(string) tmp = ({ });
-  foreach(local_path,string lp)
-    tmp+=get_dir(lp);
-  return Array.uniq(map(glob("*.pike",tmp)+glob("*.pmod",tmp)+glob("*.so",tmp),
-             lambda(string in){ if(glob("*.so",in)) return in[..<3];
-             return in[..<5]; }));
-}
-
-// _values intentionally not overloaded
-
-static void create() {
-  string tmp;
-  local_path=({ });
   // FIXME $prefix/pike_modules
   // FIXME All this should be controllable from .pikerc, when such a file is implemented...
+
   add_path("/usr/local/pike_modules");
   add_path("/opt/pike_modules");
   add_path("/opt/share/pike_modules");
   add_path("/usr/local/share/pike_modules");
 
+  string tmp;
   if( (tmp=[string]getenv("HOME")) || (tmp=[string]getenv("USERPROFILE")) ) {
     tmp = (tmp[-1]=='/'?tmp:tmp+"/")+"pike_modules/";
     add_path(tmp);
@@ -87,6 +44,8 @@ static void create() {
   }
 }
 
+//! @decl int(0..1) add_path(string path)
+//!
 //! This function prepends @[path] to the @[Local] module
 //! searchpath.
 //!
@@ -95,15 +54,6 @@ static void create() {
 //!
 //! @returns
 //!   Returns 1 on success, otherwise 0.
-int(0..1) add_path(string path){
-  if(!file_stat(path))
-    return 0;
-  if(path[sizeof(path)-1]!='/')
-    path+="/";
-  remove_path(path); // Avoid duplicate entries.
-  local_path=({path})+local_path;
-  return 1;
-}
 
 //! This function removes @[path] from the @[Local] module
 //! searchpath. If @[path] is not in the search path, this is
@@ -112,7 +62,7 @@ int(0..1) add_path(string path){
 //! @param path
 //!   The path to be removed.
 //!
-void remove_path(string path){
-  if(local_path)
-    local_path-=({ path });
+void remove_path(string path)
+{
+  rem_path(path);
 }
