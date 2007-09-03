@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.402 2007/07/31 23:24:21 bill Exp $
+// $Id: master.pike.in,v 1.403 2007/09/03 13:04:27 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1288,6 +1288,9 @@ static void create()
       add_constant(e, this[e]);
     else
       error("Function %O is missing from master.pike.\n", e);
+
+  add_constant("__dirnode", dirnode);
+  add_constant("__joinnode", joinnode);
 
   add_constant("strlen", sizeof);
   add_constant("write", write);
