@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.374 2007/05/02 17:43:32 grubba Exp $
+|| $Id: language.yacc,v 1.375 2007/09/03 11:57:01 grubba Exp $
 */
 
 %pure_parser
@@ -1955,19 +1955,22 @@ lambda: TOK_LAMBDA line_number_info push_compiler_frame1
 
     debug_malloc_touch($7);
     $7=mknode(F_COMMA_EXPR,$7,mknode(F_RETURN,mkintnode(0),0));
-    if (Pike_compiler->compiler_pass == 2)
+    if (Pike_compiler->compiler_pass == 2) {
       /* Doing this in pass 1 might induce too strict checks on types
        * in cases where we got placeholders. */
       type=find_return_type($7);
-    else
-      type = NULL;
-
-    if(type) {
-      push_finished_type(type);
-      free_type(type);
-    } else
+      if (type) {
+	push_finished_type(type);
+	free_type(type);
+      } else {
+	yywarning("Failed to determine return type for lambda.");
+	push_type(T_ZERO);
+      }
+    } else {
+      /* Tentative return type. */
       push_type(T_MIXED);
-    
+    }
+
     e=$5-1;
     if($<number>6)
     {
@@ -1993,8 +1996,10 @@ lambda: TOK_LAMBDA line_number_info push_compiler_frame1
     name=make_shared_string(buf);
 
 #ifdef LAMBDA_DEBUG
-    fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
-	    Pike_compiler->compiler_pass, buf, (long)Pike_compiler->new_program->id, Pike_compiler->local_class_counter-1);
+    fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n%d:   type: ",
+	    Pike_compiler->compiler_pass, buf, (long)Pike_compiler->new_program->id, Pike_compiler->local_class_counter-1, Pike_compiler->compiler_pass);
+    simple_describe_type(type);
+    fprintf(stderr, "\n");
 #endif /* LAMBDA_DEBUG */
     if(Pike_compiler->compiler_pass == 2)
       Pike_compiler->compiler_frame->current_function_number=isidentifier(name);
@@ -3153,18 +3158,21 @@ optional_block: /* EMPTY */ { $$=0; }
 
     debug_malloc_touch($5);
     $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
-    if (Pike_compiler->compiler_pass == 2)
+    if (Pike_compiler->compiler_pass == 2) {
       /* Doing this in pass 1 might induce too strict checks on types
        * in cases where we got placeholders. */
       type=find_return_type($5);
-    else
-      type = NULL;
-
-    if(type) {
-      push_finished_type(type);
-      free_type(type);
-    } else
+      if (type) {
+	push_finished_type(type);
+	free_type(type);
+      } else {
+	yywarning("Failed to determine return type for implicit lambda.");
+	push_type(T_ZERO);
+      }
+    } else {
+      /* Tentative return type. */
       push_type(T_MIXED);
+    }
     
     push_type(T_VOID);
     push_type(T_MANY);
