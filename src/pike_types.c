@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.310 2007/07/02 10:49:10 grubba Exp $
+|| $Id: pike_types.c,v 1.311 2007/09/03 11:52:02 grubba Exp $
 */
 
 #include "global.h"
@@ -6803,7 +6803,15 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
       if(!p)
       {
 	copy_pike_type(ret, zero_type_string);
-      }else{
+      } else if (p == pike_trampoline_program) {
+	struct pike_trampoline *t =
+	  (struct pike_trampoline *) s->u.object->storage;
+	if ((p = t->frame->current_object->prog)) {
+	  copy_pike_type(ret, ID_FROM_INT(p, t->func)->type);
+	} else {
+	  copy_pike_type(ret, zero_type_string);
+	}
+      } else {
 	copy_pike_type(ret, ID_FROM_INT(p,s->subtype)->type);
       }
     }
