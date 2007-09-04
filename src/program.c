@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.616 2007/05/26 19:14:59 mast Exp $
+|| $Id: program.c,v 1.617 2007/09/04 16:45:15 grubba Exp $
 */
 
 #include "global.h"
@@ -2020,7 +2020,7 @@ void fixate_program(void)
     struct reference *funp;
     struct identifier *fun;
     funp=p->identifier_references+i;
-    if(funp->id_flags & (ID_HIDDEN|ID_STATIC)) continue;
+    if(funp->id_flags & ID_HIDDEN) continue;
     fun=ID_FROM_PTR(p, funp);
     if(funp->id_flags & ID_INHERITED)
     {
@@ -2038,7 +2038,7 @@ void fixate_program(void)
 	struct identifier *funb;
 
 	funpb=p->identifier_references+t;
-	if(funpb->id_flags & (ID_HIDDEN|ID_STATIC)) continue;
+	if (funpb->id_flags & ID_HIDDEN) continue;
 	funb=ID_FROM_PTR(p,funpb);
 	/* if(funb->func.offset == -1) continue; * prototype */
 
@@ -2048,6 +2048,8 @@ void fixate_program(void)
 
 	  /* FIXME: Is this stuff needed?
 	   *        It looks like it already is done by define_function().
+	   *
+	   *        Yes -- It's needed in case of mixin.
 	   */
 	  if(funa_is_prototype && (funb->func.offset != -1) &&
 	     !(funp->id_flags & ID_INLINE))
@@ -2070,6 +2072,7 @@ void fixate_program(void)
       my_yyerror("Missing definition for local function %S.",
 		 fun->name);
     }
+    if (funp->id_flags & ID_STATIC) continue;
     add_to_identifier_index(i);
   }
   fsort_program_identifier_index(p->identifier_index,
@@ -2700,7 +2703,12 @@ void dump_program_desc(struct program *p)
 	    p->identifier_references[e].id_flags);
     for (q = 0; q < p->num_inherits; q++)
       if (p->inherits + q == inh) {
-	fprintf (stderr, "  inherit %d\n", q);
+	fprintf(stderr,
+		"  inherit %d\n"
+		"       type: ",
+		q);
+	simple_describe_type(ID_FROM_INT(p, e)->type);
+	fprintf(stderr, "\n");
 	goto inherit_found;
       }
     fprintf (stderr, "  inherit not found!\n");
@@ -5049,6 +5057,7 @@ INT32 define_function(struct pike_string *name,
       if (!match_types(type, lfun_type->u.type)) {
 	my_yyerror("Type mismatch for callback function %S:", name);
 	yytype_error(NULL, lfun_type->u.type, type, 0);
+	Pike_fatal("Type mismatch!\n");
       } else if (lex.pragmas & ID_STRICT_TYPES) {
 	yywarning("Type mismatch for callback function %S:", name);
 	yytype_error(NULL, lfun_type->u.type, type,
@@ -5659,13 +5668,29 @@ int store_constant(struct svalue *foo,
     if (SETJMP(jmp)) {
       handle_compile_exception ("Error comparing constants.");
       /* Assume that if `==() throws an error, the svalues aren't equal. */
-    }
-    else {
-      struct program_constant *c= Pike_compiler->new_program->constants+e;
-      if((equal ? is_equal(& c->sval,foo) : is_eq(& c->sval,foo)))
-      {
-	UNSETJMP(jmp);
-	return e;
+    } else {
+      struct program_constant *c = Pike_compiler->new_program->constants+e;
+
+      if (foo->type == c->sval.type) {
+	/* Make sure only to compare within the same basic type. */
+	if (foo->type == T_OBJECT) {
+	  /* Special case objects -- We don't want stange LFUN effects... */
+	  if ((foo->u.object == c->sval.u.object) &&
+	      (foo->subtype == c->sval.subtype)) {
+	    UNSETJMP(jmp);
+	    return e;
+	  }
+	} else if (foo->type == T_INT) {
+	  if (foo->u.integer == c->sval.u.integer) {
+	    if (foo->u.integer || (foo->subtype == c->sval.subtype)) {
+	      UNSETJMP(jmp);
+	      return e;
+	    }
+	  }
+	} else if(equal ? is_equal(& c->sval,foo) : is_eq(& c->sval,foo)) {
+	  UNSETJMP(jmp);
+	  return e;
+	}
       }
     }
     UNSETJMP(jmp);
@@ -7600,6 +7625,11 @@ void real_gc_cycle_check_program(struct program *p, int weak)
 	if(e && p->inherits[e].prog)
 	  gc_cycle_check_program(p->inherits[e].prog, 0);
       }
+
+#ifdef DEBUG_MALLOC
+      for (e = 0; e < p->num_identifiers; e++)
+	gc_cycle_check_type(p->identifiers[e].type, 0);
+#endif
       
       /* Strong ref follows. It must be last. */
       if(p->parent)
