@@ -1,5 +1,5 @@
 /*
- * $Id: Trie.pike,v 1.1 2007/08/30 14:38:34 grubba Exp $
+ * $Id: Trie.pike,v 1.2 2007/09/06 14:28:31 grubba Exp $
  *
  * An implementation of a trie.
  *
@@ -161,7 +161,8 @@ string|array(int) next(string|array(int) base)
   this_program o = trie[base[offset]];
   if (o) {
     for (int i = offset+1; i < o->offset; i++) {
-      if (o->path[i] > base[i]) {
+      if ((i >= sizeof(base)) || (o->path[i] > base[i])) {
+	// o is a suffix to base, or is larger.
 	if (zero_type(o->value)) return o->first();
 	return o->path;
       } else if (o->path[i] < base[i]) break;
