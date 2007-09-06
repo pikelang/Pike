@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.391 2007/05/04 18:35:18 grubba Exp $
+|| $Id: las.c,v 1.392 2007/09/06 13:24:01 grubba Exp $
 */
 
 #include "global.h"
@@ -3730,8 +3730,8 @@ void fix_type_field(node *n)
 	  /* Success. */
 	  break;
 	}
-	struct pike_string *t1 = describe_type(CAR(n)->type);
-	struct pike_string *t2 = describe_type(soft_type);
+	struct pike_string *t1 = describe_type(soft_type);
+	struct pike_string *t2 = describe_type(CAR(n)->type);
 	my_yyerror("Soft cast of %S to %S isn't a valid cast.",
 		   t2, t1);
 	free_string(t2);
@@ -4009,9 +4009,11 @@ void fix_type_field(node *n)
 	my_yyerror("Too few arguments to %S (got %d).", name, args);
 	yytype_error(NULL, s, NULL, 0);
 	free_type(s);
+	yytype_error("Function type:", CAR(n)->type, NULL, 0);
+	yytype_error("Remaining type:", f, NULL, 0);
       } else {
-	my_yyerror("Type checking error for function call to %S.", name);
-	yytype_error(NULL, NULL, f, 0);
+	my_yyerror("Attempt to call a non function value %S.", name);
+	yytype_error(NULL, function_type_string, f, 0);
       }
       free_type(f);
       break;
