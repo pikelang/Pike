@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.14 2006/11/04 19:06:48 nilsson Exp $
+// $Id: module.pmod,v 1.15 2007/09/09 22:41:36 srb Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -1163,6 +1163,21 @@ class Message {
       boundary = params["boundary"];
     }
     if (headers["content-disposition"]) {
+      int ismsie=1;	// kludge for MSIE undoubled backslashes in filenames
+      if(ismsie) {
+       string s=headers["content-disposition"];
+#define MSIEFILENAME	"; filename=\""
+#define MFOFFSET	(offset+sizeof(MSIEFILENAME))
+       int offset=search(s,MSIEFILENAME);
+       if(offset>=0 && MFOFFSET+4<=sizeof(s)
+        && (s[MFOFFSET]=='\\'		// perform approximate check for MSIE
+         || (s[MFOFFSET]>='a' && s[MFOFFSET]<='z'
+	   || s[MFOFFSET]>='A' && s[MFOFFSET]<='Z')
+	  && s[MFOFFSET+1]==':' && s[MFOFFSET+2]=='\\' )
+	  && s[MFOFFSET+3]!='\\' )
+        headers["content-disposition"]=s[0..MFOFFSET-1]+
+         replace(s[MFOFFSET..],"\\","\\\\");
+      }
       array(array(string|int)) arr =
 	tokenize(headers["content-disposition"]) / ({';'});
       array(string|int) p;
