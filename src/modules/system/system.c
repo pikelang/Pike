@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.169 2004/04/06 13:00:52 nilsson Exp $
+|| $Id: system.c,v 1.170 2007/09/12 10:47:38 grubba Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.169 2004/04/06 13:00:52 nilsson Exp $");
+RCSID("$Id: system.c,v 1.170 2007/09/12 10:47:38 grubba Exp $");
 
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
@@ -1652,27 +1652,6 @@ int my_isipv6nr(char *s)
     } \
     THREADS_DISALLOW()
 
-#else /* HAVE_OSF1_GETHOSTBYNAME_R */
-static MUTEX_T gethostbyname_mutex;
-#define GETHOSTBYNAME_MUTEX_EXISTS
-
-#define GETHOST_DECLARE struct hostent *ret
-
-#define CALL_GETHOSTBYNAME(X) \
-    THREADS_ALLOW(); \
-    mt_lock(&gethostbyname_mutex); \
-    ret=gethostbyname(X); \
-    mt_unlock(&gethostbyname_mutex); \
-    THREADS_DISALLOW()
-
-
-#define CALL_GETHOSTBYADDR(X,Y,Z) \
-    THREADS_ALLOW(); \
-    mt_lock(&gethostbyname_mutex); \
-    ret=gethostbyaddr((X),(Y),(Z)); \
-    mt_unlock(&gethostbyname_mutex); \
-    THREADS_DISALLOW()
-
 #endif /* HAVE_OSF1_GETHOSTBYNAME_R */
 #endif /* HAVE_SOLARIS_GETHOSTBYNAME_R */
 
@@ -1706,37 +1685,27 @@ static MUTEX_T gethostbyname_mutex;
     } \
     THREADS_DISALLOW()
 
-#else /* HAVE_OSF1_GETSERVBYNAME_R */
-static MUTEX_T getservbyname_mutex;
-#define GETSERVBYNAME_MUTEX_EXISTS
-
-#define GETSERV_DECLARE struct servent *ret
-
-#define CALL_GETSERVBYNAME(X,Y) \
-    THREADS_ALLOW(); \
-    mt_lock(&getservbyname_mutex); \
-    ret=getservbyname(X,Y); \
-    mt_unlock(&getservbyname_mutex); \
-    THREADS_DISALLOW()
-
+#endif
 #endif /* HAVE_OSF1_GETSERVBYNAME_R */
 #endif /* HAVE_SOLARIS_GETSERVBYNAME_R */
 
-#else /* _REENTRANT */
+#endif /* REENTRANT */
 
+#ifndef GETHOST_DECLARE
 #ifdef HAVE_GETHOSTBYNAME
-
 #define GETHOST_DECLARE struct hostent *ret
 #define CALL_GETHOSTBYNAME(X) ret=gethostbyname(X)
 #define CALL_GETHOSTBYADDR(X,Y,Z) ret=gethostbyaddr((X),(Y),(Z))
 #endif
+#endif /* !GETHOST_DECLARE */
 
+#ifndef GETSERV_DECLARE
 #ifdef HAVE_GETSERVBYNAME
 #define GETSERV_DECLARE struct servent *ret
 #define CALL_GETSERVBYNAME(X,Y) ret=getservbyname(X,Y)
 #endif
+#endif /* !GETSERV_DECLARE */
 
-#endif /* REENTRANT */
 
 /* this is used from modules/file, and modules/spider! */
 int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port, int udp)
