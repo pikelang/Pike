@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.182 2007/06/10 18:11:13 mast Exp $
+|| $Id: system.c,v 1.183 2007/09/12 11:16:54 grubba Exp $
 */
 
 /*
@@ -1674,27 +1674,6 @@ int my_isipv6nr(char *s)
     } \
     THREADS_DISALLOW()
 
-#else /* HAVE_OSF1_GETHOSTBYNAME_R */
-static MUTEX_T gethostbyname_mutex;
-#define GETHOSTBYNAME_MUTEX_EXISTS
-
-#define GETHOST_DECLARE struct hostent *ret
-
-#define CALL_GETHOSTBYNAME(X) \
-    THREADS_ALLOW(); \
-    mt_lock(&gethostbyname_mutex); \
-    ret=gethostbyname(X); \
-    mt_unlock(&gethostbyname_mutex); \
-    THREADS_DISALLOW()
-
-
-#define CALL_GETHOSTBYADDR(X,Y,Z) \
-    THREADS_ALLOW(); \
-    mt_lock(&gethostbyname_mutex); \
-    ret=gethostbyaddr((X),(Y),(Z)); \
-    mt_unlock(&gethostbyname_mutex); \
-    THREADS_DISALLOW()
-
 #endif /* HAVE_OSF1_GETHOSTBYNAME_R */
 #endif /* HAVE_SOLARIS_GETHOSTBYNAME_R */
 
@@ -1728,37 +1707,25 @@ static MUTEX_T gethostbyname_mutex;
     } \
     THREADS_DISALLOW()
 
-#else /* HAVE_OSF1_GETSERVBYNAME_R */
-static MUTEX_T getservbyname_mutex;
-#define GETSERVBYNAME_MUTEX_EXISTS
-
-#define GETSERV_DECLARE struct servent *ret
-
-#define CALL_GETSERVBYNAME(X,Y) \
-    THREADS_ALLOW(); \
-    mt_lock(&getservbyname_mutex); \
-    ret=getservbyname(X,Y); \
-    mt_unlock(&getservbyname_mutex); \
-    THREADS_DISALLOW()
-
 #endif /* HAVE_OSF1_GETSERVBYNAME_R */
 #endif /* HAVE_SOLARIS_GETSERVBYNAME_R */
 
-#else /* _REENTRANT */
+#endif /* REENTRANT */
 
+#ifndef GETHOST_DECLARE
 #ifdef HAVE_GETHOSTBYNAME
-
 #define GETHOST_DECLARE struct hostent *ret
 #define CALL_GETHOSTBYNAME(X) ret=gethostbyname(X)
 #define CALL_GETHOSTBYADDR(X,Y,Z) ret=gethostbyaddr((X),(Y),(Z))
 #endif
+#endif /* !GETHOST_DECLARE */
 
+#ifndef GETSERV_DECLARE
 #ifdef HAVE_GETSERVBYNAME
 #define GETSERV_DECLARE struct servent *ret
 #define CALL_GETSERVBYNAME(X,Y) ret=getservbyname(X,Y)
 #endif
-
-#endif /* REENTRANT */
+#endif /* !GETSERV_DECLARE */
 
 /* this is used from modules/file, and modules/spider! */
 int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port, int udp)
