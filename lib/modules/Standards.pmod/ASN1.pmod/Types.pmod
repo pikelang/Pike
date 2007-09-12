@@ -1,5 +1,5 @@
 /*
- * $Id: Types.pmod,v 1.20 2004/02/22 17:15:54 nilsson Exp $
+ * $Id: Types.pmod,v 1.21 2007/09/12 17:00:04 grubba Exp $
  *
  * Encodes various asn.1 objects according to the Distinguished
  * Encoding Rules (DER) */
@@ -125,6 +125,9 @@ class asn1_object
 	init(@args);
     }
 }
+
+// Forward compat.
+constant Object = asn1_object;
 
 class asn1_compound
 {
