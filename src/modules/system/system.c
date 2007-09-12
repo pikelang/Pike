@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.133 2003/10/17 15:40:35 mast Exp $
+|| $Id: system.c,v 1.134 2007/09/12 10:46:32 grubba Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.133 2003/10/17 15:40:35 mast Exp $");
+RCSID("$Id: system.c,v 1.134 2007/09/12 10:46:32 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -1593,39 +1593,18 @@ int my_isipv6nr(char *s)
     } \
     THREADS_DISALLOW()
 
-#else /* HAVE_OSF1_GETHOSTBYNAME_R */
-static MUTEX_T gethostbyname_mutex;
-#define GETHOSTBYNAME_MUTEX_EXISTS
-
-#define GETHOST_DECLARE struct hostent *ret
-
-#define CALL_GETHOSTBYNAME(X) \
-    THREADS_ALLOW(); \
-    mt_lock(&gethostbyname_mutex); \
-    ret=gethostbyname(X); \
-    mt_unlock(&gethostbyname_mutex); \
-    THREADS_DISALLOW()
-
-
-#define CALL_GETHOSTBYADDR(X,Y,Z) \
-    THREADS_ALLOW(); \
-    mt_lock(&gethostbyname_mutex); \
-    ret=gethostbyaddr((X),(Y),(Z)); \
-    mt_unlock(&gethostbyname_mutex); \
-    THREADS_DISALLOW()
-
 #endif /* HAVE_OSF1_GETHOSTBYNAME_R */
 #endif /* HAVE_SOLARIS_GETHOSTBYNAME_R */
-#else /* _REENTRANT */
+#endif /* REENTRANT */
 
+#ifndef GETHOST_DECLARE
 #ifdef HAVE_GETHOSTBYNAME
 
 #define GETHOST_DECLARE struct hostent *ret
 #define CALL_GETHOSTBYNAME(X) ret=gethostbyname(X)
 #define CALL_GETHOSTBYADDR(X,Y,Z) ret=gethostbyaddr((X),(Y),(Z))
 #endif
-
-#endif /* REENTRANT */
+#endif /* !GETHOST_DECLARE */
 
 /* this is used from modules/file, and modules/spider! */
 void get_inet_addr(struct sockaddr_in *addr,char *name)
