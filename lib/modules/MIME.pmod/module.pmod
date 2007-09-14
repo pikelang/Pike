@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.15 2007/09/09 22:41:36 srb Exp $
+// $Id: module.pmod,v 1.16 2007/09/14 18:53:49 grubba Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -1167,16 +1167,18 @@ class Message {
       if(ismsie) {
        string s=headers["content-disposition"];
 #define MSIEFILENAME	"; filename=\""
-#define MFOFFSET	(offset+sizeof(MSIEFILENAME))
-       int offset=search(s,MSIEFILENAME);
-       if(offset>=0 && MFOFFSET+4<=sizeof(s)
-        && (s[MFOFFSET]=='\\'		// perform approximate check for MSIE
-         || (s[MFOFFSET]>='a' && s[MFOFFSET]<='z'
-	   || s[MFOFFSET]>='A' && s[MFOFFSET]<='Z')
-	  && s[MFOFFSET+1]==':' && s[MFOFFSET+2]=='\\' )
-	  && s[MFOFFSET+3]!='\\' )
-        headers["content-disposition"]=s[0..MFOFFSET-1]+
-         replace(s[MFOFFSET..],"\\","\\\\");
+       int offset = search(s, MSIEFILENAME);
+       if (offset>=0) {
+	 // Perform approximate check for MSIE
+	 offset += sizeof(MSIEFILENAME);
+	 // FIXME: Consider paths of the type \\host\path\from\root\.
+	 if (offset+4 <= sizeof(s) &&
+	     (s[offset]=='\\' && s[offset+1]!='\\' ||
+	      s[offset+1]==':' && s[offset+2]=='\\' && s[offset+3]!='\\' &&
+	      (s[offset]>='a' && s[offset]<='z' ||
+	       s[offset]>='A' && s[offset]<='Z')))
+	   headers["content-disposition"] =
+	     s[0..offset-1] + replace(s[offset..], "\\", "\\\\");
       }
       array(array(string|int)) arr =
 	tokenize(headers["content-disposition"]) / ({';'});
