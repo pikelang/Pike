@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.375 2007/09/03 11:57:01 grubba Exp $
+|| $Id: language.yacc,v 1.376 2007/09/14 18:13:26 grubba Exp $
 */
 
 %pure_parser
@@ -256,6 +256,7 @@ int yylex(YYSTYPE *yylval);
 %type <number> function_type_list2
 %type <number> optional_dot_dot_dot
 %type <number> optional_comma
+%type <number> optional_constant
 %type <number> optional_stars
 
 %type <str> magic_identifiers
@@ -593,7 +594,8 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
     if(!is_const($3))
     {
       if(Pike_compiler->compiler_pass==2)
-	yyerror("Constant definition is not constant.");
+	my_yyerror("Constant definition is not constant (0x%04x).",
+		   $3->tree_info);
       else
 	add_constant($1->u.sval.u.string, 0,
 		     Pike_compiler->current_modifiers & ~ID_EXTERN);
@@ -725,16 +727,31 @@ push_compiler_frame0: /* empty */
   }
   ;
 
-def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
+optional_constant: /* empty */
+  {
+    $$ = OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT;
+  }
+  | TOK_CONSTANT
+  {
+    $$ = 0;
+  }
+  ;
+
+def: modifiers type_or_error optional_constant optional_stars
+     TOK_IDENTIFIER push_compiler_frame0
   '(' arguments close_paren_or_missing
   {
     int e;
+
+    /* Adjust opt_flags in case we've got an optional_constant. */
+    Pike_compiler->compiler_frame->opt_flags = $3;
+
     /* construct the function type */
     push_finished_type(Pike_compiler->compiler_frame->current_type);
-    if ($3 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
+    if ($4 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
-    while(--$3>=0) push_type(T_ARRAY);
+    while(--$4>=0) push_type(T_ARRAY);
     
     if(Pike_compiler->compiler_frame->current_return_type)
       free_type(Pike_compiler->compiler_frame->current_return_type);
@@ -742,7 +759,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
     
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
     
-    e=$7-1;
+    e=$8-1;
     if(Pike_compiler->varargs)
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
@@ -760,14 +777,14 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 
     {
       struct pike_type *s=compiler_pop_type();
-      int i = isidentifier($4->u.sval.u.string);
+      int i = isidentifier($5->u.sval.u.string);
 
       if (Pike_compiler->compiler_pass == 1) {
 	if ($1 & ID_VARIANT) {
 	  /* FIXME: Lookup the type of any existing variant */
 	  /* Or the types. */
 	  fprintf(stderr, "Pass %d: Identifier %s:\n",
-		  Pike_compiler->compiler_pass, $4->u.sval.u.string->str);
+		  Pike_compiler->compiler_pass, $5->u.sval.u.string->str);
 
 	  if (i >= 0) {
 	    struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, i);
@@ -788,7 +805,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 #endif
 	    } else {
 	      my_yyerror("Lost identifier %S (%d).",
-			 $4->u.sval.u.string, i);
+			 $5->u.sval.u.string, i);
 	    }
 	  } else {
 	    fprintf(stderr, "Not defined.\n");
@@ -807,7 +824,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 	      ID_VARIANT) {
 	    struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, i);
 	    fprintf(stderr, "Pass %d: Identifier %s:\n",
-		    Pike_compiler->compiler_pass, $4->u.sval.u.string->str);
+		    Pike_compiler->compiler_pass, $5->u.sval.u.string->str);
 
 	    free_type(s);
 	    copy_pike_type(s, id->type);
@@ -819,7 +836,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 	  }
 	} else {
 	  my_yyerror("Identifier %S lost after first pass.",
-		     $4->u.sval.u.string);
+		     $5->u.sval.u.string);
 	}
       }
 
@@ -834,13 +851,13 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
        * set current_function_number for local functions as well
        */
       Pike_compiler->compiler_frame->current_function_number=
-	define_function(check_node_hash($4)->u.sval.u.string,
+	define_function(check_node_hash($5)->u.sval.u.string,
 			check_node_hash($<n>$)->u.sval.u.type,
 			$1 & (~ID_EXTERN),
 			IDENTIFIER_PIKE_FUNCTION |
 			(Pike_compiler->varargs?IDENTIFIER_VARARGS:0),
 			0,
-			OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+			$3);
 
       Pike_compiler->varargs=0;
 
@@ -853,7 +870,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
   block_or_semi
   {
     int e;
-    if($10)
+    if($11)
     {
       int f;
       node *check_args = NULL;
@@ -861,14 +878,14 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
       int save_line = lex.current_line;
       int num_required_args = 0;
       struct identifier *i;
-      lex.current_file = $4->current_file;
-      lex.current_line = $4->line_number;
+      lex.current_file = $5->current_file;
+      lex.current_line = $5->line_number;
 
       if (($1 & ID_EXTERN) && (Pike_compiler->compiler_pass == 1)) {
 	yywarning("Extern declared function definition.");
       }
 
-      for(e=0; e<$7; e++)
+      for(e=0; e<$8; e++)
       {
 	if(!Pike_compiler->compiler_frame->variable[e].name ||
 	   !Pike_compiler->compiler_frame->variable[e].name->len)
@@ -935,19 +952,19 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
       }
 
       {
-	int l = $10->line_number;
-	struct pike_string *f = $10->current_file;
+	int l = $11->line_number;
+	struct pike_string *f = $11->current_file;
 	if (check_args) {
 	  /* Prepend the arg checking code. */
-	  $10 = mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, check_args, NULL), $10);
+	  $11 = mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, check_args, NULL), $11);
 	}
 	lex.current_line = l;
 	lex.current_file = f;
       }
 
-      f=dooptcode(check_node_hash($4)->u.sval.u.string,
-		  check_node_hash($10),
-		  check_node_hash($<n>9)->u.sval.u.type,
+      f=dooptcode(check_node_hash($5)->u.sval.u.string,
+		  check_node_hash($11),
+		  check_node_hash($<n>10)->u.sval.u.type,
 		  $1);
 
       i = ID_FROM_INT(Pike_compiler->new_program, f);
@@ -966,7 +983,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
       if((Pike_compiler->compiler_pass == 1) &&
 	 (f != Pike_compiler->compiler_frame->current_function_number)) {
 	fprintf(stderr, "define_function()/do_opt_code() failed for symbol %s\n",
-		$4->u.sval.u.string->str);
+		$5->u.sval.u.string->str);
 	dump_program_desc(Pike_compiler->new_program);
 	Pike_fatal("define_function screwed up! %d != %d\n",
 	      f, Pike_compiler->compiler_frame->current_function_number);
@@ -977,25 +994,25 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
       lex.current_file = save_file;
     }
     pop_compiler_frame();
-    free_node($4);
-    free_node($8);
-    free_node($<n>9);
+    free_node($5);
+    free_node($9);
+    free_node($<n>10);
   }
-  | modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
+  | modifiers type_or_error optional_constant optional_stars TOK_IDENTIFIER push_compiler_frame0
     error
   {
     pop_compiler_frame();
-    free_node($4);
+    free_node($5);
   }
-  | modifiers type_or_error optional_stars bad_identifier
+  | modifiers type_or_error optional_constant optional_stars bad_identifier
   {
     free_type(compiler_pop_type());
   }
     '(' arguments ')' block_or_semi
   {
-    if ($9) free_node($9);
+    if ($10) free_node($10);
   }
-  | modifiers type_or_error name_list ';' {}
+  | modifiers type_or_error optional_constant name_list ';' {}
   | inheritance {}
   | facet {}
   | import {}
