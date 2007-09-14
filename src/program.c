@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.617 2007/09/04 16:45:15 grubba Exp $
+|| $Id: program.c,v 1.618 2007/09/14 18:38:43 grubba Exp $
 */
 
 #include "global.h"
@@ -3104,9 +3104,10 @@ void check_program(struct program *p)
       ptrdiff_t offset = INHERIT_FROM_INT(p, e)->storage_offset+i->func.offset;
       if (i->run_time_type == PIKE_T_GET_SET) {
 	struct reference *ref = PTR_FROM_INT(p, e);
-	if (!(ref->id_flags & ID_INHERITED)) {
+	if (!ref->inherit_offset) {
 	  INT32 *gs_info = (INT32 *)(p->program + i->func.offset);
 	  if ((gs_info + 2) > (INT32 *)(p->program + p->num_program)) {
+	    dump_program_tables(p, 0);
 	    Pike_fatal("Getter/setter variable outside program!\n");
 	  }
 	  if (gs_info[0] >= p->num_identifier_references) {
