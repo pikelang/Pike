@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.785 2007/06/18 00:42:52 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.786 2007/09/14 19:01:53 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -3491,6 +3491,25 @@ test_any([[
   y->x2 = 2;
   return (y->x1 + y->x2) * y->x;
 ]], 6)
+
+test_any([[
+  // Triggered fatal error "Getter/setter variable outside program!".
+  class X {
+    static int xx;
+    int `->x() { return xx; }
+    void `->x=(int xxx) { xx = xxx; }
+    static void create(int xxx) {
+      x = xxx;
+    }
+  };
+  class Y {
+    inherit X;
+    static void create(int yyy) {
+      X:x = yyy + 2;
+    }
+  };
+  return Y(5)->x;
+]], 7)
 
 test_compile_error([[
   class X {
