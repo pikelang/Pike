@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.377 2007/09/15 13:03:42 grubba Exp $
+|| $Id: language.yacc,v 1.378 2007/09/15 13:17:55 grubba Exp $
 */
 
 %pure_parser
@@ -1801,14 +1801,19 @@ new_static_name: optional_stars TOK_IDENTIFIER
 
     add_ref(type);
     id = define_variable(name, type, ID_STATIC|ID_PRIVATE|ID_INLINE);
-    free_string(name);
     if (id >= 0) {
       n = mkidentifiernode(id);
+      if ($4->tree_info & OPT_NOT_CONST) {
+	my_yyerror("Invalid initializer for static variable %S(%S).",
+		   $2->u.sval.u.string, name);
+      }
+      add_ref(n);
       Pike_compiler->init_node =
 	mknode(F_COMMA_EXPR, Pike_compiler->init_node,
 	       mkcastnode(void_type_string,
-			  mknode(F_ASSIGN, $4, mkidentifiernode(id))));
+			  mknode(F_ASSIGN, $4, n)));
     }
+    free_string(name);
     id = add_local_name($2->u.sval.u.string, type, n);
 #if 0
     if (id >= 0)
@@ -1850,6 +1855,7 @@ new_static_name2: TOK_IDENTIFIER
 
     add_ref(type);
     id = define_variable(name, type, ID_STATIC|ID_PRIVATE|ID_INLINE);
+    free_string(name);
     if (id >= 0) {
       n = mkidentifiernode(id);
     }
@@ -1875,12 +1881,17 @@ new_static_name2: TOK_IDENTIFIER
     id = define_variable(name, type, ID_STATIC|ID_PRIVATE|ID_INLINE);
     if (id >= 0) {
       n = mkidentifiernode(id);
+      if ($3->tree_info & OPT_NOT_CONST) {
+	my_yyerror("Invalid initializer for static variable %S(%S).",
+		   $1->u.sval.u.string, name);
+      }
       add_ref(n);
       Pike_compiler->init_node =
 	mknode(F_COMMA_EXPR, Pike_compiler->init_node,
 	       mkcastnode(void_type_string,
 			  mknode(F_ASSIGN, $3, n)));
     }
+    free_string(name);
     add_ref(type);
     id = add_local_name($1->u.sval.u.string, type, n);
     if (id >= 0)
