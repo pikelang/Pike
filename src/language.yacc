@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.376 2007/09/14 18:13:26 grubba Exp $
+|| $Id: language.yacc,v 1.377 2007/09/15 13:03:42 grubba Exp $
 */
 
 %pure_parser
@@ -152,6 +152,7 @@
 
 /* #define LAMBDA_DEBUG	1 */
 
+static struct pike_string *get_new_name();
 int add_local_name(struct pike_string *, struct pike_type *, node *);
 int low_add_local_name(struct compiler_frame *,
 		       struct pike_string *, struct pike_type *, node *);
@@ -333,6 +334,8 @@ int yylex(YYSTYPE *yylval);
 %type <n> m_expr_list2
 %type <n> new_local_name
 %type <n> new_local_name2
+%type <n> new_static_name
+%type <n> new_static_name2
 %type <n> normal_label_statement
 %type <n> optional_else_part
 %type <n> optional_label
@@ -341,6 +344,8 @@ int yylex(YYSTYPE *yylval);
 %type <n> statement
 %type <n> statements
 %type <n> statement_with_semicolon
+%type <n> static_name_list
+%type <n> static_name_list2
 %type <n> switch
 %type <n> typeof
 %type <n> unused
@@ -1746,6 +1751,147 @@ new_local_name2: TOK_IDENTIFIER
   | bad_identifier '=' safe_expr0 { $$=$3; }
   ;
 
+new_static_name: optional_stars TOK_IDENTIFIER
+  {
+    int id;
+    struct pike_type *type;
+    struct pike_string *name;
+    node *n = NULL;
+
+    push_finished_type($<n>0->u.sval.u.type);
+    if ($1 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
+      yywarning("The *-syntax in types is obsolete. Use array instead.");
+    }
+    while($1--) push_type(T_ARRAY);
+    type = compiler_pop_type();
+
+    name = get_new_name();
+
+    add_ref(type);
+    id = define_variable(name, type, ID_STATIC|ID_PRIVATE|ID_INLINE);
+    free_string(name);
+    if (id >= 0) {
+      n = mkidentifiernode(id);
+    }
+
+    id = add_local_name($2->u.sval.u.string, type, n);
+    if (id >= 0) {
+      /* FIXME: Consider using mklocalnode(id, -1). */
+      $$ = mklocalnode(id, 0);
+    } else
+      $$ = 0;
+    free_node($2);
+  }
+  | optional_stars bad_identifier { $$=0; }
+  | optional_stars TOK_IDENTIFIER '=' expr0 
+  {
+    int id;
+    struct pike_type *type;
+    struct pike_string *name;
+    node *n = NULL;
+
+    push_finished_type($<n>0->u.sval.u.type);
+    if ($1 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
+      yywarning("The *-syntax in types is obsolete. Use array instead.");
+    }
+    while($1--) push_type(T_ARRAY);
+    type = compiler_pop_type();
+
+    name = get_new_name();
+
+    add_ref(type);
+    id = define_variable(name, type, ID_STATIC|ID_PRIVATE|ID_INLINE);
+    free_string(name);
+    if (id >= 0) {
+      n = mkidentifiernode(id);
+      Pike_compiler->init_node =
+	mknode(F_COMMA_EXPR, Pike_compiler->init_node,
+	       mkcastnode(void_type_string,
+			  mknode(F_ASSIGN, $4, mkidentifiernode(id))));
+    }
+    id = add_local_name($2->u.sval.u.string, type, n);
+#if 0
+    if (id >= 0)
+      $$ = mklocalnode(id, 0);
+    else
+#endif
+      $$ = 0;
+    if (!n) free_node($4);
+    free_node($2);
+  }
+  | optional_stars bad_identifier '=' expr0
+  {
+    free_node($4);
+    $$=0;
+  }
+  | optional_stars TOK_IDENTIFIER '=' error
+  {
+    free_node($2);
+    /* No yyerok here since we aren't done yet. */
+    $$=0;
+  }
+  | optional_stars TOK_IDENTIFIER '=' TOK_LEX_EOF
+  {
+    yyerror("Unexpected end of file in local variable definition.");
+    free_node($2);
+    /* No yyerok here since we aren't done yet. */
+    $$=0;
+  }
+  ;
+
+new_static_name2: TOK_IDENTIFIER
+  {
+    int id;
+    struct pike_type *type = $<n>0->u.sval.u.type;
+    struct pike_string *name;
+    node *n = NULL;
+
+    name = get_new_name();
+
+    add_ref(type);
+    id = define_variable(name, type, ID_STATIC|ID_PRIVATE|ID_INLINE);
+    if (id >= 0) {
+      n = mkidentifiernode(id);
+    }
+    add_ref(type);
+    id = add_local_name($1->u.sval.u.string, type, n);
+    if (id >= 0) {
+      $$ = mklocalnode(id, 0);
+    } else
+      $$ = 0;
+    free_node($1);
+  }
+  | bad_identifier { $$=0; }
+  | TOK_IDENTIFIER '=' safe_expr0
+  {
+    int id;
+    struct pike_type *type = $<n>0->u.sval.u.type;
+    struct pike_string *name;
+    node *n = NULL;
+
+    name = get_new_name();
+
+    add_ref(type);
+    id = define_variable(name, type, ID_STATIC|ID_PRIVATE|ID_INLINE);
+    if (id >= 0) {
+      n = mkidentifiernode(id);
+      add_ref(n);
+      Pike_compiler->init_node =
+	mknode(F_COMMA_EXPR, Pike_compiler->init_node,
+	       mkcastnode(void_type_string,
+			  mknode(F_ASSIGN, $3, n)));
+    }
+    add_ref(type);
+    id = add_local_name($1->u.sval.u.string, type, n);
+    if (id >= 0)
+      $$ = mklocalnode(id, 0);
+    else
+      $$ = 0;
+    free_node($1);
+  }
+  | bad_identifier '=' safe_expr0 { $$=$3; }
+  ;
+
 line_number_info: /* empty */
   {
     /* Used to hold line-number info */
@@ -1800,6 +1946,16 @@ local_name_list: new_local_name
 
 local_name_list2: new_local_name2
   | local_name_list2 ',' { $<n>$=$<n>0; } new_local_name
+    { $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $4); }
+  ;
+
+static_name_list: new_static_name
+  | static_name_list ',' { $<n>$=$<n>0; } new_static_name
+    { $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $4); }
+  ;
+
+static_name_list2: new_static_name2
+  | static_name_list2 ',' { $<n>$=$<n>0; } new_static_name
     { $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $4); }
   ;
 
@@ -1962,7 +2118,6 @@ lambda: TOK_LAMBDA line_number_info push_compiler_frame1
   failsafe_block
   {
     struct pike_type *type;
-    char buf[80];
     int f,e;
     struct pike_string *name;
     struct pike_string *save_file = lex.current_file;
@@ -2006,15 +2161,14 @@ lambda: TOK_LAMBDA line_number_info push_compiler_frame1
     
     type=compiler_pop_type();
 
-    sprintf(buf,"__lambda_%ld_%ld_line_%d",
-	    (long)Pike_compiler->new_program->id,
-	    (long)(Pike_compiler->local_class_counter++ & 0xffffffff), /* OSF/1 cc bug. */
-	    (int) lex.current_line);
-    name=make_shared_string(buf);
+    name = get_new_name();
 
 #ifdef LAMBDA_DEBUG
     fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n%d:   type: ",
-	    Pike_compiler->compiler_pass, buf, (long)Pike_compiler->new_program->id, Pike_compiler->local_class_counter-1, Pike_compiler->compiler_pass);
+	    Pike_compiler->compiler_pass, name->str,
+	    (long)Pike_compiler->new_program->id,
+	    Pike_compiler->local_class_counter-1,
+	    Pike_compiler->compiler_pass);
     simple_describe_type(type);
     fprintf(stderr, "\n");
 #endif /* LAMBDA_DEBUG */
@@ -2055,7 +2209,6 @@ lambda: TOK_LAMBDA line_number_info push_compiler_frame1
 
 local_function: TOK_IDENTIFIER push_compiler_frame1 func_args 
   {
-    char buf[40];
     struct pike_string *name;
     struct pike_type *type;
     int id,e;
@@ -2090,17 +2243,14 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     type=compiler_pop_type();
     /***/
 
-    sprintf(buf,"__lambda_%ld_%ld_line_%d",
-	    (long)Pike_compiler->new_program->id,
-	    (long)(Pike_compiler->local_class_counter++ & 0xffffffff), /* OSF/1 cc bug. */
-	    (int) $1->line_number);
+    name = get_new_name();
 
 #ifdef LAMBDA_DEBUG
     fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
-	    Pike_compiler->compiler_pass, buf, (long)Pike_compiler->new_program->id, Pike_compiler->local_class_counter-1);
+	    Pike_compiler->compiler_pass, name->str,
+	    (long)Pike_compiler->new_program->id,
+	    Pike_compiler->local_class_counter-1);
 #endif /* LAMBDA_DEBUG */
-
-    name=make_shared_string(buf);
 
     if(Pike_compiler->compiler_pass > 1)
     {
@@ -2185,7 +2335,6 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
 
 local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args 
   {
-    char buf[40];
     struct pike_string *name;
     struct pike_type *type;
     int id,e;
@@ -2226,18 +2375,14 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     type=compiler_pop_type();
     /***/
 
-
-    sprintf(buf,"__lambda_%ld_%ld_line_%d",
-	    (long)Pike_compiler->new_program->id,
-	    (long)(Pike_compiler->local_class_counter++ & 0xffffffff), /* OSF/1 cc bug. */
-	    (int) $2->line_number);
+    name = get_new_name();
 
 #ifdef LAMBDA_DEBUG
     fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
-	    Pike_compiler->compiler_pass, buf, (long)Pike_compiler->new_program->id, Pike_compiler->local_class_counter-1);
+	    Pike_compiler->compiler_pass, name->str,
+	    (long)Pike_compiler->new_program->id,
+	    Pike_compiler->local_class_counter-1);
 #endif /* LAMBDA_DEBUG */
-
-    name=make_shared_string(buf);
 
     if(Pike_compiler->compiler_pass > 1)
     {
@@ -2973,7 +3118,9 @@ safe_comma_expr: comma_expr
 
 comma_expr: comma_expr2
   | simple_type2 local_name_list { $$=$2; free_node($1); }
+  | TOK_STATIC simple_type2 static_name_list { $$=$3; free_node($2); }
   | simple_identifier_type local_name_list2 { $$=$2; free_node($1); }
+  | TOK_STATIC simple_identifier_type static_name_list2 { $$=$3; free_node($2); }
   | simple_identifier_type local_function { $$=$2; free_node($1); }
   | simple_type2 local_function2 { $$=$2; free_node($1); }
   ;
@@ -3161,7 +3308,6 @@ optional_block: /* EMPTY */ { $$=0; }
   statements end_block
   {
     struct pike_type *type;
-    char buf[40];
     int f/*, e */;
     struct pike_string *name;
     struct pike_string *save_file = lex.current_file;
@@ -3201,15 +3347,13 @@ optional_block: /* EMPTY */ { $$=0; }
     
     type=compiler_pop_type();
 
-    sprintf(buf,"__lambda_%ld_%ld_line_%d",
-	    (long)Pike_compiler->new_program->id,
-	    (long)(Pike_compiler->local_class_counter++ & 0xffffffff), /* OSF/1 cc bug. */
-	    (int) lex.current_line);
-    name=make_shared_string(buf);
+    name = get_new_name();
 
 #ifdef LAMBDA_DEBUG
     fprintf(stderr, "%d: IMPLICIT LAMBDA: %s 0x%08lx 0x%08lx\n",
-	    Pike_compiler->compiler_pass, buf, (long)Pike_compiler->new_program->id, Pike_compiler->local_class_counter-1);
+	    Pike_compiler->compiler_pass, name->str,
+	    (long)Pike_compiler->new_program->id,
+	    Pike_compiler->local_class_counter-1);
 #endif /* LAMBDA_DEBUG */
     
     f=dooptcode(name,
@@ -4121,6 +4265,18 @@ static void yyerror_reserved(char *keyword)
   SNPRINTF(fmt, sizeof(fmt), "%s is a reserved word.", keyword);
   yyerror(fmt);
 }
+
+static struct pike_string *get_new_name()
+{
+  char buf[40];
+  /* Generate a name for a global symbol... */
+  sprintf(buf,"__lambda_%ld_%ld_line_%d",
+	  (long)Pike_compiler->new_program->id,
+	  (long)(Pike_compiler->local_class_counter++ & 0xffffffff), /* OSF/1 cc bug. */
+	  (int) lex.current_line);
+  return make_shared_string(buf);
+}
+
 
 static int low_islocal(struct compiler_frame *f,
 		       struct pike_string *str)
