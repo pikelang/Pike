@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.378 2007/09/15 13:17:55 grubba Exp $
+|| $Id: language.yacc,v 1.379 2007/09/15 13:18:56 grubba Exp $
 */
 
 %pure_parser
@@ -599,8 +599,7 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
     if(!is_const($3))
     {
       if(Pike_compiler->compiler_pass==2)
-	my_yyerror("Constant definition is not constant (0x%04x).",
-		   $3->tree_info);
+	yyerror("Constant definition is not constant.");
       else
 	add_constant($1->u.sval.u.string, 0,
 		     Pike_compiler->current_modifiers & ~ID_EXTERN);
