@@ -1,7 +1,7 @@
 //
 // Argument parser
 // By Martin Nilsson
-// $Id: Arg.pike,v 1.1 2007/09/16 12:27:13 nilsson Exp $
+// $Id: Arg.pike,v 1.2 2007/09/16 13:07:48 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -351,6 +351,15 @@ class Options
 {
   inherit LowOptions;
 
+  static string|int `[](string id)
+  {
+    return values[id];
+  }
+  static string|int `->(string id)
+  {
+    return values[id];
+  }
+
   static int(0..1)|string unhandled_argument(array(string) argv,
                                              mapping(string:string) env)
   {
@@ -453,7 +462,7 @@ class Getopt
 }
 
 
-void main()
+void main(int num, array args)
 {
-  werror("%O\n", Getopt( ({ "x", "--verbose"}) )->verbose );
+  werror("%O\n", Getopt( args )->verbose );
 }
