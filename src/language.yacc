@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.379 2007/09/15 13:18:56 grubba Exp $
+|| $Id: language.yacc,v 1.380 2007/09/16 11:39:42 grubba Exp $
 */
 
 %pure_parser
@@ -259,6 +259,7 @@ int yylex(YYSTYPE *yylval);
 %type <number> optional_comma
 %type <number> optional_constant
 %type <number> optional_stars
+%type <number> static_list
 
 %type <str> magic_identifiers
 %type <str> magic_identifiers1
@@ -3126,11 +3127,21 @@ safe_comma_expr: comma_expr
   | error { $$=0; }
   ;
 
+static_list: TOK_STATIC
+  { $$ = 1; }
+/*
+  | static_list TOK_STATIC
+  {
+    $$ = $1 + 1;
+  }
+*/
+  ;
+
 comma_expr: comma_expr2
   | simple_type2 local_name_list { $$=$2; free_node($1); }
-  | TOK_STATIC simple_type2 static_name_list { $$=$3; free_node($2); }
+  | static_list simple_type2 static_name_list { $$=$3; free_node($2); }
   | simple_identifier_type local_name_list2 { $$=$2; free_node($1); }
-  | TOK_STATIC simple_identifier_type static_name_list2 { $$=$3; free_node($2); }
+  | static_list simple_identifier_type static_name_list2 { $$=$3; free_node($2); }
   | simple_identifier_type local_function { $$=$2; free_node($1); }
   | simple_type2 local_function2 { $$=$2; free_node($1); }
   ;
@@ -4382,6 +4393,86 @@ int add_local_name(struct pike_string *str,
 			    type,
 			    def);
 }
+
+#if 0
+/* Note that this function eats a reference to each of
+ * 'type' and 'initializer', but not to 'name'.
+ * Note also that 'initializer' may be NULL.
+ */
+static node *add_static_variable(struct pike_string *name,
+				 struct pike_type *type,
+				 int depth,
+				 node *initializer)
+{
+  struct compiler_frame *f = Pike_compiler->compiler_frame;
+  int i;
+  int id;
+  node *n = NULL;
+
+  if (initializer) {
+    /* FIXME: We need to pop levels off local and external variables here. */
+  }
+
+  for(i = depth; f && i; i--) {
+    f->lexical_scope |= SCOPE_SCOPED;
+    f = f->previous;
+  }
+  if (!f) {
+    int parent_depth = i;
+    struct program_state *p = Pike_compiler;
+    struct pike_string *tmp_name;
+    while (i--) {
+      if (!p->previous) {
+	my_yyerror("Too many levels of static (%d, max:%d).",
+		   depth, depth - (i+1));
+	parent_depth -= i+1;
+	break;
+      }
+      p->new_program->flags |= PROGRAM_USES_PARENT;
+      p = p->previous;
+    }
+    
+    tmp_name = get_new_name();
+    id = define_parent_variable(p, tmp_name, type,
+				ID_STATIC|ID_PRIVATE|ID_INLINE);
+    free_string(tmp_name);
+    if (id >= 0) {
+      if (def) {
+	p->init_node =
+	  mknode(F_COMMA_EXPR, Pike_compiler->init_node,
+		 mkcastnode(void_type_string,
+			    mknode(F_ASSIGN, initializer,
+				   mkidentifiernode(id))));
+	initializer = NULL;
+      }
+      n = mkexternalnode(id, parent_depth);
+    }
+  } else if (depth) {
+    f->lexical_scope|=SCOPE_SCOPE_USED;
+    tmp_name = get_new_name();
+    id = low_add_local_name(f, tmp_name, type, NULL);
+    free_string(tmp_name);
+    if(f->min_number_of_locals < id+1)
+      f->min_number_of_locals = id+1;
+    if (initializer) {
+      /* FIXME! */
+      yyerror("Initializers not yet supported for static variables with function scope.");
+    }
+    n = mklocalnode(id, depth);
+  }
+  id = add_local_name(name, type, n);
+  if (id >= 0) {
+    if (initializer) {
+      return mknode(F_ASSIGN, initializer, mklocalnode(id,0));
+    }
+    return mklocalnode(id, 0);
+  }
+  if (initializer) {
+    free_node(initializer);
+  }
+  return NULL;
+}
+#endif /* 0 */
 
 int islocal(struct pike_string *str)
 {
