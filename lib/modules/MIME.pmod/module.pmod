@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.16 2007/09/14 18:53:49 grubba Exp $
+// $Id: module.pmod,v 1.17 2007/09/16 05:06:10 mbaehr Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -1179,6 +1179,7 @@ class Message {
 	       s[offset]>='A' && s[offset]<='Z')))
 	   headers["content-disposition"] =
 	     s[0..offset-1] + replace(s[offset..], "\\", "\\\\");
+        }
       }
       array(array(string|int)) arr =
 	tokenize(headers["content-disposition"]) / ({';'});
