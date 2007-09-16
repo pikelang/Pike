@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.170 2007/09/12 10:47:38 grubba Exp $
+|| $Id: system.c,v 1.171 2007/09/16 13:35:11 nilsson Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.170 2007/09/12 10:47:38 grubba Exp $");
+RCSID("$Id: system.c,v 1.171 2007/09/16 13:35:11 nilsson Exp $");
 
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
@@ -1685,7 +1685,6 @@ int my_isipv6nr(char *s)
     } \
     THREADS_DISALLOW()
 
-#endif
 #endif /* HAVE_OSF1_GETSERVBYNAME_R */
 #endif /* HAVE_SOLARIS_GETSERVBYNAME_R */
 
