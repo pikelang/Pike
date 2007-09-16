@@ -1,27 +1,31 @@
 //
 // Argument parser
 // By Martin Nilsson
-// $Id: Arg.pike,v 1.2 2007/09/16 13:07:48 nilsson Exp $
+// $Id: Arg.pike,v 1.3 2007/09/16 13:32:54 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
 
-// Base class for parsing an argument.
+//! Base class for parsing an argument. Inherit this class to create
+//! custom made argument types.
 class Arg
 {
   constant is_arg = 1;
   static Arg next;
 
-  // Should return 1 for set options or a string containing the value
-  // of the option. Returning 0 means the option was not set (or
-  // matched).
+  //! Should return 1 for set options or a string containing the value
+  //! of the option. Returning 0 means the option was not set (or
+  //! matched). To properly chain arguments parsers, return
+  //! @expr{::get_value(argv, env)@} instead of @expr{0@}, unless you
+  //! want to explicitly stop the chain and not set this option.
   int(0..1)|string get_value(array(string) argv, mapping(string:string) env)
   {
     if(next) return next->get_value(argv, env);
     return 0;
   }
 
-  //
+  //! Should return a list of arguments that is parsed. To properly
+  //! chain argument parsers, return @expr{your_args + ::get_args()@}.
   array(string) get_args()
   {
     return next->get_args();
@@ -43,7 +47,8 @@ class Arg
     return this;
   }
 
-  //
+  //! This function will be called by @expr{_sprintf@}, which handles
+  //! formatting of chaining between objects.
   static string __sprintf()
   {
     return sprintf("%O()", this_program);
@@ -59,7 +64,11 @@ class Arg
   }
 }
 
-// Parses an argument without parameter.
+//! Parses an argument without parameter, such as --help, -x or "x"
+//! from -axb.
+//!
+//! @example
+//!   Arg verbose = NoArg("-v")|NoArg("--verbose");
 class NoArg
 {
   inherit Arg;
@@ -113,7 +122,11 @@ class NoArg
   }
 }
 
-// Environment fallback for an argument.
+//! Environment fallback for an argument. Can of course be used as
+//! only Arg source.
+//!
+//! @example
+//!   Arg debug = NoArg("--debug")|Env("MY_DEBUG");
 class Env
 {
   inherit Arg;
@@ -136,6 +149,10 @@ class Env
   }
 }
 
+//! Default value for a setting.
+//!
+//! @example
+//!   Arg output = HasArg("-o")|Default("a.out");
 class Default
 {
   inherit Arg;
@@ -157,6 +174,13 @@ class Default
   }
 }
 
+//! Parses an argument that may have a parameter. @tt{--foo@},
+//! @tt{-x@} and x in a sequence like @tt{-axb@} will set the variable
+//! to @expr{1@}. @tt{--foo=bar@}, @tt{-x bar@} and @tt{-x=bar@} will
+//! set the variable to @expr{bar@}.
+//!
+//! @example
+//!   Arg debug = MaybyArg("--debug");
 class MaybyArg
 {
   inherit NoArg;
@@ -165,7 +189,7 @@ class MaybyArg
   {
     if( double )
     {
-      // --foo bar
+      // --foo
       if( argv[0]==arg )
       {
         argv[0] = 0;
@@ -215,6 +239,11 @@ class MaybyArg
   }
 }
 
+//! Parses an argument that has a parameter. @tt{--foo=bar@}, @tt{-x
+//! bar@} and @tt{-x=bar@} will set the variable to @expr{bar@}.
+//!
+//! @example
+//!   Arg user = HasArg("--user")|HasArg("-u");
 class HasArg
 {
   inherit NoArg;
@@ -285,7 +314,8 @@ class HasArg
   }
 }
 
-// FIXME: Support for rc files?
+// FIXME: Support for rc files? ( Arg x = Arg("--x")|INIFile(path, name); )
+// FIXME: Support for type casts? ( Arg level = Integer(Arg("--level"));
 
 class LowOptions
 {
@@ -347,6 +377,8 @@ class LowOptions
   }
 }
 
+//! The option parser class that contains all the argument objects.
+//!
 class Options
 {
   inherit LowOptions;
