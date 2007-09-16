@@ -85,6 +85,7 @@ testfont binary
 /lib/modules/ADT.pmod/Table.pmod foreign_ident
 /lib/modules/ADT.pmod/Trie.pike foreign_ident
 /lib/modules/ADT.pmod/testsuite.in foreign_ident
+/lib/modules/Arg.pike foreign_ident
 /lib/modules/Audio.pmod/Codec.pmod foreign_ident
 /lib/modules/Audio.pmod/Format.pmod/MP3.pike foreign_ident
 /lib/modules/Audio.pmod/Format.pmod/module.pmod foreign_ident
