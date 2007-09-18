@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.380 2007/09/16 11:39:42 grubba Exp $
+|| $Id: language.yacc,v 1.381 2007/09/18 13:55:58 grubba Exp $
 */
 
 %pure_parser
@@ -259,7 +259,6 @@ int yylex(YYSTYPE *yylval);
 %type <number> optional_comma
 %type <number> optional_constant
 %type <number> optional_stars
-%type <number> static_list
 
 %type <str> magic_identifiers
 %type <str> magic_identifiers1
@@ -335,8 +334,6 @@ int yylex(YYSTYPE *yylval);
 %type <n> m_expr_list2
 %type <n> new_local_name
 %type <n> new_local_name2
-%type <n> new_static_name
-%type <n> new_static_name2
 %type <n> normal_label_statement
 %type <n> optional_else_part
 %type <n> optional_label
@@ -345,8 +342,6 @@ int yylex(YYSTYPE *yylval);
 %type <n> statement
 %type <n> statements
 %type <n> statement_with_semicolon
-%type <n> static_name_list
-%type <n> static_name_list2
 %type <n> switch
 %type <n> typeof
 %type <n> unused
@@ -1751,158 +1746,6 @@ new_local_name2: TOK_IDENTIFIER
   | bad_identifier '=' safe_expr0 { $$=$3; }
   ;
 
-new_static_name: optional_stars TOK_IDENTIFIER
-  {
-    int id;
-    struct pike_type *type;
-    struct pike_string *name;
-    node *n = NULL;
-
-    push_finished_type($<n>0->u.sval.u.type);
-    if ($1 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
-      yywarning("The *-syntax in types is obsolete. Use array instead.");
-    }
-    while($1--) push_type(T_ARRAY);
-    type = compiler_pop_type();
-
-    name = get_new_name();
-
-    add_ref(type);
-    id = define_variable(name, type, ID_STATIC|ID_PRIVATE|ID_INLINE);
-    free_string(name);
-    if (id >= 0) {
-      n = mkidentifiernode(id);
-    }
-
-    id = add_local_name($2->u.sval.u.string, type, n);
-    if (id >= 0) {
-      /* FIXME: Consider using mklocalnode(id, -1). */
-      $$ = mklocalnode(id, 0);
-    } else
-      $$ = 0;
-    free_node($2);
-  }
-  | optional_stars bad_identifier { $$=0; }
-  | optional_stars TOK_IDENTIFIER '=' expr0 
-  {
-    int id;
-    struct pike_type *type;
-    struct pike_string *name;
-    node *n = NULL;
-
-    push_finished_type($<n>0->u.sval.u.type);
-    if ($1 && (Pike_compiler->compiler_pass == 2) && !TEST_COMPAT (0, 6)) {
-      yywarning("The *-syntax in types is obsolete. Use array instead.");
-    }
-    while($1--) push_type(T_ARRAY);
-    type = compiler_pop_type();
-
-    name = get_new_name();
-
-    add_ref(type);
-    id = define_variable(name, type, ID_STATIC|ID_PRIVATE|ID_INLINE);
-    if (id >= 0) {
-      n = mkidentifiernode(id);
-      if ($4->tree_info & OPT_NOT_CONST) {
-	my_yyerror("Invalid initializer for static variable %S(%S).",
-		   $2->u.sval.u.string, name);
-      }
-      add_ref(n);
-      Pike_compiler->init_node =
-	mknode(F_COMMA_EXPR, Pike_compiler->init_node,
-	       mkcastnode(void_type_string,
-			  mknode(F_ASSIGN, $4, n)));
-    }
-    free_string(name);
-    id = add_local_name($2->u.sval.u.string, type, n);
-#if 0
-    if (id >= 0)
-      $$ = mklocalnode(id, 0);
-    else
-#endif
-      $$ = 0;
-    if (!n) free_node($4);
-    free_node($2);
-  }
-  | optional_stars bad_identifier '=' expr0
-  {
-    free_node($4);
-    $$=0;
-  }
-  | optional_stars TOK_IDENTIFIER '=' error
-  {
-    free_node($2);
-    /* No yyerok here since we aren't done yet. */
-    $$=0;
-  }
-  | optional_stars TOK_IDENTIFIER '=' TOK_LEX_EOF
-  {
-    yyerror("Unexpected end of file in local variable definition.");
-    free_node($2);
-    /* No yyerok here since we aren't done yet. */
-    $$=0;
-  }
-  ;
-
-new_static_name2: TOK_IDENTIFIER
-  {
-    int id;
-    struct pike_type *type = $<n>0->u.sval.u.type;
-    struct pike_string *name;
-    node *n = NULL;
-
-    name = get_new_name();
-
-    add_ref(type);
-    id = define_variable(name, type, ID_STATIC|ID_PRIVATE|ID_INLINE);
-    free_string(name);
-    if (id >= 0) {
-      n = mkidentifiernode(id);
-    }
-    add_ref(type);
-    id = add_local_name($1->u.sval.u.string, type, n);
-    if (id >= 0) {
-      $$ = mklocalnode(id, 0);
-    } else
-      $$ = 0;
-    free_node($1);
-  }
-  | bad_identifier { $$=0; }
-  | TOK_IDENTIFIER '=' safe_expr0
-  {
-    int id;
-    struct pike_type *type = $<n>0->u.sval.u.type;
-    struct pike_string *name;
-    node *n = NULL;
-
-    name = get_new_name();
-
-    add_ref(type);
-    id = define_variable(name, type, ID_STATIC|ID_PRIVATE|ID_INLINE);
-    if (id >= 0) {
-      n = mkidentifiernode(id);
-      if ($3->tree_info & OPT_NOT_CONST) {
-	my_yyerror("Invalid initializer for static variable %S(%S).",
-		   $1->u.sval.u.string, name);
-      }
-      add_ref(n);
-      Pike_compiler->init_node =
-	mknode(F_COMMA_EXPR, Pike_compiler->init_node,
-	       mkcastnode(void_type_string,
-			  mknode(F_ASSIGN, $3, n)));
-    }
-    free_string(name);
-    add_ref(type);
-    id = add_local_name($1->u.sval.u.string, type, n);
-    if (id >= 0)
-      $$ = mklocalnode(id, 0);
-    else
-      $$ = 0;
-    free_node($1);
-  }
-  | bad_identifier '=' safe_expr0 { $$=$3; }
-  ;
-
 line_number_info: /* empty */
   {
     /* Used to hold line-number info */
@@ -1957,16 +1800,6 @@ local_name_list: new_local_name
 
 local_name_list2: new_local_name2
   | local_name_list2 ',' { $<n>$=$<n>0; } new_local_name
-    { $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $4); }
-  ;
-
-static_name_list: new_static_name
-  | static_name_list ',' { $<n>$=$<n>0; } new_static_name
-    { $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $4); }
-  ;
-
-static_name_list2: new_static_name2
-  | static_name_list2 ',' { $<n>$=$<n>0; } new_static_name
     { $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1), $4); }
   ;
 
@@ -3127,21 +2960,9 @@ safe_comma_expr: comma_expr
   | error { $$=0; }
   ;
 
-static_list: TOK_STATIC
-  { $$ = 1; }
-/*
-  | static_list TOK_STATIC
-  {
-    $$ = $1 + 1;
-  }
-*/
-  ;
-
 comma_expr: comma_expr2
   | simple_type2 local_name_list { $$=$2; free_node($1); }
-  | static_list simple_type2 static_name_list { $$=$3; free_node($2); }
   | simple_identifier_type local_name_list2 { $$=$2; free_node($1); }
-  | static_list simple_identifier_type static_name_list2 { $$=$3; free_node($2); }
   | simple_identifier_type local_function { $$=$2; free_node($1); }
   | simple_type2 local_function2 { $$=$2; free_node($1); }
   ;
