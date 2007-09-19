@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.155 2007/06/16 17:20:28 nilsson Exp $
+|| $Id: backend.cmod,v 1.156 2007/09/19 08:31:38 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.155 2007/06/16 17:20:28 nilsson Exp $");
+RCSID("$Id: backend.cmod,v 1.156 2007/09/19 08:31:38 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -3132,9 +3132,9 @@ PIKECLASS Backend
 
 	set_nonblocking(pipe[0],1);
 	set_nonblocking(pipe[1],1);
+	me->wakeup_pipe_send_fd = pipe[1];
 	INIT_FD_CALLBACK_BOX (&me->wakeup_cb_box, me, NULL,
 			      pipe[0], PIKE_BIT_FD_READ, wakeup_callback);
-	me->wakeup_pipe_send_fd = pipe[1];
 
 	/* Don't keep these on exec! */
 	set_close_on_exec(pipe[0], 1);
