@@ -8,6 +8,29 @@ o Fixed infinite loop that could occur when feeding Image.XBM with
 o Added option "file" to Image.PS.decode().
 o Image.PS.decode() now reads nonblocking from the pipes.
 o Added "Regexp.PCRE.Widestring" to the feature list.
+o Added ADT.Trie data type.
+o Encoder, Decoder and Codec are now available in the Pike module.
+  While the programs were always retrievable from the master object,
+  now they can be inherited in codecs that wish to extend the master
+  codecs.
+o The XMLRPC module can now serialize Calender objects. Only 200
+  responses will be attempted to be decoded. Fixed a bug in handling
+  of string values.
+o In the Sql module, do not show the total row count after a
+  big_query, if unavilable.
+o Fixed a race condition in Stdio.mkdirhier()
+o Fixed some memory problems in the backend pointed out by valgrind
+  and others.
+o Fixed bug ingethrvtime when cpu_time_t isn't 64 bit long.
+o Fixed bug in finding out svalue type for trampolines.
+o Don't crash when not sending ssl options to Mysql.
+o Fix for case where ODBC tried to write error messages with wide
+  strings in them.
+o Bugfixes for ODBC long fields.
+o Added handling of ISO-6937:2001 in charset decoder.
+o Many dup2() fixes in Stdio.File.
+o More error handling added to Monger.
+o More error handling added to cgrep.
 o Added more methods to enable the buggy unicode decode support in
   Mysql.mysql:
 
@@ -25,6 +48,12 @@ Build fixes:
 
 o Mird: Renamed FDATASYNC() to MIRD_FDATASYNC() to avoid clash with
   NetBSD header-files.
+o The precompiler doesn't generate broken string width check code.
+o Fixed some problems with configure tests using rusage and threads.
+
+Other:
+
+o Bugfixed GUID generation in installer.
 
 
 Changes since Pike 7.6.86
