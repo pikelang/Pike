@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.618 2007/09/14 18:38:43 grubba Exp $
+|| $Id: program.c,v 1.619 2007/09/24 19:18:24 grubba Exp $
 */
 
 #include "global.h"
@@ -1997,12 +1997,17 @@ void fixate_program(void)
     Pike_fatal("Cannot fixate optimized program\n");
 #endif
 
-  /* Fixup identifier_flags. */
+  /* Fixup the runtime type for functions.
+   * (T_MIXED is used as the tentative type marker in pass 1).
+   */
   for (i=0; i < p->num_identifiers; i++) {
-    if (IDENTIFIER_IS_FUNCTION(p->identifiers[i].identifier_flags) ==
-	IDENTIFIER_FUNCTION) {
-      /* Get rid of any remaining tentative type markers. */
-      p->identifiers[i].identifier_flags &= ~IDENTIFIER_C_FUNCTION;
+    if (IDENTIFIER_IS_FUNCTION(p->identifiers[i].identifier_flags) &&
+	(p->identifiers[i].run_time_type == T_MIXED)) {
+      /* Get rid of the remaining tentative type marker. */
+      /* FIXME: Should probably never be reachable.
+       *        Consider a fatal?
+       */
+      p->identifiers[i].run_time_type = T_FUNCTION;
     }
   }
 
@@ -5026,6 +5031,7 @@ INT32 define_function(struct pike_string *name,
   struct identifier *funp,fun;
   struct reference ref;
   struct svalue *lfun_type;
+  int run_time_type = T_FUNCTION;
   INT32 i;
   INT32 getter_setter_offset = -1;
 
@@ -5152,11 +5158,12 @@ INT32 define_function(struct pike_string *name,
     Pike_compiler->new_program->flags |= PROGRAM_HAS_C_METHODS;
 
   if (Pike_compiler->compiler_pass == 1) {
-    /* Mark the type as tentative by reusing IDENTIFIER_C_FUNCTION.
+    /* Mark the type as tentative by setting the runtime-type
+     * to T_MIXED.
      *
-     * NOTE: This flag MUST be cleared in the second pass.
+     * NOTE: This should be reset to T_FUNCTION in pass 2.
      */
-    function_flags |= IDENTIFIER_C_FUNCTION;
+    run_time_type = T_MIXED;
   }
 
   i=isidentifier(name);
@@ -5193,8 +5200,12 @@ INT32 define_function(struct pike_string *name,
 	return i;
       }
 
-      if (IDENTIFIER_IS_FUNCTION(funp->identifier_flags) !=
-	  IDENTIFIER_FUNCTION) {
+      /* Note: The type from pass 1 may be incompatible with the one from
+       *       pass 2. Only do this in pass 2, and only if the previous
+       *       type isn't from pass 1.
+       */
+      if ((Pike_compiler->compiler_pass == 2) &&
+	  (funp->run_time_type == T_FUNCTION)) {
 	/* match types against earlier prototype or vice versa */
 	if(!match_types(type, funp->type))
 	{
@@ -5213,6 +5224,7 @@ INT32 define_function(struct pike_string *name,
 #endif
 
       funp->identifier_flags=function_flags;
+      funp->run_time_type = run_time_type;
 
       funp->opt_flags &= opt_flags;
 
@@ -5253,7 +5265,7 @@ INT32 define_function(struct pike_string *name,
       copy_shared_string(fun.name, name);
       copy_pike_type(fun.type, type);
 
-      fun.run_time_type=T_FUNCTION;
+      fun.run_time_type = run_time_type;
 
       fun.identifier_flags=function_flags;
 
@@ -5302,7 +5314,7 @@ INT32 define_function(struct pike_string *name,
     copy_pike_type(fun.type, type);
 
     fun.identifier_flags=function_flags;
-    fun.run_time_type=T_FUNCTION;
+    fun.run_time_type = run_time_type;
 
     if(func)
       fun.func = *func;
@@ -5782,12 +5794,30 @@ struct array *program_values(struct program *p)
   return(res);
 }
 
-void program_index_no_free(struct svalue *to, struct program *p,
-			   struct svalue *ind)
+int program_index_no_free(struct svalue *to, struct svalue *what,
+			  struct svalue *ind)
 {
   int e;
   struct pike_string *s;
+  struct object *parent = NULL;
+  struct svalue *sub = NULL;
+  struct program *p;
+  struct identifier *id;
 
+  if (what->type == T_PROGRAM) {
+    p = what->u.program;
+  } else if ((what->type == T_FUNCTION) &&
+	     (what->subtype != FUNCTION_BUILTIN) &&
+	     ((parent = what->u.object)->prog) &&
+	     IDENTIFIER_IS_CONSTANT((id = ID_FROM_INT(parent->prog,
+						      what->subtype))->identifier_flags) &&
+	     (id->func.offset != -1) &&
+	     ((sub = &PROG_FROM_INT(parent->prog, what->subtype)->constants[id->func.offset].sval)->type == T_PROGRAM)) {
+    p = sub->u.program;
+  } else {
+    /* Not a program. */
+    return 0;
+  }
   if (ind->type != T_STRING) {
     Pike_error("Can't index a program with a %s (expected string)\n",
 	  get_name_of_type(ind->type));
@@ -5809,13 +5839,14 @@ void program_index_no_free(struct svalue *to, struct program *p,
 	to->subtype = 0;
 	to->u.integer = 0;
       }
-      return;
+      return 1;
     }
   }
 
   to->type=T_INT;
   to->subtype=NUMBER_UNDEFINED;
   to->u.integer=0;
+  return 1;
 }
 
 /*

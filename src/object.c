@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.274 2007/05/26 19:14:58 mast Exp $
+|| $Id: object.c,v 1.275 2007/09/24 19:18:24 grubba Exp $
 */
 
 #include "global.h"
@@ -1092,9 +1092,6 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 
   switch(i->identifier_flags & IDENTIFIER_TYPE_MASK)
   {
-  case IDENTIFIER_FUNCTION:
-    /* Pike function with tentative type from the first pass. */
-    /* FALL_THROUGH */
   case IDENTIFIER_PIKE_FUNCTION:
     if (i->func.offset == -1 && p->flags & PROGRAM_FINISHED) {
       /* Prototype. In the first pass we must be able to get a
@@ -1103,6 +1100,10 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
        * We also need to get a function anyway if we're currently
        * in the second pass of compiling this program, since the
        * function might be defined further ahead.
+       *
+       * FIXME: Consider looking at IDENTIFIER_HAS_BODY in pass 2?
+       *
+       * On the other hand, consider mixins.
        */
       to->type=T_INT;
       to->subtype=NUMBER_UNDEFINED;

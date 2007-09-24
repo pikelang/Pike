@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.229 2007/05/26 19:14:59 mast Exp $
+|| $Id: program.h,v 1.230 2007/09/24 19:18:25 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -216,11 +216,13 @@ union idptr
 };
 
 #define IDENTIFIER_VARIABLE 0
-#define IDENTIFIER_PIKE_FUNCTION 1
+#define IDENTIFIER_CONSTANT 1
 #define IDENTIFIER_C_FUNCTION 2
-#define IDENTIFIER_FUNCTION 3
-#define IDENTIFIER_CONSTANT 4
-#define IDENTIFIER_TYPE_MASK 7
+#define IDENTIFIER_PIKE_FUNCTION 3
+#define IDENTIFIER_FUNCTION 2
+#define IDENTIFIER_TYPE_MASK 3
+
+#define IDENTIFIER_EXTERN 4  /* Identifier actually in a surrounding scope. */
 
 #define IDENTIFIER_VARARGS 8	/* Used for functions only. */
 #define IDENTIFIER_NO_THIS_REF 8 /* Used for variables only: Don't count refs to self. */
@@ -230,10 +232,11 @@ union idptr
 #define IDENTIFIER_ALIAS 128   /* This identifier is an alias. */
 
 #define IDENTIFIER_IS_FUNCTION(X) ((X) & IDENTIFIER_FUNCTION)
-#define IDENTIFIER_IS_PIKE_FUNCTION(X) ((X) & IDENTIFIER_PIKE_FUNCTION)
-#define IDENTIFIER_IS_C_FUNCTION(X) ((X) & IDENTIFIER_C_FUNCTION)
-#define IDENTIFIER_IS_CONSTANT(X) ((X) & IDENTIFIER_CONSTANT)
+#define IDENTIFIER_IS_PIKE_FUNCTION(X) (((X) & IDENTIFIER_TYPE_MASK) == IDENTIFIER_PIKE_FUNCTION)
+#define IDENTIFIER_IS_C_FUNCTION(X) (((X) & IDENTIFIER_TYPE_MASK) == IDENTIFIER_C_FUNCTION)
+#define IDENTIFIER_IS_CONSTANT(X) (((X) & IDENTIFIER_TYPE_MASK) == IDENTIFIER_CONSTANT)
 #define IDENTIFIER_IS_VARIABLE(X) (!((X) & IDENTIFIER_TYPE_MASK))
+#define IDENTIFIER_IS_SCOPED(X) ((X) & IDENTIFIER_SCOPED)
 #define IDENTIFIER_IS_ALIAS(X)	((X) & IDENTIFIER_ALIAS)
 
 #define IDENTIFIER_MASK 255
@@ -591,7 +594,7 @@ struct program
 #endif
 };
 
-#if 0
+#if PIKE_DEBUG
 static INLINE int CHECK_IDREF_RANGE (int x, const struct program *p)
 {
   if (x < 0 || x >= p->num_identifier_references)
@@ -831,8 +834,8 @@ int store_constant(struct svalue *foo,
 		   struct pike_string *constant_name);
 struct array *program_indices(struct program *p);
 struct array *program_values(struct program *p);
-void program_index_no_free(struct svalue *to, struct program *p,
-			   struct svalue *ind);
+int program_index_no_free(struct svalue *to, struct svalue *what,
+			  struct svalue *ind);
 int get_small_number(char **q);
 void ext_store_program_line (struct program *prog, INT32 line, struct pike_string *file);
 void start_line_numbering(void);

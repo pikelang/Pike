@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.221 2007/05/03 09:04:10 grubba Exp $
+|| $Id: operators.c,v 1.222 2007/09/24 19:18:24 grubba Exp $
 */
 
 #include "global.h"
@@ -97,19 +97,10 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 		    get_name_of_type (ind->type));
     }
 
-  case T_PROGRAM:
-    program_index_no_free(to, what->u.program, ind);
-    break;
-
   case T_FUNCTION:
-    {
-      struct program *p = program_from_svalue(what);
-      if (p) {
-	program_index_no_free(to, p, ind);
-	break;
-      }
-    }
-    /* FALL THROUGH */
+  case T_PROGRAM:
+    if (program_index_no_free(to, what, ind)) break;
+    goto index_error;
 
 #ifdef AUTO_BIGNUM
   case T_INT:
@@ -135,6 +126,7 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 #endif /* AUTO_BIGNUM */    
 
   default:
+  index_error:
     if (ind->type == T_INT)
       Pike_error ("Cannot index %s with %"PRINTPIKEINT"d.\n",
 		  (what->type == T_INT && !what->u.integer)?
