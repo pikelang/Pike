@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.230 2007/09/24 19:18:25 grubba Exp $
+|| $Id: program.h,v 1.231 2007/09/25 15:27:04 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -195,22 +195,33 @@ struct object;
 
 union idptr
 {
-  /* C function pointer. */
+  /* External symbol reference. (IDENTIFIER_EXTERN)
+   *
+   * Note that this bit MUST be checked to be zero
+   * before looking at the other four cases!
+   */
+  struct {
+    unsigned short depth;	/* Scope count. */
+    unsigned short id;		/* Reference number. */
+  } ext_ref;
+
+  /* C function pointer. (IDENTIFIER_C_FUNCTION) */
   void (*c_fun)(INT32);
 
   /* For variables: Offset of the variable in the storage pointed to
    * by inherit.storage_offset in the struct inherit that corresponds
    * to the identifier. See LOW_GET_GLOBAL and GET_GLOBAL. The stored
    * variable may be either a normal or a short svalue, depending on
-   * identifier.run_time_type.
+   * identifier.run_time_type. (IDENTIFIER_VARIABLE)
    *
    * For constants: Offset of the struct program_constant in
    * program.constants in the program pointed to by prog in the struct
-   * inherit that corresponds to the identifier.
+   * inherit that corresponds to the identifier. (IDENTIFIER_CONSTANT)
    *
    * For pike functions: Offset to the start of the function in
    * program.program in the program pointed to by prog in the struct
    * inherit that corresponds to the identifier. Or -1 if a prototype.
+   * (IDENTIFIER_PIKE_FUNCTION)
    */
   ptrdiff_t offset;
 };
