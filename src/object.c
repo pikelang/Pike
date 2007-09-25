@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.275 2007/09/24 19:18:24 grubba Exp $
+|| $Id: object.c,v 1.276 2007/09/25 17:36:00 grubba Exp $
 */
 
 #include "global.h"
@@ -1080,15 +1080,28 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 					  ptrdiff_t f)
 {
   struct identifier *i;
-  struct program *p=o->prog;
-  
-  if(!p)
-    Pike_error("Cannot access variables in destructed object.\n");
+  struct program *p = NULL;
 
-  debug_malloc_touch(o);
-  debug_malloc_touch(o->storage);
+  while(1) {
+    struct external_variable_context loc;
 
-  i=ID_FROM_INT(p, f);
+    if(!o || !(p = o->prog)) {
+      Pike_error("Cannot access variables in destructed object.\n");
+    }
+    debug_malloc_touch(o);
+    debug_malloc_touch(o->storage);
+
+    i=ID_FROM_INT(p, f);
+
+    if (!IDENTIFIER_IS_EXTERN(i->identifier_flags)) break;
+
+    loc.o = o;
+    loc.inherit = INHERIT_FROM_INT(p, f);
+    loc.parent_identifier = f;
+    find_external_context(&loc, i->func.ext_ref.depth);
+    f = i->func.ext_ref.id + loc.inherit->identifier_level;
+    o = loc.o;
+  }
 
   switch(i->identifier_flags & IDENTIFIER_TYPE_MASK)
   {
@@ -1343,17 +1356,31 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
   struct program *p = NULL;
   int rtt, id_flags;
 
-  if(!o || !(p=o->prog))
-  {
-    Pike_error("Lookup in destructed object.\n");
-    return; /* make gcc happy */
+  while(1) {
+    struct external_variable_context loc;
+
+    if(!o || !(p=o->prog))
+    {
+      Pike_error("Lookup in destructed object.\n");
+      return; /* make gcc happy */
+    }
+
+    debug_malloc_touch(o);
+    debug_malloc_touch(o->storage);
+
+    i=ID_FROM_INT(p, f);
+
+    if (!IDENTIFIER_IS_EXTERN(i->identifier_flags)) break;
+
+    loc.o = o;
+    loc.inherit = INHERIT_FROM_INT(p, f);
+    loc.parent_identifier = f;
+    find_external_context(&loc, i->func.ext_ref.depth);
+    f = i->func.ext_ref.id + loc.inherit->identifier_level;
+    o = loc.o;
   }
 
-  debug_malloc_touch(o);
-  debug_malloc_touch(o->storage);
   check_destructed(from);
-
-  i=ID_FROM_INT(p, f);
   rtt = i->run_time_type;
   id_flags = i->identifier_flags;
 
