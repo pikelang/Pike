@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.231 2007/09/25 15:27:04 grubba Exp $
+|| $Id: program.h,v 1.232 2007/09/25 16:56:23 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -247,6 +247,7 @@ union idptr
 #define IDENTIFIER_IS_C_FUNCTION(X) (((X) & IDENTIFIER_TYPE_MASK) == IDENTIFIER_C_FUNCTION)
 #define IDENTIFIER_IS_CONSTANT(X) (((X) & IDENTIFIER_TYPE_MASK) == IDENTIFIER_CONSTANT)
 #define IDENTIFIER_IS_VARIABLE(X) (!((X) & IDENTIFIER_TYPE_MASK))
+#define IDENTIFIER_IS_EXTERN(X) ((X) & IDENTIFIER_EXTERN)
 #define IDENTIFIER_IS_SCOPED(X) ((X) & IDENTIFIER_SCOPED)
 #define IDENTIFIER_IS_ALIAS(X)	((X) & IDENTIFIER_ALIAS)
 
