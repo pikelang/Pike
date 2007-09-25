@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.619 2007/09/24 19:18:24 grubba Exp $
+|| $Id: program.c,v 1.620 2007/09/25 16:56:53 grubba Exp $
 */
 
 #include "global.h"
@@ -3067,14 +3067,25 @@ void check_program(struct program *p)
        (p->identifiers[e].run_time_type!=PIKE_T_GET_SET))
       check_type(p->identifiers[e].run_time_type);
 
-    if(IDENTIFIER_IS_VARIABLE(p->identifiers[e].identifier_flags))
-    {
-      if( (p->identifiers[e].func.offset /* + OFFSETOF(object,storage)*/ ) &
-	 (alignof_variable(p->identifiers[e].run_time_type)-1))
+    if (!IDENTIFIER_IS_EXTERN(p->identifiers[e].identifier_flags)) {
+      if(IDENTIFIER_IS_VARIABLE(p->identifiers[e].identifier_flags))
       {
-	Pike_fatal("Variable %s offset is not properly aligned (%ld).\n",
-	      p->identifiers[e].name->str,
-	      PTRDIFF_T_TO_LONG(p->identifiers[e].func.offset));
+	if( (p->identifiers[e].func.offset /* + OFFSETOF(object,storage)*/ ) &
+	    (alignof_variable(p->identifiers[e].run_time_type)-1))
+	{
+	  Pike_fatal("Variable %s offset is not properly aligned (%ld).\n",
+		     p->identifiers[e].name->str,
+		     PTRDIFF_T_TO_LONG(p->identifiers[e].func.offset));
+	}
+      }
+    } else {
+      /* FIXME: Check that ext_ref.depth and ext_ref.id are valid and
+       *        have matching identifier_flags.
+       */
+      if (!(p->flags & PROGRAM_USES_PARENT)) {
+	Pike_fatal("Identifier %d is an external reference, but "
+		   "PROGRAM_USES_PARENT hasn't been set.\n",
+		   e);
       }
     }
   }
