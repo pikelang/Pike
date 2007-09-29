@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.232 2007/09/25 16:56:23 grubba Exp $
+|| $Id: program.h,v 1.233 2007/09/29 15:09:03 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -233,25 +233,24 @@ union idptr
 #define IDENTIFIER_FUNCTION 2
 #define IDENTIFIER_TYPE_MASK 3
 
-#define IDENTIFIER_EXTERN 4  /* Identifier actually in a surrounding scope. */
-
+#define IDENTIFIER_ALIAS 4  /* Identifier is an alias for another
+			     * (possibly extern) symbol.
+			     */
 #define IDENTIFIER_VARARGS 8	/* Used for functions only. */
 #define IDENTIFIER_NO_THIS_REF 8 /* Used for variables only: Don't count refs to self. */
 #define IDENTIFIER_HAS_BODY 16  /* Function has a body (set already in pass 1). */
 #define IDENTIFIER_SCOPED 32   /* This is used for local functions only */
 #define IDENTIFIER_SCOPE_USED 64 /* contains scoped local functions */
-#define IDENTIFIER_ALIAS 128   /* This identifier is an alias. */
 
 #define IDENTIFIER_IS_FUNCTION(X) ((X) & IDENTIFIER_FUNCTION)
 #define IDENTIFIER_IS_PIKE_FUNCTION(X) (((X) & IDENTIFIER_TYPE_MASK) == IDENTIFIER_PIKE_FUNCTION)
 #define IDENTIFIER_IS_C_FUNCTION(X) (((X) & IDENTIFIER_TYPE_MASK) == IDENTIFIER_C_FUNCTION)
 #define IDENTIFIER_IS_CONSTANT(X) (((X) & IDENTIFIER_TYPE_MASK) == IDENTIFIER_CONSTANT)
 #define IDENTIFIER_IS_VARIABLE(X) (!((X) & IDENTIFIER_TYPE_MASK))
-#define IDENTIFIER_IS_EXTERN(X) ((X) & IDENTIFIER_EXTERN)
-#define IDENTIFIER_IS_SCOPED(X) ((X) & IDENTIFIER_SCOPED)
 #define IDENTIFIER_IS_ALIAS(X)	((X) & IDENTIFIER_ALIAS)
+#define IDENTIFIER_IS_SCOPED(X) ((X) & IDENTIFIER_SCOPED)
 
-#define IDENTIFIER_MASK 255
+#define IDENTIFIER_MASK 127
 
 /*
  * Every constant, class, function and variable
@@ -301,9 +300,8 @@ struct program_constant
 #define ID_OPTIONAL       0x100	/* Symbol is not required by the interface */
 #define ID_EXTERN         0x200	/* Symbol is defined later */
 #define ID_VARIANT	  0x400 /* Function is overloaded by argument. */
-#define ID_ALIAS	  0x800 /* Variable is an overloaded alias. */
 
-#define ID_MODIFIER_MASK 0x0fff
+#define ID_MODIFIER_MASK 0x07ff
 
 #define ID_STRICT_TYPES  0x8000	/* #pragma strict_types */
 #define ID_SAVE_PARENT  0x10000 /* #pragma save_parent */
@@ -769,6 +767,10 @@ void simple_do_inherit(struct pike_string *s,
 		       INT32 flags,
 		       struct pike_string *name);
 int isidentifier(struct pike_string *s);
+int low_define_alias(struct pike_string *name, struct pike_type *type,
+		     int flags, int depth, int refno);
+PMOD_EXPORT int define_alias(struct pike_string *name, struct pike_type *type,
+			     int flags, int depth, int refno);
 int low_define_variable(struct pike_string *name,
 			struct pike_type *type,
 			INT32 flags,
@@ -913,8 +915,7 @@ void pop_local_variables(int level);
 void pop_compiler_frame(void);
 ptrdiff_t low_get_storage(struct program *o, struct program *p);
 PMOD_EXPORT char *get_storage(struct object *o, struct program *p);
-struct program *low_program_from_function(struct program *p,
-					  INT32 i);
+struct program *low_program_from_function(struct object *o, INT32 i);
 PMOD_EXPORT struct program *program_from_function(const struct svalue *f);
 PMOD_EXPORT struct program *program_from_svalue(const struct svalue *s);
 struct find_child_cache_s;

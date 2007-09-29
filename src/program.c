@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.620 2007/09/25 16:56:53 grubba Exp $
+|| $Id: program.c,v 1.621 2007/09/29 15:09:02 grubba Exp $
 */
 
 #include "global.h"
@@ -3067,7 +3067,7 @@ void check_program(struct program *p)
        (p->identifiers[e].run_time_type!=PIKE_T_GET_SET))
       check_type(p->identifiers[e].run_time_type);
 
-    if (!IDENTIFIER_IS_EXTERN(p->identifiers[e].identifier_flags)) {
+    if (!IDENTIFIER_IS_ALIAS(p->identifiers[e].identifier_flags)) {
       if(IDENTIFIER_IS_VARIABLE(p->identifiers[e].identifier_flags))
       {
 	if( (p->identifiers[e].func.offset /* + OFFSETOF(object,storage)*/ ) &
@@ -3082,7 +3082,8 @@ void check_program(struct program *p)
       /* FIXME: Check that ext_ref.depth and ext_ref.id are valid and
        *        have matching identifier_flags.
        */
-      if (!(p->flags & PROGRAM_USES_PARENT)) {
+      if (p->identifiers[e].func.ext_ref.depth &&
+	  !(p->flags & PROGRAM_USES_PARENT)) {
 	Pike_fatal("Identifier %d is an external reference, but "
 		   "PROGRAM_USES_PARENT hasn't been set.\n",
 		   e);
@@ -3113,7 +3114,8 @@ void check_program(struct program *p)
 
     i=ID_FROM_INT(p, e);
 
-    if(IDENTIFIER_IS_VARIABLE(i->identifier_flags))
+    if(IDENTIFIER_IS_VARIABLE(i->identifier_flags) &&
+       !IDENTIFIER_IS_ALIAS(i->identifier_flags))
     {
       size_t q, size;
       /* Variable */
@@ -4273,6 +4275,7 @@ void compiler_do_inherit(node *n,
 
   continue_inherit:
 
+      /* FIXME: Support external constants. */
       if(numid != IDREF_MAGIC_THIS &&
 	 (IDENTIFIER_IS_CONSTANT((i=ID_FROM_INT(p, numid))->
 				 identifier_flags)) &&
@@ -4359,6 +4362,157 @@ int isidentifier(struct pike_string *s)
 						  SEE_STATIC|SEE_PRIVATE);
 }
 
+/* Define an alias for a (possibly extern) identifier.
+ *
+ * Note that both type and name may be NULL. If they are NULL
+ * they will be defaulted to the values from the aliased identifier.
+ */
+int low_define_alias(struct pike_string *name, struct pike_type *type,
+		     int flags, int depth, int refno)
+{
+  int n;
+  int e;
+
+  struct program_state *state = Pike_compiler;
+  struct identifier dummy, *id;
+  struct reference ref;
+
+#ifdef PIKE_DEBUG
+  if(Pike_compiler->new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
+    Pike_fatal("Attempting to add variable to fixed program\n");
+
+  if(Pike_compiler->compiler_pass==2)
+    Pike_fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n"
+	  "Added identifier: \"%s\"\n", name->str);
+#endif
+
+  for(e = 0; state && (e < depth); e++) {
+    state = state->previous;
+  }
+
+#ifdef PIKE_DEBUG
+  if (!state) {
+    Pike_fatal("Internal error: External symbol buried too deep.\n");
+  }
+  if (state->new_program->num_identifier_references <= refno) {
+    Pike_fatal("Internal error: Reference out of bounds: %d (max: %d).\n",
+	       refno, state->new_program->num_identifier_references);
+  }
+#endif
+
+  id = ID_FROM_INT(state->new_program, refno);
+
+  if (name) {
+    copy_shared_string(dummy.name, name);
+  } else {
+    copy_shared_string(dummy.name, id->name);
+  }
+  if (type) {
+    copy_pike_type(dummy.type, type);
+  } else {
+    copy_pike_type(dummy.type, id->type);
+  }
+  dummy.identifier_flags = id->identifier_flags | IDENTIFIER_ALIAS;
+  dummy.run_time_type = id->run_time_type;	/* Not actually used. */
+  dummy.func.ext_ref.depth = depth;
+  dummy.func.ext_ref.id = refno;
+#ifdef PROFILING
+  dummy.self_time=0;
+  dummy.num_calls=0;
+  dummy.total_time=0;
+#endif
+
+  ref.id_flags=flags;
+  ref.identifier_offset=Pike_compiler->new_program->num_identifiers;
+  ref.inherit_offset=0;
+
+  debug_add_to_identifiers(dummy);
+
+  n = Pike_compiler->new_program->num_identifier_references;
+  add_to_identifier_references(ref);
+
+  return n;
+}
+
+PMOD_EXPORT int define_alias(struct pike_string *name, struct pike_type *type,
+			     int flags, int depth, int refno)
+{
+  /* FIXME: Support NULL name and type. */
+  int n = isidentifier(name);
+
+  if(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE)
+  {
+    if(n==-1)
+      yyerror("Pass2: Alias disappeared!");
+    else {
+      struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, n);
+      if (!IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
+	if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
+	  /* Convert a placeholder constant into an alias. */
+	  struct program_state *state = Pike_compiler;
+	  int e;
+
+	  for(e = 0; state && (e < depth); e++) {
+	    state = state->previous;
+	  }
+
+#ifdef PIKE_DEBUG
+	  if (!state) {
+	    Pike_fatal("Internal error: External symbol buried too deep.\n");
+	  }
+	  if (state->new_program->num_identifier_references <= refno) {
+	    Pike_fatal("Internal error: Reference out of bounds: %d (max: %d).\n",
+		       refno, state->new_program->num_identifier_references);
+	  }
+#endif
+
+	  id->identifier_flags = IDENTIFIER_ALIAS |
+	    ID_FROM_INT(state->new_program, refno)->identifier_flags;
+	} else {
+	  Pike_fatal("Replacing non alias with an alias in second pass!\n");
+	}
+      }
+
+      free_type(id->type);
+      copy_pike_type(id->type, type);
+      id->func.ext_ref.depth = depth;
+      id->func.ext_ref.id = refno;
+      return n;
+    }
+  }
+
+#ifdef PIKE_DEBUG
+  if(Pike_compiler->new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
+    Pike_fatal("Attempting to add variable to fixed program\n");
+#endif
+
+  if(n != -1)
+  {
+    /* not inherited */
+    if(Pike_compiler->new_program->identifier_references[n].inherit_offset == 0)
+    {
+      if (!((IDENTIFIERP(n)->id_flags | flags) & ID_EXTERN)) {
+	my_yyerror("Identifier %S defined twice.",name);
+	return n;
+      }
+      if (flags & ID_EXTERN) {
+	/* FIXME: Check type */
+	return n;
+      }
+    }
+
+    if (!(IDENTIFIERP(n)->id_flags & ID_EXTERN)) {
+      if (IDENTIFIERP(n)->id_flags & ID_NOMASK)
+	my_yyerror("Illegal to redefine 'nomask/final' "
+		   "variable/functions %S", name);
+
+      /* FIXME: More. */
+    }
+  }
+
+  return low_define_alias(name, type, flags, depth, refno);
+}
+
 /* argument must be a shared string */
 int low_define_variable(struct pike_string *name,
 			struct pike_type *type,
@@ -4382,11 +4536,7 @@ int low_define_variable(struct pike_string *name,
 
   copy_shared_string(dummy.name, name);
   copy_pike_type(dummy.type, type);
-  if (flags & ID_ALIAS) {
-    dummy.identifier_flags = IDENTIFIER_VARIABLE | IDENTIFIER_ALIAS;
-  } else {
-    dummy.identifier_flags = IDENTIFIER_VARIABLE;
-  }
+  dummy.identifier_flags = IDENTIFIER_VARIABLE;
   dummy.run_time_type=run_time_type;
   dummy.func.offset=offset - Pike_compiler->new_program->inherits[0].storage_offset;
 #ifdef PROFILING
@@ -4568,24 +4718,13 @@ int define_variable(struct pike_string *name,
 	  return n;
 	}
 
-	/* Copy the variable reference, so that we can change the
-	 * compile-time type. */
-	n2 = low_define_variable(name, type,
-				 (flags | ID_ALIAS) & ~ID_EXTERN,
-				 ID_FROM_INT(Pike_compiler->new_program, n)->
-				 func.offset +
-				 INHERIT_FROM_INT(Pike_compiler->new_program,
-						  n)->storage_offset,
-				 ID_FROM_INT(Pike_compiler->new_program, n)->
-				 run_time_type);
-	/* Copy IDENTIFIER_NO_THIS_REF state from the old variable.
-	 */
-	ID_FROM_INT(Pike_compiler->new_program, n2)->identifier_flags |=
-	  ID_FROM_INT(Pike_compiler->new_program, n)->identifier_flags &
-	  IDENTIFIER_NO_THIS_REF;
-	/* Hide the old variable. */
+	/* Create an alias for the old variable reference, so that we
+	 * can change the compile-time type. */
+	n2 = define_alias(name, type, flags & ~ID_EXTERN, 0, n);
+
+	/* Hide the old variable and make it local. */
 	Pike_compiler->new_program->identifier_references[n].id_flags |=
-	  ID_HIDDEN;
+	  ID_HIDDEN|ID_INLINE;
 	return n2;
       }
     }
@@ -4690,50 +4829,38 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     c->subtype != FUNCTION_BUILTIN &&
     c->u.object->prog)
   {
+    struct program_state *state = Pike_compiler;
     struct reference *idref = PTR_FROM_INT(c->u.object->prog, c->subtype);
     struct program *p = PROG_FROM_PTR(c->u.object->prog, idref);
     struct identifier *id = p->identifiers + idref->identifier_offset;
-    if(c->u.object->prog == Pike_compiler->new_program) {
-      /* Alias for a symbol in the current program.
+    int depth = 0;
+    while (state && (c->u.object->prog != state->new_program)) {
+      depth++;
+      state = state->previous;
+    }
+    if(state) {
+      /* Alias for a symbol in the current or surrounding programs.
        */
       if(IDENTIFIER_IS_CONSTANT(id->identifier_flags) &&
-	 id->func.offset != -1) {
+	 (id->func.offset != -1) &&
+	 (state == Pike_compiler)) {
 	c=& p->constants[id->func.offset].sval;
-      }
-      else if (IDENTIFIER_IS_FUNCTION(id->identifier_flags)) {
-	if (!idref->inherit_offset) {
-	  /* Alias for a function defined in this program. */
-	  /* FIXME: Does this work for forward references? */
-	  return define_function(name,
-				 id->type,
-				 flags,
-				 id->identifier_flags | IDENTIFIER_ALIAS,
-				 & id->func,
-				 id->opt_flags);
-	} else if (Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE) {
-	  /* Alias for a function defined in an inherited program. */
-	  yyerror("Aliasing of inherited functions not supported yet.");
-	  return define_function(name,
-				 id->type,
-				 flags,
-				 id->identifier_flags | IDENTIFIER_ALIAS,
-				 NULL,
-				 id->opt_flags);	    
-	} else {
-	  /* First pass.
-	   * Make a prototype for now.
-	   */
-	  return define_function(name,
-				 id->type,
-				 flags,
-				 id->identifier_flags | IDENTIFIER_ALIAS,
-				 NULL,
-				 id->opt_flags);
-	}
-      } else if (IDENTIFIER_IS_VARIABLE(id->identifier_flags)) {
+      } else if (IDENTIFIER_IS_VARIABLE(id->identifier_flags) &&
+		 (state == Pike_compiler)) {
 	my_yyerror("Attempt to make a constant %S of a variable.",
 		   name);
 	c = NULL;
+      } else {
+	/* Alias for a function or a variable or constant in a surrounding
+	 * scope.
+	 */
+	int n = c->subtype;
+	struct reference *remote_ref = PTR_FROM_INT(state->new_program, n);
+	if (!(remote_ref->id_flags & (ID_INLINE|ID_HIDDEN))) {
+	  /* We need to get a suitable reference. */
+	  n = really_low_reference_inherited_identifier(state, 0, n);
+	}
+	return define_alias(name, id->type, flags, depth, n);
       }
     }
   }
@@ -5747,7 +5874,11 @@ struct array *program_indices(struct program *p)
       continue;
     }
     id = ID_FROM_INT(p, e);
-    if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
+    if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
+      /* FIXME!
+       */
+      continue;
+    } else if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
       if (id->func.offset >= 0) {
 	struct program *p2 = PROG_FROM_INT(p, e);
 	struct svalue *val = &p2->constants[id->func.offset].sval;
@@ -5782,7 +5913,11 @@ struct array *program_values(struct program *p)
       continue;
     }
     id = ID_FROM_INT(p, e);
-    if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
+    if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
+      /* FIXME!
+       */
+      continue;
+    } else if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
       if (id->func.offset >= 0) {
 	struct program *p2 = PROG_FROM_INT(p, e);
 	struct svalue *val = &p2->constants[id->func.offset].sval;
@@ -5814,6 +5949,7 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
   struct svalue *sub = NULL;
   struct program *p;
   struct identifier *id;
+  int parent_identifier = -1;
 
   if (what->type == T_PROGRAM) {
     p = what->u.program;
@@ -5825,6 +5961,7 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
 	     (id->func.offset != -1) &&
 	     ((sub = &PROG_FROM_INT(parent->prog, what->subtype)->constants[id->func.offset].sval)->type == T_PROGRAM)) {
     p = sub->u.program;
+    parent_identifier = what->subtype;
   } else {
     /* Not a program. */
     return 0;
@@ -5839,6 +5976,46 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
   {
     struct identifier *id;
     id=ID_FROM_INT(p, e);
+
+    if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
+      struct external_variable_context loc;
+      struct object fake_object;
+      struct parent_info parent_info;
+      int refid;
+
+      if (!parent) goto fail;
+
+      parent_info.parent = parent;
+      parent_info.parent_identifier = parent_identifier;
+      fake_object.prog = p;
+      fake_object.refs = 1;
+      fake_object.next = fake_object.prev = NULL;
+      fake_object.storage = ((char *)&parent_info) - p->parent_info_storage;
+#ifdef PIKE_DEBUG
+      fake_object.program_id = p->id;
+#endif
+
+      loc.o = &fake_object;
+      loc.inherit = INHERIT_FROM_INT(p, e);
+      loc.parent_identifier = 0;
+
+      do {
+	find_external_context(&loc, id->func.ext_ref.depth);
+	refid = id->func.ext_ref.id;
+	id = ID_FROM_INT(loc.o->prog, refid);
+      } while (IDENTIFIER_IS_ALIAS(id->identifier_flags));
+
+      if (fake_object.refs != 1) {
+	Pike_fatal("Lost track of fake object! refs: %d\n",
+		   fake_object.refs);
+      }
+
+      if (loc.o != &fake_object) {
+	low_object_index_no_free(to, loc.o, refid);
+	return 1;
+      }
+    }
+
     if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
       if (id->func.offset >= 0) {
 	struct program *p2 = PROG_FROM_INT(p, e);
@@ -5853,6 +6030,7 @@ int program_index_no_free(struct svalue *to, struct svalue *what,
       return 1;
     }
   }
+ fail:
 
   to->type=T_INT;
   to->subtype=NUMBER_UNDEFINED;
@@ -6375,9 +6553,21 @@ PMOD_EXPORT struct pike_string *low_get_function_line (struct object *o,
 						       int fun, INT32 *linep)
 {
   if (o->prog) {
-    struct reference *idref = o->prog->identifier_references + fun;
-    struct program *p = PROG_FROM_PTR (o->prog, idref);
-    struct identifier *id = p->identifiers + idref->identifier_offset;
+    struct program *p;
+    struct identifier *id;
+    while (1) {
+      struct external_variable_context loc;
+      struct reference *idref = o->prog->identifier_references + fun;
+      p = PROG_FROM_PTR(o->prog, idref);
+      id = p->identifiers + idref->identifier_offset;
+      if (!IDENTIFIER_IS_ALIAS(id->identifier_flags)) break;
+      loc.o = o;
+      loc.inherit = INHERIT_FROM_INT(o->prog, fun);
+      loc.parent_identifier = fun;
+      find_external_context(&loc, id->func.ext_ref.depth);
+      fun = id->func.ext_ref.id + loc.inherit->identifier_level;
+      o = loc.o;
+    }
     if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags))
       return low_get_line (p->program + id->func.offset, p, linep);
     return low_get_program_line(o->prog, linep);
@@ -8004,14 +8194,30 @@ PMOD_EXPORT char *get_storage(struct object *o, struct program *p)
   return o->storage + offset;
 }
 
-struct program *low_program_from_function(struct program *p,
-					  INT32 i)
+struct program *low_program_from_function(struct object *o, INT32 i)
 {
   struct svalue *f;
-  struct identifier *id=ID_FROM_INT(p, i);
+  struct program *p;
+  struct identifier *id;
+  while(1) {
+    struct external_variable_context loc;
+    p = o->prog;
+
+    if(!p) return 0;
+
+    id = ID_FROM_INT(p, i);
+    if(!IDENTIFIER_IS_ALIAS(id->identifier_flags)) break;
+
+    loc.o = o;
+    loc.inherit = INHERIT_FROM_INT(p, i);
+    loc.parent_identifier = i;
+    find_external_context(&loc, id->func.ext_ref.depth);
+    i = id->func.ext_ref.id + loc.inherit->identifier_level;
+    o = loc.o;
+  }
   if(!IDENTIFIER_IS_CONSTANT(id->identifier_flags)) return 0;
   if(id->func.offset==-1) return 0;
-  f=& PROG_FROM_INT(p,i)->constants[id->func.offset].sval;
+  f = &PROG_FROM_INT(p,i)->constants[id->func.offset].sval;
   if(f->type!=T_PROGRAM) return 0;
   return f->u.program;
 }
@@ -8020,8 +8226,7 @@ PMOD_EXPORT struct program *program_from_function(const struct svalue *f)
 {
   if(f->type != T_FUNCTION) return 0;
   if(f->subtype == FUNCTION_BUILTIN) return 0;
-  if(!f->u.object->prog) return 0;
-  return low_program_from_function(f->u.object->prog, f->subtype);
+  return low_program_from_function(f->u.object, f->subtype);
 }
 
 /* NOTE: Does not add references to the return value! */
@@ -8067,6 +8272,7 @@ struct find_child_cache_s
   INT32 pid,cid,id;
 };
 
+#if 0
 static struct find_child_cache_s find_child_cache[FIND_CHILD_HASHSIZE];
 
 int find_child(struct program *parent, struct program *child)
@@ -8096,6 +8302,7 @@ int find_child(struct program *parent, struct program *child)
   }
   return -1;
 }
+#endif /* 0 */
 
 void yywarning(char *fmt, ...)
 {

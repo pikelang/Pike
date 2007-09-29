@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.276 2007/09/25 17:36:00 grubba Exp $
+|| $Id: object.c,v 1.277 2007/09/29 15:09:03 grubba Exp $
 */
 
 #include "global.h"
@@ -1093,7 +1093,7 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 
     i=ID_FROM_INT(p, f);
 
-    if (!IDENTIFIER_IS_EXTERN(i->identifier_flags)) break;
+    if (!IDENTIFIER_IS_ALIAS(i->identifier_flags)) break;
 
     loc.o = o;
     loc.inherit = INHERIT_FROM_INT(p, f);
@@ -1370,7 +1370,7 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
 
     i=ID_FROM_INT(p, f);
 
-    if (!IDENTIFIER_IS_EXTERN(i->identifier_flags)) break;
+    if (!IDENTIFIER_IS_ALIAS(i->identifier_flags)) break;
 
     loc.o = o;
     loc.inherit = INHERIT_FROM_INT(p, f);
@@ -1715,7 +1715,8 @@ PMOD_EXPORT int object_equal_p(struct object *a, struct object *b, struct proces
       struct identifier *i;
       i=ID_FROM_INT(a->prog, e);
 
-      if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
+      if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags) ||
+	 IDENTIFIER_IS_ALIAS(i->identifier_flags))
 	continue;
 
       if(i->run_time_type == T_MIXED)
@@ -1845,8 +1846,7 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 	    int id_flags = id->identifier_flags;
 	    int rtt = id->run_time_type;
 
-	    if (IDENTIFIER_IS_ALIAS(id_flags) ||
-		(rtt == PIKE_T_GET_SET))
+	    if (IDENTIFIER_IS_ALIAS(id_flags) || (rtt == PIKE_T_GET_SET))
 	      continue;
 	
 	    if(rtt == T_MIXED)
@@ -1911,8 +1911,7 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 	  int id_flags = id->identifier_flags;
 	  int rtt = id->run_time_type;
 	
-	  if (IDENTIFIER_IS_ALIAS(id_flags) ||
-	      (rtt == PIKE_T_GET_SET))
+	  if (IDENTIFIER_IS_ALIAS(id_flags) || (rtt == PIKE_T_GET_SET))
 	    continue;
 	
 	  if(rtt == T_MIXED)
@@ -1985,8 +1984,7 @@ static INLINE void gc_check_object(struct object *o)
 	  int id_flags = id->identifier_flags;
 	  int rtt = id->run_time_type;
 	
-	  if (IDENTIFIER_IS_ALIAS(id_flags) ||
-	      (rtt == PIKE_T_GET_SET))
+	  if (IDENTIFIER_IS_ALIAS(id_flags) || (rtt == PIKE_T_GET_SET))
 	    continue;
 	
 	  if(rtt == T_MIXED)
