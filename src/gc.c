@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.297 2007/06/19 18:23:52 mast Exp $
+|| $Id: gc.c,v 1.298 2007/09/29 15:10:50 grubba Exp $
 */
 
 #include "global.h"
@@ -1292,10 +1292,10 @@ again:
 	  id_inh = INHERIT_FROM_PTR (p, id_ref);
 	  id = id_inh->prog->identifiers + id_ref->identifier_offset;
 
-	  if (IDENTIFIER_IS_PIKE_FUNCTION (id->identifier_flags)) type = "fun";
+	  if (IDENTIFIER_IS_ALIAS (id->identifier_flags)) type = "alias";
+	  else if (IDENTIFIER_IS_PIKE_FUNCTION (id->identifier_flags)) type = "fun";
 	  else if (IDENTIFIER_IS_FUNCTION (id->identifier_flags)) type = "cfun";
 	  else if (IDENTIFIER_IS_CONSTANT (id->identifier_flags)) type = "const";
-	  else if (IDENTIFIER_IS_ALIAS (id->identifier_flags))    type = "alias";
 	  else if (IDENTIFIER_IS_VARIABLE (id->identifier_flags)) type = "var";
 	  else type = "???";
 
@@ -1313,7 +1313,6 @@ again:
 	  if (id_ref->id_flags & ID_OPTIONAL)  strcat (prot, ",opt");
 	  if (id_ref->id_flags & ID_EXTERN)    strcat (prot, ",ext");
 	  if (id_ref->id_flags & ID_VARIANT)   strcat (prot, ",var");
-	  if (id_ref->id_flags & ID_ALIAS)     strcat (prot, ",ali");
 
 	  sprintf (descr, "%s: %s", type, prot + 1);
 	  fprintf (stderr, "%*s**%*s%-18s name: ",
@@ -1324,7 +1323,10 @@ again:
 	  else
 	    fprintf (stderr, "%-20s", id->name->str);
 
-	  if (id->identifier_flags & IDENTIFIER_C_FUNCTION)
+	  if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
+	    fprintf(stderr, "  depth: %d  id: %d",
+		    id->func.ext_ref.depth, id->func.ext_ref.id);
+	  } else if (id->identifier_flags & IDENTIFIER_C_FUNCTION)
 	    fprintf (stderr, "  addr: %p", id->func.c_fun);
 	  else if (IDENTIFIER_IS_VARIABLE (id->identifier_flags))
 	    fprintf (stderr, "  rtt: %s  off: %"PRINTPTRDIFFT"d",
