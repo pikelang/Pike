@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.146 2007/06/09 18:02:14 mast Exp $
+|| $Id: svalue.h,v 1.147 2007/10/02 12:39:57 grubba Exp $
 */
 
 #ifndef SVALUE_H
@@ -250,6 +250,11 @@ struct svalue
 #define tName1(X,Y) "\361\1"X"\0\0"Y
 #define tName2(X,Y) "\361\2"X"\0\0\0\0"Y
 #endif /* PIKE_BYTEORDER == 1234 */
+
+/* Some convenience macros for common attributes. */
+#define tSprintfFormat(X)	tAttr("sprintf_format", X)
+#define tSprintfArgs(X)		tAttr("sprintf_args", X)
+#define tDeprecated(X)		tAttr("deprecated", X)
 
 #define tSimpleCallable tOr3(tArray,tFunction,tObj)
 #define tCallable tOr3(tArr(tSimpleCallable),tFunction,tObj)
