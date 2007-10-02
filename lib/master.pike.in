@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.403 2007/09/03 13:04:27 grubba Exp $
+// $Id: master.pike.in,v 1.404 2007/10/02 16:52:25 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1218,7 +1218,11 @@ mixed handle_attribute_constant(string attr, mixed arg,
   werror("handle_attribute_constant(%O, %O, %O, %O)\n",
 	 attr, arg, arg_type, cont_type);
 #endif /* 0 */
-  return __handle_attribute_constant(attr, arg, arg_type, cont_type);
+  switch(attr) {
+  case "sprintf_format":
+    return __handle_sprintf_format(attr, arg, arg_type, cont_type);
+  }
+  return UNDEFINED;
 }
 
 /* This array contains the names of the functions
