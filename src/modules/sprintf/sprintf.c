@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.146 2007/05/20 18:16:05 nilsson Exp $
+|| $Id: sprintf.c,v 1.147 2007/10/02 16:53:08 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -2347,14 +2347,12 @@ PIKE_MODULE_INIT
 {
   struct pike_string *attr;
   struct svalue s;
-  s.type = T_FUNCTION;
-  s.subtype = FUNCTION_BUILTIN;
-  s.u.efun = ADD_EFUN("__handle_sprintf_format", f___handle_sprintf_format,
-		      tFunc(tStr tStr tType(tMix) tType(tMix), tType(tMix)),
-		      0);
-  MAKE_CONST_STRING(attr, "sprintf_format");
-  register_attribute_handler(attr, &s);
 
+  ADD_EFUN("__handle_sprintf_format", f___handle_sprintf_format,
+	   tFunc(tStr tStr tType(tMix) tType(tMix), tType(tMix)),
+	   0);
+
+  MAKE_CONST_STRING(attr, "sprintf_format");
   s.type = T_TYPE;
   s.subtype = 0;
   s.u.type = make_pike_type(tAttr("sprintf_format", tOr(tStr, tObj)));
