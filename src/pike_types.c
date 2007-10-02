@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.311 2007/09/03 11:52:02 grubba Exp $
+|| $Id: pike_types.c,v 1.312 2007/10/02 16:54:31 grubba Exp $
 */
 
 #include "global.h"
@@ -7569,47 +7569,6 @@ static struct callback *dmalloc_gc_callback = NULL;
 #endif /* DEBUG_MALLOC */
 #endif /* 0 */
 
-static struct mapping *builtin_attributes = NULL;
-
-void register_attribute_handler(struct pike_string *attr,
-				struct svalue *handler)
-{
-  mapping_string_insert(builtin_attributes, attr, handler);
-}
-
-static void f___register_attribute_handler(INT32 args)
-{
-  if (args < 2) SIMPLE_TOO_FEW_ARGS_ERROR("__register_attribute_handler", 2);
-  if (args > 2) {
-    pop_n_elems(args-2);
-    args = 2;
-  }
-  if (Pike_sp[-2].type != PIKE_T_STRING) {
-    SIMPLE_BAD_ARG_ERROR("__register_attribute_handler", 1, "string");
-  }
-  mapping_insert(builtin_attributes, Pike_sp-2, Pike_sp-1);
-  pop_n_elems(args);
-}
-
-static void f___handle_attribute_constant(INT32 args)
-{
-  struct svalue *sval;
-  if (args < 4) SIMPLE_TOO_FEW_ARGS_ERROR("__handle_attribute_constant", 4);
-  if (args > 4) {
-    pop_n_elems(args-4);
-    args = 4;
-  }
-  if (Pike_sp[-4].type != PIKE_T_STRING) {
-    SIMPLE_BAD_ARG_ERROR("__handle_attribute_constant", 1, "string");
-  }
-  if ((sval = low_mapping_lookup(builtin_attributes, Pike_sp-4))) {
-    apply_svalue(sval, 4);
-  } else {
-    pop_n_elems(args);
-    push_undefined();
-  }
-}
-
 void init_types(void)
 {
   /* Initialize hashtable here. */
@@ -7638,16 +7597,6 @@ void init_types(void)
 				    tFuncV(tNone,tZero,tOr(tMix,tVoid))));
   /* add_ref(weak_type_string);	*//* LEAK */
 
-  builtin_attributes = allocate_mapping(20);
-
-  ADD_EFUN("__register_attribute_handler", f___register_attribute_handler,
-	   tFunc(tSetvar(0, tStr)
-		 tFunc(tVar(0) tMix tType(tMix) tType(tMix), tType(tMix)),
-		 tVoid), 0);
-
-  ADD_EFUN("__handle_attribute_constant", f___handle_attribute_constant,
-	   tFunc(tStr tMix tType(tMix) tType(tMix), tType(tMix)), 0);
-
 #if 0
 #ifdef DEBUG_MALLOC
   dmalloc_gc_callback = add_gc_callback(gc_mark_external_types, NULL, NULL);
@@ -7665,11 +7614,6 @@ void cleanup_pike_types(void)
     t = t->next;
   }
 #endif /* DO_PIKE_CLEANUP */
-
-  if (builtin_attributes) {
-    free_mapping(builtin_attributes);
-    builtin_attributes = NULL;
-  }
 
   clear_markers();
 
