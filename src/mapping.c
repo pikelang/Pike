@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.190 2007/03/09 12:01:57 mast Exp $
+|| $Id: mapping.c,v 1.191 2007/10/03 16:18:51 grubba Exp $
 */
 
 #include "global.h"
@@ -93,14 +93,14 @@ BLOCK_ALLOC_FILL_PAGES(mapping, 2)
       prev_ = md->hash + h_;				\
       DO_IF_DEBUG(					\
 	if (!*prev_) {					\
-	  Pike_fatal("Node to move not found!\n");		\
+	  Pike_fatal("Node to move not found!\n");	\
 	}						\
       );						\
       while (*prev_ != md->free_list) {			\
 	prev_ = &((*prev_)->next);			\
         DO_IF_DEBUG(					\
 	  if (!*prev_) {				\
-	    Pike_fatal("Node to move not found!\n");		\
+	    Pike_fatal("Node to move not found!\n");	\
 	  }						\
 	);						\
       }							\
@@ -139,13 +139,17 @@ static void check_mapping_type_fields(struct mapping *m)
 #endif
 
 static struct mapping_data empty_data =
-  { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0, 0, 0,{0}};
+  { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0, 0,
+    (struct keypair *)&empty_data.hash, {0}};
 static struct mapping_data weak_ind_empty_data =
-  { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0, MAPPING_WEAK_INDICES, 0,{0}};
+  { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0, MAPPING_WEAK_INDICES,
+    (struct keypair *)&weak_ind_empty_data.hash, {0}};
 static struct mapping_data weak_val_empty_data =
-  { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0, MAPPING_WEAK_VALUES, 0,{0}};
+  { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0, MAPPING_WEAK_VALUES,
+    (struct keypair *)&weak_val_empty_data.hash, {0}};
 static struct mapping_data weak_both_empty_data =
-  { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0, MAPPING_WEAK, 0,{0}};
+  { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0, MAPPING_WEAK,
+    (struct keypair *)&weak_both_empty_data.hash, {0}};
 
 /** This function allocates the hash table and svalue space for a mapping
  * struct. The size is the max number of indices that can fit in the
@@ -1102,7 +1106,7 @@ PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
 }
 
 PMOD_EXPORT struct svalue *low_mapping_string_lookup(struct mapping *m,
-					 struct pike_string *p)
+						     struct pike_string *p)
 {
   struct svalue tmp;
   tmp.type=T_STRING;
@@ -1139,10 +1143,11 @@ PMOD_EXPORT struct svalue *simple_mapping_string_lookup(struct mapping *m,
   return 0;
 }
 
+/* Lookup in a mapping of mappings */
 PMOD_EXPORT struct svalue *mapping_mapping_lookup(struct mapping *m,
-				      struct svalue *key1,
-				      struct svalue *key2,
-				      int create)
+						  struct svalue *key1,
+						  struct svalue *key2,
+						  int create)
 {
   struct svalue tmp;
   struct mapping *m2;
