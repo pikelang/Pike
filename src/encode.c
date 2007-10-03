@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.245 2007/07/03 09:52:07 grubba Exp $
+|| $Id: encode.c,v 1.246 2007/10/03 11:38:06 grubba Exp $
 */
 
 #include "global.h"
@@ -1150,7 +1150,10 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  code_number(p->identifiers[d].identifier_flags,data);
 	  code_number(p->identifiers[d].run_time_type,data);
 	  code_number(p->identifiers[d].opt_flags,data);
-	  if (!IDENTIFIER_IS_C_FUNCTION(p->identifiers[d].identifier_flags)) {
+	  if (IDENTIFIER_IS_ALIAS(p->identifiers[d].identifier_flags)) {
+	    code_number(p->identifiers[d].func.ext_ref.depth,data);
+	    code_number(p->identifiers[d].func.ext_ref.id,data);
+	  } else if (!IDENTIFIER_IS_C_FUNCTION(p->identifiers[d].identifier_flags)) {
 	    code_number(p->identifiers[d].func.offset,data);
 	  } else {
 	    Pike_error("Cannot encode functions implemented in C "
@@ -1349,7 +1352,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      /* Skip getter/setter variables; they get pulled in
 	       * by their respective functions.
 	       */
-	      if (IDENTIFIER_IS_VARIABLE(id->identifier_flags) &&
+	      if (!IDENTIFIER_IS_ALIAS(id->identifier_flags) &&
+		  IDENTIFIER_IS_VARIABLE(id->identifier_flags) &&
 		  (id->run_time_type == PIKE_T_GET_SET))
 		continue;
 
@@ -1434,7 +1438,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 		  }
 		}
 
-		switch (id->identifier_flags & IDENTIFIER_TYPE_MASK) {
+		if (IDENTIFIER_IS_ALIAS(id->identifier_flags)) {
+		  Pike_error("Encoding of aliases not supported yet.\n");
+		} else switch (id->identifier_flags & IDENTIFIER_TYPE_MASK) {
 		case IDENTIFIER_CONSTANT:
 		  EDB(3,
 		      fprintf(stderr, "%*sencode: encoding constant\n",
@@ -3251,7 +3257,10 @@ static void decode_value2(struct decode_data *data)
 	    decode_number(p->identifiers[d].identifier_flags,data);
 	    decode_number(p->identifiers[d].run_time_type,data);
 	    decode_number(p->identifiers[d].opt_flags,data);
-	    if (!IDENTIFIER_IS_C_FUNCTION(p->identifiers[d].identifier_flags))
+	    if (IDENTIFIER_IS_ALIAS(p->identifiers[d].identifier_flags)) {
+	      decode_number(p->identifiers[d].func.ext_ref.depth, data);
+	      decode_number(p->identifiers[d].func.ext_ref.id, data);
+	    } else if (!IDENTIFIER_IS_C_FUNCTION(p->identifiers[d].identifier_flags))
 	    {
 	      decode_number(p->identifiers[d].func.offset,data);
 	    } else {
