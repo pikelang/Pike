@@ -103,6 +103,12 @@ class ExecTest(string id,Test test)
 
 	 if (status=="")
 	 {
+	    if (ret < 0) {
+	      err = p->last_signal();
+	      write("Spawned pike died by signal: %d (%s)\n",
+		    err, signame(err) || "UNKNOWN");
+	      return 1;
+	    }
 	    write("Failed to spawn pike or run test (code:%d, errno:%d)\n",
 		  ret, err);
 	    return 1;
