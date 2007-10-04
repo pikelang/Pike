@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.191 2007/10/03 16:18:51 grubba Exp $
+|| $Id: mapping.c,v 1.192 2007/10/04 13:03:37 grubba Exp $
 */
 
 #include "global.h"
@@ -77,16 +77,19 @@ DO_IF_DEBUG(								\
 BLOCK_ALLOC_FILL_PAGES(mapping, 2)
 
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
+#define IF_ELSE_KEYPAIR_LOOP(X, Y)	Y
 #define FREE_KEYPAIR(md, k) do {	\
     k->next = md->free_list;		\
     md->free_list = k;			\
   } while(0)
 #else /* PIKE_MAPPING_KEYPAIR_LOOP */
+#define IF_ELSE_KEYPAIR_LOOP(X, Y)	X
 #define FREE_KEYPAIR(md, k) do {			\
     md->free_list--;					\
     if (k != md->free_list) {				\
       struct keypair **prev_;				\
       unsigned INT32 h_;				\
+      INT32 e;						\
       /* Move the last keypair to the new hole. */	\
       *k = *(md->free_list);				\
       h_ = k->hval % md->hashsize;			\
@@ -140,16 +143,16 @@ static void check_mapping_type_fields(struct mapping *m)
 
 static struct mapping_data empty_data =
   { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0, 0,
-    (struct keypair *)&empty_data.hash, {0}};
+    IF_ELSE_KEYPAIR_LOOP((struct keypair *)&empty_data.hash, 0), {0}};
 static struct mapping_data weak_ind_empty_data =
   { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0, MAPPING_WEAK_INDICES,
-    (struct keypair *)&weak_ind_empty_data.hash, {0}};
+    IF_ELSE_KEYPAIR_LOOP((struct keypair *)&weak_ind_empty_data.hash, 0), {0}};
 static struct mapping_data weak_val_empty_data =
   { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0, MAPPING_WEAK_VALUES,
-    (struct keypair *)&weak_val_empty_data.hash, {0}};
+    IF_ELSE_KEYPAIR_LOOP((struct keypair *)&weak_val_empty_data.hash, 0), {0}};
 static struct mapping_data weak_both_empty_data =
   { PIKE_CONSTANT_MEMOBJ_INIT(1), 1, 0,0,0,0,0,0, MAPPING_WEAK,
-    (struct keypair *)&weak_both_empty_data.hash, {0}};
+    IF_ELSE_KEYPAIR_LOOP((struct keypair *)&weak_both_empty_data.hash, 0), {0}};
 
 /** This function allocates the hash table and svalue space for a mapping
  * struct. The size is the max number of indices that can fit in the
@@ -2328,6 +2331,54 @@ void check_all_mappings(void)
   }									\
 } while (0)
 
+#ifdef PIKE_MAPPING_KEYPAIR_LOOP
+/* NOTE: Broken code below! */
+#define GC_RECURSE(M, MD, REC_KEYPAIR, TYPE, IND_TYPES, VAL_TYPES) do {	\
+    int remove;								\
+    struct keypair *k,**prev_;						\
+    /* no locking required (no is_eq) */				\
+    for(k = MD_KEYPAIRS(md, md->hashsize);k < MD->free_list;)		\
+    {									\
+      REC_KEYPAIR(remove,						\
+		  PIKE_CONCAT(TYPE, _svalues),				\
+		  PIKE_CONCAT(TYPE, _weak_svalues),			\
+		  PIKE_CONCAT(TYPE, _without_recurse),			\
+		  PIKE_CONCAT(TYPE, _weak_without_recurse));		\
+      if (remove) {							\
+	/* Find and unlink k. */					\
+	unsigned INT32 h_;						\
+	h_ = k->hval % md->hashsize;					\
+	prev_ = md->hash + h_;						\
+	DO_IF_DEBUG(							\
+		    if (!*prev_) {					\
+		      Pike_fatal("Node to unlink not found!\n");	\
+		    }							\
+		    );							\
+	while (*prev_ != k) {						\
+	  prev_ = &((*prev_)->next);					\
+	  DO_IF_DEBUG(							\
+		      if (!*prev_) {					\
+			Pike_fatal("Node to unlink not found!\n");	\
+		      }							\
+		      );						\
+	}								\
+	(*prev_)->next = k->next;					\
+        FREE_KEYPAIR(MD, k);						\
+        MD->free_list->ind.type = T_INT;				\
+        MD->free_list->val.type = T_INT;				\
+	MD->size--;							\
+	DO_IF_MAPPING_SIZE_DEBUG(					\
+	  if(M->data ==MD)						\
+	    M->debug_size--;						\
+	);								\
+      } else {								\
+	VAL_TYPES |= 1 << k->val.type;					\
+	IND_TYPES |= 1 << k->ind.type;					\
+	k++;								\
+      }									\
+    }									\
+  } while (0)
+#else /* !PIKE_MAPPING_KEYPAIR_LOOP */
 #define GC_RECURSE(M, MD, REC_KEYPAIR, TYPE, IND_TYPES, VAL_TYPES) do {	\
   INT32 e;								\
   int remove;								\
@@ -2361,6 +2412,7 @@ void check_all_mappings(void)
     }									\
   }									\
 } while (0)
+#endif /* PIKE_MAPPING_KEYPAIR_LOOP */
 
 #define GC_REC_KP(REMOVE, N_REC, W_REC, N_TST, W_TST) do {		\
   if ((REMOVE = N_REC(&k->ind, 1)))					\
