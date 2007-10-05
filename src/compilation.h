@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: compilation.h,v 1.32 2006/07/05 02:17:09 mast Exp $
+|| $Id: compilation.h,v 1.33 2007/10/05 17:44:30 grubba Exp $
 */
 
 /*
@@ -141,6 +141,7 @@
   ZMEMBER(int,catch_level,0)
   ZMEMBER(INT32,current_modifiers,0)
   ZMEMBER(int,varargs,0)
+  ZMEMBER(int, num_create_args, 0)
   STRMEMBER(last_identifier,0)
   ZMEMBER(struct mapping *,module_index_cache,0)
   STACKMEMBER(struct pike_type **,type_stackp,type_stack)
