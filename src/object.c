@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.277 2007/09/29 15:09:03 grubba Exp $
+|| $Id: object.c,v 1.278 2007/10/05 09:21:32 grubba Exp $
 */
 
 #include "global.h"
@@ -1610,11 +1610,21 @@ static union anything *object_low_get_item_ptr(struct object *o,
     Pike_fatal ("Dangerous with the refcount-less this-pointers.\n");
 #endif
 
+  while (IDENTIFIER_IS_ALIAS(i->identifier_flags)) {
+    struct external_variable_context loc;
+    loc.o = o;
+    loc.inherit = INHERIT_FROM_INT(p, f);
+    loc.parent_identifier = 0;
+    find_external_context(&loc, i->func.ext_ref.depth);
+    f = i->func.ext_ref.id;
+    p = (o = loc.o)->prog;
+    i = ID_FROM_INT(p, f);
+  }
+
   if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
   {
     Pike_error("Cannot assign functions or constants.\n");
-  }
-  else if(i->run_time_type == T_MIXED)
+  } else if(i->run_time_type == T_MIXED)
   {
     struct svalue *s;
     s=(struct svalue *)LOW_GET_GLOBAL(o,f,i);
