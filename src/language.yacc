@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.382 2007/09/29 15:09:03 grubba Exp $
+|| $Id: language.yacc,v 1.383 2007/10/05 17:45:10 grubba Exp $
 */
 
 %pure_parser
@@ -244,7 +244,6 @@ int yylex(YYSTYPE *yylval);
 %type <number> arguments
 %type <number> arguments2
 %type <number> func_args
-%type <number> optional_create_arguments
 %type <number> create_arguments
 %type <number> create_arguments2
 %type <number> create_arg
@@ -762,7 +761,37 @@ optional_constant: /* empty */
 
 def: modifiers type_or_error optional_constant optional_stars
      TOK_IDENTIFIER push_compiler_frame0
-  '(' arguments close_paren_or_missing
+  '(' 
+  {
+    $<number>$ = 0;
+    /* Check for the (very special) case of create and create_args. */
+    if (Pike_compiler->num_create_args) {
+      struct pike_string *create_string = NULL;
+      int e;
+      MAKE_CONST_STRING(create_string, "create");
+      if ($5->u.sval.u.string == create_string) {
+	/* Prepend the create arguments. */
+	if (Pike_compiler->num_create_args < 0) {
+	  Pike_compiler->varargs = 1;
+	  for (e = 0; e < -Pike_compiler->num_create_args; e++) {
+	    struct identifier *id =
+	      Pike_compiler->new_program->identifiers + e;
+	    add_ref(id->type);
+	    add_local_name(id->name, id->type, 0);
+	  }
+	} else {
+	  for (e = 0; e < Pike_compiler->num_create_args; e++) {
+	    struct identifier *id =
+	      Pike_compiler->new_program->identifiers + e;
+	    add_ref(id->type);
+	    add_local_name(id->name, id->type, 0);
+	  }
+	}
+	$<number>$ = e;
+      }
+    }
+  }
+  arguments close_paren_or_missing
   {
     int e;
 
@@ -782,8 +811,9 @@ def: modifiers type_or_error optional_constant optional_stars
     
     push_finished_type(Pike_compiler->compiler_frame->current_return_type);
     
-    e=$8-1;
-    if(Pike_compiler->varargs)
+    e = $<number>8 + $9 - 1;
+    if(Pike_compiler->varargs &&
+       (!$<number>8 || (Pike_compiler->num_create_args >= 0)))
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
       e--;
@@ -893,7 +923,7 @@ def: modifiers type_or_error optional_constant optional_stars
   block_or_semi
   {
     int e;
-    if($11)
+    if($12)
     {
       int f;
       node *check_args = NULL;
@@ -908,12 +938,12 @@ def: modifiers type_or_error optional_constant optional_stars
 	yywarning("Extern declared function definition.");
       }
 
-      for(e=0; e<$8; e++)
+      for(e=0; e<$<number>8+$9; e++)
       {
 	if(!Pike_compiler->compiler_frame->variable[e].name ||
 	   !Pike_compiler->compiler_frame->variable[e].name->len)
 	{
-	  my_yyerror("Missing name for argument %d.",e);
+	  my_yyerror("Missing name for argument %d.", e - $<number>8);
 	} else {
 	  if (Pike_compiler->compiler_pass == 2) {
 	    if ($1 & ID_VARIANT) {
@@ -974,20 +1004,31 @@ def: modifiers type_or_error optional_constant optional_stars
 			NULL));
       }
 
+      if ($<number>8) {
+	/* Hook in the initializers for the create arguments. */
+	for (e = $<number>8; e--;) {
+	  $12 = mknode(F_COMMA_EXPR,
+		       mknode(F_POP_VALUE,
+			      mknode(F_ASSIGN, mklocalnode(e, 0),
+				     mkidentifiernode(e)), NULL),
+		       $12);
+	}
+      }
+
       {
-	int l = $11->line_number;
-	struct pike_string *f = $11->current_file;
+	int l = $12->line_number;
+	struct pike_string *f = $12->current_file;
 	if (check_args) {
 	  /* Prepend the arg checking code. */
-	  $11 = mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, check_args, NULL), $11);
+	  $12 = mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, check_args, NULL), $12);
 	}
 	lex.current_line = l;
 	lex.current_file = f;
       }
 
       f=dooptcode(check_node_hash($5)->u.sval.u.string,
-		  check_node_hash($11),
-		  check_node_hash($<n>10)->u.sval.u.type,
+		  check_node_hash($12),
+		  check_node_hash($<n>11)->u.sval.u.type,
 		  $1);
 
       i = ID_FROM_INT(Pike_compiler->new_program, f);
@@ -1018,8 +1059,8 @@ def: modifiers type_or_error optional_constant optional_stars
     }
     pop_compiler_frame();
     free_node($5);
-    free_node($9);
-    free_node($<n>10);
+    free_node($10);
+    free_node($<n>11);
   }
   | modifiers type_or_error optional_constant optional_stars TOK_IDENTIFIER push_compiler_frame0
     error
@@ -2337,8 +2378,9 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
 create_arg: modifiers type_or_error optional_stars optional_dot_dot_dot TOK_IDENTIFIER
   {
     struct pike_type *type;
+    int ref_no;
 
-    if (Pike_compiler->varargs) {
+    if (Pike_compiler->num_create_args < 0) {
       yyerror("Can't define more variables after ...");
     }
 
@@ -2349,18 +2391,24 @@ create_arg: modifiers type_or_error optional_stars optional_dot_dot_dot TOK_IDEN
     while($3--) push_type(T_ARRAY);
     if ($4) {
       push_type(T_ARRAY);
-      Pike_compiler->varargs = 1;
     }
     type=compiler_pop_type();
 
-    if(islocal($5->u.sval.u.string) >= 0)
-      my_yyerror("Variable %S appears twice in create argument list.",
-		 $5->u.sval.u.string);
+    /* Add the identifier both globally. */
+    ref_no = define_variable($5->u.sval.u.string, type,
+			     Pike_compiler->current_modifiers);
 
-    /* Add the identifier both globally and locally. */
-    define_variable($5->u.sval.u.string, type,
-		    Pike_compiler->current_modifiers);
-    add_local_name($5->u.sval.u.string, type, 0);
+    if (Pike_compiler->num_create_args != ref_no) {
+      my_yyerror("Multiple definitions of create variable %S (%d != %d).",
+		 $5->u.sval.u.string,
+		 Pike_compiler->num_create_args, ref_no);
+    }
+    if ($4) {
+      /* Encode varargs marker as negative number of args. */
+      Pike_compiler->num_create_args = -(ref_no + 1);
+    } else {
+      Pike_compiler->num_create_args = ref_no + 1;
+    }
 
     /* free_type(type); */
     free_node($5);
@@ -2382,121 +2430,10 @@ create_arguments: /* empty */ optional_comma { $$=0; }
   | create_arguments2 optional_comma
   ;
 
-push_compiler_frame01: /* empty */
+optional_create_arguments: /* empty */
+  | '(' create_arguments close_paren_or_missing
   {
-    push_compiler_frame(SCOPE_LOCAL);
-  }
-  ;
-
-optional_create_arguments: /* empty */ { $$ = 0; }
-  | '(' push_compiler_frame01 create_arguments close_paren_or_missing
-  {
-    int e;
-    node *create_code = NULL;
-    struct pike_type *type = NULL;
-    struct pike_string *create_string = NULL;
-    int f;
-
-    MAKE_CONST_STRING(create_string, "create");
-
-    /* First: Deduce the type for the create() function. */
-    push_type(T_VOID); /* Return type. */
-    e = $3-1;
-    if (Pike_compiler->varargs) {
-      /* Varargs */
-      push_finished_type(Pike_compiler->compiler_frame->variable[e--].type);
-      pop_type_stack(T_ARRAY); /* Pop one level of array. */
-    } else {
-      /* Not varargs. */
-      push_type(T_VOID);
-    }
-    push_type(T_MANY);
-    for(; e >= 0; e--) {
-      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-      push_type(T_FUNCTION);
-    }
-
-    type = compiler_pop_type();
-
-    /* Second: Declare the function. */
-
-    Pike_compiler->compiler_frame->current_function_number=
-      define_function(create_string, type,
-		      ID_INLINE | ID_STATIC,
-		      IDENTIFIER_PIKE_FUNCTION |
-		      (Pike_compiler->varargs?IDENTIFIER_VARARGS:0),
-		      0,
-		      OPT_SIDE_EFFECT);
-
-    Pike_compiler->varargs = 0;
-
-    /* Third: Generate the initialization code.
-     *
-     * global_arg = [type]local_arg;
-     * [,..]
-     */
-
-    for(e=0; e<$3; e++)
-    {
-      if(!Pike_compiler->compiler_frame->variable[e].name ||
-	 !Pike_compiler->compiler_frame->variable[e].name->len)
-      {
-	my_yyerror("Missing name for argument %d.",e);
-      } else {
-	node *local_node = mklocalnode(e, 0);
-
-	/* FIXME: Should probably use some other flag. */
-	if ((runtime_options & RUNTIME_CHECK_TYPES) &&
-	    (Pike_compiler->compiler_pass == 2) &&
-	    (Pike_compiler->compiler_frame->variable[e].type !=
-	     mixed_type_string)) {
-	  /* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
-
-	  /* The following is needed to go around the optimization in
-	   * mksoftcastnode().
-	   */
-	  free_type(local_node->type);
-	  copy_pike_type(local_node->type, mixed_type_string);
-	  
-	  local_node = mksoftcastnode(Pike_compiler->compiler_frame->
-				      variable[e].type, local_node);
-	}
-	create_code =
-	  mknode(F_COMMA_EXPR, create_code,
-		 mknode(F_ASSIGN, local_node,
-			mkidentifiernode(isidentifier(Pike_compiler->
-						      compiler_frame->
-						      variable[e].name))));
-      }
-    }
-
-    /* Fourth: Add a return 0; at the end. */
-
-    create_code = mknode(F_COMMA_EXPR,
-			 mknode(F_POP_VALUE, create_code, NULL),
-			 mknode(F_RETURN, mkintnode(0), NULL));
-
-    /* Fifth: Define the function. */
-
-    f=dooptcode(create_string, check_node_hash(create_code),
-		type, ID_STATIC);
-
-#ifdef PIKE_DEBUG
-    if(Pike_interpreter.recoveries &&
-       Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
-      Pike_fatal("Stack error (underflow)\n");
-
-    if(Pike_compiler->compiler_pass == 1 &&
-       f!=Pike_compiler->compiler_frame->current_function_number)
-      Pike_fatal("define_function screwed up! %d != %d\n",
-	    f, Pike_compiler->compiler_frame->current_function_number);
-#endif
-
-    /* Done. */
-
-    pop_compiler_frame();
-    free_node($4);
-    free_type(type);
+    free_node($3);
   }
   ;
 
@@ -2593,6 +2530,137 @@ class: modifiers TOK_CLASS line_number_info optional_identifier
   optional_create_arguments failsafe_program
   {
     struct program *p;
+
+    /* Check if we have create arguments but no locally defined create(). */
+    if (Pike_compiler->num_create_args) {
+      struct pike_string *create_string = NULL;
+      struct reference *ref = NULL;
+      struct identifier *id = NULL;
+      int ref_id;
+      MAKE_CONST_STRING(create_string, "create");
+      if (((ref_id = isidentifier(create_string)) < 0) ||
+	  (ref = PTR_FROM_INT(Pike_compiler->new_program, ref_id))->inherit_offset ||
+	  (id = ID_FROM_PTR(Pike_compiler->new_program, ref))->func.offset == -1) {
+	int e;
+	node *create_code = NULL;
+	struct pike_type *type = NULL;
+	int nargs = Pike_compiler->num_create_args;
+	int f;
+
+	push_compiler_frame(SCOPE_LOCAL);
+	
+	/* Init: Prepend the create arguments. */
+	if (Pike_compiler->num_create_args < 0) {
+	  for (e = 0; e < -Pike_compiler->num_create_args; e++) {
+	    id = Pike_compiler->new_program->identifiers + e;
+	    add_ref(id->type);
+	    add_local_name(id->name, id->type, 0);
+	  }
+	} else {
+	  for (e = 0; e < Pike_compiler->num_create_args; e++) {
+	    id = Pike_compiler->new_program->identifiers + e;
+	    add_ref(id->type);
+	    add_local_name(id->name, id->type, 0);
+	  }
+	}
+
+	/* First: Deduce the type for the create() function. */
+	push_type(T_VOID); /* Return type. */
+
+	if ((e = nargs) < 0) {
+	  /* Varargs */
+	  e = nargs = -nargs;
+	  push_finished_type(Pike_compiler->compiler_frame->variable[--e].type);
+	  pop_type_stack(T_ARRAY); /* Pop one level of array. */
+	} else {
+	  /* Not varargs. */
+	  push_type(T_VOID);
+	}
+	push_type(T_MANY);
+	while(e--) {
+	  push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+	  push_type(T_FUNCTION);
+	}
+
+	type = compiler_pop_type();
+
+	/* Second: Declare the function. */
+
+	Pike_compiler->compiler_frame->current_function_number=
+	  define_function(create_string, type,
+			  ID_INLINE | ID_STATIC,
+			  IDENTIFIER_PIKE_FUNCTION |
+			  (Pike_compiler->num_create_args < 0?IDENTIFIER_VARARGS:0),
+			  0,
+			  OPT_SIDE_EFFECT);
+	
+	/* Third: Generate the initialization code.
+	 *
+	 * global_arg = [type]local_arg;
+	 * [,..]
+	 */
+
+	for(e=0; e<nargs; e++)
+	{
+	  if(!Pike_compiler->compiler_frame->variable[e].name ||
+	     !Pike_compiler->compiler_frame->variable[e].name->len)
+	  {
+	    my_yyerror("Missing name for argument %d.",e);
+	  } else {
+	    node *local_node = mklocalnode(e, 0);
+
+	    /* FIXME: Should probably use some other flag. */
+	    if ((runtime_options & RUNTIME_CHECK_TYPES) &&
+		(Pike_compiler->compiler_pass == 2) &&
+		(Pike_compiler->compiler_frame->variable[e].type !=
+		 mixed_type_string)) {
+	      /* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
+
+	      /* The following is needed to go around the optimization in
+	       * mksoftcastnode().
+	       */
+	      free_type(local_node->type);
+	      copy_pike_type(local_node->type, mixed_type_string);
+	  
+	      local_node = mksoftcastnode(Pike_compiler->compiler_frame->
+					  variable[e].type, local_node);
+	    }
+	    create_code =
+	      mknode(F_COMMA_EXPR, create_code,
+		     mknode(F_ASSIGN, local_node,
+			    mkidentifiernode(e)));
+	  }
+	}
+
+	/* Fourth: Add a return 0; at the end. */
+
+	create_code = mknode(F_COMMA_EXPR,
+			     mknode(F_POP_VALUE, create_code, NULL),
+			     mknode(F_RETURN, mkintnode(0), NULL));
+
+	/* Fifth: Define the function. */
+
+	f=dooptcode(create_string, check_node_hash(create_code),
+		    type, ID_STATIC);
+
+#ifdef PIKE_DEBUG
+	if(Pike_interpreter.recoveries &&
+	   Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
+	  Pike_fatal("Stack error (underflow)\n");
+
+	if(Pike_compiler->compiler_pass == 1 &&
+	   f!=Pike_compiler->compiler_frame->current_function_number)
+	  Pike_fatal("define_function screwed up! %d != %d\n",
+		     f, Pike_compiler->compiler_frame->current_function_number);
+#endif
+
+	/* Done. */
+
+	free_type(type);
+	pop_compiler_frame();
+      }
+    }
+
     if(Pike_compiler->compiler_pass == 1)
       p=end_first_pass(0);
     else
