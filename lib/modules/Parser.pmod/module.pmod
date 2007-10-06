@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod,v 1.22 2004/02/24 12:27:36 jhs Exp $
+// $Id: module.pmod,v 1.23 2007/10/06 13:53:38 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -393,6 +393,12 @@ string parse_html_entities(string in,void|int noerror)
 
 static mapping(string:string) rev_html_entities;
 
+//! Encode characters to HTML entities, e.g. turning @expr{"<"@} into
+//! @expr{"&lt;"@}.
+//!
+//! The characters that will be encoded are characters <= 32,
+//! @expr{"\"&'<>"@} and characters >= 127 and <= 160 and characters
+//! >= 255.
 string encode_html_entities(string raw)
 {
   if (!rev_html_entities) {
