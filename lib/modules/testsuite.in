@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.37 2006/01/31 10:15:59 mast Exp $
+dnl $Id: testsuite.in,v 1.38 2007/10/06 16:23:39 grubba Exp $
 
 START_MARKER
 
@@ -741,12 +741,19 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && (cpp("__NT__")/"\n")[
   dnl Some OSs have a delay before PIDs are reused.
   dnl Be nice, and let them reuse some.
   test_do([[ sleep(2); ]]);
-  test_any([[ for(int x=0;x<10;x++) { for(int e=0;e<100;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; __signal_watchdog(); } return -1;]],-1)
+  test_any([[
+#ifdef DISABLE_SLOW_TESTS
+    return -1;
+#endif
+    for(int x=0;x<10;x++) { for(int e=0;e<100;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; __signal_watchdog(); } return -1;]],-1)
 ]])
 
 cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[1]=="__NT__" ]],
 [[
   test_any([[
+#ifdef DISABLE_SLOW_TESTS
+    return ({});
+#endif
     return allocate(10, thread_create) (
       lambda() {
 	for (int x=0; x<10; x++) {
@@ -763,6 +770,9 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thre
 cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[1]=="__NT__" ]],
 [[
   test_do([[
+#ifdef DISABLE_SLOW_TESTS
+    return 0;
+#endif
   for(int q=0;q<100;q++)
   {
     array fnord=({});
@@ -791,6 +801,9 @@ test_any([[
   {
 int gnapp(int t)
 {
+#ifdef DISABLE_SLOW_TESTS
+  return -1;
+#endif
   int e;
   for(e=0;e<7;e++)
   {
