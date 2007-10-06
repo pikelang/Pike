@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.233 2007/09/29 15:09:03 grubba Exp $
+|| $Id: program.h,v 1.234 2007/10/06 11:02:18 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -289,11 +289,14 @@ struct program_constant
  * char code[]
  */
 
+#define ID_PROTECTED       0x01 /* Symbol is not visible by indexing */
 #define ID_STATIC          0x01	/* Symbol is not visible by indexing */
 #define ID_PRIVATE         0x02	/* Symbol is not visible by inherit */
+#define ID_FINAL           0x04	/* Symbol may not be overloaded */
 #define ID_NOMASK          0x04	/* Symbol may not be overloaded */
 #define ID_PUBLIC          0x08 /* Anti private */
-#define ID_PROTECTED       0x10 /* Not currently used at all */
+
+#define ID_LOCAL           0x20 /* Locally referenced symbol (not virtual) */
 #define ID_INLINE          0x20 /* Same as local */
 #define ID_HIDDEN          0x40	/* Symbols that are private and inherited one step later */
 #define ID_INHERITED       0x80 /* Symbol is inherited */
@@ -301,7 +304,7 @@ struct program_constant
 #define ID_EXTERN         0x200	/* Symbol is defined later */
 #define ID_VARIANT	  0x400 /* Function is overloaded by argument. */
 
-#define ID_MODIFIER_MASK 0x07ff
+#define ID_MODIFIER_MASK 0x07ef
 
 #define ID_STRICT_TYPES  0x8000	/* #pragma strict_types */
 #define ID_SAVE_PARENT  0x10000 /* #pragma save_parent */
