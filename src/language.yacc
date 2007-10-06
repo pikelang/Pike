@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.384 2007/10/06 09:59:05 grubba Exp $
+|| $Id: language.yacc,v 1.385 2007/10/06 13:45:22 grubba Exp $
 */
 
 %pure_parser
@@ -662,7 +662,7 @@ constant: modifiers TOK_CONSTANT constant_list ';' {}
 
 block_or_semi: block
   {
-    $$ = check_node_hash(mknode(F_COMMA_EXPR,$1,mknode(F_RETURN,mkintnode(0),0)));
+    $$ = mknode(F_COMMA_EXPR,$1,mknode(F_RETURN,mkintnode(0),0));
     COPY_LINE_NUMBER_INFO($$, $1);
   }
   | ';' { $$ = NULL; }
@@ -674,7 +674,7 @@ block_or_semi: block
 type_or_error: simple_type
   {
 #ifdef PIKE_DEBUG
-    check_type_string(check_node_hash($1)->u.sval.u.type);
+    check_type_string($1->u.sval.u.type);
 #endif /* PIKE_DEBUG */
     if(Pike_compiler->compiler_frame->current_type)
       free_type(Pike_compiler->compiler_frame->current_type); 
@@ -904,8 +904,8 @@ def: modifiers type_or_error optional_constant optional_stars
        * set current_function_number for local functions as well
        */
       Pike_compiler->compiler_frame->current_function_number=
-	define_function(check_node_hash($5)->u.sval.u.string,
-			check_node_hash($<n>$)->u.sval.u.type,
+	define_function($5->u.sval.u.string,
+			$<n>$->u.sval.u.type,
 			$1 & (~ID_EXTERN),
 			IDENTIFIER_PIKE_FUNCTION |
 			(Pike_compiler->varargs?IDENTIFIER_VARARGS:0),
@@ -1026,10 +1026,7 @@ def: modifiers type_or_error optional_constant optional_stars
 	lex.current_file = f;
       }
 
-      f=dooptcode(check_node_hash($5)->u.sval.u.string,
-		  check_node_hash($12),
-		  check_node_hash($<n>11)->u.sval.u.type,
-		  $1);
+      f=dooptcode($5->u.sval.u.string, $12, $<n>11->u.sval.u.type, $1);
 
       i = ID_FROM_INT(Pike_compiler->new_program, f);
       i->opt_flags = Pike_compiler->compiler_frame->opt_flags;
@@ -2647,8 +2644,7 @@ class: modifiers TOK_CLASS line_number_info optional_identifier
 
 	/* Fifth: Define the function. */
 
-	f=dooptcode(create_string, check_node_hash(create_code),
-		    type, ID_STATIC);
+	f=dooptcode(create_string, create_code, type, ID_STATIC);
 
 #ifdef PIKE_DEBUG
 	if(Pike_interpreter.recoveries &&

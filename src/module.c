@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.45 2007/05/18 15:43:24 grubba Exp $
+|| $Id: module.c,v 1.46 2007/10/06 13:45:22 grubba Exp $
 */
 
 #include "global.h"
@@ -151,10 +151,6 @@ static void exit_builtin_modules(void)
   /* This zaps Pike_interpreter.thread_state among other things, so
    * THREADS_ALLOW/DISALLOW are NOPs beyond this point. */
   th_cleanup();
-
-#ifdef SHARED_NODES
-  free(node_hash.table);
-#endif /* SHARED_NODES */
 
   exit_pike_security();
   free_svalue(& throw_value);

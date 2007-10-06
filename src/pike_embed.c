@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.c,v 1.13 2007/06/18 09:21:24 mast Exp $
+ * $Id: pike_embed.c,v 1.14 2007/10/06 13:45:22 grubba Exp $
  *
  * Pike embedding API.
  *
@@ -182,17 +182,6 @@ void init_pike(char **argv, const char *file)
     init_multiset();
     init_builtin_constants();
   }
-
-#ifdef SHARED_NODES
-  TRACE((stderr, "Init shared nodes...\n"));
-  
-  node_hash.table = malloc(sizeof(node *)*32831);
-  if (!node_hash.table) {
-    Pike_fatal("Out of memory!\n");
-  }
-  MEMSET(node_hash.table, 0, sizeof(node *)*32831);
-  node_hash.size = 32831;
-#endif /* SHARED_NODES */
 
 #ifdef HAVE_TZSET
   tzset();

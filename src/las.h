@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.h,v 1.73 2006/07/05 19:28:10 mast Exp $
+|| $Id: las.h,v 1.74 2007/10/06 13:45:22 grubba Exp $
 */
 
 #ifndef LAS_H
@@ -100,11 +100,7 @@ union node_data
 
 struct node_s
 {
-#if defined(SHARED_NODES)
   unsigned INT32 refs;
-  size_t hash;
-  struct node_s *next;
-#endif /* SHARED_NODES */
   struct pike_string *current_file;
   struct pike_type *type;
   struct pike_string *name;
@@ -116,39 +112,6 @@ struct node_s
   unsigned INT16 token;
   union node_data u;
 };
-
-#ifdef SHARED_NODES_MK2
-
-struct node_identifier
-{
-  ptrdiff_t refs;
-  struct node_identifier *next;
-  size_t hash;
-  INT16 token;
-  union node_data u;
-};
-
-struct node_hash_table
-{
-  struct node_identifier **table;
-  INT32 size;
-};
-
-extern struct node_hash_table node_hash;
-
-#endif /* SHARED_NODES_MK2 */
-
-#ifdef SHARED_NODES
-
-struct node_hash_table
-{
-  node **table;
-  INT32 size;
-};
-
-extern struct node_hash_table node_hash;
-
-#endif /* SHARED_NODES */
 
 #define OPT_OPTIMIZED       0x1    /* has been processed by optimize(),
 				    * only used in node_info
@@ -169,8 +132,6 @@ extern struct node_hash_table node_hash;
 #define OPT_APPLY           0x1000 /* contains apply */
 #define OPT_FLAG_NODE	    0x2000 /* don't optimize away unless the
 				    * parent also is optimized away */
-#define OPT_DEFROSTED	    0x4000 /* Node may be a duplicate */
-#define OPT_NOT_SHARED	    0x8000 /* Node is not to be shared */
 
 
 /* This is a statement which got custom break/continue label handling.
@@ -193,7 +154,6 @@ int check_tailrecursion(void);
 struct node_chunk;
 void free_all_nodes(void);
 void debug_free_node(node *n);
-node *debug_check_node_hash(node *n);
 node *debug_mknode(int token,node *a,node *b);
 node *debug_mkstrnode(struct pike_string *str);
 node *debug_mkintnode(INT_TYPE nr);
@@ -278,12 +238,6 @@ void resolv_program(node *n);
   } while (0)
 
 
-#if defined(PIKE_DEBUG) && (defined(SHARED_NODES) || defined(SHARED_NODES_MK2))
-#define check_node_hash(X)	debug_check_node_hash(X)
-#else /* !PIKE_DEBUG || (!SHARED_NODES && !SHARED_NODES_MK2) */
-#define check_node_hash(X)	(X)
-#endif /* PIKE_DEBUG && (SHARED_NODES || SHARED_NODES_MK2) */
-
 /* lvalue variants of CAR(n) & CDR(n) */
 #define _CAR(n) (dmalloc_touch(node *,(n))->u.node.a)
 #define _CDR(n) (dmalloc_touch(node *,(n))->u.node.b)
@@ -296,18 +250,12 @@ void resolv_program(node *n);
 #define ADD_NODE_REF(n)	do { if (n) add_ref(n); } while(0)
 #define ADD_NODE_REF2(n, code)	do { ADD_NODE_REF(n); code; } while(0)
 #else /* !SHARED_NODES */
-#define defrost_node(n) (n)
 #define ADD_NODE_REF(n)	(n = 0)
 #define ADD_NODE_REF2(n, code)	do { code; n = 0;} while(0)
 #endif /* SHARED_NODES */
 
-#ifdef SHARED_NODES
-#define CAR(n)  (check_node_hash(dmalloc_touch(node *, (n)->u.node.a)))
-#define CDR(n)  (check_node_hash(dmalloc_touch(node *, (n)->u.node.b)))
-#else /* !SHARED_NODES */
 #define CAR(n) _CAR(n)
 #define CDR(n) _CDR(n)
-#endif /* SHARED_NODES */ 
 #define CAAR(n) CAR(CAR(n))
 #define CADR(n) CAR(CDR(n))
 #define CDAR(n) CDR(CAR(n))

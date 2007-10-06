@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.189 2007/03/03 15:26:54 grubba Exp $
+|| $Id: docode.c,v 1.190 2007/10/06 13:45:22 grubba Exp $
 */
 
 #include "global.h"
@@ -290,7 +290,7 @@ int do_docode(node *n, int flags)
 #ifdef PIKE_DEBUG
   if (current_stack_depth == -4711) Pike_fatal("do_docode() used outside docode().\n");
 #endif
-  i=do_docode2(check_node_hash(n), flags);
+  i=do_docode2(n, flags);
   current_stack_depth = stack_depth_save + i;
 
   lex.current_line=save_current_line;
@@ -306,7 +306,7 @@ static int is_efun(node *n, c_fun fun)
 
 static void code_expression(node *n, int flags, char *err)
 {
-  switch(do_docode(check_node_hash(n), flags & ~DO_POP))
+  switch(do_docode(n, flags & ~DO_POP))
   {
   case 0: my_yyerror("Void expression for %s",err);
   case 1: return;
@@ -619,7 +619,7 @@ static void emit_range (node *n DO_IF_DEBUG (COMMA int num_args))
 
 #ifdef PIKE_DEBUG
   {
-    int expected_args;
+    int expected_args = 0;
     switch (bound_types & (RANGE_LOW_OPEN|RANGE_HIGH_OPEN)) {
       case 0:
 	expected_args = 2; break;
@@ -1032,7 +1032,7 @@ static int do_docode2(node *n, int flags)
 	   match_types(CDR(n)->type, multiset_type_string) ||
 	   match_types(CDR(n)->type, mapping_type_string))
 	{
-	  num_args = do_docode(check_node_hash(CDAR(n)), 0);
+	  num_args = do_docode(CDAR(n), 0);
 	  switch (num_args)
 	  {
 	    case 0: emit0(F_LTOSVAL1); break;
@@ -1045,7 +1045,7 @@ static int do_docode2(node *n, int flags)
 	  }
 	}else{
 	  emit0(F_LTOSVAL);
-	  num_args = do_docode(check_node_hash(CDAR(n)), 0);
+	  num_args = do_docode(CDAR(n), 0);
 	}
 
 	if (CAR (n)->token == F_RANGE)
