@@ -1,5 +1,5 @@
 //
-// $Id: BitBuffer.pike,v 1.8 2005/01/04 08:10:14 nilsson Exp $
+// $Id: BitBuffer.pike,v 1.9 2007/10/06 13:43:41 nilsson Exp $
 
 //! Implements a FIFO bit buffer, i.e. a buffer that operates on bits
 //! instead of bytes. It is not designed for performance, but as a way
@@ -22,11 +22,11 @@
 
 #pike __REAL_VERSION__
 
-static string data = "";
-static int dptr;
+protected string data = "";
+protected int dptr;
 
 //! The buffer can be initialized with initial data during creation.
-void create(void|string _data) {
+protected void create(void|string _data) {
   if(_data) feed(_data);
 }
 
@@ -59,7 +59,7 @@ string drain() {
   return d;
 }
 
-static int out_buffer, bib;
+protected int out_buffer, bib;
 
 //! Get @[bits] from the buffer.
 //! @throws
@@ -106,7 +106,7 @@ string read( void|int bytes )
   return (string)buf;
 }
 
-static int in_buffer, bob;
+protected int in_buffer, bob;
 
 //! Put @[bits] number of bits with the value @[value] into the
 //! buffer.
@@ -176,11 +176,11 @@ this_program put1( int bits ) {
 }
 
 //! @[sizeof()] will return the number of bits in the buffer.
-int _sizeof() {
+protected int _sizeof() {
   return sizeof(data)*8+bib+bob-dptr*8;
 }
 
-string _sprintf(int t) {
+protected string _sprintf(int t) {
   if(t!='O') return UNDEFINED;
   string ret = sprintf("%O(", this_program);
   if(bib) ret += reverse(sprintf("%0"+bib+"b", out_buffer));
