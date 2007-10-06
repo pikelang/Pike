@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.254 2007/06/10 18:11:13 mast Exp $
+|| $Id: threads.c,v 1.255 2007/10/06 13:10:12 marcus Exp $
 */
 
 #include "global.h"
@@ -642,6 +642,65 @@ PMOD_EXPORT struct object *thread_for_id(THREAD_T tid)
   return (s == NULL? NULL : THREADSTATE2OBJ(s));
   /* See NB in thread_state_for_id.  Lifespan of result can be prolonged
      by incrementing refcount though. */
+}
+
+PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx)
+{
+  struct thread_state *state;
+
+  if((state = thread_state_for_id(th_self()))!=NULL) {
+    /* This is a pike thread.  Do we have the interpreter lock? */
+    if(!state->swapped) {
+      /* Yes.  Go for it... */
+      func(ctx);
+    } else {
+      /* Nope, let's get it... */
+      mt_lock_interpreter();
+      SWAP_IN_THREAD(state);
+
+      func(ctx);
+
+      /* Restore */
+      SWAP_OUT_THREAD(state);
+      mt_unlock_interpreter();
+    }
+  } else {
+    /* Not a pike thread.  Create a temporary thread_id... */
+    struct object *thread_obj;
+
+    mt_lock_interpreter();
+    init_interpreter();
+    Pike_interpreter.stack_top=((char *)&state)+ (thread_stack_size-16384) * STACK_DIRECTION;
+    Pike_interpreter.recoveries = NULL;
+    thread_obj = fast_clone_object(thread_id_prog);
+    INIT_THREAD_STATE((struct thread_state *)(thread_obj->storage +
+                                              thread_storage_offset));
+    num_threads++;
+    thread_table_insert(Pike_interpreter.thread_state);
+
+    func(ctx);
+
+    cleanup_interpret();        /* Must be done before EXIT_THREAD_STATE */
+    Pike_interpreter.thread_state->status=THREAD_EXITED;
+    co_signal(&Pike_interpreter.thread_state->status_change);
+    thread_table_delete(Pike_interpreter.thread_state);
+    EXIT_THREAD_STATE(Pike_interpreter.thread_state);
+    Pike_interpreter.thread_state=NULL;
+    free_object(thread_obj);
+    thread_obj = NULL;
+    num_threads--;
+    mt_unlock_interpreter();
+  }
+}
+
+PMOD_EXPORT void enable_external_threads(void)
+{
+  num_threads++;  
+}
+
+PMOD_EXPORT void disable_external_threads(void)
+{
+  num_threads--;
 }
 
 /*! @module Thread

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.81 2006/07/05 00:19:55 mast Exp $
+|| $Id: jvm.c,v 1.82 2007/10/06 13:10:12 marcus Exp $
 */
 
 /*
@@ -33,6 +33,7 @@
 #include "gc.h"
 #include "threads.h"
 #include "operators.h"
+#include "signal_handler.h"
 
 #ifdef HAVE_JAVA
 
@@ -2016,13 +2017,24 @@ static void make_java_exception(struct object *jvm, JNIEnv *env,
 
 #endif
 
-static void do_native_dispatch(struct native_method_context *ctx,
-			       JNIEnv *env, jclass cls, void *args_,
-			       jvalue *rc)
+struct dispatch {
+  struct native_method_context *ctx;
+  JNIEnv *env;
+  jclass cls;
+  void *args;
+  jvalue *rc;
+};
+
+static void do_native_dispatch(void *arg)
 {
   JMP_BUF recovery;
   struct svalue *osp = Pike_sp;
   char *p;
+  struct dispatch *d = (struct dispatch *)arg;
+  struct native_method_context *ctx = d->ctx;
+  JNIEnv *env = d->env;
+  ARGS_TYPE args = d->args;
+  jvalue *rc = d->rc;
 
   if (SETJMP(recovery)) {
     make_java_exception(ctx->nat->jvm, env, &throw_value);
@@ -2035,9 +2047,8 @@ static void do_native_dispatch(struct native_method_context *ctx,
 
   {
     int nargs = 0;
-    ARGS_TYPE args = args_;
 
-    if(!cls) {
+    if(!d->cls) {
       push_java_anyobj(GET_NATIVE_ARG(jobject), ctx->nat->jvm, env);
       nargs++;
     }
@@ -2110,51 +2121,14 @@ static void native_dispatch(struct native_method_context *ctx,
 			    JNIEnv *env, jclass cls, void *args,
 			    jvalue *rc)
 {
-  struct thread_state *state;
+  struct dispatch d;
+  d.ctx = ctx;
+  d.env = env;
+  d.cls = cls;
+  d.args = args;
+  d.rc = rc;
 
-  if((state = thread_state_for_id(th_self()))!=NULL) {
-    /* This is a pike thread.  Do we have the interpreter lock? */
-    if(!state->swapped) {
-      /* Yes.  Go for it... */
-      do_native_dispatch(ctx, env, cls, args, rc);
-    } else {
-      /* Nope, let's get it... */
-      mt_lock_interpreter();
-      SWAP_IN_THREAD(state);
-
-      do_native_dispatch(ctx, env, cls, args, rc);
-
-      /* Restore */
-      SWAP_OUT_THREAD(state);
-      mt_unlock_interpreter();
-    }
-  } else {
-    /* Not a pike thread.  Create a temporary thread_id... */
-    struct object *thread_obj;
-
-    mt_lock_interpreter();
-    init_interpreter();
-    Pike_interpreter.stack_top=((char *)&state)+ (thread_stack_size-16384) * STACK_DIRECTION;
-    Pike_interpreter.recoveries = NULL;
-    thread_obj = fast_clone_object(thread_id_prog);
-    INIT_THREAD_STATE((struct thread_state *)(thread_obj->storage +
-					      thread_storage_offset));
-    num_threads++;
-    thread_table_insert(Pike_interpreter.thread_state);
-
-    do_native_dispatch(ctx, env, cls, args, rc);
-
-    cleanup_interpret();	/* Must be done before EXIT_THREAD_STATE */
-    Pike_interpreter.thread_state->status=THREAD_EXITED;
-    co_signal(&Pike_interpreter.thread_state->status_change);
-    thread_table_delete(Pike_interpreter.thread_state);
-    EXIT_THREAD_STATE(Pike_interpreter.thread_state);
-    Pike_interpreter.thread_state=NULL;
-    free_object(thread_obj);
-    thread_obj = NULL;
-    num_threads--;
-    mt_unlock_interpreter();
-  }
+  call_with_interpreter(do_native_dispatch, &d);
 }
 
 static jboolean JNICALL native_dispatch_z(struct native_method_context *ctx,
@@ -3339,7 +3313,7 @@ static void init_jvm_struct(struct object *o)
   struct jvm_storage *j = THIS_JVM;
 
 #ifdef SUPPORT_NATIVE_METHODS
-  num_threads++;
+  enable_external_threads();
 #endif /* SUPPORT_NATIVE_METHODS */
   j->jvm = NULL;
   j->classpath_string = NULL;
@@ -3392,7 +3366,7 @@ static void exit_jvm_struct(struct object *o)
     free_object(j->tl_env);
 #endif /* _REENTRANT */
 #ifdef SUPPORT_NATIVE_METHODS
-  num_threads--;
+  disable_external_threads();
 #endif /* SUPPORT_NATIVE_METHODS */
 }
 

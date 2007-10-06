@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.h,v 1.132 2007/06/10 18:11:13 mast Exp $
+|| $Id: threads.h,v 1.133 2007/10/06 13:10:12 marcus Exp $
 */
 
 #ifndef THREADS_H
@@ -110,6 +110,9 @@ void th_cleanup(void);
 int th_num_idle_farmers(void);
 int th_num_farmers(void);
 PMOD_EXPORT void th_farm(void (*fun)(void *), void *here);
+PMOD_EXPORT void call_with_interpreter(void (*func)(void *ctx), void *ctx);
+PMOD_EXPORT void enable_external_threads(void);
+PMOD_EXPORT void disable_external_threads(void);
 /* Prototypes end here */
 
 #endif
