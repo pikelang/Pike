@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.383 2007/10/05 17:45:10 grubba Exp $
+|| $Id: language.yacc,v 1.384 2007/10/06 09:59:05 grubba Exp $
 */
 
 %pure_parser
@@ -2394,9 +2394,16 @@ create_arg: modifiers type_or_error optional_stars optional_dot_dot_dot TOK_IDEN
     }
     type=compiler_pop_type();
 
-    /* Add the identifier both globally. */
+    /* Add the identifier globally.
+     * Note: Since these are the first identifiers (and references)
+     *       to be added to the program, they will be numbered in
+     *       sequence starting at 0 (zero). This means that the
+     *       counter num_create_args is sufficient extra information
+     *       to be able to keep track of them.
+     */
     ref_no = define_variable($5->u.sval.u.string, type,
 			     Pike_compiler->current_modifiers);
+    free_type(type);
 
     if (Pike_compiler->num_create_args != ref_no) {
       my_yyerror("Multiple definitions of create variable %S (%d != %d).",
