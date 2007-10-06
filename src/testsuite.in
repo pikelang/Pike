@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.787 2007/10/06 13:32:37 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.788 2007/10/06 13:33:02 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -3620,7 +3620,7 @@ class X {
  static class gazonk { void create() { f(); }};
   static class g { object e() { return gazonk(); }};
  void create() { g()->e(); }}; return objectp(X()); ]],1)
-test_any([[class A { int x=1; }; class B { protected inherit A; int foo() { return A::x; }}; return !B->x && B()->foo()==A()->x;]],1)
+test_any([[class A { int x=1; }; class B { protected inherit A; int foo() { return A::x; }}; return A()->x && !B()->x && B()->foo()==A()->x;]],1)
 test_any([[class C { int q() { return p(); } int p() { return 17; }}; return C()->q();]],17)
 test_any([[class C1 {
  class D { string id() { return "foo"; } };
