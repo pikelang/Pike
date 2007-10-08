@@ -9,6 +9,9 @@ int num_failed;
 
 void test_resolv(string file, int base_size, object|void handler)
 {
+#if constant(alarm)
+  alarm(1*60);	// 1 minute should be sufficient for this test.
+#endif
   string prg = replace( file[base_size+1..sizeof(file)-6],
 			([ "/":".", ".pmod":""]) );
   if(prg[sizeof(prg)-7..]==".module")
@@ -29,6 +32,9 @@ void test_dir(string dir, int|void base_size, object|void handler)
 {
   if (!Stdio.is_dir (dir)) return;
   // write("Testing directory %O...\n", dir);
+#if constant(alarm)
+  alarm(1*60);	// 1 minute should be sufficient for this test.
+#endif
   if(!base_size) base_size=sizeof(dir);
   array(string) files = get_dir(dir);
   // Ensure that .so files are loaded before .pike and .pmod files.
@@ -106,7 +112,7 @@ void test_dir(string dir, int|void base_size, object|void handler)
 int main()
 {
 #if constant(alarm)
-  alarm(5*60);	// 5 minutes should be sufficient for this test.
+  alarm(1*60);	// 5 minute should be sufficient for each part of this test.
 #endif
   Array.map(master()->pike_module_path,test_dir);
   // FIXME: Forward compatibility?
