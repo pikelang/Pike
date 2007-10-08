@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.206 2007/07/02 16:07:30 grubba Exp $
+ * $Id: backend.cmod,v 1.207 2007/10/08 15:36:39 grubba Exp $
  *
  * Backend object.
  */
@@ -2352,6 +2352,9 @@ int POLL_DEVICE_SET_EVENTS(struct Backend_struct *me,
 
   if (events) {
     struct epoll_event ev;
+#ifdef __CHECKER__
+    MEMSET(&ev, 0, sizeof(ev));
+#endif
     ev.events = events;
     ev.data.fd = fd;
 
