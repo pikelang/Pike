@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.385 2007/10/06 13:45:22 grubba Exp $
+|| $Id: language.yacc,v 1.386 2007/10/08 14:28:03 grubba Exp $
 */
 
 %pure_parser
@@ -257,6 +257,7 @@ int yylex(YYSTYPE *yylval);
 %type <number> optional_dot_dot_dot
 %type <number> optional_comma
 %type <number> optional_constant
+%type <number> optional_create_arguments
 %type <number> optional_stars
 
 %type <str> magic_identifiers
@@ -770,6 +771,10 @@ def: modifiers type_or_error optional_constant optional_stars
       int e;
       MAKE_CONST_STRING(create_string, "create");
       if ($5->u.sval.u.string == create_string) {
+	if (TEST_COMPAT(7, 6)) {
+	  yywarning("Having both an implicit and an explicit create() "
+		    "was not supported in Pike 7.6 and before.");
+	}
 	/* Prepend the create arguments. */
 	if (Pike_compiler->num_create_args < 0) {
 	  Pike_compiler->varargs = 1;
@@ -777,14 +782,14 @@ def: modifiers type_or_error optional_constant optional_stars
 	    struct identifier *id =
 	      Pike_compiler->new_program->identifiers + e;
 	    add_ref(id->type);
-	    add_local_name(id->name, id->type, 0);
+	    add_local_name(empty_pike_string, id->type, 0);
 	  }
 	} else {
 	  for (e = 0; e < Pike_compiler->num_create_args; e++) {
 	    struct identifier *id =
 	      Pike_compiler->new_program->identifiers + e;
 	    add_ref(id->type);
-	    add_local_name(id->name, id->type, 0);
+	    add_local_name(empty_pike_string, id->type, 0);
 	  }
 	}
 	$<number>$ = e;
@@ -940,8 +945,9 @@ def: modifiers type_or_error optional_constant optional_stars
 
       for(e=0; e<$<number>8+$9; e++)
       {
-	if(!Pike_compiler->compiler_frame->variable[e].name ||
-	   !Pike_compiler->compiler_frame->variable[e].name->len)
+	if((e >= $<number>8) &&
+	   (!Pike_compiler->compiler_frame->variable[e].name ||
+	    !Pike_compiler->compiler_frame->variable[e].name->len))
 	{
 	  my_yyerror("Missing name for argument %d.", e - $<number>8);
 	} else {
@@ -2434,9 +2440,12 @@ create_arguments: /* empty */ optional_comma { $$=0; }
   | create_arguments2 optional_comma
   ;
 
-optional_create_arguments: /* empty */
+optional_create_arguments: /* empty */ { $$ = 0; }
   | '(' create_arguments close_paren_or_missing
   {
+    /* NOTE: One more than the number of arguments, so that we
+<     *       can detect the case of no parenthesis below. */
+    $$ = $2 + 1;
     free_node($3);
   }
   ;
@@ -2536,7 +2545,7 @@ class: modifiers TOK_CLASS line_number_info optional_identifier
     struct program *p;
 
     /* Check if we have create arguments but no locally defined create(). */
-    if (Pike_compiler->num_create_args) {
+    if ($7) {
       struct pike_string *create_string = NULL;
       struct reference *ref = NULL;
       struct identifier *id = NULL;
