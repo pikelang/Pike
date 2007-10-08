@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.108 2007/10/08 15:59:04 mast Exp $
+// $Id: client.pike,v 1.109 2007/10/08 16:47:09 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -90,11 +90,10 @@ import ".";
 #define ASN1_GET_ATTR_NAME(X)		((X)->elements[0]->value)
 #define ASN1_GET_ATTR_VALUES(X)         ((X)->elements[1]->elements->value)
 
-#define ASN1_DECODE_RESULTAPP(X)	ASN1_GET_RESULTAPP (.ldap_privates.ldap_der_decode(X))
-#define ASN1_DECODE_RESULTCODE(X)	(int)(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[0]->value->cast_to_int())
-#define ASN1_DECODE_RESULTSTRING(X)	(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[2]->value)
-#define ASN1_DECODE_RESULTREFS(X)	(.ldap_privates.ldap_der_decode(X)->elements[1]->elements[3]->elements)
-#define ASN1_DECODE_RAWDEBUG(X)		(.ldap_privates.ldap_der_decode(X)->debug_string())
+#define ASN1_RESULTCODE(X)		(int)((X)->elements[1]->elements[0]->value->cast_to_int())
+#define ASN1_RESULTSTRING(X)		((X)->elements[1]->elements[2]->value)
+#define ASN1_RESULTREFS(X)		((X)->elements[1]->elements[3]->elements)
+#define ASN1_RAWDEBUG(X)		((X)->debug_string())
 
  //! Contains the client implementation of the LDAP protocol.
  //! All of the version 2 protocol features are implemented
@@ -184,14 +183,14 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     // using decode_entry, the rest have not.
     private int first_undecoded_entry = 0;
 
-    array(ResultEntry) decode_entries (array rawres)
+    array(ResultEntry) decode_entries (array(object) entries)
     {
       array(ResultEntry) res = ({});
 
 #define DECODE_ENTRIES(SET_DN, SET_ATTR) do {				\
 	if (flags & SEARCH_MULTIVAL_ARRAYS_ONLY) {			\
-	  foreach (rawres, string rawent) {				\
-	    object derent = .ldap_privates.ldap_der_decode (rawent)->elements[1]; \
+	  foreach (entries, object entry) {				\
+	    object derent = entry->elements[1];				\
 	    if (array(object) derattribs = ASN1_GET_ATTR_ARRAY (derent)) { \
 	      string dn;						\
 	      {SET_DN;}							\
@@ -227,8 +226,8 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 	}								\
 									\
 	else {								\
-	  foreach (rawres, string rawent) {				\
-	    object derent = .ldap_privates.ldap_der_decode (rawent)->elements[1]; \
+	  foreach (entries, object entry) {				\
+	    object derent = entry->elements[1];				\
 	    if (array(object) derattribs = ASN1_GET_ATTR_ARRAY (derent)) { \
 	      string dn;						\
 	      {SET_DN;}							\
@@ -346,8 +345,8 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
     //!
     //! You can't create instances of this object yourself.
     //! The only way to create it is via a search of a LDAP server.
-    object|int create(array rawres, void|int stuff, void|int flags) {
-    // rawres: array of result in raw format, but WITHOUT LDAP PDU !!!
+    object|int create(array(object) entries, int stuff, int flags) {
+    // entries: array of der decoded entries, but WITHOUT LDAP PDU !!!
     // stuff: 1=bind result; ...
 
       this_program::flags = flags;
@@ -357,19 +356,17 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
       // if search() is extended to not retrieve the complete reply at
       // once.
 
-      int lastel = sizeof(rawres) - 1;
-
-      if (lastel < 0) {
+      if (!sizeof (entries)) {
 	seterr (LDAP_LOCAL_ERROR);
         THROW(({"LDAP: Internal error.\n",backtrace()}));
 	return -ldap_errno;
       }
-      DWRITE(sprintf("result.create: rawres=%O\n",rawres[lastel]));
+      DWRITE(sprintf("result.create: %O\n",entries[-1]));
 
-      // The last element of 'rawres' is result itself
-      resultcode = ASN1_DECODE_RESULTCODE(rawres[lastel]);
+      // The last element of 'entries' is result itself
+      resultcode = ASN1_RESULTCODE (entries[-1]);
       DWRITE(sprintf("result.create: code=%d\n",resultcode));
-      resultstring = ASN1_DECODE_RESULTSTRING(rawres[lastel]);
+      resultstring = ASN1_RESULTSTRING (entries[-1]);
       if (resultstring == "")
 	resultstring = 0;
       else if (ldap_version >= 3)
@@ -381,20 +378,20 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
       // referral (v3 mode)
       if(resultcode == 10) {
         referrals = ({});
-        foreach(ASN1_DECODE_RESULTREFS(rawres[lastel]), object ref1)
+	foreach(ASN1_RESULTREFS (entries[-1]), object ref1)
 	  referrals += ({ ref1->value });
         DWRITE(sprintf("result.create: refs=%O\n",referrals));
       }
 #endif
-      DWRITE(sprintf("result.create: elements=%d\n",lastel+1));
+      DWRITE(sprintf("result.create: elements=%d\n",sizeof (entries)));
 #if 0
-      DWRITE(sprintf("result.create: entries=%O\n",rawres[..lastel-1]));
+      DWRITE(sprintf("result.create: entries=%O\n", entries[..<1]));
 #endif
 
-      entry = decode_entries (rawres[..lastel-1]);
+      entry = decode_entries (entries[..<1]);
 
 #if 0
-      // Context specific proccessing of 'rawres'
+      // Context specific proccessing of 'entries'
       switch(stuff) {
         case 1:	DWRITE("result.create: stuff=1\n");
 		break;
@@ -582,6 +579,11 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
 
   // helper functions and macros
 
+// To make a result from any ldap operation that only returns a plain
+// LDAPResult.
+#define SIMPLE_RESULT(STR, STUFF, FLAGS)				\
+  result (({.ldap_privates.ldap_der_decode (STR)}), (STUFF), (FLAGS))
+
 #ifdef ENABLE_PAGED_SEARCH
 #define IF_ELSE_PAGED_SEARCH(X,Y)	X
 #else /* !ENABLE_PAGED_SEARCH */
@@ -661,7 +663,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
   void create(string|mapping(string:mixed)|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.108 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.109 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -781,7 +783,7 @@ void reset_options()
     msgval = ASN1_APPLICATION_SEQUENCE(23, ({Standards.ASN1.Types.OctetString("1.3.6.1.4.1.1466.20037")}));
 
     do_op(msgval);
-    int result = ASN1_DECODE_RESULTCODE(readbuf);
+    int result = ASN1_RESULTCODE(.ldap_privates.ldap_der_decode (readbuf));
     if(result!=0) return 0;
     // otherwise, we can try to negotiate.
       if(!context)
@@ -892,7 +894,7 @@ void reset_options()
     }
 
    bound_dn = md5_password = 0;
-   last_rv = result(({raw}),1);
+   last_rv = SIMPLE_RESULT (raw, 1, 0);
    if (!last_rv->error_number()) {
      bound_dn = dn;
      md5_password = Crypto.MD5()->update (pass)->digest();
@@ -975,7 +977,7 @@ void reset_options()
       return 0;
     }
 
-   last_rv = result(({raw}));
+   last_rv = SIMPLE_RESULT (raw, 0, 0);
    DWRITE_HI(sprintf("client.DELETE: %s\n", last_rv->error_string()));
    seterr (last_rv->error_number(), last_rv->error_string());
    return !last_rv->error_number();
@@ -1051,7 +1053,7 @@ void reset_options()
       return 0;
     }
 
-   last_rv = result(({raw}));
+   last_rv = SIMPLE_RESULT (raw, 0, 0);
    DWRITE_HI(sprintf("client.COMPARE: %s\n", last_rv->error_string()));
    seterr (last_rv->error_number(), last_rv->error_string());
    return last_rv->error_number() == LDAP_COMPARE_TRUE;
@@ -1130,7 +1132,7 @@ void reset_options()
       return 0;
     }
 
-    last_rv = result(({raw}));
+    last_rv = SIMPLE_RESULT (raw, 0, 0);
     DWRITE_HI(sprintf("client.ADD: %s\n", last_rv->error_string()));
     seterr (last_rv->error_number(), last_rv->error_string());
     return !last_rv->error_number();
@@ -1412,8 +1414,8 @@ object get_default_filter()
 		     void|int flags) {
 
     int id,nv;
-    mixed raw;
-    array(string) rawarr = ({});
+    object entry;
+    array(object) entries = ({});
 
     DWRITE_HI(sprintf ("client.SEARCH: %O\n", filter));
     if (chk_ver())
@@ -1472,7 +1474,6 @@ object get_default_filter()
 #endif
 
     object cookie = Standards.ASN1.Types.asn1_octet_string("");
-    rawarr = ({});
     do {
       PROFILE("send_search_op", {
 	  array ctrls = common_controls;
@@ -1495,30 +1496,34 @@ object get_default_filter()
 	    controls = .ldap_privates.asn1_sequence(0, ctrls);
 	  }
 
+	  string|int raw;
 	  if(intp(raw = do_op(search_request, controls))) {
 	    THROW(({error_string()+"\n",backtrace()}));
 	    return 0;
 	  }
+	  entry = .ldap_privates.ldap_der_decode (raw);
 	});
 
-      PROFILE("rawarr++", {
-	  rawarr += ({raw});
-	  while (ASN1_DECODE_RESULTAPP(raw) != 5) {
+      PROFILE("entries++", {
+	  entries += ({entry});
+	  while (ASN1_GET_RESULTAPP(entry) != 5) {
+	    string|int raw;
 	    PROFILE("readmsg", raw = readmsg(id));
 	    if (intp(raw)) {
 	      THROW(({error_string()+"\n",backtrace()}));
 	      return 0;
 	    }
-	    rawarr += ({raw});
+	    entry = .ldap_privates.ldap_der_decode (raw);
+	    entries += ({entry});
 	  } // while
 	});
 
-      // At this point @[raw] contains a SearchResultDone.
+      // At this point @[entry] contains a SearchResultDone.
       cookie = 0;
       IF_ELSE_PAGED_SEARCH({
-	  if ((ASN1_DECODE_RESULTCODE(raw) != 10) &&
-	      (sizeof(.ldap_privates.ldap_der_decode(raw)->elements) > 2)) {
-	    object controls = .ldap_privates.ldap_der_decode(raw)->elements[2];
+	  if ((ASN1_RESULTCODE(entry) != 10) &&
+	      (sizeof(entry->elements) > 2)) {
+	    object controls = entry->elements[2];
 	    foreach(controls->elements, object control) {
 	      if (!control->constructed ||
 		  !sizeof(control) ||
@@ -1557,14 +1562,14 @@ object get_default_filter()
 	    }
 	    if (cookie) {
 	      // Remove the extra end marker.
-	      rawarr = rawarr[..<1];
+	      entries = entries[..<1];
 	    }
 	  }
 	    
 	},);
     } while (cookie);
 
-    PROFILE("result", last_rv = result (rawarr, 0, flags));
+    PROFILE("result", last_rv = result (entries, 0, flags));
     if(objectp(last_rv))
       seterr (last_rv->error_number(), last_rv->error_string());
     //if (rv->error_number() || !rv->num_entries())	// if error or entries=0
@@ -1629,18 +1634,21 @@ mapping(string:string|array(string)) read (
       ctrls = .ldap_privates.asn1_sequence(0, control_list);
   }
 
-  string|int raw;
+  object entry;
   PROFILE ("send_get_op", {
+      string|int raw;
       if(intp(raw = do_op(search_request, ctrls))) {
 	THROW(({error_string()+"\n",backtrace()}));
 	return 0;
       }
+      entry = .ldap_privates.ldap_der_decode (raw);
     });
 
-  array(string) rawarr;
-  PROFILE("rawarr++", {
-      rawarr = ({raw});
-      while (ASN1_DECODE_RESULTAPP(raw) != 5) {
+  array(object) entries;
+  PROFILE("entries++", {
+      entries = ({entry});
+      while (ASN1_GET_RESULTAPP(entry) != 5) {
+	string|int raw;
 	// NB: The msgid stuff is defunct in readmsg, so we can
 	// just as well pass a zero there. :P
 	PROFILE("readmsg", raw = readmsg(0));
@@ -1648,11 +1656,12 @@ mapping(string:string|array(string)) read (
 	  THROW(({error_string()+"\n",backtrace()}));
 	  return 0;
 	}
-	rawarr += ({raw});
+	entry = .ldap_privates.ldap_der_decode (raw);
+	entries += ({entry});
       } // while
     });
 
-  PROFILE ("result", last_rv = result (rawarr, 0, flags));
+  PROFILE ("result", last_rv = result (entries, 0, flags));
   seterr (last_rv->error_number(), last_rv->error_string());
 
   if (ldap_errno != LDAP_SUCCESS) return 0;
@@ -1923,7 +1932,7 @@ mapping(string:mixed) get_parsed_url() {return lauth;}
       return 0;
     }
 
-    last_rv = result(({raw}));
+    last_rv = SIMPLE_RESULT (raw, 0, 0);
     DWRITE_HI(sprintf("client.MODIFYDN: %s\n", last_rv->error_string()));
     seterr (last_rv->error_number(), last_rv->error_string());
     return !last_rv->error_number();
@@ -2000,7 +2009,7 @@ mapping(string:mixed) get_parsed_url() {return lauth;}
       return 0;
     }
 
-    last_rv = result(({raw}));
+    last_rv = SIMPLE_RESULT (raw, 0, 0);
     DWRITE_HI(sprintf("client.MODIFY: %s\n", last_rv->error_string()));
     seterr (last_rv->error_number(), last_rv->error_string());
     return !last_rv->error_number();
