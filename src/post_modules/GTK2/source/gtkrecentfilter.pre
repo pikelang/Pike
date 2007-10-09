@@ -12,7 +12,7 @@ void create(?mapping(string:mixed) props)
     INIT_WITH_PROPS(GTK_TYPE_RECENT_FILTER);
     pgtk2_pop_n_elems(args);
   } else {
-    GtkWidget *gd;
+    GtkRecentFilter *gd;
     gd=gtk_recent_filter_new();
     THIS->obj=G_OBJECT(gd);
   }
