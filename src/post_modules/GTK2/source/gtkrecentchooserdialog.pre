@@ -43,7 +43,7 @@ void create(mapping(string:mixed)|string title, GTK2.Window|int|void parent,
 
 	  if (ITEM(a)[i].type!=PIKE_T_MAPPING)
 	    continue;
-	  m=ITEM(a)[i]->u.mapping;
+	  m=ITEM(a)[i].u.mapping;
 	  sv=low_mapping_string_lookup(m,_STR("text"));
 	  if (sv==NULL)
 	    continue;
