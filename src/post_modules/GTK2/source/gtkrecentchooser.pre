@@ -122,7 +122,7 @@ array get_items()
     }
     if (gl) {
       f_aggregate(i);
-      g_list_free(fl);
+      g_list_free(gl);
     } else
       push_int(0);
   }

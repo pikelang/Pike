@@ -28,12 +28,12 @@ void create(mapping(string:mixed)|string title, GTK2.Window|int|void parent,
       if (o2)
 	gr=gtk_recent_chooser_dialog_new_for_manager(CGSTR0(Pike_sp[-1].u.string),
 			GTK_WINDOW(get_gobject(o1)),
-			GTK_RECENT_MANAGER(get_gobject(o2)),NULL)
+			GTK_RECENT_MANAGER(get_gobject(o2)),NULL);
       else
 	gr=gtk_recent_chooser_dialog_new(CGSTR0(Pike_sp[-1].u.string),
 			GTK_WINDOW(get_gobject(o1)),NULL);
       pop_stack();
-      THIS->obj=G_OBJECT(gf);
+      THIS->obj=G_OBJECT(gr);
       if (a) {
 	for (i=0; i<a->size; i++) {
 	  struct pike_string *text;
@@ -41,7 +41,7 @@ void create(mapping(string:mixed)|string title, GTK2.Window|int|void parent,
 	  struct svalue *sv;
 	  struct mapping *m;
 
-	  if (ITEM(a)[i]->type!=PIKE_T_MAPPING)
+	  if (ITEM(a)[i].type!=PIKE_T_MAPPING)
 	    continue;
 	  m=ITEM(a)[i]->u.mapping;
 	  sv=low_mapping_string_lookup(m,_STR("text"));
