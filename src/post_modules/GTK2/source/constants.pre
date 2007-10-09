@@ -1752,7 +1752,7 @@ constant string GNOME_STOCK_MENU_JUMP_TO;
 */
 endrequire;
 
-require gtk210;
+require gtk212;
 constant int GTK_PRINT_CAPABILITY_PAGE_SET;
 constant int GTK_PRINT_CAPABILITY_COPIES;
 constant int GTK_PRINT_CAPABILITY_COLLATE;
@@ -1842,7 +1842,6 @@ constant int GTK_PRINT_QUALITY_DRAFT;
 constant int GTK_PRINT_PAGES_ALL;
 constant int GTK_PRINT_PAGES_CURRENT;
 constant int GTK_PRINT_PAGES_RANGES;
-constant int GTK_PRINT_PAGES_ALL;
 
 /* GtkPrintSettings: GtkPageSet */
 constant int GTK_PAGE_SET_ALL;
