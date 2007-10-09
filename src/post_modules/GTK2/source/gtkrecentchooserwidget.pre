@@ -23,7 +23,7 @@ void create(mapping(string:mixed)|GTK2.RecentManager|void props)
       if (grm)
         gw=gtk_recent_chooser_widget_new_for_manager(grm);
       else
-        gw=gtk_recent_chooser_wdget_new();
+        gw=gtk_recent_chooser_widget_new();
       THIS->obj=G_OBJECT(gw);
     }
     pgtk2_pop_n_elems(args);
