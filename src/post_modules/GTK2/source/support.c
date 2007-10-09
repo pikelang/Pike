@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.14 2006/09/05 14:18:19 ldillon Exp $
+|| $Id: support.c,v 1.15 2007/10/09 17:52:01 nilsson Exp $
 */
 
 #include <version.h>
@@ -691,8 +691,7 @@ void push_gvalue_r(const GValue *param, GType t) {
       if (!s)
 	s="unknown type";
     }
-    fprintf(stderr,"** Warning: No push callback for type %d/%d (%s%s)\n",
-             t,0,a,s);
+    Pike_error("No push callback for type %d (%s%s)\n",t,a,s);
   }
   return;
 }
