@@ -12,7 +12,7 @@ void create(?mapping(string:mixed) props)
     INIT_WITH_PROPS(GTK_TYPE_CELL_RENDERER_SPIN);
     pgtk2_pop_n_elems(args);
   } else {
-    GtkWidget *ga;
+    GtkCellRenderer *ga;
     ga=gtk_cell_renderer_spin_new();
     THIS->obj=G_OBJECT(ga);
   }
