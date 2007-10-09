@@ -1,5 +1,5 @@
 /* -*- C -*- */
-require gtk210;
+require gtk212;
 class GTK2.PrintUnixDialog;
 inherit GTK2.Dialog;
 
@@ -26,9 +26,9 @@ void create(string|mapping(string:mixed) title_or_props, ?GTK2.Window parent)
       gp=gtk_print_unix_dialog_new(CGSTR0(Pike_sp[-1].u.string),get_gobject
 (o1));
       pop_stack();
-      THIS->object=G_OBJECT(gp);
+      THIS->obj=G_OBJECT(gp);
     } else {
-      INIT_WITH_PROPS(GTK_TYPE_PAGE_SETUP_UNIX_DIALOG);
+      INIT_WITH_PROPS(GTK_TYPE_PRINT_UNIX_DIALOG);
     }
     pgtk2_pop_n_elems(args);
   }
