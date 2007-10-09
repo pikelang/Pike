@@ -6,45 +6,93 @@ void destroy()
 //! Destructor.
 {
   if (THIS->obj)
-    gtk_recent_info_unref();
+    gtk_recent_info_unref((GtkRecentInfo *)THIS->obj);
   THIS->obj=NULL;
   pgtk2_pop_n_elems(args);
   push_int(0);
 }
 
-string get_uri();
+string get_uri()
 //! Gets the URI of the resource.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_string(gtk_recent_info_get_uri((GtkRecentInfo *)THIS->obj));
+}
 
-string get_display_name();
+string get_display_name()
 //! Gets the name of the resource. If none has been defined, the basename
 //! of the resource is obtained.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_string(gtk_recent_info_get_display_name((GtkRecentInfo *)THIS->obj));
+}
 
-string get_description();
+string get_description()
+//! Gets the (short) description of the resource.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_string(gtk_recent_info_get_description((GtkRecentInfo *)THIS->obj));
+}
+
 //! Gets the (short) description of the resource.
 
-string get_mime_type();
+string get_mime_type()
 //! Gets the MIME type of the resource.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_string(gtk_recent_info_get_mime_type((GtkRecentInfo *)THIS->obj));
+}
 
-int get_added();
+
+int get_added()
 //! Gets the timestamp (seconds from system's Epoch) when the resource was
 //! added to the recently used resources list.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(gtk_recent_info_get_added((GtkRecentInfo *)THIS->obj));
+}
 
-int get_modified();
+int get_modified()
 //! Gets the timestamp (seconds from system's Epoch) when the resource was
 //! last modified.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(gtk_recent_info_get_modified((GtkRecentInfo *)THIS->obj));
+}
 
-int get_visited();
+int get_visited()
 //! Gets the timestamp (seconds from system's Epoch) when the resource was
 //! last visited.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(gtk_recent_info_get_visited((GtkRecentInfo *)THIS->obj));
+}
 
-int get_private_hint();
+int get_private_hint()
 //! Gets the value of the "private" flag. Resources in the recently used
 //! list that have this flag set to TRUE should only be displayed by the
 //! applications that have registered them.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(gtk_recent_info_get_private_hint((GtkRecentInfo *)THIS->obj));
+}
 
-string last_application();
+string last_application()
 //! Gets the name of the last application that have registered the recently
 //! used resource represented by info.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_string(gtk_recent_info_last_application((GtkRecentInfo *)THIS->obj));
+}
 
 array get_groups()
 //! Returns all groups registered for the recently used item.
@@ -55,10 +103,10 @@ array get_groups()
     gchar **groups,**gr;
     int i;
 
-    groups=gr=gtk_recent_info_get_groups((GtkRecentInfo *)THIS->obj);
+    groups=gr=gtk_recent_info_get_groups((GtkRecentInfo *)THIS->obj,NULL);
     i=0;
     while (gr) {
-      push_string(make_shared_binary_string(*gr));
+      push_string(make_shared_binary_string(*gr,strlen(*gr)));
       i++;
       gr++;
     }
@@ -71,35 +119,98 @@ array get_groups()
   }
 }
 
-int has_group(string group_name);
+int has_group(string group_name)
 //! Checks whether group_name appears inside the groups registered for the
 //! recently used item info.
+{
+  pgtk2_verify_inited();
+  {
+    char *name;
+    int hg;
 
-int has_application();
+    get_all_args("has_group",args,"%s",&name);
+    hg=gtk_recent_info_has_group((GtkRecentInfo *)THIS->obj,name);
+    pgtk2_pop_n_elems(args);
+    push_int(hg);
+  }
+}
+
+int has_application()
 //! Checks whether an application registered this resource using app_name.
+{
+  pgtk2_verify_inited();
+  {
+    char *name;
+    int hg;
+ 
+    get_all_args("has_group",args,"%s",&name);
+    hg=gtk_recent_info_has_application((GtkRecentInfo *)THIS->obj,name);
+    pgtk2_pop_n_elems(args);
+    push_int(hg);
+  }
+}
 
-GDK2.Pixbuf get_icon(int size);
+
+GDK2.Pixbuf get_icon(int size)
 //! Retrieves the icon of size size associated to the resource MIME type.
+{
+  pgtk2_verify_inited();
+  {
+    int size;
+    GdkPixbuf *gp;
 
-string get_short_name();
+    get_all_args("get_icon",args,"%i",&size);
+    pgtk2_pop_n_elems(args);
+    gp=gdk_recent_info_get_icon((GtkRecentInfo *)THIS->obj,size);
+    push_gobject(gp);
+  }
+}
+
+string get_short_name()
 //! Computes a valid UTF-8 string that can be used as the name of the item
 //! in a menu or list. For example, calling this function on an item that
 //! refers to "file:///foo/bar.txt" will yield "bar.txt".
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_string(gtk_recent_info_get_short_name((GtkRecentInfo *)THIS->obj));
+}
 
-string get_uri_display();
+string get_uri_display()
 //! Gets a displayable version of the resource's URI.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_string(gtk_recent_info_get_uri_display((GtkRecentInfo *)THIS->obj));
+}
 
-int get_age();
+int get_age()
 //! Gets the number of days elapsed since the last update of the resource
 //! pointed by info.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(gtk_recent_info_get_age((GtkRecentInfo *)THIS->obj));
+}
 
-int is_local();
+int is_local()
 //! Checks whether the resource is local or not by looking at the scheme
 //! of its URI.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(gtk_recent_info_is_local((GtkRecentInfo *)THIS->obj));
+}
 
-int exists();
+int exists()
 //! Checks whether the resource pointed by info still exists. At the moment
 //! this check is done only on resources pointing to local files.
+{
+  pgtk2_verify_inited();
+  pgtk2_pop_n_elems(args);
+  push_int(gtk_recent_info_exists((GtkRecentInfo *)THIS->obj));
+}
+
 
 int match(GTK2.RecentInfo b)
 //! Checks whether two GTK2.RecentInfo structures point to the same resource.
