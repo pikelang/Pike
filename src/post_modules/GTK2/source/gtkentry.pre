@@ -12,11 +12,20 @@ inherit GTK2.Editable;
 //! int cursor-position
 //! int editable
 //! int has-frame
+require gtk210;
+//! int inner-border
+endrequire;
 //! int invisible-char
 //! int max-length
 //! int scroll-offset
 //! int selection-bound
+require gtk212;
+//! int shadow-type
+endrequire;
 //! string text
+require gtk210;
+//! int truncate-multiline
+endrequire;
 //! int visibility
 //! int width-chars
 //! float xalign
@@ -94,7 +103,7 @@ array get_inner_border()
   pgtk2_verify_inited();
   pgtk2_pop_n_elems(args);
   {
-    GtkBorder *gb;
+    const GtkBorder *gb;
 
     gb=gtk_entry_get_inner_border(GTK_ENTRY(THIS->obj));
     push_int(gb->left);
@@ -119,7 +128,7 @@ void set_has_frame(int setting);
 //! Sets whether the entry has a beveled frame around it.
 
 require gtk210;
-void set_inner_border(array border)
+void set_inner_border(int left, int right, int top, int bottom)
 //! Sets the inner-border property to border, or clears it if 0 is passed.
 //! The inner-border is the area around the entry's text, but inside its
 //! frame.
@@ -131,16 +140,14 @@ void set_inner_border(array border)
 {
   pgtk2_verify_inited();
   {
-    struct array *a;
+    INT_TYPE l,r,t,b;
     GtkBorder gb;
 
-    get_all_args("set_inner_border",args,"%A",&a);
-    if (a==NULL || a->size!=4)
-      Pike_error("Invalid array.\n");
-    gb.left=PGTK_GETINT(ITEM(a)[0]);
-    gb.right=PGTK_GETINT(ITEM(a)[1]);
-    gb.top=PGTK_GETINT(ITEM(a)[2]);
-    gb.bottom=PGTK_GETINT(ITEM(a)[3]);
+    get_all_args("set_inner_border",args,"%i%i%i%i",&l,&r,&t,&b);
+    gb.left=l;
+    gb.right=r;
+    gb.top=t;
+    gb.bottom=b;
     gtk_entry_set_inner_border(GTK_ENTRY(THIS->obj),&gb);
   }
   RETURN_THIS();
@@ -230,3 +237,11 @@ void set_completion(GTK2.EntryCompletion completion);
 //! Returns the completion object.
 endrequire;
 
+require gtk212;
+void set_cursor_hadjustment(GTK2.Adjustment adj);
+//! Hooks up an adjustment to the cursor position in an entry, so that when 
+//! the cursor is moved, the adjustment is scrolled to show that position.
+
+GTK2.Adjustment get_cursor_hadjustment();
+//! Retrieves the horizontal cursor adjustment
+endrequire;
