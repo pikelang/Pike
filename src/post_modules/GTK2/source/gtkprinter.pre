@@ -45,7 +45,7 @@ void create(mapping(string:mixed)|string props_or_name,
 +GTK2.PrintBackend get_backend();
 //! Returns the backend of the printer.
 
-string name get_name();
+string get_name();
 //! Returns the name of the printer.
 
 string get_state_message();
