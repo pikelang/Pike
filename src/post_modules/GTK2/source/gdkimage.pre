@@ -73,7 +73,6 @@ string get_pnm()
     for(x=0; x<i->width; x++) {
       unsigned int pi=gdk_image_get_pixel(i,x,y);
       struct my_pixel pix=pgtk2_pixel_from_xpixel(pi,i);
-      /*      fprintf(stderr, "%d,%d\n", x, y); */
       (*p++)=pix.r;
       (*p++)=pix.g;
       (*p++)=pix.b;

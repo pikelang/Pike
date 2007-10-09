@@ -107,7 +107,6 @@ array get_row(GTK2.TreeIter iter)
 //! Get the row at this iter.
 {
   pgtk2_verify_inited();
-/*  fprintf(stderr,"get_row(): \n"); */
   {
     int i;
     int cols;

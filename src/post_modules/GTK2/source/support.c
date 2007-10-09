@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.15 2007/10/09 17:52:01 nilsson Exp $
+|| $Id: support.c,v 1.16 2007/10/09 17:52:54 nilsson Exp $
 */
 
 #include <version.h>
@@ -1274,10 +1274,9 @@ void pgtk2_marshaller(GClosure *closure,
     data1=g_value_peek_pointer(param_values+0);
     data2=closure->data;
   }
-/*  fprintf(stderr,"marshaller:  before:  nvals==%d\n",n_params-1); */
+
   callback=(pgtk2_marshal_func)(marshal_data?marshal_data:cc->callback);
   callback(data1,data2,n_params-1,param_values+1,return_value);
-/*  fprintf(stderr,"marshaller:  after:  nvals==%d\n",n_params-1); */
 }
 
 int pgtk2_tree_view_row_separator_func(GtkTreeModel *model,
