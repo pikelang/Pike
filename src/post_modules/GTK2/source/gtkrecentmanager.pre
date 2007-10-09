@@ -3,7 +3,7 @@ require gtk210;
 class GTK2.RecentManager;
 inherit G.Object;
 
-void create(mapping(string:mixed)|int|GDK2.Screen void props_or_def)
+void create(mapping(string:mixed)|int|GDK2.Screen|void props_or_def)
 //! Create a new GTK2.RecentManager.
 {
   pgtk2_verify_not_inited();
