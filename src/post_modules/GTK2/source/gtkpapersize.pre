@@ -33,14 +33,14 @@ void create(string|void name, string|void ppd_display_name,
       gps=gtk_paper_size_new_custom(name,ppd_display_name,width,height,unit);
     THIS->obj=(void *)gps;
   } 
-  pgtk2_pop_n_elems();
+  pgtk2_pop_n_elems(args);
   pgtk2__init_this_object();
 }
 
 void destroy()
 //! Destructor.
 {
-  if (This->obj)
+  if (THIS->obj)
     gtk_paper_size_free((GtkPaperSize *)(THIS->obj));
   THIS->obj=0;
   pgtk2_pop_n_elems(args);
@@ -172,36 +172,52 @@ void set_size(float width, float height, int unit)
   }
 }
 
-float get_default_top_margin()
+float get_default_top_margin(int unit)
 //! Gets the default top margin.
 {
   pgtk2_verify_inited();
-  pgtk2_pop_n_elems(args);
-  push_float(gtk_paper_size_get_default_top_margin((GtkPaperSize *)(THIS->obj)));
+  {
+    INT_TYPE unit;
+    get_all_args("get_default_top_margin",args,"%i",&unit);
+    pgtk2_pop_n_elems(args);
+    push_float(gtk_paper_size_get_default_top_margin((GtkPaperSize *)(THIS->obj),unit));
+  }
 }
 
-float get_default_bottom_margin()
+float get_default_bottom_margin(int unit)
 //! Gets the default bottom margin.
 {
   pgtk2_verify_inited();
-  pgtk2_pop_n_elems(args);
-  push_float(gtk_paper_size_get_default_bottom_margin((GtkPaperSize *)(THIS->obj)));
+  {
+    INT_TYPE unit;
+    get_all_args("get_default_bottom_margin",args,"%i",&unit);
+    pgtk2_pop_n_elems(args);
+    push_float(gtk_paper_size_get_default_bottom_margin((GtkPaperSize *)(THIS->obj),unit));
+  }
 }
 
-float get_default_left_margin()
+float get_default_left_margin(int unit)
 //! Gets the default left margin.
 {
   pgtk2_verify_inited();
-  pgtk2_pop_n_elems(args);
-  push_float(gtk_paper_size_get_default_left_margin((GtkPaperSize *)(THIS->obj)));
+  {
+    INT_TYPE unit;
+    get_all_args("get_default_left_margin",args,"%i",&unit);
+    pgtk2_pop_n_elems(args);
+    push_float(gtk_paper_size_get_default_left_margin((GtkPaperSize *)(THIS->obj),unit));
+  }
 }
 
-float get_default_right_margin()
+float get_default_right_margin(int unit)
 //! Gets the default right margin.
 {
   pgtk2_verify_inited();
-  pgtk2_pop_n_elems(args);
-  push_float(gtk_paper_size_get_default_right_margin((GtkPaperSize *)(THIS->obj)));
+  {
+    INT_TYPE unit;
+    get_all_args("get_default_right_margin",args,"%i",&unit);
+    pgtk2_pop_n_elems(args);
+    push_float(gtk_paper_size_get_default_right_margin((GtkPaperSize *)(THIS->obj),unit));
+  }
 }
 
 string get_default()
