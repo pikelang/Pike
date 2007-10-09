@@ -48,14 +48,14 @@ void create(mapping(string:mixed)|GDK2.Pixbuf arg)
     if (Pike_sp[-args].type==PIKE_T_MAPPING) {
       INIT_WITH_PROPS(GTK_TYPE_STATUS_ICON);
     } else {
-      GtkWidget *gi;
+      GtkStatusIcon *gi;
 
       if (Pike_sp[-args].type==PIKE_T_STRING) {
 	struct pike_string *s1;
 	int t=0;
 	GtkStockItem item;
 
-	get_all_args("create",args,"%t",&str);
+	get_all_args("create",args,"%t",&s1);
 	if (s1->size_shift==0) {
 	  t=gtk_stock_lookup(CGSTR0(s1),&item);
 	  if (t)
@@ -63,7 +63,7 @@ void create(mapping(string:mixed)|GDK2.Pixbuf arg)
 	  else {
 	    gi=gtk_status_icon_new_from_icon_name(CGSTR0(s1));
 	    if (gi==NULL)
-	      gi=gtk_status_icon_new_from_filename(CGSTR0(s1));
+	      gi=gtk_status_icon_new_from_file(CGSTR0(s1));
 	  }
 	} else
 	  gi=gtk_status_icon_new();
@@ -80,7 +80,7 @@ void create(mapping(string:mixed)|GDK2.Pixbuf arg)
       }
     }
   } else {
-    GtkWidget *gi;
+    GtkStatusIcon *gi;
     gi=gtk_status_icon_new();
     THIS->obj=G_OBJECT(gi);
   }
