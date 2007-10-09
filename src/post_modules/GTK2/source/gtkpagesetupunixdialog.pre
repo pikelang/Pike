@@ -1,5 +1,5 @@
 /* -*- C -*- */
-require gtk210;
+require gtk212;
 class GTK2.PageSetupUnixDialog;
 inherit GTK2.Dialog;
 
@@ -19,7 +19,7 @@ void create(string|mapping(string:mixed) title_or_props, ?GTK2.Window parent)
       f_string_to_utf8(1);
       gp=gtk_page_setup_unix_dialog_new(CGSTR0(Pike_sp[-1].u.string),get_gobject(o1));
       pop_stack();
-      THIS->object=G_OBJECT(gp);
+      THIS->obj=G_OBJECT(gp);
     } else {
       INIT_WITH_PROPS(GTK_TYPE_PAGE_SETUP_UNIX_DIALOG);
     }
