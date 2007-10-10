@@ -161,7 +161,7 @@ GDK2.Pixbuf get_icon(int size)
 
     get_all_args("get_icon",args,"%i",&size);
     pgtk2_pop_n_elems(args);
-    gp=gdk_recent_info_get_icon((GtkRecentInfo *)THIS->obj,size);
+    gp=gtk_recent_info_get_icon((GtkRecentInfo *)THIS->obj,size);
     push_gobject(gp);
   }
 }
