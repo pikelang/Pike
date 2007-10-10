@@ -112,7 +112,7 @@ void test_dir(string dir, int|void base_size, object|void handler)
 int main()
 {
 #if constant(alarm)
-  alarm(1*60);	// 5 minute should be sufficient for each part of this test.
+  alarm(1*60);	// 1 minute should be sufficient for each part of this test.
 #endif
   Array.map(master()->pike_module_path,test_dir);
   // FIXME: Forward compatibility?
@@ -122,5 +122,9 @@ int main()
   }
   write ("%*s\r", 75, "");
   Tools.Testsuite.report_result (num_ok, num_failed);
+#if constant(alarm)
+  alarm(0);	// Disable any alarms. When running with DMALLOC
+  		// the exit code may take quite a while...
+#endif
   return !ok;
 }
