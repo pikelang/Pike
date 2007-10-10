@@ -93,7 +93,7 @@ array(GTK2.Widget) get_widgets()
     GSList *gl,*g2;
     int i=0;
 
-    gl=g2=gtk_size_group_get_widgets( (GtkSizeGroup *)(THIS->obj) );
+    gl=g2=gtk_size_group_get_widgets(GTK_SIZE_GROUP(THIS->obj));
     while (g2) {
       push_gobject(g2->data);
       g_object_ref(GTK_WIDGET(g2->data));
