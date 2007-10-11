@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.387 2007/10/11 15:45:53 grubba Exp $
+|| $Id: language.yacc,v 1.388 2007/10/11 16:52:20 grubba Exp $
 */
 
 %pure_parser
@@ -2089,7 +2089,7 @@ lambda: TOK_LAMBDA line_number_info push_compiler_frame1
     f=dooptcode(name,
 		$7,
 		type,
-		ID_STATIC | ID_PRIVATE | ID_INLINE);
+		ID_STATIC | ID_PRIVATE | ID_INLINE | ID_USED);
 
 #ifdef LAMBDA_DEBUG
     fprintf(stderr, "%d:   lexical_scope: 0x%08x\n",
@@ -3304,7 +3304,7 @@ optional_block: /* EMPTY */ { $$=0; }
     f=dooptcode(name,
 		$5,
 		type,
-		ID_STATIC | ID_PRIVATE | ID_INLINE);
+		ID_STATIC | ID_PRIVATE | ID_INLINE | ID_USED);
 
     if(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPED) {
       $$ = mktrampolinenode(f,Pike_compiler->compiler_frame->previous);
