@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.234 2007/10/06 11:02:18 grubba Exp $
+|| $Id: program.h,v 1.235 2007/10/11 15:45:16 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -295,7 +295,9 @@ struct program_constant
 #define ID_FINAL           0x04	/* Symbol may not be overloaded */
 #define ID_NOMASK          0x04	/* Symbol may not be overloaded */
 #define ID_PUBLIC          0x08 /* Anti private */
-
+#define ID_USED		   0x10 /* This reference has been used. Check
+				 * that the type is compatible when
+				 * overloading. */
 #define ID_LOCAL           0x20 /* Locally referenced symbol (not virtual) */
 #define ID_INLINE          0x20 /* Same as local */
 #define ID_HIDDEN          0x40	/* Symbols that are private and inherited one step later */
@@ -304,7 +306,7 @@ struct program_constant
 #define ID_EXTERN         0x200	/* Symbol is defined later */
 #define ID_VARIANT	  0x400 /* Function is overloaded by argument. */
 
-#define ID_MODIFIER_MASK 0x07ef
+#define ID_MODIFIER_MASK 0x07ff
 
 #define ID_STRICT_TYPES  0x8000	/* #pragma strict_types */
 #define ID_SAVE_PARENT  0x10000 /* #pragma save_parent */
