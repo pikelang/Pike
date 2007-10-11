@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.621 2007/09/29 15:09:02 grubba Exp $
+|| $Id: program.c,v 1.622 2007/10/11 15:46:57 grubba Exp $
 */
 
 #include "global.h"
@@ -1931,13 +1931,13 @@ struct pike_string *find_program_name(struct program *p, INT32 *line)
 }
 #endif
 
-int override_identifier (struct reference *ref, struct pike_string *name)
+int override_identifier (struct reference *new_ref, struct pike_string *name)
 {
-  int id = -1, cur_id = 0;
+  int id = -1, cur_id = 0, is_used = 0;
 
   int new_is_variable =
     IDENTIFIER_IS_VARIABLE(ID_FROM_PTR(Pike_compiler->new_program,
-				       ref)->identifier_flags);
+				       new_ref)->identifier_flags);
 
   /* This loop could possibly be optimized by looping over
    * each inherit and looking up 'name' in each inherit
@@ -1947,39 +1947,71 @@ int override_identifier (struct reference *ref, struct pike_string *name)
 
   for(;cur_id<Pike_compiler->new_program->num_identifier_references;cur_id++)
   {
+    struct reference *ref =
+      Pike_compiler->new_program->identifier_references + cur_id;
+    struct identifier *i;
+
+    /* No need to do anything for ourselves. */
+    if (ref == new_ref) continue;
+
     /* Do not zapp hidden identifiers */
-    if(Pike_compiler->new_program->identifier_references[cur_id].id_flags & ID_HIDDEN)
-      continue;
+    if(ref->id_flags & ID_HIDDEN) continue;
 
     /* Do not zapp inherited inline ('local') identifiers */
-    if((Pike_compiler->new_program->identifier_references[cur_id].id_flags &
-	(ID_INLINE|ID_INHERITED)) == (ID_INLINE|ID_INHERITED))
+    if((ref->id_flags & (ID_INLINE|ID_INHERITED)) == (ID_INLINE|ID_INHERITED))
       continue;
 
     /* Do not zapp functions with the wrong name... */
-    if(ID_FROM_INT(Pike_compiler->new_program, cur_id)->name != name)
+    if((i = ID_FROM_PTR(Pike_compiler->new_program, ref))->name != name)
       continue;
 
 #ifdef PROGRAM_BUILD_DEBUG
     fprintf(stderr, "%.*soverloaded reference %d (id_flags:0x%04x)\n",
-	    compilation_depth, "                ", cur_id,
-	    Pike_compiler->new_program->identifier_references[cur_id].id_flags);
+	    compilation_depth, "                ", cur_id, ref->id_flags);
 #endif
 
-    if (!new_is_variable &&
-	IDENTIFIER_IS_VARIABLE(ID_FROM_INT(Pike_compiler->new_program,
-					   cur_id)->identifier_flags)) {
+    if (!new_is_variable && IDENTIFIER_IS_VARIABLE(i->identifier_flags)) {
       /* Overloading a variable with a constant or a function.
        * This is generally a bad idea.
        */
-      Pike_compiler->new_program->identifier_references[cur_id].id_flags |=
-	ID_INLINE|ID_HIDDEN;
+      ref->id_flags |= ID_INLINE|ID_HIDDEN;
       yywarning("Attempt to override a non local variable %S "
-		"with a non variable.", name);
+		"with a non-variable.", name);
       continue;
     }
 
-    Pike_compiler->new_program->identifier_references[cur_id]=*ref;
+    if ((ref->id_flags & (ID_INHERITED|ID_USED)) == (ID_INHERITED|ID_USED)) {
+      struct inherit *inh = INHERIT_FROM_PTR(Pike_compiler->new_program, ref);
+      struct reference *sub_ref;
+
+      /* Find the inherit one level away. */
+      while (inh->inherit_level > 1) inh--;
+
+#ifdef PIKE_DEBUG
+      if (!inh->inherit_level) {
+	Pike_fatal("Inherit without intermediate levels.\n");
+      }
+#endif
+
+      sub_ref = PTR_FROM_INT(inh->prog, cur_id - inh->identifier_level);
+
+      /* Check if the symbol was used before it was inherited. */
+      if (sub_ref->id_flags & ID_USED) {
+	if (!pike_types_le(ID_FROM_PTR(inh->prog, sub_ref)->type,
+			   ID_FROM_PTR(Pike_compiler->new_program,
+				       new_ref)->type)) {
+	  yywarning("Type mismatch when overloading %S.", name);
+	  yytype_error(NULL,
+		       ID_FROM_PTR(inh->prog, sub_ref)->type,
+		       ID_FROM_PTR(Pike_compiler->new_program, new_ref)->type,
+		       YYTE_IS_WARNING);
+	}
+      }
+    }
+    is_used = ref->id_flags & ID_USED;
+
+    *ref=*new_ref;
+    ref->id_flags |= is_used;
     id = cur_id;
   }
 
@@ -2017,6 +2049,11 @@ void fixate_program(void)
     if (ref->id_flags & ID_HIDDEN) continue;
     if (ref->inherit_offset != 0) continue;
     override_identifier (ref, ID_FROM_PTR (p, ref)->name);
+
+    if ((ref->id_flags & (ID_HIDDEN|ID_PRIVATE|ID_USED)) == ID_PRIVATE) {
+      yywarning("%S is private but not used anywhere.",
+		ID_FROM_PTR(p, ref)->name);
+    }
   }
 
   /* Ok, sort for binsearch */
@@ -2059,11 +2096,25 @@ void fixate_program(void)
 	  if(funa_is_prototype && (funb->func.offset != -1) &&
 	     !(funp->id_flags & ID_INLINE))
 	  {
+	    if (funp->id_flags & ID_USED) {
+	      /* Verify that the types are compatible. */
+	      if (!pike_types_le(fun->type, funb->type)) {
+		yywarning("Type mismatch when overloading %S.", fun->name);
+		yytype_error(NULL, fun->type, funb->type, YYTE_IS_WARNING);
+	      }
+	    }
 	    funp->inherit_offset = funpb->inherit_offset;
 	    funp->identifier_offset = funpb->identifier_offset;
 	  }
 	  if(!funa_is_prototype && funb->func.offset == -1)
 	  {
+	    if (funpb->id_flags & ID_USED) {
+	      /* Verify that the types are compatible. */
+	      if (!pike_types_le(funb->type, fun->type)) {
+		yywarning("Type mismatch when overloading %S.", fun->name);
+		yytype_error(NULL, funb->type, fun->type, YYTE_IS_WARNING);
+	      }
+	    }
 	    funpb->inherit_offset = funp->inherit_offset;
 	    funpb->identifier_offset = funp->identifier_offset;
 	  }
@@ -3672,7 +3723,10 @@ int really_low_reference_inherited_identifier(struct program_state *q,
     struct reference *refp;
     refp = np->identifier_references + d;
 
-    if(!MEMCMP((char *)refp,(char *)&funp,sizeof funp)) return d;
+    if ((refp->inherit_offset == funp.inherit_offset) &&
+	(refp->identifier_offset == funp.identifier_offset) &&
+	((refp->id_flags | ID_USED) == (funp.id_flags | ID_USED)))
+      return d;
   }
 
   if(q)
@@ -4576,7 +4630,7 @@ PMOD_EXPORT int map_variable(const char *name,
 
   n=make_shared_string(name);
   t=parse_type(type);
-  ret=low_define_variable(n,t,flags,offset,run_time_type);
+  ret=low_define_variable(n,t,flags|ID_USED,offset,run_time_type);
   free_string(n);
   free_type(t);
   return ret;
@@ -4609,7 +4663,7 @@ PMOD_EXPORT int quick_map_variable(const char *name,
   }
 #endif
 
-  ret=low_define_variable(n,t,flags,offset,run_time_type);
+  ret=low_define_variable(n,t,flags|ID_USED,offset,run_time_type);
   free_string(n);
   free_type(t);
   return ret;
@@ -4988,8 +5042,13 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     /* override */
     if ((overridden = override_identifier (&ref, name)) >= 0) {
 #ifdef PIKE_DEBUG
-      if(MEMCMP(Pike_compiler->new_program->identifier_references+n, &ref,sizeof(ref)))
+      struct reference *oref =
+	Pike_compiler->new_program->identifier_references+overridden;
+      if((oref->inherit_offset != ref.inherit_offset) ||
+	 (oref->identifier_offset != ref.identifier_offset) ||
+	 ((oref->id_flags | ID_USED) != (ref.id_flags | ID_USED))) {
 	Pike_fatal("New constant overriding algorithm failed!\n");
+      }
 #endif
       return overridden;
     }
@@ -5257,11 +5316,11 @@ INT32 define_function(struct pike_string *name,
 	  my_yyerror("Illegal to redefine a current variable with a getter/setter: %S.", symbol);
 	  getter_setter_offset = -1;
 	} else {
-	  if (ref->id_flags != flags) {
+	  if ((ref->id_flags | ID_USED) != (flags | ID_USED)) {
 	    if (Pike_compiler->compiler_pass == 1) {
 	      yywarning("Modifier mismatch for variable %S.", symbol);
 	    }
-	    ref->id_flags &= flags;
+	    ref->id_flags &= flags | ID_USED;
 	  }
 	  getter_setter_offset += id->func.offset;
 	}
@@ -5422,8 +5481,22 @@ INT32 define_function(struct pike_string *name,
     ref.id_flags = flags;
     if ((overridden = override_identifier (&ref, name)) >= 0) {
 #ifdef PIKE_DEBUG
-      if(MEMCMP(Pike_compiler->new_program->identifier_references+i, &ref,sizeof(ref)))
+      struct reference *oref =
+	Pike_compiler->new_program->identifier_references+overridden;
+      if((oref->inherit_offset != ref.inherit_offset) ||
+	 (oref->identifier_offset != ref.identifier_offset) ||
+	 ((oref->id_flags | ID_USED) != (ref.id_flags | ID_USED))) {
+	fprintf(stderr,
+		"ref: %d:%d 0x%04x\n"
+		"got: %d:%d 0x%04x (%d)\n",
+		ref.inherit_offset, ref.identifier_offset,
+		ref.id_flags,
+		oref->inherit_offset,
+		oref->identifier_offset,
+		oref->id_flags,
+		overridden);
 	Pike_fatal("New function overloading algorithm failed!\n");
+      }
 #endif
 
       if (getter_setter_offset >= 0) {
@@ -5513,7 +5586,7 @@ int add_ext_ref(struct program_state *state, struct program *target, int i)
   for (r = state->new_program->identifier_references, j = 0;
        j < state->new_program->num_identifier_references;
        j++, r++) {
-    if (((r->id_flags & ID_PARENT_REF|ID_STATIC|ID_PRIVATE|ID_HIDDEN) ==
+    if (((r->id_flags & (ID_PARENT_REF|ID_STATIC|ID_PRIVATE|ID_HIDDEN)) ==
 	 ID_PARENT_REF|ID_STATIC|ID_PRIVATE|ID_HIDDEN) &&
 	(r->identifier_offset == i) &&
 	(!(r->inherit_offset))) {
@@ -6244,7 +6317,7 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
     if(Pike_compiler->last_line != line ||
        Pike_compiler->last_pc != off ||
        (Pike_compiler->last_file && file &&
-	memcmp(Pike_compiler->last_file->str, file, len<<shift)))
+	MEMCMP(Pike_compiler->last_file->str, file, len<<shift)))
     {
       Pike_fatal("Line numbering out of whack\n"
 	    "    (line : %d ?= %d)!\n"
@@ -8306,6 +8379,10 @@ int find_child(struct program *parent, struct program *child)
 
 void yywarning(char *fmt, ...)
 {
+  struct string_builder s;
+  struct pike_string *msg;
+  va_list args;
+
   /* If we have parse errors we might get erroneous warnings,
    * so don't print them.
    * This has the additional benefit of making it easier to
@@ -8313,25 +8390,26 @@ void yywarning(char *fmt, ...)
    */
   if (Pike_compiler->num_parse_error) return;
 
-  /* Don't bother generating the warning message if we don't have
-   * anywhere to report it...
-   */
-  if ((error_handler && error_handler->prog) || get_master()) {
-    struct string_builder s;
-    va_list args;
+  init_string_builder(&s, 0);
+  va_start(args,fmt);
+  string_builder_vsprintf(&s, fmt, args);
+  va_end(args);
+  msg = finish_string_builder(&s);
 
-    init_string_builder(&s, 0);
-    va_start(args,fmt);
-    string_builder_vsprintf(&s, fmt, args);
-    va_end(args);
-
+  if (master_object) {
     ref_push_string(lex.current_file);
     push_int(lex.current_line);
-    push_string(finish_string_builder(&s));
+    push_string(msg);
 
     low_safe_apply_handler("compile_warning",
 			   error_handler, compat_handler, 3);
     pop_stack();
+  } else {
+    if (!msg->size_shift) {
+      fprintf(stderr, "%s:%d: Warning: %s\n",
+	      lex.current_file->str, lex.current_line, msg->str);
+    }
+    free_string(msg);
   }
 }
 
