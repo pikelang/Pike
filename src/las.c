@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.393 2007/10/06 13:45:22 grubba Exp $
+|| $Id: las.c,v 1.394 2007/10/11 15:47:44 grubba Exp $
 */
 
 #include "global.h"
@@ -1159,6 +1159,9 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
       check_string(id->name);
     }
 #endif
+
+    /* Mark the identifier reference as used. */
+    PTR_FROM_INT(parent_prog, i)->id_flags |= ID_USED;
 
     copy_pike_type(res->type, id->type);
 
