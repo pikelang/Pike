@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.30 2004/05/24 18:40:46 grubba Exp $
+|| $Id: ia32.c,v 1.31 2007/10/11 16:47:16 mast Exp $
 */
 
 /*
@@ -417,23 +417,22 @@ static void ins_debug_instr_prologue (PIKE_INSTR_T instr, INT32 arg1, INT32 arg2
   int flags = instrs[instr].flags;
 
   if (flags & I_HASARG2) {
-    add_to_program (0xc7);	/* movl $xxxx, 0xc(%esp) */
-    add_to_program (0x44);
-    add_to_program (0x24);
-    add_to_program (0x0c);
-    PUSH_INT (arg2);
-  }
-  if (flags & I_HASARG) {
     add_to_program (0xc7);	/* movl $xxxx, 0x8(%esp) */
     add_to_program (0x44);
     add_to_program (0x24);
     add_to_program (0x08);
+    PUSH_INT (arg2);
+  }
+  if (flags & I_HASARG) {
+    add_to_program (0xc7);	/* movl $xxxx, 0x4(%esp) */
+    add_to_program (0x44);
+    add_to_program (0x24);
+    add_to_program (0x04);
     PUSH_INT (arg1);
   }
-  add_to_program (0xc7);	/* movl $xxxx, 0x4(%esp) */
-  add_to_program (0x44);
-  add_to_program (0x24);
+  add_to_program (0xc7);	/* movl $xxxx, (%esp) */
   add_to_program (0x04);
+  add_to_program (0x24);
   PUSH_INT (instr);
 
   if (flags & I_HASARG2)
