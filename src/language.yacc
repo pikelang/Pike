@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.386 2007/10/08 14:28:03 grubba Exp $
+|| $Id: language.yacc,v 1.387 2007/10/11 15:45:53 grubba Exp $
 */
 
 %pure_parser
@@ -2169,7 +2169,7 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     }else{
       id=define_function(name,
 			 type,
-			 ID_INLINE,
+			 ID_INLINE|ID_USED,
 			 IDENTIFIER_PIKE_FUNCTION |
 			 (Pike_compiler->varargs?IDENTIFIER_VARARGS:0),
 			 0,
@@ -2301,7 +2301,7 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     }else{
       id=define_function(name,
 			 type,
-			 ID_INLINE,
+			 ID_INLINE|ID_USED,
 			 IDENTIFIER_PIKE_FUNCTION|
 			 (Pike_compiler->varargs?IDENTIFIER_VARARGS:0),
 			 0,
