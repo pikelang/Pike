@@ -13,6 +13,10 @@
 
 inherit .polyline;
 
+static constant LITET = 1.0e-38;
+static constant STORTLITET = 1.0e-30;
+static constant STORT = 1.0e30;
+
 object tileimage(object img, int xs, int ys)
 {
   //written by js@roxen.com
@@ -391,19 +395,21 @@ mapping(string:mixed) init(mapping(string:mixed) diagram_data)
   if (!(diagram_data->xminvalue))
     diagram_data->xminvalue=xminvalue;
   if ((!(diagram_data->xmaxvalue)) ||
-      (diagram_data->xmaxvalue<xmaxvalue))
+      (diagram_data->xmaxvalue<xmaxvalue)) {
     if (xmaxvalue<0.0)
       diagram_data->xmaxvalue=0.0;
     else
       diagram_data->xmaxvalue=xmaxvalue;
+  }
   if (!(diagram_data->yminvalue))
     diagram_data->yminvalue=yminvalue;
   if ((!(diagram_data->ymaxvalue)) ||
-      (diagram_data->ymaxvalue<ymaxvalue))
+      (diagram_data->ymaxvalue<ymaxvalue)) {
     if (ymaxvalue<0.0)
       diagram_data->ymaxvalue=0.0;
     else
       diagram_data->ymaxvalue=ymaxvalue;
+  }
 
   //Create empty names on xnames if the names don't exist.
   if ((diagram_data->type=="bars")||(diagram_data->type=="sumbars"))
