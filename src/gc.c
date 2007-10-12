@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.299 2007/10/12 13:31:05 mast Exp $
+|| $Id: gc.c,v 1.300 2007/10/12 18:42:38 mast Exp $
 */
 
 #include "global.h"
@@ -1289,9 +1289,12 @@ again:
 	    inh_id_end = inh->identifier_level + inh->prog->num_identifier_references;
 	  }
 
+#if 0
+	  /* Can be illuminating to see these too.. */
 	  if (id_ref->id_flags & ID_HIDDEN ||
 	      (id_ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
 	      (ID_INHERITED|ID_PRIVATE)) continue;
+#endif
 
 	  id_inh = INHERIT_FROM_PTR (p, id_ref);
 	  id = id_inh->prog->identifiers + id_ref->identifier_offset;
@@ -1315,12 +1318,14 @@ again:
 	  if (id_ref->id_flags & ID_PROTECTED) strcat (prot, ",pro");
 	  if (id_ref->id_flags & ID_INLINE)    strcat (prot, ",inl");
 	  if (id_ref->id_flags & ID_OPTIONAL)  strcat (prot, ",opt");
+	  if (id_ref->id_flags & ID_HIDDEN)    strcat (prot, ",hid");
+	  if (id_ref->id_flags & ID_INHERITED) strcat (prot, ",inh");
 	  if (id_ref->id_flags & ID_EXTERN)    strcat (prot, ",ext");
 	  if (id_ref->id_flags & ID_VARIANT)   strcat (prot, ",var");
 
 	  sprintf (descr, "%s: %s", type, prot + 1);
-	  fprintf (stderr, "%*s**%*s%-18s name: ",
-		   indent, "", id_inh->inherit_level + 1, "", descr);
+	  fprintf (stderr, "%*s**%*s%-3"PRINTPTRDIFFT"d %-18s name: ",
+		   indent, "", id_inh->inherit_level + 1, "", id_idx, descr);
 
 	  if (id->name->size_shift)
 	    safe_print_short_svalue (stderr, (union anything *) &id->name,
