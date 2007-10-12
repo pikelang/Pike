@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.164 2006/06/21 11:33:02 mast Exp $
+|| $Id: svalue.c,v 1.165 2007/10/12 13:07:51 mast Exp $
 */
 
 #include "global.h"
@@ -72,7 +72,7 @@ static int pike_isnan(double x)
 #define PIKE_ISUNORDERED(X,Y) (PIKE_ISNAN(X)||PIKE_ISNAN(Y))
 #endif /* HAVE_ISUNORDERED */
 
-RCSID("$Id: svalue.c,v 1.164 2006/06/21 11:33:02 mast Exp $");
+RCSID("$Id: svalue.c,v 1.165 2007/10/12 13:07:51 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1582,8 +1582,12 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
     }
 
     case T_FLOAT:
-      sprintf(buf,"%f",(double)s->u.float_number);
+      sprintf(buf,"%.16g",(double)s->u.float_number);
       my_strcat(buf);
+      if (!STRCHR (buf, '.') && !STRCHR (buf, 'e'))
+	/* A small float number without fraction can be
+	 * indistinguishable from an integer when formatted by %g. */
+	my_strcat (".0");
       break;
 
     case T_ARRAY:
