@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.32 2006/01/17 16:35:01 mbaehr Exp $
+// $Id: TimeRanges.pmod,v 1.33 2007/10/12 13:05:51 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -126,11 +126,13 @@ class TimeRange
    static void convert_from(TimeRange other)
    {
 // inheriting class must take care of size
-      if (other->unix_time)
-	 create("unix_r",other->unix_time(),other->ruleset());
-      else if (other->julian_day)
-         create("julian_r",other->julian_day(),other->ruleset());
-      else 
+      if (other->unix_time) {
+         rules = other->ruleset();
+         create_unixtime_default(other->unix_time());
+      } else if (other->julian_day) {
+	 rules = other->ruleset();
+         create_julian_day(other->julian_day());
+      } else 
 	 error("Can't convert %O->%s.%O\n",other,
 	       calendar_name(), this_program);
    }

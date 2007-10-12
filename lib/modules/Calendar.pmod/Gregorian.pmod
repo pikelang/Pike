@@ -26,13 +26,13 @@ private static mixed __initstuff=lambda()
    f_year_number_from_name="year_number_from_name";
 }();
 
-static int year_leap_year(int y) 
+static int(0..1) year_leap_year(int y) 
 { 
    return (!(((y)%4) || (!((y)%100) && ((y)%400))));
 }
 
 // [y,yjd]
-static array year_from_julian_day(int jd)
+static array(int) year_from_julian_day(int jd)
 {
    int d=jd-1721426;
 
