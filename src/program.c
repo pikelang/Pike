@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.623 2007/10/12 12:59:12 grubba Exp $
+|| $Id: program.c,v 1.624 2007/10/12 14:33:28 grubba Exp $
 */
 
 #include "global.h"
@@ -1996,16 +1996,17 @@ int override_identifier (struct reference *new_ref, struct pike_string *name)
       sub_ref = PTR_FROM_INT(inh->prog, cur_id - inh->identifier_level);
 
       /* Check if the symbol was used before it was inherited. */
-      if (sub_ref->id_flags & ID_USED) {
+      if ((lex.pragmas & ID_STRICT_TYPES) &&
+	  (sub_ref->id_flags & ID_USED)) {
 	struct identifier *sub_id = ID_FROM_PTR(inh->prog, sub_ref);
 	if (IDENTIFIER_IS_FUNCTION(sub_id->identifier_flags)) {
 	  if (!pike_types_le(ID_FROM_PTR(Pike_compiler->new_program,
 					 new_ref)->type, sub_id->type)) {
 	    yywarning("Type mismatch when overloading function %S.", name);
-	    yytype_error(NULL,
-			 ID_FROM_PTR(inh->prog, sub_ref)->type,
-			 ID_FROM_PTR(Pike_compiler->new_program, new_ref)->type,
-			 YYTE_IS_WARNING);
+	    yyexplain_nonmatching_types(sub_id->type,
+					ID_FROM_PTR(Pike_compiler->new_program,
+						    new_ref)->type,
+					YYTE_IS_WARNING);
 	  }
 	} else {
 	  /* Variable or constant. */
@@ -2013,10 +2014,10 @@ int override_identifier (struct reference *new_ref, struct pike_string *name)
 			     ID_FROM_PTR(Pike_compiler->new_program,
 					 new_ref)->type)) {
 	    yywarning("Type mismatch when overloading %S.", name);
-	    yytype_error(NULL,
-			 ID_FROM_PTR(inh->prog, sub_ref)->type,
-			 ID_FROM_PTR(Pike_compiler->new_program, new_ref)->type,
-			 YYTE_IS_WARNING);
+	    yyexplain_nonmatching_types(sub_id->type,
+					ID_FROM_PTR(Pike_compiler->new_program,
+						    new_ref)->type,
+					YYTE_IS_WARNING);
 	  }
 	}
       }
@@ -2109,11 +2110,13 @@ void fixate_program(void)
 	  if(funa_is_prototype && (funb->func.offset != -1) &&
 	     !(funp->id_flags & ID_INLINE))
 	  {
-	    if (funp->id_flags & ID_USED) {
+	    if ((lex.pragmas & ID_STRICT_TYPES) &&
+		(funp->id_flags & ID_USED)) {
 	      /* Verify that the types are compatible. */
 	      if (!pike_types_le(funb->type, fun->type)) {
 		yywarning("Type mismatch when overloading %S.", fun->name);
-		yytype_error(NULL, fun->type, funb->type, YYTE_IS_WARNING);
+		yyexplain_nonmatching_types(fun->type, funb->type,
+					    YYTE_IS_WARNING);
 	      }
 	    }
 	    funp->inherit_offset = funpb->inherit_offset;
@@ -2121,11 +2124,13 @@ void fixate_program(void)
 	  }
 	  if(!funa_is_prototype && funb->func.offset == -1)
 	  {
-	    if (funpb->id_flags & ID_USED) {
+	    if ((lex.pragmas & ID_STRICT_TYPES) &&
+		(funpb->id_flags & ID_USED)) {
 	      /* Verify that the types are compatible. */
 	      if (!pike_types_le(fun->type, funb->type)) {
 		yywarning("Type mismatch when overloading %S.", fun->name);
-		yytype_error(NULL, funb->type, fun->type, YYTE_IS_WARNING);
+		yyexplain_nonmatching_types(funb->type, fun->type,
+					    YYTE_IS_WARNING);
 	      }
 	    }
 	    funpb->inherit_offset = funp->inherit_offset;
