@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.232 2007/10/12 13:07:51 mast Exp $
+|| $Id: svalue.c,v 1.233 2007/10/12 13:31:05 mast Exp $
 */
 
 #include "global.h"
@@ -1250,7 +1250,7 @@ static void dsv_add_string_to_buf (struct pike_string *str)
   }
 }
 
-static int no_pike_calls = 0;	/* More ugly global state. */
+static int no_pike_calls = 0;	/* FIXME: Use TLS for this. */
 
 /* FIXME: Ought to be rewritten to use string_builder.
  * FIXME: Ought not to have global state.
@@ -1758,9 +1758,9 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 PMOD_EXPORT void safe_describe_svalue (const struct svalue *s, int i,
 				       struct processing *p)
 {
-  no_pike_calls = 1;
+  no_pike_calls++;
   describe_svalue (s, i, p);
-  no_pike_calls = 0;
+  no_pike_calls--;
 }
 
 PMOD_EXPORT void print_svalue (FILE *out, const struct svalue *s)
@@ -1768,10 +1768,17 @@ PMOD_EXPORT void print_svalue (FILE *out, const struct svalue *s)
   dynamic_buffer save_buf;
   dynbuf_string str;
   init_buf(&save_buf);
-  describe_svalue (s, 0, 0);
+  describe_svalue (s, 0, NULL);
   str = complex_free_buf(&save_buf);
   fwrite (str.str, str.len, 1, out);
   free (str.str);
+}
+
+PMOD_EXPORT void safe_print_svalue (FILE *out, const struct svalue *s)
+{
+  no_pike_calls++;
+  print_svalue (out, s);
+  no_pike_calls--;
 }
 
 PMOD_EXPORT void print_short_svalue (FILE *out, const union anything *a, TYPE_T type)
@@ -1785,6 +1792,13 @@ PMOD_EXPORT void print_short_svalue (FILE *out, const union anything *a, TYPE_T 
     sval.u = *a;
     print_svalue (out, &sval);
   }
+}
+
+PMOD_EXPORT void safe_print_short_svalue (FILE *out, const union anything *a, TYPE_T type)
+{
+  no_pike_calls++;
+  print_short_svalue (out, a, type);
+  no_pike_calls--;
 }
 
 PMOD_EXPORT void print_svalue_compact (FILE *out, const struct svalue *s)
@@ -1817,6 +1831,13 @@ PMOD_EXPORT void print_svalue_compact (FILE *out, const struct svalue *s)
   }
 }
 
+PMOD_EXPORT void safe_print_svalue_compact (FILE *out, const struct svalue *s)
+{
+  no_pike_calls++;
+  print_svalue_compact (out, s);
+  no_pike_calls--;
+}
+
 PMOD_EXPORT void print_short_svalue_compact (FILE *out, const union anything *a, TYPE_T type)
 {
   if (type <= MAX_REF_TYPE && !a->dummy)
@@ -1827,6 +1848,13 @@ PMOD_EXPORT void print_short_svalue_compact (FILE *out, const union anything *a,
     sval.u = *a;
     print_svalue_compact (out, &sval);
   }
+}
+
+PMOD_EXPORT void safe_print_short_svalue_compact (FILE *out, const union anything *a, TYPE_T type)
+{
+  no_pike_calls++;
+  print_short_svalue_compact (out, a, type);
+  no_pike_calls--;
 }
 
 PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,

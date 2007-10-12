@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.298 2007/09/29 15:10:50 grubba Exp $
+|| $Id: gc.c,v 1.299 2007/10/12 13:31:05 mast Exp $
 */
 
 #include "global.h"
@@ -576,7 +576,7 @@ static void describe_rec_stack (struct gc_rec_frame *p1, const char *p1_name,
     if (l == p1) {fprintf (stderr, " %s", p1_name); c += strlen (p1_name) + 1;}
     if (l == p2) {fprintf (stderr, " %s", p2_name); c += strlen (p2_name) + 1;}
     if (l == p3) {fprintf (stderr, " %s", p3_name); c += strlen (p3_name) + 1;}
-    fprintf (stderr, ": %*s", c < longest ? longest - c : 0, "");
+    fprintf (stderr, ": %*s", c < longest ? (int) (longest - c) : 0, "");
     describe_rec_frame (l);
     fputc ('\n', stderr);
   }
@@ -858,13 +858,13 @@ void describe_location(void *real_memblock,
       for (; node; node = low_multiset_next (node)) {
 	if (&node->i.ind == (struct svalue *) location) {
 	  fprintf (stderr, "%*s  **In index ", indent, "");
-	  print_svalue (stderr, low_use_multiset_index (node, ind));
+	  safe_print_svalue (stderr, low_use_multiset_index (node, ind));
 	  fputc ('\n', stderr);
 	  break;
 	}
 	else if (indval && &node->iv.val == (struct svalue *) location) {
 	  fprintf(stderr, "%*s  **In value with index ", indent, "");
-	  print_svalue(stderr, low_use_multiset_index (node, ind));
+	  safe_print_svalue (stderr, low_use_multiset_index (node, ind));
 	  fputc('\n', stderr);
 	  break;
 	}
@@ -898,13 +898,13 @@ void describe_location(void *real_memblock,
       NEW_MAPPING_LOOP((struct mapping_data *) descblock)
 	if (&k->ind == (struct svalue *) location) {
 	  fprintf(stderr, "%*s  **In index ", indent, "");
-	  print_svalue(stderr, &k->ind);
+	  safe_print_svalue (stderr, &k->ind);
 	  fputc('\n', stderr);
 	  break;
 	}
 	else if (&k->val == (struct svalue *) location) {
 	  fprintf(stderr, "%*s  **In value with index ", indent, "");
-	  print_svalue(stderr, &k->ind);
+	  safe_print_svalue (stderr, &k->ind);
 	  fputc('\n', stderr);
 	  break;
 	}
@@ -1152,7 +1152,8 @@ again:
 	    if (inh->name) {
 	      fprintf (stderr, "%*s**%*s=== In inherit ",
 		       indent, "", inh->inherit_level + 1, "");
-	      print_short_svalue (stderr, (union anything *) &inh->name, T_STRING);
+	      safe_print_short_svalue (stderr, (union anything *) &inh->name,
+				       T_STRING);
 	      fprintf (stderr, ", program %d:\n", inh->prog->id);
 	    }
 	    else
@@ -1169,7 +1170,8 @@ again:
 		     get_name_of_type (id->run_time_type));
 
 	    if (id->name->size_shift)
-	      print_short_svalue (stderr, (union anything *) &id->name, T_STRING);
+	      safe_print_short_svalue (stderr, (union anything *) &id->name,
+				       T_STRING);
 	    else
 	      fprintf (stderr, "%-20s", id->name->str);
 
@@ -1179,10 +1181,10 @@ again:
 	    ptr = PIKE_OBJ_STORAGE ((struct object *) a) +
 	      inh->storage_offset + id->func.offset;
 	    if (id->run_time_type == T_MIXED)
-	      print_svalue_compact (stderr, (struct svalue *) ptr);
+	      safe_print_svalue_compact (stderr, (struct svalue *) ptr);
 	    else
-	      print_short_svalue_compact (stderr, (union anything *) ptr,
-					  id->run_time_type);
+	      safe_print_short_svalue_compact (stderr, (union anything *) ptr,
+					       id->run_time_type);
 
 	    fputc ('\n', stderr);
 	    var_count++;
@@ -1260,7 +1262,8 @@ again:
 	    if (inh->name) {
 	      fprintf (stderr, "%*s**%*s=== In inherit ",
 		       indent, "", inh->inherit_level + 1, "");
-	      print_short_svalue (stderr, (union anything *) &inh->name, T_STRING);
+	      safe_print_short_svalue (stderr, (union anything *) &inh->name,
+				       T_STRING);
 	      fprintf (stderr, ", program %d:\n", inh->prog->id);
 	    }
 	    else
@@ -1273,7 +1276,8 @@ again:
 	    if (inh->name) {
 	      fprintf (stderr, "%*s**%*s=== End of inherit ",
 		       indent, "", inh->inherit_level + 1, "");
-	      print_short_svalue (stderr, (union anything *) &inh->name, T_STRING);
+	      safe_print_short_svalue (stderr, (union anything *) &inh->name,
+				       T_STRING);
 	      fputc ('\n', stderr);
 	    }
 	    else
@@ -1319,7 +1323,8 @@ again:
 		   indent, "", id_inh->inherit_level + 1, "", descr);
 
 	  if (id->name->size_shift)
-	    print_short_svalue (stderr, (union anything *) &id->name, T_STRING);
+	    safe_print_short_svalue (stderr, (union anything *) &id->name,
+				     T_STRING);
 	  else
 	    fprintf (stderr, "%-20s", id->name->str);
 
@@ -1335,7 +1340,8 @@ again:
 	    fprintf (stderr, "  pc: %"PRINTPTRDIFFT"d", id->func.offset);
 	  else if (IDENTIFIER_IS_CONSTANT (id->identifier_flags)) {
 	    fputs ("  value: ", stderr);
-	    print_svalue_compact (stderr, &id_inh->prog->constants[id->func.offset].sval);
+	    safe_print_svalue_compact (
+	      stderr, &id_inh->prog->constants[id->func.offset].sval);
 	  }
 
 	  fputc ('\n', stderr);
