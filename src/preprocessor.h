@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.83 2005/12/28 18:38:30 grubba Exp $
+|| $Id: preprocessor.h,v 1.84 2007/10/13 13:51:29 grubba Exp $
 */
 
 /*
@@ -1798,9 +1798,11 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  nflags = CPP_EXPECT_ELSE | CPP_EXPECT_ENDIF | CPP_NO_OUTPUT;
 	  if(!OUTP())
 	    nflags|=CPP_REALLY_NO_OUTPUT;
-	  if(find_define(s))
-	    nflags&=~CPP_NO_OUTPUT;
-	  free_string (s);
+	  if (s) {
+	    if(find_define(s))
+	      nflags&=~CPP_NO_OUTPUT;
+	    free_string (s);
+	  }
 
 	  pos += lower_cpp(this, data+pos, len-pos, nflags,
 			   auto_convert, charset);
@@ -1820,9 +1822,11 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  nflags=CPP_EXPECT_ELSE | CPP_EXPECT_ENDIF;
 	  if(!OUTP())
 	    nflags|=CPP_REALLY_NO_OUTPUT;
-	  if(find_define(s))
-	    nflags|=CPP_NO_OUTPUT;
-	  free_string (s);
+	  if (s) {
+	    if(find_define(s))
+	      nflags|=CPP_NO_OUTPUT;
+	    free_string (s);
+	  }
 
 	  pos += lower_cpp(this, data+pos, len-pos, nflags,
 			   auto_convert, charset);
@@ -2335,8 +2339,14 @@ static ptrdiff_t lower_cpp(struct cpp *this,
     unknown_preprocessor_directive:
       {
 	struct pike_string *unknown = GOBBLE_IDENTIFIER();
-	cpp_error_sprintf(this, "Unknown preprocessor directive %S.", unknown);
-	free_string (unknown);
+	if (unknown) {
+	  cpp_error_sprintf(this, "Unknown preprocessor directive %S.",
+			    unknown);
+	  free_string(unknown);
+	} else {
+	  cpp_error_sprintf(this, "Invalid preprocessor directive character at %d: '%c'.",
+			    pos, data[pos]);
+	}
       }
     }
     }
