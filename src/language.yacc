@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.388 2007/10/11 16:52:20 grubba Exp $
+|| $Id: language.yacc,v 1.389 2007/10/13 15:21:51 grubba Exp $
 */
 
 %pure_parser
@@ -3514,7 +3514,9 @@ idents2: idents
 	    struct reference *refp;
 	    refp = Pike_compiler->new_program->identifier_references + d;
 
-	    if(!MEMCMP((char *)refp,(char *)&funp,sizeof funp)) {
+	    if((refp->inherit_offset == funp.inherit_offset) &&
+	       (refp->identifier_offset == funp.identifier_offset) &&
+	       ((refp->id_flags | ID_USED) == (funp.id_flags | ID_USED))) {
 	      i = d;
 	      break;
 	    }
