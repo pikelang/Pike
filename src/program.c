@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.624 2007/10/12 14:33:28 grubba Exp $
+|| $Id: program.c,v 1.625 2007/10/13 15:34:59 grubba Exp $
 */
 
 #include "global.h"
@@ -1320,6 +1320,38 @@ void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
                                     TYPE ARG) {				\
   NUMTYPE m = state->malloc_size_program->PIKE_CONCAT(num_,NAME);	\
   CHECK_FOO(NUMTYPE,TYPE,NAME);						\
+  if(m == state->new_program->PIKE_CONCAT(num_,NAME)) {			\
+    TYPE *tmp;								\
+    if(m==MAXVARS(NUMTYPE)) {						\
+      yyerror("Too many " #NAME ".");					\
+      return;								\
+    }									\
+    m = MINIMUM(m*2+1,MAXVARS(NUMTYPE));				\
+    tmp = realloc((void *)state->new_program->NAME,			\
+		  sizeof(TYPE) * m);					\
+    if(!tmp) Pike_fatal("Out of memory.\n");				\
+    PIKE_CONCAT(RELOCATE_,NAME)(state->new_program, tmp);		\
+    state->malloc_size_program->PIKE_CONCAT(num_,NAME)=m;		\
+    state->new_program->NAME=tmp;					\
+  }									\
+  state->new_program->							\
+    NAME[state->new_program->PIKE_CONCAT(num_,NAME)++]=(ARG);		\
+}									\
+void PIKE_CONCAT(add_to_,NAME) (ARGTYPE ARG) {				\
+  PIKE_CONCAT(low_add_to_,NAME) ( Pike_compiler, ARG );			\
+}
+
+/* Funny guys use the uppermost value for nonexistant variables and
+   the like. Hence -2 and not -1. Y2K. */
+#define PASS1ONLY(NUMTYPE,TYPE,ARGTYPE,NAME)				\
+void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
+                                    TYPE ARG) {				\
+  NUMTYPE m = state->malloc_size_program->PIKE_CONCAT(num_,NAME);	\
+  CHECK_FOO(NUMTYPE,TYPE,NAME);						\
+  DO_IF_DEBUG(if (state->compiler_pass != 1) {				\
+		Pike_fatal("Adding " TOSTR(NAME) " in pass %d.\n",	\
+			   state->compiler_pass);			\
+	      });							\
   if(m == state->new_program->PIKE_CONCAT(num_,NAME)) {			\
     TYPE *tmp;								\
     if(m==MAXVARS(NUMTYPE)) {						\
