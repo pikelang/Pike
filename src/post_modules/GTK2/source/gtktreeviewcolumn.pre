@@ -318,3 +318,9 @@ void queue_resize();
 //! Flags the column, and the cell renderers added to this column, to have
 //! their sizes renegotiated.
 endrequire;
+
+require gtk212;
++GTK2.Widget get_tree_view();
+//! Returns the W(TreeView) that this TreeViewColumn has been inserted into.
+endrequire;
+

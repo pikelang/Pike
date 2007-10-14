@@ -48,7 +48,14 @@ inherit GTK2.Widget;
 
 //! Properties:
 //! GTK2.Adjustment adjustment
+require gtk212;
+//! float fill-level
+endrequire;
 //! int inverted
+require gtk212;
+//! int restrict-to-fill-level
+//! int show-fill-level
+endrequire;
 //! int update-policy
 //! <p>
 //! Style properties:
@@ -67,6 +74,26 @@ signal adjust_bounds;
 signal change_value;
 signal move_slider;
 signal value_changed;
+
+require gtk212;
+float get_fill_level();
+//! Gets the current position of the fill level indicator.
+
+int get_restrict_to_fill_level();
+//! Gets whether the range is restricted to the fill level.
+
+int get_show_fill_level();
+//! Gets whether the range displays the fill level graphically.
+
+void set_fill_level(float fill);
+//! Set the new position of the fill level indicator.
+
+void set_restrict_to_fill_level(int rest);
+//! Sets whether the slider is restricted to the fill level
+
+void set_show_fill_level(int show);
+//! Sets whether a graphical fill level is show on the trough.
+endrequire;
 
 +GTK2.Adjustment get_adjustment();
 //! Gets the W(Adjustment) which is the "model" object for W(Range).

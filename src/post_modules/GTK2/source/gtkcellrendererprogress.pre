@@ -5,7 +5,15 @@ class GTK2.CellRendererProgress;
 inherit GTK2.CellRenderer;
 
 //! Properties:
+require gtk212;
+//! int orientation
+//! int pulse
+endrequire;
 //! string text
+require gtk212;
+//! float text-xalign
+//! float text-yalign
+endrequire;
 //! int value
 
 void create(?mapping(string:mixed) props)

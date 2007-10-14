@@ -95,6 +95,13 @@ void activate();
 +GTK2.Widget create_tool_item();
 //! Creates a toolbar item widget that proxies for the action.
 
+require gtk212;
++GTK2.Widget create_menu();
+//! If this action provides a W(Menu) widget as a submenu for the menu item 
+//! or the toolbar item it creates, this function returns an instance of 
+//! that menu.
+endrequire;
+
 void connect_proxy(GTK2.Widget proxy);
 //! Connects a widget to an action object as a proxy.  Synchronises various
 //! properties of the action with the widget (such as label text, icon,

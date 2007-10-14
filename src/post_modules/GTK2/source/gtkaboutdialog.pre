@@ -38,11 +38,21 @@ void create(?mapping(string:mixed) props)
   pgtk2__init_this_object();
 }
 
+not gtk212;
 string get_name();
 //! Returns the program name.
 
 void set_name(string name);
 //! Sets the name to display.
+endnot;
+
+require gtk212;
+string get_program_name();
+//! Returns the program name.
+
+void set_program_name(string name);
+//! Sets the name to display in the dialog.
+endrequire;
 
 string get_version();
 //! Returns the version string.

@@ -15,10 +15,16 @@ require gtk26;
 //! int hover-expand
 //! int hover-selection
 endrequire;
+require gtk212;
+//! int level-indentation
+endrequire;
 //! GTK2.TreeModel model
 //! int reorderable
 //! int rules-hint
 //! int search-column
+require gtk212;
+//! int show-expanders
+endrequire;
 //! GTK2.Adjustment vadjustment
 //! <p>
 //! Style properties:
@@ -76,6 +82,17 @@ void create(GTK2.TreeModel|mapping(string:mixed)|void model_or_props)
   }
   pgtk2__init_this_object();
 }
+
+require gtk212;
+int get_level_indentation();
+//! Returns the amount, in pixels, of extra indentation for child levels
+
+int get_show_expanders();
+//! Returns whether or not expanders are drawn
+
+void set_show_expanders(int show);
+//! Sets whether to draw and enable expanders and indent child rows.
+endrequire;
 
 +GTK2.TreeModel get_model();
 //! Returns the model this TreeView is based on.
@@ -520,6 +537,7 @@ endrequire;
 //! compare to event->window to confirm that the event on this view is on the
 //! right window.
 
+not gtk212;
 mapping widget_to_tree_coords(int wx, int wy)
 //! converts widget coordinates to coordinates for the tree window (the full
 //! scrollable area of the tree).
@@ -553,6 +571,106 @@ mapping tree_to_widget_coords(int tx, int ty)
     f_aggregate_mapping(4);
   }
 }
+endnot;
+
+require gtk212;
+mapping convert_bin_window_to_tree_coords(int bx, int by)
+{
+  pgtk2_verify_inited();
+  {
+    gint tx,ty;
+    INT_TYPE bx,by;
+    get_all_args("convert_bin_window_to_tree_coords",args,"%i%i",&bx,&by);
+    pgtk2_pop_n_elems(args);
+    gtk_tree_view_convert_bin_window_to_tree_coords(GTK_TREE_VIEW(THIS->obj),
+			bx,by,&tx,&ty);
+    ref_push_string(_STR("x")); push_int(tx);
+    ref_push_string(_STR("y")); push_int(ty);
+    f_aggregate_mapping(4);
+  }
+}
+
+mapping convert_bin_window_to_widget_coords(int bx, int by)
+{
+  pgtk2_verify_inited();
+  {
+    gint wx,wy;
+    INT_TYPE bx,by;
+    get_all_args("convert_bin_window_to_widget_coords",args,"%i%i",&bx,&by);
+    pgtk2_pop_n_elems(args);
+    gtk_tree_view_convert_bin_window_to_widget_coords(GTK_TREE_VIEW(THIS->obj),
+			bx,by,&wx,&wy);
+    ref_push_string(_STR("x")); push_int(wx);
+    ref_push_string(_STR("y")); push_int(wy);
+    f_aggregate_mapping(4);
+  }
+}
+
+mapping convert_tree_to_bin_window_coords(int tx, int ty)
+{
+  pgtk2_verify_inited();
+  {
+    gint bx,by;
+    INT_TYPE tx,ty;
+    get_all_args("convert_tree_to_bin_window_coords",args,"%i%i",&tx,&ty);
+    pgtk2_pop_n_elems(args);
+    gtk_tree_view_convert_tree_to_bin_window_coords(GTK_TREE_VIEW(THIS->obj),
+			tx,ty,&bx,&by);
+    ref_push_string(_STR("x")); push_int(bx);
+    ref_push_string(_STR("y")); push_int(by);
+    f_aggregate_mapping(4);
+  }
+}
+
+mapping convert_tree_to_widget_coords(int tx, int ty)
+{
+  pgtk2_verify_inited();
+  {
+    gint wx,wy;
+    INT_TYPE tx,ty;
+    get_all_args("convert_tree_to_widget_coords",args,"%i%i",&tx,&ty);
+    pgtk2_pop_n_elems(args);
+    gtk_tree_view_convert_tree_to_widget_woords(GTK_TREE_VIEW(THIS->obj),
+			tx,ty,&wx,&wy);
+    ref_push_string(_STR("x")); push_int(wx);
+    ref_push_string(_STR("y")); push_int(wy);
+    f_aggregate_mapping(4);
+  }
+}
+
+mapping convert_widget_to_bin_window_coords(int wx, int wy)
+{
+  pgtk2_verify_inited();
+  {
+    gint bx,by;
+    INT_TYPE wx,wy;
+    get_all_args("convert_widget_to_bin_window_coords",args,"%i%i",&wx,&wy);
+    pgtk2_pop_n_elems(args);
+    gtk_tree_view_convert_widget_to_bin_window_coords(GTK_TREE_VIEW(THIS->obj),
+			wx,wy,&bx,&by);
+    ref_push_string(_STR("x")); push_int(bx);
+    ref_push_string(_STR("y")); push_int(by);
+    f_aggregate_mapping(4);
+  }
+}
+
+mapping convert_widget_to_tree_coords(int wx, int wy)
+{
+  pgtk2_verify_inited();
+  {
+    gint tx,ty;
+    INT_TYPE wx,wy;
+    get_all_args("convert_widget_to_tree_coords",args,"%i%i",&wx,&wy);
+    pgtk2_pop_n_elems(args);
+    gtk_tree_view_convert_widget_to_tree_coords(GTK_TREE_VIEW(THIS->obj),
+			wx,wy,&tx,&ty);
+    ref_push_string(_STR("x")); push_int(tx);
+    ref_push_string(_STR("y")); push_int(ty);
+    f_aggregate_mapping(4);
+  }
+}
+
+endrequire;
 
 /*
 // Not implemented yet
