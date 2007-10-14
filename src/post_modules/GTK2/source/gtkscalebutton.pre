@@ -1,0 +1,94 @@
+/* -*- C -*- */
+require gtk212;
+
+class GTK2.ScaleButton;
+inherit GTK2.Button;
+
+//! Properties:
+//! GTK2.Adjustment adjustment
+//! string icons
+//! int size
+//! float value
+
+signal popdown;
+signal popup;
+signal value_changed;
+
+//! Scale button
+void create(int|void size_or_props, ?float min, ?float max,
+	    ?float step, ?array(string) icons)
+//! Create a new W(ScaleButton).
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args>1) {
+    INT_TYPE size;
+    FLOAT_TYPE min,max,step;
+    struct array *a;
+    gchar **icons;
+    int i,j;
+    GtkScaleButton *gsb;
+
+    get_all_args("create",args,"%i%f%f%f%A",&size,&min,&max,&step,&a);
+    if (a==NULL || a->size<1)
+      Pike_error("Invalid array argument 5.\n");
+    icons=g_new0(gchar *,a->size+1);
+    for (i=j=0; i<a->size; i++) {
+      icons[j]=g_strdup(CGSTR0((ITEM(a)+i)->u.string));
+      j++;
+    }
+    icons[j]=NULL;
+    gsb=gtk_scale_button_new(size,min,max,step,icons);
+    THIS->obj=G_OBJECT(gsb);
+    for (i=0; icons[i]; i++)
+      g_free(icons[i]);
+    g_free(icons);
+  } else {
+    INIT_WITH_PROPS(GTK_TYPE_SCALE_BUTTON);
+  }
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
+}
+
+void set_adjustment(GTK2.Adjustment adj);
+//! Sets the GTK2.Adjustment to be used as a model.
+
+void set_icons(array icons)
+//! Sets the icons to be used.
+{
+  pgtk_verify_inited();
+  {
+    struct array *a;
+    int i,j;
+    gchar **icons;
+
+    get_all_args("set_icons",args,"%A",&a);
+    if (a==NULL || a->size<1)
+      Pike_error("Invalid array argument 1.\n");
+    icons=g_new0(gchar *,a->size+1);
+    for (i=j=0; i<a->size; i++) {
+      icons[j]=g_strdup(CGSTR0((ITEM(a)+i)->u.string));
+      j++;
+    }
+    icons[j]=NULL;
+    gtk_scale_button_set_icons(GTK_SCALE_BUTTON(THIS->obj),icons);
+    for (i=0; icons[i]; i++)
+      g_free(icons[i]);
+    g_free(icons);
+  }
+  RETURN_THIS();
+}
+
+void set_value(float val);
+//! Sets the current value of the scale; if the scale is outside the minimum
+//! or maximum range values, it will be clamped to fit inside them.  The
+//! button emits the "value-changed" signal if the value changes.
+
++GTK2.Adjustment get_adjustment();
+//! Returns the GTK2.Adjustment associated with this scale.
+
+float get_value();
+//! Gets the current value.
+
+endrequire;
+
