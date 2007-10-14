@@ -23,6 +23,7 @@ signal deactivate;
 signal move_current;
 //! An action signal which moves the current menu item in the direction
 //! specified.
+signal move_selected;
 signal selection_done;
 //! This signal is emitted when a selection has been completed within a
 //! menu shell.
