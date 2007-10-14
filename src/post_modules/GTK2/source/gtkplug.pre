@@ -10,6 +10,12 @@ inherit GTK2.Window;
 //! contained in the GTK2.Plug then will appear inside the first
 //! applications window.
 
+
+//! Properties
+require gtk212;
+//! int embedded
+endrequire;
+
 signal embedded;
 
 void create(int|mapping(string:mixed) socket_id_or_props)

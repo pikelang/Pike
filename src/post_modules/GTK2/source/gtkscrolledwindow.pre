@@ -23,6 +23,7 @@ inherit GTK2.Bin;
 //! <p>
 //! Style properties:
 //! int scrollbar-spacing
+//! int scrollbars-within-bevel
 
 signal move_focus_out;
 signal scroll_child;
