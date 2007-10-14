@@ -21,6 +21,18 @@ signal cancel;
 signal close;
 signal prepare;
 
+%{
+int pgtk2_assistant_callback(gint cur_page, struct signal_data *d) {
+  int res;
+  push_svalue(&d->args);
+  apply_svalue(&d->cb,2);
+  res=Pike_sp[-1].u.integer;
+  pop_stack();
+  return res;
+}
+
+%}
+
 //! A GTK2.Assistant is a widget used to represent a generally complex
 //! operation splitted in several steps, guiding the user through its pages
 //! and controlling the page flow to collect the necessary data.
@@ -114,5 +126,22 @@ void update_buttons_state();
 //! One situation where it can be necessary to call this function is when
 //! changing a value on the current page affects the future page flow of the
 //! assistant.
+
+void set_forward_page_func(function f, mixed data)
+//! Set the forward page function.
+{
+  struct svalue *sv1,*sv2;
+  struct signal_data *sd;
+
+  get_all_args("set_forward_page_func",args,"%*%*",&sv1,&sv2);
+  sd=(struct signal_data *)g_malloc(sizeof(struct signal_data));
+  if (sd==NULL)
+    SIMPLE_OUT_OF_MEMORY_ERROR("set_forward_page_func",sizeof(struct signal_data));
+  assign_svalue_no_free(&sd->cb,sv1);
+  assign_svalue_no_free(&sd->args,sv2);
+  gtk_assistant_set_forward_page_func(GTK_ASSISTANT(THIS->obj),pgtk2_assistant_callback,sd,(GtkDestroyNotify)pgtk2_free_signal_data);
+  RETURN_THIS();
+}
+
 
 endrequire;
