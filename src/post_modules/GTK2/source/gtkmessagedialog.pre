@@ -60,7 +60,7 @@ void set_markup(string text);
 endrequire;
 
 require gtk210;
-void set_image(GTK2.Image image);
+void set_image(GTK2.Widget image);
 //! Sets the dialog's image to image.
 endrequire;
 

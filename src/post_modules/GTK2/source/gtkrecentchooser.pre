@@ -138,13 +138,15 @@ array get_uris()
   pgtk2_pop_n_elems(args);
   {
     gchar **a;
-    int len,i;
+    unsigned int len;
 
     a=gtk_recent_chooser_get_uris(GTK_RECENT_CHOOSER(THIS->obj),&len);
     if (len) {
       gchar **b;
+      int i;
 
       b=a;
+      i=0;
       while (b) {
         push_string(make_shared_binary_string(*b,strlen(*b)));
         i++;
