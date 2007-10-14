@@ -396,7 +396,7 @@ void shape_combine_mask(GDK2.Bitmap shape_mask, int offset_x, int offset_y)
 }
 
 require gtk210;
-void input_shape_combine_mask(GD2.Bitmap shape_mask, int offset_x, int offset_y)
+void input_shape_combine_mask(GDK2.Bitmap shape_mask, int offset_x, int offset_y)
 //! Sets an input shape for this widget's GDK2.Window.
 {
   pgtk2_verify_inited();
