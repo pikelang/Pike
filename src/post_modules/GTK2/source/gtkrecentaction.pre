@@ -1,0 +1,57 @@
+/* -*- C -*- */
+class GTK2.RecentAction;
+inherit GTK2.Action;
+
+//! Properties:
+//! int show-numbers
+
+void create(string|mapping(string:mixed) name_or_props, ?string label,
+	    ?string tooltip, ?string stock_id, ?GTK2.RecentManager mgr)
+//! Create a new W(RecentAction)
+{
+  pgtk2_verify_not_inited();
+  pgtk2_verify_setup();
+  if (args>0 && Pike_sp[-args].type==PIKE_T_STRING) {
+    char *name,*stock_id=NULL;
+    struct pike_string *label=NULL,*tooltip=NULL;
+    gchar *label2=NULL,*tooltip2=NULL;
+    struct object *o=NULL;
+    GtkRecentAction *gra;
+    GtkRecentManager *grm=NULL;
+
+    get_all_args("create",args,"%s.%t%t%s%o",
+		&name,&label,&tooltip,&stock_id,&o);
+    if (label) {
+      ref_push_string(label);
+      f_string_to_utf8(1);
+      label2=GSTR0(Pike_sp[-1].u.string);
+    }
+    if (tooltip) {
+      ref_push_string(tooltip);
+      f_string_to_utf8(1);
+      tooltip2=GSTR0(Pike_sp[-1].u.string);
+    }
+    grm=GTK_RECENT_MANAGER(get_gobject(o));
+    if (grm)
+      gra=gtk_recent_action_new_for_manager(name,label2,tooltip2,stock_id,grm);
+    else
+      gra=gtk_recent_action_new(name,label2,tooltip2,stock_id);
+    if (tooltip)
+      pop_stack();
+    if (label)
+      pop_stack();
+    pgtk2_pop_n_elems(args);
+    THIS->obj=G_OBJECT(gra);
+  } else {
+    INIT_WITH_PROPS(GTK_TYPE_RECENT_ACTION);
+  }
+  pgtk2_pop_n_elems(args);
+  pgtk2__init_this_object();
+}
+
+int get_show_numbers();
+//! Returns the value set by set_show_numbers().
+
+void set_show_numbers(int show_numbers);
+//! Sets whether a number should be added to the items shown by the widgets.
+endrequire;
