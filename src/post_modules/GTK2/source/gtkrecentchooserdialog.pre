@@ -23,15 +23,17 @@ void create(mapping(string:mixed)|string title, GTK2.Window|int|void parent,
       int i;
 
       get_all_args("create",args,"%t%O%A.%O",&title,&o1,&a,&o2);
+      if (a==NULL)
+	Pike_error("Invalid number of buttons");
       ref_push_string(title);
       f_string_to_utf8(1);
       if (o2)
 	gr=gtk_recent_chooser_dialog_new_for_manager(CGSTR0(Pike_sp[-1].u.string),
 			GTK_WINDOW(get_gobject(o1)),
-			GTK_RECENT_MANAGER(get_gobject(o2)),NULL);
+			GTK_RECENT_MANAGER(get_gobject(o2)),NULL,NULL);
       else
 	gr=gtk_recent_chooser_dialog_new(CGSTR0(Pike_sp[-1].u.string),
-			GTK_WINDOW(get_gobject(o1)),NULL);
+			GTK_WINDOW(get_gobject(o1)),NULL,NULL);
       pop_stack();
       THIS->obj=G_OBJECT(gr);
       if (a) {
@@ -47,7 +49,7 @@ void create(mapping(string:mixed)|string title, GTK2.Window|int|void parent,
 	  sv=low_mapping_string_lookup(m,_STR("text"));
 	  if (sv==NULL)
 	    continue;
-	  ref_push_string(CGSTR0(sv->u.string));
+	  ref_push_string(STR0(sv->u.string));
 	  f_string_to_utf8(1);
 	  sv=low_mapping_string_lookup(m,_STR("id"));
 	  response_id=PGTK_GETINT(sv);
