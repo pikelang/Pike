@@ -4,6 +4,9 @@ inherit GTK2.Item;
 
 //! Menu items, to be added to menus.
 
+//! Properties
+//! GTK2.Menu submenu
+//! <p>
 //! Style properties:
 //! int arrow-spacing
 //! int horizontal-padding
@@ -44,8 +47,22 @@ void create(string|mapping(string:mixed)|void label_or_props)
   pgtk2__init_this_object();
 }
 
-void set_submenu(GTK2.Widget menu);
+void set_submenu(?GTK2.Widget menu)
 //! Set the submenu for this menu button.
+{
+  pgtk2_verify_inited();
+  {
+    struct object *o;
+
+    get_all_args("set_submenu",args,"%o",&o);
+    if (o==NULL)
+      gtk_menu_item_set_submenu(GTK_MENU_ITEM(THIS->obj),NULL);
+    else 
+      gtk_menu_item_set_submenu(GTK_MENU_ITEM(THIS->obj),
+			GTK_WIDGET(get_gobject(o)));
+  }
+  RETURN_THIS();
+}
 
 +GTK2.Widget get_submenu();
 //! Gets the submenu underneath this menu item.
@@ -53,8 +70,10 @@ void set_submenu(GTK2.Widget menu);
 void set_accel_path(string path);
 //! Sets the accelerator path.
 
+not gtk212;
 void remove_submenu();
 //! Remove the submenu for this menu button.
+endnot;
 
 void select();
 //! Emulate a select signal
