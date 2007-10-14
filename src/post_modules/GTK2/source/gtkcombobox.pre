@@ -21,6 +21,8 @@ endrequire;
 //! <p>
 //! Style properties:
 //! int appears-as-list
+//! int arrow-size
+//! int shadow-type
 
 signal changed;
 
