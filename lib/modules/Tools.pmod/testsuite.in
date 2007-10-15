@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.22 2007/06/02 09:45:30 grubba Exp $
+// $Id: testsuite.in,v 1.23 2007/10/15 17:11:39 grubba Exp $
 
 // Tools.Hilfe
 define(test_hilfe_setup_low,[[test_do([[
@@ -89,7 +89,7 @@ test_hilfe("void foo(function f) { write(\"a\"); f(); write(\"b\"); }", "")
 
 // Test variable delarations.
 test_hilfe("int|float a=2;", "")
-test_hilfe("a=2.0;", "2.000000")
+test_hilfe("a=2.0;", "2.0")
 test_hilfe("int b=2;", "")
 test_hilfe("b=2.0;", "Compiler Error: 1:Bad type in assignment.\n"
        "Compiler Error: 1:Expected: int\n"
