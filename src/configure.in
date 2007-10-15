@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.698 2007/05/04 16:55:04 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.699 2007/10/15 20:59:12 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -4074,11 +4074,19 @@ if test "$with_machine_code" = "no"; then :; else
   AC_MSG_CHECKING(machine code architecture)
   AC_CACHE_VAL(pike_cv_machine_code_arch, [
     pike_cv_machine_code_arch=unknown
-    AC_TRY_COMPILE([
+    if test "x$GCC" = xyes; then
+      gcc_version=`$CC --version | head -n 1 | sed -e 's/^.* \([[0-9.]]*\) .*$/\1/'`
+      if echo $gcc_version | grep '^3\.' >/dev/null; then
+	# Only enable machine code with gcc 3.x. Later versions
+	# doesn't produce the right stack frames for it to work. Pike
+	# 7.6 and later also works with gcc >= 4.x though.
+	AC_TRY_COMPILE([
 #if !defined(__i386__) && !defined(__i386)
 #error Not ia32 architecture
 #endif
-    ], [], [pike_cv_machine_code_arch=ia32], [])
+	], [], [pike_cv_machine_code_arch=ia32], [])
+      fi
+    fi
     AC_TRY_COMPILE([
 #if !defined(sparc) && !defined(__sparc__) && !defined(__sparc)
 #error Not sparc architecture
