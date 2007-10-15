@@ -1,4 +1,6 @@
 /* -*- C -*- */
+require gtk212;
+
 class GTK2.RecentAction;
 inherit GTK2.Action;
 
