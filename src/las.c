@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.394 2007/10/11 15:47:44 grubba Exp $
+|| $Id: las.c,v 1.395 2007/10/15 17:55:22 mast Exp $
 */
 
 #include "global.h"
@@ -5438,7 +5438,7 @@ int dooptcode(struct pike_string *name,
     if(a_flag > 2)
     {
       fputs("Coding: ", stderr);
-      /*print_tree(n);*/
+      print_tree(n);
     }
 #endif
     if(!Pike_compiler->num_parse_error)
