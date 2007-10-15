@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.h,v 1.31 2006/10/06 08:00:35 stewa Exp $
+|| $Id: ia32.h,v 1.32 2007/10/15 21:04:45 mast Exp $
 */
 
 /* #define ALIGN_PIKE_JUMPS 8 */
@@ -30,6 +30,7 @@
 /* Don't need an lvalue in this case. */
 #define PROG_COUNTER ((unsigned char *)__builtin_return_address(0))
 #else
+#error This method to tweak the jump address does not work with gcc >= 4.x
 #define PROG_COUNTER (((unsigned char **)__builtin_frame_address(0))[1])
 #endif
 
