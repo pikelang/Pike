@@ -779,7 +779,7 @@ void set_row_separator_func(function f, mixed user_data )
 );
     assign_svalue_no_free(&sd->cb,sv1);
     assign_svalue_no_free(&sd->args,sv2);
-    gtk_combo_box_set_row_separator_func(GTK_TREE_VIEW(THIS->obj),
+    gtk_tree_view_set_row_separator_func(GTK_TREE_VIEW(THIS->obj),
                         (GtkTreeViewRowSeparatorFunc)pgtk2_tree_view_row_separator_func,
                         sd,(GtkDestroyNotify)pgtk2_free_signal_data);
   }

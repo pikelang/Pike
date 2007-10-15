@@ -49,7 +49,7 @@ void create(mapping(string:mixed)|string title, GTK2.Window|int|void parent,
 	  sv=low_mapping_string_lookup(m,_STR("text"));
 	  if (sv==NULL)
 	    continue;
-	  ref_push_string(STR0(sv->u.string));
+	  ref_push_string(sv->u.string);
 	  f_string_to_utf8(1);
 	  sv=low_mapping_string_lookup(m,_STR("id"));
 	  response_id=PGTK_GETINT(sv);
