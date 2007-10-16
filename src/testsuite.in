@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.789 2007/10/15 17:10:55 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.790 2007/10/16 09:14:05 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -11188,7 +11188,7 @@ test_equal(indices(class {class A {} class B {inherit A;}}()->B()), ({}))
 test_equal(indices(class {class A {int v;} class B {inherit A;}}()->B()), ({"v"}))
 test_equal(indices(class {class A {public int v;} class B {inherit A;}}()->B()), ({"v"}))
 test_equal(indices(class {class A {static int v;} class B {inherit A;}}()->B()), ({}))
-test_equal(indices(class {class A {private int v; int q=v;} class B {inherit A;}}()->B()), ({}))
+test_equal(indices(class {class A {private int v; static int q=v;} class B {inherit A;}}()->B()), ({}))
 test_equal(indices(class {class A {final int v;} class B {inherit A;}}()->B()), ({"v"}))
 test_equal(indices(class {class A {nomask int v;} class B {inherit A;}}()->B()), ({"v"}))
 test_equal(indices(class {class A {local int v;} class B {inherit A;}}()->B()), ({"v"}))
@@ -11196,7 +11196,7 @@ test_equal(indices(class {class A {inline int v;} class B {inherit A;}}()->B()),
 test_equal(indices(class {class A {int f(){}} class B {inherit A;}}()->B()), ({"f"}))
 test_equal(indices(class {class A {public int f(){}} class B {inherit A;}}()->B()), ({"f"}))
 test_equal(indices(class {class A {static int f(){}} class B {inherit A;}}()->B()), ({}))
-test_equal(indices(class {class A {private int f(){} int q=f();} class B {inherit A;}}()->B()), ({}))
+test_equal(indices(class {class A {private int f(){} static int q=f();} class B {inherit A;}}()->B()), ({}))
 test_equal(indices(class {class A {final int f(){}} class B {inherit A;}}()->B()), ({"f"}))
 test_equal(indices(class {class A {nomask int f(){}} class B {inherit A;}}()->B()), ({"f"}))
 test_equal(indices(class {class A {local int f(){}} class B {inherit A;}}()->B()), ({"f"}))
