@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.699 2007/10/15 20:59:12 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.700 2007/10/16 14:39:41 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1312,7 +1312,7 @@ AC_ARG_WITH(machine-code,
 	  # Currently only supported with gcc.
 	  #
 	  # Further tests later on.
-	  with_machine_code="$GCC"
+	  if test "x$GCC" = xyes; then :; else with_machine_code=no; fi
 	])
 
 MY_AC_ARG_WITH(keypair-loop,
@@ -4074,17 +4074,29 @@ if test "$with_machine_code" = "no"; then :; else
   AC_MSG_CHECKING(machine code architecture)
   AC_CACHE_VAL(pike_cv_machine_code_arch, [
     pike_cv_machine_code_arch=unknown
-    if test "x$GCC" = xyes; then
-      gcc_version=`$CC --version | head -n 1 | sed -e 's/^.* \([[0-9.]]*\) .*$/\1/'`
-      if echo $gcc_version | grep '^3\.' >/dev/null; then
-	# Only enable machine code with gcc 3.x. Later versions
-	# doesn't produce the right stack frames for it to work. Pike
-	# 7.6 and later also works with gcc >= 4.x though.
-	AC_TRY_COMPILE([
+    AC_TRY_COMPILE([
 #if !defined(__i386__) && !defined(__i386)
 #error Not ia32 architecture
 #endif
-	], [], [pike_cv_machine_code_arch=ia32], [])
+    ], [], [pike_cv_machine_code_arch=ia32], [])
+    if test "x$pike_cv_machine_code_arch" = xia32 -a "x$GCC" = xyes; then
+      gcc_version=`$CC --version | head -n 1 | sed -e 's/^.* \([[0-9]]*\.[[0-9.]]*\) .*$/\1/'`
+      if echo $gcc_version | grep '^3\.' >/dev/null || \
+	 echo $gcc_version | grep '^4\.0' >/dev/null; then :; else
+	if test "x$with_machine_code" != xyes; then
+	  # Only enable machine code with gcc 3.x and 4.0. Later
+	  # versions doesn't produce the right stack frames for it to
+	  # work. Pike 7.6 and later works with all gcc versions though.
+	  pike_cv_machine_code_arch=unknown
+	  AC_MSG_WARN([
+Detected gcc version $gcc_version - disabled machine code since it
+probably will not work with this version. It is enabled for gcc 3.x
+and 4.0.])
+	else
+	  AC_MSG_WARN([
+Detected gcc version $gcc_version - machine code might not work with
+this version. Enabling it anyway due to explicit configure option.])
+	fi
       fi
     fi
     AC_TRY_COMPILE([
