@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.625 2007/10/13 15:34:59 grubba Exp $
+|| $Id: program.c,v 1.626 2007/10/16 09:17:20 grubba Exp $
 */
 
 #include "global.h"
@@ -8447,7 +8447,11 @@ void yywarning(char *fmt, ...)
   msg = finish_string_builder(&s);
 
   if (master_object) {
-    ref_push_string(lex.current_file);
+    if (lex.current_file) {
+      ref_push_string(lex.current_file);
+    } else {
+      push_constant_text("-");
+    }
     push_int(lex.current_line);
     push_string(msg);
 
