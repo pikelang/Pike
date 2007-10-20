@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.84 2007/10/13 13:51:29 grubba Exp $
+|| $Id: preprocessor.h,v 1.85 2007/10/20 13:34:56 grubba Exp $
 */
 
 /*
@@ -1032,7 +1032,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 			   struct pike_string *charset)
 {
   ptrdiff_t pos, tmp, e;
-  int tmp2;
+  int include_mode;
   INT32 first_line = this->current_line;
   /* FIXME: What about this->current_file? */
   
@@ -1552,10 +1552,17 @@ static ptrdiff_t lower_cpp(struct cpp *this,
       case 's':
 	{
 	  static const WCHAR string_[] = { 's', 't', 'r', 'i', 'n', 'g' };
+	  static const WCHAR string_recur_[] =
+	    { 's', 't', 'r', 'i', 'n', 'g', '_', 'r', 'e', 'c', 'u', 'r' };
 
 	  if(WGOBBLE2(string_))
 	  {
-	    tmp2=1;
+	    include_mode = 1;
+	    goto do_include;
+	  }
+	  if(WGOBBLE2(string_recur_))
+	  {
+	    include_mode = 3;
 	    goto do_include;
 	  }
 	}
@@ -1564,13 +1571,20 @@ static ptrdiff_t lower_cpp(struct cpp *this,
     case 'i': /* include, if, ifdef */
       {
 	static const WCHAR include_[] = { 'i', 'n', 'c', 'l', 'u', 'd', 'e' };
+	static const WCHAR include_recur_[] =
+	  { 'i', 'n', 'c', 'l', 'u', 'd', 'e', '_', 'r', 'e', 'c', 'u', 'r' };
 	static const WCHAR if_[] = { 'i', 'f' };
 	static const WCHAR ifdef_[] = { 'i', 'f', 'd', 'e', 'f' };
 	static const WCHAR ifndef_[] = { 'i', 'f', 'n', 'd', 'e', 'f' };
+	int recur = 0;
 
-      if(WGOBBLE2(include_))
+      if(WGOBBLE2(include_) || (recur = WGOBBLE2(include_recur_)))
       {
-	tmp2=0;
+	if (recur) {
+	  include_mode = 2;
+	} else {
+	  include_mode = 0;
+	}
       do_include:
 	{
 	  struct svalue *save_sp=Pike_sp;
@@ -1578,8 +1592,6 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  
 	  check_stack(3);
 
-	  /* FIXME: Ought to macro-expand (Bug 2440). */
-	  
 	  switch(data[pos++])
 	  {
 	    case '"':
@@ -1615,11 +1627,55 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      }
 
 	    default:
-	      cpp_error(this, "Expected file to include.");
-	      break;
-	    }
+	      if (include_mode & 2) {
+		/* Macro expanding didn't help... */
+		cpp_error(this, "Expected file to include.");
+		break;
+	      } else {
+		/* Try macro expanding (Bug 2440). */
+		struct string_builder save = this->buf, tmp;
+		PCHARP ptr;
+		p_wchar2 c;
+		int save_line = this->current_line;
+		init_string_builder(&this->buf, SHIFT);
 
-	  if(Pike_sp==save_sp) break;
+		/* Prefix the buffer with the corresponding *_recur
+		 * directive, to avoid infinite loops.
+		 */
+		if (include_mode & 1) {
+		  string_builder_strcat(&this->buf, "#string_recur ");
+		} else {
+		  string_builder_strcat(&this->buf, "#include_recur ");
+		}
+
+		pos--;
+		pos += lower_cpp(this, data + pos, len - pos,
+				 CPP_END_AT_NEWLINE,
+				 auto_convert, charset);
+
+		string_builder_putchar(&this->buf, '\n');
+
+		tmp = this->buf;
+		this->buf = save;
+
+		/* We now have a #include-recur or #string-recur directive
+		 * in tmp. Preprocess it.
+		 */
+
+		/* We're processing the line twice. */
+		this->current_line = save_line;
+		low_cpp(this, tmp.s->str, tmp.s->len, tmp.s->size_shift,
+			flags, auto_convert, charset);
+		this->current_line = save_line;
+
+		free_string_builder(&tmp);
+	      }
+	      break;
+	  }
+
+	  if(Pike_sp==save_sp) {
+	    break;
+	  }
 
 	  if(OUTP())
 	  {
@@ -1661,7 +1717,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      PUSH_STRING_SHIFT(new_file->str, new_file->len,
 				new_file->size_shift, &this->buf);
 	      string_builder_putchar(&this->buf, '\n');
-	      if(tmp2)
+	      if(include_mode & 1)
 	      {
 		/* #string */
 		struct pike_string *str = Pike_sp[-1].u.string;
