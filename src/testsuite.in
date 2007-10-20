@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.790 2007/10/16 09:14:05 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.791 2007/10/20 13:49:36 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -8199,6 +8199,18 @@ test_any([[
 dnltest_any([[
 dnl#include <conftest.h>
 dnl]],17)
+
+test_any([[
+// bug 2440 (a)
+#define FILENAME "conftest.h"
+return #string FILENAME;
+]], "return 17;\n")
+
+test_any([[
+// bug 2440 (b)
+#define FILENAME "conftest.h"
+#include FILENAME
+]], 17)
 
 test_true( rm("conftest.h") )
 
