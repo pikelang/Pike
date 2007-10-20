@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.85 2007/10/20 13:34:56 grubba Exp $
+|| $Id: preprocessor.h,v 1.86 2007/10/20 18:03:20 grubba Exp $
 */
 
 /*
@@ -1666,9 +1666,15 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		this->current_line = save_line;
 		low_cpp(this, tmp.s->str, tmp.s->len, tmp.s->size_shift,
 			flags, auto_convert, charset);
-		this->current_line = save_line;
-
 		free_string_builder(&tmp);
+
+		this->current_line = save_line;
+		string_builder_sprintf(&this->buf, "\n# %d ", save_line);
+		PUSH_STRING_SHIFT(this->current_file->str,
+				  this->current_file->len,
+				  this->current_file->size_shift,
+				  &this->buf);
+		string_builder_putchar(&this->buf, '\n');
 	      }
 	      break;
 	  }
@@ -1685,7 +1691,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 				     this->handler, this->compat_handler,
 				     3, BIT_STRING) ||
 		!(new_file=Pike_sp[-1].u.string) ) {
-	      cpp_handle_exception (this, "Couldn't include file.");
+	      cpp_handle_exception (this, "Couldn't find include file.");
 	      pop_n_elems(Pike_sp-save_sp);
 	      break;
 	    }
@@ -1697,8 +1703,13 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 
 	    if (!safe_apply_handler ("read_include",
 				     this->handler, this->compat_handler,
-				     1, BIT_STRING)) {
+				     1, BIT_STRING|BIT_INT)) {
 	      cpp_handle_exception (this, "Couldn't read include file.");
+	      pop_n_elems(Pike_sp-save_sp);
+	      break;
+	    } else if (Pike_sp[-1].type == PIKE_T_INT) {
+	      cpp_error_sprintf(this, "Couldn't read include file \"%S\".",
+				new_file);
 	      pop_n_elems(Pike_sp-save_sp);
 	      break;
 	    }
@@ -1759,7 +1770,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      this->current_file=save_current_file;
 	      this->current_line=save_current_line;
 	      
-	      sprintf(buffer,"# %d ",this->current_line);
+	      sprintf(buffer,"\n# %d ",this->current_line);
 	      string_builder_binary_strcat(&this->buf, buffer, strlen(buffer));
 	      PUSH_STRING_SHIFT(this->current_file->str,
 				this->current_file->len,
