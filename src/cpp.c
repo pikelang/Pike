@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.162 2007/04/02 13:51:53 grubba Exp $
+|| $Id: cpp.c,v 1.163 2007/10/22 09:49:44 grubba Exp $
 */
 
 #include "global.h"
@@ -162,9 +162,43 @@ static void cpp_error(struct cpp *this, const char *err)
 static void cpp_error_vsprintf (struct cpp *this, const char *fmt,
 				va_list args)
 {
-  char buf[8192];
-  Pike_vsnprintf (buf, sizeof (buf), fmt, args);
-  cpp_error(this, buf);
+  struct string_builder s;
+  struct pike_string *msg;
+
+  this->compile_errors++;
+  if (this->compile_errors > 10) return;
+
+  init_string_builder(&s, 0);
+
+  string_builder_vsprintf(&s, fmt, args);
+
+  msg = finish_string_builder(&s);
+
+  if((this->handler && this->handler->prog) || get_master())
+  {
+    ref_push_string(this->current_file);
+    push_int(this->current_line);
+    push_string(msg);
+    low_safe_apply_handler("compile_error", this->handler,
+			   this->compat_handler, 3);
+    pop_stack();
+    return;
+  }
+
+  if (this->current_file->size_shift) {
+    fprintf(stderr, "WIDE:%ld: ", (long)this->current_line);
+  } else {
+    fprintf(stderr, "%s:%ld: ",
+	    this->current_file->str, (long)this->current_line);
+  }
+
+  if (!msg->size_shift) {
+    fprintf(stderr, "%s\n", msg->str);
+  } else {
+    fprintf(stderr, "WIDE (fmt: %s)\n", fmt);
+  }
+  free_string(msg);
+  fflush(stderr);
 }
 
 static void cpp_error_sprintf(struct cpp *this, const char *fmt, ...)
