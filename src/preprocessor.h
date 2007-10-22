@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.89 2007/10/22 12:48:46 grubba Exp $
+|| $Id: preprocessor.h,v 1.90 2007/10/22 15:12:30 grubba Exp $
 */
 
 /*
@@ -1777,12 +1777,12 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 				this->current_file->size_shift,
 				&this->buf);
 	      string_builder_putchar(&this->buf, '\n');
-	      if (include_mode & 2) {
+	      if ((include_mode & 2) && (pos < len)) {
 		/* NOTE: The rest of the current buffer has already been
 		 *       expanded once.
 		 */
-		string_builder_binary_strcat(&this->buf,
-					     data + pos, len - pos);
+		PIKE_XCONCAT(string_builder_binary_strcat, SHIFT)
+		  (&this->buf, data + pos, len - pos);
 		pos = len;
 	      }
 	    }
