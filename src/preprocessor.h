@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.87 2007/10/22 10:50:08 grubba Exp $
+|| $Id: preprocessor.h,v 1.88 2007/10/22 10:58:36 grubba Exp $
 */
 
 /*
@@ -1779,7 +1779,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      string_builder_putchar(&this->buf, '\n');
 	      if (include_mode & 2) {
 		/* NOTE: The rest of the current buffer has already been
-		 * processed once.
+		 *       expanded once.
 		 */
 		string_builder_binary_strcat(&this->buf,
 					     data + pos, len - pos);
