@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.88 2007/10/22 10:58:36 grubba Exp $
+|| $Id: preprocessor.h,v 1.89 2007/10/22 12:48:46 grubba Exp $
 */
 
 /*
@@ -577,8 +577,8 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 	    if (pos > len) {
 	      int old_line = this->current_line;
 	      this->current_line = start_line;
-	      cpp_error_sprintf(this, "Missing ) in the meta function %s().",
-				func_name->str);
+	      cpp_error_sprintf(this, "Missing ) in the meta function %S().",
+				func_name);
 	      this->current_line = old_line;
 	      return pos-1;
 	    }
@@ -601,8 +601,8 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 	if(!GOBBLE(')')) {
 	  int old_line = this->current_line;
 	  this->current_line = start_line;
-	  cpp_error_sprintf(this, "Missing ) in the meta function %s().",
-			    func_name->str);
+	  cpp_error_sprintf(this, "Missing ) in the meta function %S().",
+			    func_name);
 	  this->current_line = old_line;
 	}
 	/* NOTE: cpp_func MUST protect against errors. */
@@ -1997,7 +1997,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  if(OUTP())
 	  {
 	    push_string(MAKE_BINARY_STRING(data+foo, pos-foo));
-	    cpp_error_sprintf(this, "%O", Pike_sp[-1]);
+	    cpp_error_sprintf(this, "%O", Pike_sp-1);
 	  }
 	  break;
 	}
