@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.129 2006/10/26 12:16:40 grubba Exp $
+|| $Id: efuns.c,v 1.130 2007/10/23 09:38:16 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.129 2006/10/26 12:16:40 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.130 2007/10/23 09:38:16 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -500,12 +500,11 @@ void f_filesystem_stat(INT32 args)
   {
     push_int(0);
   }else{
-    int num_fields = 8;
+    int num_fields = 0;
 #ifdef HAVE_STATVFS
 #if 0
     push_text("id");         push_int(st.f_fsid);
-#else
-    num_fields--;
+    num_fields++;
 #endif
     push_text("blocksize");  push_int(st.f_frsize);
     push_text("blocks");     push_int(st.f_blocks);
@@ -514,6 +513,7 @@ void f_filesystem_stat(INT32 args)
     push_text("files");      push_int(st.f_files);
     push_text("ffree");      push_int(st.f_ffree);
     push_text("favail");     push_int(st.f_favail);
+    num_fields += 7;
 #ifdef HAVE_STATVFS_F_FSTR
     push_text("fsname");     push_text(st.f_fstr);
     num_fields++;
@@ -522,14 +522,12 @@ void f_filesystem_stat(INT32 args)
     push_text("fstype");     push_text(st.f_basetype);
     num_fields++;
 #endif /* HAVE_STATVFS_F_BASETYPE */
-    f_aggregate_mapping(num_fields*2);
 #else /* !HAVE_STATVFS */
 #ifdef HAVE_STATFS
 #ifdef HAVE_STRUCT_STATFS
 #if 0 && HAVE_STATFS_F_FSID
     push_text("id");           push_int(st.f_fsid);
-#else
-    num_fields--;
+    num_fields++;
 #endif
     push_text("blocksize");    push_int(st.f_bsize);
     push_text("blocks");       push_int(st.f_blocks);
@@ -537,11 +535,10 @@ void f_filesystem_stat(INT32 args)
     push_text("files");        push_int(st.f_files);
     push_text("ffree");        push_int(st.f_ffree);
     push_text("favail");       push_int(st.f_ffree);
+    num_fields += 6;
 #ifdef HAVE_STATFS_F_BAVAIL
     push_text("bavail");       push_int(st.f_bavail);
-    f_aggregate_mapping((num_fields-1)*2);
-#else
-    f_aggregate_mapping((num_fields-2)*2);
+    num_fields++
 #endif /* HAVE_STATFS_F_BAVAIL */
 #else /* !HAVE_STRUCT_STATFS */
 #ifdef HAVE_STRUCT_FS_DATA
@@ -550,7 +547,7 @@ void f_filesystem_stat(INT32 args)
     push_text("blocks");       push_int(st.fd_btot);
     push_text("bfree");        push_int(st.fd_bfree);
     push_text("bavail");       push_int(st.fd_bfreen);
-    f_aggregate_mapping(4*2);
+    num_fields += 4;
 #else /* !HAVE_STRUCT_FS_DATA */
     /* Should not be reached */
 #error No struct to hold statfs() data.
@@ -561,13 +558,14 @@ void f_filesystem_stat(INT32 args)
     push_text("bfree");      push_int(st.f_tfree);
     push_text("ffree");      push_int(st.f_tinode);
     push_text("fsname");     push_text(st.f_fname);
-    f_aggregate_mapping(3*2);
+    num_fields += 3;
 #else
     /* Should not be reached */
 #error No stat function for filesystems.
 #endif /* HAVE_USTAT */
 #endif /* HAVE_STATFS */
 #endif /* HAVE_STATVFS */
+    f_aggregate_mapping(num_fields*2);
   }
 }
   
