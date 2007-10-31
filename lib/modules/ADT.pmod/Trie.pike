@@ -1,5 +1,5 @@
 /*
- * $Id: Trie.pike,v 1.2 2007/09/06 14:28:31 grubba Exp $
+ * $Id: Trie.pike,v 1.3 2007/10/31 13:46:14 grubba Exp $
  *
  * An implementation of a trie.
  *
@@ -91,6 +91,7 @@ void merge(this_program o)
 void insert(string|array(int) key, mixed val)
 {
   this_program o;
+  if (zero_type(val)) return;
   if (sizeof(key) == offset) {
     value = val;
   } else if (!trie) {
@@ -119,6 +120,45 @@ void insert(string|array(int) key, mixed val)
       o = trie[key[offset]] = new_o;
     }      
     o->insert(key, val);
+  }
+}
+
+mixed remove(string|array(int) key)
+{
+  mixed val;
+  this_program o;
+  if (sizeof(key) == offset) {
+    val = value;
+    value = UNDEFINED;
+    index = 0;	// Invalidated.
+    return val;
+  } else if (!trie) {
+    return UNDEFINED;
+  } else if (!(o = trie[key[offset]])) {
+    return UNDEFINED;
+  } else {
+    if (o->offset > sizeof(key)) {
+      return UNDEFINED;
+    }
+    int i;
+    for (i = offset+1; i < o->offset; i++) {
+      if (key[i] != o->path[i]) {
+	return UNDEFINED;
+      }
+    }
+    if (!zero_type(val = o->remove(key))) {
+      if (zero_type(o->value)) {
+	if (!o->trie) {
+	  m_delete(trie, key[offset]);
+	  index = 0;	// Invalidated.
+	  if (!sizeof(trie)) trie = 0;
+	} else if (sizeof(o->trie) == 1) {
+	  // Get rid of intermediate level.
+	  trie[key[offset]] = values(o->trie)[0];
+	}
+      }
+    }
+    return val;
   }
 }
 
