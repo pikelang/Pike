@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_gif.c,v 1.26 2006/01/04 20:09:37 grendel Exp $
+|| $Id: image_gif.c,v 1.27 2007/11/01 09:51:56 agehall Exp $
 */
 
 /*
@@ -1659,6 +1659,7 @@ static void _gif_decode_lzw(unsigned char *s,
    unsigned int q;
    unsigned int mask=(unsigned short)((1<<bits)-1);
    struct lzwc *c;
+   struct lzwc *last_last_seq = NULL;
 
 #ifdef GIF_DEBUG
    int debug=0;
@@ -1685,6 +1686,7 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
       c[n].prev=0xffff,c[n].len=1,c[n].c=n;
    c[clearcode].len=0; 
    c[endcode].len=0;   
+   last_last_seq = c+clearcode;
 
    while (bit>0)
    {
@@ -1700,8 +1702,9 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
 
       if (n==m) 
       {
+	// Copy the last color from the previous sequence
 	 c[n].prev=last;
-	 c[n].c=c[last].c;
+	 c[n].c=last_last_seq->c;
 	 c[n].len=c[last].len+1;
       }
       else if (n>=m) 
@@ -1719,6 +1722,7 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
 	    m=endcode;
 	    last=clearcode;
 	    maxcode=1<<bits;
+	    last_last_seq = c+clearcode;
 	 }
 	 else 
 	 {
@@ -1760,6 +1764,8 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
 	    if (myc->prev==0xffff) break;
 	    myc=c+myc->prev;
 	 }
+
+	 last_last_seq = myc;  // Keep for use in next iteration
 
 	 if (last!=clearcode)
 	 {
@@ -2526,6 +2532,7 @@ static void image_gif_lzw_decode(INT32 args)
    ptrdiff_t dlen,dlen0;
    unsigned int mask;
    struct lzwc *c;
+   struct lzwc *last_last_seq = NULL;
    signed long bits,obits=8;
    signed long maxcode;
    int reversebits=0;
@@ -2575,6 +2582,8 @@ static void image_gif_lzw_decode(INT32 args)
    c[clearcode].len=0; 
    c[endcode].len=0;   
 
+   last_last_seq = c+clearcode;
+
    if (len>1)
    {
       if (reversebits) q=s[1]|(s[0]<<8);
@@ -2613,7 +2622,7 @@ static void image_gif_lzw_decode(INT32 args)
       if (n==m) 
       {
 	 c[n].prev = DO_NOT_WARN((unsigned short)last);
-	 c[n].c=c[last].c;
+	 c[n].c=last_last_seq->c;
 	 c[n].len=c[last].len+1;
       }
       else if (n>=m) 
@@ -2681,6 +2690,8 @@ static void image_gif_lzw_decode(INT32 args)
 	    if (myc->prev==0xffff) break;
 	    myc=c+myc->prev;
 	 }
+
+	 last_last_seq = myc;
 
 	 if (last!=clearcode)
 	 {
