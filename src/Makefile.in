@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.348 2006/06/17 11:11:47 mast Exp $
+# $Id: Makefile.in,v 1.349 2007/11/01 07:45:11 agehall Exp $
 #
 
 # This line is needed on some machines.
@@ -649,6 +649,7 @@ lib: Makefile
 master.pike: $(LIBDIR_SRC)/master.pike.in Makefile
 	t="$$PIKE_PATH_TRANSLATE"; if test "x$$t" = "x"; then t=s,x,x,; else :; fi; \
 	if test "x$(PIKE_MODULE_RELOC)" = "x"; then u=s,x,x,; else u='s/^#undef PIKE_MODULE_RELOC/#define PIKE_MODULE_RELOC 1/'; fi; \
+	LANG=C; export LANG; \
 	sed -e 's!¤lib_prefix¤!'"`echo "$(TMP_LIBDIR)" | sed -e "$$t"`"'!' <$(LIBDIR_SRC)/master.pike.in \
 	  | sed -e 's!¤share_prefix¤!'"`echo "$(LIBDIR_SRC)" | sed -e "$$t"`"'!' \
 	  | sed -e 's!¤include_prefix¤!'"`echo "$(TMP_BUILDDIR)" | sed -e "$$t"`"'!' \
