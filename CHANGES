@@ -1,6 +1,10 @@
 Changes since Pike 7.6:
 ----------------------------------------------------------------------
 
+o Added ABI selection.
+  It's now possible to select whether to compile in 32bit or 64bit
+  mode at configure time by using the --with-abi option.
+
 o New syntax to index from the end in range operations.
   A "<" can be added before an index in the [..] operator to count
   from the end instead. This is convenient to e.g. chop off the last
@@ -31,6 +35,22 @@ o Generalized this and this_program.
   In the above B()->get_a() will return an object with two symbols,
   'a' and 'foo', but B()->get_a()->foo() will still write "B\n".
 
+o Added support for getters and setters.
+  It is now possible to simulate variables with functions. Example:
+    class A {
+      private int a;
+      int `->b() { return a; }		// Getter for the symbol b.
+      void `->b=(int c) { a = c; }	// Setter for the symbol b.
+      int c()
+      {
+        return b;			// Calls `->b().
+      }
+    }
+
+    object a = A();
+    a->b = 17;				// Calls `->b=(17).
+    werror("%d\n", a->b);		// Calls `->b().
+
 o Unicode escapes.
   Pike now understands the common way to escape unicode chars, using
   \uxxxx and \Uxxxxxxxx escapes. These escapes works both in string
@@ -39,11 +59,43 @@ o Unicode escapes.
   they contain characters that can't be represented raw in the source
   code charset.
 
+o New (stricter) type checker for function calls.
+  The type checker for function calls is now based on the concept
+  of currification. This should provide for error messages that
+  are more easily understood. It also is much better att typechecking
+  function calls utilizing the splice (@) operator.
+  The mechanisms used by the typechecker are also made available as
+  Pike.get_first_arg_type(), Pike.low_check_call() and Pike.get_return_type().
+
+o Added generic attributes for types.
+  Provides a method to hook into the type checker, so that it is
+  possible to make custom type checking.
+  No syntax yet.
+  Added such a type checker for sprintf().
+
+o Stricter typing of strings.
+  The string type may now have an (optional) value range. Example:
+    string(0..255) bytes;
+
 o Stdio.*
   Stdio.cp can now work recursively in a directory tree.
   Stdio.cp now keeps permissions when copying.
   Added Stdio.recursive_mv which works on every OS and also when the
   destination isn't on the same filesystem as the source.
+
+o Prepared for having multiple different active backend implementations.
+  ...
+  The global variable next_timeout is no more. It has been replaced by
+  a backend-specific variable. Added backend_lower_timeout() for accessing
+  the new variable. This fixes issues GTK, GTK2 and sendfile had with the
+  new backend implementation.
+
+  NOTE!
+  NOTE! Changed the argument for backend callbacks!
+  NOTE!
+  NOTE! The argument is now a struct Backend_struct * when called at entry (was NULL).
+  NOTE! The argument is now NULL when called at exit (was 1).
+  NOTE!
 
 o Process.popen
    Process.popen is now able to run in nonblocking mode. If a second
@@ -52,6 +104,10 @@ o Process.popen
 
 o bin/precompile.pike
    Voidable pointer types are no longer promoted to mixed.
+
+o cpp
+  The preprocessor now supports macro expansion in the #include and #string
+  directives.
 
 o PIKE_PORTABLE_BYTECODE
    --with-portable-bytecode is now the default. Pike programs that have
@@ -68,6 +124,21 @@ o Destruct reason passed to lfun::destroy.
   These integers are defined in the new Object module as
   DESCTRUCT_EXPLICIT, DESTRUCT_NO_REFS, DESTRUCT_GC and
   DESTRUCT_CLEANUP.
+
+o Support for class symbols with storage in parent scope.
+  Also added support for aliased symbols.
+
+o Improved support for mixin.
+  The Pike compiler now supports mixin for symbols that have been
+  declared static.
+
+o Implicit and explicit create().
+  The compiler now supports defining classes with both an implicit
+  and an explicit create().
+
+o Warnings for unused private symbols.
+  The compiler now checks that all symbols that have been declared
+  private actually are used.
 
 o Unicode
   Case information and the Unicode module are updated to Unicode
@@ -111,6 +182,7 @@ o Calendar
   fixed hour formatting for format_smtp()
   Time: * and / now handle floats. split implemented.
   how_many() now returns the correct value. was off by one.
+  Updated timezone information.
 
 o Crypto.Random
   Now thread safe.
@@ -141,15 +213,26 @@ o Int
   inf + operations
 
 o Locale.Charset
+  Remapped and documented the use of the private character space.
+  ISO-IR non-spacers are now converted into combiners.
+  Added some support for pluggable character sets.
   Added GB18030/GBK
   UTF-EBCDIC
   unicode prefix, e.g. unicode-1-1-utf-7
   CP949
   GBK (cp936)
+  DIN-31624 (ISO-IR-38)
+  ISO-5426:1980 (ISO-IR-53)
+  ISO-6438:1996 (ISO-IR-39, ISO-IR-216)
+  ISO-6937:2001 (ISO-IR-156)  
 
 o MIME
   Fix for casting MIME.Message objects to strings
   Added remapping variants of the encode words functions.
+
+o Odbc
+  Now supports UnixODBC properly.
+  Fixed various issues with Unicode.
 
 o Parser.Pike
   Now uses parser written in C.
@@ -180,7 +263,11 @@ o Process
   Extended system() to pass args to spawn()
   New popen implementation.
 
+o protected
+  The modifier protected is now an alias for the modifier static.
+
 o Protocols.DNS
+  Added support for NAPTR (RFC 3403) records.
   Fix for TTL parsing in SRV records.
   gethostbyname() now returns IPv6 addresses too, if available.
   Improved support for T_TXT.
@@ -206,6 +293,10 @@ o Protocols.HTTP.Session
 
 o Protocols.HTTP
   http_encode_string() now know how to encode UCS-2 characters.
+
+o sprintf
+  sprintf() now attempts to lookup the name of the program when
+  formatting types of objects and programs.
   
 PROTOCOLS NOT DONE
 
@@ -218,6 +309,8 @@ o Calendar.Badi
 New Modules
 
 o ADT.List
+
+o ADT.Trie
 
 o ADT.Set
   ADT.Set implements a datatype for sets. These sets behave much
