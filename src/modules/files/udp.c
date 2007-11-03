@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.77 2007/11/03 14:55:33 grubba Exp $
+|| $Id: udp.c,v 1.78 2007/11/03 17:00:50 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -276,6 +276,13 @@ static void udp_bind(INT32 args)
     Pike_error("Stdio.UDP->bind: failed to bind to port %d\n",
 	       (unsigned INT16)Pike_sp[-args].u.integer);
     return;
+  }
+
+  if(!Pike_fp->current_object->prog)
+  {
+    if (fd >= 0)
+      while (fd_close(fd) && errno == EINTR) {}
+    Pike_error("Object destructed in Stdio.UDP->bind()\n");
   }
 
   change_fd_for_box (&THIS->box, fd);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.96 2006/07/05 02:14:52 mast Exp $
+|| $Id: socket.c,v 1.97 2007/11/03 16:59:10 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -294,6 +294,13 @@ static void port_bind(INT32 args)
   tmp=fd_bind(fd, (struct sockaddr *)&addr, addr_len) < 0 || fd_listen(fd, 16384) < 0;
   THREADS_DISALLOW_UID();
 
+  if(!Pike_fp->current_object->prog)
+  {
+    if (fd >= 0)
+      while (fd_close(fd) && errno == EINTR) {}
+    Pike_error("Object destructed in Stdio.Port->bind()\n");
+  }
+
   if(tmp)
   {
     p->my_errno=errno;
@@ -389,6 +396,13 @@ static void unix_bind(INT32 args)
     fd_listen(fd, 16384) < 0;
   THREADS_DISALLOW_UID();
 
+  if(!Pike_fp->current_object->prog)
+  {
+    if (fd >= 0)
+      while (fd_close(fd) && errno == EINTR) {}
+    Pike_error("Object destructed in Stdio.Port->unix_bind()\n");
+  }
+
   if(tmp)
   {
     p->my_errno=errno;
@@ -450,6 +464,8 @@ static void port_create(INT32 args)
       if(Pike_sp[-args].type != PIKE_T_STRING)
 	SIMPLE_TOO_FEW_ARGS_ERROR("Port->create", 1);
 
+      /* FIXME: Check that the argument is "stdin". */
+
       do_close(p);
       change_fd_for_box (&p->box, 0);
 
@@ -483,6 +499,7 @@ static void port_accept(INT32 args)
   int fd, err;
   struct object *o;
   ACCEPT_SIZE_T len=0;
+  int one = 1;
 
   if(this->box.fd < 0)
     Pike_error("port->accept(): Port not open.\n");
@@ -505,6 +522,12 @@ static void port_accept(INT32 args)
     push_int(0);
     return;
   }
+
+  /* We don't really care if setsockopt fails, since it's just a hint. */
+  while ((fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
+			(char *)&one, sizeof(int)) < 0) &&
+	 (errno == EINTR))
+    one = 1;
 
   my_set_close_on_exec(fd,1);
   o=file_make_object_from_fd(fd,FILE_READ | FILE_WRITE, SOCKET_CAPABILITIES);
