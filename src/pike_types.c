@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.313 2007/11/03 20:06:31 grubba Exp $
+|| $Id: pike_types.c,v 1.314 2007/11/03 20:11:48 grubba Exp $
 */
 
 #include "global.h"
@@ -687,10 +687,14 @@ void debug_push_int_type(INT_TYPE min, INT_TYPE max)
 	       min, max);
 #endif /* PIKE_DEBUG */
 
-  *(++Pike_compiler->type_stackp) = mk_type(T_INT,
-					    (void *)(ptrdiff_t)min,
-					    (void *)(ptrdiff_t)max, 0);
-
+  if (!min && !max) {
+    /* Special case... */
+    push_type(T_ZERO);
+  } else {
+    *(++Pike_compiler->type_stackp) = mk_type(T_INT,
+					      (void *)(ptrdiff_t)min,
+					      (void *)(ptrdiff_t)max, 0);
+  }
   TYPE_STACK_DEBUG("push_int_type");
 }
 
