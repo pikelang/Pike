@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.312 2007/10/02 16:54:31 grubba Exp $
+|| $Id: pike_types.c,v 1.313 2007/11/03 20:06:31 grubba Exp $
 */
 
 #include "global.h"
@@ -218,11 +218,11 @@ static void internal_parse_type(const char **s);
  * SCOPE	num vars (int)	type
  * ASSIGN	variable (int)	type
  * NAME		name (string)	type
- * ATTRIBUTE	name (string)	type
+ * ATTRIBUTE	name (string)	type			Added in 7.7.
  * FUNCTION	type		FUNCTION|MANY
  * MANY		many type	return type
- * RING		type		type
- * TUPLE	type		type
+ * RING		type		type			Reserved.
+ * TUPLE	type		type			Reserved.
  * MAPPING	index type	value type
  * OR		type (not OR)	type
  * AND		type		type
@@ -2882,12 +2882,18 @@ static void low_or_pike_types(struct pike_type *t1,
     }
   }
   else {
-    int val = lower_or_pike_types(t1, t2, zero_implied, 0);
+    int val;
+    type_stack_mark();
+    val = lower_or_pike_types(t1, t2, zero_implied, 0);
     if (val < 0) {
-      push_finished_type(t2);
-      push_reverse_joiner_type(T_OR);
+      lower_or_pike_types(NULL, t2, zero_implied, 1);
     } else if (val > 0) {
-      push_finished_type(t1);
+      lower_or_pike_types(t1, NULL, zero_implied, 1);
+    } else {
+      pop_stack_mark();
+      return;
+    }
+    for (val = pop_stack_mark(); val > 1; val--) {
       push_reverse_joiner_type(T_OR);
     }
   }
@@ -5752,10 +5758,16 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
     /* FIXME: Save and restore the corresponding marker set. */
   case T_ASSIGN:
   case PIKE_T_NAME:
-  case PIKE_T_ATTRIBUTE:
     fun_type = fun_type->cdr;
     goto loop;
 
+  case PIKE_T_ATTRIBUTE:
+    res = lower_new_check_call(fun_type->cdr, arg_type, flags, sval CHECK_CALL_ARGS);
+    type_stack_mark();
+    push_finished_type(res);
+    push_type_attribute((struct pike_string *)fun_type->car);
+    free_type(res);
+    return pop_unfinished_type();
 
   case T_OR:
     res = lower_new_check_call(fun_type->car, arg_type, flags, sval CHECK_CALL_ARGS);
@@ -7095,8 +7107,8 @@ void yyexplain_nonmatching_types(struct pike_type *type_a,
     s2 = describe_type(type_b);
     if(flags & YYTE_IS_WARNING)
     {
-      yywarning("Expected: %s",s1->str);
-      yywarning("Got     : %s",s2->str);
+      yywarning("Expected: %S", s1);
+      yywarning("Got     : %S", s2);
     }else{
       my_yyerror("Expected: %S", s1);
       my_yyerror("Got     : %S", s2);
