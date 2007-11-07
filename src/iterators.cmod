@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.60 2007/01/10 18:40:47 grubba Exp $
+|| $Id: iterators.cmod,v 1.61 2007/11/07 19:26:01 grubba Exp $
 */
 
 #include "global.h"
@@ -84,8 +84,8 @@ PIKECLASS Iterator
    *! The iterator initially points to the first item in the data set,
    *! if there is any.
    *!
-   *! The iterator need not support being reused, so this function is
-   *! typically static.
+   *! The iterator does not need to support being reused, so this
+   *! function is typically static.
    */
   PIKEFUN void create(void|mixed data)
     flags ID_STATIC;
@@ -121,8 +121,10 @@ PIKECLASS Iterator
    *! iterator doesn't support backward movement it should throw an
    *! exception in that case.
    *!
-   *! @[foreach] calls this function with a step value of @expr{1@}
-   *! if @[next()] doesn't exist.
+   *! @note
+   *!   @[foreach] calls this function with a step value of @expr{1@}
+   *!   if @[next()] doesn't exist for compatibility with Pike 7.6
+   *!   and earlier.
    *!
    *! @note
    *!   @[foreach] will call this function even when the the
@@ -145,7 +147,7 @@ PIKECLASS Iterator
    */
   PIKEFUN Iterator `+=(int steps)
     prototype;
-    flags ID_OPTIONAL;
+    flags ID_STATIC|ID_OPTIONAL;
   {}
 
   /*! @decl optional Iterator `- (int steps)
@@ -166,7 +168,7 @@ PIKECLASS Iterator
    *! doesn't point to any item.
    *!
    *! If there's no obvious index set then the index is the current
-   *! position in the data set, counting from @expr{0@}.
+   *! position in the data set, counting from @expr{0@} (zero).
    */
   PIKEFUN mixed index()
     prototype;
@@ -224,7 +226,7 @@ PIKECLASS Iterator
     prototype;
   {}
 
-  /*! @decl optional int next()
+  /*! @decl int next()
    *!
    *! If this function is defined it should advance the iterator one
    *! step, just like @expr{@[`+=](1)@} would do.
@@ -234,15 +236,13 @@ PIKECLASS Iterator
    *!   reduces the overhead.
    *!
    *! @note
-   *!   This function will likely be non-optional in future versions
-   *!   of Pike.
+   *!   This function was optional in Pike 7.6 and earlier.
    *!
    *! @returns
    *!   Returns @tt{1@} if it succeeded in advancing, and
    *!   @tt{0@} (zero) if it has reached the end of the iterator.
    */
   PIKEFUN int(0..1) next()
-    flags ID_OPTIONAL;
     prototype;
   {}
 
@@ -303,6 +303,16 @@ PIKECLASS mapping_iterator
       }
     }
 
+#ifdef PIKE_MAPPING_KEYPAIR_LOOP
+  static int mi_step(struct mapping_iterator_struct *i)
+    {
+      if(i->current == i->md->free_list) return 0;
+      if (++i->current == i->md->free_list) {
+	return 0;
+      }
+      return 1;
+    }
+#else /* !PIKE_MAPPING_KEYPAIR_LOOP */
   static int step_bucket(struct mapping_iterator_struct *i)
     {
       if (i->md) {
@@ -327,6 +337,8 @@ PIKECLASS mapping_iterator
       i->current=i->current->next;
       return step_bucket(i);
     }
+#endif /* PIKE_MAPPING_KEYPAIR_LOOP */
+
   
   PIKEFUN object `+(int(0..) steps)
     {
@@ -356,14 +368,23 @@ PIKECLASS mapping_iterator
 
   PIKEFUN int first()
     {
+#ifdef PIKE_MAPPING_KEYPAIR_LOOP
+      THIS->current = MD_KEYPAIRS(THIS->md, THIS->md->hashsize);
+      RETURN (THIS->current < THIS->md->free_list);
+#else /* !PIKE_MAPPING_KEYPAIR_LOOP */
       THIS->current=0;
       THIS->bucket=-1;
       RETURN step_bucket(THIS);
+#endif /* PIKE_MAPPING_KEYPAIR_LOOP */
     }
 
   /* Hubbe: Should this really be destructive ?? */
   PIKEFUN object _random()
     {
+#ifdef PIKE_MAPPING_KEYPAIR_LOOP
+      size_t k = my_rand() % THIS->md->size;
+      THIS->current = MD_KEYPAIRS(THIS->md, THIS->md->hashsize) + k;
+#else /* !PIKE_MAPPING_KEYPAIR_LOOP */
       if(THIS->md && THIS->md->hashsize)
       {
 	size_t k;
@@ -383,11 +404,18 @@ PIKECLASS mapping_iterator
 	THIS->current=0;
       }
       step_bucket(THIS);
+#endif /* PIKE_MAPPING_KEYPAIR_LOOP */
       REF_RETURN Pike_fp->current_object;
     }
 
   PIKEFUN int next() { RETURN mi_step(THIS); }
-  PIKEFUN int `!() { RETURN !THIS->current; }
+  PIKEFUN int `!() {
+#ifdef PIKE_MAPPING_KEYPAIR_LOOP
+    RETURN (THIS->current == THIS->md->free_list);
+#else /* !PIKE_MAPPING_KEYPAIR_LOOP */
+    RETURN !THIS->current;
+#endif /* PIKE_MAPPING_KEYPAIR_LOOP */
+  }
 
   PIKEFUN void create(mapping map)
     {
@@ -398,8 +426,13 @@ PIKECLASS mapping_iterator
       THIS->md=map->data;
       add_ref(THIS->md);
       THIS->md->valrefs++;
+#ifdef PIKE_MAPPING_KEYPAIR_LOOP
+      THIS->current = MD_KEYPAIRS(THIS->md, THIS->md->hashsize);
+#else /* !PIKE_MAPPING_KEYPAIR_LOOP */
+      THIS->current = NULL;
       THIS->bucket=-1;
       step_bucket(THIS);
+#endif /* PIKE_MAPPING_KEYPAIR_LOOP */
     }
 
   INIT
@@ -1843,9 +1876,18 @@ int foreach_iterate(struct object *o, int do_step)
 {
   struct program *prog = o->prog;
   int fun;
+  int res;
 
   if(!prog)
     Pike_error("foreach on destructed iterator.\n");
+
+  /* FIXME: This could be simplified by letting the iterators
+   *        start at one position before the first element, and
+   *        then use next() to both advance and check if we are
+   *        at the end of the iterator. The do_step flag would
+   *        then not be needed. This would also have the benefit
+   *        of not needing `!() to be implemented.
+   */
 
   if(prog->flags & PROGRAM_HAS_C_METHODS)
   {
@@ -1853,11 +1895,16 @@ int foreach_iterate(struct object *o, int do_step)
     {
       struct mapping_iterator_struct *i=OBJ2_MAPPING_ITERATOR(o);
 
+#ifdef PIKE_MAPPING_KEYPAIR_LOOP
+      if (i->current == i->md->free_list) return 0;
+      if (do_step && (++i->current == i->md->free_list)) return 0;
+#else /* !PIKE_MAPPING_KEYPAIR_LOOP */
       if (!i->current) return 0;
       if (do_step) {
 	mi_step (i);
 	if (!i->current) return 0;
       }
+#endif /* PIKE_MAPPING_KEYPAIR_LOOP */
 
       if(Pike_sp[-4].type != T_INT)
 	assign_lvalue(Pike_sp-4, & i->current->ind);
@@ -2029,6 +2076,9 @@ int foreach_iterate(struct object *o, int do_step)
 	return 0;
       }
     }
+#if 0
+    pop_stack();
+#else
   } else {
     fun = FIND_LFUN(prog, LFUN_NOT);
     if (fun < 0) Pike_error("Iterator object lacks `!.\n");
@@ -2038,18 +2088,10 @@ int foreach_iterate(struct object *o, int do_step)
       pop_stack();
       return 0;
     }
+#endif
   }
 
-  /* Only reached if the iterator is at a valid position. */
-
-  pop_stack();	/* Get rid of the return value from `!() or step(). */
-
 #if 0
-  /* NOTE: This code has not been updated since the introduction of
-   *       support for next().
-   *		/grubba 2004-11-26
-   */
-
   /* We should be able to save calls to `! this way, but there are
    * iterators where index() and value() don't return UNDEFINED as
    * stipulated by the interface. */
@@ -2075,6 +2117,11 @@ int foreach_iterate(struct object *o, int do_step)
     if (fun < 0) Pike_error ("Iterator object lacks value().\n");
     apply_low(o, fun, 0);
     if (IS_UNDEFINED (Pike_sp - 1)) {
+      /* NOTE: If index() doesn't return UNDEFINED when value() does,
+       *       the index-lvalue will contain a value that doesn't
+       *       correspond to the value in the value-lvalue on exit
+       *       from the loop. Please refrain from writing such iterators.
+       */
       Pike_sp--;
       return 0;
     }
@@ -2082,11 +2129,12 @@ int foreach_iterate(struct object *o, int do_step)
     pop_stack();
   }
 
-  if (fun >= 0)
-    /* index() and/or value() has returned a value so we know we can
-     * iterate without calling `!. */
+  if (do_step || (fun >= 0)) {
+    /* We succeeded in advancing, or index() and/or value() returned
+     * values that were not UNDEFINED. No need to call `!().
+     */
     return 1;
-  else {
+  } else {
     int res;
     fun = FIND_LFUN (prog, LFUN_NOT);
     if (fun < 0) Pike_error ("Iterator object lacks `!.\n");
@@ -2097,6 +2145,10 @@ int foreach_iterate(struct object *o, int do_step)
   }
 
 #else
+
+  /* Only reached if the iterator is at a valid position. */
+
+  pop_stack();	/* Get rid of the return value from `!() or step(). */
 
   if(Pike_sp[-4].type != T_INT)
   {
