@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.84 2005/06/02 16:27:22 mast Exp $
+// $Id: MySQL.pike,v 1.85 2007/11/07 16:50:15 wellhard Exp $
 
 inherit .Base;
 
@@ -16,6 +16,7 @@ inherit .Base;
 #define SQL Sql.sql
 #endif
 
+#define DB_MAX_WORD_SIZE 64
 
 static
 {
@@ -76,7 +77,7 @@ void init_tables()
 
   
   db->query(
-#"create table if not exists word_hit (word        varchar(64) binary not null,
+#"create table if not exists word_hit (word        varchar("+DB_MAX_WORD_SIZE+#") binary not null,
                          first_doc_id   int not null,
             	         hits           mediumblob not null,
                          primary key (word,first_doc_id))");
@@ -347,6 +348,10 @@ static _WhiteFish.Blobs blobs = _WhiteFish.Blobs();
 void insert_words(Standards.URI|string uri, void|string language,
 		  string field, array(string) words)
 {
+  // Remove long words that won't fit into the database.
+  words = filter(words, lambda (string word)
+			{ return sizeof(string_to_utf8(word)) <= DB_MAX_WORD_SIZE; });
+      
   if(!sizeof(words))  return;
   init_fields();
 
