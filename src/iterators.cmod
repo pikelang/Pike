@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.61 2007/11/07 19:26:01 grubba Exp $
+|| $Id: iterators.cmod,v 1.62 2007/11/08 18:29:55 grubba Exp $
 */
 
 #include "global.h"
@@ -1876,7 +1876,6 @@ int foreach_iterate(struct object *o, int do_step)
 {
   struct program *prog = o->prog;
   int fun;
-  int res;
 
   if(!prog)
     Pike_error("foreach on destructed iterator.\n");
