@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.628 2007/10/24 15:49:26 grubba Exp $
+|| $Id: program.c,v 1.629 2007/11/10 19:45:49 grubba Exp $
 */
 
 #include "global.h"
@@ -2192,15 +2192,6 @@ void fixate_program(void)
   /* Yes, it is supposed to start at 1  /Hubbe */
   for(i=1;i<NUM_LFUNS;i++) {
     int id = p->lfuns[i] = low_find_lfun(p, i);
-    if (id >= 0) {
-      p->identifier_references[id].id_flags |= ID_USED;
-    }
-  }
-  for(;i < NELEM(lfun_names); i++) {
-    int id = low_find_lfun(p, i);
-    if (id >= 0) {
-      p->identifier_references[id].id_flags |= ID_USED;
-    }
   }
 
   /* Set the PROGRAM_LIVE_OBJ flag by looking for destroy() and
