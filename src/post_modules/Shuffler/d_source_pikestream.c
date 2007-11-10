@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: d_source_pikestream.c,v 1.7 2004/10/16 07:27:29 agehall Exp $
+|| $Id: d_source_pikestream.c,v 1.8 2007/11/10 21:23:02 nilsson Exp $
 */
 
 #include "global.h"
@@ -72,7 +72,7 @@ static void remove_callbacks( struct source *_s )
 static struct data get_data( struct source *_s, off_t len )
 {
   struct pf_source *s = (struct pf_source *)_s;
-  struct data res;
+  struct data res = { 0, 0, 0, NULL };
   char *buffer = NULL;
 
   if( s->str )
@@ -83,10 +83,7 @@ static struct data get_data( struct source *_s, off_t len )
       if( s->skip >= (size_t)s->str->len )
       {
 	s->skip -= (size_t)s->str->len;
-	res.do_free = 0;
-	res.data = 0;
 	res.len = -2;
-	res.off = 0;
 	return res;
       }
       len -= s->skip;
@@ -109,7 +106,6 @@ static struct data get_data( struct source *_s, off_t len )
     res.data = buffer;
     res.len = len;
     res.do_free = 1;
-    res.off = 0;
     free_string( s->str );
     s->str = 0;
     setup_callbacks( _s );
