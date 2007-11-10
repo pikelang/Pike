@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.389 2007/10/13 15:21:51 grubba Exp $
+|| $Id: language.yacc,v 1.390 2007/11/10 21:36:27 nilsson Exp $
 */
 
 %pure_parser
@@ -4199,14 +4199,14 @@ void low_yyerror(struct pike_string *str)
   STACK_LEVEL_DONE(0);
 }
 
-PMOD_EXPORT void yyerror(char *str)
+PMOD_EXPORT void yyerror(const char *str)
 {
   push_text(str);
   low_yyerror(Pike_sp[-1].u.string);
   pop_stack();
 }
 
-static void yyerror_reserved(char *keyword)
+static void yyerror_reserved(const char *keyword)
 {
   char fmt[100];
   SNPRINTF(fmt, sizeof(fmt), "%s is a reserved word.", keyword);

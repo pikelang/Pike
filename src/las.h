@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.h,v 1.74 2007/10/06 13:45:22 grubba Exp $
+|| $Id: las.h,v 1.75 2007/11/10 21:36:27 nilsson Exp $
 */
 
 #ifndef LAS_H
@@ -20,11 +20,11 @@ typedef void (*c_fun)(INT32);
 /* Flags used by yytype_error() */
 #define YYTE_IS_WARNING	1
 
-void yytype_error(char *msg, struct pike_type *expected_t,
+void yytype_error(const char *msg, struct pike_type *expected_t,
 		  struct pike_type *got_t, unsigned int flags);
 void low_yyerror(struct pike_string *str);
-PMOD_EXPORT void yyerror(char *s);
-static void yyerror_reserved(char *keyword);
+PMOD_EXPORT void yyerror(const char *s);
+static void yyerror_reserved(const char *keyword);
 int islocal(struct pike_string *str);
 int verify_declared(struct pike_string *str);
 void cleanup_compiler(void);

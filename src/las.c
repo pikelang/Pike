@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.395 2007/10/15 17:55:22 mast Exp $
+|| $Id: las.c,v 1.396 2007/11/10 21:36:27 nilsson Exp $
 */
 
 #include "global.h"
@@ -3036,7 +3036,7 @@ static void low_build_function_type(node *n)
   }
 }
 
-void yytype_error(char *msg, struct pike_type *expected_t,
+void yytype_error(const char *msg, struct pike_type *expected_t,
 		  struct pike_type *got_t, unsigned int flags)
 {
   if (msg)
