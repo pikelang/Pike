@@ -2,10 +2,10 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode_truecolor.c,v 1.3 2006/02/27 12:23:16 mast Exp $
+|| $Id: encode_truecolor.c,v 1.4 2007/11/10 20:56:08 nilsson Exp $
 */
 
-static unsigned char swap_bits[256] = 
+static const unsigned char swap_bits[256] =
 { 0,128,64,192,32,160,96,224,16,144,80,208,48,176,112,
   240,8,136,72,200,40,168,104,232,24,152,88,216,56,184,
   120,248,4,132,68,196,36,164,100,228,20,148,84,212,52,
