@@ -36,9 +36,8 @@ iso-8859-1 encoding until a #charset directive has been found.</li>
 decoded as 32bit or 16bit wide string.</li>
 <li>It's an error for a program written in EBCDIC not to start with a
 #charset directive.</li>
-<li>Obfuscation note: It is possible to encode the #charset directive in
-EBCDIC and the rest of the file in any other charset stated in the
-#charset directive.</li>
+<li>For obfuscation it is possible to encode the #charset directive in
+a different charset than the charset stated in the #charset directive.</li>
 </ul>
 
 </section>
@@ -110,7 +109,7 @@ text expansion with arguments, but it is often very useful to make a
 cleaner looking code and to write less.</p>
 
 <example>
-#define VAR(X) id-&gt;:misc-&gt;variable[X]
+#define VAR(X) id-&gt;misc-&gt;variable[X]
 #define ROL(X,Y) (((X)&lt;&lt;(Y))&amp;7+((X)&gt;&gt;(8-(Y))))
 #define PLACEHOLDER(X) void X(mixed ... args) { \
   error("Method " #X " is not implemented yet.\n"); }
@@ -125,9 +124,14 @@ cleaner looking code and to write less.</p>
 <ul>
 <li>A macro can have up to 254 arguments.</li>
 <li>It can be wise to put extra parentheses around the arguments
-expanded since it is a purely textual expansion. I.e. if the macro
+expanded since it is a purely textual expansion. E.g. if the macro
 DOUBLE(X) is defined as X*2, then DOUBLE(2+3) will produce 2+3*2,
 probably producing a hard to track down bug.</li>
+<li>Since the preprocessor works with textual expansion, it will not
+evaluate its arguments. Using one argument several time in the macro
+will thus cause it to evaluated several times during execution. E.g.
+#define MSG(X) werror("The value "+(X)+" can differ from "+(X)+"\n")
+when called with MSG(random(1000));.</li>
 <li>A backslash (\) at the end of the line can be used to make the
 definition span several lines.</li>
 <li>A hash (#) in front of a macro variable "casts" it to a string.</li>
@@ -227,7 +231,7 @@ or marcro.</p>
 </subsection>
 
 <subsection title="#ifndef">
-<p>Works as an inverted <tt>#ifndef</tt>; it only "activated" the
+<p>Works as an inverted <tt>#ifndef</tt>; it only "activates" the
 following block if the symbol is not defined.</p>
 </subsection>
 
