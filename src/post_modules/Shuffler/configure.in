@@ -1,5 +1,6 @@
-# $Id: configure.in,v 1.1 2002/05/29 05:41:02 per Exp $
+# $Id: configure.in,v 1.2 2007/11/10 21:21:03 nilsson Exp $
 AC_INIT(Shuffler.cmod)
+AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
 
