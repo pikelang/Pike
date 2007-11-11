@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Error.pmod,v 1.3 2007/06/01 06:13:28 mbaehr Exp $
+// $Id: Error.pmod,v 1.4 2007/11/11 16:16:24 nilsson Exp $
 
 constant Generic = __builtin.GenericError;
 
@@ -22,8 +22,8 @@ constant MasterLoad = __builtin.MasterLoadError;
 
 constant ModuleLoad = __builtin.ModuleLoadError;
 
-//! returns an Error object for any argument it receives.
-//! if the argument already is an Error object or is empty, it does nothing.
+//! Returns an Error object for any argument it receives. If the
+//! argument already is an Error object or is empty, it does nothing.
 object mkerror(mixed error)
 {
   if (error == UNDEFINED)
