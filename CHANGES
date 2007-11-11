@@ -344,44 +344,146 @@ o Process
     stdout and stderr arguments to the spawn() call it performs.
 
 o Protocols.DNS
-  Added support for NAPTR (RFC 3403) records.
-  Fix for TTL parsing in SRV records.
-  gethostbyname() now returns IPv6 addresses too, if available.
-  Improved support for T_TXT.
+
+  - Added support for NAPTR (RFC 3403) records.
+
+  - The gethostbyname() function now returns IPv6 addresses too, if
+    available.
+
+  - Fixed bugs in IPv6 record parsing.
 
 o Protocols.Bittorrent
-  Support for gzipped and compact tracker responses.
-  30% faster hashing of files.
+
+  - Support for gzipped and compact tracker responses.
+
+  - 30% faster hashing of files.
+
+  - Many performance and bug fixes.
+
+o Protocols.HTTP
+
+  - Added support for httpu and httpmu requests.
+
+  - Queries will now throw an exception in case of an errno condition.
+
+  - A new function, do_async_method(), has been added to allow access
+    to low level asynchronous HTTP calls.
+
+  - The http_encode_string() function now know how to encode UCS-2
+    characters.
+
+o Protocols.HTTP.Server
+
+  - If accept() fails on the open port, the Port object will continue
+    trying, to support servers with high load.
 
 o Protocols.HTTP.Query
 
-  Many async bug fixes.
-  Added timed_async_fetch()
- 
-  Don't silently downgrade to http from https if there is no crypto 
-  support.
+  - Added unicode_data() method that will return the payload decoded
+    according to the charset described in the Content-Type header.
 
-  Addedunicode_data()
+  - Many fixes for bugs in asynchronous mode.
 
-  Keep alive fixes.
+  - A query will not silently downgrade to http from https anymore if
 
-o Protocols.HTTP.Session
-  Now possible to manually set content type.
+    there is no crypto support.
 
-o Protocols.HTTP
-  http_encode_string() now know how to encode UCS-2 characters.
+  - Fixes for keep alive.
+
+o Protocols.LDAP
+
+  FIXME: Many changes
+
+o Protocols.SNMP
+
+  The readmsg() method in the protocol object now takes an optional
+  timout argument.
+
+o Protocols.XMLRPC
+
+  The new AsyncClient class implements an asynchronous XMLRPC client.
+
+o Sql
+
+  - Bugfixes in listing Postgres fields.
+
+  - If ENABLE_SPAWN_RSQLD is defined, rsqld will be spawned when
+    needed to complete rsql queries.
+
+  - Added streaming_query() method to Sql objects which enables larger
+    result sets than available memory.
+
+  - It is possible to iterate over the result object from big_query()
+    queries directly in foreach.
+
+  FIXME: mysql
+
+o SSL
+
+  FIXME: client certificates: examples?
+
+o Standards.IIM
+
+  Some bugfixes in parsing Photoshop headers and DOS EPS Binary
+  Headers.
+
+o Standards.ISO639_2
+
+  Updated with the latest ISO639-2 languages.
+
+o Standards.URI
+
+  - Updated to conform to RFC 3986.
+
+  - Added methods get_query_variables(), set_query_variables(),
+    add_query_variable() and add_query_variables() to give a better
+    API to to handle query variables.
+
+  - The new method get_http_query() returns the query part and
+    get_http_path_query() returns both the path and the query, both
+    coded according to RFC 1738.
+
+o Standards.UUID
+
+  - Added support for UUID version 5; name based with SHA hash, which
+    can be generated from the make_version5 function.
+
+  - An UUID object can now be used as namespace in the second argument
+    to make_version3 as well as the new make_version5.
+
+o Standards.XML.Wix
+
+  FIXME
+
+o Stdio
+
+  (module.pmod, Readline, Terminfo) FIXME
+
+o String
+
+  - The function int2size has been rewritten to fixpoint as well as
+    using the more common abbreviation of "B" for byte.
+
+o Tools
+
+  FIXME
+
+o Web.Crawler
+
+  - Bugfix to support robots.txt created on windows.
+
+  - User Agent change to "Mozilla 4.0 (PikeCrawler)"
+
+o Web.RDF
+
+  - Added add_statement() method which allows new relations to be
+    added to an RDF set.
 
 o sprintf
   sprintf() now attempts to lookup the name of the program when
   formatting types of objects and programs.
   
-PROTOCOLS NOT DONE
 
-o ADT.Table
-  Fixed sorting of columns typed num.
-
-o Calendar.Badi
-  Support for the Badi calendar used in the Baha'i religion.
 
 New Modules
 
@@ -524,15 +626,21 @@ o Stdio
 o The modules Mird, Perl, Pipe and Ssleay have been removed.
 
 
+-------------------- NOTES------------
+
+2004/04/26 00:13:30
+
 backport:
 
 Calendar.pmod/events/regional
 Calendar.pmod/TZnames.pmod
+Protocols.HTTP.Query
 
 update(?):
 
 Geography.pmod/Countries.pmod
 MIME.pmod/ext...
+Bittorrent.pmod/PeerID.pmod
 
 fixme:
 Process.locate_binary
