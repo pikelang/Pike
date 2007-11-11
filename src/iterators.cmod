@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.62 2007/11/08 18:29:55 grubba Exp $
+|| $Id: iterators.cmod,v 1.63 2007/11/11 13:19:32 nilsson Exp $
 */
 
 #include "global.h"
@@ -956,9 +956,9 @@ PIKECLASS file_line_iterator
       return;
 
   again:
-      start = ssi->buffer->str + start_off;
-      ptr   = ssi->buffer->str + ssi->offset;
-      eptr  = ssi->buffer->str + ssi->buffer->len;
+      start = (unsigned char*)ssi->buffer->str + start_off;
+      ptr   = (unsigned char*)ssi->buffer->str + ssi->offset;
+      eptr  = (unsigned char*)ssi->buffer->str + ssi->buffer->len;
 
       /* Loop until we find a '\n'. */
       while( ptr < eptr )
@@ -966,7 +966,7 @@ PIKECLASS file_line_iterator
 	  ptr++;
 	else
 	{
-	  ssi->current = make_shared_binary_string( start, ptr-start );
+	  ssi->current = make_shared_binary_string( (char*)start, ptr-start );
 	  // skip the '\n'
 	  ssi->offset =  ptr - ((unsigned char *)ssi->buffer->str) + 1;
 	  ssi->index++;
@@ -998,7 +998,7 @@ PIKECLASS file_line_iterator
 	// End of stream.
 	pop_stack();
 	if (start != ptr) {
-	  ssi->current = make_shared_binary_string(start, ptr-start);
+	  ssi->current = make_shared_binary_string((char*)start, ptr-start);
 	  ssi->index++;
 	}
       }

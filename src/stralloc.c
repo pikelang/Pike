@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.212 2007/03/29 13:38:38 marcus Exp $
+|| $Id: stralloc.c,v 1.213 2007/11/11 13:18:53 nilsson Exp $
 */
 
 #include "global.h"
@@ -2890,7 +2890,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	    /* FIXME: Field lengths and precision. */
 	    if ((bytes = SNPRINTF(NULL, 0, "%f", val))) {
 	      p_wchar0 *p = string_builder_allocate(s, bytes, 0);
-	      size_t check = SNPRINTF(p, bytes+1, "%f", val);
+	      size_t check = SNPRINTF((char*)p, bytes+1, "%f", val);
 	      if (check != bytes) {
 		Pike_fatal("string_builder_vsprintf(): snprintf(%f) is not "
 			   "trustworthy: %"PRINTSIZET"u != %"PRINTSIZET"u\n",
