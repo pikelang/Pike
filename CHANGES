@@ -20,6 +20,8 @@ o New `[..] operator function.
   the range bounds are specified. For compatibility, if there is no
   `[..] then `[] is still called for range operations.
 
+  FIXME: Describe relation with Pike.INDEX_FROM_BEG/END & OPEN_BOUND.
+
 o Generalized this and this_program.
   It is now possible to refer to inherits in objects. Example:
     class A {
@@ -97,11 +99,6 @@ o Prepared for having multiple different active backend implementations.
   NOTE! The argument is now NULL when called at exit (was 1).
   NOTE!
 
-o Process.popen
-   Process.popen is now able to run in nonblocking mode. If a second
-   argument is provided a file object will be opened with that mode
-   and return, enabling two way communication with the new process.
-
 o bin/precompile.pike
    Voidable pointer types are no longer promoted to mixed.
 
@@ -144,75 +141,117 @@ o Unicode
   Case information and the Unicode module are updated to Unicode
   5.0.0.
 
+o protected
+  The modifier protected is now an alias for the modifier static.
+
 
 Extensions and New Functions
 
 o ADT.BitBuffer
-  read() added. Bugfixes.
-
-o ADT.Priotity_queue
-  Fixed pop bug.
+ 
+  Added read() method that reads whole bytes from the buffer and
+  returns as a string.
 
 o ADT.Queue
-  Added _sizeof, _values
+
+  It is now possible to use sizeof() and value() on a Queue object.
+
+o ADT.Stack
+
+  Stack objects can now be cast to arrays.
 
 o ADT.Struct
-  Signed integers.
-  Structs can be Items in other Structs.
-  _sizeof in every Item.
 
-o ADT.Relation.Binary
-  iterator API fix.
-  Fixed creating relation with initial relation.
-  Added cast to mapping.
+  - New Item class SByte, SWord and SLong represents a signed byte,
+    word and longword respectively.
+
+  - The Item classes int8, uint8, int16, uint16, int32, uint32, int64
+    and uint 64 are aliases for already existing Item classes.
+
+  - sizeof() now works for empty Struct objects.
+
+  - sizeof() can be used on individual Item objects.
+
+  - Struct objects can now be used as Items in other Structs.
+
+    FIXME: Example
 
 o Array
-  Added combinations()
-  Bugfixed Array.diff3
-  Added push(), pop(), shift() and unshift() for Perl weirdos.
 
-o Cache
-  Data.recursive_low_size() now supports floats.
-  thread fixes
+  - New function combinations() returns all combinations of a
+    specified length with elements from a given array.
+
+  - Added push(), pop(), shift() and unshift() functions for Perl
+    weirdos.
 
 o Calendar
-  Fixed bugs in discordian. year off by 1166 and now 5 month per year.
-  Islamic days start at sunset
-  New national day
-  fixed hour formatting for format_smtp()
-  Time: * and / now handle floats. split implemented.
-  how_many() now returns the correct value. was off by one.
-  Updated timezone information.
 
-o Crypto.Random
-  Now thread safe.
+  - Added new calendar Badi, used in the Baha'i religion.
+
+  - Fixed bugs in discordian, where the year() was off by 1166 and
+    now() was off 5 month per year.
+
+  - Time objects now handle * and / with floats. A split() method has
+    been added for more advanced splitting. FIXME: Example
+
+  - A new formatting method format_ext_time_short() has been added to
+    Time objects.
+
+  - Timezones are now read from /etc/localtime, if available.
 
 o Debug
-  count_objects() added.
+
+  The new function count_objects() will return the different kinds of
+  objects existing within the Pike process. Useful when trying to
+  pinpoint a leak of Pike objects.
+
+o Error
+
+  The new function mkerror() will normalize any thrown value into a
+  proper error object (or 0).
 
 o Filesystem
-  ignore_error added to traverse
+
+  Traversion has been extended with two new create arguments. The
+  first one is a flag to supress errors and the other is a sorting
+  function which will be applied to the entries in every directory.
+  This callback can also be used to filter the directory entries.
 
 o Float
-  Added isnan()
+
+  The function isnan() can be used to check if a float is Not a
+  Number.
+
+  > Float.isnan(Math.inf/Math.inf);
+  (1) Result: 1
 
 o Geography.Position
-  Now possible to encode.
+
+  It is now possible to encode Position objects with encode_value().
 
 o GLUE
-  mipmap to flags
-  supports clamped textures in BaseTexture and BaseDWIM
+
+  - The default event callback will now exit both on Exit and Escape
+    events.
+
+  - The texture, list and light id generators will now be created
+    after we are sure that GL has been initialized, to prevent crashes
+    on several systems.
+
+  - BaseTexture and BaseDWIM now supports clamped textures.
+
+  - Several bug fixes.
 
 o Image.Dims
-  supports TIFF
 
-o _Image ?
-  Added support for DOS EPS
+  Support for parsing out the dimensions of TIFF files has been added.
 
 o Int
-  inf + operations
+
+  Int.inf is an object that can be used as an infinitly large integer.
 
 o Locale.Charset
+  FIXME: Rewrite
   Remapped and documented the use of the private character space.
   ISO-IR non-spacers are now converted into combiners.
   Added some support for pluggable character sets.
@@ -227,21 +266,42 @@ o Locale.Charset
   ISO-6937:2001 (ISO-IR-156)  
 
 o MIME
-  Fix for casting MIME.Message objects to strings
-  Added remapping variants of the encode words functions.
+
+  - Added remapping variants of the encode words functions with
+    encode_word_text_remapped(), encode_word_quoted(),
+    encode_words_quoted_remapped() and
+    encode_words_quoted_labled_remapped().
+
+  - Added workaround for a bug in Microsoft Internet Explorer where it
+    forgets to properly quote backslashes in the Content-Disposition
+    field.
+
+  - Fixed a bug that could occur when casting MIME.Message objects to
+    strings.
 
 o Odbc
+  FIXME: Rewrite
   Now supports UnixODBC properly.
   Fixed various issues with Unicode.
 
 o Parser.Pike
-  Now uses parser written in C.
-  Fixed parsing of #string
+
+  Parsing of Pike has been rewritten in C for increased performance.
+  #string directives should be handled correctly now.
 
 o Parser.RCS
+  FIXME: Rewrite
   Handle broken RCS files better.
 
+o Parser.XML.NSTree
+
+  - Added add_child_before() and add_child_after() methods to the
+    NSNode object.
+
+  - Fixed crash bug.
+
 o Parser.XML.Tree
+  FIXME: Rewrite
   Added rendering of DTD ENTITY nodes.
   The renderer now knows about the internal_subset attribute for the
     DOCTYPE tag.
@@ -254,17 +314,34 @@ o Parser.XML.Tree
   Node.zap_tree
 
 o Pike
-  get_runtime_info()
-  Encoder, Decoder, Codec
+
+  - A new function get_runtime_info() has been added which returns
+    information about current ABI, if automatic bignums are enabled,
+    what bytecode method is used, the size of native floats and
+    integers and the native byte order.
+
+  - The constants INDEX_FROM_BEG, INDEX_FROM_END and OPEN_BOUND has
+    been added for use with the `[..] operator API.
+
+  - The functions low_check_call(), get_return_type() and
+    get_first_arg_type(). FIXME!
 
 o Process
-  run()
-  spawn_pike()
-  Extended system() to pass args to spawn()
-  New popen implementation.
 
-o protected
-  The modifier protected is now an alias for the modifier static.
+  - The new function spawn_pike() will spawn a Pike process similar to
+    the current one, using the same binary file, master and module
+    paths.
+
+  - The new function run() is an easy interface that will run a
+    process and return a mapping with all the outputs and exit code.
+
+
+  - Process.popen is now able to run in nonblocking mode. If a second
+    argument is provided a file object will be opened with that mode
+    and return, enabling two way communication with the new process.
+
+  - The system() function has been extended to be able to pass stdin,
+    stdout and stderr arguments to the spawn() call it performs.
 
 o Protocols.DNS
   Added support for NAPTR (RFC 3403) records.
@@ -321,6 +398,8 @@ o ADT.Set
   Pike program to use mappings to serve as sets, rather than using an
   ADT.Set,so ADT.Set is mainly provided for the sake of completeness
   and code readability.
+
+o Arg
 
 o Protocols.DNS_SD
   This module provides an interface to DNS Service Discovery. The
@@ -399,6 +478,10 @@ o Array.transpose_old
 o _Charset
   This internal module has had most of its content removed.
 
+o Crypto
+  The old crypto functions from Pike 7.4 has been removed. These
+  functions produced a warning when used in Pike 7.6.
+
 o Debug.describe_program
   The API for this debug function has changed.
 
@@ -439,3 +522,17 @@ o Stdio
   read_bytes() still returns 0 if the file does not exists.
 
 o The modules Mird, Perl, Pipe and Ssleay have been removed.
+
+
+backport:
+
+Calendar.pmod/events/regional
+Calendar.pmod/TZnames.pmod
+
+update(?):
+
+Geography.pmod/Countries.pmod
+MIME.pmod/ext...
+
+fixme:
+Process.locate_binary
