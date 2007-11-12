@@ -587,7 +587,7 @@ int __hash()
 //!
 int `==(object pos)
 {
-   return (pos->lat==lat && pos->long==long);
+   return (objectp(pos) && pos->lat==lat && pos->long==long);
 }
 
 //!
