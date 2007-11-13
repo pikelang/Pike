@@ -263,7 +263,12 @@ o Locale.Charset
   DIN-31624 (ISO-IR-38)
   ISO-5426:1980 (ISO-IR-53)
   ISO-6438:1996 (ISO-IR-39, ISO-IR-216)
-  ISO-6937:2001 (ISO-IR-156)  
+  ISO-6937:2001 (ISO-IR-156)
+
+  Added typed encode and decode error objects
+  (Locale.Charset.EncodeError and Locale.Charset.DecodeError) to make
+  it possible to catch such errors in a better way. FIXME: Not
+  finished.
 
 o MIME
 
@@ -278,6 +283,10 @@ o MIME
 
   - Fixed a bug that could occur when casting MIME.Message objects to
     strings.
+
+o Mysql
+  Unicode support. FIXME: Document in more detail. C.f. check-in 1.25
+  of lib/modules/Sql.pmod/mysql.pike.
 
 o Odbc
   FIXME: Rewrite
@@ -392,6 +401,10 @@ o Protocols.HTTP.Query
 
 o Protocols.LDAP
 
+  Added more resilience to UTF-8 encode errors. A new flag
+  Protocols.LDAP.SEARCH_RETURN_DECODE_ERRORS may be used to avoid
+  throwing errors when this happens.
+
   FIXME: Many changes
 
 o Protocols.SNMP
@@ -402,6 +415,10 @@ o Protocols.SNMP
 o Protocols.XMLRPC
 
   The new AsyncClient class implements an asynchronous XMLRPC client.
+
+o Regexp.PCRE.Widestring
+  This feature is now reported in the basic feature list (pike
+  --features).
 
 o Sql
 
@@ -482,7 +499,15 @@ o Web.RDF
 o sprintf
   sprintf() now attempts to lookup the name of the program when
   formatting types of objects and programs.
-  
+
+o gethrtime, gethrvtime, gauge
+  Added support for POSIX style timers using clock_gettime(3). Notably
+  this fixes nice high resolution thread local cpu time and monotonic
+  real time on reasonably modern Linux systems.
+
+  There are new constants CPU_TIME_* and REAL_TIME_* in the System
+  module to allow pike code to query various properties of the CPU and
+  real time clocks in use.
 
 
 New Modules
