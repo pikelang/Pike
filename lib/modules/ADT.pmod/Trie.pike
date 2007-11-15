@@ -1,5 +1,5 @@
 /*
- * $Id: Trie.pike,v 1.3 2007/10/31 13:46:14 grubba Exp $
+ * $Id: Trie.pike,v 1.4 2007/11/15 18:09:17 mast Exp $
  *
  * An implementation of a trie.
  *
@@ -171,6 +171,7 @@ mixed lookup(string|array(int) key)
     }
     return value;
   }
+  if (!trie) return UNDEFINED;
   this_program o = trie[key[offset]];
   if (!o) return UNDEFINED;
   return o->lookup(key);
