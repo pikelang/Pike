@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.629 2007/11/10 19:45:49 grubba Exp $
+|| $Id: program.c,v 1.630 2007/11/15 17:09:42 grubba Exp $
 */
 
 #include "global.h"
@@ -2032,7 +2032,8 @@ int override_identifier (struct reference *new_ref, struct pike_string *name)
 	  (sub_ref->id_flags & ID_USED)) {
 	struct identifier *sub_id = ID_FROM_PTR(inh->prog, sub_ref);
 	if (IDENTIFIER_IS_FUNCTION(sub_id->identifier_flags)) {
-	  if (!pike_types_le(ID_FROM_PTR(Pike_compiler->new_program,
+	  if ((Pike_compiler->compiler_pass == 2) &&
+	      !pike_types_le(ID_FROM_PTR(Pike_compiler->new_program,
 					 new_ref)->type, sub_id->type)) {
 	    yywarning("Type mismatch when overloading function %S.", name);
 	    yyexplain_nonmatching_types(sub_id->type,
