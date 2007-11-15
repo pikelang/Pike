@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.630 2007/11/15 17:09:42 grubba Exp $
+|| $Id: program.c,v 1.631 2007/11/15 17:41:52 grubba Exp $
 */
 
 #include "global.h"
@@ -1112,7 +1112,8 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[predef::search()]
  */
 
-/*! @decl mixed lfun::`->symbol()
+/*! @decl mixed lfun::`symbol()
+ *! @decl mixed lfun::`->symbol()
  *!
  *!   Variable retrieval callback (aka "getter").
  *!
@@ -1130,7 +1131,8 @@ static struct pike_type *lfun_setter_type_string = NULL;
  *!   @[lfun::`->symbol=()], @[lfun::`->()]
  */
 
-/*! @decl void lfun::`->symbol=(zero value)
+/*! @decl void lfun::`symbol=(zero value)
+ *! @decl void lfun::`->symbol=(zero value)
  *!
  *!   Variable assignment callback (aka "setter").
  *!
@@ -5319,26 +5321,35 @@ INT32 define_function(struct pike_string *name,
 		     YYTE_IS_WARNING);
       }
     }
-  } else if ((name->len > 3) &&
-	     (index_shared_string(name, 0) == '`') &&
-	     (index_shared_string(name, 1) == '-') &&
-	     (index_shared_string(name, 2) == '>')) {
+  } else if (((name->len > 3) &&
+	      (index_shared_string(name, 0) == '`') &&
+	      (index_shared_string(name, 1) == '-') &&
+	      (index_shared_string(name, 2) == '>')) ||
+	     ((name->len > 1) &&
+	      (index_shared_string(name, 0) == '`') &&
+	      ((index_shared_string(name, 1) >= 256) ||
+	       isidchar(index_shared_string(name, 1))))) {
+    /* Getter setter. */
     struct pike_string *symbol = NULL;
     struct pike_type *symbol_type = NULL;
     struct pike_type *gs_type = NULL;
-    /* Getter setter. */
+    int delta = 1;	/* new-style */
+    if (index_shared_string(name, 1) == '-') {
+      /* Getter setter (old-style). */
+      delta = 3;
+    }
     if (index_shared_string(name, name->len-1) != '=') {
       /* fprintf(stderr, "Got getter: %s\n", name->str); */
       gs_type = lfun_getter_type_string;
       getter_setter_offset = 0;
-      symbol = string_slice(name, 3, name->len-3);
+      symbol = string_slice(name, delta, name->len-delta);
       symbol_type = get_argument_type(type, -1);
-    } else if (name->len > 4) {
+    } else if (name->len > delta+1) {
       /* fprintf(stderr, "Got setter: %s\n", name->str); */
       gs_type = lfun_setter_type_string;
       getter_setter_offset =
 	((PIKE_OPCODE_T *)(((INT32 *)0) + 1)) - ((PIKE_OPCODE_T *)0);
-      symbol = string_slice(name, 3, name->len-4);
+      symbol = string_slice(name, delta, name->len-(delta+1));
       symbol_type = get_argument_type(type, 0);
     }
 
