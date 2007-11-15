@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-/* $Id: handshake.pike,v 1.58 2005/10/28 19:49:40 bill Exp $
+/* $Id: handshake.pike,v 1.59 2007/11/15 15:56:09 bill Exp $
  *
  */
 
@@ -264,7 +264,7 @@ Packet certificate_verify_packet()
 
   .context cx = .context();
   cx->rsa = context->client_rsa;
-  
+
   session->cipher_spec->sign(cx, handshake_messages, struct);
 
   return handshake_packet (HANDSHAKE_certificate_verify,
@@ -1314,8 +1314,10 @@ werror("sending certificate: " + Standards.PKCS.Certificate.get_dn_string(Tools.
       if (key_exchange)
 	send_packet(key_exchange);
 
-      // FIXME: Certificate verify
-      if(certificate_state == CERT_received) // we sent a certificate, so we should send the verification.
+      // FIXME: Certificate verify; we should redo this so it makes more sense
+      if(certificate_state == CERT_received
+          && sizeof(context->client_certificates) && context->client_rsa) 
+         // we sent a certificate, so we should send the verification.
       {
          send_packet(certificate_verify_packet());
       }
