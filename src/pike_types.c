@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.314 2007/11/03 20:11:48 grubba Exp $
+|| $Id: pike_types.c,v 1.315 2007/11/15 16:42:42 grubba Exp $
 */
 
 #include "global.h"
@@ -3134,6 +3134,18 @@ static struct pike_type *low_object_lfun_type(struct pike_type *t, short lfun)
 {
   struct program *p;
   int i;
+  while ((t->type == PIKE_T_NAME) || (t->type == PIKE_T_ATTRIBUTE)) {
+    t = t->cdr;
+  }
+#ifdef PIKE_DEBUG
+  if (t->type != T_OBJECT) {
+    fprintf(stderr, "Invalid type to low_object_lfun_type(");
+    simple_describe_type(t);
+    fprintf(stderr, ", \"%s\")\n", lfun_names[lfun]);
+    Pike_fatal("Invalid type to low_object_lfun_type: %d (expected OBJECT).\n",
+	       t->type);
+  }
+#endif /* PIKE_DEBUG */
   p = id_to_program(CDR_TO_INT(t));
   if(!p) return 0;
   i=FIND_LFUN(p, lfun);
@@ -5866,16 +5878,22 @@ static struct pike_type *lower_new_check_call(struct pike_type *fun_type,
   case PIKE_T_PROGRAM:
     tmp = low_object_lfun_type(fun_type->car, LFUN_CREATE);
     if (!tmp) {
+      /* No create() -- No arguments. */
       /* FIXME: Multiple cases:
        *          Untyped object.		function(mixed|void...:obj)
        *          Failed to lookup program id.	function(mixed|void...:obj)
        *          Program does not have a create().	function(:obj)
+       *
+       * We simply ignore the args.
        */
 
-      /* No create() -- No arguments. */
-      /* return NULL; */
-      copy_pike_type(res, mixed_type_string);
-      break;
+      type_stack_mark();
+      push_finished_type(fun_type->car);
+      push_type(T_MIXED);
+      push_type(T_VOID);
+      push_type(T_OR);
+      push_type(T_MANY);
+      fun_type = pop_unfinished_type();
     } else {
       fun_type = zzap_function_return(tmp, CDR_TO_INT(fun_type->car));
     }
