@@ -41,17 +41,17 @@ o Added support for getters and setters.
   It is now possible to simulate variables with functions. Example:
     class A {
       private int a;
-      int `->b() { return a; }		// Getter for the symbol b.
-      void `->b=(int c) { a = c; }	// Setter for the symbol b.
+      int `b() { return a; }		// Getter for the symbol b.
+      void `b=(int c) { a = c; }	// Setter for the symbol b.
       int c()
       {
-        return b;			// Calls `->b().
+        return b;			// Calls `b().
       }
     }
 
     object a = A();
-    a->b = 17;				// Calls `->b=(17).
-    werror("%d\n", a->b);		// Calls `->b().
+    a->b = 17;				// Calls `b=(17).
+    werror("%d\n", a->b);		// Calls `b().
 
 o Unicode escapes.
   Pike now understands the common way to escape unicode chars, using
