@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.85 2007/11/07 16:50:15 wellhard Exp $
+// $Id: MySQL.pike,v 1.86 2007/11/16 10:12:03 wellhard Exp $
 
 inherit .Base;
 
@@ -221,6 +221,24 @@ void remove_document(string|Standards.URI uri, void|string language)
   db->query("delete from document where id in ("+a->id*","+")");
   db->query("insert delayed into deleted_document (doc_id) values "+
 	    "("+a->id*"),("+")");
+}
+
+void remove_document_prefix(string|Standards.URI uri)
+{
+  array a =
+    db->query("SELECT document.id AS id"
+	      "  FROM document, uri "
+	      " WHERE document.uri_id=uri.id "
+	      "   AND uri.uri like '" + db->quote(uri) + "%%'");
+  if(!sizeof(a))
+    return;
+
+  array ids = a->id;
+  docs += sizeof(ids); // DEBUG
+  db->query("DELETE FROM document "
+	    " WHERE id IN (" + (ids * ",") + ")");
+  db->query("INSERT DELAYED INTO deleted_document "
+	    "(doc_id) VALUES (" + (ids * "),(") + ")");
 }
 
 static Search.ResultSet deleted_documents = Search.ResultSet();

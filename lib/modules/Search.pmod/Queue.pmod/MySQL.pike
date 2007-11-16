@@ -250,6 +250,16 @@ void remove_uri(string|Standards.URI uri)
   db->query("delete from "+table+" where uri_md5=%s", to_md5((string)uri));
 }
 
+void remove_uri_prefix(string|Standards.URI uri)
+{
+  string uri_string = (string)uri;
+  foreach(indices(hascache), string _uri)
+    if(has_prefix(_uri, uri_string))
+      hascache[_uri]=0;
+  
+  db->query("delete from "+table+" where uri like '" + db->quote(uri_string) + "%%'");
+}
+
 void clear_stage( int ... stages )
 {
   foreach( stages, int s )

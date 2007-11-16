@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Base.pike,v 1.5 2004/08/07 15:26:58 js Exp $
+// $Id: Base.pike,v 1.6 2007/11/16 10:12:03 wellhard Exp $
 
 //! Base class for Roxen Search database storage abstraction implementations.
 
@@ -109,6 +109,11 @@ mapping(int:string) get_special_metadata(array(int) doc_ids,
 //!   A two letter ISO-639-1 language code. If zero, delete all
 //!   existing language forks with the URI of @[uri].
 void remove_document(string|Standards.URI uri, void|string language);
+
+//! Removes all documents that matches the provided uri prefix.
+//! @param uri
+//!   The URI prefix of the documents to delete.
+void remove_document_prefix(string|Standards.URI uri);
 
 //! Writes the data stored in temporary buffers to permanent storage.
 //! Calls the function set by @[set_sync_callback]] when done.

@@ -15,4 +15,5 @@ void clear_md5( int ... stages );
 int num_with_stage( int ... stage );
 void set_stage( Standards.URI uri, int stage );
 void remove_uri(string|Standards.URI uri);
+void remove_uri_prefix(string|Standards.URI uri);
 void clear_cache();
