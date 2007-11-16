@@ -3,7 +3,7 @@
 //! This is the Badi calendar,
 //! used in the Baha'i religion.
 
-inherit .Gregorian:Gregorian;
+inherit .YMD:YMD;
 
 #include "constants.h"
 
@@ -41,7 +41,11 @@ static int year_leap_year(int y)
 // [y,yjd]
 static array year_from_julian_day(int jd)
 {
-   int d=jd-julian_day_from_year(1);
+   // in order to avoid coming up with a formula for leapyears in the bahai
+   // calendar we add the necessary offsets to the data so we can use the take
+   // the gregorian formula
+   // gregorian year starts 286 days later march 21st -> january 1st
+   int d=jd+286-1721426; 
 
    int century=(4*d+3)/146097;
    int century_jd=(century*146097)/4;
@@ -50,16 +54,17 @@ static array year_from_julian_day(int jd)
 
    return 
    ({
-      century*100+century_year+1,
-      julian_day_from_year(1)+century_year*365+century_year/4+century_jd,
+      (century*100+century_year+1)-1844, // but 1844 years earlier
+      1721426-286+century_year*365+century_year/4+century_jd,
    });
 }
 
 static int julian_day_from_year(int y)
 {
-   // this would be march 21st, by taking the preceding year we can reuse the
-   // leapyear calculations from the gregorian calendar
-   y+=1843;
+   // FIXME: verify for leapyears (esp: 56 (1900) and 100, ...)
+   // same as above
+   y+=1843; // above we are adding days and subtracting years,
+            // going back we need to subtract days and add years.
    return 1721426-286+y*365+y/4-y/100+y/400;
 }
 
@@ -111,11 +116,13 @@ static array(int) week_from_julian_day(int jd)
 
    [int y,int yjd]=year_from_julian_day(jd);
    int yday=jd-yjd+1;
+   int wjd=jd-(jd+2)%7;  // +2 is the offset from the julian day week 
+                         // starting on monday.
 
-   int k=4+(yjd-4)%7;
-   int w=(yday+k)/7;
-   int wjd=jd-(jd+2)%7;  // i am assuming 2 is the offset from the julian day
-                         // week starting on monday.
+   int k=4+(yjd-2)%7;
+   int w=(yday+k-1)/7;
+
+   //werror("jd %d: y%O yjd%O yday%O, k%O w%O wjd%O, wd%O:%O\n",jd,y,yjd,yday,k,w,wjd, 1+(jd+2)%7, 1+(1+yjd+yday)%7);
 
    if (!w) 
    {
@@ -132,6 +139,7 @@ static array(int) week_from_julian_day(int jd)
       w=1;
    }
 
+   //werror("jd %d: y%O yjd%O yday%O, k%O w%O wjd%O, wd%O:%O\n",jd,y,yjd,yday,k,w,wjd, 1+(jd+2)%7, 1+(1+yjd+yday)%7);
    return ({y,w,1+(1+yjd+yday)%7,7,wjd});
 }
 
@@ -140,8 +148,10 @@ static array(int) week_from_week(int y,int w)
 // [year,week,1 (wd),ndays,week-julian-day]
 
    int yjd=julian_day_from_year(y);
-   int wjd=-5+yjd-(yjd+4)%7;
+   int wjd=-6+yjd-(yjd+3)%7;
+//   int wjd=-7+yjd-(yjd+2)%7;
 
+   werror("%t: %O, %O, %O, %O\n", this, y, w, wjd, wjd+w*7);
    if (w<1 || w>52) // may or may not be out of this year
       return week_from_julian_day(wjd+w*7);
 
@@ -165,8 +175,7 @@ int daystart_offset()
 
 class cFraction
 {
-   inherit Gregorian::cFraction;
-   // nothing from gregorian
+   inherit YMD::cFraction;
 
    TimeRange make_base()
    {  
@@ -184,8 +193,7 @@ class cFraction
 
 class cSecond
 {
-   inherit Gregorian::cSecond;
-   // nothing from gregorian
+   inherit YMD::cSecond;
 
    TimeRange make_base()
    {  
@@ -203,8 +211,7 @@ class cSecond
 
 class cMinute
 {
-   inherit Gregorian::cMinute;
-   // nothing from gregorian
+   inherit YMD::cMinute;
 
    TimeRange make_base()
    {  
@@ -235,8 +242,7 @@ class cMinute
 
 class cHour
 {
-   inherit Gregorian::cHour;
-   // nothing from gregorian
+   inherit YMD::cHour;
 
    TimeRange make_base()
    {  
@@ -266,8 +272,7 @@ class cHour
 
 class cDay
 {
-   inherit Gregorian::cDay;
-   // nothing from gregorian
+   inherit YMD::cDay;
 
    void create_unixtime_default(int unixtime)
    {
@@ -301,39 +306,119 @@ class cDay
       [int zm,int zmd,int znd,int zmyd]=month_from_yday(zy,jd+n-zyjd);
       return zm-m+1+(zy-y)*19;
    }
+
+   string nice_print()
+   {
+      if (m==CALUNKNOWN) make_month();
+      if (wd==CALUNKNOWN) make_week();
+      return
+         sprintf("%s %s %s(%d) %s",
+                 week_day_shortname(),
+                 month_day_name(),month_shortname(), month_no(),
+                 year_name());
+   }
 }
 
 class cWeek
 {
-   inherit Gregorian::cWeek;
-   // string nice_print();
-   // static int weeks_to_week(int y2,int w2);
-   // int number_of_days();
+   inherit YMD::cWeek;
+
+   // identical to gregorian
+   static int weeks_to_week(int y2,int w2)
+   {
+      [int y3,int w3,int wd2,int nd2,int jd2]=week_from_week(y2,w2);
+      werror("%t: %O, %O, %O, %O, %O\n", this, y2, w2, jd2, jd, (jd2-jd)/7);
+      return (jd2-jd)/7;
+   }
 
    int unix_time()
    {
       return ::unix_time()+daystart_offset();
+   }
+
+   int number_of_days()
+   {
+      return 7*n;
    }
 }
 
 class cMonth
 {
-   inherit Gregorian::cMonth;
-   // static int months_to_month(int y2,int m2); // likely wrong
-   // TimeRange place(TimeRange what,int|void force);
+   inherit YMD::cMonth;
+
+   static int months_to_month(int y2,int m2)
+   {
+      return (y2-y)*19+(m2-m);
+   }
 
    int unix_time()
    {
       return ::unix_time()+daystart_offset();
    }
+
+   string nice_print()
+   {  
+      return sprintf("%s(%d) %s", month_name(), month_no(), year_name());
+   }
+
+
+   // identical to gregorian
+   TimeRange place(TimeRange what,int|void force)
+   {
+      if (what->is_day)
+      {
+         int wmd=what->month_day();
+         if (md==CALUNKNOWN) make_month();
+         if (what->m==2 && m==2 && wmd>=24)
+         {  
+            int l1=year_leap_year(what->y);
+            int l2=year_leap_year(y);
+            if (l1||l2)
+            {  
+               if (l1 && wmd==24)
+                  if (l2) wmd=24;
+                  else { if (!force) return 0; }
+               else
+               {  
+                  if (l1 && wmd>24) wmd--;
+                  if (l2 && wmd>24) wmd++;
+               }
+            }
+         }
+         if (!force && wmd>number_of_days()) return 0;
+         return Day("ymd_yd",rules,y,yjd,jd+wmd-1,yd+wmd-1,what->n);
+      }
+
+      return ::place(what);
+   }
 }
 
 class cYear
 {  
-   inherit Gregorian::cYear;
-   // int number_of_days(); 
-   // int number_of_weeks();
-   // TimeRange place(TimeRange what,void|int force);
+   inherit YMD::cYear;
+
+   // identical to gregorian
+   int number_of_days()
+   {
+      switch (n)
+      {
+         case 0: return 0;
+         case 1: return 365+leap_year();
+         default: 
+            return julian_day_from_year(y+n)-yjd;
+      }
+   }
+
+   // identical to gregorian
+   int number_of_weeks()
+   {
+      if (!n) return 1;
+      if (n==1) return 53+(yjd%7==5 && leap_year());
+      return 
+         Week("julian",jd)
+         ->range(Week("julian",julian_day_from_year(y+n)-1))
+         ->number_of_weeks();
+   }
 
    int number_of_months()
    {  
@@ -343,6 +428,32 @@ class cYear
    int unix_time()
    {
       return ::unix_time()+daystart_offset();
+   }
+
+   // identical to gregorian
+   TimeRange place(TimeRange what,void|int force)
+   {
+      if (what->is_day)
+      {
+         int yd=what->yd;
+         if (yd>=55)
+            switch (year_leap_year(what->y)*10+year_leap_year(y))
+            {
+               case 00:
+               case 11:
+                  break;
+               case 10: /* from leap to non-leap */
+                  if (yd==55 && !force) return 0; // not this year
+                  yd--;
+                  break;
+               case 01: /* from non-leap to leap */
+                  yd++;
+                  break;
+            }
+         return Day("ymd_yd",rules,y,yjd,yjd+yd-1,yd,what->n);
+      }
+
+      return ::place(what);
    }
 
    Vahid vahid(void|int m) 
