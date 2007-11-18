@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.641 2007/06/10 19:03:11 mast Exp $
+|| $Id: builtin_functions.c,v 1.642 2007/11/18 19:04:24 nilsson Exp $
 */
 
 #include "global.h"
@@ -4543,6 +4543,36 @@ void f_gc(INT32 args)
     push_int(t);							\
   }
 
+/*! @decl int undefinedp(mixed arg)
+ *!
+ *! Returns @expr{1@} if @[arg] is undefined, @expr{0@} (zero) otherwise.
+ *!
+ *! @seealso
+ *!   @[zero_type], @[destructedp], @[intp]
+ */
+PMOD_EXPORT void f_undefinedp(INT32 args)
+{
+  if( args<1 )
+    SIMPLE_TOO_FEW_ARGS_ERROR("undefinedp", 1);
+  f_zero_type(args);
+  Pike_sp[-1].u.integer = ( Pike_sp[-1].u.integer == NUMBER_UNDEFINED);
+}
+
+/*! @decl int destructedp(mixed arg)
+ *!
+ *! Returns @expr{1@} if @[arg] is a destructed object, @expr{0@}
+ *! (zero) otherwise.
+ *!
+ *! @seealso
+ *!   @[zero_type], @[undefinedp], @[intp]
+ */
+PMOD_EXPORT void f_destructedp(INT32 args)
+{
+  if( args<1 )
+    SIMPLE_TOO_FEW_ARGS_ERROR("destructedp", 1);
+  f_zero_type(args);
+  Pike_sp[-1].u.integer = ( Pike_sp[-1].u.integer == NUMBER_DESTRUCTED);
+}
 
 /*! @decl int programp(mixed arg)
  *!
@@ -9032,10 +9062,13 @@ void init_builtin_efuns(void)
 		      tArr(tVar(1))),
 		tFunc(tOr(tObj,tPrg(tObj)),tArr(tStr))),
 	    OPT_TRY_OPTIMIZE,fix_indices_type,0);
-  
+
+  ADD_EFUN("undefinedp", f_undefinedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE);
+  ADD_EFUN("destructedp", f_destructedp, tFunc(tMix,tInt01), OPT_TRY_OPTIMIZE);
+
 /* function(mixed:int) */
   ADD_EFUN("intp", f_intp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
-  
+
 /* function(mixed:int) */
   ADD_EFUN("multisetp", f_multisetp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
   
