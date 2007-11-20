@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.130 2007/10/23 09:38:16 grubba Exp $
+|| $Id: efuns.c,v 1.131 2007/11/20 14:29:01 jonasw Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.130 2007/10/23 09:38:16 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.131 2007/11/20 14:29:01 jonasw Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -538,7 +538,7 @@ void f_filesystem_stat(INT32 args)
     num_fields += 6;
 #ifdef HAVE_STATFS_F_BAVAIL
     push_text("bavail");       push_int(st.f_bavail);
-    num_fields++
+    num_fields++;
 #endif /* HAVE_STATFS_F_BAVAIL */
 #else /* !HAVE_STRUCT_STATFS */
 #ifdef HAVE_STRUCT_FS_DATA
