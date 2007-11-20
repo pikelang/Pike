@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.642 2007/11/18 19:04:24 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.643 2007/11/20 18:06:23 grubba Exp $
 */
 
 #include "global.h"
@@ -9401,7 +9401,8 @@ void init_builtin_efuns(void)
 	tFuncV(IN tSet(tMix),tMix,OUTSET), \
 	tFuncV(IN tMap(tMix, tSetvar(2,tMix)), tMix, OUTMAP), \
         tFuncV(IN tArray, tMix, OUTARR), \
-        tFuncV(IN tInt0, tMix, OUTMIX), \
+	tIfnot(tFuncV(IN, tNot(tMix), tMix), \
+	       tFuncV(IN, tMix, OUTMIX)), \
 	tFuncV(IN, tVoid, OUTMIX) )
 
   ADD_EFUN2("map", f_map,
