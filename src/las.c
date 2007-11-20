@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.396 2007/11/10 21:36:27 nilsson Exp $
+|| $Id: las.c,v 1.397 2007/11/20 18:19:21 grubba Exp $
 */
 
 #include "global.h"
@@ -1260,6 +1260,16 @@ node *debug_mkcastnode(struct pike_type *type, node *n)
 
   res = mkemptynode();
   res->token = F_CAST;
+
+  /* FIXME: Consider strengthening the node type [bug 4435].
+   *        E.g. the cast in the code
+   *
+   *          mapping(string:string) m = (["a":"A", "b":"B"]);
+   *          return (array)m;
+   *
+   *        should have a result type of array(array(string)),
+   *        rather than array(mixed).
+   */     
   copy_pike_type(res->type, type);
 
   if(match_types(object_type_string, type) ||
