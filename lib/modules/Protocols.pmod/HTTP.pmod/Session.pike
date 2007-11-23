@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.18 2007/11/23 14:19:09 srb Exp $
+// $Id: Session.pike,v 1.19 2007/11/23 14:20:36 srb Exp $
 
 import Protocols.HTTP;
 
@@ -405,10 +405,10 @@ class Cookie
 {
    string key="?";
    string data="?";
+   string site="?";
    int expires=-1;
    string path="/";
    string domain="";
-   string site="?";
    int secure=0;
 
    string _sprintf(int t)
