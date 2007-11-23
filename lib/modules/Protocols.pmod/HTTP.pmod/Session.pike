@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.17 2007/11/15 02:24:01 srb Exp $
+// $Id: Session.pike,v 1.18 2007/11/23 14:19:09 srb Exp $
 
 import Protocols.HTTP;
 
@@ -407,23 +407,29 @@ class Cookie
    string data="?";
    int expires=-1;
    string path="/";
+   string domain="";
    string site="?";
+   int secure=0;
 
    string _sprintf(int t)
    {
       if (t=='O')
-	 return sprintf("Cookie(%O: %O=%O; expires=%s; path=%O)",
+	 return sprintf(
+	    "Cookie(%O: %O=%O; expires=%s; path=%O; domain=%O; secure=%d)",
 			site,
 			key,data,
 			Calendar.ISO.Second(expires)->format_http(),
-			path);
+			path,domain,secure);
    }
 
    void from_http(string s,Standards.URI at)
    {
-      array v=array_sscanf(s,"%{%s=%[^;]%*[; ]%}");
+      array v=array_sscanf(s,"%{%s=%[^;]%*[; ]%}%s");
 
       site=at->host+":"+at->port;
+
+      if (sizeof(v)>=2 && lower_case(v[1])=="secure")
+	 secure=1;
 
       if (sizeof(v)<1) return;
       v=v[0];
@@ -443,27 +449,32 @@ class Cookie
 	    case "path":
 	       path=value;
 	       break;
+
+	    case "domain":
+	       domain=value;
+	       break;
 	 }
    }
 
    string encode()
    {
-      return sprintf("%O\t%O=%O\t%O\t%O",
+      return sprintf("%O\t%O=%O\t%O\t%O\t%O\t%O",
 		     site,
 		     key,data,
 		     expires,
-		     path);
+		     path,domain,secure);
    }
 
    Cookie decode(string indata)
    {
-      array v=array_sscanf(indata,"%O\t%O=%O\t%O\t%O");
+      array v=array_sscanf(indata,"%O\t%O=%O\t%O\t%O\t%O\t%O");
       if (sizeof(v)!=5) error("Cookie.decode: parse error\n");
-      [site,key,data,expires,path]=v;
+      [site,key,data,expires,path,domain,secure]=v;
       if (!stringp(site) ||
 	  !stringp(key) ||
 	  !stringp(data) ||
 	  !stringp(path) ||
+	  !stringp(domain) ||
 	  !intp(expires))
 	 error("Cookie.decode: parse error\n");
       return this;
@@ -537,8 +548,9 @@ void decode_cookies(string data,void|int(0..1) no_clear)
 array(string) get_cookies(Standards.URI|SessionURL for_url,
 			  void|int(0..1) no_delete)
 {
+   string host=for_url->host;
    mapping(string:Cookie) sc=
-      cookie_lookup[for_url->host+":"+for_url->port]||([]);
+      cookie_lookup[host+":"+for_url->port]||([]);
 
    array(string) res=({});
    int now=time();
@@ -553,17 +565,11 @@ array(string) get_cookies(Standards.URI|SessionURL for_url,
 	    all_cookies[c]=0;
 	 }
       }
-      else 
-      {
-	 if (c->path!="/")
-	 {
-	    string path=for_url->path;
-	    if (path=="") continue; // =="/" and we didn't get that
-	    if (c->path[..strlen(path)]!=path)
-	       continue; // not our path
-	 }
+      else if ((!sizeof(c->domain)
+	        || c->domain==host[sizeof(host)-sizeof(c->domain)..])
+	    && (sizeof(c->path)<=1 || has_prefix(for_url->path, c->path))
+	    && (!c->secure || has_prefix(for_url->scheme, "https")))
 	 res+=({key+"="+c->data});
-      }
    }
    return res;
 }
