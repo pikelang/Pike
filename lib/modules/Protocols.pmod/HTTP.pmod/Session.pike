@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.19 2007/11/23 14:20:36 srb Exp $
+// $Id: Session.pike,v 1.20 2007/11/25 19:17:00 srb Exp $
 
 import Protocols.HTTP;
 
@@ -759,7 +759,7 @@ Request do_method_url(string method,
 {
    if (method=="POST")
       extra_headers=
-	 (extra_headers||([]))||
+	 (extra_headers||([]))+
 	 (["content-type":"application/x-www-form-urlencoded"]);
    
    Request p=Request();
@@ -879,7 +879,7 @@ Request async_do_method_url(string method,
 
    if (method=="POST")
       extra_headers=
-	 (extra_headers||([]))||
+	 (extra_headers||([]))+
 	 (["content-type":"application/x-www-form-urlencoded"]);
 
    p->do_async(p->prepare_method(method,url,query_variables,
