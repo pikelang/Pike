@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.20 2007/11/25 19:17:00 srb Exp $
+// $Id: Session.pike,v 1.21 2007/11/25 19:17:52 srb Exp $
 
 import Protocols.HTTP;
 
@@ -110,14 +110,9 @@ class Request
       array v=get_cookies(url_requested);
       if (v && sizeof(v))
 	 if (request_headers->cookie)
-	    if (!arrayp(request_headers->cookie))
-	       request_headers->cookie=
-		  ({request_headers->cookie})+v;
-	    else
-	       request_headers->cookie=
-		  request_headers->cookie+v;
+	    request_headers->cookie+="; "+v*"; ";
 	 else
-	    request_headers->cookie=v;
+	    request_headers->cookie=v*"; ";
 
       string query=url->query;
       if(query_variables && sizeof(query_variables))
