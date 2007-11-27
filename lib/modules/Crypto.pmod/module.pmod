@@ -63,8 +63,8 @@ int(0..1) verify_crypt_md5(string password, string hash) {
 
 class CipherState {
   inherit Nettle.CipherState;
-  this_program set_encrypt_key(string); // Better return type
-  this_program set_decrypt_key(string); // Better return type
+  this_program set_encrypt_key(string, int|void force); // Better return type
+  this_program set_decrypt_key(string, int|void force); // Better return type
 }
 
 //! Abstract class for crypto algorithms. Contains some tools useful
