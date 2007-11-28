@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: support.c,v 1.16 2007/10/09 17:52:54 nilsson Exp $
+|| $Id: support.c,v 1.17 2007/11/28 13:17:24 per Exp $
 */
 
 #include <version.h>
@@ -684,6 +684,46 @@ void push_gvalue_r(const GValue *param, GType t) {
     return;
   } else {
     const char *s=(char *)g_type_name(t);
+    if( s && (s[0] == 'g') ) // FIXME: How to get these types from GTK?
+    {
+	switch( s[1] )
+	{
+	    case 'c':
+		if( !strcmp( s, "gchararray" ) )
+		{
+		    pgtk2_push_string_param(param);
+		    return;
+		}
+		break;
+	    case 'f':
+	    case 'd':
+		if( !strcmp( s, "gfloat" ) )
+		{
+		    push_float( g_value_get_float( param ) );
+		    return;
+		}
+		if( !strcmp( s, "gdouble" ) )
+		{
+		    push_float( g_value_get_double( param ) );
+		    return;
+		}
+		break;
+	    case 'i':
+	    case 'u':
+		if( !strcmp( s, "gint" ) )
+		{
+		    push_int(g_value_get_int(param));
+		    return;
+		}
+		else if( !strcmp( s, "guint" ) )
+		{
+		    push_int64(g_value_get_uint(param));
+		    return;
+		}
+		break;
+	}
+    }
+
     char *a="";
     if (!s) {
       a="Unknown child of ";
