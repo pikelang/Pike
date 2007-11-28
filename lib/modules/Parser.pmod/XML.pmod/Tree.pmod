@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.69 2007/04/04 17:24:15 grubba Exp $
+ * $Id: Tree.pmod,v 1.70 2007/11/28 14:33:42 grubba Exp $
  *
  */
 
@@ -1745,10 +1745,48 @@ static class DTDElementHelper
 
 // Convenience stuff for creation of @[SimpleNode]s.
 
+//! The root node of an XML-tree consisting of @[SimpleNode]s.
 class SimpleRootNode
 {
   inherit SimpleNode;
   inherit XMLParser;
+
+  static mapping(string:SimpleElementNode) node_ids;
+
+  //! Find the element with the specified id.
+  //!
+  //! @param id
+  //!   The XML id of the node to search for.
+  //!
+  //! @param force
+  //!   Force a regeneration of the id lookup cache.
+  //!   Needed the first time after the node tree has been
+  //!   modified by adding or removing element nodes, or
+  //!   by changing the id attribute of an element node.
+  //!
+  //! @returns
+  //!   Returns the element node with the specified id
+  //!   if any. Returns @[UNDEFINED] otherwise.
+  SimpleElementNode get_element_by_id(string id, int|void force)
+  {
+    if (!node_ids || force) {
+      mapping(string:SimpleNode) new_lookup = ([]);
+      walk_preorder(lambda(SimpleNode node,
+			   mapping(string:SimpleElementNode) new_lookup) {
+		      if (node->get_node_type() != XML_ELEMENT) return 0;
+		      string id = node->get_attributes()->id;
+		      if (new_lookup[id]) {
+			error("Multiple nodes with the same id "
+			      "(id: %O, nodes: %O, %O)\n",
+			      id, new_lookup[id], node);
+		      }
+		      new_lookup[id] = node;
+		      return 0;
+		    }, new_lookup);
+      node_ids = new_lookup;
+    }
+    return node_ids[id];
+  }
 
   static SimpleNode low_clone()
   {
@@ -1928,10 +1966,48 @@ class SimpleElementNode
 
 // Convenience stuff for creation of @[Node]s.
 
+//! The root node of an XML-tree consisting of @[Node]s.
 class RootNode
 {
   inherit Node;
   inherit XMLParser;
+
+  static mapping(string:ElementNode) node_ids;
+
+  //! Find the element with the specified id.
+  //!
+  //! @param id
+  //!   The XML id of the node to search for.
+  //!
+  //! @param force
+  //!   Force a regeneration of the id lookup cache.
+  //!   Needed the first time after the node tree has been
+  //!   modified by adding or removing element nodes, or
+  //!   by changing the id attribute of an element node.
+  //!
+  //! @returns
+  //!   Returns the element node with the specified id
+  //!   if any. Returns @[UNDEFINED] otherwise.
+  ElementNode get_element_by_id(string id, int|void force)
+  {
+    if (!node_ids || force) {
+      mapping(string:ElementNode) new_lookup = ([]);
+      walk_preorder(lambda(SimpleNode node,
+			   mapping(string:ElementNode) new_lookup) {
+		      if (node->get_node_type() != XML_ELEMENT) return 0;
+		      string id = node->get_attributes()->id;
+		      if (new_lookup[id]) {
+			error("Multiple nodes with the same id "
+			      "(id: %O, nodes: %O, %O)\n",
+			      id, new_lookup[id], node);
+		      }
+		      new_lookup[id] = node;
+		      return 0;
+		    }, new_lookup);
+      node_ids = new_lookup;
+    }
+    return node_ids[id];
+  }
 
   static Node low_clone()
   {
