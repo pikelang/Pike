@@ -30,6 +30,7 @@ void create(int|void fast_mode, Image.Image|void image)
     stack_swap();
     pop_stack();
     pgdk2_image_set(1);
+    args = 1;
   }
   pgtk2_pop_n_elems(args);
 /* Do not add one extra ref for the internal gdk object..*/
