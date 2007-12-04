@@ -9,6 +9,8 @@ o Added option "file" to Image.PS.decode().
 o Image.PS.decode() now reads nonblocking from the pipes.
 o Added "Regexp.PCRE.Widestring" to the feature list.
 o Added ADT.Trie data type.
+o Fixed bug in columns sorting in ADT.Table.
+o Fixed bug in a special case of GIF color decoding (bug 3536).
 o Encoder, Decoder and Codec are now available in the Pike module.
   While the programs were always retrievable from the master object,
   now they can be inherited in codecs that wish to extend the master
@@ -29,6 +31,7 @@ o Fix for case where ODBC tried to write error messages with wide
 o Bugfixes for ODBC long fields.
 o Added handling of ISO-6937:2001 in charset decoder.
 o Many dup2() fixes in Stdio.File.
+o Fixed Crypto.set_{en,de}crypt_key() to accept the force flag.
 o More error handling added to Monger.
 o More error handling added to cgrep.
 o Added more methods to enable the buggy unicode decode support in
