@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.46 2007/12/07 16:53:56 mast Exp $
+|| $Id: odbc_result.c,v 1.47 2007/12/07 17:31:09 mast Exp $
 */
 
 /*
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.46 2007/12/07 16:53:56 mast Exp $");
+RCSID("$Id: odbc_result.c,v 1.47 2007/12/07 17:31:09 mast Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -115,9 +115,9 @@ static void exit_res_struct(struct object *o)
     HSTMT hstmt = PIKE_ODBC_RES->hstmt;
     RETCODE code;
     PIKE_ODBC_RES->hstmt = SQL_NULL_HSTMT;
-    THREADS_ALLOW();
+    ODBC_ALLOW();
     code = SQLFreeStmt(hstmt, SQL_DROP);
-    THREADS_DISALLOW();
+    ODBC_DISALLOW();
     odbc_check_error("exit_res_struct", "Freeing of HSTMT failed",
 		     code, (void (*)(void *))clean_sql_res, NULL);
   }
@@ -157,7 +157,7 @@ static void odbc_fix_fields(void)
 
     while (1) {
       RETCODE code;
-      THREADS_ALLOW();
+      ODBC_ALLOW();
       code =
 #ifdef SQL_WCHAR
 	SQLDescribeColW
@@ -169,7 +169,7 @@ static void odbc_fix_fields(void)
 	 DO_NOT_WARN((SQLSMALLINT)buf_size),
 	 &name_len,
 	 &sql_type, &precision, &scale, &nullable);
-      THREADS_DISALLOW();
+      ODBC_DISALLOW();
       odbc_check_error("odbc_fix_fields", "Failed to fetch field info",
 		       code, NULL, NULL);
       if (name_len
@@ -356,9 +356,9 @@ static void f_create(INT32 args)
   {
     HDBC hdbc = PIKE_ODBC_RES->odbc->hdbc;
     RETCODE code;
-    THREADS_ALLOW();
+    ODBC_ALLOW();
     code = SQLAllocStmt(hdbc, &hstmt);
-    THREADS_DISALLOW();
+    ODBC_DISALLOW();
     odbc_check_error("odbc_result", "Statement allocation failed",
 		     code, NULL, NULL);
   }
@@ -392,7 +392,7 @@ static void f_execute(INT32 args)
     } else {
       p = (SQLWCHAR *)q->str;
     }
-    THREADS_ALLOW();
+    ODBC_ALLOW();
     code = SQLExecDirectW(hstmt, p, DO_NOT_WARN((SQLINTEGER)(q->len)));
     if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
       err_msg = "Query failed";
@@ -406,12 +406,12 @@ static void f_execute(INT32 args)
 	  err_msg = "Couldn't get the number of rows";
       }
     }
-    THREADS_DISALLOW();
+    ODBC_DISALLOW();
     if (to_free) free (to_free);
   } else
 #endif
   {
-    THREADS_ALLOW();
+    ODBC_ALLOW();
     code = SQLExecDirect(hstmt, STR0(q), DO_NOT_WARN((SQLINTEGER)(q->len)));
     if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
       err_msg = "Query failed";
@@ -425,7 +425,7 @@ static void f_execute(INT32 args)
 	  err_msg = "Couldn't get the number of rows";
       }
     }
-    THREADS_DISALLOW();
+    ODBC_DISALLOW();
   }
 
   if (err_msg)
@@ -465,7 +465,7 @@ static void f_list_tables(INT32 args)
 
   table_name_pattern = Pike_sp[-args].u.string;
 
-  THREADS_ALLOW();
+  ODBC_ALLOW();
   code = SQLTables(hstmt, "%", 1, "%", 1,
 		   table_name_pattern->str,
 		   DO_NOT_WARN((SQLSMALLINT)table_name_pattern->len),
@@ -482,7 +482,7 @@ static void f_list_tables(INT32 args)
 	err_msg = "Couldn't get the number of rows";
     }
   }
-  THREADS_DISALLOW();
+  ODBC_DISALLOW();
 
   if (err_msg)
     odbc_error ("odbc_result->list_tables", err_msg, PIKE_ODBC_RES->odbc, hstmt,
@@ -532,9 +532,9 @@ static void f_fetch_row(INT32 args)
  
   pop_n_elems(args);
 
-  THREADS_ALLOW();
+  ODBC_ALLOW();
   code = SQLFetch(hstmt);
-  THREADS_DISALLOW();
+  ODBC_DISALLOW();
   
   if (code == SQL_NO_DATA_FOUND) {
     /* No rows left in result */
@@ -569,7 +569,7 @@ static void f_fetch_row(INT32 args)
 	  }
 #endif /* ODBC_DEBUG */
 
-	  THREADS_ALLOW();
+	  ODBC_ALLOW();
 	  code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
 			    field_type,
 			    blob_buf, BLOB_BUFSIZ
@@ -590,7 +590,7 @@ static void f_fetch_row(INT32 args)
 			      field_type, blob_buf, BLOB_BUFSIZ, &len);
 	  }
 #endif
-	  THREADS_DISALLOW();
+	  ODBC_DISALLOW();
 
 #ifdef SQL_WCHAR
 	  /* In case the type got changed in the kludge above. */
@@ -667,7 +667,7 @@ static void f_fetch_row(INT32 args)
 	      buf = xalloc(len+2);
 #endif
 
-	      THREADS_ALLOW();
+	      ODBC_ALLOW();
 	      code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
 				field_type, buf, (len+1)
 #ifdef SQL_WCHAR
@@ -675,7 +675,7 @@ static void f_fetch_row(INT32 args)
 				   sizeof(SQLWCHAR):1)
 #endif
 				, &newlen);
-	      THREADS_DISALLOW();
+	      ODBC_DISALLOW();
 
 	      if (code != SQL_SUCCESS) {
 		Pike_error("odbc->fetch_row(): "
