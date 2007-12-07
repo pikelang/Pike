@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.53 2007/06/27 15:41:40 grubba Exp $
+|| $Id: odbc_result.c,v 1.54 2007/12/07 17:35:50 mast Exp $
 */
 
 /*
@@ -111,10 +111,13 @@ static void exit_res_struct(struct object *o)
 {
   if (PIKE_ODBC_RES->hstmt != SQL_NULL_HSTMT) {
     SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
+    RETCODE code;
     PIKE_ODBC_RES->hstmt = SQL_NULL_HSTMT;
+    ODBC_ALLOW();
+    code = SQLFreeStmt(hstmt, SQL_DROP);
+    ODBC_DISALLOW();
     odbc_check_error("exit_res_struct", "Freeing of HSTMT failed",
-		     SQLFreeStmt(hstmt, SQL_DROP),
-		     (void (*)(void *))clean_sql_res, NULL);
+		     code, (void (*)(void *))clean_sql_res, NULL);
   }
   clean_sql_res();
 }
@@ -125,6 +128,7 @@ static void exit_res_struct(struct object *o)
 
 static void odbc_fix_fields(void)
 {
+  SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
   int i;
   SWORD *odbc_field_types = alloca(sizeof(SWORD) * PIKE_ODBC_RES->num_fields);
   size_t buf_size = 1024;
@@ -150,18 +154,22 @@ static void odbc_fix_fields(void)
     SWORD nullable = 0;
 
     while (1) {
-      odbc_check_error("odbc_fix_fields", "Failed to fetch field info",
+      RETCODE code;
+      ODBC_ALLOW();
+      code =
 #ifdef SQL_WCHAR
-		       SQLDescribeColW
+	SQLDescribeColW
 #else
-		       SQLDescribeCol
+	SQLDescribeCol
 #endif
-		       (PIKE_ODBC_RES->hstmt, i+1,
-			buf,
-			DO_NOT_WARN((SQLSMALLINT)buf_size),
-			&name_len,
-			&sql_type, &precision, &scale, &nullable),
-		       NULL, NULL);
+	(hstmt, i+1,
+	 buf,
+	 DO_NOT_WARN((SQLSMALLINT)buf_size),
+	 &name_len,
+	 &sql_type, &precision, &scale, &nullable);
+      ODBC_DISALLOW();
+      odbc_check_error("odbc_fix_fields", "Failed to fetch field info",
+		       code, NULL, NULL);
       if (name_len
 #ifdef SQL_WCHAR
 	  * (ptrdiff_t)sizeof(SQLWCHAR)
@@ -342,9 +350,16 @@ static void f_create(INT32 args)
   }
   add_ref(PIKE_ODBC_RES->obj = Pike_sp[-args].u.object);
 
-  odbc_check_error("odbc_result", "Statement allocation failed",
-		   SQLAllocStmt(PIKE_ODBC_RES->odbc->hdbc, &hstmt),
-		   NULL, NULL);
+  /* It's doubtful if this call really can block, but we play safe. /mast */
+  {
+    HDBC hdbc = PIKE_ODBC_RES->odbc->hdbc;
+    RETCODE code;
+    ODBC_ALLOW();
+    code = SQLAllocStmt(hdbc, &hstmt);
+    ODBC_DISALLOW();
+    odbc_check_error("odbc_result", "Statement allocation failed",
+		     code, NULL, NULL);
+  }
   PIKE_ODBC_RES->hstmt = hstmt;
 }
 
@@ -352,6 +367,10 @@ static void f_execute(INT32 args)
 {
   struct pike_string *q = NULL;
   SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
+  RETCODE code;
+  const char *err_msg = NULL;
+  SWORD num_fields;
+  SQLLEN num_rows;
 
 #ifdef SQL_WCHAR
   get_all_args("odbc_result->execute", args, "%W", &q);
@@ -371,44 +390,67 @@ static void f_execute(INT32 args)
     } else {
       p = (SQLWCHAR *)q->str;
     }
-    odbc_check_error("odbc_result->execute", "Query failed",
-		     SQLExecDirectW(hstmt, p,
-				    DO_NOT_WARN((SQLINTEGER)(q->len))),
-		     to_free?(void (*)(void *))free:NULL, to_free);
-  } else {
+    ODBC_ALLOW();
+    code = SQLExecDirectW(hstmt, p, DO_NOT_WARN((SQLINTEGER)(q->len)));
+    if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
+      err_msg = "Query failed";
+    else {
+      code = SQLNumResultCols(hstmt, &num_fields);
+      if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
+	err_msg = "Couldn't get the number of fields";
+      else {
+	code = SQLRowCount(hstmt, &num_rows);
+	if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
+	  err_msg = "Couldn't get the number of rows";
+      }
+    }
+    ODBC_DISALLOW();
+    if (to_free) free (to_free);
+  } else
 #endif
-    odbc_check_error("odbc_result->execute", "Query failed",
-		     SQLExecDirect(hstmt, STR0(q),
-				   DO_NOT_WARN((SQLINTEGER)(q->len))),
-		     NULL, NULL);
-#ifdef SQL_WCHAR
-  }
-#endif
-
-  odbc_check_error("odbc_result->execute", "Couldn't get the number of fields",
-		   SQLNumResultCols(hstmt, &(PIKE_ODBC_RES->num_fields)),
-		   NULL, NULL);
-
-  odbc_check_error("odbc_result->execute", "Couldn't get the number of rows",
-		   SQLRowCount(hstmt, &(PIKE_ODBC_RES->num_rows)),
-		   NULL, NULL);
-
-  PIKE_ODBC_RES->odbc->affected_rows = PIKE_ODBC_RES->num_rows;
-
-  if (PIKE_ODBC_RES->num_fields) {
-    odbc_fix_fields();
+  {
+    ODBC_ALLOW();
+    code = SQLExecDirect(hstmt, STR0(q), DO_NOT_WARN((SQLINTEGER)(q->len)));
+    if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
+      err_msg = "Query failed";
+    else {
+      code = SQLNumResultCols(hstmt, &num_fields);
+      if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
+	err_msg = "Couldn't get the number of fields";
+      else {
+	code = SQLRowCount(hstmt, &num_rows);
+	if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
+	  err_msg = "Couldn't get the number of rows";
+      }
+    }
+    ODBC_DISALLOW();
   }
 
-  pop_n_elems(args);
+  if (err_msg)
+    odbc_error ("odbc_result->execute", err_msg, PIKE_ODBC_RES->odbc, hstmt,
+		code, NULL, NULL);
+  else {
+    PIKE_ODBC_RES->odbc->affected_rows = PIKE_ODBC_RES->num_rows = num_rows;
+    if (num_fields) {
+      PIKE_ODBC_RES->num_fields = num_fields;
+      odbc_fix_fields();
+    }
 
-  /* Result */
-  push_int(PIKE_ODBC_RES->num_fields);
+    pop_n_elems(args);
+
+    /* Result */
+    push_int(num_fields);
+  }
 }
  
 static void f_list_tables(INT32 args)
 {
   struct pike_string *table_name_pattern = NULL;
   SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
+  RETCODE code;
+  const char *err_msg = NULL;
+  SWORD num_fields;
+  SQLLEN num_rows;
 
   if (!args) {
     push_constant_text("%");
@@ -421,33 +463,40 @@ static void f_list_tables(INT32 args)
 
   table_name_pattern = Pike_sp[-args].u.string;
 
-  odbc_check_error("odbc_result->list_tables", "Query failed",
-		   SQLTables(hstmt, "%", 1, "%", 1,
-			     table_name_pattern->str,
-			     DO_NOT_WARN((SQLSMALLINT)table_name_pattern->len),
-			     "%", 1),
-		   NULL, NULL);
-
-  odbc_check_error("odbc_result->list_tables",
-		   "Couldn't get the number of fields",
-		   SQLNumResultCols(hstmt, &(PIKE_ODBC_RES->num_fields)),
-		   NULL, NULL);
-
-  odbc_check_error("odbc_result->list_tables",
-		   "Couldn't get the number of rows",
-		   SQLRowCount(hstmt, &(PIKE_ODBC_RES->num_rows)),
-		   NULL, NULL);
-
-  PIKE_ODBC_RES->odbc->affected_rows = PIKE_ODBC_RES->num_rows;
-
-  if (PIKE_ODBC_RES->num_fields) {
-    odbc_fix_fields();
+  ODBC_ALLOW();
+  code = SQLTables(hstmt, "%", 1, "%", 1,
+		   table_name_pattern->str,
+		   DO_NOT_WARN((SQLSMALLINT)table_name_pattern->len),
+		   "%", 1);
+  if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
+    err_msg = "Query failed";
+  else {
+    code = SQLNumResultCols(hstmt, &num_fields);
+    if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
+      err_msg = "Couldn't get the number of fields";
+    else {
+      code = SQLRowCount(hstmt, &num_rows);
+      if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
+	err_msg = "Couldn't get the number of rows";
+    }
   }
+  ODBC_DISALLOW();
 
-  pop_n_elems(args);
+  if (err_msg)
+    odbc_error ("odbc_result->list_tables", err_msg, PIKE_ODBC_RES->odbc, hstmt,
+		code, NULL, NULL);
+  else {
+    PIKE_ODBC_RES->odbc->affected_rows = PIKE_ODBC_RES->num_rows = num_rows;
+    if (num_fields) {
+      PIKE_ODBC_RES->num_fields = num_fields;
+      odbc_fix_fields();
+    }
 
-  /* Result */
-  push_int(PIKE_ODBC_RES->num_fields);
+    pop_n_elems(args);
+
+    /* Result */
+    push_int(PIKE_ODBC_RES->num_fields);
+  }
 }
  
 /* int num_rows() */
@@ -475,12 +524,15 @@ static void f_fetch_fields(INT32 args)
 /* int|array(string|float|int) fetch_row() */
 static void f_fetch_row(INT32 args)
 {
+  SQLHSTMT hstmt = PIKE_ODBC_RES->hstmt;
   int i;
   RETCODE code;
  
   pop_n_elems(args);
 
-  code = SQLFetch(PIKE_ODBC_RES->hstmt);
+  ODBC_ALLOW();
+  code = SQLFetch(hstmt);
+  ODBC_DISALLOW();
   
   if (code == SQL_NO_DATA_FOUND) {
     /* No rows left in result */
@@ -499,45 +551,51 @@ static void f_fetch_row(INT32 args)
 		   ];
 	int num_strings = 0;
 	SQLLEN len = 0;
+	SWORD field_type = PIKE_ODBC_RES->field_info[i].type;
 
 	while(1) {
+
 #ifdef ODBC_DEBUG
 	  fprintf(stderr, "ODBC:fetch_row(): field_info[%d].type: ", i);
-	  if (PIKE_ODBC_RES->field_info[i].type == SQL_C_CHAR) {
+	  if (field_info == SQL_C_CHAR) {
 	    fprintf(stderr, "SQL_C_CHAR\n");
 #ifdef SQL_WCHAR
-	  } else if (PIKE_ODBC_RES->field_info[i].type == SQL_C_WCHAR) {
+	  } else if (field_type == SQL_C_WCHAR) {
 	    fprintf(stderr, "SQL_C_WCHAR\n");
 #endif /* SQL_WCHAR */
 	  } else {
-	    fprintf(stderr, "%d\n", PIKE_ODBC_RES->field_info[i].type);
+	    fprintf(stderr, "%d\n", field_type);
 	  }
 #endif /* ODBC_DEBUG */
+
+	  ODBC_ALLOW();
+	  code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
+			    field_type,
+			    blob_buf, BLOB_BUFSIZ
 #ifdef SQL_WCHAR
-	  while (((
+			    * ((field_type == SQL_C_WCHAR) ? sizeof(SQLWCHAR):1)
 #endif
-		   code = SQLGetData(PIKE_ODBC_RES->hstmt, (SQLUSMALLINT)(i+1),
-				     PIKE_ODBC_RES->field_info[i].type,
-				     blob_buf, BLOB_BUFSIZ
+			    , &len);
 #ifdef SQL_WCHAR
-				     * ((PIKE_ODBC_RES->field_info[i].type ==
-					 SQL_C_WCHAR)?sizeof(SQLWCHAR):1)
-#endif
-				     , &len)
-#ifdef SQL_WCHAR
-		   ) == SQL_NULL_DATA) &&
-		 (PIKE_ODBC_RES->field_info[i].type == SQL_C_WCHAR)) {
+	  if (code == SQL_NULL_DATA && (field_type == SQL_C_WCHAR)) {
 	    /* Kludge for FreeTDS which doesn't support WCHAR.
 	     * Refetch as a normal char.
 	     */
 #ifdef ODBC_DEBUG
 	    fprintf(stderr, "ODBC:fetch_row(): WCHAR not supported.\n");
 #endif /* ODBC_DEBUG */
-	    PIKE_ODBC_RES->field_info[i].type = SQL_C_CHAR;
+	    field_type = SQL_C_CHAR;
+	    code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
+			      field_type, blob_buf, BLOB_BUFSIZ, &len);
 	  }
-#else
-	  ;
-#endif /* SQL_WCHAR */
+#endif
+	  ODBC_DISALLOW();
+
+#ifdef SQL_WCHAR
+	  /* In case the type got changed in the kludge above. */
+	  PIKE_ODBC_RES->field_info[i].type = field_type;
+#endif
+
 	  if (code == SQL_NO_DATA_FOUND) {
 #ifdef ODBC_DEBUG
 	    fprintf(stderr, "ODBC:fetch_row(): NO DATA FOUND\n");
@@ -565,12 +623,12 @@ static void f_fetch_row(INT32 args)
 #ifdef ODBC_DEBUG
 	    fprintf(stderr, "[%d] ", num_strings);
 #endif /* ODBC_DEBUG */
-	    if (PIKE_ODBC_RES->field_info[i].type == SQL_C_BINARY) {
+	    if (field_type == SQL_C_BINARY) {
 	      push_string(make_shared_binary_string(blob_buf, BLOB_BUFSIZ));
 	    } else {
 	      /* SQL_C_CHAR and SQL_C_WCHAR's are NUL-terminated... */
 #ifdef SQL_WCHAR
-	      if (PIKE_ODBC_RES->field_info[i].type == SQL_C_WCHAR) {
+	      if (field_type == SQL_C_WCHAR) {
 		push_sqlwchar((SQLWCHAR *)blob_buf, BLOB_BUFSIZ - 1);
 	      } else {
 #endif
@@ -590,7 +648,7 @@ static void f_fetch_row(INT32 args)
 #endif /* SQL_NO_TOTAL */
                 ) {
 #ifdef SQL_WCHAR
-	      if (PIKE_ODBC_RES->field_info[i].type == SQL_C_WCHAR) {
+	      if (field_type == SQL_C_WCHAR) {
 		push_sqlwchar((SQLWCHAR *)blob_buf, len / sizeof(SQLWCHAR));
 	      } else {
 #endif
@@ -607,14 +665,17 @@ static void f_fetch_row(INT32 args)
 #else
 	      buf = xalloc(len+2);
 #endif
-	      code = SQLGetData(PIKE_ODBC_RES->hstmt, (SQLUSMALLINT)(i+1),
-				PIKE_ODBC_RES->field_info[i].type,
-				buf, (len+1)
+
+	      ODBC_ALLOW();
+	      code = SQLGetData(hstmt, (SQLUSMALLINT)(i+1),
+				field_type, buf, (len+1)
 #ifdef SQL_WCHAR
-				* ((PIKE_ODBC_RES->field_info[i].type ==
-				    SQL_C_WCHAR)?sizeof(SQLWCHAR):1)
+				* ((field_type == SQL_C_WCHAR)?
+				   sizeof(SQLWCHAR):1)
 #endif
 				, &newlen);
+	      ODBC_DISALLOW();
+
 	      if (code != SQL_SUCCESS) {
 		Pike_error("odbc->fetch_row(): "
 			   "Unexpected code from SQLGetData(): %d\n"
@@ -627,7 +688,7 @@ static void f_fetch_row(INT32 args)
 			   "%d (expected %d)\n", newlen, len);
 	      }
 #ifdef SQL_WCHAR
-	      if (PIKE_ODBC_RES->field_info[i].type == SQL_C_WCHAR) {
+	      if (field_type == SQL_C_WCHAR) {
 		push_sqlwchar((SQLWCHAR *)buf, len / sizeof(SQLWCHAR));
 	      } else {
 #endif

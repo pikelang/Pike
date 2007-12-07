@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.44 2006/02/06 17:13:06 grubba Exp $
+|| $Id: odbc.c,v 1.45 2007/12/07 17:35:50 mast Exp $
 */
 
 /*
@@ -195,9 +195,12 @@ static void exit_odbc_struct(struct object *o)
 
   if (hdbc != SQL_NULL_HDBC) {
     if (PIKE_ODBC->flags & PIKE_ODBC_CONNECTED) {
+      RETCODE code;
       PIKE_ODBC->flags &= ~PIKE_ODBC_CONNECTED;
-      odbc_check_error("odbc_error", "Disconnecting HDBC",
-		       SQLDisconnect(hdbc),
+      ODBC_ALLOW();
+      code = SQLDisconnect(hdbc);
+      ODBC_DISALLOW();
+      odbc_check_error("odbc_error", "Disconnecting HDBC", code,
 		       (void (*)(void *))exit_odbc_struct, NULL);
       /* NOTE: Potential recursion above! */
     }
@@ -230,6 +233,8 @@ static void f_create(INT32 args)
   struct pike_string *database = NULL;
   struct pike_string *user = NULL;
   struct pike_string *pwd = NULL;
+  HDBC hdbc = PIKE_ODBC->hdbc;
+  RETCODE code;
 
   check_all_args("odbc->create", args,
 		 BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING|BIT_INT|BIT_VOID,
@@ -279,21 +284,24 @@ static void f_create(INT32 args)
   }
   if (PIKE_ODBC->flags & PIKE_ODBC_CONNECTED) {
     PIKE_ODBC->flags &= ~PIKE_ODBC_CONNECTED;
+    ODBC_ALLOW();
+    code = SQLDisconnect(hdbc);
+    ODBC_DISALLOW();
     /* Disconnect old hdbc */
-    odbc_check_error("odbc->create", "Disconnecting HDBC",
-		     SQLDisconnect(PIKE_ODBC->hdbc), NULL, NULL);
+    odbc_check_error("odbc->create", "Disconnecting HDBC", code, NULL, NULL);
   }
 
   /* FIXME: Support wide strings. */
 
-  odbc_check_error("odbc->create", "Connect failed",
-		   SQLConnect(PIKE_ODBC->hdbc, (unsigned char *)database->str,
-			      DO_NOT_WARN((SQLSMALLINT)database->len),
-			      (unsigned char *)user->str,
-			      DO_NOT_WARN((SQLSMALLINT)user->len),
-			      (unsigned char *)pwd->str,
-			      DO_NOT_WARN((SQLSMALLINT)pwd->len)),
-		   NULL, NULL);
+  ODBC_ALLOW();
+  code = SQLConnect(hdbc, (unsigned char *)database->str,
+		    DO_NOT_WARN((SQLSMALLINT)database->len),
+		    (unsigned char *)user->str,
+		    DO_NOT_WARN((SQLSMALLINT)user->len),
+		    (unsigned char *)pwd->str,
+		    DO_NOT_WARN((SQLSMALLINT)pwd->len));
+  ODBC_DISALLOW();
+  odbc_check_error("odbc->create", "Connect failed", code, NULL, NULL);
   PIKE_ODBC->flags |= PIKE_ODBC_CONNECTED;
   pop_n_elems(args);
 }
@@ -402,9 +410,15 @@ static void f_big_query(INT32 args)
 
 #ifdef ENABLE_IMPLICIT_COMMIT
     /* This breaks with Free TDS. */
-    odbc_check_error("odbc->big_query", "Couldn't commit query",
-		     SQLTransact(odbc_henv, PIKE_ODBC->hdbc, SQL_COMMIT),
-		     NULL, NULL);
+    {
+      HDBC hdbc = PIKE_ODBC->hdbc;
+      RETCODE code;
+      ODBC_ALLOW();
+      code = SQLTransact(odbc_henv, hdbc, SQL_COMMIT);
+      ODBC_DISALLOW();
+      odbc_check_error("odbc->big_query", "Couldn't commit query",
+		       code, NULL, NULL);
+    }
 #endif /* ENABLE_IMPLICIT_COMMIT */
 
     push_int(0);

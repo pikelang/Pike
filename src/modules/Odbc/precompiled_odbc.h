@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: precompiled_odbc.h,v 1.23 2006/11/06 13:16:57 grubba Exp $
+|| $Id: precompiled_odbc.h,v 1.24 2007/12/07 17:35:50 mast Exp $
 */
 
 /*
@@ -137,6 +137,19 @@ struct precompiled_odbc_result {
 
 /* Flags */
 #define PIKE_ODBC_CONNECTED	1
+
+/* http://msdn2.microsoft.com/en-us/library/ms715361.aspx says:
+ *
+ *   On multithread operating systems, drivers must be thread-safe.
+ *   That is, it must be possible for applications to use the same
+ *   handle on more than one thread.
+ *
+ * This means we don't need a lock at all on the connection when we
+ * release the interpreter lock. If this really is true remains to be
+ * seen..
+ */
+#define ODBC_ALLOW() THREADS_ALLOW()
+#define ODBC_DISALLOW() THREADS_DISALLOW()
 
 /*
  * Prototypes
