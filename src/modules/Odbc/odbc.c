@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.42 2007/06/29 14:46:01 grubba Exp $
+|| $Id: odbc.c,v 1.43 2007/12/07 16:53:56 mast Exp $
 */
 
 /*
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.42 2007/06/29 14:46:01 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.43 2007/12/07 16:53:56 mast Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -43,6 +43,24 @@ RCSID("$Id: odbc.c,v 1.42 2007/06/29 14:46:01 grubba Exp $");
 #define fp Pike_fp
 
 #ifdef HAVE_ODBC
+
+/* http://msdn2.microsoft.com/en-us/library/ms715361.aspx says:
+ *
+ *   On multithread operating systems, drivers must be thread-safe.
+ *   That is, it must be possible for applications to use the same
+ *   handle on more than one thread.
+ *
+ * This means we don't need a lock at all on the connection when we
+ * release the interpreter lock. If this really is true remains to be
+ * seen..
+ */
+#ifdef PIKE_THREADS
+#define ODBC_ALLOW() THREADS_ALLOW()
+#define ODBC_DISALLOW()	THREADS_DISALLOW()
+#else
+#define ODBC_ALLOW()
+#define ODBC_DISALLOW()
+#endif
 
 /*
  * Globals
@@ -176,9 +194,12 @@ static void exit_odbc_struct(struct object *o)
 
   if (hdbc != SQL_NULL_HDBC) {
     if (PIKE_ODBC->flags & PIKE_ODBC_CONNECTED) {
+      RETCODE code;
       PIKE_ODBC->flags &= ~PIKE_ODBC_CONNECTED;
-      odbc_check_error("odbc_error", "Disconnecting HDBC",
-		       SQLDisconnect(hdbc),
+      THREADS_ALLOW();
+      code = SQLDisconnect(hdbc);
+      THREADS_DISALLOW();
+      odbc_check_error("odbc_error", "Disconnecting HDBC", code,
 		       (void (*)(void *))exit_odbc_struct, NULL);
       /* NOTE: Potential recursion above! */
     }
@@ -211,6 +232,8 @@ static void f_create(INT32 args)
   struct pike_string *database = NULL;
   struct pike_string *user = NULL;
   struct pike_string *pwd = NULL;
+  HDBC hdbc = PIKE_ODBC->hdbc;
+  RETCODE code;
 
   check_all_args("odbc->create", args,
 		 BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING|BIT_INT|BIT_VOID,
@@ -262,21 +285,24 @@ static void f_create(INT32 args)
   }
   if (PIKE_ODBC->flags & PIKE_ODBC_CONNECTED) {
     PIKE_ODBC->flags &= ~PIKE_ODBC_CONNECTED;
+    THREADS_ALLOW();
+    code = SQLDisconnect(hdbc);
+    THREADS_DISALLOW();
     /* Disconnect old hdbc */
-    odbc_check_error("odbc->create", "Disconnecting HDBC",
-		     SQLDisconnect(PIKE_ODBC->hdbc), NULL, NULL);
+    odbc_check_error("odbc->create", "Disconnecting HDBC", code, NULL, NULL);
   }
 
   /* FIXME: Support wide strings. */
 
-  odbc_check_error("odbc->create", "Connect failed",
-		   SQLConnect(PIKE_ODBC->hdbc, (unsigned char *)database->str,
-			      DO_NOT_WARN((SQLSMALLINT)database->len),
-			      (unsigned char *)user->str,
-			      DO_NOT_WARN((SQLSMALLINT)user->len),
-			      (unsigned char *)pwd->str,
-			      DO_NOT_WARN((SQLSMALLINT)pwd->len)),
-		   NULL, NULL);
+  THREADS_ALLOW();
+  code = SQLConnect(hdbc, (unsigned char *)database->str,
+		    DO_NOT_WARN((SQLSMALLINT)database->len),
+		    (unsigned char *)user->str,
+		    DO_NOT_WARN((SQLSMALLINT)user->len),
+		    (unsigned char *)pwd->str,
+		    DO_NOT_WARN((SQLSMALLINT)pwd->len));
+  THREADS_DISALLOW();
+  odbc_check_error("odbc->create", "Connect failed", code, NULL, NULL);
   PIKE_ODBC->flags |= PIKE_ODBC_CONNECTED;
   pop_n_elems(args);
 }
@@ -341,9 +367,15 @@ static void f_big_query(INT32 args)
 
 #ifdef ENABLE_IMPLICIT_COMMIT
     /* This breaks with Free TDS. */
-    odbc_check_error("odbc->big_query", "Couldn't commit query",
-		     SQLTransact(odbc_henv, PIKE_ODBC->hdbc, SQL_COMMIT),
-		     NULL, NULL);
+    {
+      HDBC hdbc = PIKE_ODBC->hdbc;
+      RETCODE code;
+      THREADS_ALLOW();
+      code = SQLTransact(odbc_henv, hdbc, SQL_COMMIT);
+      THREADS_DISALLOW();
+      odbc_check_error("odbc->big_query", "Couldn't commit query",
+		       code, NULL, NULL);
+    }
 #endif /* ENABLE_IMPLICIT_COMMIT */
 
     push_int(0);
