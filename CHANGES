@@ -29,6 +29,7 @@ o Don't crash when not sending ssl options to Mysql.
 o Fix for case where ODBC tried to write error messages with wide
   strings in them.
 o Bugfixes for ODBC long fields.
+o Added unlocking of the interpreter lock for all blocking ODBC operations.
 o Added handling of ISO-6937:2001 in charset decoder.
 o Many dup2() fixes in Stdio.File.
 o Fixed Crypto.set_{en,de}crypt_key() to accept the force flag.
