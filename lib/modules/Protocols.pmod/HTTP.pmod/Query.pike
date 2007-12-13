@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.90 2007/08/03 17:20:52 grubba Exp $
+// $Id: Query.pike,v 1.91 2007/12/13 11:41:05 per Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -906,14 +906,15 @@ string data(int|void max_length)
        werror ("<- data() read 5\n");
 #endif
        string s = con->read(l);
-       if (!s) {
+       if (!s && strlen(buf) <= datapos) {
 	 errno = con->errno();
 #ifdef HTTP_QUERY_DEBUG
 	 werror ("<- (read error: %s)\n", strerror (errno));
 #endif
 	 return 0;
        }
-       buf += s;
+       if( s ) 
+	 buf += s;
      }
    }
    if(zero_type( len ))
