@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.194 2006/08/06 14:28:16 mast Exp $
+|| $Id: array.c,v 1.195 2007/12/15 21:30:36 grubba Exp $
 */
 
 #include "global.h"
@@ -394,11 +394,20 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
 #endif
 
   /* Can we fit it into the existing block? */
-  if(v->refs<=1 && v->malloced_size > v->size)
+  if(v->refs<=1 && (v->malloced_size > v->size))
   {
-    MEMMOVE((char *)(ITEM(v)+index+1),
-	    (char *)(ITEM(v)+index),
-	    (v->size-index) * sizeof(struct svalue));
+    if ((v->item != v->real_item) &&
+	(((index<<1) < v->size) ||
+	 ((v->item + v->size) == (v->real_item + v->malloced_size)))) {
+      MEMMOVE((char *)(ITEM(v)-1),
+	      (char *)(ITEM(v)),
+	      index * sizeof(struct svalue));
+      v->item--;
+    } else {
+      MEMMOVE((char *)(ITEM(v)+index+1),
+	      (char *)(ITEM(v)+index),
+	      (v->size-index) * sizeof(struct svalue));
+    }
     ITEM(v)[index].type=T_INT;
 #ifdef __CHECKER__
     ITEM(v)[index].subtype=0;
@@ -408,7 +417,7 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
   }else{
     struct array *ret;
 
-    ret = array_set_flags(allocate_array_no_init(v->size+1, v->size),
+    ret = array_set_flags(allocate_array_no_init(v->size+1, v->size + 1),
 			  v->flags);
     ret->type_field = v->type_field;
 
@@ -488,7 +497,8 @@ PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size)
   {
     /* We should grow the array */
 
-    if(a->malloced_size >= size)
+    if((a->malloced_size >= size) &&
+       ((a->item + size) <= (a->real_item + a->malloced_size)))
     {
       for(;a->size < size; a->size++)
       {
@@ -500,8 +510,7 @@ PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size)
       return a;
     } else {
       struct array *ret;
-      ret = array_set_flags(low_allocate_array(size, (size>>1) + 4),
-			    a->flags);
+      ret = array_set_flags(low_allocate_array(size, size + 1), a->flags);
       MEMCPY(ITEM(ret), ITEM(a), sizeof(struct svalue)*a->size);
       ret->type_field = DO_NOT_WARN((TYPE_FIELD)(a->type_field | BIT_INT));
       a->size=0;
@@ -1475,6 +1484,7 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
 {
   INT32 e, size;
   struct array *v;
+  struct array *v2 = NULL;
 
   for(size=e=0;e<args;e++)
     size+=argp[e].u.array->size;
@@ -1482,44 +1492,87 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
 #if 1
   {
     INT32 tmp=0;
+    INT32 tmp2 = size + 1;
+    INT32 e2 = -1;
+
     for(e=0;e<args;e++)
     {
       v=argp[e].u.array;
       if(v->refs == 1 &&
-	 (v->item - v->real_item) >= tmp &&
-	 v->malloced_size >= size - tmp)
+	 v->malloced_size >= size)
       {
-	debug_malloc_touch(v);
-	argp[e].type=T_INT;
-	for(tmp=e-1;tmp>=0;tmp--)
-	{
-	  debug_malloc_touch(argp[tmp].u.array);
-	  v->type_field|=argp[tmp].u.array->type_field;
-	  assign_svalues_no_free(ITEM(v) - argp[tmp].u.array->size,
-				 ITEM(argp[tmp].u.array),
-				 argp[tmp].u.array->size,
-				 argp[tmp].u.array->type_field);
-	  v->item-=argp[tmp].u.array->size;
-	  v->malloced_size+=argp[tmp].u.array->size;
-	}
+	if ((v->item - v->real_item) >= tmp) {
+	  debug_malloc_touch(v);
+	  argp[e].type=T_INT;
+	  for(tmp=e-1;tmp>=0;tmp--)
+	  {
+	    debug_malloc_touch(argp[tmp].u.array);
+	    v->type_field|=argp[tmp].u.array->type_field;
+	    assign_svalues_no_free(ITEM(v) - argp[tmp].u.array->size,
+				   ITEM(argp[tmp].u.array),
+				   argp[tmp].u.array->size,
+				   argp[tmp].u.array->type_field);
+	    v->item-=argp[tmp].u.array->size;
+	    v->size+=argp[tmp].u.array->size;
+	  }
 
-	for(tmp=e+1;tmp<args;tmp++)
-	{
-	  debug_malloc_touch(argp[tmp].u.array);
-	  v->type_field|=argp[tmp].u.array->type_field;
-	  assign_svalues_no_free(ITEM(v) + v->size,
-				 ITEM(argp[tmp].u.array),
-				 argp[tmp].u.array->size,
-				 argp[tmp].u.array->type_field);
-	  v->size+=argp[tmp].u.array->size;
-	}
+	  for(tmp=e+1;tmp<args;tmp++)
+	  {
+	    debug_malloc_touch(argp[tmp].u.array);
+	    v->type_field|=argp[tmp].u.array->type_field;
+	    assign_svalues_no_free(ITEM(v) + v->size,
+				   ITEM(argp[tmp].u.array),
+				   argp[tmp].u.array->size,
+				   argp[tmp].u.array->type_field);
+	    v->size+=argp[tmp].u.array->size;
+	  }
 #ifdef PIKE_DEBUG
-	if(d_flag>1)
-	  check_array(v);
+	  if(d_flag>1)
+	    check_array(v);
 #endif
-	return v;
+	  return v;
+	}
+	if (tmp - (v->item - v->real_item) < tmp2) {
+	  /* Got a potential candidate. */
+	  tmp2 = tmp - (v->item - v->real_item);
+	  v2 = v;
+	  e2 = e;
+	}
       }
       tmp+=v->size;
+    }
+    if (v2) {
+      debug_malloc_touch(v2);
+      argp[e2].type=T_INT;
+      MEMMOVE((char *)(ITEM(v2)+tmp2), (char *)ITEM(v2),
+	      v2->size * sizeof(struct svalue));
+      v2->item += tmp2;
+      for(tmp=e2-1;tmp>=0;tmp--)
+      {
+	debug_malloc_touch(argp[tmp].u.array);
+	v2->type_field|=argp[tmp].u.array->type_field;
+	assign_svalues_no_free(ITEM(v2) - argp[tmp].u.array->size,
+			       ITEM(argp[tmp].u.array),
+			       argp[tmp].u.array->size,
+			       argp[tmp].u.array->type_field);
+	v2->item-=argp[tmp].u.array->size;
+	v2->size+=argp[tmp].u.array->size;
+      }
+      for(tmp=e2+1;tmp<args;tmp++)
+      {
+	debug_malloc_touch(argp[tmp].u.array);
+	v2->type_field|=argp[tmp].u.array->type_field;
+	assign_svalues_no_free(ITEM(v2) + v2->size,
+			       ITEM(argp[tmp].u.array),
+			       argp[tmp].u.array->size,
+			       argp[tmp].u.array->type_field);
+	v2->size+=argp[tmp].u.array->size;
+      }
+#ifdef PIKE_DEBUG
+      if(d_flag>1)
+	check_array(v2);
+#endif
+      return v2;
     }
   }
 #endif
@@ -1959,8 +2012,13 @@ node *make_node_from_array(struct array *a)
   }else{
     node *ret=0;
     debug_malloc_touch(a);
-    for(e=0; e<a->size; e++)
-      ret=mknode(F_ARG_LIST,ret,mksvaluenode(ITEM(a)+e));
+    for(e = a->size; e--;) {
+      if (ret) {
+	ret = mknode(F_ARG_LIST, mksvaluenode(ITEM(a)+e), ret);
+      } else {
+	ret = mksvaluenode(ITEM(a)+e);
+      }
+    }
     return mkefuncallnode("aggregate",ret);
   }
 }
@@ -2390,6 +2448,9 @@ PMOD_EXPORT void check_array(struct array *a)
 
   if(a->malloced_size < 0)
     Pike_fatal("Array malloced size is negative!\n");
+
+  if((a->item + a->size) > (a->real_item + a->malloced_size))
+    Pike_fatal("Array uses memory outside of the malloced block!\n");
 
   if(a->item < a->real_item)
   {
