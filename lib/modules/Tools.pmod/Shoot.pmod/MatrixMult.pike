@@ -7,11 +7,13 @@ int size = 100;
 
 array(array(float)) mkmatrix(int rows, int cols) 
 {
-   return map(enumerate(rows*cols,1,1),
-	      lambda(int f)
+   return map(enumerate(rows*cols,1,0),
+	      lambda(int f, float den)
 	      {
-		 return ((float)f)/(rows*cols);
-	      })/cols;
+		if (f & 1)
+		  return -((float)f)/den;
+		return ((float)f)/den;
+	      }, (float)rows*cols)/cols;
 }
 
 void test(int n)
