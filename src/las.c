@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.397 2007/11/20 18:19:21 grubba Exp $
+|| $Id: las.c,v 1.398 2007/12/15 18:50:51 grubba Exp $
 */
 
 #include "global.h"
@@ -161,6 +161,7 @@ void check_tree(node *n, int depth)
 
     if(d_flag<2) break;
 
+#ifdef PIKE_DEBUG
     if(!(depth & 1023))
     {
       node *q;
@@ -168,6 +169,7 @@ void check_tree(node *n, int depth)
 	if(q->parent==n)
 	  Pike_fatal("Cyclic node structure found.\n");
     }
+#endif
 
     if(car_is_node(n))
     {
