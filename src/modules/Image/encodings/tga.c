@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tga.c,v 1.39 2005/01/23 13:30:04 nilsson Exp $
+|| $Id: tga.c,v 1.40 2007/12/15 13:37:13 grubba Exp $
 */
 
 /*
@@ -828,7 +828,7 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
     free(data);
   }
   UNSET_ONERROR(err);
-  obuf.len -= buf.len;
+  obuf.len -= fp->len;
   return obuf;
 }
 
