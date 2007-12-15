@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.870 2007/11/15 15:57:09 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.871 2007/12/15 14:58:11 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2249,15 +2249,18 @@ if test $ldflags_is_set = no ; then
     $with_root/usr/local/lib $with_root/sw/local/lib $with_root/sw/lib \
     $with_root/usr/gnu/lib $with_root/opt/gnu/lib $with_root/sw/gnu/lib \
     $with_root/usr/freeware/lib $with_root/usr/pkg/lib \
-    $with_root/opt/sfw/lib $with_root/opt/gnome-1.4/lib \
-    `echo $with_root/usr/X11*/lib | sort -r`
+    $with_root/opt/sfw/lib $with_root/opt/gnome-1.4/lib $with_root/opt/csw/lib \
+    `echo $with_root/usr/X11*/lib | sort -r` \
+    `test "x$GCC" = xno || $CC -print-search-dirs | sed -ne 's/^libraries://p' | sed 's/:/ /g'`
   do
+    dd="`(cd \"$dd\"/. && /bin/pwd) || echo \"$dd\" | sed 's:/*$::'`"
     if test "$dd" = "/lib"; then continue; fi
     if test "$dd" = "/usr/lib"; then continue; fi
     for suff in $pike_cv_abi_suffixes; do
       d="$dd$suff"
       AC_MSG_CHECKING($d)
       if test -d "$d/." ; then
+	d="`(cd \"$d\"/. && /bin/pwd) || echo \"$d\"`"
   	case " $LDFLAGS " in
   	  *\ -L$d\ -R$d\ * | *\ -R$d\ -L$d\ *)
   	    AC_MSG_RESULT(already added)
