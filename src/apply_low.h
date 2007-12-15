@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.29 2006/03/17 17:56:04 grubba Exp $
+|| $Id: apply_low.h,v 1.30 2007/12/15 18:21:46 grubba Exp $
 */
 
     {
@@ -202,6 +202,12 @@
       
 #ifdef PROFILING
       new_frame->self_time_base=function->total_time;
+#endif
+
+#ifdef PIKE_DEBUG
+      if (IDENTIFIER_IS_ALIAS(function->identifier_flags)) {
+	Pike_fatal("Calling an alias!\n");
+      }
 #endif
 
       switch(function->identifier_flags & IDENTIFIER_TYPE_MASK)
