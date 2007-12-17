@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.69 2006/07/05 20:49:17 mast Exp $
+|| $Id: array.h,v 1.70 2007/12/17 18:02:59 grubba Exp $
 */
 
 #ifndef ARRAY_H
@@ -116,6 +116,7 @@ PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
 PMOD_EXPORT void array_free_index(struct array *v,INT32 ind);
 PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s);
 PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 ind);
+void o_append_array(INT32 args);
 PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size);
 PMOD_EXPORT struct array *array_shrink(struct array *v, ptrdiff_t size);
 PMOD_EXPORT struct array *array_remove(struct array *v,INT32 ind);
