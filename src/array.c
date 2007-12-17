@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.195 2007/12/15 21:30:36 grubba Exp $
+|| $Id: array.c,v 1.196 2007/12/17 18:00:55 grubba Exp $
 */
 
 #include "global.h"
@@ -436,6 +436,82 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
   array_set_index(v,index,s);
 
   return v;
+}
+
+/*
+ * lval += ({ @args });
+ *
+ * Stack is lvalue followed by arguments.
+ */
+void o_append_array(INT32 args)
+{
+  struct svalue *lval = Pike_sp - args;
+  struct svalue *val = lval + 2;
+#ifdef PIKE_DEBUG
+  if (args < 3) {
+    Pike_fatal("Too few arguments to o_append_array(): %d\n", args);
+  }
+#endif
+  args -= 3;
+  /* Note: val should always be a zero here! */
+  lvalue_to_svalue_no_free(val, lval);
+
+  if (val->type == T_ARRAY) {
+    struct svalue tmp;
+    struct array *v = val->u.array;
+    /* This is so that we can minimize the number of references
+     * to the array, and be able to use destructive operations.
+     * It's done by freeing the old reference to foo after it has been
+     * pushed on the stack. That way foo can have only 1 reference if we
+     * are lucky, and then the low array manipulation routines can
+     * be destructive if they like.
+     */
+    tmp.type=PIKE_T_INT;
+    tmp.subtype=NUMBER_NUMBER;
+    tmp.u.integer=0;
+    assign_lvalue(lval, &tmp);
+
+    if (args == 1) {
+      val->u.array = array_insert(v, Pike_sp - 1, v->size);
+      pop_stack();
+    } else if (!args) {
+      /* FIXME: Weak? */
+      if ((v->refs > 1) && (v->size)) {
+	val->u.array = copy_array(v);
+	free_array(v);
+      }
+    } else {
+      int i;
+      for (i = 0; i < args; i++) {
+	v = array_insert(v, val + 1 + i, v->size);
+      }
+      val->u.array = v;
+      pop_n_elems(args);
+    }
+    assign_lvalue(lval, val);
+  } else {
+    int i;
+    struct object *o;
+    struct program *p;
+    /* Fall back to aggregate(). */
+    f_aggregate(args);
+    if ((val->type == T_OBJECT) &&
+	/* One ref in the lvalue, and one on the stack. */
+	((o = val->u.object)->refs <= 2) &&
+	(p = o->prog) &&
+	(i = FIND_LFUN(p->inherits[Pike_sp[-2].subtype].prog,
+		       LFUN_ADD_EQ)) != -1) {
+      apply_low(o, i + p->inherits[Pike_sp[-2].subtype].identifier_level, 1);
+      /* NB: The lvalue already contains the object, so
+       *     no need to reassign it.
+       */
+      pop_stack();
+    } else {
+      f_add(2);
+      assign_lvalue(lval, val);
+    }
+  }
+  stack_pop_2_elems_keep_top();
 }
 
 /**
@@ -1952,7 +2028,9 @@ node *make_node_from_array(struct array *a)
   INT32 e;
 
   if(!a->size)
-      return mkefuncallnode("aggregate",0);
+    return mkefuncallnode("aggregate",0);
+  if (a->size == 1)
+    return mkefuncallnode("aggregate", mksvaluenode(ITEM(a)));
     
   if(array_fix_type_field(a) == BIT_INT)
   {
