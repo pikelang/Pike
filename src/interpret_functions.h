@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.195 2007/06/11 18:13:27 grubba Exp $
+|| $Id: interpret_functions.h,v 1.196 2007/12/17 18:01:52 grubba Exp $
 */
 
 /*
@@ -1793,6 +1793,10 @@ OPCODE0(F_PUSH_ARRAY, "@", I_UPDATE_SP, {
   Pike_sp--;
   push_array_items(Pike_sp->u.array);
 });
+
+OPCODE0(F_APPEND_ARRAY, "append array", I_UPDATE_SP|I_UPDATE_M_SP, {
+    o_append_array(Pike_sp - *(--Pike_mark_sp));
+  });
 
 OPCODE2(F_LOCAL_LOCAL_INDEX, "local[local]", I_UPDATE_SP, {
   LOCAL_VAR(struct svalue *s);
