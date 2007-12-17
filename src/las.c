@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.398 2007/12/15 18:50:51 grubba Exp $
+|| $Id: las.c,v 1.399 2007/12/17 18:03:33 grubba Exp $
 */
 
 #include "global.h"
@@ -860,6 +860,7 @@ node *debug_mknode(int token, node *a, node *b)
     res->node_info |= OPT_ASSIGNMENT;
     break;
 
+  case F_APPEND_ARRAY:
   case F_ASSIGN:
   case F_MOD_EQ:
   case F_AND_EQ:
@@ -3305,6 +3306,25 @@ void fix_type_field(node *n)
       copy_pike_type(n->type, CDR(n)->type);
     }else{
       n->type = or_pike_types(CAR(n)->type, CDR(n)->type, 0);
+    }
+    break;
+
+  case F_APPEND_ARRAY:
+    if (!CAR(n) || (CAR(n)->type == void_type_string)) {
+      yyerror("Assigning a void expression.");
+      copy_pike_type(n->type, void_type_string);
+    } else if (!CDR(n)) {
+      copy_pike_type(n->type, CAR(n)->type);
+    } else {
+      struct pike_type *tmp;
+      /* Ensure that the type-fields are up to date. */
+      fix_type_field(CAR(n));
+      fix_type_field(CDR(n));
+      type_stack_mark();
+      push_finished_type(CDR(n)->type);
+      push_type(T_ARRAY);
+      n->type = and_pike_types(CAR(n)->type, tmp = pop_unfinished_type());
+      free_type(tmp);
     }
     break;
 

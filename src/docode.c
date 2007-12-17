@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.190 2007/10/06 13:45:22 grubba Exp $
+|| $Id: docode.c,v 1.191 2007/12/17 18:02:35 grubba Exp $
 */
 
 #include "global.h"
@@ -823,6 +823,17 @@ static int do_docode2(node *n, int flags)
     code_expression(CAR(n), 0, "`@");
     emit0(F_PUSH_ARRAY);
     return 0;
+  }
+
+  case F_APPEND_ARRAY: {
+    emit0(F_MARK);
+    PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+    do_docode(CAR(n),DO_LVALUE);
+    emit0(F_CONST0);	/* Reserved for svalue. */
+    do_docode(CDR(n),0);
+    emit0(F_APPEND_ARRAY);
+    POP_AND_DONT_CLEANUP;
+    return 1;
   }
 
   case '?':
