@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.86 2007/10/06 13:45:22 grubba Exp $
+// $Id: treeopt.in,v 1.87 2007/12/17 18:04:14 grubba Exp $
 //
 // The tree optimizer
 //
@@ -901,6 +901,12 @@ F_SUB_EQ(0, 1 = F_CONSTANT[$$->u.sval.type == T_INT]
 	 [($$->u.sval.u.integer) == -1]):
   F_INC($0, -);
 
+// a += ({ args... })  ->  F_APPEND_ARRAY(a, args...)
+F_ADD_EQ(0, F_APPLY(F_CONSTANT
+		    [$$->u.sval.type == T_FUNCTION]
+		    [$$->u.sval.subtype == FUNCTION_BUILTIN]
+		    [$$->u.sval.u.efun->function == debug_f_aggregate], 1)):
+  F_APPEND_ARRAY($0, $1);
 
 F_INDEX(-, 0 = *):
   F_COMMA_EXPR(F_POP_VALUE($0, -), 0);
