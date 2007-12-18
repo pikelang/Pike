@@ -365,6 +365,9 @@ float log10(float x) { return log(x)/log(10.0); }
 //! The 2-logarithm of @[x].
 float log2(float x) { return log(x)/log(2.0); }
 
+//! The @[n]-logatirhm of @[x].
+float logn(float n, float x) { return log(x)/log(n); }
+
 
 // Only available when there is Gmp.mpz
 #if constant(Gmp.mpz)
