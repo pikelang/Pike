@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: matrix_code.h,v 1.12 2007/12/18 23:24:48 nilsson Exp $
+|| $Id: matrix_code.h,v 1.13 2007/12/18 23:48:49 nilsson Exp $
 */
 
 /*
@@ -293,6 +293,8 @@ void matrixX(_cast)(INT32 args)
 	    f_aggregate(ys);
 	    return;
 	 }
+         else
+           Pike_error("Can only cast to array.\n");
 
    SIMPLE_BAD_ARG_ERROR("cast",1,"string");
 }
@@ -675,7 +677,7 @@ static void matrixX(_cross)(INT32 args)
    FTYPE *a,*b,*d;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("matrix->`×",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("cross",1);
 
    pop_n_elems(args-1); /* shouldn't be needed */
 
