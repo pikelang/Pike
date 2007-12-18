@@ -94,6 +94,37 @@ MATRIX_CONVOLVE_TEST(
                    ({     72,    171,    100}) }) )
                      );
 
+// Testing creating all classes
+test_eq( Math.Matrix( ({({1,2,3})}) )->min(), 1.0 )
+test_eq( Math.IMatrix( ({({1,2,3})}) )->min(), 1 )
+test_eq( Math.FMatrix( ({({1,2,3})}) )->min(), 1.0 )
+test_eq( Math.SMatrix( ({({1,2,3})}) )->min(), 1 )
+cond_resolv([[ Math.LMatrix,
+  test_eq( Math.Matrix( ({({1,2,3})}) )->min(), 1 )
+]])
+
+// Testing different creation methods
+
+test_equal( (array)Math.IMatrix(2,2), ({ ({ 1,0 }), ({ 0,1 }) }) )
+test_equal( (array)Math.IMatrix(2,2,"identity"), ({ ({ 1,0 }), ({ 0,1 }) }) )
+test_equal( (array)Math.IMatrix(2,2,"clr"), ({ ({ 0,0 }), ({ 0,0 }) }) )
+
+test_equal( (array)Math.IMatrix( ({ 1,2 }) ), ({({1,2})}) )
+dnl test_eval_error( Math.Matrix( ({ ({ 1 }), ({ 2,3 }) }) ) )
+test_eq( Math.IMatrix( ({ ({ 1, 2.0, Gmp.mpz(3) }) }) )->max(), 3)
+test_eval_error( Math.Matrix( ({ ({ 0, "1" }) }) ) )
+dnl test_eval_error( Math.Matrix( 0, 1 ) )
+dnl test_eval_error( Math.Matrix( 1, 0 ) )
+
+test_equal( (array)Math.IMatrix("identity",2), ({ ({ 1,0 }), ({ 0,1 }) }) )
+test_equal( (array)Math.IMatrix("rotate",2,90,10,10,10),
+  ({ ({ 144, 135 }), ({ 153, 144 }) }) )
+dnl test_eval_error( Math.Matrix("rotate",1,90,10,10,10) )
+
+dnl This mode is broken
+dnl test_equal( (array)Math.IMatrix("rotate",2,
+dnl   Math.IMatrix( ({({10,10,10})}) )), ({ ({ 144,135 }), ({ 153, 144 }) }))
+
 // Inf
 test_true([[Math.inf>0.0]])
 test_true( Math.inf == Math.inf )
@@ -143,4 +174,11 @@ test_convert(90, "deg", "rad")
 test_convert(90, "rad", "gon")
 test_convert(90, "gon", "str")
 test_convert(90, "str", "deg")
+
+test_eq(Math.log2(64.0), 6.0)
+test_eq(Math.log10(100.0), 2.0)
+test_eq(Math.logn(3.0, 81.0), 4.0)
+
+test_true( floatp(Math.e) )
+test_true( floatp(Math.pi) )
 END_MARKER
