@@ -1,6 +1,6 @@
 /* sqlite.cmod -*- c -*-
  *
- * $Id: sqlite.cmod,v 1.17 2006/07/09 22:59:17 nilsson Exp $
+ * $Id: sqlite.cmod,v 1.18 2007/12/18 18:24:14 grubba Exp $
  */
 
 #include "global.h"
@@ -13,7 +13,7 @@
 #include "mapping.h"
 #include "threads.h"
 
-#ifdef HAVE_SQLITE3_H
+#if defined(HAVE_SQLITE3_H) && defined(HAVE_LIBSQLITE3)
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -40,9 +40,12 @@ if((X)!=SQLITE_OK) {				\
   SQLite_handle_error((db));			\
 }
 
-static void SQLite_handle_error(sqlite3 *db) {
+static void SQLite_handle_error(sqlite3 *db)
+{
   if (db) {
-    Pike_error("Sql.SQLite: %s\n", sqlite3_errmsg(db));
+    push_text(sqlite3_errmsg(db));
+    f_utf8_to_string(1);
+    Pike_error("Sql.SQLite: %S\n", Pike_sp[-1].u.string);
   } else {
     Pike_error("Sql.SQLite: Internal module error\n");
   }
@@ -481,7 +484,7 @@ PIKECLASS ResObj
 }
 
 
-#endif /* HAVE_SQLITE3_H */
+#endif /* HAVE_SQLITE3_H && HAVE_LIBSQLITE3 */
 
 PIKE_MODULE_INIT {
   INIT;
