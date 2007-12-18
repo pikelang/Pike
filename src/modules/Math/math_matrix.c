@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math_matrix.c,v 1.39 2005/01/20 10:50:31 nilsson Exp $
+|| $Id: math_matrix.c,v 1.40 2007/12/18 23:24:49 nilsson Exp $
 */
 
 #include "global.h"
@@ -41,6 +41,7 @@ extern struct program *math_fmatrix_program;
 extern struct program *math_lmatrix_program;
 #endif /* INT64 */
 
+#define PNAME "Matrix"
 #define FTYPE double
 #define PTYPE tFloat
 #define matrixX(X) PIKE_CONCAT(matrix,X)
@@ -54,7 +55,9 @@ extern struct program *math_lmatrix_program;
 #undef XmatrixY
 #undef FTYPE
 #undef PTYPE
+#undef PNAME
 
+#define PNAME "IMatrix"
 #define FTYPE int
 #define PTYPE tInt
 #define matrixX(X) PIKE_CONCAT(imatrix,X)
@@ -68,8 +71,10 @@ extern struct program *math_lmatrix_program;
 #undef XmatrixY
 #undef FTYPE
 #undef PTYPE
+#undef PNAME
 
 #ifdef INT64
+#define PNAME "LMatrix"
 #define FTYPE INT64
 #define PTYPE tInt
 #define matrixX(X) PIKE_CONCAT(lmatrix,X)
@@ -83,8 +88,10 @@ extern struct program *math_lmatrix_program;
 #undef XmatrixY
 #undef FTYPE
 #undef PTYPE
+#undef PNAME
 #endif /* INT64 */
 
+#define PNAME "FMatrix"
 #define FTYPE float
 #define PTYPE tFloat
 #define matrixX(X) PIKE_CONCAT(fmatrix,X)
@@ -98,7 +105,9 @@ extern struct program *math_lmatrix_program;
 #undef XmatrixY
 #undef FTYPE
 #undef PTYPE
+#undef PNAME
 
+#define PNAME "SMatrix"
 #define FTYPE short
 #define PTYPE tInt
 #define matrixX(X) PIKE_CONCAT(smatrix,X)
@@ -112,6 +121,7 @@ extern struct program *math_lmatrix_program;
 #undef XmatrixY
 #undef FTYPE
 #undef PTYPE
+#undef PNAME
 
 /*! @decl void create(array(array(int|float)) matrix_2d)
  *! @decl void create(array(int|float) matrix_1d)
@@ -217,6 +227,14 @@ extern struct program *math_lmatrix_program;
 
 /*! @decl Matrix convolve(object with)
  *!	Convolve called matrix with the argument.
+ */
+
+/*! @decl int xsize()
+ *!     Returns the width of the matrix.
+ */
+
+/*! @decl int ysize()
+ *!     Returns the height of the matrix.
  */
 
 /*! @endclass
