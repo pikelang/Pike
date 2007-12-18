@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.278 2007/10/05 09:21:32 grubba Exp $
+|| $Id: object.c,v 1.279 2007/12/18 19:10:03 grubba Exp $
 */
 
 #include "global.h"
@@ -331,18 +331,23 @@ void call_pike_initializers(struct object *o, int args)
   ptrdiff_t fun;
   struct program *p=o->prog;
   if(!p) return;
+  STACK_LEVEL_START(args);
   fun=FIND_LFUN(p, LFUN___INIT);
   if(fun!=-1)
   {
     apply_low(o,fun,0);
     pop_stack();
   }
+  STACK_LEVEL_CHECK(args);
   fun=FIND_LFUN(p, LFUN_CREATE);
   if(fun!=-1)
   {
     apply_low(o,fun,args);
     pop_stack();
+  } else {
+    pop_n_elems(args);
   }
+  STACK_LEVEL_DONE(0);
 }
 
 PMOD_EXPORT void do_free_object(struct object *o)
@@ -362,14 +367,22 @@ PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args)
     Pike_error("Attempting to clone an unfinished program\n");
 
   o=low_clone(p);
-  SET_ONERROR(tmp, do_free_object, o);
-  debug_malloc_touch(o);
+  if (!args) {
+    push_object(o);
+  } else {
+    SET_ONERROR(tmp, do_free_object, o);
+    debug_malloc_touch(o);
+  }
   call_c_initializers(o);
   debug_malloc_touch(o);
   call_pike_initializers(o,args);
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
-  UNSET_ONERROR(tmp);
+  if (!args) {
+    Pike_sp--;
+  } else {
+    UNSET_ONERROR(tmp);
+  }
   return o;
 }
 
@@ -379,12 +392,10 @@ PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args)
  */
 PMOD_EXPORT struct object *fast_clone_object(struct program *p)
 {
-  ONERROR tmp;
   struct object *o=low_clone(p);
-  SET_ONERROR(tmp, do_free_object, o);
-  debug_malloc_touch(o);
+  push_object(o);
   call_c_initializers(o);
-  UNSET_ONERROR(tmp);
+  Pike_sp--;
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
   return o;
@@ -397,8 +408,12 @@ PMOD_EXPORT struct object *parent_clone_object(struct program *p,
 {
   ONERROR tmp;
   struct object *o=low_clone(p);
-  SET_ONERROR(tmp, do_free_object, o);
-  debug_malloc_touch(o);
+  if (!args) {
+    push_object(o);
+  } else {
+    SET_ONERROR(tmp, do_free_object, o);
+    debug_malloc_touch(o);
+  }
 
   if(!(p->flags & PROGRAM_PASS_1_DONE))
     Pike_error("Attempting to clone an unfinished program\n");
@@ -410,7 +425,11 @@ PMOD_EXPORT struct object *parent_clone_object(struct program *p,
   }
   call_c_initializers(o);
   call_pike_initializers(o,args);
-  UNSET_ONERROR(tmp);
+  if (!args) {
+    Pike_sp--;
+  } else {
+    UNSET_ONERROR(tmp);
+  }
   return o;
 }
 
@@ -541,6 +560,7 @@ PMOD_EXPORT struct object *get_master(void)
        !simple_mapping_string_lookup(get_builtin_constants(),
 				     "_static_modules"))
     {
+      /* fprintf(stderr, "Builtin_constants: %p\n", get_builtin_constants()); */
       /* fprintf(stderr,"Cannot load master object yet!\n"); */
       return 0;
     }
