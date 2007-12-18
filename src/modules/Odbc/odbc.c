@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.45 2007/12/07 17:35:50 mast Exp $
+|| $Id: odbc.c,v 1.46 2007/12/18 15:58:17 mast Exp $
 */
 
 /*
@@ -100,16 +100,19 @@ void odbc_error(const char *fun, const char *msg,
 #endif
   SWORD errmsg_len = 0;
   SDWORD native_error;
+  HDBC hdbc = odbc->hdbc;
 
+  ODBC_ALLOW();
   _code =
 #ifdef SQL_WCHAR
     SQLErrorW
 #else
     SQLError
 #endif
-    (odbc_henv, odbc->hdbc, hstmt, errcode, &native_error,
+    (odbc_henv, hdbc, hstmt, errcode, &native_error,
      errmsg, (SQL_MAX_MESSAGE_LENGTH-1), &errmsg_len);
   errmsg[errmsg_len] = '\0';
+  ODBC_DISALLOW();
 
   if (odbc) {
     if (odbc->last_error) {
@@ -179,14 +182,20 @@ static void clean_last_error(void)
 
 static void init_odbc_struct(struct object *o)
 {
-  PIKE_ODBC->hdbc = SQL_NULL_HDBC;
+  HDBC hdbc = SQL_NULL_HDBC;
+  RETCODE code;
+
   PIKE_ODBC->affected_rows = 0;
   PIKE_ODBC->flags = 0;
   PIKE_ODBC->last_error = NULL;
 
+  ODBC_ALLOW();
+  code = SQLAllocConnect(odbc_henv, &hdbc);
+  ODBC_DISALLOW();
+  PIKE_ODBC->hdbc = hdbc;
+
   odbc_check_error("init_odbc_struct", "ODBC initialization failed",
-		   SQLAllocConnect(odbc_henv, &(PIKE_ODBC->hdbc)),
-		   NULL, NULL);
+		   code, NULL, NULL);
 }
 
 static void exit_odbc_struct(struct object *o)
@@ -194,21 +203,32 @@ static void exit_odbc_struct(struct object *o)
   SQLHDBC hdbc = PIKE_ODBC->hdbc;
 
   if (hdbc != SQL_NULL_HDBC) {
-    if (PIKE_ODBC->flags & PIKE_ODBC_CONNECTED) {
-      RETCODE code;
-      PIKE_ODBC->flags &= ~PIKE_ODBC_CONNECTED;
-      ODBC_ALLOW();
+    unsigned int flags = PIKE_ODBC->flags;
+    RETCODE code;
+    const char *err_msg = NULL;
+
+    PIKE_ODBC->flags &= ~PIKE_ODBC_CONNECTED;
+    ODBC_ALLOW();
+    if (flags & PIKE_ODBC_CONNECTED) {
       code = SQLDisconnect(hdbc);
-      ODBC_DISALLOW();
-      odbc_check_error("odbc_error", "Disconnecting HDBC", code,
-		       (void (*)(void *))exit_odbc_struct, NULL);
-      /* NOTE: Potential recursion above! */
+      if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
+	err_msg = "Disconnecting HDBC";
     }
-    PIKE_ODBC->hdbc = SQL_NULL_HDBC;
-    odbc_check_error("odbc_error", "Freeing HDBC",
-		     SQLFreeConnect(hdbc),
-		     (void (*)(void *))clean_last_error, NULL);
+    if (!err_msg) {
+      code = SQLFreeConnect(hdbc);
+      if (code != SQL_SUCCESS && code != SQL_SUCCESS_WITH_INFO)
+	err_msg = "Freeing HDBC";
+      hdbc = SQL_NULL_HDBC;
+    }
+    ODBC_DISALLOW();
+    PIKE_ODBC->hdbc = hdbc;
+
+    if (err_msg)
+      /* NOTE: Potential recursion here! */
+      odbc_check_error("odbc_error", err_msg, code,
+		       (void (*)(void *))exit_odbc_struct, NULL);
   }
+
   clean_last_error();
 }
 
@@ -528,6 +548,7 @@ static void f_list_dbs(INT32 args)
 
   pop_n_elems(args);
 
+  ODBC_ALLOW();
   ret =
 #ifdef SQL_WCHAR
     SQLDataSourcesW
@@ -537,6 +558,8 @@ static void f_list_dbs(INT32 args)
     (odbc_henv, SQL_FETCH_FIRST,
      buf, SQL_MAX_DSN_LENGTH, &buf_len,
      descr, 255, &descr_len);
+  ODBC_DISALLOW();
+
   while ((ret == SQL_SUCCESS) || (ret == SQL_SUCCESS_WITH_INFO)) {
 #ifdef SQL_WCHAR
     push_sqlwchar(buf, buf_len);
@@ -544,6 +567,8 @@ static void f_list_dbs(INT32 args)
     push_string(make_shared_binary_string(buf, buf_len));
 #endif
     cnt++;
+
+    ODBC_ALLOW();
     ret =
 #ifdef SQL_WCHAR
       SQLDataSourcesW
@@ -553,7 +578,9 @@ static void f_list_dbs(INT32 args)
       (odbc_henv, SQL_FETCH_NEXT,
        buf, SQL_MAX_DSN_LENGTH, &buf_len,
        descr, 255, &descr_len);
+    ODBC_DISALLOW();
   }
+
   f_aggregate(cnt);
 }
 
