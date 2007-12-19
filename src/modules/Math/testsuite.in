@@ -155,7 +155,13 @@ test_false(Math.nan >= Math.nan)
 
 dnl Floating point comparison.
 define([[test_approx]], [[
-  test_eq(`<=(-0.0000001, ($1) - ($2), 0.0000001), 1)
+  test_any([[
+    float f1 = (float)($1);
+    float f2 = (float)($2);
+    float limit = (f1 + f2) * 0.0000001;	// ~1.0/(1<<23).
+    if (limit < 0.0) limit = -limit;
+    return `<=(-limit, f1 - f2, limit);
+  ]], 1)
 ]])
 
 test_approx(Math.Angle(45, "deg")->degree(), 45)
@@ -175,9 +181,9 @@ test_convert(90, "rad", "gon")
 test_convert(90, "gon", "str")
 test_convert(90, "str", "deg")
 
-test_eq(Math.log2(64.0), 6.0)
-test_eq(Math.log10(100.0), 2.0)
-test_eq(Math.logn(3.0, 81.0), 4.0)
+test_approx(Math.log2(64.0), 6.0)
+test_approx(Math.log10(100.0), 2.0)
+test_approx(Math.logn(3.0, 81.0), 4.0)
 
 test_true( floatp(Math.e) )
 test_true( floatp(Math.pi) )
