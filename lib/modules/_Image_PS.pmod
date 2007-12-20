@@ -166,18 +166,21 @@ object decode( string data, mapping|void options )
   fd->close();
   fd4->close();
 
-  // FIXME: Create a new backend instead of using the default.
+  // Backend to use.
+  Pike.Backend be = Pike.Backend();
 
   // Kill the gs binary after 30 seconds in case it hangs.
-  mixed co = call_out(lambda(Process.Process pid) {
-			if (!pid->status()) {
-			  pid->kill(9);
-			}
-		      }, 30, pid);
+  mixed co =
+    be->call_out(lambda(Process.Process pid) {
+		   if (!pid->status()) {
+		     pid->kill(9);
+		   }
+		 }, 30, pid);
   if(!options->file)
   {
     if(!has_value(data, "showpage"))
       data += "\nshowpage\n";
+    be->add_file(fd2);
     Stdio.sendfile(({ data }), 0, 0, sizeof(data), 0, fd2,
 		   lambda(int n) {
 		     fd2->close();
@@ -186,6 +189,7 @@ object decode( string data, mapping|void options )
     fd2->close();
   }
   string output = "";
+  be->add_file(fd3);
   fd3->set_nonblocking(lambda(mixed ignored, string s) {
 			 output += s;
 		       }, 0,
@@ -195,7 +199,7 @@ object decode( string data, mapping|void options )
 		       });
   mixed err = catch {
     while (fd3) {
-      Pike.DefaultBackend(1.0);
+      be(1.0);
     }
   };
 #if 0
@@ -203,7 +207,7 @@ object decode( string data, mapping|void options )
     werror("Backend failed: %s\n", describe_backtrace(err));
   }
 #endif
-  remove_call_out(co);
+  be->remove_call_out(co);
   int ret_code = pid->wait();
   if(ret_code)
     error("Ghostscript failed with exit code: %O:\n%s\n", ret_code, output);
@@ -211,7 +215,8 @@ object decode( string data, mapping|void options )
 
   if (data) {
 
-    if(data && sscanf(data, "%*s\n%%%%BoundingBox: %s\n", string bbox) == 2 && !options->eps_crop)
+    if(data && sscanf(data, "%*s\n%%%%BoundingBox: %s\n", string bbox) == 2 &&
+       !options->eps_crop)
     {
       int x0,x1,y0,y1;
       sscanf(bbox, "%d %d %d %d", x0,y0,x1,y1 );
