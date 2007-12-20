@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.229 2007/08/06 08:57:14 grubba Exp $
+// $Id: module.pmod,v 1.230 2007/12/20 16:07:45 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -2949,9 +2949,9 @@ static class nb_sendfile
 //! In some cases, the backend must also be active for any sending to
 //! be performed at all.
 //!
-//! In Pike 7.7 and later the backend associated with @[to] will
-//! be used rather than the default backend. Note that you usually
-//! will want @[from] to have the same backend as @[to].
+//! In Pike 7.4.496, Pike 7.6.120 and Pike 7.7 and later the backend
+//! associated with @[to] will be used rather than the default backend.
+//! Note that you usually will want @[from] to have the same backend as @[to].
 //!
 //! @bugs
 //! FIXME: Support for timeouts?
