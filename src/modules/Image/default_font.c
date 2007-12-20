@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: default_font.c,v 1.6 2003/03/23 11:13:35 marcus Exp $
+|| $Id: default_font.c,v 1.7 2007/12/20 16:12:35 grubba Exp $
 */
 
 #include "global.h"
@@ -19,6 +19,7 @@
 #define FF32	FF16,FF16
 #define FF64	FF32,FF32
 
+static const long force_alignment = 0;
 const unsigned char image_default_font[] = {
   70,79,78,84,0,0,0,1,0,0,1,Z4,11,0,0,0,
   9,0,0,4,20,0,0,4,32,0,0,4,44,0,0,4,
