@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.73 2005/11/18 14:11:58 grubba Exp $
+|| $Id: nt.c,v 1.74 2007/12/20 17:17:28 grubba Exp $
 */
 
 /*
@@ -212,7 +212,11 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
       break;
       
     case REG_SZ:
-      push_string(make_shared_binary_string(buffer,len-1));
+      if (!len) {
+	push_constant_text("");
+      } else {
+	push_string(make_shared_binary_string(buffer,len-1));
+      }
       break;
       
     case REG_EXPAND_SZ:
@@ -226,9 +230,13 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
       break;
       
     case REG_MULTI_SZ:
-      push_string(make_shared_binary_string(buffer,len-1));
-      push_string(make_shared_binary_string("\000",1));
-      f_divide(2);
+      if (!len) {
+	ref_push_array(&empty_array);
+      } else {
+	push_string(make_shared_binary_string(buffer,len-1));
+	push_string(make_shared_binary_string("\000",1));
+	f_divide(2);
+      }
       break;
       
     case REG_DWORD_LITTLE_ENDIAN:
@@ -305,7 +313,7 @@ void f_RegGetValue(INT32 args)
   DWORD len,type;
   char buffer[8192];
   len=sizeof(buffer)-1;
-  get_all_args("RegQueryValue", args, "%i%s%s",
+  get_all_args("RegGetValue", args, "%i%s%s",
 	       &hkey_num, &key, &ind);
 
   if ((hkey_num < 0) || ((unsigned int)hkey_num >= NELEM(hkeys))) {
