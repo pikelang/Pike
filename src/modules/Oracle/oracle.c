@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.88 2005/08/17 09:29:51 grubba Exp $
+|| $Id: oracle.c,v 1.89 2007/12/20 19:02:36 nilsson Exp $
 */
 
 /*
@@ -2463,7 +2463,7 @@ PIKE_MODULE_INIT
   NULL_program=end_program();
   add_program_constant("NULL", NULL_program, 0);
 
-  push_text("");
+  push_empty_string();
   add_object_constant("NULLstring",nullstring_object=clone_object(NULL_program,1),0);
 
   push_int(0);

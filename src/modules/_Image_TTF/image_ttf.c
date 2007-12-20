@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_ttf.c,v 1.53 2006/06/21 17:13:27 mast Exp $
+|| $Id: image_ttf.c,v 1.54 2007/12/20 18:59:42 nilsson Exp $
 */
 
 #include "config.h"
@@ -1014,7 +1014,7 @@ static void image_ttf_faceinstance_write(INT32 args)
 
    if (!args)
    {
-      push_text("");
+      push_empty_string();
       args=1;
    }
 

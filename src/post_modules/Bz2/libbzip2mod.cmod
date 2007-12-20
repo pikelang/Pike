@@ -514,7 +514,7 @@ PIKECLASS Deflate
       break;
     case BZ_RUN:
       f_Deflate_feed(1);
-      push_constant_text("");
+      push_empty_string();
       break;
     }
   }

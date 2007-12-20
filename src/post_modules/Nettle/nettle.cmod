@@ -1,5 +1,5 @@
 /* nettle.cmod -*- c -*- */
-/* $Id: nettle.cmod,v 1.42 2006/12/29 16:58:39 nilsson Exp $ */
+/* $Id: nettle.cmod,v 1.43 2007/12/20 19:03:46 nilsson Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -688,7 +688,7 @@ PIKECLASS Proxy {
 	       data->str, data->len);
 	THIS->backlog_len += data->len;
 	pop_n_elems(args);
-	push_constant_text("");
+	push_empty_string();
 	return;
       }
     }
