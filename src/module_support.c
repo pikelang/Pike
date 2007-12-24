@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module_support.c,v 1.67 2007/12/24 13:42:24 grubba Exp $
+|| $Id: module_support.c,v 1.68 2007/12/24 15:43:10 grubba Exp $
 */
 
 #include "global.h"
@@ -300,7 +300,7 @@ static int va_get_args_2(struct svalue *s,
 
     case 'N':
       if(s->type != T_STRING && UNSAFE_IS_ZERO (s)) {
-	*va_arg (ap, struct pike_string **) = NULL;
+	*cast_arg(ptr, struct pike_string **) = NULL;
 	break;
       }
       /* FALL THROUGH */
@@ -313,7 +313,7 @@ static int va_get_args_2(struct svalue *s,
 
     case 'T':
       if(s->type != T_STRING && UNSAFE_IS_ZERO (s)) {
-	*va_arg (ap, struct pike_string **) = NULL;
+	*cast_arg(ptr, struct pike_string **) = NULL;
 	break;
       }
       /* FALL THROUGH */
@@ -325,7 +325,7 @@ static int va_get_args_2(struct svalue *s,
 
     case 'A':
       if(s->type != T_ARRAY && UNSAFE_IS_ZERO (s)) {
-	*va_arg (ap, struct array **) = NULL;
+	*cast_arg(ptr, struct array **) = NULL;
 	break;
       }
       /* FALL THROUGH */
@@ -355,7 +355,7 @@ static int va_get_args_2(struct svalue *s,
 
     case 'G':
       if(s->type != T_MAPPING && UNSAFE_IS_ZERO (s)) {
-	*va_arg (ap, struct mapping **) = NULL;
+	*cast_arg(ptr, struct mapping **) = NULL;
 	break;
       }
       /* FALL THROUGH */
@@ -366,7 +366,7 @@ static int va_get_args_2(struct svalue *s,
 
     case 'U':
       if(s->type != T_MULTISET && UNSAFE_IS_ZERO (s)) {
-	*va_arg (ap, struct multiset **) = NULL;
+	*cast_arg(ptr, struct multiset **) = NULL;
 	break;
       }
       /* FALL THROUGH */
@@ -378,7 +378,7 @@ static int va_get_args_2(struct svalue *s,
 
     case 'O':
       if(s->type != T_OBJECT && UNSAFE_IS_ZERO (s)) {
-	*va_arg (ap, struct object **) = NULL;
+	*cast_arg(ptr, struct object **) = NULL;
 	break;
       }
       /* FALL THROUGH */
@@ -401,7 +401,7 @@ static int va_get_args_2(struct svalue *s,
 
 	default:
 	  if (*fmt == 'P' && UNSAFE_IS_ZERO(s))
-	    *va_arg (ap, struct program **) = NULL;
+	    *cast_arg(ptr, struct program **) = NULL;
 	  goto type_err;
       }
       break;
