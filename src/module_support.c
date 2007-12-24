@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module_support.c,v 1.66 2005/12/04 18:57:55 nilsson Exp $
+|| $Id: module_support.c,v 1.67 2007/12/24 13:42:24 grubba Exp $
 */
 
 #include "global.h"
@@ -188,6 +188,8 @@ static int va_get_args_2(struct svalue *s,
 
   while(*fmt)
   {
+    void *ptr;
+
     if (*fmt == '.' && !optional) {
       fmt++;
       optional = 1;
@@ -205,35 +207,37 @@ static int va_get_args_2(struct svalue *s,
       return ret;
     }
 
+    ptr = va_arg(ap, void *);
+
+#define cast_arg(PTR, TYPE)	((TYPE)(PTR))
+
     if (optional && IS_UNDEFINED (s)) {
       /* An optional argument with an undefined value should be
        * treated as if it isn't given at all, i.e. don't assign this
        * argument. */
       fmt++;
-      va_arg (ap, void *);
     }
-
     else switch(*++fmt)
     {
     case 'd':
       if(s->type != T_INT) goto type_err;
-      *va_arg(ap, int *)=s->u.integer;
+      *cast_arg(ptr, int *)=s->u.integer;
       break;
     case 'i':
       if(s->type != T_INT) goto type_err;
-      *va_arg(ap, INT_TYPE *)=s->u.integer;
+      *cast_arg(ptr, INT_TYPE *)=s->u.integer;
       break;
     case '+':
       if(s->type != T_INT) goto type_err;
       if(s->u.integer<0) goto type_err;
-      *va_arg(ap, INT_TYPE *)=s->u.integer;
+      *cast_arg(ptr, INT_TYPE *)=s->u.integer;
       break;
 
     case 'D':
       if(s->type == T_INT)
-	 *va_arg(ap, int *)=s->u.integer;
+	 *cast_arg(ptr, int *)=s->u.integer;
       else if(s->type == T_FLOAT)
-        *va_arg(ap, int *)=
+        *cast_arg(ptr, int *)=
 	  DO_NOT_WARN((int)s->u.float_number);
       else 
       {
@@ -241,9 +245,9 @@ static int va_get_args_2(struct svalue *s,
         push_svalue( s );
         f_cast( );
 	if(sp[-1].type == T_INT)
-	  *va_arg(ap, int *)=sp[-1].u.integer;
+	  *cast_arg(ptr, int *)=sp[-1].u.integer;
 	else if(s->type == T_FLOAT)
-	  *va_arg(ap, int *)=
+	  *cast_arg(ptr, int *)=
 	    DO_NOT_WARN((int)sp[-1].u.float_number);
 	else
 	  Pike_error("Cast to int failed.\n");
@@ -253,18 +257,18 @@ static int va_get_args_2(struct svalue *s,
 
     case 'I':
       if(s->type == T_INT)
-	 *va_arg(ap, INT_TYPE *)=s->u.integer;
+	 *cast_arg(ptr, INT_TYPE *)=s->u.integer;
       else if(s->type == T_FLOAT)
-        *va_arg(ap, INT_TYPE *) = DO_NOT_WARN((INT_TYPE)s->u.float_number);
+        *cast_arg(ptr, INT_TYPE *) = DO_NOT_WARN((INT_TYPE)s->u.float_number);
       else 
       {
         ref_push_type_value(int_type_string);
         push_svalue( s );
         f_cast( );
 	if(sp[-1].type == T_INT)
-	  *va_arg(ap, INT_TYPE *)=sp[-1].u.integer;
+	  *cast_arg(ptr, INT_TYPE *)=sp[-1].u.integer;
 	else if(s->type == T_FLOAT)
-	  *va_arg(ap, INT_TYPE *)=
+	  *cast_arg(ptr, INT_TYPE *)=
 	    DO_NOT_WARN((INT_TYPE)sp[-1].u.float_number);
 	else
 	  Pike_error("Cast to int failed.\n");
@@ -274,11 +278,11 @@ static int va_get_args_2(struct svalue *s,
 
     case 'l':
       if (s->type == T_INT) {
-	*va_arg(ap, LONGEST *)=s->u.integer;
+	*cast_arg(ptr, LONGEST *)=s->u.integer;
 	break;
 #ifdef AUTO_BIGNUM
       } else if (is_bignum_object_in_svalue(s) &&
-		 int64_from_bignum(va_arg(ap, LONGEST *), s->u.object) == 1) {
+		 int64_from_bignum(cast_arg(ptr, LONGEST *), s->u.object) == 1) {
         break;
 #endif
       }
@@ -291,7 +295,7 @@ static int va_get_args_2(struct svalue *s,
       /* FIXME: Should set a better error message. */
       if(string_has_null(s->u.string)) goto type_err;
 
-      *va_arg(ap, char **)=s->u.string->str;
+      *cast_arg(ptr, char **)=s->u.string->str;
       break;
 
     case 'N':
@@ -304,7 +308,7 @@ static int va_get_args_2(struct svalue *s,
     case 'S':
       if(s->type != T_STRING) goto type_err;
       if(s->u.string->size_shift) goto type_err;
-      *va_arg(ap, struct pike_string **)=s->u.string;
+      *cast_arg(ptr, struct pike_string **)=s->u.string;
       break;
 
     case 'T':
@@ -316,7 +320,7 @@ static int va_get_args_2(struct svalue *s,
     case 't':
     case 'W':
       if(s->type != T_STRING) goto type_err;
-      *va_arg(ap, struct pike_string **)=s->u.string;
+      *cast_arg(ptr, struct pike_string **)=s->u.string;
       break;
 
     case 'A':
@@ -327,24 +331,24 @@ static int va_get_args_2(struct svalue *s,
       /* FALL THROUGH */
     case 'a':
       if(s->type != T_ARRAY) goto type_err;
-      *va_arg(ap, struct array **)=s->u.array;
+      *cast_arg(ptr, struct array **)=s->u.array;
       break;
 
     case 'f':
       if(s->type != T_FLOAT) goto type_err;
-      *va_arg(ap, FLOAT_TYPE *)=s->u.float_number;
+      *cast_arg(ptr, FLOAT_TYPE *)=s->u.float_number;
       break;
     case 'F':
       if(s->type == T_FLOAT)
-	 *va_arg(ap, FLOAT_TYPE *)=s->u.float_number;
+	 *cast_arg(ptr, FLOAT_TYPE *)=s->u.float_number;
       else if(s->type == T_INT)
-	 *va_arg(ap, FLOAT_TYPE *)=(FLOAT_TYPE)s->u.integer;
+	 *cast_arg(ptr, FLOAT_TYPE *)=(FLOAT_TYPE)s->u.integer;
       else 
       {
         ref_push_type_value(float_type_string);
         push_svalue( s );
         f_cast( );
-        *va_arg(ap, FLOAT_TYPE *)=sp[-1].u.float_number;
+        *cast_arg(ptr, FLOAT_TYPE *)=sp[-1].u.float_number;
         pop_stack();
       }
       break;
@@ -357,7 +361,7 @@ static int va_get_args_2(struct svalue *s,
       /* FALL THROUGH */
     case 'm':
       if(s->type != T_MAPPING) goto type_err;
-      *va_arg(ap, struct mapping **)=s->u.mapping;
+      *cast_arg(ptr, struct mapping **)=s->u.mapping;
       break;
 
     case 'U':
@@ -369,7 +373,7 @@ static int va_get_args_2(struct svalue *s,
     case 'u':
     case 'M':
       if(s->type != T_MULTISET) goto type_err;
-      *va_arg(ap, struct multiset **)=s->u.multiset;
+      *cast_arg(ptr, struct multiset **)=s->u.multiset;
       break;
 
     case 'O':
@@ -380,7 +384,7 @@ static int va_get_args_2(struct svalue *s,
       /* FALL THROUGH */
     case 'o':
       if(s->type != T_OBJECT) goto type_err;
-      *va_arg(ap, struct object **)=s->u.object;
+      *cast_arg(ptr, struct object **)=s->u.object;
       break;
 
     case 'P':
@@ -388,11 +392,11 @@ static int va_get_args_2(struct svalue *s,
       switch(s->type)
       {
 	case T_PROGRAM:
-	  *va_arg(ap, struct program **)=s->u.program;
+	  *cast_arg(ptr, struct program **)=s->u.program;
 	  break;
 
 	case T_FUNCTION:
-	  if((*va_arg(ap, struct program **)=program_from_svalue(s)))
+	  if((*cast_arg(ptr, struct program **)=program_from_svalue(s)))
 	    break;
 
 	default:
@@ -403,7 +407,7 @@ static int va_get_args_2(struct svalue *s,
       break;
 
     case '*':
-      *va_arg(ap, struct svalue **)=s;
+      *cast_arg(ptr, struct svalue **)=s;
       break;
       
     default:
