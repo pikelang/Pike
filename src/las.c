@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.399 2007/12/17 18:03:33 grubba Exp $
+|| $Id: las.c,v 1.400 2007/12/26 11:35:52 grubba Exp $
 */
 
 #include "global.h"
@@ -3251,13 +3251,15 @@ void fix_type_field(node *n)
       struct pike_type *soft_type = NULL;
       if (CDR(n) && (CDR(n)->token == F_CONSTANT) &&
 	  (CDR(n)->u.sval.type == T_TYPE)) {
+	struct pike_string *t1;
+	struct pike_string *t2;
 	soft_type = CDR(n)->u.sval.u.type;
 	if ((n->type = soft_cast(soft_type, CAR(n)->type, 0))) {
 	  /* Success. */
 	  break;
 	}
-	struct pike_string *t1 = describe_type(soft_type);
-	struct pike_string *t2 = describe_type(CAR(n)->type);
+	t1 = describe_type(soft_type);
+	t2 = describe_type(CAR(n)->type);
 	my_yyerror("Soft cast of %S to %S isn't a valid cast.",
 		   t2, t1);
 	free_string(t2);
