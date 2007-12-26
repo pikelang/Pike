@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.155 2007/06/10 18:11:12 mast Exp $
+|| $Id: acconfig.h,v 1.156 2007/12/26 21:16:31 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -10,7 +10,17 @@
 
 /* We must define this *always* */
 #ifndef POSIX_SOURCE
-#define POSIX_SOURCE
+#define POSIX_SOURCE	1
+#endif
+
+/* We must define this *always* */
+#ifndef _POSIX_SOURCE
+#define _POSIX_SOURCE	1
+#endif
+
+/* We must define this *always* */
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE	99999999L
 #endif
 
 /* Get more declarations in GNU libc. */
