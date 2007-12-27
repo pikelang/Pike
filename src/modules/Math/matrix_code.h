@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: matrix_code.h,v 1.15 2007/12/26 23:12:44 nilsson Exp $
+|| $Id: matrix_code.h,v 1.16 2007/12/27 17:10:46 grubba Exp $
 */
 
 /*
@@ -101,22 +101,37 @@ static void matrixX(_create)(INT32 args)
 	    switch (a->item[j].type)
 	    {
 	       case T_INT:
-		  *(m++)=(FTYPE)
-		     a->item[j].u.integer;
+		  *(m++) = (FTYPE)a->item[j].u.integer;
 		  break;
 	       case T_FLOAT:
-		  *(m++)=(FTYPE)
-  	            a->item[j].u.float_number;
+		  *(m++) = (FTYPE)a->item[j].u.float_number;
 		  break;
 	      case T_OBJECT:
 		{
 		  INT64 x;
-		  if( int64_from_bignum( &x, a->item[j].u.object ) )
-		  {
-		    *(m++)=(FTYPE)x;
+		  if (a->item[i].u.object->prog != auto_bignum_program) {
+		    /* Use push_svalue() so that we support subtypes... */
+		    push_svalue(a->item+j);
+		    o_cast_to_int();
+		    if (Pike_sp[-1].type == T_INT) {
+		      *(m++) = (FTYPE)Pike_sp[-1].u.integer;
+		      pop_stack();
+		      break;
+		    } else if ((Pike_sp[-1].type == T_OBJECT) &&
+			       (Pike_sp[-1].u.object->prog ==
+				auto_bignum_program) &&
+			       int64_from_bignum(&x, Pike_sp[-1].u.object)) {
+		      *(m++) = (FTYPE)x;
+		      pop_stack();
+		      break;
+		    }
+		    pop_stack();
+		  } else if (int64_from_bignum(&x, a->item[j].u.object)) {
+		    *(m++) = (FTYPE)x;
 		    break;
 		  }
 		}
+		/* FALL_THROUGH */
 	      default:
 		SIMPLE_BAD_ARG_ERROR(PNAME,1,
 				     "array(array(int|float))");
