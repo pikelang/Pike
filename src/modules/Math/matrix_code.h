@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: matrix_code.h,v 1.17 2007/12/27 20:52:10 grubba Exp $
+|| $Id: matrix_code.h,v 1.18 2007/12/27 23:34:52 grubba Exp $
 */
 
 /*
@@ -109,7 +109,7 @@ static void matrixX(_create)(INT32 args)
 	      case T_OBJECT:
 		{
 		  INT64 x;
-		  if (a->item[i].u.object->prog != get_auto_bignum_program()) {
+		  if (a->item[j].u.object->prog != get_auto_bignum_program()) {
 		    /* Use push_svalue() so that we support subtypes... */
 		    push_svalue(a->item+j);
 		    o_cast_to_int();
