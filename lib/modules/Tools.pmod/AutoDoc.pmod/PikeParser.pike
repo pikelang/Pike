@@ -393,7 +393,9 @@ ProgramType parseProgram() {
   eat("program");
   if( peekToken() == "(" ) {
     readToken();
-    prg->classname = readToken();
+    prg->classname = "";
+    while( peekToken() != ")" )
+      prg->classname += readToken();
     eat(")");
   }
   return prg;
