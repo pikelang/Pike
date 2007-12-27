@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: matrix_code.h,v 1.16 2007/12/27 17:10:46 grubba Exp $
+|| $Id: matrix_code.h,v 1.17 2007/12/27 20:52:10 grubba Exp $
 */
 
 /*
@@ -109,7 +109,7 @@ static void matrixX(_create)(INT32 args)
 	      case T_OBJECT:
 		{
 		  INT64 x;
-		  if (a->item[i].u.object->prog != auto_bignum_program) {
+		  if (a->item[i].u.object->prog != get_auto_bignum_program()) {
 		    /* Use push_svalue() so that we support subtypes... */
 		    push_svalue(a->item+j);
 		    o_cast_to_int();
@@ -119,7 +119,7 @@ static void matrixX(_create)(INT32 args)
 		      break;
 		    } else if ((Pike_sp[-1].type == T_OBJECT) &&
 			       (Pike_sp[-1].u.object->prog ==
-				auto_bignum_program) &&
+				get_auto_bignum_program()) &&
 			       int64_from_bignum(&x, Pike_sp[-1].u.object)) {
 		      *(m++) = (FTYPE)x;
 		      pop_stack();
@@ -291,7 +291,7 @@ void matrixX(_cast)(INT32 args)
    }
 
    if (args)
-      if (Pike_sp[-1].type==T_STRING)
+      if (Pike_sp[-1].type==T_STRING) {
 	 if (Pike_sp[-1].u.string==s_array)
 	 {
 	    int i,j;
@@ -310,6 +310,7 @@ void matrixX(_cast)(INT32 args)
 	 }
          else
            Pike_error("Can only cast to array.\n");
+      }
 
    SIMPLE_BAD_ARG_ERROR("cast",1,"string");
 }
