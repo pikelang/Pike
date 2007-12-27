@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.38 2007/10/06 16:23:39 grubba Exp $
+dnl $Id: testsuite.in,v 1.39 2007/12/27 00:51:47 nilsson Exp $
 
 START_MARKER
 
@@ -289,6 +289,7 @@ test_sort(dwim_sort_func,"1","1a")
 test_sort(dwim_sort_func,"0a","1")
 test_sort(dwim_sort_func,"1","2")
 test_sort(dwim_sort_func,"2a","10")
+test_sort(dwim_sort_func,"a1x","a02x")
 test_eq(Array.dwim_sort_func("1","1"), 0)
 test_eq(Array.dwim_sort_func("1","01"), 0)
 
@@ -296,8 +297,6 @@ test_false(Array.lyskom_sort_func("",""))
 test_sort(lyskom_sort_func,"a","b")
 test_false(Array.lyskom_sort_func("a","a"))
 test_false(Array.lyskom_sort_func("Foo (bar)","foo (really!)"))
-
-dnl Array.lyskom_sort_func
 
 test_eq( Array.flatten( ({}) ), ({}) )
 test_equal( Array.flatten( ({1,({2,({3,({4}),({}),5})}),({({}),({6})})})),

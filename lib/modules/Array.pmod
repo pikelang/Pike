@@ -437,54 +437,37 @@ array(array(array)) diff3 (array a, array b, array c)
 //! zeroes).
 int(-1..1) dwim_sort_func(string a, string b)
 {
-   if (a==b) return 0;
-   array aa=({}), bb=({});
-   int state, oi;
+  if( a==b ) return 0;
 
-   for( int i = 0; i<sizeof(a); i++ )
-     if( (<'0','1','2','3','4','5','6','7','8','9'>)[a[i]] != state )
-     {
-       state = !state;
-       if( state )
-	 aa += ({ a[oi..i-1] });
-       else
-	 aa += ({ (int)a[oi..i-1] });
-       oi = i;
-     }
-   if( state )
-     aa += ({ (int)a[oi..] });
-   else
-     aa += ({ a[oi..] });
+  string a_int,b_int;
+  string a_str,b_str;
+  while(1)
+  {
+    sscanf(a, "%[0-9]%[^0-9]%s", a_int,a_str,a);
+    sscanf(b, "%[0-9]%[^0-9]%s", b_int,b_str,b);
 
+    // Need only be done first iteration
+    if( !sizeof(a_int) ^ !sizeof(b_int) )
+      return sizeof(a_int) ? -1 : 1;
 
-   oi = state = 0;
+    if( a_int != b_int )
+    {
+      int ai = (int)a_int;
+      int bi = (int)b_int;
+      if( ai!=bi )
+        return ai<bi ? -1 : 1;
+    }
 
-   for( int i = 0; i<sizeof(b); i++ )
-     if( (<'0','1','2','3','4','5','6','7','8','9'>)[b[i]] != state )
-     {
-       state = !state;
-       if( state )
-	 bb += ({ b[oi..i-1] });
-       else
-	 bb += ({ (int)b[oi..i-1] });
-       oi = i;
-     }
-   if( state )
-     bb += ({ (int)b[oi..] });
-   else
-     bb += ({ b[oi..] });
+    if( a_str != b_str )
+      return a_str<b_str ? -1 : 1;
 
-   for( int i = 0; i<sizeof( aa ); i++ )
-   {
-     if( i >= sizeof( bb ) )  return 1; // a is definately bigger.
-
-     if( aa[i] < bb[i] )      return -1;
-     if( aa[i] > bb[i] )      return 1;
-   }
-
-   // Either equal, or bb is longer.
-
-   return [int(-1..1)]-(sizeof(aa)<sizeof(bb));
+    if( !sizeof(a) || !sizeof(b) )
+    {
+      if( sizeof(a) ) return 1;
+      if( sizeof(b) ) return -1;
+      return 0;
+    }
+  }
 }
 
 //! Sort comparison function that does not care about case, nor about
