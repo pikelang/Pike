@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.405 2007/11/15 16:26:47 mast Exp $
+// $Id: master.pike.in,v 1.406 2007/12/27 22:12:36 nilsson Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -643,7 +643,7 @@ string programs_reverse_lookup (program prog)
 }
 
 program objects_reverse_lookup (object obj)
-//! Returns the program for @[obj] in @[objects], if it got any.
+//! Returns the program for @[obj], if known to the master.
 {
   if (sizeof (rev_objects) < sizeof (objects)) {
     foreach (objects; program prog; object|NoValue obj)
