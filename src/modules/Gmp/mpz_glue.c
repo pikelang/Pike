@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.168 2006/10/20 07:08:46 nilsson Exp $
+|| $Id: mpz_glue.c,v 1.169 2007/12/27 17:13:37 grubba Exp $
 */
 
 #include "global.h"
@@ -195,7 +195,10 @@ static int gmp_int64_from_bignum (INT64 *i, struct object *bignum)
   size_t pos = (INT64_BITS + GMP_NUMB_BITS - 1) / GMP_NUMB_BITS - 1;
 
 #ifdef PIKE_DEBUG
-  if (bignum->prog != bignum_program) Pike_fatal ("Not a Gmp.bignum.\n");
+  if ((bignum->prog != bignum_program) &&
+      (bignum->prog != mpzmod_program)) {
+    Pike_fatal("cast_to_int(): Not a Gmp.bignum or Gmp.mpz.\n");
+  }
 #endif
 
   if (mpz_size (mpz) <= pos + 1) {
