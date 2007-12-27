@@ -565,20 +565,31 @@ array arrayify(void|array|mixed x)
    return ({ x });
 }
 
-//! Sort with care of numerical sort for OID values:
-//! "1.2.1" before "1.11.1"
+//! Sort with care of numerical sort for OID values, e.g.
+//! "1.2.1" before "1.11.1".
+//! @returns
+//!   @int
+//!     @value -1
+//!       @expr{a<b@}
+//!     @value 0
+//!       @expr{a==b@}
+//!     @value 1
+//!       @expr{a>b@}
+//!   @endint
+//! @note
+//!   In Pike 7.6 and older this function returned @expr{0@} both when
+//!   @expr{a<b@} and @expr{a==b@}.
 //! @seealso
 //!   @[sort_array]
-int oid_sort_func(string a0,string b0)
+int(-1..1) oid_sort_func(string a, string b)
 {
-    string a2="",b2="";
     int a1, b1;
-    sscanf(a0,"%d.%s",a1,a2);
-    sscanf(b0,"%d.%s",b1,b2);
+    sscanf(a, "%d.%s", a1, a);
+    sscanf(b, "%d.%s", b1, b);
     if (a1>b1) return 1;
-    if (a1<b1) return 0;
-    if (a2==b2) return 0;
-    return oid_sort_func(a2,b2);
+    if (a1<b1) return -1;
+    if (a==b) return 0;
+    return oid_sort_func(a,b);
 }
 
 static array(array(array)) low_greedy_diff(array(array) d1, array(array) d2)
