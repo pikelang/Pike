@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: nt.cmod,v 1.13 2007/09/16 15:01:59 nilsson Exp $
+ * $Id: nt.cmod,v 1.14 2007/12/27 01:38:04 grubba Exp $
  */
 
 #include "global.h"
@@ -59,9 +59,9 @@ PIKECLASS CryptContext
     flags ID_STATIC;
   {
     if(THIS->handle) Pike_error("Already initialized.\n");
-    if(str1->type==T_STRING && str1->u.string->shift_size)
+    if(str1->type==T_STRING && str1->u.string->size_shift)
       Pike_error("Bad argument 1. Must be 8-bit string.\n");
-    if(str2->type==T_STRING && str2->u.string->shift_size)
+    if(str2->type==T_STRING && str2->u.string->size_shift)
       Pike_error("Bad argument 2. Must be 8-bit string.\n");
     if(!CryptAcquireContext(&THIS->handle,
 			    (str1->type==T_STRING ? str1->u.string->str : 0),
