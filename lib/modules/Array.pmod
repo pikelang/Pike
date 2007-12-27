@@ -175,30 +175,30 @@ array sum_arrays(function(mixed ...:mixed) sum, array ... args)
 //! @[map()], @[sort()], @[`>()], @[dwim_sort_func], @[lyskom_sort_func],
 //! @[oid_sort_func]
 //!
-array sort_array(array foo, function|void cmp, mixed ... args)
+array sort_array(array arr, function(mixed,mixed,mixed ...:int)|void cmp,
+                 mixed ... args)
 {
   array bar,tmp;
   int len,start;
   int length;
   int foop, fooend, barp, barend;
 
+  arr+=({});
+
   if(!cmp || cmp==`>)
   {
-    foo+=({});
-    sort(foo);
-    return foo;
+    sort(arr);
+    return arr;
   }
 
   if(cmp == `<)
   {
-    foo+=({});
-    sort(foo);
-    return reverse(foo);
+    sort(arr);
+    return reverse(arr);
   }
 
-  length=sizeof(foo);
+  length=sizeof(arr);
 
-  foo+=({});
   bar=allocate(length);
 
   for(len=1;len<length;len*=2)
@@ -214,33 +214,33 @@ array sort_array(array foo, function|void cmp, mixed ... args)
 
       while(1)
       {
-	if(([function(mixed,mixed,mixed...:int)]cmp)(foo[foop],foo[barp],@args)
+	if(([function(mixed,mixed,mixed...:int)]cmp)(arr[foop],arr[barp],@args)
 	    <= 0)
 	{
-	  bar[start++]=foo[foop++];
+	  bar[start++]=arr[foop++];
 	  if(foop == fooend)
 	  {
-	    while(barp < barend) bar[start++]=foo[barp++];
+	    while(barp < barend) bar[start++]=arr[barp++];
 	    break;
 	  }
 	}else{
-	  bar[start++]=foo[barp++];
+	  bar[start++]=arr[barp++];
 	  if(barp == barend)
 	  {
-	    while(foop < fooend) bar[start++]=foo[foop++];
+	    while(foop < fooend) bar[start++]=arr[foop++];
 	    break;
 	  }
 	}
       }
     }
-    while(start < length) bar[start]=foo[start++];
+    while(start < length) bar[start]=arr[start++];
 
-    tmp=foo;
-    foo=bar;
+    tmp=arr;
+    arr=bar;
     bar=tmp;
   }
 
-  return foo;
+  return arr;
 }
 
 //! Get multiple columns from an array.
