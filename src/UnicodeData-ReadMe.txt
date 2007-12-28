@@ -4,7 +4,7 @@ Version 5.0.0
  Revision           5.0.0
  Authors            Mark Davis, Ken Whistler and Asmus Freytag
  Date               2006-07-14
- This Version       http://www.unicode.org/Public/5.0.0/ucd//
+ This Version       http://www.unicode.org/Public/5.0.0/ucd/
  Previous Version   http://www.unicode.org/Public/4.1.0/ucd/
  Latest Version     http://www.unicode.org/Public/UNIDATA/
 
