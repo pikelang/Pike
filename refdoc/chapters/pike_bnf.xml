@@ -56,7 +56,7 @@
  lambda               ::=   "lambda" "(" arguments? ")" block
  constant_identifier  ::=   "."? identifier ( "." identifier )*
  call                 ::=   expression6 "(" expression_list ")"
- index_expression     ::=   "<"? expression
+ index_expression     ::=   "&lt;"? expression
  index                ::=   expression6 "[" ( index_expression | ".." index_expression | index_expression ".." | index_expresion ".." index_expresion ) "]"
  array                ::=   "({" expression_list "})"
  multiset             ::=   "(&lt;" expression_list "&gt;)"
