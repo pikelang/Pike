@@ -80,7 +80,7 @@
  program_specifier    ::=   string_constant | constant_identifier
  string               ::=   ( 0x22 character* 0x22 )+
  hex4                 ::=   hex_int hex_int hex_int hex_int
- character            ::=   [0x0000 - 0xffff] | "\" octal_int | "\x" hex_int | "\d" digit* | "\u" hex4 | "\U" hex4 hex 4 | "\t" | "\r" | "\n" | "\b"
+ character            ::=   [0x0000 - 0xffff] | "\" octal_int | "\x" hex_int | "\d" digit* | "\u" hex4 | "\U" hex4 hex 4 | "\a" | "\b" | "\t" | "\n" | "\v" | "\f" | "\r" | "\" 0x22 | "\\"
  identifier           ::=   letter { letter | digit } | "`+" | "`/" | "`%" | "`*" | "`&amp;" | "`|" | "`^" | "`~" |
                             "`&lt;" | "`&lt;&lt;" | "`&lt;=" | "`&gt;" | "`&gt;&gt;" | "`&gt;=" | "`==" | "`!=" | "`!" | "`()" | "`-" |
                             "`-&gt;" | "`-&gt;=" | "`[]" | "`[]="
