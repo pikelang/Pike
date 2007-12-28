@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.44 2007/06/25 16:45:41 grubba Exp $
+|| $Id: iso2022.c,v 1.45 2007/12/28 13:36:16 nilsson Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -1494,7 +1494,7 @@ void iso2022_init(void)
   set_init_callback(init_stor);
   set_exit_callback(exit_stor);
   add_program_constant("ISO2022Dec", iso2022dec_program = end_program(),
-		       ID_STATIC|ID_NOMASK);
+		       ID_STATIC|ID_FINAL);
 
   start_new_program();
   ADD_STORAGE(struct iso2022enc_stor);
@@ -1513,7 +1513,7 @@ void iso2022_init(void)
   set_init_callback(init_enc_stor);
   set_exit_callback(exit_enc_stor);
   add_program_constant("ISO2022Enc", iso2022enc_program = end_program(),
-		       ID_STATIC|ID_NOMASK);
+		       ID_STATIC|ID_FINAL);
 }
 
 void iso2022_exit(void)

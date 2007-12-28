@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.390 2007/11/10 21:36:27 nilsson Exp $
+|| $Id: language.yacc,v 1.391 2007/12/28 13:38:15 nilsson Exp $
 */
 
 %pure_parser
@@ -1178,8 +1178,8 @@ arguments2: new_arg_name { $$ = 1; }
   ;
 
 modifier:
-    TOK_NO_MASK    { $$ = ID_NOMASK; }
-  | TOK_FINAL_ID   { $$ = ID_NOMASK; }
+    TOK_NO_MASK    { $$ = ID_FINAL; }
+  | TOK_FINAL_ID   { $$ = ID_FINAL; }
   | TOK_STATIC     { $$ = ID_STATIC; }
   | TOK_EXTERN     { $$ = ID_EXTERN; }
   | TOK_OPTIONAL   { $$ = ID_OPTIONAL; }

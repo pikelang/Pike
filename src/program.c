@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.631 2007/11/15 17:41:52 grubba Exp $
+|| $Id: program.c,v 1.632 2007/12/28 13:38:15 nilsson Exp $
 */
 
 #include "global.h"
@@ -2226,8 +2226,8 @@ void fixate_program(void)
   {
     for(i=0;i<(int)p->num_identifier_references;i++)
     {
-      if((p->identifier_references[i].id_flags & (ID_NOMASK|ID_HIDDEN)) ==
-	 ID_NOMASK)
+      if((p->identifier_references[i].id_flags & (ID_FINAL|ID_HIDDEN)) ==
+	 ID_FINAL)
       {
 	struct pike_string *name=ID_FROM_INT(p, i)->name;
 
@@ -4311,7 +4311,7 @@ PMOD_EXPORT void low_inherit(struct program *p,
     name=ID_FROM_PTR(p,&fun)->name;
     fun.inherit_offset += inherit_offset;
 
-    if (fun.id_flags & ID_NOMASK)
+    if (fun.id_flags & ID_FINAL)
     {
       Pike_compiler->flags |= COMPILATION_CHECK_FINAL;
     }
@@ -4609,8 +4609,8 @@ PMOD_EXPORT int define_alias(struct pike_string *name, struct pike_type *type,
     }
 
     if (!(IDENTIFIERP(n)->id_flags & ID_EXTERN)) {
-      if (IDENTIFIERP(n)->id_flags & ID_NOMASK)
-	my_yyerror("Illegal to redefine 'nomask/final' "
+      if (IDENTIFIERP(n)->id_flags & ID_FINAL)
+	my_yyerror("Illegal to redefine 'final' "
 		   "variable/functions %S", name);
 
       /* FIXME: More. */
@@ -4784,8 +4784,8 @@ int define_variable(struct pike_string *name,
     }
 
     if (!(IDENTIFIERP(n)->id_flags & ID_EXTERN)) {
-      if (IDENTIFIERP(n)->id_flags & ID_NOMASK)
-	my_yyerror("Illegal to redefine 'nomask/final' "
+      if (IDENTIFIERP(n)->id_flags & ID_FINAL)
+	my_yyerror("Illegal to redefine 'final' "
 		   "variable/functions %S", name);
 
       if(!(IDENTIFIERP(n)->id_flags & ID_INLINE) ||
@@ -5075,8 +5075,8 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
   {
     int overridden;
 
-    if(IDENTIFIERP(n)->id_flags & ID_NOMASK)
-      my_yyerror("Illegal to redefine 'nomask' identifier %S", name);
+    if(IDENTIFIERP(n)->id_flags & ID_FINAL)
+      my_yyerror("Illegal to redefine 'final' identifier %S", name);
 
     if(!TEST_COMPAT(7,2) &&
        IDENTIFIER_IS_VARIABLE(ID_FROM_INT(Pike_compiler->new_program,
@@ -5495,13 +5495,13 @@ INT32 define_function(struct pike_string *name,
 	      compilation_depth, "                ");
 #endif
 
-      if((ref.id_flags & ID_NOMASK)
+      if((ref.id_flags & ID_FINAL)
 #if 0
 	 && !(funp->func.offset == -1)
 #endif
 	)
       {
-	my_yyerror("Illegal to redefine 'nomask' function %S.", name);
+	my_yyerror("Illegal to redefine 'final' function %S.", name);
       }
 
 

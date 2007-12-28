@@ -83,7 +83,7 @@ optional class Fifo {
   //!
   int size() {  return num; }
 
-  static nomask mixed read_unlocked()
+  static final mixed read_unlocked()
   {
     mixed tmp=buffer[ptr];
     buffer[ptr++] = 0;	// Throw away any references.
@@ -134,7 +134,7 @@ optional class Fifo {
     return res;
   }
 
-  static nomask array read_all_unlocked()
+  static final array read_all_unlocked()
   {
     array ret;
 
@@ -199,7 +199,7 @@ optional class Fifo {
     return ret;
   }
 
-  static nomask void write_unlocked (mixed value)
+  static final void write_unlocked (mixed value)
   {
     buffer[(ptr + num) % sizeof(buffer)] = value;
     if(write_tres)
@@ -327,7 +327,7 @@ optional class Queue {
     return tmp;
   }
 
-  static nomask array read_all_unlocked()
+  static final array read_all_unlocked()
   {
     array ret;
 

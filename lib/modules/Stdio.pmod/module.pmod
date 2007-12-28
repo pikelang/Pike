@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.230 2007/12/20 16:07:45 grubba Exp $
+// $Id: module.pmod,v 1.231 2007/12/28 13:35:24 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -773,7 +773,7 @@ class File
   }
 #endif
 
-  this_program set_peek_file_before_read_callback(int(0..1) ignored)
+  /*FIXME: deprecated*/ this_program set_peek_file_before_read_callback(int(0..1) ignored)
   {
     // This hack is not necessary anymore - the backend now properly
     // ignores events if other callbacks/threads has managed to read
@@ -1457,7 +1457,7 @@ class FILE
     return ::_sprintf( type, flags );
   }
 
-  inline private static nomask int low_get_data()
+  inline private static final int low_get_data()
   {
     string s = file::read(BUFSIZE,1);
     if(s && strlen(s)) {
@@ -1471,7 +1471,7 @@ class FILE
     }
   }
  
-  inline private static nomask int get_data()
+  inline private static final int get_data()
   {
     if( bpos )
     {
@@ -1485,7 +1485,7 @@ class FILE
   // Return 0 at end of file, 1 otherwise.
   // At exit cached_lines contains at least one string,
   // and lp is set to zero.
-  inline private static nomask int get_lines()
+  inline private static final int get_lines()
   {
     if( bpos )
     {
@@ -1503,7 +1503,7 @@ class FILE
   }
 
   // NB: Caller is responsible for clearing cached_lines and lp.
-  inline private static nomask string extract(int bytes, int|void skip)
+  inline private static final string extract(int bytes, int|void skip)
   {
     string s;
     s=b[bpos..bpos+bytes-1];

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.62 2007/06/21 16:43:20 grubba Exp $
+|| $Id: charsetmod.c,v 1.63 2007/12/28 13:36:16 nilsson Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -2250,13 +2250,13 @@ PIKE_MODULE_INIT
   /* function(:object) */
   ADD_FUNCTION("clear", f_clear_utf7,tFunc(tNone,tObj), 0);
   set_init_callback(utf7_init_stor);
-  add_program_constant("UTF7dec", utf7_program = end_program(), ID_STATIC|ID_NOMASK);
+  add_program_constant("UTF7dec", utf7_program = end_program(), ID_STATIC|ID_FINAL);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_utf8,tFunc(tStr,tObj), 0);
-  add_program_constant("UTF8dec", utf8_program = end_program(), ID_STATIC|ID_NOMASK);
+  add_program_constant("UTF8dec", utf8_program = end_program(), ID_STATIC|ID_FINAL);
 
   prog.u.program = utf7_program;
   start_new_program();
@@ -2265,38 +2265,38 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("feed", f_feed_utf7e,tFunc(tStr,tObj), 0);
   /* function(:string) */
   ADD_FUNCTION("drain", f_drain_utf7e,tFunc(tNone,tStr), 0);
-  add_program_constant("UTF7enc", utf7e_program = end_program(), ID_STATIC|ID_NOMASK);
+  add_program_constant("UTF7enc", utf7e_program = end_program(), ID_STATIC|ID_FINAL);
   prog.u.program = std_cs_program;
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_utf8e,tFunc(tStr,tObj), 0);
-  add_program_constant("UTF8enc", utf8e_program = end_program(), ID_STATIC|ID_NOMASK);
+  add_program_constant("UTF8enc", utf8e_program = end_program(), ID_STATIC|ID_FINAL);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_utf_ebcdic,tFunc(tStr,tObj), 0);
-  add_program_constant("UTF_EBCDICdec", utf_ebcdic_program = end_program(), ID_STATIC|ID_NOMASK);
+  add_program_constant("UTF_EBCDICdec", utf_ebcdic_program = end_program(), ID_STATIC|ID_FINAL);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_utf_ebcdice,tFunc(tStr,tObj), 0);
-  add_program_constant("UTF_EBCDICenc", utf_ebcdice_program = end_program(), ID_STATIC|ID_NOMASK);
+  add_program_constant("UTF_EBCDICenc", utf_ebcdice_program = end_program(), ID_STATIC|ID_FINAL);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_utf7_5,tFunc(tStr,tObj), 0);
-  add_program_constant("UTF7_5dec", utf7_5_program = end_program(), ID_STATIC|ID_NOMASK);
+  add_program_constant("UTF7_5dec", utf7_5_program = end_program(), ID_STATIC|ID_FINAL);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_utf7_5e,tFunc(tStr,tObj), 0);
-  add_program_constant("UTF7_5enc", utf7_5e_program = end_program(), ID_STATIC|ID_NOMASK);
+  add_program_constant("UTF7_5enc", utf7_5e_program = end_program(), ID_STATIC|ID_FINAL);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
@@ -2305,32 +2305,32 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("feed", f_feed_euc,tFunc(tStr,tObj), 0);
   /* function(string:) */
   ADD_FUNCTION("create", f_create_euc,tFunc(tStr,tVoid), ID_STATIC);
-  add_program_constant("EUCDec", euc_program = end_program(), ID_STATIC|ID_NOMASK);
+  add_program_constant("EUCDec", euc_program = end_program(), ID_STATIC|ID_FINAL);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
   multichar_stor_offs = ADD_STORAGE(struct multichar_stor);
   ADD_FUNCTION("create", f_create_multichar,tFunc(tStr,tVoid), ID_STATIC);
   ADD_FUNCTION("feed", f_feed_multichar,tFunc(tStr,tObj), 0);
-  add_program_constant("MulticharDec", multichar_program = end_program(), ID_STATIC|ID_NOMASK);
+  add_program_constant("MulticharDec", multichar_program = end_program(), ID_STATIC|ID_FINAL);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_gb18030e,tFunc(tStr,tObj), 0);
-  add_program_constant("GB18030Enc", gb18030e_program = end_program(), ID_STATIC|ID_NOMASK);
+  add_program_constant("GB18030Enc", gb18030e_program = end_program(), ID_STATIC|ID_FINAL);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_gbke,tFunc(tStr,tObj), 0);
-  add_program_constant("GBKenc", gbke_program = end_program(), ID_STATIC|ID_NOMASK);
+  add_program_constant("GBKenc", gbke_program = end_program(), ID_STATIC|ID_FINAL);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
   /* function(string:object) */
   ADD_FUNCTION("feed", f_feed_sjis,tFunc(tStr,tObj), 0);
-  add_program_constant("ShiftJisDec", sjis_program = end_program(), ID_STATIC|ID_NOMASK);
+  add_program_constant("ShiftJisDec", sjis_program = end_program(), ID_STATIC|ID_FINAL);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
@@ -2362,13 +2362,13 @@ PIKE_MODULE_INIT
   do_inherit(&prog, 0, NULL);
   /* function(string,string|void,function(string:string)|void:void) */
   ADD_FUNCTION("create", f_create_euce,tFunc(tStr tOr(tStr,tVoid) tOr(tFunc(tStr,tStr),tVoid),tVoid), 0);
-  add_program_constant("EUCEnc", euce_program = end_program(), ID_STATIC|ID_NOMASK);
+  add_program_constant("EUCEnc", euce_program = end_program(), ID_STATIC|ID_FINAL);
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
   /* function(string|void,function(string:string)|void:void) */
   ADD_FUNCTION("create", f_create_sjise,tFunc(tOr(tStr,tVoid) tOr(tFunc(tStr,tStr),tVoid),tVoid), 0);
-  add_program_constant("ShiftJisEnc", sjise_program = end_program(), ID_STATIC|ID_NOMASK);
+  add_program_constant("ShiftJisEnc", sjise_program = end_program(), ID_STATIC|ID_FINAL);
 
   prog.u.program = std_rfc_program;
 

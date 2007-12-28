@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.235 2007/10/11 15:45:16 grubba Exp $
+|| $Id: program.h,v 1.236 2007/12/28 13:38:16 nilsson Exp $
 */
 
 #ifndef PROGRAM_H
@@ -293,7 +293,7 @@ struct program_constant
 #define ID_STATIC          0x01	/* Symbol is not visible by indexing */
 #define ID_PRIVATE         0x02	/* Symbol is not visible by inherit */
 #define ID_FINAL           0x04	/* Symbol may not be overloaded */
-#define ID_NOMASK          0x04	/* Symbol may not be overloaded */
+#define ID_NOMASK          0x04	/* Symbol may not be overloaded (deprecated) */
 #define ID_PUBLIC          0x08 /* Anti private */
 #define ID_USED		   0x10 /* This reference has been used. Check
 				 * that the type is compatible when

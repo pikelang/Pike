@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.300 2007/10/12 18:42:38 mast Exp $
+|| $Id: gc.c,v 1.301 2007/12/28 13:38:15 nilsson Exp $
 */
 
 #include "global.h"
@@ -1313,7 +1313,7 @@ again:
 	  }
 	  else
 	    if (id_ref->id_flags & ID_STATIC) strcat (prot, ",sta");
-	  if (id_ref->id_flags & ID_NOMASK)    strcat (prot, ",nom");
+	  if (id_ref->id_flags & ID_FINAL)     strcat (prot, ",fin");
 	  if (id_ref->id_flags & ID_PUBLIC)    strcat (prot, ",pub");
 	  if (id_ref->id_flags & ID_PROTECTED) strcat (prot, ",pro");
 	  if (id_ref->id_flags & ID_INLINE)    strcat (prot, ",inl");
