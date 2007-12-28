@@ -1,14 +1,15 @@
-# $Id: Makefile.in,v 1.7 2004/04/02 19:12:38 grubba Exp $
+# $Id: Makefile.in,v 1.8 2007/12/28 15:29:22 nilsson Exp $
 @make_variables@
 VPATH=@srcdir@
 OBJS=unicode_module.o normalize.o split.o buffer.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
 SRC_TARGETS=$(SRCDIR)/wordbits.h \
-	$(SRCDIR)/decompositions.h $(SRCDIR)/canonicals.h
+	$(SRCDIR)/decompositions.h $(SRCDIR)/canonicals.h $(SRCDIR)/uversion.h
 @dynamic_module_makefile@
 
 UNICODEDATA=../../UnicodeData.txt
+UNICODEDATARM=../../UnicodeData-ReadMe.txt
 
 # UnixWare make needs help to find the source file...
 unicode_module.o: $(SRCDIR)/unicode_module.c
@@ -25,9 +26,14 @@ $(SRCDIR)/wordbits.h: $(SRCDIR)/make_wordbits.pike $(SRCDIR)/$(UNICODEDATA)
 	 $(RUNPIKE) $(SRCDIR)/make_wordbits.pike 		\
                     < $(SRCDIR)/$(UNICODEDATA) > "$@" || { rm "$@"; exit 1; }
 
+$(SRCDIR)/uversion.h: $(SRCDIR)/make_uversion.pike $(SRCDIR)/$(UNICODEDATA)
+	 $(RUNPIKE) $(SRCDIR)/make_uversion.pike		\
+                    $(SRCDIR)/$(UNICODEDATARM) > "$@" || { rm "$@"; exit 1; }
+
 unicode_module.o: $(SRCDIR)/unicode_module.c $(SRCDIR)/wordbits.h         \
 		  $(SRCDIR)/canonicals.h     			\
-		  $(SRCDIR)/decompositions.h
+		  $(SRCDIR)/decompositions.h			\
+		  $(SRCDIR)/uversion.h
 
 split.o: $(SRCDIR)/wordbits.h
 
