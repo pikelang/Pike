@@ -41,11 +41,13 @@
                             expression6 "++" | "~" expression5 | "-" expression5 
  expression6          ::=   string | int | float | catch | gauge | typeof | sscanf | lambda | class | constant_identifier | call |
                             index | mapping | multiset | array | parenthesis | arrow 
- int                  ::=   "-"? ( number | "'" character "'" )
- number               ::=   "-"? ( ["1" - "9"] digit* | hex_number | bin_number | oct_number )
- hex_number           ::=   "0" ( "x" | "X" ) ( digits | ["a" - "f"] | ["A" - "F"] )+
- bin_number           ::=   "0" ( "b" | "B" ) ( "1" | "0" )+
- oct_number           ::=   "0" ["0" - "7"]*
+ int                  ::=   "-"? ( ["1" - "9"] digit* | hex_int | bin_int | oct_int | "'" character "'" )
+ hex_int              ::=   "0" ( "x" | "X" ) hex_number
+ hex_number           ::=   ( digit | ["a" - "f"] | ["A" - "F"] )+
+ bin_int              ::=   "0" ( "b" | "B" ) bin_number
+ bin_number           ::=   ( "1" | "0" )+
+ oct_int              ::=   "0" oct_number
+ oct_number           ::=   ["0" - "7"]*
  float                ::=   "-"? digit+ "." digit+ ( ( "e" | "E" ) "-"? digit+ )?
  catch                ::=   "catch" ( "(" expression ")" | block )
  gauge                ::=   "gauge" ( "(" expression ")" | block )
@@ -53,8 +55,9 @@
  lvalue               ::=   expression6 | type identifier | "[" ( lvalue ( "," lvalue )* ","? )? "]"
  lambda               ::=   "lambda" "(" arguments? ")" block
  constant_identifier  ::=   "."? identifier ( "." identifier )*
- call                 ::=   expression6 "(" expression_list ")" 
- index                ::=   expression6 "[" ( expression | ".." expression | expression ".." | expresion ".." expresion ) "]"
+ call                 ::=   expression6 "(" expression_list ")"
+ index_expression     ::=   "<"? expression
+ index                ::=   expression6 "[" ( index_expression | ".." index_expression | index_expression ".." | index_expresion ".." index_expresion ) "]"
  array                ::=   "({" expression_list "})"
  multiset             ::=   "(&lt;" expression_list "&gt;)"
  mapping              ::=   "([" ( expression ":" expression ( "," expression ":" expression )* ","? )? "])"
@@ -75,8 +78,9 @@
  varargs              ::=   type "..." identifier
  prot_arguments       ::=   ( type ( "," type )* ( type "..." )? | ( type "..." ) ) ","?
  program_specifier    ::=   string_constant | constant_identifier
- string               ::=   ( 0x22 string_literal* 0x22 )+
- string_literal       ::=   [0x0000 - 0xffff] | "\" [0x00 - 0xff] | "\" number
+ string               ::=   ( 0x22 character* 0x22 )+
+ hex4                 ::=   hex_int hex_int hex_int hex_int
+ character            ::=   [0x0000 - 0xffff] | "\" octal_int | "\x" hex_int | "\d" digit* | "\u" hex4 | "\U" hex4 hex 4 | "\t" | "\r" | "\n" | "\b"
  identifier           ::=   letter { letter | digit } | "`+" | "`/" | "`%" | "`*" | "`&amp;" | "`|" | "`^" | "`~" |
                             "`&lt;" | "`&lt;&lt;" | "`&lt;=" | "`&gt;" | "`&gt;&gt;" | "`&gt;=" | "`==" | "`!=" | "`!" | "`()" | "`-" |
                             "`-&gt;" | "`-&gt;=" | "`[]" | "`[]="
