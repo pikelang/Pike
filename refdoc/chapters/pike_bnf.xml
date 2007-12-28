@@ -48,7 +48,7 @@
  bin_number           ::=   ( "1" | "0" )+
  oct_int              ::=   "0" oct_number
  oct_number           ::=   ["0" - "7"]*
- float                ::=   "-"? digit+ "." digit+ ( ( "e" | "E" ) "-"? digit+ )?
+ float                ::=   "-"? digit* "." digit+ ( ( "e" | "E" ) "-"? digit+ )?
  catch                ::=   "catch" ( "(" expression ")" | block )
  gauge                ::=   "gauge" ( "(" expression ")" | block )
  sscanf               ::=   "sscanf" "(" expression2 "," expression2 ( "," lvalue )* ")" 
