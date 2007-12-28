@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.406 2007/12/27 22:12:36 nilsson Exp $
+// $Id: master.pike.in,v 1.407 2007/12/28 14:51:29 nilsson Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -2955,9 +2955,9 @@ void _main(array(string) orig_argv, array(string) env)
     };
 
     if (err)
-      error( "Pike: Failed to load tool %s:\n"
-	     "%s\n", argv[0],
-	     stringp(err[0])?err[0]:describe_backtrace(err) );
+      exit(1, "Pike: Failed to load tool %s:\n"
+           "%s\n", argv[0],
+           stringp(err[0])?err[0]:describe_backtrace(err));
 
     argv[0] = search(programs, prog) || argv[0];
   } else {
@@ -2968,14 +2968,21 @@ void _main(array(string) orig_argv, array(string) env)
     };
 
     if (err) {
-      if( !file_stat(argv[0]) )
-	exit(1, "Could not find file %O. %s.\n", argv[0], strerror(errno()));
-      if( !file_stat(argv[0])->isreg )
-	exit(1, "File %O is not a regular file.\n", argv[0]);
-      if( !master_read_file(argv[0]) )
-	exit(1, "File %O is not readable. %s.\n", argv[0], strerror(errno()));
-      error( "Pike: Failed to compile script:\n"
-	     "%s\n", stringp(err[0])?err[0]:describe_backtrace(err) );
+      string eno = strerror(errno());
+      string fn = argv[0];
+      if( !file_stat(fn) )
+      {
+        if( file_stat(fn+".pike") )
+          fn += ".pike";
+        else
+          exit(1, "Could not find file %O. %s.\n", fn, eno);
+      }
+      if( !file_stat(fn)->isreg )
+	exit(1, "File %O is not a regular file.\n", fn);
+      if( !master_read_file(fn) )
+	exit(1, "File %O is not readable. %s.\n", fn, eno);
+      exit(1, "Pike: Failed to compile script:\n"
+           "%s\n", stringp(err[0])?err[0]:describe_backtrace(err));
     }
 
     // Don't list the program with its real path in the programs
@@ -2986,6 +2993,7 @@ void _main(array(string) orig_argv, array(string) env)
 
   programs["/main"] = prog;
 
+  // FIXME: Can this occur at all?
   if(!prog)
     error("Pike: Couldn't find script to execute\n(%O)\n", argv[0]);
 
