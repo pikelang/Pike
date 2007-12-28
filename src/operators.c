@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.222 2007/09/24 19:18:24 grubba Exp $
+|| $Id: operators.c,v 1.223 2007/12/28 10:29:43 grubba Exp $
 */
 
 #include "global.h"
@@ -202,7 +202,7 @@ void o_index(void)
  */
 
 /* Special case for casting to int. */
-void o_cast_to_int(void)
+PMOD_EXPORT void o_cast_to_int(void)
 {
   switch(sp[-1].type)
   {
@@ -465,7 +465,7 @@ PMOD_EXPORT void o_cast_to_string(void)
   sp[-1].u.string = make_shared_string(buf);
 }
 
-void o_cast(struct pike_type *type, INT32 run_time_type)
+PMOD_EXPORT void o_cast(struct pike_type *type, INT32 run_time_type)
 {
   if(run_time_type != sp[-1].type)
   {
