@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.62 2007/11/15 17:24:12 grubba Exp $
+|| $Id: lexer.h,v 1.63 2007/12/28 13:40:31 nilsson Exp $
 */
 
 /*
@@ -672,9 +672,9 @@ static int low_yylex(YYSTYPE *yylval)
 	  {
 	    lex.pragmas |= ID_INLINE;
 	  }
-	  else if (ISWORD("all_nomask"))
+	  else if (ISWORD("all_final") || ISWORD("all_nomask"))
 	  {
-	    lex.pragmas |= ID_NOMASK;
+	    lex.pragmas |= ID_FINAL;
 	  }
 	  else if (ISWORD("strict_types"))
 	  {
