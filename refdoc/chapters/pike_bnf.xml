@@ -43,11 +43,14 @@
                             index | mapping | multiset | array | parenthesis | arrow 
  int                  ::=   "-"? ( ["1" - "9"] digit* | hex_int | bin_int | oct_int | "'" character "'" )
  hex_int              ::=   "0" ( "x" | "X" ) hex_number
- hex_number           ::=   ( digit | ["a" - "f"] | ["A" - "F"] )+
+ hex_number           ::=   hex_digit+
+ hex_digit            ::=   ( digit | ["a" - "f"] | ["A" - "F"] )
  bin_int              ::=   "0" ( "b" | "B" ) bin_number
- bin_number           ::=   ( "1" | "0" )+
+ bin_number           ::=   bin_digit+
+ bin_digit            ::=   ( "1" | "0" )
  oct_int              ::=   "0" oct_number
- oct_number           ::=   ["0" - "7"]*
+ oct_number           ::=   oct_digit+
+ oct_digit            ::=   ["0" - "7"]
  float                ::=   "-"? digit* "." digit+ ( ( "e" | "E" ) "-"? digit+ )?
  catch                ::=   "catch" ( "(" expression ")" | block )
  gauge                ::=   "gauge" ( "(" expression ")" | block )
@@ -79,8 +82,8 @@
  prot_arguments       ::=   ( type ( "," type )* ( type "..." )? | ( type "..." ) ) ","?
  program_specifier    ::=   string_constant | constant_identifier
  string               ::=   ( 0x22 character* 0x22 )+
- hex4                 ::=   hex_int hex_int hex_int hex_int
- character            ::=   [0x0000 - 0xffff] | "\" octal_int | "\x" hex_int | "\d" digit* | "\u" hex4 | "\U" hex4 hex 4 | "\a" | "\b" | "\t" | "\n" | "\v" | "\f" | "\r" | "\" 0x22 | "\\"
+ hex4                 ::=   hex_digit hex_digit hex_digit hex_digit
+ character            ::=   [0x0000 - 0xffff] | "\" oct_number | "\x" hex_number | "\d" digit* | "\u" hex4 | "\U" hex4 hex4 | "\a" | "\b" | "\t" | "\n" | "\v" | "\f" | "\r" | "\" 0x22 | "\\"
  identifier           ::=   letter { letter | digit } | "`+" | "`/" | "`%" | "`*" | "`&amp;" | "`|" | "`^" | "`~" |
                             "`&lt;" | "`&lt;&lt;" | "`&lt;=" | "`&gt;" | "`&gt;&gt;" | "`&gt;=" | "`==" | "`!=" | "`!" | "`()" | "`-" |
                             "`-&gt;" | "`-&gt;=" | "`[]" | "`[]="
