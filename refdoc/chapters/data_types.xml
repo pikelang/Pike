@@ -83,9 +83,9 @@ exponential form:</p>
 
 <matrix>
 <r><c><b>Pattern</b></c><c><b>Example</b></c><c><b>Equals</b></c></r>
-<r><c>-?[0-9]+\.[0-9]+</c><c>3.1415926</c><c>3.1415926</c></r>
+<r><c>-?[0-9]*\.[0-9]+</c><c>3.1415926</c><c>3.1415926</c></r>
 <r><c>-?[0-9]+e-?[0-9]+</c><c>-5e3</c><c>-5000.0</c></r>
-<r><c>-?[0-9]+\.[0-9]+e-?[0-9]+</c><c>1.022e-2</c><c>0.01022</c></r>
+<r><c>-?[0-9]*\.[0-9]+e-?[0-9]+</c><c>.22e-2</c><c>0.0022</c></r>
 </matrix>
 
 <p>Of course you can have any number of decimals to increase the accuracy.
@@ -172,6 +172,8 @@ string:</p>
 <r><c>\\[0-7]+</c><c>\116</c></r>
 <r><c>\\x[0-9a-fA-F]+</c><c>\x4e</c></r>
 <r><c>\\d[0-9]+</c><c>\d78</c></r>
+<r><c>\\u[0-9a-fA-F]+ (4)</c><c>\u004E</c></r>
+<r><c>\\U[0-9a-fA-F]+ (8)</c><c>\U0000004e</c></r>
 </matrix>
 
 <matrix>
