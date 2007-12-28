@@ -304,8 +304,8 @@ file.</p>
 <p>Instructs the compiler to mark all symbols as final.</p>
 </subsection>
 
-<subsection title="#pragma all_final">
-<p>Deprecated version of #pragma all_nomask</p>
+<subsection title="#pragma all_nomask">
+<p>Deprecated version of #pragma all_final</p>
 </subsection>
 
 <subsection title="#pragma strict_types">
