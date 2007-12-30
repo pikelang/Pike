@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.125 2007/12/30 00:05:52 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.126 2007/12/30 11:30:25 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -549,7 +549,7 @@ int main(int argc, array(string) argv)
       // do nonblocking on (Linux 2.6/glibc 2.5). Maybe a bug in the new
       // epoll stuff? /mast
 #ifdef __NT__
-      Stdio.File pipe_2 = pipe_1->pipe (Stdio.PROP_IPC|Stdio.PROP_NONBLOCK);
+      Stdio.File pipe_2 = pipe_1->pipe(Stdio.PROP_IPC);
 #else /* !__NT__ */
       Stdio.File pipe_2 = pipe_1->pipe (Stdio.PROP_IPC|
 					Stdio.PROP_NONBLOCK|
