@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.124 2007/10/20 18:04:13 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.125 2007/12/30 00:05:52 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -548,9 +548,13 @@ int main(int argc, array(string) argv)
       // some reason to make a pipe/socket that the watchdog process can
       // do nonblocking on (Linux 2.6/glibc 2.5). Maybe a bug in the new
       // epoll stuff? /mast
+#ifdef __NT__
+      Stdio.File pipe_2 = pipe_1->pipe (Stdio.PROP_IPC|Stdio.PROP_NONBLOCK);
+#else /* !__NT__ */
       Stdio.File pipe_2 = pipe_1->pipe (Stdio.PROP_IPC|
 					Stdio.PROP_NONBLOCK|
 					Stdio.PROP_BIDIRECTIONAL);
+#endif /* __NT__ */
       if (!pipe_2) {
 	werror ("Failed to create pipe for watchdog: %s\n",
 		strerror (pipe_1->errno()));
