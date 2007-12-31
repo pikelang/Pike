@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.372 2007/07/29 14:56:23 grubba Exp $
+|| $Id: file.c,v 1.373 2007/12/31 23:58:54 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -1023,6 +1023,11 @@ static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event)
     SUB_FD_EVENTS (f, 1 << event);
   }
   else {
+#ifdef __NT__
+    if (!(fd_query_properties(f->fd, fd_CAN_NONBLOCK) & fd_CAN_NONBLOCK)) {
+      Pike_error("Setting backend callback on a non-socket!\n");
+    }
+#endif /* __NT__ */
     assign_svalue (&f->event_cbs[event], cb);
     ADD_FD_EVENTS (f, 1 << event);
   }
@@ -2458,6 +2463,12 @@ static void file_set_backend (INT32 args)
     get_storage (Pike_sp[-args].u.object, Backend_program);
   if (!backend)
     SIMPLE_BAD_ARG_ERROR ("Stdio.File->set_backend", 1, "object(Pike.Backend)");
+
+#ifdef __NT__
+  if (!(fd_query_properties(THIS->fd, fd_CAN_NONBLOCK) & fd_CAN_NONBLOCK)) {
+    Pike_error("set_backend() on non-socket!\n");
+  }
+#endif /* __NT__ */
 
   if (f->box.backend)
     change_backend_for_box (&f->box, backend);
