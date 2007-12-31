@@ -123,7 +123,12 @@ array(int) low_run_script (array(string) command, mapping opts)
       }
       void run()
       {
+#ifdef __NT__
+	p->set_read_callback(read_cb);
+	p->set_close_callback(close_cb);
+#else /* !__NT__ */
 	p->set_nonblocking (read_cb, 0, close_cb);
+#endif /* __NT__ */
 	while (!done) Pike.DefaultBackend();
       }
     } (p);

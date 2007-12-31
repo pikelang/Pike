@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.126 2007/12/30 11:30:25 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.127 2007/12/31 19:19:17 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -324,7 +324,12 @@ class Watchdog
     this_program::verbose = verbose;
     WATCHDOG_DEBUG_MSG ("Watchdog started.\n");
     stdin = Stdio.File ("stdin");
+#ifdef __NT__
+    stdin->set_read_callback(stdin_read);
+    stdin->set_close_callback(stdin_close);
+#else /* !__NT__ */
     stdin->set_nonblocking (stdin_read, 0, stdin_close);
+#endif /* __NT__ */
     call_out (check_parent_pid, 10);
     call_out (timeout, WATCHDOG_TIMEOUT);
   }
