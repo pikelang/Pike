@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.30 2007/12/15 18:21:46 grubba Exp $
+|| $Id: apply_low.h,v 1.31 2007/12/31 12:38:52 grubba Exp $
 */
 
     {
@@ -165,7 +165,15 @@
 #ifdef SCOPE
       if(new_frame->scope) add_ref(new_frame->scope);
 #endif
+#ifdef PIKE_DEBUG      
+      if (Pike_fp && (new_frame->locals < Pike_fp->locals)) {
+	fatal("New locals below old locals: %p < %p\n",
+	      new_frame->locals, Pike_fp->locals);
+      }
+#endif /* PIKE_DEBUG */
 
+      Pike_fp = new_frame;
+      
       if(Pike_interpreter.trace_level)
       {
 	dynamic_buffer save_buf;
@@ -181,15 +189,6 @@
 	do_trace_call(args, &save_buf);
       }
 
-#ifdef PIKE_DEBUG      
-      if (Pike_fp && (new_frame->locals < Pike_fp->locals)) {
-	fatal("New locals below old locals: %p < %p\n",
-	      new_frame->locals, Pike_fp->locals);
-      }
-#endif /* PIKE_DEBUG */
-
-      Pike_fp = new_frame;
-      
 #ifdef PROFILING
       function->num_calls++;
 #endif
@@ -204,14 +203,8 @@
       new_frame->self_time_base=function->total_time;
 #endif
 
-#ifdef PIKE_DEBUG
-      if (IDENTIFIER_IS_ALIAS(function->identifier_flags)) {
-	Pike_fatal("Calling an alias!\n");
-      }
-#endif
-
-      switch(function->identifier_flags & IDENTIFIER_TYPE_MASK)
-      {
+      switch(function->identifier_flags & (IDENTIFIER_TYPE_MASK|IDENTIFIER_ALIAS))
+      {       
       case IDENTIFIER_C_FUNCTION:
 	debug_malloc_touch(Pike_fp);
 	Pike_fp->num_args=args;
@@ -354,7 +347,21 @@
 	return 1;
       }
 
-      default:;
+      default:
+	if (IDENTIFIER_IS_ALIAS(function->identifier_flags)) {
+	  POP_PIKE_FRAME();
+	  do {
+	    struct external_variable_context loc;
+	    loc.o = o;
+	    loc.inherit = INHERIT_FROM_INT(p, fun);
+	    loc.parent_identifier = 0;
+	    find_external_context(&loc, function->func.ext_ref.depth);
+	    fun = function->func.ext_ref.id;
+	    p = (o = loc.o)->prog;
+	    function = ID_FROM_INT(p, fun);
+	  } while (IDENTIFIER_IS_ALIAS(function->identifier_flags));
+	  goto apply_low;
+	}
 #ifdef PIKE_DEBUG
 	Pike_fatal("Unknown identifier type.\n");
 #endif
