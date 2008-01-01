@@ -103,6 +103,7 @@ array(int) low_run_script (array(string) command, mapping opts)
       int succeeded, failed, skipped, got_subresult;
       void read_cb (mixed ignored, string in)
       {
+	all_constants()->__signal_watchdog();
 	write (filter (in));
 	foreach (get_cmds(), string wd_cmd) {
 	  if (sscanf (wd_cmd, "succeeded %d failed %d skipped %d",
@@ -114,6 +115,7 @@ array(int) low_run_script (array(string) command, mapping opts)
       }
       void close_cb (mixed ignored)
       {
+	all_constants()->__signal_watchdog();
 	if (p->errno()) {
 	  werror ("Error reading output from subprocess: %s\n",
 		  strerror (p->errno()));
