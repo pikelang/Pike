@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.207 2007/10/08 15:36:39 grubba Exp $
+ * $Id: backend.cmod,v 1.208 2008/01/01 00:02:02 grubba Exp $
  *
  * Backend object.
  */
@@ -1348,6 +1348,13 @@ PIKECLASS Backend
 			      int old_events, int new_events)
    {
      if (fd < 0) return;
+
+#ifdef __NT__
+     if (new_events && !(fd_query_properties(fd, fd_CAN_NONBLOCK) & fd_CAN_NONBLOCK)) {
+       Pike_fatal("update_fd_set() on non-socket!\n");
+     }
+#endif /* __NT__ */
+
      if (me->update_fd_set_handler) {
        me->update_fd_set_handler(me, me->handler_data,
 				 fd, old_events, new_events);
@@ -1366,6 +1373,11 @@ PIKECLASS Backend
 #ifdef PIKE_DEBUG
     if (!me) Pike_fatal ("Backend not set.\n");
 #endif
+#ifdef __NT__
+    if (new_events && !(fd_query_properties(fd, fd_CAN_NONBLOCK) & fd_CAN_NONBLOCK)) {
+      Pike_fatal("hook_fd_callback_box() on non-socket!\n");
+    }
+#endif /* __NT__ */
     add_fd_box (box);
     if (fd >= 0) update_fd_set (me, fd, 0, box->events);
     if (box->ref_obj && box->events) add_ref (box->ref_obj);
