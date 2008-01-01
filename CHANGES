@@ -7,6 +7,7 @@ o Fixed infinite loop that could occur when feeding Image.XBM with
   malformed data.
 o Added option "file" to Image.PS.decode().
 o Image.PS.decode() now reads nonblocking from the pipes.
+o Added use of custom backend in Image.PS.
 o Added "Regexp.PCRE.Widestring" to the feature list.
 o Added ADT.Trie data type.
 o Fixed bug in columns sorting in ADT.Table.
@@ -29,10 +30,17 @@ o Don't crash when not sending ssl options to Mysql.
 o Fix for case where ODBC tried to write error messages with wide
   strings in them.
 o Bugfixes for ODBC long fields.
-o Added unlocking of the interpreter lock for all blocking ODBC operations.
+o Added unlocking of the interpreter lock for almost all ODBC
+  operations. This is needed for simplistic odbc drivers that take
+  their internal lock for all calls.
 o Added handling of ISO-6937:2001 in charset decoder.
 o Many dup2() fixes in Stdio.File.
 o Fixed Crypto.set_{en,de}crypt_key() to accept the force flag.
+o Added alternate backend support for Stdio.sendfile().
+o win32: Fixed bug in RegGetValue{,s}() for fields of type *_SZ of length 0.
+o Close the kqueue fd when a backend goes away. Should solve all
+  kinds of "no more file descriptor" and "couldn't create backend wakeup
+  pipe" problems on Darwin.
 o More error handling added to Monger.
 o More error handling added to cgrep.
 o Added more methods to enable the buggy unicode decode support in
@@ -54,6 +62,10 @@ o Mird: Renamed FDATASYNC() to MIRD_FDATASYNC() to avoid clash with
   NetBSD header-files.
 o The precompiler doesn't generate broken string width check code.
 o Fixed some problems with configure tests using rusage and threads.
+o Added /opt/csw/lib to list of library directories to check.
+o If compiler is GCC, also add all library directories listed by
+  gcc -print-search-dirs.
+o Normalize library directory pathnames before adding them.
 
 Other:
 
@@ -342,6 +354,7 @@ o Do not decode non-shortest forms in utf8_to_string and _Charset, for
   security reasons and unicode 3.1 compliance.
 o Image.PNG: fix a memory leak.
 o Image.FreeType: Added support for monochrome pixel fonts.
+o Fixed Image.Font default font alignment.
 o Postgres: Fixes to create() variable 5 parsing.
 o GTK: a number of typos were fixed.
 o A large number of fixes for 64 bit architectures.
