@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.188 2006/08/10 13:46:48 mast Exp $
+|| $Id: pike_memory.c,v 1.189 2008/01/01 18:53:02 grubba Exp $
 */
 
 #include "global.h"
@@ -904,6 +904,8 @@ PMOD_EXPORT void mexec_free(void *ptr)
 
 #endif  /* !USE_MY_MEXEC_ALLOC && !VALGRIND_DISCARD_TRANSLATIONS */
 
+/* #define DMALLOC_USE_HASHBASE */
+
 /* #define DMALLOC_TRACE */
 /* #define DMALLOC_TRACELOGSIZE	256*1024 */
 
@@ -1346,6 +1348,12 @@ struct memhdr
   struct memhdr *next;
   long size;
   int flags;
+#ifdef DMALLOC_USE_HASHBASE
+  long hashbase;	/* Cached calculation of ((long)&next)*53 */
+#define INIT_HASHBASE(X)	(((X)->hashbase) = (((long)(X))*53))
+#else /* !DMALLOC_USE_HASHBASE */
+#define INIT_HASHBASE(X)
+#endif /* DMALLOC_USE_HASHBASE */
 #ifdef DMALLOC_VERIFY_INTERNALS
   int times;		/* Should be equal to `+(@(locations->times))... */
 #endif
@@ -1518,8 +1526,12 @@ void check_pad(struct memhdr *mh, int freeok)
 static INLINE unsigned long lhash(struct memhdr *m, LOCATION location)
 {
   unsigned long l;
+#ifdef DMALLOC_USE_HASHBASE
+  l = m->hashbase;
+#else /* !DMALLOC_USE_HASHBASE */
   l=(long)m;
   l*=53;
+#endif /* DMALLOC_USE_HASHBASE */
   l+=(long)location;
   l%=LHSIZE;
   return l;
@@ -1531,6 +1543,7 @@ static INLINE unsigned long lhash(struct memhdr *m, LOCATION location)
 #define INIT_BLOCK(X) do {				\
     X->locations = NULL;				\
     X->flags=0;						\
+    INIT_HASHBASE(X);					\
     DO_IF_VERIFY_INTERNALS(				\
       X->times=0;					\
     );							\
@@ -1791,7 +1804,7 @@ static void add_location(struct memhdr *mh,
 			 LOCATION location)
 {
   struct memloc *ml;
-  unsigned long l;
+  unsigned long l=lhash(mh,location);
 
 #ifdef DMALLOC_TRACE
   if(dmalloc_print_trace)
@@ -1814,8 +1827,6 @@ static void add_location(struct memhdr *mh,
 #ifdef DMALLOC_PROFILE
   add_location_calls++;
 #endif
-
-  l=lhash(mh,location);
 
   if(mlhash[l] && (mlhash[l]->mh==mh) && (mlhash[l]->location==location))
   {
