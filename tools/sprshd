@@ -161,7 +161,9 @@ void handle_incoming_connection(object(Stdio.File) io)
     {
       env[key]=val;
     }
+#ifdef DEBUG
     werror("%s = %s\n",key,env[key]);
+#endif
     cmd=cmd[1..];
   }
 
@@ -263,7 +265,9 @@ void handle_incoming_connection(object(Stdio.File) io)
 #if __VERSION__ >= 0.699999
    if(io->read_oob)
    {
+#ifdef DEBUG
      write("Trapping OOB\n");
+#endif
      thread_create(lambda() {
        while(1)
        {
@@ -318,6 +322,8 @@ void handle_incoming_connection(object(Stdio.File) io)
       }else{
 	werror("dir=%s\n",dir);
 	werror(master()->describe_backtrace(err));
+	if(!dir || sizeof(dir)<2 || dir[1] != ':')
+	  werror("\n*** %O is probably not mapped on the windows machine! ***\n\n", dir);
 	destruct(p2);
 	io->write(sprintf("%4c",0));
 	io->write(sprintf("%4c",69));
