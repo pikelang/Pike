@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.407 2007/12/28 14:51:29 nilsson Exp $
+// $Id: master.pike.in,v 1.408 2008/01/03 16:50:42 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1577,7 +1577,7 @@ class dirnode
       resolv_debug ("dirnode(%O)->module_checker()->`!()\n",dirname);
       INC_RESOLV_MSG_DEPTH();
 
-      if (mixed err = catch { 
+      if (/*mixed err =*/ catch { 
 	// Look up module.
 	if (module = cache["module"] || low_ind("module", 1)) {
 	  /* This allows for `[] to have side effects first time
