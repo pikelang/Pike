@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.394 2008/01/03 16:22:59 grubba Exp $
+|| $Id: language.yacc,v 1.395 2008/01/03 16:29:08 grubba Exp $
 */
 
 %pure_parser
@@ -4422,6 +4422,8 @@ static node *lexical_islocal(struct pike_string *str)
       if(f->variable[e].name==str)
       {
 	struct compiler_frame *q=Pike_compiler->compiler_frame;
+
+	f->variable[e].flags |= LOCAL_VAR_IS_USED;
 
 	while(q!=f) 
 	{
