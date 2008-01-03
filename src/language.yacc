@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.392 2007/12/28 16:10:16 grubba Exp $
+|| $Id: language.yacc,v 1.393 2008/01/03 15:56:25 grubba Exp $
 */
 
 %pure_parser
@@ -4230,8 +4230,10 @@ static int low_islocal(struct compiler_frame *f,
 {
   int e;
   for(e=f->current_number_of_locals-1;e>=0;e--)
-    if(f->variable[e].name==str)
+    if(f->variable[e].name==str) {
+      f->variable[e].flags |= LOCAL_VAR_IS_USED;
       return e;
+    }
   return -1;
 }
 
@@ -4274,35 +4276,36 @@ int low_add_local_name(struct compiler_frame *frame,
     if (def) free_node(def);
     return -1;
   } else {
-    reference_shared_string(str);
+    int var = frame->current_number_of_locals;
+
 #ifdef PIKE_DEBUG
     check_type_string(type);
 #endif /* PIKE_DEBUG */
     if (pike_types_le(type, void_type_string)) {
       if (Pike_compiler->compiler_pass != 1) {
-	yywarning("Declaring local variable with type void "
-		  "(converted to type zero).");
+	yywarning("Declaring local variable %S with type void "
+		  "(converted to type zero).", str);
       }
       free_type(type);
       copy_pike_type(type, zero_type_string);
     }
-    frame->variable[frame->current_number_of_locals].type = type;
-    frame->variable[frame->current_number_of_locals].name = str;
-    frame->variable[frame->current_number_of_locals].def = def;
+    frame->variable[var].name = str;
+    reference_shared_string(str);
+    frame->variable[var].def = def;
 
-    frame->variable[frame->current_number_of_locals].line=lex.current_line;
-    frame->variable[frame->current_number_of_locals].file=lex.current_file;
-    add_ref(lex.current_file);
+    frame->variable[var].line=lex.current_line;
+    frame->variable[var].file=lex.current_file;
+    reference_shared_string(lex.current_file);
+
+    frame->variable[var].flags = 0;
 
     frame->current_number_of_locals++;
-    if(frame->current_number_of_locals > 
-       frame->max_number_of_locals)
+    if(frame->current_number_of_locals > frame->max_number_of_locals)
     {
-      frame->max_number_of_locals=
-	frame->current_number_of_locals;
+      frame->max_number_of_locals = frame->current_number_of_locals;
     }
 
-    return frame->current_number_of_locals-1;
+    return var;
   }
 }
 
