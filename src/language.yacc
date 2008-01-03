@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.393 2008/01/03 15:56:25 grubba Exp $
+|| $Id: language.yacc,v 1.394 2008/01/03 16:22:59 grubba Exp $
 */
 
 %pure_parser
@@ -4289,6 +4289,7 @@ int low_add_local_name(struct compiler_frame *frame,
       free_type(type);
       copy_pike_type(type, zero_type_string);
     }
+    frame->variable[var].type = type;
     frame->variable[var].name = str;
     reference_shared_string(str);
     frame->variable[var].def = def;
