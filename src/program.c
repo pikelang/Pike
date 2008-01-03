@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.632 2007/12/28 13:38:15 nilsson Exp $
+|| $Id: program.c,v 1.633 2008/01/03 15:58:27 grubba Exp $
 */
 
 #include "global.h"
@@ -8221,6 +8221,17 @@ void low_pop_local_variables(int level)
   {
     int e;
     e=--(Pike_compiler->compiler_frame->current_number_of_locals);
+    if (!(Pike_compiler->compiler_frame->variable[e].flags &
+	  LOCAL_VAR_IS_USED)) {
+      struct pike_string *save_file = lex.current_file;
+      int save_line = lex.current_line;
+      lex.current_file = Pike_compiler->compiler_frame->variable[e].file;
+      lex.current_line = Pike_compiler->compiler_frame->variable[e].line;
+      yywarning("Unused local variable %S.\n",
+		Pike_compiler->compiler_frame->variable[e].name);
+      lex.current_file = save_file;
+      lex.current_line = save_line;
+    }
     free_string(Pike_compiler->compiler_frame->variable[e].name);
     free_type(Pike_compiler->compiler_frame->variable[e].type);
     if(Pike_compiler->compiler_frame->variable[e].def)
@@ -8236,11 +8247,25 @@ void pop_local_variables(int level)
   /* We need to save the variables Kuppo (but not their names) */
   if(level < Pike_compiler->compiler_frame->min_number_of_locals)
   {
+    /* FIXME: Consider using flags to indicate whether a local variable
+     *        actually is used from a nested scope. */
     for(;level<Pike_compiler->compiler_frame->min_number_of_locals;level++)
     {
+      if (!(Pike_compiler->compiler_frame->variable[level].flags &
+	    LOCAL_VAR_IS_USED)) {
+	struct pike_string *save_file = lex.current_file;
+	int save_line = lex.current_line;
+	lex.current_file = Pike_compiler->compiler_frame->variable[level].file;
+	lex.current_line = Pike_compiler->compiler_frame->variable[level].line;
+	yywarning("Unused local variable %S.\n",
+		Pike_compiler->compiler_frame->variable[level].name);
+	lex.current_file = save_file;
+	lex.current_line = save_line;
+      }
       free_string(Pike_compiler->compiler_frame->variable[level].name);
       copy_shared_string(Pike_compiler->compiler_frame->variable[level].name,
 			 empty_pike_string);
+      /* FIXME: Do we need to keep the filenames? */
     }
   }
 #endif
