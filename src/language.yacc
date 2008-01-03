@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.396 2008/01/03 16:49:09 grubba Exp $
+|| $Id: language.yacc,v 1.397 2008/01/03 21:13:38 grubba Exp $
 */
 
 %pure_parser
@@ -1154,8 +1154,9 @@ new_arg_name: type7 optional_dot_dot_dot optional_identifier
 		 $3->u.sval.u.string);
     
     i = add_local_name($3->u.sval.u.string, compiler_pop_type(),0);
-    if (!(lex.pragmas & ID_STRICT_TYPES)) {
-      /* Only warn about unused arguments in struct types mode. */
+    if (!$3->u.sval.u.string->len ||
+	!(lex.pragmas & ID_STRICT_TYPES)) {
+      /* Only warn about unused arguments in strict types mode. */
       Pike_compiler->compiler_frame->variable[i].flags |= LOCAL_VAR_IS_USED;
     }
     free_node($3);
@@ -1713,6 +1714,11 @@ new_name: optional_stars TOK_IDENTIFIER
     }
     $<number>$=define_variable($2->u.sval.u.string, type,
 			       Pike_compiler->current_modifiers & (~ID_EXTERN));
+    if (!(lex.pragmas & ID_STRICT_TYPES)) {
+      /* Only warn about unused initialized variables in strict types mode. */
+      Pike_compiler->compiler_frame->variable[$<number>$].flags |=
+	LOCAL_VAR_IS_USED;
+    }
     free_type(type);
   }
   expr0
