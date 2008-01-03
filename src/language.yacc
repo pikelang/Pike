@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.395 2008/01/03 16:29:08 grubba Exp $
+|| $Id: language.yacc,v 1.396 2008/01/03 16:49:09 grubba Exp $
 */
 
 %pure_parser
@@ -1134,6 +1134,7 @@ optional_identifier: TOK_IDENTIFIER
 
 new_arg_name: type7 optional_dot_dot_dot optional_identifier
   {
+    int i;
     if(Pike_compiler->varargs) yyerror("Can't define more arguments after ...");
 
     if($2)
@@ -1152,7 +1153,11 @@ new_arg_name: type7 optional_dot_dot_dot optional_identifier
       my_yyerror("Variable %S appears twice in argument list.",
 		 $3->u.sval.u.string);
     
-    add_local_name($3->u.sval.u.string, compiler_pop_type(),0);
+    i = add_local_name($3->u.sval.u.string, compiler_pop_type(),0);
+    if (!(lex.pragmas & ID_STRICT_TYPES)) {
+      /* Only warn about unused arguments in struct types mode. */
+      Pike_compiler->compiler_frame->variable[i].flags |= LOCAL_VAR_IS_USED;
+    }
     free_node($3);
   }
   ;
@@ -2568,12 +2573,16 @@ class: modifiers TOK_CLASS line_number_info optional_identifier
 	    id = Pike_compiler->new_program->identifiers + e;
 	    add_ref(id->type);
 	    add_local_name(id->name, id->type, 0);
+	    Pike_compiler->compiler_frame->variable[e].flags |=
+	      LOCAL_VAR_IS_USED;
 	  }
 	} else {
 	  for (e = 0; e < Pike_compiler->num_create_args; e++) {
 	    id = Pike_compiler->new_program->identifiers + e;
 	    add_ref(id->type);
 	    add_local_name(id->name, id->type, 0);
+	    Pike_compiler->compiler_frame->variable[e].flags |=
+	      LOCAL_VAR_IS_USED;
 	  }
 	}
 
