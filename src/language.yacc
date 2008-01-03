@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.397 2008/01/03 21:13:38 grubba Exp $
+|| $Id: language.yacc,v 1.398 2008/01/03 23:01:33 grubba Exp $
 */
 
 %pure_parser
@@ -1714,11 +1714,6 @@ new_name: optional_stars TOK_IDENTIFIER
     }
     $<number>$=define_variable($2->u.sval.u.string, type,
 			       Pike_compiler->current_modifiers & (~ID_EXTERN));
-    if (!(lex.pragmas & ID_STRICT_TYPES)) {
-      /* Only warn about unused initialized variables in strict types mode. */
-      Pike_compiler->compiler_frame->variable[$<number>$].flags |=
-	LOCAL_VAR_IS_USED;
-    }
     free_type(type);
   }
   expr0
@@ -1771,6 +1766,10 @@ new_local_name: optional_stars TOK_IDENTIFIER
     }
     while($1--) push_type(T_ARRAY);
     id = add_local_name($2->u.sval.u.string, compiler_pop_type(),0);
+    if (!(lex.pragmas & ID_STRICT_TYPES)) {
+      /* Only warn about unused initialized variables in strict types mode. */
+      Pike_compiler->compiler_frame->variable[id].flags |= LOCAL_VAR_IS_USED;
+    }
     if (id >= 0)
       $$=mknode(F_ASSIGN,$4,mklocalnode(id,0));
     else
