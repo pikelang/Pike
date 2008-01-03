@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.h,v 1.75 2007/11/10 21:36:27 nilsson Exp $
+|| $Id: las.h,v 1.76 2008/01/03 15:53:34 grubba Exp $
 */
 
 #ifndef LAS_H
@@ -39,13 +39,18 @@ struct node_s;
 typedef struct node_s node;
 #endif
 
+/* local variable flags */
+#define LOCAL_VAR_IS_USED		1
+
 struct local_variable
 {
   struct pike_string *name;
   struct pike_type *type;
   node *def;
+  /* FIXME: Consider moving these two to the def node above? */
   struct pike_string *file;
   int line;
+  unsigned int flags;
 };
 
 struct compiler_frame
