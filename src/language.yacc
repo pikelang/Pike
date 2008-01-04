@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.398 2008/01/03 23:01:33 grubba Exp $
+|| $Id: language.yacc,v 1.399 2008/01/04 10:25:22 grubba Exp $
 */
 
 %pure_parser
@@ -1154,8 +1154,9 @@ new_arg_name: type7 optional_dot_dot_dot optional_identifier
 		 $3->u.sval.u.string);
     
     i = add_local_name($3->u.sval.u.string, compiler_pop_type(),0);
-    if (!$3->u.sval.u.string->len ||
-	!(lex.pragmas & ID_STRICT_TYPES)) {
+    if (i >= 0 &&
+	(!$3->u.sval.u.string->len ||
+	 !(lex.pragmas & ID_STRICT_TYPES))) {
       /* Only warn about unused arguments in strict types mode. */
       Pike_compiler->compiler_frame->variable[i].flags |= LOCAL_VAR_IS_USED;
     }
@@ -1766,13 +1767,13 @@ new_local_name: optional_stars TOK_IDENTIFIER
     }
     while($1--) push_type(T_ARRAY);
     id = add_local_name($2->u.sval.u.string, compiler_pop_type(),0);
-    if (!(lex.pragmas & ID_STRICT_TYPES)) {
-      /* Only warn about unused initialized variables in strict types mode. */
-      Pike_compiler->compiler_frame->variable[id].flags |= LOCAL_VAR_IS_USED;
-    }
-    if (id >= 0)
+    if (id >= 0) {
+      if (!(lex.pragmas & ID_STRICT_TYPES)) {
+	/* Only warn about unused initialized variables in strict types mode. */
+	Pike_compiler->compiler_frame->variable[id].flags |= LOCAL_VAR_IS_USED;
+      }
       $$=mknode(F_ASSIGN,$4,mklocalnode(id,0));
-    else
+    } else
       $$ = 0;
     free_node($2);
   }
@@ -1814,9 +1815,13 @@ new_local_name2: TOK_IDENTIFIER
     int id;
     add_ref($<n>0->u.sval.u.type);
     id = add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.type, 0);
-    if (id >= 0)
+    if (id >= 0) {
+      if (!(lex.pragmas & ID_STRICT_TYPES)) {
+	/* Only warn about unused initialized variables in strict types mode. */
+	Pike_compiler->compiler_frame->variable[id].flags |= LOCAL_VAR_IS_USED;
+      }
       $$=mknode(F_ASSIGN,$3, mklocalnode(id,0));
-    else
+    } else
       $$ = 0;
     free_node($1);
   }
@@ -2578,6 +2583,7 @@ class: modifiers TOK_CLASS line_number_info optional_identifier
 	    id = Pike_compiler->new_program->identifiers + e;
 	    add_ref(id->type);
 	    add_local_name(id->name, id->type, 0);
+	    /* Note: add_local_name() above will return e. */
 	    Pike_compiler->compiler_frame->variable[e].flags |=
 	      LOCAL_VAR_IS_USED;
 	  }
@@ -2586,6 +2592,7 @@ class: modifiers TOK_CLASS line_number_info optional_identifier
 	    id = Pike_compiler->new_program->identifiers + e;
 	    add_ref(id->type);
 	    add_local_name(id->name, id->type, 0);
+	    /* Note: add_local_name() above will return e. */
 	    Pike_compiler->compiler_frame->variable[e].flags |=
 	      LOCAL_VAR_IS_USED;
 	  }
