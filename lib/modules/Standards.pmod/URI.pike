@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396 and RFC 3986.
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.25 2006/11/04 19:06:49 nilsson Exp $
+// $Id: URI.pike,v 1.26 2008/01/04 20:48:15 nilsson Exp $
 
 #pragma strict_types
 
@@ -467,7 +467,7 @@ string http_encode(string in)
 
 //! Return the query part, coded according to RFC 1738.
 string get_http_query() {
-  mapping out = ([]);
+  mapping(string:string) out = ([]);
   foreach(get_query_variables(); string name; string value)
     out[http_encode(name)] = http_encode(value);
   return ((array)out)[*]*"="*"&";
