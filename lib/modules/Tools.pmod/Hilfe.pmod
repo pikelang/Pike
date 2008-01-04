@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.147 2007/08/30 15:32:24 mbaehr Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.148 2008/01/04 11:45:08 grubba Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -2547,7 +2547,7 @@ class StdinHilfe
 
   void handle_doc(string key)
   {
-    array modules, tokens;
+    array tokens;
     string input = readline->gettext()[..readline->getcursorpos()-1];
     mixed error = catch
     {
@@ -2567,7 +2567,7 @@ class StdinHilfe
     HilfeCompileHandler handler = HilfeCompileHandler(sizeof(backtrace()));
     master()->set_inhibit_compile_errors(handler);
 
-    array modules, tokens;
+    array tokens;
     string input = readline->gettext()[..readline->getcursorpos()-1];
     array|string completions;
 
@@ -2834,7 +2834,6 @@ class StdinHilfe
             module = modules[0];
             modules = ({});
             object thismodule;
-            int(0..1) pmod;
 
             if(other && other[module])
             {
