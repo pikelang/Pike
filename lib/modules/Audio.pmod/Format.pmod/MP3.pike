@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: MP3.pike,v 1.1 2002/09/13 13:37:53 hop Exp $
+// $Id: MP3.pike,v 1.2 2008/01/04 20:52:17 nilsson Exp $
 
 // MP3 file parser/formatter
 //
@@ -19,11 +19,7 @@
 //! A MP3 file parser with ID3 tag support.
 
   inherit .module.ANY;
-  private int metainterval;
-  private int new_meta;
-  private string metadata;
   private int start = 1;
-  private int name;
 
   void create() { }
 
