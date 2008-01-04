@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.399 2008/01/04 10:25:22 grubba Exp $
+|| $Id: language.yacc,v 1.400 2008/01/04 11:38:55 grubba Exp $
 */
 
 %pure_parser
@@ -1059,6 +1059,11 @@ def: modifiers type_or_error optional_constant optional_stars
 
       lex.current_line = save_line;
       lex.current_file = save_file;
+    } else {
+      /* Prototype; don't warn about unused arguments. */
+      for (e = Pike_compiler->compiler_frame->num_variables; e--;) {
+	Pike_compiler->compiler_frame->variable[e].flags |= LOCAL_VAR_IS_USED;
+      }
     }
     pop_compiler_frame();
     free_node($5);
