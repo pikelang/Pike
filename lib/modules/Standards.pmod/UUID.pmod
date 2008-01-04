@@ -11,7 +11,7 @@
 //!                identifier components
 //!
 
-// $Id: UUID.pmod,v 1.15 2007/08/05 12:04:55 marcus Exp $
+// $Id: UUID.pmod,v 1.16 2008/01/04 11:48:24 grubba Exp $
 //
 // 2004-10-01 Henrik Grubbström
 // 2004-10-04 Martin Nilsson
@@ -210,7 +210,7 @@ class UUID {
       in = String.hex2string(in);
       // fallthrough
     case 16:
-      int time_low, time_mid, time_hi_and_version, clk_seq_res;
+      int time_low, time_mid, time_hi_and_version;
       sscanf(in, "%4c%2c%2c%2c%6c", time_low, time_mid, time_hi_and_version,
 	     clk_seq, node);
       version = (time_hi_and_version & 0xf000)>>12;
