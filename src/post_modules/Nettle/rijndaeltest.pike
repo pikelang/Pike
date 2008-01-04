@@ -1,5 +1,5 @@
 /*
- * $Id: rijndaeltest.pike,v 1.3 2007/06/18 00:43:51 mast Exp $
+ * $Id: rijndaeltest.pike,v 1.4 2008/01/04 11:53:12 grubba Exp $
  *
  * Test Crypto.aes against the official test-vectors.
  *
@@ -176,7 +176,6 @@ int check_cbc_d_m()
 int check_ecb_tbl()
 {
   int fail;
-  string keysize;
 
   object aes_e = Crypto.AES();
   object aes_d = Crypto.AES();

@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.45 2006/09/12 14:01:42 nilsson Exp $
+// $Id: module.pmod,v 1.46 2008/01/04 11:51:38 grubba Exp $
 
 static constant fmts = ([
   "image/x-pnm" : "PNM",
@@ -192,7 +192,7 @@ array(Image.Layer) decode_layers( string data, mapping|void opt )
 string read_file(string file)
 {
   string ext="";
-  sscanf(reverse(file),"%s.%s",ext,string rest);
+  sscanf(reverse(file),"%s.%*s",ext);
   string dcc;
 
   switch(lower_case(reverse(ext)))
