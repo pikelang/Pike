@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.25 2007/05/01 10:36:25 grubba Exp $
+// $Id: Terminfo.pmod,v 1.26 2008/01/04 11:33:18 grubba Exp $
 #pike __REAL_VERSION__
 
 
@@ -703,7 +703,6 @@ class TerminfoDB {
   {
     LOCK;
     if (!complete_index) {
-      array(string) files;
       foreach (get_dir(dir), string a)
 	if (sizeof(a) == 1)
 	  foreach (get_dir(dir+a), string b)
