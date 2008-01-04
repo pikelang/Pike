@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 #pragma strict_types
-// $Id: Random.pmod,v 1.16 2005/11/14 13:26:28 nilsson Exp $
+// $Id: Random.pmod,v 1.17 2008/01/04 11:43:46 grubba Exp $
 
 //! This module contains stuff to that tries to give you the
 //! best possible random generation.
@@ -128,6 +128,7 @@ static class RND {
   string random_string(int len) {
     object key = lock->lock();
     return low_random_string(len);
+    key = 0;	// Fix warning.
   }
 
   string low_random_string(int len) {
