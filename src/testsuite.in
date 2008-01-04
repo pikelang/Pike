@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.792 2007/10/22 10:58:02 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.793 2008/01/04 12:03:46 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -204,12 +204,13 @@ test_any([[
 ]], "11")
 
 test_compile_any([[
-  void foo() 
+  mixed foo() 
   {
     Stdio.File bar(int x, int y)
     { 
       return 0;
-    }; 
+    };
+    return bar;
   } 
 ]])
 
@@ -605,8 +606,8 @@ test_compile_any([[
 ]])
 
 test_compile_any([[
-  class { void a() {  constant c = 17; }
-	  void b() {  constant c = 17; }  }
+  class { mixed a() {  constant c = 17; return c; }
+	  mixed b() {  constant c = 17; return c; }  }
 ]])
 
 test_compile_any([[
@@ -829,7 +830,6 @@ test_any( [[
 // bug [721] -------------------------------------------------------------
 // http://community/crunch/show_bug.cgi?id=721
 int res=0;
-program p;
 catch
 {
 add_constant("test_a",compile_string("int foo();","test_a"));
@@ -1176,8 +1176,8 @@ test_program([[
   }
   int a()
   {
-    foreach (({0, monitor::lock()}), mixed m)
-      return f (1); // F_CALL_LFUN_AND_RETURN
+    foreach (({1, monitor::lock()}), mixed m)
+      return f (m); // F_CALL_LFUN_AND_RETURN
   };
 ]]);
 test_program([[
@@ -1191,8 +1191,8 @@ test_program([[
   mixed g = f;
   int a()
   {
-    foreach (({0, monitor::lock()}), mixed m)
-      return g (1); // F_CALL_FUNCTION_AND_RETURN
+    foreach (({1, monitor::lock()}), mixed m)
+      return g (m); // F_CALL_FUNCTION_AND_RETURN
   }
 ]]);
 test_program([[
@@ -1210,8 +1210,8 @@ test_program([[
     return compile_string(#"
       int g()
       {
-	foreach (({0, monitor->lock()}), mixed m)
-	  return f (1); // F_APPLY_AND_RETURN
+	foreach (({1, monitor->lock()}), mixed m)
+	  return f (m); // F_APPLY_AND_RETURN
       }")()->g();
   }
 ]]);
@@ -1227,8 +1227,8 @@ test_program([[
   int a()
   {
     int res;
-    foreach (({0, monitor::lock()}), mixed m) {
-      res = this->f (1); // F_CALL_OTHER (no `->)
+    foreach (({1, monitor::lock()}), mixed m) {
+      res = this->f (m); // F_CALL_OTHER (no `->)
       dummy = random (res);
       return res;
     }
@@ -1247,8 +1247,8 @@ test_program([[
   int a()
   {
     int res;
-    foreach (({0, monitor::lock()}), mixed m) {
-      res = this->f (1); // F_CALL_OTHER (with `->)
+    foreach (({1, monitor::lock()}), mixed m) {
+      res = this->f (m); // F_CALL_OTHER (with `->)
       dummy = random (res);
       return res;
     }
@@ -1266,8 +1266,8 @@ test_program([[
   };
   int a()
   {
-    foreach (({0, monitor::lock()}), mixed m) {
-      this->f (1); // F_CALL_OTHER_AND_POP (no `->)
+    foreach (({1, monitor::lock()}), mixed m) {
+      this->f (m); // F_CALL_OTHER_AND_POP (no `->)
       return res;
     }
   }
@@ -1285,8 +1285,8 @@ test_program([[
   };
   int a()
   {
-    foreach (({0, monitor::lock()}), mixed m) {
-      this->f (1); // F_CALL_OTHER_AND_POP (with `->)
+    foreach (({1, monitor::lock()}), mixed m) {
+      this->f (m); // F_CALL_OTHER_AND_POP (with `->)
       return res;
     }
   }
@@ -1301,8 +1301,8 @@ test_program([[
   };
   int a()
   {
-    foreach (({0, monitor::lock()}), mixed m)
-      return this->f (1); // F_CALL_OTHER_AND_RETURN (no `->)
+    foreach (({1, monitor::lock()}), mixed m)
+      return this->f (m); // F_CALL_OTHER_AND_RETURN (no `->)
   }
 ]]);
 test_program([[
@@ -1316,8 +1316,8 @@ test_program([[
   };
   int a()
   {
-    foreach (({0, monitor::lock()}), mixed m)
-      return this->f (1); // F_CALL_OTHER_AND_RETURN (with `->)
+    foreach (({1, monitor::lock()}), mixed m)
+      return this->f (m); // F_CALL_OTHER_AND_RETURN (with `->)
   }
 ]]);
 test_program([[
@@ -1332,8 +1332,8 @@ test_program([[
     }
     else {
       iter = 1;
-      foreach (({0, monitor::lock()}), mixed m)
-	return a (1); // F_COND_RECUR
+      foreach (({1, monitor::lock()}), mixed m)
+	return a (m); // F_COND_RECUR
     }
   }
 ]]);
@@ -1353,8 +1353,8 @@ test_program([[
     }
     else {
       iter = 2;
-      foreach (({0, monitor::lock()}), mixed m)
-	return a (1); // F_TAIL_RECUR
+      foreach (({1, monitor::lock()}), mixed m)
+	return a (m); // F_TAIL_RECUR
     }
   }
 ]]);
@@ -1375,8 +1375,8 @@ test_program([[
     else {
       iter = 2;
       int res;
-      foreach (({0, monitor::lock()}), mixed m) {
-	res = a (1); // F_RECUR
+      foreach (({1, monitor::lock()}), mixed m) {
+	res = a (m); // F_RECUR
 	iter = random (res);
 	return res;
       }
@@ -1399,8 +1399,8 @@ test_program([[
     }
     else {
       iter = 2;
-      foreach (({0, monitor::lock()}), mixed m) {
-	a (1); // F_RECUR_AND_POP
+      foreach (({1, monitor::lock()}), mixed m) {
+	a (m); // F_RECUR_AND_POP
 	return iter;
       }
     }
@@ -2513,7 +2513,7 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
   test_compile_error([[object x = Gmp.mpz(17); constant y = x;]])
 ]])
 test_any([[object(Stdio.File) f; f=Stdio.File(); return 1]],1)
-test_compile([[float t=gauge { string foo; };]])
+test_compile([[float t=gauge { string foo; foo; };]])
 test_compile_any([[class { object(Stdio.FILE) f; void create() { f=Stdio.FILE(); }}]])
 test_eq([[compile_string("#define A(X) (X)\nint x() { return A \n\t(1); }")()->x()]],1)
 
@@ -3277,7 +3277,7 @@ test_equal([[
 // Testing 'global.'
 
 test_compile([[
-  mixed a() {return global.Parser.HTML;}
+  mixed a() {return global.Parser.HTML;}; a;
 ]], 0);
 
 test_compile_error([[
@@ -3758,7 +3758,7 @@ test_eq([[function f;
 	return f(17);]],
 	[[function f;
 	for(int i = 0; i < 2; i++)
-	  { {int _i = i; f = lambda(int j) { return _i+j; }; } int FEL; }
+	  { {int _i = i; f = lambda(int j) { return _i+j; }; } int FEL; FEL; }
 	return f(17);]]);
 
 test_any([[
@@ -3785,7 +3785,7 @@ test_any([[
   foo();
   bar();
   p();
-  return y;
+  return y; x; z;
 ]], 7 * 5 + 4711 )
 
 test_any([[
@@ -3826,7 +3826,7 @@ test_any([[
   }
 
   int really_magic_var;
-  return my_lambda();
+  return my_lambda(); really_magic_var;
 ]],"foo")
 
 test_eq([[class c { int `()(){ return 4711; } }()(); ]],4711)
@@ -4362,8 +4362,8 @@ test_do(class c { object(Stdio.File) foo; object bar=foo; })
 test_do(class c { Stdio.File foo; object bar=foo; })
 test_any(if(int i=1) return i; return 0;,1)
 test_compile(for(int i=0;i<100;i++) return 0;)
-test_compile(foreach(({}),mixed i){})
-test_compile(sscanf("","",mixed foo))
+test_compile(foreach(({}),mixed i){i;})
+test_compile(sscanf("","",mixed foo);foo;)
 test_compile_error(sscanf("","",float))
 test_compile_error(sscanf("",float))
 
