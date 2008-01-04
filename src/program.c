@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.634 2008/01/03 16:49:46 grubba Exp $
+|| $Id: program.c,v 1.635 2008/01/04 11:33:02 grubba Exp $
 */
 
 #include "global.h"
@@ -8228,7 +8228,7 @@ void low_pop_local_variables(int level)
       int save_line = lex.current_line;
       lex.current_file = Pike_compiler->compiler_frame->variable[e].file;
       lex.current_line = Pike_compiler->compiler_frame->variable[e].line;
-      yywarning("Unused local variable %S.\n",
+      yywarning("Unused local variable %S.",
 		Pike_compiler->compiler_frame->variable[e].name);
       lex.current_file = save_file;
       lex.current_line = save_line;
@@ -8259,7 +8259,7 @@ void pop_local_variables(int level)
 	int save_line = lex.current_line;
 	lex.current_file = Pike_compiler->compiler_frame->variable[level].file;
 	lex.current_line = Pike_compiler->compiler_frame->variable[level].line;
-	yywarning("Unused local variable %S.\n",
+	yywarning("Unused local variable %S.",
 		Pike_compiler->compiler_frame->variable[level].name);
 	lex.current_file = save_file;
 	lex.current_line = save_line;
