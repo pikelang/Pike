@@ -1,5 +1,7 @@
+#pike __REAL_VERSION__
+
 /*
- * $Id: Trie.pike,v 1.4 2007/11/15 18:09:17 mast Exp $
+ * $Id: Trie.pike,v 1.5 2008/01/04 20:48:40 nilsson Exp $
  *
  * An implementation of a trie.
  *

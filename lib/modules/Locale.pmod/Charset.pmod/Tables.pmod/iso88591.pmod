@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! Codec for the ISO-8859-1 character encoding.
 
 class decoder {
