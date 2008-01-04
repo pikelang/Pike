@@ -417,7 +417,9 @@ void clean_cache() {
   remove_call_out(clean_cache);
   int t = time(1)-CLEAN_CYCLE;
   foreach(locales; string lang_str; mapping lang) {
+    lang_str;	// Fix warning.
     foreach(lang; string proj_str; object proj) {
+      proj_str;	// Fix warning.
       if(objectp(proj) && proj->timestamp < t) {
 #ifdef LOCALE_DEBUG	
 	werror("\nLocale.clean_cache: Removing project %O in %O\n",
