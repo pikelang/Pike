@@ -17,7 +17,7 @@
 //!      2570   : v3 description
 //!
 
-// $Id: protocol.pike,v 1.16 2006/01/20 01:30:31 nilsson Exp $
+// $Id: protocol.pike,v 1.17 2008/01/04 20:50:42 nilsson Exp $
 
 
 #include "snmp_globals.h"
@@ -196,7 +196,7 @@ private mapping msgpool = ([]);
 //:
 //: callback support
 //:
-private function con_ok, con_fail;
+private function con_fail;
 private array extra_args;
 
 //! create a new SNMP protocol object
