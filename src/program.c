@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.635 2008/01/04 11:33:02 grubba Exp $
+|| $Id: program.c,v 1.636 2008/01/05 20:08:12 grubba Exp $
 */
 
 #include "global.h"
@@ -8263,6 +8263,9 @@ void pop_local_variables(int level)
 		Pike_compiler->compiler_frame->variable[level].name);
 	lex.current_file = save_file;
 	lex.current_line = save_line;
+	/* Make sure we only warn once... */
+	Pike_compiler->compiler_frame->variable[level].flags |=
+	  LOCAL_VAR_IS_USED;
       }
       free_string(Pike_compiler->compiler_frame->variable[level].name);
       copy_shared_string(Pike_compiler->compiler_frame->variable[level].name,
