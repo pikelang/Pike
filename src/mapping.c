@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.192 2007/10/04 13:03:37 grubba Exp $
+|| $Id: mapping.c,v 1.193 2008/01/05 17:58:54 nilsson Exp $
 */
 
 #include "global.h"
@@ -117,11 +117,11 @@ BLOCK_ALLOC_FILL_PAGES(mapping, 2)
 /** This function checks that the type field isn't lacking any bits.
  * It is used for debugging purposes only.
  */
-static void check_mapping_type_fields(struct mapping *m)
+static void check_mapping_type_fields(const struct mapping *m)
 {
   INT32 e;
-  struct keypair *k=0;
-  struct mapping_data *md;
+  const struct keypair *k=0;
+  const struct mapping_data *md;
   TYPE_FIELD ind_types, val_types;
 
   ind_types=val_types=0;
@@ -277,7 +277,7 @@ PMOD_EXPORT void do_free_mapping(struct mapping *m)
     free_mapping(m);
 }
 
-/** This function is used to rehash a mapping without loosing the internal
+/* This function is used to rehash a mapping without loosing the internal
  * order in each hash chain. This is to prevent mappings from becoming
  * inefficient just after being rehashed.
  */
@@ -812,7 +812,7 @@ PMOD_EXPORT void mapping_insert(struct mapping *m,
 #define mapping_insert(M, KEY, VAL) low_mapping_insert ((M), (KEY), (VAL), 1)
 
 PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
-				     struct svalue *key,
+				     const struct svalue *key,
 				     TYPE_T t)
 {
   unsigned INT32 h, h2;
@@ -928,7 +928,7 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
 }
 
 PMOD_EXPORT void map_delete_no_free(struct mapping *m,
-			struct svalue *key,
+			const struct svalue *key,
 			struct svalue *to)
 {
   unsigned INT32 h,h2;
@@ -1109,7 +1109,7 @@ PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
 }
 
 PMOD_EXPORT struct svalue *low_mapping_string_lookup(struct mapping *m,
-						     struct pike_string *p)
+                                                     struct pike_string *p)
 {
   struct svalue tmp;
   tmp.type=T_STRING;
@@ -1118,8 +1118,8 @@ PMOD_EXPORT struct svalue *low_mapping_string_lookup(struct mapping *m,
 }
 
 PMOD_EXPORT void mapping_string_insert(struct mapping *m,
-			   struct pike_string *p,
-			   struct svalue *val)
+                                       struct pike_string *p,
+                                       const struct svalue *val)
 {
   struct svalue tmp;
   tmp.type=T_STRING;
@@ -1148,8 +1148,8 @@ PMOD_EXPORT struct svalue *simple_mapping_string_lookup(struct mapping *m,
 
 /* Lookup in a mapping of mappings */
 PMOD_EXPORT struct svalue *mapping_mapping_lookup(struct mapping *m,
-						  struct svalue *key1,
-						  struct svalue *key2,
+						  const struct svalue *key1,
+						  const struct svalue *key2,
 						  int create)
 {
   struct svalue tmp;
@@ -1208,7 +1208,7 @@ PMOD_EXPORT struct svalue *mapping_mapping_string_lookup(struct mapping *m,
 
 PMOD_EXPORT void mapping_index_no_free(struct svalue *dest,
 			   struct mapping *m,
-			   struct svalue *key)
+			   const struct svalue *key)
 {
   struct svalue *p;
 
@@ -2120,8 +2120,8 @@ PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
 
 PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 			    struct mapping *m,
-			    struct svalue *look_for,
-			    struct svalue *key /* start */)
+			    const struct svalue *look_for,
+			    const struct svalue *key /* start */)
 {
   struct mapping_data *md, *omd;
 
@@ -2195,11 +2195,11 @@ PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 
 #ifdef PIKE_DEBUG
 
-void check_mapping(struct mapping *m)
+void check_mapping(const struct mapping *m)
 {
   int e,num;
   struct keypair *k;
-  struct mapping_data *md;
+  const struct mapping_data *md;
 
   static int in_check_mapping;
   if(in_check_mapping) return;

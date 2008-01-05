@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.h,v 1.65 2006/08/06 16:10:02 mast Exp $
+|| $Id: mapping.h,v 1.66 2008/01/05 17:58:54 nilsson Exp $
 */
 
 #ifndef MAPPING_H
@@ -87,22 +87,10 @@ extern struct mapping *gc_internal_mapping;
 
 #endif /* PIKE_MAPPING_KEYPAIR_LOOP */
 
-#if defined(USE_DLL) && defined(DYNAMIC_MODULE)
-/* Use the function in modules so we don't have to export the block
- * alloc stuff. */
-#define free_mapping(M) do_free_mapping (M)
-#else
 
 void really_free_mapping(struct mapping *md);
 
-/** Free a previously allocated mapping. The preferred method of freeing
-  * a mapping is by calling the @ref do_free_mapping function.
-  *
-  * @param M The mapping to be freed
-  * @see do_free_mapping
-  * @see free_mapping_data
-  */
-#define free_mapping(M) do{						\
+#define inl_free_mapping(M) do{						\
     struct mapping *m_=(M);						\
     debug_malloc_touch(m_);						\
     DO_IF_DEBUG (							\
@@ -113,7 +101,22 @@ void really_free_mapping(struct mapping *md);
       really_free_mapping(m_);						\
   }while(0)
 
+#if defined(USE_DLL) && defined(DYNAMIC_MODULE)
+/* Use the function in modules so we don't have to export the block
+ * alloc stuff. */
+#define free_mapping(M) do_free_mapping (M)
+#else
+
+/** Free a previously allocated mapping. The preferred method of freeing
+  * a mapping is by calling the @ref do_free_mapping function.
+  *
+  * @param M The mapping to be freed
+  * @see do_free_mapping
+  * @see free_mapping_data
+  */
+#define free_mapping(M) inl_free_mapping(M)
 #endif	/* !(USE_DLL && DYNAMIC_MODULE) */
+
 
 /** Free only the mapping data leaving the mapping structure itself intact.
   *
@@ -196,7 +199,7 @@ PMOD_EXPORT void mapping_insert(struct mapping *m,
 				const struct svalue *key,
 				const struct svalue *val);
 PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
-				     struct svalue *key,
+				     const struct svalue *key,
 				     TYPE_T t);
 
 /** Deletes the specified entry from the indicated mapping and frees
@@ -209,7 +212,7 @@ PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
   * @param to if not NULL will contain the deleted item's value
   */
 PMOD_EXPORT void map_delete_no_free(struct mapping *m,
-			struct svalue *key,
+			const struct svalue *key,
 			struct svalue *to);
 PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m);
 
@@ -240,7 +243,7 @@ PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
   * @see simple_mapping_string_lookup
   */
 PMOD_EXPORT struct svalue *low_mapping_string_lookup(struct mapping *m,
-					 struct pike_string *p);
+                                                     struct pike_string *p);
 
 /** A shortcut function for inserting an entry into a mapping for cases 
   * where the key is a Pike string.
@@ -253,8 +256,8 @@ PMOD_EXPORT struct svalue *low_mapping_string_lookup(struct mapping *m,
   * @see mapping_string_insert_string
   */
 PMOD_EXPORT void mapping_string_insert(struct mapping *m,
-			   struct pike_string *p,
-			   struct svalue *val);
+                                       struct pike_string *p,
+                                       const struct svalue *val);
 
 /** A shortcut function for inserting an entry into a mapping for cases
   * where both the key and the value are Pike strings.
@@ -315,8 +318,8 @@ PMOD_EXPORT struct svalue *simple_mapping_string_lookup(struct mapping *m,
   * @see low_mapping_lookup
   */
 PMOD_EXPORT struct svalue *mapping_mapping_lookup(struct mapping *m,
-				      struct svalue *key1,
-				      struct svalue *key2,
+				      const struct svalue *key1,
+				      const struct svalue *key2,
 				      int create);
 
 /** A shortcut for @ref mapping_mapping_lookup when both keys are Pike strings.
@@ -341,7 +344,7 @@ PMOD_EXPORT struct svalue *mapping_mapping_string_lookup(struct mapping *m,
 				      int create);
 PMOD_EXPORT void mapping_index_no_free(struct svalue *dest,
 			   struct mapping *m,
-			   struct svalue *key);
+			   const struct svalue *key);
 PMOD_EXPORT struct array *mapping_indices(struct mapping *m);
 PMOD_EXPORT struct array *mapping_values(struct mapping *m);
 PMOD_EXPORT struct array *mapping_to_array(struct mapping *m);
@@ -363,10 +366,12 @@ PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
 						     struct mapping *p);
 PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 			    struct mapping *m,
-			    struct svalue *look_for,
-			    struct svalue *key );
-void check_mapping(struct mapping *m);
+			    const struct svalue *look_for,
+			    const struct svalue *key );
+#ifdef PIKE_DEBUG
+void check_mapping(const struct mapping *m);
 void check_all_mappings(void);
+#endif
 void gc_mark_mapping_as_referenced(struct mapping *m);
 void real_gc_cycle_check_mapping(struct mapping *m, int weak);
 unsigned gc_touch_all_mappings(void);
