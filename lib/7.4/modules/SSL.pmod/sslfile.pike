@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.1 2004/07/04 14:19:39 mast Exp $
+/* $Id: sslfile.pike,v 1.2 2008/01/05 22:17:51 grubba Exp $
  *
  */
 
@@ -308,7 +308,6 @@ int write(string|array(string) s)
   int call_write = !sizeof (write_buffer);
   int len = strlen(s);
   object packet;
-  int res;
   while(strlen(s))
   {
     packet = Packet();

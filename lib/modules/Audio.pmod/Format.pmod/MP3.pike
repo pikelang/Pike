@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: MP3.pike,v 1.2 2008/01/04 20:52:17 nilsson Exp $
+// $Id: MP3.pike,v 1.3 2008/01/05 22:16:57 grubba Exp $
 
 // MP3 file parser/formatter
 //
@@ -120,7 +120,7 @@
       p++;
       if( (patt & 0xfff0) == 0xfff0 )
       {
-	int srate, channels, layer, ID, pad, blen;
+	int srate, layer, ID, pad, blen;
 	int header = ((patt&0xffff)<<16);
 	if( (by = buffer->getbytes( 2 )) < 0 )
 	  break;
