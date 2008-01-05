@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.193 2008/01/05 17:58:54 nilsson Exp $
+|| $Id: mapping.c,v 1.194 2008/01/05 18:05:10 nilsson Exp $
 */
 
 #include "global.h"
@@ -274,7 +274,7 @@ PMOD_EXPORT void really_free_mapping_data(struct mapping_data *md)
 PMOD_EXPORT void do_free_mapping(struct mapping *m)
 {
   if (m)
-    free_mapping(m);
+    inl_free_mapping(m);
 }
 
 /* This function is used to rehash a mapping without loosing the internal
