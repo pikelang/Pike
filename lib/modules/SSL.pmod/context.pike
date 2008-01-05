@@ -1,5 +1,5 @@
 //
-// $Id: context.pike,v 1.35 2007/03/09 10:52:05 mast Exp $
+// $Id: context.pike,v 1.36 2008/01/05 14:40:14 grubba Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -320,6 +320,8 @@ array(int) acceptable_types, array(string) acceptable_authority_dns)
           return context->client_certificates[[int](cert->chain)];
       }
   }
+  // FIXME: Check acceptable_authority_dns.
+  acceptable_authority_dns;
 }
 
 // update the cached decoded issuers list
