@@ -87,7 +87,7 @@ array(array(int)) get_day_month()
   int i,j;
   for(i=0; i<6; i++)
   {
-    for(j=0; j<7; i++)
+    for(j=0; j<7; j++)
       push_int( GTK_CALENDAR( THIS->obj )->day_month[i][j] );
     f_aggregate( 7 );
   }
@@ -101,7 +101,7 @@ array(array(int)) get_day()
   int i,j;
   for(i=0; i<6; i++)
   {
-    for(j=0; j<7; i++)
+    for(j=0; j<7; j++)
       push_int( GTK_CALENDAR( THIS->obj )->day[i][j] );
     f_aggregate( 7 );
   }
