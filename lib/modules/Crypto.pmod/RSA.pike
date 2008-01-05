@@ -1,4 +1,4 @@
-/* $Id: RSA.pike,v 1.8 2004/04/14 19:27:01 nilsson Exp $
+/* $Id: RSA.pike,v 1.9 2008/01/05 14:33:57 grubba Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -235,7 +235,7 @@ string sha_sign(string message, mixed|void r)
 {
   string s = Crypto.SHA1->hash(message);
   s = sprintf("%c%s%c%s", 4, "sha1", sizeof(s), s);
-  return cooked_sign(s);
+  return cooked_sign(s);r;
 }
   
 //! @fixme
@@ -253,7 +253,7 @@ string md5_sign(string message, mixed|void r)
 {
   string s = Crypto.MD5->hash(message);
   s = "0 0\14\6\10*\x86H\x86\xf7\15\2\5\5\0\4\20"+s;
-  return cooked_sign(s);
+  return cooked_sign(s);r;
 }
 
 //! @fixme
