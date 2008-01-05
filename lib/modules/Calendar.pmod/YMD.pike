@@ -2702,7 +2702,6 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 #endif
       if (m->n && m->n!="") return 0;
 
-      string x;
       if (m->Y) 
 	 m->Y=default_rules->language[f_year_number_from_name](m->Y);
 
@@ -2985,7 +2984,6 @@ cDay dwim_day(string day,void|TimeRange context)
 
 TimeofDay dwim_time(string what,void|TimeRange cx)
 {
-   string a,h,m,s;
    TimeofDay t;
 
 // #define COLON "$*[ :]" 
