@@ -17,6 +17,7 @@ o More error handling added to cgrep.
 o Added "Regexp.PCRE.Widestring" to the feature list.
 o Added ADT.Trie data type.
 o Fixed bug in columns sorting in ADT.Table.
+o Fixed infinite loop in GTK.Calendar->get_day() and ->get_day_month().
 o Encoder, Decoder and Codec are now available in the Pike module.
   While the programs were always retrievable from the master object,
   now they can be inherited in codecs that wish to extend the master
