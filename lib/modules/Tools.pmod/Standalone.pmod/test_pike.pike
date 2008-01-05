@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.127 2007/12/31 19:19:17 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.128 2008/01/05 14:29:37 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -346,7 +346,6 @@ int main(int argc, array(string) argv)
   int skipped;
   array(string) tests;
   array(string) forked;
-  program testprogram;
   int start, fail, mem;
   int loop=1;
   int end=0x7fffffff;
