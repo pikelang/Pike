@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.91 2007/12/13 11:41:05 per Exp $
+// $Id: Query.pike,v 1.92 2008/01/05 14:46:38 grubba Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -203,7 +203,6 @@ static void connect(string server,int port,int blocking)
        SSL_rsa_export_with_des40_cbc_sha,
 #endif /* 0 */
      });
-     string ref;
      context->random = Crypto.Random.random_string;
      
      object read_callback=con->query_read_callback();
@@ -347,7 +346,6 @@ void async_got_host(string server,int port)
 			      SSL_rsa_with_rc4_128_md5,
 			      SSL_rsa_with_3des_ede_cbc_sha,
 			    });
-			    string ref;
 			    context->random = Crypto.Random.random_string;
 		 
 			    ssl = SSL.sslfile(con, context, 1,0);

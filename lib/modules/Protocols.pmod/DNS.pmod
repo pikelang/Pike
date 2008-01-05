@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.91 2007/04/07 13:30:13 grubba Exp $
+// $Id: DNS.pmod,v 1.92 2008/01/05 14:45:21 grubba Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -474,7 +474,6 @@ class protocol
     m->length=sizeof(s);
     
     array(string) tmp=({});
-    int e;
     
     array(int) next=({12});
     m->qd = allocate(m->qdcount);
@@ -1324,7 +1323,6 @@ class async_client
 
   void get_mx_all(string host, function callback, mixed ... args)
   {
-    mapping m;
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
       do_query(host, C_IN, T_MX,
 	       generic_get, 0, 1, T_MX, "mx", host, callback, @args);

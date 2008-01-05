@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.793 2008/01/04 12:03:46 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.794 2008/01/05 14:23:01 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -6499,7 +6499,7 @@ test_compile_error([[void f() {int i; void i() {};}]]);
 test_compile_error([[void f (int i) {string i;}]]);
 
 // Not yet cataloged
-test_any(int i=10; { int i; } return i, 10)
+test_any(int i=10; { int i=0; } return i, 10)
 test_program(void foo(int a, int b){} function(int,int:void) a() { return foo; })
 test_program(void foo(int a, int ... b){} function(int,int ...:void) a() { return foo; })
 test_program(void foo(){} function(:void) a() { return foo; })
@@ -6568,22 +6568,22 @@ test_any([[mixed a; sscanf("11","%1D",a); return a]],1)
 
 test_any([[mixed a; sscanf("0x11","%D",a); return a]],0x11)
 test_any([[mixed a; sscanf("011","%D",a); return a]],011)
-test_any([[mixed a,b; return sscanf("11foo","%dfoo",a)]],1)
-test_any([[mixed a,b; sscanf("11foo","%dfoo",a); return a]],11)
+test_any([[mixed a; return sscanf("11foo","%dfoo",a)]],1)
+test_any([[mixed a; sscanf("11foo","%dfoo",a); return a]],11)
 test_any([[mixed a,b; return sscanf("11foo","%d%s",a,b)]],2)
 test_any([[mixed a,b; sscanf("11foo","%d%s",a,b); return b]],"foo")
 test_any([[mixed a,b; return sscanf("foo","%c%s",b,a)]],2)
 test_any([[mixed a,b; sscanf("foo","%c%s",b,a); return b]],'f')
 test_any([[mixed a,b; sscanf("foo","%c%s",b,a); return a]],"oo")
-test_any([[mixed a,b; return sscanf("1.0","%f",a),a]],1.0)
-test_any([[mixed a,b; return sscanf("-1.0","%f",a),a]],-1.0)
-test_any([[mixed a,b; return sscanf("1.25","%f",a),a]],1.25)
-test_any([[mixed a,b; return sscanf("-1.25","%f",a),a]],-1.25)
-test_any([[mixed a,b; return sscanf("1.25e3","%f",a),a]],1.25e3)
-test_any([[mixed a,b; return sscanf("-1.25e3","%f",a),a]],-1.25e3)
-test_any([[mixed a,b; return sscanf("1.25e-3","%f",a),a]],1.25e-3)
-test_any([[mixed a,b; return sscanf("-1.25e-3","%f",a),a]],-1.25e-3)
-test_any([[mixed a,b; sscanf("1.0","%f",a); return a]],1.0)
+test_any([[mixed a; return sscanf("1.0","%f",a),a]],1.0)
+test_any([[mixed a; return sscanf("-1.0","%f",a),a]],-1.0)
+test_any([[mixed a; return sscanf("1.25","%f",a),a]],1.25)
+test_any([[mixed a; return sscanf("-1.25","%f",a),a]],-1.25)
+test_any([[mixed a; return sscanf("1.25e3","%f",a),a]],1.25e3)
+test_any([[mixed a; return sscanf("-1.25e3","%f",a),a]],-1.25e3)
+test_any([[mixed a; return sscanf("1.25e-3","%f",a),a]],1.25e-3)
+test_any([[mixed a; return sscanf("-1.25e-3","%f",a),a]],-1.25e-3)
+test_any([[mixed a; sscanf("1.0","%f",a); return a]],1.0)
 test_any([[mixed a,b; sscanf("-z ","%[-z]%s",a,b); return a]],"-z")
 test_any([[mixed a,b; sscanf("-z ","%[z-]%s",a,b); return a]],"-z")
 test_any([[mixed a,b; sscanf("abcdeFGji","%[a-z]%s",a,b); return a]],"abcde")
@@ -7568,7 +7568,7 @@ test_any([[
 
 test_any([[
   mapping m=([1:2,3:5,7:11,13:17]);
-  foreach(m  ; int a ; int b) m_delete(m,a);
+  foreach(m; int a; int b) if (m_delete(m,a) != b) return -1;
   return sizeof(m);
 ]],0)
 
@@ -7598,7 +7598,7 @@ test_any([[
   x[o] = 1;
   destruct (o);
   int i;
-  foreach (x; object p;) i++;
+  foreach (x;;) i++;
   return i;
 ]], 0)
 
@@ -7608,7 +7608,7 @@ test_any([[
   x[o] = 1;
   destruct (o);
   int i;
-  foreach (x; object p;) i++;
+  foreach (x;;) i++;
   return i;
 ]], 0)
 
@@ -7835,6 +7835,7 @@ test_any_equal([[
       foreach (({1, 2}), int y) {
 	if (i >= 3) break foo;
 	if (i >= 2) continue foo;
+	y;
       }
       res += ({i});
     }
@@ -7938,7 +7939,7 @@ test_do([[
   gnu(@indices (all_constants()), gauge {
     foreach (({1,2,3}), int j)
       do
-        if (gnu(@indices (all_constants()),
+        if (j && gnu(@indices (all_constants()),
 		17 + gauge {break;}))
 	  return 0;
       while (0);
@@ -7950,7 +7951,7 @@ foo:
   gnu(@indices (all_constants()), gauge {
     foreach (({1,2,3}), int j)
       do
-        if (gnu(@indices (all_constants()),
+        if (j && gnu(@indices (all_constants()),
 		17 + gauge {break foo;}))
 	  return 0;
       while (0);
@@ -8255,8 +8256,8 @@ return FOOa;
 
 test_any([[
 #define FOOa array
-FOOa(int) b;
-return 1;
+FOOa(int) b = ({0});
+return sizeof(b);
 ]],1)
 
 test_any([[
@@ -11002,6 +11003,7 @@ test_compile(
 	 error("bah\n");
       return ({}); 
    };
+   tz_ux(0);
 ]]);
 
 // string[]=

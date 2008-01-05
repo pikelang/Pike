@@ -1,5 +1,5 @@
 //
-// $Id: Types.pmod,v 1.39 2007/05/13 18:59:42 mast Exp $
+// $Id: Types.pmod,v 1.40 2008/01/05 14:37:59 grubba Exp $
 //
 
 //! Encodes various asn.1 objects according to the Distinguished
@@ -91,9 +91,9 @@ class Object
 
   mapping(int:program(Object)) element_types(int i,
       mapping(int:program(Object)) types) {
-    return types;
+    return types; i;
   }
-  this_program init(mixed ... args) { return this; }
+  this_program init(mixed ... args) { return this; args; }
 
   string to_base_128(int n) {
     if (!n)
@@ -532,7 +532,7 @@ class Identifier
 //! always the case...
 int(1..1) asn1_utf8_valid (string s)
 {
-  return 1;
+  return 1; s;
 }
 
 //! UTF8 string object
@@ -1078,7 +1078,7 @@ class UTC
 //!
 int(0..0) asn1_universal_valid (string s)
 {
-  return 0; // Return 0 since the UniversalString isn't implemented.
+  return 0; s; // Return 0 since the UniversalString isn't implemented.
 }
 
 //! Universal String object
@@ -1099,7 +1099,7 @@ class UniversalString
   }
 
   this_program decode_primitive (string contents) {
-    error( "Decoding not implemented\n" );
+    error( "Decoding not implemented\n" ); contents;
   }
 }
 
