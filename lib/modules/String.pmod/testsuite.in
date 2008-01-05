@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.23 2005/01/07 20:07:57 grubba Exp $
+dnl $Id: testsuite.in,v 1.24 2008/01/05 22:06:44 grubba Exp $
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
@@ -102,7 +102,7 @@ dnl MISSING TEST: String.Iterator
 test_any([[
   object it = String.SplitIterator("  foobar gazonk  gurka baz  ", ' ');
   array res = ({});
-  foreach(it; int i; string part) {
+  foreach(it; ; string part) {
     res += ({ part });
   }
   return equal(res, "  foobar gazonk  gurka baz  "/" ");
@@ -116,7 +116,7 @@ test_any([[
 test_any([[
   object it = String.SplitIterator("foobar gazonk  gurka baz", ' ');
   array res = ({});
-  foreach(it; int i; string part) {
+  foreach(it; ; string part) {
     res += ({ part });
   }
   return equal(res, "foobar gazonk  gurka baz"/" ");
@@ -130,7 +130,7 @@ test_any([[
 test_any([[
   object it = String.SplitIterator("  foobar gazonk  gurka baz  ", ' ', 1);
   array res = ({});
-  foreach(it; int i; string part) {
+  foreach(it; ; string part) {
     res += ({ part });
   }
   return equal(res, "foobar gazonk gurka baz"/" ");
@@ -144,7 +144,7 @@ test_any([[
 test_any([[
   object it = String.SplitIterator("foobar gazonk  gurka baz", ' ', 1);
   array res = ({});
-  foreach(it; int i; string part) {
+  foreach(it; ; string part) {
     res += ({ part });
   }
   return equal(res, "foobar gazonk gurka baz"/" ");
