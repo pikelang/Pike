@@ -302,7 +302,6 @@ static NSNode|int(0..0) parse_xml_callback(string type, string name,
 					   mapping attr, string|array contents,
 					   mixed location, mixed ...extra)
 {
-  NSNode node;
   NSNode parent = sizeof(extra[0]) && extra[0]->top();
 
   switch (type) {
