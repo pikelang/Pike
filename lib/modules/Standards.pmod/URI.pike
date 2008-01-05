@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396 and RFC 3986.
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.26 2008/01/04 20:48:15 nilsson Exp $
+// $Id: URI.pike,v 1.27 2008/01/05 14:28:05 grubba Exp $
 
 #pragma strict_types
 
@@ -483,7 +483,7 @@ string get_http_path_query() {
 
 string _sprintf(int how, mapping|void args)
 {
-  string look, _scheme = scheme, _host = host, getstring;
+  string look, _host = host, getstring;
   switch(how)
   {
     case 't':
@@ -491,6 +491,7 @@ string _sprintf(int how, mapping|void args)
 
     case 'x': // A case-mangling version, especially suited for readable hash values
       if(_host) _host = lower_case(_host);
+    default:
     case 's':
     case 'O':
       getstring = (path||"") +
