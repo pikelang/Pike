@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.643 2007/11/20 18:06:23 grubba Exp $
+|| $Id: builtin_functions.c,v 1.644 2008/01/05 18:00:06 nilsson Exp $
 */
 
 #include "global.h"
@@ -1210,11 +1210,12 @@ PMOD_EXPORT void f_has_index(INT32 args)
       f_index(2);
       f_zero_type(1);
       
-      if(Pike_sp[-1].type == T_INT)
-	Pike_sp[-1].u.integer = !Pike_sp[-1].u.integer;
-      else
+#ifdef PIKE_DEBUG
+      if(Pike_sp[-1].type != T_INT)
 	PIKE_ERROR("has_index",
 		   "Function `zero_type' gave incorrect result.\n", Pike_sp, args);
+#endif
+      Pike_sp[-1].u.integer = !Pike_sp[-1].u.integer;
       break;
       
     case T_OBJECT:
@@ -1227,6 +1228,8 @@ PMOD_EXPORT void f_has_index(INT32 args)
 	 the object implements it.
 	 
 	 /Noring */
+      /* If it is an iterator object we may want to use the iterator
+         interface to look for the index. */
 
       stack_swap();
       f_indices(1);
