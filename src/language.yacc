@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.402 2008/01/05 19:06:30 grubba Exp $
+|| $Id: language.yacc,v 1.403 2008/01/05 20:09:46 grubba Exp $
 */
 
 %pure_parser
@@ -4373,7 +4373,7 @@ static mark_lvalues_as_used(node *n)
     if (CAR(n)->token == F_ARRAY_LVALUE) {
       mark_lvalues_as_used(CAAR(n));
     } else if ((CAR(n)->token == F_LOCAL) && !(CAR(n)->u.integer.b)) {
-      Pike_compiler->compiler_frame->variable[CAR(n)->u.integer.a] |=
+      Pike_compiler->compiler_frame->variable[CAR(n)->u.integer.a].flags |=
 	LOCAL_VAR_IS_USED;
     }
     n = CDR(n);
