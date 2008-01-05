@@ -629,7 +629,7 @@ array(int) a() {
       mapping(string:int) positions = mkmapping (alloc_order, indices (alloc_order));
       array(array(string)) setup_left = setup;
 
-      foreach (alloc_order; int i; string obj) {
+      foreach (alloc_order; ; string obj) {
 	string basename = obj[..sizeof (obj) - 3];
 	string class_body;
 
@@ -684,7 +684,7 @@ array(int) a() {
 
       string prog = "";
 
-      foreach (alloc_order; int i; string obj)
+      foreach (alloc_order; ; string obj)
 	if (!has_value (obj, "_nested_")) {
 	  prog += "class C_" + obj + " {\n" + class_bodies[obj] + "}\n\n";
 	}
