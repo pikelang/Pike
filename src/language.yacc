@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.401 2008/01/04 11:41:27 grubba Exp $
+|| $Id: language.yacc,v 1.402 2008/01/05 19:06:30 grubba Exp $
 */
 
 %pure_parser
@@ -156,6 +156,7 @@ static struct pike_string *get_new_name();
 int add_local_name(struct pike_string *, struct pike_type *, node *);
 int low_add_local_name(struct compiler_frame *,
 		       struct pike_string *, struct pike_type *, node *);
+static mark_lvalues_as_used(node *n);
 static node *lexical_islocal(struct pike_string *);
 static void safe_inc_enum(void);
 static int call_handle_import(struct pike_string *s);
@@ -1926,6 +1927,7 @@ local_constant_name: TOK_IDENTIFIER '=' safe_expr0
     low_add_local_name(Pike_compiler->compiler_frame, /*->previous,*/
 		       $1->u.sval.u.string,
 		       type, $3);
+    /* Note: Intentionally not marked as used. */
     free_node($1);
   }
   | bad_identifier '=' safe_expr0 { if ($3) free_node($3); }
@@ -3113,6 +3115,9 @@ expr0: expr01
   | bad_expr_ident '=' expr0 { $$=$3; }
   | open_bracket_with_line_info low_lvalue_list ']' '=' expr0
   {
+    if (!(lex.pragmas & ID_STRICT_TYPES)) {
+      mark_lvalues_as_used($2);
+    }
     $$=mknode(F_ASSIGN,$5,mknode(F_ARRAY_LVALUE,$2,0));
     COPY_LINE_NUMBER_INFO($$, $1);
     free_node ($1);
@@ -3127,7 +3132,9 @@ expr0: expr01
     free_node ($1);
   }
   | open_bracket_with_line_info low_lvalue_list ']' error
-    { $$=$2; free_node ($1); reset_type_stack(); yyerrok; }
+    {
+      $$=$2; free_node ($1); reset_type_stack(); yyerrok;
+    }
 /*  | error { $$=0; reset_type_stack(); } */
   ;
 
@@ -4036,20 +4043,29 @@ lvalue: expr4
   | type6 TOK_IDENTIFIER
   {
     int id = add_local_name($2->u.sval.u.string,compiler_pop_type(),0);
+    /* Note: Variable intentionally not marked as used. */
     if (id >= 0)
       $$=mklocalnode(id,-1);
     else
       $$ = 0;
     free_node($2);
   }
+  /* FIXME: Add production for type6 ==> constant type svalue here? */
   | bad_expr_ident
   { $$=mknewintnode(0); }
   ;
-low_lvalue_list: lvalue lvalue_list { $$=mknode(F_LVALUE_LIST,$1,$2); }
+
+low_lvalue_list: lvalue lvalue_list
+  {
+    $$=mknode(F_LVALUE_LIST,$1,$2);
+  }
   ;
 
 lvalue_list: /* empty */ { $$ = 0; }
-  | ',' lvalue lvalue_list { $$ = mknode(F_LVALUE_LIST,$2,$3); }
+  | ',' lvalue lvalue_list
+  {
+    $$ = mknode(F_LVALUE_LIST,$2,$3);
+  }
   ;
 
 string: TOK_STRING 
@@ -4348,6 +4364,20 @@ int add_local_name(struct pike_string *str,
 			    str,
 			    type,
 			    def);
+}
+
+/* Mark local variables declared in a multi-assign expression as used. */
+static mark_lvalues_as_used(node *n)
+{
+  while (n && n->token == F_LVALUE_LIST) {
+    if (CAR(n)->token == F_ARRAY_LVALUE) {
+      mark_lvalues_as_used(CAAR(n));
+    } else if ((CAR(n)->token == F_LOCAL) && !(CAR(n)->u.integer.b)) {
+      Pike_compiler->compiler_frame->variable[CAR(n)->u.integer.a] |=
+	LOCAL_VAR_IS_USED;
+    }
+    n = CDR(n);
+  }
 }
 
 #if 0
