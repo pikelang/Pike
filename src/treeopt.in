@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.87 2007/12/17 18:04:14 grubba Exp $
+// $Id: treeopt.in,v 1.88 2008/01/06 14:07:14 grubba Exp $
 //
 // The tree optimizer
 //
@@ -980,12 +980,14 @@ F_FOREACH(F_VAL_LVAL(0, -), 1):
   }
   ;
 
-// foreach(X;;)  ->  loop(sizof(arr)) body;
-F_FOREACH(F_VAL_LVAL(0, ':'(-, -)), 1):
-  {
-    $$ = mknode(F_LOOP, mkefuncallnode("sizeof", $0), $1);
-  }
-  ;
+// foreach(X;;)  ->  loop(sizeof(X)) body;
+//
+// FIXME: But only if the index set can't contain destructed values.
+// F_FOREACH(F_VAL_LVAL(0, ':'(-, -)), 1):
+//   {
+//     $$ = mknode(F_LOOP, mkefuncallnode("sizeof", $0), $1);
+//   }
+//   ;
 
 // foreach(str/"x", ...)  ==>  foreach(String.SplitIterator(str, 'x'), ...)
 F_FOREACH(F_VAL_LVAL(F_APPLY(F_CONSTANT
