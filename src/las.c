@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.400 2007/12/26 11:35:52 grubba Exp $
+|| $Id: las.c,v 1.401 2008/01/06 17:32:55 grubba Exp $
 */
 
 #include "global.h"
@@ -4068,7 +4068,10 @@ void fix_type_field(node *n)
 	      free_string(t);
 	    }
 	    
-	    if (!CDAR(n) || pike_types_le(CDAR(n)->type, void_type_string)) {
+	    if (!CDAR(n)) {
+	      /* No loop variable. Will be converted to a counted loop
+	       * by treeopt. */
+	    } else if (pike_types_le(CDAR(n)->type, void_type_string)) {
 	      yyerror("Bad argument 2 to foreach().");
 	    } else {
 	      struct pike_type *array_value_type;
