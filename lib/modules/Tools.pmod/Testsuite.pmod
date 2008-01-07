@@ -123,11 +123,26 @@ array(int) low_run_script (array(string) command, mapping opts)
 	}
 	done = 1;
       }
+
+      void reader_thread(Stdio.File watchdog_pipe)
+      {
+	while(1) {
+	  string data = watchdog_pipe->read(1024, 1);
+	  if (!data || (data=="")) break;
+	  mixed err = catch { read_cb(0, data); };
+	  if (err) master()->report_error(err);
+	}
+	mixed err = catch { close_cb(0); };
+	if (err) master()->report_error(err);
+	call_out(lambda(){}, 0);	// Wake up the backend.
+      }
+
       void run()
       {
 #ifdef __NT__
-	p->set_read_callback(read_cb);
-	p->set_close_callback(close_cb);
+#if constant(thread_create)
+	thread_create(reader_thread, p);
+#endif
 #else /* !__NT__ */
 	p->set_nonblocking (read_cb, 0, close_cb);
 #endif /* __NT__ */

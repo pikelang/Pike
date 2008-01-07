@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
 #pike __REAL_VERSION__
 
-/* $Id: test_pike.pike,v 1.128 2008/01/05 14:29:37 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.129 2008/01/07 21:03:02 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -318,6 +318,18 @@ class Watchdog
     }
   }
 
+  void reader_thread(Stdio.File watchdog_pipe)
+  {
+    while(1) {
+      string data = watchdog_pipe->read(1024, 1);
+      if (!data || (data=="")) break;
+      mixed err = catch { stdin_read(0, data); };
+      if (err) master()->report_error(err);
+    }
+    mixed err = catch { stdin_close(0); };
+    if (err) master()->report_error(err);
+  }
+
   void create (int pid, int verbose)
   {
     parent_pid = watched_pid = pid;
@@ -325,8 +337,11 @@ class Watchdog
     WATCHDOG_DEBUG_MSG ("Watchdog started.\n");
     stdin = Stdio.File ("stdin");
 #ifdef __NT__
-    stdin->set_read_callback(stdin_read);
-    stdin->set_close_callback(stdin_close);
+#if constant(thread_create)
+    // Non-blocking I/O on non-sockets is not supported on NT.
+    // Simulate with a thread that performs a blocking read.
+    thread_create(reader_thread, stdin);
+#endif
 #else /* !__NT__ */
     stdin->set_nonblocking (stdin_read, 0, stdin_close);
 #endif /* __NT__ */
@@ -505,8 +520,13 @@ int main(int argc, array(string) argv)
     }
 
   if (watchdog_pid) {
+#if defined(__NT__) && !constant(thread_create)
+    werror("Watchdog not supported on NT without threads.\n");
+    return 1;
+#else
     Watchdog (watchdog_pid, verbose);
     return -1;
+#endif
   }
 
   // FIXME: Make this code more robust!
@@ -552,23 +572,22 @@ int main(int argc, array(string) argv)
       // some reason to make a pipe/socket that the watchdog process can
       // do nonblocking on (Linux 2.6/glibc 2.5). Maybe a bug in the new
       // epoll stuff? /mast
+      // No, you had swapped the read and write ends of the pipe. /grubba
 #ifdef __NT__
       Stdio.File pipe_2 = pipe_1->pipe(Stdio.PROP_IPC);
 #else /* !__NT__ */
-      Stdio.File pipe_2 = pipe_1->pipe (Stdio.PROP_IPC|
-					Stdio.PROP_NONBLOCK|
-					Stdio.PROP_BIDIRECTIONAL);
+      Stdio.File pipe_2 = pipe_1->pipe(Stdio.PROP_IPC | Stdio.PROP_NONBLOCK);
 #endif /* __NT__ */
       if (!pipe_2) {
 	werror ("Failed to create pipe for watchdog: %s\n",
 		strerror (pipe_1->errno()));
 	exit (1);
       }
-      pipe_1->dup2 (Stdio.stdout);
+      pipe_2->dup2 (Stdio.stdout);
       watchdog=Process.create_process(
 	backtrace()[0][3] + ({ "--watchdog="+getpid() }),
-	(["stdin": pipe_2, "stdout": orig_stdout]));
-      pipe_2->close();
+	(["stdin": pipe_1, "stdout": orig_stdout]));
+      pipe_1->close();
       orig_stdout->close();
       WATCHDOG_DEBUG_MSG ("Forked watchdog %d.\n", watchdog->pid());
     }
