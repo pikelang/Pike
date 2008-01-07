@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.404 2008/01/05 20:10:41 grubba Exp $
+|| $Id: language.yacc,v 1.405 2008/01/07 09:59:35 grubba Exp $
 */
 
 %pure_parser
@@ -2881,6 +2881,16 @@ optional_else_part: { $$=0; }
   ;      
 
 safe_lvalue: lvalue
+  {
+    if (!(lex.pragmas & ID_STRICT_TYPES) && $1) {
+      if ($1->token == F_ARRAY_LVALUE) {
+	mark_lvalues_as_used(CAR($1));
+      } else if (($1->token == F_LOCAL) && !($1->u.integer.b)) {
+	Pike_compiler->compiler_frame->variable[$1->u.integer.a].flags |=
+	  LOCAL_VAR_IS_USED;
+      }
+    }
+  }
   | error { $$=0; }
   ;
 
@@ -3967,6 +3977,10 @@ catch: TOK_CATCH
 
 sscanf: TOK_SSCANF '(' expr0 ',' expr0 lvalue_list ')'
   {
+    if ($6 && !(lex.pragmas & ID_STRICT_TYPES)) {
+      mark_lvalues_as_used($6);
+    }
+    mark_lvalues_as_used(
     $$=mknode(F_SSCANF,mknode(F_ARG_LIST,$3,$5),$6);
   }
   | TOK_SSCANF '(' expr0 ',' expr0 error ')'
@@ -4366,7 +4380,8 @@ int add_local_name(struct pike_string *str,
 			    def);
 }
 
-/* Mark local variables declared in a multi-assign expression as used. */
+/* Mark local variables declared in a multi-assign or sscanf expression
+ * as used. */
 static void mark_lvalues_as_used(node *n)
 {
   while (n && n->token == F_LVALUE_LIST) {
