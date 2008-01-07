@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.405 2008/01/07 09:59:35 grubba Exp $
+|| $Id: language.yacc,v 1.406 2008/01/07 10:38:04 grubba Exp $
 */
 
 %pure_parser
@@ -3980,7 +3980,6 @@ sscanf: TOK_SSCANF '(' expr0 ',' expr0 lvalue_list ')'
     if ($6 && !(lex.pragmas & ID_STRICT_TYPES)) {
       mark_lvalues_as_used($6);
     }
-    mark_lvalues_as_used(
     $$=mknode(F_SSCANF,mknode(F_ARG_LIST,$3,$5),$6);
   }
   | TOK_SSCANF '(' expr0 ',' expr0 error ')'
