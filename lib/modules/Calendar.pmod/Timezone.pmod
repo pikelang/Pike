@@ -86,21 +86,48 @@ static function(:.Rule.Timezone) _locale()
       if (tz) return tz;
    }
 
-   if(s = Stdio.read_bytes("/etc/localtime"))
-   {
-      tz=tz_from_tzfile(s);
-      if (tz) return tz;
+   // Mapping from file name to variable name.
+   foreach(([ "/etc/localtime":0,		// Linux & BSDs
+	      "/etc/sysconfig/clock":"ZONE",	// Linux RedHat
+	      "/etc/TIMEZONE":"TZ",		// Solaris
+	      "/etc/conf.d/clock":"TIMEZONE",	// Linux Gentoo
+	   ]); string fname; string var_name) {
+     catch {
+       if (Stdio.is_file(fname) && (s = Stdio.read_bytes(fname))) {
+	 if (!var_name) {
+	   if (tz = tz_from_tzfile(s)) return tz;
+	 } else {
+	   foreach(s/"\n", string line) {
+	     line = (line/"#")[0];	// Strip comments.
+	     if (sscanf(s, "%*s" + var_name + "=%s", s) == 2) {
+	       sscanf(s, "\"%s\"", s);	// Strip quotes (if any).
+	       if (tz = `[](s)) 
+	       {
+		 // werror("=>%O\n",tz);
+		 return tz;
+	       }
+	     }
+	   }
+	 }
+       }
+     };
    }
 
-// Linux RedHat
-   if (Stdio.is_dir("/etc/sysconfig/.") &&
-       (s = Stdio.read_bytes("/etc/sysconfig/clock")) )
-   {
-      sscanf(s,"%*sZONE=\"%s\"",s);
-      tz=`[](s);
-//        werror("=>%O\n",tz);
-      if (tz) return tz;
-   }
+#ifdef __NT__
+   // FIXME: Consider getting timezone info from the registry.
+   //      HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet
+   //        \\Control\\TimeZoneInformation:
+   //	ActiveTimeBias	REG_DWORD	0xffffffc4
+   //	Bias		REG_DWORD	0xffffffc4
+   //	DaylightBias	REG_DWORD	0xffffffc4
+   //	DaylightName	REG_SZ		"W. Europe Daylight Time"
+   //	DaylightStart	REG_BINARY	00 00 03 00 05 00 02 00
+   //					00 00 00 00 00 00 00 00
+   //	StandardBias	REG_DWORD	0x00000000
+   //	StandardName	REG_SZ		"W. Europe Standard Time"
+   //	StandardStart	REG_BINARY	00 00 0a 00 05 00 03 00
+   //					00 00 00 00 00 00 00 00
+#endif /* __NT__ */
 
 #if constant(tzname)
    mapping l=predef::localtime(time()); 
