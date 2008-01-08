@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.644 2008/01/05 18:00:06 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.645 2008/01/08 17:08:28 grubba Exp $
 */
 
 #include "global.h"
@@ -7347,7 +7347,7 @@ PMOD_EXPORT void f_gethrvtime(INT32 args)
 #endif
   }
   else {
-#if CPU_TIME_TICKS > 1000000
+#if CPU_TIME_TICKS_LOW > 1000000
     push_int64(time / (CPU_TIME_TICKS / 1000000));
 #else
     push_int64 (time);
@@ -7399,7 +7399,11 @@ PMOD_EXPORT void f_gethrtime(INT32 args)
 #endif
   }
   else {
-#if CPU_TIME_TICKS > 1000000
+    fprintf(stderr,
+	    "time:  %ld\n"
+	    "ticks: %ld\n",
+	    time, CPU_TIME_TICKS);
+#if CPU_TIME_TICKS_LOW > 1000000
     push_int64(time / (CPU_TIME_TICKS / 1000000));
 #else
     push_int64 (time);
