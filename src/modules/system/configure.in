@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.78 2008/01/07 17:33:25 grubba Exp $
+# $Id: configure.in,v 1.79 2008/01/08 18:24:14 grubba Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -91,6 +91,7 @@ AC_HAVE_FUNCS(syslog link symlink readlink resolvepath realpath chown \
         setpgid getsid setsid \
 	getpwnam getspnam getgrnam getpwuid getgrgid \
 	getgrent setgrent endgrent getpwent setpwent endpwent \
+	gethostname gethostbyname getservbyname \
 	chroot fchroot uname sysinfo \
         getgrnam_r getgrent_r getgrgid_r \
         getpwnam_r getpwent_r getpwuid_r \
@@ -98,13 +99,6 @@ AC_HAVE_FUNCS(syslog link symlink readlink resolvepath realpath chown \
         getrlimit setrlimit setproctitle \
         setitimer getitimer mmap munmap \
 	gettimeofday settimeofday prctl inet_ntoa inet_ntop getaddrinfo)
-
-# Note: Use CHECK_FUNC (instead of HAVE_FUNCS above) so that our
-#       customized test code from aclocal.m4 gets used, and the
-#       symbols get found on NT.
-AC_CHECK_FUNC(gethostname)
-AC_CHECK_FUNC(gethostbyname)
-AC_CHECK_FUNC(getservbyname)
 
 if test "x$ac_cv_func_setpgrp" = "xyes"; then
   AC_MSG_CHECKING([if setpgrp takes two arguments (BSD)])
