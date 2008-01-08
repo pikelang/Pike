@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_rusage.h,v 1.23 2008/01/08 07:45:12 grubba Exp $
+|| $Id: pike_rusage.h,v 1.24 2008/01/08 17:08:00 grubba Exp $
 */
 
 #ifndef PIKE_RUSAGE_H
@@ -159,17 +159,18 @@ long *low_rusage(void);
 /* The time is returned in nanoseconds. */
 typedef INT64 cpu_time_t;
 #define LONG_CPU_TIME
-#define CPU_TIME_TICKS /* per second */ (1000000000L)
+#define CPU_TIME_TICKS_LOW /* per second */ (1000000000L)
 #define CPU_TIME_UNIT "ns"
 #define PRINT_CPU_TIME PRINTINT64 "d"
 #else
 /* The time is returned in milliseconds. (Note that the value will
  * wrap after about 49 days.) */
 typedef unsigned long cpu_time_t;
-#define CPU_TIME_TICKS /* per second */ 1000
+#define CPU_TIME_TICKS_LOW /* per second */ 1000
 #define CPU_TIME_UNIT "ms"
 #define PRINT_CPU_TIME "lu"
 #endif
+#define CPU_TIME_TICKS /* per second */ ((cpu_time_t)CPU_TIME_TICKS_LOW)
 
 #ifdef GCT_RUNTIME_CHOICE
 #ifndef cpu_time_is_thread_local
