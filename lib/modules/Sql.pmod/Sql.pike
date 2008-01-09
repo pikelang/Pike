@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.79 2006/09/15 12:27:11 mast Exp $
+ * $Id: Sql.pike,v 1.80 2008/01/09 14:26:07 mast Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -161,10 +161,15 @@ function(string:int) decode_datetime;
 //! @note
 //!   Support for @[options] was added in Pike 7.3.
 //!
-void create(string|object host, void|string|mapping(string:int|string) db,
-	    void|string user, void|string password,
+void create(string|object _host, void|string|mapping(string:int|string) db,
+	    void|string user, void|string _password,
 	    void|mapping(string:int|string) options)
 {
+  // _host is censored only if we pick out a password from it below.
+  void|string|object host = _host;
+  string password = _password;
+  _password = "CENSORED";
+
   if (objectp(host)) {
     master_sql = host;
     if ((user && user != "") || (password && password != "") ||
@@ -221,6 +226,8 @@ void create(string|object host, void|string|mapping(string:int|string) db,
 	  if (password == "") {
 	    password = 0;
 	  }
+	  else
+	    _host = "CENSORED";
 	}
       }
       arr = host/"/";
