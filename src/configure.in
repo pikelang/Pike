@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.700 2007/10/16 14:39:41 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.701 2008/01/09 18:19:33 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -523,8 +523,6 @@ fi
 
 ## Build smartlink
 
-AC_CHECK_HEADERS(stdlib.h string.h unistd.h sys/stat.h sys/types.h sys/errno.h)
-
 if test -x /usr/bin/uname 2>/dev/null; then
   UNAME=`/usr/bin/uname -sr`
 elif test -x /bin/uname 2>/dev/null; then
@@ -567,6 +565,12 @@ else
 fi
 ])
 AC_MSG_RESULT($pike_cv_sys_os)
+
+if test "x$pike_cv_sys_os" = xWindows_NT; then
+  PIKE_FUNCS_NEED_DECLS(yes)
+fi
+
+AC_CHECK_HEADERS(stdlib.h string.h unistd.h sys/stat.h sys/types.h sys/errno.h)
 
 if test "$GCC" = "yes"; then :; else
 #
