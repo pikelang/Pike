@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 #pragma strict_types
-// $Id: Random.pmod,v 1.17 2008/01/04 11:43:46 grubba Exp $
+// $Id: Random.pmod,v 1.18 2008/01/09 16:05:31 grubba Exp $
 
 //! This module contains stuff to that tries to give you the
 //! best possible random generation.
@@ -15,6 +15,7 @@ class Source {
   static void create(int(0..1) no_block) {
     ctx = Nettle.NT.CryptContext(0, 0, Nettle.NT.PROV_RSA_FULL,
 				 Nettle.NT.CRYPT_VERIFYCONTEXT );
+    no_block;	// Fix warning.
   }
 
   string read(int bytes) {
