@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# $Id: uname,v 1.26 2007/04/19 11:23:05 mast Exp $
+# $Id: uname,v 1.27 2008/01/09 14:44:02 grubba Exp $
 
 . $NTTOOLS
 
@@ -15,7 +15,7 @@ for a in "$@"
 do
   case "$a" in
     --version)
-      ver=`echo "$Revision: 1.26 $" |sed -e 's/.* \(.*\) .*/\1/'`
+      ver=`echo "$Revision: 1.27 $" |sed -e 's/.* \(.*\) .*/\1/'`
       echo "Fake NT uname version $ver by Fredrik Hubinette and others"
       exit 0
     ;;
@@ -129,18 +129,29 @@ if [ "$M$P" = "" ]; then :; else
       #   "ia64 Family 7 Model 1 Stepping 5, GenuineIntel"
       # or
       #   "x86 Family 6 Model 7 Stepping 3, GenuineIntel"
+      # or
+      #   "EM64T Family 15 Model 4 Stepping 3, GenuineIntel"
+      #
+      # FIXME: What does it contain on AMD's?
+      #
       # PROCESSOR_LEVEL jumps to 15 with P4/Xeon
 
-      if [ "$NT_PROCESSOR_ARCHITECTURE" = "x86" ]; then
-	PL=`getntenv PROCESSOR_LEVEL`
-	if [ "$PL" -gt 6 ]; then
-	  PL=6
-	fi
-	NT_PROCESSOR_ARCHITECTURE="i${PL}86"
-	if [ "$NT_PROCESSOR_ARCHITECTURE" = "i86" ]; then
-	  NT_PROCESSOR_ARCHITECTURE="i386"
-	fi
-      fi
+      case "$NT_PROCESSOR_ARCHITECTURE" in
+	"x86")
+	  PL=`getntenv PROCESSOR_LEVEL`
+	  if [ "$PL" -gt 6 ]; then
+	    PL=6
+	  fi
+	  NT_PROCESSOR_ARCHITECTURE="i${PL}86"
+	  if [ "$NT_PROCESSOR_ARCHITECTURE" = "i86" ]; then
+	    NT_PROCESSOR_ARCHITECTURE="i386"
+	  fi
+	;;
+	"EM64T"|"AMD64")
+	  # FIXME: Consider looking at PROCESSOR_ARCHITEW6432 (=AMD64)?
+	  NT_PROCESSOR_ARCHITECTURE="x86_64"
+	;;
+      esac
     fi
   fi
 
