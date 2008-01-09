@@ -224,8 +224,11 @@ array(mapping(string:mixed)) query(mixed ... args)
   return do_request('@', args);
 }
 
-void create(string|void host, string|void db, string|void user, string|void pw)
+void create(string|void host, string|void db, string|void user, string|void _pw)
 {
+  string pw = _pw;
+  _pw = "CENSORED";
+
   // Reconstruct the original URL (minus rsql://)
 
   if(!host) {

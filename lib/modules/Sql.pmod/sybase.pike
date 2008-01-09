@@ -2,7 +2,7 @@
  * Sybase driver for the Pike programming language.
  * By Francesco Chemolli <kinkie@roxen.com> 10/12/1999
  *
- * $Id: sybase.pike,v 1.10 2004/04/16 12:12:46 grubba Exp $
+ * $Id: sybase.pike,v 1.11 2008/01/09 14:26:07 mast Exp $
  *
  */
 
@@ -91,7 +91,9 @@ void seek(int skipthismany) {
 }
 
 void create(void|string host, void|string db, void|string user,
-            void|string pass) {
+	    void|string _pass) {
+  string pass = _pass;
+  _pass = "CENSORED";
   mo::create(host||"",db||"",user||"",pass||"");
   if (db && stringp(db) && sizeof(db)) {
     mo::big_query("use "+db);

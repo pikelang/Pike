@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.39 2007/05/26 13:53:26 mast Exp $
+ * $Id: mysql.pike,v 1.40 2008/01/09 14:26:07 mast Exp $
  *
  * Glue for the Mysql-module
  */
@@ -804,9 +804,12 @@ int(0..1) is_keyword( string name )
 }
 
 static void create(string|void host, string|void database,
-		   string|void user, string|void password,
+		   string|void user, string|void _password,
 		   mapping(string:string|int)|void options)
 {
+  string password = _password;
+  _password = "CENSORED";
+
   if (options) {
     string charset = options->mysql_charset_name ?
       lower_case (options->mysql_charset_name) : "latin1";

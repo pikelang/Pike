@@ -1,7 +1,7 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.26 2006/06/06 03:26:00 adam Exp $
+ * $Id: postgres.pike,v 1.27 2008/01/09 14:26:07 mast Exp $
  *
  */
 
@@ -153,7 +153,9 @@ static private int mkbool(string s) {
 //! @seealso
 //!   @[Postgres.postgres], @[Sql.Sql], @[postgres->select_db]
 void create(void|string host, void|string database, void|string user,
-		void|string pass) {
+		void|string _pass) {
+	string pass = _pass;
+	_pass = "CENSORED";
 	string real_host=host, real_db=database;
 	int port=0;
 	quote = this->_quote ? this->_quote : simple_quote;
