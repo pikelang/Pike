@@ -1,4 +1,6 @@
 Shuffler.c
 Shuffler.cmod.compiled
+config.h.in
 configure
 dependencies
+stamp-h.in
