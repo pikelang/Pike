@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.90 2008/01/09 14:26:07 mast Exp $
+ * $Id: Sql.pike,v 1.91 2008/01/09 16:32:13 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -170,12 +170,12 @@ static program find_dbm(string program_name) {
 //! @note
 //!   Support for @[options] was added in Pike 7.3.
 //!
-void create(string|object _host, void|string|mapping(string:int|string) db,
+void create(string|object host, void|string|mapping(string:int|string) db,
 	    void|string user, void|string _password,
 	    void|mapping(string:int|string) options)
 {
-  // _host is censored only if we pick out a password from it below.
-  void|string|object host = _host;
+  // Note: No need to censor host here, since it is rewritten below if
+  //       it contains an SQL-URL.
   string password = _password;
   _password = "CENSORED";
 
@@ -235,8 +235,6 @@ void create(string|object _host, void|string|mapping(string:int|string) db,
 	  if (password == "") {
 	    password = 0;
 	  }
-	  else
-	    _host = "CENSORED";
 	}
       }
       arr = host/"/";
