@@ -37,6 +37,8 @@ o Fixed bug in a special case of GIF color decoding (bug 3536).
 
 Database related changes in Pike:
 
+o Added censoring of passwords in database connection arguments
+  so that they don't get printed by describe_backtrace.
 o In the Sql module, do not show the total row count after a
   big_query, if unavilable.
 o Don't crash when not sending ssl options to Mysql.
