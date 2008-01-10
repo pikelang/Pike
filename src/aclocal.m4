@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.158 2007/07/06 15:54:49 grubba Exp $
+dnl $Id: aclocal.m4,v 1.159 2008/01/10 23:22:59 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -133,6 +133,43 @@ pushdef([AC_PROG_CC],
     AC_MSG_RESULT(no)
     ICC=no
   fi
+])
+
+# Check for libgcc.
+define([PIKE_CHECK_LIBGCC],[
+  if test $ac_cv_prog_gcc = yes; then
+    AC_MSG_CHECKING(for libgcc file name)
+    if test -f "$pike_cv_libgcc_filename"; then :; else
+      # libgcc has gone away probably due to gcc having been upgraded.
+      # Invalidate the entry.
+      unset pike_cv_libgcc_filename
+    fi
+    AC_CACHE_VAL(pike_cv_libgcc_filename,
+    [
+      pike_cv_libgcc_filename="`${CC-cc} $CCSHARED -print-libgcc-file-name`"
+      if test -z "$pike_cv_libgcc_filename"; then
+        pike_cv_libgcc_filename=no
+      else
+         if test -f "$pike_cv_libgcc_filename"; then
+           pic_name=`echo "$pike_cv_libgcc_filename"|sed -e 's/\.a$/_pic.a/'`
+  	 if test -f "$pic_name"; then
+  	   pike_cv_libgcc_filename="$pic_name"
+  	 fi
+         else
+           pike_cv_libgcc_filename=no
+         fi
+      fi
+    ])
+    AC_MSG_RESULT($pike_cv_libgcc_filename)
+    if test x"$pike_cv_libgcc_filename" = xno; then
+      LIBGCC=""
+    else
+      LIBGCC="$pike_cv_libgcc_filename"
+    fi
+  else
+    LIBGCC=""
+  fi
+  AC_SUBST(LIBGCC)
 ])
 
 dnl Like AC_PATH_PROG but if $2 isn't found and $RNTANY is set, tries
@@ -557,7 +594,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.158 2007/07/06 15:54:49 grubba Exp $
+  # $Id: aclocal.m4,v 1.159 2008/01/10 23:22:59 grubba Exp $
 
   MY_AC_PROG_CC
 
