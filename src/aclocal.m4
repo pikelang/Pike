@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.159 2008/01/10 23:22:59 grubba Exp $
+dnl $Id: aclocal.m4,v 1.160 2008/01/11 00:22:27 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -594,7 +594,7 @@ define([PIKE_RETAIN_VARIABLES],
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.159 2008/01/10 23:22:59 grubba Exp $
+  # $Id: aclocal.m4,v 1.160 2008/01/11 00:22:27 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -649,6 +649,8 @@ define([AC_LOW_MODULE_INIT],
     fi
   fi
   AC_SUBST(RUNPIKE)
+
+  PIKE_CHECK_LIBGCC
 ])
 
 

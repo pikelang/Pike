@@ -1,8 +1,7 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.123 2006/08/02 21:19:03 mast Exp $
+# $Id: dynamic_module_makefile.in,v 1.124 2008/01/11 00:22:27 grubba Exp $
 #
 
-LIBGCC=@LIBGCC@
 LC_REQ=@LC_REQ@
 
 LINKAGE_CPPFLAGS=
