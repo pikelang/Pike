@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.637 2008/01/13 15:49:01 grubba Exp $
+|| $Id: program.c,v 1.638 2008/01/13 19:53:49 grubba Exp $
 */
 
 #include "global.h"
@@ -4221,10 +4221,10 @@ PMOD_EXPORT void low_inherit(struct program *p,
 	  for(e=1;e<inherit.parent_offset;e++)
 	  {
 	    struct inherit *in;
-	    if(!par->prog)
+	    if(!par || !par->prog)
 	    {
-	      par=0;
-	      pid=-1;
+	      par = NULL;
+	      pid = -1;
 	      break;
 	    }
 
@@ -4258,8 +4258,8 @@ PMOD_EXPORT void low_inherit(struct program *p,
 		  pid = PARENT_INFO(par)->parent_identifier;
 		  par = PARENT_INFO(par)->parent;
 		}else{
-		  pid=-1;
-		  par=0;
+		  pid = -1;
+		  par = NULL;
 		}
 	    }
 	  }
