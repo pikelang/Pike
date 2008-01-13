@@ -16,7 +16,7 @@ void create( mixed ... args )
 }
 
 #define W(X) mixed X(mixed ... args) { return cl->X(@args); }
-#deinfe E(X) mixed X() { return cl->X(); }
+#define E(X) mixed X() { return cl->X(); }
 
 /* inherited: object */
 W(signal_connect); W(signal_emit_stop); W(signal_disconnect);
