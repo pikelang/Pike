@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.646 2008/01/08 17:19:29 grubba Exp $
+|| $Id: builtin_functions.c,v 1.647 2008/01/13 19:20:17 grubba Exp $
 */
 
 #include "global.h"
@@ -3896,11 +3896,12 @@ node *optimize_replace(node *n)
   struct pike_type *array_zero;
   struct pike_type *mapping_zero;
 
+  if (!arg0) return NULL;
+
   MAKE_CONSTANT_TYPE(array_zero, tArr(tZero));
   MAKE_CONSTANT_TYPE(mapping_zero, tMap(tZero, tZero));
 
-  if (arg0 &&
-      (pike_types_le(array_zero, (*arg0)->type) ||
+  if ((pike_types_le(array_zero, (*arg0)->type) ||
        pike_types_le(mapping_zero, (*arg0)->type))) {
     /* First argument might be an array or a mapping.
      *
