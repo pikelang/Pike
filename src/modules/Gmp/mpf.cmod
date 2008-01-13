@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpf.cmod,v 1.32 2005/09/15 15:32:39 nilsson Exp $
+|| $Id: mpf.cmod,v 1.33 2008/01/13 12:55:53 grubba Exp $
 */
 
 #include "global.h"
@@ -434,7 +434,7 @@ PIKECLASS mpf
 	  break;	  
       }
     }  
-    free_string(s);
+    push_string(s);	/* Free it when the stack unwinds. */
       
     Pike_error("Gmp.mpf cast to \"%S\" is other type than int, string or float.\n",
 	       s);
