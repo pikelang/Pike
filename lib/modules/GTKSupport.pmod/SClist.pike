@@ -14,6 +14,7 @@ void create( mixed ... args )
   cl = GTK.Clist( @args );
   add( cl->show() );
 }
+
 #define W(X) mixed X(mixed ... args) { return cl->X(@args); }
 #deinfe E(X) mixed X() { return cl->X(); }
 
