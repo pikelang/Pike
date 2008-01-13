@@ -1357,7 +1357,8 @@ mapping timezone_expert_tree=
 	 -46800:"Pacific/Fiji",
 	 -39600:"Pacific/Kosrae",]),
       -46800:"Antarctica/McMurdo",
-      -39600:"Asia/Kamchatka",]),
+      -39600:"Asia/Kamchatka",
+      39600:"Pacific/Auckland",]),
    -3600:
    ([ "test":433299604, // 1983-09-25 01:00:04
       -7200:"Europe/Tirane",
