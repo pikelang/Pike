@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.315 2007/11/15 16:42:42 grubba Exp $
+|| $Id: pike_types.c,v 1.316 2008/01/13 18:30:57 grubba Exp $
 */
 
 #include "global.h"
@@ -1412,7 +1412,7 @@ static void internal_parse_typeA(const char **_s)
 	      while(ISSPACE(**s)) ++*s;
 	      if(**s != ':') {
 		yyerror("Missing ':' after ... in function type.");
-		*s--;
+		--*s;
 	      }
 	      break;
 	    } else {
