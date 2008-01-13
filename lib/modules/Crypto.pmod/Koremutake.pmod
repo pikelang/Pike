@@ -1,4 +1,4 @@
-// $Id: Koremutake.pmod,v 1.2 2005/01/23 15:28:21 nilsson Exp $
+// $Id: Koremutake.pmod,v 1.3 2008/01/13 17:05:36 nilsson Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -82,10 +82,12 @@ class `() {
 
   static int mode;
   this_program set_encrypt_key(void|mixed key) {
+    key;
     mode = 0;
     return this;
   }
   this_program set_decrypt_key(void|mixed key) {
+    key;
     mode = 1;
     return this;
   }
