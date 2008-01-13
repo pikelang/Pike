@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.328 2007/10/04 17:02:27 grubba Exp $
+|| $Id: signal_handler.c,v 1.329 2008/01/13 15:19:21 grubba Exp $
 */
 
 #include "global.h"
@@ -2341,17 +2341,11 @@ static int set_priority( int pid, char *to )
  */
 void f_set_priority( INT32 args )
 {
-  INT_TYPE pid;
+  INT_TYPE pid = 0;
   char *plevel;
   ASSERT_SECURITY_ROOT("set_priority");
 
-  if(args == 1)
-  {
-    pid = 0;
-    get_all_args( "set_priority", args, "%s", &plevel );
-  } else if(args >= 2) {
-    get_all_args( "set_priority", args, "%s%i", &plevel, &pid );
-  }
+  get_all_args("set_priority", args, "%s.%i", &plevel, &pid);
   pid = set_priority( pid, plevel );
   pop_n_elems(args);
   push_int( pid );
