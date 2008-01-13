@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.794 2008/01/05 14:23:01 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.795 2008/01/13 19:11:22 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9008,6 +9008,9 @@ test_compile_error(int a=grunk(5);)
 // - aggregate
 test_equal(aggregate(),({}))
 test_equal(aggregate(1,2,3,4),({1,2,3,4}))
+test_equal(aggregate(1,2)+aggregate(3,4),({1,2,3,4}))
+test_equal(aggregate(@({1,2,3,4})),({1,2,3,4}))
+test_equal(aggregate(@({7})*50),({7})*50)
 
 // - aggregate_multiset
 test_equal(aggregate_multiset(), (<>))
@@ -9243,6 +9246,7 @@ test_eq(copy_value(""),"")
 test_eq(copy_value(1.0),1.0)
 test_eq(copy_value(this_object()),this_object())
 test_eq(copy_value(a),a)
+test_eq(copy_value(typeof(true)),typeof(true))
 define(do_test_copy_value,[[
 test_any([[mixed x=$1; return x==x]],1)
 test_any([[mixed x=$1; return copy_value(x)!=x]],1)
@@ -9662,6 +9666,22 @@ test_eval_error( return hash_7_0("foo",0) )
 // Versioned scope.
 test_eq(7.0::hash, hash_7_0)
 test_eq(7.4::hash, hash_7_4)
+
+// - hash_value
+define(test_hash_value, [[
+  test_true(intp(hash_value($1)))
+  test_eq(hash_value($1),hash_value($1))
+]])
+test_hash_value(77)
+test_hash_value(5.0)
+test_hash_value("hello")
+test_hash_value((<>))
+test_hash_value(({}))
+test_hash_value(([]))
+test_hash_value(time)
+test_hash_value(ADT.Stack)
+dnl test_hash_value(String)
+test_hash_value(typeof(true))
 
 // - indices
 test_equal(indices("foo"),({0,1,2}))
