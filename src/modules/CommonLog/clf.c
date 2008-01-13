@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: clf.c,v 1.17 2004/10/07 22:49:56 nilsson Exp $
+|| $Id: clf.c,v 1.18 2008/01/13 12:41:50 grubba Exp $
 */
 
 /* MUST BE FIRST */
@@ -240,7 +240,7 @@ static void f_read( INT32 args )
       check_threads_etc();
     } while (1);
 
-    if(errno < 0)
+    if(f < 0)
       Pike_error("CommonLog.read(): Failed to open file for reading (errno=%d).\n",
 	    errno);
   } else
