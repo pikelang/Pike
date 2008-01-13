@@ -23,7 +23,6 @@ void verify_heap()
 
 static void adjust_down(int elem)
 {
-  int steps;
   while(1)
   {
     int child=elem*2+1;

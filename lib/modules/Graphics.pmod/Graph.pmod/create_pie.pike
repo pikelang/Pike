@@ -1,5 +1,5 @@
 //! Graph sub-module for drawing pie-charts.
-// $Id: create_pie.pike,v 1.14 2006/11/04 19:06:48 nilsson Exp $
+// $Id: create_pie.pike,v 1.15 2008/01/13 17:04:39 nilsson Exp $
 //
 // These functions were written by Henrik "Hedda" Wallin (hedda@roxen.com)
 // Create_pie can draw pie charts in different forms.
@@ -14,8 +14,6 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 {
   //Only tested with xsize>=100
   int si=diagram_data->fontsize;
-
-  string where_is_ax;
 
   Image.Image piediagram;
 
@@ -375,7 +373,6 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
   //And now some shading!
   if (!twoD)
     {
-      object below;
       array(int) b=({70,70,70});
       array(int) a=({0,0,0});
       

@@ -1,6 +1,6 @@
 /* Requests.pike
  *
- * $Id: Requests.pmod,v 1.32 2003/01/20 17:44:01 nilsson Exp $
+ * $Id: Requests.pmod,v 1.33 2008/01/13 17:02:43 nilsson Exp $
  */
 
 /*
@@ -318,7 +318,6 @@ class GetAtomName
 
   string handle_reply(mapping reply)
   {
-    string name;
     int length;
     sscanf(reply->rest, "%2c", length);
     return reply->rest[24..23+length];

@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.109 2007/10/08 16:47:09 mast Exp $
+// $Id: client.pike,v 1.110 2008/01/13 17:02:43 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -663,7 +663,7 @@ typedef mapping(string:ResultAttributeValue) ResultEntry;
   void create(string|mapping(string:mixed)|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.109 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.110 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -751,7 +751,7 @@ void reset_options()
   private mixed send_bind_op(string name, string password) {
   // Simple BIND operation
 
-    object msgval, vers, namedn, auth, app;
+    object msgval, vers, namedn, auth;
     string pass = password;
     password = "censored";
 
@@ -815,8 +815,6 @@ void reset_options()
   //!
   int start_tls (void|SSL.context context) {
 
-    int id;
-    mixed raw;
     if(ldap_version < 3)
     {
       seterr (LDAP_PROTOCOL_ERROR);
@@ -864,7 +862,6 @@ void reset_options()
   //!   to follow his logic better.
   int bind (string|void dn, string|void password, int|void version) {
 
-    int id;
     mixed raw;
     string pass = password;
     password = "censored";
@@ -960,7 +957,6 @@ void reset_options()
   //!	to follow his logic better.
   int delete (string dn) {
 
-    int id;
     mixed raw;
 
     if (chk_ver())
@@ -1032,7 +1028,6 @@ void reset_options()
   //!   used here isn't the same as the attribute value syntax.
   int compare (string dn, string attr, string value) {
 
-    int id;
     mixed raw;
 
     // if (!aval || sizeof(aval)<2)
@@ -1109,7 +1104,6 @@ void reset_options()
   //!	to follow his logic better.
   int add (string dn, mapping(string:array(string)) attrs) {
 
-    int id;
     mixed raw;
 
     if (chk_ver())
@@ -1326,7 +1320,6 @@ object get_default_filter()
     // SEARCH
   // limitations: !!! sizelimit and timelimit should be unsigned int !!!
 
-    object msgval;
     array(object) ohlp;
 
     ohlp = ({filter});
@@ -1413,7 +1406,7 @@ object get_default_filter()
 		     void|mapping(string:array(int|string)) controls,
 		     void|int flags) {
 
-    int id,nv;
+    int id;
     object entry;
     array(object) entries = ({});
 
@@ -1982,7 +1975,6 @@ mapping(string:mixed) get_parsed_url() {return lauth;}
   //!	to follow his logic better.
   int modify (string dn, mapping(string:array(int(0..2)|string)) attropval) {
 
-    int id;
     mixed raw;
 
     if (chk_ver())

@@ -1,6 +1,6 @@
 /* Xlib.pmod
  *
- * $Id: Xlib.pmod,v 1.49 2004/01/11 00:46:12 nilsson Exp $
+ * $Id: Xlib.pmod,v 1.50 2008/01/13 17:02:43 nilsson Exp $
  */
 
 /*
@@ -268,7 +268,6 @@ class Display
 
   void default_event_handler(object me, mapping event)
   {
-    int wid;
     object w;
     array a;
     

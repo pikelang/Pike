@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.22 2007/04/29 01:38:16 nilsson Exp $
+//  $Id: ID3.pmod,v 1.23 2008/01/13 17:04:09 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -1184,7 +1184,6 @@ class Tagv1 {
 
     object st = file->stat();
     string buf;
-    int i;
 
     if(!st)
       error("File not open.\n");
@@ -1234,8 +1233,6 @@ class FrameDatav1 {
   static string id;
 
   void create(string buffer, string name) {
-    int i;
-
     frame_data = buffer;
     id = name;
     sscanf(frame_data, "%s\0", frame_data);

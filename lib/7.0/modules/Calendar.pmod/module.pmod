@@ -125,7 +125,6 @@ string print_month(void|object month,void|mapping options)
    do
    {
       array a;
-      array b;
       object d;
       string format="";
 

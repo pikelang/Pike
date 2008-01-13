@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 inherit Parser._RCS;
 
-// $Id: RCS.pike,v 1.37 2007/05/10 15:35:07 per Exp $
+// $Id: RCS.pike,v 1.38 2008/01/13 17:03:43 nilsson Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -197,7 +197,6 @@ loop:
 //!   Does not handle rcsfile(5) newphrase skipping.
 array parse_delta_sections(array raw)
 {
-  array got;
   string revision, ptr;
   revisions = ([]);
   

@@ -3,7 +3,7 @@
 
 int DEBUG=1;
 
-constant version = ("$Revision: 1.4 $"/" ")[1];
+constant version = ("$Revision: 1.5 $"/" ")[1];
 constant description = "Pike packaged module (PMAR) installer.";
 
 int forcing;
@@ -94,8 +94,6 @@ int main(int argc, array(string) argv)
   mapping sysinfo, metadata;
   object moduletool;
   string system_module_path;
-  string system_doc_path;
-  string system_include_path;
 
   sysinfo = get_sysinfo();
   metadata = get_package_metadata(s, fsroot);
@@ -230,7 +228,6 @@ int has_dir(string s, string fsroot)
 int verify_suitable_package(mapping metadata, mapping sysinfo)
 {
   int osok, procok;
-  string os, proc;
   string pos, pproc;
 
   [pos,pproc] = metadata->PLATFORM /"/";
@@ -299,7 +296,6 @@ int untar(string source, string path, void|string cwd) {
     }
     else if (stat->isreg()) {
       string file = Stdio.append_path(path, fname);
-      object f;
       if (mixed err = catch{
         if (DEBUG)
           write("%O [file %d bytes]\n", file, stat->size);

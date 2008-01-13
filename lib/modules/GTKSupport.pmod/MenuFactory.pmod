@@ -11,10 +11,9 @@
 array parse_shortcut(string what)
 {
   int flags;
-  int key;
-  
+
   if(!what)
-    return ({0,0 });
+    return ({0,0});
 
   string a, b;
   if(sscanf(what, "%s-%s", a, b) != 2)

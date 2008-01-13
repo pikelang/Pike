@@ -42,9 +42,8 @@ array(Parasite) decode_parasites( mixed data )
   while(sizeof(data))
   {
     int slen, flags;
-    string value, name;
     sscanf(data, "%4c", slen);
-    name = data[..slen-2];
+    string name = data[..slen-2];
     data = data[slen..];
     sscanf(data, "%4c%4c", flags, slen);
     res += ({ Parasite( name,flags,data[8..slen+8-1] ) });

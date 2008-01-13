@@ -362,11 +362,9 @@ void|function get_get_oid_callback(string oid)
     return oid_get_callbacks[oid];
 }
 
-private int is_valid_oid(string o)
+private int is_valid_oid(string oid)
 {
-  array oid=o/".";
-  int i;
-  foreach(oid, string c)
+  foreach(oid/".", string c)
   {
     string x;
     sscanf(c, "%[0-9]", x);

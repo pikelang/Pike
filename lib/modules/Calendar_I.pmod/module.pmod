@@ -84,15 +84,8 @@ class _TimeUnit
 }
 
 
-
-
-
 string print_month(void|object month,void|mapping options)
 {
-   object w;
-   object today;
-   string res="";
-
    if (!month)  // resolv thing here is to avoid compile-time resolve
       month=master()->resolv("Calendar_I")["Gregorian"]["Month"]();
 
@@ -105,11 +98,11 @@ string print_month(void|object month,void|mapping options)
    options=(["date_space":(options->mark_today?3:2)])|options;
 
 
-   today=function_object(object_program(month))->Day();
+   object today=function_object(object_program(month))->Day();
 
-   w=month->day(1)->week();
+   object w=month->day(1)->week();
 
-   res="";
+   string res="";
    if (options->weeks) res+=" "+" "*options->week_space;
    if (options->title)
       res+=sprintf("%|*s\n",
@@ -127,27 +120,19 @@ string print_month(void|object month,void|mapping options)
       res+="\n";
    }
 
-   string daynotes="";
-
-   if (sizeof(Array.filter(
-      Array.map(month->days(),month->day),
-      lambda(object d) { return !!options->notes[d]; })))
-      daynotes="\n%-|"+options->date_space+"s";
-
    do
    {
-      array a;
-      array b;
-      object d;
-      string format="";
-
-      a=Array.map(Array.map(w->days(),w->day),
-		  lambda(object d) 
-		  { if (d->month()!=month) return 0; else return d; });
+      array a = map(map(w->days(),w->day),
+                    lambda(object d)
+                    {
+                      if (d->month()!=month)
+                        return 0;
+                      else
+                        return d; });
 
       if (options->weeks)
 	 res+=sprintf("%*s ",options->week_space,w->name());
-      foreach (a,d)
+      foreach (a, object d)
 	 if (d)
 	    if (!options->mark_today || d!=today) 
 	       res+=sprintf("%* |d ",
@@ -165,11 +150,6 @@ string print_month(void|object month,void|mapping options)
 		      options->notes[w]);
 
       res+="\n";
-
-      if (daynotes)
-      {
-	 
-      }
 
       w++;
    }

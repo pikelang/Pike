@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 // -*- Pike -*-
-// $Id: cgrep.pike,v 1.12 2007/09/16 14:48:58 nilsson Exp $
+// $Id: cgrep.pike,v 1.13 2008/01/13 17:03:13 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -111,7 +111,6 @@ class PikeFile {
   }
 
   void grep(array(string) tokens) {
-    int old;
     foreach(tokens; int i; string token) {
 #if 0
       if(line!=old) {
@@ -336,7 +335,7 @@ Output control:
       --summarize           print a summary of the number of matches
 ";
 
-constant version = #"cgrep $Revision: 1.12 $
+constant version = #"cgrep $Revision: 1.13 $
 A token based grep with UI stolen from GNU grep.
 By Martin Nilsson 2003.
 ";

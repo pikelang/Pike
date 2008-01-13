@@ -3,7 +3,7 @@
 // This is a module for pike.
 // 3 July 1998 <hww3@riverweb.com> Bill Welliver
 //
-// $Id: LPD.pmod,v 1.9 2002/06/17 11:46:58 grubba Exp $
+// $Id: LPD.pmod,v 1.10 2008/01/13 17:02:43 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -89,7 +89,6 @@ class client {
 //! Returns 1 if success, 0 otherwise.
   int send_job(string queue, string job)
   {
-    int r;
     string resp;
 
     if(!queue) return 0;

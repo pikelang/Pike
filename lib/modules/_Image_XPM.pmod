@@ -18,7 +18,6 @@ int old_time,start_time;
 
 mapping _decode( string what, void|mapping opts )
 {
-  array e;
   array data;
   mapping retopts = ([ ]);
   if(!opts)
@@ -46,7 +45,6 @@ mapping _decode( string what, void|mapping opts )
   data = what/"\n";
   what = 0;
   int len = sizeof(data);
-  int r, sp;
 
   TD("Trim");
   _xpm_trim_rows( data );
@@ -108,7 +106,6 @@ array cmap_t;
 string encode( object what, mapping|void options )
 {
   int x,y,q;
-  array lcmapt;
   TI("Encode init");
   if(!options) options = ([]);
   if(!cmap_t)

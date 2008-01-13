@@ -912,7 +912,7 @@ int write_name(mapping diagram_data)
   object notext=GETFONT(namefont);
 
   object text;
-  int y,x;
+  int y;
   if (diagram_data->namesize)
     y=diagram_data->namesize;
   else
@@ -942,8 +942,6 @@ mapping(string:mixed) create_graph(mapping diagram_data)
 {
   //Supports only xsize>=100
   int si=diagram_data->fontsize;
-  
-  string where_is_ax;
   
   //No uneven data
   

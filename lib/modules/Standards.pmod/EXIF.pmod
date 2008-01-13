@@ -3,7 +3,7 @@
 //! This module implements EXIF (Exchangeable image file format for
 //! Digital Still Cameras) 2.2 parsing.
 
-// $Id: EXIF.pmod,v 1.27 2005/05/09 21:01:50 nilsson Exp $
+// $Id: EXIF.pmod,v 1.28 2008/01/13 17:04:00 nilsson Exp $
 //  Johan Schön <js@roxen.com>, July 2001.
 //  Based on Exiftool by Robert F. Tobler <rft@cg.tuwien.ac.at>.
 //
@@ -1056,7 +1056,6 @@ static mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
     {
       int long1=long_value(file->read(4), order);
       int long2=long_value(file->read(4), order);
-      string val;
       switch(tag_format)
       {
   	case "BIAS":

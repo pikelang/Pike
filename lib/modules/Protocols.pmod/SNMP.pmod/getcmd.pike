@@ -32,7 +32,6 @@ void tt() {
 
 int main(int argc, array(string) argv) {
 
-  mapping m;
   string host = sizeof(argv) > 1 ? argv[1] : "localhost";
   string comm = sizeof(argv) > 2 ? argv[2] : "public";
   

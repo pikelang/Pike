@@ -33,7 +33,7 @@
 //! @enddl
 
 // Author:  Johan Schön.
-// $Id: Crawler.pmod,v 1.24 2006/05/19 19:15:30 adam Exp $
+// $Id: Crawler.pmod,v 1.25 2008/01/13 17:03:29 nilsson Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -786,14 +786,12 @@ class Crawler
     
     void create(Standards.URI _uri, void|Standards.URI _real_uri, mapping extra_headers)
     {
-      string pq;
-      mapping headers;
       uri=_uri;
       real_uri=_real_uri;
       if(!real_uri)
 	real_uri=uri;
 
-      headers = ([
+      mapping headers = ([
 	"host": uri->host+":"+uri->port,
 	"user-agent": "Mozilla 4.0 (PikeCrawler)",
       ]);

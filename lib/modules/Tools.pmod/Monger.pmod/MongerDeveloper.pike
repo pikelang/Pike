@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: MongerDeveloper.pike,v 1.3 2008/01/04 20:51:11 nilsson Exp $
+// $Id: MongerDeveloper.pike,v 1.4 2008/01/13 17:03:13 nilsson Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.3 $"/" ")[1];
+constant version = ("$Revision: 1.4 $"/" ")[1];
 constant description = "MongerDeveloper: the Pike module manger.";
 
 private string default_repository = "http://modules.gotpike.org:8000/xmlrpc/index.pike";
@@ -67,7 +67,6 @@ void set_default_directory()
 int add_new_version(string module_name, string version, 
                     string changes, string license)
 {
-  mixed e; // for catching errors
   int module_id;
   mapping data = ([]);
 
@@ -86,7 +85,6 @@ int add_new_version(string module_name, string version,
 int update_version(string module_name, string version, 
                     string|void changes, string|void license)
 {
-  mixed e; // for catching errors
   int module_id;
   mapping data = ([]);
 
@@ -106,26 +104,16 @@ int update_version(string module_name, string version,
 //!
 int user_change_password(string|void _username, string _newpassword)
 {
-  mixed e; // for catching errors
-  int module_id;
-
   object x = xmlrpc_handler(repository);
- 
   if(!_username) _username = username;
-
-  return x->user_change_password(_username, _newpassword, ({username, password}));  
+  return x->user_change_password(_username, _newpassword, ({username, password}));
 }
 
 //!
 int user_change_email(string|void _username, string _newemail)
 {
-  mixed e; // for catching errors
-  int module_id;
-
   object x = xmlrpc_handler(repository);
- 
   if(!_username) _username = username;
-
   return x->user_change_email(_username, _newemail, ({username, password}));  
 }
 
@@ -133,7 +121,6 @@ int user_change_email(string|void _username, string _newemail)
 int set_version_active(string module_name, string version, 
                     int active)
 {
-  mixed e; // for catching errors
   int module_id;
   mapping data = ([]);
 
@@ -150,7 +137,6 @@ int set_version_active(string module_name, string version,
 int set_module_source(string module_name, string version, 
                     string filename)
 {
-  mixed e; // for catching errors
   int module_id;
   mapping data = ([]);
 
@@ -175,7 +161,6 @@ int set_dependency(string module_name, string version,
                     string dependency, string min_version, string max_version,
                     int(0..1) required)
 {
-  mixed e; // for catching errors
   int module_id;
   mapping data = ([]);
 
@@ -193,7 +178,6 @@ int set_dependency(string module_name, string version,
 int delete_dependency(string module_name, string version, 
                     string dependency, string min_version, string max_version)
 {
-  mixed e; // for catching errors
   int module_id;
   mapping data = ([]);
 
@@ -210,7 +194,6 @@ int delete_dependency(string module_name, string version,
 //!
 array get_dependencies(string module_name, string version)
 {
-  mixed e; // for catching errors
   int module_id;
   mapping data = ([]);
 
@@ -287,9 +270,6 @@ private mapping get_module_action_data(string name, string|void version)
 
 private void do_download(string name, string|void version)
 {
-  mixed e; // for catching errors
-  int module_id;
-
   mapping vi = get_module_action_data(name, version);
 
   if(vi->download)
@@ -310,8 +290,6 @@ private void do_download(string name, string|void version)
 
 private void do_install(string name, string|void version)
 {
-  mixed e; // for catching errors
-  int module_id;
   int res;
 
   mapping vi = get_module_action_data(name, version);
@@ -420,30 +398,22 @@ private void do_install(string name, string|void version)
 
 private void do_list(string|void name)
 {
-  mixed e; // for catching errors
   array results;
 
   object x = xmlrpc_handler(repository);
 
   if(name && strlen(name))
-  {
     results=x->get_modules_match(name);
-  }
   else
     results=x->get_modules();
 
-
   foreach(results, string r)
-  {
     write("%s\n", r);
-  }
 }
 
 string generate_components(string root_directory)
 {
-  object s;
-
-  s = file_stat(root_directory);
+  Stdio.Stat s = file_stat(root_directory);
 
   if(!s ||!s->isdir)
   {

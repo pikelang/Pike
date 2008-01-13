@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: protocol.pike,v 1.19 2008/01/04 20:50:27 nilsson Exp $
+// $Id: protocol.pike,v 1.20 2008/01/13 17:02:43 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -206,7 +206,6 @@ int get_last_io_time() {return last_io_time;}
     object msgval;
     object msgid;
     int rv = 0, msgnum;
-    string s;
 
     //THREAD_LOCK
     msgnum = next_id++;
@@ -311,7 +310,6 @@ int get_last_io_time() {return last_io_time;}
     object msgval;
     object msgid;
     int rv = 0, msgnum;
-    string s;
 
     //THREAD_LOCK
     msgnum = next_id++;

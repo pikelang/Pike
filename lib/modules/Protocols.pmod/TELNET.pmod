@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.26 2006/11/04 19:06:49 nilsson Exp $
+// $Id: TELNET.pmod,v 1.27 2008/01/13 17:02:43 nilsson Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -601,8 +601,6 @@ class protocol
 
 	    DWRITE(sprintf("TELNET: Code %s\n", lookup_telnetcodes[part[0]] || (string)part[0]));
 
-	    int j;
-	    function fun;
 	    switch (part[0]) {
 	    default:
 	      call_callback(part[0]);
@@ -616,7 +614,7 @@ class protocol
 	      break;
 
 	    case EC:	// Erase Character
-	      for (j=i; j--;) {
+	      for (int j=i; j--;) {
 		if (sizeof(a[j])) {
 		  a[j] = a[j][..<1];
 		  break;
@@ -627,7 +625,7 @@ class protocol
 
 #if 0
 	    case EL:	// Erase Line
-	      for (j=0; j < i; j++) {
+	      for (int j=0; j < i; j++) {
 		a[j] = "";
 	      }
 	      a[i] = a[i][1..];
@@ -733,7 +731,7 @@ class protocol
 
 	    case DM:	// Data Mark
 	      if (synch) {
-		for (j=0; j < i; j++) {
+		for (int j=0; j < i; j++) {
 		  a[j] = "";
 		}
 	      }

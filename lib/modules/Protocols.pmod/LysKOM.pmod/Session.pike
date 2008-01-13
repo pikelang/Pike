@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//  $Id: Session.pike,v 1.34 2004/05/15 15:37:51 nilsson Exp $
+//  $Id: Session.pike,v 1.35 2008/01/13 17:02:43 nilsson Exp $
 
 import ".";
 
@@ -1255,7 +1255,6 @@ object|void _create_text(string textstring,
 object|void send_message(string textstring, mapping options)
 {
   int|object res;
-  string call;
 
   if(!options) options = ([]);
 
