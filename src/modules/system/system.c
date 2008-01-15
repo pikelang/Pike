@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.134 2007/09/12 10:46:32 grubba Exp $
+|| $Id: system.c,v 1.135 2008/01/15 14:32:25 jonasw Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.134 2007/09/12 10:46:32 grubba Exp $");
+RCSID("$Id: system.c,v 1.135 2008/01/15 14:32:25 jonasw Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -1598,7 +1598,7 @@ int my_isipv6nr(char *s)
 #endif /* REENTRANT */
 
 #ifndef GETHOST_DECLARE
-#ifdef HAVE_GETHOSTBYNAME
+#if defined(HAVE_GETHOSTBYNAME) || defined(__NT__)
 
 #define GETHOST_DECLARE struct hostent *ret
 #define CALL_GETHOSTBYNAME(X) ret=gethostbyname(X)
@@ -1776,7 +1776,7 @@ void f_gethostbyname(INT32 args)
   }
   describe_hostent(ret);
 }  
-#endif /* HAVE_GETHOSTBYNAME */
+#endif /* GETHOST_DECLARE */
 
 #ifdef GETHOSTBYNAME_MUTEX_EXISTS
 static void cleanup_after_fork(struct callback *cb, void *arg0, void *arg1)
