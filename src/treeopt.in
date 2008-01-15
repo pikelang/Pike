@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.90 2008/01/15 23:30:57 grubba Exp $
+// $Id: treeopt.in,v 1.91 2008/01/15 23:41:02 grubba Exp $
 //
 // The tree optimizer
 //
@@ -1470,7 +1470,6 @@ F_LOOP(0 = +[ !depend_p($$, $$)]
   struct pike_type *type = $0->type;
   struct pike_string *tmpname;
   int tmpvar;
-  void add_local_name(struct pike_string *, struct pike_type *, node *);
 
   MAKE_CONST_STRING(tmpname, " ");
   tmpvar = islocal(tmpname);
