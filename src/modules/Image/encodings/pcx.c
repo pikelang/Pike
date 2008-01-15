@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcx.c,v 1.24 2005/01/23 13:30:04 nilsson Exp $
+|| $Id: pcx.c,v 1.25 2008/01/15 14:10:02 grubba Exp $
 */
 
 #include "global.h"
@@ -576,7 +576,7 @@ void image_pcx_encode( INT32 args )
 
   img = ((struct image *)get_storage( i, image_program ));
   
-  MEMSET(&c, sizeof(c), 0);
+  MEMSET(&c, 0, sizeof(c));
   c.hdpi = 150;
   c.vdpi = 150;
   c.raw = 0;
