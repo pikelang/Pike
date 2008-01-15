@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: psd.c,v 1.45 2005/12/12 20:26:20 nilsson Exp $
+|| $Id: psd.c,v 1.46 2008/01/15 14:21:12 grubba Exp $
 */
 
 #include "global.h"
@@ -476,8 +476,8 @@ static void f_decode_image_data( INT32 args )
          dst->r = ct->str[*source];
          dst->g = ct->str[*source+256];
          dst->b = ct->str[*source+256*2];
-         *source++;
-         *dst++;
+         source++;
+         dst++;
        }
        else
        {
