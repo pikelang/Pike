@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.89 2008/01/15 21:38:17 grubba Exp $
+// $Id: treeopt.in,v 1.90 2008/01/15 23:30:57 grubba Exp $
 //
 // The tree optimizer
 //
@@ -971,11 +971,7 @@ F_LOOP(0, -):
 // foreach(arr ; ; val) body; -> foreach(arr, val) body;
 F_FOREACH(F_VAL_LVAL(0[ pike_types_le($$->type, array_type_string) ],
 		     ':'(-, 1) ), 2):
-{
-  $$ = mknode(F_FOREACH, mknode(F_VAL_LVAL, $0, $1), $2);
-}
-;
-//  F_FOREACH(F_VAL_LVAL($0, $1), $2);
+  F_FOREACH(F_VAL_LVAL($0, $1), $2);
 
 // foreach(arr, -) body;  ->  loop(sizeof(arr)) body;
 F_FOREACH(F_VAL_LVAL(0, -), 1):
