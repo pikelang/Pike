@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: layer_channel.h,v 1.8 2002/10/11 01:39:42 nilsson Exp $
+|| $Id: layer_channel.h,v 1.9 2008/01/15 21:51:07 grubba Exp $
 */
 
 /* template for operator layer row function */
@@ -44,7 +44,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	 while (len--)
 	 {
 	    L_CHANNEL_DO_V(*s,*l,*d,white,alpha);
-	    l++; s++; la++; d++; sa++; 
+	    l++; s++; d++; sa++; 
 	 }
       else
 	 while (len--)
