@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.h,v 1.76 2008/01/03 15:53:34 grubba Exp $
+|| $Id: las.h,v 1.77 2008/01/15 23:39:26 grubba Exp $
 */
 
 #ifndef LAS_H
@@ -26,6 +26,13 @@ void low_yyerror(struct pike_string *str);
 PMOD_EXPORT void yyerror(const char *s);
 static void yyerror_reserved(const char *keyword);
 int islocal(struct pike_string *str);
+int low_add_local_name(struct compiler_frame *frame,
+                       struct pike_string *str,
+                       struct pike_type *type,
+                       node *def);
+int add_local_name(struct pike_string *str,
+                   struct pike_type *type,
+                   node *def);
 int verify_declared(struct pike_string *str);
 void cleanup_compiler(void);
 
