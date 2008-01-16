@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.795 2008/01/13 19:11:22 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.796 2008/01/16 18:01:50 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9675,9 +9675,11 @@ define(test_hash_value, [[
 test_hash_value(77)
 test_hash_value(5.0)
 test_hash_value("hello")
-test_hash_value((<>))
 test_hash_value(({}))
-test_hash_value(([]))
+dnl (<>) is mutable.
+test_true(intp(hash_value((<>))))
+dnl ([]) is mutable.
+test_true(intp(hash_value(([]))))
 test_hash_value(time)
 test_hash_value(ADT.Stack)
 dnl test_hash_value(String)
