@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tga.c,v 1.40 2007/12/15 13:37:13 grubba Exp $
+|| $Id: tga.c,v 1.41 2008/01/16 19:51:48 grubba Exp $
 */
 
 /*
@@ -272,6 +272,8 @@ static ptrdiff_t rle_fread (guchar *buf, size_t datasize, size_t nelems,
     count = std_fgetc (fp);
     if (count == EOF)
     {
+      if (statebuf)
+	free(statebuf);
       return j / datasize;
     }
 
@@ -296,6 +298,8 @@ static ptrdiff_t rle_fread (guchar *buf, size_t datasize, size_t nelems,
       /* Fill the buffer with the next value. */
       if (std_fread (p, datasize, 1, fp) != 1)
       {
+	if (statebuf)
+	  free(statebuf);
         return j / datasize;
       }
 
@@ -309,8 +313,10 @@ static ptrdiff_t rle_fread (guchar *buf, size_t datasize, size_t nelems,
     else
     {
       /* Read in the buffer. */
-      if (std_fread (p, bytes, 1, fp) != 1)
+      if (std_fread (p, bytes, 1, fp) != 1) {
+	free(statebuf);
         return j / datasize;
+      }
     }
 
     /* We may need to copy bytes from the state buffer. */
@@ -319,6 +325,8 @@ static ptrdiff_t rle_fread (guchar *buf, size_t datasize, size_t nelems,
     else
       j += bytes;
   }
+  if (statebuf)
+    free(statebuf);
   return nelems;
 }
 
