@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.401 2008/01/06 17:32:55 grubba Exp $
+|| $Id: las.c,v 1.402 2008/01/16 19:41:13 grubba Exp $
 */
 
 #include "global.h"
@@ -811,6 +811,7 @@ node *debug_mknode(int token, node *a, node *b)
     int e;
     struct program_state *state = Pike_compiler;
     res->node_info |= OPT_EXTERNAL_DEPEND;
+    if (!b) break;	/* Paranoia; probably compiler error. */
     for(e=0;e<b->u.sval.u.integer;e++)
     {
       state->new_program->flags |= PROGRAM_USES_PARENT | PROGRAM_NEEDS_PARENT;
