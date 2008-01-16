@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: clf.c,v 1.18 2008/01/13 12:41:50 grubba Exp $
+|| $Id: clf.c,v 1.19 2008/01/16 18:19:47 grubba Exp $
 */
 
 /* MUST BE FIRST */
@@ -270,7 +270,7 @@ static void f_read( INT32 args )
     char_pointer = read_buf;
     while(len--) {
       offs0++;
-      c = char_pointer[0];
+      c = char_pointer[0] & 0xff;
       char_pointer ++;
       cls = char_class[c];
 #ifdef TRACE_DFA
