@@ -155,7 +155,7 @@ void set_fill(int fill )
 //! Set the fill method to fill.
 {
     int i;
-    get_all_args("set_fill", args, "%d", i );
+    get_all_args("set_fill", args, "%d", &i );
     gdk_gc_set_fill( (GdkGC*)THIS->obj, i );
     RETURN_THIS();
 }
