@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.246 2007/10/03 11:38:06 grubba Exp $
+|| $Id: encode.c,v 1.247 2008/01/16 19:55:25 grubba Exp $
 */
 
 #include "global.h"
@@ -1182,6 +1182,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  code_entry (TAG_PROGRAM, 5, data);
 	  data->delayed = append_array (data->delayed, val);
 	  tmp = low_mapping_lookup (data->encoded, val);
+	  if (!tmp)
+	    Pike_error("Internal error in delayed encoder of programs.\n");
 	  tmp->u.integer = CONVERT_ENTRY_ID (tmp->u.integer);
 	  goto encode_done;
 	}
