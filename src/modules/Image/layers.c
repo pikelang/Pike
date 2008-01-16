@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: layers.c,v 1.99 2006/03/08 01:22:01 peter Exp $
+|| $Id: layers.c,v 1.100 2008/01/16 19:42:57 grubba Exp $
 */
 
 /*
@@ -2938,7 +2938,7 @@ void image_lay(INT32 args)
       return;
    }
 
-   l=(struct layer**)xalloc(sizeof(struct layer)*layers);
+   l=(struct layer**)xalloc(sizeof(struct layer *)*layers);
 
    SET_ONERROR(err, free, l);
 
