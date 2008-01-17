@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.33 2002/10/17 17:01:49 manual Exp $
+ * $Id: mktreeopt.pike,v 1.34 2008/01/17 00:45:07 nilsson Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -236,7 +236,7 @@ constant header =
 "/* Tree transformation code.\n"
 " *\n"
 " * This file was generated from %O by\n"
-" * $Id: mktreeopt.pike,v 1.33 2002/10/17 17:01:49 manual Exp $\n"
+" * $Id: mktreeopt.pike,v 1.34 2008/01/17 00:45:07 nilsson Exp $\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"
@@ -977,8 +977,8 @@ string generate_match(array(object(node)) rule_set, string indent)
 
   string tpos = rule_set[0]->tpos;
 
-  string label;
-  int any_cdr_last;
+  // string label;
+  // int any_cdr_last;
 
   int last_was_if = 0;
   if (sizeof(node_classes[NULL_CAR]) ||
@@ -1234,7 +1234,6 @@ string generate_extras_match(array(object(node)) rule_set, string indent)
   array(object(node)) no_extras = ({});
 
   foreach(rule_set, object(node) n) {
-    string t = 0;
     if (n->extras && sizeof(n->extras)) {
       extra_set[n->extras * (") &&\n" +
 			     indent + "    (")] += ({ n });
