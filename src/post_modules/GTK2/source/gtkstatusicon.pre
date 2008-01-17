@@ -39,7 +39,7 @@ signal activate;
 signal popup_menu;
 signal size_changed;
 
-void create(mapping(string:mixed)|GDK2.Pixbuf arg)
+void create(mapping(string:mixed)|GDK2.Pixbuf|string arg)
 //! Create a new GTK2.StatusIcon.
 {
   pgtk2_verify_not_inited();
@@ -78,6 +78,7 @@ void create(mapping(string:mixed)|GDK2.Pixbuf arg)
 	else
 	  gi=gtk_status_icon_new();
       }
+      THIS->obj=G_OBJECT(gi);
     }
   } else {
     GtkStatusIcon *gi;
