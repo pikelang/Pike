@@ -25,19 +25,19 @@ void create(array(mixed) types)
     get_all_args("create",args,"%A",&a);
     if (a==NULL)
       Pike_error("Invalid argument.\n");
-    if (a->size) {
-      sd=(struct store_data *)g_malloc(sizeof(struct store_data));
-      if (sd==NULL)
-	SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(struct store_data));
-      sd->types=g_malloc(sizeof(GType)*a->size);
-      if (sd->types==NULL) {
-        g_free(sd);
-	SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(struct store_data));
-      }
+    if (!a->size)
+      Pike_error("No elements in array.\n");
+    sd=(struct store_data *)g_malloc(sizeof(struct store_data));
+    if (sd==NULL)
+      SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(struct store_data));
+    sd->types=g_malloc(sizeof(GType)*a->size);
+    if (sd->types==NULL) {
+      g_free(sd);
+      SIMPLE_OUT_OF_MEMORY_ERROR("create",sizeof(struct store_data));
     }
     for (i=sd->n_cols=0; i<a->size; i++) {
       if ((ITEM(a)+i)->type==PIKE_T_STRING) {
-        const struct pike_string *str = (ITEM(a)+i)->u.string;
+	const struct pike_string *str = (ITEM(a)+i)->u.string;
 	if (is_same_string(_STR("int"),str))
 	  sd->types[sd->n_cols++]=G_TYPE_INT;
 	else if (is_same_string(_STR("uint"),str))
@@ -57,12 +57,12 @@ void create(array(mixed) types)
 	else if (is_same_string(_STR("char"),str))
 	  sd->types[sd->n_cols++]=G_TYPE_CHAR;
 	else if (is_same_string(_STR("uchar"),str))
-	  sd->types[sd->n_cols++]=G_TYPE_UCHAR;
+	    sd->types[sd->n_cols++]=G_TYPE_UCHAR;
 	else if (is_same_string(_STR("object"),str)) {
 	  sd->types[sd->n_cols++]=G_TYPE_POINTER;
 	} else {
 	  sd->types[sd->n_cols]=g_type_from_name(CGSTR0((ITEM(a)+i)->u.string));
-          if (sd->types[sd->n_cols]==0)
+	  if (sd->types[sd->n_cols]==0)
 	    break;
 	  sd->n_cols++;
 	}
@@ -76,8 +76,9 @@ void create(array(mixed) types)
       gl=gtk_list_store_newv(sd->n_cols,sd->types);
       THIS->obj=G_OBJECT(gl);
       g_object_set_data_full(THIS->obj,"store-data",sd,
-		(GDestroyNotify)pgtk2_destroy_store_data);
+			     (GDestroyNotify)pgtk2_destroy_store_data);
     } else {
+      g_free(sd);
       Pike_error("No valid types\n");
     }
   }
