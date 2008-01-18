@@ -250,7 +250,7 @@ int begins_tag(?GTK2.TextTag tag)
 {
   pgtk2_verify_inited();
   {
-    struct object *o1;
+    struct object *o1 = NULL;
     int res;
     if (args)
       get_all_args("begins_tag",args,"%o",&o1);
@@ -269,7 +269,7 @@ int ends_tag(?GTK2.TextTag tag)
 {
   pgtk2_verify_inited();
   {
-    struct object *o1;
+    struct object *o1 = NULL;
     int res;
     if (args)
       get_all_args("ends_tag",args,"%o",&o1);
@@ -286,7 +286,7 @@ int toggles_tag(?GTK2.TextTag tag)
 {
   pgtk2_verify_inited();
   {
-    struct object *o1;
+    struct object *o1 = NULL;
     int res;
     if (args)
       get_all_args("toggles_tag",args,"%o",&o1);
