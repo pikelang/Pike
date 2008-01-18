@@ -871,18 +871,24 @@ void cut_clipboard(GTK2.Clipboard clipboard, int default_editable);
 endrequire;
 
 array get_selection_bounds()
-//! Returns either a start and end W(TextIter) if some text is selected, or
-//! 2 0's.
+//! Returns either an array with start and end W(TextIter)
+//! if some text is selected, or 0 if there's no active selection.
 {
   pgtk2_verify_inited();
   {
-    GtkTextIter *start,*end;
-    gtk_text_buffer_get_selection_bounds(GTK_TEXT_BUFFER(THIS->obj),
-		start,end);
+    GtkTextIter start;
+    GtkTextIter end;
+    gboolean ok =
+      gtk_text_buffer_get_selection_bounds(GTK_TEXT_BUFFER(THIS->obj),
+					   &start, &end);
     pgtk2_pop_n_elems(args);
-    push_gobjectclass(start,pgtk2_text_iter_program);
-    push_gobjectclass(end,pgtk2_text_iter_program);
-    f_aggregate(2);
+    if (ok) {
+      push_gobjectclass(gtk_text_iter_copy(&start), pgtk2_text_iter_program);
+      push_gobjectclass(gtk_text_iter_copy(&end), pgtk2_text_iter_program);
+      f_aggregate(2);
+    } else {
+      push_int(0);
+    }
   }
 }
 
