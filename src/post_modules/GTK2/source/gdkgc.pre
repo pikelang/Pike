@@ -235,7 +235,7 @@ void set_fill(int fill)
   {
     INT_TYPE i;
 
-    get_all_args("set_fill",args,"%d",i);
+    get_all_args("set_fill",args,"%d",&i);
     gdk_gc_set_fill(GDK_GC(THIS->obj),i);
   }
   RETURN_THIS();
