@@ -119,7 +119,7 @@ mapping(string:mixed) get_values()
   ref_push_string(_STR("function"));  push_int(v.function);
   {
     GdkColor *f,*b;
-    f==g_malloc(sizeof(GdkColor));
+    f=g_malloc(sizeof(GdkColor));
     if (f==NULL)
       SIMPLE_OUT_OF_MEMORY_ERROR("get_values",sizeof(GdkColor));
     b=g_malloc(sizeof(GdkColor));
