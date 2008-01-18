@@ -205,7 +205,7 @@ int is_descendant(GTK2.TreePath ancestor)
 {
   pgtk2_verify_inited();
   {
-    GtkTreePath *gp;
+    GtkTreePath *gp = NULL;
     struct object *o1;
     int res;
     get_all_args("is_descendant",args,"%o",&o1);
