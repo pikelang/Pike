@@ -62,7 +62,7 @@ void create(string|mapping options)
   } else {
     struct mapping *m;
     struct svalue *sv;
-    int bits=8,width=-2,height=-2,alpha;
+    int bits = 8, width = -2, height = -2, alpha = 0;
     
     get_all_args("create",args,"%m",&m);
     if (m==NULL)
