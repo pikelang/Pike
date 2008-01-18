@@ -139,7 +139,7 @@ void set_tag_style(string id, ?mapping(string:mixed) style)
 {
   char *id;
   struct mapping *m=NULL;
-  GtkSourceTagStyle *sts;
+  GtkSourceTagStyle *sts = NULL;
 
   pgtk2_verify_inited();
   get_all_args("set_tag_style",args,"%s.%m",&id,&m);
@@ -179,7 +179,7 @@ void set_tag_style(string id, ?mapping(string:mixed) style)
       sts->strikethrough=PGTK_GETINT(sv);
   }
 
-  gtk_source_language_set_tag_style(GTK_SOURCE_LANGUAGE(THIS->obj),id,sts);
+  gtk_source_language_set_tag_style(GTK_SOURCE_LANGUAGE(THIS->obj), id, sts);
 
   if(sts)
     gtk_source_tag_style_free(sts);
