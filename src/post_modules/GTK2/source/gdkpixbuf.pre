@@ -152,10 +152,11 @@ void create(string|mapping options)
 	if (rowdata && rowdata->type==PIKE_T_STRING) {
 	  int stride;
 	  
-	  sv=low_mapping_string_lookup(m,_STR("rowstride"));
-	  stride=PGTK_GETINT(sv);
+	  sv = low_mapping_string_lookup(m,_STR("rowstride"));
 	  if (sv==NULL)
-	    SIMPLE_ARG_ERROR("create",args,"rowstride must exist and be non-zero");
+	    SIMPLE_ARG_ERROR("create", args,
+			     "rowstride must exist and be non-zero");
+	  stride=PGTK_GETINT(sv);
 	  pixel_data=g_malloc(height*stride+width+1);
 	  if (pixel_data==NULL)
 	    SIMPLE_OUT_OF_MEMORY_ERROR("create",height*stride+width+1);
