@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.86 2008/01/16 18:24:20 grubba Exp $
+|| $Id: port.c,v 1.87 2008/01/19 14:51:53 grubba Exp $
 */
 
 /*
@@ -175,7 +175,7 @@ PMOD_EXPORT /*@null@*/ void *pike_realloc(void *ptr, size_t sz)
 			islower(x) ? (x) + 10 - 'a' : (x) + 10 - 'A')
 #define MBASE	('z' - 'a' + 1 + 10)
 
-long STRTOL(const char *str,char **ptr,int base)
+long STRTOL(const char *str, char **ptr, int base)
 {
   /* Note: Code duplication in STRTOL_PCHARP and pcharp_to_svalue_inumber. */
 
@@ -214,7 +214,7 @@ long STRTOL(const char *str,char **ptr,int base)
    */
   if (!isalnum(c) || (xx = DIGIT(c)) >= base)
     return (0);			/* no number formed */
-  if (base == 16 && c == '0' && isxdigit(((const unsigned char *)str)[2]) &&
+  if (base == 16 && c == '0' && isxdigit(str[2] & 0xff) &&
       (str[1] == 'x' || str[1] == 'X'))
     c = *(str += 2) & 0xff;		/* skip over leading "0x" or "0X" */
 
@@ -229,7 +229,7 @@ long STRTOL(const char *str,char **ptr,int base)
   }
 
   for (val = (unsigned long)DIGIT(c);
-       isalnum(c = *++str) && (xx = DIGIT(c)) < base; ) {
+       isalnum(c = *++str & 0xff) && (xx = DIGIT(c)) < base; ) {
     if (val > mul_limit || (val == mul_limit && xx > add_limit))
       overflow = 1;
     else
