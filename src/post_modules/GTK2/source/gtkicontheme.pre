@@ -125,7 +125,7 @@ array(string) list_icons(?string context)
   {
     char *context=NULL;
     GList *gl,*g2;
-    int i;
+    int i = 0;
     if (args)
       get_all_args("list_icons",args,"%s",&context);
     gl=g2=gtk_icon_theme_list_icons(GTK_ICON_THEME(THIS->obj),context);
