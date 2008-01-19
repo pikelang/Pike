@@ -231,7 +231,7 @@ void add_toggle_actions(array(mapping(string:mixed)) entries)
     struct mapping *m;
     GtkToggleActionEntry gta;
     struct svalue *sv;
-    struct signal_data *sd;
+    struct signal_data *sd = NULL;
     int i;
     get_all_args("add_toggle_actions",args,"%A",&a);
     if (a==NULL || a->size<1)
@@ -257,6 +257,12 @@ void add_toggle_actions(array(mapping(string:mixed)) entries)
       sv=low_mapping_string_lookup(m,_STR("accelerator"));
       if (sv && sv->type==PIKE_T_STRING)
 	gta.accelerator=(const gchar *)STR0(sv->u.string);
+
+      /* FIXME: Verify that the strings are copied by
+       *        gtk_action_group_add_toggle_actions() below.
+       *        Otherwise we need to keep references to them somehow.
+       */
+
       sv=low_mapping_string_lookup(m,_STR("callback"));
       if (sv) {
 	gta.callback=G_CALLBACK(pgtk2_action_callback);
@@ -265,13 +271,21 @@ void add_toggle_actions(array(mapping(string:mixed)) entries)
 	  SIMPLE_OUT_OF_MEMORY_ERROR("add_toggle_actions",sizeof(struct signal_data));
 	assign_svalue_no_free(&sd->cb,sv);
 	sv=low_mapping_string_lookup(m,_STR("data"));
-	assign_svalue_no_free(&sd->args,sv);
+	if (sv) {
+	  assign_svalue_no_free(&sd->args,sv);
+	} else {
+	  sd->args.type = PIKE_T_INT;
+	  sd->args.subtype = NUMBER_NUMBER;
+	  sd->args.u.integer = 0;
+	}
       }
       sv=low_mapping_string_lookup(m,_STR("is_active"));
       if (sv)
 	gta.is_active=PGTK_GETINT(sv);
+      else
+	gta.is_active = 0;
       gtk_action_group_add_toggle_actions(GTK_ACTION_GROUP(THIS->obj),
-			&gta,1,sd);
+					  &gta, 1, sd);
     }
   }
   RETURN_THIS();
