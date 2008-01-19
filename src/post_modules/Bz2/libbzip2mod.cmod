@@ -140,27 +140,27 @@ PIKECLASS Deflate
       break;
     case 1:
       if(compression->type != T_INT){
-	Pike_error("Wrong type of argument 1 in call to Bz2.Deflate()");
+	Pike_error("Wrong type of argument 1 in call to Bz2.Deflate().\n");
       }
       compression_rate = compression->u.integer;
       break;
     case 2:
       if(work->type != T_INT){
-	Pike_error("Wrong type of argument 2 in call to Bz2.Deflate()");
+	Pike_error("Wrong type of argument 2 in call to Bz2.Deflate().\n");
       }
       compression_rate = compression->u.integer;
       work_factor = work->u.integer;
       break;
     default: 
-      Pike_error("Wrong number of arguments in call to Bz2.Deflate()");
+      Pike_error("Wrong number of arguments in call to Bz2.Deflate().\n");
     
     }
     if(work_factor < 1 || work_factor > 250){
-      Pike_error("work_factor out of range for Bz2.Deflate()");
+      Pike_error("work_factor out of range for Bz2.Deflate().\n");
     }
 
     if(compression_rate < 1 || compression_rate > 9){
-      Pike_error("compression_rate out of range for Bz2.Deflate()");
+      Pike_error("compression_rate out of range for Bz2.Deflate().\n");
     }
   
     s = &(THIS->strm);
@@ -188,15 +188,15 @@ PIKECLASS Deflate
     
     switch(retval){
     case BZ_PARAM_ERROR:
-      Pike_error("Parameter error when initializing Bz2.Deflate object");
+      Pike_error("Parameter error when initializing Bz2.Deflate object.\n");
       break;
     case BZ_MEM_ERROR:
-      Pike_error("Memory error when initialing Bz2.Deflate object");
+      Pike_error("Memory error when initialing Bz2.Deflate object.\n");
       break;
     case BZ_OK:
       break;
     default:
-      Pike_error("Failed to initialize Bz2.Deflate object");
+      Pike_error("Failed to initialize Bz2.Deflate object.\n");
     }
     pop_n_elems(args);
   }
@@ -223,7 +223,7 @@ PIKECLASS Deflate
        since it does the type checking for string but not for
        int|void */
     if(args != 1){
-      Pike_error("Bad number of arguments in call to Bz2.Deflate->feed()");
+      Pike_error("Bad number of arguments in call to Bz2.Deflate->feed().\n");
     }
         
     if (THIS->internbuf==NULL){
@@ -244,7 +244,7 @@ PIKECLASS Deflate
       /* allocate out buffer */
       tmp = malloc(i * DEFL_BUF_SIZE);
       if(tmp == NULL){
-	Pike_error("Failed to allocate memory in Bz2.Deflate->feed()");
+	Pike_error("Failed to allocate memory in Bz2.Deflate->feed().\n");
       }
       s->next_out = tmp;
       s->avail_out = i * DEFL_BUF_SIZE;
@@ -253,7 +253,7 @@ PIKECLASS Deflate
       if (retval != BZ_RUN_OK){
 	bzCompressEnd(s);
 	free(tmp);
-	Pike_error("Error when compressing in Bz2.feed()");
+	Pike_error("Error when compressing in Bz2.feed().\n");
       }
       
       if(TOTAL_OUT(s) - THIS->total_out_previous_buf > 0){
@@ -301,7 +301,7 @@ PIKECLASS Deflate
 	fprintf(stderr,"\nRetval is %d", retval); 
 #endif /* 0 */
 	bzCompressEnd(s);
-	Pike_error("Error when compressing data");
+	Pike_error("Error when compressing data.\n");
       }
       /* If all data has been finished or flushed then end this loop*/
       if(retval == BZ_STREAM_END || ((retval == BZ_RUN_OK)&&(s->avail_in == 0))){
@@ -313,7 +313,8 @@ PIKECLASS Deflate
 	i = 2 * i;
 	tmp = malloc(i * DEFL_BUF_SIZE);
 	if(tmp == NULL){
-	  Pike_error("Failed to allocate memory in Bz2.Deflate->read()/finish()");
+	  Pike_error("Failed to allocate memory in "
+		     "Bz2.Deflate->read()/finish().\n");
 	}
 	s->next_out = tmp;
 	s->avail_out = i * DEFL_BUF_SIZE;
@@ -449,7 +450,7 @@ PIKECLASS Deflate
         
     retval = bzCompressInit(s,THIS->compression_rate,0,THIS->work_factor);  
     if(retval < 0){
-      Pike_error("Failed to reinitialize stream");
+      Pike_error("Failed to reinitialize stream.\n");
     }
 
     if(retstr != NULL){
@@ -486,7 +487,7 @@ PIKECLASS Deflate
     
     switch (args){
     case 0:
-      Pike_error("Too few arguments to method Deflate->deflate()"); 
+      Pike_error("Too few arguments to method Deflate->deflate().\n"); 
       break; 
     case 1:
       flush_mode = BZ_FLUSH;
@@ -496,12 +497,12 @@ PIKECLASS Deflate
       flush_mode = mode->u.integer;
     }
     else{
-      Pike_error("Bad argument 2 in call to Bz2.Deflate->deflate()");
+      Pike_error("Bad argument 2 in call to Bz2.Deflate->deflate().\n");
     }
     pop_n_elems(1);
     break;
     default:
-      Pike_error("Too many arguments to method Deflate->deflate()");
+      Pike_error("Too many arguments to method Deflate->deflate().\n");
       break;
     }
     
@@ -577,7 +578,7 @@ PIKECLASS Inflate
     bz_stream *s;
     
     if(args > 0){
-      Pike_error("Bz2.Inflate() should be called with NO arguments");
+      Pike_error("Bz2.Inflate() should be called with NO arguments.\n");
     }
     s = &(THIS->strm);
     
@@ -595,7 +596,7 @@ PIKECLASS Inflate
    
     /* make more detailed*/
     if(retval != BZ_OK){
-      Pike_error("Unexpected error in Bz2.Inflate()");
+      Pike_error("Unexpected error in Bz2.Inflate().\n");
     }
     
     s->next_in = NULL;
@@ -642,7 +643,7 @@ PIKECLASS Inflate
     if (s->avail_in > 0){
       tmp_internbuf = malloc(s->avail_in);
       if(tmp_internbuf == NULL){
-	Pike_error("Failed to allocate memory in Bz2.Inflate->inflate()");
+	Pike_error("Failed to allocate memory in Bz2.Inflate->inflate().\n");
       }
       bcopy(s->next_in, tmp_internbuf, s->avail_in);
     }
@@ -686,12 +687,13 @@ PIKECLASS Inflate
       if(retval == BZ_STREAM_END && s->avail_in > 0){
 	bzDecompressEnd(s);
 	toss_buffer(&ret_buffer);
-	Pike_error("No data may follow after end of stream"); 
+	Pike_error("No data may follow after end of stream.\n"); 
       }
       if((retval != BZ_STREAM_END) && (retval != BZ_OK)){
 	bzDecompressEnd(s);
 	toss_buffer(&ret_buffer);
-	Pike_error("Error when decompressing, probably because inflate is fed with invalid data");
+	Pike_error("Error when decompressing, probably because inflate "
+		   "is fed with invalid data.\n");
       }    
       
       /* If outputbuffer is not full, or input buffer is empty, or end of stream has been detected
@@ -706,7 +708,7 @@ PIKECLASS Inflate
 	tmp = malloc(i * INFL_BUF_SIZE);
 	if(tmp == NULL){
 	  toss_buffer(&ret_buffer);
-	  Pike_error("Failed to allocate memory in Bz2.Inflate->inflate()");
+	  Pike_error("Failed to allocate memory in Bz2.Inflate->inflate().\n");
 	}
 	s->next_out = tmp;
 	s->avail_out = i * INFL_BUF_SIZE;
@@ -741,7 +743,7 @@ PIKECLASS Inflate
 	
 	/* make more detailed*/
 	if(retval != BZ_OK){
-	  Pike_error("Unexpected error in Bz2.Inflate()");
+	  Pike_error("Unexpected error in Bz2.Inflate().\n");
 	}
 	
 	s->next_in = NULL;
@@ -816,13 +818,14 @@ PIKECLASS File
 	bzWriteClose ( &(THIS->bzerror), THIS->file,0,NULL,NULL);
 	break;
       default:
-	Pike_error("This error can never occur");
+	Pike_error("This error can never occur.\n");
       }
       fclose(THIS->fp);
       THIS->fp = NULL;
     }
     else{
-      Pike_error("Too many arguments in call to Bz2.File()->close(), there should be none");
+      Pike_error("Too many arguments in call to Bz2.File()->close(), "
+		 "there should be none.\n");
     }
     THIS->mode = NO_FILE_MODE;
     THIS->small = 0;
@@ -852,7 +855,7 @@ PIKECLASS File
     THIS->fp = NULL;
     
     if(args != 0){
-      Pike_error("Bz2.File()must be called with NO arguments");
+      Pike_error("Bz2.File()must be called with NO arguments.\n");
     }
     pop_n_elems(args);
   }
@@ -884,15 +887,15 @@ PIKECLASS File
 	  THIS->small = 1;
 	  bzReadOpen(&(THIS->bzerror),tmp,1,0,NULL,0);
 	  if(THIS->bzerror != BZ_OK){
-	    Pike_error("Bz2.File->read_open() failed");
+	    Pike_error("Bz2.File->read_open() failed.\n");
 	  }	    
 	}
 	else{
-	  Pike_error("Bz2.File->read_open() out of memory");
+	  Pike_error("Bz2.File->read_open() out of memory.\n");
 	}
 	break;
       default:
-	Pike_error("Error in Bz2.File()->read_open");
+	Pike_error("Error in Bz2.File()->read_open.\n");
       }
     }
     if(tmp==NULL){
@@ -914,34 +917,30 @@ PIKECLASS File
     int compression_rate = DEFAULT_COMPRESSION_RATE;
     FILE *tmp = NULL;
     
-    if(args > 1){
-      if(work->type != T_INT){
-	Pike_error("Bad argument 2 in call to Bz2.File()->write_open()");
+    if(compression){
+      if(compression->type != T_INT){
+	Pike_error("Bad argument 2 in call to Bz2.File()->write_open().\n");
       }
       else{
 	compression_rate = compression->u.integer;
       }
-      if(args == 3){
-	if(work->type != T_INT){
-	    Pike_error("Bad argument 3 in call to Bz2.File()->write_open()");
-	}
-	else{
-	  work_factor = work->u.integer;
-	  }
+    }
+    if(work){
+      if(work->type != T_INT){
+	Pike_error("Bad argument 3 in call to Bz2.File()->write_open().\n");
       }
-    }
-    else if (args > 3){
-      Pike_error("Too many arguments in call to Bz2.File()->write_open()");
-    }
-    else if (args < 1){
-      Pike_error("Too few arguments in call to Bz2.File()->write_open()");
+      else{
+	work_factor = work->u.integer;
+      }
     }
     
     if(compression_rate < 1 || compression_rate > 9){
-      Pike_error("compression rate out of range for Bz2.File()->write_open()");
+      Pike_error("Compression rate %d is out of range for "
+		 "Bz2.File()->write_open().\n", compression_rate);
     }
     if(work_factor < 1 || work_factor > 250){
-      Pike_error("work factor out of range for Bz2.File()->write_open()");
+      Pike_error("Work factor %d is out of range for "
+		 "Bz2.File()->write_open().\n", work_factor);
     }
     if (THIS->mode == NO_FILE_MODE){
       tmp = fopen(file_name->str,"wb");
@@ -955,7 +954,7 @@ PIKECLASS File
 	break;
       default:
 	fclose(tmp);
-	Pike_error("Error in Bz2.File()->write_open");
+	Pike_error("Error in Bz2.File()->write_open().\n");
       }
       THIS->mode = WRITE_MODE;
     }
@@ -997,7 +996,8 @@ PIKECLASS File
 	f_File_read_open(1);
       }
       else{
-	Pike_error("Unknown open mode for file, should be either 'w' or 'r'");
+	Pike_error("Unknown open mode for file, "
+		   "should be either 'w' or 'r'.\n");
       }
       /* The integer is returned by the called functions f_File_... */
     }
@@ -1018,7 +1018,7 @@ PIKECLASS File
     case BZ_OK:
       break;
     default:
-      Pike_error("Error in Bz2.File()->write();");
+      Pike_error("Error in Bz2.File()->write().\n");
     }
     
     RETURN(len);
@@ -1044,7 +1044,7 @@ PIKECLASS File
 	to_be_read = bytes->u.integer;
       }
       else{
-	Pike_error("Bad type of argument in call to Bz2.File()->read");
+	Pike_error("Bad type of argument in call to Bz2.File()->read.\n");
       }
     }
     else if(args == 0){
@@ -1053,7 +1053,7 @@ PIKECLASS File
       to_be_read = INFL_BUF_SIZE;
     }
     else{
-      Pike_error("Bad number of arguments in call to Bz2.File->read");
+      Pike_error("Bad number of arguments in call to Bz2.File->read.\n");
     }
     
 
@@ -1064,9 +1064,10 @@ PIKECLASS File
       buf = malloc(i * INFL_BUF_SIZE);
       if(buf == NULL){
 	toss_buffer(&retbuf);
-	Pike_error("Failed to allocate memory in Bz2.File->read()");
+	Pike_error("Failed to allocate memory in Bz2.File->read().\n");
       }
-      nr_of_bytes = nr_of_bytes + bzRead ( &(THIS->bzerror), THIS->file, buf, to_be_read - nr_of_bytes);
+      nr_of_bytes = nr_of_bytes + bzRead ( &(THIS->bzerror), THIS->file, 
+					   buf, to_be_read - nr_of_bytes);
             
       if((args == 0) && (to_be_read == nr_of_bytes)){
 	/*make sure that we do this loop until end_of_file is reached*/
@@ -1085,7 +1086,7 @@ PIKECLASS File
 	break;
       default:
 	toss_buffer(&retbuf);
-	Pike_error("Error in Bz2.File()->read()");
+	Pike_error("Error in Bz2.File()->read().\n");
 	}
     }
     
@@ -1116,7 +1117,7 @@ PIKECLASS File
       }
     }
     else{
-      Pike_error("Too many arguments in call to Bz2.File()->eof()");
+      Pike_error("Too many arguments in call to Bz2.File()->eof().\n");
     }  
   }
 
@@ -1142,7 +1143,7 @@ PIKECLASS File
 	case NO_FILE_MODE:
 	  break;
 	default:
-	  Pike_error("This error can never occur");
+	  Pike_error("This error can never occur.\n");
 	}
 	fclose(THIS->fp);
 	THIS->fp = NULL;
