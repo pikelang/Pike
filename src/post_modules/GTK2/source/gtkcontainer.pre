@@ -134,12 +134,12 @@ void set_focus_chain(array focusable_widgets)
 {
   pgtk2_verify_inited();
   {
-    GList *gl;
     struct array *a;
     get_all_args("set_focus_chain",args,"%A",&a);
     if (a==NULL)
       Pike_error("Invalid argument.\n");
     if (a->size) {
+      GList *gl = NULL;
       int i;
       GtkWidget *w;
       for (i=0; i<a->size; i++) {
