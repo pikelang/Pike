@@ -27,25 +27,50 @@ void pixel_data_free(guchar *pixels, gpointer data) {
 %}
 
 void create(string|mapping options)
-//! Create a GDK2.Pixbuf object.  options is either a filename or a mapping
-//! of options.  options can be:<br>
-//! <table>
-//! <tr><td>filename</td><td>name of file to load</td></tr>
-//! <tr><td>bits</td><td>number of bits per sample</td></tr>
-//! <tr><td>width</td><td>width of image</td></tr>
-//! <tr><td>height</td><td>height of image</td></tr>
-//! <tr><td>alpha</td><td>true if alpha channel</td></tr>
-//! <tr><td>scale</td><td>true if use width and height as scale</td></tr>
-//! <tr><td>preserve</td><td>true if preserve aspect ratio</td></tr>
-//! <tr><td>xpm</td><td>if this key exists, then value is xpm data to create from</td></tr>
-//! <tr><td>data</td><td>if this key exists, then value is pixel data<br>
-//! The following is a list of valid keys if key data exists:<br>
-//! <table>
-//! <tr><td>colorspace</td><td>colorspace, default GDK2.COLORSPACE_RGB, currently ignored</td></tr>
-//! <tr><td>rowstride</td><td>distance in bytes between row starts</td></tr>
-//! </table>
-//! </td></tr>
-//! </table>
+//! Create a GDK2.Pixbuf object.
+//!
+//! @param options
+//!   @options is either a filename or a mapping of options.
+//!
+//!   If it is a mapping, it may contain:
+//!   @mapping
+//!     @member string "filename"
+//!       Name of file to load.
+//!   
+//!     @member string "xpm"
+//!       If this key exists, then value is xpm data to create from.
+//!   
+//!     @member string "data"
+//!       If this key exists, then value is pixel data.
+//!
+//!     @member int "bits"
+//!       Number of bits per sample.
+//!   
+//!     @member int "width"
+//!       Width of image.
+//!   
+//!     @member int "height"
+//!       Height of image.
+//!   
+//!     @member int "alpha"
+//!       True if alpha channel.
+//!   
+//!     @member int "scale"
+//!       True if use width and height as scale.
+//!   
+//!     @member int "preserve"
+//!       True if preserve aspect ratio.
+//!   @endmapping
+//!   
+//!   The following is additional keys may exist if the member
+//!   @expr{"data"@} exists:
+//!   @mapping
+//!     @member int "colorspace"
+//!       Colorspace, default @[GDK2.COLORSPACE_RGB], currently ignored.
+//!   
+//!     @member int "rowstride"
+//!        Distance in bytes between row starts.
+//!   @endmapping
 {
   GdkPixbuf *gp;
   GError *error=NULL;
@@ -100,11 +125,10 @@ void create(string|mapping options)
 	    height=-1;
 	  gp=gdk_pixbuf_new_from_file_at_size(file,width,height,&error);
 	} else
-#else
-	  {
-	    gp=gdk_pixbuf_new_from_file(file,&error);
-	  }
 #endif
+	{
+	  gp=gdk_pixbuf_new_from_file(file,&error);
+	}
       if (gp==NULL)
 	Pike_error("Unable to load file %s: %s\n",file,error->message);
     } else {
