@@ -18,7 +18,7 @@ void create(GTK2.TreeModel model, GTK2.TreePath root)
     struct object *o1,*o2;
     GtkTreeModel *gtm;
 
-    get_all_args("create",args,"%o",&o1);
+    get_all_args("create", args, "%o%o", &o1, &o2);
     gtm=gtk_tree_model_filter_new(GTK_TREE_MODEL(get_gobject(o1)),
 			(GtkTreePath *)get_pg2object(o2,pgtk2_tree_path_program));
      THIS->obj=G_OBJECT(gtm);
