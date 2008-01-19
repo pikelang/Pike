@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_gif.c,v 1.27 2007/11/01 09:51:56 agehall Exp $
+|| $Id: image_gif.c,v 1.28 2008/01/19 22:43:21 grubba Exp $
 */
 
 /*
@@ -2356,7 +2356,7 @@ void image_gif__encode_render(INT32 args)
 void image_gif__encode_extension(INT32 args)
 {
    struct array *a;
-   char buf[2];
+   char buf[4];
    int n,i;
    struct pike_string *s,*d;
 
@@ -2364,14 +2364,16 @@ void image_gif__encode_extension(INT32 args)
        sp[-args].type!=T_ARRAY)
       Pike_error("Image.GIF._encode_extension: Illegal argument(s) (expected array)\n");
 
-   add_ref(a=sp[-args].u.array);
-   pop_n_elems(args);
+   a=sp[-args].u.array;
 
    if (a->size<3)
       Pike_error("Image.GIF._encode_extension: Illegal size of array\n");
    if (a->item[1].type!=T_INT ||
        a->item[2].type!=T_STRING)
       Pike_error("Image.GIF._encode_extension: Illegal type in indices 1 or 2\n");
+
+   add_ref(a);
+   pop_n_elems(args);
 
    sprintf(buf,"%c%c",0x21,(int) a->item[1].u.integer);
    push_string(make_shared_binary_string(buf,2));
