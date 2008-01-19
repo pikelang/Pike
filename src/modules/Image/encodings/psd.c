@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: psd.c,v 1.46 2008/01/15 14:21:12 grubba Exp $
+|| $Id: psd.c,v 1.47 2008/01/19 15:28:27 grubba Exp $
 */
 
 #include "global.h"
@@ -325,36 +325,31 @@ packbitsdecode(struct buffer src,
 
 static void f_decode_packbits_encoded(INT32 args)
 {
-  struct pike_string *src = sp[-args].u.string;
-  int nelems = sp[-args+1].u.integer;
-  int width = sp[-args+2].u.integer;
+  struct pike_string *src = NULL;
+  int nelems = 0;
+  int width = 0;
+  int multiplier = 1;
   struct pike_string *dest;
-  int compression = 0;
+  int compression = -1;
   struct buffer b, ob, d;
   if(sp[-args].type != T_STRING)
     Pike_error("Internal argument error.\n");
 
-#ifdef HIDE_WARNINGS
-  b.str = NULL;
-  b.len = 0;
-#endif
+  get_all_args("decode_packbits_encoded", args,
+	       "%T%d%d.%d%d",
+	       &src, &nelems, &width,
+	       &multiplier, &compression);
 
-
-  if(args == 5)
-  {
-    nelems *= sp[-args+3].u.integer;
-    compression = sp[-args+4].u.integer;
-    b.str = (unsigned char *)src->str;
-    b.len = src->len;
-    pop_n_elems(4);
-  } else if(args == 3) {
-    if( src->str[0] )
-      Pike_error("Impossible compression (%d)!\n", (src->str[0]<<8|src->str[1]) );
-    compression = src->str[1];
-    b.str = (unsigned char *)src->str+2;
-    b.len = src->len-2;
-    pop_n_elems(2);
+  nelems *= multiplier;
+  b.str = (unsigned char *)src->str;
+  b.len = src->len;
+  if (compression < 0) {
+    compression = (src->str[0] << 8) | src->str[1];
+    b.str += 2;
+    b.len -= 2;
   }
+
+  pop_n_elems(args-1);
 
   ob = b;
   ob.str += nelems*2;
@@ -374,7 +369,7 @@ static void f_decode_packbits_encoded(INT32 args)
      push_string( make_shared_binary_string((char *)b.str,b.len));
      break;
    default:
-     Pike_error("Impossible compression (%d)!\n", src->str[1]);
+     Pike_error("Unsupported compression (%d)!\n", compression);
   }
   stack_swap();
   pop_stack();
