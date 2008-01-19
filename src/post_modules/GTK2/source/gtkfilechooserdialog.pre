@@ -154,7 +154,7 @@ void create(string title, GTK2.Window parent, int mode,
     if (a) {
       for (i=0; i<a->size; i++) {
 	char *text;
-	int response_id;
+	int response_id = 0;
 	struct svalue *sv;
         struct mapping *m;
 	if ((ITEM(a)+i)->type!=PIKE_T_MAPPING)
@@ -165,7 +165,8 @@ void create(string title, GTK2.Window parent, int mode,
 	  continue;
 	text=(char *)STR0(sv->u.string); 
 	sv=low_mapping_string_lookup(m,_STR("id"));
-	response_id=PGTK_GETINT(sv);
+	if (sv)
+	  response_id=PGTK_GETINT(sv);
 	gtk_dialog_add_button(GTK_DIALOG(THIS->obj),text,response_id);
       }
     }
