@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.52 2007/08/10 17:51:59 grubba Exp $
+|| $Id: postgres.c,v 1.53 2008/01/20 22:15:34 grubba Exp $
 */
 
 /*
@@ -232,85 +232,37 @@ static void f_create (INT32 args)
 {
         /*port will be used as a string with a sprintf()*/
 	char * host=NULL, *db=NULL, *user=NULL, *pass=NULL, *port=NULL;
+	int port_no = -1;
+	char port_buffer[10]; /*it's enough, we need only 6*/
 	PGconn * conn;
 	PQ_FETCH();
 
-	check_all_args("postgres->create",args,
-			BIT_STRING|BIT_VOID,
-		        BIT_STRING|BIT_VOID,
-			BIT_STRING|BIT_VOID,
-		        BIT_STRING|BIT_VOID,
-			BIT_INT|BIT_VOID,
-		        0);
+	get_all_args("postgres->create",args,
+		     ".%s%s%s%s%d",
+		     &host,
+		     &db,
+		     &user,
+		     &pass,
+		     &port_no);
 
-	if (THIS->dblink) {
-		conn=THIS->dblink;
-		THREADS_ALLOW();
-		PQ_LOCK();
-		PQfinish(conn);
-		PQ_UNLOCK();
-		THREADS_DISALLOW();
+	if (port_no != -1) {
+	  if ((port_no >= 0) && (port_no < 65536)) {
+	    sprintf(port = port_buffer, "%d", port_no);
+	  } else {
+	    SIMPLE_ARG_TYPE_ERROR("create", 5, "int(0..65535)");
+	  }
 	}
 
-	/*no break;'s here, it's intentional*/
-	switch(args) {
-		default:
-		case 5:
-			if (/* Pike_sp[4-args].type==PIKE_T_INT && */
-			    Pike_sp[4-args].u.integer <=65535 &&
-			    Pike_sp[4-args].u.integer >= 0) {
-			  if (Pike_sp[4-args].u.integer>0) {
-			    port=xalloc(6*sizeof(char));
-			    sprintf(port, "%"PRINTPIKEINT"d",
-				    Pike_sp[4-args].u.integer);
-			  }
-			}
-			else
-			  SIMPLE_ARG_TYPE_ERROR("create", 5, "int(0..65535)");
-		case 4:
-			if (Pike_sp[3-args].type==PIKE_T_STRING && Pike_sp[3-args].u.string->len)
-				pass=Pike_sp[3-args].u.string->str;
-		case 3:
-			if (Pike_sp[2-args].type==PIKE_T_STRING && Pike_sp[2-args].u.string->len)
-				user=Pike_sp[2-args].u.string->str;
-		case 2:
-			if (Pike_sp[1-args].type==PIKE_T_STRING && Pike_sp[1-args].u.string->len)
-				db=Pike_sp[1-args].u.string->str;
-		case 1:
-			if(Pike_sp[-args].type==PIKE_T_STRING && Pike_sp[-args].u.string->len)
-				host=Pike_sp[-args].u.string->str;
-		case 0:
-			;
-	}
-#if 0
-	/* Old arguments-checking code */
-	if (args>=1)
-		if(Pike_sp[-args].type==PIKE_T_STRING && Pike_sp[-args].u.string->len)
-			host=Pike_sp[-args].u.string->str;
-		/* postgres docs say they use hardwired defaults if no variable is found*/
-	if (args>=2)
-		if (Pike_sp[1-args].type==PIKE_T_STRING && Pike_sp[1-args].u.string->len)
-			db=Pike_sp[1-args].u.string->str;
-		/* This is not beautiful code, but it works:
-		 * it specifies the port to connect to if there is a third
-		 * argument greater than 0. It accepts integer arguments >= 0
-		 * to allow simpler code in pike wrappers part.
-		 */
-	if (args==3)
-		if (Pike_sp[2-args].type==PIKE_T_INT && Pike_sp[2-args].u.integer <=65535 && Pike_sp[2-args].u.integer >= 0) {
-			if (Pike_sp[2-args].u.integer>0) {
-				port=xalloc(10*sizeof(char)); /*it's enough, we need only 6*/
-				sprintf(port,"%d",Pike_sp[2-args].u.integer);
-			}
-		}
-		else
-			Pike_error ("You must specify a TCP/IP port number as argument 5 "
-					"to Sql.postgres->create().\n");
-#endif
-	pgdebug("f_create(host=%s, port=%s, db=%s, user=%s, pass=%s).\n",
-			host,port,db,user,pass);
+	conn=THIS->dblink;
+	THIS->dblink = NULL;
+
+	/* FIXME: Race-condition! */
+
 	THREADS_ALLOW();
 	PQ_LOCK();
+	if (conn) {
+		PQfinish(conn);
+	}
 #ifdef HAVE_PQSETDBLOGIN
 	conn=PQsetdbLogin(host,port,NULL,NULL,db,user,pass);
 #else
@@ -318,8 +270,10 @@ static void f_create (INT32 args)
 #endif
 	PQ_UNLOCK();
 	THREADS_DISALLOW();
+
 	if (!conn)
 		Pike_error ("Could not conneect to server\n");
+	THIS->dblink=conn;
 	if (PQstatus(conn)!=CONNECTION_OK) {
 		set_error(PQerrorMessage(conn));
 		THREADS_ALLOW();
@@ -330,9 +284,6 @@ static void f_create (INT32 args)
 		Pike_error("Could not connect to database. Reason: \"%S\".\n",
 			   THIS->last_error);
 	}
-	THIS->dblink=conn;
-	if (!THIS->dblink)
-		Pike_error ("Huh? Weirdness here! Internal error!\n");
 	pop_n_elems(args);
 }
 
@@ -358,35 +309,29 @@ static void f_select_db (INT32 args)
 	PGconn * conn, *newconn;
 	PQ_FETCH();
 
-	check_all_args("Postgres->select_db",args,BIT_STRING,0);
+	get_all_args("Postgres->select_db",args,"%s", &db);
 	
 	if (!THIS->dblink)
 	  Pike_error ("Driver error. How can you possibly not be linked to a "
 		      "database already?\n");
 	conn=THIS->dblink;
+#if 0
+	/* This is an optimization, but people may want to reset a connection
+	 * by re-selecting its database.
+	 */
+	if (!strcmp(db, PQdb(conn))) {
+		pop_n_elems(args);
+		return;
+	}
+#endif
 	THREADS_ALLOW();
 	PQ_LOCK();
 	host=PQhost(conn);
 	port=PQport(conn);
 	options=PQoptions(conn);
 	tty=PQtty(conn);
-	db=PQdb(conn);
-	PQ_UNLOCK();
-	THREADS_DISALLOW();
-#if 0
-	/* This is an optimization, but people may want to reset a connection
-	 * re-selecting its database.
-	 */
-	if (!strcmp(Pike_sp[-args].u.string->str,db)) {
-		pop_n_elems(args);
-		return;
-	}
-#endif
-	db=Pike_sp[-args].u.string->str;
 	/* This could be really done calling f_create, but it's more efficient this
 	 * way */
-	THREADS_ALLOW();
-	PQ_LOCK();
 	/* using newconn is necessary or otherwise the datastructures I use
 	 * as arguments get freed by PQfinish. Could be a problem under extreme
 	 * situations (i.e. if the temporary use of _one_ more filedescriptor
