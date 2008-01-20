@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.211 2008/01/20 19:32:03 grubba Exp $
+ * $Id: backend.cmod,v 1.212 2008/01/20 19:55:14 grubba Exp $
  *
  * Backend object.
  */
@@ -377,8 +377,9 @@ PIKECLASS Backend
 
     if(me && me->may_need_wakeup && (me->wakeup_pipe_send_fd >= 0)) {
       /* Avoid fd_write with its dmalloc stuff. */
+      int len;
       do {
-	int len =
+	len =
 #ifdef HAVE_WINSOCK_H
 	  debug_fd_write
 #else
