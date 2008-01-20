@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_gif.c,v 1.28 2008/01/19 22:43:21 grubba Exp $
+|| $Id: image_gif.c,v 1.29 2008/01/20 19:55:46 grubba Exp $
 */
 
 /*
@@ -2050,7 +2050,7 @@ void image_gif__decode(INT32 args)
 void image_gif_decode(INT32 args)
 {
    struct array *a,*b;
-   struct image *img,*src,*alpha;
+   struct image *alpha;
    struct object *o;
    int n;
 
@@ -2080,7 +2080,6 @@ void image_gif_decode(INT32 args)
    push_svalue(a->item+0);
    push_svalue(a->item+1);
    o=clone_object(image_program,2);
-   img=(struct image*)get_storage(o,image_program);
    
    for (n=4; n<a->size; n++)
       if (a->item[n].type==T_ARRAY
@@ -2088,8 +2087,7 @@ void image_gif_decode(INT32 args)
 	  && b->item[0].type==T_INT 
 	  && b->item[0].u.integer==GIF_RENDER
 	  && b->item[3].type==T_OBJECT
-	  && (src=(struct image*)get_storage(b->item[3].u.object,
-					     image_program)) )
+	  && get_storage(b->item[3].u.object, image_program) )
       {
 	 if (b->item[4].type==T_OBJECT)
 	    alpha=(struct image*)get_storage(b->item[4].u.object,
