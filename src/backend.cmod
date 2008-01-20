@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.210 2008/01/04 19:36:55 grubba Exp $
+ * $Id: backend.cmod,v 1.211 2008/01/20 19:32:03 grubba Exp $
  *
  * Backend object.
  */
@@ -375,14 +375,18 @@ PIKECLASS Backend
   {
     char foo=0;
 
-    if(me && me->may_need_wakeup && (me->wakeup_pipe_send_fd >= 0))
+    if(me && me->may_need_wakeup && (me->wakeup_pipe_send_fd >= 0)) {
       /* Avoid fd_write with its dmalloc stuff. */
+      do {
+	int len =
 #ifdef HAVE_WINSOCK_H
-      debug_fd_write
+	  debug_fd_write
 #else
-      write
+	  write
 #endif
-	(me->wakeup_pipe_send_fd, &foo ,1);
+	  (me->wakeup_pipe_send_fd, &foo ,1);
+      } while ((len < 0) && (errno == EINTR));
+    }
   }
 
   /* Lower the timeout
