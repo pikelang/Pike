@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.639 2008/01/21 22:43:42 grubba Exp $
+|| $Id: program.c,v 1.640 2008/01/21 22:46:18 grubba Exp $
 */
 
 #include "global.h"
@@ -4304,11 +4304,9 @@ PMOD_EXPORT void low_inherit(struct program *p,
   for (e=0; e < (int)p->num_identifier_references; e++)
   {
     struct reference fun;
-    struct pike_string *name;
 
     fun = p->identifier_references[e]; /* Make a copy */
 
-    name=ID_FROM_PTR(p,&fun)->name;
     fun.inherit_offset += inherit_offset;
 
     if (fun.id_flags & ID_FINAL)
