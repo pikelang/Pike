@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.647 2008/01/13 19:20:17 grubba Exp $
+|| $Id: builtin_functions.c,v 1.648 2008/01/21 11:44:48 grubba Exp $
 */
 
 #include "global.h"
@@ -3959,8 +3959,13 @@ node *optimize_replace(node *n)
 	node *ret = NULL;
 	INT32 args;
 	args = eval_low(*arg1, 1);
+	if (args != 1) return NULL;
 	if (arg2) {
-	  args += eval_low(*arg2,1);
+	  args += eval_low(*arg2, 1);
+	  if (!args) {
+	    /* eval_low() returned -1. */
+	    return NULL;
+	  }
 	}
 
 	replace_obj = clone_object(replace_compiler, args);
